@@ -443,8 +443,12 @@ namespace Feel
         template<typename MeshType>
         struct InitializeSpace
         {
-            InitializeSpace( boost::shared_ptr<MeshType> const& mesh, std::vector<boost::tuple<size_type, uint16_type, size_type> > const& dofindices )
+            InitializeSpace( boost::shared_ptr<MeshType> const& mesh,
+                             std::vector<boost::tuple<size_type, uint16_type, size_type> > const& dofindices,
+                             std::vector<WorldComm> const & worldsComm )
                 :
+                _M_cursor(0),
+                _M_worldsComm(worldsComm),
                 _M_mesh( mesh ),
                 _M_dofindices( dofindices )
 
@@ -452,12 +456,114 @@ namespace Feel
             template <typename T>
             void operator()(boost::shared_ptr<T> & x) const
             {
-                x = boost::shared_ptr<T>( new T( _M_mesh, _M_dofindices ) );
+                x = boost::shared_ptr<T>( new T( _M_mesh, _M_dofindices, std::vector<WorldComm>(1,_M_worldsComm[_M_cursor]) ) );
                 FEEL_ASSERT( x ).error( "invalid function space" );
+
+                ++_M_cursor;// warning _M_cursor < nb color
             }
+            mutable uint16_type _M_cursor;
+            std::vector<WorldComm> _M_worldsComm;
             boost::shared_ptr<MeshType> _M_mesh;
             std::vector<boost::tuple<size_type, uint16_type, size_type> > const& _M_dofindices;
         };
+        template<typename DofType>
+        struct updateDataMapProcess
+        {
+            updateDataMapProcess( std::vector<WorldComm> const & worldsComm,
+                                  WorldComm const& worldCommFusion,
+                                  uint16_type lastCursor)
+                :
+                _M_cursor(0),
+                _M_start_index(0),
+                _M_lastCursor(lastCursor),
+                _M_worldsComm(worldsComm),
+                _M_dm(new DofType(worldCommFusion)),
+                _M_dmOnOff(new DofType(worldCommFusion))
+            {}
+
+            template <typename T>
+            void operator()(boost::shared_ptr<T> & x) const
+            {
+
+                if (_M_worldsComm[_M_cursor].isActive())
+                    {
+                        size_type nLocWithGhost=x->nLocalDofWithGhost();
+                        size_type nLocWithoutGhost=x->nLocalDofWithoutGhost();
+                        _M_dm->setFirstDof(_M_dm->worldComm().globalRank(), x->dof()->firstDof());
+                        _M_dm->setLastDof(_M_dm->worldComm().globalRank(), x->dof()->lastDof());
+                        _M_dm->setFirstDofGlobalCluster(_M_dm->worldComm().globalRank(), _M_start_index + x->dof()->firstDofGlobalCluster());
+                        _M_dm->setLastDofGlobalCluster(_M_dm->worldComm().globalRank(), _M_start_index + x->dof()->lastDofGlobalCluster());
+                        _M_dm->setNLocalDofWithoutGhost(_M_dm->worldComm().globalRank(), x->dof()->nLocalDofWithoutGhost() );
+                        _M_dm->setNLocalDofWithGhost(_M_dm->worldComm().globalRank(), x->dof()->nLocalDofWithGhost() );
+
+                        _M_dm->resizeMapGlobalProcessToGlobalCluster(nLocWithGhost);
+                        _M_dm->resizeMapGlobalClusterToGlobalProcess(nLocWithoutGhost);
+                        for (int i=0;i<nLocWithGhost;++i)
+                            _M_dm->setMapGlobalProcessToGlobalCluster( i, _M_start_index + x->dof()->mapGlobalProcessToGlobalCluster(i));
+                        for (int i=0;i<nLocWithoutGhost;++i)
+                            _M_dm->setMapGlobalClusterToGlobalProcess( i, x->dof()->mapGlobalClusterToGlobalProcess(i) );
+                    }
+
+
+                if (_M_cursor==0)
+                    {
+                        _M_dmOnOff->setFirstDof(_M_dmOnOff->worldComm().globalRank(), x->dof()->firstDof());
+                        _M_dmOnOff->setFirstDofGlobalCluster(_M_dmOnOff->worldComm().globalRank(),
+                                                             _M_start_index + x->dof()->firstDofGlobalCluster());
+                        _M_dmOnOff->setNLocalDofWithoutGhost(_M_dmOnOff->worldComm().globalRank(),
+                                                             0 );
+                        _M_dmOnOff->setNLocalDofWithGhost(_M_dmOnOff->worldComm().globalRank(),
+                                                          0 );
+                    }
+
+                if (_M_cursor==_M_lastCursor)
+                    {
+                        _M_dmOnOff->setLastDof(_M_dmOnOff->worldComm().globalRank(),
+                                               _M_start_index + x->dof()->lastDof());
+                        _M_dmOnOff->setLastDofGlobalCluster(_M_dmOnOff->worldComm().globalRank(),
+                                                            _M_start_index + x->dof()->lastDofGlobalCluster());
+                    }
+
+                // update nLoc
+                size_type nLocWithoutGhostOnOff= _M_dmOnOff->nLocalDofWithoutGhost() + x->dof()->nLocalDofWithoutGhost();
+                size_type nLocWithGhostOnOff= _M_dmOnOff->nLocalDofWithGhost() + x->dof()->nLocalDofWithGhost();
+
+                _M_dmOnOff->setNLocalDofWithoutGhost(_M_dmOnOff->worldComm().globalRank(),
+                                                     nLocWithoutGhostOnOff );
+                _M_dmOnOff->setNLocalDofWithGhost(_M_dmOnOff->worldComm().globalRank(),
+                                                  nLocWithGhostOnOff);
+
+                // update map
+                _M_dmOnOff->resizeMapGlobalProcessToGlobalCluster(nLocWithGhostOnOff);
+                _M_dmOnOff->resizeMapGlobalClusterToGlobalProcess(nLocWithoutGhostOnOff);
+
+                size_type startGlobClusterDof = _M_dmOnOff->nLocalDofWithoutGhost() - x->dof()->nLocalDofWithoutGhost();
+                size_type startGlobProcessDof = _M_dmOnOff->nLocalDofWithGhost() - x->dof()->nLocalDofWithGhost();
+                for (int i=0;i<x->dof()->nLocalDofWithGhost();++i)
+                    {
+                        _M_dmOnOff->setMapGlobalProcessToGlobalCluster( startGlobProcessDof + i, _M_start_index + x->dof()->mapGlobalProcessToGlobalCluster(i));
+                    }
+                for (int i=0;i<x->dof()->nLocalDofWithoutGhost();++i)
+                    {
+                        _M_dmOnOff->setMapGlobalClusterToGlobalProcess( startGlobClusterDof + i, x->dof()->mapGlobalClusterToGlobalProcess(i) );
+                    }
+
+
+                _M_start_index+=x->nDof();
+
+                ++_M_cursor;// warning _M_cursor < nb color
+            }
+
+            boost::shared_ptr<DofType> dataMap() const { return _M_dm; }
+            boost::shared_ptr<DofType> dataMapOnOff() const { return _M_dmOnOff; }
+
+            mutable uint16_type _M_cursor;
+            mutable size_type _M_start_index;
+            std::vector<WorldComm> _M_worldsComm;
+            uint16_type _M_lastCursor;
+            mutable boost::shared_ptr<DofType> _M_dm;
+            mutable boost::shared_ptr<DofType> _M_dmOnOff;
+        }; // updateDataMapProcess
         struct NbDof
         {
             typedef size_type result_type;
@@ -486,7 +592,7 @@ namespace Feel
             if ( !x )
                 return ret;
             if ( _M_cursor < _M_finish )
-                ret += x->nDof();
+                    ret += x->nDof();
             ++_M_cursor;
             return ret;
         }
@@ -547,10 +653,14 @@ private:
     struct NLocalDof
     {
 
-        NLocalDof( size_type start = 0, size_type size = invalid_size_type_value )
+        NLocalDof( std::vector<WorldComm> const & worldsComm = std::vector<WorldComm>(1,WorldComm()),
+                   bool useOffSubSpace = false,
+                   size_type start = 0, size_type size = invalid_size_type_value )
             :
             _M_cursor( start ),
-            _M_finish( size )
+            _M_finish( size ),
+            _M_worldsComm( worldsComm ),
+            _M_useOffSubSpace( useOffSubSpace )
         {}
         template<typename Sig>
         struct result;
@@ -585,7 +695,15 @@ private:
         {
             size_type ret = s;
             if ( _M_cursor < _M_finish )
-                ret += nLocalDof(x, mpl::bool_<IsWithGhostType::value>() );
+                if (_M_useOffSubSpace)
+                    {
+                        ret += nLocalDof(x, mpl::bool_<IsWithGhostType::value>() );
+                    }
+                else
+                    {
+                        if (_M_worldsComm[_M_cursor].isActive())
+                            ret += nLocalDof(x, mpl::bool_<IsWithGhostType::value>() );
+                    }
             ++_M_cursor;
             return ret;
         }
@@ -599,6 +717,8 @@ private:
     private:
         mutable size_type _M_cursor;
         size_type _M_finish;
+        std::vector<WorldComm> const& _M_worldsComm;
+        bool _M_useOffSubSpace;
     };
 #endif // end MPI
 template< typename map_type >
@@ -1930,19 +2050,30 @@ public:
         {
             size_type nbdof_start =  fusion::accumulate( this->functionSpaces(),
                                                          size_type( 0 ),
-                                                         detail::NLocalDof<mpl::bool_<true> >( 0, i ) );
+                                                         detail::NLocalDof<mpl::bool_<true> >( this->worldsComm(), false, 0, i ) );
 
             typename mpl::at_c<functionspace_vector_type,i>::type space( _M_functionspace->template functionSpace<i>() );
             Debug( 5010 ) << "Element <" << i << ">::start :  "<< nbdof_start << "\n";
             Debug( 5010 ) << "Element <" << i << ">::size :  "<<  space->nDof()<< "\n";
             Debug( 5010 ) << "Element <" << i << ">::local size :  "<<  space->nLocalDof()<< "\n";
             Debug( 5010 ) << "Element <" << -1 << ">::size :  "<<  this->size() << "\n";
-            ct_type ct( *this, ublas::range( nbdof_start, nbdof_start+space->nLocalDof() ) );
+            if (this->functionSpace()->functionSpace<i>()->worldComm().isActive() )
+                {
+                    ct_type ct( *this, ublas::range( nbdof_start, nbdof_start+space->nLocalDof() ),
+                                _M_functionspace->template functionSpace<i>()->map() );
 
-            Debug( 5010 ) << "Element <" << i << ">::range.size :  "<<  ct.size()<< "\n";
-            Debug( 5010 ) << "Element <" << i << ">::range.start :  "<<  ct.start()<< "\n";
-
-            return typename mpl::at_c<element_vector_type,i>::type( space, ct );
+                    Debug( 5010 ) << "Element <" << i << ">::range.size :  "<<  ct.size()<< "\n";
+                    Debug( 5010 ) << "Element <" << i << ">::range.start :  "<<  ct.start()<< "\n";
+                    return typename mpl::at_c<element_vector_type,i>::type( space, ct );
+                }
+            else
+                {
+                    //warning : maybe todo a communication between the active procs (ct is zero)
+                    ct_type ct(_M_functionspace->template functionSpace<i>()->map());
+                    Debug( 5010 ) << "Element <" << i << ">::range.size :  "<<  ct.size()<< "\n";
+                    Debug( 5010 ) << "Element <" << i << ">::range.start :  "<<  ct.start()<< "\n";
+                    return typename mpl::at_c<element_vector_type,i>::type( space, ct );
+                }
         }
 
         template<int i>
@@ -1951,7 +2082,7 @@ public:
         {
             size_type nbdof_start =  fusion::accumulate( _M_functionspace->functionSpaces(),
                                                          size_type( 0 ),
-                                                         detail::NLocalDof<mpl::bool_<true> >( 0, i ) );
+                                                         detail::NLocalDof<mpl::bool_<true> >( this->worldsComm(), false, 0, i ) );
             typename mpl::at_c<functionspace_vector_type,i>::type space( _M_functionspace->template functionSpace<i>() );
 
             Debug( 5010 ) << "Element <" << i << ">::start :  "<< nbdof_start << "\n";
@@ -1959,12 +2090,25 @@ public:
             Debug( 5010 ) << "Element <" << i << ">::local size :  "<<  space->nLocalDof()<< "\n";
             Debug( 5010 ) << "Element <" << -1 << ">::size :  "<<  this->size() << "\n";
 
-            ct_type ct( const_cast<VectorUblas<value_type>&>(*this),
-                        ublas::range( nbdof_start, nbdof_start+space->nLocalDof() ) );
+            if (this->functionSpace()->worldsComm()[i].isActive() )
+                {
+                    ct_type ct( const_cast<VectorUblas<value_type>&>(*this),
+                                ublas::range( nbdof_start, nbdof_start+space->nLocalDof() ),
+                                _M_functionspace->template functionSpace<i>()->map() );
 
-            Debug( 5010 ) << "Element <" << i << ">::range.size :  "<<  ct.size()<< "\n";
-            Debug( 5010 ) << "Element <" << i << ">::range.start :  "<<  ct.start()<< "\n";
-            return typename mpl::at_c<element_vector_type,i>::type( space, ct );
+                    Debug( 5010 ) << "Element <" << i << ">::range.size :  "<<  ct.size()<< "\n";
+                    Debug( 5010 ) << "Element <" << i << ">::range.start :  "<<  ct.start()<< "\n";
+                    return typename mpl::at_c<element_vector_type,i>::type( space, ct );
+                }
+            else
+                {
+                    //warning : maybe todo a communication between the active procs
+                    ct_type ct(_M_functionspace->template functionSpace<i>()->map());
+                    Debug( 5010 ) << "Element <" << i << ">::range.size :  "<<  ct.size()<< "\n";
+                    Debug( 5010 ) << "Element <" << i << ">::range.start :  "<<  ct.start()<< "\n";
+                    return typename mpl::at_c<element_vector_type,i>::type( space, ct );
+                }
+
         }
 
         /**
@@ -1973,6 +2117,15 @@ public:
          */
         component_functionspace_ptrtype const& compSpace() const { return _M_functionspace->compSpace(); }
 
+        /**
+         * subWorlds : vector of WorldComm ( >1 if composite)
+         */
+        std::vector<WorldComm> const& worldsComm() const { return _M_functionspace->worldsComm(); };
+
+        /**
+         * world communicator
+         */
+        WorldComm const& worldComm() const { return _M_functionspace->worldComm(); };
 
         /**
          * \return the number of dof
@@ -2228,12 +2381,22 @@ public:
      */
     FunctionSpace( mesh_ptrtype const& mesh,
                    size_type mesh_components = MESH_RENUMBER | MESH_CHECK,
-                   periodicity_type  periodicity = periodicity_type() )
+                   periodicity_type  periodicity = periodicity_type(),
+                   std::vector<WorldComm> const& _worldsComm = std::vector<WorldComm>(nSpaces,WorldComm()) )
     {
+        this->setWorldsComm(_worldsComm);
+        this->setWorldComm(_worldsComm[0]);
         this->init( mesh, mesh_components, periodicity );
     }
 
-    FunctionSpace( mesh_ptrtype const& mesh, std::vector<boost::tuple<size_type, uint16_type, size_type> > const& dofindices ) { this->init( mesh, 0, dofindices ); }
+    FunctionSpace( mesh_ptrtype const& mesh,
+                   std::vector<boost::tuple<size_type, uint16_type, size_type> > const& dofindices,
+                   std::vector<WorldComm> const& _worldsComm = std::vector<WorldComm>(nSpaces,WorldComm()) )
+    {
+        this->setWorldsComm(_worldsComm);
+        this->setWorldComm(_worldsComm[0]);
+        this->init( mesh, 0, dofindices );
+    }
 
     /**
      * helper static function to create a boost::shared_ptr<> out of
@@ -2250,29 +2413,43 @@ public:
     {
         return pointer_type( new functionspace_type( __m, dofindices ) );
     }
-
+#if !defined(FEEL_ENABLE_MPI_MODE)
     static pointer_type New( mesh_ptrtype const& __m,
                              size_type mesh_components = MESH_RENUMBER | MESH_CHECK,
                              periodicity_type periodicity = periodicity_type() )
     {
         return pointer_type( new functionspace_type( __m, mesh_components, periodicity ) );
     }
+#else
+    static pointer_type New( mesh_ptrtype const& __m,
+                             std::vector<WorldComm> const& worldsComm = std::vector<WorldComm>(nSpaces,WorldComm()),
+                             size_type mesh_components = MESH_RENUMBER | MESH_CHECK,
+                             periodicity_type periodicity = periodicity_type() )
+    {
+        return pointer_type( new functionspace_type( __m, mesh_components, periodicity, worldsComm ) );
+    }
+
+#endif
     /**
      * initialize the function space
      */
-    void init( mesh_ptrtype const& mesh, size_type mesh_components = MESH_RENUMBER | MESH_CHECK, periodicity_type periodicity = periodicity_type() )
+    void init( mesh_ptrtype const& mesh,
+               size_type mesh_components = MESH_RENUMBER | MESH_CHECK,
+               periodicity_type periodicity = periodicity_type() )
     {
-
         Context ctx( mesh_components );
         Debug( 5010 ) << "component     MESH_RENUMBER: " <<  ctx.test( MESH_RENUMBER ) << "\n";
         Debug( 5010 ) << "component MESH_UPDATE_EDGES: " <<  ctx.test( MESH_UPDATE_EDGES ) << "\n";
         Debug( 5010 ) << "component MESH_UPDATE_FACES: " <<  ctx.test( MESH_UPDATE_FACES ) << "\n";
         Debug( 5010 ) << "component    MESH_PARTITION: " <<  ctx.test( MESH_PARTITION ) << "\n";
+
         this->init( mesh, mesh_components, periodicity, std::vector<boost::tuple<size_type, uint16_type, size_type> >(), mpl::bool_<is_composite>() );
         mesh->addObserver( *this );
     }
 
-    void init( mesh_ptrtype const& mesh, size_type mesh_components, std::vector<boost::tuple<size_type, uint16_type, size_type> > const& dofindices )
+    void init( mesh_ptrtype const& mesh,
+               size_type mesh_components,
+               std::vector<boost::tuple<size_type, uint16_type, size_type> > const& dofindices)
     {
 
         Context ctx( mesh_components );
@@ -2280,12 +2457,20 @@ public:
         Debug( 5010 ) << "component MESH_UPDATE_EDGES: " <<  ctx.test( MESH_UPDATE_EDGES ) << "\n";
         Debug( 5010 ) << "component MESH_UPDATE_FACES: " <<  ctx.test( MESH_UPDATE_FACES ) << "\n";
         Debug( 5010 ) << "component    MESH_PARTITION: " <<  ctx.test( MESH_PARTITION ) << "\n";
+
         this->init( mesh, mesh_components, periodicity_type(), dofindices, mpl::bool_<is_composite>() );
         mesh->addObserver( *this );
     }
 
     //! destructor: do nothing thanks to shared_ptr<>
     ~FunctionSpace() {}
+
+
+    void setWorldsComm(std::vector<WorldComm> const& _worldsComm) { _M_worldsComm=_worldsComm; };
+    void setWorldComm(WorldComm const& _worldComm) { _M_worldComm.reset(new WorldComm(_worldComm)); };
+
+    std::vector<WorldComm> const& worldsComm() const { return _M_worldsComm; };
+    WorldComm const& worldComm() const { return *_M_worldComm; };
 
     //@}
 
@@ -2369,6 +2554,24 @@ public:
         return start;
     }
 
+    size_type nLocalDofStart( size_type i = 0 ) const
+    {
+        size_type start =  fusion::accumulate( this->functionSpaces(), size_type( 0 ), detail::NLocalDof<mpl::bool_<true> >(this->worldsComm(),true,0,i));
+        return start;
+    }
+
+    size_type nLocalDofWithGhostStart( size_type i = 0 ) const
+    {
+        size_type start =  fusion::accumulate( this->functionSpaces(), size_type( 0 ), detail::NLocalDof<mpl::bool_<true> >(this->worldsComm(),true,0,i));
+        return start;
+    }
+
+    size_type nLocalDofWithoutGhostStart( size_type i = 0 ) const
+    {
+        size_type start =  fusion::accumulate( this->functionSpaces(), size_type( 0 ), detail::NLocalDof<mpl::bool_<false> >(this->worldsComm(),true,0,i));
+        return start;
+    }
+
     uint16_type nSubFunctionSpace() const
     {
         uint16_type nbSpaces = mpl::int_< fusion::result_of::template size<functionspace_vector_type>::type::value>();
@@ -2417,6 +2620,15 @@ public:
     */
     DataMap const& map() const { return *_M_dof; }
 
+    /**
+       \return the degrees of freedom
+    */
+    DataMap const& mapOn() const { return *_M_dof; }
+
+    /**
+       \return the degrees of freedom
+    */
+    DataMap const& mapOnOff() const { return *_M_dofOnOff; }
 
     /**
        \return the degrees of freedom
@@ -2424,9 +2636,29 @@ public:
     dof_ptrtype dof() { return _M_dof; }
 
     /**
+       \return the degrees of freedom (ON processor)
+    */
+    dof_ptrtype dofOn() { return _M_dof; }
+
+    /**
+       \return the degrees of freedom (ON and OFF processor)
+    */
+    dof_ptrtype dofOnOff() { return _M_dofOnOff; }
+
+    /**
        \return the degrees of freedom
     */
     dof_ptrtype const& dof() const { return _M_dof; }
+
+    /**
+       \return the degrees of freedom (ON processor)
+    */
+    dof_ptrtype const& dofOn() const { return _M_dof; }
+
+    /**
+       \return the degrees of freedom (ON and OFF processor)
+    */
+    dof_ptrtype const& dofOnOff() const { return _M_dofOnOff; }
 
     /**
      * get the \c FunctionSpace vector
@@ -2580,10 +2812,13 @@ public:
 
     FunctionSpace( FunctionSpace const& __fe )
         :
+        _M_worldsComm(__fe._M_worldsComm),
+        _M_worldComm(__fe._M_worldComm),
         _M_mesh( __fe._M_mesh ),
         _M_ref_fe( __fe._M_ref_fe ),
         _M_comp_space( __fe._M_comp_space ),
         _M_dof( __fe._M_dof ),
+        _M_dofOnOff( __fe._M_dofOnOff ),
         _M_rt( __fe._M_rt )
     {
         Debug( 5010 ) << "copying FunctionSpace\n";
@@ -2603,7 +2838,6 @@ private:
                periodicity_type const& periodicity,
                std::vector<boost::tuple<size_type, uint16_type, size_type> > const& dofindices,
                mpl::bool_<true> );
-
 
     size_type nDof( mpl::bool_<false> ) const;
     size_type nDof( mpl::bool_<true> ) const;
@@ -2670,6 +2904,8 @@ protected:
     //friend class FunctionSpace<mesh_type, typename bases_list::component_basis_type, value_type>;
     //friend class FunctionSpace<mesh_type, bases_list, value_type>;
 
+    std::vector<WorldComm> _M_worldsComm;
+    boost::shared_ptr<WorldComm> _M_worldComm;
 
     // finite element mesh
     mesh_ptrtype _M_mesh;
@@ -2682,6 +2918,9 @@ protected:
 
     //! Degrees of freedom
     dof_ptrtype _M_dof;
+
+    //! Degrees of freedom (only init wiht mpi)
+    dof_ptrtype _M_dofOnOff;
 
     /** region tree associated with the mesh */
     mutable boost::optional<region_tree_ptrtype> _M_rt;
@@ -2728,8 +2967,6 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
     Debug( 5010 ) << "calling init(<space>) is_periodic: " << is_periodic << "\n";
     _M_mesh = __m;
 
-
-
     if ( basis_type::nDofPerEdge || nDim >= 3 )
         mesh_components |= MESH_UPDATE_EDGES;
     /*
@@ -2745,15 +2982,22 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
     _M_mesh->updateForUse();
 
     _M_ref_fe = basis_ptrtype( new basis_type );
-    _M_dof = dof_ptrtype( new dof_type( _M_ref_fe, periodicity ) );
+
+    _M_dof = dof_ptrtype( new dof_type( _M_ref_fe, periodicity, this->worldsComm()[0] ) );
+
     Debug( 5010 ) << "[functionspace] Dof indices is empty ? " << dofindices.empty() << "\n";
     _M_dof->setDofIndices( dofindices );
     Debug( 5010 ) << "[functionspace] is_periodic = " << is_periodic << "\n";
 
     _M_dof->build( _M_mesh );
 
+    _M_dofOnOff = _M_dof;
+
     if ( is_vectorial )
-        _M_comp_space = component_functionspace_ptrtype( new component_functionspace_type( _M_mesh, MESH_COMPONENTS_DEFAULTS, periodicity ) );
+        _M_comp_space = component_functionspace_ptrtype( new component_functionspace_type( _M_mesh,
+                                                                                           MESH_COMPONENTS_DEFAULTS,
+                                                                                           periodicity,
+                                                                                           std::vector<WorldComm>(1,this->worldsComm()[0]) ) );
 
     Debug( 5010 ) << "nb dim : " << qDim() << "\n";
     Debug( 5010 ) << "nb dof : " << nDof() << "\n";
@@ -2796,11 +3040,12 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
 #else
     _M_mesh->components().set( mesh_components | MESH_UPDATE_FACES | MESH_UPDATE_EDGES | MESH_PARTITION );
 #endif
-
     _M_mesh->updateForUse();
 
-    fusion::for_each( _M_functionspaces, detail::InitializeSpace<mesh_type>( __m, dofindices ) );
+    // todo : check worldsComm size and _M_functionspaces are the same!
+    fusion::for_each( _M_functionspaces, detail::InitializeSpace<mesh_type>( __m, dofindices, this->worldsComm() ) );
 
+#if !defined(FEEL_ENABLE_MPI_MODE) // NOT MPI
     _M_dof = dof_ptrtype( new dof_type( this->nDof(), this->nLocalDof() ) );
     Debug( 5010 ) << "calling nDof(<composite>)" << this->nDof() << "\n";
     Debug( 5010 ) << "calling init(<composite>) end\n";
@@ -2809,6 +3054,43 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
     procDistMap = fusion::accumulate( _M_functionspaces,
                                       emptyMap,
                                       detail::searchIndicesBySpace<proc_dist_map_type>() );
+    _M_dofOnOff = _M_dof;
+#else // new version with MPI
+
+    if (this->worldComm().globalSize()>1)
+        {
+            // build the WorldComm associated to mix space
+            WorldComm mixSpaceWorldComm = this->worldsComm()[0];
+            if (this->worldsComm().size()>1)
+                for (int i=1;i<this->worldsComm().size();++i)
+                    {
+                        mixSpaceWorldComm = mixSpaceWorldComm + this->worldsComm()[i];
+                    }
+            this->setWorldComm(mixSpaceWorldComm);
+            //mixSpaceWorldComm.showMe();
+
+            // update DofTable for the mixSpace (we have 2 dofTables : On and OnOff)
+            auto dofInitTool=detail::updateDataMapProcess<dof_type>( this->worldsComm(), mixSpaceWorldComm, this->nSubFunctionSpace()-1 );
+            fusion::for_each( _M_functionspaces, dofInitTool );
+            _M_dof = dofInitTool.dataMap();
+            _M_dof->setNDof(this->nDof());
+            _M_dof->updateDataInWorld();
+
+            _M_dofOnOff = dofInitTool.dataMapOnOff();
+            _M_dofOnOff->setNDof(this->nDof());
+            _M_dofOnOff->updateDataInWorld();
+        }
+    else // sequential
+        {
+            // update DofTable for the mixSpace (here On is not build properly but OnOff yes and On=OnOff, see detail::updateDataMapProcess)
+            auto dofInitTool=detail::updateDataMapProcess<dof_type>( this->worldsComm(), this->worldComm(), this->nSubFunctionSpace()-1 );
+            fusion::for_each( _M_functionspaces, dofInitTool );
+            _M_dof = dofInitTool.dataMapOnOff();
+            _M_dof->setNDof(this->nDof());
+            _M_dofOnOff = dofInitTool.dataMapOnOff();
+            _M_dofOnOff->setNDof(this->nDof());
+        }
+#endif
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
@@ -2833,7 +3115,7 @@ size_type
 FunctionSpace<A0, A1, A2, A3, A4>::nLocalDof( mpl::bool_<true> ) const
 {
     Debug( 5010 ) << "calling nLocalDof(<composite>) begin\n";
-    size_type ndof =  fusion::accumulate( _M_functionspaces, size_type( 0 ), detail::NLocalDof<mpl::bool_<true> >() );
+    size_type ndof =  fusion::accumulate( _M_functionspaces, size_type( 0 ), detail::NLocalDof<mpl::bool_<true> >(this->worldsComm()) );
     Debug( 5010 ) << "calling nLocalDof(<composite>) end\n";
     return ndof;
 }
@@ -2851,7 +3133,7 @@ size_type
 FunctionSpace<A0, A1, A2, A3, A4>::nLocalDofWithGhost( mpl::bool_<true> ) const
 {
     Debug( 5010 ) << "calling nLocalDof(<composite>) begin\n";
-    size_type ndof =  fusion::accumulate( _M_functionspaces, size_type( 0 ), detail::NLocalDof<mpl::bool_<true> >() );
+    size_type ndof =  fusion::accumulate( _M_functionspaces, size_type( 0 ), detail::NLocalDof<mpl::bool_<true> >(this->worldsComm()) );
     Debug( 5010 ) << "calling nLocalDof(<composite>) end\n";
     return ndof;
 }
@@ -2868,7 +3150,7 @@ size_type
 FunctionSpace<A0, A1, A2, A3, A4>::nLocalDofWithoutGhost( mpl::bool_<true> ) const
 {
     Debug( 5010 ) << "calling nLocalDof(<composite>) begin\n";
-    size_type ndof =  fusion::accumulate( _M_functionspaces, size_type( 0 ), detail::NLocalDof<mpl::bool_<false> >() );
+    size_type ndof =  fusion::accumulate( _M_functionspaces, size_type( 0 ), detail::NLocalDof<mpl::bool_<false> >(this->worldsComm()) );
     Debug( 5010 ) << "calling nLocalDof(<composite>) end\n";
     return ndof;
 }

@@ -46,36 +46,40 @@ struct compute_graph3
     template <typename Space2>
     void operator()( boost::shared_ptr<Space2> const& space2 ) const
         {
-
-            if (M_stencil->isBlockPatternZero(M_test_index,M_trial_index))
-                {
-                    const size_type proc_id           = M_stencil->testSpace()->mesh()->comm().rank();
-                    const size_type n1_dof_on_proc    = space2->nLocalDof();
+            if ( M_stencil->testSpace()->worldsComm()[M_test_index].isActive() )
+            {
+                if (M_stencil->isBlockPatternZero(M_test_index,M_trial_index))
+                    {
 #if !defined(FEEL_ENABLE_MPI_MODE)
-                    const size_type first1_dof_on_proc = space2->dof()->firstDof( proc_id );
-                    const size_type last1_dof_on_proc = space2->dof()->lastDof( proc_id );
-                    const size_type first2_dof_on_proc = M_space1->dof()->firstDof( proc_id );
-                    const size_type last2_dof_on_proc = M_space1->dof()->lastDof( proc_id );
+                        const size_type proc_id           = M_stencil->testSpace()->mesh()->comm().rank();
+                        const size_type n1_dof_on_proc    = space2->nLocalDof();
+                        const size_type first1_dof_on_proc = space2->dof()->firstDof( proc_id );
+                        const size_type last1_dof_on_proc = space2->dof()->lastDof( proc_id );
+                        const size_type first2_dof_on_proc = M_space1->dof()->firstDof( proc_id );
+                        const size_type last2_dof_on_proc = M_space1->dof()->lastDof( proc_id );
 #else
-                    const size_type first1_dof_on_proc = space2->dof()->firstDofGlobalCluster( proc_id );
-                    const size_type last1_dof_on_proc = space2->dof()->lastDofGlobalCluster( proc_id );
-                    const size_type first2_dof_on_proc = M_space1->dof()->firstDofGlobalCluster( proc_id );
-                    const size_type last2_dof_on_proc = M_space1->dof()->lastDofGlobalCluster( proc_id );
+                        const size_type proc_id           = M_stencil->testSpace()->worldsComm()[M_test_index].globalRank();
+                        const size_type n1_dof_on_proc    = space2->nLocalDof();
+                        const size_type first1_dof_on_proc = space2->dof()->firstDofGlobalCluster( proc_id );
+                        const size_type last1_dof_on_proc = space2->dof()->lastDofGlobalCluster( proc_id );
+                        const size_type first2_dof_on_proc = M_space1->dof()->firstDofGlobalCluster( proc_id );
+                        const size_type last2_dof_on_proc = M_space1->dof()->lastDofGlobalCluster( proc_id );
 #endif
-                    typename BFType::graph_ptrtype zerograph( new typename BFType::graph_type( n1_dof_on_proc,
-                                                                                              first1_dof_on_proc, last1_dof_on_proc,
-                                                                                              first2_dof_on_proc, last2_dof_on_proc ) );
-                    zerograph->zero();
-                    M_stencil->mergeGraph( M_stencil->testSpace()->nDofStart( M_test_index ), M_stencil->trialSpace()->nDofStart( M_trial_index ) , zerograph );
-                }
-            else
-                {
-                    auto thestencil = stencil(_test=space2, _trial=M_space1,
-                                              _pattern=M_stencil->blockPattern(M_test_index,M_trial_index)/*M_hints*/,
-                                              _pattern_block=M_stencil->blockPattern() );
+                        typename BFType::graph_ptrtype zerograph( new typename BFType::graph_type( n1_dof_on_proc,
+                                                                                                   first1_dof_on_proc, last1_dof_on_proc,
+                                                                                                   first2_dof_on_proc, last2_dof_on_proc ) );
+                        zerograph->zero();
+                        M_stencil->mergeGraph( M_stencil->testSpace()->nDofStart( M_test_index ), M_stencil->trialSpace()->nDofStart( M_trial_index ) , zerograph );
+                    }
+                else
+                    {
+                        auto thestencil = stencil(_test=space2, _trial=M_space1,
+                                                  _pattern=M_stencil->blockPattern(M_test_index,M_trial_index)/*M_hints*/,
+                                                  _pattern_block=M_stencil->blockPattern() );
 
-                    M_stencil->mergeGraph( M_stencil->testSpace()->nDofStart( M_test_index ), M_stencil->trialSpace()->nDofStart( M_trial_index ) , thestencil->graph() );
-                }
+                        M_stencil->mergeGraph( M_stencil->testSpace()->nDofStart( M_test_index ), M_stencil->trialSpace()->nDofStart( M_trial_index ) , thestencil->graph() );
+                    }
+            } // if ( M_stencil->testSpace()->worldsComm()[M_test_index].isActive() )
 
             ++M_test_index;
         }
@@ -103,44 +107,49 @@ struct compute_graph2
 
     template <typename Space2>
     void operator()( boost::shared_ptr<Space2> const& space2 ) const
-        {
-            if (M_stencil->isBlockPatternZero(M_test_index,M_trial_index))
-                {
-                    const size_type proc_id           = M_stencil->testSpace()->mesh()->comm().rank();
-                    const size_type n1_dof_on_proc    = M_space1->nLocalDof();
+    {
+        if ( M_stencil->testSpace()->worldsComm()[M_test_index].isActive() )
+            {
+                if (M_stencil->isBlockPatternZero(M_test_index,M_trial_index))
+                    {
 #if !defined(FEEL_ENABLE_MPI_MODE)
-                    const size_type first1_dof_on_proc = M_space1->dof()->firstDof( proc_id );
-                    const size_type last1_dof_on_proc = M_space1->dof()->lastDof( proc_id );
-                    const size_type first2_dof_on_proc = space2->dof()->firstDof( proc_id );
-                    const size_type last2_dof_on_proc = space2->dof()->lastDof( proc_id );
+                        const size_type proc_id           = M_stencil->testSpace()->mesh()->comm().rank();
+                        const size_type n1_dof_on_proc    = M_space1->nLocalDof();
+                        const size_type first1_dof_on_proc = M_space1->dof()->firstDof( proc_id );
+                        const size_type last1_dof_on_proc = M_space1->dof()->lastDof( proc_id );
+                        const size_type first2_dof_on_proc = space2->dof()->firstDof( proc_id );
+                        const size_type last2_dof_on_proc = space2->dof()->lastDof( proc_id );
 #else
-                    const size_type first1_dof_on_proc = M_space1->dof()->firstDofGlobalCluster( proc_id );
-                    const size_type last1_dof_on_proc = M_space1->dof()->lastDofGlobalCluster( proc_id );
-                    const size_type first2_dof_on_proc = space2->dof()->firstDofGlobalCluster( proc_id );
-                    const size_type last2_dof_on_proc = space2->dof()->lastDofGlobalCluster( proc_id );
+                        const size_type proc_id           = M_stencil->testSpace()->worldsComm()[M_test_index].globalRank();
+                        const size_type n1_dof_on_proc    = M_space1->nLocalDof();
+                        const size_type first1_dof_on_proc = M_space1->dof()->firstDofGlobalCluster( proc_id );
+                        const size_type last1_dof_on_proc = M_space1->dof()->lastDofGlobalCluster( proc_id );
+                        const size_type first2_dof_on_proc = space2->dof()->firstDofGlobalCluster( proc_id );
+                        const size_type last2_dof_on_proc = space2->dof()->lastDofGlobalCluster( proc_id );
 #endif
 
-                    typename BFType::graph_ptrtype zerograph( new typename BFType::graph_type( n1_dof_on_proc,
-                                                                                               first1_dof_on_proc, last1_dof_on_proc,
-                                                                                               first2_dof_on_proc, last2_dof_on_proc ) );
-                    zerograph->zero();
-                    M_stencil->mergeGraph( M_stencil->testSpace()->nDofStart( M_test_index ),
-                                           M_stencil->trialSpace()->nDofStart( M_trial_index ),
-                                           zerograph );
-                }
-            else
-                {
-                    auto thestencil = stencil(_test=M_space1, _trial=space2,
-                                              _pattern=M_stencil->blockPattern(M_test_index,M_trial_index)/*M_hints*/,
-                                              _pattern_block=M_stencil->blockPattern());
+                        typename BFType::graph_ptrtype zerograph( new typename BFType::graph_type( n1_dof_on_proc,
+                                                                                                   first1_dof_on_proc, last1_dof_on_proc,
+                                                                                                   first2_dof_on_proc, last2_dof_on_proc ) );
+                        zerograph->zero();
+                        M_stencil->mergeGraph( M_stencil->testSpace()->nDofStart( M_test_index ),
+                                               M_stencil->trialSpace()->nDofStart( M_trial_index ),
+                                               zerograph );
+                    }
+                else
+                    {
 
-                    M_stencil->mergeGraph( M_stencil->testSpace()->nDofStart( M_test_index ),
-                                           M_stencil->trialSpace()->nDofStart( M_trial_index ),
-                                           thestencil->graph() );
-                }
+                        auto thestencil = stencil(_test=M_space1, _trial=space2,
+                                                  _pattern=M_stencil->blockPattern(M_test_index,M_trial_index)/*M_hints*/,
+                                                  _pattern_block=M_stencil->blockPattern());
 
-            ++M_trial_index;
-        }
+                        M_stencil->mergeGraph( M_stencil->testSpace()->nDofStart( M_test_index ),
+                                               M_stencil->trialSpace()->nDofStart( M_trial_index ),
+                                               thestencil->graph() );
+                    }
+            } // if ( M_stencil->testSpace()->worldsComm()[M_test_index].isActive() )
+        ++M_trial_index;
+    }
 
 
     mutable BFType* M_stencil;
@@ -191,7 +200,6 @@ public:
              std::vector<size_type> block_pattern=std::vector<size_type>(1,size_type(Pattern::HAS_NO_BLOCK_PATTERN)),
              bool diag_is_nonzero=false )
         :
-        M_comm(),
         _M_X1( Xh ),
         _M_X2( Yh ),
 #if !defined(FEEL_ENABLE_MPI_MODE)
@@ -200,8 +208,9 @@ public:
                                  Yh->nDofStart(), Yh->nDofStart()+ Yh->nLocalDof()-1 ) ),
 #else
         M_graph( new graph_type( Xh->nLocalDof(),
-                                 Xh->dof()->firstDofGlobalCluster(this->comm().rank()), Xh->dof()->lastDofGlobalCluster(this->comm().rank()),
-                                 Yh->dof()->firstDofGlobalCluster(this->comm().rank()), Yh->dof()->lastDofGlobalCluster(this->comm().rank()) ) ),
+                                 Xh->dof()->firstDofGlobalCluster(Xh->worldComm().globalRank()), Xh->dof()->lastDofGlobalCluster(Xh->worldComm().globalRank()),
+                                 Yh->dof()->firstDofGlobalCluster(Yh->worldComm().globalRank()), Yh->dof()->lastDofGlobalCluster(Yh->worldComm().globalRank()),
+                                 Xh->worldComm() ) ),
 #endif
         M_block_pattern(block_pattern)
         {
@@ -216,7 +225,6 @@ public:
             //else FEEL_ASSERT(M_block_pattern.size() == nbSubSpace1*nbSubSpace2 ).error ("invalid block pattern size");
 
             const size_type n1_dof_on_proc = _M_X1->nLocalDof();
-
             M_graph = this->computeGraph(graph_hints);
 
             if (diag_is_nonzero) M_graph->addMissingZeroEntriesDiagonal();
@@ -225,7 +233,6 @@ public:
         }
     Stencil( test_space_ptrtype Xh, trial_space_ptrtype Yh, size_type graph_hints, graph_ptrtype g )
         :
-        M_comm(),
         _M_X1( Xh ),
         _M_X2( Yh ),
         M_graph( g )
@@ -304,11 +311,8 @@ public:
     trial_space_ptrtype trialSpace() const { return _M_X2; }
     graph_ptrtype graph() const { return M_graph; }
     graph_ptrtype graph() { return M_graph; }
-    mpi::communicator const& comm() const { return M_comm; }
 
 private:
-    //! mpi communicator
-    mpi::communicator M_comm;
 
     test_space_ptrtype _M_X1;
     trial_space_ptrtype _M_X2;
@@ -491,25 +495,26 @@ Stencil<X1,X2>::mergeGraph( int row, int col, graph_ptrtype g )
         }
     else
         {
-            //std::cout << "\n _M_X1->nDofStart() " << _M_X1->nDofStart()<< std::endl;
-            //M_graph->setFirstRowEntryOnProc( _M_X1->nDofStart());
-            //M_graph->setFirstColEntryOnProc( _M_X2->nDofStart());
-            //M_graph->setLastRowEntryOnProc( _M_X1->nDofStart()+ _M_X1->nLocalDof() );
-            //M_graph->setLastColEntryOnProc( _M_X2->nDofStart()+ _M_X2->nLocalDof()  );
-
+            //std::cout << "\n row " << row << " col " << col << " with god rank" <<  this->testSpace()->worldComm().godRank() << std::endl;
             Debug( 5050 ) << "[merge graph] already something in store\n";
             typename graph_type::const_iterator it = g->begin();
             typename graph_type::const_iterator en = g->end();
             for( ; it != en; ++it )
             {
                 int theglobalrow = row+it->first;
-                int thelocalrow = row + boost::get<1>( it->second );
+                int thelocalrow;// warning : not the same in parallel
+                if (this->testSpace()->worldComm().globalSize()>1)
+                    thelocalrow = /*row +*/ boost::get<1>( it->second );
+                else
+                    thelocalrow = row + boost::get<1>( it->second );
+
                 //auto row1_entries = boost::unwrap_ref( boost::ref( M_graph->row(theglobalrow).template get<2>() ) );
                 std::set<size_type>& row1_entries = M_graph->row(theglobalrow).template get<2>();
                 std::set<size_type> const& row2_entries = boost::get<2>( it->second );
 
                 Debug( 5050 ) << "[mergeGraph] adding information to global row [" << theglobalrow << "], localrow=" << thelocalrow << "\n";
                 M_graph->row(theglobalrow).template get<1>() = thelocalrow;
+                M_graph->row(theglobalrow).template get<0>() = this->testSpace()->worldComm().mapLocalRankToGlobalRank()[it->second.get<0>()];
 
                 if (!row2_entries.empty())
                     {
@@ -534,7 +539,7 @@ Stencil<X1,X2>::mergeGraph( int row, int col, graph_ptrtype g )
                                 std::for_each( row2_entries.begin(), row2_entries.end(),[&]( size_type o ){ itg = row1_entries.insert( itg, o+col); });
                             }
                     }
-            }
+            } // for( ; it != en; ++it )
         }
     Debug( 5050 ) << " -- merge_graph (" << row << "," << col << ") in " << tim.elapsed() << "\n";
     Debug( 5050 ) << "merge graph for composite bilinear form done\n";
@@ -886,16 +891,20 @@ Stencil<X1,X2>::computeGraph( size_type hints, mpl::bool_<true> )
     // fed into a PetscMatrix to allocate exacly the number of nonzeros
     // necessary to store the matrix.  This algorithm should be linear
     // in the (# of elements)*(# nodes per element)
+#if !defined(FEEL_ENABLE_MPI_MODE) // NOT MPI
     const size_type nprocs           = _M_X1->mesh()->comm().size();
     const size_type proc_id           = _M_X1->mesh()->comm().rank();
     const size_type n1_dof_on_proc    = _M_X1->nLocalDof();
     //const size_type n2_dof_on_proc    = _M_X2->nLocalDof();
-#if !defined(FEEL_ENABLE_MPI_MODE) // NOT MPI
     const size_type first1_dof_on_proc = _M_X1->dof()->firstDof( proc_id );
     const size_type last1_dof_on_proc = _M_X1->dof()->lastDof( proc_id );
     const size_type first2_dof_on_proc = _M_X2->dof()->firstDof( proc_id );
     const size_type last2_dof_on_proc = _M_X2->dof()->lastDof( proc_id );
 #else // MPI
+    const size_type nprocs           = _M_X1->worldsComm()[0].localSize();
+    const size_type proc_id           = _M_X1->worldsComm()[0].localRank();
+    const size_type n1_dof_on_proc    = _M_X1->nLocalDof();
+    //const size_type n2_dof_on_proc    = _M_X2->nLocalDof();
     const size_type first1_dof_on_proc = _M_X1->dof()->firstDofGlobalCluster( proc_id );
     const size_type last1_dof_on_proc = _M_X1->dof()->lastDofGlobalCluster( proc_id );
     const size_type first2_dof_on_proc = _M_X2->dof()->firstDofGlobalCluster( proc_id );
@@ -903,10 +912,11 @@ Stencil<X1,X2>::computeGraph( size_type hints, mpl::bool_<true> )
 #endif
     graph_ptrtype sparsity_graph( new graph_type( n1_dof_on_proc,
                                                   first1_dof_on_proc, last1_dof_on_proc,
-                                                  first2_dof_on_proc, last2_dof_on_proc ) );
+                                                  first2_dof_on_proc, last2_dof_on_proc,
+                                                  _M_X1->worldComm() ) );
 
-    auto elem_it  = _M_X1->mesh()->beginElementWithProcessId( proc_id );
-    auto elem_en  = _M_X1->mesh()->endElementWithProcessId( proc_id );
+    auto elem_it  = _M_X1->mesh()->beginElementWithProcessId( _M_X1->mesh()->worldComm().localRank() /*proc_id*/ );
+    auto elem_en  = _M_X1->mesh()->endElementWithProcessId( _M_X1->mesh()->worldComm().localRank() /*proc_id*/ );
 
     Feel::Context graph( hints );
     // If the user did not explicitly specify the DOF coupling
