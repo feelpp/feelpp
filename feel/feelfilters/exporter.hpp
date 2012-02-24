@@ -109,7 +109,10 @@ public:
      * \param prefix the prefix for the file names of the exported data
      * \param freq an integer giving the frequency at which the data should be saved
      */
-    Exporter( std::string const& type, std::string const& prefix = "", int freq = 1 );
+    Exporter( std::string const& type,
+              std::string const& prefix = "",
+              int freq = 1,
+              WorldComm const& worldComm = WorldComm() );
 
     /**
      * Constructor
@@ -117,7 +120,9 @@ public:
      * \param prefix the prefix for the file names of the exported data
      * \param freq an integer giving the frequency at which the data should be saved
      */
-    Exporter( po::variables_map const& vm, std::string const& exporter_prefix = "" );
+    Exporter( po::variables_map const& vm,
+              std::string const& exporter_prefix = "",
+              WorldComm const& worldComm = WorldComm() );
 
     /**
      * copy constructor
@@ -134,14 +139,18 @@ public:
      * of the \p exportername and using \p prefix for the prefix of the data
      * files.
      */
-    static Exporter<MeshType,N>* New( std::string const& exportername, std::string prefix = "export" );
+    static Exporter<MeshType,N>* New( std::string const& exportername,
+                                      std::string prefix = "export",
+                                      WorldComm const& worldComm = WorldComm() );
 
     /**
      * Static function instantiating from the Exporter Factory an exporter out
      * of the variables_map \p vm and using \p prefix for the prefix of the data
      * files.
      */
-    static Exporter<MeshType,N>* New( po::variables_map const& vm, std::string prefix = "export" );
+    static Exporter<MeshType,N>* New( po::variables_map const& vm,
+                                      std::string prefix = "export",
+                                      WorldComm const& worldComm = WorldComm() );
 
     //@}
 
@@ -329,8 +338,13 @@ public:
             }
     }
 
+    WorldComm const& worldComm() const { return M_worldComm; }
+
+
     //@}
 protected:
+
+    WorldComm M_worldComm;
 
     bool M_do_export;
     std::string M_type;

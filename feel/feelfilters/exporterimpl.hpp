@@ -44,10 +44,11 @@ template<typename MeshType, int N> class ExporterEnsight;
 template<typename MeshType, int N> class ExporterGmsh;
 
 template<typename MeshType, int N>
-Exporter<MeshType, N>::Exporter( std::string const& __type, std::string const& __prefix, int __freq  )
+Exporter<MeshType, N>::Exporter( std::string const& __type, std::string const& __prefix, int __freq, WorldComm const& worldComm  )
     :
     super1(),
     super2(),
+    M_worldComm(worldComm),
     M_do_export( true ),
     M_type( __type ),
     M_prefix( __prefix ),
@@ -60,10 +61,11 @@ Exporter<MeshType, N>::Exporter( std::string const& __type, std::string const& _
 }
 
 template<typename MeshType, int N>
-Exporter<MeshType, N>::Exporter( po::variables_map const& vm, std::string const& exp_prefix )
+Exporter<MeshType, N>::Exporter( po::variables_map const& vm, std::string const& exp_prefix, WorldComm const& worldComm )
     :
     super1(),
     super2(),
+    M_worldComm(worldComm),
     M_do_export( true ),
     M_type(),
     M_prefix( exp_prefix ),
@@ -80,6 +82,7 @@ Exporter<MeshType, N>::Exporter( Exporter const & __ex )
     :
     super1(),
     super2(),
+    M_worldComm( __ex.M_worldComm ),
     M_do_export( __ex.M_do_export ),
     M_type( __ex.M_type ),
     M_prefix( __ex.M_prefix ),
@@ -97,7 +100,7 @@ Exporter<MeshType, N>::~Exporter()
 
 template<typename MeshType, int N>
 Exporter<MeshType, N>*
-Exporter<MeshType, N>::New( std::string const& exportername, std::string prefix )
+Exporter<MeshType, N>::New( std::string const& exportername, std::string prefix, WorldComm const& worldComm )
 {
     Exporter<MeshType, N>* exporter =  0;//Factory::type::instance().createObject( exportername  );
     if ( N == 1 && exportername == "ensight" )
@@ -112,12 +115,12 @@ Exporter<MeshType, N>::New( std::string const& exportername, std::string prefix 
 
 template<typename MeshType, int N>
 Exporter<MeshType, N>*
-Exporter<MeshType, N>::New( po::variables_map const& vm, std::string prefix )
+Exporter<MeshType, N>::New( po::variables_map const& vm, std::string prefix, WorldComm const& worldComm )
 {
     std::string estr = vm["exporter.format"].template as<std::string>();
     Exporter<MeshType, N>* exporter =  0;//Factory::type::instance().createObject( estr  );
     if ( N == 1 && estr == "ensight" )
-        exporter = new ExporterEnsight<MeshType, N>;
+        exporter = new ExporterEnsight<MeshType, N>(vm,prefix,worldComm);
     if ( N > 1 || estr == "gmsh" )
         exporter = new ExporterGmsh<MeshType,N>;
     exporter->setOptions( vm );
