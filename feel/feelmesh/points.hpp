@@ -110,11 +110,13 @@ public:
 
     Points()
         :
+        _M_worldCommPoints(),
         _M_points()
     {}
 
     Points( Points const & f )
         :
+        _M_worldCommPoints(f._M_worldCommPoints),
         _M_points( f._M_points )
     {}
 
@@ -131,6 +133,7 @@ public:
     {
         if ( this != &e )
         {
+            _M_worldCommPoints = e._M_worldCommPoints;
             _M_points = e._M_points;
         }
         return *this;

@@ -282,8 +282,8 @@ public:
     {
         if ( this != &e )
             {
-                _M_elements = e._M_elements;
                 _M_worldCommElements = e._M_worldCommElements;
+                _M_elements = e._M_elements;
             }
         return *this;
     }
