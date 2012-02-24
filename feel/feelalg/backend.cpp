@@ -201,6 +201,7 @@ Backend<T>::solve( sparse_matrix_ptrtype const& A,
     start();
 
     this->setPrecMatrixStructure( SAME_PRECONDITIONER );
+
     //std::cout << "backend: " << this->precMatrixStructure() << "\n";
     boost::tie( M_converged, M_iteration, M_residual ) = this->solve( A, P, x, b );
     stop();
@@ -256,6 +257,9 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
         //M_nlsolver->setReuse( -2, -2 );
         //M_nlsolver->setReuse( -1, -2 );
         M_nlsolver->setReuse( typeReuseJac, typeReusePrec );
+
+        // compute cst jacobian in case of quasi-newton!
+        if (reuseJac) this->nlSolver()->jacobian( x, A );
     }
     auto ret = M_nlsolver->solve( A, x, b, tol, its );
     //std::cout << "[nlSolve] ret.first " << ret.first <<std::endl;

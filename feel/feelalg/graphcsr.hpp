@@ -34,11 +34,12 @@
 #include <map>
 #include <set>
 #include <boost/tuple/tuple.hpp>
-#include <boost/mpi/communicator.hpp>
+//#include <boost/mpi/communicator.hpp>
 
 #include <boost/shared_ptr.hpp>
 
 #include <feel/feelcore/feel.hpp>
+#include <feel/feelcore/worldcomm.hpp>
 
 namespace Feel
 {
@@ -87,7 +88,8 @@ public:
               size_type first_row_entry_on_proc = 0,
               size_type last_row_entry_on_proc = 0,
               size_type first_col_entry_on_proc = 0,
-              size_type last_col_entry_on_proc = 0 );
+              size_type last_col_entry_on_proc = 0,
+              WorldComm const& worldcomm = WorldComm() );
 
     /**
      * copy constructor
@@ -244,7 +246,8 @@ public:
     /**
      * \return the communicator
      */
-    mpi::communicator const& comm() const { return M_comm; }
+    //mpi::communicator const& comm() const { return M_comm; }
+    WorldComm const& worldComm() const { return M_worldComm; }
 
     nz_type const& ia() const { return M_ia; }
     nz_type const& ja() const { return M_ja; }
@@ -308,7 +311,8 @@ protected:
 
 private:
     bool M_is_closed;
-    mpi::communicator M_comm;
+    //mpi::communicator M_comm;
+    WorldComm M_worldComm;
 
     size_type M_first_row_entry_on_proc;
     size_type M_last_row_entry_on_proc;

@@ -163,8 +163,8 @@ public:
                bool init = true)
     {
         sparse_matrix_ptrtype mat;
-        if (this->comm().size()>1) mat = sparse_matrix_ptrtype( new petscMPI_sparse_matrix_type(imagemap,domainmap));
-        else mat = sparse_matrix_ptrtype( new petsc_sparse_matrix_type(imagemap,domainmap));
+        if (imagemap.worldComm().globalSize()>1) mat = sparse_matrix_ptrtype( new petscMPI_sparse_matrix_type(imagemap,domainmap,imagemap.worldComm()));
+        else mat = sparse_matrix_ptrtype( new petsc_sparse_matrix_type(imagemap,domainmap,imagemap.worldComm()));
 
         mat->setMatrixProperties( matrix_properties );
         if (init)
@@ -182,13 +182,12 @@ public:
                size_type matrix_properties = NON_HERMITIAN)
     {
         sparse_matrix_ptrtype mat;
-        if (this->comm().size()>1) mat = sparse_matrix_ptrtype( new petscMPI_sparse_matrix_type(imagemap,domainmap));
-        else mat = sparse_matrix_ptrtype( new petsc_sparse_matrix_type(imagemap,domainmap));
+        if (imagemap.worldComm().globalSize()>1) mat = sparse_matrix_ptrtype( new petscMPI_sparse_matrix_type(imagemap,domainmap,imagemap.worldComm() ));
+        else mat = sparse_matrix_ptrtype( new petsc_sparse_matrix_type(imagemap,domainmap,imagemap.worldComm()));
 
         mat->setMatrixProperties( matrix_properties );
 
         mat->init( imagemap.nDof(), domainmap.nDof(),
-                   //imagemap.nLocalDofWithGhost(), domainmap.nLocalDofWithGhost(),
                    imagemap.nLocalDofWithoutGhost(), domainmap.nLocalDofWithoutGhost(),
                    graph);
         return mat;

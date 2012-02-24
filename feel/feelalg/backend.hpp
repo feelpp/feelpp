@@ -253,7 +253,8 @@ public:
                                         ))
         {
 
-            auto mat = this->newMatrix( trial->map(), test->map(), properties, false );
+            //auto mat = this->newMatrix( trial->map(), test->map(), properties, false );
+            auto mat = this->newMatrix( trial->mapOnOff(), test->mapOn(), properties, false );
 
             if(!buildGraphWithTranspose)
                 {

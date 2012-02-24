@@ -49,9 +49,9 @@ MatrixPetsc<T>::MatrixPetsc()
 
 template <typename T>
 inline
-MatrixPetsc<T>::MatrixPetsc(DataMap const& dmRow, DataMap const& dmCol)
+MatrixPetsc<T>::MatrixPetsc(DataMap const& dmRow, DataMap const& dmCol, WorldComm const& worldComm)
     :
-    super(dmRow,dmCol),
+    super(dmRow,dmCol,worldComm),
     _M_destroy_mat_on_exit(true)
 {}
 
@@ -157,7 +157,7 @@ void MatrixPetsc<T>::init (const size_type m,
     //CHKERRABORT(this->comm(),ierr);
 
     // generates an error for new matrix entry
-    //ierr = MatSetOption (_M_mat, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE);
+    ierr = MatSetOption (_M_mat, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE);
     CHKERRABORT(this->comm(),ierr);
 #endif // 0
 
@@ -1490,9 +1490,9 @@ MatrixPetscMPI<T>::MatrixPetscMPI()
 
 template <typename T>
 inline
-MatrixPetscMPI<T>::MatrixPetscMPI(DataMap const& dmRow, DataMap const& dmCol)
+MatrixPetscMPI<T>::MatrixPetscMPI(DataMap const& dmRow, DataMap const& dmCol, WorldComm const& worldComm )
     :
-    super(dmRow,dmCol)
+    super(dmRow,dmCol,worldComm)
 {}
 
 //----------------------------------------------------------------------------------------------------//
@@ -1536,10 +1536,6 @@ void MatrixPetscMPI<T>::init( const size_type m,
         this->clear();
 
     this->setInitialized(  true );
-
-    int proc_id = 0;
-
-    MPI_Comm_rank(this->comm(), &proc_id);
 
     if (m==0)
         return;
@@ -1907,7 +1903,13 @@ MatrixPetscMPI<T>::addMatrix( int* rows, int nrows,
                               value_type* data )
 {
     FEEL_ASSERT (this->isInitialized()).error( "petsc matrix not initialized" );
-
+    /*for (int k=0;k<nrows;++k)
+        for (int q=0;q<ncols;++q)
+            { std::cout << "rank " << this->comm().rank()
+                        << "add mat("<< rows[k] <<"," << cols[q]
+                        << ") = "//<< data[k][q]
+                        << " " << this->mapCol().mapGlobalProcessToGlobalCluster()[cols[q]]
+                        << std::endl; }*/
     int ierr=0;
 
     // These casts are required for PETSc <= 2.1.5

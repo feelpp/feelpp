@@ -216,8 +216,6 @@ public:
 
 private:
 
-    mpi::communicator M_comm;
-
     /**
      * Tells PETSC to use the user-specified solver stored in
      * \p _solver_type
@@ -263,7 +261,7 @@ SolverLinearPetsc<T>::SolverLinearPetsc ()
     :
     M_constant_null_space(false)
 {
-  if (M_comm.size() == 1)
+    if (this->worldComm().globalSize() == 1)
     this->setPreconditionerType(  LU_PRECOND );
   else
     this->setPreconditionerType( BLOCK_JACOBI_PRECOND );
