@@ -1083,92 +1083,100 @@ namespace Feel {
                                      (partitions,   *(boost::is_integral<mpl::_>), 1 )
                                      (partition_file,   *(boost::is_integral<mpl::_>), 0 )
                                      (partitioner,   *(boost::is_integral<mpl::_>), GMSH_PARTITIONER_CHACO )
+                                     (worldcomm,      *, WorldComm() )
                                      ) //optional
                                     )
         {
                 typedef typename detail::mesh<Args>::type _mesh_type;
                 typedef typename detail::mesh<Args>::ptrtype _mesh_ptrtype;
 
-                this->cleanOstr();
-                this->zeroCpt();
-                this->init(_mesh_type::nOrder,partitioner,partitions,partition_file);
-
-                std::string geostring;
-                if(_M_geoIsDefineByUser)
-                    {
-                        geostring= _M_ostrDefineByUser->str();
-                    }
-                else
-                    {
-                        this->geoStr();
-                        geostring = _M_ostr->str();
-                    }
-
                 _mesh_ptrtype _mesh( mesh );
+                _mesh->setWorldComm(worldcomm);
+                if (worldcomm.isActive())
+                    {
 
-                Gmsh gmsh;
-                gmsh.setOrder(_mesh_type::nOrder);
-                gmsh.setNumberOfPartitions( partitions );
-                gmsh.setPartitioner( partitioner );
-                gmsh.setMshFileByPartition( partition_file );
+                        this->cleanOstr();
+                        this->zeroCpt();
+                        this->init(_mesh_type::nOrder,partitioner,partitions,partition_file);
 
-                std::string fname = gmsh.generate( name,
-                                                   geostring,false,false,false );
+                        std::string geostring;
+                        if(_M_geoIsDefineByUser)
+                            {
+                                geostring= _M_ostrDefineByUser->str();
+                            }
+                        else
+                            {
+                                this->geoStr();
+                                geostring = _M_ostr->str();
+                            }
 
-                ImporterGmsh<_mesh_type> import( fname );
-                import.setVersion( "2.1" );
 
-                //boost::shared_ptr<mesh_type> mesh( new mesh_type );
-                _mesh->accept( import );
-                _mesh->components().set ( MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
-                _mesh->updateForUse();
+                        Gmsh gmsh;
+                        gmsh.setWorldComm(worldcomm);
+                        gmsh.setOrder(_mesh_type::nOrder);
+                        gmsh.setNumberOfPartitions( partitions );
+                        gmsh.setPartitioner( partitioner );
+                        gmsh.setMshFileByPartition( partition_file );
 
-                if ( straighten && _mesh_type::nOrder > 1 )
-                    return straightenMesh( _mesh );
-                else
-                    return _mesh;
+                        std::string fname = gmsh.generate( name,
+                                                           geostring,
+                                                           false,false,false );
 
+                        ImporterGmsh<_mesh_type> import( fname, FEEL_GMSH_FORMAT_VERSION, worldcomm );
+                        _mesh->accept( import );
+                        _mesh->components().set ( MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
+                        _mesh->updateForUse();
+
+                        if ( straighten && _mesh_type::nOrder > 1 )
+                            return straightenMesh( _mesh );
+
+                    } // if (worldcomm.isActive())
+
+                return _mesh;
         }
 
 
 
             template<typename mesh_type>
             boost::shared_ptr<mesh_type>
-            createMesh(std::string name, int straighten = 1 )
+            createMesh(std::string name, int straighten = 1, WorldComm const& worldcomm=WorldComm() )
             {
-                this->cleanOstr();
-                this->zeroCpt();
-                this->init(mesh_type::nOrder);
-
-                std::string geostring;
-                if(_M_geoIsDefineByUser)
-                    {
-                        geostring= _M_ostrDefineByUser->str();
-                    }
-                else
-                    {
-                        this->geoStr();
-                        geostring = _M_ostr->str();
-                    }
-
-
-                Gmsh gmsh;
-                gmsh.setOrder(mesh_type::nOrder);
-                std::string fname = gmsh.generate( name,
-                                                   geostring,false,false,false );
-
-                ImporterGmsh<mesh_type> import( fname );
-                import.setVersion( "2.1" );
-
                 boost::shared_ptr<mesh_type> mesh( new mesh_type );
-                mesh->accept( import );
-                mesh->components().set ( MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
-                mesh->updateForUse();
+                mesh->setWorldComm(worldcomm);
+                if (worldcomm.isActive())
+                    {
+                        this->cleanOstr();
+                        this->zeroCpt();
+                        this->init(mesh_type::nOrder);
 
-                if ( straighten && mesh_type::nOrder > 1 )
-                    return straightenMesh( mesh );
-                else
-                    return mesh;
+                        std::string geostring;
+                        if(_M_geoIsDefineByUser)
+                            {
+                                geostring= _M_ostrDefineByUser->str();
+                            }
+                        else
+                            {
+                                this->geoStr();
+                                geostring = _M_ostr->str();
+                            }
+
+
+                        Gmsh gmsh;
+                        gmsh.setWorldComm(worldcomm);
+                        gmsh.setOrder(mesh_type::nOrder);
+                        std::string fname = gmsh.generate( name,
+                                                           geostring,false,false,false );
+
+                        ImporterGmsh<mesh_type> import( fname, FEEL_GMSH_FORMAT_VERSION, worldcomm );
+                        mesh->accept( import );
+                        mesh->components().set ( MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
+                        mesh->updateForUse();
+
+                        if ( straighten && mesh_type::nOrder > 1 )
+                            return straightenMesh( mesh );
+                    } // if (worldcomm.isActive())
+
+                return mesh;
             }
 
             /*_________________________________________________*

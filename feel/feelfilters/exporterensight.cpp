@@ -40,17 +40,17 @@
 namespace Feel
 {
 template<typename MeshType, int N>
-ExporterEnsight<MeshType,N>::ExporterEnsight( std::string const& __p, int freq )
+ExporterEnsight<MeshType,N>::ExporterEnsight( std::string const& __p, int freq, WorldComm const& worldComm )
     :
-    super( "ensight", __p, freq ),
+    super( "ensight", __p, freq, worldComm ),
     _M_element_type()
 {
     init();
 }
 template<typename MeshType, int N>
-ExporterEnsight<MeshType,N>::ExporterEnsight( po::variables_map const& vm, std::string const& exp_prefix )
+ExporterEnsight<MeshType,N>::ExporterEnsight( po::variables_map const& vm, std::string const& exp_prefix, WorldComm const& worldComm )
     :
-    super( vm, exp_prefix )
+    super( vm, exp_prefix, worldComm )
 {
     init();
 }
@@ -93,9 +93,12 @@ template<typename MeshType, int N>
 void
 ExporterEnsight<MeshType,N>::save() const
 {
+    if (!this->worldComm().isActive()) return;
+
     static int freq = 0;
 
     Debug( 8006 ) << "[ExporterEnsight::save] checking if frequency is ok\n";
+
 
     if ( this->cptOfSave() % this->freq()  )
         {
@@ -136,10 +139,10 @@ void
 ExporterEnsight<MeshType,N>::_F_writeSoSFile() const
 {
     // only on proc 0
-    if ( M_comm.rank() == 0 )
+    if ( this->worldComm().rank() == this->worldComm().masterRank() )
         {
             std::ostringstream filestr;
-            filestr << this->path() << "/" << this->prefix() << "-" << M_comm.size() << ".sos";
+            filestr << this->path() << "/" << this->prefix() << "-" << this->worldComm().globalSize() << ".sos";
             std::ofstream __out(filestr.str().c_str());
             if ( __out.fail() )
                 {
@@ -149,15 +152,15 @@ ExporterEnsight<MeshType,N>::_F_writeSoSFile() const
             __out << "FORMAT:\n"
                   << "type: master_server gold \n"
                   << "SERVERS\n"
-                  << "number of servers: " << M_comm.size() << "\n";
-            for ( size_type pid = 0 ; pid < M_comm.size(); ++pid )
+                  << "number of servers: " << this->worldComm().globalSize() << "\n";
+            for ( size_type pid = 0 ; pid < this->worldComm().globalSize(); ++pid )
                 {
 
                     __out << "#Server " << pid+1 << "\n"
                           << "machine id: " << mpi::environment::processor_name() << "\n"
                           << "executable: /usr/local/bin/ensight76/bin/ensight7.server\n"
                           << "data_path: " << fs::current_path().string() << "\n"
-                          << "casefile: " << this->prefix() << "-" << M_comm.size() << "_" << pid << ".case\n";
+                          << "casefile: " << this->prefix() << "-" << this->worldComm().globalSize() << "_" << pid << ".case\n";
                 }
         }
 }
@@ -168,7 +171,7 @@ ExporterEnsight<MeshType,N>::_F_writeCaseFile() const
     std::ostringstream filestr;
     filestr << this->path() << "/"
             << this->prefix() << "-"
-            << M_comm.size() << "_" << M_comm.rank() << ".case";
+            << this->worldComm().globalSize() << "_" << this->worldComm().globalRank() << ".case";
     std::ofstream __out(filestr.str().c_str());
     if ( __out.fail() )
         {
@@ -185,7 +188,7 @@ ExporterEnsight<MeshType,N>::_F_writeCaseFile() const
         {
             timeset_ptrtype __ts = *__ts_it;
             __out << "model: " << __ts->index() << " " << __ts->name()
-                  << "-" << M_comm.size() << "_" << M_comm.rank() << ".geo***"  << "\n";
+                  << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank() << ".geo***"  << "\n";
             ++__ts_it;
         }
 
@@ -202,7 +205,7 @@ ExporterEnsight<MeshType,N>::_F_writeCaseFile() const
                 {
                     __out << "scalar per node: "
                           << __ts->index() << " " // << *__ts_it->beginStep() << " "
-                          << __it->second.name() << " " << __it->first << "-" << M_comm.size() << "_" << M_comm.rank() << ".***" << "\n";
+                          << __it->second.name() << " " << __it->first << "-" << this->worldComm().globalSize() << "_" << this->worldComm().localRank() << ".***" << "\n";// important localRank !!
                     ++__it;
                 }
             typename timeset_type::step_type::nodal_vector_const_iterator __itv = ( *__ts->rbeginStep() )->beginNodalVector();
@@ -211,7 +214,7 @@ ExporterEnsight<MeshType,N>::_F_writeCaseFile() const
                 {
                     __out << "vector per node: "
                           << __ts->index() << " " // << *__ts_it->beginStep() << " "
-                          << __itv->second.name() << " " << __itv->first << "-" << M_comm.size() << "_" << M_comm.rank() << ".***" << "\n";
+                          << __itv->second.name() << " " << __itv->first << "-" << this->worldComm().globalSize() << "_" << this->worldComm().localRank() << ".***" << "\n";// important localRank !!
                     ++__itv;
                 }
 
@@ -221,7 +224,7 @@ ExporterEnsight<MeshType,N>::_F_writeCaseFile() const
                 {
                     __out << "tensor per node: "
                           << __ts->index() << " " // << *__ts_it->beginStep() << " "
-                          << __itt->second.name() << " " << __itt->first << "-" << M_comm.size() << "_" << M_comm.rank() << ".***" << "\n";
+                          << __itt->second.name() << " " << __itt->first << "-" << this->worldComm().globalSize() << "_" << this->worldComm().localRank() << ".***" << "\n"; // important localRank !!
                     ++__itt;
                 }
 
@@ -231,7 +234,7 @@ ExporterEnsight<MeshType,N>::_F_writeCaseFile() const
                 {
                     __out << "scalar per element: "
                           << __ts->index() << " " // << *__ts_it->beginStep() << " "
-                          << __it_el->second.name() << " " << __it_el->first << "-" << M_comm.size() << "_" << M_comm.rank() << ".***" << "\n";
+                          << __it_el->second.name() << " " << __it_el->first << "-" << this->worldComm().globalSize() << "_" << this->worldComm().localRank() << ".***" << "\n";// important localRank !!
                     ++__it_el;
                 }
             typename timeset_type::step_type::element_vector_const_iterator __itv_el = ( *__ts->rbeginStep() )->beginElementVector();
@@ -240,7 +243,7 @@ ExporterEnsight<MeshType,N>::_F_writeCaseFile() const
                 {
                     __out << "vector per element: "
                           << __ts->index() << " " // << *__ts_it->beginStep() << " "
-                          << __itv_el->second.name() << " " << __itv_el->first << "-" << M_comm.size() << "_" << M_comm.rank() << ".***" << "\n";
+                          << __itv_el->second.name() << " " << __itv_el->first << "-" << this->worldComm().globalSize() << "_" << this->worldComm().localRank() << ".***" << "\n"; // important localRank !!
                     ++__itv_el;
                 }
             typename timeset_type::step_type::element_tensor2_const_iterator __itt_el = ( *__ts->rbeginStep() )->beginElementTensor2();
@@ -249,7 +252,7 @@ ExporterEnsight<MeshType,N>::_F_writeCaseFile() const
                 {
                     __out << "tensor per element: "
                           << __ts->index() << " " // << *__ts_it->beginStep() << " "
-                          << __itt_el->second.name() << " " << __itt_el->first << "-" << M_comm.size() << "_" << M_comm.rank() << ".***" << "\n";
+                          << __itt_el->second.name() << " " << __itt_el->first << "-" << this->worldComm().globalSize() << "_" << this->worldComm().localRank() << ".***" << "\n"; // important localRank !!
                     ++__itt_el;
                 }
             ++__ts_it;
@@ -315,7 +318,7 @@ ExporterEnsight<MeshType,N>::_F_writeGeoFiles() const
 
                     __geofname << this->path() << "/"
                                << __ts->name()
-                               << "-" << M_comm.size() << "_" << M_comm.rank()
+                               << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank()
                                << ".geo" << std::setfill( '0' ) << std::setw( 3 ) << __step->index();
 
                     if ( __step->isInMemory() )
@@ -378,10 +381,12 @@ ExporterEnsight<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype __st
 {
     while( __var != en )
         {
+            if (!__var->second.worldComm().isActive()) return;
+
             std::ostringstream __varfname;
 
             __varfname << this->path() << "/" << __var->first
-                       << "-" << M_comm.size() << "_" << M_comm.rank()
+                       << "-" << this->worldComm().globalSize() << "_" << this->worldComm().localRank() // important localRank
                        << "." << std::setfill( '0' ) << std::setw( 3 ) << __step->index();
             Debug( 8006 ) << "[ExporterEnsight::saveNodal] saving " << __varfname.str() << "...\n";
             std::fstream __out( __varfname.str().c_str(), std::ios::out | std::ios::binary );
@@ -442,11 +447,12 @@ ExporterEnsight<MeshType,N>::saveElement( typename timeset_type::step_ptrtype __
 {
     while( __evar != __evaren )
         {
+            if (!__evar->second.worldComm().isActive()) return;
 
             std::ostringstream __evarfname;
 
             __evarfname << this->path() << "/" << __evar->first
-                        << "-" << M_comm.size() << "_" << M_comm.rank()
+                        << "-" << this->worldComm().globalSize() << "_" << this->worldComm().localRank() // important localRank
                         << "." << std::setfill( '0' ) << std::setw( 3 ) << __step->index();
             Debug( 8006 ) << "[ExporterEnsight::saveElement] saving " << __evarfname.str() << "...\n";
             std::fstream __out( __evarfname.str().c_str(), std::ios::out | std::ios::binary );
@@ -477,7 +483,7 @@ ExporterEnsight<MeshType,N>::saveElement( typename timeset_type::step_ptrtype __
                     typename mesh_type::marker_element_const_iterator elt_it;
                     typename mesh_type::marker_element_const_iterator elt_en;
                     boost::tie( elt_it, elt_en ) = __step->mesh()->elementsWithMarker(p_it->first,
-                                                                                      M_comm.rank() );
+                                                                                      this->worldComm().localRank() ); // important localRank!!!!
                     if ( !__evar->second.areGlobalValuesUpdated() )
                         __evar->second.updateGlobalValues();
 
@@ -487,7 +493,7 @@ ExporterEnsight<MeshType,N>::saveElement( typename timeset_type::step_ptrtype __
                     size_type e = 0;
                     for ( ; elt_it != elt_en; ++elt_it, ++e )
                         {
-                            Debug( 8006 ) << "pid : " << M_comm.rank()
+                            Debug( 8006 ) << "pid : " << this->worldComm().globalRank()
                                           << " elt_it :  " << elt_it->id()
                                           << " e : " << e << "\n";
 
@@ -608,7 +614,7 @@ ExporterEnsight<MeshType,N>::visit( mesh_type* __mesh )
             typename mesh_type::marker_element_const_iterator elt_it;// = __mesh->beginElementWithMarker(p_it->first);
             typename mesh_type::marker_element_const_iterator elt_en;// = __mesh->endElementWithMarker(p_it->first);
             boost::tie( elt_it, elt_en ) = __mesh->elementsWithMarker( p_it->first,
-                                                                       M_comm.rank() );
+                                                                       this->worldComm().localRank() ); // important localRank!!!!
 
             //	int __ne = __mesh->numElements();
             //int __ne = p_it->second;
@@ -629,7 +635,7 @@ ExporterEnsight<MeshType,N>::visit( mesh_type* __mesh )
 
             //	elt_it = __mesh->beginElement();
             boost::tie( elt_it, elt_en ) = __mesh->elementsWithMarker(p_it->first,
-                                                                      M_comm.rank() );
+                                                                      this->worldComm().localRank() ); // important localRank!!!!
             //elt_it = __mesh->beginElementWithMarker(p_it->first);
 
             for ( ; elt_it != elt_en; ++elt_it )

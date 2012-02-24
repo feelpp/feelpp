@@ -122,9 +122,9 @@ public:
      \endhtmlonly
 
     */
-    ExporterEnsight( std::string const& __p = "default", int freq = 1 );
+    ExporterEnsight( std::string const& __p = "default", int freq = 1, WorldComm const& worldComm = WorldComm() );
 
-    ExporterEnsight( po::variables_map const& vm, std::string const& exp_prefix = "" );
+    ExporterEnsight( po::variables_map const& vm, std::string const& exp_prefix = "", WorldComm const& worldComm = WorldComm() );
 
     ExporterEnsight( ExporterEnsight const & __ex );
 
@@ -217,7 +217,7 @@ private:
     void saveElement( typename timeset_type::step_ptrtype __step, Iterator __evar, Iterator __evaren ) const;
 
 private:
-    mpi::communicator M_comm;
+
     mutable std::string _M_filename;
     std::string _M_element_type;
 };
