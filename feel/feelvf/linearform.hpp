@@ -786,44 +786,52 @@ struct LFAssign
         _M_Xh( Xh ),
         _M_expr( expr ),
         _M_index( 0 ),
-        _M_init( init)
+        _M_init( init )
     {}
     template<typename SpaceType>
     void operator()( boost::shared_ptr<SpaceType> const& X ) const
     {
-        Debug(5050) << "expression has test functions ? :"
-                    << ExprType::template HasTestFunction<typename SpaceType::reference_element_type>::result
-                    << "\n";
-        if ( !ExprType::template HasTestFunction<typename SpaceType::reference_element_type>::result )
+        if (_M_lf.testSpace()->worldsComm()[_M_index].isActive())
             {
-                ++_M_index;
-                return;
-            }
+                Debug(5050) << "expression has test functions ? :"
+                            << ExprType::template HasTestFunction<typename SpaceType::reference_element_type>::result
+                            << "\n";
+                if ( !ExprType::template HasTestFunction<typename SpaceType::reference_element_type>::result )
+                    {
+                        ++_M_index;
+                        return;
+                    }
 
-        list_block_type __list_block;
-        __list_block.push_back( Block( 0, 0, _M_Xh->nDofStart( _M_index ), 0 ) );
-        LinearForm<SpaceType,typename LFType::vector_type, typename LFType::element_type> lf( X,
-                                                                                              _M_lf.representation(),
-                                                                                              __list_block,
-                                                                                              _M_lf.rowStartInVector(),
-                                                                                              false );
-        //
-        // in composite integration, make sure that if _M_init is \p
-        // true for the first space, it is set to \p false for the
-        // next spaces otherwise it will erase/clear to 0 the previous
-        // assemblies
-        //
-        if ( _M_init )
-            {
-                // assembly
-                lf = _M_expr;
+                list_block_type __list_block;
+                // with mpi, dof start to 0 (thanks to the LocalToGlobal mapping).
+                if (_M_lf.testSpace()->worldsComm()[_M_index].globalSize()>1)
+                    __list_block.push_back( Block( 0, 0, 0, 0 ) );
+                else
+                    __list_block.push_back( Block( 0, 0, _M_Xh->nDofStart( _M_index ), 0 ) );
 
-                // make sure we won't erase the assembly we just did
-                _M_init = false;
-            }
-        else
-            {
-                lf += _M_expr;
+                LinearForm<SpaceType,typename LFType::vector_type, typename LFType::element_type> lf( X,
+                                                                                                      _M_lf.representation(),
+                                                                                                      __list_block,
+                                                                                                      _M_lf.rowStartInVector(),
+                                                                                                      false );
+                //
+                // in composite integration, make sure that if _M_init is \p
+                // true for the first space, it is set to \p false for the
+                // next spaces otherwise it will erase/clear to 0 the previous
+                // assemblies
+                //
+                if ( _M_init )
+                    {
+                        // assembly
+                        lf = _M_expr;
+
+                        // make sure we won't erase the assembly we just did
+                        _M_init = false;
+                    }
+                else
+                    {
+                        lf += _M_expr;
+                    }
             }
         ++_M_index;
     }
@@ -833,6 +841,7 @@ private:
     ExprType const& _M_expr;
     mutable size_type _M_index;
     mutable bool _M_init;
+
 };
 
 // implementation
