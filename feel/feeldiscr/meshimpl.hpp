@@ -785,7 +785,7 @@ template<typename Shape, typename T>
 void
 Mesh<Shape, T>::updateEntitiesCoDimensionOneGhostCell()
 {
-    //std::cout << "[Mesh::updateEntitiesCoDimensionOneGhostCell] start" << std::endl;
+    //std::cout << "[Mesh::updateEntitiesCoDimensionOneGhostCell] start on god rank "<< this->worldComm().godRank() << std::endl;
     std::vector<int> nbMsgToSend(this->worldComm().localSize());
     std::fill(nbMsgToSend.begin(),nbMsgToSend.end(),0);
 

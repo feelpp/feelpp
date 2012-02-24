@@ -210,7 +210,7 @@ public:
      * @param _fe reference element
      *
      */
-    DofTable( fe_ptrtype const& _fe, periodicity_type const& periodicity );
+    DofTable( fe_ptrtype const& _fe, periodicity_type const& periodicity, WorldComm const& _worldComm );
 
     /**
      * copy constructor
@@ -225,7 +225,7 @@ public:
      *  @param mesh a RegionMesh3D
      *  @param _fe reference element
      */
-    DofTable( mesh_type& mesh, fe_ptrtype const& _fe, periodicity_type const& periodicity );
+    DofTable( mesh_type& mesh, fe_ptrtype const& _fe, periodicity_type const& periodicity, WorldComm const& _worldComm );
 
     /**
      * \return the number of dof for faces on the boundary
@@ -374,11 +374,12 @@ public:
                 _M_el_l2g[ boost::get<0>( thedof ) ][ boost::get<1>( thedof ) ] = boost::get<2>( thedof );
 
             }
-        this->_M_first_df[0] = 0;
-        this->_M_last_df[0] = dofs.size()-1;
+        int processor = this->worldComm().localRank();
+
+        this->_M_first_df[processor] = 0;
+        this->_M_last_df[processor] = dofs.size()-1;
         this->_M_n_dofs = dofs.size();
 
-        int processor = this->comm().rank();
         this->_M_n_localWithGhost_df[processor] = this->_M_last_df[processor] - this->_M_first_df[processor] + 1;
         this->_M_n_localWithoutGhost_df[processor]=this->_M_n_localWithGhost_df[processor];
         this->_M_first_df_globalcluster[processor]=this->_M_first_df[processor];
@@ -765,6 +766,7 @@ public:
             }
         Debug(5015) << "[build] call buildDofMap()\n";
         this->buildDofMap( M, start_next_free_dof );
+        //std::cout << "[build] callFINISH buildDofMap() with god rank " << this->worldComm().godRank() <<"\n";
 
 #if !defined(NDEBUG)
         Debug(5015) << "[build] check that all elements dof were assigned()\n";
@@ -800,11 +802,12 @@ public:
         this->buildBoundaryDofMap( M );
 
         // multi process
-        if (M_comm.size()>1)
+        if (this->worldComm().localSize()>1)
             {
 #if defined(FEEL_ENABLE_MPI_MODE)
-                //std::cout << "[build] call buildGhostDofMap ()"<<std::endl;
+                //std::cout << "[build] call buildGhostDofMap () with god rank " << this->worldComm().godRank()  <<std::endl;
                 this->buildGhostDofMap(M);
+                //std::cout << "[build] callFINISH buildGhostDofMap () with god rank " << this->worldComm().godRank()  <<std::endl;
 #else
                 std::cerr << "ERROR : FEEL_ENABLE_MPI_MODE is OFF" << std::endl;
                 //throw std::logic_error( "ERROR : FEEL_ENABLE_MPI_MODE is OFF" );
@@ -1845,9 +1848,9 @@ template<typename MeshType, typename FEType, typename PeriodicityType>
 const uint16_type DofTable<MeshType, FEType, PeriodicityType>::nComponents;
 
 template<typename MeshType, typename FEType, typename PeriodicityType>
-DofTable<MeshType, FEType, PeriodicityType>::DofTable( mesh_type& mesh, fe_ptrtype const& _fe, periodicity_type const& periodicity )
+DofTable<MeshType, FEType, PeriodicityType>::DofTable( mesh_type& mesh, fe_ptrtype const& _fe, periodicity_type const& periodicity, WorldComm const& _worldComm )
     :
-    super(),
+    super(_worldComm),
     _M_fe( _fe ),
     _M_n_el( invalid_size_type_value ),
     _M_n_dof_per_face_on_bdy( invalid_uint16_type_value ),
@@ -1868,9 +1871,9 @@ DofTable<MeshType, FEType, PeriodicityType>::DofTable( mesh_type& mesh, fe_ptrty
 }
 
 template<typename MeshType, typename FEType, typename PeriodicityType>
-DofTable<MeshType, FEType, PeriodicityType>::DofTable( fe_ptrtype const& _fe, periodicity_type const& periodicity )
+DofTable<MeshType, FEType, PeriodicityType>::DofTable( fe_ptrtype const& _fe, periodicity_type const& periodicity, WorldComm const& _worldComm )
     :
-    super(),
+    super(_worldComm),
     _M_fe( _fe ),
     _M_n_el( 0 ),
     _M_n_dof_per_face_on_bdy( invalid_uint16_type_value ),
@@ -2493,7 +2496,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildDofMap( mesh_type& M, size_typ
 
     typedef Container::index index;
 
-#if !defined(FEEL_ENABLE_MPI_MODE) // sequential if (M_comm.size()==1)
+#if !defined(FEEL_ENABLE_MPI_MODE) // sequential if (this->worldComm().size()==1)
 
     const size_type n_proc  = M.worldComm().localSize();
 
@@ -2585,7 +2588,6 @@ DofTable<MeshType, FEType, PeriodicityType>::buildDofMap( mesh_type& M, size_typ
     }
 
 #else // MPI_MODE
-
     // compute the number of dof on current processor
     auto it_elt = M.beginElementWithProcessId( M.worldComm().localRank() );
     auto en_elt = M.endElementWithProcessId( M.worldComm().localRank() );
@@ -2618,13 +2620,18 @@ DofTable<MeshType, FEType, PeriodicityType>::buildDofMap( mesh_type& M, size_typ
     mpi::all_gather( M.worldComm().localComm(),
                      mynDofWithGhost,
                      this->_M_n_localWithGhost_df );
+#if 0
+    std::cout << "\n build Dof Map --2---with god rank " << this->worldComm().godRank()
+              << " local rank DofT " << this->worldComm().localRank()
+              << " local rank mesh " << M.worldComm().localRank()
+              << std::endl;
+#endif
 
     // only true in sequential, redefine in buildDofGhostMap
-    this->_M_n_localWithoutGhost_df[M_comm.rank()]=this->_M_n_localWithGhost_df[M_comm.rank()];
-    this->_M_first_df_globalcluster[M_comm.rank()]=this->_M_first_df[M_comm.rank()];
-    this->_M_last_df_globalcluster[M_comm.rank()]=this->_M_last_df[M_comm.rank()];
+    this->_M_n_localWithoutGhost_df[this->worldComm().localRank()]=this->_M_n_localWithGhost_df[this->worldComm().localRank()];
+    this->_M_first_df_globalcluster[this->worldComm().localRank()]=this->_M_first_df[this->worldComm().localRank()];
+    this->_M_last_df_globalcluster[this->worldComm().localRank()]=this->_M_last_df[this->worldComm().localRank()];
     this->_M_n_dofs = next_free_dof;
-
 
     it_elt = M.beginElementWithProcessId( M.worldComm().localRank() );
     for( ; it_elt != en_elt; ++it_elt )
