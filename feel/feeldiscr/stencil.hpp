@@ -67,7 +67,8 @@ struct compute_graph3
 #endif
                         typename BFType::graph_ptrtype zerograph( new typename BFType::graph_type( n1_dof_on_proc,
                                                                                                    first1_dof_on_proc, last1_dof_on_proc,
-                                                                                                   first2_dof_on_proc, last2_dof_on_proc ) );
+                                                                                                   first2_dof_on_proc, last2_dof_on_proc,
+                                                                                                   space2->worldComm() ) );
                         zerograph->zero();
                         M_stencil->mergeGraph( M_stencil->testSpace()->nDofStart( M_test_index ), M_stencil->trialSpace()->nDofStart( M_trial_index ) , zerograph );
                     }
@@ -130,7 +131,8 @@ struct compute_graph2
 
                         typename BFType::graph_ptrtype zerograph( new typename BFType::graph_type( n1_dof_on_proc,
                                                                                                    first1_dof_on_proc, last1_dof_on_proc,
-                                                                                                   first2_dof_on_proc, last2_dof_on_proc ) );
+                                                                                                   first2_dof_on_proc, last2_dof_on_proc,
+                                                                                                   M_space1->worldComm() ) );
                         zerograph->zero();
                         M_stencil->mergeGraph( M_stencil->testSpace()->nDofStart( M_test_index ),
                                                M_stencil->trialSpace()->nDofStart( M_trial_index ),
