@@ -364,8 +364,9 @@ public:
                                      )
                                     )
     {
-        //return this->newZeroMatrix( dm->map(), im->map() );
-        return this->newZeroMatrix( trial->map(), test->map() );
+        //return this->newZeroMatrix( trial->map(), test->map() );
+        return this->newZeroMatrix( trial->mapOnOff(), test->mapOn() );
+
     }
 
     /**

@@ -214,8 +214,25 @@ public:
     newZeroMatrix( DataMap const& domainmap,
                    DataMap const& imagemap )
     {
-        return newZeroMatrix(imagemap.nDof(), domainmap.nDof(),
-                             imagemap.nLocalDofWithoutGhost(), domainmap.nLocalDofWithoutGhost() );
+        graph_ptrtype sparsity_graph( new graph_type(0,
+                                                     0, imagemap.nLocalDofWithoutGhost()-1,
+                                                     0, domainmap.nLocalDofWithoutGhost()-1,
+                                                     imagemap.worldComm()) );
+        sparsity_graph->zero();
+        sparsity_graph->close();
+
+        sparse_matrix_ptrtype mat;
+        if (imagemap.worldComm().globalSize()>1) mat = sparse_matrix_ptrtype( new petscMPI_sparse_matrix_type(imagemap,domainmap,imagemap.worldComm()) );
+        else mat = sparse_matrix_ptrtype( new petsc_sparse_matrix_type(imagemap,domainmap,imagemap.worldComm()) );
+
+        //mat->setMatrixProperties( matrix_properties );
+        mat->init( imagemap.nDof(), domainmap.nDof(),
+                   imagemap.nLocalDofWithoutGhost(), domainmap.nLocalDofWithoutGhost(),
+                   sparsity_graph );
+
+        return mat;
+        //return newZeroMatrix(imagemap.nDof(), domainmap.nDof(),
+        //                     imagemap.nLocalDofWithoutGhost(), domainmap.nLocalDofWithoutGhost() );
     }
 
     sparse_matrix_ptrtype
