@@ -80,7 +80,7 @@ public:
 
     int masterRank() const { return M_masterRank; }
 
-    WorldComm subWorldComm(int color);
+    WorldComm subWorldComm(int color) const;
 
     bool isActive() const { return M_isActive[this->godRank()]; }
 

@@ -213,7 +213,7 @@ WorldComm::WorldComm( WorldComm const& wc )
 }
 
 WorldComm::self_type
-WorldComm::subWorldComm(int _color)
+WorldComm::subWorldComm(int _color) const
 {
     bool isActive;
     int myColor = this->mapColorWorld()[this->globalRank()];
