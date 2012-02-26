@@ -38,7 +38,7 @@
 #include <string>
 #include <sstream>
 #include <fstream>
-#include <iostream> 
+#include <iostream>
 
 #include <Eigen/Core>
 #include <Eigen/LU>
@@ -79,7 +79,9 @@ makeOptions()
         ("muMax", po::value<double>()->default_value( M_PI/2.),"angle in [0,pi/2]")
         ("mu",po::value<double>()->default_value(1.),"angle in [0,pi/2]")
         ("Offline",po::value<int>()->default_value(1),"integer equal to 0 if the offline has not  to be done")
-        ("ComputeError",po::value<int>()->default_value(1),"integer equal to 0 if the error computation has not to be done");
+        ("ComputeError",po::value<int>()->default_value(1),"integer equal to 0 if the error computation has not to be done")
+
+        ("polynomialOrder",po::value<int>()->default_value(3),"polynomial order");
         ;
     return laplacianoptions.add( Feel::feel_options() );
 }
@@ -110,14 +112,14 @@ makeAbout()
 //inline
 //bool SortFunction( double i, double j) { return std::abs(i)<std::abs(j) ;}
 
-class NIRBTEST
+template<int PolynomialOrder> class NIRBTEST
     :
     public Simget
 {
     typedef Simget super;
 public:
 
-    static const uint16_type Order = 3;
+    //static const uint16_type Order = 3;
 
     //! numerical type is double
     typedef double value_type;
@@ -127,7 +129,7 @@ public:
     //! linear algebra backend factory shared_ptr<> type
     typedef boost::shared_ptr<backend_type> backend_ptrtype;
 
-    //! geometry entities type composing the mesh, here Simplex in Dimension Dim of Order 1
+    //! geometry entities type composing the mesh, here Simplex in Dimension 2 of Order 1
     typedef Simplex<2> convex_type;
     //! mesh type
     typedef Mesh<convex_type> mesh_type;
@@ -136,18 +138,18 @@ public:
 
 
     //! the basis type of our approximation space
-    typedef bases<Lagrange<Order,Scalar> > basis_type;
+    typedef bases<Lagrange<PolynomialOrder,Scalar> > basis_type;
 
     //! the approximation function space type
     typedef FunctionSpace<mesh_type, basis_type> space_type;
     //! the approximation function space type (shared_ptr<> type)
     typedef boost::shared_ptr<space_type> space_ptrtype;
-    typedef space_type::element_type element_type;
+    typedef typename space_type::element_type element_type;
 
     //! the exporter factory type
     typedef Exporter<mesh_type> export_type;
     //! the exporter factory (shared_ptr<> type)
-    typedef boost::shared_ptr<export_type> export_ptrtype; 
+    typedef boost::shared_ptr<export_type> export_ptrtype;
     typedef std::vector<element_type> un_type;
 
     /**
@@ -157,15 +159,15 @@ public:
         :
         super( vm, about ),
         M_backend( backend_type::build( this->vm() ) ),
-        FineMeshSize( this->vm()["hfinsize"].as<double>() ),
-        CoarseMeshSize( this->vm()["hcoarsesize"].as<double>() ),
-        NbSnapshot( this->vm()["NbSnapshot"].as<int>() ),
-        sizeRB(this->vm()["sizeRB"].as<int>()),
-        muMin( this->vm()["muMin"].as<double>() ),
-        muMax( this->vm()["muMax"].as<double>() ),
-        mu(this->vm()["mu"].as<double>() ),
-        Offline( this->vm()["Offline"].as<int>()),
-        ComputeError( this->vm()["ComputeError"].as<int>())
+        FineMeshSize( this->vm()["hfinsize"].template as<double>() ),
+        CoarseMeshSize( this->vm()["hcoarsesize"].template as<double>() ),
+        NbSnapshot( this->vm()["NbSnapshot"].template as<int>() ),
+        sizeRB(this->vm()["sizeRB"].template as<int>()),
+        muMin( this->vm()["muMin"].template as<double>() ),
+        muMax( this->vm()["muMax"].template as<double>() ),
+        mu(this->vm()["mu"].template as<double>() ),
+        Offline( this->vm()["Offline"].template as<int>()),
+        ComputeError( this->vm()["ComputeError"].template as<int>())
     {
     }
 
@@ -179,7 +181,7 @@ public:
     void ChooseRBFunction(space_ptrtype Xh);
     void OrthogonalisationRBFunction(space_ptrtype Xh);
     void OrthogonalisationRBFunctionL2GrammSchmidt(space_ptrtype Xh,Eigen::MatrixXd &M );
-    
+
     //Eigen::MatrixXd  ConstructStiffMatrixSnapshot(space_ptrtype Xh, un_type un );
     //Eigen::MatrixXd  ConstructStiffMatrixRB(space_ptrtype Xh,un_type un);
     //Eigen::MatrixXd  ConstructMassMatrixRB(space_ptrtype Xh,un_type un);
@@ -210,13 +212,15 @@ private:
     int ComputeError;
     //if ComputeError = 1  == ON
     //if ComputeError = 0 == OFF
+    int polynomialOrder;
     }; // NIRBTEST
-const uint16_type NIRBTEST::Order;
-void
-NIRBTEST::run()
+//const uint16_type NIRBTEST::Order;
+template< int PolynomialOrder>
+void NIRBTEST<PolynomialOrder>::run()
 {
+
     std::cout << "------------------------------------------------------------\n";
-    std::cout << "Execute NIRBTEST<" << 2 << ">\n";
+    std::cout << "Execute NIRBTEST<" << PolynomialOrder << ">\n";
     std::vector<double> X(9);
     X[0] = FineMeshSize;
     X[1] = CoarseMeshSize;
@@ -230,8 +234,8 @@ NIRBTEST::run()
     std::vector<double> Y(1);
     run( X.data(), X.size(), Y.data(), Y.size() );
 }
-void
-NIRBTEST::run( const double* X, unsigned long P, double* Y, unsigned long N )
+template< int PolynomialOrder>
+void NIRBTEST<PolynomialOrder>::run( const double* X, unsigned long P, double* Y, unsigned long N )
 {
 
     std::cout << "fine mesh size : " << FineMeshSize << std::endl;
@@ -240,7 +244,7 @@ NIRBTEST::run( const double* X, unsigned long P, double* Y, unsigned long N )
     if ( !this->vm().count( "nochdir" ) )
         Environment::changeRepository( boost::format( "%1%/P%2%/" )
                                        % this->about().appName()
-                                       % Order );
+                                       % PolynomialOrder );
 
     mesh_ptrtype meshFine = createGMSHMesh( _mesh=new mesh_type,
                                          _desc=domain( _name="Omega1",
@@ -337,8 +341,8 @@ NIRBTEST::run( const double* X, unsigned long P, double* Y, unsigned long N )
                                       _expr=(gradv(uRef)*trans(gradv(uRef))+ idv(uRef)*idv(uRef) )).evaluate()(0,0);
 
 
-        H1NormUref = std :: sqrt(H1NormUref); 
-        
+        H1NormUref = std :: sqrt(H1NormUref);
+
         uCoarse = blackbox( XhCoarse, p);
         std :: cout << "Computation of FE solution (uCoarse) -  Coarse Grid (saved in nirbInCoarse):"<< endl;
 
@@ -410,20 +414,20 @@ NIRBTEST::run( const double* X, unsigned long P, double* Y, unsigned long N )
 
         exporterErr->save();
         std :: cout << "Construction of the Error map between uNirb and uFine)  (saved in nirbErr): done"<< endl;
-        
+
         exporterFine->step(0)->add("uFine", uFine );
         exporterCoarse->step(0)->add("uCoarse", uCoarse );
-        exporter1Grid->step(0)->add("u1Grid",u1Grid);         
+        exporter1Grid->step(0)->add("u1Grid",u1Grid);
         exporterFine->save();
         exporterCoarse->save();
         exporter1Grid->save();
 
         exporterFine->step(0)->add("uFine", uFine );
         exporterCoarse->step(0)->add("uCoarse", uCoarse );
-        exporter1Grid->step(0)->add("u1Grid",u1Grid); 
+        exporter1Grid->step(0)->add("u1Grid",u1Grid);
         exporterFine->step(0)->add("uFine", uFine );
         exporterCoarse->step(0)->add("uCoarse", uCoarse );
-        exporter1Grid->step(0)->add("u1Grid",u1Grid); 
+        exporter1Grid->step(0)->add("u1Grid",u1Grid);
         exporterFine->save();
         exporterCoarse->save();
         exporter1Grid->save();
@@ -439,7 +443,8 @@ NIRBTEST::run( const double* X, unsigned long P, double* Y, unsigned long N )
 }
 //-----------------------------------------
 //-----------------------------------------
-void NIRBTEST::ComputeSnapshot(space_ptrtype Xh){
+template< int PolynomialOrder>
+void NIRBTEST<PolynomialOrder>::ComputeSnapshot(space_ptrtype Xh){
 
     int XhNdof = Xh->nLocalDof();
     double pi = 3.14159265;
@@ -452,12 +457,13 @@ void NIRBTEST::ComputeSnapshot(space_ptrtype Xh){
         std::string path = (boost::format("./Sol_%1%") %i).str() ;
         ui.save(_path=path);
    }
-    
+
 }
 //-----------------------------------------
 //-----------------------------------------
-Eigen::MatrixXd NIRBTEST :: ConstructStiffMatrixSnapshot(space_ptrtype Xh){
-	
+template< int PolynomialOrder>
+Eigen::MatrixXd NIRBTEST<PolynomialOrder> :: ConstructStiffMatrixSnapshot(space_ptrtype Xh){
+
     auto ui = Xh->element();
 	auto uj = Xh->element();
 	auto D = M_backend->newMatrix( _test=Xh, _trial=Xh  );//Sparse F.E stiffness matrix D
@@ -523,20 +529,21 @@ Eigen::MatrixXd NIRBTEST :: ConstructStiffMatrixSnapshot(space_ptrtype Xh){
 
 //-----------------------------------------
 //-----------------------------------------
-Eigen::MatrixXd NIRBTEST :: ConstructStiffMatrixRB(space_ptrtype Xh, std::string filename){
+template< int PolynomialOrder>
+Eigen::MatrixXd NIRBTEST<PolynomialOrder> :: ConstructStiffMatrixRB(space_ptrtype Xh, std::string filename){
 	auto ui = Xh->element();
 	auto uj = Xh->element();
 	auto D = M_backend->newMatrix( _test=Xh, _trial=Xh  ); //Sparse FE stiffness matrix
 	form2( _test=Xh, _trial=Xh, _matrix=D ) =
     integrate( _range=elements(Xh->mesh()), _expr=gradt(ui)*trans(grad(uj)));
-    
+
 	Eigen::MatrixXd S (sizeRB,sizeRB); //Dense RB stiffness matrix
-    
+
 	for (int i = 0; i< sizeRB;i++)
     {
         std::string path = (boost::format(filename+"%1%") %i).str() ;
 		ui.load(_path=path);
-        
+
 		for(int j=0; j< i;j++)
         {
             path = (boost::format(filename+"%1%") %j).str() ;
@@ -548,7 +555,7 @@ Eigen::MatrixXd NIRBTEST :: ConstructStiffMatrixRB(space_ptrtype Xh, std::string
  		double Sii = D->energy(ui,ui);
 		S(i,i) = Sii;
 	}
-    
+
 	return S;
 }
 //-----------------------------------------
@@ -618,20 +625,21 @@ Eigen::MatrixXd NIRBTEST :: ConstructStiffMatrixRB(space_ptrtype Xh, std::string
 //}
 //--------------------------------------------------------------
 //--------------------------------------------------------------
-Eigen::MatrixXd NIRBTEST :: ConstructMassMatrixRB(space_ptrtype Xh, std::string filename){
+template< int PolynomialOrder>
+Eigen::MatrixXd NIRBTEST<PolynomialOrder> :: ConstructMassMatrixRB(space_ptrtype Xh, std::string filename){
 	auto ui = Xh->element();
 	auto uj = Xh->element();
 	auto D = M_backend->newMatrix( _test=Xh, _trial=Xh  ); //Sparse FE mass matrix
 	form2( _test=Xh, _trial=Xh, _matrix=D ) =
 	integrate( _range=elements(Xh->mesh()), _expr=idt(ui)*id(uj));
-    
+
 	Eigen::MatrixXd S (sizeRB,sizeRB); //Dense RB mass matrix
-    
+
 	for (int i = 0; i< sizeRB;i++)
     {
         std::string path = (boost::format(filename+"%1%") %i).str() ;
 		ui.load(_path=path);
-        
+
 		for(int j=0; j< i;j++)
         {
             path = (boost::format(filename+"%1%") %j).str() ;
@@ -642,9 +650,9 @@ Eigen::MatrixXd NIRBTEST :: ConstructMassMatrixRB(space_ptrtype Xh, std::string 
 		}
 		double Sii = D->energy(ui,ui);
 		S(i,i) = Sii;
-	} 
+	}
 	return S;
-    
+
 }
 
 
@@ -653,7 +661,8 @@ Eigen::MatrixXd NIRBTEST :: ConstructMassMatrixRB(space_ptrtype Xh, std::string 
 
 //-----------------------------------------
 //-----------------------------------------
-void NIRBTEST ::ChooseRBFunction(space_ptrtype Xh){
+template< int PolynomialOrder>
+void NIRBTEST<PolynomialOrder> ::ChooseRBFunction(space_ptrtype Xh){
 
 	Eigen::MatrixXd S (NbSnapshot,NbSnapshot);//Dense Stiffness Matrix
 	S = ConstructStiffMatrixSnapshot(Xh);
@@ -711,7 +720,8 @@ void NIRBTEST ::ChooseRBFunction(space_ptrtype Xh){
 
 //-----------------------------------------
 //-----------------------------------------
-void NIRBTEST :: OrthogonalisationRBFunctionL2GrammSchmidt
+template< int PolynomialOrder>
+void NIRBTEST<PolynomialOrder> :: OrthogonalisationRBFunctionL2GrammSchmidt
 	      (space_ptrtype Xh,Eigen::MatrixXd & M ){
 
    double Ndof = Xh->nLocalDof();
@@ -777,7 +787,8 @@ void NIRBTEST :: OrthogonalisationRBFunctionL2GrammSchmidt
 
 //-----------------------------------------
 //-----------------------------------------
-void NIRBTEST ::OrthogonalisationRBFunction(space_ptrtype Xh){
+template< int PolynomialOrder>
+void NIRBTEST<PolynomialOrder> ::OrthogonalisationRBFunction(space_ptrtype Xh){
      //First step : L2 -Pre-orthogonalization and normalization using a Gramm-schmidt method
 
     int Ndof = Xh->nLocalDof();
@@ -870,7 +881,8 @@ void NIRBTEST ::OrthogonalisationRBFunction(space_ptrtype Xh){
 }
 //---------------------------------------------------
 //---------------------------------------------------
-NIRBTEST::element_type NIRBTEST ::BuildNirbSolution(space_ptrtype XhFine,space_ptrtype XhCoarse, double param){
+template< int PolynomialOrder>
+typename NIRBTEST<PolynomialOrder>::element_type NIRBTEST<PolynomialOrder> ::BuildNirbSolution(space_ptrtype XhFine,space_ptrtype XhCoarse, double param){
 
     //std :: cout << "In BuildNirbSolution" << endl;
 
@@ -927,7 +939,8 @@ NIRBTEST::element_type NIRBTEST ::BuildNirbSolution(space_ptrtype XhFine,space_p
 
 //-----------------------------------------
 //-----------------------------------------
-void NIRBTEST :: ConstructNIRB(space_ptrtype Xh){
+template< int PolynomialOrder>
+void NIRBTEST<PolynomialOrder> :: ConstructNIRB(space_ptrtype Xh){
 
     boost::timer ti;
 	ComputeSnapshot(Xh);
@@ -953,7 +966,8 @@ void NIRBTEST :: ConstructNIRB(space_ptrtype Xh){
 
 
 //---------------------------------------------------
-NIRBTEST::element_type NIRBTEST::blackbox( space_ptrtype Xh, double param )
+template< int PolynomialOrder>
+typename NIRBTEST<PolynomialOrder>::element_type NIRBTEST<PolynomialOrder>::blackbox( space_ptrtype Xh, double param )
 {
 
     auto u = Xh->element();
@@ -1000,7 +1014,26 @@ main( int argc, char** argv )
     /**
      * register the simgets
      */
-    app.add( new NIRBTEST( app.vm(), app.about() ) );
+
+    const int polynomialOrder =  app.vm()["polynomialOrder"].as<int>();
+
+
+    if(polynomialOrder == 1)
+    {
+        app.add( new NIRBTEST<1>( app.vm(), app.about() ) );
+    }
+    else if(polynomialOrder == 2)
+    {
+        app.add( new NIRBTEST<2>( app.vm(), app.about() ) );
+    }
+    else if(polynomialOrder == 3)
+    {
+        app.add( new NIRBTEST<3>( app.vm(), app.about() ) );
+    }
+    else
+    {
+        throw std::logic_error( "Error with polynomialOrder variable, this application allows only P1 P2 and P3" );
+    }
 
     /**
      * run the application
