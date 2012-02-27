@@ -96,7 +96,6 @@ public:
     VectorPetsc ()
         :
         super(),
-        M_comm(),
         _M_destroy_vec_on_exit( true )
     {
     }
@@ -104,10 +103,9 @@ public:
     /**
      * Constructor. Set dimension to \p n and initialize all elements with zero.
      */
-    VectorPetsc (const size_type n)
+    VectorPetsc (const size_type n, WorldComm const& _worldComm = WorldComm())
         :
-        super( n ),
-        M_comm(),
+        super( n, _worldComm ),
         _M_destroy_vec_on_exit( true )
     {
         this->init(n, n, false);
@@ -118,10 +116,10 @@ public:
      * to \p n, and initialize all elements with zero.
      */
     VectorPetsc (const size_type n,
-                 const size_type n_local)
+                 const size_type n_local,
+                 WorldComm const& _worldComm = WorldComm())
         :
-        super( n, n_local ),
-        M_comm(),
+        super( n, n_local, _worldComm ),
         _M_destroy_vec_on_exit( true )
     {
         this->init(n, n_local, false);
@@ -130,7 +128,6 @@ public:
     VectorPetsc ( DataMap const& dm, bool doInit=true )
         :
         super(dm),
-        M_comm(),
         _M_destroy_vec_on_exit( true )
     {
         if (doInit)
@@ -148,7 +145,6 @@ public:
     VectorPetsc(Vec v)
         :
         super(),
-        M_comm(),
         _M_destroy_vec_on_exit( false )
     {
         this->_M_vec = v;
@@ -158,7 +154,6 @@ public:
     VectorPetsc(Vec v, DataMap const& dm)
         :
         super(dm),
-        M_comm(),
         _M_destroy_vec_on_exit( false )
     {
         this->_M_vec = v;
@@ -230,12 +225,12 @@ public:
 
 
         ierr = VecGetArray(_M_vec, &values);
-        CHKERRABORT(M_comm,ierr);
+        CHKERRABORT(this->comm(),ierr);
 
         value = values[i - this->firstLocalIndex()];
 
         ierr = VecRestoreArray (_M_vec, &values);
-        CHKERRABORT(M_comm,ierr);
+        CHKERRABORT(this->comm(),ierr);
 
         return static_cast<value_type>(value);
     }
@@ -292,7 +287,7 @@ public:
 
         int petsc_size=0;
         int ierr = VecGetSize(_M_vec, &petsc_size);
-        CHKERRABORT(M_comm,ierr);
+        CHKERRABORT(this->comm(),ierr);
         return static_cast<size_type>(petsc_size);
     }
     /**
@@ -305,7 +300,7 @@ public:
 
         int petsc_size=0;
         int ierr = VecGetLocalSize(_M_vec, &petsc_size);
-        CHKERRABORT(M_comm,ierr);
+        CHKERRABORT(this->comm(),ierr);
 
         return static_cast<size_type>(petsc_size);
     }
@@ -341,9 +336,9 @@ public:
         int ierr=0;
 
         ierr = VecAssemblyBegin(_M_vec);
-        CHKERRABORT(M_comm,ierr);
+        CHKERRABORT(this->comm(),ierr);
         ierr = VecAssemblyEnd(_M_vec);
-        CHKERRABORT(M_comm,ierr);
+        CHKERRABORT(this->comm(),ierr);
 
         this->M_is_closed = true;
     }
@@ -364,13 +359,13 @@ public:
 #if (PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR <= 2)
 
         ierr = VecSet (&z, _M_vec);
-        CHKERRABORT(M_comm,ierr);
+        CHKERRABORT(this->comm(),ierr);
 
         // 2.3.x & newer
 #else
 
         ierr = VecSet (_M_vec, z);
-        CHKERRABORT(M_comm,ierr);
+        CHKERRABORT(this->comm(),ierr);
 
 #endif
     }
@@ -463,7 +458,7 @@ public:
         // The const_cast<> is not elegant, but it is required since PETSc
         // is not const-correct.
         ierr = MatMultAdd(const_cast<MatrixPetsc<T>*>(A)->mat(), V->_M_vec, _M_vec, _M_vec);
-        CHKERRABORT(M_comm,ierr);
+        CHKERRABORT(this->comm(),ierr);
     }
 
 
@@ -590,7 +585,7 @@ public:
         int ierr=0, petsc_first=0, petsc_last=0;
 
         ierr = VecGetOwnershipRange (_M_vec, &petsc_first, &petsc_last);
-        CHKERRABORT(M_comm,ierr);
+        CHKERRABORT(this->comm(),ierr);
 
         return static_cast<size_type>(petsc_first);
     }
@@ -608,7 +603,7 @@ public:
         int ierr=0, petsc_first=0, petsc_last=0;
 
         ierr = VecGetOwnershipRange (_M_vec, &petsc_first, &petsc_last);
-        CHKERRABORT(M_comm,ierr);
+        CHKERRABORT(this->comm(),ierr);
 
         return static_cast<size_type>(petsc_last);
     }
@@ -683,8 +678,6 @@ public:
 
 private:
 
-    mpi::communicator M_comm;
-
     /**
      * Petsc vector datatype to store values
      */
@@ -728,12 +721,12 @@ VectorPetsc<T>::init (const size_type n,
         {
             FEEL_ASSERT(n_local < n)( n_local )( n ).error( "invalid local size" );
 
-            ierr = VecCreateMPI (M_comm, petsc_n_local, petsc_n,
+            ierr = VecCreateMPI (this->comm(), petsc_n_local, petsc_n,
                                  &_M_vec);
-            CHKERRABORT(M_comm,ierr);
+            CHKERRABORT(this->comm(),ierr);
 
             ierr = VecSetFromOptions (_M_vec);
-            CHKERRABORT(M_comm,ierr);
+            CHKERRABORT(this->comm(),ierr);
         }
 
     this->M_is_initialized = true;
@@ -750,7 +743,7 @@ VectorPetsc<T>::set ( const value_type& value)
     PetscScalar petsc_value = static_cast<PetscScalar>(value);
 
     ierr = VecSet (_M_vec, petsc_value );
-    CHKERRABORT(M_comm,ierr);
+    CHKERRABORT(this->comm(),ierr);
 }
 template <typename T>
 void
@@ -764,7 +757,7 @@ VectorPetsc<T>::set ( size_type i, const value_type& value)
     PetscScalar petsc_value = static_cast<PetscScalar>(value);
 
     ierr = VecSetValues (_M_vec, 1, &i_val, &petsc_value, INSERT_VALUES);
-    CHKERRABORT(M_comm,ierr);
+    CHKERRABORT(this->comm(),ierr);
 }
 
 template <typename T>
@@ -778,7 +771,7 @@ VectorPetsc<T>::add (const size_type i, const value_type& value)
     PetscScalar petsc_value = static_cast<PetscScalar>(value);
 
     ierr = VecSetValues (_M_vec, 1, &i_val, &petsc_value, ADD_VALUES);
-    CHKERRABORT(M_comm,ierr);
+    CHKERRABORT(this->comm(),ierr);
 }
 
 template <typename T>
@@ -789,7 +782,7 @@ VectorPetsc<T>::addVector ( int* i, int n, value_type* v )
 
     int ierr=0;
     ierr = VecSetValues (_M_vec, n, i, v, ADD_VALUES);
-    CHKERRABORT(M_comm,ierr);
+    CHKERRABORT(this->comm(),ierr);
 
 }
 
