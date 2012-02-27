@@ -91,6 +91,7 @@ DataMap::DataMap(WorldComm const& _worldComm)
 
     if ( this->worldComm().size() > 1 )
         {
+#if !defined(FEEL_ENABLE_MPI_MODE)
             local_sizes_send[this->worldComm().rank()] = n_local;
 #if 1
             MPI_Allreduce (&local_sizes_send[0],
@@ -128,6 +129,11 @@ DataMap::DataMap(WorldComm const& _worldComm)
                     _M_first_df[p] = _local_index;
                     _M_last_df[p] = _local_index+n_local-1;
                 }
+#else // defined(FEEL_ENABLE_MPI_MODE)
+
+            // Vincent TODO!
+
+#endif
 
         }
     else // sequential

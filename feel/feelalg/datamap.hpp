@@ -218,6 +218,16 @@ public:
         return res;
     }
 
+    bool dofGlobalClusterIsOnProc( size_type globDof ) const
+    {
+        return dofGlobalClusterIsOnProc(globDof, this->worldComm().globalRank());
+    }
+
+    bool dofGlobalClusterIsOnProc( size_type globDof, int proc ) const
+    {
+        return ((globDof <= _M_last_df_globalcluster[proc] ) && (globDof >= _M_first_df_globalcluster[proc] ) );
+    }
+
     //! Returns local ID of global ID, return invalid_size_type_value if not found on this processor.
     size_type  lid(size_type GID) const
     {

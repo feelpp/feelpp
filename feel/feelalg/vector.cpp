@@ -40,7 +40,6 @@ Vector<T>::Vector () :
 
 
 template <typename T>
-
 Vector<T>::Vector ( DataMap const& dm ) :
     M_is_closed(false),
     M_is_initialized(false),
@@ -49,11 +48,11 @@ Vector<T>::Vector ( DataMap const& dm ) :
 
 
 template <typename T>
-
-Vector<T>::Vector (const size_type n) :
+Vector<T>::Vector (const size_type n, WorldComm const& _worldComm )
+    :
     M_is_closed(false),
     M_is_initialized(false),
-    M_map( n, n )
+    M_map( n, n, _worldComm )
 {
     //init(n, n, false);
 }
@@ -61,13 +60,13 @@ Vector<T>::Vector (const size_type n) :
 
 
 template <typename T>
-
 Vector<T>::Vector (const size_type n,
-                   const size_type n_local) :
+                   const size_type n_local,
+                   WorldComm const& _worldComm )
+    :
     M_is_closed(false),
     M_is_initialized(false),
-    M_map( n, n_local )
-
+    M_map( n, n_local, _worldComm )
 {
     //init(n, n_local, false);
 }

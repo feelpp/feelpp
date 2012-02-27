@@ -2075,11 +2075,12 @@ MatrixPetscMPI<T>::zeroRows( std::vector<int> const& rows,
                              Vector<value_type>& rhs,
                              Context const& on_context )
 {
-    // the matrix needs to be closed for this to work
-    this->close();
+    // the matrix doesn't be closed because not all processors are present here with composite spaces(this call must be done after)
+    // this->close();
 
 #if (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR > 0)
     MatSetOption(this->mat(),MAT_KEEP_NONZERO_PATTERN,PETSC_TRUE);
+    MatSetOption(this->mat(),MAT_NO_OFF_PROC_ZERO_ROWS,PETSC_TRUE);
 #elif (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR == 0)
     MatSetOption(this->mat(),MAT_KEEP_ZEROED_ROWS,PETSC_TRUE);
 #else
@@ -2089,12 +2090,14 @@ MatrixPetscMPI<T>::zeroRows( std::vector<int> const& rows,
     int start=0, stop=this->mapRow().nLocalDofWithGhost(), ierr=0;
     //ierr = MatGetOwnershipRange(_M_mat, &start, &stop);
 
-    if ( on_context.test( ON_ELIMINATION_KEEP_DIAGONAL ) )
+    if (false)// on_context.test( ON_ELIMINATION_KEEP_DIAGONAL ) )
         {
             VectorPetscMPI<value_type> diag( this->mapRow() );
 
+            //VectorPetsc<value_type> diag( this->mapRow().nLocalDofWithoutGhost(),this->mapRow().worldComm() );
+            //diag( this->mapRow().nLocalDofWithGhost(),this->mapRow().worldComm().subWorldComm(this->mapRow().worldComm().mapColorWorld()[this->mapRow().worldComm().globalRank()  ] ));
             ierr =MatGetDiagonal( this->mat(), diag.vec() );
-            //CHKERRABORT(this->comm(),ierr);
+            CHKERRABORT(this->comm(),ierr);
 
             // in Petsc 3.2, we might want to look at the new interface so that
             // right hand side is automatically changed wrt to zeroing out the
@@ -2105,6 +2108,7 @@ MatrixPetscMPI<T>::zeroRows( std::vector<int> const& rows,
 #else
             MatZeroRowsLocal( this->mat(), rows.size(), rows.data(), 1.0);
 #endif
+            // doesn't work with composite space
             ierr=MatDiagonalSet( this->mat(), diag.vec(), INSERT_VALUES );
             //CHKERRABORT(this->comm(),ierr);
 
@@ -2124,11 +2128,9 @@ MatrixPetscMPI<T>::zeroRows( std::vector<int> const& rows,
         }
     else
         {
-
-
-
 #if (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR >= 2)
             MatZeroRowsLocal( this->mat(), rows.size(), rows.data(), 1.0, PETSC_NULL, PETSC_NULL);
+            //CHKERRABORT(this->comm(),ierr);
 #else
             MatZeroRowsLocal( this->mat(), rows.size(), rows.data(), 1.0);
 #endif
@@ -2140,10 +2142,19 @@ MatrixPetscMPI<T>::zeroRows( std::vector<int> const& rows,
                     // processor, so make sure that we access only the
                     // rows that belong to this processor
                     if ( rows[i] >= start && rows[i] < stop )
-                        rhs.set( rows[i], values[i] );
+                      rhs.set( rows[i], values[i] );
                 }
         }
-    rhs.close();
+
+    // rsh doesn't be closed because not all processors are present here with composite spaces(this call must be done after)
+    // rhs.close();
+
+    //reset MatOption (assemble with communication)
+#if (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR > 0)
+    MatSetOption(this->mat(),MAT_NO_OFF_PROC_ZERO_ROWS,PETSC_FALSE);
+#else
+    // ???
+#endif
 } // zeroRows
 
 //----------------------------------------------------------------------------------------------------//

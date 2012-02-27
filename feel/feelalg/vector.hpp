@@ -67,14 +67,15 @@ public:
     /**
      * Constructor. Set dimension to \p n and initialize all elements with zero.
      */
-    Vector (const size_type n);
+    Vector (const size_type n, WorldComm const& _worldComm = WorldComm());
 
     /**
      * Constructor. Set local dimension to \p n_local, the global dimension
      * to \p n, and initialize all elements with zero.
      */
     Vector (const size_type n,
-            const size_type n_local);
+            const size_type n_local,
+            WorldComm const& _worldComm = WorldComm() );
 
     /**
      * Destructor, deallocates memory. Made virtual to allow
