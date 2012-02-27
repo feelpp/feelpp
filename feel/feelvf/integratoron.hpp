@@ -416,8 +416,17 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
                                         // this can be quite expensive depending on the
                                         // matrix storage format.
                                         //__form.diagonalize( thedof, range_dof, _M_rhs, __value, thedof_nproc );
+#if !defined(FEEL_ENABLE_MPI_MODE)
                                         dofs.push_back( thedof );
                                         values.push_back( __value );
+#else
+                                        // only the real dof ( not the ghosts )
+                                        if ( __form.testSpace()->mapOn().dofGlobalClusterIsOnProc(__form.testSpace()->mapOn().mapGlobalProcessToGlobalCluster(thedof)))
+                                            {
+                                                dofs.push_back( thedof );
+                                                values.push_back( __value );
+                                            }
+#endif
 
 
                                         //_M_rhs.set( thedof, __value );
