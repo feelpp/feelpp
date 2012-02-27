@@ -102,16 +102,6 @@ GraphCSR::operator=( GraphCSR const& g )
 void
 GraphCSR::zero()
 {
-#if 0
-    auto nbDof = M_last_row_entry_on_proc-M_first_row_entry_on_proc+1;
-    for (size_type i=0 ; i<nbDof ; ++i)
-        {
-            row_type& row = this->row(i);
-            row.get<0>() = 0;//proc
-            row.get<1>() = i; //local index : warning false in parallel!!!!
-            row.get<2>().clear(); //all is zero
-        }
-#else
     auto nbDof = M_last_row_entry_on_proc-M_first_row_entry_on_proc+1;
     for (size_type i=M_first_row_entry_on_proc ; i<=M_last_row_entry_on_proc ; ++i)
         {
@@ -120,8 +110,6 @@ GraphCSR::zero()
             row.get<1>() = i-M_first_row_entry_on_proc; //local index
             row.get<2>().clear(); //all is zero
         }
-
-#endif
 }
 
 GraphCSR::self_ptrtype
@@ -171,7 +159,6 @@ GraphCSR::addMissingZeroEntriesDiagonal()
         {
             if (this->storage().find(i)!=this->end())
                 {
-                    //std::cout << " row() " /*<< this->row(i).get<0>()*/ << " glabalRank " << this->worldComm().globalRank() << std::endl;
                     if (this->row(i).get<2>().find(i) == this->row(i).get<2>().end())
                         {
                             this->row(i).get<2>().insert(i);
@@ -213,9 +200,9 @@ GraphCSR::close()
     M_n_nz.resize( M_last_row_entry_on_proc+1/*M_storage.size()*/ );
     M_n_oz.resize( M_last_row_entry_on_proc+1/*M_storage.size()*/ );
 #else // MPI
-    M_n_total_nz.resize( this->lastRowEntryOnProc()-this->firstRowEntryOnProc()+1/*M_storage.size()*/ );
-    M_n_nz.resize( this->lastRowEntryOnProc()-this->firstRowEntryOnProc()+1/*M_storage.size()*/ );
-    M_n_oz.resize( this->lastRowEntryOnProc()-this->firstRowEntryOnProc()+1/*M_storage.size()*/ );
+    M_n_total_nz.resize( this->lastRowEntryOnProc()-this->firstRowEntryOnProc()+1 );
+    M_n_nz.resize( this->lastRowEntryOnProc()-this->firstRowEntryOnProc()+1 );
+    M_n_oz.resize( this->lastRowEntryOnProc()-this->firstRowEntryOnProc()+1 );
 
     std::vector<int> nbMsgToSend(this->worldComm().globalSize());
     std::fill(nbMsgToSend.begin(),nbMsgToSend.end(),0);
@@ -232,15 +219,11 @@ GraphCSR::close()
         {
             // Get the row of the sparsity pattern
             row_type const& irow = it->second;
-            //if ( (it->first + this->firstRowEntryOnProc()) >= this->firstRowEntryOnProc() && (it->first + this->firstRowEntryOnProc() )<=this->lastRowEntryOnProc())
-            //std::cout << " irow rank " << irow.get<0>() << " global rank " << this->worldComm().globalRank() << " god rank " << this->worldComm().godRank()  << std::endl;
             if ( boost::get<0>( irow ) == this->worldComm().globalRank() )
                 {
-                    //std::vector<size_type> const& ivec = boost::get<2>( irow );
-                    size_type vec_size = boost::get<2>( irow ).size();
                     size_type globalindex = it->first;
-                    size_type localindex = boost::get<1>( irow );
-
+                    size_type localindex = irow.get<1>();
+                    size_type vec_size = irow.get<2>().size();
 
                     FEEL_ASSERT( globalindex >= firstRowEntryOnProc() )
                         ( globalindex <= lastRowEntryOnProc() )
@@ -257,24 +240,14 @@ GraphCSR::close()
                             if ( (*vecit < firstColEntryOnProc()) ||
                                  (*vecit > lastColEntryOnProc() ))
                                 {
-                                    //Debug() << "globalindex=" << globalindex << " localindex="
-                                    //<< localindex << " off-block diag: " << M_n_oz[localindex] << "\n";
-                                    //std::cout << "rank " << M_comm.rank() << " globalindex=" << globalindex << " localindex="
-                                    //          << localindex << " off-block diag: " << M_n_oz[localindex] << std::endl;
                                     // entry is off block-diagonal
                                     ++M_n_oz[localindex];
-                                    //vincent++sum_n_oz;
                                 }
                             else
 #endif
                                 {
-                                    //Debug() << "globalindex=" << globalindex << " localindex="
-                                    //<< localindex << " on-block diag: " << M_n_nz[localindex] << "\n";
-                                    //std::cout << "rank " << M_comm.rank() << " globalindex=" << globalindex << " localindex="
-                                    //          << localindex << " on-block diag: " << M_n_nz[localindex] << std::endl;
                                     // entry is in block-diagonal
                                     ++M_n_nz[localindex];
-                                    //vincent++sum_n_nz;
                                 }
                         }
 
@@ -292,19 +265,14 @@ GraphCSR::close()
                 {
 #if defined(FEEL_ENABLE_MPI_MODE) // MPI
 
-                    //size_type globalindex = it->first;
-                    //size_type localindex = boost::get<1>( irow );
-                    //size_type vec_size = boost::get<2>( irow ).size();
-
                     auto dofOnGlobalCluster = it->first;
 
                     // Get the row of the sparsity pattern
                     row_type const& irow = it->second;
 
                     auto procOnGlobalCluster = irow.get<0>();
-
                     auto dofOnProc = irow.get<1>();
-                    //std::cout << " OOOOdofOnProc " << dofOnProc << " vecsize" << boost::get<2>( irow ).size() << std::endl;
+
                     std::vector<size_type> ivec( irow.get<2>().size()+2 );
                     ivec[0]=dofOnGlobalCluster;
                     ivec[1]=dofOnProc;
@@ -313,8 +281,7 @@ GraphCSR::close()
                     auto icol_en = irow.get<2>().end();
                     for (int i=0; icol_it!=icol_en ; ++i,++icol_it)
                         {
-                            //std::cout << " *icol_it " << *icol_it << std::endl;
-                            ivec[i+2] = *icol_it;//-this->firstColEntryOnProc(); //ivec[i+1] = *icol_it;
+                            ivec[i+2] = *icol_it;
                         }
 
 #if 0
@@ -335,7 +302,6 @@ GraphCSR::close()
 #endif // MPI
                 }
 
-
         }
 
 #if defined(FEEL_ENABLE_MPI_MODE) // MPI
@@ -350,7 +316,6 @@ GraphCSR::close()
         {
             for ( int cpt=0;cpt<nbMsgToRecv[proc];++cpt)
                 {
-                    //size_type localindex = mapMsg[proc][cpt];
                     std::vector<size_type> ivec;
 
                     this->worldComm().globalComm().recv(proc, cpt,ivec );
@@ -382,8 +347,6 @@ GraphCSR::close()
 
 
                         }
-                    //std::sort(M_colindices_nz[localindex].begin(), M_colindices_nz[localindex].end());
-
                 }
 
         } // for (int proc=0; proc<M_comm.size();++proc)
