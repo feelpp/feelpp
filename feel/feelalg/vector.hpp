@@ -214,11 +214,21 @@ public:
     virtual real_type min () const = 0;
 
     /**
+     * retrieve the min component as well as the index of the min component
+     */
+    //virtual real_type min( size_type& index ) const = 0;
+
+    /**
      * @returns the maximum element in the vector.
      * In case of complex numbers, this returns the maximum
      * Real part.
      */
     virtual real_type max () const = 0;
+
+    /**
+     * retrieve the max component as well as the index of the max component
+     */
+    //virtual real_type max( size_type& index ) const = 0;
 
     /**
      * @returns the \f$l_1\f$-norm of the vector, i.e.
