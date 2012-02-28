@@ -828,6 +828,33 @@ struct computeNDofForEachSpace
         }
 };
 
+struct BasisName
+{
+    typedef std::string result_type;
+
+    template<typename T>
+    result_type operator()(result_type const & previousRes, T const& t)
+        {
+            std::ostringstream os;
+            os << previousRes << "_" << t->basis()->familyName();
+
+            return os.str();
+        }
+};
+
+struct BasisOrder
+{
+    typedef std::vector<int> result_type;
+
+    template<typename T>
+    result_type operator()(result_type const & previousRes, T const& t)
+        {
+            std::vector<int> res( previousRes );
+            res.push_back( t->nSubFunctionSpace() );
+            return res;
+        }
+};
+
 
 } // detail
 
@@ -2302,15 +2329,14 @@ public:
             Debug( 5010 ) << "got name " << _M_name << "\n";
             if ( Archive::is_saving::value )
                 {
+                    std::cout << "saving in version " << version << "\n";
                     size_type s = this->size();
                     ar & boost::serialization::make_nvp("size", s);
-                    if( version > 0 )
-                    {
-                        int no = basis_type::nOrder;
-                        ar & boost::serialization::make_nvp("order",  no);
-                        std::string family = _M_functionspace->basis()->familyName();
-                        ar & boost::serialization::make_nvp("family", family );
-                    }
+
+                    std::vector<int> no = _M_functionspace->basisOrder();
+                    ar & boost::serialization::make_nvp("order",  no);
+                    std::string family = _M_functionspace->basisName();
+                    ar & boost::serialization::make_nvp("family", family );
 
                     typename container_type::const_iterator it = this->begin();
                     typename container_type::const_iterator en = this->end();
@@ -2327,6 +2353,8 @@ public:
                 }
             if ( Archive::is_loading::value )
                 {
+                    std::cout << "loading in version " << version << "\n";
+
                     size_type s( 0 );
                     ar & boost::serialization::make_nvp("size", s);
 
@@ -2335,16 +2363,25 @@ public:
                     if ( s != this-> size() )
                         throw std::logic_error( (boost::format( "load function: invalid number of degrees of freedom, read %1% but has %2%" ) % s % this->size()).str() );
 
-                    if( version > 0 )
+                    if( version == 1 )
                     {
                         int order;
                         std::string family;
                         ar & boost::serialization::make_nvp("order", order );
                         ar & boost::serialization::make_nvp("family", family );
-                        if ( order != basis_type::nOrder )
-                            throw std::logic_error( (boost::format( "load function: invalid polynomial order, read %1% but has %2%" ) % order % basis_type::nOrder).str() );
-                        if ( family != _M_functionspace->basis()->familyName() )
-                            throw std::logic_error( (boost::format( "load function: invalid polynomial family, read %1% but has %2%" ) % family % _M_functionspace->basis()->familyName()).str() );
+                    }
+                    if( version > 1 )
+                    {
+                        std::vector<int> order;
+                        std::string family;
+                        ar & boost::serialization::make_nvp("order", order );
+                        ar & boost::serialization::make_nvp("family", family );
+                        auto orders = _M_functionspace->basisOrder();
+                        if ( order !=  orders )
+                            throw std::logic_error( (boost::format( "load function: invalid polynomial order, read %1% but has %2%" ) % order % orders ).str() );
+                        std::string bname = _M_functionspace->basisName();
+                        if ( family !=  bname )
+                            throw std::logic_error( (boost::format( "load function: invalid polynomial family, read %1% but has %2%" ) % family % bname ).str() );
                     }
 
                     for ( size_type i = 0; i < s ; ++i )
@@ -2619,6 +2656,26 @@ public:
        \return the reference finite element
     */
     basis_ptrtype const& basis() const { return _M_ref_fe; }
+
+    /**
+     * \return the basis name
+     *
+     * \note in the case of product of space, this is the concatenation of the
+     * basis name of each function space
+     */
+    std::string basisName() const {
+        return  fusion::accumulate( this->functionSpaces(), std::string(), detail::BasisName());
+    }
+
+    /**
+     * \return the basis order
+     *
+     * \note in the case of product of space, this is the concatenation of the
+     * orders in a vector
+     */
+    std::vector<int> basisOrder() const {
+        return  fusion::accumulate( this->functionSpaces(), std::vector<int>(), detail::BasisOrder());
+    }
 
     /**
        \return the reference finite element
@@ -5027,7 +5084,7 @@ template<
     typename A4>
 struct version< FSElement<A0,A1,A2,A3,A4> >
 {
-    typedef mpl::int_<1> type;
+    typedef mpl::int_<2> type;
     typedef mpl::integral_c_tag tag;
     BOOST_STATIC_CONSTANT(unsigned int, value = version::type::value);
 };
