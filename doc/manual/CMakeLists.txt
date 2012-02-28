@@ -24,7 +24,10 @@
 INCLUDE_DIRECTORIES( ${CMAKE_CURRENT_SOURCE_DIR} )
 include(UseLATEX)
 
-FILE(GLOB CPPFILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "*.cpp")
+foreach(cppfile "tutorial/*.cpp" "nonlinear/*.cpp" )
+ FILE(GLOB CPPFILE RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${cppfile})
+ SET(CPPFILES "${CPPFILES};${CPPFILE}")
+endforeach()
 FILE(GLOB STYFILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "styles/*.sty")
 
 FILE(WRITE version.tex "\\newcommand{\\feelversion}{${FEEL_VERSION_STRING}}")
