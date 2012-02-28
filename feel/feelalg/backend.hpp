@@ -44,6 +44,7 @@
 #include <feel/feelalg/datamap.hpp>
 
 #include <feel/feelalg/solvernonlinear.hpp>
+#include <feel/feelalg/preconditioner.hpp>
 #include <feel/feeldiscr/functionspacebase.hpp>
 
 //#include <feel/feelvf/vf.hpp>
@@ -605,7 +606,8 @@ public:
                                                          boost::is_convertible<mpl::_,vector_ptrtype> >))
                                      (rhs,(vector_ptrtype)))
                                     (optional
-                                     (prec,(sparse_matrix_ptrtype), matrix )
+                                     //(prec,(sparse_matrix_ptrtype), matrix )
+                                     (prec,(preconditioner_ptrtype), preconditioner(_matrix=matrix,_pc=LU_PRECOND,_backend=BACKEND_PETSC) )
                                      (maxit,(size_type), M_maxit/*1000*/ )
                                      (rtolerance,(double), M_rtolerance/*1e-13*/)
                                      (atolerance,(double), M_atolerance/*1e-50*/)
@@ -627,6 +629,7 @@ public:
             this->setSolverType( _pc=pc, _ksp=ksp,
                                  _constant_null_space=constant_null_space,
                                  _pcfactormatsolverpackage = pcfactormatsolverpackage);
+            this->attachPreconditioner( prec );
             // make sure matrix and rhs are closed
             matrix->close();
             rhs->close();
@@ -645,10 +648,10 @@ public:
             if ( reuse_prec == false )
             {
                 this->setPrecMatrixStructure( SAME_NONZERO_PATTERN );
-                ret = solve( matrix, prec, _sol, rhs );
+                ret = solve( matrix, matrix, _sol, rhs );
             }
             else
-                ret = solve( matrix, prec, _sol, rhs, reuse_prec );
+                ret = solve( matrix, matrix, _sol, rhs, reuse_prec );
             //new
             _sol->close();
             detail::ref(solution) = *_sol;
@@ -764,12 +767,21 @@ public:
                                           vector_ptrtype& b,
                                           const double, const int,
                                           bool reusePC, bool reuseJAC );
+
+    /**
+     * Attaches a Preconditioner object to be used by the solver
+     */
+    void attachPreconditioner(preconditioner_ptrtype preconditioner)
+        {
+            M_preconditioner = preconditioner;
+        }
+
     //@}
 
 
 
 protected:
-
+    preconditioner_ptrtype M_preconditioner;
 private:
 
     void start();

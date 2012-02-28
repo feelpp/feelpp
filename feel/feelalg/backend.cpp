@@ -54,6 +54,8 @@ Backend<T>::Backend()
     M_pcFactorMatSolverPackage("petsc"),
     M_constant_null_space(false)
 {
+    if ( M_comm.size() > 1 )
+        M_pc = "block_jacobi";
 }
 
 template <typename T>
