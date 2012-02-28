@@ -27,7 +27,7 @@
    \date 2012-01-16
  */
 #include <feel/feelalg/preconditioner.hpp>
-//#include <feel/feelalg/preconditionerpetsc.hpp>
+#include <feel/feelalg/preconditionerpetsc.hpp>
 
 namespace Feel
 {
@@ -40,7 +40,7 @@ Preconditioner<T>::build(BackendType backend)
 
     case BACKEND_PETSC:
     {
-        //return preconditioner_ptrtype( new PreconditionerPetsc<T>() );
+        return preconditioner_ptrtype( new PreconditionerPetsc<T>() );
     }
   }
 }
