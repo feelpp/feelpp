@@ -271,7 +271,7 @@ void
 Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  ) const
 {
 #if HAVE_GMSH
-#if 1
+#if 0
     // generate mesh
     std::ostringstream __str;
     //__str << "gmsh -algo tri -" << dim << " " << "-order " << this->order() << " " << __geoname;
