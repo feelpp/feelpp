@@ -2077,10 +2077,14 @@ MatrixPetscMPI<T>::zeroRows( std::vector<int> const& rows,
 {
     // the matrix doesn't be closed because not all processors are present here with composite spaces(this call must be done after)
     // this->close();
+#if (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR > 1)
+    MatSetOption(this->mat(),MAT_NO_OFF_PROC_ZERO_ROWS,PETSC_TRUE);
+#else
+    // ????
+#endif
 
 #if (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR > 0)
     MatSetOption(this->mat(),MAT_KEEP_NONZERO_PATTERN,PETSC_TRUE);
-    MatSetOption(this->mat(),MAT_NO_OFF_PROC_ZERO_ROWS,PETSC_TRUE);
 #elif (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR == 0)
     MatSetOption(this->mat(),MAT_KEEP_ZEROED_ROWS,PETSC_TRUE);
 #else
@@ -2150,7 +2154,7 @@ MatrixPetscMPI<T>::zeroRows( std::vector<int> const& rows,
     // rhs.close();
 
     //reset MatOption (assemble with communication)
-#if (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR > 0)
+#if (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR > 1)
     MatSetOption(this->mat(),MAT_NO_OFF_PROC_ZERO_ROWS,PETSC_FALSE);
 #else
     // ???
