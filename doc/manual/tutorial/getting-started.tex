@@ -19,7 +19,7 @@ application. Before writing anything, you have to include the \lstinline!Applica
 Note that \feel uses the \lstinline!boost::program_options!\footnote{\url{http://www.boost.org/doc/html/program_options.html}} (\verb|po|)
 library from Boost to handle its command line options.
 
-\lstinputlisting[linerange=marker1-endmarker1]{tutorial/myapp.cpp}
+\lstinputlisting[linerange=marker1-endmarker1]{myapp.cpp}
 
 Next to ease the programming and reading, we use the \lstinline!using!
 \cpp directive to bring the namespace Feel to the current namespace
@@ -32,7 +32,7 @@ Then we define the command line options that the applications will
 provide. Note that on the \lstinline!return! line, we incorporate the
 options defined internally in \feel.
 
-\lstinputlisting[linerange=marker2-endmarker2]{tutorial/myapp.cpp}
+\lstinputlisting[linerange=marker2-endmarker2]{myapp.cpp}
 
 In the example, we provide the options \lstinline!dt! which takes an
 argument, a \lstinline!double! and its default value is \lstinline!1!
@@ -41,7 +41,7 @@ if the options is not set by the command line. Then we describe the application 
 \lstinline!help! command line options to describe the application
 
 
-\lstinputlisting[linerange=marker3-endmarker3]{tutorial/myapp.cpp}
+\lstinputlisting[linerange=marker3-endmarker3]{myapp.cpp}
 
 
 Now we turn to the class \lstinline!MyApp! itself: it derives from
@@ -51,7 +51,7 @@ Now we turn to the class \lstinline!MyApp! itself: it derives from
 This class \lstinline!MyApp! has to redefine the \lstinline!run()! method. It is defined as a pure virtual function in \lstinline!Application!.
 
 
-\lstinputlisting[linerange=marker4-endmarker4]{tutorial/myapp.cpp}
+\lstinputlisting[linerange=marker4-endmarker4]{myapp.cpp}
 
 The implementation of the constructors is usually simple, we pass the
 arguments to the super class \lstinline!Application! that will analyze
@@ -59,14 +59,14 @@ them and subsequently provide them with a
 \lstinline!Feel::po::variable_map! data structure which operates like
 a \lstinline!map!. Have a look at the document \lstinline!boost::program_options!\footnote{\url{http://www.boost.org/doc/html/program_options.html}} for further details. Here our two constructors do nothing ( because $\{ \}$).
 
-\lstinputlisting[linerange=marker5-endmarker5]{tutorial/myapp.cpp}
+\lstinputlisting[linerange=marker5-endmarker5]{myapp.cpp}
 
 The \lstinline!run()! member function holds the application
 commands/statements. Here we provide the smallest code unit: we print
 the description of the application if the \lstinline!--help! command
 line options is set.
 
-\lstinputlisting[linerange=marker6-endmarker6]{tutorial/myapp.cpp}
+\lstinputlisting[linerange=marker6-endmarker6]{myapp.cpp}
 
 Finally the \lstinline!main()! function can be implemented. We pass
 the results of the \lstinline!makeAbout()! and
@@ -74,7 +74,7 @@ the results of the \lstinline!makeAbout()! and
 well as \lstinline!argc! and \lstinline!argv!. Then we call the
 \lstinline!run()! member function to execute the application.
 
-\lstinputlisting[linerange=marker7-endmarker7]{tutorial/myapp.cpp}
+\lstinputlisting[linerange=marker7-endmarker7]{myapp.cpp}
 
 Now, you can check if your first \feel application is working. To compile \lstinline!myapp!, type in a command-line :
 \begin{unixcom}
@@ -108,7 +108,7 @@ Christophe Prud'homme   developer  christophe.prudhomme@ujf-grenoble.fr
 will be stored in a subdirectory of \lstinline!~/feel!. For
 example the following code
 
-\lstinputlisting[linerange=marker8-endmarker8]{tutorial/myapp.cpp}
+\lstinputlisting[linerange=marker8-endmarker8]{myapp.cpp}
 
 will create the directory \lstinline!~/feel/doc/tutorial/! and will store the
 logfile and any files created after calling
@@ -236,20 +236,20 @@ template arguments:
 \end{itemize}
 
 
-\lstinputlisting[linerange=marker1-endmarker1]{tutorial/mymesh.cpp}
+\lstinputlisting[linerange=marker1-endmarker1]{mymesh.cpp}
 
 Now, you are able to define the mesh type, \lstinline!Mesh<Entity>! by passing as
 argument the type of entity it is formed with (at the moment hybrid
 meshes are not supported).
 
-\lstinputlisting[linerange=marker2-endmarker2]{tutorial/mymesh.cpp}
+\lstinputlisting[linerange=marker2-endmarker2]{mymesh.cpp}
 
 \lstinline!boost::shared_ptr! allows to manipulate a pointer on a mesh. It is customary, and usually a very good practice, to define the
 \lstinline!boost::shared_ptr<>!  counterpart which is used actually in practice.
 
 %We can now instantiate a new mesh data structure.
 
-%\lstinputlisting[linerange=marker3-endmarker3]{tutorial/mymesh.cpp}
+%\lstinputlisting[linerange=marker3-endmarker3]{mymesh.cpp}
 
 \subsection{Mesh file format}
 The next step is to read some mesh files. \feel supports essentially the Gmsh mesh file format. It provides also some classes to manipulate Gmsh \lstinline!.geo! files and generate \lstinline!.msh! files. To begin, we use some helper classes and functions to generate a \lstinline!.geo! file.
@@ -276,7 +276,7 @@ The next step is to read some mesh files. \feel supports essentially the Gmsh me
 
 %Next we import the mesh using the \lstinline!ImporterGmsh!\index{mesh!import}\index{Class!ImporterGmsh} class as follows:
 
-%lstinputlisting[linerange=marker5-endmarker5]{tutorial/mymesh.cpp}
+%lstinputlisting[linerange=marker5-endmarker5]{mymesh.cpp}
 %At this stage we are ready to use the mesh instance: we can for example export the mesh to a postprocessing format. Two formats are supported at the moment
 %\begin{itemize}
 %\item \lstinline!Ensight! (case and sos) which is supported by the
@@ -287,7 +287,7 @@ The next step is to read some mesh files. \feel supports essentially the Gmsh me
 
 %The export stage reads as follows:
 
-%\lstinputlisting[linerange=marker6-endmarker6]{tutorial/mymesh.cpp}
+%\lstinputlisting[linerange=marker6-endmarker6]{mymesh.cpp}
 
 %In this example, we create a $\polyP{0}$ function space and save the
 %piecewise constant function that associates to each element the
@@ -307,7 +307,7 @@ The next step is to read some mesh files. \feel supports essentially the Gmsh me
 \label{mesh:examples}
 Here is an example of how to get a simplex or hypercube geometry :
 
-\lstinputlisting[linerange=marker4-endmarker4]{tutorial/mymesh.cpp}
+\lstinputlisting[linerange=marker4-endmarker4]{mymesh.cpp}
 The parameter \lstinline!_h! in the function \lstinline!domain! allows to change the mesh characteristic size to \lstinline!M_meshsize! which is given for example on the command-line using the Application framework, please refer to ~\ref{sec:creat-appl} for more details. You can see the meshes, by executing with the followings ordering :
 
 \begin{unixcom}
@@ -356,11 +356,11 @@ We can export the mesh to two postprocessing formats supported at the moment :
 \end{itemize}
 
 We define the exporter data structure type as follows :
-\lstinputlisting[linerange=marker61-endmarker61]{tutorial/mymesh.cpp}
+\lstinputlisting[linerange=marker61-endmarker61]{mymesh.cpp}
 
 By default, the  export format is ensight. We can use the code \lstinline!Exporter::setMesh()! and \lstinline!Exporter::save()! to save the mesh to the format given to the command line --exporter= <format>
 
-\lstinputlisting[linerange=marker62-endmarker62]{tutorial/mymesh.cpp}
+\lstinputlisting[linerange=marker62-endmarker62]{mymesh.cpp}
 
 To take into account the exporting format, you have to type thoses syntaxes
 \begin{unixcom}
@@ -440,23 +440,23 @@ The constants are indicated by the function constant() (for example, we have to 
 
 \paragraph{First integral : domain area \\}
 To compute the first integral (the domain area), the code reads :
-\lstinputlisting[linerange=marker1-endmarker1]{tutorial/myintegrals.cpp}
+\lstinputlisting[linerange=marker1-endmarker1]{myintegrals.cpp}
 
 
 This compute the integral only on the region of the domain owned by the current processor \lstinline!(local_domain_area)!. \\
 
 To obtain the total area, we collect the integrals on all processors using a reduce MPI operation and sum all contributions. We have used here the \lstinline!Boost.MPI! library that provides an extremely powerful wrapper around the MPI library. \\
-\lstinputlisting[linerange=marker2-endmarker2]{tutorial/myintegrals.cpp}
+\lstinputlisting[linerange=marker2-endmarker2]{myintegrals.cpp}
 
 \vspace{0.2cm}
 Finally, we print to the log file the result of the local and global integral calculation.
-\lstinputlisting[linerange=marker3-endmarker3]{tutorial/myintegrals.cpp}
+\lstinputlisting[linerange=marker3-endmarker3]{myintegrals.cpp}
 
 \paragraph{Second integral : domain perimeter \\}
 
 The difference with the domain area computation resides in the elements with are iterating on: here we are iterating on the boundary faces of the domain to compute the integral using \lstinline!boundaryfaces(mesh)! to provide the pairs of iterators. But the stages are the same as previously \\
 
-\lstinputlisting[linerange=marker4-endmarker4]{tutorial/myintegrals.cpp}
+\lstinputlisting[linerange=marker4-endmarker4]{myintegrals.cpp}
 
 We can apply the same method to compute the third, and the last integral. \\
 
@@ -465,10 +465,10 @@ We can apply the same method to compute the third, and the last integral. \\
 Feel computes automatically the quadrature associated to the expression under the integral. If the expression is polynomial then the quadrature is exact. If the expression is not polynomial, then each non-polynomial term in the expression is considered as a polynomial of degree 2 by default.
 
 Here is how the 4-th integral can be computed letting Feel decide about the quadrature \\
-\lstinputlisting[linerange=marker6-endmarker6]{tutorial/myintegrals.cpp}
+\lstinputlisting[linerange=marker6-endmarker6]{myintegrals.cpp}
 
 An alternative is to set yourself the quadrature by passing a new argument to the integrate function: \_Q<Order>() where Order is the maximum polynomial order that the quadrature should integrate exactely.
-\lstinputlisting[linerange=marker7-endmarker7]{tutorial/myintegrals.cpp}
+\lstinputlisting[linerange=marker7-endmarker7]{myintegrals.cpp}
 
 \subsection{Complete example : application, mesh and integrals}
 
@@ -483,11 +483,11 @@ Here, we have created two functions \lstinline!makeAbout()! and \lstinline!makeO
 \item \lstinline!shape! which corresponds to the shape of the domain (default = $hypercube$)
 \end{itemize}
 
-\lstinputlisting[linerange=marker8-endmarker8]{tutorial/myintegrals.cpp}
+\lstinputlisting[linerange=marker8-endmarker8]{myintegrals.cpp}
 
 makeAbout() gives the description of the application :\\
 
-\lstinputlisting[linerange=marker9-endmarker9]{tutorial/myintegrals.cpp}
+\lstinputlisting[linerange=marker9-endmarker9]{myintegrals.cpp}
 
 To get further information about the application, see creating applications section ~\ref{sec:creat-appl}.
 
@@ -500,7 +500,7 @@ MyIntegrals( po::variables_map const& vm, AboutData const& about )
 which takes \lstinline!vm! (a map which associates the available options with their default value), and \lstinline!about! (containing our application's description). \\
 
 The \lstinline!run()! member function is redifined twice in this class :
-\lstinputlisting[linerange=marker10-endmarker10]{tutorial/myintegrals.cpp}
+\lstinputlisting[linerange=marker10-endmarker10]{myintegrals.cpp}
 These two versions are linked, because the first uses the second. Indeed, \lstinline!run()! stores the parameters we have chosen with the options \lstinline!(mesh size, shape, $\dots$)!, and uses them in the second version (X corresponds to these parameters : \lstinline!X[0]=mesh_size! and \lstinline!X[1]=mesh_shape!). \\
 
 \subsubsection{The run() member function}
@@ -521,7 +521,7 @@ Environment::changeRepository( boost::format( "doc/tutorial/%1%/%2%/h_%3%/")
 \end{lstlisting}
 
 It is also in run() that we create the mesh before to compute the integrals :
-\lstinputlisting[linerange=marker11-endmarker11]{tutorial/myintegrals.cpp}
+\lstinputlisting[linerange=marker11-endmarker11]{myintegrals.cpp}
 Now that we have a computational mesh, we can compute the integrals as we have seen before :
 
 \begin{lstlisting}
@@ -618,19 +618,19 @@ After we have chosen this parameters, we can create the new function base (new t
 
 Here, we build a base with Lagrange polynomials, with order 0. The result of these polynomials is a scalar, and we authorized them
 to be discontinue at the interface between two elements. In our example, \lstinline!p0_space_type! is the function space that holds piecwise constant $\mathbb{P}_0$ functions :  \\
-\lstinputlisting[linerange=marker1-endmarker1]{tutorial/myfunctionspace.cpp}
+\lstinputlisting[linerange=marker1-endmarker1]{myfunctionspace.cpp}
 
 \subsubsection{Instantiation of the function space}
 
 We want now to instanciate the function space $X_h$ of type \lstinline!space_type! (that we created previously). \\
 
 First, we build the mesh on which we want to work (of type \lstinline!mesh_ptrtype!)
-\lstinputlisting[linerange=marker31-endmarker31]{tutorial/myfunctionspace.cpp}
+\lstinputlisting[linerange=marker31-endmarker31]{myfunctionspace.cpp}
 
 Then we instantiate $X_h$ using \lstinline!space_type::New()! static member function and obtain a \lstinline!space_ptrtype!.
-\lstinputlisting[linerange=marker32-endmarker32]{tutorial/myfunctionspace.cpp}
+\lstinputlisting[linerange=marker32-endmarker32]{myfunctionspace.cpp}
 We are now able to instanciate elements on $X_h$. There are two ways to proceed, using auto keyword allowing to infer automatically the type of $ X_h$ elements or knowing the actual type of the elements
-\lstinputlisting[linerange=marker33-endmarker33]{tutorial/myfunctionspace.cpp}
+\lstinputlisting[linerange=marker33-endmarker33]{myfunctionspace.cpp}
 
 \subsection{Using function space and functions}
 \subsubsection{Projection}
@@ -641,11 +641,11 @@ g(x,y,z) &=& \sin(\pi x/2)\ \cos(\pi y/2)\ \cos(\pi*z/2) \\
 f(x,y,z) &=& (1-x^2)\ (1-y^2)\ (1-z^2)\ (x^2+y^2+z^2)^{\alpha/2.0},\quad \alpha=3
 \end{eqnarray*}
 In our example, these functions correspond to
-\lstinputlisting[linerange=marker4-endmarker4]{tutorial/myfunctionspace.cpp}
+\lstinputlisting[linerange=marker4-endmarker4]{myfunctionspace.cpp}
 (they are implemented using the new \lstinline!auto! C++ keyword to infer the type of expression automatically). \\ \\
 Then we build the interpolant (Lagrange interpolant in this case since we chose Lagrange basis function), by calling the \lstinline!vf::project()! function which can be applied on all or parts of the mesh thanks to the mesh iterators such as \lstinline!elements(mesh)! or \lstinline!markedelements(mesh,marker)!.
 The return object is the interpolant of the function in the space $ X_h $ given as an argument to \lstinline!vf::project()!.
-\lstinputlisting[linerange=marker5-endmarker5]{tutorial/myfunctionspace.cpp}
+\lstinputlisting[linerange=marker5-endmarker5]{myfunctionspace.cpp}
 Here, $u$ is the projection of $g$ on the nodes of the mesh. Note that $u$ and $g$ have not the same type. To evaluate the error of $(u-g)$ on the nodes, we have to evaluate the function $u$, with the function $v$.
 
 \subsubsection{Norm}
@@ -654,7 +654,7 @@ To calculate norms, we use integrals. For example, the $L_2$ norm is defined by 
 $$\displaystyle{\| g\|_{L_2} = \sqrt{\int_\varOmega (g)^2}}$$
 To compute this, we use the integrate function (See ~\ref{sec:computing-integrals}) with \lstinline!elements(mesh)! which allows to integrate on the entire domain.
 Let's see an example of norms computation with log file printing :
-\lstinputlisting[linerange=marker6-endmarker6]{tutorial/myfunctionspace.cpp}
+\lstinputlisting[linerange=marker6-endmarker6]{myfunctionspace.cpp}
 
 
 \subsection{Results}
@@ -1084,7 +1084,7 @@ First we define the $f$ and $g$. To do that we use the
 \lstinline!AUTO! keyword and associate to \lstinline!f! and
 \lstinline!g! their expressions
 
-\lstinputlisting[linerange=marker1-endmarker1]{tutorial/laplacian.cpp}
+\lstinputlisting[linerange=marker1-endmarker1]{laplacian.cpp}
 
 \noindent where \lstinline!M_PI! is defined in the header
 \lstinline!cmath!.  Using \lstinline!AUTO! allows to defined
@@ -1099,7 +1099,7 @@ algebraic representation will be stored in a
 algebra backend. The linear form is equated with an integral
 expression defining our right hand side.
 
-\lstinputlisting[linerange=marker2-endmarker2]{tutorial/laplacian.cpp}
+\lstinputlisting[linerange=marker2-endmarker2]{laplacian.cpp}
 
 \noindent \lstinline!form1! generates an instance of the object
 representing linear forms, that is to say it mimics the mathematical
@@ -1129,7 +1129,7 @@ associated matrix should initialized using
 \lstinline!_init!.
 
 
-\lstinputlisting[linerange=marker3-endmarker3]{tutorial/laplacian.cpp}
+\lstinputlisting[linerange=marker3-endmarker3]{laplacian.cpp}
 
 
 Finally, we deal with the boundary condition, we implement both
@@ -1137,7 +1137,7 @@ formulation described in appendix~\ref{sec:vari-form}. For a
 \emph{strong} treatment of the Dirichlet condition, we use the
 \lstinline!on()! keyword of \feel as follows
 
-\lstinputlisting[linerange=marker5-endmarker5]{tutorial/laplacian.cpp}
+\lstinputlisting[linerange=marker5-endmarker5]{laplacian.cpp}
 
 Notice that we add, using \lstinline!+=!, the Dirichlet contribution
 for the bilinear form. The first argument is the set of boundary faces
@@ -1147,8 +1147,8 @@ marked using the flags $1$ and $3$ ($x=-1$ and $x=1$ respectively).
 To implement the weak Dirichlet boundary condition, we add the
 following contributions to the left and right hand side:
 
-\lstinputlisting[linerange=marker41-endmarker41]{tutorial/laplacian.cpp}
-\lstinputlisting[linerange=marker10-endmarker10]{tutorial/laplacian.cpp}
+\lstinputlisting[linerange=marker41-endmarker41]{laplacian.cpp}
+\lstinputlisting[linerange=marker10-endmarker10]{laplacian.cpp}
 
 Note that we use the command line option \lstinline!--weakdir! set to
 1 by default to decide between weak/strong Dirichlet handling.  Apart
@@ -1163,7 +1163,7 @@ Next we solve the linear system
 
 where the \lstinline!solve! function is implemented as follows
 
-\lstinputlisting[linerange=marker6-endmarker6]{tutorial/laplacian.cpp}
+\lstinputlisting[linerange=marker6-endmarker6]{laplacian.cpp}
 
 Finally we check for the $L_2$ error in our approximation by computing
 \begin{equation}
@@ -1176,7 +1176,7 @@ $u_h$ in the $P_2$ Lagrange basis are given by solving (\ref{eq:6}).
 
 The code reads
 
-\lstinputlisting[linerange=marker7-endmarker7]{tutorial/laplacian.cpp}
+\lstinputlisting[linerange=marker7-endmarker7]{laplacian.cpp}
 
 
 You can now verify that the $L_2$ error norm behaves like $h^{-(N+1)}$
@@ -1320,23 +1320,23 @@ We start by defining and building $\mathcal{X}_h$: first we define the
 basis functions that will span each subspaces $X_h$, $M_h$ and
 $\mathbb{P}_0(\Omega)$.
 
-\lstinputlisting[linerange=marker1-endmarker1]{tutorial/stokes.cpp}
+\lstinputlisting[linerange=marker1-endmarker1]{stokes.cpp}
 
 note that on the \lstinline!typedef! we build a (MPL) vector of them. Now we are
 ready to define the functionspace $\mathcal{X}_h$, much like in the
 Laplacian case:
 
-\lstinputlisting[linerange=marker2-endmarker2]{tutorial/stokes.cpp}
+\lstinputlisting[linerange=marker2-endmarker2]{stokes.cpp}
 
 Next we define a few types which are associated with $\mathcal{U}$,
 $u$, $p$ and $\lambda$ respectively.
 
-\lstinputlisting[linerange=marker3-endmarker3]{tutorial/stokes.cpp}
+\lstinputlisting[linerange=marker3-endmarker3]{stokes.cpp}
 
 Using these types we can instantiate elements of $\mathcal{X}_h$,
 $X_h$, $M_h$ and $\mathbb{P}_0(\Omega_h)$ respectively:
 
-\lstinputlisting[linerange=marker4-endmarker4]{tutorial/stokes.cpp}
+\lstinputlisting[linerange=marker4-endmarker4]{stokes.cpp}
 
 They will serve in the definition of the variational formulation. We
 can now start assemble the various terms of the variational
@@ -1346,21 +1346,21 @@ $\tau(\mathbf{u}) = \nabla \mathbf{u}$,
 associated with the trial and test functions
 respectively
 
-\lstinputlisting[linerange=marker5-endmarker5]{tutorial/stokes.cpp}
+\lstinputlisting[linerange=marker5-endmarker5]{stokes.cpp}
 
 Then we define the total stress tensor times the normal,
 $\bar{\sigma}(\mathbf{u},p) \mathbf{n} = -p \mathbf{n} + 2 \mu \tau(\mathbf{u})
 \mathbf{n}$ where $\mathbf{n}$ is the normal and $\bar{\sigma}(\mathbf{u},p) =
 -p \mathbb{I} + 2 \mu \tau(\mathbf{u})$:
 
-\lstinputlisting[linerange=marker6-endmarker6]{tutorial/stokes.cpp}
+\lstinputlisting[linerange=marker6-endmarker6]{stokes.cpp}
 
 
 We then form the matrix $\mathcal{A}$ starting with block $A$,  block $B$
 block $C$ and finally the boundary conditions.
 
 
-\lstinputlisting[linerange=marker7-endmarker7]{tutorial/stokes.cpp}
+\lstinputlisting[linerange=marker7-endmarker7]{stokes.cpp}
 
 The figure~\ref{fig:2} displays $p$ and $\mathbf{u}$ which are available in
 \begin{unixcom}
