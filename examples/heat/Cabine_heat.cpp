@@ -59,7 +59,9 @@
 using namespace Feel;
 using namespace Feel::vf;
 
+namespace Feel {
 gmsh_ptrtype createRoom( int Dim, double meshSize );
+}
 
 /**
  * This routine returns the list of options using the
