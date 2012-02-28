@@ -308,7 +308,7 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  
     strcpy( argv[5], "-o" );
     Log() << "argv[5] = " << argv[5] << "xxx\n";
     argv[6] = new char[__geoname.size()];
-    strcpy( argv[6], (boost::format( "%1%.msh" ) % fs::stem(__geoname)).str().c_str() );
+    strcpy( argv[6], (boost::format( "%1%.msh" ) % fs::path(__geoname).stem().string()).str().c_str() );
     Log() << "argv[6] = " << argv[6] << "xxx\n";
     boost::timer ti;
     std::cout << "Executing ";
