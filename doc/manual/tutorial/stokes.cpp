@@ -238,8 +238,8 @@ Stokes::run()
 {
     this->init();
 
-    auto U = Xh->element();
-    auto V = Xh->element();
+    auto U = Xh->element("(u,p)");
+    auto V = Xh->element("(v,q)");
     auto u = U.element<0>();
     auto v = V.element<0>();
     auto p = U.element<1>();
@@ -310,6 +310,8 @@ Stokes::run()
     //# endmarker7 #
 
     M_backend->solve( _matrix=D, _solution=U, _rhs=F );
+
+    U.save(_path=".");
 
     this->exportResults( u_exact, p_exact, U, V );
 
