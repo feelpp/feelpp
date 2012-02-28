@@ -52,6 +52,7 @@
 
 #include <feel/feelalg/solverlinearpetsc.hpp>
 #include <feel/feelalg/functionspetsc.hpp>
+#include <feel/feelalg/preconditionerpetsc.hpp>
 
 namespace Feel
 {
@@ -59,56 +60,58 @@ namespace Feel
 extern "C"
 {
 #if PETSC_VERSION_LESS_THAN(2,2,1)
-  typedef int PetscErrorCode;
-  typedef int PetscInt;
+    typedef int PetscErrorCode;
+    typedef int PetscInt;
 #endif
 
 
 #if PETSC_VERSION_LESS_THAN(3,0,1) && PETSC_VERSION_RELEASE
-  PetscErrorCode __feel_petsc_preconditioner_setup (void * ctx)
-  {
-    Preconditioner<double> * preconditioner = static_cast<Preconditioner<double>*>(ctx);
-    preconditioner->init();
+    PetscErrorCode __feel_petsc_preconditioner_setup (void * ctx)
+    {
+        Preconditioner<double> * preconditioner = static_cast<Preconditioner<double>*>(ctx);
+        preconditioner->init();
 
-    return 0;
-  }
+        std::cout << "init prec\n";
+
+        return 0;
+    }
 
 
-  PetscErrorCode __feel_petsc_preconditioner_apply(void *ctx, Vec x, Vec y)
-  {
-    Preconditioner<double> * preconditioner = static_cast<Preconditioner<double>*>(ctx);
+    PetscErrorCode __feel_petsc_preconditioner_apply(void *ctx, Vec x, Vec y)
+    {
+        Preconditioner<double> * preconditioner = static_cast<Preconditioner<double>*>(ctx);
 
-    VectorPetsc<double> x_vec(x);
-    VectorPetsc<double> y_vec(y);
+        VectorPetsc<double> x_vec(x);
+        VectorPetsc<double> y_vec(y);
+        std::cout << "apply prec\n";
+        preconditioner->apply(x_vec,y_vec);
 
-    preconditioner->apply(x_vec,y_vec);
-
-    return 0;
-  }
+        return 0;
+    }
 #else
-  PetscErrorCode __feel_petsc_preconditioner_setup (PC pc)
-  {
-    void *ctx;
-    PetscErrorCode ierr = PCShellGetContext(pc,&ctx);CHKERRQ(ierr);
-    Preconditioner<double> * preconditioner = static_cast<Preconditioner<double>*>(ctx);
-    preconditioner->init();
+    PetscErrorCode __feel_petsc_preconditioner_setup (PC pc)
+    {
+        void *ctx;
+        PetscErrorCode ierr = PCShellGetContext(pc,&ctx);CHKERRQ(ierr);
+        Preconditioner<double> * preconditioner = static_cast<Preconditioner<double>*>(ctx);
+        preconditioner->init();
+        std::cout << "init prec\n";
+        return 0;
+    }
 
-    return 0;
-  }
+    PetscErrorCode __feel_petsc_preconditioner_apply(PC pc, Vec x, Vec y)
+    {
+        void *ctx;
+        PetscErrorCode ierr = PCShellGetContext(pc,&ctx);CHKERRQ(ierr);
+        Preconditioner<double> * preconditioner = static_cast<Preconditioner<double>*>(ctx);
+        std::cout << "apply prec\n";
+        VectorPetsc<double> x_vec(x);
+        VectorPetsc<double> y_vec(y);
 
-  PetscErrorCode __feel_petsc_preconditioner_apply(PC pc, Vec x, Vec y)
-  {
-    void *ctx;
-    PetscErrorCode ierr = PCShellGetContext(pc,&ctx);CHKERRQ(ierr);
-    Preconditioner<double> * preconditioner = static_cast<Preconditioner<double>*>(ctx);
+        preconditioner->apply(x_vec,y_vec);
 
-    VectorPetsc<double> x_vec(x);
-    VectorPetsc<double> y_vec(y);
-
-    preconditioner->apply(x_vec,y_vec);
-
-    return 0;
-  }
+        return 0;
+    }
 #endif
 } // end extern "C"
 
@@ -227,6 +230,23 @@ void SolverLinearPetsc<T>::init ()
 
 #endif
 
+        // Have the Krylov subspace method use our good initial guess
+        // rather than 0, unless the user requested a KSPType of
+        // preonly, which complains if asked to use initial guesses.
+#if PETSC_VERSION_LESS_THAN(3,0,0)
+        KSPType ksp_type;
+#else
+        const KSPType ksp_type;
+#endif
+
+        ierr = KSPGetType (_M_ksp, &ksp_type);
+        CHKERRABORT(M_comm,ierr);
+
+        if (strcmp(ksp_type, "preonly"))
+        {
+            ierr = KSPSetInitialGuessNonzero (_M_ksp, PETSC_TRUE);
+            CHKERRABORT(M_comm,ierr);
+        }
 
         // Notify PETSc of location to store residual history.
         // This needs to be called before any solves, since
@@ -240,7 +260,7 @@ void SolverLinearPetsc<T>::init ()
         CHKERRABORT(this->worldComm().globalComm(),ierr);
 
         //If there is a preconditioner object we need to set the internal setup and apply routines
-        //if(this->M_preconditioner)
+        if(this->M_preconditioner)
         {
             PCShellSetContext(_M_pc,(void*)this->M_preconditioner.get());
             PCShellSetSetUp(_M_pc,__feel_petsc_preconditioner_setup);
@@ -409,6 +429,9 @@ SolverLinearPetsc<T>::solve (MatrixSparse<T> const&  matrix_in,
                              this->dTolerance(),
                              this->maxIterations());
     CHKERRABORT(this->worldComm().globalComm(),ierr);
+
+    PreconditionerPetsc<T>::setPetscPreconditionerType(this->preconditionerType(),_M_pc);
+
 
     // makes the default convergence test use || B*(b - A*(initial guess))||
     // instead of || B*b ||. In the case of right preconditioner or if
