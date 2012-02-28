@@ -176,7 +176,7 @@ FIND_LIBRARY(METIS_LIBRARY
     metis
     PATHS
     "/opt/local/lib/petsc/lib"
-    "/opt/local/lib"
+#    "/opt/local/lib"
 )
 message(STATUS "Metis: ${METIS_LIBRARY}" )
 IF( METIS_LIBRARY )
