@@ -286,8 +286,8 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  
     auto err = ::system( __str.str().c_str() );
 #else
     // Initialize static stuff (parser symbols, options)
-    int argc = 5;
-    char**argv = new char*[5];
+    int argc = 7;
+    char**argv = new char*[7];
     argv[0] = new char[5];
     strcpy( argv[0], "gmsh" );
     Log() << "argv[0] = " << argv[0] << "xxx\n";
@@ -304,9 +304,15 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  
     argv[4] = new char[__geoname.size()];
     strcpy( argv[4], __geoname.c_str() );
     Log() << "argv[4] = " << argv[4] << "xxx\n";
+    argv[5] = new char[2];
+    strcpy( argv[5], "-o" );
+    Log() << "argv[5] = " << argv[5] << "xxx\n";
+    argv[6] = new char[__geoname.size()];
+    strcpy( argv[6], (boost::format( "%1%.msh" ) % fs::stem(__geoname)).str().c_str() );
+    Log() << "argv[6] = " << argv[6] << "xxx\n";
     boost::timer ti;
     std::cout << "Executing ";
-    for( int i = 0;i < 5; ++i )
+    for( int i = 0;i < 7; ++i )
     {
         std::cout << argv[i] << " ";
     }
