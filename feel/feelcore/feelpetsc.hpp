@@ -55,6 +55,18 @@ typedef PetscTruth  PetscBool;
                                           (PETSC_VERSION_MINOR == (minor) && \
                                            PETSC_VERSION_SUBMINOR < (subminor))))) ? 1 : 0)
 
+#define PETSC_VERSION_GREATER_THAN(major,minor,subminor)                \
+    ((PETSC_VERSION_MAJOR > (major) ||                                  \
+      (PETSC_VERSION_MAJOR == (major) && (PETSC_VERSION_MINOR > (minor) || \
+                                          (PETSC_VERSION_MINOR == (minor) && \
+                                           PETSC_VERSION_SUBMINOR > (subminor))))) ? 1 : 0)
+
+#define PETSC_VERSION_GREATER_OR_EQUAL_THAN(major,minor,subminor)       \
+    ((PETSC_VERSION_MAJOR > (major) ||                                  \
+      (PETSC_VERSION_MAJOR == (major) && (PETSC_VERSION_MINOR >= (minor) || \
+                                          (PETSC_VERSION_MINOR == (minor) && \
+                                           PETSC_VERSION_SUBMINOR >= (subminor))))) ? 1 : 0)
+
 namespace Feel
 {
 namespace PETSc
