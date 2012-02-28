@@ -240,12 +240,12 @@ void SolverLinearPetsc<T>::init ()
 #endif
 
         ierr = KSPGetType (_M_ksp, &ksp_type);
-        CHKERRABORT(M_comm,ierr);
+        CHKERRABORT(this->worldComm().globalComm(),ierr);
 
         if (strcmp(ksp_type, "preonly"))
         {
             ierr = KSPSetInitialGuessNonzero (_M_ksp, PETSC_TRUE);
-            CHKERRABORT(M_comm,ierr);
+            CHKERRABORT(this->worldComm().globalComm(),ierr);
         }
 
         // Notify PETSc of location to store residual history.
