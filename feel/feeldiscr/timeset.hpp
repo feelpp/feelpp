@@ -419,6 +419,19 @@ public:
             _M_state.clear( STEP_ON_DISK );
         }
 
+        void
+        addRegions()
+            {
+                if ( !M_ts->_M_scalar_p0 )
+                {
+                    M_ts->_M_scalar_p0 = scalar_p0_space_ptrtype( new scalar_p0_space_type ( _M_mesh.get() ) );
+                    _M_scalar_p0 = M_ts->_M_scalar_p0;
+                }
+                add( "pid", regionProcess( _M_scalar_p0 ) );
+                //add( "marker", regionMarker( _M_scalar_p0 ) );
+                //add( "marker2", regionMarker2( _M_scalar_p0 ) );
+                //add( "marker3", regionMarker3( _M_scalar_p0 ) );
+            }
         template<typename FunctionType>
         void add( std::string const& __n, FunctionType const& func)
         {
