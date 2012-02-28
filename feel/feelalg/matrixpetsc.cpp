@@ -2077,18 +2077,16 @@ MatrixPetscMPI<T>::zeroRows( std::vector<int> const& rows,
 {
     // the matrix doesn't be closed because not all processors are present here with composite spaces(this call must be done after)
     // this->close();
-#if (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR > 1)
+#if !PETSC_VERSION_LESS_THAN(3,2,0)
     MatSetOption(this->mat(),MAT_NO_OFF_PROC_ZERO_ROWS,PETSC_TRUE);
-#else
-    // ????
 #endif
 
-#if (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR > 0)
-    MatSetOption(this->mat(),MAT_KEEP_NONZERO_PATTERN,PETSC_TRUE);
-#elif (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR == 0)
+#if PETSC_VERSION_LESS_THAN(3,0,0)
+    MatSetOption(this->mat(),MAT_KEEP_ZEROED_ROWS);
+#elif PETSC_VERSION_LESS_THAN(3,1,0)
     MatSetOption(this->mat(),MAT_KEEP_ZEROED_ROWS,PETSC_TRUE);
 #else
-    MatSetOption(this->mat(),MAT_KEEP_ZEROED_ROWS);
+    MatSetOption(this->mat(),MAT_KEEP_NONZERO_PATTERN,PETSC_TRUE);
 #endif
 
     int start=0, stop=this->mapRow().nLocalDofWithGhost(), ierr=0;
@@ -2106,7 +2104,7 @@ MatrixPetscMPI<T>::zeroRows( std::vector<int> const& rows,
             // in Petsc 3.2, we might want to look at the new interface so that
             // right hand side is automatically changed wrt to zeroing out the
             // matrix entries
-#if (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR >= 2)
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN(3,2,0)
             ierr = MatZeroRowsLocal( this->mat(), rows.size(), rows.data(), 1.0, PETSC_NULL, PETSC_NULL);
             //CHKERRABORT(this->comm(),ierr);
 #else
