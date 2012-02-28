@@ -83,6 +83,7 @@
 #include <feel/feeldiscr/functionspacebase.hpp>
 #include <feel/feelfilters/pointsettomesh.hpp>
 
+#include <feel/feeldiscr/region.hpp>
 
 namespace Feel
 {
@@ -2294,7 +2295,7 @@ public:
         friend class boost::serialization::access;
 
         template<class Archive>
-        void serialize(Archive & ar, const unsigned int /*version*/)
+        void serialize(Archive & ar, const unsigned int version )
         {
             //ar & BOOST_SERIALIZATION_NVP( boost::serialization::base_object<super>(*this) );
             ar & boost::serialization::make_nvp( "name", _M_name );
@@ -2303,6 +2304,13 @@ public:
                 {
                     size_type s = this->size();
                     ar & boost::serialization::make_nvp("size", s);
+                    if( version > 0 )
+                    {
+                        int no = basis_type::nOrder;
+                        ar & boost::serialization::make_nvp("order",  no);
+                        std::string family = _M_functionspace->basis()->familyName();
+                        ar & boost::serialization::make_nvp("family", family );
+                    }
 
                     typename container_type::const_iterator it = this->begin();
                     typename container_type::const_iterator en = this->end();
@@ -2322,10 +2330,22 @@ public:
                     size_type s( 0 );
                     ar & boost::serialization::make_nvp("size", s);
 
+                    // verify number of degree of freedom
                     Debug( 5010 ) << "loading ublas::vector of size " << s << "\n";
+                    if ( s != this-> size() )
+                        throw std::logic_error( (boost::format( "load function: invalid number of degrees of freedom, read %1% but has %2%" ) % s % this->size()).str() );
 
-                    this->resize(  s );
-                    Debug( 5010 ) << "resize done: " << this->size() << "\n";
+                    if( version > 0 )
+                    {
+                        int order;
+                        std::string family;
+                        ar & boost::serialization::make_nvp("order", order );
+                        ar & boost::serialization::make_nvp("family", family );
+                        if ( order != basis_type::nOrder )
+                            throw std::logic_error( (boost::format( "load function: invalid polynomial order, read %1% but has %2%" ) % order % basis_type::nOrder).str() );
+                        if ( family != _M_functionspace->basis()->familyName() )
+                            throw std::logic_error( (boost::format( "load function: invalid polynomial family, read %1% but has %2%" ) % family % _M_functionspace->basis()->familyName()).str() );
+                    }
 
                     for ( size_type i = 0; i < s ; ++i )
                         {
@@ -4987,4 +5007,31 @@ measurePointElements( boost::shared_ptr<FunctionSpace<MeshType,bases<Lagrange<Me
 }
 
 } // Feel
+
+namespace boost {
+namespace serialization {
+template<
+    typename A0,
+    typename A1,
+    typename A2,
+    typename A3,
+    typename A4>
+struct FSElement: public Feel::FunctionSpace<A0,A1,A2,A3,A4>::element_type
+{
+};
+template<
+    typename A0,
+    typename A1,
+    typename A2,
+    typename A3,
+    typename A4>
+struct version< FSElement<A0,A1,A2,A3,A4> >
+{
+    typedef mpl::int_<1> type;
+    typedef mpl::integral_c_tag tag;
+    BOOST_STATIC_CONSTANT(unsigned int, value = version::type::value);
+};
+}
+}
+
 #endif /* __FunctionSpace_H */
