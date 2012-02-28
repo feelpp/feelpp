@@ -151,6 +151,7 @@ public:
      */
     Mat M_mat;
 
+    static void setPetscSubpreconditionerType(const PCType type, PC& pc);
 private:
     /**
      * Some PETSc preconditioners (ILU, LU) don't work in parallel.  This function
@@ -164,7 +165,7 @@ private:
     //static void setPetscSubpreconditionerType(PCType type, PC& pc);
 //#else
     // In later versions, PCType is #define'd as char*, so we need the const
-    static void setPetscSubpreconditionerType(const PCType type, PC& pc);
+
 //#endif
 };
 
