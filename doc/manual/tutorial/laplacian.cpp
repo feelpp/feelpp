@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2008-02-07
 
-  Copyright (C) 2008-2010 Universite Joseph Fourier (Grenoble I)
+  Copyright (C) 2008-2012 Universite Joseph Fourier (Grenoble I)
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -125,7 +125,6 @@ public:
 
     //! the basis type of our approximation space
     typedef bases<Lagrange<Order,Scalar> > basis_type;
-
     //! the approximation function space type
     typedef FunctionSpace<mesh_type, basis_type> space_type;
     //! the approximation function space type (shared_ptr<> type)
@@ -209,6 +208,8 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
      */
     /** \code */
     space_ptrtype Xh = space_type::New( mesh );
+    // print some information (number of local/global dof in logfile)
+    Xh->printInfo();
     element_type u( Xh, "u" );
     element_type v( Xh, "v" );
     element_type gproj( Xh, "v" );
@@ -347,6 +348,7 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
 
         exporter->step(0)->setMesh( mesh );
 
+        exporter->step(0)->addRegions();
         exporter->step(0)->add( "u", u );
         exporter->step(0)->add( "g", e );
 
@@ -379,7 +381,8 @@ main( int argc, char** argv )
      * register the simgets
      */
     /** \code */
-    app.add( new Laplacian<1>( app.vm(), app.about() ) );
+    if ( app.nProcess() == 1 )
+        app.add( new Laplacian<1>( app.vm(), app.about() ) );
     app.add( new Laplacian<2>( app.vm(), app.about() ) );
     app.add( new Laplacian<3>( app.vm(), app.about() ) );
     /** \endcode */
