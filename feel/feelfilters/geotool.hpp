@@ -1865,10 +1865,16 @@ namespace Feel {
         template<typename mesh_type>
         boost::shared_ptr<mesh_type>
         createMeshFromGeoFile(std::string geofile,std::string name,double meshSize,int straighten = 1,
-                              int partitions=1, int partition_file = 0,  GMSH_PARTITIONER partitioner = GMSH_PARTITIONER_CHACO )
+                              int partitions=1, WorldComm worldcomm=WorldComm(),
+                              int partition_file = 0, GMSH_PARTITIONER partitioner = GMSH_PARTITIONER_CHACO )
         {
 
+            boost::shared_ptr<mesh_type> mesh( new mesh_type );
+            mesh->setWorldComm(worldcomm);
+            if (!worldcomm.isActive()) return mesh;
+
             Gmsh gmsh(mesh_type::nDim,mesh_type::nOrder);
+            gmsh.setWorldComm(worldcomm);
             gmsh.setCharacteristicLength(meshSize);
             gmsh.setNumberOfPartitions( partitions );
             gmsh.setPartitioner( partitioner );
@@ -1904,10 +1910,8 @@ namespace Feel {
             std::string fname = gmsh.generate( name,
                                                ostr.str(),false,false,true );
 
-            ImporterGmsh<mesh_type> import( fname );
-            import.setVersion( "2.1" );
+            ImporterGmsh<mesh_type> import( fname, FEEL_GMSH_FORMAT_VERSION, worldcomm );
 
-            boost::shared_ptr<mesh_type> mesh( new mesh_type );
             mesh->accept( import );
             mesh->components().set ( MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
             mesh->updateForUse();
