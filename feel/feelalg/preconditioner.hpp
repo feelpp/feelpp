@@ -199,8 +199,11 @@ protected:
      */
     bool M_is_initialized;
 
-
+    mpi::communicator M_comm;
 };
+
+typedef Preconditioner<double> preconditioner_type;
+typedef boost::shared_ptr<Preconditioner<double> > preconditioner_ptrtype;
 
 
 template <typename T>
