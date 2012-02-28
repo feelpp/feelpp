@@ -42,7 +42,7 @@ void PreconditionerPetsc<T>::apply(const Vector<T> & x, Vector<T> & y)
     Vec y_vec = y_pvec.vec();
 
     int ierr = PCApply(M_pc,x_vec,y_vec);
-    CHKERRABORT(PETSC_COMM_WORLD,ierr);
+    CHKERRABORT(this->M_comm,ierr);
 }
 
 
@@ -55,13 +55,14 @@ void PreconditionerPetsc<T>::init ()
     {
         std::cerr << "ERROR: No matrix set for PreconditionerPetsc, but init() called" << std::endl;
     }
+    this->M_matrix->close();
 
     // Clear the preconditioner in case it has been created in the past
     if (!this->M_is_initialized)
     {
         // Create the preconditioning object
-        int ierr = PCCreate(PETSC_COMM_WORLD,&M_pc);
-        CHKERRABORT(PETSC_COMM_WORLD,ierr);
+        int ierr = PCCreate(this->M_comm,&M_pc);
+        CHKERRABORT(this->M_comm,ierr);
 
         MatrixPetsc<T> * pmatrix = dynamic_cast<MatrixPetsc<T>*>(this->M_matrix.get());
 
@@ -69,7 +70,7 @@ void PreconditionerPetsc<T>::init ()
     }
 
     int ierr = PCSetOperators(M_pc,M_mat,M_mat,(MatStructure)SAME_NONZERO_PATTERN);
-    CHKERRABORT(PETSC_COMM_WORLD,ierr);
+    CHKERRABORT(this->M_comm,ierr);
 
     // Set the PCType.  Note: this used to be done *before* the call to
     // PCSetOperators(), and only when !M_is_initialized, but
@@ -89,6 +90,7 @@ void PreconditionerPetsc<T>::init ()
 template <typename T>
 void PreconditionerPetsc<T>::setPetscPreconditionerType (const PreconditionerType & preconditioner_type, PC & pc)
 {
+    mpi::communicator world;
     int ierr = 0;
 
     switch (preconditioner_type)
@@ -107,7 +109,7 @@ void PreconditionerPetsc<T>::setPetscPreconditionerType (const PreconditionerTyp
         // In serial, just set the ILU preconditioner type
         //if (Feel::n_processors() == 1)
         // change in parallel version
-        if ( 1 )
+        if ( world.size() == 1 )
         {
             ierr = PCSetType (pc, (char*) PCILU);
             CHKERRABORT(PETSC_COMM_WORLD,ierr);
@@ -128,10 +130,11 @@ void PreconditionerPetsc<T>::setPetscPreconditionerType (const PreconditionerTyp
 
     case LU_PRECOND:
     {
+
         // In serial, just set the LU preconditioner type
         //if (Feel::n_processors() == 1)
         // do be changed in parallel
-        if ( 1 )
+        if ( world.size() == 1 )
         {
             ierr = PCSetType (pc, (char*) PCLU);
             CHKERRABORT(PETSC_COMM_WORLD,ierr);
@@ -249,6 +252,7 @@ void PreconditionerPetsc<T>::setPetscSubpreconditionerType(PCType type, PC& pc)
     {
         // Get pointer to sub KSP object's PC
         PC subpc;
+
         ierr = KSPGetPC(subksps[i], &subpc);
         CHKERRABORT(PETSC_COMM_WORLD,ierr);
 
