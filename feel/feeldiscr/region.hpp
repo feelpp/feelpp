@@ -66,6 +66,7 @@ region( boost::shared_ptr<SpaceType> const& space,
         }
     return v;
 }
+struct Region { virtual ~Region() {} };
 
 /**
  *
@@ -107,6 +108,19 @@ regionProcess( boost::shared_ptr<SpaceType> const& space )
 }
 
 /**
+ * \class Functor class for RegionProcess
+ */
+struct RegionProcess : public Region
+{
+    template<typename SpaceType>
+    typename SpaceType::element_type
+    apply( boost::shared_ptr<SpaceType> const& space )
+        {
+            return regionProcess( space );
+        }
+};
+
+/**
  *
  * \ingroup SpaceTime
  */
@@ -114,9 +128,21 @@ template<typename SpaceType>
 typename SpaceType::element_type
 regionMarker( boost::shared_ptr<SpaceType> const& space )
 {
-    return regionv( space, lambda::bind( &SpaceType::mesh_type::element_type::marker, lambda::_1 ) );
+    return region( space, lambda::bind( &SpaceType::mesh_type::element_type::marker, lambda::_1 ) );
 
 }
+/**
+ * \class Functor class for RegionMarker
+ */
+struct RegionMarkre : public Region
+{
+    template<typename SpaceType>
+    typename SpaceType::element_type
+    apply( boost::shared_ptr<SpaceType> const& space )
+        {
+            return regionMarker( space );
+        }
+};
 
 /**
  *
@@ -126,9 +152,22 @@ template<typename SpaceType>
 typename SpaceType::element_type
 regionMarker2( boost::shared_ptr<SpaceType> const& space )
 {
-    return regionv( space, lambda::bind( &SpaceType::mesh_type::element_type::marker2, lambda::_1 ) );
+    return region( space, lambda::bind( &SpaceType::mesh_type::element_type::marker2, lambda::_1 ) );
 
 }
+
+/**
+ * \class Functor class for RegionMarker2
+ */
+struct RegionMarker2 : public Region
+{
+    template<typename SpaceType>
+    typename SpaceType::element_type
+    apply( boost::shared_ptr<SpaceType> const& space )
+        {
+            return regionMarker2( space );
+        }
+};
 
 /**
  *
@@ -138,9 +177,22 @@ template<typename SpaceType>
 typename SpaceType::element_type
 regionMarker3( boost::shared_ptr<SpaceType> const& space )
 {
-    return regionv( space, lambda::bind( &SpaceType::mesh_type::element_type::marker3, lambda::_1 ) );
+    return region( space, lambda::bind( &SpaceType::mesh_type::element_type::marker3, lambda::_1 ) );
 
 }
+
+/**
+ * \class Functor class for RegionMarker3
+ */
+struct RegionMarker3 : public Region
+{
+    template<typename SpaceType>
+    typename SpaceType::element_type
+    apply( boost::shared_ptr<SpaceType> const& space )
+        {
+            return regionMarker3( space );
+        }
+};
 
 } // Feel
 
