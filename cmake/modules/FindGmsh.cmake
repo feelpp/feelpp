@@ -25,12 +25,23 @@ include (FindPackageHandleStandardArgs)
 INCLUDE(CheckIncludeFileCXX)
 
 FIND_PATH(GMSH_INCLUDE_DIR
-  Gmsh.h
+  Gmsh.h Context.h GModel.h
   PATHS /usr/include/ /usr/include/gmsh/ /usr/local/include/gmsh /opt/local/include/gmsh $ENV{GMSH_DIR}/include/gmsh
   DOC "Directory where GMSH header files are stored" )
+include_directories(${GMSH_INCLUDE_DIR})
+if ( GMSH_INCLUDE_DIR )
+  set( HAVE_GMSH_H 1 )
+endif()
+#include(CheckIncludeFiles)
+#set(CMAKE_REQUIRED_INCLUDES "${GMSH_INCLUDE_DIR};${CMAKE_REQUIRED_INCLUDES}")
+#check_include_file(Gmsh.h HAVE_GMSH_GMSH_H )
+##check_include_file(Context.h HAVE_GMSH_CONTEXT_H )
+#check_include_file(GModel.h HAVE_GMSH_GMODEL_H )
+#if ( HAVE_GMSH_GMODEL_H AND HAVE_GMSH_CONTEXT_H and HAVE_GMSH_GMSH_H )
+#  set( HAVE_GMSH_H 1 )
+#endif()
+#message(STATUS "Gmsh headers : ${HAVE_GMSH_H}, ${CMAKE_REQUIRED_INCLUDES}" )
 
-
-#CHECK_INCLUDE_FILE_CXX(Gmsh.h HAVE_GMSH_H)
 
 FIND_LIBRARY(GMSH_LIBRARY NAMES Gmsh gmsh-2.5.1 gmsh
   PATH
