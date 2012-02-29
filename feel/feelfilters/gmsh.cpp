@@ -45,11 +45,6 @@
 #include <boost/filesystem/fstream.hpp>
 #include <boost/algorithm/string.hpp>
 
-#include <Gmsh.h>
-#include <GModel.h>
-#include <Context.h>
-//#include <meshPartition.h>
-int PartitionMesh(GModel *const model, meshPartitionOptions &options);
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/application.hpp>
@@ -58,6 +53,14 @@ int PartitionMesh(GModel *const model, meshPartitionOptions &options);
 #include <feel/feelfilters/gmshsimplexdomain.hpp>
 #include <feel/feelfilters/gmshhypercubedomain.hpp>
 #include <feel/feelfilters/gmshellipsoiddomain.hpp>
+
+#if defined( HAVE_GMSH_H )
+#include <Gmsh.h>
+#include <GModel.h>
+#include <Context.h>
+//#include <meshPartition.h>
+int PartitionMesh(GModel *const model, meshPartitionOptions &options);
+#endif
 
 namespace Feel
 {
@@ -274,7 +277,7 @@ void
 Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  ) const
 {
 #if HAVE_GMSH
-#if 0
+#if !defined(HAVE_GMSH_H)
     // generate mesh
     std::ostringstream __str;
     //__str << "gmsh -algo tri -" << dim << " " << "-order " << this->order() << " " << __geoname;
@@ -288,41 +291,8 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  
 
     auto err = ::system( __str.str().c_str() );
 #else
-    // Initialize static stuff (parser symbols, options)
-    int argc = 7;
-    char**argv = new char*[7];
-    argv[0] = new char[5];
-    strcpy( argv[0], "gmsh" );
-    Log() << "argv[0] = " << argv[0] << "xxx\n";
-    argv[1] = new char[3];
-    strcpy( argv[1], (boost::format( "-%1%" ) % dim).str().c_str() );
-    Log() << "argv[1] = " << argv[1] << "xxx\n";
-    argv[2] = new char[6];
-    strcpy( argv[2], "-part" );
-    Log() << "argv[2] = " << argv[2] << "xxx\n";
-    std::string nparts = (boost::format( "%1%" ) % M_partitions).str();
-    argv[3] = new char[nparts.size()];
-    strcpy( argv[3], nparts.c_str() );
-    Log() << "argv[3] = " << argv[3] << "xxx\n";
-    argv[4] = new char[__geoname.size()];
-    strcpy( argv[4], __geoname.c_str() );
-    Log() << "argv[4] = " << argv[4] << "xxx\n";
-    argv[5] = new char[2];
-    strcpy( argv[5], "-o" );
-    Log() << "argv[5] = " << argv[5] << "xxx\n";
-    argv[6] = new char[__geoname.size()];
-    strcpy( argv[6], (boost::format( "%1%.msh" ) % fs::path(__geoname).stem().string()).str().c_str() );
-    Log() << "argv[6] = " << argv[6] << "xxx\n";
-    boost::timer ti;
-    std::cout << "Executing ";
-    for( int i = 0;i < 7; ++i )
-    {
-        std::cout << argv[i] << " ";
-    }
-    std::cout << " ...\n";
-
     std::string _name = fs::path(__geoname).stem().string();
-    GmshInitialize(argc, argv);
+    GmshInitialize();
     CTX::instance()->partitionOptions.setDefaults();
     CTX::instance()->partitionOptions.num_partitions = M_partitions;
     new GModel();
@@ -332,19 +302,9 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  
     GModel::current()->readGEO( _name+".geo" );
     GModel::current()->mesh( dim );
     PartitionMesh( GModel::current(), CTX::instance()->partitionOptions );
-    std::cout << "size : " << GModel::current()->getMeshPartitions().size() << "\n";
+    //std::cout << "size : " << GModel::current()->getMeshPartitions().size() << "\n";
     GModel::current()->writeMSH( _name+".msh" );
-    auto it = GModel::list.begin(), en = GModel::list.end();
-    for( ; it != en; ++it )
-    {
-        //std::cout << "Name: " << (*it)->getName() << "\n";
-        //std::cout << "Filename: " << (*it)->getFileName() << "\n";
-        delete *it;
-    }
-
-    GModel::list.resize( 0 );
-    for(int i = 0;i < 5; ++i ) delete argv[i]; delete argv;
-    std::cout << "Executing gmsh done in "<< ti.elapsed() << "s.\n";
+    GModel::current()->destroy();
 #endif
 #else
     throw std::invalid_argument("Gmsh is not available on this system");
