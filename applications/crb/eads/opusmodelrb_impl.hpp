@@ -275,8 +275,9 @@ OpusModelRB<OrderU,OrderP,OrderT>::init()
 
     //  initialisation de A1 et A2
     M_Aq.resize( Qa() );
-    M_Aq[0] = backend->newMatrix( M_Th, M_Th );
-    form2( _test=M_Th, _trial=M_Th, _matrix=M_Aq[0], _init=true );
+    size_type pattern = Pattern::COUPLED | Pattern::EXTENDED;
+    M_Aq[0] = backend->newMatrix( _test=M_Th, _trial=M_Th , _pattern=pattern);
+    //form2( _test=M_Th, _trial=M_Th, _matrix=M_Aq[0] );
 
     for( int q = 1; q < Qa(); ++q )
     {
@@ -405,7 +406,7 @@ OpusModelRB<OrderU,OrderP,OrderT>::init()
     //
     // left hand side terms
     //
-    size_type pattern = Pattern::COUPLED | Pattern::EXTENDED;
+    //size_type pattern = Pattern::COUPLED | Pattern::EXTENDED;
     // matrix to merge all Aq
     form2( M_Th, M_Th, D, _init=true, _pattern=pattern ) =
         integrate( elements(M_mesh), 0*idt(u)*id(v) )+
@@ -688,7 +689,8 @@ OpusModelRB<OrderU,OrderP,OrderT>::init()
 
 
     //mas matrix
-    form2( M_Th, M_Th, Mass, _init=true, _pattern=pattern );
+    //form2( M_Th, M_Th, Mass, _init=true, _pattern=pattern );
+
 
     form2( M_Th, M_Th, M_Mq[0], _init=true, _pattern=pattern ) =
         integrate ( markedelements(M_mesh,"PCB") ,    idv(rhoC)*idt(u)*id(w) ) +
@@ -888,7 +890,7 @@ template<int OrderU, int OrderP, int OrderT>
 typename OpusModelRB<OrderU,OrderP,OrderT>::sparse_matrix_ptrtype
 OpusModelRB<OrderU,OrderP,OrderT>::newMatrix() const
 {
-    auto Dnew = backend->newMatrix( M_Th, M_Th );
+  auto Dnew = backend->newMatrix( M_Th, M_Th );  
     *Dnew  = *D;
     Dnew->zero();
     return Dnew;
@@ -927,12 +929,13 @@ OpusModelRB<OrderU,OrderP,OrderT>::update( parameter_type const& mu , double tim
     Log() << "[update(mu)] pV done\n";
     boost::timer ti;
     D->zero();
-    for( size_type q = 0;q < M_Aq.size(); ++q )
+    *D = M_Aq[0];
+    D->scale( M_thetaAq(0) );
+    for( size_type q = 1;q < M_Aq.size(); ++q )
     {
         //Log() << "[affine decomp] scale q=" << q << " with " << M_thetaAq(q) << "\n";
         D->addMatrix( M_thetaAq(q) , M_Aq[q] );
     }
-
     Log() << "[update(mu,"<<time<<")] D assembled in " << ti.elapsed() << "s\n";ti.restart();
     for( int l = 0; l < Nl(); ++l )
     {
@@ -944,6 +947,7 @@ OpusModelRB<OrderU,OrderP,OrderT>::update( parameter_type const& mu , double tim
         }
         Log() << "[update(mu,"<<time<<")] L[" << l << "] assembled in " << ti.elapsed() << "s\n";ti.restart();
     }
+
 
     //mass matrix contribution
     auto vec_bdf_poly = backend->newVector( M_Th );
@@ -958,13 +962,16 @@ OpusModelRB<OrderU,OrderP,OrderT>::update( parameter_type const& mu , double tim
     }
     Log() << "[update(mu,"<<time<<")] add mass matrix contributions in " << ti.elapsed() << "s\n";ti.restart();
 
+#if 0
     Mass->close();
-    //Mass->zero();
-    for( size_type q = 0;q < M_Mq.size(); ++q )
+    Mass->zero();
+    *Mass = M_Mq[0];
+    Mass->scale( M_thetaMq(0) );
+    for( size_type q = 1;q < M_Mq.size(); ++q )
     {
         Mass->addMatrix( M_thetaMq(q) , M_Mq[q] );
     }
-
+#endif
 
 }
 template<int OrderU, int OrderP, int OrderT>
@@ -1013,7 +1020,7 @@ OpusModelRB<OrderU,OrderP,OrderT>::solve( parameter_type const& mu, element_ptrt
         Log() << "[solve(mu)] : time = "<<M_temp_bdf->time()<<"\n";
         Log() << "[solve(mu)] update(mu) done in " << ti.elapsed() << "s\n";ti.restart();
         Log() << "[solve(mu)] start solve\n";
-        backend->solve( _matrix=D,  _solution=*T, _rhs=L[0], _prec=D );
+        backend->solve( _matrix=D,  _solution=*T, _rhs=L[0] );
 
 #if(0)
         auto ret = backend->solve( _matrix=D,  _solution=*T, _rhs=L[0], _reuse_prec=(M_temp_bdf->iteration() >=2));
@@ -1215,8 +1222,8 @@ OpusModelRB<OrderU,OrderP,OrderT>::exportResults(double time, temp_element_type&
     //if ( this->data()->doExport() )
     {
         Log() << "exporting...\n";
-        M_exporter->step(0)->setMesh( T.functionSpace()->mesh() );
-        M_exporter->step(0)->add( "Domains", *domains );
+	M_exporter->step(0)->setMesh( T.functionSpace()->mesh() );
+	M_exporter->step(0)->add( "Domains", *domains );
         M_exporter->step(0)->add( "k", *k);
         M_exporter->step(0)->add( "rhoC", *rhoC );
         M_exporter->step(0)->add( "Q", *Q );
