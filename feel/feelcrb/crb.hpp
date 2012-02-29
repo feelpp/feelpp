@@ -868,7 +868,6 @@ CRB<TruthModelType>::offline()
     while ( maxerror > M_tolerance && M_N < M_iter_max && no_residual_index<sampling_size)
     {
 
-
        if( M_error_type == CRB_NO_RESIDUAL )  mu = M_Xi->at( no_residual_index );
 
         boost::timer timer, timer2;
@@ -908,7 +907,7 @@ CRB<TruthModelType>::offline()
             udu->setName( (boost::format( "fem-dual-%1%" ) % (M_N-1)).str() );
 
             Log() << "[CRB::offline] solving primal" << "\n";
-            backend_primal_problem->solve( _matrix=A,  _solution=u, _rhs=F[0], _prec=A );
+            backend_primal_problem->solve( _matrix=A,  _solution=u, _rhs=F[0] );
 
 
 #if 0
@@ -943,7 +942,7 @@ CRB<TruthModelType>::offline()
             std::cout << "  -- primal problem solved in " << timer2.elapsed() << "s\n"; timer2.restart();
             *Rhs = *F[M_output_index];
             Rhs->scale( -1 );
-            backend_dual_problem->solve( _matrix=At,  _solution=udu, _rhs=Rhs, _prec=At );
+            backend_dual_problem->solve( _matrix=At,  _solution=udu, _rhs=Rhs );
 
         }
         else
@@ -1070,11 +1069,14 @@ CRB<TruthModelType>::offline()
                 M_bdf_dual->initialize(*udu);
                 M_bdf_dual_save->initialize(*udu);
 
+
                 bdf_coeff = M_bdf_dual->polyDerivCoefficient(0);
                 for ( M_bdf_dual->start(),M_bdf_dual_save->start();
                       !M_bdf_dual->isFinished() , !M_bdf_dual_save->isFinished();
                       M_bdf_dual->next() , M_bdf_dual_save->next() )
                 {
+
+		  
                     auto bdf_poly = M_bdf_dual->polyDeriv();
 
                     boost::tie(M, A, F ) = M_model->update( mu , M_bdf_dual->time() );
@@ -1105,6 +1107,7 @@ CRB<TruthModelType>::offline()
                     double term2 = Adu->energy(*u,*udu);
                     double diff = math::abs(term1-term2);
                     Log() << "< A u , udu > - < u , A* udu > = "<<diff<<"\n";
+
 
                     element_ptrtype projection ( new element_type (M_model->functionSpace() ) );
                     projectionOnPodSpace ( udu , projection, "dual" );
@@ -1353,38 +1356,41 @@ CRB<TruthModelType>::offline()
                     M_coeff_pr_ini_online.push_back(projectionN(i));
                 }
             }
-            if( orthonormalize_dual )
-            {
-                for(int elem=M_N-number_of_added_elements; elem<M_N; elem++ )
-                {
-                    double k =  M_model->scalarProduct(*dual_initial_field, M_WNdu[elem]);
-                    M_coeff_du_ini_online.push_back(k);
-                }
-            }
-            else if( !orthonormalize_dual )
-            {
-                matrixN_type MNdu ( (int)M_N, (int)M_N ) ;
-                vectorN_type FNdu ( (int)M_N );
-                //dual
-                for(int i=0; i<M_N; i++)
-                {
-                    for(int j=0; j<i; j++)
-                    {
-                        MNdu(i,j) = M_model->scalarProduct( M_WNdu[j] , M_WNdu[i] );
-                        MNdu(j,i) = MNdu(i,j);
-                    }
-                    MNdu(i,i) = M_model->scalarProduct( M_WNdu[i] , M_WNdu[i] );
-                    FNdu(i) = M_model->scalarProduct(*dual_initial_field,M_WNdu[i]);
-                }
-                vectorN_type projectionN ((int) M_N);
-                projectionN = MNdu.lu().solve( FNdu );
+	    if( solve_dual_problem )
+	    {
+               if( orthonormalize_dual )
+	       {
+                   for(int elem=M_N-number_of_added_elements; elem<M_N; elem++ )
+                   {
+                       double k =  M_model->scalarProduct(*dual_initial_field, M_WNdu[elem]);
+                       M_coeff_du_ini_online.push_back(k);
+		   }
+	       }
+	       else if( !orthonormalize_dual )
+                  {
+		    matrixN_type MNdu ( (int)M_N, (int)M_N ) ;
+		    vectorN_type FNdu ( (int)M_N );
+		    //dual
+		    for(int i=0; i<M_N; i++)
+		      {
+			for(int j=0; j<i; j++)
+			{
+			  MNdu(i,j) = M_model->scalarProduct( M_WNdu[j] , M_WNdu[i] );
+			  MNdu(j,i) = MNdu(i,j);
+			}
+			MNdu(i,i) = M_model->scalarProduct( M_WNdu[i] , M_WNdu[i] );
+			FNdu(i) = M_model->scalarProduct(*dual_initial_field,M_WNdu[i]);
+		      }
+		    vectorN_type projectionN ((int) M_N);
+		    projectionN = MNdu.lu().solve( FNdu );
 
-                for(int i=M_N-number_of_added_elements;i<M_N; i++)
-                {
-                    M_coeff_du_ini_online.push_back(projectionN(i));
-                }
-            }
-        }
+		    for(int i=M_N-number_of_added_elements;i<M_N; i++)
+		      {
+			M_coeff_du_ini_online.push_back(projectionN(i));
+		      }
+		  }
+	    }
+	}
 
 
         timer2.restart();
@@ -1412,7 +1418,6 @@ CRB<TruthModelType>::offline()
         //mu = M_Xi->at( M_N );//M_WNmu_complement->min().get<0>();
 
         check( M_WNmu->size() );
-
 
 
         if ( this->vm()["crb.check.rb"].template as<int>() == 1 )std::cout << "  -- check reduced basis done in " << timer2.elapsed() << "s\n"; timer2.restart();
@@ -1503,11 +1508,11 @@ CRB<TruthModelType>::checkResidual(parameter_type const& mu, std::vector<double>
     udu->setName( (boost::format( "fem-dual-%1%" ) % (M_N-1)).str() );
 
     Log() << "[CRB::checkResidual] solving primal" << "\n";
-    backendA->solve( _matrix=A,  _solution=u, _rhs=F[0], _prec=A );
+    backendA->solve( _matrix=A,  _solution=u, _rhs=F[0] );
     Log() << "  -- primal problem solved in " << timer2.elapsed() << "s\n"; timer2.restart();
     *Rhs = *F[M_output_index];
     Rhs->scale( -1 );
-    backendAt->solve( _matrix=At,  _solution=udu, _rhs=Rhs, _prec=At );
+    backendAt->solve( _matrix=At,  _solution=udu, _rhs=Rhs );
     Log() << "  -- dual problem solved in " << timer2.elapsed() << "s\n"; timer2.restart();
 
 
@@ -1745,6 +1750,9 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
 
 
 
+    bool save_output_behavior = this->vm()["crb.save-output-behavior"].template as<bool>();
+
+
     //if K>0 then the time at which we want to evaluate output is defined by
     //time_for_output = K * time_step
     //else it's the default value and in this case we take final time
@@ -1828,9 +1836,6 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
     double output;
     int time_index=0;
 
-    //Log()<<"Begin output vector for mu = [";
-    //for(int i=0;i<mu.size()-1;i++) Log()<<mu(i)<<", ";
-    //Log()<<mu(mu.size()-1)<<"] and output number : "<<M_output_index<<"\n";
 
     for(double time=time_step; time<=time_for_output; time+=time_step)
     {
@@ -1872,13 +1877,9 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
         output = L.dot( uN[time_index] );
         output_time_vector.push_back(output);
 
-        //Log() << output << "\n";
-
         time_index++;
     }
     time_index--;
-
-    //Log() << "End of output vector\n\n" ;
 
 
 
@@ -1907,9 +1908,10 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
     double s_wo_correction = L.dot( uN [time_index] );
     double s = s_wo_correction ;
 
+
+    //now the dual problem
     if (  this->vm()["crb.solve-dual-problem"].template as<bool>() || M_error_type == CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM )
     {
-        //now the dual problem
         double time;
 
         if( M_model->isSteady() )
@@ -1950,11 +1952,8 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
                     Adu += theta_aq[q]*M_Aq_du[q].block(0,0,N,N);
                 }
 
+		//No Rhs for adjoint problem except mass contribution
                 Fdu.setZero(N);
-		for(int q = 0;q < M_model->Ql(M_output_index); ++q)
-		{
-		    Fdu += theta_fq[M_output_index][q]*M_Lq_du[q].head(N);
-		}
 
                 for(int q = 0;q < Qm; ++q)
                 {
@@ -1975,6 +1974,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
 
 
         time_index=0;
+
 
 
         for(double time=time_step; time<=time_for_output; time+=time_step)
@@ -2009,10 +2009,13 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
             }
             else
             {
+	        s = output_time_vector[time_index];
                 s += time_step*Fdu.dot(uNdu[time_index]) -
                     time_step*uNdu[time_index].dot(Aprdu*uN[time_index]) -
                     uNdu[time_index].dot(Mprdu*uN[time_index]) +
                     uNdu[time_index].dot(Mprdu*uNold[time_index]);
+
+		output_time_vector[time_index]=s;
             }
 
             time_index++;
@@ -2021,9 +2024,28 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
 
     }//end of if ( solve_dual_problem || M_error_type == CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM )
 
+    if( save_output_behavior )
+    {
+       time_index=0;
+       std::ofstream file_output;
+       std::string mu_str;
+       for(int i=0;i<mu.size();i++)
+       {
+	 mu_str= mu_str + (boost::format("_%1%") %mu[i]).str() ;
+       }
+       std::string name = "output_evolution" + mu_str;
+       file_output.open(name,std::ios::out);
+       for(double time=time_step; time<=time_for_output; time+=time_step)
+       {
+	 file_output<<time<<"\t"<<output_time_vector[time_index]<<"\n";
+	 time_index++;
+       }
+       file_output.close();
+    }
+
     //return s;
     return boost::make_tuple( s, condition_number);
-
+    
 }
 
 
@@ -2079,7 +2101,7 @@ CRB<TruthModelType>::delta( size_type N,
         {
             auto du = transientDualResidual( N, mu, uNdu[time_index], uNduold[time_index], dt, time);
             dual_sum += du.get<0>();
-            vect_du = du.get<1>();
+	    vect_du = du.get<1>();
             time_index--;
         }//end of time loop for primal problem
 
@@ -2684,6 +2706,7 @@ template<typename TruthModelType>
 typename CRB<TruthModelType>::error_estimation_type
 CRB<TruthModelType>::steadyDualResidual( int Ncur,parameter_type const& mu, vectorN_type const& Undu, double time) const
 {
+
 
     int __QLhs = M_model->Qa();
     int __QOutput = M_model->Ql(M_output_index);
@@ -3646,7 +3669,7 @@ CRB<TruthModelType>::save(Archive & ar, const unsigned int version) const
         ar & BOOST_SERIALIZATION_NVP( M_Mq_pr );
         ar & BOOST_SERIALIZATION_NVP( M_Mq_du );
         ar & BOOST_SERIALIZATION_NVP( M_Mq_pr_du );
-
+	
         if( version>=1)
         {
             ar & BOOST_SERIALIZATION_NVP( M_coeff_pr_ini_online );

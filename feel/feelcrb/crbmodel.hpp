@@ -855,20 +855,24 @@ CRBModel<TruthModelType>::offlineMerge( parameter_type const& mu )
 #endif
     std::vector<vector_ptrtype> F( Nl() );
 
-
-    A->close();
-    for( int q = 0; q < Qa(); ++q )
+    //A->close();
+    *A = *M_Aq[0];
+    A->scale( this->thetaAq( 0 ) );
+    for( int q = 1; q < Qa(); ++q )
     {
         A->addMatrix( this->thetaAq( q ), M_Aq[q] );
     }
 
-
-    M->close();
-    for( int q = 0; q < Qm(); ++q )
+    //M->close();
+    if ( Qm()>0 )
+    {
+      *M = *M_Mq[0];
+       M->scale( this->thetaMq( 0 ) );
+    }
+    for( int q = 1; q < Qm(); ++q )
     {
         M->addMatrix( this->thetaMq( q ), M_Mq[q] );
     }
-
 
     for( int l = 0;l < Nl(); ++l )
     {
