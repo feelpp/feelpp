@@ -76,8 +76,14 @@ makeHeatSink2DOptions()
     ("do-export", Feel::po::value<bool>()->default_value( false ),
      "export results if true")
     ("steady", Feel::po::value<bool>()->default_value(true),
-     "if true : steady else unsteady");
-
+     "if true : steady else unsteady")
+    ("rho", Feel::po::value<double>()->default_value( 8940 ),
+     "density in SI unit kg.m^{-3}")
+    ("C", Feel::po::value<double>()->default_value( 385 ),
+     "heat capacity in SI unit J.kg^{-1}.K^{-1}")
+    ("k_fin", Feel::po::value<double>()->default_value( 386 ),
+     "thermal conductivity of the fin in SI unit W.m^{-1}.K^{-1}")
+      ;
     return heatsink2doptions.add( Feel::feel_options() ).add(bdf_options("heatSink2d"));
 }
 AboutData
@@ -116,8 +122,8 @@ public:
 
     static const uint16_type Order = 1;
     static const uint16_type ParameterSpaceDimension = 3;
-    static const bool is_time_dependent = false;
-  //static const bool is_time_dependent = true;
+  //static const bool is_time_dependent = false;
+    static const bool is_time_dependent = true;
     
     //@}
 
@@ -179,8 +185,8 @@ public:
 
     typedef Eigen::VectorXd theta_vector_type;
 
-  //typedef boost::tuple<std::vector<sparse_matrix_ptrtype>, std::vector<sparse_matrix_ptrtype>, std::vector<std::vector<vector_ptrtype>  > > affine_decomposition_type;
-  typedef boost::tuple<std::vector<sparse_matrix_ptrtype>, std::vector<std::vector<vector_ptrtype>  > > affine_decomposition_type;
+    typedef boost::tuple<std::vector<sparse_matrix_ptrtype>, std::vector<sparse_matrix_ptrtype>, std::vector<std::vector<vector_ptrtype>  > > affine_decomposition_type;
+  //typedef boost::tuple<std::vector<sparse_matrix_ptrtype>, std::vector<std::vector<vector_ptrtype>  > > affine_decomposition_type;
     //@}
 
     /** @name Constructors, destructor
@@ -249,9 +255,9 @@ public:
      * \brief compute the theta coefficient for both bilinear and linear form
      * \param mu parameter to evaluate the coefficients
      */
-    //boost::tuple<theta_vector_type, theta_vector_type, std::vector<theta_vector_type> >
-    boost::tuple<theta_vector_type, std::vector<theta_vector_type> >
-    computeThetaq( parameter_type const& mu , double time=0)
+    boost::tuple<theta_vector_type, theta_vector_type, std::vector<theta_vector_type> >
+    //boost::tuple<theta_vector_type, std::vector<theta_vector_type> >
+    computeThetaq( parameter_type const& mu , double time=1e30)
         {
             double biot      = mu( 0 );
             double L         = mu( 1 );
@@ -262,8 +268,8 @@ public:
             double t = M_bdf->time();
 
 	    M_thetaMq.resize( Qm() );
-	    M_thetaMq( 0 )=1;
-	    M_thetaMq( 1 )=1;
+	    M_thetaMq( 0 )=rho*C/k_fin;
+	    M_thetaMq( 1 )=rho*C/k_fin * detJ;
 
             M_thetaAq.resize( Qa() );
             M_thetaAq( 0 ) = k ;
@@ -274,14 +280,14 @@ public:
             M_thetaFq.resize( Nl() );
 
             M_thetaFq[0].resize( Ql(0) );
-	    M_thetaFq[0]( 0 ) = 1;//-exp(-t);
+	    M_thetaFq[0]( 0 ) = 1-exp(-t);
 
             M_thetaFq[1].resize( Ql(1) );
-            M_thetaFq[1]( 0 ) = 1;
+            M_thetaFq[1]( 0 ) = 2;
 
 
-            //return boost::make_tuple( M_thetaMq, M_thetaAq, M_thetaFq );
-            return boost::make_tuple( M_thetaAq, M_thetaFq );
+            return boost::make_tuple( M_thetaMq, M_thetaAq, M_thetaFq );
+            //return boost::make_tuple( M_thetaAq, M_thetaFq );
         }
 
     /**
@@ -397,7 +403,7 @@ public:
     /**
      * export results to ensight format (enabled by  --export cmd line options)
      */
-  void exportResults(double time, element_type& T , parameter_type const& mu);
+    void exportResults(double time, element_type& T , parameter_type const& mu);
 
     void exportOutputs(double time, double output1, double output2);
 
@@ -449,6 +455,10 @@ private:
     double meshSize;
     double Lref;//reference value for geometric parameter
 
+    double rho;
+    double C;
+    double k_fin;
+
     int export_number;
     bool do_export;
   //export_ptrtype exporter;
@@ -497,6 +507,9 @@ HeatSink2D::HeatSink2D()
     //exporter( Exporter<mesh_type>::New( "ensight" ) ),
     export_number( 0 ),
     do_export( false ),
+    rho( 8940 ),
+    C( 385 ),
+    k_fin( 386 ),
     M_Dmu( new parameterspace_type )
 {
   this->init();
@@ -512,6 +525,9 @@ HeatSink2D::HeatSink2D( po::variables_map const& vm )
     //exporter( Exporter<mesh_type>::New( vm, "Model_HeatSink2D_Temperature" ) ),
     export_number( 0 ),
     do_export( vm["do-export"].as<bool>() ),
+    rho( vm["rho"].as<double>() ),
+    C( vm["C"].as<double>() ),
+    k_fin( vm["k_fin"].as<double>() ),
     M_Dmu( new parameterspace_type )
 {
   this->init();
@@ -524,6 +540,7 @@ HeatSink2D::HeatSink2D( po::variables_map const& vm )
 gmsh_ptrtype
 HeatSink2D::createGeo( double hsize, double mu2)
 {
+
     std::ostringstream ostr;
         ostr << "Mesh.MshFileVersion = 2.1;\n"
              << "Point (1) = {0   , 0  , 0, " << hsize << "};\n"
@@ -599,7 +616,6 @@ void HeatSink2D::init()
                             _desc = createGeo( meshSize, Lref),
                             _update=MESH_UPDATE_FACES | MESH_UPDATE_EDGES );
 
-
     /*
      * The function space and some associate elements are then defined
      */
@@ -629,11 +645,12 @@ void HeatSink2D::init()
     F = backend->newVector( Xh );
 
     Feel::ParameterSpace<ParameterSpaceDimension>::Element mu_min( M_Dmu );
-    mu_min <<  /* Bi */ 0.01 , /*L*/2, /*k*/1;
+    //mu_min <<  /* Bi */ 0.4 , /*L*/2, /*k*/1;
+    mu_min <<  /* Bi */ 0.1 , /*L*/2, /*k*/1;
     M_Dmu->setMin( mu_min );
     Feel::ParameterSpace<ParameterSpaceDimension>::Element mu_max( M_Dmu );
-    //mu_max << /* Bi */ 0.5  ,  /*L*/8 , /*k*/10;
-    mu_max <<  /* Bi */ 0.010001 , /*L*/2, /*k*/1;
+    mu_max << /* Bi */ 0.5  ,  /*L*/8 , /*k*/10;
+    //mu_max <<  /* Bi */ 0.4 , /*L*/2, /*k*/1;
     M_Dmu->setMax( mu_max );
 
     Log() << "Number of dof " << Xh->nLocalDof() << "\n";
@@ -655,18 +672,21 @@ void HeatSink2D::assemble()
     element_type v( Xh, "v" );
 
 
-    M_Aq[0] = backend->newMatrix( Xh, Xh );
-    form2( _test=Xh, _trial=Xh, _matrix=M_Aq[0], _init=true) = integrate( _range= markedfaces(mesh, "spreader_mesh"), _expr= gradt(u)*trans(grad(v)) );
-    M_Aq[1] = backend->newMatrix( Xh, Xh , M_Aq[0]);
-    form2( _test=Xh, _trial=Xh, _matrix=M_Aq[1], _init=true) = integrate( _range= markedelements(mesh,"fin_mesh"),_expr=  dx(v)*dxt(u)  );
-    M_Aq[2] = backend->newMatrix( Xh, Xh , M_Aq[0]);
-    form2( _test=Xh, _trial=Xh, _matrix=M_Aq[2], _init=true) = integrate( _range= markedelements(mesh,"fin_mesh"),_expr=  dy(v)*dyt(u)  );
-    M_Aq[3] = backend->newMatrix( Xh, Xh , M_Aq[0]);
-    form2( _test=Xh, _trial=Xh, _matrix=M_Aq[3], _init=true) = integrate( _range= markedfaces(mesh, "gamma5"), _expr= idt(u)*id(v) );
-    form2( _test=Xh, _trial=Xh, _matrix=M_Aq[3]) +=            integrate( _range= markedfaces(mesh, "gamma6"), _expr= idt(u)*id(v) );
+    M_Aq[0] = backend->newMatrix( _test=Xh, _trial=Xh );
+    form2( _test=Xh, _trial=Xh, _matrix=M_Aq[0]) = integrate( _range= markedfaces(mesh, "spreader_mesh"), _expr= gradt(u)*trans(grad(v)) );
 
-    form1( _test=Xh, _vector=M_Fq[0][0], _init=true ) = integrate( _range=markedfaces(mesh,"gamma1"), _expr= id(v) ) ;
-    form1( _test=Xh, _vector=M_Fq[1][0], _init=true ) = integrate( _range=markedfaces(mesh,"gamma1"), _expr= id(v) ) ;
+    M_Aq[1] = backend->newMatrix( _test=Xh, _trial=Xh , _matrix=M_Aq[0]);
+    M_Aq[2] = backend->newMatrix( _test=Xh, _trial=Xh , _matrix=M_Aq[0]);
+    M_Aq[3] = backend->newMatrix( _test=Xh, _trial=Xh , _matrix=M_Aq[0]);
+
+    form2( _test=Xh, _trial=Xh, _matrix=M_Aq[2]) = integrate( _range= markedelements(mesh,"fin_mesh"),_expr=  dy(v)*dyt(u)  );
+    form2( _test=Xh, _trial=Xh, _matrix=M_Aq[1]) = integrate( _range= markedelements(mesh,"fin_mesh"),_expr=  dx(v)*dxt(u)  );
+    form2( _test=Xh, _trial=Xh, _matrix=M_Aq[3])  = integrate( _range= markedfaces(mesh, "gamma5"), _expr= idt(u)*id(v) );
+    form2( _test=Xh, _trial=Xh, _matrix=M_Aq[3]) += integrate( _range= markedfaces(mesh, "gamma6"), _expr= idt(u)*id(v) );
+
+
+    form1( _test=Xh, _vector=M_Fq[0][0] ) = integrate( _range=markedfaces(mesh,"gamma1"), _expr= id(v) ) ;
+    form1( _test=Xh, _vector=M_Fq[1][0] ) = integrate( _range=markedfaces(mesh,"gamma1"), _expr= id(v) ) ;
     
     M_Aq[0]->close();
     M_Aq[1]->close();
@@ -677,25 +697,24 @@ void HeatSink2D::assemble()
     M_Fq[1][0]->close();
 
     //mass matrix
-    M_Mq[0] = backend->newMatrix( Xh, Xh , M_Aq[0]);
-    form2( _test=Xh, _trial=Xh, _matrix=M_Mq[0], _init=true ) = integrate ( _range=markedelements(mesh,"spreader_mesh"), _expr=idt(u)*id(v) );
-    M_Mq[1] = backend->newMatrix( Xh, Xh , M_Aq[0]);
-    form2( _test=Xh, _trial=Xh, _matrix=M_Mq[1], _init=true ) = integrate ( _range=markedelements(mesh,"fin_mesh"), _expr=idt(u)*id(v) );
+    M_Mq[0] = backend->newMatrix( _test=Xh, _trial=Xh , _matrix=M_Aq[0]);    
+    M_Mq[1] = backend->newMatrix( _test=Xh, _trial=Xh , _matrix=M_Aq[0]);
+    form2( _test=Xh, _trial=Xh, _matrix=M_Mq[0] ) = integrate ( _range=markedelements(mesh,"spreader_mesh"), _expr=idt(u)*id(v) );
+    form2( _test=Xh, _trial=Xh, _matrix=M_Mq[1] ) = integrate ( _range=markedelements(mesh,"fin_mesh"),      _expr=idt(u)*id(v) );
     M_Mq[0]->close();
     M_Mq[1]->close();
 
-
-
     //for scalarProduct
-    M = backend->newMatrix( _test=Xh, _trial=Xh , _matrix=M_Aq[0]);
-    form2( Xh, Xh, M, _init=true ) =
+    M = backend->newMatrix( _test=Xh, _trial=Xh );
+    form2( Xh, Xh, M ) =
       integrate( elements(mesh), id(u)*idt(v) + grad(u)*trans(gradt(u)) );
     M->close();
 
-    Mpod = backend->newMatrix( _test=Xh, _trial=Xh , _matrix=M_Aq[0]);
-    form2( Xh, Xh, Mpod, _init=true ) =
+    Mpod = backend->newMatrix( _test=Xh, _trial=Xh );
+    form2( Xh, Xh, Mpod ) =
         integrate( elements(mesh), id(u)*idt(v) );
     Mpod->close();
+
 
 }
 
@@ -703,15 +722,15 @@ void HeatSink2D::assemble()
 typename HeatSink2D::sparse_matrix_ptrtype
 HeatSink2D::newMatrix() const
 {
-    return backend->newMatrix( Xh, Xh );
+  return backend->newMatrix( Xh, Xh , M_Aq[0] );
 }
 
 
 typename HeatSink2D::affine_decomposition_type
 HeatSink2D::computeAffineDecomposition()
 {
-  //return boost::make_tuple(M_Mq, M_Aq, M_Fq );
-    return boost::make_tuple( M_Aq, M_Fq );
+  return boost::make_tuple(M_Mq, M_Aq, M_Fq );
+  //return boost::make_tuple( M_Aq, M_Fq );
 }
 
 
@@ -743,6 +762,7 @@ void HeatSink2D::exportResults(double time, element_type& T, parameter_type cons
 	std::string name = "T_with_parameters_"+mu_str;
 	exporter->step(time)->add(name, T );
         exporter->save();
+	std::cout<<" ====================== export ok"<<std::endl;
 }
 
 void HeatSink2D::exportOutputs(double time, double output1, double output2)
@@ -759,9 +779,12 @@ void HeatSink2D::update( parameter_type const& mu,double bdf_coeff, element_type
 
     D->close();
     D->zero();
-    for( size_type q = 0;q < M_Aq.size(); ++q )
+
+    *D = *M_Aq[0];
+    D->scale( M_thetaAq[0] );
+    for( size_type q = 1;q < M_Aq.size(); ++q )
     {
-        D->addMatrix( M_thetaAq[q], M_Aq[q] );
+        D->addMatrix( M_thetaAq[q] , M_Aq[q] );
     }
 
     F->close();
@@ -810,8 +833,8 @@ void HeatSink2D::solve( parameter_type const& mu, element_ptrtype& T, int output
 
     // pT->zero();
     // T->zero();
-    assemble();
 
+    assemble();
     
     element_type v( Xh, "v" );//test functions
 
@@ -827,11 +850,14 @@ void HeatSink2D::solve( parameter_type const& mu, element_ptrtype& T, int output
     for ( M_bdf->start(); !M_bdf->isFinished() ; M_bdf->next() )
     {
 
-        this->computeThetaq( mu, M_bdf->time() );
 
+        this->computeThetaq( mu, M_bdf->time() );
 	auto bdf_poly = M_bdf->polyDeriv();
         this->update( mu , bdf_coeff, bdf_poly );
-	backend->solve( _matrix=D,  _solution=T, _rhs=F, _prec=D );
+	std::cout<<"[HeatSink] call solve"<<std::endl;
+	backend->solve( _matrix=D,  _solution=T, _rhs=F );
+	std::cout<<"[HeatSink] call solve finished"<<std::endl;
+
 	if( do_export )
 	{
 	  exportResults( export_number, *T , mu);
@@ -886,7 +912,7 @@ HeatSink2D::computeNumberOfSnapshots()
 void HeatSink2D::l2solve( vector_ptrtype& u, vector_ptrtype const& f )
 {
     //std::cout << "l2solve(u,f)\n";
-    backend->solve( _matrix=M,  _solution=u, _rhs=f, _prec=M );
+    backend->solve( _matrix=M,  _solution=u, _rhs=f );
     //std::cout << "l2solve(u,f) done\n";
 }
 
@@ -956,14 +982,12 @@ double HeatSink2D::output( int output_index, parameter_type const& mu, bool expo
     else if(output_index==1)
     {
         s = M_thetaFq[output_index](0)*dot( M_Fq[output_index][0], U );
+	std::cout<<" s model = "<<s<<std::endl;
     }
     else{
       throw std::logic_error( "[HeatSink2D::output] error with output_index : only 0 or 1 " );
     }
-    //return s;
-    //double biot      = mu( 0 );
-    //double dim_term = therm_coeff/(heat_flux*biot);
-    return s ;//* dim_term;
+    return s ;
 }
 
 }
