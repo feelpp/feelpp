@@ -2489,9 +2489,9 @@ public:
     {
         return NewImpl( mesh, components, periodicity );
     }
-    static pointer_type New( mesh_ptrtype const& __m,
-                             size_type mesh_components = MESH_RENUMBER | MESH_CHECK,
-                             periodicity_type periodicity = periodicity_type() )
+    static pointer_type NewImpl( mesh_ptrtype const& __m,
+                                 size_type mesh_components = MESH_RENUMBER | MESH_CHECK,
+                                 periodicity_type periodicity = periodicity_type() )
     {
         return pointer_type( new functionspace_type( __m, mesh_components, periodicity ) );
     }
