@@ -27,6 +27,9 @@
 /* Define to 1 if you have the <Eigen/Eigen> header file. */
 #cmakedefine HAVE_EIGEN_EIGEN
 
+/* Define to 1 if you have the Gmsh headers are available. */
+#cmakedefine HAVE_GMSH_H
+
 /* Define to 1 if you have the <inttypes.h> header file. */
 #cmakedefine HAVE_INTTYPES_H
 
