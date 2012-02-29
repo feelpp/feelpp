@@ -134,11 +134,10 @@ OpusModel<OrderU,OrderP,OrderT>::init()
     period[0]=this->data()->component("PCB").e()+this->data()->component("AIR").e();
     period[1]=0;
     Log() << "[init] period=" << period[0] << "," << period[1] << "\n";
-    M_Th = temp_functionspace_type::New( M_mesh,
-                                         MESH_COMPONENTS_DEFAULTS,
-                                         Periodic<1,2,value_type>( period ) );
+    M_Th = temp_functionspace_type::New( _mesh=M_mesh,
+                                         _periodicity=Periodic<1,2,value_type>( period ) );
     Log() << "[init] M_Th init done\n";
-    M_grad_Th = grad_temp_functionspace_type::New( M_mesh, MESH_COMPONENTS_DEFAULTS );
+    M_grad_Th = grad_temp_functionspace_type::New( _mesh=M_mesh );
     Log() << "[init] M_grad_Th init done\n";
     M_Xh = fluid_functionspace_type::New( M_mesh );
     Log() << "[init] M_Xh init done\n";

@@ -196,11 +196,10 @@ OpusModelRB<OrderU,OrderP,OrderT>::init()
     period[1]=0;
     Log() << "   - period built\n";
 
-    M_Th = temp_functionspace_type::New( M_mesh,
-                                         MESH_COMPONENTS_DEFAULTS,
-                                         Periodic<1,2,value_type>( period ) );
+    M_Th = temp_functionspace_type::New( _mesh=M_mesh,
+                                         _periodicity=Periodic<1,2,value_type>( period ) );
     Log() << "   - Th built\n";
-    //M_grad_Th = grad_temp_functionspace_type::New( M_mesh, MESH_COMPONENTS_DEFAULTS );
+    //M_grad_Th = grad_temp_functionspace_type::New( _mesh=M_mesh );
     //Log() << "grad Th built\n";
 
     pT = element_ptrtype( new element_type( M_Th ) );
