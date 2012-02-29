@@ -2470,7 +2470,21 @@ public:
     {
         return pointer_type( new functionspace_type( __m, dofindices ) );
     }
-#if !defined(FEEL_ENABLE_MPI_MODE)
+#if !defined( FEEL_ENABLE_MPI_MODE)
+    BOOST_PARAMETER_MEMBER_FUNCTION((pointer_type),
+                                    static New,
+                                    tag,
+                                    (required
+                                     (mesh,*)
+                                     )
+                                    (optional
+                                     (components, (size_type), MESH_RENUMBER | MESH_CHECK)
+                                     (periodicity,*,periodicity_type())
+                                     )
+                                    )
+    {
+        return NewImpl( mesh, components, periodicity );
+    }
     static pointer_type New( mesh_ptrtype const& __m,
                              size_type mesh_components = MESH_RENUMBER | MESH_CHECK,
                              periodicity_type periodicity = periodicity_type() )
@@ -2478,7 +2492,23 @@ public:
         return pointer_type( new functionspace_type( __m, mesh_components, periodicity ) );
     }
 #else
-    static pointer_type New( mesh_ptrtype const& __m,
+    BOOST_PARAMETER_MEMBER_FUNCTION((pointer_type),
+                                    static New,
+                                    tag,
+                                    (required
+                                     (mesh,*)
+                                     )
+                                    (optional
+                                     (worldscomm, *, std::vector<WorldComm>(nSpaces,WorldComm()))
+                                     (components, (size_type), MESH_RENUMBER | MESH_CHECK)
+                                     (periodicity,*,periodicity_type())
+                                     )
+                                    )
+    {
+        return NewImpl( mesh, worldscomm, components, periodicity );
+    }
+
+    static pointer_type NewImpl( mesh_ptrtype const& __m,
                              std::vector<WorldComm> const& worldsComm = std::vector<WorldComm>(nSpaces,WorldComm()),
                              size_type mesh_components = MESH_RENUMBER | MESH_CHECK,
                              periodicity_type periodicity = periodicity_type() )
