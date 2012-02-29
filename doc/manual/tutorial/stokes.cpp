@@ -239,11 +239,11 @@ Stokes::run()
     this->init();
 
     auto U = Xh->element("(u,p)");
-    auto V = Xh->element("(v,q)");
-    auto u = U.element<0>();
-    auto v = V.element<0>();
-    auto p = U.element<1>();
-    auto q = V.element<1>();
+    auto V = Xh->element("(u,q)");
+    auto u = U.element<0>("u");
+    auto v = V.element<0>("u");
+    auto p = U.element<1>("p");
+    auto q = V.element<1>("p");
 
     auto lambda = U.element<2>();
     auto nu = V.element<2>();
@@ -312,7 +312,13 @@ Stokes::run()
     M_backend->solve( _matrix=D, _solution=U, _rhs=F );
 
     U.save(_path=".");
-
+    u.save(_path=".");
+    p.save(_path=".");
+    V.load(_path=".");
+    v.load(_path=".");
+    q.load(_path=".");
+    std::cout << "||u-v||=" << (u-v).l2Norm() << "\n";
+    std::cout << "||p-q||=" << (p-q).l2Norm() << "\n";
     this->exportResults( u_exact, p_exact, U, V );
 
     Log() << "[dof]         number of dof: " << Xh->nDof() << "\n";
