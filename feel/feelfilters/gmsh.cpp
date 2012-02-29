@@ -47,6 +47,9 @@
 
 #include <Gmsh.h>
 #include <GModel.h>
+#include <Context.h>
+//#include <meshPartition.h>
+int PartitionMesh(GModel *const model, meshPartitionOptions &options);
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/application.hpp>
@@ -317,10 +320,29 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  
         std::cout << argv[i] << " ";
     }
     std::cout << " ...\n";
-    new GModel();
+
+    std::string _name = fs::path(__geoname).stem().string();
     GmshInitialize(argc, argv);
-    GmshBatch();
-    GmshFinalize();
+    CTX::instance()->partitionOptions.setDefaults();
+    CTX::instance()->partitionOptions.num_partitions = M_partitions;
+    new GModel();
+    //std::cout << "size : " << GModel::list.size() << "\n";
+    GModel::current()->setName( _name );
+    GModel::current()->setFileName( _name );
+    GModel::current()->readGEO( _name+".geo" );
+    GModel::current()->mesh( dim );
+    PartitionMesh( GModel::current(), CTX::instance()->partitionOptions );
+    std::cout << "size : " << GModel::current()->getMeshPartitions().size() << "\n";
+    GModel::current()->writeMSH( _name+".msh" );
+    auto it = GModel::list.begin(), en = GModel::list.end();
+    for( ; it != en; ++it )
+    {
+        //std::cout << "Name: " << (*it)->getName() << "\n";
+        //std::cout << "Filename: " << (*it)->getFileName() << "\n";
+        delete *it;
+    }
+
+    GModel::list.resize( 0 );
     for(int i = 0;i < 5; ++i ) delete argv[i]; delete argv;
     std::cout << "Executing gmsh done in "<< ti.elapsed() << "s.\n";
 #endif
