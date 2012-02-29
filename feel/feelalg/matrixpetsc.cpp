@@ -926,9 +926,12 @@ MatrixPetsc<T> &
 MatrixPetsc<T>::operator = ( MatrixSparse<value_type> const& M )
 {
     MatrixPetsc<T> const* X = dynamic_cast<MatrixPetsc<T> const*> (&M);
+    this->setGraph( M.graph() );
 
     //MatConvert(X->mat(), MATSAME, MAT_INITIAL_MATRIX, &_M_mat);
-    MatDuplicate(X->mat(),MAT_COPY_VALUES,&_M_mat);
+    M.close();
+    int ierr= MatDuplicate(X->mat(),MAT_COPY_VALUES,&_M_mat);
+    CHKERRABORT(this->comm(),ierr);
 
     return *this;
 }
