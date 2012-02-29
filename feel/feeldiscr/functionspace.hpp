@@ -44,6 +44,7 @@
 
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/array.hpp>
+#include <boost/serialization/version.hpp>
 
 #include <boost/shared_ptr.hpp>
 #include <boost/function.hpp>
@@ -836,7 +837,10 @@ struct BasisName
     result_type operator()(result_type const & previousRes, T const& t)
         {
             std::ostringstream os;
-            os << previousRes << "_" << t->basis()->familyName();
+            if ( previousRes.size() )
+                os << previousRes << "_" << t->basis()->familyName();
+            else
+                os << t->basis()->familyName();
 
             return os.str();
         }
@@ -2074,7 +2078,7 @@ public:
 
         template<int i>
         typename mpl::at_c<element_vector_type,i>::type
-        element()
+        element( std::string const& name ="u" )
         {
             size_type nbdof_start =  fusion::accumulate( this->functionSpaces(),
                                                          size_type( 0 ),
@@ -2092,7 +2096,7 @@ public:
 
                     Debug( 5010 ) << "Element <" << i << ">::range.size :  "<<  ct.size()<< "\n";
                     Debug( 5010 ) << "Element <" << i << ">::range.start :  "<<  ct.start()<< "\n";
-                    return typename mpl::at_c<element_vector_type,i>::type( space, ct );
+                    return typename mpl::at_c<element_vector_type,i>::type( space, ct, name );
                 }
             else
                 {
@@ -2100,13 +2104,13 @@ public:
                     ct_type ct(_M_functionspace->template functionSpace<i>()->map());
                     Debug( 5010 ) << "Element <" << i << ">::range.size :  "<<  ct.size()<< "\n";
                     Debug( 5010 ) << "Element <" << i << ">::range.start :  "<<  ct.start()<< "\n";
-                    return typename mpl::at_c<element_vector_type,i>::type( space, ct );
+                    return typename mpl::at_c<element_vector_type,i>::type( space, ct, name );
                 }
         }
 
         template<int i>
         typename mpl::at_c<element_vector_type,i>::type
-        element() const
+        element( std::string const& name ="u" ) const
         {
             size_type nbdof_start =  fusion::accumulate( _M_functionspace->functionSpaces(),
                                                          size_type( 0 ),
@@ -2126,7 +2130,7 @@ public:
 
                     Debug( 5010 ) << "Element <" << i << ">::range.size :  "<<  ct.size()<< "\n";
                     Debug( 5010 ) << "Element <" << i << ">::range.start :  "<<  ct.start()<< "\n";
-                    return typename mpl::at_c<element_vector_type,i>::type( space, ct );
+                    return typename mpl::at_c<element_vector_type,i>::type( space, ct, name );
                 }
             else
                 {
@@ -2134,7 +2138,7 @@ public:
                     ct_type ct(_M_functionspace->template functionSpace<i>()->map());
                     Debug( 5010 ) << "Element <" << i << ">::range.size :  "<<  ct.size()<< "\n";
                     Debug( 5010 ) << "Element <" << i << ">::range.start :  "<<  ct.start()<< "\n";
-                    return typename mpl::at_c<element_vector_type,i>::type( space, ct );
+                    return typename mpl::at_c<element_vector_type,i>::type( space, ct, name );
                 }
 
         }
@@ -2334,9 +2338,14 @@ public:
                     ar & boost::serialization::make_nvp("size", s);
 
                     std::vector<int> no = _M_functionspace->basisOrder();
-                    ar & boost::serialization::make_nvp("order",  no);
+                    for( int i = 0; i < no.size(); ++i ) std::cout << no[i] << std::endl;
                     std::string family = _M_functionspace->basisName();
+                    std::cout << "family name = " << family << std::endl;
+
+                    ar & boost::serialization::make_nvp("order",  no);
+                    std::cout << "saving order done" << std::endl;
                     ar & boost::serialization::make_nvp("family", family );
+                    std::cout << "saving family done" << std::endl;
 
                     typename container_type::const_iterator it = this->begin();
                     typename container_type::const_iterator en = this->end();
@@ -2363,26 +2372,21 @@ public:
                     if ( s != this-> size() )
                         throw std::logic_error( (boost::format( "load function: invalid number of degrees of freedom, read %1% but has %2%" ) % s % this->size()).str() );
 
-                    if( version == 1 )
-                    {
-                        int order;
-                        std::string family;
-                        ar & boost::serialization::make_nvp("order", order );
-                        ar & boost::serialization::make_nvp("family", family );
-                    }
-                    if( version > 1 )
-                    {
-                        std::vector<int> order;
-                        std::string family;
-                        ar & boost::serialization::make_nvp("order", order );
-                        ar & boost::serialization::make_nvp("family", family );
-                        auto orders = _M_functionspace->basisOrder();
-                        if ( order !=  orders )
-                            throw std::logic_error( (boost::format( "load function: invalid polynomial order, read %1% but has %2%" ) % order % orders ).str() );
-                        std::string bname = _M_functionspace->basisName();
-                        if ( family !=  bname )
-                            throw std::logic_error( (boost::format( "load function: invalid polynomial family, read %1% but has %2%" ) % family % bname ).str() );
-                    }
+                    std::vector<int> order;
+                    std::string family;
+                    ar & boost::serialization::make_nvp("order", order );
+                    for( int i = 0; i < order.size(); ++i ) std::cout << order[i] << std::endl;
+
+                    ar & boost::serialization::make_nvp("family", family );
+                    std::cout << "family name = " << family << std::endl;
+#if 0
+                    auto orders = _M_functionspace->basisOrder();
+                    if ( order !=  orders )
+                        throw std::logic_error( (boost::format( "load function: invalid polynomial order, read %1% but has %2%" ) % order % orders ).str() );
+                    std::string bname = _M_functionspace->basisName();
+                    if ( family !=  bname )
+                        throw std::logic_error( (boost::format( "load function: invalid polynomial family, read %1% but has %2%" ) % family % bname ).str() );
+#endif
 
                     for ( size_type i = 0; i < s ; ++i )
                         {
@@ -2693,9 +2697,18 @@ public:
      * \note in the case of product of space, this is the concatenation of the
      * basis name of each function space
      */
-    std::string basisName() const {
-        return  fusion::accumulate( this->functionSpaces(), std::string(), detail::BasisName());
-    }
+    std::string basisName() const
+        {
+            return basisName( mpl::bool_<(nSpaces>1)>() );
+        }
+    std::string basisName( mpl::bool_<true> ) const
+        {
+            return  fusion::accumulate( this->functionSpaces(), std::string(), detail::BasisName());
+        }
+    std::string basisName( mpl::bool_<false> ) const
+        {
+            return this->basis()->familyName();
+        }
 
     /**
      * \return the basis order
@@ -2703,9 +2716,20 @@ public:
      * \note in the case of product of space, this is the concatenation of the
      * orders in a vector
      */
-    std::vector<int> basisOrder() const {
-        return  fusion::accumulate( this->functionSpaces(), std::vector<int>(), detail::BasisOrder());
-    }
+    std::vector<int> basisOrder() const
+        {
+            return basisOrder( mpl::bool_<(nSpaces>1)>() );
+        }
+    std::vector<int> basisOrder( mpl::bool_<true> ) const
+        {
+            return  fusion::accumulate( this->functionSpaces(), std::vector<int>(), detail::BasisOrder());
+        }
+    std::vector<int> basisOrder( mpl::bool_<false> ) const
+        {
+            std::vector<int> o(1);
+            o[0]=basis_type::nOrder;
+            return o;
+        }
 
     /**
        \return the reference finite element
@@ -5095,30 +5119,52 @@ measurePointElements( boost::shared_ptr<FunctionSpace<MeshType,bases<Lagrange<Me
 
 } // Feel
 
-namespace boost {
-namespace serialization {
+
+
+#if 0
 template<
     typename A0,
     typename A1,
     typename A2,
     typename A3,
-    typename A4>
-struct FSElement: public Feel::FunctionSpace<A0,A1,A2,A3,A4>::element_type
+    typename A4,
+    typename T,
+    typename Cont>
+struct FSElement: public Feel::FunctionSpace<A0,A1,A2,A3,A4>::template Element<T, Cont>
 {
 };
+
 template<
     typename A0,
     typename A1,
     typename A2,
     typename A3,
     typename A4>
-struct version< FSElement<A0,A1,A2,A3,A4> >
+//struct version< typename Feel::FunctionSpace<A0,A1,A2,A3,A4>::template Element<double,Feel::VectorUblas<double> > >
+struct version< typename Feel::FunctionSpace<A0,A1,A2,A3,A4>::element_type >
 {
+    //typedef typename version< typename Feel::FunctionSpace<A0,A1,A2,A3,A4>::template Element<double,Feel::VectorUblas<double> > > version_type;
+    typedef typename version< typename Feel::FunctionSpace<A0,A1,A2,A3,A4>::element_type > version_type;
     typedef mpl::int_<2> type;
     typedef mpl::integral_c_tag tag;
-    BOOST_STATIC_CONSTANT(unsigned int, value = version::type::value);
+    BOOST_STATIC_CONSTANT(unsigned int, value = version_type::type::value);
 };
-}
-}
+
+#define FEEL_REGISTER_ELEMENT( element_type )   \
+    namespace boost {                                                   \
+    namespace serialization {                                           \
+    template<>                                                          \
+    struct version<element_type>                                        \
+    {                                                                   \
+        typedef mpl::int_<2> type;                                      \
+        typedef mpl::integral_c_tag tag;                                \
+        BOOST_STATIC_CONSTANT(unsigned int, value = version::type::value); \
+    };                                                                  \
+    }                                                                   \
+    }
+#
+
+#endif
+
 
 #endif /* __FunctionSpace_H */
