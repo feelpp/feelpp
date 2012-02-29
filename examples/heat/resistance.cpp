@@ -239,8 +239,8 @@ ResistanceLaplacian<Dim,Order>::ResistanceLaplacian( int argc, char** argv, Abou
     node_type trans(2);
     trans[0]=0;
     trans[1]=2;
-    Xh = functionspace_type::New( mesh, MESH_COMPONENTS_DEFAULTS );
-    Yh = vectorial_functionspace_type::New( mesh, MESH_COMPONENTS_DEFAULTS );
+    Xh = functionspace_type::New( _mesh=mesh );
+    Yh = vectorial_functionspace_type::New( _mesh=mesh );
 
     Log() << "print space info\n";
     Xh->printInfo();
