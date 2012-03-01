@@ -292,7 +292,17 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  
     auto err = ::system( __str.str().c_str() );
 #else
     std::string _name = fs::path(__geoname).stem().string();
-    GmshInitialize();
+
+    std::cout << "\nHOLA "<< std::endl;
+#if 1 // fix vincent
+    static bool gmshIsInit =false;
+    if (! gmshIsInit) {
+        gmshIsInit=true;
+        GmshInitialize(argc, argv);
+    }
+#else
+    GmshInitialize(argc, argv);
+#endif
     CTX::instance()->partitionOptions.setDefaults();
     CTX::instance()->partitionOptions.num_partitions = M_partitions;
     new GModel();
