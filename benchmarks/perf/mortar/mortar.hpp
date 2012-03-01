@@ -151,7 +151,7 @@ Mortar<Dim, Order1, Order2>::run()
 {
     using namespace Feel::vf;
 
-    if ( this->vm().count( "nochdir" ) == false )
+    if ( this->vm().count( "nochdir" ) == 0 )
     {
         this->changeRepository( boost::format( "perf/%1%/%2%/%3%/h_%4%/" )
                                 % this->about().appName()
@@ -380,9 +380,9 @@ Mortar<Dim, Order1, Order2>::run()
     B2->transpose(B2t);
     M_stats.put("t.transpose.B2t",t.elapsed());t.restart();
 
-    auto myb = Blocks<3,3,double>()<< D1 << B12 << B1t
-                                   << B21 << D2 << B2t
-                                   << B1 << B2  << BLL ;
+    auto myb = Blocks<3,3>()<< D1 << B12 << B1t
+                            << B21 << D2 << B2t
+                            << B1 << B2  << BLL ;
 
     auto AbB = backend->newBlockMatrix(myb);
     AbB->close();
