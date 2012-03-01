@@ -541,48 +541,49 @@ gmsh_ptrtype
 HeatSink2D::createGeo( double hsize, double mu2)
 {
 
+    gmsh_ptrtype gmshp( new Gmsh );
     std::ostringstream ostr;
-        ostr << "Mesh.MshFileVersion = 2.1;\n"
-             << "Point (1) = {0   , 0  , 0, " << hsize << "};\n"
-             << "Point (2) = {0.5 , 0  , 0, " << hsize << "};\n"
-             << "Point (3) = {0.5 , 0.6, 0, " << hsize << "};\n"
-             << "Point (4) = {0.15, 0.6, 0, " << hsize << "};\n"
-             << "Point (5) = {0.15, 0.6+"<<mu2/2<<", 0, " << hsize << "};\n"
-	     << "Point (6) = {0.15, 0.6+"<<mu2<<  ", 0, " << hsize << "};\n"
-	     << "Point (7) = {0, 0.6+"<<mu2<<  ", 0, " << hsize << "};\n"
-	     << "Point (8) = {0   , 0.6+"<<mu2/2<<", 0, " << hsize << "};\n"
-	     << "Point (9) = {0   , 0.6, 0, " << hsize << "};\n"
-             << "Line (1)  = {1, 2};\n"
-             << "Line (2)  = {2, 3};\n"
-             << "Line (3)  = {3, 4};\n"
-	     << "Line (4)  = {4, 9};\n"
-             << "Line (5)  = {4, 5};\n"
-             << "Line (6)  = {5, 6};\n"
-             << "Line (7)  = {6, 7};\n"
-             << "Line (8)  = {7, 8};\n"
-             << "Line (9)  = {8, 9};\n"
-	     << "Line (10) = {9, 1};\n"
-	     << "Line Loop (20) = {1, 2, 3, 4, 10};\n"
-             << "Line Loop (21) = {5, 6, 7, 8, 9, -4};\n"
-             << "Plane Surface (20) = {20};\n"
-             << "Plane Surface (21) = {21};\n"
-	     << "Physical Line (\"gamma1\")  = {1};\n"
-	     << "Physical Line (\"gamma2\")  = {2};\n"
-	     << "Physical Line (\"gamma3\")  = {3};\n"
-	     << "Physical Line (\"gamma4\")  = {4};\n"
-	     << "Physical Line (\"gamma5\")  = {5};\n"
-	     << "Physical Line (\"gamma6\")  = {6};\n"
-	     << "Physical Line (\"gamma7\")  = {7};\n"
-             << "Physical Line (\"gamma8\")  = {8};\n"
-             << "Physical Line (\"gamma9\")  = {9};\n"
-             << "Physical Line (\"gamma10\") = {10};\n"
-             << "Physical Surface (\"spreader_mesh\") = {20};\n"
-             << "Physical Surface (\"fin_mesh\") = {21};\n";
+
+    ostr << gmshp->preamble() <<"\n"
+	 << "Point (1) = {0   , 0  , 0, " << hsize << "};\n"
+	 << "Point (2) = {0.5 , 0  , 0, " << hsize << "};\n"
+	 << "Point (3) = {0.5 , 0.6, 0, " << hsize << "};\n"
+	 << "Point (4) = {0.15, 0.6, 0, " << hsize << "};\n"
+	 << "Point (5) = {0.15, 0.6+"<<mu2/2<<", 0, " << hsize << "};\n"
+	 << "Point (6) = {0.15, 0.6+"<<mu2<<  ", 0, " << hsize << "};\n"
+	 << "Point (7) = {0, 0.6+"<<mu2<<  ", 0, " << hsize << "};\n"
+	 << "Point (8) = {0   , 0.6+"<<mu2/2<<", 0, " << hsize << "};\n"
+	 << "Point (9) = {0   , 0.6, 0, " << hsize << "};\n"
+	 << "Line (1)  = {1, 2};\n"
+	 << "Line (2)  = {2, 3};\n"
+	 << "Line (3)  = {3, 4};\n"
+	 << "Line (4)  = {4, 9};\n"
+	 << "Line (5)  = {4, 5};\n"
+	 << "Line (6)  = {5, 6};\n"
+	 << "Line (7)  = {6, 7};\n"
+	 << "Line (8)  = {7, 8};\n"
+	 << "Line (9)  = {8, 9};\n"
+	 << "Line (10) = {9, 1};\n"
+	 << "Line Loop (20) = {1, 2, 3, 4, 10};\n"
+	 << "Line Loop (21) = {5, 6, 7, 8, 9, -4};\n"
+	 << "Plane Surface (20) = {20};\n"
+	 << "Plane Surface (21) = {21};\n"
+	 << "Physical Line (\"gamma1\")  = {1};\n"
+	 << "Physical Line (\"gamma2\")  = {2};\n"
+	 << "Physical Line (\"gamma3\")  = {3};\n"
+	 << "Physical Line (\"gamma4\")  = {4};\n"
+	 << "Physical Line (\"gamma5\")  = {5};\n"
+	 << "Physical Line (\"gamma6\")  = {6};\n"
+	 << "Physical Line (\"gamma7\")  = {7};\n"
+	 << "Physical Line (\"gamma8\")  = {8};\n"
+	 << "Physical Line (\"gamma9\")  = {9};\n"
+	 << "Physical Line (\"gamma10\") = {10};\n"
+	 << "Physical Surface (\"spreader_mesh\") = {20};\n"
+	 << "Physical Surface (\"fin_mesh\") = {21};\n";
 
     std::ostringstream nameStr;
     nameStr.precision( 3 );
     nameStr << "fin_sink";
-    gmsh_ptrtype gmshp( new Gmsh );
     gmshp->setPrefix( nameStr.str() );
     gmshp->setDescription( ostr.str() );
     return gmshp;
@@ -605,17 +606,17 @@ void HeatSink2D::init()
 {
 
 
-
     using namespace Feel::vf;
 
  
     /*
      * First we create the mesh
      */
+
     mesh = createGMSHMesh ( _mesh = new mesh_type,
                             _desc = createGeo( meshSize, Lref),
                             _update=MESH_UPDATE_FACES | MESH_UPDATE_EDGES );
-
+   
     /*
      * The function space and some associate elements are then defined
      */
@@ -863,6 +864,7 @@ void HeatSink2D::solve( parameter_type const& mu, element_ptrtype& T, int output
 	  exportResults( export_number, *T , mu);
 	  export_number++;
 	}
+
 
 
 #if 0
