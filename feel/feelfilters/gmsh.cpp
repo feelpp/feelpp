@@ -298,10 +298,10 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  
     static bool gmshIsInit =false;
     if (! gmshIsInit) {
         gmshIsInit=true;
-        GmshInitialize(argc, argv);
+        GmshInitialize();
     }
 #else
-    GmshInitialize(argc, argv);
+    GmshInitialize();
 #endif
     CTX::instance()->partitionOptions.setDefaults();
     CTX::instance()->partitionOptions.num_partitions = M_partitions;
