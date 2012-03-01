@@ -839,12 +839,24 @@ BOOST_PARAMETER_FUNCTION(
     }
     // first try in the current path
     if ( fs::exists( cp / filename ) )
-        gmsh_ptr->setDescription(gmsh_ptr->getDescriptionFromFile((cp/filename).string()));
+      {
+	std::string desc = gmsh_ptr->preamble()+gmsh_ptr->getDescriptionFromFile((cp/filename).string());
+	gmsh_ptr->setDescription( desc );
+	//gmsh_ptr->setDescription(gmsh_ptr->getDescriptionFromFile((cp/filename).string()));
+      }
     else if ( fs::exists( fs::path(Environment::localGeoRepository()) / filename ) )
-        gmsh_ptr->setDescription( gmsh_ptr->getDescriptionFromFile((fs::path(Environment::localGeoRepository()) / filename).string()) );
+      {
+        //gmsh_ptr->setDescription( gmsh_ptr->getDescriptionFromFile((fs::path(Environment::localGeoRepository()) / filename).string()) );
+	std::string desc = gmsh_ptr->preamble()+gmsh_ptr->getDescriptionFromFile((fs::path(Environment::localGeoRepository()) / filename).string());
+	gmsh_ptr->setDescription( desc );
+      }
     else if ( Environment::systemGeoRepository().template get<1>()  &&
               fs::exists( fs::path(Environment::systemGeoRepository().get<0>()) / filename ) )
-        gmsh_ptr->setDescription( gmsh_ptr->getDescriptionFromFile((fs::path(Environment::systemGeoRepository().get<0>()) / filename).string()) );
+      {
+        //gmsh_ptr->setDescription( gmsh_ptr->getDescriptionFromFile((fs::path(Environment::systemGeoRepository().get<0>()) / filename).string()) );
+	std::string desc = gmsh_ptr->preamble()+gmsh_ptr->getDescriptionFromFile((fs::path(Environment::systemGeoRepository().get<0>()) / filename).string());
+	gmsh_ptr->setDescription( desc );
+      }
     else
     {
         std::ostringstream ostr;
