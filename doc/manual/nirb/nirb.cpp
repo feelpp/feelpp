@@ -461,6 +461,7 @@ void NIRBTEST<PolynomialOrder>::run( const double* X, unsigned long P, double* Y
                                             + (idv(uRef)-idv(uNirbCoarse))*(idv(uRef)-idv(uNirbCoarse)) )).evaluate()(0,0);
         ErrH1uNirbCoarse = sqrt(ErrH1uNirbCoarse)/H1NormUref;
         
+        
         //uRef - uNirbFine (= uRef - u1Grid)
         ErrH1u1Grid = integrate(_range=elements(XhRef->mesh()),
                                 _expr=( (gradv(uRef)-gradv(u1Grid))*trans(gradv(uRef)-gradv(u1Grid))
@@ -482,7 +483,7 @@ void NIRBTEST<PolynomialOrder>::run( const double* X, unsigned long P, double* Y
         exporter1Grid->save();
         
         
-        
+         
         
         auto uFine = XhFine->element();
         auto uCoarse = XhCoarse->element();
@@ -542,6 +543,7 @@ void NIRBTEST<PolynomialOrder>::run( const double* X, unsigned long P, double* Y
         
         exporterFine->save();
         exporterCoarse->save();
+         
      }
     MeshFiles.close();
     
@@ -839,8 +841,8 @@ Eigen::MatrixXd NIRBTEST<PolynomialOrder> :: ConstructMassMatrixRB(space_ptrtype
      
      
      Eigen::MatrixXd Mu (Ndof,sizeRB);
-     double Tol = 0.;
-     
+     double Tol = 1e-30;
+     std::ofstream fout("fout");
      //Sorting eigenvector #i
      std::vector<double>Vi(NbSnapshot);
      
@@ -876,6 +878,7 @@ Eigen::MatrixXd NIRBTEST<PolynomialOrder> :: ConstructMassMatrixRB(space_ptrtype
          if (i>0){
              double normL2 = OrthogonalisationRBFunctionL2GrammSchmidt(Xh,Mu,i);
              //std :: cout << "i = " << i << " --- NormU(" << IndMax << ") = " << normL2 << endl;
+             fout << "i = " << i << " --- NormU(" << IndMax << ") = " << normL2 << endl;
              if (normL2 > Tol){
                  Uind[IndMax] = i;
                  find << IndMax << endl;
@@ -893,6 +896,13 @@ Eigen::MatrixXd NIRBTEST<PolynomialOrder> :: ConstructMassMatrixRB(space_ptrtype
          
      }
      find.close();
+     fout.close();
+     
+     
+     
+     //OrthogonalisationRBFunctionL2GrammSchmidt(Xh,Mu);
+     
+     
      //save in a file the matrix A
      for (int i=0;i<sizeRB;i++)
      {
@@ -901,8 +911,14 @@ Eigen::MatrixXd NIRBTEST<PolynomialOrder> :: ConstructMassMatrixRB(space_ptrtype
          {
              ui(j) = Mu(j,i);
          }
+         double L2norm = std::sqrt(D->energy(ui,ui));
+         for (int j =0;j<Ndof;j++)
+         {
+             ui(j) = Mu(j,i)/L2norm;
+         }
          ui.save(_path=(boost::format("./Sol_OR%1%") %i).str());
      }
+       
      
  }
 
@@ -978,11 +994,8 @@ void NIRBTEST<PolynomialOrder> :: OrthogonalisationRBFunctionL2GrammSchmidt
              }
              Dtemp1 = D->energy(ui,uk);
              Dtemp2 = D->energy(uk,uk);
-             Dtemp3 = Dtemp1/Dtemp2;
-             for (int j=0;j<Ndof;j++)
-             {
-                 ui(j) = ui(j) -Dtemp3*uk(j);
-             }
+             Dtemp3 = - Dtemp1/Dtemp2;
+             ui.add(Dtemp3,uk);
          }
          for (int j=0;j<Ndof;j++){
              M(j,i) = ui(j);
@@ -1025,45 +1038,23 @@ void NIRBTEST<PolynomialOrder> ::OrthogonalisationRBFunction(space_ptrtype Xh){
     Eigen :: MatrixXd M(Ndof,sizeRB);
     std::string path;
     int TindBR;
-    /*
-     //reading the index's number to identify the NIRB basis functions
-     path = (boost::format("./IndBR%1%") %sizeRB).str() ;
-     std :: ifstream f_in(path);
-     if (!f_in)
-     {
-     std :: cerr << "In 'OrthogonalisationRBFunction' subroutine : Error in opening file -> " << path << endl;
-     }
-     for (int i=0;i<sizeRB;i++)
-     {
-     f_in >> TindBR;
-     ui.zero();
-     std::string path = (boost::format("./Sol_%1%") %TindBR).str() ;
-     ui.load(_path=path);
-     if( D->energy(ui,ui) == 0.){
-     std::cerr << " In OrthogonalisationRBFunction : Sol_" << i << " is equal to zero " << endl;
-     exit(0);
-     }
-     for (int j=0;j<Ndof;j++)
-     {
-     M(j,i) = ui(j);
-     }
-     }
-     
-     double Dtemp;
-     OrthogonalisationRBFunctionL2GrammSchmidt(Xh,M);
-     
-     //save in a file the matrix A
-     for (int i=0;i<sizeRB;i++)
-     {
-     ui.zero();
-     for (int j =0;j<Ndof;j++)
-     {
-     ui(j) = M(j,i);
-     }
-     std::string path = (boost::format("./Sol_OR%1%") %i).str() ;
-     ui.save(_path=path);
-     } 
-     */
+    
+    for (int i=0;i<sizeRB;i++)
+    {
+        ui.zero();
+        std::string path = (boost::format("./Sol_OR%1%") %i).str()  ;
+        ui.load(_path=path);
+        if( D->energy(ui,ui) == 0.){
+            std::cerr << " In OrthogonalisationRBFunction : Sol_OR" << i << " is equal to zero " << endl;
+            exit(0);
+        }
+        for (int j=0;j<Ndof;j++)
+        {
+            M(j,i) = ui(j);
+        }
+    }
+    
+    
     
     //Second step : Solving a generalized eigenvalue problem
     //A*Epsilon_i = \lambda_i*B*Epsilon_i
