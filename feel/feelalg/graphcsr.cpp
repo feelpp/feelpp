@@ -521,7 +521,7 @@ GraphCSR::printPython( std::string const& nameFile) const
     // start file : init
     if (this->worldComm().globalRank() == this->worldComm().masterRank())
         {
-            graphFile.open(nameFile, std::ios::out);
+            graphFile.open(nameFile.c_str(), std::ios::out);
 
             graphFile << "import numpy" << std::endl
                       << "from scipy.sparse import * " << std::endl
@@ -544,7 +544,7 @@ GraphCSR::printPython( std::string const& nameFile) const
         {
             if (proc==this->worldComm().globalRank())
                 {
-                    graphFile.open(nameFile, std::ios::out | std::ios::app);
+                    graphFile.open(nameFile.c_str(), std::ios::out | std::ios::app);
 
                     for( auto it = M_storage.begin(), en = --M_storage.end() ; it != en; ++it )
                         {
@@ -581,7 +581,7 @@ GraphCSR::printPython( std::string const& nameFile) const
     //endfile
     if (this->worldComm().globalRank() == this->worldComm().masterRank())
         {
-            graphFile.open(nameFile, std::ios::out | std::ios::app);
+            graphFile.open(nameFile.c_str(), std::ios::out | std::ios::app);
 
             graphFile << "row = array(mattt[:,0],dtype=int);" << std::endl
                       << "col = array(mattt[:,1],dtype=int);" << std::endl
