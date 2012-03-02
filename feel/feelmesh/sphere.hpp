@@ -174,7 +174,7 @@ public:
      */
     void createFromCenterRadius (const Point& c, const double r)
     {
-        FEEL_ASSERT( r > 0 )( r ).error( "radius negative" );
+        FEELPP_ASSERT( r > 0 )( r ).error( "radius negative" );
         this->setCenter( c );
         this->setRadius( r );
 
@@ -186,8 +186,8 @@ public:
      */
     bool intersects (const Sphere& other_sphere) const
     {
-        FEEL_ASSERT( _M_radius > 0 )( _M_radius ).error( "radius negative" );
-        FEEL_ASSERT( other_sphere.radius() > 0 )( other_sphere.radius() ).error( "radius negative" );
+        FEELPP_ASSERT( _M_radius > 0 )( _M_radius ).error( "radius negative" );
+        FEELPP_ASSERT( other_sphere.radius() > 0 )( other_sphere.radius() ).error( "radius negative" );
 
         if ( Feel::distance( this->center(), other_sphere.center() ) < (this->radius() + other_sphere.radius()) )
             return true;
@@ -202,7 +202,7 @@ public:
      */
     bool aboveSurface (const Point& p) const
     {
-        FEEL_ASSERT( _M_radius > 0 )( _M_radius ).error( "radius negative" );
+        FEELPP_ASSERT( _M_radius > 0 )( _M_radius ).error( "radius negative" );
 
         if ( Feel::distance( p, this->center() ) > this->radius() )
             return true;
@@ -229,7 +229,7 @@ public:
      */
     bool onSurface (const Point& p) const
     {
-        FEEL_ASSERT( _M_radius > 0 )( _M_radius ).error( "radius negative" );
+        FEELPP_ASSERT( _M_radius > 0 )( _M_radius ).error( "radius negative" );
 
 
         if ( std::abs( Feel::distance( p, this->center() ) - this->radius()) < 1.e-10)
@@ -244,7 +244,7 @@ public:
      */
     Point closestPoint (const Point& p) const
     {
-        FEEL_ASSERT( _M_radius > 0 )( _M_radius ).error( "radius negative" );
+        FEELPP_ASSERT( _M_radius > 0 )( _M_radius ).error( "radius negative" );
 
         // get the normal from the surface in the direction
         // of p
@@ -264,7 +264,7 @@ public:
      */
     Point unitNormal (const Point& p) const
     {
-        FEEL_ASSERT( _M_radius > 0 )( _M_radius ).error( "radius negative" );
+        FEELPP_ASSERT( _M_radius > 0 )( _M_radius ).error( "radius negative" );
 
         //assert ( !(p == this->center()) );
 

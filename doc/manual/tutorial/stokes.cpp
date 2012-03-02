@@ -150,17 +150,17 @@ public:
     /* export */
     typedef Exporter<mesh_type> export_type;
 
-    FEEL_DONT_INLINE
+    FEELPP_DONT_INLINE
     Stokes( int argc, char** argv, AboutData const& ad, po::options_description const& od );
 
     // init mesh and space
-    FEEL_DONT_INLINE
+    FEELPP_DONT_INLINE
     void init();
 
     /**
      * run the convergence test
      */
-    FEEL_DONT_INLINE
+    FEELPP_DONT_INLINE
     void run();
 
 private:
@@ -170,7 +170,7 @@ private:
      * export results to ensight format (enabled by  --export cmd line options)
      */
     template<typename ExprUExact, typename ExprPExact>
-    FEEL_DONT_INLINE
+    FEELPP_DONT_INLINE
     void exportResults( ExprUExact uexact, ExprPExact pexact,
                         element_type& u, element_type& v );
 

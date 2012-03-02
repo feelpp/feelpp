@@ -531,7 +531,7 @@ public:
      */
     Epetra_FECrsMatrix& mat ()
     {
-        //FEEL_ASSERT (_M_mat != NULL).error("null epetra matrix");
+        //FEELPP_ASSERT (_M_mat != NULL).error("null epetra matrix");
         return *_M_mat;
     }
 
@@ -540,7 +540,7 @@ public:
      */
     Epetra_FECrsMatrix const& mat () const
     {
-        //FEEL_ASSERT (_M_mat != NULL).error("null epetra matrix");
+        //FEELPP_ASSERT (_M_mat != NULL).error("null epetra matrix");
         return *_M_mat;
     }
 
@@ -768,7 +768,7 @@ void MatrixEpetra::init ()
 inline
 void MatrixEpetra::zero ()
 {
-    FEEL_ASSERT (this->isInitialized()).error( "epetra matrix not properly initialized" ) ;
+    FEELPP_ASSERT (this->isInitialized()).error( "epetra matrix not properly initialized" ) ;
 
     M_bc_index.resize(0);
     _M_mat->PutScalar(0.0);
@@ -808,7 +808,7 @@ void MatrixEpetra::close () const
 inline
 void MatrixEpetra::setDiagonal ( Epetra_Vector const& x )
 {
-    FEEL_ASSERT (this->isInitialized()).error( "MatrixEpetra<> not properly initialized" );;
+    FEELPP_ASSERT (this->isInitialized()).error( "MatrixEpetra<> not properly initialized" );;
 
     const Epetra_Map& rowMap(_M_mat->RowMatrixRowMap());
     const Epetra_Map& colMap(_M_mat->RowMatrixColMap());
@@ -835,7 +835,7 @@ void MatrixEpetra::setDiagonal ( Epetra_Vector const& x )
 inline
 size_type MatrixEpetra::size1 () const
 {
-    FEEL_ASSERT (this->isInitialized()).error( "MatrixEpetra<> not properly initialized" );;
+    FEELPP_ASSERT (this->isInitialized()).error( "MatrixEpetra<> not properly initialized" );;
 
     Debug(10010) << "Size in size1(): " << _M_mat->NumGlobalRows() << "\n";
 
@@ -849,7 +849,7 @@ size_type MatrixEpetra::size1 () const
 inline
 size_type MatrixEpetra::size2 () const
 {
-    FEEL_ASSERT (this->isInitialized()).error( "MatrixEpetra<> not properly initialized" );;
+    FEELPP_ASSERT (this->isInitialized()).error( "MatrixEpetra<> not properly initialized" );;
 
     int epetra_n = _M_mat->NumGlobalCols();
 
@@ -861,7 +861,7 @@ size_type MatrixEpetra::size2 () const
 inline
 size_type MatrixEpetra::rowStart () const
 {
-    FEEL_ASSERT (this->isInitialized()).error( "MatrixEpetra<> not properly initialized" );;
+    FEELPP_ASSERT (this->isInitialized()).error( "MatrixEpetra<> not properly initialized" );;
 
     int start = _M_emap.MinMyGID();
 
@@ -874,7 +874,7 @@ size_type MatrixEpetra::rowStart () const
 inline
 size_type MatrixEpetra::rowStop () const
 {
-    FEEL_ASSERT (this->isInitialized()).error( "MatrixEpetra<> not properly initialized" );;
+    FEELPP_ASSERT (this->isInitialized()).error( "MatrixEpetra<> not properly initialized" );;
 
     int stop = _M_emap.MaxMyGID();
 
@@ -887,7 +887,7 @@ void MatrixEpetra::set (const size_type i,
                         const size_type j,
                         const value_type& value)
 {
-    FEEL_ASSERT (this->isInitialized()).error( "MatrixEpetra<> not properly initialized" );;
+    FEELPP_ASSERT (this->isInitialized()).error( "MatrixEpetra<> not properly initialized" );;
 
     int i_val = static_cast<int>(i);
     int j_val = static_cast<int>(j);
@@ -906,7 +906,7 @@ void MatrixEpetra::set (const size_type i,
                     Debug(10010) << "ERRORCODE InsertGlobalValues: " << ierr <<  " in M(" << i_val << "," << j_val << ") for value "<< epetra_value << "." << "\n";
                 }
         }
-    //FEEL_ASSERT( ierr == 0 )( ierr ).warn ( "invalid MatrixEpetra::set operation" );
+    //FEELPP_ASSERT( ierr == 0 )( ierr ).warn ( "invalid MatrixEpetra::set operation" );
 }
 
 
@@ -915,7 +915,7 @@ void MatrixEpetra::set (const size_type i,
 inline
 bool MatrixEpetra::closed() const
 {
-    FEEL_ASSERT (this->isInitialized()).error( "MatrixEpetra<> not properly initialized" );
+    FEELPP_ASSERT (this->isInitialized()).error( "MatrixEpetra<> not properly initialized" );
 
     bool filled;
     filled = _M_mat->Filled();
@@ -927,7 +927,7 @@ bool MatrixEpetra::closed() const
 inline
 bool MatrixEpetra::EpetraIndicesAreLocal() const
 {
-    FEEL_ASSERT (this->isInitialized()).error( "MatrixEpetra<> not properly initialized" );
+    FEELPP_ASSERT (this->isInitialized()).error( "MatrixEpetra<> not properly initialized" );
 
     bool IsLocal;
     IsLocal = _M_mat->IndicesAreLocal();
@@ -939,7 +939,7 @@ bool MatrixEpetra::EpetraIndicesAreLocal() const
 inline
 bool MatrixEpetra::HaveColMap() const
 {
-    FEEL_ASSERT (this->isInitialized()).error( "MatrixEpetra<> not properly initialized" );
+    FEELPP_ASSERT (this->isInitialized()).error( "MatrixEpetra<> not properly initialized" );
 
     bool HaveMap;
     HaveMap = _M_mat->HaveColMap();
@@ -951,7 +951,7 @@ inline
 void
 MatrixEpetra::addMatrix (const value_type coeff, super &X)
 {
-    FEEL_ASSERT ( this->isInitialized() ).error( "epetra matrix not initialized" );
+    FEELPP_ASSERT ( this->isInitialized() ).error( "epetra matrix not initialized" );
 
     epetra_sparse_matrix_type* A_ptr = dynamic_cast< epetra_sparse_matrix_type*>(&X);
 
@@ -962,7 +962,7 @@ inline
 void
 MatrixEpetra::scale ( double scalar )
 {
-    FEEL_ASSERT ( this->isInitialized() ).error( "epetra matrix not initialized" );
+    FEELPP_ASSERT ( this->isInitialized() ).error( "epetra matrix not initialized" );
     this->close();
     _M_mat->Scale(scalar);
 }
@@ -971,7 +971,7 @@ inline
 MatrixEpetra::real_type
 MatrixEpetra::l1Norm() const
 {
-    FEEL_ASSERT (this->isInitialized()).error( "epetra matrix not initialized" );
+    FEELPP_ASSERT (this->isInitialized()).error( "epetra matrix not initialized" );
     this->close();
 
     real_type NormOne = _M_mat->NormOne();
@@ -983,7 +983,7 @@ inline
 MatrixEpetra::real_type
 MatrixEpetra::linftyNorm() const
 {
-    FEEL_ASSERT (this->isInitialized()).error( "epetra matrix not initialized" );
+    FEELPP_ASSERT (this->isInitialized()).error( "epetra matrix not initialized" );
     this->close();
 
     real_type NormInf = _M_mat->NormInf();
@@ -999,7 +999,7 @@ MatrixEpetra::value_type   //doesnt work in parallel yet
 MatrixEpetra::operator () (const size_type i,
                            const size_type j) const
 {
-    FEEL_ASSERT (this->isInitialized()).error( "epetra matrix not initialized" );
+    FEELPP_ASSERT (this->isInitialized()).error( "epetra matrix not initialized" );
 
 
     int i_val=static_cast<int>(i),

@@ -52,7 +52,7 @@
 
 namespace Feel
 {
-extern const char* FEEL_GMSH_FORMAT_VERSION;
+extern const char* FEELPP_GMSH_FORMAT_VERSION;
 }
 
 #include <feel/feelfilters/importergmsh.hpp>
@@ -281,7 +281,7 @@ public:
      */
     void setVersion( std::string version )
         {
-            if ( version != "1" && version != "2" && version != FEEL_GMSH_FORMAT_VERSION )
+            if ( version != "1" && version != "2" && version != FEELPP_GMSH_FORMAT_VERSION )
                 throw std::invalid_argument( "invalid gmsh file format version" );
             M_version = version;
         }
@@ -302,18 +302,18 @@ public:
         }
     virtual void setX( std::pair<double,double> const& x )
         {
-            FEEL_ASSERT( dimension() >= 1 )( dimension() ).error( "invalid dimension" );
+            FEELPP_ASSERT( dimension() >= 1 )( dimension() ).error( "invalid dimension" );
             M_I[0] = x;
         }
     virtual void setY( std::pair<double,double> const& y )
         {
-            FEEL_ASSERT( dimension() >= 2 )( dimension() ).warn( "invalid dimension" );
+            FEELPP_ASSERT( dimension() >= 2 )( dimension() ).warn( "invalid dimension" );
             if ( dimension() >= 2 )
                 M_I[1] = y;
         }
     virtual void setZ( std::pair<double,double> const& z )
         {
-            FEEL_ASSERT( dimension() >= 3 )( dimension() ).warn( "invalid dimension" );
+            FEELPP_ASSERT( dimension() >= 3 )( dimension() ).warn( "invalid dimension" );
             if ( dimension() >= 3 )
                 M_I[2] = z;
         }
@@ -708,7 +708,7 @@ BOOST_PARAMETER_FUNCTION(
                     fname = gmsh.refine( fname, refine, parametricnodes );
                 }
 
-            ImporterGmsh<_mesh_type> import( fname, FEEL_GMSH_FORMAT_VERSION, worldcomm );
+            ImporterGmsh<_mesh_type> import( fname, FEELPP_GMSH_FORMAT_VERSION, worldcomm );
             // need to replace physical_regions by elementary_regions for specific meshes
             if (physical_are_elementary_regions)
                 {

@@ -1124,7 +1124,7 @@ namespace Feel {
                                                            geostring,
                                                            false,false,false );
 
-                        ImporterGmsh<_mesh_type> import( fname, FEEL_GMSH_FORMAT_VERSION, worldcomm );
+                        ImporterGmsh<_mesh_type> import( fname, FEELPP_GMSH_FORMAT_VERSION, worldcomm );
                         _mesh->accept( import );
                         _mesh->components().set ( MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
                         _mesh->updateForUse();
@@ -1171,7 +1171,7 @@ namespace Feel {
                         std::string fname = gmsh.generate( name,
                                                            geostring,false,false,false );
 
-                        ImporterGmsh<mesh_type> import( fname, FEEL_GMSH_FORMAT_VERSION, worldcomm );
+                        ImporterGmsh<mesh_type> import( fname, FEELPP_GMSH_FORMAT_VERSION, worldcomm );
                         mesh->accept( import );
                         mesh->components().set ( MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
                         mesh->updateForUse();
@@ -1915,7 +1915,7 @@ namespace Feel {
             std::string fname = gmsh.generate( name,
                                                ostr.str(),false,false,true );
 
-            ImporterGmsh<mesh_type> import( fname, FEEL_GMSH_FORMAT_VERSION, worldcomm );
+            ImporterGmsh<mesh_type> import( fname, FEELPP_GMSH_FORMAT_VERSION, worldcomm );
 
             mesh->accept( import );
             mesh->components().set ( MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );

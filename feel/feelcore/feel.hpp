@@ -30,8 +30,8 @@
 # error You must use C++ for Feel
 # endif
 
-# ifndef _FEEL_HH_
-# define _FEEL_HH_
+# ifndef _FEELPP_HH_
+# define _FEELPP_HH_
 
 #include <complex>
 
@@ -107,7 +107,7 @@ namespace detail
    void f( int q )
    {
      // q is not used before the check
-     FEEL_ASSERT( q ).error( "q <= 0" );
+     FEELPP_ASSERT( q ).error( "q <= 0" );
      // q is not used after the check
 
      // this ensures that in -DNDEBUG there are no warnings about
@@ -375,15 +375,15 @@ struct remove_all
 }
 
 #if defined( HAVE_ARPREC)
-# define FEEL_HAVE_MP_REAL 1
+# define FEELPP_HAVE_MP_REAL 1
 #include <mp/mpreal.h>
 #include <mp/mp.h>
 #endif /* HAVE_ARPREC */
 
 
 #if defined( HAVE_QDLIB ) || defined( HAVE_QD_H )
-# define FEEL_HAVE_DD_REAL 1
-# define FEEL_HAVE_QD_REAL 1
+# define FEELPP_HAVE_DD_REAL 1
+# define FEELPP_HAVE_QD_REAL 1
 # include <qd/dd.h>
 # include <qd/qd.h>
 # include <qd/fpu.h>

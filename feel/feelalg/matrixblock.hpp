@@ -370,7 +370,7 @@ public:
     void printPersonal(std::ostream& /*os*/=std::cout) const
     {
         std::cerr << "ERROR: Not Implemented in base class yet!" << std::endl;
-        FEEL_ASSERT( 0 ).error("invalid call");
+        FEELPP_ASSERT( 0 ).error("invalid call");
     }
 
     /**

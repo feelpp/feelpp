@@ -47,25 +47,25 @@ BOOST_AUTO_TEST_CASE( test_functions )
 {
   using namespace Feel;
 
-# define FEEL_CHECK_UNARY_FUNCS_OP_STD(_,TF) \
-  FEEL_CHECK_UNARY_FUNCS_OP_CODE_STD TF      \
+# define FEELPP_CHECK_UNARY_FUNCS_OP_STD(_,TF) \
+  FEELPP_CHECK_UNARY_FUNCS_OP_CODE_STD TF      \
   /**/
 #
-# define FEEL_CHECK_UNARY_FUNCS_OP_CODE_STD(T,F)                                                                                     \
-  check( Feel::math::FEEL_FUNC_NAME( F )( FEEL_TRAITS_TYPE( T )( 1.0 ) ) - std::FEEL_FUNC_NONS( F )( FEEL_TRAITS_TYPE( T )( 1.0 ) ) ); \
+# define FEELPP_CHECK_UNARY_FUNCS_OP_CODE_STD(T,F)                                                                                     \
+  check( Feel::math::FEELPP_FUNC_NAME( F )( FEELPP_TRAITS_TYPE( T )( 1.0 ) ) - std::FEELPP_FUNC_NONS( F )( FEELPP_TRAITS_TYPE( T )( 1.0 ) ) ); \
   /**/
 #
-BOOST_PP_LIST_FOR_EACH_PRODUCT( FEEL_CHECK_UNARY_FUNCS_OP_STD, 2, (BOOST_PP_LIST_FILTER(FEEL_PRED_FUNC, 0, FEEL_TRAITS_TYPES ), FEEL_STD_FUNCS) );
+BOOST_PP_LIST_FOR_EACH_PRODUCT( FEELPP_CHECK_UNARY_FUNCS_OP_STD, 2, (BOOST_PP_LIST_FILTER(FEELPP_PRED_FUNC, 0, FEELPP_TRAITS_TYPES ), FEELPP_STD_FUNCS) );
 
-# define FEEL_CHECK_UNARY_FUNCS_OP_GLOBAL(_,TF) \
-  FEEL_CHECK_UNARY_FUNCS_OP_CODE_GLOBAL TF      \
+# define FEELPP_CHECK_UNARY_FUNCS_OP_GLOBAL(_,TF) \
+  FEELPP_CHECK_UNARY_FUNCS_OP_CODE_GLOBAL TF      \
   /**/
 #
-# define FEEL_CHECK_UNARY_FUNCS_OP_CODE_GLOBAL(T,F)                                                                                  \
-  check( Feel::math::FEEL_FUNC_NAME( F )( FEEL_TRAITS_TYPE( T )( 1.0 ) ) - ::FEEL_FUNC_NONS( F )( FEEL_TRAITS_TYPE( T )( 1.0 ) ) ); \
+# define FEELPP_CHECK_UNARY_FUNCS_OP_CODE_GLOBAL(T,F)                                                                                  \
+  check( Feel::math::FEELPP_FUNC_NAME( F )( FEELPP_TRAITS_TYPE( T )( 1.0 ) ) - ::FEELPP_FUNC_NONS( F )( FEELPP_TRAITS_TYPE( T )( 1.0 ) ) ); \
   /**/
 #
-BOOST_PP_LIST_FOR_EACH_PRODUCT( FEEL_CHECK_UNARY_FUNCS_OP_GLOBAL, 2, (BOOST_PP_LIST_FILTER(FEEL_PRED_FUNC, 1, FEEL_TRAITS_TYPES ), FEEL_GLOBAL_FUNCS) );
+BOOST_PP_LIST_FOR_EACH_PRODUCT( FEELPP_CHECK_UNARY_FUNCS_OP_GLOBAL, 2, (BOOST_PP_LIST_FILTER(FEELPP_PRED_FUNC, 1, FEELPP_TRAITS_TYPES ), FEELPP_GLOBAL_FUNCS) );
 }
 
 BOOST_AUTO_TEST_CASE( test_promote )
@@ -98,7 +98,7 @@ BOOST_AUTO_TEST_CASE( test_promote )
 
 
 
-#if defined(FEEL_HAVE_QD_REAL)
+#if defined(FEELPP_HAVE_QD_REAL)
     BOOST_CHECK( ( boost::is_same<strongest_numeric_type<dd_real, float>::type, dd_real>::type::value ) );
     BOOST_CHECK( ( boost::is_same<strongest_numeric_type<dd_real, double>::type, dd_real>::type::value ) );
     //BOOST_CHECK( ( boost::is_same<strongest_numeric_type<dd_real, long double>::type, dd_real>::type::value ) );
@@ -120,7 +120,7 @@ BOOST_AUTO_TEST_CASE( test_constants )
     BOOST_MESSAGE( "check pi value with float" );
     check( math::Constant<math::pi_tag, float >() - float( M_PI ) );
 
-#if defined(FEEL_HAVE_QD_REAL)
+#if defined(FEELPP_HAVE_QD_REAL)
     BOOST_MESSAGE( "check pi value with dd/qd_real" );
     check( math::Constant<math::pi_tag, dd_real >() - dd_real::_pi );
     check( math::Constant<math::pi_tag, qd_real >() - qd_real::_pi );

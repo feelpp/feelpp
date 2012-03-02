@@ -61,7 +61,7 @@ static inline hrtime gethrtime() {
 #endif
 
 template<typename MeshT, typename EltT>
-FEEL_DONT_INLINE double
+FEELPP_DONT_INLINE double
 f( MeshT& mesh, EltT const& u, bool use_tbb, int gs, std::string const& part )
 {
     using namespace Feel;
@@ -74,7 +74,7 @@ f( MeshT& mesh, EltT const& u, bool use_tbb, int gs, std::string const& part )
                       _use_tbb=use_tbb, _grainsize=gs, _partitioner=part ).evaluate()(0,0);
 }
 template<typename SpaceT, typename EltT, typename MatrixT>
-FEEL_DONT_INLINE void
+FEELPP_DONT_INLINE void
 g( SpaceT& Xh, EltT const& u, MatrixT& M, bool use_tbb, int gs, std::string const& part )
 {
     using namespace Feel;

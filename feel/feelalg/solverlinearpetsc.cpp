@@ -298,10 +298,10 @@ SolverLinearPetsc<T>::solve (MatrixSparse<T> const&  matrix_in,
 
     // We cast to pointers so we can be sure that they succeeded
     // by comparing the result against NULL.
-    FEEL_ASSERT(matrix   != NULL).error( "non petsc matrix structure" );
-    FEEL_ASSERT(precond  != NULL).error( "non petsc matrix structure" );
-    FEEL_ASSERT(solution != NULL).error( "non petsc vector structure" );
-    FEEL_ASSERT(rhs      != NULL).error( "non petsc vector structure" );
+    FEELPP_ASSERT(matrix   != NULL).error( "non petsc matrix structure" );
+    FEELPP_ASSERT(precond  != NULL).error( "non petsc matrix structure" );
+    FEELPP_ASSERT(solution != NULL).error( "non petsc vector structure" );
+    FEELPP_ASSERT(rhs      != NULL).error( "non petsc vector structure" );
 
     int ierr=0;
     int its=0, max_its = 10*static_cast<int>(m_its);

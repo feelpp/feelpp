@@ -522,7 +522,7 @@ size_type findBoundaryEdges( const RegionMesh3D & mesh, TempEdgeContainer & bedg
     typedef typename RegionMesh3D::faces_type faces_type;
 
 
-    FEEL_ASSERT( mesh.isUpdatedForUse() ).error( "mesh has not been updated for use" );
+    FEELPP_ASSERT( mesh.isUpdatedForUse() ).error( "mesh has not been updated for use" );
 
     // clean first in case it has been alredy used
     bedges.clear();
@@ -686,7 +686,7 @@ size_type testClosedDomain_Top( RegionMesh3D const & mesh, size_type & numBEdges
     //for ( size_type k = 0;k < mesh.numBFaces();++k )
     for ( size_type k = 0;k < 0;++k )
     {
-        FEEL_ASSERT( iv != mesh.faces().end() )( k )( mesh.numBFaces() ).error(" Trying to get not existing face" );
+        FEELPP_ASSERT( iv != mesh.faces().end() )( k )( mesh.numBFaces() ).error(" Trying to get not existing face" );
         for ( uint16_type j = 0;j < face_type::numEdges;++j )
         {
             i1 = ele.eToP( j, 0 );
@@ -889,7 +889,7 @@ bool checkIdnumber( const MeshEntityList & list )
     size_type count = 0;
     for ( C_Iter l = list.begin();l != list.end();++l, ++count )
     {
-        FEEL_ASSERT( l->id() == count )( l->id() )( count ).error( "wrong id" );
+        FEELPP_ASSERT( l->id() == count )( l->id() )( count ).error( "wrong id" );
         ok &= ( l->id() == count );
     }
     return ok;
@@ -1645,7 +1645,7 @@ bool buildEdges( RegionMesh3D & mesh,
             // Face
             typedef typename RegionMesh3D::face_type face_type;
             typename RegionMesh3D::face_iterator __fit = mesh.faces().find( face_type( facuint16_type ) );
-            FEEL_ASSERT( __fit != mesh.faces().end() )( facuint16_type ).error( "invalid id for the faces" );
+            FEELPP_ASSERT( __fit != mesh.faces().end() )( facuint16_type ).error( "invalid id for the faces" );
 
             // The local uint16_type of edge on face
             j = info.second;
@@ -1932,7 +1932,7 @@ MeshBoundingBox
 processorBoundingBox (const MeshType& mesh,
                       const size_type pid = invalid_size_type_value )
 {
-    FEEL_ASSERT (mesh.numPoints() != 0).error( "mesh has no points" );
+    FEELPP_ASSERT (mesh.numPoints() != 0).error( "mesh has no points" );
 
     Point min(1.e30,   1.e30,  1.e30);
     Point max(-1.e30, -1.e30, -1.e30);

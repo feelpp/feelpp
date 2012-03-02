@@ -75,7 +75,7 @@ DataMap::DataMap(WorldComm const& _worldComm)
     _M_first_df_globalcluster.resize( this->worldComm().globalSize() );
     _M_last_df_globalcluster.resize( this->worldComm().globalSize() );
 
-    FEEL_ASSERT (n_local <= n)
+    FEELPP_ASSERT (n_local <= n)
         ( n_local )( n )
         ( this->worldComm().globalRank() )
         ( this->worldComm().globalSize() ).error( "Invalid local vector size" );
@@ -91,7 +91,7 @@ DataMap::DataMap(WorldComm const& _worldComm)
 
     if ( this->worldComm().size() > 1 )
         {
-#if !defined(FEEL_ENABLE_MPI_MODE)
+#if !defined(FEELPP_ENABLE_MPI_MODE)
             local_sizes_send[this->worldComm().rank()] = n_local;
 #if 1
             MPI_Allreduce (&local_sizes_send[0],
@@ -129,7 +129,7 @@ DataMap::DataMap(WorldComm const& _worldComm)
                     _M_first_df[p] = _local_index;
                     _M_last_df[p] = _local_index+n_local-1;
                 }
-#else // defined(FEEL_ENABLE_MPI_MODE)
+#else // defined(FEELPP_ENABLE_MPI_MODE)
 
             // Vincent TODO!
 
@@ -163,7 +163,7 @@ DataMap::DataMap(WorldComm const& _worldComm)
         sum += local_sizes[p];
 
     if ( n != invalid_size_type_value )
-        FEEL_ASSERT (sum == static_cast<int>(n))
+        FEELPP_ASSERT (sum == static_cast<int>(n))
             ( sum )( n )
             ( this->worldComm().rank() )
             ( this->worldComm().size() ).warn( "invalid distributed vector construction" );
@@ -269,25 +269,25 @@ DataMap::setNLocalDofWithGhost(const size_type proc, const size_type n, bool inW
 void
 DataMap::setFirstDof(const size_type proc, const size_type df, bool inWorld)
 {
-    FEEL_ASSERT(proc < _M_first_df.size())( proc )( _M_first_df.size() ).error( "invalid proc id or dof table" );
+    FEELPP_ASSERT(proc < _M_first_df.size())( proc )( _M_first_df.size() ).error( "invalid proc id or dof table" );
     _M_first_df[this->worldComm().globalRank()]=df;
 }
 void
 DataMap::setLastDof(const size_type proc, const size_type df, bool inWorld)
 {
-    FEEL_ASSERT(proc < _M_first_df.size())( proc )( _M_first_df.size() ).error( "invalid proc id or dof table" );
+    FEELPP_ASSERT(proc < _M_first_df.size())( proc )( _M_first_df.size() ).error( "invalid proc id or dof table" );
     _M_last_df[this->worldComm().globalRank()]=df;
 }
 void
 DataMap::setFirstDofGlobalCluster(const size_type proc, const size_type df, bool inWorld)
 {
-    FEEL_ASSERT(proc < _M_first_df_globalcluster.size())( proc )( _M_first_df_globalcluster.size() ).error( "invalid proc id or dof table" );
+    FEELPP_ASSERT(proc < _M_first_df_globalcluster.size())( proc )( _M_first_df_globalcluster.size() ).error( "invalid proc id or dof table" );
     _M_first_df_globalcluster[this->worldComm().globalRank()]=df;
 }
 void
 DataMap::setLastDofGlobalCluster(const size_type proc, const size_type df, bool inWorld)
 {
-    FEEL_ASSERT(proc < _M_first_df_globalcluster.size())( proc )( _M_first_df_globalcluster.size() ).error( "invalid proc id or dof table" );
+    FEELPP_ASSERT(proc < _M_first_df_globalcluster.size())( proc )( _M_first_df_globalcluster.size() ).error( "invalid proc id or dof table" );
     _M_last_df_globalcluster[this->worldComm().globalRank()]=df;
 }
 

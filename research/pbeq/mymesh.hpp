@@ -119,7 +119,7 @@ public:
 
     void setPointCharacteristic( std::vector<double> const&  ptChar )
     {
-        FEEL_ASSERT( this->nDim != ptChar.size() )( this->nDim ).error( "invalid dimension" );
+        FEELPP_ASSERT( this->nDim != ptChar.size() )( this->nDim ).error( "invalid dimension" );
         _M_ptChar.push_back(ptChar);
     }
 

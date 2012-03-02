@@ -333,7 +333,7 @@ OperatorLagrangeP1<space_type>::OperatorLagrangeP1( domain_space_ptrtype const& 
                             uint16_type localptid_dof = localDof( it, localptid );
                             size_type ptid = boost::get<0>(this->domainSpace()->dof()->localToGlobal( it->id(),
                                                                                                       localptid_dof, 0 ));
-                            FEEL_ASSERT( ptid < this->domainSpace()->nLocalDof()/domain_space_type::nComponents )( ptid )( this->domainSpace()->nLocalDof()/domain_space_type::nComponents ).warn( "invalid domain dof index" );
+                            FEELPP_ASSERT( ptid < this->domainSpace()->nLocalDof()/domain_space_type::nComponents )( ptid )( this->domainSpace()->nLocalDof()/domain_space_type::nComponents ).warn( "invalid domain dof index" );
                             //if ( pts_done[ptid] == false )
                             {
                                 dofindices[pt_image_id] = boost::make_tuple( elid, p, ptid );
@@ -359,7 +359,7 @@ OperatorLagrangeP1<space_type>::OperatorLagrangeP1( domain_space_ptrtype const& 
                                       << boost::get<1>(this->domainSpace()->dof()->dofPoint( ptid ))
                                 //<< " lid: " << boost::get<2>(this->domainSpace()->dof()->dofPoint( ptid ))
                                       << " coords: " << boost::get<0>(this->domainSpace()->dof()->dofPoint( ptid )) << "\n";
-                            FEEL_ASSERT( ublas::norm_2( boost::get<0>(this->domainSpace()->dof()->dofPoint( ptid ))-__pt.node()) < 1e-10 )
+                            FEELPP_ASSERT( ublas::norm_2( boost::get<0>(this->domainSpace()->dof()->dofPoint( ptid ))-__pt.node()) < 1e-10 )
                                 (boost::get<0>(this->domainSpace()->dof()->dofPoint( ptid )))
                                 (__pt.node())
                                 (elid)
@@ -374,9 +374,9 @@ OperatorLagrangeP1<space_type>::OperatorLagrangeP1( domain_space_ptrtype const& 
                             elt.setPoint( p, _M_mesh->point( ptid ) );
                             //elt.setPoint( localptid, _M_mesh->point( ptid ) );
                             //_M_el2pt[elid][p] = localptid;
-                            //FEEL_ASSERT( ublas::norm_2( _M_mesh->point( ptid ).node(), __pt.node() ) ).error("invalid point");
+                            //FEELPP_ASSERT( ublas::norm_2( _M_mesh->point( ptid ).node(), __pt.node() ) ).error("invalid point");
 #if 1
-                            FEEL_ASSERT( ublas::norm_2( boost::get<0>(this->domainSpace()->dof()->dofPoint( ptid ))-elt.point(p).node()) < 1e-10 )
+                            FEELPP_ASSERT( ublas::norm_2( boost::get<0>(this->domainSpace()->dof()->dofPoint( ptid ))-elt.point(p).node()) < 1e-10 )
                                 (boost::get<0>(this->domainSpace()->dof()->dofPoint( ptid )))
                                 (p)
                                 (elt.point(p).node())
@@ -386,7 +386,7 @@ OperatorLagrangeP1<space_type>::OperatorLagrangeP1( domain_space_ptrtype const& 
                                 (localptid_dof)
                                 (ptid).warn( "[after] inconsistent point coordinates" );
 
-                            FEEL_ASSERT( ublas::norm_2( elt.point(p).node()-ublas::column( elt.G(), p ) ) < 1e-10 )
+                            FEELPP_ASSERT( ublas::norm_2( elt.point(p).node()-ublas::column( elt.G(), p ) ) < 1e-10 )
                                 (p)
                                 (elt.point(p).node())
                                 (elid)
@@ -407,11 +407,11 @@ OperatorLagrangeP1<space_type>::OperatorLagrangeP1( domain_space_ptrtype const& 
                         }
                     ublas::subrange( M, 0, nDim, 0, nDim+1 ) = P0;
                     double meas_times = details::det( M, mpl::int_<nDim+1>() );
-                    FEEL_ASSERT( meas_times > 0 )( elt.id() )( elt.G() ).warn( "negative area" );
+                    FEELPP_ASSERT( meas_times > 0 )( elt.id() )( elt.G() ).warn( "negative area" );
 #else
-                    //FEEL_ASSERT( elt.isAnticlockwiseOriented() )( elt.id() )( elt.G() ).warn( "negative area" );
-                    //FEEL_ASSERT( ublas::norm_inf( elt.G()- it->G() ) < 1e-10 )( it->G() )( elt.G() ).warn( "global: not same element" );
-                    //FEEL_ASSERT( ublas::norm_inf( elt.G()- itl->G() ) < 1e-10 )( itl->G() )( elt.G() ).warn( "local: not same element" );
+                    //FEELPP_ASSERT( elt.isAnticlockwiseOriented() )( elt.id() )( elt.G() ).warn( "negative area" );
+                    //FEELPP_ASSERT( ublas::norm_inf( elt.G()- it->G() ) < 1e-10 )( it->G() )( elt.G() ).warn( "global: not same element" );
+                    //FEELPP_ASSERT( ublas::norm_inf( elt.G()- itl->G() ) < 1e-10 )( itl->G() )( elt.G() ).warn( "local: not same element" );
 #endif
                     //_M_el2el[it->id()].push_back( elt.id() );
                     _M_mesh->addElement ( elt );
@@ -428,7 +428,7 @@ OperatorLagrangeP1<space_type>::OperatorLagrangeP1( domain_space_ptrtype const& 
     for( size_type i = 0; i < this->domainSpace()->nLocalDof()/domain_space_type::nComponents; ++i )
         {
             //dofindices[i] = _M_mesh->point( i ).id();//boost::get<1>(this->domainSpace()->dof()->dofPoint( i ));
-            FEEL_ASSERT(ublas::norm_2( boost::get<0>(this->domainSpace()->dof()->dofPoint( i ))-
+            FEELPP_ASSERT(ublas::norm_2( boost::get<0>(this->domainSpace()->dof()->dofPoint( i ))-
                                        _M_mesh->point( i ).node()
                                        ) < 1e-10 )
                 (boost::get<0>(this->domainSpace()->dof()->dofPoint( i )))
@@ -444,7 +444,7 @@ OperatorLagrangeP1<space_type>::OperatorLagrangeP1( domain_space_ptrtype const& 
 
     for( size_type i = 0; i < this->domainSpace()->nLocalDof()/domain_space_type::nComponents; ++i )
         {
-            FEEL_ASSERT(ublas::norm_2( boost::get<0>(this->domainSpace()->dof()->dofPoint( i ))-
+            FEELPP_ASSERT(ublas::norm_2( boost::get<0>(this->domainSpace()->dof()->dofPoint( i ))-
                                        _M_mesh->point( i ).node()
                                        ) < 1e-10 )
                 (boost::get<0>(this->domainSpace()->dof()->dofPoint( i )))
@@ -460,7 +460,7 @@ OperatorLagrangeP1<space_type>::OperatorLagrangeP1( domain_space_ptrtype const& 
 
     for( size_type i = 0; i < this->domainSpace()->nLocalDof()/domain_space_type::nComponents; ++i )
         {
-            FEEL_ASSERT(ublas::norm_2( boost::get<0>(this->domainSpace()->dof()->dofPoint( i ))-
+            FEELPP_ASSERT(ublas::norm_2( boost::get<0>(this->domainSpace()->dof()->dofPoint( i ))-
                                        _M_mesh->point( i ).node()
                                        ) < 1e-10 )
                 (boost::get<0>(this->domainSpace()->dof()->dofPoint( i )))
@@ -470,12 +470,12 @@ OperatorLagrangeP1<space_type>::OperatorLagrangeP1( domain_space_ptrtype const& 
 #if 0
     for( size_type i = 0; i < this->domainSpace()->nLocalDof()/domain_space_type::nComponents; ++i )
         {
-            FEEL_ASSERT( boost::get<1>(this->domainSpace()->dof()->dofPoint( i )) ==
+            FEELPP_ASSERT( boost::get<1>(this->domainSpace()->dof()->dofPoint( i )) ==
                          boost::get<1>(this->dualImageSpace()->dof()->dofPoint( i )) )
                 (boost::get<0>(this->domainSpace()->dof()->dofPoint( i )))
                 (boost::get<0>(this->dualImageSpace()->dof()->dofPoint( i )))
                 (i).warn( "check inconsistent point id" );
-            FEEL_ASSERT( ublas::norm_2( boost::get<0>(this->domainSpace()->dof()->dofPoint( i ))-
+            FEELPP_ASSERT( ublas::norm_2( boost::get<0>(this->domainSpace()->dof()->dofPoint( i ))-
                                         boost::get<0>(this->dualImageSpace()->dof()->dofPoint( i ))
                                         ) < 1e-10 )
                 (boost::get<0>(this->domainSpace()->dof()->dofPoint( i )))
@@ -546,7 +546,7 @@ OperatorLagrangeP1<space_type>::localDof( typename domain_mesh_type::element_con
             uint16_type l = localptid - ( domain_mesh_type::element_type::numVertices * domain_fe_type::nDofPerVertex +
                                           edge_id * domain_fe_type::nDofPerEdge );
 
-            FEEL_ASSERT( l != invalid_uint16_type_value && ( l < domain_fe_type::nDofPerEdge ) )
+            FEELPP_ASSERT( l != invalid_uint16_type_value && ( l < domain_fe_type::nDofPerEdge ) )
                 ( l )
                 ( domain_fe_type::nDofPerEdge )
                 (localptid)
@@ -558,7 +558,7 @@ OperatorLagrangeP1<space_type>::localDof( typename domain_mesh_type::element_con
                               edge_id * domain_fe_type::nDofPerEdge +
                               domain_fe_type::nDofPerEdge - 1 - l );
 
-            FEEL_ASSERT( localptid_dof != invalid_uint16_type_value &&
+            FEELPP_ASSERT( localptid_dof != invalid_uint16_type_value &&
                          ( localptid_dof < domain_fe_type::nLocalDof ) )
                 ( l )
                 (localptid)

@@ -26,8 +26,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2006-05-22
  */
-#if !defined(FEEL_MATRIX_HPP)
-#define FEEL_MATRIX_HPP 1
+#if !defined(FEELPP_MATRIX_HPP)
+#define FEELPP_MATRIX_HPP 1
 
 #include <boost/numeric/ublas/vector.hpp>
 #include <boost/numeric/ublas/matrix_expression.hpp>
@@ -424,5 +424,5 @@ namespace boost { namespace numeric { namespace ublas {
     }
 }
 
-#endif /* FEEL_MATRIX_HPP */
+#endif /* FEELPP_MATRIX_HPP */
 

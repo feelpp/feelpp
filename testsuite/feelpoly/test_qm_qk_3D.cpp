@@ -120,7 +120,7 @@ void add_tests( test_suite* test )
 
   test->add( BOOST_TEST_CASE( ( QK_find_N_opt<P,double> ) ) );
 
-#if defined(FEEL_HAVE_QD_REAL)
+#if defined(FEELPP_HAVE_QD_REAL)
   test->add( BOOST_TEST_CASE( ( QK_find_N_opt<P,dd_real> ) ) );
   test->add( BOOST_TEST_CASE( ( QK_find_N_opt<P,qd_real> ) ) );
 #endif
@@ -136,7 +136,7 @@ void add_tests<40>( test_suite* test )
 
   test->add( BOOST_TEST_CASE( ( QK_find_N_opt<40,double> ) ) );
 
-#if defined(FEEL_HAVE_QD_REAL)
+#if defined(FEELPP_HAVE_QD_REAL)
   test->add( BOOST_TEST_CASE( ( QK_find_N_opt<40,dd_real> ) ) );
   test->add( BOOST_TEST_CASE( ( QK_find_N_opt<40,qd_real> ) ) );
 #endif
@@ -151,7 +151,7 @@ init_unit_test_suite( int /*argc*/, char** /*argv*/ )
     QK_log_3D << "This file attempt to save the errors encountered while numerically integrating $x^iy^iz^i$ on the cube !" << "\n\n";
 
     ost << "This file save the details of the execution of 'test_qm_qk_3D' !" << "\n\n";
-#if defined( FEEL_HAVE_QD_REAL)
+#if defined( FEELPP_HAVE_QD_REAL)
     unsigned int old_cw;
     fpu_fix_start(&old_cw);
 #endif

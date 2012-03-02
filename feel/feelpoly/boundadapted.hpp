@@ -372,7 +372,7 @@ private:
     vector_matrix_type
     static derivate( ublas::matrix_expression<AE> const& __pts, mpl::int_<1> )
     {
-        FEEL_ASSERT( __pts().size1() == 1 )( __pts().size1() )( __pts().size2() ).error("invalid points");
+        FEELPP_ASSERT( __pts().size1() == 1 )( __pts().size1() )( __pts().size2() ).error("invalid points");
 
         vector_matrix_type E( 1 );
         E[0].resize( nOrder+1, __pts().size2() );
@@ -618,7 +618,7 @@ BoundaryAdapted<Dim, Degree,  T, StoragePolicy>::evaluate( points_type const& __
 {
     matrix_type res( convex_type::polyDims( nOrder ), __pts.size2() );
 
-    FEEL_ASSERT( __pts.size1() == 3 )( __pts.size1() ).error( "invalid space dimension" );
+    FEELPP_ASSERT( __pts.size1() == 3 )( __pts.size1() ).error( "invalid space dimension" );
 
     details::etas<TETRAHEDRON, value_type> etas( __pts );
     vector_type eta1s = ublas::row( etas(), 0 );
@@ -815,7 +815,7 @@ BoundaryAdapted<Dim, Degree,  T, StoragePolicy>::derivate( ublas::matrix_express
     res[1].resize( convex_type::polyDims( nOrder ), __pts().size2() );
     res[2].resize( convex_type::polyDims( nOrder ), __pts().size2() );
 
-    FEEL_ASSERT( __pts().size1() == 3 )( __pts().size1() ).error( "invalid space dimension" );
+    FEELPP_ASSERT( __pts().size1() == 3 )( __pts().size1() ).error( "invalid space dimension" );
 
     details::etas<TETRAHEDRON, value_type> etas( __pts );
     vector_type eta1s = ublas::row( etas(), 0 );
@@ -1187,7 +1187,7 @@ BoundaryAdapted<Dim, Degree,  T, StoragePolicy>::derivate( ublas::matrix_express
 
     /** Adding Jacobian contribution **/
 
-#if defined (FEEL_HAVE_QD_REAL)
+#if defined (FEELPP_HAVE_QD_REAL)
 
     /* Warning : if qd are enable we can not use
      * the ublas::diagonal_matrix type

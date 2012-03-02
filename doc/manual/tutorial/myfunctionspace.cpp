@@ -127,9 +127,9 @@ public:
     {
     }
 
-    FEEL_DONT_INLINE void run();
+    FEELPP_DONT_INLINE void run();
 
-    FEEL_DONT_INLINE void run( const double* X, unsigned long P, double* Y, unsigned long N );
+    FEELPP_DONT_INLINE void run( const double* X, unsigned long P, double* Y, unsigned long N );
 
 private:
 

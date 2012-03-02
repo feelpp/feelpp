@@ -105,7 +105,7 @@ extern "C"
     Feel::SolverNonLinearPetsc<double>* solver =
       static_cast<Feel::SolverNonLinearPetsc<double>*> (ctx);
 
-#if !defined(FEEL_ENABLE_MPI_MODE)
+#if !defined(FEELPP_ENABLE_MPI_MODE)
     boost::shared_ptr<Feel::Vector<double> > R( new Feel::VectorPetsc<double>(r));
     boost::shared_ptr<Feel::MatrixSparse<double> >  PC;
     boost::shared_ptr<Feel::Vector<double> > X_global( new Feel::VectorPetsc<double>(x));
@@ -148,7 +148,7 @@ extern "C"
     Feel::SolverNonLinearPetsc<double>* solver =
       static_cast<Feel::SolverNonLinearPetsc<double>*> (ctx);
 
-#if !defined(FEEL_ENABLE_MPI_MODE)
+#if !defined(FEELPP_ENABLE_MPI_MODE)
     boost::shared_ptr<Feel::Vector<double> > R;
     boost::shared_ptr<Feel::MatrixSparse<double> >  PC(new Feel::MatrixPetsc<double>(*pc) );
     boost::shared_ptr<Feel::MatrixSparse<double> >  Jac(new Feel::MatrixPetsc<double>(*jac) );
@@ -443,7 +443,7 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
     ierr = SNESSetMonitor (M_snes, __feel_petsc_snes_monitor, this, PETSC_NULL);
 #endif
     CHKERRABORT(PETSC_COMM_WORLD,ierr);
-#if !defined(FEEL_ENABLE_MPI_MODE)
+#if !defined(FEELPP_ENABLE_MPI_MODE)
     MatrixPetsc<T>* jac = dynamic_cast<MatrixPetsc<T>*>( jac_in.get() );
     VectorPetsc<T>* x   = dynamic_cast<VectorPetsc<T>*>( x_in.get() );
     VectorPetsc<T>* r   = dynamic_cast<VectorPetsc<T>*>( r_in.get() );

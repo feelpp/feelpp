@@ -157,10 +157,10 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
     _M_eval_expr11( new eval11_expr_type( expr, _gmcExpr, _M_test_fec1, _M_trial_fec1 ) ),
     M_integrator( im )
 {
-    FEEL_ASSERT( fusion::at_key<gmc<0> >( _M_test_fec0 ).get() != 0 ).error( "invalid test_fec");
-    FEEL_ASSERT( fusion::at_key<test_gmc1 >( _M_test_fec1 ).get() != 0 ).error( "invalid test_fec");
-    FEEL_ASSERT( fusion::at_key<gmc<0> >( _M_trial_fec0 ).get() != 0 ).error( "invalid trial_fec");
-    FEEL_ASSERT( fusion::at_key<trial_gmc1 >( _M_trial_fec1 ).get() != 0 ).error( "invalid trial_fec");
+    FEELPP_ASSERT( fusion::at_key<gmc<0> >( _M_test_fec0 ).get() != 0 ).error( "invalid test_fec");
+    FEELPP_ASSERT( fusion::at_key<test_gmc1 >( _M_test_fec1 ).get() != 0 ).error( "invalid test_fec");
+    FEELPP_ASSERT( fusion::at_key<gmc<0> >( _M_trial_fec0 ).get() != 0 ).error( "invalid trial_fec");
+    FEELPP_ASSERT( fusion::at_key<trial_gmc1 >( _M_trial_fec1 ).get() != 0 ).error( "invalid trial_fec");
 
     _M_eval_expr00->init( im2 );
     _M_eval_expr01->init( im2 );
@@ -219,13 +219,13 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
     _M_trial_fec0 = fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( _M_trial_fec ) );
     _M_trial_fec1 = fusion::make_map<trial_gmc1 >( fusion::at_key<trial_gmc1 >( _M_trial_fec ) );
 
-    FEEL_ASSERT( fusion::at_key<gmc<0> >( _M_test_fec0 ).get() != 0 )
+    FEELPP_ASSERT( fusion::at_key<gmc<0> >( _M_test_fec0 ).get() != 0 )
         ( 0 ).error( "invalid test_fec0" );
-    FEEL_ASSERT( fusion::at_key<gmc<1> >( _M_test_fec1 ).get() != 0 )
+    FEELPP_ASSERT( fusion::at_key<gmc<1> >( _M_test_fec1 ).get() != 0 )
         ( 1 ).error( "invalid test_fec1" );
-    FEEL_ASSERT( fusion::at_key<gmc<0> >( _M_trial_fec0 ).get() != 0 )
+    FEELPP_ASSERT( fusion::at_key<gmc<0> >( _M_trial_fec0 ).get() != 0 )
         ( 0 ).error( "invalid trial_fec0" );
-    FEEL_ASSERT( fusion::at_key<gmc<1> >( _M_trial_fec1 ).get() != 0 )
+    FEELPP_ASSERT( fusion::at_key<gmc<1> >( _M_trial_fec1 ).get() != 0 )
         ( 0 ).error( "invalid trial_fec1" );
 
     _M_eval_expr00->update( _gmcExpr, _M_test_fec0, _M_trial_fec0 );

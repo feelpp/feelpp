@@ -91,7 +91,7 @@ template<int Dim>struct ExactSolution{};
 template<>
 struct ExactSolution<1>
 {
-#if FEEL_GNUC_AT_LEAST(4,6)
+#if FEELPP_GNUC_AT_LEAST(4,6)
     static constexpr double pi = M_PI;
 #else
     static const double pi = M_PI;
@@ -103,7 +103,7 @@ struct ExactSolution<1>
 template<>
 struct ExactSolution<2>
 {
-#if FEEL_GNUC_AT_LEAST(4,6)
+#if FEELPP_GNUC_AT_LEAST(4,6)
     static constexpr double pi = M_PI;
 #else
     static const double pi = M_PI;
@@ -115,7 +115,7 @@ struct ExactSolution<2>
 template<>
 struct ExactSolution<3>
 {
-#if FEEL_GNUC_AT_LEAST(4,6)
+#if FEELPP_GNUC_AT_LEAST(4,6)
     static constexpr double pi = M_PI;
 #else
     static const double pi = M_PI;

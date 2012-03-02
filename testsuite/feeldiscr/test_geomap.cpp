@@ -69,7 +69,7 @@ public:
         :
         M_mesh()
     {}
-    void test( double hsize, std::string version  = FEEL_GMSH_FORMAT_VERSION )
+    void test( double hsize, std::string version  = FEELPP_GMSH_FORMAT_VERSION )
     {
         M_mesh = mesh_ptr_type( new mesh_type );
         Debug() << "testing Interp with file format version " << version << "\n";
@@ -124,7 +124,7 @@ public:
                         std::cout << "gic xref " << q << " = " << gic.xRef() << "\n";
                         std::cout << "is in gic? = " << gic.geometricMapping()->isIn( gic.xRef() ) << "\n";
                     }
-                FEEL_ASSERT( gic.isIn() )
+                FEELPP_ASSERT( gic.isIn() )
                     ( refelem.points() )( gmc.xReal() )
                     ( el_it->id() ).error( "invalid geometric transformation inversion" );
             }
@@ -142,8 +142,8 @@ main( int argc, char** argv )
 
     if ( argc == 2 )
         {
-            test_interp.test( std::atof( argv[1] ), FEEL_GMSH_FORMAT_VERSION );
+            test_interp.test( std::atof( argv[1] ), FEELPP_GMSH_FORMAT_VERSION );
         }
     else
-        test_interp.test( 2.0, FEEL_GMSH_FORMAT_VERSION );
+        test_interp.test( 2.0, FEELPP_GMSH_FORMAT_VERSION );
 }

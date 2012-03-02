@@ -312,7 +312,7 @@ private:
     vector_matrix_type
     derivate( ublas::matrix_expression<AE> const& __pts, mpl::int_<1> ) const
     {
-        FEEL_ASSERT( __pts().size1() == 1 )( __pts().size1() )( __pts().size2() ).error("invalid points");
+        FEELPP_ASSERT( __pts().size1() == 1 )( __pts().size1() )( __pts().size2() ).error("invalid points");
 
         vector_matrix_type D( 1 );
         D[0].resize( nOrder+1, __pts().size2() );

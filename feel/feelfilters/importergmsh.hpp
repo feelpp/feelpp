@@ -119,13 +119,13 @@ public:
     ImporterGmsh(WorldComm const& _worldcomm = WorldComm())
         :
         super( GMSH, _worldcomm ),
-        _M_version( FEEL_GMSH_FORMAT_VERSION ),
+        _M_version( FEELPP_GMSH_FORMAT_VERSION ),
         M_use_elementary_region_as_physical_region( false )
         {
             //showMe();
         }
 
-    explicit ImporterGmsh( std::string const& _fname, std::string _version = FEEL_GMSH_FORMAT_VERSION,
+    explicit ImporterGmsh( std::string const& _fname, std::string _version = FEELPP_GMSH_FORMAT_VERSION,
                            WorldComm const& _worldcomm = WorldComm() )
         :
         super( _fname, GMSH, _worldcomm ),
@@ -273,7 +273,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
          this->version() != "2.0" &&
          this->version() != "2.1" &&
          this->version() != "2.2" &&
-         this->version() != FEEL_GMSH_FORMAT_VERSION )
+         this->version() != FEELPP_GMSH_FORMAT_VERSION )
         throw std::logic_error( "invalid gmsh file format version" );
 
     Debug( 8011 ) << "[ImporterGmsh<" << typeid( *mesh ).name() << ">::visit()] starts\n";
@@ -296,16 +296,16 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
     if ( ( (this->version() == "2.0") ||
            (this->version() == "2.1") ||
            (this->version() == "2.2") ||
-           (this->version() == FEEL_GMSH_FORMAT_VERSION ) )  &&
+           (this->version() == FEELPP_GMSH_FORMAT_VERSION ) )  &&
          std::string( __buf ) == "$MeshFormat" )
     {
 
         // version file-type(0=ASCII,1=BINARY) data-size(sizeof(double))
         __is >> theversion >> __buf >> __buf;
-        FEEL_ASSERT( boost::lexical_cast<double>( theversion ) >= 2 )( theversion )( this->version() ).warn( "invalid gmsh file format version ");
+        FEELPP_ASSERT( boost::lexical_cast<double>( theversion ) >= 2 )( theversion )( this->version() ).warn( "invalid gmsh file format version ");
         // should be $EndMeshFormat
         __is >> __buf;
-        FEEL_ASSERT( std::string( __buf ) == "$EndMeshFormat" )
+        FEELPP_ASSERT( std::string( __buf ) == "$EndMeshFormat" )
             ( __buf )
             ( "$EndMeshFormat").error ( "invalid file format entry" );
         __is >> __buf;
@@ -330,9 +330,9 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
 
                 mesh->addMarkerName( std::make_pair( name, boost::make_tuple( id, topodim ) ) );
             }
-            FEEL_ASSERT( mesh->markerNames().size() == nnames )( mesh->markerNames().size() )( nnames ).error( "invalid number of physical names" );
+            FEELPP_ASSERT( mesh->markerNames().size() == nnames )( mesh->markerNames().size() )( nnames ).error( "invalid number of physical names" );
             __is >> __buf;
-            FEEL_ASSERT( std::string( __buf ) == "$EndPhysicalNames" )
+            FEELPP_ASSERT( std::string( __buf ) == "$EndPhysicalNames" )
                 ( __buf )
                 ( "$EndPhysicalNames").error ( "invalid file format entry" );
             __is >> __buf;
@@ -343,7 +343,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
     // Read NODES
     //
     Debug( 8011 ) << "buf: "<< __buf << "\n";
-    FEEL_ASSERT( std::string( __buf ) == "$NOD" ||
+    FEELPP_ASSERT( std::string( __buf ) == "$NOD" ||
                  std::string( __buf ) == "$Nodes" ||
                  std::string( __buf ) == "$ParametricNodes" )
         ( __buf )
@@ -392,7 +392,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
     __is >> __buf;
     Debug( 8011 ) << "buf: "<< __buf << "\n";
     // make sure that we have read all the points
-    FEEL_ASSERT( std::string( __buf ) == "$ENDNOD" ||
+    FEELPP_ASSERT( std::string( __buf ) == "$ENDNOD" ||
                  std::string( __buf ) == "$EndNodes" ||
                  std::string( __buf ) == "$EndParametricNodes"
         )
@@ -405,7 +405,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
     //
     __is >> __buf;
     Debug( 8011 ) << "buf: "<< __buf << "\n";
-    FEEL_ASSERT( std::string( __buf ) == "$ELM" ||
+    FEELPP_ASSERT( std::string( __buf ) == "$ELM" ||
                  std::string( __buf ) == "$Elements" )
         ( __buf )
         ( "$ELM" )( "$Elements" )
@@ -473,7 +473,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
                  >> __physical_region // reg-phys
                  >> __elementary_region // reg-elem
                  >> __np; // number-of-nodes
-            FEEL_ASSERT( __np == nptable[__t] )( __np )( __t )( nptable[__t] ).error( "invalid number of nodes" );
+            FEELPP_ASSERT( __np == nptable[__t] )( __np )( __t )( nptable[__t] ).error( "invalid number of nodes" );
         }
         else if ( boost::lexical_cast<double>( this->version()) >= 2  )
         {
@@ -537,7 +537,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
     // make sure that we have read everything
     __is >> __buf;
     Debug( 8011 ) << "buf: "<< __buf << "\n";
-    FEEL_ASSERT( std::string( __buf ) == "$ENDELM" ||
+    FEELPP_ASSERT( std::string( __buf ) == "$ENDELM" ||
                  std::string( __buf ) == "$EndElements" )
         ( __buf )
         ( "$ENDELM" )( "$EndElements" ).error("invalid end elements string in gmsh importer");

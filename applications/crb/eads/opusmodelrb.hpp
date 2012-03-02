@@ -73,7 +73,7 @@ public:
      */
     //@{
     static const uint16_type Dim = 2;
-#if FEEL_GNUC_AT_LEAST(4,6)
+#if FEELPP_GNUC_AT_LEAST(4,6)
     static constexpr double kmin = 0.2;
     static constexpr double kmax = 150.;
 
@@ -521,7 +521,7 @@ private:
     bool M_is_steady;
 };
 
-#if !FEEL_GNUC_AT_LEAST(4,6)
+#if !FEELPP_GNUC_AT_LEAST(4,6)
 template<int OrderU, int OrderP, int OrderT>
 const double
 OpusModelRB<OrderU,OrderP,OrderT>::kmin;

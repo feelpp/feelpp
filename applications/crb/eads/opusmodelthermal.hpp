@@ -175,24 +175,24 @@ OpusModelThermal<SpaceType>::OpusModelThermal( po::variables_map const& _vm,
     M_Xh( Xh )
 {
     Log() << "[OpusModelThermal] constructor start\n";
-    FEEL_ASSERT( M_backend != 0 ).error( "[OpusModelThermal] invalid backend" );
-    FEEL_ASSERT( M_Xh != 0 ).error( "[OpusModelThermal] invalid functionspace_ptrtype" );
+    FEELPP_ASSERT( M_backend != 0 ).error( "[OpusModelThermal] invalid backend" );
+    FEELPP_ASSERT( M_Xh != 0 ).error( "[OpusModelThermal] invalid functionspace_ptrtype" );
 
 
     M_D = M_backend->newMatrix( M_Xh, M_Xh );
-    FEEL_ASSERT( M_D != 0 ).error( "invalid CDR matrix");
+    FEELPP_ASSERT( M_D != 0 ).error( "invalid CDR matrix");
     Log() << "[OpusModelThermal] D allocated\n";
 
     M_Dt = M_backend->newMatrix( M_Xh, M_Xh );
-    FEEL_ASSERT( M_D != 0 ).error( "invalid CDR matrix");
+    FEELPP_ASSERT( M_D != 0 ).error( "invalid CDR matrix");
     Log() << "[OpusModelThermal] Dt allocated\n";
 
     M_M = M_backend->newMatrix( M_Xh, M_Xh );
-    FEEL_ASSERT( M_M != 0 ).error( "invalid mass matrix");
+    FEELPP_ASSERT( M_M != 0 ).error( "invalid mass matrix");
     Log() << "[OpusModelThermal] M allocated\n";
 
     M_F = M_backend->newVector( M_Xh );
-    FEEL_ASSERT( M_F != 0 ).error( "invalid vector");
+    FEELPP_ASSERT( M_F != 0 ).error( "invalid vector");
     Log() << "[OpusModelThermal] F allocated\n";
     sparse_matrix_ptrtype M( M_backend->newMatrix( M_Xh, M_Xh ) );
 

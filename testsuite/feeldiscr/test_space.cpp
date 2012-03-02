@@ -146,7 +146,7 @@ public:
         auto U = Xh->element( "U" );
 
 #if !defined( USE_BOOST_TEST )
-#define BOOST_CHECK( e ) FEEL_ASSERT( e ).warn( "BOOST_CHECK assertion failed" );
+#define BOOST_CHECK( e ) FEELPP_ASSERT( e ).warn( "BOOST_CHECK assertion failed" );
 #endif
 
         BOOST_CHECK( Xh->nDof() == ( Xh->template functionSpace<0>()->nDof() +
@@ -193,18 +193,18 @@ public:
         BOOST_CHECK( U.template element<2>().start() == (U.template functionSpace<0>()->nDof() + U.template functionSpace<1>()->nDof()) &&
                      U.template element<2>().size() == U.template functionSpace<2>()->nDof() );
 #else
-        FEEL_ASSERT( U.template element<0>().start() == 0 &&
+        FEELPP_ASSERT( U.template element<0>().start() == 0 &&
                      U.template element<0>().size() == U.template functionSpace<0>()->nDof() )
             ( U.template element<0>().start() )
             ( U.template element<0>().size() )
             ( U.template functionSpace<0>()->nDof() ).warn( "invalid size" );
-        FEEL_ASSERT( U.template element<1>().start() == U.template functionSpace<0>()->nDof() &&
+        FEELPP_ASSERT( U.template element<1>().start() == U.template functionSpace<0>()->nDof() &&
                      U.template element<1>().size() == U.template functionSpace<1>()->nDof() )
             ( U.template element<1>().start() )
             ( U.template functionSpace<0>()->nDof() )
             ( U.template element<1>().size() )
             ( U.template functionSpace<1>()->nDof() ).warn( "invalid size 2");
-        FEEL_ASSERT( U.template element<2>().start() == (U.template functionSpace<0>()->nDof() + U.template functionSpace<1>()->nDof()) &&
+        FEELPP_ASSERT( U.template element<2>().start() == (U.template functionSpace<0>()->nDof() + U.template functionSpace<1>()->nDof()) &&
                      U.template element<2>().size() == U.template functionSpace<2>()->nDof() )
             ( U.template element<2>().start() )
             ( U.template functionSpace<0>()->nDof() + U.template functionSpace<1>()->nDof() )
@@ -262,8 +262,8 @@ public:
         typename space_type::element_type U( Xh, "U" );
 
 #if !defined( USE_BOOST_TEST )
-#define BOOST_CHECK( e ) FEEL_ASSERT( e ).warn( "BOOST_CHECK assertion failed" );
-#define BOOST_CHECK_EQUAL( a, b ) FEEL_ASSERT( a==b )(a)(b).warn( "BOOST_CHECK assertion failed" );
+#define BOOST_CHECK( e ) FEELPP_ASSERT( e ).warn( "BOOST_CHECK assertion failed" );
+#define BOOST_CHECK_EQUAL( a, b ) FEELPP_ASSERT( a==b )(a)(b).warn( "BOOST_CHECK assertion failed" );
 #endif
         BOOST_CHECK( Xh->is_scalar == false );
         BOOST_CHECK( Xh->is_vectorial == true );

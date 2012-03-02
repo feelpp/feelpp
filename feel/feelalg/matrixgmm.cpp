@@ -139,7 +139,7 @@ template<typename T, typename LayoutType>
 void
 MatrixGmm<T, LayoutType>::transpose( MatrixSparse<value_type>& Mt ) const
 {
-    FEEL_ASSERT( 0 ).warn( "not implemented yet" );
+    FEELPP_ASSERT( 0 ).warn( "not implemented yet" );
 }
 
 
@@ -169,8 +169,8 @@ void
 MatrixGmm<T, LayoutType>::addMatrix(value_type v, MatrixSparse<value_type>& _m )
 {
     MatrixGmm<value_type, LayoutType>* m = dynamic_cast<MatrixGmm<value_type,LayoutType>*>(&_m);
-    FEEL_ASSERT( m != 0 ).error( "invalid sparse matrix type, should be MatrixGmm" );
-    FEEL_ASSERT( m->closed() ).error( "invalid sparse matrix type, should be closed" );
+    FEELPP_ASSERT( m != 0 ).error( "invalid sparse matrix type, should be MatrixGmm" );
+    FEELPP_ASSERT( m->closed() ).error( "invalid sparse matrix type, should be closed" );
     if ( !m )
         throw std::invalid_argument("m");
     if ( !this->closed() )
@@ -206,7 +206,7 @@ MatrixGmm<T, LayoutType>::printMatlab(const std::string filename ) const
 
     std::ofstream file_out( name.c_str() );
 
-    FEEL_ASSERT( file_out)( filename ).error("[Feel::spy] ERROR: File cannot be opened for writing.");
+    FEELPP_ASSERT( file_out)( filename ).error("[Feel::spy] ERROR: File cannot be opened for writing.");
 
     file_out << "S = [ ";
     file_out.precision( 16 );

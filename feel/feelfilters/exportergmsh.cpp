@@ -434,12 +434,12 @@ ExporterGmsh<MeshType,N>::gmshSaveElements( std::ostream& out, mesh_ptrtype mesh
         out << ordering_face.type();
         // number-of-tags < tag >
 
-        if (FEEL_GMSH_FORMAT_VERSION==std::string("2.1"))
+        if (FEELPP_GMSH_FORMAT_VERSION==std::string("2.1"))
             {
                 // out<<" 2 " << face_it->marker().value() << " " << face_it->marker2().value();
                 out<<" 3 " << face_it->marker().value() << " " << face_it->marker2().value() << " " << face_it->processId()+1;
             }
-        else if (FEEL_GMSH_FORMAT_VERSION==std::string("2.2"))
+        else if (FEELPP_GMSH_FORMAT_VERSION==std::string("2.2"))
             {
                 uint16_type nbTag = 3 + face_it->numberOfPartitions();
                 out << " " << nbTag
@@ -465,12 +465,12 @@ ExporterGmsh<MeshType,N>::gmshSaveElements( std::ostream& out, mesh_ptrtype mesh
         out << elem_number++ <<" ";
         out << ordering.type();
 
-        if (FEEL_GMSH_FORMAT_VERSION==std::string("2.1") )
+        if (FEELPP_GMSH_FORMAT_VERSION==std::string("2.1") )
             {
                 //out<<" 2 " << elt_it->marker().value() << " " << elt_it->marker2().value();
                 out<<" 3 " << elt_it->marker().value() << " " << elt_it->marker2().value() << " " << elt_it->processId()+1;
             }
-        else if (FEEL_GMSH_FORMAT_VERSION== std::string("2.2") )
+        else if (FEELPP_GMSH_FORMAT_VERSION== std::string("2.2") )
             {
                 uint16_type nbTag = 3 + elt_it->numberOfPartitions();
                 out << " " << nbTag
@@ -719,7 +719,7 @@ ExporterGmsh<MeshType,N>::gmshSaveElementNodeData( std::ostream& out,
 }
 
 #if 0
-#if defined( FEEL_INSTANTIATION_MODE )
+#if defined( FEELPP_INSTANTIATION_MODE )
 
 
 //
@@ -736,7 +736,7 @@ ExporterGmsh<MeshType,N>::gmshSaveElementNodeData( std::ostream& out,
 
 BOOST_PP_LIST_FOR_EACH_PRODUCT(FACTORY_OP, 3, (DIMS, ORDERS, ORDERS_FUN_GMSH))
 
-#endif // FEEL_INSTANTIATION_MODE
+#endif // FEELPP_INSTANTIATION_MODE
 #endif
 }
 #endif // __EXPORTERGMSH_CPP

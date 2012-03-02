@@ -56,7 +56,7 @@ BOOST_AUTO_TEST_CASE( test_context )
 #if 0
     detail::Flags<on_context_type> oct;
 
-    //FEEL_DECLARE_FLAGS( onct, on_context_type );
+    //FEELPP_DECLARE_FLAGS( onct, on_context_type );
 
 
     onct |= (ON_ELIMINATION|ON_ELIMINATION_SYMMETRIC);

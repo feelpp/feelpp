@@ -95,7 +95,7 @@ test_suite*
 init_unit_test_suite( int /*argc*/, char** /*argv[]*/ )
 {
   test_suite* test = BOOST_TEST_SUITE( "Spectral Accuracy (BA) test using Feel Language" );
-#if defined( FEEL_HAVE_QD_REAL)
+#if defined( FEELPP_HAVE_QD_REAL)
   unsigned int old_cw;
   fpu_fix_start(&old_cw);
 #endif
@@ -443,7 +443,7 @@ class Poisson
             cout << "Error Analysis ...\n";
 
             size_type s = U.lastLocalIndex() - U.firstLocalIndex();
-            FEEL_ASSERT( s != invalid_size_type_value ).error( "invalid size" );
+            FEELPP_ASSERT( s != invalid_size_type_value ).error( "invalid size" );
 
             sol_proj.resize( Xh->dof()->nDof() );
             sol_ap.resize( Xh->dof()->nDof() );

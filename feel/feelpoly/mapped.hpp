@@ -240,7 +240,7 @@ private:
 
     permutation_vector_type matrixToVectorPermutation ( permutation_matrix_type const& P )
     {
-        FEEL_ASSERT(P.size1() == P.size2()).error("invalid permutation");
+        FEELPP_ASSERT(P.size1() == P.size2()).error("invalid permutation");
 
         permutation_vector_type v ( P.size1() );
 

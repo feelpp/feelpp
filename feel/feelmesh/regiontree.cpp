@@ -89,7 +89,7 @@ struct leaf
 };
 
 /* enlarge box to hold [a..b] */
-FEEL_NO_EXPORT
+FEELPP_NO_EXPORT
 void
 updateBox( node_type& bmin, node_type& bmax,
            const node_type& a, const node_type& b )
@@ -103,7 +103,7 @@ updateBox( node_type& bmin, node_type& bmax,
     }
 }
 
-FEEL_NO_EXPORT
+FEELPP_NO_EXPORT
 bool
 r1_ge_r2(const node_type& min1, const node_type& max1,
          const node_type& min2, const node_type& max2)
@@ -116,7 +116,7 @@ r1_ge_r2(const node_type& min1, const node_type& max1,
     return true;
 }
 
-FEEL_NO_EXPORT
+FEELPP_NO_EXPORT
 bool
 r1_inter_r2(const node_type& min1, const node_type& max1,
             const node_type& min2, const node_type& max2)
@@ -130,7 +130,7 @@ r1_inter_r2(const node_type& min1, const node_type& max1,
 }
 
 /* some predicates for searches */
-struct FEEL_NO_EXPORT intersection_p
+struct FEELPP_NO_EXPORT intersection_p
 {
     intersection_p(const node_type& min_, const node_type& max_)
         :
@@ -147,7 +147,7 @@ struct FEEL_NO_EXPORT intersection_p
 };
 
 /* match boxes containing [min..max] */
-struct FEEL_NO_EXPORT contains_p
+struct FEELPP_NO_EXPORT contains_p
 {
     contains_p(const node_type& min_, const node_type& max_)
         :
@@ -164,7 +164,7 @@ struct FEEL_NO_EXPORT contains_p
 };
 
 /* match boxes contained in [min..max] */
-struct FEEL_NO_EXPORT contained_p
+struct FEELPP_NO_EXPORT contained_p
 {
     contained_p(const node_type& min_, const node_type& max_)
         :
@@ -173,7 +173,7 @@ struct FEEL_NO_EXPORT contained_p
         {}
     bool operator()(const node_type& min2, const node_type& max2)
         {
-            FEEL_ASSERT( min.size() == min2.size() &&
+            FEELPP_ASSERT( min.size() == min2.size() &&
                          min.size() == max2.size() &&
                          max.size() == min2.size() &&
                          max.size() == max2.size() )
@@ -186,13 +186,13 @@ struct FEEL_NO_EXPORT contained_p
     const node_type min,max;
 };
 
-struct FEEL_NO_EXPORT has_point_p
+struct FEELPP_NO_EXPORT has_point_p
 {
     has_point_p(const node_type& P_) : P(P_) {}
 
     bool operator()(const node_type& min2, const node_type& max2)
         {
-            FEEL_ASSERT( P.size() == min2.size() &&
+            FEELPP_ASSERT( P.size() == min2.size() &&
                          P.size() == max2.size() )
                 ( P.size() )( min2.size() )( max2.size() ).error( "invalid point size" );
             for (size_type i=0; i < P.size(); ++i)
@@ -208,7 +208,7 @@ struct FEEL_NO_EXPORT has_point_p
 
 
 template <typename Predicate>
-FEEL_NO_EXPORT void findMatchingBoxes( RegionTree::element_base *n,
+FEELPP_NO_EXPORT void findMatchingBoxes( RegionTree::element_base *n,
                                         RegionTree::pbox_set_type& boxlst,
                                         Predicate p )
 {
@@ -359,7 +359,7 @@ RegionTree::toIdVector(pbox_set_type const& bs, std::vector<size_type>& idvec)
   try to split at the approximate center of the box. Could be much more
   sophisticated
 */
-FEEL_NO_EXPORT
+FEELPP_NO_EXPORT
 bool
 splitTest( const RegionTree::pbox_container_type& b,
            const node_type& bmin,
@@ -406,7 +406,7 @@ splitTest( const RegionTree::pbox_container_type& b,
   where splitting does not occurs at predefined positions (hence the split_test
   function above). Regions of the tree do not overlap (box are splitted).
 */
-FEEL_NO_EXPORT
+FEELPP_NO_EXPORT
 RegionTree::element_base*
 build( RegionTree::pbox_container_type& b,
        const node_type& bmin,
@@ -462,9 +462,9 @@ build( RegionTree::pbox_container_type& b,
 
         Debug( 4010 ) << "  -> left : " << cnt1 << " boxes, right : " << cnt2 << " boxes\n";
 
-        FEEL_ASSERT( cnt1 )( cnt1 ).error( "counter 1 is 0" );
-        FEEL_ASSERT( cnt2 )( cnt2 ).error( "counter 2 is 0" );
-        FEEL_ASSERT( cnt1+cnt2 >= b.size() )( cnt1 )( cnt2 )( cnt1+cnt2 )( b.size() ).error( "counter sum should be greater or equal to the number of boxes" );
+        FEELPP_ASSERT( cnt1 )( cnt1 ).error( "counter 1 is 0" );
+        FEELPP_ASSERT( cnt2 )( cnt2 ).error( "counter 2 is 0" );
+        FEELPP_ASSERT( cnt1+cnt2 >= b.size() )( cnt1 )( cnt2 )( cnt1+cnt2 )( b.size() ).error( "counter sum should be greater or equal to the number of boxes" );
 
         RegionTree::pbox_container_type v1(cnt1);
         RegionTree::pbox_container_type v2(cnt2);
@@ -499,8 +499,8 @@ build( RegionTree::pbox_container_type& b,
         }
         bmax1[split_dir] = std::min(bmax1[split_dir], split_v);
         bmin2[split_dir] = std::max(bmin2[split_dir], split_v);
-        FEEL_ASSERT(cnt1 == v1.size())( cnt1 )( v1.size() ).error( "sizes should be equal" );;
-        FEEL_ASSERT(cnt2 == v2.size())( cnt2 )( v2.size() ).error( "sizes should be equal" );;
+        FEELPP_ASSERT(cnt1 == v1.size())( cnt1 )( v1.size() ).error( "sizes should be equal" );;
+        FEELPP_ASSERT(cnt2 == v2.size())( cnt2 )( v2.size() ).error( "sizes should be equal" );;
         return new tree_node(bmin,bmax,
                              build(v1, bmin1, bmax1, split_dir),
                              build(v2, bmin2, bmax2, split_dir));
@@ -520,7 +520,7 @@ RegionTree::build()
     if ( _M_boxes.size() == 0 )
         return;
 
-    FEEL_ASSERT( _M_root == 0 ).error( "the tree has already been built" );
+    FEELPP_ASSERT( _M_root == 0 ).error( "the tree has already been built" );
 
     pbox_container_type b( _M_boxes.size() );
     pbox_container_type::iterator b_it = b.begin();
@@ -547,7 +547,7 @@ RegionTree::build()
 }
 
 
-FEEL_NO_EXPORT
+FEELPP_NO_EXPORT
 void
 dump( RegionTree::element_base *p, int level, size_type& count)
 {
@@ -602,7 +602,7 @@ RegionTree::dump()
 }
 
 
-FEEL_NO_EXPORT
+FEELPP_NO_EXPORT
 void
 destroy( RegionTree::element_base *n)
 {

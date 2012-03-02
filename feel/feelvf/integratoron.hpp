@@ -44,7 +44,7 @@ template<typename T>
 struct access_value
 {
 };
-#if defined( FEEL_HAVE_QD_REAL )
+#if defined( FEELPP_HAVE_QD_REAL )
 template<>
 struct access_value<dd_real>
 {
@@ -65,7 +65,7 @@ struct access_value<qd_real>
     qd_real operator()() const { return v; }
     qd_real v;
 };
-#endif /*FEEL_HAVE_QD_REAL*/
+#endif /*FEELPP_HAVE_QD_REAL*/
 
 #if defined(HAVE_MPFR)
 template<>
@@ -328,7 +328,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
             {
                 __geopc[__f][__p] = geopc_ptrtype(  new geopc_type( __gm, __fe->points( __f ) ) );
                 //Debug(5066) << "[geopc] FACE_ID = " << __f << " ref pts=" << __fe->dual().points( __f ) << "\n";
-                FEEL_ASSERT( __geopc[__f][__p]->nPoints() ).error( "invalid number of points" );
+                FEELPP_ASSERT( __geopc[__f][__p]->nPoints() ).error( "invalid number of points" );
             }
         }
 
@@ -361,7 +361,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
           __face_it != this->endElement();
           ++__face_it )
         {
-            FEEL_ASSERT( __face_it->isOnBoundary() && !__face_it->isConnectedTo1() )
+            FEELPP_ASSERT( __face_it->isOnBoundary() && !__face_it->isConnectedTo1() )
                 ( __face_it->marker() )
                 ( __face_it->isOnBoundary() )
                 ( __face_it->ad_first() )
@@ -416,7 +416,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
                                         // this can be quite expensive depending on the
                                         // matrix storage format.
                                         //__form.diagonalize( thedof, range_dof, _M_rhs, __value, thedof_nproc );
-#if !defined(FEEL_ENABLE_MPI_MODE)
+#if !defined(FEELPP_ENABLE_MPI_MODE)
                                         dofs.push_back( thedof );
                                         values.push_back( __value );
 #else

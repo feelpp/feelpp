@@ -216,8 +216,8 @@ public:
 
     value_type operator() (const size_type i) const
     {
-        FEEL_ASSERT (this->isInitialized()).error( "vector not initialized" );
-        FEEL_ASSERT ( ((i >= this->firstLocalIndex()) &&
+        FEELPP_ASSERT (this->isInitialized()).error( "vector not initialized" );
+        FEELPP_ASSERT ( ((i >= this->firstLocalIndex()) &&
                        (i <  this->lastLocalIndex())) )( i )( this->firstLocalIndex() )( this->lastLocalIndex() ).error( "invalid vector index" );
 
         int ierr=0;
@@ -242,7 +242,7 @@ public:
      */
     Vector<T> & operator += (const Vector<value_type> &V)
     {
-        FEEL_ASSERT(this->closed()).error( "vector is not closed" );
+        FEELPP_ASSERT(this->closed()).error( "vector is not closed" );
 
         this->add(1., V);
 
@@ -255,7 +255,7 @@ public:
      */
     Vector<T> & operator -= (const Vector<value_type> &V)
     {
-        FEEL_ASSERT(this->closed()).error( "vector is not closed" );
+        FEELPP_ASSERT(this->closed()).error( "vector is not closed" );
 
         this->add(-1., V);
 
@@ -279,7 +279,7 @@ public:
      */
     size_type size () const
     {
-        FEEL_ASSERT (this->isInitialized()).error( "VectorPetsc not initialized" );
+        FEELPP_ASSERT (this->isInitialized()).error( "VectorPetsc not initialized" );
 
 
         if (!this->isInitialized())
@@ -296,7 +296,7 @@ public:
      */
     size_type localSize() const
     {
-        FEEL_ASSERT (this->isInitialized()).error( "VectorPetsc not initialized" );
+        FEELPP_ASSERT (this->isInitialized()).error( "VectorPetsc not initialized" );
 
         int petsc_size=0;
         int ierr = VecGetLocalSize(_M_vec, &petsc_size);
@@ -310,8 +310,8 @@ public:
      * not required in user-level code. Just don't do anything crazy like
      * calling VecDestroy()!
      */
-    Vec vec () const { FEEL_ASSERT (_M_vec != 0).error( "invalid petsc vector" ); return _M_vec; }
-    Vec& vec ()  { FEEL_ASSERT (_M_vec != 0).error( "invalid petsc vector" ); return _M_vec; }
+    Vec vec () const { FEELPP_ASSERT (_M_vec != 0).error( "invalid petsc vector" ); return _M_vec; }
+    Vec& vec ()  { FEELPP_ASSERT (_M_vec != 0).error( "invalid petsc vector" ); return _M_vec; }
 
     //@}
 
@@ -331,7 +331,7 @@ public:
      */
     void close ()
     {
-        FEEL_ASSERT (this->isInitialized()).error( "VectorPetsc<> not initialized" );
+        FEELPP_ASSERT (this->isInitialized()).error( "VectorPetsc<> not initialized" );
 
         int ierr=0;
 
@@ -349,7 +349,7 @@ public:
      */
     void zero ()
     {
-        FEEL_ASSERT (this->isInitialized()).error( "VectorPetsc<> not initialized" );
+        FEELPP_ASSERT (this->isInitialized()).error( "VectorPetsc<> not initialized" );
 
         int ierr=0;
 
@@ -386,7 +386,7 @@ public:
     /**
      * @returns the \p VectorPetsc<T> to a pristine state.
      */
-    FEEL_DONT_INLINE void clear ();
+    FEELPP_DONT_INLINE void clear ();
 
     /**
      * \f$ v(i) = \mathrm{value} \forall i\f$
@@ -416,7 +416,7 @@ public:
     void addVector (const std::vector<value_type>& v,
                     const std::vector<size_type>& dof_indices)
     {
-        FEEL_ASSERT (v.size() == dof_indices.size()).error( "invalid dof indices" );
+        FEELPP_ASSERT (v.size() == dof_indices.size()).error( "invalid dof indices" );
 
         for (size_type i=0; i<v.size(); i++)
             this->add (dof_indices[i], v[i]);
@@ -431,7 +431,7 @@ public:
     void addVector (const Vector<value_type>& V,
                     const std::vector<size_type>& dof_indices)
     {
-        FEEL_ASSERT (V.size() == dof_indices.size()).error( "invalid dof indices" );
+        FEELPP_ASSERT (V.size() == dof_indices.size()).error( "invalid dof indices" );
 
         for (size_type i=0; i<V.size(); i++)
             this->add (dof_indices[i], V(i));
@@ -471,7 +471,7 @@ public:
     void addVector (const ublas::vector<value_type>& V,
                     const std::vector<size_type>& dof_indices)
     {
-        FEEL_ASSERT (V.size() == dof_indices.size()).error( "invalid dof indices" );
+        FEELPP_ASSERT (V.size() == dof_indices.size()).error( "invalid dof indices" );
 
         for (size_type i=0; i<V.size(); i++)
             this->add (dof_indices[i], V(i));
@@ -484,7 +484,7 @@ public:
     void insert (const std::vector<T>& /*v*/,
                          const std::vector<size_type>& /*dof_indices*/)
     {
-        FEEL_ASSERT( 0 ).error( "invalid call, not implemented yet" );
+        FEELPP_ASSERT( 0 ).error( "invalid call, not implemented yet" );
     }
 
     /**
@@ -667,7 +667,7 @@ public:
         super( v ),
         _M_destroy_vec_on_exit( true )
     {
-        FEEL_ASSERT(v.closed()).error( "copied vector is not closed" );
+        FEELPP_ASSERT(v.closed()).error( "copied vector is not closed" );
 
         VecDuplicate(v._M_vec, &_M_vec);
         VecCopy(v._M_vec, _M_vec);
@@ -719,7 +719,7 @@ VectorPetsc<T>::init (const size_type n,
     // otherwise create an MPI-enabled vector
     else
         {
-            FEEL_ASSERT(n_local < n)( n_local )( n ).error( "invalid local size" );
+            FEELPP_ASSERT(n_local < n)( n_local )( n ).error( "invalid local size" );
 
             ierr = VecCreateMPI (this->comm(), petsc_n_local, petsc_n,
                                  &_M_vec);
@@ -749,7 +749,7 @@ template <typename T>
 void
 VectorPetsc<T>::set ( size_type i, const value_type& value)
 {
-    FEEL_ASSERT(i<size())( i )( size() ).error( "invalid index" );
+    FEELPP_ASSERT(i<size())( i )( size() ).error( "invalid index" );
 
 
     int ierr=0;
@@ -764,7 +764,7 @@ template <typename T>
 void
 VectorPetsc<T>::add (const size_type i, const value_type& value)
 {
-    FEEL_ASSERT(i<size())( i )( size() ).error( "invalid index" );
+    FEELPP_ASSERT(i<size())( i )( size() ).error( "invalid index" );
 
     int ierr=0;
     int i_val = static_cast<int>(i);
@@ -778,7 +778,7 @@ template <typename T>
 void
 VectorPetsc<T>::addVector ( int* i, int n, value_type* v )
 {
-    //FEEL_ASSERT(n<=size())( n )( size() ).error( "invalid local index array size" );
+    //FEELPP_ASSERT(n<=size())( n )( size() ).error( "invalid local index array size" );
 
     int ierr=0;
     ierr = VecSetValues (_M_vec, n, i, v, ADD_VALUES);

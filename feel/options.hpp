@@ -26,8 +26,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2007-07-21
  */
-#ifndef _FEEL_OPTIONS_HPP
-#define _FEEL_OPTIONS_HPP 1
+#ifndef _FEELPP_OPTIONS_HPP
+#define _FEELPP_OPTIONS_HPP 1
 
 #include <boost/program_options.hpp>
 
@@ -39,4 +39,4 @@ po::options_description
 feel_options( std::string const& prefix = "" );
 
 }
-#endif // _FEEL_OPTIONS_HPP
+#endif // _FEELPP_OPTIONS_HPP

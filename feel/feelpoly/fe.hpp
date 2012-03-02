@@ -142,7 +142,7 @@ public:
                       << "C=" << C << "\n";
         }
 #endif
-        FEEL_ASSERT( lu.isNonsingular() )( A )( D )( C ).error( "vandermonde matrix is singular" );
+        FEELPP_ASSERT( lu.isNonsingular() )( A )( D )( C ).error( "vandermonde matrix is singular" );
 
         this->setCoefficient( ublas::trans(C ) );
 

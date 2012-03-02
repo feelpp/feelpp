@@ -195,7 +195,7 @@ GraphCSR::close()
     Debug(5050) << "[close] M_n_total_nz=" << M_n_total_nz.size() << "\n";
     Debug(5050) << "[close] M_storage size=" << M_storage.size() << "\n";
     Debug(5050) << "[close] nrows=" << this->size() << "\n";
-#if !defined(FEEL_ENABLE_MPI_MODE)
+#if !defined(FEELPP_ENABLE_MPI_MODE)
     M_n_total_nz.resize( M_last_row_entry_on_proc+1/*M_storage.size()*/ );
     M_n_nz.resize( M_last_row_entry_on_proc+1/*M_storage.size()*/ );
     M_n_oz.resize( M_last_row_entry_on_proc+1/*M_storage.size()*/ );
@@ -225,18 +225,18 @@ GraphCSR::close()
                     size_type localindex = irow.get<1>();
                     size_type vec_size = irow.get<2>().size();
 
-                    FEEL_ASSERT( globalindex >= firstRowEntryOnProc() )
+                    FEELPP_ASSERT( globalindex >= firstRowEntryOnProc() )
                         ( globalindex <= lastRowEntryOnProc() )
                         ( globalindex )( firstRowEntryOnProc() )
                         ( lastRowEntryOnProc() ).error ( "invalid local/global index" );
-                    FEEL_ASSERT( globalindex >= 0 )( globalindex < M_n_total_nz.size() )
+                    FEELPP_ASSERT( globalindex >= 0 )( globalindex < M_n_total_nz.size() )
                         ( globalindex )
                         ( M_n_total_nz.size() ).error ( "invalid local/global index for M_n_total_nz" );
                     M_n_total_nz[localindex] = vec_size;
                     sum_nz += vec_size;
                     for( auto vecit = boost::get<2>( irow ).begin(), vecen = boost::get<2>( irow ).end(); vecit != vecen; ++vecit )
                         {
-#if defined(FEEL_ENABLE_MPI_MODE) // MPI
+#if defined(FEELPP_ENABLE_MPI_MODE) // MPI
                             if ( (*vecit < firstColEntryOnProc()) ||
                                  (*vecit > lastColEntryOnProc() ))
                                 {
@@ -263,7 +263,7 @@ GraphCSR::close()
                 }
             else
                 {
-#if defined(FEEL_ENABLE_MPI_MODE) // MPI
+#if defined(FEELPP_ENABLE_MPI_MODE) // MPI
 
                     auto dofOnGlobalCluster = it->first;
 
@@ -304,7 +304,7 @@ GraphCSR::close()
 
         }
 
-#if defined(FEEL_ENABLE_MPI_MODE) // MPI
+#if defined(FEELPP_ENABLE_MPI_MODE) // MPI
     // counter of msg received for each process
     std::vector<int> nbMsgToRecv;
     mpi::all_to_all(this->worldComm().globalComm(),
@@ -373,7 +373,7 @@ GraphCSR::close()
     M_ia[M_storage.size()] = sum_nz;
 #else
 
-#if !defined(FEEL_ENABLE_MPI_MODE) // NOT MPI
+#if !defined(FEELPP_ENABLE_MPI_MODE) // NOT MPI
     M_ia.resize( M_last_row_entry_on_proc+2,0 );
     M_ja.resize( sum_nz );
     M_a.resize(  sum_nz, 0. );

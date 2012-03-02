@@ -412,8 +412,8 @@ public:
      * not required in user-level code. Just don't do anything crazy like
      * calling MatDestroy()!
      */
-    Mat mat () const { FEEL_ASSERT (_M_mat != NULL).error("null petsc matrix"); return _M_mat; }
-    Mat& mat () { FEEL_ASSERT (_M_mat != NULL).error("null petsc matrix"); return _M_mat; }
+    Mat mat () const { FEELPP_ASSERT (_M_mat != NULL).error("null petsc matrix"); return _M_mat; }
+    Mat& mat () { FEELPP_ASSERT (_M_mat != NULL).error("null petsc matrix"); return _M_mat; }
 
     /**
      * Print the contents of the matrix in Matlab's

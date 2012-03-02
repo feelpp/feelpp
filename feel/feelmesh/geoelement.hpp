@@ -520,7 +520,7 @@ public:
      */
     void setFace( uint16_type const i, point_type const & p )
     {
-        FEEL_ASSERT( i < numLocalVertices )( i ).error( "invalid local point index" );
+        FEELPP_ASSERT( i < numLocalVertices )( i ).error( "invalid local point index" );
         M_vertices[i] = const_cast<point_type*>( boost::addressof( p ) );
     }
 
@@ -535,12 +535,12 @@ public:
     }
     point_type const* facePtr( uint16_type i ) const
     {
-        FEEL_ASSERT( i < numLocalVertices )( this->id() )( i ).error( "invalid local vertex index" );
+        FEELPP_ASSERT( i < numLocalVertices )( this->id() )( i ).error( "invalid local vertex index" );
         return M_vertices[i];
     }
     point_type* facePtr( uint16_type i )
     {
-        FEEL_ASSERT( i < numLocalVertices )( this->id() )( i ).error( "invalid local vertex index" );
+        FEELPP_ASSERT( i < numLocalVertices )( this->id() )( i ).error( "invalid local vertex index" );
         return M_vertices[i];
     }
 
@@ -570,7 +570,7 @@ public:
      */
     vertex_permutation_type facePermutation( uint16_type i ) const
     {
-        FEEL_ASSERT( i < numLocalVertices )( i )( numLocalVertices ).error( "invalid local vertex index" );
+        FEELPP_ASSERT( i < numLocalVertices )( i )( numLocalVertices ).error( "invalid local vertex index" );
         return M_vertex_permutation[i];
     }
 
@@ -732,8 +732,8 @@ public:
      */
     edge_type const& edge( uint16_type i ) const
     {
-        FEEL_ASSERT( i < numLocalEdges )( i )( numLocalEdges ).error( "invalid local edge index" );
-        FEEL_ASSERT( M_edges[i] )( i ).error( "invalid edge (null pointer)" );
+        FEELPP_ASSERT( i < numLocalEdges )( i )( numLocalEdges ).error( "invalid local edge index" );
+        FEELPP_ASSERT( M_edges[i] )( i ).error( "invalid edge (null pointer)" );
         return boost::cref( *M_edges[i] );
     }
 
@@ -742,14 +742,14 @@ public:
      */
     edge_type const& face( uint16_type i ) const
     {
-        FEEL_ASSERT( i < numLocalEdges )( i )( numLocalEdges ).error( "invalid local edge index" );
-        FEEL_ASSERT( M_edges[i] )( i ).error( "invalid edge (null pointer)" );
+        FEELPP_ASSERT( i < numLocalEdges )( i )( numLocalEdges ).error( "invalid local edge index" );
+        FEELPP_ASSERT( M_edges[i] )( i ).error( "invalid edge (null pointer)" );
         return boost::cref( *M_edges[i] );
     }
 
     edge_type const* facePtr( uint16_type i ) const
     {
-        FEEL_ASSERT( i < numLocalEdges )( this->id() )( i ).error( "invalid local edge index" );
+        FEELPP_ASSERT( i < numLocalEdges )( this->id() )( i ).error( "invalid local edge index" );
         return M_edges[i];
     }
 
@@ -759,7 +759,7 @@ public:
      */
     void setFace( uint16_type const i, edge_type const & p )
     {
-        FEEL_ASSERT( i < numLocalEdges )( i ).error( "invalid local edge index" );
+        FEELPP_ASSERT( i < numLocalEdges )( i ).error( "invalid local edge index" );
         M_edges[i] = const_cast<edge_type*>( boost::addressof( p ) );
     }
 
@@ -768,7 +768,7 @@ public:
      */
     edge_permutation_type edgePermutation( uint16_type i ) const
     {
-        FEEL_ASSERT( i < numLocalEdges )( i )( numLocalEdges ).error( "invalid local edge index" );
+        FEELPP_ASSERT( i < numLocalEdges )( i )( numLocalEdges ).error( "invalid local edge index" );
         return M_edge_permutation[i];
     }
     /**
@@ -776,7 +776,7 @@ public:
      */
     edge_permutation_type facePermutation( uint16_type i ) const
     {
-        FEEL_ASSERT( i < numLocalEdges )( i )( numLocalEdges ).error( "invalid local edge index" );
+        FEELPP_ASSERT( i < numLocalEdges )( i )( numLocalEdges ).error( "invalid local edge index" );
         return M_edge_permutation[i];
     }
 
@@ -785,7 +785,7 @@ public:
      */
     edge_permutation_type permutation( uint16_type i ) const
     {
-        FEEL_ASSERT( i < numLocalEdges )( i )( numLocalEdges ).error( "invalid local edge index" );
+        FEELPP_ASSERT( i < numLocalEdges )( i )( numLocalEdges ).error( "invalid local edge index" );
         return M_edge_permutation[i];
     }
 
@@ -795,13 +795,13 @@ public:
      */
     void setEdge( uint16_type i, edge_type const & p )
     {
-        FEEL_ASSERT( i < numLocalEdges )( i ).error( "invalid local edge index" );
+        FEELPP_ASSERT( i < numLocalEdges )( i ).error( "invalid local edge index" );
         M_edges[i] = const_cast<edge_type*>( boost::addressof( p ) );
     }
 
     void setEdgePermutation( uint16_type i, edge_permutation_type o )
     {
-        FEEL_ASSERT( i < numLocalEdges )( i ).error( "invalid local edge index" );
+        FEELPP_ASSERT( i < numLocalEdges )( i ).error( "invalid local edge index" );
         M_edge_permutation[i] = o;
     }
 
@@ -980,23 +980,23 @@ public:
 
     edge_type const& edge( uint16_type i ) const
     {
-        FEEL_ASSERT( i < numLocalEdges )( i ).error( "invalid local edge index" );
-        FEEL_ASSERT( M_edges[i] )( i ).error( "invalid edge (null pointer)" );
+        FEELPP_ASSERT( i < numLocalEdges )( i ).error( "invalid local edge index" );
+        FEELPP_ASSERT( M_edges[i] )( i ).error( "invalid edge (null pointer)" );
         return *M_edges[i];
     }
 
     edge_type const* edgePtr( uint16_type i ) const
     {
-        FEEL_ASSERT( i < numLocalEdges )( i ).error( "invalid local edge index" );
-        FEEL_ASSERT( M_edges[i] )( i ).error( "invalid edge (null pointer)" );
+        FEELPP_ASSERT( i < numLocalEdges )( i ).error( "invalid local edge index" );
+        FEELPP_ASSERT( M_edges[i] )( i ).error( "invalid edge (null pointer)" );
         return M_edges[i];
     }
 
     edge_permutation_type edgePermutation( uint16_type i ) const
     {
-        FEEL_ASSERT( i < numLocalEdges )( i ).error( "invalid local edge index" );
+        FEELPP_ASSERT( i < numLocalEdges )( i ).error( "invalid local edge index" );
 
-        FEEL_ASSERT( M_edges[i] )( i ).warn( "invalid edge (null pointer)" );
+        FEELPP_ASSERT( M_edges[i] )( i ).warn( "invalid edge (null pointer)" );
 
         return M_edge_permutation[i];
     }
@@ -1006,42 +1006,42 @@ public:
      */
     void setEdge( uint16_type const i, edge_type const & p )
     {
-        FEEL_ASSERT( boost::addressof( p ) )( i ).error( "invalid edge (null pointer)" );
+        FEELPP_ASSERT( boost::addressof( p ) )( i ).error( "invalid edge (null pointer)" );
         M_edges[i] = const_cast<edge_type*>( boost::addressof( p ) );
-        FEEL_ASSERT( M_edges[i] )( i ).error( "invalid edge (null pointer)" );
+        FEELPP_ASSERT( M_edges[i] )( i ).error( "invalid edge (null pointer)" );
 
     }
 
     void setEdgePermutation( uint16_type i, edge_permutation_type o )
     {
-        FEEL_ASSERT( i < numLocalEdges )( i ).error( "invalid local edge index" );
+        FEELPP_ASSERT( i < numLocalEdges )( i ).error( "invalid local edge index" );
         M_edge_permutation[i] = o;
     }
 
     face_type const& face( uint16_type i ) const
     {
-        FEEL_ASSERT( i < numLocalFaces )( this->id() )( i ).error( "invalid local edge index" );
-        FEEL_ASSERT( M_faces[i] )( this->id() )( i ).error( "invalid edge (null pointer)" );
+        FEELPP_ASSERT( i < numLocalFaces )( this->id() )( i ).error( "invalid local edge index" );
+        FEELPP_ASSERT( M_faces[i] )( this->id() )( i ).error( "invalid edge (null pointer)" );
         return *M_faces[i];
     }
 
     face_type const* facePtr( uint16_type i ) const
     {
-        FEEL_ASSERT( i < numLocalFaces )( this->id() )( i ).error( "invalid local edge index" );
-        //FEEL_ASSERT( M_faces[i] )( i ).error( "invalid edge (null pointer)" );
+        FEELPP_ASSERT( i < numLocalFaces )( this->id() )( i ).error( "invalid local edge index" );
+        //FEELPP_ASSERT( M_faces[i] )( i ).error( "invalid edge (null pointer)" );
         return M_faces[i];
     }
 
     face_permutation_type facePermutation( uint16_type i ) const
     {
-        FEEL_ASSERT( i < numLocalFaces )( this->id() )( i ).error( "invalid local face index" );
-        FEEL_ASSERT( M_faces[i] )( this->id() )( i ).error( "invalid face (null pointer)" );
+        FEELPP_ASSERT( i < numLocalFaces )( this->id() )( i ).error( "invalid local face index" );
+        FEELPP_ASSERT( M_faces[i] )( this->id() )( i ).error( "invalid face (null pointer)" );
         return M_face_permutation[i];
     }
     face_permutation_type permutation( uint16_type i ) const
     {
-        FEEL_ASSERT( i < numLocalFaces )( this->id() )( i ).error( "invalid local face index" );
-        FEEL_ASSERT( M_faces[i] )( this->id() )( i ).error( "invalid face (null pointer)" );
+        FEELPP_ASSERT( i < numLocalFaces )( this->id() )( i ).error( "invalid local face index" );
+        FEELPP_ASSERT( M_faces[i] )( this->id() )( i ).error( "invalid face (null pointer)" );
         return M_face_permutation[i];
     }
 
@@ -1052,7 +1052,7 @@ public:
 
     void setFacePermutation( uint16_type i, face_permutation_type o )
     {
-        FEEL_ASSERT( i < numLocalFaces )( this->id() )( i ).error( "invalid local face index" );
+        FEELPP_ASSERT( i < numLocalFaces )( this->id() )( i ).error( "invalid local face index" );
         M_face_permutation[i] = o;
     }
 

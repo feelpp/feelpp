@@ -151,7 +151,7 @@ public:
         _M_fname( p.familyName() )
     {
         setCoefficient( c, __as_is );
-        //FEEL_ASSERT( c.size2() == p.coeff().size1() )( c.size2() )( p.coeff().size1() ).error( "invalid dimension\n" );
+        //FEELPP_ASSERT( c.size2() == p.coeff().size1() )( c.size2() )( p.coeff().size1() ).error( "invalid dimension\n" );
         //std::cout << "[PolynomialSet] dim = " << nDim << " order = " << nOrder << "\n";
         //std::cout << "[PolynomialSet] c = " << c << "\n";
         //std::cout << "[PolynomialSet] p.coeff = " << p.coeff() << "\n";
@@ -169,7 +169,7 @@ public:
         _M_fname( "pset" )
     {
         setCoefficient( c, __as_is );
-        //FEEL_ASSERT( c.size2() == p.coeff().size1() )( c.size2() )( p.coeff().size1() ).error( "invalid dimension\n" );
+        //FEELPP_ASSERT( c.size2() == p.coeff().size1() )( c.size2() )( p.coeff().size1() ).error( "invalid dimension\n" );
         //std::cout << "[PolynomialSet] dim = " << nDim << " order = " << nOrder << "\n";
         //std::cout << "[PolynomialSet] c = " << c << "\n";
         //std::cout << "[PolynomialSet] p.coeff = " << p.coeff() << "\n";
@@ -215,7 +215,7 @@ public:
     component_type operator[]( uint16_type i ) const
     {
         BOOST_STATIC_ASSERT( is_vectorial );
-        FEEL_ASSERT( i < nComponents )( i )( nComponents ).error ( "invalid component index" );
+        FEELPP_ASSERT( i < nComponents )( i )( nComponents ).error ( "invalid component index" );
         const int nrows = _M_coeff.size1()/nComponents;
         const int ncols = _M_coeff.size2();
         return component_type( Poly(), ublas::project( _M_coeff,
@@ -476,7 +476,7 @@ public:
     matrix_type evaluate( ublas::matrix_expression<AE> const& __pts ) const
     {
         matrix_type m ( _M_basis.evaluate( __pts ) );
-        FEEL_ASSERT( _M_coeff.size2() == m.size1() )(_M_coeff.size2())(m.size1() ).error("invalid size");
+        FEELPP_ASSERT( _M_coeff.size2() == m.size1() )(_M_coeff.size2())(m.size1() ).error("invalid size");
         return ublas::prod( _M_coeff, m );
     }
 
@@ -628,7 +628,7 @@ public:
      */
     void insert( PolynomialSet<Poly,PolySetType> const& p, bool erase = false )
     {
-        FEEL_ASSERT( p.coeff().size2() == coeff().size2() )( p.coeff().size2() )( coeff().size2() ).warn("invalid polynomial set");
+        FEELPP_ASSERT( p.coeff().size2() == coeff().size2() )( p.coeff().size2() )( coeff().size2() ).warn("invalid polynomial set");
 
 #if 0
         std::cout << "coeff = " << _M_coeff << "\n"
@@ -807,8 +807,8 @@ public:
          */
         value_type phi( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
-            FEEL_ASSERT( q < nComputedNodes() )( q )( nComputedNodes() ).error( "invalid node index" );
-            FEEL_ASSERT( i < _M_ref_ele->nbDof() )( i )( _M_ref_ele->nbDof() ).error( "invalid dof index" );
+            FEELPP_ASSERT( q < nComputedNodes() )( q )( nComputedNodes() ).error( "invalid node index" );
+            FEELPP_ASSERT( i < _M_ref_ele->nbDof() )( i )( _M_ref_ele->nbDof() ).error( "invalid dof index" );
 
             return _M_phi[i][q](c1,c2);
         }
@@ -950,7 +950,7 @@ public:
                 for( permutation_type __p( permutation_type::IDENTITY );
                      __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
                 {
-                    //FEEL_ASSERT( ppts[__f].find(__p)->second.size2() != 0 ).warn( "invalid quadrature type" );
+                    //FEELPP_ASSERT( ppts[__f].find(__p)->second.size2() != 0 ).warn( "invalid quadrature type" );
                     geopc[__f][__p] = precompute_ptrtype(  new precompute_type( p, P ) );
                 }
             }
@@ -1834,7 +1834,7 @@ public:
             /**
              * divergence of a scalar function is undefined.
              */
-            FEEL_ASSERT( 0 ).error( "divergence of a scalar function is undefined.");
+            FEELPP_ASSERT( 0 ).error( "divergence of a scalar function is undefined.");
             return 0;
         }
 

@@ -298,7 +298,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     Debug( 5034 ) << "matrix size1 = " <<  this->mat().size1() << "\n";
     Debug( 5034 ) << "matrix size2 = " <<  this->mat().size2() << "\n";
 
-    FEEL_ASSERT( this->mat().isInitialized() ).warn( "[OperatorInterpolation] matrix not initialized" );
+    FEELPP_ASSERT( this->mat().isInitialized() ).warn( "[OperatorInterpolation] matrix not initialized" );
 
 
     std::vector<bool> dof_done( this->dualImageSpace()->nDof() );
@@ -538,7 +538,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                 {
                     meshinv.addPointWithId( *it_dofpt );
                 }
-            FEEL_ASSERT( meshinv.nPoints() == nbpts )( meshinv.nPoints() )( nbpts ).error( "invalid number of points " );
+            FEELPP_ASSERT( meshinv.nPoints() == nbpts )( meshinv.nPoints() )( nbpts ).error( "invalid number of points " );
             meshinv.distribute();
             Debug( 5034 ) << "number of points inserted : " << nbpts << "\n";
 
@@ -594,7 +594,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
 
             for( size_type i = 0; i < dof_done.size(); ++i )
                 {
-                    FEEL_ASSERT( dof_done[i] == true )( i ).warn ( "invalid dof, was not treated" );
+                    FEELPP_ASSERT( dof_done[i] == true )( i ).warn ( "invalid dof, was not treated" );
                 }
 
 #endif

@@ -232,12 +232,12 @@ public:
     {
         this->elements().clear();
         this->points().clear();
-        FEEL_ASSERT( isEmpty() ).error( "all mesh containers should be empty after a clear." );
+        FEELPP_ASSERT( isEmpty() ).error( "all mesh containers should be empty after a clear." );
     }
 
 
 
-    FEEL_DEFINE_VISITABLE();
+    FEELPP_DEFINE_VISITABLE();
     //@}
 
 
@@ -248,7 +248,7 @@ protected:
      * dummy  implementation
      * \see Mesh
      */
-    void renumber() { FEEL_ASSERT( 0 ).error( "invalid call" ); }
+    void renumber() { FEELPP_ASSERT( 0 ).error( "invalid call" ); }
 
 
     /**

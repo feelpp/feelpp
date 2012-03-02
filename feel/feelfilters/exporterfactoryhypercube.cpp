@@ -82,7 +82,7 @@ namespace Feel
     const bool meshsp32g = Exporter<meshsp32_t>::Factory::type::instance().registerProduct( "gmsh", &detail::createGmsh<meshsp32_t> );
 
 #endif
-    //#if defined( FEEL_INSTANTIATION_MODE )
+    //#if defined( FEELPP_INSTANTIATION_MODE )
     //
     // explicit instances
     //
@@ -96,4 +96,4 @@ namespace Feel
 
 /// \endcond detail
 }
-//#endif // FEEL_INSTANTIATION_MODE
+//#endif // FEELPP_INSTANTIATION_MODE

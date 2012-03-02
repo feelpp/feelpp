@@ -599,7 +599,7 @@ ParameterSpace<P>::Sampling::searchNearestNeighbors( element_type const& mu,
         for( size_type i = 0; i < this->size(); ++i )
         {
             std::copy( this->at(i).data(), this->at(i).data()+M_space->Dimension, data_pts[i] );
-            FEEL_ASSERT( data_pts[i] != 0 )( i ) .error( "invalid pointer" );
+            FEELPP_ASSERT( data_pts[i] != 0 )( i ) .error( "invalid pointer" );
         }
         //std::cout << "[ParameterSpace::Sampling::searchNearestNeighbors] building tree in R^" <<  M_space->Dimension << "\n";
         M_kdtree = kdtree_ptrtype( new kdtree_type( data_pts, this->size(), M_space->Dimension ) );

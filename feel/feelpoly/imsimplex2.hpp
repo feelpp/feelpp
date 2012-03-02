@@ -632,7 +632,7 @@ public:
             }
         else
             {
-                FEEL_ASSERT( 0 )( m ).error( "invalid multiplicity in IMSimplex<3>" );
+                FEELPP_ASSERT( 0 )( m ).error( "invalid multiplicity in IMSimplex<3>" );
             }
 
     }

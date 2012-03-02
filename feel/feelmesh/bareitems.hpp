@@ -615,7 +615,7 @@ BareItemsHandler<BareItem>::addIfNotThere( const BareItem & s, const size_type i
     ( i.first ) ->second = id;
 
     // id count should grow +1
-    //FEEL_ASSERT( _M_id_count == id )( _M_id_count )( id ).error ( "invalid item id" );
+    //FEELPP_ASSERT( _M_id_count == id )( _M_id_count )( id ).error ( "invalid item id" );
     if ( i.second )
         {
             _M_id_count = id;

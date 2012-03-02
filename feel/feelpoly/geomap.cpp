@@ -58,9 +58,9 @@ RealToReference<Elem,T>::operator()( points_type const& pts ) const
 template class RealToReference< GeoND<2,GeoEntity<Simplex<2,1> >, double>, double >;
 template class RealToReference< GeoND<3,GeoEntity<Simplex<3,1> >, double>, double >;
 
-#if defined( FEEL_HAVE_QD_REAL)
+#if defined( FEELPP_HAVE_QD_REAL)
 template class RealToReference< GeoND<2,GeoEntity<Simplex<2,1> >, qd_real>, qd_real >;
 template class RealToReference< GeoND<2,GeoEntity<Simplex<2,1> >, dd_real>, dd_real >;
-#endif // FEEL_HAVE_QD_REAL
+#endif // FEELPP_HAVE_QD_REAL
 
 } // Feel

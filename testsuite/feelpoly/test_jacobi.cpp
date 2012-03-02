@@ -194,7 +194,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_dubiner_double, T, test_types )
     TestJacobi<10, double> d;
     //test->add( BOOST_TEST_CASE( ( TestJacobi<15, Feel::real96_type>(50.0) )  ) );
 
-#if defined( FEEL_HAVE_QD_REAL)
+#if defined( FEELPP_HAVE_QD_REAL)
     unsigned int old_cw;
     fpu_fix_start(&old_cw);
 
@@ -204,7 +204,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_dubiner_double, T, test_types )
     test->add( BOOST_TEST_CASE( ( TestJacobi<4, qd_real>() )  ) );
     test->add( BOOST_TEST_CASE( ( TestJacobi<10, qd_real>() )  ) );
     //test->add( BOOST_TEST_CASE( ( TestJacobi<15, qd_real>() )  ) );
-#endif /* FEEL_HAVE_QD_REAL */
+#endif /* FEELPP_HAVE_QD_REAL */
 
     //
     // TestDubiner
@@ -217,7 +217,7 @@ TestDubiner<0, double> d0;
     //test->add( BOOST_TEST_CASE( ( TestJacobi<1, double>() )  ) );
     //test->add( BOOST_TEST_CASE( ( TestJacobi<10, double>() )  ) );
 
-#if defined( FEEL_HAVE_QD_REAL)
+#if defined( FEELPP_HAVE_QD_REAL)
     unsigned int old_cw;
     fpu_fix_start(&old_cw);
 
@@ -227,7 +227,7 @@ TestDubiner<0, double> d0;
     //test->add( BOOST_TEST_CASE( ( TestJacobi<4, qd_real>() )  ) );
     test->add( BOOST_TEST_CASE( ( TestJacobi<10, qd_real>() )  ) );
     //test->add( BOOST_TEST_CASE( ( TestJacobi<15, qd_real>() )  ) );
-#endif /* FEEL_HAVE_QD_REAL */
+#endif /* FEELPP_HAVE_QD_REAL */
 
 #endif
     //    return test;

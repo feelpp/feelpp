@@ -176,9 +176,9 @@ private:
 
 } // Feel
 
-#if !defined( FEEL_INSTANTIATION_MODE )
+#if !defined( FEELPP_INSTANTIATION_MODE )
 # include <feel/feelfilters/exportergnuplot.cpp>
-#endif // FEEL_INSTANTIATION_MODE
+#endif // FEELPP_INSTANTIATION_MODE
 
 #endif /* __ExporterGnuplot_H */
 

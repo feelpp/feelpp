@@ -165,12 +165,12 @@ ExporterGnuplot<MeshType>::save() const
 }
 
 
-#if defined( FEEL_INSTANTIATION_MODE )
+#if defined( FEELPP_INSTANTIATION_MODE )
 //
 // explicit instances
 //
 template class ExporterGnuplot<Mesh<Simplex<1,1> > >;
-#endif // FEEL_INSTANTIATION_MODE
+#endif // FEELPP_INSTANTIATION_MODE
 
 }
 #endif // __EXPORTERGNUPLOT_CPP

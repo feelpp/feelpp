@@ -128,7 +128,7 @@ BOOST_PP_LIST_FOR_EACH_PRODUCT(FACTORY_OP, 3, (DIMS, ORDERS, ORDERS_FUN_GMSH))
     const bool meshs32e = Exporter<meshs32_t>::Factory::type::instance().registerProduct( "ensight", &detail::createEnsight<meshs32_t> );
     const bool meshs32g = Exporter<meshs32_t>::Factory::type::instance().registerProduct( "gmsh", &detail::createGmsh<meshs32_t> );
 
-    //#if defined( FEEL_INSTANTIATION_MODE )
+    //#if defined( FEELPP_INSTANTIATION_MODE )
     //
     // explicit instances
     //
@@ -145,4 +145,4 @@ template class Exporter<Mesh<Simplex<1,1,2> > >;
 #endif
 /// \endcond detail
 }
-//#endif // FEEL_INSTANTIATION_MODE
+//#endif // FEELPP_INSTANTIATION_MODE

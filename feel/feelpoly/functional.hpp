@@ -109,9 +109,9 @@ public:
         _M_p( P ),
         _M_coeff( coeff )
     {
-        //FEEL_ASSERT( _M_coeff.size1() == nComponents && _M_coeff.size2() == _M_p.polynomialDimensionPerComponent() )
+        //FEELPP_ASSERT( _M_coeff.size1() == nComponents && _M_coeff.size2() == _M_p.polynomialDimensionPerComponent() )
         //( _M_coeff.size1() )( _M_coeff.size2() )( _M_p.polynomialDimension() ).error( "invalid coefficient size" );
-//         FEEL_ASSERT( _M_coeff.size2() == 1 )( _M_coeff.size2() ).error( "there should be only one column" );
+//         FEELPP_ASSERT( _M_coeff.size2() == 1 )( _M_coeff.size2() ).error( "there should be only one column" );
     }
 
     Functional( Functional const & __f )
@@ -119,7 +119,7 @@ public:
         _M_p( __f._M_p ),
         _M_coeff( __f._M_coeff )
     {
-        //FEEL_ASSERT( _M_coeff.size1() == nComponents && _M_coeff.size2() == _M_p.polynomialDimensionPerComponent() )
+        //FEELPP_ASSERT( _M_coeff.size1() == nComponents && _M_coeff.size2() == _M_p.polynomialDimensionPerComponent() )
         //( _M_coeff.size1() )( _M_coeff.size2() )( _M_p.polynomialDimensionPerComponent() ).error( "invalid coefficient size" );
     }
 
@@ -161,7 +161,7 @@ public:
      */
     virtual matrix_type operator()( polynomial_type const& p ) const
     {
-        FEEL_ASSERT( p.coeff().size2()  == _M_coeff.size2() )
+        FEELPP_ASSERT( p.coeff().size2()  == _M_coeff.size2() )
             ( p.coeff() )( _M_coeff ).error( "invalid polynomial" );
 
         return ublas::prod( p.coeff(), ublas::trans(_M_coeff) );

@@ -187,14 +187,14 @@ private:
     points_type permutatePoints (nodes_type const& Gt,
                                  face_permutation_type face_perm )
     {
-        FEEL_ASSERT( face_perm != face_permutation_type( face_permutation_type::NO_PERMUTATION ) )
+        FEELPP_ASSERT( face_perm != face_permutation_type( face_permutation_type::NO_PERMUTATION ) )
             ( face_perm ).error( "invalid permutation" );
 
         nodes_type res( Gt );
         if ( face_perm != face_permutation_type( face_permutation_type::IDENTITY ) )
 	    res = prod( Gt, getMatrixPermutation(face_perm) );
 
-        FEEL_ASSERT( res.size1() == Gt.size1() &&
+        FEELPP_ASSERT( res.size1() == Gt.size1() &&
                       res.size2() == Gt.size2() ) ( res )( Gt ).error ("invalid permutation operation" );
         return res;
     }
@@ -211,7 +211,7 @@ private:
 
     permutation_vector_type matrixToVectorPermutation ( permutation_matrix_type const& P )
     {
-        FEEL_ASSERT(P.size1() == P.size2()).error("invalid permutation");
+        FEELPP_ASSERT(P.size1() == P.size2()).error("invalid permutation");
 
         permutation_vector_type v ( P.size1() );
         v.clear();
@@ -238,8 +238,8 @@ private:
         //uint16_type npoints = n_side_points*(n_side_points+1)/2;
         //uint16_type n_side_points = (uint16_type) (-1 + math::sqrt( (double)8*npoints + 1 ))/2;
         uint16_type n_side_points = (uint16_type)math::sqrt((double)npoints);
-        //FEEL_ASSERT( npoints == (n_side_points-1)*(n_side_points-2)/2 )
-        //FEEL_ASSERT( npoints == (n_side_points)*(n_side_points))
+        //FEELPP_ASSERT( npoints == (n_side_points-1)*(n_side_points-2)/2 )
+        //FEELPP_ASSERT( npoints == (n_side_points)*(n_side_points))
         //( npoints )( n_side_points ).error( "invalid number of points" );
         permutation_vector_type _vec(npoints);
         _vec.clear();
@@ -289,7 +289,7 @@ private:
     {
         //uint16_type npoints = n_side_points*(n_side_points);
         uint16_type n_side_points = (uint16_type)math::sqrt((double)npoints);
-        FEEL_ASSERT( npoints == n_side_points*n_side_points )
+        FEELPP_ASSERT( npoints == n_side_points*n_side_points )
             ( npoints )( n_side_points ).error( "invalid number of points" );
         permutation_vector_type _vec(npoints);
         _vec.clear();

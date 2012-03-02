@@ -235,7 +235,7 @@ Mesh<Shape, T>::updateForUse()
                                                             this ) );
                     }
             }
-#if defined(FEEL_ENABLE_MPI_MODE)
+#if defined(FEELPP_ENABLE_MPI_MODE)
             if ( this->components().test( MESH_UPDATE_FACES ) && this->worldComm().localSize()>1 )
                 {
                     this->updateEntitiesCoDimensionOneGhostCell();
@@ -345,8 +345,8 @@ Mesh<Shape, T>::renumber(mpl::bool_<true>)
     std::vector<size_type> check_id( node_map );
     std::unique(check_id.begin(), check_id.end());
 
-    FEEL_ASSERT( check_id.size() == node_map.size() )( node_map.size() )( check_id.size() ).error( "all ids must be unique");
-    FEEL_ASSERT ( std::find( node_map.begin(), node_map.end(), invalid_size_type_value ) == node_map.end() ).warn("invalid size_type value found as id ");
+    FEELPP_ASSERT( check_id.size() == node_map.size() )( node_map.size() )( check_id.size() ).error( "all ids must be unique");
+    FEELPP_ASSERT ( std::find( node_map.begin(), node_map.end(), invalid_size_type_value ) == node_map.end() ).warn("invalid size_type value found as id ");
 
 #endif /* NDEBUG */
 
@@ -362,7 +362,7 @@ Mesh<Shape, T>::renumber(mpl::bool_<true>)
                           <<  " with " << ptmapit->second.id() << "\n";
 #endif
             bool __rep1 = this->points().replace( ptit, ptmapit->second );
-            FEEL_ASSERT( __rep1 )( __rep1 )( ptit->id() )( ptmapit->second.id() ) .warn( "invalid point replacement");
+            FEELPP_ASSERT( __rep1 )( __rep1 )( ptit->id() )( ptmapit->second.id() ) .warn( "invalid point replacement");
 
         }
     Debug( 4015 ) << "[mesh::renumber] done replace point ids\n";
@@ -518,7 +518,7 @@ Mesh<Shape, T>::updateEntitiesCoDimensionOne()
                     else
                         Debug( 4015 ) << "not added face with id " << __it->id ()
                                       << " was already face with id = " << _faceit->second << "\n";
-                    FEEL_ASSERT( faceinserted )
+                    FEELPP_ASSERT( faceinserted )
                         (_faceit->second )
                         ( __it->id() ).warn( "duplicated face" );
 #endif
@@ -529,7 +529,7 @@ Mesh<Shape, T>::updateEntitiesCoDimensionOne()
                             size_type theid = __it->id();
                             __it = this->eraseFace( __it );
                             face_iterator __other = this->faces().find( face_type( _faceit->second ) );
-                            FEEL_ASSERT( __other->id() != theid )
+                            FEELPP_ASSERT( __other->id() != theid )
                                 ( __other->id() )
                                 ( theid ).error( "faces should have different ids " );
 
@@ -615,7 +615,7 @@ Mesh<Shape, T>::updateEntitiesCoDimensionOne()
                             bool inserted = false;
                             face_iterator __fit;
                             boost::tie( __fit, inserted)  = this->addFace( face );
-                            FEEL_ASSERT( inserted && __fit != this->endFace() )
+                            FEELPP_ASSERT( inserted && __fit != this->endFace() )
                                 ( _faceit->second )
                                 ( iv->id() )
                                 ( __fit->id() )
@@ -645,7 +645,7 @@ Mesh<Shape, T>::updateEntitiesCoDimensionOne()
 
                             // look in the face table for the face
                             face_iterator __fit = this->faces().find( face_type( _faceit->second ) );
-                            FEEL_ASSERT( __fit != this->endFace() )( _faceit->second ).error( "face is not in face container" );
+                            FEELPP_ASSERT( __fit != this->endFace() )( _faceit->second ).error( "face is not in face container" );
 
 
                             face_type face = *__fit;
@@ -696,7 +696,7 @@ Mesh<Shape, T>::updateEntitiesCoDimensionOne()
                                                           detail::UpdateFaceConnection1<typename face_type::element_connectivity_type>( boost::make_tuple( boost::addressof( __element ), __element_id, j, __element.processId() ) ) );
 
 
-                                    FEEL_ASSERT( __fit->isConnectedTo0() && __fit->isConnectedTo1() )
+                                    FEELPP_ASSERT( __fit->isConnectedTo0() && __fit->isConnectedTo1() )
                                         ( __fit->isConnectedTo0() )( __fit->isConnectedTo1() ).error( "invalid face connection" );
 #endif
                                     detail::UpdateFaceConnection1<typename face_type::element_connectivity_type> update1( boost::make_tuple( boost::addressof( __element ), __element_id, j, __element.processId() ) );
@@ -742,11 +742,11 @@ Mesh<Shape, T>::updateEntitiesCoDimensionOne()
 
                                 }
 
-                            FEEL_ASSERT( __fit->processId() == __fit->proc_first() )
+                            FEELPP_ASSERT( __fit->processId() == __fit->proc_first() )
                                 ( __fit->processId() )( __fit->proc_first() ).error( "invalid process id" );
                         }
 
-                    FEEL_ASSERT( iv->facePtr( j ) )( j )( iv->id() ).error( "invalid element face error" );
+                    FEELPP_ASSERT( iv->facePtr( j ) )( j )( iv->id() ).error( "invalid element face error" );
                 } // face loop
         } // element loop
 #if 0
@@ -780,7 +780,7 @@ Mesh<Shape, T>::updateEntitiesCoDimensionOne()
     ti.restart();
 }
 
-#if defined(FEEL_ENABLE_MPI_MODE)
+#if defined(FEELPP_ENABLE_MPI_MODE)
 template<typename Shape, typename T>
 void
 Mesh<Shape, T>::updateEntitiesCoDimensionOneGhostCell()
@@ -957,7 +957,7 @@ Mesh<Shape, T>::updateEntitiesCoDimensionOneGhostCell()
     //std::cout << "[Mesh::updateEntitiesCoDimensionOneGhostCell] finish" << std::endl;
 
 } // updateEntitiesCoDimensionOneGhostCell
-#endif // defined(FEEL_ENABLE_MPI_MODE)
+#endif // defined(FEELPP_ENABLE_MPI_MODE)
 
 
 template<typename Shape, typename T>
@@ -974,7 +974,7 @@ Mesh<Shape, T>::check() const
             element_type const& __element = *iv;
             for ( size_type j = 0; j < this->numLocalFaces(); j++ )
                 {
-                    FEEL_ASSERT( iv->facePtr( j ) )( j )( iv->id() ).error( "invalid element face check" );
+                    FEELPP_ASSERT( iv->facePtr( j ) )( j )( iv->id() ).error( "invalid element face check" );
                     Debug( 4015 ) << "------------------------------------------------------------\n";
                     Debug( 4015 ) << "Element : " << iv->id() << " face lid: " << j << " face gid:  " << iv->face( j ).id() << "\n";
 
@@ -988,11 +988,11 @@ Mesh<Shape, T>::check() const
 
                 }
             Debug( 4015 ) << "[Mesh::check] element " << __element.id() << " number of neighbors: " << counter << "\n";
-            FEEL_ASSERT( counter >= 1 )( __element.id() )( __element.nNeighbors() )( counter ).warn( "invalid neighboring data" );
+            FEELPP_ASSERT( counter >= 1 )( __element.id() )( __element.nNeighbors() )( counter ).warn( "invalid neighboring data" );
 #if 0
             for ( size_type j = 0; j < (size_type)element_type::numEdges; ++j )
                 {
-                    FEEL_ASSERT( iv->edgePtr( j ) )( j )( iv->id() ).error( "invalid element edge check" );
+                    FEELPP_ASSERT( iv->edgePtr( j ) )( j )( iv->id() ).error( "invalid element edge check" );
                     Debug( 4015 ) << "------------------------------------------------------------\n";
                     Debug( 4015 ) << "Element : " << iv->id() << " edge lid: " << j << " edge gid:  " << iv->edge( j ).id() << "\n";
 
@@ -1008,14 +1008,14 @@ Mesh<Shape, T>::check() const
     for( ; itf != ite; ++ itf )
         {
             face_type const& __face = *itf;
-            FEEL_ASSERT( __face.isConnectedTo0() )
+            FEELPP_ASSERT( __face.isConnectedTo0() )
                 (__face.id() )( __face.G() )( __face.ad_first() )( __face.pos_first() )( __face.proc_first() ).warn( "invalid face" );
             if ( __face.isConnectedTo0() )
                 {
-                    FEEL_ASSERT( __face.element(0).facePtr( __face.pos_first() ) )
+                    FEELPP_ASSERT( __face.element(0).facePtr( __face.pos_first() ) )
                         ( __face.ad_first() )( __face.pos_first() )( __face.proc_first() )( __face.element(0).id() ).warn( "invalid face in element" );
                 }
-            FEEL_ASSERT( !__face.isConnectedTo1() )
+            FEELPP_ASSERT( !__face.isConnectedTo1() )
                 ( __face.ad_first() )( __face.pos_first() )( __face.proc_first() ).warn( "invalid boundary face" );
 
         }
@@ -1134,7 +1134,7 @@ Mesh<Shape, T>::checkAndFixPermutation(  )
             bool is_anticlockwise = __element.isAnticlockwiseOriented();
             // --verbose
 #if 0
-            FEEL_ASSERT( is_anticlockwise == true )
+            FEELPP_ASSERT( is_anticlockwise == true )
                 ( is_anticlockwise )
                 ( __element.id() )
                 ( __element.G() ).warn( "invalid element permutation, will fix it" );
@@ -1148,13 +1148,13 @@ Mesh<Shape, T>::checkAndFixPermutation(  )
                         __element.exchangePoints( otn_tetra );
                     else
                         {
-                            FEEL_ASSERT( 0 )
+                            FEELPP_ASSERT( 0 )
                                 ( __element.id() )
                                 ( __element.G() ).error( "invalid element type" );
                             throw std::logic_error( "invalid element type" );
                         }
                     is_anticlockwise = __element.isAnticlockwiseOriented();
-                    FEEL_ASSERT( is_anticlockwise == true )
+                    FEELPP_ASSERT( is_anticlockwise == true )
                         ( is_anticlockwise )
                         ( __element.id() )
                         ( __element.G() ).error( "invalid element permutation" );
@@ -1259,7 +1259,7 @@ Mesh<Shape, T>::Localization::init()
 {
 
 #if !defined( NDEBUG )
-    FEEL_ASSERT( IsInit == false )
+    FEELPP_ASSERT( IsInit == false )
         ( IsInit ).warn( "You have already initialized the tool of localization" );
 #endif
     //clear data
@@ -1384,7 +1384,7 @@ Mesh<Shape, T>::Localization::searchElement(const node_type & p)
 {
 
 #if !defined( NDEBUG )
-    FEEL_ASSERT( IsInit == true )
+    FEELPP_ASSERT( IsInit == true )
         ( IsInit ).warn( "You don't have initialized the tool of localization" );
 #endif
 
@@ -1405,7 +1405,7 @@ Mesh<Shape, T>::Localization::searchElement(const node_type & p)
 
 #if !defined( NDEBUG )
     //if(std::distance(itLT,itLT_end)==0) std::cout<<"\nListTri vide\n";
-    FEEL_ASSERT( std::distance(itLT,itLT_end)>0 ).error( " problem in list localization : is empty" );
+    FEELPP_ASSERT( std::distance(itLT,itLT_end)>0 ).error( " problem in list localization : is empty" );
 #endif
 
     while (itLT != itLT_end && !isin  )
@@ -1466,7 +1466,7 @@ Mesh<Shape, T>::Localization::run_analysis(const matrix_node_type & m)
 {
 
 #if !defined( NDEBUG )
-    FEEL_ASSERT( IsInit == true )
+    FEELPP_ASSERT( IsInit == true )
         ( IsInit ).warn( "You don't have initialized the tool of localization" );
 #endif
 
@@ -1534,7 +1534,7 @@ Mesh<Shape, T>::Localization::searchElements(const node_type & p)
 {
 
 #if !defined( NDEBUG )
-    FEEL_ASSERT( IsInit == true )
+    FEELPP_ASSERT( IsInit == true )
         ( IsInit ).warn( "You don't have initialized the tool of localization" );
 #endif
     
@@ -1557,7 +1557,7 @@ Mesh<Shape, T>::Localization::searchElements(const node_type & p)
 
 #if !defined( NDEBUG )
     //if(std::distance(itLT,itLT_end)==0) std::cout<<"\nListTri vide\n";
-    FEEL_ASSERT( std::distance(itLT,itLT_end)>0 ).error( " problem in list localization : is empty" );
+    FEELPP_ASSERT( std::distance(itLT,itLT_end)>0 ).error( " problem in list localization : is empty" );
 #endif
 
     std::list<boost::tuple<size_type,node_type> > newlistelts;newlistelts.clear();
@@ -1639,7 +1639,7 @@ Mesh<Shape, T>::Localization::searchInKdTree(const node_type & p,
     typename KDTree::points_search_const_iterator itNN_end = ptsNN.end();
 
 #if !defined( NDEBUG )
-    FEEL_ASSERT( std::distance(itNN,itNN_end)>0 ).error( "none Near Neighbor Points are find" );
+    FEELPP_ASSERT( std::distance(itNN,itNN_end)>0 ).error( "none Near Neighbor Points are find" );
 #endif
 
     //iterator on a l(ist index element
@@ -1706,7 +1706,7 @@ Mesh<Shape, T>::Localization::searchElement(const node_type & p,
 
 #if !defined( NDEBUG )
     //if(std::distance(itLT,itLT_end)==0) std::cout<<"\nListTri vide\n";
-    FEEL_ASSERT( std::distance(itLT,itLT_end)>0 ).error( " problem in list localization : is empty" );
+    FEELPP_ASSERT( std::distance(itLT,itLT_end)>0 ).error( " problem in list localization : is empty" );
 #endif
 
     //research the element which contains the point p
@@ -1823,7 +1823,7 @@ Mesh<Shape, T>::Localization::run_analysis(const matrix_node_type & m,
                                            mpl::bool_<true> /**/)
 {
 #if !defined( NDEBUG )
-    FEEL_ASSERT( IsInit == true )
+    FEELPP_ASSERT( IsInit == true )
         ( IsInit ).warn( "You don't have initialized the tool of localization" );
 #endif
 
@@ -1849,7 +1849,7 @@ Mesh<Shape, T>::Localization::run_analysis(const matrix_node_type & m,
 
 
 
-#if defined( FEEL_INSTANTIATION_MODE )
+#if defined( FEELPP_INSTANTIATION_MODE )
 
 # define DIMS1 BOOST_PP_TUPLE_TO_LIST(1,(1))
 # define RDIMS1 BOOST_PP_TUPLE_TO_LIST(3,(1,2,3))
@@ -1876,19 +1876,19 @@ Mesh<Shape, T>::Localization::run_analysis(const matrix_node_type & m,
 # define FACTORY_SIMPLEX_OP_E(_, GDO) FACTORY_HYPERCUBE GDO
 # define FACTORY_HYPERCUBE_OP_E(_, GDO) FACTORY_HYPERCUBE_E GDO
 
-#if !defined( FEEL_MESH_IMPL_NOEXTERN )
+#if !defined( FEELPP_MESH_IMPL_NOEXTERN )
 
-BOOST_PP_LIST_FOR_EACH_PRODUCT(FACTORY_SIMPLEX_OP_E, 3, (DIMS1, BOOST_PP_LIST_FIRST_N(FEEL_MESH_MAX_ORDER, ORDERS1), RDIMS1))
-BOOST_PP_LIST_FOR_EACH_PRODUCT(FACTORY_HYPERCUBE_OP_E, 3, (DIMS1, BOOST_PP_LIST_FIRST_N(FEEL_MESH_MAX_ORDER, ORDERS1), RDIMS1))
+BOOST_PP_LIST_FOR_EACH_PRODUCT(FACTORY_SIMPLEX_OP_E, 3, (DIMS1, BOOST_PP_LIST_FIRST_N(FEELPP_MESH_MAX_ORDER, ORDERS1), RDIMS1))
+BOOST_PP_LIST_FOR_EACH_PRODUCT(FACTORY_HYPERCUBE_OP_E, 3, (DIMS1, BOOST_PP_LIST_FIRST_N(FEELPP_MESH_MAX_ORDER, ORDERS1), RDIMS1))
 
-BOOST_PP_LIST_FOR_EACH_PRODUCT(FACTORY_SIMPLEX_OP_E, 3, (DIMS2, BOOST_PP_LIST_FIRST_N(FEEL_MESH_MAX_ORDER, ORDERS2), RDIMS2))
-BOOST_PP_LIST_FOR_EACH_PRODUCT(FACTORY_HYPERCUBE_OP_E, 3, (DIMS2, BOOST_PP_LIST_FIRST_N(FEEL_MESH_MAX_ORDER, ORDERS2), RDIMS2))
+BOOST_PP_LIST_FOR_EACH_PRODUCT(FACTORY_SIMPLEX_OP_E, 3, (DIMS2, BOOST_PP_LIST_FIRST_N(FEELPP_MESH_MAX_ORDER, ORDERS2), RDIMS2))
+BOOST_PP_LIST_FOR_EACH_PRODUCT(FACTORY_HYPERCUBE_OP_E, 3, (DIMS2, BOOST_PP_LIST_FIRST_N(FEELPP_MESH_MAX_ORDER, ORDERS2), RDIMS2))
 
-BOOST_PP_LIST_FOR_EACH_PRODUCT(FACTORY_SIMPLEX_OP_E, 3, (DIMS3, BOOST_PP_LIST_FIRST_N(FEEL_MESH_MAX_ORDER, ORDERS3), RDIMS3))
-BOOST_PP_LIST_FOR_EACH_PRODUCT(FACTORY_HYPERCUBE_OP_E, 3, (DIMS3, BOOST_PP_LIST_FIRST_N(FEEL_MESH_MAX_ORDER, ORDERS3), RDIMS3))
+BOOST_PP_LIST_FOR_EACH_PRODUCT(FACTORY_SIMPLEX_OP_E, 3, (DIMS3, BOOST_PP_LIST_FIRST_N(FEELPP_MESH_MAX_ORDER, ORDERS3), RDIMS3))
+BOOST_PP_LIST_FOR_EACH_PRODUCT(FACTORY_HYPERCUBE_OP_E, 3, (DIMS3, BOOST_PP_LIST_FIRST_N(FEELPP_MESH_MAX_ORDER, ORDERS3), RDIMS3))
 
-#endif // FEEL_MESH_IMPL_NOEXTERN
-#endif // FEEL_INSTANTIATION_MODE
+#endif // FEELPP_MESH_IMPL_NOEXTERN
+#endif // FEELPP_INSTANTIATION_MODE
 
 } // namespace Feel
 

@@ -129,7 +129,7 @@ MatrixBlockBase<T>::mergeBlockGraph(graph_ptrtype & globGraph,
                                       size_type start_i, size_type start_j)
 {
 
-    //FEEL_ASSERT(m->hasGraph()).error("sub matrix doesn t have a graph");
+    //FEELPP_ASSERT(m->hasGraph()).error("sub matrix doesn t have a graph");
 
     auto g = m->graph();
 

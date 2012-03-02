@@ -128,7 +128,7 @@ void add_tests( test_suite* test )
 
   test->add( BOOST_TEST_CASE( ( PK_find_N_opt<P,double> ) ) );
 
-#if defined( FEEL_HAVE_QD_REAL)
+#if defined( FEELPP_HAVE_QD_REAL)
   test->add( BOOST_TEST_CASE( ( PK_find_N_opt<P,dd_real> ) ) );
   test->add( BOOST_TEST_CASE( ( PK_find_N_opt<P,qd_real> ) ) );
 #endif
@@ -144,7 +144,7 @@ void add_tests<40>( test_suite* test )
 
   test->add( BOOST_TEST_CASE( ( PK_find_N_opt<40,double> ) ) );
 
-#if defined( FEEL_HAVE_QD_REAL)
+#if defined( FEELPP_HAVE_QD_REAL)
   test->add( BOOST_TEST_CASE( ( PK_find_N_opt<40,dd_real> ) ) );
   test->add( BOOST_TEST_CASE( ( PK_find_N_opt<40,qd_real> ) ) );
 #endif
@@ -157,7 +157,7 @@ init_unit_test_suite( int /*argc*/, char** /*argv*/ )
     test_suite* test = BOOST_TEST_SUITE( "Integration methods on simplicies test suite" );
 
     PK_log << "This file attempt to save the errors encountered while numerically integrating $x^iy^i$ on the triangle !" << "\n\n";
-#if defined( FEEL_HAVE_QD_REAL)
+#if defined( FEELPP_HAVE_QD_REAL)
     unsigned int old_cw;
     fpu_fix_start(&old_cw);
 #endif

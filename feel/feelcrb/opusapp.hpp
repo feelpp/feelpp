@@ -171,7 +171,7 @@ public:
                     throw std::logic_error( "CRB/SCM Database could not be loaded" );
             }
         }
-    FEEL_DONT_INLINE
+    FEELPP_DONT_INLINE
     void run()
         {
             if ( this->vm().count( "help" ) )

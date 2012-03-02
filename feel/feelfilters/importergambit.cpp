@@ -350,7 +350,7 @@ read( std::string const& filename,
 
                     }
 
-                    FEEL_ASSERT( elements[nfr].get<0>() == type )( type )( elements[nfr].get<0>() ).error( "[gambit] inconsistent element type for boundary conditions specifications" );
+                    FEELPP_ASSERT( elements[nfr].get<0>() == type )( type )( elements[nfr].get<0>() ).error( "[gambit] inconsistent element type for boundary conditions specifications" );
                 }
 
             }

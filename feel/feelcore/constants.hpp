@@ -75,7 +75,7 @@ namespace long_double_constants
 {
 Constant<pi_tag, long double> const pi;
 }
-#if defined(FEEL_HAVE_QD_REAL)
+#if defined(FEELPP_HAVE_QD_REAL)
 namespace dd_real_constants
 {
 Constant<pi_tag, dd_real> const pi;
@@ -84,7 +84,7 @@ namespace qd_real_constants
 {
 Constant<pi_tag, qd_real> const pi;
 }
-#endif /*FEEL_HAVE_QD_REAL*/
+#endif /*FEELPP_HAVE_QD_REAL*/
 template<> inline Constant<pi_tag, long double>::operator long double() const
 {
     return 3.141592653589793238462643383279502884197L;
@@ -97,7 +97,7 @@ template<> inline Constant<pi_tag, float>::operator float() const
 {
     return 3.141592653589793238462643383279502884197F;
 }
-#if defined(FEEL_HAVE_QD_REAL)
+#if defined(FEELPP_HAVE_QD_REAL)
 template<> inline Constant<pi_tag, dd_real>::operator dd_real() const
 {
     return dd_real::_pi;
@@ -106,7 +106,7 @@ template<> inline Constant<pi_tag, qd_real>::operator qd_real() const
 {
     return qd_real::_pi;
 }
-#endif /*FEEL_HAVE_QD_REAL*/
+#endif /*FEELPP_HAVE_QD_REAL*/
 } // namespace math
 } // namespace Feel
 #endif /* __Constants_H */

@@ -207,7 +207,7 @@ typedef boost::shared_ptr<Preconditioner<double> > preconditioner_ptrtype;
 
 
 template <typename T>
-FEEL_STRONG_INLINE
+FEELPP_STRONG_INLINE
 Preconditioner<T>::Preconditioner ()
   :
     M_matrix(),
@@ -219,14 +219,14 @@ Preconditioner<T>::Preconditioner ()
 
 
 template <typename T>
-FEEL_STRONG_INLINE
+FEELPP_STRONG_INLINE
 Preconditioner<T>::~Preconditioner ()
 {
   this->clear ();
 }
 
 template <typename T>
-FEEL_STRONG_INLINE
+FEELPP_STRONG_INLINE
 void
 Preconditioner<T>::setMatrix( sparse_matrix_ptrtype mat )
 {

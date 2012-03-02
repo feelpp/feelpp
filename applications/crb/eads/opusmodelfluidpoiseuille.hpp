@@ -118,7 +118,7 @@ OpusModelFluidPoiseuille<SpaceType>::OpusModelFluidPoiseuille(  po::variables_ma
     M_Xh( Xh )
 {
     Log() << "[OpusModelFluidPoiseuille] constructor starts\n";
-    FEEL_ASSERT( M_Xh != 0 ).error( "[OpusModelFluidPoiseuille] invalid functionspace_ptrtype" );
+    FEELPP_ASSERT( M_Xh != 0 ).error( "[OpusModelFluidPoiseuille] invalid functionspace_ptrtype" );
     Log() << "[OpusModelFluidPoiseuille] constructor done\n";
 }
 

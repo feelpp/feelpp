@@ -182,14 +182,14 @@ const bool meshsp32g = Partitioner<meshsp32_t>::Factory::type::instance().regist
 template<typename MeshType>
 Partitioner<MeshType>::Partitioner()
 {
-#if defined(FEEL_INSTANTIATION_MODE)
+#if defined(FEELPP_INSTANTIATION_MODE)
     test_partitioner();
 #endif
 }
 
 
 
-#if defined( FEEL_INSTANTIATION_MODE )
+#if defined( FEELPP_INSTANTIATION_MODE )
 void test_partitioner()
 {
     Debug( 4020 ) << "meshsp21e= " << detail::meshsp21e << "\n"
@@ -206,22 +206,22 @@ template class Partitioner<Mesh<Simplex<1,1,2> > >;
 // 2D
 template class Partitioner<Mesh<Simplex<2,1,2> > >;
 template class Partitioner<Mesh<Simplex<3,1,3> > >;
-#if BOOST_PP_GREATER_EQUAL( FEEL_MESH_MAX_ORDER, 2 )
+#if BOOST_PP_GREATER_EQUAL( FEELPP_MESH_MAX_ORDER, 2 )
 template class Partitioner<Mesh<Simplex<1,2,2> > >;
 template class Partitioner<Mesh<Simplex<2,2> > >;
 template class Partitioner<Mesh<Simplex<3,2> > >;
 #endif
-#if BOOST_PP_GREATER_EQUAL( FEEL_MESH_MAX_ORDER, 3 )
+#if BOOST_PP_GREATER_EQUAL( FEELPP_MESH_MAX_ORDER, 3 )
 template class Partitioner<Mesh<Simplex<1,3,2> > >;
 template class Partitioner<Mesh<Simplex<2,3> > >;
 template class Partitioner<Mesh<Simplex<3,3> > >;
 #endif
-#if BOOST_PP_GREATER_EQUAL( FEEL_MESH_MAX_ORDER, 4 )
+#if BOOST_PP_GREATER_EQUAL( FEELPP_MESH_MAX_ORDER, 4 )
 template class Partitioner<Mesh<Simplex<1,4,2> > >;
 template class Partitioner<Mesh<Simplex<2,4> > >;
 template class Partitioner<Mesh<Simplex<3,4> > >;
 #endif
-#if BOOST_PP_GREATER_EQUAL( FEEL_MESH_MAX_ORDER, 5 )
+#if BOOST_PP_GREATER_EQUAL( FEELPP_MESH_MAX_ORDER, 5 )
 template class Partitioner<Mesh<Simplex<1,5,2> > >;
 template class Partitioner<Mesh<Simplex<2,5> > >;
 template class Partitioner<Mesh<Simplex<3,5> > >;
@@ -235,7 +235,7 @@ template class Partitioner<Mesh<Hypercube<2,1,2> > >;
 template class Partitioner<Mesh<Hypercube<3,1,3> > >;
 template class Partitioner<Mesh<Hypercube<3,2,3> > >;
 
-#endif // FEEL_INSTANTIATION_MODE
+#endif // FEELPP_INSTANTIATION_MODE
 }
 
 #endif // __PARTITIONER_CPP

@@ -365,57 +365,57 @@ inline ::Feel::Assert make_assert( const char * expr)
 
 } // Feel Namespace
 
-#ifdef FEEL_SMART_ASSERT_DEBUG_MODE
+#ifdef FEELPP_SMART_ASSERT_DEBUG_MODE
 
-#if FEEL_SMART_ASSERT_DEBUG_MODE == 1
-#define FEEL_SMART_ASSERT_DEBUG
+#if FEELPP_SMART_ASSERT_DEBUG_MODE == 1
+#define FEELPP_SMART_ASSERT_DEBUG
 #else
-#undef FEEL_SMART_ASSERT_DEBUG
+#undef FEELPP_SMART_ASSERT_DEBUG
 #endif
 
 #else
 
 // defaults
 #ifndef NDEBUG
-#define FEEL_SMART_ASSERT_DEBUG
+#define FEELPP_SMART_ASSERT_DEBUG
 #else
-#undef FEEL_SMART_ASSERT_DEBUG
+#undef FEELPP_SMART_ASSERT_DEBUG
 #endif
 
 #endif
 
 
-#ifdef FEEL_SMART_ASSERT_DEBUG
+#ifdef FEELPP_SMART_ASSERT_DEBUG
 // "debug" mode
-#define FEEL_SMART_ASSERT( expr) \
+#define FEELPP_SMART_ASSERT( expr) \
     if ( (expr) ) ; \
     else ::Feel::SmartAssert::make_assert( #expr).printContext( __FILE__, __LINE__).SMART_ASSERT_A \
     /**/
 
 #else
 // "release" mode
-#define FEEL_SMART_ASSERT( expr) \
+#define FEELPP_SMART_ASSERT( expr) \
     if ( true ) ; \
     else ::Feel::SmartAssert::make_assert( "").SMART_ASSERT_A \
     /**/
 
-#endif // ifdef FEEL_SMART_ASSERT_DEBUG
+#endif // ifdef FEELPP_SMART_ASSERT_DEBUG
 
-// FEEL_ASSERT is a equivalent to FEEL_SMART_ASSERT
-#define FEEL_ASSERT( expr) FEEL_SMART_ASSERT(expr)
+// FEELPP_ASSERT is a equivalent to FEELPP_SMART_ASSERT
+#define FEELPP_ASSERT( expr) FEELPP_SMART_ASSERT(expr)
 
 
-#define FEEL_SMART_VERIFY( expr) \
+#define FEELPP_SMART_VERIFY( expr) \
     if ( (expr) ) ; \
     else ::Feel::SmartAssert::make_assert( #expr).error().printContext( __FILE__, __LINE__).SMART_ASSERT_A \
     /**/
-#define FEEL_VERIFY( expr) FEEL_SMART_VERIFY(expr)
+#define FEELPP_VERIFY( expr) FEELPP_SMART_VERIFY(expr)
 
 
-#define SMART_ASSERT_A(x) FEEL_SMART_ASSERT_OP(x, B)
-#define SMART_ASSERT_B(x) FEEL_SMART_ASSERT_OP(x, A)
+#define SMART_ASSERT_A(x) FEELPP_SMART_ASSERT_OP(x, B)
+#define SMART_ASSERT_B(x) FEELPP_SMART_ASSERT_OP(x, A)
 
-#define FEEL_SMART_ASSERT_OP(x, next) \
+#define FEELPP_SMART_ASSERT_OP(x, next) \
     SMART_ASSERT_A.printCurrentValue((x), #x).SMART_ASSERT_ ## next \
     /**/
 

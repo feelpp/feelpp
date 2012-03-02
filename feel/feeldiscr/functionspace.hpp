@@ -98,7 +98,7 @@ namespace Feel
         {
             std::vector<T> operator()( std::vector<T> const& v1, std::vector<T> const& v2 ) const
             {
-                FEEL_ASSERT( v1.size() == v2.size() )( v1.size() )( v2.size() ).error( "invalid vector size for vector_plus<>");
+                FEELPP_ASSERT( v1.size() == v2.size() )( v1.size() )( v2.size() ).error( "invalid vector size for vector_plus<>");
                 std::vector<T> res( v1.size() );
                 for( size_type i = 0;i < v1.size(); ++i )
                     res[i]=v1[i]+v2[i];
@@ -459,7 +459,7 @@ namespace Feel
             void operator()(boost::shared_ptr<T> & x) const
             {
                 x = boost::shared_ptr<T>( new T( _M_mesh, _M_dofindices, std::vector<WorldComm>(1,_M_worldsComm[_M_cursor]) ) );
-                FEEL_ASSERT( x ).error( "invalid function space" );
+                FEELPP_ASSERT( x ).error( "invalid function space" );
 
                 ++_M_cursor;// warning _M_cursor < nb color
             }
@@ -1361,7 +1361,7 @@ public:
         component_type
         comp( ComponentType i, mpl::bool_<true> ) const
         {
-            FEEL_ASSERT( i >= X && i < N_COMPONENTS );
+            FEELPP_ASSERT( i >= X && i < N_COMPONENTS );
             auto s = ublas::slice( i, N_COMPONENTS, _M_functionspace->nDofPerComponent() );
             std::string __name = this->name() + "_" + componentToString( i );
 
@@ -1375,7 +1375,7 @@ public:
         component_type
         comp( ComponentType i, mpl::bool_<false> ) const
         {
-            FEEL_ASSERT( i >= X && i < N_COMPONENTS );
+            FEELPP_ASSERT( i >= X && i < N_COMPONENTS );
             auto s = ublas::slice( i, N_COMPONENTS, _M_functionspace->nDofPerComponent() );
             std::string __name = this->name() + "_" + componentToString( i );
 
@@ -1403,7 +1403,7 @@ public:
         component_type
         comp( ComponentType i, mpl::bool_<true> )
         {
-            FEEL_ASSERT( i >= X && i < N_COMPONENTS );
+            FEELPP_ASSERT( i >= X && i < N_COMPONENTS );
             auto s = ublas::slice( i, N_COMPONENTS, _M_functionspace->nDofPerComponent() );
 
             std::string __name = this->name() + "_" + componentToString( i );
@@ -1417,7 +1417,7 @@ public:
         component_type
         comp( ComponentType i, mpl::bool_<false> )
         {
-            FEEL_ASSERT( i >= X && i < N_COMPONENTS );
+            FEELPP_ASSERT( i >= X && i < N_COMPONENTS );
             auto s = ublas::slice( i, N_COMPONENTS, _M_functionspace->nDofPerComponent() );
 
             std::string __name = this->name() + "_" + componentToString( i );
@@ -1528,8 +1528,8 @@ public:
         typename p0_space_type::element_type extremeValue( boost::shared_ptr<p0_space_type> const& P0h, std::string extreme )
         {
             // check if the mesh coming from P0h and the class elements is the same
-            FEEL_ASSERT( P0h->mesh() == this->mesh() ).error("mesh is not the same");
-            FEEL_ASSERT( is_scalar ).error("only works for scalar fields");
+            FEELPP_ASSERT( P0h->mesh() == this->mesh() ).error("mesh is not the same");
+            FEELPP_ASSERT( is_scalar ).error("only works for scalar fields");
 
             typename p0_space_type::element_type p0Element( P0h );
 
@@ -2474,7 +2474,7 @@ public:
     {
         return pointer_type( new functionspace_type( __m, dofindices ) );
     }
-#if !defined( FEEL_ENABLE_MPI_MODE)
+#if !defined( FEELPP_ENABLE_MPI_MODE)
     BOOST_PARAMETER_MEMBER_FUNCTION((pointer_type),
                                     static New,
                                     tag,
@@ -3005,7 +3005,7 @@ private:
         }
         component_functionspace_ptrtype operator()( mpl::bool_<true> )
         {
-            FEEL_ASSERT( 0 ).error( "invalid call for component space extraction" );
+            FEELPP_ASSERT( 0 ).error( "invalid call for component space extraction" );
             //return _M_functionspace;
             return component_functionspace_ptrtype();
         }
@@ -3176,7 +3176,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
     // todo : check worldsComm size and _M_functionspaces are the same!
     fusion::for_each( _M_functionspaces, detail::InitializeSpace<mesh_type>( __m, dofindices, this->worldsComm() ) );
 
-#if !defined(FEEL_ENABLE_MPI_MODE) // NOT MPI
+#if !defined(FEELPP_ENABLE_MPI_MODE) // NOT MPI
     _M_dof = dof_ptrtype( new dof_type( this->nDof(), this->nLocalDof() ) );
     Debug( 5010 ) << "calling nDof(<composite>)" << this->nDof() << "\n";
     Debug( 5010 ) << "calling init(<composite>) end\n";
@@ -3659,7 +3659,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::id_( Context_t const & conte
                 //std::cout << "ldof = " << ldof << "\n";
                 //std::cout << "gdof = " << gdof << "\n";
 
-                FEEL_ASSERT( gdof < this->size() )
+                FEELPP_ASSERT( gdof < this->size() )
                     ( context.eId() )
                     ( l )( c1 )( ldof)( gdof )
                     ( this->size() )( this->localSize() )
@@ -3887,7 +3887,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::grad_( ContextType const & c
                 {
                     int ldof = c1*basis_type::nDof+l;
                     size_type gdof = boost::get<0>(_M_functionspace->dof()->localToGlobal( context.eId(), l, c1 ) );
-                    FEEL_ASSERT( gdof >= this->firstLocalIndex() &&
+                    FEELPP_ASSERT( gdof >= this->firstLocalIndex() &&
                                  gdof < this->lastLocalIndex() )
                         ( context.eId() )
                         ( l )( c1 )( ldof)( gdof )
@@ -4041,7 +4041,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::div_( ContextType const & co
                 {
                     int ldof = c1*basis_type::nDof+l;
                     size_type gdof = boost::get<0>(_M_functionspace->dof()->localToGlobal( context.eId(), l, c1 ) );
-                    FEEL_ASSERT( gdof >= this->firstLocalIndex() &&
+                    FEELPP_ASSERT( gdof >= this->firstLocalIndex() &&
                                  gdof < this->lastLocalIndex() )
                         ( context.eId() )
                         ( l )( c1 )( ldof)( gdof )
@@ -4071,7 +4071,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::div_( ContextType const & co
                 {
                     int ldof = c1*basis_type::nDof+l;
                     size_type gdof = boost::get<0>(_M_functionspace->dof()->localToGlobal( context.eId(), l, c1 ) );
-                    FEEL_ASSERT( gdof >= this->firstLocalIndex() &&
+                    FEELPP_ASSERT( gdof >= this->firstLocalIndex() &&
                                  gdof < this->lastLocalIndex() )
                         ( context.eId() )
                         ( l )( c1 )( ldof)( gdof )
@@ -4187,7 +4187,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curl_( ContextType const & c
                 {
                     int ldof = c1*basis_type::nDof+l;
                     size_type gdof = boost::get<0>(_M_functionspace->dof()->localToGlobal( context.eId(), l, c1 ) );
-                    FEEL_ASSERT( gdof >= this->firstLocalIndex() &&
+                    FEELPP_ASSERT( gdof >= this->firstLocalIndex() &&
                                  gdof < this->lastLocalIndex() )
                         ( context.eId() )
                         ( l )( c1 )( ldof)( gdof )
@@ -4234,7 +4234,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curl_( ContextType const & c
                 {
                     int ldof = c1*basis_type::nDof+l;
                     size_type gdof = boost::get<0>(_M_functionspace->dof()->localToGlobal( context.eId(), l, c1 ) );
-                    FEEL_ASSERT( gdof >= this->firstLocalIndex() &&
+                    FEELPP_ASSERT( gdof >= this->firstLocalIndex() &&
                                  gdof < this->lastLocalIndex() )
                         ( context.eId() )
                         ( l )( c1 )( ldof)( gdof )
@@ -4630,7 +4630,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::d_( int N, ContextType const
                 {
                     size_type ldof = basis_type::nDof*c1 + i;
                     size_type gdof = boost::get<0>(_M_functionspace->dof()->localToGlobal( context.eId(), i, c1 ) );
-                    FEEL_ASSERT( gdof >= this->firstLocalIndex() &&
+                    FEELPP_ASSERT( gdof >= this->firstLocalIndex() &&
                                  gdof < this->lastLocalIndex() )
                         ( context.eId() )
                         ( i )( c1 )( ldof)( gdof )
@@ -4896,7 +4896,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::hess_( ContextType const & c
 {
     if ( !this->areGlobalValuesUpdated() )
         this->updateGlobalValues();
-    //FEEL_ASSERT( comp < nRealDim )( comp )( nRealDim ).error( "[FunctionSpace::Element] grad: invalid component" );
+    //FEELPP_ASSERT( comp < nRealDim )( comp )( nRealDim ).error( "[FunctionSpace::Element] grad: invalid component" );
     for ( int i = 0; i < basis_type::nDof; ++i )
         {
             const int ncdof = is_product?nComponents1:1;
@@ -4904,7 +4904,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::hess_( ContextType const & c
                 {
                     size_type ldof = basis_type::nDof*c1 + i;
                     size_type gdof = boost::get<0>(_M_functionspace->dof()->localToGlobal( context.eId(), i, c1 ) );
-                    FEEL_ASSERT( gdof >= this->firstLocalIndex() &&
+                    FEELPP_ASSERT( gdof >= this->firstLocalIndex() &&
                                  gdof < this->lastLocalIndex() )
                         ( context.eId() )
                         ( i )( c1 )( ldof)( gdof )
@@ -5056,7 +5056,7 @@ template <typename ElementType>
 ElementType
 element_product( ElementType const& v1, ElementType const& v2 )
 {
-    FEEL_ASSERT( v1.functionSpace() == v2.functionSpace() ).error( "incompatible function spaces");
+    FEELPP_ASSERT( v1.functionSpace() == v2.functionSpace() ).error( "incompatible function spaces");
 
     typedef typename type_traits<typename ElementType::value_type>::real_type real_type;
 
@@ -5079,7 +5079,7 @@ template <typename ElementType>
 ElementType
 element_div( ElementType const& v1, ElementType const& v2 )
 {
-    FEEL_ASSERT( v1.functionSpace() == v2.functionSpace() ).error( "incompatible function spaces");
+    FEELPP_ASSERT( v1.functionSpace() == v2.functionSpace() ).error( "incompatible function spaces");
 
     typedef typename type_traits<typename ElementType::value_type>::real_type real_type;
 
@@ -5150,7 +5150,7 @@ struct version< typename Feel::FunctionSpace<A0,A1,A2,A3,A4>::element_type >
     BOOST_STATIC_CONSTANT(unsigned int, value = version_type::type::value);
 };
 
-#define FEEL_REGISTER_ELEMENT( element_type )   \
+#define FEELPP_REGISTER_ELEMENT( element_type )   \
     namespace boost {                                                   \
     namespace serialization {                                           \
     template<>                                                          \

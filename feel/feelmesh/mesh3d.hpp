@@ -286,7 +286,7 @@ public:
     virtual void clear();
 
 
-    FEEL_DEFINE_VISITABLE();
+    FEELPP_DEFINE_VISITABLE();
 
     //@}
 
@@ -298,7 +298,7 @@ protected:
      * dummy  implementation
      * \see Mesh
      */
-    void renumber() { FEEL_ASSERT( 0 ).error( "invalid call" ); }
+    void renumber() { FEELPP_ASSERT( 0 ).error( "invalid call" ); }
 
     /**
      * update the entities of co-dimension 2
@@ -406,7 +406,7 @@ Mesh3D<GEOSHAPE>::clear()
     this->edges().clear();
 
     _M_e2e.resize( boost::extents[0][0] );
-    FEEL_ASSERT( isEmpty() ).error( "all mesh containers should be empty after a clear." );
+    FEELPP_ASSERT( isEmpty() ).error( "all mesh containers should be empty after a clear." );
 }
 
 template <typename GEOSHAPE>
@@ -505,7 +505,7 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionOnePermutation()
                     _left[i] = elt_it->element0().point( elt_it->element0().fToP( elt_it->pos_first(), i ) ).id();
 
                     uint16_type right_p = elt_it->element1().fToP( elt_it->pos_second(), i );
-                    FEEL_ASSERT( right_p >= 0 && right_p < elt_it->element1().numLocalPoints )( right_p )( elt_it->element1().numLocalPoints )
+                    FEELPP_ASSERT( right_p >= 0 && right_p < elt_it->element1().numLocalPoints )( right_p )( elt_it->element1().numLocalPoints )
                         ( elt_it->pos_second() )( i ).error( "invalid point index" );
                     _right[i] = elt_it->element1().point( right_p ).id();
 
@@ -528,7 +528,7 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionOnePermutation()
         {
             for ( size_type j = 0; j < numLocalFaces(); j++ )
                 {
-                    FEEL_ASSERT( iv->facePtr( j ) )( j )( iv->id() ).warn( "invalid element face check" );
+                    FEELPP_ASSERT( iv->facePtr( j ) )( j )( iv->id() ).warn( "invalid element face check" );
                 }
         }
     Debug( 4015 ) << "[Mesh3D::updateFaces] element/face permutation : " << ti.elapsed() << "\n";
@@ -567,8 +567,8 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
                     if ( edgeinserted )
                         ++next_edge;
 
-                    FEEL_ASSERT( edgeinserted == false )( i1 )( i2 ).error( "Two identical Edges stored in EdgeList" );
-                    FEEL_ASSERT( _edgeit->second == this->edge( j ).id() )( _edgeit->second )( this->edge( j ).id() ).error( "Edges in EdgeList have inconsistent id" );
+                    FEELPP_ASSERT( edgeinserted == false )( i1 )( i2 ).error( "Two identical Edges stored in EdgeList" );
+                    FEELPP_ASSERT( _edgeit->second == this->edge( j ).id() )( _edgeit->second )( this->edge( j ).id() ).error( "Edges in EdgeList have inconsistent id" );
 
                 }
         }
@@ -645,7 +645,7 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
 
                     if ( edgeinserted )
                         {
-                            FEEL_ASSERT( _edgeit->second >= this->numEdges() )( _edgeit->second )( this->numEdges() ).error( "invalid edge index" );
+                            FEELPP_ASSERT( _edgeit->second >= this->numEdges() )( _edgeit->second )( this->numEdges() ).error( "invalid edge index" );
                             // set edge id
                             edg.setId( _edgeit->second );
                             // we have already inserted edges on the boundary so
@@ -699,7 +699,7 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
                         {
                             edge_pair_type _default = _edge_it->second;
 
-                            FEEL_ASSERT( _default.first == _current.first ||
+                            FEELPP_ASSERT( _default.first == _current.first ||
                                          _default.first == _current.second ).error("invalid edge index");
 
                             if ( _default.first != _current.first )

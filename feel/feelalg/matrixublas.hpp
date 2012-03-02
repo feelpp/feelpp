@@ -373,7 +373,7 @@ MatrixUBlas<T, LayoutType>::fill( pattern_type const& __pattern )
     //     ublas::unbounded_array<value_type> __val( __nnz );
     //     std::for_each( __val.begin(), __val.end(), boost::lambda::_1 = 0.0 );
 
-    FEEL_ASSERT( __nnz >= _M_mat.nnz() )(__nnz)(_M_mat.nnz()).error("incompatible sizes");
+    FEELPP_ASSERT( __nnz >= _M_mat.nnz() )(__nnz)(_M_mat.nnz()).error("incompatible sizes");
 
     Debug( 5010 ) << "number of nnz in old M : " << _M_mat.nnz() << ", " << _M_mat.nnz_capacity() <<"\n";
     Debug( 5010 ) << "size M.value_data() :  " << _M_mat.value_data().size() << "\n";
@@ -460,9 +460,9 @@ MatrixUBlas<T, LayoutType>::fill( pattern_type const& __pattern )
             ++__row;
         }
     _M_mat.index1_data()[thesize] = __filled2;
-    FEEL_ASSERT(thesize+1 == __filled1 )( thesize )( __filled1 ).error( "invalid matrix storage" );
+    FEELPP_ASSERT(thesize+1 == __filled1 )( thesize )( __filled1 ).error( "invalid matrix storage" );
     _M_mat.set_filled( __filled1, __filled2 );
-    FEEL_ASSERT( _M_mat.nnz() == __filled2 )( _M_mat.nnz() )( __filled2 ).error( "inconsistent matrix storage" );
+    FEELPP_ASSERT( _M_mat.nnz() == __filled2 )( _M_mat.nnz() )( __filled2 ).error( "inconsistent matrix storage" );
 
     Debug( 5010 ) << "***  value data size  : " << _M_mat.value_data().size() << "\n";
     Debug( 5010 ) << "***              nnz  : " << _M_mat.nnz() << "\n";
@@ -494,7 +494,7 @@ MatrixUBlas<T, LayoutType>::printMatlab(const std::string filename ) const
 
     std::ofstream file_out( name.c_str() );
 
-    FEEL_ASSERT( file_out)( filename ).error("[Feel::spy] ERROR: File cannot be opened for writing.");
+    FEELPP_ASSERT( file_out)( filename ).error("[Feel::spy] ERROR: File cannot be opened for writing.");
 
     file_out << "S = [ ";
     for ( typename matrix_type::const_iterator1 i1=_M_mat.begin1();

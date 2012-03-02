@@ -52,9 +52,9 @@
 
 namespace Feel
 {
-#if defined( FEEL_INSTANTIATION_MODE )
+#if defined( FEELPP_INSTANTIATION_MODE )
 void test_partitioner();
-#endif // FEEL_INSTANTIATION_MODE
+#endif // FEELPP_INSTANTIATION_MODE
 /**
  * The \p Partitioner class provides a uniform interface for
  * partitioning algorithms.  It takes a reference to a \p mesh_type
@@ -94,7 +94,7 @@ public:
      */
     static Partitioner<Mesh>* New( std::string const& partitioner )
     {
-#if defined(FEEL_INSTANTIATION_MODE)
+#if defined(FEELPP_INSTANTIATION_MODE)
         test_partitioner();
 #endif
         return Factory::type::instance().createObject( partitioner );
@@ -221,7 +221,7 @@ Partitioner<Mesh>::singlePartition (mesh_type& mesh)
 
 } // Feel
 
-#if !defined( FEEL_INSTANTIATION_MODE )
+#if !defined( FEELPP_INSTANTIATION_MODE )
 # include <feel/feeldiscr/partitioner.cpp>
 #endif
 #endif

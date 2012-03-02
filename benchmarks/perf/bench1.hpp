@@ -103,12 +103,12 @@ public:
      */
     //@{
 
-    FEEL_DONT_INLINE Bench1( int argc,
+    FEELPP_DONT_INLINE Bench1( int argc,
                              char** argv,
                              AboutData const& ad,
                              po::options_description const& od );
 
-    FEEL_DONT_INLINE ~Bench1();
+    FEELPP_DONT_INLINE ~Bench1();
 
     //@}
 
@@ -147,36 +147,36 @@ protected:
 
 private:
 
-    template<typename FSType> FEEL_DONT_INLINE void A( boost::shared_ptr<FSType> const& Xh, mpl::int_<1> );
-    template<typename FSType> FEEL_DONT_INLINE void A( boost::shared_ptr<FSType> const& Xh, mpl::int_<2> );
-    template<typename FSType> FEEL_DONT_INLINE void A( boost::shared_ptr<FSType> const& Xh, mpl::int_<3> );
-    template<typename FSType> FEEL_DONT_INLINE void R( boost::shared_ptr<FSType> const& Xh );
-    template<typename FSType> FEEL_DONT_INLINE void D( boost::shared_ptr<FSType> const& Xh );
-    template<typename FSType> FEEL_DONT_INLINE void DR( boost::shared_ptr<FSType> const& Xh );
+    template<typename FSType> FEELPP_DONT_INLINE void A( boost::shared_ptr<FSType> const& Xh, mpl::int_<1> );
+    template<typename FSType> FEELPP_DONT_INLINE void A( boost::shared_ptr<FSType> const& Xh, mpl::int_<2> );
+    template<typename FSType> FEELPP_DONT_INLINE void A( boost::shared_ptr<FSType> const& Xh, mpl::int_<3> );
+    template<typename FSType> FEELPP_DONT_INLINE void R( boost::shared_ptr<FSType> const& Xh );
+    template<typename FSType> FEELPP_DONT_INLINE void D( boost::shared_ptr<FSType> const& Xh );
+    template<typename FSType> FEELPP_DONT_INLINE void DR( boost::shared_ptr<FSType> const& Xh );
 
-    template<typename FSType> FEEL_DONT_INLINE void ADR( boost::shared_ptr<FSType> const& Xh, mpl::int_<1> );
-    template<typename FSType> FEEL_DONT_INLINE void ADR( boost::shared_ptr<FSType> const& Xh, mpl::int_<2> );
-    template<typename FSType> FEEL_DONT_INLINE void ADR( boost::shared_ptr<FSType> const& Xh, mpl::int_<3> );
+    template<typename FSType> FEELPP_DONT_INLINE void ADR( boost::shared_ptr<FSType> const& Xh, mpl::int_<1> );
+    template<typename FSType> FEELPP_DONT_INLINE void ADR( boost::shared_ptr<FSType> const& Xh, mpl::int_<2> );
+    template<typename FSType> FEELPP_DONT_INLINE void ADR( boost::shared_ptr<FSType> const& Xh, mpl::int_<3> );
     /**
      * 1D performance test
      */
-    FEEL_DONT_INLINE void run1d();
+    FEELPP_DONT_INLINE void run1d();
 
     /**
      * 2D performance test
      */
-    FEEL_DONT_INLINE void run2d();
+    FEELPP_DONT_INLINE void run2d();
 
     /**
      * 3D performance test
      */
-    FEEL_DONT_INLINE void run3d();
+    FEELPP_DONT_INLINE void run3d();
 
     /**
      * dimension independant code
      */
     template<typename MeshType, int Order>
-    FEEL_DONT_INLINE void bench1( boost::shared_ptr<MeshType> & mesh );
+    FEELPP_DONT_INLINE void bench1( boost::shared_ptr<MeshType> & mesh );
 
 private:
 

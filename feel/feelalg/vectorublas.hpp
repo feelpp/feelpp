@@ -180,8 +180,8 @@ public:
      */
     T operator()( size_type i ) const
     {
-        FEEL_ASSERT (this->isInitialized()).error( "vector not initialized" );
-        FEEL_ASSERT ( (i >= this->firstLocalIndex()) &&
+        FEELPP_ASSERT (this->isInitialized()).error( "vector not initialized" );
+        FEELPP_ASSERT ( (i >= this->firstLocalIndex()) &&
                       (i < this->lastLocalIndex()))
             ( i )
             ( this->firstLocalIndex() )
@@ -195,8 +195,8 @@ public:
      */
     T& operator()( size_type i )
     {
-        FEEL_ASSERT (this->isInitialized()).error( "vector not initialized" );
-        FEEL_ASSERT ( (i >= this->firstLocalIndex()) &&
+        FEELPP_ASSERT (this->isInitialized()).error( "vector not initialized" );
+        FEELPP_ASSERT ( (i >= this->firstLocalIndex()) &&
                       (i <  this->lastLocalIndex()))
             ( i )
             ( this->firstLocalIndex() )
@@ -210,8 +210,8 @@ public:
      */
     T operator[]( size_type i ) const
     {
-        FEEL_ASSERT (this->isInitialized()).error( "vector not initialized" );
-        FEEL_ASSERT ( (i >= this->firstLocalIndex()) &&
+        FEELPP_ASSERT (this->isInitialized()).error( "vector not initialized" );
+        FEELPP_ASSERT ( (i >= this->firstLocalIndex()) &&
                       (i < this->lastLocalIndex()))
             ( i )
             ( this->firstLocalIndex() )
@@ -225,8 +225,8 @@ public:
      */
     T& operator[]( size_type i )
     {
-        FEEL_ASSERT (this->isInitialized()).error( "vector not initialized" );
-        FEEL_ASSERT ( (i >= this->firstLocalIndex()) &&
+        FEELPP_ASSERT (this->isInitialized()).error( "vector not initialized" );
+        FEELPP_ASSERT ( (i >= this->firstLocalIndex()) &&
                       (i <=  this->lastLocalIndex()))
             ( i )
             ( this->firstLocalIndex() )
@@ -445,7 +445,7 @@ public:
     void addVector (const std::vector<value_type>& v,
                     const std::vector<size_type>& dof_indices)
     {
-        FEEL_ASSERT (v.size() == dof_indices.size()).error( "invalid dof indices" );
+        FEELPP_ASSERT (v.size() == dof_indices.size()).error( "invalid dof indices" );
         this->outdateGlobalValues();
         for (size_type i=0; i<v.size(); i++)
             this->add (dof_indices[i], v[i]);
@@ -460,7 +460,7 @@ public:
     void addVector (const Vector<value_type>& V,
                     const std::vector<size_type>& dof_indices)
     {
-        FEEL_ASSERT (V.size() == dof_indices.size()).error( "invalid dof indices" );
+        FEELPP_ASSERT (V.size() == dof_indices.size()).error( "invalid dof indices" );
         this->outdateGlobalValues();
         for (size_type i=0; i<V.size(); i++)
             this->add (dof_indices[i], V(i));
@@ -474,7 +474,7 @@ public:
     void addVector (const Vector<value_type>& /*V_in*/,
                     const MatrixSparse<value_type>& /*A_in*/)
     {
-        FEEL_ASSERT( 0 ).error( "invalid call, not implemented yet" );
+        FEELPP_ASSERT( 0 ).error( "invalid call, not implemented yet" );
     }
 
     /**
@@ -486,7 +486,7 @@ public:
     void addVector (const ublas::vector<value_type>& V,
                     const std::vector<size_type>& dof_indices)
     {
-        FEEL_ASSERT (V.size() == dof_indices.size()).error( "invalid dof indices" );
+        FEELPP_ASSERT (V.size() == dof_indices.size()).error( "invalid dof indices" );
         this->outdateGlobalValues();
         for (size_type i=0; i<V.size(); i++)
             this->add (dof_indices[i], V(i));
@@ -499,7 +499,7 @@ public:
     void insert (const std::vector<T>& /*v*/,
                  const std::vector<size_type>& /*dof_indices*/)
     {
-        FEEL_ASSERT( 0 ).error( "invalid call, not implemented yet" );
+        FEELPP_ASSERT( 0 ).error( "invalid call, not implemented yet" );
     }
 
     /**
@@ -511,7 +511,7 @@ public:
     void insert (const Vector<T>& /*V*/,
                  const std::vector<size_type>& /*dof_indices*/)
     {
-        FEEL_ASSERT( 0 ).error( "invalid call, not implemented yet" );
+        FEELPP_ASSERT( 0 ).error( "invalid call, not implemented yet" );
     }
 
 
@@ -524,7 +524,7 @@ public:
     void insert (const ublas::vector<T>& /*V*/,
                  const std::vector<size_type>& /*dof_indices*/)
     {
-        FEEL_ASSERT( 0 ).error( "invalid call, not implemented yet" );
+        FEELPP_ASSERT( 0 ).error( "invalid call, not implemented yet" );
     }
 
     /**
@@ -600,7 +600,7 @@ public:
      * @return the \f$l_1\f$-norm of the vector, i.e.  the sum of the
      * absolute values.
      */
-    FEEL_DONT_INLINE real_type l1Norm() const
+    FEELPP_DONT_INLINE real_type l1Norm() const
     {
         checkInvariant();
         double local_l1 = ublas::norm_1( _M_vec );
@@ -624,7 +624,7 @@ public:
      * @return the \f$l_2\f$-norm of the vector, i.e.  the square root
      * of the sum of the squares of the elements.
      */
-    FEEL_DONT_INLINE real_type l2Norm() const
+    FEELPP_DONT_INLINE real_type l2Norm() const
     {
         checkInvariant();
         real_type local_norm2 = ublas::inner_prod( _M_vec, _M_vec );
@@ -689,7 +689,7 @@ public:
     /**
      * @compute sqrt on each element of the vector.
      */
-    FEEL_DONT_INLINE this_type sqrt() const;
+    FEELPP_DONT_INLINE this_type sqrt() const;
 
 
     /**
@@ -745,7 +745,7 @@ public:
      */
     void localize ( std::vector<value_type>& /*v_local*/) const
     {
-        FEEL_ASSERT( 0 ).error( "invalid call, not implemented yet" );
+        FEELPP_ASSERT( 0 ).error( "invalid call, not implemented yet" );
     }
 
     /**
@@ -838,7 +838,7 @@ template <typename T>
 VectorUblas<T>
 element_product( VectorUblas<T> const& v1, VectorUblas<T> const& v2 )
 {
-    FEEL_ASSERT( v1.localSize() == v2.localSize() &&
+    FEELPP_ASSERT( v1.localSize() == v2.localSize() &&
                  v1.size() == v2.size() )
         ( v1.localSize() )( v2.localSize() )
         ( v1.size() )( v2.size() ).error( "incompatible vector sizes" );
@@ -891,23 +891,23 @@ struct linalg_traits<Feel::VectorUblas<T,Storage> >
     typedef typename this_type::const_iterator const_iterator;
     typedef abstract_dense storage_type;
     typedef linalg_true index_sorted;
-    static FEEL_STRONG_INLINE size_type size(const this_type &v) { return v.size(); }
-    static FEEL_STRONG_INLINE iterator begin(this_type &v) { return v.begin(); }
-    static FEEL_STRONG_INLINE const_iterator begin(const this_type &v) { return v.begin(); }
-    static FEEL_STRONG_INLINE iterator end(this_type &v) { return v.end(); }
-    static FEEL_STRONG_INLINE const_iterator end(const this_type &v) { return v.end(); }
-    static FEEL_STRONG_INLINE origin_type* origin(this_type &v) { return &v; }
-    static FEEL_STRONG_INLINE const origin_type* origin(const this_type &v) { return &v; }
-    static FEEL_STRONG_INLINE void clear(origin_type*, const iterator &it, const iterator &ite)
+    static FEELPP_STRONG_INLINE size_type size(const this_type &v) { return v.size(); }
+    static FEELPP_STRONG_INLINE iterator begin(this_type &v) { return v.begin(); }
+    static FEELPP_STRONG_INLINE const_iterator begin(const this_type &v) { return v.begin(); }
+    static FEELPP_STRONG_INLINE iterator end(this_type &v) { return v.end(); }
+    static FEELPP_STRONG_INLINE const_iterator end(const this_type &v) { return v.end(); }
+    static FEELPP_STRONG_INLINE origin_type* origin(this_type &v) { return &v; }
+    static FEELPP_STRONG_INLINE const origin_type* origin(const this_type &v) { return &v; }
+    static FEELPP_STRONG_INLINE void clear(origin_type*, const iterator &it, const iterator &ite)
     { std::fill(it, ite, value_type(0)); }
-    static FEEL_STRONG_INLINE void do_clear(this_type &v) { v.clear(); }
-    static FEEL_STRONG_INLINE value_type access(const origin_type *, const const_iterator &it,
+    static FEELPP_STRONG_INLINE void do_clear(this_type &v) { v.clear(); }
+    static FEELPP_STRONG_INLINE value_type access(const origin_type *, const const_iterator &it,
                                                 const const_iterator &, size_type i)
     { return *( it+i ); }
-    static FEEL_STRONG_INLINE reference access(origin_type *, const iterator &it,
+    static FEELPP_STRONG_INLINE reference access(origin_type *, const iterator &it,
                                                const iterator &, size_type i)
     { return *( it+i ); }
-    static FEEL_STRONG_INLINE void resize(this_type &v, size_type n) { v.resize(n, true); }
+    static FEELPP_STRONG_INLINE void resize(this_type &v, size_type n) { v.resize(n, true); }
 };
 
 

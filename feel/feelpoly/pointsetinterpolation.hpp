@@ -123,7 +123,7 @@ public:
 
     ublas::matrix_range<nodes_type const> pointsByEntity( uint16_type e ) const
     {
-        FEEL_ASSERT( _M_eid[e].size() )( e ).error( "no points defined on this entity" );
+        FEELPP_ASSERT( _M_eid[e].size() )( e ).error( "no points defined on this entity" );
 
         return ublas::project( this->points(),
                                ublas::range(0,Dim),
@@ -283,7 +283,7 @@ public:
 
     void addToPtE ( uint16_type p, range_type q ) { _M_pt_to_entity[p] = q; }
 
-    FEEL_DEFINE_VISITABLE();
+    FEELPP_DEFINE_VISITABLE();
 
 private:
 

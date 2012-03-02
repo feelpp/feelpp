@@ -37,7 +37,7 @@ extern "C"
 #include <petsc.h>
 #include <petscerror.h>
 }
-#if defined( FEEL_HAVE_SLEPC )
+#if defined( FEELPP_HAVE_SLEPC )
 # include <slepc.h>
 #endif /* HAVE_SLEPC */
 
@@ -71,7 +71,7 @@ namespace Feel
 {
 namespace PETSc
 {
-FEEL_STRONG_INLINE int VecDestroy( Vec& vec )
+FEELPP_STRONG_INLINE int VecDestroy( Vec& vec )
 {
 #if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
     ::VecDestroy( &vec );
@@ -79,7 +79,7 @@ FEEL_STRONG_INLINE int VecDestroy( Vec& vec )
     ::VecDestroy( vec );
 #endif
 }
-FEEL_STRONG_INLINE int VecScatterDestroy( VecScatter& scatter )
+FEELPP_STRONG_INLINE int VecScatterDestroy( VecScatter& scatter )
 {
 #if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
     ::VecScatterDestroy(&scatter);
@@ -89,7 +89,7 @@ FEEL_STRONG_INLINE int VecScatterDestroy( VecScatter& scatter )
 
 
 }
-FEEL_STRONG_INLINE int MatDestroy( Mat& mat )
+FEELPP_STRONG_INLINE int MatDestroy( Mat& mat )
 {
 #if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
     ::MatDestroy( &mat );
@@ -98,7 +98,7 @@ FEEL_STRONG_INLINE int MatDestroy( Mat& mat )
 #endif
 }
 
-FEEL_STRONG_INLINE int ISDestroy( IS& is )
+FEELPP_STRONG_INLINE int ISDestroy( IS& is )
 {
 #if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
     ::ISDestroy( &is );
@@ -106,7 +106,7 @@ FEEL_STRONG_INLINE int ISDestroy( IS& is )
     ::ISDestroy( is );
 #endif
 }
-FEEL_STRONG_INLINE int KSPDestroy (KSP& ksp )
+FEELPP_STRONG_INLINE int KSPDestroy (KSP& ksp )
 {
 #if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
     ::KSPDestroy( &ksp );
@@ -114,7 +114,7 @@ FEEL_STRONG_INLINE int KSPDestroy (KSP& ksp )
     ::KSPDestroy( ksp );
 #endif
 }
-FEEL_STRONG_INLINE int PCDestroy (PC& pc )
+FEELPP_STRONG_INLINE int PCDestroy (PC& pc )
 {
 #if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
     ::PCDestroy( &pc);
@@ -123,7 +123,7 @@ FEEL_STRONG_INLINE int PCDestroy (PC& pc )
 #endif
 }
 
-FEEL_STRONG_INLINE int MatNullSpaceDestroy(MatNullSpace& nullsp )
+FEELPP_STRONG_INLINE int MatNullSpaceDestroy(MatNullSpace& nullsp )
 {
 #if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
     ::MatNullSpaceDestroy( &nullsp );
@@ -131,7 +131,7 @@ FEEL_STRONG_INLINE int MatNullSpaceDestroy(MatNullSpace& nullsp )
     ::MatNullSpaceDestroy( nullsp );
 #endif
 }
-FEEL_STRONG_INLINE int SNESDestroy (SNES& snes )
+FEELPP_STRONG_INLINE int SNESDestroy (SNES& snes )
 {
 #if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
     ::SNESDestroy( &snes);
@@ -140,7 +140,7 @@ FEEL_STRONG_INLINE int SNESDestroy (SNES& snes )
 #endif
 }
 
-FEEL_STRONG_INLINE int PetscViewerDestroy (PetscViewer& petsc_viewer)
+FEELPP_STRONG_INLINE int PetscViewerDestroy (PetscViewer& petsc_viewer)
 {
 #if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
     ::PetscViewerDestroy( &petsc_viewer );

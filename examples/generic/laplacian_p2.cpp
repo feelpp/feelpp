@@ -486,14 +486,14 @@ Laplacian<Order>::run()
                     vectorial_space_ptrtype Wvh = vectorial_space_type::New( localmesh );
                     space_ptrtype Wsh = space_type::New( localmesh );
 
-                    FEEL_ASSERT
+                    FEELPP_ASSERT
                         ( ublas::norm_frobenius( localmesh->element( 0 ).G() -
                                                  it->element0().G() ) < 1e-10 )
 
                         ( it->id() )( localmesh->element( 0 ).id() ).error( "invalid local element");
                     if ( !it->isOnBoundary() )
                         {
-                            FEEL_ASSERT
+                            FEELPP_ASSERT
                                 ( ublas::norm_frobenius( localmesh->element( 1 ).G() -
                                                          it->element1().G() ) < 1e-10 )
 
@@ -522,7 +522,7 @@ Laplacian<Order>::run()
                     mesh_type::element_iterator itl, enl;
                     //typename std::vector<typename mesh_type::element_type>::iterator itl, enl;
                     boost::tie( itl, enl ) = localmesh->elementsRange();
-                    FEEL_ASSERT( std::distance( itl, enl ) ==  localmesh->numElements() )( localmesh->numElements() )( std::distance( itl, enl ) ).error( "invalid element range");
+                    FEELPP_ASSERT( std::distance( itl, enl ) ==  localmesh->numElements() )( localmesh->numElements() )( std::distance( itl, enl ) ).error( "invalid element range");
 
                     // for each basis function in each element
                     // associated to the face, construct the
@@ -544,9 +544,9 @@ Laplacian<Order>::run()
                                     wglobal[lelt[n]][i] = vectorial_element_ptrtype( new vectorial_element_type( Wh, "wglobal" ) );
                                     w.zero();
                                     w( k ) = 1;
-                                    FEEL_ASSERT( w.l2Norm() == 1 )( lelt[n] )( i )( w.l2Norm() )( k ).error( "invalid local basis function" );
+                                    FEELPP_ASSERT( w.l2Norm() == 1 )( lelt[n] )( i )( w.l2Norm() )( k ).error( "invalid local basis function" );
 
-                                    FEEL_ASSERT
+                                    FEELPP_ASSERT
                                         ( ( ublas::norm_frobenius( itl->face( lface[n] ).G() - it->G() ) < 1e-10 ) &&
                                           ( ublas::norm_frobenius( localmesh->face( itl->face( lface[n] ).id() ).G() - it->G() ) < 1e-10 ) )
                                         ( itl->face( lface[n] ).G() )
@@ -556,13 +556,13 @@ Laplacian<Order>::run()
 
                                     if ( it->isOnBoundary() )
                                         {
-                                            FEEL_ASSERT( localmesh->face( itl->face( lface[n] ).id() ).isOnBoundary() ).error( "invalid local boundary face" );
+                                            FEELPP_ASSERT( localmesh->face( itl->face( lface[n] ).id() ).isOnBoundary() ).error( "invalid local boundary face" );
                                             form1( Wvh, Floc, _init=true ) = integrate( _range=idedfaces( localmesh, itl->face( lface[n] ).id() ), _quad=im,
                                                                                         _expr=trans(idv( w )*N())*id( vv ) );
                                         }
                                     else
                                         {
-                                            FEEL_ASSERT( ( std::distance( localmesh->beginInternalFace(),
+                                            FEELPP_ASSERT( ( std::distance( localmesh->beginInternalFace(),
                                                                           localmesh->endInternalFace() ) == 1 ) &&
                                                          ( ublas::norm_frobenius( localmesh->beginInternalFace()->G() -
                                                                                   it->G() ) < 1e-10 ) ).error( "invalid local internal face");
@@ -603,7 +603,7 @@ Laplacian<Order>::run()
                                             }
                                     Log() << "element " << lelt[n] << " global basis_" << i << " norm= " << wglobal[lelt[n]][i]->l2Norm() << "\n";
 #if 0
-                                    FEEL_ASSERT( wlocal[lelt[n]][i]->l2Norm() > 1e-10 &&
+                                    FEELPP_ASSERT( wlocal[lelt[n]][i]->l2Norm() > 1e-10 &&
                                                  wglobal[lelt[n]][i]->l2Norm() > 1e-10 )
                                         ( lelt[n] )( i )
                                         ( wlocal[lelt[n]][i]->l2Norm()  )

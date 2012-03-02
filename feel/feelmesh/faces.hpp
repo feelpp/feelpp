@@ -613,7 +613,7 @@ public:
     std::pair<face_iterator,bool> addFace( face_type& f )
     {
         std::pair<face_iterator,bool> ret =  _M_faces.insert( f );
-        FEEL_ASSERT( ret.second )( ret.second )( ret.first->id() )( f.id() ).warn("face not added to container");
+        FEELPP_ASSERT( ret.second )( ret.second )( ret.first->id() )( f.id() ).warn("face not added to container");
         return ret;
     }
 

@@ -154,7 +154,7 @@ struct test_mesh_filters
                     int face_1 = it->pos_second();
                     Feel::node<double>::type n00 = it->element(0).point( it->element(0).fToP( face_0, 0 ) ).node();
                     Feel::node<double>::type n10 = it->element(1).point( it->element(1).fToP( face_1, 1 ) ).node();
-                    FEEL_ASSERT( ublas::norm_2( n00 - n10 ) < 1e-15 )
+                    FEELPP_ASSERT( ublas::norm_2( n00 - n10 ) < 1e-15 )
                         ( it->id() )
                         ( it->element( 0 ).G() )
                         ( face_0 )
@@ -168,7 +168,7 @@ struct test_mesh_filters
                     BOOST_CHECK( ublas::norm_2( n00 - n10 ) < 1e-15 );
                     Feel::node<double>::type n01 = it->element(0).point( it->element(0).fToP( face_0, 1 ) ).node();
                     Feel::node<double>::type n11 = it->element(1).point( it->element(1).fToP( face_1, 0 ) ).node();
-                    FEEL_ASSERT( ublas::norm_2( n01 - n11 ) < 1e-15 )
+                    FEELPP_ASSERT( ublas::norm_2( n01 - n11 ) < 1e-15 )
                         ( it->id() )
                         ( it->element( 0 ).G() )
                         ( face_0 )

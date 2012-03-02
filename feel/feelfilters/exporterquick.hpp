@@ -26,8 +26,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2008-02-21
  */
-#ifndef __FEEL_EXPORTERQUICK_HPP__
-#define __FEEL_EXPORTERQUICK_HPP__ 1
+#ifndef __FEELPP_EXPORTERQUICK_HPP__
+#define __FEELPP_EXPORTERQUICK_HPP__ 1
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelfilters/exporterensight.hpp>
 #include <feel/feelfilters/exportergmsh.hpp>
@@ -75,7 +75,7 @@ public:
     {
         if ( !mesh )
             {
-                FEEL_ASSERT( mesh ).error( "[ExporterQuick] invalid mesh (=0)" );
+                FEELPP_ASSERT( mesh ).error( "[ExporterQuick] invalid mesh (=0)" );
                 return;
             }
         typename timeset_type::step_ptrtype timeStep = timeSet->step( 0 );
@@ -127,4 +127,4 @@ private:
 };
 
 }
-#endif // __FEEL_EXPORTERQUICK_HPP__
+#endif // __FEELPP_EXPORTERQUICK_HPP__

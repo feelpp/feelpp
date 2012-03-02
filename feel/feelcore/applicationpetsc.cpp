@@ -39,7 +39,7 @@ namespace Feel
 {
 #if defined( HAVE_PETSC_H )
 
-FEEL_NO_EXPORT
+FEELPP_NO_EXPORT
 po::options_description
 petscOptions()
 {

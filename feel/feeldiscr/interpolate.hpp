@@ -203,7 +203,7 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
         {
             meshinv.addPointWithId( *it_dofpt );
         }
-        FEEL_ASSERT( meshinv.nPoints() == nbpts )( meshinv.nPoints() )( nbpts ).error( "invalid number of points " );
+        FEELPP_ASSERT( meshinv.nPoints() == nbpts )( meshinv.nPoints() )( nbpts ).error( "invalid number of points " );
         meshinv.distribute();
 
         std::vector<bool> dof_done( nbpts );
@@ -267,7 +267,7 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
             if ( dof_done[i] != true )
             {
                 Log() << "[interpolate] dof not treated\n";
-                //FEEL_ASSERT( dof_done[i] == true )( i ).warn ( "invalid dof, was not treated" );
+                //FEELPP_ASSERT( dof_done[i] == true )( i ).warn ( "invalid dof, was not treated" );
 
                 typename SpaceType::dof_type::dof_points_const_iterator it_dofpt = space->dof()->dofPointBegin();
                 typename SpaceType::dof_type::dof_points_const_iterator en_dofpt = space->dof()->dofPointEnd();

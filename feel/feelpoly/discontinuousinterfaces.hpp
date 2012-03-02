@@ -333,7 +333,7 @@ public:
                     uint16_type iVeEl = element_type::fToP( iFaEl, iVeFa );
                     Feel::detail::ignore_unused_variable_warning(iVeEl);
 
-                    FEEL_ASSERT( iVeEl != invalid_uint16_type_value ).error( "invalid local dof" );
+                    FEELPP_ASSERT( iVeEl != invalid_uint16_type_value ).error( "invalid local dof" );
 
                     // Loop number of Dof per vertex
                     for ( uint16_type l = 0; l < fe_type::nDofPerVertex; ++l )
@@ -345,7 +345,7 @@ public:
                             bool inserted = M_dof.insertDof( elt.id(), lid, iVeEl, boost::make_tuple(0, 0, gDof), 0, next_free_dof, 1, false, shift );
                             if ( shift )
                                 {
-                                    FEEL_ASSERT( inserted == false )( elt.id() )
+                                    FEELPP_ASSERT( inserted == false )( elt.id() )
                                         ( lid )( gDof )( next_free_dof ).error( "should have inserted unique dof" );
                                 }
                             Debug( 5015 ) << "vertex discontinuous dof inserted : " << inserted << "\n";

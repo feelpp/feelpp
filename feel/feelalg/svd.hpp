@@ -497,7 +497,7 @@ SVD<MatrixA>::SVD( MatrixA const& A )
     _M_V( _M_cols, _M_cols ),
     _M_S( _M_cols )
 {
-    //FEEL_ASSERT( _M_rows >= _M_cols ).error("The Matrix A should have at least as many rows as it has columns");
+    //FEELPP_ASSERT( _M_rows >= _M_cols ).error("The Matrix A should have at least as many rows as it has columns");
 
     MatrixA B( A );
 

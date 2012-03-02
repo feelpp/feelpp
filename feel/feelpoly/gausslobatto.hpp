@@ -103,7 +103,7 @@ public :
 
     ~GaussLobatto() {}
 
-    FEEL_DEFINE_VISITABLE();
+    FEELPP_DEFINE_VISITABLE();
 };
 
 
@@ -167,7 +167,7 @@ public :
 
     ~GaussLobatto() {}
 
-    FEEL_DEFINE_VISITABLE();
+    FEELPP_DEFINE_VISITABLE();
 };
 
 /** Gauss-Lobatto x Left-Radau x Left-Radau Quadrature on a tetrahedra **/
@@ -238,7 +238,7 @@ public :
 
     ~GaussLobatto() {}
 
-    FEEL_DEFINE_VISITABLE();
+    FEELPP_DEFINE_VISITABLE();
 };
 
 
@@ -292,7 +292,7 @@ public :
 
     ~GaussLobatto() {}
 
-    FEEL_DEFINE_VISITABLE();
+    FEELPP_DEFINE_VISITABLE();
 };
 
 /** GaussLobatto Quadrature on the hexahedra [-1,1]x[-1,1]x[-1,1] **/
@@ -344,7 +344,7 @@ public :
     }
 
     ~GaussLobatto() {}
-    FEEL_DEFINE_VISITABLE();
+    FEELPP_DEFINE_VISITABLE();
 };
 /// \endcond
 
@@ -403,7 +403,7 @@ public:
 
     PointSetGaussLobatto( int interior = 0 )
     {
-        FEEL_ASSERT( is_hypercube || (Dim == 1)  ).error("gauss lobatto points are just defined in simplex products");
+        FEELPP_ASSERT( is_hypercube || (Dim == 1)  ).error("gauss lobatto points are just defined in simplex products");
 
         nodes_type pts( Dim, numPoints );
 

@@ -1193,7 +1193,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
             for( permutation_type __p( permutation_type::IDENTITY );
                  __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
             {
-                //FEEL_ASSERT( ppts[__f].find(__p)->second.size2() != 0 ).warn( "invalid quadrature type" );
+                //FEELPP_ASSERT( ppts[__f].find(__p)->second.size2() != 0 ).warn( "invalid quadrature type" );
                 __geopc[__f][__p] = pc_ptrtype(  new pc_type( __form.gm(), ppts[__f].find(__p)->second ) );
                 __geopc1[__f][__p] = pc1_ptrtype(  new pc1_type( __form.gm1(), ppts[__f].find(__p)->second ) );
             }
@@ -1307,7 +1307,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                     default:
                     case GeomapStrategyType::GEOMAP_HO:
                     {
-                        FEEL_ASSERT( it->isOnBoundary() == false  )
+                        FEELPP_ASSERT( it->isOnBoundary() == false  )
                             ( it->id() ).error( "face on boundary but connected on both sides");
                         //ti0.restart();
                         // get the id of the face in each adjacent element
@@ -1336,7 +1336,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                     case GeomapStrategyType::GEOMAP_O1:
                     case GeomapStrategyType::GEOMAP_OPT:
                     {
-                        FEEL_ASSERT( it->isOnBoundary() == false  )
+                        FEELPP_ASSERT( it->isOnBoundary() == false  )
                             ( it->id() ).error( "face on boundary but connected on both sides");
                         //ti0.restart();
                         // get the id of the face in each adjacent element
@@ -1380,7 +1380,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                 __c0->update( it->element(0),__face_id_in_elt_0 );
                 //t0 += ti0.elapsed();
 
-                FEEL_ASSERT( __face_id_in_elt_0 == __c0->faceId() )
+                FEELPP_ASSERT( __face_id_in_elt_0 == __c0->faceId() )
                     ( __face_id_in_elt_0 )
                     ( __c0->faceId() ).warn ( "invalid face id" );
 
@@ -1498,7 +1498,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate( detail::Biline
             for( permutation_type __p( permutation_type::IDENTITY );
                  __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
             {
-                //FEEL_ASSERT( ppts[__f].find(__p)->second.size2() != 0 ).warn( "invalid quadrature type" );
+                //FEELPP_ASSERT( ppts[__f].find(__p)->second.size2() != 0 ).warn( "invalid quadrature type" );
                 __geopcExpr[__f][__p] = pc_expr_ptrtype(  new pc_expr_type( elt_it->element(0).gm(), ppts[__f].find(__p)->second ) );
             }
         }
@@ -1649,7 +1649,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate( detail::Linear
             for( permutation_type __p( permutation_type::IDENTITY );
                  __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
             {
-                //FEEL_ASSERT( ppts[__f].find(__p)->second.size2() != 0 ).warn( "invalid quadrature type" );
+                //FEELPP_ASSERT( ppts[__f].find(__p)->second.size2() != 0 ).warn( "invalid quadrature type" );
                 __geopcExpr[__f][__p] = pc_expr_ptrtype(  new pc_expr_type( elt_it->element(0).gm(), ppts[__f].find(__p)->second ) );
             }
         }
@@ -1999,7 +1999,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_FACES> ) const
             for( permutation_type __p( permutation_type::IDENTITY );
                  __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
             {
-                //FEEL_ASSERT( ppts[__f][__p]->size2() != 0 ).warn( "invalid quadrature type" );
+                //FEELPP_ASSERT( ppts[__f][__p]->size2() != 0 ).warn( "invalid quadrature type" );
                 __geopc[__f][__p] = pc_ptrtype(  new pc_type( gm, ppts[__f].find(__p)->second ) );
             }
         }
@@ -2059,7 +2059,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_FACES> ) const
 
             if ( it->isConnectedTo1() )
                 {
-                    FEEL_ASSERT( it->isOnBoundary() == false   )
+                    FEELPP_ASSERT( it->isOnBoundary() == false   )
                         ( it->id() ).error( "face on boundary but connected on both sides");
                     uint16_type __face_id_in_elt_0 = it->pos_first();
                     uint16_type __face_id_in_elt_1 = it->pos_second();
@@ -2274,7 +2274,7 @@ Integrator<Elements, Im, Expr, Im2>::broken( boost::shared_ptr<P0hType>& P0h, mp
             for( permutation_type __p( permutation_type::IDENTITY );
                  __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
             {
-                //FEEL_ASSERT( ppts[__f][__p]->size2() != 0 ).warn( "invalid quadrature type" );
+                //FEELPP_ASSERT( ppts[__f][__p]->size2() != 0 ).warn( "invalid quadrature type" );
                 __geopc[__f][__p] = pc_ptrtype(  new pc_type( gm, ppts[__f].find(__p)->second ) );
             }
         }
@@ -2331,7 +2331,7 @@ Integrator<Elements, Im, Expr, Im2>::broken( boost::shared_ptr<P0hType>& P0h, mp
 
             if ( it->isConnectedTo1() )
                 {
-                    FEEL_ASSERT( it->isOnBoundary() == false   )
+                    FEELPP_ASSERT( it->isOnBoundary() == false   )
                         ( it->id() ).error( "face on boundary but connected on both sides");
                     uint16_type __face_id_in_elt_0 = it->pos_first();
                     uint16_type __face_id_in_elt_1 = it->pos_second();

@@ -88,7 +88,7 @@ public:
 /// \endcond
 
 
-#define FEEL_DECLARE_FLAGS(Flags, Enum)         \
+#define FEELPP_DECLARE_FLAGS(Flags, Enum)         \
     typedef detail::Flags<Enum> Flags;
 
 } // Feel

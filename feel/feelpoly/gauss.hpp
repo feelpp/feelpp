@@ -74,7 +74,7 @@ public :
 
     ~Gauss() {}
 
-    FEEL_DEFINE_VISITABLE();
+    FEELPP_DEFINE_VISITABLE();
 };
 
 /// \cond detail
@@ -114,7 +114,7 @@ public :
 
     ~Gauss() {}
 
-    FEEL_DEFINE_VISITABLE();
+    FEELPP_DEFINE_VISITABLE();
 };
 
 /** Gauss Quadrature on a triangle **/
@@ -189,7 +189,7 @@ public :
 
     ~Gauss() {}
 
-    FEEL_DEFINE_VISITABLE();
+    FEELPP_DEFINE_VISITABLE();
 };
 
 
@@ -260,7 +260,7 @@ public :
 
     ~Gauss() {}
 
-    FEEL_DEFINE_VISITABLE();
+    FEELPP_DEFINE_VISITABLE();
 };
 
 /** Gauss Quadrature on Simplex Product **/
@@ -319,7 +319,7 @@ public :
 
     ~Gauss() {}
 
-    FEEL_DEFINE_VISITABLE();
+    FEELPP_DEFINE_VISITABLE();
 };
 /** Gauss Quadrature on the quadrangle [-1,1]x[-1,1] **/
 
@@ -378,7 +378,7 @@ public :
 
     ~Gauss() {}
 
-    FEEL_DEFINE_VISITABLE();
+    FEELPP_DEFINE_VISITABLE();
 };
 
 /** Gauss Quadrature on the hexahedra [-1,1]x[-1,1]x[-1,1] **/
@@ -431,7 +431,7 @@ public :
 
     ~Gauss() {}
 
-    FEEL_DEFINE_VISITABLE();
+    FEELPP_DEFINE_VISITABLE();
 };
 
 
@@ -482,7 +482,7 @@ public :
 
     ~Gauss() {}
 
-    FEEL_DEFINE_VISITABLE();
+    FEELPP_DEFINE_VISITABLE();
 };
 
 
@@ -537,7 +537,7 @@ public :
 
     ~Gauss() {}
 
-    FEEL_DEFINE_VISITABLE();
+    FEELPP_DEFINE_VISITABLE();
 };
 /// \endcond
 } // Feel

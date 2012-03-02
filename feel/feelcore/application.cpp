@@ -80,7 +80,7 @@ namespace fs = boost::filesystem;
 namespace ptree = boost::property_tree;
 
 
-FEEL_NO_EXPORT
+FEELPP_NO_EXPORT
 std::pair<std::string, std::string>
 at_option_parser(std::string const&s)
 {
@@ -100,7 +100,7 @@ Application::initPETSc()
             PETSC_COMM_WORLD = COMM_WORLD;
             int __argc = this->unknownArgc();
             char** __argv = this->unknownArgv();
-#if defined( FEEL_HAVE_SLEPC )
+#if defined( FEELPP_HAVE_SLEPC )
             int ierr = SlepcInitialize(&__argc,&__argv, PETSC_NULL, PETSC_NULL );
 #else
             int ierr = PetscInitialize( &__argc, &__argv, PETSC_NULL, PETSC_NULL );
@@ -422,11 +422,11 @@ Application::~Application()
     PetscInitialized( &is_petsc_initialized );
     if ( is_petsc_initialized )
     {
-#if defined( FEEL_HAVE_SLEPC )
+#if defined( FEELPP_HAVE_SLEPC )
         SlepcFinalize();
 #else
         PetscFinalize();
-#endif // FEEL_HAVE_SLEPC
+#endif // FEELPP_HAVE_SLEPC
     }
 #endif // HAVE_PETSC_H
 

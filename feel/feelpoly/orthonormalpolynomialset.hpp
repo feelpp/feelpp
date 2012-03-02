@@ -125,7 +125,7 @@ public:
             std::cout << "m1=" << m << "\n"
                       << "m2=" << polyset_type::toMatrix( polyset_type::toType( m ) ) << "\n"
                       << ublas::norm_frobenius( polyset_type::toMatrix( polyset_type::toType( m ) ) - m ) << "\n";
-        FEEL_ASSERT( ublas::norm_frobenius( polyset_type::toMatrix( polyset_type::toType( m ) ) -
+        FEELPP_ASSERT( ublas::norm_frobenius( polyset_type::toMatrix( polyset_type::toType( m ) ) -
                                              m ) < 1e-10 )( m ).warn ( "invalid transformation" );
         this->setCoefficient( polyset_type::toType( m ), true );
     }
@@ -224,7 +224,7 @@ public:
         ublas::matrix<value_type> m( ublas::identity_matrix<value_type>( nComponents*convex_type::polyDims( nOrder ) ) );
         if ( is_tensor2 )
             std::cout << "[orthonormalpolynomialset] m = " << m << "\n";
-        FEEL_ASSERT( ublas::norm_frobenius( polyset_type::toMatrix( polyset_type::toType( m ) ) -
+        FEELPP_ASSERT( ublas::norm_frobenius( polyset_type::toMatrix( polyset_type::toType( m ) ) -
                                              m ) < 1e-10 )( m ).warn ( "invalid transformation" );
         this->setCoefficient( polyset_type::toType( m ), true );
     }

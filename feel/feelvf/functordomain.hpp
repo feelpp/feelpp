@@ -59,7 +59,7 @@ public:
 
     virtual value_type lowerBound() const
         {
-            FEEL_ASSERT( true )( "FunctorDomain::lowerBound() called for a domain without "
+            FEELPP_ASSERT( true )( "FunctorDomain::lowerBound() called for a domain without "
                                   "a lower bound" );
             return 0.0;
         }
@@ -68,7 +68,7 @@ public:
 
     virtual value_type upperBound() const
         {
-            FEEL_ASSERT( true )( "FunctorDomain::upperBound() called for a domain without "
+            FEELPP_ASSERT( true )( "FunctorDomain::upperBound() called for a domain without "
                                   "a upper bound" );
             return 0.0;
         }
@@ -77,7 +77,7 @@ public:
 
     virtual value_type excludedPoint() const
         {
-            FEEL_ASSERT( true )( "FunctorDomain::excludedPoint() called for a domain without "
+            FEELPP_ASSERT( true )( "FunctorDomain::excludedPoint() called for a domain without "
                                   "an excluded point" );
             return 0.0;
         }

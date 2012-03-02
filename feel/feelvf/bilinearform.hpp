@@ -575,10 +575,10 @@ public:
         void precomputeBasisAtPoints( uint16_type __f, permutation_1_type const& __p, Pts const& pts )
             {
                 _M_test_pc_face[__f][__p] = test_precompute_ptrtype( new test_precompute_type( _M_form.testSpace()->fe(), pts ) );
-                //FEEL_ASSERT( _M_test_pc_face.find(__f )->second )( __f ).error( "invalid test precompute type" );
+                //FEELPP_ASSERT( _M_test_pc_face.find(__f )->second )( __f ).error( "invalid test precompute type" );
 
                 _M_trial_pc_face[__f][__p] = trial_precompute_ptrtype( new trial_precompute_type( _M_form.trialSpace()->fe(), pts ) );
-                //FEEL_ASSERT( _M_trial_pc_face.find(__f )->second )( __f ).error( "invalid trial precompute type" );
+                //FEELPP_ASSERT( _M_trial_pc_face.find(__f )->second )( __f ).error( "invalid trial precompute type" );
             }
 
         template<typename PtsSet>
@@ -667,7 +667,7 @@ public:
             {
                 if ( __f == invalid_uint16_type_value )
                     return  _M_test_pc;
-                //FEEL_ASSERT( _M_test_pc_face.find(__f )->second )( __f ).error( "invalid test precompute type" );
+                //FEELPP_ASSERT( _M_test_pc_face.find(__f )->second )( __f ).error( "invalid test precompute type" );
                 return _M_test_pc_face.find(__f )->second.find( __p )->second;
             }
 
@@ -682,7 +682,7 @@ public:
             {
                 if ( __f == invalid_uint16_type_value )
                     return  _M_trial_pc;
-                //FEEL_ASSERT( _M_trial_pc_face.find(__f )->second )( __f ).error( "invalid trial precompute type" );
+                //FEELPP_ASSERT( _M_trial_pc_face.find(__f )->second )( __f ).error( "invalid trial precompute type" );
                 return _M_trial_pc_face.find(__f )->second.find( __p )->second;
             }
 
