@@ -31,7 +31,7 @@ PROJECT_NAME           = Feel++
 # This could be handy for archiving the generated documentation or
 # if some version control system is used.
 
-PROJECT_NUMBER         = "@FEEL_VERSION_STRING@"
+PROJECT_NUMBER         = "@FEELPP_VERSION_STRING@"
 
 # The OUTPUT_DIRECTORY tag is used to specify the (relative or absolute)
 # base path where the generated documentation will be put.
@@ -573,12 +573,12 @@ WARN_LOGFILE           = Doxylog
 # directories like "/usr/src/myproject". Separate the files or directories
 # with spaces.
 #
-INPUT                  = "@FEEL_HOME_DIR@/feel/feelcore" \
-                         "@FEEL_HOME_DIR@/feel/feelalg" \
-                         "@FEEL_HOME_DIR@/feel/feelfilters" \
-                         "@FEEL_HOME_DIR@/feel/feelmesh" \
-                         "@FEEL_HOME_DIR@/doc/api"\
-                         "@FEEL_HOME_DIR@/doc/tutorial"
+INPUT                  = "@FEELPP_HOME_DIR@/feel/feelcore" \
+                         "@FEELPP_HOME_DIR@/feel/feelalg" \
+                         "@FEELPP_HOME_DIR@/feel/feelfilters" \
+                         "@FEELPP_HOME_DIR@/feel/feelmesh" \
+                         "@FEELPP_HOME_DIR@/doc/api"\
+                         "@FEELPP_HOME_DIR@/doc/tutorial"
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding, which is
@@ -636,7 +636,7 @@ EXCLUDE_SYMBOLS        =
 # directories that contain example code fragments that are included (see
 # the \include command).
 
-EXAMPLE_PATH           = "@FEEL_HOME_DIR@/doc/tutorial" \
+EXAMPLE_PATH           = "@FEELPP_HOME_DIR@/doc/tutorial" \
                          "@CMAKE_CURRENT_BINARY_DIR@/../"
 
 
@@ -658,7 +658,7 @@ EXAMPLE_RECURSIVE      = YES
 # directories that contain image that are included in the documentation (see
 # the \image command).
 
-IMAGE_PATH             = "@FEEL_HOME_DIR@/doc/tutorial/pngs/"\
+IMAGE_PATH             = "@FEELPP_HOME_DIR@/doc/tutorial/pngs/"\
                          "@CMAKE_CURRENT_BINARY_DIR@/../tutorial/"
 
 # The INPUT_FILTER tag can be used to specify a program that doxygen should
@@ -1030,7 +1030,7 @@ EXTRA_PACKAGES         = amsmath \
 # the first chapter. If it is left blank doxygen will generate a
 # standard header. Notice: only use this tag if you know what you are doing!
 
-LATEX_HEADER           = @FEEL_HOME_DIR@/doc/api/latexheader.tex
+LATEX_HEADER           = @FEELPP_HOME_DIR@/doc/api/latexheader.tex
 
 # If the PDF_HYPERLINKS tag is set to YES, the LaTeX that is generated
 # is prepared for conversion to pdf (using ps2pdf). The pdf file will
@@ -1261,8 +1261,8 @@ INCLUDE_FILE_PATTERNS  =
 PREDEFINED             = HAVE_MPI \
                          HAVE_PETSC_H \
                          HAVE_PETSC \
-                         FEEL_HAVE_QD_REAL \
-                         FEEL_HAVE_DD_REAL
+                         FEELPP_HAVE_QD_REAL \
+                         FEELPP_HAVE_DD_REAL
 
 # If the MACRO_EXPANSION and EXPAND_ONLY_PREDEF tags are set to YES then
 # this tag can be used to specify a list of macro names that should be expanded.
