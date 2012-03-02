@@ -700,7 +700,6 @@ BOOST_PARAMETER_FUNCTION(
             desc->setMshFileByPartition( partition_file );
 
             std::string fname = desc->generate( desc->prefix(), desc->description(), force_rebuild, parametricnodes );
-
             // refinement if option is enabled to a value greater or equal to 1
             if ( refine )
                 {
@@ -710,7 +709,6 @@ BOOST_PARAMETER_FUNCTION(
                 }
 
             ImporterGmsh<_mesh_type> import( fname, FEEL_GMSH_FORMAT_VERSION, worldcomm );
-
             // need to replace physical_regions by elementary_regions for specific meshes
             if (physical_are_elementary_regions)
                 {
@@ -840,22 +838,16 @@ BOOST_PARAMETER_FUNCTION(
     // first try in the current path
     if ( fs::exists( cp / filename ) )
       {
-	std::string desc = gmsh_ptr->preamble()+gmsh_ptr->getDescriptionFromFile((cp/filename).string());
-	gmsh_ptr->setDescription( desc );
-	//gmsh_ptr->setDescription(gmsh_ptr->getDescriptionFromFile((cp/filename).string()));
+          gmsh_ptr->setDescription(gmsh_ptr->getDescriptionFromFile((cp/filename).string()));
       }
     else if ( fs::exists( fs::path(Environment::localGeoRepository()) / filename ) )
       {
-        //gmsh_ptr->setDescription( gmsh_ptr->getDescriptionFromFile((fs::path(Environment::localGeoRepository()) / filename).string()) );
-	std::string desc = gmsh_ptr->preamble()+gmsh_ptr->getDescriptionFromFile((fs::path(Environment::localGeoRepository()) / filename).string());
-	gmsh_ptr->setDescription( desc );
+          gmsh_ptr->setDescription( gmsh_ptr->getDescriptionFromFile((fs::path(Environment::localGeoRepository()) / filename).string()) );
       }
     else if ( Environment::systemGeoRepository().template get<1>()  &&
               fs::exists( fs::path(Environment::systemGeoRepository().get<0>()) / filename ) )
       {
-        //gmsh_ptr->setDescription( gmsh_ptr->getDescriptionFromFile((fs::path(Environment::systemGeoRepository().get<0>()) / filename).string()) );
-	std::string desc = gmsh_ptr->preamble()+gmsh_ptr->getDescriptionFromFile((fs::path(Environment::systemGeoRepository().get<0>()) / filename).string());
-	gmsh_ptr->setDescription( desc );
+          gmsh_ptr->setDescription( gmsh_ptr->getDescriptionFromFile((fs::path(Environment::systemGeoRepository().get<0>()) / filename).string()) );
       }
     else
     {
