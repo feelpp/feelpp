@@ -38,7 +38,7 @@ int main( int argc, char** argv )
 \n" )
 
 add_executable(${targetname} ${BENCH}.cpp )
-target_link_libraries(${targetname} ${FEEL_LIBRARIES} )
+target_link_libraries(${targetname} ${FEELPP_LIBRARIES} )
 
 endforeach() # dim
 

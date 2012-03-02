@@ -22,15 +22,15 @@
 #
 #
 if( PETSC_FOUND )
-  set( FEEL_PETSC_SRCS vectorpetsc.cpp matrixpetsc.cpp solverlinearpetsc.cpp solvernonlinearpetsc.cpp functionspetsc.cpp preconditionerpetsc.cpp)
+  set( FEELPP_PETSC_SRCS vectorpetsc.cpp matrixpetsc.cpp solverlinearpetsc.cpp solvernonlinearpetsc.cpp functionspetsc.cpp preconditionerpetsc.cpp)
 
-  if ( FEEL_HAVE_SLEPC )
-    set( FEEL_SLEPC_SRCS solvereigenslepc.cpp )
+  if ( FEELPP_HAVE_SLEPC )
+    set( FEELPP_SLEPC_SRCS solvereigenslepc.cpp )
   endif()
 endif()
 
 if ( TRILINOS_LIBRARIES )
-  set( FEEL_TRILINOS_SRCS vectorepetra.cpp matrixepetra.cpp preconditionerml.cpp preconditionerifpack.cpp backendtrilinos.cpp solvernonlineartrilinos.cpp )
+  set( FEELPP_TRILINOS_SRCS vectorepetra.cpp matrixepetra.cpp preconditionerml.cpp preconditionerifpack.cpp backendtrilinos.cpp solvernonlineartrilinos.cpp )
 endif()
 
 set( SRC
@@ -40,9 +40,9 @@ set( SRC
   backend.cpp  matrixshellsparse.cpp backend_adaptive_reuse_pc.cpp backendpetsc.cpp
   graphcsr.cpp  solvereigen.cpp
   solvernonlinear.cpp matrixblock.cpp vectorblock.cpp
-  ${FEEL_PETSC_SRCS}
-  ${FEEL_SLEPC_SRCS}
-  ${FEEL_TRILINOS_SRCS}
+  ${FEELPP_PETSC_SRCS}
+  ${FEELPP_SLEPC_SRCS}
+  ${FEELPP_TRILINOS_SRCS}
   )
 
 

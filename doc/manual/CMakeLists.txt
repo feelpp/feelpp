@@ -30,16 +30,16 @@ foreach(cppfile "tutorial/*.cpp" "nonlinear/*.cpp" )
 endforeach()
 FILE(GLOB STYFILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "styles/*.sty")
 
-FILE(WRITE version.tex "\\newcommand{\\feelversion}{${FEEL_VERSION_STRING}}")
+FILE(WRITE version.tex "\\newcommand{\\feelversion}{${FEELPP_VERSION_STRING}}")
 
 FIND_PACKAGE(Subversion)
 IF(Subversion_FOUND AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.svn" )
    Subversion_WC_INFO(${PROJECT_SOURCE_DIR} FEEL)
-   MESSAGE("Current revision is ${FEEL_WC_REVISION}")
-   MESSAGE("Last changed date is ${FEEL_WC_LAST_CHANGED_DATE}")
+   MESSAGE("Current revision is ${FEELPP_WC_REVISION}")
+   MESSAGE("Last changed date is ${FEELPP_WC_LAST_CHANGED_DATE}")
 
-   FILE(APPEND version.tex "\\newcommand{\\feelsvnrevision}{${FEEL_WC_REVISION}}")
-   FILE(APPEND version.tex "\\newcommand{\\feelsvndate}{${FEEL_WC_LAST_CHANGED_DATE}}")
+   FILE(APPEND version.tex "\\newcommand{\\feelsvnrevision}{${FEELPP_WC_REVISION}}")
+   FILE(APPEND version.tex "\\newcommand{\\feelsvndate}{${FEELPP_WC_LAST_CHANGED_DATE}}")
 ENDIF()
 
 
@@ -70,7 +70,7 @@ add_custom_target(figures WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/ )
 
 macro( add_docex target )
  add_executable( feel_doc_${target} ${target}.cpp )
- target_link_libraries( feel_doc_${target} ${FEEL_LIBRARIES} )
+ target_link_libraries( feel_doc_${target} ${FEELPP_LIBRARIES} )
  get_target_property(target_executable feel_doc_${target} LOCATION)
  list(APPEND LIST_APPS ${target_executable})
  add_dependencies(figures feel_doc_${target})
@@ -111,25 +111,25 @@ add_custom_target(
 add_dependencies(tut-prerequisites feel_doc_mymesh)
 configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/tutorial.pos  ${CMAKE_CURRENT_BINARY_DIR}/tutorial.pos)
 
-if ( NOT FEEL_MINIMAL_CONFIGURATION )
+if ( NOT FEELPP_MINIMAL_CONFIGURATION )
 
 # # foreach( docex  myintegrals mymesh geotool myfunctionspace laplacian loadmesh residualestimator stokes stokes_good stokes_locking stokes_spurious bratu nonlinearpow mortar multi_levels threefields nirb nirbTest)
 # #   add_docex( ${docex} )
 # # endforeach()
 
-#copy (${FEEL_SOURCE_DIR}/data/medit/Cylref.mesh ${CMAKE_CURRENT_BINARY_DIR}/)
+#copy (${FEELPP_SOURCE_DIR}/data/medit/Cylref.mesh ${CMAKE_CURRENT_BINARY_DIR}/)
 
 
 # Natural convection problem
 #include_directories( ${CMAKE_CURRENT_SOURCE_DIR} )
 #add_executable( feel_doc_convection convection.hpp convection_other.cpp convection_main.cpp convection_run.cpp convection_residual.cpp convection_jacobian.cpp convection_jacobian1.cpp convection_jacobian2.cpp convection_lo.cpp convection_lo2.cpp )
-#target_link_libraries( feel_doc_convection ${FEEL_LIBRARIES} )
+#target_link_libraries( feel_doc_convection ${FEELPP_LIBRARIES} )
 
 
 
-endif ( NOT FEEL_MINIMAL_CONFIGURATION )
+endif ( NOT FEELPP_MINIMAL_CONFIGURATION )
 
-set(FEEL_INSTALL_APPS ${FEEL_INSTALL_APPS};${LIST_APPS} PARENT_SCOPE)
+set(FEELPP_INSTALL_APPS ${FEELPP_INSTALL_APPS};${LIST_APPS} PARENT_SCOPE)
 message(STATUS "doc tutorial: ${LIST_APPS}")
 
 
@@ -155,7 +155,7 @@ macro(add_octave_module modulename)
         ${CMAKE_CURRENT_SOURCE_DIR}/${modulename}.hpp
         )
       add_dependencies(octave ${modulename}_${dim}_${order}.oct)
-      target_link_libraries( ${modulename}_${dim}_${order}.oct ${FEEL_LIBRARIES} ${Octave_LIBRARIES})
+      target_link_libraries( ${modulename}_${dim}_${order}.oct ${FEELPP_LIBRARIES} ${Octave_LIBRARIES})
       set_target_properties( ${modulename}_${dim}_${order}.oct PROPERTIES PREFIX "" )
       set_target_properties( ${modulename}_${dim}_${order}.oct PROPERTIES SUFFIX "" )
     endforeach( order )

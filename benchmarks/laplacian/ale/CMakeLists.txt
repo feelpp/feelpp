@@ -28,12 +28,12 @@ foreach( BENCH ale1 ale2 ale3 ale4 ale5 )
     feel_add_bench( ${BENCH} )
 
     # test each backend
-    foreach( BACKEND ${FEEL_BACKENDS} )
+    foreach( BACKEND ${FEELPP_BACKENDS} )
       add_test( feel_bench_${BENCH}-${BACKEND}
-        ${PYTHON_EXECUTABLE} ${FEEL_SOURCE_DIR}/benchmarks/python/batch_validation.py
+        ${PYTHON_EXECUTABLE} ${FEELPP_SOURCE_DIR}/benchmarks/python/batch_validation.py
         --program=${targetname}
         --mode=0
-        --path=${FEEL_BUILD_DIR}/benchmarks/laplacian/ale/
+        --path=${FEELPP_BUILD_DIR}/benchmarks/laplacian/ale/
         --cmdargs="--exporter-format=gmsh --backend=${BACKEND} --export=0 ${${BACKEND}_LU_SOLVER_OPTIONS}" )
       set_property(TEST feel_bench_${BENCH}-${BACKEND}  PROPERTY LABELS benchmarks)
     endforeach()

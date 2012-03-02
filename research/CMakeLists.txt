@@ -26,7 +26,7 @@ project( feel-research )
 foreach(project apee fsi idf ifp darcy hamm maxwell cabine pmp )
 
 # a posteriori error estimation project
-if ( EXISTS ${FEEL_SOURCE_DIR}/research/${project} )
+if ( EXISTS ${FEELPP_SOURCE_DIR}/research/${project} )
   add_subdirectory( ${project} )
 endif()
 endforeach()

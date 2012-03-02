@@ -22,13 +22,13 @@
 #
 #
 
-#opus_add_executable(heat1dpfem heat1dpfem.cpp LINK_LIBRARIES ${FEEL_LIBRARIES} CFG heat1dpfem.cfg )
+#opus_add_executable(heat1dpfem heat1dpfem.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG heat1dpfem.cfg )
 #opus_add_executable(heat1dpfem heat1dpfem.cpp LINK_LIBRARIES feel++_opus_crb CFG heat1dpfem.cfg )
-opus_add_executable(heat1dscm heat1dscm.cpp LINK_LIBRARIES ${FEEL_LIBRARIES} CFG heat1dscm.cfg )
-#opus_add_executable(heat1dcrb heat1dcrb.cpp LINK_LIBRARIES feel++_opus_crb ${FEEL_LIBRARIES} CFG heat1dcrb.cfg )
+opus_add_executable(heat1dscm heat1dscm.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG heat1dscm.cfg )
+#opus_add_executable(heat1dcrb heat1dcrb.cpp LINK_LIBRARIES feel++_opus_crb ${FEELPP_LIBRARIES} CFG heat1dcrb.cfg )
 
 #add_subdirectory(python)
 #add_subdirectory(octave)
 
-opus_add_model(heat1d Heat1D HDRS heat1d.hpp LINK_LIBRARIES ${FEEL_LIBRARIES} CFG heat1d.cfg XML heat1d.xml SCRIPTS heat1d.m)
+opus_add_model(heat1d Heat1D HDRS heat1d.hpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG heat1d.cfg XML heat1d.xml SCRIPTS heat1d.m)
 #opus_add_python_module( heat1dcrb opusheat1dcrb_wrapper.cpp LINK_LIBRARIES feel++_opus_models SCRIPTS heat1d.py )

@@ -24,8 +24,8 @@
 # Overlapping schwartz domain decomposition method
 include_directories( ${CMAKE_CURRENT_SOURCE_DIR} )
 add_executable( feel_doc_overlapping overlapping_ddmethodgeo.cpp overlapping_ddmethod.cpp )
-target_link_libraries( feel_doc_overlapping ${FEEL_LIBRARIES} )
+target_link_libraries( feel_doc_overlapping ${FEELPP_LIBRARIES} )
 
 # Non-overlapping schwartz domain decomposition method
 add_executable( feel_doc_nonoverlapping nonoverlappinggeo.cpp nonoverlapping.cpp )
-target_link_libraries( feel_doc_nonoverlapping ${FEEL_LIBRARIES} )
+target_link_libraries( feel_doc_nonoverlapping ${FEELPP_LIBRARIES} )

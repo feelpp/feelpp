@@ -23,5 +23,5 @@
 #
 
 
-opus_add_model(unsteadyHeat1d UnsteadyHeat1D HDRS unsteadyHeat1d.hpp LINK_LIBRARIES ${FEEL_LIBRARIES} CFG unsteadyHeat1d.cfg XML unsteadyHeat1d.xml SCRIPTS unsteadyHeat1d.m)
+opus_add_model(unsteadyHeat1d UnsteadyHeat1D HDRS unsteadyHeat1d.hpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG unsteadyHeat1d.cfg XML unsteadyHeat1d.xml SCRIPTS unsteadyHeat1d.m)
 

@@ -24,7 +24,7 @@
 
 macro( add_mcs_doc target )
  add_executable( feel_mcs_${target} ${target}.cpp )
- target_link_libraries( feel_mcs_${target} ${FEEL_LIBRARIES} )
+ target_link_libraries( feel_mcs_${target} ${FEELPP_LIBRARIES} )
 endmacro()
 
 add_mcs_doc(mcs_example)

@@ -24,7 +24,7 @@
 #
 project( feel-applications )
 add_subdirectory( polyvis )
-if ( EXISTS ${FEEL_SOURCE_DIR}/applications/crb AND FEEL_ENABLE_APPLICATIONS_CRB )
+if ( EXISTS ${FEELPP_SOURCE_DIR}/applications/crb AND FEELPP_ENABLE_APPLICATIONS_CRB )
      add_subdirectory( crb )
      set(OPUS_VERSION_MAJOR "${OPUS_VERSION_MAJOR}" PARENT_SCOPE)
      set(OPUS_VERSION_MINOR "${OPUS_VERSION_MINOR}" PARENT_SCOPE)

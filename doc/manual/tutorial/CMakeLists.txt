@@ -25,8 +25,8 @@
 add_custom_target(
   loadmesh
   ALL
-  COMMAND ${CMAKE_COMMAND} -E copy ${FEEL_SOURCE_DIR}/data/medit/Cylref.mesh
-                                   ${FEEL_BUILD_DIR}/doc/manual/
+  COMMAND ${CMAKE_COMMAND} -E copy ${FEELPP_SOURCE_DIR}/data/medit/Cylref.mesh
+                                   ${FEELPP_BUILD_DIR}/doc/manual/
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 )
 add_docex(myapp)

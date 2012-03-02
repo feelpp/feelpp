@@ -47,7 +47,7 @@ add_library(feel++_opus_models SHARED
   eadsmfemapp.cpp
   eadsscmapp.cpp
 )
-target_link_libraries(feel++_opus_models ${FEEL_LIBRARIES} ${MPI_LIBRARIES} )
+target_link_libraries(feel++_opus_models ${FEELPP_LIBRARIES} ${MPI_LIBRARIES} )
 set_target_properties( feel++_opus_models PROPERTIES VERSION ${FEELPP_OPUS_SHARED_VERSION} SOVERSION ${FEELPP_OPUS_SHARED_SOVERSION})
 install(TARGETS feel++_opus_models DESTINATION lib COMPONENT Bin)
 set_property(TARGET feel++_opus_models PROPERTY LABELS opus)
@@ -57,14 +57,14 @@ add_dependencies(opus feel++_opus_models)
 # executables
 #
 # mfem
-opus_add_executable( eadsmfem eadsmfemmain.cpp LINK_LIBRARIES feel++_opus_models ${FEEL_LIBRARIES} CFG eadsmfem.cfg )
+opus_add_executable( eadsmfem eadsmfemmain.cpp LINK_LIBRARIES feel++_opus_models ${FEELPP_LIBRARIES} CFG eadsmfem.cfg )
 # pfem
-#opus_add_executable( eadspfem eadspfemmain.cpp LINK_LIBRARIES feel++_opus_models ${FEEL_LIBRARIES} CFG eadspfem.cfg )
-opus_add_executable( eadspfem eadspfemmain.cpp  LINK_LIBRARIES feel++_opus_models ${FEEL_LIBRARIES} CFG eadspfem.cfg )
+#opus_add_executable( eadspfem eadspfemmain.cpp LINK_LIBRARIES feel++_opus_models ${FEELPP_LIBRARIES} CFG eadspfem.cfg )
+opus_add_executable( eadspfem eadspfemmain.cpp  LINK_LIBRARIES feel++_opus_models ${FEELPP_LIBRARIES} CFG eadspfem.cfg )
 # SCM
-opus_add_executable( eadsscm eadsscmmain.cpp LINK_LIBRARIES feel++_opus_models   ${FEEL_LIBRARIES} CFG eadsscm.cfg )
+opus_add_executable( eadsscm eadsscmmain.cpp LINK_LIBRARIES feel++_opus_models   ${FEELPP_LIBRARIES} CFG eadsscm.cfg )
 # CRB
-opus_add_executable( eadscrb eadscrbmain.cpp LINK_LIBRARIES  feel++_opus_models ${FEEL_LIBRARIES} CFG eadscrb.cfg )
+opus_add_executable( eadscrb eadscrbmain.cpp LINK_LIBRARIES  feel++_opus_models ${FEELPP_LIBRARIES} CFG eadscrb.cfg )
 
 add_subdirectory(python)
 add_subdirectory(octave)
