@@ -95,7 +95,7 @@ template<uint16_type Dim,
          uint16_type RealDim,
          typename T = double,
          template<uint16_type, uint16_type, uint16_type> class Entity = Simplex,
-         template<uint16_type, template<uint16_type RealDim> class PolySetType, typename ContinuityType,
+         template<uint16_type, template<uint16_type RDim> class PolySetType, typename ContinuityType,
                   template<class, uint16_type, class> class Pts, uint16_type > class PP = Lagrange>
 class GeoMap
     :
@@ -736,7 +736,7 @@ public:
        //_M_xreal( NDim ),
        //_M_x0( NDim ),
        _M_J( p->_M_J ),
-       _M_G( ( gm_type::nNodes == element_type::numVertices ) ?_M_element.vertices() : _M_element.G() ),
+       _M_G( ( gm_type::nNodes == element_type::numVertices ) ?_M_element->vertices() : _M_element->G() ),
        _M_n( p->_M_n ),
        _M_n_real( p->_M_n_real ),
        _M_u_n_real( p->_M_u_n_real ),
