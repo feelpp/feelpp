@@ -303,8 +303,25 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  
 #else
     GmshInitialize();
 #endif
-    CTX::instance()->partitionOptions.setDefaults();
-    CTX::instance()->partitionOptions.num_partitions = M_partitions;
+    CTX::instance()->partitionOptions.num_partitions =  M_partitions;
+    CTX::instance()->partitionOptions.partitioner =  M_partitioner;
+
+    CTX::instance()->mesh.mshFileVersion = std::atof( this->version().c_str() );
+    CTX::instance()->mesh.lcExtendFromBoundary = 1;
+    CTX::instance()->mesh.lcFromPoints = 1;
+    CTX::instance()->mesh.order = M_order;
+    CTX::instance()->mesh.secondOrderIncomplete = 0;
+    if ( M_recombine )
+        {
+            CTX::instance()->mesh.algo2d = 5;
+            CTX::instance()->mesh.algoRecombine = 1;
+            CTX::instance()->mesh.recombineAll = 1;
+        }
+    else
+        CTX::instance()->mesh.algo2d = 6;
+
+    CTX::instance()->mesh.mshFilePartitioned = M_partition_file;
+
     new GModel();
     //std::cout << "size : " << GModel::list.size() << "\n";
     GModel::current()->setName( _name );
