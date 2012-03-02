@@ -150,6 +150,8 @@ private:
     backend_ptrtype M_backend;
     double meshSize;
     std::string shape;
+    mesh_ptrtype mesh1;
+    mesh_ptrtype mesh2;
     export_ptrtype M_firstExporter;
     export_ptrtype M_secondExporter;
 
@@ -219,7 +221,7 @@ ddmethod<Dim>::localProblem(element_type& u,
 
     timers["solver"].first.restart();
 
-    backend_type::build()->solve( _matrix=A, _solution=u, _rhs=B, _reuse_prec=true );
+    backend_type::build()->solve( _matrix=A, _solution=u, _rhs=B );//, _reuse_prec=true );
 
     timers["solver"].second = timers["solver"].first.elapsed();
 
@@ -282,7 +284,7 @@ ddmethod<Dim>::exportResults( element_type& u, element_type& v, double time)
             ofs << "machine id: " << mpi::environment::processor_name()  << "\n";
             ofs << "executable:\n";
             ofs << "data_path: .\n";
-            ofs << "casefile: nonoverlap-" << Dim << "-" << j << "-1_0.case\n";
+            ofs << "casefile: nonoverlapping-" << Dim << "-" << j << "-1_0.case\n";
         }
     }
     Log() << "exportResults done\n";
@@ -316,42 +318,68 @@ ddmethod<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
     value_type tol = this->vm()["tol"].template as<double>();
     value_type imax = this->vm()["imax"].template as<double>();
 
-    Environment::changeRepository( boost::format( "%1%/%2%-%3%/P%4%/h_%5%/" )
+    Environment::changeRepository( boost::format( "doc/manual/dd/%1%/%2%-%3%/P%4%/h_%5%/" )
                                    % this->about().appName()
                                    %this->shape
                                    % Dim
                                    % Order
                                    %this->meshSize );
 
+    if ( Dim == 2 )
+    {
+        mesh1 = createGMSHMesh( _mesh=new mesh_type,
+                                _desc = nonOverlapGeometryLeft(this->meshSize) );
 
-    mesh_ptrtype mesh1 = createGMSHMesh( _mesh=new mesh_type,
-                                         _desc = nonOverlapGeometryLeft(this->meshSize) );
+        mesh2 = createGMSHMesh( _mesh=new mesh_type,
+                                _desc = nonOverlapGeometryRight(this->meshSize) );
+    }
+    else if( Dim == 3 )
+    {
+        mesh1 = createGMSHMesh( _mesh=new mesh_type,
+                                _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
+                                _desc=geo("Parallelepiped.geo",3,1,this->meshSize));
 
-    mesh_ptrtype  mesh2 = createGMSHMesh( _mesh=new mesh_type,
-                                          _desc = nonOverlapGeometryRight(this->meshSize) );
+        mesh2 = createGMSHMesh( _mesh=new mesh_type,
+                                _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
+                                _desc=geo("Cylinder.geo",3,1,this->meshSize));
+    }
 
 
-    using namespace boost::assign;
-    dirichletFlags1+= 1,2,4;
-    dirichletFlags2+= 2,3,4;
-    interfaceFlags1+= 3;
-    interfaceFlags2+= 1;
+    if ( Dim == 2 )
+    {
+        using namespace boost::assign;
+        dirichletFlags1+= 1,2,4;
+        dirichletFlags2+= 2,3,4;
+        interfaceFlags1+= 3;
+        interfaceFlags2+= 1;
+    }
+    else if( Dim == 3 )
+    {
+        using namespace boost::assign;
+        dirichletFlags1+= 1,2,3,4,5,6;
+        dirichletFlags2+= 2,3,4,5,6;
+        interfaceFlags1+= 7;
+        interfaceFlags2+= 1;
+    }
+
 
     auto Xh1 = space_type::New( mesh1 );
     auto Xh2 = space_type::New( mesh2 );
     element_type u1( Xh1, "u1" );
     element_type u2( Xh2, "u2" );
     auto uu = Xh1->element();
+    auto uv = Xh2->element();
 
     auto lambda = Xh1->element();
     auto lambdaold = Xh1->element();
     lambda.zero();
     value_type pi = M_PI;
-    auto g = sin(pi*Px())*cos(pi*Py());
+    auto g = sin(pi*Px())*cos(pi*Py())*cos(pi*Pz());
     auto f = pi*pi*Dim*g;
 
-    auto gradg = trans( +pi*cos(pi*Px())*cos(pi*Py())*unitX()+
-                        -pi*sin(pi*Px())*sin(pi*Py())*unitY());
+    auto gradg = trans( pi*cos(pi*Px())*cos(pi*Py())*cos(pi*Pz())*unitX()
+                        -pi*sin(pi*Px())*sin(pi*Py())*cos(pi*Pz())*unitY()
+                        -pi*sin(pi*Px())*cos(pi*Py())*sin(pi*Pz())*unitZ() );
 
     double L2erroru1 = 1.;
     double L2erroru2 = 1.;
@@ -359,8 +387,9 @@ ddmethod<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
     double H1erroru1 = 2.;
     double H1erroru2 = 2.;
 
-    // auto Ih12 = opInterpolation( _domainSpace=Xh1, _imageSpace=Xh2, _range=elements(Xh2->mesh()) );
-    auto Ih21 = opInterpolation( _domainSpace=Xh2, _imageSpace=Xh1, _range=elements(Xh1->mesh()) );
+    auto Ih12 = opInterpolation( _domainSpace=Xh1, _imageSpace=Xh2, _range=markedfaces(Xh2->mesh(),interfaceFlags2[0]) );
+    auto Ih21 = opInterpolation( _domainSpace=Xh2, _imageSpace=Xh1, _range=markedfaces(Xh1->mesh(),interfaceFlags1[0]) );
+
 
     unsigned int cptExport = 0;
 
@@ -385,10 +414,12 @@ ddmethod<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
                      /*rhs*/f,
                      interfaceFlags1,idv(lambda) );
 
+        Ih12->apply( lambda, uv );
+
         localProblem(u2,
                      dirichletFlags2, g,
                      f,
-                     interfaceFlags2,-idv(lambda) );
+                     interfaceFlags2,-idv(uv) );
 
         Ih21->apply( u2, uu );
 
@@ -463,7 +494,7 @@ main( int argc, char** argv )
         std::cout << app.optionsDescription() << "\n";
         return 0;
     }
-    ddmethod<2>  Relax( app.vm(), app.about() );
+    ddmethod<3>  Relax( app.vm(), app.about() );
 
     Relax.run();
 }

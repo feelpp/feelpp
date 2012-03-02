@@ -301,7 +301,7 @@ ddmethod<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
     value_type tolerance = this->vm()["tolerance"].template as<double>();
     value_type maxIterations = this->vm()["maxIterations"].template as<double>();
 
-    Environment::changeRepository( boost::format( "doc/manual/%1%/%2%-%3%/P%4%/h_%5%/" )
+    Environment::changeRepository( boost::format( "doc/manual/dd/%1%/%2%-%3%/P%4%/h_%5%/" )
                                    % this->about().appName()
                                    %this->shape
                                    % Dim
@@ -315,7 +315,6 @@ ddmethod<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
 
         mesh2 = createGMSHMesh( _mesh=new mesh_type,
                                 _desc = ddmethodGeometryRight(Dim,this->meshSize) );
-
 
     }
 
@@ -352,6 +351,10 @@ ddmethod<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
     double L2erroru2 = 1.;
     double H1erroru1 = 2.;
     double H1erroru2 = 2.;
+
+    auto Ih12 = opInterpolation( _domainSpace=Xh1, _imageSpace=Xh2, _range=markedfaces(Xh2->mesh(),interfaceFlags2[0]) );
+    auto Ih21 = opInterpolation( _domainSpace=Xh2, _imageSpace=Xh1, _range=markedfaces(Xh1->mesh(),interfaceFlags1[0]) );
+
     unsigned int cpt = 0;
     while( (L2erroru1 +L2erroru2 ) > tolerance && cpt <= maxIterations)
     {
@@ -376,13 +379,17 @@ ddmethod<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
         localProblem(u1,
                      dirichletFlags1, g,
                      f,
-                     interfaceFlags1,idv(u2) );
+                     interfaceFlags1,idv(uv) );
         // if ( !additive )
         //    u1old = u1;
+        Ih12->apply( u1, uu );
+
         localProblem(u2,
                      dirichletFlags2, g,
                      f,
-                     interfaceFlags2,idv(u1) );
+                     interfaceFlags2,idv(uu) );
+
+        Ih21->apply( u2, uv );
 
         // compute L2error;
         L2erroru1 = l2Error(u1);
