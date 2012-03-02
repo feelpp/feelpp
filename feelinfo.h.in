@@ -1,33 +1,33 @@
 /* buildid */
-#cmakedefine01 FEEL_BUILDID @FEEL_BUILDID@ //
+#cmakedefine01 FEELPP_BUILDID @FEELPP_BUILDID@ //
 
 /* revision */
-#cmakedefine01 FEEL_REVISION @FEEL_REVISION@ //
+#cmakedefine01 FEELPP_REVISION @FEELPP_REVISION@ //
 
 /* full blown version */
-#cmakedefine FEEL_VERSION @FEEL_VERSION@
+#cmakedefine FEELPP_VERSION @FEELPP_VERSION@
 
 /* extra version information: date, cvs, ... */
-#cmakedefine01 FEEL_VERSION_EXTRA @FEEL_VERSION_EXTRA@ //
+#cmakedefine01 FEELPP_VERSION_EXTRA @FEELPP_VERSION_EXTRA@ //
 
 /* major version number */
-#cmakedefine01 FEEL_VERSION_MAJOR @FEEL_VERSION_MAJOR@ //
+#cmakedefine01 FEELPP_VERSION_MAJOR @FEELPP_VERSION_MAJOR@ //
 
 /* micro version number */
-#cmakedefine01 FEEL_VERSION_MICRO @FEEL_VERSION_MICRO@ //
+#cmakedefine01 FEELPP_VERSION_MICRO @FEELPP_VERSION_MICRO@ //
 
 /* minor version number */
-#cmakedefine01 FEEL_VERSION_MINOR @FEEL_VERSION_MINOR@ //
+#cmakedefine01 FEELPP_VERSION_MINOR @FEELPP_VERSION_MINOR@ //
 
 /* Feel version string */
-#cmakedefine FEEL_VERSION_STRING @FEEL_VERSION_STRING@
+#cmakedefine FEELPP_VERSION_STRING @FEELPP_VERSION_STRING@
 
 /* the cmake install prefix */
 #cmakedefine INSTALL_PREFIX @CMAKE_INSTALL_PREFIX@
 
 /* define prefix dir for feel installation */
-#cmakedefine FEEL_PREFIX @FEEL_PREFIX@
+#cmakedefine FEELPP_PREFIX @FEELPP_PREFIX@
 
 /* define data dir for feel installation */
-#cmakedefine FEEL_DATADIR @FEEL_DATADIR@
+#cmakedefine FEELPP_DATADIR @FEELPP_DATADIR@
 
