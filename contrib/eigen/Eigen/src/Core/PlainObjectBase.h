@@ -34,6 +34,19 @@
 
 namespace internal {
 
+template<typename Index>
+EIGEN_ALWAYS_INLINE void check_rows_cols_for_overflow(Index rows, Index cols)
+{
+  // http://hg.mozilla.org/mozilla-central/file/6c8a909977d3/xpcom/ds/CheckedInt.h#l242
+  // we assume Index is signed
+  Index max_index = (size_t(1) << (8 * sizeof(Index) - 1)) - 1; // assume Index is signed
+  bool error = (rows < 0  || cols < 0)  ? true
+             : (rows == 0 || cols == 0) ? false
+                                        : (rows > max_index / cols);
+  if (error)
+    throw_std_bad_alloc();
+}
+
 template <typename Derived, typename OtherDerived = Derived, bool IsVector = static_cast<bool>(Derived::IsVectorAtCompileTime)> struct conservative_resize_like_impl;
 
 template<typename MatrixTypeA, typename MatrixTypeB, bool SwapPointers> struct matrix_swap_impl;
@@ -85,13 +98,11 @@ class PlainObjectBase : public internal::dense_xpr_base<Derived>::type
     template<typename StrideType> struct StridedAlignedMapType { typedef Eigen::Map<Derived, Aligned, StrideType> type; };
     template<typename StrideType> struct StridedConstAlignedMapType { typedef Eigen::Map<const Derived, Aligned, StrideType> type; };
 
-
   protected:
     DenseStorage<Scalar, Base::MaxSizeAtCompileTime, Base::RowsAtCompileTime, Base::ColsAtCompileTime, Options> m_storage;
 
   public:
-    enum { NeedsToAlign = (!(Options&DontAlign))
-                          && SizeAtCompileTime!=Dynamic && ((static_cast<int>(sizeof(Scalar))*SizeAtCompileTime)%16)==0 };
+    enum { NeedsToAlign = SizeAtCompileTime != Dynamic && (internal::traits<Derived>::Flags & AlignedBit) != 0 };
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW_IF(NeedsToAlign)
 
     Base& base() { return *static_cast<Base*>(this); }
@@ -200,11 +211,13 @@ class PlainObjectBase : public internal::dense_xpr_base<Derived>::type
     EIGEN_STRONG_INLINE void resize(Index rows, Index cols)
     {
       #ifdef EIGEN_INITIALIZE_MATRICES_BY_ZERO
+        internal::check_rows_cols_for_overflow(rows, cols);
         Index size = rows*cols;
         bool size_changed = size != this->size();
         m_storage.resize(size, rows, cols);
         if(size_changed) EIGEN_INITIALIZE_BY_ZERO_IF_THAT_OPTION_IS_ENABLED
       #else
+        internal::check_rows_cols_for_overflow(rows, cols);
         m_storage.resize(rows*cols, rows, cols);
       #endif
     }
@@ -273,6 +286,7 @@ class PlainObjectBase : public internal::dense_xpr_base<Derived>::type
     EIGEN_STRONG_INLINE void resizeLike(const EigenBase<OtherDerived>& _other)
     {
       const OtherDerived& other = _other.derived();
+      internal::check_rows_cols_for_overflow(other.rows(), other.cols());
       const Index othersize = other.rows()*other.cols();
       if(RowsAtCompileTime == 1)
       {
@@ -293,7 +307,7 @@ class PlainObjectBase : public internal::dense_xpr_base<Derived>::type
       * of rows and/or of columns, you can use conservativeResize(NoChange_t, Index) or
       * conservativeResize(Index, NoChange_t).
       *
-      * Matrices are resized relative to the top-left element. In case values need to be
+      * Matrices are resized relative to the top-left element. In case values need to be 
       * appended to the matrix they will be uninitialized.
       */
     EIGEN_STRONG_INLINE void conservativeResize(Index rows, Index cols)
@@ -346,7 +360,7 @@ class PlainObjectBase : public internal::dense_xpr_base<Derived>::type
       * of rows and/or of columns, you can use conservativeResize(NoChange_t, Index) or
       * conservativeResize(Index, NoChange_t).
       *
-      * Matrices are resized relative to the top-left element. In case values need to be
+      * Matrices are resized relative to the top-left element. In case values need to be 
       * appended to the matrix they will copied from \c other.
       */
     template<typename OtherDerived>
@@ -417,6 +431,7 @@ class PlainObjectBase : public internal::dense_xpr_base<Derived>::type
       : m_storage(other.derived().rows() * other.derived().cols(), other.derived().rows(), other.derived().cols())
     {
       _check_template_params();
+      internal::check_rows_cols_for_overflow(other.derived().rows(), other.derived().cols());
       Base::operator=(other.derived());
     }
 
@@ -424,9 +439,6 @@ class PlainObjectBase : public internal::dense_xpr_base<Derived>::type
       * These are convenience functions returning Map objects. The Map() static functions return unaligned Map objects,
       * while the AlignedMap() functions return aligned Map objects and thus should be called only with 16-byte-aligned
       * \a data pointers.
-      *
-      * These methods do not allow to specify strides. If you need to specify strides, you have to
-      * use the Map class directly.
       *
       * \see class Map
       */
@@ -584,6 +596,7 @@ class PlainObjectBase : public internal::dense_xpr_base<Derived>::type
     {
       eigen_assert(rows >= 0 && (RowsAtCompileTime == Dynamic || RowsAtCompileTime == rows)
              && cols >= 0 && (ColsAtCompileTime == Dynamic || ColsAtCompileTime == cols));
+      internal::check_rows_cols_for_overflow(rows, cols);      
       m_storage.resize(rows*cols,rows,cols);
       EIGEN_INITIALIZE_BY_ZERO_IF_THAT_OPTION_IS_ENABLED
     }
@@ -612,21 +625,16 @@ class PlainObjectBase : public internal::dense_xpr_base<Derived>::type
 #ifndef EIGEN_PARSED_BY_DOXYGEN
     EIGEN_STRONG_INLINE static void _check_template_params()
     {
-#if 0
       EIGEN_STATIC_ASSERT((EIGEN_IMPLIES(MaxRowsAtCompileTime==1 && MaxColsAtCompileTime!=1, (Options&RowMajor)==RowMajor)
-                           && EIGEN_IMPLIES(MaxColsAtCompileTime==1 && MaxRowsAtCompileTime!=1, (Options&RowMajor)==0)
-                         && ((RowsAtCompileTime == Dynamic) || (RowsAtCompileTime >= 0))
+                        && EIGEN_IMPLIES(MaxColsAtCompileTime==1 && MaxRowsAtCompileTime!=1, (Options&RowMajor)==0)
+                        && ((RowsAtCompileTime == Dynamic) || (RowsAtCompileTime >= 0))
                         && ((ColsAtCompileTime == Dynamic) || (ColsAtCompileTime >= 0))
                         && ((MaxRowsAtCompileTime == Dynamic) || (MaxRowsAtCompileTime >= 0))
                         && ((MaxColsAtCompileTime == Dynamic) || (MaxColsAtCompileTime >= 0))
                         && (MaxRowsAtCompileTime == RowsAtCompileTime || RowsAtCompileTime==Dynamic)
                         && (MaxColsAtCompileTime == ColsAtCompileTime || ColsAtCompileTime==Dynamic)
-                           && (Options & (DontAlign|RowMajor)) == Options),
-                          INVALID_MATRIX_TEMPLATE_PARAMETERS);
-#endif
-      //EIGEN_STATIC_ASSERT((EIGEN_IMPLIES(MaxRowsAtCompileTime==1 && MaxColsAtCompileTime!=1, (Options&RowMajor)==RowMajor)),INVALID_MATRIX_TEMPLATE_PARAMETERS_1);
-      //EIGEN_STATIC_ASSERT(EIGEN_IMPLIES(MaxColsAtCompileTime==1 && MaxRowsAtCompileTime!=1, (Options&RowMajor)==0),INVALID_MATRIX_TEMPLATE_PARAMETERS_1);
-
+                        && (Options & (DontAlign|RowMajor)) == Options),
+        INVALID_MATRIX_TEMPLATE_PARAMETERS)
     }
 #endif
 
@@ -646,6 +654,7 @@ struct internal::conservative_resize_like_impl
     if ( ( Derived::IsRowMajor && _this.cols() == cols) || // row-major and we change only the number of rows
          (!Derived::IsRowMajor && _this.rows() == rows) )  // column-major and we change only the number of columns
     {
+      internal::check_rows_cols_for_overflow(rows, cols);
       _this.derived().m_storage.conservativeResize(rows*cols,rows,cols);
     }
     else

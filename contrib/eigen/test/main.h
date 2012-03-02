@@ -23,9 +23,6 @@
 // License and a copy of the GNU General Public License along with
 // Eigen. If not, see <http://www.gnu.org/licenses/>.
 
-#define min(A,B) please_protect_your_min_with_parentheses
-#define max(A,B) please_protect_your_max_with_parentheses
-
 #include <cstdlib>
 #include <cerrno>
 #include <ctime>
@@ -33,6 +30,15 @@
 #include <string>
 #include <vector>
 #include <typeinfo>
+#include <limits>
+#include <algorithm>
+#include <sstream>
+#include <complex>
+#include <deque>
+#include <queue>
+
+#define min(A,B) please_protect_your_min_with_parentheses
+#define max(A,B) please_protect_your_max_with_parentheses
 
 #ifdef NDEBUG
 #undef NDEBUG
@@ -112,7 +118,7 @@ namespace Eigen
       }                                     \
       else if (Eigen::internal::push_assert)       \
       {                                     \
-        eigen_assert_list.push_back(std::string(EI_PP_MAKE_STRING(__FILE__)" ("EI_PP_MAKE_STRING(__LINE__)") : "#a) ); \
+        eigen_assert_list.push_back(std::string(EI_PP_MAKE_STRING(__FILE__) " (" EI_PP_MAKE_STRING(__LINE__) ") : " #a) ); \
       }
 
     #define VERIFY_RAISES_ASSERT(a)                                                   \
