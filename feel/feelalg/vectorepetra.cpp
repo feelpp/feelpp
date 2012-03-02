@@ -148,7 +148,7 @@ VectorEpetra<T>::init(const size_type N, const size_type n_local, const bool fas
     if (this->isInitialized())
         this->clear();
 
-    FEEL_ASSERT(n_local < N)( n_local )( N ).error( "invalid local size" );
+    FEELPP_ASSERT(n_local < N)( n_local )( N ).error( "invalid local size" );
 
     /*
     _M_emap = Epetra_Map( -1, epetra_n_local, 0, Epetra_MpiComm(M_comm) );
@@ -174,7 +174,7 @@ template<typename T>
 void
 VectorEpetra<T>::set ( size_type i, const value_type& value)
 {
-    FEEL_ASSERT(i<size())( i )( size() ).error( "invalid index" );
+    FEELPP_ASSERT(i<size())( i )( size() ).error( "invalid index" );
 
     int i_val = static_cast<int>(i);
     value_type epetra_value = static_cast<value_type>(value);
@@ -190,7 +190,7 @@ template<typename T>
 void
 VectorEpetra<T>::add (const size_type i, const value_type& value)
 {
-    FEEL_ASSERT(i<size())( i )( size() ).error( "invalid index" );
+    FEELPP_ASSERT(i<size())( i )( size() ).error( "invalid index" );
 
     int i_val = static_cast<int>(i);
     value_type epetra_value = static_cast<value_type>(value);
@@ -207,7 +207,7 @@ template<typename T>
 void
 VectorEpetra<T>::addVector ( int* i, int n, value_type* v )
 {
-    //FEEL_ASSERT(n<=size())( n )( size() ).error( "invalid index array size" );
+    //FEELPP_ASSERT(n<=size())( n )( size() ).error( "invalid index array size" );
 
     int ierr;
     //indices are in global index space
@@ -222,33 +222,33 @@ template<typename T>
 void
 VectorEpetra<T>::checkInvariants () const
 {
-    FEEL_ASSERT( this->localSize() == _M_emap.NumMyElements() )
+    FEELPP_ASSERT( this->localSize() == _M_emap.NumMyElements() )
         ( this->localSize() )
         ( _M_emap.NumMyElements() ).error( "Invalid VectorEpetra (Local size)" );
-    FEEL_ASSERT( this->size() == _M_emap.NumGlobalElements() )
+    FEELPP_ASSERT( this->size() == _M_emap.NumGlobalElements() )
         ( this->size() )
         ( _M_emap.NumGlobalElements() ).error( "Invalid VectorEpetra (Global size)" );
 
-    FEEL_ASSERT( this->firstLocalIndex() == _M_emap.MinLID() )
+    FEELPP_ASSERT( this->firstLocalIndex() == _M_emap.MinLID() )
         ( this->firstLocalIndex() )
         ( _M_emap.MinLID() ).error( "Invalid VectorEpetra (Min global index)" );
 
-    FEEL_ASSERT( this->lastLocalIndex() == _M_emap.MaxLID()+1 )
+    FEELPP_ASSERT( this->lastLocalIndex() == _M_emap.MaxLID()+1 )
         ( this->lastLocalIndex() )
         ( _M_emap.MaxLID() ).error( "Invalid VectorEpetra (Min global index)" );
 
-    FEEL_ASSERT( this->localSize() == _M_vec.Map().NumMyElements() )
+    FEELPP_ASSERT( this->localSize() == _M_vec.Map().NumMyElements() )
         ( this->localSize() )
         ( _M_vec.Map().NumMyElements() ).error( "Invalid VectorEpetra (Local size)" );
-    FEEL_ASSERT( this->size() == _M_vec.Map().NumGlobalElements() )
+    FEELPP_ASSERT( this->size() == _M_vec.Map().NumGlobalElements() )
         ( this->size() )
         ( _M_vec.Map().NumGlobalElements() ).error( "Invalid VectorEpetra (Global size)" );
 
-    FEEL_ASSERT( this->firstLocalIndex() == _M_vec.Map().MinLID() )
+    FEELPP_ASSERT( this->firstLocalIndex() == _M_vec.Map().MinLID() )
         ( this->firstLocalIndex() )
         ( _M_vec.Map().MinLID() ).error( "Invalid VectorEpetra (Min global index)" );
 
-    FEEL_ASSERT( this->lastLocalIndex() == _M_vec.Map().MaxLID()+1 )
+    FEELPP_ASSERT( this->lastLocalIndex() == _M_vec.Map().MaxLID()+1 )
         ( this->lastLocalIndex() )
         ( _M_vec.Map().MaxLID() ).error( "Invalid VectorEpetra (Min global index)" );
 
@@ -257,7 +257,7 @@ template<typename T>
 void
 VectorEpetra<T>::printMatlab (const std::string name) const
 {
-    FEEL_ASSERT (this->closed()).warn("epetra vector not closed");
+    FEELPP_ASSERT (this->closed()).warn("epetra vector not closed");
 #if 0
     if ( !this->closed() )
         const_cast<VectorEpetra<T>*>(this)->close();

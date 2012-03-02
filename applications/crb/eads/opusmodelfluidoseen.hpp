@@ -181,14 +181,14 @@ OpusModelFluidOseen<SpaceType>::OpusModelFluidOseen( po::variables_map const& vm
     M_F()
 {
     Log() << "[OpusModelFluidOseen] flow rate = " << M_flow_rate << "\n";
-    FEEL_ASSERT( M_backend != 0 ).error( "[OpusModelFluidOseen] invalid backend" );
-    FEEL_ASSERT( M_Xh != 0 ).error( "[OpusModelFluidOseen] invalid functionspace_ptrtype" );
+    FEELPP_ASSERT( M_backend != 0 ).error( "[OpusModelFluidOseen] invalid backend" );
+    FEELPP_ASSERT( M_Xh != 0 ).error( "[OpusModelFluidOseen] invalid functionspace_ptrtype" );
 
     M_D = M_backend->newMatrix( M_Xh, M_Xh );
-    FEEL_ASSERT( M_D != 0 ).error( "invalid matrix");
+    FEELPP_ASSERT( M_D != 0 ).error( "invalid matrix");
 
     M_F = M_backend->newVector( M_Xh );
-    FEEL_ASSERT( M_F != 0 ).error( "invalid vector");
+    FEELPP_ASSERT( M_F != 0 ).error( "invalid vector");
 
     M_backend->nlSolver()->residual = boost::bind( &self_type::updateResidual, boost::ref( *this ), _1, _2 );
     M_backend->nlSolver()->jacobian = boost::bind( &self_type::updateJacobian, boost::ref( *this ), _1, _2 );

@@ -37,36 +37,36 @@
 
   Feel defines a few macros to test pre and post conditions. To
   enable them all you define the preprocessing variable \c
-  FEEL_CHECK_ALL . This is done easily by configuring Feel with the
+  FEELPP_CHECK_ALL . This is done easily by configuring Feel with the
   flag \c --enable-debug which will include the option
-  \c -DFEEL_CHECK_ALL
+  \c -DFEELPP_CHECK_ALL
 
-  -# #FEEL_ASSERT
+  -# #FEELPP_ASSERT
 
   \subsection hints Feel C++ Compiler Hints
 
   -# #INLINE
-  -# #FEEL_RESTRICT
+  -# #FEELPP_RESTRICT
 
   \subsection attribute_macro Feel Attribute Macros
 
-  -# #FEEL_EXPORT and #FEEL_NO_EXPORT
-  -# #FEEL_PACKED
-  -# #FEEL_DEPRECATED
-  -# #FEEL_ISLIKELY and #FEEL_ISUNLIKELY
+  -# #FEELPP_EXPORT and #FEELPP_NO_EXPORT
+  -# #FEELPP_PACKED
+  -# #FEELPP_DEPRECATED
+  -# #FEELPP_ISLIKELY and #FEELPP_ISUNLIKELY
 */
 
 // access to smart assertion from feel.hpp
 #include <feel/feelcore/smartassert.hpp>
 
-#if FEEL_IS_VERSION(0,9,0)
+#if FEELPP_IS_VERSION(0,9,0)
 
-#define ERROR_MSG(A) FEEL_ASSERT( 0 ).error( A );
-#define ASSERT0(X,A) FEEL_ASSERT( X ).error( A );
-#define ASSERT_PRE0(X,A) FEEL_ASSERT( X ).error( "Precondition Error"  );
-#define ASSERT_POS0(X,A) FEEL_ASSERT( X ).error( "Postcondition Error"  );
-#define ASSERT_INV0(X,A) FEEL_ASSERT( X ).error( "Invariant Error : "  );
-#define ASSERT_BD0(X)    FEEL_ASSERT( X ).error( "Array bounds error" );
+#define ERROR_MSG(A) FEELPP_ASSERT( 0 ).error( A );
+#define ASSERT0(X,A) FEELPP_ASSERT( X ).error( A );
+#define ASSERT_PRE0(X,A) FEELPP_ASSERT( X ).error( "Precondition Error"  );
+#define ASSERT_POS0(X,A) FEELPP_ASSERT( X ).error( "Postcondition Error"  );
+#define ASSERT_INV0(X,A) FEELPP_ASSERT( X ).error( "Invariant Error : "  );
+#define ASSERT_BD0(X)    FEELPP_ASSERT( X ).error( "Array bounds error" );
 
 #else
 
@@ -100,7 +100,7 @@ ERROR_MSG("Array bound error " << "in file " << __FILE__  \
 #endif /* 0 */
 
 #if 0
-#ifdef  FEEL_CHECK_ALL
+#ifdef  FEELPP_CHECK_ALL
 #define CHECK_KN
 #define TEST_PRE
 #define TEST_POS
@@ -108,7 +108,7 @@ ERROR_MSG("Array bound error " << "in file " << __FILE__  \
 #define TEST_BOUNDS
 #define NOINLINE
 #undef  NDEBUG
-#endif /* FEEL_CHECK_ALL */
+#endif /* FEELPP_CHECK_ALL */
 
 #ifdef NDEBUG
 #define ASSERT(X,A)

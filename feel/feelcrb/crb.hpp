@@ -2263,7 +2263,7 @@ CRB<TruthModelType>::checkOrthonormality ( int N, const wn_type& wn) const
     A -= I;
     Debug(12000) << "orthonormalization: " << A.norm() << "\n";
     std::cout << "    o check : " << A.norm() << " (should be 0)\n";
-    //FEEL_ASSERT( A.norm() < 1e-14 )( A.norm() ).error( "orthonormalization failed.");
+    //FEELPP_ASSERT( A.norm() < 1e-14 )( A.norm() ).error( "orthonormalization failed.");
 }
 
 
@@ -3471,7 +3471,7 @@ CRB<TruthModelType>::run( const double * X, unsigned long N, double * Y, unsigne
     std::vector<vectorN_type> uNold ;
     std::vector<vectorN_type> uNduold;
 
-    FEEL_ASSERT( P == 2 )( P ).warn( "invalid number of outputs" );
+    FEELPP_ASSERT( P == 2 )( P ).warn( "invalid number of outputs" );
     auto o = lb( Nwn, mu, uN, uNdu , uNold, uNduold );
     auto e = delta( Nwn, mu, uN, uNdu , uNold, uNduold );
     Y[0]  = o.get<0>();
@@ -3523,7 +3523,7 @@ CRB<TruthModelType>::run( const double * X, unsigned long N, double * Y, unsigne
     std::vector<vectorN_type> uNold ;
     std::vector<vectorN_type> uNduold;
 
-    FEEL_ASSERT( P == 2 )( P ).warn( "invalid number of outputs" );
+    FEELPP_ASSERT( P == 2 )( P ).warn( "invalid number of outputs" );
     auto o = lb( Nwn, mu, uN, uNdu , uNold, uNduold );
     auto e = delta( Nwn, mu, uN, uNdu , uNold, uNduold );
     Y[0]  = o.get<0>();

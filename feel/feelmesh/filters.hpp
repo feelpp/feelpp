@@ -27,8 +27,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2005-08-27
  */
-#ifndef __FEEL_FILTERS_HPP
-#define __FEEL_FILTERS_HPP 1
+#ifndef __FEELPP_FILTERS_HPP
+#define __FEELPP_FILTERS_HPP 1
 
 #include <utility>
 

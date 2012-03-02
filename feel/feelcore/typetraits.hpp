@@ -48,7 +48,7 @@
 #include <boost/preprocessor/arithmetic/add.hpp>
 #include <boost/preprocessor/list/filter.hpp>
 
-#if !defined( FEEL_TRAITS_HPP)
+#if !defined( FEELPP_TRAITS_HPP)
 //#error feel/feelcore/typetraits.hpp must not be used directly, use feel/feelcore/traits.hpp instead
 #endif
 
@@ -77,11 +77,11 @@ struct type_traits
 {
 };
 
-# define FEEL_FUNC_NAME(T)          BOOST_PP_TUPLE_ELEM(3, 0 , T)
-# define FEEL_FUNC_CALL(T)          BOOST_PP_TUPLE_ELEM(3, 1 , T)
-# define FEEL_FUNC_NONS(T)          BOOST_PP_TUPLE_ELEM(3, 2 , T)
+# define FEELPP_FUNC_NAME(T)          BOOST_PP_TUPLE_ELEM(3, 0 , T)
+# define FEELPP_FUNC_CALL(T)          BOOST_PP_TUPLE_ELEM(3, 1 , T)
+# define FEELPP_FUNC_NONS(T)          BOOST_PP_TUPLE_ELEM(3, 2 , T)
 
-#define FEEL_STD_FUNCS                                        \
+#define FEELPP_STD_FUNCS                                        \
 BOOST_PP_TUPLE_TO_LIST(                                        \
     19,                                                        \
     (                                                          \
@@ -107,7 +107,7 @@ BOOST_PP_TUPLE_TO_LIST(                                        \
      )                                                         \
     )                                                          \
     /**/
-#define FEEL_STDCOMPLEX_FUNCS                                  \
+#define FEELPP_STDCOMPLEX_FUNCS                                  \
     BOOST_PP_TUPLE_TO_LIST(                                    \
                            11,                                        \
                            (                                            \
@@ -125,7 +125,7 @@ BOOST_PP_TUPLE_TO_LIST(                                        \
                                                                         ) \
                                                                )        \
     /**/
-#define FEEL_STD_BINARY_FUNCS                                  \
+#define FEELPP_STD_BINARY_FUNCS                                  \
 BOOST_PP_TUPLE_TO_LIST(                                        \
     1,                                                         \
     (                                                          \
@@ -134,7 +134,7 @@ BOOST_PP_TUPLE_TO_LIST(                                        \
     )                                                          \
     /**/
 #
-#define FEEL_MP_FUNCS                                     \
+#define FEELPP_MP_FUNCS                                     \
 BOOST_PP_TUPLE_TO_LIST(                                        \
     18,                                                        \
     (                                                          \
@@ -161,7 +161,7 @@ BOOST_PP_TUPLE_TO_LIST(                                        \
     /**/
 #
 #
-#define FEEL_MP_BINARY_FUNCS                                  \
+#define FEELPP_MP_BINARY_FUNCS                                  \
 BOOST_PP_TUPLE_TO_LIST(                                        \
     1,                                                         \
     (                                                          \
@@ -170,7 +170,7 @@ BOOST_PP_TUPLE_TO_LIST(                                        \
     )                                                          \
     /**/
 #
-#define FEEL_GLOBAL_FUNCS                                     \
+#define FEELPP_GLOBAL_FUNCS                                     \
 BOOST_PP_TUPLE_TO_LIST(                                        \
     18,                                                        \
     (                                                          \
@@ -196,7 +196,7 @@ BOOST_PP_TUPLE_TO_LIST(                                        \
     )                                                          \
     /**/
 #
-#define FEEL_GLOBAL_BINARY_FUNCS                              \
+#define FEELPP_GLOBAL_BINARY_FUNCS                              \
 BOOST_PP_TUPLE_TO_LIST(                                        \
     1,                                                         \
     (                                                          \
@@ -207,36 +207,36 @@ BOOST_PP_TUPLE_TO_LIST(                                        \
 
 #
 #if 1
-# define FEEL_TRAITS_FUNC_REAL(T, t)           \
-  BOOST_PP_IF( FEEL_TRAITS_IS_COMPLEX(T),     \
+# define FEELPP_TRAITS_FUNC_REAL(T, t)           \
+  BOOST_PP_IF( FEELPP_TRAITS_IS_COMPLEX(T),     \
                t.real(),  \
                t )      \
  /**/
 #
-# define FEEL_TRAITS_FUNC_IMAG(T, t)                                       \
-  BOOST_PP_IF( FEEL_TRAITS_IS_COMPLEX(T),                                 \
+# define FEELPP_TRAITS_FUNC_IMAG(T, t)                                       \
+  BOOST_PP_IF( FEELPP_TRAITS_IS_COMPLEX(T),                                 \
                BOOST_PP_IDENTITY( t.imag() ),                              \
-               BOOST_PP_IDENTITY( FEEL_TRAITS_REAL_TYPE(T)( 0.0 ) ) )()   \
+               BOOST_PP_IDENTITY( FEELPP_TRAITS_REAL_TYPE(T)( 0.0 ) ) )()   \
  /**/
 #
-# define FEEL_TRAITS_FUNC_CONJ(T, t)                   \
-  BOOST_PP_IF( FEEL_TRAITS_IS_COMPLEX(T),             \
+# define FEELPP_TRAITS_FUNC_CONJ(T, t)                   \
+  BOOST_PP_IF( FEELPP_TRAITS_IS_COMPLEX(T),             \
                BOOST_PP_IDENTITY( std::conj( t ) ),    \
                BOOST_PP_IDENTITY( t ) )()              \
  /**/
 #else
-# define FEEL_TRAITS_FUNC_REAL(T, t) t
-# define FEEL_TRAITS_FUNC_IMAG(T, t) 0.0
-# define FEEL_TRAITS_FUNC_CONJ(T, t) t
+# define FEELPP_TRAITS_FUNC_REAL(T, t) t
+# define FEELPP_TRAITS_FUNC_IMAG(T, t) 0.0
+# define FEELPP_TRAITS_FUNC_CONJ(T, t) t
 #endif
 #
-# define FEEL_TRAITS_TYPE(T)              BOOST_PP_TUPLE_ELEM(7, 0 , T)
-# define FEEL_TRAITS_REAL_TYPE(T)         BOOST_PP_TUPLE_ELEM(7, 1 , T)
-# define FEEL_TRAITS_IS_FLOATING(T)       BOOST_PP_TUPLE_ELEM(7, 2 , T)
-# define FEEL_TRAITS_IS_COMPLEX(T)        BOOST_PP_TUPLE_ELEM(7, 3 , T)
-# define FEEL_TRAITS_RANK(T)              BOOST_PP_TUPLE_ELEM(7, 4 , T)
-# define FEEL_TRAITS_EPSILON(T)           BOOST_PP_TUPLE_ELEM(7, 5 , T)
-# define FEEL_TRAITS_FUNC_TYPE(T)         BOOST_PP_TUPLE_ELEM(7, 6 , T)
+# define FEELPP_TRAITS_TYPE(T)              BOOST_PP_TUPLE_ELEM(7, 0 , T)
+# define FEELPP_TRAITS_REAL_TYPE(T)         BOOST_PP_TUPLE_ELEM(7, 1 , T)
+# define FEELPP_TRAITS_IS_FLOATING(T)       BOOST_PP_TUPLE_ELEM(7, 2 , T)
+# define FEELPP_TRAITS_IS_COMPLEX(T)        BOOST_PP_TUPLE_ELEM(7, 3 , T)
+# define FEELPP_TRAITS_RANK(T)              BOOST_PP_TUPLE_ELEM(7, 4 , T)
+# define FEELPP_TRAITS_EPSILON(T)           BOOST_PP_TUPLE_ELEM(7, 5 , T)
+# define FEELPP_TRAITS_FUNC_TYPE(T)         BOOST_PP_TUPLE_ELEM(7, 6 , T)
 #
 const double factor_from_eps = 50;
 const float  factor_from_eps_fl = 50;
@@ -259,10 +259,10 @@ const float  factor_from_eps_fl = 50;
 #define MPFR_MP_TYPE
 #endif // HAVE_MPFR
 
-#define FEEL_NUMERICAL_NTYPES BOOST_PP_ADD(4, BOOST_PP_ADD( QD_NTYPES, MPFR_NTYPES ) )
-# define FEEL_TRAITS_TYPES \
+#define FEELPP_NUMERICAL_NTYPES BOOST_PP_ADD(4, BOOST_PP_ADD( QD_NTYPES, MPFR_NTYPES ) )
+# define FEELPP_TRAITS_TYPES \
    BOOST_PP_TUPLE_TO_LIST( \
-      FEEL_NUMERICAL_NTYPES, \
+      FEELPP_NUMERICAL_NTYPES, \
       ( \
        QD_DD_TYPE                               \
        QD_QD_TYPE                               \
@@ -276,41 +276,41 @@ const float  factor_from_eps_fl = 50;
    /**/
 #
 # /* Generates code for all integral types. */
-# define FEEL_TRAITS_OP(_, T) \
-      FEEL_TRAITS_OP_CODE T   \
+# define FEELPP_TRAITS_OP(_, T) \
+      FEELPP_TRAITS_OP_CODE T   \
    /**/
 #
-#define FEEL_TRAITS_OP_CODE(T)                                                     \
+#define FEELPP_TRAITS_OP_CODE(T)                                                     \
 template<>                                                                          \
-struct type_traits<FEEL_TRAITS_TYPE( T )> {                                        \
-    typedef type_traits<FEEL_TRAITS_TYPE( T )> self_type;                          \
-    typedef FEEL_TRAITS_TYPE( T ) value_type;                                      \
+struct type_traits<FEELPP_TRAITS_TYPE( T )> {                                        \
+    typedef type_traits<FEELPP_TRAITS_TYPE( T )> self_type;                          \
+    typedef FEELPP_TRAITS_TYPE( T ) value_type;                                      \
     typedef const value_type &const_reference;                                      \
     typedef value_type &reference;                                                  \
-    typedef FEEL_TRAITS_REAL_TYPE( T ) real_type;                                  \
-    typedef FEEL_TRAITS_REAL_TYPE( T ) precision_type;                             \
+    typedef FEELPP_TRAITS_REAL_TYPE( T ) real_type;                                  \
+    typedef FEELPP_TRAITS_REAL_TYPE( T ) precision_type;                             \
                                                                                     \
-    static const bool is_floating = FEEL_TRAITS_IS_FLOATING( T );       \
-    static const uint16_type rank = FEEL_TRAITS_RANK( T );              \
-    static real_type epsilon() { return FEEL_TRAITS_EPSILON( T ); }     \
+    static const bool is_floating = FEELPP_TRAITS_IS_FLOATING( T );       \
+    static const uint16_type rank = FEELPP_TRAITS_RANK( T );              \
+    static real_type epsilon() { return FEELPP_TRAITS_EPSILON( T ); }     \
 };                                                                      \
 inline                                                                              \
-FEEL_TRAITS_REAL_TYPE( T ) real( FEEL_TRAITS_TYPE( T ) const& t )                 \
+FEELPP_TRAITS_REAL_TYPE( T ) real( FEELPP_TRAITS_TYPE( T ) const& t )                 \
 {                                                                                   \
     boost::ignore_unused_variable_warning(t);                                       \
-    return FEEL_TRAITS_FUNC_REAL( T, t );                                          \
+    return FEELPP_TRAITS_FUNC_REAL( T, t );                                          \
 }                                                                                   \
 inline                                                                              \
-FEEL_TRAITS_REAL_TYPE( T ) imag ( FEEL_TRAITS_TYPE( T ) const& t )                \
+FEELPP_TRAITS_REAL_TYPE( T ) imag ( FEELPP_TRAITS_TYPE( T ) const& t )                \
 {                                                                                   \
     boost::ignore_unused_variable_warning(t);                                       \
-    return FEEL_TRAITS_FUNC_IMAG( T, t );                                          \
+    return FEELPP_TRAITS_FUNC_IMAG( T, t );                                          \
 }                                                                                   \
 inline                                                                              \
-FEEL_TRAITS_TYPE( T ) conj ( FEEL_TRAITS_TYPE( T ) const& t)                      \
+FEELPP_TRAITS_TYPE( T ) conj ( FEELPP_TRAITS_TYPE( T ) const& t)                      \
 {                                                                                   \
     boost::ignore_unused_variable_warning(t);                                       \
-    return FEEL_TRAITS_FUNC_CONJ( T, t );                                          \
+    return FEELPP_TRAITS_FUNC_CONJ( T, t );                                          \
 }                                                                                   \
  /**/
 
@@ -318,52 +318,52 @@ FEEL_TRAITS_TYPE( T ) conj ( FEEL_TRAITS_TYPE( T ) const& t)                    
 /**
  * Generate the type traits
  */
-BOOST_PP_LIST_FOR_EACH_PRODUCT( FEEL_TRAITS_OP, 1, (FEEL_TRAITS_TYPES) );
+BOOST_PP_LIST_FOR_EACH_PRODUCT( FEELPP_TRAITS_OP, 1, (FEELPP_TRAITS_TYPES) );
 
 namespace math
 {
 #
-# define FEEL_PRED_FUNC(d, data, elem) BOOST_PP_EQUAL(FEEL_TRAITS_FUNC_TYPE(elem), data)
+# define FEELPP_PRED_FUNC(d, data, elem) BOOST_PP_EQUAL(FEELPP_TRAITS_FUNC_TYPE(elem), data)
 #
 /**
  * Generate the unary functions for each type
  */
-# define FEEL_UNARY_FUNCS_OP(_,TF) \
-  FEEL_UNARY_FUNCS_OP_CODE TF      \
+# define FEELPP_UNARY_FUNCS_OP(_,TF) \
+  FEELPP_UNARY_FUNCS_OP_CODE TF      \
   /**/
 #
-# define FEEL_UNARY_FUNCS_OP_CODE(T,F)                                             \
+# define FEELPP_UNARY_FUNCS_OP_CODE(T,F)                                             \
   inline                                                                            \
-  FEEL_TRAITS_TYPE( T ) FEEL_FUNC_NAME( F )( FEEL_TRAITS_TYPE( T ) const& t )    \
+  FEELPP_TRAITS_TYPE( T ) FEELPP_FUNC_NAME( F )( FEELPP_TRAITS_TYPE( T ) const& t )    \
   {                                                                                 \
-      return FEEL_FUNC_CALL( F )( t );                                             \
+      return FEELPP_FUNC_CALL( F )( t );                                             \
   }                                                                                 \
   /**/
 #
-BOOST_PP_LIST_FOR_EACH_PRODUCT( FEEL_UNARY_FUNCS_OP, 2, (BOOST_PP_LIST_FILTER(FEEL_PRED_FUNC, 0, FEEL_TRAITS_TYPES ), FEEL_STD_FUNCS) );
-BOOST_PP_LIST_FOR_EACH_PRODUCT( FEEL_UNARY_FUNCS_OP, 2, (BOOST_PP_LIST_FILTER(FEEL_PRED_FUNC, 1, FEEL_TRAITS_TYPES ), FEEL_MP_FUNCS) );
-BOOST_PP_LIST_FOR_EACH_PRODUCT( FEEL_UNARY_FUNCS_OP, 2, (BOOST_PP_LIST_FILTER(FEEL_PRED_FUNC, 2, FEEL_TRAITS_TYPES ), FEEL_GLOBAL_FUNCS) );
-BOOST_PP_LIST_FOR_EACH_PRODUCT( FEEL_UNARY_FUNCS_OP, 2, (BOOST_PP_LIST_FILTER(FEEL_PRED_FUNC, 3, FEEL_TRAITS_TYPES ), FEEL_STDCOMPLEX_FUNCS) );
+BOOST_PP_LIST_FOR_EACH_PRODUCT( FEELPP_UNARY_FUNCS_OP, 2, (BOOST_PP_LIST_FILTER(FEELPP_PRED_FUNC, 0, FEELPP_TRAITS_TYPES ), FEELPP_STD_FUNCS) );
+BOOST_PP_LIST_FOR_EACH_PRODUCT( FEELPP_UNARY_FUNCS_OP, 2, (BOOST_PP_LIST_FILTER(FEELPP_PRED_FUNC, 1, FEELPP_TRAITS_TYPES ), FEELPP_MP_FUNCS) );
+BOOST_PP_LIST_FOR_EACH_PRODUCT( FEELPP_UNARY_FUNCS_OP, 2, (BOOST_PP_LIST_FILTER(FEELPP_PRED_FUNC, 2, FEELPP_TRAITS_TYPES ), FEELPP_GLOBAL_FUNCS) );
+BOOST_PP_LIST_FOR_EACH_PRODUCT( FEELPP_UNARY_FUNCS_OP, 2, (BOOST_PP_LIST_FILTER(FEELPP_PRED_FUNC, 3, FEELPP_TRAITS_TYPES ), FEELPP_STDCOMPLEX_FUNCS) );
 
 /**
  * Generate the binary functions for each type
  */
-# define FEEL_BINARY_FUNCS_OP(_,TF) \
-  FEEL_BINARY_FUNCS_OP_CODE TF      \
+# define FEELPP_BINARY_FUNCS_OP(_,TF) \
+  FEELPP_BINARY_FUNCS_OP_CODE TF      \
   /**/
 #
-# define FEEL_BINARY_FUNCS_OP_CODE(T,F)                                                         \
+# define FEELPP_BINARY_FUNCS_OP_CODE(T,F)                                                         \
   template<typename Type2>                                                                       \
   inline                                                                                         \
-  FEEL_TRAITS_TYPE( T ) FEEL_FUNC_NAME( F )( FEEL_TRAITS_TYPE( T ) const& x, Type2 const& y ) \
+  FEELPP_TRAITS_TYPE( T ) FEELPP_FUNC_NAME( F )( FEELPP_TRAITS_TYPE( T ) const& x, Type2 const& y ) \
   {                                                                                              \
-      return FEEL_FUNC_CALL( F )( x, y );                                                       \
+      return FEELPP_FUNC_CALL( F )( x, y );                                                       \
   }                                                                                              \
   /**/
 #
-BOOST_PP_LIST_FOR_EACH_PRODUCT( FEEL_BINARY_FUNCS_OP, 2, (BOOST_PP_LIST_FILTER(FEEL_PRED_FUNC, 0, FEEL_TRAITS_TYPES ), FEEL_STD_BINARY_FUNCS) );
-BOOST_PP_LIST_FOR_EACH_PRODUCT( FEEL_BINARY_FUNCS_OP, 2, (BOOST_PP_LIST_FILTER(FEEL_PRED_FUNC, 1, FEEL_TRAITS_TYPES ), FEEL_MP_BINARY_FUNCS) );
-BOOST_PP_LIST_FOR_EACH_PRODUCT( FEEL_BINARY_FUNCS_OP, 2, (BOOST_PP_LIST_FILTER(FEEL_PRED_FUNC, 2, FEEL_TRAITS_TYPES ), FEEL_GLOBAL_BINARY_FUNCS) );
+BOOST_PP_LIST_FOR_EACH_PRODUCT( FEELPP_BINARY_FUNCS_OP, 2, (BOOST_PP_LIST_FILTER(FEELPP_PRED_FUNC, 0, FEELPP_TRAITS_TYPES ), FEELPP_STD_BINARY_FUNCS) );
+BOOST_PP_LIST_FOR_EACH_PRODUCT( FEELPP_BINARY_FUNCS_OP, 2, (BOOST_PP_LIST_FILTER(FEELPP_PRED_FUNC, 1, FEELPP_TRAITS_TYPES ), FEELPP_MP_BINARY_FUNCS) );
+BOOST_PP_LIST_FOR_EACH_PRODUCT( FEELPP_BINARY_FUNCS_OP, 2, (BOOST_PP_LIST_FILTER(FEELPP_PRED_FUNC, 2, FEELPP_TRAITS_TYPES ), FEELPP_GLOBAL_BINARY_FUNCS) );
 } // math
 
 

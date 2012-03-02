@@ -199,7 +199,7 @@ ReinitializerFMS<FunctionSpaceType, Iterator>::operator()
     //BOOST_STATIC_ASSERT(( boost::is_same<return_value_type, typename functionspace_type::return_value_type>::value ));
 
     const uint16_type ndofv = functionspace_type::fe_type::nDof;
-    FEEL_ASSERT( __v.size() == _M_functionspace->dof()->nDof() )( __v.size() )( _M_functionspace->dof()->nDof() ).warn( "invalid size" );
+    FEELPP_ASSERT( __v.size() == _M_functionspace->dof()->nDof() )( __v.size() )( _M_functionspace->dof()->nDof() ).warn( "invalid size" );
     // assert functionspace_type::nComponents == 1
     __v.resize( _M_functionspace->dof()->nDof() );
     iterator_type it, en;

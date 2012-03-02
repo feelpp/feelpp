@@ -157,7 +157,7 @@ createSubmeshTool<MeshType,IteratorRange>::build(mpl::int_<MESH_ELEMENTS> /**/)
             // Loop over the nodes on this element.
             for (unsigned int n=0; n < old_elem.nPoints(); n++)
                 {
-                    //FEEL_ASSERT (old_elem.point( n ).id() < new_node_numbers.size()).error( "invalid point id()" );
+                    //FEELPP_ASSERT (old_elem.point( n ).id() < new_node_numbers.size()).error( "invalid point id()" );
 
                     if ( new_node_numbers[old_elem.point(n).id()] == invalid_size_type_value )
                         {
@@ -178,13 +178,13 @@ createSubmeshTool<MeshType,IteratorRange>::build(mpl::int_<MESH_ELEMENTS> /**/)
 
                             if ( n < element_type::numVertices )
                                 {
-                                    FEEL_ASSERT( new_vertex[old_elem.point(n).id()] == 0 ).error( "already seen this point?" );
+                                    FEELPP_ASSERT( new_vertex[old_elem.point(n).id()] == 0 ).error( "already seen this point?" );
                                     new_vertex[old_elem.point(n).id()]=1;
                                 }
                         }
 
                     // Define this element's connectivity on the new mesh
-                    FEEL_ASSERT (new_node_numbers[old_elem.point(n).id()] < newMesh->numPoints()).error("invalid connectivity");
+                    FEELPP_ASSERT (new_node_numbers[old_elem.point(n).id()] < newMesh->numPoints()).error("invalid connectivity");
 
                     Debug( 4015 ) << "[Mesh<Shape,T>::createSubmesh] adding point old(" << old_elem.point(n).id()
                                   << ") as point new(" << new_node_numbers[old_elem.point(n).id()]
@@ -339,7 +339,7 @@ createSubmeshTool<MeshType,IteratorRange>::build(mpl::int_<MESH_FACES> /**/)
 
                             if ( n < new_element_type::numVertices )
                                 {
-                                    FEEL_ASSERT( new_vertex[oldElem.point(n).id()] == 0 ).error( "already seen this point?" );
+                                    FEELPP_ASSERT( new_vertex[oldElem.point(n).id()] == 0 ).error( "already seen this point?" );
                                     new_vertex[oldElem.point(n).id()]=1;
                                 }
 

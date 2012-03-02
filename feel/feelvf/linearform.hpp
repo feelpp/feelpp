@@ -353,7 +353,7 @@ public:
         void precomputeBasisAtPoints( uint16_type __f, permutation_type const& __p, Pts const& pts )
             {
                 _M_test_pc_face[__f][__p] = test_precompute_ptrtype( new test_precompute_type( _M_form.testSpace()->fe(), pts ) );
-                //FEEL_ASSERT( _M_test_pc_face.find(__f )->second )( __f ).error( "invalid test precompute type" );
+                //FEELPP_ASSERT( _M_test_pc_face.find(__f )->second )( __f ).error( "invalid test precompute type" );
             }
         /**
          * Return the structure that holds the test basis functions
@@ -367,7 +367,7 @@ public:
             {
                 if ( __f == invalid_uint16_type_value )
                     return  _M_test_pc;
-                //FEEL_ASSERT( _M_test_pc_face.find(__f )->second )( __f ).error( "invalid test precompute type" );
+                //FEELPP_ASSERT( _M_test_pc_face.find(__f )->second )( __f ).error( "invalid test precompute type" );
                 return _M_test_pc_face.find(__f )->second.find( __p )->second;
             }
 

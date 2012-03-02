@@ -338,7 +338,7 @@ FilterFromVtk<MeshType>::visit( mesh_type* mesh, mpl::int_<2> )
     }
 
 
-    FEEL_ASSERT( n_faces == mesh->numFaces() )( n_faces )( mesh->numFaces() ).error( "invalid face container size" );
+    FEELPP_ASSERT( n_faces == mesh->numFaces() )( n_faces )( mesh->numFaces() ).error( "invalid face container size" );
 
     Debug( 8099 ) <<"[FilterFromVtk] done with element accumulation !\n";
 
@@ -398,7 +398,7 @@ FilterFromVtk3D<MeshType>::visit( mesh_type* mesh, mpl::int_<3> )
     }
 
     Debug( 8099 ) << "[FilterFromVtk3D] mesh np = " << mesh->numPoints() << "\n";
-    FEEL_ASSERT( mesh->numPoints() == __n )( __n )( mesh->numPoints() ).error( "invalid number of points" );
+    FEELPP_ASSERT( mesh->numPoints() == __n )( __n )( mesh->numPoints() ).error( "invalid number of points" );
     size_type n_faces = 0;
 
     // Add Boundary faces
@@ -480,7 +480,7 @@ FilterFromVtk3D<MeshType>::visit( mesh_type* mesh, mpl::int_<3> )
     }
 
     
-    FEEL_ASSERT( n_faces == mesh->numFaces() )( n_faces )( mesh->numFaces() ).error( "invalid face container size" );
+    FEELPP_ASSERT( n_faces == mesh->numFaces() )( n_faces )( mesh->numFaces() ).error( "invalid face container size" );
 
     Debug( 8099 ) <<"[FilterFromVtk] done with element accumulation !\n";
 

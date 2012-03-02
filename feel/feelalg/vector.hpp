@@ -522,7 +522,7 @@ public:
     {
         std::cerr << "ERROR: Not Implemented in base class yet!" << std::endl;
         std::cerr << "ERROR writing MATLAB file " << name << std::endl;
-        FEEL_ASSERT( 0 ).error( "invalid call" );
+        FEELPP_ASSERT( 0 ).error( "invalid call" );
     }
 
     /**
@@ -535,7 +535,7 @@ public:
                                   const std::vector<size_type>& ) const
     {
         std::cerr << "ERROR: Not Implemented in base class yet!" << std::endl;
-        FEEL_ASSERT( 0 ).error( "invalid call" );
+        FEELPP_ASSERT( 0 ).error( "invalid call" );
     }
 
 protected:
@@ -572,7 +572,7 @@ template <typename T>
 typename type_traits<T>::real_type
 inner_product( Vector<T> const& v1, Vector<T> const& v2 )
 {
-    FEEL_ASSERT( v1.localSize() == v2.localSize() &&
+    FEELPP_ASSERT( v1.localSize() == v2.localSize() &&
                  v1.size() == v2.size() )
         ( v1.localSize() )( v2.localSize() )
         ( v1.size() )( v2.size() ).error( "incompatible vector sizes" );

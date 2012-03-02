@@ -112,7 +112,7 @@ struct test_integration_internal_faces_v: public Application
 #if defined(USE_BOOST_TEST)
         BOOST_CHECK_CLOSE( v0, meas, eps );
 #else
-        FEEL_ASSERT( math::abs( v0-1.0) < eps )( v0 )( math::abs( v0-1.0) )( eps ).warn ( "v0 != 1" );
+        FEELPP_ASSERT( math::abs( v0-1.0) < eps )( v0 )( math::abs( v0-1.0) )( eps ).warn ( "v0 != 1" );
 #endif /* USE_BOOST_TEST */
 
         value_type v1 = integrate( internalfaces(mesh), jumpv(trans(2*P())) ).evaluate()( 0, 0 );
@@ -126,7 +126,7 @@ struct test_integration_internal_faces_v: public Application
         BOOST_TEST_MESSAGE( "int right(2*X^t) =" << v1r << "\n" );
         BOOST_CHECK_CLOSE( v1l, -v1r, eps );
 #else
-        FEEL_ASSERT( math::abs( v1-0.0) < eps )( v1 )( math::abs( v1-0.0) )( eps ).warn ( "v1 != 0" );
+        FEELPP_ASSERT( math::abs( v1-0.0) < eps )( v1 )( math::abs( v1-0.0) )( eps ).warn ( "v1 != 0" );
 #endif /* USE_BOOST_TEST */
 
         auto normp = vf::sqrt(trans(P())*P());
@@ -136,7 +136,7 @@ struct test_integration_internal_faces_v: public Application
         BOOST_TEST_MESSAGE( "int jump(vnormp) =" << v2 << "\n" );
         BOOST_CHECK_SMALL( v2, eps );
 #else
-        FEEL_ASSERT( math::abs( v2-0.0) < eps )( v2 )( math::abs( v2-0.0) )( eps ).warn ( "v2 != 0" );
+        FEELPP_ASSERT( math::abs( v2-0.0) < eps )( v2 )( math::abs( v2-0.0) )( eps ).warn ( "v2 != 0" );
 #endif /* USE_BOOST_TEST */
 
         value_type v3 = integrate( internalfaces(mesh),
@@ -144,7 +144,7 @@ struct test_integration_internal_faces_v: public Application
 #if defined(USE_BOOST_TEST)
         BOOST_CHECK_SMALL( v3, eps );
 #else
-        FEEL_ASSERT( math::abs( v3-0.0) < eps )( v3 )( math::abs( v3-0.0) )( eps ).warn ( "v3 != 0" );
+        FEELPP_ASSERT( math::abs( v3-0.0) < eps )( v3 )( math::abs( v3-0.0) )( eps ).warn ( "v3 != 0" );
 #endif /* USE_BOOST_TEST */
 
         element_type u( Xh, "u" );

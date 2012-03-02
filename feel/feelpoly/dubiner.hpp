@@ -400,7 +400,7 @@ private:
     static vector_matrix_type
     derivate( ublas::matrix_expression<AE> const& __pts, mpl::int_<1> )
     {
-        FEEL_ASSERT( __pts().size1() == 1 )( __pts().size1() )( __pts().size2() ).error("invalid points");
+        FEELPP_ASSERT( __pts().size1() == 1 )( __pts().size1() )( __pts().size2() ).error("invalid points");
         // Debug() << "Expansion::derivate<1>] number of points " << __pts().size2() << "\n";
 
         vector_matrix_type D( 1 );
@@ -672,7 +672,7 @@ Dubiner<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::evaluate( 
 {
     matrix_type res( convex_type::polyDims( nOrder ), __pts.size2() );
 
-    FEEL_ASSERT( __pts.size1() == 3 )( __pts.size1() ).error( "invalid space dimension" );
+    FEELPP_ASSERT( __pts.size1() == 3 )( __pts.size1() ).error( "invalid space dimension" );
 
     details::etas<TETRAHEDRON, value_type> etas( __pts );
     ublas::vector<value_type> eta1s = ublas::row( etas(), 0 );
@@ -751,7 +751,7 @@ Dubiner<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::derivate( 
     res[1].resize( convex_type::polyDims( nOrder ), __pts().size2() );
     res[2].resize( convex_type::polyDims( nOrder ), __pts().size2() );
 
-    FEEL_ASSERT( __pts().size1() == 3 )( __pts().size1() ).error( "invalid space dimension" );
+    FEELPP_ASSERT( __pts().size1() == 3 )( __pts().size1() ).error( "invalid space dimension" );
 
     details::etas<TETRAHEDRON, value_type> etas( __pts );
     ublas::vector<value_type> eta1s = ublas::row( etas(), 0 );

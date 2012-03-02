@@ -453,7 +453,7 @@ unite( Poly1<P, Type> const& pset1,
     typedef PolynomialSet<P, Type> res_type;
     typedef typename res_type::value_type value_type;
 
-    FEEL_ASSERT( pset1.coeff().size2() == pset2.coeff().size2() )
+    FEELPP_ASSERT( pset1.coeff().size2() == pset2.coeff().size2() )
         ( pset1.coeff().size2() )( pset2.coeff().size2() ).error( "incompatible size" );
 
     ublas::matrix<value_type> M( pset1.coeff().size1()+pset2.coeff().size1(), pset1.coeff().size2() );

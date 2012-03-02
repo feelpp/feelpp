@@ -37,7 +37,7 @@
 
 namespace Feel
 {
-FEEL_NO_EXPORT
+FEELPP_NO_EXPORT
 po::options_description
 mpiOptions()
 {

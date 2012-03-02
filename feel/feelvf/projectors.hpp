@@ -174,7 +174,7 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
     boost::timer __timer;
 
     element_type __v( M_functionspace );
-    FEEL_ASSERT( __v.size() == M_functionspace->dof()->nDof() )( __v.size() )( M_functionspace->dof()->nDof() ).warn( "invalid size" );
+    FEELPP_ASSERT( __v.size() == M_functionspace->dof()->nDof() )( __v.size() )( M_functionspace->dof()->nDof() ).warn( "invalid size" );
     __v.setZero();
 
     typedef typename functionspace_type::fe_type fe_type;
@@ -429,8 +429,8 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
                 __geopc[__f][__p] = geopc_ptrtype(  new geopc_type( __gm, __fe->points( __f ) ) );
                 __geopc1[__f][__p] = geopc1_ptrtype(  new geopc1_type( __gm1, __fe->points( __f ) ) );
                 //Debug(5066) << "[geopc] FACE_ID = " << __f << " ref pts=" << __fe->dual().points( __f ) << "\n";
-                FEEL_ASSERT( __geopc[__f][__p]->nPoints() ).error( "invalid number of points for geopc" );
-                FEEL_ASSERT( __geopc1[__f][__p]->nPoints() ).error( "invalid number of points for geopc1" );
+                FEELPP_ASSERT( __geopc[__f][__p]->nPoints() ).error( "invalid number of points for geopc" );
+                FEELPP_ASSERT( __geopc1[__f][__p]->nPoints() ).error( "invalid number of points for geopc1" );
             }
     }
 
@@ -461,7 +461,7 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
 
     for ( ;__face_it != __face_en; ++__face_it )
     {
-        FEEL_ASSERT( __face_it->isOnBoundary() && !__face_it->isConnectedTo1() )
+        FEELPP_ASSERT( __face_it->isOnBoundary() && !__face_it->isConnectedTo1() )
             ( __face_it->marker() )
             ( __face_it->isOnBoundary() )
             ( __face_it->ad_first() )

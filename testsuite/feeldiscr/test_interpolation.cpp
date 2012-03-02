@@ -118,7 +118,7 @@ struct test_interpolation
 #if defined(USE_BOOST_TEST)
         BOOST_CHECK_SMALL( v0-1.0, eps );
 #else
-        FEEL_ASSERT( math::abs( v0-1.0) < eps )( v0 )( math::abs( v0-1.0) )( eps ).warn ( "v0 != 1" );
+        FEELPP_ASSERT( math::abs( v0-1.0) < eps )( v0 )( math::abs( v0-1.0) )( eps ).warn ( "v0 != 1" );
 #endif /* USE_BOOST_TEST */
 
         u = vf::project( Xh, elements(*mesh), constant(2.0) - Px()*Px()-Py()*Py()-Pz()*Pz() );
@@ -133,7 +133,7 @@ struct test_interpolation
 #if defined(USE_BOOST_TEST)
         BOOST_CHECK_SMALL( v1-v1_ex, eps );
 #else
-        FEEL_ASSERT( math::abs( v1-v1_ex) < eps )( v1 )( math::abs( v1-v1_ex) )( eps ).warn ( "v1 != v0_ex" );
+        FEELPP_ASSERT( math::abs( v1-v1_ex) < eps )( v1 )( math::abs( v1-v1_ex) )( eps ).warn ( "v1 != v0_ex" );
 #endif /* USE_BOOST_TEST */
         auto gradient( u.grad( pt ) );
         double g_v1_x = gradient(0,0,0);
@@ -141,7 +141,7 @@ struct test_interpolation
 #if defined(USE_BOOST_TEST)
         BOOST_CHECK_SMALL( g_v1_x-g_v1_ex_x, eps );
 #else
-        FEEL_ASSERT( math::abs( g_v1_x-g_v1_ex_x) < eps )( g_v1_x )( math::abs( g_v1_x-g_v1_ex_x) )( eps ).warn ( "g_v1 != g_v1_ex" );
+        FEELPP_ASSERT( math::abs( g_v1_x-g_v1_ex_x) < eps )( g_v1_x )( math::abs( g_v1_x-g_v1_ex_x) )( eps ).warn ( "g_v1 != g_v1_ex" );
 #endif /* USE_BOOST_TEST */
 
         if ( Dim >= 2 )

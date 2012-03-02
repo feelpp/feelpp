@@ -26,8 +26,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2007-07-02
  */
-#if !defined( FEEL_VF_VAL_HPP )
-#define FEEL_VF_VAL_HPP 1
+#if !defined( FEELPP_VF_VAL_HPP )
+#define FEELPP_VF_VAL_HPP 1
 
 # include <boost/preprocessor/comparison/less.hpp>
 # include <boost/preprocessor/logical/and.hpp>
@@ -298,5 +298,5 @@ val( ExprT1 const& __e1 )
 }
 } // vf
 } // Feel
-#endif /* FEEL_VF_VAL_HPP */
+#endif /* FEELPP_VF_VAL_HPP */
 

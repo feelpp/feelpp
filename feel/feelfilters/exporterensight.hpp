@@ -225,8 +225,8 @@ private:
 
 } // Feel
 
-//#if !defined( FEEL_INSTANTIATION_MODE )
+//#if !defined( FEELPP_INSTANTIATION_MODE )
 # include <feel/feelfilters/exporterensight.cpp>
-//#endif // FEEL_INSTANTIATION_MODE
+//#endif // FEELPP_INSTANTIATION_MODE
 
 #endif /* __ExporterEnsight_H */

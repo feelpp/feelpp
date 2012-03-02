@@ -88,7 +88,7 @@ template<int Dim>struct ExactSolution{};
 template<>
 struct ExactSolution<1>
 {
-#if FEEL_GNUC_AT_LEAST(4,6)
+#if FEELPP_GNUC_AT_LEAST(4,6)
     static constexpr double pi = M_PI;
 #else
     static const double pi = M_PI;
@@ -100,7 +100,7 @@ struct ExactSolution<1>
 template<>
 struct ExactSolution<2>
 {
-#if FEEL_GNUC_AT_LEAST(4,6)
+#if FEELPP_GNUC_AT_LEAST(4,6)
     static constexpr double pi = M_PI;
 #else
     static const double pi = M_PI;
@@ -112,7 +112,7 @@ struct ExactSolution<2>
 template<>
 struct ExactSolution<3>
 {
-#if FEEL_GNUC_AT_LEAST(4,6)
+#if FEELPP_GNUC_AT_LEAST(4,6)
     static constexpr double pi = M_PI;
 #else
     static const double pi = M_PI;
@@ -305,7 +305,7 @@ Laplacian<Dim, Order, Cont, Entity, FType>::run()
             size_type dof0 = boost::get<0>( P0h->dof()->localToGlobal( it->id(), 0 ) );
 
             Log() << "element " << it->id() << " pid = " << it->processId() << " dof = " << dof0 << " value= " << pid( dof0 ) << "\n";
-            //FEEL_ASSERT( pid( dof0
+            //FEELPP_ASSERT( pid( dof0
         }
 
     if ( this->vm().count( "export" ) )

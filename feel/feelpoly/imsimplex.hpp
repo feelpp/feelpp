@@ -8901,7 +8901,7 @@ public:
     static const uint16_type nDim = Dim;
     static const uint16_type nOrder = Order;
 
-#if FEEL_GNUC_AT_LEAST(4,6)
+#if FEELPP_GNUC_AT_LEAST(4,6)
     static constexpr T factor = (Dim==2)?T(1)/T(2):T(1)/T(6);
 #else
     static const T factor = (Dim==2)?T(1)/T(2):T(1)/T(6);

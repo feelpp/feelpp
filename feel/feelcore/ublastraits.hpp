@@ -27,10 +27,10 @@
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2005-07-28
  */
-#ifndef FEEL_UBLAS_TRAITS_HPP
-#define FEEL_UBLAS_TRAITS_HPP 1
+#ifndef FEELPP_UBLAS_TRAITS_HPP
+#define FEELPP_UBLAS_TRAITS_HPP 1
 
-#if !defined( FEEL_TRAITS_HPP)
+#if !defined( FEELPP_TRAITS_HPP)
 #error feel/feelcore/ublas_traits.hpp must not be used directly, use feel/feelcore/traits.hpp instead
 #endif
 
@@ -112,7 +112,7 @@ struct type_traits<Feel::mp_type> {
 };
 #endif // HAVE_MPFR
 
-#if defined ( FEEL_HAVE_QD_REAL )
+#if defined ( FEELPP_HAVE_QD_REAL )
 template<>
 struct type_traits<qd_real> {
     typedef type_traits<qd_real> self_type;
@@ -184,8 +184,8 @@ struct type_traits<qd_real> {
                         BOOST_UBLAS_TYPE_CHECK_MIN);
     }
 };
-#endif /* FEEL_HAVE_QD_REAL */
-#if defined ( FEEL_HAVE_DD_REAL )
+#endif /* FEELPP_HAVE_QD_REAL */
+#if defined ( FEELPP_HAVE_DD_REAL )
 template<>
 struct type_traits<dd_real> {
     typedef type_traits<dd_real> self_type;
@@ -256,9 +256,9 @@ struct type_traits<dd_real> {
                         BOOST_UBLAS_TYPE_CHECK_MIN);
     }
 };
-#endif /* FEEL_HAVE_DD_REAL */
+#endif /* FEELPP_HAVE_DD_REAL */
 
-#if defined ( FEEL_HAVE_MP_REAL )
+#if defined ( FEELPP_HAVE_MP_REAL )
 template<>
 struct type_traits<mp_real> {
     typedef type_traits<mp_real> self_type;
@@ -329,6 +329,6 @@ struct type_traits<mp_real> {
                         BOOST_UBLAS_TYPE_CHECK_MIN);
     }
 };
-#endif /* FEEL_HAVE_MP_REAL */
+#endif /* FEELPP_HAVE_MP_REAL */
 }}}
-#endif /* FEEL_UBLAS_TRAITS_HPP */
+#endif /* FEELPP_UBLAS_TRAITS_HPP */

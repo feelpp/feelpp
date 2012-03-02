@@ -23,21 +23,21 @@
 
 namespace Feel
 {
-#if defined( FEEL_INSTANTIATION_MODE )
+#if defined( FEELPP_INSTANTIATION_MODE )
 
 template class MeshHighOrder< Simplex<2,1> >;
-#if BOOST_PP_GREATER_EQUAL( FEEL_MESH_MAX_ORDER, 2 )
+#if BOOST_PP_GREATER_EQUAL( FEELPP_MESH_MAX_ORDER, 2 )
 template class MeshHighOrder< Simplex<2,2> >;
 #endif
-#if BOOST_PP_GREATER_EQUAL( FEEL_MESH_MAX_ORDER, 3 )
+#if BOOST_PP_GREATER_EQUAL( FEELPP_MESH_MAX_ORDER, 3 )
 template class MeshHighOrder< Simplex<2,3> >;
 #endif
-#if BOOST_PP_GREATER_EQUAL( FEEL_MESH_MAX_ORDER, 4 )
+#if BOOST_PP_GREATER_EQUAL( FEELPP_MESH_MAX_ORDER, 4 )
 template class MeshHighOrder< Simplex<2,4> >;
-#endif // FEEL_MESH_MAX_ORDER
-#if BOOST_PP_GREATER_EQUAL( FEEL_MESH_MAX_ORDER, 5 )
+#endif // FEELPP_MESH_MAX_ORDER
+#if BOOST_PP_GREATER_EQUAL( FEELPP_MESH_MAX_ORDER, 5 )
 template class MeshHighOrder< Simplex<2,5> >;
-#endif // FEEL_MESH_MAX_ORDER
+#endif // FEELPP_MESH_MAX_ORDER
 
-#endif // FEEL_INSTANTIATION_MODE
+#endif // FEELPP_INSTANTIATION_MODE
 } // Feel

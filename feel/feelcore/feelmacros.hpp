@@ -36,48 +36,48 @@
    \subsection hints Feel C++ Compiler Hints
 
   -# #INLINE
-  -# #FEEL_RESTRICT
+  -# #FEELPP_RESTRICT
 
   \subsection attribute_macro Feel Attribute Macros
 
-  -# #FEEL_EXPORT and #FEEL_NO_EXPORT
-  -# #FEEL_PACKED
-  -# #FEEL_DEPRECATED
-  -# #FEEL_ISLIKELY and #FEEL_ISUNLIKELY
+  -# #FEELPP_EXPORT and #FEELPP_NO_EXPORT
+  -# #FEELPP_PACKED
+  -# #FEELPP_DEPRECATED
+  -# #FEELPP_ISLIKELY and #FEELPP_ISUNLIKELY
 */
 #ifdef __GNUC__
-  #define FEEL_GNUC_AT_LEAST(x,y) ((__GNUC__>=x && __GNUC_MINOR__>=y) || __GNUC__>x)
+  #define FEELPP_GNUC_AT_LEAST(x,y) ((__GNUC__>=x && __GNUC_MINOR__>=y) || __GNUC__>x)
 #else
-  #define FEEL_GNUC_AT_LEAST(x,y) 0
+  #define FEELPP_GNUC_AT_LEAST(x,y) 0
 #endif
 
 /**
-   \def FEEL_CONSTRUCTOR_BEGIN(Area,x)
+   \def FEELPP_CONSTRUCTOR_BEGIN(Area,x)
    Inform that the constructor of the class x has started
  */
-#define FEEL_CONSTRUCTOR_BEGIN(Area, A) Debug( Area ) << "Constructor of " << A << " begins\n";
-#define FEEL_CONSTRUCTOR(Area,A) FEEL_CONSTRUCTOR_BEGIN(Area,A)
-#define CONSTRUCTOR(A) FEEL_CONSTRUCTOR_BEGIN(20000,A)
+#define FEELPP_CONSTRUCTOR_BEGIN(Area, A) Debug( Area ) << "Constructor of " << A << " begins\n";
+#define FEELPP_CONSTRUCTOR(Area,A) FEELPP_CONSTRUCTOR_BEGIN(Area,A)
+#define CONSTRUCTOR(A) FEELPP_CONSTRUCTOR_BEGIN(20000,A)
 
 /**
-   \def FEEL_CONSTRUCTOR_END(Area,x)
+   \def FEELPP_CONSTRUCTOR_END(Area,x)
    Inform that the constructor of the class x has ended
  */
-#define FEEL_CONSTRUCTOR_END(Area,A) Debug( Area ) << "Constructor of " << A << " ends\n";
+#define FEELPP_CONSTRUCTOR_END(Area,A) Debug( Area ) << "Constructor of " << A << " ends\n";
 
 /**
-   \def FEEL_DESTRUCTOR_BEGIN(Area,x)
+   \def FEELPP_DESTRUCTOR_BEGIN(Area,x)
    Inform that the destructor of the class x has started
  */
-#define FEEL_DESTRUCTOR_BEGIN(Area,A) Debug( Area ) << "Destructor of " << A << " begins\n";
-#define FEEL_DESTRUCTOR(Area,A) FEEL_DESTRUCTOR_END(Area,A)
-#define DESTRUCTOR(A) FEEL_DESTRUCTOR_BEGIN(20000,A)
+#define FEELPP_DESTRUCTOR_BEGIN(Area,A) Debug( Area ) << "Destructor of " << A << " begins\n";
+#define FEELPP_DESTRUCTOR(Area,A) FEELPP_DESTRUCTOR_END(Area,A)
+#define DESTRUCTOR(A) FEELPP_DESTRUCTOR_BEGIN(20000,A)
 
 /**
-   \def FEEL_DESTRUCTOR_END(Area,x)
+   \def FEELPP_DESTRUCTOR_END(Area,x)
    Inform that the destructor of the class x has started
  */
-#define FEEL_DESTRUCTOR_END(Area,A) Debug( Area ) << "Destructor of " << A << " ends\n";
+#define FEELPP_DESTRUCTOR_END(Area,A) Debug( Area ) << "Destructor of " << A << " ends\n";
 
 
 /**
@@ -88,7 +88,7 @@
 #define INLINE inline
 
 /**
-   \def FEEL_RESTRICT
+   \def FEELPP_RESTRICT
    \brief C99 feature of restricted(not aliased) pointers and references
 
    As with gcc, g++ understands the C99 feature of restricted
@@ -135,17 +135,17 @@
    function prototype as well.
 
    In order to ensure that the code is portable to other compiler than
-   gcc/g++ a macro has been defined FEEL_RESTRICT that is equal to
+   gcc/g++ a macro has been defined FEELPP_RESTRICT that is equal to
    __restrict__ if the compiler supports it.
  */
-#define FEEL_RESTRICT __restrict__
+#define FEELPP_RESTRICT __restrict__
 
 
 
 
 
 /**
-   \def FEEL_EXPORT
+   \def FEELPP_EXPORT
    \brief Load time improvements for DSO libraries
 
    Here are a few explanations why this is useful.  For more info
@@ -178,17 +178,17 @@
 
    here is an example on how to use them
    \code
-   int FEEL_NO_EXPORT foo;
-   int FEEL_EXPORT bar;
+   int FEELPP_NO_EXPORT foo;
+   int FEELPP_EXPORT bar;
 
-   extern "C" FEEL_EXPORT void function(int a);
+   extern "C" FEELPP_EXPORT void function(int a);
 
-   class FEEL_EXPORT SomeClass
+   class FEELPP_EXPORT SomeClass
    {
      int c;
 
      // Only for use within this DSO
-     FEEL_NO_EXPORT void privateMethod();
+     FEELPP_NO_EXPORT void privateMethod();
 
     public:
 
@@ -198,22 +198,22 @@
    \endcode
 */
 /**
-   \def FEEL_NO_EXPORT
+   \def FEELPP_NO_EXPORT
 
-   Counterpart to #FEEL_EXPORT.
+   Counterpart to #FEELPP_EXPORT.
  */
 #if __GNUC__ - 0 > 3 || (__GNUC__ - 0 == 3 && __GNUC_MINOR__ - 0 > 2)
-#define FEEL_EXPORT __attribute__ ((visibility("default")))
+#define FEELPP_EXPORT __attribute__ ((visibility("default")))
 
-#define FEEL_NO_EXPORT __attribute__ ((visibility("hidden")))
+#define FEELPP_NO_EXPORT __attribute__ ((visibility("hidden")))
 #else
-#define FEEL_EXPORT
-#define FEEL_NO_EXPORT
+#define FEELPP_EXPORT
+#define FEELPP_NO_EXPORT
 #endif
 
 /**
-   \def FEEL_PACKED
-   The FEEL_PACKED can be used to hint the compiler that a particular
+   \def FEELPP_PACKED
+   The FEELPP_PACKED can be used to hint the compiler that a particular
    structure or class should not contain unnecessary paddings.
 
    Here is an explanation from http://sig9.com/articles/gcc-packed-structures
@@ -275,7 +275,7 @@
    int  a;
    char b;
    int  c;
-   } FEEL_PACKED
+   } FEELPP_PACKED
 
    struct test_t test = { 10, 20, 30};
    \endcode
@@ -303,52 +303,52 @@
    of memory and manipulate it through the fields of a structure.
  */
 #ifdef __GNUC__
-#define FEEL_PACKED __attribute__((__packed__))
+#define FEELPP_PACKED __attribute__((__packed__))
 #else
-#define FEEL_PACKED
+#define FEELPP_PACKED
 #endif
 
 /**
-   The FEEL_DEPRECATED macro can be used to trigger compile-time warnings
+   The FEELPP_DEPRECATED macro can be used to trigger compile-time warnings
    with gcc >= 3.2 when deprecated functions are used.
 
    For non-inline functions, the macro gets inserted at the very end of the
    function declaration, right before the semicolon:
 
    \code
-   DeprecatedConstructor() FEEL_DEPRECATED;
-   void deprecatedFunctionA() FEEL_DEPRECATED;
-   int deprecatedFunctionB() const FEEL_DEPRECATED;
+   DeprecatedConstructor() FEELPP_DEPRECATED;
+   void deprecatedFunctionA() FEELPP_DEPRECATED;
+   int deprecatedFunctionB() const FEELPP_DEPRECATED;
    \endcode
 
    Functions which are implemented inline are handled differently: for them,
-   the FEEL_DEPRECATED macro is inserted at the front, right before the return
+   the FEELPP_DEPRECATED macro is inserted at the front, right before the return
    type, but after "static" or "virtual":
 
    \code
-   FEEL_DEPRECATED void deprecatedInlineFunctionA() { .. }
-   virtual FEEL_DEPRECATED int deprecatedInlineFunctionB() { .. }
-   static FEEL_DEPRECATED bool deprecatedInlineFunctionC() { .. }
+   FEELPP_DEPRECATED void deprecatedInlineFunctionA() { .. }
+   virtual FEELPP_DEPRECATED int deprecatedInlineFunctionB() { .. }
+   static FEELPP_DEPRECATED bool deprecatedInlineFunctionC() { .. }
    \end
 
    You can also mark whole structs or classes as deprecated, by inserting the
-   FEEL_DEPRECATED macro after the struct/class keyword, but before the
+   FEELPP_DEPRECATED macro after the struct/class keyword, but before the
    name of the struct/class:
 
    \code
-   class FEEL_DEPRECATED DeprecatedClass { };
-   struct FEEL_DEPRECATED DeprecatedStruct { };
+   class FEELPP_DEPRECATED DeprecatedClass { };
+   struct FEELPP_DEPRECATED DeprecatedStruct { };
    \endcode
 */
 #if __GNUC__ - 0 > 3 || (__GNUC__ - 0 == 3 && __GNUC_MINOR__ - 0 >= 2)
-# define FEEL_DEPRECATED __attribute__ ((deprecated))
+# define FEELPP_DEPRECATED __attribute__ ((deprecated))
 #else
-# define FEEL_DEPRECATED
+# define FEELPP_DEPRECATED
 #endif
 
 /**
-   \def FEEL_ISLIKELY(x)
-   The FEEL_ISLIKELY macro tags a boolean expression as likely to evaluate to
+   \def FEELPP_ISLIKELY(x)
+   The FEELPP_ISLIKELY macro tags a boolean expression as likely to evaluate to
    'true'. When used in an if ( ) statement, it gives a hint to the compiler
    that the following codeblock is likely to get executed. Providing this
    information helps the compiler to optimize the code for better performance.
@@ -362,31 +362,31 @@
    in all cases ( independent from e.g. user configuration ).
 
    \par
-   The FEEL_ISUNLIKELY macro tags an expression as unlikely evaluating to 'true'.
+   The FEELPP_ISUNLIKELY macro tags an expression as unlikely evaluating to 'true'.
 
    \note
-   Do NOT use ( !FEEL_ISLIKELY(foo) ) as an replacement for FEEL_ISUNLIKELY !
+   Do NOT use ( !FEELPP_ISLIKELY(foo) ) as an replacement for FEELPP_ISUNLIKELY !
 
    \code
-   if ( FEEL_ISUNLIKELY( testsomething() ) )
+   if ( FEELPP_ISUNLIKELY( testsomething() ) )
        abort();     // assume its unlikely that the application aborts
    \endcode
 */
 /**
-   \def FEEL_ISUNLIKELY(x)
-   Counterpart to #FEEL_ISLIKELY
-   The FEEL_ISUNLIKELY macro tags an expression as unlikely evaluating to 'true'.
+   \def FEELPP_ISUNLIKELY(x)
+   Counterpart to #FEELPP_ISLIKELY
+   The FEELPP_ISUNLIKELY macro tags an expression as unlikely evaluating to 'true'.
  */
 #if __GNUC__ - 0 >= 3
-# define FEEL_ISLIKELY( x )    __builtin_expect(!!(x),1)
-# define FEEL_ISUNLIKELY( x )  __builtin_expect(!!(x),0)
+# define FEELPP_ISLIKELY( x )    __builtin_expect(!!(x),1)
+# define FEELPP_ISUNLIKELY( x )  __builtin_expect(!!(x),0)
 #else
-# define FEEL_ISLIKELY( x )   ( x )
-# define FEEL_ISUNLIKELY( x )  ( x )
+# define FEELPP_ISLIKELY( x )   ( x )
+# define FEELPP_ISUNLIKELY( x )  ( x )
 #endif
 
 /**
- * \def FEEL_PREFETCH(x)
+ * \def FEELPP_PREFETCH(x)
  * \brief Prefetching
 
  Another important method of improving performance is through caching
@@ -447,13 +447,13 @@
  \endcode
  */
 #if __GNUC__ - 0 >= 3
-# define FEEL_PREFETCH( x, rw, locality )   __builtin_prefetch( (x), rw, locality )
+# define FEELPP_PREFETCH( x, rw, locality )   __builtin_prefetch( (x), rw, locality )
 #else
-# define FEEL_PREFETCH( x, rw, locality )
+# define FEELPP_PREFETCH( x, rw, locality )
 #endif // __GNUC__
 
 /**
- * \def FEEL_IS_CONSTANT(x)
+ * \def FEELPP_IS_CONSTANT(x)
  * \brief detect at compile if it is a constant
 
  GCC provides a built-in function that you can use to determine
@@ -493,40 +493,40 @@
 \endcode
  */
 #if __GNUC__ - 0 >= 3
-# define FEEL_IS_CONSTANT( n ) __builtin_constant_p( n )
+# define FEELPP_IS_CONSTANT( n ) __builtin_constant_p( n )
 #else
-# define FEEL_IS_CONSTANT( n )
+# define FEELPP_IS_CONSTANT( n )
 #endif // __GNUC__
 
-#define FEEL_DEBUG_VAR(x) std::cerr << #x << " = " << x << std::endl;
+#define FEELPP_DEBUG_VAR(x) std::cerr << #x << " = " << x << std::endl;
 
 #ifdef NDEBUG
-# ifndef FEEL_NO_DEBUG
-#  define FEEL_NO_DEBUG
+# ifndef FEELPP_NO_DEBUG
+#  define FEELPP_NO_DEBUG
 # endif
 #endif
 
-// FEEL_ALWAYS_INLINE_ATTRIB should be use in the declaration of function
+// FEELPP_ALWAYS_INLINE_ATTRIB should be use in the declaration of function
 // which should be inlined even in debug mode.
-#if FEEL_GNUC_AT_LEAST(4,0)
-#define FEEL_ALWAYS_INLINE_ATTRIB __attribute__((always_inline))
+#if FEELPP_GNUC_AT_LEAST(4,0)
+#define FEELPP_ALWAYS_INLINE_ATTRIB __attribute__((always_inline))
 #else
-#define FEEL_ALWAYS_INLINE_ATTRIB
+#define FEELPP_ALWAYS_INLINE_ATTRIB
 #endif
 
-// FEEL_FORCE_INLINE means "inline as much as possible"
+// FEELPP_FORCE_INLINE means "inline as much as possible"
 #if (defined _MSC_VER) || (defined __intel_compiler)
-#define FEEL_STRONG_INLINE __forceinline
+#define FEELPP_STRONG_INLINE __forceinline
 #else
-#define FEEL_STRONG_INLINE inline
+#define FEELPP_STRONG_INLINE inline
 #endif
 
 #if (defined __GNUC__)
-#define FEEL_DONT_INLINE __attribute__((noinline))
+#define FEELPP_DONT_INLINE __attribute__((noinline))
 #elif (defined _MSC_VER)
-#define FEEL_DONT_INLINE __declspec(noinline)
+#define FEELPP_DONT_INLINE __declspec(noinline)
 #else
-#define FEEL_DONT_INLINE
+#define FEELPP_DONT_INLINE
 #endif
 
 #endif /* FEELMACROS_HPP */

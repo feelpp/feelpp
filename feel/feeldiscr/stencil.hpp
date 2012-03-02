@@ -50,7 +50,7 @@ struct compute_graph3
             {
                 if (M_stencil->isBlockPatternZero(M_test_index,M_trial_index))
                     {
-#if !defined(FEEL_ENABLE_MPI_MODE)
+#if !defined(FEELPP_ENABLE_MPI_MODE)
                         const size_type proc_id           = M_stencil->testSpace()->mesh()->comm().rank();
                         const size_type n1_dof_on_proc    = space2->nLocalDof();
                         const size_type first1_dof_on_proc = space2->dof()->firstDof( proc_id );
@@ -113,7 +113,7 @@ struct compute_graph2
             {
                 if (M_stencil->isBlockPatternZero(M_test_index,M_trial_index))
                     {
-#if !defined(FEEL_ENABLE_MPI_MODE)
+#if !defined(FEELPP_ENABLE_MPI_MODE)
                         const size_type proc_id           = M_stencil->testSpace()->mesh()->comm().rank();
                         const size_type n1_dof_on_proc    = M_space1->nLocalDof();
                         const size_type first1_dof_on_proc = M_space1->dof()->firstDof( proc_id );
@@ -204,7 +204,7 @@ public:
         :
         _M_X1( Xh ),
         _M_X2( Yh ),
-#if !defined(FEEL_ENABLE_MPI_MODE)
+#if !defined(FEELPP_ENABLE_MPI_MODE)
         M_graph( new graph_type( Xh->nLocalDof(),
                                  Xh->nDofStart(), Xh->nDofStart()+ Xh->nLocalDof()-1,
                                  Yh->nDofStart(), Yh->nDofStart()+ Yh->nLocalDof()-1 ) ),
@@ -224,7 +224,7 @@ public:
                     M_block_pattern.resize((nbSubSpace1*nbSubSpace2));
                     for (auto it=M_block_pattern.begin(), en=M_block_pattern.end();it!=en;++it)  *it = graph_hints;
                 }
-            //else FEEL_ASSERT(M_block_pattern.size() == nbSubSpace1*nbSubSpace2 ).error ("invalid block pattern size");
+            //else FEELPP_ASSERT(M_block_pattern.size() == nbSubSpace1*nbSubSpace2 ).error ("invalid block pattern size");
 
             const size_type n1_dof_on_proc = _M_X1->nLocalDof();
             M_graph = this->computeGraph(graph_hints);
@@ -420,9 +420,9 @@ sortSparsityRow (const BidirectionalIterator begin,
 
     assert (std::distance (begin,  middle) > 0);
     assert (std::distance (middle, end)    > 0);
-    FEEL_ASSERT( std::unique (begin,  middle) == middle )
+    FEELPP_ASSERT( std::unique (begin,  middle) == middle )
         ( *begin )( *middle ).error( "duplicate dof(begin,middle)" );
-    FEEL_ASSERT (std::unique (middle, end)    == end)
+    FEELPP_ASSERT (std::unique (middle, end)    == end)
         (*begin)( *middle ).error( "duplicate dof (middle,end)" );
 
     while (middle != end)
@@ -714,8 +714,8 @@ Stencil<X1,X2>::computeGraph( size_type hints, mpl::bool_<true> )
                                     // but do the test like this because ig and
                                     // first_dof_on_proc are size_types
 #if 0
-                                    FEEL_ASSERT (ig1 >= first1_dof_on_proc )( ig1 )( first1_dof_on_proc ).error ("invalid dof index");
-                                    FEEL_ASSERT ((ig1 - first1_dof_on_proc) < sparsity_graph->size() )
+                                    FEELPP_ASSERT (ig1 >= first1_dof_on_proc )( ig1 )( first1_dof_on_proc ).error ("invalid dof index");
+                                    FEELPP_ASSERT ((ig1 - first1_dof_on_proc) < sparsity_graph->size() )
                                         ( ig1 )( first1_dof_on_proc )( sparsity_graph->size() ).error( "invalid dof index" );
 #endif
                                     graph_type::row_type& row = sparsity_graph->row(ig1);
@@ -893,7 +893,7 @@ Stencil<X1,X2>::computeGraph( size_type hints, mpl::bool_<true> )
     // fed into a PetscMatrix to allocate exacly the number of nonzeros
     // necessary to store the matrix.  This algorithm should be linear
     // in the (# of elements)*(# nodes per element)
-#if !defined(FEEL_ENABLE_MPI_MODE) // NOT MPI
+#if !defined(FEELPP_ENABLE_MPI_MODE) // NOT MPI
     const size_type nprocs           = _M_X1->mesh()->comm().size();
     const size_type proc_id           = _M_X1->mesh()->comm().rank();
     const size_type n1_dof_on_proc    = _M_X1->nLocalDof();
@@ -945,7 +945,7 @@ Stencil<X1,X2>::computeGraph( size_type hints, mpl::bool_<true> )
 
         // Get the global indices of the DOFs with support on this element
         //element_dof1 = _M_X1->dof()->getIndices( elem.id() );
-#if !defined(FEEL_ENABLE_MPI_MODE) // NOT MPI
+#if !defined(FEELPP_ENABLE_MPI_MODE) // NOT MPI
         _M_X2->dof()->getIndicesSet( elem.id(), element_dof2 );
 #else // MPI
         _M_X2->dof()->getIndicesSetOnGlobalCluster( elem.id(), element_dof2 );
@@ -962,7 +962,7 @@ Stencil<X1,X2>::computeGraph( size_type hints, mpl::bool_<true> )
         for (size_type i=0; i<n1_dof_on_element; i++)
         //BOOST_FOREACH( auto ig1, _M_X1->dof()->getIndices( elem.id() ) )
         {
-#if !defined(FEEL_ENABLE_MPI_MODE) // NOT MPI
+#if !defined(FEELPP_ENABLE_MPI_MODE) // NOT MPI
             const size_type ig1 = _M_X1->dof()->localToGlobalId( elem.id(), i );
 #else // MPI
             const size_type ig1 = _M_X1->dof()->mapGlobalProcessToGlobalCluster()[_M_X1->dof()->localToGlobalId( elem.id(), i )];
@@ -981,13 +981,13 @@ Stencil<X1,X2>::computeGraph( size_type hints, mpl::bool_<true> )
                 // but do the test like this because ig and
                 // first_dof_on_proc are size_types
 #if 0
-                FEEL_ASSERT (ig1 >= first1_dof_on_proc )( ig1 )( first1_dof_on_proc ).error ("invalid dof index");
-                FEEL_ASSERT ((ig1 - first1_dof_on_proc) < sparsity_graph->size() )
+                FEELPP_ASSERT (ig1 >= first1_dof_on_proc )( ig1 )( first1_dof_on_proc ).error ("invalid dof index");
+                FEELPP_ASSERT ((ig1 - first1_dof_on_proc) < sparsity_graph->size() )
                     ( ig1 )( first1_dof_on_proc )( sparsity_graph->size() ).error( "invalid dof index" );
 #endif
                 graph_type::row_type& row = sparsity_graph->row(ig1);
                 bool is_on_proc = ( ig1 >= first1_dof_on_proc) && (ig1 <= last1_dof_on_proc);
-#if !defined(FEEL_ENABLE_MPI_MODE) // NOT MPI
+#if !defined(FEELPP_ENABLE_MPI_MODE) // NOT MPI
                 row.get<0>() = is_on_proc?proc_id:invalid_size_type_value;
                 row.get<1>() = is_on_proc?ig1 - first1_dof_on_proc:invalid_size_type_value;
 #else // MPI
@@ -1260,12 +1260,12 @@ Stencil<X1,X2>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<tru
     locToolForXh1->setExtrapolation(false);
 
 
-#define FEEL_EXPORT_GRAPH 0
-#if FEEL_EXPORT_GRAPH
+#define FEELPP_EXPORT_GRAPH 0
+#if FEELPP_EXPORT_GRAPH
 #include <feel/feelfilters/exporter.hpp>
 #endif
 
-#if FEEL_EXPORT_GRAPH
+#if FEELPP_EXPORT_GRAPH
     std::map<size_type,std::list<size_type> > mapBetweenMeshes;
 #endif
 
@@ -1332,7 +1332,7 @@ Stencil<X1,X2>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<tru
                                     auto res_en = listTup.end();
                                     for ( ; res_it != res_en ; ++res_it)
                                         {
-#if FEEL_EXPORT_GRAPH
+#if FEELPP_EXPORT_GRAPH
                                             //mapBetweenMeshes[elem.id()].push_back(*res_it);
                                             mapBetweenMeshes[*res_it].push_back(elem.id());
 #endif
@@ -1387,7 +1387,7 @@ Stencil<X1,X2>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<tru
                                     auto resQuad = locToolForXh2->searchElement(gmc->xReal( q ));
                                     if (resQuad.get<0>())
                                         {
-#if FEEL_EXPORT_GRAPH
+#if FEELPP_EXPORT_GRAPH
                                             mapBetweenMeshes[resQuad.get<1>()].push_back(elem.id());
 #endif
                                             element_dof2 = _M_X2->dof()->getIndices( resQuad.get<1>() );
@@ -1485,7 +1485,7 @@ Stencil<X1,X2>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<tru
                                     auto res_en = listTup.end();
                                     for ( ; res_it != res_en ; ++res_it)
                                         {
-#if FEEL_EXPORT_GRAPH
+#if FEELPP_EXPORT_GRAPH
                                             //mapBetweenMeshes[elem.id()].push_back(*res_it);
                                             mapBetweenMeshes[*res_it/*->get<0>()*/].push_back(elem.id());
 #endif
@@ -1531,7 +1531,7 @@ Stencil<X1,X2>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<tru
                                     auto resQuad = locToolForXh2->searchElement(gmc->xReal( q ));
                                     if (resQuad.get<0>())
                                         {
-#if FEEL_EXPORT_GRAPH
+#if FEELPP_EXPORT_GRAPH
                                             mapBetweenMeshes[resQuad.get<1>()].push_back(elem.id());
 #endif
                                             element_dof2 = _M_X2->dof()->getIndices( resQuad.get<1>() );
@@ -1559,7 +1559,7 @@ Stencil<X1,X2>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<tru
 
     //sparsity_graph->close();
 
-#if FEEL_EXPORT_GRAPH
+#if FEELPP_EXPORT_GRAPH
 #if 0
     typedef mesh_1_type mesh_export_type;
     typedef FunctionSpace<mesh_1_type, bases<Lagrange<0, Scalar,Discontinuous> > > space_disc_type;

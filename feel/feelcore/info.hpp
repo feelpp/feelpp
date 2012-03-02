@@ -32,11 +32,11 @@
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2005-02-19
  */
-#ifndef _FEEL_VERSION_H_
-#define _FEEL_VERSION_H_
+#ifndef _FEELPP_VERSION_H_
+#define _FEELPP_VERSION_H_
 
-#define FEEL_MAKE_VERSION( a,b,c ) (((a) << 16) | ((b) << 8) | (c))
-#define FEEL_IS_VERSION(a,b,c) ( FEEL_VERSION >= FEEL_MAKE_VERSION(a,b,c) )
+#define FEELPP_MAKE_VERSION( a,b,c ) (((a) << 16) | ((b) << 8) | (c))
+#define FEELPP_IS_VERSION(a,b,c) ( FEELPP_VERSION >= FEELPP_MAKE_VERSION(a,b,c) )
 
 /**
  * Namespace for general FEEL functions.
@@ -67,7 +67,7 @@ public:
     static unsigned long long revision();
 
     /**
-     * Returns the encoded number of FEEL's version, see the FEEL_VERSION macro.
+     * Returns the encoded number of FEEL's version, see the FEELPP_VERSION macro.
      * In contrary to that macro this function returns the number of the actually
      * installed FEEL version, not the number of the FEEL version that was
      * installed when the program was compiled.
@@ -133,4 +133,4 @@ private:
 
 }
 
-#endif // _FEEL_VERSION_H_
+#endif // _FEELPP_VERSION_H_

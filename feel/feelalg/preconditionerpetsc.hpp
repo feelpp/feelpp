@@ -174,7 +174,7 @@ private:
 
 /*----------------------- inline functions ----------------------------------*/
 template <typename T>
-FEEL_STRONG_INLINE
+FEELPP_STRONG_INLINE
 PreconditionerPetsc<T>::PreconditionerPetsc ()
  :
     Preconditioner<T>()
@@ -184,7 +184,7 @@ PreconditionerPetsc<T>::PreconditionerPetsc ()
 
 
 template <typename T>
-FEEL_STRONG_INLINE
+FEELPP_STRONG_INLINE
 PreconditionerPetsc<T>::~PreconditionerPetsc ()
 {
     this->clear ();

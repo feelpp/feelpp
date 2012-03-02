@@ -312,7 +312,7 @@ template<typename T>
 void
 MatrixValue<T>::diagonalize( size_type __dof_index )
 {
-    FEEL_ASSERT( 0 ).error( "diagonalize is undefined for this matrix type" );
+    FEELPP_ASSERT( 0 ).error( "diagonalize is undefined for this matrix type" );
 }
 template<typename T>
 void

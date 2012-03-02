@@ -463,7 +463,7 @@ public:
      */
     void setNumberOfNeighborPartitions( uint16_type nep )
         {
-            FEEL_ASSERT( M_npids -1 == M_neighor_pids.size() )(M_npids)(M_neighor_pids).error( "invalid partitioning data" );
+            FEELPP_ASSERT( M_npids -1 == M_neighor_pids.size() )(M_npids)(M_neighor_pids).error( "invalid partitioning data" );
             M_neighor_pids.size();
         }
 

@@ -183,12 +183,12 @@ public:
 
     double polyCoefficient( int i ) const
     {
-        FEEL_ASSERT( i >=0 && i < BDF_MAX_ORDER-1 ).error( "[BDF] invalid index" );
+        FEELPP_ASSERT( i >=0 && i < BDF_MAX_ORDER-1 ).error( "[BDF] invalid index" );
         return M_beta[this->timeOrder()-1][i];
     }
     double polyDerivCoefficient( int i ) const
     {
-        FEEL_ASSERT( i >=0 && i < BDF_MAX_ORDER ).error( "[BDF] invalid index" );
+        FEELPP_ASSERT( i >=0 && i < BDF_MAX_ORDER ).error( "[BDF] invalid index" );
         return M_alpha[this->timeOrder()-1][i]/math::abs(this->timeStep());
         //return M_alpha[this->timeOrder()-1][i]/this->timeStep();
     }
@@ -282,7 +282,7 @@ public:
     //! return the real time in seconds spent in the iteration
     double realTimePerIteration() const
     {
-        FEEL_ASSERT( state() == BDF_RUNNING ).error( "invalid BDF state" );
+        FEELPP_ASSERT( state() == BDF_RUNNING ).error( "invalid BDF state" );
         M_real_time_per_iteration = M_timer.elapsed();
         return M_real_time_per_iteration;
     }
@@ -357,7 +357,7 @@ public:
      */
     double next() const
     {
-        FEEL_ASSERT( state() == BDF_RUNNING ).error( "invalid BDF state" );
+        FEELPP_ASSERT( state() == BDF_RUNNING ).error( "invalid BDF state" );
         M_real_time_per_iteration = M_timer.elapsed();
         M_timer.restart();
         M_time += M_dt;
@@ -1053,8 +1053,8 @@ Bdf<SpaceType>::polyDeriv() const
     element_type __t( M_space );
     __t.zero();
 
-    FEEL_ASSERT( __t.size() == M_space->nDof() )( __t.size() )( M_space->nDof() ).error( "invalid space element size" );
-    FEEL_ASSERT( __t.size() == M_unknowns[0]->size() )( __t.size() )( M_unknowns[0]->size() ).error( "invalid space element size" );
+    FEELPP_ASSERT( __t.size() == M_space->nDof() )( __t.size() )( M_space->nDof() ).error( "invalid space element size" );
+    FEELPP_ASSERT( __t.size() == M_unknowns[0]->size() )( __t.size() )( M_unknowns[0]->size() ).error( "invalid space element size" );
     for ( uint8_type i = 0;i < this->timeOrder();++i )
         __t.add( this->polyDerivCoefficient( i+1 ), *M_unknowns[i] );
 
@@ -1068,8 +1068,8 @@ Bdf<SpaceType>::poly() const
     element_type __t( M_space );
     __t.zero();
 
-    FEEL_ASSERT( __t.size() == M_space->nDof() )( __t.size() )( M_space->nDof() ).error( "invalid space element size" );
-    FEEL_ASSERT( __t.size() == M_unknowns[0]->size() )( __t.size() )( M_unknowns[0]->size() ).error( "invalid space element size" );
+    FEELPP_ASSERT( __t.size() == M_space->nDof() )( __t.size() )( M_space->nDof() ).error( "invalid space element size" );
+    FEELPP_ASSERT( __t.size() == M_unknowns[0]->size() )( __t.size() )( M_unknowns[0]->size() ).error( "invalid space element size" );
 
     for ( uint8_type i = 0;i < this->timeOrder();++i )
         __t.add(  this->polyCoefficient( i ),  *M_unknowns[ i ] );

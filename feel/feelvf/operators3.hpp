@@ -27,8 +27,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2005-01-17
  */
-#if !defined( __FEEL_VF_OPERATORS3_HPP )
-#define __FEEL_VF_OPERATORS3_HPP 1
+#if !defined( __FEELPP_VF_OPERATORS3_HPP )
+#define __FEELPP_VF_OPERATORS3_HPP 1
 
 # include <boost/preprocessor/stringize.hpp>
 
@@ -198,4 +198,4 @@ dot( LeftExprType const& left, RightExprType const& right  )
 } // vf
 } // feel
 
-#endif /* __FEEL_VF_OPERATORS2_HPP */
+#endif /* __FEELPP_VF_OPERATORS2_HPP */

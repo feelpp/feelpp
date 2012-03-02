@@ -116,7 +116,7 @@ SolverEigen<T>::build(const SolverPackage solver_package)
         case SOLVERS_SLEPC:
             {
 
-#if defined( FEEL_HAVE_SLEPC ) && defined( HAVE_PETSC_H )
+#if defined( FEELPP_HAVE_SLEPC ) && defined( HAVE_PETSC_H )
                 solvereigen_ptrtype ap(new SolverEigenSlepc<T>);
                 return ap;
 #else
@@ -168,7 +168,7 @@ SolverEigen<T>::build( po::variables_map const& vm, std::string const& prefix )
         case SOLVERS_SLEPC:
             {
 
-#if defined( FEEL_HAVE_SLEPC ) && defined( HAVE_PETSC_H )
+#if defined( FEELPP_HAVE_SLEPC ) && defined( HAVE_PETSC_H )
                 solvereigen_ptrtype ap(new SolverEigenSlepc<T>( vm, prefix ) );
                 return ap;
 #else

@@ -172,7 +172,7 @@ MatrixEpetra::init ( const size_type m,
 
                 Feel::detail::ignore_unused_variable_warning(ierr);
 
-                FEEL_ASSERT( ierr == 0 )( ierr )( it->first )( it->second.get<0>() )( it->second.get<1>() )( it->second.get<2>().size() ).warn( "problem with Epetra_FECrsGraph::InsertGlobalIndices" );
+                FEELPP_ASSERT( ierr == 0 )( ierr )( it->first )( it->second.get<0>() )( it->second.get<1>() )( it->second.get<2>().size() ).warn( "problem with Epetra_FECrsGraph::InsertGlobalIndices" );
                 //                 Debug( 10010 ) << "row = " << ii << " irow.size " << irow.size() <<  " ierr = " << ierr << "\n";
             }
         //std::cout << "------------------------------------------------------------\n";
@@ -190,7 +190,7 @@ MatrixEpetra::init ( const size_type m,
         //int ierr = epetra_graph.GlobalAssemble();
         //std::cout << "Epetra graph: " << epetra_graph << "\n";
         Feel::detail::ignore_unused_variable_warning(ierr);
-        FEEL_ASSERT( ierr == 0 )( ierr ).warn ( "[MatrixEpetra::init] GlobalAssemble failed" );
+        FEELPP_ASSERT( ierr == 0 )( ierr ).warn ( "[MatrixEpetra::init] GlobalAssemble failed" );
         Debug( 10010 ) << "Global assemble  ierr = " << ierr << "\n";
         //epetra_graph.Print( std::cout );
         _M_mat = boost::shared_ptr<Epetra_FECrsMatrix>( new Epetra_FECrsMatrix(Copy, epetra_graph ) );
@@ -208,7 +208,7 @@ MatrixEpetra::add (const size_type i,
                    const size_type j,
                    const value_type& value)
 {
-    FEEL_ASSERT (this->isInitialized()).error( "MatrixEpetra<> not properly initialized" );
+    FEELPP_ASSERT (this->isInitialized()).error( "MatrixEpetra<> not properly initialized" );
 
     int i_val = static_cast<int>(i);
     int j_val = static_cast<int>(j);
@@ -256,7 +256,7 @@ MatrixEpetra::diagonal (Vector<double>& dest) const
 void
 MatrixEpetra::transpose( MatrixSparse<value_type>& Mt ) const
 {
-    FEEL_ASSERT( 0 ).warn( "not implemented yet" );
+    FEELPP_ASSERT( 0 ).warn( "not implemented yet" );
 #if 0
  	Epetra_FECrsMatrix* Atrans;
 
@@ -279,9 +279,9 @@ MatrixEpetra::transpose( MatrixSparse<value_type>& Mt ) const
 void
 MatrixEpetra::printMatlab (const std::string name) const
 {
-    FEEL_ASSERT (this->isInitialized()).error( "epetra matrix not properly initialized" );
+    FEELPP_ASSERT (this->isInitialized()).error( "epetra matrix not properly initialized" );
 
-    FEEL_ASSERT (this->closed()).warn("epetra matrix not closed");
+    FEELPP_ASSERT (this->closed()).warn("epetra matrix not closed");
     if ( !this->closed() )
         const_cast<MatrixEpetra*>(this)->close();
 
@@ -301,7 +301,7 @@ MatrixEpetra::printMatlab (const std::string name) const
 void
 MatrixEpetra::printKonsole () const
 {
-    FEEL_ASSERT (this->isInitialized()).error( "epetra matrix not properly initialized" );
+    FEELPP_ASSERT (this->isInitialized()).error( "epetra matrix not properly initialized" );
 
     std::cout << "\n+---------------Information about the Matrix---------------+\n" <<  std::endl;
     cout << *_M_mat;
@@ -319,7 +319,7 @@ MatrixEpetra::printKonsole () const
 void
 MatrixEpetra::zeroRows( std::vector<int> const& rows, std::vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context )
 {
-    FEEL_ASSERT (this->isInitialized()).error( "MatrixEpetra<> not properly initialized" );
+    FEELPP_ASSERT (this->isInitialized()).error( "MatrixEpetra<> not properly initialized" );
 
     const Epetra_Map& rowMap(_M_mat->RowMatrixRowMap());
     const Epetra_Map& colMap(_M_mat->RowMatrixColMap());
@@ -354,7 +354,7 @@ MatrixEpetra::zeroRows( std::vector<int> const& rows, std::vector<value_type> co
                     //When doing ExtractMyRowView, Indices contain the local indices
                     int ierr = _M_mat->ExtractMyRowView( myRow, NumEntries, Values, Indices);
                     Debug( 10010 ) << "ExtractGlobalRowView1  ierr = " << ierr << "\n";
-                    FEEL_ASSERT( ierr == 0 )( ierr )( myRow )( NumEntries ).warn ("error in ExtractGlobalRowView");
+                    FEELPP_ASSERT( ierr == 0 )( ierr )( myRow )( NumEntries ).warn ("error in ExtractGlobalRowView");
                     if ( on_context.test( ON_ELIMINATION_SYMMETRIC ) )
                         {
                             // we suppose here that the pattern is
@@ -381,7 +381,7 @@ MatrixEpetra::zeroRows( std::vector<int> const& rows, std::vector<value_type> co
                                             Debug( 10010 ) << "[zeroRows] local, gid =" << gid << " lid = " << Indices[j] << "\n";
                                             ierr = _M_mat->ExtractMyRowView( Indices[j], NumRowEntries, RowValues, RowIndices);
                                             Debug( 10010 ) << "ExtractMyRowView ierr = " << ierr << "\n";
-                                            FEEL_ASSERT( ierr == 0 )( ierr )( Indices[j] )( NumRowEntries ).warn ("error in ExtractMyRowView/symm");
+                                            FEELPP_ASSERT( ierr == 0 )( ierr )( Indices[j] )( NumRowEntries ).warn ("error in ExtractMyRowView/symm");
                                             bool found = false;
                                             for( int k = 0; k < NumRowEntries; ++k )
                                                 if ( RowIndices[k] == myRow )
@@ -391,11 +391,11 @@ MatrixEpetra::zeroRows( std::vector<int> const& rows, std::vector<value_type> co
                                                         RowValues[k] = 0.0;
                                                         break;
                                                     }
-                                            FEEL_ASSERT( found == true )( myRow )( Indices[j] ).error ( "matrix graph is not symmetric" );
+                                            FEELPP_ASSERT( found == true )( myRow )( Indices[j] ).error ( "matrix graph is not symmetric" );
                                         }
                                     else
                                         {
-                                            FEEL_ASSERT( 0 ).error ( "zeroRows() not available in parallel computation" );
+                                            FEELPP_ASSERT( 0 ).error ( "zeroRows() not available in parallel computation" );
                                         }
                                 }
                         }
@@ -406,14 +406,14 @@ MatrixEpetra::zeroRows( std::vector<int> const& rows, std::vector<value_type> co
                     if ( on_context.test( ON_ELIMINATION_KEEP_DIAGONAL ) )
                         {
                             ierr = _M_mat->ReplaceMyValues(myRow, NumEntries, &Diagonal[myRow], &myRow  );
-                            FEEL_ASSERT( ierr == 0 )( ierr )( myRow )( NumEntries ).warn ("error in ReplaceMyValues()/diag");
+                            FEELPP_ASSERT( ierr == 0 )( ierr )( myRow )( NumEntries ).warn ("error in ReplaceMyValues()/diag");
                         }
                     else
                         {
                             /* put diagonal to 1 */
                             Diagonal[myRow] = 1.0;
                             ierr = _M_mat->ReplaceMyValues(myRow, NumEntries, &Diagonal[myRow], &myRow  );
-                            FEEL_ASSERT( ierr == 0 )( ierr )( myRow )( NumEntries ).warn ("error in ReplaceMyValues()/1");
+                            FEELPP_ASSERT( ierr == 0 )( ierr )( myRow )( NumEntries ).warn ("error in ReplaceMyValues()/1");
                         }
 
                     M_bc_index.push_back(*rit);
@@ -437,7 +437,7 @@ MatrixEpetra::addMatrix ( int* rows, int nrows,
                           int* cols, int ncols,
                           value_type* data )
 {
-    FEEL_ASSERT (this->isInitialized()).error( "MatrixEpetra<> not properly initialized" );
+    FEELPP_ASSERT (this->isInitialized()).error( "MatrixEpetra<> not properly initialized" );
 
     _M_mat->SumIntoGlobalValues( nrows, rows, ncols, cols, data, Epetra_FECrsMatrix::ROW_MAJOR );
 }

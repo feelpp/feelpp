@@ -143,7 +143,7 @@ int Molecule::readCRDfile( std::string const filename)
   numAtoms = atoi(atmSTR.c_str());
   atmSTR = clearRemarks("*", radfile);
 
-  FEEL_ASSERT( numAtoms == atoi(atmSTR.c_str())  ).error( "cha and rad files have different length" );
+  FEELPP_ASSERT( numAtoms == atoi(atmSTR.c_str())  ).error( "cha and rad files have different length" );
 
   int ret;
   while (! (chafile.eof() || radfile.eof())  )

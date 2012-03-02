@@ -116,7 +116,7 @@ void add_tests( test_suite* test )
   using namespace std;
 
   test->add( BOOST_TEST_CASE( ( PK_Monom_N_opt<P,double> ) ) );
-#if defined( FEEL_HAVE_QD_REAL)
+#if defined( FEELPP_HAVE_QD_REAL)
   //test->add( BOOST_TEST_CASE( ( PK_Monom_N_opt<P,dd_real> ) ) );
   //test->add( BOOST_TEST_CASE( ( PK_Monom_N_opt<P,qd_real> ) ) );
 #endif
@@ -132,7 +132,7 @@ void add_tests<40>( test_suite* test )
 
   test->add( BOOST_TEST_CASE( ( PK_Monom_N_opt<40,double> ) ) );
 
-#if defined( FEEL_HAVE_QD_REAL)
+#if defined( FEELPP_HAVE_QD_REAL)
   //test->add( BOOST_TEST_CASE( ( PK_Monom_N_opt<80,dd_real> ) ) );
   //test->add( BOOST_TEST_CASE( ( PK_Monom_N_opt<80,qd_real> ) ) );
 #endif
@@ -145,7 +145,7 @@ init_unit_test_suite( int /*argc*/, char** /*argv*/ )
     test_suite* test = BOOST_TEST_SUITE( "Integration methods on simplicies test suite" );
 
     PK_x_log << "This file attempt to save the errors encountered while numerically integrating $x^i$ on the tetraedra !" << "\n\n";
-#if defined( FEEL_HAVE_QD_REAL)
+#if defined( FEELPP_HAVE_QD_REAL)
     unsigned int old_cw;
     fpu_fix_start(&old_cw);
 #endif

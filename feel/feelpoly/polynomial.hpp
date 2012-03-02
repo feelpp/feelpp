@@ -300,7 +300,7 @@ public:
      */
     void setCoefficient( matrix_type const& __c, bool __as_is = false )
     {
-        //FEEL_ASSERT( __c.size1() == nComponents*nComponents && __c.size2() == _M_coeff.size2() )
+        //FEELPP_ASSERT( __c.size1() == nComponents*nComponents && __c.size2() == _M_coeff.size2() )
         //    ( is_scalar )( is_vectorial )( is_tensor2 )( __c )( _M_coeff ).error( "invalid polynomial coefficients" );
         if ( !__as_is )
             {

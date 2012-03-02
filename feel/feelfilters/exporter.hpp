@@ -363,8 +363,8 @@ po::options_description exporter_options( std::string const& prefix = "" );
 
 } // Feel
 
-//#if !defined( FEEL_INSTANTIATION_MODE )
+//#if !defined( FEELPP_INSTANTIATION_MODE )
 # include <feel/feelfilters/exporterimpl.hpp>
-//#endif // FEEL_INSTANTIATION_MODE
+//#endif // FEELPP_INSTANTIATION_MODE
 
 #endif /* __Exporter_H */

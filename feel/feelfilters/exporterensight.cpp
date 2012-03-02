@@ -651,7 +651,7 @@ ExporterEnsight<MeshType,N>::visit( mesh_type* __mesh )
 }
 
 #if 0
-#if defined( FEEL_INSTANTIATION_MODE )
+#if defined( FEELPP_INSTANTIATION_MODE )
 //
 // explicit instances
 //
@@ -673,7 +673,7 @@ template class ExporterEnsight<Mesh<Simplex<2,3,2> > >;
 template class ExporterEnsight<Mesh<Hypercube<2,2> > >;
 template class ExporterEnsight<Mesh<Hypercube<2,3> > >;
 
-#endif // FEEL_INSTANTIATION_MODE
+#endif // FEELPP_INSTANTIATION_MODE
 #endif
 }
 #endif // __EXPORTERENSIGHT_CPP

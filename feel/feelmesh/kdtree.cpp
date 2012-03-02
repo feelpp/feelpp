@@ -52,7 +52,7 @@ struct KDTree::Leaf : public KDTree::Element
         :
         Element( std::distance(begin,end) )
     {
-        FEEL_ASSERT( begin != end )( std::distance(begin,end) ).error( "invalid iterator" );
+        FEELPP_ASSERT( begin != end )( std::distance(begin,end) ).error( "invalid iterator" );
         it = begin;
     }
 };
@@ -253,7 +253,7 @@ build_tree( KDTree::points_iterator begin,
             else
                 {
                     /* the general case */
-                    FEEL_ASSERT( (boost::get<0>(*itmedian)[dir] > median &&
+                    FEELPP_ASSERT( (boost::get<0>(*itmedian)[dir] > median &&
                                  boost::get<0>(*(itmedian-1))[dir] <= median ) )
                         ( dir )
                         ( boost::get<0>(*itmedian)[dir])
@@ -332,7 +332,7 @@ points_in_box(const points_in_box_data& p,
                     bool is_in = true;
                     KDTree::node_type::const_iterator it = boost::get<0>(*itpt).begin();
                     KDTree::node_type::const_iterator en = boost::get<0>(*itpt).end();
-                    //FEEL_ASSERT( it != en  )( i ).error( "invalid iterator");
+                    //FEELPP_ASSERT( it != en  )( i ).error( "invalid iterator");
                     if ( it == en )
                         continue;
 

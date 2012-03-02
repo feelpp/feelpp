@@ -138,7 +138,7 @@ public:
      */
     matrix_type operator()( space_type const& p ) const
     {
-        //FEEL_ASSERT( _M_mat.size2() == ublas::trans(p.coeff()).size1() )( _M_mat.size1() )( p.coeff().size1() ).error( "incompatible dimension between functional and polynomial.\n Is the space correctly defined?" );
+        //FEELPP_ASSERT( _M_mat.size2() == ublas::trans(p.coeff()).size1() )( _M_mat.size1() )( p.coeff().size1() ).error( "incompatible dimension between functional and polynomial.\n Is the space correctly defined?" );
 
         return ublas::prod( space_type::polyset_type::toMatrix( _M_mat ),
                             ublas::trans( space_type::polyset_type::toMatrix( p.coeff() ) ) );

@@ -27,8 +27,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2005-07-28
  */
-#ifndef FEEL_TRAITS_HPP
-#define FEEL_TRAITS_HPP 1
+#ifndef FEELPP_TRAITS_HPP
+#define FEELPP_TRAITS_HPP 1
 
 #include <cmath>
 

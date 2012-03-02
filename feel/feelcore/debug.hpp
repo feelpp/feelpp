@@ -38,12 +38,12 @@ typedef DebugStream & (*LManipFunction)( DebugStream &); // manipulator function
 typedef NdebugStream & (*LNManipFunction)( NdebugStream&); // manipulator function
 
 #ifdef __GNUC__
-# define FEEL_FUNCINFO "[" << __PRETTY_FUNCTION__ << "] "
+# define FEELPP_FUNCINFO "[" << __PRETTY_FUNCTION__ << "] "
 #else
-# define FEEL_FUNCINFO "[" << __FILE__ << ":" << __LINE__ << "] "
+# define FEELPP_FUNCINFO "[" << __FILE__ << ":" << __LINE__ << "] "
 #endif
 
-#define FEEL_LINEINFO "[" << __FILE__ << ":" << __LINE__ << "] "
+#define FEELPP_LINEINFO "[" << __FILE__ << ":" << __LINE__ << "] "
 
 namespace detail
 {
@@ -259,11 +259,11 @@ DebugStream Fatal( int area = 0 );
 DebugStream Fatal( bool cond, int area = 0 );
 
 /// Standard function announcer
-#define FEEL_DEBUG_FUNC_INFO(area) Debug(area) << FEEL_FUNCINFO << "\n";
+#define FEELPP_DEBUG_FUNC_INFO(area) Debug(area) << FEELPP_FUNCINFO << "\n";
 
 /// Use these to introduce and extroduce functions
-#define FEEL_DEBUG_BEGIN(area) Debug(area) << "BEGIN: " << __PRETTY_FUNCTION__ << "\n";
-#define FEEL_DEBUG_END(area)   Debug(area) << "END: " << __PRETTY_FUNCTION__ << "\n";
+#define FEELPP_DEBUG_BEGIN(area) Debug(area) << "BEGIN: " << __PRETTY_FUNCTION__ << "\n";
+#define FEELPP_DEBUG_END(area)   Debug(area) << "END: " << __PRETTY_FUNCTION__ << "\n";
 
 }
 

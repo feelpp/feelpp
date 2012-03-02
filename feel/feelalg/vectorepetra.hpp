@@ -170,8 +170,8 @@ public:
     value_type operator() (const size_type i) const
     {
         checkInvariants();
-        FEEL_ASSERT (this->isInitialized()).error( "vector not initialized" );
-        FEEL_ASSERT ( ((i >= this->firstLocalIndex()) &&
+        FEELPP_ASSERT (this->isInitialized()).error( "vector not initialized" );
+        FEELPP_ASSERT ( ((i >= this->firstLocalIndex()) &&
                        (i <  this->lastLocalIndex())) )( i )( this->firstLocalIndex() )( this->lastLocalIndex() ).warn( "invalid vector index" );
 
         value_type value=0.;
@@ -188,8 +188,8 @@ public:
     value_type& operator() (const size_type i)
     {
         checkInvariants();
-        FEEL_ASSERT (this->isInitialized()).error( "vector not initialized" );
-        FEEL_ASSERT ( ((i >= this->firstLocalIndex()) &&
+        FEELPP_ASSERT (this->isInitialized()).error( "vector not initialized" );
+        FEELPP_ASSERT ( ((i >= this->firstLocalIndex()) &&
                        (i <  this->lastLocalIndex())) )( i )( this->firstLocalIndex() )( this->lastLocalIndex() ).warn( "invalid vector index" );
 
         return _M_vec[0][ (int)i-this->firstLocalIndex() ];
@@ -251,7 +251,7 @@ public:
      */
     size_type size () const
     {
-        FEEL_ASSERT (this->isInitialized()).error( "VectorEpetra not initialized" );
+        FEELPP_ASSERT (this->isInitialized()).error( "VectorEpetra not initialized" );
 
 
         if (!this->isInitialized())
@@ -269,7 +269,7 @@ public:
      */
     size_type localSize() const
     {
-        FEEL_ASSERT (this->isInitialized()).error( "VectorEpetra not initialized" );
+        FEELPP_ASSERT (this->isInitialized()).error( "VectorEpetra not initialized" );
 
         int epetra_size=0;
         epetra_size = _M_vec.MyLength();
@@ -284,7 +284,7 @@ public:
      */
     Epetra_FEVector const& vec () const
     {
-        //FEEL_ASSERT (_M_vec != 0).error( "invalid epetra vector" );
+        //FEELPP_ASSERT (_M_vec != 0).error( "invalid epetra vector" );
         return _M_vec;
     }
 
@@ -295,7 +295,7 @@ public:
      */
     Epetra_FEVector& vec ()
     {
-        //FEEL_ASSERT (_M_vec != 0).error( "invalid epetra vector" );
+        //FEELPP_ASSERT (_M_vec != 0).error( "invalid epetra vector" );
         return _M_vec;
     }
 
@@ -332,7 +332,7 @@ public:
      */
     void close ()
     {
-        FEEL_ASSERT (this->isInitialized()).error( "VectorEpetra<> not initialized" );
+        FEELPP_ASSERT (this->isInitialized()).error( "VectorEpetra<> not initialized" );
 
         int ierr=0;
         ierr = _M_vec.GlobalAssemble( Add );
@@ -346,7 +346,7 @@ public:
      */
     void zero ()
     {
-        FEEL_ASSERT (this->isInitialized()).error( "VectorEpetra<> not initialized" );
+        FEELPP_ASSERT (this->isInitialized()).error( "VectorEpetra<> not initialized" );
 
         _M_vec.PutScalar(0.0);
 
@@ -421,7 +421,7 @@ public:
     void addVector (const std::vector<value_type>& v,
                     const std::vector<size_type>& dof_indices)
     {
-        FEEL_ASSERT (v.size() == dof_indices.size()).error( "invalid dof indices" );
+        FEELPP_ASSERT (v.size() == dof_indices.size()).error( "invalid dof indices" );
 
         for (size_type i=0; i<v.size(); i++)
             this->add (dof_indices[i], v[i]);
@@ -437,7 +437,7 @@ public:
     void addVector (const Vector<value_type>& V,
                     const std::vector<size_type>& dof_indices)
     {
-        FEEL_ASSERT (V.size() == dof_indices.size()).error( "invalid dof indices" );
+        FEELPP_ASSERT (V.size() == dof_indices.size()).error( "invalid dof indices" );
 
         for (size_type i=0; i<V.size(); i++)
             this->add (dof_indices[i], V(i));
@@ -465,7 +465,7 @@ public:
     void addVector (const ublas::vector<value_type>& V,
                     const std::vector<size_type>& dof_indices)
     {
-        FEEL_ASSERT (V.size() == dof_indices.size()).error( "invalid dof indices" );
+        FEELPP_ASSERT (V.size() == dof_indices.size()).error( "invalid dof indices" );
 
         for (size_type i=0; i<V.size(); i++)
             this->add (dof_indices[i], V(i));

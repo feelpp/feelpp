@@ -28,8 +28,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2005-01-17
  */
-#if !defined( __FEEL_VF_OPERATORS_HPP )
-#define __FEEL_VF_OPERATORS_HPP 1
+#if !defined( __FEELPP_VF_OPERATORS_HPP )
+#define __FEELPP_VF_OPERATORS_HPP 1
 
 #include <feel/feelpoly/quadmapped.hpp>
 
@@ -729,4 +729,4 @@ BOOST_PP_LIST_FOR_EACH_PRODUCT(VF_ARRAY_OPERATOR, 2, (VF_OPERATORS, VF_OPERATORS
 }
 }
 
-#endif /* __FEEL_VF_OPERATORS_HPP */
+#endif /* __FEELPP_VF_OPERATORS_HPP */

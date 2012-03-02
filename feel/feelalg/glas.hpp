@@ -26,8 +26,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2005-08-17
  */
-#ifndef __FEEL_GLAS_HPP
-#define __FEEL_GLAS_HPP 1
+#ifndef __FEELPP_GLAS_HPP
+#define __FEELPP_GLAS_HPP 1
 
 #include <string>
 #include <sstream>
@@ -281,7 +281,7 @@ operator<<( NdebugStream& __os, ublas::matrix<T,Orient> const& /*__n*/ )
 //
 // sparse matrices
 //
-#if defined( FEEL_SIZET_SAME_AS_UINT )
+#if defined( FEELPP_SIZET_SAME_AS_UINT )
 typedef ublas::compressed_matrix<double,
                                  ublas::row_major > csr_matrix_type;
 typedef ublas::compressed_matrix<double,
@@ -324,7 +324,7 @@ void spy( MatrixType const& __m, std::string const &filename )
 
     std::ofstream file_out( name.c_str() );
 
-    FEEL_ASSERT( file_out)( filename ).error("[Feel::spy] ERROR: File cannot be opened for writing.");
+    FEELPP_ASSERT( file_out)( filename ).error("[Feel::spy] ERROR: File cannot be opened for writing.");
 
     file_out << "S = [ ";
     for ( typename MatrixType::const_iterator1 i1=__m.begin1();
@@ -416,4 +416,4 @@ randomize( T& t )
 } // namespace glas
 } // namespace Feel
 
-#endif /* __FEEL_GLAS_HPP */
+#endif /* __FEELPP_GLAS_HPP */

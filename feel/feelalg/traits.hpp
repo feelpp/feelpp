@@ -81,13 +81,13 @@ struct traits
 /*
  * Vector
  */
-# define FEEL_GLAS_TRAITS_VECTOR_TYPE(T)              BOOST_PP_TUPLE_ELEM(5, 0 , T)
-# define FEEL_GLAS_TRAITS_VECTOR_ITERATOR(T)          BOOST_PP_TUPLE_ELEM(5, 1 , T)
-# define FEEL_GLAS_TRAITS_VECTOR_CONST_ITERATOR(T)    BOOST_PP_TUPLE_ELEM(5, 2 , T)
-# define FEEL_GLAS_TRAITS_VECTOR_SIZE(T)              BOOST_PP_TUPLE_ELEM(5, 3 , T)
-# define FEEL_GLAS_TRAITS_VECTOR_RESIZE(T)            BOOST_PP_TUPLE_ELEM(5, 4 , T)
+# define FEELPP_GLAS_TRAITS_VECTOR_TYPE(T)              BOOST_PP_TUPLE_ELEM(5, 0 , T)
+# define FEELPP_GLAS_TRAITS_VECTOR_ITERATOR(T)          BOOST_PP_TUPLE_ELEM(5, 1 , T)
+# define FEELPP_GLAS_TRAITS_VECTOR_CONST_ITERATOR(T)    BOOST_PP_TUPLE_ELEM(5, 2 , T)
+# define FEELPP_GLAS_TRAITS_VECTOR_SIZE(T)              BOOST_PP_TUPLE_ELEM(5, 3 , T)
+# define FEELPP_GLAS_TRAITS_VECTOR_RESIZE(T)            BOOST_PP_TUPLE_ELEM(5, 4 , T)
 #
-# define FEEL_GLAS_TRAITS_VECTOR_TYPES                                 \
+# define FEELPP_GLAS_TRAITS_VECTOR_TYPES                                 \
   BOOST_PP_TUPLE_TO_LIST(                                               \
       2,                                                                \
       (                                                                 \
@@ -98,52 +98,52 @@ struct traits
   /**/
 #
 # /* Generates code for all integral types. */
-# define FEEL_GLAS_TRAITS_VECTOR_OP(_, T) \
-      FEEL_GLAS_TRAITS_VECTOR_OP_CODE T   \
+# define FEELPP_GLAS_TRAITS_VECTOR_OP(_, T) \
+      FEELPP_GLAS_TRAITS_VECTOR_OP_CODE T   \
    /**/
 #
-#define FEEL_GLAS_TRAITS_VECTOR_OP_CODE(T,V)                                                   \
+#define FEELPP_GLAS_TRAITS_VECTOR_OP_CODE(T,V)                                                   \
 template<>                                                                                      \
-struct traits<FEEL_GLAS_TRAITS_VECTOR_TYPE( V )<FEEL_TRAITS_TYPE( T )> >                      \
+struct traits<FEELPP_GLAS_TRAITS_VECTOR_TYPE( V )<FEELPP_TRAITS_TYPE( T )> >                      \
 {                                                                                               \
-    typedef FEEL_TRAITS_TYPE( T ) value_type;                                                  \
-    typedef FEEL_GLAS_TRAITS_VECTOR_TYPE( V )<FEEL_TRAITS_TYPE( T )> self_type;               \
-    typedef self_type::FEEL_GLAS_TRAITS_VECTOR_ITERATOR( V ) iterator;                         \
-    typedef  self_type::FEEL_GLAS_TRAITS_VECTOR_CONST_ITERATOR( V ) const_iterator;            \
+    typedef FEELPP_TRAITS_TYPE( T ) value_type;                                                  \
+    typedef FEELPP_GLAS_TRAITS_VECTOR_TYPE( V )<FEELPP_TRAITS_TYPE( T )> self_type;               \
+    typedef self_type::FEELPP_GLAS_TRAITS_VECTOR_ITERATOR( V ) iterator;                         \
+    typedef  self_type::FEELPP_GLAS_TRAITS_VECTOR_CONST_ITERATOR( V ) const_iterator;            \
     typedef vector_tag type_tag;                                                                \
     static const bool is_vector = true;                                                         \
     static const bool is_matrix = false;                                                        \
                                                                                                 \
 };                                                                                              \
-traits<FEEL_GLAS_TRAITS_VECTOR_TYPE( V )<FEEL_TRAITS_TYPE( T )> >::const_iterator             \
-begin( FEEL_GLAS_TRAITS_VECTOR_TYPE( V )<FEEL_TRAITS_TYPE( T )> const& t )                    \
+traits<FEELPP_GLAS_TRAITS_VECTOR_TYPE( V )<FEELPP_TRAITS_TYPE( T )> >::const_iterator             \
+begin( FEELPP_GLAS_TRAITS_VECTOR_TYPE( V )<FEELPP_TRAITS_TYPE( T )> const& t )                    \
 {                                                                                               \
     return t.begin();                                                                           \
 }                                                                                               \
-traits<FEEL_GLAS_TRAITS_VECTOR_TYPE( V )<FEEL_TRAITS_TYPE( T )> >::iterator                   \
-begin( FEEL_GLAS_TRAITS_VECTOR_TYPE( V )<FEEL_TRAITS_TYPE( T )>& t )                          \
+traits<FEELPP_GLAS_TRAITS_VECTOR_TYPE( V )<FEELPP_TRAITS_TYPE( T )> >::iterator                   \
+begin( FEELPP_GLAS_TRAITS_VECTOR_TYPE( V )<FEELPP_TRAITS_TYPE( T )>& t )                          \
 {                                                                                               \
     return t.begin();                                                                           \
 }                                                                                               \
-traits<FEEL_GLAS_TRAITS_VECTOR_TYPE( V )<FEEL_TRAITS_TYPE( T )> >::const_iterator             \
-end( FEEL_GLAS_TRAITS_VECTOR_TYPE( V )<FEEL_TRAITS_TYPE( T )> const& t )                      \
+traits<FEELPP_GLAS_TRAITS_VECTOR_TYPE( V )<FEELPP_TRAITS_TYPE( T )> >::const_iterator             \
+end( FEELPP_GLAS_TRAITS_VECTOR_TYPE( V )<FEELPP_TRAITS_TYPE( T )> const& t )                      \
 {                                                                                               \
     return t.end();                                                                             \
 }                                                                                               \
-traits<FEEL_GLAS_TRAITS_VECTOR_TYPE( V )<FEEL_TRAITS_TYPE( T )> >::iterator                   \
-end( FEEL_GLAS_TRAITS_VECTOR_TYPE( V )<FEEL_TRAITS_TYPE( T )>& t )                            \
+traits<FEELPP_GLAS_TRAITS_VECTOR_TYPE( V )<FEELPP_TRAITS_TYPE( T )> >::iterator                   \
+end( FEELPP_GLAS_TRAITS_VECTOR_TYPE( V )<FEELPP_TRAITS_TYPE( T )>& t )                            \
 {                                                                                               \
     return t.end();                                                                             \
 }                                                                                               \
 inline                                                                                          \
-size_type size( FEEL_GLAS_TRAITS_VECTOR_TYPE( V )<FEEL_TRAITS_TYPE( T )>  const& t )          \
+size_type size( FEELPP_GLAS_TRAITS_VECTOR_TYPE( V )<FEELPP_TRAITS_TYPE( T )>  const& t )          \
 {                                                                                               \
-    return t.FEEL_GLAS_TRAITS_VECTOR_SIZE(V)();                                                \
+    return t.FEELPP_GLAS_TRAITS_VECTOR_SIZE(V)();                                                \
 }                                                                                               \
 inline                                                                                          \
-void resize( FEEL_GLAS_TRAITS_VECTOR_TYPE( V )<FEEL_TRAITS_TYPE( T )>& t, size_type newsize ) \
+void resize( FEELPP_GLAS_TRAITS_VECTOR_TYPE( V )<FEELPP_TRAITS_TYPE( T )>& t, size_type newsize ) \
 {                                                                                               \
-    return t.FEEL_GLAS_TRAITS_VECTOR_RESIZE(V)( newsize );                                     \
+    return t.FEELPP_GLAS_TRAITS_VECTOR_RESIZE(V)( newsize );                                     \
 }                                                                                               \
  /**/
 
@@ -151,24 +151,24 @@ void resize( FEEL_GLAS_TRAITS_VECTOR_TYPE( V )<FEEL_TRAITS_TYPE( T )>& t, size_t
 /**
  * Generate the type traits
  */
-BOOST_PP_LIST_FOR_EACH_PRODUCT( FEEL_GLAS_TRAITS_VECTOR_OP, 2, (FEEL_TRAITS_TYPES, FEEL_GLAS_TRAITS_VECTOR_TYPES) );
+BOOST_PP_LIST_FOR_EACH_PRODUCT( FEELPP_GLAS_TRAITS_VECTOR_OP, 2, (FEELPP_TRAITS_TYPES, FEELPP_GLAS_TRAITS_VECTOR_TYPES) );
 
 /*
  * Matrices
  */
 #
-# define FEEL_GLAS_TRAITS_MATRIX_TYPE(T)              BOOST_PP_TUPLE_ELEM(5, 0 , T)
-# define FEEL_GLAS_TRAITS_MATRIX_SIZE1(T)             BOOST_PP_TUPLE_ELEM(5, 1 , T)
-# define FEEL_GLAS_TRAITS_MATRIX_SIZE2(T)             BOOST_PP_TUPLE_ELEM(5, 2 , T)
-# define FEEL_GLAS_TRAITS_MATRIX_RESIZE(T)            BOOST_PP_TUPLE_ELEM(5, 3 , T)
-# define FEEL_GLAS_TRAITS_MATRIX_NNZ(T)               BOOST_PP_TUPLE_ELEM(5, 4 , T)
+# define FEELPP_GLAS_TRAITS_MATRIX_TYPE(T)              BOOST_PP_TUPLE_ELEM(5, 0 , T)
+# define FEELPP_GLAS_TRAITS_MATRIX_SIZE1(T)             BOOST_PP_TUPLE_ELEM(5, 1 , T)
+# define FEELPP_GLAS_TRAITS_MATRIX_SIZE2(T)             BOOST_PP_TUPLE_ELEM(5, 2 , T)
+# define FEELPP_GLAS_TRAITS_MATRIX_RESIZE(T)            BOOST_PP_TUPLE_ELEM(5, 3 , T)
+# define FEELPP_GLAS_TRAITS_MATRIX_NNZ(T)               BOOST_PP_TUPLE_ELEM(5, 4 , T)
 #
 #define UBLAS_MATRIX_ROW( T ) ublas::matrix<T, ublas::row_major>
 #define UBLAS_MATRIX_COL( T ) ublas::matrix<T, ublas::column_major>
 #define UBLAS_MATRIX_SPARSE_ROW( T ) ublas::compressed_matrix<T, ublas::row_major>
 #define UBLAS_MATRIX_SPARSE_COL( T ) ublas::compressed_matrix<T, ublas::column_major>
 #
-# define FEEL_GLAS_TRAITS_MATRIX_TYPES                                         \
+# define FEELPP_GLAS_TRAITS_MATRIX_TYPES                                         \
   BOOST_PP_TUPLE_TO_LIST(                                                       \
       4,                                                                        \
       (                                                                         \
@@ -181,34 +181,34 @@ BOOST_PP_LIST_FOR_EACH_PRODUCT( FEEL_GLAS_TRAITS_VECTOR_OP, 2, (FEEL_TRAITS_TYPE
   /**/
 #
 # /* Generates code for all integral types. */
-# define FEEL_GLAS_TRAITS_MATRIX_OP(_, T) \
-      FEEL_GLAS_TRAITS_MATRIX_OP_CODE T   \
+# define FEELPP_GLAS_TRAITS_MATRIX_OP(_, T) \
+      FEELPP_GLAS_TRAITS_MATRIX_OP_CODE T   \
    /**/
 #
-#define FEEL_GLAS_TRAITS_MATRIX_OP_CODE(T,V)                                                                           \
+#define FEELPP_GLAS_TRAITS_MATRIX_OP_CODE(T,V)                                                                           \
 template<>                                                                                                              \
-struct traits<FEEL_GLAS_TRAITS_MATRIX_TYPE( V )( FEEL_TRAITS_TYPE( T ) ) >                                            \
+struct traits<FEELPP_GLAS_TRAITS_MATRIX_TYPE( V )( FEELPP_TRAITS_TYPE( T ) ) >                                            \
 {                                                                                                                       \
-    typedef FEEL_TRAITS_TYPE( T ) value_type;                                                                          \
-    typedef FEEL_GLAS_TRAITS_MATRIX_TYPE( V )( FEEL_TRAITS_TYPE( T ) ) self_type;                                     \
+    typedef FEELPP_TRAITS_TYPE( T ) value_type;                                                                          \
+    typedef FEELPP_GLAS_TRAITS_MATRIX_TYPE( V )( FEELPP_TRAITS_TYPE( T ) ) self_type;                                     \
     typedef matrix_tag type_tag;                                                                                        \
     static const bool is_vector = false;                                                                                \
     static const bool is_matrix = true;                                                                                 \
 };                                                                                                                      \
 inline                                                                                                                  \
-size_type nrows( FEEL_GLAS_TRAITS_MATRIX_TYPE( V )( FEEL_TRAITS_TYPE( T ) )  const& t )                               \
+size_type nrows( FEELPP_GLAS_TRAITS_MATRIX_TYPE( V )( FEELPP_TRAITS_TYPE( T ) )  const& t )                               \
 {                                                                                                                       \
-    return t.FEEL_GLAS_TRAITS_MATRIX_SIZE1(V)();                                                                       \
+    return t.FEELPP_GLAS_TRAITS_MATRIX_SIZE1(V)();                                                                       \
 }                                                                                                                       \
 inline                                                                                                                  \
-size_type ncols( FEEL_GLAS_TRAITS_MATRIX_TYPE( V )( FEEL_TRAITS_TYPE( T ) )  const& t )                               \
+size_type ncols( FEELPP_GLAS_TRAITS_MATRIX_TYPE( V )( FEELPP_TRAITS_TYPE( T ) )  const& t )                               \
 {                                                                                                                       \
-    return t.FEEL_GLAS_TRAITS_MATRIX_SIZE2(V)();                                                                       \
+    return t.FEELPP_GLAS_TRAITS_MATRIX_SIZE2(V)();                                                                       \
 }                                                                                                                       \
 inline                                                                                                                  \
-void resize( FEEL_GLAS_TRAITS_MATRIX_TYPE( V )( FEEL_TRAITS_TYPE( T ) )& t, size_type newsize1, size_type newsize2 )  \
+void resize( FEELPP_GLAS_TRAITS_MATRIX_TYPE( V )( FEELPP_TRAITS_TYPE( T ) )& t, size_type newsize1, size_type newsize2 )  \
 {                                                                                                                       \
-    return t.FEEL_GLAS_TRAITS_MATRIX_RESIZE(V)( newsize1, newsize2 );                                                  \
+    return t.FEELPP_GLAS_TRAITS_MATRIX_RESIZE(V)( newsize1, newsize2 );                                                  \
 }                                                                                                                       \
  /**/
 
@@ -216,7 +216,7 @@ void resize( FEEL_GLAS_TRAITS_MATRIX_TYPE( V )( FEEL_TRAITS_TYPE( T ) )& t, size
 /**
  * Generate the type traits
  */
-BOOST_PP_LIST_FOR_EACH_PRODUCT( FEEL_GLAS_TRAITS_MATRIX_OP, 2, (FEEL_TRAITS_TYPES, FEEL_GLAS_TRAITS_MATRIX_TYPES) );
+BOOST_PP_LIST_FOR_EACH_PRODUCT( FEELPP_GLAS_TRAITS_MATRIX_OP, 2, (FEELPP_TRAITS_TYPES, FEELPP_GLAS_TRAITS_MATRIX_TYPES) );
 
 } // glas
 /// \endcond detail

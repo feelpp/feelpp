@@ -378,7 +378,7 @@ public :
                 for( permutation_type __p( permutation_type::IDENTITY );
                      __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
                     {
-                        //FEEL_ASSERT( ppts[__f].find(__p)->second.size2() != 0 ).warn( "invalid quadrature type" );
+                        //FEELPP_ASSERT( ppts[__f].find(__p)->second.size2() != 0 ).warn( "invalid quadrature type" );
                         __geopc[__f][__p] = pc_ptrtype(  new pc_type( elt_it->element(0).gm(), ppts[__f].find(__p)->second ) );
                     }
             }
@@ -484,7 +484,7 @@ public :
                 for( permutation_type __p( permutation_type::IDENTITY );
                      __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
                     {
-                        //FEEL_ASSERT( ppts[__f].find(__p)->second.size2() != 0 ).warn( "invalid quadrature type" );
+                        //FEELPP_ASSERT( ppts[__f].find(__p)->second.size2() != 0 ).warn( "invalid quadrature type" );
                         __geopc[__f][__p] = pc_ptrtype(  new pc_type( elt_it->element(0).gm(), ppts[__f].find(__p)->second ) );
                     }
             }

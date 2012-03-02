@@ -26,8 +26,8 @@
    \author Christophe Prud'homme <prudhomm@zion>
    \date 2005-08-27
  */
-#ifndef __FEEL_MESH_TRAITS_HPP
-#define __FEEL_MESH_TRAITS_HPP 1
+#ifndef __FEELPP_MESH_TRAITS_HPP
+#define __FEELPP_MESH_TRAITS_HPP 1
 
 #include <feel/feelcore/traits.hpp>
 

@@ -227,7 +227,7 @@ public :
                           Expression const& f ) const
     {
         //std::cout << "integrating using " << nNodes << "\n";
-        FEEL_ASSERT(  __face == ALL_FACES || ( __face >= 0 && __face < nFaces() ) )
+        FEELPP_ASSERT(  __face == ALL_FACES || ( __face >= 0 && __face < nFaces() ) )
             ( __face )( nFaces() ).error( "invalid face index (can be ALL_FACE or FACE_0 <= f < nFaces()" );
         value_type res(0.0);
         if ( __face != ALL_FACES )
@@ -262,7 +262,7 @@ public :
     {
         Debug( 5048 ) << "[PointSetQuadrature] face " << int(__face)<< " integration\n";
         //std::cout << "integrating using " << nNodes << "\n";
-        FEEL_ASSERT(  int(__face) == int(ALL_FACES) ||
+        FEELPP_ASSERT(  int(__face) == int(ALL_FACES) ||
                       ( int(__face) >= 0 &&
                         int(__face) < int(nFaces()) ) )
             ( __face )( nFaces() ).error( "invalid face index (can be ALL_FACE or FACE_0 <= f < nFaces()" );
@@ -447,7 +447,7 @@ public :
     typedef Face face_quadrature_type;
     face_quadrature_type face( uint16_type f ) const { return Face( *this, f ); }
 
-    FEEL_DEFINE_VISITABLE();
+    FEELPP_DEFINE_VISITABLE();
 
 protected:
 

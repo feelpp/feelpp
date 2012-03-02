@@ -42,37 +42,37 @@ namespace Feel
 unsigned long long
 Info::buildId()
 {
-    return FEEL_BUILDID;
+    return FEELPP_BUILDID;
 }
 
 unsigned long long
 Info::revision()
 {
-    return FEEL_REVISION;
+    return FEELPP_REVISION;
 }
 
 unsigned long long
 Info::version()
 {
-    return FEEL_VERSION;
+    return FEELPP_VERSION;
 }
 
 unsigned int
 Info::versionMajor()
 {
-    return FEEL_VERSION_MAJOR;
+    return FEELPP_VERSION_MAJOR;
 }
 
 unsigned int
 Info::versionMinor()
 {
-    return FEEL_VERSION_MINOR;
+    return FEELPP_VERSION_MINOR;
 }
 
 unsigned int
 Info::versionMicro()
 {
-    return FEEL_VERSION_MICRO;
+    return FEELPP_VERSION_MICRO;
 }
 
 char const*
@@ -82,11 +82,11 @@ Info::versionString()
     static std::ostringstream ostr;
     if ( !_created )
         {
-            ostr << FEEL_VERSION_MAJOR << "."
-                 << FEEL_VERSION_MINOR << "."
-                 << FEEL_VERSION_MICRO << "-r"
-                 << FEEL_REVISION << "-"
-                 << FEEL_BUILDID;
+            ostr << FEELPP_VERSION_MAJOR << "."
+                 << FEELPP_VERSION_MINOR << "."
+                 << FEELPP_VERSION_MICRO << "-r"
+                 << FEELPP_REVISION << "-"
+                 << FEELPP_BUILDID;
             _created = true;
         }
     return ostr.str().c_str();
@@ -95,13 +95,13 @@ Info::versionString()
 char const*
 Info::prefix()
 {
-    return stringize(FEEL_PREFIX);
+    return stringize(FEELPP_PREFIX);
 }
 
 char const*
 Info::datadir()
 {
-    return stringize(FEEL_DATADIR);
+    return stringize(FEELPP_DATADIR);
 }
 
 }

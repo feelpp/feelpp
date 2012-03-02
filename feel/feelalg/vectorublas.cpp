@@ -281,8 +281,8 @@ Vector<T> &
 VectorUblas<T,Storage>::operator= (const Vector<value_type> &V)
 {
     checkInvariant();
-    FEEL_ASSERT( this->localSize() == V.localSize() )( this->localSize() )( V.localSize() ).error ( "invalid vector size" );
-    FEEL_ASSERT( this->firstLocalIndex() == V.firstLocalIndex() &&
+    FEELPP_ASSERT( this->localSize() == V.localSize() )( this->localSize() )( V.localSize() ).error ( "invalid vector size" );
+    FEELPP_ASSERT( this->firstLocalIndex() == V.firstLocalIndex() &&
                  this->lastLocalIndex() == V.lastLocalIndex() )
         ( this->firstLocalIndex() )( this->lastLocalIndex() )
         ( this->vec().size() )
@@ -305,7 +305,7 @@ VectorUblas<T,Storage>::init ( const size_type n,
                                const size_type n_local,
                                const bool      fast )
 {
-    FEEL_ASSERT (n_local <= n)
+    FEELPP_ASSERT (n_local <= n)
         ( n_local )( n )
         ( M_comm.rank() )
         ( M_comm.size() ).error( "Invalid local vector size" );
@@ -398,7 +398,7 @@ VectorUblas<T,Storage>::printMatlab(const std::string filename ) const
         {
             std::ofstream file_out( name.c_str() );
 
-            FEEL_ASSERT( file_out)( filename ).error("[VectorUblas::printMatlab] ERROR: File cannot be opened for writing.");
+            FEELPP_ASSERT( file_out)( filename ).error("[VectorUblas::printMatlab] ERROR: File cannot be opened for writing.");
 
             file_out << "F = [ ";
             file_out.precision( 16 );
@@ -420,7 +420,7 @@ VectorUblas<T,Storage>::localize (Vector<T>& v_local_in) const
     checkInvariant();
 
     VectorUblas<T,Storage>* v_local = dynamic_cast<VectorUblas<T,Storage>*>(&v_local_in);
-    FEEL_ASSERT( v_local != 0 ).error ( "dynamic_cast failed: invalid vector object" );
+    FEELPP_ASSERT( v_local != 0 ).error ( "dynamic_cast failed: invalid vector object" );
 
 #if 0
     v_local->firstLocalIndex() = 0;
@@ -444,7 +444,7 @@ VectorUblas<T,Storage>::localize (Vector<T>& v_local_in) const
 
 #ifndef HAVE_MPI
 
-    FEEL_ASSERT (this->localSize() == this->size())( this->localSize() )( this->size() ).error( "invalid size in non MPI mode" );
+    FEELPP_ASSERT (this->localSize() == this->size())( this->localSize() )( this->size() ).error( "invalid size in non MPI mode" );
 
 #endif
 }
@@ -470,10 +470,10 @@ VectorUblas<T,Storage>::localize (const size_type first_local_idx,
                                   const std::vector<size_type>& send_list)
 {
     // Only good for serial vectors
-    FEEL_ASSERT (this->size() == this->localSize())( this->size() )( this->localSize() ).error("invalid local/global size" );
-    FEEL_ASSERT (last_local_idx > first_local_idx)( last_local_idx )( first_local_idx ).error("invalid first/last local indices");
-    FEEL_ASSERT (send_list.size() <= this->size())( send_list.size() )( this->size() ).error("invalid send list size" );
-    FEEL_ASSERT (last_local_idx < this->size())( last_local_idx )( this->size() ).error( "invalid last local index" );
+    FEELPP_ASSERT (this->size() == this->localSize())( this->size() )( this->localSize() ).error("invalid local/global size" );
+    FEELPP_ASSERT (last_local_idx > first_local_idx)( last_local_idx )( first_local_idx ).error("invalid first/last local indices");
+    FEELPP_ASSERT (send_list.size() <= this->size())( send_list.size() )( this->size() ).error("invalid send list size" );
+    FEELPP_ASSERT (last_local_idx < this->size())( last_local_idx )( this->size() ).error( "invalid last local index" );
     Feel::detail::ignore_unused_variable_warning(send_list);
 
     const size_type size       = this->size();
@@ -540,13 +540,13 @@ VectorUblas<T, Storage>::localize ( ublas::vector<value_type>& v_local) const
         }
     else
         {
-            FEEL_ASSERT (this->localSize() == this->size())( this->localSize() )( this->size() ).error( "invalid size in non MPI mode" );
+            FEELPP_ASSERT (this->localSize() == this->size())( this->localSize() )( this->size() ).error( "invalid size in non MPI mode" );
             std::copy( this->begin(), this->end(), v_local.begin() );
         }
 
 #else
 
-    FEEL_ASSERT (this->localSize() == this->size())( this->localSize() )( this->size() ).error( "invalid size in non MPI mode" );
+    FEELPP_ASSERT (this->localSize() == this->size())( this->localSize() )( this->size() ).error( "invalid size in non MPI mode" );
 
 #endif
 }
@@ -583,8 +583,8 @@ VectorUblas<T,Storage>::localizeToOneProcessor ( ublas::vector<value_type>& v_lo
 
 #else
 
-    FEEL_ASSERT ( this->localSize() == this->size())( this->localSize() )( this->size() ).error( "invalid size in non MPI mode" );
-    FEEL_ASSERT ( pid == 0  )( pid ).error( "invalid pid in non MPI mode" );
+    FEELPP_ASSERT ( this->localSize() == this->size())( this->localSize() )( this->size() ).error( "invalid size in non MPI mode" );
+    FEELPP_ASSERT ( pid == 0  )( pid ).error( "invalid pid in non MPI mode" );
 
 #endif
 }
@@ -603,12 +603,12 @@ template <typename T, typename Storage>
 void
 VectorUblas<T,Storage>::checkInvariant() const
 {
-    FEEL_ASSERT (this->isInitialized()).error( "vector not initialized" );
-    FEEL_ASSERT ( this->localSize() <= this->size() )
+    FEELPP_ASSERT (this->isInitialized()).error( "vector not initialized" );
+    FEELPP_ASSERT ( this->localSize() <= this->size() )
         ( this->size() )( this->localSize() ).error( "vector invalid size" );
-    FEEL_ASSERT (_M_vec.size() == this->localSize())
+    FEELPP_ASSERT (_M_vec.size() == this->localSize())
         (_M_vec.size())(this->localSize()).error( "vector invalid size" );
-    FEEL_ASSERT ((this->lastLocalIndex() - this->firstLocalIndex() ) == this->localSize())
+    FEELPP_ASSERT ((this->lastLocalIndex() - this->firstLocalIndex() ) == this->localSize())
         (this->size())
         (this->lastLocalIndex())
         (this->firstLocalIndex())

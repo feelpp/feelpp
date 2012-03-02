@@ -43,7 +43,7 @@ void
 PartitionerMetis<Mesh>::doPartition ( mesh_type& mesh,
                                       const uint16_type n_pieces )
 {
-    FEEL_ASSERT (n_pieces > 0)( n_pieces ).error( "the number of partitions should be >0" );
+    FEELPP_ASSERT (n_pieces > 0)( n_pieces ).error( "the number of partitions should be >0" );
 
     // Check for an easy return
     if (n_pieces == 1)
@@ -104,12 +104,12 @@ PartitionerMetis<Mesh>::doPartition ( mesh_type& mesh,
 
         for (; elem_it != elem_end; ++elem_it)
             {
-                FEEL_ASSERT (elem_it->id() < forward_map.size())( elem_it->id() )( forward_map.size() ).error( "invalid dimensions" );
+                FEELPP_ASSERT (elem_it->id() < forward_map.size())( elem_it->id() )( forward_map.size() ).error( "invalid dimensions" );
 
                 forward_map[elem_it->id()] = el_num++;
             }
 
-        FEEL_ASSERT (el_num == n_elem)( el_num )( n_elem ).error( "incompatible number of elements" );
+        FEELPP_ASSERT (el_num == n_elem)( el_num )( n_elem ).error( "incompatible number of elements" );
     }
 
 
@@ -131,8 +131,8 @@ PartitionerMetis<Mesh>::doPartition ( mesh_type& mesh,
             {
                 const element_type* elem = boost::addressof( *elem_it );
 
-                FEEL_ASSERT (elem->id() < forward_map.size()).error( "element id and forward_map incompatible" );
-                FEEL_ASSERT (forward_map[elem->id()] != invalid_size_type_value ).error( "forward_map problem" );
+                FEELPP_ASSERT (elem->id() < forward_map.size()).error( "element id and forward_map incompatible" );
+                FEELPP_ASSERT (forward_map[elem->id()] != invalid_size_type_value ).error( "forward_map problem" );
 
                 // maybe there is a better weight?
                 // The weight is used to define what a balanced graph is
@@ -150,7 +150,7 @@ PartitionerMetis<Mesh>::doPartition ( mesh_type& mesh,
 
                     }
                 Debug( 4021 ) << "[PartitionerMetis] element " << elem->id() << " number of neighbors: " << counter << "\n";
-                FEEL_ASSERT( counter >= 1 )( elem->id() )( counter ).error( "invalid neighboring data" );
+                FEELPP_ASSERT( counter >= 1 )( elem->id() )( counter ).error( "invalid neighboring data" );
 
 
                 // Loop over the element's neighbors.  An element
@@ -160,9 +160,9 @@ PartitionerMetis<Mesh>::doPartition ( mesh_type& mesh,
                         size_type neighbor_id = mesh.localFaceId( elem->id(), ms ).template get<1>();
                         if ( neighbor_id != invalid_size_type_value )
                             {
-                                FEEL_ASSERT (neighbor_id < forward_map.size())
+                                FEELPP_ASSERT (neighbor_id < forward_map.size())
                                 ( neighbor_id )( forward_map.size() ).error( "problem with neighbor id and forward_map" );
-                                FEEL_ASSERT (forward_map[neighbor_id] != invalid_size_type_value )
+                                FEELPP_ASSERT (forward_map[neighbor_id] != invalid_size_type_value )
                                 ( (forward_map[neighbor_id] ) ).error( "invalid forward_map" );
 
                                 adjncy.push_back (forward_map[neighbor_id]);
@@ -203,8 +203,8 @@ PartitionerMetis<Mesh>::doPartition ( mesh_type& mesh,
                 element_iterator  elem_it = mesh.elementIterator( i, 0 );
                 element_type elem = *elem_it;
 
-                FEEL_ASSERT ( elem.id() < forward_map.size() )( elem.id() )( forward_map.size() ).error( "invalid size" );
-                FEEL_ASSERT ( forward_map[elem.id()] != invalid_size_type_value )( forward_map[elem.id()] ).error( "invalid forward map" );;
+                FEELPP_ASSERT ( elem.id() < forward_map.size() )( elem.id() )( forward_map.size() ).error( "invalid size" );
+                FEELPP_ASSERT ( forward_map[elem.id()] != invalid_size_type_value )( forward_map[elem.id()] ).error( "invalid forward map" );;
                 elem.setProcessId( static_cast<short int>(part[forward_map[elem.id()]]) );
 
 
@@ -217,8 +217,8 @@ PartitionerMetis<Mesh>::doPartition ( mesh_type& mesh,
                         size_type neighbor_id = elem.neighbor(ms).first;
                         if ( neighbor_id != invalid_size_type_value )
                             {
-                                FEEL_ASSERT ( neighbor_id < forward_map.size() )( neighbor_id )( forward_map.size() ).error( "invalid size" );
-                                FEEL_ASSERT ( forward_map[neighbor_id] != invalid_size_type_value )( forward_map[neighbor_id] ).error( "invalid forward map" );
+                                FEELPP_ASSERT ( neighbor_id < forward_map.size() )( neighbor_id )( forward_map.size() ).error( "invalid size" );
+                                FEELPP_ASSERT ( forward_map[neighbor_id] != invalid_size_type_value )( forward_map[neighbor_id] ).error( "invalid forward map" );
 
                                 elem.setNeighbor( ms, neighbor_id, static_cast<short int>(part[forward_map[neighbor_id]]) );
 
@@ -272,7 +272,7 @@ PartitionerMetis<Mesh>::doPartition ( mesh_type& mesh,
                 // boundary faces can belong to only one process id
                 if ( face.isOnBoundary() )
                     {
-                        FEEL_ASSERT( face.isConnectedTo0() &&
+                        FEELPP_ASSERT( face.isConnectedTo0() &&
                                      !face.isConnectedTo1() )
                             ( face.ad_first() )( face.pos_first() )
                             ( face.ad_second() )( face.pos_second() ).error( "invalid boundary face" );
@@ -285,7 +285,7 @@ PartitionerMetis<Mesh>::doPartition ( mesh_type& mesh,
                     {
                         Debug( 4021 ) << "[PartitionerMetis] face " << face.id() << " will be on proc " << face.element0().processId() << "\n";
 
-                        FEEL_ASSERT( face.isConnectedTo0() &&
+                        FEELPP_ASSERT( face.isConnectedTo0() &&
                                      face.isConnectedTo1() )
                             ( face.ad_first() )( face.pos_first() )
                             ( face.ad_second() )( face.pos_second() ).error( "invalid internal face" );
@@ -309,10 +309,10 @@ PartitionerMetis<Mesh>::doPartition ( mesh_type& mesh,
 
                     }
 
-                FEEL_ASSERT( face.element(0).facePtr( face.pos_first() ) )
+                FEELPP_ASSERT( face.element(0).facePtr( face.pos_first() ) )
                     ( face.ad_first() )( face.pos_first() )( face.element(0).id() ).error( "invalid face in element" );
                 if ( face.isConnectedTo1() )
-                    FEEL_ASSERT( face.element(1).facePtr( face.pos_second() ) )
+                    FEELPP_ASSERT( face.element(1).facePtr( face.pos_second() ) )
                         ( face.ad_second() )( face.pos_second() )( face.element(1).id() ).error( "invalid internal face in element" );
 
                 mesh.faces().replace( face_it, face );
@@ -343,7 +343,7 @@ PartitionerMetis<Mesh>::doPartition ( mesh_type& mesh,
 
 
 namespace{
-    FEEL_NO_EXPORT void test()
+    FEELPP_NO_EXPORT void test()
     {
         typedef Mesh2D<Simplex<2, 1> > mesh_type;
 
@@ -365,7 +365,7 @@ template class PartitionerMetis<Mesh<Hypercube<1,1> > >;
 template class PartitionerMetis<Mesh<Hypercube<2,1> > >;
 template class PartitionerMetis<Mesh<Hypercube<3,1> > >;
 
-#if BOOST_PP_GREATER_EQUAL( FEEL_MESH_MAX_ORDER, 2 )
+#if BOOST_PP_GREATER_EQUAL( FEELPP_MESH_MAX_ORDER, 2 )
 template class PartitionerMetis<Mesh<Simplex<1,2> > >;
 template class PartitionerMetis<Mesh<Simplex<2,2> > >;
 template class PartitionerMetis<Mesh<Simplex<3,2> > >;
@@ -374,7 +374,7 @@ template class PartitionerMetis<Mesh<Hypercube<1,2> > >;
 template class PartitionerMetis<Mesh<Hypercube<2,2> > >;
 template class PartitionerMetis<Mesh<Hypercube<3,2> > >;
 #endif
-#if BOOST_PP_GREATER_EQUAL( FEEL_MESH_MAX_ORDER, 3 )
+#if BOOST_PP_GREATER_EQUAL( FEELPP_MESH_MAX_ORDER, 3 )
 template class PartitionerMetis<Mesh<Simplex<1,3> > >;
 template class PartitionerMetis<Mesh<Simplex<1,3,2> > >;
 template class PartitionerMetis<Mesh<Simplex<2,3> > >;
@@ -384,7 +384,7 @@ template class PartitionerMetis<Mesh<Hypercube<1,3> > >;
 template class PartitionerMetis<Mesh<Hypercube<2,3> > >;
 template class PartitionerMetis<Mesh<Hypercube<3,3> > >;
 #endif
-#if BOOST_PP_GREATER_EQUAL( FEEL_MESH_MAX_ORDER, 4 )
+#if BOOST_PP_GREATER_EQUAL( FEELPP_MESH_MAX_ORDER, 4 )
 template class PartitionerMetis<Mesh<Simplex<1,4> > >;
 template class PartitionerMetis<Mesh<Simplex<2,4> > >;
 template class PartitionerMetis<Mesh<Simplex<3,4> > >;
@@ -393,7 +393,7 @@ template class PartitionerMetis<Mesh<Hypercube<1,4> > >;
 template class PartitionerMetis<Mesh<Hypercube<2,4> > >;
 template class PartitionerMetis<Mesh<Hypercube<3,4> > >;
 #endif
-#if BOOST_PP_GREATER_EQUAL( FEEL_MESH_MAX_ORDER, 5 )
+#if BOOST_PP_GREATER_EQUAL( FEELPP_MESH_MAX_ORDER, 5 )
 template class PartitionerMetis<Mesh<Simplex<1,5> > >;
 template class PartitionerMetis<Mesh<Simplex<2,5> > >;
 //template class PartitionerMetis<Mesh<Simplex<3,5> > >;

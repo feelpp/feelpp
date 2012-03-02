@@ -34,7 +34,7 @@
 
 #include <complex>
 
-#if defined( FEEL_USES_BOOST_INTERVAL )
+#if defined( FEELPP_USES_BOOST_INTERVAL )
 
 #ifndef BOOST_UBLAS_USE_INTERVAL
 # define BOOST_UBLAS_USE_INTERVAL
@@ -45,7 +45,7 @@
 
 namespace Feel
 {
-#if defined( FEEL_USES_BOOST_INTERVAL )
+#if defined( FEELPP_USES_BOOST_INTERVAL )
      using namespace boost::numeric;
      using namespace boost::numeric::interval_lib;
 
@@ -77,7 +77,7 @@ namespace Feel
       {
          typedef boost::numeric::interval<T,P> type;
       };
-#endif // FEEL_USES_BOOST_INTERVAL
+#endif // FEELPP_USES_BOOST_INTERVAL
 
       template <class A, class B>
       class SNumericalTraits
@@ -103,7 +103,7 @@ public:                                          \
     typedef type3 promote;                       \
 };
 
-#if defined( FEEL_USES_BOOST_INTERVAL )
+#if defined( FEELPP_USES_BOOST_INTERVAL )
 #define INTERVAL_TRAITS( TYPE )                                                           \
 typedef interval<double, interval_policy_## TYPE ##_type>::type interval_## TYPE ##_type; \
 NUMERICAL_TRAITS(interval_## TYPE ##_type,double,interval_## TYPE ##_type)                \
@@ -117,7 +117,7 @@ INTERVAL_TRAITS ( opp );
 INTERVAL_TRAITS ( std );
 
 #undef INTERVAL_TRAITS
-#endif // FEEL_USES_BOOST_INTERVAL
+#endif // FEELPP_USES_BOOST_INTERVAL
 
 NUMERICAL_TRAITS(double,std::complex<float>,std::complex<double>)
 NUMERICAL_TRAITS(double,float,double)
@@ -127,30 +127,30 @@ NUMERICAL_TRAITS(float,long,float)
 NUMERICAL_TRAITS(float,int,float)
 
 
-#if defined( FEEL_USES_BOOST_INTERVAL )
-#define FEEL_INTERVAL_DEBUG( TYPE )                                                        \
+#if defined( FEELPP_USES_BOOST_INTERVAL )
+#define FEELPP_INTERVAL_DEBUG( TYPE )                                                        \
    SDebugStream& operator<<( SDebugStream& o, Feel::interval_## TYPE ##_type  const& e );    \
    SNDebugStream& operator<<( SNDebugStream& o, Feel::interval_## TYPE ##_type const& e );
 
-   FEEL_INTERVAL_DEBUG(default);
-   FEEL_INTERVAL_DEBUG(std);
-   FEEL_INTERVAL_DEBUG(opp);
-   FEEL_INTERVAL_DEBUG(exact);
-#undef FEEL_INTERVAL_DEBUG
+   FEELPP_INTERVAL_DEBUG(default);
+   FEELPP_INTERVAL_DEBUG(std);
+   FEELPP_INTERVAL_DEBUG(opp);
+   FEELPP_INTERVAL_DEBUG(exact);
+#undef FEELPP_INTERVAL_DEBUG
 
-#endif // FEEL_USES_BOOST_INTERVAL
+#endif // FEELPP_USES_BOOST_INTERVAL
 
 }
 namespace std
 {
-#if defined( FEEL_USES_BOOST_INTERVAL )
+#if defined( FEELPP_USES_BOOST_INTERVAL )
   template<typename T, typename P>
   std::ostream& operator<< ( std::ostream& __os, boost::numeric::interval<T,P> const& __i )
   {
         __os << '[' << __i.lower() << ',' << __i.upper() << ']';
         return __os;
   }
-#endif // FEEL_USES_BOOST_INTERVAL
+#endif // FEELPP_USES_BOOST_INTERVAL
 }
 #endif /* __ADTraits_H */
 

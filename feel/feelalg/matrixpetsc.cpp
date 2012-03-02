@@ -193,7 +193,7 @@ void MatrixPetsc<T>::init (const size_type m,
     Debug( 7013 ) << "[MatrixPETSc::init()] n_l = " << n_l << "\n";
 
     // Make sure the sparsity pattern isn't empty
-    FEEL_ASSERT (this->graph()->size() == n_l)( this->graph()->size() )( n_l ).warn( "incompatible diagonal non zero pattern" );
+    FEELPP_ASSERT (this->graph()->size() == n_l)( this->graph()->size() )( n_l ).warn( "incompatible diagonal non zero pattern" );
     Debug( 7013 ) << "[MatrixPETSc::init()] graph size   = " << this->graph()->size() << "\n";
     Debug( 7013 ) << "[MatrixPETSc::init()] graph first row entry on proc   = " << this->graph()->firstRowEntryOnProc() << "\n";
     Debug( 7013 ) << "[MatrixPETSc::init()] graph last row entry on proc   = " << this->graph()->lastRowEntryOnProc() << "\n";
@@ -441,7 +441,7 @@ void MatrixPetsc<T>::updatePCFieldSplit(PC & pc)
 template <typename T>
 void MatrixPetsc<T>::zero ()
 {
-    FEEL_ASSERT (this->isInitialized()).error( "petsc matrix not properly initialized" ) ;
+    FEELPP_ASSERT (this->isInitialized()).error( "petsc matrix not properly initialized" ) ;
 
     int ierr=0;
 
@@ -475,7 +475,7 @@ template <typename T>
 void MatrixPetsc<T>::zero ( size_type /*start1*/, size_type /*stop1*/, size_type /*start2*/, size_type /*stop2*/ )
 {
 
-    FEEL_ASSERT (this->isInitialized()).error( "petsc matrix not properly initialized" ) ;
+    FEELPP_ASSERT (this->isInitialized()).error( "petsc matrix not properly initialized" ) ;
 
     int ierr=0;
 
@@ -557,7 +557,7 @@ template <typename T>
 inline
 size_type MatrixPetsc<T>::size1 () const
 {
-    FEEL_ASSERT (this->isInitialized()).error( "MatrixPetsc<> not properly initialized" );;
+    FEELPP_ASSERT (this->isInitialized()).error( "MatrixPetsc<> not properly initialized" );;
 
     int petsc_m=0, petsc_n=0, ierr=0;
 
@@ -572,7 +572,7 @@ template <typename T>
 inline
 size_type MatrixPetsc<T>::size2 () const
 {
-    FEEL_ASSERT (this->isInitialized()).error( "MatrixPetsc<> not properly initialized" );;
+    FEELPP_ASSERT (this->isInitialized()).error( "MatrixPetsc<> not properly initialized" );;
 
     int petsc_m=0, petsc_n=0, ierr=0;
 
@@ -587,7 +587,7 @@ template <typename T>
 inline
 size_type MatrixPetsc<T>::rowStart () const
 {
-    FEEL_ASSERT (this->isInitialized()).error( "MatrixPetsc<> not properly initialized" );;
+    FEELPP_ASSERT (this->isInitialized()).error( "MatrixPetsc<> not properly initialized" );;
 
     int start=0, stop=0, ierr=0;
 
@@ -603,7 +603,7 @@ template <typename T>
 inline
 size_type MatrixPetsc<T>::rowStop () const
 {
-    FEEL_ASSERT (this->isInitialized()).error( "MatrixPetsc<> not properly initialized" );;
+    FEELPP_ASSERT (this->isInitialized()).error( "MatrixPetsc<> not properly initialized" );;
 
     int start=0, stop=0, ierr=0;
 
@@ -621,7 +621,7 @@ void MatrixPetsc<T>::set (const size_type i,
                           const size_type j,
                           const value_type& value)
 {
-    FEEL_ASSERT (this->isInitialized()).error( "MatrixPetsc<> not properly initialized" );;
+    FEELPP_ASSERT (this->isInitialized()).error( "MatrixPetsc<> not properly initialized" );;
 
     int ierr=0, i_val=i, j_val=j;
 
@@ -639,7 +639,7 @@ void MatrixPetsc<T>::add (const size_type i,
                           const size_type j,
                           const value_type& value)
 {
-    FEEL_ASSERT (this->isInitialized()).error( "MatrixPetsc<> not properly initialized" );
+    FEELPP_ASSERT (this->isInitialized()).error( "MatrixPetsc<> not properly initialized" );
 
     int ierr=0, i_val=i, j_val=j;
     //Debug( 7013 ) << "[MatrixPetsc<>::add] adding value " << value << " at (" << i << "," << j << ")\n";
@@ -656,7 +656,7 @@ template <typename T>
 inline
 bool MatrixPetsc<T>::closed() const
 {
-    FEEL_ASSERT (this->isInitialized()).error( "MatrixPetsc<> not properly initialized" );
+    FEELPP_ASSERT (this->isInitialized()).error( "MatrixPetsc<> not properly initialized" );
 
 
     int ierr=0;
@@ -673,13 +673,13 @@ MatrixPetsc<T>::addMatrix(const ublas::matrix<value_type>& dm,
                           const std::vector<size_type>& rows,
                           const std::vector<size_type>& cols)
 {
-    FEEL_ASSERT (this->isInitialized()).error( "petsc matrix not initialized" );
+    FEELPP_ASSERT (this->isInitialized()).error( "petsc matrix not initialized" );
 
     const size_type m = dm.size1();
     const size_type n = dm.size2();
 
-    FEEL_ASSERT (rows.size() == size1()).error( "invalid row size" );
-    FEEL_ASSERT (cols.size() == size2()).error( "invalid column size" );
+    FEELPP_ASSERT (rows.size() == size1()).error( "invalid row size" );
+    FEELPP_ASSERT (cols.size() == size2()).error( "invalid column size" );
 
     int ierr=0;
 
@@ -697,7 +697,7 @@ MatrixPetsc<T>::addMatrix ( int* rows, int nrows,
                             int* cols, int ncols,
                             value_type* data )
 {
-    FEEL_ASSERT (this->isInitialized()).error( "petsc matrix not initialized" );
+    FEELPP_ASSERT (this->isInitialized()).error( "petsc matrix not initialized" );
 
     int ierr=0;
 
@@ -764,7 +764,7 @@ template <typename T>
 void
 MatrixPetsc<T>::printMatlab (const std::string name) const
 {
-    FEEL_ASSERT (this->isInitialized()).error( "petsc matrix not properly initialized" );
+    FEELPP_ASSERT (this->isInitialized()).error( "petsc matrix not properly initialized" );
 
     // assert (this->closed());
     this->close();
@@ -823,12 +823,12 @@ inline
 void
 MatrixPetsc<T>::addMatrix (const T a_in, MatrixSparse<T> &X_in)
 {
-    FEEL_ASSERT ( this->isInitialized() ).error( "petsc matrix not initialized" );
+    FEELPP_ASSERT ( this->isInitialized() ).error( "petsc matrix not initialized" );
 
     // sanity check. but this cannot avoid
     // crash due to incompatible sparsity structure...
-    FEEL_ASSERT( this->size1() == X_in.size1())( this->size1() )( X_in.size1() ).error( "incompatible dimension" );
-    FEEL_ASSERT( this->size2() == X_in.size2())( this->size2() )( X_in.size2() ).error( "incompatible dimension" );
+    FEELPP_ASSERT( this->size1() == X_in.size1())( this->size1() )( X_in.size1() ).error( "incompatible dimension" );
+    FEELPP_ASSERT( this->size2() == X_in.size2())( this->size2() )( X_in.size2() ).error( "incompatible dimension" );
 
     PetscScalar     a = static_cast<PetscScalar>      (a_in);
     MatrixPetsc<T>* X;
@@ -840,7 +840,7 @@ MatrixPetsc<T>::addMatrix (const T a_in, MatrixSparse<T> &X_in)
         {
             X = dynamic_cast<MatrixPetsc<T>*> (&X_in);
         }
-    FEEL_ASSERT (X != 0).error( "invalid petsc matrix" );
+    FEELPP_ASSERT (X != 0).error( "invalid petsc matrix" );
 
     int ierr=0;
 
@@ -884,7 +884,7 @@ inline
 typename MatrixPetsc<T>::real_type
 MatrixPetsc<T>::l1Norm() const
 {
-    FEEL_ASSERT (this->isInitialized()).error( "petsc matrix not initialized" );
+    FEELPP_ASSERT (this->isInitialized()).error( "petsc matrix not initialized" );
 
     int ierr=0;
     double petsc_value;
@@ -905,7 +905,7 @@ inline
 typename MatrixPetsc<T>::real_type
 MatrixPetsc<T>::linftyNorm() const
 {
-    FEEL_ASSERT (this->isInitialized()).error( "petsc matrix not initialized" );
+    FEELPP_ASSERT (this->isInitialized()).error( "petsc matrix not initialized" );
 
     int ierr=0;
     double petsc_value;
@@ -941,7 +941,7 @@ typename MatrixPetsc<T>::value_type
 MatrixPetsc<T>::operator () (const size_type i,
                              const size_type j) const
 {
-    FEEL_ASSERT (this->isInitialized()).error( "petsc matrix not initialized" );
+    FEELPP_ASSERT (this->isInitialized()).error( "petsc matrix not initialized" );
 
 #if (((PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR >= 2) && (PETSC_VERSION_SUBMINOR >= 1)) || \
     ((PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR >= 3))  || ( PETSC_VERSION_MAJOR >= 3 ) )
@@ -1108,7 +1108,7 @@ MatrixPetsc<T>::zeroRows( std::vector<int> const& rows, std::vector<value_type> 
                                         break;
                                     }
                             MatRestoreRow( _M_mat, cols[j], &ncols2, &cols2, &vals2 );
-                            FEEL_ASSERT( found == true )( myRow )( cols[j] ).error ( "matrix graph is not symmetric" );
+                            FEELPP_ASSERT( found == true )( myRow )( cols[j] ).error ( "matrix graph is not symmetric" );
                         }
                     MatRestoreRow( _M_mat, myRow, &ncols, &cols, &vals );
                 } // i
@@ -1217,7 +1217,7 @@ MatrixPetsc<T>::symmetricPart( MatrixSparse<value_type>& Mt ) const
     CHKERRABORT(this->comm(),ierr);
 
     MatrixPetsc<T>* B = dynamic_cast<MatrixPetsc<T>*> (&Mt);
-    FEEL_ASSERT( B ).error ( "[symmetricPart] invalid dynamic_cast<MatrixPetsc>" );
+    FEELPP_ASSERT( B ).error ( "[symmetricPart] invalid dynamic_cast<MatrixPetsc>" );
 
     ierr = MatCreateComposite(PETSC_COMM_WORLD,2,A,&B->_M_mat);
     CHKERRABORT(this->comm(),ierr);
@@ -1737,7 +1737,7 @@ template <typename T>
 inline
 size_type MatrixPetscMPI<T>::size1() const
 {
-    FEEL_ASSERT (this->isInitialized()).error( "MatrixPetsc<> not properly initialized" );;
+    FEELPP_ASSERT (this->isInitialized()).error( "MatrixPetsc<> not properly initialized" );;
 
     int petsc_m=0, petsc_n=0, ierr=0;
 
@@ -1755,7 +1755,7 @@ template <typename T>
 inline
 size_type MatrixPetscMPI<T>::size2() const
 {
-    FEEL_ASSERT (this->isInitialized()).error( "MatrixPetsc<> not properly initialized" );;
+    FEELPP_ASSERT (this->isInitialized()).error( "MatrixPetsc<> not properly initialized" );;
 
     int petsc_m=0, petsc_n=0, ierr=0;
 
@@ -1773,7 +1773,7 @@ template <typename T>
 inline
 size_type MatrixPetscMPI<T>::rowStart() const
 {
-    FEEL_ASSERT (this->isInitialized()).error( "MatrixPetsc<> not properly initialized" );;
+    FEELPP_ASSERT (this->isInitialized()).error( "MatrixPetsc<> not properly initialized" );;
 
     int start=0, stop=0, ierr=0;
 
@@ -1790,7 +1790,7 @@ template <typename T>
 inline
 size_type MatrixPetscMPI<T>::rowStop() const
 {
-    FEEL_ASSERT (this->isInitialized()).error( "MatrixPetsc<> not properly initialized" );;
+    FEELPP_ASSERT (this->isInitialized()).error( "MatrixPetsc<> not properly initialized" );;
 
     int start=0, stop=0, ierr=0;
 
@@ -1806,7 +1806,7 @@ template <typename T>
 inline
 size_type MatrixPetscMPI<T>::colStart() const
 {
-    FEEL_ASSERT (this->isInitialized()).error( "MatrixPetsc<> not properly initialized" );;
+    FEELPP_ASSERT (this->isInitialized()).error( "MatrixPetsc<> not properly initialized" );;
 
     int start=0, stop=0;
     start=0; stop=this->mapCol().nLocalDofWithGhost();
@@ -1820,7 +1820,7 @@ template <typename T>
 inline
 size_type MatrixPetscMPI<T>::colStop() const
 {
-    FEEL_ASSERT (this->isInitialized()).error( "MatrixPetsc<> not properly initialized" );;
+    FEELPP_ASSERT (this->isInitialized()).error( "MatrixPetsc<> not properly initialized" );;
 
     int start=0, stop=0;
     start=0; stop=this->mapCol().nLocalDofWithGhost();
@@ -1836,7 +1836,7 @@ void MatrixPetscMPI<T>::set(const size_type i,
                             const size_type j,
                             const value_type& value)
 {
-    FEEL_ASSERT (this->isInitialized()).error( "MatrixPetsc<> not properly initialized" );;
+    FEELPP_ASSERT (this->isInitialized()).error( "MatrixPetsc<> not properly initialized" );;
 
     int ierr=0, i_val=i, j_val=j;
 
@@ -1856,7 +1856,7 @@ void MatrixPetscMPI<T>::add (const size_type i,
                              const size_type j,
                              const value_type& value)
 {
-    FEEL_ASSERT (this->isInitialized()).error( "MatrixPetsc<> not properly initialized" );
+    FEELPP_ASSERT (this->isInitialized()).error( "MatrixPetsc<> not properly initialized" );
 
     int ierr=0, i_val=i, j_val=j;
     //Debug( 7013 ) << "[MatrixPetsc<>::add] adding value " << value << " at (" << i << "," << j << ")\n";
@@ -1876,13 +1876,13 @@ MatrixPetscMPI<T>::addMatrix(const ublas::matrix<value_type>& dm,
                              const std::vector<size_type>& rows,
                              const std::vector<size_type>& cols)
 {
-    FEEL_ASSERT (this->isInitialized()).error( "petsc matrix not initialized" );
+    FEELPP_ASSERT (this->isInitialized()).error( "petsc matrix not initialized" );
 
     const size_type m = dm.size1();
     const size_type n = dm.size2();
 
-    FEEL_ASSERT (rows.size() == size1()).error( "invalid row size" );
-    FEEL_ASSERT (cols.size() == size2()).error( "invalid column size" );
+    FEELPP_ASSERT (rows.size() == size1()).error( "invalid row size" );
+    FEELPP_ASSERT (cols.size() == size2()).error( "invalid column size" );
 
     int ierr=0;
 
@@ -1905,7 +1905,7 @@ MatrixPetscMPI<T>::addMatrix( int* rows, int nrows,
                               int* cols, int ncols,
                               value_type* data )
 {
-    FEEL_ASSERT (this->isInitialized()).error( "petsc matrix not initialized" );
+    FEELPP_ASSERT (this->isInitialized()).error( "petsc matrix not initialized" );
     /*for (int k=0;k<nrows;++k)
         for (int q=0;q<ncols;++q)
             { std::cout << "rank " << this->comm().rank()
@@ -1931,7 +1931,7 @@ template <typename T>
 void
 MatrixPetscMPI<T>::zero()
 {
-    FEEL_ASSERT (this->isInitialized()).error( "petsc matrix not properly initialized" ) ;
+    FEELPP_ASSERT (this->isInitialized()).error( "petsc matrix not properly initialized" ) ;
 
     int ierr=0;
 
@@ -1999,7 +1999,7 @@ void
 MatrixPetscMPI<T>::zero( size_type /*start1*/, size_type /*stop1*/, size_type /*start2*/, size_type /*stop2*/ )
 {
 
-    FEEL_ASSERT (this->isInitialized()).error( "petsc matrix not properly initialized" ) ;
+    FEELPP_ASSERT (this->isInitialized()).error( "petsc matrix not properly initialized" ) ;
 
     int ierr=0;
 

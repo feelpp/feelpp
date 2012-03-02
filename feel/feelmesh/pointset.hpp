@@ -243,7 +243,7 @@ class PointSet : public VisitableBase<>
             << "\", document.paperformat.A4)\n";
     }
 
-    FEEL_DEFINE_VISITABLE();
+    FEELPP_DEFINE_VISITABLE();
 
 protected:
 

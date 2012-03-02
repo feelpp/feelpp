@@ -144,7 +144,7 @@ public:
 private:
     void check_invariant()
     {
-        //FEEL_ASSERT(  d <= E::topological_dimension )( d )( E::topological_dimension ).error( "invalid topological dimension" );
+        //FEELPP_ASSERT(  d <= E::topological_dimension )( d )( E::topological_dimension ).error( "invalid topological dimension" );
     }
 };
 

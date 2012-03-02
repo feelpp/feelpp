@@ -180,7 +180,7 @@ public:
 
     int ApplyInverse ( const vector_ptrtype& X, vector_ptrtype& Y ) const
     {
-        FEEL_ASSERT( hasInverse() ).error( "This operator cannot be inverted." );
+        FEELPP_ASSERT( hasInverse() ).error( "This operator cannot be inverted." );
 
         int result = ApplyInverse( dynamic_cast<epetra_vector_type const&>(*X).vec(),
                                    dynamic_cast<epetra_vector_type&>(*Y).vec() );
@@ -190,7 +190,7 @@ public:
 
     int ApplyInverse ( const Epetra_MultiVector& X, Epetra_MultiVector& Y ) const
     {
-        FEEL_ASSERT( hasInverse() ).error( "This operator cannot be inverted." );
+        FEELPP_ASSERT( hasInverse() ).error( "This operator cannot be inverted." );
 
         std::pair<unsigned int, real_type> result;
 
@@ -322,7 +322,7 @@ public:
     {
         Debug(10100) << "Apply matrix " << Label() << "\n";
 
-        FEEL_ASSERT( hasApply() ).error( "This operator cannot be applied." );
+        FEELPP_ASSERT( hasApply() ).error( "This operator cannot be applied." );
         M_F->ApplyInverse(X,Y);
 
         return !hasApply();
@@ -332,7 +332,7 @@ public:
     {
         Debug(10100) << "ApplyInverse matrix " << Label() << "\n";
 
-        FEEL_ASSERT( hasInverse() ).error( "This operator cannot be inverted." );
+        FEELPP_ASSERT( hasInverse() ).error( "This operator cannot be inverted." );
 
         M_F->Apply(X,Y);
 
@@ -466,7 +466,7 @@ public:
 
     int Apply( const Epetra_MultiVector & X, Epetra_MultiVector & Y ) const
     {
-        FEEL_ASSERT( hasApply() ).error( "This operator cannot be applied." );
+        FEELPP_ASSERT( hasApply() ).error( "This operator cannot be applied." );
 
         Debug(10100) << "Apply operator " << Label() << " ...\n";
 
@@ -480,7 +480,7 @@ public:
 
     int ApplyInverse ( const Epetra_MultiVector& X, Epetra_MultiVector& Y ) const
     {
-        FEEL_ASSERT( hasInverse() ).error( "This operator cannot be inverted." );
+        FEELPP_ASSERT( hasInverse() ).error( "This operator cannot be inverted." );
 
         Debug(10100) << "Apply Inverse operator " << Label() << " ...\n";
 
@@ -643,7 +643,7 @@ public:
     {
         Debug(10100) << "ApplyInverse scale operator " << Label() << "\n";
 
-        FEEL_ASSERT( hasInverse() && ( M_alpha != 0) ).error( "This operator cannot be inverted." );
+        FEELPP_ASSERT( hasInverse() && ( M_alpha != 0) ).error( "This operator cannot be inverted." );
 
         Epetra_MultiVector Z( X );
         Z.Scale(1./M_alpha);
@@ -799,7 +799,7 @@ public:
     {
         Debug(10100) << "ApplyInverse operator " << Label() << "\n";
 
-        FEEL_ASSERT( hasInverse() ).error( "This operator cannot be inverted." );
+        FEELPP_ASSERT( hasInverse() ).error( "This operator cannot be inverted." );
 
         std::pair<unsigned int, real_type> result = M_Solver->solve( M_op, M_Prec, Y, X, M_tol, M_maxiter);
 

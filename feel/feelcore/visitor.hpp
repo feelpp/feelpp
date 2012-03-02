@@ -310,12 +310,12 @@ protected:
 };
 
 /**
- * \def FEEL_DEFINE_VISITABLE()
+ * \def FEELPP_DEFINE_VISITABLE()
  *
  * Put it in every class that you want to make visitable (in
  * addition to deriving it from VisitableBase<R>
  */
-#define FEEL_DEFINE_VISITABLE()                          \
+#define FEELPP_DEFINE_VISITABLE()                          \
   virtual return_type accept( VisitorBase& guest )   \
   {                                                   \
     return acceptImpl( this, &guest );                 \
@@ -359,11 +359,11 @@ public:
 };
 
 /**
- * \def FEEL_DEFINE_CYCLIC_VISITABLE(SomeVisitor)
+ * \def FEELPP_DEFINE_CYCLIC_VISITABLE(SomeVisitor)
  *
  * Put it in every class that you want to make visitable by a cyclic visitor
  */
-#define FEEL__DEFINE_CYCLIC_VISITABLE(SomeVisitor)                    \
+#define FEELPP__DEFINE_CYCLIC_VISITABLE(SomeVisitor)                    \
   virtual SomeVisitor::return_type Accept(SomeVisitor& guest)     \
   {                                                               \
     return guest.genericVisit(*this);                             \

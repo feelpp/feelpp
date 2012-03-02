@@ -620,7 +620,7 @@ ALE<Convex>::updatePointsInFaces( std::vector<flag_type>& flagSet,
 
 } // Feel
 
-#if !defined( FEEL_INSTANTIATION_MODE )
+#if !defined( FEELPP_INSTANTIATION_MODE )
 # include <feel/feeldiscr/ale.cpp>
-#endif // FEEL_INSTANTIATION_MODE
+#endif // FEELPP_INSTANTIATION_MODE
 #endif // __ALE

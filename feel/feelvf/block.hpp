@@ -89,7 +89,7 @@ public:
 
     Block& operator=( Block const& __b )
         {
-            if ( FEEL_ISLIKELY( this != &__b ) )
+            if ( FEELPP_ISLIKELY( this != &__b ) )
             {
                 _M_lr = __b._M_lr;
                 _M_lc = __b._M_lc;

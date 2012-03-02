@@ -565,7 +565,7 @@ public:
     virtual void printPersonal(std::ostream& /*os*/=std::cout) const
     {
         std::cerr << "ERROR: Not Implemented in base class yet!" << std::endl;
-        FEEL_ASSERT( 0 ).error("invalid call");
+        FEELPP_ASSERT( 0 ).error("invalid call");
     }
 
     /**
@@ -578,7 +578,7 @@ public:
     {
         std::cerr << "ERROR: Not Implemented in base class yet!" << std::endl;
         std::cerr << "ERROR writing MATLAB file " << name << std::endl;
-        FEEL_ASSERT( 0 ).error("invalid call");
+        FEELPP_ASSERT( 0 ).error("invalid call");
     }
 
     /**
@@ -669,7 +669,7 @@ protected:
     {
         std::cerr << "Error! This function is not yet implemented in the base class!"
                   << std::endl;
-        FEEL_ASSERT( 0 ).error("invalid call");
+        FEELPP_ASSERT( 0 ).error("invalid call");
     }
 
     //! mpi communicator

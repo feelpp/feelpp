@@ -46,7 +46,7 @@ makeMLEpetraOptions()
         ("increasing-or-decreasing", po::value<std::string>()->default_value( "decreasing" ), "increasing or decreasing level indices");
     return mlEpetraOptions;
 }
-FEEL_NO_EXPORT
+FEELPP_NO_EXPORT
 po::options_description
 epetraOptions()
 {

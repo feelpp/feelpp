@@ -93,7 +93,7 @@ Environment::Environment( int& argc, char**& argv )
     if ( !is_petsc_initialized )
     {
         i_initialized = true;
-#if defined( FEEL_HAVE_SLEPC )
+#if defined( FEELPP_HAVE_SLEPC )
         int ierr = SlepcInitialize(&argc,&argv, PETSC_NULL, PETSC_NULL );
 #else
         int ierr = PetscInitialize( &argc, &argv, PETSC_NULL, PETSC_NULL );
@@ -124,7 +124,7 @@ Environment::~Environment()
         PetscInitialized( &is_petsc_initialized );
         if ( is_petsc_initialized )
         {
-#if defined( FEEL_HAVE_SLEPC )
+#if defined( FEELPP_HAVE_SLEPC )
             SlepcFinalize();
 #else
             PetscFinalize();
@@ -168,9 +168,9 @@ std::string
 Environment::rootRepository()
 {
     std::string env;
-    if ( ::getenv( "FEEL_REPOSITORY" ) )
+    if ( ::getenv( "FEELPP_REPOSITORY" ) )
     {
-        env = ::getenv( "FEEL_REPOSITORY" );
+        env = ::getenv( "FEELPP_REPOSITORY" );
     }
     else
     {

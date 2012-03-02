@@ -58,7 +58,7 @@ solvereigenslepc_options( std::string const& prefix )
 }
 
 // must have both slepc and petsc
-#if defined(FEEL_HAVE_SLEPC) && defined(HAVE_PETSC)
+#if defined(FEELPP_HAVE_SLEPC) && defined(HAVE_PETSC)
 
 
 /*----------------------- functions ----------------------------------*/

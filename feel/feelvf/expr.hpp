@@ -1249,14 +1249,14 @@ public:
         {
         }
 
-        FEEL_STRONG_INLINE value_type
+        FEELPP_STRONG_INLINE value_type
         evalijq( uint16_type /*i*/, uint16_type /*j*/, uint16_type c1, uint16_type /*c2*/, uint16_type /*q*/ ) const
         {
             return (gmc_type::nDim>=c1)&&((c1==CType) || (CType==-1));
             //return M_one[c1];
         }
         template<int PatternContext>
-        FEEL_STRONG_INLINE value_type
+        FEELPP_STRONG_INLINE value_type
         evalijq( uint16_type /*i*/, uint16_type /*j*/, uint16_type c1, uint16_type /*c2*/, uint16_type /*q*/,
                  mpl::int_<PatternContext> ) const
         {
@@ -1264,13 +1264,13 @@ public:
             //return M_one[c1];
         }
 
-        FEEL_STRONG_INLINE value_type
+        FEELPP_STRONG_INLINE value_type
         evaliq( uint16_type /*i*/, uint16_type c1, uint16_type /*c2*/, uint16_type /*q*/ ) const
         {
             return (gmc_type::nDim>=c1)&&((c1==CType) || (CType==-1));
             //return M_one[c1];
         }
-        FEEL_STRONG_INLINE value_type
+        FEELPP_STRONG_INLINE value_type
         evalq( uint16_type c1, uint16_type /*c2*/, uint16_type /*q*/ ) const
         {
             return (gmc_type::nDim>=c1)&&((c1==CType) || (CType==-1));
@@ -2520,7 +2520,7 @@ public:
             typename basis_type::iterator it = const_cast<basis_type&>(M_expr.basis()).find( fusion::at_key<key_type>( geom )->id() );
             typename basis_type::iterator en = const_cast<basis_type&>(M_expr.basis()).end();
 
-            FEEL_ASSERT( it != en )( fusion::at_key<key_type>( geom )->id() ).error ("invalid basis function to integrate" );
+            FEELPP_ASSERT( it != en )( fusion::at_key<key_type>( geom )->id() ).error ("invalid basis function to integrate" );
             for( uint16_type i = 0; i < M_loc.size(); ++i )
                 {
                     //M_loc[i] = it->second[i]->id( *M_ctx, M_pc, M_loc[i] );

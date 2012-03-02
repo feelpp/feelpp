@@ -479,7 +479,7 @@ public:
      */
     void checkAndFixPermutation();
 
-    FEEL_DEFINE_VISITABLE();
+    FEELPP_DEFINE_VISITABLE();
     //@}
 
     //private:
@@ -916,7 +916,7 @@ Mesh<Shape, T>::createSubmesh( self_type& new_mesh,
             // Loop over the nodes on this element.
             for (unsigned int n=0; n < old_elem.nPoints(); n++)
                 {
-                    FEEL_ASSERT (old_elem.point( n ).id() < new_node_numbers.size()).error( "invalid point id()" );
+                    FEELPP_ASSERT (old_elem.point( n ).id() < new_node_numbers.size()).error( "invalid point id()" );
 
                     if ( new_node_numbers[old_elem.point(n).id()] == invalid_size_type_value )
                         {
@@ -937,13 +937,13 @@ Mesh<Shape, T>::createSubmesh( self_type& new_mesh,
 
                             if ( n < element_type::numVertices )
                                 {
-                                    FEEL_ASSERT( new_vertex[old_elem.point(n).id()] == 0 ).error( "already seen this point?" );
+                                    FEELPP_ASSERT( new_vertex[old_elem.point(n).id()] == 0 ).error( "already seen this point?" );
                                     new_vertex[old_elem.point(n).id()]=1;
                                 }
                         }
 
                     // Define this element's connectivity on the new mesh
-                    FEEL_ASSERT (new_node_numbers[old_elem.point(n).id()] < new_mesh.numPoints()).error("invalid connectivity");
+                    FEELPP_ASSERT (new_node_numbers[old_elem.point(n).id()] < new_mesh.numPoints()).error("invalid connectivity");
 
                     Debug( 4015 ) << "[Mesh<Shape,T>::createSubmesh] adding point old(" << old_elem.point(n).id()
                                   << ") as point new(" << new_node_numbers[old_elem.point(n).id()]
@@ -1074,7 +1074,7 @@ Mesh<Shape, T>::createP1mesh() const
             // Loop over the P1 nodes on this element.
             for (unsigned int n=0; n < element_type::numVertices; n++)
                 {
-                    //!!!!!FEEL_ASSERT (old_elem.point( n ).id() < new_node_numbers.size()).error( "invalid point id()" );
+                    //!!!!!FEELPP_ASSERT (old_elem.point( n ).id() < new_node_numbers.size()).error( "invalid point id()" );
 
                     if ( new_node_numbers[old_elem.point(n).id()] == invalid_size_type_value )
                         {
@@ -1095,13 +1095,13 @@ Mesh<Shape, T>::createP1mesh() const
 
                             if ( n < element_type::numVertices ) //???
                                 {
-                                    FEEL_ASSERT( new_vertex[old_elem.point(n).id()] == 0 ).error( "already seen this point?" );
+                                    FEELPP_ASSERT( new_vertex[old_elem.point(n).id()] == 0 ).error( "already seen this point?" );
                                     new_vertex[old_elem.point(n).id()]=1;
                                 }
                         }
 
                     // Define this element's connectivity on the new mesh
-                    FEEL_ASSERT (new_node_numbers[old_elem.point(n).id()] < new_mesh->numPoints()).error("invalid connectivity");
+                    FEELPP_ASSERT (new_node_numbers[old_elem.point(n).id()] < new_mesh->numPoints()).error("invalid connectivity");
 
                     Debug( 4015 ) << "[Mesh<Shape,T>::createP1mesh] adding point old(" << old_elem.point(n).id()
                                   << ") as point new(" << new_node_numbers[old_elem.point(n).id()]
@@ -1179,7 +1179,7 @@ Mesh<Shape, T>::createP1mesh() const
 } // Feel
 
 
-//#if !defined(FEEL_INSTANTIATION_MODE)
+//#if !defined(FEELPP_INSTANTIATION_MODE)
 # include <feel/feeldiscr/meshimpl.hpp>
 //#endif //
 

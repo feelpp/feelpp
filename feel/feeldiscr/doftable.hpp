@@ -395,7 +395,7 @@ public:
 #if 0
         if ( M_dof_indices.empty() )
             return dof;
-        FEEL_ASSERT( dof < M_dof_indices.size() )( dof )( M_dof_indices.size() ).warn( "invalid dof index" );
+        FEELPP_ASSERT( dof < M_dof_indices.size() )( dof )( M_dof_indices.size() ).warn( "invalid dof index" );
         return M_dof_indices[dof];
 #endif
     }
@@ -804,18 +804,18 @@ public:
         // multi process
         if (this->worldComm().localSize()>1)
             {
-#if defined(FEEL_ENABLE_MPI_MODE)
+#if defined(FEELPP_ENABLE_MPI_MODE)
                 //std::cout << "[build] call buildGhostDofMap () with god rank " << this->worldComm().godRank()  <<std::endl;
                 this->buildGhostDofMap(M);
                 //std::cout << "[build] callFINISH buildGhostDofMap () with god rank " << this->worldComm().godRank()  <<std::endl;
 #else
-                std::cerr << "ERROR : FEEL_ENABLE_MPI_MODE is OFF" << std::endl;
-                //throw std::logic_error( "ERROR : FEEL_ENABLE_MPI_MODE is OFF" );
+                std::cerr << "ERROR : FEELPP_ENABLE_MPI_MODE is OFF" << std::endl;
+                //throw std::logic_error( "ERROR : FEELPP_ENABLE_MPI_MODE is OFF" );
 #endif
             }
         else
             {
-#if defined(FEEL_ENABLE_MPI_MODE)
+#if defined(FEELPP_ENABLE_MPI_MODE)
                 // in sequential : identity map
                 const size_type s = this->_M_n_localWithGhost_df[this->comm().rank()];
                 this->M_mapGlobalProcessToGlobalCluster.resize(s);
@@ -853,7 +853,7 @@ public:
      */
     void buildBoundaryDofMap( mesh_type& mesh );
 
-#if defined(FEEL_ENABLE_MPI_MODE)
+#if defined(FEELPP_ENABLE_MPI_MODE)
     /**
      * build the GlobalProcessToGlobalClusterDof table
      */
@@ -937,7 +937,7 @@ public:
 
                 pDof += 1;
 
-                FEEL_ASSERT( __inserted == true )( ie )( lc_dof )
+                FEELPP_ASSERT( __inserted == true )( ie )( lc_dof )
                     (gDof.get<0>())(gDof.get<1>())( gDof.get<2>() )
                     ( processor )( itdof->second ).error( "dof should have been inserted");
             }
@@ -961,9 +961,9 @@ public:
             if ( boost::get<0>( _M_el_l2g[ ie][ lc_dof ] ) == invalid_size_type_value )
             {
 
-                FEEL_ASSERT( itdof->first == gDof ).error( "very bad logical error in insertDof" );
+                FEELPP_ASSERT( itdof->first == gDof ).error( "very bad logical error in insertDof" );
 
-                FEEL_ASSERT( lc_dof >= fe_type::nLocalDof*itdof->first.get<1>() &&
+                FEELPP_ASSERT( lc_dof >= fe_type::nLocalDof*itdof->first.get<1>() &&
                              lc_dof < fe_type::nLocalDof*(itdof->first.get<1>()+1) )
                     ( lc_dof )
                     ( fe_type::nLocalDof*itdof->first.get<1>() ).error( "invalid local dof index" );
@@ -1110,7 +1110,7 @@ private:
                                     gDof += fe_type::nDofPerEdge - 1 - l ;
                             }
                         else
-                            FEEL_ASSERT( 0 ).error ( "invalid edge permutation" );
+                            FEELPP_ASSERT( 0 ).error ( "invalid edge permutation" );
                         this->insertDof( ie, lc, i, boost::make_tuple(1, 0, gDof), processor, next_free_dof, sign, false, global_shift );
                     }
             }
@@ -1160,7 +1160,7 @@ private:
                                     gDof += fe_type::nDofPerEdge - 1 - l ;
                             }
                         else
-                            FEEL_ASSERT( 0 ).error ( "invalid edge permutation" );
+                            FEELPP_ASSERT( 0 ).error ( "invalid edge permutation" );
 
                         this->insertDof( ie, lc, i, boost::make_tuple(1, 0, gDof), processor, next_free_dof, sign, false, global_shift );
                     }
@@ -1220,7 +1220,7 @@ private:
         for ( uint16_type i = 0; i < element_type::numFaces; ++i )
             {
                 face_permutation_type permutation = __elt.facePermutation(i);
-                FEEL_ASSERT( permutation != face_permutation_type(0) ).error ( "invalid face permutation" );
+                FEELPP_ASSERT( permutation != face_permutation_type(0) ).error ( "invalid face permutation" );
 
                 // Polynomial order in each direction
                 uint16_type p=1;
@@ -1321,15 +1321,15 @@ private:
     void addVertexBoundaryDof( FaceIterator __face_it, uint16_type& lc, mpl::bool_<true>, mpl::int_<1>  )
     {
         BOOST_STATIC_ASSERT( face_type::numVertices );
-#if !defined(FEEL_ENABLE_MPI_MODE)
+#if !defined(FEELPP_ENABLE_MPI_MODE)
         // id of the element adjacent to the face
         // \warning NEED TO INVESTIGATE THIS
         size_type iElAd = __face_it->ad_first();
-        FEEL_ASSERT( iElAd != invalid_size_type_value )( __face_it->id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
+        FEELPP_ASSERT( iElAd != invalid_size_type_value )( __face_it->id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
 
         // local id of the face in its adjacent element
         uint16_type iFaEl = __face_it->pos_first();
-        FEEL_ASSERT( iFaEl != invalid_uint16_type_value ).error ("invalid element index in face");
+        FEELPP_ASSERT( iFaEl != invalid_uint16_type_value ).error ("invalid element index in face");
 #else // MPI
         uint16_type iFaEl;
         size_type iElAd;
@@ -1337,20 +1337,20 @@ private:
         if (__face_it->processId() == __face_it->proc_first())
             {
                 iElAd = __face_it->ad_first();
-                FEEL_ASSERT( iElAd != invalid_size_type_value )( __face_it->id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
+                FEELPP_ASSERT( iElAd != invalid_size_type_value )( __face_it->id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
 
                 // local id of the face in its adjacent element
                 iFaEl = __face_it->pos_first();
-                FEEL_ASSERT( iFaEl != invalid_uint16_type_value ).error ("invalid element index in face");
+                FEELPP_ASSERT( iFaEl != invalid_uint16_type_value ).error ("invalid element index in face");
             }
         else
             {
                 iElAd = __face_it->ad_second();
-                FEEL_ASSERT( iElAd != invalid_size_type_value )( __face_it->id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
+                FEELPP_ASSERT( iElAd != invalid_size_type_value )( __face_it->id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
 
                 // local id of the face in its adjacent element
                 iFaEl = __face_it->pos_second();
-                FEEL_ASSERT( iFaEl != invalid_uint16_type_value ).error ("invalid element index in face");
+                FEELPP_ASSERT( iFaEl != invalid_uint16_type_value ).error ("invalid element index in face");
             }
 
 #endif
@@ -1372,15 +1372,15 @@ private:
     void addVertexBoundaryDof( FaceIterator __face_it, uint16_type& lc, mpl::bool_<true>, mpl::int_<2>  )
     {
         BOOST_STATIC_ASSERT( face_type::numVertices );
-#if !defined(FEEL_ENABLE_MPI_MODE)
+#if !defined(FEELPP_ENABLE_MPI_MODE)
         // id of the element adjacent to the face
         // \warning NEED TO INVESTIGATE THIS
         size_type iElAd = __face_it->ad_first();
-        FEEL_ASSERT( iElAd != invalid_size_type_value )( __face_it->id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
+        FEELPP_ASSERT( iElAd != invalid_size_type_value )( __face_it->id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
 
         // local id of the face in its adjacent element
         uint16_type iFaEl = __face_it->pos_first();
-        FEEL_ASSERT( iFaEl != invalid_uint16_type_value ).error ("invalid element index in face");
+        FEELPP_ASSERT( iFaEl != invalid_uint16_type_value ).error ("invalid element index in face");
 #else // MPI
         uint16_type iFaEl;
         size_type iElAd;
@@ -1388,20 +1388,20 @@ private:
         if (__face_it->processId() == __face_it->proc_first())
             {
                 iElAd = __face_it->ad_first();
-                FEEL_ASSERT( iElAd != invalid_size_type_value )( __face_it->id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
+                FEELPP_ASSERT( iElAd != invalid_size_type_value )( __face_it->id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
 
                 // local id of the face in its adjacent element
                 iFaEl = __face_it->pos_first();
-                FEEL_ASSERT( iFaEl != invalid_uint16_type_value ).error ("invalid element index in face");
+                FEELPP_ASSERT( iFaEl != invalid_uint16_type_value ).error ("invalid element index in face");
             }
         else
             {
                 iElAd = __face_it->ad_second();
-                FEEL_ASSERT( iElAd != invalid_size_type_value )( __face_it->id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
+                FEELPP_ASSERT( iElAd != invalid_size_type_value )( __face_it->id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
 
                 // local id of the face in its adjacent element
                 iFaEl = __face_it->pos_second();
-                FEEL_ASSERT( iFaEl != invalid_uint16_type_value ).error ("invalid element index in face");
+                FEELPP_ASSERT( iFaEl != invalid_uint16_type_value ).error ("invalid element index in face");
             }
 #endif
 
@@ -1422,7 +1422,7 @@ private:
                 // local vertex number (in element)
                 uint16_type iVeEl = element_type::fToP( iFaEl, iVeFa );
 
-                FEEL_ASSERT( iVeEl != invalid_uint16_type_value ).error( "invalid local dof" );
+                FEELPP_ASSERT( iVeEl != invalid_uint16_type_value ).error( "invalid local dof" );
 
                 // Loop number of Dof per vertex
                 for ( uint16_type l = 0; l < fe_type::nDofPerVertex; ++l )
@@ -1455,11 +1455,11 @@ private:
     template<typename FaceIterator>
     void addEdgeBoundaryDof( FaceIterator __face_it, uint16_type& lc, mpl::bool_<true>, mpl::int_<2> )
     {
-#if !defined(FEEL_ENABLE_MPI_MODE)
+#if !defined(FEELPP_ENABLE_MPI_MODE)
         // id of the element adjacent to the face
         // \warning NEED TO INVESTIGATE THIS
         size_type iElAd = __face_it->ad_first();
-        FEEL_ASSERT( iElAd != invalid_size_type_value )
+        FEELPP_ASSERT( iElAd != invalid_size_type_value )
             ( __face_it->id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
 
         // local id of the face in its adjacent element
@@ -1471,7 +1471,7 @@ private:
         if (__face_it->processId() == __face_it->proc_first())
             {
                 iElAd = __face_it->ad_first();
-                FEEL_ASSERT( iElAd != invalid_size_type_value )
+                FEELPP_ASSERT( iElAd != invalid_size_type_value )
                     ( __face_it->id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
 
                 // local id of the face in its adjacent element
@@ -1480,7 +1480,7 @@ private:
         else
             {
                 iElAd = __face_it->ad_second();
-                FEEL_ASSERT( iElAd != invalid_size_type_value )
+                FEELPP_ASSERT( iElAd != invalid_size_type_value )
                     ( __face_it->id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
 
                 // local id of the face in its adjacent element
@@ -1489,7 +1489,7 @@ private:
 #endif
 
 
-        FEEL_ASSERT( iFaEl != invalid_uint16_type_value ).error ("invalid element index in face");
+        FEELPP_ASSERT( iFaEl != invalid_uint16_type_value ).error ("invalid element index in face");
 #if !defined(NDEBUG)
         Debug( 5005 ) << " local face id : " << iFaEl << "\n";
 #endif
@@ -1521,15 +1521,15 @@ private:
     void addEdgeBoundaryDof( FaceIterator __face_it, uint16_type& lc, mpl::bool_<true>, mpl::int_<3> )
     {
         //BOOST_STATIC_ASSERT( face_type::numEdges );
-#if !defined(FEEL_ENABLE_MPI_MODE)
+#if !defined(FEELPP_ENABLE_MPI_MODE)
         // id of the element adjacent to the face
         // \warning NEED TO INVESTIGATE THIS
         size_type iElAd = __face_it->ad_first();
-        FEEL_ASSERT( iElAd != invalid_size_type_value )( __face_it->id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
+        FEELPP_ASSERT( iElAd != invalid_size_type_value )( __face_it->id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
 
         // local id of the face in its adjacent element
         uint16_type iFaEl = __face_it->pos_first();
-        FEEL_ASSERT( iFaEl != invalid_uint16_type_value ).error ("invalid element index in face");
+        FEELPP_ASSERT( iFaEl != invalid_uint16_type_value ).error ("invalid element index in face");
 #else // MPI
         uint16_type iFaEl;
         size_type iElAd;
@@ -1537,7 +1537,7 @@ private:
         if (__face_it->processId() == __face_it->proc_first())
             {
                 iElAd = __face_it->ad_first();
-                FEEL_ASSERT( iElAd != invalid_size_type_value )
+                FEELPP_ASSERT( iElAd != invalid_size_type_value )
                     ( __face_it->id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
 
                 // local id of the face in its adjacent element
@@ -1546,7 +1546,7 @@ private:
         else
             {
                 iElAd = __face_it->ad_second();
-                FEEL_ASSERT( iElAd != invalid_size_type_value )
+                FEELPP_ASSERT( iElAd != invalid_size_type_value )
                     ( __face_it->id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
 
                 // local id of the face in its adjacent element
@@ -1572,7 +1572,7 @@ private:
                 // local edge number (in element)
                 uint16_type iEdEl = element_type::fToE( iFaEl, iEdFa );
 
-                FEEL_ASSERT( iEdEl != invalid_uint16_type_value ).error( "invalid local dof" );
+                FEELPP_ASSERT( iEdEl != invalid_uint16_type_value ).error( "invalid local dof" );
 
                 // Loop number of Dof per edge
                 for ( uint16_type l = 0; l < fe_type::nDofPerEdge; ++l )
@@ -1602,15 +1602,15 @@ private:
     template<typename FaceIterator>
     void addFaceBoundaryDof( FaceIterator __face_it, uint16_type& lc, mpl::bool_<true> )
     {
-#if !defined(FEEL_ENABLE_MPI_MODE)
+#if !defined(FEELPP_ENABLE_MPI_MODE)
         // id of the element adjacent to the face
         // \warning NEED TO INVESTIGATE THIS
         size_type iElAd = __face_it->ad_first();
-        FEEL_ASSERT( iElAd != invalid_size_type_value )( __face_it->id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
+        FEELPP_ASSERT( iElAd != invalid_size_type_value )( __face_it->id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
 
         // local id of the face in its adjacent element
         uint16_type iFaEl = __face_it->pos_first();
-        FEEL_ASSERT( iFaEl != invalid_uint16_type_value ).error ("invalid element index in face");
+        FEELPP_ASSERT( iFaEl != invalid_uint16_type_value ).error ("invalid element index in face");
 #else // MPI
         uint16_type iFaEl;
         size_type iElAd;
@@ -1618,7 +1618,7 @@ private:
         if (__face_it->processId() == __face_it->proc_first())
             {
                 iElAd = __face_it->ad_first();
-                FEEL_ASSERT( iElAd != invalid_size_type_value )
+                FEELPP_ASSERT( iElAd != invalid_size_type_value )
                     ( __face_it->id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
 
                 // local id of the face in its adjacent element
@@ -1627,7 +1627,7 @@ private:
         else
             {
                 iElAd = __face_it->ad_second();
-                FEEL_ASSERT( iElAd != invalid_size_type_value )
+                FEELPP_ASSERT( iElAd != invalid_size_type_value )
                     ( __face_it->id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
 
                 // local id of the face in its adjacent element
@@ -1729,7 +1729,7 @@ private:
                         for (uint16_type i=1; i < _numEntities; i++)
                             {
 
-                                FEEL_ASSERT( ublas::norm_inf( real_coordinates[i] - real_coordinates[0] ) < tol  )
+                                FEELPP_ASSERT( ublas::norm_inf( real_coordinates[i] - real_coordinates[0] ) < tol  )
                                     ( gDof )
                                     ( real_coordinates[0] )
                                     ( real_coordinates[i] ).error( "Reference points aren't being mapped to the same real one's" );
@@ -1971,12 +1971,12 @@ DofTable<MeshType, FEType, PeriodicityType>::addVertexPeriodicDof( element_type 
     // id of the element adjacent to the face
 
     size_type iElAd = __face.ad_first();
-    FEEL_ASSERT( iElAd != invalid_size_type_value )( __face.id() ).error( "[periodic]invalid face/element in face" );
+    FEELPP_ASSERT( iElAd != invalid_size_type_value )( __face.id() ).error( "[periodic]invalid face/element in face" );
     Feel::detail::ignore_unused_variable_warning(iElAd);
 
     // local id of the face in its adjacent element
     uint16_type iFaEl = __face.pos_first();
-    FEEL_ASSERT( iFaEl != invalid_uint16_type_value ).error ("invalid element index in face");
+    FEELPP_ASSERT( iFaEl != invalid_uint16_type_value ).error ("invalid element index in face");
 
     // loop on face vertices
     for ( uint16_type iVeFa = 0; iVeFa < face_type::numVertices; ++iVeFa )
@@ -1985,7 +1985,7 @@ DofTable<MeshType, FEType, PeriodicityType>::addVertexPeriodicDof( element_type 
             uint16_type iVeEl = element_type::fToP( iFaEl, iVeFa );
             Feel::detail::ignore_unused_variable_warning(iVeEl);
 
-            FEEL_ASSERT( iVeEl != invalid_uint16_type_value ).error( "invalid local dof" );
+            FEELPP_ASSERT( iVeEl != invalid_uint16_type_value ).error( "invalid local dof" );
 
             // Loop number of Dof per vertex
             for ( uint16_type l = 0; l < fe_type::nDofPerVertex; ++l )
@@ -2027,13 +2027,13 @@ DofTable<MeshType, FEType, PeriodicityType>::addEdgePeriodicDof( element_type co
     // id of the element adjacent to the face
     // \warning NEED TO INVESTIGATE THIS
     size_type iElAd = __face.ad_first();
-    FEEL_ASSERT( iElAd != invalid_size_type_value )
+    FEELPP_ASSERT( iElAd != invalid_size_type_value )
         ( __face.id() ).error( "[DofTable::buildBoundaryDof] invalid face/element in face" );
 #endif // 0
 
     // local id of the face in its adjacent element
     uint16_type iFaEl = __face.pos_first();
-    FEEL_ASSERT( iFaEl != invalid_uint16_type_value ).error ("invalid element index in face");
+    FEELPP_ASSERT( iFaEl != invalid_uint16_type_value ).error ("invalid element index in face");
 #if !defined(NDEBUG)
     Debug( 5005 ) << " local face id : " << iFaEl << "\n";
 #endif
@@ -2075,11 +2075,11 @@ DofTable<MeshType, FEType, PeriodicityType>::addEdgePeriodicDof( element_type co
     // id of the element adjacent to the face
     // \warning NEED TO INVESTIGATE THIS
     size_type iElAd = __face.ad_first();
-    FEEL_ASSERT( iElAd != invalid_size_type_value )( __face.id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
+    FEELPP_ASSERT( iElAd != invalid_size_type_value )( __face.id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
 
     // local id of the face in its adjacent element
     uint16_type iFaEl = __face.pos_first();
-    FEEL_ASSERT( iFaEl != invalid_uint16_type_value ).error ("invalid element index in face");
+    FEELPP_ASSERT( iFaEl != invalid_uint16_type_value ).error ("invalid element index in face");
 #if !defined(NDEBUG)
     Debug( 5005 ) << " local face id : " << iFaEl << "\n";
 #endif
@@ -2090,7 +2090,7 @@ DofTable<MeshType, FEType, PeriodicityType>::addEdgePeriodicDof( element_type co
             // local edge number (in element)
             uint16_type iEdEl = element_type::fToE( iFaEl, iEdFa );
 
-            FEEL_ASSERT( iEdEl != invalid_uint16_type_value ).error( "invalid local dof" );
+            FEELPP_ASSERT( iEdEl != invalid_uint16_type_value ).error( "invalid local dof" );
 
             // Loop number of Dof per edge
             for ( uint16_type l = 0; l < fe_type::nDofPerEdge; ++l )
@@ -2139,11 +2139,11 @@ DofTable<MeshType, FEType, PeriodicityType>::addFacePeriodicDof( element_type co
     // id of the element adjacent to the face
     // \warning NEED TO INVESTIGATE THIS
     size_type iElAd = __face.ad_first();
-    FEEL_ASSERT( iElAd != invalid_size_type_value )( __face.id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
+    FEELPP_ASSERT( iElAd != invalid_size_type_value )( __face.id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
 
     // local id of the face in its adjacent element
     uint16_type iFaEl = __face.pos_first();
-    FEEL_ASSERT( iFaEl != invalid_uint16_type_value ).error ("invalid element index in face");
+    FEELPP_ASSERT( iFaEl != invalid_uint16_type_value ).error ("invalid element index in face");
 #if !defined(NDEBUG)
     Debug( 5005 ) << " local face id : " << iFaEl << "\n";
 #endif
@@ -2188,7 +2188,7 @@ DofTable<MeshType, FEType, PeriodicityType>::initDofMap( mesh_type& M )
     Debug(5015) << "element_type::numVertices= " << int(element_type::numVertices) << "\n";
     Debug(5015) << "==============================\n";
 
-    FEEL_ASSERT( nldof == fe_type::nLocalDof )
+    FEELPP_ASSERT( nldof == fe_type::nLocalDof )
         ( nldof )
         ( fe_type::nLocalDof ).error( "Something wrong in FE specification" ) ;
 
@@ -2200,7 +2200,7 @@ DofTable<MeshType, FEType, PeriodicityType>::initDofMap( mesh_type& M )
     _M_el_l2g.resize( boost::extents[nV][ntldof] );
     M_locglob_indices.resize( nV );
     M_locglob_signs.resize( nV );
-#if defined(FEEL_ENABLE_MPI_MODE)
+#if defined(FEELPP_ENABLE_MPI_MODE)
     M_locglobOnCluster_indices.resize( nV );
     M_locglobOnCluster_signs.resize( nV );
 #endif
@@ -2225,7 +2225,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildPeriodicDofMap( mesh_type& M )
         fe_type::nDofPerEdge * element_type::numEdges +
         fe_type::nDofPerVertex * element_type::numVertices;
 
-    FEEL_ASSERT( nldof == fe_type::nLocalDof )
+    FEELPP_ASSERT( nldof == fe_type::nLocalDof )
         ( nldof )
         ( fe_type::nLocalDof ).error( "Something wrong in FE specification" ) ;
 
@@ -2333,10 +2333,10 @@ DofTable<MeshType, FEType, PeriodicityType>::buildPeriodicDofMap( mesh_type& M )
     BOOST_FOREACH( dof2, periodic_dof[periodicity_type::tag2] )
         {
             size_type gid2 = dof2.first;
-            FEEL_ASSERT( gid2 > max_gid )( gid2 )( max_gid ).error( "invalid dof index" );
+            FEELPP_ASSERT( gid2 > max_gid )( gid2 )( max_gid ).error( "invalid dof index" );
             max_gid2 = (max_gid2 > gid2)?max_gid2:gid2;
         }
-    FEEL_ASSERT( (max_gid+1) == (max_gid2+1-(max_gid+1)) )( max_gid )( max_gid2 ).error( "[periodic] invalid periodic setup" );
+    FEELPP_ASSERT( (max_gid+1) == (max_gid2+1-(max_gid+1)) )( max_gid )( max_gid2 ).error( "[periodic] invalid periodic setup" );
 
     std::vector<bool> periodic_dof_done( max_gid+1 );
     std::fill( periodic_dof_done.begin(), periodic_dof_done.end(), false );
@@ -2354,9 +2354,9 @@ DofTable<MeshType, FEType, PeriodicityType>::buildPeriodicDofMap( mesh_type& M )
             for( ; it_dof2 != en_dof2; ++ it_dof2 )
                 {
                     size_type gid2 = it_dof2->first;
-                    FEEL_ASSERT( gid2 < next_free_dof )( gid )( gid2 )( next_free_dof ).error( "[periodic] invalid dof id" );
+                    FEELPP_ASSERT( gid2 < next_free_dof )( gid )( gid2 )( next_free_dof ).error( "[periodic] invalid dof id" );
                     node_type x2 = periodic_dof_points[gid2].template get<0>();
-                    //FEEL_ASSERT( math::abs( x2[0]-M_periodicity.translation()[0]) < 1e-10 )
+                    //FEELPP_ASSERT( math::abs( x2[0]-M_periodicity.translation()[0]) < 1e-10 )
                     //( x1 )( x2 )( M_periodicity.translation() ).error( "[periodic] invalid periodic setup");
                 }
             it_dof2 = periodic_dof[periodicity_type::tag2].begin();
@@ -2364,9 +2364,9 @@ DofTable<MeshType, FEType, PeriodicityType>::buildPeriodicDofMap( mesh_type& M )
             for( ; it_dof2 != en_dof2; ++ it_dof2 )
                 {
                     size_type gid2 = it_dof2->first;
-                    FEEL_ASSERT( gid2 < next_free_dof )( gid )( gid2 )( next_free_dof ).error( "[periodic] invalid dof id" );
+                    FEELPP_ASSERT( gid2 < next_free_dof )( gid )( gid2 )( next_free_dof ).error( "[periodic] invalid dof id" );
                     node_type x2 = periodic_dof_points[gid2].template get<0>();
-                    FEEL_ASSERT( ( x1.size() == x2.size() ) &&
+                    FEELPP_ASSERT( ( x1.size() == x2.size() ) &&
                                  ( x1.size() == M_periodicity.translation().size() ) )
                         ( gid )( dof.second.template get<0>() )( dof.second.template get<1>())
                         ( gid2 )( it_dof2->second.template get<0>() )( it_dof2->second.template get<1>())
@@ -2397,7 +2397,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildPeriodicDofMap( mesh_type& M )
                             uint16_type dof2_type = it_dof2->second.template get<3>();
                             uint16_type dof1_type = dof.second.template get<3>();
 
-                            FEEL_ASSERT( dof1_type == dof2_type )
+                            FEELPP_ASSERT( dof1_type == dof2_type )
                                 ( gid )( it_dof2->first )( gDof )( lid )( ie )
                                 ( dof1_type )( dof2_type ).error ( "invalid dof" );
 
@@ -2409,7 +2409,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildPeriodicDofMap( mesh_type& M )
 
                             // warning: must modify the data structure that allows to
                             // generate unique global dof ids
-                            FEEL_ASSERT( (map_gdof[  boost::make_tuple(dof2_type, 0, gDof) ] == corresponding_gid ) ||
+                            FEELPP_ASSERT( (map_gdof[  boost::make_tuple(dof2_type, 0, gDof) ] == corresponding_gid ) ||
                                          ( map_gdof[ boost::make_tuple(dof2_type, 0, gDof) ] == gid ) )
                                 ( corresponding_gid )( dof2_type )( gDof )( gid )
                                 ( map_gdof[ boost::make_tuple(dof2_type, 0, gDof) ] ).error ("invalid gid" );
@@ -2417,7 +2417,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildPeriodicDofMap( mesh_type& M )
                             Debug( 5015 ) << "link mapgdof " <<   map_gdof[ boost::make_tuple(dof2_type, 0, gDof) ]  << " -> " << gid << "\n";
                             map_gdof[ boost::make_tuple(dof2_type, 0, gDof) ] = gid;
 
-                            FEEL_ASSERT( map_gdof[ boost::make_tuple(dof2_type, 0, gDof) ] == gid )
+                            FEELPP_ASSERT( map_gdof[ boost::make_tuple(dof2_type, 0, gDof) ] == gid )
                                 ( corresponding_gid )( dof2_type )( gDof )( gid )
                                 ( map_gdof[ boost::make_tuple(dof2_type, 0, gDof) ]) .error ("invalid gid" );
 
@@ -2490,13 +2490,13 @@ DofTable<MeshType, FEType, PeriodicityType>::buildDofMap( mesh_type& M, size_typ
         fe_type::nDofPerEdge * element_type::numEdges +
         fe_type::nDofPerVertex * element_type::numVertices;
 
-    FEEL_ASSERT( nldof == fe_type::nLocalDof )
+    FEELPP_ASSERT( nldof == fe_type::nLocalDof )
         ( nldof )
         ( fe_type::nLocalDof ).error( "Something wrong in FE specification" ) ;
 
     typedef Container::index index;
 
-#if !defined(FEEL_ENABLE_MPI_MODE) // sequential if (this->worldComm().size()==1)
+#if !defined(FEELPP_ENABLE_MPI_MODE) // sequential if (this->worldComm().size()==1)
 
     const size_type n_proc  = M.worldComm().localSize();
 
@@ -2672,7 +2672,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildBoundaryDofMap( mesh_type& M )
     //
     // Face dof
     //
-#if defined(FEEL_ENABLE_MPI_MODE)
+#if defined(FEELPP_ENABLE_MPI_MODE)
     auto __face_it = M.facesWithProcessId(M.worldComm().localRank()).first;
     auto __face_en = M.facesWithProcessId(M.worldComm().localRank()).second;
 #else
@@ -2695,7 +2695,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildBoundaryDofMap( mesh_type& M )
 
     for ( size_type nf = 0; __face_it != __face_en; ++__face_it, ++nf )
     {
-        FEEL_ASSERT( __face_it->isConnectedTo0() )
+        FEELPP_ASSERT( __face_it->isConnectedTo0() )
             ( __face_it->id() )
             ( __face_it->marker() )
             ( __face_it->isConnectedTo0() )
@@ -2723,7 +2723,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildBoundaryDofMap( mesh_type& M )
 #if !defined(NDEBUG)
     for ( index face_id = 0; face_id < index(nF); ++face_id )
         for ( index face_dof_id = 0; face_dof_id < index(ntldof); ++face_dof_id )
-            FEEL_ASSERT( boost::get<0>(_M_face_l2g[face_id][face_dof_id]) != invalid_size_type_value )( face_id )( face_dof_id ).warn( "invalid dof table: initialized dof entries" );
+            FEELPP_ASSERT( boost::get<0>(_M_face_l2g[face_id][face_dof_id]) != invalid_size_type_value )( face_id )( face_dof_id ).warn( "invalid dof table: initialized dof entries" );
 #endif
 }    // updateBoundaryDof
 
@@ -2776,7 +2776,7 @@ DofTable<MeshType, FEType, PeriodicityType>::generateDofPoints(  mesh_type& M )
                                 // get only the local dof
                                 //size_type thedofonproc = thedof - firstDof();
                                 thedof -= firstDof();
-                                FEEL_ASSERT( thedof < nLocalDofWithGhost() )( thedof )( nLocalDofWithGhost() )( firstDof() )( lastDof() )( it_elt->id() )( l )( c1 ).error ( "invalid local dof index");
+                                FEELPP_ASSERT( thedof < nLocalDofWithGhost() )( thedof )( nLocalDofWithGhost() )( firstDof() )( lastDof() )( it_elt->id() )( l )( c1 ).error ( "invalid local dof index");
                                 if ( dof_done[ thedof ] == false )
                                     {
                                         std::set<uint16_type> lid;
@@ -2792,12 +2792,12 @@ DofTable<MeshType, FEType, PeriodicityType>::generateDofPoints(  mesh_type& M )
     }
     for ( size_type dof_id = 0; dof_id < nLocalDofWithGhost() ; ++dof_id )
         {
-            FEEL_ASSERT( boost::get<1>(M_dof_points[dof_id]) >= firstDof() &&
+            FEELPP_ASSERT( boost::get<1>(M_dof_points[dof_id]) >= firstDof() &&
                          boost::get<1>(M_dof_points[dof_id]) <= lastDof() )
                 ( dof_id )( firstDof() )( lastDof() )( nLocalDofWithGhost() )
                 ( boost::get<1>(M_dof_points[dof_id]) )
                 ( boost::get<0>(M_dof_points[dof_id]) ).error( "invalid dof point" );
-            FEEL_ASSERT( dof_done[dof_id] == true )( dof_id )( nLocalDofWithGhost() )( firstDof() )( lastDof() )( fe_type::nDim )( fe_type::nLocalDof ).warn( "invalid dof point" );
+            FEELPP_ASSERT( dof_done[dof_id] == true )( dof_id )( nLocalDofWithGhost() )( firstDof() )( lastDof() )( fe_type::nDim )( fe_type::nLocalDof ).warn( "invalid dof point" );
         }
     Debug( 5005 ) << "[Dof::generateDofPoints] generating dof coordinates done\n";
 }
@@ -2842,12 +2842,12 @@ DofTable<MeshType, FEType, PeriodicityType>::generatePeriodicDofPoints(  mesh_ty
         face_type const& __face = *it_elt->template get<1>();
 
         size_type iElAd = __face.ad_first();
-        FEEL_ASSERT( iElAd != invalid_size_type_value )( __face.id() ).error( "[periodic]invalid face/element in face" );
+        FEELPP_ASSERT( iElAd != invalid_size_type_value )( __face.id() ).error( "[periodic]invalid face/element in face" );
         Feel::detail::ignore_unused_variable_warning(iElAd);
 
         // local id of the face in its adjacent element
         uint16_type iFaEl = __face.pos_first();
-        FEEL_ASSERT( iFaEl != invalid_uint16_type_value ).error ("invalid element index in face");
+        FEELPP_ASSERT( iFaEl != invalid_uint16_type_value ).error ("invalid element index in face");
 
         // loop on face vertices
         for ( uint16_type iVeFa = 0; iVeFa < face_type::numVertices; ++iVeFa )
@@ -2856,7 +2856,7 @@ DofTable<MeshType, FEType, PeriodicityType>::generatePeriodicDofPoints(  mesh_ty
             uint16_type iVeEl = element_type::fToP( iFaEl, iVeFa );
             Feel::detail::ignore_unused_variable_warning(iVeEl);
 
-            FEEL_ASSERT( iVeEl != invalid_uint16_type_value ).error( "invalid local dof" );
+            FEELPP_ASSERT( iVeEl != invalid_uint16_type_value ).error( "invalid local dof" );
 
             // Loop number of Dof per vertex
             for ( uint16_type l = 0; l < fe_type::nDofPerVertex; ++l )
@@ -2864,7 +2864,7 @@ DofTable<MeshType, FEType, PeriodicityType>::generatePeriodicDofPoints(  mesh_ty
                 uint16_type lid = iVeEl * fe_type::nDofPerVertex + l;
 
                 size_type thedof = boost::get<0>(localToGlobal( it_elt->template get<0>()->id(), lid, 0 ));
-                FEEL_ASSERT( thedof < dof_done.size() )
+                FEELPP_ASSERT( thedof < dof_done.size() )
                     ( thedof )
                     ( dof_done.size() )
                     ( it_elt->template get<0>()->id() )
@@ -2875,9 +2875,9 @@ DofTable<MeshType, FEType, PeriodicityType>::generatePeriodicDofPoints(  mesh_ty
                     // these tests are problem specific x=0 and x=translation
 #if 0
                     if ( __face.marker().value() == periodicity_type::tag1 )
-                        FEEL_ASSERT( math::abs( __c->xReal( lid )[0] ) < 1e-10 )( __c->xReal( lid ) ).warn( "[periodic] invalid p[eriodic point tag1");
+                        FEELPP_ASSERT( math::abs( __c->xReal( lid )[0] ) < 1e-10 )( __c->xReal( lid ) ).warn( "[periodic] invalid p[eriodic point tag1");
                     if ( __face.marker().value() == periodicity_type::tag2 )
-                        FEEL_ASSERT( math::abs( __c->xReal( lid )[0] - M_periodicity.translation()[0] ) < 1e-10 )
+                        FEELPP_ASSERT( math::abs( __c->xReal( lid )[0] - M_periodicity.translation()[0] ) < 1e-10 )
                             ( __c->xReal( lid ) )( M_periodicity.translation()).warn( "[periodic] invalid p[eriodic point tag1");
 #endif
                     dof_done[thedof] = true;
@@ -2890,7 +2890,7 @@ DofTable<MeshType, FEType, PeriodicityType>::generatePeriodicDofPoints(  mesh_ty
         {
             uint16_type lid = element_type::numVertices*fe_type::nDofPerVertex + iFaEl * fe_type::nDofPerEdge + l;
             size_type thedof = boost::get<0>(localToGlobal( it_elt->template get<0>()->id(), lid, 0 ));
-            FEEL_ASSERT( thedof < dof_done.size() )
+            FEELPP_ASSERT( thedof < dof_done.size() )
                 ( thedof )
                 ( dof_done.size() )
                 ( it_elt->template get<0>()->id() )
@@ -2901,9 +2901,9 @@ DofTable<MeshType, FEType, PeriodicityType>::generatePeriodicDofPoints(  mesh_ty
                 // these tests are problem specific x=0 and x=translation
 #if 0
                 if ( __face.marker().value() == periodicity_type::tag1 )
-                    FEEL_ASSERT( math::abs( __c->xReal( lid )[1] +1 ) < 1e-10 )( __c->xReal( lid ) ).warn( "[periodic] invalid p[eriodic point tag1");
+                    FEELPP_ASSERT( math::abs( __c->xReal( lid )[1] +1 ) < 1e-10 )( __c->xReal( lid ) ).warn( "[periodic] invalid p[eriodic point tag1");
                 if ( __face.marker().value() == periodicity_type::tag2 )
-                    FEEL_ASSERT( math::abs( __c->xReal( lid )[1] - (M_periodicity.translation()[1]-1) ) < 1e-10 )
+                    FEELPP_ASSERT( math::abs( __c->xReal( lid )[1] - (M_periodicity.translation()[1]-1) ) < 1e-10 )
                         ( __c->xReal( lid ) )( M_periodicity.translation()).warn( "[periodic] invalid p[eriodic point tag1");
 #endif
                 dof_done[thedof] = true;
@@ -2913,12 +2913,12 @@ DofTable<MeshType, FEType, PeriodicityType>::generatePeriodicDofPoints(  mesh_ty
     }
     for ( size_type dof_id = 0; dof_id < periodic_dof_points.size() ; ++dof_id )
     {
-        FEEL_ASSERT( boost::get<1>(periodic_dof_points[dof_id]) >= 0 &&
+        FEELPP_ASSERT( boost::get<1>(periodic_dof_points[dof_id]) >= 0 &&
                      boost::get<1>(periodic_dof_points[dof_id]) < periodic_dof_points.size() )
             ( dof_id )( periodic_dof_points.size() )
             ( boost::get<1>(periodic_dof_points[dof_id]) )
             ( boost::get<0>(periodic_dof_points[dof_id]) ).error( "invalid dof point" );
-        FEEL_ASSERT( dof_done[dof_id] == true )( dof_id ).error( "invalid dof point" );
+        FEELPP_ASSERT( dof_done[dof_id] == true )( dof_id ).error( "invalid dof point" );
     }
 }
 
@@ -2930,7 +2930,7 @@ DofTable<MeshType, FEType, PeriodicityType>::generatePeriodicDofPoints(  mesh_ty
 
 
 
-#if defined(FEEL_ENABLE_MPI_MODE)
+#if defined(FEELPP_ENABLE_MPI_MODE)
 #include <feel/feeldiscr/doftablempi.hpp>
 #endif
 

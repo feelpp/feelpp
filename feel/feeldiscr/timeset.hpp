@@ -199,7 +199,7 @@ public:
         /**
            destructor
         */
-        FEEL_NO_EXPORT ~Step();
+        FEELPP_NO_EXPORT ~Step();
 
         //@}
 
@@ -1334,7 +1334,7 @@ private:
                         bool __inserted;
                         boost::tie( __sit, __inserted ) = _M_step_set.insert( step_ptrtype( new Step( this, t,ind, __state ) ) );
 
-                        FEEL_ASSERT( __inserted )( t )( ind ).error ("insertion failed");
+                        FEELPP_ASSERT( __inserted )( t )( ind ).error ("insertion failed");
                     }
 
                 for( size_type __i = 0; __i < s2; ++__i )
@@ -1352,7 +1352,7 @@ private:
                         bool __inserted;
                         boost::tie( __sit, __inserted ) = _M_stepIgnored_set.insert( step_ptrtype( new Step( this, t,ind, __state ) ) );
 
-                        FEEL_ASSERT( __inserted )( t )( ind ).error ("insertion failed");
+                        FEELPP_ASSERT( __inserted )( t )( ind ).error ("insertion failed");
                     }
 
             }
@@ -1384,20 +1384,20 @@ private:
 
 };
 template<typename MeshType, int N>
-inline FEEL_EXPORT  bool operator<( TimeSet<MeshType, N> const& __ts1, TimeSet<MeshType, N> const& __ts2 )
+inline FEELPP_EXPORT  bool operator<( TimeSet<MeshType, N> const& __ts1, TimeSet<MeshType, N> const& __ts2 )
 {
     return __ts1.index() < __ts2.index();
 }
 
 template<typename MeshType, int N>
-inline FEEL_EXPORT bool operator<( boost::shared_ptr<TimeSet<MeshType, N> > const& __ts1,
+inline FEELPP_EXPORT bool operator<( boost::shared_ptr<TimeSet<MeshType, N> > const& __ts1,
                                     boost::shared_ptr<TimeSet<MeshType, N> > const& __ts2 )
 {
     return __ts1->index() < __ts2->index();
 }
 
 template<typename MeshType, int N>
-FEEL_NO_EXPORT bool operator<( typename TimeSet<MeshType, N>::step_type const& __s1,
+FEELPP_NO_EXPORT bool operator<( typename TimeSet<MeshType, N>::step_type const& __s1,
                                 typename TimeSet<MeshType, N>::step_type const& __s2 )
 {
     //return __s1->index() < __s2->index();
@@ -1405,7 +1405,7 @@ FEEL_NO_EXPORT bool operator<( typename TimeSet<MeshType, N>::step_type const& _
 }
 
 template<typename MeshType, int N>
-FEEL_NO_EXPORT bool operator<( typename TimeSet<MeshType, N>::step_ptrtype const& __s1,
+FEELPP_NO_EXPORT bool operator<( typename TimeSet<MeshType, N>::step_ptrtype const& __s1,
                                 typename TimeSet<MeshType, N>::step_ptrtype const& __s2 )
 {
     return __s1->index() < __s2->index();

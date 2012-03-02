@@ -442,7 +442,7 @@ private:
     vector_matrix_type
     derivate( ublas::matrix_expression<AE> const& __pts, mpl::int_<1> ) const
         {
-            FEEL_ASSERT( __pts().size1() == 1 )( __pts().size1() )( __pts().size2() ).error("invalid points");
+            FEELPP_ASSERT( __pts().size1() == 1 )( __pts().size1() )( __pts().size2() ).error("invalid points");
             vector_matrix_type D( 1 );
 
             D[0].resize( nOrder+1, __pts().size2() );
@@ -865,7 +865,7 @@ Moment<Dim, Degree, TheConvex, T, StoragePolicy>::evaluate( points_type const& _
 {
     matrix_type res( convex_type::polyDims( nOrder ), __pts.size2() );
 
-    FEEL_ASSERT( __pts.size1() == 3 )( __pts.size1() ).error( "invalid space dimension" );
+    FEELPP_ASSERT( __pts.size1() == 3 )( __pts.size1() ).error( "invalid space dimension" );
 
     ublas::vector<value_type> pts_x = ublas::row( __pts, 0 );
     ublas::vector<value_type> pts_y = ublas::row( __pts, 1 );
@@ -903,7 +903,7 @@ Moment<Dim, Degree, TheConvex,  T, StoragePolicy>::derivate( ublas::matrix_expre
     res[1].resize( convex_type::polyDims( nOrder ), __pts().size2() );
     res[2].resize( convex_type::polyDims( nOrder ), __pts().size2() );
 
-    FEEL_ASSERT( __pts().size1() == 3 )( __pts().size1() ).error( "invalid space dimension" );
+    FEELPP_ASSERT( __pts().size1() == 3 )( __pts().size1() ).error( "invalid space dimension" );
 
     ublas::vector<value_type> pts_x = ublas::row( __pts(), 0 );
     ublas::vector<value_type> pts_y = ublas::row( __pts(), 1 );
@@ -1027,7 +1027,7 @@ public:
             std::cout << "m1=" << m << "\n"
                       << "m2=" << polyset_type::toMatrix( polyset_type::toType( m ) ) << "\n"
                       << ublas::norm_frobenius( polyset_type::toMatrix( polyset_type::toType( m ) ) - m ) << "\n";
-        FEEL_ASSERT( ublas::norm_frobenius( polyset_type::toMatrix( polyset_type::toType( m ) ) -
+        FEELPP_ASSERT( ublas::norm_frobenius( polyset_type::toMatrix( polyset_type::toType( m ) ) -
                                              m ) < 1e-10 )( m ).warn ( "invalid transformation" );
         this->setCoefficient( polyset_type::toType( m ), true );
     }

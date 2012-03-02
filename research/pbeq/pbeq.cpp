@@ -192,7 +192,7 @@ Pbeq::setDomain( molecule_type const& _molecule)
     uint16_type const dim(pbeqspace_type::Dim);
     node_type _min(dim),  _max(dim);
     node_type  stretch(dim), translation(dim);
-    FEEL_ASSERT( this->vm()["farBnd"].as<value_type>() > 0 )(dim).error( "invalid farBnd" );
+    FEELPP_ASSERT( this->vm()["farBnd"].as<value_type>() > 0 )(dim).error( "invalid farBnd" );
 
     _molecule.domainMinMax(_min,_max);
 
@@ -208,7 +208,7 @@ Pbeq::setDomain( molecule_type const& _molecule)
     for (int i = 1; i < dim; i++)
         M_detJac *= stretch[i];
 
-    FEEL_ASSERT( M_detJac > 0 )(dim).error( "invalid sign of the Jacobian" );
+    FEELPP_ASSERT( M_detJac > 0 )(dim).error( "invalid sign of the Jacobian" );
 
     M_jacInvStr2.resize(dim);
     for (int i = 0; i < dim; i++)
@@ -316,7 +316,7 @@ Pbeq::deltaAndHeavisyde( molecule_type const       &myMolecule,
     // Checking consistency of the right hand side
     Log() << myMolecule.name() << " total charge = " << myMolecule.totalCharge() << " == " << F->sum() << " = sum(F)\n";
 
-    FEEL_ASSERT(  std::abs(myMolecule.totalCharge() -  F->sum())
+    FEELPP_ASSERT(  std::abs(myMolecule.totalCharge() -  F->sum())
                   < (myMolecule.totalAbsCharge() +  F->l1Norm())  * 1.e-9  ).error( "total charge and sum(F) are different" );
 
 
@@ -412,7 +412,7 @@ Pbeq::solveReceptor(std::string const& receptorName)
     using namespace Feel::vf;
 
     setReceptor(receptorName);
-    FEEL_ASSERT(  M_receptor.size() > 0 ).error( "Receptor has zero length" );
+    FEELPP_ASSERT(  M_receptor.size() > 0 ).error( "Receptor has zero length" );
 
     element_type u( M_pbeqspace.Xh(), "u" );
     element_type v( M_pbeqspace.Xh(), "v" );
@@ -456,7 +456,7 @@ value_type
 Pbeq::solveLigand()
 {
 
-    FEEL_ASSERT(  M_receptor.size() > 0 ).error( "Receptor has zero length" );
+    FEELPP_ASSERT(  M_receptor.size() > 0 ).error( "Receptor has zero length" );
 
     using namespace Feel::vf;
 

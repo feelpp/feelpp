@@ -75,7 +75,7 @@ void
 VectorPetsc<T>::insert (const Vector<T>& /*V*/,
                         const std::vector<size_type>& /*dof_indices*/)
 {
-    FEEL_ASSERT( 0 ).error( "invalid call, not implemented yet" );
+    FEELPP_ASSERT( 0 ).error( "invalid call, not implemented yet" );
 }
 
 
@@ -84,7 +84,7 @@ void
 VectorPetsc<T>::insert (const ublas::vector<T>& /*V*/,
                         const std::vector<size_type>& /*dof_indices*/)
 {
-    FEEL_ASSERT( 0 ).error( "invalid call, not implemented yet" );
+    FEELPP_ASSERT( 0 ).error( "invalid call, not implemented yet" );
 }
 
 template <typename T>
@@ -644,7 +644,7 @@ template <typename T>
 void VectorPetsc<T>::printMatlab (const std::string name) const
 {
     assert (this->isInitialized());
-    FEEL_ASSERT (this->closed()).warn( "vector is not closed" );
+    FEELPP_ASSERT (this->closed()).warn( "vector is not closed" );
 
     if ( !this->closed() )
         {
@@ -751,7 +751,7 @@ VectorPetscMPI<T>::init(const size_type n,
     if (this->isInitialized())
         this->clear();
 
-    FEEL_ASSERT(n_localWithoutGhost < n)( n_localWithoutGhost )( n ).error( "invalid local size" );
+    FEELPP_ASSERT(n_localWithoutGhost < n)( n_localWithoutGhost )( n ).error( "invalid local size" );
 
     ierr = VecCreateMPI (this->comm(), petsc_n_localWithoutGhost, petsc_n,
                          &this->vec() );//&_M_vec);
@@ -841,7 +841,7 @@ template <typename T>
 void
 VectorPetscMPI<T>::set( size_type i, const value_type& value)
 {
-    //FEEL_ASSERT(i<size())( i )( size() ).error( "invalid index" );
+    //FEELPP_ASSERT(i<size())( i )( size() ).error( "invalid index" );
 
     int ierr=0;
     int i_val = static_cast<int>(i);
@@ -857,7 +857,7 @@ template <typename T>
 void
 VectorPetscMPI<T>::add (const size_type i, const value_type& value)
 {
-    //FEEL_ASSERT(i<size())( i )( size() ).error( "invalid index" );
+    //FEELPP_ASSERT(i<size())( i )( size() ).error( "invalid index" );
 
     int ierr=0;
     int i_val = static_cast<int>(i);
@@ -873,7 +873,7 @@ template <typename T>
 void
 VectorPetscMPI<T>::addVector ( int* i, int n, value_type* v )
 {
-    //FEEL_ASSERT(n<=size())( n )( size() ).error( "invalid local index array size" );
+    //FEELPP_ASSERT(n<=size())( n )( size() ).error( "invalid local index array size" );
 
     int ierr=0;
     ierr=VecSetValuesLocal(this->vec(), n, i, v, ADD_VALUES);
@@ -983,7 +983,7 @@ template <typename T>
 void
 VectorPetscMPI<T>::close()
 {
-    //FEEL_ASSERT (this->isInitialized()).error( "VectorPetsc<> not initialized" );
+    //FEELPP_ASSERT (this->isInitialized()).error( "VectorPetsc<> not initialized" );
     //std::cout << "\n MPI CLOSE "<<std::endl;;
     super::close();
 

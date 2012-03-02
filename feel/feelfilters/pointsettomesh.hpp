@@ -276,7 +276,7 @@ PointSetToMesh<Convex, T>::visit( pointset_type* pset, mpl::int_<1> )
     }
 
 
-    FEEL_ASSERT( n_faces == _M_mesh->numFaces() )( n_faces )( _M_mesh->numFaces() ).error( "invalid face container size" );
+    FEELPP_ASSERT( n_faces == _M_mesh->numFaces() )( n_faces )( _M_mesh->numFaces() ).error( "invalid face container size" );
 
     Debug( 8099 ) <<"[PointSetToMesh<1>] done with element accumulation !\n";
 

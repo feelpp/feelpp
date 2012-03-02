@@ -205,7 +205,7 @@ public:
         {}
 
     //! initialize the model (mesh, function space, operators, matrices, ...)
-    FEEL_DONT_INLINE void init()
+    FEELPP_DONT_INLINE void init()
         {
             if ( M_is_initialized )
                 return;

@@ -191,7 +191,7 @@ public:
         _M_g_linear( nNodes, nDim ),
         M_refconvex()
     {
-        FEEL_CONSTRUCTOR_END( 5046, "GeoMap" );
+        FEELPP_CONSTRUCTOR_END( 5046, "GeoMap" );
 
         if ( trans == fem::LINEAR )
             {
@@ -200,10 +200,10 @@ public:
 
                 ublas::vector<ublas::matrix<value_type> > m = super::derivate( __dummy_pts );
 
-                FEEL_ASSERT( _M_g_linear.size2() == m.size() )( _M_g_linear.size2() )(  m.size() ).error( "invalid dimension" );
-                FEEL_ASSERT( m( 0 ).size2() == 1 )( m( 0 ).size2() ).error( "Invalid number of points" );
+                FEELPP_ASSERT( _M_g_linear.size2() == m.size() )( _M_g_linear.size2() )(  m.size() ).error( "invalid dimension" );
+                FEELPP_ASSERT( m( 0 ).size2() == 1 )( m( 0 ).size2() ).error( "Invalid number of points" );
 
-                FEEL_ASSERT( _M_g_linear.size1() == m( 0 ).size1() )( _M_g_linear.size1() )( m( 0 ).size1() ).error( "invalid number of DOF" );
+                FEELPP_ASSERT( _M_g_linear.size1() == m( 0 ).size1() )( _M_g_linear.size1() )( m( 0 ).size1() ).error( "invalid number of DOF" );
 
                 //std::cout << "nNodes= " << nNodes << "\n"
                 //<< "nDim= " << nDim << "\n";
@@ -228,7 +228,7 @@ public:
                     }
 #endif // 0
             }
-        FEEL_CONSTRUCTOR_END( 5046, "GeoMap" );
+        FEELPP_CONSTRUCTOR_END( 5046, "GeoMap" );
     }
     /** default constructor */
     GeoMap( element_gm_ptrtype const& e,  face_gm_ptrtype const& f )
@@ -240,7 +240,7 @@ public:
         _M_g_linear( nNodes, nDim ),
         M_refconvex()
     {
-        FEEL_CONSTRUCTOR_END( 5046, "GeoMap" );
+        FEELPP_CONSTRUCTOR_END( 5046, "GeoMap" );
 
         if ( trans == fem::LINEAR )
             {
@@ -276,7 +276,7 @@ public:
 #endif // 0
             }
 
-        FEEL_CONSTRUCTOR_END( 5046, "GeoMap" );
+        FEELPP_CONSTRUCTOR_END( 5046, "GeoMap" );
     }
     /**
        destructor
@@ -409,7 +409,7 @@ public:
             }
         else
             {
-                FEEL_ASSERT( __pt.size() == dim() )( __pt.size() )( dim() ).error( "invalid dimension" );
+                FEELPP_ASSERT( __pt.size() == dim() )( __pt.size() )( dim() ).error( "invalid dimension" );
 
                 matrix_node_t_type __pts( nDim, 1 );
                 ublas::column( __pts, 0 ) = __pt;
@@ -434,7 +434,7 @@ public:
                    matrix_type& __g,
                    precompute_type const* __pc ) const
     {
-        FEEL_ASSERT( __pc )( __idref ).error( "a PreCompute must be set first before using this function" );
+        FEELPP_ASSERT( __pc )( __idref ).error( "a PreCompute must be set first before using this function" );
 
         if ( trans == fem::LINEAR )
             {
@@ -442,7 +442,7 @@ public:
             }
         else
             {
-                FEEL_ASSERT( __pc->dim() == dim() )( __pc->dim() )( dim() ).error( "invalid dimension" );
+                FEELPP_ASSERT( __pc->dim() == dim() )( __pc->dim() )( dim() ).error( "invalid dimension" );
                 for ( size_type i = 0; i < nNodes; ++i)
                     {
                         for ( uint16_type n = 0; n < nDim; ++n)
@@ -472,7 +472,7 @@ public:
         // in the case of linear inversion (__g is a constant matrix in this case)
         this->gradient( this->refNode( 0 ), __g );
 
-        FEEL_ASSERT(  __g.size1() == G.size2() )( __g.size1() )( G.size2() ).error( "invalid sizes" );
+        FEELPP_ASSERT(  __g.size1() == G.size2() )( __g.size1() )( G.size2() ).error( "invalid sizes" );
 
         matrix_node_t_type K( G.size1(), __g.size2() );
         ublas::axpy_prod( G, __g, K );
@@ -520,26 +520,26 @@ public:
             }
         return true;
     }
-    bool cached( int e ) const {  FEEL_ASSERT( this->isCacheValid() )( e ).error( "invalid cache" ); return M_cached[e]; }
-    void setCached( int e, bool v ) { FEEL_ASSERT( this->isCacheValid() )( e ).error( "invalid cache" ); M_cached[e] = v; }
-    double J( int e ) const { FEEL_ASSERT( this->isCacheValid() )( e ).error( "invalid cache" ); return M_J[e]; }
-    matrix_type const& B( int e ) const { FEEL_ASSERT( this->isCacheValid() )( e ).error( "invalid cache" ); return M_B[e]; }
-    matrix_type const& K( int e ) const { FEEL_ASSERT( this->isCacheValid() )( e ).error( "invalid cache" ); return M_K[e]; }
+    bool cached( int e ) const {  FEELPP_ASSERT( this->isCacheValid() )( e ).error( "invalid cache" ); return M_cached[e]; }
+    void setCached( int e, bool v ) { FEELPP_ASSERT( this->isCacheValid() )( e ).error( "invalid cache" ); M_cached[e] = v; }
+    double J( int e ) const { FEELPP_ASSERT( this->isCacheValid() )( e ).error( "invalid cache" ); return M_J[e]; }
+    matrix_type const& B( int e ) const { FEELPP_ASSERT( this->isCacheValid() )( e ).error( "invalid cache" ); return M_B[e]; }
+    matrix_type const& K( int e ) const { FEELPP_ASSERT( this->isCacheValid() )( e ).error( "invalid cache" ); return M_K[e]; }
     void addJ( int e, double v )
     {
-        FEEL_ASSERT( this->isCacheValid() )( e ).error( "invalid cache" );
+        FEELPP_ASSERT( this->isCacheValid() )( e ).error( "invalid cache" );
         M_J[e] = v;
     }
     void addK( int e, matrix_type const& K )
     {
-        FEEL_ASSERT( this->isCacheValid() )( e ).error( "invalid cache" ); M_K[e].resize( K.size1(), K.size2() );
+        FEELPP_ASSERT( this->isCacheValid() )( e ).error( "invalid cache" ); M_K[e].resize( K.size1(), K.size2() );
         for( size_type i = 0; i < K.size1(); ++i )
             for( size_type j = 0; j < K.size2(); ++j )
                 M_K[e]( i, j ) = K( i, j );
     }
     void addB( int e, matrix_type const& B )
     {
-        FEEL_ASSERT( this->isCacheValid() )( e ).error( "invalid cache" );
+        FEELPP_ASSERT( this->isCacheValid() )( e ).error( "invalid cache" );
         M_B[e].resize( B.size1(), B.size2() );
         for( size_type i = 0; i < B.size1(); ++i )
             for( size_type j = 0; j < B.size2(); ++j )
@@ -825,8 +825,8 @@ public:
         _M_measface = __e.faceMeasure( __f );
         _M_xrefq = _M_pc->nodes();
 
-        FEEL_ASSERT( _M_G.size2() == _M_gm->nbPoints() )( _M_G.size2() )( _M_gm->nbPoints() ).error( "invalid dimensions" );
-        FEEL_ASSERT( _M_pc ).error( "invalid precompute data structure" );
+        FEELPP_ASSERT( _M_G.size2() == _M_gm->nbPoints() )( _M_G.size2() )( _M_gm->nbPoints() ).error( "invalid dimensions" );
+        FEELPP_ASSERT( _M_pc ).error( "invalid precompute data structure" );
 
         if ( vm::has_point<context>::value )
             {
@@ -908,8 +908,8 @@ public:
         _M_meas = __e.measure();
         _M_xrefq = _M_pc->nodes();
 
-        FEEL_ASSERT( _M_G.size2() == _M_gm->nbPoints() )( _M_G.size2() )( _M_gm->nbPoints() ).error( "invalid dimensions" );
-        FEEL_ASSERT( _M_pc ).error( "invalid precompute data structure" );
+        FEELPP_ASSERT( _M_G.size2() == _M_gm->nbPoints() )( _M_G.size2() )( _M_gm->nbPoints() ).error( "invalid dimensions" );
+        FEELPP_ASSERT( _M_pc ).error( "invalid precompute data structure" );
 
         if ( vm::has_point<context>::value )
             {
@@ -1395,7 +1395,7 @@ private:
      */
     permutation_type permutation( mpl::bool_<true> ) const
     {
-        FEEL_ASSERT( _M_face_id == invalid_uint16_type_value ||
+        FEELPP_ASSERT( _M_face_id == invalid_uint16_type_value ||
                      (_M_face_id != invalid_uint16_type_value &&
                       _M_perm != permutation_type( permutation_type::NO_PERMUTATION ) ) )
             ( _M_face_id ).error( "invalid permutation" );
@@ -1807,7 +1807,7 @@ public:
         _M_nlsolver( SolverNonLinear<double>::build( SOLVERS_GMM ) )
 #endif
     {
-        FEEL_ASSERT( _M_G.size2() == __gm->nbPoints() )
+        FEELPP_ASSERT( _M_G.size2() == __gm->nbPoints() )
             ( _M_G.size2() )( __gm->nbPoints() ).error( "invalid dimensions" );
 
         if ( _M_gm->isLinear() )
@@ -1842,7 +1842,7 @@ public:
         _M_nlsolver( SolverNonLinear<double>::build( SOLVERS_GMM ) )
 #endif
     {
-        FEEL_ASSERT( _M_G.size2() == __gm->nbPoints() )
+        FEELPP_ASSERT( _M_G.size2() == __gm->nbPoints() )
             ( _M_G.size2() )( __gm->nbPoints() ).error( "invalid dimensions" );
 
         if ( _M_gm->isLinear() )
@@ -2107,10 +2107,10 @@ private:
     void
     checkInvariant() const
     {
-        FEEL_ASSERT( _M_G.size2() == _M_g.size1() )( _M_G.size2() )( _M_g.size1() ).error( "G,g invalid dimensions" );
-        FEEL_ASSERT( _M_G.size1() == _M_K.size1() )( _M_G.size1() )( _M_K.size1() ).error( "G,K invalid dimensions" );
-        FEEL_ASSERT( _M_g.size2() == _M_K.size2() )( _M_g.size2() )( _M_K.size2() ).error( "g,K invalid dimensions" );
-        FEEL_ASSERT( _M_B.size2() == _M_gm->dim() )( _M_B.size1() )( N() ).error( "B,gm invalid dimensions" );
+        FEELPP_ASSERT( _M_G.size2() == _M_g.size1() )( _M_G.size2() )( _M_g.size1() ).error( "G,g invalid dimensions" );
+        FEELPP_ASSERT( _M_G.size1() == _M_K.size1() )( _M_G.size1() )( _M_K.size1() ).error( "G,K invalid dimensions" );
+        FEELPP_ASSERT( _M_g.size2() == _M_K.size2() )( _M_g.size2() )( _M_K.size2() ).error( "g,K invalid dimensions" );
+        FEELPP_ASSERT( _M_B.size2() == _M_gm->dim() )( _M_B.size1() )( N() ).error( "B,gm invalid dimensions" );
     }
 
 
@@ -2403,7 +2403,7 @@ struct GT_QK
 {};
 
 # /* List of dims. */
-# define FEEL_GEOMAP                                    \
+# define FEELPP_GEOMAP                                    \
     BOOST_PP_TUPLE_TO_LIST(                             \
                            1,                           \
                            (                            \
@@ -2412,7 +2412,7 @@ struct GT_QK
                                                     )   \
     /**/
 # /* List of dims. */
-# define FEEL_DIMS                                      \
+# define FEELPP_DIMS                                      \
     BOOST_PP_TUPLE_TO_LIST(                             \
                            3,                           \
                            (                            \
@@ -2421,7 +2421,7 @@ struct GT_QK
                                                     )   \
     /**/
 # /* List of real dims. */
-# define FEEL_REALDIMS                                  \
+# define FEELPP_REALDIMS                                  \
     BOOST_PP_TUPLE_TO_LIST(                             \
                            3,                           \
                            (                            \
@@ -2431,7 +2431,7 @@ struct GT_QK
 
 # /* List of real dims. */
 
-# define FEEL_NEWDIMS                                           \
+# define FEELPP_NEWDIMS                                           \
     BOOST_PP_TUPLE_TO_LIST(                                     \
                            6,                                   \
                            (                                    \
@@ -2442,7 +2442,7 @@ struct GT_QK
                                                             )   \
     /**/
 # /* List of orders. */
-# define FEEL_ORDERS                                    \
+# define FEELPP_ORDERS                                    \
     BOOST_PP_TUPLE_TO_LIST(                             \
                            5,                           \
                            (                            \
@@ -2451,34 +2451,34 @@ struct GT_QK
                                                     )   \
     /**/
 #
-# define FEEL_ENTITY BOOST_PP_TUPLE_TO_LIST( 2, ( Simplex,Hypercube ) )
+# define FEELPP_ENTITY BOOST_PP_TUPLE_TO_LIST( 2, ( Simplex,Hypercube ) )
     /**/
 #
-# define FEEL_GEN_GT(GEOM,LDIM,LORDER)         \
+# define FEELPP_GEN_GT(GEOM,LDIM,LORDER)         \
     "GT_" #GEOM "(" #LDIM "," #LORDER ")"       \
     /**/
 #
 # /* Generates code for all dim and order. */
-# define FEEL_GT_FACTORY_OP(_, GDO)            \
-    FEEL_GT_FACTORY GDO                        \
+# define FEELPP_GT_FACTORY_OP(_, GDO)            \
+    FEELPP_GT_FACTORY GDO                        \
     /**/
 #
 #
-# define FEEL_GT_DIM(T)  BOOST_PP_TUPLE_ELEM(2, 0, T) \
+# define FEELPP_GT_DIM(T)  BOOST_PP_TUPLE_ELEM(2, 0, T) \
 /**/
-# define FEEL_GT_REALDIM(T)  BOOST_PP_TUPLE_ELEM(2, 1, T)   \
+# define FEELPP_GT_REALDIM(T)  BOOST_PP_TUPLE_ELEM(2, 1, T)   \
 /**/
 #
 #
-#define FEEL_GT_FACTORY(GEOM,LDIMS,LORDER,ENTITY)                       \
+#define FEELPP_GT_FACTORY(GEOM,LDIMS,LORDER,ENTITY)                       \
     template<typename T>                                                \
-    struct BOOST_PP_CAT(GT_, GEOM)<FEEL_GT_DIM(LDIMS), LORDER, FEEL_GT_REALDIM(LDIMS), ENTITY, T> \
+    struct BOOST_PP_CAT(GT_, GEOM)<FEELPP_GT_DIM(LDIMS), LORDER, FEELPP_GT_REALDIM(LDIMS), ENTITY, T> \
         :                                                               \
-        public GeoMap<FEEL_GT_DIM(LDIMS), LORDER, FEEL_GT_REALDIM(LDIMS), T, ENTITY, GEOM> \
+        public GeoMap<FEELPP_GT_DIM(LDIMS), LORDER, FEELPP_GT_REALDIM(LDIMS), T, ENTITY, GEOM> \
     {                                                                   \
-        static const uint16_type nDim = FEEL_GT_DIM(LDIMS);             \
+        static const uint16_type nDim = FEELPP_GT_DIM(LDIMS);             \
         static const uint16_type order = LORDER;                        \
-        static const uint16_type nRealDim = FEEL_GT_REALDIM(LDIMS);     \
+        static const uint16_type nRealDim = FEELPP_GT_REALDIM(LDIMS);     \
         static const uint16_type nRealDimCheck2d = mpl::if_< mpl::less_equal<mpl::int_<2>,mpl::int_<nRealDim> >, \
                                                              mpl::int_<nRealDim>, \
                                                              mpl::int_<nDim> >::type::value; \
@@ -2512,19 +2512,19 @@ struct GT_QK
     };                                                                  \
     /**/
 #if 0
-#define FEEL_GT_FACTORY(GEOM,LDIM,LORDER,LREALDIM,ENTITY)               \
-    FEEL_GT_FACTORY_BIS(GEOM,LDIM,LORDER,LREALDIM,ENTITY)),             \
+#define FEELPP_GT_FACTORY(GEOM,LDIM,LORDER,LREALDIM,ENTITY)               \
+    FEELPP_GT_FACTORY_BIS(GEOM,LDIM,LORDER,LREALDIM,ENTITY)),             \
                  BOOST_PP_EMPTY )                                       \
     /**/
 #endif
 
-//BOOST_PP_LIST_FOR_EACH_PRODUCT(FEEL_GT_FACTORY_OP, 5, (FEEL_GEOMAP, FEEL_DIMS, FEEL_ORDERS, FEEL_REALDIMS, FEEL_ENTITY))
-BOOST_PP_LIST_FOR_EACH_PRODUCT(FEEL_GT_FACTORY_OP, 4, (FEEL_GEOMAP, FEEL_NEWDIMS, FEEL_ORDERS, FEEL_ENTITY))
+//BOOST_PP_LIST_FOR_EACH_PRODUCT(FEELPP_GT_FACTORY_OP, 5, (FEELPP_GEOMAP, FEELPP_DIMS, FEELPP_ORDERS, FEELPP_REALDIMS, FEELPP_ENTITY))
+BOOST_PP_LIST_FOR_EACH_PRODUCT(FEELPP_GT_FACTORY_OP, 4, (FEELPP_GEOMAP, FEELPP_NEWDIMS, FEELPP_ORDERS, FEELPP_ENTITY))
 
-#undef FEEL_DIMS
-#undef FEEL_ORDERS
-#undef FEEL_REALDIMS
-#undef FEEL_NEWDIMS
+#undef FEELPP_DIMS
+#undef FEELPP_ORDERS
+#undef FEELPP_REALDIMS
+#undef FEELPP_NEWDIMS
 
 
 template<typename Elem, template<uint16_type,uint16_type,uint16_type> class Entity = Simplex, typename T = double>

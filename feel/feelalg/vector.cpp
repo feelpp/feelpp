@@ -196,10 +196,10 @@ template <>
 Vector<float>::compare (const Vector<float> &other_vector,
                         const real_type threshold) const
 {
-    FEEL_ASSERT (this->isInitialized()).error( "vector not initialized");
-    FEEL_ASSERT (other_vector.isInitialized()).error( "vector not initialized");
-    FEEL_ASSERT (this->firstLocalIndex() == other_vector.firstLocalIndex()).error( "" );
-    FEEL_ASSERT (this->lastLocalIndex()  == other_vector.lastLocalIndex()).error( "" );
+    FEELPP_ASSERT (this->isInitialized()).error( "vector not initialized");
+    FEELPP_ASSERT (other_vector.isInitialized()).error( "vector not initialized");
+    FEELPP_ASSERT (this->firstLocalIndex() == other_vector.firstLocalIndex()).error( "" );
+    FEELPP_ASSERT (this->lastLocalIndex()  == other_vector.lastLocalIndex()).error( "" );
 
     int rvalue     = -1;
     size_type i = firstLocalIndex();
@@ -221,10 +221,10 @@ template <>
 Vector<double>::compare (const Vector<double> &other_vector,
                          const real_type threshold) const
 {
-    FEEL_ASSERT (this->isInitialized()).error( "vector not initialized");
-    FEEL_ASSERT (other_vector.isInitialized()).error( "vector not initialized");
-    FEEL_ASSERT (this->firstLocalIndex() == other_vector.firstLocalIndex()).error( "" );
-    FEEL_ASSERT (this->lastLocalIndex()  == other_vector.lastLocalIndex()).error( "" );
+    FEELPP_ASSERT (this->isInitialized()).error( "vector not initialized");
+    FEELPP_ASSERT (other_vector.isInitialized()).error( "vector not initialized");
+    FEELPP_ASSERT (this->firstLocalIndex() == other_vector.firstLocalIndex()).error( "" );
+    FEELPP_ASSERT (this->lastLocalIndex()  == other_vector.lastLocalIndex()).error( "" );
 
     int rvalue     = -1;
     size_type i = firstLocalIndex();
@@ -247,10 +247,10 @@ template <>
 Vector<long double>::compare (const Vector<long double> &other_vector,
                               const real_type threshold) const
 {
-    FEEL_ASSERT (this->isInitialized()).error( "vector not initialized");
-    FEEL_ASSERT (other_vector.isInitialized()).error( "vector not initialized");
-    FEEL_ASSERT (this->firstLocalIndex() == other_vector.firstLocalIndex()).error( "" );
-    FEEL_ASSERT (this->lastLocalIndex()  == other_vector.lastLocalIndex()).error( "" );
+    FEELPP_ASSERT (this->isInitialized()).error( "vector not initialized");
+    FEELPP_ASSERT (other_vector.isInitialized()).error( "vector not initialized");
+    FEELPP_ASSERT (this->firstLocalIndex() == other_vector.firstLocalIndex()).error( "" );
+    FEELPP_ASSERT (this->lastLocalIndex()  == other_vector.lastLocalIndex()).error( "" );
 
     int rvalue     = -1;
     size_type i = firstLocalIndex();
@@ -302,7 +302,7 @@ template <typename T>
 
 void Vector<T>::print(std::ostream& os) const
 {
-    FEEL_ASSERT (this->isInitialized()).error( "vector not initialized" );
+    FEELPP_ASSERT (this->isInitialized()).error( "vector not initialized" );
     os << "Size\tglobal =  " << this->size()
        << "\t\tlocal =  " << this->localSize() << std::endl;
 

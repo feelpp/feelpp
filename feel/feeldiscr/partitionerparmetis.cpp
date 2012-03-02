@@ -41,8 +41,8 @@ void
 PartitionerParmetis<Mesh>::doPartition ( mesh_type& mesh,
                                          const uint16_type n_pieces )
 {
-    FEEL_ASSERT( mesh.isUpdatedForUse() ).error( "invalid call, must call mesh.updateForUse first" );
-    FEEL_ASSERT (n_pieces > 0)( n_pieces ).error( "the number of partitions should be >0" );
+    FEELPP_ASSERT( mesh.isUpdatedForUse() ).error( "invalid call, must call mesh.updateForUse first" );
+    FEELPP_ASSERT (n_pieces > 0)( n_pieces ).error( "the number of partitions should be >0" );
 
     // Check for an easy return
     if (n_pieces == 1)
@@ -85,7 +85,7 @@ PartitionerParmetis<Mesh>::doPartition ( mesh_type& mesh,
                          &mpi_comm);
 
     // Collect the partioning information from all the processors.
-    FEEL_ASSERT (M_part.size() == local_part.size())
+    FEELPP_ASSERT (M_part.size() == local_part.size())
         (M_part.size())(local_part.size()).error( "invalid partitioning info" );
     MPI_Allreduce (&local_part[0], &M_part[0], M_part.size(), MPI_INT, MPI_SUM,
                    this->comm());
@@ -134,9 +134,9 @@ PartitionerParmetis<Mesh>::initialize (const mesh_type& mesh,
     // Set up the vtxdist array.  This will be the same on each processor.
     // Consult the Parmetis documentation.
     {
-        FEEL_ASSERT (M_vtxdist.size() == n_procs+1)
+        FEELPP_ASSERT (M_vtxdist.size() == n_procs+1)
             ( M_vtxdist.size() )( n_procs+1 ).error( "invalid vtxdist array size" );
-        FEEL_ASSERT (M_vtxdist[0] == 0)( M_vtxdist[0] ).error( "invalid vtxdist entry 0" );
+        FEELPP_ASSERT (M_vtxdist[0] == 0)( M_vtxdist[0] ).error( "invalid vtxdist entry 0" );
 
         for (uint16_type proc_id=0; proc_id<this->comm().size(); proc_id++)
             M_vtxdist[proc_id+1] = M_vtxdist[proc_id] + std::distance( mesh.beginElementWithProcessId( proc_id ),
@@ -165,8 +165,8 @@ PartitionerParmetis<Mesh>::initialize (const mesh_type& mesh,
 
             for (; elem_it != elem_end; ++elem_it)
                 {
-                    FEEL_ASSERT ( elem_it->id() < M_forward_map.size() ).error( "invalid element id" );
-                    FEEL_ASSERT ( M_forward_map[elem_it->id()] == invalid_size_type_value );
+                    FEELPP_ASSERT ( elem_it->id() < M_forward_map.size() ).error( "invalid element id" );
+                    FEELPP_ASSERT ( M_forward_map[elem_it->id()] == invalid_size_type_value );
 
                     M_forward_map[elem_it->id()] = el_num;
                     el_num++;
@@ -177,8 +177,8 @@ PartitionerParmetis<Mesh>::initialize (const mesh_type& mesh,
                 }
         }
 
-    FEEL_ASSERT (el_num       == n_active_elem)( el_num )( n_active_elem ).error( "invalid element number" );
-    FEEL_ASSERT (local_el_num == n_active_local_elem)( local_el_num )( n_active_local_elem ).error( "invalid local element number" );
+    FEELPP_ASSERT (el_num       == n_active_elem)( el_num )( n_active_elem ).error( "invalid element number" );
+    FEELPP_ASSERT (local_el_num == n_active_local_elem)( local_el_num )( n_active_local_elem ).error( "invalid local element number" );
 }
 
 
@@ -203,8 +203,8 @@ PartitionerParmetis<Mesh>::buildGraph (const mesh_type& mesh)
         {
             const element_type* elem = boost::addressof( *elem_it );
 
-            FEEL_ASSERT (elem->id() < M_forward_map.size()).error( "element id and forward_map incompatible" );
-            FEEL_ASSERT (M_forward_map[elem->id()] != invalid_size_type_value ).error( "forward_map problem" );
+            FEELPP_ASSERT (elem->id() < M_forward_map.size()).error( "element id and forward_map incompatible" );
+            FEELPP_ASSERT (M_forward_map[elem->id()] != invalid_size_type_value ).error( "forward_map problem" );
 
             // The beginning of the adjacency array for this elem
             M_xadj.push_back(M_adjncy.size());
@@ -229,9 +229,9 @@ PartitionerParmetis<Mesh>::buildGraph (const mesh_type& mesh)
                             // connection
                             if (neighbor->active())
                                 {
-                                    FEEL_ASSERT (neighbor->id() < M_forward_map.size())
+                                    FEELPP_ASSERT (neighbor->id() < M_forward_map.size())
                                         ( neighbor->id() )( M_forward_map.size() ).error( "problem with neighbor id and forward_map" );
-                                    FEEL_ASSERT (M_forward_map[neighbor->id()] != invalid_size_type_value )
+                                    FEELPP_ASSERT (M_forward_map[neighbor->id()] != invalid_size_type_value )
                                         ( (M_forward_map[neighbor->id()] ) ).error( "invalid forward_map" );
 
                                     M_adjncy.push_back (M_forward_map[neighbor->id()]);
@@ -260,9 +260,9 @@ PartitionerParmetis<Mesh>::assignPartitioning (mesh_type& mesh)
         {
             element_type elem = *elem_it;
 
-            FEEL_ASSERT ( elem.id() < M_forward_map.size() )( elem.id() )( M_forward_map.size() ).error( "invalid size" );
-            FEEL_ASSERT ( M_forward_map[elem.id()] != invalid_size_type_value )( M_forward_map[elem.id()] ).error( "invalid forward map" );
-            FEEL_ASSERT (M_forward_map[elem.id()] < M_part.size())
+            FEELPP_ASSERT ( elem.id() < M_forward_map.size() )( elem.id() )( M_forward_map.size() ).error( "invalid size" );
+            FEELPP_ASSERT ( M_forward_map[elem.id()] != invalid_size_type_value )( M_forward_map[elem.id()] ).error( "invalid forward map" );
+            FEELPP_ASSERT (M_forward_map[elem.id()] < M_part.size())
                 ( M_forward_map[elem.id()] )( M_part.size() ).error( "invalid forward map entry" );
 
             elem.setProcessId( static_cast<short int>(M_part[M_forward_map[elem.id()]]) );
@@ -323,7 +323,7 @@ PartitionerParmetis<Mesh>::assignPartitioning (mesh_type& mesh)
 
 
 
-#if defined( FEEL_INSTANTIATION_MODE )
+#if defined( FEELPP_INSTANTIATION_MODE )
 //
 // explicit instantiations
 //
@@ -331,22 +331,22 @@ template class PartitionerParmetis<Mesh<Simplex<1,1> > >;
 template class PartitionerParmetis<Mesh<Simplex<2,1> > >;
 template class PartitionerParmetis<Mesh<Simplex<3,1> > >;
 
-#if BOOST_PP_GREATER_EQUAL( FEEL_MESH_MAX_ORDER, 2 )
+#if BOOST_PP_GREATER_EQUAL( FEELPP_MESH_MAX_ORDER, 2 )
 template class PartitionerParmetis<Mesh<Simplex<1,2> > >;
 template class PartitionerParmetis<Mesh<Simplex<2,2> > >;
 template class PartitionerParmetis<Mesh<Simplex<3,2> > >;
 #endif
-#if BOOST_PP_GREATER_EQUAL( FEEL_MESH_MAX_ORDER, 3 )
+#if BOOST_PP_GREATER_EQUAL( FEELPP_MESH_MAX_ORDER, 3 )
 template class PartitionerParmetis<Mesh<Simplex<1,3> > >;
 template class PartitionerParmetis<Mesh<Simplex<2,3> > >;
 template class PartitionerParmetis<Mesh<Simplex<3,3> > >;
 #endif
-#if BOOST_PP_GREATER_EQUAL( FEEL_MESH_MAX_ORDER, 4 )
+#if BOOST_PP_GREATER_EQUAL( FEELPP_MESH_MAX_ORDER, 4 )
 template class PartitionerParmetis<Mesh<Simplex<1,4> > >;
 template class PartitionerParmetis<Mesh<Simplex<2,4> > >;
 template class PartitionerParmetis<Mesh<Simplex<3,4> > >;
 #endif
-#if BOOST_PP_GREATER_EQUAL( FEEL_MESH_MAX_ORDER, 5 )
+#if BOOST_PP_GREATER_EQUAL( FEELPP_MESH_MAX_ORDER, 5 )
 template class PartitionerParmetis<Mesh<Simplex<1,5> > >;
 template class PartitionerParmetis<Mesh<Simplex<2,5> > >;
 template class PartitionerParmetis<Mesh<Simplex<3,5> > >;
@@ -357,7 +357,7 @@ template class PartitionerParmetis<Mesh<Hypercube<2,1> > >;
 template class PartitionerParmetis<Mesh<Hypercube<3,1> > >;
 template class PartitionerParmetis<Mesh<Hypercube<3,2> > >;
 
-#endif // FEEL_INSTANTIATION_MODE
+#endif // FEELPP_INSTANTIATION_MODE
 }
 
 

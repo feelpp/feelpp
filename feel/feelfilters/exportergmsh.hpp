@@ -42,7 +42,7 @@
 
 namespace Feel
 {
-extern const char* FEEL_GMSH_FORMAT_VERSION;
+extern const char* FEELPP_GMSH_FORMAT_VERSION;
 /**
  * \class ExporterGmsh
  * \brief Exporter to GMSH format
@@ -142,7 +142,7 @@ public:
 
     void gmshSaveAscii() const;
 
-    void gmshSaveFormat( std::ostream& out, std::string const& version = FEEL_GMSH_FORMAT_VERSION ) const;
+    void gmshSaveFormat( std::ostream& out, std::string const& version = FEELPP_GMSH_FORMAT_VERSION ) const;
 
     void gmshSavePhysicalNames( std::ostream& out, mesh_ptrtype mesh ) const;
 
@@ -174,9 +174,9 @@ private:
 
 } // Feel
 
-//#if !defined( FEEL_INSTANTIATION_MODE )
+//#if !defined( FEELPP_INSTANTIATION_MODE )
 # include <feel/feelfilters/exportergmsh.cpp>
-//#endif // FEEL_INSTANTIATION_MODE
+//#endif // FEELPP_INSTANTIATION_MODE
 
 #endif /* __ExporterGmsh_H */
 

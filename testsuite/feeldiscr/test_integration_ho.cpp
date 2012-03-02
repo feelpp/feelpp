@@ -385,8 +385,8 @@ struct test_integration_circle
         BOOST_CHECK_SMALL( v0-pi, 1e-2 );
         BOOST_CHECK_SMALL( v0-v00, eps  );
 #else
-        FEEL_ASSERT( math::abs( v0-pi) < 1e-2 )( v0 )( math::abs( v0-pi) )( 1e-2 ).warn ( "v0 != pi" );
-        FEEL_ASSERT( math::abs( v0-v00) < 1e-2 )( v0 )( v00 )( math::abs( v0-v00) )( eps ).warn ( "v0 != pi" );
+        FEELPP_ASSERT( math::abs( v0-pi) < 1e-2 )( v0 )( math::abs( v0-pi) )( 1e-2 ).warn ( "v0 != pi" );
+        FEELPP_ASSERT( math::abs( v0-v00) < 1e-2 )( v0 )( v00 )( math::abs( v0-v00) )( eps ).warn ( "v0 != pi" );
 #endif /* USE_BOOST_TEST */
 
         typedef typename imesh<value_type,2,Order>::type mesh_type;
@@ -402,7 +402,7 @@ struct test_integration_circle
 #if defined(USE_BOOST_TEST)
         BOOST_CHECK_SMALL( v0-pi, math::pow(meshSize,2*Order) );
 #else
-        FEEL_ASSERT( math::abs( v0-pi) < math::pow(meshSize,2*Order) )( v0 )( math::abs( v0-pi) )( math::pow(meshSize,2*Order) ).warn ( "v0 != pi" );
+        FEELPP_ASSERT( math::abs( v0-pi) < math::pow(meshSize,2*Order) )( v0 )( math::abs( v0-pi) )( math::pow(meshSize,2*Order) ).warn ( "v0 != pi" );
 #endif /* USE_BOOST_TEST */
 
         u = vf::project( Xh, elements(mesh), Px()+Py()+1 );
@@ -445,7 +445,7 @@ struct test_integration_circle
 #if defined(USE_BOOST_TEST)
         BOOST_CHECK_SMALL( v0-pi, math::pow(meshSize,2*Order) );
 #else
-        FEEL_ASSERT( math::abs( v0-pi) < math::pow(meshSize,2*Order) )( v0 )( math::abs( v0-pi) )( math::pow(meshSize,2*Order) ).warn ( "v0 != pi" );
+        FEELPP_ASSERT( math::abs( v0-pi) < math::pow(meshSize,2*Order) )( v0 )( math::abs( v0-pi) )( math::pow(meshSize,2*Order) ).warn ( "v0 != pi" );
 #endif /* USE_BOOST_TEST */
 
 
@@ -566,7 +566,7 @@ main( int argc, char** argv )
     Feel::Application mpi( argc, argv, makeAbout(), makeOptions() );
     Feel::Assert::setLog( "test_integration.assert");
 
-    std::cout << "Order = " << mpi.vm()["order"].as<int>() << " / " << FEEL_MESH_MAX_ORDER << "\n";
+    std::cout << "Order = " << mpi.vm()["order"].as<int>() << " / " << FEELPP_MESH_MAX_ORDER << "\n";
     if ( mpi.vm()["order"].as<int>() == 1 )
         {
             test_integration_sin<2,1,double> t1( mpi.vm()["hsize"].as<double>() ); t1();
@@ -574,26 +574,26 @@ main( int argc, char** argv )
 
     else if ( mpi.vm()["order"].as<int>() == 2 )
         {
-#if BOOST_PP_GREATER_EQUAL(FEEL_MESH_MAX_ORDER, 2)
+#if BOOST_PP_GREATER_EQUAL(FEELPP_MESH_MAX_ORDER, 2)
             test_integration_sin<2,2,double> t2( mpi.vm()["hsize"].as<double>() ); t2();
 #endif
         }
 
     else if ( mpi.vm()["order"].as<int>() == 3 )
         {
-#if BOOST_PP_GREATER_EQUAL(FEEL_MESH_MAX_ORDER, 3)
+#if BOOST_PP_GREATER_EQUAL(FEELPP_MESH_MAX_ORDER, 3)
             test_integration_sin<2,3,double> t2( mpi.vm()["hsize"].as<double>() ); t2();
 #endif
         }
     else if ( mpi.vm()["order"].as<int>() == 4 )
         {
-#if BOOST_PP_GREATER_EQUAL(FEEL_MESH_MAX_ORDER, 4)
+#if BOOST_PP_GREATER_EQUAL(FEELPP_MESH_MAX_ORDER, 4)
             test_integration_sin<2,4,double> t2( mpi.vm()["hsize"].as<double>() ); t2();
 #endif
         }
     else if ( mpi.vm()["order"].as<int>() == 5 )
         {
-#if BOOST_PP_GREATER_EQUAL(FEEL_MESH_MAX_ORDER, 5)
+#if BOOST_PP_GREATER_EQUAL(FEELPP_MESH_MAX_ORDER, 5)
             test_integration_sin<2,5,double> t2( mpi.vm()["hsize"].as<double>() ); t2();
 #endif
         }

@@ -274,7 +274,7 @@ void
 Bdf<SpaceType>::initialize( unknowns_type const& uv0 )
 {
     // Check if uv0 has the right dimensions
-    //FEEL_ASSERT( uv0.size() == uint16_type(_M_order) ).error( "Initial data set are not enough for the selected BDF" );
+    //FEELPP_ASSERT( uv0.size() == uint16_type(_M_order) ).error( "Initial data set are not enough for the selected BDF" );
 
     std::copy( uv0.begin(), uv0.end(), _M_unknowns.begin() );
 }
@@ -302,7 +302,7 @@ template <typename SpaceType>
 double
 Bdf<SpaceType>::derivateCoefficient( int n, size_type i, double dt ) const
 {
-    FEEL_ASSERT( i < size_type(n + 1) ).error( "Error in specification of the time derivative coefficient for the BDF formula (out of range error)" );
+    FEELPP_ASSERT( i < size_type(n + 1) ).error( "Error in specification of the time derivative coefficient for the BDF formula (out of range error)" );
     return _M_alpha[n-1][ i ]/dt;
 }
 
@@ -310,7 +310,7 @@ template <typename SpaceType>
 double
 Bdf<SpaceType>::extrapolateCoefficient( int n, size_type i, double dt ) const
 {
-    FEEL_ASSERT( i < n ).error( "Error in specification of the time derivative coefficient for the BDF formula (out of range error)" );
+    FEELPP_ASSERT( i < n ).error( "Error in specification of the time derivative coefficient for the BDF formula (out of range error)" );
     return _M_beta[n-1][ i ];
 }
 
@@ -366,8 +366,8 @@ Bdf<SpaceType>::derivate( int n ) const
     element_type __t( _M_space );
     __t.zero();
 
-    FEEL_ASSERT( __t.size() == _M_space->nDof() )( __t.size() )( _M_space->nDof() ).error( "invalid space element size" );
-    FEEL_ASSERT( __t.size() == _M_unknowns[0]->size() )( __t.size() )( _M_unknowns[0]->size() ).error( "invalid space element size" );
+    FEELPP_ASSERT( __t.size() == _M_space->nDof() )( __t.size() )( _M_space->nDof() ).error( "invalid space element size" );
+    FEELPP_ASSERT( __t.size() == _M_unknowns[0]->size() )( __t.size() )( _M_unknowns[0]->size() ).error( "invalid space element size" );
     for ( uint8_type i = 0;i < n;++i )
         __t.add( _M_alpha[n-1][ i+1 ], *_M_unknowns[i] );
 
@@ -381,8 +381,8 @@ Bdf<SpaceType>::extrapolate( int n ) const
     element_type __t( _M_space );
     __t.zero();
 
-    FEEL_ASSERT( __t.size() == _M_space->nDof() )( __t.size() )( _M_space->nDof() ).error( "invalid space element size" );
-    FEEL_ASSERT( __t.size() == _M_unknowns[0]->size() )( __t.size() )( _M_unknowns[0]->size() ).error( "invalid space element size" );
+    FEELPP_ASSERT( __t.size() == _M_space->nDof() )( __t.size() )( _M_space->nDof() ).error( "invalid space element size" );
+    FEELPP_ASSERT( __t.size() == _M_unknowns[0]->size() )( __t.size() )( _M_unknowns[0]->size() ).error( "invalid space element size" );
 
     for ( uint8_type i = 0;i < n;++i )
         __t.add(  _M_beta[n-1][ i ],  *_M_unknowns[ i ] );

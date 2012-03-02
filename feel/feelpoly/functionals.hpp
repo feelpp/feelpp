@@ -26,8 +26,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2006-01-22
  */
-#ifndef __FEEL_FUNCTIONALS_HPP
-#define __FEEL_FUNCTIONALS_HPP 1
+#ifndef __FEELPP_FUNCTIONALS_HPP
+#define __FEELPP_FUNCTIONALS_HPP 1
 
 #include <feel/feelpoly/functional.hpp>
 
@@ -445,5 +445,5 @@ public:
 
 } // Feel
 
-#endif // __FEEL_FUNCTIONALS_HPP
+#endif // __FEELPP_FUNCTIONALS_HPP
 

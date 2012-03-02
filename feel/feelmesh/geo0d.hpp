@@ -481,7 +481,7 @@ Geo0D<Dim, T>::Geo0D( size_type id, node_type const& __p, bool boundary, bool is
     M_gtag( 0 ),
     M_uv(2)
 {
-    FEEL_ASSERT( __p.size() == Dim )( __p )( Dim ).error( "invalid node" );
+    FEELPP_ASSERT( __p.size() == Dim )( __p )( Dim ).error( "invalid node" );
 
     this->setOnBoundary( boundary );
 }

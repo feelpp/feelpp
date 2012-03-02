@@ -26,8 +26,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2005-08-17
  */
-#ifndef __FEEL_GLAS_TRANSPOSED_HPP
-#define __FEEL_GLAS_TRANSPOSED_HPP 1
+#ifndef __FEELPP_GLAS_TRANSPOSED_HPP
+#define __FEELPP_GLAS_TRANSPOSED_HPP 1
 namespace Feel
 {
 namespace glas
@@ -43,4 +43,4 @@ transposed( Matrix &m )
 } // namespace glas
 } // namespace Feel
 
-#endif /*  __FEEL_GLAS_TRANSPOSED_HPP */
+#endif /*  __FEELPP_GLAS_TRANSPOSED_HPP */

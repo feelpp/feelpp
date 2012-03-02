@@ -326,8 +326,8 @@ struct test_integration_circle: public Application
         BOOST_CHECK_CLOSE( v0, v00, eps  );
         BOOST_CHECK_CLOSE( v00, pi, eps  );
 #else
-        FEEL_ASSERT( math::abs( v0-pi) < math::pow( meshSize, 2*Order ) )( v0 )( math::abs( v0-pi) )( math::pow( meshSize, 2*Order ) ).warn ( "v0 != pi" );
-        FEEL_ASSERT( math::abs( v0-v00) < eps )( v0 )( v00 )( math::abs( v0-v00) )( eps ).warn ( "v0 != pi" );
+        FEELPP_ASSERT( math::abs( v0-pi) < math::pow( meshSize, 2*Order ) )( v0 )( math::abs( v0-pi) )( math::pow( meshSize, 2*Order ) ).warn ( "v0 != pi" );
+        FEELPP_ASSERT( math::abs( v0-v00) < eps )( v0 )( v00 )( math::abs( v0-v00) )( eps ).warn ( "v0 != pi" );
 #endif /* USE_BOOST_TEST */
 
         auto v1 = integrate( elements(mesh), Px()*Px()+Py()*Py(), _Q<2>() ).evaluate()( 0, 0 );
@@ -345,7 +345,7 @@ struct test_integration_circle: public Application
         BOOST_TEST_MESSAGE( "[circle] v0(~pi)=" << v0 << " pi=" << pi << " should be equal \n");
         BOOST_CHECK_CLOSE( v0, pi, 2e-1);
 #else
-        FEEL_ASSERT( math::abs( v0-pi) < math::pow( meshSize, 2*Order ) )( v0 )( math::abs( v0-pi) )( math::pow( meshSize, 2*Order ) ).warn ( "v0 != pi" );
+        FEELPP_ASSERT( math::abs( v0-pi) < math::pow( meshSize, 2*Order ) )( v0 )( math::abs( v0-pi) )( math::pow( meshSize, 2*Order ) ).warn ( "v0 != pi" );
 #endif /* USE_BOOST_TEST */
 
         u = vf::project( Xh, elements(mesh), Px()*Px()+Py()*Py() );
@@ -368,7 +368,7 @@ struct test_integration_circle: public Application
         BOOST_CHECK_SMALL( v0, eps );
         BOOST_CHECK_SMALL( v00, eps );
 #else
-        FEEL_ASSERT( math::abs( v0-v00) < eps )( v0 )(v00)( math::abs( v0-v00) ).warn ( "int 1.N() != int div 1" );
+        FEELPP_ASSERT( math::abs( v0-v00) < eps )( v0 )(v00)( math::abs( v0-v00) ).warn ( "int 1.N() != int div 1" );
 #endif /* USE_BOOST_TEST */
 
         U = vf::project( Xvh, elements(mesh), vec(Px(),Py()) );
@@ -379,7 +379,7 @@ struct test_integration_circle: public Application
 #if defined(USE_BOOST_TEST)
         BOOST_CHECK_CLOSE( v0, v00, eps );
 #else
-        FEEL_ASSERT( math::abs( v0-v00) < eps )( v0 )(v00)( math::abs( v0-v00) ).warn ( "int (x,y).N() != int div (x,y)" );
+        FEELPP_ASSERT( math::abs( v0-v00) < eps )( v0 )(v00)( math::abs( v0-v00) ).warn ( "int (x,y).N() != int div (x,y)" );
 #endif /* USE_BOOST_TEST */
 
     }
@@ -441,7 +441,7 @@ struct test_integration_simplex: public Application
 #else
         const value_type eps = 1000*Feel::type_traits<value_type>::epsilon();
 
-        FEEL_ASSERT( math::abs( v0-pi) < 1e-2 )( v0 )( math::abs( v0-pi) )( eps ).warn ( "v0 != pi" );
+        FEELPP_ASSERT( math::abs( v0-pi) < 1e-2 )( v0 )( math::abs( v0-pi) )( eps ).warn ( "v0 != pi" );
 #endif /* USE_BOOST_TEST */
 
         auto in1 = integrate( boundaryfaces(mesh), N() ).evaluate();
@@ -575,8 +575,8 @@ struct test_integration_domain: public Application
         BOOST_CHECK_CLOSE( v0, 4.0, eps );
         BOOST_CHECK_CLOSE( v0, v00, eps );
 #else
-        FEEL_ASSERT( math::abs( v0-4.0) < eps )( v0 )( math::abs( v0-4.0) )( eps ).warn ( "v0 != 4" );
-        FEEL_ASSERT( math::abs( v0-v00) < eps )( v0 )(v00)( math::abs( v0-v00) )( eps ).warn ( "v0 != v00" );
+        FEELPP_ASSERT( math::abs( v0-4.0) < eps )( v0 )( math::abs( v0-4.0) )( eps ).warn ( "v0 != 4" );
+        FEELPP_ASSERT( math::abs( v0-v00) < eps )( v0 )(v00)( math::abs( v0-v00) )( eps ).warn ( "v0 != v00" );
 #endif /* USE_BOOST_TEST */
 
 
@@ -590,8 +590,8 @@ struct test_integration_domain: public Application
         BOOST_CHECK_SMALL( v1- 0.0, eps );
         BOOST_CHECK_SMALL( v11- 0.0, eps );
 #else
-        FEEL_ASSERT( math::abs( v1-0.0) < eps )( v1 )( math::abs( v1-0.0) )( eps ).warn ( "v1 != 0" );
-        FEEL_ASSERT( math::abs( v11-0.0) < eps )( v11 )( math::abs( v11-0.0) )( eps ).warn ( "v11 != 0" );
+        FEELPP_ASSERT( math::abs( v1-0.0) < eps )( v1 )( math::abs( v1-0.0) )( eps ).warn ( "v1 != 0" );
+        FEELPP_ASSERT( math::abs( v11-0.0) < eps )( v11 )( math::abs( v11-0.0) )( eps ).warn ( "v11 != 0" );
 #endif /* USE_BOOST_TEST */
 
          // int ([-1,1],[-1,1]) abs(x) dx
@@ -601,10 +601,10 @@ struct test_integration_domain: public Application
         BOOST_CHECK_SMALL( vsin- 2*(-math::cos(1.0)+math::cos(-1.0)), eps );
         BOOST_CHECK_SMALL( vsin1- 2*(-math::cos(1.0)+math::cos(-1.0)), eps );
 #else
-        FEEL_ASSERT( math::abs( vsin-2.0*(-math::cos(1.0)+math::cos(-1.0))) < eps )
+        FEELPP_ASSERT( math::abs( vsin-2.0*(-math::cos(1.0)+math::cos(-1.0))) < eps )
             ( vsin )
             ( math::abs( vsin-2.0*(-math::cos(1.0)+math::cos(-1.0))) )( eps ).warn ( "vsin != 2*(cos(1)-cos(-1))" );
-        FEEL_ASSERT( math::abs( vsin1-2.0*(-math::cos(1.0)+math::cos(-1.0))) < eps )
+        FEELPP_ASSERT( math::abs( vsin1-2.0*(-math::cos(1.0)+math::cos(-1.0))) < eps )
             ( vsin1 )
             ( math::abs( vsin1-2.0*(-math::cos(1.0)+math::cos(-1.0))) )( eps ).warn ( "vsin1 != 2*(cos(1)-cos(-1))" );
 #endif /* USE_BOOST_TEST */
@@ -614,7 +614,7 @@ struct test_integration_domain: public Application
 #if defined(USE_BOOST_TEST)
         BOOST_CHECK_CLOSE( vabs, 4.0, 1e-2 );
 #else
-        FEEL_ASSERT( math::abs( vabs-4.0) < 1e-2 )( vabs )( math::abs( vabs-4.0) )( 1e-2 ).warn ( "vabs != 4" );
+        FEELPP_ASSERT( math::abs( vabs-4.0) < 1e-2 )( vabs )( math::abs( vabs-4.0) )( 1e-2 ).warn ( "vabs != 4" );
 #endif /* USE_BOOST_TEST */
 
 
@@ -624,7 +624,7 @@ struct test_integration_domain: public Application
 #if defined(USE_BOOST_TEST)
         BOOST_CHECK_CLOSE( v2, 8.0, eps );
 #else
-        FEEL_ASSERT( math::abs( v2-8.0) < eps )( v2 )( math::abs( v2-8.0) )( eps ).warn ( "v2 != 8" );
+        FEELPP_ASSERT( math::abs( v2-8.0) < eps )( v2 )( math::abs( v2-8.0) )( eps ).warn ( "v2 != 8" );
 #endif /* USE_BOOST_TEST */
 
 
@@ -678,7 +678,7 @@ struct test_integration_boundary: public Application
 #if defined(USE_BOOST_TEST)
         BOOST_CHECK_CLOSE( v2, 8.0, eps );
 #else
-        FEEL_ASSERT( math::abs( v2-8.0) < eps )( v2 )( math::abs( v2-8.0) )( eps ).warn ( "v2 != 8" );
+        FEELPP_ASSERT( math::abs( v2-8.0) < eps )( v2 )( math::abs( v2-8.0) )( eps ).warn ( "v2 != 8" );
 #endif /* USE_BOOST_TEST */
 
         // int (\partial ([-1,1],[-1,1]) x * y dx dy
@@ -686,7 +686,7 @@ struct test_integration_boundary: public Application
 #if defined(USE_BOOST_TEST)
         BOOST_CHECK_SMALL( v3- 0.0, eps );
 #else
-        FEEL_ASSERT( math::abs( v3-0.0) < eps )( v3 )( math::abs( v3-0.0) )( eps ).warn ( "v3 != 0" );
+        FEELPP_ASSERT( math::abs( v3-0.0) < eps )( v3 )( math::abs( v3-0.0) )( eps ).warn ( "v3 != 0" );
 #endif /* USE_BOOST_TEST */
 
         // int (\partial ([-1,1],[-1,1]) -2*y dx dy
@@ -694,7 +694,7 @@ struct test_integration_boundary: public Application
 #if defined(USE_BOOST_TEST)
         BOOST_CHECK_SMALL( v4- 0.0, eps );
 #else
-        FEEL_ASSERT( math::abs( v4-0.0) < eps )( v4 )( math::abs( v4-0.0) )( eps ).warn ( "v4 != 0" );
+        FEELPP_ASSERT( math::abs( v4-0.0) < eps )( v4 )( math::abs( v4-0.0) )( eps ).warn ( "v4 != 0" );
 #endif /* USE_BOOST_TEST */
 
         // int_10 exp(Py) dx
@@ -703,7 +703,7 @@ struct test_integration_boundary: public Application
 #if defined(USE_BOOST_TEST)
         BOOST_CHECK_CLOSE( v5, v5_ex, eps );
 #else
-        FEEL_ASSERT( math::abs( v5-v5_ex) < eps )( v5 )(v5_ex)( math::abs( v5-v5_ex) )( eps ).warn ( "v5 != v5_ex" );
+        FEELPP_ASSERT( math::abs( v5-v5_ex) < eps )( v5 )(v5_ex)( math::abs( v5-v5_ex) )( eps ).warn ( "v5 != v5_ex" );
 #endif /* USE_BOOST_TEST */
 
         // int_20 exp(Py) dx
@@ -712,7 +712,7 @@ struct test_integration_boundary: public Application
 #if defined(USE_BOOST_TEST)
         BOOST_CHECK_CLOSE( v6, v6_ex, eps );
 #else
-        FEEL_ASSERT( math::abs( v6-v6_ex) < eps )( v6 )(v6_ex)( math::abs( v6-v6_ex) )( eps ).warn ( "v6 != v6_ex" );
+        FEELPP_ASSERT( math::abs( v6-v6_ex) < eps )( v6 )(v6_ex)( math::abs( v6-v6_ex) )( eps ).warn ( "v6 != v6_ex" );
 #endif /* USE_BOOST_TEST */
 
 
@@ -769,7 +769,7 @@ struct test_integration_functions: public Application
 #if defined(USE_BOOST_TEST)
         BOOST_CHECK_CLOSE( v0, 4.0, eps );
 #else
-        FEEL_ASSERT( math::abs( v0-4.0) < eps )( v0 )( math::abs( v0-4.0) )( eps ).warn ( "v0 != 4" );
+        FEELPP_ASSERT( math::abs( v0-4.0) < eps )( v0 )( math::abs( v0-4.0) )( eps ).warn ( "v0 != 4" );
 #endif /* USE_BOOST_TEST */
 
         //
@@ -778,20 +778,20 @@ struct test_integration_functions: public Application
 #if defined(USE_BOOST_TEST)
         BOOST_CHECK_SMALL( v1- 0.0, eps );
 #else
-        FEEL_ASSERT( math::abs( v1-0.0) < eps )( v1 )( math::abs( v1-0.0) )( eps ).warn ( "v1 != 0" );
+        FEELPP_ASSERT( math::abs( v1-0.0) < eps )( v1 )( math::abs( v1-0.0) )( eps ).warn ( "v1 != 0" );
 #endif /* USE_BOOST_TEST */
         value_type v2 = integrate( elements(mesh), dxv( u ) ).evaluate()( 0, 0 );
 #if defined(USE_BOOST_TEST)
         BOOST_CHECK_CLOSE( v2, 4.0, eps );
 #else
-        FEEL_ASSERT( math::abs( v2-4.0) < eps )( v2 )( math::abs( v2-4.0) )( eps ).warn ( "v2 != 4" );
+        FEELPP_ASSERT( math::abs( v2-4.0) < eps )( v2 )( math::abs( v2-4.0) )( eps ).warn ( "v2 != 4" );
 #endif /* USE_BOOST_TEST */
 
         value_type v3 = integrate( elements(mesh), dyv( u ) ).evaluate()( 0, 0 );
 #if defined(USE_BOOST_TEST)
         BOOST_CHECK_SMALL( v3- 0.0, eps );
 #else
-        FEEL_ASSERT( math::abs( v3-0.0) < eps )( v3 )( math::abs( v3-0.0) )( eps ).warn ( "v3 != 0" );
+        FEELPP_ASSERT( math::abs( v3-0.0) < eps )( v3 )( math::abs( v3-0.0) )( eps ).warn ( "v3 != 0" );
 #endif /* USE_BOOST_TEST */
 
         u = vf::project( Xh, elements(mesh), exp(Px())*exp(Py()) );
@@ -800,7 +800,7 @@ struct test_integration_functions: public Application
 #if defined(USE_BOOST_TEST)
         BOOST_CHECK_CLOSE( v4, v4_ex, std::pow(10.0,-2.0*Order) );
 #else
-        FEEL_ASSERT( math::abs( v4-v4_ex) < std::pow(10.0,-2.0*Order) )
+        FEELPP_ASSERT( math::abs( v4-v4_ex) < std::pow(10.0,-2.0*Order) )
             ( v4 )
             ( v4_ex )
             ( math::abs( v4-v4_ex ) )( std::pow(10.0,-2.0*Order) ).warn ( "v4 != v4_ex" );
@@ -809,7 +809,7 @@ struct test_integration_functions: public Application
 #if defined(USE_BOOST_TEST)
         BOOST_CHECK_CLOSE( v4_x, v4_ex, std::pow(10.0,-2.0*Order) );
 #else
-        FEEL_ASSERT( math::abs( v4_x-v4_ex) < std::pow(10.0,-2.0*Order) )
+        FEELPP_ASSERT( math::abs( v4_x-v4_ex) < std::pow(10.0,-2.0*Order) )
             ( v4_x )
             ( v4_ex )
             ( math::abs( v4_x-v4_ex ) )( std::pow(10.0,-2.0*Order) ).warn ( "v4_x != v4_ex" );
@@ -819,7 +819,7 @@ struct test_integration_functions: public Application
 #if defined(USE_BOOST_TEST)
         BOOST_CHECK_CLOSE( v4_y, v4_ex, std::pow(10.0,-2.0*Order) );
 #else
-        FEEL_ASSERT( math::abs( v4_y-v4_ex) < std::pow(10.0,-2.0*Order) )
+        FEELPP_ASSERT( math::abs( v4_y-v4_ex) < std::pow(10.0,-2.0*Order) )
             ( v4_y )
             ( v4_ex )
             ( math::abs( v4_y-v4_ex ) )( std::pow(10.0,-2.0*Order) ).warn ( "v4_y != v4_ex" );
@@ -830,7 +830,7 @@ struct test_integration_functions: public Application
 #if defined(USE_BOOST_TEST)
         BOOST_CHECK_CLOSE( v5, v5_ex, std::pow(10.0,-2.0*Order) );
 #else
-        FEEL_ASSERT( math::abs( v5-v5_ex) < std::pow(10.0,-2.0*Order) )
+        FEELPP_ASSERT( math::abs( v5-v5_ex) < std::pow(10.0,-2.0*Order) )
             ( v5 )
             ( v5_ex )
             ( math::abs( v5-v5_ex ) )( std::pow(10.0,-2.0*Order) ).warn ( "v5 != v5_ex" );
@@ -848,7 +848,7 @@ struct test_integration_functions: public Application
         BOOST_CHECK_CLOSE( hess6(1,0), hess6(0, 1), eps );
         BOOST_CHECK_CLOSE( hess6(1,1), 2*meas, eps );
 #else
-        FEEL_ASSERT( math::abs( v6-v6_ex) < std::pow(10.0,-2.0*Order) )
+        FEELPP_ASSERT( math::abs( v6-v6_ex) < std::pow(10.0,-2.0*Order) )
             ( v6 )
             ( v6_ex )
             ( math::abs( v6-v6_ex ) )( std::pow(10.0,-2.0*Order) ).warn ( "v6 != v6_ex" );
@@ -866,7 +866,7 @@ struct test_integration_functions: public Application
 #if defined(USE_BOOST_TEST)
         BOOST_CHECK_SMALL( v6-v6_ex, std::pow(10.0,-2.0*Order) );
 #else
-        FEEL_ASSERT( math::abs( v6-v6_ex) < std::pow(10.0,-2.0*Order) )
+        FEELPP_ASSERT( math::abs( v6-v6_ex) < std::pow(10.0,-2.0*Order) )
             ( v6 )
             ( v6_ex )
             ( math::abs( v6-v6_ex ) )( std::pow(10.0,-2.0*Order) ).warn ( "v6 != v6_ex" );
