@@ -1952,7 +1952,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
                     Adu += theta_aq[q]*M_Aq_du[q].block(0,0,N,N);
                 }
 
-		//No Rhs for adjoint problem except mass contribution
+                //No Rhs for adjoint problem except mass contribution
                 Fdu.setZero(N);
 
                 for(int q = 0;q < Qm; ++q)
@@ -1983,7 +1983,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
             boost::tie( theta_mq, theta_aq, theta_fq ) = M_model->computeThetaq( mu ,time);
 
 
-	    Fdu.setZero(N);
+            Fdu.setZero(N);
 
             for(int q = 0;q < M_model->Ql(0); ++q)
             {
@@ -2005,17 +2005,17 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
 
             if( M_model->isSteady() )
             {
-	        s += -( Fdu.dot( uNdu[0] ) - uNdu[0].dot(Aprdu*uN[0])  );
+                s += -( Fdu.dot( uNdu[0] ) - uNdu[0].dot(Aprdu*uN[0])  );
             }
             else
             {
-	        s = output_time_vector[time_index];
+                s = output_time_vector[time_index];
                 s += time_step*Fdu.dot(uNdu[time_index]) -
                     time_step*uNdu[time_index].dot(Aprdu*uN[time_index]) -
                     uNdu[time_index].dot(Mprdu*uN[time_index]) +
                     uNdu[time_index].dot(Mprdu*uNold[time_index]);
 
-		output_time_vector[time_index]=s;
+                output_time_vector[time_index]=s;
             }
 
             time_index++;
@@ -2026,21 +2026,21 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
 
     if( save_output_behavior )
     {
-       time_index=0;
-       std::ofstream file_output;
-       std::string mu_str;
-       for(int i=0;i<mu.size();i++)
-       {
-	 mu_str= mu_str + (boost::format("_%1%") %mu[i]).str() ;
-       }
-       std::string name = "output_evolution" + mu_str;
-       file_output.open(name,std::ios::out);
-       for(double time=time_step; time<=time_for_output; time+=time_step)
-       {
-	 file_output<<time<<"\t"<<output_time_vector[time_index]<<"\n";
-	 time_index++;
-       }
-       file_output.close();
+        time_index=0;
+        std::ofstream file_output;
+        std::string mu_str;
+        for(int i=0;i<mu.size();i++)
+        {
+            mu_str= mu_str + (boost::format("_%1%") %mu[i]).str() ;
+        }
+        std::string name = "output_evolution" + mu_str;
+        file_output.open(name.c_str(),std::ios::out);
+        for(double time=time_step; time<=time_for_output; time+=time_step)
+        {
+            file_output<<time<<"\t"<<output_time_vector[time_index]<<"\n";
+            time_index++;
+        }
+        file_output.close();
     }
 
     //return s;
