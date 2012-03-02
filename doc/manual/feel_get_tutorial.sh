@@ -19,7 +19,7 @@ SET(CMAKE_BUILD_TYPE Release CACHE STRING
       FORCE)
 include_directories(\${CMAKE_CURRENT_SOURCE_DIR})
 add_executable($1 $1.cpp)
-target_link_libraries($1 \${FEEL_LIBRARIES})
+target_link_libraries($1 \${FEELPP_LIBRARIES})
 
 message("")
 message("You can now type 'make' to build the project \${PROJECT_NAME}")
