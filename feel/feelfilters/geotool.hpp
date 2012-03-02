@@ -922,6 +922,7 @@ namespace Feel {
             GeoGMSHTool opFusion(const GeoGMSHTool & m,int __typeop);
 
             void init(int orderGeo,
+                      std::string gmshFormatVersion,
                       GMSH_PARTITIONER partitioner=GMSH_PARTITIONER_CHACO,
                       int partitions=1,
                       bool partition_file=false);
@@ -1097,7 +1098,16 @@ namespace Feel {
 
                         this->cleanOstr();
                         this->zeroCpt();
-                        this->init(_mesh_type::nOrder,partitioner,partitions,partition_file);
+
+                        Gmsh gmsh;
+                        gmsh.setWorldComm(worldcomm);
+                        gmsh.setRecombine(_mesh_type::shape_type::is_hypercube);
+                        gmsh.setOrder(_mesh_type::nOrder);
+                        gmsh.setNumberOfPartitions( partitions );
+                        gmsh.setPartitioner( partitioner );
+                        gmsh.setMshFileByPartition( partition_file );
+
+                        this->init(_mesh_type::nOrder,gmsh.version(),partitioner,partitions,partition_file);
 
                         std::string geostring;
                         if(_M_geoIsDefineByUser)
@@ -1109,14 +1119,6 @@ namespace Feel {
                                 this->geoStr();
                                 geostring = _M_ostr->str();
                             }
-
-
-                        Gmsh gmsh;
-                        gmsh.setWorldComm(worldcomm);
-                        gmsh.setOrder(_mesh_type::nOrder);
-                        gmsh.setNumberOfPartitions( partitions );
-                        gmsh.setPartitioner( partitioner );
-                        gmsh.setMshFileByPartition( partition_file );
 
                         std::string fname = gmsh.generate( name,
                                                            geostring,
@@ -1147,7 +1149,13 @@ namespace Feel {
                     {
                         this->cleanOstr();
                         this->zeroCpt();
-                        this->init(mesh_type::nOrder);
+
+                        Gmsh gmsh;
+                        gmsh.setWorldComm(worldcomm);
+                        gmsh.setOrder(mesh_type::nOrder);
+                        gmsh.setRecombine(mesh_type::shape_type::is_hypercube);
+
+                        this->init(mesh_type::nOrder,gmsh.version());
 
                         std::string geostring;
                         if(_M_geoIsDefineByUser)
@@ -1160,10 +1168,6 @@ namespace Feel {
                                 geostring = _M_ostr->str();
                             }
 
-
-                        Gmsh gmsh;
-                        gmsh.setWorldComm(worldcomm);
-                        gmsh.setOrder(mesh_type::nOrder);
                         std::string fname = gmsh.generate( name,
                                                            geostring,false,false,false );
 
@@ -1879,6 +1883,7 @@ namespace Feel {
             gmsh.setNumberOfPartitions( partitions );
             gmsh.setPartitioner( partitioner );
             gmsh.setMshFileByPartition( partition_file );
+            gmsh.setRecombine(mesh_type::shape_type::is_hypercube);
 
             std::ostringstream ostr;
 
