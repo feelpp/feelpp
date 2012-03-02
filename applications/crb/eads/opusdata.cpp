@@ -466,8 +466,7 @@ OpusData::createMesh( double h, bool ref )
 
     //std::ofstream costr( "constants.geo" );
     std::ostringstream costr;
-    costr << gmshp->preamble()<<"\n"
-          << "m=1;mm=10^-3;"
+    costr << "m=1;mm=10^-3;"
           << "\n"
           << "//\n"
           << "// Integrated circuit : IC\n"
@@ -625,8 +624,7 @@ OpusData::createMeshLine( double h )
     gmsh_ptrtype gmshp( new Gmsh );
 
     std::ofstream costr( "constantsline.geo" );
-    costr 
-          << "m=1;mm=10^-3;"
+    costr << "m=1;mm=10^-3;"
           << "\n"
           << "//\n"
           << "// Integrated circuit : IC\n"
@@ -715,8 +713,7 @@ OpusData::createMeshCrossSection2( double h )
           << "// thickness\n"
           << "e_A = " << this->component("AIR").e() << "*m;\n";
 
-    ostr << gmshp->preamble()<<"\n"
-         << "Include \"constantscs2.geo\";"
+    ostr << "Include \"constantscs2.geo\";"
          << "\n"
          << "h=" << 0.05 << "*mm-1e-8;\n"
          << "p1=newp;Point(p1) = {0,0.08,0,h};\n"
@@ -740,8 +737,7 @@ OpusData::createMeshAir( double h )
     gmsh_ptrtype gmshp( new Gmsh );
 
     std::ostringstream costr;
-    costr << gmshp->preamble()<<"\n"
-          << "m=1;mm=10^-3;"
+    costr << "m=1;mm=10^-3;"
           << "\n"
 
 
