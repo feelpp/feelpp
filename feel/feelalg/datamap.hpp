@@ -205,7 +205,7 @@ public:
     {
         uint16_type proc=0,res=0;
         bool find=false;
-        while ( !find & proc<this->nProcessors() )
+        while ( (!find) && (proc<this->nProcessors()) )
             {
                 if ( (globDof <= _M_last_df_globalcluster[proc] ) && (globDof >= _M_first_df_globalcluster[proc] ) )
                     {
