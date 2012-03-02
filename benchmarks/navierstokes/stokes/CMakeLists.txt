@@ -22,6 +22,6 @@
 #
 #
 add_executable(sphere sphere.cpp)
-target_link_libraries(sphere ${FEEL_LIBRARIES} )
+target_link_libraries(sphere ${FEELPP_LIBRARIES} )
 set_property(TARGET sphere PROPERTY LABELS benchmarks)
 add_dependencies(benchmarks sphere )

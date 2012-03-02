@@ -21,5 +21,5 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-opus_add_model(mic Microphone HDRS mic.hpp LINK_LIBRARIES ${FEEL_LIBRARIES} CFG mic.cfg XML mic.xml SCRIPTS mic.m)
+opus_add_model(mic Microphone HDRS mic.hpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG mic.cfg XML mic.xml SCRIPTS mic.m)
 

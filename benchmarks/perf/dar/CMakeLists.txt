@@ -47,7 +47,7 @@ endforeach()
 add_executable(feel_perf_dar  ${lagrange} bench.cpp)
 #add_executable(feel_perf_dar ${CMAKE_CURRENT_BINARY_DIR}/feel_perf_dar_Hypercube_2D_CrouzeixRaviart_1.cpp  bench.cpp)
 add_dependencies(feel_perf_dar gen_feel_perf_dar)
-target_link_libraries(feel_perf_dar ${FEEL_LIBRARIES})
+target_link_libraries(feel_perf_dar ${FEELPP_LIBRARIES})
 
 
 configure_file(dar.cfg dar.cfg)

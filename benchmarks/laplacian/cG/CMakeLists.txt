@@ -22,7 +22,7 @@
 #
 #
 INCLUDE_DIRECTORIES (
-  ${FEEL_SOURCE_DIR}/benchmarks/laplacian/cG
+  ${FEELPP_SOURCE_DIR}/benchmarks/laplacian/cG
   )
 ENABLE_TESTING()
 
@@ -47,24 +47,24 @@ int main( int argc, char** argv )
 \n" )
 
 add_executable(${targetname} ${modulename}_${continuity}_${dim}_${order}_${convex}.cpp)
-target_link_libraries(${targetname} ${FEEL_LIBRARIES} )
+target_link_libraries(${targetname} ${FEELPP_LIBRARIES} )
 set_property(TARGET ${targetname} PROPERTY LABELS benchmarks)
 add_dependencies( benchmarks ${targetname} )
 # test each backend
-    foreach( BACKEND ${FEEL_BACKENDS} )
+    foreach( BACKEND ${FEELPP_BACKENDS} )
       add_test( feel_bench_${BENCH}-${BACKEND}-strong
         ${PYTHON_EXECUTABLE}
-        ${FEEL_SOURCE_DIR}/benchmarks/python/batch_validation.py
+        ${FEELPP_SOURCE_DIR}/benchmarks/python/batch_validation.py
         --program=${targetname}
-        --path=${FEEL_BUILD_DIR}/benchmarks/laplacian/cG/
+        --path=${FEELPP_BUILD_DIR}/benchmarks/laplacian/cG/
         --cmdargs="--backend=${BACKEND} --weak=0 --export=0 ${${BACKEND}_SOLVER_OPTIONS}" )
       set_property(TEST feel_bench_${BENCH}-${BACKEND}-strong PROPERTY LABELS benchmarks)
       add_test( feel_bench_${BENCH}-${BACKEND}-weak
         ${PYTHON_EXECUTABLE}
-        ${FEEL_SOURCE_DIR}/benchmarks/python/batch_validation.py
+        ${FEELPP_SOURCE_DIR}/benchmarks/python/batch_validation.py
         --program=${targetname}
         --mode=0
-        --path=${FEEL_BUILD_DIR}/benchmarks/laplacian/cG/
+        --path=${FEELPP_BUILD_DIR}/benchmarks/laplacian/cG/
         --cmdargs="--backend=${BACKEND} --weak=1 --export=0 ${${BACKEND}_SOLVER_OPTIONS}")
       set_property(TEST feel_bench_${BENCH}-${BACKEND}-weak PROPERTY LABELS benchmarks)
     endforeach() # backend

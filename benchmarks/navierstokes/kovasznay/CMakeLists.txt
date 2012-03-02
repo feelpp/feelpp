@@ -22,7 +22,7 @@
 #
 #
 INCLUDE_DIRECTORIES (
-  ${FEEL_SOURCE_DIR}/benchmarks/navierstokes/kovasznay/
+  ${FEELPP_SOURCE_DIR}/benchmarks/navierstokes/kovasznay/
   )
 ENABLE_TESTING()
 
@@ -31,7 +31,7 @@ macro(feel_add_bench_kovasznay examplename)
   set(targetname feel_bench_${examplename})
   set(filename ${examplename}.cpp)
   add_executable(${targetname} ${filename}  stokes.cpp )
-  target_link_libraries(${targetname} ${FEEL_LIBRARIES} )
+  target_link_libraries(${targetname} ${FEELPP_LIBRARIES} )
 endmacro(feel_add_bench_kovasznay)
 
 foreach( orderp 1 2 )
@@ -55,17 +55,17 @@ int main( int argc, char** argv )
 \n" )
 
       add_executable(${targetname} ${BENCH}.cpp kovasznay.cpp)
-      target_link_libraries(${targetname} ${FEEL_LIBRARIES} )
+      target_link_libraries(${targetname} ${FEELPP_LIBRARIES} )
       set_property(TARGET ${targetname} PROPERTY LABELS benchmarks)
       add_dependencies( benchmarks ${targetname} )
 
       # test each backend
-      foreach( BACKEND ${FEEL_BACKENDS} )
+      foreach( BACKEND ${FEELPP_BACKENDS} )
         add_test( ${targetname}_${BENCH}-${BACKEND}-weak
-          ${PYTHON_EXECUTABLE}  ${FEEL_SOURCE_DIR}/benchmarks/python/batch_validation.py
+          ${PYTHON_EXECUTABLE}  ${FEELPP_SOURCE_DIR}/benchmarks/python/batch_validation.py
           --program=${targetname}
           --mode=0
-          --path=${FEEL_BUILD_DIR}/benchmarks/navierstokes/kovasznay/
+          --path=${FEELPP_BUILD_DIR}/benchmarks/navierstokes/kovasznay/
           --cmdargs="--backend=${BACKEND} --export=0 --weak --penalisation=1 --beta=1 ${${BACKEND}_LU_UMFPACK_SOLVER_OPTIONS}")
         set_property(TEST  ${targetname}_${BENCH}-${BACKEND}-weak PROPERTY LABELS benchmarks)
       endforeach() # backend

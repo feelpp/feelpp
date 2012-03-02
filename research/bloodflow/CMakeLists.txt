@@ -30,4 +30,4 @@
 
 
 add_executable( fsi_oned  oned.cpp )
-target_link_libraries(fsi_oned ${FEEL_LIBRARIES} )
+target_link_libraries(fsi_oned ${FEELPP_LIBRARIES} )

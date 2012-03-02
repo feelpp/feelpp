@@ -22,7 +22,7 @@
 #
 #
 
-feel_add_example(beam beam.cpp LINK_LIBRARIES ${FEEL_LIBRARIES})
-feel_add_example(stvenant_kirchhoff stvenant_kirchhoff.cpp LINK_LIBRARIES ${FEEL_LIBRARIES})
-feel_add_example(axi_1D axi_1D.cpp LINK_LIBRARIES ${FEEL_LIBRARIES})
+feel_add_example(beam beam.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES})
+feel_add_example(stvenant_kirchhoff stvenant_kirchhoff.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES})
+feel_add_example(axi_1D axi_1D.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES})
 

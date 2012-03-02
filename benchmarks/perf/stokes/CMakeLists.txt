@@ -59,8 +59,8 @@ add_executable(feel_perf_stokes  ${taylor_hood} ${cr1p0}  bench.cpp)
 #add_executable(feel_perf_stokes  ${taylor_hood}   bench.cpp)
 add_dependencies(feel_perf_stokes gen_feel_perf_stokes)
 #add_executable(feel_perf_stokes  ${CMAKE_CURRENT_BINARY_DIR}/feel_perf_stokes_cr1p0.cpp  bench.cpp)
-#target_link_libraries(feel_perf_stokes ${FEEL_LIBRARIES} /opt/local/lib/libprofiler.dylib)
-target_link_libraries(feel_perf_stokes ${FEEL_LIBRARIES})
+#target_link_libraries(feel_perf_stokes ${FEELPP_LIBRARIES} /opt/local/lib/libprofiler.dylib)
+target_link_libraries(feel_perf_stokes ${FEELPP_LIBRARIES})
 
 
 configure_file(stokes.cfg stokes.cfg)
@@ -70,6 +70,6 @@ configure_file(stokes.cfg stokes.cfg)
 
 # add_executable(feel_perf_stokes_s  stokes_bench.cpp )
 # add_executable(feel_perf_stokes_hc  stokes_bench_hc.cpp )
-# target_link_libraries(feel_perf_stokes_s ${FEEL_LIBRARIES} )
-# target_link_libraries(feel_perf_stokes_hc ${FEEL_LIBRARIES} )
+# target_link_libraries(feel_perf_stokes_s ${FEELPP_LIBRARIES} )
+# target_link_libraries(feel_perf_stokes_hc ${FEELPP_LIBRARIES} )
 

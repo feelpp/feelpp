@@ -22,8 +22,8 @@
 #
 #
 INCLUDE_DIRECTORIES (
-  ${FEEL_SOURCE_DIR}/benchmarks/navierstokes/kovasznay2/
+  ${FEELPP_SOURCE_DIR}/benchmarks/navierstokes/kovasznay2/
   )
 add_executable( kovasznay2 EXCLUDE_FROM_ALL kovasznay2d.cpp kovasznay.cpp kovasznay_osin.cpp kovasznay_osit.cpp options.cpp )
-target_link_libraries(kovasznay2 ${FEEL_LIBRARIES} )
+target_link_libraries(kovasznay2 ${FEELPP_LIBRARIES} )
 

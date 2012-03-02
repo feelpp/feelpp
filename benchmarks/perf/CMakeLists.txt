@@ -45,13 +45,13 @@ add_executable( feel_perf
   bench1_run2d.cpp
   bench1_run3d.cpp
   )
-target_link_libraries(feel_perf ${FEEL_LIBRARIES} )
+target_link_libraries(feel_perf ${FEELPP_LIBRARIES} )
 # add_test( perf COMMAND feel_perf --hsi
 
 add_executable( feel_perf2
   perf2.cpp
   )
-target_link_libraries(feel_perf2 ${FEEL_LIBRARIES} )
+target_link_libraries(feel_perf2 ${FEELPP_LIBRARIES} )
 
 add_subdirectory(laplacian)
 add_subdirectory(dar)

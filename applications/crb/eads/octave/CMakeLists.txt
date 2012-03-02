@@ -45,4 +45,4 @@ INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/opuseadspfemtest.m ${CMAKE_CURRENT_BIN
 #   ARGS
 #   ${octave_include_dirs}
 #   ${CMAKE_CURRENT_SOURCE_DIR}/opuseadsmfem.cpp
-#   ${FEEL_LIBRARIES} )
+#   ${FEELPP_LIBRARIES} )

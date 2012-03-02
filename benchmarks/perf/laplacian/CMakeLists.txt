@@ -80,7 +80,7 @@ endforeach()
 add_executable(feel_perf_laplacian  ${lagrange} ${cr} bench.cpp)
 #add_executable(feel_perf_laplacian ${CMAKE_CURRENT_BINARY_DIR}/feel_perf_laplacian_Hypercube_2D_CrouzeixRaviart_1.cpp  bench.cpp)
 add_dependencies(feel_perf_laplacian gen_feel_perf_laplacian)
-target_link_libraries(feel_perf_laplacian ${FEEL_LIBRARIES})
+target_link_libraries(feel_perf_laplacian ${FEELPP_LIBRARIES})
 
 
 configure_file(laplacian.cfg laplacian.cfg)
