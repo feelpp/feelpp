@@ -7,37 +7,37 @@
 #    ctest -S path/to/feel/cmake/dashboard/testsuite.cmake[,option1=value1[,option2=value2]]
 #
 # Options:
-#  - FEEL_CXX: compiler, eg.: g++-4.2
+#  - FEELPP_CXX: compiler, eg.: g++-4.2
 #      default: default c++ compiler
-#  - FEEL_SITE: eg, sd-25154, or the name of the contributor, etc.
+#  - FEELPP_SITE: eg, sd-25154, or the name of the contributor, etc.
 #      default: hostname
-#  - FEEL_BUILD_STRING: a string which identify the system/compiler. It should be formed like that:
+#  - FEELPP_BUILD_STRING: a string which identify the system/compiler. It should be formed like that:
 #        <OS_name>-<OS_version>-<arch>-<compiler-version>
 #      with:
 #        <OS_name> = opensuse, debian, osx, windows, cygwin, freebsd, solaris, etc.
 #        <OS_version> = 11.1, XP, vista, leopard, etc.
 #        <arch> = i386, x86_64, ia64, powerpc, etc.
 #        <compiler-version> = gcc-4.3.2, icc-11.0, MSVC-2008, etc.
-#  - FEEL_EXPLICIT_VECTORIZATION: novec, SSE2, Altivec
+#  - FEELPP_EXPLICIT_VECTORIZATION: novec, SSE2, Altivec
 #       default: SSE2 for x86_64 systems, novec otherwise
-#       Its value is automatically appended to FEEL_BUILD_STRING
-#  - FEEL_CMAKE_DIR: path to cmake executable
-#  - FEEL_MODE: dashboard model, can be Experimental, Nightly, or Continuous
+#       Its value is automatically appended to FEELPP_BUILD_STRING
+#  - FEELPP_CMAKE_DIR: path to cmake executable
+#  - FEELPP_MODE: dashboard model, can be Experimental, Nightly, or Continuous
 #      default: Nightly
-#  - FEEL_WORK_DIR: directory used to download the source files and make the builds
+#  - FEELPP_WORK_DIR: directory used to download the source files and make the builds
 #      default: folder which contains this script
-#  - FEEL_CMAKE_ARGS: additional arguments passed to cmake
-#  - FEEL_GENERATOR_TYPE: allows to overwrite the generator type
+#  - FEELPP_CMAKE_ARGS: additional arguments passed to cmake
+#  - FEELPP_GENERATOR_TYPE: allows to overwrite the generator type
 #      default: nmake (windows
 #      See http://www.cmake.org/cmake/help/cmake2.6docs.html#section_Generators for a complete
 #      list of supported generators.
-#  - FEEL_NO_UPDATE: allows to submit dash boards from local repositories
+#  - FEELPP_NO_UPDATE: allows to submit dash boards from local repositories
 #      This might be interesting in case you want to submit dashboards
 #      including local changes.
 #  - CTEST_SOURCE_DIRECTORY: path to feel's feel (use a new and empty folder, not the one you are working on)
-#      default: <FEEL_WORK_DIR>/feel
+#      default: <FEELPP_WORK_DIR>/feel
 #  - CTEST_BINARY_DIRECTORY: build directory
-#      default: <FEEL_WORK_DIR>/nightly-<FEEL_CXX>
+#      default: <FEELPP_WORK_DIR>/nightly-<FEELPP_CXX>
 #
 # Here is an example running several compilers on a linux system:
 # #!/bin/bash
@@ -47,12 +47,12 @@
 # WORK_DIR=/home/prudhomm/scratch/cdash
 # # get the last version of the script
 # wget http://bitbucket.org/feel/feel/raw/tip/test/testsuite.cmake -o $WORK_DIR/testsuite.cmake
-# COMMON="ctest -S $WORK_DIR/testsuite.cmake,FEEL_WORK_DIR=$WORK_DIR,FEEL_SITE=$SITE,FEEL_MODE=$1,FEEL_BUILD_STRING=$OS_VERSION-$ARCH"
-# $COMMON-gcc-3.4.6,FEEL_CXX=g++-3.4
-# $COMMON-gcc-4.0.1,FEEL_CXX=g++-4.0.1
-# $COMMON-gcc-4.3.2,FEEL_CXX=g++-4.3,FEEL_EXPLICIT_VECTORIZATION=novec
-# $COMMON-gcc-4.3.2,FEEL_CXX=g++-4.3,FEEL_EXPLICIT_VECTORIZATION=SSE2
-# $COMMON-icc-11.0,FEEL_CXX=icpc
+# COMMON="ctest -S $WORK_DIR/testsuite.cmake,FEELPP_WORK_DIR=$WORK_DIR,FEELPP_SITE=$SITE,FEELPP_MODE=$1,FEELPP_BUILD_STRING=$OS_VERSION-$ARCH"
+# $COMMON-gcc-3.4.6,FEELPP_CXX=g++-3.4
+# $COMMON-gcc-4.0.1,FEELPP_CXX=g++-4.0.1
+# $COMMON-gcc-4.3.2,FEELPP_CXX=g++-4.3,FEELPP_EXPLICIT_VECTORIZATION=novec
+# $COMMON-gcc-4.3.2,FEELPP_CXX=g++-4.3,FEELPP_EXPLICIT_VECTORIZATION=SSE2
+# $COMMON-icc-11.0,FEELPP_CXX=icpc
 #
 ####################################################################
 
@@ -90,67 +90,67 @@ endwhile(${ARGLIST} MATCHES ".+.*")
 ####################################################################
 cmake_minimum_required(VERSION 2.6 FATAL_ERROR)
 
-if(NOT FEEL_SITE)
-  site_name(FEEL_SITE)
-endif(NOT FEEL_SITE)
+if(NOT FEELPP_SITE)
+  site_name(FEELPP_SITE)
+endif(NOT FEELPP_SITE)
 
-if(NOT FEEL_CMAKE_DIR)
-  SET(FEEL_CMAKE_DIR "")
-endif(NOT FEEL_CMAKE_DIR)
+if(NOT FEELPP_CMAKE_DIR)
+  SET(FEELPP_CMAKE_DIR "")
+endif(NOT FEELPP_CMAKE_DIR)
 
-if (NOT FEEL_CXX)
-  set(FEEL_CXX "g++")
-endif(NOT FEEL_CXX)
+if (NOT FEELPP_CXX)
+  set(FEELPP_CXX "g++")
+endif(NOT FEELPP_CXX)
 
 
 
-if(NOT FEEL_BUILD_STRING)
+if(NOT FEELPP_BUILD_STRING)
 
   # let's try to find all information we need to make the build string ourself
 
   # OS
-  build_name(FEEL_OS_VERSION)
+  build_name(FEELPP_OS_VERSION)
 
   # arch
-  set(FEEL_ARCH ${CMAKE_SYSTEM_PROCESSOR})
+  set(FEELPP_ARCH ${CMAKE_SYSTEM_PROCESSOR})
   if(WIN32)
-    set(FEEL_ARCH $ENV{PROCESSOR_ARCHITECTURE})
+    set(FEELPP_ARCH $ENV{PROCESSOR_ARCHITECTURE})
   else(WIN32)
-    execute_process(COMMAND uname -m OUTPUT_VARIABLE FEEL_ARCH OUTPUT_STRIP_TRAILING_WHITESPACE)
+    execute_process(COMMAND uname -m OUTPUT_VARIABLE FEELPP_ARCH OUTPUT_STRIP_TRAILING_WHITESPACE)
   endif(WIN32)
 
-  set(FEEL_BUILD_STRING ${FEEL_OS_VERSION}${FEEL_ARCH}-${FEEL_CXX})
+  set(FEELPP_BUILD_STRING ${FEELPP_OS_VERSION}${FEELPP_ARCH}-${FEELPP_CXX})
 
-endif(NOT FEEL_BUILD_STRING)
+endif(NOT FEELPP_BUILD_STRING)
 
-if(DEFINED FEEL_EXPLICIT_VECTORIZATION)
-  set(FEEL_BUILD_STRING ${FEEL_BUILD_STRING}-${FEEL_EXPLICIT_VECTORIZATION})
-endif(DEFINED FEEL_EXPLICIT_VECTORIZATION)
+if(DEFINED FEELPP_EXPLICIT_VECTORIZATION)
+  set(FEELPP_BUILD_STRING ${FEELPP_BUILD_STRING}-${FEELPP_EXPLICIT_VECTORIZATION})
+endif(DEFINED FEELPP_EXPLICIT_VECTORIZATION)
 
-if(NOT FEEL_WORK_DIR)
-  set(FEEL_WORK_DIR ${CTEST_SCRIPT_DIRECTORY})
-endif(NOT FEEL_WORK_DIR)
+if(NOT FEELPP_WORK_DIR)
+  set(FEELPP_WORK_DIR ${CTEST_SCRIPT_DIRECTORY})
+endif(NOT FEELPP_WORK_DIR)
 
 if(NOT CTEST_SOURCE_DIRECTORY)
-  SET (CTEST_SOURCE_DIRECTORY "${FEEL_WORK_DIR}/feel")
+  SET (CTEST_SOURCE_DIRECTORY "${FEELPP_WORK_DIR}/feel")
 endif(NOT CTEST_SOURCE_DIRECTORY)
 
 if(NOT CTEST_BINARY_DIRECTORY)
-  SET (CTEST_BINARY_DIRECTORY "${FEEL_WORK_DIR}/${FEEL_MODE}_${FEEL_CXX}")
+  SET (CTEST_BINARY_DIRECTORY "${FEELPP_WORK_DIR}/${FEELPP_MODE}_${FEELPP_CXX}")
 endif(NOT CTEST_BINARY_DIRECTORY)
 
-if(NOT FEEL_MODE)
-  set(FEEL_MODE Nightly)
-endif(NOT FEEL_MODE)
+if(NOT FEELPP_MODE)
+  set(FEELPP_MODE Nightly)
+endif(NOT FEELPP_MODE)
 
 ## mandatory variables (the default should be ok in most cases):
 
-#if(NOT FEEL_NO_UPDATE)
+#if(NOT FEELPP_NO_UPDATE)
 SET (CTEST_SVN_COMMAND "svn")
 SET (CTEST_SVN_CHECKOUT   "${CTEST_SVN_COMMAND} co svn://scm.forge.imag.fr/var/lib/gforge/chroot/scmrepos/svn/life/trunk/life/trunk ${CTEST_SOURCE_DIRECTORY}")
 set (CTEST_UPDATE_COMMAND "${CTEST_SVN_COMMAND}")
   #SET(CTEST_BACKUP_AND_RESTORE TRUE) # the backup is SVN related ...
-#endif(NOT FEEL_NO_UPDATE)
+#endif(NOT FEELPP_NO_UPDATE)
 
 ####################################################################
 # The values in this section are optional you can either
@@ -164,29 +164,29 @@ if (UNIX)
   set(CTEST_CMAKE_GENERATOR "Unix Makefiles")
 endif(UNIX)
 
-# if(DEFINED FEEL_EXPLICIT_VECTORIZATION)
-#   if(FEEL_EXPLICIT_VECTORIZATION MATCHES SSE2)
-#     set(CTEST_CMAKE_COMMAND "${CTEST_CMAKE_COMMAND} -DFEEL_TEST_SSE2=ON")
-#   elseif(FEEL_EXPLICIT_VECTORIZATION MATCHES SSE3)
-#     set(CTEST_CMAKE_COMMAND "${CTEST_CMAKE_COMMAND} -DFEEL_TEST_SSE2=ON -DFEEL_TEST_SSE3=ON")
-#   elseif(FEEL_EXPLICIT_VECTORIZATION MATCHES SSSE3)
-#     set(CTEST_CMAKE_COMMAND "${CTEST_CMAKE_COMMAND} -DFEEL_TEST_SSE2=ON -DFEEL_TEST_SSE3=ON -DFEEL_TEST_SSSE3=ON")
-#   elseif(FEEL_EXPLICIT_VECTORIZATION MATCHES SSE4_1)
-#     set(CTEST_CMAKE_COMMAND "${CTEST_CMAKE_COMMAND} -DFEEL_TEST_SSE2=ON -DFEEL_TEST_SSE3=ON -DFEEL_TEST_SSSE3=ON -DFEEL_TEST_SSE4_1=ON")
-#   elseif(FEEL_EXPLICIT_VECTORIZATION MATCHES SSE4_2)
-#     set(CTEST_CMAKE_COMMAND "${CTEST_CMAKE_COMMAND} -DFEEL_TEST_SSE2=ON -DFEEL_TEST_SSE3=ON -DFEEL_TEST_SSSE3=ON -DFEEL_TEST_SSE4_1=ON -DFEEL_TEST_SSE4_2=ON")
-#   elseif(FEEL_EXPLICIT_VECTORIZATION MATCHES Altivec)
-#     set(CTEST_CMAKE_COMMAND "${CTEST_CMAKE_COMMAND} -DFEEL_TEST_ALTIVEC=ON")
-#   elseif(FEEL_EXPLICIT_VECTORIZATION MATCHES novec)
-#     set(CTEST_CMAKE_COMMAND "${CTEST_CMAKE_COMMAND} -DFEEL_TEST_NO_EXPLICIT_VECTORIZATION=ON")
-#   else(FEEL_EXPLICIT_VECTORIZATION MATCHES SSE2)
-#     message(FATAL_ERROR "Invalid value for FEEL_EXPLICIT_VECTORIZATION (${FEEL_EXPLICIT_VECTORIZATION}), must be: novec, SSE2, SSE3, Altivec")
-#   endif(FEEL_EXPLICIT_VECTORIZATION MATCHES SSE2)
-# endif(DEFINED FEEL_EXPLICIT_VECTORIZATION)
+# if(DEFINED FEELPP_EXPLICIT_VECTORIZATION)
+#   if(FEELPP_EXPLICIT_VECTORIZATION MATCHES SSE2)
+#     set(CTEST_CMAKE_COMMAND "${CTEST_CMAKE_COMMAND} -DFEELPP_TEST_SSE2=ON")
+#   elseif(FEELPP_EXPLICIT_VECTORIZATION MATCHES SSE3)
+#     set(CTEST_CMAKE_COMMAND "${CTEST_CMAKE_COMMAND} -DFEELPP_TEST_SSE2=ON -DFEELPP_TEST_SSE3=ON")
+#   elseif(FEELPP_EXPLICIT_VECTORIZATION MATCHES SSSE3)
+#     set(CTEST_CMAKE_COMMAND "${CTEST_CMAKE_COMMAND} -DFEELPP_TEST_SSE2=ON -DFEELPP_TEST_SSE3=ON -DFEELPP_TEST_SSSE3=ON")
+#   elseif(FEELPP_EXPLICIT_VECTORIZATION MATCHES SSE4_1)
+#     set(CTEST_CMAKE_COMMAND "${CTEST_CMAKE_COMMAND} -DFEELPP_TEST_SSE2=ON -DFEELPP_TEST_SSE3=ON -DFEELPP_TEST_SSSE3=ON -DFEELPP_TEST_SSE4_1=ON")
+#   elseif(FEELPP_EXPLICIT_VECTORIZATION MATCHES SSE4_2)
+#     set(CTEST_CMAKE_COMMAND "${CTEST_CMAKE_COMMAND} -DFEELPP_TEST_SSE2=ON -DFEELPP_TEST_SSE3=ON -DFEELPP_TEST_SSSE3=ON -DFEELPP_TEST_SSE4_1=ON -DFEELPP_TEST_SSE4_2=ON")
+#   elseif(FEELPP_EXPLICIT_VECTORIZATION MATCHES Altivec)
+#     set(CTEST_CMAKE_COMMAND "${CTEST_CMAKE_COMMAND} -DFEELPP_TEST_ALTIVEC=ON")
+#   elseif(FEELPP_EXPLICIT_VECTORIZATION MATCHES novec)
+#     set(CTEST_CMAKE_COMMAND "${CTEST_CMAKE_COMMAND} -DFEELPP_TEST_NO_EXPLICIT_VECTORIZATION=ON")
+#   else(FEELPP_EXPLICIT_VECTORIZATION MATCHES SSE2)
+#     message(FATAL_ERROR "Invalid value for FEELPP_EXPLICIT_VECTORIZATION (${FEELPP_EXPLICIT_VECTORIZATION}), must be: novec, SSE2, SSE3, Altivec")
+#   endif(FEELPP_EXPLICIT_VECTORIZATION MATCHES SSE2)
+# endif(DEFINED FEELPP_EXPLICIT_VECTORIZATION)
 
-if(DEFINED FEEL_CMAKE_ARGS)
-  set(CTEST_CMAKE_COMMAND "${CTEST_CMAKE_COMMAND} ${FEEL_CMAKE_ARGS}")
-endif(DEFINED FEEL_CMAKE_ARGS)
+if(DEFINED FEELPP_CMAKE_ARGS)
+  set(CTEST_CMAKE_COMMAND "${CTEST_CMAKE_COMMAND} ${FEELPP_CMAKE_ARGS}")
+endif(DEFINED FEELPP_CMAKE_ARGS)
 
 #The idea behind ctest launchers is that they wrap each compile or link step so
 #the output can be saved and sent to CDash in the event of a warning or
@@ -207,22 +207,22 @@ include("${CTEST_SOURCE_DIRECTORY}/CTestConfig.cmake")
 # clear the binary directory and create an initial cache
 #CTEST_EMPTY_BINARY_DIRECTORY (${CTEST_BINARY_DIRECTORY})
 set(CTEST_INITIAL_CACHE "
-CMAKE_CXX_COMPILER:STRING=${FEEL_CXX}
-FEEL_ENABLE_ALL:BOOL=ON
+CMAKE_CXX_COMPILER:STRING=${FEELPP_CXX}
+FEELPP_ENABLE_ALL:BOOL=ON
 ")
 # site
-set(CTEST_SITE "${FEEL_SITE}")
+set(CTEST_SITE "${FEELPP_SITE}")
 # build name
-set(CTEST_BUILD_NAME "${FEEL_BUILD_STRING}")
+set(CTEST_BUILD_NAME "${FEELPP_BUILD_STRING}")
 # should ctest wipe the binary tree before running
 #SET(CTEST_START_WITH_EMPTY_BINARY_DIRECTORY TRUE)
 
-if(FEEL_CXX AND NOT WIN32)
- set(CTEST_ENVIRONMENT "CXX=${FEEL_CXX}")
-endif(FEEL_CXX AND NOT WIN32)
+if(FEELPP_CXX AND NOT WIN32)
+ set(CTEST_ENVIRONMENT "CXX=${FEELPP_CXX}")
+endif(FEELPP_CXX AND NOT WIN32)
 MESSAGE(WARNING "ctest_environment ${CTEST_ENVIRONMENT}")
 
-ctest_start(${FEEL_MODE})
+ctest_start(${FEELPP_MODE})
 ctest_update(SOURCE "${CTEST_SOURCE_DIRECTORY}")
 ctest_submit(PARTS Update Notes)
 
@@ -233,10 +233,10 @@ foreach(subproject ${CTEST_PROJECT_SUBPROJECTS})
   set_property(GLOBAL PROPERTY SubProject ${subproject})
   set_property (GLOBAL PROPERTY Label ${subproject})
   ctest_configure(BUILD "${CTEST_BINARY_DIRECTORY}" APPEND 
-    OPTIONS "-DCTEST_USE_LAUNCHERS=${CTEST_USE_LAUNCHERS};-DCMAKE_CXX_COMPILER:STRING=${FEEL_CXX};-DFEEL_ENABLE_ALL:BOOL=ON" )
+    OPTIONS "-DCTEST_USE_LAUNCHERS=${CTEST_USE_LAUNCHERS};-DCMAKE_CXX_COMPILER:STRING=${FEELPP_CXX};-DFEELPP_ENABLE_ALL:BOOL=ON" )
   ctest_submit(PARTS Configure)
   message(WARNING "build target ${subproject}")
-  #set(CTEST_BUILD_COMMAND "make ${FEEL_MAKE_ARGS} -i ${subproject}")
+  #set(CTEST_BUILD_COMMAND "make ${FEELPP_MAKE_ARGS} -i ${subproject}")
   ctest_build(BUILD "${CTEST_BINARY_DIRECTORY}" APPEND TARGET "${subproject}"  )
   # builds target ${CTEST_BUILD_TARGET}
   ctest_submit(PARTS Build)
