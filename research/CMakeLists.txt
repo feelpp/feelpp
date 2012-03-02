@@ -23,46 +23,10 @@
 #
 project( feel-research )
 
+foreach(project apee fsi idf ifp darcy hamm maxwell cabine pmp )
 
 # a posteriori error estimation project
-if ( EXISTS ${FEEL_SOURCE_DIR}/research/apee )
-  add_subdirectory( apee )
+if ( EXISTS ${FEEL_SOURCE_DIR}/research/${project} )
+  add_subdirectory( ${project} )
 endif()
-
-# fluid-structure interaction project
-if ( EXISTS ${FEEL_SOURCE_DIR}/research/fsi )
-  add_subdirectory( fsi )
-endif()
-
-# integro-differential equations project
-if ( EXISTS ${FEEL_SOURCE_DIR}/research/idf )
-  add_subdirectory( idf )
-endif()
-
-# IFP project
-if ( EXISTS ${FEEL_SOURCE_DIR}/research/ifp )
-#  add_subdirectory( ifp )
-endif()
-
-# Darcy project
-if ( EXISTS ${FEEL_SOURCE_DIR}/research/darcy )
-  # add_subdirectory( darcy )
-endif()
-
-
-# Hamm project
-if ( EXISTS ${FEEL_SOURCE_DIR}/research/hamm )
-  add_subdirectory( hamm )
-endif()
-
-
-if (EXISTS ${FEEL_SOURCE_DIR}/research/maxwell)
-  add_subdirectory(maxwell)
-endif()
-
-
-# cabine project
-if ( EXISTS ${FEEL_SOURCE_DIR}/research/cabine )
-  add_subdirectory( cabine )
-endif()
-
+endforeach()
