@@ -293,7 +293,6 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  
 #else
     std::string _name = fs::path(__geoname).stem().string();
 
-    std::cout << "\nHOLA "<< std::endl;
 #if 1 // fix vincent
     static bool gmshIsInit =false;
     if (! gmshIsInit) {
