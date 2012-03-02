@@ -581,7 +581,11 @@ private:
     ublas::bounded_array<vertex_permutation_type, numLocalVertices> M_vertex_permutation;
 
 };
-
+template<uint16_type Dim,
+         typename GEOSHAPE,
+         typename SubFace,
+         typename T>
+const uint16_type GeoElement1D<Dim,GEOSHAPE,SubFace,T>::numLocalVertices;
 
 /**
  * \class GeoElement2D
