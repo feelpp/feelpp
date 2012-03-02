@@ -1,5 +1,5 @@
-#ifndef _FEEL_CONFIG_H_
-#define _FEEL_CONFIG_H_
+#ifndef _FEELPP_CONFIG_H_
+#define _FEELPP_CONFIG_H_
 
 /* the maximum of parameters for boost.parameter */
 #cmakedefine BOOST_PARAMETER_MAX_ARITY @BOOST_PARAMETER_MAX_ARITY@
@@ -19,7 +19,7 @@
 #cmakedefine FC_DUMMY_MAIN_EQ_F77
 
 /* define if Bamg is enabled */
-#cmakedefine FEEL_HAVE_BAMG
+#cmakedefine FEELPP_HAVE_BAMG
 
 /* Define to 1 if you have the <Cnames.h> header file. */
 #cmakedefine HAVE_CNAMES_H
@@ -55,10 +55,10 @@
 #cmakedefine HAVE_PETSC_H @HAVE_PETSC_H@
 
 /* Define to 1 if you have slepc. */
-#cmakedefine FEEL_HAVE_SLEPC @FEEL_HAVE_SLEPC@
+#cmakedefine FEELPP_HAVE_SLEPC @FEELPP_HAVE_SLEPC@
 
 /* Define to 1 if you have the <slepc.h> header file. */
-#cmakedefine FEEL_HAVE_SLEPC_H @FEEL_HAVE_SLEPC_H@
+#cmakedefine FEELPP_HAVE_SLEPC_H @FEELPP_HAVE_SLEPC_H@
 
 /* Define to 1 if you have the <slu_Cnames.h> header file. */
 #cmakedefine HAVE_SLU_CNAMES_H
@@ -118,13 +118,13 @@
 #cmakedefine INSTALL_PATH
 
 /* Define if support for c++ class instantiation is enabled) */
-#cmakedefine FEEL_INSTANTIATION_MODE @FEEL_INSTANTIATION_MODE@
+#cmakedefine FEELPP_INSTANTIATION_MODE @FEELPP_INSTANTIATION_MODE@
 
 /* Define if minimal mesh support is required (order 1 mesh in 1D,2D,3D) */
-#cmakedefine FEEL_MESH_MAX_ORDER @FEEL_MESH_MAX_ORDER@
+#cmakedefine FEELPP_MESH_MAX_ORDER @FEELPP_MESH_MAX_ORDER@
 
 /* sizeof(size_t)==sizeof(uint) */
-#cmakedefine FEEL_SIZET_SAME_AS_UINT
+#cmakedefine FEELPP_SIZET_SAME_AS_UINT
 
 /* Define to 1 if your C compiler doesn't accept -c and -o together. */
 #cmakedefine NO_MINUS_C_MINUS_O
@@ -154,8 +154,8 @@
 #cmakedefine size_t
 
 /* Define if support for mpi class instantiation is enabled) */
-#cmakedefine FEEL_ENABLE_MPI_MODE
+#cmakedefine FEELPP_ENABLE_MPI_MODE
 
-#define FEEL_CONFIG_OPTIONS "${FEEL_CONFIG_OPTIONS}"
+#define FEELPP_CONFIG_OPTIONS "${FEELPP_CONFIG_OPTIONS}"
 
 #endif
