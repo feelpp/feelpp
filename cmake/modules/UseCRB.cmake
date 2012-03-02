@@ -3,7 +3,7 @@
 INCLUDE(ParseArguments)
 
 macro(opus_add_octave_module)
-
+if ( FEELPP_ENABLE_OCTAVE )
   PARSE_ARGUMENTS(OCTAVE_MODULE
     "LINK_LIBRARIES;SCRIPTS;CFG"
     ""
@@ -42,6 +42,7 @@ macro(opus_add_octave_module)
       INSTALL(FILES "${cfg}"  DESTINATION share/feel/config)
     endforeach()
   endif()
+endif( FEELPP_ENABLE_OCTAVE )
 endmacro(opus_add_octave_module)
 
 macro(opus_add_executable)

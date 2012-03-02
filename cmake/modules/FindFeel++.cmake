@@ -340,38 +340,41 @@ endif()
 #
 # Octave
 #
-FIND_PACKAGE(Octave)
-if ( OCTAVE_FOUND )
+OPTION(FEELPP_ENABLE_OCTAVE "Enable Feel++/Octave interface" OFF)
+if ( FEELPP_ENABLE_OCTAVE )
+  FIND_PACKAGE(Octave)
+  if ( OCTAVE_FOUND )
 
-  # find octave-config and get variables from it
-  FIND_PROGRAM(OCTAVE_CONFIG octave-config)
-  IF(NOT OCTAVE_CONFIG)
-    MESSAGE(FATAL_ERROR "Octave is required, but octave-config was not found.  Please install Octave and rerun cmake.")
-  ENDIF(NOT OCTAVE_CONFIG)
+    # find octave-config and get variables from it
+    FIND_PROGRAM(OCTAVE_CONFIG octave-config)
+    IF(NOT OCTAVE_CONFIG)
+      MESSAGE(FATAL_ERROR "Octave is required, but octave-config was not found.  Please install Octave and rerun cmake.")
+    ENDIF(NOT OCTAVE_CONFIG)
 
-  EXECUTE_PROCESS(COMMAND ${OCTAVE_CONFIG} --oct-site-dir
-    OUTPUT_VARIABLE OCT_SITE_DIR OUTPUT_STRIP_TRAILING_WHITESPACE)
-  EXECUTE_PROCESS(COMMAND ${OCTAVE_CONFIG} --m-site-dir
-    OUTPUT_VARIABLE M_SITE_DIR OUTPUT_STRIP_TRAILING_WHITESPACE)
-  EXECUTE_PROCESS(COMMAND ${OCTAVE_CONFIG} -p OCTINCLUDEDIR
-    OUTPUT_VARIABLE OCTINCLUDEDIR OUTPUT_STRIP_TRAILING_WHITESPACE)
-  EXECUTE_PROCESS(COMMAND ${OCTAVE_CONFIG} -p OCTLIBDIR
-    OUTPUT_VARIABLE OCTLIBDIR OUTPUT_STRIP_TRAILING_WHITESPACE)
+    EXECUTE_PROCESS(COMMAND ${OCTAVE_CONFIG} --oct-site-dir
+      OUTPUT_VARIABLE OCT_SITE_DIR OUTPUT_STRIP_TRAILING_WHITESPACE)
+    EXECUTE_PROCESS(COMMAND ${OCTAVE_CONFIG} --m-site-dir
+      OUTPUT_VARIABLE M_SITE_DIR OUTPUT_STRIP_TRAILING_WHITESPACE)
+    EXECUTE_PROCESS(COMMAND ${OCTAVE_CONFIG} -p OCTINCLUDEDIR
+      OUTPUT_VARIABLE OCTINCLUDEDIR OUTPUT_STRIP_TRAILING_WHITESPACE)
+    EXECUTE_PROCESS(COMMAND ${OCTAVE_CONFIG} -p OCTLIBDIR
+      OUTPUT_VARIABLE OCTLIBDIR OUTPUT_STRIP_TRAILING_WHITESPACE)
 
-  # Make the values accessible from other CMakeLists.txt files
-  # Also, this allows packagers to override the default values
-  SET(FEELPP_OCT_DIR ${OCT_SITE_DIR}/feel++ CACHE PATH ".oct files from Feel++")
-  SET(FEELPP_M_DIR ${M_SITE_DIR}/feel++ CACHE PATH ".m files from Feel++")
+    # Make the values accessible from other CMakeLists.txt files
+    # Also, this allows packagers to override the default values
+    SET(FEELPP_OCT_DIR ${OCT_SITE_DIR}/feel++ CACHE PATH ".oct files from Feel++")
+    SET(FEELPP_M_DIR ${M_SITE_DIR}/feel++ CACHE PATH ".m files from Feel++")
 
-  message(STATUS "oct dir: ${FEELPP_OCT_DIR}" )
-  message(STATUS "m dir: ${FEELPP_M_DIR}" )
-  message(STATUS "include dir: ${OCTINCLUDEDIR}" )
+    message(STATUS "oct dir: ${FEELPP_OCT_DIR}" )
+    message(STATUS "m dir: ${FEELPP_M_DIR}" )
+    message(STATUS "include dir: ${OCTINCLUDEDIR}" )
 
 
-  INCLUDE_DIRECTORIES( ${OCTINCLUDEDIR} )
+    INCLUDE_DIRECTORIES( ${OCTINCLUDEDIR} )
 
-  SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Octave" )
-endif( OCTAVE_FOUND )
+    SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Octave" )
+  endif( OCTAVE_FOUND )
+endif( FEELPP_ENABLE_OCTAVE)
 
 #
 # Gmsh
