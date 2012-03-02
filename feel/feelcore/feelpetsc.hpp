@@ -74,17 +74,17 @@ namespace PETSc
 FEELPP_STRONG_INLINE int VecDestroy( Vec& vec )
 {
 #if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
-    ::VecDestroy( &vec );
+    return ::VecDestroy( &vec );
 #else
-    ::VecDestroy( vec );
+    return ::VecDestroy( vec );
 #endif
 }
 FEELPP_STRONG_INLINE int VecScatterDestroy( VecScatter& scatter )
 {
 #if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
-    ::VecScatterDestroy(&scatter);
+    return ::VecScatterDestroy(&scatter);
 #else
-    ::VecScatterDestroy(scatter);
+    return ::VecScatterDestroy(scatter);
 #endif
 
 
@@ -92,60 +92,60 @@ FEELPP_STRONG_INLINE int VecScatterDestroy( VecScatter& scatter )
 FEELPP_STRONG_INLINE int MatDestroy( Mat& mat )
 {
 #if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
-    ::MatDestroy( &mat );
+    return ::MatDestroy( &mat );
 #else
-    ::MatDestroy( mat );
+    return ::MatDestroy( mat );
 #endif
 }
 
 FEELPP_STRONG_INLINE int ISDestroy( IS& is )
 {
 #if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
-    ::ISDestroy( &is );
+    return ::ISDestroy( &is );
 #else
-    ::ISDestroy( is );
+    return ::ISDestroy( is );
 #endif
 }
 FEELPP_STRONG_INLINE int KSPDestroy (KSP& ksp )
 {
 #if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
-    ::KSPDestroy( &ksp );
+    return ::KSPDestroy( &ksp );
 #else
-    ::KSPDestroy( ksp );
+    return ::KSPDestroy( ksp );
 #endif
 }
 FEELPP_STRONG_INLINE int PCDestroy (PC& pc )
 {
 #if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
-    ::PCDestroy( &pc);
+    return ::PCDestroy( &pc);
 #else
-    ::PCDestroy( pc );
+    return ::PCDestroy( pc );
 #endif
 }
 
 FEELPP_STRONG_INLINE int MatNullSpaceDestroy(MatNullSpace& nullsp )
 {
 #if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
-    ::MatNullSpaceDestroy( &nullsp );
+    return ::MatNullSpaceDestroy( &nullsp );
 #else
-    ::MatNullSpaceDestroy( nullsp );
+    return ::MatNullSpaceDestroy( nullsp );
 #endif
 }
 FEELPP_STRONG_INLINE int SNESDestroy (SNES& snes )
 {
 #if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
-    ::SNESDestroy( &snes);
+    return ::SNESDestroy( &snes);
 #else
-    ::SNESDestroy( snes );
+    return ::SNESDestroy( snes );
 #endif
 }
 
 FEELPP_STRONG_INLINE int PetscViewerDestroy (PetscViewer& petsc_viewer)
 {
 #if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
-    ::PetscViewerDestroy( &petsc_viewer );
+    return ::PetscViewerDestroy( &petsc_viewer );
 #else
-    ::PetscViewerDestroy( petsc_viewer );
+    return ::PetscViewerDestroy( petsc_viewer );
 #endif
 }
 
