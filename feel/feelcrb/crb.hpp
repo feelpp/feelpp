@@ -199,7 +199,7 @@ public:
     //! default constructor
     CRB()
         :
-        super( "noname" ),
+        super(),
         M_model(),
         M_output_index( 0 ),
         M_tolerance( 1e-2),
@@ -1076,7 +1076,7 @@ CRB<TruthModelType>::offline()
                       M_bdf_dual->next() , M_bdf_dual_save->next() )
                 {
 
-		  
+
                     auto bdf_poly = M_bdf_dual->polyDeriv();
 
                     boost::tie(M, A, F ) = M_model->update( mu , M_bdf_dual->time() );
@@ -1982,7 +1982,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
 
             boost::tie( theta_mq, theta_aq, theta_fq ) = M_model->computeThetaq( mu ,time);
 
-            
+
 	    Fdu.setZero(N);
 
             for(int q = 0;q < M_model->Ql(0); ++q)
@@ -2045,7 +2045,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
 
     //return s;
     return boost::make_tuple( s, condition_number);
-    
+
 }
 
 
@@ -2112,7 +2112,7 @@ CRB<TruthModelType>::delta( size_type N,
 	    boost::tie( alpha, lbti ) = M_scm->lb( mu );
             boost::tie( alpha_up, lbti ) = M_scm->ub( mu );
             std::cout << "alpha_lo = " << alpha << " alpha_hi = " << alpha_up << "\n";
-	    
+
         }
 
         double upper_bound;
@@ -2125,7 +2125,7 @@ CRB<TruthModelType>::delta( size_type N,
             //upper_bound = math::sqrt(dt/alpha * primal_sum) * math::sqrt(dt/alpha * dual_sum +dt*dual_residual);
             upper_bound = math::sqrt(dt/alpha * primal_sum) * math::sqrt(dt/alpha * dual_sum);
         }
-	
+
 
 
         std::copy( vect_pr.begin(), vect_pr.end(), std::back_inserter(residual_coeffs));
@@ -2497,7 +2497,7 @@ CRB<TruthModelType>::transientPrimalResidual( int Ncur,parameter_type const& mu,
             __Cmm_pr -= 1./(time_step*time_step) * m_q1 * m_q2 * Un.dot(m2);
             __Cmm_pr -= 1./(time_step*time_step) * m_q1 * m_q2 * Unold.dot(m1);
             __Cmm_pr += 1./(time_step*time_step) * m_q1 * m_q2 * Unold.dot(m2);
-	 }	 
+	 }
       }
     }//end of if(! M_model->isSteady() )
 
@@ -3669,7 +3669,7 @@ CRB<TruthModelType>::save(Archive & ar, const unsigned int version) const
         ar & BOOST_SERIALIZATION_NVP( M_Mq_pr );
         ar & BOOST_SERIALIZATION_NVP( M_Mq_du );
         ar & BOOST_SERIALIZATION_NVP( M_Mq_pr_du );
-	
+
         if( version>=1)
         {
             ar & BOOST_SERIALIZATION_NVP( M_coeff_pr_ini_online );

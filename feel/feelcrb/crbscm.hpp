@@ -114,7 +114,7 @@ public:
     //! default constructor
     CRBSCM()
         :
-        super( "noname" ),
+        super(),
         M_is_initialized( false ),
         M_model(),
         M_tolerance( 1e-2),
@@ -513,7 +513,7 @@ CRBSCM<TruthModelType>::offline()
         modes=
             eigs( _matrixA=symmA,
                   _matrixB=B,
-                  _solver=(EigenSolverType)M_vm["solvereigen-solver-type"].as<int>(),
+                  _solver=(EigenSolverType)M_vm["solvereigen-solver-type"].template as<int>(),
                   _spectrum=SMALLEST_REAL,
                   //_spectrum=LARGEST_MAGNITUDE,
                   _transform=SINVERT,
@@ -595,8 +595,8 @@ CRBSCM<TruthModelType>::offline()
     //before call saveDB we have to split the vector of tuple M_y_bounds
     for(int i=0; i<M_y_bounds.size();i++)
     {
-      M_y_bounds_0.push_back(M_y_bounds[i].get<0>()); 
-      M_y_bounds_1.push_back(M_y_bounds[i].get<1>()); 
+      M_y_bounds_0.push_back(M_y_bounds[i].get<0>());
+      M_y_bounds_1.push_back(M_y_bounds[i].get<1>());
     }
     saveDB();
     return ckconv;
@@ -664,14 +664,14 @@ CRBSCM<TruthModelType>::ex( parameter_type const& mu ) const
     SolverEigen<double>::eigenmodes_type modesmin=
         eigs( _matrixA=D,
               _matrixB=M,
-              _solver=(EigenSolverType)M_vm["solvereigen-solver-type"].as<int>(),
+              _solver=(EigenSolverType)M_vm["solvereigen-solver-type"].template as<int>(),
               //_spectrum=LARGEST_MAGNITUDE,
               _spectrum=SMALLEST_REAL,
               _transform=SINVERT,
-              _ncv=M_vm["solvereigen-ncv"].as<int>(),
-              _nev=M_vm["solvereigen-nev"].as<int>(),
-              _tolerance=M_vm["solvereigen-tol"].as<double>(),
-              _maxit=M_vm["solvereigen-maxiter"].as<int>()
+              _ncv=M_vm["solvereigen-ncv"].template as<int>(),
+              _nev=M_vm["solvereigen-nev"].template as<int>(),
+              _tolerance=M_vm["solvereigen-tol"].template as<double>(),
+              _maxit=M_vm["solvereigen-maxiter"].template as<int>()
             );
 
     if( modesmin.empty() )
@@ -718,7 +718,7 @@ boost::tuple<typename CRBSCM<TruthModelType>::value_type, double>
 CRBSCM<TruthModelType>::lb( parameter_type const& mu ,size_type K ,int indexmu) const
 {
 
-  
+
 
     if ( K == invalid_size_type_value ) K = this->KMax();
     if ( K > this->KMax() ) K = this->KMax();
@@ -859,7 +859,7 @@ CRBSCM<TruthModelType>::lb( parameter_type const& mu ,size_type K ,int indexmu) 
         }
         break;
         }
-	
+
 
         for( int q = 0; q < M_model->Qa(); ++q, ++nnz_index )
         {
