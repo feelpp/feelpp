@@ -34,8 +34,9 @@ opus_add_octave_module( opuseadspfem opuseadspfem.cpp
   LINK_LIBRARIES feel++_opus_models ${Octave_LIBRARIES}
   SCRIPTS opuseadspfemtest.m )
 
-
-INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/opuseadspfemtest.m ${CMAKE_CURRENT_BINARY_DIR}/opuseadsmfemtest.m DESTINATION ${FEELPP_M_DIR})
+if (FEELPP_ENABLE_OCTAVE)
+  INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/opuseadspfemtest.m ${CMAKE_CURRENT_BINARY_DIR}/opuseadsmfemtest.m DESTINATION ${FEELPP_M_DIR})
+endif()
 
 # add_custom_target(  opuseadsmfemoct DEPENDS  opuseadsmfem.oct )
 # add_custom_command(
