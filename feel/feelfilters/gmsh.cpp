@@ -223,6 +223,7 @@ Gmsh::generate( std::string const& __name, std::string const& __geo, bool const 
             if ( geochanged || __forceRebuild || !fs::exists( __meshpath ) )
                 {
                     Debug(10000) << "generating: " << __meshname.str() << "\n";
+#if 0
                     if ( __geo.find( "Volume" ) != std::string::npos )
                         generate( __geoname.str(), 3, parametric );
                     else if ( __geo.find( "Surface" ) != std::string::npos )
@@ -231,6 +232,9 @@ Gmsh::generate( std::string const& __name, std::string const& __geo, bool const 
                         generate( __geoname.str(), 1, parametric );
                     //else
                         //generate( __geoname.str(), 3, parametric );
+#else
+                    generate( __geoname.str(), this->dimension(), parametric );
+#endif
                 }
             Log() << "[Gmsh::generate] meshname = " << __meshname.str() << "\n";
             fname=__meshname.str();
@@ -252,7 +256,7 @@ Gmsh::refine( std::string const& name, int level, bool parametric  ) const
 
 #if BOOST_FILESYSTEM_VERSION == 3
     boost::system::error_code ec;
-    //fs::copy_file( fs::path( name ), fs::path( filename.str() ), fs::copy_option::overwrite_if_exists, ec );
+    fs::copy_file( fs::path( name ), fs::path( filename.str() ), fs::copy_option::overwrite_if_exists, ec );
 #elif BOOST_FILESYSTEM_VERSION == 2
     fs::copy_file( fs::path( name ), fs::path( filename.str() ), fs::copy_option::overwrite_if_exists);
 #endif
@@ -293,15 +297,12 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  
 #else
     std::string _name = fs::path(__geoname).stem().string();
 
-#if 1 // fix vincent
     static bool gmshIsInit =false;
     if (! gmshIsInit) {
         gmshIsInit=true;
         GmshInitialize();
     }
-#else
-    GmshInitialize();
-#endif
+
     CTX::instance()->partitionOptions.num_partitions =  M_partitions;
     CTX::instance()->partitionOptions.partitioner =  M_partitioner;
 
@@ -322,7 +323,8 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  
     CTX::instance()->mesh.mshFilePartitioned = M_partition_file;
 
     new GModel();
-    //std::cout << "size : " << GModel::list.size() << "\n";
+    std::cout << "dim : " << dim << "\n";
+    std::cout << "geo : " << _name << ".geo\n";
     GModel::current()->setName( _name );
     GModel::current()->setFileName( _name );
     GModel::current()->readGEO( _name+".geo" );
@@ -330,7 +332,7 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  
     PartitionMesh( GModel::current(), CTX::instance()->partitionOptions );
     //std::cout << "size : " << GModel::current()->getMeshPartitions().size() << "\n";
     GModel::current()->writeMSH( _name+".msh" );
-    GModel::current()->destroy();
+    //GModel::current()->destroy();
 #endif
 #else
     throw std::invalid_argument("Gmsh is not available on this system");
