@@ -897,13 +897,13 @@ UnsteadyHeat1D::solve( parameter_type const& mu, element_ptrtype& T , int output
     {
         auto bdf_poly = M_bdf->polyDeriv();
         this->update( mu , bdf_coeff, bdf_poly );
-        auto ret = backend->solve( _matrix=D,  _solution=T, _rhs=F, _prec=D, _reuse_prec=(M_bdf->iteration() >=2));
+        auto ret = backend->solve( _matrix=D,  _solution=T, _rhs=F, _reuse_prec=(M_bdf->iteration() >=2));
         if ( !ret.get<0>() )
         {
             Log()<<"WARNING : at time "<<M_bdf->time()<<" we have not converged ( nb_it : "<<ret.get<1>()<<" and residual : "<<ret.get<2>() <<" ) \n";
         }
 
-        //backend->solve( _matrix=D,  _solution=T, _rhs=F, _prec=D );
+        //backend->solve( _matrix=D,  _solution=T, _rhs=F );
 
 
 #if( 0 )
@@ -922,7 +922,7 @@ void
 UnsteadyHeat1D::l2solve( vector_ptrtype& u, vector_ptrtype const& f )
 {
     //std::cout << "l2solve(u,f)\n";
-    backend->solve( _matrix=M,  _solution=u, _rhs=f, _prec=M );
+    backend->solve( _matrix=M,  _solution=u, _rhs=f );
     //std::cout << "l2solve(u,f) done\n";
 }
 

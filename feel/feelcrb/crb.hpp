@@ -438,7 +438,7 @@ public:
      *\and also condition number of matrix A
      */
 
-    boost::tuple<double,double> lb( size_type N, parameter_type const& mu, std::vector< vectorN_type >& uN, std::vector< vectorN_type >& uNdu , std::vector<vectorN_type> const& uNold=std::vector<vectorN_type>(), std::vector<vectorN_type> const& uNduold=std::vector<vectorN_type>(), int K=0) const;
+    boost::tuple<double,double> lb( size_type N, parameter_type const& mu, std::vector< vectorN_type >& uN, std::vector< vectorN_type >& uNdu , std::vector<vectorN_type> & uNold=std::vector<vectorN_type>(), std::vector<vectorN_type> & uNduold=std::vector<vectorN_type>(), int K=0) const;
 
     /**
      * Returns the lower bound of the output
@@ -1745,7 +1745,7 @@ CRB<TruthModelType>::computeErrorEstimationEfficiencyIndicator (parameterspace_p
 
 template<typename TruthModelType>
 boost::tuple<double,double>
-CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vectorN_type > & uN, std::vector< vectorN_type > & uNdu,  std::vector<vectorN_type> const& uNold, std::vector<vectorN_type> const& uNduold,int K  ) const
+CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vectorN_type > & uN, std::vector< vectorN_type > & uNdu,  std::vector<vectorN_type> & uNold, std::vector<vectorN_type> & uNduold,int K  ) const
 {
 
 
