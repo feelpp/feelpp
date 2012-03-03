@@ -602,14 +602,14 @@ Heat1D::solve( parameter_type const& mu, element_ptrtype& T )
 {
     this->computeThetaq( mu );
     this->update( mu );
-    backend->solve( _matrix=D,  _solution=T, _rhs=F, _prec=D );
+    backend->solve( _matrix=D,  _solution=T, _rhs=F );
 }
 
 void
 Heat1D::l2solve( vector_ptrtype& u, vector_ptrtype const& f )
 {
     //std::cout << "l2solve(u,f)\n";
-    backend->solve( _matrix=M,  _solution=u, _rhs=f, _prec=M );
+    backend->solve( _matrix=M,  _solution=u, _rhs=f);
     //std::cout << "l2solve(u,f) done\n";
 }
 

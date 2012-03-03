@@ -582,7 +582,7 @@ ThermalBlock<Dim>::solve( parameter_type const& mu, element_ptrtype& u )
 {
     this->computeThetaq( mu );
     this->update( mu );
-    M_backend->solve( _matrix=D,  _solution=u, _rhs=F, _prec=D );
+    M_backend->solve( _matrix=D,  _solution=u, _rhs=F );
 }
 
 template<int Dim>
@@ -590,7 +590,7 @@ void
 ThermalBlock<Dim>::l2solve( vector_ptrtype& u, vector_ptrtype const& f )
 {
     //std::cout << "l2solve(u,f)\n";
-    M_backend->solve( _matrix=M,  _solution=u, _rhs=f, _prec=M );
+    M_backend->solve( _matrix=M,  _solution=u, _rhs=f );
     //std::cout << "l2solve(u,f) done\n";
 }
 
