@@ -246,7 +246,10 @@ public:
      */
     //@{
 
-
+    /**
+     * set the dimension
+     */
+    Gmsh& setDimension( int dim ) { M_dimension = dim; return *this; }
 
     /**
      * the gmsh generator to generate a reference domain
@@ -675,7 +678,6 @@ BOOST_PARAMETER_FUNCTION(
 
     (optional
      (h,              *(boost::is_arithmetic<mpl::_>), 0.1 )
-     (order,          *(boost::is_integral<mpl::_>), 1 )
      (parametricnodes,*(boost::is_integral<mpl::_>), 0 )
      (straighten,     *(boost::is_integral<mpl::_>), 1 )
      (refine,          *(boost::is_integral<mpl::_>), 0 )
@@ -696,6 +698,8 @@ BOOST_PARAMETER_FUNCTION(
     _mesh->setWorldComm(worldcomm);
     if (worldcomm.isActive())
         {
+            desc->setDimension(mesh->nDim);
+            desc->setOrder(mesh->nOrder);
             desc->setWorldComm(worldcomm);
             desc->setNumberOfPartitions( partitions );
             desc->setPartitioner( partitioner );
@@ -768,10 +772,10 @@ BOOST_PARAMETER_FUNCTION(
      (name,           *(boost::is_convertible<mpl::_,std::string>))
      (shape,          *(boost::is_convertible<mpl::_,std::string>)))
     (optional
-     (dim,            *(boost::is_integral<mpl::_>)      , 2)
-     (order,          *(boost::is_integral<mpl::_>)      , 1)
      (shear,          *(boost::is_arithmetic<mpl::_>)    , 0)
      (recombine,      *(boost::is_integral<mpl::_>)    , 0)
+     (dim,              *(boost::is_integral<mpl::_>), 3 )
+     (order,              *(boost::is_integral<mpl::_>), 1 )
      (h,              *(boost::is_arithmetic<mpl::_>), double(0.1) )
      (convex,         *(boost::is_convertible<mpl::_,std::string>), "Simplex")
      (addmidpoint,    *(boost::is_integral<mpl::_>), true )
@@ -783,7 +787,7 @@ BOOST_PARAMETER_FUNCTION(
      (zmin,           *(boost::is_arithmetic<mpl::_>), 0. )
      (zmax,           *(boost::is_arithmetic<mpl::_>), 1 )))
 {
-    gmsh_ptrtype gmsh_ptr = Gmsh::New( shape, dim, order, convex );
+    gmsh_ptrtype gmsh_ptr = Gmsh::New( shape, 3, 1, convex );
 
     gmsh_ptr->setPrefix( name );
     gmsh_ptr->setCharacteristicLength( h );
@@ -792,13 +796,10 @@ BOOST_PARAMETER_FUNCTION(
     gmsh_ptr->setShear( shear );
     gmsh_ptr->setRecombine( recombine );
     gmsh_ptr->setX( std::make_pair( xmin, xmax ) );
-    if ( dim >= 2 )
-        gmsh_ptr->setY( std::make_pair( ymin, ymax ) );
-    if ( dim >= 3 )
-        gmsh_ptr->setZ( std::make_pair( zmin, zmax ) );
+    gmsh_ptr->setY( std::make_pair( ymin, ymax ) );
+    gmsh_ptr->setZ( std::make_pair( zmin, zmax ) );
     return gmsh_ptr;
 }
-
 
 /**
  * \brief geo return a gmsh_ptrtype of a .geo mesh
@@ -813,17 +814,17 @@ BOOST_PARAMETER_FUNCTION(
     geo,    // 2. function name
     tag,           // 3. namespace of tag types
     (required
-     (filename,       *(boost::is_convertible<mpl::_,std::string>))
-     (dim,            *(boost::is_integral<mpl::_>)))
+     (filename,       *(boost::is_convertible<mpl::_,std::string>)))
     (optional
-     (order,          *(boost::is_integral<mpl::_>)      , 1)
      (h,              *(boost::is_arithmetic<mpl::_>), double(0.1) )
-     (files_path, *(boost::is_convertible<mpl::_,std::string>), ".")
-     (depends, *(boost::is_convertible<mpl::_,std::list<std::string> >), "." )
-     )
-                         )
+     (dim,              *(boost::is_integral<mpl::_>), 3 )
+     (order,              *(boost::is_integral<mpl::_>), 1 )
+     (files_path, *(boost::is_convertible<mpl::_,std::string>), std::string("."))
+     (depends, *(boost::is_convertible<mpl::_,std::list<std::string> >), std::list<std::string>() ))
+    )
+
 {
-    gmsh_ptrtype gmsh_ptr( new Gmsh( dim, order ) );
+    gmsh_ptrtype gmsh_ptr( new Gmsh( 3, 1 ) );
 
     gmsh_ptr->setCharacteristicLength( h );
 #if BOOST_FILESYSTEM_VERSION == 3
@@ -862,30 +863,26 @@ BOOST_PARAMETER_FUNCTION(
         throw std::invalid_argument( ostr.str() );
     }
 
-#if 0
     // copy include/merged files needed by geometry file
-    boost::for_each( depends, [&cp, &files_path]( std::string _filename)
+    boost::for_each( depends,
+                     [&cp, &files_path]( std::string const& _filename)
                      {
-                         std::ostringstream __file_path;
-                         __file_path << files_path << "/" << _filename;
-                         fs::path file_path( __file_path.str() );
-
+                         fs::path file_path( files_path );
+                         file_path /= _filename;
                          try
-                             {
-                                 boost::system::error_code ec;
-                                 if( fs::exists(file_path) && !fs::exists(cp / _filename)  )
-                                     boost::filesystem::copy_file(file_path, fs::path(_filename));
-                                 else
-                                     std::cout << "File : " << _filename << "doesn't exist" << std::endl;
-                             }
-                         catch (const boost::filesystem::filesystem_error& e)
-                             {
-                                 std::cerr << "Error: " << e.what() << std::endl;
-                             }
+                         {
+                             boost::system::error_code ec;
+                             if( !( fs::exists(file_path) && fs::is_regular_file( file_path ) ) )
+                                 std::cout << "File : " << _filename << " doesn't exist or is not a regular file" << std::endl;
+                             else if ( !fs::exists(cp / _filename)  )
+                                 fs::copy_file(file_path, fs::path(_filename), fs::copy_option::none );
 
-
+                         }
+                         catch (const fs::filesystem_error& e)
+                         {
+                             std::cerr << "Error: " << e.what() << std::endl;
+                         }
                      });
-#endif
 
     return gmsh_ptr;
 
@@ -907,10 +904,11 @@ BOOST_PARAMETER_FUNCTION(
     (required
      (filename,       *(boost::is_convertible<mpl::_,std::string>)))
     (optional
-     (dim,            *(boost::is_integral<mpl::_>), 3)
-     (order,          *(boost::is_integral<mpl::_>), 1)))
+     (dim,              *(boost::is_integral<mpl::_>), 3 )
+     (order,              *(boost::is_integral<mpl::_>), 1 ))
+    )
 {
-    gmsh_ptrtype gmsh_ptr( new Gmsh( dim, order ) );
+    gmsh_ptrtype gmsh_ptr( new Gmsh( 3, 1 ) );
 #if BOOST_FILESYSTEM_VERSION == 3
     gmsh_ptr->setPrefix( fs::path(filename).stem().string() );
 #elif BOOST_FILESYSTEM_VERSION == 2
