@@ -819,7 +819,7 @@ BOOST_PARAMETER_FUNCTION(
      (h,              *(boost::is_arithmetic<mpl::_>), double(0.1) )
      (dim,              *(boost::is_integral<mpl::_>), 3 )
      (order,              *(boost::is_integral<mpl::_>), 1 )
-     (files_path, *(boost::is_convertible<mpl::_,std::string>), std::string("."))
+     (files_path, *(boost::is_convertible<mpl::_,std::string>), Environment::localGeoRepository())
      (depends, *(boost::is_convertible<mpl::_,std::list<std::string> >), std::list<std::string>() ))
     )
 
@@ -873,7 +873,7 @@ BOOST_PARAMETER_FUNCTION(
                          {
                              boost::system::error_code ec;
                              if( !( fs::exists(file_path) && fs::is_regular_file( file_path ) ) )
-                                 std::cout << "File : " << _filename << " doesn't exist or is not a regular file" << std::endl;
+                                 std::cout << "File : " << file_path << " doesn't exist or is not a regular file" << std::endl;
                              else if ( !fs::exists(cp / _filename)  )
                                  fs::copy_file(file_path, fs::path(_filename), fs::copy_option::none );
 
