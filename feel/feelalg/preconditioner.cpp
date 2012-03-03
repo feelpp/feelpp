@@ -37,11 +37,11 @@ Preconditioner<T>::build(BackendType backend)
 {
   switch (backend)
   {
-
-    case BACKEND_PETSC:
-    {
-        return preconditioner_ptrtype( new PreconditionerPetsc<T>() );
-    }
+  default:
+  case BACKEND_PETSC:
+  {
+      return preconditioner_ptrtype( new PreconditionerPetsc<T>() );
+  }
   }
 }
 
