@@ -38,7 +38,8 @@ int main(int argc, char** argv)
     po::options_description desc("Allowed options");
     desc.add_options()
         ("help", "produce help message")
-        ("filename", po::value<std::string>()->default_value( "Cylref.mesh" ), "h size")
+        ("filename", po::value<std::string>()->default_value( "Cylref.geo" ), "h size")
+        ("depends", po::value<std::string>()->default_value( "Cylref.mesh" ), "copy files")
         ;
 
     po::variables_map vm;
@@ -51,10 +52,10 @@ int main(int argc, char** argv)
     typedef Mesh<Simplex<3> > mesh_type;
     std::string mesh_name=vm["filename"].as<std::string>();
 
-#if 0
-    auto mesh = loadGMSHMesh( _mesh=new mesh_type,
+#if 1
+    auto mesh = createGMSHMesh( _mesh=new mesh_type,
                               //_desc=img2msh( _filename=mesh_name),
-                              _desc=geo( _filename=mesh_name,_dim=3),
+                                _desc=geo( _filename=mesh_name,_depends=assign::list_of(vm["depends"].as<std::string>())),
                                 _physical_are_elementary_regions=true,
                                 _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES );
 #else
