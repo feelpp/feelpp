@@ -323,8 +323,6 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  
     CTX::instance()->mesh.mshFilePartitioned = M_partition_file;
 
     new GModel();
-    std::cout << "dim : " << dim << "\n";
-    std::cout << "geo : " << _name << ".geo\n";
     GModel::current()->setName( _name );
     GModel::current()->setFileName( _name );
     GModel::current()->readGEO( _name+".geo" );
