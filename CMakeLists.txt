@@ -155,12 +155,6 @@ IF ( FEELPP_ENABLE_MOVE_SEMANTICS )
   ADD_DEFINITIONS( -DBOOST_UBLAS_MOVE_SEMANTICS )
 ENDIF( FEELPP_ENABLE_MOVE_SEMANTICS )
 
-# this fix an issue with boost filesystem: boost is usually no compiled with
-# std=c++0x and we compile with it, this causes problems with the macro
-# BOOST_SCOPED_ENUM macros whose behavior differs in both case and would
-# generate different c++ codes and undefined references at link time.
-# in a short future, this should not be necessary anymore
-ADD_DEFINITIONS(-DBOOST_NO_SCOPED_ENUMS)
 
 OPTION(ENABLE_INSTANTIATION_MODE "Instantiation mode" ON )
 MARK_AS_ADVANCED(ENABLE_INSTANTIATION_MODE)
