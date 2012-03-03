@@ -47,6 +47,8 @@
 #include <boost/mpl/begin_end.hpp>
 #include <boost/mpl/comparison.hpp>
 
+#include <boost/assign/list_of.hpp>
+
 #include <boost/lambda/lambda.hpp>
 #include <boost/lambda/bind.hpp>
 
@@ -89,6 +91,7 @@
 
 namespace Feel
 {
+namespace assign = boost::assign;
 namespace fs = boost::filesystem;
 namespace mpl = boost::mpl;
 namespace lambda = boost::lambda;
