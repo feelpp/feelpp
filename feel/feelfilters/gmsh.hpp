@@ -38,6 +38,8 @@
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/assign/list_of.hpp>
+#include <boost/range/algorithm/for_each.hpp>
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/environment.hpp>
@@ -811,11 +813,15 @@ BOOST_PARAMETER_FUNCTION(
     geo,    // 2. function name
     tag,           // 3. namespace of tag types
     (required
-    (filename,       *(boost::is_convertible<mpl::_,std::string>))
+     (filename,       *(boost::is_convertible<mpl::_,std::string>))
      (dim,            *(boost::is_integral<mpl::_>)))
     (optional
      (order,          *(boost::is_integral<mpl::_>)      , 1)
-     (h,              *(boost::is_arithmetic<mpl::_>), double(0.1) )))
+     (h,              *(boost::is_arithmetic<mpl::_>), double(0.1) )
+     (files_path, *(boost::is_convertible<mpl::_,std::string>), ".")
+     (depends, *(boost::is_convertible<mpl::_,std::list<std::string> >), "." )
+     )
+                         )
 {
     gmsh_ptrtype gmsh_ptr( new Gmsh( dim, order ) );
 
@@ -855,6 +861,32 @@ BOOST_PARAMETER_FUNCTION(
         ostr << "File " << filename << " was not found neither in current directory or in " << Environment::localGeoRepository() << " or in " << Environment::systemGeoRepository();
         throw std::invalid_argument( ostr.str() );
     }
+
+#if 0
+    // copy include/merged files needed by geometry file
+    boost::for_each( depends, [&cp, &files_path]( std::string _filename)
+                     {
+                         std::ostringstream __file_path;
+                         __file_path << files_path << "/" << _filename;
+                         fs::path file_path( __file_path.str() );
+
+                         try
+                             {
+                                 boost::system::error_code ec;
+                                 if( fs::exists(file_path) && !fs::exists(cp / _filename)  )
+                                     boost::filesystem::copy_file(file_path, fs::path(_filename));
+                                 else
+                                     std::cout << "File : " << _filename << "doesn't exist" << std::endl;
+                             }
+                         catch (const boost::filesystem::filesystem_error& e)
+                             {
+                                 std::cerr << "Error: " << e.what() << std::endl;
+                             }
+
+
+                     });
+#endif
+
     return gmsh_ptr;
 
 }
