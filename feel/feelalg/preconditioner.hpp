@@ -246,14 +246,15 @@ BOOST_PARAMETER_MEMBER_FUNCTION((boost::shared_ptr<Preconditioner<double> >),
                                 preconditioner,
                                 tag,
                                 (required
-                                 (matrix,(d_sparse_matrix_ptrtype))
                                  (pc,(PreconditionerType)))
                                 (optional
+                                 (matrix,(d_sparse_matrix_ptrtype),d_sparse_matrix_ptrtype())
                                  (backend,(BackendType), BACKEND_PETSC )))
 {
     boost::shared_ptr<Preconditioner<double> > p = Preconditioner<double>::build(backend);
     p->setType( pc );
-    p->setMatrix(matrix);
+    if ( matrix )
+        p->setMatrix(matrix);
     return p;
 }
 
