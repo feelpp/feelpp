@@ -51,7 +51,7 @@ makeOptions()
 {
     Feel::po::options_description beamoptions("Beam options");
     beamoptions.add_options()
-        ("hsize", Feel::po::value<double>()->default_value( 0.5 ), "first h value to start convergence")
+        ("hsize", Feel::po::value<double>()->default_value( 0.01 ), "first h value to start convergence")
         ("beta", Feel::po::value<double>()->default_value( 1.0 ), "beta value in -Delta u + beta u = f")
         ("bccoeff", Feel::po::value<double>()->default_value( 100.0 ), "coeff for weak Dirichlet conditions")
         ("bctype", Feel::po::value<int>()->default_value( 1 ), "Dirichlet condition type(0=elimination,1=penalisation, 2=weak")
@@ -68,10 +68,10 @@ makeAbout()
 {
     Feel::AboutData about( "beam" ,
                            "beam" ,
-                           "0.1",
+                           "0.2",
                            "Linear elasticity model for a beam",
                            Feel::AboutData::License_GPL,
-                           "Copyright (c) 2007-2010 Universite Joseph Fourier");
+                           "Copyright (c) 2007-2012 Universite Joseph Fourier");
 
     about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
     return about;
@@ -149,10 +149,6 @@ public:
                 Log() << it->first << " : " << it->second.second << " s elapsed\n";
             }
     }
-    /**
-     * create the mesh using mesh size \c meshSize
-     */
-    mesh_ptrtype createMesh( double meshSize );
 
     /**
      * run the convergence test
@@ -160,11 +156,6 @@ public:
     void run();
 
 private:
-
-    /**
-     * solve symmetric system
-     */
-    void solve( sparse_matrix_ptrtype const& D, element_type& u, vector_ptrtype const& F );
 
     /**
      * export results to ensight format (enabled by  --export cmd line options)
@@ -186,28 +177,6 @@ private:
 }; // Beam
 
 template<int nDim, int nOrder>
-typename Beam<nDim,nOrder>::mesh_ptrtype
-Beam<nDim,nOrder>::createMesh( double meshSize )
-{
-    timers["mesh"].first.restart();
-    mesh_ptrtype mesh( new mesh_type );
-
-    GmshHypercubeDomain td(Dim,1,Dim,false);
-    td.setCharacteristicLength( meshSize );
-#if 0
-    td.setX( std::make_pair( 0, 20 ) );
-    td.setY( std::make_pair( -1, 1 ) );
-#else
-    td.setX( std::make_pair( 0, 0.351 ) );
-    td.setY( std::make_pair( 0, 0.02 ) );
-#endif
-    ImporterGmsh<mesh_type> import( td.generate( entity_type::name().c_str() ) );
-    mesh->accept( import );
-    timers["mesh"].second = timers["mesh"].first.elapsed();
-    return mesh;
-} // Beam::createMesh
-
-template<int nDim, int nOrder>
 void
 Beam<nDim,nOrder>::run()
 {
@@ -222,15 +191,20 @@ Beam<nDim,nOrder>::run()
                            % nOrder
                            % this->vm()["hsize"].template as<double>()
                            );
-    this->setLogs();
-
     using namespace Feel::vf;
 
     /*
      * First we create the mesh
      */
-    mesh_ptrtype mesh = createMesh( meshSize );
-
+    mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
+                                        _desc=domain( _name=(boost::format( "beam-%1%" ) % nDim).str() ,
+                                                      _shape="hypercube",
+                                                      _usenames=true,
+                                                      _xmin=0., _xmax=0.351,
+                                                      _ymin=0., _ymax=0.02,
+                                                      _h=meshSize ),
+                                        _update=MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK,
+                                        _partitions=this->comm().size()  );
     /*
      * The function space and some associate elements are then defined
      */
@@ -283,15 +257,15 @@ Beam<nDim,nOrder>::run()
      */
     sparse_matrix_ptrtype D( M_backend->newMatrix( Xh, Xh ) );
     timers["assembly"].first.restart();
-    AUTO( deft, 0.5*( gradt(u)+trans(gradt(u)) ) );
-    AUTO( def, 0.5*( grad(v)+trans(grad(v)) ) );
+    auto deft = 0.5*( gradt(u)+trans(gradt(u)) );
+    auto def = 0.5*( grad(v)+trans(grad(v)) );
     form2( Xh, Xh, D, _init=true ) =
         integrate( elements(mesh),
                    lambda*divt(u)*div(v)  +
                    2*mu*trace(trans(deft)*def) );
     if ( M_bctype == 1 ) // weak Dirichlet bc
         {
-            AUTO( Id, (mat<nDim,nDim>( cst(1), cst(0), cst(0), cst(1.) )) );
+            auto Id = (mat<nDim,nDim>( cst(1), cst(0), cst(0), cst(1.) ));
             form2( Xh, Xh, D ) +=
                 integrate( markedfaces(mesh,1),
                            - trans((2*mu*deft+lambda*trace(deft)*Id )*N())*id(v)
@@ -299,8 +273,6 @@ Beam<nDim,nOrder>::run()
                            + bcCoeff*trans(idt(u))*id(v)/hFace() );
         }
 
-
-    D->close();
     if ( M_bctype == 0 )
         form2( Xh, Xh, D ) += on( markedfaces(mesh,(nDim==2)?1:23), u, F, constant(0)*one() );
 
@@ -311,7 +283,7 @@ Beam<nDim,nOrder>::run()
         }
     timers["assembly"].second += timers["assembly"].first.elapsed();
 
-    this->solve( D, u, F );
+    M_backend->solve( _matrix=D, _solution=u, _rhs=F );
 
     auto i1 = integrate( markedfaces(mesh,3), idv(u) ).evaluate();
     std::cout << "deflection: " << i1/0.02 << "\n";
@@ -348,19 +320,6 @@ Beam<nDim,nOrder>::run()
 #endif
 } // Beam::run
 
-template<int nDim, int nOrder>
-void
-Beam<nDim,nOrder>::solve( sparse_matrix_ptrtype const& D, element_type& u, vector_ptrtype const& F )
-{
-    timers["solver"].first.restart();
-
-    vector_ptrtype U( M_backend->newVector( u.functionSpace() ) );
-    M_backend->solve( D, D, U, F );
-    u = *U;
-
-    timers["solver"].second = timers["solver"].first.elapsed();
-    Log() << "[timer] solve: " << timers["solver"].second << "\n";
-}
 template<int nDim, int nOrder>
 void
 Beam<nDim,nOrder>::exportResults( double time, element_type const& u, element_type const &v  )
