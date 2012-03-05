@@ -162,11 +162,13 @@ struct test_disc: public Application
             u = vf::project(Xh, elements(mesh),
                             (emarker()==mesh->markerName("k2"))*(2-Px())+
                             (emarker()==mesh->markerName("k1"))*Px() );
-
+            BOOST_TEST_MESSAGE( "here\n" );
             double len1 = integrate( markedfaces( mesh, "Tdiscontinuity" ), cst(1.0) ).evaluate()(0,0);
             BOOST_CHECK_CLOSE( len1, 2, 1e-12 );
+            BOOST_TEST_MESSAGE( "here 1\n" );
             double len11 = integrate( markedfaces( mesh, "Tdiscontinuity" ), leftfacev(cst(1.0))+rightfacev(cst(1.)) ).evaluate()(0,0);
             BOOST_CHECK_CLOSE( len11, 4, 1e-12 );
+            BOOST_TEST_MESSAGE( "here 2\n" );
             double len2 = integrate( markedfaces( mesh, "Tline" ), cst(1.0) ).evaluate()(0,0);
             BOOST_CHECK_CLOSE( len2, 2, 1e-12 );
             auto int1 = integrate( markedfaces( mesh, "Tdiscontinuity" ), jumpv( idv( u ) ) ).evaluate();
