@@ -69,7 +69,6 @@ checkCreateGmshMesh( std::string const& shape, std::string const& convex = "Simp
                                          _usenames=true,
                                          _addmidpoint=false,
                                          _shape=shape,
-                                         _dim=Dim,
                                          _h=0.5 ) );
 
     auto neumann = markedfaces( mesh, "Neumann" );
