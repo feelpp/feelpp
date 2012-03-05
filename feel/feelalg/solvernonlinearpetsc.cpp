@@ -35,6 +35,7 @@
 #include <feel/feelalg/glas.hpp>
 #include <feel/feelalg/vectorpetsc.hpp>
 #include <feel/feelalg/matrixpetsc.hpp>
+#include <feel/feelalg/solverlinearpetsc.hpp>
 #include <feel/feelalg/solvernonlinearpetsc.hpp>
 #include <feel/feelalg/functionspetsc.hpp>
 
@@ -69,7 +70,8 @@ extern "C"
       ostr << "[SolverNonLinearPetsc] NL step " << its
            << std::scientific
            << ", |residual|_2 = " << fnorm;
-      Feel::Log() << ostr.str() << "\n";
+      //Feel::Log() << ostr.str() << "\n";
+      //std::cout << ostr.str() << "\n";
 #if 1
       KSP            ksp;         /* linear solver context */
       SNESGetKSP( snes,&ksp);
@@ -353,6 +355,16 @@ void SolverNonLinearPetsc<T>::init ()
             CHKERRABORT(PETSC_COMM_WORLD,ierr);
 
 #endif
+#if PETSC_VERSION_LESS_THAN(2,3,3)
+            ierr = SNESSetMonitor (M_snes, __feel_petsc_snes_monitor,
+                                   this, PETSC_NULL);
+#else
+            // API name change in PETSc 2.3.3
+            ierr = SNESMonitorSet (M_snes, __feel_petsc_snes_monitor,
+                                   this, PETSC_NULL);
+#endif
+            CHKERRABORT(PETSC_COMM_WORLD,ierr);
+
 
             ierr = SNESSetFromOptions(M_snes);
             CHKERRABORT(PETSC_COMM_WORLD,ierr);
@@ -421,6 +433,23 @@ void SolverNonLinearPetsc<T>::init ()
     CHKERRABORT(PETSC_COMM_WORLD,ierr);
 
 
+    if(this->M_preconditioner)
+    {
+        KSP ksp;
+        ierr = SNESGetKSP (M_snes, &ksp);
+        CHKERRABORT(PETSC_COMM_WORLD,ierr);
+        PC pc;
+        ierr = KSPGetPC(ksp,&pc);
+        CHKERRABORT(PETSC_COMM_WORLD,ierr);
+
+        PCSetType(pc, PCSHELL);
+        PCShellSetContext(pc,(void*)this->M_preconditioner.get());
+
+        //Re-Use the shell functions from petsc_linear_solver
+        PCShellSetSetUp(pc,__feel_petsc_preconditioner_setup);
+        PCShellSetApply(pc,__feel_petsc_preconditioner_apply);
+    }
+
 }
 
 
@@ -437,12 +466,6 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
 
     int ierr=0;
 
-#if ((PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR == 3) && (PETSC_VERSION_SUBMINOR >= 3)) || ( PETSC_VERSION_MAJOR >= 3 )
-    ierr = SNESMonitorSet (M_snes, __feel_petsc_snes_monitor, this, PETSC_NULL);
-#else
-    ierr = SNESSetMonitor (M_snes, __feel_petsc_snes_monitor, this, PETSC_NULL);
-#endif
-    CHKERRABORT(PETSC_COMM_WORLD,ierr);
 #if !defined(FEELPP_ENABLE_MPI_MODE)
     MatrixPetsc<T>* jac = dynamic_cast<MatrixPetsc<T>*>( jac_in.get() );
     VectorPetsc<T>* x   = dynamic_cast<VectorPetsc<T>*>( x_in.get() );
@@ -514,6 +537,9 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
 
     ierr = SNESSetFromOptions(M_snes);
     CHKERRABORT(PETSC_COMM_WORLD,ierr);
+    //Set the preconditioning matrix
+    if(this->M_preconditioner)
+        this->M_preconditioner->setMatrix(jac_in);
 
     /*
       Set array that saves the function norms.  This array is intended

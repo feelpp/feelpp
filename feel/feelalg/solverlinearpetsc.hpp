@@ -51,8 +51,9 @@
 
 #include <feel/feelcore/feel.hpp>
 
-
+#include <feel/feelcore/feelpetsc.hpp>
 #include <feel/feelalg/solverlinear.hpp>
+
 #include <feel/feelalg/matrixpetsc.hpp>
 #include <feel/feelalg/vectorpetsc.hpp>
 
@@ -80,6 +81,34 @@ extern "C" {
 #   include <petscksp.h>
 # endif
 #endif
+
+//--------------------------------------------------------------------
+// Functions with C linkage to pass to PETSc.  PETSc will call these
+// methods as needed for preconditioning
+//
+// Since they must have C linkage they have no knowledge of a namespace.
+// Give them an obscure name to avoid namespace pollution.
+extern "C"
+{
+#if PETSC_VERSION_LESS_THAN(3,0,1) && PETSC_VERSION_RELEASE
+  /**
+   * This function is called by PETSc to initialize the preconditioner.
+   * ctx will hold the Preconditioner.
+   */
+  PetscErrorCode __feel_petsc_preconditioner_setup (void * ctx);
+
+  /**
+   * This function is called by PETSc to acctually apply the preconditioner.
+   * ctx will hold the Preconditioner.
+   */
+  PetscErrorCode __feel_petsc_preconditioner_apply(void *ctx, Vec x, Vec y);
+#else
+  PetscErrorCode __feel_petsc_preconditioner_setup (PC);
+  PetscErrorCode __feel_petsc_preconditioner_apply(PC, Vec x, Vec y);
+#endif
+} // end extern "C"
+
+
 
 namespace Feel
 {
