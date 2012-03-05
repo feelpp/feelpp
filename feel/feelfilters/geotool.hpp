@@ -1099,10 +1099,9 @@ namespace Feel {
                         this->cleanOstr();
                         this->zeroCpt();
 
-                        Gmsh gmsh;
+                        Gmsh gmsh(_mesh_type::nDim, _mesh_type::nOrder );
                         gmsh.setWorldComm(worldcomm);
                         gmsh.setRecombine(_mesh_type::shape_type::is_hypercube);
-                        gmsh.setOrder(_mesh_type::nOrder);
                         gmsh.setNumberOfPartitions( partitions );
                         gmsh.setPartitioner( partitioner );
                         gmsh.setMshFileByPartition( partition_file );
@@ -1150,7 +1149,7 @@ namespace Feel {
                         this->cleanOstr();
                         this->zeroCpt();
 
-                        Gmsh gmsh;
+                        Gmsh gmsh(mesh_type::nDim,mesh_type::nOrder);
                         gmsh.setWorldComm(worldcomm);
                         gmsh.setOrder(mesh_type::nOrder);
                         gmsh.setRecombine(mesh_type::shape_type::is_hypercube);
