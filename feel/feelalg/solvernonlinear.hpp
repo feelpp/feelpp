@@ -32,9 +32,12 @@
 #include <boost/function.hpp>
 #include <boost/bind.hpp>
 
+
 #include <feel/feelalg/enums.hpp>
 #include <feel/feelalg/glas.hpp>
 #include <feel/feelcore/traits.hpp>
+#include <feel/feelalg/preconditioner.hpp>
+
 
 namespace Feel
 {
@@ -70,6 +73,7 @@ public:
     typedef T value_type;
     typedef typename type_traits<T>::real_type real_type;
 
+    typedef boost::shared_ptr<Preconditioner<T> > preconditioner_ptrtype;
 
     typedef boost::shared_ptr<Vector<value_type> > vector_ptrtype;
     typedef boost::shared_ptr<MatrixSparse<value_type> > sparse_matrix_ptrtype;
@@ -213,13 +217,39 @@ public:
     SolverType kspSolverType () const { return M_kspSolver_type; }
 
     /**
-     * Sets the type of preconditioner to use.
-     */
-    void setPreconditionerType (const PreconditionerType pct) { M_preconditioner_type = pct; }
-    /**
      * Returns the type of preconditioner to use.
      */
-    PreconditionerType preconditionerType () const { return M_preconditioner_type; }
+    PreconditionerType preconditionerType () const
+        {
+            if ( M_preconditioner )
+                return M_preconditioner->type();
+            return M_preconditioner_type;
+        }
+
+    /**
+     * Sets the type of preconditioner to use.
+     */
+    void setPreconditionerType (const PreconditionerType pct)
+        {
+            if ( M_preconditioner )
+                M_preconditioner->setType( pct );
+            else
+                M_preconditioner_type = pct;
+        }
+
+    /**
+     * Attaches a Preconditioner object to be used by the solver
+     */
+    void attachPreconditioner(preconditioner_ptrtype preconditioner)
+        {
+            if(this->M_is_initialized)
+            {
+                std::cerr<<"Preconditioner must be attached before the solver is initialized!"<<std::endl;
+            }
+
+            M_preconditioner_type = SHELL_PRECOND;
+            M_preconditioner = preconditioner;
+        }
 
     /**
      * Sets the type of preconditioner to use.
@@ -347,6 +377,11 @@ protected:
      * Enum statitng with type of preconditioner to use.
      */
     PreconditionerType M_preconditioner_type;
+
+    /**
+     * Holds the Preconditioner object to be used for the linear solves.
+     */
+    preconditioner_ptrtype M_preconditioner;
 
     /**
      * Enum the software that is used to perform the factorization

@@ -1,11 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2008-04-17
 
-  Copyright (C) 2008, 2009 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2008-2012 Universite Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -45,6 +45,7 @@ SolverNonLinear<T>::SolverNonLinear ()
     M_snl_type( SELECT_IN_ARGLIST ),
     M_kspSolver_type(GMRES),
     M_preconditioner_type(LU_PRECOND),
+    M_preconditioner(),
     M_relativeResidualTol( 0 ),
     M_absoluteResidualTol( 0 ),
     M_absoluteSolutionTol( 0 ),
@@ -64,6 +65,7 @@ SolverNonLinear<T>::SolverNonLinear ( SolverNonLinear const& snl )
     M_snl_type( snl.M_snl_type),
     M_kspSolver_type( snl.M_kspSolver_type ),
     M_preconditioner_type( snl.M_preconditioner_type),
+    M_preconditioner( snl.M_preconditioner ),
     M_relativeResidualTol( snl.M_relativeResidualTol),
     M_absoluteResidualTol( snl.M_absoluteResidualTol),
     M_absoluteSolutionTol( snl.M_absoluteSolutionTol),
