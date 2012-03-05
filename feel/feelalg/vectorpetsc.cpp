@@ -57,6 +57,27 @@ void iota (ForwardIter first, ForwardIter last, T value)
 
 template <typename T>
 void
+VectorPetsc<T>::zero()
+{
+    FEELPP_ASSERT (this->isInitialized()).error( "VectorPetsc<> not initialized" );
+
+    int ierr=0;
+
+    PetscScalar z=0.;
+    this->close();
+    // 2.2.x & earlier style
+#if PETSC_VERSION_LESS_THAN(2,2,0)
+    ierr = VecSet (&z, _M_vec);
+    CHKERRABORT(this->comm(),ierr);
+#else
+    ierr = VecSet (_M_vec, z);
+    CHKERRABORT(this->comm(),ierr);
+#endif
+}
+
+
+template <typename T>
+void
 VectorPetsc<T>::clear ()
 {
     if ((this->isInitialized()) && (this->_M_destroy_vec_on_exit))
@@ -651,7 +672,8 @@ void VectorPetsc<T>::printMatlab (const std::string name) const
             Debug() << "closing vector\n";
             const_cast<VectorPetsc<T>*>(this)->close();
         }
-
+    const_cast<VectorPetsc<T>*>(this)->close();
+    //this->close();
     int ierr=0;
     PetscViewer petsc_viewer;
 
@@ -852,6 +874,7 @@ VectorPetscMPI<T>::set( size_type i, const value_type& value)
 }
 
 //----------------------------------------------------------------------------------------------------//
+
 
 template <typename T>
 void
