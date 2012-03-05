@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -49,7 +49,7 @@ public:
 
     typedef Space space_type;
 
-    typedef boost::shared_ptr<const space_type> space_ptrtype;
+    typedef boost::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
 
     typedef typename space_type::value_type value_type;
@@ -62,19 +62,15 @@ public:
 
     FsFunctionalLinear( space_ptrtype space ) :
         super_type( space ),
-#if defined( HAVE_PETSC_H )
         M_backend( backend_type::build( BACKEND_PETSC ) ),
-#else
-        M_backend( backend_type::build( BACKEND_GMM ) ),
-#endif
-        M_vector( M_backend->newVector( space->map() ) )
+        M_vector( M_backend->newVector( space ) )
     {
     }
 
     FsFunctionalLinear( space_ptrtype space, backend_ptrtype backend ) :
         super_type( space ),
         M_backend( backend ),
-        M_vector( M_backend->newVector( space->map() ) )
+        M_vector( M_backend->newVector( space ) )
     {
     }
 
@@ -110,7 +106,7 @@ public:
     template<typename ExprT>
     this_type& operator=( ExprT const& e )
     {
-        form( this->space(), *M_vector ) = e;
+        form1( _test=this->space(), _vector=M_vector ) = e;
         return *this;
     }
 
@@ -118,7 +114,7 @@ public:
     template<typename ExprT>
     this_type& operator+=( ExprT const& e )
     {
-        form( this->space(), *M_vector ) += e;
+        form1( _test=this->space(), _vector=M_vector ) += e;
         return *this;
     }
 
