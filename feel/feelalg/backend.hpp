@@ -707,12 +707,13 @@ public:
                                     nlSolve,
                                     tag,
                                     (required
-                                     (jacobian,(sparse_matrix_ptrtype))
                                      (in_out(solution),*(mpl::or_<boost::is_convertible<mpl::_,vector_type&>,
-                                                                  boost::is_convertible<mpl::_,vector_ptrtype> >))
-                                    (residual,(vector_ptrtype)))
+                                                                  boost::is_convertible<mpl::_,vector_ptrtype> >)))
                                     (optional
-                                     (prec,(sparse_matrix_ptrtype), jacobian )
+                                     (jacobian,(sparse_matrix_ptrtype), sparse_matrix_ptrtype())
+                                     (residual,(vector_ptrtype), vector_ptrtype())
+                                     //(prec,(sparse_matrix_ptrtype), jacobian )
+                                     (prec,(preconditioner_ptrtype), preconditioner(_pc=LU_PRECOND,_backend=BACKEND_PETSC) )
                                      (maxit,(size_type), M_maxit/*1000*/ )
                                      (rtolerance,(double), M_rtolerance/*1e-13*/)
                                      (atolerance,(double), M_atolerance/*1e-50*/)
@@ -738,8 +739,15 @@ public:
             this->setTranspose( transpose );
             solve_return_type ret;
             // this is done with nonlinerarsolver
-            //this->nlSolver()->residual( _sol, residual );
-            //this->nlSolver()->jacobian( _sol, jacobian );
+            if ( !residual )
+            {
+                residual = this->newVector( ( detail::datamap(solution) ) );
+                //this->nlSolver()->residual( _sol, residual );
+            }
+            if ( !jacobian )
+                this->nlSolver()->jacobian( _sol, jacobian );
+            if ( prec )
+                this->nlSolver()->attachPreconditioner( prec );
             if ( reuse_prec == false && reuse_jac == false )
                 ret = nlSolve( jacobian, _sol, residual, rtolerance, maxit );
             else
