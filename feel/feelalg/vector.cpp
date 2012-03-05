@@ -117,14 +117,9 @@ Vector<T> & Vector<T>::operator= (const Vector<T>& v )
 {
     if ( this != &v )
         {
-            // faut il le faire??
-            //M_map = v.map();
-            //std::cout << "calling operator=(Vector)\n";
-            //Debug() << "calling operator=(Vector)\n";
-
-            //for( size_type i = 0; i < this->localSize(); ++i )
+            M_map = v.map();
             for( size_type i = 0; i < M_map.nLocalDofWithGhost(); ++i )
-                {
+            {
                     this->set( i,  v( v.firstLocalIndex() + i ) );
                 }
         }
