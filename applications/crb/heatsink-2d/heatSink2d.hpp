@@ -540,12 +540,13 @@ HeatSink2D::HeatSink2D( po::variables_map const& vm )
 gmsh_ptrtype
 HeatSink2D::createGeo( double hsize, double mu2)
 {
-
-    gmsh_ptrtype gmshp( new Gmsh );
+    int elements_order = 1;
+    int dim = 2;
+    gmsh_ptrtype gmshp( new Gmsh ( dim , elements_order ) );
     std::ostringstream ostr;
 
-    ostr << gmshp->preamble() <<"\n"
-	 << "Point (1) = {0   , 0  , 0, " << hsize << "};\n"
+
+    ostr << "Point (1) = {0   , 0  , 0, " << hsize << "};\n"
 	 << "Point (2) = {0.5 , 0  , 0, " << hsize << "};\n"
 	 << "Point (3) = {0.5 , 0.6, 0, " << hsize << "};\n"
 	 << "Point (4) = {0.15, 0.6, 0, " << hsize << "};\n"
@@ -607,7 +608,6 @@ void HeatSink2D::init()
 
 
     using namespace Feel::vf;
-
  
     /*
      * First we create the mesh
@@ -855,9 +855,7 @@ void HeatSink2D::solve( parameter_type const& mu, element_ptrtype& T, int output
         this->computeThetaq( mu, M_bdf->time() );
 	auto bdf_poly = M_bdf->polyDeriv();
         this->update( mu , bdf_coeff, bdf_poly );
-	std::cout<<"[HeatSink] call solve"<<std::endl;
 	backend->solve( _matrix=D,  _solution=T, _rhs=F );
-	std::cout<<"[HeatSink] call solve finished"<<std::endl;
 
 	if( do_export )
 	{
@@ -962,6 +960,7 @@ void HeatSink2D::run( const double * X, unsigned long N, double * Y, unsigned lo
 double HeatSink2D::output( int output_index, parameter_type const& mu, bool export_outputs )
 {
     using namespace vf;
+
 
     element_type u( Xh, "u" );
     element_type v( Xh, "v" );
