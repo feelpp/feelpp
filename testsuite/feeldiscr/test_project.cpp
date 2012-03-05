@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -69,7 +69,6 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( project1, T, dim_types )
                                                       _usenames=true,
                                                       _addmidpoint=false,
                                                       _shape="simplex",
-                                                      _dim=T::value,
                                                       _h=2. ),
                                         _update=MESH_CHECK|MESH_UPDATE_EDGES|MESH_UPDATE_FACES );
 
