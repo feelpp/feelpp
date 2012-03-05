@@ -177,9 +177,6 @@ private:
 
     functionspace_ptrtype M_Xh;
     oplin_ptrtype M_oplin;
-    oplin_ptrtype M_jac;
-    funlin_ptrtype M_residual;
-
     export_ptrtype exporter;
 }; // NonLinearPow
 
@@ -212,9 +209,8 @@ NonLinearPow<Dim,Order,Entity>::NonLinearPow( int argc, char** argv, AboutData c
                                         _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
                                         _desc=domain( _name= (boost::format( "%1%-%2%-%3%" ) % "hypercube" % Dim % 1).str() ,
                                                       _shape="hypercube",
-                                                      _dim=Dim,
-                                                      _order=1,
-                                                      _h=meshSize ) );
+                                                      _h=meshSize ),
+                                        _partitions=this->comm().size()  );
     M_Xh = functionspace_ptrtype( functionspace_type::New( mesh ) );
 
     exporter = export_ptrtype( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) );
@@ -232,9 +228,9 @@ NonLinearPow<Dim, Order, Entity>::updateResidual( const vector_ptrtype& X, vecto
     element_type v( M_Xh, "v" );
 
     u = *X;
-    AUTO( g, constant(0.0) );
+    auto g = constant(0.0);
 
-    *M_residual =
+    form1( _test=M_Xh, _vector=R ) =
         integrate( elements( mesh ),  + gradv(u)*trans(grad(v)) + pow(idv(u),M_lambda)*id(v) +id(v), _Q<2*Order>() ) +
         integrate( boundaryfaces(mesh),
                    ( - trans(id(v))*(gradv(u)*N())
@@ -242,9 +238,7 @@ NonLinearPow<Dim, Order, Entity>::updateResidual( const vector_ptrtype& X, vecto
                      + penalisation_bc*trans(idv(u))*id(v)/hFace())-
                    g*( - grad(v)*N() + penalisation_bc*id(v)/hFace() )
                    );
-
-    M_residual->close();
-    *R = M_residual->container();
+    R->close();
     Log() << "[updateResidual] done in " << ti.elapsed() << "s\n";
 }
 template<int Dim, int Order, template<uint16_type,uint16_type,uint16_type> class Entity>
@@ -253,24 +247,14 @@ NonLinearPow<Dim, Order, Entity>::updateJacobian( const vector_ptrtype& X, spars
 {
     boost::timer ti;
     Log() << "[updateJacobian] start\n";
-    static bool is_init = false;
     mesh_ptrtype mesh = M_Xh->mesh();
     element_type u( M_Xh, "u" );
     element_type v( M_Xh, "v" );
     u = *X;
-    if ( is_init == false )
-        {
-            *M_jac = integrate( elements( mesh ),  M_lambda*pow(idv(u),M_lambda-1)*idt(u)*id(v), _Q<2*Order>() );
-            is_init = true;
-        }
-    else
-        {
-            M_jac->matPtr()->zero();
-            *M_jac += integrate( elements( mesh ),  M_lambda*pow(idv(u),M_lambda-1)*idt(u)*id(v), _Q<2*Order>() );
-        }
-    M_jac->close();
-    M_jac->matPtr()->addMatrix( 1.0, M_oplin->mat() );
-    J = M_jac->matPtr();
+    if ( !J ) J = M_backend->newMatrix( M_Xh, M_Xh );
+    form2(_test=M_Xh, _trial=M_Xh, _matrix=J )  =
+        integrate( elements( mesh ),  M_lambda*pow(idv(u),M_lambda-1)*idt(u)*id(v), _Q<2*Order>() );
+    J->addMatrix( 1.0, M_oplin->mat() );
     Log() << "[updateJacobian] done in " << ti.elapsed() << "s\n";
 }
 
@@ -295,19 +279,12 @@ NonLinearPow<Dim, Order, Entity>::run()
                      + penalisation_bc*trans(idt(u))*id(v)/hFace()) );
     M_oplin->close();
 
-    M_jac = oplin_ptrtype( new oplin_type( M_Xh, M_Xh, M_backend ) );
-    M_residual = funlin_ptrtype( new funlin_type( M_Xh, M_backend ) );
-
-
-
     M_backend->nlSolver()->residual = boost::bind( &self_type::updateResidual, boost::ref( *this ), _1, _2 );
     M_backend->nlSolver()->jacobian = boost::bind( &self_type::updateJacobian, boost::ref( *this ), _1, _2 );
 
     u = vf::project( M_Xh, elements(mesh), constant(0.) );
 
-    auto R = M_backend->newVector( u.functionSpace() );
-    auto J = M_backend->newMatrix( u.functionSpace(), u.functionSpace() );
-    M_backend->nlSolve( _jacobian=J, _solution=u, _residual=R );
+    M_backend->nlSolve( _solution=u );
 
     exportResults( u );
 
@@ -322,6 +299,7 @@ NonLinearPow<Dim, Order, Entity>::exportResults( element_type& U )
     exporter->step(0)->setMesh( U.functionSpace()->mesh() );
     if ( !this->vm().count( "export-mesh-only" ) )
         {
+            exporter->step(0)->addRegions();
             exporter->step(0)->add( "u", U );
         }
     exporter->save();
