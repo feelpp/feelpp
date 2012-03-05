@@ -9,14 +9,14 @@ Becoming a \feel developer makes library improvements possible, you may have sev
 \subsection{Creating RSA keys}
 \label{sec:creation-rsa-keys}
 At the top of the manual, you have seen how to get the sources anonymously, if you want to checkout or commit properly, you will need an account on \href{https://forge.imag.fr/}. After the administrator approval, you have to demand the rights to see the project tree. \newline \newline
-Once it's done, you will have to create RSA keys to be able to connect to the server using ssh. To do that you have to type the commands : \verb|ssh-keygen| and accept the 3 questions without typing anything. The generated key is placed in \verb|~/.ssh/id_rsa.pub|, you just need to copy this file's content in your forge account. To make it, go on the LJKForge website and enter into your account's personnal page. At the bottom of the page, you'll have the possibility to edit your SSH keys, go into it and copy/paste the id\_rsa.pub content. Once it's done, the number of your SSH keys in that page should have increased. Now, you will be able to connect to the server within an hour.
+Once it's done, you will have to create RSA keys to be able to connect to the server using ssh. To do that you have to type the commands : \verb|ssh-keygen| and accept the 3 questions without typing anything. The generated key is placed in \verb|~/.ssh/id_rsa.pub|, you just need to copy this file's content in your forge account. To make it, go on the Forge website and enter into your account's personnal page. At the bottom of the page, you'll have the possibility to edit your SSH keys, go into it and copy/paste the id\_rsa.pub content. Once it's done, the number of your SSH keys in that page should have increased. Now, you will be able to connect to the server within an hour.
 %\verb|ssh-keygen -t dsa| and \linebreak[2] \verb|ssh-keygen -t rsa| to create the keys. After that, you have to copy the \verb|id_dsa.pub| and \verb|id_rsa.pub| files in the My Page > Account Maintenance > Edit SSH Keys section of the LJKForge website. Those files are located in the \verb|~/.ssh/| folder of your computer. You will be able to connect to the server within an hour.
 \\ \\
 {\bfseries Important : } If you don't have the same login on your computer as on
 Forge, you must add the commands in the \verb|~/.ssh/config| file :
 \begin{lstlisting}[language=sh]
 host forge.imag.fr
-  user <your_login_ljkforge>
+  user <your_login_forge>
 \end{lstlisting}
 
 
@@ -28,7 +28,7 @@ installed on your computer. In a command prompt, go where you want \feel to be
 downloaded and type the following command :
 \\ \verb|svn co svn+ssh://login@scm.forge.imag.fr/var/lib/gforge/chroot/scmrepos|
 \\ \verb|/svn/life/trunk/life/trunk feel|
-\\ where \verb|login| is your login name in the LJKForge plateform.
+\\ where \verb|login| is your login name in the Forge plateform.
 
 % ---- Useless now ? the command above downloads all feel sources, included the feel-test ---------
 %Then, if you want to download the feel-test sources type :
