@@ -2333,19 +2333,19 @@ public:
             Debug( 5010 ) << "got name " << _M_name << "\n";
             if ( Archive::is_saving::value )
                 {
-                    std::cout << "saving in version " << version << "\n";
+                    //std::cout << "saving in version " << version << "\n";
                     size_type s = this->size();
                     ar & boost::serialization::make_nvp("size", s);
 
                     std::vector<int> no = _M_functionspace->basisOrder();
-                    for( int i = 0; i < no.size(); ++i ) std::cout << no[i] << std::endl;
+                    //for( int i = 0; i < no.size(); ++i ) std::cout << no[i] << std::endl;
                     std::string family = _M_functionspace->basisName();
-                    std::cout << "family name = " << family << std::endl;
+                    //std::cout << "family name = " << family << std::endl;
 
                     ar & boost::serialization::make_nvp("order",  no);
-                    std::cout << "saving order done" << std::endl;
+                    //std::cout << "saving order done" << std::endl;
                     ar & boost::serialization::make_nvp("family", family );
-                    std::cout << "saving family done" << std::endl;
+                    //std::cout << "saving family done" << std::endl;
 
                     typename container_type::const_iterator it = this->begin();
                     typename container_type::const_iterator en = this->end();
@@ -2362,7 +2362,7 @@ public:
                 }
             if ( Archive::is_loading::value )
                 {
-                    std::cout << "loading in version " << version << "\n";
+                    //std::cout << "loading in version " << version << "\n";
 
                     size_type s( 0 );
                     ar & boost::serialization::make_nvp("size", s);
@@ -2375,10 +2375,10 @@ public:
                     std::vector<int> order;
                     std::string family;
                     ar & boost::serialization::make_nvp("order", order );
-                    for( int i = 0; i < order.size(); ++i ) std::cout << order[i] << std::endl;
+                    //for( int i = 0; i < order.size(); ++i ) std::cout << order[i] << std::endl;
 
                     ar & boost::serialization::make_nvp("family", family );
-                    std::cout << "family name = " << family << std::endl;
+                    //std::cout << "family name = " << family << std::endl;
 #if 0
                     auto orders = _M_functionspace->basisOrder();
                     if ( order !=  orders )
