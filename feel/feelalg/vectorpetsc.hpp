@@ -347,28 +347,7 @@ public:
      * Set all entries to zero. Equivalent to \p v = 0, but more obvious and
      * faster.
      */
-    void zero ()
-    {
-        FEELPP_ASSERT (this->isInitialized()).error( "VectorPetsc<> not initialized" );
-
-        int ierr=0;
-
-        PetscScalar z=0.;
-
-        // 2.2.x & earlier style
-#if (PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR <= 2)
-
-        ierr = VecSet (&z, _M_vec);
-        CHKERRABORT(this->comm(),ierr);
-
-        // 2.3.x & newer
-#else
-
-        ierr = VecSet (_M_vec, z);
-        CHKERRABORT(this->comm(),ierr);
-
-#endif
-    }
+    void zero ();
 
     /**
      * Set entries to zero between \p start and \p stop
