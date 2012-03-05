@@ -416,7 +416,7 @@ Application::Application( Application const& __app )
 }
 Application::~Application()
 {
-#if 0
+#if 1
 #if defined ( HAVE_PETSC_H )
     PetscTruth is_petsc_initialized;
     PetscInitialized( &is_petsc_initialized );
