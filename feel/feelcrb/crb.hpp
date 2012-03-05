@@ -66,6 +66,7 @@
 #include <feel/feeldiscr/bdf2.hpp>
 #include <feel/feelfilters/exporter.hpp>
 
+
 namespace Feel
 {
   /**
@@ -701,6 +702,8 @@ private:
     array_4_type M_Cmm_pr;
     array_4_type M_Cmm_du;
 
+    std::vector<int> M_index;
+    int M_mode_number;
 };
 
 po::options_description crbOptions( std::string const& prefix = "" );
@@ -842,6 +845,7 @@ CRB<TruthModelType>::offline()
     element_ptrtype dual_initial_field( new element_type( M_model->functionSpace() ) );
     vector_ptrtype Rhs( M_backend->newVector( M_model->functionSpace() ) );
 
+    M_mode_number=1;
 
     Log() << "[CRB::offline] starting offline adaptive loop\n";
 
@@ -1171,7 +1175,17 @@ CRB<TruthModelType>::offline()
 
             pod_ptrtype POD = pod_ptrtype( new pod_type(  ) );
 
-            POD->setNm(M_Nm);
+	    if( M_mode_number == 1 )
+	    {
+	      //in this case, it's the first time that we add mu
+	      POD->setNm(M_Nm);
+	    }
+	    else
+	    {
+	      //in this case, mu has been chosen twice (at least)
+	      //so we add the M_mode_number^th mode in the basis
+	      POD->setNm( M_mode_number*M_Nm );
+	    }
             POD->setBdf( M_bdf_primal_save );
             POD->setModel(M_model);
             mode_set_type ModeSet;
@@ -1188,7 +1202,8 @@ CRB<TruthModelType>::offline()
             //now : loop over number modes per mu
             for(int i=0;i<M_Nm;i++)
             {
-                M_WN.push_back( ModeSet[i] );
+	      //M_WN.push_back( ModeSet[i] );
+	      M_WN.push_back( ModeSet[M_mode_number-1] );
 	    }
 
             //and now the dual
@@ -1199,7 +1214,8 @@ CRB<TruthModelType>::offline()
                 POD->pod(ModeSetdu,false);
                 for(int i=0;i<M_Nm;i++)
                 {
-                    M_WNdu.push_back( ModeSetdu[i] ) ;
+		  //M_WNdu.push_back( ModeSetdu[i] ) ;
+		    M_WNdu.push_back( ModeSetdu[M_mode_number-1] ) ;
                 }
             }
             else
@@ -1411,6 +1427,12 @@ CRB<TruthModelType>::offline()
         else
             {
                 boost::tie( maxerror, mu, index ) = maxErrorBounds( M_N );
+
+		M_index.push_back(index);
+
+		int count = std::count(M_index.begin(),M_index.end(),index);
+		M_mode_number = count; 
+
                 std::cout << "  -- max error bounds computed in " << timer2.elapsed() << "s\n"; timer2.restart();
             }
         M_rbconv.insert( convergence( M_N, maxerror ) );
@@ -1428,7 +1450,6 @@ CRB<TruthModelType>::offline()
 
     }
     std::cout<<"number of elements in the reduced basis : "<<M_N<<std::endl;
-
 
 
     bool visualize_basis = this->vm()["crb.visualize-basis"].template as<bool>() ;
@@ -2193,9 +2214,11 @@ CRB<TruthModelType>::maxErrorBounds( size_type N ) const
           }
     }//else
 
+    
     Eigen::MatrixXf::Index index;
     double maxerr = err.array().abs().maxCoeff( &index );
     Log() << "[maxErrorBounds] N=" << N << " max Error = " << maxerr << " at index = " << index << "\n";
+
     return boost::make_tuple( maxerr, M_Xi->at( index ), index );
 }
 template<typename TruthModelType>
