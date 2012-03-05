@@ -86,11 +86,7 @@ public:
     OperatorLinear()
         :
         super_type(),
-#if defined( HAVE_PETSC_H )
         M_backend( backend_type::build( BACKEND_PETSC ) ),
-#else
-        M_backend( backend_type::build( BACKEND_GMM ) ),
-#endif
         M_matrix()
     {}
     OperatorLinear( OperatorLinear const& ol, bool deep_copy = false )
@@ -113,8 +109,8 @@ public:
                     backend_ptrtype          backend ) :
         super_type( domainSpace, dualImageSpace ),
         M_backend( backend ),
-#if 0
-        M_matrix( M_backend->newMatrix( domainSpace, dualImageSpace ) )
+#if 1
+        M_matrix( M_backend->newMatrix( _trial=domainSpace, _test=dualImageSpace ) )
 #else
         M_matrix( M_backend->newMatrix( dualImageSpace->nDof(),domainSpace->nDof() ,
                                         dualImageSpace->nLocalDof(), domainSpace->nLocalDof() ) )
@@ -132,8 +128,8 @@ public:
         this->setDomainSpace( domainSpace );
         this->setDualImageSpace( dualImageSpace );
         M_backend = backend;
-#if 0
-        M_matrix = M_backend->newMatrix( domainSpace, dualImageSpace );
+#if 1
+        M_matrix = M_backend->newMatrix( _trial=domainSpace, _test=dualImageSpace );
 #else
         M_matrix = M_backend->newMatrix( dualImageSpace->nDof(),domainSpace->nDof() ,
                                          dualImageSpace->nLocalDof(), domainSpace->nLocalDof() );
@@ -435,7 +431,7 @@ public:
         domain_element_type de = this->domainSpace()->element();
 
         auto ie = M_backend->newVector(this->dualImageSpace());
-        form1(_test=this->dualImageSpace(), _vector=ie, _init=true) =
+        form1(_test=this->dualImageSpace(), _vector=ie ) =
             integrate(elements(this->domainSpace()->mesh()),
                       rhs_expr * id( this->dualImageSpace()->element() ) );
 
@@ -453,9 +449,7 @@ public:
         //         M_matrix->clear();
         form2( _trial=this->domainSpace(),
                _test=this->dualImageSpace(),
-               _matrix=M_matrix,
-               _init=true
-              ) = e;
+               _matrix=M_matrix ) = e;
         return *this;
     }
 
