@@ -117,11 +117,12 @@ Vector<T> & Vector<T>::operator= (const Vector<T>& v )
 {
     if ( this != &v )
         {
-            M_map = v.map();
+            if ( M_map.nProcessors() == 1 )
+                M_map = v.map();
             for( size_type i = 0; i < M_map.nLocalDofWithGhost(); ++i )
             {
-                    this->set( i,  v( v.firstLocalIndex() + i ) );
-                }
+                this->set( i,  v( v.firstLocalIndex() + i ) );
+            }
         }
     return *this;
 }
