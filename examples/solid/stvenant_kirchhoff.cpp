@@ -6,7 +6,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2008-04-14
 
-  Copyright (C) 2008 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2008-2012 Université Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -35,14 +35,10 @@
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feeldiscr/region.hpp>
 #include <feel/feeldiscr/operatorlinear.hpp>
-#include <feel/feeldiscr/bdf.hpp>
-#include <feel/feelpoly/im.hpp>
+#include <feel/feeldiscr/bdf2.hpp>
 
 #include <feel/feelfilters/gmsh.hpp>
 #include <feel/feelfilters/exporter.hpp>
-#include <feel/feelfilters/gmshhypercubedomain.hpp>
-#include <feel/feelpoly/polynomialset.hpp>
-
 
 #include <feel/feelvf/vf.hpp>
 
@@ -78,10 +74,10 @@ makeAbout()
 {
     Feel::AboutData about( "stvenant_kirchhoff" ,
                            "stvenant_kirchhoff" ,
-                           "0.1",
+                           "0.2",
                            "nD(n=1,2,3) Stvenant_Kirchhoff model",
                            Feel::AboutData::License_GPL,
-                           "Copyright (c) 2008 Université Joseph Fourier");
+                           "Copyright (c) 2008-2012 Université Joseph Fourier");
 
     about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
     return about;
@@ -91,16 +87,8 @@ makeAbout()
 
 namespace Feel
 {
-template<typename A, uint16_type i>
-class Tagged : public A
-{
-public:
-    static const uint16_type TAG = i;
-
-};
-#define MIXED 0
-
 using namespace Feel::vf;
+
 /**
  * StVenant_Kirchhoff Model
  *
@@ -137,22 +125,15 @@ public:
     typedef FunctionSpace<mesh_type, fusion::vector<Lagrange<0, Scalar> >, Discontinuous > p0_space_type;
     typedef typename p0_space_type::element_type p0_element_type;
 
-    typedef Tagged<Lagrange<Order, Vectorial>, 0> basis_u_type;
-    typedef Tagged<Lagrange<Order, Vectorial>, 1> basis_v_type;
-#if MIXED
-    typedef mpl::vector<basis_u_type, basis_v_type> basis_type;
-#else
+    typedef Lagrange<Order, Vectorial> basis_u_type;
+    typedef Lagrange<Order, Vectorial> basis_v_type;
     typedef mpl::vector<basis_u_type> basis_type;
-#endif
+
 
     typedef FunctionSpace<mesh_type, basis_type, value_type> functionspace_type;
     typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
     typedef typename functionspace_type::element_type element_type;
     typedef boost::shared_ptr<element_type> element_ptrtype;
-#if MIXED
-    typedef typename element_type::template sub_element<0>::type element_u_type;
-    typedef typename element_type::template sub_element<1>::type element_v_type;
-#endif
 
     typedef OperatorLinear<functionspace_type,functionspace_type> oplin_type;
     typedef boost::shared_ptr<oplin_type> oplin_ptrtype;
@@ -209,7 +190,15 @@ public:
         Log() << "[data] dt=" << dt << "\n";
         Log() << "[data] ft=" << ft << "\n";
 
-        mesh_ptrtype mesh = createMesh( meshSize );
+        mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
+                                            _desc=domain( _name=(boost::format( "beam-%1%" ) % Dim).str() ,
+                                                          _shape="hypercube",
+                                                          _usenames=true,
+                                                          _xmin=0., _xmax=20,
+                                                          _ymin=-1., _ymax=1.,
+                                                          _h=meshSize ),
+                                            _update=MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK,
+                                            _partitions=this->comm().size()  );
 
         M_Xh = functionspace_ptrtype( functionspace_type::New( mesh ) );
         un2 = element_ptrtype( new element_type( M_Xh, "un2" ) );
@@ -217,11 +206,6 @@ public:
         un = element_ptrtype( new element_type( M_Xh, "un" ) );
 
     }
-
-    /**
-     * create the mesh using mesh size \c meshSize
-     */
-    mesh_ptrtype createMesh( double meshSize, double ymin = 0, double ymax = 1 );
 
     /**
      * run the convergence test
@@ -234,14 +218,6 @@ public:
     void updateResidualJacobian( const vector_ptrtype& X, vector_ptrtype& R, sparse_matrix_ptrtype& J);
 
 private:
-
-
-
-    /**
-     * solve the system
-     */
-    void solve( sparse_matrix_ptrtype& D, element_type& u, vector_ptrtype& F );
-
 
     /**
      * export results to ensight format (enabled by  --export cmd line options)
@@ -261,8 +237,6 @@ private:
     element_ptrtype un;
 
     oplin_ptrtype M_oplin;
-    oplin_ptrtype M_jac;
-    funlin_ptrtype M_residual;
 
     export_ptrtype exporter;
 
@@ -284,27 +258,6 @@ private:
 }; // StVenantKirchhoff
 
 template<int Dim, int Order>
-typename StVenantKirchhoff<Dim,Order>::mesh_ptrtype
-StVenantKirchhoff<Dim,Order>::createMesh( double meshSize, double ymin, double ymax )
-{
-    mesh_ptrtype mesh( new mesh_type );
-    //mesh->setRenumber( false );
-
-    GmshHypercubeDomain td(Dim,1,Dim,entity_type::is_hypercube);
-    td.setCharacteristicLength( meshSize );
-    td.setX( std::make_pair( 0, 20 ) );
-    td.setY( std::make_pair( -1, 1 ) );
-
-    std::string fname = td.generate( entity_type::name().c_str() );
-
-    ImporterGmsh<mesh_type> import( fname );
-    mesh->accept( import );
-
-    return mesh;
-} // StVenantKirchhoff::createMesh
-
-
-template<int Dim, int Order>
 void
 StVenantKirchhoff<Dim, Order>::updateResidual( const vector_ptrtype& X, vector_ptrtype& R )
 {
@@ -313,71 +266,37 @@ StVenantKirchhoff<Dim, Order>::updateResidual( const vector_ptrtype& X, vector_p
     value_type penalisation_bc = this->vm()["penalbc"].template as<value_type>();
 
     mesh_ptrtype mesh = M_Xh->mesh();
-#if MIXED
-    element_type U( M_Xh, "U" );
-    element_type V( M_Xh, "V" );
-    element_u_type u = U.template element<0>();
-    element_u_type v = V.template element<0>();
-    element_v_type uu = U.template element<1>();
-    element_v_type vv = V.template element<1>();
-    U = *X;
-#else
     element_type u( M_Xh, "U" );
     element_type v( M_Xh, "V" );
     u = *X;
-#endif
 
-    AUTO( g, constant(0.0) );
-    AUTO( defv, 0.5*( gradv(u)+trans(gradv(u)) ) );
-    AUTO( def, 0.5*( grad(v)+trans(grad(v)) ) );
-    AUTO( Id, (mat<Dim,Dim>( cst(1), cst(0), cst(0), cst(1.) )) );
+    auto g = constant(0.0);
+    auto defv = sym(gradv(u));
+    auto def=  sym(grad(u));
+    auto Id = (mat<Dim,Dim>( cst(1), cst(0), cst(0), cst(1.) ));
     //std::cout << "u = " << u << "\n";
 
-    AUTO( eta, 0.1*Px()*( Px() -5 )*(Px()-2.5)*sin( omega*M_PI*cst_ref(time)  ) );
+    auto eta = 0.1*Px()*( Px() -5 )*(Px()-2.5)*sin( omega*M_PI*cst_ref(time)  );
 
-    *M_residual =
+    form1( _test=M_Xh, _vector=R ) =
         integrate( elements( mesh ),
                    .5*mu*(trace( (gradv(u)*trans(gradv(u)))*grad(v) ) )+
                    .25*lambda*trace(gradv(u)*trans(gradv(u)))*div(v) -
                    trans(gravity*oneY())*id(v) );
 
-#if 1
     // force applied at the bottom
-    *M_residual +=
+    form1( _test=M_Xh, _vector=R ) +=
         integrate( markedfaces( mesh, 2 ),
                    -trans(eta*oneY())*id(v) );
-#endif
-
-#if MIXED
-    *M_residual +=
-        integrate( elements( mesh ),
-                   - density*trans(idv( M_bdf->derivate( M_time_order, dt ).template element<1>() ) ) *id(v)
-                   //-density*trans(2*idv(un->template element<0>())-idv(un1->template element<0>())) *id(v) /(dt*dt)
-                   );
-    *M_residual +=
-        integrate( elements( mesh ),
-                   + trans(idv( u ))*id(vv)*M_bdf->derivateCoefficient( M_time_order, dt )
-                   - trans(idv( M_bdf->derivate( M_time_order, dt ).template element<0>() ) )*id(vv)
-                   );
-    FsFunctionalLinear<functionspace_type> flin( M_Xh, M_backend );
-    M_oplin->apply( U, flin );
-#else
-    *M_residual +=
+    form1( _test=M_Xh, _vector=R ) +=
         integrate( elements( mesh ),
                    -density*trans(2*idv(*un)-idv(*un1)) *id(v) /(dt*dt)
                    );
 
-    FsFunctionalLinear<functionspace_type> flin( M_Xh, M_backend );
-    M_oplin->apply( u, flin );
-#endif
+    M_oplin->apply( u, v );
 
-
-
-
-
-    M_residual->add( flin );
-    M_residual->close();
-    *R = M_residual->container();
+    R->add( 1., v );
+    Log() << "residual norm 2 = " << R->l2Norm() << "\n";
     Log() << "[updateResidual] done in " << ti.elapsed() << "s\n";
                    }
 template<int Dim, int Order>
@@ -389,39 +308,15 @@ StVenantKirchhoff<Dim, Order>::updateJacobian( const vector_ptrtype& X, sparse_m
     static bool is_init = false;
     value_type penalisation_bc = this->vm()["penalbc"].template as<value_type>();
     mesh_ptrtype mesh = M_Xh->mesh();
-#if MIXED
-    element_type U( M_Xh, "U" );
-    element_type V( M_Xh, "V" );
-    element_u_type u = U.template element<0>();
-    element_u_type v = V.template element<0>();
-    element_v_type uu = U.template element<1>();
-    element_v_type vv = V.template element<1>();
-
-    U = *X;
-#else
     element_type u( M_Xh, "U" );
     element_type v( M_Xh, "V" );
     u = *X;
-#endif
-    if ( is_init == false )
-        {
-            *M_jac = integrate( elements( mesh ),
-                                .5*mu*(trace( (gradv(u)*trans(gradt(u)))*grad(v) ) )+
-                                .25*lambda*trace(gradv(u)*trans(gradt(u)))*div(v)
-                                );
-
-            is_init = true;
-        }
-    else
-        {
-            M_jac->matPtr()->zero();
-            *M_jac += integrate( elements( mesh ),
-                                 .5*mu*(trace( (gradv(u)*trans(gradt(u)))*grad(v) ) )+
-                                 .25*lambda*trace(gradv(u)*trans(gradt(u)))*div(v) );
-        }
-    M_jac->close();
-    M_jac->matPtr()->addMatrix( 1.0, M_oplin->mat() );
-    J = M_jac->matPtr();
+    if ( !J ) J=M_backend->newMatrix( M_Xh, M_Xh );
+    form2( _test=M_Xh, _trial=M_Xh, _matrix=J ) =
+        integrate( elements( mesh ),
+                   .5*mu*(trace( (gradv(u)*trans(gradt(u)))*grad(v) ) )+
+                   .25*lambda*trace(gradv(u)*trans(gradt(u)))*div(v) );
+    J->addMatrix( 1.0, M_oplin->mat() );
     Log() << "[updateJacobian] done in " << ti.elapsed() << "s\n";
 }
 template<int Dim, int Order>
@@ -438,19 +333,11 @@ StVenantKirchhoff<Dim, Order>::run()
     mesh_ptrtype mesh = M_Xh->mesh();
 
     element_type U( M_Xh, "U" );
-#if MIXED
-    element_type V( M_Xh, "V" );
-    element_u_type u = U.template element<0>();
-    element_u_type v = V.template element<0>();
-    element_v_type uu = U.template element<1>();
-    element_v_type vv = V.template element<1>();
-#else
     element_type u( M_Xh, "U" );
     element_type v( M_Xh, "V" );
-#endif
 
 
-    M_bdf = bdf_ptrtype( new bdf_type( M_Xh ) );
+    M_bdf = bdf( _space=M_Xh, _vm=this->vm() );
 
 
     value_type penalisation = this->vm()["penal"].template as<value_type>();
@@ -463,21 +350,16 @@ StVenantKirchhoff<Dim, Order>::run()
           << "mu     = " << mu << "\n"
           << "gravity= " << gravity << "\n";
 
-    M_oplin = oplin_ptrtype( new oplin_type( M_Xh, M_Xh, M_backend ) );
-    AUTO( deft, 0.5*( gradt(u)+trans(gradt(u)) ) );
-    AUTO( def, 0.5*( grad(v)+trans(grad(v)) ) );
-    AUTO( Id, (mat<Dim,Dim>( cst(1), cst(0), cst(0), cst(1.) )) );
+    M_oplin = opLinear( _domainSpace=M_Xh, _imageSpace=M_Xh, _backend=M_backend );
+    auto deft = sym(gradt(u));
+    auto def = sym(grad(v));
+    auto Id = (mat<Dim,Dim>( cst(1), cst(0), cst(0), cst(1.) ));
     *M_oplin =
         integrate( elements(mesh),
                    //density*trans(idt(uu))*id(v)*M_bdf->derivateCoefficient( M_time_order, dt ) +
                    density*trans(idt(u))*id(v)/(dt*dt)+
                    lambda*divt(u)*div(v)  +
                    2*mu*trace(trans(deft)*def)
-#if MIXED
-                   //
-                   //+ trans(idt( u ))*id(vv)*M_bdf->derivateCoefficient( M_time_order, dt )
-                   - trans(idt(uu))*id(vv)
-#endif
                    );
 
     *M_oplin +=
@@ -492,27 +374,16 @@ StVenantKirchhoff<Dim, Order>::run()
                    - trans((2*mu*def+lambda*trace(def)*Id )*N())*idt(u)
                    + penalisation_bc*trans(idt(u))*id(v)/hFace() );
 
-    M_oplin->close();
-
-    M_jac = oplin_ptrtype( new oplin_type( M_Xh, M_Xh, M_backend ) );
-    M_residual = funlin_ptrtype( new funlin_type( M_Xh, M_backend ) );
-
-
     M_backend->nlSolver()->residual = boost::bind( &self_type::updateResidual, boost::ref( *this ), _1, _2 );
     M_backend->nlSolver()->jacobian = boost::bind( &self_type::updateJacobian, boost::ref( *this ), _1, _2 );
 
-    //u = vf::project( M_Xh, elements(mesh), constant(0.)*one() );
     U.zero();
 
     un->zero();
     un1->zero();
 
-    vector_ptrtype Un( M_backend->newVector( U.functionSpace() ) );
-
-    vector_ptrtype R( M_backend->newVector( U.functionSpace() ) );
-    sparse_matrix_ptrtype J;
-
     M_bdf->initialize( U );
+
 
     boost::timer ttotal;
     int iterations = 0;
@@ -522,12 +393,7 @@ StVenantKirchhoff<Dim, Order>::run()
             Log() << "============================================================\n";
             Log() << "time: " << time << "s, iteration: " << iterations << "\n";
 
-            *Un = U;
-
-            this->updateResidual( Un, R );
-            this->updateJacobian( Un, J );
-
-            solve( J, U, R );
+            M_backend->nlSolve( _solution=U );
 
             exportResults( time, U );
 
@@ -545,19 +411,6 @@ StVenantKirchhoff<Dim, Order>::run()
 
 } // StVenantKirchhoff::run
 
-template<int Dim, int Order>
-void
-StVenantKirchhoff<Dim, Order>::solve( sparse_matrix_ptrtype& D,
-                                      element_type& u,
-                                      vector_ptrtype& F )
-{
-    vector_ptrtype U( M_backend->newVector( u.functionSpace() ) );
-    *U = u;
-    M_backend->nlSolve( D, U, F, 1e-10, 10 );
-    u = *U;
-
-
-} // StVenantKirchhoff::solve
 
 
 template<int Dim, int Order>
