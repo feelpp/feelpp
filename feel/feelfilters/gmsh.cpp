@@ -311,14 +311,17 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  
     CTX::instance()->mesh.lcFromPoints = 1;
     CTX::instance()->mesh.order = M_order;
     CTX::instance()->mesh.secondOrderIncomplete = 0;
-    if ( M_recombine )
+    //if ( M_recombine )
+    if ( 0 )
         {
             CTX::instance()->mesh.algo2d = 5;
             CTX::instance()->mesh.algoRecombine = 1;
             CTX::instance()->mesh.recombineAll = 1;
         }
     else
+    {
         CTX::instance()->mesh.algo2d = 6;
+    }
 
     CTX::instance()->mesh.mshFilePartitioned = M_partition_file;
 
