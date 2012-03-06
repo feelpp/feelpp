@@ -160,7 +160,10 @@ public:
         /*
          * First we create the mesh
          */
-        mesh = createMesh( meshSize );
+        mesh = createGMSHMesh( _mesh=new mesh_type,
+                               _desc=::makefin(this->vm()["hsize"].as<double>()),
+                               _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES,
+                               _partitions=this->comm().size());
 
         /*
          * The function space and some associate elements are then defined
@@ -223,21 +226,6 @@ private:
     boost::shared_ptr<export_type> exporter;
 
 }; // ThermalFin
-
-ThermalFin::mesh_ptrtype
-ThermalFin::createMesh( double meshSize )
-{
-    mesh_ptrtype mesh( new mesh_type );
-
-    Gmsh gmsh;
-    std::string mesh_name, mesh_desc;
-    boost::tie( mesh_name, mesh_desc ) = ::makefin(meshSize);
-    std::string fname = gmsh.generate( mesh_name, mesh_desc );
-
-    ImporterGmsh<mesh_type> import( "Mesh.0.1.msh" );
-    mesh->accept( import );
-    return mesh;
-} // ThermalFin::createMesh
 
 
 void
