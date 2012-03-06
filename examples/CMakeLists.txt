@@ -3,7 +3,7 @@ project( feel-examples )
 add_custom_target( examples )
 macro(feel_add_example)
   PARSE_ARGUMENTS(EXAMPLE
-    "LINK_LIBRARIES;CFG"
+    "LINK_LIBRARIES;CFG;GEO"
     ""
     ${ARGN}
     )
@@ -25,6 +25,25 @@ macro(feel_add_example)
 #        message(WARNING "Examples subproject: config file ${cfg} does not exist" )
 #      endif()
     endforeach()
+  endif()
+
+  if ( EXAMPLE_GEO )
+    if (EXISTS $ENV{HOME})
+      # create $ENV{HOME}/feel/geo if it does not exist already: this is the geometry
+      # files repository
+      file(MAKE_DIRECTORY $ENV{HOME}/feel/geo)
+
+      foreach(exp ${EXAMPLE_GEO} )
+        FILE(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/${exp}")
+        message(STATUS ${files})
+        foreach(file ${files})
+          get_filename_component(filename ${file} NAME )
+          add_custom_command(TARGET ${targetname}
+            COMMAND ${CMAKE_COMMAND} -E copy  ${file} $ENV{HOME}/feel/geo )
+          add_dependencies(${targetname} copy_mesh_data_${filename} )
+        endforeach()
+      endforeach()
+    endif(EXISTS $ENV{HOME})
   endif()
 endmacro(feel_add_example)
 
