@@ -169,7 +169,8 @@ This configured file will be parsed automatically before being executed. In that
 \marginpar{\lstinline!mympiapp.cpp!}
 
 \feel relies on MPI for parallel computations and the class
-\lstinline!Application!  initialises the MPI environment. To launch a parallel computation for your application, you have to call the application \verb|mpirun| such as
+\lstinline!Application!  initialises the MPI environment, for that, you should go to the appropriate repertory and call \lstinline!ccmake .!. Then turn on the \lstinline!FEELPP_ENABLE_MPI_MODE!
+To launch a parallel computation for your application, you have to call the application \verb|mpirun| such as
 \begin{lstlisting}[language=sh]
 mpirun -np 2 mympiapp
 \end{lstlisting}
