@@ -40,8 +40,7 @@ gmsh_ptrtype
 makefin( double hsize )
 {
     std::ostringstream ostr;
-    ostr << "Mesh.MshFileVersion = 2.1;\n"
-         << "h=" << hsize << ";\n"
+    ostr << "h=" << hsize << ";\n"
          << "Point (1) = {0, 0, 0, h};\n"
          << "Point (2) = {1, 0, 0, h};\n"
          << "Point (3) = {1, 1, 0, h};\n"
