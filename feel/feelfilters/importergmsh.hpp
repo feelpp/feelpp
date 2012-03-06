@@ -122,6 +122,7 @@ public:
         _M_version( FEELPP_GMSH_FORMAT_VERSION ),
         M_use_elementary_region_as_physical_region( false )
         {
+            this->setIgnorePhysicalName("FEELPP_GMSH_PHYSICALNAME_IGNORED");
             //showMe();
         }
 
@@ -132,14 +133,18 @@ public:
         _M_version( _version ),
         M_use_elementary_region_as_physical_region( false )
         {
+            this->setIgnorePhysicalName("FEELPP_GMSH_PHYSICALNAME_IGNORED");
             //showMe();
         }
     ImporterGmsh( ImporterGmsh const & i )
         :
         super( i ),
         _M_version( i._M_version ),
-        M_use_elementary_region_as_physical_region( false )
+        M_use_elementary_region_as_physical_region( false ),
+        _M_ignorePhysicalGroup(i._M_ignorePhysicalGroup),
+        _M_ignorePhysicalName(i._M_ignorePhysicalName)
         {
+            this->setIgnorePhysicalName("FEELPP_GMSH_PHYSICALNAME_IGNORED");
             //showMe();
         }
     ~ImporterGmsh()
@@ -176,6 +181,9 @@ public:
     //@{
 
     void setVersion( std::string const& version ) { _M_version = version; }
+
+    void setIgnorePhysicalGroup( int i ) { _M_ignorePhysicalGroup.insert(i); }
+    void setIgnorePhysicalName( std::string s ) { _M_ignorePhysicalName.insert(s); }
 
     //@}
 
@@ -224,6 +232,8 @@ private:
     std::vector<int> _M_n_vertices;
     std::vector<int> _M_n_b_vertices;
 
+    std::set<int> _M_ignorePhysicalGroup;
+    std::set<std::string> _M_ignorePhysicalName;
 };
 
 
@@ -329,6 +339,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
                 boost::trim_if(name,boost::is_any_of("\""));
 
                 mesh->addMarkerName( std::make_pair( name, boost::make_tuple( id, topodim ) ) );
+                if (_M_ignorePhysicalName.find(name)!=_M_ignorePhysicalName.end()) this->setIgnorePhysicalGroup(id);
             }
             FEELPP_ASSERT( mesh->markerNames().size() == nnames )( mesh->markerNames().size() )( nnames ).error( "invalid number of physical names" );
             __is >> __buf;
@@ -558,7 +569,8 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
     __whichboundary.assign( __n, vv );
     for( uint __i = 0; __i < __nele;++__i )
     {
-        if ( isElementOnProcessor( __et[__i] ).get<0>() == false )
+        if ( isElementOnProcessor( __et[__i] ).get<0>() == false ||
+             _M_ignorePhysicalGroup.find(__et[__i][0]) != _M_ignorePhysicalGroup.end() )
             continue;
         switch( __etype[__i] )
         {
@@ -637,7 +649,8 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
     // add the element to the mesh
     for( uint __i = 0; __i < __nele;++__i )
     {
-        if ( isElementOnProcessor( __et[__i] ).get<0>() == false )
+        if ( isElementOnProcessor( __et[__i] ).get<0>() == false ||
+             _M_ignorePhysicalGroup.find(__et[__i][0]) != _M_ignorePhysicalGroup.end() )
             continue;
         switch( __etype[__i] )
         {
