@@ -161,6 +161,7 @@ MyMesh<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
 
     //# marker62 #
     exporter->step(0)->setMesh( mesh );
+    exporter->step(0)->addRegions();
     exporter->save();
     //# endmarker62 #
 }
