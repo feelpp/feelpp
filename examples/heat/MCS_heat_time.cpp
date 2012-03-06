@@ -221,7 +221,7 @@ template<int Dim>
 void
 BlocHeat<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
 {
-    
+
     //if ( X[1] == 0 ) shape = "simplex";
     //if ( X[1] == 1 ) shape = "hypercube";
 
@@ -233,7 +233,9 @@ BlocHeat<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
                                        % Order
                                        % meshSize );
 
-    auto mesh = GeoTool::createMeshFromGeoFile<mesh_type>("/u/e/effeindm/feel.src/examples/heat/MCS_heat.geo", "nameExport",meshSize);
+    auto mesh = createGMSHMesh( _mesh=new mesh_type,
+                                _desc = geo(_filename="MCS_heat.geo") );
+    //auto mesh = GeoTool::createMeshFromGeoFile<mesh_type>("/u/e/effeindm/feel.src/examples/heat/MCS_heat.geo", "nameExport",meshSize);
 
     /**
      * The function space and some associated elements(functions) are then defined
@@ -244,11 +246,11 @@ BlocHeat<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
     element_type Tn( Xh, "Tn" );
     element_type v( Xh, "v" );
 
-   // Initialization of the terms :    
+   // Initialization of the terms :
    Tn.zero();
-    
-    
-   
+
+
+
 
     /** \endcode */
 
@@ -258,7 +260,7 @@ BlocHeat<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
      */
     /** \code */
     //# marker1 #
-  
+
     //! deduce from expression the type of f (thanks to keyword 'auto')
     auto f = 0;
     //# endmarker1 #

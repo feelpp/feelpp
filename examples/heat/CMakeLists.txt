@@ -25,6 +25,7 @@ feel_add_example( thermalfin thermalfin.cpp fin.cpp LINK_LIBRARIES ${FEELPP_LIBR
 feel_add_example( resistance resistance.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES})
 feel_add_example( heatsink heatsink.cpp fin_sink.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG heatsink.cfg)
 feel_add_example( MCS_heat MCS_heat.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES})
+configure_file(MCS_heat.geo MCS_heat.geo)
 feel_add_example( MCS_heat_time MCS_heat_time.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES})
 #feel_add_example( Cabine_heat Cabine_heat.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES})
 #feel_add_example( ground ground.cpp  LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG ground.cfg ground-realistic.cfg ) #ground1.cfg ground2.cfg ground3.cfg )
