@@ -73,7 +73,6 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( elementminmax1, T, dim_types )
     mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
                                         _desc=domain( _name=(boost::format( "elementminmax1-%1%" )  % T::value).str() ,
                                                       _shape="simplex",
-                                                      _dim=T::value,
                                                       _h=2.0 ),
                                         _update=MESH_CHECK|MESH_UPDATE_EDGES|MESH_UPDATE_FACES );
 
