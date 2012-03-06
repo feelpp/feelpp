@@ -46,7 +46,7 @@
 
 
 
-std::pair<std::string, std::string> makefin( double hsize );
+Feel::gmsh_ptrtype makefin( double hsize );
 
 inline
 Feel::po::options_description
