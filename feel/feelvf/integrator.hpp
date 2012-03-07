@@ -1806,14 +1806,20 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
         //std::cout << "2" << std::endl;
         it = this->beginElement();
         // wait for all the guys
-
+#if 0
 #ifdef HAVE_MPI
         if ( M_comm.size() > 1 )
         {
             M_comm.barrier();
         }
 #endif
-
+#else
+        auto const& worldComm = const_cast<MeshBase*>(it->mesh())->worldComm();
+        if ( worldComm.localSize() > 1 )
+        {
+            worldComm.localComm().barrier();
+        }
+#endif
 
         // possibly high order
         gmc_ptrtype __c( new gmc_type( gm, *it, __geopc ) );
