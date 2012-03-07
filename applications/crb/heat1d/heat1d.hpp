@@ -593,7 +593,7 @@ Heat1D::solve( parameter_type const& mu )
 
     element_ptrtype T( new element_type( Xh ) );
     this->solve( mu, T );
-    this->exportResults( *T );
+    //this->exportResults( *T );
 
 }
 
