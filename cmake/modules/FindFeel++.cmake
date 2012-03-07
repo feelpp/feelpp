@@ -91,7 +91,7 @@ FIND_PACKAGE(Boost COMPONENTS date_time filesystem system program_options unit_t
 OPTION(BOOST_ENABLE_TEST_DYN_LINK "enable boost test with dynamic lib" ON)
 MARK_AS_ADVANCED(BOOST_ENABLE_TEST_DYN_LINK)
 
-set(Boost_ADDITIONAL_VERSIONS "1.39" "1.40" "1.41" "1.42" "1.43" "1.44" "1.45" "1.46" "1.47" "1.48" )
+set(Boost_ADDITIONAL_VERSIONS "1.39" "1.40" "1.41" "1.42" "1.43" "1.44" "1.45" "1.46" "1.47" "1.48" "1.49" )
 set( BOOST_PARAMETER_MAX_ARITY 20 )
 #set( BOOST_FILESYSTEM_VERSION 2)
 set( BOOST_FILESYSTEM_VERSION 3)
