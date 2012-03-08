@@ -26,7 +26,7 @@ INCLUDE(CheckIncludeFileCXX)
 
 FIND_PATH(GMSH_INCLUDE_DIR
   Gmsh.h Context.h GModel.h
-  PATHS /usr/include/ /usr/include/gmsh/ /usr/local/include/gmsh /opt/local/include/gmsh $ENV{GMSH_DIR}/include/gmsh
+  PATHS /usr/include/ /usr/include/gmsh/ /usr/local/include/gmsh /opt/local/include/gmsh /usr/local/dev/include/gmsh $ENV{GMSH_DIR}/include/gmsh
   DOC "Directory where GMSH header files are stored" )
 include_directories(${GMSH_INCLUDE_DIR})
 if ( GMSH_INCLUDE_DIR )
@@ -48,6 +48,7 @@ FIND_LIBRARY(GMSH_LIBRARY NAMES Gmsh gmsh-2.5.1 gmsh
   /usr/lib
   /usr/local/lib
   /opt/local/lib
+  /usr/local/dev/lib
   $ENV{GMSH_DIR}/lib
   )
 
