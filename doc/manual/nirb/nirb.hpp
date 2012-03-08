@@ -11,6 +11,7 @@
 #include <feel/options.hpp>
 #include <feel/feelalg/backend.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feeldiscr/operatorinterpolation.hpp>
 #include <feel/feelfilters/gmsh.hpp>
 #include <feel/feeldiscr/mesh.hpp>
 #include <feel/feelfilters/exporter.hpp>
@@ -103,6 +104,7 @@ public:
     muMax( this->vm()["muMax"].template as<double>() ),
     mu(this->vm()["mu"].template as<double>() ),
     Sampling(this->vm()["Sampling"].template as<int>()),
+    SamplingCoarse(this->vm()["SamplingCoarse"].template as<int>()),
     Offline( this->vm()["Offline"].template as<int>() ),
     ComputeError( this->vm()["ComputeError"].template as<int>() )
     {
@@ -112,33 +114,88 @@ public:
     
     void run( const double* X, unsigned long P, double* Y, unsigned long N ); 
     
+	
+	// computation of the "blackbox" solution
     element_type blackbox( space_ptrtype Xh, double param);
     
-    void ComputeSnapshot(space_ptrtype Xh);
-    
-    
-    element_type BuildNirbSolution(space_ptrtype XhFine,space_ptrtype XhCoarse,double param);
-    
-    void ConstructNIRB (space_ptrtype Xh);
 
-    void ChooseRBFunction(space_ptrtype Xh,vector_of_element_type &VuBasis,sparse_matrix_ptrtype const &MassMatrix,sparse_matrix_ptrtype const &StiffMatrix);
+	//Construction of  NIRB basis
+	
+    void ComputeSnapshot(space_ptrtype Xh, std::string filename);
+
+    void ChooseRBFunction(space_ptrtype Xh,
+						  vector_of_element_type &VuBasis,
+						  sparse_matrix_ptrtype const &MassMatrix,
+						  sparse_matrix_ptrtype const &StiffMatrix);
     
-    void OrthogonalisationRBFunction(space_ptrtype Xh,vector_of_element_type &Vu,vector_of_element_type &M_Vu,sparse_matrix_ptrtype const &StiffMatrix,sparse_matrix_ptrtype const &MassMatrix);
+    void OrthogonalisationRBFunction(space_ptrtype Xh,
+									 vector_of_element_type &Vu,
+									 vector_of_element_type &M_Vu,
+									 sparse_matrix_ptrtype const &StiffMatrix,
+									 sparse_matrix_ptrtype const &MassMatrix);
     
-    void OrthogonalisationRBFunctionL2GrammSchmidt(space_ptrtype Xh,vector_of_element_type &Vu, sparse_matrix_ptrtype const &MassMatrix);
+    void OrthogonalisationRBFunctionL2GrammSchmidt(space_ptrtype Xh,
+												   vector_of_element_type &Vu, 
+												   sparse_matrix_ptrtype const &MassMatrix);
     
-    double OrthogonalisationRBFunctionL2GrammSchmidt(space_ptrtype Xh, vector_of_element_type &Vu,int n,sparse_matrix_ptrtype const &MassMatrix);
+    double OrthogonalisationRBFunctionL2GrammSchmidt(space_ptrtype Xh, 
+													 vector_of_element_type &Vu,
+													 int n,
+													 sparse_matrix_ptrtype const &MassMatrix);
     
     
-    Eigen::MatrixXd  ConstructStiffMatrixSnapshot(space_ptrtype Xh,sparse_matrix_ptrtype  const &StiffMatrix);
-    Eigen::MatrixXd  ConstructStiffMatrixRB(space_ptrtype Xh,vector_of_element_type &Vu,sparse_matrix_ptrtype const &StiffMatrix);
+    Eigen::MatrixXd  ConstructStiffMatrixSnapshot(space_ptrtype Xh
+												  ,sparse_matrix_ptrtype  const &StiffMatrix);
+	
+    Eigen::MatrixXd  ConstructStiffMatrixRB(space_ptrtype Xh,
+											vector_of_element_type &Vu,
+											sparse_matrix_ptrtype const &StiffMatrix);
     
-    Eigen::MatrixXd  ConstructMassMatrixRB(space_ptrtype Xh,vector_of_element_type &Vu,sparse_matrix_ptrtype const &MassMatrix);
+    Eigen::MatrixXd  ConstructMassMatrixRB(space_ptrtype Xh,
+										   vector_of_element_type &Vu,
+										   sparse_matrix_ptrtype const &MassMatrix);
     
+    void ConstructNIRB (space_ptrtype Xh, 
+						vector_of_element_type  &M_VNirbBasis, 
+						vector_of_element_type  &VNirbBasis);
     
-    element_type  BuildNirbSolution(space_ptrtype XhFine,space_ptrtype XhCoarse, vector_of_element_type const &M_VNirbBasis, vector_of_element_type const &VNirbBasis, double param);
+	
+	//Construction of NIRB solution 
+    element_type  BuildNirbSolutionWithoutPostProcess(space_ptrtype XhFine, 
+													  element_type uCoarseInterpolate,
+													  vector_of_element_type const &M_VNirbBasis, 
+													  vector_of_element_type const &VNirbBasis, 
+													  Eigen::VectorXd & BetaiH);
+    element_type BuildCoarseInterpolation(space_ptrtype XhFine,
+										  space_ptrtype XhCoarse, 
+										  double param);
     
-    void ConstructNIRB (space_ptrtype Xh, vector_of_element_type  &M_VNirbBasis, vector_of_element_type  &VNirbBasis);
+    element_type BuildNirbSolution(space_ptrtype XhFine,
+								   space_ptrtype XhCoarse, 
+								   vector_of_element_type const &M_VNirbBasis, 
+								   vector_of_element_type const &VNirbBasis, 
+								   double param,
+								   Eigen::VectorXd BetaiH);
+    
+    //Post-processing of NIRB solution 
+    Eigen::MatrixXd BuildBetaH(space_ptrtype XhFine,
+								 space_ptrtype XhCoarse, 
+								 vector_of_element_type  &M_VNirbBasis);
+    
+    Eigen::MatrixXd BuildBetah(space_ptrtype XhFine,
+								 vector_of_element_type  &M_VNirbBasis);
+    
+    Eigen::MatrixXd BuildPostProcessMatrix(space_ptrtype XhFine,
+										   space_ptrtype XhCoarse,  
+										   vector_of_element_type  &M_VNirbBasis);
+    
+    element_type BuildNirbSolutionWithPostProcess(space_ptrtype XhFine,
+												  space_ptrtype XhCoarse,
+												  vector_of_element_type  &M_VNirbBasis, 
+												  vector_of_element_type  &VNirbBasis, 
+												  Eigen::VectorXd &BetaiuH, 
+												  element_type &uCoarseInterpolate);
+    
     
     //Create geometry
     gmsh_ptrtype createGeo(double hsize,std::string MeshFileName);
@@ -160,6 +217,7 @@ private:
     // Paramater to set OFF or ON the "offline" procedure
     
     int Sampling;
+    int SamplingCoarse;
     // if sampling = 1 ==> compute sampling (by default)
     // if sampling = 0 ==> read sampling from a file
     
@@ -185,7 +243,7 @@ void NIRBTEST<PolynomialOrder>::run()
     
     std::cout << "------------------------------------------------------------\n";
     std::cout << "Execute NIRBTEST<" << PolynomialOrder << ">\n";
-    std::vector<double> X(11);
+    std::vector<double> X(12);
     X[0] = FineMeshSize;
     X[1] = CoarseMeshSize;
     X[2] = ReadingMeshes;
@@ -195,8 +253,9 @@ void NIRBTEST<PolynomialOrder>::run()
     X[6] = muMax;
     X[7] = mu;
     X[8] = Sampling;
-    X[9] = Offline;
-    X[10] = ComputeError;
+    X[9] = SamplingCoarse;
+    X[10] = Offline;
+    X[11] = ComputeError;
     std::vector<double> Y(1);
     run( X.data(), X.size(), Y.data(), Y.size() );
 }
@@ -313,9 +372,18 @@ void NIRBTEST<PolynomialOrder>::run( const double* X, unsigned long P, double* Y
     }
     
     if (Offline){
-        ConstructNIRB(XhFine) ;
+        ConstructNIRB(XhFine,MassMat_x_VuNirb,VNirbBasis);
+        if (SamplingCoarse){
+            std::cout << "Computation of Coarse snapshot " << endl;
+            boost::timer ti; 
+            ComputeSnapshot(XhCoarse,"_Coarse_");
+            
+            double Time_snapshot_Coarse = ti.elapsed();
+            std::cout << "Computation of the " << NbSnapshot << " snapshots : done  -- ";
+            std::cout << "Time per snapshot: " << Time_snapshot_Coarse/NbSnapshot << " sec " << endl;
+        }	
     }
-    
+	
     //STEP TWO : Approximation of the solution using the "nirb" functions for a choosen mu
     
     
@@ -324,31 +392,50 @@ void NIRBTEST<PolynomialOrder>::run( const double* X, unsigned long P, double* Y
     double p = mu;
     
     
+    std :: cout << "OFFLINE Procedure has been skipped" << endl;
     
     
-    
+	auto uCoarseInterpolate = XhFine->element(); 
     auto uNirbCoarse = XhFine->element();   // Fine/Coarse Grid NIRB solution
-    
-    double TimeCoarse,TimeFine;
+    Eigen::VectorXd BetaiH(sizeRB);
+    double TimeCoarse,TimeCoarsePostProcess,TimeFine;
     boost::timer ti;   
     ti.restart();
-    uNirbCoarse = BuildNirbSolution(XhFine,XhCoarse,MassMat_x_VuNirb,VNirbBasis,p);
+    uCoarseInterpolate = BuildCoarseInterpolation(XhFine,XhCoarse,p);
+    TimeCoarse =  ti.elapsed();
+    std :: cout << "Calculation of uCoarse and it's interpolation on XhFine :"   << TimeCoarse << " sec" << endl;
+    uNirbCoarse = BuildNirbSolutionWithoutPostProcess(XhFine,uCoarseInterpolate,MassMat_x_VuNirb,VNirbBasis,BetaiH); 
+    //uNirbCoarse = BuildNirbSolution(XhFine,XhCoarse,MassMat_x_VuNirb,VNirbBasis,p,BetaiH);
     TimeCoarse =  ti.elapsed();
     std :: cout << "Construction of NIRB solution (uNirbCoarse) - Fine/Coarse Grid (saved in nirb2GridCoarse):" << endl;
-    std::cout << "Time to build solution " << TimeCoarse << " sec" << endl;    
-    
+    std::cout << "Time to build solution " << TimeCoarse << " sec" << endl;
+	
     export_ptrtype exporter2GridCoarse(export_type::New( this->vm(), "nirb2GridCoarse"));
     exporter2GridCoarse->step(0)->setMesh( meshFine );
     exporter2GridCoarse->step(0)->add("uNirbCoarse",uNirbCoarse);
     exporter2GridCoarse->save();
+	
+    auto uNirbCoarsePostProcess = XhFine->element();   // Fine/Coarse Grid NIRB solution	
+    ti.restart();
+	uNirbCoarsePostProcess = BuildNirbSolutionWithPostProcess(XhFine, XhCoarse, MassMat_x_VuNirb, 
+															  VNirbBasis,BetaiH,uCoarseInterpolate);
+	
+    TimeCoarsePostProcess =  ti.elapsed();
+    std :: cout << "Post-processing of NIRB solution (uNirbCoarsePostProcess) - Fine/Coarse Grid (saved in nirb2GridCoarse):" << endl;
+    std::cout << "Time  " << TimeCoarsePostProcess << " sec" << endl;
+    
+    export_ptrtype exporter2GridCoarsePostProcess(export_type::New( this->vm(), "nirb2GridCoarsePostProcess"));
+    exporter2GridCoarsePostProcess->step(0)->setMesh( meshFine );
+    exporter2GridCoarsePostProcess->step(0)->add("uNirbCoarsePostProcess",uNirbCoarsePostProcess);
+    exporter2GridCoarsePostProcess->save();
     
     if (ComputeError){
         std :: cout << "Error calculation " << endl;
-        
-        
+		Eigen::VectorXd Betaih(sizeRB);
+  
         auto u1Grid = XhFine->element();
         ti.restart();
-        u1Grid = BuildNirbSolution(XhFine,XhFine,p);
+        u1Grid = BuildNirbSolution(XhFine,XhFine,MassMat_x_VuNirb,VNirbBasis,p,Betaih);
         TimeFine =  ti.elapsed();
         std::cout << "Construction of uNirbFine - Fine/Fine Grid  (saved in nirb1Grid): done "<< endl;
         std::cout << "Time to build  " << TimeFine << " sec" << endl;
@@ -415,16 +502,22 @@ void NIRBTEST<PolynomialOrder>::run( const double* X, unsigned long P, double* Y
         
         
         
-        double  ErrH1uNirbCoarse,ErrH1u1Grid;
+        double  ErrH1uNirbCoarse,ErrH1uNirbCoarsePostProcess,ErrH1u1Grid;
         
         
-        /*
-         // uRef - uNirbCoarse
-         ErrH1uNirbCoarse = integrate(_range=elements(XhRef->mesh()),
-         _expr=( (gradv(uRef)-gradv(uNirbCoarse))*trans(gradv(uRef)-gradv(uNirbCoarse))
-         + (idv(uRef)-idv(uNirbCoarse))*(idv(uRef)-idv(uNirbCoarse)) )).evaluate()(0,0);
-         ErrH1uNirbCoarse = sqrt(ErrH1uNirbCoarse)/H1NormUref;
-         */
+         
+		// uRef - uNirbCoarse
+		ErrH1uNirbCoarsePostProcess = integrate(_range=elements(XhRef->mesh()),
+									 _expr=( (gradv(uRef)-gradv(uNirbCoarsePostProcess))*trans(gradv(uRef)-gradv(uNirbCoarsePostProcess))
+											+ (idv(uRef)-idv(uNirbCoarsePostProcess))*(idv(uRef)-idv(uNirbCoarsePostProcess)) )).evaluate()(0,0);
+		ErrH1uNirbCoarsePostProcess = sqrt(ErrH1uNirbCoarsePostProcess)/H1NormUref;
+          
+		 
+		// uRef - uNirbCoarse
+		ErrH1uNirbCoarse = integrate(_range=elements(XhRef->mesh()),
+									 _expr=( (gradv(uRef)-gradv(uNirbCoarse))*trans(gradv(uRef)-gradv(uNirbCoarse))
+											+ (idv(uRef)-idv(uNirbCoarse))*(idv(uRef)-idv(uNirbCoarse)) )).evaluate()(0,0);
+		ErrH1uNirbCoarse = sqrt(ErrH1uNirbCoarse)/H1NormUref;
         
         //uRef - uNirbFine (= uRef - u1Grid)
         ErrH1u1Grid = integrate(_range=elements(XhRef->mesh()),
@@ -433,7 +526,8 @@ void NIRBTEST<PolynomialOrder>::run( const double* X, unsigned long P, double* Y
         ErrH1u1Grid = sqrt(ErrH1u1Grid)/H1NormUref;
         
         std :: cout << "H1-norm NIRB Error " << endl;
-        //std :: cout << "||u_ref - u_NirbCoarse ||_{H1}  = " << ErrH1uNirbCoarse << endl;
+        std :: cout << "||u_ref - u_NirbCoarse ||_{H1}  = " << ErrH1uNirbCoarse << endl;
+        std :: cout << "||u_ref - u_NirbCoarsePostProcess ||_{H1}  = " << ErrH1uNirbCoarsePostProcess << endl;
         std :: cout << "||u_ref - u_NirbFine ||_{H1}  = " << ErrH1u1Grid<< endl;
         std :: cout <<  endl;
         
@@ -446,18 +540,18 @@ void NIRBTEST<PolynomialOrder>::run( const double* X, unsigned long P, double* Y
         exporter1Grid->step(0)->add("uNirbFine",u1Grid);    
         exporter1Grid->save();
         
-        
-        /* 
+         
          
          auto uFine = XhFine->element();
          auto uCoarse = XhCoarse->element();
+        
          uCoarse = blackbox( XhCoarse, p);
          std :: cout << "Computation of FE solution (uCoarse) -  Coarse Grid (not saved):"<< endl;
          
          uFine = blackbox( XhFine, p );
          std :: cout << "Computation of FE solution (uFine) - Fine Grid (saved in EFFine): done" << endl;
          
-         
+         /*
          
          // uref - uFine 
          double ErrSemiH1uFine,ErrL2uFine,ErrH1uFine;
@@ -496,7 +590,7 @@ void NIRBTEST<PolynomialOrder>::run( const double* X, unsigned long P, double* Y
          std :: cout << "||u_ref - u_fine ||_{H1}  = " << ErrH1uFine << endl;
          std :: cout << endl;
          
-         
+         */
          export_ptrtype exporterFine(export_type::New( this->vm(), "EF_Fine" ) );
          export_ptrtype exporterCoarse(export_type::New( this->vm(), "EF_Coarse" ) );
          exporterFine->step(0)->setMesh( meshFine );
@@ -507,7 +601,7 @@ void NIRBTEST<PolynomialOrder>::run( const double* X, unsigned long P, double* Y
          
          exporterFine->save();
          exporterCoarse->save();
-         */
+         
     }
     
     
@@ -567,7 +661,7 @@ gmsh_ptrtype NIRBTEST<PolynomialOrder>::createGeo(double hsize, std::string Mesh
 //-----------------------------------------
 
 template< int PolynomialOrder>
-void NIRBTEST<PolynomialOrder>::ComputeSnapshot(space_ptrtype Xh){
+void NIRBTEST<PolynomialOrder>::ComputeSnapshot(space_ptrtype Xh,std::string filename){
     
     int XhNdof = Xh->nLocalDof();
     double pi = 3.14159265;
@@ -577,7 +671,7 @@ void NIRBTEST<PolynomialOrder>::ComputeSnapshot(space_ptrtype Xh){
     {
         double theta = (i+1)*(muMax-muMin)/(113.);
         ui = blackbox(Xh,theta);
-        std::string path = (boost::format("./Sol_%1%") %i).str() ;
+        std::string path = "./Sol" + filename + (boost::format("%1%") %i).str() ;
         ui.save(_path=path);
     }
     
@@ -946,52 +1040,28 @@ void NIRBTEST<PolynomialOrder> ::OrthogonalisationRBFunction(space_ptrtype Xh,ve
     }
 }
 
- //---------------------------------------------------
+//---------------------------------------------------
 //---------------------------------------------------
 
 template< int PolynomialOrder>
-typename NIRBTEST<PolynomialOrder>::element_type NIRBTEST<PolynomialOrder> :: BuildNirbSolution(space_ptrtype XhFine,space_ptrtype XhCoarse, vector_of_element_type const &M_VNirbBasis, vector_of_element_type const &VNirbBasis, double param){
-    
-    //std :: cout << "In BuildNirbSolution" << endl;
-    
-    
-    auto uNirb = XhFine->element();
-    auto uCoarse = XhCoarse->element();
-    auto uCoarseInterpolate = XhFine->element();
-    auto ui = XhFine->element();
-    
+typename NIRBTEST<PolynomialOrder>::element_type NIRBTEST<PolynomialOrder> :: BuildNirbSolutionWithoutPostProcess (space_ptrtype XhFine, element_type uCoarseInterpolate,vector_of_element_type const &M_VNirbBasis, vector_of_element_type const &VNirbBasis, Eigen::VectorXd & BetaiH){
      
     
-    //auto D = M_backend->newMatrix( _test=XhCoarse, _trial=XhFine  ); //Sparse FE mass matrix
-    //form2( _test=XhCoarse, _trial=XhFine, _matrix=D ) = 
-    //            integrate( _range=elements(XhFine->mesh()),_expr=id(uCoarse)*idt(ui));
     
-    uCoarse = blackbox(XhCoarse,param);//Computation of the coarse solution
-    
-    //Interpolation of the coarse solution on the fine Mesh to compute the coefficiant BetaiH
-    interpolate (XhFine,uCoarse,uCoarseInterpolate);
-    
+    auto uNirb = XhFine->element(); 
+     
     auto UcoarseInterpol = M_backend->newVector(XhFine);
     *UcoarseInterpol =  uCoarseInterpolate;
     
     //Computation of the coefficiant \BetaiH = \int uCoarse*\Epsilon_i
     //with \Epsilon_i being the final Nirb basis functions
-    
-    //Reading Nirb basis function #i and building the Nirb solution
-    Eigen :: VectorXd BetaiH(sizeRB);
-    uNirb.zero();
-    std::string path;
+     
+    uNirb.zero(); 
     auto Mui = M_backend->newVector(XhFine);
     for (int i =0;i<sizeRB;i++)
-    {
-       
-        //BetaiH[i] = integrate( _range=elements(XhFine->mesh()),_expr=(idv(uCoarse)*idv(ui)) ).evaluate()(0,0);
-        //BetaiH[i] = D->energy(uCoarse,ui);
-         
-        
+    { 
         *Mui=M_VNirbBasis[i];
         BetaiH[i] = inner_product(UcoarseInterpol,Mui);
-    
         uNirb.add(BetaiH[i], VNirbBasis[i] );
     }
     
@@ -1004,157 +1074,40 @@ typename NIRBTEST<PolynomialOrder>::element_type NIRBTEST<PolynomialOrder> :: Bu
 //---------------------------------------------------
 
 template< int PolynomialOrder>
-typename NIRBTEST<PolynomialOrder>::element_type NIRBTEST<PolynomialOrder> ::BuildNirbSolution(space_ptrtype XhFine,space_ptrtype XhCoarse, double param){
-    
-    //std :: cout << "In BuildNirbSolution" << endl;
-    
-    
-    auto uNirb = XhFine->element();
+typename NIRBTEST<PolynomialOrder>::element_type NIRBTEST<PolynomialOrder> ::BuildCoarseInterpolation(space_ptrtype XhFine,space_ptrtype XhCoarse, double param){
+    //boost::timer ti;   
+    //ti.restart();
     auto uCoarse = XhCoarse->element();
     auto uCoarseInterpolate = XhFine->element();
     auto ui = XhFine->element();
+    uCoarse = blackbox(XhCoarse,param); 
+    //std :: cout << "Calculation of uCoarse "   << ti.elapsed() << " sec" << endl;  
+    //ti.restart();
+    ////Interpolation of the coarse solution on the fine Mesh to compute the coefficiant BetaiH
     
-    
-    
-    /*
-     auto D = M_backend->newMatrix( _test=XhFine, _trial=XhFine  ); //Sparse FE mass matrix
-     form2( _test=XhFine, _trial=XhFine, _matrix=D ) =
-     integrate( _range=elements(XhFine->mesh()), _expr=id(uCoarseInterpolate)*idt(ui));
-     */
-    
-    //auto D = M_backend->newMatrix( _test=XhCoarse, _trial=XhFine  ); //Sparse FE mass matrix
-    //form2( _test=XhCoarse, _trial=XhFine, _matrix=D ) = 
-    //            integrate( _range=elements(XhFine->mesh()),_expr=id(uCoarse)*idt(ui));
-    
-    uCoarse = blackbox(XhCoarse,param);//Computation of the coarse solution
-    
-    //Interpolation of the coarse solution on the fine Mesh to compute the coefficiant BetaiH
+	//auto opI = opInterpolation(_domainSpace=XhCoarse,_imageSpace=XhFine);
+    //std :: cout << "Construction of the operator"   << ti.elapsed() << " sec" << endl;  
+    //ti.restart();
+	//opI->apply(uCoarse,uCoarseInterpolate);
+    //std :: cout << "Application of the operator"   << ti.elapsed() << " sec" << endl;
     interpolate (XhFine,uCoarse,uCoarseInterpolate);
-    
-    auto UcoarseInterpol = M_backend->newVector(XhFine);
-    *UcoarseInterpol =  uCoarseInterpolate;
-    
-    //Computation of the coefficiant \BetaiH = \int uCoarse*\Epsilon_i
-    //with \Epsilon_i being the final Nirb basis functions
-    
-    //Reading Nirb basis function #i and building the Nirb solution
-    Eigen :: VectorXd BetaiH(sizeRB);
-    uNirb.zero();
-    std::string path;
-    auto Mui = M_backend->newVector(XhFine);
-    for (int i =0;i<sizeRB;i++)
-    {
-        ui.zero(); //Reading vector which contains D*ui
-        path =(boost::format("./RB%1%D_Nirb_Basis%2%File") %sizeRB%i).str()  ;
-        ui.load(_path=path);
-        if( ui.l2Norm() == 0.){
-            std::cerr << "ERROR: In BuilNirbSolution : NIRB Basis function (" << i << ") equal to zero " << endl;
-            exit(0);
-        }
-        //BetaiH[i] = integrate( _range=elements(XhFine->mesh()),_expr=(idv(uCoarse)*idv(ui)) ).evaluate()(0,0);
-        //BetaiH[i] = D->energy(uCoarse,ui);
-        
-        //BetaiH[i] =  0.;
-        //for (int j =0;j<XhFine->nLocalDof();j++){
-        //    BetaiH[i] += uCoarseInterpolate(j)*ui(j);
-        //}
-        
-        //BetaiH[i] = D->energy(uCoarseInterpolate,ui);
-        
-        *Mui=ui;
-        BetaiH[i] = inner_product(UcoarseInterpol,Mui);
-        ui.zero();
-        path =(boost::format("./RB%1%NIRB_BasisFile_%2%") %sizeRB%i).str()  ;
-        ui.load(_path=path);
-        if( ui.l2Norm() == 0.){
-            std::cerr << "ERROR: In BuilNirbSolution : NIRB Basis function (" << i << ") equal to zero " << endl;
-            exit(0);
-        }
-        uNirb.add(BetaiH[i], ui );
-    }
-    
-    
-    return uNirb;
-    
+    return uCoarseInterpolate;
     
 }
 
 
-//-----------------------------------------
+// //---------------------------------------------------
+////---------------------------------------------------
 
-//-----------------------------------------
-//-----------------------------------------
 template< int PolynomialOrder>
-void NIRBTEST<PolynomialOrder> :: ConstructNIRB(space_ptrtype Xh){
+typename NIRBTEST<PolynomialOrder>::element_type NIRBTEST<PolynomialOrder> :: BuildNirbSolution(space_ptrtype XhFine,space_ptrtype XhCoarse, vector_of_element_type const &M_VNirbBasis, vector_of_element_type const &VNirbBasis, double param,Eigen::VectorXd BetaiH){
     
-    std :: cout << "OFFLINE PROCEDURE :  Construction of the 'non intruisive' reduced basis (nirb) " << endl;
-    /*
-     if(!Sampling){
-     //check if the sampling function exist
-     std::string filename;
-     for (int i=0;i<NbSnapshot;i++){
-     filename = (boost::format("./Sol_%1%/u.fdb") %i).str();
-     auto ui = Xh->element();
-     ui.load(filename);
-     int NdofNirb;
-     NdofNirb = ui.size();
-     if (NdofNirb != Xh->nLocalDof()){
-     std::cout <<"WARNING Error in  Sol_" << i << " Ndof not the same as in Xh=> Sampling parameter set to 1 " << endl;
-     Sampling = 1;
-     break;
-     }
-     }
-     }
-     */
-    boost::timer ti;
-    double Time_Divers = 0.;
-    double Time_snapshot = 0.;
-    if(Sampling){
-        std::cout << "Sampling Procedure :" << endl;
-        ComputeSnapshot(Xh);
-        Time_snapshot = ti.elapsed();
-        std::cout << "Computation of the " << NbSnapshot << " snapshots : done  -- ";
-        std::cout << "Time per snapshot: " << Time_snapshot/NbSnapshot << " sec " << endl;
-    }
-    ti.restart();
-    
-    //construction of elementary mass and stiffness matrix
-    auto ui = Xh->element();
-    auto uj = Xh->element();
-    
-    sparse_matrix_ptrtype MassMatrix = M_backend->newMatrix( _test=Xh, _trial=Xh); //Sparse FE mass matrix
-    form2( _test=Xh , _trial=Xh, _matrix= MassMatrix) =
-    integrate( _range=elements(Xh->mesh()), _expr=id(uj)*idt(ui));
-    
-    sparse_matrix_ptrtype StiffMatrix = M_backend->newMatrix( _test=Xh, _trial=Xh); //Sparse FE mass matrix
-    form2( _test=Xh , _trial=Xh, _matrix= StiffMatrix) =
-    integrate( _range=elements(Xh->mesh()), _expr=gradt(ui)*trans(grad(uj)));
-    double Time_Construct_Elementary_Matrix = ti.elapsed();
-    ti.restart();
-    std::cout << "Time to build elementary F.E matrix = " << Time_Construct_Elementary_Matrix << " sec " << endl;
-    
-    ui.zero();
-
-    vector_of_element_type VuNirb(sizeRB,ui);
-    Time_Divers += ti.elapsed();
-    ti.restart();
-	ChooseRBFunction(Xh,VuNirb,MassMatrix,StiffMatrix);
-    double TimeChooseRB =  ti.elapsed();
-	std::cout << "Choice of " << sizeRB << " reduced basis functions : done  -- ";
-    std::cout << "Time: " << TimeChooseRB << " sec "<< endl;
-    ti.restart();
-    
-	//Orthogonalisation de Gram-schmidt
-    vector_of_element_type MassMat_x_VuNirb(sizeRB,ui);
-    Time_Divers += ti.elapsed();
-    ti.restart();
-	OrthogonalisationRBFunction(Xh,VuNirb,MassMat_x_VuNirb,StiffMatrix,MassMatrix);
-	//OrthogonalisationRBFunction(Xh);
-    double Time_buildNIRBbasis = ti.elapsed();
-	std::cout << "H1 and L2 orthogonalisation of the reduced basis functions : done  -- ";
-    std::cout << "Time: " << Time_buildNIRBbasis << " sec " << endl;
-    double TotalTime = Time_buildNIRBbasis +TimeChooseRB + Time_snapshot;
-    std::cout <<"Total time for the OFFLINE procedure: " << TotalTime << " sec "<< endl;
+    //Eigen::VectorXd BetaiH(sizeRB); 
+    auto uCoarseInterpolate = XhFine->element();
+    auto uNirb = XhFine->element();
+    uCoarseInterpolate = BuildCoarseInterpolation(XhFine,XhCoarse,param); 
+    uNirb = BuildNirbSolutionWithoutPostProcess(XhFine,uCoarseInterpolate,M_VNirbBasis,VNirbBasis,BetaiH); 
+    return uNirb;
     
 }
 
@@ -1167,7 +1120,7 @@ void NIRBTEST<PolynomialOrder> :: ConstructNIRB(space_ptrtype Xh, vector_of_elem
     double Time_snapshot = 0.;
     if(Sampling){
         std::cout << "Sampling Procedure :" << endl;
-        ComputeSnapshot(Xh);
+        ComputeSnapshot(Xh,"_");
         Time_snapshot = ti.elapsed();
         std::cout << "Computation of the " << NbSnapshot << " snapshots : done  -- ";
         std::cout << "Time per snapshot: " << Time_snapshot/NbSnapshot << " sec " << endl;
@@ -1204,6 +1157,8 @@ void NIRBTEST<PolynomialOrder> :: ConstructNIRB(space_ptrtype Xh, vector_of_elem
     std::cout << "Time: " << Time_buildNIRBbasis << " sec " << endl;
     double TotalTime = Time_buildNIRBbasis +TimeChooseRB + Time_Construct_Elementary_Matrix + Time_snapshot;
     std::cout <<"Total time for the OFFLINE procedure: " << TotalTime << " sec "<< endl;
+	
+	
     
 }
 
@@ -1250,6 +1205,223 @@ typename NIRBTEST<PolynomialOrder>::element_type NIRBTEST<PolynomialOrder>::blac
     
     return u;
 }  
+
+
+//---------------------------------------------------
+//---------------------------------------------------
+//Post-processing of NIRB solution 
+template< int PolynomialOrder>
+Eigen::MatrixXd NIRBTEST<PolynomialOrder> :: BuildBetaH(space_ptrtype XhFine,
+						   space_ptrtype XhCoarse,vector_of_element_type  &M_VNirbBasis){
+	
+    //boost::timer ti;   
+    //ti.restart(); 
+	//auto opI = opInterpolation(_domainSpace=XhCoarse,_imageSpace=XhFine);
+    //std :: cout << "Construction of the operator"   << ti.elapsed() << " sec" << endl;  
+    //ti.restart();
+	auto uCoarse = XhCoarse->element();
+	auto uCoarseInterpolation = XhFine->element();
+	
+	std::vector<int> IndTab(sizeRB);
+	Eigen::MatrixXd BetaH(sizeRB,sizeRB);
+    std::string path = (boost::format("./IndBR%1%") %sizeRB).str() ; 	
+	std::ifstream find(path);
+	if(!find){
+		std::cerr << "ERROR : Problem in opening 'IndBR'" << sizeRB << " file " << endl;
+		exit(0);
+	}
+	for (int i =0 ;i < sizeRB;i++){
+		int Itemp;
+		find >> Itemp;
+		IndTab[i] = Itemp;
+	} 
+    
+    path =  (boost::format("./AlphaH_%1%") %sizeRB).str();
+    std::ofstream fB(path);
+    fB << sizeRB << " " << sizeRB << endl;
+	for (int i =0;i<sizeRB;i++){
+		uCoarse.zero();
+		uCoarseInterpolation.zero();
+		path = (boost::format("./Sol_Coarse_%1%") %IndTab[i]).str();
+        uCoarse.load(_path=path);
+		if (uCoarse.l2Norm()==0.){
+            std::cerr <<"'BuildBetaH routine': ERROR IN LOADING FILE  " << path << endl;
+            exit(0);
+        }
+		//opI->apply(uCoarse,uCoarseInterpolation);
+        interpolate(XhFine,uCoarse,uCoarseInterpolation);
+		auto UcoarseInterpol_i = M_backend->newVector(XhFine);
+		*UcoarseInterpol_i = uCoarseInterpolation;
+		auto Muj = M_backend->newVector(XhFine);
+		for (int j =0;j<sizeRB;j++)
+		{ 
+			*Muj=M_VNirbBasis[j];
+			BetaH(j,i) = inner_product(UcoarseInterpol_i,Muj); //beta_j(\mu_i)
+            fB << BetaH(j,i) << endl;
+		}	
+	}
+    fB.close();
+	return BetaH;	
+	
+}
+//---------------------------------------------------
+//---------------------------------------------------
+
+template< int PolynomialOrder>
+Eigen::MatrixXd NIRBTEST<PolynomialOrder> ::  BuildBetah(space_ptrtype XhFine,
+														 vector_of_element_type  &M_VNirbBasis){
+	 
+	auto uFine = XhFine->element(); 
+	
+	std::vector<int> IndTab(sizeRB);
+	Eigen::MatrixXd BetaH(sizeRB,sizeRB);
+    std::string path = (boost::format("./IndBR%1%") %sizeRB).str() ; 	
+	std::ifstream find(path);
+	if(!find){
+		std::cerr << "ERROR : Problem in opening 'IndBR'" << sizeRB << " file " << endl;
+		exit(0);
+	}
+	for (int i =0 ;i < sizeRB;i++){
+		int Itemp;
+		find >> Itemp;
+		IndTab[i] = Itemp;
+	} 
+    
+    path =  (boost::format("./Betah_%1%") %sizeRB).str();
+    std::ofstream fB(path);
+    fB << sizeRB << " " << sizeRB << endl;
+	for (int i =0;i<sizeRB;i++){
+		uFine.zero(); 
+		path = (boost::format("./Sol_%1%") %IndTab[i]).str();
+        uFine.load(_path=path);
+		if (uFine.l2Norm()==0.){
+            std::cerr <<"'ChooseRBFunction routine': ERROR IN LOADING FILE  " << path << endl;
+            exit(0);
+        } 
+		auto Ufine_i = M_backend->newVector(XhFine);
+		*Ufine_i = uFine;
+		auto Muj = M_backend->newVector(XhFine);
+		for (int j =0;j<sizeRB;j++)
+		{ 
+			*Muj=M_VNirbBasis[j];
+			BetaH(j,i) = inner_product(Ufine_i,Muj); // beta_j(\mu_i)
+            fB << BetaH(j,i) << endl;
+		}	
+	}
+    fB.close();
+	
+	return BetaH;	
+	
+}
+//---------------------------------------------------
+//---------------------------------------------------
+
+template< int PolynomialOrder>
+Eigen::MatrixXd NIRBTEST<PolynomialOrder> ::BuildPostProcessMatrix(space_ptrtype XhFine, space_ptrtype XhCoarse,vector_of_element_type  &M_VNirbBasis){
+	
+	Eigen::MatrixXd BetaH(sizeRB,sizeRB);
+	Eigen::MatrixXd Betah(sizeRB,sizeRB);
+	Eigen::MatrixXd T(sizeRB,sizeRB);
+     
+    int FileOkA = 1,FileOkB = 1 ;
+    if(!Offline){
+        std::string path =  (boost::format("./AlphaH_%1%") %sizeRB).str();
+        std::ifstream fA (path);
+        if(!fA){ 
+            FileOkA = 0;
+            BetaH = BuildBetaH(XhFine,XhCoarse,M_VNirbBasis);
+        }
+        path =  (boost::format("./betah_%1%") %sizeRB).str();
+        std::ifstream fB (path);
+        if(!fB){
+            FileOkB = 0;
+            Betah = BuildBetah(XhFine,M_VNirbBasis);
+        }
+        
+        int Itemp1,Itemp2;
+        double dTempA,dTempB;
+        
+        if (FileOkA && FileOkB){
+            fA >> Itemp1 >> Itemp2;
+            fB >> Itemp1 >> Itemp2;
+            for (int i = 0; i< sizeRB;i++){
+                for (int j=0;j<sizeRB;j++){
+                    fA >> dTempA;
+                    fB >> dTempB;
+                    BetaH(j,i) = dTempA;
+                    Betah(j,i) = dTempB;
+                }
+            }
+        }
+        else {
+            if (FileOkA){
+                fA >> Itemp1 >> Itemp2; 
+                for (int i = 0; i< sizeRB;i++){
+                    for (int j=0;j<sizeRB;j++){
+                        fA >> dTempA; 
+                        BetaH(j,i) = dTempA; 
+                    }
+                }  
+            }
+            if (FileOkB){
+                fB >> Itemp1 >> Itemp2; 
+                for (int i = 0; i< sizeRB;i++){
+                    for (int j=0;j<sizeRB;j++){
+                        fB >> dTempB; 
+                        Betah(j,i) = dTempB; 
+                    }
+                }  
+            } 
+        }
+        fA.close();
+        fB.close();
+    
+    }
+    
+    if (Offline){	
+        BetaH = BuildBetaH(XhFine,XhCoarse,M_VNirbBasis);
+        Betah = BuildBetah(XhFine,M_VNirbBasis);
+	}
+     
+	T = Betah* BetaH.inverse() ; 
+    
+	return T;
+	
+
+}
+
+
+// //---------------------------------------------------
+////---------------------------------------------------
+
+template< int PolynomialOrder>
+typename NIRBTEST<PolynomialOrder>::element_type NIRBTEST<PolynomialOrder> :: 
+BuildNirbSolutionWithPostProcess(space_ptrtype XhFine,
+								 space_ptrtype XhCoarse,
+								 vector_of_element_type  &M_VNirbBasis,
+								 vector_of_element_type  &VNirbBasis,
+								 Eigen::VectorXd &BetaiuH, 
+								 element_type &uCoarseInterpolate){
+	
+	Eigen::MatrixXd T (sizeRB,sizeRB);
+	T = BuildPostProcessMatrix(XhFine,XhCoarse,M_VNirbBasis);
+    
+	//Eigen::VectorXd AlphaiH (sizeRB);
+	//AlphaiH = T*BetaiuH;
+	double AlphaiH; 
+    auto uNirb = XhFine->element(); 
+	uNirb.zero();  
+    for (int i =0;i<sizeRB;i++){
+        AlphaiH =0.;
+        for (int k=0;k<sizeRB;k++){
+            AlphaiH += T(i,k)*BetaiuH[k];
+        }
+		uNirb.add(AlphaiH, VNirbBasis[i] );
+    }
+	
+
+    return uNirb;
+}
 
 
 

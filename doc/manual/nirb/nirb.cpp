@@ -81,6 +81,7 @@ inline po::options_description makeOptions()
         ("mu",po::value<double>()->default_value(1.),"angle in [0,pi/2]")
     
         ("Sampling",po::value<int>()->default_value(1),"Does not compute sampling if set to 0, (set to 1 by default)")
+        ("SamplingCoarse",po::value<int>()->default_value(0),"Compute Coarse sampling if set to 1, (set to 0 by default)")
 
         ("Offline",po::value<int>()->default_value(1),"integer equal to 0 if the offline has not  to be done")
     
