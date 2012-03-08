@@ -855,7 +855,7 @@ Mesh<Shape, T>::updateEntitiesCoDimensionOneGhostCell()
                             /*auto GLASbaryFace =*/ //Feel::glas::average(jkj);
                             auto baryFace = ublas::column(glas::average(theface.G()),0);
 #endif
-                            // save facebarycenter by components 
+                            // save facebarycenter by components
                             for (uint16_type comp = 0; comp<nDim; ++comp)
                                 {
                                     //idFaces[(1+nDim)*j+comp+1]=this->element(idRecv).faceBarycenter(j)[comp];
@@ -1257,11 +1257,14 @@ template<typename Shape, typename T>
 void
 Mesh<Shape, T>::Localization::init()
 {
+    if ( !M_mesh ) return;
 
 #if !defined( NDEBUG )
     FEELPP_ASSERT( IsInit == false )
         ( IsInit ).warn( "You have already initialized the tool of localization" );
 #endif
+
+
     //clear data
     M_geoGlob_Elts.clear();
     M_kd_tree->clear();
@@ -1537,9 +1540,9 @@ Mesh<Shape, T>::Localization::searchElements(const node_type & p)
     FEELPP_ASSERT( IsInit == true )
         ( IsInit ).warn( "You don't have initialized the tool of localization" );
 #endif
-    
+
     //this->kdtree()->nbNearNeighbor(this->mesh()->numElements());
-    
+
     std::list< std::pair<size_type, uint> > ListTri;
     searchInKdTree(p,ListTri);
 
