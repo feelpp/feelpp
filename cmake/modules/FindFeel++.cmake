@@ -184,7 +184,7 @@ FIND_LIBRARY(METIS_LIBRARY
     NAMES
     metis
     PATHS
-    "/opt/local/lib/petsc/lib"
+    $ENV{PETSC_DIR}/lib
 #    "/opt/local/lib"
 )
 message(STATUS "Metis: ${METIS_LIBRARY}" )
@@ -196,7 +196,7 @@ FIND_LIBRARY(PARMETIS_LIBRARY
     NAMES
     parmetis
     PATHS
-    "/opt/local/lib/petsc/lib"
+    $ENV{PETSC_DIR}/lib
 )
 
 
@@ -209,7 +209,7 @@ FIND_LIBRARY(ML_LIBRARY
     NAMES
     ml
     PATHS
-    "/opt/local/lib/petsc/lib"
+    $ENV{PETSC_DIR}/lib
 )
 message(STATUS "ML: ${ML_LIBRARY}" )
 IF ( ML_LIBRARY )
@@ -229,7 +229,7 @@ FIND_LIBRARY(MUMPS_COMMON_LIBRARY
     NAMES
     mumps_common
     PATHS
-    "/opt/local/lib/petsc/lib"
+    $ENV{PETSC_DIR}/lib
 )
 
 
@@ -237,7 +237,7 @@ FIND_LIBRARY(DMUMPS_LIBRARY
     NAMES
     dmumps
     PATHS
-    "/opt/local/lib/petsc/lib"
+    $ENV{PETSC_DIR}/lib
 )
 
 message(STATUS "Mumps: ${DMUMPS_LIBRARY} ${MUMPS_COMMON_LIBRARY}" )
@@ -249,14 +249,14 @@ FIND_LIBRARY(AMD_LIBRARY
     NAMES
     amd
     PATHS
-    "/opt/local/lib/petsc/lib"
+    $ENV{PETSC_DIR}/lib
 )
 
 FIND_LIBRARY(UMFPACK_LIBRARY
     NAMES
     umfpack
     PATHS
-    "/opt/local/lib/petsc/lib"
+    $ENV{PETSC_DIR}/lib
 )
 message(STATUS "Amd: ${AMD_LIBRARY}" )
 message(STATUS "Umfpack: ${UMFPACK_LIBRARY}" )
