@@ -156,7 +156,7 @@ MyMesh<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
                             mesh->endElementWithProcessId( this->comm().rank() ) );
     Log() << "Local number of elements: " << ne << "\n";
     int gne;
-    mpi::all_reduce( this->comm(), ne, gne, [] ( double x, double y ) { return x + y; } );
+    mpi::all_reduce( this->comm(), ne, gne, [] ( int x, int y ) { return x + y; } );
     Log() << "Global number of elements: " << gne << "\n";
 
     //# marker62 #
