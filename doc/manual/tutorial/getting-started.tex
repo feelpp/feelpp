@@ -440,13 +440,13 @@ The constants are indicated by the function constant() (for example, we have to 
 \subsubsection{Examples}
 
 \paragraph{First integral : domain area \\}
-To compute the first integral (the domain area), the code reads :
+To compute the first integral (the domain area) and to have the local contributions only, we have to pass 'false' to \lstinline!evaluate! as follows :
 \lstinputlisting[linerange=marker1-endmarker1]{tutorial/myintegrals.cpp}
 
 
 This compute the integral only on the region of the domain owned by the current processor \lstinline!(local_domain_area)!. \\
 
-To obtain the total area, we collect the integrals on all processors using a reduce MPI operation and sum all contributions. We have used here the \lstinline!Boost.MPI! library that provides an extremely powerful wrapper around the MPI library. \\
+To obtain the total area,\lstinline!integrate(...).evaluate()! computes the global integral in parallel which induces communications (all\_reduce) to compute the sum of the local contributions \\
 \lstinputlisting[linerange=marker2-endmarker2]{tutorial/myintegrals.cpp}
 
 \vspace{0.2cm}
