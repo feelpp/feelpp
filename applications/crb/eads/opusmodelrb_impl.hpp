@@ -72,7 +72,7 @@ OpusModelRB<OrderU,OrderP,OrderT>::OpusModelRB( po::variables_map const& vm )
     M_mesh_air( new mesh_type ),
     M_mesh_line( new mesh12_type ),
     M_mesh_cross_section_2( new mesh12_type ),
-    M_exporter( Exporter<mesh_type>::New( vm, "opus" ) ),
+    //M_exporter( Exporter<mesh_type>::New( vm, "opus" ) ),
     M_Dmu( new parameterspace_type )
 
 {
@@ -93,7 +93,7 @@ OpusModelRB<OrderU,OrderP,OrderT>::OpusModelRB(  )
     M_mesh_air( new mesh_type ),
     M_mesh_line( new mesh12_type ),
     M_mesh_cross_section_2( new mesh12_type ),
-    M_exporter( Exporter<mesh_type>::New( "ensight", "opus" ) ),
+    //M_exporter( Exporter<mesh_type>::New( "ensight", "opus" ) ),
     M_Dmu( new parameterspace_type )
 
 {
@@ -1032,7 +1032,7 @@ OpusModelRB<OrderU,OrderP,OrderT>::solve( parameter_type const& mu, element_ptrt
 #endif
 
         Log() << "[solve(mu)] solve done in " << ti.elapsed() << "s\n";ti.restart();
-        this->exportResults(M_temp_bdf->time(), *T );
+        this->exportResults(M_temp_bdf->time(), *T , mu);
         Log() << "[solve(mu)] export done in " << ti.elapsed() << "s\n";ti.restart();
 
         M_temp_bdf->shiftRight(*T);
@@ -1082,7 +1082,7 @@ OpusModelRB<OrderU,OrderP,OrderT>::solve( parameter_type const& mu, element_ptrt
                 Log()<<"WARNING : we have not converged ( nb_it : "<<ret.get<1>()<<" and residual : "<<ret.get<2>() <<" ) \n";
             }
         }
-        this->exportResults(M_temp_bdf->time(), *T );
+        this->exportResults(M_temp_bdf->time(), *T ,mu );
 
 
         M_temp_bdf->shiftRight(*T);
@@ -1211,9 +1211,22 @@ OpusModelRB<OrderU,OrderP,OrderT>::run()
 
 template<int OrderU, int OrderP, int OrderT>
 void
-OpusModelRB<OrderU,OrderP,OrderT>::exportResults(double time, temp_element_type& T )
+OpusModelRB<OrderU,OrderP,OrderT>::exportResults(double time, temp_element_type& T , parameter_type const& mu)
 {
     std::ostringstream osstr ;
+
+        std::string exp_name;
+	export_ptrtype exporter;
+	std::string mu_str;
+	for(int i=0;i<mu.size();i++)
+        {
+	  mu_str= mu_str + (boost::format("_%1%") %mu[i]).str() ;
+	}
+	exp_name = "opus_time" + (boost::format("_%1%") %time).str()+"_parameters_"+mu_str;
+
+	exporter = export_ptrtype( Exporter<mesh_type>::New( "ensight", exp_name  ) );
+	exporter->step(time)->setMesh( T.functionSpace()->mesh() );
+
 
 
     int j = time;
@@ -1222,13 +1235,13 @@ OpusModelRB<OrderU,OrderP,OrderT>::exportResults(double time, temp_element_type&
     //if ( this->data()->doExport() )
     {
         Log() << "exporting...\n";
-	M_exporter->step(0)->setMesh( T.functionSpace()->mesh() );
-	M_exporter->step(0)->add( "Domains", *domains );
-        M_exporter->step(0)->add( "k", *k);
-        M_exporter->step(0)->add( "rhoC", *rhoC );
-        M_exporter->step(0)->add( "Q", *Q );
-        M_exporter->step(0)->add( "T", T );
-        M_exporter->step(0)->add( "V", *pV );
+	exporter->step(time)->setMesh( T.functionSpace()->mesh() );
+	exporter->step(time)->add( "Domains", *domains );
+        exporter->step(time)->add( "k", *k);
+        exporter->step(time)->add( "rhoC", *rhoC );
+        exporter->step(time)->add( "Q", *Q );
+        exporter->step(time)->add( "T", T );
+        exporter->step(time)->add( "V", *pV );
         //M_exporter->step(0)->add( "Velocity",  U.template element<0>() );
         //M_exporter->step(0)->add( "Pressure",  U.template element<1>() );
 
@@ -1236,7 +1249,7 @@ OpusModelRB<OrderU,OrderP,OrderT>::exportResults(double time, temp_element_type&
         //typename grad_temp_functionspace_type::element_type g( M_grad_Th, "k*grad(T)" );
         //g = vf::project( M_grad_Th, elements( M_grad_Th->mesh() ), trans(idv(*k)*gradv(T)) );
         //M_exporter->step(0)->add( "k_grad(T)", g );
-        M_exporter->save();
+        exporter->save();
         Log() << "exporting done.\n";
     }
 }
