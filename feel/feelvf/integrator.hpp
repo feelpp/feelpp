@@ -348,30 +348,36 @@ public:
             auto p0 = broken( P0h, mpl::int_<iDim>() );
             return p0;
         }
+#if 1
+    matrix_type
+    evaluate( bool parallel=true ) const
+#else
     //typename expression_type::template tensor<Geo_t>::value_type
-    matrix_type
-    evaluate() const
-    {
-        return evaluate( mpl::int_<iDim>() );
-    }
-
-    matrix_type
-    evaluateAndSum() const
+    BOOST_PARAMETER_MEMBER_FUNCTION((matrix_type),
+                                    evaluate,
+                                    tag,
+                                    /*(required
+                                    //(h,*(double)))*/
+                                    (optional
+                                     (parallel,*(bool), true) ))
+#endif
     {
         typename eval::matrix_type loc =  evaluate( mpl::int_<iDim>() );
-        typename eval::matrix_type glo( loc );
-#if defined( HAVE_MPI )
-        if ( M_comm.size() > 1 )
+        if (!parallel )
+            return loc;
+        else // parallel
+        {
+            typename eval::matrix_type glo( loc );
+            auto const& worldComm = const_cast<MeshBase*>(this->beginElement()->mesh())->worldComm();
+            if ( worldComm.localSize() > 1 )
             {
-                MPI_Allreduce( loc.data().begin(),
-                               glo.data().begin(),
-                               loc.size1()*loc.size2(),
-                               MPI_DOUBLE,
-                               MPI_SUM,
-                               M_comm );
+                mpi::all_reduce( worldComm.localComm(),
+                                 loc,
+                                 glo,
+                                 [] ( matrix_type const& x, matrix_type const& y ) { return x + y; } );
             }
-#endif // HAVE_MPI
-        return glo;
+            return glo;
+        }
     }
 
 #if defined( HAVE_TBB )
