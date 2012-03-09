@@ -476,9 +476,9 @@ public:
     //ublas::matrix<typename expression_type::value_type>
 
     typename expression_type::value_type
-    evaluate() const
+    evaluate( bool parallel = true ) const
     {
-        return M_expr.evaluate();
+        return M_expr.evaluate(parallel);
     }
 
     typename expression_type::value_type
@@ -1019,6 +1019,7 @@ public:
     }
 
     value_type evaluate() const { return M_constant; }
+    value_type evaluate(bool) const { return M_constant; }
 
     template<typename Geo_t, typename Basis_i_t=mpl::void_, typename Basis_j_t = Basis_i_t>
     struct tensor

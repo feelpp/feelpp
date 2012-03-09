@@ -631,6 +631,11 @@
         {                                                               \
             return _M_left.evaluate() VF_OP_SYMBOL( O ) _M_right.evaluate(); \
         }                                                               \
+        double                                                          \
+            evaluate(bool p) const                                            \
+        {                                                               \
+            return _M_left.evaluate(p) VF_OP_SYMBOL( O ) _M_right.evaluate(p); \
+        }                                                               \
                                                                         \
         std::string expressionStr() const                               \
         {                                                               \
