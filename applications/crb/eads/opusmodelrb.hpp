@@ -199,6 +199,8 @@ public:
 
     /* export */
     typedef Exporter<mesh_type> export_type;
+    typedef boost::shared_ptr<export_type> export_ptrtype;
+
     typedef typename Exporter<mesh_type>::timeset_type timeset_type;
 
     /* parameter space */
@@ -394,7 +396,7 @@ public:
     void run( const double * X, unsigned long N, double * Y, unsigned long P );
 
     //void exportResults( double time, temp_element_type& T, fluid_element_type& U, bool force_export = false );
-    void exportResults(double time, temp_element_type& T );
+  void exportResults(double time, temp_element_type& T , parameter_type const& mu);
 
 
     std::vector<double> sigmaQ( double k,double r, double Q );
