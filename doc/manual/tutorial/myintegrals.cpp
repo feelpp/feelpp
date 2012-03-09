@@ -162,15 +162,12 @@ MyIntegrals<Dim>::run( const double* X, unsigned long P, double* Y, unsigned lon
      */
     //# marker1 #
     double local_domain_area = integrate( _range=elements(mesh),
-                                          _expr=constant(1.0)).evaluate()(0,0);
-    //# endmarker1 #
+                                          _expr=constant(1.0)).evaluate(false)(0,0);
 
+    //# endmarker1 #
     //# marker2 #
-    double global_domain_area=local_domain_area;
-    mpi::all_reduce( this->comm(),
-                     local_domain_area,
-                     global_domain_area,
-                     [] ( double x, double y ) { return x + y; } );
+    double global_domain_area= integrate( _range=elements(mesh),
+                                          _expr=constant(1.0)).evaluate()(0,0);
     //# endmarker2 #
     //# marker3 #
     Log() << "int_Omega 1 = " << global_domain_area
@@ -182,13 +179,10 @@ MyIntegrals<Dim>::run( const double* X, unsigned long P, double* Y, unsigned lon
          * Compute domain perimeter
          */
         //# marker4 #
-        double local_boundary_length = integrate( boundaryfaces(mesh),
+        double local_boundary_length =  integrate( boundaryfaces(mesh),
+                                                  constant(1.0)).evaluate(false)(0,0);
+        double global_boundary_length = integrate( boundaryfaces(mesh),
                                                   constant(1.0)).evaluate()(0,0);
-        double global_boundary_length = local_boundary_length;
-        mpi::all_reduce( this->comm(),
-                         local_boundary_length,
-                         global_boundary_length,
-                         std::plus<double>() );
         Log() << "int_BoundaryOmega (1)= " << global_boundary_length
               << "[ " << local_boundary_length << " ]\n";
         //# endmarker4 #
@@ -202,40 +196,34 @@ MyIntegrals<Dim>::run( const double* X, unsigned long P, double* Y, unsigned lon
     //# marker5 #
     double local_intf = integrate( elements(mesh),
                                    Px()*Px() + Py()*Py() + Pz()*Pz() // trans(P())*P()
+                                   ).evaluate(false)(0,0);
+    double global_intf = integrate( elements(mesh),
+                                    Px()*Px() + Py()*Py() + Pz()*Pz() // trans(P())*P()
                                    ).evaluate()(0,0);
     //# endmarker5 #
-    double global_intf = local_intf;
-    mpi::all_reduce( this->comm(),
-                     local_intf,
-                     global_intf,
-                     std::plus<double>() );
     Log() << "int_Omega (x^2+y^2+z^2) = " << global_intf
           << "[ " << local_intf << " ]\n";
 
     //# marker6 #
-    double local_intsin = integrate( elements(mesh),
+    double global_intsin = integrate( elements(mesh),
                                      sin( Px()*Px() + Py()*Py() + Pz()*Pz() )
                                     ).evaluate()(0,0);
+    double local_intsin = integrate( elements(mesh),
+                                     sin( Px()*Px() + Py()*Py() + Pz()*Pz() ) ).evaluate(false)(0,0);
     //# endmarker6 #
-    double global_intsin = local_intsin;
-    mpi::all_reduce( this->comm(),
-                     local_intsin,
-                     global_intsin,
-                     std::plus<double>() );
-    Log() << "int_Omega (sin(x^2+y^2+z^2)) [with order 4 max exact integration]= " << global_intsin
-          << "[ " << local_intsin << " ]\n";
+    Log() << "int_Omega (sin(x^2+y^2+z^2)) [with order 4 max exact integration]= " << global_intsin << "\n";
+    Log() << "int_Omega[" << this->comm().rank() << "] (sin(x^2+y^2+z^2)) [with order 4 max exact integration]= " << local_intsin << "\n";
+
 
     //# marker7 #
     double local_intsin2 = integrate( elements(mesh),
                                       sin( Px()*Px() + Py()*Py() + Pz()*Pz() ),
                                       _Q<2>()
-                                    ).evaluate()(0,0);
+                                    ).evaluate(false)(0,0);
+    double global_intsin2 = integrate( elements(mesh),
+                                       sin( Px()*Px() + Py()*Py() + Pz()*Pz() ),
+                                       _Q<2>()).evaluate()(0,0);
     //# endmarker7 #
-    double global_intsin2 = local_intsin2;
-    mpi::all_reduce( this->comm(),
-                     local_intsin2,
-                     global_intsin2,
-                     std::plus<double>() );
     Log() << "int_Omega (sin(x^2+y^2+z^2)) [with order 2 max exact integration] = " << global_intsin2
           << "[ " << local_intsin2 << " ]\n";
 
