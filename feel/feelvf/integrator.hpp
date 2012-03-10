@@ -738,7 +738,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
 
     //int nelt = std::distance( this->beginElement(), this->endElement() );
     boost::timer ti0,ti1, ti2, ti3;
-    double t0 = 0, t1 = 0,t2 = 0,t3 = 0;
+    //double t0 = 0, t1 = 0,t2 = 0,t3 = 0;
     //
     // start the real intensive job:
     // -# iterate over all elements to integrate over
@@ -1280,7 +1280,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
     }
 
     boost::timer ti0,ti1, ti2, ti3;
-    double t0 = 0, t1 = 0,t2 = 0,t3 = 0;
+    //double t0 = 0, t1 = 0,t2 = 0,t3 = 0;
     Debug( 5065 ) << "[Integrator::faces/forms] starting...\n";
     //
     // start the real intensive job:

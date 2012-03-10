@@ -95,7 +95,7 @@ ExporterEnsight<MeshType,N>::save() const
 {
     if (!this->worldComm().isActive()) return;
 
-    static int freq = 0;
+    //static int freq = 0;
 
     Debug( 8006 ) << "[ExporterEnsight::save] checking if frequency is ok\n";
 
