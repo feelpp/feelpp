@@ -78,13 +78,11 @@ Environment::Environment( int& argc, char**& argv )
     M_env( argc, argv )
 {
 #if defined( HAVE_TBB )
-    //int n = tbb::task_scheduler_init::default_num_threads();
-    int n = 2;
-#else
-    int n = 1 ;
-#endif
+    int n = tbb::task_scheduler_init::default_num_threads();
+    //int n = 2;
     //Log() << "[Feel++] TBB running with " << n << " threads\n";
     //tbb::task_scheduler_init init(2);
+#endif
 
     mpi::communicator world;
 #if defined ( HAVE_PETSC_H )

@@ -68,9 +68,10 @@ Simget::print( std::ostream& out, std::vector<ptree::ptree> & stats)
             //std::for_each( it->begin(),it->end(), []( std::pair<std::string,boost::any> const& o ) { std::cout << o.first << "\n"; } );
             //std::map<std::string,boost::any> data = *it;
             //std::map<std::string,boost::any> datap;
-            double rocu = 1, rocp=1;
             double h  = it->get<double>("h");
 #if 0
+            double rocu = 1, rocp=1;
+
             double u  = boost::any_cast<double>( data.find("||u_error||_L2")->second );
             double p  =  boost::any_cast<double>( data.find("||p_error||_L2")->second );
 
