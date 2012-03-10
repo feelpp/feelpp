@@ -42,11 +42,6 @@ if(    NOT cmake_build_type_tolower STREQUAL "debug"
   message(FATAL_ERROR "Unknown build type \"${CMAKE_BUILD_TYPE}\". Allowed values are Debug, Release, RelWithDebInfo (case-insensitive).")
 endif()
 
-if(CMAKE_COMPILER_IS_GNUCXX)
-  SET(CMAKE_CXX_FLAGS "-std=c++0x" CACHE STRING "Default flags" FORCE)
-  SET(CMAKE_CXX_FLAGS_DEBUG "-std=c++0x -g" CACHE STRING "Debug flags" FORCE)
-  SET(CMAKE_CXX_FLAGS_RELEASE "-std=c++0x -g0 -O2 -DNDEBUG" CACHE STRING "Release flags" FORCE)
-endif(CMAKE_COMPILER_IS_GNUCXX)
 
 #SET( CMAKE_CXX_FLAGS "-pipe -Wall -O2 ")
 #SET( CMAKE_C_FLAGS "-pipe -Wall -O2")
@@ -147,6 +142,12 @@ elseif(CYGWIN)
 else(APPLE)
   set(FEELPP_OS "${CMAKE_SYSTEM_NAME}")
 endif(APPLE)
+
+if(CMAKE_COMPILER_IS_GNUCXX)
+  SET(CMAKE_CXX_FLAGS "-std=c++0x  -ftemplate-depth-128 -Wno-inline -Wall" CACHE STRING "Default flags" FORCE)
+  SET(CMAKE_CXX_FLAGS_DEBUG "-std=c++0x -g  -ftemplate-depth-128 -Wno-inline -Wall" CACHE STRING "Debug flags" FORCE)
+  SET(CMAKE_CXX_FLAGS_RELEASE "-std=c++0x -g0 -O2 -DNDEBUG  -ftemplate-depth-128 -finline-functions -Wno-inline -Wall"  CACHE STRING "Release flags" FORCE)
+endif(CMAKE_COMPILER_IS_GNUCXX)
 
 OPTION(FEELPP_ENABLE_MOVE_SEMANTICS "enable move semantics(elision)" ON )
 MARK_AS_ADVANCED(FEELPP_ENABLE_MOVE_SEMANTICS)
