@@ -100,8 +100,8 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
     _M_trial_gmc( _gmcTrial ),
 
     _M_test_pc( new test_precompute_type( _M_form.testSpace()->fe(), im2.points() ) ),
-    _M_trial_pc( new trial_precompute_type( _M_form.trialSpace()->fe(), im2.points() ) ),
     _M_test_pc_face( precomputeTestBasisAtPoints( im2 ) ),
+    _M_trial_pc( new trial_precompute_type( _M_form.trialSpace()->fe(), im2.points() ) ),
     _M_trial_pc_face( precomputeTrialBasisAtPoints( im2 ) ),
 
     _M_test_fec( fusion::transform( _gmcTest, detail::FEContextInit<0,form_context_type>(__form.testSpace()->fe(), *this ) ) ),

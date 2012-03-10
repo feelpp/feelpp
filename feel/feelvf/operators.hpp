@@ -67,11 +67,6 @@ namespace vf
 # define VF_OPERATOR_DIFFORDERIM(O)    BOOST_PP_TUPLE_ELEM(11, 9, O)
 # define VF_OPERATOR_TERMINAL(O)       BOOST_PP_TUPLE_ELEM(11,10, O)
 
-const size_type jk = vm::JACOBIAN|vm::KB;
-const size_type jkd = jkd|vm::FIRST_DERIVATIVE;
-const size_type jkn = jkd|vm::FIRST_DERIVATIVE_NORMAL;
-const size_type jkg = jkd|vm::GRAD;
-const size_type jkh = jkd|vm::HESSIAN;
 
 
 # /* List of applicative operators. */

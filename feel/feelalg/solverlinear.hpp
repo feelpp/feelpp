@@ -271,6 +271,11 @@ protected:
             _M_is_initialized = init;
         }
 
+private:
+
+    //mpi communicator
+    WorldComm M_worldComm;
+
 protected:
 
     ///
@@ -319,10 +324,6 @@ protected:
 
     MatrixStructure M_prec_matrix_structure;
 
-private:
-
-    //mpi communicator
-    WorldComm M_worldComm;
 
 };
 

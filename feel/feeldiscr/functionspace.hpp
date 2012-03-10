@@ -697,6 +697,7 @@ private:
         {
             size_type ret = s;
             if ( _M_cursor < _M_finish )
+            {
                 if (_M_useOffSubSpace)
                     {
                         ret += nLocalDof(x, mpl::bool_<IsWithGhostType::value>() );
@@ -706,6 +707,7 @@ private:
                         if (_M_worldsComm[_M_cursor].isActive())
                             ret += nLocalDof(x, mpl::bool_<IsWithGhostType::value>() );
                     }
+            }
             ++_M_cursor;
             return ret;
         }

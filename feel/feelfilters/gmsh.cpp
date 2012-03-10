@@ -270,7 +270,7 @@ Gmsh::refine( std::string const& name, int level, bool parametric  ) const
         else
             __str << BOOST_PP_STRINGIZE( GMSH_EXECUTABLE )
                   << " -refine " << filename.str();
-        auto err = ::system( __str.str().c_str() );
+        ::system( __str.str().c_str() );
     }
     return filename.str();
 #else

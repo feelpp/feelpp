@@ -98,8 +98,8 @@ Backend<T>::Backend( po::variables_map const& vm, std::string const& prefix )
     M_pc( vm[prefixvm(prefix,"pc-type")].template as<std::string>() ),
     M_fieldSplit( vm[prefixvm(prefix,"fieldsplit-type")].template as<std::string>() ),
     M_pcFactorMatSolverPackage( vm[prefixvm(prefix,"pc-factor-mat-solver-package-type")].template as<std::string>() ),
-    M_constant_null_space( vm[prefixvm(prefix,"constant-null-space")].template as<bool>() ),
-    M_export( vm[prefixvm(prefix,"export-matlab")].template as<std::string>() )
+    M_export( vm[prefixvm(prefix,"export-matlab")].template as<std::string>() ),
+    M_constant_null_space( vm[prefixvm(prefix,"constant-null-space")].template as<bool>() )
 {
 }
 template <typename T>
@@ -165,6 +165,7 @@ Backend<T>::build( po::variables_map const& vm, std::string const& prefix )
     switch ( bt )
         {
 #if defined ( HAVE_PETSC_H )
+        default:
         case BACKEND_PETSC:
             {
                 Log() << "[Backend] Instantiate a Petsc backend\n";

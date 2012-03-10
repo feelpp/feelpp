@@ -816,9 +816,10 @@ private:
     double M_residual;
     double M_rtolerance;
     double M_dtolerance;
+    double M_atolerance;
+
     bool M_reuse_prec;
     bool M_reuse_jac;
-    double M_atolerance;
     size_t M_nUsePC;
     bool   M_converged;
     bool   M_reusePC;
