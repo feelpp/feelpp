@@ -49,6 +49,8 @@
 
 #include <boost/assign/list_of.hpp>
 
+#include <boost/math/constants/constants.hpp>
+
 #include <boost/lambda/lambda.hpp>
 #include <boost/lambda/bind.hpp>
 
@@ -97,6 +99,8 @@ namespace mpl = boost::mpl;
 namespace lambda = boost::lambda;
 namespace po = boost::program_options;
 namespace mpi=boost::mpi;
+namespace constants=boost::math::constants;
+namespace cst=boost::math::constants;
 
 namespace detail
 {
