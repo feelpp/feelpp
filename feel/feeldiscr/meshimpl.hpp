@@ -99,9 +99,6 @@ Mesh<Shape, T>::updateForUse()
             boost::tie( iv, en ) = this->elementsRange();
             for ( ;iv != en; ++iv )
                 {
-                    element_type const& __element = *iv;
-
-                    //MakeBareEntity<element_type,nDim> baremaker( __element );
                     for ( size_type j = 0; j < this->numLocalFaces(); j++ )
                     {
                         std::set<int> s;

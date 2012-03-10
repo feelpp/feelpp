@@ -51,8 +51,7 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
     _M_lb( __form.blockList() ),
     _M_test_dof( __form.testSpace()->dof().get() ),
     _M_trial_dof( __form.trialSpace()->dof().get() ),
-    _M_test_gmc( _gmcTest ),
-    _M_trial_gmc( _gmcTrial ),
+
 
     _M_test_pc( new test_precompute_type( _M_form.testSpace()->fe(), fusion::at_key<gmc<0> >( _gmcTest )->pc()->nodes() ) ),
     _M_test_pc_face( precomputeTestBasisAtPoints( im ) ),
@@ -61,6 +60,9 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
 
     _M_test_fec( fusion::transform( _gmcTest,
                                     detail::FEContextInit<0,form_context_type>(__form.testSpace()->fe(),
+
+    _M_test_gmc( _gmcTest ),
+    _M_trial_gmc( _gmcTrial ),
                                                                                *this ) ) ),
     _M_test_fec0( fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( _M_test_fec ) ) ),
     _M_trial_fec( getMap( _M_test_fec, fusion::transform( _gmcTrial,
@@ -96,13 +98,14 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
     _M_lb( __form.blockList() ),
     _M_test_dof( __form.testSpace()->dof().get() ),
     _M_trial_dof( __form.trialSpace()->dof().get() ),
-    _M_test_gmc( _gmcTest ),
-    _M_trial_gmc( _gmcTrial ),
 
     _M_test_pc( new test_precompute_type( _M_form.testSpace()->fe(), im2.points() ) ),
     _M_test_pc_face( precomputeTestBasisAtPoints( im2 ) ),
     _M_trial_pc( new trial_precompute_type( _M_form.trialSpace()->fe(), im2.points() ) ),
     _M_trial_pc_face( precomputeTrialBasisAtPoints( im2 ) ),
+
+    _M_test_gmc( _gmcTest ),
+    _M_trial_gmc( _gmcTrial ),
 
     _M_test_fec( fusion::transform( _gmcTest, detail::FEContextInit<0,form_context_type>(__form.testSpace()->fe(), *this ) ) ),
     _M_test_fec0( fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( _M_test_fec ) ) ),
@@ -135,13 +138,14 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
     _M_lb( __form.blockList() ),
     _M_test_dof( __form.testSpace()->dof().get() ),
     _M_trial_dof( __form.trialSpace()->dof().get() ),
-    _M_test_gmc( _gmcTest ),
-    _M_trial_gmc( _gmcTrial ),
 
     _M_test_pc( new test_precompute_type( _M_form.testSpace()->fe(), im2.points() ) ),
-    _M_trial_pc( new trial_precompute_type( _M_form.trialSpace()->fe(), im2.points() ) ),
     _M_test_pc_face( precomputeTestBasisAtPoints( im2 ) ),
+    _M_trial_pc( new trial_precompute_type( _M_form.trialSpace()->fe(), im2.points() ) ),
     _M_trial_pc_face( precomputeTrialBasisAtPoints( im2 ) ),
+
+    _M_test_gmc( _gmcTest ),
+    _M_trial_gmc( _gmcTrial ),
 
     _M_test_fec( fusion::transform( _gmcTest, detail::FEContextInit<0,form_context_type>(__form.testSpace()->fe(), *this ) ) ),
     _M_test_fec0( fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( _M_test_fec ) ) ),
@@ -528,9 +532,11 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
     M_local_rows.array() = _M_test_dof->localToGlobalIndices(eltTest).array() + row_start;
     M_local_cols.array() = _M_trial_dof->localToGlobalIndices(eltTrial).array() + col_start;
 
+#if 0
     bool do_less = ( ( _M_form.isPatternDefault() &&
                        ( _M_test_dof->nComponents == _M_trial_dof->nComponents ) ) &&
                      !_M_form.isPatternCoupled() );
+#endif
 
     if ( test_dof_type::is_modal || trial_dof_type::is_modal )
     {

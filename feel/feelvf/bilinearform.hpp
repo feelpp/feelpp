@@ -1031,10 +1031,10 @@ public:
                     value_type* data )
         {
             if (this->rowStartInMatrix()!=0)
-                for (uint i=0;i<nrows;++i)
+                for (int i=0;i<nrows;++i)
                     rows[i]+=this->rowStartInMatrix();
             if (this->colStartInMatrix()!=0)
-                for (uint i=0;i<ncols;++i)
+                for (int i=0;i<ncols;++i)
                     cols[i]+=this->colStartInMatrix();
 
             _M_matrix.addMatrix( rows, nrows, cols, ncols, data );

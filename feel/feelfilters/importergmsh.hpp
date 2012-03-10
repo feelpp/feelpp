@@ -82,8 +82,6 @@ public:
 		M_use_elementary_region_as_physical_region=param;
 	}
 
-    bool M_use_elementary_region_as_physical_region;
-
     /** @name Typedefs
      */
     //@{
@@ -234,6 +232,9 @@ private:
 
     std::set<int> _M_ignorePhysicalGroup;
     std::set<std::string> _M_ignorePhysicalName;
+    bool M_use_elementary_region_as_physical_region;
+
+
 };
 
 

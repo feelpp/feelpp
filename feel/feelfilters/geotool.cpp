@@ -407,9 +407,9 @@ namespace GeoTool {
 
                 }
 
-            
+
             std::map<int,int> mapSurfaceRenumbering;
-            
+
 
             //Write the planes surfaces
             //Fait ici a cause des opertateurs (+,-)
@@ -480,7 +480,7 @@ namespace GeoTool {
             //Write the extrude surfaces
             this->updateOstr(_M_ostrExtrude->str());
 
-            
+
 #if 0
             //Write the surfaces loops
             this->updateOstr(_M_ostrSurfaceLoop->str());
@@ -527,7 +527,7 @@ namespace GeoTool {
 
 
 #endif
-            
+
 
 
             //Write the volumes
@@ -1621,7 +1621,6 @@ namespace GeoTool {
             Node a4( 7.3, yh-0.5);
             Node a5( 8.5, yh);
             Node a6(/*11.0*/16.0, yh);
-            double ep=0.3;
             //_______________________________________________//
             writePoint( 1, dg , a1(0), a1(1) );
             writePoint( 2, dg , a2(0), a2(1) );

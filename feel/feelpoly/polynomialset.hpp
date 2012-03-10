@@ -1586,7 +1586,6 @@ public:
             geometric_mapping_context_type* thegmc = __gmc.get();
             if ( vm::has_grad<context>::value || vm::has_first_derivative<context>::value  )
                 {
-                    precompute_type* __pc = _M_pc.get().get();
                     const uint16_type Q = _M_npoints;//__gmc->nPoints();//_M_grad.size2();
                     const uint16_type I = nDof; //_M_ref_ele->nbDof();
 

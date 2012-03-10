@@ -564,8 +564,6 @@ ExporterGmsh<MeshType,N>::gmshSaveElementNodeData( std::ostream& out,
     mesh_ptrtype mesh = __step->mesh();
 
     auto allmarkedfaces = boundaryfaces( mesh );
-    auto face_it = allmarkedfaces.get<1>();
-    auto face_end = allmarkedfaces.get<2>();
     int number_markedfaces= std::distance(allmarkedfaces.get<1>(),allmarkedfaces.get<2>());
 
     uint16_type nLocalDof;
