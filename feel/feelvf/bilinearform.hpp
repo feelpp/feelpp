@@ -807,9 +807,9 @@ public:
         _M_X1( __vf._M_X1 ),
         _M_X2( __vf._M_X2 ),
         _M_matrix( __vf._M_matrix ),
+        _M_lb( __vf._M_lb ),
         _M_row_startInMatrix( __vf._M_row_startInMatrix),
         _M_col_startInMatrix( __vf._M_col_startInMatrix),
-        _M_lb( __vf._M_lb ),
         _M_do_threshold( __vf._M_do_threshold ),
         _M_threshold( __vf._M_threshold )
     {}
