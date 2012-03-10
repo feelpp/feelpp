@@ -388,11 +388,14 @@ public:
             double tn = M_time_values_map[M_iteration];
             double tn1 = M_time_values_map[M_iteration-1];
             double tn2= 0;
-            double tn3= 0;
             if ( M_iteration >= 2 )
                 tn2 = M_time_values_map[M_iteration-2];
+            // order 3 and 4 not yet done
+#if 0
+            double tn3= 0;
             if ( M_iteration >= 3 )
                 tn3 = M_time_values_map[M_iteration-3];
+#endif
 
             for ( int i = 0; i < BDF_MAX_ORDER; ++i )
             {

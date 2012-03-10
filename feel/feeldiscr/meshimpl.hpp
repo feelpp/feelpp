@@ -886,8 +886,9 @@ Mesh<Shape, T>::updateEntitiesCoDimensionOneGhostCell()
                     auto const& theelt = this->element(mapMsg[proc][cpt],proc);
                     for ( size_type j = 0; j < this->numLocalFaces(); j++ )
                         {
-                            //BUT : trouver le bon face_it (dc le jBis dans theelt ) (les permutations seraient necessaire)
-                            uint16_type jBis;bool hasFind=false;
+                            //objective : find  face_it (hence jBis in theelt ) (permutations would be necessary)
+                            uint16_type jBis = invalid_uint16_type_value;
+                            bool hasFind=false;
                             for ( uint16_type/*size_type*/ j2 = 0; j2 < this->numLocalFaces(); j2++ )
                                 {
 
