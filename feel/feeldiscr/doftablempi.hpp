@@ -86,7 +86,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGhostInterProcessDofMap( mesh_
         {
             element_type eltOnProc;
             element_type eltOffProc;
-            uint16_type faceIdInEltOnProc;
+            uint16_type faceIdInEltOnProc = invalid_uint16_type_value;
 
             auto const& elt0 = face_it->element0();
             auto const& elt1 = face_it->element1();

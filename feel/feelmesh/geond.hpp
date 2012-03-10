@@ -658,7 +658,7 @@ public:
                 if ( tags[2] > 1 )
                 {
                     std::vector<int> p( tags[2]-1 );
-                    for( int i = 0;i < p.size(); ++i )
+                    for( size_type i = 0;i < p.size(); ++i )
                     {
                         p[i] = tags[4+i];
                     }
