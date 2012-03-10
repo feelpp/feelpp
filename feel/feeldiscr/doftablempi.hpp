@@ -224,7 +224,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGhostInterProcessDofMap( mesh_
                                 //locDof= nbVertexDofInFace + nbEdgeDofInFace - 1 - dataToRecv[1];
                         }
 #else
-                    int locDof;
+                    int locDof = nbFaceDof;
 
                     //const int ncdof = is_product?nComponents:1;
                     //for( int c = 0; c < ncdof; ++c )
