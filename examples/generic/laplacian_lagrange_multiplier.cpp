@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2008-06-04
 
-  Copyright (C) 2008 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2008-2012 Université Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -51,9 +51,9 @@ inline
 Feel::po::options_description
 makeOptions()
 {
-    Feel::po::options_description laplacian_mloptions("LaplacianML options");
+    Feel::po::options_description laplacian_mloptions("LaplacianLM options");
     laplacian_mloptions.add_options()
-        ("h", Feel::po::value<double>()->default_value( 0.1 ), "mesh size in domain")
+        ("hsize", Feel::po::value<double>()->default_value( 0.1 ), "mesh size in domain")
 
         ("penalbc", Feel::po::value<double>()->default_value( 10 ), "penalisation parameter for the weak boundary conditions")
 
@@ -68,7 +68,7 @@ makeAbout()
     Feel::AboutData about( "laplacian_ml" ,
                            "laplacian_ml" ,
                            "0.1",
-                           "nD(n=1,2,3) LaplacianML on simplices or simplex products",
+                           "nD(n=1,2,3) LaplacianLM on simplices or simplex products",
                            Feel::AboutData::License_GPL,
                            "Copyright (c) 2008 Université Joseph Fourier");
 
@@ -88,7 +88,7 @@ using namespace vf;
  *
  */
 template<int Dim, int Order>
-class LaplacianML
+class LaplacianLM
     :
     public Application
 {
@@ -135,7 +135,7 @@ public:
     typedef boost::shared_ptr<export_type> export_ptrtype;
 
     /** constructor */
-    LaplacianML( int argc, char** argv, AboutData const& ad, po::options_description const& od );
+    LaplacianLM( int argc, char** argv, AboutData const& ad, po::options_description const& od );
 
     /** mesh generation */
     mesh_ptrtype createMesh();
@@ -167,16 +167,16 @@ private:
 
     std::map<std::string,std::pair<boost::timer,double> > timers;
 
-}; // LaplacianML
+}; // LaplacianLM
 
 template<int Dim, int Order>
-LaplacianML<Dim,Order>::LaplacianML( int argc, char** argv, AboutData const& ad, po::options_description const& od )
+LaplacianLM<Dim,Order>::LaplacianLM( int argc, char** argv, AboutData const& ad, po::options_description const& od )
     :
     super( argc, argv, ad, od ),
     M_backend( backend_type::build( this->vm() ) ),
 
     // Data
-    h( this->vm()["h"].template as<double>() ),
+    h( this->vm()["hsize"].template as<double>() ),
     penalisation_bc( this->vm()["penalbc"].template as<value_type>() ),
 
     // spaces
@@ -204,7 +204,13 @@ LaplacianML<Dim,Order>::LaplacianML( int argc, char** argv, AboutData const& ad,
                             );
 
     Log() << "create mesh\n";
-    mesh = createMesh();
+    mesh = createGMSHMesh( _mesh=new mesh_type,
+                           _desc=domain( _name=(boost::format( "hypercube-%1%" )  % Dim).str() ,
+                                         _usenames=true,
+                                         _shape="hypercube",
+                                         _h=h ),
+                           _update=MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK,
+                           _partitions=this->comm().size()  );
 
     Log() << "create space\n";
     Xh = functionspace_type::New( mesh );
@@ -219,29 +225,8 @@ LaplacianML<Dim,Order>::LaplacianML( int argc, char** argv, AboutData const& ad,
     Log() << "Constructor done\n";
 }
 template<int Dim, int Order>
-typename LaplacianML<Dim,Order>::mesh_ptrtype
-LaplacianML<Dim,Order>::createMesh()
-{
-    timers["mesh"].first.restart();
-    mesh_ptrtype mesh( new mesh_type );
-    //mesh->setRenumber( false );
-
-    GmshHypercubeDomain td(entity_type::nDim,entity_type::nOrder,entity_type::nRealDim,entity_type::is_hypercube);
-    td.setCharacteristicLength( h );
-    td.setX( std::make_pair( -1., 1. ) );
-    td.setY( std::make_pair( -1., 1. ) );
-    std::string fname = td.generate( "square" );
-
-    ImporterGmsh<mesh_type> import( fname );
-    mesh->accept( import );
-    timers["mesh"].second = timers["mesh"].first.elapsed();
-    Log() << "[timer] createMesh(): " << timers["mesh"].second << "\n";
-    return mesh;
-} // LaplacianML::createMesh
-
-template<int Dim, int Order>
 void
-LaplacianML<Dim, Order>::run()
+LaplacianLM<Dim, Order>::run()
 {
     //    int maxIter = 10.0/meshSize;
     using namespace Feel::vf;
@@ -257,49 +242,34 @@ LaplacianML<Dim, Order>::run()
     element_0_type v = V.template element<0>() ;
     element_1_type nu = V.template element<1>() ;
 
-#if 0
-    AUTO( g, Px()*Py()+2*Px()+1 );
-    AUTO( grad_g, vec(
-                      Py()+2,
-                      Px()
-                      )
-          );
-    AUTO( f, 0 );
-#else
-    AUTO( g, sin(M_PI*Px())*cos(M_PI*Py()));
-    AUTO( grad_g, vec(
-                      +M_PI*cos(M_PI*Px())*cos(M_PI*Py()),
-                      -M_PI*sin(M_PI*Px())*sin(M_PI*Py())
-                      )
-          );
-    AUTO( f, 2*M_PI*M_PI*g );
-#endif
+    auto pi = constants::pi<double>();
+    auto g= sin(pi*Px())*cos(pi*Py())*cos(pi*Pz());;
+    auto grad_g = vec(
+        +pi*cos(pi*Px())*cos(pi*Py()),
+        -pi*sin(pi*Px())*sin(pi*Py())
+        );
+    auto f = 2*pi*pi*g;
 
-    sparse_matrix_ptrtype M( M_backend->newMatrix( Xh, Xh ) );
+    auto M = M_backend->newMatrix( Xh, Xh );
 
-    form2( Xh, Xh, M, _init=true ) = integrate( _range=elements( mesh ),
+    form2( _test=Xh, _trial=Xh, _matrix=M ) = integrate( _range=elements( mesh ),
                                                 _expr=gradt(u)*trans(grad(v)) + id(u)*idt(lambda) + idt(u)*id(nu) + 0*idt(lambda)*id(nu));
 
-    M->close();
-
-    double area = integrate( _range=elements(mesh), _expr=constant(1.0) ).evaluate()( 0, 0);
+    double area = integrate( _range=elements(mesh), _expr=constant(1.0) ).evaluate()(0,0);
     double mean = integrate( _range=elements(mesh), _expr=g ).evaluate()( 0, 0)/area;
     Log() << "int g  = " << mean << "\n";
     vector_ptrtype F( M_backend->newVector( Xh ) );
-    form1( Xh, F, _init=true ) = ( integrate( _range=elements( mesh ), _expr=f*id(v) )+
-                                   integrate( _range=boundaryfaces( mesh ), _expr=(trans(grad_g)*N())*id(v) ) +
-                                   integrate( _range=elements( mesh ), _expr=mean*id(nu) )
-
-                                   );
-    F->close();
-
+    form1( Xh, F ) = ( integrate( _range=elements( mesh ), _expr=f*id(v) )+
+                       integrate( _range=boundaryfaces( mesh ), _expr=(trans(grad_g)*N())*id(v) ) +
+                       integrate( _range=elements( mesh ), _expr=mean*id(nu) )
+        );
     if ( this->vm().count( "export-matlab" ) )
         {
             M->printMatlab( "M.m" );
             F->printMatlab( "F.m" );
         }
 
-    M_backend->solve( _matrix=M, _solution=u, _rhs=F );
+    M_backend->solve( _matrix=M, _solution=U, _rhs=F );
 
     Log() << "lambda = " << lambda( 0 ) << "\n";
     Log() << "area   = " << area << "\n";
@@ -315,12 +285,12 @@ LaplacianML<Dim, Order>::run()
 
     exportResults( U, V, E );
 
-} // LaplacianML::run
+} // LaplacianLM::run
 
 
 template<int Dim, int Order>
 void
-LaplacianML<Dim, Order>::exportResults( element_type& U, element_type& V, element_type& E )
+LaplacianLM<Dim, Order>::exportResults( element_type& U, element_type& V, element_type& E )
 
 {
     timers["export"].first.restart();
@@ -335,7 +305,7 @@ LaplacianML<Dim, Order>::exportResults( element_type& U, element_type& V, elemen
     exporter->save();
     timers["export"].second = timers["export"].first.elapsed();
     Log() << "[timer] exportResults(): " << timers["export"].second << "\n";
-} // LaplacianML::export
+} // LaplacianLM::export
 } // Feel
 
 
@@ -350,7 +320,7 @@ main( int argc, char** argv )
     const int nDim = 2;
     const int nOrder = 4;
 
-    typedef Feel::LaplacianML<nDim, nOrder> laplacian_ml_type;
+    typedef Feel::LaplacianLM<nDim, nOrder> laplacian_ml_type;
 
     /* define and run application */
     laplacian_ml_type laplacian_ml( argc, argv, makeAbout(), makeOptions() );
