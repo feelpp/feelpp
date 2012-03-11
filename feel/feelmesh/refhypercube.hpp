@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -829,7 +829,7 @@ Reference<Hypercube<Dim, Order, RDim>, Dim, Order, RDim, T>::computeMeasure()
     {
 
         typename matrix_node<value_type>::type M( nDim,nDim);
-        double factor = 1;
+        //double factor = 1;
         switch( nDim )
         {
         case 1:
@@ -843,7 +843,7 @@ Reference<Hypercube<Dim, Order, RDim>, Dim, Order, RDim, T>::computeMeasure()
              */
             ublas::column( M, 0 ) = this->vertex( 2 )-this->vertex( 0 );
             ublas::column( M, 1 ) = this->vertex( 3 )-this->vertex( 1 );
-            factor = 2;
+            //factor = 2;
             M_meas = 4;
             break;
         case 3:

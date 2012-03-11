@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -431,11 +431,11 @@ public :
         auto meshTestLocalization = meshTest->tool_localization();
         meshTestLocalization->updateForUse();
 
-        auto nQuadPtsInElt = this->im().nPoints();
-        auto nElts = std::distance(elt_it,elt_en);
-        auto nQuadPts = nElts*nQuadPtsInElt;
+        //auto nQuadPtsInElt = this->im().nPoints();
+        //auto nElts = std::distance(elt_it,elt_en);
+        //auto nQuadPts = nElts*nQuadPtsInElt;
 
-        auto nEltTest= meshTest->numElements();
+        //auto nEltTest= meshTest->numElements();
 
         //for ( size_type theIdEltTest = 0; theIdEltTest < nEltTest ; ++theIdEltTest ) {testEltToPtsQuad[theIdEltTest].clear();}
 
