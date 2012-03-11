@@ -1,11 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2008-02-01
 
-  Copyright (C) 2008 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2008-2012 Universite Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -274,11 +274,11 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     image_basis_type const* imagebasis = this->dualImageSpace()->basis().get();
     domain_basis_type const* domainbasis = this->domainSpace()->basis().get();
 
-    int nComponents = this->dualImageSpace()->dof()->nComponents;
+    //int nComponents = this->dualImageSpace()->dof()->nComponents;
     //ublas::matrix<value_type,ublas::row_major> Mloc( this->dualImageSpace()->dof()->nDofPerElement,
     //                                                 this->domainSpace()->dof()->nDofPerElement );
 
-    
+
 
     // Local assembly: compute the Mloc matrix by evaluating
     // the domain space basis function at the dual image space
@@ -450,7 +450,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
             image_mesh_element_iterator it = this->dualImageSpace()->mesh()->beginElementWithProcessId( this->dualImageSpace()->mesh()->comm().rank() );
             image_mesh_element_iterator en = this->dualImageSpace()->mesh()->endElementWithProcessId( this->dualImageSpace()->mesh()->comm().rank() );
 
-            //enregistre les numero locales par rapport à la place dans __ptsReal(colonne)
+            //enregistre les numero locales par rapport a la place dans __ptsReal(colonne)
             std::vector<boost::tuple<uint,size_type> > __memLocDof(image_basis_type::nLocalDof);
 
             typename matrix_node<value_type>::type __ptsReal( image_mesh_type::nDim, image_basis_type::nLocalDof);
