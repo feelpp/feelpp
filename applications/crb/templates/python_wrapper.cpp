@@ -25,7 +25,7 @@
 #include <signal.h>
 
 #include <feel/feelcore/opuswrapper.hpp>
-#include <@OPUS_MODEL_SHORT_NAME@.hpp>
+#include <@CRB_MODEL_SHORT_NAME@.hpp>
 #include <feel/feelcrb/opusapp.hpp>
 
 #include <WrapperCommon.h>
@@ -90,7 +90,7 @@
  */
 
 /* The name of the wrapper's functions is defined in WRAPPERNAME macro */
-#define WRAPPERNAME @OPUS_MODEL_WRAPPER_NAME@
+#define WRAPPERNAME @CRB_MODEL_WRAPPER_NAME@
 
 
 
@@ -101,7 +101,7 @@ extern "C" {
     /*
 *********************************************************************************
 *                                                                               *
-*                             @OPUS_MODEL_WRAPPER_NAME@ function                                    *
+*                             @CRB_MODEL_WRAPPER_NAME@ function                                    *
 *                                                                               *
 *********************************************************************************
 */
@@ -140,9 +140,9 @@ extern "C" {
                           CHECK_WRAPPER_IN(   WRAPPER_ARGUMENTS  );
                           CHECK_WRAPPER_OUT(  WRAPPER_ARGUMENTS  );
 
-                          auto app = new Feel::OpusApp<Feel::@OPUS_MODEL_LONG_NAME@>( Feel::make@OPUS_MODEL_LONG_NAME@About( "@OPUS_MODEL_SHORT_NAME@" ),
-                                                                                      Feel::make@OPUS_MODEL_LONG_NAME@Options() );
-                          app->setMode( @OPUS_MODEL_WRAPPER_TYPE@ );
+                          auto app = new Feel::OpusApp<Feel::@CRB_MODEL_LONG_NAME@>( Feel::make@CRB_MODEL_LONG_NAME@About( "@CRB_MODEL_SHORT_NAME@" ),
+                                                                                      Feel::make@CRB_MODEL_LONG_NAME@Options() );
+                          app->setMode( @CRB_MODEL_WRAPPER_TYPE@ );
                           *p_p_state = app;
 
 
@@ -151,7 +151,7 @@ extern "C" {
     /* The deleteState function is optional */
     FUNC_DELETESTATE( WRAPPERNAME ,
                       {
-                          delete CAST(Feel::OpusApp<Feel::@OPUS_MODEL_LONG_NAME@>*,p_state);
+                          delete CAST(Feel::OpusApp<Feel::@CRB_MODEL_LONG_NAME@>*,p_state);
                       } )
 
     /* Any function declared into the wrapper may declare three actual function prefixed with
@@ -196,7 +196,7 @@ extern "C" {
      */
     FUNC_EXEC( WRAPPERNAME,
                {
-                   OPUS_FUNC_EXEC_BODY_IN_TEMPDIR( Feel::OpusApp<Feel::@OPUS_MODEL_LONG_NAME@>, WRAPPERNAME )
+                   CRB_FUNC_EXEC_BODY_IN_TEMPDIR( Feel::OpusApp<Feel::@CRB_MODEL_LONG_NAME@>, WRAPPERNAME )
                } )
 
     // do not use multithreading it breaks the wrapper
