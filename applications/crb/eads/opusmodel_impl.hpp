@@ -290,7 +290,7 @@ OpusModel<OrderU,OrderP,OrderT>::run()
     double e_AIR = this->data()->component("AIR").e();
     double e_PCB = this->data()->component("PCB").e();
     double e_IC = this->data()->component("IC1").e();
-    double L_IC = this->data()->component("IC1").h();
+    //double L_IC = this->data()->component("IC1").h();
 
     Log() << "[opusmodel] flow_rate = " << flow_rate << "\n";
     Log() << "[opusmodel] e_AIR = " << e_AIR << "\n";
