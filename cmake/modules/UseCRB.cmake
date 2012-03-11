@@ -149,11 +149,11 @@ macro(crb_add_model)
   # generate pfem
   set(CODE "/* this file is generated automatically */
 #include <${CRB_MODEL_SHORT_NAME}.hpp>
-#include <feel/feelcrb/crbapp.hpp>
+#include <feel/feelcrb/opusapp.hpp>
 
 int main( int argc, char** argv )
 {
-    Feel::CrbApp<Feel::${CRB_MODEL_LONG_NAME}> app( argc, argv,
+    Feel::OpusApp<Feel::${CRB_MODEL_LONG_NAME}> app( argc, argv,
                                                       Feel::make${CRB_MODEL_LONG_NAME}About( \"${CRB_MODEL_SHORT_NAME}\" ),
                                                       Feel::make${CRB_MODEL_LONG_NAME}Options()  )\;
     app.run()\;
