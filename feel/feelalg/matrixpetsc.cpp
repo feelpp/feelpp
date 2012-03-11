@@ -1096,6 +1096,7 @@ MatrixPetsc<T>::zeroRows( std::vector<int> const& rows, std::vector<value_type> 
                             PetscScalar* v = new PetscScalar[ncols2];
                             std::copy( vals2, vals2+ncols, v );
                             bool found = false;
+                            Feel::detail::ignore_unused_variable_warning(found);
                             for( int k = 0; k < ncols2; ++k )
                                 if ( cols2[k] == myRow )
                                     {
@@ -1336,7 +1337,8 @@ MatrixPetsc<T>::updateBlockMat(boost::shared_ptr<MatrixSparse<T> > m, size_type 
                 ierr = MatGetRow(blockMatrix->mat(), row, &ncols, &cols, &vals);
                 CHKERRABORT(PETSC_COMM_WORLD,ierr);
 
-                for (size_type jj = 0 ; jj < ncols ; ++jj)
+                FEELPP_ASSERT( size_type(ncols) != invalid_size_type_value )( ncols ).error( "invalid number of columns value" );
+                for (size_type jj = 0 ; jj < (size_type)ncols ; ++jj)
                     {
                         //std::cout << "\n [updateBlockMat] i "<< start_i+row << " j " << start_j+cols[jj] << " val " << vals[jj] << std::endl;
                         this->set(start_i+row,
@@ -1739,13 +1741,7 @@ size_type MatrixPetscMPI<T>::size1() const
 {
     FEELPP_ASSERT (this->isInitialized()).error( "MatrixPetsc<> not properly initialized" );;
 
-    int petsc_m=0, petsc_n=0, ierr=0;
-
-    //ierr = MatGetLocalSize (this->mat(), &petsc_m, &petsc_n);
-    //CHKERRABORT(this->comm(),ierr);
-    petsc_m = this->mapRow().nLocalDofWithGhost();
-
-    return static_cast<size_type>(petsc_m);
+    return static_cast<size_type>(this->mapRow().nLocalDofWithGhost());
 }
 
 //----------------------------------------------------------------------------------------------------//
@@ -1757,13 +1753,7 @@ size_type MatrixPetscMPI<T>::size2() const
 {
     FEELPP_ASSERT (this->isInitialized()).error( "MatrixPetsc<> not properly initialized" );;
 
-    int petsc_m=0, petsc_n=0, ierr=0;
-
-    //ierr = MatGetLocalSize (this->mat(), &petsc_m, &petsc_n);
-    //CHKERRABORT(this->comm(),ierr);
-    petsc_n = this->mapCol().nLocalDofWithGhost();
-
-    return static_cast<size_type>(petsc_n);
+    return static_cast<size_type>(this->mapCol().nLocalDofWithGhost());
 }
 
 //----------------------------------------------------------------------------------------------------//
@@ -1774,13 +1764,7 @@ inline
 size_type MatrixPetscMPI<T>::rowStart() const
 {
     FEELPP_ASSERT (this->isInitialized()).error( "MatrixPetsc<> not properly initialized" );;
-
-    int start=0, stop=0, ierr=0;
-
-    //ierr = MatGetOwnershipRange(_M_mat, &start, &stop);
-    //CHKERRABORT(this->comm(),ierr);
-    start=0; stop=this->mapRow().nLocalDofWithGhost();
-    return static_cast<size_type>(start);
+    return static_cast<size_type>(0);
 }
 
 //----------------------------------------------------------------------------------------------------//
@@ -1792,12 +1776,7 @@ size_type MatrixPetscMPI<T>::rowStop() const
 {
     FEELPP_ASSERT (this->isInitialized()).error( "MatrixPetsc<> not properly initialized" );;
 
-    int start=0, stop=0, ierr=0;
-
-    //ierr = MatGetOwnershipRange(_M_mat, &start, &stop);
-    //CHKERRABORT(this->comm(),ierr);
-    start=0; stop=this->mapRow().nLocalDofWithGhost();
-    return static_cast<size_type>(stop);
+    return static_cast<size_type>(this->mapRow().nLocalDofWithGhost());
 }
 
 //----------------------------------------------------------------------------------------------------//
@@ -1808,9 +1787,7 @@ size_type MatrixPetscMPI<T>::colStart() const
 {
     FEELPP_ASSERT (this->isInitialized()).error( "MatrixPetsc<> not properly initialized" );;
 
-    int start=0, stop=0;
-    start=0; stop=this->mapCol().nLocalDofWithGhost();
-    return static_cast<size_type>(start);
+    return static_cast<size_type>(0);
 }
 
 //----------------------------------------------------------------------------------------------------//
@@ -1822,9 +1799,7 @@ size_type MatrixPetscMPI<T>::colStop() const
 {
     FEELPP_ASSERT (this->isInitialized()).error( "MatrixPetsc<> not properly initialized" );;
 
-    int start=0, stop=0;
-    start=0; stop=this->mapCol().nLocalDofWithGhost();
-    return static_cast<size_type>(stop);
+    return static_cast<size_type>(this->mapCol().nLocalDofWithGhost());
 }
 
 //----------------------------------------------------------------------------------------------------//
@@ -1954,7 +1929,7 @@ MatrixPetscMPI<T>::zero()
             //std::vector<PetscScalar> v( this->graph()->nCols(), 0. );
             for ( auto it=this->graph()->begin(), en=this->graph()->end() ; it!=en ; ++it )
             {
-                if ( it->second.get<0>() == this->comm().rank() )
+                if ( (int)it->second.get<0>() == this->comm().rank() )
                     {
 
                         std::vector<PetscInt> cols(  it->second.get<2>().size(), 0 );
@@ -2030,7 +2005,7 @@ MatrixPetscMPI<T>::zero( size_type /*start1*/, size_type /*stop1*/, size_type /*
             //std::vector<PetscScalar> v( this->graph()->nCols(), 0. );
             for ( auto it=this->graph()->begin(), en=this->graph()->end() ; it!=en ; ++it )
             {
-                if ( it->second.get<0>() == this->comm().rank() )
+                if ( (int)it->second.get<0>() == this->comm().rank() )
                     {
 
                         std::vector<PetscInt> cols(  it->second.get<2>().size(), 0 );
