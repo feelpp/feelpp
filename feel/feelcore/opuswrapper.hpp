@@ -22,14 +22,14 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 /**
-   \file opuswrapper.hpp
+   \file crbwrapper.hpp
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2010-03-19
  */
-#ifndef __OpusWrapper_H
-#define __OpusWrapper_H 1
+#ifndef __CrbWrapper_H
+#define __CrbWrapper_H 1
 
-#define OPUS_FUNC_EXEC_BODY_IN_TEMPDIR( classname, dirname )            \
+#define CRB_FUNC_EXEC_BODY_IN_TEMPDIR( classname, dirname )            \
 {                                                                       \
 char* currentWorkingDirectory = getCurrentWorkingDirectory (0) ;        \
 char* temporaryDirectory=createTemporaryDirectory(#dirname,p_exchangedData,0); \
@@ -51,4 +51,4 @@ deleteTemporaryDirectory ( temporaryDirectory , rc, 0 ) ;               \
 free ( currentWorkingDirectory ) ;                                      \
 }
 
-#endif /* __OpusWrapper_H */
+#endif /* __CrbWrapper_H */
