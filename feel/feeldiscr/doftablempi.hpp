@@ -622,7 +622,6 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGlobalProcessToGlobalClusterDo
 {
     //NEWBARRIER this->worldComm().barrier();
     int myRank = this->worldComm().rank();
-    size_type nbFaceDof = invalid_size_type_value;
 
     //------------------------------------------------------------------------------//
     //construction des map local proc to global : part dof present
