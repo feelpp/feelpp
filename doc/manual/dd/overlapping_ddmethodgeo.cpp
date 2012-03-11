@@ -39,28 +39,29 @@ ddmethodGeometryLeft( int RDim, double hsize )
     gmshp->setOrder( GMSH_ORDER_ONE );
     gmshp->setRecombine(false);
     gmshp->setCharacteristicLength( hsize );
-    ostr << gmshp->preamble() << "\n";
+    // ostr << gmshp->preamble() << "\n";
 
 
      switch( RDim ) {
     case 2:
 
-        ostr << "Point(1) = {0,0,0,h};\n"
-             << "Point(2) = {1,0,0,h};\n"
-             << "Point(3) = {0,1,0,h};\n"
-             << "Point(4) = {-1,0,0,h/5};\n"
-             << "Point(5) = {0,-1,0,h/5};\n"
-             << "Circle(1) = {2,1,3};\n"
-             << "Circle(2) = {3,1,4};\n"
-             << "Circle(3) = {4,1,5};\n"
-             << "Circle(4) = {5,1,2};\n"
-             << "Line Loop (5) = {1,2,3,4};\n"
-             << "Plane Surface(6) = {5};\n"
-             << "Physical Line(1) = {2};\n"
-             << "Physical Line(2) = {3};\n"
-             << "Physical Line(3) = {1};\n"
-             << "Physical Line(4) = {4};\n"
-             << "Physical Surface(\"Mat1\") = {6};\n";
+        ostr<< "h =" << hsize <<";\n"
+            << "Point(1) = {0,0,0,h};\n"
+            << "Point(2) = {1,0,0,h};\n"
+            << "Point(3) = {0,1,0,h};\n"
+            << "Point(4) = {-1,0,0,h/5};\n"
+            << "Point(5) = {0,-1,0,h/5};\n"
+            << "Circle(1) = {2,1,3};\n"
+            << "Circle(2) = {3,1,4};\n"
+            << "Circle(3) = {4,1,5};\n"
+            << "Circle(4) = {5,1,2};\n"
+            << "Line Loop (5) = {1,2,3,4};\n"
+            << "Plane Surface(6) = {5};\n"
+            << "Physical Line(1) = {2};\n"
+            << "Physical Line(2) = {3};\n"
+            << "Physical Line(3) = {1};\n"
+            << "Physical Line(4) = {4};\n"
+            << "Physical Surface(\"Mat1\") = {6};\n";
      nameStr << "leftgeo2D";
         break;
     case 3:
@@ -98,13 +99,14 @@ ddmethodGeometryRight( int RDim, double hsize )
     gmshp->setOrder( GMSH_ORDER_ONE );
     gmshp->setRecombine(false);
     gmshp->setCharacteristicLength( hsize );
-    ostr << gmshp->preamble() << "\n";
+    // ostr << gmshp->preamble() << "\n";
 
 
      switch( RDim ) {
     case 2:
 
-        ostr << "Point(1) = {1,0,0,h};\n"
+        ostr << "h =" << hsize <<";\n"
+             << "Point(1) = {1,0,0,h};\n"
              << "Point(2) = {2,0,0,h};\n"
              << "Point(3) = {2,1,0,h/2};\n"
              << "Point(4) = {0,1,0,h/2};\n"
