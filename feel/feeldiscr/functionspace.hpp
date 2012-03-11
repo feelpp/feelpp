@@ -3195,7 +3195,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
             // build the WorldComm associated to mix space
             WorldComm mixSpaceWorldComm = this->worldsComm()[0];
             if (this->worldsComm().size()>1)
-                for (int i=1;i<this->worldsComm().size();++i)
+                for (int i=1;i<(int)this->worldsComm().size();++i)
                     {
                         mixSpaceWorldComm = mixSpaceWorldComm + this->worldsComm()[i];
                     }
