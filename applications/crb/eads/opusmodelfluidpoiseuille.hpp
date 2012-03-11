@@ -140,7 +140,7 @@ OpusModelFluidPoiseuille<SpaceType>::solve( element_type& U )
     double e_AIR = this->data()->component("AIR").e();
     double e_PCB = this->data()->component("PCB").e();
     double e_IC = this->data()->component("IC1").e();
-    double L_IC = this->data()->component("IC1").h();
+    //double L_IC = this->data()->component("IC1").h();
 
     Log() << "flow_rate = " << M_flow_rate << "\n";
     Log() << "e_AIR = " << e_AIR << "\n";
