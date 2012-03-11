@@ -60,10 +60,10 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
 
     _M_test_fec( fusion::transform( _gmcTest,
                                     detail::FEContextInit<0,form_context_type>(__form.testSpace()->fe(),
-
+                                                                               *this ) ) ),
     _M_test_gmc( _gmcTest ),
     _M_trial_gmc( _gmcTrial ),
-                                                                               *this ) ) ),
+
     _M_test_fec0( fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( _M_test_fec ) ) ),
     _M_trial_fec( getMap( _M_test_fec, fusion::transform( _gmcTrial,
                                                           detail::FEContextInit<1,form_context_type>( __form.trialSpace()->fe(),
