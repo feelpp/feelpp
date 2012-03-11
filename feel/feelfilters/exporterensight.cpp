@@ -153,7 +153,7 @@ ExporterEnsight<MeshType,N>::_F_writeSoSFile() const
                   << "type: master_server gold \n"
                   << "SERVERS\n"
                   << "number of servers: " << this->worldComm().globalSize() << "\n";
-            for ( size_type pid = 0 ; pid < this->worldComm().globalSize(); ++pid )
+            for ( int pid = 0 ; pid < this->worldComm().globalSize(); ++pid )
                 {
 
                     __out << "#Server " << pid+1 << "\n"

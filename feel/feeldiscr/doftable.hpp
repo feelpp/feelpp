@@ -2258,7 +2258,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildPeriodicDofMap( mesh_type& M )
                     typename element_type::face_const_iterator it, en;
                     boost::tie( it, en ) = it_elt->faces();
 
-                    bool found_periodic_face_in_element = false;
+                    //bool found_periodic_face_in_element = false;
                     for( ;it != en; ++it )
                         {
                             if ( (*it)->marker().value() == periodicity_type::tag2 ||
@@ -2268,7 +2268,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildPeriodicDofMap( mesh_type& M )
                                     // dof on the periodic face is in fact already taken care of.
                                     // the "internal" dof or on not periodic face will be added
                                     periodic_elements.push_back( boost::make_tuple( boost::addressof(__elt), *it ) );
-                                    found_periodic_face_in_element = true;
+                                    //found_periodic_face_in_element = true;
                                     break;
                                 }
                         }

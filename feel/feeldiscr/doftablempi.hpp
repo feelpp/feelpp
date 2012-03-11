@@ -188,19 +188,19 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGhostInterProcessDofMap( mesh_
 
                     element_type eltOnProc;
                     element_type eltOffProc;
-                    uint16_type faceIdInEltOnProc = invalid_uint16_type_value;
+                    //uint16_type faceIdInEltOnProc = invalid_uint16_type_value;
 
                     if (elt0.processId()!=myRank)
                         {
                             eltOffProc = elt0;
                             eltOnProc=elt1;
-                            faceIdInEltOnProc = face_it->pos_second();
+                            //faceIdInEltOnProc = face_it->pos_second();
                         }
                     else if (elt1.processId()!=myRank)
                         {
                             eltOffProc = elt1;
                             eltOnProc=elt0;
-                            faceIdInEltOnProc = face_it->pos_first();
+                            //faceIdInEltOnProc = face_it->pos_first();
                         }
                     else std::cout << "\nPROBLEME2!!!!"
                                    << " elt0.processId() " << elt0.processId()
@@ -308,7 +308,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGhostInterProcessDofMap( mesh_
                         mapInterProcessDof.insert(std::make_pair(mapMsg[proc][cpt], boost::make_tuple(proc,dofGlobRecv) ));
                     else
                         {
-                            if ( mapInterProcessDof.find(mapMsg[proc][cpt])->second.get<0>() > proc )
+                            if ( (int)mapInterProcessDof.find(mapMsg[proc][cpt])->second.get<0>() > proc )
                                 { std::cout << "\n HJHJHJHJH"<<std::endl;
                                     mapInterProcessDof.insert(std::make_pair(mapMsg[proc][cpt], boost::make_tuple(proc,dofGlobRecv) ));
                                 }
@@ -623,12 +623,6 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGlobalProcessToGlobalClusterDo
     //NEWBARRIER this->worldComm().barrier();
     int myRank = this->worldComm().rank();
     size_type nbFaceDof = invalid_size_type_value;
-    if ( !fe_type::is_modal )
-        nbFaceDof = ( face_type::numVertices * fe_type::nDofPerVertex +
-                      face_type::numEdges * fe_type::nDofPerEdge +
-                      face_type::numFaces * fe_type::nDofPerFace );
-    else
-        nbFaceDof = face_type::numVertices * fe_type::nDofPerVertex;
 
     //------------------------------------------------------------------------------//
     //construction des map local proc to global : part dof present
@@ -755,7 +749,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGlobalProcessToGlobalClusterDo
     //------------------------------//
     // check
 
-    for ( int i=0; i<this->_M_n_localWithGhost_df[myRank]; ++i)
+    for ( int i=0; i<(int)this->_M_n_localWithGhost_df[myRank]; ++i)
         {
 
         }
