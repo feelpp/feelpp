@@ -55,7 +55,6 @@ DataMap::DataMap(WorldComm const& _worldComm)
 }
     DataMap::DataMap( size_type n, size_type n_local, WorldComm const& _worldComm )
     :
-    M_worldComm(_worldComm),
     M_closed( false ),
     _M_n_dofs( n ),
     _M_n_localWithoutGhost_df( ),
@@ -66,7 +65,8 @@ DataMap::DataMap(WorldComm const& _worldComm)
     _M_last_df_globalcluster(),
     M_myglobalelements(),
     M_mapGlobalProcessToGlobalCluster(),
-    M_mapGlobalClusterToGlobalProcess()
+    M_mapGlobalClusterToGlobalProcess(),
+    M_worldComm(_worldComm)
 {
     _M_n_localWithoutGhost_df.resize( this->worldComm().globalSize() );
     _M_n_localWithGhost_df.resize( this->worldComm().globalSize() );
@@ -81,9 +81,6 @@ DataMap::DataMap(WorldComm const& _worldComm)
         ( this->worldComm().globalSize() ).error( "Invalid local vector size" );
 
     _M_n_dofs = n;
-
-    size_type M_local_size  = n_local;
-    size_type M_first_local_index = 0;
 
 #ifdef HAVE_MPI
     std::vector<int> local_sizes     ( this->worldComm().size(), 0);
@@ -193,7 +190,6 @@ DataMap::DataMap(WorldComm const& _worldComm)
 
 DataMap::DataMap( DataMap const & dm )
     :
-    M_worldComm( dm.M_worldComm ),
     M_closed( dm.M_closed ),
     _M_n_dofs( dm._M_n_dofs ),
     _M_n_localWithoutGhost_df( dm._M_n_localWithoutGhost_df ),
@@ -204,7 +200,8 @@ DataMap::DataMap( DataMap const & dm )
     _M_last_df_globalcluster( dm._M_last_df_globalcluster),
     M_myglobalelements(),
     M_mapGlobalProcessToGlobalCluster(dm.M_mapGlobalProcessToGlobalCluster),
-    M_mapGlobalClusterToGlobalProcess(dm.M_mapGlobalClusterToGlobalProcess)
+    M_mapGlobalClusterToGlobalProcess(dm.M_mapGlobalClusterToGlobalProcess),
+    M_worldComm( dm.M_worldComm )
 {}
 DataMap::~DataMap()
 {}
