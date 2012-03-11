@@ -333,16 +333,16 @@ ddmethod<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
         mesh2 = createGMSHMesh( _mesh=new mesh_type,
                                 _desc = nonOverlapGeometryRight(this->meshSize) );
     }
-    // else if( Dim == 3 )
-    // {
-    //     mesh1 = createGMSHMesh( _mesh=new mesh_type,
-    //                             _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
-    //                             _desc=geo("Parallelepiped.geo",3,1,this->meshSize));
+    else if( Dim == 3 )
+    {
+        mesh1 = createGMSHMesh( _mesh=new mesh_type,
+                                _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
+                                _desc=geo(_filename="Parallelepiped.geo",_h=this->meshSize));
 
-    //     mesh2 = createGMSHMesh( _mesh=new mesh_type,
-    //                             _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
-    //                             _desc=geo("Cylinder.geo",3,1,this->meshSize));
-    // }
+        mesh2 = createGMSHMesh( _mesh=new mesh_type,
+                                _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
+                                _desc=geo(_filename="Cylinder.geo",_h=this->meshSize));
+    }
 
 
     if ( Dim == 2 )
