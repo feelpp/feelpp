@@ -100,7 +100,6 @@ namespace lambda = boost::lambda;
 namespace po = boost::program_options;
 namespace mpi=boost::mpi;
 namespace constants=boost::math::constants;
-namespace cst=boost::math::constants;
 
 namespace detail
 {
