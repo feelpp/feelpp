@@ -35,7 +35,7 @@
 
 #include <eads.hpp>
 
-#include <feel/feelcore/opuswrapper.hpp>
+#include <feel/feelcrb/crbwrapper.hpp>
 #include <opusdata.hpp>
 #include <opusmodelbase.hpp>
 #include <opusmodelfactory.hpp>
