@@ -205,7 +205,7 @@ extern "C" {
      */
     FUNC_EXEC( WRAPPERNAME,
                {
-                   OPUS_FUNC_EXEC_BODY_IN_TEMPDIR( Feel::OpusApp<Feel::opusmodel212_type >, WRAPPERNAME  )
+                   CRB_FUNC_EXEC_BODY_IN_TEMPDIR( Feel::OpusApp<Feel::opusmodel212_type >, WRAPPERNAME  )
                } )
 
     // do not use multithreading it breaks the wrapper
