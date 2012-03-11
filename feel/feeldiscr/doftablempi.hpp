@@ -571,7 +571,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildDofNotPresent( mesh_type& mesh
 
 
 
-    int nGlobalDofInProcess = setInterProcessDof.size() - setInterProcessDofNotPresent.size();
+    //int nGlobalDofInProcess = setInterProcessDof.size() - setInterProcessDofNotPresent.size();
 
     auto dof_it = setInterProcessDof.begin();
     auto dof_en = setInterProcessDof.end();
@@ -664,7 +664,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGlobalProcessToGlobalClusterDo
                 }
         } // for ( ; mapGDof_it!=mapGDof_en; ++mapGDof_it)
 #else
-    for ( int i=0; i<this->_M_n_localWithGhost_df[myRank]; ++i)
+    for ( int i=0; i< (int)this->_M_n_localWithGhost_df[myRank]; ++i)
         {
             //std::cout << "\n rank " << myRank << " mapGDof_it " << mapGDof_it->first << " second " << mapGDof_it->second << std::endl;
 
@@ -823,7 +823,7 @@ DofTable<MeshType, FEType, PeriodicityType>::updateGhostGlobalDof(std::map<size_
         }
 
     // get response to initial request and update Feel::Mesh::Faces data
-    size_type firstGlobIndex = this->_M_first_df_globalcluster[this->comm().rank()];
+    //size_type firstGlobIndex = this->_M_first_df_globalcluster[this->comm().rank()];
     for (int proc=0; proc<this->worldComm().size();++proc)
         {
             for ( int cpt=0;cpt<nbMsgToSend2[proc];++cpt)
