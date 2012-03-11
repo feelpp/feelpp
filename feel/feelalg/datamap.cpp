@@ -135,7 +135,6 @@ DataMap::DataMap(WorldComm const& _worldComm)
         }
     else // sequential
         {
-            M_first_local_index = 0;
             local_sizes[this->worldComm().rank()] = n_local;
 
             _M_first_df[this->worldComm().rank()] = 0;
