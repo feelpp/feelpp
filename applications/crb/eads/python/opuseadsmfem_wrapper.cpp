@@ -196,7 +196,7 @@ extern "C" {
      */
     FUNC_EXEC( WRAPPERNAME,
                {
-                   OPUS_FUNC_EXEC_BODY_IN_TEMPDIR( Feel::EadsMFemApp, WRAPPERNAME  )
+                   CRB_FUNC_EXEC_BODY_IN_TEMPDIR( Feel::EadsMFemApp, WRAPPERNAME  )
 
                } )
 
