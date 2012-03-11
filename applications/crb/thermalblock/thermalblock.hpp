@@ -55,8 +55,20 @@ namespace Feel
  *
  * \return the list of options
  */
+
 po::options_description
-makeThermalBlockOptions();
+makeThermalBlockOptions()
+{
+    po::options_description thermalblockoptions("ThermalBlock options");
+    thermalblockoptions.add_options()
+        ("hsize", po::value<double>()->default_value( 0.05 ), "mesh size")
+        ("nx", po::value<int>()->default_value( 3 ), "number of blocks in the x direction")
+        ("ny", po::value<int>()->default_value( 3 ), "number of blocks in the y direction")
+        ("gamma_dir", Feel::po::value<double>()->default_value( 10 ),
+         "penalisation parameter for the weak boundary Dirichlet formulation")
+        ;
+    return thermalblockoptions.add( Feel::feel_options() );
+}
 
 /**
  * This routine defines some information about the application like
@@ -66,15 +78,25 @@ makeThermalBlockOptions();
  * \return some data about the application.
  */
 AboutData
-makeThermalBlockAbout();
+makeThermalBlockAbout( std::string const& str = "thermalBlock" )
+{
+    AboutData about( "thermalblock" ,
+                     "thermalblock" ,
+                     "0.1",
+                     "2D Heterogeneous Thermal Block Problem",
+                     Feel::AboutData::License_GPL,
+                     "Copyright (c) 2011 Universite Joseph Fourier");
+
+    about.addAuthor("Abdoulaye Samake", "main developer", "abdoulaye.samake@ujf-grenoble.fr", "");
+    about.addAuthor("Christophe Prud'homme", "contributor", "christophe.prudhomme@ujf-grenoble.fr", "");
+    about.addAuthor("Stephane Veys", "contributor", "stephane.veys@imag.fr", "");
+    return about;
+
+}
+
+
 
 using namespace vf;
-
-
-gmsh_ptrtype thermalBlockGeometry( int nx=1, int ny=1, double hsize=0.1 );
-
-
-
 
 
 /**
@@ -86,7 +108,7 @@ gmsh_ptrtype thermalBlockGeometry( int nx=1, int ny=1, double hsize=0.1 );
  * \tparam Dim the geometric dimension of the problem (e.g. Dim=1, 2 or 3)
  */
 
-template<int Dim>
+
 class ThermalBlock
 
 {
@@ -121,8 +143,8 @@ public:
     typedef boost::shared_ptr<eigen_matrix_type> eigen_matrix_ptrtype;
 
 
-    //! geometry entities type composing the mesh, here Simplex in Dimension Dim of Order 1
-    typedef Simplex<Dim> convex_type;
+    //! geometry entities type composing the mesh, here Simplex in Dimension 2 of Order 1
+    typedef Simplex<2> convex_type;
     //! mesh type
     typedef Mesh<convex_type> mesh_type;
     //! mesh shared_ptr<> type
@@ -137,7 +159,7 @@ public:
     typedef bases<Lagrange<Order,Scalar> > basis_type;
 
     //! the approximation function space type
-    typedef FunctionSpace<mesh_type, basis_type> functionspace_type;
+    typedef FunctionSpace<mesh_type, basis_type, value_type> functionspace_type;
     typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
 
 
@@ -400,10 +422,80 @@ private:
 }; // ThermalBlock
 
 
+gmsh_ptrtype
+thermalBlockGeometry( int nx, int ny, double hsize )
+{
+    std::ostringstream ostr;
+    std::ostringstream nameStr;
 
-template<int Dim>
+    ostr << "nx=" << nx << ";\n"
+         << "ny=" << ny << ";\n"
+         << "hsize=" << hsize << ";\n"
+         << "dx = 1/nx;\n"
+         << "dy = 1/ny;\n"
+         << "t1=0;\n"
+         << "x=0;\n"
+         << "y=0;\n"
+         << "For j In {0:ny}\n"
+         << "  For i In {0:nx}\n"
+         << "  y = j*dy ;\n"
+         << "  x = i*dx ;\n"
+         << "  t1+=1;\n"
+         << "  Point(t1) = {x, y, 0,  hsize} ;\n"
+         << "  EndFor\n"
+         << "EndFor\n"
+         << "t2=0;\n"
+         << "For j In {0:ny}\n"
+         << "  For i In {0:nx-1}\n"
+         << "  t2 +=1;\n"
+         << "  Line(t2)={t2+j,t2+j+1};\n"
+         << "//  Physical Line(t2+1)={t2};\n"
+         << "  EndFor\n"
+         << "EndFor\n";
+    for( int i = 1; i <= nx; ++i )
+        ostr << "Physical Line(\"south_domain-"  << i << "\")={"<< i << "};\n";
+    for( int i = nx*ny+1, j=nx*(ny-1)+1; i<= nx*(ny+1); ++i,++j )
+        ostr << "  Physical Line(\"north_domain-" << j << "\") = {" << i << "};\n";
+    ostr << "t3 = (ny+1)*nx;\n"
+         << "t4 = 0;\n"
+         << "For i In {0:nx}\n"
+         << "  For j In {0:ny-1}\n"
+         << "  t3 +=1;\n"
+         << "  t4 +=1;\n"
+         << " Line(t3)={t4,t4+nx+1};\n"
+         << "// Physical Line(t3+1)={t3};\n"
+         << " EndFor\n"
+         << "EndFor\n";
+    for( int i = 1, j=0, k=1; i <= ny; ++i, j += nx+1, k += nx )
+        ostr << "Physical Line(\"west_domain-"  << k << "\")={"<< nx*(ny+1)+j+1 << "};\n";
+    for( int i = 1, j=0, k=nx; i <= ny; ++i, j += nx+1, k += nx )
+        ostr << "Physical Line(\"east_domain-"  << k << "\")={"<< nx*(ny+2)+j+1 << "};\n";
+    ostr << "t5 = 0;\n"
+         << "ne = (ny+1)*nx+1;\n"
+         << "For j In {0:ny-1}\n"
+         << "  For i In {0:nx-1}\n"
+         << "  t5 +=1;\n"
+         << "  Line Loop(t5)={t5,(ne+t5+j),-(nx+t5),-(ne+t5+j-1)};\n"
+         << "  Plane Surface(t5)={t5};\n"
+         << " EndFor\n"
+         << "EndFor\n";
+    for( int i = 1, d= 1; i <= nx; ++i )
+        for( int j = 1; j <= ny; ++j, ++d )
+        {
+            ostr << "  Physical Surface(\"domain-"<< d << "\")={" << d << "};\n";
+        }
+
+    nameStr << "thermalblock";
+
+    gmsh_ptrtype gmshp( new Gmsh );
+    gmshp->setPrefix( nameStr.str() );
+    gmshp->setDescription( ostr.str() );
+    return gmshp;
+}
+
+
 void
-ThermalBlock<Dim>::init()
+ThermalBlock::init()
 {
     mmesh = createGMSHMesh( _mesh=new mesh_type,
                             _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
@@ -535,18 +627,18 @@ ThermalBlock<Dim>::init()
 }//init()
 
 
-template<int Dim> const uint16_type ThermalBlock<Dim>::Order;
+const uint16_type ThermalBlock::Order;
 
-template<int Dim>
-typename ThermalBlock<Dim>::affine_decomposition_type
-ThermalBlock<Dim>::computeAffineDecomposition()
+
+typename ThermalBlock::affine_decomposition_type
+ThermalBlock::computeAffineDecomposition()
 {
     return boost::make_tuple( M_Aq, M_Fq );
 }
 
-template<int Dim>
+
 void
-ThermalBlock<Dim>::update( parameter_type const& mu )
+ThermalBlock::update( parameter_type const& mu )
 {
     D->zero();
     for( size_type q = 0;q < M_Aq.size(); ++q )
@@ -563,9 +655,9 @@ ThermalBlock<Dim>::update( parameter_type const& mu )
     }
 }
 
-template<int Dim>
+
 void
-ThermalBlock<Dim>::solve( parameter_type const& mu )
+ThermalBlock::solve( parameter_type const& mu )
 {
     //sd::cout<<"solve (mu) for mu = ["
     //int size = mu.size();
@@ -576,18 +668,18 @@ ThermalBlock<Dim>::solve( parameter_type const& mu )
     this->exportResults( *u );
 }
 
-template<int Dim>
+
 void
-ThermalBlock<Dim>::solve( parameter_type const& mu, element_ptrtype& u )
+ThermalBlock::solve( parameter_type const& mu, element_ptrtype& u )
 {
     this->computeThetaq( mu );
     this->update( mu );
     M_backend->solve( _matrix=D,  _solution=u, _rhs=F );
 }
 
-template<int Dim>
+
 void
-ThermalBlock<Dim>::l2solve( vector_ptrtype& u, vector_ptrtype const& f )
+ThermalBlock::l2solve( vector_ptrtype& u, vector_ptrtype const& f )
 {
     //std::cout << "l2solve(u,f)\n";
     M_backend->solve( _matrix=M,  _solution=u, _rhs=f );
@@ -596,31 +688,31 @@ ThermalBlock<Dim>::l2solve( vector_ptrtype& u, vector_ptrtype const& f )
 
 
 
-template<int Dim>
+
 double
-ThermalBlock<Dim>::scalarProduct( vector_ptrtype const& x, vector_ptrtype const& y )
+ThermalBlock::scalarProduct( vector_ptrtype const& x, vector_ptrtype const& y )
 {
     return M->energy( x, y );
 }
 
-template<int Dim>
+
 double
-ThermalBlock<Dim>::scalarProduct( vector_type const& x, vector_type const& y )
+ThermalBlock::scalarProduct( vector_type const& x, vector_type const& y )
 {
     return M->energy( x, y );
 }
 
-template<int Dim>
-typename ThermalBlock<Dim>::sparse_matrix_ptrtype
-ThermalBlock<Dim>::newMatrix() const
+
+typename ThermalBlock::sparse_matrix_ptrtype
+ThermalBlock::newMatrix() const
 {
     return M_backend->newMatrix( Xh, Xh );
 }
 
 
-template<int Dim>
+
 double
-ThermalBlock<Dim>::output( int output_index, parameter_type const& mu )
+ThermalBlock::output( int output_index, parameter_type const& mu )
 {
     using namespace vf;
     this->solve( mu, pT );
@@ -636,9 +728,9 @@ ThermalBlock<Dim>::output( int output_index, parameter_type const& mu )
 }//output
 
 
-template<int Dim>
+
 std::string
-ThermalBlock<Dim>::subdomainFromBoundary( std::string const& boundary ) const
+ThermalBlock::subdomainFromBoundary( std::string const& boundary ) const
 {
     typedef std::vector< std::string > split_vector_type;
 
@@ -647,9 +739,9 @@ ThermalBlock<Dim>::subdomainFromBoundary( std::string const& boundary ) const
     return SplitVec[1];
 }
 
-template<int Dim>
+
 int
-ThermalBlock<Dim>::subdomainId( std::string const& domain ) const
+ThermalBlock::subdomainId( std::string const& domain ) const
 {
     typedef std::vector< std::string > split_vector_type;
     split_vector_type SplitVec; // #2: Search for tokens
@@ -658,9 +750,9 @@ ThermalBlock<Dim>::subdomainId( std::string const& domain ) const
 }
 
 
-template<int Dim>
+
 double
-ThermalBlock<Dim>::l2Error(element_type& u)
+ThermalBlock::l2Error(element_type& u)
 {
     auto Xh=u.functionSpace();
     auto mesh=Xh->mesh();
@@ -672,9 +764,9 @@ ThermalBlock<Dim>::l2Error(element_type& u)
     return error;
 }
 
-template<int Dim>
+
 double
-ThermalBlock<Dim>::h1Error(element_type& u)
+ThermalBlock::h1Error(element_type& u)
 {
     auto Xh=u.functionSpace();
     auto mesh=Xh->mesh();
@@ -692,9 +784,9 @@ ThermalBlock<Dim>::h1Error(element_type& u)
 }
 
 
-template<int Dim>
+
 void
-ThermalBlock<Dim>::exportResults( element_type& u )
+ThermalBlock::exportResults( element_type& u )
 {
     Log() << "exportResults starts\n";
     auto exporter = export_type::New( M_vm, "thermalblock" );
@@ -706,32 +798,32 @@ ThermalBlock<Dim>::exportResults( element_type& u )
 } // ThermalBlock::export
 
 
-template<int Dim>
+
 void
-ThermalBlock<Dim>::run()
+ThermalBlock::run()
 {
     std::cout << "------------------------------------------------------------\n";
-    std::cout << "Execute ThermalBlock<" << Dim << ">\n";
+    std::cout << "Execute ThermalBlock\n";
     std::vector<double> X( 1 );
     X[0] = meshSize;
     std::vector<double> Y( 3 );
     run( X.data(), X.size(), Y.data(), Y.size() );
 }
 
-template<int Dim>
+
 void
-ThermalBlock<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
+ThermalBlock::run( const double* X, unsigned long P, double* Y, unsigned long N )
 {
     std::cout<<"[thermalblock.hpp] WARNING : function run is to implement, you can't use it"<<std::endl;
     exit(0);
 } // ThermalBlock::run
 
-template<int Dim>
+
 void
-ThermalBlock<Dim>::checkout()
+ThermalBlock::checkout()
 {
     std::cout << "------------------------------------------------------------\n";
-    std::cout << "Execute ThermalBlock<" << Dim << ">\n";
+    std::cout << "Execute ThermalBlock\n";
     std::vector<double> X( 1 );
     X[0] = meshSize;
     std::vector<double> Y( 3 );
@@ -739,9 +831,9 @@ ThermalBlock<Dim>::checkout()
 }
 
 
-template<int Dim>
+
 void
-ThermalBlock<Dim>::checkout( const double* X, unsigned long P, double* Y, unsigned long N )
+ThermalBlock::checkout( const double* X, unsigned long P, double* Y, unsigned long N )
 {
     meshSize=X[0];
 
@@ -756,7 +848,7 @@ ThermalBlock<Dim>::checkout( const double* X, unsigned long P, double* Y, unsign
 
     value_type pi = M_PI;
     auto g = sin(pi*Px())*cos(pi*Py())*cos(pi*Pz());
-    auto f = pi*pi*Dim*g;
+    auto f = pi*pi*2*g;
 
     auto gradg = trans( +pi*cos(pi*Px())*cos(pi*Py())*cos(pi*Pz())*unitX()+
                         -pi*sin(pi*Px())*sin(pi*Py())*cos(pi*Pz())*unitY()+
@@ -776,7 +868,7 @@ ThermalBlock<Dim>::checkout( const double* X, unsigned long P, double* Y, unsign
     BOOST_FOREACH( auto domain, domainMarkers )
     {
         std::cout << domain << " K[" << domain << "]=" << K[domain] << std::endl;
-        form1( Xh, B ) += integrate(markedelements(mmesh, domain),K[domain]*pi*pi*Dim*g*id(v), _Q<10>());
+        form1( Xh, B ) += integrate(markedelements(mmesh, domain),K[domain]*pi*pi*2*g*id(v), _Q<10>());
     }
 
     BOOST_FOREACH( auto marker, southMarkers )
@@ -871,10 +963,10 @@ ThermalBlock<Dim>::checkout( const double* X, unsigned long P, double* Y, unsign
 
     // std::cout << "myerror=" << myerror << "\n";
 
-    export_ptrtype exporter( export_type::New( this->vm(),
+    export_ptrtype exporter( export_type::New( M_vm,
                                                (boost::format( "thermalblock-%1%-%2%" )
                                                 % Order
-                                                % Dim).str() ) );
+                                                % 2).str() ) );
     if ( exporter->doExport() )
     {
         Log() << "exportResults starts\n";
