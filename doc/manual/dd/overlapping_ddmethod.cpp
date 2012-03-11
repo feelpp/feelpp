@@ -341,8 +341,8 @@ ddmethod<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
     auto u1 = Xh1->element();
     auto u2 = Xh2->element();
     auto u1old = Xh1->element();
-    auto uu = Xh1->element();
-    auto vv = Xh2->element();
+    auto uv = Xh1->element();
+    auto uu = Xh2->element();
     value_type pi = M_PI;
     auto g = sin(pi*Px())*cos(pi*Py())*cos(pi*Pz());
     auto f = pi*pi*Dim*g;
