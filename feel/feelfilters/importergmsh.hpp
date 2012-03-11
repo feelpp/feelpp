@@ -342,7 +342,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
                 mesh->addMarkerName( std::make_pair( name, boost::make_tuple( id, topodim ) ) );
                 if (_M_ignorePhysicalName.find(name)!=_M_ignorePhysicalName.end()) this->setIgnorePhysicalGroup(id);
             }
-            FEELPP_ASSERT( mesh->markerNames().size() == nnames )( mesh->markerNames().size() )( nnames ).error( "invalid number of physical names" );
+            FEELPP_ASSERT( mesh->markerNames().size() == (size_type)nnames )( mesh->markerNames().size() )( nnames ).error( "invalid number of physical names" );
             __is >> __buf;
             FEELPP_ASSERT( std::string( __buf ) == "$EndPhysicalNames" )
                 ( __buf )
@@ -475,8 +475,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
 
     for( uint __i = 0; __i < __nele;++__i )
     {
-        int __ne, __t, __physical_region, __np, __dummy, __elementary_region = 1, __partition_region = 0;
-        int npartitions=1;
+        int __ne, __t, __physical_region, __np, __elementary_region = 1;
         std::vector<int> partitions;
         if ( this->version() == "1.0" )
         {
@@ -518,7 +517,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
             for( int ii = 3; ii < __ntag; ++ ii )
                 __et[__i][ii] -= 1;
 
-            for( int jj=0;jj < __et[__i].size(); ++jj )
+            for( int jj=0;jj < (int)__et[__i].size(); ++jj )
                 Debug( 8011 ) << __et[__i][jj] << " ";
             Debug( 8011 ) << " is on proc:" << isElementOnProcessor( __et[__i] ).get<0>() << "\n";
             __np = nptable[__t];

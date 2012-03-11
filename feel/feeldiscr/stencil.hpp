@@ -226,7 +226,6 @@ public:
                 }
             //else FEELPP_ASSERT(M_block_pattern.size() == nbSubSpace1*nbSubSpace2 ).error ("invalid block pattern size");
 
-            const size_type n1_dof_on_proc = _M_X1->nLocalDof();
             M_graph = this->computeGraph(graph_hints);
 
             if (diag_is_nonzero) M_graph->addMissingZeroEntriesDiagonal();
@@ -642,7 +641,6 @@ Stencil<X1,X2>::computeGraph( size_type hints, mpl::bool_<true> )
     // fed into a PetscMatrix to allocate exacly the number of nonzeros
     // necessary to store the matrix.  This algorithm should be linear
     // in the (# of elements)*(# nodes per element)
-    const size_type nprocs           = _M_X1->mesh()->comm().size();
     const size_type proc_id           = _M_X1->mesh()->comm().rank();
     const size_type n1_dof_on_proc    = _M_X1->nLocalDof();
     //const size_type n2_dof_on_proc    = _M_X2->nLocalDof();
@@ -894,7 +892,6 @@ Stencil<X1,X2>::computeGraph( size_type hints, mpl::bool_<true> )
     // necessary to store the matrix.  This algorithm should be linear
     // in the (# of elements)*(# nodes per element)
 #if !defined(FEELPP_ENABLE_MPI_MODE) // NOT MPI
-    const size_type nprocs           = _M_X1->mesh()->comm().size();
     const size_type proc_id           = _M_X1->mesh()->comm().rank();
     const size_type n1_dof_on_proc    = _M_X1->nLocalDof();
     //const size_type n2_dof_on_proc    = _M_X2->nLocalDof();
@@ -903,7 +900,6 @@ Stencil<X1,X2>::computeGraph( size_type hints, mpl::bool_<true> )
     const size_type first2_dof_on_proc = _M_X2->dof()->firstDof( proc_id );
     const size_type last2_dof_on_proc = _M_X2->dof()->lastDof( proc_id );
 #else // MPI
-    const size_type nprocs           = _M_X1->worldsComm()[0].localSize();
     const size_type proc_id           = _M_X1->worldsComm()[0].localRank();
     const size_type n1_dof_on_proc    = _M_X1->nLocalDof();
     //const size_type n2_dof_on_proc    = _M_X2->nLocalDof();
@@ -986,8 +982,8 @@ Stencil<X1,X2>::computeGraph( size_type hints, mpl::bool_<true> )
                     ( ig1 )( first1_dof_on_proc )( sparsity_graph->size() ).error( "invalid dof index" );
 #endif
                 graph_type::row_type& row = sparsity_graph->row(ig1);
-                bool is_on_proc = ( ig1 >= first1_dof_on_proc) && (ig1 <= last1_dof_on_proc);
 #if !defined(FEELPP_ENABLE_MPI_MODE) // NOT MPI
+                bool is_on_proc = ( ig1 >= first1_dof_on_proc) && (ig1 <= last1_dof_on_proc);
                 row.get<0>() = is_on_proc?proc_id:invalid_size_type_value;
                 row.get<1>() = is_on_proc?ig1 - first1_dof_on_proc:invalid_size_type_value;
 #else // MPI
@@ -1067,7 +1063,6 @@ typename Stencil<X1,X2>::graph_ptrtype
 Stencil<X1,X2>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<true> )
 {
 
-    const size_type nprocs           = _M_X1->mesh()->comm().size();
     const size_type proc_id           = _M_X1->mesh()->comm().rank();
     const size_type n1_dof_on_proc    = _M_X1->nLocalDof();
     //const size_type n2_dof_on_proc    = _M_X2->nLocalDof();
@@ -1234,7 +1229,6 @@ Stencil<X1,X2>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<tru
 
     //-----------------------------------------------------------------------//
 
-    const size_type nprocs           = _M_X1->mesh()->comm().size();
     const size_type proc_id           = _M_X1->mesh()->comm().rank();
     const size_type n1_dof_on_proc    = _M_X1->nLocalDof();
     //const size_type n2_dof_on_proc    = _M_X2->nLocalDof();
@@ -1294,7 +1288,7 @@ Stencil<X1,X2>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<tru
                     for (size_type i=0; i<n1_dof_on_element; i++)
                         {
                             const size_type ig1 = element_dof1[i];
-                            const int ndofpercomponent1 = n1_dof_on_element / _M_X1->dof()->nComponents;
+                            //const int ndofpercomponent1 = n1_dof_on_element / _M_X1->dof()->nComponents;
                             //const int ncomp1 = i / ndofpercomponent1;
                             //const int ndofpercomponent2 = n2_dof_on_element / _M_X2->dof()->nComponents;
 

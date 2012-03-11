@@ -1453,7 +1453,7 @@ public:
             }
         Element& operator-=( Element const& _e )
             {
-                for( int i=0; i < _e.nLocalDof(); ++i )
+                for( size_type i=0; i < _e.nLocalDof(); ++i )
                     this->operator()(i) -= _e(i);
                 return *this;
             }
