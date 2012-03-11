@@ -22,7 +22,7 @@
 #
 #
 
-opus_add_executable(eegpfem eegpfem.cpp LINK_LIBRARIES feel++_opus_crb )
+crb_add_executable(eegpfem eegpfem.cpp LINK_LIBRARIES feel++_crb_crb )
 
-opus_add_executable(eegscm eegscm.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} )
+crb_add_executable(eegscm eegscm.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} )
 

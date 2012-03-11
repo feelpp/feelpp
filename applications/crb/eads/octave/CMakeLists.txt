@@ -27,11 +27,11 @@ FOREACH(it ${cmake_include_directories})
   SET(octave_include_dirs ${octave_include_dirs} "-I${it}")
 ENDFOREACH(it)
 
-opus_add_octave_module( opuseadsmfem opuseadsmfem.cpp
-  LINK_LIBRARIES feel++_opus_models ${Octave_LIBRARIES}
+crb_add_octave_module( opuseadsmfem opuseadsmfem.cpp
+  LINK_LIBRARIES feel++_crb_models ${Octave_LIBRARIES}
   SCRIPTS opuseadsmfemtest.m )
-opus_add_octave_module( opuseadspfem opuseadspfem.cpp
-  LINK_LIBRARIES feel++_opus_models ${Octave_LIBRARIES}
+crb_add_octave_module( opuseadspfem opuseadspfem.cpp
+  LINK_LIBRARIES feel++_crb_models ${Octave_LIBRARIES}
   SCRIPTS opuseadspfemtest.m )
 
 if (FEELPP_ENABLE_OCTAVE)

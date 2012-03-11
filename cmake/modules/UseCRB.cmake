@@ -2,7 +2,7 @@
 
 INCLUDE(ParseArguments)
 
-macro(opus_add_octave_module)
+macro(crb_add_octave_module)
 if ( FEELPP_ENABLE_OCTAVE )
   PARSE_ARGUMENTS(OCTAVE_MODULE
     "LINK_LIBRARIES;SCRIPTS;CFG"
@@ -22,15 +22,15 @@ if ( FEELPP_ENABLE_OCTAVE )
   target_link_libraries( ${octname} ${OCTAVE_MODULE_LINK_LIBRARIES} )
   set_target_properties( ${octname} PROPERTIES PREFIX "" )
   set_target_properties( ${octname} PROPERTIES SUFFIX "" )
-  set_property(TARGET ${octname} PROPERTY LABELS opus)
+  set_property(TARGET ${octname} PROPERTY LABELS crb)
   INSTALL(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/${octname} DESTINATION ${FEELPP_OCT_DIR})
 
-  add_dependencies(opus ${octname})
+  add_dependencies(crb ${octname})
   if ( OCTAVE_MODULE_SCRIPTS )
     foreach(  script ${OCTAVE_MODULE_SCRIPTS} )
       configure_file( ${script} ${script} )
       #add_test(${script} ${OCTAVE} ${scipt})
-      #set_property(TEST ${script} PROPERTY LABELS opus)
+      #set_property(TEST ${script} PROPERTY LABELS crb)
 
     endforeach()
     INSTALL(FILES ${OCTAVE_MODULE_SCRIPTS}  DESTINATION ${FEELPP_M_DIR})
@@ -43,48 +43,48 @@ if ( FEELPP_ENABLE_OCTAVE )
     endforeach()
   endif()
 endif( FEELPP_ENABLE_OCTAVE )
-endmacro(opus_add_octave_module)
+endmacro(crb_add_octave_module)
 
-macro(opus_add_executable)
+macro(crb_add_executable)
 
-  PARSE_ARGUMENTS(OPUS_EXEC
+  PARSE_ARGUMENTS(CRB_EXEC
     "LINK_LIBRARIES;CFG"
     "NO_TEST"
     ${ARGN}
     )
-  CAR(OPUS_EXEC_NAME ${OPUS_EXEC_DEFAULT_ARGS})
-  CDR(OPUS_EXEC_SOURCES ${OPUS_EXEC_DEFAULT_ARGS})
+  CAR(CRB_EXEC_NAME ${CRB_EXEC_DEFAULT_ARGS})
+  CDR(CRB_EXEC_SOURCES ${CRB_EXEC_DEFAULT_ARGS})
 
-#  MESSAGE("*** Arguments for Opus application ${OPUS_EXEC_NAME}")
-#  MESSAGE("    Sources: ${OPUS_EXEC_SOURCES}")
-#  MESSAGE("    Link libraries: ${OPUS_EXEC_LINK_LIBRARIES}")
-#  MESSAGE("    Scripts: ${OPUS_EXEC_SCRIPTS}")
-#  MESSAGE("    Cfg file: ${OPUS_EXEC_CFG}")
+#  MESSAGE("*** Arguments for Crb application ${CRB_EXEC_NAME}")
+#  MESSAGE("    Sources: ${CRB_EXEC_SOURCES}")
+#  MESSAGE("    Link libraries: ${CRB_EXEC_LINK_LIBRARIES}")
+#  MESSAGE("    Scripts: ${CRB_EXEC_SCRIPTS}")
+#  MESSAGE("    Cfg file: ${CRB_EXEC_CFG}")
 
-  set(execname opus_${OPUS_EXEC_NAME})
-  add_executable(${execname}    ${OPUS_EXEC_SOURCES}  )
-  target_link_libraries( ${execname} ${OPUS_EXEC_LINK_LIBRARIES} )
-  set_property(TARGET ${execname} PROPERTY LABELS opus)
+  set(execname crb_${CRB_EXEC_NAME})
+  add_executable(${execname}    ${CRB_EXEC_SOURCES}  )
+  target_link_libraries( ${execname} ${CRB_EXEC_LINK_LIBRARIES} )
+  set_property(TARGET ${execname} PROPERTY LABELS crb)
   INSTALL(PROGRAMS "${CMAKE_CURRENT_BINARY_DIR}/${execname}"  DESTINATION bin COMPONENT Bin)
   add_test(${execname} ${CMAKE_CURRENT_BINARY_DIR}/${execname})
-  set_property(TEST ${execname} PROPERTY LABELS opus)
-  add_dependencies(opus ${execname})
-  if ( OPUS_EXEC_CFG )
-    foreach(  cfg ${OPUS_EXEC_CFG} )
+  set_property(TEST ${execname} PROPERTY LABELS crb)
+  add_dependencies(crb ${execname})
+  if ( CRB_EXEC_CFG )
+    foreach(  cfg ${CRB_EXEC_CFG} )
 #      if ( EXISTS ${cfg} )
         configure_file( ${cfg} ${cfg} )
           INSTALL(FILES "${cfg}"  DESTINATION share/feel/config)
 #      else()
-#        message(WARNING "Executable ${OPUS_EXEC_NAME}: configuration file ${cfg} does not exist")
+#        message(WARNING "Executable ${CRB_EXEC_NAME}: configuration file ${cfg} does not exist")
 #      endif()
     endforeach()
   endif()
-endmacro(opus_add_executable)
+endmacro(crb_add_executable)
 
 #
-# opus_add_python_module
+# crb_add_python_module
 #
-macro(opus_add_python_module)
+macro(crb_add_python_module)
 
   PARSE_ARGUMENTS(PYTHON
     "LINK_LIBRARIES;SCRIPTS;XML;CFG"
@@ -95,12 +95,12 @@ macro(opus_add_python_module)
   CDR(PYTHON_SOURCES ${PYTHON_DEFAULT_ARGS})
 
   add_library( ${PYTHON_NAME} MODULE  ${PYTHON_SOURCES}  )
-#  target_link_libraries( ${PYTHON_NAME} feel++_opus_models  )
+#  target_link_libraries( ${PYTHON_NAME} feel++_crb_models  )
   set_target_properties( ${PYTHON_NAME} PROPERTIES PREFIX "" )
-  set_property(TARGET ${PYTHON_NAME} PROPERTY LABELS opus)
+  set_property(TARGET ${PYTHON_NAME} PROPERTY LABELS crb)
   #configure_file(${PYTHON_NAME}.xml.in ${PYTHON_NAME}.xml)
 
-  add_dependencies(opus ${PYTHON_NAME})
+  add_dependencies(crb ${PYTHON_NAME})
 
   install(TARGETS ${PYTHON_NAME} DESTINATION lib/openturns/wrappers/ COMPONENT Bin)
   install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${PYTHON_NAME}.xml" DESTINATION lib/openturns/wrappers/ COMPONENT Bin)
@@ -109,7 +109,7 @@ macro(opus_add_python_module)
     foreach(  script ${PYTHON_SCRIPTS} )
       configure_file( ${script} ${script} )
       add_test(${script} ${PYTHON_EXECUTABLE} ${script})
-      set_property(TEST ${script} PROPERTY LABELS opus)
+      set_property(TEST ${script} PROPERTY LABELS crb)
     endforeach()
   endif()
   if ( PYTHON_CFG )
@@ -119,76 +119,76 @@ macro(opus_add_python_module)
     endforeach()
   endif()
 
-endmacro(opus_add_python_module)
+endmacro(crb_add_python_module)
 
 #
-# opus_add_model -
+# crb_add_model -
 #
 # generate all C++ files for the various flavors: pfem, crb, scm
 # generate all wrappers for python and octave for each flavors
 #
-macro(opus_add_model)
+macro(crb_add_model)
 
-  PARSE_ARGUMENTS(OPUS_MODEL
+  PARSE_ARGUMENTS(CRB_MODEL
     "HDRS;SRCS;LINK_LIBRARIES;CFG;XML;SCRIPTS"
     ""
     ${ARGN}
     )
-  CAR(OPUS_MODEL_SHORT_NAME ${OPUS_MODEL_DEFAULT_ARGS})
-  CDR(OPUS_MODEL_LONG_NAME ${OPUS_MODEL_DEFAULT_ARGS})
+  CAR(CRB_MODEL_SHORT_NAME ${CRB_MODEL_DEFAULT_ARGS})
+  CDR(CRB_MODEL_LONG_NAME ${CRB_MODEL_DEFAULT_ARGS})
 
-  MESSAGE("*** Arguments for Opus models ${OPUS_MODEL_SHORT_NAME}(${OPUS_MODEL_LONG_NAME})")
-  MESSAGE("    Headers: ${OPUS_MODEL_HDRS}")
-  MESSAGE("    Sources: ${OPUS_MODEL_SRCS}")
-  #MESSAGE("    Link libraries: ${OPUS_MODEL_LINK_LIBRARIES}")
-  MESSAGE("    Cfg file: ${OPUS_MODEL_CFG}")
-  MESSAGE("    Xml file: ${OPUS_MODEL_XML}")
-  MESSAGE("Scripts file: ${OPUS_MODEL_SCRIPTS}")
+  MESSAGE("*** Arguments for Crb models ${CRB_MODEL_SHORT_NAME}(${CRB_MODEL_LONG_NAME})")
+  MESSAGE("    Headers: ${CRB_MODEL_HDRS}")
+  MESSAGE("    Sources: ${CRB_MODEL_SRCS}")
+  #MESSAGE("    Link libraries: ${CRB_MODEL_LINK_LIBRARIES}")
+  MESSAGE("    Cfg file: ${CRB_MODEL_CFG}")
+  MESSAGE("    Xml file: ${CRB_MODEL_XML}")
+  MESSAGE("Scripts file: ${CRB_MODEL_SCRIPTS}")
 
   include_directories( ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR} )
   # generate pfem
   set(CODE "/* this file is generated automatically */
-#include <${OPUS_MODEL_SHORT_NAME}.hpp>
-#include <feel/feelcrb/opusapp.hpp>
+#include <${CRB_MODEL_SHORT_NAME}.hpp>
+#include <feel/feelcrb/crbapp.hpp>
 
 int main( int argc, char** argv )
 {
-    Feel::OpusApp<Feel::${OPUS_MODEL_LONG_NAME}> app( argc, argv,
-                                                      Feel::make${OPUS_MODEL_LONG_NAME}About( \"${OPUS_MODEL_SHORT_NAME}\" ),
-                                                      Feel::make${OPUS_MODEL_LONG_NAME}Options()  )\;
+    Feel::CrbApp<Feel::${CRB_MODEL_LONG_NAME}> app( argc, argv,
+                                                      Feel::make${CRB_MODEL_LONG_NAME}About( \"${CRB_MODEL_SHORT_NAME}\" ),
+                                                      Feel::make${CRB_MODEL_LONG_NAME}Options()  )\;
     app.run()\;
 }
 " )
-  IF ( EXISTS ${OPUS_MODEL_SHORT_NAME}app.cpp)
-    file(READ ${OPUS_MODEL_SHORT_NAME}app.cpp APPCODE)
+  IF ( EXISTS ${CRB_MODEL_SHORT_NAME}app.cpp)
+    file(READ ${CRB_MODEL_SHORT_NAME}app.cpp APPCODE)
     IF (NOT ${CODE} STREQUAL ${APPCODE} )
-      file(WRITE ${OPUS_MODEL_SHORT_NAME}app.cpp ${CODE})
+      file(WRITE ${CRB_MODEL_SHORT_NAME}app.cpp ${CODE})
     ENDIF()
   ELSE()
-    file(WRITE ${OPUS_MODEL_SHORT_NAME}app.cpp ${CODE})
+    file(WRITE ${CRB_MODEL_SHORT_NAME}app.cpp ${CODE})
   ENDIF()
 
-  opus_add_executable(${OPUS_MODEL_SHORT_NAME}app ${OPUS_MODEL_SHORT_NAME}app.cpp
-    LINK_LIBRARIES ${OPUS_MODEL_LINK_LIBRARIES}
-    CFG ${OPUS_MODEL_CFG})
+  crb_add_executable(${CRB_MODEL_SHORT_NAME}app ${CRB_MODEL_SHORT_NAME}app.cpp
+    LINK_LIBRARIES ${CRB_MODEL_LINK_LIBRARIES}
+    CFG ${CRB_MODEL_CFG})
 
 
   foreach( wrapper pfem scm crb )
-    set(pycpp "${OPUS_MODEL_SHORT_NAME}${wrapper}_pywrapper.cpp")
-    set(octcpp "${OPUS_MODEL_SHORT_NAME}${wrapper}_octwrapper.cpp")
-    set(xml "${OPUS_MODEL_SHORT_NAME}${wrapper}.xml")
-    set(OPUS_MODEL_WRAPPER_NAME "opus${OPUS_MODEL_SHORT_NAME}${wrapper}")
-    set(OPUS_MODEL_WRAPPER_TYPE "\"${wrapper}\"")
+    set(pycpp "${CRB_MODEL_SHORT_NAME}${wrapper}_pywrapper.cpp")
+    set(octcpp "${CRB_MODEL_SHORT_NAME}${wrapper}_octwrapper.cpp")
+    set(xml "${CRB_MODEL_SHORT_NAME}${wrapper}.xml")
+    set(CRB_MODEL_WRAPPER_NAME "crb${CRB_MODEL_SHORT_NAME}${wrapper}")
+    set(CRB_MODEL_WRAPPER_TYPE "\"${wrapper}\"")
     configure_file(${FEELPP_SOURCE_DIR}/applications/crb/templates/python_wrapper.cpp ${pycpp})
     configure_file(${FEELPP_SOURCE_DIR}/applications/crb/templates/octave_wrapper.cpp ${octcpp})
-    configure_file(${OPUS_MODEL_SHORT_NAME}.xml.in ${xml})
+    configure_file(${CRB_MODEL_SHORT_NAME}.xml.in ${xml})
 
-    opus_add_python_module(opus${OPUS_MODEL_SHORT_NAME}${wrapper} ${pycpp}
-      LINK_LIBRARIES ${OPUS_MODEL_LINK_LIBRARIES}
-      CFG ${OPUS_MODEL_CFG} XML ${xml})
-    opus_add_octave_module(opus${OPUS_MODEL_SHORT_NAME}${wrapper} ${octcpp}
-      LINK_LIBRARIES ${OPUS_MODEL_LINK_LIBRARIES} ${Octave_LIBRARIES}
-      CFG ${OPUS_MODEL_CFG} SCRIPTS ${OPUS_MODEL_SCRIPTS} )
+    crb_add_python_module(crb${CRB_MODEL_SHORT_NAME}${wrapper} ${pycpp}
+      LINK_LIBRARIES ${CRB_MODEL_LINK_LIBRARIES}
+      CFG ${CRB_MODEL_CFG} XML ${xml})
+    crb_add_octave_module(crb${CRB_MODEL_SHORT_NAME}${wrapper} ${octcpp}
+      LINK_LIBRARIES ${CRB_MODEL_LINK_LIBRARIES} ${Octave_LIBRARIES}
+      CFG ${CRB_MODEL_CFG} SCRIPTS ${CRB_MODEL_SCRIPTS} )
   endforeach()
 
 

@@ -22,12 +22,12 @@
 #
 #
 
-#opus_add_executable(thermalblockpfem
+#crb_add_executable(thermalblockpfem
 #  thermalblockmain.cpp thermalblock.cpp  thermalblockgeo.cpp
 #  LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG thermalblock.cfg )
 #include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
-#opus_add_executable(thermalblockpfem thermalblock.cpp thermalblockpfem.cpp thermalblockgeo.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG thermalblockpfem.cfg )
-#opus_add_executable(thermalblockcrb  thermalblock.cpp thermalblockcrb.cpp  thermalblockgeo.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG thermalblockcrb.cfg )
+#crb_add_executable(thermalblockpfem thermalblock.cpp thermalblockpfem.cpp thermalblockgeo.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG thermalblockpfem.cfg )
+#crb_add_executable(thermalblockcrb  thermalblock.cpp thermalblockcrb.cpp  thermalblockgeo.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG thermalblockcrb.cfg )
 
-opus_add_model(thermalblock ThermalBlock HDRS thermalblock.hpp  LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG thermalblock.cfg XML thermalblock.xml SCRIPTS thermalblock.m)
+crb_add_model(thermalblock ThermalBlock HDRS thermalblock.hpp  LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG thermalblock.cfg XML thermalblock.xml SCRIPTS thermalblock.m)

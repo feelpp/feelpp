@@ -26,9 +26,9 @@ include_directories(
   )
 
 #
-# opus_models: a library of models
+# crb_models: a library of models
 #
-add_library(feel++_opus_models SHARED
+add_library(feel++_crb_models SHARED
   eads.cpp
 
   opusdata.cpp opuscomponent.cpp opusmodelbase.cpp
@@ -47,24 +47,24 @@ add_library(feel++_opus_models SHARED
   eadsmfemapp.cpp
   eadsscmapp.cpp
 )
-target_link_libraries(feel++_opus_models ${FEELPP_LIBRARIES} ${MPI_LIBRARIES} )
-set_target_properties( feel++_opus_models PROPERTIES VERSION ${FEELPP_OPUS_SHARED_VERSION} SOVERSION ${FEELPP_OPUS_SHARED_SOVERSION})
-install(TARGETS feel++_opus_models DESTINATION lib COMPONENT Bin)
-set_property(TARGET feel++_opus_models PROPERTY LABELS opus)
-add_dependencies(opus feel++_opus_models)
+target_link_libraries(feel++_crb_models ${FEELPP_LIBRARIES} ${MPI_LIBRARIES} )
+set_target_properties( feel++_crb_models PROPERTIES VERSION ${FEELPP_OPUS_SHARED_VERSION} SOVERSION ${FEELPP_OPUS_SHARED_SOVERSION})
+install(TARGETS feel++_crb_models DESTINATION lib COMPONENT Bin)
+set_property(TARGET feel++_crb_models PROPERTY LABELS crb)
+add_dependencies(crb feel++_crb_models)
 
 #
 # executables
 #
 # mfem
-opus_add_executable( eadsmfem eadsmfemmain.cpp LINK_LIBRARIES feel++_opus_models ${FEELPP_LIBRARIES} CFG eadsmfem.cfg )
+crb_add_executable( eadsmfem eadsmfemmain.cpp LINK_LIBRARIES feel++_crb_models ${FEELPP_LIBRARIES} CFG eadsmfem.cfg )
 # pfem
-#opus_add_executable( eadspfem eadspfemmain.cpp LINK_LIBRARIES feel++_opus_models ${FEELPP_LIBRARIES} CFG eadspfem.cfg )
-opus_add_executable( eadspfem eadspfemmain.cpp  LINK_LIBRARIES feel++_opus_models ${FEELPP_LIBRARIES} CFG eadspfem.cfg )
+#crb_add_executable( eadspfem eadspfemmain.cpp LINK_LIBRARIES feel++_crb_models ${FEELPP_LIBRARIES} CFG eadspfem.cfg )
+crb_add_executable( eadspfem eadspfemmain.cpp  LINK_LIBRARIES feel++_crb_models ${FEELPP_LIBRARIES} CFG eadspfem.cfg )
 # SCM
-opus_add_executable( eadsscm eadsscmmain.cpp LINK_LIBRARIES feel++_opus_models   ${FEELPP_LIBRARIES} CFG eadsscm.cfg )
+crb_add_executable( eadsscm eadsscmmain.cpp LINK_LIBRARIES feel++_crb_models   ${FEELPP_LIBRARIES} CFG eadsscm.cfg )
 # CRB
-opus_add_executable( eadscrb eadscrbmain.cpp LINK_LIBRARIES  feel++_opus_models ${FEELPP_LIBRARIES} CFG eadscrb.cfg )
+crb_add_executable( eadscrb eadscrbmain.cpp LINK_LIBRARIES  feel++_crb_models ${FEELPP_LIBRARIES} CFG eadscrb.cfg )
 
 add_subdirectory(python)
 add_subdirectory(octave)

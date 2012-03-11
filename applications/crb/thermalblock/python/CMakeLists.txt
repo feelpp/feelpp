@@ -22,8 +22,8 @@
 #
 #
 
-opus_add_python_module( opusthermalblockpfem opusthermalblockpfem_wrapper.cpp LINK_LIBRARIES feel++_opus_crb SCRIPTS opusthermalblockpfemtest.py )
-#opus_add_python_module( opusthermalblockcrb opusthermalblockcrb_wrapper.cpp LINK_LIBRARIES feel++_opus_crb SCRIPTS opusthermalblockcrbtest.py )
+crb_add_python_module( opusthermalblockpfem opusthermalblockpfem_wrapper.cpp LINK_LIBRARIES feel++_crb_crb SCRIPTS opusthermalblockpfemtest.py )
+#crb_add_python_module( opusthermalblockcrb opusthermalblockcrb_wrapper.cpp LINK_LIBRARIES feel++_crb_crb SCRIPTS opusthermalblockcrbtest.py )
 
 
 FILE(GLOB pyprogs "${CMAKE_CURRENT_SOURCE_DIR}/*.py" )

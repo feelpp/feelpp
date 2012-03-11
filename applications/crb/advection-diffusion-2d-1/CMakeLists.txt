@@ -23,6 +23,6 @@
 #
 
 
-#opus_add_executable(ad1pfem ad1pfem.cpp LINK_LIBRARIES feel++_opus_models ${FEELPP_LIBRARIES} CFG ad1pfem.cfg )
-#opus_add_executable(ad1crb ad1crb.cpp LINK_LIBRARIES feel++_opus_crb ${FEELPP_LIBRARIES} CFG ad1crb.cfg)
-opus_add_model(ad AdvectionDiffusion HDRS ad.hpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG ad.cfg XML ad.xml SCRIPTS ad.m )
+#crb_add_executable(ad1pfem ad1pfem.cpp LINK_LIBRARIES feel++_crb_models ${FEELPP_LIBRARIES} CFG ad1pfem.cfg )
+#crb_add_executable(ad1crb ad1crb.cpp LINK_LIBRARIES feel++_crb_crb ${FEELPP_LIBRARIES} CFG ad1crb.cfg)
+crb_add_model(ad AdvectionDiffusion HDRS ad.hpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG ad.cfg XML ad.xml SCRIPTS ad.m )
