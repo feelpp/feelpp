@@ -86,34 +86,34 @@ endmacro(crb_add_executable)
 #
 macro(crb_add_python_module)
 
-  PARSE_ARGUMENTS(PYTHON
+  PARSE_ARGUMENTS(CRB_PYTHON
     "LINK_LIBRARIES;SCRIPTS;XML;CFG"
     ""
     ${ARGN}
     )
-  CAR(PYTHON_NAME ${PYTHON_DEFAULT_ARGS})
-  CDR(PYTHON_SOURCES ${PYTHON_DEFAULT_ARGS})
+  CAR(CRB_PYTHON_NAME ${CRB_PYTHON_DEFAULT_ARGS})
+  CDR(CRB_PYTHON_SOURCES ${CRB_PYTHON_DEFAULT_ARGS})
 
-  add_library( ${PYTHON_NAME} MODULE  ${PYTHON_SOURCES}  )
-#  target_link_libraries( ${PYTHON_NAME} feel++_crb_models  )
-  set_target_properties( ${PYTHON_NAME} PROPERTIES PREFIX "" )
-  set_property(TARGET ${PYTHON_NAME} PROPERTY LABELS crb)
-  #configure_file(${PYTHON_NAME}.xml.in ${PYTHON_NAME}.xml)
+  add_library( ${CRB_PYTHON_NAME} MODULE  ${CRB_PYTHON_SOURCES}  )
+  target_link_libraries( ${CRB_PYTHON_NAME} ${CRB_PYTHON_LINK_LIBRARIES}  )
+  set_target_properties( ${CRB_PYTHON_NAME} PROPERTIES PREFIX "" )
+  set_property(TARGET ${CRB_PYTHON_NAME} PROPERTY LABELS crb)
+  #configure_file(${CRB_PYTHON_NAME}.xml.in ${CRB_PYTHON_NAME}.xml)
 
-  add_dependencies(crb ${PYTHON_NAME})
+  add_dependencies(crb ${CRB_PYTHON_NAME})
 
-  install(TARGETS ${PYTHON_NAME} DESTINATION lib/openturns/wrappers/ COMPONENT Bin)
-  install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${PYTHON_NAME}.xml" DESTINATION lib/openturns/wrappers/ COMPONENT Bin)
+  install(TARGETS ${CRB_PYTHON_NAME} DESTINATION lib/openturns/wrappers/ COMPONENT Bin)
+  install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${CRB_PYTHON_NAME}.xml" DESTINATION lib/openturns/wrappers/ COMPONENT Bin)
 
-  if ( PYTHON_SCRIPTS )
-    foreach(  script ${PYTHON_SCRIPTS} )
+  if ( CRB_PYTHON_SCRIPTS )
+    foreach(  script ${CRB_PYTHON_SCRIPTS} )
       configure_file( ${script} ${script} )
       add_test(${script} ${PYTHON_EXECUTABLE} ${script})
       set_property(TEST ${script} PROPERTY LABELS crb)
     endforeach()
   endif()
-  if ( PYTHON_CFG )
-    foreach(  cfg ${PYTHON_CFG} )
+  if ( CRB_PYTHON_CFG )
+    foreach(  cfg ${CRB_PYTHON_CFG} )
       configure_file( ${cfg} ${cfg} )
       INSTALL(FILES "${cfg}"  DESTINATION share/feel/config)
     endforeach()
