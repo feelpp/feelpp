@@ -24,7 +24,7 @@
  */
 #include <signal.h>
 
-#include <feel/feelcore/opuswrapper.hpp>
+#include <feel/feelcore/crbwrapper.hpp>
 #include <@CRB_MODEL_SHORT_NAME@.hpp>
 #include <feel/feelcrb/opusapp.hpp>
 
