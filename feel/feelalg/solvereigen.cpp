@@ -140,7 +140,7 @@ template <typename T>
 boost::shared_ptr<SolverEigen<T> >
 SolverEigen<T>::build( po::variables_map const& vm, std::string const& prefix )
 {
-   SolverPackage solver_package;
+   SolverPackage solver_package = SOLVERS_SLEPC;
     if ( vm["backend"].template as<std::string>() == "petsc" )
         {
 #if defined( HAVE_PETSC )

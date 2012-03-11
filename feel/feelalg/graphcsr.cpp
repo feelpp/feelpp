@@ -40,6 +40,8 @@ GraphCSR::GraphCSR( size_type n,
                     size_type last_col_entry_on_proc,
                     WorldComm const& worldcomm )
     :
+    M_is_closed( false ),
+    M_worldComm( worldcomm ),
     M_first_row_entry_on_proc( first_row_entry_on_proc ),
     M_last_row_entry_on_proc( last_row_entry_on_proc ),
     M_first_col_entry_on_proc( first_col_entry_on_proc ),
@@ -48,15 +50,15 @@ GraphCSR::GraphCSR( size_type n,
     M_n_total_nz( n, 0 ),
     M_n_nz( n, 0 ),
     M_n_oz( n, 0 ),
-    M_storage(),
-    M_is_closed( false ),
-    M_worldComm( worldcomm )
+    M_storage()
 {
     //std::cout << "creating graph " << this << "\n";
 }
 
 GraphCSR::GraphCSR( GraphCSR const & g )
     :
+    M_is_closed( g.M_is_closed ),
+    M_worldComm( g.M_worldComm),
     M_first_row_entry_on_proc( g.M_first_row_entry_on_proc ),
     M_last_row_entry_on_proc( g.M_last_row_entry_on_proc ),
     M_first_col_entry_on_proc( g.M_first_col_entry_on_proc ),
@@ -66,9 +68,7 @@ GraphCSR::GraphCSR( GraphCSR const & g )
     M_n_nz( g.M_n_nz ),
     M_n_oz( g.M_n_oz ),
     M_storage( g.M_storage ),
-    M_graphT( g.M_graphT),
-    M_is_closed( g.M_is_closed ),
-    M_worldComm( g.M_worldComm)
+    M_graphT( g.M_graphT)
 {
 }
 
@@ -128,12 +128,12 @@ GraphCSR::transpose()
         {
             // Get the row of the sparsity pattern
             row_type const& irow = it->second;
-            if ( boost::get<0>( irow ) == this->worldComm().globalRank() )
+            if ( (int)boost::get<0>( irow ) == this->worldComm().globalRank() )
                 {
                     // num line
                     size_type globalindex = it->first;
 
-                    size_type localindex = boost::get<1>( irow );
+                    //size_type localindex = boost::get<1>( irow );
                     for ( auto colit = boost::get<2>( irow ).begin(), colen=boost::get<2>( irow ).end() ; colit!=colen ; ++colit )
                         {
                             self_type::row_type& row = M_graphT->row(*colit);
@@ -219,7 +219,7 @@ GraphCSR::close()
         {
             // Get the row of the sparsity pattern
             row_type const& irow = it->second;
-            if ( boost::get<0>( irow ) == this->worldComm().globalRank() )
+            if ( (int)boost::get<0>( irow ) == this->worldComm().globalRank() )
                 {
                     size_type globalindex = it->first;
                     size_type localindex = irow.get<1>();
@@ -405,13 +405,13 @@ GraphCSR::close()
     M_a.resize(  /*sum_n_nz*/sum_nz, 0. );
     size_type col_cursor = 0;
     auto jait = M_ja.begin();
-    for( int i = 0 ; i<nRowLoc; ++i )
+    for( int i = 0 ; i< (int) nRowLoc; ++i )
     {
         if (M_storage.find(this->firstRowEntryOnProc()+i)!=M_storage.end())
             {
 
                 row_type const& irow = this->row(this->firstRowEntryOnProc()+i);
-                size_type localindex = boost::get<1>( irow );
+                //size_type localindex = boost::get<1>( irow );
                 M_ia[i/*localindex*/] = col_cursor;
                 jait = std::copy( boost::get<2>( irow ).begin(), boost::get<2>( irow ).end(), jait );
 
@@ -549,14 +549,14 @@ GraphCSR::printPython( std::string const& nameFile) const
                     for( auto it = M_storage.begin(), en = --M_storage.end() ; it != en; ++it )
                         {
                             auto const& row = it->second;
-                            if (row.get<0>()==proc)
+                            if ((int)row.get<0>()==proc)
                                 for (auto it2 = row.get<2>().begin(), en2= row.get<2>().end() ; it2!=en2 ; ++it2)
                                     graphFile << "[" << it->first << " , " << *it2 << " , 1.0 ],";// << std::endl;
                         }
 
                     auto it = --M_storage.end();
                     auto const& row = it->second;
-                    if (row.get<0>()==proc)
+                    if ((int)row.get<0>()==proc)
                         {
                             if (row.get<2>().size()>0)
                                 {

@@ -822,7 +822,6 @@ printErrors( std::ostream& out, std::vector<ptree::ptree> const& stats, std::str
         //std::for_each( it->begin(),it->end(), []( std::pair<std::string,boost::any> const& o ) { std::cout << o.first << "\n"; } );
         //std::map<std::string,boost::any> data = *it;
         //std::map<std::string,boost::any> datap;
-        double rocu = 1, rocp=1;
         double h  = it->get<double>("h");
         double hp = h;
         out << std::right << std::setw(10) << l
@@ -928,7 +927,7 @@ printTime( std::ostream& out, std::vector<ptree::ptree> const& stats, std::strin
     out << "\n";
     int l=1;
     std::map<std::string,double> t0;
-    for( auto it = stats.begin(), first=stats.begin(), en =stats.end(); it!=en; ++it,++l )
+    for( auto it = stats.begin(),  en =stats.end(); it!=en; ++it,++l )
     {
         double h  = it->get<double>("h");
         out << std::right << std::setw(10) << l

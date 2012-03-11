@@ -82,8 +82,8 @@ public:
     Preconditioner( Preconditioner const & o )
     :
     M_matrix( o.M_matrix ),
-    M_is_initialized( o.M_is_initialized ),
-    M_preconditioner_type( o.M_preconditioner_type )
+    M_preconditioner_type( o.M_preconditioner_type ),
+    M_is_initialized( o.M_is_initialized )
         {}
 
     //! destructor

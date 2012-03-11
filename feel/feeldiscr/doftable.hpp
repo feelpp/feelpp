@@ -2075,6 +2075,7 @@ DofTable<MeshType, FEType, PeriodicityType>::addEdgePeriodicDof( element_type co
     // id of the element adjacent to the face
     // \warning NEED TO INVESTIGATE THIS
     size_type iElAd = __face.ad_first();
+    Feel::detail::ignore_unused_variable_warning(iElAd);
     FEELPP_ASSERT( iElAd != invalid_size_type_value )( __face.id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
 
     // local id of the face in its adjacent element
@@ -2089,7 +2090,7 @@ DofTable<MeshType, FEType, PeriodicityType>::addEdgePeriodicDof( element_type co
         {
             // local edge number (in element)
             uint16_type iEdEl = element_type::fToE( iFaEl, iEdFa );
-
+            Feel::detail::ignore_unused_variable_warning(iEdEl);
             FEELPP_ASSERT( iEdEl != invalid_uint16_type_value ).error( "invalid local dof" );
 
             // Loop number of Dof per edge

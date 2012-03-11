@@ -820,7 +820,7 @@ BOOST_PARAMETER_FUNCTION(
      (dim,              *(boost::is_integral<mpl::_>), 3 )
      (order,              *(boost::is_integral<mpl::_>), 1 )
      (files_path, *(boost::is_convertible<mpl::_,std::string>), Environment::localGeoRepository())
-     (depends, *(boost::is_convertible<mpl::_,std::vector<std::string> >), std::vector<std::string>() ))
+     (depends, *(std::vector<std::string>), std::vector<std::string>() ))
     )
 
 {

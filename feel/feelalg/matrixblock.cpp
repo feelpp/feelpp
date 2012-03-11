@@ -158,9 +158,8 @@ MatrixBlockBase<T>::mergeBlockGraph(graph_ptrtype & globGraph,
 
                     std::vector<size_type> ivec(nbDof);
                     auto itDof=it->second.template get<2>().begin();
-                    for ( int i=0;
-                          i<nbDof;
-                          ++i,++itDof) ivec[i]=*itDof+start_j;
+                    for ( int i=0;i<(int)nbDof;++i,++itDof)
+                        ivec[i]=*itDof+start_j;
 #endif
                     //std::set<size_type> iout( ivec.size()+ M_graph->row(theglobalrow).template get<2>().size() );
                     //std::set<size_type> iout( ivec.begin(), ivec.end() );

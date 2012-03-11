@@ -94,10 +94,10 @@ Backend<T>::Backend( po::variables_map const& vm, std::string const& prefix )
     M_reuse_jac(  vm[prefixvm(prefix,"reuse-jac")].template as<bool>() ),
     M_transpose( false ),
     M_maxit( vm[prefixvm(prefix,"ksp-maxit")].template as<size_type>() ),
+    M_export( vm[prefixvm(prefix,"export-matlab")].template as<std::string>() ),
     M_ksp( vm[prefixvm(prefix,"ksp-type")].template as<std::string>() ),
     M_pc( vm[prefixvm(prefix,"pc-type")].template as<std::string>() ),
     M_fieldSplit( vm[prefixvm(prefix,"fieldsplit-type")].template as<std::string>() ),
-    M_export( vm[prefixvm(prefix,"export-matlab")].template as<std::string>() ),
     M_pcFactorMatSolverPackage( vm[prefixvm(prefix,"pc-factor-mat-solver-package-type")].template as<std::string>() ),
     M_constant_null_space( vm[prefixvm(prefix,"constant-null-space")].template as<bool>() )
 {

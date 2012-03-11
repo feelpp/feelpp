@@ -151,12 +151,6 @@ SolverEigenSlepc<T>::solve (MatrixSparse<T> &matrix_A_in,
     int nconv=0;
     int its=0;
 
-    // The relative error.
-    PetscReal error, re, im;
-
-    // Pointer to vectors of the real parts, imaginary parts.
-    PetscScalar kr, ki;
-
     // Close the matrix and vectors in case this wasn't already done.
     matrix_A->close ();
 
@@ -210,6 +204,13 @@ SolverEigenSlepc<T>::solve (MatrixSparse<T> &matrix_A_in,
 
 
 #if 0 //!defined( NDEBUG )
+    // The relative error.
+    PetscReal error, re, im;
+
+    // Pointer to vectors of the real parts, imaginary parts.
+    PetscScalar kr, ki;
+
+
     // ierr = PetscPrintf(PETSC_COMM_WORLD,
     //         "\n Number of iterations: %d\n"
     //         " Number of converged eigenpairs: %d\n\n", its, nconv);
@@ -289,11 +290,6 @@ SolverEigenSlepc<T>::solve (MatrixSparse<T> &matrix_A_in,
     int nconv=0;
     int its=0;
 
-    // The relative error.
-    PetscReal error, re, im;
-
-    // Pointer to vectors of the real parts, imaginary parts.
-    PetscScalar kr, ki;
 
     // Close the matrix and vectors in case this wasn't already done.
     matrix_A->close ();
@@ -370,10 +366,17 @@ SolverEigenSlepc<T>::solve (MatrixSparse<T> &matrix_A_in,
     EPSGetTolerances(M_eps,&_tol,&maxit);
     //PetscPrintf(PETSC_COMM_WORLD," Stopping condition: tol=%.4g, maxit=%d\n",_tol,maxit);
 
+#if 0//!defined( NDEBUG )
     PetscScalar shift;
     //STGetShift(M_st, &shift );
     //PetscPrintf(PETSC_COMM_WORLD," shift=%.4g\n",shift);
-#if 0//!defined( NDEBUG )
+
+    // The relative error.
+    PetscReal error, re, im;
+
+    // Pointer to vectors of the real parts, imaginary parts.
+    PetscScalar kr, ki;
+
     // ierr = PetscPrintf(PETSC_COMM_WORLD,
     //         "\n Number of iterations: %d\n"
     //         " Number of converged eigenpairs: %d\n\n", its, nconv);
