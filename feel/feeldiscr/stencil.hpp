@@ -1295,7 +1295,7 @@ Stencil<X1,X2>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<tru
                         {
                             const size_type ig1 = element_dof1[i];
                             const int ndofpercomponent1 = n1_dof_on_element / _M_X1->dof()->nComponents;
-                            const int ncomp1 = i / ndofpercomponent1;
+                            //const int ncomp1 = i / ndofpercomponent1;
                             //const int ndofpercomponent2 = n2_dof_on_element / _M_X2->dof()->nComponents;
 
                             auto ptRealDof = boost::get<0>(_M_X1->dof()->dofPoint(ig1));
@@ -1309,7 +1309,7 @@ Stencil<X1,X2>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<tru
                                     listTup.insert(resTemp.get<1>());
                                     hasFinds[i] = boost::make_tuple(true,resTemp.get<1>());
                                     // maybe is on boundary->more elts
-                                    size_type idElt1 = elem.id();
+                                    //size_type idElt1 = elem.id();
                                     size_type idElt2 = resTemp.get<1>();
                                     auto const& geoelt2 = _M_X2->mesh()->element(idElt2);
                                     std::vector<size_type> neighbor_ids;//(geoelt2.nNeighbors());
@@ -1440,7 +1440,7 @@ Stencil<X1,X2>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<tru
                                     listTup.insert(resTemp.get<1>());
                                     hasFinds[i] = boost::make_tuple(true,resTemp.get<1>());
                                     // maybe is on boundary->more elts
-                                    size_type idElt1 = elem.id();
+                                    //size_type idElt1 = elem.id();
                                     size_type idElt2 = resTemp.get<1>();
                                     auto const& geoelt2 = _M_X2->mesh()->element(idElt2);
                                     std::vector<size_type> neighbor_ids(geoelt2.nNeighbors());//neighbor_ids.clear();//(geoelt2.nNeighbors());
