@@ -243,7 +243,7 @@ WorldComm::showMe( std::ostream& __out ) const
                               << " isActive " << this->isActive() << "\n"
                               << "------------------------------------------------"
                               << std::endl;
-                    for ( int k=0;k<this->mapLocalRankToGlobalRank().size();++k)
+                    for ( int k=0;k<(int)this->mapLocalRankToGlobalRank().size();++k)
                         std::cout << k << " " << this->mapLocalRankToGlobalRank()[k] << std::endl;
 
                     std::cout << "------------------------------------------------"<< std::endl;

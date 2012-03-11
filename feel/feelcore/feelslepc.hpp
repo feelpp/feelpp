@@ -44,9 +44,9 @@ namespace SLEPc
 FEELPP_STRONG_INLINE int EPSDestroy (EPS& eps )
 {
 #if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
-    ::EPSDestroy( &eps);
+    return ::EPSDestroy( &eps);
 #else
-    ::EPSDestroy( eps );
+    return ::EPSDestroy( eps );
 #endif
 }
 

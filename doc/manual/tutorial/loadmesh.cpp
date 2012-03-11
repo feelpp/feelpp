@@ -32,7 +32,6 @@
 
 int main(int argc, char** argv)
 {
-    double hsize = 2;
     // Declare the supported options.
     namespace po = boost::program_options;
     po::options_description desc("Allowed options");

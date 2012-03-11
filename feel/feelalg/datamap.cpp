@@ -1,11 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2008-02-28
 
-  Copyright (C) 2008, 2009 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2008-2012 Universite Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -32,7 +32,6 @@ namespace Feel
 {
 DataMap::DataMap(WorldComm const& _worldComm)
     :
-    M_worldComm(_worldComm),
     M_closed( false ),
     _M_n_dofs( 0 ),
     _M_n_localWithoutGhost_df( ),
@@ -43,7 +42,8 @@ DataMap::DataMap(WorldComm const& _worldComm)
     _M_last_df_globalcluster(),
     M_myglobalelements(),
     M_mapGlobalProcessToGlobalCluster(),
-    M_mapGlobalClusterToGlobalProcess()
+    M_mapGlobalClusterToGlobalProcess(),
+    M_worldComm(_worldComm)
 {
     //std::cout << "\nDataMap : build empty! on godrank " << this->worldComm().godRank() << std::endl;
     _M_n_localWithoutGhost_df.resize( this->worldComm().globalSize() );
@@ -181,9 +181,6 @@ DataMap::DataMap(WorldComm const& _worldComm)
         }
 
 #endif
-
-    size_type M_last_local_index = M_first_local_index + M_local_size;
-
 
     /*
     Debug( 5600 ) << "        global size = " << this->size() << "\n";

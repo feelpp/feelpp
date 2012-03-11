@@ -1022,9 +1022,7 @@ VectorPetscMPI<T>::firstLocalIndex() const
 {
     assert (this->isInitialized());
 
-    int petsc_first=0, petsc_last=0;
-
-    petsc_first=0; petsc_last=this->map().nLocalDofWithGhost();
+    int petsc_first=0
 
     return static_cast<size_type>(petsc_first);
 }
@@ -1037,9 +1035,7 @@ VectorPetscMPI<T>::lastLocalIndex() const
 {
     assert (this->isInitialized());
 
-    int petsc_first=0, petsc_last=0;
-
-    petsc_first=0; petsc_last=this->map().nLocalDofWithGhost();
+    int petsc_last=this->map().nLocalDofWithGhost();
 
     return static_cast<size_type>(petsc_last);
 }

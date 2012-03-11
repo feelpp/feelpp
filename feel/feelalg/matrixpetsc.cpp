@@ -516,7 +516,7 @@ void MatrixPetsc<T>::clear ()
         ierr = PETSc::MatDestroy (_M_mat);
         CHKERRABORT(this->comm(),ierr);
 
-        for (int i=0;i< _M_petscIS.size(); ++i)
+        for (int i=0;i< (int) _M_petscIS.size(); ++i)
             {
 #if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
                 ierr = ISDestroy(&_M_petscIS[i]);
@@ -562,7 +562,7 @@ size_type MatrixPetsc<T>::size1 () const
     int petsc_m=0, petsc_n=0, ierr=0;
 
     ierr = MatGetSize (_M_mat, &petsc_m, &petsc_n);
-
+    CHKERRABORT(this->comm(),ierr);
     return static_cast<size_type>(petsc_m);
 }
 
@@ -577,7 +577,7 @@ size_type MatrixPetsc<T>::size2 () const
     int petsc_m=0, petsc_n=0, ierr=0;
 
     ierr = MatGetSize (_M_mat, &petsc_m, &petsc_n);
-
+    CHKERRABORT(this->comm(),ierr);
     return static_cast<size_type>(petsc_n);
 }
 

@@ -605,13 +605,12 @@ SolverNonLinearPetsc<T>::solve ( dense_matrix_type&  jac_in,  // System Jacobian
     this->init ();
 
     int ierr=0;
-    int n_iterations =0;
 
     Vec petsc_x;
     //VecCreateSeqWithArray(PETSC_COMM_SELF,x_in.size(),x_in.data().data(),&petsc_x);
     VecCreateSeq(PETSC_COMM_SELF,x_in.size(),&petsc_x);
 
-    for (int i=0; i< x_in.size(); i++)
+    for (int i=0; i< (int)x_in.size(); i++)
         {
             VecSetValues( petsc_x,1,&i,&x_in[i],INSERT_VALUES);
         }
@@ -619,7 +618,7 @@ SolverNonLinearPetsc<T>::solve ( dense_matrix_type&  jac_in,  // System Jacobian
     Vec petsc_r;
     //VecCreateSeqWithArray(PETSC_COMM_SELF,x_in.size(),x_in.data().data(),&petsc_x);
     VecCreateSeq(PETSC_COMM_SELF,r_in.size(),&petsc_r);
-    for (int i=0; i<x_in.size(); i++)
+    for (int i=0; i< (int)x_in.size(); i++)
         {
             VecSetValues( petsc_r,1,&i,&r_in[i],INSERT_VALUES);
         }
@@ -630,8 +629,8 @@ SolverNonLinearPetsc<T>::solve ( dense_matrix_type&  jac_in,  // System Jacobian
     Mat petsc_j;
     MatCreateSeqDense( PETSC_COMM_SELF, jac_in.size1(), jac_in.size2(), 0, &petsc_j );
 
-    for( int i = 0; i < jac_in.size1(); ++i )
-        for( int j = 0; j < jac_in.size2(); ++j )
+    for( int i = 0; i < (int)jac_in.size1(); ++i )
+        for( int j = 0; j < (int)jac_in.size2(); ++j )
             {
                 MatSetValue( petsc_j, i, j, jac_in( i, j ), INSERT_VALUES );
 
@@ -665,6 +664,7 @@ SolverNonLinearPetsc<T>::solve ( dense_matrix_type&  jac_in,  // System Jacobian
     // the last one being a pointer to an int to hold the number of iterations required.
 
 # if (PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR <= 1)
+    int n_iterations =0;
 
     ierr = SNESSolve (M_snes, petsc_x, &n_iterations);
     CHKERRABORT(PETSC_COMM_WORLD,ierr);
@@ -686,7 +686,7 @@ SolverNonLinearPetsc<T>::solve ( dense_matrix_type&  jac_in,  // System Jacobian
     double* a;
     VecGetArray( petsc_x , &a );
 
-    for( int i = 0; i < x_in.size(); ++i )
+    for( int i = 0; i < (int)x_in.size(); ++i )
         x_in[i] = a[i];
 
     VecRestoreArray( petsc_x , &a );
