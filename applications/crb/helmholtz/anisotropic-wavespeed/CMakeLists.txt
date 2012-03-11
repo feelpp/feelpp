@@ -21,5 +21,5 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-opus_add_model(aw AnisotropicWavespeed HDRS aw.hpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG aw.cfg XML aw.xml SCRIPTS aw.m)
+crb_add_model(aw AnisotropicWavespeed HDRS aw.hpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG aw.cfg XML aw.xml SCRIPTS aw.m)
 

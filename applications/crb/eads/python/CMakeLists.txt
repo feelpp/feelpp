@@ -28,10 +28,10 @@ include_directories(
 
 #files(GLOB pyfiles "*.py")
 if ( FEELPP_ENABLE_OPENTURNS )
- opus_add_python_module( opuseadsmfem opuseadsmfem_wrapper.cpp LINK_LIBRARIES feel++_opus_models SCRIPTS opuseadsmfemtest.py )
- opus_add_python_module( opuseadspfem opuseadspfem_wrapper.cpp LINK_LIBRARIES feel++_opus_models SCRIPTS opuseadspfemtest.py )
- #opus_add_python_module( opuseadscrb opuseadscrb_wrapper.cpp LINK_LIBRARIES feel++_opus_models SCRIPTS opuseadscrbtest.py )
- opus_add_python_module( opuseadscrb opuseadscrb_wrapper.cpp LINK_LIBRARIES feel++_opus_models  )
+ crb_add_python_module( opuseadsmfem opuseadsmfem_wrapper.cpp LINK_LIBRARIES feel++_crb_models SCRIPTS opuseadsmfemtest.py )
+ crb_add_python_module( opuseadspfem opuseadspfem_wrapper.cpp LINK_LIBRARIES feel++_crb_models SCRIPTS opuseadspfemtest.py )
+ #crb_add_python_module( opuseadscrb opuseadscrb_wrapper.cpp LINK_LIBRARIES feel++_crb_models SCRIPTS opuseadscrbtest.py )
+ crb_add_python_module( opuseadscrb opuseadscrb_wrapper.cpp LINK_LIBRARIES feel++_crb_models  )
 
  configure_file(ct_thermique.py ct_thermique.py)
 

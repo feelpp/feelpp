@@ -21,19 +21,19 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-add_custom_target(opus)
-set(FEELPP_OPUS_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
-set(FEELPP_OPUS_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
+add_custom_target(crb)
+set(FEELPP_CRB_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+set(FEELPP_CRB_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
 include(UseCRB)
 
-OPTION(FEELPP_ENABLE_CRB_EADS "enable EADS testcase" OFF)
-OPTION(FEELPP_ENABLE_CRB_HEAT1D "enable HEAT1D testcase" OFF)
-OPTION(FEELPP_ENABLE_CRB_AD1 "enable AD1(Advection-Diffusion) testcase" OFF)
-OPTION(FEELPP_ENABLE_CRB_THERMALBLOCK "enable THERMALBLOCK(many parameters) testcase" OFF)
-OPTION(FEELPP_ENABLE_CRB_HELMHOLTZ "enable Helmholtz testcases" OFF)
-OPTION(FEELPP_ENABLE_CRB_HEATSINK "enable Heatsink testcases" OFF)
+OPTION(FEELPP_ENABLE_CRB_EADS "enable EADS testcase" ON)
+OPTION(FEELPP_ENABLE_CRB_HEAT1D "enable HEAT1D testcase" ON)
+OPTION(FEELPP_ENABLE_CRB_AD1 "enable AD1(Advection-Diffusion) testcase" ON)
+OPTION(FEELPP_ENABLE_CRB_THERMALBLOCK "enable THERMALBLOCK(many parameters) testcase" ON)
+OPTION(FEELPP_ENABLE_CRB_HELMHOLTZ "enable Helmholtz testcases" ON)
+OPTION(FEELPP_ENABLE_CRB_HEATSINK "enable Heatsink testcases" ON)
 
-OPTION(FEELPP_ENABLE_CRB_ALL "enable all crb testcase" OFF)
+OPTION(FEELPP_ENABLE_CRB_ALL "enable all crb testcase" ON)
 if (FEELPP_ENABLE_CRB_ALL)
   set(FEELPP_ENABLE_CRB_EADS ON)
   set(FEELPP_ENABLE_CRB_HEAT1D ON)
