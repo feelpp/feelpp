@@ -32,7 +32,7 @@
 #include <WrapperMacros.h>
 
 
-#include <feel/feelcore/opuswrapper.hpp>
+#include <feel/feelcrb/crbwrapper.hpp>
 #include <feel/feelcrb/pfemapp.hpp>
 #include <opusmodelrb.hpp>
 

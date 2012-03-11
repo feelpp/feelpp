@@ -26,7 +26,7 @@
 
 
 #include <eadsmfemapp.hpp>
-#include <feel/feelcore/opuswrapper.hpp>
+#include <feel/feelcrb/crbwrapper.hpp>
 
 #include <WrapperCommon.h>
 #include <WrapperMacros.h>
