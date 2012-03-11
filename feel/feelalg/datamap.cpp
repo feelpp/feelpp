@@ -103,13 +103,6 @@ DataMap::DataMap(WorldComm const& _worldComm)
             std::vector<int> M_recvcounts( this->worldComm().size() );
             std::vector<int> M_displs( this->worldComm().size() );
 
-            // _first_local_index is the sum of _local_size
-            // for all processor ids less than ours
-            for ( int p=0; p<this->worldComm().rank(); p++ )
-                {
-                    M_first_local_index += local_sizes[p];
-                }
-
             int _local_index = 0;
             for ( int p=0; p<this->worldComm().size(); p++ )
                 {
