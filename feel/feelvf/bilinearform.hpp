@@ -1105,9 +1105,9 @@ BilinearForm<FE1, FE2, ElemContType>::BilinearForm( space_1_ptrtype const& Xh,
     _M_X2( Yh ),
     _M_matrix( __M ),
     _M_do_build( build ),
+    _M_lb(),
     _M_row_startInMatrix(rowstart),
     _M_col_startInMatrix(colstart),
-    _M_lb(),
     _M_do_threshold( do_threshold ),
     _M_threshold( threshold )
 {
@@ -1136,9 +1136,9 @@ BilinearForm<FE1, FE2, ElemContType>::BilinearForm( space_1_ptrtype const& Xh,
     _M_X2( Yh ),
     _M_matrix( __M ),
     _M_do_build( false ),
+    _M_lb( __lb ),
     _M_row_startInMatrix(rowstart),
     _M_col_startInMatrix(colstart),
-    _M_lb( __lb ),
     _M_do_threshold( do_threshold ),
     _M_threshold( threshold )
 {
