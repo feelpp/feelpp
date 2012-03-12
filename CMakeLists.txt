@@ -425,7 +425,7 @@ INSTALL(FILES ${FEELPP_INSTALL_APPS} DESTINATION bin/ COMPONENT Bin)
 
 # documentation and examples
 if ( FEELPP_ENABLE_DOCUMENTATION )
-  install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/doc/manual/feel_get_tutorial.sh DESTINATION bin COMPONENT Doc)
+#  install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/doc/manual/feel_get_tutorial.sh DESTINATION bin COMPONENT Doc)
   install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/doc/manual/manual/feel-manual.pdf DESTINATION share/doc/feel COMPONENT Doc)
   if ( NOT APPLE )
     if ( EXISTS ${CMAKE_CURRENT_BINARY_DIR}/doc/api/html )
