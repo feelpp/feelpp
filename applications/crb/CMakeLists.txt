@@ -28,6 +28,7 @@ include(UseCRB)
 
 OPTION(FEELPP_ENABLE_CRB_EADS "enable EADS testcase" ON)
 OPTION(FEELPP_ENABLE_CRB_HEAT1D "enable HEAT1D testcase" ON)
+OPTION(FEELPP_ENABLE_CRB_RBHEAT "enable RBHEAT testcases" ON)
 OPTION(FEELPP_ENABLE_CRB_AD1 "enable AD1(Advection-Diffusion) testcase" ON)
 OPTION(FEELPP_ENABLE_CRB_THERMALBLOCK "enable THERMALBLOCK(many parameters) testcase" ON)
 OPTION(FEELPP_ENABLE_CRB_HELMHOLTZ "enable Helmholtz testcases" ON)
@@ -37,11 +38,13 @@ OPTION(FEELPP_ENABLE_CRB_ALL "enable all crb testcase" ON)
 if (FEELPP_ENABLE_CRB_ALL)
   set(FEELPP_ENABLE_CRB_EADS ON)
   set(FEELPP_ENABLE_CRB_HEAT1D ON)
+  set(FEELPP_ENABLE_CRB_RBHEAT ON)
   set(FEELPP_ENABLE_CRB_HEATSINK ON)
   set(FEELPP_ENABLE_CRB_AD1 ON)
   set(FEELPP_ENABLE_CRB_THERMALBLOCK ON)
   set(FEELPP_ENABLE_CRB_HELMHOLTZ ON)
 endif()
+
 
 IF ( FEELPP_ENABLE_CRB_EADS )
   add_subdirectory(eads)
@@ -53,6 +56,9 @@ IF ( FEELPP_ENABLE_CRB_HEAT1D )
   add_subdirectory(unsteady_heat1d)
 ENDIF()
 
+IF ( FEELPP_ENABLE_CRB_RBHEAT )
+add_subdirectory(Rbheat)
+ENDIF()
 
 IF ( FEELPP_ENABLE_CRB_AD1 )
   add_subdirectory(advection-diffusion-2d-1)
@@ -71,5 +77,7 @@ ENDIF()
 
 if ( FEELPP_ENABLE_CRB_HEATSINK )
   add_subdirectory(heatsink-2d)
-endif()
+ENDIF()
+
+
 
