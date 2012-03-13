@@ -500,9 +500,9 @@ namespace Feel
 
                         _M_dm->resizeMapGlobalProcessToGlobalCluster(nLocWithGhost);
                         _M_dm->resizeMapGlobalClusterToGlobalProcess(nLocWithoutGhost);
-                        for (int i=0;i<nLocWithGhost;++i)
+                        for (size_type i=0;i<nLocWithGhost;++i)
                             _M_dm->setMapGlobalProcessToGlobalCluster( i, _M_start_index + x->dof()->mapGlobalProcessToGlobalCluster(i));
-                        for (int i=0;i<nLocWithoutGhost;++i)
+                        for (size_type i=0;i<nLocWithoutGhost;++i)
                             _M_dm->setMapGlobalClusterToGlobalProcess( i, x->dof()->mapGlobalClusterToGlobalProcess(i) );
                     }
 
@@ -541,11 +541,11 @@ namespace Feel
 
                 size_type startGlobClusterDof = _M_dmOnOff->nLocalDofWithoutGhost() - x->dof()->nLocalDofWithoutGhost();
                 size_type startGlobProcessDof = _M_dmOnOff->nLocalDofWithGhost() - x->dof()->nLocalDofWithGhost();
-                for (int i=0;i<x->dof()->nLocalDofWithGhost();++i)
+                for (size_type i=0;i<x->dof()->nLocalDofWithGhost();++i)
                     {
                         _M_dmOnOff->setMapGlobalProcessToGlobalCluster( startGlobProcessDof + i, _M_start_index + x->dof()->mapGlobalProcessToGlobalCluster(i));
                     }
-                for (int i=0;i<x->dof()->nLocalDofWithoutGhost();++i)
+                for (size_type i=0;i<x->dof()->nLocalDofWithoutGhost();++i)
                     {
                         _M_dmOnOff->setMapGlobalClusterToGlobalProcess( startGlobClusterDof + i, x->dof()->mapGlobalClusterToGlobalProcess(i) );
                     }
@@ -561,8 +561,8 @@ namespace Feel
 
             mutable uint16_type _M_cursor;
             mutable size_type _M_start_index;
-            std::vector<WorldComm> _M_worldsComm;
             uint16_type _M_lastCursor;
+            std::vector<WorldComm> _M_worldsComm;
             mutable boost::shared_ptr<DofType> _M_dm;
             mutable boost::shared_ptr<DofType> _M_dmOnOff;
         }; // updateDataMapProcess
