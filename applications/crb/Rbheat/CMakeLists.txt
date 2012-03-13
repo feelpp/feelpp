@@ -31,5 +31,5 @@
 #add_subdirectory(octave)
 
 
-opus_add_model(Rbheat RbHeat HDRS Rbheat.hpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG Rbheat.cfg XML Rbheat.xml SCRIPTS Rbheat.m)
+crb_add_model(Rbheat RbHeat HDRS Rbheat.hpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG Rbheat.cfg XML Rbheat.xml SCRIPTS Rbheat.m)
 #opus_add_python_module( heat1dcrb opusheat1dcrb_wrapper.cpp LINK_LIBRARIES feel++_opus_models SCRIPTS heat1d.py )
