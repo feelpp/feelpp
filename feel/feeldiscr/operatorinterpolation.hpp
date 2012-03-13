@@ -270,7 +270,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     typedef typename domain_space_type::dof_type domain_dof_type;
     typedef typename dual_image_space_type::dof_type dual_image_dof_type;
     domain_dof_type const* domaindof = this->domainSpace()->dof().get();
-    dual_image_dof_type const* dualimagedof = this->dualImageSpace()->dof().get();
+    //dual_image_dof_type const* dualimagedof = this->dualImageSpace()->dof().get();
     image_basis_type const* imagebasis = this->dualImageSpace()->basis().get();
     domain_basis_type const* domainbasis = this->domainSpace()->basis().get();
 
