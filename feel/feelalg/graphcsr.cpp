@@ -102,7 +102,7 @@ GraphCSR::operator=( GraphCSR const& g )
 void
 GraphCSR::zero()
 {
-    auto nbDof = M_last_row_entry_on_proc-M_first_row_entry_on_proc+1;
+    //auto nbDof = M_last_row_entry_on_proc-M_first_row_entry_on_proc+1;
     for (size_type i=M_first_row_entry_on_proc ; i<=M_last_row_entry_on_proc ; ++i)
         {
             row_type& row = this->row(i);
