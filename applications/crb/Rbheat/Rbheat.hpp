@@ -92,27 +92,6 @@ createGeo( double meshSize  )
 {
 std::ostringstream ostr;
 
-
- ostr <<"Point(1) = {-0.5,0,0,"<<0.01<<"};\n"
-      <<"Point(2) = {0.5,0,0,"<<0.01<<"};\n"
-      <<"Point(3) = {0.5,0.5,0,"<<0.01<<"};\n"
-      <<"Point(4) = {-0.5,0.5,0,"<<0.01<<"};\n"
-      <<"\n"
-      <<"Line(1) = {1,2};\n"
-      <<"Line(2) = {2,3};\n"
-      <<"Line(3) = {3,4};\n"
-      <<"Line(4) = {4,1};\n"
-   
-      <<"Line Loop(10) = {1,2,3,4};\n"
-      <<"Plane Surface(20) = {10};\n"
-
-      <<"Physical Line(\"left\") = {4};\n"
-      <<"Physical Line(\"right\")={2};\n"
-      <<"Physical Line(\"hautbas\")={1,4};\n"
-      <<"Physical Surface(\"maille1\") = {20};\n"
-      <<"\n";
-
-#if 0
     ostr << "p=" << meshSize << ";\n"
 	 <<"Point(1) = {-0.5,0,0,p};\n"
 	 <<"Point(2) = {0,0,0,p};\n"
@@ -141,7 +120,7 @@ std::ostringstream ostr;
 	 <<"Physical Surface(\"maille1\") = {3};\n"
 	 <<"Physical Surface(\"maille2\") = {4};\n"
 	 <<"\n";
-#endif
+
     gmsh_ptrtype gmshp( new Gmsh );
     gmshp->setPrefix( "rbheat" );
     gmshp->setDescription( ostr.str() );
@@ -183,7 +162,7 @@ public:
     typedef boost::shared_ptr<eigen_matrix_type> eigen_matrix_ptrtype;
 
     /*mesh*/
-    typedef Simplex<1,1> entity_type;
+    typedef Simplex<2,1> entity_type;
     typedef Mesh<entity_type> mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
@@ -283,7 +262,7 @@ public:
     boost::tuple<theta_vector_type, std::vector<theta_vector_type> >
     computeThetaq( parameter_type const& mu, double time=0 )
         {
-	  std::cout<<" computeThetaQ ======= "<<std::endl;
+	  
             M_thetaAq.resize( Qa() );
             M_thetaAq( 0 ) = 1;
             M_thetaAq( 1 ) = mu( 0 ); // k_1
@@ -525,17 +504,16 @@ RbHeat::init()
     double surface_left = integrate( _range= markedfaces(mesh,"left"), _expr=cst(1.) ).evaluate()(0,0);
     std::cout<<"left = "<<surface_left<<std::endl;
 
- double surface_right = integrate( _range= markedfaces(mesh,"right"), _expr=cst(1.) ).evaluate()(0,0);
+    double surface_right = integrate( _range= markedfaces(mesh,"right"), _expr=cst(1.) ).evaluate()(0,0);
     std::cout<<"right = "<<surface_right<<std::endl;
 
- double surface__haut_bas = integrate( _range= markedfaces(mesh,"hautbas"), _expr=cst(1.) ).evaluate()(0,0);
+    double surface__haut_bas = integrate( _range= markedfaces(mesh,"hautbas"), _expr=cst(1.) ).evaluate()(0,0);
     std::cout<<"hautbas = "<<surface__haut_bas<<std::endl;
 
- double surface__maille1 = integrate( _range= markedelements(mesh,"maille1"), _expr=cst(1.) ).evaluate()(0,0);
+    double surface__maille1 = integrate( _range= markedelements(mesh,"maille1"), _expr=cst(1.) ).evaluate()(0,0);
     std::cout<<"maille1 = "<<surface__maille1<<std::endl;
-    exit(0);
-
- double surface__maille2 = integrate( _range= markedelements(mesh,"maille2"), _expr=cst(1.) ).evaluate()(0,0);
+    
+    double surface__maille2 = integrate( _range= markedelements(mesh,"maille2"), _expr=cst(1.) ).evaluate()(0,0);
     std::cout<<"maille2 = "<<surface__maille2<<std::endl;
 
     // right hand side
@@ -579,7 +557,6 @@ RbHeat::newMatrix() const
 RbHeat::affine_decomposition_type
 RbHeat::computeAffineDecomposition()
 {
-  std::cout<<"computeAffineDecomposition du model"<<std::endl;
     return boost::make_tuple( M_Aq, M_Fq );
 }
 
@@ -618,12 +595,8 @@ RbHeat::update( parameter_type const& mu )
   std::cout<<"================================================================= "<<std::endl;
 
     *D = *M_Aq[0];
-    //std::cout<<"*M_Aq[0] = "<<std::endl;
-    //std::cout<<*M_Aq[0]<<std::endl;
     for( size_type q = 1;q < M_Aq.size(); ++q )
     {
-      //std::cout<<"\n\n"<<std::endl;
-      //std::cout<<"*M_Aq["<<q<<"] = "<<std::endl;
         D->addMatrix( M_thetaAq[q], M_Aq[q] );
     }
 
@@ -631,8 +604,6 @@ RbHeat::update( parameter_type const& mu )
     F->zero();
     for( size_type q = 0;q < M_Fq[0].size(); ++q )
     {
-      std::cout<<"M_Fq[0]["<<q<<"] = "<<std::endl;
-      std::cout<<*M_Fq[0][q]<<std::endl;
         F->add( M_thetaFq[0][q], M_Fq[0][q] );
     }
 }
@@ -675,24 +646,18 @@ RbHeat::scalarProduct( vector_type const& x, vector_type const& y )
 void
 RbHeat::run( const double * X, unsigned long N, double * Y, unsigned long P )
 {
-  std::cout<<" model RUN"<<std::endl;
+
     using namespace vf;
     Feel::ParameterSpace<4>::Element mu( M_Dmu );
-    std::cout<<"model RUN -1- "<<std::endl;
     mu << X[0], X[1], X[2], X[3];
-    std::cout<<"model RUN -2- "<<std::endl;
     static int do_init = true;
     if ( do_init )
     {
-    std::cout<<"model RUN -3- "<<std::endl;
         meshSize = X[4];
         this->init();
-	std::cout<<"model RUN -4- "<<std::endl;
         do_init = false;
     }
-    std::cout<<"model RUN call solve"<<std::endl;
     this->solve( mu, pT );
-    std::cout<<"model RUN END "<<std::endl;
 }
 
 
