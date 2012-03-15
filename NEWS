@@ -10,18 +10,30 @@
 
 * New in 0.91.0
 
-** Contributors for this release
+** Main NEWS
 
- - Vincent Doyeux
+ - Feel++ is now seamlessly parallel
+ - Feel++ supports seamlessly interpolation in its variational formulation
+   language
+
+** Main contributors for this release
+
+Hopefully nobody has been forgotten
+
+ - Abdoulaye Samake
  - Baptiste Morin
  - Christophe Prud'homme
+ - Rachida Chakir
+ - Stephane Veys
  - Vincent Chabannes
- - Abdoulaye Samake
+ - Vincent Doyeux
 
 ** Programming Environment
 
 *** Developer changes
 
+ - cmake: overall cleanup of cmake feel++ variables which are now prefixed
+   FEELPP
  - cmake: in-source builds forbidden
  - cmake: guards againts invalid CMAKE_BUILD_TYPE
  - cmake: added sse, altivec and neon optimizations
@@ -29,6 +41,12 @@
  - cmake: even more minimal configuration in doc/tutorial
  - fix compilation in APPLE and s390 platforms
  - added macport port for feel++ with support for snow leopard and lion
+
+** Contrib
+
+*** Eigen3
+
+ - Eigen code has been updated to 3.0.5
 
 ** Libraries
 
@@ -96,7 +114,7 @@
      a matrix expression
    - added access to expression components via () operator
    - allow integration of test and/or trial functions which are defined  on different
-     meshes as well as integrating on a different mesh. 
+     meshes as well as integrating on a different mesh.
 
 ** Documentation
 
