@@ -35,8 +35,12 @@ add_docex(loadmesh)
 add_docex(myintegrals)
 add_docex(geotool)
 add_docex(myfunctionspace)
-add_docex(laplacian)
-add_docex(dar)
-add_docex(stokes)
+
+if( NOT FEELPP_MINIMAL_CONFIGURATION )
+  add_docex(laplacian)
+  add_docex(dar)
+  add_docex(stokes)
+endif()
+
 # stokes_good stokes_locking stokes_spurious
 # bratu nonlinearpow mortar multi_levels threefields nirb)
