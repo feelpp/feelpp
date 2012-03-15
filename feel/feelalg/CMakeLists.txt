@@ -24,7 +24,7 @@
 if( PETSC_FOUND )
   set( FEELPP_PETSC_SRCS vectorpetsc.cpp matrixpetsc.cpp solverlinearpetsc.cpp solvernonlinearpetsc.cpp functionspetsc.cpp preconditionerpetsc.cpp)
 
-  if ( FEELPP_HAVE_SLEPC )
+  if ( FEELPP_HAS_SLEPC )
     set( FEELPP_SLEPC_SRCS solvereigenslepc.cpp )
   endif()
 endif()
