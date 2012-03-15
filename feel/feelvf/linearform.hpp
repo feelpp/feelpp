@@ -833,6 +833,10 @@ struct LFAssign
                         lf += _M_expr;
                     }
             }
+        else // not active : there is the init case with a close in zero
+            {
+                if (_M_init) _M_lf.representation().zero();
+            }
         ++_M_index;
     }
 private:
