@@ -725,6 +725,89 @@ private:
         bool _M_useOffSubSpace;
     };
 #endif // end MPI
+
+
+    template<int i,typename SpaceCompositeType>
+    struct InitializeContainersOff
+    {
+        InitializeContainersOff( boost::shared_ptr<SpaceCompositeType> const& _space )
+            :
+            _M_cursor(0),
+            _M_space(_space)
+        {}
+        template <typename T>
+        void operator()(boost::shared_ptr<T> & x) const
+        {
+            if (_M_cursor==i && !x)
+                x = boost::shared_ptr<T>( new T(_M_space->template functionSpace<i>()->map() ) );
+
+            ++_M_cursor;// warning _M_cursor < nb color
+        }
+        mutable uint16_type _M_cursor;
+        boost::shared_ptr<SpaceCompositeType> _M_space;
+    };
+
+
+    template<int i,typename SpaceCompositeType>
+    struct SendContainersOn
+    {
+        SendContainersOn( boost::shared_ptr<SpaceCompositeType> const& _space,
+                          std::vector<double> const& _dataToSend)
+            :
+            _M_cursor(0),
+            _M_space(_space),
+            _M_dataToSend(_dataToSend)
+        {}
+        template <typename T>
+        void operator()(boost::shared_ptr<T> & x) const
+        {
+            if (_M_cursor!=i)
+                {
+                    int locRank=_M_space->worldComm().localRank();
+                    int globRank=_M_space->worldComm().localColorToGlobalRank(_M_cursor,locRank);
+                    int tag = 0;
+                    //std::cout << "\n I am proc " << _M_space->worldComm().globalRank()
+                    //          << " I send to proc " << globRank << std::endl;
+                    _M_space->worldComm().globalComm().send(globRank,tag,_M_dataToSend);
+                }
+            ++_M_cursor;// warning _M_cursor < nb color
+        }
+        mutable uint16_type _M_cursor;
+        boost::shared_ptr<SpaceCompositeType> _M_space;
+        std::vector<double> _M_dataToSend;
+    };
+
+
+    template<int i,typename SpaceCompositeType>
+    struct RecvContainersOff
+    {
+        RecvContainersOff( boost::shared_ptr<SpaceCompositeType> const& _space )
+            :
+            _M_cursor(0),
+            _M_space(_space)
+        {}
+        template <typename T>
+        void operator()(boost::shared_ptr<T> & x) const
+        {
+            if (_M_cursor==i)
+                {
+                    std::vector<double> dataToRecv(_M_space->template functionSpace<i>()->nLocalDof());
+                    int locRank=_M_space->worldComm().localRank();
+                    int globRank=_M_space->worldComm().localColorToGlobalRank(i,locRank);
+                    int tag = 0;//locRank;
+                    //std::cout << "\n I am proc " << _M_space->worldComm().globalRank()
+                    //          << " I recv to proc " << globRank << std::endl;
+                    _M_space->worldComm().globalComm().recv(globRank,tag,dataToRecv);
+                    std::copy( dataToRecv.begin(), dataToRecv.end(), x->begin() );
+                }
+            ++_M_cursor;// warning _M_cursor < nb color
+        }
+        mutable uint16_type _M_cursor;
+        boost::shared_ptr<SpaceCompositeType> _M_space;
+    };
+
+
+
 template< typename map_type >
 struct searchIndicesBySpace
 {
@@ -1183,6 +1266,17 @@ public:
         typedef typename mpl::transform<bases_list, ChangeElement<mpl::_1>, mpl::back_inserter<mpl::vector<> > >::type element_vector_type;
         typedef typename VectorUblas<T>::range::type ct_type;
 
+        /**
+         * usefull in // with composite case
+         * store the off views
+         */
+        template<typename BasisType>
+        struct AddOffContainer
+        {
+            BOOST_MPL_ASSERT_NOT( ( boost::is_same<BasisType,mpl::void_> ) );
+            typedef boost::shared_ptr<Cont> type;
+        };
+        typedef typename mpl::transform<bases_list, AddOffContainer<mpl::_1>, mpl::back_inserter<fusion::vector<> > >::type container_vector_type;
 
     public:
 
@@ -2080,8 +2174,10 @@ public:
 
         template<int i>
         typename mpl::at_c<element_vector_type,i>::type
-        element( std::string const& name ="u" )
+        element( std::string const& name ="u", bool updateOffViews=true )
         {
+            if (this->worldComm().globalSize()>1) this->worldComm().globalComm().barrier();
+
             size_type nbdof_start =  fusion::accumulate( this->functionSpaces(),
                                                          size_type( 0 ),
                                                          detail::NLocalDof<mpl::bool_<true> >( this->worldsComm(), false, 0, i ) );
@@ -2096,16 +2192,41 @@ public:
                     ct_type ct( *this, ublas::range( nbdof_start, nbdof_start+space->nLocalDof() ),
                                 _M_functionspace->template functionSpace<i>()->map() );
 
+#if defined(FEELPP_ENABLE_MPI_MODE)
+                    // update _M_containersOffProcess<i> : send
+                    if (this->worldComm().globalSize()>1 && updateOffViews)
+                        {
+                            std::vector<double> dataToSend(space->nLocalDof());
+                            std::copy( ct.begin(), ct.end(), dataToSend.begin() );
+                            if (!_M_containersOffProcess) _M_containersOffProcess = boost::in_place();
+                            fusion::for_each( *_M_containersOffProcess, detail::SendContainersOn<i,functionspace_type>( this->functionSpace(), dataToSend ) );
+                        }
+#endif
                     Debug( 5010 ) << "Element <" << i << ">::range.size :  "<<  ct.size()<< "\n";
                     Debug( 5010 ) << "Element <" << i << ">::range.start :  "<<  ct.start()<< "\n";
                     return typename mpl::at_c<element_vector_type,i>::type( space, ct, name );
                 }
             else
                 {
-                    //warning : maybe todo a communication between the active procs (ct is zero)
-                    ct_type ct(_M_functionspace->template functionSpace<i>()->map());
+                    // initialize if not the case
+                    if (!_M_containersOffProcess) _M_containersOffProcess = boost::in_place();
+                    fusion::for_each( *_M_containersOffProcess, detail::InitializeContainersOff<i,functionspace_type>( this->functionSpace() ) );
+
+#if defined(FEELPP_ENABLE_MPI_MODE)
+                    // update _M_containersOffProcess<i> : recv
+                    if (this->worldComm().globalSize()>1 && updateOffViews)
+                        {
+                            fusion::for_each( *_M_containersOffProcess, detail::RecvContainersOff<i,functionspace_type>( this->functionSpace() ) );
+                        }
+#endif
+                    // build a subrange view identical
+                    ct_type ct( *fusion::at_c<i>(*_M_containersOffProcess),
+                                ublas::range( 0, space->nLocalDof() ),
+                                _M_functionspace->template functionSpace<i>()->map() );
+
                     Debug( 5010 ) << "Element <" << i << ">::range.size :  "<<  ct.size()<< "\n";
                     Debug( 5010 ) << "Element <" << i << ">::range.start :  "<<  ct.start()<< "\n";
+
                     return typename mpl::at_c<element_vector_type,i>::type( space, ct, name );
                 }
         }
@@ -2130,14 +2251,36 @@ public:
                                 ublas::range( nbdof_start, nbdof_start+space->nLocalDof() ),
                                 _M_functionspace->template functionSpace<i>()->map() );
 
+#if defined(FEELPP_ENABLE_MPI_MODE)
+                    // update _M_containersOffProcess<i> : send
+                    if (this->worldComm().globalSize()>1)
+                        {
+                            std::vector<double> dataToSend(space->nLocalDof());
+                            std::copy( ct.begin(), ct.end(), dataToSend.begin() );
+                            if (!_M_containersOffProcess) _M_containersOffProcess = boost::in_place();
+                            fusion::for_each( *_M_containersOffProcess, detail::SendContainersOn<i,functionspace_type>( this->functionSpace(), dataToSend ) );
+                        }
+#endif
+
                     Debug( 5010 ) << "Element <" << i << ">::range.size :  "<<  ct.size()<< "\n";
                     Debug( 5010 ) << "Element <" << i << ">::range.start :  "<<  ct.start()<< "\n";
                     return typename mpl::at_c<element_vector_type,i>::type( space, ct, name );
                 }
             else
                 {
-                    //warning : maybe todo a communication between the active procs
-                    ct_type ct(_M_functionspace->template functionSpace<i>()->map());
+#if defined(FEELPP_ENABLE_MPI_MODE)
+                    // update _M_containersOffProcess<i> : recv
+                    if (this->worldComm().globalSize()>1)
+                        {
+                            fusion::for_each( *_M_containersOffProcess, detail::RecvContainersOff<i,functionspace_type>( this->functionSpace() ) );
+                        }
+#endif
+
+                    // build a subrange view identical
+                    ct_type ct( *fusion::at_c<i>(*_M_containersOffProcess),
+                                ublas::range( 0, space->nLocalDof() ),
+                                _M_functionspace->template functionSpace<i>()->map() );
+
                     Debug( 5010 ) << "Element <" << i << ">::range.size :  "<<  ct.size()<< "\n";
                     Debug( 5010 ) << "Element <" << i << ">::range.start :  "<<  ct.start()<< "\n";
                     return typename mpl::at_c<element_vector_type,i>::type( space, ct, name );
@@ -2418,6 +2561,9 @@ public:
 
         //! type of the component
         ComponentType _M_ct;
+
+        // only init in // with composite case : ex p = U.element<1>()
+        mutable boost::optional<container_vector_type> _M_containersOffProcess;
 
     }; // Element
 
@@ -3421,7 +3567,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element()
     :
     super(),
     _M_start( 0 ),
-    _M_ct( NO_COMPONENT )
+    _M_ct( NO_COMPONENT ),
+    _M_containersOffProcess(boost::none)
 {}
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
@@ -3432,7 +3579,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element( Element const& __e 
     _M_functionspace( __e._M_functionspace ),
     _M_name( __e._M_name ),
     _M_start( __e._M_start ),
-    _M_ct( __e._M_ct )
+    _M_ct( __e._M_ct ),
+    _M_containersOffProcess( __e._M_containersOffProcess )
 {
     Debug( 5010 ) << "Element<copy>::range::start = " << this->start() << "\n";
     Debug( 5010 ) << "Element<copy>::range::size = " << this->size() << "\n";
@@ -3450,7 +3598,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element( functionspace_ptrty
     _M_functionspace( __functionspace ),
     _M_name( __name ),
     _M_start( __start ),
-    _M_ct( __ct )
+    _M_ct( __ct ),
+    _M_containersOffProcess(boost::none)
 {
     Debug( 5010 ) << "Element::start = " << this->start() << "\n";
     Debug( 5010 ) << "Element::size = " << this->size() << "\n";
@@ -3470,7 +3619,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element( functionspace_ptrty
     _M_functionspace( __functionspace ),
     _M_name( __name ),
     _M_start( __start ),
-    _M_ct( __ct )
+    _M_ct( __ct ),
+    _M_containersOffProcess(boost::none)
 {
     Debug( 5010 ) << "Element<range>::range::start = " << __c.start() << "\n";
     Debug( 5010 ) << "Element<range>::range::size = " << __c.size() << "\n";
@@ -3508,6 +3658,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator=( Element const& __
                 _M_name = __e._M_name;
             _M_start = __e._M_start;
             _M_ct = __e._M_ct;
+            _M_containersOffProcess = __e._M_containersOffProcess;
             this->resize( _M_functionspace->nLocalDof() );
             super::operator=( __e );
             this->outdateGlobalValues();
