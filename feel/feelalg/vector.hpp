@@ -294,7 +294,7 @@ public:
     /**
      * \return the communicator
      */
-    mpi::communicator const& comm() const { return M_map.comm(); }
+    WorldComm const& comm() const { return M_map.comm(); }
 
     /**
      * Access components, returns \p U(i).
