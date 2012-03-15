@@ -183,7 +183,8 @@ VectorUblas<T,Storage>::VectorUblas( DataMap const& dm )
     M_global_values_updated( false ),
     M_global_values( dm.nGlobalElements() )
 {
-    this->init( dm.nGlobalElements(), dm.nMyElements(), false );
+    //this->init( dm.nGlobalElements(), dm.nMyElements(), false );
+    this->init( dm.nDof(), dm.nLocalDofWithGhost(), false );
 }
 
 template <typename T, typename Storage>
@@ -307,8 +308,8 @@ VectorUblas<T,Storage>::init ( const size_type n,
 {
     FEELPP_ASSERT (n_local <= n)
         ( n_local )( n )
-        ( M_comm.rank() )
-        ( M_comm.size() ).error( "Invalid local vector size" );
+        ( this->comm().rank() )
+        ( this->comm().size() ).error( "Invalid local vector size" );
     // Clear the data structures if already initialized
     if (this->isInitialized())
         this->clear();
@@ -334,11 +335,11 @@ VectorUblas<T,Storage>::init ( const size_type n,
     // Zero the components unless directed otherwise
     if (!fast)
         this->zero();
+
 }
 
-//new!!!!!!!
- template<typename T, typename Storage>
- void
+template<typename T, typename Storage>
+void
 VectorUblas<T,Storage>::init( DataMap const& dm )
 {
     super1::init(dm);
@@ -394,7 +395,7 @@ VectorUblas<T,Storage>::printMatlab(const std::string filename ) const
     ublas::vector<value_type> v_local;
     this->localizeToOneProcessor ( v_local, 0 );
 
-    if ( M_comm.rank() == 0 )
+    if ( this->comm().rank() == 0 )
         {
             std::ofstream file_out( name.c_str() );
 
@@ -523,7 +524,7 @@ VectorUblas<T, Storage>::localize ( ublas::vector<value_type>& v_local) const
 
 #ifdef FEELPP_HAS_MPI
 
-    if( M_comm.size() > 1 )
+    if( this->comm().size() > 1 )
         {
             std::fill (v_local.begin(), v_local.end(), value_type(0.) );
             std::fill (v_local_in.begin(), v_local_in.end(), value_type(0.) );
@@ -534,7 +535,7 @@ VectorUblas<T, Storage>::localize ( ublas::vector<value_type>& v_local) const
                 }
 
             MPI_Allreduce (&v_local_in[0], &v_local[0], v_local.size(),
-                           MPI_DOUBLE, MPI_SUM, M_comm);
+                           MPI_DOUBLE, MPI_SUM, this->comm());
             Debug( 5600 ) << "[VectorUblas::localize] Allreduce size = " << v_local.size() << "\n";
 
         }
@@ -571,10 +572,10 @@ VectorUblas<T,Storage>::localizeToOneProcessor ( ublas::vector<value_type>& v_lo
 
 #ifdef FEELPP_HAS_MPI
 
-    if ( M_comm.size() > 1 )
+    if ( this->comm().size() > 1 )
         {
             MPI_Reduce (&v_tmp[0], &v_local[0], v_local.size(),
-                        MPI_DOUBLE, MPI_SUM, pid, M_comm);
+                        MPI_DOUBLE, MPI_SUM, pid, this->comm());
         }
     else
         {
