@@ -53,7 +53,7 @@ PartitionerMetis<Mesh>::doPartition ( mesh_type& mesh,
         }
 
     // What to do if the Metis library IS NOT present
-#if !defined( HAVE_METIS_H ) && !defined( HAVE_METIS ) && !defined( HAVE_METIS_METIS_H )
+#if !defined( FEELPP_HAS_METIS_H ) && !defined( FEELPP_HAS_METIS ) && !defined( FEELPP_HAS_METIS_METIS_H )
 
     std::cerr << "ERROR: The library has been built without"    << std::endl
               << "Metis support. "  << std::endl;

@@ -110,7 +110,7 @@ sign( T const& x )
       VF_UNARY_FUNCTIONS_CODE O \
    /**/
 
-#if defined( HAVE_QD_H ) && defined(HAVE_MPFR)
+#if defined( FEELPP_HAS_QD_H ) && defined(FEELPP_HAS_MPFR)
 # define VF_CHECK_ARITHMETIC_TYPE()                                        \
    BOOST_STATIC_ASSERT( (::boost::is_arithmetic<value_1_type>::value ||    \
                          ::boost::is_same<value_1_type, std::complex<float> >::value || \
@@ -119,7 +119,7 @@ sign( T const& x )
                          ::boost::is_same<value_1_type,dd_real>::value ||  \
                          ::boost::is_same<value_1_type,qd_real>::value) ); \
    /**/
-#elif defined( HAVE_QD_H )
+#elif defined( FEELPP_HAS_QD_H )
 # define VF_CHECK_ARITHMETIC_TYPE()                                        \
    BOOST_STATIC_ASSERT( (::boost::is_arithmetic<value_1_type>::value ||    \
                          ::boost::is_same<value_1_type, std::complex<float> >::value || \
@@ -127,7 +127,7 @@ sign( T const& x )
                          ::boost::is_same<value_1_type,dd_real>::value ||  \
                          ::boost::is_same<value_1_type,qd_real>::value) ); \
    /**/
-#elif defined( HAVE_MPFR )
+#elif defined( FEELPP_HAS_MPFR )
 # define VF_CHECK_ARITHMETIC_TYPE()                                        \
    BOOST_STATIC_ASSERT( (::boost::is_arithmetic<value_1_type>::value ||    \
                          ::boost::is_same<value_1_type, std::complex<float> >::value || \

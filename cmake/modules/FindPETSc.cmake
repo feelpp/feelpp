@@ -261,7 +261,7 @@ find_package_handle_standard_args (PETSc
   PETSC_INCLUDES PETSC_LIBRARIES )
 
 if ( PETSC_FOUND )
-  add_definitions( -DHAVE_PETSC -DHAVE_PETSC_H )
-  set(HAVE_PETSC 1)
-  set(HAVE_PETSC_H 1)
+  add_definitions( -DFEELPP_HAS_PETSC -DFEELPP_HAS_PETSC_H )
+  set(FEELPP_HAS_PETSC 1)
+  set(FEELPP_HAS_PETSC_H 1)
 endif( PETSC_FOUND )

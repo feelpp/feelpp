@@ -31,13 +31,13 @@
 
 namespace Feel
 {
-#if defined(HAVE_TRILINOS_EPETRA)
+#if defined(FEELPP_HAS_TRILINOS_EPETRA)
 
 template<typename T>
 VectorEpetra<T>::VectorEpetra( )
     :
     super(),
-#ifdef HAVE_MPI
+#ifdef FEELPP_HAS_MPI
     _M_emap( Epetra_BlockMap( -1, 0, 0, Epetra_MpiComm(super::comm())) ),
     _M_vec( _M_emap ) // false (zerout)?
 #else
@@ -119,7 +119,7 @@ VectorEpetra<T>::init ( Epetra_BlockMap const& emap, const bool fast )
 
 
 	//create an MPI-enabled vector
-#ifdef HAVE_MPI
+#ifdef FEELPP_HAS_MPI
     {
         _M_vec = Epetra_FEVector(emap);
     }

@@ -40,14 +40,14 @@
 #include <feel/feelcore/feel.hpp>
 
 
-#if defined(HAVE_VTK)
+#if defined(FEELPP_HAS_VTK)
 // Vtk header files
 //#include "vtkPointSet.h"
 #include "vtkPolyData.h"
 #include "vtkUnstructuredGrid.h"
 #include "vtkCell.h"
 
-#endif /* HAVE_VTK */
+#endif /* FEELPP_HAS_VTK */
 
 namespace Feel
 {
@@ -81,21 +81,21 @@ public:
     typedef typename mesh_type::edge_type edge_type;
     typedef typename mesh_type::face_type face_type;
     typedef typename mesh_type::element_type element_type;
-#if defined(HAVE_VTK)
+#if defined(FEELPP_HAS_VTK)
 
     typedef typename mpl::if_<mpl::equal_to<mpl::int_<MeshType::nDim>,mpl::int_<2> >,
                               mpl::identity<vtkPolyData>,
                               mpl::identity<vtkUnstructuredGrid> >::type::type vtkmesh_type;
 
 
-#endif /* HAVE_VTK */
+#endif /* FEELPP_HAS_VTK */
     //@}
 
     /** @name Constructors, destructor
      */
     //@{
 
-#if defined(HAVE_VTK)
+#if defined(FEELPP_HAS_VTK)
     FilterFromVtk( vtkmesh_type* __vtkmesh)
     {
         _M_vtkmesh = vtkmesh_type::New();
@@ -104,18 +104,18 @@ public:
 #else
     FilterFromVtk()
     {}
-#endif /* HAVE_VTK */
+#endif /* FEELPP_HAS_VTK */
 
     ~FilterFromVtk()
     {
-#if defined(HAVE_VTK)
+#if defined(FEELPP_HAS_VTK)
         _M_vtkmesh->Delete();
-#endif /* HAVE_VTK */
+#endif /* FEELPP_HAS_VTK */
     }
 
-#if defined(HAVE_VTK)
+#if defined(FEELPP_HAS_VTK)
     vtkmesh_type* getVtkMesh() {return _M_vtkmesh;}
-#endif /* HAVE_VTK */
+#endif /* FEELPP_HAS_VTK */
 
     //@}
 
@@ -133,9 +133,9 @@ public:
 
 protected :
 
-#if defined(HAVE_VTK)
+#if defined(FEELPP_HAS_VTK)
     vtkmesh_type* _M_vtkmesh;
-#endif /* HAVE_VTK */
+#endif /* FEELPP_HAS_VTK */
 
 private:
 
@@ -172,19 +172,19 @@ public:
     typedef typename mesh_type::edge_type edge_type;
     typedef typename mesh_type::face_type face_type;
     typedef typename mesh_type::element_type element_type;
-#if defined(HAVE_VTK)
+#if defined(FEELPP_HAS_VTK)
     typedef typename mpl::if_<mpl::equal_to<mpl::int_<MeshType::nDim>,mpl::int_<2> >,
                               mpl::identity<vtkPolyData>,
                               mpl::identity<vtkUnstructuredGrid> >::type::type vtkmesh_type;
 
-#endif /* HAVE_VTK */
+#endif /* FEELPP_HAS_VTK */
     //@}
 
     /** @name Constructors, destructor
      */
     //@{
 
-#if defined(HAVE_VTK)
+#if defined(FEELPP_HAS_VTK)
     FilterFromVtk3D( vtkmesh_type* __vtkmesh)
     {
         _M_vtkmesh = vtkmesh_type::New();
@@ -193,18 +193,18 @@ public:
 #else
     FilterFromVtk3D()
     {}
-#endif /* HAVE_VTK */
+#endif /* FEELPP_HAS_VTK */
 
     ~FilterFromVtk3D()
     {
-#if defined(HAVE_VTK)
+#if defined(FEELPP_HAS_VTK)
         _M_vtkmesh->Delete();
-#endif /* HAVE_VTK */
+#endif /* FEELPP_HAS_VTK */
     }
 
-#if defined(HAVE_VTK)
+#if defined(FEELPP_HAS_VTK)
     vtkmesh_type* getVtkMesh() {return _M_vtkmesh;}
-#endif /* HAVE_VTK */
+#endif /* FEELPP_HAS_VTK */
 
     //@}
 
@@ -222,9 +222,9 @@ public:
 
 protected :
 
-#if defined(HAVE_VTK)
+#if defined(FEELPP_HAS_VTK)
     vtkmesh_type* _M_vtkmesh;
-#endif /* HAVE_VTK */
+#endif /* FEELPP_HAS_VTK */
 
 private:
 
@@ -237,7 +237,7 @@ void
 FilterFromVtk<MeshType>::visit( mesh_type* mesh, mpl::int_<2> )
 {
     detail::ignore_unused_variable_warning( mesh );
-#if defined(HAVE_VTK)
+#if defined(FEELPP_HAS_VTK)
     //  std::cout <<"Start of mesh conversion !" << std::endl;
 
     vtkPolyData * _vtkMesh = this->getVtkMesh();
@@ -351,7 +351,7 @@ FilterFromVtk<MeshType>::visit( mesh_type* mesh, mpl::int_<2> )
 
 #else
     std::cerr << "The library was not compiled with vtk support\n";
-#endif /* HAVE_VTK */
+#endif /* FEELPP_HAS_VTK */
 
 }
 
@@ -360,7 +360,7 @@ void
 FilterFromVtk3D<MeshType>::visit( mesh_type* mesh, mpl::int_<3> )
 {
     detail::ignore_unused_variable_warning( mesh );
-#if defined(HAVE_VTK)
+#if defined(FEELPP_HAS_VTK)
     //  std::cout <<"Start of mesh conversion !" << std::endl;
 
     vtkUnstructuredGrid * _vtkMesh = this->getVtkMesh();
@@ -495,7 +495,7 @@ FilterFromVtk3D<MeshType>::visit( mesh_type* mesh, mpl::int_<3> )
 
 #else
     std::cerr << "The library was not compiled with vtk support\n";
-#endif /* HAVE_VTK */
+#endif /* FEELPP_HAS_VTK */
 
 }
 

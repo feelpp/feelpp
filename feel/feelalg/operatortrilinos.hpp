@@ -37,12 +37,12 @@
 
 #include <feel/feelalg/solverlineartrilinos.hpp>
 
-#if defined( HAVE_TRILINOS_EPETRA )
+#if defined( FEELPP_HAS_TRILINOS_EPETRA )
 #include "Epetra_ConfigDefs.h"
 #include "Epetra_Operator.h"
 
 
-#if defined( HAVE_MPI )
+#if defined( FEELPP_HAS_MPI )
 #include "mpi.h"
 #include "Epetra_MpiComm.h"
 #else
@@ -880,5 +880,5 @@ private:
 
 } // Feel
 
-#endif // HAVE_TRILINOS_EPETRA
+#endif // FEELPP_HAS_TRILINOS_EPETRA
 #endif /* __operator_trilinos_matrix_H */

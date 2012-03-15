@@ -36,7 +36,7 @@
 
 #include <feel/feelalg/backendtrilinos.hpp>
 
-#if defined( HAVE_TRILINOS_AZTECOO )
+#if defined( FEELPP_HAS_TRILINOS_AZTECOO )
 #undef PACKAGE_BUGREPORT
 #undef PACKAGE_NAME
 #undef PACKAGE_STRING
@@ -303,7 +303,7 @@ private:
 
 } // Feel
 
-#endif /* HAVE_TRILINOS_AZTECOO */
+#endif /* FEELPP_HAS_TRILINOS_AZTECOO */
 #endif /* __trilinos_linear_solver_H */
 
 

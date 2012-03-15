@@ -206,7 +206,7 @@ createSimget( AboutData cponst& about )
 #define REGISTER_SIMGET_IN_FACTORY( simget, simgetname, about )         \
     SimgetFactory::instance().registerProduct( simgetname, &createSimget<simget>( about )
 
-#if defined( HAVE_OCT_H )
+#if defined( FEELPP_HAS_OCT_H )
 #define OCTNAME(name,dim, order) BOOST_PP_CAT(BOOST_PP_CAT(BOOST_PP_CAT(name,dim),_),order)
 
 #define REGISTER_SIMGET( dim, order )                                   \
@@ -253,7 +253,7 @@ createSimget( AboutData cponst& about )
 
 
 
-#endif /* HAVE_OCT_H */
+#endif /* FEELPP_HAS_OCT_H */
 #endif // 0
 }
 #endif /* __Simget_H */

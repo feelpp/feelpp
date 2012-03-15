@@ -98,7 +98,7 @@ BOOST_AUTO_TEST_CASE( test_promote )
 
 
 
-#if defined(FEELPP_HAVE_QD_REAL)
+#if defined(FEELPP_HAS_QD_REAL)
     BOOST_CHECK( ( boost::is_same<strongest_numeric_type<dd_real, float>::type, dd_real>::type::value ) );
     BOOST_CHECK( ( boost::is_same<strongest_numeric_type<dd_real, double>::type, dd_real>::type::value ) );
     //BOOST_CHECK( ( boost::is_same<strongest_numeric_type<dd_real, long double>::type, dd_real>::type::value ) );
@@ -120,7 +120,7 @@ BOOST_AUTO_TEST_CASE( test_constants )
     BOOST_MESSAGE( "check pi value with float" );
     check( math::Constant<math::pi_tag, float >() - float( M_PI ) );
 
-#if defined(FEELPP_HAVE_QD_REAL)
+#if defined(FEELPP_HAS_QD_REAL)
     BOOST_MESSAGE( "check pi value with dd/qd_real" );
     check( math::Constant<math::pi_tag, dd_real >() - dd_real::_pi );
     check( math::Constant<math::pi_tag, qd_real >() - qd_real::_pi );

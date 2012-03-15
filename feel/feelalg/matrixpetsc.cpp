@@ -32,7 +32,7 @@
 #include <feel/feelalg/vectorpetsc.hpp>
 #include <feel/feelalg/matrixpetsc.hpp>
 
-#if defined( HAVE_PETSC_H )
+#if defined( FEELPP_HAS_PETSC_H )
 
 
 
@@ -2143,4 +2143,4 @@ template class MatrixPetsc<double>;
 template class MatrixPetscMPI<double>;
 } // Feel
 
-#endif // HAVE_PETSC_H
+#endif // FEELPP_HAS_PETSC_H

@@ -32,7 +32,7 @@
 
 namespace Feel
 {
-#if defined( HAVE_TRILINOS_IFPACK )
+#if defined( FEELPP_HAS_TRILINOS_IFPACK )
 PreconditionerIfpack::PreconditionerIfpack( std::string str  )
     :
     M_Prec(),
@@ -139,5 +139,5 @@ PreconditionerIfpack::getPrec()
     return M_Prec;
 }
 
-#endif // HAVE_TRILINOS_IFPACK
+#endif // FEELPP_HAS_TRILINOS_IFPACK
 } // Feel

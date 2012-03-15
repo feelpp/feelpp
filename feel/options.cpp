@@ -46,11 +46,11 @@ feel_options( std::string const& prefix  )
     return
         /* alg options */
         backend_options()
-#if defined(HAVE_PETSC_H)
+#if defined(FEELPP_HAS_PETSC_H)
         .add( backendpetsc_options( prefix ) )
 #endif
         .add( solvereigen_options( prefix ) )
-#if defined( HAVE_TRILINOS_EPETRA )
+#if defined( FEELPP_HAS_TRILINOS_EPETRA )
         .add( backendtrilinos_options( prefix ) )
 #endif
         /* nonlinear solver options */

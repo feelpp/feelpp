@@ -186,7 +186,7 @@ operator<<( NdebugStream& os, node<real64_type>::type const& /*n*/ )
 }
 
 
-#if defined( HAVE_QD_QD_H )
+#if defined( FEELPP_HAS_QD_QD_H )
 inline
 DebugStream&
 operator<<( DebugStream& __os, node<dd_real>::type const& __n )
@@ -230,7 +230,7 @@ operator<<( NdebugStream& __os, node<qd_real>::type const& __n )
 }
 
 
-#endif /* HAVE_QD_QD_H */
+#endif /* FEELPP_HAS_QD_QD_H */
 
 template<typename T>
 inline

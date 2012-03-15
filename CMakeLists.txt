@@ -144,9 +144,9 @@ else(APPLE)
 endif(APPLE)
 
 if(CMAKE_COMPILER_IS_GNUCXX)
-  SET(CMAKE_CXX_FLAGS "-std=c++0x -pedantic  -ftemplate-depth-256 -Wno-inline -Wall" CACHE STRING "Default flags" FORCE)
-  SET(CMAKE_CXX_FLAGS_DEBUG "-std=c++0x  -pedantic -g  -ftemplate-depth-256 -Wno-inline -Wall" CACHE STRING "Debug flags" FORCE)
-  SET(CMAKE_CXX_FLAGS_RELEASE "-std=c++0x  -pedantic -g0 -O2 -DNDEBUG  -ftemplate-depth-256 -finline-functions -Wno-inline -Wall"  CACHE STRING "Release flags" FORCE)
+  SET(CMAKE_CXX_FLAGS "-std=c++0x -pedantic  -ftemplate-depth-256 -Wno-inline" CACHE STRING "Default flags" FORCE)
+  SET(CMAKE_CXX_FLAGS_DEBUG "-std=c++0x  -pedantic -g  -ftemplate-depth-256 -Wno-inline" CACHE STRING "Debug flags" FORCE)
+  SET(CMAKE_CXX_FLAGS_RELEASE "-std=c++0x  -pedantic -g0 -O2 -DNDEBUG  -ftemplate-depth-256 -finline-functions -Wno-inline"  CACHE STRING "Release flags" FORCE)
 endif(CMAKE_COMPILER_IS_GNUCXX)
 
 OPTION(FEELPP_ENABLE_MOVE_SEMANTICS "enable move semantics(elision)" ON )
@@ -227,6 +227,15 @@ endif(CMAKE_COMPILER_IS_GNUCXX)
 #INCLUDE(AdvancedSet)
 #INCLUDE(AdvancedOption)
 
+include(feelpp.extra.warnings)
+add_definitions(${FEELPP_FLAGS})
+
+if("${CMAKE_CXX_FLAGS} ${FEELPP_FLAGS}" MATCHES "[^ ]")
+  message(STATUS "[feel++] Global flags: ${CMAKE_CXX_FLAGS} ${FEELPP_FLAGS}")
+endif()
+
+message(STATUS "[feel++] Debug flags: ${CMAKE_CXX_FLAGS_DEBUG}")
+message(STATUS "[feel++] Release flags: ${CMAKE_CXX_FLAGS_RELEASE}")
 
 INCLUDE(CheckIncludeFile)
 INCLUDE(CheckIncludeFiles)

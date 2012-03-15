@@ -29,7 +29,7 @@
    \author Klaus.Sapelza <klaus.sapelza@epfl.ch>
    \date 2006-09-14
  */
-#define HAVE_BOOST_TEST 1
+#define FEELPP_HAS_BOOST_TEST 1
 #include <cstdlib>
 #include <cassert>
 
@@ -39,7 +39,7 @@
 
 #include <feel/feelconfig.h>
 
-#if defined(HAVE_BOOST_TEST)
+#if defined(FEELPP_HAS_BOOST_TEST)
 // Boost.Test
 #include <boost/test/test_tools.hpp>
 #include <boost/test/unit_test.hpp>
@@ -48,7 +48,7 @@
 using boost::unit_test_framework::test_suite;
 
 
-#if defined(HAVE_TRILINOS_EPETRA) && defined(HAVE_PARMETIS_H)
+#if defined(FEELPP_HAS_TRILINOS_EPETRA) && defined(FEELPP_HAS_PARMETIS_H)
 #include <feel/feelcore/application.hpp>
 #include <feel/feelcore/application.hpp>
 #include <feel/feelalg/vectorepetra.hpp>
@@ -321,7 +321,7 @@ init_unit_test_suite( int /*argc*/, char** /*argv*/ )
     test_suite* test= BOOST_TEST_SUITE( "EPETRA Unit Test" );
     return test;
 }
-#endif /* HAVE_TRILINOS_EPETRA */
+#endif /* FEELPP_HAS_TRILINOS_EPETRA */
 #else
 int main()
 {

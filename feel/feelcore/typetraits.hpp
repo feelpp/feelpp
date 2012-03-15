@@ -52,13 +52,13 @@
 //#error feel/feelcore/typetraits.hpp must not be used directly, use feel/feelcore/traits.hpp instead
 #endif
 
-#if defined( HAVE_QD_H )
+#if defined( FEELPP_HAS_QD_H )
 qd_real floor(const qd_real &a);
 qd_real ceil(const qd_real &a);
 qd_real npwr(const qd_real &a, int n);
 #endif
 
-#if defined HAVE_ARPREC
+#if defined FEELPP_HAS_ARPREC
 inline mp_real_temp floor( mp_real const& m ) {
     if ( m >0 ) return ::aint( m );
     return ::aint( m-1 );
@@ -67,7 +67,7 @@ inline mp_real_temp ceil( mp_real const& m ) {
     if ( m >0 )return ::aint( m+1 );
     return ::aint( m );
 }
-#endif // HAVE_ARPREC
+#endif // FEELPP_HAS_ARPREC
 
 namespace Feel
 {
@@ -241,7 +241,7 @@ BOOST_PP_TUPLE_TO_LIST(                                        \
 const double factor_from_eps = 50;
 const float  factor_from_eps_fl = 50;
 
-#if defined( HAVE_QD_H )
+#if defined( FEELPP_HAS_QD_H )
 #define QD_DD_TYPE  ( dd_real, dd_real, 1, 0, 11, dd_real::_eps*factor_from_eps , 2 ),
 #define QD_QD_TYPE  ( qd_real, qd_real, 1, 0, 12, qd_real::_eps*factor_from_eps , 2 ),
 #define QD_NTYPES 2
@@ -249,15 +249,15 @@ const float  factor_from_eps_fl = 50;
 #define QD_NTYPES 0
 #define QD_DD_TYPE
 #define QD_QD_TYPE
-#endif // HAVE_QD_H
+#endif // FEELPP_HAS_QD_H
 
-#if defined( HAVE_MPFR )
+#if defined( FEELPP_HAS_MPFR )
 #define MPFR_MP_TYPE ( mp_type, mp_type, 1, 0, 10 , mp_eps*factor_from_eps, 1 ),
 #define MPFR_NTYPES 1
 #else
 #define MPFR_NTYPES 0
 #define MPFR_MP_TYPE
-#endif // HAVE_MPFR
+#endif // FEELPP_HAS_MPFR
 
 #define FEELPP_NUMERICAL_NTYPES BOOST_PP_ADD(4, BOOST_PP_ADD( QD_NTYPES, MPFR_NTYPES ) )
 # define FEELPP_TRAITS_TYPES \
@@ -370,7 +370,7 @@ BOOST_PP_LIST_FOR_EACH_PRODUCT( FEELPP_BINARY_FUNCS_OP, 2, (BOOST_PP_LIST_FILTER
 
 } // Feel
 
-#if defined( HAVE_QD_H )
+#if defined( FEELPP_HAS_QD_H )
 //
 // make dd_real/qd_real known to boost::lambda
 //
@@ -385,6 +385,6 @@ template <> struct promote_code<qd_real> { static const int value = 7000; };
 } // namespace lambda
 } // namespace boost
 
-#endif /* HAVE_QD_H */
+#endif /* FEELPP_HAS_QD_H */
 
 #endif /* __typetraits_H */

@@ -50,7 +50,7 @@ makeAbout()
     return about;
 
 }
-#if defined(HAVE_PETSC_H)
+#if defined(FEELPP_HAS_PETSC_H)
 class test_matrixpetsc
     :
     public Application
@@ -150,7 +150,7 @@ public:
 };
 #endif
 
-#if defined(HAVE_PETSC_H)
+#if defined(FEELPP_HAS_PETSC_H)
 int main( int argc, char** argv )
 {
     test_matrixpetsc t( argc, argv );

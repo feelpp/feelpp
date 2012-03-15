@@ -32,7 +32,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 namespace Feel
 {
-#if defined( HAVE_TRILINOS_ML )
+#if defined( FEELPP_HAS_TRILINOS_ML )
 
 PreconditionerML::PreconditionerML( list_type options )
     :
@@ -78,5 +78,5 @@ PreconditionerML::getPrec()
     return M_Prec;
 }
 
-#endif // HAVE_TRILINOS_ML
+#endif // FEELPP_HAS_TRILINOS_ML
 } // Feel

@@ -37,7 +37,7 @@
 #include <feel/feeldiscr/bdf.hpp>
 
 // petsc may not be available
-#if defined(HAVE_PETSC_H)
+#if defined(FEELPP_HAS_PETSC_H)
 
 #include <feel/feelalg/matrixpetsc.hpp>
 #include <feel/feelalg/vectorpetsc.hpp>
@@ -497,4 +497,4 @@ int main( int argc,  char** argv )
 {
     // do nothing here
 }
-#endif // HAVE_PETSC_H
+#endif // FEELPP_HAS_PETSC_H

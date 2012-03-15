@@ -36,7 +36,7 @@
 
 #include <stdlib.h>
 
-#if defined(HAVE_VTK)
+#if defined(FEELPP_HAS_VTK)
 
 #include <vtkPointSet.h>
 #include <vtkDelaunay2D.h>
@@ -47,7 +47,7 @@
 #include <vtkPolyDataMapper.h>
 #include <vtkDataSetMapper.h>
 
-#endif /* HAVE_VTK */
+#endif /* FEELPP_HAS_VTK */
 
 #include <feel/feelmesh/pointset.hpp>
 #include <feel/feelfilters/filterfromvtk.hpp>
@@ -296,7 +296,7 @@ template<typename Convex, typename T>
 void
 PointSetToMesh<Convex, T>::visit( pointset_type* pset, mpl::int_<2> )
 {
-#if defined(HAVE_VTK)
+#if defined(FEELPP_HAS_VTK)
     // reinitialize mesh
     _M_mesh = mesh_ptrtype( new mesh_type );
 
@@ -382,7 +382,7 @@ PointSetToMesh<Convex, T>::visit( pointset_type* pset, mpl::int_<2> )
 
 #else
     std::cerr << "The library was not compiled with vtk support\n";
-#endif /* HAVE_VTK */
+#endif /* FEELPP_HAS_VTK */
 
 }
 
@@ -390,7 +390,7 @@ template<typename Convex, typename T>
 void
 PointSetToMesh<Convex, T>::visit( pointset_type* pset, mpl::int_<3> )
 {
-#if defined(HAVE_VTK)
+#if defined(FEELPP_HAS_VTK)
     // reinitialize mesh
     _M_mesh = mesh_ptrtype( new mesh_type );
 
@@ -432,7 +432,7 @@ PointSetToMesh<Convex, T>::visit( pointset_type* pset, mpl::int_<3> )
 
 #else
     std::cerr << "The library was not compiled with vtk support\n";
-#endif /* HAVE_VTK */
+#endif /* FEELPP_HAS_VTK */
 }
 } // Feel
 #endif /* __PointSetToMesh_H */

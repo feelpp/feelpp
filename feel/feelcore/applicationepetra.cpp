@@ -33,7 +33,7 @@
 
 namespace Feel
 {
-#if defined( HAVE_TRILINOS_EPETRA )
+#if defined( FEELPP_HAS_TRILINOS_EPETRA )
 
 po::options_description
 makeMLEpetraOptions()
@@ -69,7 +69,7 @@ Application::init( MPI_Comm& _comm )
 }
 
 
-#if defined(HAVE_MPI)
+#if defined(FEELPP_HAS_MPI)
 Application::Application( int argc,
                                       char** argv,
                                       AboutData const& ad,
@@ -90,10 +90,10 @@ Application::Application( int argc,
 {
     init(comm);
 }
-#endif /* HAVE_MPI */
+#endif /* FEELPP_HAS_MPI */
 
 
-#if defined(HAVE_MPI)
+#if defined(FEELPP_HAS_MPI)
 Application::Application( int argc,
                                       char** argv,
                                       AboutData const& ad,
@@ -102,7 +102,7 @@ Application::Application( int argc,
     :
     super( argc, argv, ad, epetraOptions().add( makeMLEpetraOptions() ).add(od), comm )
 {
-//cout << "hallo HAVE_MPI2\n" << endl;
+//cout << "hallo FEELPP_HAS_MPI2\n" << endl;
     init(comm);
 }
 
@@ -119,7 +119,7 @@ Application::Application( int argc,
 
 
 
-#endif /* HAVE_MPI */
+#endif /* FEELPP_HAS_MPI */
 
 
 Application::~Application()
@@ -130,7 +130,7 @@ boost::shared_ptr<Epetra_MpiComm> Application::_S_comm;
 
 bool Application::_S_is_Initialized = false;
 
-#endif // HAVE_TRILINOS_EPETRA
+#endif // FEELPP_HAS_TRILINOS_EPETRA
 
 
 

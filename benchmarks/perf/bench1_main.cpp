@@ -66,7 +66,7 @@ main( int argc, char** argv )
 {
     Feel::Bench1 bench1(argc, argv, Feel::makeAbout(), Feel::makeOptions() );
 
-#ifdef HAVE_TBB
+#ifdef FEELPP_HAS_TBB
     int n = tbb::task_scheduler_init::default_num_threads();
 #else
     int n = 1 ;
@@ -80,13 +80,13 @@ main( int argc, char** argv )
         Feel::fs::create_directory( pth );
         ::chdir( pth.string().c_str() );
         std::cout << "benchmark starts with nthreads = " << p << "\n";
-#ifdef HAVE_TBB
+#ifdef FEELPP_HAS_TBB
         tbb::task_scheduler_init init(p);
 
         tbb::tick_count t0 = tbb::tick_count::now();
 #endif
         bench1.run();
-#ifdef HAVE_TBB
+#ifdef FEELPP_HAS_TBB
         tbb::tick_count t1 = tbb::tick_count::now();
         double t = (t1-t0).seconds();
         ::chdir( cur.string().c_str() );

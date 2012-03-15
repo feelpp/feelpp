@@ -30,10 +30,10 @@
 
 #include <feel/feelalg/vectorublas.hpp>
 
-#if defined( HAVE_TBB )
+#if defined( FEELPP_HAS_TBB )
 #include <parallel_for.h>
 #include <blocked_range.h>
-#endif // HAVE_TBB
+#endif // FEELPP_HAS_TBB
 
 namespace Feel
 {
@@ -442,7 +442,7 @@ VectorUblas<T,Storage>::localize (Vector<T>& v_local_in) const
     // prevent code duplication
     localize (v_local->_M_vec);
 
-#ifndef HAVE_MPI
+#ifndef FEELPP_HAS_MPI
 
     FEELPP_ASSERT (this->localSize() == this->size())( this->localSize() )( this->size() ).error( "invalid size in non MPI mode" );
 
@@ -521,7 +521,7 @@ VectorUblas<T, Storage>::localize ( ublas::vector<value_type>& v_local) const
     v_local.resize(this->size());
     ublas::vector<value_type> v_local_in( this->size() );
 
-#ifdef HAVE_MPI
+#ifdef FEELPP_HAS_MPI
 
     if( M_comm.size() > 1 )
         {
@@ -569,7 +569,7 @@ VectorUblas<T,Storage>::localizeToOneProcessor ( ublas::vector<value_type>& v_lo
     for (size_type i=0; i< this->localSize(); i++)
         v_tmp[i+this->firstLocalIndex()] = this->operator()( this->firstLocalIndex()+i );
 
-#ifdef HAVE_MPI
+#ifdef FEELPP_HAS_MPI
 
     if ( M_comm.size() > 1 )
         {
@@ -617,7 +617,7 @@ VectorUblas<T,Storage>::checkInvariant() const
 
 namespace detail
 {
-#if defined(HAVE_TBB)
+#if defined(FEELPP_HAS_TBB)
 template<typename VectorType>
 struct Sqrt
 {
@@ -635,7 +635,7 @@ struct Sqrt
             }
         }
 };
-#endif // HAVE_TBB
+#endif // FEELPP_HAS_TBB
 } //detail
 template <typename T, typename Storage>
 typename VectorUblas<T,Storage>::this_type
@@ -643,13 +643,13 @@ VectorUblas<T,Storage>::sqrt() const
 {
     this_type _tmp( this->map() );
 
-#if defined( HAVE_TBB )
+#if defined( FEELPP_HAS_TBB )
     tbb::parallel_for( tbb::blocked_range<size_t>(0, this->localSize() ),
                        detail::Sqrt<this_type>( *this, _tmp ) );
 #else
     for(int i = 0; i < (int)this->localSize(); ++i )
         _tmp[i] = math::sqrt( this->operator[](i) );
-#endif // HAVE_TBB
+#endif // FEELPP_HAS_TBB
 
     return _tmp;
 }

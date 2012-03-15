@@ -32,7 +32,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 #include <feel/feelalg/matrixepetra.hpp>
 
-#if defined( HAVE_TRILINOS_IFPACK )
+#if defined( FEELPP_HAS_TRILINOS_IFPACK )
 #undef PACKAGE_BUGREPORT
 #undef PACKAGE_NAME
 #undef PACKAGE_STRING
@@ -100,5 +100,5 @@ public:
   };
 
 } // Feel
-#endif /* HAVE_TRILINOS_IFPACK */
+#endif /* FEELPP_HAS_TRILINOS_IFPACK */
 #endif /* __preconditionerIfpack_H */

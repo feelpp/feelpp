@@ -48,7 +48,7 @@
 
 #include <feel/feelcore/feel.hpp>
 
-#ifdef HAVE_PETSC_H
+#ifdef FEELPP_HAS_PETSC_H
 
 #include <feel/feelalg/solverlinearpetsc.hpp>
 #include <feel/feelalg/functionspetsc.hpp>
@@ -728,4 +728,4 @@ template class SolverLinearPetsc<double>;
 
 } // Feel
 
-#endif // #ifdef HAVE_PETSC
+#endif // #ifdef FEELPP_HAS_PETSC

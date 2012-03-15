@@ -48,7 +48,7 @@ namespace po = boost::program_options;
 
 
 
-#if defined( HAVE_PETSC_H )
+#if defined( FEELPP_HAS_PETSC_H )
 /**
  * \class BackendPetsc
  *
@@ -385,7 +385,7 @@ BackendPetsc<T>::solve( sparse_matrix_type const& A,
 
 po::options_description backendpetsc_options( std::string const& prefix = "" );
 
-#endif // HAVE_PETSC_H
+#endif // FEELPP_HAS_PETSC_H
 } // Feel
 
 #endif /* _BACKENDPETSC_HPP_ */

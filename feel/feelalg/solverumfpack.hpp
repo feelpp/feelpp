@@ -39,15 +39,15 @@
 #include <feel/feelalg/glas.hpp>
 #include <feel/feelalg/matrixtriplet.hpp>
 
-#if defined(HAVE_UMFPACK)
+#if defined(FEELPP_HAS_UMFPACK)
 
 extern "C"
 {
-#if defined (HAVE_SUITESPARSE_UMFPACK_H)
+#if defined (FEELPP_HAS_SUITESPARSE_UMFPACK_H)
 #include <suitesparse/umfpack.h>
-#elif defined (HAVE_UFSPARSE_UMFPACK_H)
+#elif defined (FEELPP_HAS_UFSPARSE_UMFPACK_H)
 #include <ufsparse/umfpack.h>
-#elif defined (HAVE_UMFPACK_UMFPACK_H)
+#elif defined (FEELPP_HAS_UMFPACK_UMFPACK_H)
 #include <umfpack/umfpack.h>
 #else
 #include <umfpack.h>

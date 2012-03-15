@@ -31,7 +31,7 @@
 #include <feel/feelalg/vectorepetra.hpp>
 #include <feel/feelalg/matrixepetra.hpp>
 
-#if defined( HAVE_TRILINOS_EPETRA )
+#if defined( FEELPP_HAS_TRILINOS_EPETRA )
 #include <Epetra_FECrsGraph.h>
 #include <Epetra_Time.h>
 #include <Epetra_RowMatrixTransposer.h>
@@ -40,7 +40,7 @@
 
 namespace Feel
 {
-#if defined ( HAVE_TRILINOS_EPETRA )
+#if defined ( FEELPP_HAS_TRILINOS_EPETRA )
 
 namespace detail
 {
@@ -447,5 +447,5 @@ MatrixEpetra::addMatrix ( int* rows, int nrows,
 // Explicit instantiation
 //
 
-#endif // HAVE_TRILINOS_EPETRA
+#endif // FEELPP_HAS_TRILINOS_EPETRA
 }

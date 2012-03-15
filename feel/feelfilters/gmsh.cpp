@@ -54,7 +54,7 @@
 #include <feel/feelfilters/gmshhypercubedomain.hpp>
 #include <feel/feelfilters/gmshellipsoiddomain.hpp>
 
-#if defined( HAVE_GMSH_H )
+#if defined( FEELPP_HAS_GMSH_H )
 #include <Gmsh.h>
 #include <GModel.h>
 #include <Context.h>
@@ -250,7 +250,7 @@ Gmsh::generate( std::string const& __name, std::string const& __geo, bool const 
 std::string
 Gmsh::refine( std::string const& name, int level, bool parametric  ) const
 {
-#if HAVE_GMSH
+#if FEELPP_HAS_GMSH
     std::ostringstream filename;
     filename << fs::path( name ).stem() << "-refine-" << level << ".msh";
 
@@ -280,8 +280,8 @@ Gmsh::refine( std::string const& name, int level, bool parametric  ) const
 void
 Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  ) const
 {
-#if HAVE_GMSH
-#if !defined(HAVE_GMSH_H)
+#if FEELPP_HAS_GMSH
+#if !defined(FEELPP_HAS_GMSH_H)
     // generate mesh
     std::ostringstream __str;
     //__str << "gmsh -algo tri -" << dim << " " << "-order " << this->order() << " " << __geoname;

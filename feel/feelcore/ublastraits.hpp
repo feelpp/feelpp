@@ -38,7 +38,7 @@
 
 namespace boost { namespace numeric { namespace ublas {
 
-#if defined( HAVE_MPFR )
+#if defined( FEELPP_HAS_MPFR )
 template<>
 struct type_traits<Feel::mp_type> {
     typedef type_traits<Feel::mp_type> self_type;
@@ -110,9 +110,9 @@ struct type_traits<Feel::mp_type> {
                         BOOST_UBLAS_TYPE_CHECK_MIN);
     }
 };
-#endif // HAVE_MPFR
+#endif // FEELPP_HAS_MPFR
 
-#if defined ( FEELPP_HAVE_QD_REAL )
+#if defined ( FEELPP_HAS_QD_REAL )
 template<>
 struct type_traits<qd_real> {
     typedef type_traits<qd_real> self_type;
@@ -184,8 +184,8 @@ struct type_traits<qd_real> {
                         BOOST_UBLAS_TYPE_CHECK_MIN);
     }
 };
-#endif /* FEELPP_HAVE_QD_REAL */
-#if defined ( FEELPP_HAVE_DD_REAL )
+#endif /* FEELPP_HAS_QD_REAL */
+#if defined ( FEELPP_HAS_DD_REAL )
 template<>
 struct type_traits<dd_real> {
     typedef type_traits<dd_real> self_type;
@@ -256,9 +256,9 @@ struct type_traits<dd_real> {
                         BOOST_UBLAS_TYPE_CHECK_MIN);
     }
 };
-#endif /* FEELPP_HAVE_DD_REAL */
+#endif /* FEELPP_HAS_DD_REAL */
 
-#if defined ( FEELPP_HAVE_MP_REAL )
+#if defined ( FEELPP_HAS_MP_REAL )
 template<>
 struct type_traits<mp_real> {
     typedef type_traits<mp_real> self_type;
@@ -329,6 +329,6 @@ struct type_traits<mp_real> {
                         BOOST_UBLAS_TYPE_CHECK_MIN);
     }
 };
-#endif /* FEELPP_HAVE_MP_REAL */
+#endif /* FEELPP_HAS_MP_REAL */
 }}}
 #endif /* FEELPP_UBLAS_TRAITS_HPP */

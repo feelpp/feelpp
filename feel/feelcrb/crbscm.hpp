@@ -1037,8 +1037,6 @@ CRBSCM<TruthModelType>::computeYBounds()
             double eigmax=eigenvalue_ub;
 #else
 
-            double eigenvalue_real, eigenvalue_imag;
-            vector_ptrtype eigenvector;
             SolverEigen<double>::eigenmodes_type modes;
 #if 1
             // solve  for eigenvalue problem at \p mu

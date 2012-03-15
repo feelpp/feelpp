@@ -31,17 +31,17 @@
 
 #include <feel/feelcore/feel.hpp>
 
-#if defined( HAVE_PETSC_H )
+#if defined( FEELPP_HAS_PETSC_H )
 extern "C"
 {
 #include <petsc.h>
 #include <petscerror.h>
 }
-#if defined( FEELPP_HAVE_SLEPC )
+#if defined( FEELPP_HAS_SLEPC )
 # include <slepc.h>
-#endif /* HAVE_SLEPC */
+#endif /* FEELPP_HAS_SLEPC */
 
-#endif /* HAVE_PETSC_H */
+#endif /* FEELPP_HAS_PETSC_H */
 
 #if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
 typedef  PetscBool PetscTruth;

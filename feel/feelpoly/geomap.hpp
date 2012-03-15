@@ -1801,7 +1801,7 @@ public:
         _M_B( N(), __gm->dim() ),
         _M_CS( __gm->dim(), __gm->dim() ),
         _M_g( _M_gm->nbPoints(), __gm->dim() ),
-#if defined( HAVE_PETSC )
+#if defined( FEELPP_HAS_PETSC )
         _M_nlsolver( SolverNonLinear<double>::build( SOLVERS_PETSC ) )
 #else
         _M_nlsolver( SolverNonLinear<double>::build( SOLVERS_GMM ) )
@@ -1814,7 +1814,7 @@ public:
             update();
         else
             {
-#if defined( HAVE_PETSC )
+#if defined( FEELPP_HAS_PETSC )
                 _M_nlsolver->dense_residual = boost::bind( &Inverse::updateResidual, boost::ref( *this ), _1, _2 );
                 _M_nlsolver->dense_jacobian = boost::bind( &Inverse::updateJacobian, boost::ref( *this ), _1, _2 );
 #else
@@ -1836,7 +1836,7 @@ public:
         _M_B( N(), __gm->dim() ),
         _M_CS( __gm->dim(), __gm->dim() ),
         _M_g( _M_gm->nbPoints(), __gm->dim() ),
-#if defined( HAVE_PETSC )
+#if defined( FEELPP_HAS_PETSC )
         _M_nlsolver( SolverNonLinear<double>::build( SOLVERS_PETSC ) )
 #else
         _M_nlsolver( SolverNonLinear<double>::build( SOLVERS_GMM ) )
@@ -1849,7 +1849,7 @@ public:
             update();
         else
             {
-#if defined( HAVE_PETSC )
+#if defined( FEELPP_HAS_PETSC )
                 _M_nlsolver->dense_residual = boost::bind( &Inverse::updateResidual, boost::ref( *this ), _1, _2 );
                 _M_nlsolver->dense_jacobian = boost::bind( &Inverse::updateJacobian, boost::ref( *this ), _1, _2 );
 #else

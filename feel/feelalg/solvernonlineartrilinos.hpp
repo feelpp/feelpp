@@ -37,7 +37,7 @@
 #include <feel/feelalg/vectorepetra.hpp>
 // #include <feel/feelalg/operatortrilinos.hpp>
 
-#if defined( HAVE_TRILINOS )
+#if defined( FEELPP_HAS_TRILINOS )
 #include "NOX.H"
 #include "NOX_Epetra_Interface_Required.H"
 #include "NOX_Epetra_Interface_Jacobian.H"
@@ -178,5 +178,5 @@ SolverNonLinearTrilinos<T>::~SolverNonLinearTrilinos ()
 }
 
 } // Feel
-#endif// HAVE_TRILINOS_NOX
+#endif// FEELPP_HAS_TRILINOS_NOX
 #endif /* __SolverNonLinearTrilinos_H */

@@ -50,7 +50,7 @@
 #include <feel/feelvf/bilinearform.hpp>
 #include <feel/feelvf/linearform.hpp>
 #include <feel/feeldiscr/quadptlocalization.hpp>
-#if defined( HAVE_GOOGLE_PROFILER_H )
+#if defined( FEELPP_HAS_GOOGLE_PROFILER_H )
 #include <google/profiler.h>
 #endif
 
@@ -380,7 +380,7 @@ public:
         }
     }
 
-#if defined( HAVE_TBB )
+#if defined( FEELPP_HAS_TBB )
     template<typename FormType, typename ExprType, typename IMType, typename EltType>
     class Context
     {
@@ -556,7 +556,7 @@ public:
         im_type M_im;
         value_type M_ret;
     };
-#endif // HAVE_TBB
+#endif // FEELPP_HAS_TBB
     //@}
 
 private:
@@ -673,7 +673,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                   << std::distance( this->beginElement(), this->endElement() )  << " elements\n";
     boost::timer __timer;
 
-#if defined(HAVE_TBB)
+#if defined(FEELPP_HAS_TBB)
     //std::cout << "Integrator Uses TBB: " << M_use_tbb << "\n";
     if ( !M_use_tbb )
 #else
@@ -884,7 +884,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
     delete formc;
     delete formc1;
     }
-#if defined( HAVE_TBB )
+#if defined( FEELPP_HAS_TBB )
     else
     {
         element_iterator it = this->beginElement();
@@ -904,7 +904,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                                                                                                 *it);
         tbb::parallel_for( r,  thecontext);
     }
-#endif // HAVE_TBB
+#endif // FEELPP_HAS_TBB
 }
 
 template<typename Elements, typename Im, typename Expr, typename Im2>
@@ -1753,7 +1753,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
                   << std::distance( this->beginElement(), this->endElement() )  << " elements\n";
     boost::timer __timer;
 
-#if defined(HAVE_TBB)
+#if defined(FEELPP_HAS_TBB)
     //std::cout << "Integrator Uses TBB: " << M_use_tbb << "\n";
     if ( !M_use_tbb )
 #else
@@ -1813,7 +1813,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
         it = this->beginElement();
         // wait for all the guys
 #if 0
-#ifdef HAVE_MPI
+#ifdef FEELPP_HAS_MPI
         if ( M_comm.size() > 1 )
         {
             M_comm.barrier();
@@ -1934,7 +1934,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
     }
     else
     {
-#if defined(HAVE_TBB)
+#if defined(FEELPP_HAS_TBB)
         element_iterator it = this->beginElement();
         element_iterator en = this->endElement();
         typedef ContextEvaluate<expression_type, im_type, typename eval::the_element_type> context_type;
@@ -1953,7 +1953,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
         //else if ( M_partitioner == "affinity" )
         //tbb::parallel_reduce( r,  thecontext, tbb::affinity_partitioner() );
         return thecontext.result();
-#endif // HAVE_TBB
+#endif // FEELPP_HAS_TBB
     }
 
 }
@@ -2185,7 +2185,7 @@ Integrator<Elements, Im, Expr, Im2>::broken( boost::shared_ptr<P0hType>& P0h, mp
 
     it = this->beginElement();
     // wait for all the guys
-#ifdef HAVE_MPI
+#ifdef FEELPP_HAS_MPI
         if ( M_comm.size() > 1 )
             {
                 M_comm.barrier();

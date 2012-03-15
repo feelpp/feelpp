@@ -143,7 +143,7 @@ BOOST_AUTO_TEST_CASE( gmshpartgeo )
                            _partitions=2 );
 }
 
-#if defined( HAVE_TBB )
+#if defined( FEELPP_HAS_TBB )
 template<typename elt_iterator>
 class tbb_check_mesh
 {
@@ -207,7 +207,7 @@ BOOST_AUTO_TEST_CASE( gmshgeo_tbb )
                         << "Resulting in a speedup of " << (serial_t1 - serial_t0).seconds() / (parallel_t1 - parallel_t0).seconds() << "\n");
 
 }
-#endif // HAVE_TBB
+#endif // FEELPP_HAS_TBB
 
 BOOST_AUTO_TEST_CASE_TEMPLATE( gmshimportexport, T, dim_types )
 {

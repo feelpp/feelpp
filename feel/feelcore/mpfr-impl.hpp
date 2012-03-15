@@ -41,13 +41,13 @@ MA 02110-1301, USA. */
 
 /* Include 'config.h' before using ANY configure macros if needed
    NOTE: It isn't MPFR 'config.h', but GMP's one! */
-#if defined(HAVE_CONFIG_H)
-#if HAVE_CONFIG_H
+#if defined(FEELPP_HAS_CONFIG_H)
+#if FEELPP_HAS_CONFIG_H
 //#include "config.h"
 #endif
 #endif
 
-#ifdef  MPFR_HAVE_GMP_IMPL /* Build with gmp internals*/
+#ifdef  MPFR_FEELPP_HAS_GMP_IMPL /* Build with gmp internals*/
 
 # ifndef __GMP_H__
 #  include "gmp.h"
@@ -155,7 +155,7 @@ MA 02110-1301, USA. */
 
 /* mpn_sub_nc is internal but may be defined in the header
    but not in the library! That's why we may need to overide it.*/
-#ifndef MPFR_HAVE_MPN_SUB_NC
+#ifndef MPFR_FEELPP_HAS_MPN_SUB_NC
 mp_limb_t mpfr_sub_nc _MPFR_PROTO ((mp_ptr, mp_srcptr, mp_srcptr, mp_size_t,
                                     mp_limb_t ));
 #undef mpn_sub_nc
@@ -389,7 +389,7 @@ typedef union ieee_double_extract Ieee_double_extract;
    has been seen false, meaning NaNs are not detected.  This seemed to
    happen only after other comparisons, not sure what's really going on.  In
    any case we can pick apart the bytes to identify a NaN.  */
-#ifdef HAVE_LDOUBLE_IEEE_QUAD_BIG
+#ifdef FEELPP_HAS_LDOUBLE_IEEE_QUAD_BIG
 # define LONGDOUBLE_NAN_ACTION(x, action)                       \
   do {                                                          \
     union {                                                     \
@@ -437,7 +437,7 @@ __MPFR_DECLSPEC long double __gmpfr_longdouble_volatile _MPFR_PROTO ((long doubl
 #endif
 
 /* Some special case for IEEE_EXT Litle Endian */
-#if HAVE_LDOUBLE_IEEE_EXT_LITTLE
+#if FEELPP_HAS_LDOUBLE_IEEE_EXT_LITTLE
 
 typedef union {
   long double    ld;
@@ -1464,7 +1464,7 @@ __MPFR_DECLSPEC void mpfr_setmin _MPFR_PROTO ((mpfr_ptr, mp_exp_t));
 __MPFR_DECLSPEC long mpfr_mpn_exp _MPFR_PROTO ((mp_limb_t *, mp_exp_t *, int,
                            mp_exp_t, size_t));
 
-#ifdef _MPFR_H_HAVE_FILE
+#ifdef _MPFR_H_FEELPP_HAS_FILE
 __MPFR_DECLSPEC void mpfr_fprint_binary _MPFR_PROTO ((FILE *, mpfr_srcptr));
 #endif
 __MPFR_DECLSPEC void mpfr_print_binary _MPFR_PROTO ((mpfr_srcptr));

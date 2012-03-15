@@ -36,7 +36,7 @@
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/traits.hpp>
 
-#if defined(HAVE_BOOST_TEST)
+#if defined(FEELPP_HAS_BOOST_TEST)
 // Boost.Test
 #include <boost/test/test_tools.hpp>
 #include <boost/test/unit_test.hpp>
@@ -44,7 +44,7 @@
 
 using boost::unit_test_framework::test_suite;
 
-#if defined(HAVE_UMFPACK_H)
+#if defined(FEELPP_HAS_UMFPACK_H)
 
 #include <feel/feelalg/solverumfpack.hpp>
 
@@ -254,7 +254,7 @@ init_unit_test_suite( int argc, char** argv )
     test_suite* test= BOOST_TEST_SUITE( "UMFPACK Unit Test" );
     return test;
 }
-#endif  /* HAVE_UMFPACK_H */
+#endif  /* FEELPP_HAS_UMFPACK_H */
 #else
 int main()
 {

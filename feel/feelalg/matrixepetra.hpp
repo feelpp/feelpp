@@ -42,17 +42,17 @@
 #include <feel/feelalg/matrixsparse.hpp>
 #include <feel/feelalg/vectorepetra.hpp>
 
-#if defined( HAVE_TRILINOS_EPETRA )
+#if defined( FEELPP_HAS_TRILINOS_EPETRA )
 #undef PACKAGE_BUGREPORT
 #undef PACKAGE_NAME
 #undef PACKAGE_STRING
 #undef PACKAGE_TARNAME
 #undef PACKAGE_VERSION
-#if defined(HAVE_MPI)
+#if defined(FEELPP_HAS_MPI)
 #include <Epetra_MpiComm.h>
 #else
 #include <Epetra_SerialComm.h>
-#endif /* HAVE_MPI */
+#endif /* FEELPP_HAS_MPI */
 #include <Epetra_Map.h>
 #include <EpetraExt_MatrixMatrix.h>
 #include <EpetraExt_RowMatrixOut.h>
@@ -620,7 +620,7 @@ MatrixEpetra::MatrixEpetra()
     :
     super(),
 
-#ifdef HAVE_MPI
+#ifdef FEELPP_HAS_MPI
     _M_emap( Epetra_Map( -1, 0, 0, Epetra_MpiComm(M_comm)) ),
     _M_col_emap( Epetra_Map( -1, 0, 0, Epetra_MpiComm(M_comm)) ),
     _M_dom_map( Epetra_Map( -1, 0, 0, Epetra_MpiComm(M_comm)) ),
@@ -1084,6 +1084,6 @@ operator<<( NdebugStream& __os, MatrixEpetra const& /*__n*/ )
 
 } // Feel
 
-#endif /* HAVE_TRILINOS_EPETRA */
+#endif /* FEELPP_HAS_TRILINOS_EPETRA */
 #endif /* __MatrixEpetra_H */
 

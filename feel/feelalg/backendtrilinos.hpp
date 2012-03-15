@@ -38,7 +38,7 @@
 #include <boost/program_options/variables_map.hpp>
 #include <feel/feelconfig.h>
 
-#if defined ( HAVE_TRILINOS_EPETRA )
+#if defined ( FEELPP_HAS_TRILINOS_EPETRA )
 #undef PACKAGE_BUGREPORT
 #undef PACKAGE_NAME
 #undef PACKAGE_STRING
@@ -471,7 +471,7 @@ po::options_description backendtrilinos_options( std::string const& prefix );
 
 } // Feel
 
-#endif // HAVE_TRILINOS_EPETRA
+#endif // FEELPP_HAS_TRILINOS_EPETRA
 
 
 #endif /* _BACKENDTRILINOS_HPP_ */

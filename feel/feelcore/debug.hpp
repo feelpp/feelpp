@@ -151,10 +151,10 @@ public:
 
     DebugStream& operator<<( double );
     DebugStream& operator<<( std::complex<double> );
-#if defined(HAVE_QD_H)
+#if defined(FEELPP_HAS_QD_H)
     DebugStream& operator<<( dd_real );
     DebugStream& operator<<( qd_real );
-#endif /* HAVE_QD_H */
+#endif /* FEELPP_HAS_QD_H */
 
     DebugStream& operator<<( const char* );
     DebugStream& operator<<( std::string const& );
@@ -222,10 +222,10 @@ public:
 
     NdebugStream& operator<<( double ) { return *this; }
     NdebugStream& operator<<( std::complex<double> ) { return *this; }
-#if defined(HAVE_QD_H)
+#if defined(FEELPP_HAS_QD_H)
     NdebugStream& operator<<( dd_real ) { return *this; }
     NdebugStream& operator<<( qd_real ) { return *this; }
-#endif /* HAVE_QD_H */
+#endif /* FEELPP_HAS_QD_H */
 
     NdebugStream& operator<<( std::string const& ){ return *this; }
     NdebugStream& operator<<( LManipFunction  ) { return *this; }

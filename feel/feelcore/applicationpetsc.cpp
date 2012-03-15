@@ -31,13 +31,13 @@
 
 #include <feel/feelcore/application.hpp>
 
-#if defined(HAVE_SLEPC)
+#if defined(FEELPP_HAS_SLEPC)
 #include <slepc/slepceps.h>
-#endif /* HAVE_SLEPC */
+#endif /* FEELPP_HAS_SLEPC */
 
 namespace Feel
 {
-#if defined( HAVE_PETSC_H )
+#if defined( FEELPP_HAS_PETSC_H )
 
 FEELPP_NO_EXPORT
 po::options_description
@@ -60,7 +60,7 @@ Application::Application( int argc,
     PETSC_COMM_WORLD = super::COMM_WORLD;
     int __argc = this->unknownArgc();
     char** __argv = this->unknownArgv();
-#if defined( HAVE_SLEPC )
+#if defined( FEELPP_HAS_SLEPC )
     int ierr = SlepcInitialize(&__argc,&__argv, PETSC_NULL, PETSC_NULL );
 #else
     int ierr = PetscInitialize( &__argc, &__argv, PETSC_NULL, PETSC_NULL );
@@ -84,7 +84,7 @@ Application::Application( int argc,
     PETSC_COMM_WORLD = super::COMM_WORLD;
     int __argc = this->unknownArgc();
     char** __argv = this->unknownArgv();
-#if defined( HAVE_SLEPC )
+#if defined( FEELPP_HAS_SLEPC )
     int ierr = SlepcInitialize(&__argc,&__argv, PETSC_NULL, PETSC_NULL );
 #else
     int ierr = PetscInitialize( &__argc, &__argv, PETSC_NULL, PETSC_NULL );
@@ -103,7 +103,7 @@ Application::Application( int argc,
 
 Application::~Application()
 {
-#if defined( HAVE_SLEPC )
+#if defined( FEELPP_HAS_SLEPC )
     SlepcFinalize();
 #else
     PetscFinalize();

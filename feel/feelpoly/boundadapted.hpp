@@ -1187,7 +1187,7 @@ BoundaryAdapted<Dim, Degree,  T, StoragePolicy>::derivate( ublas::matrix_express
 
     /** Adding Jacobian contribution **/
 
-#if defined (FEELPP_HAVE_QD_REAL)
+#if defined (FEELPP_HAS_QD_REAL)
 
     /* Warning : if qd are enable we can not use
      * the ublas::diagonal_matrix type

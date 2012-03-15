@@ -35,7 +35,7 @@
 #include <feel/feelalg/vectorpetsc.hpp>
 
 // Petsc include files.
-#if defined( HAVE_PETSC_H )
+#if defined( FEELPP_HAS_PETSC_H )
 
 #ifndef USE_COMPLEX_NUMBERS
 extern "C" {
@@ -228,5 +228,5 @@ SolverNonLinearPetsc<T>::~SolverNonLinearPetsc ()
 
 } // Feel
 
-#endif /* HAVE_PETSC */
+#endif /* FEELPP_HAS_PETSC */
 #endif /* __SolverNonLinearPetsc_H */

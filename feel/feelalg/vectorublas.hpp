@@ -561,7 +561,7 @@ public:
 
 
 
-#ifdef HAVE_MPI
+#ifdef FEELPP_HAS_MPI
         if ( M_comm.size() > 1 )
             {
                 MPI_Allreduce (&local_min, &global_min, 1,
@@ -584,7 +584,7 @@ public:
         real_type global_max = local_max;
 
 
-#ifdef HAVE_MPI
+#ifdef FEELPP_HAS_MPI
 
         if ( M_comm.size() > 1 )
             {
@@ -608,7 +608,7 @@ public:
         double global_l1 = local_l1;
 
 
-#ifdef HAVE_MPI
+#ifdef FEELPP_HAS_MPI
 
         if ( M_comm.size() > 1 )
             {
@@ -631,7 +631,7 @@ public:
         real_type global_norm2 = local_norm2;
 
 
-#ifdef HAVE_MPI
+#ifdef FEELPP_HAS_MPI
 
         if ( M_comm.size() > 1 )
             {
@@ -652,7 +652,7 @@ public:
         real_type global_norminf = local_norminf;
 
 
-#ifdef HAVE_MPI
+#ifdef FEELPP_HAS_MPI
 
         if ( M_comm.size() > 1 )
             {
@@ -674,7 +674,7 @@ public:
         double global_sum = local_sum;
 
 
-#ifdef HAVE_MPI
+#ifdef FEELPP_HAS_MPI
 
         if ( M_comm.size() > 1 )
             {

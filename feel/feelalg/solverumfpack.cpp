@@ -36,7 +36,7 @@
 #include <boost/numeric/ublas/matrix_sparse.hpp>
 #include <boost/numeric/ublas/io.hpp>
 
-#if defined(HAVE_UMFPACK)
+#if defined(FEELPP_HAS_UMFPACK)
 
 namespace Feel
 {
@@ -241,4 +241,4 @@ void SolverUMFPACK::prepareSolve()
 }
 
 }
-#endif // HAVE_UMFPACK
+#endif // FEELPP_HAS_UMFPACK

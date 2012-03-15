@@ -44,7 +44,7 @@ template<typename T>
 struct access_value
 {
 };
-#if defined( FEELPP_HAVE_QD_REAL )
+#if defined( FEELPP_HAS_QD_REAL )
 template<>
 struct access_value<dd_real>
 {
@@ -65,9 +65,9 @@ struct access_value<qd_real>
     qd_real operator()() const { return v; }
     qd_real v;
 };
-#endif /*FEELPP_HAVE_QD_REAL*/
+#endif /*FEELPP_HAS_QD_REAL*/
 
-#if defined(HAVE_MPFR)
+#if defined(FEELPP_HAS_MPFR)
 template<>
 struct access_value<mp_type>
 {
@@ -78,7 +78,7 @@ struct access_value<mp_type>
     mp_type operator()() const { return v; }
     mp_type v;
 };
-#endif /* HAVE_MPFR */
+#endif /* FEELPP_HAS_MPFR */
 
 template<>
 struct access_value<double>

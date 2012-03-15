@@ -80,14 +80,14 @@
 #include <feel/feelcore/flags.hpp>
 #include <feel/feelcore/serialization.hpp>
 
-#if defined( HAVE_TBB )
+#if defined( FEELPP_HAS_TBB )
 #include <tbb/tick_count.h>
 #include <tbb/blocked_range.h>
 #include <tbb/parallel_for.h>
 #include <tbb/parallel_reduce.h>
 #include <tbb/task_scheduler_init.h>
 #include <tbb/mutex.h>
-#endif // HAVE_TBB
+#endif // FEELPP_HAS_TBB
 
 
 
@@ -380,16 +380,16 @@ struct remove_all
 }
 }
 
-#if defined( HAVE_ARPREC)
-# define FEELPP_HAVE_MP_REAL 1
+#if defined( FEELPP_HAS_ARPREC)
+# define FEELPP_HAS_MP_REAL 1
 #include <mp/mpreal.h>
 #include <mp/mp.h>
-#endif /* HAVE_ARPREC */
+#endif /* FEELPP_HAS_ARPREC */
 
 
-#if defined( HAVE_QDLIB ) || defined( HAVE_QD_H )
-# define FEELPP_HAVE_DD_REAL 1
-# define FEELPP_HAVE_QD_REAL 1
+#if defined( FEELPP_HAS_QDLIB ) || defined( FEELPP_HAS_QD_H )
+# define FEELPP_HAS_DD_REAL 1
+# define FEELPP_HAS_QD_REAL 1
 # include <qd/dd.h>
 # include <qd/qd.h>
 # include <qd/fpu.h>
@@ -440,9 +440,9 @@ struct numeric_limits<qd_real>
     };
 }
 
-#endif /* HAVE_QD */
+#endif /* FEELPP_HAS_QD */
 
-#if defined( HAVE_MPFR )
+#if defined( FEELPP_HAS_MPFR )
 #include <feel/feelcore/mpfr.hpp>
 
 namespace Feel
@@ -476,7 +476,7 @@ inline void setMpPrecision( mp_precision_type __prec )
 const mp_type mp_eps = mpfr::pow( mp_type(  2 ), -mp_type::GetDefaultPrecision()+1 );
 
 }
-#endif // HAVE_MPFR
+#endif // FEELPP_HAS_MPFR
 
 
 #include <feel/feelcore/debug.hpp>
@@ -492,7 +492,7 @@ BOOST_DETAIL_IS_XXX_DEF(shared_ptr, boost::shared_ptr, 1)
 }
 }
 
-#if defined(HAVE_OPENMP)
+#if defined(FEELPP_HAS_OPENMP)
 #include <omp.h>
 
 #define OMP_SET_NUM_THREADS(num) omp_set_num_threads(num)
@@ -513,7 +513,7 @@ BOOST_DETAIL_IS_XXX_DEF(shared_ptr, boost::shared_ptr, 1)
 #define OMP_GET_WTIME           0
 #define OMP_GET_WTICK           0
 
-#endif /* HAVE_OPENMP */
+#endif /* FEELPP_HAS_OPENMP */
 
 
 #endif

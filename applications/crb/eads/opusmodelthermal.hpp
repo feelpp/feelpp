@@ -325,7 +325,7 @@ OpusModelThermal<SpaceType>::update( double time,
             Log() << "n AIR faces = " << n << "\n";
             Log() << "n total faces = " << nt << "\n";
             boost::timer ti;
-#if defined(HAVE_GOOGLE_PROFILER_H )
+#if defined(FEELPP_HAS_GOOGLE_PROFILER_H )
             //ProfilerStart( "faces_integration_profile" );
 #endif
 
@@ -336,7 +336,7 @@ OpusModelThermal<SpaceType>::update( double time,
                         (abs(trans(N())*conv_coeff)))*
                     (jumpt(gradt(u)) * jump(grad(w)))
                     ,_Q<2*(Order)>() );
-#if defined(HAVE_GOOGLE_PROFILER_H )
+#if defined(FEELPP_HAS_GOOGLE_PROFILER_H )
             //ProfilerStop();
 #endif
 

@@ -30,9 +30,9 @@
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/application.hpp>
 
-#if defined(HAVE_TAU)
+#if defined(FEELPP_HAS_TAU)
 #include <Profile/Profiler.h>
-#endif /* HAVE_TAU */
+#endif /* FEELPP_HAS_TAU */
 
 
 namespace Feel
@@ -50,7 +50,7 @@ mpiOptions()
 
 bool Application::_S_is_mpi_initialized = false;
 
-#if defined( HAVE_MPI )
+#if defined( FEELPP_HAS_MPI )
 MPI_Comm Application::COMM_WORLD = MPI_COMM_NULL;
 
 Application::Application( int argc,
@@ -61,15 +61,15 @@ Application::Application( int argc,
 Application::Application( int argc,
                                 char** argv,
                                 AboutData const& ad )
-#endif // HAVE_MPI
+#endif // FEELPP_HAS_MPI
     :
 super( argc, argv, ad, mpiOptions(), false )
-#if defined( HAVE_MPI )
+#if defined( FEELPP_HAS_MPI )
     ,
     M_env()
 #endif
 {
-#if defined( HAVE_MPI )
+#if defined( FEELPP_HAS_MPI )
     int is_mpi_initialized;
     MPI_Initialized (&is_mpi_initialized);
     //std::cout << "is_mpi_initialized = " << is_mpi_initialized << "\n";
@@ -93,11 +93,11 @@ super( argc, argv, ad, mpiOptions(), false )
     _S_process_id = S_world.rank();
     _S_n_process = S_world.size();
 #endif
-#endif // HAVE_MPI
+#endif // FEELPP_HAS_MPI
 
     this->doOptions( argc, argv );
 
-#if defined( HAVE_MPI )
+#if defined( FEELPP_HAS_MPI )
     char * __env = getenv("DEBUG");
     std::string env_str;
     if ( __env )
@@ -111,13 +111,13 @@ super( argc, argv, ad, mpiOptions(), false )
         }
 #endif // MPI
 
-#if defined(HAVE_TAU)
+#if defined(FEELPP_HAS_TAU)
     TAU_PROFILE_SET_NODE(_S_process_id);
-#endif /* HAVE_TAU */
+#endif /* FEELPP_HAS_TAU */
 }
 
 
-#if defined( HAVE_MPI )
+#if defined( FEELPP_HAS_MPI )
 Application::Application( int argc,
                                 char** argv,
                                 AboutData const& ad,
@@ -128,15 +128,15 @@ Application::Application( int argc,
                                 char** argv,
                                 AboutData const& ad,
                                 po::options_description const& od )
-#endif // HAVE_MPI
+#endif // FEELPP_HAS_MPI
     :
 super( argc, argv, ad, mpiOptions().add( od ), false )
-#if defined( HAVE_MPI )
+#if defined( FEELPP_HAS_MPI )
     ,
     M_env()
 #endif
 {
-#if defined( HAVE_MPI )
+#if defined( FEELPP_HAS_MPI )
     int is_mpi_initialized;
     MPI_Initialized (&is_mpi_initialized);
     //std::cout << "is_mpi_initialized = " << is_mpi_initialized << "\n";
@@ -165,7 +165,7 @@ super( argc, argv, ad, mpiOptions().add( od ), false )
 
     this->doOptions( argc, argv );
 
-#if defined( HAVE_MPI )
+#if defined( FEELPP_HAS_MPI )
     char * __env = getenv("DEBUG");
     std::string env_str;
     if ( __env )
@@ -180,14 +180,14 @@ super( argc, argv, ad, mpiOptions().add( od ), false )
         }
 #endif // MPI
 
-#if defined(HAVE_TAU)
+#if defined(FEELPP_HAS_TAU)
     TAU_PROFILE_SET_NODE(_S_process_id);
-#endif /* HAVE_TAU */
+#endif /* FEELPP_HAS_TAU */
 }
 
 Application::~Application()
 {
-#if 0 // defined ( HAVE_MPI )
+#if 0 // defined ( FEELPP_HAS_MPI )
     MPI_Comm_free (&Application::COMM_WORLD);
 
     if (_S_is_mpi_initialized)

@@ -61,7 +61,7 @@
 /**
  * Petsc include files.
  */
-#ifdef HAVE_PETSC_H
+#ifdef FEELPP_HAS_PETSC_H
 #include <feel/feelcore/feelpetsc.hpp>
 
 #ifndef USE_COMPLEX_NUMBERS
@@ -316,6 +316,6 @@ SolverLinearPetsc<T>::~SolverLinearPetsc ()
 } // Feel
 
 
-#endif // #ifdef HAVE_PETSC_H
+#endif // #ifdef FEELPP_HAS_PETSC_H
 #endif // #ifdef __petsc_linear_solver_h__
 
