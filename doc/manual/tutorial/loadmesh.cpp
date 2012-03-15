@@ -38,7 +38,7 @@ int main(int argc, char** argv)
     desc.add_options()
         ("help", "produce help message")
         ("filename", po::value<std::string>()->default_value( "Cylref.geo" ), "h size")
-        ("depends", po::value<std::string>()->default_value( "Cylref.mesh" ), "copy files")
+        ("depends", po::value<std::vector<std::string> >()->default_value( std::vector<std::string>(1, "Cylref.mesh") ), "copy files")
         ;
 
     po::variables_map vm;
@@ -54,7 +54,7 @@ int main(int argc, char** argv)
 #if 1
     auto mesh = createGMSHMesh( _mesh=new mesh_type,
                               //_desc=img2msh( _filename=mesh_name),
-                                _desc=geo( _filename=mesh_name,_depends=assign::list_of(vm["depends"].as<std::string>())),
+                                _desc=geo( _filename=mesh_name,_depends=vm["depends"].as<std::vector<std::string> >()),
                                 _physical_are_elementary_regions=true,
                                 _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES );
 #else
