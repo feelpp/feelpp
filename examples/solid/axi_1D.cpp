@@ -282,7 +282,7 @@ Elaxi<Order, Entity>::run()
     size_type pattern = Pattern::COUPLED;
 
     timers["assembly"].first.restart();
-    sparse_matrix_ptrtype D( M_backend->newMatrix( Xh, Xh ) );
+    auto D = M_backend->newMatrix( Xh, Xh );
     std::cout << "====================Newton========================\n---->Start\n";
     Log() << "====================Newton========================\n---->Start\n";
 
@@ -301,8 +301,7 @@ Elaxi<Order, Entity>::run()
 
         timers["assembly"].first.restart();
 
-        //size_type pattern = Pattern::COUPLED|Pattern::EXTENDED;
-        form2( Xh, Xh, D ) =
+        form2( _test=Xh, _trial=Xh, _matrix=D ) =
             integrate( elements(mesh), 2.0*(
                            //idt(u1)*id(v1)/Py()
                            idt(u0)*id(v0)/Py()
@@ -331,7 +330,7 @@ Elaxi<Order, Entity>::run()
         //      Phi.print();
 #endif
 
-        form1( Xh, newt_nl_source_term,_init=true ) =
+        form1( _test=Xh, _vector=newt_nl_source_term ) =
             integrate( elements(mesh), 2.0*(
                            //idv(phi1)*id(v1)/Py()
                            dyv(phi1)*dy(v1)*val(Py())
@@ -340,14 +339,15 @@ Elaxi<Order, Entity>::run()
 #if 0
         newt_nl_source_term->print();
 #endif
-        rhs->add(-1.0,*newt_nl_source_term);
+        rhs->add(-1.0,newt_nl_source_term);
         rhs->close();
 
         std::cout << "rhs->l2Norm= " << rhs->l2Norm() << "\n";
 
         std::cout << "----> Block marked dofs\n";
 
-        form2( Xh, Xh, D ) += on( _range=boundaryfaces(mesh), _element=u0, _rhs=rhs, _expr=constant(0.))+
+        form2( _test=Xh, _trial=Xh, _matrix=D ) +=
+            on( _range=boundaryfaces(mesh), _element=u0, _rhs=rhs, _expr=constant(0.))+
             on( _range=boundaryfaces(mesh), _element=u1, _rhs=rhs, _expr=constant(0.));
 
         std::cout << "rhs->l2Norm= " << rhs->l2Norm() << "\n";
