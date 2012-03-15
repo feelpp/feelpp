@@ -581,7 +581,7 @@ namespace Feel {
         BOOST_PP_FOR( (0, BOOST_PP_SUB(BOOST_PP_ARRAY_SIZE(GEOTOOL_SHAPE),1) ),
                       GEOTOOL_INSTANTIATES_FOR_COMP,
                       GEOTOOL_INSTANTIATES_FOR_INCR,
-                      GEOTOOL_INSTANTIATES_FOR );
+                      GEOTOOL_INSTANTIATES_FOR )
 
 
 
@@ -1861,7 +1861,7 @@ namespace Feel {
         BOOST_PP_FOR( (0, BOOST_PP_SUB(BOOST_PP_ARRAY_SIZE(GEOTOOL_SHAPE),1) ),
                       GEOTOOL_FOR_COMP,
                       GEOTOOL_FOR_INCR,
-                      GEOTOOL_SHAPE_CLASS );
+                      GEOTOOL_SHAPE_CLASS )
 
 
 

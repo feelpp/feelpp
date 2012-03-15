@@ -44,7 +44,7 @@ enum ProjectorType
 {
     PROJ_NODAL = 0,             /**< Nodal projection */
     PROJ_L2 = 1,                /**< L2 projection */
-    PROJ_H1 = 2,                /**< H1 projection */
+    PROJ_H1 = 2                 /**< H1 projection */
 };
 namespace details
 {

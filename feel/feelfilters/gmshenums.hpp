@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -83,7 +83,7 @@ enum GMSH_ENTITY
 
     GMSH_TETRAHEDRON_3=29, //!< tetra of order 3
     GMSH_TETRAHEDRON_4=30, //!< tetra of order 4
-    GMSH_TETRAHEDRON_5=31, //!< tetra of order 5
+    GMSH_TETRAHEDRON_5=31  //!< tetra of order 5
 };
 
 template<typename ConvexType>

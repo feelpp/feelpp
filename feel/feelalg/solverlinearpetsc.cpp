@@ -304,7 +304,7 @@ SolverLinearPetsc<T>::solve (MatrixSparse<T> const&  matrix_in,
     FEELPP_ASSERT(rhs      != NULL).error( "non petsc vector structure" );
 
     int ierr=0;
-    int its=0;//, max_its = 10*static_cast<int>(m_its);
+    int its=0;
     PetscReal final_resid=0.;
 
     // Close the matrices and vectors in case this wasn't already done.

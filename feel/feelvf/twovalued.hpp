@@ -594,7 +594,7 @@ public:
     template<typename Func>
     struct HasTrialFunction
     {
-        static const bool result = ExprT::template HasTrialFunction<Func>::result;;
+        static const bool result = ExprT::template HasTrialFunction<Func>::result;
     };
 
     /** @name Typedefs

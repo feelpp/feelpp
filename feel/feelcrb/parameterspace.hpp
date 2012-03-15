@@ -549,7 +549,8 @@ private:
 template<int P> const uint16_type ParameterSpace<P>::Dimension;
 
 template<int P>
-typename ParameterSpace<P>::sampling_ptrtype
+//typename ParameterSpace<P>::sampling_ptrtype
+boost::shared_ptr<typename ParameterSpace<P>::Sampling>
 ParameterSpace<P>::Sampling::complement() const
 {
   //std::cout << "[ParameterSpace::Sampling::complement] start\n";
@@ -586,7 +587,7 @@ ParameterSpace<P>::Sampling::complement() const
     return complement;
 }
 template<int P>
-typename ParameterSpace<P>::sampling_ptrtype
+boost::shared_ptr<typename ParameterSpace<P>::Sampling>
 ParameterSpace<P>::Sampling::searchNearestNeighbors( element_type const& mu,
                                                      size_type _M )
 {

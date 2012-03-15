@@ -123,7 +123,7 @@ namespace detail
    \endcode
  */
 template <class T> inline void ignore_unused_variable_warning(const T&) { }
-};
+}
 
 /*!  \page types_page Feel Types
   \section types Types

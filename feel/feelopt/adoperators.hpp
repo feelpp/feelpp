@@ -125,11 +125,11 @@ public:                                                                         
   bool deps( int i ) const { return __right.deps( i ); }                               \
 };
 
-AD_BIN_ADD_CST(int);
-AD_BIN_ADD_CST(long int);
-AD_BIN_ADD_CST(float);
-AD_BIN_ADD_CST(double);
-AD_BIN_ADD_CST(long double);
+AD_BIN_ADD_CST(int)
+AD_BIN_ADD_CST(long int)
+AD_BIN_ADD_CST(float)
+AD_BIN_ADD_CST(double)
+AD_BIN_ADD_CST(long double)
 
 #undef AD_BIN_ADD_CST
 
@@ -218,11 +218,11 @@ public:                                                                         
   bool deps( int i ) const { return __right.deps( i ); }                                  \
 };
 
-AD_BIN_SUB_CST(int);
-AD_BIN_SUB_CST(long int);
-AD_BIN_SUB_CST(float);
-AD_BIN_SUB_CST(double);
-AD_BIN_SUB_CST(long double);
+AD_BIN_SUB_CST(int)
+AD_BIN_SUB_CST(long int)
+AD_BIN_SUB_CST(float)
+AD_BIN_SUB_CST(double)
+AD_BIN_SUB_CST(long double)
 
 #undef AD_BIN_SUB_CST
 
@@ -311,11 +311,11 @@ public:                                                                         
    bool deps( int i ) const { return __right.deps( i ); }                                    \
 };
 
-AD_BIN_MUL_CST(int);
-AD_BIN_MUL_CST(long int);
-AD_BIN_MUL_CST(float);
-AD_BIN_MUL_CST(double);
-AD_BIN_MUL_CST(long double);
+AD_BIN_MUL_CST(int)
+AD_BIN_MUL_CST(long int)
+AD_BIN_MUL_CST(float)
+AD_BIN_MUL_CST(double)
+AD_BIN_MUL_CST(long double)
 
 #undef AD_BIN_MUL_CST
 
@@ -412,11 +412,11 @@ public:                                                                         
   bool deps( int i ) const { return __right.deps( i ); }                                                                \
 };
 
-AD_BIN_DIV_CST(int);
-AD_BIN_DIV_CST(long int);
-AD_BIN_DIV_CST(float);
-AD_BIN_DIV_CST(double);
-AD_BIN_DIV_CST(long double);
+AD_BIN_DIV_CST(int)
+AD_BIN_DIV_CST(long int)
+AD_BIN_DIV_CST(float)
+AD_BIN_DIV_CST(double)
+AD_BIN_DIV_CST(long double)
 
 #undef AD_BIN_DIV_CST
 
@@ -667,11 +667,11 @@ public:                                                                         
                                                                                           \
   bool deps( int i ) const { return __left.deps( i ) || __right.deps( i ); }              \
 };                                                                                        \
-AD_BIN_REL_CST( Rel, OP, int);                                                           \
-AD_BIN_REL_CST( Rel, OP, long int);                                                      \
-AD_BIN_REL_CST( Rel, OP, float);                                                         \
-AD_BIN_REL_CST( Rel, OP, double);                                                        \
-AD_BIN_REL_CST( Rel, OP, long double);
+AD_BIN_REL_CST( Rel, OP, int)                                           \
+AD_BIN_REL_CST( Rel, OP, long int)                                      \
+AD_BIN_REL_CST( Rel, OP, float)                                         \
+AD_BIN_REL_CST( Rel, OP, double)                                        \
+AD_BIN_REL_CST( Rel, OP, long double)
 
 AD_BIN_REL( Greater, > )
 AD_BIN_REL( Less, < )
