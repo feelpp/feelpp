@@ -29,3 +29,5 @@ target_link_libraries( feel_doc_overlapping ${FEELPP_LIBRARIES} )
 # Non-overlapping schwartz domain decomposition method
 add_executable( feel_doc_nonoverlapping nonoverlappinggeo.cpp nonoverlapping.cpp )
 target_link_libraries( feel_doc_nonoverlapping ${FEELPP_LIBRARIES} )
+
+add_docex(multi_levels)
