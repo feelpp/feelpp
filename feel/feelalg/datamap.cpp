@@ -279,17 +279,17 @@ DataMap::setLastDofGlobalCluster(const size_type proc, const size_type df, bool 
 
 
 void
-DataMap::setMapGlobalProcessToGlobalCluster( std::vector<size_type> const& map) { M_mapGlobalProcessToGlobalCluster=map; };
+DataMap::setMapGlobalProcessToGlobalCluster( std::vector<size_type> const& map) { M_mapGlobalProcessToGlobalCluster=map; }
 void
-DataMap::setMapGlobalClusterToGlobalProcess( std::vector<size_type> const& map) { M_mapGlobalClusterToGlobalProcess=map; };
+DataMap::setMapGlobalClusterToGlobalProcess( std::vector<size_type> const& map) { M_mapGlobalClusterToGlobalProcess=map; }
 void
-DataMap::setMapGlobalProcessToGlobalCluster( size_type i, size_type j) { M_mapGlobalProcessToGlobalCluster[i]=j; };
+DataMap::setMapGlobalProcessToGlobalCluster( size_type i, size_type j) { M_mapGlobalProcessToGlobalCluster[i]=j; }
 void
-DataMap::setMapGlobalClusterToGlobalProcess( size_type i, size_type j) { M_mapGlobalClusterToGlobalProcess[i]=j; };
+DataMap::setMapGlobalClusterToGlobalProcess( size_type i, size_type j) { M_mapGlobalClusterToGlobalProcess[i]=j; }
 void
-DataMap::resizeMapGlobalProcessToGlobalCluster( size_type n) { M_mapGlobalProcessToGlobalCluster.resize(n); };
+DataMap::resizeMapGlobalProcessToGlobalCluster( size_type n) { M_mapGlobalProcessToGlobalCluster.resize(n); }
 void
-DataMap::resizeMapGlobalClusterToGlobalProcess( size_type n) { M_mapGlobalClusterToGlobalProcess.resize(n); };
+DataMap::resizeMapGlobalClusterToGlobalProcess( size_type n) { M_mapGlobalClusterToGlobalProcess.resize(n); }
 
 void
 DataMap::updateDataInWorld()

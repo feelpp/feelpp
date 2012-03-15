@@ -107,7 +107,7 @@ public:
     static const uint16_type real_dimension = nRealDim;
 
     static const size_type Shape = mpl::at<shapes_t, mpl::int_<nDim> >::type::value;
-    static const size_type Geometry = mpl::at<geometries_t, mpl::int_<nDim> >::type::value;;
+    static const size_type Geometry = mpl::at<geometries_t, mpl::int_<nDim> >::type::value;
 
     typedef typename mpl::at<elements_t, mpl::int_<nDim> >::type element_type;
     typedef typename mpl::at<typename faces_t<real_dimension>::type, mpl::int_<nDim> >::type topological_face_type;

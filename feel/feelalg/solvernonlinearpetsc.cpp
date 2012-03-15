@@ -374,25 +374,25 @@ void SolverNonLinearPetsc<T>::init ()
 
     int ierr=0;
 
-    // if the non linear solver type is define by the user int the code
-    if (this->getType() != SELECT_IN_ARGLIST )
-        {
-            switch (this->getType())
-                {
-                case LINE_SEARCH :
-                    {
-                        ierr = SNESSetType(M_snes, SNESLS);
-                        CHKERRABORT(PETSC_COMM_WORLD,ierr);
-                    }
-                    break;
-                case TRUST_REGION :
-                    {
-                        ierr = SNESSetType(M_snes, SNESTR);
-                        CHKERRABORT(PETSC_COMM_WORLD,ierr);
-                    }
-                    break;
-                }
-        }
+    // if the non linear solver type is define by the user in the code
+    switch (this->getType())
+    {
+    case LINE_SEARCH :
+    {
+        ierr = SNESSetType(M_snes, SNESLS);
+        CHKERRABORT(PETSC_COMM_WORLD,ierr);
+    }
+    break;
+    case TRUST_REGION :
+    {
+        ierr = SNESSetType(M_snes, SNESTR);
+        CHKERRABORT(PETSC_COMM_WORLD,ierr);
+    }
+    break;
+    case SELECT_IN_ARGLIST:
+        // no-op
+        break;
+    }
 
 
     double __relResTol,__absResTol,__absSolTol;

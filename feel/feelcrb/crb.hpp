@@ -439,7 +439,9 @@ public:
      *\and also condition number of matrix A
      */
 
-    boost::tuple<double,double> lb( size_type N, parameter_type const& mu, std::vector< vectorN_type >& uN, std::vector< vectorN_type >& uNdu , std::vector<vectorN_type> & uNold=std::vector<vectorN_type>(), std::vector<vectorN_type> & uNduold=std::vector<vectorN_type>(), int K=0) const;
+//    boost::tuple<double,double> lb( size_type N, parameter_type const& mu, std::vector< vectorN_type >& uN, std::vector< vectorN_type >& uNdu , std::vector<vectorN_type> & uNold=std::vector<vectorN_type>(), std::vector<vectorN_type> & uNduold=std::vector<vectorN_type>(), int K=0) const;
+    boost::tuple<double,double> lb( size_type N, parameter_type const& mu, std::vector< vectorN_type >& uN, std::vector< vectorN_type >& uNdu , std::vector<vectorN_type> & uNold, std::vector<vectorN_type> & uNduold, int K) const;
+
 
     /**
      * Returns the lower bound of the output
@@ -1431,7 +1433,7 @@ CRB<TruthModelType>::offline()
 		M_index.push_back(index);
 
 		int count = std::count(M_index.begin(),M_index.end(),index);
-		M_mode_number = count; 
+		M_mode_number = count;
 
                 std::cout << "  -- max error bounds computed in " << timer2.elapsed() << "s\n"; timer2.restart();
             }
@@ -2214,7 +2216,7 @@ CRB<TruthModelType>::maxErrorBounds( size_type N ) const
           }
     }//else
 
-    
+
     Eigen::MatrixXf::Index index;
     double maxerr = err.array().abs().maxCoeff( &index );
     Log() << "[maxErrorBounds] N=" << N << " max Error = " << maxerr << " at index = " << index << "\n";
