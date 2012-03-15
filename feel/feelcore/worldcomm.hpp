@@ -84,7 +84,7 @@ public:
 
     bool isActive() const { return M_isActive[this->godRank()]; }
 
-    void active();
+    int localColorToGlobalRank(int _color,int _localRank) const;
 
     /**
      * showMe
