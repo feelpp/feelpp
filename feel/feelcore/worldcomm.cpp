@@ -228,11 +228,15 @@ WorldComm::subWorldComm(int _color) const
 void
 WorldComm::showMe( std::ostream& __out ) const
 {
+    this->globalComm().barrier();
+
     for (int proc = 0 ; proc < this->globalSize(); ++proc)
         {
-            if ( this->globalRank()==proc)
+            if ( this->globalRank()==proc && this->isActive() )
                 {
-                    std::cout << "\n-------------WorldComm[proc "<<proc<<"]------------------------\n"
+                    std::cout << "\n"
+                              << "----------------------------------------------------------------------\n"
+                              << "-------------WorldComm[proc "<<proc<<"]------------------------\n"
                               << " godrank " << this->godRank() << "\n"
                               << " globalrank " << this->globalRank() << "\n"
                               << " localrank " << this->localRank() << "\n"
@@ -241,17 +245,23 @@ WorldComm::showMe( std::ostream& __out ) const
                               << " localsize " << this->localSize() << "\n"
                               << " masterRank " << this->masterRank() << "\n"
                               << " isActive " << this->isActive() << "\n"
-                              << "------------------------------------------------"
-                              << std::endl;
+                              << "------------------------------------------------\n";
                     for ( int k=0;k<(int)this->mapLocalRankToGlobalRank().size();++k)
                         std::cout << k << " " << this->mapLocalRankToGlobalRank()[k] << std::endl;
-
+                    std::cout << "------------------------------------------------"<< std::endl;
+                    for ( int k=0;k<(int)this->mapColorWorld().size();++k)
+                        std::cout << k << " " << this->mapColorWorld()[k] << std::endl;
+                    std::cout << "------------------------------------------------"<< std::endl;
+                    for ( int k=0;k<(int)this->M_isActive.size();++k)
+                        std::cout << k << " " << this->M_isActive[k] << std::endl;
                     std::cout << "------------------------------------------------"<< std::endl;
 
+                    std::cout << "\n----------------------------------------------------------------------\n";
+                    std::cout << std::endl;
                 }
             this->globalComm().barrier();
         }
-
+    this->godComm().barrier();
 }
 
 WorldComm::self_type
@@ -275,7 +285,7 @@ WorldComm::operator+(WorldComm const & _worldComm) const
 
     return WorldComm(fusionComm,colorOnProc,active);
 }
-
+#if 0
 void
 WorldComm::active()
 {
@@ -285,7 +295,22 @@ WorldComm::active()
     //                 M_isActive );
 
 }
+#endif
 
+int
+WorldComm::localColorToGlobalRank(int _color,int _localRank) const
+{
+    int res=0,cptLoc=0;
+    bool find=false;
+    while (!find)
+        {
+            if (this->mapColorWorld()[res]==_color)
+                if ( cptLoc == _localRank ) find=true;
+                else { ++cptLoc;++res; }
+            else ++res;
+        }
+    return res;
+}
 
 } //namespace Feel
 
