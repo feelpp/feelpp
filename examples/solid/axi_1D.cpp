@@ -115,9 +115,8 @@ public:
 
     /*basis*/
     //typedef mytag<fem::Lagrange<Dim, Order, Vectorial, Continuous, double, Entity>,0> basis_u_type;
-    typedef mytag<Lagrange<Order, Scalar>,0> basis_scalar_type_0;
-    typedef mytag<Lagrange<Order, Scalar>,1> basis_scalar_type_1;
-    typedef fusion::vector<basis_scalar_type_0,basis_scalar_type_1> basis_type;
+    typedef Lagrange<Order, Scalar> basis_scalar_type;
+    typedef fusion::vector<basis_scalar_type,basis_scalar_type> basis_type;
     /*space*/
     typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
     typedef boost::shared_ptr<space_type> space_ptrtype;
@@ -146,24 +145,12 @@ public:
 
     }
 
-
-    /**
-     * create the mesh using mesh size \c meshSize
-     */
-    mesh_ptrtype createMesh( double meshSize );
-
-
     /**
      * run the convergence test
      */
     void run();
 
 private:
-
-    /**
-     * solve system
-     */
-    void solve( sparse_matrix_ptrtype const& D, element_type& u, vector_ptrtype const& F, bool is_sym );
 
     /**
      * export results to ensight format (enabled by  --export cmd line options)
@@ -182,24 +169,6 @@ private:
     std::map<std::string,std::pair<boost::timer,double> > timers;
     std::map<std::string,double> stats;
 }; // Elaxi
-template<int Order, template<uint16_type,uint16_type,uint16_type> class Entity>
-typename Elaxi<Order,Entity>::mesh_ptrtype
-Elaxi<Order,Entity>::createMesh( double meshSize )
-{
-    timers["mesh"].first.restart();
-    mesh_ptrtype mesh( new mesh_type );
-
-    GmshHypercubeDomain td(entity_type::nDim,entity_type::nOrder,entity_type::nRealDim,entity_type::is_hypercube);
-    td.setCharacteristicLength( meshSize );
-    td.setY(std::pair<double,double>(1,2));
-    std::string fname = td.generate( entity_type::name().c_str() );
-
-    ImporterGmsh<mesh_type> import( fname );
-    mesh->accept( import );
-    timers["mesh"].second = timers["mesh"].first.elapsed();
-    Log() << "[timer] createMesh(): " << timers["mesh"].second << "\n";
-    return mesh;
-} // Elaxi::createMesh
 
 
 template<int Order, template<uint16_type,uint16_type,uint16_type> class Entity>
@@ -229,7 +198,15 @@ Elaxi<Order, Entity>::run()
     /*
      * First we create the mesh
      */
-    mesh_ptrtype mesh = createMesh( meshSize );
+    mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
+                                        _desc=domain( _name="axi_1D",
+                                                      _shape="hypercube",
+                                                      _usenames=true,
+                                                      _ymin=1, _ymax=2,
+                                                      _h=meshSize ),
+                                        _update=MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK,
+                                        _partitions=this->comm().size()  );
+
     stats["nelt"] = mesh->elements().size();
 
 
@@ -325,7 +302,7 @@ Elaxi<Order, Entity>::run()
         timers["assembly"].first.restart();
 
         //size_type pattern = Pattern::COUPLED|Pattern::EXTENDED;
-        form2( Xh, Xh, D, _init=true, _pattern=pattern ) =
+        form2( Xh, Xh, D ) =
             integrate( elements(mesh), 2.0*(
                            //idt(u1)*id(v1)/Py()
                            idt(u0)*id(v0)/Py()
@@ -370,8 +347,8 @@ Elaxi<Order, Entity>::run()
 
         std::cout << "----> Block marked dofs\n";
 
-        form2( Xh, Xh, D ) += on( boundaryfaces(mesh), u0, *rhs, constant(0))+
-            on( boundaryfaces(mesh), u1, *rhs, constant(0));
+        form2( Xh, Xh, D ) += on( _range=boundaryfaces(mesh), _element=u0, _rhs=rhs, _expr=constant(0.))+
+            on( _range=boundaryfaces(mesh), _element=u1, _rhs=rhs, _expr=constant(0.));
 
         std::cout << "rhs->l2Norm= " << rhs->l2Norm() << "\n";
 
@@ -379,7 +356,7 @@ Elaxi<Order, Entity>::run()
 
 
         Log() << "[elaxi] starting solve for D\n";
-        this->solve( D, U, rhs, true );
+        M_backend->solve( _matrix=D, _solution=U, _rhs=rhs );
         std::cout << "rhs->l2Norm= " << rhs->l2Norm() << "\n";
 
         u1.zero();
@@ -405,23 +382,6 @@ Elaxi<Order, Entity>::run()
 
 } //run
 
-template<int Order, template<uint16_type,uint16_type,uint16_type> class Entity>
-void
-Elaxi<Order, Entity>::solve( sparse_matrix_ptrtype const& D,
-                             element_type& u,
-                             vector_ptrtype const& F,
-                             bool is_sym )
-{
-    timers["solver"].first.restart();
-
-    vector_ptrtype U( M_backend->newVector( u.functionSpace() ) );
-    M_backend->solve( D, D, U, F, is_sym );
-    u = *U;
-
-    //Log() << "u = " << u.container() << "\n";
-    timers["solver"].second = timers["solver"].first.elapsed();
-    Log() << "[timer] solve(): " << timers["solver"].second << "\n";
-} // Elaxi::solve
 
 template<int Order, template<uint16_type,uint16_type,uint16_type> class Entity>
 void
