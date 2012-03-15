@@ -32,7 +32,7 @@
 #include <feel/feelcore/feel.hpp>
 
 // Petsc include files.
-#if defined( HAVE_PETSC_H )
+#if defined( FEELPP_HAS_PETSC_H )
 
 #ifndef USE_COMPLEX_NUMBERS
 extern "C" {

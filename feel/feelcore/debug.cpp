@@ -40,7 +40,7 @@
 
 #include <feel/feelconfig.h>
 
-#ifdef HAVE_BACKTRACE
+#ifdef FEELPP_HAS_BACKTRACE
 # include <execinfo.h>
 #endif
 
@@ -334,7 +334,7 @@ DebugStream::operator<<( std::complex<double> s)
     }
     return *this;
 }
-#if defined(HAVE_QD_H)
+#if defined(FEELPP_HAS_QD_H)
 DebugStream&
 DebugStream::operator<<( dd_real s)
 {
@@ -355,7 +355,7 @@ DebugStream::operator<<( qd_real s)
     }
     return *this;
 }
-#endif /* HAVE_QD_H */
+#endif /* FEELPP_HAS_QD_H */
 DebugStream&
 DebugStream::operator<<( bool s)
 {
@@ -679,7 +679,7 @@ std::string
 backtrace ( int /*__levels*/ )
 {
     std::ostringstream os;
-#ifdef HAVE_BACKTRACE
+#ifdef FEELPP_HAS_BACKTRACE
 
     void* trace[256];
     int n = backtrace ( trace, 256 );

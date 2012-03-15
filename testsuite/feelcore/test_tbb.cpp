@@ -47,7 +47,7 @@ using boost::unit_test::test_suite;
 #include <feel/options.hpp>
 #include <feel/feelcore/environment.hpp>
 
-#if defined (HAVE_TBB)
+#if defined (FEELPP_HAS_TBB)
 int N=100000000;
 class A
 {
@@ -156,4 +156,4 @@ BOOST_AUTO_TEST_CASE( test_tbb_reduce )
 
 }
 
-#endif // HAVE_TBB
+#endif // FEELPP_HAS_TBB

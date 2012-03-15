@@ -3579,7 +3579,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator()( node_type const&
                                              pc ) );
         found_pt[ rank ] = 1;
 
-#if defined(HAVE_MPI)
+#if defined(FEELPP_HAS_MPI)
         if ( nprocs > 1 )
         {
             //mpi::all_reduce( functionSpace()->mesh()->comm(), found_pt, global_found_pt, std::plus<std::vector<int> >() );
@@ -3587,30 +3587,30 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator()( node_type const&
         }
 #else
         global_found_pt[ 0 ] = found_pt[ 0 ];
-#endif /* HAVE_MPI */
+#endif /* FEELPP_HAS_MPI */
 
         id_type __id( this->id( *fectx ) );
 
         //Debug(5010) << "[interpolation]  id = " << __id << "\n";
-#if defined(HAVE_MPI)
+#if defined(FEELPP_HAS_MPI)
         Debug( 5010 ) << "sending interpolation context to all processors from " << functionSpace()->mesh()->comm().rank() << "\n";
         if ( functionSpace()->mesh()->comm().size() > 1 )
         {
             mpi::broadcast( functionSpace()->mesh()->comm(), __id, functionSpace()->mesh()->comm().rank() );
         }
         //Debug(5010) << "[interpolation] after broadcast id = " << __id << "\n";
-#endif /* HAVE_MPI */
+#endif /* FEELPP_HAS_MPI */
         return __id;
     }
     else
     {
-#if defined(HAVE_MPI)
+#if defined(FEELPP_HAS_MPI)
         if ( functionSpace()->mesh()->comm().size() > 1 )
         {
             //mpi::all_reduce( functionSpace()->mesh()->comm(), found_pt, global_found_pt, std::plus<std::vector<int> >() );
             mpi::all_reduce( functionSpace()->mesh()->comm(), found_pt, global_found_pt, detail::vector_plus<int>() );
         }
-#endif /* HAVE_MPI */
+#endif /* FEELPP_HAS_MPI */
         bool found = false;
         size_type i = 0;
         for(;i < global_found_pt.size();++i )
@@ -3624,10 +3624,10 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator()( node_type const&
         if ( found )
         {
             Debug( 5010 ) << "receiving interpolation context from processor " << i << "\n";
-#if defined(HAVE_MPI)
+#if defined(FEELPP_HAS_MPI)
             if ( functionSpace()->mesh()->comm().size() > 1 )
                 mpi::broadcast( functionSpace()->mesh()->comm(), __id, i );
-#endif /* HAVE_MPI */
+#endif /* FEELPP_HAS_MPI */
 
             Debug(5010) << "[interpolation] after broadcast id = " << __id << "\n";
         }
@@ -3810,7 +3810,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::grad( node_type const& __x )
 
         found_pt[ functionSpace()->mesh()->comm().rank() ] = 1;
 
-#if defined(HAVE_MPI)
+#if defined(FEELPP_HAS_MPI)
         if ( functionSpace()->mesh()->comm().size() > 1 )
         {
             //mpi::all_reduce( functionSpace()->mesh()->comm(), found_pt, global_found_pt, std::plus<std::vector<int> >() );
@@ -3818,29 +3818,29 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::grad( node_type const& __x )
         }
 #else
         global_found_pt[ 0 ] = found_pt[ 0 ];
-#endif /* HAVE_MPI */
+#endif /* FEELPP_HAS_MPI */
 
         grad_type g_( this->grad( *fectx ) );
         //Debug(5010) << "[interpolation]  id = " << v << "\n";
-#if defined(HAVE_MPI)
+#if defined(FEELPP_HAS_MPI)
         Debug( 5010 ) << "sending interpolation context to all processors from " << functionSpace()->mesh()->comm().rank() << "\n";
         if ( functionSpace()->mesh()->comm().size() > 1 )
         {
             mpi::broadcast( functionSpace()->mesh()->comm(), g_, functionSpace()->mesh()->comm().rank() );
         }
         //Debug(5010) << "[interpolation] after broadcast g_ = " << g_ << "\n";
-#endif /* HAVE_MPI */
+#endif /* FEELPP_HAS_MPI */
         return g_;
     }
     else
     {
-#if defined(HAVE_MPI)
+#if defined(FEELPP_HAS_MPI)
         if ( functionSpace()->mesh()->comm().size() > 1 )
         {
             //mpi::all_reduce( functionSpace()->mesh()->comm(), found_pt, global_found_pt, std::plus<std::vector<int> >() );
             mpi::all_reduce( functionSpace()->mesh()->comm(), found_pt, global_found_pt, detail::vector_plus<int>() );
         }
-#endif /* HAVE_MPI */
+#endif /* FEELPP_HAS_MPI */
         bool found = false;
         size_type i = 0;
         for(;i < global_found_pt.size();++i )
@@ -3854,10 +3854,10 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::grad( node_type const& __x )
         if ( found )
         {
             Debug( 5010 ) << "receiving interpolation context from processor " << i << "\n";
-#if defined(HAVE_MPI)
+#if defined(FEELPP_HAS_MPI)
             if ( functionSpace()->mesh()->comm().size() > 1 )
                 mpi::broadcast( functionSpace()->mesh()->comm(), g_, i );
-#endif /* HAVE_MPI */
+#endif /* FEELPP_HAS_MPI */
 
             //Debug(5010) << "[interpolation] after broadcast id = " << v << "\n";
         }

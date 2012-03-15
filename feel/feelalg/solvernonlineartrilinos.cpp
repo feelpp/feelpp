@@ -32,7 +32,7 @@
 #include <feel/feelalg/glas.hpp>
 #include <feel/feelalg/solvernonlineartrilinos.hpp>
 
-#if defined( HAVE_TRILINOS )
+#if defined( FEELPP_HAS_TRILINOS )
 namespace Feel
 {
 

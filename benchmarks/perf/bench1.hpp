@@ -53,9 +53,9 @@
 #include <feel/feelalg/backend.hpp>
 #include <feel/feelvf/vf.hpp>
 
-#if defined(HAVE_GOOGLE_PROFILER_H)
+#if defined(FEELPP_HAS_GOOGLE_PROFILER_H)
 #include <google/profiler.h>
-#endif // HAVE_GOOGLE_PROFILER_H
+#endif // FEELPP_HAS_GOOGLE_PROFILER_H
 
 
 

@@ -49,13 +49,13 @@
 #include <boost/serialization/string.hpp> // Needed to send/receive strings!
 
 #include <boost/mpi.hpp>
-#if defined(HAVE_MPI_H)
+#if defined(FEELPP_HAS_MPI_H)
 #include <mpi.h>
-#endif /* HAVE_MPI_H */
+#endif /* FEELPP_HAS_MPI_H */
 
-#if defined(HAVE_TAU)
+#if defined(FEELPP_HAS_TAU)
 #include <Profile/Profiler.h>
-#endif /* HAVE_TAU */
+#endif /* FEELPP_HAS_TAU */
 
 
 namespace Feel
@@ -95,7 +95,7 @@ public:
      * @param ad \p AboutData structure for this \p Application
      * @param Comm MPI communicator
      */
-#if defined( HAVE_MPI )
+#if defined( FEELPP_HAS_MPI )
     Application( AboutData const& ad, MPI_Comm Comm = MPI_COMM_WORLD );
 #else
     Application( AboutData const& ad );
@@ -108,7 +108,7 @@ public:
      * @param od \p po::options_description structure for this \p Application
      * @param Comm MPI communicator
      */
-#if defined( HAVE_MPI )
+#if defined( FEELPP_HAS_MPI )
     Application( AboutData const& ad, po::options_description const& od, MPI_Comm Comm = MPI_COMM_WORLD );
 #else
     Application( AboutData const& ad, po::options_description const& od );
@@ -122,7 +122,7 @@ public:
      * @param ad \p AboutData structure for this \p Application
      * @param Comm MPI communicator
      */
-#if defined( HAVE_MPI )
+#if defined( FEELPP_HAS_MPI )
     Application( int argc, char** argv, AboutData const& ad, MPI_Comm Comm = MPI_COMM_WORLD );
 #else
     Application( int argc, char** argv, AboutData const& ad );
@@ -137,7 +137,7 @@ public:
      * @param od \p po::options_description structure for this \p Application
      * @param Comm MPI communicator
      */
-#if defined( HAVE_MPI )
+#if defined( FEELPP_HAS_MPI )
     Application( int argc, char** argv, AboutData const& ad, po::options_description const& od, MPI_Comm Comm = MPI_COMM_WORLD );
 #else
     Application( int argc, char** argv, AboutData const& ad, po::options_description const& od );
@@ -241,7 +241,7 @@ public:
      */
     static std::string processorName()
     {
-#if defined( HAVE_MPI )
+#if defined( FEELPP_HAS_MPI )
         return mpi::environment::processor_name();
 #else
         // fallback
@@ -305,9 +305,9 @@ public:
      */
     Application& changeRepository( boost::format );
 
-#if defined( HAVE_MPI )
+#if defined( FEELPP_HAS_MPI )
     static MPI_Comm COMM_WORLD;
-#endif // HAVE_MPI
+#endif // FEELPP_HAS_MPI
 
     /**
      * @return the communicator

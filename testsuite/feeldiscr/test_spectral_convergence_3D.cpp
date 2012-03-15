@@ -118,7 +118,7 @@ init_unit_test_suite( int argc, char* argv[] )
 {
   test_suite* test = BOOST_TEST_SUITE( "Spectral Accuracy (BA) test using Feel Language" );
 
-#if defined(FEELPP_HAVE_QD_REAL)
+#if defined(FEELPP_HAS_QD_REAL)
   unsigned int old_cw;
   fpu_fix_start(&old_cw);
 #endif

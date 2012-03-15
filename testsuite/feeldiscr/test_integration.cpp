@@ -1243,7 +1243,7 @@ BOOST_AUTO_TEST_CASE( test_integration_1 )
     Feel::test_integration_circle<double> t( boost::unit_test::framework::master_test_suite().argc,
                                              boost::unit_test::framework::master_test_suite().argv,
                                              makeAbout(), makeOptions() );
-#if defined( HAVE_TBB )
+#if defined( FEELPP_HAS_TBB )
     //int n = tbb::task_scheduler_init::default_num_threads();
     int n = 1 ;
 
@@ -1262,7 +1262,7 @@ BOOST_AUTO_TEST_CASE( test_integration_1 )
     }
 #else
     t();
-#endif // HAVE_TBB
+#endif // FEELPP_HAS_TBB
     BOOST_TEST_MESSAGE( "Test integration Circle Done" );
 }
 

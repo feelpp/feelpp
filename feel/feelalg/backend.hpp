@@ -165,7 +165,7 @@ public:
      * default, otherwise use GMM which is distributed with feel
      */
     static backend_ptrtype build(
-#if defined( HAVE_PETSC_H )
+#if defined( FEELPP_HAS_PETSC_H )
         BackendType = BACKEND_PETSC
 #else
         BackendType = BACKEND_GMM

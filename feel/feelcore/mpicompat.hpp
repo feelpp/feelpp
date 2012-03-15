@@ -36,9 +36,9 @@
 #endif
 
 #if OPENMPI_DLOPEN_LIBMPI
-#if HAVE_DLOPEN
+#if FEELPP_HAS_DLOPEN
 
-#if HAVE_DLFCN_H
+#if FEELPP_HAS_DLFCN_H
   #include <dlfcn.h>
 #else
   #if defined(__CYGWIN__)
@@ -94,10 +94,10 @@ static void * my_dlopen(const char *name, int mode) {
   static int called = 0;
   if (!called) {
     called = 1;
-    #if HAVE_DLFCN_H
-    printf("HAVE_DLFCN_H: yes\n");
+    #if FEELPP_HAS_DLFCN_H
+    printf("FEELPP_HAS_DLFCN_H: yes\n");
     #else
-    printf("HAVE_DLFCN_H: no\n");
+    printf("FEELPP_HAS_DLFCN_H: no\n");
     #endif
     printf("\n");
     printf("RTLD_LAZY:    0x%X\n", RTLD_LAZY   );
@@ -155,7 +155,7 @@ PyPetsc_PetscInitialize(int *argc,char ***args,
 #define PetscInitialize PyPetsc_PetscInitialize
 #endif
 
-#endif /* HAVE_DLOPEN */
+#endif /* FEELPP_HAS_DLOPEN */
 #endif /* OPENMPI_DLOPEN_LIBMPI */
 
 #endif /* OPEN_MPI */

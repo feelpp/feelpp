@@ -116,7 +116,7 @@ SolverEigen<T>::build(const SolverPackage solver_package)
         case SOLVERS_SLEPC:
             {
 
-#if defined( FEELPP_HAVE_SLEPC ) && defined( HAVE_PETSC_H )
+#if defined( FEELPP_HAS_SLEPC ) && defined( FEELPP_HAS_PETSC_H )
                 solvereigen_ptrtype ap(new SolverEigenSlepc<T>);
                 return ap;
 #else
@@ -143,13 +143,13 @@ SolverEigen<T>::build( po::variables_map const& vm, std::string const& prefix )
    SolverPackage solver_package = SOLVERS_SLEPC;
     if ( vm["backend"].template as<std::string>() == "petsc" )
         {
-#if defined( HAVE_PETSC )
+#if defined( FEELPP_HAS_PETSC )
             solver_package = SOLVERS_SLEPC;
 #endif
         }
     else if ( vm["backend"].template as<std::string>() == "trilinos" )
         {
-#if defined( HAVE_TRILINOS )
+#if defined( FEELPP_HAS_TRILINOS )
             solver_package = SOLVERS_TRILINOS;
 #endif
         }
@@ -157,7 +157,7 @@ SolverEigen<T>::build( po::variables_map const& vm, std::string const& prefix )
         {
             Log() << "[SolverNonLinear] solver " << vm["backend"].template as<std::string>() << " not available\n";
             Log() << "[Backend] use fallback  gmm\n";
-#if defined( HAVE_PETSC )
+#if defined( FEELPP_HAS_PETSC )
             solver_package = SOLVERS_PETSC;
 #endif
         }
@@ -168,7 +168,7 @@ SolverEigen<T>::build( po::variables_map const& vm, std::string const& prefix )
         case SOLVERS_SLEPC:
             {
 
-#if defined( FEELPP_HAVE_SLEPC ) && defined( HAVE_PETSC_H )
+#if defined( FEELPP_HAS_SLEPC ) && defined( FEELPP_HAS_PETSC_H )
                 solvereigen_ptrtype ap(new SolverEigenSlepc<T>( vm, prefix ) );
                 return ap;
 #else

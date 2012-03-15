@@ -19,100 +19,100 @@
 #cmakedefine FC_DUMMY_MAIN_EQ_F77
 
 /* define if Bamg is enabled */
-#cmakedefine FEELPP_HAVE_BAMG
+#cmakedefine FEELPP_HAS_BAMG
 
 /* Define to 1 if you have the <Cnames.h> header file. */
-#cmakedefine HAVE_CNAMES_H
+#cmakedefine FEELPP_HAS_CNAMES_H
 
 /* Define to 1 if you have the <Eigen/Eigen> header file. */
-#cmakedefine HAVE_EIGEN_EIGEN
+#cmakedefine FEELPP_HAS_EIGEN_EIGEN
 
 /* Define to 1 if you have the Gmsh headers are available. */
-#cmakedefine HAVE_GMSH_H
+#cmakedefine FEELPP_HAS_GMSH_H
 
 /* Define to 1 if you have the <inttypes.h> header file. */
-#cmakedefine HAVE_INTTYPES_H
+#cmakedefine FEELPP_HAS_INTTYPES_H
 
 /* Define if the superlu library can be used. */
-#cmakedefine HAVE_LIBSUPERLU
+#cmakedefine FEELPP_HAS_LIBSUPERLU
 
 /* Define to 1 if you have the <MAdLib.h> header file. */
-#cmakedefine HAVE_MADLIB_H
+#cmakedefine FEELPP_HAS_MADLIB_H
 
 /* Define to 1 if you have the <memory.h> header file. */
-#cmakedefine HAVE_MEMORY_H
+#cmakedefine FEELPP_HAS_MEMORY_H
 
 /* Define if you have the <oct.h> header file. */
-#cmakedefine HAVE_OCT_H
+#cmakedefine FEELPP_HAS_OCT_H
 
 /* Define if the OPENMP is supported by the compiler. */
-#cmakedefine HAVE_OPENMP
+#cmakedefine FEELPP_HAS_OPENMP
 
 /* Define to 1 if you have petsc. */
-#cmakedefine HAVE_PETSC @HAVE_PETSC@
+#cmakedefine FEELPP_HAS_PETSC @FEELPP_HAS_PETSC@
 
 /* Define to 1 if you have the <petsc.h> header file. */
-#cmakedefine HAVE_PETSC_H @HAVE_PETSC_H@
+#cmakedefine FEELPP_HAS_PETSC_H @FEELPP_HAS_PETSC_H@
 
 /* Define to 1 if you have slepc. */
-#cmakedefine FEELPP_HAVE_SLEPC @FEELPP_HAVE_SLEPC@
+#cmakedefine FEELPP_HAS_SLEPC @FEELPP_HAS_SLEPC@
 
 /* Define to 1 if you have the <slepc.h> header file. */
-#cmakedefine FEELPP_HAVE_SLEPC_H @FEELPP_HAVE_SLEPC_H@
+#cmakedefine FEELPP_HAS_SLEPC_H @FEELPP_HAS_SLEPC_H@
 
 /* Define to 1 if you have the <slu_Cnames.h> header file. */
-#cmakedefine HAVE_SLU_CNAMES_H
+#cmakedefine FEELPP_HAS_SLU_CNAMES_H
 
 /* Define to 1 if you have the <stdint.h> header file. */
-#cmakedefine HAVE_STDINT_H
+#cmakedefine FEELPP_HAS_STDINT_H
 
 /* Define to 1 if you have the <stdlib.h> header file. */
-#cmakedefine HAVE_STDLIB_H
+#cmakedefine FEELPP_HAS_STDLIB_H
 
 /* Define to 1 if you have the <strings.h> header file. */
-#cmakedefine HAVE_STRINGS_H
+#cmakedefine FEELPP_HAS_STRINGS_H
 
 /* Define to 1 if you have the <string.h> header file. */
-#cmakedefine HAVE_STRING_H
+#cmakedefine FEELPP_HAS_STRING_H
 
 /* Define to 1 if you have the <suitesparse/umfpack.h> header file. */
-#cmakedefine HAVE_SUITESPARSE_UMFPACK_H
+#cmakedefine FEELPP_HAS_SUITESPARSE_UMFPACK_H
 
 /* Define to 1 if you have the <superlu/Cnames.h> header file. */
-#cmakedefine HAVE_SUPERLU_CNAMES_H
+#cmakedefine FEELPP_HAS_SUPERLU_CNAMES_H
 
 /* Define to 1 if you have the <superlu/slu_Cnames.h> header file. */
-#cmakedefine HAVE_SUPERLU_SLU_CNAMES_H
+#cmakedefine FEELPP_HAS_SUPERLU_SLU_CNAMES_H
 
 /* Define to 1 if you have the <sys/stat.h> header file. */
-#cmakedefine HAVE_SYS_STAT_H
+#cmakedefine FEELPP_HAS_SYS_STAT_H
 
 /* Define to 1 if you have the <sys/types.h> header file. */
-#cmakedefine HAVE_SYS_TYPES_H
+#cmakedefine FEELPP_HAS_SYS_TYPES_H
 
 /* Define to 1 if you have tbb. */
-#cmakedefine HAVE_TBB
+#cmakedefine FEELPP_HAS_TBB
 
 /* Define to 1 if you have the <tbb.h> header file. */
-#cmakedefine HAVE_TBB_H
+#cmakedefine FEELPP_HAS_TBB_H
 
 /* Define to 1 if you have the <ufsparse/umfpack.h> header file. */
-#cmakedefine HAVE_UFSPARSE_UMFPACK_H
+#cmakedefine FEELPP_HAS_UFSPARSE_UMFPACK_H
 
 /* Define if the UMFPACK library is used. */
-#cmakedefine HAVE_UMFPACK
+#cmakedefine FEELPP_HAS_UMFPACK
 
 /* Define to 1 if you have the <umfpack.h> header file. */
-#cmakedefine HAVE_UMFPACK_H
+#cmakedefine FEELPP_HAS_UMFPACK_H
 
 /* Define to 1 if you have the <umfpack/umfpack.h> header file. */
-#cmakedefine HAVE_UMFPACK_UMFPACK_H
+#cmakedefine FEELPP_HAS_UMFPACK_UMFPACK_H
 
 /* Define to 1 if you have the <unistd.h> header file. */
-#cmakedefine HAVE_UNISTD_H
+#cmakedefine FEELPP_HAS_UNISTD_H
 
 /* Define to 1 if you have VTK . */
-#cmakedefine HAVE_VTK
+#cmakedefine FEELPP_HAS_VTK
 
 /* The path of installation */
 #cmakedefine INSTALL_PATH

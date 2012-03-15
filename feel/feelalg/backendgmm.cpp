@@ -47,9 +47,9 @@ BackendGmm<T>::BackendGmm()
     M_solver_type( "umfpack" ),
     M_precond_type( "ilut" ),
     M_restart(200)
-#if defined( HAVE_UMFPACK )
+#if defined( FEELPP_HAS_UMFPACK )
     , M_umfpack()
-#endif // HAVE_UMFPACK
+#endif // FEELPP_HAS_UMFPACK
 {}
 
 template<typename T>
@@ -66,9 +66,9 @@ BackendGmm<T>::BackendGmm( po::variables_map const& vm, std::string const& prefi
     M_solver_type( "umfpack" ),
     M_precond_type( "ilut" ),
     M_restart(200)
-#if defined( HAVE_UMFPACK )
+#if defined( FEELPP_HAS_UMFPACK )
     , M_umfpack()
-#endif // HAVE_UMFPACK
+#endif // FEELPP_HAS_UMFPACK
 {
     std::string _prefix = prefix;
     if ( !_prefix.empty() )
@@ -146,7 +146,7 @@ BackendGmm<T>::solve( sparse_matrix_type const& _A,
         }
     else if ( M_solver_type == "umfpack" )
         {
-#if defined( HAVE_UMFPACK )
+#if defined( FEELPP_HAS_UMFPACK )
             M_umfpack.setMatrix( *BackendGmm<value_type>::toTriplet( A ) );
 
             if ( M_isSymmetric )

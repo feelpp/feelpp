@@ -40,9 +40,9 @@
 #include <boost/mpi.hpp>
 #include <feel/feelconfig.h>
 
-#if defined(HAVE_MPI_H)
+#if defined(FEELPP_HAS_MPI_H)
 #include <mpi.h>
-#endif /* HAVE_MPI_H */
+#endif /* FEELPP_HAS_MPI_H */
 
 
 
@@ -86,7 +86,7 @@ public:
      * @param ad \p AboutData structure for this \p Application
      * @param Comm MPI communicator
      */
-#if defined( HAVE_MPI )
+#if defined( FEELPP_HAS_MPI )
     Application( int argc, char** argv, AboutData const& ad, MPI_Comm Comm = MPI_COMM_WORLD );
 #else
     Application( int argc, char** argv, AboutData const& ad );
@@ -101,7 +101,7 @@ public:
      * @param od \p po::options_description structure for this \p Application
      * @param Comm MPI communicator
      */
-#if defined( HAVE_MPI )
+#if defined( FEELPP_HAS_MPI )
     Application( int argc, char** argv, AboutData const& ad, po::options_description const& od, MPI_Comm Comm = MPI_COMM_WORLD );
 #else
     Application( int argc, char** argv, AboutData const& ad, po::options_description const& od );
@@ -155,7 +155,7 @@ public:
      */
     static std::string processorName()
     {
-#if defined( HAVE_MPI )
+#if defined( FEELPP_HAS_MPI )
         return mpi::environment::processor_name();
 #else
         // fallback
@@ -180,7 +180,7 @@ public:
 
 
 
-#if defined( HAVE_MPI )
+#if defined( FEELPP_HAS_MPI )
     template<class T>
     static void Send(const T& obj, int proc, int tag, const MPI_Comm& comm = COMM_WORLD )
     {
@@ -199,10 +199,10 @@ public:
     {
         // dummy function, don't have to do anything
     }
-#endif // HAVE_MPI
+#endif // FEELPP_HAS_MPI
 
 
-#if defined( HAVE_MPI )
+#if defined( FEELPP_HAS_MPI )
     template<class T>
     static void Broadcast( T& obj, int root = 0, const MPI_Comm& comm = COMM_WORLD )
     {
@@ -236,12 +236,12 @@ public:
     {
         // dummy function, don't have to do anything
     }
-#endif // HAVE_MP
+#endif // FEELPP_HAS_MP
 
 
 
 
-#if defined( HAVE_MPI )
+#if defined( FEELPP_HAS_MPI )
     template<class T>
     static void Recv(T& obj, int proc, int tag, const MPI_Comm& comm = COMM_WORLD )
     {
@@ -262,12 +262,12 @@ public:
     {
         // dummy function, don't have to do anything
     }
-#endif // HAVE_MPI
+#endif // FEELPP_HAS_MPI
     //@}
 
-#if defined( HAVE_MPI )
+#if defined( FEELPP_HAS_MPI )
     static MPI_Comm COMM_WORLD;
-#endif // HAVE_MPI
+#endif // FEELPP_HAS_MPI
 
     /**
      * @return the communicator

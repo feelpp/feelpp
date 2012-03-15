@@ -155,7 +155,7 @@ void add_tests( test_suite* test )
   using namespace std;
 
   test->add( BOOST_TEST_CASE( ( PK_Monom_N_opt<P,double> ) ) );
-#if defined( FEELPP_HAVE_QD_REAL)
+#if defined( FEELPP_HAS_QD_REAL)
   //test->add( BOOST_TEST_CASE( ( PK_Monom_N_opt<P,dd_real> ) ) );
   //test->add( BOOST_TEST_CASE( ( PK_Monom_N_opt<P,qd_real> ) ) );
 #endif
@@ -171,7 +171,7 @@ void add_tests<80>( test_suite* test )
 
   test->add( BOOST_TEST_CASE( ( PK_Monom_N_opt<80,double> ) ) );
 
-#if defined( FEELPP_HAVE_QD_REAL)
+#if defined( FEELPP_HAS_QD_REAL)
   //test->add( BOOST_TEST_CASE( ( PK_Monom_N_opt<80,dd_real> ) ) );
   //test->add( BOOST_TEST_CASE( ( PK_Monom_N_opt<80,qd_real> ) ) );
 #endif
@@ -186,7 +186,7 @@ init_unit_test_suite( int /*argc*/, char** /*argv*/ )
     PK_x_log << "This file attempt to save the errors encountered while numerically integrating $x^i$ on the triangle !" << "\n\n";
     PK_y_log << "This file attempt to save the errors encountered while numerically integrating $y^i$ on the triangle !" << "\n\n";
 
-#if defined( FEELPP_HAVE_QD_REAL)
+#if defined( FEELPP_HAS_QD_REAL)
     unsigned int old_cw;
     fpu_fix_start(&old_cw);
 #endif

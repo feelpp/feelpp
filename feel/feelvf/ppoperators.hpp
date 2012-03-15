@@ -31,7 +31,7 @@
 #define PP_OPERATORS_HPP 1
 
 #include <feel/feelconfig.h>
-#if defined( HAVE_QD_H )
+#if defined( FEELPP_HAS_QD_H )
 # include <qd/qd.h>
 #endif
 /// \cond detail
@@ -155,7 +155,7 @@
    ) \
    /**/
 #else
-# if defined( DISABLE_HAVE_QD_H ) && defined( DISABLE_HAVE_MPFR )
+# if defined( DISABLE_FEELPP_HAS_QD_H ) && defined( DISABLE_FEELPP_HAS_MPFR )
 #  define VF_BUILTIN_TYPES \
    BOOST_PP_TUPLE_TO_LIST( \
       12, \
@@ -175,7 +175,7 @@
       ) \
    ) \
    /**/
-# elif defined (DISABLE_HAVE_QD_H )
+# elif defined (DISABLE_FEELPP_HAS_QD_H )
 #  define VF_BUILTIN_TYPES \
    BOOST_PP_TUPLE_TO_LIST( \
       11, \
@@ -194,7 +194,7 @@
       ) \
    ) \
    /**/
-# elif defined (DISABLE_HAVE_MPFR )
+# elif defined (DISABLE_FEELPP_HAS_MPFR )
 #  define VF_BUILTIN_TYPES \
    BOOST_PP_TUPLE_TO_LIST( \
       10, \

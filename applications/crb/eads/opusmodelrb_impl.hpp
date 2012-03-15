@@ -890,7 +890,7 @@ template<int OrderU, int OrderP, int OrderT>
 typename OpusModelRB<OrderU,OrderP,OrderT>::sparse_matrix_ptrtype
 OpusModelRB<OrderU,OrderP,OrderT>::newMatrix() const
 {
-  auto Dnew = backend->newMatrix( M_Th, M_Th );  
+  auto Dnew = backend->newMatrix( M_Th, M_Th );
     *Dnew  = *D;
     Dnew->zero();
     return Dnew;
@@ -1165,7 +1165,7 @@ OpusModelRB<OrderU,OrderP,OrderT>::run( const double * X, unsigned long N, doubl
    }
 #endif
 
-    for( int i = 0;i < N; ++i )
+    for( unsigned long i = 0;i < N; ++i )
         Log() << "[OpusModelRB::run] X[" << i << "]=" << X[i] << "\n";
 
     this->data()->component("IC1").setK( X[0] );
@@ -1174,7 +1174,7 @@ OpusModelRB<OrderU,OrderP,OrderT>::run( const double * X, unsigned long N, doubl
     this->data()->component("IC1").setQ( X[2] );
     this->data()->component("IC2").setQ( X[2] );
 
-    for( int i = 0;i < N; ++i )
+    for( unsigned long i = 0;i < N; ++i )
         Log() << "[OpusModel::run] X[" << i << "]=" << X[i] << "\n";
     this->data()->component("AIR").setE( X[4] );
     M_meshSize = X[5];
@@ -1200,7 +1200,7 @@ OpusModelRB<OrderU,OrderP,OrderT>::run( const double * X, unsigned long N, doubl
     Y[0] = inner_product( *L[1], *U );
     Y[1] = inner_product( *L[2], *U );
     Log() << "[OpusModel::run] run done, set outputs\n";
-    for( int i = 0;i < P; ++i )
+    for( unsigned long i = 0;i < P; ++i )
         Log() << "[OpusModel::run] Y[" << i << "]=" << Y[i] << "\n";
 
 }

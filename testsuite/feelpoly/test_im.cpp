@@ -810,7 +810,7 @@ init_unit_test_suite( int /*argc*/, char** /*argv*/ )
 
     add_tests<double>( test );
 
-#if defined( HAVE_QD_QD_H )
+#if defined( FEELPP_HAS_QD_QD_H )
 
     unsigned int old_cw;
     fpu_fix_start(&old_cw);
@@ -818,9 +818,9 @@ init_unit_test_suite( int /*argc*/, char** /*argv*/ )
     add_tests<dd_real>( test );
     add_tests<qd_real>( test );
 
-#endif /* HAVE_QD_QD_H  */
+#endif /* FEELPP_HAS_QD_QD_H  */
 
-#if defined( HAVE_MPFR )
+#if defined( FEELPP_HAS_MPFR )
      std::cout << "[feelpoly::testsuite::test_im] test with arbitrary precision\n";
      mp::mp_init( 200 );
      add_tests<mp_type>( test );

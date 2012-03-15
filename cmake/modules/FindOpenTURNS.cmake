@@ -115,9 +115,9 @@ if (NOT (OpenTURNS_INCLUDE_DIR
   # set wrapper definitions
   if (NOT OpenTURNS_WRAPPER_DEFINITIONS)
     set(OpenTURNS_WRAPPER_DEFINITIONS)
-    check_include_file_cxx (pthread.h HAVE_PTHREAD_H)
-    if (HAVE_PTHREAD_H)
-      list (APPEND OpenTURNS_WRAPPER_DEFINITIONS -DHAVE_PTHREAD_H)
+    check_include_file_cxx (pthread.h FEELPP_HAS_PTHREAD_H)
+    if (FEELPP_HAS_PTHREAD_H)
+      list (APPEND OpenTURNS_WRAPPER_DEFINITIONS -DFEELPP_HAS_PTHREAD_H)
     endif ()
   endif ()
 
@@ -133,14 +133,14 @@ if (NOT (OpenTURNS_INCLUDE_DIR
     set (OpenTURNS_MODULE_DEFINITIONS)
 
     # check for STDC_HEADERS
-    check_include_files (stdlib.h HAVE_STDLIB_H)
-    check_include_files (stdarg.h HAVE_STDARG_H)
-    check_include_files (string.h HAVE_STRING_H)
-    check_include_files (float.h HAVE_FLOAT_H)
-    check_function_exists (memchr HAVE_MEMCHR)
-    check_function_exists (free HAVE_FREE)
-    check_include_files (ctype.h HAVE_CTYPE_H)
-    if(HAVE_STDLIB_H AND HAVE_STDARG_H AND HAVE_STRING_H AND HAVE_FLOAT_H AND HAVE_MEMCHR AND HAVE_FREE AND HAVE_CTYPE_H)
+    check_include_files (stdlib.h FEELPP_HAS_STDLIB_H)
+    check_include_files (stdarg.h FEELPP_HAS_STDARG_H)
+    check_include_files (string.h FEELPP_HAS_STRING_H)
+    check_include_files (float.h FEELPP_HAS_FLOAT_H)
+    check_function_exists (memchr FEELPP_HAS_MEMCHR)
+    check_function_exists (free FEELPP_HAS_FREE)
+    check_include_files (ctype.h FEELPP_HAS_CTYPE_H)
+    if(FEELPP_HAS_STDLIB_H AND FEELPP_HAS_STDARG_H AND FEELPP_HAS_STRING_H AND FEELPP_HAS_FLOAT_H AND FEELPP_HAS_MEMCHR AND FEELPP_HAS_FREE AND FEELPP_HAS_CTYPE_H)
       list (APPEND OpenTURNS_MODULE_DEFINITIONS -DSTDC_HEADERS_H=1)
     else ()
       list (APPEND OpenTURNS_MODULE_DEFINITIONS -DSTDC_HEADERS_H=0)
@@ -151,7 +151,7 @@ if (NOT (OpenTURNS_INCLUDE_DIR
       # get macro name from header_file
       string(TOUPPER "${header_file}" macro_name)
       string(REGEX REPLACE "[/.]" "_" macro_name ${macro_name})
-      set(macro_name HAVE_${macro_name})
+      set(macro_name FEELPP_HAS_${macro_name})
       # check for header
       check_include_files(${header_file} ${macro_name})
       # define macro

@@ -31,7 +31,7 @@
 
 namespace Feel
 {
-#if defined ( HAVE_TRILINOS_EPETRA )
+#if defined ( FEELPP_HAS_TRILINOS_EPETRA )
 
 /**
  * \return the command lines options of the trilinos backend
@@ -283,6 +283,6 @@ BackendTrilinos::dot( const vector_type& _f,
     return result;
 }
 
-#endif // HAVE_TRILINOS_EPETRA
+#endif // FEELPP_HAS_TRILINOS_EPETRA
 } // Feel
 

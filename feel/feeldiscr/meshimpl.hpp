@@ -1028,7 +1028,7 @@ Mesh<Shape, T>::findNeighboringProcessors()
     if (this->worldComm().localSize() == 1)
         return;
 
-#ifdef HAVE_MPI
+#ifdef FEELPP_HAS_MPI
 
     _M_neighboring_processors.clear();
 

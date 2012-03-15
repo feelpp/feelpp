@@ -117,7 +117,7 @@ int main(int argc, char** argv)
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);
     po::notify(vm);
-#if defined( HAVE_TBB )
+#if defined( FEELPP_HAS_TBB )
     tbb::task_scheduler_init init(nt);
     std::cout << "is_active: " << init.is_active() << "\n";
     using namespace Feel;

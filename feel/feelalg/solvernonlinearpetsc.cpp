@@ -30,7 +30,7 @@
 
 
 
-#if defined( HAVE_PETSC_H )
+#if defined( FEELPP_HAS_PETSC_H )
 #include <feel/feelcore/feelpetsc.hpp>
 #include <feel/feelalg/glas.hpp>
 #include <feel/feelalg/vectorpetsc.hpp>
@@ -839,4 +839,4 @@ template class SolverNonLinearPetsc<double>;
 
 } // Feel
 
-#endif // #ifdef HAVE_PETSC
+#endif // #ifdef FEELPP_HAS_PETSC

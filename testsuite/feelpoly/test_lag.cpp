@@ -251,7 +251,7 @@ void test_scalar_continuous_simplex_product( test_suite* test )
 test_suite*
 init_unit_test_suite( int argc, char* argv[] )
 {
-#if defined( HAVE_QD_QD_H )
+#if defined( FEELPP_HAS_QD_QD_H )
     unsigned int old_cw;
     fpu_fix_start(&old_cw);
 #endif
@@ -295,7 +295,7 @@ int main( int argc, char* argv[] )
     ( ( ( TestLagrange<fem::Lagrange<3, 3, 2, Scalar, Continuous, real64_type, Hypercube> >())  ) );
     ( ( ( TestLagrange<fem::Lagrange<3, 3, 3, Scalar, Continuous, real64_type, Hypercube> >())  ) );
 #else
-#if defined( HAVE_QD_QD_H )
+#if defined( FEELPP_HAS_QD_QD_H )
 
     unsigned int old_cw;
     fpu_fix_start(&old_cw);
@@ -306,7 +306,7 @@ int main( int argc, char* argv[] )
 
     fpu_fix_end(&old_cw);
 
-#endif /* HAVE_QD_QD_H  */
+#endif /* FEELPP_HAS_QD_QD_H  */
 
 #endif
 }

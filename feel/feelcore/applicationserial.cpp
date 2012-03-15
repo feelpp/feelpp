@@ -29,9 +29,9 @@
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/application.hpp>
 
-#if defined(HAVE_TAU)
+#if defined(FEELPP_HAS_TAU)
 #include <Profile/Profiler.h>
-#endif /* HAVE_TAU */
+#endif /* FEELPP_HAS_TAU */
 
 
 namespace Feel
@@ -51,9 +51,9 @@ Application::Application( int argc,
     super( argc, argv, ad, serialOptions(), true )
 {
 
-#if defined(HAVE_TAU)
+#if defined(FEELPP_HAS_TAU)
     TAU_PROFILE_SET_NODE(_S_process_id);
-#endif /* HAVE_TAU */
+#endif /* FEELPP_HAS_TAU */
 }
 
 
@@ -65,9 +65,9 @@ Application::Application( int argc,
     super( argc, argv, ad, serialOptions().add( od ), true )
 
 {
-#if defined(HAVE_TAU)
+#if defined(FEELPP_HAS_TAU)
     TAU_PROFILE_SET_NODE(_S_process_id);
-#endif /* HAVE_TAU */
+#endif /* FEELPP_HAS_TAU */
 }
 
 Application::Application(Application const& a )

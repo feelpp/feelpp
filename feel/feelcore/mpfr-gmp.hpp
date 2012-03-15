@@ -39,7 +39,7 @@ MA 02110-1301, USA. */
 # elif defined (_MSC_VER)
 #  include <malloc.h>
 #  define alloca _alloca
-# elif defined (HAVE_ALLOCA_H)
+# elif defined (FEELPP_HAS_ALLOCA_H)
 #  include <alloca.h>
 # elif defined (_AIX) || defined (_IBMR2)
  #pragma alloca
@@ -178,7 +178,7 @@ __MPFR_DECLSPEC void mpfr_assert_fail _MPFR_PROTO((const char *, int,
 #define TMP_FREE(m)
 
 /* For longlong.h */
-#ifdef HAVE_ATTRIBUTE_MODE
+#ifdef FEELPP_HAS_ATTRIBUTE_MODE
 typedef unsigned int UQItype    __attribute__ ((mode (QI)));
 typedef          int SItype     __attribute__ ((mode (SI)));
 typedef unsigned int USItype    __attribute__ ((mode (SI)));
@@ -188,7 +188,7 @@ typedef unsigned int UDItype    __attribute__ ((mode (DI)));
 typedef unsigned char UQItype;
 typedef          long SItype;
 typedef unsigned long USItype;
-#ifdef HAVE_LONG_LONG
+#ifdef FEELPP_HAS_LONG_LONG
 typedef long long int DItype;
 typedef unsigned long long int UDItype;
 #else /* Assume `long' gives us a wide enough type.  Needed for hppa2.0w.  */

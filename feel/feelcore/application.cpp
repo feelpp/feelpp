@@ -58,13 +58,13 @@
 
 #include <feel/feelcore/feelpetsc.hpp>
 
-#if defined(HAVE_TRILINOS_EPETRA)
-#if defined(HAVE_MPI_H)
+#if defined(FEELPP_HAS_TRILINOS_EPETRA)
+#if defined(FEELPP_HAS_MPI_H)
 #include <Epetra_MpiComm.h>
 #else
 #include <Epetra_SerialComm.h>
-#endif /* HAVE_MPI_H */
-#endif /* HAVE_TRILINOS_EPETRA */
+#endif /* FEELPP_HAS_MPI_H */
+#endif /* FEELPP_HAS_TRILINOS_EPETRA */
 #undef PACKAGE_BUGREPORT
 #undef PACKAGE_NAME
 #undef PACKAGE_STRING
@@ -94,13 +94,13 @@ at_option_parser(std::string const&s)
 void
 Application::initPETSc()
 {
-#if defined ( HAVE_PETSC_H )
+#if defined ( FEELPP_HAS_PETSC_H )
     //if ( _M_vm["backend"].as<std::string>() == "petsc" )
         {
             PETSC_COMM_WORLD = COMM_WORLD;
             int __argc = this->unknownArgc();
             char** __argv = this->unknownArgv();
-#if defined( FEELPP_HAVE_SLEPC )
+#if defined( FEELPP_HAS_SLEPC )
             int ierr = SlepcInitialize(&__argc,&__argv, PETSC_NULL, PETSC_NULL );
 #else
             int ierr = PetscInitialize( &__argc, &__argv, PETSC_NULL, PETSC_NULL );
@@ -119,23 +119,23 @@ Application::initPETSc()
             boost::ignore_unused_variable_warning(ierr);
             CHKERRABORT(COMM_WORLD,ierr);
         }
-#endif // HAVE_PETSC_H
+#endif // FEELPP_HAS_PETSC_H
 
 }
 void
 Application::initTrilinos()
 {
-#if defined( HAVE_TRILINOS_EPETRA )
+#if defined( FEELPP_HAS_TRILINOS_EPETRA )
     //if ( _M_vm["backend"].as<std::string>() == "trilinos" )
         {
 
         }
-#endif // HAVE_TRILINOS_EPETRA
+#endif // FEELPP_HAS_TRILINOS_EPETRA
 }
 void
 Application::initMPI( int argc, char** argv, MPI_Comm comm )
 {
-#if defined( HAVE_TBB )
+#if defined( FEELPP_HAS_TBB )
     int n = tbb::task_scheduler_init::default_num_threads();
 #else
     int n = 1 ;
@@ -143,7 +143,7 @@ Application::initMPI( int argc, char** argv, MPI_Comm comm )
     Debug( 1000 ) << "[Feel++] TBB running with " << n << " threads\n";
     //tbb::task_scheduler_init init(1);
 
-#if defined( HAVE_MPI_H )
+#if defined( FEELPP_HAS_MPI_H )
     if (!mpi::environment::initialized())
     {
         MPI_Init (&argc, &argv);
@@ -160,11 +160,11 @@ Application::initMPI( int argc, char** argv, MPI_Comm comm )
     //_S_process_id = S_world.rank();
     //_S_n_process = S_world.size();
 #endif
-#endif // HAVE_MPI_H
+#endif // FEELPP_HAS_MPI_H
 
 }
 
-#if defined( HAVE_MPI_H )
+#if defined( FEELPP_HAS_MPI_H )
 MPI_Comm Application::COMM_WORLD = MPI_COMM_WORLD;
 
 Application::Application( int argc,
@@ -175,13 +175,13 @@ Application::Application( int argc,
 Application::Application( int argc,
                           char** argv,
                           AboutData const& ad )
-#endif // HAVE_MPI_H
+#endif // FEELPP_HAS_MPI_H
     :
 _M_about( ad ),
 _M_desc( "Allowed options" ),
 _M_vm(),
 _M_to_pass_further()
-#if defined( HAVE_MPI_H )
+#if defined( FEELPP_HAS_MPI_H )
     ,
     M_env()
 #endif
@@ -192,7 +192,7 @@ _M_to_pass_further()
 
     doOptions( argc, argv );
 
-#if defined( HAVE_MPI_H )
+#if defined( FEELPP_HAS_MPI_H )
     char * __env = getenv("DEBUG");
     std::string env_str;
     if ( __env )
@@ -209,14 +209,14 @@ _M_to_pass_further()
     initPETSc();
     initTrilinos();
 
-#if defined(HAVE_TAU)
+#if defined(FEELPP_HAS_TAU)
     TAU_PROFILE("Application", "Application::Application( int, char**, AboutData const&, bool)", TAU_DEFAULT);
     TAU_PROFILE_INIT(argc,argv);
     TAU_PROFILE_SET_NODE(0);
-#endif /* HAVE_TAU */
+#endif /* FEELPP_HAS_TAU */
 }
 
-#if defined( HAVE_MPI_H )
+#if defined( FEELPP_HAS_MPI_H )
 Application::Application( int argc,
                           char** argv,
                           AboutData const& ad,
@@ -227,13 +227,13 @@ Application::Application( int argc,
                           char** argv,
                           AboutData const& ad,
                           po::options_description const& od )
-#endif // HAVE_MPI_H
+#endif // FEELPP_HAS_MPI_H
     :
     _M_about( ad ),
     _M_desc( "Allowed options" ),
     _M_vm(),
     _M_to_pass_further()
-#if defined( HAVE_MPI_H )
+#if defined( FEELPP_HAS_MPI_H )
     ,
     M_env()
 #endif
@@ -247,7 +247,7 @@ Application::Application( int argc,
 
     doOptions( argc, argv );
 
-#if defined( HAVE_MPI_H )
+#if defined( FEELPP_HAS_MPI_H )
     char * __env = getenv("DEBUG");
     std::string env_str;
     if ( __env )
@@ -264,31 +264,31 @@ Application::Application( int argc,
     initPETSc();
     initTrilinos();
 
-#if defined(HAVE_TAU)
+#if defined(FEELPP_HAS_TAU)
     TAU_PROFILE("Application", "Application::Application( int, char**, AboutData const&, po::options_description const&, bool)", TAU_DEFAULT);
     TAU_PROFILE_INIT(argc,argv);
     TAU_PROFILE_SET_NODE(0);
-#endif /* HAVE_TAU */
+#endif /* FEELPP_HAS_TAU */
 
 
 
 
 }
 
-#if defined( HAVE_MPI_H )
+#if defined( FEELPP_HAS_MPI_H )
 Application::Application( AboutData const& ad,
                           po::options_description const& od,
                           MPI_Comm comm )
 #else
 Application::Application( AboutData const& ad,
                           po::options_description const& od )
-#endif // HAVE_MPI_H
+#endif // FEELPP_HAS_MPI_H
     :
     _M_about( ad ),
     _M_desc( "Allowed options" ),
     _M_vm(),
     _M_to_pass_further()
-#if defined( HAVE_MPI_H )
+#if defined( FEELPP_HAS_MPI_H )
     ,
     M_env()
 #endif
@@ -316,7 +316,7 @@ Application::Application( AboutData const& ad,
 
     doOptions( argc, argv );
 
-#if defined( HAVE_MPI_H )
+#if defined( FEELPP_HAS_MPI_H )
     char * __env = getenv("DEBUG");
     std::string env_str;
     if ( __env )
@@ -333,30 +333,30 @@ Application::Application( AboutData const& ad,
     initPETSc();
     initTrilinos();
 
-#if defined(HAVE_TAU)
+#if defined(FEELPP_HAS_TAU)
     TAU_PROFILE("Application", "Application::Application( int, char**, AboutData const&, po::options_description const&, bool)", TAU_DEFAULT);
     TAU_PROFILE_INIT(argc,argv);
     TAU_PROFILE_SET_NODE(0);
-#endif /* HAVE_TAU */
+#endif /* FEELPP_HAS_TAU */
 
 
 
 
 }
 
-#if defined( HAVE_MPI_H )
+#if defined( FEELPP_HAS_MPI_H )
 Application::Application( AboutData const& ad,
                           MPI_Comm comm )
 #else
 Application::Application( AboutData const& ad )
 
-#endif // HAVE_MPI_H
+#endif // FEELPP_HAS_MPI_H
     :
     _M_about( ad ),
     _M_desc( "Allowed options" ),
     _M_vm(),
     _M_to_pass_further()
-#if defined( HAVE_MPI_H )
+#if defined( FEELPP_HAS_MPI_H )
     ,
     M_env()
 #endif
@@ -382,7 +382,7 @@ Application::Application( AboutData const& ad )
     initMPI( argc, argv, comm );
 #endif
 
-#if defined( HAVE_MPI_H )
+#if defined( FEELPP_HAS_MPI_H )
     char * __env = getenv("DEBUG");
     std::string env_str;
     if ( __env )
@@ -399,11 +399,11 @@ Application::Application( AboutData const& ad )
     initPETSc();
     initTrilinos();
 
-#if defined(HAVE_TAU)
+#if defined(FEELPP_HAS_TAU)
     TAU_PROFILE("Application", "Application::Application( int, char**, AboutData const&, po::options_description const&, bool)", TAU_DEFAULT);
     TAU_PROFILE_INIT(argc,argv);
     TAU_PROFILE_SET_NODE(0);
-#endif /* HAVE_TAU */
+#endif /* FEELPP_HAS_TAU */
 
 }
 Application::Application( Application const& __app )
@@ -417,18 +417,18 @@ Application::Application( Application const& __app )
 Application::~Application()
 {
 #if 1
-#if defined ( HAVE_PETSC_H )
+#if defined ( FEELPP_HAS_PETSC_H )
     PetscTruth is_petsc_initialized;
     PetscInitialized( &is_petsc_initialized );
     if ( is_petsc_initialized )
     {
-#if defined( FEELPP_HAVE_SLEPC )
+#if defined( FEELPP_HAS_SLEPC )
         SlepcFinalize();
 #else
         PetscFinalize();
-#endif // FEELPP_HAVE_SLEPC
+#endif // FEELPP_HAS_SLEPC
     }
-#endif // HAVE_PETSC_H
+#endif // FEELPP_HAS_PETSC_H
 
 #endif // 0
 }

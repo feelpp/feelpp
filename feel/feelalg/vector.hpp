@@ -586,7 +586,7 @@ inner_product( Vector<T> const& v1, Vector<T> const& v2 )
         res += v1( start + i )* v2( start + i );
 
     real_type global_res = res;
-#if defined( HAVE_MPI )
+#if defined( FEELPP_HAS_MPI )
     if ( v1.comm().size() > 1 )
         mpi::all_reduce( v1.comm(), res, global_res, std::plus<real_type>() );
 #endif

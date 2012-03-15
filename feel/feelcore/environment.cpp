@@ -48,7 +48,7 @@ Environment::Environment()
     :
     M_env()
 {
-#if defined( HAVE_TBB )
+#if defined( FEELPP_HAS_TBB )
     int n = tbb::task_scheduler_init::default_num_threads();
 #else
     int n = 1 ;
@@ -57,7 +57,7 @@ Environment::Environment()
     //tbb::task_scheduler_init init(1);
 
     mpi::communicator world;
-#if defined ( HAVE_PETSC_H )
+#if defined ( FEELPP_HAS_PETSC_H )
     PetscTruth is_petsc_initialized;
     PetscInitialized( &is_petsc_initialized );
     if ( !is_petsc_initialized )
@@ -71,13 +71,13 @@ Environment::Environment()
     // make sure that petsc do not catch signals and hence do not print long
     //and often unuseful messages
     PetscPopSignalHandler();
-#endif // HAVE_PETSC_H
+#endif // FEELPP_HAS_PETSC_H
 }
 Environment::Environment( int& argc, char**& argv )
     :
     M_env( argc, argv )
 {
-#if defined( HAVE_TBB )
+#if defined( FEELPP_HAS_TBB )
     int n = tbb::task_scheduler_init::default_num_threads();
     //int n = 2;
     //Log() << "[Feel++] TBB running with " << n << " threads\n";
@@ -85,13 +85,13 @@ Environment::Environment( int& argc, char**& argv )
 #endif
 
     mpi::communicator world;
-#if defined ( HAVE_PETSC_H )
+#if defined ( FEELPP_HAS_PETSC_H )
     PetscTruth is_petsc_initialized;
     PetscInitialized( &is_petsc_initialized );
     if ( !is_petsc_initialized )
     {
         i_initialized = true;
-#if defined( FEELPP_HAVE_SLEPC )
+#if defined( FEELPP_HAS_SLEPC )
         int ierr = SlepcInitialize(&argc,&argv, PETSC_NULL, PETSC_NULL );
 #else
         int ierr = PetscInitialize( &argc, &argv, PETSC_NULL, PETSC_NULL );
@@ -102,7 +102,7 @@ Environment::Environment( int& argc, char**& argv )
     // make sure that petsc do not catch signals and hence do not print long
     //and often unuseful messages
     PetscPopSignalHandler();
-#endif // HAVE_PETSC_H
+#endif // FEELPP_HAS_PETSC_H
 
 
     if ( argc >= 1 )
@@ -117,18 +117,18 @@ Environment::~Environment()
 {
     if ( i_initialized )
     {
-#if defined ( HAVE_PETSC_H )
+#if defined ( FEELPP_HAS_PETSC_H )
         PetscTruth is_petsc_initialized;
         PetscInitialized( &is_petsc_initialized );
         if ( is_petsc_initialized )
         {
-#if defined( FEELPP_HAVE_SLEPC )
+#if defined( FEELPP_HAS_SLEPC )
             SlepcFinalize();
 #else
             PetscFinalize();
-#endif // HAVE_SLEPC
+#endif // FEELPP_HAS_SLEPC
         }
-#endif // HAVE_PETSC_H
+#endif // FEELPP_HAS_PETSC_H
     }
 
 
@@ -140,7 +140,7 @@ bool
 Environment::initialized()
 {
 
-#if defined( HAVE_PETSC_H )
+#if defined( FEELPP_HAS_PETSC_H )
     PetscTruth is_petsc_initialized;
     PetscInitialized( &is_petsc_initialized );
     return mpi::environment::initialized() && is_petsc_initialized ;
@@ -152,7 +152,7 @@ Environment::initialized()
 bool
 Environment::finalized()
 {
-#if defined( HAVE_PETSC_H )
+#if defined( FEELPP_HAS_PETSC_H )
     PetscTruth is_petsc_initialized;
     PetscInitialized( &is_petsc_initialized );
     return mpi::environment::finalized() && !is_petsc_initialized;

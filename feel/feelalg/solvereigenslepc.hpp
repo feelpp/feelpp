@@ -37,7 +37,7 @@
  * SLEPc include files. SLEPs can only be used
  * together with PETSc.
  */
-#if defined(FEELPP_HAVE_SLEPC) && defined(HAVE_PETSC)
+#if defined(FEELPP_HAS_SLEPC) && defined(FEELPP_HAS_PETSC)
 #ifndef USE_COMPLEX_NUMBERS
 extern "C"
 {

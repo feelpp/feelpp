@@ -31,9 +31,9 @@
 
 #include <feel/feelcore/feelpetsc.hpp>
 
-#if defined( FEELPP_HAVE_SLEPC )
+#if defined( FEELPP_HAS_SLEPC )
 # include <slepc.h>
-#endif /* HAVE_SLEPC */
+#endif /* FEELPP_HAS_SLEPC */
 
 
 

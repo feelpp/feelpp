@@ -145,7 +145,7 @@ MyIntegrals<Dim>::run( const double* X, unsigned long P, double* Y, unsigned lon
                                        % this->about().appName()
                                        % shape
                                        % meshSize );
-#if defined(HAVE_TBB)
+#if defined(FEELPP_HAS_TBB)
     /*
      * First we create the mesh
      */
@@ -225,7 +225,7 @@ MyIntegrals<Dim>::run( const double* X, unsigned long P, double* Y, unsigned lon
        std::cout << "------------------------------------------------------------\n";
     }
 #endif
-#endif // HAVE_TBB
+#endif // FEELPP_HAS_TBB
 } // MyIntegrals::run
 
 int

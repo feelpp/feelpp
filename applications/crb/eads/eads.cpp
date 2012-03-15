@@ -84,7 +84,7 @@ opusModelThermalOptions()
     thermaloptions
         .add( backend_options( "thermal" ) );
 
-#if defined( FEELPP_HAVE_SLEPC )
+#if defined( FEELPP_HAS_SLEPC )
     thermaloptions
         .add( solvereigen_options( "thermal-coerc" ) )
         .add( solvereigen_options( "thermal-cont" ) );

@@ -58,7 +58,7 @@ solvereigenslepc_options( std::string const& prefix )
 }
 
 // must have both slepc and petsc
-#if defined(FEELPP_HAVE_SLEPC) && defined(HAVE_PETSC)
+#if defined(FEELPP_HAS_SLEPC) && defined(FEELPP_HAS_PETSC)
 
 
 /*----------------------- functions ----------------------------------*/
@@ -666,6 +666,6 @@ template class SolverEigenSlepc<double>;
 
 
 
-#endif // #ifdef HAVE_SLEPC
+#endif // #ifdef FEELPP_HAS_SLEPC
 
 }

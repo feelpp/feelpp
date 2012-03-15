@@ -147,5 +147,5 @@ mark_as_advanced (
   )
 
 if ( OCTAVE_FOUND )
-  SET( HAVE_OCT_H 1 )
+  SET( FEELPP_HAS_OCT_H 1 )
 endif()

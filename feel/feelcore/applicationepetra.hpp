@@ -31,20 +31,20 @@
 
 
 
-#if defined( HAVE_TRILINOS_EPETRA )
+#if defined( FEELPP_HAS_TRILINOS_EPETRA )
 #undef PACKAGE_BUGREPORT
 #undef PACKAGE_NAME
 #undef PACKAGE_STRING
 #undef PACKAGE_TARNAME
 #undef PACKAGE_VERSION
 //#include <Epetra_Vector.h>
-#if defined(HAVE_MPI)
+#if defined(FEELPP_HAS_MPI)
 #include <feel/feelcore/application.hpp>
 #include <Epetra_MpiComm.h>
 #else
 #include <feel/feelcore/application.hpp>
 #include <Epetra_SerialComm.h>
-#endif /* HAVE_MPI */
+#endif /* FEELPP_HAS_MPI */
 #undef PACKAGE_BUGREPORT
 #undef PACKAGE_NAME
 #undef PACKAGE_STRING
@@ -61,13 +61,13 @@ namespace Feel
  * @see Application
  */
 class Application
-#if defined(HAVE_MPI)
+#if defined(FEELPP_HAS_MPI)
     : public Application
 #else
     : public Application
 #endif
 {
-#if defined(HAVE_MPI)
+#if defined(FEELPP_HAS_MPI)
     typedef Application super;
 #else
     typedef Application super;
@@ -80,11 +80,11 @@ public:
      */
     //@{
 
-#if defined(HAVE_MPI)
+#if defined(FEELPP_HAS_MPI)
     typedef Epetra_MpiComm comm_type;
 #else
     typedef Epetra_SerialComm comm_type;
-#endif /* HAVE_MPI */
+#endif /* FEELPP_HAS_MPI */
 
     //@}
 
@@ -95,7 +95,7 @@ public:
     /**
      * Initialize the epetra application
      */
-#if defined( HAVE_MPI )
+#if defined( FEELPP_HAS_MPI )
     Application( int argc,
                        char** argv,
                        AboutData const& ad,
@@ -108,7 +108,7 @@ public:
     /**
      * Initialize the epetra application and pass options to super classes
      */
-#if defined( HAVE_MPI )
+#if defined( FEELPP_HAS_MPI )
     Application( int argc,
                        char** argv,
                        AboutData const& ad,
@@ -174,6 +174,6 @@ private:
     static boost::shared_ptr<comm_type> _S_comm;
 };
 } // Feel
-#endif /* HAVE_TRILINOS_EPETRA */
+#endif /* FEELPP_HAS_TRILINOS_EPETRA */
 
 #endif /* __Application_H */

@@ -35,7 +35,7 @@ namespace Feel
 template <typename T>
 Backend<T>::Backend()
     :
-#if defined( HAVE_PETSC_H )
+#if defined( FEELPP_HAS_PETSC_H )
     M_backend    (BACKEND_PETSC),
 #endif
     M_prefix(""),
@@ -115,7 +115,7 @@ Backend<T>::build( BackendType bt )
     switch ( bt )
         {
 
-#if defined ( HAVE_PETSC_H )
+#if defined ( FEELPP_HAS_PETSC_H )
         case BACKEND_PETSC:
             {
                 return backend_ptrtype( new BackendPetsc<value_type> );
@@ -123,7 +123,7 @@ Backend<T>::build( BackendType bt )
             break;
 #endif
 
-#if defined ( HAVE_TRILINOS_EPETRA )
+#if defined ( FEELPP_HAS_TRILINOS_EPETRA )
         case BACKEND_TRILINOS:
             {
                 return backend_ptrtype( new BackendTrilinos );
@@ -152,7 +152,7 @@ Backend<T>::build( po::variables_map const& vm, std::string const& prefix )
     else
         {
 
-#if defined( HAVE_PETSC_H )
+#if defined( FEELPP_HAS_PETSC_H )
 
             Log() << "[Backend] use fallback backend petsc\n";
             bt = BACKEND_PETSC;
@@ -164,7 +164,7 @@ Backend<T>::build( po::variables_map const& vm, std::string const& prefix )
     // Build the appropriate solver
     switch ( bt )
         {
-#if defined ( HAVE_PETSC_H )
+#if defined ( FEELPP_HAS_PETSC_H )
         default:
         case BACKEND_PETSC:
             {
@@ -173,10 +173,10 @@ Backend<T>::build( po::variables_map const& vm, std::string const& prefix )
             }
             break;
 #endif
-#if defined ( HAVE_TRILINOS_EPETRA )
+#if defined ( FEELPP_HAS_TRILINOS_EPETRA )
         case BACKEND_TRILINOS:
             {
-#if defined ( HAVE_TRILINOS_EPETRA )
+#if defined ( FEELPP_HAS_TRILINOS_EPETRA )
                 return backend_ptrtype( new BackendTrilinos( vm, prefix ) );
 #else
                 return backend_ptrtype();

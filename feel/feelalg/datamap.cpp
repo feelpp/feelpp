@@ -82,7 +82,7 @@ DataMap::DataMap(WorldComm const& _worldComm)
 
     _M_n_dofs = n;
 
-#ifdef HAVE_MPI
+#ifdef FEELPP_HAS_MPI
     std::vector<int> local_sizes     ( this->worldComm().size(), 0);
     std::vector<int> local_sizes_send( this->worldComm().size(), 0);
 

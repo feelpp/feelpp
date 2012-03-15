@@ -30,9 +30,9 @@
 #define __worldcomm_H 1
 
 #include <boost/mpi.hpp>
-#if defined(HAVE_MPI_H)
+#if defined(FEELPP_HAS_MPI_H)
 #include <mpi.h>
-#endif /* HAVE_MPI_H */
+#endif /* FEELPP_HAS_MPI_H */
 
 namespace Feel
 {

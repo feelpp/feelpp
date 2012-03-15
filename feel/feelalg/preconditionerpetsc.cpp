@@ -195,7 +195,7 @@ void PreconditionerPetsc<T>::setPetscPreconditionerType (const PreconditionerTyp
 
     // Set additional options if we are doing AMG and
     // HYPRE is available
-#ifdef FEELPP_HAVE_PETSC_HYPRE
+#ifdef FEELPP_HAS_PETSC_HYPRE
     if (preconditioner_type == AMG_PRECOND)
     {
         ierr = PCHYPRESetType(pc, "boomeramg");

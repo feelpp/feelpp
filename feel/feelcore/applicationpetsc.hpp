@@ -32,17 +32,17 @@
 
 #include <feel/feelcore/application.hpp>
 
-#if defined( HAVE_PETSC_H )
+#if defined( FEELPP_HAS_PETSC_H )
 extern "C"
 {
 #include <petsc.h>
 #include <petscerror.h>
 }
-#endif /* HAVE_PETSC_H */
+#endif /* FEELPP_HAS_PETSC_H */
 
 namespace Feel
 {
-#if defined( HAVE_PETSC_H )
+#if defined( FEELPP_HAS_PETSC_H )
 /**
  * \class Application
  *\ingroup Core
@@ -123,6 +123,6 @@ private:
 private:
 
 };
-#endif /* HAVE_PETSC_H */
+#endif /* FEELPP_HAS_PETSC_H */
 } // Feel
 #endif /* __Application_H */

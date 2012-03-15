@@ -35,7 +35,7 @@
 
 #include <feel/feelconfig.h>
 
-#if defined(HAVE_BOOST_TEST)
+#if defined(FEELPP_HAS_BOOST_TEST)
 // Boost.Test
 #include <boost/test/test_tools.hpp>
 #include <boost/test/unit_test.hpp>
@@ -44,7 +44,7 @@
 using boost::unit_test_framework::test_suite;
 
 
-#if defined(HAVE_PETSC_H)
+#if defined(FEELPP_HAS_PETSC_H)
 #include <feel/feelcore/application.hpp>
 #include <feel/feelalg/solverlinearpetsc.hpp>
 
@@ -91,7 +91,7 @@ init_unit_test_suite( int /*argc*/, char** /*argv*/ )
     test_suite* test= BOOST_TEST_SUITE( "PETSC Unit Test" );
     return test;
 }
-#endif /* HAVE_PETSC_H */
+#endif /* FEELPP_HAS_PETSC_H */
 #else
 int main()
 {

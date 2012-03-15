@@ -440,7 +440,7 @@ public:
      */
 
 //    boost::tuple<double,double> lb( size_type N, parameter_type const& mu, std::vector< vectorN_type >& uN, std::vector< vectorN_type >& uNdu , std::vector<vectorN_type> & uNold=std::vector<vectorN_type>(), std::vector<vectorN_type> & uNduold=std::vector<vectorN_type>(), int K=0) const;
-    boost::tuple<double,double> lb( size_type N, parameter_type const& mu, std::vector< vectorN_type >& uN, std::vector< vectorN_type >& uNdu , std::vector<vectorN_type> & uNold, std::vector<vectorN_type> & uNduold, int K) const;
+    boost::tuple<double,double> lb( size_type N, parameter_type const& mu, std::vector< vectorN_type >& uN, std::vector< vectorN_type >& uNdu , std::vector<vectorN_type> & uNold, std::vector<vectorN_type> & uNduold, int K=0) const;
 
 
     /**
@@ -2476,7 +2476,6 @@ CRB<TruthModelType>::transientPrimalResidual( int Ncur,parameter_type const& mu,
     int __QRhs = M_model->Ql(0);
     int __QOutput = M_model->Ql(M_output_index);
     int __Qm = M_model->Qm();
-    int __size = Un.size();
     int __N = Ncur;
 
 
@@ -2568,7 +2567,6 @@ CRB<TruthModelType>::steadyPrimalResidual( int Ncur,parameter_type const& mu, ve
 
     int __QLhs = M_model->Qa();
     int __QRhs = M_model->Ql(0);
-    int __size = Un.size();
     int __N = Ncur;
 
     // primal terms
@@ -2810,7 +2808,6 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
     int __QRhs = M_model->Ql(0);
     int __QOutput = M_model->Ql(M_output_index);
     int __Qm = M_model->Qm();
-    int __size = Ncur;
     int __N = Ncur;
     std::cout << "     o N=" << Ncur << " QLhs=" << __QLhs
               << " QRhs=" << __QRhs << " Qoutput=" << __QOutput
@@ -3109,7 +3106,6 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<false> , int number_o
     int __QLhs = M_model->Qa();
     int __QRhs = M_model->Ql(0);
     int __QOutput = M_model->Ql(M_output_index);
-    int __size = Ncur;
     int __N = Ncur;
     std::cout << "     o N=" << Ncur << " QLhs=" << __QLhs
               << " QRhs=" << __QRhs << " Qoutput=" << __QOutput << "\n";

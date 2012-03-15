@@ -83,10 +83,10 @@ public:
     typedef typename traits_type::node_type node_type;
 
 
-#if defined( FEELPP_HAVE_QD_REAL )
+#if defined( FEELPP_HAS_QD_REAL )
     typedef typename traits_type::template ChangeValueType<qd_real>::type qd_basis_type;
     typedef typename traits_type::template ChangeValueType<qd_real>::traits_type::diff_pointset_type qd_diff_pointset_type;
-#endif // FEELPP_HAVE_QD_REAL
+#endif // FEELPP_HAS_QD_REAL
 #endif
     //@}
 
@@ -204,7 +204,7 @@ std::vector<typename Basis<Tag, T>::matrix_type>  Basis<Tag, T>::_S_D;
 
 
 
-#if defined( FEELPP_HAVE_QD_REAL)
+#if defined( FEELPP_HAS_QD_REAL)
 template<typename PrimalBasis>
 static void initDerivation( PrimalBasis const& basis )
 {
@@ -366,7 +366,7 @@ Basis<Tag, T>::initDerivation( PrimalBasis const& basis )
 #endif
         }
 }
-#endif // FEELPP_HAVE_QD_REAL
+#endif // FEELPP_HAS_QD_REAL
 
 
 } // Feel

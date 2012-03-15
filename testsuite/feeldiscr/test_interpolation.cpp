@@ -208,7 +208,7 @@ struct test_interpolation_op
 
         typedef Backend<double> backend_type;
         typedef boost::shared_ptr<backend_type> backend_ptrtype;
-#if defined( HAVE_PETSC_H )
+#if defined( FEELPP_HAS_PETSC_H )
         backend_ptrtype backend( Backend<double>::build( BACKEND_PETSC ) );
 #else
         backend_ptrtype backend( Backend<double>::build( BACKEND_GMM ) );
@@ -372,7 +372,7 @@ struct test_lagrange_p1_op
 #endif
 
         typedef Backend<value_type> backend_type;
-#if defined( HAVE_PETSC_H )
+#if defined( FEELPP_HAS_PETSC_H )
         boost::shared_ptr<backend_type> backend( backend_type::build( BACKEND_PETSC ) );
 #else
         boost::shared_ptr<backend_type> backend( backend_type::build( BACKEND_GMM ) );

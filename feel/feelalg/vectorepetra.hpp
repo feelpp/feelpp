@@ -38,13 +38,13 @@
 #include <feel/feelalg/vector.hpp>
 #include <feel/feelalg/matrixsparse.hpp>
 #include <feel/feelcore/application.hpp>
-#if defined(HAVE_TRILINOS_EPETRA)
+#if defined(FEELPP_HAS_TRILINOS_EPETRA)
 
-#if defined(HAVE_MPI)
+#if defined(FEELPP_HAS_MPI)
 #include <Epetra_MpiComm.h>
 #else
 #include <Epetra_SerialComm.h>
-#endif /* HAVE_MPI */
+#endif /* FEELPP_HAS_MPI */
 
 #include <EpetraExt_MultiVectorOut.h>
 #include <Epetra_FEVector.h>
@@ -798,5 +798,5 @@ operator<<( NdebugStream& __os, Epetra_BlockMap const& __n );
 
 
 } // Feel
-#endif /* HAVE_EPETRA */
+#endif /* FEELPP_HAS_EPETRA */
 #endif /* __VectorEpetra_H */

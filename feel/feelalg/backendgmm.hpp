@@ -224,7 +224,7 @@ public:
 
     void set_direct( bool isDirect )
     {
-#if defined(GMM_USES_SUPERLU) || defined(HAVE_UMFPACK)
+#if defined(GMM_USES_SUPERLU) || defined(FEELPP_HAS_UMFPACK)
         M_isDirect = isDirect;
         if ( isDirect )
         {
@@ -331,9 +331,9 @@ private:
     std::string    M_precond_type;
     int            M_restart;
 
-#if defined( HAVE_UMFPACK )
+#if defined( FEELPP_HAS_UMFPACK )
     SolverUMFPACK  M_umfpack;
-#endif // HAVE_UMFPACK
+#endif // FEELPP_HAS_UMFPACK
 
 }; // class BackendGmm
 

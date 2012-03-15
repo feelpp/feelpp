@@ -51,7 +51,7 @@ int main( int argc, char** argv )
     test.add_options()
         ("testall", "run all test cases")
         ;
-#if defined( HAVE_PETSC_H )
+#if defined( FEELPP_HAS_PETSC_H )
     //MPI_Init( &argc, &argv );
     //PetscInitialize (&argc, &argv, PETSC_NULL, PETSC_NULL);
     Application app( argc, argv, makeAbout(), test );

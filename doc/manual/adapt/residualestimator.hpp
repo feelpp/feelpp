@@ -55,9 +55,9 @@
 /** include  the header for the variational formulation language (vf) aka FEEL++ */
 #include <feel/feelvf/vf.hpp>
 
-#if defined (HAVE_MADLIB_H)
+#if defined (FEELPP_HAS_MADLIB_H)
 #include <MAdLib.h>
-#endif // HAVE_MADLIB_H
+#endif // FEELPP_HAS_MADLIB_H
 
 
 
@@ -228,7 +228,7 @@ public:
          (collapseOnBoundaryTolerance, *(boost::is_arithmetic<mpl::_>), 1e-6 ) ) // 5. optional
         )
         {
-#if defined (HAVE_MADLIB_H)
+#if defined (FEELPP_HAS_MADLIB_H)
             saveGMSHMesh( _filename="inputmesh.msh",
                           _parametricnodes=!model.empty(),
                           _mesh=h.mesh() );
@@ -301,7 +301,7 @@ public:
                                  _filename="result.msh",
                                  _update=update );
 
-#endif // HAVE_MADLIB_H
+#endif // FEELPP_HAS_MADLIB_H
 
         }
 

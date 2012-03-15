@@ -81,7 +81,7 @@ Bench1::R( boost::shared_ptr<FSType> const& Xh  )
     form2(Xh,Xh,M,_init=true);
     boost::timer timer;
 
-#if defined(HAVE_GOOGLE_PROFILER_H)
+#if defined(FEELPP_HAS_GOOGLE_PROFILER_H)
     ProfilerStart( "perf" );
 #endif
     std::ofstream ofs( (boost::format( "perf-R-%1%-%2%.dat" ) % FSType::fe_type::nDim % FSType::fe_type::nOrder).str().c_str(), std::ios::app );
@@ -107,7 +107,7 @@ Bench1::R( boost::shared_ptr<FSType> const& Xh  )
                idt(u)*id(v),
                "R", "p0 val(xyz)(const)" );
 
-#if defined(HAVE_GOOGLE_PROFILER_H)
+#if defined(FEELPP_HAS_GOOGLE_PROFILER_H)
     ProfilerStop();
 #endif
 }
@@ -123,7 +123,7 @@ Bench1::D( boost::shared_ptr<FSType> const& Xh  )
     form2(Xh,Xh,M,_init=true);
     boost::timer timer;
 
-#if defined(HAVE_GOOGLE_PROFILER_H)
+#if defined(FEELPP_HAS_GOOGLE_PROFILER_H)
     ProfilerStart( "perf" );
 #endif
     std::ofstream ofs( (boost::format( "perf-D-%1%-%2%.dat" ) % FSType::fe_type::nDim % FSType::fe_type::nOrder).str().c_str(), std::ios::app );
@@ -141,7 +141,7 @@ Bench1::D( boost::shared_ptr<FSType> const& Xh  )
                gradt(u)*trans(grad(v)),
                "D", "val(xyz)(const)" );
 
-#if defined(HAVE_GOOGLE_PROFILER_H)
+#if defined(FEELPP_HAS_GOOGLE_PROFILER_H)
     ProfilerStop();
 #endif
 }
@@ -164,7 +164,7 @@ Bench1::A( boost::shared_ptr<FSType> const& Xh, mpl::int_<1>  )
     form2(Xh,Xh,M,_init=true);
     boost::timer timer;
 
-#if defined(HAVE_GOOGLE_PROFILER_H)
+#if defined(FEELPP_HAS_GOOGLE_PROFILER_H)
     ProfilerStart( "perf" );
 #endif
     std::ofstream ofs( (boost::format( "perf-A-%1%-%2%.dat" ) % FSType::fe_type::nDim % FSType::fe_type::nOrder).str().c_str(), std::ios::app );
@@ -183,7 +183,7 @@ Bench1::A( boost::shared_ptr<FSType> const& Xh, mpl::int_<1>  )
                "A", "val(xyz)(const)" );
 
 
-#if defined(HAVE_GOOGLE_PROFILER_H)
+#if defined(FEELPP_HAS_GOOGLE_PROFILER_H)
     ProfilerStop();
 #endif
 }
@@ -207,7 +207,7 @@ Bench1::A( boost::shared_ptr<FSType> const& Xh, mpl::int_<2>  )
     form2(Xh,Xh,M,_init=true);
     boost::timer timer;
 
-#if defined(HAVE_GOOGLE_PROFILER_H)
+#if defined(FEELPP_HAS_GOOGLE_PROFILER_H)
     ProfilerStart( "perf" );
 #endif
     std::ofstream ofs( (boost::format( "perf-A-%1%-%2%.dat" ) % FSType::fe_type::nDim % FSType::fe_type::nOrder).str().c_str(), std::ios::app );
@@ -225,7 +225,7 @@ Bench1::A( boost::shared_ptr<FSType> const& Xh, mpl::int_<2>  )
                (gradt(u)*vec(constant(1.0),constant(1.0)))*id(v),
                "A", "val(xyz)(const)" );
 
-#if defined(HAVE_GOOGLE_PROFILER_H)
+#if defined(FEELPP_HAS_GOOGLE_PROFILER_H)
     ProfilerStop();
 #endif
 }
@@ -249,7 +249,7 @@ Bench1::A( boost::shared_ptr<FSType> const& Xh, mpl::int_<3>  )
     form2(Xh,Xh,M,_init=true);
     boost::timer timer;
 
-#if defined(HAVE_GOOGLE_PROFILER_H)
+#if defined(FEELPP_HAS_GOOGLE_PROFILER_H)
     ProfilerStart( "perf" );
 #endif
     std::ofstream ofs( (boost::format( "perf-A-%1%-%2%.dat" ) % FSType::fe_type::nDim % FSType::fe_type::nOrder).str().c_str(), std::ios::app );
@@ -267,7 +267,7 @@ Bench1::A( boost::shared_ptr<FSType> const& Xh, mpl::int_<3>  )
                (gradt(u)*vec(constant(1.0),constant(1.0),constant(1.0)))*id(v),
                "A", "val(xyz)(const)" );
 
-#if defined(HAVE_GOOGLE_PROFILER_H)
+#if defined(FEELPP_HAS_GOOGLE_PROFILER_H)
     ProfilerStop();
 #endif
 }
@@ -283,7 +283,7 @@ Bench1::DR( boost::shared_ptr<FSType> const& Xh )
     form2(Xh,Xh,M,_init=true);
     boost::timer timer;
 
-#if defined(HAVE_GOOGLE_PROFILER_H)
+#if defined(FEELPP_HAS_GOOGLE_PROFILER_H)
     ProfilerStart( "perf" );
 #endif
     std::ofstream ofs( (boost::format( "perf-DR-%1%-%2%.dat" ) % FSType::fe_type::nDim % FSType::fe_type::nOrder).str().c_str(), std::ios::app );
@@ -299,7 +299,7 @@ Bench1::DR( boost::shared_ptr<FSType> const& Xh )
                gradt(u)*trans(grad(v))+idt( u )*id( v ),
                "DR", "val(xyz)(const)" );
 
-#if defined(HAVE_GOOGLE_PROFILER_H)
+#if defined(FEELPP_HAS_GOOGLE_PROFILER_H)
     ProfilerStop();
 #endif
 }
@@ -314,7 +314,7 @@ Bench1::ADR( boost::shared_ptr<FSType> const& Xh, mpl::int_<1>  )
     form2(Xh,Xh,M,_init=true);
     boost::timer timer;
 
-#if defined(HAVE_GOOGLE_PROFILER_H)
+#if defined(FEELPP_HAS_GOOGLE_PROFILER_H)
     ProfilerStart( "perf" );
 #endif
     std::ofstream ofs( (boost::format( "perf-ADR-%1%-%2%.dat" ) % FSType::fe_type::nDim % FSType::fe_type::nOrder).str().c_str(), std::ios::app );
@@ -333,7 +333,7 @@ Bench1::ADR( boost::shared_ptr<FSType> const& Xh, mpl::int_<1>  )
                (gradt(u)*vec(val((Px()*Px()*Px())+(Py()*Py())*Pz())))*id(v),
                gradt(u)*trans(grad(v))+idt( u )*id( v )+(gradt(u)*vec(constant(1.0)))*id(v),
                "ADR", "val(xyz)(const)" );
-#if defined(HAVE_GOOGLE_PROFILER_H)
+#if defined(FEELPP_HAS_GOOGLE_PROFILER_H)
     ProfilerStop();
 #endif
 }
@@ -349,7 +349,7 @@ Bench1::ADR( boost::shared_ptr<FSType> const& Xh, mpl::int_<2>  )
     form2(Xh,Xh,M,_init=true);
     boost::timer timer;
 
-#if defined(HAVE_GOOGLE_PROFILER_H)
+#if defined(FEELPP_HAS_GOOGLE_PROFILER_H)
     ProfilerStart( "perf" );
 #endif
     std::ofstream ofs( (boost::format( "perf-ADR-%1%-%2%.dat" ) % FSType::fe_type::nDim % FSType::fe_type::nOrder).str().c_str(), std::ios::app );
@@ -372,7 +372,7 @@ Bench1::ADR( boost::shared_ptr<FSType> const& Xh, mpl::int_<2>  )
                (gradt(u)*vec(constant(1.0),constant(1.0)))*id(v),
                "ADR", "val(xyz)(const)" );
 
-#if defined(HAVE_GOOGLE_PROFILER_H)
+#if defined(FEELPP_HAS_GOOGLE_PROFILER_H)
     ProfilerStop();
 #endif
 }
@@ -387,7 +387,7 @@ Bench1::ADR( boost::shared_ptr<FSType> const& Xh, mpl::int_<3>  )
     form2(Xh,Xh,M,_init=true);
     boost::timer timer;
 
-#if defined(HAVE_GOOGLE_PROFILER_H)
+#if defined(FEELPP_HAS_GOOGLE_PROFILER_H)
     ProfilerStart( "perf" );
 #endif
     std::ofstream ofs( (boost::format( "perf-ADR-%1%-%2%.dat" ) % FSType::fe_type::nDim % FSType::fe_type::nOrder).str().c_str(), std::ios::app );
@@ -410,7 +410,7 @@ Bench1::ADR( boost::shared_ptr<FSType> const& Xh, mpl::int_<3>  )
                (gradt(u)*vec(constant(1.0),constant(1.0),constant(1.0)))*id(v),
                "ADR", "val(xyz)(const)" );
 
-#if defined(HAVE_GOOGLE_PROFILER_H)
+#if defined(FEELPP_HAS_GOOGLE_PROFILER_H)
     ProfilerStop();
 #endif
 }

@@ -52,7 +52,7 @@ PartitionerParmetis<Mesh>::doPartition ( mesh_type& mesh,
         }
     Debug() << "[PartitionerParmetis::doPartition] n_pieces = " << n_pieces << "\n";
     // What to do if the Parmetis library IS NOT present
-#if !defined( HAVE_PARMETIS_H ) && !defined(HAVE_PARMETIS_PARMETIS_H)
+#if !defined( FEELPP_HAS_PARMETIS_H ) && !defined(FEELPP_HAS_PARMETIS_PARMETIS_H)
 
     std::cerr << "ERROR: The library has been built without"    << std::endl
               << "Parmetis support.   Using a Metis"           << std::endl
@@ -93,12 +93,12 @@ PartitionerParmetis<Mesh>::doPartition ( mesh_type& mesh,
     // Assign the returned processor ids
     this->assignPartitioning (mesh);
 
-#endif // HAVE_PARMETIS_H
+#endif // FEELPP_HAS_PARMETIS_H
 }
 
 
 // Only need to compile these methods if ParMETIS is present
-#if defined( HAVE_PARMETIS_H ) || defined( HAVE_PARMETIS_PARMETIS_H )
+#if defined( FEELPP_HAS_PARMETIS_H ) || defined( FEELPP_HAS_PARMETIS_PARMETIS_H )
 template<typename Mesh>
 void
 PartitionerParmetis<Mesh>::initialize (const mesh_type& mesh,
@@ -319,7 +319,7 @@ PartitionerParmetis<Mesh>::assignPartitioning (mesh_type& mesh)
 
 }
 
-#endif // #ifdef HAVE_PARMETIS
+#endif // #ifdef FEELPP_HAS_PARMETIS
 
 
 

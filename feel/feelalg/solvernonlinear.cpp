@@ -88,13 +88,13 @@ SolverNonLinear<T>::build( po::variables_map const& vm, std::string const& prefi
     SolverPackage solver_package;
     if ( vm["backend"].template as<std::string>() == "petsc" )
         {
-#if defined( HAVE_PETSC )
+#if defined( FEELPP_HAS_PETSC )
             solver_package = SOLVERS_PETSC;
 #endif
         }
     else if ( vm["backend"].template as<std::string>() == "trilinos" )
         {
-#if defined( HAVE_TRILINOS )
+#if defined( FEELPP_HAS_TRILINOS )
             solver_package = SOLVERS_TRILINOS;
 #endif
         }
@@ -102,14 +102,14 @@ SolverNonLinear<T>::build( po::variables_map const& vm, std::string const& prefi
         {
             Log() << "[SolverNonLinear] solver " << vm["backend"].template as<std::string>() << " not available\n";
             Log() << "[Backend] use fallback  gmm\n";
-#if defined( HAVE_PETSC )
+#if defined( FEELPP_HAS_PETSC )
             solver_package = SOLVERS_PETSC;
 #endif
         }
     // Build the appropriate solver
     switch (solver_package)
         {
-#if defined( HAVE_PETSC )
+#if defined( FEELPP_HAS_PETSC )
         case SOLVERS_PETSC:
             {
 
@@ -120,7 +120,7 @@ SolverNonLinear<T>::build( po::variables_map const& vm, std::string const& prefi
             break;
 #endif
 
-#if defined( HAVE_TRILINOS )
+#if defined( FEELPP_HAS_TRILINOS )
         case SOLVERS_TRILINOS:
             {
                 solvernonlinear_ptrtype ap(new SolverNonLinearTrilinos<T>);
@@ -143,7 +143,7 @@ template <typename T>
 boost::shared_ptr<SolverNonLinear<T> >
 SolverNonLinear<T>::build( SolverPackage solver_package )
 {
-#if defined( HAVE_PETSC )
+#if defined( FEELPP_HAS_PETSC )
     if ( solver_package != SOLVERS_PETSC )
         {
             Log() << "[SolverNonLinear] solver " << solver_package << " not available\n";
@@ -157,7 +157,7 @@ SolverNonLinear<T>::build( SolverPackage solver_package )
         case SOLVERS_PETSC:
             {
 
-#if defined( HAVE_PETSC )
+#if defined( FEELPP_HAS_PETSC )
                 solvernonlinear_ptrtype ap(new SolverNonLinearPetsc<T>);
                 return ap;
 #else
@@ -169,7 +169,7 @@ SolverNonLinear<T>::build( SolverPackage solver_package )
 
         case SOLVERS_TRILINOS:
             {
-#if defined( HAVE_TRILINOS )
+#if defined( FEELPP_HAS_TRILINOS )
                 solvernonlinear_ptrtype ap(new SolverNonLinearTrilinos<T>);
                 return ap;
 #else

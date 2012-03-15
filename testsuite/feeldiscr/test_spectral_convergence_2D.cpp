@@ -142,7 +142,7 @@ init_unit_test_suite( int argc, char* argv[] )
     hsize = static_cast<double> ( atof(argv[1]) );
   }
 
-#if defined( FEELPP_HAVE_QD_REAL)
+#if defined( FEELPP_HAS_QD_REAL)
   unsigned int old_cw;
   fpu_fix_start(&old_cw);
 #endif

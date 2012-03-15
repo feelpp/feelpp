@@ -32,7 +32,7 @@
 
 #include <feel/feelconfig.h>
 
-#if defined(HAVE_PETSC_H)
+#if defined(FEELPP_HAS_PETSC_H)
 
 
 #include <feel/feelcore/application.hpp>
@@ -44,8 +44,8 @@
 extern "C"
 {
 #if defined(MPICH_NAME)
-#if !defined( MPICH_HAVE_MPI_WIN )
-#define MPICH_HAVE_MPI_WIN
+#if !defined( MPICH_FEELPP_HAS_MPI_WIN )
+#define MPICH_FEELPP_HAS_MPI_WIN
   struct MPI_Win {};
 #endif
 #endif
@@ -557,5 +557,5 @@ public :
 
 
 } // Feel
-#endif /* HAVE_PETSC */
+#endif /* FEELPP_HAS_PETSC */
 #endif /* __MatrixPetsc_H */
