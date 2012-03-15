@@ -496,11 +496,11 @@ RbHeat::init()
     element_type v( Xh, "v" );
 
     Log() << "Number of dof " << Xh->nLocalDof() << "\n";
-    std::cout<<"Number of dof " << Xh->nLocalDof() << "\n";
+    //std::cout<<"Number of dof " << Xh->nLocalDof() << "\n";
 
 
-
-
+    //Test mesh generation.
+#if 0
     double surface_left = integrate( _range= markedfaces(mesh,"left"), _expr=cst(1.) ).evaluate()(0,0);
     std::cout<<"left = "<<surface_left<<std::endl;
 
@@ -515,6 +515,7 @@ RbHeat::init()
     
     double surface__maille2 = integrate( _range= markedelements(mesh,"maille2"), _expr=cst(1.) ).evaluate()(0,0);
     std::cout<<"maille2 = "<<surface__maille2<<std::endl;
+#endif
 
     // right hand side
     form1( Xh, M_Fq[0][0], _init=true ) = integrate( markedfaces(mesh,"left"), id(v) );
@@ -592,14 +593,11 @@ void
 RbHeat::update( parameter_type const& mu )
 {
 
-  std::cout<<"================================================================= "<<std::endl;
-
     *D = *M_Aq[0];
     for( size_type q = 1;q < M_Aq.size(); ++q )
     {
         D->addMatrix( M_thetaAq[q], M_Aq[q] );
     }
-
     F->close();
     F->zero();
     for( size_type q = 0;q < M_Fq[0].size(); ++q )
@@ -668,35 +666,22 @@ RbHeat::output( int output_index, parameter_type const& mu )
     std::cout<<"model output"<<std::endl;
 
     using namespace vf;
+
     this->solve( mu, pT );
+
     vector_ptrtype U( backend->newVector( Xh ) );
     *U = *pT;
 
     // right hand side (compliant)
-    if( output_index == 0 )
-    {
-        double s1 = M_thetaFq[0](0)*dot( M_Fq[0][0], U )+M_thetaFq[0](1)*dot( M_Fq[0][1], U );
+   double meanT=0;
+ 
+	meanT = (integrate( markedfaces(mesh,"interface"),idv(*pT)).evaluate()(0,0))/0.5;
 
-        return s1;
-    }
-    // output
-    if ( output_index == 1 )
-    {
-	    double s1 = M_thetaFq[1](0)*dot( M_Fq[1][0], U )+M_thetaFq[1](1)*dot( M_Fq[1][1], U );
-        double mean = integrate( elements(mesh),
-                                 chi( (Px() >= -0.1) && (Px() <= 0.1) )*idv(*pT) ).evaluate()(0,0)/0.2;
-        //std::cout<<"output1 c1 = "<<mean<<std::endl;
+    return meanT;
 
-        double meanT = ( integrate( markedelements(mesh,"maille1"),idv(*pT) ).evaluate()(0,0)+
-                         integrate( markedelements(mesh,"maille2"),idv(*pT) ).evaluate()(0,0) )/0.2;
-        //std::cout<<"output1 c2 = "<<meanT<<std::endl;
-        //std::cout<<"output1 c3= "<< dot( M_Fq[1][0], U ) <<std::endl;
-	std ::cout <<"sortie"<<endl;
-        return s1;
-
-    }
-
+/////////////////////////////////////////////////////////////////////////////////////////////////////
 }
+
 
 }
 
