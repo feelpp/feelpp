@@ -33,7 +33,7 @@ include(CheckCXXCompilerFlag)
 option(FEELPP_EXTRA_WARNINGS "Enable/disable extra warnings" OFF)
 
 if(FEELPP_EXTRA_WARNINGS)
-  message(STATUS "[nt2] extra warnings enabled")
+  message(STATUS "[feelpp] extra warnings enabled")
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
