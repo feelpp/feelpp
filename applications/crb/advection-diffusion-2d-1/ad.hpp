@@ -350,7 +350,7 @@ public:
     /**
      * export results to ensight format (enabled by  --export cmd line options)
      */
-    void exportResults( element_type& u );
+  void exportResults( element_type& u , parameter_type const& mu );
 
     void solve( sparse_matrix_ptrtype& ,element_type& ,vector_ptrtype&  );
 
@@ -383,16 +383,23 @@ public:
 
 private:
 
+
     po::variables_map M_vm;
+
     backend_ptrtype backend;
 
     double meshSize;
 
-    bool M_use_weak_dirichlet;
-    double M_gammabc;
-
     bool M_do_export;
-    export_ptrtype exporter;
+
+    int export_number;
+
+    parameterspace_ptrtype M_Dmu;
+
+
+    bool M_use_weak_dirichlet;
+
+    double M_gammabc;
 
     mesh_ptrtype mesh;
     space_ptrtype Xh;
@@ -403,7 +410,6 @@ private:
     std::vector<sparse_matrix_ptrtype> M_Aq;
     std::vector<std::vector<vector_ptrtype> > M_Fq;
 
-    parameterspace_ptrtype M_Dmu;
     theta_vector_type M_thetaAq;
     std::vector<theta_vector_type> M_thetaFq;
 };
@@ -413,7 +419,7 @@ AdvectionDiffusion::AdvectionDiffusion()
     backend( backend_type::build( BACKEND_PETSC ) ),
     meshSize( 0.01 ),
     M_do_export( true ),
-    exporter( Exporter<mesh_type>::New( "ensight" ) ),
+    export_number( 0 ),
     M_Dmu( new parameterspace_type )
 {
   this->init();
@@ -426,7 +432,7 @@ AdvectionDiffusion::AdvectionDiffusion( po::variables_map const& vm )
     backend( backend_type::build( vm ) ),
     meshSize( vm["hsize"].as<double>() ),
     M_do_export( !vm.count( "no-export" ) ),
-    exporter( Exporter<mesh_type>::New( vm, "AdvectionDiffusion" ) ),
+    export_number( 0 ),
     M_Dmu( new parameterspace_type )
 {
   this->init();
@@ -470,7 +476,7 @@ AdvectionDiffusion::init()
     F = backend->newVector( Xh );
 
     using namespace Feel::vf;
-    static const int N = 2;
+
     Feel::ParameterSpace<2>::Element mu_min( M_Dmu );
     mu_min << 1, 0.1;
     M_Dmu->setMin( mu_min );
@@ -481,7 +487,7 @@ AdvectionDiffusion::init()
     element_type u( Xh, "u" );
     element_type v( Xh, "v" );
 
-    Log() << "Number of dof " << Xh->nLocalDof() << "\n";
+    std::cout << "Number of dof " << Xh->nLocalDof() << "\n";
 
     // right hand side
     form1( Xh, M_Fq[0][0], _init=true ) = integrate( markedfaces(mesh, "Bottom"), id(v) );
@@ -535,16 +541,27 @@ AdvectionDiffusion::solve( sparse_matrix_ptrtype& D,
 
 
 void
-AdvectionDiffusion::exportResults( element_type& U )
+AdvectionDiffusion::exportResults( element_type& U , parameter_type const& mu )
 {
+
     if ( M_do_export )
     {
         Log() << "exportResults starts\n";
 
-        exporter->step(0)->setMesh( U.functionSpace()->mesh() );
+        std::string exp_name;
+	export_ptrtype exporter;
+	std::string mu_str;
 
+	for(int i=0;i<mu.size();i++)
+        {
+	  mu_str= mu_str + (boost::format("_%1%") %mu[i]).str() ;
+	}
+
+	exp_name = "solution_with_parameters_" + mu_str;
+
+	exporter = export_ptrtype( Exporter<mesh_type>::New( "ensight", exp_name  ) );
+	exporter->step(0)->setMesh( U.functionSpace()->mesh() );
         exporter->step(0)->add( "u", U );
-
         exporter->save();
     }
 } // AdvectionDiffusion::export
@@ -573,7 +590,7 @@ AdvectionDiffusion::solve( parameter_type const& mu )
 
     element_ptrtype T( new element_type( Xh ) );
     this->solve( mu, T );
-    this->exportResults( *T );
+    //this->exportResults( *T );
 
 }
 
@@ -583,6 +600,37 @@ AdvectionDiffusion::solve( parameter_type const& mu, element_ptrtype& T )
     this->computeThetaq( mu );
     this->update( mu );
     backend->solve( _matrix=D,  _solution=T, _rhs=F );
+    export_number++;
+#if 0
+	    std::ofstream file;
+	    std::string mu_str;
+	    for(int i=0;i<mu.size();i++)
+            {
+	      mu_str= mu_str + (boost::format("_%1%") %mu[i]).str() ;
+	    }
+	    std::string number =  (boost::format("Exp_%1%") %export_number).str();
+	    std::string name = "PFEMsolution" + mu_str + number;
+	    file.open(name,std::ios::out);
+	    for(int i=0;i<T->size();i++) file<<T->operator()(i)<<"\n";
+	    file.close();
+
+	    
+	    std::cout<<"pfem solution ok"<<std::endl;
+	    std::ofstream file_matrix;
+	    name = "PFEMmatrix" + mu_str + number;
+	    file_matrix.open(name,std::ios::out);
+	    file_matrix<<*D;
+	    file_matrix.close();
+
+	    std::cout<<"pfem matrix ok"<<std::endl;
+	    name = "PFEMrhs" + mu_str + number;
+	    std::ofstream file_rhs;
+	    file_rhs.open(name,std::ios::out);
+	    file_rhs<<*F;
+	    file_rhs.close();
+	    std::cout<<"pfem rhs ok"<<std::endl;
+#endif
+
 }
 
 void
@@ -634,13 +682,18 @@ AdvectionDiffusion::output( int output_index, parameter_type const& mu )
     vector_ptrtype U( backend->newVector( Xh ) );
     *U = *pT;
 
+    double output=0;
+
     // right hand side (compliant)
     if( output_index == 0 )
     {
-        double s1 = M_thetaFq[0](0)*dot( M_Fq[0][0], U );
-        return s1;
+        output = M_thetaFq[0](0)*dot( M_Fq[0][0], U );
+    }
+    else{
+      throw std::logic_error( "[AdvectionDiffusion::output] error with output_index : only 0 " );
     }
 
+    return output;
 }
 
 }

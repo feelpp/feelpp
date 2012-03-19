@@ -382,13 +382,8 @@ public:
     sparse_matrix_ptrtype newMatrix() const;
 
 private:
-    po::variables_map M_vm;
-    mesh_ptrtype mmesh;
-    functionspace_ptrtype Xh;
-    element_ptrtype pT;
 
-    sparse_matrix_ptrtype D,M;
-    vector_ptrtype F;
+    po::variables_map M_vm;
 
     //! linear algebra backend
     backend_ptrtype M_backend;
@@ -397,6 +392,19 @@ private:
     double meshSize;
 
     value_type gamma_dir;
+
+    parameterspace_ptrtype M_Dmu;
+
+    functionspace_ptrtype Xh;
+    element_ptrtype pT;
+
+    mesh_ptrtype mmesh;
+
+    sparse_matrix_ptrtype D,M;
+    vector_ptrtype F;
+
+
+
     std::map<std::string, std::pair<boost::timer, double> > timers;
     std::map<std::string,double> stats;
 
@@ -415,7 +423,6 @@ private:
     std::vector<sparse_matrix_ptrtype> M_Aq;
     std::vector<std::vector<vector_ptrtype> > M_Fq;
 
-    parameterspace_ptrtype M_Dmu;
     theta_vector_type M_thetaAq;
     std::vector<theta_vector_type> M_thetaFq;
 

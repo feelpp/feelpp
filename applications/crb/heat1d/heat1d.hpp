@@ -476,7 +476,7 @@ Heat1D::init()
     F = backend->newVector( Xh );
 
     using namespace Feel::vf;
-    static const int N = 2;
+    //static const int N = 2;
     Feel::ParameterSpace<4>::Element mu_min( M_Dmu );
     mu_min << 0.2, 0.2, 0.01, 0.1;
     M_Dmu->setMin( mu_min );
@@ -654,29 +654,32 @@ Heat1D::output( int output_index, parameter_type const& mu )
     vector_ptrtype U( backend->newVector( Xh ) );
     *U = *pT;
 
+    double output;
     // right hand side (compliant)
     if( output_index == 0 )
     {
-        double s1 = M_thetaFq[0](0)*dot( M_Fq[0][0], U )+M_thetaFq[0](1)*dot( M_Fq[0][1], U );
+        output = M_thetaFq[0](0)*dot( M_Fq[0][0], U )+M_thetaFq[0](1)*dot( M_Fq[0][1], U );
         //std::cout << "output0 c1 = " << s1 <<"\n";
-        double s2 = ( M_thetaFq[0](0)*integrate( markedfaces(mesh,mesh->markerName( "left" )), idv(*pT) ).evaluate()(0,0) +
-                      M_thetaFq[0](1)*integrate( elements(mesh), idv(*pT) ).evaluate()(0,0) );
+        //double s2 = ( M_thetaFq[0](0)*integrate( markedfaces(mesh,mesh->markerName( "left" )), idv(*pT) ).evaluate()(0,0) +
+	//M_thetaFq[0](1)*integrate( elements(mesh), idv(*pT) ).evaluate()(0,0) );
         //std::cout << "output0 c2 = " << s2 <<"\n";
-        return s1;
+        //return s1;
     }
     // output
     if ( output_index == 1 )
     {
-        double mean = integrate( elements(mesh),
-                                 chi( (Px() >= -0.1) && (Px() <= 0.1) )*idv(*pT) ).evaluate()(0,0)/0.2;
+      //double mean = integrate( elements(mesh),
+      //chi( (Px() >= -0.1) && (Px() <= 0.1) )*idv(*pT) ).evaluate()(0,0)/0.2;
         //std::cout<<"output1 c1 = "<<mean<<std::endl;
 
-        double meanT = ( integrate( markedelements(mesh,"k1_2"),idv(*pT) ).evaluate()(0,0)+
+        output = ( integrate( markedelements(mesh,"k1_2"),idv(*pT) ).evaluate()(0,0)+
                          integrate( markedelements(mesh,"k2_1"),idv(*pT) ).evaluate()(0,0) )/0.2;
         //std::cout<<"output1 c2 = "<<meanT<<std::endl;
         //std::cout<<"output1 c3= "<< dot( M_Fq[1][0], U ) <<std::endl;
-        return meanT;
+        //return meanT;
     }
+
+    return output;
 
 }
 

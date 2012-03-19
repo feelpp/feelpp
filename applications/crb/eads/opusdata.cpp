@@ -654,8 +654,7 @@ OpusData::createMeshLine( double h )
           << "// thickness\n"
           << "e_A = " << this->component("AIR").e() << "*m;\n";
 
-    ostr << gmshp->preamble()<<"\n"
-         << "Include \"constantsline.geo\";"
+    ostr << "Include \"constantsline.geo\";"
          << "\n"
          << "h=" << h << "*mm-1e-8;\n"
          << "p1=newp;Point(p1) = {e_PCB,0,0,h};\n"
