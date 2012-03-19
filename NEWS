@@ -15,6 +15,8 @@
  - overall cleanup in C++ preprocessor macros
  - cleanup in cmake
  - fix some compilation issues and added more stringent compiler flags
+ - port to boost1.49
+ - Fix issues 1, 2 and 9 (see Google Code, http://code.google.com/p/feelpp/issues/list)
 
 * New in 0.91.0
 
