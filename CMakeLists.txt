@@ -273,7 +273,7 @@ MESSAGE(STATUS "SIZE_LONG_DOUBLE=${SIZE_LONG_DOUBLE}")
 # Find Feel++ or at least it dependencies
 FIND_PACKAGE(Feel++ REQUIRED)
 
-option(FEELPP_ENABLE_BAMG "Enable Bamg mesh generator in Feel++" ON)
+option(FEELPP_ENABLE_BAMG "Enable Bamg mesh generator in Feel++" OFF)
 if(FEELPP_ENABLE_BAMG)
   add_subdirectory(contrib/bamg)
   include_directories(contrib/bamg contrib/bamg/bamglib)
