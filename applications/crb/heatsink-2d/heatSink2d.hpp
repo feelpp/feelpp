@@ -451,17 +451,26 @@ public:
 
 private:
 
+    po::variables_map M_vm;
+
+    backend_ptrtype backend;
+    bool M_is_steady ;
+
     /* mesh parameters */
     double meshSize;
+
     double Lref;//reference value for geometric parameter
+
+    int export_number;
+
+    bool do_export;
 
     double rho;
     double C;
     double k_fin;
 
-    int export_number;
-    bool do_export;
-  //export_ptrtype exporter;
+
+    parameterspace_ptrtype M_Dmu;
 
     /* surfaces*/
     double surface_gamma4, surface_gamma1;
@@ -473,23 +482,12 @@ private:
     sparse_matrix_ptrtype D,M,Mpod;
     vector_ptrtype F;
 
-    /* time management */
-    //bdf_ptrtype M_bdf;
-    bool M_is_steady ;
-
-
-
-    po::variables_map M_vm;
-    backend_ptrtype backend;
-
-
     element_ptrtype pT;
 
     std::vector<sparse_matrix_ptrtype> M_Aq;
     std::vector<sparse_matrix_ptrtype> M_Mq;
     std::vector<std::vector<vector_ptrtype> > M_Fq;
 
-    parameterspace_ptrtype M_Dmu;
     theta_vector_type M_thetaAq;
     theta_vector_type M_thetaMq;
     std::vector<theta_vector_type> M_thetaFq;
@@ -504,7 +502,6 @@ HeatSink2D::HeatSink2D()
     M_is_steady( false ),
     meshSize( 1e-3 ),
     Lref( 2 ),
-    //exporter( Exporter<mesh_type>::New( "ensight" ) ),
     export_number( 0 ),
     do_export( false ),
     rho( 8940 ),
@@ -522,7 +519,6 @@ HeatSink2D::HeatSink2D( po::variables_map const& vm )
     M_is_steady( vm["steady"].as<bool>() ),
     meshSize( vm["hsize"].as<double>() ),
     Lref( vm["Lref"].as<double>() ),
-    //exporter( Exporter<mesh_type>::New( vm, "Model_HeatSink2D_Temperature" ) ),
     export_number( 0 ),
     do_export( vm["do-export"].as<bool>() ),
     rho( vm["rho"].as<double>() ),
@@ -627,6 +623,7 @@ void HeatSink2D::init()
     pT = element_ptrtype( new element_type( Xh ) );
 
     surface_gamma1 = integrate( _range= markedfaces(mesh,"gamma1"), _expr=cst(1.) ).evaluate()(0,0);
+    std::cout<<"surface_gamma = "<<surface_gamma1<<std::endl;
 
     M_bdf = bdf( _space=Xh, _vm=M_vm, _name="heatSink2d" , _prefix="heatSink2d");
 
@@ -651,7 +648,7 @@ void HeatSink2D::init()
     M_Dmu->setMin( mu_min );
     Feel::ParameterSpace<ParameterSpaceDimension>::Element mu_max( M_Dmu );
     mu_max << /* Bi */ 0.5  ,  /*L*/8 , /*k*/10;
-    //mu_max <<  /* Bi */ 0.4 , /*L*/2, /*k*/1;
+    //mu_max <<  /* Bi */ 0.1 , /*L*/2, /*k*/1;
     M_Dmu->setMax( mu_max );
 
     Log() << "Number of dof " << Xh->nLocalDof() << "\n";
@@ -748,11 +745,13 @@ void HeatSink2D::solve( sparse_matrix_ptrtype& D,
 
 void HeatSink2D::exportResults(double time, element_type& T, parameter_type const& mu )
 {
+  std::cout<<"STRT"<<std::endl;
         Log() << "exportResults starts\n";
 	std::string exp_name = "Model_T" + (boost::format("_%1%") %time).str();
 	//export_ptrtype exp = export_ptrtype( Exporter<mesh_type>::New( exp_name ) );
 	export_ptrtype exporter;
-	exporter = export_ptrtype( Exporter<mesh_type>::New(M_vm, exp_name  ) );
+	//exporter = export_ptrtype( Exporter<mesh_type>::New(M_vm, exp_name  ) );
+	exporter = export_ptrtype( Exporter<mesh_type>::New( "ensight", exp_name  ) );
 	//exporter exp = export_ptrtype( Exporter<mesh_type>::New( exp_name ) );
         exporter->step(time)->setMesh( T.functionSpace()->mesh() );
 	std::string mu_str;
@@ -823,6 +822,7 @@ void HeatSink2D::solve( parameter_type const& mu )
 void HeatSink2D::solve( parameter_type const& mu, element_ptrtype& T, int output_index )
 {
 
+  
 
     using namespace Feel::vf;
 
@@ -851,15 +851,16 @@ void HeatSink2D::solve( parameter_type const& mu, element_ptrtype& T, int output
     for ( M_bdf->start(); !M_bdf->isFinished() ; M_bdf->next() )
     {
 
-
         this->computeThetaq( mu, M_bdf->time() );
 	auto bdf_poly = M_bdf->polyDeriv();
         this->update( mu , bdf_coeff, bdf_poly );
+
 	backend->solve( _matrix=D,  _solution=T, _rhs=F );
 
+	do_export=true;
 	if( do_export )
 	{
-	  exportResults( export_number, *T , mu);
+	  exportResults( M_bdf->time(), *T , mu);
 	  export_number++;
 	}
 

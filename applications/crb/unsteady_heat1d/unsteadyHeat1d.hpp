@@ -479,24 +479,29 @@ public:
 
 private:
 
-    bool M_is_steady ;
-    bool pfem;
-    double alpha;
-
     po::variables_map M_vm;
+
     backend_ptrtype backend;
 
+    bool M_is_steady ;
+
+    double alpha;
+
     double meshSize;
+
+    parameterspace_ptrtype M_Dmu;
+
+
+    bool pfem;
 
     bool M_use_weak_dirichlet;
     double M_gammabc;
 
-    bool M_do_export;
     export_ptrtype exporter;
 
     mesh_ptrtype mesh;
     space_ptrtype Xh;
-  sparse_matrix_ptrtype D,M,A_du,Mpod;
+    sparse_matrix_ptrtype D,M,A_du,Mpod;
     vector_ptrtype F, F_du;
     element_ptrtype pT;
 
@@ -507,7 +512,6 @@ private:
     std::vector<vector_ptrtype> M_Fq_du;
 
 
-    parameterspace_ptrtype M_Dmu;
     theta_vector_type M_thetaAq;
     theta_vector_type M_thetaMq;
     std::vector<theta_vector_type> M_thetaFq;
@@ -515,7 +519,7 @@ private:
     theta_vector_type M_thetaFq_du;
 
 
-	bdf_ptrtype M_bdf;
+  bdf_ptrtype M_bdf;
     int M_Nsnap;
 
 };
@@ -526,8 +530,6 @@ UnsteadyHeat1D::UnsteadyHeat1D()
     M_is_steady( false ),
     alpha( 1 ),
     meshSize( 0.01 ),
-    M_do_export( true ),
-    exporter( Exporter<mesh_type>::New( "ensight" ) ),
     M_Dmu( new parameterspace_type )
 {
   this->init();
@@ -541,8 +543,6 @@ UnsteadyHeat1D::UnsteadyHeat1D( po::variables_map const& vm )
     M_is_steady( vm["steady"].as<bool>() ),
     alpha( vm["alpha"].as<double>() ),
     meshSize( vm["hsize"].as<double>() ),
-    M_do_export( !vm.count( "no-export" ) ),
-    exporter( Exporter<mesh_type>::New( vm, "heat1d" ) ),
     M_Dmu( new parameterspace_type )
 {
   this->init();
@@ -586,22 +586,12 @@ UnsteadyHeat1D::init()
     M_Mq.resize( 1 );
     M_Mq[0] = backend->newMatrix( Xh, Xh );
 
-    M_Aq_du.resize( 3 );
-    M_Aq_du[0] = backend->newMatrix( Xh, Xh );
-    M_Aq_du[1] = backend->newMatrix( Xh, Xh );
-    M_Aq_du[2] = backend->newMatrix( Xh, Xh );
-
-    M_Fq_du.resize(1);
-    M_Fq_du[0] = backend->newVector( Xh );
-
     D = backend->newMatrix( Xh, Xh );
     F = backend->newVector( Xh );
-    A_du = backend->newMatrix( Xh, Xh );
-    F_du = backend->newVector( Xh );
 
 
     using namespace Feel::vf;
-    static const int N = 2;
+    
 
 
     Feel::ParameterSpace<4>::Element mu_min( M_Dmu );
@@ -687,10 +677,6 @@ UnsteadyHeat1D::assemble()
     form2( Xh, Xh, M_Aq[0], _init=true ) = integrate( elements(mesh), 0.1*(gradt(u)*trans(grad(v)) ) );
     form2( Xh, Xh, M_Aq[0] ) += integrate( markedfaces(mesh,"right"), idt(u)*id(v) );
 
-    //if(!steady)
-    //{
-    //    form2( Xh, Xh, M_Aq[0] ) += integrate( elements(mesh),alpha*idt(u)*id(v)*M_bdf->polyDerivCoefficient(0) );
-    //}
     M_Aq[0]->close();
 
     form2( Xh, Xh, M_Aq[1], _init=true ) = integrate( markedelements(mesh,"k1_1"), (gradt(u)*trans(grad(v)) ) );
@@ -701,22 +687,6 @@ UnsteadyHeat1D::assemble()
     form2( Xh, Xh, M_Aq[2] ) += integrate( markedelements(mesh,"k2_2"), (gradt(u)*trans(grad(v)) ) );
     M_Aq[2]->close();
 
-    //and now the adjoint
-    form2( Xh, Xh, M_Aq_du[0], _init=true) = integrate( elements(mesh), 0.1*(gradt(u)*trans(grad(v)) ) );
-    form2( Xh, Xh, M_Aq_du[0] ) += integrate( elements(mesh),-alpha*idt(u)*id(v)*M_bdf->polyDerivCoefficient(0) );
-    form2( Xh, Xh, M_Aq_du[0] ) += integrate( markedfaces(mesh,"right"), idt(u)*id(v)*(alpha-1) );
-    M_Aq_du[0]->close();
-
-    form2( Xh, Xh, M_Aq_du[1], _init=true ) = integrate( markedelements(mesh,"k1_1"), (gradt(u)*trans(grad(v)) ) );
-    form2( Xh, Xh, M_Aq_du[1] ) += integrate( markedelements(mesh,"k1_2"), (gradt(u)*trans(grad(v)) ) );
-    M_Aq_du[1]->close();
-
-    form2( Xh, Xh, M_Aq_du[2], _init=true ) = integrate( markedelements(mesh,"k2_1"), (gradt(u)*trans(grad(v)) ) );
-    form2( Xh, Xh, M_Aq_du[2] ) += integrate( markedelements(mesh,"k2_2"), (gradt(u)*trans(grad(v)) ) );
-    M_Aq_du[2]->close();
-
-    form1( Xh , M_Fq_du[0] , _init=true) = integrate( markedelements(mesh,"right"), idt(u)*(alpha-1)*id(v) );
-    M_Fq_du[0]->close();
 
 }
 
@@ -739,6 +709,7 @@ UnsteadyHeat1D::computeAffineDecomposition()
 void
 UnsteadyHeat1D::exportResults(double time, element_type& T )
 {
+#if 0
     if ( M_do_export )
     {
         Log() << "exportResults starts\n";
@@ -749,6 +720,7 @@ UnsteadyHeat1D::exportResults(double time, element_type& T )
 
         exporter->save();
     }
+#endif
 } // Heat1d::export
 
 
@@ -891,7 +863,7 @@ UnsteadyHeat1D::solve( parameter_type const& mu, element_ptrtype& T , int output
     }
 
     double bdf_coeff = M_bdf->polyDerivCoefficient(0);
-    int column_index=0;//usefull to fill the snapshots matrix
+
     std::cout<<"  -- solving primal "<<std::endl;
     for ( M_bdf->start(); !M_bdf->isFinished();M_bdf->next() )
     {
@@ -991,30 +963,21 @@ UnsteadyHeat1D::output( int output_index, parameter_type const& mu, bool export_
     vector_ptrtype U( backend->newVector( Xh ) );
     *U = *pT;
 
+    double output=0;
+
     // right hand side (compliant)
     if( output_index == 0 )
     {
-        double s1 = M_thetaFq[0](0)*dot( M_Fq[0][0], U )+M_thetaFq[0](1)*dot( M_Fq[0][1], U );
-        //std::cout << "output0 c1 = " << s1 <<"\n";
-        double s2 = ( M_thetaFq[0](0)*integrate( markedfaces(mesh,mesh->markerName( "left" )), idv(*pT) ).evaluate()(0,0) +
-                      M_thetaFq[0](1)*integrate( elements(mesh), idv(*pT) ).evaluate()(0,0) );
-        //std::cout << "output0 c2 = " << s2 <<"\n";
-        return s1;
+         output = M_thetaFq[0](0)*dot( M_Fq[0][0], U )+M_thetaFq[0](1)*dot( M_Fq[0][1], U );
     }
     // output
     if ( output_index == 1 )
     {
-        double mean = integrate( elements(mesh),
-                                 chi( (Px() >= -0.1) && (Px() <= 0.1) )*idv(*pT) ).evaluate()(0,0)/0.2;
-        //std::cout<<"output1 c1 = "<<mean<<std::endl;
-
-        double meanT = ( integrate( markedelements(mesh,"k1_2"),idv(*pT) ).evaluate()(0,0)+
-                         integrate( markedelements(mesh,"k2_1"),idv(*pT) ).evaluate()(0,0) )/0.2;
-        //std::cout<<"output1 c2 = "<<meanT<<std::endl;
-        //std::cout<<"output1 c3= "<< dot( M_Fq[1][0], U ) <<std::endl;
-        return meanT;
+        output = integrate( elements(mesh),
+			    chi( (Px() >= -0.1) && (Px() <= 0.1) )*idv(*pT) ).evaluate()(0,0)/0.2;
     }
 
+    return output;
 }
 
 }

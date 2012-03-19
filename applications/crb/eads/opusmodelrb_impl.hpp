@@ -52,9 +52,9 @@ template<int OrderU, int OrderP, int OrderT>
 OpusModelRB<OrderU,OrderP,OrderT>::OpusModelRB( OpusModelRB const& om )
     :
     super( om ),
+    M_is_initialized( om.M_is_initialized ),
     M_mesh( om.M_mesh ),
-    M_Dmu( new parameterspace_type ),
-    M_is_initialized( om.M_is_initialized )
+    M_Dmu( new parameterspace_type )
 {
     initParametrization();
 }
@@ -1222,7 +1222,7 @@ OpusModelRB<OrderU,OrderP,OrderT>::exportResults(double time, temp_element_type&
         {
 	  mu_str= mu_str + (boost::format("_%1%") %mu[i]).str() ;
 	}
-	exp_name = "opus_time" + (boost::format("_%1%") %time).str()+"_parameters_"+mu_str;
+	exp_name = "T" + (boost::format("%1%") %time).str()+"_mu_"+mu_str;
 
 	exporter = export_ptrtype( Exporter<mesh_type>::New( "ensight", exp_name  ) );
 	exporter->step(time)->setMesh( T.functionSpace()->mesh() );

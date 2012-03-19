@@ -474,8 +474,23 @@ private:
 
 private:
 
+
     backend_ptrtype backend;
     backend_ptrtype backendM;
+
+    double M_meshSize;
+
+    bool M_is_steady;
+
+    bool M_is_initialized;
+
+
+    mesh_ptrtype M_mesh;
+    mesh_ptrtype M_mesh_air;
+    mesh12_ptrtype M_mesh_line;
+    mesh12_ptrtype M_mesh_cross_section_2;
+
+    parameterspace_ptrtype M_Dmu;
 
     int Nmax;
     int Taille_rb;
@@ -483,13 +498,7 @@ private:
     double epsilon2;
     double tau;
     double M_dt;
-    bool M_is_initialized;
 
-    double M_meshSize;
-    mesh_ptrtype M_mesh;
-    mesh_ptrtype M_mesh_air;
-    mesh12_ptrtype M_mesh_line;
-    mesh12_ptrtype M_mesh_cross_section_2;
 
     p0_space_ptrtype M_P0h;
     p0_element_ptrtype domains;
@@ -510,7 +519,6 @@ private:
     std::vector<sparse_matrix_ptrtype> M_Aq;
     std::vector<sparse_matrix_ptrtype> M_Mq;
     std::vector<std::vector<vector_ptrtype> > M_L;
-    parameterspace_ptrtype M_Dmu;
     theta_vector_type M_thetaAq;
     theta_vector_type M_thetaMq;
     std::vector<theta_vector_type> M_thetaL;
@@ -520,7 +528,6 @@ private:
     element_ptrtype M_bdf_poly;
     double M_T0;//initial value of temperature
 
-    bool M_is_steady;
 };
 
 #if !FEELPP_GNUC_AT_LEAST(4,6)

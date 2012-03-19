@@ -126,7 +126,7 @@ namespace Feel
                              % M_scm->Malpha()
                              % this->vm()["crb-scm-sampling-size"].as<int>()
                              % this->vm()["crb-scm-level"].as<int>() ).str().c_str() );
-        for( int k = 0; k < ckconv.size(); ++k )
+        for( size_type k = 0; k < ckconv.size(); ++k )
             {
                 osck << k << "  "  << std::setprecision( 16) << ckconv[k] << "\n";
             }
