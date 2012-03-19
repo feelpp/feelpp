@@ -433,21 +433,12 @@ message(STATUS "apps: ${FEELPP_INSTALL_APPS}")
 INSTALL(FILES ${FEELPP_INSTALL_APPS} DESTINATION bin/ COMPONENT Bin)
 
 # documentation and examples
-if ( FEELPP_ENABLE_DOCUMENTATION )
 #  install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/doc/manual/feel_get_tutorial.sh DESTINATION bin COMPONENT Doc)
-  install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/doc/manual/manual/feel-manual.pdf DESTINATION share/doc/feel COMPONENT Doc)
-  if ( NOT APPLE )
-    if ( EXISTS ${CMAKE_CURRENT_BINARY_DIR}/doc/api/html )
-      install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/doc/api/html DESTINATION share/doc/feel COMPONENT Doc
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/doc/manual/manual/feel-manual.pdf DESTINATION share/doc/feel COMPONENT Doc)
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/doc/api/html DESTINATION share/doc/feel COMPONENT Doc
         PATTERN ".svn" EXCLUDE PATTERN ".git" EXCLUDE )
-    elseif( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/doc/api/html )
-      install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/doc/api/html DESTINATION share/doc/feel COMPONENT Doc
-        PATTERN ".svn" EXCLUDE PATTERN ".git" EXCLUDE )
-    endif()
-  endif(NOT APPLE)
-  FILE(GLOB examples "${CMAKE_CURRENT_SOURCE_DIR}/doc/manual/*.*pp")
-  INSTALL(FILES ${examples} DESTINATION share/doc/feel/examples/ COMPONENT Doc)
-endif()
+FILE(GLOB examples "${CMAKE_CURRENT_SOURCE_DIR}/doc/manual/*.*pp")
+INSTALL(FILES ${examples} DESTINATION share/doc/feel/examples/ COMPONENT Doc)
 
 
 ##
