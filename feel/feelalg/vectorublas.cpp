@@ -676,9 +676,3 @@ template class VectorUblas<double,ublas::vector_slice<ublas::vector<double> > >;
 
 
 } // Feel
-namespace gmm
-{
-template class linalg_traits<Feel::VectorUblas<double> >;
-//template class linalg_traits<Feel::VectorUblas<long double> >;
-//template class linalg_traits<ublas::vector<dd_real> >;
-}
