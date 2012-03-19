@@ -34,8 +34,8 @@
 #include <boost/operators.hpp>
 #include <boost/numeric/ublas/vector.hpp>
 #include <boost/numeric/ublas/vector_proxy.hpp>
-#include <gmm_vector.h>
-#include <gmm_sub_vector.h>
+//#include <gmm_vector.h>
+//#include <gmm_sub_vector.h>
 
 #include <feel/feelcore/application.hpp>
 #include <feel/feelalg/vector.hpp>
@@ -873,6 +873,7 @@ element_product( boost::shared_ptr<VectorUblas<T> > const& v1,
 
 } // Feel
 
+#if 0
 namespace gmm
 {
 namespace ublas = boost::numeric::ublas;
@@ -919,5 +920,5 @@ nnz(const Feel::VectorUblas<T,Storage>& l)
 }
 /// \endcond detail
 } // gmm
-
+#endif
 #endif /* __VectorUblas_H */
