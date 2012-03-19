@@ -47,6 +47,11 @@
 #include <boost/mpl/begin_end.hpp>
 #include <boost/mpl/comparison.hpp>
 
+#include <boost/tokenizer.hpp>
+#include <boost/token_functions.hpp>
+#include <boost/algorithm/string/split.hpp>
+#include <boost/algorithm/string/classification.hpp>
+
 #include <boost/assign/list_of.hpp>
 
 #include <boost/math/constants/constants.hpp>
@@ -100,6 +105,7 @@ namespace lambda = boost::lambda;
 namespace po = boost::program_options;
 namespace mpi=boost::mpi;
 namespace constants=boost::math::constants;
+namespace algorithm=boost::algorithm;
 
 namespace detail
 {

@@ -33,10 +33,6 @@
 
 #include <boost/type_traits.hpp>
 
-#include <boost/tokenizer.hpp>
-#include <boost/token_functions.hpp>
-#include <boost/algorithm/string/split.hpp>
-#include <boost/algorithm/string/classification.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/assign/list_of.hpp>
 #include <boost/range/algorithm/for_each.hpp>
@@ -820,7 +816,7 @@ BOOST_PARAMETER_FUNCTION(
      (dim,              *(boost::is_integral<mpl::_>), 3 )
      (order,              *(boost::is_integral<mpl::_>), 1 )
      (files_path, *(boost::is_convertible<mpl::_,std::string>), Environment::localGeoRepository())
-     (depends, *(boost::is_convertible<mpl::_,std::vector<std::string> >), std::vector<std::string>() ))
+     (depends, *(boost::is_convertible<mpl::_,std::string>), std::string("") ))
     )
 
 {
@@ -863,8 +859,10 @@ BOOST_PARAMETER_FUNCTION(
         throw std::invalid_argument( ostr.str() );
     }
 
+    std::vector<std::string> depends_on_files;
+    algorithm::split( depends_on_files, depends, algorithm::is_any_of(":,; "), algorithm::token_compress_on );
     // copy include/merged files needed by geometry file
-    boost::for_each( depends,
+    boost::for_each( depends_on_files,
                      [&cp, &files_path]( std::string const& _filename)
                      {
                          fs::path file_path( files_path );
