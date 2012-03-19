@@ -256,7 +256,10 @@ public:
     parameterspace_ptrtype parameterSpace() const { return M_Dmu;}
 
     /**
-     * \brief compute the theta coefficient for both bilinear and linear form
+     * \brief compute the theta
+
+
+ coefficient for both bilinear and linear form
      * \param mu parameter to evaluate the coefficients
      */
     boost::tuple<theta_vector_type, std::vector<theta_vector_type> >
@@ -519,14 +522,12 @@ RbHeat::init()
 
     // right hand side
     form1( Xh, M_Fq[0][0], _init=true ) = integrate( markedfaces(mesh,"left"), id(v) );
-
     form1( _test=Xh, _vector=M_Fq[0][1], _init=true ) = integrate( elements(mesh), id(v) );
     M_Fq[0][0]->close();
     M_Fq[0][1]->close();
 
     // output
-    form1( Xh, M_Fq[1][0], _init=true ) = integrate( markedelements(mesh,"maille1"), id(v)/0.2 );
-    form1( Xh, M_Fq[1][0] ) += integrate( markedelements(mesh,"maille2"), id(v)/0.2 );
+    form1( Xh, M_Fq[1][0], _init=true ) = integrate( markedfaces(mesh,"interface"), id(v)/0.5 );
     M_Fq[1][0]->close();
 
     form2( Xh, Xh, M_Aq[0], _init=true ) = integrate( elements(mesh), 0.1*(gradt(u)*trans(grad(v)) ) );
@@ -672,12 +673,23 @@ RbHeat::output( int output_index, parameter_type const& mu )
     vector_ptrtype U( backend->newVector( Xh ) );
     *U = *pT;
 
-    // right hand side (compliant)
-   double meanT=0;
- 
-	meanT = (integrate( markedfaces(mesh,"interface"),idv(*pT)).evaluate()(0,0))/0.5;
+    // (compliant) and (mean temperature on interface)
+    double s=0;
+    if(output_index<2)
+    {
+        for(int i=0;i<Ql(output_index);i++)  s += M_thetaFq[output_index](i)*dot( M_Fq[output_index][i], U );
+    }
+    else{
+      throw std::logic_error( "[Rbheat::output] error with output_index : only 0 or 1 " );
+    }
+    return s ;
+   
 
-    return meanT;
+	//double meanT=0;
+ 
+	//meanT = (integrate( markedfaces(mesh,"interface"),idv(*pT)).evaluate()(0,0))/0.5;
+
+    	//return meanT;
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 }
