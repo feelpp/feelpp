@@ -35,10 +35,11 @@ int main(int argc, char** argv)
     // Declare the supported options.
     namespace po = boost::program_options;
     po::options_description desc("Allowed options");
+
     desc.add_options()
         ("help", "produce help message")
-        ("filename", po::value<std::string>()->default_value( "Cylref.geo" ), "h size")
-        ("depends", po::value<std::vector<std::string> >()->default_value( std::vector<std::string>(1, "Cylref.mesh") ), "copy files")
+        ("filename", po::value<std::string>()->default_value( "Cylref.geo" ), "name of the file to load")
+        ("depends", po::value<std::string>()->default_value( "Cylref.mesh" ), "copy files (space,comma,semi-colon,ddot separated) necessary to generate the mesh")
         ;
 
     po::variables_map vm;
@@ -51,20 +52,11 @@ int main(int argc, char** argv)
     typedef Mesh<Simplex<3> > mesh_type;
     std::string mesh_name=vm["filename"].as<std::string>();
 
-#if 1
     auto mesh = createGMSHMesh( _mesh=new mesh_type,
-                              //_desc=img2msh( _filename=mesh_name),
-                                _desc=geo( _filename=mesh_name,_depends=vm["depends"].as<std::vector<std::string> >()),
+                                _desc=geo( _filename=mesh_name,_depends=vm["depends"].as<std::string>()),
                                 _physical_are_elementary_regions=true,
                                 _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES );
-#else
-    auto mesh = createGMSHMesh( _mesh=new mesh_type,
-                                //_desc=img2msh( _filename=mesh_name),
-                                _desc=mshconvert( _filename=mesh_name ),
-                                //_desc=geo( _filename=mesh_name,_dim=3),
-                                _physical_are_elementary_regions=true,
-                                _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES );
-#endif
+
     std::cout << "mesh " << mesh_name << " loaded\n" << std::endl;
 
     std::cout << "volume =" << std::endl
