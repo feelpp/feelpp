@@ -207,11 +207,14 @@ public :
     const truth_model_ptrtype & model()  { return M_model; }
 
     void setBdf( bdf_ptrtype& bdf ) { M_bdf = bdf; }
+
     void setSnapshotsMatrix (matrixN_type& Matrix ) { M_snapshots_matrix=Matrix; }
+
     void setWN (wn_type& WN) { M_WN=WN; }
+
     void setNm ( const int Nm ) { M_Nm=Nm; }
+
     void setModel ( truth_model_ptrtype Model ) { M_model=Model; }
-    void setNdof ( const int Ndof ) { M_Ndof = Ndof;  }
 
     //! fill the matrix which will be used to perform the POD
     void fillPodMatrix();
@@ -228,21 +231,19 @@ public :
 
 private :
 
-    int M_Nm;
-
-    int M_Ndof;
-
-    truth_model_ptrtype M_model;
-
-    matrixN_type M_snapshots_matrix;
-
-    matrixN_type M_pod_matrix;
-
-    wn_type M_WN;
-
     bool M_store_pod_matrix;
 
     bool M_store_pod_matrix_format_octave;
+
+    int M_Nm;
+
+    matrixN_type M_pod_matrix;
+
+    matrixN_type M_snapshots_matrix;
+
+    truth_model_ptrtype M_model;
+
+    wn_type M_WN;
 
     backend_ptrtype M_backend;
 
@@ -461,7 +462,7 @@ int POD<TruthModelType>::pod(mode_set_type& ModeSet, bool is_primal)
         {
             std::ofstream mode_file( (boost::format("mode_%1%") %i).str().c_str() );
             element_type e = ModeSet[i];
-            for(int j=0; j<e.size(); j++) mode_file<<std::setprecision(16)<<e(j)<<"\n";
+            for(size_type j=0; j<e.size(); j++) mode_file<<std::setprecision(16)<<e(j)<<"\n";
             mode_file.close();
         }
 
