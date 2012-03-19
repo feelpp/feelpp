@@ -137,11 +137,11 @@ public:
 
     CRBModel()
         :
+        M_Aq(),
+        M_Mq(),
+        M_Fq(),
         M_is_initialized( false ),
         M_mode( CRBModelMode::PFEM ),
-        M_Aq(),
-        M_Fq(),
-        M_Mq(),
         M_model( new model_type() ),
         M_backend( backend_type::build( BACKEND_PETSC ) ),
         M_B()
@@ -151,12 +151,12 @@ public:
 
     CRBModel( po::variables_map const& vm, CRBModelMode mode = CRBModelMode::PFEM  )
         :
+        M_Aq(),
+        M_Mq(),
+        M_Fq(),
         M_is_initialized( false ),
         M_vm( vm ),
         M_mode( mode ),
-        M_Aq(),
-        M_Fq(),
-        M_Mq(),
         M_model( new model_type( vm ) ),
         M_backend( backend_type::build( vm ) ),
         M_B()
@@ -169,12 +169,12 @@ public:
      */
     CRBModel( model_ptrtype & model )
         :
+        M_Aq(),
+        M_Mq(),
+        M_Fq(),
         M_is_initialized( false ),
         M_vm(),
         M_mode( CRBModelMode::PFEM ),
-        M_Aq(),
-        M_Fq(),
-        M_Mq(),
         M_model( model ),
         M_backend( backend_type::build( model->vm ) ),
         M_B()
@@ -187,12 +187,12 @@ public:
      */
     CRBModel( CRBModel const & o )
         :
+        M_Aq( o.M_Aq ),
+        M_Mq( o.M_Mq ),
+        M_Fq( o.M_Fq ),
         M_is_initialized( o.M_is_initialized ),
         M_vm( o.M_vm ),
         M_mode( o.M_mode ),
-        M_Aq( o.M_Aq ),
-        M_Fq( o.M_Fq ),
-        M_Mq( o.M_Mq ),
         M_model(  o.M_model ),
         M_backend( o.M_backend ),
         M_B( o.M_B )
@@ -655,12 +655,13 @@ public:
      *
      * \param v a vector of \c shared_ptr<> elements of the functions space
      */
+#if 0
     bool
     exportResults( double time, std::vector<element_ptrtype> const& v )
         {
             //return model->export( time, v );
         }
-
+#endif
     /**
      * run the model
      */
@@ -757,11 +758,24 @@ protected:
 
 private:
 
+    bool M_is_initialized;
+
     //! variables_map
     po::variables_map M_vm;
 
     //! mode for CRBModel
     CRBModelMode M_mode;
+
+    //! model
+    model_ptrtype M_model;
+
+    backend_ptrtype M_backend;
+
+    // ! matrix associated with inner product
+    sparse_matrix_ptrtype M_B;
+    sparse_matrix_ptrtype M_H1;
+
+
 
     //! initialize the matrix associated with the \f$H_1\f$ inner product
     void initB();
@@ -774,16 +788,7 @@ private:
      */
     offline_merge_type offlineMerge( parameter_type const& mu );
 
-    bool M_is_initialized;
 
-    //! model
-    model_ptrtype M_model;
-
-    backend_ptrtype M_backend;
-
-    // ! matrix associated with inner product
-    sparse_matrix_ptrtype M_B;
-    sparse_matrix_ptrtype M_H1;
 };
 
 template<typename TruthModelType>
@@ -858,7 +863,7 @@ CRBModel<TruthModelType>::offlineMerge( parameter_type const& mu )
     //A->close();
     *A = *M_Aq[0];
     A->scale( this->thetaAq( 0 ) );
-    for( int q = 1; q < Qa(); ++q )
+    for( size_type q = 1; q < Qa(); ++q )
     {
         A->addMatrix( this->thetaAq( q ), M_Aq[q] );
     }
@@ -869,17 +874,17 @@ CRBModel<TruthModelType>::offlineMerge( parameter_type const& mu )
       *M = *M_Mq[0];
        M->scale( this->thetaMq( 0 ) );
     }
-    for( int q = 1; q < Qm(); ++q )
+    for( size_type q = 1; q < Qm(); ++q )
     {
         M->addMatrix( this->thetaMq( q ), M_Mq[q] );
     }
 
-    for( int l = 0;l < Nl(); ++l )
+    for( size_type l = 0;l < Nl(); ++l )
     {
         F[l] = M_backend->newVector( M_model->functionSpace() );
         F[l]->close();
         F[l]->zero();
-        for( int q = 0; q < Ql(l); ++q )
+        for( size_type q = 0; q < Ql(l); ++q )
         {
             F[l]->add( this->thetaL( l, q ), M_Fq[l][q] );
         }

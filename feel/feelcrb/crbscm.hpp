@@ -475,7 +475,7 @@ CRBSCM<TruthModelType>::offline()
     std::vector<vector_ptrtype> F;
 
     // dimension of Y_UB and U_LB
-    size_type K = 1;
+    int K = 1;
 
     std::vector<sparse_matrix_ptrtype> Aq;
     boost::tie(boost::tuples::ignore, Aq, boost::tuples::ignore ) = M_model->computeAffineDecomposition();
@@ -505,8 +505,6 @@ CRBSCM<TruthModelType>::offline()
         //
         // Build Y_UB
         //
-        int nconv;
-        double eigenvalue_real, eigenvalue_imag;
         vector_ptrtype eigenvector;
         // solve  for eigenvalue problem at \p mu
         SolverEigen<double>::eigenmodes_type modes;
@@ -578,11 +576,11 @@ CRBSCM<TruthModelType>::offline()
         {
             std::cout << " -- inserting mu in C (" << M_C->size() << ")\n";
             M_C->push_back( mu, index );
-            for( int _i =0;_i < M_C->size(); ++_i )
+            for( size_type _i =0;_i < M_C->size(); ++_i )
                 std::cout << " -- mu [" << _i << "]=" << M_C->at( _i ) << std::endl;
 
             M_C_complement = M_C->complement();
-            for( int _i =0;_i < M_C_complement->size(); ++_i )
+            for( size_type _i =0;_i < M_C_complement->size(); ++_i )
             {
                 //std::cout << " -- mu complement [" << _i << "]=" << M_C_complement->at( _i ) << std::endl;
             }
@@ -593,7 +591,7 @@ CRBSCM<TruthModelType>::offline()
     }
 
     //before call saveDB we have to split the vector of tuple M_y_bounds
-    for(int i=0; i<M_y_bounds.size();i++)
+    for(size_type i=0; i<M_y_bounds.size();i++)
     {
       M_y_bounds_0.push_back(M_y_bounds[i].get<0>());
       M_y_bounds_1.push_back(M_y_bounds[i].get<1>());
@@ -728,7 +726,7 @@ CRBSCM<TruthModelType>::lb( parameter_type const& mu ,size_type K ,int indexmu) 
     if ( indexmu >= 0 && ( M_C_alpha_lb[indexmu].find(K) !=  M_C_alpha_lb[indexmu].end() ) )
         return  M_C_alpha_lb[indexmu][K] ;
     //if ( K == std::max(size_type(0),M_C->size()-(size_type)M_vm["crb.scm.level"].template as<int>() ) ) return 0.0;
-    int level = M_vm["crb.scm.level"].template as<int>();
+    //int level = M_vm["crb.scm.level"].template as<int>();
 
     //std::cout << "[CRBSCM::lb] Alphalb size " << M_C_alpha_lb.size() << "\n";
 
@@ -789,7 +787,7 @@ CRBSCM<TruthModelType>::lb( parameter_type const& mu ,size_type K ,int indexmu) 
 
 
         //std::cout << "[CRBSCM::lb] constraints matrix\n";
-        for( int q = 0; q < M_model->Qa(); ++q, ++nnz_index )
+        for( size_type q = 0; q < M_model->Qa(); ++q, ++nnz_index )
         {
             //std::cout << "[CRBSCM::lb] constraints matrix q = " << q << "\n";
             ia[nnz_index]=m+1;
@@ -861,7 +859,7 @@ CRBSCM<TruthModelType>::lb( parameter_type const& mu ,size_type K ,int indexmu) 
         }
 
 
-        for( int q = 0; q < M_model->Qa(); ++q, ++nnz_index )
+        for( size_type q = 0; q < M_model->Qa(); ++q, ++nnz_index )
         {
             ia[nnz_index]=Malpha+m+1;
             ja[nnz_index]=q+1;
@@ -875,7 +873,7 @@ CRBSCM<TruthModelType>::lb( parameter_type const& mu ,size_type K ,int indexmu) 
     // set the structural variables, we have M_model->Qa() of them
     boost::tie(boost::tuples::ignore, theta_q, boost::tuples::ignore ) = M_model->computeThetaq( mu );
     glp_add_cols(lp, M_model->Qa());
-    for( int q = 0; q < M_model->Qa(); ++q )
+    for( size_type q = 0; q < M_model->Qa(); ++q )
     {
         glp_set_col_name( lp, q+1, (boost::format( "y_%1%" ) % q).str().c_str() );
         glp_set_col_bnds( lp, q+1, GLP_DB,
@@ -896,11 +894,13 @@ CRBSCM<TruthModelType>::lb( parameter_type const& mu ,size_type K ,int indexmu) 
     // retrieve the minimum
     double Jobj = glp_get_obj_val(lp);
     //std::cout << "Jobj = " << Jobj << "\n";
-    for( int q = 0; q < M_model->Qa(); ++q )
+#if 0
+    for(size_type q = 0; q < M_model->Qa(); ++q )
     {
         double y = glp_get_col_prim(lp,q+1);
         //std::cout << "y" << q << " = " << y << "\n";
     }
+#endif
     glp_delete_prob(lp);
 
     if (indexmu >= 0 ) {
@@ -982,12 +982,12 @@ CRBSCM<TruthModelType>::computeYBounds()
 {
     //std::cout << "************************************************************\n";
     Log() << "[CRBSCM<TruthModelType>::computeYBounds()] start...\n";
-    int nconv;
-    double eigenvalue_lb, eigenvalue_ub;
+
+
     sparse_matrix_ptrtype A, symmA=M_model->newMatrix(), B=M_model->innerProduct();
     B->close();
     // solve 2 * Q_a eigenproblems
-    for( int q = 0; q < M_model->Qa();++q )
+    for(size_type q = 0; q < M_model->Qa();++q )
     {
         //std::cout << "================================================================================\n";
         //std::cout << "[ComputeYBounds] = q = " << q << " / " << M_model->Qa() << "\n";
@@ -1036,6 +1036,7 @@ CRBSCM<TruthModelType>::computeYBounds()
             //          << " eigenvalue_ub = " << eigenvalue_ub << "\n";
             double eigmax=eigenvalue_ub;
 #else
+
 
             SolverEigen<double>::eigenmodes_type modes;
 #if 1
@@ -1129,14 +1130,14 @@ CRBSCM<TruthModelType>::run( const double * X, unsigned long N, double * Y, unsi
 {
     parameter_type mu( M_Dmu );
     // the last parameter is the max error
-    for( int p= 0; p < N-3; ++p )
+    for( unsigned long p= 0; p < N-3; ++p )
         mu(p) = X[p];
 
-    for(int i=0;i<N;i++) std::cout<<"X["<<i<<"] = "<<X[i]<<std::endl;
+    for(unsigned long i=0;i<N;i++) std::cout<<"X["<<i<<"] = "<<X[i]<<std::endl;
     double meshSize  = X[N-3];
     M_model->setMeshSize(meshSize);
 
-    int K = this->KMax();
+    size_type K = this->KMax();
     double alpha_lb,lbti;
     boost::tie( alpha_lb, lbti ) = this->lb( mu, K );
     double alpha_ub,ubti;
@@ -1183,7 +1184,7 @@ CRBSCM<TruthModelType>::load(Archive & ar, const unsigned int version)
     ar & M_Y_ub;
     ar & M_Xi;
 
-    for(int i=0;i<M_y_bounds_0.size();i++)
+    for(size_type i=0;i<M_y_bounds_0.size();i++)
     {
       M_y_bounds.push_back( boost::make_tuple( M_y_bounds_0[i] , M_y_bounds_1[i] ) );
     }
