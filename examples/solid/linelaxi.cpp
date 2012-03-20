@@ -77,7 +77,7 @@ public:
     typedef double value_type;
 
     /*mesh*/
-    typedef Entity<2> entity_type;
+    typedef Simplex<2> entity_type;
     typedef Mesh<entity_type> mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
@@ -100,9 +100,7 @@ public:
         M_backend( backend_type::build( this->vm() )),
         meshSize( this->vm()["hsize"].template as<double>() ),
         bcCoeff( this->vm()["bccoeff"].template as<double>() ),
-        exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) ),
-        timers(),
-        stats()
+        exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) )
     {
         Log() << "[LinElAxi] hsize = " << meshSize << "\n";
         Log() << "[LinElAxi] bccoeff = " << bcCoeff << "\n";
@@ -134,9 +132,9 @@ private:
 }; // LinElAxi
 
 
-template<int Order, template<uint16_type,uint16_type,uint16_type> class Entity>
+template<int Order>
 void
-LinElAxi<Order, Entity>::run()
+LinElAxi<Order>::run()
 {
     tic();
     if ( this->vm().count( "help" ) )
@@ -217,20 +215,16 @@ LinElAxi<Order, Entity>::run()
 } //run
 
 
-template<int Order, template<uint16_type,uint16_type,uint16_type> class Entity>
+template<int Order>
 void
-LinElAxi<Order, Entity>::exportResults( double time, element_type& U )
+LinElAxi<Order>::exportResults( double time, element_type& U )
 {
-    timers["export"].first.restart();
-
-
+    tic();
     exporter->step(time)->setMesh( U.functionSpace()->mesh() );
     exporter->step(time)->add( "u0", U.template element<0>());
     exporter->step(time)->add( "u1", U.template element<1>());
     exporter->save();
-
-    timers["export"].second = timers["export"].first.elapsed();
-    Log() << "[timer] exportResults(): " << timers["export"].second << "\n";
+    Log() << "[timer] exportResults(): " << toc(false) << "\n";
 } // LinElAxi::export
 
 
@@ -242,6 +236,7 @@ LinElAxi<Order, Entity>::exportResults( double time, element_type& U )
 int
 main( int argc, char** argv )
 {
+    tic();
     using namespace Feel;
 
     typedef Feel::LinElAxi<2> linelaxi_type;
@@ -252,6 +247,7 @@ main( int argc, char** argv )
     /* define and run application */
     linelaxi_type linelaxi( argc, argv, makeAbout(), makeOptions() );
     linelaxi.run();
+    toc();
 }
 
 
