@@ -85,10 +85,15 @@ public:
     /*basis*/
     typedef Lagrange<Order, Scalar> basis_scalar_type;
     typedef bases<basis_scalar_type,basis_scalar_type> basis_type;
+    typedef Lagrange<Order, Vectorial> basis_vector_type;
     /*space*/
     typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
     typedef boost::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
+
+    typedef FunctionSpace<mesh_type, bases<basis_vector_type> > disp_space_type;
+    typedef boost::shared_ptr<disp_space_type> disp_space_ptrtype;
+    typedef typename disp_space_type::element_type disp_element_type;
 
 
     /* export */
@@ -159,7 +164,7 @@ LinElAxi<Order>::run()
                                                       _shape="hypercube",
                                                       _usenames=true,
                                                       _xmin=0, _xmax=1,
-                                                      _ymin=1, _ymax=2,
+                                                      _ymin=0, _ymax=10,
                                                       _h=meshSize ),
                                         _update=MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK,
                                         _partitions=this->comm().size()  );
@@ -217,15 +222,17 @@ LinElAxi<Order>::run()
     form1( _test=Xh, _vector=rhs ) =
         integrate( _range=elements(mesh), _expr=gravity*id(vz)*Px() );
     form1( _test=Xh, _vector=rhs ) +=
-        integrate( _range=markedfaces(mesh,"Neumann"),
+        integrate( _range=markedfaces(mesh,"Dirichlet"),
                    _expr=gr*id(vr)*Px()+gz*id(vz)*Px() );
 
     form2( _test=Xh, _trial=Xh, _matrix=lhs ) =
         integrate( _range=elements(mesh),
-                   _expr=Px()*lambda*(dxt(ur)+idt(ur)/Px()+dyt(uz))*(dx(vr)+idt(vr)/Px()));
+                   _expr=Px()*lambda*(dxt(ur)+idt(ur)/Px()+
+                                      dyt(uz))*(dx(vr)+idt(vr)/Px()));
     form2( _test=Xh, _trial=Xh, _matrix=lhs ) +=
         integrate( _range=elements(mesh),
-                   _expr=Px()*mu*(2*dxt(ur)*dx(vr)+idt(ur)*id(vr)/(Px()*Px())+dyt(ur)*dy(vr)+dxt(uz)*dy(vr)));
+                   _expr=Px()*mu*(2*(dxt(ur)*dx(vr)+idt(ur)*id(vr)/(Px()*Px()))+
+                                  dyt(ur)*dy(vr)+dxt(uz)*dy(vr)));
     form2( _test=Xh, _trial=Xh, _matrix=lhs ) +=
         integrate( _range=elements(mesh),
                    _expr=(Px()*mu*(dyt(ur)*dx(vz)+dxt(uz)*dx(vz)+2*dyt(uz)*dy(vz))+
@@ -233,9 +240,10 @@ LinElAxi<Order>::run()
 
 
     form2( _test=Xh, _trial=Xh, _matrix=lhs ) +=
-        on( _range=markedfaces(mesh,"Dirichlet"), _element=uz, _rhs=rhs, _expr=cst(0.))+
-        on( _range=markedfaces(mesh,"Dirichlet"), _element=ur, _rhs=rhs, _expr=cst(0.));
+        on( _range=markedfaces(mesh,"Neumann"), _element=uz, _rhs=rhs, _expr=cst(0.))+
+        on( _range=markedfaces(mesh,"Neumann"), _element=ur, _rhs=rhs, _expr=cst(0.));
     M_backend->solve( _matrix=lhs, _solution=U, _rhs=rhs );
+
 
     this->exportResults( 0, U );
     //toc();
@@ -248,9 +256,19 @@ void
 LinElAxi<Order>::exportResults( double time, element_type& U )
 {
     //tic();
-    exporter->step(time)->setMesh( U.functionSpace()->mesh() );
-    exporter->step(time)->add( "u0", U.template element<0>());
-    exporter->step(time)->add( "u1", U.template element<1>());
+    using namespace Feel::vf;
+    auto mesh = U.functionSpace()->mesh();
+    auto ur = U.template element<0>();
+    auto uz = U.template element<1>();
+    disp_space_ptrtype Dh = disp_space_type::New( mesh );
+    auto disp = Dh->element();
+    disp = vf::project( _range=elements(mesh), _space=Dh, _expr=vec(idv(ur),idv(uz)));
+
+    exporter->step(time)->setMesh( mesh );
+    exporter->step(time)->add( "ur", ur);
+    exporter->step(time)->add( "uz", uz);
+    exporter->step(time)->add( "displacement", disp);
+
     exporter->save();
     //Log() << "[timer] exportResults(): " << toc(false) << "\n";
 } // LinElAxi::export
