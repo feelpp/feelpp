@@ -26,7 +26,7 @@
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2012-03-20
  */
-#if defined(FEELPP_TIMING_NOW_HPP)
+#if !defined(FEELPP_TIMING_NOW_HPP)
 #define FEELPP_TIMING_NOW_HPP 1
 
 #include <feel/feelcore/feel.hpp>
