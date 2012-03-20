@@ -44,6 +44,8 @@ makeOptions()
         ("hsize", Feel::po::value<double>()->default_value( 0.1 ), "first h value to start convergence")
         ("bctype", Feel::po::value<int>()->default_value( 1 ), "0 = strong Dirichlet, 1 = weak Dirichlet")
         ("bccoeff", Feel::po::value<double>()->default_value( 1.0e+5 ), "coeff for weak Dirichlet conditions")
+        ("gr", Feel::po::value<double>()->default_value( 1.0 ), "component in r of the surfacic force")
+        ("gz", Feel::po::value<double>()->default_value( 1.0 ), "component in z of the surfacic force")
         ;
     return linelaxioptions.add( Feel::feel_options() ) ;
 }
@@ -56,10 +58,9 @@ makeAbout()
                            "0.1",
                            "Elasticity axisym  on simplices or simplex products",
                            Feel::AboutData::License_GPL,
-                           "Copyright (c) 2007 University Joseph Fourier Grenoble 1");
+                           "Copyright (c) 2012 University Joseph Fourier Grenoble 1");
 
     about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
-    about.addAuthor("Vuk Milisic", "developer", "vuk.milisic@imag.fr", "");
    return about;
 
 }
@@ -83,7 +84,7 @@ public:
 
     /*basis*/
     typedef Lagrange<Order, Scalar> basis_scalar_type;
-    typedef fusion::vector<basis_scalar_type,basis_scalar_type> basis_type;
+    typedef bases<basis_scalar_type,basis_scalar_type> basis_type;
     /*space*/
     typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
     typedef boost::shared_ptr<space_type> space_ptrtype;
@@ -157,6 +158,7 @@ LinElAxi<Order>::run()
                                         _desc=domain( _name="beamaxi",
                                                       _shape="hypercube",
                                                       _usenames=true,
+                                                      _xmin=0, _xmax=1,
                                                       _ymin=1, _ymax=2,
                                                       _h=meshSize ),
                                         _update=MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK,
@@ -199,6 +201,8 @@ LinElAxi<Order>::run()
     std::cout << "lambda = " << lambda << "\n"
               << "mu     = " << mu << "\n"
               << "gravity= " << gravity << "\n";
+    auto gr = this->vm()["gr"].template as<double>();
+    auto gz = this->vm()["gz"].template as<double>();
     /*
      * Construction of the constant right hand side
      *
@@ -207,7 +211,33 @@ LinElAxi<Order>::run()
      */
 
     auto rhs = M_backend->newVector( Xh );
+    auto lhs = M_backend->newMatrix( Xh, Xh );
 
+    using namespace Feel::vf;
+    form1( _test=Xh, _vector=rhs ) =
+        integrate( _range=elements(mesh), _expr=gravity*id(vz)*Px() );
+    form1( _test=Xh, _vector=rhs ) +=
+        integrate( _range=markedfaces(mesh,"Neumann"),
+                   _expr=gr*id(vr)*Px()+gz*id(vz)*Px() );
+
+    form2( _test=Xh, _trial=Xh, _matrix=lhs ) =
+        integrate( _range=elements(mesh),
+                   _expr=Px()*lambda*(dxt(ur)+idt(ur)/Px()+dyt(uz))*(dx(vr)+idt(vr)/Px()));
+    form2( _test=Xh, _trial=Xh, _matrix=lhs ) +=
+        integrate( _range=elements(mesh),
+                   _expr=Px()*mu*(2*dxt(ur)*dx(vr)+idt(ur)*id(vr)/(Px()*Px())+dyt(ur)*dy(vr)+dxt(uz)*dy(vr)));
+    form2( _test=Xh, _trial=Xh, _matrix=lhs ) +=
+        integrate( _range=elements(mesh),
+                   _expr=(Px()*mu*(dyt(ur)*dx(vz)+dxt(uz)*dx(vz)+2*dyt(uz)*dy(vz))+
+                          Px()*lambda*(dxt(ur)+idt(ur)/Px()+dyt(uz))*dy(vz)));
+
+
+    form2( _test=Xh, _trial=Xh, _matrix=lhs ) +=
+        on( _range=markedfaces(mesh,"Dirichlet"), _element=uz, _rhs=rhs, _expr=cst(0.))+
+        on( _range=markedfaces(mesh,"Dirichlet"), _element=ur, _rhs=rhs, _expr=cst(0.));
+    M_backend->solve( _matrix=lhs, _solution=U, _rhs=rhs );
+
+    this->exportResults( 0, U );
     //toc();
 
 } //run
