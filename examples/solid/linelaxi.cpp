@@ -136,7 +136,7 @@ template<int Order>
 void
 LinElAxi<Order>::run()
 {
-    tic();
+    //tic();
     if ( this->vm().count( "help" ) )
         {
             std::cout << this->optionsDescription() << "\n";
@@ -152,7 +152,7 @@ LinElAxi<Order>::run()
     /*
      * First we create the mesh
      */
-    tic();
+    //tic();
     mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
                                         _desc=domain( _name="beamaxi",
                                                       _shape="hypercube",
@@ -161,28 +161,26 @@ LinElAxi<Order>::run()
                                                       _h=meshSize ),
                                         _update=MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK,
                                         _partitions=this->comm().size()  );
-    toc();
+    //toc();
 
 
     /*
      * The function space and some associate elements are then defined
      */
-    tic();
+    //tic();
     space_ptrtype Xh = space_type::New( mesh );
 
     //Xh->dof()->showMe();
     element_type U( Xh, "u" );
     element_type V( Xh, "v" );
 
-    element_0_type u0 = U.template element<0>();
-    element_0_type v0 = V.template element<0>();
-    element_0_type phi0 = Phi.template element<0>();
+    auto ur = U.template element<0>();
+    auto vr = V.template element<0>();
 
-    element_1_type u1 = U.template element<1>();
-    element_1_type v1 = V.template element<1>();
-    element_1_type phi1 = Phi.template element<1>();
+    auto uz = U.template element<1>();
+    auto vz = V.template element<1>();
 
-    toc();
+    //toc();
 
     /*
      * Data associated with the simulation
@@ -210,7 +208,7 @@ LinElAxi<Order>::run()
 
     auto rhs = M_backend->newVector( Xh );
 
-    toc();
+    //toc();
 
 } //run
 
@@ -219,12 +217,12 @@ template<int Order>
 void
 LinElAxi<Order>::exportResults( double time, element_type& U )
 {
-    tic();
+    //tic();
     exporter->step(time)->setMesh( U.functionSpace()->mesh() );
     exporter->step(time)->add( "u0", U.template element<0>());
     exporter->step(time)->add( "u1", U.template element<1>());
     exporter->save();
-    Log() << "[timer] exportResults(): " << toc(false) << "\n";
+    //Log() << "[timer] exportResults(): " << toc(false) << "\n";
 } // LinElAxi::export
 
 
@@ -236,7 +234,7 @@ LinElAxi<Order>::exportResults( double time, element_type& U )
 int
 main( int argc, char** argv )
 {
-    tic();
+    //tic();
     using namespace Feel;
 
     typedef Feel::LinElAxi<2> linelaxi_type;
@@ -247,7 +245,7 @@ main( int argc, char** argv )
     /* define and run application */
     linelaxi_type linelaxi( argc, argv, makeAbout(), makeOptions() );
     linelaxi.run();
-    toc();
+    //toc();
 }
 
 
