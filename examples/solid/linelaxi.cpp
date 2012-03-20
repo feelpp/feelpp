@@ -1,0 +1,258 @@
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*-
+
+  This file is part of the Feel library
+
+  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+       Date: 2012-03-20
+
+  Copyright (C) 2012 Université Joseph Fourier (Grenoble I)
+
+  This library is free software; you can redistribute it and/or
+  modify it under the terms of the GNU Lesser General Public
+  License as published by the Free Software Foundation; either
+  version 2.1 of the License, or (at your option) any later version.
+
+  This library is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  Lesser General Public License for more details.
+
+  You should have received a copy of the GNU Lesser General Public
+  License along with this library; if not, write to the Free Software
+  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+*/
+/**
+   \file beamaxi2D.cpp
+   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \date 2012-03-20
+ */
+#include <feel/options.hpp>
+#include <feel/feelcore/application.hpp>
+#include <feel/feeltiming/tic.hpp>
+#include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feelalg/backend.hpp>
+#include <feel/feelfilters/gmsh.hpp>
+#include <feel/feelfilters/exporter.hpp>
+#include <feel/feelvf/vf.hpp>
+
+inline
+Feel::po::options_description
+makeOptions()
+{
+    Feel::po::options_description linelaxioptions("LinElAxi options");
+    linelaxioptions.add_options()
+        ("hsize", Feel::po::value<double>()->default_value( 0.1 ), "first h value to start convergence")
+        ("bctype", Feel::po::value<int>()->default_value( 1 ), "0 = strong Dirichlet, 1 = weak Dirichlet")
+        ("bccoeff", Feel::po::value<double>()->default_value( 1.0e+5 ), "coeff for weak Dirichlet conditions")
+        ;
+    return linelaxioptions.add( Feel::feel_options() ) ;
+}
+inline
+Feel::AboutData
+makeAbout()
+{
+    Feel::AboutData about( "linelaxi" ,
+                           "linelaxi" ,
+                           "0.1",
+                           "Elasticity axisym  on simplices or simplex products",
+                           Feel::AboutData::License_GPL,
+                           "Copyright (c) 2007 University Joseph Fourier Grenoble 1");
+
+    about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
+    about.addAuthor("Vuk Milisic", "developer", "vuk.milisic@imag.fr", "");
+   return about;
+
+}
+
+
+namespace Feel
+{
+template<int Order>
+class LinElAxi
+    :
+        public Application
+{
+    typedef Application super;
+public:
+    typedef double value_type;
+
+    /*mesh*/
+    typedef Entity<2> entity_type;
+    typedef Mesh<entity_type> mesh_type;
+    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+
+    /*basis*/
+    typedef Lagrange<Order, Scalar> basis_scalar_type;
+    typedef fusion::vector<basis_scalar_type,basis_scalar_type> basis_type;
+    /*space*/
+    typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
+    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef typename space_type::element_type element_type;
+
+
+    /* export */
+    typedef Exporter<mesh_type> export_type;
+
+
+    LinElAxi( int argc, char** argv, AboutData const& ad, po::options_description const& od )
+        :
+        super( argc, argv, ad, od ),
+        M_backend( backend_type::build( this->vm() )),
+        meshSize( this->vm()["hsize"].template as<double>() ),
+        bcCoeff( this->vm()["bccoeff"].template as<double>() ),
+        exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) ),
+        timers(),
+        stats()
+    {
+        Log() << "[LinElAxi] hsize = " << meshSize << "\n";
+        Log() << "[LinElAxi] bccoeff = " << bcCoeff << "\n";
+        Log() << "[LinElAxi] export = " << this->vm().count("export") << "\n";
+
+    }
+
+    /**
+     * run the convergence test
+     */
+    void run();
+
+private:
+
+    /**
+     * export results to ensight format (enabled by  --export cmd line options)
+     */
+    void exportResults( double ,element_type& u );
+
+private:
+
+    backend_ptrtype M_backend;
+
+    double meshSize;
+    double bcCoeff;
+
+    boost::shared_ptr<export_type> exporter;
+
+}; // LinElAxi
+
+
+template<int Order, template<uint16_type,uint16_type,uint16_type> class Entity>
+void
+LinElAxi<Order, Entity>::run()
+{
+    tic();
+    if ( this->vm().count( "help" ) )
+        {
+            std::cout << this->optionsDescription() << "\n";
+            return;
+        }
+
+    this->changeRepository( boost::format( "%1%/%2%/P%3%/h_%4%/" )
+                            % this->about().appName()
+                            % entity_type::name()
+                            % Order
+                            % this->vm()["hsize"].template as<double>()
+                            );
+    /*
+     * First we create the mesh
+     */
+    tic();
+    mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
+                                        _desc=domain( _name="beamaxi",
+                                                      _shape="hypercube",
+                                                      _usenames=true,
+                                                      _ymin=1, _ymax=2,
+                                                      _h=meshSize ),
+                                        _update=MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK,
+                                        _partitions=this->comm().size()  );
+    toc();
+
+
+    /*
+     * The function space and some associate elements are then defined
+     */
+    tic();
+    space_ptrtype Xh = space_type::New( mesh );
+
+    //Xh->dof()->showMe();
+    element_type U( Xh, "u" );
+    element_type V( Xh, "v" );
+
+    element_0_type u0 = U.template element<0>();
+    element_0_type v0 = V.template element<0>();
+    element_0_type phi0 = Phi.template element<0>();
+
+    element_1_type u1 = U.template element<1>();
+    element_1_type v1 = V.template element<1>();
+    element_1_type phi1 = Phi.template element<1>();
+
+    toc();
+
+    /*
+     * Data associated with the simulation
+     */
+    const double tol = 1e-5;
+    const double E = 21*1e5;
+    const double sigma = 0.28;
+    const double mu = E/(2*(1+sigma));
+    const double lambda = E*sigma/((1+sigma)*(1-2*sigma));
+    const double density = 50;
+    //    const double gravity = -density*9.81;
+    const double gravity = -1.0;
+    Log() << "lambda = " << lambda << "\n"
+          << "mu     = " << mu << "\n"
+          << "gravity= " << gravity << "\n";
+    std::cout << "lambda = " << lambda << "\n"
+              << "mu     = " << mu << "\n"
+              << "gravity= " << gravity << "\n";
+    /*
+     * Construction of the constant right hand side
+     *
+     * \f$ f = \int_\Omega g * v \f$ where \f$ g \f$ is a vector
+     * directed in the \f$ z \f$ direction.
+     */
+
+    auto rhs = M_backend->newVector( Xh );
+
+    toc();
+
+} //run
+
+
+template<int Order, template<uint16_type,uint16_type,uint16_type> class Entity>
+void
+LinElAxi<Order, Entity>::exportResults( double time, element_type& U )
+{
+    timers["export"].first.restart();
+
+
+    exporter->step(time)->setMesh( U.functionSpace()->mesh() );
+    exporter->step(time)->add( "u0", U.template element<0>());
+    exporter->step(time)->add( "u1", U.template element<1>());
+    exporter->save();
+
+    timers["export"].second = timers["export"].first.elapsed();
+    Log() << "[timer] exportResults(): " << timers["export"].second << "\n";
+} // LinElAxi::export
+
+
+} // Feel
+
+
+
+
+int
+main( int argc, char** argv )
+{
+    using namespace Feel;
+
+    typedef Feel::LinElAxi<2> linelaxi_type;
+
+    /* assertions handling */
+    Feel::Assert::setLog( "linelaxi.assert");
+
+    /* define and run application */
+    linelaxi_type linelaxi( argc, argv, makeAbout(), makeOptions() );
+    linelaxi.run();
+}
+
+
+
