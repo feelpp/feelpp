@@ -54,12 +54,12 @@ namespace Feel
         BOOST_ASSERT_MSG(!empty(), "Unbalanced timing calls");
         type t = time()-times().top();
         times().pop();
-        if(display) timer_type::Print(t);
+        if(display) timer_type::print(t);
         return t;
       }
 
       bool  empty() const { return times().empty();   }
-      type  time()  const { return timer_type::Time();  }
+      type  time()  const { return timer_type::time();  }
 
       std::stack<type>& times() const
       {
