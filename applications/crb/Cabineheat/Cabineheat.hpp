@@ -300,7 +300,7 @@ ostr << "lc1=" <<meshSize <<";\n"
 <<"Physical Line(\"right_outlet\") = {3, 2, 43};\n"
 <<"Physical Line(\"cabine_inlet\") = {14, 13, 12};\n"
 <<"\n";
-
+std::cout<<"meshSize="<<meshSize<<std::endl;
 ///////////////////FIN MAILLAGE CABINE /////////////////////////////////////////////
     gmsh_ptrtype gmshp( new Gmsh );
     gmshp->setPrefix( "Cabineheat" );
@@ -663,7 +663,7 @@ std::cout<<"debut init"<<std::endl;
     using namespace Feel::vf;
     static const int N = 2;
     Feel::ParameterSpace<3>::Element mu_min( M_Dmu );
-    mu_min << 0.2, 0.01, 0.1;
+    mu_min << 0.2, 0.1, 0.1;
     M_Dmu->setMin( mu_min );
     Feel::ParameterSpace<3>::Element mu_max( M_Dmu );
     mu_max << 50, 5, 5;
@@ -677,25 +677,43 @@ std::cout<<"debut init"<<std::endl;
     //std::cout<<"Number of dof " << Xh->nLocalDof() << "\n";
 
 
+
 	std::cout<<"debut remplissage M_Fq"<<std::endl;
+double oncabinewall = integrate( markedfaces(mesh,"cabin_wall"), cst(1.) ).evaluate()(0,0);
+	std::cout<<"oncabinewall="<<oncabinewall<<std::endl;
+double onmesh = integrate( elements(mesh),cst(1.) ).evaluate()(0,0);
+	std::cout<<"onmesh="<<onmesh<<std::endl;
+//double onrightoutlet = integrate( markedfaces(mesh,"right_outlet"), cst(1.) ).evaluate()(0,0);
+//	std::cout<<"onrightoutlet="<<onrightoutlet<<std::endl;
+//double onleftoutlet = integrate( markedfaces(mesh,"left_outlet"), cst(1.) ).evaluate()(0,0);
+//	std::cout<<"onleftoutlet="<<onleftoutlet<<std::endl;
+double onpassenger1 = integrate( markedfaces(mesh,"passenger1"), cst(1.) ).evaluate()(0,0);
+	std::cout<<"onpassenger1="<<onpassenger1<<std::endl;
+double oncabineinlet = integrate( markedfaces(mesh,"cabine_inlet"), cst(1.) ).evaluate()(0,0);
+	std::cout<<"oncabineinlet="<<oncabineinlet<<std::endl;
+double onplancher = integrate( markedfaces(mesh,"plancher"), cst(1.) ).evaluate()(0,0);
+	std::cout<<"onplancher="<<onplancher<<std::endl;
+
+
     // right hand side
     form1( Xh, M_Fq[0][0], _init=true ) = integrate( markedfaces(mesh,"cabin_wall"), id(v) );
-	std::cout<<"M_Fq[0][0]----1"<<std::endl;
-    //form1( Xh, M_Fq[0][0] ) += integrate( markedfaces(mesh,"right_outlet"), id(v));
-	std::cout<<"M_Fq[0][0]----2"<<std::endl;
+		std::cout<<"M_Fq[0][0]----1"<<std::endl;
+    //form1( Xh, M_Fq[0][0]) += integrate( markedfaces(mesh,"right_outlet"), id(v));
+		std::cout<<"M_Fq[0][0]----2"<<std::endl;
     //form1( Xh, M_Fq[0][0]) += integrate( markedfaces(mesh,"left_outlet"), id(v));
-	//std::cout<<"M_Fq[0][0]----3"<<std::endl;
+		std::cout<<"M_Fq[0][0]----3"<<std::endl;
 	
     form1( _test=Xh, _vector=M_Fq[0][1], _init=true ) = integrate( elements(mesh), id(v) );
     M_Fq[0][0]->close();
     M_Fq[0][1]->close();
 
-    std::cout<<"M_Fq ok"<<std::endl;
+    std::cout<<"M_Fq[0] ok"<<std::endl;
     // output
-    //form1( Xh, M_Fq[1][0], _init=true ) = integrate( markedelements(mesh,"maille1"), id(v)/0.2 );
-    //form1( Xh, M_Fq[1][0] ) += integrate( markedelements(mesh,"maille2"), id(v)/0.2 );
-    //M_Fq[1][0]->close();
+	std::cout<<"M_Fq[1][0]"<<std::endl;
+    form1( Xh, M_Fq[1][0], _init=true ) = integrate( markedfaces(mesh,"cabin_wall"), id(v)/oncabinewall );
+    M_Fq[1][0]->close();
 
+	std::cout<<"debut M_Aq"<<std::endl;
     form2( Xh, Xh, M_Aq[0], _init=true ) = integrate( elements(mesh),(gradt(u)*trans(grad(v))) );
     form2( Xh, Xh, M_Aq[0]) += on( markedfaces(mesh,"plancher"), u, F, cst(10.) );
     form2( Xh, Xh, M_Aq[0]) += on( markedfaces(mesh,"passenger1"), u, F, cst(30.) );
@@ -709,12 +727,16 @@ std::cout<<"debut init"<<std::endl;
 
     M_Aq[0]->close();
 	std::cout<<"M_Aq ok"<<std::endl;
+
+
     M = backend->newMatrix( Xh, Xh );
 
     form2( Xh, Xh, M, _init=true ) =
         integrate( elements(mesh), id(u)*idt(v) + grad(u)*trans(gradt(u)) );
     M->close();
 	std::cout<<"fin init"<<std::endl;
+
+
 ////////////////////////////////////////////////////////////////////////////////
 
 
@@ -723,7 +745,9 @@ std::cout<<"debut init"<<std::endl;
 CabineHeat::sparse_matrix_ptrtype
 CabineHeat::newMatrix() const
 {
+std::cout<<"debut newMatrix"<<std::endl;
     return backend->newMatrix( Xh, Xh );
+std::cout<<"fin newMatrix"<<std::endl;
 }
 
 CabineHeat::affine_decomposition_type
