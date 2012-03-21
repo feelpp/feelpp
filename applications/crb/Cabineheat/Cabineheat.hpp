@@ -296,11 +296,11 @@ ostr << "lc1=" <<meshSize <<";\n"
 <<"Physical Line(\"plancher\") = {1};\n"
 <<"Physical Line(\"bay_wall\") = {45, 49, 48, 46};\n"
 <<"Physical Line(\"bay_inlet\") = {53, 52, 51};\n"
-<<"Physical Line(\"left_outlet\") = {5, 4, 42};\n"
-<<"Physical Line(\"right_outlet\") = {3, 2, 43};\n"
+<<"Physical Line(\"left_outlet\") = {5, 4};\n"
+<<"Physical Line(\"right_outlet\") = {3, 2};\n"
 <<"Physical Line(\"cabine_inlet\") = {14, 13, 12};\n"
 <<"\n";
-std::cout<<"meshSize="<<meshSize<<std::endl;
+
 ///////////////////FIN MAILLAGE CABINE /////////////////////////////////////////////
     gmsh_ptrtype gmshp( new Gmsh );
     gmshp->setPrefix( "Cabineheat" );
@@ -443,18 +443,14 @@ public:
     boost::tuple<theta_vector_type, std::vector<theta_vector_type> >
     computeThetaq( parameter_type const& mu, double time=0 )
         {
-	  
             M_thetaAq.resize( Qa() );
             M_thetaAq( 0 ) = mu(0);//k
-
             M_thetaFq.resize( Nl() );
             M_thetaFq[0].resize( Ql(0) );
             M_thetaFq[0]( 0 ) = mu(1); // delta
             M_thetaFq[0]( 1 ) = mu(2); // phi
-
             M_thetaFq[1].resize( Ql(1) );
             M_thetaFq[1]( 0 ) = 1;
-
             return boost::make_tuple( M_thetaAq, M_thetaFq );
         }
 
@@ -630,7 +626,6 @@ CabineHeat::CabineHeat( po::variables_map const& vm )
 void
 CabineHeat::init()
 {
-std::cout<<"debut init"<<std::endl;
     /*
      * First we create the mesh
      */
@@ -677,43 +672,24 @@ std::cout<<"debut init"<<std::endl;
     //std::cout<<"Number of dof " << Xh->nLocalDof() << "\n";
 
 
-
-	std::cout<<"debut remplissage M_Fq"<<std::endl;
-double oncabinewall = integrate( markedfaces(mesh,"cabin_wall"), cst(1.) ).evaluate()(0,0);
-	std::cout<<"oncabinewall="<<oncabinewall<<std::endl;
-double onmesh = integrate( elements(mesh),cst(1.) ).evaluate()(0,0);
-	std::cout<<"onmesh="<<onmesh<<std::endl;
-//double onrightoutlet = integrate( markedfaces(mesh,"right_outlet"), cst(1.) ).evaluate()(0,0);
-//	std::cout<<"onrightoutlet="<<onrightoutlet<<std::endl;
-//double onleftoutlet = integrate( markedfaces(mesh,"left_outlet"), cst(1.) ).evaluate()(0,0);
-//	std::cout<<"onleftoutlet="<<onleftoutlet<<std::endl;
-double onpassenger1 = integrate( markedfaces(mesh,"passenger1"), cst(1.) ).evaluate()(0,0);
-	std::cout<<"onpassenger1="<<onpassenger1<<std::endl;
-double oncabineinlet = integrate( markedfaces(mesh,"cabine_inlet"), cst(1.) ).evaluate()(0,0);
-	std::cout<<"oncabineinlet="<<oncabineinlet<<std::endl;
-double onplancher = integrate( markedfaces(mesh,"plancher"), cst(1.) ).evaluate()(0,0);
-	std::cout<<"onplancher="<<onplancher<<std::endl;
-
-
     // right hand side
     form1( Xh, M_Fq[0][0], _init=true ) = integrate( markedfaces(mesh,"cabin_wall"), id(v) );
-		std::cout<<"M_Fq[0][0]----1"<<std::endl;
-    //form1( Xh, M_Fq[0][0]) += integrate( markedfaces(mesh,"right_outlet"), id(v));
-		std::cout<<"M_Fq[0][0]----2"<<std::endl;
-    //form1( Xh, M_Fq[0][0]) += integrate( markedfaces(mesh,"left_outlet"), id(v));
-		std::cout<<"M_Fq[0][0]----3"<<std::endl;
+		
+    form1( Xh, M_Fq[0][0]) += integrate( markedfaces(mesh,"right_outlet"), id(v));
+		
+    form1( Xh, M_Fq[0][0]) += integrate( markedfaces(mesh,"left_outlet"), id(v));
+		
 	
     form1( _test=Xh, _vector=M_Fq[0][1], _init=true ) = integrate( elements(mesh), id(v) );
     M_Fq[0][0]->close();
     M_Fq[0][1]->close();
 
-    std::cout<<"M_Fq[0] ok"<<std::endl;
-    // output
-	std::cout<<"M_Fq[1][0]"<<std::endl;
-    form1( Xh, M_Fq[1][0], _init=true ) = integrate( markedfaces(mesh,"cabin_wall"), id(v)/oncabinewall );
+    // output non compliant : mean temperature on left_outlet
+    double onleftoutlet = integrate(markedfaces(mesh,"left_outlet"), cst(1.)).evaluate()(0,0);
+    form1( Xh, M_Fq[1][0], _init=true ) = integrate( markedfaces(mesh,"left_outlet"), id(v)/onleftoutlet);
     M_Fq[1][0]->close();
 
-	std::cout<<"debut M_Aq"<<std::endl;
+	
     form2( Xh, Xh, M_Aq[0], _init=true ) = integrate( elements(mesh),(gradt(u)*trans(grad(v))) );
     form2( Xh, Xh, M_Aq[0]) += on( markedfaces(mesh,"plancher"), u, F, cst(10.) );
     form2( Xh, Xh, M_Aq[0]) += on( markedfaces(mesh,"passenger1"), u, F, cst(30.) );
@@ -726,15 +702,14 @@ double onplancher = integrate( markedfaces(mesh,"plancher"), cst(1.) ).evaluate(
 		
 
     M_Aq[0]->close();
-	std::cout<<"M_Aq ok"<<std::endl;
-
+	
 
     M = backend->newMatrix( Xh, Xh );
 
     form2( Xh, Xh, M, _init=true ) =
         integrate( elements(mesh), id(u)*idt(v) + grad(u)*trans(gradt(u)) );
     M->close();
-	std::cout<<"fin init"<<std::endl;
+	
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -745,17 +720,13 @@ double onplancher = integrate( markedfaces(mesh,"plancher"), cst(1.) ).evaluate(
 CabineHeat::sparse_matrix_ptrtype
 CabineHeat::newMatrix() const
 {
-std::cout<<"debut newMatrix"<<std::endl;
     return backend->newMatrix( Xh, Xh );
-std::cout<<"fin newMatrix"<<std::endl;
 }
 
 CabineHeat::affine_decomposition_type
 CabineHeat::computeAffineDecomposition()
 {
-std::cout<<"début computeAffineDecomposition"<<std::endl;
     return boost::make_tuple( M_Aq, M_Fq );
-std::cout<<"fin computeAffineDecomposition"<<std::endl;
 }
 
 
@@ -764,7 +735,6 @@ CabineHeat::solve( sparse_matrix_ptrtype& D,
                element_type& t,
                vector_ptrtype& F )
 {
-std::cout<<"solve0"<<std::endl;
     vector_ptrtype T( backend->newVector( t.functionSpace() ) );
     backend->solve( D, D, T, F );
     t = *T;
@@ -789,10 +759,9 @@ CabineHeat::exportResults( element_type& U )
 void
 CabineHeat::update( parameter_type const& mu )
 {
-std::cout<<"debut update"<<std::endl;
 
     *D = *M_Aq[0];
-    for( size_type q = 1;q < M_Aq.size(); ++q )
+    for( size_type q = 0;q < M_Aq.size(); ++q )
     {
         D->addMatrix( M_thetaAq[q], M_Aq[q] );
     }
@@ -806,7 +775,6 @@ std::cout<<"debut update"<<std::endl;
 void
 CabineHeat::solve( parameter_type const& mu )
 {
-std::cout<<"solve1"<<std::endl;
     element_ptrtype T( new element_type( Xh ) );
     this->solve( mu, T );
     //this->exportResults( *T );
@@ -816,7 +784,6 @@ std::cout<<"solve1"<<std::endl;
 void
 CabineHeat::solve( parameter_type const& mu, element_ptrtype& T )
 {
-std::cout<<"solve2"<<std::endl;
     this->computeThetaq( mu );
     this->update( mu );
     backend->solve( _matrix=D,  _solution=T, _rhs=F );
@@ -825,7 +792,6 @@ std::cout<<"solve2"<<std::endl;
 void
 CabineHeat::l2solve( vector_ptrtype& u, vector_ptrtype const& f )
 {
-std::cout<<"l2solve"<<std::endl;
     //std::cout << "l2solve(u,f)\n";
     backend->solve( _matrix=M,  _solution=u, _rhs=f);
     //std::cout << "l2solve(u,f) done\n";
@@ -834,20 +800,17 @@ std::cout<<"l2solve"<<std::endl;
 double
 CabineHeat::scalarProduct( vector_ptrtype const& x, vector_ptrtype const& y )
 {
-std::cout<<"scalarProduct0"<<std::endl;
     return M->energy( x, y );
 }
 double
 CabineHeat::scalarProduct( vector_type const& x, vector_type const& y )
 {
-std::cout<<"scalarProduct1"<<std::endl;
     return M->energy( x, y );
 }
 
 void
 CabineHeat::run( const double * X, unsigned long N, double * Y, unsigned long P )
 {
-std::cout<<"run"<<std::endl;
     using namespace vf;
     Feel::ParameterSpace<3>::Element mu( M_Dmu );
     mu << X[0], X[1], X[2];
@@ -865,7 +828,6 @@ std::cout<<"run"<<std::endl;
 double
 CabineHeat::output( int output_index, parameter_type const& mu )
 {
-std::cout<<"output"<<std::endl;
     std::cout<<"model output"<<std::endl;
 
     using namespace vf;
@@ -875,23 +837,16 @@ std::cout<<"output"<<std::endl;
     vector_ptrtype U( backend->newVector( Xh ) );
     *U = *pT;
 
-    // (compliant) and (mean temperature on interface)
-    //double s=0;
-    //if(output_index<2)
-    //{
-      //  for(int i=0;i<Ql(output_index);i++)  s += M_thetaFq[output_index](i)*dot( M_Fq[output_index][i], U );
-    //}
-    //else{
-     // throw std::logic_error( "[Rbheat::output] error with output_index : only 0 or 1 " );
-    //}
-    //return s;
-
-double meanT=0;
- 
-	meanT = 7;
-
-    	return meanT;
-
+    // (compliant) and (non compliant: mean temperature on left_outlet)
+    double s=0;
+    if(output_index<2)
+    {
+        for(int i=0;i<Ql(output_index);i++)  s += M_thetaFq[output_index](i)*dot( M_Fq[output_index][i], U );
+    }
+    else{
+      throw std::logic_error( "[Rbheat::output] error with output_index : only 0 or 1 " );
+    }
+    return s;
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 }
