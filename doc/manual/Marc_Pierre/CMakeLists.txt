@@ -1,9 +1,9 @@
 ###  TEMPLATE.txt.tpl; coding: utf-8 ---
 
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
-#       Date: 2012-02-03
+#       Date: 2011-11-18
 #
-#  Copyright (C) 2012 Université Joseph Fourier (Grenoble I)
+#  Copyright (C) 2011 Université Joseph Fourier (Grenoble I)
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -21,5 +21,12 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-#add_docex( nirb )
 
+macro( add_Marc_Pierre_doc target )
+ add_executable( feel_Marc_Pierre_${target} ${target}.cpp )
+ target_link_libraries( feel_Marc_Pierre_${target} ${FEEL_LIBRARIES} )
+endmacro()
+
+
+add_Marc_Pierre_doc(exemple3_5_1)
+CONFIGURE_FILE(maillage.geo maillage.geo)

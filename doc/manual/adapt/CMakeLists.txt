@@ -21,8 +21,8 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-include_directories( ${CMAKE_CURRENT_SOURCE_DIR} )
-add_docex(residualestimator)
-if (OCTAVE_FOUND)
-add_octave_module(residualestimator)
-endif()
+#include_directories( ${CMAKE_CURRENT_SOURCE_DIR} )
+#add_docex(residualestimator)
+#if (OCTAVE_FOUND)
+#add_octave_module(residualestimator)
+#endif()
