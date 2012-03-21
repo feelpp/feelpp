@@ -142,7 +142,7 @@ template<int Order>
 void
 LinElAxi<Order>::run()
 {
-    //tic();
+    tic();
     if ( this->vm().count( "help" ) )
         {
             std::cout << this->optionsDescription() << "\n";
@@ -158,7 +158,7 @@ LinElAxi<Order>::run()
     /*
      * First we create the mesh
      */
-    //tic();
+    tic();
     mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
                                         _desc=domain( _name="beamaxi",
                                                       _shape="hypercube",
@@ -168,13 +168,13 @@ LinElAxi<Order>::run()
                                                       _h=meshSize ),
                                         _update=MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK,
                                         _partitions=this->comm().size()  );
-    //toc();
+    toc();
 
 
     /*
      * The function space and some associate elements are then defined
      */
-    //tic();
+    tic();
     space_ptrtype Xh = space_type::New( mesh );
 
     //Xh->dof()->showMe();
@@ -187,7 +187,7 @@ LinElAxi<Order>::run()
     auto uz = U.template element<1>();
     auto vz = V.template element<1>();
 
-    //toc();
+    toc();
 
     /*
      * Data associated with the simulation
@@ -246,7 +246,7 @@ LinElAxi<Order>::run()
 
 
     this->exportResults( 0, U );
-    //toc();
+    toc();
 
 } //run
 
@@ -255,7 +255,7 @@ template<int Order>
 void
 LinElAxi<Order>::exportResults( double time, element_type& U )
 {
-    //tic();
+    tic();
     using namespace Feel::vf;
     auto mesh = U.functionSpace()->mesh();
     auto ur = U.template element<0>();
@@ -270,7 +270,7 @@ LinElAxi<Order>::exportResults( double time, element_type& U )
     exporter->step(time)->add( "displacement", disp);
 
     exporter->save();
-    //Log() << "[timer] exportResults(): " << toc(false) << "\n";
+    Log() << "[timer] exportResults(): " << toc(false) << "\n";
 } // LinElAxi::export
 
 
@@ -282,8 +282,9 @@ LinElAxi<Order>::exportResults( double time, element_type& U )
 int
 main( int argc, char** argv )
 {
-    //tic();
     using namespace Feel;
+
+    tic();
 
     typedef Feel::LinElAxi<2> linelaxi_type;
 
@@ -293,7 +294,7 @@ main( int argc, char** argv )
     /* define and run application */
     linelaxi_type linelaxi( argc, argv, makeAbout(), makeOptions() );
     linelaxi.run();
-    //toc();
+    toc();
 }
 
 
