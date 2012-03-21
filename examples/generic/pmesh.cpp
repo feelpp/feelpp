@@ -88,37 +88,22 @@ template<int Dim>struct ExactSolution{};
 template<>
 struct ExactSolution<1>
 {
-#if FEELPP_GNUC_AT_LEAST(4,6)
-    static constexpr double pi = M_PI;
-#else
-    static const double pi = M_PI;
-#endif
-    typedef __typeof__( sin(pi*Px()) ) type;
-    typedef __typeof__( pi*pi*sin(pi*Px()) ) laplacian_type;
+    typedef __typeof__( sin(M_PI*Px()) ) type;
+    typedef __typeof__( M_PI*M_PI*sin(M_PI*Px()) ) laplacian_type;
 };
 
 template<>
 struct ExactSolution<2>
 {
-#if FEELPP_GNUC_AT_LEAST(4,6)
-    static constexpr double pi = M_PI;
-#else
-    static const double pi = M_PI;
-#endif
-    typedef __typeof__( sin(pi*Px())*cos(pi*Py()) ) type;
-    typedef __typeof__( 2*pi*pi*sin(pi*Px())*cos(pi*Py()) ) laplacian_type;
+    typedef __typeof__( sin(M_PI*Px())*cos(M_PI*Py()) ) type;
+    typedef __typeof__( 2*M_PI*M_PI*sin(M_PI*Px())*cos(M_PI*Py()) ) laplacian_type;
 };
 
 template<>
 struct ExactSolution<3>
 {
-#if FEELPP_GNUC_AT_LEAST(4,6)
-    static constexpr double pi = M_PI;
-#else
-    static const double pi = M_PI;
-#endif
-    typedef __typeof__( sin(pi*Px())*cos(pi*Py())*cos(pi*Pz()) ) type;
-    typedef __typeof__( 3*pi*pi*sin(pi*Px())*cos(pi*Py())*cos(pi*Pz()) ) laplacian_type;
+    typedef __typeof__( sin(M_PI*Px())*cos(M_PI*Py())*cos(M_PI*Pz()) ) type;
+    typedef __typeof__( 3*M_PI*M_PI*sin(M_PI*Px())*cos(M_PI*Py())*cos(M_PI*Pz()) ) laplacian_type;
 };
 /**
  * Laplacian Solver using discontinous approximation spaces
@@ -345,7 +330,7 @@ Laplacian<Dim, Order, Cont, Entity, FType>::run()
     value_type penalisation_bc = this->vm()["penalbc"].template as<value_type>();
     int bctype = this->vm()["bctype"].template as<int>();
 
-    value_type pi = 4.0*math::atan(1.0);
+    value_type pi = M_PI;
     //__typeof__( sin(pi*Px()) ) g= sin(pi*Px());
     //__typeof__( pi*pi*sin(pi*Px()) ) f = pi*pi*sin(pi*Px());
     AUTO( g, val( sin(pi*Px())*cos(pi*Py())*cos(pi*Pz()) ) );
