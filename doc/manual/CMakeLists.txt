@@ -183,7 +183,7 @@ add_subdirectory(adapt)
 add_subdirectory(nirb)
 add_subdirectory(mcs)
 
-add_subdirectory(Marc_Pierre)
+#add_subdirectory(Marc_Pierre)
 
 if (NOT FEELPP_MINIMAL_CONFIGURATION)
   add_subdirectory(dd)
