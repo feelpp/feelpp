@@ -23,7 +23,7 @@
 #
 
 macro( add_mcs_doc target )
-  add_executable( feel_mcs_${target} ${target}.cpp EXCLUDE_FROM_ALL)
+  add_executable( feel_mcs_${target} EXCLUDE_FROM_ALL ${target}.cpp )
   target_link_libraries( feel_mcs_${target} ${FEELPP_LIBRARIES} )
 endmacro()
 
