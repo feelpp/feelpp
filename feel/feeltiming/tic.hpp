@@ -38,7 +38,7 @@ namespace details
 {
 struct SecondBasedTimer
 {
-    static void print(const double& val);
+    static void print(const double& val) { std::cout << "Time : " << val << "s\n"; }
     static inline double  time() { return details::now(); }
 };
 
