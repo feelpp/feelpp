@@ -22,13 +22,13 @@
 #
 #
 
-#macro( add_mcs_doc target )
- #add_executable( feel_mcs_${target} ${target}.cpp )
- #target_link_libraries( feel_mcs_${target} ${FEELPP_LIBRARIES} )
-#endmacro()
+macro( add_mcs_doc target )
+  add_executable( feel_mcs_${target} ${target}.cpp EXCLUDE_FROM_ALL)
+  target_link_libraries( feel_mcs_${target} ${FEELPP_LIBRARIES} )
+endmacro()
 
-#add_mcs_doc(mcs_example)
-#add_mcs_doc(manteaux_sidibe)
-#add_mcs_doc(MCS_heat)
-#add_mcs_doc(burgers)
+add_mcs_doc(mcs_example)
+add_mcs_doc(manteaux_sidibe)
+add_mcs_doc(MCS_heat)
+add_mcs_doc(burgers)
 
