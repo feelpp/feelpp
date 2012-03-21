@@ -35,7 +35,7 @@ add_docex(loadmesh)
 add_docex(myintegrals)
 add_docex(geotool)
 add_docex(myfunctionspace)
-add_docex(laplacian_marc)
+#add_docex(laplacian_marc)
 
 
 if( NOT FEELPP_MINIMAL_CONFIGURATION )
