@@ -22,5 +22,5 @@
 #
 #
 
-#add_docex(bratu)
-#add_docex(nonlinearpow)
+add_docex(bratu)
+add_docex(nonlinearpow)
