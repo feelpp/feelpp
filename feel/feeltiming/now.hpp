@@ -29,6 +29,8 @@
 #if !defined(FEELPP_TIMING_NOW_HPP)
 #define FEELPP_TIMING_NOW_HPP 1
 
+#include <sys/time.h>
+#include <boost/cstdint.hpp>
 #include <feel/feelcore/feel.hpp>
 
 
@@ -37,11 +39,17 @@ namespace Feel
 namespace details
 {
 typedef Feel::uint64_type  cycles_t;
-double    now();
+double    now()
+{
+    struct timeval tp;
+    gettimeofday(&tp,NULL);
+    return double(tp.tv_sec) + double(tp.tv_usec)*1e-6;
+}
+
 inline cycles_t read_cycles();
 } // details
 } // Feel
 
-//#include <feel/feeltiming/impl/cycles.hpp>
+#include <feel/feeltiming/impl/cycles.hpp>
 
 #endif /* FEELPP_TIMING_NOW_HPP */
