@@ -46,10 +46,9 @@ double    now()
     return double(tp.tv_sec) + double(tp.tv_usec)*1e-6;
 }
 
-inline cycles_t read_cycles();
+//inline cycles_t read_cycles();
 } // details
 } // Feel
 
-#include <feel/feeltiming/impl/cycles.hpp>
 
 #endif /* FEELPP_TIMING_NOW_HPP */
