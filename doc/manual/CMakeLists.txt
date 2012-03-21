@@ -112,11 +112,15 @@ add_custom_target(
 add_dependencies(tut-prerequisites feel_doc_mymesh)
 configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/tutorial.pos  ${CMAKE_CURRENT_BINARY_DIR}/tutorial.pos)
 
+#<<<<<<< .mine
+#if ( NOT FEEL_MINIMAL_CONFIGURATION )
+#=======
 if ( NOT FEELPP_MINIMAL_CONFIGURATION )
+#>>>>>>> .r8419
 
-# # foreach( docex  myintegrals mymesh geotool myfunctionspace laplacian loadmesh residualestimator stokes stokes_good stokes_locking stokes_spurious bratu nonlinearpow mortar multi_levels threefields nirb nirbTest)
-# #   add_docex( ${docex} )
-# # endforeach()
+ #foreach( docex  myintegrals mymesh geotool myfunctionspace laplacian loadmesh residualestimator stokes stokes_good stokes_locking stokes_spurious bratu nonlinearpow mortar multi_levels threefields nirb nirbTest)
+  # add_docex( ${docex} )
+ #endforeach()
 
 #copy (${FEELPP_SOURCE_DIR}/data/medit/Cylref.mesh ${CMAKE_CURRENT_BINARY_DIR}/)
 
@@ -170,6 +174,16 @@ endmacro(add_octave_module)
 ENDIF( OCTAVE_FOUND )
 
 add_subdirectory(tutorial)
+
+
+#add_subdirectory(heat)
+#add_subdirectory(heatns)
+add_subdirectory(nonlinear)
+add_subdirectory(adapt)
+add_subdirectory(nirb)
+add_subdirectory(mcs)
+
+add_subdirectory(Marc_Pierre)
 
 if (NOT FEELPP_MINIMAL_CONFIGURATION)
   add_subdirectory(dd)
