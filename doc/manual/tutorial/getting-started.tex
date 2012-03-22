@@ -316,37 +316,42 @@ The parameter \lstinline!_h! in the function \lstinline!domain! allows to change
 		./feel_doc_mymesh --shape=hypercube
 \end{unixcom}
 we generate some of the following graphics (which are located in \verb|~/feel/doc/tutorial/mymesh/| \newline \verb|hypercube-x/h_y.z| or \verb|~/feel/doc/tutorial/mymesh/simplex-x/h_y.z|)
-\begin{figure}[!h]
-\begin{minipage}[b]{.50\linewidth}
-\centering
-\includegraphics[width=4.5cm]{pngs/mymesh/hypercube_1.png}
-\caption{Line in 1D}
-\end{minipage}
-\begin{minipage}[b]{.50\linewidth}
-\centering
-\includegraphics[width=4.5cm]{pngs/mymesh/hypercube_2.png}
-\caption{Cube in 2D}
-\end{minipage}
-\label{fig.erreur}
-\end{figure}
-\newline
-\begin{figure}[!h]
-\begin{minipage}[b]{.50\linewidth}
-\centering
-\includegraphics[width=4.5cm]{pngs/mymesh/simplex_3.png}
-\caption{Tetrahedron}
-\end{minipage}
-\begin{minipage}[b]{.50\linewidth}
-\centering
-\includegraphics[width=4.5cm]{pngs/mymesh/hypercube_3.png}
-\caption{Unit cube in 3D}
-\end{minipage}
-\end{figure}
 
+\newline
 To admire the meshes you've generated, you should go to \lstinline!~/feel/doc/tutorial/mymesh/hypercube! (or \lstinline!simplex!) and find out the \verb|.msh| files. Last step is to launch gmsh with
 \begin{unixcom}
 		gmsh yourfile.msh
 \end{unixcom}
+
+
+\begin{figure}[!h]
+  \centering
+  \subfigure[Line in 1D]{\includegraphics[width=4.5cm]{pngs/mymesh/hypercube_1.png}}
+  \subfigure[Cube in 2D]{\includegraphics[width=4.5cm]{pngs/mymesh/hypercube_2.png}}
+  \newline
+  \centering
+  \subfigure[Tetrahedron]{\includegraphics[width=4.5cm]{pngs/mymesh/simplex_3.png}}
+  \subfigure[Unit cube in 3D]{\includegraphics[width=4.5cm]{pngs/mymesh/hypercube_3.png}}
+  \caption{Sequential computation}
+\end{figure}
+\label{fig:2}
+\newline
+Some examples of meshes generated in sequential and parallel computaion are shown in the following figures.
+
+\newline
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{figure}[!h]
+  \centering
+  \subfigure[Square]{\includegraphics[width=4.75cm]{pngs/mymesh/mesh3.png}}
+  \subfigure[Triangle]{\includegraphics[width=4.75cm]{pngs/mymesh/mesh_triangle.png}}
+  \subfigure[Cube in 3D]{\includegraphics[width=4.75cm]{pngs/mymesh/mesh_cube.png}}
+  \caption{Parallel computation for generating meshes}
+
+\end{figure}
+  \label{fig:2}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 
 \subsection{Exporting meshes for post-processing}
 
@@ -572,6 +577,36 @@ int_Omega (sin(x^2+y^2+z^2)) [with order 4 max exact integration]= 0.731683[ 0.7
 int_Omega (sin(x^2+y^2+z^2)) [with order 2 max exact integration] = 0.731693[ 0.731693 ]
 \end{lstlisting}
 
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\\We can execute this application in parallel as well. The results in dimension 2 of each integral are as follow : \\
+\begin{lstlisting}
+------------------------------------------------------------
+Execute MyIntegrals<2>
+int_Omega 1 = 1[ 0.353404 ]
+int_BoundaryOmega (1)= 4[ 1.5 ]
+int_Omega (x^2+y^2+z^2) = 0.666667[ 0.0801182 ]
+int_Omega (sin(x^2+y^2+z^2)) [with order 4 max exact integration]= 0.56129
+int_Omega[0] (sin(x^2+y^2+z^2)) [with order 4 max exact integration]= 0.0787206
+int_Omega (sin(x^2+y^2+z^2)) [with order 2 max exact integration] = 0.561298[ 0.0787224 ]
+
+int_Omega 1 = 1[ 0.336194 ]
+int_BoundaryOmega (1)= 4[ 0.75 ]
+int_Omega (x^2+y^2+z^2) = 0.666667[ 0.247545 ]
+int_Omega (sin(x^2+y^2+z^2)) [with order 4 max exact integration]= 0.56129
+int_Omega[1] (sin(x^2+y^2+z^2)) [with order 4 max exact integration]= 0.221861
+int_Omega (sin(x^2+y^2+z^2)) [with order 2 max exact integration] = 0.561298[ 0.221865 ]
+
+int_Omega 1 = 1[ 0.310402 ]
+int_BoundaryOmega (1)= 4[ 1.75 ]
+int_Omega (x^2+y^2+z^2) = 0.666667[ 0.339003 ]
+int_Omega (sin(x^2+y^2+z^2)) [with order 4 max exact integration]= 0.56129
+int_Omega[2] (sin(x^2+y^2+z^2)) [with order 4 max exact integration]= 0.260709
+int_Omega (sin(x^2+y^2+z^2)) [with order 2 max exact integration] = 0.561298[ 0.26071 ]
+\end{lstlisting}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
 \section{Function Spaces}
@@ -1192,6 +1227,19 @@ figure~\ref{fig:2} displays the results using Paraview.
   \caption{Solution of problem~\ref{prob:3}}
   \label{fig:2}
 \end{figure}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+Let's try a parallel computation using 3 processors. The following figures display the results using Paraview.
+ \begin{figure}[!h]%[htbp]
+  \centering
+  \subfigure[domain 1]{\includegraphics[width=.43\linewidth]{pngs/laplacian/laplacian1.png}}
+  \subfigure[domain 2]{\includegraphics[width=.43\linewidth]{pngs/laplacian/laplacian2.png}}\\
+  \subfigure[domain 3]{\includegraphics[width=.43\linewidth]{pngs/laplacian/laplacian3.png}}
+  \caption{Solution of the laplacian problem}
+  \label{fig:2}
+\end{figure}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 
 \newpage
 
