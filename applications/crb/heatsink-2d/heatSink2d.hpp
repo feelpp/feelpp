@@ -622,6 +622,8 @@ void HeatSink2D::init()
     // allocate an element of Xh
     pT = element_ptrtype( new element_type( Xh ) );
 
+
+    std::cout<<"evaluation of surface_gamma1 ..."<<std::endl;
     surface_gamma1 = integrate( _range= markedfaces(mesh,"gamma1"), _expr=cst(1.) ).evaluate()(0,0);
     std::cout<<"surface_gamma = "<<surface_gamma1<<std::endl;
 

@@ -21,8 +21,8 @@ for i=1:N
   for j=1:N
     intP(2)=0.8+(i-1)*(50-0.8)/N;
     y(j) = inP(2);
-    z(i,j) = opusrbheatcrb( inP )(1);
-    e(i,j) = opusrbheatcrb( inP )(2);
+    z(i,j) = opuscabineheatcrb( inP )(1);
+    e(i,j) = opuscabineheatcrb( inP )(2);
   end
 end
 [xx,yy]=meshgrid(x,y);

@@ -22,7 +22,7 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 /**
-   \file RBheat.hpp
+   \file Cabineheat.hpp
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2009-11-13
  */
@@ -844,7 +844,7 @@ CabineHeat::output( int output_index, parameter_type const& mu )
         for(int i=0;i<Ql(output_index);i++)  s += M_thetaFq[output_index](i)*dot( M_Fq[output_index][i], U );
     }
     else{
-      throw std::logic_error( "[Rbheat::output] error with output_index : only 0 or 1 " );
+      throw std::logic_error( "[Cabineheat::output] error with output_index : only 0 or 1 " );
     }
     return s;
 
