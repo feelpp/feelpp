@@ -571,7 +571,6 @@ Heat1D::exportResults( element_type& U )
 void
 Heat1D::update( parameter_type const& mu )
 {
-
     *D = *M_Aq[0];
     for( size_type q = 1;q < M_Aq.size(); ++q )
     {
@@ -600,6 +599,7 @@ Heat1D::solve( parameter_type const& mu )
 void
 Heat1D::solve( parameter_type const& mu, element_ptrtype& T )
 {
+
     this->computeThetaq( mu );
     this->update( mu );
     backend->solve( _matrix=D,  _solution=T, _rhs=F );
