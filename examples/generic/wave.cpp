@@ -92,37 +92,22 @@ template<int Dim>struct ExactSolution{};
 template<>
 struct ExactSolution<1>
 {
-#if FEELPP_GNUC_AT_LEAST(4,6)
-    static constexpr double pi = M_PI;
-#else
-    static const double pi = M_PI;
-#endif
-    typedef __typeof__( sin(pi*Px()) ) type;
-    typedef __typeof__( pi*pi*sin(pi*Px()) ) wave_type;
+    typedef __typeof__( sin(M_PI*Px()) ) type;
+    typedef __typeof__( M_PI*M_PI*sin(M_PI*Px()) ) wave_type;
 };
 
 template<>
 struct ExactSolution<2>
 {
-#if FEELPP_GNUC_AT_LEAST(4,6)
-    static constexpr double pi = M_PI;
-#else
-    static const double pi = M_PI;
-#endif
-    typedef __typeof__( sin(pi*Px())*cos(pi*Py()) ) type;
-    typedef __typeof__( 2*pi*pi*sin(pi*Px())*cos(pi*Py()) ) wave_type;
+    typedef __typeof__( sin(M_PI*Px())*cos(M_PI*Py()) ) type;
+    typedef __typeof__( 2*M_PI*M_PI*sin(M_PI*Px())*cos(M_PI*Py()) ) wave_type;
 };
 
 template<>
 struct ExactSolution<3>
 {
-#if FEELPP_GNUC_AT_LEAST(4,6)
-    static constexpr double pi = M_PI;
-#else
-    static const double pi = M_PI;
-#endif
-    typedef __typeof__( sin(pi*Px())*cos(pi*Py())*cos(pi*Pz()) ) type;
-    typedef __typeof__( 3*pi*pi*sin(pi*Px())*cos(pi*Py())*cos(pi*Pz()) ) wave_type;
+    typedef __typeof__( sin(M_PI*Px())*cos(M_PI*Py())*cos(M_PI*Pz()) ) type;
+    typedef __typeof__( 3*M_PI*M_PI*sin(M_PI*Px())*cos(M_PI*Py())*cos(M_PI*Pz()) ) wave_type;
 };
 /**
  * Wave Solver using discontinous approximation spaces
