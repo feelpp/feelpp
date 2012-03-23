@@ -281,6 +281,8 @@ if(FEELPP_ENABLE_BAMG)
 endif(FEELPP_ENABLE_BAMG)
 
 
+include( feelpp.macros )
+
 #
 # Python
 #
