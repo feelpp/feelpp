@@ -21,13 +21,13 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-# Overlapping schwartz domain decomposition method
 include_directories( ${CMAKE_CURRENT_SOURCE_DIR} )
-add_executable( feel_doc_overlapping overlapping_ddmethodgeo.cpp overlapping_ddmethod.cpp )
-target_link_libraries( feel_doc_overlapping ${FEELPP_LIBRARIES} )
+
+# Overlapping schwartz domain decomposition method
+feelpp_add_application( doc_overlapping SRCS overlapping_ddmethodgeo.cpp overlapping_ddmethod.cpp )
 
 # Non-overlapping schwartz domain decomposition method
-add_executable( feel_doc_nonoverlapping nonoverlappinggeo.cpp nonoverlapping.cpp )
-target_link_libraries( feel_doc_nonoverlapping ${FEELPP_LIBRARIES} )
+feelpp_add_application( doc_nonoverlapping SRCS nonoverlappinggeo.cpp nonoverlapping.cpp )
 
-add_docex(multi_levels)
+# eigenmodes of Dirichlet to Neumann operator
+feelpp_add_application( doc_multi_levels SRCS multi_levels.cpp )
