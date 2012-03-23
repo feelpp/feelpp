@@ -1,11 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2009-03-04
 
-  Copyright (C) 2009 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2009-2012 Universite Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -28,6 +28,7 @@
  */
 #include "convection.hpp"
 
+
 // command line options
 inline po::options_description makeOptions()
 {
@@ -49,7 +50,7 @@ inline po::options_description makeOptions()
 
 	// return the options as well as the feel options
 	return convectionoptions.add( feel_options() );
-};
+}
 
 
 // Definition de la fonction qui donne les infos quand l'option --help est passee
@@ -70,7 +71,9 @@ makeAbout()
 
 	// Retourne les infos
 	return about;
-};
+}
+
+extern template class Convection<2,1,2>;
 
 int
 main( int argc, char** argv )
