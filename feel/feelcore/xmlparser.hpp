@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
 
   This file is part of the Feel library
@@ -70,10 +70,10 @@ public:
         name = new std::string((const char*)args[_name]);
         type = (int)args[_type];
         cmdName = ( args[_cmdName | 0] ?
-                    new std::string((const char*)args[_cmdName | 0]) :
+                    new std::string((const char*)args[_cmdName | (const char*)0]) :
                     new std::string(*name) );
-        latex = (args[_latex | 0] ? new std::string((const char*)args[_latex | 0]) : 0);
-        values = (args[_values | 0] ? new std::string((const char*)args[_values | 0]) : 0);
+        latex = (args[_latex | 0] ? new std::string((const char*)args[_latex | (const char*)0]) : (std::string*)0);
+        values = (args[_values | 0] ? new std::string((const char*)args[_values | (const char*)0]) : (std::string*)0);
     }
     /**
      * \brief Function used to know the attributes available in the parameter
