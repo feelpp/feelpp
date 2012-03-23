@@ -1063,11 +1063,13 @@ protected:
 private:
 
 
-    template <class ExprT>
-    void assign( Expr<ExprT> const& __expr, bool init, mpl::bool_<false> );
+    template <class ExprT> void assign( Expr<ExprT> const& __expr, bool init, mpl::bool_<false> );
+    template <class ExprT> void assign( Expr<ExprT> const& __expr, bool init, mpl::bool_<true> );
+    template <class ExprT> void assign( Expr<ExprT> const& __expr, mpl::bool_<true>, mpl::bool_<true> );
+    template <class ExprT> void assign( Expr<ExprT> const& __expr, mpl::bool_<true>, mpl::bool_<false> );
+    template <class ExprT> void assign( Expr<ExprT> const& __expr, mpl::bool_<true>, mpl::bool_<false>, mpl::bool_<true> );
+    template <class ExprT> void assign( Expr<ExprT> const& __expr, mpl::bool_<true>, mpl::bool_<false>, mpl::bool_<false> );
 
-    template <class ExprT>
-    void assign( Expr<ExprT> const& __expr, bool init, mpl::bool_<true> );
 private:
 
     size_type M_pattern;
@@ -1175,20 +1177,54 @@ template<typename FE1,  typename FE2,  typename ElemContType>
 template<typename ExprT>
 void
 BilinearForm<FE1, FE2, ElemContType>::assign( Expr<ExprT> const& __expr,
-                                              bool /*init*/,
+                                              bool init,
                                               mpl::bool_<true> )
 {
     Debug( 5050 ) << "BilinearForm::assign() start loop on test spaces\n";
-    if (FE1::nSpaces > 1 && FE2::nSpaces > 1 )
-        fusion::for_each( _M_X1->functionSpaces(), make_bfassign2( *this, __expr ) );
-    else if (FE1::nSpaces > 1 )
-        fusion::for_each( _M_X1->functionSpaces(),
-                          make_bfassign3( *this, __expr, _M_X2, 0 ) );
-    else
-        fusion::for_each( _M_X2->functionSpaces(),
-                          make_bfassign1( *this, __expr, _M_X1, 0 ) );
-
+    if ( init) _M_matrix.zero();
+    assign( __expr, mpl::bool_<true>(), mpl::bool_<(FE1::nSpaces > 1 && FE2::nSpaces > 1 )>() );
     Debug( 5050 ) << "BilinearForm::assign() stop loop on test spaces\n";
+
+}
+template<typename FE1,  typename FE2,  typename ElemContType>
+template<typename ExprT>
+void
+BilinearForm<FE1, FE2, ElemContType>::assign( Expr<ExprT> const& __expr,
+                                              mpl::bool_<true>,
+                                              mpl::bool_<true> )
+{
+    fusion::for_each( _M_X1->functionSpaces(), make_bfassign2( *this, __expr ) );
+}
+template<typename FE1,  typename FE2,  typename ElemContType>
+template<typename ExprT>
+void
+BilinearForm<FE1, FE2, ElemContType>::assign( Expr<ExprT> const& __expr,
+                                              mpl::bool_<true>,
+                                              mpl::bool_<false> )
+{
+    assign( __expr, mpl::bool_<true>(), mpl::bool_<false>(), mpl::bool_<(FE1::nSpaces > 1 )>() );
+}
+
+template<typename FE1,  typename FE2,  typename ElemContType>
+template<typename ExprT>
+void
+BilinearForm<FE1, FE2, ElemContType>::assign( Expr<ExprT> const& __expr,
+                                              mpl::bool_<true>,
+                                              mpl::bool_<false>,
+                                              mpl::bool_<true> )
+{
+    fusion::for_each( _M_X1->functionSpaces(), make_bfassign3( *this, __expr, _M_X2, 0 ) );
+}
+template<typename FE1,  typename FE2,  typename ElemContType>
+template<typename ExprT>
+void
+BilinearForm<FE1, FE2, ElemContType>::assign( Expr<ExprT> const& __expr,
+                                              mpl::bool_<true>,
+                                              mpl::bool_<false>,
+                                              mpl::bool_<false> )
+{
+    fusion::for_each( _M_X2->functionSpaces(), make_bfassign1( *this, __expr, _M_X1, 0 ) );
+
 }
 template<typename FE1,  typename FE2,  typename ElemContType>
 template<typename ExprT>

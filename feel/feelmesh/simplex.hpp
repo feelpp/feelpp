@@ -37,7 +37,29 @@
 
 namespace Feel
 {
+namespace details
+{
+template<int Order>
+struct points
+{
+    typedef mpl::vector_c<size_type, 1, Order+1, ( Order+1 )*( Order+2 )/2, ( Order+1 )*( Order+2 )*( Order+3 )/6 > type;
+    typedef mpl::vector_c<size_type, 0, Order+1-2, ( Order+1-2 )*( Order+2-2 )/2, ( Order+1-2 )*( Order+2-2 )*( Order+3-2 )/6 > interior_type;
+    typedef mpl::vector_c<size_type, 0, Order+1-2,                 Order+1-2,                             Order+1-2 > edge_type;
+    typedef mpl::vector_c<size_type, 0,         0, ( Order-1 )*( Order-2 )/2,             ( Order-1 )*( Order-2 )/2 > face_type;
+    typedef mpl::vector_c<size_type, 0,         0,                         0, ( Order-1 )*( Order-2 )*( Order-3 )/6 > volume_type;
+};
+template<>
+struct points<0>
+{
+    typedef mpl::vector_c<size_type, 1, 1, 1, 1> type;
+    typedef mpl::vector_c<size_type, 0, 1, 1, 1> interior_type;
+    typedef mpl::vector_c<size_type, 0, 1, 0, 0> edge_type;
+    typedef mpl::vector_c<size_type, 0, 0, 1, 0> face_type;
+    typedef mpl::vector_c<size_type, 0, 0, 0, 1> volume_type;
+};
 
+
+}
 
 /**
  * @class Simplex
@@ -61,11 +83,11 @@ private:
     typedef mpl::vector_c<uint16_type, 0, 0, 0, 1> volumes_t;
     typedef mpl::vector_c<uint16_type, 0, 2, 3, 4> normals_t;
 
-    typedef mpl::vector_c<size_type, 1, Order+1, ( Order+1 )*( Order+2 )/2, ( Order+1 )*( Order+2 )*( Order+3 )/6 > points_t;
-    typedef mpl::vector_c<size_type, 0, Order+1-2, ( Order+1-2 )*( Order+2-2 )/2, ( Order+1-2 )*( Order+2-2 )*( Order+3-2 )/6 > points_interior_t;
-    typedef mpl::vector_c<size_type, 0, Order+1-2,                 Order+1-2,                             Order+1-2 > points_edge_t;
-    typedef mpl::vector_c<size_type, 0,         0, ( Order-1 )*( Order-2 )/2,             ( Order-1 )*( Order-2 )/2 > points_face_t;
-    typedef mpl::vector_c<size_type, 0,         0,                         0, ( Order-1 )*( Order-2 )*( Order-3 )/6 > points_volume_t;
+    typedef typename details::points<Order>::type points_t;
+    typedef typename details::points<Order>::interior_type points_interior_t;
+    typedef typename details::points<Order>::edge_type points_edge_t;
+    typedef typename details::points<Order>::face_type points_face_t;
+    typedef typename details::points<Order>::volume_type points_volume_t;
 
     typedef mpl::vector_c<size_type, SHAPE_POINT, SHAPE_LINE, SHAPE_TRIANGLE, SHAPE_TETRA> shapes_t;
     typedef mpl::vector_c<size_type, GEOMETRY_POINT, GEOMETRY_LINE, GEOMETRY_SURFACE, GEOMETRY_VOLUME> geometries_t;
@@ -123,9 +145,9 @@ public:
     static const uint16_type numNormals = mpl::at<normals_t, mpl::int_<nDim> >::type::value;
 
     static const uint16_type nbPtsPerVertex = (nOrder==0)?0:1;
-    static const uint16_type nbPtsPerEdge = (nOrder==0)?((nDim==1)?1:0):mpl::at<points_edge_t, mpl::int_<nDim> >::type::value;
-    static const uint16_type nbPtsPerFace = (nOrder==0)?((nDim==2)?1:0):mpl::at<points_face_t, mpl::int_<nDim> >::type::value;
-    static const uint16_type nbPtsPerVolume = (nOrder==0)?((nDim==3)?1:0):mpl::at<points_volume_t, mpl::int_<nDim> >::type::value;
+    static const uint16_type nbPtsPerEdge = mpl::at<points_edge_t, mpl::int_<nDim> >::type::value;
+    static const uint16_type nbPtsPerFace = mpl::at<points_face_t, mpl::int_<nDim> >::type::value;
+    static const uint16_type nbPtsPerVolume = mpl::at<points_volume_t, mpl::int_<nDim> >::type::value;
     static const uint16_type numPoints = ( numVertices * nbPtsPerVertex +
                                            numEdges * nbPtsPerEdge +
                                            numFaces * nbPtsPerFace +
