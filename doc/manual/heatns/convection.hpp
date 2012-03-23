@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -92,10 +92,10 @@ public:
     typedef backend_type::vector_ptrtype vector_ptrtype;
 
 	// space and associated elements definitions
-	typedef mytag<Lagrange<Order_s, Vectorial>,0> basis_u_type; // velocity space
-	typedef mytag<Lagrange<Order_p, Scalar>,1> basis_p_type; // pressure space
-	typedef mytag<Lagrange<Order_t, Scalar>,2> basis_t_type; // temperature space
-    typedef mytag<Lagrange<0, Scalar>,3> basis_l_type; // multipliers for pressure space
+	typedef Lagrange<Order_s, Vectorial> basis_u_type; // velocity space
+	typedef Lagrange<Order_p, Scalar> basis_p_type; // pressure space
+	typedef Lagrange<Order_t, Scalar> basis_t_type; // temperature space
+    typedef Lagrange<0, Scalar> basis_l_type; // multipliers for pressure space
 
 	typedef fusion::vector< basis_u_type , basis_p_type , basis_t_type,basis_l_type> basis_type;
 
@@ -122,27 +122,18 @@ public:
     // destructor
     ~Convection() {}
 
-    // generate the mesh
-    mesh_ptrtype createMesh();
-
 	// Definition de la procedure pour faire tourner le code
 	void run();
 
     void updateResidual( const vector_ptrtype& X, vector_ptrtype& R );
     void updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J);
 
-
-	// Definition de la procedure pour resoudre le systeme lineaire
-    void solve( sparse_matrix_ptrtype& D, element_type& u, vector_ptrtype& F );
-
 	// Definition de la procedure pour exporter les solutions
 	void exportResults( boost::format, element_type& U, double t );
 
 private:
     void initLinearOperator( sparse_matrix_ptrtype& L );
-    void initLinearOperator2( sparse_matrix_ptrtype& L );
     void updateJacobian1( const vector_ptrtype& X, sparse_matrix_ptrtype& J);
-    void updateJacobian2( const vector_ptrtype& X, sparse_matrix_ptrtype& J);
 private:
 
     backend_ptrtype M_backend;
