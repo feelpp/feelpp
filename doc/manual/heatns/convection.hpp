@@ -120,7 +120,7 @@ public:
 	Convection( int argc , char** argv , AboutData const& , po::options_description const& );
 
     // destructor
-    ~Convection() {}
+    ~Convection();
 
 	// Definition de la procedure pour faire tourner le code
 	void run();
