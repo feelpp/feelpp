@@ -71,6 +71,9 @@ Convection<Order_s,Order_p,Order_t>::Convection(int argc,
     Log() << "output added\n";
 }
 
+template <int Order_s, int Order_p, int Order_t>
+Convection<Order_s,Order_p,Order_t>::~Convection()
+{}
 
 template <int Order_s, int Order_p, int Order_t>
 void Convection<Order_s,Order_p,Order_t> ::exportResults( boost::format fmt, element_type& U, double t)
