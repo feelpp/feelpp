@@ -9,15 +9,18 @@ macro(feelpp_add_application)
     "NO_TEST"
     ${ARGN}
     )
-  CDR(FEELPP_APP_NAME ${FEELPP_APP_DEFAULT_ARGS})
+  CAR(FEELPP_APP_NAME ${FEELPP_APP_DEFAULT_ARGS})
+
+  set(execname feel_${FEELPP_APP_NAME})
 
   MESSAGE("*** Arguments for Feel++ application ${FEELPP_APP_NAME}")
   MESSAGE("    Sources: ${FEELPP_APP_SRCS}")
   MESSAGE("    Link libraries: ${FEELPP_APP_LINK_LIBRARIES}")
   MESSAGE("    Cfg file: ${FEELPP_APP_CFG}")
   MESSAGE("    Geo file: ${FEELPP_APP_GEO}")
+  MESSAGE("   Exec file: ${execname}")
 
-  set(execname feel_${FEELPP_APP_NAME})
+
   add_executable(${execname}    ${FEELPP_APP_SRCS}  )
   target_link_libraries( ${execname} ${FEELPP_APP_LINK_LIBRARIES} ${FEELPP_LIBRARIES})
   INSTALL(PROGRAMS "${CMAKE_CURRENT_BINARY_DIR}/${execname}"  DESTINATION bin COMPONENT Bin)
@@ -33,23 +36,23 @@ macro(feelpp_add_application)
 
   if ( FEELPP_APP_CFG )
     foreach(  cfg ${FEELPP_APP_CFG} )
-#      if ( EXISTS ${cfg} )
-        configure_file( ${cfg} ${cfg} )
-          INSTALL(FILES "${cfg}"  DESTINATION share/feel/config)
-#      else()
-#        message(WARNING "Executable ${FEELPP_APP_NAME}: configuration file ${cfg} does not exist")
-#      endif()
+      #      if ( EXISTS ${cfg} )
+      # extract cfg filename  to be copied in binary dir
+      get_filename_component( CFG_NAME ${cfg} NAME )
+      configure_file( ${cfg} ${CFG_NAME} )
+      INSTALL(FILES "${cfg}"  DESTINATION share/feel/config)
+      #      else()
+      #        message(WARNING "Executable ${FEELPP_APP_NAME}: configuration file ${cfg} does not exist")
+      #      endif()
     endforeach()
   endif(FEELPP_APP_CFG)
 
   if ( FEELPP_APP_GEO )
     foreach(  geo ${FEELPP_APP_GEO} )
-#      if ( EXISTS ${cfg} )
-        configure_file( ${geo} ${geo} )
-          INSTALL(FILES "${geo}"  DESTINATION share/feel/geo)
-#      else()
-#        message(WARNING "Executable ${FEELPP_APP_NAME}: configuration file ${cfg} does not exist")
-#      endif()
+      # extract geo filename  to be copied in binary dir
+      get_filename_component( GEO_NAME ${geo} NAME )
+      configure_file( ${geo} ${GEO_NAME} )
+      INSTALL(FILES "${geo}"  DESTINATION share/feel/geo)
     endforeach()
   endif(FEELPP_APP_GEO)
 
