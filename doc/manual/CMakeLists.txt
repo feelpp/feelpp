@@ -112,13 +112,9 @@ add_custom_target(
 add_dependencies(tut-prerequisites feel_doc_mymesh)
 configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/tutorial.pos  ${CMAKE_CURRENT_BINARY_DIR}/tutorial.pos)
 
-#<<<<<<< .mine
-#if ( NOT FEEL_MINIMAL_CONFIGURATION )
-#=======
 if ( NOT FEELPP_MINIMAL_CONFIGURATION )
-#>>>>>>> .r8419
 
- #foreach( docex  myintegrals mymesh geotool myfunctionspace laplacian loadmesh residualestimator stokes stokes_good stokes_locking stokes_spurious bratu nonlinearpow mortar multi_levels threefields nirb nirbTest)
+  #foreach( docex  myintegrals mymesh geotool myfunctionspace laplacian loadmesh residualestimator stokes stokes_good stokes_locking stokes_spurious bratu nonlinearpow mortar multi_levels threefields nirb nirbTest)
   # add_docex( ${docex} )
  #endforeach()
 

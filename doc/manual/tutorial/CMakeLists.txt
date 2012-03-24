@@ -36,7 +36,6 @@ add_docex(myintegrals)
 add_docex(geotool)
 add_docex(myfunctionspace)
 
-
 if( NOT FEELPP_MINIMAL_CONFIGURATION )
   add_docex(laplacian)
   add_docex(dar)
