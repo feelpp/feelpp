@@ -77,8 +77,8 @@ public:
         super( vm, about ),
         M_backend( backend_type::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
-        eigen( SolverEigen<value_type>::build( this->vm() ) ),
-        shape( this->vm()["shape"].template as<std::string>() )
+        shape( this->vm()["shape"].template as<std::string>() ),
+        eigen( SolverEigen<value_type>::build( this->vm() ) )
     {
     }
 
