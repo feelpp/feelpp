@@ -44,11 +44,12 @@
 /** include  the header for the variational formulation language (vf) aka FEEL++ */
 #include <feel/feelvf/vf.hpp>
 
-/** use Feel namespace */
-using namespace Feel;
+
+
+
+namespace Feel
+{
 using namespace Feel::vf;
-
-
 /**
  * This routine returns the list of options using the
  * boost::program_options library. The data returned is typically used
@@ -408,18 +409,20 @@ DAR<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
     /** \endcode */
 } // DAR::run
 
+} // Feel
+
 /**
  * main function: entry point of the program
  */
 int
 main( int argc, char** argv )
 {
-    Environment env( argc, argv );
+    Feel::Environment env( argc, argv );
     /**
      * create an application
      */
     /** \code */
-    Application app( argc, argv, makeAbout(), makeOptions() );
+    Feel::Application app( argc, argv, Feel::makeAbout(), Feel::makeOptions() );
     if ( app.vm().count( "help" ) )
     {
         std::cout << app.optionsDescription() << "\n";
@@ -431,7 +434,7 @@ main( int argc, char** argv )
      * register the simgets
      */
     /** \code */
-    app.add( new DAR<2>( app.vm(), app.about() ) );
+    app.add( new Feel::DAR<2>( app.vm(), app.about() ) );
     /** \endcode */
 
     /**
