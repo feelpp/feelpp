@@ -37,7 +37,7 @@ set( SRC
   dummy.cpp datamap.cpp
   vector.cpp vectorublas.cpp
   preconditioner.cpp
-  backend.cpp  matrixshellsparse.cpp backend_adaptive_reuse_pc.cpp backendpetsc.cpp
+  backend.cpp  matrixshellsparse.cpp backendpetsc.cpp
   graphcsr.cpp  solvereigen.cpp
   solvernonlinear.cpp matrixblock.cpp vectorblock.cpp
   ${FEELPP_PETSC_SRCS}
