@@ -8,6 +8,20 @@
 #+OPTIONS: toc:t
 #+LATEX_class: cparticle
 
+* New in 0.92.0
+
+** Programming environment
+
+ - port to icc 12.1 and clang 3.1
+ - added cmake macro feelpp_add application, see http://code.google.com/p/feelpp/issues/detail?id=11&can=1
+
+** Bugs
+
+ - fixed issue 1: http://code.google.com/p/feelpp/issues/detail?id=1&can=1
+ - fixed issue 2: http://code.google.com/p/feelpp/issues/detail?id=2&can=1
+ - fixed issue 9: http://code.google.com/p/feelpp/issues/detail?id=9&can=1
+
+
 * New in 0.91.1
 
 ** Maintainance release
