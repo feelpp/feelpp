@@ -189,7 +189,7 @@ public:
     /**
      * \f$U(0-N) = s\f$: fill all components.
      */
-    virtual Vector<T> & operator= (const T s);
+    Vector<T> & operator= (const T s);
 
     /**
      *  \f$U = V\f$: copy all components.
@@ -199,7 +199,7 @@ public:
     /**
      *  \f$U = V\f$: copy all components.
      */
-    virtual Vector<T> & operator= (const std::vector<T> &v);
+    Vector<T> & operator= (const std::vector<T> &v);
 
     /**
      * \return the sum of the components of the vector
@@ -386,8 +386,8 @@ public:
      * \f$U+=A*V\f$, add the product of a \p SparseMatrix \p A
      * and a \p Vector \p V to \p this, where \p this=U.
      */
-    virtual void addVector (const boost::shared_ptr<Vector<T> >& V_in,
-                            const boost::shared_ptr<MatrixSparse<T> >& A_in )
+    void addVector (const boost::shared_ptr<Vector<T> >& V_in,
+                    const boost::shared_ptr<MatrixSparse<T> >& A_in )
         {
             addVector( *V_in, *A_in );
         }

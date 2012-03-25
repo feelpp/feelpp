@@ -447,7 +447,7 @@ public:
     /**
      * Copies the diagonal part of the matrix into \p dest.
      */
-    virtual void diagonal (boost::shared_ptr<Vector<T> >& dest) const { diagonal(*dest); }
+    void diagonal (boost::shared_ptr<Vector<T> >& dest) const { diagonal(*dest); }
 
     /**
      * Returns the transpose of a matrix
@@ -485,7 +485,7 @@ public:
     /**
      * Returns the symmetric part of the matrix
      */
-    virtual void symmetricPart( boost::shared_ptr<MatrixSparse<value_type> >& Ms ) const
+    void symmetricPart( boost::shared_ptr<MatrixSparse<value_type> >& Ms ) const
         {
             symmetricPart( *Ms );
         }
@@ -510,12 +510,12 @@ public:
      * \param transpose true to compute \f$v^T A^T u\f$ instead, false otherwise
      * \return the energy \f$v^T A u\f$
      */
-    virtual real_type energy ( vector_ptrtype const& v,
-                               vector_ptrtype const& u,
-                               bool _transpose = false ) const
-    {
-        return this->energy( *v, *u, _transpose );
-    }
+    real_type energy ( vector_ptrtype const& v,
+                       vector_ptrtype const& u,
+                       bool _transpose = false ) const
+        {
+            return this->energy( *v, *u, _transpose );
+        }
 
     /**
      * Return the l1-norm of the matrix, that is

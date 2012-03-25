@@ -593,8 +593,8 @@ CRBSCM<TruthModelType>::offline()
     //before call saveDB we have to split the vector of tuple M_y_bounds
     for(size_type i=0; i<M_y_bounds.size();i++)
     {
-      M_y_bounds_0.push_back(M_y_bounds[i].get<0>());
-      M_y_bounds_1.push_back(M_y_bounds[i].get<1>());
+      M_y_bounds_0.push_back(M_y_bounds[i].template get<0>());
+      M_y_bounds_1.push_back(M_y_bounds[i].template get<1>());
     }
     saveDB();
     return ckconv;
@@ -677,7 +677,7 @@ CRBSCM<TruthModelType>::ex( parameter_type const& mu ) const
         std::cout << "no eigenmode converged: increase --solvereigen-ncv\n";
         return 0.;
     }
-    double eigmin = modesmin.begin()->second.get<0>();
+    double eigmin = modesmin.begin()->second.template get<0>();
     //std::cout << std::setprecision(4) << mu << " eigmin = "
     //          << std::setprecision(16) << eigmin << "\n";
 
@@ -698,7 +698,7 @@ CRBSCM<TruthModelType>::ex( parameter_type const& mu ) const
         std::cout << "no eigenmode converged: increase --solvereigen-ncv\n";
         return;
     }
-    double eigmax = modesmax.rbegin()->second.get<0>();
+    double eigmax = modesmax.rbegin()->second.template get<0>();
 
     //std::cout << "[crbmodel] " << std::setprecision(4) << mu << " "
     //          << std::setprecision(16) << eigmin << " " << eigmax
@@ -877,8 +877,8 @@ CRBSCM<TruthModelType>::lb( parameter_type const& mu ,size_type K ,int indexmu) 
     {
         glp_set_col_name( lp, q+1, (boost::format( "y_%1%" ) % q).str().c_str() );
         glp_set_col_bnds( lp, q+1, GLP_DB,
-                          M_y_bounds[q].get<0>(),
-                          M_y_bounds[q].get<1>() );
+                          M_y_bounds[q].template get<0>(),
+                          M_y_bounds[q].template get<1>() );
         glp_set_obj_coef( lp, q+1, theta_q(q) );
     }
 

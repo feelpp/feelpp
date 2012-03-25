@@ -192,7 +192,7 @@ public :
         matrix_node_type newquadPtsRef(quadPtsRef.size1() , nContextPt);
         for (uint16_type i=0;i<nContextPt; ++i)
             {
-                ublas::column( newquadPtsRef, i ) = ublas::column( quadPtsRef, indexLocalToQuad[i].get<0>() );
+                ublas::column( newquadPtsRef, i ) = ublas::column( quadPtsRef, indexLocalToQuad[i].template get<0>() );
             }
 
         // create context
@@ -225,7 +225,7 @@ public :
         matrix_node_type newquadPtsRef(quadPtsRef.size1() , nContextPt);
         for (uint16_type i=0;i<nContextPt; ++i)
             {
-                ublas::column( newquadPtsRef, i ) = ublas::column( quadPtsRef, indexLocalToQuad[i].get<0>() );
+                ublas::column( newquadPtsRef, i ) = ublas::column( quadPtsRef, indexLocalToQuad[i].template get<0>() );
             }
 
         // create context
@@ -261,7 +261,7 @@ public :
         std::map<size_type,std::list<size_type> > mapEltId;
         for (uint16_type i=0;i<nContextPt; ++i)
             {
-                size_type eltId = this->eltForThisQuadPt(indexLocalToQuad[i].get<1>(),mpl::int_<iDim>());
+                size_type eltId = this->eltForThisQuadPt(indexLocalToQuad[i].template get<1>(),mpl::int_<iDim>());
                 mapEltId[eltId].push_back(i);
             }
 
@@ -309,7 +309,7 @@ public :
         std::map<size_type,std::list<size_type> > mapEltId;
         for (uint16_type i=0;i<nContextPt; ++i)
             {
-                size_type eltId = this->eltForThisQuadPt(indexLocalToQuad[i].get<1>(),mpl::int_<iDim>());
+                size_type eltId = this->eltForThisQuadPt(indexLocalToQuad[i].template get<1>(),mpl::int_<iDim>());
                 mapEltId[eltId].push_back(i);
             }
 
@@ -405,8 +405,8 @@ public :
                     {
                         size_type idq = gmc->nPoints()*ide+q;
                         auto testAnalysis = meshTestLocalization->searchElement(gmc->xReal( q ));
-                        auto testIdElt = testAnalysis.get<1>();
-                        auto testNodeRef = testAnalysis.get<2>();
+                        auto testIdElt = testAnalysis.template get<1>();
+                        auto testNodeRef = testAnalysis.template get<2>();
                         testEltToPtsQuad[testIdElt].push_back( boost::make_tuple(idq,q,testNodeRef) );
                     }
             }
@@ -449,8 +449,8 @@ public :
                         size_type idq = gmc->nPoints()*ide+q;
                         // search in test mesh
                         auto testAnalysis = meshTestLocalization->searchElement(gmc->xReal( q ));
-                        auto testIdElt = testAnalysis.get<1>();
-                        auto testNodeRef = testAnalysis.get<2>();
+                        auto testIdElt = testAnalysis.template get<1>();
+                        auto testNodeRef = testAnalysis.template get<2>();
                         testEltToPtsQuad[testIdElt].push_back( boost::make_tuple(idq,q,testNodeRef) );
 
                     }
@@ -518,13 +518,13 @@ public :
 
                         // search in trial mesh
                         auto trialAnalysis= meshTrialLocalization->searchElement(gmc->xReal( q ));
-                        auto trialIdElt = trialAnalysis.get<1>();
-                        auto trialNodeRef = trialAnalysis.get<2>();
+                        auto trialIdElt = trialAnalysis.template get<1>();
+                        auto trialNodeRef = trialAnalysis.template get<2>();
                         trialEltToPtsQuad[trialIdElt].push_back( boost::make_tuple(idq,q,trialNodeRef) );
                         // search in test mesh
                         auto testAnalysis = meshTestLocalization->searchElement(gmc->xReal( q ));
-                        auto testIdElt = testAnalysis.get<1>();
-                        auto testNodeRef = testAnalysis.get<2>();
+                        auto testIdElt = testAnalysis.template get<1>();
+                        auto testNodeRef = testAnalysis.template get<2>();
                         testEltToPtsQuad[testIdElt].push_back( boost::make_tuple(idq,q,testNodeRef) );
 
                         // relation between test and trial
@@ -575,14 +575,14 @@ public :
 
                         // search in trial mesh
                         auto trialAnalysis= meshTrialLocalization->searchElement(gmc->xReal( q ));
-                        auto trialIdElt = trialAnalysis.get<1>();
-                        auto trialNodeRef = trialAnalysis.get<2>();
+                        auto trialIdElt = trialAnalysis.template get<1>();
+                        auto trialNodeRef = trialAnalysis.template get<2>();
                         //std::cout << "\n trialNodeRef " << trialNodeRef << std::endl;
                         trialEltToPtsQuad[trialIdElt].push_back( boost::make_tuple(idq,q,trialNodeRef) );
                         // search in test mesh
                         auto testAnalysis = meshTestLocalization->searchElement(gmc->xReal( q ));
-                        auto testIdElt = testAnalysis.get<1>();
-                        auto testNodeRef = testAnalysis.get<2>();
+                        auto testIdElt = testAnalysis.template get<1>();
+                        auto testNodeRef = testAnalysis.template get<2>();
                         testEltToPtsQuad[testIdElt].push_back( boost::make_tuple(idq,q,testNodeRef) );
 
                         // relation between test and trial
@@ -626,8 +626,8 @@ public :
                         uint16_type cptIdq = 0;
                         for ( ; idq_it != idq_en ; ++idq_it, ++cptIdq )
                             {
-                                indexLocalToQuad[cptIdq] = boost::make_tuple(idq_it->get<1>(),idq_it->get<0>());
-                                ublas::column( ptsRefTest, cptIdq ) = idq_it->get<2>();
+                                indexLocalToQuad[cptIdq] = boost::make_tuple(idq_it->template get<1>(),idq_it->template get<0>());
+                                ublas::column( ptsRefTest, cptIdq ) = idq_it->template get<2>();
                             }
                         _M_resLinear.push_back(boost::make_tuple( theIdEltTest, indexLocalToQuad, ptsRefTest ));
                     }
@@ -679,15 +679,15 @@ public :
                 for ( ; quadPtTest_it != quadPtTest_en ; ++quadPtTest_it )
                     {
                         // get test data
-                        auto theIdq = quadPtTest_it->get<0>();
-                        auto theq = quadPtTest_it->get<1>();
+                        auto theIdq = quadPtTest_it->template get<0>();
+                        auto theq = quadPtTest_it->template get<1>();
                         //std::cout << "\nidq modulo : " << theIdq%nQuadPtsInElt << " q " << theq << " elt " << theIdq/nQuadPtsInElt;
-                        auto theNodeRefTest = quadPtTest_it->get<2>();
+                        auto theNodeRefTest = quadPtTest_it->template get<2>();
                         // search in trial data
                         auto theRes = this->findQuadPt(*eltCoupled_it,trialEltToPtsQuad,theIdq );
                         // get trial data
-                        auto theIdEltTrial = theRes.get<0>();
-                        auto theNodeRefTrial = theRes.get<1>();
+                        auto theIdEltTrial = theRes.template get<0>();
+                        auto theNodeRefTrial = theRes.template get<1>();
                         // add into the temporary map
                         mapTrial2idq[theIdEltTrial].push_back(boost::make_tuple(theq,theIdq,theNodeRefTest,theNodeRefTrial));
                     }
@@ -710,9 +710,9 @@ public :
                         uint16_type cptIdq = 0;
                         for ( ; idq_it != idq_en ; ++idq_it, ++cptIdq )
                             {
-                                indexLocalToQuad[cptIdq] = boost::make_tuple(idq_it->get<0>(),idq_it->get<1>());
-                                ublas::column( ptsRefTest, cptIdq ) = idq_it->get<2>();
-                                ublas::column( ptsRefTrial, cptIdq ) = idq_it->get<3>();
+                                indexLocalToQuad[cptIdq] = boost::make_tuple(idq_it->template get<0>(),idq_it->template get<1>());
+                                ublas::column( ptsRefTest, cptIdq ) = idq_it->template get<2>();
+                                ublas::column( ptsRefTrial, cptIdq ) = idq_it->template get<3>();
                             }
                         mapiIdTrial2qAndPtRef[map_it->first] = boost::make_tuple(indexLocalToQuad,ptsRefTest,ptsRefTrial);
 
@@ -743,7 +743,7 @@ private :
             auto quadPtTrial_en = trialPtQuadToElt[*eltTrial_it].end();
             while (!find && quadPtTrial_it != quadPtTrial_en )
                 {
-                    if ( quadPtTrial_it->get<0>() == idq ) { find = true;resNodeRef=quadPtTrial_it->get<2>(); }
+                    if ( quadPtTrial_it->template get<0>() == idq ) { find = true;resNodeRef=quadPtTrial_it->template get<2>(); }
                     else ++quadPtTrial_it;
                 }
             if (!find) ++eltTrial_it;
