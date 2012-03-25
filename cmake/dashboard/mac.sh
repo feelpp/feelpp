@@ -23,3 +23,7 @@ if [ -x /opt/local/bin/g++-mp-4.6 ]; then
     $COMMON-gcc-4.6.2,FEELPP_CXX=/opt/local/bin/g++-mp-4.6,FEELPP_EXPLICIT_VECTORIZATION=SSE2
     $COMMON-gcc-4.6.2-mpi,FEELPP_CXX=/opt/local/bin/g++-mp-4.6,FEELPP_EXPLICIT_VECTORIZATION=SSE2,FEELPP_ENABLE_MPI_MODE=ON
 fi
+if [ -x /opt/local/bin/clang-mp-3.1 ]; then
+    $COMMON-clang-3.1,FEELPP_CXX=/opt/local/bin/clang-mp-3.1,FEELPP_EXPLICIT_VECTORIZATION=SSE2
+    $COMMON-clang-3.1-mpi,FEELPP_CXX_CXX=/opt/local/bin/clang-mp-3.1,FEELPP_EXPLICIT_VECTORIZATION=SSE2,FEELPP_ENABLE_MPI_MODE=ON
+fi
