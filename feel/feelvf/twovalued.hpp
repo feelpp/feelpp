@@ -824,19 +824,39 @@ rightfacet( ExprT v )
 /**
  *
  */
-#define jump( u ) (leftface( (u)*N() ) + rightface( (u)*N() ))
+template<typename U>
+auto
+jump( U const& u ) -> decltype(leftface( (u)*N() ) + rightface( (u)*N() ))
+{
+    return (leftface( (u)*N() ) + rightface( (u)*N() ));
+}
 /**
  *
  */
-#define jumpt( u ) (leftfacet( (u)*N() ) + rightfacet( (u)*N() ))
+template<typename U>
+auto
+jumpt( U const& u ) -> decltype(leftfacet( (u)*N() ) + rightfacet( (u)*N() ))
+{
+    return (leftfacet( (u)*N() ) + rightfacet( (u)*N() ));
+}
 /**
  *
  */
-#define average( u ) (leftface( 0.5*(u) )+rightface( 0.5*(u) ))
+template<typename U>
+auto
+average( U const& u ) -> decltype(leftface( 0.5*(u) )+rightface( 0.5*(u) ))
+{
+    return leftface( 0.5*(u) )+rightface( 0.5*(u) );
+}
 /**
  *
  */
-#define averaget( u ) (leftfacet( 0.5*(u) )+rightfacet( 0.5*(u) ))
+template<typename U>
+auto
+averaget( U const&u ) -> decltype(leftfacet( 0.5*(u) )+rightfacet( 0.5*(u) ))
+{
+    return leftfacet( 0.5*(u) )+rightfacet( 0.5*(u) );
+}
 
 
 /// \cond detail
@@ -1136,13 +1156,21 @@ rightfacev( ExprT v )
 /**
  *
  */
-//#define jumpv( u ) sumv( (u)*N() )
-#define jumpv( u )  (leftfacev((u)*N())+rightfacev((u)*N()))
+template<typename U>
+auto
+jumpv( U const& u ) -> decltype( (leftfacev((u)*N())+rightfacev((u)*N())) )
+{
+    return (leftfacev((u)*N())+rightfacev((u)*N()));
+}
 /**
  *
  */
-#define averagev( u ) (.5*(leftfacev((u))+rightfacev((u))))
-//#define averagev( u ) (.5*sumv((u)))
+template<typename U>
+auto
+averagev( U const& u ) -> decltype(.5*(leftfacev((u))+rightfacev((u))))
+{
+    return .5*(leftfacev((u))+rightfacev((u)));
+}
 
 } // vf
 } // Feel
