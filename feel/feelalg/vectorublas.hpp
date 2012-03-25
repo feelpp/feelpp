@@ -34,9 +34,6 @@
 #include <boost/operators.hpp>
 #include <boost/numeric/ublas/vector.hpp>
 #include <boost/numeric/ublas/vector_proxy.hpp>
-//#include <gmm_vector.h>
-//#include <gmm_sub_vector.h>
-
 #include <feel/feelcore/application.hpp>
 #include <feel/feelalg/vector.hpp>
 
@@ -146,7 +143,9 @@ public:
     void init ( const size_type n,
                 const bool      fast=false);
 
-    //new !!!!!!!!!
+    /**
+     * init from a \p DataMap
+     */
     void init( DataMap const& dm );
 
 
@@ -165,10 +164,10 @@ public:
     /**
      *  \f$U = V\f$: copy all components.
      */
-    Vector<value_type> & operator= (const Vector<value_type> &V);
+    Vector<value_type>& operator= (const Vector<value_type> &V);
 
     template<typename AE>
-    VectorUblas& operator=( ublas::vector_expression<AE> const& e )
+    VectorUblas<value_type, Storage>& operator=( ublas::vector_expression<AE> const& e )
     {
         this->outdateGlobalValues();
         _M_vec.operator=( e );
@@ -600,7 +599,7 @@ public:
      * @return the \f$l_1\f$-norm of the vector, i.e.  the sum of the
      * absolute values.
      */
-    FEELPP_DONT_INLINE real_type l1Norm() const
+    real_type l1Norm() const
     {
         checkInvariant();
         double local_l1 = ublas::norm_1( _M_vec );
@@ -624,7 +623,7 @@ public:
      * @return the \f$l_2\f$-norm of the vector, i.e.  the square root
      * of the sum of the squares of the elements.
      */
-    FEELPP_DONT_INLINE real_type l2Norm() const
+    real_type l2Norm() const
     {
         checkInvariant();
         real_type local_norm2 = ublas::inner_prod( _M_vec, _M_vec );
@@ -867,58 +866,18 @@ element_product( boost::shared_ptr<VectorUblas<T> > const& v1,
     return element_product( *v1, *v2 );
 }
 
-
-
-
+/**
+ * FEELPP_INSTANTIATE_VECTORUBLAS is never defined except in vectorublas.cpp
+ * where we do the instantiate. This allows to reduce the VectorUblas
+ * instantiation to the strict minimum
+ */
+#if !defined( FEELPP_INSTANTIATE_VECTORUBLAS )
+extern template class VectorUblas<double,ublas::vector<double> >;
+extern template class VectorUblas<double,ublas::vector_range<ublas::vector<double> > >;
+extern template class VectorUblas<double,ublas::vector_slice<ublas::vector<double> > >;
+#endif
 
 } // Feel
 
-#if 0
-namespace gmm
-{
-namespace ublas = boost::numeric::ublas;
-/// \cond detail
-template <typename T, typename Storage>
-struct linalg_traits<Feel::VectorUblas<T,Storage> >
-{
-    typedef Feel::VectorUblas<T,Storage> this_type;
-    typedef this_type origin_type;
-    typedef linalg_false is_reference;
-    typedef abstract_vector linalg_type;
-    typedef T value_type;
-    typedef T& reference;
-    typedef typename this_type::iterator iterator;
-    typedef typename this_type::const_iterator const_iterator;
-    typedef abstract_dense storage_type;
-    typedef linalg_true index_sorted;
-    static FEELPP_STRONG_INLINE size_type size(const this_type &v) { return v.size(); }
-    static FEELPP_STRONG_INLINE iterator begin(this_type &v) { return v.begin(); }
-    static FEELPP_STRONG_INLINE const_iterator begin(const this_type &v) { return v.begin(); }
-    static FEELPP_STRONG_INLINE iterator end(this_type &v) { return v.end(); }
-    static FEELPP_STRONG_INLINE const_iterator end(const this_type &v) { return v.end(); }
-    static FEELPP_STRONG_INLINE origin_type* origin(this_type &v) { return &v; }
-    static FEELPP_STRONG_INLINE const origin_type* origin(const this_type &v) { return &v; }
-    static FEELPP_STRONG_INLINE void clear(origin_type*, const iterator &it, const iterator &ite)
-    { std::fill(it, ite, value_type(0)); }
-    static FEELPP_STRONG_INLINE void do_clear(this_type &v) { v.clear(); }
-    static FEELPP_STRONG_INLINE value_type access(const origin_type *, const const_iterator &it,
-                                                const const_iterator &, size_type i)
-    { return *( it+i ); }
-    static FEELPP_STRONG_INLINE reference access(origin_type *, const iterator &it,
-                                               const iterator &, size_type i)
-    { return *( it+i ); }
-    static FEELPP_STRONG_INLINE void resize(this_type &v, size_type n) { v.resize(n, true); }
-};
 
-
-template <typename T, typename Storage>
-inline
-gmm::size_type
-nnz(const Feel::VectorUblas<T,Storage>& l)
-{
-    return l.size();
-}
-/// \endcond detail
-} // gmm
-#endif
 #endif /* __VectorUblas_H */

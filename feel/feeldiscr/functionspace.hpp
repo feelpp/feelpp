@@ -1369,8 +1369,8 @@ public:
 
         ~Element();
 
-        void init( functionspace_ptrtype const& __functionspace,
-                   container_type const& __c );
+        void initFromSpace( functionspace_ptrtype const& __functionspace,
+                            container_type const& __c );
 
         //@}
 
@@ -1655,12 +1655,8 @@ public:
         template < typename p0_space_type >
         typename p0_space_type::element_type max( boost::shared_ptr<p0_space_type> const& P0h ) { return this->extremeValue(P0h, "max" ); }
 
-        value_type max() { return this->container().max(); }
-
         template < typename p0_space_type >
         typename p0_space_type::element_type min( boost::shared_ptr<p0_space_type> const& P0h ) { return this->extremeValue(P0h, "min" ); }
-
-        value_type min() { return this->container().min(); }
 
         //! Interpolation at a set of points
         //@{
@@ -2187,7 +2183,7 @@ public:
             Debug( 5010 ) << "Element <" << i << ">::size :  "<<  space->nDof()<< "\n";
             Debug( 5010 ) << "Element <" << i << ">::local size :  "<<  space->nLocalDof()<< "\n";
             Debug( 5010 ) << "Element <" << -1 << ">::size :  "<<  this->size() << "\n";
-            if (this->functionSpace()->functionSpace<i>()->worldComm().isActive() )
+            if (this->functionSpace()->template functionSpace<i>()->worldComm().isActive() )
                 {
                     ct_type ct( *this, ublas::range( nbdof_start, nbdof_start+space->nLocalDof() ),
                                 _M_functionspace->template functionSpace<i>()->map() );
@@ -3639,8 +3635,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::~Element()
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::init( functionspace_ptrtype const& __functionspace,
-                                                          container_type const& __c )
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::initFromSpace( functionspace_ptrtype const& __functionspace,
+                                                                   container_type const& __c )
 {
     _M_functionspace = __functionspace;
     (container_type)*this = __c;

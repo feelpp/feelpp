@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -6,6 +6,7 @@
        Date: 2005-07-26
 
   Copyright (C) 2005,2006 EPFL
+  Copyright (C) 2006-2012 Universite Joseph Fourier Grenoble 1
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -534,20 +535,34 @@ JacobiBatchEvaluation( T a, T b, ublas::vector<T> const& __pts )
 }
 
 template<uint16_type N, typename T>
+void
+JacobiBatchDerivation( ublas::matrix<T>& res, T a, T b, ublas::vector<T> const& __pts, mpl::bool_<true> )
+{
+    typedef T value_type;
+    ublas::subrange( res, 1, N+1, 0, __pts.size() ) = JacobiBatchEvaluation<N-1, T>( a+1.0, b+1.0, __pts );
+    for ( uint16_type i = 1;i < N+1; ++i )
+        ublas::row( res, i ) *= 0.5*(a+b+value_type( i )+1.0);
+}
+
+template<uint16_type N, typename T>
+void
+JacobiBatchDerivation( ublas::matrix<T>& /*res*/, T /*a*/, T /*b*/,
+                       ublas::vector<T> const& /*__pts*/, mpl::bool_<false> )
+{
+}
+
+template<uint16_type N, typename T>
 ublas::matrix<T>
 JacobiBatchDerivation( T a, T b, ublas::vector<T> const& __pts )
 {
     typedef T value_type;
     ublas::matrix<T> res( N+1, __pts.size() );
     ublas::row( res, 0 ) = ublas::scalar_vector<value_type>( res.size2(), 0.0 );
-    if ( N > 0 )
-    {
-        ublas::subrange( res, 1, N+1, 0, __pts.size() ) = JacobiBatchEvaluation<N-1, T>( a+1.0, b+1.0, __pts );
-        for ( uint16_type i = 1;i < N+1; ++i )
-            ublas::row( res, i ) *= 0.5*(a+b+value_type( i )+1.0);
-    }
+    static const bool cond = N>0;
+    JacobiBatchDerivation<N,T>( res, a, b, __pts, mpl::bool_<cond>() );
     return res;
 }
+
 
 #if 0
 template<uint16_type N, typename T>
@@ -785,7 +800,7 @@ gausslobattojacobi( VectorW& wr, VectorN& xr, T a = T( 0.0 ), T b = T( 0.0 ) )
     value_type a4 = fact( a+b+value_type( N ) );//gamma(a + b + m + 1);
     value_type a5 = fact(value_type(N)-1.0)*(value_type(N)-1.0); // (Q-1)!(Q-1)
 
-    value_type a6 = a1 * a2 * a3;// Numérateur
+    value_type a6 = a1 * a2 * a3;// Numerateur
 
     for ( int k = 0; k < N; ++k )
     {
@@ -842,7 +857,7 @@ gausslobattojacobi( size_type N, VectorW& wr, VectorN& xr, T a = T( 0.0 ), T b =
     value_type a4 = fact( a+b+value_type( N ) );//gamma(a + b + m + 1);
     value_type a5 = fact(value_type(N)-1.0)*(value_type(N)-1.0); // (Q-1)!(Q-1)
 
-    value_type a6 = a1 * a2 * a3;// Numérateur
+    value_type a6 = a1 * a2 * a3;// Numerateur
 
     for ( int k = 1-interior; k < int(N-1-interior); ++k )
     {
@@ -895,7 +910,7 @@ left_gaussradaujacobi( VectorW& wr, VectorN& xr, T a = T( 0.0 ), T b = T( 0.0 ) 
     value_type a4 = fact( a+b+value_type( N ) );//gamma(a + b + m + 1);
     value_type a5 = fact(value_type(N)-1.0)*(value_type(N)+b); // (Q-1)!(Q+b)
 
-    value_type a6 = a1 * a2 * a3;// Numérateur
+    value_type a6 = a1 * a2 * a3;// Numerateur
 
     for ( int k = 0; k < N; ++k )
     {

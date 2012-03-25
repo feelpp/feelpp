@@ -416,7 +416,7 @@ public:
      * \param Dmu (input) parameter space
      * \param N : sampling size (optional input with default value)
      */
-    void computeErrorEstimationEfficiencyIndicator (parameterspace_ptrtype const& Dmu, double& max_ei, double& min_ei,int N);
+    void computeErrorEstimationEfficiencyIndicator (parameterspace_ptrtype const& Dmu, double& max_ei, double& min_ei,int N = 4);
 
 
     /**
@@ -474,7 +474,7 @@ public:
         {
             auto o = lb( N, mu, uN, uNdu );
             auto e = delta( N, mu, uN, uNdu );
-            return o.get<0>() + e.get<0>();
+            return o.template get<0>() + e.template get<0>();
         }
 
     /**
@@ -490,7 +490,7 @@ public:
     value_type delta( size_type N, parameter_ptrtype const& mu, std::vector< vectorN_type > const& uN, std::vector< vectorN_type > const& uNdu, std::vector<vectorN_type> const& uNold,  std::vector<vectorN_type> const& uNduold , int k=0) const
         {
             auto e = delta( N, mu, uN, uNdu );
-            return e.get<0>();
+            return e.template get<0>();
         }
 
     /**
@@ -999,14 +999,14 @@ CRB<TruthModelType>::offline()
                 if( reuse_prec )
                 {
                     auto ret = backend_primal_problem->solve( _matrix=A, _solution=u, _rhs=Rhs, _reuse_prec=(M_bdf_primal->iteration() >=2) );
-                    if  (!ret.get<0>() )
-                        Log()<<"[CRB] WARNING : at time "<<M_bdf_primal->time()<<" we have not converged ( nb_it : "<<ret.get<1>()<<" and residual : "<<ret.get<2>() <<" ) \n";
+                    if  (!ret.template get<0>() )
+                        Log()<<"[CRB] WARNING : at time "<<M_bdf_primal->time()<<" we have not converged ( nb_it : "<<ret.template get<1>()<<" and residual : "<<ret.template get<2>() <<" ) \n";
                 }
                 else
                 {
                     auto ret = backend_primal_problem->solve( _matrix=A, _solution=u, _rhs=Rhs );
-                    if ( !ret.get<0>() )
-                        Log()<<"[CRB] WARNING : at time "<<M_bdf_primal->time()<<" we have not converged ( nb_it : "<<ret.get<1>()<<" and residual : "<<ret.get<2>() <<" ) \n";
+                    if ( !ret.template get<0>() )
+                        Log()<<"[CRB] WARNING : at time "<<M_bdf_primal->time()<<" we have not converged ( nb_it : "<<ret.template get<1>()<<" and residual : "<<ret.template get<2>() <<" ) \n";
                 }
 
 
@@ -1093,14 +1093,14 @@ CRB<TruthModelType>::offline()
                     if( reuse_prec )
                     {
                         auto ret = backend_dual_problem->solve( _matrix=Adu, _solution=udu, _rhs=Rhs, _reuse_prec=(M_bdf_dual->iteration() >=2) );
-                        if ( !ret.get<0>() )
-                            Log()<<"[CRB] WARNING (adjoint model) : at time "<<M_bdf_dual->time()<<" we have not converged ( nb_it : "<<ret.get<1>()<<" and residual : "<<ret.get<2>() <<" ) \n";
+                        if ( !ret.template get<0>() )
+                            Log()<<"[CRB] WARNING (adjoint model) : at time "<<M_bdf_dual->time()<<" we have not converged ( nb_it : "<<ret.template get<1>()<<" and residual : "<<ret.template get<2>() <<" ) \n";
                    }
                    else
                    {
                        auto ret = backend_dual_problem->solve( _matrix=Adu, _solution=udu, _rhs=Rhs );
-                       if ( !ret.get<0>() )
-                           Log()<<"[CRB] WARNING (adjoint model) : at time "<<M_bdf_dual->time()<<" we have not converged ( nb_it : "<<ret.get<1>()<<" and residual : "<<ret.get<2>() <<" ) \n";
+                       if ( !ret.template get<0>() )
+                           Log()<<"[CRB] WARNING (adjoint model) : at time "<<M_bdf_dual->time()<<" we have not converged ( nb_it : "<<ret.template get<1>()<<" and residual : "<<ret.template get<2>() <<" ) \n";
                    }
 
 
@@ -1437,7 +1437,7 @@ CRB<TruthModelType>::offline()
             }
         M_rbconv.insert( convergence( M_N, maxerror ) );
 
-        //mu = M_Xi->at( M_N );//M_WNmu_complement->min().get<0>();
+        //mu = M_Xi->at( M_N );//M_WNmu_complement->min().template get<0>();
 
         check( M_WNmu->size() );
 
@@ -1685,9 +1685,9 @@ CRB<TruthModelType>::check( size_type N ) const
         std::vector< vectorN_type > uNold;
         std::vector< vectorN_type > uNduold;
         auto tuple = lb( N, mu, uN, uNdu, uNold, uNduold);
-        double s = tuple.get<0>();
+        double s = tuple.template get<0>();
         auto error_estimation = delta( N, mu, uN, uNdu , uNold, uNduold);
-        double err = error_estimation.get<0>() ;
+        double err = error_estimation.template get<0>() ;
 
 
 #if 0
@@ -1714,7 +1714,7 @@ CRB<TruthModelType>::check( size_type N ) const
 
         if ( this->vm()["crb.check.residual"].template as<int>() == 1 )
         {
-            std::vector<double> coefficients = error_estimation.get<1>();
+            std::vector<double> coefficients = error_estimation.template get<1>();
             checkResidual( mu , coefficients);
         }
 
@@ -1725,7 +1725,7 @@ CRB<TruthModelType>::check( size_type N ) const
 
 template<typename TruthModelType>
 void
-CRB<TruthModelType>::computeErrorEstimationEfficiencyIndicator (parameterspace_ptrtype const& Dmu, double& max_ei, double& min_ei,int N=4)
+CRB<TruthModelType>::computeErrorEstimationEfficiencyIndicator (parameterspace_ptrtype const& Dmu, double& max_ei, double& min_ei,int N)
 {
     std::vector< vectorN_type > uN; //( N );
     std::vector< vectorN_type > uNdu;//( N );
@@ -2108,8 +2108,8 @@ CRB<TruthModelType>::delta( size_type N,
         for(double time=dt; time<=Tf; time+=dt)
         {
             auto pr = transientPrimalResidual( N, mu, uN[time_index], uNold[time_index], dt, time);
-            primal_sum += pr.get<0>();
-            vect_pr = pr.get<1>();
+            primal_sum += pr.template get<0>();
+            vect_pr = pr.template get<1>();
             time_index++;
         }//end of time loop for primal problem
         time_index--;
@@ -2120,8 +2120,8 @@ CRB<TruthModelType>::delta( size_type N,
         for(double time=Tf; time>=dt; time-=dt)
         {
             auto du = transientDualResidual( N, mu, uNdu[time_index], uNduold[time_index], dt, time);
-            dual_sum += du.get<0>();
-	    vect_du = du.get<1>();
+            dual_sum += du.template get<0>();
+	    vect_du = du.template get<1>();
             time_index--;
         }//end of time loop for primal problem
 
@@ -2184,7 +2184,7 @@ CRB<TruthModelType>::maxErrorBounds( size_type N ) const
                   parameter_type const& mu = M_WNmu_complement->at( k );
                   //double _err = delta( N, mu, uN, uNdu, uNold, uNduold, k);
                   auto error_estimation = delta( N, mu, uN, uNdu, uNold, uNduold, k);
-                  double _err = error_estimation.get<0>();
+                  double _err = error_estimation.template get<0>();
                   err1(k) = _err;
               }
           Eigen::MatrixXf::Index index;
@@ -2205,10 +2205,10 @@ CRB<TruthModelType>::maxErrorBounds( size_type N ) const
               //std::cout << "[maxErrorBounds] mu=" << mu << "\n";
 	      lb( N, mu, uN, uNdu , uNold ,uNduold );
               //auto tuple = lb( N, mu, uN, uNdu , uNold ,uNduold );
-              //double o = tuple.get<0>();
+              //double o = tuple.template get<0>();
               //std::cout << "[maxErrorBounds] output=" << o << "\n";
               auto error_estimation = delta( N, mu, uN, uNdu, uNold, uNduold, k);
-              double _err = error_estimation.get<0>();
+              double _err = error_estimation.template get<0>();
               //std::cout << "[maxErrorBounds] error=" << _err << "\n";
               err(k) = _err;
           }
@@ -2296,8 +2296,8 @@ CRB<TruthModelType>::exportBasisFunctions( const export_vector_wn_type& export_v
 {
 
 
-    std::vector<wn_type> vect_wn=export_vector_wn.get<0>();
-    std::vector<std::string> vect_names=export_vector_wn.get<1>();
+    std::vector<wn_type> vect_wn=export_vector_wn.template get<0>();
+    std::vector<std::string> vect_names=export_vector_wn.template get<1>();
 
     if( vect_wn.size()==0 )
     {
@@ -2354,7 +2354,7 @@ CRB<TruthModelType>::empiricalErrorEstimation ( int Nwn, parameter_type const& m
   std::vector<vectorN_type> Unold;
   std::vector<vectorN_type> Unduold;
   auto o = lb( Nwn, mu, Un, Undu, Unold, Unduold  );
-  double sn = o.get<0>();
+  double sn = o.template get<0>();
 
     int nb_element =Nwn/M_factor*(M_factor>0) + (Nwn+M_factor)*(M_factor<0 && (int)Nwn>(-M_factor)) + 1*(M_factor<0 && (int)Nwn<=(-M_factor))  ;
 
@@ -2363,7 +2363,7 @@ CRB<TruthModelType>::empiricalErrorEstimation ( int Nwn, parameter_type const& m
 
   //double output_smaller_basis = lb(nb_element, mu, Un2, Undu2, Unold, Unduold);
   auto tuple = lb(nb_element, mu, Un2, Undu2, Unold, Unduold);
-  double output_smaller_basis = tuple.get<0>();
+  double output_smaller_basis = tuple.template get<0>();
 
   double error_estimation = math::abs(sn-output_smaller_basis);
 
@@ -2479,7 +2479,7 @@ CRB<TruthModelType>::transientPrimalResidual( int Ncur,parameter_type const& mu,
 
 
     error_estimation_type steady_residual_contribution = steadyPrimalResidual(Ncur, mu, Un, time);
-    std::vector<double> steady_coeff_vector = steady_residual_contribution.get<1>();
+    std::vector<double> steady_coeff_vector = steady_residual_contribution.template get<1>();
     value_type __c0_pr     = steady_coeff_vector[0];
     value_type __lambda_pr = steady_coeff_vector[1];
     value_type __gamma_pr  = steady_coeff_vector[2];
@@ -2642,7 +2642,7 @@ CRB<TruthModelType>::transientDualResidual( int Ncur,parameter_type const& mu,  
 
 
     error_estimation_type steady_residual_contribution = steadyDualResidual(Ncur, mu, Undu, time);
-    std::vector<double> steady_coeff_vector = steady_residual_contribution.get<1>();
+    std::vector<double> steady_coeff_vector = steady_residual_contribution.template get<1>();
     value_type __c0_du     = steady_coeff_vector[0];
     value_type __lambda_du = steady_coeff_vector[1];
     value_type __gamma_du  = steady_coeff_vector[2];
@@ -3423,10 +3423,10 @@ CRB<TruthModelType>::run( parameter_type const& mu, double eps )
     //uNdu.setZero( Nwn );
 
     auto o = lb( Nwn, mu, uN, uNdu , uNold, uNduold );
-    double output = o.get<0>();
+    double output = o.template get<0>();
     auto error_estimation = delta( Nwn, mu, uN, uNdu , uNold, uNduold);
-    double e = error_estimation.get<0>();
-    double condition_number = o.get<1>();
+    double e = error_estimation.template get<0>();
+    double condition_number = o.template get<1>();
 
     return boost::make_tuple( output , e, Nwn , condition_number);
 }
@@ -3494,8 +3494,8 @@ CRB<TruthModelType>::run( const double * X, unsigned long N, double * Y, unsigne
     FEELPP_ASSERT( P == 2 )( P ).warn( "invalid number of outputs" );
     auto o = lb( Nwn, mu, uN, uNdu , uNold, uNduold );
     auto e = delta( Nwn, mu, uN, uNdu , uNold, uNduold );
-    Y[0]  = o.get<0>();
-    Y[1]  = e.get<0>();
+    Y[0]  = o.template get<0>();
+    Y[1]  = e.template get<0>();
 }
 
 
@@ -3546,8 +3546,8 @@ CRB<TruthModelType>::run( const double * X, unsigned long N, double * Y, unsigne
     FEELPP_ASSERT( P == 2 )( P ).warn( "invalid number of outputs" );
     auto o = lb( Nwn, mu, uN, uNdu , uNold, uNduold );
     auto e = delta( Nwn, mu, uN, uNdu , uNold, uNduold );
-    Y[0]  = o.get<0>();
-    Y[1]  = e.get<0>();
+    Y[0]  = o.template get<0>();
+    Y[1]  = e.template get<0>();
 
 }
 

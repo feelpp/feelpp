@@ -426,7 +426,7 @@ public:
                 {
                     //std::cerr << "coucpu 2 " << topo_dim << " " << topological_dimension << " " << __id << "\n";
                     if ( __id == 0 )
-                        return makeLattice<Shape>( interior );
+                        return this->template makeLattice<Shape>( interior );
                     throw std::logic_error( "cannot make those points" );
                     return points_type();
                 }
@@ -436,7 +436,8 @@ public:
                     points_type G;
                     if ( topo_dim == 1 )
                         {
-                            G = Reference<Simplex<1, Order, 1>, 1, Order, 1, T>().makeLattice<SHAPE_LINE>( interior );
+                            Reference<Simplex<1, Order, 1>, 1, Order, 1, T> refline;
+                            G = refline.template makeLattice<SHAPE_LINE>( interior );
                             pt_to_entity<Shape,1> p_to_e( __id );
                             points_type Gret( nRealDim, G.size2() );
                             for ( size_type i = 0; i < G.size2(); ++i )
@@ -446,7 +447,8 @@ public:
                         }
                     else if ( topo_dim == 2 )
                         {
-                            G = Reference<Simplex<2, Order, 2>, 2, Order, 2, T>().makeLattice<SHAPE_TRIANGLE>( interior );
+                            Reference<Simplex<2, Order, 2>, 2, Order, 2, T> refface;
+                            G = refface.template makeLattice<SHAPE_TRIANGLE>( interior );
                             pt_to_entity<Shape,2> p_to_e( __id );
                             points_type Gret( nRealDim, G.size2() );
                             for ( size_type i = 0; i < G.size2(); ++i )

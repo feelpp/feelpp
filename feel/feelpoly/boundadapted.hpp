@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -42,13 +42,13 @@
 namespace Feel
 {
 template<class Convex,uint16_type O,typename T> class PointSetWarpBlend;
-template<uint16_type Dim,uint16_type RealDim,uint16_type Degree,typename NormalizationPolicy,typename T,template<class> class StoragePolicy> struct Dubiner;
+template<uint16_type Dim,uint16_type RealDim,uint16_type Degree,typename NormalizationPolicy,typename T,template<class> class StoragePolicy> class Dubiner;
 
 template<uint16_type Dim,
          uint16_type Degree,
          typename T,
          template<class> class StoragePolicy>
-struct BoundaryAdapted;
+class BoundaryAdapted;
 
 template<uint16_type Dim,
          uint16_type Degree,
@@ -353,15 +353,15 @@ private:
     {
       matrix_type E = _M_pfunc.evaluate_1( ublas::row(__pts,0) );
       matrix_type D; D.resize(E.size1(), E.size2());
-      
+
       ublas::row(D, 0) = ublas::row(E, 0);
       ublas::row(D, 1) = ublas::row(E, E.size2()-1);
-      
+
       for(unsigned int i=1; i < E.size2()-1 ; ++i)
       {
 	ublas::row(D, i+1) = ublas::row(E, i);
       }
-      
+
       return D;
     }
 
@@ -380,15 +380,15 @@ private:
 
 	vector_matrix_type D( 1 );
 	D[0].resize( nOrder+1, __pts().size2() );
-	
+
 	ublas::row(D[0], 0) = ublas::row(E[0], 0);
 	ublas::row(D[0], 1) = ublas::row(E[0], E[0].size2()-1);
-	
+
 	for(unsigned int i=1; i < E[0].size2()-1 ; ++i)
 	{
 	  ublas::row(D[0], i+1) = ublas::row(E[0], i);
 	}
-	
+
         return D;
     }
 
@@ -604,7 +604,7 @@ BoundaryAdapted<Dim, Degree,  T, StoragePolicy>::derivate( ublas::matrix_express
                 ublas::row(res[1],G_i) +=  ublas::element_prod(ublas::row(psi_1,p) , ublas::row(dpsi_2[p],q) );
             }
     //@}
-    
+
 
     return res;
 }
