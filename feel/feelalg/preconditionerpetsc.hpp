@@ -71,7 +71,7 @@ public:
     //! copy constructor
     PreconditionerPetsc( PreconditionerPetsc const & );
     //! destructor
-    ~PreconditionerPetsc();
+    virtual ~PreconditionerPetsc();
 
     /**
      * Release all memory and clear data structures.

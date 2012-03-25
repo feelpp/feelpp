@@ -442,9 +442,9 @@ public:
                                    const uint16_type c = 0 ) const
     {
         auto resloc = _M_el_l2g[ ElId][ fe_type::nLocalDof * c  + localNode ];
-        return boost::make_tuple(this->mapGlobalProcessToGlobalCluster()[resloc.get<0>()],
-                                 resloc.get<1>(),
-                                 resloc.get<2>() );
+        return boost::make_tuple(this->mapGlobalProcessToGlobalCluster()[resloc.template get<0>()],
+                                 resloc.template get<1>(),
+                                 resloc.template get<2>() );
     }
 
     global_dof_fromface_type faceLocalToGlobal( const size_type ElId,
@@ -473,7 +473,7 @@ public:
         }
         DofTable const& _M_d;
     };
-    friend class element_access;
+    friend struct element_access;
 
     struct face_access
     {
@@ -497,7 +497,7 @@ public:
 
         DofTable const& _M_d;
     };
-    friend class face_access;
+    friend struct face_access;
 
     /**
      * @brief local to global mapping

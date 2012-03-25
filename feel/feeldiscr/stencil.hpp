@@ -1296,15 +1296,15 @@ Stencil<X1,X2>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<tru
                             //std::cout << "Pt dof " << ptRealDof<<std::endl;
 
                             auto resTemp = locToolForXh2->searchElement(ptRealDof);
-                            bool hasFind = resTemp.get<0>();
+                            bool hasFind = resTemp.template get<0>();
                             std::set<size_type > listTup;
                             if ( hasFind )
                                 {
-                                    listTup.insert(resTemp.get<1>());
-                                    hasFinds[i] = boost::make_tuple(true,resTemp.get<1>());
+                                    listTup.insert(resTemp.template get<1>());
+                                    hasFinds[i] = boost::make_tuple(true,resTemp.template get<1>());
                                     // maybe is on boundary->more elts
                                     //size_type idElt1 = elem.id();
-                                    size_type idElt2 = resTemp.get<1>();
+                                    size_type idElt2 = resTemp.template get<1>();
                                     auto const& geoelt2 = _M_X2->mesh()->element(idElt2);
                                     std::vector<size_type> neighbor_ids;//(geoelt2.nNeighbors());
                                     for (uint16_type ms=0; ms < geoelt2.nNeighbors(); ms++)
@@ -1315,7 +1315,7 @@ Stencil<X1,X2>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<tru
                                         }
                                     auto resIsIn = locToolForXh2->isIn(neighbor_ids,ptRealDof);
                                     uint16_type cpt=0;
-                                    for (auto it=resIsIn.get<1>().begin(),en=resIsIn.get<1>().end();it<en;++it,++cpt)
+                                    for (auto it=resIsIn.template get<1>().begin(),en=resIsIn.template get<1>().end();it<en;++it,++cpt)
                                         {
                                             if(*it)
                                                 {
@@ -1334,10 +1334,10 @@ Stencil<X1,X2>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<tru
 
                                             graph_type::row_type& row = sparsity_graph->row(ig1);
                                             bool is_on_proc = ( ig1 >= first1_dof_on_proc) && (ig1 <= last1_dof_on_proc);
-                                            row.get<0>() = is_on_proc?proc_id:invalid_size_type_value;
-                                            row.get<1>() = is_on_proc?ig1 - first1_dof_on_proc:invalid_size_type_value;
+                                            row.template get<0>() = is_on_proc?proc_id:invalid_size_type_value;
+                                            row.template get<1>() = is_on_proc?ig1 - first1_dof_on_proc:invalid_size_type_value;
                                             //if ( do_less ) {}
-                                            row.get<2>().insert( element_dof2.begin(), element_dof2.end() );
+                                            row.template get<2>().insert( element_dof2.begin(), element_dof2.end() );
                                         }//res
                                 } // if (hasFind)
                             else
@@ -1346,9 +1346,9 @@ Stencil<X1,X2>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<tru
                                             // row empty
                                             graph_type::row_type& row = sparsity_graph->row(ig1);
                                             bool is_on_proc = ( ig1 >= first1_dof_on_proc) && (ig1 <= last1_dof_on_proc);
-                                            row.get<0>() = is_on_proc?proc_id:invalid_size_type_value;
-                                            row.get<1>() = is_on_proc?ig1 - first1_dof_on_proc:invalid_size_type_value;
-                                            row.get<2>().clear();
+                                            row.template get<0>() = is_on_proc?proc_id:invalid_size_type_value;
+                                            row.template get<1>() = is_on_proc?ig1 - first1_dof_on_proc:invalid_size_type_value;
+                                            row.template get<2>().clear();
                                 }
                         } // for (size_type i=0; i<n1_dof_on_element; i++)
 
@@ -1356,14 +1356,14 @@ Stencil<X1,X2>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<tru
                     bool doQ=false;
                     size_type id1,id2;
                     for( uint16_type nF = 0 ; nF<nbFind && !doQ ; ++nF )
-                        if (hasFinds[nF].get<0>())
+                        if (hasFinds[nF].template get<0>())
                             {
-                                id1=hasFinds[nF].get<1>();
+                                id1=hasFinds[nF].template get<1>();
                                 for( uint16_type nF2 = 0 ; nF2<nbFind && !doQ  ; ++nF2 )
                                     {
-                                        if ( hasFinds[nF2].get<0>())
+                                        if ( hasFinds[nF2].template get<0>())
                                             {
-                                                id2=hasFinds[nF2].get<1>();
+                                                id2=hasFinds[nF2].template get<1>();
                                                 if (id1!=id2)
                                                     doQ=true; //if( !_M_X2->mesh()->element(id1).isNeighbor(_M_X2->mesh()->element(id2) ) )  doQ=true;
                                             }
@@ -1379,21 +1379,21 @@ Stencil<X1,X2>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<tru
                             for( int q = 0; q <  gmc->nPoints(); ++ q )
                                 {
                                     auto resQuad = locToolForXh2->searchElement(gmc->xReal( q ));
-                                    if (resQuad.get<0>())
+                                    if (resQuad.template get<0>())
                                         {
 #if FEELPP_EXPORT_GRAPH
-                                            mapBetweenMeshes[resQuad.get<1>()].push_back(elem.id());
+                                            mapBetweenMeshes[resQuad.template get<1>()].push_back(elem.id());
 #endif
-                                            element_dof2 = _M_X2->dof()->getIndices( resQuad.get<1>() );
+                                            element_dof2 = _M_X2->dof()->getIndices( resQuad.template get<1>() );
                                             for (size_type i=0; i<n1_dof_on_element; i++)
                                                 {
                                                     const size_type ig1 = element_dof1[i];
                                                     graph_type::row_type& row = sparsity_graph->row(ig1);
                                                     bool is_on_proc = ( ig1 >= first1_dof_on_proc) && (ig1 <= last1_dof_on_proc);
-                                                    row.get<0>() = is_on_proc?proc_id:invalid_size_type_value;
-                                                    row.get<1>() = is_on_proc?ig1 - first1_dof_on_proc:invalid_size_type_value;
+                                                    row.template get<0>() = is_on_proc?proc_id:invalid_size_type_value;
+                                                    row.template get<1>() = is_on_proc?ig1 - first1_dof_on_proc:invalid_size_type_value;
                                                     //if ( do_less ) {}
-                                                    row.get<2>().insert( element_dof2.begin(), element_dof2.end() );
+                                                    row.template get<2>().insert( element_dof2.begin(), element_dof2.end() );
                                                 }
                                         }
                                 }
@@ -1423,19 +1423,19 @@ Stencil<X1,X2>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<tru
                             ublas::column( ptReal ,0 ) = ublas::column( elem.G(),i );
 
                             //auto res = locTool->searchElements(ublas::column( elem.G(),i )/*ptReal*/);
-                            //auto hasFind = res.get<0>();
+                            //auto hasFind = res.template get<0>();
 
                             auto resTemp = locToolForXh2->searchElement(ublas::column( elem.G(),i ));
-                            bool hasFind = resTemp.get<0>();
+                            bool hasFind = resTemp.template get<0>();
                             std::set<size_type > listTup;
 
                             if ( hasFind )
                                 {
-                                    listTup.insert(resTemp.get<1>());
-                                    hasFinds[i] = boost::make_tuple(true,resTemp.get<1>());
+                                    listTup.insert(resTemp.template get<1>());
+                                    hasFinds[i] = boost::make_tuple(true,resTemp.template get<1>());
                                     // maybe is on boundary->more elts
                                     //size_type idElt1 = elem.id();
-                                    size_type idElt2 = resTemp.get<1>();
+                                    size_type idElt2 = resTemp.template get<1>();
                                     auto const& geoelt2 = _M_X2->mesh()->element(idElt2);
                                     std::vector<size_type> neighbor_ids(geoelt2.nNeighbors());//neighbor_ids.clear();//(geoelt2.nNeighbors());
                                     for (uint16_type ms=0; ms < geoelt2.nNeighbors(); ms++)
@@ -1447,7 +1447,7 @@ Stencil<X1,X2>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<tru
 
                                     auto resIsIn = locToolForXh2->isIn(neighbor_ids,ublas::column( elem.G(),i ));
                                     uint16_type cpt=0;
-                                    for (auto it=resIsIn.get<1>().begin(),en=resIsIn.get<1>().end();it<en;++it,++cpt)
+                                    for (auto it=resIsIn.template get<1>().begin(),en=resIsIn.template get<1>().end();it<en;++it,++cpt)
                                         {
                                             if(*it)
                                                 {
@@ -1457,7 +1457,7 @@ Stencil<X1,X2>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<tru
                                                 {
                                                     for ( auto it_neigh = neighbor_ids.begin(), en_neigh = neighbor_ids.end() ; it_neigh != en_neigh ; ++it_neigh )
                                                         {
-                                                            if ((sparsity_graph->row(ig1)).get<2>().find(*it_neigh)==(sparsity_graph->row(ig1)).get<2>().end())
+                                                            if ((sparsity_graph->row(ig1)).template get<2>().find(*it_neigh)==(sparsity_graph->row(ig1)).template get<2>().end())
                                                                 {
                                                                     if (neighLocalizedInXh1.find(*it_neigh)==neighLocalizedInXh1.end())
                                                                         {
@@ -1468,7 +1468,7 @@ Stencil<X1,X2>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<tru
                                                                             for (size_type iii=0; iii<nPtGeoBis && !findNeih ; iii++)
                                                                                 {
                                                                                     auto  resBis = locToolForXh1->searchElement(ublas::column( geoeltNEW.G(),iii ));
-                                                                                    if (resBis.get<0>()) { listTup.insert(*it_neigh);findNeih=true;}
+                                                                                    if (resBis.template get<0>()) { listTup.insert(*it_neigh);findNeih=true;}
                                                                                 }
                                                                         }
                                                                 }
@@ -1489,10 +1489,10 @@ Stencil<X1,X2>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<tru
 
                                             graph_type::row_type& row = sparsity_graph->row(ig1);
                                             bool is_on_proc = ( ig1 >= first1_dof_on_proc) && (ig1 <= last1_dof_on_proc);
-                                            row.get<0>() = is_on_proc?proc_id:invalid_size_type_value;
-                                            row.get<1>() = is_on_proc?ig1 - first1_dof_on_proc:invalid_size_type_value;
+                                            row.template get<0>() = is_on_proc?proc_id:invalid_size_type_value;
+                                            row.template get<1>() = is_on_proc?ig1 - first1_dof_on_proc:invalid_size_type_value;
                                             //if ( do_less ) {}
-                                            row.get<2>().insert( element_dof2.begin(), element_dof2.end() );
+                                            row.template get<2>().insert( element_dof2.begin(), element_dof2.end() );
                                         }
                                 } // hasFind
                         } // for (size_type i=0; i<nPtGeo; i++)
@@ -1501,14 +1501,14 @@ Stencil<X1,X2>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<tru
                     bool doQ=false;
                     size_type id1,id2;
                     for( uint16_type nF = 0 ; nF<nbFind && !doQ ; ++nF )
-                        if (hasFinds[nF].get<0>())
+                        if (hasFinds[nF].template get<0>())
                             {
-                                id1=hasFinds[nF].get<1>();
+                                id1=hasFinds[nF].template get<1>();
                                 for( uint16_type nF2 = 0 ; nF2<nbFind && !doQ  ; ++nF2 )
                                     {
-                                        if ( hasFinds[nF2].get<0>())
+                                        if ( hasFinds[nF2].template get<0>())
                                             {
-                                                id2=hasFinds[nF2].get<1>();
+                                                id2=hasFinds[nF2].template get<1>();
                                                 if (id1!=id2)
                                                     doQ=true; //if( !_M_X2->mesh()->element(id1).isNeighbor(_M_X2->mesh()->element(id2) ) )  doQ=true;
                                             }
@@ -1523,21 +1523,21 @@ Stencil<X1,X2>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<tru
                             for( int q = 0; q <  gmc->nPoints(); ++ q )
                                 {
                                     auto resQuad = locToolForXh2->searchElement(gmc->xReal( q ));
-                                    if (resQuad.get<0>())
+                                    if (resQuad.template get<0>())
                                         {
 #if FEELPP_EXPORT_GRAPH
-                                            mapBetweenMeshes[resQuad.get<1>()].push_back(elem.id());
+                                            mapBetweenMeshes[resQuad.template get<1>()].push_back(elem.id());
 #endif
-                                            element_dof2 = _M_X2->dof()->getIndices( resQuad.get<1>() );
+                                            element_dof2 = _M_X2->dof()->getIndices( resQuad.template get<1>() );
                                             //for (size_type i=0; i<n1_dof_on_element; i++)
                                             //   {
                                                     const size_type ig1 = element_dof1[0];
                                                     graph_type::row_type& row = sparsity_graph->row(ig1);
                                                     bool is_on_proc = ( ig1 >= first1_dof_on_proc) && (ig1 <= last1_dof_on_proc);
-                                                    row.get<0>() = is_on_proc?proc_id:invalid_size_type_value;
-                                                    row.get<1>() = is_on_proc?ig1 - first1_dof_on_proc:invalid_size_type_value;
+                                                    row.template get<0>() = is_on_proc?proc_id:invalid_size_type_value;
+                                                    row.template get<1>() = is_on_proc?ig1 - first1_dof_on_proc:invalid_size_type_value;
                                                     //if ( do_less ) {}
-                                                    row.get<2>().insert( element_dof2.begin(), element_dof2.end() );
+                                                    row.template get<2>().insert( element_dof2.begin(), element_dof2.end() );
                                                     //    }
                                         }
                                 }

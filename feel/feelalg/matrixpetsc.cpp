@@ -462,9 +462,9 @@ void MatrixPetsc<T>::zero ()
             std::vector<PetscScalar> v( this->graph()->nCols(), 0. );
             for ( auto it=this->graph()->begin(), en=this->graph()->end() ; it!=en ; ++it )
             {
-                PetscInt row = it->second.get<1>();
-                std::copy( it->second.get<2>().begin(), it->second.get<2>().end(), cols.begin() );
-                MatSetValues( _M_mat, 1, &row, it->second.get<2>().size(), cols.data(), v.data(), INSERT_VALUES );
+                PetscInt row = it->second.template get<1>();
+                std::copy( it->second.template get<2>().begin(), it->second.template get<2>().end(), cols.begin() );
+                MatSetValues( _M_mat, 1, &row, it->second.template get<2>().size(), cols.data(), v.data(), INSERT_VALUES );
             }
         }
     }
@@ -496,9 +496,9 @@ void MatrixPetsc<T>::zero ( size_type /*start1*/, size_type /*stop1*/, size_type
             std::vector<PetscScalar> v( this->graph()->nCols(), 0. );
             for ( auto it=this->graph()->begin(), en=this->graph()->end() ; it!=en ; ++it )
             {
-                PetscInt row = it->second.get<1>();
-                std::copy( it->second.get<2>().begin(), it->second.get<2>().end(), cols.begin() );
-                MatSetValues( _M_mat, 1, &row, it->second.get<2>().size(), cols.data(), v.data(), INSERT_VALUES );
+                PetscInt row = it->second.template get<1>();
+                std::copy( it->second.template get<2>().begin(), it->second.template get<2>().end(), cols.begin() );
+                MatSetValues( _M_mat, 1, &row, it->second.template get<2>().size(), cols.data(), v.data(), INSERT_VALUES );
             }
         }
      }
@@ -1467,8 +1467,8 @@ void MatrixPetsc<T>::zeroEntriesDiagonal()
             size_type index = it->first;std::cout << "\n index " << index;
             if (index < std::min(this->size1(),this->size2()))
                 {
-                    //if (!it->second.get<2>().empty())
-                    if (it->second.get<2>().find(index)!=it->second.get<2>().end()  )
+                    //if (!it->second.template get<2>().empty())
+                    if (it->second.template get<2>().find(index)!=it->second.template get<2>().end()  )
                         this->set(index,index,0.);
                 }
         }
@@ -1929,21 +1929,21 @@ MatrixPetscMPI<T>::zero()
             //std::vector<PetscScalar> v( this->graph()->nCols(), 0. );
             for ( auto it=this->graph()->begin(), en=this->graph()->end() ; it!=en ; ++it )
             {
-                if ( (int)it->second.get<0>() == this->comm().rank() )
+                if ( (int)it->second.template get<0>() == this->comm().rank() )
                     {
 
-                        std::vector<PetscInt> cols(  it->second.get<2>().size(), 0 );
+                        std::vector<PetscInt> cols(  it->second.template get<2>().size(), 0 );
                         //std::set<PetscInt> cols;
 
-                        //PetscInt row = it->second.get<1>();
+                        //PetscInt row = it->second.template get<1>();
                         PetscInt row =  it->first;
 
 
                         //MatZeroRowsLocal( this->mat(), rows.size(), rows.data(), 1.0, PETSC_NULL, PETSC_NULL);
 
                         //this->mapRow()->firstDofGlobalCluster( this->comm().rank() );
-                        auto it2=it->second.get<2>().begin();
-                        auto  en2=it->second.get<2>().end();
+                        auto it2=it->second.template get<2>().begin();
+                        auto  en2=it->second.template get<2>().end();
                         size_type cpt=0;
                         for ( ; it2!=en2 ; ++it2)
                             {
@@ -1957,8 +1957,8 @@ MatrixPetscMPI<T>::zero()
                         cols.resize(cpt);
                         std::vector<PetscScalar> v(  cpt,0 );
 
-                        //std::copy( it->second.get<2>().begin(), it->second.get<2>().end(), cols.begin() );
-                        MatSetValuesLocal( this->mat(), 1, &row, it->second.get<2>().size(), cols.data(), v.data(), INSERT_VALUES );
+                        //std::copy( it->second.template get<2>().begin(), it->second.template get<2>().end(), cols.begin() );
+                        MatSetValuesLocal( this->mat(), 1, &row, it->second.template get<2>().size(), cols.data(), v.data(), INSERT_VALUES );
                     }
             }
 #endif
@@ -1996,30 +1996,30 @@ MatrixPetscMPI<T>::zero( size_type /*start1*/, size_type /*stop1*/, size_type /*
             std::vector<PetscScalar> v( this->graph()->nCols(), 0. );
             for ( auto it=this->graph()->begin(), en=this->graph()->end() ; it!=en ; ++it )
             {
-                PetscInt row = it->second.get<1>();
-                std::copy( it->second.get<2>().begin(), it->second.get<2>().end(), cols.begin() );
-                MatSetValuesLocal( this->mat(), 1, &row, it->second.get<2>().size(), cols.data(), v.data(), INSERT_VALUES );
+                PetscInt row = it->second.template get<1>();
+                std::copy( it->second.template get<2>().begin(), it->second.template get<2>().end(), cols.begin() );
+                MatSetValuesLocal( this->mat(), 1, &row, it->second.template get<2>().size(), cols.data(), v.data(), INSERT_VALUES );
             }
 #else
             //std::vector<PetscInt> cols( this->graph()->nCols(), 0 );
             //std::vector<PetscScalar> v( this->graph()->nCols(), 0. );
             for ( auto it=this->graph()->begin(), en=this->graph()->end() ; it!=en ; ++it )
             {
-                if ( (int)it->second.get<0>() == this->comm().rank() )
+                if ( (int)it->second.template get<0>() == this->comm().rank() )
                     {
 
-                        std::vector<PetscInt> cols(  it->second.get<2>().size(), 0 );
+                        std::vector<PetscInt> cols(  it->second.template get<2>().size(), 0 );
                         //std::set<PetscInt> cols;
 
-                        //PetscInt row = it->second.get<1>();
+                        //PetscInt row = it->second.template get<1>();
                         PetscInt row =  it->first;
 
 
                         //MatZeroRowsLocal( this->mat(), rows.size(), rows.data(), 1.0, PETSC_NULL, PETSC_NULL);
 
                         //this->mapRow()->firstDofGlobalCluster( this->comm().rank() );
-                        auto it2=it->second.get<2>().begin();
-                        auto  en2=it->second.get<2>().end();
+                        auto it2=it->second.template get<2>().begin();
+                        auto  en2=it->second.template get<2>().end();
                         size_type cpt=0;
                         for ( ; it2!=en2 ; ++it2)
                             {
@@ -2033,8 +2033,8 @@ MatrixPetscMPI<T>::zero( size_type /*start1*/, size_type /*stop1*/, size_type /*
                         cols.resize(cpt);
                         std::vector<PetscScalar> v(  cpt,0 );
 
-                        //std::copy( it->second.get<2>().begin(), it->second.get<2>().end(), cols.begin() );
-                        MatSetValuesLocal( this->mat(), 1, &row, it->second.get<2>().size(), cols.data(), v.data(), INSERT_VALUES );
+                        //std::copy( it->second.template get<2>().begin(), it->second.template get<2>().end(), cols.begin() );
+                        MatSetValuesLocal( this->mat(), 1, &row, it->second.template get<2>().size(), cols.data(), v.data(), INSERT_VALUES );
                     }
             }
 

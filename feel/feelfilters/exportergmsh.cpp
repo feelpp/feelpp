@@ -149,15 +149,15 @@ ExporterGmsh<MeshType,N>::gmshSaveAscii() const
                     gmshSavePhysicalNames( out, __step->mesh() );
 
                     auto nPointAndIndex = numberOfGlobalPtAndIndex(__step->mesh());
-                    auto nGlobPoint = nPointAndIndex.get<0>();
-                    auto indexPointStart = nPointAndIndex.get<1>();
+                    auto nGlobPoint = nPointAndIndex.template get<0>();
+                    auto indexPointStart = nPointAndIndex.template get<1>();
                     gmshSaveNodesStart(out, __step->mesh(), nGlobPoint);
                     gmshSaveNodes( out,__step->mesh(),indexPointStart);
                     gmshSaveNodesEnd(out, __step->mesh());
 
                     auto nEltAndIndex = numberOfGlobalEltAndIndex(__step->mesh());
-                    auto nGlobElement = nEltAndIndex.get<0>();
-                    auto indexElementStart = nEltAndIndex.get<1>();
+                    auto nGlobElement = nEltAndIndex.template get<0>();
+                    auto indexElementStart = nEltAndIndex.template get<1>();
                     gmshSaveElementsStart(out, nGlobElement);
                     gmshSaveElements( out, __step->mesh(), indexElementStart, indexPointStart);
                     gmshSaveElementsEnd(out);
@@ -194,8 +194,8 @@ ExporterGmsh<MeshType,N>::saveMesh( std::string const& filename, mesh_ptrtype me
     //-----------------------------------------------------------------//
 
     auto nPointAndIndex = numberOfGlobalPtAndIndex(mesh);
-    auto nGlobPoint = nPointAndIndex.get<0>();
-    auto indexPointStart = nPointAndIndex.get<1>();
+    auto nGlobPoint = nPointAndIndex.template get<0>();
+    auto indexPointStart = nPointAndIndex.template get<1>();
     if (  M_comm.rank() == 0 )
         {
             std::ofstream out( filename.c_str(), std::ios::app);
@@ -224,8 +224,8 @@ ExporterGmsh<MeshType,N>::saveMesh( std::string const& filename, mesh_ptrtype me
     //-----------------------------------------------------------------//
 
     auto nEltAndIndex = numberOfGlobalEltAndIndex(mesh);
-    auto nGlobElement = nEltAndIndex.get<0>();
-    auto indexElementStart = nEltAndIndex.get<1>();
+    auto nGlobElement = nEltAndIndex.template get<0>();
+    auto indexElementStart = nEltAndIndex.template get<1>();
     if (  M_comm.rank() == 0 )
         {
             std::ofstream out( filename.c_str(), std::ios::app);
@@ -271,8 +271,8 @@ ExporterGmsh<MeshType,N>::gmshSavePhysicalNames( std::ostream& out, mesh_ptrtype
     // physical-dimension physical-number "physical-name" ...
     BOOST_FOREACH( auto data, mesh->markerNames() )
     {
-        out << data.second.get<1>() << " "
-            << data.second.get<0>() << " "
+        out << data.second.template get<1>() << " "
+            << data.second.template get<0>() << " "
             << "\"" << data.first << "\"" << "\n";
     }
     out << "$EndPhysicalNames\n";
@@ -365,10 +365,10 @@ ExporterGmsh<MeshType,N>::numberOfGlobalEltAndIndex( mesh_ptrtype mesh) const
 {
     //auto allmarkedfaces = markedfaces( mesh );
     auto allmarkedfaces = boundaryfaces( mesh );
-    size_type number_markedfaces= std::distance(allmarkedfaces.get<1>(),allmarkedfaces.get<2>());
+    size_type number_markedfaces= std::distance(allmarkedfaces.template get<1>(),allmarkedfaces.template get<2>());
 
     auto eltOnProccess = elements(mesh);
-    size_type number_elements= std::distance(eltOnProccess.get<1>(),eltOnProccess.get<2>());
+    size_type number_elements= std::distance(eltOnProccess.template get<1>(),eltOnProccess.template get<2>());
 
     auto local_numberElements = number_markedfaces+number_elements;
     auto global_numberElements=local_numberElements;
@@ -415,8 +415,8 @@ ExporterGmsh<MeshType,N>::gmshSaveElements( std::ostream& out, mesh_ptrtype mesh
 
     //auto allmarkedfaces = markedfaces( mesh );
     auto allmarkedfaces = boundaryfaces( mesh );
-    auto face_it = allmarkedfaces.get<1>();
-    auto face_end = allmarkedfaces.get<2>();
+    auto face_it = allmarkedfaces.template get<1>();
+    auto face_end = allmarkedfaces.template get<2>();
 
     auto elem_number=indexEltStart+1;
 
@@ -458,8 +458,8 @@ ExporterGmsh<MeshType,N>::gmshSaveElements( std::ostream& out, mesh_ptrtype mesh
 
 
     auto eltOnProccess = elements(mesh);
-    auto elt_it = eltOnProccess.get<1>();
-    auto elt_en = eltOnProccess.get<2>();
+    auto elt_it = eltOnProccess.template get<1>();
+    auto elt_en = eltOnProccess.template get<2>();
     for ( ; elt_it != elt_en; ++elt_it )
     {
         out << elem_number++ <<" ";
@@ -564,7 +564,7 @@ ExporterGmsh<MeshType,N>::gmshSaveElementNodeData( std::ostream& out,
     mesh_ptrtype mesh = __step->mesh();
 
     auto allmarkedfaces = boundaryfaces( mesh );
-    int number_markedfaces= std::distance(allmarkedfaces.get<1>(),allmarkedfaces.get<2>());
+    int number_markedfaces= std::distance(allmarkedfaces.template get<1>(),allmarkedfaces.template get<2>());
 
     uint16_type nLocalDof;
     size_type globaldof;

@@ -1901,10 +1901,11 @@ namespace Feel {
 
 
             std::string contenu;
-            std::ifstream ifstr(geofile, std::ios::in);
+            std::ifstream ifstr(geofile.c_str(), std::ios::in);
             if(ifstr)
                 {
-                    while(getline(ifstr, contenu))  // on met dans "contenu" la ligne
+                    // each line of the stream is appended in contenu
+                    while(getline(ifstr, contenu))
                         ostr << contenu<<"\n";
 
                     ifstr.close();

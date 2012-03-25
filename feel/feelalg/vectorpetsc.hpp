@@ -268,7 +268,7 @@ public:
      */
     //@{
 
-    const bool destroy_vec_on_exit() const {return _M_destroy_vec_on_exit;}
+    bool destroy_vec_on_exit() const {return _M_destroy_vec_on_exit;}
 
     /**
      * @return dimension of the vector. This

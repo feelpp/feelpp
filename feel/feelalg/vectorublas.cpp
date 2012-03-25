@@ -26,6 +26,14 @@
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2008-03-20
  */
+/**
+ * \sa vectorublas.hpp
+ * FEELPP_INSTANTIATE_VECTORUBLAS is never defined except in vectorublas.cpp
+ * where we do the instantiate. This allows to reduce the VectorUblas
+ * instantiation to the strict minimum
+ */
+#define FEELPP_INSTANTIATE_VECTORUBLAS 1
+
 #include <boost/numeric/ublas/io.hpp>
 
 #include <feel/feelalg/vectorublas.hpp>

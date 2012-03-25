@@ -349,8 +349,8 @@ BackendPetsc<T>::solve( sparse_matrix_ptrtype const& A,
 
     //std::pair<size_type,value_type> res = M_solver_petsc.solve( *A, *x, *b, this->rTolerance(), this->maxIterations(), this->transpose() );
     auto res = M_solver_petsc.solve( *A, *B, *x, *b, this->rTolerance(), this->maxIterations(), this->transpose() );
-    Debug( 7005 ) << "[BackendPetsc::solve] number of iterations : " << res.get<1>()/*first*/ << "\n";
-    Debug( 7005 ) << "[BackendPetsc::solve]             residual : " << res.get<2>()/*second*/ << "\n";
+    Debug( 7005 ) << "[BackendPetsc::solve] number of iterations : " << res.template get<1>()/*first*/ << "\n";
+    Debug( 7005 ) << "[BackendPetsc::solve]             residual : " << res.template get<2>()/*second*/ << "\n";
 
     //bool converged = (res.first < this->maxIterations()) && (res.second < this->rTolerance());
     return res;//boost::make_tuple( converged, res.first, res.second );
