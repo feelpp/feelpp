@@ -705,7 +705,8 @@ public:
                              std::map<size_type,periodic_dof_map_type>& periodic_dof,
                              size_type tag )
     {
-        addEdgePeriodicDof( __elt, __face, next_free_dof, periodic_dof, tag , mpl::bool_<fe_type::nDofPerEdge>(), mpl::int_<nDim>() );
+        static const bool cond = fe_type::nDofPerEdge > 0;
+        addEdgePeriodicDof( __elt, __face, next_free_dof, periodic_dof, tag , mpl::bool_<cond>(), mpl::int_<nDim>() );
     }
     void addEdgePeriodicDof( element_type const& __elt,face_type const& __face,size_type& next_free_dof,std::map<size_type,periodic_dof_map_type>& periodic_dof, size_type tag, mpl::bool_<false>, mpl::int_<1> ) {}
     void addEdgePeriodicDof( element_type const& __elt,face_type const& __face,size_type& next_free_dof,std::map<size_type,periodic_dof_map_type>& periodic_dof, size_type tag, mpl::bool_<false>, mpl::int_<2> ) {}
@@ -717,7 +718,8 @@ public:
 
     void addFacePeriodicDof( element_type const& __elt,face_type const& __face,size_type& next_free_dof,std::map<size_type,periodic_dof_map_type>& periodic_dof,size_type tag )
     {
-        addFacePeriodicDof( __elt, __face, next_free_dof, periodic_dof, tag, mpl::bool_<fe_type::nDofPerFace>() );
+        static const bool cond = fe_type::nDofPerFace > 0;
+        addFacePeriodicDof( __elt, __face, next_free_dof, periodic_dof, tag, mpl::bool_<cond>() );
     }
     void addFacePeriodicDof( element_type const& __elt,face_type const& __face,size_type& next_free_dof,std::map<size_type,periodic_dof_map_type>& periodic_dof,size_type tag, mpl::bool_<false> ) {}
     void addFacePeriodicDof( element_type const& __elt,face_type const& __face,size_type& next_free_dof,std::map<size_type,periodic_dof_map_type>& periodic_dof,size_type tag, mpl::bool_<true> );
@@ -1039,12 +1041,13 @@ private:
     void addEdgeDof( element_type const& __elt, uint16_type processor, size_type& next_free_dof,
                      ref_shift_type& shifts )
     {
+        static const bool cond = fe_type::nDofPerEdge > 0;
         return addEdgeDof( __elt,
                            processor,
                            next_free_dof,
                            shifts,
                            mpl::int_<fe_type::nDim>(),
-                           mpl::bool_<fe_type::nDofPerEdge>() );
+                           mpl::bool_<cond>() );
     }
     void addEdgeDof( element_type const& /*M*/, uint16_type /*processor*/, size_type& /*next_free_dof*/,
                      ref_shift_type& /*shifts*/, mpl::int_<1>, mpl::bool_<false> )
@@ -1444,7 +1447,8 @@ private:
     template<typename FaceIterator>
     void addEdgeBoundaryDof( FaceIterator __face_it, uint16_type& lc )
     {
-        addEdgeBoundaryDof( __face_it, lc, mpl::bool_<fe_type::nDofPerEdge*face_type::numEdges>(), mpl::int_<nDim>() );
+        static const bool cond = fe_type::nDofPerEdge*face_type::numEdges > 0;
+        addEdgeBoundaryDof( __face_it, lc, mpl::bool_<cond>(), mpl::int_<nDim>() );
     }
     template<typename FaceIterator>
     void addEdgeBoundaryDof( FaceIterator /*__face_it*/, uint16_type& /*lc*/, mpl::bool_<false>, mpl::int_<1> ){}
