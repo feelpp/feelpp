@@ -89,6 +89,7 @@ public:
     //@{
 
     static const size_type context = Expr::context;
+    static const bool is_terminal = false;
 
     static const uint16_type imorder = 0;
     static const bool imIsPoly = true;
@@ -998,8 +999,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate( detail::Biline
     auto res_en = QPL.result().end();
     for ( ; res_it != res_en ; ++res_it)
         {
-            auto idEltTest = res_it->get<0>();
-            auto map = res_it->get<1>();
+            auto idEltTest = res_it->template get<0>();
+            auto map = res_it->template get<1>();
             auto map_it = map.begin();
             auto map_en = map.end();
             for ( ; map_it != map_en ; ++map_it)
@@ -1008,9 +1009,9 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate( detail::Biline
                     auto eltTrial = meshTrial->element( idEltTrial );
                     auto eltTest = meshTest->element( idEltTest );
 
-                    auto ptRefTest = map_it->second.get<1>();
-                    auto ptRefTrial = map_it->second.get<2>();
-                    auto themapQuad = map_it->second.get<0>();
+                    auto ptRefTest = map_it->second.template get<1>();
+                    auto ptRefTrial = map_it->second.template get<2>();
+                    auto themapQuad = map_it->second.template get<0>();
 
                     auto vec_gmcExpr = QPL.getUsableDataInFormContext(themapQuad,ptRefTest,ptRefTrial);
 
@@ -1020,19 +1021,19 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate( detail::Biline
                     for ( ; gmcExpr_it != gmcExpr_en ; ++gmcExpr_it)
                         {
 
-                            geopcFormTest->update(gmcExpr_it->get<2>());
-                            geopcFormTrial->update(gmcExpr_it->get<3>());
+                            geopcFormTest->update(gmcExpr_it->template get<2>());
+                            geopcFormTrial->update(gmcExpr_it->template get<3>());
 
                             gmcFormTest->update(eltTest,geopcFormTest);
                             gmcFormTrial->update(eltTrial,geopcFormTrial);
 
                             map_gmc_formTest_type mapgmcFormTest( fusion::make_pair<detail::gmc<0> >( gmcFormTest ) );
                             map_gmc_formTrial_type mapgmcFormTrial( fusion::make_pair<detail::gmc<0> >( gmcFormTrial ) );
-                            map_gmc_expr_type mapgmcExpr( fusion::make_pair<detail::gmc<0> >( gmcExpr_it->get<1>() ) );
+                            map_gmc_expr_type mapgmcExpr( fusion::make_pair<detail::gmc<0> >( gmcExpr_it->template get<1>() ) );
 
-                            formc->updateInCaseOfInterpolate( mapgmcFormTest, mapgmcFormTrial, mapgmcExpr, gmcExpr_it->get<0>() );
+                            formc->updateInCaseOfInterpolate( mapgmcFormTest, mapgmcFormTrial, mapgmcExpr, gmcExpr_it->template get<0>() );
 
-                            formc->integrateInCaseOfInterpolate( gmcExpr_it->get<0>(),isFirstExperience );
+                            formc->integrateInCaseOfInterpolate( gmcExpr_it->template get<0>(),isFirstExperience );
                             isFirstExperience = false;
                         }
                     formc->assembleInCaseOfInterpolate();
@@ -1117,11 +1118,11 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate( detail::Linear
     for ( ; res_it != res_en ; ++res_it)
         {
 
-            auto idEltTest = res_it->get<0>();
+            auto idEltTest = res_it->template get<0>();
             auto eltTest = meshTest->element( idEltTest );
 
-            auto ptRefTest = res_it->get<2>();
-            auto themapQuad = res_it->get<1>();
+            auto ptRefTest = res_it->template get<2>();
+            auto themapQuad = res_it->template get<1>();
 
             auto vec_gmcExpr = QPL.getUsableDataInFormContext(themapQuad,ptRefTest);
             auto gmcExpr_it = vec_gmcExpr.begin();
@@ -1129,13 +1130,13 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate( detail::Linear
             bool isFirstExperience = true;
             for ( ; gmcExpr_it != gmcExpr_en ; ++gmcExpr_it)
                 {
-                    geopcForm->update(gmcExpr_it->get<2>());
+                    geopcForm->update(gmcExpr_it->template get<2>());
                     gmcForm->update(eltTest,geopcForm);
                     map_gmc_form_type mapgmcForm( fusion::make_pair<detail::gmc<0> >( gmcForm ) );
-                    map_gmc_expr_type mapgmcExpr( fusion::make_pair<detail::gmc<0> >( gmcExpr_it->get<1>() ) );
-                    formc->updateInCaseOfInterpolate( mapgmcForm, mapgmcForm, mapgmcExpr,gmcExpr_it->get<0>() );
+                    map_gmc_expr_type mapgmcExpr( fusion::make_pair<detail::gmc<0> >( gmcExpr_it->template get<1>() ) );
+                    formc->updateInCaseOfInterpolate( mapgmcForm, mapgmcForm, mapgmcExpr,gmcExpr_it->template get<0>() );
 
-                    formc->integrateInCaseOfInterpolate( gmcExpr_it->get<0>(),isFirstExperience );
+                    formc->integrateInCaseOfInterpolate( gmcExpr_it->template get<0>(),isFirstExperience );
                     isFirstExperience = false;
                 }
 
@@ -1555,8 +1556,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate( detail::Biline
     auto res_en = QPL.result().end();
     for ( ; res_it != res_en ; ++res_it)
         {
-            auto idEltTest = res_it->get<0>();
-            auto map = res_it->get<1>();
+            auto idEltTest = res_it->template get<0>();
+            auto map = res_it->template get<1>();
             auto map_it = map.begin();
             auto map_en = map.end();
             for ( ; map_it != map_en ; ++map_it)
@@ -1565,9 +1566,9 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate( detail::Biline
                     auto eltTrial = meshTrial->element( idEltTrial );
                     auto eltTest = meshTest->element( idEltTest );
 
-                    auto ptRefTest = map_it->second.get<1>();
-                    auto ptRefTrial = map_it->second.get<2>();
-                    auto themapQuad = map_it->second.get<0>();
+                    auto ptRefTest = map_it->second.template get<1>();
+                    auto ptRefTrial = map_it->second.template get<2>();
+                    auto themapQuad = map_it->second.template get<0>();
 
                     auto vec_gmcExpr = QPL.getUsableDataInFormContext(themapQuad,ptRefTest,ptRefTrial);
                     auto gmcExpr_it = vec_gmcExpr.begin();
@@ -1575,19 +1576,19 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate( detail::Biline
                     bool isFirstExperience = true;
                     for ( ; gmcExpr_it != gmcExpr_en ; ++gmcExpr_it)
                         {
-                            geopcFormTest->update(gmcExpr_it->get<2>());
-                            geopcFormTrial->update(gmcExpr_it->get<3>());
+                            geopcFormTest->update(gmcExpr_it->template get<2>());
+                            geopcFormTrial->update(gmcExpr_it->template get<3>());
 
                             gmcFormTest->update(eltTest,geopcFormTest);
                             gmcFormTrial->update(eltTrial,geopcFormTrial);
 
                             map_gmc_formTest_type mapgmcFormTest( fusion::make_pair<detail::gmc<0> >( gmcFormTest ) );
                             map_gmc_formTrial_type mapgmcFormTrial( fusion::make_pair<detail::gmc<0> >( gmcFormTrial ) );
-                            map_gmc_expr_type mapgmcExpr( fusion::make_pair<detail::gmc<0> >( gmcExpr_it->get<1>() ) );
-                            __face_id_in_elt_0 = gmcExpr_it->get<1>()->faceId();
-                            formc->updateInCaseOfInterpolate( mapgmcFormTest, mapgmcFormTrial, mapgmcExpr,face_ims[__face_id_in_elt_0],gmcExpr_it->get<0>() );
+                            map_gmc_expr_type mapgmcExpr( fusion::make_pair<detail::gmc<0> >( gmcExpr_it->template get<1>() ) );
+                            __face_id_in_elt_0 = gmcExpr_it->template get<1>()->faceId();
+                            formc->updateInCaseOfInterpolate( mapgmcFormTest, mapgmcFormTrial, mapgmcExpr,face_ims[__face_id_in_elt_0],gmcExpr_it->template get<0>() );
 
-                            formc->integrateInCaseOfInterpolate( gmcExpr_it->get<0>(),isFirstExperience );
+                            formc->integrateInCaseOfInterpolate( gmcExpr_it->template get<0>(),isFirstExperience );
                             isFirstExperience = false;
                         }
 
@@ -1702,11 +1703,11 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate( detail::Linear
     for ( ; res_it != res_en ; ++res_it)
         {
 
-            auto idEltTest = res_it->get<0>();
+            auto idEltTest = res_it->template get<0>();
             auto eltTest = meshTest->element( idEltTest );
 
-            auto ptRefTest = res_it->get<2>();
-            auto themapQuad = res_it->get<1>();
+            auto ptRefTest = res_it->template get<2>();
+            auto themapQuad = res_it->template get<1>();
             //geopcForm->update(ptRefTest);
             //gmcForm->update(eltTest,geopcForm);
             //std::cout <<  "\ngmcbeginForm " << gmcForm->xReal();
@@ -1720,19 +1721,19 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate( detail::Linear
             //std::cout << "\n start \n";
             for ( ; gmcExpr_it != gmcExpr_en ; ++gmcExpr_it)
                 {
-                    geopcForm->update(gmcExpr_it->get<2>());
+                    geopcForm->update(gmcExpr_it->template get<2>());
                     gmcForm->update(eltTest,geopcForm);
 
-                    //std::cout << "\ngmcExpr " << gmcExpr_it->get<1>()->xReal()
+                    //std::cout << "\ngmcExpr " << gmcExpr_it->template get<1>()->xReal()
                     //          << "\ngmcForm " << gmcForm->xReal();
 
                     map_gmc_form_type mapgmcForm( fusion::make_pair<detail::gmc<0> >( gmcForm ) );
-                    map_gmc_expr_type mapgmcExpr( fusion::make_pair<detail::gmc<0> >( gmcExpr_it->get<1>() ) );
+                    map_gmc_expr_type mapgmcExpr( fusion::make_pair<detail::gmc<0> >( gmcExpr_it->template get<1>() ) );
 
-                    __face_id_in_elt_0 = gmcExpr_it->get<1>()->faceId();
-                    formc->updateInCaseOfInterpolate( mapgmcForm, mapgmcForm, mapgmcExpr,face_ims[__face_id_in_elt_0],gmcExpr_it->get<0>() );
+                    __face_id_in_elt_0 = gmcExpr_it->template get<1>()->faceId();
+                    formc->updateInCaseOfInterpolate( mapgmcForm, mapgmcForm, mapgmcExpr,face_ims[__face_id_in_elt_0],gmcExpr_it->template get<0>() );
 
-                    formc->integrateInCaseOfInterpolate( gmcExpr_it->get<0>(),isFirstExperience );
+                    formc->integrateInCaseOfInterpolate( gmcExpr_it->template get<0>(),isFirstExperience );
                     isFirstExperience = false;
                 }
 

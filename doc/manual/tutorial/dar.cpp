@@ -193,7 +193,6 @@ void
 DAR<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
 {
     using namespace Feel::vf;
-    using  vf::N;
 
     if ( X[1] == 0 ) shape = "simplex";
     if ( X[1] == 1 ) shape = "hypercube";

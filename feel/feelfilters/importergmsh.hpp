@@ -519,7 +519,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
 
             for( int jj=0;jj < (int)__et[__i].size(); ++jj )
                 Debug( 8011 ) << __et[__i][jj] << " ";
-            Debug( 8011 ) << " is on proc:" << isElementOnProcessor( __et[__i] ).get<0>() << "\n";
+            Debug( 8011 ) << " is on proc:" << isElementOnProcessor( __et[__i] ).template get<0>() << "\n";
             __np = nptable[__t];
 
             Debug( 8011 ) << "element type: " << __t << " nb pts: " << __np << "\n";
@@ -569,7 +569,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
     __whichboundary.assign( __n, vv );
     for( uint __i = 0; __i < __nele;++__i )
     {
-        if ( isElementOnProcessor( __et[__i] ).get<0>() == false ||
+        if ( isElementOnProcessor( __et[__i] ).template get<0>() == false ||
              _M_ignorePhysicalGroup.find(__et[__i][0]) != _M_ignorePhysicalGroup.end() )
             continue;
         switch( __etype[__i] )
@@ -649,7 +649,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
     // add the element to the mesh
     for( uint __i = 0; __i < __nele;++__i )
     {
-        if ( isElementOnProcessor( __et[__i] ).get<0>() == false ||
+        if ( isElementOnProcessor( __et[__i] ).template get<0>() == false ||
              _M_ignorePhysicalGroup.find(__et[__i][0]) != _M_ignorePhysicalGroup.end() )
             continue;
         switch( __etype[__i] )
@@ -659,9 +659,9 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
             {
                 addPoint( mesh, __e[__i], __et[__i], __etype[__i], __idGmshToFeel[__i] );
 
-                if ( isElementOnProcessor( __et[__i] ).get<1>().get<0>() == true ) // a ghost cell
+                if ( isElementOnProcessor( __et[__i] ).template get<1>().template get<0>() == true ) // a ghost cell
                     {
-                        auto idProc=isElementOnProcessor( __et[__i] ).get<1>().get<1>();
+                        auto idProc=isElementOnProcessor( __et[__i] ).template get<1>().template get<1>();
                         mapGhostElt.insert(std::make_pair(__i,boost::make_tuple(__idGmshToFeel[__i], idProc) ) );
                     }
 
@@ -676,9 +676,9 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
             {
                 addEdge( mesh, __e[__i], __et[__i], __etype[__i], __idGmshToFeel[__i] );
 
-                if ( isElementOnProcessor( __et[__i] ).get<1>().get<0>() == true ) // a ghost cell
+                if ( isElementOnProcessor( __et[__i] ).template get<1>().template get<0>() == true ) // a ghost cell
                     {
-                        auto idProc=isElementOnProcessor( __et[__i] ).get<1>().get<1>();
+                        auto idProc=isElementOnProcessor( __et[__i] ).template get<1>().template get<1>();
                         mapGhostElt.insert(std::make_pair(__i,boost::make_tuple(__idGmshToFeel[__i], idProc) ) );
                     }
 
@@ -695,9 +695,9 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
             {
                 addFace( mesh, __e[__i], __et[__i], __etype[__i], __idGmshToFeel[__i] );
 
-                if ( isElementOnProcessor( __et[__i] ).get<1>().get<0>() == true ) // a ghost cell
+                if ( isElementOnProcessor( __et[__i] ).template get<1>().template get<0>() == true ) // a ghost cell
                     {
-                        auto idProc=isElementOnProcessor( __et[__i] ).get<1>().get<1>();
+                        auto idProc=isElementOnProcessor( __et[__i] ).template get<1>().template get<1>();
                         mapGhostElt.insert(std::make_pair(__i,boost::make_tuple(__idGmshToFeel[__i], idProc) ) );
                     }
 
@@ -714,9 +714,9 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
             {
                 addVolume( mesh, __e[__i], __et[__i], __etype[__i], __idGmshToFeel[__i] );
 
-                if ( isElementOnProcessor( __et[__i] ).get<1>().get<0>() == true ) // a ghost cell
+                if ( isElementOnProcessor( __et[__i] ).template get<1>().template get<0>() == true ) // a ghost cell
                     {
-                        auto idProc=isElementOnProcessor( __et[__i] ).get<1>().get<1>();
+                        auto idProc=isElementOnProcessor( __et[__i] ).template get<1>().template get<1>();
                         mapGhostElt.insert(std::make_pair(__i,boost::make_tuple(__idGmshToFeel[__i], idProc) ) );
                     }
                 break;
@@ -1031,20 +1031,20 @@ ImporterGmsh<MeshType>::updateGhostCellInfo(mesh_type* mesh, std::vector<int> co
     for (int cpt=0; it_map!=en_map; ++it_map,++cpt)
         {
             auto idGmsh = it_map->first;
-            auto idProc = it_map->second.get<1>();
+            auto idProc = it_map->second.template get<1>();
 #if 0
             std::cout << "[updateGhostCellInfo]----1---\n"
                       << "I am the proc " << this->worldComm().globalRank()
                       << " local proc " << this->worldComm().localRank()
                       << " I send to the proc " << idProc << " for idGmsh " << idGmsh+1
                       << " with tag "<< nbMsgToSend[idProc]
-                      << " the G " << mesh->element(it_map->second.get<0>(),idProc ).G()
+                      << " the G " << mesh->element(it_map->second.template get<0>(),idProc ).G()
                       << std::endl;
 #endif
             // send
             this->worldComm().localComm().send(idProc , nbMsgToSend[idProc], idGmsh);
             // save tag of request
-            mapMsg[idProc].insert(std::make_pair(nbMsgToSend[idProc],it_map->second.get<0>() ) );
+            mapMsg[idProc].insert(std::make_pair(nbMsgToSend[idProc],it_map->second.template get<0>() ) );
             // update nb send
             nbMsgToSend[idProc]++;
         }

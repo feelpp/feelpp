@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -343,7 +343,6 @@ public:
     static const uint16_type nDim = Dim;
     static const uint16_type nOrder = Order;
 
-    static const T factor = (Dim==2)?T(1)/T(2):T(1)/T(6);
     //@}
 
     /** @name Constructors, destructor
@@ -360,7 +359,7 @@ public:
                 permute(_M_quad.m[i], _M_quad.q[i], wi );
                 for (int j=0; j<_M_quad.m[i]; j++, wi++)
                     {
-                        this->_M_w( wi ) = factor*_M_quad.w[i];
+                        this->_M_w( wi ) = factor()*_M_quad.w[i];
                     }
             }
 
@@ -387,6 +386,12 @@ public:
     {}
 
     //@}
+
+    T factor() const
+        {
+            return (Dim==2)?T(1)/T(2):T(1)/T(6);
+        }
+
 
     /** @name  Methods
      */

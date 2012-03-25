@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -178,6 +178,7 @@ public:
     static const bool is_normalized = traits_type::is_normalized;
     static const bool isTransformationEquivalent = true;
     static const bool isContinuous = false;
+    static const bool is_product = true;
     typedef Discontinuous continuity_type;
 
     /** @name Typedefs
