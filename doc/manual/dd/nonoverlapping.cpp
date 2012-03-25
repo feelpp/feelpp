@@ -116,7 +116,6 @@ public:
         M_backend( backend_type::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( this->vm()["shape"].template as<std::string>() ),
-        timers(),
         M_firstExporter( export_type::New( this->vm(),
                                            (boost::format( "%1%-%2%-%3%" )
                                             % this->about().appName()
@@ -126,7 +125,9 @@ public:
                                             (boost::format( "%1%-%2%-%3%" )
                                              % this->about().appName()
                                              % Dim
-                                             % int(2)).str() ) )
+                                             % int(2)).str() ) ),
+        timers()
+
     {}
 
     template<typename DirichletExpr,
