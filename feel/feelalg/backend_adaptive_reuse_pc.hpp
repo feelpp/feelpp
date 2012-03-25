@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -117,23 +117,19 @@ public:
     // -- SETTING OF OPTIONS --
     void set_noisy( int noisy )
     {
-#warning TODO
         //M_backend->set_noisy( noisy );
     }
     void set_maxiter( int maxiter ) { M_maxiter = maxiter; }
     void set_fillin( int fillin )
     {
-#warning TODO
         //M_backend->set_fillin( fillin );
     }
     void set_threshold( double threshold )
     {
-#warning TODO
         //M_backend->set_threshold( threshold );
     }
     void set_tol( double tol )
     {
-#warning TODO
         //M_backend->set_tol( tol );
     }
     void set_symmetric( bool isSymmetric )
@@ -146,7 +142,6 @@ public:
     }
     void set_solver_type( std::string const& solver )
     {
-#warning TODO
         //M_backend->set_solver_type( solver );
     }
     void set_preconditioner_type( std::string const& prec )
