@@ -93,9 +93,9 @@ opusModelThermalOptions()
     return thermaloptions;
 }
 
-po::options_description makeEadsOptions()
+  Feel::po::options_description makeEadsOptions()
 {
-    po::options_description options("Eads Model Options");
+  Feel::po::options_description options("Eads Model Options");
 #if 1
     options
         .add( opusModelThermalOptions() )
