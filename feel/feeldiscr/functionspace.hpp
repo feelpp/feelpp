@@ -1652,8 +1652,12 @@ public:
             return p0Element;
         }
 
+        value_type max() const { return super::max(); }
+
         template < typename p0_space_type >
         typename p0_space_type::element_type max( boost::shared_ptr<p0_space_type> const& P0h ) { return this->extremeValue(P0h, "max" ); }
+
+        value_type min() const { return super::min(); }
 
         template < typename p0_space_type >
         typename p0_space_type::element_type min( boost::shared_ptr<p0_space_type> const& P0h ) { return this->extremeValue(P0h, "min" ); }
