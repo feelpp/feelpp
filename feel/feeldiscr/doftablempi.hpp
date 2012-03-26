@@ -127,7 +127,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGhostInterProcessDofMap( mesh_
                             // get dof local on Proc
                             auto thedof = faceLocalToGlobal(face_it->id(),locDof,c);
                             // save the tag of mpi send
-                            mapMsg[IdProcessOfGhost].insert(std::make_pair(nbMsgToSend[IdProcessOfGhost],thedof.get<0>()) );
+                            mapMsg[IdProcessOfGhost].insert(std::make_pair(nbMsgToSend[IdProcessOfGhost],thedof.template get<0>()) );
 
                             // get info to send
                             //boost::tuple<int,int,int> dataToSend = boost::make_tuple(idFaceInPartition,l,c);
@@ -136,11 +136,11 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGhostInterProcessDofMap( mesh_
                             dataToSend[1]=l;
                             dataToSend[2]=c;
                             dataToSend[3]=eltOnProc.facePermutation(faceIdInEltOnProc).value();
-                            dataToSend[4]=dofPoint(thedof.get<0>()).get<0>()[0];
+                            dataToSend[4]=dofPoint(thedof.template get<0>()).template get<0>()[0];
                             if (nDim>1)
-                                dataToSend[5]=dofPoint(thedof.get<0>()).get<0>()[1];
+                                dataToSend[5]=dofPoint(thedof.template get<0>()).template get<0>()[1];
                             if (nDim>2)
-                                dataToSend[6]=dofPoint(thedof.get<0>()).get<0>()[2];
+                                dataToSend[6]=dofPoint(thedof.template get<0>()).template get<0>()[2];
 
                             // send
                             this->worldComm().send(IdProcessOfGhost , nbMsgToSend[IdProcessOfGhost], dataToSend);
@@ -150,7 +150,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGhostInterProcessDofMap( mesh_
                                       << " I send to proc "<< IdProcessOfGhost
                                       << " with tag "<< nbMsgToSend[IdProcessOfGhost]
                                 //<< " face_it->id() " << face_it->id()
-                                      << " blabla " << thedof.get<0>() << " " << dofPoint(thedof.get<0>())
+                                      << " blabla " << thedof.template get<0>() << " " << dofPoint(thedof.template get<0>())
                                       << " face_it->G() " << face_it->G()
                                       << " with locDof " << locDof
                                       << std::endl;
@@ -232,11 +232,11 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGhostInterProcessDofMap( mesh_
                     for ( uint16_type l = 0; (l < nbFaceDof && !find) ; ++l )
                         //while (!find && l<nbFaceDof )
                         {
-                            auto thedofInFace = faceLocalToGlobal(dataToRecv[0], l, dataToRecv[2]).get<0>();
+                            auto thedofInFace = faceLocalToGlobal(dataToRecv[0], l, dataToRecv[2]).template get<0>();
 
                             if (nDim==1)
                                 {
-                                    if (std::abs(dofPoint(thedofInFace).get<0>()[0]-dataToRecv[4])<1e-5)
+                                    if (std::abs(dofPoint(thedofInFace).template get<0>()[0]-dataToRecv[4])<1e-5)
                                         {
                                             locDof = l;
                                             find=true;
@@ -244,8 +244,8 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGhostInterProcessDofMap( mesh_
                                 }
                             else if (nDim==2)
                                 {
-                                    if ( (std::abs(dofPoint(thedofInFace).get<0>()[0]-dataToRecv[4])<1e-5) &&
-                                         (std::abs(dofPoint(thedofInFace).get<0>()[1]-dataToRecv[5])<1e-5) )
+                                    if ( (std::abs(dofPoint(thedofInFace).template get<0>()[0]-dataToRecv[4])<1e-5) &&
+                                         (std::abs(dofPoint(thedofInFace).template get<0>()[1]-dataToRecv[5])<1e-5) )
                                         {
                                             locDof = l;
                                             find=true;
@@ -253,9 +253,9 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGhostInterProcessDofMap( mesh_
                                 }
                             else if (nDim==3)
                                 {
-                                    if ( (std::abs(dofPoint(thedofInFace).get<0>()[0]-dataToRecv[4])<1e-5) &&
-                                         (std::abs(dofPoint(thedofInFace).get<0>()[1]-dataToRecv[5])<1e-5) &&
-                                         (std::abs(dofPoint(thedofInFace).get<0>()[2]-dataToRecv[6])<1e-5) )
+                                    if ( (std::abs(dofPoint(thedofInFace).template get<0>()[0]-dataToRecv[4])<1e-5) &&
+                                         (std::abs(dofPoint(thedofInFace).template get<0>()[1]-dataToRecv[5])<1e-5) &&
+                                         (std::abs(dofPoint(thedofInFace).template get<0>()[2]-dataToRecv[6])<1e-5) )
                                         {
                                             locDof = l;
                                             find=true;
@@ -268,12 +268,12 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGhostInterProcessDofMap( mesh_
 #endif
                     auto thedof = faceLocalToGlobal(dataToRecv[0], locDof, dataToRecv[2]);
 
-                    int dofGlobAsked = thedof.get<0>();
+                    int dofGlobAsked = thedof.template get<0>();
 #if 0
                     std::cout << "\nI am proc "<<  myRank
                               << " I recv to proc "<< proc
                               << " with tag "<< cpt
-                              << " blabla " << dofPoint(thedof.get<0>())
+                              << " blabla " << dofPoint(thedof.template get<0>())
                         //<< " mapMsg " << mapMsg[proc][cpt]
                               << " dofGlobAsked " << dofGlobAsked
                         //<< " face_it->id() " << face_it->id()
@@ -308,7 +308,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGhostInterProcessDofMap( mesh_
                         mapInterProcessDof.insert(std::make_pair(mapMsg[proc][cpt], boost::make_tuple(proc,dofGlobRecv) ));
                     else
                         {
-                            if ( (int)mapInterProcessDof.find(mapMsg[proc][cpt])->second.get<0>() > proc )
+                            if ( (int)mapInterProcessDof.find(mapMsg[proc][cpt])->second.template get<0>() > proc )
                                 { std::cout << "\n HJHJHJHJH"<<std::endl;
                                     mapInterProcessDof.insert(std::make_pair(mapMsg[proc][cpt], boost::make_tuple(proc,dofGlobRecv) ));
                                 }
@@ -373,12 +373,12 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGhostInterProcessDofMap( mesh_
 #endif
                             auto thedof = faceLocalToGlobal(face_it->id(),locDof,c);
 
-                            int IdProcessOfGhost = mapInterProcessDof[thedof.get<0>()].get<0>();
+                            int IdProcessOfGhost = mapInterProcessDof[thedof.template get<0>()].template get<0>();
 
                             //boost::tuple<int,int,int> dataToSend = boost::make_tuple(idFaceInPartition,l,c);
                             ublas::vector<float> dataToSendCheck(3+nDim/*5*/);
-                            dataToSendCheck[0]=mapInterProcessDof[thedof.get<0>()].get<1>();
-                            dataToSendCheck[1]=dofPoint(thedof.get<0>()).get<0>()[0];
+                            dataToSendCheck[0]=mapInterProcessDof[thedof.template get<0>()].template get<1>();
+                            dataToSendCheck[1]=dofPoint(thedof.template get<0>()).template get<0>()[0];
                             if (nDim==1)
                                 {
                                     dataToSendCheck[2]=eltOnProc.facePermutation(faceIdInEltOnProc).value();
@@ -386,14 +386,14 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGhostInterProcessDofMap( mesh_
                                 }
                             else if (nDim==2)
                                 {
-                                    dataToSendCheck[2]=dofPoint(thedof.get<0>()).get<0>()[1];
+                                    dataToSendCheck[2]=dofPoint(thedof.template get<0>()).template get<0>()[1];
                                     dataToSendCheck[3]=eltOnProc.facePermutation(faceIdInEltOnProc).value();
                                     dataToSendCheck[4]=face_it->idInPartition(IdProcessOfGhost);
                                 }
                             else if (nDim==3)
                                 {
-                                    dataToSendCheck[2]=dofPoint(thedof.get<0>()).get<0>()[1];
-                                    dataToSendCheck[3]=dofPoint(thedof.get<0>()).get<0>()[2];
+                                    dataToSendCheck[2]=dofPoint(thedof.template get<0>()).template get<0>()[1];
+                                    dataToSendCheck[3]=dofPoint(thedof.template get<0>()).template get<0>()[2];
                                     dataToSendCheck[4]=eltOnProc.facePermutation(faceIdInEltOnProc).value();
                                     dataToSendCheck[5]=face_it->idInPartition(IdProcessOfGhost);
 
@@ -405,7 +405,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGhostInterProcessDofMap( mesh_
                     std::cout << "\nI am proc "<<  myRank
                               << " I send to proc "<< IdProcessOfGhost
                               << " with tag "<< nbMsgToSendCheck[IdProcessOfGhost]
-                              << " dofGlobAsked " <<  thedof.get<0>() << " " << dofPoint( thedof.get<0>()).get<0>()
+                              << " dofGlobAsked " <<  thedof.template get<0>() << " " << dofPoint( thedof.template get<0>()).template get<0>()
                         //<< "ma permutation " <<theotherelt.edgePermutation(face_idInOther).value()
                               << std::endl;
 #endif
@@ -456,7 +456,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGhostInterProcessDofMap( mesh_
 
 
 #if 0
-                    auto ptDof = dofPoint((int)dataToRecv[0]).get<0>();
+                    auto ptDof = dofPoint((int)dataToRecv[0]).template get<0>();
                     if (nDim ==2)
                         {
                             if ( (std::abs(ptDof[0]-dataToRecv[1])> 1e-4) ||
@@ -466,7 +466,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGhostInterProcessDofMap( mesh_
                                               << "\nI am proc "<<  myRank
                                               << " I recv to proc "<< proc
                                               << " with tag "<< cpt
-                                              << " dofGlobAsked " <<  dataToRecv[0] << " " << dofPoint((int)dataToRecv[0]).get<0>()
+                                              << " dofGlobAsked " <<  dataToRecv[0] << " " << dofPoint((int)dataToRecv[0]).template get<0>()
                                               << " dof X " << dataToRecv[1]
                                               << " dof Y "<< dataToRecv[2]
                                               << " ma permutation " << eltOnProc.facePermutation(faceIdInEltOnProc).value()
@@ -483,7 +483,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGhostInterProcessDofMap( mesh_
                                                       << "\nI am proc "<<  myRank
                                                       << " I recv to proc "<< proc
                                                       << " with tag "<< cpt
-                                                      << " dofGlobAsked " <<  dataToRecv[0] << " " << dofPoint((int)dataToRecv[0]).get<0>()
+                                                      << " dofGlobAsked " <<  dataToRecv[0] << " " << dofPoint((int)dataToRecv[0]).template get<0>()
                                                       << " dof X " << dataToRecv[1]
                                                       << " dof Y "<< dataToRecv[2]
                                                       << " ma permutation " << eltOnProc.facePermutation(faceIdInEltOnProc).value()
@@ -560,11 +560,11 @@ DofTable<MeshType, FEType, PeriodicityType>::buildDofNotPresent( mesh_type& mesh
                                       << " face_it->G() " << face_it->G()
                                       << " blabla " << blabla << std::endl;
 #endif
-                            setInterProcessDof.insert(blabla.get<0>());
+                            setInterProcessDof.insert(blabla.template get<0>());
 
                             if (theelt.processId()<myRank)
-                                setInterProcessDofNotPresent.insert(blabla.get<0>());
-                            //mapGhost[theelet.processId()].insert(blabla.get<0>(), );
+                                setInterProcessDofNotPresent.insert(blabla.template get<0>());
+                            //mapGhost[theelet.processId()].insert(blabla.template get<0>(), );
                         }
                 }
         } // for ( ; face_it != face_en ; ++face_it)
@@ -696,8 +696,8 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGlobalProcessToGlobalClusterDo
     auto dofNP_en = setInterProcessDofNotPresent.end();
     for ( ; dofNP_it!=dofNP_en ; ++dofNP_it)
         {
-            int IdProcessOfGhost = mapInterProcessDof[*dofNP_it].get<0>();
-            int dofFaceInPartition = mapInterProcessDof[*dofNP_it].get<1>();
+            int IdProcessOfGhost = mapInterProcessDof[*dofNP_it].template get<0>();
+            int dofFaceInPartition = mapInterProcessDof[*dofNP_it].template get<1>();
 
             this->worldComm().send(IdProcessOfGhost , nbMsgToSend2[IdProcessOfGhost], dofFaceInPartition);
 
@@ -779,8 +779,8 @@ DofTable<MeshType, FEType, PeriodicityType>::updateGhostGlobalDof(std::map<size_
             auto dofNP_en = setInterProcessDofNotPresent.end();
             for ( ; dofNP_it!=dofNP_en ; ++dofNP_it)
                 {
-                    int IdProcessOfGhost = mapInterProcessDof.find(*dofNP_it)->second.get<0>();
-                    int dofFaceInPartition = mapInterProcessDof.find(*dofNP_it)->second.get<1>();
+                    int IdProcessOfGhost = mapInterProcessDof.find(*dofNP_it)->second.template get<0>();
+                    int dofFaceInPartition = mapInterProcessDof.find(*dofNP_it)->second.template get<1>();
 
                     this->worldComm().send(IdProcessOfGhost , nbMsgToSend2[IdProcessOfGhost], dofFaceInPartition);
 
