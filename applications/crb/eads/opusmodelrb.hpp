@@ -73,24 +73,26 @@ public:
      */
     //@{
     static const uint16_type Dim = 2;
-#if FEELPP_GNUC_AT_LEAST(4,6)
-    static constexpr double kmin = 0.2;
-    static constexpr double kmax = 150.;
 
-    static constexpr double rmin = 0.1;
-    static constexpr double rmax = 100.;
+  // #if FEELPP_GNUC_AT_LEAST(4,6)
+#if 0
+    static constexpr double kmin ;
+    static constexpr double kmax ;
 
-    static constexpr double Qmin = 0.;
-    static constexpr double Qmax = 1000000.;
+    static constexpr double rmin ;
+    static constexpr double rmax ;
+
+    static constexpr double Qmin ;
+    static constexpr double Qmax ;
 #else
-    static const double kmin = 0.2;
-    static const double kmax = 150;
+    static const double kmin ;
+    static const double kmax ;
 
-    static const double rmin = 0.1;
-    static const double rmax = 100;
+    static const double rmin ;
+    static const double rmax ;
 
-    static const double Qmin = 0;
-    static const double Qmax = 1000000;
+    static const double Qmin ;
+    static const double Qmax ;
 #endif
     static const uint16_type ParameterSpaceDimension = 5;
 
@@ -530,30 +532,31 @@ private:
 
 };
 
-#if !FEELPP_GNUC_AT_LEAST(4,6)
+
+  //#if !FEELPP_GNUC_AT_LEAST(4,6)
 template<int OrderU, int OrderP, int OrderT>
 const double
-OpusModelRB<OrderU,OrderP,OrderT>::kmin;
+OpusModelRB<OrderU,OrderP,OrderT>::kmin = 0.2;
 template<int OrderU, int OrderP, int OrderT>
 const double
-OpusModelRB<OrderU,OrderP,OrderT>::kmax;
+OpusModelRB<OrderU,OrderP,OrderT>::kmax = 150.;
 
 
 template<int OrderU, int OrderP, int OrderT>
 const double
-OpusModelRB<OrderU,OrderP,OrderT>::rmin;
+OpusModelRB<OrderU,OrderP,OrderT>::rmin=0.1;
 template<int OrderU, int OrderP, int OrderT>
 const double
-OpusModelRB<OrderU,OrderP,OrderT>::rmax;
+OpusModelRB<OrderU,OrderP,OrderT>::rmax=100;
 
 
 template<int OrderU, int OrderP, int OrderT>
 const double
-OpusModelRB<OrderU,OrderP,OrderT>::Qmin;
+OpusModelRB<OrderU,OrderP,OrderT>::Qmin=0;
 template<int OrderU, int OrderP, int OrderT>
 const double
-OpusModelRB<OrderU,OrderP,OrderT>::Qmax;
-#endif
+OpusModelRB<OrderU,OrderP,OrderT>::Qmax=1000000.;
+  //#endif
 
 typedef OpusModelRB<2,1,2> opusmodel212_type;
 }
