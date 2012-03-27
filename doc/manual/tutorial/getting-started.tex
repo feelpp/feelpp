@@ -125,7 +125,7 @@ Each application can be configured via the command line but also using a
 \verb|.cfg| file. If they exist they may have been installed on your system
 along with \feel or you may create your own configuration files.  \feel provides
 a way to look for them and parse them.
-\newline
+
 The \verb|.cfg| file is searched in the following order
 \begin{enumerate}
 \item look in the current directory
@@ -205,8 +205,17 @@ mympiapp-2.1 is opened for debug
 
 \index{PETSc}\index{Trilinos}\index{Libraries!PETSc}\index{Libraries!Trilinos}
 
-PETSc is a suite of data structures and routines for the scalable (parallel) solution of scientific applications modeled by partial differential equations. It employs the MPI standard for parallelism.  \newline \newline The Trilinos Project is an effort to develop algorithms and enabling technologies within an object-oriented software framework for the solution of large-scale, complex multi-physics engineering and scientific problems. \newline \newline
-\feel supports the PETSc and Trilinos framework, the class \lstinline!Application!\index{Class!Application} takes care of initialize the associated environments. \newline
+PETSc is a suite of data structures and routines for the scalable (parallel)
+solution of scientific applications modeled by partial differential
+equations. It employs the MPI standard for parallelism.  
+
+The Trilinos Project is an effort to develop algorithms and enabling
+technologies within an object-oriented software framework for the solution of
+large-scale, complex multi-physics engineering and scientific problems.
+
+\feel supports the PETSc and Trilinos framework, the class
+\lstinline!Application!\index{Class!Application} takes care of initialize the
+associated environments. 
 
 
 \section{Mesh Manipulation}
@@ -227,9 +236,9 @@ the type of geometric entities that we shall use to form our mesh. \feel support
 \item tensorized entities: segment, quadrangle, hexahedron
 \end{itemize}
 
-To create a mesh, we use the following keywords \lstinline!Simplex<Dim,Order,RealDim>!  and \newline
-\lstinline!SimplexProduct <Dim,Order,RealDim>!. They have the same
-template arguments:
+To create a mesh, use the following keywords \lstinline!Simplex<Dim,Order,RealDim>!  and \\
+\lstinline!SimplexProduct <Dim,Order,RealDim>!. They have the same template
+arguments:
 \begin{itemize}
 \item \lstinline!Dim!: the topological dimension of the entity (optional, default value = 1).
 \item \lstinline!Order!: the order of the entity(usually 1, higher order in development).
@@ -245,7 +254,8 @@ meshes are not supported).
 
 \lstinputlisting[linerange=marker2-endmarker2]{tutorial/mymesh.cpp}
 
-\lstinline!boost::shared_ptr! allows to manipulate a pointer on a mesh. It is customary, and usually a very good practice, to define the
+\lstinline!boost::shared_ptr! allows to manipulate a pointer on a mesh. It is
+customary, and usually a very good practice, to define the
 \lstinline!boost::shared_ptr<>!  counterpart which is used actually in practice.
 
 %We can now instantiate a new mesh data structure.
@@ -317,10 +327,12 @@ The parameter \lstinline!_h! in the function \lstinline!domain! allows to change
 \end{unixcom}
 we generate some of the following graphics (which are located in \verb|~/feel/doc/tutorial/mymesh/| \newline \verb|hypercube-x/h_y.z| or \verb|~/feel/doc/tutorial/mymesh/simplex-x/h_y.z|)
 
-\newline
-To admire the meshes you've generated, you should go to \lstinline!~/feel/doc/tutorial/mymesh/hypercube! (or \lstinline!simplex!) and find out the \verb|.msh| files. Last step is to launch gmsh with
+
+To visualize the meshes, go to \lstinline!~/feel/doc/tutorial/mymesh/hypercube!
+(or \lstinline!simplex!) and find out the \verb|.msh| files. Last step is to
+launch gmsh with
 \begin{unixcom}
-		gmsh yourfile.msh
+  gmsh yourfile.msh
 \end{unixcom}
 
 
@@ -335,10 +347,10 @@ To admire the meshes you've generated, you should go to \lstinline!~/feel/doc/tu
   \caption{Sequential computation}
 \end{figure}
 \label{fig:2}
-\newline
+
 Some examples of meshes generated in sequential and parallel computaion are shown in the following figures.
 
-\newline
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
  \begin{figure}[!h]
   \centering
@@ -401,8 +413,14 @@ or
 
 \[ \Omega=\{ \mathbf{x} \in \mathbb{R}^d | x_i \geq 0, \sum_{i=1}^{d} x_i \leq 1 \} \]
 
-where $ d=1,2$ or $3$ and $\mathbf{x}=(x_1,...,x_d)$.\\ \newline
-These domains are plotted in the section ~\ref{sec:mesh-manipulation} (If it's not yet done, compile all examples which are used in this tutorial, go to \lstinline!~/FEEL/feel.opt/doc/manual/! and type \verb|make| and execute the application \verb|feel_doc_mymesh|). The execution will result in several meshes as it is explained in ~\ref{mesh:examples}.\\
+where $ d=1,2$ or $3$ and $\mathbf{x}=(x_1,...,x_d)$.
+
+These domains are plotted in the section ~\ref{sec:mesh-manipulation} (If it's
+not yet done, compile all examples which are used in this tutorial, go to
+\lstinline!~/FEEL/feel.opt/doc/manual/! and type \verb|make| and execute the
+application \verb|feel_doc_mymesh|). The execution will result in several meshes
+as it is explained in ~\ref{mesh:examples}.
+
 Here are the integrals we want to compute :
 \begin{itemize}
 \item $\displaystyle{ \int_\Omega 1 }$ : the measure of the domain
@@ -580,7 +598,7 @@ int_Omega (sin(x^2+y^2+z^2)) [with order 2 max exact integration] = 0.731693[ 0.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\\We can execute this application in parallel as well. The results in dimension 2 of each integral are as follow : \\
+This application can be executed in parallel as well. The results in dimension 2 of each integral are as follow : 
 \begin{lstlisting}
 ------------------------------------------------------------
 Execute MyIntegrals<2>
@@ -840,11 +858,12 @@ BOOST_PARAMETER_MEMBER_FUNCTION(
 
 \subsection{Principle}
 \label{sec:vari-form-princip}
-A vartiational formulation of a problem is also called weak formulation. The key item is to bring a new function (called test function) and to integrate by parts. In that way we decrease the condition on our functions.
+A variational formulation of a problem is also called weak formulation. The key
+item is to bring a new function (called test function) and to integrate by
+parts. In that way we decrease the regularity constraint on our functions.
 %The finite elements method, on which is based $Feel++$ library, is used to numerically solve partial differential equation. The resolution of such equations makes the representation of complex system's dynamic behavior possible.
-\newline
-\newline
-Let's considerate the equation to solve with boundary conditions where $u  \in \varOmega$ is the unknown
+
+Let's consider the equation to solve with boundary conditions where $u  \in \varOmega$ is the unknown
 \begin{equation}
 \begin{array}{l l l}
 	-\Delta u = f  \\
