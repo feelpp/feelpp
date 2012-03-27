@@ -58,7 +58,7 @@ add_latex_document(feel-manual.tex
   ../biblio/feel-manual.bib
   ../biblio/feelpp.bib
   ../biblio/feelpp-thesis.bib
-  IMAGE_DIRS pngs pdfs pngs/mymesh pngs/heatsink
+  IMAGE_DIRS pngs pdfs pngs/mymesh pngs/heatsink pngs/laplacian
   USE_INDEX
   DEFAULT_PDF
   )
