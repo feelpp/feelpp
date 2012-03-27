@@ -91,38 +91,8 @@ createGeo( double meshSize  )
 {
 std::ostringstream ostr;
 
-#if 0
-    ostr << "p=" << meshSize << ";\n"
-	 <<"Point(1) = {-0.5,0,0,p};\n"
-	 <<"Point(2) = {0,0,0,p};\n"
-	 <<"Point(3) = {0.5,0,0,p};\n"
-	 <<"Point(4) = {0.5,0.5,0,p};\n"
-	 <<"Point(5) = {0,0.5,0,p};\n"
-	 <<"Point(6) = {-0.5,0.5,0,p};\n"
-	 <<"\n"
-	 <<"Line(1) = {1,2};\n"
-	 <<"Line(2) = {2,3};\n"
-	 <<"Line(3) = {3,4};\n"
-	 <<"Line(4) = {4,5};\n"
-	 <<"Line(5) = {5,6};\n"
-	 <<"Line(6) = {6,1};\n"
-	 <<"Line(7) = {2,5};\n"
-
-	 <<"Line Loop(1) = {1,7,5,6};\n"
-	 <<"Line Loop(2) = {2,3,4,-7};\n"
-	 <<"Plane Surface(3) = {1};\n"
-	 <<"Plane Surface(4) = {2};\n"
-
-	 <<"Physical Line(\"left\") = {6};\n"
-	 <<"Physical Line(\"right\")={3};\n"
-	 <<"Physical Line(\"hautbas\")={1,2,4,5};\n"
-	 <<"Physical Line(\"interface\") = {7};\n"
-	 <<"Physical Surface(\"maille1\") = {3};\n"
-	 <<"Physical Surface(\"maille2\") = {4};\n"
-	 <<"\n";
-#endif
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////// MAILLAGE CABINE JUSTE LE HAUT ////////////////////////////////////////////////////////
+//////////////////////// MAILLAGE CABINE TOP ////////////////////////////////////////////////////////
 
 ostr << "lc1=" <<meshSize <<";\n"
 
@@ -200,11 +170,7 @@ ostr << "lc1=" <<meshSize <<";\n"
 <<"Point(64)={ 0.20,-1.65,0, lc1};\n"
 <<"Point(65)={ 0.20,-1.55,0, lc1};\n"
 <<"Point(66)={-0.15,-1.55,0, lc1};\n"
-//Point(63)={-0.15,-1.65,0, lc2};          // bay inlet
-//Point(64)={ 0.20,-1.65,0, lc2};
-//Point(65)={ 0.20,-1.55,0, lc2};
-//Point(66)={-0.15,-1.55,0, lc2};
-//creation contour cabine+plancher
+
 <<"Line(1) = {1,2} ;\n"
 <<"Line(2) = {2,3} ;\n"
 <<"Line(3) = {3,4} ;\n"
@@ -319,7 +285,7 @@ public:
     //@{
 
     static const uint16_type Order = 5;
-    static const uint16_type ParameterSpaceDimension = 3;
+    static const uint16_type ParameterSpaceDimension = 5;
     static const bool is_time_dependent = false;
     //@}
 
@@ -420,13 +386,13 @@ public:
      *
      * \return number of outputs associated to the model
      */
-    int Nl() const { return 2; }
+    int Nl() const { return 4; }
 
     /**
      * \param l the index of output
      * \return number of terms  in affine decomposition of the \p q th output term
      */
-    int Ql( int l ) const { if ( l == 0 ) return 2; return 1; }
+    int Ql( int l ) const { if ( l == 0 ) return 4; return 1; }
 
     /**
      * \brief Returns the function space
@@ -447,8 +413,10 @@ public:
             M_thetaAq( 0 ) = mu(0);//k
             M_thetaFq.resize( Nl() );
             M_thetaFq[0].resize( Ql(0) );
-            M_thetaFq[0]( 0 ) = mu(1); // delta
-            M_thetaFq[0]( 1 ) = mu(2); // phi
+            M_thetaFq[0]( 0 ) = mu(1); // 175
+            M_thetaFq[0]( 1 ) = mu(2); // delta1
+	    M_thetaFq[0]( 2 ) = mu(3); // delta2
+	    M_thetaFq[0]( 3 ) = mu(4); // phi		
             M_thetaFq[1].resize( Ql(1) );
             M_thetaFq[1]( 0 ) = 1;
             return boost::make_tuple( M_thetaAq, M_thetaFq );
@@ -644,10 +612,12 @@ CabineHeat::init()
     M_Aq.resize( 1 );
     M_Aq[0] = backend->newMatrix( Xh, Xh );
 
-    M_Fq.resize( 2 );
-    M_Fq[0].resize( 2 );
+    M_Fq.resize( 4 );
+    M_Fq[0].resize( 4 );
     M_Fq[0][0] = backend->newVector( Xh );
     M_Fq[0][1] = backend->newVector( Xh );
+    M_Fq[0][2] = backend->newVector( Xh );	
+    M_Fq[0][3] = backend->newVector( Xh );
 
     M_Fq[1].resize( 1 );
     M_Fq[1][0] = backend->newVector( Xh );
@@ -657,11 +627,11 @@ CabineHeat::init()
 
     using namespace Feel::vf;
     static const int N = 2;
-    Feel::ParameterSpace<3>::Element mu_min( M_Dmu );
-    mu_min << 0.2, 0.1, 0.1;
+    Feel::ParameterSpace<5>::Element mu_min( M_Dmu );
+    mu_min << 0.2,175, 0.1, 0.1, 0.1;
     M_Dmu->setMin( mu_min );
-    Feel::ParameterSpace<3>::Element mu_max( M_Dmu );
-    mu_max << 50, 5, 5;
+    Feel::ParameterSpace<5>::Element mu_max( M_Dmu );
+    mu_max << 50, 175, 5, 5, 5;
     M_Dmu->setMax( mu_max );
 
 
@@ -673,34 +643,32 @@ CabineHeat::init()
 
 
     // right hand side
-    form1( Xh, M_Fq[0][0], _init=true ) = integrate( markedfaces(mesh,"cabin_wall"), id(v) );
-		
-    form1( Xh, M_Fq[0][0]) += integrate( markedfaces(mesh,"right_outlet"), id(v));
-		
-    form1( Xh, M_Fq[0][0]) += integrate( markedfaces(mesh,"left_outlet"), id(v));
-		
+    form1( Xh, M_Fq[0][0], _init=true ) = integrate( markedfaces(mesh,"passenger1"), id(v) );
+    form1( Xh, M_Fq[0][0]) += integrate( markedfaces(mesh,"passenger2"), id(v) );
+    form1( Xh, M_Fq[0][0]) += integrate( markedfaces(mesh,"passenger3"), id(v) );
+    form1( Xh, M_Fq[0][0]) += integrate( markedfaces(mesh,"passenger4"), id(v) );
+    form1( Xh, M_Fq[0][0]) += integrate( markedfaces(mesh,"passenger5"), id(v) );
+    form1( Xh, M_Fq[0][0]) += integrate( markedfaces(mesh,"passenger6"), id(v) );
 	
-    form1( _test=Xh, _vector=M_Fq[0][1], _init=true ) = integrate( elements(mesh), id(v) );
+    form1( Xh, M_Fq[0][1], _init=true ) = integrate( markedfaces(mesh,"cabin_wall"), id(v) );
+
+    form1( Xh, M_Fq[0][2], _init=true) = integrate( markedfaces(mesh,"right_outlet"), id(v));		
+    form1( Xh, M_Fq[0][2]) += integrate( markedfaces(mesh,"left_outlet"), id(v));
+		
+    form1(Xh, M_Fq[0][3], _init=true ) = integrate( elements(mesh), id(v) );
     M_Fq[0][0]->close();
     M_Fq[0][1]->close();
+    M_Fq[0][2]->close();
+    M_Fq[0][3]->close();
 
     // output non compliant : mean temperature on left_outlet
-    double onleftoutlet = integrate(markedfaces(mesh,"left_outlet"), cst(1.)).evaluate()(0,0);
-    form1( Xh, M_Fq[1][0], _init=true ) = integrate( markedfaces(mesh,"left_outlet"), id(v)/onleftoutlet);
+    double onplancher = integrate(markedfaces(mesh,"plancher"), cst(1.)).evaluate()(0,0);
+    form1( Xh, M_Fq[1][0], _init=true ) = integrate( markedfaces(mesh,"plancher"), id(v)/onplancher);
     M_Fq[1][0]->close();
 
 	
     form2( Xh, Xh, M_Aq[0], _init=true ) = integrate( elements(mesh),(gradt(u)*trans(grad(v))) );
-    form2( Xh, Xh, M_Aq[0]) += on( markedfaces(mesh,"plancher"), u, F, cst(10.) );
-    form2( Xh, Xh, M_Aq[0]) += on( markedfaces(mesh,"passenger1"), u, F, cst(30.) );
-    form2( Xh, Xh, M_Aq[0]) += on( markedfaces(mesh,"passenger2"), u, F, cst(30.) );
-    form2( Xh, Xh, M_Aq[0]) += on( markedfaces(mesh,"passenger3"), u, F, cst(30.) );
-    form2( Xh, Xh, M_Aq[0]) += on( markedfaces(mesh,"passenger4"), u, F, cst(30.) );
-    form2( Xh, Xh, M_Aq[0]) += on( markedfaces(mesh,"passenger5"), u, F, cst(30.) );
-    form2( Xh, Xh, M_Aq[0]) += on( markedfaces(mesh,"passenger6"), u, F, cst(30.) );
     form2( Xh, Xh, M_Aq[0]) += on( markedfaces(mesh,"cabine_inlet"), u, F, cst(20.) );
-		
-
     M_Aq[0]->close();
 	
 
@@ -812,12 +780,12 @@ void
 CabineHeat::run( const double * X, unsigned long N, double * Y, unsigned long P )
 {
     using namespace vf;
-    Feel::ParameterSpace<3>::Element mu( M_Dmu );
-    mu << X[0], X[1], X[2];
+    Feel::ParameterSpace<5>::Element mu( M_Dmu );
+    mu << X[0], X[1], X[2], X[3], X[4];
     static int do_init = true;
     if ( do_init )
     {
-        meshSize = X[3];
+        meshSize = X[5];
         this->init();
         do_init = false;
     }
@@ -839,7 +807,7 @@ CabineHeat::output( int output_index, parameter_type const& mu )
 
     // (compliant) and (non compliant: mean temperature on left_outlet)
     double s=0;
-    if(output_index<2)
+    if(output_index<4)
     {
         for(int i=0;i<Ql(output_index);i++)  s += M_thetaFq[output_index](i)*dot( M_Fq[output_index][i], U );
     }
