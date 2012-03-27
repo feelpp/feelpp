@@ -386,7 +386,7 @@ public:
      *
      * \return number of outputs associated to the model
      */
-    int Nl() const { return 4; }
+    int Nl() const { return 2; }
 
     /**
      * \param l the index of output
@@ -413,12 +413,12 @@ public:
             M_thetaAq( 0 ) = mu(0);//k
             M_thetaFq.resize( Nl() );
             M_thetaFq[0].resize( Ql(0) );
-            M_thetaFq[0]( 0 ) = mu(1); // 175
-            M_thetaFq[0]( 1 ) = mu(2); // delta1
-	    M_thetaFq[0]( 2 ) = mu(3); // delta2
+            M_thetaFq[0]( 0 ) = mu(1); // delta 1Flux_passenger(0->175)
+            M_thetaFq[0]( 1 ) = mu(2); // delta2
+	    M_thetaFq[0]( 2 ) = mu(3); // delta3
 	    M_thetaFq[0]( 3 ) = mu(4); // phi		
             M_thetaFq[1].resize( Ql(1) );
-            M_thetaFq[1]( 0 ) = 1;
+            M_thetaFq[1]( 0 ) = 1; //output 1
             return boost::make_tuple( M_thetaAq, M_thetaFq );
         }
 
@@ -628,7 +628,7 @@ CabineHeat::init()
     using namespace Feel::vf;
     static const int N = 2;
     Feel::ParameterSpace<5>::Element mu_min( M_Dmu );
-    mu_min << 0.2,175, 0.1, 0.1, 0.1;
+    mu_min << 0.2,100, 0.1, 0.1, 0.1;
     M_Dmu->setMin( mu_min );
     Feel::ParameterSpace<5>::Element mu_max( M_Dmu );
     mu_max << 50, 175, 5, 5, 5;
@@ -661,11 +661,11 @@ CabineHeat::init()
     M_Fq[0][2]->close();
     M_Fq[0][3]->close();
 
-    // output non compliant : mean temperature on left_outlet
+    // output non compliant : mean temperature on plancher
     double onplancher = integrate(markedfaces(mesh,"plancher"), cst(1.)).evaluate()(0,0);
+    	std::cout<<"onplancher"<<onplancher<<std::endl;
     form1( Xh, M_Fq[1][0], _init=true ) = integrate( markedfaces(mesh,"plancher"), id(v)/onplancher);
     M_Fq[1][0]->close();
-
 	
     form2( Xh, Xh, M_Aq[0], _init=true ) = integrate( elements(mesh),(gradt(u)*trans(grad(v))) );
     form2( Xh, Xh, M_Aq[0]) += on( markedfaces(mesh,"cabine_inlet"), u, F, cst(20.) );
@@ -805,7 +805,7 @@ CabineHeat::output( int output_index, parameter_type const& mu )
     vector_ptrtype U( backend->newVector( Xh ) );
     *U = *pT;
 
-    // (compliant) and (non compliant: mean temperature on left_outlet)
+    // (compliant) and (non compliant: mean temperature on plancher)
     double s=0;
     if(output_index<4)
     {
@@ -814,6 +814,7 @@ CabineHeat::output( int output_index, parameter_type const& mu )
     else{
       throw std::logic_error( "[Cabineheat::output] error with output_index : only 0 or 1 " );
     }
+    
     return s;
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
