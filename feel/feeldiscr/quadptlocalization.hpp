@@ -731,7 +731,7 @@ private :
                std::vector<std::list<boost::tuple< size_type,size_type,node_type> > > const & trialPtQuadToElt,
                size_type idq)
 {
-    size_type resId;
+    size_type resId=0;
     ublas::vector<double> resNodeRef;
     bool find=false;
 
