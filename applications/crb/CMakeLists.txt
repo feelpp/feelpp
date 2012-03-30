@@ -35,6 +35,7 @@ OPTION(FEELPP_ENABLE_CRB_AD1 "enable AD1(Advection-Diffusion) testcase" ON)
 OPTION(FEELPP_ENABLE_CRB_THERMALBLOCK "enable THERMALBLOCK(many parameters) testcase" ON)
 OPTION(FEELPP_ENABLE_CRB_HELMHOLTZ "enable Helmholtz testcases" ON)
 OPTION(FEELPP_ENABLE_CRB_HEATSINK "enable Heatsink testcases" ON)
+OPTION(FEELPP_ENABLE_CRB_HEATSHIELD "enable Heatshield testcases" ON)
 
 OPTION(FEELPP_ENABLE_CRB_ALL "enable all crb testcase" ON)
 if (FEELPP_ENABLE_CRB_ALL)
@@ -47,6 +48,7 @@ if (FEELPP_ENABLE_CRB_ALL)
   set(FEELPP_ENABLE_CRB_AD1 ON)
   set(FEELPP_ENABLE_CRB_THERMALBLOCK ON)
   set(FEELPP_ENABLE_CRB_HELMHOLTZ ON)
+  set(FEELPP_ENABLE_CRB_HEATSHIELD ON)
 endif()
 
 
@@ -89,6 +91,10 @@ ENDIF()
 
 if ( FEELPP_ENABLE_CRB_HEATSINK )
   add_subdirectory(heatsink-2d)
+ENDIF()
+
+if ( FEELPP_ENABLE_CRB_HEATSHIELD )
+  add_subdirectory(heatshield)
 ENDIF()
 
 
