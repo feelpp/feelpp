@@ -607,8 +607,8 @@ UnsteadyHeat1D::init()
 
     Mpod = backend->newMatrix( Xh, Xh );
     form2( Xh, Xh, Mpod, _init=true ) =
-      integrate( elements(mesh), id(u)*idt(v) );
-      //integrate( elements(mesh), id(u)*idt(v) + grad(v)*trans(gradt(u)) );
+      //integrate( elements(mesh), id(u)*idt(v) );
+      integrate( elements(mesh), id(u)*idt(v) + grad(v)*trans(gradt(u)) );
     Mpod->close();
 
 
@@ -773,7 +773,9 @@ UnsteadyHeat1D::update( parameter_type const& mu,double bdf_coeff, element_type 
     //first direct model
     D->close();
     D->zero();
-    for( size_type q = 0;q < M_Aq.size(); ++q )
+    *D = *M_Aq[0];
+    D->scale( M_thetaAq[0] );
+    for( size_type q = 1;q < M_Aq.size(); ++q )
     {
         D->addMatrix( M_thetaAq[q], M_Aq[q] );
     }
@@ -798,38 +800,6 @@ UnsteadyHeat1D::update( parameter_type const& mu,double bdf_coeff, element_type 
         F->addVector( *vec_bdf_poly, *M_Mq[q]);
     }
 
-    //now adjoint model
-    A_du->close();
-    A_du->zero();
-    for( size_type q = 0;q < M_Aq_du.size(); ++q )
-    {
-        A_du->addMatrix( M_thetaAq_du[q], M_Aq_du[q] );
-    }
-    F_du->close();
-    F_du->zero();
-
-    for( size_type q = 0;q < M_Fq[output_index].size(); ++q )
-    {
-        //right hand side
-        F_du->add( -M_thetaFq[output_index][q], M_Fq[output_index][q] );
-    }
-    for( size_type q = 0;q < M_Fq_du.size(); ++q )
-    {
-        //right hand side
-        //bondaries conditions of adjoint model
-        F_du->add( M_thetaFq_du[q], M_Fq_du[q] );
-    }
-
-    //add contribution from mass matrix
-    for( size_type q = 0;q < M_Mq.size(); ++q )
-    {
-        //left hand side
-        A_du->addMatrix( M_thetaMq[q]*(-bdf_coeff), M_Mq[q] );
-        //right hand side
-        *vec_bdf_poly = bdf_poly;
-        vec_bdf_poly->scale(-M_thetaMq[q]);
-        F_du->addVector( *vec_bdf_poly, *M_Mq[q]);
-    }
 
 }
 
