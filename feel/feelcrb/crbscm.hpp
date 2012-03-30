@@ -124,7 +124,8 @@ public:
         M_Dmu( new parameterspace_type ),
         M_Xi( M_Dmu ),
         M_C( M_Dmu, 1, M_Xi ),
-        M_C_complement(M_Dmu, 1, M_Xi )
+        M_C_complement(M_Dmu, 1, M_Xi ),
+	M_scm_for_mass_matrix( false )
         {
         }
 
@@ -165,7 +166,8 @@ public:
         M_Xi( o.M_Xi ),
         M_C( o.M_C ),
         M_C_complement( o.M_C_complement ),
-        M_vm( o.M_vm )
+        M_vm( o.M_vm ),
+	M_scm_for_mass_matrix( o.M_scm_for_mass_matrix )
         {
         }
 
@@ -241,6 +243,13 @@ public:
         {
             M_iter_max = K;
         }
+
+    //! set bool ( if we do scm for mass matrix or not )
+    void setScmForMassMatrix( bool b )
+    {
+      M_scm_for_mass_matrix = b;
+    }
+
 
     //@}
 
@@ -417,6 +426,8 @@ private:
     std::vector<double> M_y_bounds_1;
 
     po::variables_map M_vm;
+
+    bool M_scm_for_mass_matrix;
 };
 
 po::options_description crbSCMOptions( std::string const& prefix = "" );
@@ -471,34 +482,61 @@ CRBSCM<TruthModelType>::offline()
     //std::cout << " -- C size :  " << M_C->size() << "\n";
     //std::cout << " -- C complement size :  " << M_C_complement->size() << "\n";
 
-    sparse_matrix_ptrtype A,B,symmA;
+    sparse_matrix_ptrtype B,symmMatrix,Matrix;
     std::vector<vector_ptrtype> F;
 
     // dimension of Y_UB and U_LB
     int K = 1;
 
-    std::vector<sparse_matrix_ptrtype> Aq;
-    boost::tie(boost::tuples::ignore, Aq, boost::tuples::ignore ) = M_model->computeAffineDecomposition();
-    //boost::tie( Aq, boost::tuples::ignore ) = M_model->computeAffineDecomposition();
+
+    std::vector<sparse_matrix_ptrtype> Matrixq;
+    if( M_scm_for_mass_matrix) 
+    {
+      boost::tie(Matrixq, boost::tuples::ignore, boost::tuples::ignore ) = M_model->computeAffineDecomposition();
+    }
+    else
+    {
+      boost::tie(boost::tuples::ignore, Matrixq, boost::tuples::ignore ) = M_model->computeAffineDecomposition();
+    }
+
+    int nb_decomposition_terms;
+    if( M_scm_for_mass_matrix ) nb_decomposition_terms = M_model->Qm() ;
+    else nb_decomposition_terms = M_model->Qa();
 
     while ( relative_error > M_tolerance && K <= M_iter_max )
     {
         std::cout << "============================================================\n";
-         std::cout << "K=" << K << "\n";
+        std::cout << "K=" << K << "\n";
 
         os_C << M_C->at( K-1 ) << "\n";
 
         // resize y_ub
         M_Y_ub.resize( K );
-        M_Y_ub[K-1].resize( M_model->Qa() );
+	M_Y_ub[K-1].resize( nb_decomposition_terms );
+
         M_model->solve( mu );
 
+
         // for a given parameter \p mu assemble the left and right hand side
-        boost::tie(boost::tuples::ignore, A, F ) = M_model->update( mu );
-        A->printMatlab( "offline_A.m" );
-        symmA = M_model->newMatrix();symmA->close();
-        A->symmetricPart( symmA );
-        symmA->printMatlab( "offline_symmA.m" );
+	if( M_scm_for_mass_matrix) 
+	{
+	  boost::tie(Matrix, boost::tuples::ignore, F ) = M_model->update( mu );
+	}
+	else
+	{
+	  boost::tie(boost::tuples::ignore, Matrix, F ) = M_model->update( mu );
+	}
+        Matrix->printMatlab( "offline_Matrix.m" );
+        symmMatrix = M_model->newMatrix();symmMatrix->close();
+        Matrix->symmetricPart( symmMatrix );
+	if( M_scm_for_mass_matrix) 
+	{
+	  symmMatrix->printMatlab( "offline_symmMatrix_M.m" );
+	}
+	else
+	{
+	  symmMatrix->printMatlab( "offline_symmMatrix_A.m" );
+	}
         B = M_model->innerProduct();
         B->printMatlab( "offline_B.m" );
 
@@ -508,8 +546,9 @@ CRBSCM<TruthModelType>::offline()
         vector_ptrtype eigenvector;
         // solve  for eigenvalue problem at \p mu
         SolverEigen<double>::eigenmodes_type modes;
+
         modes=
-            eigs( _matrixA=symmA,
+            eigs( _matrixA=symmMatrix,
                   _matrixB=B,
                   _solver=(EigenSolverType)M_vm["solvereigen-solver-type"].template as<int>(),
                   _spectrum=SMALLEST_REAL,
@@ -549,14 +588,15 @@ CRBSCM<TruthModelType>::offline()
          * now apply eigenvector to the Aq to compute
          * y( eigenvector ) = ( a_q( eigenvector, eigenvector )/ ||eigenvector||^2
          */
-        for( size_type q = 0; q < M_model->Qa(); ++q )
+        for( size_type q = 0; q < nb_decomposition_terms ; ++q )
         {
-            value_type aqw = Aq[q]->energy( eigenvector, eigenvector );
+            value_type aqw = Matrixq[q]->energy( eigenvector, eigenvector );
             value_type bw = B->energy( eigenvector, eigenvector );
 
             //std::cout << "[scm_offline] q=" << q << " aqw = " << aqw << ", bw = " << bw << "\n";
             M_Y_ub[K-1]( q ) = aqw/bw;
         }
+
         //checkC( K );
         //std::cout << "[scm_offline] M_Y_ub[" << K-1 << "]=" << M_Y_ub[K-1] << "\n";
 
@@ -652,15 +692,23 @@ boost::tuple<typename CRBSCM<TruthModelType>::value_type,
 CRBSCM<TruthModelType>::ex( parameter_type const& mu ) const
 {
     boost::timer ti;
-    sparse_matrix_ptrtype D,symmA;
+    sparse_matrix_ptrtype Matrix,symmMatrix;
     sparse_matrix_ptrtype M = M_model->innerProduct();
     std::vector<vector_ptrtype> F;
-    boost::tie(boost::tuples::ignore, D, F ) = M_model->update( mu );
-    symmA = M_model->newMatrix();symmA->close();
-    D->symmetricPart( symmA );
+
+    if( M_scm_for_mass_matrix )
+    {
+      boost::tie(Matrix, boost::tuples::ignore, F ) = M_model->update( mu );
+    }
+    else
+    {
+      boost::tie(boost::tuples::ignore, Matrix, F ) = M_model->update( mu );
+    }
+    symmMatrix = M_model->newMatrix();symmMatrix->close();
+    Matrix->symmetricPart( symmMatrix );
 
     SolverEigen<double>::eigenmodes_type modesmin=
-        eigs( _matrixA=D,
+        eigs( _matrixA=Matrix,
               _matrixB=M,
               _solver=(EigenSolverType)M_vm["solvereigen-solver-type"].template as<int>(),
               //_spectrum=LARGEST_MAGNITUDE,
@@ -684,7 +732,7 @@ CRBSCM<TruthModelType>::ex( parameter_type const& mu ) const
     return boost::make_tuple( eigmin, ti.elapsed() );
 #if 0
     SolverEigen<double>::eigenmodes_type modesmax=
-        eigs( _matrixA=D,
+        eigs( _matrixA=Matrix,
               _matrixB=M,
               _solver=(EigenSolverType)M_vm["solvereigen-solver-type"].as<int>(),
               _spectrum=LARGEST_MAGNITUDE,
@@ -717,7 +765,6 @@ CRBSCM<TruthModelType>::lb( parameter_type const& mu ,size_type K ,int indexmu) 
 {
 
 
-
     if ( K == invalid_size_type_value ) K = this->KMax();
     if ( K > this->KMax() ) K = this->KMax();
     boost::timer ti;
@@ -740,12 +787,23 @@ CRBSCM<TruthModelType>::lb( parameter_type const& mu ,size_type K ,int indexmu) 
 
     int Malpha = std::min(M_Malpha,std::min(K,M_Xi->size()));
 
+    int nb_decomposition_terms;
+    if( M_scm_for_mass_matrix )
+    {
+      nb_decomposition_terms = M_model->Qm(); 
+    }
+    else
+    {
+      nb_decomposition_terms = M_model->Qa(); 
+    }
+
+
 
     int Mplus = std::min(M_Mplus,M_Xi->size()-K);
     if (M_vm["crb.scm.strategy"].template as<int>()==2)
         Mplus = std::min(M_Mplus,std::min(K, M_Xi->size()-K ));
     // we have exactely Qa*(M+ + Malpha) entries in the matrix
-    int nnz = M_model->Qa()*(Malpha+Mplus);
+    int nnz = nb_decomposition_terms*(Malpha+Mplus);
     int ia[1+1000], ja[1+1000];
     double ar[1+1000];
     int nnz_index = 1;
@@ -767,10 +825,18 @@ CRBSCM<TruthModelType>::lb( parameter_type const& mu ,size_type K ,int indexmu) 
 
         //std::cout << "[CRBSCM::lb] add row " << m << " from C_K\n";
         parameter_type mup = C_neighbors->at( m );
-        //std::cout << "[CRBSCM::lb] mup = \n" << mup << "\n";
 
         // update the theta_q associated with mup
-        boost::tie(boost::tuples::ignore, theta_q, boost::tuples::ignore ) = M_model->computeThetaq( mup );
+	if( M_scm_for_mass_matrix )
+	{
+	  boost::tie( theta_q , boost::tuples::ignore , boost::tuples::ignore ) = M_model->computeThetaq( mup );
+	}
+	else
+	{
+	  boost::tie(boost::tuples::ignore, theta_q, boost::tuples::ignore ) = M_model->computeThetaq( mup );
+
+	}
+
         //std::cout << "[CRBSCM::lb] thetaq = " << theta_q << "\n";
 
         //std::cout << "[CRBSCM::lb] row name : " << (boost::format( "c_%1%_%2%" ) % K % m).str() << "\n";
@@ -787,7 +853,7 @@ CRBSCM<TruthModelType>::lb( parameter_type const& mu ,size_type K ,int indexmu) 
 
 
         //std::cout << "[CRBSCM::lb] constraints matrix\n";
-        for( size_type q = 0; q < M_model->Qa(); ++q, ++nnz_index )
+        for( int q = 0; q < nb_decomposition_terms; ++q, ++nnz_index )
         {
             //std::cout << "[CRBSCM::lb] constraints matrix q = " << q << "\n";
             ia[nnz_index]=m+1;
@@ -832,7 +898,14 @@ CRBSCM<TruthModelType>::lb( parameter_type const& mu ,size_type K ,int indexmu) 
 #endif
 
         // update the theta_q associated with mup
-        boost::tie(boost::tuples::ignore, theta_q, boost::tuples::ignore ) = M_model->computeThetaq( mup );
+	if( M_scm_for_mass_matrix )
+	{
+	  boost::tie(theta_q, boost::tuples::ignore, boost::tuples::ignore ) = M_model->computeThetaq( mup );
+	}
+	else
+	{
+	  boost::tie(boost::tuples::ignore, theta_q, boost::tuples::ignore ) = M_model->computeThetaq( mup );
+	}
 
         glp_set_row_name(lp, Malpha+m+1, (boost::format( "xi_c_%1%_%2%" ) % K % m).str().c_str() );
 
@@ -859,7 +932,7 @@ CRBSCM<TruthModelType>::lb( parameter_type const& mu ,size_type K ,int indexmu) 
         }
 
 
-        for( size_type q = 0; q < M_model->Qa(); ++q, ++nnz_index )
+        for( int q = 0; q < nb_decomposition_terms; ++q, ++nnz_index )
         {
             ia[nnz_index]=Malpha+m+1;
             ja[nnz_index]=q+1;
@@ -869,11 +942,18 @@ CRBSCM<TruthModelType>::lb( parameter_type const& mu ,size_type K ,int indexmu) 
 
     //std::cout << "[CRBSCM::lb] add rows associated with C_K complement done. nnz=" << nnz_index << "\n";
 
-
     // set the structural variables, we have M_model->Qa() of them
-    boost::tie(boost::tuples::ignore, theta_q, boost::tuples::ignore ) = M_model->computeThetaq( mu );
-    glp_add_cols(lp, M_model->Qa());
-    for( size_type q = 0; q < M_model->Qa(); ++q )
+    if( M_scm_for_mass_matrix )
+    {
+      boost::tie(theta_q,boost::tuples::ignore, boost::tuples::ignore ) = M_model->computeThetaq( mu );
+    }
+    else
+    {
+      boost::tie(boost::tuples::ignore, theta_q, boost::tuples::ignore ) = M_model->computeThetaq( mu );
+    }
+
+    glp_add_cols(lp, nb_decomposition_terms );
+    for( int q = 0; q < nb_decomposition_terms; ++q )
     {
         glp_set_col_name( lp, q+1, (boost::format( "y_%1%" ) % q).str().c_str() );
         glp_set_col_bnds( lp, q+1, GLP_DB,
@@ -922,13 +1002,22 @@ CRBSCM<TruthModelType>::ub( parameter_type const& mu ,size_type K ) const
     if ( K > this->KMax() ) K = this->KMax();
     boost::timer ti;
     theta_vector_type theta_q;
-    boost::tie(boost::tuples::ignore, theta_q, boost::tuples::ignore ) = M_model->computeThetaq( mu );
+    if( M_scm_for_mass_matrix )
+    {
+      boost::tie(theta_q ,boost::tuples::ignore, boost::tuples::ignore ) = M_model->computeThetaq( mu );
+    }
+    else
+    {
+      boost::tie(boost::tuples::ignore, theta_q, boost::tuples::ignore ) = M_model->computeThetaq( mu );
+    }
+
     //std::cout << "[CRBSCM<TruthModelType>::ub] theta_q = " << theta_q << "\n";
     y_type y( K );
     for( size_type k = 0; k < K; ++k )
     {
         y( k ) = (theta_q.array()*M_Y_ub[k].array()).sum();
     }
+
     //std::cout << "[CRBSCM<TruthModelType>::ub] y = " << y << "\n";
     return boost::make_tuple( y.minCoeff(), ti.elapsed() );
 
@@ -983,11 +1072,20 @@ CRBSCM<TruthModelType>::computeYBounds()
     //std::cout << "************************************************************\n";
     Log() << "[CRBSCM<TruthModelType>::computeYBounds()] start...\n";
 
-
-    sparse_matrix_ptrtype A, symmA=M_model->newMatrix(), B=M_model->innerProduct();
+    int nb_decomposition_terms;
+    if( M_scm_for_mass_matrix ) 
+    {
+      nb_decomposition_terms = M_model->Qm();
+    }
+    else
+    {
+      nb_decomposition_terms = M_model->Qa();
+    }
+  
+    sparse_matrix_ptrtype Matrix, symmMatrix=M_model->newMatrix(), B=M_model->innerProduct();
     B->close();
     // solve 2 * Q_a eigenproblems
-    for(size_type q = 0; q < M_model->Qa();++q )
+    for( int q = 0; q < nb_decomposition_terms ;++q )
     {
         //std::cout << "================================================================================\n";
         //std::cout << "[ComputeYBounds] = q = " << q << " / " << M_model->Qa() << "\n";
@@ -995,16 +1093,26 @@ CRBSCM<TruthModelType>::computeYBounds()
         // for a given parameter \p mu assemble the left and right hand side
         std::ostringstream os;
 
-        A = M_model->Aq( q );
-        A->close();
-        A->symmetricPart( symmA );
-        os << "yb_A" << q << ".m";
-        A->printMatlab( os.str() );
-        os.str("");
-        os << "yb_symmA" << q << ".m";
-        symmA->printMatlab( os.str() );
 
-        if (symmA->l1Norm()==0.0) {
+	if( M_scm_for_mass_matrix )
+	{
+	  Matrix = M_model->Mq( q );
+	}
+        else
+	{
+	  Matrix = M_model->Aq( q );
+	}
+
+        Matrix->close();
+        Matrix->symmetricPart( symmMatrix );
+        os << "yb_Matrix" << q << ".m";
+        Matrix->printMatlab( os.str() );
+        os.str("");
+        os << "yb_symmMatrix" << q << ".m";
+        symmMatrix->printMatlab( os.str() );
+
+
+	if (symmMatrix->l1Norm()==0.0) {
 
             std::cout << "matrix is null\n" ;
             M_y_bounds.push_back( boost::make_tuple( 0.0, 1e-10 ) );
@@ -1041,8 +1149,9 @@ CRBSCM<TruthModelType>::computeYBounds()
             SolverEigen<double>::eigenmodes_type modes;
 #if 1
             // solve  for eigenvalue problem at \p mu
+
             modes =
-                eigs( _matrixA=symmA,
+                eigs( _matrixA=symmMatrix,
                       _matrixB=B,
                       //_problem=(EigenProblemType)PGNHEP,
                       _problem=(EigenProblemType)GHEP,
@@ -1063,7 +1172,7 @@ CRBSCM<TruthModelType>::computeYBounds()
             double eigmin = modes.empty()?0:modes.begin()->second.template get<0>();
 #if 1
             modes=
-                eigs( _matrixA=symmA,
+                eigs( _matrixA=symmMatrix,
                       _matrixB=B,
                       //_problem=(EigenProblemType)PGNHEP,
                       _problem=(EigenProblemType)GHEP,
