@@ -93,6 +93,7 @@ class Val
 public:
 
     static const size_type context = ExprT1::context;
+    static const bool is_terminal = ExprT1::is_terminal;
 
     static const uint16_type imorder = ExprT1::imorder;
     static const bool imIsPoly = ExprT1::imIsPoly;
