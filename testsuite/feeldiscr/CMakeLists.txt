@@ -5,7 +5,7 @@ foreach(TEST elementminmax project bdf interpolation integration integration_ho 
   feel_add_test( ${TEST} )
 
 endforeach()
-
+#target_link_libraries(test_solve_leak /opt/local/lib/libtcmalloc_and_profiler.0.dylib)
 
 add_custom_command(OUTPUT geo  COMMAND ${CMAKE_COMMAND} ARGS -E copy ${CMAKE_CURRENT_SOURCE_DIR}/test_integration_ho_geometry.geo ${CMAKE_CURRENT_BINARY_DIR} )
 add_custom_target(data DEPENDS geo)

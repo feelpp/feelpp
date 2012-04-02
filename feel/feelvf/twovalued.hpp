@@ -1082,7 +1082,7 @@ rightfacet( ExprT const& v )
     return expr(  sumT_t( v ) );
 }
 
-
+#if 0
 /**
  *
  */
@@ -1119,7 +1119,14 @@ averaget( U const&u ) -> decltype(0.5*(leftfacet( u )+rightfacet( u )))
 {
     return 0.5*(leftfacet( u )+rightfacet( u ));
 }
+#else
+#define jump( u )  (::Feel::vf::leftface((u)*::Feel::vf::N())+::Feel::rightface((u)*::Feel::vf::N()))
+#define average( u ) (.5*(::Feel::vf::leftface((u))+::Feel::vf::rightface((u))))
 
+#define jumpt( u )  (::Feel::vf::leftfacet((u)*::Feel::vf::N())+::Feel::vf::rightfacet((u)*::Feel::vf::N()))
+#define averaget( u ) (.5*(::Feel::vf::leftfacet((u))+::Feel::vf::rightfacet((u))))
+
+#endif
 
 template<typename ExprT>
 inline
@@ -1156,6 +1163,7 @@ rightfacev( ExprT const& v )
     return Expr< rightface_t >(  rightface_t( v ) );
 }
 
+#if 0
 /**
  *
  */
@@ -1174,7 +1182,14 @@ averagev( U const& u ) -> decltype(.5*(leftfacev(u)+rightfacev(u)))
 {
     return .5*(leftfacev(u)+rightfacev(u));
 }
+#else
+#define jumpv( u )  (::Feel::vf::leftfacev((u)*::Feel::vf::N())+::Feel::vf::rightfacev((u)*::Feel::vf::N()))
+/**
+ *
+ */
+#define averagev( u ) (.5*(::Feel::vf::leftfacev((u))+::Feel::vf::rightfacev((u))))
 
+#endif
 } // vf
 } // Feel
 #endif /* __TwoValued_H */
