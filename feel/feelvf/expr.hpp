@@ -502,6 +502,13 @@ private:
     mutable expression_type  M_expr;
 };
 
+template <typename ExprT>
+Expr<ExprT>
+expr( ExprT const& exprt )
+{
+    return Expr<ExprT>( exprt );
+}
+
 /**
  * \class ExpressionOrder
  *
