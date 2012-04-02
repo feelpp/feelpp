@@ -197,7 +197,9 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
                                         _desc=domain( _name=(boost::format( "%1%-%2%" ) % shape % Dim).str() ,
                                                       _usenames=true,
                                                       _shape=shape,
-                                                      _h=X[0] ),
+                                                      _h=X[0],
+                                                      _xmin=-1,
+                                                      _ymin=-1),
                                         _update=MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK,
                                         _partitions=this->comm().size()  );
 
