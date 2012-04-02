@@ -29,3 +29,4 @@ file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp)
 feel_append_src(feelvf "${SRC};${HDR}")
 
 
+add_executable( test_fusion test_fusion.cpp )
