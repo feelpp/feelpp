@@ -306,17 +306,9 @@ protected:
 
 private:
 
-    mutable expression_type  _M_expr;
+    expression_type  _M_expr;
 };
 
-template<typename ExprT>
-inline
-Expr< SumvExpr<ExprT> >
-sumv( ExprT v )
-{
-    typedef SumvExpr<ExprT> sumv_t;
-    return Expr< sumv_t >(  sumv_t( v ) );
-}
 
 
 /*!
@@ -546,26 +538,8 @@ protected:
 
 private:
 
-    mutable expression_type  _M_expr;
+    expression_type  _M_expr;
 };
-
-template<typename ExprT>
-inline
-Expr< SumExpr<ExprT, 0> >
-leftface( ExprT v )
-{
-    typedef SumExpr<ExprT,0> sumT_t;
-    return Expr< sumT_t >(  sumT_t( v ) );
-}
-
-template<typename ExprT>
-inline
-Expr< SumExpr<ExprT, 1> >
-rightface( ExprT v )
-{
-    typedef SumExpr<ExprT,1> sumT_t;
-    return Expr< sumT_t >(  sumT_t( v ) );
-}
 
 /*!
   \class SumTExpr
@@ -792,71 +766,9 @@ protected:
 
 private:
 
-    mutable expression_type  _M_expr;
+    expression_type  _M_expr;
 };
 /// \endcond
-
-/**
- *
- */
-template<typename ExprT>
-inline
-Expr< SumTExpr<ExprT, 0> >
-leftfacet( ExprT v )
-{
-    typedef SumTExpr<ExprT,0> sumT_t;
-    return Expr< sumT_t >(  sumT_t( v ) );
-}
-
-/**
- *
- */
-template<typename ExprT>
-inline
-Expr< SumTExpr<ExprT, 1> >
-rightfacet( ExprT v )
-{
-    typedef SumTExpr<ExprT,1> sumT_t;
-    return Expr< sumT_t >(  sumT_t( v ) );
-}
-
-
-/**
- *
- */
-template<typename U>
-auto
-jump( U const& u ) -> decltype(leftface( (u)*N() ) + rightface( (u)*N() ))
-{
-    return (leftface( (u)*N() ) + rightface( (u)*N() ));
-}
-/**
- *
- */
-template<typename U>
-auto
-jumpt( U const& u ) -> decltype(leftfacet( (u)*N() ) + rightfacet( (u)*N() ))
-{
-    return (leftfacet( (u)*N() ) + rightfacet( (u)*N() ));
-}
-/**
- *
- */
-template<typename U>
-auto
-average( U const& u ) -> decltype(leftface( 0.5*(u) )+rightface( 0.5*(u) ))
-{
-    return leftface( 0.5*(u) )+rightface( 0.5*(u) );
-}
-/**
- *
- */
-template<typename U>
-auto
-averaget( U const&u ) -> decltype(leftfacet( 0.5*(u) )+rightfacet( 0.5*(u) ))
-{
-    return leftfacet( 0.5*(u) )+rightfacet( 0.5*(u) );
-}
 
 
 /// \cond detail
@@ -1105,19 +1017,114 @@ protected:
 
 private:
 
-    mutable expression_type  _M_expr;
+    expression_type  _M_expr;
 };
 
 namespace detail{
 inline double max( double a, double b ) { return std::max( a, b ); }
 inline double min( double a, double b ) { return std::min( a, b ); }
+
+inline double left( double a, double /*b*/ ) { return a; }
+inline double right( double /*a*/, double b ) { return b; }
 }
+
 /// \endcond
 
 template<typename ExprT>
 inline
+auto
+sumv( ExprT const& v ) -> decltype( expr( SumvExpr<ExprT>( v ) ) )
+{
+    typedef SumvExpr<ExprT> sumv_t;
+    return expr(  sumv_t( v ) );
+}
+
+template<typename ExprT>
+inline
+auto
+leftface( ExprT const& v ) -> decltype( expr(  SumExpr<ExprT,0>( v ) ) )
+{
+    typedef SumExpr<ExprT,0> sumT_t;
+    return expr(  sumT_t( v ) );
+}
+
+template<typename ExprT>
+inline
+auto
+rightface( ExprT const& v ) -> decltype( expr( SumExpr<ExprT,1>( v ) ) )
+{
+    typedef SumExpr<ExprT,1> sumT_t;
+    return expr(  sumT_t( v ) );
+}
+
+
+/**
+ *
+ */
+template<typename ExprT>
+inline
+Expr< SumTExpr<ExprT, 0> >
+leftfacet( ExprT const& v )
+{
+    typedef SumTExpr<ExprT,0> sumT_t;
+    return expr(  sumT_t( v ) );
+}
+
+/**
+ *
+ */
+template<typename ExprT>
+inline
+Expr< SumTExpr<ExprT, 1> >
+rightfacet( ExprT const& v )
+{
+    typedef SumTExpr<ExprT,1> sumT_t;
+    return expr(  sumT_t( v ) );
+}
+
+
+/**
+ *
+ */
+template<typename U>
+auto
+jump( U const& u ) -> decltype(leftface( u*N() ) + rightface( u*N() ))
+{
+    return (leftface( u*N()) + rightface( u *N()));
+}
+/**
+ *
+ */
+template<typename U>
+auto
+jumpt( U const& u ) -> decltype(leftfacet( u*N() ) + rightfacet( u*N() ))
+{
+    return (leftfacet( u*N()) + rightfacet( u*N()));
+}
+/**
+ *
+ */
+template<typename U>
+auto
+average( U const& u ) -> decltype(0.5*(leftface( u )+rightface( u )))
+{
+    return 0.5*(leftface( u )+rightface( u ) );
+}
+/**
+ *
+ */
+template<typename U>
+auto
+averaget( U const&u ) -> decltype(0.5*(leftfacet( u )+rightfacet( u )))
+{
+    return 0.5*(leftfacet( u )+rightfacet( u ));
+}
+
+
+template<typename ExprT>
+inline
 Expr< FaceExprV<ExprT, detail::max > >
-maxface( ExprT v )
+maxface( ExprT const& v )
 {
     typedef FaceExprV<ExprT, detail::max > maxface_t;
     return Expr< maxface_t >(  maxface_t( v ) );
@@ -1125,21 +1132,17 @@ maxface( ExprT v )
 template<typename ExprT>
 inline
 Expr< FaceExprV<ExprT, detail::min > >
-minface( ExprT v )
+minface( ExprT const& v )
 {
     typedef FaceExprV<ExprT, detail::min > minface_t;
     return Expr< minface_t >(  minface_t( v ) );
 }
 
-namespace detail{
-inline double left( double a, double /*b*/ ) { return a; }
-inline double right( double /*a*/, double b ) { return b; }
-}
 
 template<typename ExprT>
 inline
 Expr< FaceExprV<ExprT, detail::left> >
-leftfacev( ExprT v )
+leftfacev( ExprT const& v )
 {
     typedef FaceExprV<ExprT, detail::left> leftface_t;
     return Expr< leftface_t >(  leftface_t( v ) );
@@ -1147,7 +1150,7 @@ leftfacev( ExprT v )
 template<typename ExprT>
 inline
 Expr< FaceExprV<ExprT, detail::right> >
-rightfacev( ExprT v )
+rightfacev( ExprT const& v )
 {
     typedef FaceExprV<ExprT, detail::right> rightface_t;
     return Expr< rightface_t >(  rightface_t( v ) );
@@ -1158,18 +1161,18 @@ rightfacev( ExprT v )
  */
 template<typename U>
 auto
-jumpv( U const& u ) -> decltype( (leftfacev((u)*N())+rightfacev((u)*N())) )
+jumpv( U const& u ) -> decltype( (leftfacev(u*N())+rightfacev(u*N())) )
 {
-    return (leftfacev((u)*N())+rightfacev((u)*N()));
+    return leftfacev(u*N())+rightfacev(u*N());
 }
 /**
  *
  */
 template<typename U>
 auto
-averagev( U const& u ) -> decltype(.5*(leftfacev((u))+rightfacev((u))))
+averagev( U const& u ) -> decltype(.5*(leftfacev(u)+rightfacev(u)))
 {
-    return .5*(leftfacev((u))+rightfacev((u)));
+    return .5*(leftfacev(u)+rightfacev(u));
 }
 
 } // vf
