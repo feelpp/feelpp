@@ -934,30 +934,30 @@ public:
             bool __inserted = false;
             if ( itdof == endof )
             {
-                Debug( 5005 ) << "[dof] dof (" << gDof.get<0>() << "," << gDof.get<1>() << "," << gDof.get<2>() << ") not yet inserted in map\n";
+                Debug( 5005 ) << "[dof] dof (" << gDof.template get<0>() << "," << gDof.template get<1>() << "," << gDof.template get<2>() << ") not yet inserted in map\n";
                 boost::tie( itdof, __inserted ) = map_gdof.insert( std::make_pair( gDof, dofIndex( pDof ) ) );
 
                 pDof += 1;
 
                 FEELPP_ASSERT( __inserted == true )( ie )( lc_dof )
-                    (gDof.get<0>())(gDof.get<1>())( gDof.get<2>() )
+                    (gDof.template get<0>())(gDof.template get<1>())( gDof.template get<2>() )
                     ( processor )( itdof->second ).error( "dof should have been inserted");
             }
             else
             {
-                Debug( 5005 ) << "[dof] dof (" << gDof.get<0>() << ","
-                              << gDof.get<1>()
-                              << "," << gDof.get<2>()
+                Debug( 5005 ) << "[dof] dof (" << gDof.template get<0>() << ","
+                              << gDof.template get<1>()
+                              << "," << gDof.template get<2>()
                               << ") already inserted in map with dof_id = " << itdof->second << "\n";
             }
 
 #if !defined( NDEBUG )
             Debug( 5005 ) << "global dof = " << itdof->second
-                          << " local dof = " << fe_type::nLocalDof*itdof->first.get<1>() + lc_dof
+                          << " local dof = " << fe_type::nLocalDof*itdof->first.template get<1>() + lc_dof
                           << " element = " << ie
-                          << " entity = " << itdof->first.get<0>()
-                          << " component = " << itdof->first.get<1>()
-                          << " index = " << itdof->first.get<2>() << "\n";
+                          << " entity = " << itdof->first.template get<0>()
+                          << " component = " << itdof->first.template get<1>()
+                          << " index = " << itdof->first.template get<2>() << "\n";
 #endif
             // make sure that no already created dof is overwritten here (may be done alsewhere)
             if ( boost::get<0>( _M_el_l2g[ ie][ lc_dof ] ) == invalid_size_type_value )
@@ -965,10 +965,10 @@ public:
 
                 FEELPP_ASSERT( itdof->first == gDof ).error( "very bad logical error in insertDof" );
 
-                FEELPP_ASSERT( lc_dof >= fe_type::nLocalDof*itdof->first.get<1>() &&
-                             lc_dof < fe_type::nLocalDof*(itdof->first.get<1>()+1) )
+                FEELPP_ASSERT( lc_dof >= fe_type::nLocalDof*itdof->first.template get<1>() &&
+                             lc_dof < fe_type::nLocalDof*(itdof->first.template get<1>()+1) )
                     ( lc_dof )
-                    ( fe_type::nLocalDof*itdof->first.get<1>() ).error( "invalid local dof index" );
+                    ( fe_type::nLocalDof*itdof->first.template get<1>() ).error( "invalid local dof index" );
 
 
                 // add processor to the set of processors this dof belongs to
@@ -977,12 +977,12 @@ public:
                 _M_el_l2g[ ie][ lc_dof ] = boost::make_tuple(itdof->second+shift, sign, is_dof_periodic );
 
 #if !defined(NDEBUG)
-                _M_dof2elt[itdof->second+shift].push_back( boost::make_tuple( ie, lc_dof, lc, itdof->first.get<0>() ) );
+                _M_dof2elt[itdof->second+shift].push_back( boost::make_tuple( ie, lc_dof, lc, itdof->first.template get<0>() ) );
 #endif
 #if 0
                 M_dof_view.insert( Dof( itdof->second+shift,      // global index
                                         sign,                     // sign
-                                        itdof->first.get<0>(),    // entity type
+                                        itdof->first.template get<0>(),    // entity type
                                         false,                    // is on boundary ?
                                         0                         // marker
                                        ) );
@@ -1032,7 +1032,7 @@ private:
                     }
             }
         // update shifts
-        shifts.get<0>() = lc;
+        shifts.template get<0>() = lc;
 
 #if !defined(NDEBUG)
         Debug( 5005 ) << "[Dof::updateVolumeDof(addVertexDof] vertex proc" << processor << " next_free_dof = " << next_free_dof << "\n";
@@ -1068,7 +1068,7 @@ private:
                 this->insertDof( ie, lc, l, boost::make_tuple(1, 0, gDof), processor, next_free_dof, 1, false, global_shift );
             }
         // update shifts
-        shifts.get<0>() = lc;
+        shifts.template get<0>() = lc;
 #if !defined(NDEBUG)
         Debug( 5005 ) << "[Dof::addEdgeDof(1)] element proc" << processor << " next_free_dof = " << next_free_dof << "\n";
 #endif
@@ -1119,7 +1119,7 @@ private:
             }
 
         // update shifts
-        shifts.get<0>() = lc;
+        shifts.template get<0>() = lc;
 #if !defined(NDEBUG)
         Debug( 5005 ) << "[Dof::addEdgeDof] edge proc" << processor << " next_free_dof = " << next_free_dof << "\n";
 #endif
@@ -1169,7 +1169,7 @@ private:
                     }
             }
         // update shifts
-        shifts.get<0>() = lc;
+        shifts.template get<0>() = lc;
 #if !defined(NDEBUG)
         Debug( 5005 ) << "[Dof::addEdgeDof] edge proc" << processor << " next_free_dof = " << next_free_dof << "\n";
 #endif
@@ -1202,7 +1202,7 @@ private:
                 this->insertDof( ie, lc, l, boost::make_tuple(2, 0, gDof), processor, next_free_dof, 1, false, global_shift );
             }
         // update shifts
-        shifts.get<0>() = lc;
+        shifts.template get<0>() = lc;
 #if !defined(NDEBUG)
         Debug( 5005 ) << "[Dof::addFaceDof(2,true)] face proc" << processor << " next_free_dof = " << next_free_dof << "\n";
 #endif
@@ -1277,7 +1277,7 @@ private:
                     }
             }
         // update shifts
-        shifts.get<0>() = lc;
+        shifts.template get<0>() = lc;
 #if !defined(NDEBUG)
         Debug( 5005 ) << "[Dof::addFaceDof<3>] face proc" << processor << " next_free_dof = " << next_free_dof << "\n";
 #endif
@@ -1306,7 +1306,7 @@ private:
                 this->insertDof( ie, lc, l, boost::make_tuple(3, 0, gDof), processor, next_free_dof, 1, false, global_shift );
             }
         // update shifts
-        shifts.get<0>() = lc;
+        shifts.template get<0>() = lc;
 #if !defined(NDEBUG)
         Debug( 5005 ) << "[Dof::updateVolumeDof(<2>)] element proc" << processor << " next_free_dof = " << next_free_dof << "\n";
 #endif
@@ -1698,7 +1698,7 @@ private:
         for (uint16_type gDof = 0; gDof < nDof(); ++gDof)
             {
                 uint16_type _numEntities = _M_dof2elt[gDof].size();
-                uint16_type _ent = _M_dof2elt[gDof].begin()->get<3>();
+                uint16_type _ent = _M_dof2elt[gDof].begin()->template get<3>();
 
                 if ( _numEntities > 1 && _ent == mpl::int_<N>() )
                     {
@@ -1713,9 +1713,9 @@ private:
 
                         while ( __ldofit != __ldofen )
                             {
-                                size_type entity_element_id = __ldofit->get<0>();
-                                uint16_type entity_local_dof_id = __ldofit->get<1>();
-                                uint16_type entity_local_id = __ldofit->get<2>();
+                                size_type entity_element_id = __ldofit->template get<0>();
+                                uint16_type entity_local_dof_id = __ldofit->template get<1>();
+                                uint16_type entity_local_id = __ldofit->template get<2>();
 
                                 PointSetMapped<element_type, convex_type, nOrder> test( M.element(entity_element_id) );
 

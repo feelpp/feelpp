@@ -942,7 +942,7 @@ Mesh<Shape, T>::updateEntitiesCoDimensionOneGhostCell()
 
                             // get the good face
                             //auto face_it = faceIterator(theelt.face(j).id());
-                            auto face_it = faceIterator(theelt.face(jBis).id());
+                            auto face_it = this->faceIterator(theelt.face(jBis).id());
                             //update the face
                             this->faces().modify( face_it, detail::update_id_in_partition_type( proc, idFacesRecv[(1+nDim)*j] ) );
 
