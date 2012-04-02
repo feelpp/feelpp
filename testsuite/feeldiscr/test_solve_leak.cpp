@@ -92,37 +92,22 @@ template<int Dim>struct ExactSolution{};
 template<>
 struct ExactSolution<1>
 {
-#if FEELPP_GNUC_AT_LEAST(4,6)
-    static constexpr double pi = M_PI;
-#else
-    static const double pi = M_PI;
-#endif
-    typedef __typeof__( sin(pi*Px()) ) type;
-    typedef __typeof__( pi*pi*sin(pi*Px()) ) laplacian_type;
+    typedef __typeof__( sin(M_PI*Px()) ) type;
+    typedef __typeof__( M_PI*M_PI*sin(M_PI*Px()) ) laplacian_type;
 };
 
 template<>
 struct ExactSolution<2>
 {
-#if FEELPP_GNUC_AT_LEAST(4,6)
-    static constexpr double pi = M_PI;
-#else
-    static const double pi = M_PI;
-#endif
-    typedef __typeof__( sin(pi*Px())*cos(pi*Py()) ) type;
-    typedef __typeof__( 2*pi*pi*sin(pi*Px())*cos(pi*Py()) ) laplacian_type;
+    typedef __typeof__( sin(M_PI*Px())*cos(M_PI*Py()) ) type;
+    typedef __typeof__( 2*M_PI*M_PI*sin(M_PI*Px())*cos(M_PI*Py()) ) laplacian_type;
 };
 
 template<>
 struct ExactSolution<3>
 {
-#if FEELPP_GNUC_AT_LEAST(4,6)
-    static constexpr double pi = M_PI;
-#else
-    static const double pi = M_PI;
-#endif
-    typedef __typeof__( sin(pi*Px())*cos(pi*Py())*cos(pi*Pz()) ) type;
-    typedef __typeof__( 3*pi*pi*sin(pi*Px())*cos(pi*Py())*cos(pi*Pz()) ) laplacian_type;
+    typedef __typeof__( sin(M_PI*Px())*cos(M_PI*Py())*cos(M_PI*Pz()) ) type;
+    typedef __typeof__( 3*M_PI*M_PI*sin(M_PI*Px())*cos(M_PI*Py())*cos(M_PI*Pz()) ) laplacian_type;
 };
 /**
  * Laplacian Solver using discontinous approximation spaces
@@ -301,7 +286,7 @@ Laplacian<Dim, Order, Cont, Entity, FType>::run()
     int bctype = this->vm()["bctype"].template as<int>();
 
     double t = 0;
-    value_type pi = 4.0*math::atan(1.0);
+    value_type pi = M_PI;
     auto g = val( exp(-cst_ref( t ))*sin(pi*Px())*cos(pi*Py())*cos(pi*Pz()) );
     auto f = (-1*(t > 0)+pi*pi*Dim)*g;
 
@@ -432,10 +417,10 @@ Laplacian<Dim, Order, Cont, Entity, FType>::run()
         L->printMatlab( "L.m" );
 
     // compute PDE solution
-    b->solve( _matrix=D, _solution=u, _rhs=Ft );
+    b->template solve( _matrix=D, _solution=u, _rhs=Ft );
 
     // compute L2 projection of exact solution
-    bc->solve( _matrix=M, _solution=uEx, _rhs=L );
+    bc->template solve( _matrix=M, _solution=uEx, _rhs=L );
 
 
 
@@ -468,7 +453,7 @@ Laplacian<Dim, Order, Cont, Entity, FType>::run()
 
             form1( Xch, L, _init=true ) = integrate( elements( mesh ),  trans(idv(u))*id(uEx) );
             typename space<Continuous>::element_type uc( Xch, "uc" );
-            bc->solve( _matrix=M, _solution=uc, _rhs=L );
+            bc->template solve( _matrix=M, _solution=uc, _rhs=L );
             this->exportResults( t, u, uc, uEx );
         }
 
@@ -520,14 +505,14 @@ Laplacian<Dim, Order, Cont, Entity, FType>::run()
             std::cout<<"solving with new backend ............"<<std::endl;
             system( cmd.str().c_str() );
             auto backend_solve = backend_type::build( this->vm() );
-            backend_solve->solve( _matrix=M, _solution=uEx, _rhs=L );
+            backend_solve->template solve( _matrix=M, _solution=uEx, _rhs=L );
             backend_solve.reset();
             system( cmd.str().c_str() );
 
 
             std::cout<<"solving with saved backend ............"<<std::endl;
             system( cmd.str().c_str() );
-            bc->solve( _matrix=M, _solution=uEx, _rhs=L );
+            bc->template solve( _matrix=M, _solution=uEx, _rhs=L );
             system( cmd.str().c_str() );
 
 
