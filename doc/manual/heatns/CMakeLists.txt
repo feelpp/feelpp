@@ -21,7 +21,7 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-feelpp_add_application( heatns
+feelpp_add_application( heatns EXCLUDE_FROM_ALL
   SRCS convection_main.cpp   convection212.cpp convection_residual.cpp convection_jacobian.cpp convection_linop.cpp
   GEO heatns.geo CFG heatns.cfg )
 #add_executable( heatns   convection_main.cpp   )
