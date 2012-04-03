@@ -187,56 +187,47 @@ test2d( Application_ptrtype test_app)
     typedef Mesh<Simplex<2,OrderGeo,2> > mesh_type;
     typedef boost::shared_ptr<  mesh_type > mesh_ptrtype;
 
-    //typedef bases<Lagrange<1,Scalar,Continuous,PointSetFekete> > basis_1_type;
-    typedef bases<Lagrange<2,Vectorial,Continuous,PointSetFekete> > basis_1_type;
+    typedef bases<Lagrange<3,Vectorial,Continuous,PointSetFekete> > basis_1_type;
     typedef FunctionSpace<mesh_type, basis_1_type> space_1_type;
     typedef boost::shared_ptr<space_1_type> space_1_ptrtype;
     typedef typename space_1_type::element_type element_1_type;
 
-    //typedef bases<Lagrange<1,Scalar,Continuous,PointSetFekete> > basis_2_type;
-    typedef bases<Lagrange<3,Vectorial,Continuous,PointSetFekete> > basis_2_type;
+    typedef bases<Lagrange<4,Vectorial,Continuous,PointSetFekete> > basis_2_type;
     typedef FunctionSpace<mesh_type, basis_2_type> space_2_type;
     typedef boost::shared_ptr<space_2_type> space_2_ptrtype;
     typedef typename space_2_type::element_type element_2_type;
 
-    //-----------------------------------------------------------//
+    //-------------------------------------------------------
+    //case 1 : same mesh
+    //-------------------------------------------------------
 
-    double meshSize = test_app->vm()["hsize"].as<double>();
+    auto meshSize = test_app->vm()["hsize"].as<double>();
 
     GeoTool::Node x1(0,0);
-    GeoTool::Node x2(0.5,0);
-    //GeoTool::Node x3(0,1);
-    //GeoTool::Triangle R( meshSize,"OMEGA",x1,x2,x3);
+    GeoTool::Node x2(0.6,0);
     GeoTool::Circle R( meshSize,"OMEGA",x1,x2);
 
-    auto mesh = R.createMesh<mesh_type>("domain");
+    auto mesh = R.createMesh(_mesh = new mesh_type,_name="domain");
+    auto Xh1 = space_1_type::New( _mesh=mesh );
+    auto Xh2 = space_2_type::New( _mesh=mesh );
+    auto u1 = Xh1->element("u1");
+    auto u2 = Xh2->element("u2");
+    auto u2a = Xh2->element("u2a");
 
-
-    space_1_ptrtype Xh1 = space_1_type::New( mesh );
-    space_2_ptrtype Xh2 = space_2_type::New( mesh );
-
-    element_1_type u1( Xh1, "u1" );
-    element_2_type u2( Xh2, "u2" );
-    element_2_type u2a( Xh2, "u2" );
-
-    u1 = vf::project(Xh1,elements(mesh),vec( cos(M_PI*Px()),sin(M_PI*Py()) ) );
-    //u1 = vf::project(Xh1,elements(mesh),cos(M_PI*Px() ) );
+    u1 = vf::project(_space=Xh1,
+                     _range=elements(mesh),
+                     _expr=vec( cos(M_PI*Px()),sin(M_PI*Py()) ) );
 
     auto M_backend = backend_type::build( test_app->vm() );
-    //OperatorInterpolation< space_1_type,space_2_type> opI( Xh1,Xh2, M_backend );
-    //opI.apply(u1,u2);
     auto opI=opInterpolation( _domainSpace=Xh1,
                               _imageSpace=Xh2,
-                              //_range=elements(mesh),
                               _backend=M_backend );
     opI->apply(u1,u2);
 
-    double s1 = integrate(elements(mesh), trans(idv(u1))*idv(u1)).evaluate()(0,0);
-    double s2 = integrate(elements(mesh), trans(idv(u2))*idv(u2)).evaluate()(0,0);
-
-    //std::cout << "\ns1 = " << s1 ;
-    //std::cout << "\ns2 = " << s2 <<"\n";
-
+    auto s1 = integrate(_range=elements(mesh),
+                        _expr=trans(idv(u1))*idv(u1) ).evaluate()(0,0);
+    auto s2 = integrate(_range=elements(mesh),
+                        _expr=trans(idv(u2))*idv(u2) ).evaluate()(0,0);
     BOOST_CHECK_SMALL( s1-s2,1e-8);
 
     auto opIa=opInterpolation( _domainSpace=Xh1,
@@ -245,44 +236,30 @@ test2d( Application_ptrtype test_app)
                                _backend=M_backend );
     opIa->apply(u1,u2a);
 
-    //double s1a = integrate(boundaryfaces(mesh), trans(idv(u1))*idv(u1)).evaluate()(0,0);
-    //double s2a = integrate(boundaryfaces(mesh), trans(idv(u2a))*idv(u2a)).evaluate()(0,0);
-    double s2a = integrate(boundaryfaces(mesh), trans(idv(u1)-idv(u2a))*(idv(u1)-idv(u2a))).evaluate()(0,0);
-    //std::cout << "\ns1 = " << s1 ;
-    //std::cout << "\ns2 = " << s2 <<"\n";
-
+    auto s2a = integrate(_range=boundaryfaces(mesh),
+                         _expr=trans(idv(u1)-idv(u2a))*(idv(u1)-idv(u2a))).evaluate()(0,0);
     BOOST_CHECK_SMALL( s2a,1e-8);
 
-#if 0
-    auto UNexporter = Exporter<mesh_type>::New( "gmsh"/*vm*/, "ExportOOOO" );
-    UNexporter->step( 0 )->setMesh( mesh );
-    UNexporter->step( 0 )->add( "u1", u1 );
-    UNexporter->step( 0 )->add( "u2", u2 );
-    UNexporter->step( 0 )->add( "u2a", u2a );
-    UNexporter->save();
-#endif
-
+    //-------------------------------------------------------//
     //case 2 : with interpolation tool
+    //-------------------------------------------------------//
 
     GeoTool::Circle C2( meshSize/2.,"OMEGA",x1,x2);
-    auto mesh2 = C2.createMesh<mesh_type>("domain2");
+    auto mesh2 = C2.createMesh(_mesh=new mesh_type,_name="domain2");
+    auto Xh2bis = space_2_type::New(_mesh=mesh2);
+    auto u2bis = Xh2bis->element("u2bis");
+    auto u2bisbis = Xh2bis->element("u2bisbis");
 
-    space_2_ptrtype Xh2bis = space_2_type::New( mesh2 );
-    element_2_type u2bis( Xh2bis, "u2bis" );
-    element_2_type u2bisbis( Xh2bis, "u2bisbis" );
-
-    //OperatorInterpolation< space_1_type,space_2_type> opI2( Xh1,Xh2bis, M_backend );
-    //opI2.apply(u1,u2bis);
     auto opI2=opInterpolation( _domainSpace=Xh1,
                                _imageSpace=Xh2bis,
                                _range=elements(mesh2),
                                _backend=M_backend );
     opI2->apply(u1,u2bis);
 
-    double s3 = integrate(elements(mesh2), trans(idv(u1))*idv(u1)).evaluate()(0,0);
-    double s4 = integrate(elements(mesh2), trans(idv(u2bis))*idv(u2bis)).evaluate()(0,0);
-
-
+    auto s3 = integrate(_range=elements(mesh2),
+                        _expr=trans(idv(u1))*idv(u1) ).evaluate()(0,0);
+    auto s4 = integrate(_range=elements(mesh2),
+                        _expr=trans(idv(u2bis))*idv(u2bis) ).evaluate()(0,0);
     BOOST_CHECK_SMALL( s3-s4,1e-6);
 
     auto opI3=opInterpolation( _domainSpace=Xh1,
@@ -291,19 +268,9 @@ test2d( Application_ptrtype test_app)
                                _backend=M_backend );
     opI3->apply(u1,u2bisbis);
 
-    //double s5 = integrate(boundaryfaces(mesh), trans(idv(u1))*idv(u1)).evaluate()(0,0);
-    //double s6 = integrate(boundaryfaces(mesh), trans(idv(u2bisbis))*idv(u2bisbis)).evaluate()(0,0);
-    double s7 = integrate(boundaryfaces(mesh2), trans(idv(u1)-idv(u2bisbis))*(idv(u1)-idv(u2bisbis)) ).evaluate()(0,0);
-
+    auto s7 = integrate(_range=boundaryfaces(mesh2),
+                        _expr=trans(idv(u1)-idv(u2bisbis))*(idv(u1)-idv(u2bisbis)) ).evaluate()(0,0);
     BOOST_CHECK_SMALL( s7,1e-6);
-
-#if 0
-    auto UNexporter2 = Exporter<mesh_type>::New( "gmsh"/*vm*/, "Export2" );
-    UNexporter2->step( 0 )->setMesh( mesh2 );
-    UNexporter2->step( 0 )->add( "u2bis", u2bis );
-    UNexporter2->step( 0 )->add( "u2bisbis", u2bisbis );
-    UNexporter2->save();
-#endif
 }
 
 
