@@ -1120,7 +1120,7 @@ averaget( U const&u ) -> decltype(0.5*(leftfacet( u )+rightfacet( u )))
     return 0.5*(leftfacet( u )+rightfacet( u ));
 }
 #else
-#define jump( u )  (::Feel::vf::leftface((u)*::Feel::vf::N())+::Feel::rightface((u)*::Feel::vf::N()))
+#define jump( u )  (::Feel::vf::leftface((u)*::Feel::vf::N())+::Feel::vf::rightface((u)*::Feel::vf::N()))
 #define average( u ) (.5*(::Feel::vf::leftface((u))+::Feel::vf::rightface((u))))
 
 #define jumpt( u )  (::Feel::vf::leftfacet((u)*::Feel::vf::N())+::Feel::vf::rightfacet((u)*::Feel::vf::N()))
