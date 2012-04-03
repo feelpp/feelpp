@@ -6,7 +6,7 @@ macro(feelpp_add_application)
 
   PARSE_ARGUMENTS(FEELPP_APP
     "SRCS;LINK_LIBRARIES;CFG;GEO;LABEL"
-    "NO_TEST"
+    "NO_TEST;EXCLUDE_FROM_ALL"
     ${ARGN}
     )
   CAR(FEELPP_APP_NAME ${FEELPP_APP_DEFAULT_ARGS})
@@ -16,12 +16,18 @@ macro(feelpp_add_application)
   MESSAGE("*** Arguments for Feel++ application ${FEELPP_APP_NAME}")
   MESSAGE("    Sources: ${FEELPP_APP_SRCS}")
   MESSAGE("    Link libraries: ${FEELPP_APP_LINK_LIBRARIES}")
-  MESSAGE("    Cfg file: ${FEELPP_APP_CFG}")
-  MESSAGE("    Geo file: ${FEELPP_APP_GEO}")
-  MESSAGE("   Exec file: ${execname}")
+  MESSAGE("       Cfg file: ${FEELPP_APP_CFG}")
+  MESSAGE("       Geo file: ${FEELPP_APP_GEO}")
+  MESSAGE("       Exec file: ${execname}")
+  MESSAGE("exclude from all: ${FEELPP_APP_EXCLUDE_FROM_ALL}")
 
 
-  add_executable(${execname}    ${FEELPP_APP_SRCS}  )
+  if ( FEELPP_APP_EXCLUDE_FROM_ALL)
+    add_executable(${execname}  EXCLUDE_FROM_ALL  ${FEELPP_APP_SRCS}  )
+  else()
+    add_executable(${execname}  ${FEELPP_APP_SRCS}  )
+  endif()
+
   target_link_libraries( ${execname} ${FEELPP_APP_LINK_LIBRARIES} ${FEELPP_LIBRARIES})
   INSTALL(PROGRAMS "${CMAKE_CURRENT_BINARY_DIR}/${execname}"  DESTINATION bin COMPONENT Bin)
   add_test(${execname} ${CMAKE_CURRENT_BINARY_DIR}/${execname})
