@@ -281,10 +281,13 @@ VectorPetsc<T>:: sum () const
     return static_cast<Real>(value);
 }
 
+
+
 template <typename T>
 void
 VectorPetsc<T>::localize (Vector<T>& v_local_in) const
 {
+#if 0
     VectorPetsc<T>* v_local = dynamic_cast<VectorPetsc<T>*>(&v_local_in);
 
     assert (v_local != NULL);
@@ -338,6 +341,7 @@ VectorPetsc<T>::localize (Vector<T>& v_local_in) const
 
     ierr = PETSc::VecScatterDestroy(scatter);
     CHKERRABORT(this->comm(),ierr);
+#endif
 }
 
 
@@ -346,6 +350,7 @@ template <typename T>
 void VectorPetsc<T>::localize (Vector<T>& v_local_in,
                                const std::vector<size_type>& send_list) const
 {
+#if 0
     VectorPetsc<T>* v_local = dynamic_cast<VectorPetsc<T>*>(&v_local_in);
 
     assert (v_local != NULL);
@@ -399,6 +404,7 @@ void VectorPetsc<T>::localize (Vector<T>& v_local_in,
 
     ierr = PETSc::VecScatterDestroy(scatter);
     CHKERRABORT(this->comm(),ierr);
+#endif
 }
 
 
@@ -407,6 +413,7 @@ void VectorPetsc<T>::localize (const size_type first_local_idx,
                                const size_type last_local_idx,
                                const std::vector<size_type>& send_list)
 {
+#if 0
     // Only good for serial vectors.
     assert (this->size() == this->localSize());
     assert (last_local_idx > first_local_idx);
@@ -479,12 +486,14 @@ void VectorPetsc<T>::localize (const size_type first_local_idx,
     parallel_vec.close();
     parallel_vec.localize (*this, send_list);
     this->close();
+#endif
 }
 
 // Full specialization for double datatypes
 template <>
 void VectorPetsc<double>::localize (std::vector<double>& v_local) const
 {
+#if 0
     int ierr=0;
     const int n  = this->size();
     const int nl = this->localSize();
@@ -530,6 +539,7 @@ void VectorPetsc<double>::localize (std::vector<double>& v_local) const
             MPI_Allreduce (&local_values[0], &v_local[0], n, MPI_REAL, MPI_SUM,
                            this->comm());
         }
+#endif
 }
 
 
@@ -616,6 +626,7 @@ template <>
 void VectorPetsc<Real>::localizeToOneProcessor (std::vector<Real>& v_local,
                                                 const size_type pid) const
 {
+#if 0
     int ierr=0;
     const int n  = size();
     const int nl = localSize();
@@ -659,7 +670,10 @@ void VectorPetsc<Real>::localizeToOneProcessor (std::vector<Real>& v_local,
             MPI_Reduce (&local_values[0], &v_local[0], n, MPI_REAL, MPI_SUM,
                         pid, this->comm());
         }
+#endif
 }
+
+
 
 template <typename T>
 void VectorPetsc<T>::printMatlab (const std::string name) const
