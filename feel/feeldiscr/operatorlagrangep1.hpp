@@ -81,9 +81,12 @@ struct SpaceToLagrangeP1Space
 template<typename SpaceType>
 class OperatorLagrangeP1
     :
-    public OperatorInterpolation<SpaceType, typename detail::SpaceToLagrangeP1Space<SpaceType>::image_space_type>
+    //public OperatorInterpolation<SpaceType, typename detail::SpaceToLagrangeP1Space<SpaceType>::image_space_type>
+    public OperatorLinear<SpaceType, typename detail::SpaceToLagrangeP1Space<SpaceType>::image_space_type>
 {
-    typedef OperatorInterpolation<SpaceType, typename detail::SpaceToLagrangeP1Space<SpaceType>::image_space_type> super;
+    //typedef OperatorInterpolation<SpaceType, typename detail::SpaceToLagrangeP1Space<SpaceType>::image_space_type> super;
+    typedef OperatorLinear<SpaceType, typename detail::SpaceToLagrangeP1Space<SpaceType>::image_space_type> super;
+
 public:
 
 
@@ -256,7 +259,8 @@ OperatorLagrangeP1<space_type>::OperatorLagrangeP1( domain_space_ptrtype const& 
     :
     super( space,
            dual_image_space_ptrtype( new dual_image_space_type( image_mesh_ptrtype( new image_mesh_type ) ) ),
-           backend ),
+           backend,
+           false ),
     _M_mesh( new image_mesh_type ),
     _M_el2el(),
     _M_el2pt(),
@@ -440,7 +444,8 @@ OperatorLagrangeP1<space_type>::OperatorLagrangeP1( domain_space_ptrtype const& 
     // construct the p1 space and set the operator
     this->init( this->domainSpace(),
                 dual_image_space_ptrtype( new dual_image_space_type( _M_mesh, dofindices  ) ),
-                backend );
+                backend,
+                false );
 
     for( size_type i = 0; i < this->domainSpace()->nLocalDof()/domain_space_type::nComponents; ++i )
         {
