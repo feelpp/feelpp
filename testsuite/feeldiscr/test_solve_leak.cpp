@@ -252,7 +252,7 @@ Laplacian<Dim, Order, Cont, Entity, FType>::run()
     this->setLogs();
 
     std::stringstream cmd;
-    cmd <<"ps --no-header -p "<<getpid()<<" -o \"rss pcpu\""<<std::ends;
+    cmd <<"ps -p "<<getpid()<<" -o \"rss pmem pcpu\""<<std::ends;
 
 
     //     * First we create the mesh
