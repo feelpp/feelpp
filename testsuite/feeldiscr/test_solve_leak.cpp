@@ -466,7 +466,7 @@ Laplacian<Dim, Order, Cont, Entity, FType>::run()
         {
             Log() << "============================================================\n";
             Log() << "time : " << t << "s dt: " << dt << " ft: "<< ft << "s\n";
-
+#if 1
             //
             //  construct right hand side
             //
@@ -501,7 +501,7 @@ Laplacian<Dim, Order, Cont, Entity, FType>::run()
             // find the L2-projection (with a continuous expansion) of
             // the exact solution
             form1( Xch, L, _init=true ) = integrate( elements( mesh ),  trans(g)*id(uEx) );
-
+#endif
             std::cout<<"solving with new backend ............"<<std::endl;
             system( cmd.str().c_str() );
             auto backend_solve = backend_type::build( this->vm() );
@@ -515,7 +515,7 @@ Laplacian<Dim, Order, Cont, Entity, FType>::run()
             bc->template solve( _matrix=M, _solution=uEx, _rhs=L );
             system( cmd.str().c_str() );
 
-
+#if 0
             // compute local error wrt the exact solution
             double error = integrate( elements(mesh),  val( trans(idv(u)-g)*(idv(u)-g) ) ).evaluate()(0,0);
             double errorex = integrate( elements(mesh),  trans(idv(u)-idv(uEx))*(idv(u)-idv(uEx)) ).evaluate()(0,0);
@@ -560,6 +560,7 @@ Laplacian<Dim, Order, Cont, Entity, FType>::run()
 
             Log() << "[timer] run(): init (" << mesh->numElements() << " Elems): " << timers["init"].second << "\n";
             Log() << "[timer] run(): assembly (" << Xh->dof()->nDof() << " DOFs): " << timers["assembly"].second << "\n";
+#endif
         } // time loop
 
 } // Laplacian::run
