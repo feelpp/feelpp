@@ -106,16 +106,12 @@ public:
     }
     OperatorLinear( domain_space_ptrtype     domainSpace,
                     dual_image_space_ptrtype dualImageSpace,
-                    backend_ptrtype          backend ) :
+                    backend_ptrtype          backend,
+                    bool buildMatrix = true) :
         super_type( domainSpace, dualImageSpace ),
-        M_backend( backend ),
-#if 1
-        M_matrix( M_backend->newMatrix( _trial=domainSpace, _test=dualImageSpace ) )
-#else
-        M_matrix( M_backend->newMatrix( dualImageSpace->nDof(),domainSpace->nDof() ,
-                                        dualImageSpace->nLocalDof(), domainSpace->nLocalDof() ) )
-#endif
+        M_backend( backend )
     {
+        if (buildMatrix) M_matrix = M_backend->newMatrix( _trial=domainSpace, _test=dualImageSpace );
     }
 
     ~OperatorLinear() {}
@@ -123,18 +119,13 @@ public:
     void
     init( domain_space_ptrtype     domainSpace,
           dual_image_space_ptrtype dualImageSpace,
-          backend_ptrtype          backend )
+          backend_ptrtype          backend,
+          bool buildMatrix = true )
     {
         this->setDomainSpace( domainSpace );
         this->setDualImageSpace( dualImageSpace );
         M_backend = backend;
-#if 1
-        M_matrix = M_backend->newMatrix( _trial=domainSpace, _test=dualImageSpace );
-#else
-        M_matrix = M_backend->newMatrix( dualImageSpace->nDof(),domainSpace->nDof() ,
-                                         dualImageSpace->nLocalDof(), domainSpace->nLocalDof() );
-#endif
-
+        if (buildMatrix) M_matrix = M_backend->newMatrix( _trial=domainSpace, _test=dualImageSpace );
     }
 
     // apply the operator: ie := Op de
