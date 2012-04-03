@@ -88,8 +88,11 @@ void PreconditionerPetsc<T>::init ()
 template <typename T>
 void PreconditionerPetsc<T>::clear ()
 {
-    this->M_is_initialized = false;
-    PETSc::PCDestroy( M_pc );
+    if ( this-> M_is_initialized )
+    {
+        this->M_is_initialized = false;
+        PETSc::PCDestroy( M_pc );
+    }
 }
 
 
