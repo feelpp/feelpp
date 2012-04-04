@@ -790,11 +790,10 @@ void HeatShield::solve( parameter_type const& mu, element_ptrtype& T, int output
 
 	backend->solve( _matrix=D,  _solution=T, _rhs=F );
 
-	do_export=true;
 	if( do_export )
 	{
-	  exportResults( M_bdf->time(), *T , mu);
-	  export_number++;
+	    exportResults( M_bdf->time(), *T , mu);
+	    export_number++;
 	}
 
 	M_bdf->shiftRight( *T );
