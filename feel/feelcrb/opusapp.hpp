@@ -150,7 +150,7 @@ public:
         {
             if(M_mode == CRBModelMode::PFEM)
                 return;
-            if ( !crb->scm()->isDBLoaded() )
+            if ( !crb->scm()->isDBLoaded() || crb->scm()->rebuildDB() )
             {
                 if ( M_mode == CRBModelMode::SCM )
                 {
@@ -159,7 +159,7 @@ public:
                 }
             }
 
-            if ( !crb->isDBLoaded() )
+            if ( !crb->isDBLoaded() || crb->rebuildDB() )
             {
                 if ( M_mode == CRBModelMode::CRB ||
                      M_mode == CRBModelMode::SCM )

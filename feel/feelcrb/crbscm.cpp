@@ -45,6 +45,7 @@ crbSCMOptions( std::string const& prefix )
         ("crb.scm.Malpha" , Feel::po::value<int>()->default_value( 10 ),       "M_alpha value" )
         ("crb.scm.level" , Feel::po::value<int>()->default_value( 1 ),       "level for recursion in lower bound computations" )
         ("crb.scm.strategy" , Feel::po::value<int>()->default_value( 2 ),       "scm strategy (0=patera, 1=maday, 2=prudhomme" )
+        ("crb.scm.rebuild-database" , Feel::po::value<bool>()->default_value( 0 ), "rebuild database (if it already exists)")
         ;
 
 
