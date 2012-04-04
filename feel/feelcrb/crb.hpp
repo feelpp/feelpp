@@ -606,6 +606,12 @@ public:
      */
     void projectionOnPodSpace(const element_ptrtype & u , element_ptrtype& projection ,const std::string& name_of_space="primal" );
 
+
+    /**
+     * if true, rebuild the database (if already exist)
+     */
+    bool rebuildDB() ;
+
     //@}
 
 private:
@@ -711,6 +717,8 @@ private:
 
     std::vector<int> M_index;
     int M_mode_number;
+
+    bool seek_mu_in_complement; 
 };
 
 po::options_description crbOptions( std::string const& prefix = "" );
@@ -740,6 +748,7 @@ CRB<TruthModelType>::offline()
     orthonormalize_dual = this->vm()["crb.orthonormalize-dual"].template as<bool>() ;
     solve_dual_problem = this->vm()["crb.solve-dual-problem"].template as<bool>() ;
     M_Nm = this->vm()["crb.Nm"].template as<int>() ;
+    seek_mu_in_complement = this->vm()["crb.seek-mu-in-complement"].template as<bool>() ;
 
     if( ! solve_dual_problem ) orthonormalize_dual=false;
 
@@ -1240,11 +1249,18 @@ CRB<TruthModelType>::offline()
             }
 
             //now : loop over number modes per mu
-            for(size_type i=0;i<M_Nm;i++)
-            {
-                //M_WN.push_back( ModeSet[i] );
-                M_WN.push_back( ModeSet[M_mode_number-1] );
-            }
+
+	    if( !seek_mu_in_complement )
+	    {
+	        for(size_type i=0;i<M_Nm;i++)
+		  M_WN.push_back( ModeSet[M_mode_number*M_Nm-1+i] ) ; 
+		  //M_WN.push_back( ModeSet[M_mode_number-1] ) ; 
+	    }
+	    else
+	    {
+	        for(size_type i=0;i<M_Nm;i++)
+		    M_WN.push_back( ModeSet[i] ) ;
+	    }
 
             //and now the dual
             if (solve_dual_problem || M_error_type==CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM)
@@ -1252,10 +1268,15 @@ CRB<TruthModelType>::offline()
                 POD->setBdf( M_bdf_dual );
                 mode_set_type ModeSetdu;
                 POD->pod(ModeSetdu,false);
-                for(size_type i=0;i<M_Nm;i++)
-                {
-                    //M_WNdu.push_back( ModeSetdu[i] ) ;
-                    M_WNdu.push_back( ModeSetdu[M_mode_number-1] ) ;
+		if( !seek_mu_in_complement )
+		{
+                    for(size_type i=0;i<M_Nm;i++)
+		        M_WNdu.push_back( ModeSetdu[M_mode_number*M_Nm-1+i] ) ;
+		}
+		else
+		{
+                    for(size_type i=0;i<M_Nm;i++)
+                        M_WNdu.push_back( ModeSetdu[i] ) ;
                 }
             }
             else
@@ -1494,8 +1515,10 @@ CRB<TruthModelType>::offline()
 
     }
     std::cout<<"number of elements in the reduced basis : "<<M_N<<std::endl;
-
-
+    Log() << " index choosen : ";
+    BOOST_FOREACH( auto id, M_index )
+        Log()<<id<<" ";
+    Log()<<"\n";
     bool visualize_basis = this->vm()["crb.visualize-basis"].template as<bool>() ;
     if( visualize_basis )
     {
@@ -1929,6 +1952,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
 
         uN[time_index] = A.lu().solve( F );
 
+
         if( time_index<model_K-1 )
         {
             uNold[time_index+1] = uN[time_index];
@@ -2242,7 +2266,7 @@ CRB<TruthModelType>::maxErrorBounds( size_type N ) const
     std::vector< vectorN_type > uNduold;
 
     y_type err( M_Xi->size() );
-
+    std::vector<double> check_err( M_Xi->size() ); 
 
     if( M_error_type == CRB_EMPIRICAL )
     {
@@ -2254,48 +2278,87 @@ CRB<TruthModelType>::maxErrorBounds( size_type N ) const
             return boost::make_tuple( 1e5, M_Xi->at( id ), id );
         }
         else{
-            y_type err1( M_WNmu_complement->size() );
+            err.resize( M_WNmu_complement->size() );
+            check_err.resize( M_WNmu_complement->size() );
             for( size_type k = 0; k < M_WNmu_complement->size(); ++k )
             {
                 parameter_type const& mu = M_WNmu_complement->at( k );
                 //double _err = delta( N, mu, uN, uNdu, uNold, uNduold, k);
                 auto error_estimation = delta( N, mu, uN, uNdu, uNold, uNduold, k);
                 double _err = error_estimation.template get<0>();
-                err1(k) = _err;
+                err(k) = _err;
+                check_err[k] = _err;
             }
-            Eigen::MatrixXf::Index index;
-            double maxerr = err1.array().abs().maxCoeff( &index );
-            Log() << "[maxErrorBounds] WNmu_complement N=" << N << " max Error = " << maxerr << " at index = " << index << "\n";
-            parameter_type  mu = M_WNmu_complement->at( index );
-
-            return boost::make_tuple( maxerr, mu, M_WNmu_complement->indexInSuperSampling( index ) );
         }
 
     }//end of if ( M_error_type == CRB_EMPIRICAL)
     else
-    {
-        for( size_type k = 0; k < M_Xi->size(); ++k )
-        {
-            //std::cout << "--------------------------------------------------\n";
-            parameter_type const& mu = M_Xi->at( k );
-            //std::cout << "[maxErrorBounds] mu=" << mu << "\n";
-            lb( N, mu, uN, uNdu , uNold ,uNduold );
-            //auto tuple = lb( N, mu, uN, uNdu , uNold ,uNduold );
-            //double o = tuple.template get<0>();
-            //std::cout << "[maxErrorBounds] output=" << o << "\n";
-            auto error_estimation = delta( N, mu, uN, uNdu, uNold, uNduold, k);
-            double _err = error_estimation.template get<0>();
-            //std::cout << "[maxErrorBounds] error=" << _err << "\n";
-            err(k) = _err;
-        }
+    {	
+        if( seek_mu_in_complement )
+	{
+	    err.resize( M_WNmu_complement->size() );
+	    check_err.resize( M_WNmu_complement->size() );
+	    for( size_type k = 0; k < M_WNmu_complement->size(); ++k )
+	    {
+	        parameter_type const& mu = M_WNmu_complement->at( k );
+		lb( N, mu, uN, uNdu , uNold ,uNduold );
+	        auto error_estimation = delta( N, mu, uN, uNdu, uNold, uNduold, k);
+	        double _err = error_estimation.template get<0>();
+		err(k) = _err;
+		check_err[k] = _err;
+	    }
+	}//end of seeking mu in the complement
+	else
+	{
+            for( size_type k = 0; k < M_Xi->size(); ++k )
+	    {
+	        //std::cout << "--------------------------------------------------\n";
+	        parameter_type const& mu = M_Xi->at( k );
+	        //std::cout << "[maxErrorBounds] mu=" << mu << "\n";
+	        lb( N, mu, uN, uNdu , uNold ,uNduold );
+	        //auto tuple = lb( N, mu, uN, uNdu , uNold ,uNduold );
+	        //double o = tuple.template get<0>();
+	        //std::cout << "[maxErrorBounds] output=" << o << "\n";
+	        auto error_estimation = delta( N, mu, uN, uNdu, uNold, uNduold, k);
+	        double _err = error_estimation.template get<0>();
+	        //std::cout << "[maxErrorBounds] error=" << _err << "\n";
+	        err(k) = _err;
+		check_err[k] = _err;
+	    }
+        }//else ( seek_mu_in_complement )
     }//else
-
 
     Eigen::MatrixXf::Index index;
     double maxerr = err.array().abs().maxCoeff( &index );
-    Log() << "[maxErrorBounds] N=" << N << " max Error = " << maxerr << " at index = " << index << "\n";
+    parameter_type mu;
 
-    return boost::make_tuple( maxerr, M_Xi->at( index ), index );
+    std::vector<double>::iterator it = std::max_element( check_err.begin(), check_err.end() );
+    int check_index = it - check_err.begin() ;
+    double check_maxerr = *it;
+
+    if( index != check_index || maxerr != check_maxerr )
+    {
+        std::cout<<"[CRB::maxErrorBounds] index = "<<index<<" / check_index = "<<check_index<<"   and   maxerr = "<<maxerr<<" / "<<check_maxerr<<std::endl;
+        throw std::logic_error( "[CRB::maxErrorBounds] index and check_index have different values" );
+    }
+
+    int _index=0;
+    if( seek_mu_in_complement )
+    {
+        Log() << "[maxErrorBounds] WNmu_complement N=" << N << " max Error = " << maxerr << " at index = " << index << "\n";
+	mu = M_WNmu_complement->at( index );
+	_index = M_WNmu_complement->indexInSuperSampling( index );
+    }
+    else
+    {
+        Log() << "[maxErrorBounds] N=" << N << " max Error = " << maxerr << " at index = " << index << "\n";
+	mu = M_Xi->at( index );
+	_index = index;
+    }
+	    
+    return boost::make_tuple( maxerr, mu , _index );	    
+
+    
 }
 template<typename TruthModelType>
 void
@@ -3847,6 +3910,15 @@ CRB<TruthModelType>::load(Archive & ar, const unsigned int version)
 
 }
 
+
+template<typename TruthModelType>
+bool
+CRB<TruthModelType>::rebuildDB()
+{
+    bool rebuild = this->vm()["crb.rebuild-database"].template as<bool>(); 
+    return rebuild;
+}
+
 template<typename TruthModelType>
 void
 CRB<TruthModelType>::saveDB()
@@ -3865,6 +3937,8 @@ template<typename TruthModelType>
 bool
 CRB<TruthModelType>::loadDB()
 {
+    if( this->rebuildDB() )
+        return false;
 
     fs::path db = this->lookForDB();
     if ( db.empty() )
