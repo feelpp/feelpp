@@ -373,6 +373,7 @@ public:
      */
     bool loadDB();
 
+    bool rebuildDB();
 //@}
 
 
@@ -1301,6 +1302,14 @@ CRBSCM<TruthModelType>::load(Archive & ar, const unsigned int version)
 }
 
 template<typename TruthModelType>
+bool
+CRBSCM<TruthModelType>::rebuildDB()
+{
+    bool rebuild = this->vm()["crb.scm.rebuild-database"].template as<bool>(); 
+    return rebuild;
+}
+
+template<typename TruthModelType>
 void
 CRBSCM<TruthModelType>::saveDB()
 {
@@ -1317,6 +1326,9 @@ template<typename TruthModelType>
 bool
 CRBSCM<TruthModelType>::loadDB()
 {
+    if( this->rebuildDB() )
+        return false;
+
     fs::path db = this->lookForDB();
     if ( db.empty() )
         return false;

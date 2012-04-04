@@ -55,6 +55,8 @@ crbOptions( std::string const& prefix )
         ("crb.solve-dual-problem" , Feel::po::value<bool>()->default_value( 1 ), "solve or not the dual problem (this bool will be ignored if error-type=CRB_RESIDUAL) ")
         ("crb.visualize-basis" , Feel::po::value<bool>()->default_value( 0 ), "visualize elements of the reduced basis ")
         ("crb.save-output-behavior" , Feel::po::value<bool>()->default_value( 0 ), "save output behavior in time")
+        ("crb.seek-mu-in-complement" , Feel::po::value<bool>()->default_value( 1 ), "during the offline basis construction, see mu in M the complement of Wn")
+        ("crb.rebuild-database" , Feel::po::value<bool>()->default_value( 0 ), "rebuild database (if it already exists)")
         ;
 
 
