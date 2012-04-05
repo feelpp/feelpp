@@ -226,6 +226,26 @@ public:
     /**
      * instantiate a new sparse vector
      */
+    sparse_matrix_ptrtype newMatrix( DataMap const& domainmap,
+                                     DataMap const& imagemap,
+                                     graph_ptrtype const & graph,
+                                     size_type matrix_properties = NON_HERMITIAN,
+                                     bool init = true)
+    {
+        auto mat = this->newMatrix( domainmap,imagemap, matrix_properties, false );
+        if (init) mat->init( imagemap.nDof(), domainmap.nDof(),
+                             imagemap.nLocalDofWithoutGhost(), domainmap.nLocalDofWithoutGhost(),
+                             graph);
+        mat->zero();
+        // todo!
+        //mat->setIndexSplit( trial->dofIndexSplit() );
+        return mat;
+    }
+
+
+    /**
+     * instantiate a new sparse vector
+     */
     virtual
     sparse_matrix_ptrtype
     newZeroMatrix( const size_type m,
