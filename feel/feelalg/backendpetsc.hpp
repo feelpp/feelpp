@@ -176,24 +176,6 @@ public:
     }
 
     sparse_matrix_ptrtype
-    newMatrix( DataMap const& domainmap,
-               DataMap const& imagemap,
-               graph_ptrtype const & graph,
-               size_type matrix_properties = NON_HERMITIAN)
-    {
-        sparse_matrix_ptrtype mat;
-        if (imagemap.worldComm().globalSize()>1) mat = sparse_matrix_ptrtype( new petscMPI_sparse_matrix_type(imagemap,domainmap,imagemap.worldComm() ));
-        else mat = sparse_matrix_ptrtype( new petsc_sparse_matrix_type(imagemap,domainmap,imagemap.worldComm()));
-
-        mat->setMatrixProperties( matrix_properties );
-
-        mat->init( imagemap.nDof(), domainmap.nDof(),
-                   imagemap.nLocalDofWithoutGhost(), domainmap.nLocalDofWithoutGhost(),
-                   graph);
-        return mat;
-    }
-
-    sparse_matrix_ptrtype
     newMatrix(const size_type m,
               const size_type n,
               const size_type m_l,
@@ -297,6 +279,7 @@ public:
         petsc_vector_type const& _x = dynamic_cast<petsc_vector_type const&>( x );
         petsc_vector_type const& _b = dynamic_cast<petsc_vector_type const&>( b );
         MatMult( _A.mat(), _x.vec(), _b.vec() );
+        b.close();
     }
 
 
