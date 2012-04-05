@@ -222,6 +222,7 @@ private:
 
     void updateSameMesh();
     void updateNoRelationMesh();
+    void updateNoRelationMeshMPI();
 
 
     range_iterator _M_range;
@@ -267,26 +268,41 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
         }
     else // no relation between meshes
         {
-            this->updateNoRelationMesh();
+            if (this->dualImageSpace()->worldsComm()[0].localSize() > 1)
+                this->updateNoRelationMeshMPI();
+            else
+                this->updateNoRelationMesh();
         }
-
     // close matrix after build
     this->mat().close();
 }
+
+//-----------------------------------------------------------------------------------------------------------------//
+//-----------------------------------------------------------------------------------------------------------------//
+//-----------------------------------------------------------------------------------------------------------------//
 
 template<typename DomainSpaceType, typename ImageSpaceType,typename IteratorRange,typename InterpType>
 void
 OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>::updateSameMesh()
 {
+#if !defined(FEELPP_ENABLE_MPI_MODE) // NOT MPI
     const size_type proc_id           = this->dualImageSpace()->mesh()->comm().rank();
-    const size_type n1_dof_on_proc    = this->dualImageSpace()->nLocalDof();
+    const size_type nrow_dof_on_proc    = this->dualImageSpace()->nLocalDof();
     const size_type firstrow_dof_on_proc = this->dualImageSpace()->dof()->firstDof( proc_id );
     const size_type lastrow_dof_on_proc = this->dualImageSpace()->dof()->lastDof( proc_id );
     const size_type firstcol_dof_on_proc = this->domainSpace()->dof()->firstDof( proc_id );
     const size_type lastcol_dof_on_proc = this->domainSpace()->dof()->lastDof( proc_id );
-    graph_ptrtype sparsity_graph( new graph_type( n1_dof_on_proc,
+#else
+    const size_type proc_id           = this->dualImageSpace()->worldsComm()[0].localRank();
+    const size_type nrow_dof_on_proc    = this->dualImageSpace()->nLocalDof();
+    const size_type firstrow_dof_on_proc = this->dualImageSpace()->dof()->firstDofGlobalCluster( proc_id );
+    const size_type lastrow_dof_on_proc = this->dualImageSpace()->dof()->lastDofGlobalCluster( proc_id );
+    const size_type firstcol_dof_on_proc = this->domainSpace()->dof()->firstDofGlobalCluster( proc_id );
+    const size_type lastcol_dof_on_proc = this->domainSpace()->dof()->lastDofGlobalCluster( proc_id );
+#endif
+    graph_ptrtype sparsity_graph( new graph_type( nrow_dof_on_proc,
                                                   firstrow_dof_on_proc, lastrow_dof_on_proc,
-                                                  firstrow_dof_on_proc, lastrow_dof_on_proc ) );
+                                                  firstcol_dof_on_proc, lastcol_dof_on_proc ) );
 
     auto const* imagedof = this->dualImageSpace()->dof().get();
     auto const* domaindof = this->domainSpace()->dof().get();
@@ -294,8 +310,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     auto const* domainbasis = this->domainSpace()->basis().get();
 
 
-    std::vector<bool> dof_done( this->dualImageSpace()->nDof(), false);
-    std::vector< std::list<std::pair<size_type,double> > > memory_valueInMatrix( this->dualImageSpace()->nDof() );
+    std::vector<bool> dof_done( nrow_dof_on_proc, false);
+    std::vector< std::list<std::pair<size_type,double> > > memory_valueInMatrix( nrow_dof_on_proc );
 
     // Local assembly: compute the Mloc matrix by evaluating
     // the domain space basis function at the dual image space
@@ -327,7 +343,9 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                                     const auto theproc = imagedof->procOnGlobalCluster(ig1);
                                     auto& row = sparsity_graph->row(ig1);
                                     row.get<0>() = theproc;
-                                    row.get<1>() = i;
+                                    const size_type il1 = ig1 - imagedof->firstDofGlobalCluster( theproc );
+                                    row.get<1>() = il1;
+                                    //row.get<1>() = i;
 
                                     uint16_type ilocprime=imagedof->localDofInElement(*it, iloc, comp) ;
 
@@ -350,18 +368,18 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                         }
                 }
         }
-
     //-----------------------------------------
    // compute graph
     sparsity_graph->close();
     //-----------------------------------------
    // create matrix
-    this->matPtr() = this->backend()->newMatrix(this->dualImageSpace()->nDof(), this->domainSpace()->nDof() ,
-                                                this->dualImageSpace()->nLocalDof(), this->domainSpace()->nLocalDof(),
-                                                sparsity_graph );
+    this->matPtr() = this->backend()->newMatrix(this->domainSpace()->mapOnOff(),
+                                                this->dualImageSpace()->mapOn(),
+                                                sparsity_graph  );
     //-----------------------------------------
+
    // assemble matrix
-    for (size_type idx_i=0 ; idx_i<this->dualImageSpace()->nDof() ;++idx_i)
+    for (size_type idx_i=0 ; idx_i<nrow_dof_on_proc;++idx_i)
         {
             for (auto it_j=memory_valueInMatrix[idx_i].begin(),en_j=memory_valueInMatrix[idx_i].end() ; it_j!=en_j ; ++it_j)
                 {
@@ -369,6 +387,10 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                 }
         }
 }
+
+//-----------------------------------------------------------------------------------------------------------------//
+//-----------------------------------------------------------------------------------------------------------------//
+//-----------------------------------------------------------------------------------------------------------------//
 
 template<typename DomainSpaceType, typename ImageSpaceType,typename IteratorRange,typename InterpType>
 void
@@ -386,7 +408,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
 
     graph_ptrtype sparsity_graph( new graph_type( n1_dof_on_proc,
                                                   firstrow_dof_on_proc, lastrow_dof_on_proc,
-                                                  firstrow_dof_on_proc, lastrow_dof_on_proc ) );
+                                                  firstcol_dof_on_proc, lastcol_dof_on_proc ) );
 
     auto const* imagedof = this->dualImageSpace()->dof().get();
     auto const* domaindof = this->domainSpace()->dof().get();
@@ -415,7 +437,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     // for each element in range
     iterator_type it, en;
     boost::tie( boost::tuples::ignore, it, en ) = _M_range;
-   for( ; it != en; ++ it )
+    size_type eltIdLocalised = 0;
+    for( ; it != en; ++ it )
         {
             for ( uint16_type iloc = 0; iloc < nLocalDofInDualImageElt; ++iloc )
                 {
@@ -436,7 +459,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                                     ublas::column(ptsReal,0 ) = boost::get<0>(imagedof->dofPoint(gdof));
                                     //------------------------
                                     // localisation process
-                                    __loc->run_analysis(ptsReal,it->vertices()/*it->G()*/,mpl::bool_<interpolation_type::value>());
+                                    eltIdLocalised = __loc->run_analysis(ptsReal,eltIdLocalised,it->vertices()/*it->G()*/,mpl::bool_<interpolation_type::value>());
                                     //------------------------
                                     // for each localised points
                                     itanal = __loc->result_analysis_begin();
@@ -485,8 +508,24 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                }
        }
 
-
 }
+
+//-----------------------------------------------------------------------------------------------------------------//
+//-----------------------------------------------------------------------------------------------------------------//
+//-----------------------------------------------------------------------------------------------------------------//
+
+
+template<typename DomainSpaceType, typename ImageSpaceType,typename IteratorRange,typename InterpType>
+void
+OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>::updateNoRelationMeshMPI()
+{
+    // todo!
+}
+
+
+//-----------------------------------------------------------------------------------------------------------------//
+//-----------------------------------------------------------------------------------------------------------------//
+//-----------------------------------------------------------------------------------------------------------------//
 
 
 template<typename DomainSpaceType, typename ImageSpaceType, typename IteratorRange, typename InterpType >
