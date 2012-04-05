@@ -664,16 +664,16 @@ public:
         /*--------------------------------------------------------------
          * Access
          */
+        bool isInit() const { return IsInit;}
+        bool doExtrapolation() const { return M_doExtrapolation; }
+
         boost::shared_ptr<self_type> mesh() { return M_mesh; }
+        boost::shared_ptr<self_type> const& mesh() const { return M_mesh; }
 
-        bool isInit() { return IsInit;}
-
-        bool doExtrapolation() { return M_doExtrapolation; }
-
-        //KDTree kdtree() { return M_kd_tree; }
         kdtree_ptrtype kdtree() { return M_kd_tree; }
+        kdtree_ptrtype const& kdtree() const { return M_kd_tree; }
 
-        container_search_type const & result_analysis() { return M_resultAnalysis;}
+        container_search_type const & result_analysis() const { return M_resultAnalysis;}
 
         container_search_iterator_type result_analysis_begin() { return M_resultAnalysis.begin();}
         container_search_iterator_type result_analysis_end() { return M_resultAnalysis.end();}
@@ -681,7 +681,7 @@ public:
         /*---------------------------------------------------------------
          * True if the node p is in mesh->element(id)
          */
-        bool isIn(size_type _id, const node_type & _pt);
+        boost::tuple<bool,node_type> isIn(size_type _id, const node_type & _pt) const;
         boost::tuple<uint16_type,std::vector<bool> > isIn(std::vector<size_type> _ids, const node_type & _pt);
 
         /*---------------------------------------------------------------
@@ -711,21 +711,29 @@ public:
          * Research the element wich contains the node p, forall p in the
          * matrix_node_type m. The result is save by this object
          */
-        void run_analysis(const matrix_node_type & m);
-        void run_analysis(const matrix_node_type & m,
-                          const matrix_node_type & setPoints,
-                          mpl::bool_<false> /**/)
+        size_type run_analysis(const matrix_node_type & m,
+                               const size_type & eltHypothetical);
+
+        /*---------------------------------------------------------------
+         * Research the element wich contains the node p, forall p in the
+         * matrix_node_type m. The result is save by this object
+         */
+        size_type run_analysis(const matrix_node_type & m,
+                               const size_type & eltHypothetical,
+                               const matrix_node_type & setPoints,
+                               mpl::bool_<false> /**/)
         {
-            run_analysis(m);
+            return run_analysis(m,eltHypothetical);
         }
 
         /*---------------------------------------------------------------
          * Research the element wich contains the node p, forall p in the
          * matrix_node_type m. The result is save by this object
          */
-        void run_analysis(const matrix_node_type & m,
-                          const matrix_node_type & setPoints,
-                          mpl::bool_<true> /**/);
+        size_type run_analysis(const matrix_node_type & m,
+                               const size_type & eltHypothetical,
+                               const matrix_node_type & setPoints,
+                               mpl::bool_<true> /**/);
 
         /*---------------------------------------------------------------
          * Reset all data
