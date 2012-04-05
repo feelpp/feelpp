@@ -3848,7 +3848,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::idInterpolate( matrix_node_t
 
     // create analysys map : id -> List of pt
     localization_ptrtype __loc = this->functionSpace()->mesh()->tool_localization();
-    __loc->run_analysis(__ptsReal);
+    __loc->run_analysis(__ptsReal,invalid_size_type_value);
     analysis_iterator_type it = __loc->result_analysis_begin();
     analysis_iterator_type it_end = __loc->result_analysis_end();
     analysis_output_iterator_type itL,itL_end;
@@ -4108,7 +4108,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::gradInterpolate(  matrix_nod
 
     // create analysys map : id -> List of pt
     localization_ptrtype __loc = this->functionSpace()->mesh()->tool_localization();
-    __loc->run_analysis(__ptsReal);
+    __loc->run_analysis(__ptsReal,invalid_size_type_value);
     analysis_iterator_type it = __loc->result_analysis_begin();
     analysis_iterator_type it_end = __loc->result_analysis_end();
     analysis_output_iterator_type itL,itL_end;
@@ -4260,7 +4260,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::divInterpolate( matrix_node_
 
     // create analysys map : id -> List of pt
     localization_ptrtype __loc = this->functionSpace()->mesh()->tool_localization();
-    __loc->run_analysis(__ptsReal);
+    __loc->run_analysis(__ptsReal,invalid_size_type_value);
     analysis_iterator_type it = __loc->result_analysis_begin();
     analysis_iterator_type it_end = __loc->result_analysis_end();
     analysis_output_iterator_type itL,itL_end;
@@ -4427,7 +4427,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlInterpolate( matrix_node
 
     // create analysys map : id -> List of pt
     localization_ptrtype __loc = this->functionSpace()->mesh()->tool_localization();
-    __loc->run_analysis(__ptsReal);
+    __loc->run_analysis(__ptsReal,invalid_size_type_value);
     analysis_iterator_type it = __loc->result_analysis_begin();
     analysis_iterator_type it_end = __loc->result_analysis_end();
     analysis_output_iterator_type itL,itL_end;
@@ -4516,7 +4516,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlxInterpolate(matrix_node
 
     // create analysys map : id -> List of pt
     localization_ptrtype __loc = this->functionSpace()->mesh()->tool_localization();
-    __loc->run_analysis(__ptsReal);
+    __loc->run_analysis(__ptsReal,invalid_size_type_value);
     analysis_iterator_type it = __loc->result_analysis_begin();
     analysis_iterator_type it_end = __loc->result_analysis_end();
     analysis_output_iterator_type itL,itL_end;
@@ -4604,7 +4604,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlyInterpolate( matrix_nod
 
     // create analysys map : id -> List of pt
     localization_ptrtype __loc = this->functionSpace()->mesh()->tool_localization();
-    __loc->run_analysis(__ptsReal);
+    __loc->run_analysis(__ptsReal,invalid_size_type_value);
     analysis_iterator_type it = __loc->result_analysis_begin();
     analysis_iterator_type it_end = __loc->result_analysis_end();
     analysis_output_iterator_type itL,itL_end;
@@ -4691,7 +4691,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlzInterpolate( matrix_nod
 
     // create analysys map : id -> List of pt
     localization_ptrtype __loc = this->functionSpace()->mesh()->tool_localization();
-    __loc->run_analysis(__ptsReal);
+    __loc->run_analysis(__ptsReal,invalid_size_type_value);
     analysis_iterator_type it = __loc->result_analysis_begin();
     analysis_iterator_type it_end = __loc->result_analysis_end();
     analysis_output_iterator_type itL,itL_end;
@@ -4816,7 +4816,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dxInterpolate( matrix_node_t
 
     // create analysys map : id -> List of pt
     localization_ptrtype __loc = this->functionSpace()->mesh()->tool_localization();
-    __loc->run_analysis(__ptsReal);
+    __loc->run_analysis(__ptsReal,invalid_size_type_value);
     analysis_iterator_type it = __loc->result_analysis_begin();
     analysis_iterator_type it_end = __loc->result_analysis_end();
     analysis_output_iterator_type itL,itL_end;
@@ -4892,7 +4892,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dyInterpolate( matrix_node_t
 
     // create analysys map : id -> List of pt
     localization_ptrtype __loc = this->functionSpace()->mesh()->tool_localization();
-    __loc->run_analysis(__ptsReal);
+    __loc->run_analysis(__ptsReal,invalid_size_type_value);
     analysis_iterator_type it = __loc->result_analysis_begin();
     analysis_iterator_type it_end = __loc->result_analysis_end();
     analysis_output_iterator_type itL,itL_end;
@@ -4968,7 +4968,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dzInterpolate( matrix_node_t
 
     // create analysys map : id -> List of pt
     localization_ptrtype __loc = this->functionSpace()->mesh()->tool_localization();
-    __loc->run_analysis(__ptsReal);
+    __loc->run_analysis(__ptsReal,invalid_size_type_value);
     analysis_iterator_type it = __loc->result_analysis_begin();
     analysis_iterator_type it_end = __loc->result_analysis_end();
     analysis_output_iterator_type itL,itL_end;
@@ -5093,7 +5093,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::hessInterpolate( matrix_node
 
     // create analysys map : id -> List of pt
     localization_ptrtype __loc = this->functionSpace()->mesh()->tool_localization();
-    __loc->run_analysis(__ptsReal);
+    __loc->run_analysis(__ptsReal,invalid_size_type_value);
     analysis_iterator_type it = __loc->result_analysis_begin();
     analysis_iterator_type it_end = __loc->result_analysis_end();
     analysis_output_iterator_type itL,itL_end;
