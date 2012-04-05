@@ -1291,15 +1291,15 @@ Mesh<Shape, T>::Localization::init()
 
 
 template<typename Shape, typename T>
-bool
-Mesh<Shape, T>::Localization::isIn(size_type _id, const node_type & _pt)
+boost::tuple<bool,typename Mesh<Shape, T>::node_type>
+Mesh<Shape, T>::Localization::isIn(size_type _id, const node_type & _pt) const
 {
     typedef typename self_type::gm_type::reference_convex_type ref_convex_type;
     typedef typename self_type::gm1_type::reference_convex_type ref_convex1_type;
 
     bool isin=false;
     double dmin;
-    node_type __x_ref;
+    node_type x_ref;
 
     //get element with the id
     auto const& elt = M_mesh->element(_id);
@@ -1310,7 +1310,7 @@ Mesh<Shape, T>::Localization::isIn(size_type _id, const node_type & _pt)
             typename self_type::Inverse::gic_type gic( M_mesh->gm(), elt );
             //apply the inverse geometric transformation for the point p
             gic.setXReal( _pt);
-            __x_ref=gic.xRef();
+            x_ref=gic.xRef();
             // the point is in the reference element ?
             ref_convex_type refelem;
             boost::tie( isin, dmin ) = refelem.isIn( gic.xRef() );
@@ -1321,12 +1321,12 @@ Mesh<Shape, T>::Localization::isIn(size_type _id, const node_type & _pt)
             typename self_type::Inverse::gic1_type gic( M_mesh->gm1(), elt, mpl::int_<1>() );
             //apply the inverse geometric transformation for the point p
             gic.setXReal( _pt);
-            __x_ref=gic.xRef();
+            x_ref=gic.xRef();
             // the point is in the reference element ?
             ref_convex1_type refelem1;
             boost::tie( isin, dmin ) = refelem1.isIn( gic.xRef() );
         }
-    return isin;
+    return boost::make_tuple(isin,x_ref);
 }
 
 template<typename Shape, typename T>
@@ -1462,8 +1462,9 @@ Mesh<Shape, T>::Localization::searchElement(const node_type & p)
 }
 
 template<typename Shape, typename T>
-void
-Mesh<Shape, T>::Localization::run_analysis(const matrix_node_type & m)
+size_type
+Mesh<Shape, T>::Localization::run_analysis(const matrix_node_type & m,
+                                           const size_type & eltHypothetical)
 {
 
 #if !defined( NDEBUG )
@@ -1472,59 +1473,82 @@ Mesh<Shape, T>::Localization::run_analysis(const matrix_node_type & m)
 #endif
 
     bool find_x;
-    size_type __cv_id;
-    node_type __x_ref;
+    size_type cv_id=0;
+    node_type x_ref;
 
     M_resultAnalysis.clear();
 
     bool doExtrapolationAtStart = this->doExtrapolation();
     auto nPtMaxNearNeighborAtStart = this->kdtree()->nPtMaxNearNeighbor();
 
+    // first step : no extrapolation
+    if (doExtrapolationAtStart) this->setExtrapolation(false);
+    // first currentEltHypothetical
+    auto currentEltHypothetical = eltHypothetical;
+
     for (size_type i=0;i< m.size2();++i)
         {
-            // first step : no extrapolation
-            if (doExtrapolationAtStart) this->setExtrapolation(false);
-
-            boost::tie( find_x, __cv_id, __x_ref ) = this->searchElement(ublas::column( m, i ));
-
-            // if find : OK
-            if (find_x)
+            bool testHypothetical_find = false;
+            if( eltHypothetical!=invalid_size_type_value)
                 {
-                    M_resultAnalysis[__cv_id].push_back( boost::make_tuple(i,__x_ref) );
+                    boost::tie(testHypothetical_find,x_ref) = this->isIn(currentEltHypothetical,ublas::column( m, i ));
                 }
-            // try an other method (no efficient but maybe a solution)
-            else
+
+            if (testHypothetical_find)
                 {
-                    // search in all element
-                    this->kdtree()->nbNearNeighbor(this->mesh()->numElements());
-
-                    boost::tie( find_x, __cv_id, __x_ref ) = this->searchElement(ublas::column( m, i ));
-                    //revert parameter
-                    this->kdtree()->nbNearNeighbor(nPtMaxNearNeighborAtStart);
-                    // if find : OK (but strange!)
-                    if (find_x)
+                    cv_id = currentEltHypothetical;
+                    M_resultAnalysis[cv_id].push_back( boost::make_tuple(i,x_ref) );
+                }
+            else // search kdtree
+                {
+                    // kdtree call
+                    boost::tie( find_x, cv_id, x_ref ) = this->searchElement(ublas::column( m, i ));
+                    // traitement
+                    if (find_x) // if find : OK
                         {
-                            M_resultAnalysis[__cv_id].push_back( boost::make_tuple(i,__x_ref) );
+                            M_resultAnalysis[cv_id].push_back( boost::make_tuple(i,x_ref) );
+                            currentEltHypothetical = cv_id;
                         }
-                    else if (doExtrapolationAtStart)
+                    else // try an other method (no efficient but maybe a solution)
                         {
-                            this->setExtrapolation(true);
+                            // search in all element
+                            this->kdtree()->nbNearNeighbor(15/*this->mesh()->numElements()*/);
 
-                            boost::tie( find_x, __cv_id, __x_ref ) = this->searchElement(ublas::column( m, i ));
-                            // normaly is find
+                            boost::tie( find_x, cv_id, x_ref ) = this->searchElement(ublas::column( m, i ));
+                            //revert parameter
+                            this->kdtree()->nbNearNeighbor(nPtMaxNearNeighborAtStart);
+                            // if find : OK (but strange!)
                             if (find_x)
                                 {
-                                    M_resultAnalysis[__cv_id].push_back( boost::make_tuple(i,__x_ref) );
+                                    M_resultAnalysis[cv_id].push_back( boost::make_tuple(i,x_ref) );
+                                    currentEltHypothetical = cv_id;
                                 }
+                            else if (doExtrapolationAtStart)
+                                {
+                                    this->setExtrapolation(true);
+
+                                    boost::tie( find_x, cv_id, x_ref ) = this->searchElement(ublas::column( m, i ));
+                                    // normaly is find
+                                    if (find_x)
+                                        {
+                                            M_resultAnalysis[cv_id].push_back( boost::make_tuple(i,x_ref) );
+                                            currentEltHypothetical = cv_id;
+                                        }
+
+                                    this->setExtrapolation(false);
+                                }
+                            else
+                                std::cout<<"\n Il y a un GROS Probleme de Localization\n";
                         }
-                    else
-                        std::cout<<"\n Il y a un GROS Probleme de Localization\n";
-                }
+                } // search kdtree
 
-            //revert parameter
-            if (doExtrapolationAtStart) this->setExtrapolation(true);
+        } // for (size_type i=0;i< m.size2();++i)
 
-        }
+    //revert parameter
+    if (doExtrapolationAtStart) this->setExtrapolation(true);
+
+    return cv_id;
+
 } //run_analysis
 
 
@@ -1818,8 +1842,9 @@ Mesh<Shape, T>::Localization::searchElement(const node_type & p,
 
 
 template<typename Shape, typename T>
-void
+size_type
 Mesh<Shape, T>::Localization::run_analysis(const matrix_node_type & m,
+                                           const size_type & eltHypothetical,
                                            const matrix_node_type & setPoints,
                                            mpl::bool_<true> /**/)
 {
@@ -1829,22 +1854,23 @@ Mesh<Shape, T>::Localization::run_analysis(const matrix_node_type & m,
 #endif
 
     bool find_x;
-    size_type __cv_id;
-    node_type __x_ref;
+    size_type cv_id;
+    node_type x_ref;
 
     M_resultAnalysis.clear();
 
     for (size_type i=0;i< m.size2();++i)
         {
-            boost::tie( find_x, __cv_id, __x_ref ) = this->searchElement(ublas::column( m, i ),setPoints,mpl::bool_<true>() );
+            boost::tie( find_x, cv_id, x_ref ) = this->searchElement(ublas::column( m, i ),setPoints,mpl::bool_<true>() );
 
             if (find_x)
                 {
-                    M_resultAnalysis[__cv_id].push_back( boost::make_tuple(i,__x_ref) );
+                    M_resultAnalysis[cv_id].push_back( boost::make_tuple(i,x_ref) );
                 }
             else std::cout<<"\nNew Probleme Localization\n" << std::endl;
 
         }
+    return cv_id;
 
 } // run_analysis
 
