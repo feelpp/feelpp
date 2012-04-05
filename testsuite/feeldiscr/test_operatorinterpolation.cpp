@@ -81,12 +81,18 @@ test2dTo1d( Application_ptrtype test_app)
     GeoTool::Node x1(0,0);
     GeoTool::Node x2(2,1);
     GeoTool::Rectangle C( meshSize,"OMEGA",x1,x2);
-    auto mesh2d = C.createMesh(_mesh=new mesh_2d_type,_name="domain");
+    C.setMarker(_type="line",_name="Sortie",_markerAll=true);
+    C.setMarker(_type="surface",_name="OmegaFluide",_markerAll=true);
+    auto mesh2d = C.createMesh(_mesh=new mesh_2d_type,
+                               _name="test2dTo1d_domain"+mesh_2d_type::shape_type::name());
 
     GeoTool::Node x3(0,0);
     GeoTool::Node x4(2,1);
     GeoTool::Line L( meshSize, "Line",x3,x4);
-    auto mesh1d = L.createMesh(_mesh=new mesh_1d_type,_name="domain1d");
+    L.setMarker(_type="point",_name="Sortie",_markerAll=true);
+    L.setMarker(_type="line",_name="Omega1d",_markerAll=true);
+    auto mesh1d = L.createMesh(_mesh=new mesh_1d_type,
+                               _name="test2dTo1d_domain1d"+mesh_1d_type::shape_type::name());
 
     //-----------------------------------------------------------//
 
@@ -107,7 +113,7 @@ test2dTo1d( Application_ptrtype test_app)
     auto s = integrate(_range=elements(mesh1d),
                          _expr=trans(idv(u2d)-idv(u1d))*(idv(u2d)-idv(u1d)) ).evaluate()(0,0);
     BOOST_CHECK_SMALL( s,1e-8);
-}
+} // test2dTo1d
 
 //---------------------------------------------------------------------------------------------//
 //---------------------------------------------------------------------------------------------//
@@ -132,14 +138,18 @@ test2dTo2d( Application_ptrtype test_app)
     //-------------------------------------------------------
     //case 1 : same mesh
     //-------------------------------------------------------
-
+    WorldComm myWorldComm;
     auto meshSize = test_app->vm()["hsize"].as<double>();
 
     GeoTool::Node x1(0,0);
     GeoTool::Node x2(0.6,0);
-    GeoTool::Circle R( meshSize,"OMEGA",x1,x2);
+    GeoTool::Circle C( meshSize,"OMEGA",x1,x2);
+    C.setMarker(_type="line",_name="Sortie",_markerAll=true);
+    C.setMarker(_type="surface",_name="OmegaFluide",_markerAll=true);
+    auto mesh = C.createMesh(_mesh = new mesh_type,
+                             _name="test2dTo2d_domain"+mesh_type::shape_type::name(),
+                             _partitions=myWorldComm.localSize() );
 
-    auto mesh = R.createMesh(_mesh = new mesh_type,_name="domain");
     auto Xh1 = space_1_type::New( _mesh=mesh );
     auto Xh2 = space_2_type::New( _mesh=mesh );
     auto u1 = Xh1->element("u1");
@@ -151,6 +161,7 @@ test2dTo2d( Application_ptrtype test_app)
                      _expr=vec( cos(M_PI*Px()),sin(M_PI*Py()) ) );
 
     auto mybackend = backend_type::build( test_app->vm() );
+
     auto opI=opInterpolation( _domainSpace=Xh1,
                               _imageSpace=Xh2,
                               _backend=mybackend );
@@ -177,7 +188,10 @@ test2dTo2d( Application_ptrtype test_app)
     //-------------------------------------------------------//
 
     GeoTool::Circle C2( meshSize/2.,"OMEGA",x1,x2);
-    auto mesh2 = C2.createMesh(_mesh=new mesh_type,_name="domain2");
+    C2.setMarker(_type="line",_name="Boundary",_markerAll=true);
+    C2.setMarker(_type="surface",_name="Omega",_markerAll=true);
+    auto mesh2 = C2.createMesh(_mesh=new mesh_type,
+                               _name="test2dTo2d_domain2"+mesh_type::shape_type::name());
     auto Xh2bis = space_2_type::New(_mesh=mesh2);
     auto u2bis = Xh2bis->element("u2bis");
     auto u2bisbis = Xh2bis->element("u2bisbis");
@@ -203,13 +217,16 @@ test2dTo2d( Application_ptrtype test_app)
     auto s7 = integrate(_range=boundaryfaces(mesh2),
                         _expr=trans(idv(u1)-idv(u2bisbis))*(idv(u1)-idv(u2bisbis)) ).evaluate()(0,0);
     BOOST_CHECK_SMALL( s7,1e-6);
-}
+} // test2dTo2d
 
 
 
-} // end test_operatorinterpolation
+} // namespace test_operatorinterpolation
+
 
 BOOST_AUTO_TEST_SUITE( interp_operatorinterpolation )
+Environment env( boost::unit_test::framework::master_test_suite().argc,
+                 boost::unit_test::framework::master_test_suite().argv );
 
 BOOST_AUTO_TEST_CASE( interp_operatorinterpolation )
 {
@@ -233,6 +250,4 @@ BOOST_AUTO_TEST_CASE( interp_operatorinterpolation )
 }
 
 BOOST_AUTO_TEST_SUITE_END()
-
-
 
