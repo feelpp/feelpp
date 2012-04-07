@@ -24,6 +24,7 @@
 #ifndef __galerkingraph_H
 #define __galerkingraph_H 1
 
+#include <feel/feelvf/pattern.hpp>
 #include <feel/feelalg/graphcsr.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
 #if 1
@@ -356,6 +357,12 @@ public:
 
 typedef Feel::Singleton<StencilManagerImpl> StencilManager;
 
+namespace detail
+{
+//! function that cleans up the StencilManager any time \c stencil() is called
+void runGarbageCollector();
+}
+
 BOOST_PARAMETER_FUNCTION(
     (typename detail::compute_stencil_type<Args>::ptrtype), // 1. return type
     stencil,                                       // 2. name of the function template
@@ -371,6 +378,9 @@ BOOST_PARAMETER_FUNCTION(
      )
     )
 {
+    // cleanup memory before doing anything
+    detail::runGarbageCollector();
+
     Feel::detail::ignore_unused_variable_warning(args);
     typedef typename detail::compute_stencil_type<Args>::ptrtype stencil_ptrtype;
     typedef typename detail::compute_stencil_type<Args>::type stencil_type;
