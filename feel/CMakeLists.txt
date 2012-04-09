@@ -47,11 +47,7 @@ set_target_properties( feel++ PROPERTIES VERSION ${FEELPP_SHARED_VERSION} SOVERS
 set_property(TARGET feel++ PROPERTY LABELS feel++)
 
 #target_link_libraries (feel++ ${PETSC_LIBRARIES} ${Boost_LIBRARIES} ${MPI_LIBRARIES} ${LIBXML2_LIBRARIES} ${TBB_LIBRARIES})
-if ( FEELPP_ENABLE_BAMG )
-  target_link_libraries (feel++ feel++_bamg ${FEELPP_LIBRARIES})
-else()
-  target_link_libraries (feel++ ${FEELPP_LIBRARIES})
-endif()
+target_link_libraries (feel++ ${FEELPP_LIBRARIES})
 set_target_properties(feel++ PROPERTIES VERSION ${FEELPP_SHARED_VERSION} SOVERSION ${FEELPP_SHARED_SOVERSION})
 
 # Install feel++
