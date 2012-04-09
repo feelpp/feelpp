@@ -1,0 +1,6 @@
+#! /bin/sh
+
+for dir in applications feel testsuite research examples; do
+    files=`find $dir -name "*.[hc]pp"`
+    @ASTYLE@ --options=@FEELPP_SOURCE_DIR@/scripts/astyle/feelpp.astyle.options $files
+done
