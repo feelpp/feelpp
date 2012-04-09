@@ -12,7 +12,8 @@
 
 ** Programming environment
 
- - port to icc 12.1 and clang 3.1
+ - support for Boost 1.49
+ - port to gcc4.7, icc 12.1 and clang 3.1
  - added cmake macro feelpp_add application, see http://code.google.com/p/feelpp/issues/detail?id=11&can=1
 
 ** Bugs
