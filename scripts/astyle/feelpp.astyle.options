@@ -1,0 +1,19 @@
+# See also Feel++ Coding Style here
+# http://code.google.com/p/feelpp/wiki/FeelppCodingStyles
+
+# brackets
+style=allman
+
+# indentation is 4 space (no tabs)
+indent=spaces=4
+
+# indentation for comment
+indent-col1-comments
+
+# Pad empty lines around header blocks (e.g. 'if', 'for', 'while'...).
+# Treat closing header blocks (e.g. 'else', 'catch') as stand-alone blocks.
+break-blocks=all
+
+pad-paren-in
+pad-header
+
