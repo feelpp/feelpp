@@ -229,6 +229,7 @@ endif(CMAKE_COMPILER_IS_GNUCXX)
 #INCLUDE(AdvancedOption)
 
 include(feelpp.extra.warnings)
+include(feelpp.extra.astyle)
 add_definitions(${FEELPP_FLAGS})
 
 if("${CMAKE_CXX_FLAGS} ${FEELPP_FLAGS}" MATCHES "[^ ]")
@@ -273,14 +274,6 @@ MESSAGE(STATUS "SIZE_LONG_DOUBLE=${SIZE_LONG_DOUBLE}")
 
 # Find Feel++ or at least it dependencies
 FIND_PACKAGE(Feel++ REQUIRED)
-
-option(FEELPP_ENABLE_BAMG "Enable Bamg mesh generator in Feel++" OFF)
-if(FEELPP_ENABLE_BAMG)
-  add_subdirectory(contrib/bamg)
-  include_directories(contrib/bamg contrib/bamg/bamglib)
-  set_config_option(FEELPP_HAVE_BAMG "Bamg")
-endif(FEELPP_ENABLE_BAMG)
-
 
 include( feelpp.macros )
 
