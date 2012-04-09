@@ -6,7 +6,7 @@
        Date: 2005-08-18
 
   Copyright (C) 2005,2006 EPFL
-  Copyright (C) 2008,2009 Université de Grenoble 1 (Joseph Fourier)
+  Copyright (C) 2008-2012 Université de Grenoble 1 (Joseph Fourier)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -63,7 +63,7 @@ namespace details
 template<typename Basis, template<class, uint16_type, class> class PointSetType>
 class LagrangeDual
     :
-        public DualBasis<Basis>
+public DualBasis<Basis>
 {
     typedef DualBasis<Basis> super;
 public:
@@ -122,16 +122,16 @@ public:
     static const uint16_type nLocalDof = numPoints;
 
     static const uint16_type nFacesInConvex = mpl::if_< mpl::equal_to<mpl::int_<nDim>, mpl::int_<1> >,
-                                                        mpl::int_<nVertices>,
-                                                        typename mpl::if_<mpl::equal_to<mpl::int_<nDim>, mpl::int_<2> >,
-                                                                          mpl::int_<nEdges>,
-                                                                          mpl::int_<nFaces> >::type >::type::value;
+                             mpl::int_<nVertices>,
+                             typename mpl::if_<mpl::equal_to<mpl::int_<nDim>, mpl::int_<2> >,
+                             mpl::int_<nEdges>,
+                             mpl::int_<nFaces> >::type >::type::value;
 
     LagrangeDual( primal_space_type const& primal )
         :
         super( primal ),
         _M_convex_ref(),
-        _M_eid(_M_convex_ref.topologicalDimension()+1),
+        _M_eid( _M_convex_ref.topologicalDimension()+1 ),
         _M_pts( nDim, numPoints ),
         _M_points_face( nFacesInConvex ),
         _M_fset( primal )
@@ -150,15 +150,15 @@ public:
         _M_pts = pts.points();
 
         if ( nOrder > 0 )
+        {
+            for ( uint16_type e = _M_convex_ref.entityRange( nDim-1 ).begin();
+                    e < _M_convex_ref.entityRange( nDim-1 ).end();
+                    ++e )
             {
-                for ( uint16_type e = _M_convex_ref.entityRange( nDim-1 ).begin();
-                      e < _M_convex_ref.entityRange( nDim-1 ).end();
-                      ++e )
-                    {
-                        _M_points_face[e] = pts.pointsBySubEntity(nDim-1, e, 1);
-                        Debug(5045) << "face " << e << " pts " <<  _M_points_face[e] << "\n";
-                    }
+                _M_points_face[e] = pts.pointsBySubEntity( nDim-1, e, 1 );
+                Debug( 5045 ) << "face " << e << " pts " <<  _M_points_face[e] << "\n";
             }
+        }
 
         setFset( primal, _M_pts, mpl::bool_<primal_space_type::is_scalar>() );
     }
@@ -166,7 +166,10 @@ public:
     {
 
     }
-    points_type const& points() const { return _M_pts; }
+    points_type const& points() const
+    {
+        return _M_pts;
+    }
 
     points_type const& points( uint16_type f ) const
     {
@@ -190,13 +193,13 @@ private:
     void setFset( primal_space_type const& primal, points_type const& __pts, mpl::bool_<true> )
     {
         _M_fset.setFunctionalSet( functional::PointsEvaluation<primal_space_type>( primal,
-                                                                                   __pts ) );
+                                  __pts ) );
     }
 
     void setFset( primal_space_type const& primal, points_type const& __pts, mpl::bool_<false> )
     {
         _M_fset.setFunctionalSet( functional::ComponentsPointsEvaluation<primal_space_type>( primal,
-                                                                                             __pts ) );
+                                  __pts ) );
     }
 
     /**
@@ -246,7 +249,7 @@ template<uint16_type N,
          uint16_type TheTAG = 0 >
 class Lagrange
     :
-    public FiniteElement<detail::OrthonormalPolynomialSet<N, O, RealDim, PolySetType, T, Convex>, details::LagrangeDual, Pts >
+public FiniteElement<detail::OrthonormalPolynomialSet<N, O, RealDim, PolySetType, T, Convex>, details::LagrangeDual, Pts >
 {
     typedef FiniteElement<detail::OrthonormalPolynomialSet<N, O, RealDim, PolySetType, T, Convex>, details::LagrangeDual, Pts > super;
 public:
@@ -283,8 +286,8 @@ public:
     typedef Lagrange<N, RealDim, O, Scalar, continuity_type, T, Convex,  Pts, TheTAG> component_basis_type;
 
     typedef typename mpl::if_<mpl::equal_to<mpl::int_<nDim>, mpl::int_<1> >,
-                              mpl::identity<boost::none_t>,
-                              mpl::identity< Lagrange<N-1, RealDim, O, Scalar, continuity_type, T, Convex,  Pts, TheTAG> > >::type::type face_basis_type;
+            mpl::identity<boost::none_t>,
+            mpl::identity< Lagrange<N-1, RealDim, O, Scalar, continuity_type, T, Convex,  Pts, TheTAG> > >::type::type face_basis_type;
 
     typedef boost::shared_ptr<face_basis_type> face_basis_ptrtype;
 
@@ -337,12 +340,18 @@ public:
     /**
      * \return the reference convex associated with the lagrange polynomials
      */
-    reference_convex_type const& referenceConvex() const { return _M_refconvex; }
+    reference_convex_type const& referenceConvex() const
+    {
+        return _M_refconvex;
+    }
 
     /**
      * \return the family name of the finite element
      */
-    std::string familyName() const { return "lagrange"; }
+    std::string familyName() const
+    {
+        return "lagrange";
+    }
 
     //@}
 
@@ -360,10 +369,10 @@ public:
     template<typename ExprType>
     static auto
     isomorphism( ExprType& expr ) -> decltype( expr )
-        {
-            return expr;
-            //return expr;
-        }
+    {
+        return expr;
+        //return expr;
+    }
     //@}
 
 private:
@@ -409,8 +418,8 @@ public:
     struct apply
     {
         typedef typename mpl::if_<mpl::bool_<Convex::is_simplex>,
-                                  mpl::identity<fem::Lagrange<N,RealDim,Order,PolySetType,ContinuityType,T,Simplex, Pts, TheTAG > >,
-                                  mpl::identity<fem::Lagrange<N,RealDim,Order,PolySetType,ContinuityType,T,Hypercube, Pts, TheTAG> > >::type::type result_type;
+                mpl::identity<fem::Lagrange<N,RealDim,Order,PolySetType,ContinuityType,T,Simplex, Pts, TheTAG > >,
+                mpl::identity<fem::Lagrange<N,RealDim,Order,PolySetType,ContinuityType,T,Hypercube, Pts, TheTAG> > >::type::type result_type;
         typedef result_type type;
     };
 

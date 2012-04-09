@@ -35,14 +35,15 @@ ddmethodGeometryLeft( int RDim, double hsize )
 {
     std::ostringstream ostr;
     std::ostringstream nameStr;
-    gmsh_ptrtype gmshp( new Gmsh(RDim) );
+    gmsh_ptrtype gmshp( new Gmsh( RDim ) );
     gmshp->setOrder( GMSH_ORDER_ONE );
-    gmshp->setRecombine(false);
+    gmshp->setRecombine( false );
     gmshp->setCharacteristicLength( hsize );
     // ostr << gmshp->preamble() << "\n";
 
 
-     switch( RDim ) {
+    switch ( RDim )
+    {
     case 2:
 
         ostr<< "h =" << hsize <<";\n"
@@ -62,8 +63,9 @@ ddmethodGeometryLeft( int RDim, double hsize )
             << "Physical Line(3) = {1};\n"
             << "Physical Line(4) = {4};\n"
             << "Physical Surface(\"Mat1\") = {6};\n";
-     nameStr << "leftgeo2D";
+        nameStr << "leftgeo2D";
         break;
+
     case 3:
 
         ostr << "Point(1) = {a,0,0,h};\n"
@@ -79,15 +81,16 @@ ddmethodGeometryLeft( int RDim, double hsize )
              << "Physical Surface(\"Mat1\") = {6};\n";
         nameStr << "interface3D";
         break;
-     default:
-         std::ostringstream os;
-         os << "invalid dimension: " << RDim;
-         throw std::logic_error( os.str() );
-     }
 
-     gmshp->setPrefix( nameStr.str() );
-     gmshp->setDescription( ostr.str() );
-     return gmshp;
+    default:
+        std::ostringstream os;
+        os << "invalid dimension: " << RDim;
+        throw std::logic_error( os.str() );
+    }
+
+    gmshp->setPrefix( nameStr.str() );
+    gmshp->setDescription( ostr.str() );
+    return gmshp;
 }
 
 gmsh_ptrtype
@@ -95,14 +98,15 @@ ddmethodGeometryRight( int RDim, double hsize )
 {
     std::ostringstream ostr;
     std::ostringstream nameStr;
-    gmsh_ptrtype gmshp( new Gmsh(RDim) );
+    gmsh_ptrtype gmshp( new Gmsh( RDim ) );
     gmshp->setOrder( GMSH_ORDER_ONE );
-    gmshp->setRecombine(false);
+    gmshp->setRecombine( false );
     gmshp->setCharacteristicLength( hsize );
     // ostr << gmshp->preamble() << "\n";
 
 
-     switch( RDim ) {
+    switch ( RDim )
+    {
     case 2:
 
         ostr << "h =" << hsize <<";\n"
@@ -121,8 +125,9 @@ ddmethodGeometryRight( int RDim, double hsize )
              << "Physical Line(3) = {2};\n"
              << "Physical Line(4) = {3};\n"
              << "Physical Surface(\"Mat1\") = {6};\n";
-     nameStr << "rightgeo2D";
+        nameStr << "rightgeo2D";
         break;
+
     case 3:
 
         ostr << "Point(1) = {a,0,0,h};\n"
@@ -138,15 +143,16 @@ ddmethodGeometryRight( int RDim, double hsize )
              << "Physical Surface(\"Mat1\") = {6};\n";
         nameStr << "interface3D";
         break;
-     default:
-         std::ostringstream os;
-         os << "invalid dimension: " << RDim;
-         throw std::logic_error( os.str() );
-     }
 
-     gmshp->setPrefix( nameStr.str() );
-     gmshp->setDescription( ostr.str() );
-     return gmshp;
+    default:
+        std::ostringstream os;
+        os << "invalid dimension: " << RDim;
+        throw std::logic_error( os.str() );
+    }
+
+    gmshp->setPrefix( nameStr.str() );
+    gmshp->setDescription( ostr.str() );
+    return gmshp;
 }
 
 }

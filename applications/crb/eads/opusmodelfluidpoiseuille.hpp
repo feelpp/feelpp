@@ -97,7 +97,10 @@ public:
 
     void solve( element_type& T );
 
-    void setFluidFlowRate( double r ) { M_flow_rate = r; }
+    void setFluidFlowRate( double r )
+    {
+        M_flow_rate = r;
+    }
 private:
 
     po::variables_map vm;
@@ -109,7 +112,7 @@ private:
 
 template<typename SpaceType>
 OpusModelFluidPoiseuille<SpaceType>::OpusModelFluidPoiseuille(  po::variables_map const& _vm,
-                                                                functionspace_ptrtype const& Xh )
+        functionspace_ptrtype const& Xh )
     :
     super(),
     vm( _vm ),
@@ -136,10 +139,10 @@ void
 OpusModelFluidPoiseuille<SpaceType>::solve( element_type& U )
 {
     using namespace vf;
-    M_flow_rate = this->data()->component("AIR").flowRate();
-    double e_AIR = this->data()->component("AIR").e();
-    double e_PCB = this->data()->component("PCB").e();
-    double e_IC = this->data()->component("IC1").e();
+    M_flow_rate = this->data()->component( "AIR" ).flowRate();
+    double e_AIR = this->data()->component( "AIR" ).e();
+    double e_PCB = this->data()->component( "PCB" ).e();
+    double e_IC = this->data()->component( "IC1" ).e();
     //double L_IC = this->data()->component("IC1").h();
 
     Log() << "flow_rate = " << M_flow_rate << "\n";
@@ -147,21 +150,21 @@ OpusModelFluidPoiseuille<SpaceType>::solve( element_type& U )
     Log() << "e_PCB = " << e_PCB << "\n";
     Log() << "e_IC = " << e_IC << "\n";
 
-    AUTO( chi_AIR, chi( Px() >= e_PCB+e_IC) );
-    AUTO( ft, (constant(1.0-math::exp(-M_time/3.0 ) ) ) );
+    AUTO( chi_AIR, chi( Px() >= e_PCB+e_IC ) );
+    AUTO( ft, ( constant( 1.0-math::exp( -M_time/3.0 ) ) ) );
     //AUTO( ft, (constant(1.0)) );
-    AUTO( vy, (constant(3.)/(2.*(e_AIR-e_IC)))*M_flow_rate*(1.-vf::pow((Px()-((e_AIR+e_IC)/2+e_PCB))/((e_AIR-e_IC)/2),2)) );
+    AUTO( vy, ( constant( 3. )/( 2.*( e_AIR-e_IC ) ) )*M_flow_rate*( 1.-vf::pow( ( Px()-( ( e_AIR+e_IC )/2+e_PCB ) )/( ( e_AIR-e_IC )/2 ),2 ) ) );
     //double x_mid = e_PCB+(e_IC+e_AIR)/2;
     //AUTO( vy, (constant(3)/(2*e_AIR))*M_flow_rate*(1-vf::pow((Px()-(x_mid))/(e_AIR/2),2))*ft*chi_AIR );
 
     element_0_type u = U.template element<0>();
     u = vf::project( M_Xh->template functionSpace<0>(),
-                     markedelements(M_Xh->mesh(),M_Xh->mesh()->markerName( "AIR4" )),
-                     vec( constant(0.), vy*ft*chi_AIR ) );
+                     markedelements( M_Xh->mesh(),M_Xh->mesh()->markerName( "AIR4" ) ),
+                     vec( constant( 0. ), vy*ft*chi_AIR ) );
 
-    double intu = integrate( markedfaces(M_Xh->mesh(),
-                                         M_Xh->mesh()->markerName( "Gamma_4_AIR4" )),
-                             -trans(idv(u))*N() ).evaluate()(0,0);
+    double intu = integrate( markedfaces( M_Xh->mesh(),
+                                          M_Xh->mesh()->markerName( "Gamma_4_AIR4" ) ),
+                             -trans( idv( u ) )*N() ).evaluate()( 0,0 );
     double flowr = intu;
     Log() << "[poiseuille] D=" << flowr << " umax = " << u.linftyNorm() << "\n";
 }

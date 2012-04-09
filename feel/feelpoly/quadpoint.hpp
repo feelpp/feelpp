@@ -40,18 +40,18 @@ namespace Feel
 namespace ublas = boost::numeric::ublas;
 
 enum IntegrationFaceEnum
-    {
-        ALL_FACES = -1,
-        FACE_0 = 0,
-        FACE_1 = 1,
-        FACE_2,
-        FACE_3,
-        FACE_4,
-        FACE_5,
-        FACE_6,
-        FACE_7,
-        FACE_8
-    };
+{
+    ALL_FACES = -1,
+    FACE_0 = 0,
+    FACE_1 = 1,
+    FACE_2,
+    FACE_3,
+    FACE_4,
+    FACE_5,
+    FACE_6,
+    FACE_7,
+    FACE_8
+};
 
 /**
  * \class PointSetQuadrature
@@ -82,7 +82,7 @@ public :
     PointSetQuadrature(): super(), _M_w(), _M_prod(), _M_exprq() {}
 
     PointSetQuadrature( const PointSetQuadrature& Qp )
-        : super(Qp),
+        : super( Qp ),
           _M_w( Qp.weights() ),
           _M_w_face( Qp.allfweights() ),
           _M_n_face( Qp.allfpoints() ),
@@ -90,14 +90,14 @@ public :
           _M_exprq( Qp.nPoints() )
     {}
 
-    PointSetQuadrature(uint32_type Npoints)
-        : super(Npoints), _M_w(Npoints), _M_prod( Npoints ), _M_exprq( Npoints )
+    PointSetQuadrature( uint32_type Npoints )
+        : super( Npoints ), _M_w( Npoints ), _M_prod( Npoints ), _M_exprq( Npoints )
     {}
 
-    PointSetQuadrature(weights_type Wts)
+    PointSetQuadrature( weights_type Wts )
         :
-        super(Wts.size()),
-        _M_w(Wts),
+        super( Wts.size() ),
+        _M_w( Wts ),
         _M_prod( Wts.size() ),
         _M_exprq( Wts.size() )
     {}
@@ -106,28 +106,38 @@ public :
     virtual ~PointSetQuadrature()
     {}
 
-    virtual bool isFaceIm() const { return is_face_im; }
+    virtual bool isFaceIm() const
+    {
+        return is_face_im;
+    }
 
     self_type& operator=( self_type const& q )
     {
         if ( this != &q )
-            {
-                super::operator=( q );
-                _M_w = q._M_w;
-                _M_w_face = q._M_w_face;
-                _M_n_face = q._M_n_face;
-                _M_prod = q._M_prod;
-                _M_exprq = q._M_exprq;
-            }
+        {
+            super::operator=( q );
+            _M_w = q._M_w;
+            _M_w_face = q._M_w_face;
+            _M_n_face = q._M_n_face;
+            _M_prod = q._M_prod;
+            _M_exprq = q._M_exprq;
+        }
+
         return *this;
     }
 
     /** Face Quadrature Discussion **/
 
 
-    std::vector<weights_type> const& allfweights() const {return _M_w_face;}
+    std::vector<weights_type> const& allfweights() const
+    {
+        return _M_w_face;
+    }
 
-    std::vector<nodes_type> const& allfpoints() const {return _M_n_face;}
+    std::vector<nodes_type> const& allfpoints() const
+    {
+        return _M_n_face;
+    }
 
 
     /**
@@ -137,6 +147,7 @@ public :
     {
         if ( __f == uint16_type( -1 ) )
             return _M_w;
+
         return _M_w_face[__f];
     }
 
@@ -147,6 +158,7 @@ public :
     {
         if ( __f == uint16_type( -1 ) )
             return this->points();
+
         return _M_n_face[__f];
     }
 
@@ -172,11 +184,23 @@ public :
     //size_type nFaces() const { return _M_n_face.size(); }
     //size_type nPointsOnFace( int __face = 0 ) const { return _M_n_face[__face].size2(); }
 
-    weights_type const& weights() const { return _M_w; }
-    value_type const& weight( int q ) const { return _M_w[q]; }
+    weights_type const& weights() const
+    {
+        return _M_w;
+    }
+    value_type const& weight( int q ) const
+    {
+        return _M_w[q];
+    }
 
-    size_type nFaces() const { return _M_n_face.size(); }
-    size_type nPointsOnFace( int __face = 0 ) const { return _M_n_face[__face].size2(); }
+    size_type nFaces() const
+    {
+        return _M_n_face.size();
+    }
+    size_type nPointsOnFace( int __face = 0 ) const
+    {
+        return _M_n_face[__face].size2();
+    }
 
     /**
      * Integrate the function \p f over the convex associated with the
@@ -191,12 +215,14 @@ public :
         //BOOST_MPL_ASSERT_MSG( ( boost::is_same<value_type,qd_real>::value ), INVALID_TYPE, (value_type) );
         //node_type res( this->weights()[0]*f( this->point(0) ) );
         value_type res( 0.0 );
-        for ( uint32_type k = 0;k < this->nPoints(); ++k )
-            {
 
-                value_type fk = f( k );
-                res += this->weights()[k]*fk;
-            }
+        for ( uint32_type k = 0; k < this->nPoints(); ++k )
+        {
+
+            value_type fk = f( k );
+            res += this->weights()[k]*fk;
+        }
+
         return res;
     }
 
@@ -211,8 +237,10 @@ public :
     {
         //node_type res( this->weights()[0]*f( this->point(0) ) );
         value_type res( 0.0 );
-        for ( uint32_type k = 0;k < this->nPoints(); ++k )
-            res += this->weights()[k]*f( this->point(k) );
+
+        for ( uint32_type k = 0; k < this->nPoints(); ++k )
+            res += this->weights()[k]*f( this->point( k ) );
+
         return res;
     }
 
@@ -228,26 +256,31 @@ public :
     {
         //std::cout << "integrating using " << nNodes << "\n";
         FEELPP_ASSERT(  __face == ALL_FACES || ( __face >= 0 && __face < nFaces() ) )
-            ( __face )( nFaces() ).error( "invalid face index (can be ALL_FACE or FACE_0 <= f < nFaces()" );
-        value_type res(0.0);
+        ( __face )( nFaces() ).error( "invalid face index (can be ALL_FACE or FACE_0 <= f < nFaces()" );
+        value_type res( 0.0 );
+
         if ( __face != ALL_FACES )
-            {
-                // integrate on face f
-                for ( uint32_type k = 0;k < this->nPointsOnFace(__face); ++k )
-                    res += this->weight(__face, k)*f( k );
-            }
+        {
+            // integrate on face f
+            for ( uint32_type k = 0; k < this->nPointsOnFace( __face ); ++k )
+                res += this->weight( __face, k )*f( k );
+        }
+
         else
+        {
+            // integrate on all faces
+            for ( uint16_type i = 0; i < this->nFaces(); ++i )
             {
-                // integrate on all faces
-                for ( uint16_type i = 0; i < this->nFaces(); ++i )
-                    {
-                        value_type __res_face( 0.0 );
-                        for ( uint32_type k = 0;k < this->nPointsOnFace(i); ++k )
-                            __res_face += this->weight(i, k)*f( k );
-                        //std::cout << "res on face " << i << " = " << __res_face << "\n";
-                        res += __res_face;
-                    }
+                value_type __res_face( 0.0 );
+
+                for ( uint32_type k = 0; k < this->nPointsOnFace( i ); ++k )
+                    __res_face += this->weight( i, k )*f( k );
+
+                //std::cout << "res on face " << i << " = " << __res_face << "\n";
+                res += __res_face;
             }
+        }
+
         return res;
     }
     /**
@@ -260,31 +293,36 @@ public :
     value_type integrateAtPoints( IntegrationFaceEnum __face,
                                   Expression const& f ) const
     {
-        Debug( 5048 ) << "[PointSetQuadrature] face " << int(__face)<< " integration\n";
+        Debug( 5048 ) << "[PointSetQuadrature] face " << int( __face )<< " integration\n";
         //std::cout << "integrating using " << nNodes << "\n";
-        FEELPP_ASSERT(  int(__face) == int(ALL_FACES) ||
-                      ( int(__face) >= 0 &&
-                        int(__face) < int(nFaces()) ) )
-            ( __face )( nFaces() ).error( "invalid face index (can be ALL_FACE or FACE_0 <= f < nFaces()" );
-        value_type res(0.0);
+        FEELPP_ASSERT(  int( __face ) == int( ALL_FACES ) ||
+                        ( int( __face ) >= 0 &&
+                          int( __face ) < int( nFaces() ) ) )
+        ( __face )( nFaces() ).error( "invalid face index (can be ALL_FACE or FACE_0 <= f < nFaces()" );
+        value_type res( 0.0 );
+
         if ( __face != ALL_FACES )
-            {
-                // integrate on face f
-                for ( uint32_type k = 0;k < this->nPointsOnFace(__face); ++k )
-                    res += this->weight(__face, k)*f( this->fpoint(__face, k) );
-            }
+        {
+            // integrate on face f
+            for ( uint32_type k = 0; k < this->nPointsOnFace( __face ); ++k )
+                res += this->weight( __face, k )*f( this->fpoint( __face, k ) );
+        }
+
         else
+        {
+            // integrate on all faces
+            for ( uint16_type i = 0; i < this->nFaces(); ++i )
             {
-                // integrate on all faces
-                for ( uint16_type i = 0; i < this->nFaces(); ++i )
-                    {
-                        value_type __res_face( 0.0 );
-                        for ( uint32_type k = 0;k < this->nPointsOnFace(i); ++k )
-                            __res_face += this->weight(i, k)*f( this->fpoint(i, k) );
-                        //std::cout << "res on face " << i << " = " << __res_face << "\n";
-                        res += __res_face;
-                    }
+                value_type __res_face( 0.0 );
+
+                for ( uint32_type k = 0; k < this->nPointsOnFace( i ); ++k )
+                    __res_face += this->weight( i, k )*f( this->fpoint( i, k ) );
+
+                //std::cout << "res on face " << i << " = " << __res_face << "\n";
+                res += __res_face;
             }
+        }
+
         return res;
     }
 
@@ -295,10 +333,11 @@ public :
                            uint16_type c1,
                            uint16_type c2 ) const
     {
-        for( uint16_type q = 0; q < this->nPoints(); ++q )
+        for ( uint16_type q = 0; q < this->nPoints(); ++q )
         {
             _M_exprq[q] = expr.evalijq( indi, indj, c1, c2, q );
         }
+
         return _M_prod.dot( _M_exprq );
     }
     template<typename IndexTest, typename ExprType>
@@ -307,10 +346,11 @@ public :
                            uint16_type c1,
                            uint16_type c2 ) const
     {
-        for( uint16_type q = 0; q < this->nPoints(); ++q )
-            {
-                _M_exprq[q] = expr.evaliq( indi, c1, c2, q );
-            }
+        for ( uint16_type q = 0; q < this->nPoints(); ++q )
+        {
+            _M_exprq[q] = expr.evaliq( indi, c1, c2, q );
+        }
+
         return _M_prod.dot( _M_exprq );
     }
 
@@ -319,10 +359,11 @@ public :
                            uint16_type c1,
                            uint16_type c2 ) const
     {
-        for( uint16_type q = 0; q < this->nPoints(); ++q )
-            {
-                _M_exprq[q] = expr.evalq( c1, c2, q );
-            }
+        for ( uint16_type q = 0; q < this->nPoints(); ++q )
+        {
+            _M_exprq[q] = expr.evalq( c1, c2, q );
+        }
+
         return _M_prod.dot( _M_exprq );
     }
     template<typename IndexTest, typename IndexTrial, typename ExprType>
@@ -333,14 +374,15 @@ public :
                            uint16_type c2,
                            std::vector<boost::tuple<size_type,size_type> > const& indexLocalToQuad ) const
     {
-        value_type res = value_type(0);
+        value_type res = value_type( 0 );
 
-        for( uint16_type q = 0; q < indexLocalToQuad.size(); ++q )
-            {
-                auto qReal = indexLocalToQuad[q].get<0>();
-                const value_type val_expr = expr.evalijq( indi, indj, c1, c2, q );
-                res += _M_prod[qReal]*val_expr;
-            }
+        for ( uint16_type q = 0; q < indexLocalToQuad.size(); ++q )
+        {
+            auto qReal = indexLocalToQuad[q].get<0>();
+            const value_type val_expr = expr.evalijq( indi, indj, c1, c2, q );
+            res += _M_prod[qReal]*val_expr;
+        }
+
         return res;
     }
     template<typename IndexTest, typename ExprType>
@@ -350,14 +392,15 @@ public :
                            uint16_type c2,
                            std::vector<boost::tuple<size_type,size_type> > const& indexLocalToQuad ) const
     {
-        value_type res = value_type(0);
+        value_type res = value_type( 0 );
 
-        for( uint16_type q = 0; q < indexLocalToQuad.size(); ++q )
-            {
-                auto qReal = indexLocalToQuad[q].get<0>();
-                const value_type val_expr = expr.evaliq( indi, c1, c2, q );
-                res += _M_prod[qReal]*val_expr;
-            }
+        for ( uint16_type q = 0; q < indexLocalToQuad.size(); ++q )
+        {
+            auto qReal = indexLocalToQuad[q].get<0>();
+            const value_type val_expr = expr.evaliq( indi, c1, c2, q );
+            res += _M_prod[qReal]*val_expr;
+        }
+
         return res;
     }
 
@@ -365,15 +408,16 @@ public :
     void update( GMC const& gmc )
     {
         if ( this->isFaceIm() )
-            for( uint16_type q = 0; q < this->nPoints(); ++q )
-                {
-                    _M_prod[q] = _M_w( q )*gmc.J(q)*gmc.normalNorm(q);
-                }
+            for ( uint16_type q = 0; q < this->nPoints(); ++q )
+            {
+                _M_prod[q] = _M_w( q )*gmc.J( q )*gmc.normalNorm( q );
+            }
+
         else
-            for( uint16_type q = 0; q < this->nPoints(); ++q )
-                {
-                    _M_prod[q] = _M_w( q )*gmc.J(q);
-                }
+            for ( uint16_type q = 0; q < this->nPoints(); ++q )
+            {
+                _M_prod[q] = _M_w( q )*gmc.J( q );
+            }
     }
 
     template<typename GMC>
@@ -382,29 +426,30 @@ public :
     {
 
         if ( this->isFaceIm() )
-            for( uint16_type q = 0; q < indexLocalToQuad.size(); ++q )
-                {
-                    auto qReal = indexLocalToQuad[q].get<0>();
-                    _M_prod[qReal] = _M_w( qReal )*gmc.J(q)*gmc.normalNorm(q);
-                }
+            for ( uint16_type q = 0; q < indexLocalToQuad.size(); ++q )
+            {
+                auto qReal = indexLocalToQuad[q].get<0>();
+                _M_prod[qReal] = _M_w( qReal )*gmc.J( q )*gmc.normalNorm( q );
+            }
+
         else
-            for( uint16_type q = 0; q < indexLocalToQuad.size(); ++q )
-                {
-                    auto qReal = indexLocalToQuad[q].get<0>();
-                    _M_prod[qReal] = _M_w( qReal )*gmc.J(q);
-                }
+            for ( uint16_type q = 0; q < indexLocalToQuad.size(); ++q )
+            {
+                auto qReal = indexLocalToQuad[q].get<0>();
+                _M_prod[qReal] = _M_w( qReal )*gmc.J( q );
+            }
     }
 
 
     class Face
         :
-        public PointSetQuadrature<typename Convex::topological_face_type,
-                                  Integration_Degree,
-                                  T>
+    public PointSetQuadrature<typename Convex::topological_face_type,
+        Integration_Degree,
+        T>
     {
         typedef PointSetQuadrature<typename Convex::topological_face_type,
-                                   Integration_Degree,
-                                   T> super;
+                Integration_Degree,
+                T> super;
     public:
         typedef super parent_quadrature_type;
         static const bool is_face_im = true;
@@ -419,8 +464,8 @@ public :
             super(),
             _M_f( f )
         {
-            this->setPoints( quad_elt.fpoints(f) );
-            this->setWeights( quad_elt.weights(f) );
+            this->setPoints( quad_elt.fpoints( f ) );
+            this->setWeights( quad_elt.weights( f ) );
 
         }
         Face( Face const& f )
@@ -432,40 +477,55 @@ public :
         Face& operator=( Face const& f )
         {
             if ( this != &f )
-                {
-                    super::operator=( f );
-                    _M_f = f._M_f;
-                }
+            {
+                super::operator=( f );
+                _M_f = f._M_f;
+            }
+
             return *this;
         }
-        bool isFaceIm() const { return is_face_im; }
-        uint16_type face() const { return _M_f; }
+        bool isFaceIm() const
+        {
+            return is_face_im;
+        }
+        uint16_type face() const
+        {
+            return _M_f;
+        }
     private:
         uint16_type _M_f;
     };
 
     typedef Face face_quadrature_type;
-    face_quadrature_type face( uint16_type f ) const { return Face( *this, f ); }
+    face_quadrature_type face( uint16_type f ) const
+    {
+        return Face( *this, f );
+    }
 
     FEELPP_DEFINE_VISITABLE();
 
 protected:
 
-    void setWeights( weights_type const& w ) { _M_prod.resize( w.size() ); _M_exprq.resize( w.size() ); _M_w = w; }
-
-    template<typename Elem, typename GM, typename IM>
-    void constructQROnFace(Elem const& ref_convex,
-                           boost::shared_ptr<GM> const& __gm,
-                           boost::shared_ptr<IM> const& __qr_face )
+    void setWeights( weights_type const& w )
     {
-        constructQROnFace(ref_convex, __gm, __qr_face, mpl::bool_<(Convex::nDim > 1)>() );
+        _M_prod.resize( w.size() );
+        _M_exprq.resize( w.size() );
+        _M_w = w;
     }
 
     template<typename Elem, typename GM, typename IM>
-    void constructQROnFace(Elem const& /*ref_convex*/,
-                           boost::shared_ptr<GM> const& /*__gm*/,
-                           boost::shared_ptr<IM> const& /*__qr_face*/,
-                           mpl::bool_<false> )
+    void constructQROnFace( Elem const& ref_convex,
+                            boost::shared_ptr<GM> const& __gm,
+                            boost::shared_ptr<IM> const& __qr_face )
+    {
+        constructQROnFace( ref_convex, __gm, __qr_face, mpl::bool_<( Convex::nDim > 1 )>() );
+    }
+
+    template<typename Elem, typename GM, typename IM>
+    void constructQROnFace( Elem const& /*ref_convex*/,
+                            boost::shared_ptr<GM> const& /*__gm*/,
+                            boost::shared_ptr<IM> const& /*__qr_face*/,
+                            mpl::bool_<false> )
     {
         BOOST_STATIC_ASSERT( Elem::nDim == 1 );
         _M_n_face.resize( Elem::numTopologicalFaces );
@@ -484,10 +544,10 @@ protected:
     }
 
     template<typename Elem, typename GM, typename IM>
-    void constructQROnFace(Elem const& ref_convex,
-                           boost::shared_ptr<GM> const& __gm,
-                           boost::shared_ptr<IM> const& __qr_face,
-                           mpl::bool_<true> );
+    void constructQROnFace( Elem const& ref_convex,
+                            boost::shared_ptr<GM> const& __gm,
+                            boost::shared_ptr<IM> const& __qr_face,
+                            mpl::bool_<true> );
 
 protected:
 
@@ -505,9 +565,9 @@ template<class Convex, uint16_type Integration_Degree, typename T>
 template<typename Elem, typename GM, typename IM>
 void
 PointSetQuadrature<Convex,Integration_Degree,T>::constructQROnFace( Elem const& ref_convex,
-                                                                    boost::shared_ptr<GM> const& __gm,
-                                                                    boost::shared_ptr<IM> const& __qr_face,
-                                                                    mpl::bool_<true>  )
+        boost::shared_ptr<GM> const& __gm,
+        boost::shared_ptr<IM> const& __qr_face,
+        mpl::bool_<true>  )
 {
     _M_n_face.resize( Elem::numTopologicalFaces );
     _M_w_face.resize( Elem::numTopologicalFaces );
@@ -519,45 +579,46 @@ PointSetQuadrature<Convex,Integration_Degree,T>::constructQROnFace( Elem const& 
     typedef typename GM::face_gm_type::precompute_ptrtype face_pc_ptrtype;
     face_pc_ptrtype __geopc( new face_pc_type( __gm->boundaryMap(),__qr_face->points() ) );
 
-    for ( uint16_type __f = 0;__f < Elem::numTopologicalFaces;++__f )
+    for ( uint16_type __f = 0; __f < Elem::numTopologicalFaces; ++__f )
+    {
+        typedef typename Elem::topological_face_type  element_type;
+        element_type ref_convex_face = ref_convex.topologicalFace( __f );
+        Debug( 5048 ) << "[quadpt] ref_convex_face "  << __f << "=" << ref_convex_face.points() << "\n";
+        //toPython( ref_convex_face );
+
+        typename GM::template Context<vm::JACOBIAN|vm::POINT|vm::KB,element_type> __c( __gm->boundaryMap(),
+                ref_convex_face,
+                __geopc );
+        __c.update( ref_convex_face );
+        Debug( 5048 ) << "[quadpt] ref_convex_face "  << __f << " xref" << __c.xRefs() << "\n";
+        Debug( 5048 ) << "[quadpt] ref_convex_face "  << __f << " xreal" << __c.xReal() << "\n";
+
+        value_type __len = 0.0;
+        _M_n_face[__f].resize( Elem::nDim, __qr_face->nPoints() );
+        _M_w_face[__f].resize( __qr_face->nPoints() );
+        Debug( 5048 ) << "[PointSetQuadrature::constructQROnFace] npoints on face "
+                      << __f << " : "
+                      << __qr_face->nPoints() << "\n";
+        // transform the quad nodes on the boundary _reference_
+        // element to the face of the reference element face
+
+        for ( uint16_type __ip = 0; __ip < __qr_face->nPoints(); ++__ip )
         {
-            typedef typename Elem::topological_face_type  element_type;
-            element_type ref_convex_face = ref_convex.topologicalFace( __f );
-            Debug( 5048 ) << "[quadpt] ref_convex_face "  << __f << "=" << ref_convex_face.points() << "\n";
-            //toPython( ref_convex_face );
+            ublas::column( _M_n_face[__f], __ip ) = __c.xReal( __ip );
 
-            typename GM::template Context<vm::JACOBIAN|vm::POINT|vm::KB,element_type> __c( __gm->boundaryMap(),
-                                                                                           ref_convex_face,
-                                                                                           __geopc );
-            __c.update( ref_convex_face );
-            Debug( 5048 ) << "[quadpt] ref_convex_face "  << __f << " xref" << __c.xRefs() << "\n";
-            Debug( 5048 ) << "[quadpt] ref_convex_face "  << __f << " xreal" << __c.xReal() << "\n";
+            // w = w_face * ||B*n|| * J
+            _M_w_face[ __f]( __ip ) = __qr_face->weight( __ip )*__c.J( __ip );
 
-            value_type __len = 0.0;
-            _M_n_face[__f].resize( Elem::nDim, __qr_face->nPoints() );
-            _M_w_face[__f].resize( __qr_face->nPoints() );
-            Debug( 5048 ) << "[PointSetQuadrature::constructQROnFace] npoints on face "
-                          << __f << " : "
-                          << __qr_face->nPoints() << "\n";
-            // transform the quad nodes on the boundary _reference_
-            // element to the face of the reference element face
-
-            for ( uint16_type __ip = 0; __ip < __qr_face->nPoints();++__ip )
-                {
-                    ublas::column( _M_n_face[__f], __ip ) = __c.xReal(__ip);
-
-                    // w = w_face * ||B*n|| * J
-                    _M_w_face[ __f]( __ip ) = __qr_face->weight( __ip )*__c.J(__ip);
-
-                    __len += _M_w_face[ __f]( __ip );
-                    Debug( 5048 ) << "face " << __f << " ip = " << __ip << "       J =" << __c.J( __ip ) << "\n";
-                    Debug( 5048 ) << "face " << __f << " ip = " << __ip << "  weight =" << __qr_face->weight( __ip ) << "\n";
-                    Debug( 5048 ) << "face " << __f << " ip = " << __ip << "  weight =" << _M_w_face[ __f]( __ip ) << "\n";
-                    //            Debug( 5048 ) << "face " << __f << " ip = " << __ip << "  x  ref =" << __c.xRef( __ip ) << "\n";
-                    //            Debug( 5048 ) << "face " << __f << " ip = " << __ip << "  x real =" << __c.xReal( __ip ) << "\n";
-                }
-            Debug( 5048 ) << "length = " << __len << "\n";
+            __len += _M_w_face[ __f]( __ip );
+            Debug( 5048 ) << "face " << __f << " ip = " << __ip << "       J =" << __c.J( __ip ) << "\n";
+            Debug( 5048 ) << "face " << __f << " ip = " << __ip << "  weight =" << __qr_face->weight( __ip ) << "\n";
+            Debug( 5048 ) << "face " << __f << " ip = " << __ip << "  weight =" << _M_w_face[ __f]( __ip ) << "\n";
+            //            Debug( 5048 ) << "face " << __f << " ip = " << __ip << "  x  ref =" << __c.xRef( __ip ) << "\n";
+            //            Debug( 5048 ) << "face " << __f << " ip = " << __ip << "  x real =" << __c.xReal( __ip ) << "\n";
         }
+
+        Debug( 5048 ) << "length = " << __len << "\n";
+    }
 }
 
 
@@ -574,12 +635,14 @@ std::ostream& operator<<( std::ostream& os,
        << "number of points: " << qps.nPoints() << "\n"
        << "points :  " << qps.points() << "\n"
        << "weights :  " << qps.weights() << "\n";
-    for ( Feel::uint16_type f = 0;f < qps.nFaces(); ++f )
-        {
-            os << " o Face " << f << "\n";
-            os << qps.fpoints(f) << "\n";
-            os << qps.weights(f) << "\n";
-        }
+
+    for ( Feel::uint16_type f = 0; f < qps.nFaces(); ++f )
+    {
+        os << " o Face " << f << "\n";
+        os << qps.fpoints( f ) << "\n";
+        os << qps.weights( f ) << "\n";
+    }
+
     return os;
 }
 

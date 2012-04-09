@@ -45,15 +45,15 @@ inline
 Feel::po::options_description
 makeOptions()
 {
-    Feel::po::options_description bratuoptions("Bratu problem options");
+    Feel::po::options_description bratuoptions( "Bratu problem options" );
     bratuoptions.add_options()
-        ("lambda", Feel::po::value<double>()->default_value( 1 ), "exp() coefficient value for the Bratu problem")
+    ( "lambda", Feel::po::value<double>()->default_value( 1 ), "exp() coefficient value for the Bratu problem" )
 
-        ("penalbc", Feel::po::value<double>()->default_value( 10 ), "penalisation parameter for the weak boundary conditions")
-        ("hsize", Feel::po::value<double>()->default_value( 0.5 ), "first h value to start convergence")
+    ( "penalbc", Feel::po::value<double>()->default_value( 10 ), "penalisation parameter for the weak boundary conditions" )
+    ( "hsize", Feel::po::value<double>()->default_value( 0.5 ), "first h value to start convergence" )
 
-        ("export-matlab", "export matrix and vectors in matlab" )
-        ;
+    ( "export-matlab", "export matrix and vectors in matlab" )
+    ;
     return bratuoptions.add( Feel::feel_options() );
 }
 inline
@@ -65,9 +65,9 @@ makeAbout()
                            "0.1",
                            "nD(n=1,2,3) Bratu problem",
                            Feel::AboutData::License_GPL,
-                           "Copyright (c) 2008-2009 Université Joseph Fourier");
+                           "Copyright (c) 2008-2009 Université Joseph Fourier" );
 
-    about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
     return about;
 
 }
@@ -86,7 +86,7 @@ template<int Dim,
          template<uint16_type,uint16_type,uint16_type> class Entity = Simplex>
 class Bratu
     :
-        public Application
+public Application
 {
     typedef Application super;
 public:
@@ -144,7 +144,7 @@ public:
 
 
     void updateResidual( const vector_ptrtype& X, vector_ptrtype& R );
-    void updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J);
+    void updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J );
 
 private:
 
@@ -178,10 +178,10 @@ Bratu<Dim,Order,Entity>::Bratu( int argc, char** argv, AboutData const& ad, po::
 {
 
     if ( this->vm().count( "help" ) )
-        {
-            std::cout << this->optionsDescription() << "\n";
-            return;
-        }
+    {
+        std::cout << this->optionsDescription() << "\n";
+        return;
+    }
 
     this->changeRepository( boost::format( "doc/tutorial/%1%/%2%/P%3%/h_%4%/lambda_%5%" )
                             % this->about().appName()
@@ -189,15 +189,15 @@ Bratu<Dim,Order,Entity>::Bratu( int argc, char** argv, AboutData const& ad, po::
                             % Order
                             % this->vm()["hsize"].template as<double>()
                             % this->vm()["lambda"].template as<double>()
-                            );
+                          );
 
     mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
                                         _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
-                                        _desc=domain( _name= (boost::format( "%1%-%2%-%3%" ) % "hypercube" % Dim % 1).str() ,
-                                                      _shape="hypercube",
-                                                      _dim=Dim,
-                                                      _order=1,
-                                                      _h=meshSize ),
+                                        _desc=domain( _name= ( boost::format( "%1%-%2%-%3%" ) % "hypercube" % Dim % 1 ).str() ,
+                                                _shape="hypercube",
+                                                _dim=Dim,
+                                                _order=1,
+                                                _h=meshSize ),
                                         _partitions=this->comm().size()  );
 
     M_Xh = functionspace_ptrtype( functionspace_type::New( mesh ) );
@@ -219,21 +219,21 @@ Bratu<Dim, Order, Entity>::updateResidual( const vector_ptrtype& X, vector_ptrty
     element_type v( M_Xh, "v" );
 
     u = *X;
-    auto g = constant(0.0);
+    auto g = constant( 0.0 );
 
-    form1( _test=M_Xh, _vector=R ) = integrate( elements( mesh ), gradv(u)*trans(grad(v)) );
-    form1( _test=M_Xh, _vector=R ) +=  integrate( elements( mesh ),  M_lambda*exp(idv(u))*id(v) );
-    form1( _test=M_Xh, _vector=R ) +=  integrate( boundaryfaces(mesh),
-                                                  ( - trans(id(v))*(gradv(u)*N())
-                                                    - trans(idv(u))*(grad(v)*N())
-                                                    + penalisation_bc*trans(idv(u))*id(v)/hFace())-
-                                                  g*( - grad(v)*N() + penalisation_bc*id(v)/hFace() ) );
+    form1( _test=M_Xh, _vector=R ) = integrate( elements( mesh ), gradv( u )*trans( grad( v ) ) );
+    form1( _test=M_Xh, _vector=R ) +=  integrate( elements( mesh ),  M_lambda*exp( idv( u ) )*id( v ) );
+    form1( _test=M_Xh, _vector=R ) +=  integrate( boundaryfaces( mesh ),
+                                       ( - trans( id( v ) )*( gradv( u )*N() )
+                                         - trans( idv( u ) )*( grad( v )*N() )
+                                         + penalisation_bc*trans( idv( u ) )*id( v )/hFace() )-
+                                       g*( - grad( v )*N() + penalisation_bc*id( v )/hFace() ) );
     R->close();
     Log() << "[updateResidual] done in " << ti.elapsed() << "s\n";
 }
 template<int Dim, int Order, template<uint16_type,uint16_type,uint16_type> class Entity>
 void
-Bratu<Dim, Order, Entity>::updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J)
+Bratu<Dim, Order, Entity>::updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J )
 {
     boost::timer ti;
     Log() << "[updateJacobian] start\n";
@@ -241,8 +241,10 @@ Bratu<Dim, Order, Entity>::updateJacobian( const vector_ptrtype& X, sparse_matri
     element_type u( M_Xh, "u" );
     element_type v( M_Xh, "v" );
     u = *X;
+
     if ( !J ) J = M_backend->newMatrix( M_Xh, M_Xh );
-    form2( _test=M_Xh, _trial=M_Xh, _matrix=J ) = integrate( elements( mesh ), M_lambda*(exp(idv(u)))*idt(u)*id(v) );
+
+    form2( _test=M_Xh, _trial=M_Xh, _matrix=J ) = integrate( elements( mesh ), M_lambda*( exp( idv( u ) ) )*idt( u )*id( v ) );
     J->addMatrix( 1.0, M_oplin->mat() );
     Log() << "[updateJacobian] done in " << ti.elapsed() << "s\n";
 }
@@ -260,17 +262,17 @@ Bratu<Dim, Order, Entity>::run()
     value_type penalisation_bc = this->vm()["penalbc"].template as<value_type>();
 
     M_oplin = opLinear( _domainSpace=M_Xh, _imageSpace=M_Xh, _backend=M_backend );
-    *M_oplin = integrate( elements( mesh ), gradt(u)*trans(grad(v)) );
-    *M_oplin += integrate( boundaryfaces(mesh),
-                           ( - trans(id(v))*(gradt(u)*N())
-                             - trans(idt(u))*(grad(v)*N())
-                             + penalisation_bc*trans(idt(u))*id(v)/hFace()) );
+    *M_oplin = integrate( elements( mesh ), gradt( u )*trans( grad( v ) ) );
+    *M_oplin += integrate( boundaryfaces( mesh ),
+                           ( - trans( id( v ) )*( gradt( u )*N() )
+                             - trans( idt( u ) )*( grad( v )*N() )
+                             + penalisation_bc*trans( idt( u ) )*id( v )/hFace() ) );
     M_oplin->close();
 
     M_backend->nlSolver()->residual = boost::bind( &self_type::updateResidual, boost::ref( *this ), _1, _2 );
     M_backend->nlSolver()->jacobian = boost::bind( &self_type::updateJacobian, boost::ref( *this ), _1, _2 );
 
-    u = vf::project( M_Xh, elements(mesh), constant(0.) );
+    u = vf::project( M_Xh, elements( mesh ), constant( 0. ) );
 
     M_backend->nlSolve( _solution=u );
 
@@ -287,9 +289,9 @@ Bratu<Dim, Order, Entity>::exportResults( element_type& U )
     if ( exporter->doExport() )
     {
         Log() << "exportResults starts\n";
-        exporter->step(0)->setMesh( U.functionSpace()->mesh() );
-        exporter->step(0)->addRegions();
-        exporter->step(0)->add( "u", U );
+        exporter->step( 0 )->setMesh( U.functionSpace()->mesh() );
+        exporter->step( 0 )->addRegions();
+        exporter->step( 0 )->add( "u", U );
         exporter->save();
     }
 } // Bratu::export

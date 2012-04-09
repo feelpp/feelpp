@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -39,16 +39,16 @@ EthierSteinman::oseenUpdateInit( Oseen<space_u_type, space_p_type, imOrder, ENTI
 {
     using namespace Feel::vf;
 
-    oseen.update( /* itRan = */ elements(*mesh),
-                  /* sigma = */ 1.0/dt,
-                  /* nuInc = */ M_mu,
-                  /* nuAbs = */ 0.0,
-                  /* beta  = */ oneX()-oneX(),
-                  /* f     = */ oneX()-oneX(),
-                  /* c     = */ 0.0,
-                  /* g     = */ oneX()-oneX(),
-                  /* noSlip= */ 0.0,
-                  /* updtJ = */ false );
+    oseen.update( /* itRan = */ elements( *mesh ),
+                                /* sigma = */ 1.0/dt,
+                                /* nuInc = */ M_mu,
+                                /* nuAbs = */ 0.0,
+                                /* beta  = */ oneX()-oneX(),
+                                /* f     = */ oneX()-oneX(),
+                                /* c     = */ 0.0,
+                                /* g     = */ oneX()-oneX(),
+                                /* noSlip= */ 0.0,
+                                /* updtJ = */ false );
 }
 
 } // Feel

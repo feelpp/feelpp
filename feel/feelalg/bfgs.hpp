@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -68,73 +68,77 @@ struct BFGSInvHessian
 
 
     BFGSInvHessian( BFGSType v = BFGS )
-        {
-            version = v;
-        }
+    {
+        version = v;
+    }
 
     template<typename VEC1, typename VEC2>
-    void hmult(const VEC1 &X, VEC2 &Y)
-        {
-            Y.assign(  X );
-            for (size_type k = 0 ; k < delta.size(); ++k)
-            {
-                T xdelta = ublas::inner_prod( X, delta[k] );
-                T xzeta = ublas::inner_prod( X, zeta[k] );
+    void hmult( const VEC1 &X, VEC2 &Y )
+    {
+        Y.assign(  X );
 
-                switch (version)
-                {
-                    case BFGS :
-                        Y.plus_assign( rho[k]*xdelta*zeta[k] );
-                        Y.plus_assign( rho[k]*(xzeta-rho[k]*tau[k]*xdelta )*delta[k] );
-                        break;
-                    case DFP :
-                        Y.plus_assign( rho[k]*xdelta*delta[k] );
-                        Y.minus_assign( xzeta/tau[k]*zeta[k] );
-                        break;
-                }
+        for ( size_type k = 0 ; k < delta.size(); ++k )
+        {
+            T xdelta = ublas::inner_prod( X, delta[k] );
+            T xzeta = ublas::inner_prod( X, zeta[k] );
+
+            switch ( version )
+            {
+            case BFGS :
+                Y.plus_assign( rho[k]*xdelta*zeta[k] );
+                Y.plus_assign( rho[k]*( xzeta-rho[k]*tau[k]*xdelta )*delta[k] );
+                break;
+
+            case DFP :
+                Y.plus_assign( rho[k]*xdelta*delta[k] );
+                Y.minus_assign( xzeta/tau[k]*zeta[k] );
+                break;
             }
         }
+    }
 
-    void restart(void)
-        {
-            delta.clear();
-            gamma.clear();
-            zeta.clear();
-            tau.clear();
-            rho.clear();
-        }
+    void restart( void )
+    {
+        delta.clear();
+        gamma.clear();
+        zeta.clear();
+        tau.clear();
+        rho.clear();
+    }
 
     template<typename VECT1, typename VECT2>
-    void update(const VECT1 &deltak, const VECT2 &gammak)
-        {
-            size_type N = deltak.size();
-            size_type k = delta.size();
+    void update( const VECT1 &deltak, const VECT2 &gammak )
+    {
+        size_type N = deltak.size();
+        size_type k = delta.size();
 
-            vector_type Y(N);
+        vector_type Y( N );
 
-            hmult(gammak, Y);
+        hmult( gammak, Y );
 
-            delta.resize(k+1);
-            gamma.resize(k+1);
-            zeta.resize(k+1);
-            tau.resize(k+1);
-            rho.resize(k+1);
+        delta.resize( k+1 );
+        gamma.resize( k+1 );
+        zeta.resize( k+1 );
+        tau.resize( k+1 );
+        rho.resize( k+1 );
 
-            delta[k].resize( N );
-            gamma[k].resize( N );
-            zeta[k].resize( N );
+        delta[k].resize( N );
+        gamma[k].resize( N );
+        zeta[k].resize( N );
 
-            delta[k].assign( deltak );
-            gamma[k].assign( gammak );
+        delta[k].assign( deltak );
+        gamma[k].assign( gammak );
 
-            rho[k] = magnitude_type(1) / ublas::inner_prod(deltak, gammak);
-            if ( version == BFGS )
-                zeta[k].plus_assign( delta[k] - Y );
-            else
-                zeta[k].assign( Y );
+        rho[k] = magnitude_type( 1 ) / ublas::inner_prod( deltak, gammak );
 
-            tau[k] = ublas::inner_prod( gammak,  zeta[k] );
-        }
+        if ( version == BFGS )
+            zeta[k].plus_assign( delta[k] - Y );
+
+        else
+            zeta[k].assign( Y );
+
+        tau[k] = ublas::inner_prod( gammak,  zeta[k] );
+    }
 
     //
     // Data
@@ -166,93 +170,107 @@ void bfgs( FUNCTION f,
     typedef value_type magnitude_type;
 
 
-    BFGSInvHessian<vector_type> invhessian(version);
+    BFGSInvHessian<vector_type> invhessian( version );
 
-    VECTOR r(x.size()), d(x.size()), y(x.size()), r2(x.size());
-    grad(x, r);
-    real_type lambda = lambda_init, valx = f(x), valy;
-    int nb_restart(0);
+    VECTOR r( x.size() ), d( x.size() ), y( x.size() ), r2( x.size() );
+    grad( x, r );
+    real_type lambda = lambda_init, valx = f( x ), valy;
+    int nb_restart( 0 );
 
     //if (iter.get_noisy() >= 1) cout << "value " << valx / print_norm << " ";
-    while (! iter.isFinished(r))
+    while ( ! iter.isFinished( r ) )
     {
-        invhessian.hmult(r, d);
+        invhessian.hmult( r, d );
         d *= -1;
 
         // Wolfe Line search
-        real_type derivative = ublas::inner_prod(r, d);
-        real_type lambda_min(0);
-        real_type lambda_max(0);
+        real_type derivative = ublas::inner_prod( r, d );
+        real_type lambda_min( 0 );
+        real_type lambda_max( 0 );
         real_type m1 = 0.27;
         real_type m2 = 0.57;
         bool unbounded = true, blocked = false, grad_computed = false;
 
-        for(;;) {
+        for ( ;; )
+        {
 
             //add(x, scaled(d, lambda), y);
             y = lambda*d+x;
-            valy = f(y);
+            valy = f( y );
 
 #if 0
-            if (iter.get_noisy() >= 2) {
+
+            if ( iter.get_noisy() >= 2 )
+            {
                 cout << "Wolfe line search, lambda = " << lambda
                      << " value = " << valy /print_norm << endl;
             }
+
 #endif
-            if (valy <= valx + m1 * lambda * derivative)
+
+            if ( valy <= valx + m1 * lambda * derivative )
             {
-                grad(y, r2);
+                grad( y, r2 );
                 grad_computed = true;
 
-                T derivative2 = ublas::inner_prod(r2, d);
+                T derivative2 = ublas::inner_prod( r2, d );
 
-                if (derivative2 >= m2*derivative)
+                if ( derivative2 >= m2*derivative )
                     break;
 
                 lambda_min = lambda;
             }
+
             else
             {
                 lambda_max = lambda;
                 unbounded = false;
             }
-            if (unbounded)
-                lambda *= real_type(10);
-            else
-                lambda = (lambda_max + lambda_min) / real_type(2);
 
-            if (valy <= real_type(2)*valx &&
-                (lambda < real_type(lambda_init*1E-8) ||
-                 (!unbounded && lambda_max-lambda_min < real_type(lambda_init*1E-8))))
-            { blocked = true; lambda = lambda_init; break; }
+            if ( unbounded )
+                lambda *= real_type( 10 );
+
+            else
+                lambda = ( lambda_max + lambda_min ) / real_type( 2 );
+
+            if ( valy <= real_type( 2 )*valx &&
+                    ( lambda < real_type( lambda_init*1E-8 ) ||
+                      ( !unbounded && lambda_max-lambda_min < real_type( lambda_init*1E-8 ) ) ) )
+            {
+                blocked = true;
+                lambda = lambda_init;
+                break;
+            }
         }
 
         // Rank two update
         ++iter;
 
-        if (!grad_computed)
-            grad(y, r2);
+        if ( !grad_computed )
+            grad( y, r2 );
 
         //gmm::add(scaled(r2, -1), r);
         r.minus_assign( r2 );
 
-        if (iter.numberOfIterations() % restart == 0 || blocked)
+        if ( iter.numberOfIterations() % restart == 0 || blocked )
         {
             //if (iter.get_noisy() >= 1) cout << "Restart\n";
             invhessian.restart();
 
-            if (++nb_restart > 10)
+            if ( ++nb_restart > 10 )
             {
                 //if (iter.get_noisy() >= 1) cout << "BFGS is blocked, exiting\n";
                 return;
             }
         }
+
         else
         {
             //invhessian.update(gmm::scaled(d,lambda), gmm::scaled(r,-1));
             invhessian.update( lambda*d, -r );
             nb_restart = 0;
         }
+
         r.assign( r2 );
         x.assign( y );
         valx = valy;
@@ -271,7 +289,7 @@ dfp( FUNCTION f,
      IterationBFGS& iter,
      BFGSType version = DFP )
 {
-    bfgs(f, grad, x, restart, iter, version );
+    bfgs( f, grad, x, restart, iter, version );
 }
 
 

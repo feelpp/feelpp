@@ -508,51 +508,53 @@
 /*_________________________________________________*/
 
 
-namespace Feel {
+namespace Feel
+{
 
-    namespace GeoTool {
+namespace GeoTool
+{
 
-        typedef node<double>::type node_type;
+typedef node<double>::type node_type;
 
-        class GeoGMSHTool;
-        typedef boost::shared_ptr< GeoGMSHTool> GeoGMSHTool_ptrtype;
+class GeoGMSHTool;
+typedef boost::shared_ptr< GeoGMSHTool> GeoGMSHTool_ptrtype;
 
-        typedef std::map<uint,uint> map_data_type;
-        typedef std::vector<map_data_type> vec_map_data_type;
-        typedef boost::shared_ptr<vec_map_data_type> vec_map_data_ptrtype;
+typedef std::map<uint,uint> map_data_type;
+typedef std::vector<map_data_type> vec_map_data_type;
+typedef boost::shared_ptr<vec_map_data_type> vec_map_data_ptrtype;
 
-        //if bool=true => surface stoker dans un tableau gmsh
-        typedef std::vector<std::map<uint,bool> > vec_map_data_surf1_type;
-        typedef boost::shared_ptr<vec_map_data_surf1_type> vec_map_data_surf1_ptrtype;
-        //=> la string est le nom de ce tableau
-        typedef std::vector<std::map<uint,std::string> > vec_map_data_surf2_type;
-        typedef boost::shared_ptr<vec_map_data_surf2_type> vec_map_data_surf2_ptrtype;
-        // list of pt define in more in the surface
-        typedef std::vector<std::map<uint,std::list<uint> > > vec_map_data_ptsinsurf_type;
-        typedef boost::shared_ptr<vec_map_data_ptsinsurf_type> vec_map_data_ptsinsurf_ptrtype;
+//if bool=true => surface stoker dans un tableau gmsh
+typedef std::vector<std::map<uint,bool> > vec_map_data_surf1_type;
+typedef boost::shared_ptr<vec_map_data_surf1_type> vec_map_data_surf1_ptrtype;
+//=> la string est le nom de ce tableau
+typedef std::vector<std::map<uint,std::string> > vec_map_data_surf2_type;
+typedef boost::shared_ptr<vec_map_data_surf2_type> vec_map_data_surf2_ptrtype;
+// list of pt define in more in the surface
+typedef std::vector<std::map<uint,std::list<uint> > > vec_map_data_ptsinsurf_type;
+typedef boost::shared_ptr<vec_map_data_ptsinsurf_type> vec_map_data_ptsinsurf_ptrtype;
 
-        typedef std::map<int,std::list<int> > map_surfaceLoop_type;
-        //typedef boost::shared_ptr<map_surfaceLoop_type> map_surfaceLoop_ptrtype;
-
-
-        typedef boost::tuple< GeoGMSHTool_ptrtype,
-                              vec_map_data_ptrtype,
-                              std::string,
-                              std::string,
-                              vec_map_data_surf1_ptrtype,
-                              vec_map_data_surf2_ptrtype,
-                              vec_map_data_surf1_ptrtype,
-                              vec_map_data_ptsinsurf_ptrtype,
-                              map_surfaceLoop_type > data_geo_type;
-        typedef boost::shared_ptr<data_geo_type> data_geo_ptrtype;
+typedef std::map<int,std::list<int> > map_surfaceLoop_type;
+//typedef boost::shared_ptr<map_surfaceLoop_type> map_surfaceLoop_ptrtype;
 
 
-        void run(data_geo_ptrtype __dg);
+typedef boost::tuple< GeoGMSHTool_ptrtype,
+        vec_map_data_ptrtype,
+        std::string,
+        std::string,
+        vec_map_data_surf1_ptrtype,
+        vec_map_data_surf2_ptrtype,
+        vec_map_data_surf1_ptrtype,
+        vec_map_data_ptsinsurf_ptrtype,
+        map_surfaceLoop_type > data_geo_type;
+typedef boost::shared_ptr<data_geo_type> data_geo_ptrtype;
 
-        //A faire avec les BoostPP
-        //void runRectangle(data_geo_ptrtype dg);
-        //void runCircle(data_geo_ptrtype dg);
-        //void runHexaedre(data_geo_ptrtype dg);
+
+void run( data_geo_ptrtype __dg );
+
+//A faire avec les BoostPP
+//void runRectangle(data_geo_ptrtype dg);
+//void runCircle(data_geo_ptrtype dg);
+//void runHexaedre(data_geo_ptrtype dg);
 
 
 
@@ -561,855 +563,940 @@ namespace Feel {
                             BOOST_PP_INC(BOOST_PP_TUPLE_ELEM(2, 1, state)) \
                             )                                           \
         /**/
-        /*_________________________________________________*/
-        /*                                                 */
-        /**/
+/*_________________________________________________*/
+/*                                                 */
+/**/
 #define GEOTOOL_INSTANTIATES_FOR_INCR(r, state)             \
         (                                                   \
          BOOST_PP_INC(BOOST_PP_TUPLE_ELEM(2, 0, state)),	\
          BOOST_PP_TUPLE_ELEM(2, 1, state) )                 \
         /**/
-        /*_________________________________________________*/
-        /*                                                 */
-        /**/
+/*_________________________________________________*/
+/*                                                 */
+/**/
 #define GEOTOOL_INSTANTIATES_FOR(r,state)                               \
         void BOOST_PP_CAT(run,GEOTOOL_SHAPE_NAME_CLASS(BOOST_PP_TUPLE_ELEM(2,0,state))) (data_geo_ptrtype dg); \
         /**/
-        /*_________________________________________________*/
-        /*                                                 */
-        /**/
-        BOOST_PP_FOR( (0, BOOST_PP_SUB(BOOST_PP_ARRAY_SIZE(GEOTOOL_SHAPE),1) ),
-                      GEOTOOL_INSTANTIATES_FOR_COMP,
-                      GEOTOOL_INSTANTIATES_FOR_INCR,
-                      GEOTOOL_INSTANTIATES_FOR )
+/*_________________________________________________*/
+/*                                                 */
+/**/
+BOOST_PP_FOR( ( 0, BOOST_PP_SUB( BOOST_PP_ARRAY_SIZE( GEOTOOL_SHAPE ),1 ) ),
+              GEOTOOL_INSTANTIATES_FOR_COMP,
+              GEOTOOL_INSTANTIATES_FOR_INCR,
+              GEOTOOL_INSTANTIATES_FOR )
 
 
 
 
-    } // namespace GeoTool
+} // namespace GeoTool
 
-    namespace GeoTool {
+namespace GeoTool
+{
 
-        /*_________________________________________________*
-         *_________________________________________________*
-         *_________________________________________________*
-         * GeoGMSHTool :                                   *
-         *_________________________________________________*
-         *_________________________________________________*
-         *_________________________________________________*/
-
-
-        class Node {
-        public :
-
-            Node()
-                :
-                _M_node(new node_type())
-            {}
-
-            Node(double __x) :
-                _M_node(new node_type(1)) { (*_M_node)(0)=__x;}
-
-            Node(double __x, double __y) :
-                _M_node(new node_type(2))
-            {
-                (*_M_node)(0)=__x;
-                (*_M_node)(1)=__y;
-            }
-
-            Node(double __x, double __y, double __z) :
-                _M_node(new node_type(3))
-            {
-                (*_M_node)(0)=__x;
-                (*_M_node)(1)=__y;
-                (*_M_node)(2)=__z;
-            }
-
-            Node(Node const & m)
-                :
-                _M_node(m._M_node)
-            {}
-
-            Node operator=(Node const & m)
-            {
-                _M_node.reset(new node_type(*(m._M_node)));
-                return *this;
-            }
-
-            double operator()(uint n) const
-            {
-                return this->getNode()(n);
-            }
-
-            double & operator()(uint n)
-            {
-                return (*_M_node)(n);
-            }
-
-            node_type
-            getNode() const { return *_M_node;}
-
-            node_type &
-            getNode() { return *_M_node; }
-
-            boost::shared_ptr<node_type> _M_node;
-        };
-
-        /*_________________________________________________*/
-
-        class Loop {
-        public :
-
-            Loop(Loop const & L) : _M_loop(L._M_loop) {}
-
-            Loop() {_M_loop.clear();}
-
-            void  operator=(Loop m) { this->_M_loop=m._M_loop; }
-            Loop  operator>>(int __n) { _M_loop.push_back(__n); return *this; }
-
-            uint size() {return _M_loop.size();}
-
-            std::list<int>::const_iterator begin() const { return _M_loop.begin();}
-            std::list<int>::const_iterator end() const { return _M_loop.end(); }
-
-            std::list<int> _M_loop;
-        };
+/*_________________________________________________*
+ *_________________________________________________*
+ *_________________________________________________*
+ * GeoGMSHTool :                                   *
+ *_________________________________________________*
+ *_________________________________________________*
+ *_________________________________________________*/
 
 
-        /*_________________________________________________*
-         *_________________________________________________*
-         *_________________________________________________*
-         * GeoGMSHTool :                                   *
-         *_________________________________________________*
-         *_________________________________________________*
-         *_________________________________________________*/
+class Node
+{
+public :
+
+    Node()
+        :
+        _M_node( new node_type() )
+    {}
+
+    Node( double __x ) :
+        _M_node( new node_type( 1 ) )
+    {
+        ( *_M_node )( 0 )=__x;
+    }
+
+    Node( double __x, double __y ) :
+        _M_node( new node_type( 2 ) )
+    {
+        ( *_M_node )( 0 )=__x;
+        ( *_M_node )( 1 )=__y;
+    }
+
+    Node( double __x, double __y, double __z ) :
+        _M_node( new node_type( 3 ) )
+    {
+        ( *_M_node )( 0 )=__x;
+        ( *_M_node )( 1 )=__y;
+        ( *_M_node )( 2 )=__z;
+    }
+
+    Node( Node const & m )
+        :
+        _M_node( m._M_node )
+    {}
+
+    Node operator=( Node const & m )
+    {
+        _M_node.reset( new node_type( *( m._M_node ) ) );
+        return *this;
+    }
+
+    double operator()( uint n ) const
+    {
+        return this->getNode()( n );
+    }
+
+    double & operator()( uint n )
+    {
+        return ( *_M_node )( n );
+    }
+
+    node_type
+    getNode() const
+    {
+        return *_M_node;
+    }
+
+    node_type &
+    getNode()
+    {
+        return *_M_node;
+    }
+
+    boost::shared_ptr<node_type> _M_node;
+};
+
+/*_________________________________________________*/
+
+class Loop
+{
+public :
+
+    Loop( Loop const & L ) : _M_loop( L._M_loop ) {}
+
+    Loop()
+    {
+        _M_loop.clear();
+    }
+
+    void  operator=( Loop m )
+    {
+        this->_M_loop=m._M_loop;
+    }
+    Loop  operator>>( int __n )
+    {
+        _M_loop.push_back( __n );
+        return *this;
+    }
+
+    uint size()
+    {
+        return _M_loop.size();
+    }
+
+    std::list<int>::const_iterator begin() const
+    {
+        return _M_loop.begin();
+    }
+    std::list<int>::const_iterator end() const
+    {
+        return _M_loop.end();
+    }
+
+    std::list<int> _M_loop;
+};
 
 
-        class GeoGMSHTool
+/*_________________________________________________*
+ *_________________________________________________*
+ *_________________________________________________*
+ * GeoGMSHTool :                                   *
+ *_________________________________________________*
+ *_________________________________________________*
+ *_________________________________________________*/
+
+
+class GeoGMSHTool
+{
+public:
+
+    typedef node<double>::type node_type;
+
+    /*            // list de < nameMesh, meshSize >
+    typedef boost::tuple<std::string,double> names_base_type;
+    typedef std::list< names_base_type > names_type;
+    typedef std::map< std::string, names_type > map_shape_names_type;
+    typedef names_type::const_iterator names_const_iterator_type;
+    typedef map_shape_names_type::const_iterator map_shape_names_const_iterator_type;
+    */
+    typedef boost::tuple<std::string,std::string,uint> marker_base_type;
+    typedef std::map<std::string,std::list<marker_base_type > > marker_markerName_type;
+    typedef std::map< std::string, marker_markerName_type > marker_type_type;
+    typedef std::map< std::string, marker_type_type > marker_name_type;
+    typedef std::map< std::string, marker_type_type > marker_shape_type;
+
+    typedef marker_markerName_type::const_iterator marker_markerName_const_iterator_type;
+    typedef marker_type_type::const_iterator marker_type_const_iterator_type;
+    typedef marker_name_type::const_iterator marker_name_const_iterator_type;
+    typedef marker_shape_type::const_iterator marker_shape_const_iterator_type;
+
+    typedef std::vector<node_type> parameter_rectangle_type;
+    typedef std::map<std::string, parameter_rectangle_type > parameter_name_type;
+    typedef std::map<std::string, parameter_name_type > parameter_shape_type;
+    typedef parameter_name_type::const_iterator parameter_name_const_iterator_type;
+    typedef parameter_shape_type::const_iterator parameter_shape_const_iterator_type;
+
+
+    // gestion des lignes : shape,name,value,meshSize
+    typedef boost::tuple<std::string,std::string,uint,double > ligne_type;
+    typedef std::list< ligne_type > ligne_type_type;
+    typedef std::list< ligne_type_type > ligne_name_type;
+    typedef ligne_type_type::const_iterator ligne_type_const_iterator_type;
+    typedef ligne_name_type::const_iterator ligne_name_const_iterator_type;
+
+    // gestion des surfaces : shape,name,(numGlobSurface,value),meshSize
+    typedef boost::tuple<std::string,std::string,std::pair<int,int>,double > surface_type;
+    typedef std::list< surface_type > surface_type_type;
+    typedef std::list< surface_type_type > surface_name_type;
+    typedef surface_type_type::const_iterator surface_type_const_iterator_type;
+    typedef surface_name_type::const_iterator surface_name_const_iterator_type;
+
+    // gestion des volumes : shape,name,(numGlobVolume,value),meshSize
+    typedef boost::tuple<std::string,std::string, std::pair<int,int>,double > volume_type;
+    typedef std::list< volume_type > volume_type_type;
+    typedef std::list< volume_type_type > volume_name_type;
+    typedef volume_type_type::const_iterator volume_type_const_iterator_type;
+    typedef volume_name_type::const_iterator volume_name_const_iterator_type;
+
+    // gestion des surfaceLoop : shape,name, numLoopLoc->list<value>
+    typedef boost::tuple<std::string,std::string, std::map< int, std::list<int> > > surfaceloop_type;
+    typedef std::list< surfaceloop_type > surfaceloop_type_type;
+    typedef std::list< surfaceloop_type_type > surfaceloop_name_type;
+    typedef surfaceloop_type_type::const_iterator surfaceloop_type_const_iterator_type;
+    typedef surfaceloop_name_type::const_iterator surfaceloop_name_const_iterator_type;
+
+
+    GeoGMSHTool( uint __dim, std::string __shape="NO_SHAPE", std::string __name="NO_NAME", double __meshSize=0.1 )
+        :
+        _M_dim( __dim ),
+        _M_cptPt( 1 ),
+        _M_cptLine( 1 ),
+        _M_cptLineLoop( 1 ),
+        _M_cptSurface( 1 ),
+        _M_cptTableau( 1 ),
+        _M_cptSurfaceLoop( 1 ),
+        _M_cptVolume( 1 ),
+        _M_ligneList( new ligne_name_type() ),
+        _M_surfaceList( new surface_name_type() ),
+        _M_volumeList( new volume_name_type() ),
+        _M_surfaceLoopList( new surfaceloop_name_type() ),
+        _M_ostrExtrude( new std::ostringstream() ),
+        _M_ostrSurfaceLoop( new std::ostringstream() ),
+        _M_paramShape( new parameter_shape_type() ),
+        _M_markShape( new marker_type_type() ),
+        _M_ostr( new std::ostringstream() ),
+        _M_ostrDefineByUser( new std::ostringstream() ),
+        _M_geoIsDefineByUser( false )
+    {
+    }
+
+    GeoGMSHTool( uint __dim,  std::string const & geoUserStr, double __meshSize=0.1, std::string __shape="NO_SHAPE", std::string __name="NO_NAME" )
+        :
+        _M_dim( __dim ),
+        _M_cptPt( 1 ),
+        _M_cptLine( 1 ),
+        _M_cptLineLoop( 1 ),
+        _M_cptSurface( 1 ),
+        _M_cptTableau( 1 ),
+        _M_cptSurfaceLoop( 1 ),
+        _M_cptVolume( 1 ),
+        _M_ligneList( new ligne_name_type() ),
+        _M_surfaceList( new surface_name_type() ),
+        _M_volumeList( new volume_name_type() ),
+        _M_surfaceLoopList( new surfaceloop_name_type() ),
+        _M_ostrExtrude( new std::ostringstream() ),
+        _M_ostrSurfaceLoop( new std::ostringstream() ),
+        _M_paramShape( new parameter_shape_type() ),
+        _M_markShape( new marker_type_type() ),
+        _M_ostr( new std::ostringstream() ),
+        _M_ostrDefineByUser( new std::ostringstream() ),
+        _M_geoIsDefineByUser( true )
+    {
+        *_M_ostrDefineByUser << geoUserStr;
+    }
+
+    GeoGMSHTool( GeoGMSHTool const & m )
+        :
+        _M_dim( m. _M_dim ),
+        _M_cptPt( m._M_cptPt ),
+        _M_cptLine( m._M_cptLine ),
+        _M_cptLineLoop( m._M_cptLineLoop ),
+        _M_cptSurface( m._M_cptSurface ),
+        _M_cptTableau( m._M_cptTableau ),
+        _M_cptSurfaceLoop( m._M_cptSurfaceLoop ),
+        _M_cptVolume( m._M_cptVolume ),
+        _M_ligneList( new ligne_name_type( *( m._M_ligneList ) ) ),
+        _M_surfaceList( new surface_name_type( *( m._M_surfaceList ) ) ),
+        _M_volumeList( new volume_name_type( *( m._M_volumeList ) ) ),
+        _M_surfaceLoopList( new surfaceloop_name_type( *m._M_surfaceLoopList ) ),
+        _M_ostrExtrude( new std::ostringstream() ),
+        _M_ostrSurfaceLoop( new std::ostringstream() ),
+        _M_paramShape( new parameter_shape_type( *( m._M_paramShape ) ) ),
+        _M_markShape( new marker_type_type( *( m._M_markShape ) ) ),
+        _M_ostr( new std::ostringstream() ),
+        _M_ostrDefineByUser( new std::ostringstream() ),
+        _M_geoIsDefineByUser( m._M_geoIsDefineByUser )
+    {
+        updateOstr( ( m._M_ostr )->str() );
+        *_M_ostrExtrude << ( m._M_ostrExtrude )->str();
+        *_M_ostrSurfaceLoop << ( m._M_ostrSurfaceLoop )->str();
+
+        if ( _M_geoIsDefineByUser ) *_M_ostrDefineByUser  << ( m._M_ostrDefineByUser )->str();
+    }
+
+    void zeroCpt()
+    {
+        _M_cptPt=1;
+        _M_cptLine=1;
+        _M_cptLineLoop=1;
+        _M_cptSurface=1;
+        _M_cptTableau=1;
+        _M_cptSurfaceLoop=1;
+        _M_cptVolume=1;
+
+
+        ligne_name_type::iterator itLigne = this->_M_ligneList->begin();
+        ligne_name_type::iterator itLigne_end = this->_M_ligneList->end();
+
+        for ( ; itLigne != itLigne_end; ++itLigne )
         {
-        public:
+            ligne_type_type::iterator itLigne2 = itLigne->begin();
+            ligne_type_type::iterator itLigne2_end = itLigne->end();
 
-            typedef node<double>::type node_type;
-
-            /*            // list de < nameMesh, meshSize >
-            typedef boost::tuple<std::string,double> names_base_type;
-            typedef std::list< names_base_type > names_type;
-            typedef std::map< std::string, names_type > map_shape_names_type;
-            typedef names_type::const_iterator names_const_iterator_type;
-            typedef map_shape_names_type::const_iterator map_shape_names_const_iterator_type;
-            */
-            typedef boost::tuple<std::string,std::string,uint> marker_base_type;
-            typedef std::map<std::string,std::list<marker_base_type > > marker_markerName_type;
-            typedef std::map< std::string, marker_markerName_type > marker_type_type;
-            typedef std::map< std::string, marker_type_type > marker_name_type;
-            typedef std::map< std::string, marker_type_type > marker_shape_type;
-
-            typedef marker_markerName_type::const_iterator marker_markerName_const_iterator_type;
-            typedef marker_type_type::const_iterator marker_type_const_iterator_type;
-            typedef marker_name_type::const_iterator marker_name_const_iterator_type;
-            typedef marker_shape_type::const_iterator marker_shape_const_iterator_type;
-
-            typedef std::vector<node_type> parameter_rectangle_type;
-            typedef std::map<std::string, parameter_rectangle_type > parameter_name_type;
-            typedef std::map<std::string, parameter_name_type > parameter_shape_type;
-            typedef parameter_name_type::const_iterator parameter_name_const_iterator_type;
-            typedef parameter_shape_type::const_iterator parameter_shape_const_iterator_type;
-
-
-            // gestion des lignes : shape,name,value,meshSize
-            typedef boost::tuple<std::string,std::string,uint,double > ligne_type;
-            typedef std::list< ligne_type > ligne_type_type;
-            typedef std::list< ligne_type_type > ligne_name_type;
-            typedef ligne_type_type::const_iterator ligne_type_const_iterator_type;
-            typedef ligne_name_type::const_iterator ligne_name_const_iterator_type;
-
-            // gestion des surfaces : shape,name,(numGlobSurface,value),meshSize
-            typedef boost::tuple<std::string,std::string,std::pair<int,int>,double > surface_type;
-            typedef std::list< surface_type > surface_type_type;
-            typedef std::list< surface_type_type > surface_name_type;
-            typedef surface_type_type::const_iterator surface_type_const_iterator_type;
-            typedef surface_name_type::const_iterator surface_name_const_iterator_type;
-
-            // gestion des volumes : shape,name,(numGlobVolume,value),meshSize
-            typedef boost::tuple<std::string,std::string, std::pair<int,int>,double > volume_type;
-            typedef std::list< volume_type > volume_type_type;
-            typedef std::list< volume_type_type > volume_name_type;
-            typedef volume_type_type::const_iterator volume_type_const_iterator_type;
-            typedef volume_name_type::const_iterator volume_name_const_iterator_type;
-
-            // gestion des surfaceLoop : shape,name, numLoopLoc->list<value>
-            typedef boost::tuple<std::string,std::string, std::map< int, std::list<int> > > surfaceloop_type;
-            typedef std::list< surfaceloop_type > surfaceloop_type_type;
-            typedef std::list< surfaceloop_type_type > surfaceloop_name_type;
-            typedef surfaceloop_type_type::const_iterator surfaceloop_type_const_iterator_type;
-            typedef surfaceloop_name_type::const_iterator surfaceloop_name_const_iterator_type;
-
-
-            GeoGMSHTool(uint __dim, std::string __shape="NO_SHAPE", std::string __name="NO_NAME", double __meshSize=0.1)
-                :
-                _M_dim(__dim),
-                _M_cptPt(1),
-                _M_cptLine(1),
-                _M_cptLineLoop(1),
-                _M_cptSurface(1),
-                _M_cptTableau(1),
-                _M_cptSurfaceLoop(1),
-                _M_cptVolume(1),
-                _M_ligneList(new ligne_name_type()),
-                _M_surfaceList(new surface_name_type()),
-                _M_volumeList(new volume_name_type()),
-                _M_surfaceLoopList(new surfaceloop_name_type()),
-                _M_ostrExtrude( new std::ostringstream()),
-                _M_ostrSurfaceLoop( new std::ostringstream()),
-                _M_paramShape( new parameter_shape_type()),
-                _M_markShape( new marker_type_type()),
-                _M_ostr( new std::ostringstream()),
-                _M_ostrDefineByUser( new std::ostringstream()),
-                _M_geoIsDefineByUser(false)
+            for ( ; itLigne2 != itLigne2_end; ++itLigne2 )
             {
+                boost::get<2>( *itLigne2 )=0;
             }
+        }
 
-            GeoGMSHTool(uint __dim,  std::string const & geoUserStr, double __meshSize=0.1, std::string __shape="NO_SHAPE", std::string __name="NO_NAME")
-                :
-                _M_dim(__dim),
-                _M_cptPt(1),
-                _M_cptLine(1),
-                _M_cptLineLoop(1),
-                _M_cptSurface(1),
-                _M_cptTableau(1),
-                _M_cptSurfaceLoop(1),
-                _M_cptVolume(1),
-                _M_ligneList(new ligne_name_type()),
-                _M_surfaceList(new surface_name_type()),
-                _M_volumeList(new volume_name_type()),
-                _M_surfaceLoopList(new surfaceloop_name_type()),
-                _M_ostrExtrude( new std::ostringstream()),
-                _M_ostrSurfaceLoop( new std::ostringstream()),
-                _M_paramShape( new parameter_shape_type()),
-                _M_markShape( new marker_type_type()),
-                _M_ostr( new std::ostringstream()),
-                _M_ostrDefineByUser( new std::ostringstream()),
-                _M_geoIsDefineByUser(true)
+
+        auto itSurf = this->_M_surfaceList->begin();
+        auto itSurf_end = this->_M_surfaceList->end();
+
+        for ( ; itSurf != itSurf_end; ++itSurf )
+        {
+            auto itSurf2 = itSurf->begin();
+            auto itSurf2_end = itSurf->end();
+
+            for ( ; itSurf2 != itSurf2_end; ++itSurf2 )
             {
-                *_M_ostrDefineByUser << geoUserStr;
+                itSurf2->get<2>() = std::make_pair( 0,0 ); //.clear();
+                //boost::get<2>(*itSurf2)=0;
             }
+        }
 
-            GeoGMSHTool( GeoGMSHTool const & m )
-                :
-                _M_dim(m. _M_dim),
-                _M_cptPt(m._M_cptPt),
-                _M_cptLine(m._M_cptLine),
-                _M_cptLineLoop(m._M_cptLineLoop),
-                _M_cptSurface(m._M_cptSurface),
-                _M_cptTableau(m._M_cptTableau),
-                _M_cptSurfaceLoop(m._M_cptSurfaceLoop),
-                _M_cptVolume(m._M_cptVolume),
-                _M_ligneList(new ligne_name_type(*(m._M_ligneList))),
-                _M_surfaceList(new surface_name_type(*(m._M_surfaceList))),
-                _M_volumeList(new volume_name_type(*(m._M_volumeList))),
-                _M_surfaceLoopList(new surfaceloop_name_type(*m._M_surfaceLoopList)),
-                _M_ostrExtrude(new std::ostringstream()),
-                _M_ostrSurfaceLoop(new std::ostringstream()),
-                _M_paramShape(new parameter_shape_type(*(m._M_paramShape))),
-                _M_markShape(new marker_type_type(*(m._M_markShape))),
-                _M_ostr(new std::ostringstream()),
-                _M_ostrDefineByUser( new std::ostringstream()),
-                _M_geoIsDefineByUser(m._M_geoIsDefineByUser)
+        _M_ostrExtrude.reset( new std::ostringstream() );
+        _M_ostrSurfaceLoop.reset( new std::ostringstream() );
+
+        auto itVol = this->_M_volumeList->begin();
+        auto itVol_end = this->_M_volumeList->end();
+
+        for ( ; itVol != itVol_end; ++itVol )
+        {
+            auto itVol2 = itVol->begin();
+            auto itVol2_end = itVol->end();
+
+            for ( ; itVol2 != itVol2_end; ++itVol2 )
             {
-                updateOstr((m._M_ostr)->str());
-                *_M_ostrExtrude << (m._M_ostrExtrude)->str();
-                *_M_ostrSurfaceLoop << (m._M_ostrSurfaceLoop)->str();
-                if(_M_geoIsDefineByUser) *_M_ostrDefineByUser  << (m._M_ostrDefineByUser)->str();
+                itVol2->get<2>() = std::make_pair( 0,0 ); //.clear();
+                //boost::get<2>(*itVol2)=0;
             }
+        }
 
-            void zeroCpt()
+        auto surfaceLoop_it = this->_M_surfaceLoopList->begin();
+        auto surfaceLoop_en = this->_M_surfaceLoopList->end();
+
+        for ( ; surfaceLoop_it!=surfaceLoop_en ; ++surfaceLoop_it )
+        {
+            auto surfaceLoop2_it =surfaceLoop_it->begin();
+            auto surfaceLoop2_en =surfaceLoop_it->end();
+
+            for ( ; surfaceLoop2_it!=surfaceLoop2_en ; ++surfaceLoop2_it )
+                surfaceLoop2_it->get<2>().clear();
+        }
+
+    } // end zeroCpt
+
+    void
+    operator=( GeoGMSHTool const & m )
+    {
+        _M_dim = m._M_dim;
+        _M_cptPt = m._M_cptPt;
+        _M_cptLine = m._M_cptLine;
+        _M_cptLineLoop = m._M_cptLineLoop;
+        _M_cptSurface = m._M_cptSurface;
+        _M_cptTableau = m._M_cptTableau;
+        _M_cptSurfaceLoop = m._M_cptSurfaceLoop;
+        _M_cptVolume = m._M_cptVolume;
+
+        _M_ligneList.reset( new ligne_name_type( *( m._M_ligneList ) ) );
+        _M_surfaceList.reset( new surface_name_type( *( m._M_surfaceList ) ) );
+        _M_volumeList.reset( new volume_name_type( *( m._M_volumeList ) ) );
+        _M_surfaceLoopList.reset( new surfaceloop_name_type( *m._M_surfaceLoopList ) ),
+
+                                  _M_ostrExtrude.reset( new std::ostringstream() );
+        *_M_ostrExtrude << ( m._M_ostrExtrude )->str();
+        _M_ostrSurfaceLoop.reset( new std::ostringstream() );
+        *_M_ostrSurfaceLoop << ( m._M_ostrSurfaceLoop )->str();
+
+        _M_paramShape.reset( new parameter_shape_type( *( m._M_paramShape ) ) );
+
+        _M_markShape.reset( new marker_type_type( *( m._M_markShape ) ) );
+        _M_ostr.reset( new std::ostringstream() );
+        updateOstr( ( m._M_ostr )->str() );
+    }
+
+    GeoGMSHTool operator+( const GeoGMSHTool & m );
+    GeoGMSHTool operator-( const GeoGMSHTool & m );
+
+    GeoGMSHTool opFusion( const GeoGMSHTool & m,int __typeop );
+
+    void init( int orderGeo,
+               std::string gmshFormatVersion,
+               GMSH_PARTITIONER partitioner=GMSH_PARTITIONER_CHACO,
+               int partitions=1,
+               bool partition_file=false );
+
+    /*
+     *
+     */
+    void initData( std::string __shape,
+                   std::string __name,
+                   double __meshSize,
+                   std::vector<GeoTool::Node> & __param,
+                   uint dim,
+                   uint __nbligne,
+                   uint __nbsurface,
+                   uint __nbvolume )
+    {
+        boost::tuple<std::string,double> __id = boost::make_tuple( __name, __meshSize );
+
+        ( *( _M_paramShape ) )[__shape][__name].resize( __param.size() );
+
+        for ( uint n=0; n<__param.size(); ++n )
+        {
+            ( *( _M_paramShape ) )[__shape][__name][n] = __param[n].getNode();
+        }
+
+
+
+        if ( dim>=1 )
+        {
+            //Attention 0 par defaut pour dire que ce n'est pas initialiser
+            for ( uint n=0; n<__nbligne; ++n )
             {
-                _M_cptPt=1;
-                _M_cptLine=1;
-                _M_cptLineLoop=1;
-                _M_cptSurface=1;
-                _M_cptTableau=1;
-                _M_cptSurfaceLoop=1;
-                _M_cptVolume=1;
-
-
-                ligne_name_type::iterator itLigne = this->_M_ligneList->begin();
-                ligne_name_type::iterator itLigne_end = this->_M_ligneList->end();
-                for ( ; itLigne != itLigne_end; ++itLigne)
-                    {
-                        ligne_type_type::iterator itLigne2 = itLigne->begin();
-                        ligne_type_type::iterator itLigne2_end = itLigne->end();
-                        for ( ; itLigne2 != itLigne2_end; ++itLigne2)
-                            {
-                                boost::get<2>(*itLigne2)=0;
-                            }
-                    }
-
-
-                auto itSurf = this->_M_surfaceList->begin();
-                auto itSurf_end = this->_M_surfaceList->end();
-                for ( ; itSurf != itSurf_end; ++itSurf)
-                    {
-                        auto itSurf2 = itSurf->begin();
-                        auto itSurf2_end = itSurf->end();
-                        for ( ; itSurf2 != itSurf2_end; ++itSurf2)
-                            {
-                                itSurf2->get<2>() = std::make_pair(0,0);//.clear();
-                                //boost::get<2>(*itSurf2)=0;
-                            }
-                    }
-
-                _M_ostrExtrude.reset(new std::ostringstream());
-                _M_ostrSurfaceLoop.reset(new std::ostringstream());
-
-                auto itVol = this->_M_volumeList->begin();
-                auto itVol_end = this->_M_volumeList->end();
-                for ( ; itVol != itVol_end; ++itVol)
-                    {
-                        auto itVol2 = itVol->begin();
-                        auto itVol2_end = itVol->end();
-                        for ( ; itVol2 != itVol2_end; ++itVol2)
-                            {
-                                itVol2->get<2>() = std::make_pair(0,0);//.clear();
-                                //boost::get<2>(*itVol2)=0;
-                            }
-                    }
-
-                auto surfaceLoop_it = this->_M_surfaceLoopList->begin();
-                auto surfaceLoop_en = this->_M_surfaceLoopList->end();
-                for ( ; surfaceLoop_it!=surfaceLoop_en ; ++surfaceLoop_it)
-                    {
-                        auto surfaceLoop2_it =surfaceLoop_it->begin();
-                        auto surfaceLoop2_en =surfaceLoop_it->end();
-                        for ( ; surfaceLoop2_it!=surfaceLoop2_en ; ++surfaceLoop2_it)
-                            surfaceLoop2_it->get<2>().clear();
-                    }
-
-            } // end zeroCpt
-
-            void
-            operator=( GeoGMSHTool const & m )
-            {
-                _M_dim = m._M_dim;
-                _M_cptPt = m._M_cptPt;
-                _M_cptLine = m._M_cptLine;
-                _M_cptLineLoop = m._M_cptLineLoop;
-                _M_cptSurface = m._M_cptSurface;
-                _M_cptTableau = m._M_cptTableau;
-                _M_cptSurfaceLoop = m._M_cptSurfaceLoop;
-                _M_cptVolume = m._M_cptVolume;
-
-                _M_ligneList.reset(new ligne_name_type(*(m._M_ligneList)));
-                _M_surfaceList.reset(new surface_name_type(*(m._M_surfaceList)));
-                _M_volumeList.reset(new volume_name_type(*(m._M_volumeList)));
-                _M_surfaceLoopList.reset(new surfaceloop_name_type(*m._M_surfaceLoopList)),
-
-                _M_ostrExtrude.reset(new std::ostringstream());
-                *_M_ostrExtrude << (m._M_ostrExtrude)->str();
-                _M_ostrSurfaceLoop.reset(new std::ostringstream());
-                *_M_ostrSurfaceLoop << (m._M_ostrSurfaceLoop)->str();
-
-                _M_paramShape.reset(new parameter_shape_type(*(m._M_paramShape)));
-
-                _M_markShape.reset(new marker_type_type(*(m._M_markShape)));
-                _M_ostr.reset(new std::ostringstream());
-                updateOstr((m._M_ostr)->str());
+                //std::list< boost::tuple<std::string,std::string, uint  >	>__listTemp;
+                ligne_type_type __listTemp;
+                __listTemp.push_back( boost::make_tuple( __shape,__name,0,__meshSize ) );
+                _M_ligneList->push_back( __listTemp );
             }
-
-            GeoGMSHTool operator+(const GeoGMSHTool & m);
-            GeoGMSHTool operator-(const GeoGMSHTool & m);
-
-            GeoGMSHTool opFusion(const GeoGMSHTool & m,int __typeop);
-
-            void init(int orderGeo,
-                      std::string gmshFormatVersion,
-                      GMSH_PARTITIONER partitioner=GMSH_PARTITIONER_CHACO,
-                      int partitions=1,
-                      bool partition_file=false);
-
-            /*
-             *
-             */
-            void initData(std::string __shape,
-                          std::string __name,
-                          double __meshSize,
-                          std::vector<GeoTool::Node> & __param,
-                          uint dim,
-                          uint __nbligne,
-                          uint __nbsurface,
-                          uint __nbvolume)
-            {
-                boost::tuple<std::string,double> __id = boost::make_tuple(__name, __meshSize);
-
-                (*(_M_paramShape))[__shape][__name].resize(__param.size());
-                for (uint n=0;n<__param.size();++n)
-                    {
-                        (*(_M_paramShape))[__shape][__name][n] = __param[n].getNode();
-                    }
+        }
 
 
-
-                if (dim>=1)
-                    {
-                        //Attention 0 par defaut pour dire que ce n'est pas initialiser
-                        for(uint n=0;n<__nbligne;++n)
-                            {
-                                //std::list< boost::tuple<std::string,std::string, uint  >	>__listTemp;
-                                ligne_type_type __listTemp;
-                                __listTemp.push_back( boost::make_tuple(__shape,__name,0,__meshSize));
-                                _M_ligneList->push_back( __listTemp);
-                            }
-                    }
-
-
-                if (dim>=2)
-                    {
+        if ( dim>=2 )
+        {
 #if 0
-                        //Attention 0 par defaut pour dire que ce n'est pas initialiser
-                        for(uint n=0;n<__nbsurface;++n)
-                            {
-                                //std::list< boost::tuple<std::string,std::string, uint  >	>__listTemp;
-                                surface_type_type __listTemp;
-                                __listTemp.push_back( boost::make_tuple(__shape,__name,0,__meshSize));
-                                _M_surfaceList->push_back( __listTemp);
-                            }
+
+            //Attention 0 par defaut pour dire que ce n'est pas initialiser
+            for ( uint n=0; n<__nbsurface; ++n )
+            {
+                //std::list< boost::tuple<std::string,std::string, uint  >	>__listTemp;
+                surface_type_type __listTemp;
+                __listTemp.push_back( boost::make_tuple( __shape,__name,0,__meshSize ) );
+                _M_surfaceList->push_back( __listTemp );
+            }
+
 #else
-                        for(uint n=0;n<__nbsurface;++n)
-                            {
-                                //std::pair<int,int> listEmpty;listEmpty.clear();
-                                std::pair<int,int> listEmpty = std::make_pair(0,0);
-                                surface_type_type __listTemp;
-                                __listTemp.push_back( boost::make_tuple(__shape,__name,listEmpty,__meshSize));
-                                _M_surfaceList->push_back( __listTemp);
-                            }
+
+            for ( uint n=0; n<__nbsurface; ++n )
+            {
+                //std::pair<int,int> listEmpty;listEmpty.clear();
+                std::pair<int,int> listEmpty = std::make_pair( 0,0 );
+                surface_type_type __listTemp;
+                __listTemp.push_back( boost::make_tuple( __shape,__name,listEmpty,__meshSize ) );
+                _M_surfaceList->push_back( __listTemp );
+            }
+
 #endif
 
 
-                    }
-                if (dim==3)
-                    {
-                        //Attention 0 par defaut pour dire que ce n'est pas initialiser
-                        for(uint n=0;n<__nbvolume;++n)
-                            {
+        }
+
+        if ( dim==3 )
+        {
+            //Attention 0 par defaut pour dire que ce n'est pas initialiser
+            for ( uint n=0; n<__nbvolume; ++n )
+            {
 #if 0
-                                //std::ostringstream ostr;ostr<< n;
-                                volume_type_type __listTemp;__listTemp.clear();
-                                __listTemp.push_back( boost::make_tuple(__shape,__name/*+ostr.str()*/,0,__meshSize));
+                //std::ostringstream ostr;ostr<< n;
+                volume_type_type __listTemp;
+                __listTemp.clear();
+                __listTemp.push_back( boost::make_tuple( __shape,__name/*+ostr.str()*/,0,__meshSize ) );
 #else
-                                std::pair<int,int> listEmpty = std::make_pair(0,0);
-                                surface_type_type __listTemp;
-                                __listTemp.push_back( boost::make_tuple(__shape,__name,listEmpty,__meshSize));
+                std::pair<int,int> listEmpty = std::make_pair( 0,0 );
+                surface_type_type __listTemp;
+                __listTemp.push_back( boost::make_tuple( __shape,__name,listEmpty,__meshSize ) );
 #endif
-                                _M_volumeList->push_back( __listTemp);
-                            }
-
-                        std::map<int,std::list<int> > listEmpty;listEmpty.clear();
-                        //for(uint n=0;n<__nbvolume;++n)
-                        //    {
-                        //        listEmpty.clear();
-                        //    }
-                        surfaceloop_type_type __listTemp;__listTemp.clear();
-                        __listTemp.push_back( boost::make_tuple(__shape,__name,listEmpty));
-                        _M_surfaceLoopList->push_back(__listTemp);
-
-
-
-
-                    }
-
+                _M_volumeList->push_back( __listTemp );
             }
 
-            /*
-             *Utile pour la fct geoStr()
-             *Pas de maj pour cptSurface et cptVolume car traitement different
-             */
-            void updateData(GeoGMSHTool const & m)
-            {
-                _M_cptPt = m._M_cptPt;
-                _M_cptLine = m._M_cptLine;
-                _M_cptLineLoop = m._M_cptLineLoop;
-                _M_cptTableau = m._M_cptTableau;
-                _M_cptSurfaceLoop = m._M_cptSurfaceLoop;
+            std::map<int,std::list<int> > listEmpty;
+            listEmpty.clear();
+            //for(uint n=0;n<__nbvolume;++n)
+            //    {
+            //        listEmpty.clear();
+            //    }
+            surfaceloop_type_type __listTemp;
+            __listTemp.clear();
+            __listTemp.push_back( boost::make_tuple( __shape,__name,listEmpty ) );
+            _M_surfaceLoopList->push_back( __listTemp );
 
-                _M_cptSurface = m._M_cptSurface;
-                _M_cptVolume = m._M_cptVolume;
 
-                _M_paramShape = m._M_paramShape;
-                _M_markShape = m._M_markShape;
 
-                _M_ligneList.reset(new ligne_name_type(*(m._M_ligneList)));
-                _M_surfaceList.reset(new surface_name_type(*(m._M_surfaceList)));
-                _M_volumeList.reset(new volume_name_type(*(m._M_volumeList)));
-                _M_surfaceLoopList.reset(new surfaceloop_name_type(*m._M_surfaceLoopList));
 
-                _M_ostrExtrude.reset(new std::ostringstream());
-                *_M_ostrExtrude << (m._M_ostrExtrude)->str();
+        }
 
-                _M_ostrSurfaceLoop.reset(new std::ostringstream());
-                *_M_ostrSurfaceLoop << (m._M_ostrSurfaceLoop)->str();
-            }
+    }
 
-            /*
-             * Update the output stringstream wich generate the gmsh code
-             */
-            void updateOstr( std::string __str)
-            {
-                *_M_ostr << __str;
-            }
+    /*
+     *Utile pour la fct geoStr()
+     *Pas de maj pour cptSurface et cptVolume car traitement different
+     */
+    void updateData( GeoGMSHTool const & m )
+    {
+        _M_cptPt = m._M_cptPt;
+        _M_cptLine = m._M_cptLine;
+        _M_cptLineLoop = m._M_cptLineLoop;
+        _M_cptTableau = m._M_cptTableau;
+        _M_cptSurfaceLoop = m._M_cptSurfaceLoop;
 
-            /*
-             * Generate the gmsh code
-             */
-            /*std::string*/void geoStr();
+        _M_cptSurface = m._M_cptSurface;
+        _M_cptVolume = m._M_cptVolume;
 
-            /*
-             * Clean
-             */
-            void cleanOstr() { _M_ostr.reset(new std::ostringstream()); }
+        _M_paramShape = m._M_paramShape;
+        _M_markShape = m._M_markShape;
+
+        _M_ligneList.reset( new ligne_name_type( *( m._M_ligneList ) ) );
+        _M_surfaceList.reset( new surface_name_type( *( m._M_surfaceList ) ) );
+        _M_volumeList.reset( new volume_name_type( *( m._M_volumeList ) ) );
+        _M_surfaceLoopList.reset( new surfaceloop_name_type( *m._M_surfaceLoopList ) );
+
+        _M_ostrExtrude.reset( new std::ostringstream() );
+        *_M_ostrExtrude << ( m._M_ostrExtrude )->str();
+
+        _M_ostrSurfaceLoop.reset( new std::ostringstream() );
+        *_M_ostrSurfaceLoop << ( m._M_ostrSurfaceLoop )->str();
+    }
+
+    /*
+     * Update the output stringstream wich generate the gmsh code
+     */
+    void updateOstr( std::string __str )
+    {
+        *_M_ostr << __str;
+    }
+
+    /*
+     * Generate the gmsh code
+     */
+    /*std::string*/void geoStr();
+
+    /*
+     * Clean
+     */
+    void cleanOstr()
+    {
+        _M_ostr.reset( new std::ostringstream() );
+    }
 
 
 
 
 
     BOOST_PARAMETER_MEMBER_FUNCTION(
-                                    (typename detail::mesh<Args>::ptrtype), // return type
-                                    createMesh, // function name
-                                    tag,
-                                    (required
-                                     (mesh, * )
-                                     (name, (std::string) )
-                                     ) //required
-                                    (optional
-                                     (straighten,     *(boost::is_integral<mpl::_>), 1 )
-                                     (partitions,   *(boost::is_integral<mpl::_>), 1 )
-                                     (partition_file,   *(boost::is_integral<mpl::_>), 0 )
-                                     (partitioner,   *(boost::is_integral<mpl::_>), GMSH_PARTITIONER_CHACO )
-                                     (worldcomm,      *, WorldComm() )
-                                     ) //optional
-                                    )
+        ( typename detail::mesh<Args>::ptrtype ), // return type
+        createMesh, // function name
+        tag,
+        ( required
+          ( mesh, * )
+          ( name, ( std::string ) )
+        ) //required
+        ( optional
+          ( straighten,     *( boost::is_integral<mpl::_> ), 1 )
+          ( partitions,   *( boost::is_integral<mpl::_> ), 1 )
+          ( partition_file,   *( boost::is_integral<mpl::_> ), 0 )
+          ( partitioner,   *( boost::is_integral<mpl::_> ), GMSH_PARTITIONER_CHACO )
+          ( worldcomm,      *, WorldComm() )
+        ) //optional
+    )
+    {
+        typedef typename detail::mesh<Args>::type _mesh_type;
+        typedef typename detail::mesh<Args>::ptrtype _mesh_ptrtype;
+
+        _mesh_ptrtype _mesh( mesh );
+        _mesh->setWorldComm( worldcomm );
+
+        if ( worldcomm.isActive() )
         {
-                typedef typename detail::mesh<Args>::type _mesh_type;
-                typedef typename detail::mesh<Args>::ptrtype _mesh_ptrtype;
 
-                _mesh_ptrtype _mesh( mesh );
-                _mesh->setWorldComm(worldcomm);
-                if (worldcomm.isActive())
-                    {
+            this->cleanOstr();
+            this->zeroCpt();
 
-                        this->cleanOstr();
-                        this->zeroCpt();
+            Gmsh gmsh( _mesh_type::nDim, _mesh_type::nOrder );
+            gmsh.setWorldComm( worldcomm );
+            gmsh.setRecombine( _mesh_type::shape_type::is_hypercube );
+            gmsh.setNumberOfPartitions( partitions );
+            gmsh.setPartitioner( partitioner );
+            gmsh.setMshFileByPartition( partition_file );
 
-                        Gmsh gmsh(_mesh_type::nDim, _mesh_type::nOrder );
-                        gmsh.setWorldComm(worldcomm);
-                        gmsh.setRecombine(_mesh_type::shape_type::is_hypercube);
-                        gmsh.setNumberOfPartitions( partitions );
-                        gmsh.setPartitioner( partitioner );
-                        gmsh.setMshFileByPartition( partition_file );
+            this->init( _mesh_type::nOrder,gmsh.version(),partitioner,partitions,partition_file );
 
-                        this->init(_mesh_type::nOrder,gmsh.version(),partitioner,partitions,partition_file);
+            std::string geostring;
 
-                        std::string geostring;
-                        if(_M_geoIsDefineByUser)
-                            {
-                                geostring= _M_ostrDefineByUser->str();
-                            }
-                        else
-                            {
-                                this->geoStr();
-                                geostring = _M_ostr->str();
-                            }
-
-                        std::string fname = gmsh.generate( name,
-                                                           geostring,
-                                                           false,false,false );
-
-                        ImporterGmsh<_mesh_type> import( fname, FEELPP_GMSH_FORMAT_VERSION, worldcomm );
-                        _mesh->accept( import );
-                        _mesh->components().set ( MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
-                        _mesh->updateForUse();
-
-                        if ( straighten && _mesh_type::nOrder > 1 )
-                            return straightenMesh( _mesh );
-
-                    } // if (worldcomm.isActive())
-
-                return _mesh;
-        }
-
-
-
-            template<typename mesh_type>
-            boost::shared_ptr<mesh_type>
-            createMesh(std::string name, int straighten = 1, WorldComm const& worldcomm=WorldComm() )
+            if ( _M_geoIsDefineByUser )
             {
-                boost::shared_ptr<mesh_type> mesh( new mesh_type );
-                mesh->setWorldComm(worldcomm);
-                if (worldcomm.isActive())
-                    {
-                        this->cleanOstr();
-                        this->zeroCpt();
-
-                        Gmsh gmsh(mesh_type::nDim,mesh_type::nOrder);
-                        gmsh.setWorldComm(worldcomm);
-                        gmsh.setOrder(mesh_type::nOrder);
-                        gmsh.setRecombine(mesh_type::shape_type::is_hypercube);
-
-                        this->init(mesh_type::nOrder,gmsh.version());
-
-                        std::string geostring;
-                        if(_M_geoIsDefineByUser)
-                            {
-                                geostring= _M_ostrDefineByUser->str();
-                            }
-                        else
-                            {
-                                this->geoStr();
-                                geostring = _M_ostr->str();
-                            }
-
-                        std::string fname = gmsh.generate( name,
-                                                           geostring,false,false,false );
-
-                        ImporterGmsh<mesh_type> import( fname, FEELPP_GMSH_FORMAT_VERSION, worldcomm );
-                        mesh->accept( import );
-                        mesh->components().set ( MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
-                        mesh->updateForUse();
-
-                        if ( straighten && mesh_type::nOrder > 1 )
-                            return straightenMesh( mesh );
-                    } // if (worldcomm.isActive())
-
-                return mesh;
+                geostring= _M_ostrDefineByUser->str();
             }
 
-            /*_________________________________________________*
-             *_________________________________________________*
-             * Accessor                                        *
-             *_________________________________________________*
-             *_________________________________________________*/
-
-            uint dim() const { return  _M_dim;}
-            uint cptPt() const { return _M_cptPt;}
-            uint cptLine() const { return _M_cptLine;}
-            uint cptLineLoop() const { return _M_cptLineLoop;}
-            uint cptSurface() const { return _M_cptSurface;}
-            uint cptTableau() const { return _M_cptTableau;}//voir les extrudes par exemple
-            uint cptSurfaceLoop() const { return _M_cptSurfaceLoop;}
-            uint cptVolume() const { return _M_cptVolume;}
-
-            /*_________________________________________________*
-             * Parameter
-             *_________________________________________________*/
-
-            parameter_shape_const_iterator_type
-            paramShapeBegin() const
+            else
             {
-                return _M_paramShape->begin();
+                this->geoStr();
+                geostring = _M_ostr->str();
             }
 
-            parameter_shape_const_iterator_type paramShapeEnd() const { return _M_paramShape->end();}
+            std::string fname = gmsh.generate( name,
+                                               geostring,
+                                               false,false,false );
 
-            parameter_name_const_iterator_type
-            paramNameBegin(std::string __shape) const
+            ImporterGmsh<_mesh_type> import( fname, FEELPP_GMSH_FORMAT_VERSION, worldcomm );
+            _mesh->accept( import );
+            _mesh->components().set ( MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
+            _mesh->updateForUse();
+
+            if ( straighten && _mesh_type::nOrder > 1 )
+                return straightenMesh( _mesh );
+
+        } // if (worldcomm.isActive())
+
+        return _mesh;
+    }
+
+
+
+    template<typename mesh_type>
+    boost::shared_ptr<mesh_type>
+    createMesh( std::string name, int straighten = 1, WorldComm const& worldcomm=WorldComm() )
+    {
+        boost::shared_ptr<mesh_type> mesh( new mesh_type );
+        mesh->setWorldComm( worldcomm );
+
+        if ( worldcomm.isActive() )
+        {
+            this->cleanOstr();
+            this->zeroCpt();
+
+            Gmsh gmsh( mesh_type::nDim,mesh_type::nOrder );
+            gmsh.setWorldComm( worldcomm );
+            gmsh.setOrder( mesh_type::nOrder );
+            gmsh.setRecombine( mesh_type::shape_type::is_hypercube );
+
+            this->init( mesh_type::nOrder,gmsh.version() );
+
+            std::string geostring;
+
+            if ( _M_geoIsDefineByUser )
             {
-                return _M_paramShape->find(__shape)->second.begin();
+                geostring= _M_ostrDefineByUser->str();
             }
 
-            parameter_name_const_iterator_type
-            paramNameEnd(std::string __shape) const
+            else
             {
-                return _M_paramShape->find(__shape)->second.end();
+                this->geoStr();
+                geostring = _M_ostr->str();
             }
 
-            parameter_rectangle_type
-            getParameter(std::string __shape, std::string __name) const
-            {
-                return _M_paramShape->find(__shape)->second.find(__name)->second;
-            }
+            std::string fname = gmsh.generate( name,
+                                               geostring,false,false,false );
 
-            /*_________________________________________________*
-             * Marker
-             *_________________________________________________*/
-            /*
-            marker_shape_const_iterator_type
-            markShapeBegin() const
-            {
-                return _M_markShape->begin();
-            }
+            ImporterGmsh<mesh_type> import( fname, FEELPP_GMSH_FORMAT_VERSION, worldcomm );
+            mesh->accept( import );
+            mesh->components().set ( MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
+            mesh->updateForUse();
 
-            marker_shape_const_iterator_type
-            markShapeEnd() const
-            {
-                return _M_markShape->end();
-            }*/
+            if ( straighten && mesh_type::nOrder > 1 )
+                return straightenMesh( mesh );
+        } // if (worldcomm.isActive())
 
+        return mesh;
+    }
 
-            marker_type_const_iterator_type
-            markerTypeBegin(/*std::string __shape*/) const
-            {
-                //return _M_markShape->find(__shape)->second.begin();
-                return _M_markShape->begin();
-            }
+    /*_________________________________________________*
+     *_________________________________________________*
+     * Accessor                                        *
+     *_________________________________________________*
+     *_________________________________________________*/
 
-            marker_type_const_iterator_type
-            markerTypeEnd(/*std::string __shape*/) const
-            {
-                //return _M_markShape->find(__shape)->second.end();
-                return _M_markShape->end();
-            }
-            /*
-            marker_type_type
-            markerType(std::string __shape) const
-            {
-                //return _M_markShape->find(__shape)->second;
-                }*/
+    uint dim() const
+    {
+        return  _M_dim;
+    }
+    uint cptPt() const
+    {
+        return _M_cptPt;
+    }
+    uint cptLine() const
+    {
+        return _M_cptLine;
+    }
+    uint cptLineLoop() const
+    {
+        return _M_cptLineLoop;
+    }
+    uint cptSurface() const
+    {
+        return _M_cptSurface;
+    }
+    uint cptTableau() const
+    {
+        return _M_cptTableau;   //voir les extrudes par exemple
+    }
+    uint cptSurfaceLoop() const
+    {
+        return _M_cptSurfaceLoop;
+    }
+    uint cptVolume() const
+    {
+        return _M_cptVolume;
+    }
 
-            marker_markerName_const_iterator_type
-            markerMarkerNameBegin(/*std::string __shape,*/ std::string __type) const
-            {
-                //return _M_markShape->find(__shape)->second.find(__type)->second.begin();
-                return _M_markShape->find(__type)->second.begin();
-            }
+    /*_________________________________________________*
+     * Parameter
+     *_________________________________________________*/
 
-            marker_markerName_const_iterator_type
-            markerMarkerNameEnd(/*std::string __shape,*/ std::string __type) const
-            {
-                //return _M_markShape->find(__shape)->second.find(__type)->second.end();
-                return _M_markShape->find(__type)->second.end();
-            }
+    parameter_shape_const_iterator_type
+    paramShapeBegin() const
+    {
+        return _M_paramShape->begin();
+    }
 
-            marker_markerName_type
-            markerMarkerName(/*std::string __shape,*/ std::string __type) const
-            {
-                //return _M_markShape->find(__shape)->second.find(__type)->second;
-                return _M_markShape->find(__type)->second;
-            }
+    parameter_shape_const_iterator_type paramShapeEnd() const
+    {
+        return _M_paramShape->end();
+    }
 
-            std::list<marker_base_type>::const_iterator
-            markerListIndiceBegin(/*std::string __shape,*/ std::string __type ,std::string __markerName) const
-            {
-                return _M_markShape->find(__type)->second.find(__markerName)->second.begin();
-            }
+    parameter_name_const_iterator_type
+    paramNameBegin( std::string __shape ) const
+    {
+        return _M_paramShape->find( __shape )->second.begin();
+    }
 
-            std::list<marker_base_type>::const_iterator
-            markerListIndiceEnd(/*std::string __shape,*/ std::string __type ,std::string __markerName) const
-            {
-                //return _M_markShape->find(__shape)->second.find(__type)->second.find(__markerName)->second.end();
-                return _M_markShape->find(__type)->second.find(__markerName)->second.end();
-            }
+    parameter_name_const_iterator_type
+    paramNameEnd( std::string __shape ) const
+    {
+        return _M_paramShape->find( __shape )->second.end();
+    }
 
+    parameter_rectangle_type
+    getParameter( std::string __shape, std::string __name ) const
+    {
+        return _M_paramShape->find( __shape )->second.find( __name )->second;
+    }
 
-            std::list<marker_base_type>
-            getMarkerName(/*std::string __shape,*/ std::string __type ,std::string __markerName) const
-            {
-                //return _M_markShape->find(__shape)->second.find(__type)->second.find(__markerName)->second;
-                return _M_markShape->find(__type)->second.find(__markerName)->second;
-            }
+    /*_________________________________________________*
+     * Marker
+     *_________________________________________________*/
+    /*
+    marker_shape_const_iterator_type
+    markShapeBegin() const
+    {
+        return _M_markShape->begin();
+    }
 
-            /*_________________________________________________*
-             *_________________________________________________*
-             * Members                                         *
-             *_________________________________________________*
-             *_________________________________________________*/
-
-            uint _M_dim;
-            // memory
-            uint _M_cptPt;
-            uint _M_cptLine;
-            uint _M_cptLineLoop;
-            uint _M_cptSurface;
-            uint _M_cptTableau;
-            uint _M_cptSurfaceLoop;
-            uint _M_cptVolume;
-
-            // gestion des surface : shape,name,value
-            // value is the marker associated to the planeSurface (init to 0 and to use when call geoStr())
-            //std::list< std::list< boost::tuple<std::string,std::string, uint > > > _M_surfaceList;
-            boost::shared_ptr<ligne_name_type> _M_ligneList;
-            boost::shared_ptr<surface_name_type> _M_surfaceList;
-            boost::shared_ptr<volume_name_type> _M_volumeList;
-            boost::shared_ptr<surfaceloop_name_type> _M_surfaceLoopList;
-
-            boost::shared_ptr<std::ostringstream> _M_ostrExtrude;
-            boost::shared_ptr<std::ostringstream> _M_ostrSurfaceLoop;
+    marker_shape_const_iterator_type
+    markShapeEnd() const
+    {
+        return _M_markShape->end();
+    }*/
 
 
-            // data containers
-            //boost::shared_ptr<map_shape_names_type> _M_map_Shape;
-            boost::shared_ptr<parameter_shape_type> _M_paramShape;
-            //boost::shared_ptr<marker_shape_type> _M_markShape;
-            boost::shared_ptr<marker_type_type> _M_markShape;
+    marker_type_const_iterator_type
+    markerTypeBegin( /*std::string __shape*/ ) const
+    {
+        //return _M_markShape->find(__shape)->second.begin();
+        return _M_markShape->begin();
+    }
 
-            // output string
-            boost::shared_ptr<std::ostringstream> _M_ostr;
+    marker_type_const_iterator_type
+    markerTypeEnd( /*std::string __shape*/ ) const
+    {
+        //return _M_markShape->find(__shape)->second.end();
+        return _M_markShape->end();
+    }
+    /*
+    marker_type_type
+    markerType(std::string __shape) const
+    {
+        //return _M_markShape->find(__shape)->second;
+        }*/
 
-            boost::shared_ptr<std::ostringstream> _M_ostrDefineByUser;
-            bool _M_geoIsDefineByUser;
-        };
+    marker_markerName_const_iterator_type
+    markerMarkerNameBegin( /*std::string __shape,*/ std::string __type ) const
+    {
+        //return _M_markShape->find(__shape)->second.find(__type)->second.begin();
+        return _M_markShape->find( __type )->second.begin();
+    }
 
-        /*_________________________________________________*
-         *_________________________________________________*
-         *_________________________________________________*
-         * Function on the namespace                       *
-         *_________________________________________________*
-         *_________________________________________________*
-         *_________________________________________________*/
+    marker_markerName_const_iterator_type
+    markerMarkerNameEnd( /*std::string __shape,*/ std::string __type ) const
+    {
+        //return _M_markShape->find(__shape)->second.find(__type)->second.end();
+        return _M_markShape->find( __type )->second.end();
+    }
 
+    marker_markerName_type
+    markerMarkerName( /*std::string __shape,*/ std::string __type ) const
+    {
+        //return _M_markShape->find(__shape)->second.find(__type)->second;
+        return _M_markShape->find( __type )->second;
+    }
 
-        void run( data_geo_ptrtype __dg);
+    std::list<marker_base_type>::const_iterator
+    markerListIndiceBegin( /*std::string __shape,*/ std::string __type ,std::string __markerName ) const
+    {
+        return _M_markShape->find( __type )->second.find( __markerName )->second.begin();
+    }
 
-        template <uint Numero>
-        node_type
-        param(data_geo_ptrtype __dg);
-
-
-        void
-        writePoint(uint __numLoc, data_geo_ptrtype __dg ,double __x1,double __x2=0, double __x3=0);
-
-        void
-        writeLine(uint __numLoc, data_geo_ptrtype __dg ,uint __n1, uint __n2);
-
-        void
-        writeCircle(uint __numLoc, data_geo_ptrtype __dg ,uint __n1, uint __n2, uint __n3);
-
-        void
-        writeSpline(uint __numLoc, data_geo_ptrtype __dg ,Loop __loop);
-
-        void
-        writeBSpline(uint __numLoc, data_geo_ptrtype __dg ,Loop __loop);
-
-        void
-        writeLineLoop(uint __numLoc, data_geo_ptrtype __dg , Loop /*const*/ __loop );
-
-        void
-        writePlaneSurface(uint __numLoc, data_geo_ptrtype __dg , uint __ind);
-
-        void
-        writeRuledSurface(uint __numLoc, data_geo_ptrtype __dg , uint __ind);
-
-        void
-        writeExtrudeSurface( uint __numLoc,data_geo_ptrtype __dg , uint __ind,Loop /*const*/ __loop );
-
-        void
-        writePtInSurface( data_geo_ptrtype __dg , uint __indPt,uint __indSurf);
-
-        void
-        writeSurfaceLoop(uint __numLoc, data_geo_ptrtype __dg , Loop /*const*/ __loop );
-
-        void
-        writeVolume(uint __numLoc, data_geo_ptrtype __dg , uint __ind);
-
-        boost::tuple<Node,Node,Node>
-        computeBasisOrthogonal(node_type dir,node_type centre);
+    std::list<marker_base_type>::const_iterator
+    markerListIndiceEnd( /*std::string __shape,*/ std::string __type ,std::string __markerName ) const
+    {
+        //return _M_markShape->find(__shape)->second.find(__type)->second.find(__markerName)->second.end();
+        return _M_markShape->find( __type )->second.find( __markerName )->second.end();
+    }
 
 
-        /*_________________________________________________*
-         *_________________________________________________*
-         *_________________________________________________*
-         * PREPROCESSOR METHODS                            *
-         *_________________________________________________*
-         *_________________________________________________*
-         *_________________________________________________*/
+    std::list<marker_base_type>
+    getMarkerName( /*std::string __shape,*/ std::string __type ,std::string __markerName ) const
+    {
+        //return _M_markShape->find(__shape)->second.find(__type)->second.find(__markerName)->second;
+        return _M_markShape->find( __type )->second.find( __markerName )->second;
+    }
+
+    /*_________________________________________________*
+     *_________________________________________________*
+     * Members                                         *
+     *_________________________________________________*
+     *_________________________________________________*/
+
+    uint _M_dim;
+    // memory
+    uint _M_cptPt;
+    uint _M_cptLine;
+    uint _M_cptLineLoop;
+    uint _M_cptSurface;
+    uint _M_cptTableau;
+    uint _M_cptSurfaceLoop;
+    uint _M_cptVolume;
+
+    // gestion des surface : shape,name,value
+    // value is the marker associated to the planeSurface (init to 0 and to use when call geoStr())
+    //std::list< std::list< boost::tuple<std::string,std::string, uint > > > _M_surfaceList;
+    boost::shared_ptr<ligne_name_type> _M_ligneList;
+    boost::shared_ptr<surface_name_type> _M_surfaceList;
+    boost::shared_ptr<volume_name_type> _M_volumeList;
+    boost::shared_ptr<surfaceloop_name_type> _M_surfaceLoopList;
+
+    boost::shared_ptr<std::ostringstream> _M_ostrExtrude;
+    boost::shared_ptr<std::ostringstream> _M_ostrSurfaceLoop;
+
+
+    // data containers
+    //boost::shared_ptr<map_shape_names_type> _M_map_Shape;
+    boost::shared_ptr<parameter_shape_type> _M_paramShape;
+    //boost::shared_ptr<marker_shape_type> _M_markShape;
+    boost::shared_ptr<marker_type_type> _M_markShape;
+
+    // output string
+    boost::shared_ptr<std::ostringstream> _M_ostr;
+
+    boost::shared_ptr<std::ostringstream> _M_ostrDefineByUser;
+    bool _M_geoIsDefineByUser;
+};
+
+/*_________________________________________________*
+ *_________________________________________________*
+ *_________________________________________________*
+ * Function on the namespace                       *
+ *_________________________________________________*
+ *_________________________________________________*
+ *_________________________________________________*/
+
+
+void run( data_geo_ptrtype __dg );
+
+template <uint Numero>
+node_type
+param( data_geo_ptrtype __dg );
+
+
+void
+writePoint( uint __numLoc, data_geo_ptrtype __dg ,double __x1,double __x2=0, double __x3=0 );
+
+void
+writeLine( uint __numLoc, data_geo_ptrtype __dg ,uint __n1, uint __n2 );
+
+void
+writeCircle( uint __numLoc, data_geo_ptrtype __dg ,uint __n1, uint __n2, uint __n3 );
+
+void
+writeSpline( uint __numLoc, data_geo_ptrtype __dg ,Loop __loop );
+
+void
+writeBSpline( uint __numLoc, data_geo_ptrtype __dg ,Loop __loop );
+
+void
+writeLineLoop( uint __numLoc, data_geo_ptrtype __dg , Loop /*const*/ __loop );
+
+void
+writePlaneSurface( uint __numLoc, data_geo_ptrtype __dg , uint __ind );
+
+void
+writeRuledSurface( uint __numLoc, data_geo_ptrtype __dg , uint __ind );
+
+void
+writeExtrudeSurface( uint __numLoc,data_geo_ptrtype __dg , uint __ind,Loop /*const*/ __loop );
+
+void
+writePtInSurface( data_geo_ptrtype __dg , uint __indPt,uint __indSurf );
+
+void
+writeSurfaceLoop( uint __numLoc, data_geo_ptrtype __dg , Loop /*const*/ __loop );
+
+void
+writeVolume( uint __numLoc, data_geo_ptrtype __dg , uint __ind );
+
+boost::tuple<Node,Node,Node>
+computeBasisOrthogonal( node_type dir,node_type centre );
+
+
+/*_________________________________________________*
+ *_________________________________________________*
+ *_________________________________________________*
+ * PREPROCESSOR METHODS                            *
+ *_________________________________________________*
+ *_________________________________________________*
+ *_________________________________________________*/
 
 
 
@@ -1419,9 +1506,9 @@ namespace Feel {
                             BOOST_PP_INC(BOOST_PP_TUPLE_ELEM(4, 1, state)) \
                             )                                           \
         /**/
-        /*_________________________________________________*/
-        /*                                                 */
-        /**/
+/*_________________________________________________*/
+/*                                                 */
+/**/
 #define GEOTOOL_FOR_INCR2(r, state)                         \
         (                                                   \
          BOOST_PP_INC(BOOST_PP_TUPLE_ELEM(4, 0, state)),    \
@@ -1429,9 +1516,9 @@ namespace Feel {
          BOOST_PP_TUPLE_ELEM(4, 2, state),                  \
          BOOST_PP_TUPLE_ELEM(4, 3, state) )                 \
         /**/
-        /*_________________________________________________*/
-        /*                                                 */
-        /**/
+/*_________________________________________________*/
+/*                                                 */
+/**/
 #define GEOTOOL_FOR_MARKER_POINT_MACRO2(r, state)                       \
         __listMarker.push_back(boost::make_tuple(this->shape(),this->name(), \
                                                  GEOTOOL_MARKER_POINT_MARKVALUE( BOOST_PP_CAT(GEOTOOL_MARKER_POINT_, \
@@ -1441,9 +1528,9 @@ namespace Feel {
                                                  )                      \
                                );                                       \
         /**/
-        /*_________________________________________________*/
-        /*                                                 */
-        /**/
+/*_________________________________________________*/
+/*                                                 */
+/**/
 #define GEOTOOL_FOR_MARKER_LINE_MACRO2(r, state)                        \
         __listMarker.push_back(boost::make_tuple(this->shape(),this->name(), \
                                                  GEOTOOL_MARKER_LINE_MARKVALUE( BOOST_PP_CAT(GEOTOOL_MARKER_LINE_, \
@@ -1453,9 +1540,9 @@ namespace Feel {
                                                  )                      \
                                );                                       \
         /**/
-        /*_________________________________________________*/
-        /*                                                 */
-        /**/
+/*_________________________________________________*/
+/*                                                 */
+/**/
 #if 1
 #define GEOTOOL_FOR_MARKER_SURFACE_MACRO2(r, state)                     \
         __listMarker.push_back(boost::make_tuple(this->shape(),this->name(), \
@@ -1466,9 +1553,9 @@ namespace Feel {
                                                  )                      \
                                );                                       \
         /**/
-        /*_________________________________________________*/
-        /*                                                 */
-        /**/
+/*_________________________________________________*/
+/*                                                 */
+/**/
 #else
 #define GEOTOOL_FOR_MARKER_SURFACE_MACRO2(r, state)                     \
         __listMarker.push_back(boost::make_tuple(this->shape(),this->name(), \
@@ -1481,9 +1568,9 @@ namespace Feel {
                                                  )                      \
                                );                                       \
         /**/
-        /*_________________________________________________*/
-        /*                                                 */
-        /**/
+/*_________________________________________________*/
+/*                                                 */
+/**/
 
 #endif
 
@@ -1500,9 +1587,9 @@ namespace Feel {
                                                  )                      \
                                );                                       \
         /**/
-        /*_________________________________________________*/
-        /*                                                 */
-        /**/
+/*_________________________________________________*/
+/*                                                 */
+/**/
 #else
 #define GEOTOOL_FOR_MARKER_VOLUME_MACRO2(r, state)                      \
         __listMarker.push_back(boost::make_tuple(this->shape(),this->name(), \
@@ -1513,9 +1600,9 @@ namespace Feel {
                                                  )                      \
                                );                                       \
         /**/
-        /*_________________________________________________*/
-        /*                                                 */
-        /**/
+/*_________________________________________________*/
+/*                                                 */
+/**/
 #endif
 
 
@@ -1533,11 +1620,11 @@ namespace Feel {
                                ),                                       \
                               GEOTOOL_FOR_COMP2, GEOTOOL_FOR_INCR2, GEOTOOL_FOR_MARKER_POINT_MACRO2) \
                     }                                                   \
-
-        /**/
-        /*_________________________________________________*/
-        /*                                                 */
-        /**/
+ 
+/**/
+/*_________________________________________________*/
+/*                                                 */
+/**/
 #define GEOTOOL_FOR_MARKER_LINE_MACRO(r, state)                         \
         if (BOOST_PP_CAT(marker,                                        \
                          BOOST_PP_ADD(BOOST_PP_TUPLE_ELEM(3, 0, state),	\
@@ -1552,11 +1639,11 @@ namespace Feel {
                                ),                                       \
                               GEOTOOL_FOR_COMP2, GEOTOOL_FOR_INCR2, GEOTOOL_FOR_MARKER_LINE_MACRO2) \
                     }                                                   \
-
-        /**/
-        /*_________________________________________________*/
-        /*                                                 */
-        /**/
+ 
+/**/
+/*_________________________________________________*/
+/*                                                 */
+/**/
 #if 1
 #define GEOTOOL_FOR_MARKER_SURFACE_MACRO(r, state)                      \
         if (BOOST_PP_CAT(marker,                                        \
@@ -1573,9 +1660,9 @@ namespace Feel {
                               GEOTOOL_FOR_COMP2, GEOTOOL_FOR_INCR2, GEOTOOL_FOR_MARKER_SURFACE_MACRO2) \
                     }                                                   \
         /**/
-        /*_________________________________________________*/
-        /*                                                 */
-        /**/
+/*_________________________________________________*/
+/*                                                 */
+/**/
 #else
 #define GEOTOOL_FOR_MARKER_SURFACE_MACRO(r, state)                      \
         if (BOOST_PP_CAT(marker,                                        \
@@ -1594,9 +1681,9 @@ namespace Feel {
                               GEOTOOL_FOR_COMP2, GEOTOOL_FOR_INCR2, GEOTOOL_FOR_MARKER_SURFACE_MACRO2) \
                    }                                                  \
         /**/
-        /*_________________________________________________*/
-        /*                                                 */
-        /**/
+/*_________________________________________________*/
+/*                                                 */
+/**/
 
 #endif
 
@@ -1618,9 +1705,9 @@ namespace Feel {
                               GEOTOOL_FOR_COMP2, GEOTOOL_FOR_INCR2, GEOTOOL_FOR_MARKER_VOLUME_MACRO2) \
                     }                                                   \
         /**/
-        /*_________________________________________________*/
-        /*                                                 */
-        /**/
+/*_________________________________________________*/
+/*                                                 */
+/**/
 #else
 #define GEOTOOL_FOR_MARKER_VOLUME_MACRO(r, state)                       \
         if (BOOST_PP_CAT(marker,                                        \
@@ -1637,9 +1724,9 @@ namespace Feel {
                               GEOTOOL_FOR_COMP2, GEOTOOL_FOR_INCR2, GEOTOOL_FOR_MARKER_VOLUME_MACRO2) \
                     }                                                   \
         /**/
-        /*_________________________________________________*/
-        /*                                                 */
-        /**/
+/*_________________________________________________*/
+/*                                                 */
+/**/
 
 #endif
 
@@ -1649,56 +1736,56 @@ namespace Feel {
                             BOOST_PP_INC(BOOST_PP_TUPLE_ELEM(3, 1, state)) \
                             )                                           \
         /**/
-        /*_________________________________________________*/
-        /*                                                 */
-        /**/
+/*_________________________________________________*/
+/*                                                 */
+/**/
 #define GEOTOOL_FOR_INCR1(r, state)                         \
         (                                                   \
          BOOST_PP_INC(BOOST_PP_TUPLE_ELEM(3, 0, state)),	\
          BOOST_PP_TUPLE_ELEM(3, 1, state),                  \
          BOOST_PP_TUPLE_ELEM(3, 2, state) )                 \
         /**/
-        /*_________________________________________________*/
-        /*                                                 */
-        /**/
+/*_________________________________________________*/
+/*                                                 */
+/**/
 #define GEOTOOL_FOR_COMP(r, state)                                      \
         BOOST_PP_LESS( BOOST_PP_TUPLE_ELEM(2, 0, state),           \
                             BOOST_PP_INC(BOOST_PP_TUPLE_ELEM(2, 1, state)) \
                             )                                           \
         /**/
-        /*_________________________________________________*/
-        /*                                                 */
-        /**/
+/*_________________________________________________*/
+/*                                                 */
+/**/
 #define GEOTOOL_FOR_INCR(r, state)                          \
         (                                                   \
          BOOST_PP_INC(BOOST_PP_TUPLE_ELEM(2, 0, state)),	\
          BOOST_PP_TUPLE_ELEM(2, 1, state) )                 \
         /**/
-        /*_________________________________________________*/
-        /*                                                 */
-        /**/
+/*_________________________________________________*/
+/*                                                 */
+/**/
 #define GEOTOOL_SHAPE_PARAM(r, state)                                   \
         _M_param[BOOST_PP_TUPLE_ELEM(2,0,state)] = BOOST_PP_CAT( __param, \
                                                                  BOOST_PP_TUPLE_ELEM(2,0,state) ); \
         /**/
-        /*_________________________________________________*/
-        /*                                                 */
-        /**/
+/*_________________________________________________*/
+/*                                                 */
+/**/
 #define GEOTOOL_SHAPE_FOR_PARAM_SIGNATURE(r, state)                     \
         Node BOOST_PP_CAT( __param, BOOST_PP_TUPLE_ELEM(2,0,state) ) BOOST_PP_COMMA() \
         /**/
-        /*_________________________________________________*/
-        /*                                                 */
-        /**/
+/*_________________________________________________*/
+/*                                                 */
+/**/
 #define GEOTOOL_SHAPE_PARAM_SIGNATURE(state)                           \
         BOOST_PP_FOR( (0, BOOST_PP_SUB(GEOTOOL_SHAPE_NBPARAM(BOOST_PP_TUPLE_ELEM(2,0,state)),1) ), \
                       GEOTOOL_FOR_COMP,                                 \
                       GEOTOOL_FOR_INCR,                                 \
                       GEOTOOL_SHAPE_FOR_PARAM_SIGNATURE)                \
         /**/
-        /*_________________________________________________*/
-        /*                                                 */
-        /**/
+/*_________________________________________________*/
+/*                                                 */
+/**/
 #define GEOTOOL_SHAPE_CLASS(r,state)                                    \
         class GEOTOOL_SHAPE_NAME_CLASS(BOOST_PP_TUPLE_ELEM(2,0,state)) : public GeoGMSHTool \
         {                                                               \
@@ -1850,85 +1937,88 @@ namespace Feel {
                                                                         \
         };                                                              \
         /**/
-        /*_________________________________________________*/
-        /*_________________________________________________*/
-        /*                                                 */
-        /**/
+/*_________________________________________________*/
+/*_________________________________________________*/
+/*                                                 */
+/**/
 
 
 
-        //creation des classes representants les objets geotool
-        BOOST_PP_FOR( (0, BOOST_PP_SUB(BOOST_PP_ARRAY_SIZE(GEOTOOL_SHAPE),1) ),
-                      GEOTOOL_FOR_COMP,
-                      GEOTOOL_FOR_INCR,
-                      GEOTOOL_SHAPE_CLASS )
+//creation des classes representants les objets geotool
+BOOST_PP_FOR( ( 0, BOOST_PP_SUB( BOOST_PP_ARRAY_SIZE( GEOTOOL_SHAPE ),1 ) ),
+              GEOTOOL_FOR_COMP,
+              GEOTOOL_FOR_INCR,
+              GEOTOOL_SHAPE_CLASS )
 
 
 
-        template<typename mesh_type>
-        boost::shared_ptr<mesh_type>
-        createMeshFromGeoFile(std::string geofile,std::string name,double meshSize,int straighten = 1,
-                              int partitions=1, WorldComm worldcomm=WorldComm(),
-                              int partition_file = 0, GMSH_PARTITIONER partitioner = GMSH_PARTITIONER_CHACO )
-        {
+template<typename mesh_type>
+boost::shared_ptr<mesh_type>
+createMeshFromGeoFile( std::string geofile,std::string name,double meshSize,int straighten = 1,
+                       int partitions=1, WorldComm worldcomm=WorldComm(),
+                       int partition_file = 0, GMSH_PARTITIONER partitioner = GMSH_PARTITIONER_CHACO )
+{
 
-            boost::shared_ptr<mesh_type> mesh( new mesh_type );
-            mesh->setWorldComm(worldcomm);
-            if (!worldcomm.isActive()) return mesh;
+    boost::shared_ptr<mesh_type> mesh( new mesh_type );
+    mesh->setWorldComm( worldcomm );
 
-            Gmsh gmsh(mesh_type::nDim,mesh_type::nOrder);
-            gmsh.setWorldComm(worldcomm);
-            gmsh.setCharacteristicLength(meshSize);
-            gmsh.setNumberOfPartitions( partitions );
-            gmsh.setPartitioner( partitioner );
-            gmsh.setMshFileByPartition( partition_file );
-            gmsh.setRecombine(mesh_type::shape_type::is_hypercube);
+    if ( !worldcomm.isActive() ) return mesh;
 
-            std::ostringstream ostr;
+    Gmsh gmsh( mesh_type::nDim,mesh_type::nOrder );
+    gmsh.setWorldComm( worldcomm );
+    gmsh.setCharacteristicLength( meshSize );
+    gmsh.setNumberOfPartitions( partitions );
+    gmsh.setPartitioner( partitioner );
+    gmsh.setMshFileByPartition( partition_file );
+    gmsh.setRecombine( mesh_type::shape_type::is_hypercube );
 
-            // preambule :
-            ostr << "Mesh.MshFileVersion = " << gmsh.version() << ";\n"
-                 << "Mesh.CharacteristicLengthExtendFromBoundary=1;\n"
-                 << "Mesh.CharacteristicLengthFromPoints=1;\n"
-                 << "Mesh.ElementOrder=" << gmsh.order() << ";\n"
-                 << "Mesh.SecondOrderIncomplete = 0;\n"
-                 << "Mesh.Algorithm = 6;\n"
-                 << "Mesh.OptimizeNetgen=1;\n"
-                 << "// partitioning data\n"
-                 << "Mesh.Partitioner=" << partitioner << ";\n"
-                 << "Mesh.NbPartitions=" << partitions << ";\n"
-                 << "Mesh.MshFilePartitioned=" << partition_file << ";\n";
+    std::ostringstream ostr;
 
-
-            std::string contenu;
-            std::ifstream ifstr(geofile.c_str(), std::ios::in);
-            if(ifstr)
-                {
-                    // each line of the stream is appended in contenu
-                    while(getline(ifstr, contenu))
-                        ostr << contenu<<"\n";
-
-                    ifstr.close();
-                }
+    // preambule :
+    ostr << "Mesh.MshFileVersion = " << gmsh.version() << ";\n"
+         << "Mesh.CharacteristicLengthExtendFromBoundary=1;\n"
+         << "Mesh.CharacteristicLengthFromPoints=1;\n"
+         << "Mesh.ElementOrder=" << gmsh.order() << ";\n"
+         << "Mesh.SecondOrderIncomplete = 0;\n"
+         << "Mesh.Algorithm = 6;\n"
+         << "Mesh.OptimizeNetgen=1;\n"
+         << "// partitioning data\n"
+         << "Mesh.Partitioner=" << partitioner << ";\n"
+         << "Mesh.NbPartitions=" << partitions << ";\n"
+         << "Mesh.MshFilePartitioned=" << partition_file << ";\n";
 
 
-            std::string fname = gmsh.generate( name,
-                                               ostr.str(),false,false,true );
+    std::string contenu;
+    std::ifstream ifstr( geofile.c_str(), std::ios::in );
 
-            ImporterGmsh<mesh_type> import( fname, FEELPP_GMSH_FORMAT_VERSION, worldcomm );
+    if ( ifstr )
+    {
+        // each line of the stream is appended in contenu
+        while ( getline( ifstr, contenu ) )
+            ostr << contenu<<"\n";
 
-            mesh->accept( import );
-            mesh->components().set ( MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
-            mesh->updateForUse();
-
-                if ( straighten && mesh_type::nOrder > 1 )
-                    return straightenMesh( mesh );
-                return mesh;
-        }
+        ifstr.close();
+    }
 
 
+    std::string fname = gmsh.generate( name,
+                                       ostr.str(),false,false,true );
 
-    }//GeoTool
+    ImporterGmsh<mesh_type> import( fname, FEELPP_GMSH_FORMAT_VERSION, worldcomm );
+
+    mesh->accept( import );
+    mesh->components().set ( MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
+    mesh->updateForUse();
+
+    if ( straighten && mesh_type::nOrder > 1 )
+        return straightenMesh( mesh );
+
+    return mesh;
+}
+
+
+
+}//GeoTool
 
 } //Feel
 #endif /* __geotool_H */

@@ -90,15 +90,16 @@ public:
     //@{
 
     //! copy operator
-    PreconditionerPetsc& operator=( PreconditionerPetsc const & o)
+    PreconditionerPetsc& operator=( PreconditionerPetsc const & o )
+    {
+        if ( this != &o )
         {
-            if (this != &o )
-            {
-                M_pc = o.M_pc;
-                M_mat = o.M_mat;
-            }
-            return *this;
+            M_pc = o.M_pc;
+            M_mat = o.M_mat;
         }
+
+        return *this;
+    }
     //@}
 
     /** @name Accessors
@@ -108,7 +109,10 @@ public:
      * Returns the actual Petsc PC struct.  Useful for more advanced
      * purposes
      */
-    PC pc() { return M_pc; }
+    PC pc()
+    {
+        return M_pc;
+    }
 
 
 
@@ -122,7 +126,7 @@ public:
     /**
      * Tells PETSC to use the user-specified preconditioner
      */
-    static void setPetscPreconditionerType (const PreconditionerType & preconditioner_type, PC & pc);
+    static void setPetscPreconditionerType ( const PreconditionerType & preconditioner_type, PC & pc );
 
 
     //@}
@@ -135,7 +139,7 @@ public:
      * Computes the preconditioned vector "y" based on input "x".
      * Usually by solving Py=x to get the action of P^-1 x.
      */
-    virtual void apply(const Vector<T> & x, Vector<T> & y);
+    virtual void apply( const Vector<T> & x, Vector<T> & y );
 
 
     //@}
@@ -151,7 +155,7 @@ public:
      */
     Mat M_mat;
 
-    static void setPetscSubpreconditionerType(const PCType type, PC& pc);
+    static void setPetscSubpreconditionerType( const PCType type, PC& pc );
 private:
     /**
      * Some PETSc preconditioners (ILU, LU) don't work in parallel.  This function
@@ -160,13 +164,13 @@ private:
      * so that it can be called from set_petsc_preconditioner_type().  Not sure
      * why setPetscPreconditionerType() needs to be static though...
      */
-//#if PETSC_VERSION_LESS_THAN(3,0,0)
-////    // In Petsc 2.3.3, PCType was #define'd as const char*
+    //#if PETSC_VERSION_LESS_THAN(3,0,0)
+    ////    // In Petsc 2.3.3, PCType was #define'd as const char*
     //static void setPetscSubpreconditionerType(PCType type, PC& pc);
-//#else
+    //#else
     // In later versions, PCType is #define'd as char*, so we need the const
 
-//#endif
+    //#endif
 };
 
 
@@ -176,7 +180,7 @@ private:
 template <typename T>
 FEELPP_STRONG_INLINE
 PreconditionerPetsc<T>::PreconditionerPetsc ()
- :
+    :
     Preconditioner<T>()
 {
 }

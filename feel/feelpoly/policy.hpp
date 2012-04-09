@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -120,14 +120,16 @@ struct Vectorial
         const size_type nRows = __c.size1()/nComponents;
         const size_type nCols = __c.size2();
         ublas::matrix<T> __c_reshaped( ublas::zero_matrix<value_type>( nRows, nComponents*nCols ) );
+
         for ( int c = 0; c < nComponents; ++c )
-            {
-                ublas::project( __c_reshaped,
-                                ublas::range( 0, nRows ),
-                                ublas::range( c*nCols, ( c+1 )*nCols ) ) = ublas::project( __c,
-                                                                                           ublas::slice( c, nComponents, nRows ),
-                                                                                           ublas::slice( 0, 1, nCols ) );
-            }
+        {
+            ublas::project( __c_reshaped,
+                            ublas::range( 0, nRows ),
+                            ublas::range( c*nCols, ( c+1 )*nCols ) ) = ublas::project( __c,
+                                    ublas::slice( c, nComponents, nRows ),
+                                    ublas::slice( 0, 1, nCols ) );
+        }
+
         return __c_reshaped;
     }
 
@@ -142,14 +144,16 @@ struct Vectorial
         const size_type nRows = __c().size1()*nComponents;
         const size_type nCols = __c().size2()/nComponents;
         ublas::matrix<value_type> __c_reshaped( ublas::zero_matrix<value_type>( nRows, nCols ) );
+
         for ( int c = 0; c < nComponents; ++c )
-            {
-                ublas::project( __c_reshaped,
-                                ublas::slice( c, nComponents, nRows/nComponents ),
-                                ublas::slice( 0, 1, nCols ) ) = ublas::project( __c(),
-                                                                                ublas::range( 0, nRows/nComponents ),
-                                                                                ublas::range( c*nCols, ( c+1 )*nCols ) );
-            }
+        {
+            ublas::project( __c_reshaped,
+                            ublas::slice( c, nComponents, nRows/nComponents ),
+                            ublas::slice( 0, 1, nCols ) ) = ublas::project( __c(),
+                                    ublas::range( 0, nRows/nComponents ),
+                                    ublas::range( c*nCols, ( c+1 )*nCols ) );
+        }
+
         return __c_reshaped;
     }
 
@@ -164,14 +168,16 @@ struct Vectorial
         const size_type nRows = __c.size1()*nComponents;
         const size_type nCols = __c.size2()/nComponents;
         ublas::matrix<value_type> __c_reshaped( ublas::zero_matrix<value_type>( nRows, nCols ) );
+
         for ( int c = 0; c < nComponents; ++c )
-            {
-                ublas::project( __c_reshaped,
-                                ublas::slice( c, nComponents, nRows/nComponents ),
-                                ublas::slice( 0, 1, nCols ) ) = ublas::project( __c,
-                                                                                ublas::range( 0, nRows/nComponents ),
-                                                                                ublas::range( c*nCols, ( c+1 )*nCols ) );
-            }
+        {
+            ublas::project( __c_reshaped,
+                            ublas::slice( c, nComponents, nRows/nComponents ),
+                            ublas::slice( 0, 1, nCols ) ) = ublas::project( __c,
+                                    ublas::range( 0, nRows/nComponents ),
+                                    ublas::range( c*nCols, ( c+1 )*nCols ) );
+        }
+
         return __c_reshaped;
     }
 };
@@ -185,12 +191,12 @@ namespace detail
 template<uint16_type N, uint16_type M>
 struct Field
 {
-    static const uint16_type rank = (M > 1);
+    static const uint16_type rank = ( M > 1 );
     static const uint16_type nDim = N;
     static const uint16_type nVariables = N;
 
-    static const bool is_scalar = (M==1);
-    static const bool is_vectorial = (N==M);
+    static const bool is_scalar = ( M==1 );
+    static const bool is_vectorial = ( N==M );
     static const bool is_tensor2 = false;
     static const bool is_tensor3 = false;
 
@@ -260,19 +266,22 @@ struct Tensor2
         const size_type nRows1= __c.size2()*nComponents;
         const size_type nCols = __c.size2();
         ublas::matrix<T> __c_reshaped( nRows/nComponents, nCols*nComponents );
+
         //__c_reshaped = ublas::scalar_matrix<value_type>( nRows/nComponents, nCols*nComponents, -1 );
         for ( int c1 = 0; c1 < nComponents; ++c1 )
+        {
+            uint16_type i1 = nRows1*c1;
+
+            for ( int c2 = 0; c2 < nComponents; ++c2 )
             {
-                uint16_type i1 = nRows1*c1;
-                for ( int c2 = 0; c2 < nComponents; ++c2 )
-                    {
-                        ublas::project( __c_reshaped,
-                                        ublas::range( i1/nComponents, (i1+nRows1)/nComponents ),
-                                        ublas::range( c2*nCols, (c2+1)*nCols ) ) = ublas::project( __c,
-                                                                                                   ublas::slice( i1+c2, nComponents, nRows1/nComponents ),
-                                                                                                   ublas::slice( 0, 1, nCols ) );
-                    }
+                ublas::project( __c_reshaped,
+                                ublas::range( i1/nComponents, ( i1+nRows1 )/nComponents ),
+                                ublas::range( c2*nCols, ( c2+1 )*nCols ) ) = ublas::project( __c,
+                                        ublas::slice( i1+c2, nComponents, nRows1/nComponents ),
+                                        ublas::slice( 0, 1, nCols ) );
             }
+        }
+
         return __c_reshaped;
     }
 
@@ -295,19 +304,22 @@ struct Tensor2
         const size_type nRows1= __c.size2();
         const size_type nCols = __c.size2()/nComponents;
         ublas::matrix<T> __c_reshaped( nRows, nCols );
+
         //__c_reshaped = ublas::scalar_matrix<value_type>( nRows, nCols, -1 );
         for ( int c1 = 0; c1 < nComponents; ++c1 )
+        {
+            uint16_type i1 = nRows1*c1;
+
+            for ( int c2 = 0; c2 < nComponents; ++c2 )
             {
-                uint16_type i1 = nRows1*c1;
-                for ( int c2 = 0; c2 < nComponents; ++c2 )
-                    {
-                        ublas::project( __c_reshaped,
-                                        ublas::slice( i1+c2, nComponents, nRows1/nComponents ),
-                                        ublas::slice( 0, 1, nCols ) ) = ublas::project( __c,
-                                                                                        ublas::range( i1/nComponents, (i1+nRows1)/nComponents ),
-                                                                                        ublas::range( c2*nCols, (c2+1)*nCols ) );
-                    }
+                ublas::project( __c_reshaped,
+                                ublas::slice( i1+c2, nComponents, nRows1/nComponents ),
+                                ublas::slice( 0, 1, nCols ) ) = ublas::project( __c,
+                                        ublas::range( i1/nComponents, ( i1+nRows1 )/nComponents ),
+                                        ublas::range( c2*nCols, ( c2+1 )*nCols ) );
             }
+        }
+
         return __c_reshaped;
     }
 };
@@ -344,21 +356,21 @@ template<typename T1, typename T2>
 struct ReturnSelect
 {
     typedef typename mpl::if_<boost::is_same<T1, T2>,
-                              mpl::identity<T1>,
-                              typename mpl::if_<mpl::greater<mpl::int_<T1::rank>, mpl::int_<T2::rank> >,
-                                                mpl::identity<T1>,
-                                                mpl::identity<T2> >::type>::type::type type;
+            mpl::identity<T1>,
+            typename mpl::if_<mpl::greater<mpl::int_<T1::rank>, mpl::int_<T2::rank> >,
+            mpl::identity<T1>,
+            mpl::identity<T2> >::type>::type::type type;
 };
 
 enum EnumIndex
-    {
-        GLOBAL_COMPONENT,
-        COMPONENT_IN_COMPONENT,
-        GLOBAL_FUNCTION_INDEX,
-        PER_COMPONENT_FUNCTION_INDEX,
-        COMPONENT_IN_COMPONENT_FUNCTION_INDEX,
-        FUNCTION_INDEX
-    };
+{
+    GLOBAL_COMPONENT,
+    COMPONENT_IN_COMPONENT,
+    GLOBAL_FUNCTION_INDEX,
+    PER_COMPONENT_FUNCTION_INDEX,
+    COMPONENT_IN_COMPONENT_FUNCTION_INDEX,
+    FUNCTION_INDEX
+};
 
 const mpl::int_<GLOBAL_COMPONENT> INDEX_GLOBAL_COMPONENT = mpl::int_<GLOBAL_COMPONENT>();
 const mpl::int_<COMPONENT_IN_COMPONENT> INDEX_COMPONENT_IN_COMPONENT = mpl::int_<COMPONENT_IN_COMPONENT>() ;
@@ -382,15 +394,15 @@ struct Component
 #if 0
     typedef typename mpl::find<types, T>::type iter;
     typedef typename mpl::if_<boost::is_same<T, Scalar<nDim> >,
-                              mpl::identity<Scalar<nDim> >,
-                              mpl::identity<typename mpl::deref<typename mpl::prior<iter>::type>::type> >::type::type type;
+            mpl::identity<Scalar<nDim> >,
+            mpl::identity<typename mpl::deref<typename mpl::prior<iter>::type>::type> >::type::type type;
 #else
     typedef typename mpl::if_<boost::is_same<T, Scalar<nDim> >,
-                              mpl::identity<Scalar<nDim> >,
-                              typename mpl::if_<boost::is_same<T, Vectorial<nDim> >,
-                                                mpl::identity<Vectorial<nDim> >,
-                                                typename mpl::if_<boost::is_same<T, Tensor2<nDim> >,
-                                                                  mpl::identity<Tensor2<nDim> > >::type>::type>::type::type type;
+            mpl::identity<Scalar<nDim> >,
+            typename mpl::if_<boost::is_same<T, Vectorial<nDim> >,
+            mpl::identity<Vectorial<nDim> >,
+            typename mpl::if_<boost::is_same<T, Tensor2<nDim> >,
+            mpl::identity<Tensor2<nDim> > >::type>::type>::type::type type;
 #endif
 };
 
@@ -434,8 +446,8 @@ struct RankDown
     typedef typename mpl::find<types, T>::type iter;
     typedef typename mpl::deref<typename mpl::prior<iter>::type>::type _type;
     typedef typename mpl::if_<boost::is_same<_type,mpl::void_>,
-                              mpl::identity<Scalar<nDim> >,
-                              mpl::identity<_type> >::type::type type;
+            mpl::identity<Scalar<nDim> >,
+            mpl::identity<_type> >::type::type type;
 };
 /**
  * Policy for orthogonal polynomial set which can be \p normalized or

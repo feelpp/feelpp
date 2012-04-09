@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -46,51 +46,51 @@ namespace Feel
   Manages the "Unknown Type" error in an object Factory.
 */
 template <
-    typename IdentifierType,
-    class AbstractProduct
-    >
+typename IdentifierType,
+         class AbstractProduct
+         >
 struct FactoryDefaultError
 {
     class Exception
         :
-        public std::exception
+    public std::exception
     {
     public:
         Exception( IdentifierType id )
             :
             std::exception(),
             _M_ex()
-            {
-                _M_ex = this->getEx( id );
+        {
+            _M_ex = this->getEx( id );
 
-            }
+        }
         ~Exception() throw()
-            {}
+        {}
         const char* what() const throw ()
-            {
-                return _M_ex.c_str();
-            }
+        {
+            return _M_ex.c_str();
+        }
         std::string getEx( std::string const& id )
-            {
-                std::ostringstream __ex_str;
-                __ex_str << "[Factory] Unknown Type : " << id;
-                return __ex_str.str();
-            }
+        {
+            std::ostringstream __ex_str;
+            __ex_str << "[Factory] Unknown Type : " << id;
+            return __ex_str.str();
+        }
         template<typename T>
         std::string getEx( T const& id )
-            {
-                std::ostringstream __ex_str;
-                __ex_str << "[Factory] Unknown Type : ";
-                return __ex_str.str();
-            }
+        {
+            std::ostringstream __ex_str;
+            __ex_str << "[Factory] Unknown Type : ";
+            return __ex_str.str();
+        }
     private:
         std::string _M_ex;
     };
 
-    static AbstractProduct* onUnknownType(IdentifierType id )
-        {
-            throw Exception( id );
-        }
+    static AbstractProduct* onUnknownType( IdentifierType id )
+    {
+        throw Exception( id );
+    }
 };
 
 /*!
@@ -104,14 +104,14 @@ struct FactoryDefaultError
 */
 template
 <
-    class AbstractProduct,
-    typename IdentifierType,
-    typename ProductCreator = boost::function<AbstractProduct*()>,
-    template<typename, class> class FactoryErrorPolicy = FactoryDefaultError
->
+class AbstractProduct,
+      typename IdentifierType,
+      typename ProductCreator = boost::function<AbstractProduct*()>,
+      template<typename, class> class FactoryErrorPolicy = FactoryDefaultError
+      >
 class Factory
     :
-        public FactoryErrorPolicy<IdentifierType,AbstractProduct>
+public FactoryErrorPolicy<IdentifierType,AbstractProduct>
 {
 public:
 
@@ -146,10 +146,10 @@ public:
      * @return true if registration went fine, false otherwise
      */
     bool registerProduct( const identifier_type& id, creator_type creator )
-        {
-            Feel::Debug( 2200 ) << "Registered type with id : " << id << "\n";
-            return _M_associations.insert( typename id_to_product_type::value_type( id, creator ) ).second;
-        }
+    {
+        Feel::Debug( 2200 ) << "Registered type with id : " << id << "\n";
+        return _M_associations.insert( typename id_to_product_type::value_type( id, creator ) ).second;
+    }
 
     /**
      * Unregister a product
@@ -159,10 +159,10 @@ public:
      * @return true if unregistration went fine, false otherwise
      */
     bool unregisterProduct( const identifier_type& id )
-        {
-            Feel::Debug( 2200 ) << "Unregistered type with id : " << id << "\n";
-            return _M_associations.erase( id ) == 1;
-        }
+    {
+        Feel::Debug( 2200 ) << "Unregistered type with id : " << id << "\n";
+        return _M_associations.erase( id ) == 1;
+    }
 
     /**
      * Create an object from a product registered in the Factory using
@@ -173,16 +173,18 @@ public:
      * @return the object associate with \c id
      */
     product_type* createObject( const identifier_type& id )
+    {
+        typename id_to_product_type::const_iterator i = _M_associations.find( id );
+
+        if ( i != _M_associations.end() )
         {
-            typename id_to_product_type::const_iterator i = _M_associations.find( id );
-            if (i != _M_associations.end())
-            {
-                Feel::Debug ( 2200 ) << "Creating type with id : " << id << "\n";
-                return (i->second)();
-            }
-            Feel::Debug( 2200 ) << "Unknown type with id : " << id << "\n";
-            return super::onUnknownType( id );
+            Feel::Debug ( 2200 ) << "Creating type with id : " << id << "\n";
+            return ( i->second )();
         }
+
+        Feel::Debug( 2200 ) << "Unknown type with id : " << id << "\n";
+        return super::onUnknownType( id );
+    }
 
 
 
@@ -203,83 +205,85 @@ private:
   \author Christophe Prud'homme
 */
 template <
-   class AbstractProduct,
-   class ProductCreator = boost::function<AbstractProduct* (const AbstractProduct*)>,
-   template<typename, class> class FactoryErrorPolicy = FactoryDefaultError
->
+class AbstractProduct,
+      class ProductCreator = boost::function<AbstractProduct* ( const AbstractProduct* )>,
+      template<typename, class> class FactoryErrorPolicy = FactoryDefaultError
+      >
 class FactoryClone
-   :
-   public FactoryErrorPolicy<TypeInfo, AbstractProduct>
+    :
+public FactoryErrorPolicy<TypeInfo, AbstractProduct>
 {
 public:
 
 
-   /** @name Typedefs
-    */
-   //@{
+    /** @name Typedefs
+     */
+    //@{
 
-   typedef FactoryErrorPolicy<TypeInfo,AbstractProduct> super;
+    typedef FactoryErrorPolicy<TypeInfo,AbstractProduct> super;
 
-   //@}
+    //@}
 
-   /** @name Constructors, destructor
-    */
-   //@{
+    /** @name Constructors, destructor
+     */
+    //@{
 
-   //@}
+    //@}
 
-   /** @name Operator overloads
-    */
-   //@{
-
-
-   //@}
-
-   /** @name Accessors
-    */
-   //@{
+    /** @name Operator overloads
+     */
+    //@{
 
 
-   //@}
+    //@}
 
-   /** @name  Mutators
-    */
-   //@{
+    /** @name Accessors
+     */
+    //@{
 
 
-   //@}
+    //@}
 
-   /** @name  Methods
-    */
-   //@{
+    /** @name  Mutators
+     */
+    //@{
 
-   bool registerProduct(const TypeInfo& id, ProductCreator creator)
-      {
-         return _M_associations.insert( typename id_to_product_type::value_type( id, creator ) ).second;
-      }
 
-   bool unregisterProduct( const TypeInfo& id )
-      {
-         return _M_associations.erase(id) == 1;
-      }
+    //@}
 
-   AbstractProduct* createObject( const AbstractProduct* model )
-      {
-         if ( model == 0 ) return 0;
+    /** @name  Methods
+     */
+    //@{
 
-         typename id_to_product_type::const_iterator i = _M_associations.find( typeid(*model) );
-         if ( i != _M_associations.end() )
-         {
-            return (i->second)(model);
-         }
-         return super::onUnknownType(typeid(*model));
-      }
+    bool registerProduct( const TypeInfo& id, ProductCreator creator )
+    {
+        return _M_associations.insert( typename id_to_product_type::value_type( id, creator ) ).second;
+    }
 
-   //@}
+    bool unregisterProduct( const TypeInfo& id )
+    {
+        return _M_associations.erase( id ) == 1;
+    }
+
+    AbstractProduct* createObject( const AbstractProduct* model )
+    {
+        if ( model == 0 ) return 0;
+
+        typename id_to_product_type::const_iterator i = _M_associations.find( typeid( *model ) );
+
+        if ( i != _M_associations.end() )
+        {
+            return ( i->second )( model );
+        }
+
+        return super::onUnknownType( typeid( *model ) );
+    }
+
+    //@}
 
 private:
-   typedef std::map<TypeInfo, ProductCreator> id_to_product_type;
-   id_to_product_type _M_associations;
+    typedef std::map<TypeInfo, ProductCreator> id_to_product_type;
+    id_to_product_type _M_associations;
 };
 
 

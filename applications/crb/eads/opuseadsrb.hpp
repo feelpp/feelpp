@@ -13,7 +13,7 @@ extern "C" {
 
     /* opuseadsrb returns a non-null value when it fails */
     extern int opuseadsrb( const double *, unsigned long,
-                            double *, unsigned long );
+                           double *, unsigned long );
 
 #ifdef __cplusplus
 } /* end extern "C" */

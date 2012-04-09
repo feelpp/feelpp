@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -68,15 +68,15 @@ public:
     BoundingBox( bool is_lin = true )
         :
         is_linear( is_lin )
-        {}
+    {}
     BoundingBox( BoundingBox const & bb )
         :
         is_linear( bb.is_linear ),
         min( bb.min ),
         max( bb.max )
-        {}
+    {}
     ~BoundingBox()
-        {}
+    {}
 
     //@}
 
@@ -85,53 +85,56 @@ public:
     //@{
     void
     make( matrix_node_type const& __ptab )
+    {
+        typename matrix_node_type::const_iterator2 it = __ptab.begin2();
+        typename matrix_node_type::const_iterator2 en = __ptab.end2();
+
+        size_type P = __ptab.size1();
+
+        min.resize( __ptab.size1() );
+        max.resize( __ptab.size1() );
+
+        min = ublas::column( __ptab, 0 );
+        max = ublas::column( __ptab, 0 );
+
+        ++it;
+
+        typename node_type::iterator itmin = min.begin();
+        typename node_type::iterator itmax = max.begin();
+
+        while ( it != en )
         {
-            typename matrix_node_type::const_iterator2 it = __ptab.begin2();
-            typename matrix_node_type::const_iterator2 en = __ptab.end2();
+            typename matrix_node_type::const_iterator1 it1 = it.begin();
 
-            size_type P = __ptab.size1();
-
-            min.resize( __ptab.size1() );
-            max.resize( __ptab.size1() );
-
-            min = ublas::column( __ptab, 0 );
-            max = ublas::column( __ptab, 0 );
-
-            ++it;
-
-            typename node_type::iterator itmin = min.begin();
-            typename node_type::iterator itmax = max.begin();
-
-            while ( it != en )
+            for ( size_type i = 0; i < P; ++i, ++it1 )
             {
-                typename matrix_node_type::const_iterator1 it1 = it.begin();
-                for (size_type i = 0; i < P; ++i, ++it1)
-                {
-                    min[i] = std::min( min[i], *it1 );
-                    max[i] = std::max( max[i], *it1 );
-                }
-#if 0
-                std::for_each( it.begin(), it.end(),
-                               ( lambda::var( min[i] ) = std::min( lambda::var( min[i] ), lambda::_1 ),
-                                 lambda::var( max[i] ) = std::max( lambda::var( max[i] ), lambda::_1 ),
-                                 std::cout << "min: " << lambda::var( min ) << "\n",
-                                 std::cout << "max: " << lambda::var( max ) << "\n" ) );
-#endif
-
-                // enlarge the box for non-linear transformations
-                if ( !is_linear )
-                {
-                    for (size_type i = 0; i < P; ++i)
-                    {
-                        value_type e = (max[i]-min[i]) * 0.2;
-                        min[i] -= e;
-                        max[i] += e;
-                    }
-                }
-                ++it;
+                min[i] = std::min( min[i], *it1 );
+                max[i] = std::max( max[i], *it1 );
             }
 
+#if 0
+            std::for_each( it.begin(), it.end(),
+                           ( lambda::var( min[i] ) = std::min( lambda::var( min[i] ), lambda::_1 ),
+                             lambda::var( max[i] ) = std::max( lambda::var( max[i] ), lambda::_1 ),
+                             std::cout << "min: " << lambda::var( min ) << "\n",
+                             std::cout << "max: " << lambda::var( max ) << "\n" ) );
+#endif
+
+            // enlarge the box for non-linear transformations
+            if ( !is_linear )
+            {
+                for ( size_type i = 0; i < P; ++i )
+                {
+                    value_type e = ( max[i]-min[i] ) * 0.2;
+                    min[i] -= e;
+                    max[i] += e;
+                }
+            }
+
+            ++it;
         }
+
+    }
 
 
     //@}
@@ -140,7 +143,10 @@ public:
      */
     //@{
 
-    bool isLinear() const { return is_linear; }
+    bool isLinear() const
+    {
+        return is_linear;
+    }
 
     //@}
 

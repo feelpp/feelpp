@@ -46,7 +46,7 @@ extern "C"
 #if defined(MPICH_NAME)
 #if !defined( MPICH_HAVE_MPI_WIN )
 #define MPICH_HAVE_MPI_WIN
-  struct MPI_Win {};
+    struct MPI_Win {};
 #endif
 #endif
 #include <petscmat.h>
@@ -135,7 +135,7 @@ public:
      */
     MatrixPetsc();
 
-    MatrixPetsc(DataMap const& dmRow, DataMap const& dmCol, WorldComm const& worldComm=WorldComm());
+    MatrixPetsc( DataMap const& dmRow, DataMap const& dmCol, WorldComm const& worldComm=WorldComm() );
 
 
     /**
@@ -145,7 +145,7 @@ public:
      * This allows ownership of m to remain with the original creator,
      * and to simply provide additional functionality with the PetscMatrix.
      */
-    MatrixPetsc (Mat m);
+    MatrixPetsc ( Mat m );
 
     /**
      * Destructor. Free all memory, but do not
@@ -171,8 +171,8 @@ public:
      * entries that are not in the sparsity pattern of the matrix),
      * use the \p el function.
      */
-    value_type operator () (const size_type i,
-                            const size_type j) const;
+    value_type operator () ( const size_type i,
+                             const size_type j ) const;
 
     /**
      * create a PETSc matrix which is a copy of \p M
@@ -231,12 +231,12 @@ public:
      * \p noz is the number of on-processor
      * nonzeros per row (defaults to 30).
      */
-    void init (const size_type m,
-               const size_type n,
-               const size_type m_l,
-               const size_type n_l,
-               const size_type nnz=30,
-               const size_type noz=10);
+    void init ( const size_type m,
+                const size_type n,
+                const size_type m_l,
+                const size_type n_l,
+                const size_type nnz=30,
+                const size_type noz=10 );
 
     /**
      * Initialize using sparsity structure computed by \p dof_map.
@@ -250,7 +250,7 @@ public:
     /**
      *
      */
-    void setIndexSplit(std::vector< std::vector<int> > const &indexSplit );
+    void setIndexSplit( std::vector< std::vector<int> > const &indexSplit );
 
     /**
      * reinitialize the matrix
@@ -324,9 +324,9 @@ public:
      * not exist. Still, it is allowed to store
      * zero values in non-existent fields.
      */
-    void set (const size_type i,
-              const size_type j,
-              const value_type& value);
+    void set ( const size_type i,
+               const size_type j,
+               const value_type& value );
 
     /**
      * Add \p value to the element
@@ -336,9 +336,9 @@ public:
      * store zero values in
      * non-existent fields.
      */
-    void add (const size_type i,
-              const size_type j,
-              const value_type& value);
+    void add ( const size_type i,
+               const size_type j,
+               const value_type& value );
 
     /**
      * Add the full matrix to the
@@ -346,9 +346,9 @@ public:
      * for adding an element matrix
      * at assembly time
      */
-    void addMatrix (const ublas::matrix<value_type> &dm,
-                    const std::vector<size_type> &rows,
-                    const std::vector<size_type> &cols);
+    void addMatrix ( const ublas::matrix<value_type> &dm,
+                     const std::vector<size_type> &rows,
+                     const std::vector<size_type> &cols );
 
     /**
      * Add the full matrix to the
@@ -364,10 +364,10 @@ public:
      * Same, but assumes the row and column maps are the same.
      * Thus the matrix \p dm must be square.
      */
-    void addMatrix (const ublas::matrix<value_type> &dm,
-                    const std::vector<size_type> &dof_indices)
+    void addMatrix ( const ublas::matrix<value_type> &dm,
+                     const std::vector<size_type> &dof_indices )
     {
-        this->addMatrix (dm, dof_indices, dof_indices);
+        this->addMatrix ( dm, dof_indices, dof_indices );
     }
 
     /**
@@ -381,7 +381,7 @@ public:
      * whenever you add a non-zero value to \p X.  Note: \p X will
      * be closed, if not already done, before performing any work.
      */
-    void addMatrix (const T a, MatrixSparse<T> &X);
+    void addMatrix ( const T a, MatrixSparse<T> &X );
 
     /**
      * scale the matrix by the factor \p a
@@ -392,7 +392,7 @@ public:
     /**
      * Copies the diagonal part of the matrix into \p dest.
      */
-    void diagonal (Vector<value_type>& dest) const;
+    void diagonal ( Vector<value_type>& dest ) const;
 
     /**
      * Returns the transpose of a matrix
@@ -402,9 +402,9 @@ public:
      */
     void transpose( MatrixSparse<value_type>& Mt ) const;
 
-     /**
-     * Returns the symmetric part of the matrix
-     */
+    /**
+    * Returns the symmetric part of the matrix
+    */
     virtual void symmetricPart( MatrixSparse<value_type>& Ms ) const;
 
     /**
@@ -412,8 +412,16 @@ public:
      * not required in user-level code. Just don't do anything crazy like
      * calling MatDestroy()!
      */
-    Mat mat () const { FEELPP_ASSERT (_M_mat != NULL).error("null petsc matrix"); return _M_mat; }
-    Mat& mat () { FEELPP_ASSERT (_M_mat != NULL).error("null petsc matrix"); return _M_mat; }
+    Mat mat () const
+    {
+        FEELPP_ASSERT ( _M_mat != NULL ).error( "null petsc matrix" );
+        return _M_mat;
+    }
+    Mat& mat ()
+    {
+        FEELPP_ASSERT ( _M_mat != NULL ).error( "null petsc matrix" );
+        return _M_mat;
+    }
 
     /**
      * Print the contents of the matrix in Matlab's
@@ -421,7 +429,7 @@ public:
      * matrix to the file named \p name.  If \p name
      * is not specified it is dumped to the screen.
      */
-    void printMatlab(const std::string name="NULL") const;
+    void printMatlab( const std::string name="NULL" ) const;
 
     /**
      * \return \f$ v^T M u \f$
@@ -443,13 +451,19 @@ public:
     /**
      * update a block matrix
      */
-    void updateBlockMat(boost::shared_ptr<MatrixSparse<T> > m, size_type start_i, size_type start_j);
+    void updateBlockMat( boost::shared_ptr<MatrixSparse<T> > m, size_type start_i, size_type start_j );
 
 
-    void updatePCFieldSplit(PC & pc);
+    void updatePCFieldSplit( PC & pc );
 
-    std::vector<PetscInt> ia() { return _M_ia;}
-    std::vector<PetscInt> ja() { return _M_ja;}
+    std::vector<PetscInt> ia()
+    {
+        return _M_ia;
+    }
+    std::vector<PetscInt> ja()
+    {
+        return _M_ja;
+    }
 
     //@}
 
@@ -498,18 +512,21 @@ public :
 
     MatrixPetscMPI();
 
-    MatrixPetscMPI(DataMap const& dmRow, DataMap const& dmCol, WorldComm const& worldComm=WorldComm());
+    MatrixPetscMPI( DataMap const& dmRow, DataMap const& dmCol, WorldComm const& worldComm=WorldComm() );
 
-    MatrixPetscMPI(Mat m, DataMap const& dmRow, DataMap const& dmCol);
+    MatrixPetscMPI( Mat m, DataMap const& dmRow, DataMap const& dmCol );
 
-    ~MatrixPetscMPI() { this->clear(); }
+    ~MatrixPetscMPI()
+    {
+        this->clear();
+    }
 
-    void init (const size_type m,
-               const size_type n,
-               const size_type m_l,
-               const size_type n_l,
-               const size_type nnz=30,
-               const size_type noz=10);
+    void init ( const size_type m,
+                const size_type n,
+                const size_type m_l,
+                const size_type n_l,
+                const size_type nnz=30,
+                const size_type noz=10 );
 
     /**
      * Initialize using sparsity structure computed by \p dof_map.
@@ -528,17 +545,17 @@ public :
     size_type colStart() const;
     size_type colStop() const;
 
-    void set(const size_type i,
-             const size_type j,
-             const value_type& value);
-
-    void add (const size_type i,
+    void set( const size_type i,
               const size_type j,
-              const value_type& value);
+              const value_type& value );
 
-    void addMatrix(const ublas::matrix<value_type>& dm,
-                   const std::vector<size_type>& rows,
-                   const std::vector<size_type>& cols);
+    void add ( const size_type i,
+               const size_type j,
+               const value_type& value );
+
+    void addMatrix( const ublas::matrix<value_type>& dm,
+                    const std::vector<size_type>& rows,
+                    const std::vector<size_type>& cols );
 
     void addMatrix( int* rows, int nrows,
                     int* cols, int ncols,

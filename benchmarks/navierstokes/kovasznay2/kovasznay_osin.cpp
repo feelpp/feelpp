@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -39,21 +39,21 @@ Kovasznay::oseenUpdateInit( Oseen<space_type, imOrder, ENTITY>& oseen,
     using namespace Feel::vf;
 
     value_type pi = 4.0 * math::atan( value_type( 1.0 ) );
-    value_type lambda = 1./(2.*M_nu) - std::sqrt( 1./(4.*M_nu*M_nu) + 4.*pi*pi);
-    AUTO( uxe, 1. - exp( lambda * Px() ) * cos(2.*pi*Py()) );
-    AUTO( uye, lambda/(2.*pi) * exp( lambda * Px() ) * sin(2.*pi*Py()) );
+    value_type lambda = 1./( 2.*M_nu ) - std::sqrt( 1./( 4.*M_nu*M_nu ) + 4.*pi*pi );
+    AUTO( uxe, 1. - exp( lambda * Px() ) * cos( 2.*pi*Py() ) );
+    AUTO( uye, lambda/( 2.*pi ) * exp( lambda * Px() ) * sin( 2.*pi*Py() ) );
 
-    oseen.update( /* itRan = */ elements(*u.functionSpace()->mesh()),
-                  /* sigma = */ 0.0,
-                  /* nuInc = */ M_nu,
-                  /* nuAbs = */ constant(M_nu),
-                  /* beta  = uxe*oneX() + uye*oneY(), */
-                  /* beta  = */ idv(u),
-                  /* f     = */ 0.0*oneX(),
-                  /* c     = */ 0.0,
-                  /* g     = */ uxe*oneX() + uye*oneY(),
-                  /* noSlip= */ 1.0,
-                  /* updtJ = */ true );
+    oseen.update( /* itRan = */ elements( *u.functionSpace()->mesh() ),
+                                /* sigma = */ 0.0,
+                                /* nuInc = */ M_nu,
+                                /* nuAbs = */ constant( M_nu ),
+                                /* beta  = uxe*oneX() + uye*oneY(), */
+                                /* beta  = */ idv( u ),
+                                /* f     = */ 0.0*oneX(),
+                                /* c     = */ 0.0,
+                                /* g     = */ uxe*oneX() + uye*oneY(),
+                                /* noSlip= */ 1.0,
+                                /* updtJ = */ true );
 }
 
 } // Feel

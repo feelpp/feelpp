@@ -38,7 +38,8 @@ namespace Feel
 /**
   \enum MeshFormat
 */
-enum MeshFormat {
+enum MeshFormat
+{
     MESHPP,
     INRIA,
     GMSH,
@@ -57,8 +58,8 @@ enum MeshFormat {
 template<typename MeshType>
 class Importer
     :
-        public VisitorBase,
-        public Visitor<MeshType>
+public VisitorBase,
+public Visitor<MeshType>
 {
 public:
 
@@ -77,7 +78,7 @@ public:
         _M_worldComm( _worldcomm ),
         _M_filename(),
         _M_format( _format )
-        {}
+    {}
 
     /**
      * constructor
@@ -89,7 +90,7 @@ public:
         _M_worldComm( _worldcomm ),
         _M_filename( _filename ),
         _M_format( _format )
-        {}
+    {}
 
     virtual ~Importer()
     {}
@@ -115,18 +116,27 @@ public:
     /**
      * \return the filename
      */
-    std::string const& filename() const { return _M_filename; }
+    std::string const& filename() const
+    {
+        return _M_filename;
+    }
 
 
     /**
      * \return the mesh format
      */
-    MeshFormat format() const { return _M_format; }
+    MeshFormat format() const
+    {
+        return _M_format;
+    }
 
     /**
      * \return the world comm
      */
-    WorldComm const& worldComm() const { return _M_worldComm; }
+    WorldComm const& worldComm() const
+    {
+        return _M_worldComm;
+    }
 
 private:
 

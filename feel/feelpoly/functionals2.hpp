@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -53,7 +53,7 @@ namespace functional
 template<typename Space, typename Poly = Space>
 class IntegralMoment
     :
-    public Functional<Space>
+public Functional<Space>
 {
     typedef Functional<Space> super;
 public:
@@ -82,7 +82,7 @@ public:
 #endif
         //ublas::matrix<value_type> m ( ublas::prod( q.coeff(), ublas::trans( p.basis().coeff() ) ) );
         typename space_type::Pkp1_v_type l;
-        ublas::matrix<value_type> m ( ublas::prod( q.coeff(), ublas::trans(l.coeff() ) ));
+        ublas::matrix<value_type> m ( ublas::prod( q.coeff(), ublas::trans( l.coeff() ) ) );
 
         //ublas::matrix<value_type> m ( ublas::prod( q.coeff(), p.coeff() ) );
         //std::cout << "[IntegralMoment] m = " << m << "\n";
@@ -97,9 +97,10 @@ public:
     IntegralMoment& operator=( IntegralMoment const& im )
     {
         if ( this != &im )
-            {
-                super::operator=( im );
-            }
+        {
+            super::operator=( im );
+        }
+
         return *this;
     }
 
@@ -119,7 +120,7 @@ struct prod
 #if 0
     value_type operator() ( typename node<value_type>::type const& n )
     {
-        return _M_p1.evaluate( n )(0,0) * _M_p2.evaluate( n )(0,0);
+        return _M_p1.evaluate( n )( 0,0 ) * _M_p2.evaluate( n )( 0,0 );
     }
 #endif
     typename node<value_type>::type operator() ( typename node<value_type>::type const& n )
@@ -140,7 +141,7 @@ struct prod
 template<typename Space>
 class IntegralMomentOnFace
     :
-    public Functional<Space>
+public Functional<Space>
 {
     typedef Functional<Space> super;
 public:
@@ -170,13 +171,14 @@ public:
         typedef detail::prod<typename space_type::polynomial_type, polynomial_type> prod_fun;
 
         for ( uint16_type i = 0; i < p.polynomialDimensionPerComponent(); ++i )
-            {
-                //if ( p.is_scalar )
-                //__rep( 0, i ) = _M_q.integrate( face, prod_fun( p.polynomial(i), p.polynomial( k ) ) );
-                //else
-                typedef typename node<value_type>::type node_type;
-                ublas::column( __rep, i ) = _M_q.integrate( face, prod_fun( p.polynomial(i), p.polynomial( k ) ) );
-            }
+        {
+            //if ( p.is_scalar )
+            //__rep( 0, i ) = _M_q.integrate( face, prod_fun( p.polynomial(i), p.polynomial( k ) ) );
+            //else
+            typedef typename node<value_type>::type node_type;
+            ublas::column( __rep, i ) = _M_q.integrate( face, prod_fun( p.polynomial( i ), p.polynomial( k ) ) );
+        }
+
         this->setCoefficient( __rep );
     }
 
@@ -194,19 +196,21 @@ public:
         _M_k ( k ),
         _M_q()
     {
-        ublas::matrix<value_type> __rep( ublas::zero_matrix<value_type>(nComponents, p.polynomialDimensionPerComponent() ) );
+        ublas::matrix<value_type> __rep( ublas::zero_matrix<value_type>( nComponents, p.polynomialDimensionPerComponent() ) );
         typedef detail::prod<typename space_type::polynomial_type::component_type,
-            typename polynomial_type::component_type> prod_fun;
+                typename polynomial_type::component_type> prod_fun;
 
         int nc = p.polynomialDimensionPerComponent()*c;
         int ind_p2 = nc + k;
+
         for ( uint16_type i = 0; i < p.polynomialDimensionPerComponent(); ++i )
-            {
-                int ind_p1 = nc + i;
-                typedef typename node<value_type>::type node_type;
-                __rep( c, i ) = _M_q.integrate( face, prod_fun( p.polynomial( ind_p1 )[c],
-                                                                p.polynomial( ind_p2 )[c] ) )( 0 );
-            }
+        {
+            int ind_p1 = nc + i;
+            typedef typename node<value_type>::type node_type;
+            __rep( c, i ) = _M_q.integrate( face, prod_fun( p.polynomial( ind_p1 )[c],
+                                            p.polynomial( ind_p2 )[c] ) )( 0 );
+        }
+
         this->setCoefficient( __rep );
     }
 
@@ -235,7 +239,7 @@ private:
 template<typename Space,typename BasisType>
 class IntegralMomentsOnFace
     :
-    public std::vector<Functional<Space> >
+public std::vector<Functional<Space> >
 {
     typedef std::vector<Functional<Space> > super;
 public:
@@ -279,40 +283,40 @@ public:
 
 
         typename gm_type::template Context<vm::POINT,element_type> __c( __gm->boundaryMap(),
-                                                                        ref_convex_face,
-                                                                        __geopc );
+                ref_convex_face,
+                __geopc );
 
         __c.update( ref_convex_face, __geopc );
         Debug( 5050 ) << "[nc] ref_convex_face "  << face << " xref" << __c.xRefs() << "\n";
         Debug( 5050 ) << "[nc] ref_convex_face "  << face << " xreal" << __c.xReal() << "\n";
 
         for ( uint16_type k = 0; k < l.polynomialDimensionPerComponent(); ++k )
+        {
+            ublas::matrix<value_type> __rep( nComponents, p.polynomialDimensionPerComponent() );
+
+            for ( uint16_type i = 0; i < p.polynomialDimensionPerComponent(); ++i )
             {
-                ublas::matrix<value_type> __rep( nComponents, p.polynomialDimensionPerComponent() );
-
-                for ( uint16_type i = 0; i < p.polynomialDimensionPerComponent(); ++i )
+                /*
+                typedef typename node<value_type>::type node_type;
+                double __res = 0;
+                double __len = 0;
+                for ( uint16_type __ip = 0; __ip < __qr_face.nPoints();++__ip )
                     {
-                        /*
-                        typedef typename node<value_type>::type node_type;
-                        double __res = 0;
-                        double __len = 0;
-                        for ( uint16_type __ip = 0; __ip < __qr_face.nPoints();++__ip )
-                            {
-                                __res += ( __qr_face.weight( __ip )*
-                                           p.polynomial(i).evaluate( __c.xReal(__ip) )*
-                                           l.polynomial(k).evaluate( __c.xRef( __ip ) ));
+                        __res += ( __qr_face.weight( __ip )*
+                                   p.polynomial(i).evaluate( __c.xReal(__ip) )*
+                                   l.polynomial(k).evaluate( __c.xRef( __ip ) ));
 
-                                __len += __qr_face.weight( __ip );
-                            }
-                                  Debug( 5050 ) << "[nc] length = " << __len << "\n";
-                              Debug( 5050 ) << "[nc] res = " << __res << "\n";
-                              ublas::column( __rep, i ) = __res/__len;
-                              }
-                        this->push_back( functional_type( p,  __rep ) );
-                        */
+                        __len += __qr_face.weight( __ip );
                     }
-
+                          Debug( 5050 ) << "[nc] length = " << __len << "\n";
+                      Debug( 5050 ) << "[nc] res = " << __res << "\n";
+                      ublas::column( __rep, i ) = __res/__len;
+                      }
+                this->push_back( functional_type( p,  __rep ) );
+                */
             }
+
+        }
     }
 
 private:
@@ -334,7 +338,7 @@ private:
 template<typename Space>
 class IntegralMomentOfDerivative
     :
-    public Functional<Space>
+public Functional<Space>
 {
     typedef Functional<Space> super;
 public:
@@ -351,7 +355,7 @@ public:
     template<typename P>
     IntegralMomentOfDerivative( space_type const& b, uint16_type i )
         :
-        super( b, b.d(i) )
+        super( b, b.d( i ) )
     {}
 };
 
@@ -364,7 +368,7 @@ public:
 template<typename Space, typename Poly = Space>
 class IntegralMomentOfDivergence
     :
-    public Functional<Space>
+public Functional<Space>
 {
     typedef Functional<Space> super;
 public:
@@ -390,13 +394,14 @@ public:
 
         //std::cout << "q = " << q.coeff() << "\n";
         for ( int i = 0; i < space_type::nComponents; ++i )
-            {
+        {
 
-                std::cout << "p.d("<< i << ")  = " << p.basis().d(i) << "\n"
-                          << "prod = " << ublas::prod( q.coeff(), p.basis().d(i) ) << "\n";
+            std::cout << "p.d("<< i << ")  = " << p.basis().d( i ) << "\n"
+                      << "prod = " << ublas::prod( q.coeff(), p.basis().d( i ) ) << "\n";
 
-                ublas::row(__rep,i) = ublas::row( ublas::prod( q.coeff(), p.basis().d(i) ), 0) ;
-            }
+            ublas::row( __rep,i ) = ublas::row( ublas::prod( q.coeff(), p.basis().d( i ) ), 0 ) ;
+        }
+
         //std::cout << "[IntegralMomentOfDivergence] rep = " << __rep << "\n";
         this->setCoefficient( __rep );
     }

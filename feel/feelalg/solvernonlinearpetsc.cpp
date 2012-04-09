@@ -48,248 +48,261 @@
 // Give them an obscure name to avoid namespace pollution.
 extern "C"
 {
-  // Older versions of PETSc do not have the different int typedefs.
-  // On 64-bit machines, PetscInt may actually be a long long int.
-  // This change occurred in Petsc-2.2.1.
+    // Older versions of PETSc do not have the different int typedefs.
+    // On 64-bit machines, PetscInt may actually be a long long int.
+    // This change occurred in Petsc-2.2.1.
 # if (((PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR == 2) && (PETSC_VERSION_SUBMINOR == 0)) || \
       ((PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR <= 1)))
-  typedef int PetscErrorCode;
-  typedef int PetscInt;
+    typedef int PetscErrorCode;
+    typedef int PetscInt;
 #endif
 
-  //-------------------------------------------------------------------
-  // this function is called by PETSc at the end of each nonlinear step
-  PetscErrorCode
-  __feel_petsc_snes_monitor (SNES snes, PetscInt its, PetscReal fnorm, void *)
-  {
-    //int ierr=0;
+    //-------------------------------------------------------------------
+    // this function is called by PETSc at the end of each nonlinear step
+    PetscErrorCode
+    __feel_petsc_snes_monitor ( SNES snes, PetscInt its, PetscReal fnorm, void * )
+    {
+        //int ierr=0;
 
-    //if (its > 0)
-      std::ostringstream ostr;
+        //if (its > 0)
+        std::ostringstream ostr;
 
-      ostr << "[SolverNonLinearPetsc] NL step " << its
-           << std::scientific
-           << ", |residual|_2 = " << fnorm;
-      //Feel::Log() << ostr.str() << "\n";
-      //std::cout << ostr.str() << "\n";
+        ostr << "[SolverNonLinearPetsc] NL step " << its
+             << std::scientific
+             << ", |residual|_2 = " << fnorm;
+        //Feel::Log() << ostr.str() << "\n";
+        //std::cout << ostr.str() << "\n";
 #if 1
-      KSP            ksp;         /* linear solver context */
-      SNESGetKSP( snes,&ksp);
-      PetscInt lits;
-      int ierr = KSPGetIterationNumber (ksp, &lits);
-      CHKERRABORT(PETSC_COMM_WORLD,ierr);
+        KSP            ksp;         /* linear solver context */
+        SNESGetKSP( snes,&ksp );
+        PetscInt lits;
+        int ierr = KSPGetIterationNumber ( ksp, &lits );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
 
-      PetscReal final_resid;
-      // Get the norm of the final residual to return to the user.
-      ierr = KSPGetResidualNorm ( ksp, &final_resid);
-      CHKERRABORT(PETSC_COMM_WORLD,ierr);
-      ///Feel::Log() << "[SolverNonLinearPetsc] KSP num of it = " << lits << " residual = " << final_resid << "\n";
-      //std::cout << "[SolverNonLinearPetsc] KSP num of it = " << lits << " residual = " << final_resid << "\n";
+        PetscReal final_resid;
+        // Get the norm of the final residual to return to the user.
+        ierr = KSPGetResidualNorm ( ksp, &final_resid );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        ///Feel::Log() << "[SolverNonLinearPetsc] KSP num of it = " << lits << " residual = " << final_resid << "\n";
+        //std::cout << "[SolverNonLinearPetsc] KSP num of it = " << lits << " residual = " << final_resid << "\n";
 #endif
 
-    //return ierr;
-    return 0;
-  }
+        //return ierr;
+        return 0;
+    }
 
 
-
-  //---------------------------------------------------------------
-  // this function is called by PETSc to evaluate the residual at X
-  PetscErrorCode
-  __feel_petsc_snes_residual (SNES snes, Vec x, Vec r, void *ctx)
-  {
-    int ierr=0;
-
-    assert (x   != NULL);
-    assert (r   != NULL);
-    assert (ctx != NULL);
-
-    Feel::SolverNonLinearPetsc<double>* solver =
-      static_cast<Feel::SolverNonLinearPetsc<double>*> (ctx);
-
-#if !defined(FEELPP_ENABLE_MPI_MODE)
-    boost::shared_ptr<Feel::Vector<double> > R( new Feel::VectorPetsc<double>(r));
-    boost::shared_ptr<Feel::MatrixSparse<double> >  PC;
-    boost::shared_ptr<Feel::Vector<double> > X_global( new Feel::VectorPetsc<double>(x));
-    boost::shared_ptr<Feel::Vector<double> > X_local( new Feel::VectorPetsc<double>(X_global->size()) );
-
-    X_global->localize (*X_local);
-#else
-    boost::shared_ptr<Feel::Vector<double> > R;
-    boost::shared_ptr<Feel::Vector<double> > X_global;
-    if (solver->comm().size()>1)
-        {
-            R.reset( new Feel::VectorPetscMPI<double>(r,solver->mapRow()));
-            X_global.reset( new Feel::VectorPetscMPI<double>(x,solver->mapRow()));
-        }
-    else // MPI
-        {
-            R.reset( new Feel::VectorPetsc<double>(r) );
-            X_global.reset( new Feel::VectorPetsc<double>(x) );
-        }
-#endif
-    //if (solver->residual != NULL) solver->residual (X_local, R);
-    if (solver->residual != NULL) solver->residual (X_global, R);
-    //if (solver->matvec   != NULL) solver->matvec   (X_local, R, PC );
-
-    R->close();
-
-    return ierr;
-  }
-
-
-
-  //---------------------------------------------------------------
-  // this function is called by PETSc to evaluate the Jacobian at X
-  PetscErrorCode
-  __feel_petsc_snes_jacobian (SNES snes, Vec x, Mat *jac, Mat *pc, MatStructure *msflag, void *ctx)
-  {
-    int ierr=0;
-    assert (ctx != NULL);
-
-    Feel::SolverNonLinearPetsc<double>* solver =
-      static_cast<Feel::SolverNonLinearPetsc<double>*> (ctx);
-
-#if !defined(FEELPP_ENABLE_MPI_MODE)
-    boost::shared_ptr<Feel::Vector<double> > R;
-    boost::shared_ptr<Feel::MatrixSparse<double> >  PC(new Feel::MatrixPetsc<double>(*pc) );
-    boost::shared_ptr<Feel::MatrixSparse<double> >  Jac(new Feel::MatrixPetsc<double>(*jac) );
-    boost::shared_ptr<Feel::Vector<double> > X_global( new Feel::VectorPetsc<double>(x));
-    boost::shared_ptr<Feel::Vector<double> > X_local( new Feel::VectorPetsc<double>(X_global->size()) );
-
-    X_global->localize (*X_local);
-#else // MPI
-    boost::shared_ptr<Feel::MatrixSparse<double> > Jac;
-    boost::shared_ptr<Feel::Vector<double> > X_global;
-    if (solver->comm().size()>1)
-        {
-            Jac.reset(new Feel::MatrixPetscMPI<double>(*jac,solver->mapRow(),solver->mapCol()) );
-            //Jac->setMapRow(solver->mapRow());
-            //Jac->setMapCol(solver->mapCol());
-            X_global.reset( new Feel::VectorPetscMPI<double>(x,solver->mapRow()));
-        }
-    else
-        {
-            Jac.reset(new Feel::MatrixPetsc<double>(*jac) );
-            X_global.reset( new Feel::VectorPetsc<double>(x));
-        }
-#endif
-
-    //if (solver->jacobian != NULL) solver->jacobian (X_local, PC );
-    if (solver->jacobian != NULL) solver->jacobian (X_global, Jac );
-    //if (solver->matvec   != NULL) solver->matvec   (X_local, R, PC );
-
-    //PC=Jac;
-    //PC->close();
-    //Jac = PC;
-    Jac->close();
-    //*PC = Jac;
-    //PC->printMatlab( "pc.m" );
-    //Jac->printMatlab( "jac.m" );
-    //!!!*msflag = SAME_NONZERO_PATTERN;
-    //*msflag = DIFFERENT_NONZERO_PATTERN;
-#if 0
-    std::cout << "[__ snes_jacobian] mflag = " << *msflag << "\n";
-    std::cout << "[__ snes_jacobian] SAME_NONZERO_PATTERN = " << SAME_NONZERO_PATTERN << "\n";
-    std::cout << "[__ snes_jacobian] DIFFERENT_NONZERO_PATTERN = " << DIFFERENT_NONZERO_PATTERN << "\n";
-    std::cout << "[__ snes_jacobian] SAME_PRECONDITIONER = " << SAME_PRECONDITIONER << "\n";
-#endif
-
-    //std::cout << "\nsolver->reuseJacobian() " << solver->reuseJacobian() << " solver->reusePreconditioner() " << solver->reusePreconditioner() << "\n";
-    //solver->setReuse( solver->reuseJacobian(), solver->reusePreconditioner() );
-    //solver->setReuse( -1, 2 );
-    //*msflag = MatStructure( solver->precMatrixStructure() );
-    //*msflag = SAME_NONZERO_PATTERN;
-    //*msflag = DIFFERENT_NONZERO_PATTERN;
-    return ierr;
-  }
 
     //---------------------------------------------------------------
-  // this function is called by PETSc to evaluate the residual at X
-  PetscErrorCode
-  __feel_petsc_snes_dense_residual (SNES snes, Vec x, Vec r, void *ctx)
-  {
-    int ierr=0;
+    // this function is called by PETSc to evaluate the residual at X
+    PetscErrorCode
+    __feel_petsc_snes_residual ( SNES snes, Vec x, Vec r, void *ctx )
+    {
+        int ierr=0;
 
-    assert (x   != NULL);
-    assert (r   != NULL);
-    assert (ctx != NULL);
+        assert ( x   != NULL );
+        assert ( r   != NULL );
+        assert ( ctx != NULL );
 
-    Feel::SolverNonLinearPetsc<double>* solver =
-      static_cast<Feel::SolverNonLinearPetsc<double>*> (ctx);
+        Feel::SolverNonLinearPetsc<double>* solver =
+            static_cast<Feel::SolverNonLinearPetsc<double>*> ( ctx );
 
-    int size;
-    VecGetSize(r,&size);
-    double *xa; VecGetArray( x, &xa );
-    boost::numeric::ublas::vector<double> xx( size );
-    std::copy( xa, xa+size, xx.begin() );
+#if !defined(FEELPP_ENABLE_MPI_MODE)
+        boost::shared_ptr<Feel::Vector<double> > R( new Feel::VectorPetsc<double>( r ) );
+        boost::shared_ptr<Feel::MatrixSparse<double> >  PC;
+        boost::shared_ptr<Feel::Vector<double> > X_global( new Feel::VectorPetsc<double>( x ) );
+        boost::shared_ptr<Feel::Vector<double> > X_local( new Feel::VectorPetsc<double>( X_global->size() ) );
 
-    //Feel::Log() << "dense_residual before xx= " << xx << "\n";
+        X_global->localize ( *X_local );
+#else
+        boost::shared_ptr<Feel::Vector<double> > R;
+        boost::shared_ptr<Feel::Vector<double> > X_global;
 
-    boost::numeric::ublas::vector<double> rr( size );
-
-    if (solver->dense_residual != NULL) solver->dense_residual (xx, rr );
-
-    //Feel::Log() << "dense_residual after update rr= " << rr << "\n";
-
-    for (int i=0; i<size; i++)
+        if ( solver->comm().size()>1 )
         {
-            VecSetValues( r,1,&i,&rr[i],INSERT_VALUES);
+            R.reset( new Feel::VectorPetscMPI<double>( r,solver->mapRow() ) );
+            X_global.reset( new Feel::VectorPetscMPI<double>( x,solver->mapRow() ) );
         }
-    VecRestoreArray( x, &xa );
-    //Feel::Log() << "dense_residual rr= " << rr << "\n";
 
-    return ierr;
-  }
+        else // MPI
+        {
+            R.reset( new Feel::VectorPetsc<double>( r ) );
+            X_global.reset( new Feel::VectorPetsc<double>( x ) );
+        }
+
+#endif
+
+        //if (solver->residual != NULL) solver->residual (X_local, R);
+        if ( solver->residual != NULL ) solver->residual ( X_global, R );
+
+        //if (solver->matvec   != NULL) solver->matvec   (X_local, R, PC );
+
+        R->close();
+
+        return ierr;
+    }
 
 
 
-  //---------------------------------------------------------------
-  // this function is called by PETSc to evaluate the Jacobian at X
-  PetscErrorCode
-  __feel_petsc_snes_dense_jacobian (SNES snes, Vec x, Mat *jac, Mat *pc, MatStructure *msflag, void *ctx)
-  {
-    int ierr=0;
-    assert (ctx != NULL);
+    //---------------------------------------------------------------
+    // this function is called by PETSc to evaluate the Jacobian at X
+    PetscErrorCode
+    __feel_petsc_snes_jacobian ( SNES snes, Vec x, Mat *jac, Mat *pc, MatStructure *msflag, void *ctx )
+    {
+        int ierr=0;
+        assert ( ctx != NULL );
 
-    Feel::SolverNonLinearPetsc<double>* solver =
-        static_cast<Feel::SolverNonLinearPetsc<double>*> (ctx);
+        Feel::SolverNonLinearPetsc<double>* solver =
+            static_cast<Feel::SolverNonLinearPetsc<double>*> ( ctx );
 
-    int size;
-    VecGetSize(x,&size);
-    double *xa; VecGetArray( x, &xa );
-    boost::numeric::ublas::vector<double> xx( size );
-    std::copy( xa, xa+size, xx.begin() );
+#if !defined(FEELPP_ENABLE_MPI_MODE)
+        boost::shared_ptr<Feel::Vector<double> > R;
+        boost::shared_ptr<Feel::MatrixSparse<double> >  PC( new Feel::MatrixPetsc<double>( *pc ) );
+        boost::shared_ptr<Feel::MatrixSparse<double> >  Jac( new Feel::MatrixPetsc<double>( *jac ) );
+        boost::shared_ptr<Feel::Vector<double> > X_global( new Feel::VectorPetsc<double>( x ) );
+        boost::shared_ptr<Feel::Vector<double> > X_local( new Feel::VectorPetsc<double>( X_global->size() ) );
 
-    ///Feel::Log() << "dense_jacobian xx= " << xx << "\n";
+        X_global->localize ( *X_local );
+#else // MPI
+        boost::shared_ptr<Feel::MatrixSparse<double> > Jac;
+        boost::shared_ptr<Feel::Vector<double> > X_global;
 
-    int size1; int size2;
-    MatGetSize( *jac, &size1, &size2 );
-    boost::numeric::ublas::matrix<double> jj( size1, size2 );
+        if ( solver->comm().size()>1 )
+        {
+            Jac.reset( new Feel::MatrixPetscMPI<double>( *jac,solver->mapRow(),solver->mapCol() ) );
+            //Jac->setMapRow(solver->mapRow());
+            //Jac->setMapCol(solver->mapCol());
+            X_global.reset( new Feel::VectorPetscMPI<double>( x,solver->mapRow() ) );
+        }
 
-    if (solver->dense_jacobian != NULL) solver->dense_jacobian (xx, jj );
+        else
+        {
+            Jac.reset( new Feel::MatrixPetsc<double>( *jac ) );
+            X_global.reset( new Feel::VectorPetsc<double>( x ) );
+        }
 
-    //Feel::Log() << "dense_jacobian jj = " << jj << "\n";
+#endif
 
-    for( int i = 0; i < size1; ++i )
-        for( int j = 0; j < size2; ++j )
+        //if (solver->jacobian != NULL) solver->jacobian (X_local, PC );
+        if ( solver->jacobian != NULL ) solver->jacobian ( X_global, Jac );
+
+        //if (solver->matvec   != NULL) solver->matvec   (X_local, R, PC );
+
+        //PC=Jac;
+        //PC->close();
+        //Jac = PC;
+        Jac->close();
+        //*PC = Jac;
+        //PC->printMatlab( "pc.m" );
+        //Jac->printMatlab( "jac.m" );
+        //!!!*msflag = SAME_NONZERO_PATTERN;
+        //*msflag = DIFFERENT_NONZERO_PATTERN;
+#if 0
+        std::cout << "[__ snes_jacobian] mflag = " << *msflag << "\n";
+        std::cout << "[__ snes_jacobian] SAME_NONZERO_PATTERN = " << SAME_NONZERO_PATTERN << "\n";
+        std::cout << "[__ snes_jacobian] DIFFERENT_NONZERO_PATTERN = " << DIFFERENT_NONZERO_PATTERN << "\n";
+        std::cout << "[__ snes_jacobian] SAME_PRECONDITIONER = " << SAME_PRECONDITIONER << "\n";
+#endif
+
+        //std::cout << "\nsolver->reuseJacobian() " << solver->reuseJacobian() << " solver->reusePreconditioner() " << solver->reusePreconditioner() << "\n";
+        //solver->setReuse( solver->reuseJacobian(), solver->reusePreconditioner() );
+        //solver->setReuse( -1, 2 );
+        //*msflag = MatStructure( solver->precMatrixStructure() );
+        //*msflag = SAME_NONZERO_PATTERN;
+        //*msflag = DIFFERENT_NONZERO_PATTERN;
+        return ierr;
+    }
+
+    //---------------------------------------------------------------
+    // this function is called by PETSc to evaluate the residual at X
+    PetscErrorCode
+    __feel_petsc_snes_dense_residual ( SNES snes, Vec x, Vec r, void *ctx )
+    {
+        int ierr=0;
+
+        assert ( x   != NULL );
+        assert ( r   != NULL );
+        assert ( ctx != NULL );
+
+        Feel::SolverNonLinearPetsc<double>* solver =
+            static_cast<Feel::SolverNonLinearPetsc<double>*> ( ctx );
+
+        int size;
+        VecGetSize( r,&size );
+        double *xa;
+        VecGetArray( x, &xa );
+        boost::numeric::ublas::vector<double> xx( size );
+        std::copy( xa, xa+size, xx.begin() );
+
+        //Feel::Log() << "dense_residual before xx= " << xx << "\n";
+
+        boost::numeric::ublas::vector<double> rr( size );
+
+        if ( solver->dense_residual != NULL ) solver->dense_residual ( xx, rr );
+
+        //Feel::Log() << "dense_residual after update rr= " << rr << "\n";
+
+        for ( int i=0; i<size; i++ )
+        {
+            VecSetValues( r,1,&i,&rr[i],INSERT_VALUES );
+        }
+
+        VecRestoreArray( x, &xa );
+        //Feel::Log() << "dense_residual rr= " << rr << "\n";
+
+        return ierr;
+    }
+
+
+
+    //---------------------------------------------------------------
+    // this function is called by PETSc to evaluate the Jacobian at X
+    PetscErrorCode
+    __feel_petsc_snes_dense_jacobian ( SNES snes, Vec x, Mat *jac, Mat *pc, MatStructure *msflag, void *ctx )
+    {
+        int ierr=0;
+        assert ( ctx != NULL );
+
+        Feel::SolverNonLinearPetsc<double>* solver =
+            static_cast<Feel::SolverNonLinearPetsc<double>*> ( ctx );
+
+        int size;
+        VecGetSize( x,&size );
+        double *xa;
+        VecGetArray( x, &xa );
+        boost::numeric::ublas::vector<double> xx( size );
+        std::copy( xa, xa+size, xx.begin() );
+
+        ///Feel::Log() << "dense_jacobian xx= " << xx << "\n";
+
+        int size1;
+        int size2;
+        MatGetSize( *jac, &size1, &size2 );
+        boost::numeric::ublas::matrix<double> jj( size1, size2 );
+
+        if ( solver->dense_jacobian != NULL ) solver->dense_jacobian ( xx, jj );
+
+        //Feel::Log() << "dense_jacobian jj = " << jj << "\n";
+
+        for ( int i = 0; i < size1; ++i )
+            for ( int j = 0; j < size2; ++j )
             {
                 MatSetValue( *jac, i, j, jj( i, j ), INSERT_VALUES );
 
             }
 
-    /*
-      Assemble matrix
-    */
-    MatAssemblyBegin(*jac,MAT_FINAL_ASSEMBLY);
-    MatAssemblyEnd(*jac,MAT_FINAL_ASSEMBLY);
+        /*
+          Assemble matrix
+        */
+        MatAssemblyBegin( *jac,MAT_FINAL_ASSEMBLY );
+        MatAssemblyEnd( *jac,MAT_FINAL_ASSEMBLY );
 
-    VecRestoreArray( x, &xa );
+        VecRestoreArray( x, &xa );
 
-    *msflag = SAME_NONZERO_PATTERN;
+        *msflag = SAME_NONZERO_PATTERN;
 
-    return ierr;
-  }
+        return ierr;
+    }
 
 } // end extern "C"
 //---------------------------------------------------------------------
@@ -300,25 +313,26 @@ namespace Feel
 template <typename T>
 void SolverNonLinearPetsc<T>::clear ()
 {
-    if (this->initialized())
-        {
-            this->M_is_initialized = false;
+    if ( this->initialized() )
+    {
+        this->M_is_initialized = false;
 
-            int ierr=0;
+        int ierr=0;
 #if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
-            ierr = SNESDestroy(&M_snes);
-            CHKERRABORT(PETSC_COMM_WORLD,ierr);
+        ierr = SNESDestroy( &M_snes );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
 #else
-            ierr = SNESDestroy(M_snes);
-            CHKERRABORT(PETSC_COMM_WORLD,ierr);
+        ierr = SNESDestroy( M_snes );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
 #endif
-        }
+    }
 }
 // SolverNonLinearPetsc<> methods
 template <typename T>
-void SolverNonLinearPetsc<T>::setReuse (int jac, int prec )
+void SolverNonLinearPetsc<T>::setReuse ( int jac, int prec )
 {
-    this->M_reuse_jac=jac; this->M_reuse_prec=prec;
+    this->M_reuse_jac=jac;
+    this->M_reuse_prec=prec;
 
     PetscInt cur_jac, cur_prec;
     SNESGetLagJacobian( M_snes, &cur_jac );
@@ -335,60 +349,62 @@ template <typename T>
 void SolverNonLinearPetsc<T>::init ()
 {
     // Initialize the data structures if not done so already.
-    if (!this->initialized())
-        {
-            this->M_is_initialized = true;
+    if ( !this->initialized() )
+    {
+        this->M_is_initialized = true;
 
-            int ierr=0;
+        int ierr=0;
 
 # if ((PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR <= 1) && (PETSC_VERSION_SUBMINOR <= 1))
 
-            // At least until Petsc 2.1.1, the SNESCreate had a different calling syntax.
-            // The second argument was of type SNESProblemType, and could have a value of
-            // either SNES_NONLINEAR_EQUATIONS or SNES_UNCONSTRAINED_MINIMIZATION.
-            ierr = SNESCreate(PETSC_COMM_WORLD, SNES_NONLINEAR_EQUATIONS, &M_snes);
-            CHKERRABORT(PETSC_COMM_WORLD,ierr);
+        // At least until Petsc 2.1.1, the SNESCreate had a different calling syntax.
+        // The second argument was of type SNESProblemType, and could have a value of
+        // either SNES_NONLINEAR_EQUATIONS or SNES_UNCONSTRAINED_MINIMIZATION.
+        ierr = SNESCreate( PETSC_COMM_WORLD, SNES_NONLINEAR_EQUATIONS, &M_snes );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
 
 #else
 
-            ierr = SNESCreate(PETSC_COMM_WORLD,&M_snes);
-            CHKERRABORT(PETSC_COMM_WORLD,ierr);
+        ierr = SNESCreate( PETSC_COMM_WORLD,&M_snes );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
 
 #endif
 #if PETSC_VERSION_LESS_THAN(2,3,3)
-            ierr = SNESSetMonitor (M_snes, __feel_petsc_snes_monitor,
-                                   this, PETSC_NULL);
+        ierr = SNESSetMonitor ( M_snes, __feel_petsc_snes_monitor,
+                                this, PETSC_NULL );
 #else
-            // API name change in PETSc 2.3.3
-            ierr = SNESMonitorSet (M_snes, __feel_petsc_snes_monitor,
-                                   this, PETSC_NULL);
+        // API name change in PETSc 2.3.3
+        ierr = SNESMonitorSet ( M_snes, __feel_petsc_snes_monitor,
+                                this, PETSC_NULL );
 #endif
-            CHKERRABORT(PETSC_COMM_WORLD,ierr);
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
 
 
-            ierr = SNESSetFromOptions(M_snes);
-            CHKERRABORT(PETSC_COMM_WORLD,ierr);
+        ierr = SNESSetFromOptions( M_snes );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
 
-        }
+    }
 
 
     int ierr=0;
 
     // if the non linear solver type is define by the user in the code
-    switch (this->getType())
+    switch ( this->getType() )
     {
     case LINE_SEARCH :
     {
-        ierr = SNESSetType(M_snes, SNESLS);
-        CHKERRABORT(PETSC_COMM_WORLD,ierr);
+        ierr = SNESSetType( M_snes, SNESLS );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
     }
     break;
+
     case TRUST_REGION :
     {
-        ierr = SNESSetType(M_snes, SNESTR);
-        CHKERRABORT(PETSC_COMM_WORLD,ierr);
+        ierr = SNESSetType( M_snes, SNESTR );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
     }
     break;
+
     case SELECT_IN_ARGLIST:
         // no-op
         break;
@@ -398,56 +414,60 @@ void SolverNonLinearPetsc<T>::init ()
     double __relResTol,__absResTol,__absSolTol;
     int __nbItMax, __nbEvalFuncMax;
 
-    if ( this->getAbsoluteResidualTol()==0)
-        {
-            ierr = SNESGetTolerances(M_snes, &__absResTol, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL);
-            CHKERRABORT(PETSC_COMM_WORLD,ierr);
-        }
+    if ( this->getAbsoluteResidualTol()==0 )
+    {
+        ierr = SNESGetTolerances( M_snes, &__absResTol, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+    }
+
     else __absResTol = this->getAbsoluteResidualTol();
 
-    if ( this->getRelativeResidualTol()==0)
-        {
-            ierr = SNESGetTolerances(M_snes, PETSC_NULL, &__relResTol, PETSC_NULL, PETSC_NULL, PETSC_NULL);
-            CHKERRABORT(PETSC_COMM_WORLD,ierr);
-        }
+    if ( this->getRelativeResidualTol()==0 )
+    {
+        ierr = SNESGetTolerances( M_snes, PETSC_NULL, &__relResTol, PETSC_NULL, PETSC_NULL, PETSC_NULL );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+    }
+
     else __relResTol = this->getRelativeResidualTol();
 
-    if ( this->getAbsoluteSolutionTol()==0)
-        {
-            ierr = SNESGetTolerances(M_snes, PETSC_NULL, PETSC_NULL, &__absSolTol, PETSC_NULL, PETSC_NULL);
-            CHKERRABORT(PETSC_COMM_WORLD,ierr);
-        }
+    if ( this->getAbsoluteSolutionTol()==0 )
+    {
+        ierr = SNESGetTolerances( M_snes, PETSC_NULL, PETSC_NULL, &__absSolTol, PETSC_NULL, PETSC_NULL );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+    }
+
     else __absSolTol = this->getAbsoluteSolutionTol();
 
-    if ( this->getNbItMax()==0)
-        {
-            ierr = SNESGetTolerances(M_snes, PETSC_NULL, PETSC_NULL, PETSC_NULL, &__nbItMax, PETSC_NULL);
-            CHKERRABORT(PETSC_COMM_WORLD,ierr);
-        }
+    if ( this->getNbItMax()==0 )
+    {
+        ierr = SNESGetTolerances( M_snes, PETSC_NULL, PETSC_NULL, PETSC_NULL, &__nbItMax, PETSC_NULL );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+    }
+
     else __nbItMax = this->getNbItMax();
 
-    ierr = SNESGetTolerances(M_snes, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL, &__nbEvalFuncMax);
-    CHKERRABORT(PETSC_COMM_WORLD,ierr);
+    ierr = SNESGetTolerances( M_snes, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL, &__nbEvalFuncMax );
+    CHKERRABORT( PETSC_COMM_WORLD,ierr );
 
-    ierr = SNESSetTolerances(M_snes,__absResTol,__relResTol,__absSolTol,__nbItMax,__nbEvalFuncMax);
-    CHKERRABORT(PETSC_COMM_WORLD,ierr);
+    ierr = SNESSetTolerances( M_snes,__absResTol,__relResTol,__absSolTol,__nbItMax,__nbEvalFuncMax );
+    CHKERRABORT( PETSC_COMM_WORLD,ierr );
 
 
-    if(this->M_preconditioner)
+    if ( this->M_preconditioner )
     {
         KSP ksp;
-        ierr = SNESGetKSP (M_snes, &ksp);
-        CHKERRABORT(PETSC_COMM_WORLD,ierr);
+        ierr = SNESGetKSP ( M_snes, &ksp );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
         PC pc;
-        ierr = KSPGetPC(ksp,&pc);
-        CHKERRABORT(PETSC_COMM_WORLD,ierr);
+        ierr = KSPGetPC( ksp,&pc );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
 
-        PCSetType(pc, PCSHELL);
-        PCShellSetContext(pc,(void*)this->M_preconditioner.get());
+        PCSetType( pc, PCSHELL );
+        PCShellSetContext( pc,( void* )this->M_preconditioner.get() );
 
         //Re-Use the shell functions from petsc_linear_solver
-        PCShellSetSetUp(pc,__feel_petsc_preconditioner_setup);
-        PCShellSetApply(pc,__feel_petsc_preconditioner_apply);
+        PCShellSetSetUp( pc,__feel_petsc_preconditioner_setup );
+        PCShellSetApply( pc,__feel_petsc_preconditioner_apply );
     }
 
 }
@@ -460,7 +480,7 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
                                  vector_ptrtype& x_in,    // Solution vector
                                  vector_ptrtype& r_in,    // Residual vector
                                  const double,              // Stopping tolerance
-                                 const unsigned int)
+                                 const unsigned int )
 {
     this->init ();
 
@@ -474,72 +494,79 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
     MatrixPetsc<T>* jac;
     VectorPetsc<T>* x;
     VectorPetsc<T>* r;
-    if (this->comm().size()>1)
-        {
-            jac = dynamic_cast<MatrixPetscMPI<T>*>( jac_in.get() );
-            //jac->setMapRow(jac_in->mapRow());
-            //jac->setMapCol(jac_in->mapCol());
-            x = dynamic_cast<VectorPetscMPI<T>*>( x_in.get() );
-            r = dynamic_cast<VectorPetscMPI<T>*>( r_in.get() );
-            //x->setMap(jac_in->mapRow());
-            //r->setMap(jac_in->mapRow());
-            //usefull in __feel_petsc_snes_jacobian and __feel_petsc_snes_residual
-            this->setMapRow(jac_in->mapRow());
-            this->setMapCol(jac_in->mapCol());
-        }
+
+    if ( this->comm().size()>1 )
+    {
+        jac = dynamic_cast<MatrixPetscMPI<T>*>( jac_in.get() );
+        //jac->setMapRow(jac_in->mapRow());
+        //jac->setMapCol(jac_in->mapCol());
+        x = dynamic_cast<VectorPetscMPI<T>*>( x_in.get() );
+        r = dynamic_cast<VectorPetscMPI<T>*>( r_in.get() );
+        //x->setMap(jac_in->mapRow());
+        //r->setMap(jac_in->mapRow());
+        //usefull in __feel_petsc_snes_jacobian and __feel_petsc_snes_residual
+        this->setMapRow( jac_in->mapRow() );
+        this->setMapCol( jac_in->mapCol() );
+    }
+
     else
-        {
-            jac = dynamic_cast<MatrixPetsc<T>*>( jac_in.get() );
-            x   = dynamic_cast<VectorPetsc<T>*>( x_in.get() );
-            r   = dynamic_cast<VectorPetsc<T>*>( r_in.get() );
-        }
+    {
+        jac = dynamic_cast<MatrixPetsc<T>*>( jac_in.get() );
+        x   = dynamic_cast<VectorPetsc<T>*>( x_in.get() );
+        r   = dynamic_cast<VectorPetsc<T>*>( r_in.get() );
+    }
+
 #endif
 
 
     // We cast to pointers so we can be sure that they succeeded
     // by comparing the result against NULL.
-    assert(jac != NULL); assert(jac->mat() != NULL);
-    assert(x   != NULL); assert(x->vec()   != NULL);
-    assert(r   != NULL); assert(r->vec()   != NULL);
+    assert( jac != NULL );
+    assert( jac->mat() != NULL );
+    assert( x   != NULL );
+    assert( x->vec()   != NULL );
+    assert( r   != NULL );
+    assert( r->vec()   != NULL );
 
 
     int n_iterations =0;
 
-    ierr = SNESSetFunction (M_snes, r->vec(), __feel_petsc_snes_residual, this);
-    CHKERRABORT(PETSC_COMM_WORLD,ierr);
+    ierr = SNESSetFunction ( M_snes, r->vec(), __feel_petsc_snes_residual, this );
+    CHKERRABORT( PETSC_COMM_WORLD,ierr );
 
-    ierr = SNESSetJacobian (M_snes, jac->mat(), jac->mat(), __feel_petsc_snes_jacobian, this);
-    CHKERRABORT(PETSC_COMM_WORLD,ierr);
+    ierr = SNESSetJacobian ( M_snes, jac->mat(), jac->mat(), __feel_petsc_snes_jacobian, this );
+    CHKERRABORT( PETSC_COMM_WORLD,ierr );
 
 #if 0
-    ierr = SNESSetLagJacobian( M_snes,-2);
-    CHKERRABORT(PETSC_COMM_WORLD,ierr);
+    ierr = SNESSetLagJacobian( M_snes,-2 );
+    CHKERRABORT( PETSC_COMM_WORLD,ierr );
 
-    ierr = SNESSetLagPreconditioner( M_snes,-1);
-    CHKERRABORT(PETSC_COMM_WORLD,ierr);
+    ierr = SNESSetLagPreconditioner( M_snes,-1 );
+    CHKERRABORT( PETSC_COMM_WORLD,ierr );
 #endif
 
-    SNESGetKSP(M_snes,&M_ksp);
+    SNESGetKSP( M_snes,&M_ksp );
 
-    KSPSetOperators(M_ksp, jac->mat(), jac->mat(),
-                    MatStructure(/*SAME_PRECONDITIONER*/SAME_NONZERO_PATTERN));
-    KSPGetPC(M_ksp,&M_pc);
+    KSPSetOperators( M_ksp, jac->mat(), jac->mat(),
+                     MatStructure( /*SAME_PRECONDITIONER*/SAME_NONZERO_PATTERN ) );
+    KSPGetPC( M_ksp,&M_pc );
 
     this->setPetscKspSolverType();
     this->setPetscPreconditionerType();
 
-    PetscPCFactorSetMatSolverPackage(M_pc,this->matSolverPackageType());
+    PetscPCFactorSetMatSolverPackage( M_pc,this->matSolverPackageType() );
 
     //PCSetType(pc,PCNONE);
     //PCSetType(M_pc,PCILU);
     //ierr = PCSetType (M_pc, (char*) PCILU);       CHKERRABORT(M_comm,ierr);
-    jac->updatePCFieldSplit(M_pc);
+    jac->updatePCFieldSplit( M_pc );
 
-    ierr = SNESSetFromOptions(M_snes);
-    CHKERRABORT(PETSC_COMM_WORLD,ierr);
+    ierr = SNESSetFromOptions( M_snes );
+    CHKERRABORT( PETSC_COMM_WORLD,ierr );
+
     //Set the preconditioning matrix
-    if(this->M_preconditioner)
-        this->M_preconditioner->setMatrix(jac_in);
+    if ( this->M_preconditioner )
+        this->M_preconditioner->setMatrix( jac_in );
 
     /*
       Set array that saves the function norms.  This array is intended
@@ -548,41 +575,45 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
     */
     PetscInt hist_its[50];
     PetscReal history[50];
-    ierr = SNESSetConvergenceHistory(M_snes,history,hist_its,50,PETSC_TRUE);
-    CHKERRABORT(PETSC_COMM_WORLD,ierr);
+    ierr = SNESSetConvergenceHistory( M_snes,history,hist_its,50,PETSC_TRUE );
+    CHKERRABORT( PETSC_COMM_WORLD,ierr );
 
     // Older versions (at least up to 2.1.5) of SNESSolve took 3 arguments,
     // the last one being a pointer to an int to hold the number of iterations required.
 # if (PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR <= 1)
 
-    ierr = SNESSolve (M_snes, x->vec(), &n_iterations);
-    CHKERRABORT(PETSC_COMM_WORLD,ierr);
+    ierr = SNESSolve ( M_snes, x->vec(), &n_iterations );
+    CHKERRABORT( PETSC_COMM_WORLD,ierr );
 
     // 2.2.x style
 #elif (PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR <= 2)
 
-    ierr = SNESSolve (M_snes, x->vec());
-    CHKERRABORT(PETSC_COMM_WORLD,ierr);
+    ierr = SNESSolve ( M_snes, x->vec() );
+    CHKERRABORT( PETSC_COMM_WORLD,ierr );
 
     // 2.3.x & newer style
 #else
 
-    ierr = SNESSolve (M_snes, PETSC_NULL, x->vec());
-    CHKERRABORT(PETSC_COMM_WORLD,ierr);
+    ierr = SNESSolve ( M_snes, PETSC_NULL, x->vec() );
+    CHKERRABORT( PETSC_COMM_WORLD,ierr );
 
 #endif
 
-    ierr = SNESGetIterationNumber(M_snes,&n_iterations);CHKERRABORT(PETSC_COMM_WORLD,ierr);
+    ierr = SNESGetIterationNumber( M_snes,&n_iterations );
+    CHKERRABORT( PETSC_COMM_WORLD,ierr );
     Log() << "[SolverNonLinearPetsc] number of nonlinear iterations = " << n_iterations << "\n";
-    for (int i=0; i<n_iterations+1; i++)
-        {
-            Log() << "iteration " << i << ": Linear iterations : " << hist_its[i] << " Function norm = " << history[i] << "\n";
-        }
+
+    for ( int i=0; i<n_iterations+1; i++ )
+    {
+        Log() << "iteration " << i << ": Linear iterations : " << hist_its[i] << " Function norm = " << history[i] << "\n";
+    }
 
     SNESConvergedReason reason;
-    SNESGetConvergedReason(M_snes,&reason);
+    SNESGetConvergedReason( M_snes,&reason );
     Log() << "[solvernonlinearpetsc] convergence reason : " << reason << "\n";
-    if (reason<0) {
+
+    if ( reason<0 )
+    {
         Log() << "[solvernonlinearpetsc] not converged: " << reason << "\n";
     }
 
@@ -590,7 +621,7 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
 
     // return the # of its. and the final residual norm.  Note that
     // n_iterations may be zero for PETSc versions 2.2.x and greater.
-    return std::make_pair(reason, 0.);
+    return std::make_pair( reason, 0. );
 }
 
 
@@ -600,7 +631,7 @@ SolverNonLinearPetsc<T>::solve ( dense_matrix_type&  jac_in,  // System Jacobian
                                  dense_vector_type& x_in,    // Solution vector
                                  dense_vector_type& r_in,    // Residual vector
                                  const double,              // Stopping tolerance
-                                 const unsigned int)
+                                 const unsigned int )
 {
     this->init ();
 
@@ -608,43 +639,44 @@ SolverNonLinearPetsc<T>::solve ( dense_matrix_type&  jac_in,  // System Jacobian
 
     Vec petsc_x;
     //VecCreateSeqWithArray(PETSC_COMM_SELF,x_in.size(),x_in.data().data(),&petsc_x);
-    VecCreateSeq(PETSC_COMM_SELF,x_in.size(),&petsc_x);
+    VecCreateSeq( PETSC_COMM_SELF,x_in.size(),&petsc_x );
 
-    for (int i=0; i< (int)x_in.size(); i++)
-        {
-            VecSetValues( petsc_x,1,&i,&x_in[i],INSERT_VALUES);
-        }
+    for ( int i=0; i< ( int )x_in.size(); i++ )
+    {
+        VecSetValues( petsc_x,1,&i,&x_in[i],INSERT_VALUES );
+    }
 
     Vec petsc_r;
     //VecCreateSeqWithArray(PETSC_COMM_SELF,x_in.size(),x_in.data().data(),&petsc_x);
-    VecCreateSeq(PETSC_COMM_SELF,r_in.size(),&petsc_r);
-    for (int i=0; i< (int)x_in.size(); i++)
-        {
-            VecSetValues( petsc_r,1,&i,&r_in[i],INSERT_VALUES);
-        }
+    VecCreateSeq( PETSC_COMM_SELF,r_in.size(),&petsc_r );
 
-    ierr = SNESSetFunction (M_snes, petsc_r, __feel_petsc_snes_dense_residual, this);
-    CHKERRABORT(PETSC_COMM_WORLD,ierr);
+    for ( int i=0; i< ( int )x_in.size(); i++ )
+    {
+        VecSetValues( petsc_r,1,&i,&r_in[i],INSERT_VALUES );
+    }
+
+    ierr = SNESSetFunction ( M_snes, petsc_r, __feel_petsc_snes_dense_residual, this );
+    CHKERRABORT( PETSC_COMM_WORLD,ierr );
 
     Mat petsc_j;
     MatCreateSeqDense( PETSC_COMM_SELF, jac_in.size1(), jac_in.size2(), 0, &petsc_j );
 
-    for( int i = 0; i < (int)jac_in.size1(); ++i )
-        for( int j = 0; j < (int)jac_in.size2(); ++j )
-            {
-                MatSetValue( petsc_j, i, j, jac_in( i, j ), INSERT_VALUES );
+    for ( int i = 0; i < ( int )jac_in.size1(); ++i )
+        for ( int j = 0; j < ( int )jac_in.size2(); ++j )
+        {
+            MatSetValue( petsc_j, i, j, jac_in( i, j ), INSERT_VALUES );
 
-            }
+        }
 
     /*
       Assemble matrix
     */
-    MatAssemblyBegin(petsc_j,MAT_FINAL_ASSEMBLY);
-    MatAssemblyEnd(petsc_j,MAT_FINAL_ASSEMBLY);
+    MatAssemblyBegin( petsc_j,MAT_FINAL_ASSEMBLY );
+    MatAssemblyEnd( petsc_j,MAT_FINAL_ASSEMBLY );
 
 
-    ierr = SNESSetJacobian (M_snes, petsc_j, petsc_j, __feel_petsc_snes_dense_jacobian, this);
-    CHKERRABORT(PETSC_COMM_WORLD,ierr);
+    ierr = SNESSetJacobian ( M_snes, petsc_j, petsc_j, __feel_petsc_snes_dense_jacobian, this );
+    CHKERRABORT( PETSC_COMM_WORLD,ierr );
 
 
     /*
@@ -654,11 +686,11 @@ SolverNonLinearPetsc<T>::solve ( dense_matrix_type&  jac_in,  // System Jacobian
     */
     KSP            ksp;         /* linear solver context */
     PC             pc;           /* preconditioner context */
-    SNESGetKSP(M_snes,&ksp);
-    KSPGetPC(ksp,&pc);
+    SNESGetKSP( M_snes,&ksp );
+    KSPGetPC( ksp,&pc );
     //PCSetType(pc,PCNONE);
-    PCSetType(pc,PCLU);
-    KSPSetTolerances(ksp,1e-16,PETSC_DEFAULT,PETSC_DEFAULT,20);
+    PCSetType( pc,PCLU );
+    KSPSetTolerances( ksp,1e-16,PETSC_DEFAULT,PETSC_DEFAULT,20 );
 
     // Older versions (at least up to 2.1.5) of SNESSolve took 3 arguments,
     // the last one being a pointer to an int to hold the number of iterations required.
@@ -666,27 +698,27 @@ SolverNonLinearPetsc<T>::solve ( dense_matrix_type&  jac_in,  // System Jacobian
 # if (PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR <= 1)
     int n_iterations =0;
 
-    ierr = SNESSolve (M_snes, petsc_x, &n_iterations);
-    CHKERRABORT(PETSC_COMM_WORLD,ierr);
+    ierr = SNESSolve ( M_snes, petsc_x, &n_iterations );
+    CHKERRABORT( PETSC_COMM_WORLD,ierr );
 
     // 2.2.x style
 #elif (PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR <= 2)
 
-    ierr = SNESSolve (M_snes, petsc_x );
-    CHKERRABORT(PETSC_COMM_WORLD,ierr);
+    ierr = SNESSolve ( M_snes, petsc_x );
+    CHKERRABORT( PETSC_COMM_WORLD,ierr );
 
     // 2.3.x & newer style
 #else
 
-    ierr = SNESSolve (M_snes, PETSC_NULL, petsc_x );
-    CHKERRABORT(PETSC_COMM_WORLD,ierr);
+    ierr = SNESSolve ( M_snes, PETSC_NULL, petsc_x );
+    CHKERRABORT( PETSC_COMM_WORLD,ierr );
 
 #endif
 
     double* a;
     VecGetArray( petsc_x , &a );
 
-    for( int i = 0; i < (int)x_in.size(); ++i )
+    for ( int i = 0; i < ( int )x_in.size(); ++i )
         x_in[i] = a[i];
 
     VecRestoreArray( petsc_x , &a );
@@ -696,9 +728,11 @@ SolverNonLinearPetsc<T>::solve ( dense_matrix_type&  jac_in,  // System Jacobian
     PETSc::MatDestroy( petsc_j );
 
     SNESConvergedReason reason;
-    SNESGetConvergedReason(M_snes,&reason);
+    SNESGetConvergedReason( M_snes,&reason );
+
     //Log() << "[solvernonlinearpetsc] convergence reason : " << reason << "\n";
-    if (reason<0) {
+    if ( reason<0 )
+    {
         Debug( 7020 )  << "[solvernonlinearpetsc] not converged (see petscsnes.h for an explanation): " << reason << "\n";
     }
 
@@ -706,7 +740,7 @@ SolverNonLinearPetsc<T>::solve ( dense_matrix_type&  jac_in,  // System Jacobian
 
     // return the # of its. and the final residual norm.  Note that
     // n_iterations may be zero for PETSc versions 2.2.x and greater.
-    return std::make_pair(reason, 0.);
+    return std::make_pair( reason, 0. );
 }
 
 
@@ -720,51 +754,76 @@ template <typename T>
 void
 SolverNonLinearPetsc<T>::setPetscKspSolverType()
 {
-  int ierr = 0;
-  Debug(7010) << "[SolverNonLinearPetsc] ksp solver type:  " << this->kspSolverType() << "\n";
-  switch (this->kspSolverType())
+    int ierr = 0;
+    Debug( 7010 ) << "[SolverNonLinearPetsc] ksp solver type:  " << this->kspSolverType() << "\n";
+
+    switch ( this->kspSolverType() )
     {
 
     case CG:
-      ierr = KSPSetType (M_ksp, (char*) KSPCG);         CHKERRABORT(this->comm(),ierr); return;
+        ierr = KSPSetType ( M_ksp, ( char* ) KSPCG );
+        CHKERRABORT( this->comm(),ierr );
+        return;
 
     case CR:
-      ierr = KSPSetType (M_ksp, (char*) KSPCR);         CHKERRABORT(this->comm(),ierr); return;
+        ierr = KSPSetType ( M_ksp, ( char* ) KSPCR );
+        CHKERRABORT( this->comm(),ierr );
+        return;
 
     case CGS:
-      ierr = KSPSetType (M_ksp, (char*) KSPCGS);        CHKERRABORT(this->comm(),ierr); return;
+        ierr = KSPSetType ( M_ksp, ( char* ) KSPCGS );
+        CHKERRABORT( this->comm(),ierr );
+        return;
 
     case BICG:
-      ierr = KSPSetType (M_ksp, (char*) KSPBICG);       CHKERRABORT(this->comm(),ierr); return;
+        ierr = KSPSetType ( M_ksp, ( char* ) KSPBICG );
+        CHKERRABORT( this->comm(),ierr );
+        return;
 
     case TCQMR:
-      ierr = KSPSetType (M_ksp, (char*) KSPTCQMR);      CHKERRABORT(this->comm(),ierr); return;
+        ierr = KSPSetType ( M_ksp, ( char* ) KSPTCQMR );
+        CHKERRABORT( this->comm(),ierr );
+        return;
 
     case TFQMR:
-      ierr = KSPSetType (M_ksp, (char*) KSPTFQMR);      CHKERRABORT(this->comm(),ierr); return;
+        ierr = KSPSetType ( M_ksp, ( char* ) KSPTFQMR );
+        CHKERRABORT( this->comm(),ierr );
+        return;
 
     case LSQR:
-      ierr = KSPSetType (M_ksp, (char*) KSPLSQR);       CHKERRABORT(this->comm(),ierr); return;
+        ierr = KSPSetType ( M_ksp, ( char* ) KSPLSQR );
+        CHKERRABORT( this->comm(),ierr );
+        return;
 
     case BICGSTAB:
-      ierr = KSPSetType (M_ksp, (char*) KSPBCGS);       CHKERRABORT(this->comm(),ierr); return;
+        ierr = KSPSetType ( M_ksp, ( char* ) KSPBCGS );
+        CHKERRABORT( this->comm(),ierr );
+        return;
 
     case MINRES:
-      ierr = KSPSetType (M_ksp, (char*) KSPMINRES);     CHKERRABORT(this->comm(),ierr); return;
+        ierr = KSPSetType ( M_ksp, ( char* ) KSPMINRES );
+        CHKERRABORT( this->comm(),ierr );
+        return;
 
     case GMRES:
-      ierr = KSPSetType (M_ksp, (char*) KSPGMRES);      CHKERRABORT(this->comm(),ierr); return;
+        ierr = KSPSetType ( M_ksp, ( char* ) KSPGMRES );
+        CHKERRABORT( this->comm(),ierr );
+        return;
 
     case RICHARDSON:
-      ierr = KSPSetType (M_ksp, (char*) KSPRICHARDSON); CHKERRABORT(this->comm(),ierr); return;
+        ierr = KSPSetType ( M_ksp, ( char* ) KSPRICHARDSON );
+        CHKERRABORT( this->comm(),ierr );
+        return;
 
     case CHEBYSHEV:
-      ierr = KSPSetType (M_ksp, (char*) KSPCHEBYCHEV);  CHKERRABORT(this->comm(),ierr); return;
+        ierr = KSPSetType ( M_ksp, ( char* ) KSPCHEBYCHEV );
+        CHKERRABORT( this->comm(),ierr );
+        return;
 
     default:
-      std::cerr << "ERROR:  Unsupported PETSC Solver: "
-		<< this->kspSolverType()               << std::endl
-		<< "Continuing with PETSC defaults" << std::endl;
+        std::cerr << "ERROR:  Unsupported PETSC Solver: "
+                  << this->kspSolverType()               << std::endl
+                  << "Continuing with PETSC defaults" << std::endl;
     }
 
 }
@@ -774,55 +833,82 @@ void
 SolverNonLinearPetsc<T>::setPetscPreconditionerType()
 {
 
-  int ierr = 0;
+    int ierr = 0;
 
-  switch (this->preconditionerType())
+    switch ( this->preconditionerType() )
     {
     case IDENTITY_PRECOND:
-      ierr = PCSetType (M_pc, (char*) PCNONE);      CHKERRABORT(this->comm(),ierr); return;
+        ierr = PCSetType ( M_pc, ( char* ) PCNONE );
+        CHKERRABORT( this->comm(),ierr );
+        return;
 
     case CHOLESKY_PRECOND:
-      ierr = PCSetType (M_pc, (char*) PCCHOLESKY);  CHKERRABORT(this->comm(),ierr); return;
+        ierr = PCSetType ( M_pc, ( char* ) PCCHOLESKY );
+        CHKERRABORT( this->comm(),ierr );
+        return;
 
     case ICC_PRECOND:
-      ierr = PCSetType (M_pc, (char*) PCICC);       CHKERRABORT(this->comm(),ierr); return;
+        ierr = PCSetType ( M_pc, ( char* ) PCICC );
+        CHKERRABORT( this->comm(),ierr );
+        return;
 
     case ILU_PRECOND:
-      ierr = PCSetType (M_pc, (char*) PCILU);       CHKERRABORT(this->comm(),ierr); return;
+        ierr = PCSetType ( M_pc, ( char* ) PCILU );
+        CHKERRABORT( this->comm(),ierr );
+        return;
 
     case LU_PRECOND:
-      ierr = PCSetType (M_pc, (char*) PCLU);        CHKERRABORT(this->comm(),ierr); return;
+        ierr = PCSetType ( M_pc, ( char* ) PCLU );
+        CHKERRABORT( this->comm(),ierr );
+        return;
 
     case ASM_PRECOND:
-      ierr = PCSetType (M_pc, (char*) PCASM);       CHKERRABORT(this->comm(),ierr); return;
+        ierr = PCSetType ( M_pc, ( char* ) PCASM );
+        CHKERRABORT( this->comm(),ierr );
+        return;
 
     case JACOBI_PRECOND:
-      ierr = PCSetType (M_pc, (char*) PCJACOBI);    CHKERRABORT(this->comm(),ierr); return;
+        ierr = PCSetType ( M_pc, ( char* ) PCJACOBI );
+        CHKERRABORT( this->comm(),ierr );
+        return;
 
     case BLOCK_JACOBI_PRECOND:
-      ierr = PCSetType (M_pc, (char*) PCBJACOBI);   CHKERRABORT(this->comm(),ierr); return;
+        ierr = PCSetType ( M_pc, ( char* ) PCBJACOBI );
+        CHKERRABORT( this->comm(),ierr );
+        return;
 
     case SOR_PRECOND:
-      ierr = PCSetType (M_pc, (char*) PCSOR);       CHKERRABORT(this->comm(),ierr); return;
+        ierr = PCSetType ( M_pc, ( char* ) PCSOR );
+        CHKERRABORT( this->comm(),ierr );
+        return;
 
     case EISENSTAT_PRECOND:
-      ierr = PCSetType (M_pc, (char*) PCEISENSTAT); CHKERRABORT(this->comm(),ierr); return;
+        ierr = PCSetType ( M_pc, ( char* ) PCEISENSTAT );
+        CHKERRABORT( this->comm(),ierr );
+        return;
 
 #if !((PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR <= 1) && (PETSC_VERSION_SUBMINOR <= 1))
+
     case USER_PRECOND:
-      ierr = PCSetType (M_pc, (char*) PCMAT);       CHKERRABORT(this->comm(),ierr); return;
+        ierr = PCSetType ( M_pc, ( char* ) PCMAT );
+        CHKERRABORT( this->comm(),ierr );
+        return;
 #endif
 
     case SHELL_PRECOND:
-      ierr = PCSetType (M_pc, (char*) PCSHELL);     CHKERRABORT(this->comm(),ierr); return;
+        ierr = PCSetType ( M_pc, ( char* ) PCSHELL );
+        CHKERRABORT( this->comm(),ierr );
+        return;
 
     case FIELDSPLIT_PRECOND:
-        ierr = PCSetType(M_pc,(char*) PCFIELDSPLIT); CHKERRABORT(this->comm(),ierr); return;
+        ierr = PCSetType( M_pc,( char* ) PCFIELDSPLIT );
+        CHKERRABORT( this->comm(),ierr );
+        return;
 
     default:
-      std::cerr << "ERROR:  Unsupported PETSC Preconditioner: "
-		<< this->preconditionerType()       << std::endl
-		<< "Continuing with PETSC defaults" << std::endl;
+        std::cerr << "ERROR:  Unsupported PETSC Preconditioner: "
+                  << this->preconditionerType()       << std::endl
+                  << "Continuing with PETSC defaults" << std::endl;
     }
 
 }

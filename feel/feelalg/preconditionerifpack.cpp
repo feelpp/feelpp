@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
    This file is part of the Feel library
 
@@ -37,18 +37,18 @@ PreconditionerIfpack::PreconditionerIfpack( std::string str  )
     :
     M_Prec(),
     M_List(),
-    M_precType(str)
+    M_precType( str )
 {
-    M_List.set("fact: drop tolerance", 1e-5 );
-    M_List.set("fact: level-of-fill",  1 );
-    M_List.set("partitioner: local parts", 4 );
-    M_List.set("partitioner: overlap", 4 );
+    M_List.set( "fact: drop tolerance", 1e-5 );
+    M_List.set( "fact: level-of-fill",  1 );
+    M_List.set( "partitioner: local parts", 4 );
+    M_List.set( "partitioner: overlap", 4 );
 
     M_overlap = 4;
 
     M_precType = str;
 
-    M_List.set("amesos: solver type", "Amesos_Klu");
+    M_List.set( "amesos: solver type", "Amesos_Klu" );
 
 }
 
@@ -56,18 +56,18 @@ PreconditionerIfpack::PreconditionerIfpack( list_type options, std::string str  
     :
     M_Prec(),
     M_List(),
-    M_precType(str)
+    M_precType( str )
 {
-    M_List.set("fact: drop tolerance", options.get("fact: drop tolerance", 1e-5) );
-    M_List.set("fact: level-of-fill",  options.get("fact: level-of-fill" , 1   ) );
-    M_List.set("partitioner: local parts", options.get("partitioner: local parts", 4) );
-    M_List.set("partitioner: overlap", options.get("partitioner: overlap", 4) );
+    M_List.set( "fact: drop tolerance", options.get( "fact: drop tolerance", 1e-5 ) );
+    M_List.set( "fact: level-of-fill",  options.get( "fact: level-of-fill" , 1   ) );
+    M_List.set( "partitioner: local parts", options.get( "partitioner: local parts", 4 ) );
+    M_List.set( "partitioner: overlap", options.get( "partitioner: overlap", 4 ) );
 
-    M_overlap = options.get("partitioner: overlap", 4);
+    M_overlap = options.get( "partitioner: overlap", 4 );
 
     M_precType = str;
 
-    M_List.set("amesos: solver type", "Amesos_Klu");
+    M_List.set( "amesos: solver type", "Amesos_Klu" );
 
 }
 
@@ -84,7 +84,7 @@ PreconditionerIfpack::PreconditionerIfpack( PreconditionerIfpack const& tc )
 void
 PreconditionerIfpack::setAmesosSolver( std::string str )
 {
-    M_List.set("amesos: solver type", str);
+    M_List.set( "amesos: solver type", str );
 }
 
 void
@@ -92,12 +92,12 @@ PreconditionerIfpack::setOptions( list_type options )
 {
     //M_List = options;
 
-    M_List.set("fact: drop tolerance", options.get("fact: drop tolerance", 1e-5) );
-    M_List.set("fact: level-of-fill",  options.get("fact: level-of-fill" , 3   ) );
-    M_List.set("partitioner: local parts", options.get("partitioner: local parts", 4) );
-    M_List.set("partitioner: overlap", options.get("partitioner: overlap", 4) );
+    M_List.set( "fact: drop tolerance", options.get( "fact: drop tolerance", 1e-5 ) );
+    M_List.set( "fact: level-of-fill",  options.get( "fact: level-of-fill" , 3   ) );
+    M_List.set( "partitioner: local parts", options.get( "partitioner: local parts", 4 ) );
+    M_List.set( "partitioner: overlap", options.get( "partitioner: overlap", 4 ) );
 
-    M_overlap = options.get("partitioner: overlap", 4);
+    M_overlap = options.get( "partitioner: overlap", 4 );
 }
 
 
@@ -106,12 +106,12 @@ PreconditionerIfpack::initializePreconditioner( sparse_matrix_ptrtype const& A )
 {
     Ifpack factory;
 
-    epetra_sparse_matrix_type* A_ptr = const_cast<epetra_sparse_matrix_type*>(dynamic_cast<epetra_sparse_matrix_type const*>( A.get() ));
+    epetra_sparse_matrix_type* A_ptr = const_cast<epetra_sparse_matrix_type*>( dynamic_cast<epetra_sparse_matrix_type const*>( A.get() ) );
 
-    M_Prec.reset(factory.Create(M_precType, &A_ptr->mat(), M_overlap));
+    M_Prec.reset( factory.Create( M_precType, &A_ptr->mat(), M_overlap ) );
 
-    IFPACK_CHK_ERR(M_Prec->SetParameters(M_List));
-    IFPACK_CHK_ERR(M_Prec->Initialize());
+    IFPACK_CHK_ERR( M_Prec->SetParameters( M_List ) );
+    IFPACK_CHK_ERR( M_Prec->Initialize() );
 
     return EXIT_SUCCESS;
 }
@@ -119,7 +119,7 @@ PreconditionerIfpack::initializePreconditioner( sparse_matrix_ptrtype const& A )
 int
 PreconditionerIfpack::computePreconditioner()
 {
-    IFPACK_CHK_ERR(M_Prec->Compute());
+    IFPACK_CHK_ERR( M_Prec->Compute() );
 
     return EXIT_SUCCESS;
 }
@@ -127,7 +127,7 @@ PreconditionerIfpack::computePreconditioner()
 int
 PreconditionerIfpack::buildPreconditioner( sparse_matrix_ptrtype const& A )
 {
-    initializePreconditioner(A);
+    initializePreconditioner( A );
     int result = computePreconditioner();
 
     return result;

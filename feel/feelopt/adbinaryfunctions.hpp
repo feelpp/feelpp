@@ -1,4 +1,4 @@
-/* 
+/*
    adbinaryfunctions.hpp	ADType expression templates
    This file is part of gstlibs.
 
@@ -8,18 +8,18 @@
    it under the terms of the GNU Lesser General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
    (at your option) any later version.
-   
+
    gstlibs is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU Lesser General Public License for more details.
-   
+
    You should have received a copy of the GNU Lesser General Public License
    along with gstlibs; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-// Generated source file.  Do not edit. 
+// Generated source file.  Do not edit.
 // /home/prudhomm/Devel/FEEL/feel/feel/feelopt/adgenerate.cpp Jun 22 2011 01:46:56
 
 #ifndef AD_BINARY_FUNCS_HPP
@@ -121,69 +121,81 @@ protected:
 
 public:
 
-    AdFuncPow (const Expr1 & expr1, const Expr2& expr2 ) : expr1_(expr1), expr2_(expr2)
-	{
-	    ;
-	}
+    AdFuncPow ( const Expr1 & expr1, const Expr2& expr2 ) : expr1_( expr1 ), expr2_( expr2 )
+    {
+        ;
+    }
 
 
     template<int isFundamental, typename Expr1_, typename Expr2_>
     struct Value
     {
 
-	typedef typename Expr1_::value_type value_type;
+        typedef typename Expr1_::value_type value_type;
 
-	static value_type value( Expr1_ const& expr1_, Expr2_ const& expr2_ )
-	    {
-		return pow( expr1_.value(), expr2_.value() );
-	    }
-	static value_type grad( Expr1_ const& expr1_, Expr2_ const& expr2_, int __i )
-	    {
-		return expr2_.value() * expr1_.grad(__i) * pow(expr1_.value(),expr2_.value()-1);
-	    }
-	static value_type hessian( Expr1_ const& expr1_, Expr2_ const& expr2_, int __i, int __j )
-	    {
-		return expr2_.value() * ( (expr2_.value()-1) * expr1_.grad(__i) * expr1_.grad(__j)  * pow(expr1_.value(),expr2_.value()-2) +  expr1_.hessian(__i,__j) * pow(expr1_.value(),expr2_.value()-1));
-	    }
+        static value_type value( Expr1_ const& expr1_, Expr2_ const& expr2_ )
+        {
+            return pow( expr1_.value(), expr2_.value() );
+        }
+        static value_type grad( Expr1_ const& expr1_, Expr2_ const& expr2_, int __i )
+        {
+            return expr2_.value() * expr1_.grad( __i ) * pow( expr1_.value(),expr2_.value()-1 );
+        }
+        static value_type hessian( Expr1_ const& expr1_, Expr2_ const& expr2_, int __i, int __j )
+        {
+            return expr2_.value() * ( ( expr2_.value()-1 ) * expr1_.grad( __i ) * expr1_.grad( __j )  * pow( expr1_.value(),expr2_.value()-2 ) +  expr1_.hessian( __i,__j ) * pow( expr1_.value(),expr2_.value()-1 ) );
+        }
     };
     template<typename Expr1_, typename Expr2_>
     struct Value<true, Expr1_, Expr2_>
     {
-	typedef typename Expr1_::value_type value_type;
+        typedef typename Expr1_::value_type value_type;
 
-	static value_type value( Expr1_ const& expr1_, Expr2_ const& expr2_ )
-	    {
-		return std::pow( expr1_.value(), expr2_.value() );
-	    }
-	static value_type grad( Expr1_ const& expr1_, Expr2_ const& expr2_, int __i )
-	    {
-		return expr2_.value() * expr1_.grad(__i) * std::pow(expr1_.value(),expr2_.value()-1);
-	    }
-	static value_type hessian( Expr1_ const& expr1_, Expr2_ const& expr2_, int __i, int __j )
-	    {
-		return expr2_.value() * ( (expr2_.value()-1) * expr1_.grad(__i) * expr1_.grad(__j) * std::pow(expr1_.value(),expr2_.value()-2) + expr1_.hessian(__i,__j) * std::pow(expr1_.value(),expr2_.value()-1));
-	    }
+        static value_type value( Expr1_ const& expr1_, Expr2_ const& expr2_ )
+        {
+            return std::pow( expr1_.value(), expr2_.value() );
+        }
+        static value_type grad( Expr1_ const& expr1_, Expr2_ const& expr2_, int __i )
+        {
+            return expr2_.value() * expr1_.grad( __i ) * std::pow( expr1_.value(),expr2_.value()-1 );
+        }
+        static value_type hessian( Expr1_ const& expr1_, Expr2_ const& expr2_, int __i, int __j )
+        {
+            return expr2_.value() * ( ( expr2_.value()-1 ) * expr1_.grad( __i ) * expr1_.grad( __j ) * std::pow( expr1_.value(),expr2_.value()-2 ) + expr1_.hessian( __i,__j ) * std::pow( expr1_.value(),expr2_.value()-1 ) );
+        }
     };
 
-    inline value_type value() const  { return Value<true/*boost::type_traits::is_fundamental<value_type>::value*/,Expr1,Expr2>::value(expr1_, expr2_);}
-    inline value_type grad(int __i) const {return  Value<true/*boost::type_traits::is_fundamental<value_type>::value*/,Expr1,Expr2>::grad(expr1_, expr2_, __i); }
-    inline value_type hessian(int __i, int __j) const {return  Value<true/*boost::type_traits::is_fundamental<value_type>::value*/,Expr1, Expr2>::hessian(expr1_, expr2_, __i, __j); }
-    inline bool deps(int __i) const {return expr1_.deps( __i ) || expr2_.deps( __i ); }
+    inline value_type value() const
+    {
+        return Value<true/*boost::type_traits::is_fundamental<value_type>::value*/,Expr1,Expr2>::value( expr1_, expr2_ );
+    }
+    inline value_type grad( int __i ) const
+    {
+        return  Value<true/*boost::type_traits::is_fundamental<value_type>::value*/,Expr1,Expr2>::grad( expr1_, expr2_, __i );
+    }
+    inline value_type hessian( int __i, int __j ) const
+    {
+        return  Value<true/*boost::type_traits::is_fundamental<value_type>::value*/,Expr1, Expr2>::hessian( expr1_, expr2_, __i, __j );
+    }
+    inline bool deps( int __i ) const
+    {
+        return expr1_.deps( __i ) || expr2_.deps( __i );
+    }
 };
 
 template <class Expr1, class Expr2>
 inline
 ADExpr< AdFuncPow< ADExpr<Expr1>, ADExpr<Expr2> > >
-pow (const ADExpr<Expr1>& expr1, const ADExpr<Expr2>& expr2 )
+pow ( const ADExpr<Expr1>& expr1, const ADExpr<Expr2>& expr2 )
 {
     typedef AdFuncPow< ADExpr<Expr1>, ADExpr<Expr2> > expr_t;
-    return ADExpr< expr_t >(  expr_t(expr1, expr2) );
+    return ADExpr< expr_t >(  expr_t( expr1, expr2 ) );
 }
 
 template <class T, int Nvar, int Order, int Var>
 inline
 ADExpr< AdFuncPow< ADType<T, Nvar, Order, Var>, ADType<T, Nvar, Order, Var> > >
-pow (const ADType<T, Nvar, Order, Var>& x, const ADType<T, Nvar, Order, Var>& y )
+pow ( const ADType<T, Nvar, Order, Var>& x, const ADType<T, Nvar, Order, Var>& y )
 {
     typedef AdFuncPow< ADType<T, Nvar, Order, Var>, ADType<T, Nvar, Order, Var> > expr_t;
     return ADExpr< expr_t >(  expr_t( x, y ) );
@@ -192,7 +204,7 @@ pow (const ADType<T, Nvar, Order, Var>& x, const ADType<T, Nvar, Order, Var>& y 
 template <class W, class T, int Nvar, int Order, int Var>
 inline
 ADExpr< AdFuncPow< ADType<T, Nvar, Order, Var>, ADCst<W> > >
-pow (const ADType<T, Nvar, Order, Var>& x, W y )
+pow ( const ADType<T, Nvar, Order, Var>& x, W y )
 {
     typedef AdFuncPow< ADType<T, Nvar, Order, Var>, ADCst<W> > expr_t;
     ADCst<W> y1 ( y );

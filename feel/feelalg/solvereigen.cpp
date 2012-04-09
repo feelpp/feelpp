@@ -39,6 +39,7 @@ solvereigen_options( std::string const& prefix )
 {
     std::string _prefix = prefix;
     boost::algorithm::trim( _prefix );
+
     if ( !_prefix.empty() && !boost::algorithm::ends_with( _prefix, "-" ) )
         _prefix += "-";
 
@@ -47,43 +48,43 @@ solvereigen_options( std::string const& prefix )
     //int ncv,                  // number of basis vectors
     //const double tol,         // solver tolerance
     //const unsigned int m_its) // maximum number of iterations
-    po::options_description _options( "Solver EigenValue Slepc -- " + prefix + " solver options");
+    po::options_description _options( "Solver EigenValue Slepc -- " + prefix + " solver options" );
     _options.add_options()
-        // solver options
-        ((_prefix+"solvereigen-solver-type").c_str(), Feel::po::value<int>()->default_value( KRYLOVSCHUR ), "type of eigenvalue solver")
-        ((_prefix+"solvereigen-problem-type").c_str(), Feel::po::value<int>()->default_value( NHEP ), "type of eigenvalue problem")
-        ((_prefix+"solvereigen-position").c_str(), Feel::po::value<int>()->default_value( LARGEST_MAGNITUDE ), "eigenvalue solver position in spectrum: LARGEST_MAGNITUDE=0, SMALLEST_MAGNITUDE=1, LARGEST_REAL=2, SMALLEST_REAL=3, LARGEST_IMAGINARY=4, SMALLEST_IMAGINARY=5")
-        ((_prefix+"solvereigen-nev").c_str(), Feel::po::value<int>()->default_value( 1 ), "number of requested eigenpairs")
-        ((_prefix+"solvereigen-ncv").c_str(), Feel::po::value<int>()->default_value( 3 ), "number of basis vectors")
-        ((_prefix+"solvereigen-tol").c_str(), Feel::po::value<double>()->default_value( 1e-10 ), "solver tolerance")
-        ((_prefix+"solvereigen-maxiter").c_str(), Feel::po::value<int>()->default_value( 10000 ), "maximum number of iterations");
+    // solver options
+    ( ( _prefix+"solvereigen-solver-type" ).c_str(), Feel::po::value<int>()->default_value( KRYLOVSCHUR ), "type of eigenvalue solver" )
+    ( ( _prefix+"solvereigen-problem-type" ).c_str(), Feel::po::value<int>()->default_value( NHEP ), "type of eigenvalue problem" )
+    ( ( _prefix+"solvereigen-position" ).c_str(), Feel::po::value<int>()->default_value( LARGEST_MAGNITUDE ), "eigenvalue solver position in spectrum: LARGEST_MAGNITUDE=0, SMALLEST_MAGNITUDE=1, LARGEST_REAL=2, SMALLEST_REAL=3, LARGEST_IMAGINARY=4, SMALLEST_IMAGINARY=5" )
+    ( ( _prefix+"solvereigen-nev" ).c_str(), Feel::po::value<int>()->default_value( 1 ), "number of requested eigenpairs" )
+    ( ( _prefix+"solvereigen-ncv" ).c_str(), Feel::po::value<int>()->default_value( 3 ), "number of basis vectors" )
+    ( ( _prefix+"solvereigen-tol" ).c_str(), Feel::po::value<double>()->default_value( 1e-10 ), "solver tolerance" )
+    ( ( _prefix+"solvereigen-maxiter" ).c_str(), Feel::po::value<int>()->default_value( 10000 ), "maximum number of iterations" );
 
     return _options;
 }
 template <typename T>
 SolverEigen<T>::SolverEigen()
     :
-    M_eigen_solver_type    (ARNOLDI),
-    M_eigen_problem_type   (NHEP),
-    M_position_of_spectrum (LARGEST_MAGNITUDE),
-    M_spectral_transform   (SHIFT),
-    M_is_initialized       (false),
-    M_nev(1),
-    M_ncv(3)
+    M_eigen_solver_type    ( ARNOLDI ),
+    M_eigen_problem_type   ( NHEP ),
+    M_position_of_spectrum ( LARGEST_MAGNITUDE ),
+    M_spectral_transform   ( SHIFT ),
+    M_is_initialized       ( false ),
+    M_nev( 1 ),
+    M_ncv( 3 )
 {
 }
 
 template <typename T>
 SolverEigen<T>::SolverEigen( po::variables_map const& vm, std::string const& prefix )
     :
-    M_prefix( (!prefix.empty() && !boost::algorithm::ends_with( prefix, "-" ))? (prefix+"-"):prefix ),
-    M_eigen_solver_type    ((EigenSolverType)vm[M_prefix+"solvereigen-solver-type"].template as<int>() ),
-    M_eigen_problem_type   ((EigenProblemType)vm[M_prefix+"solvereigen-problem-type"].template as<int>() ),
-    M_position_of_spectrum ((PositionOfSpectrum)vm[M_prefix+"solvereigen-position"].template as<int>() ),
-    M_spectral_transform   (SHIFT),
-    M_is_initialized       (false),
-    M_nev(vm[M_prefix+"solvereigen-nev"].template as<int>()),
-    M_ncv(vm[M_prefix+"solvereigen-ncv"].template as<int>())
+    M_prefix( ( !prefix.empty() && !boost::algorithm::ends_with( prefix, "-" ) )? ( prefix+"-" ):prefix ),
+    M_eigen_solver_type    ( ( EigenSolverType )vm[M_prefix+"solvereigen-solver-type"].template as<int>() ),
+    M_eigen_problem_type   ( ( EigenProblemType )vm[M_prefix+"solvereigen-problem-type"].template as<int>() ),
+    M_position_of_spectrum ( ( PositionOfSpectrum )vm[M_prefix+"solvereigen-position"].template as<int>() ),
+    M_spectral_transform   ( SHIFT ),
+    M_is_initialized       ( false ),
+    M_nev( vm[M_prefix+"solvereigen-nev"].template as<int>() ),
+    M_ncv( vm[M_prefix+"solvereigen-ncv"].template as<int>() )
 {
 }
 
@@ -93,7 +94,7 @@ SolverEigen<T>::SolverEigen( SolverEigen const& eis )
     M_eigen_solver_type    ( eis.M_eigen_solver_type ),
     M_eigen_problem_type   ( eis.M_eigen_problem_type ),
     M_position_of_spectrum ( eis.M_position_of_spectrum ),
-    M_spectral_transform   ( eis.M_spectral_transform),
+    M_spectral_transform   ( eis.M_spectral_transform ),
     M_is_initialized       ( eis.M_is_initialized ),
     M_nev( eis.M_nev ),
     M_ncv( eis.M_ncv )
@@ -107,31 +108,31 @@ SolverEigen<T>::~SolverEigen()
 }
 template <typename T>
 boost::shared_ptr<SolverEigen<T> >
-SolverEigen<T>::build(const SolverPackage solver_package)
+SolverEigen<T>::build( const SolverPackage solver_package )
 {
     // Build the appropriate solver
-    switch (solver_package)
-        {
+    switch ( solver_package )
+    {
 
-        case SOLVERS_SLEPC:
-            {
+    case SOLVERS_SLEPC:
+    {
 
 #if defined( FEELPP_HAS_SLEPC ) && defined( FEELPP_HAS_PETSC_H )
-                solvereigen_ptrtype ap(new SolverEigenSlepc<T>);
-                return ap;
+        solvereigen_ptrtype ap( new SolverEigenSlepc<T> );
+        return ap;
 #else
-                std::cerr << "Slepc is not available/installed" << std::endl;
-                throw std::invalid_argument( "invalid solver slepc package" );
+        std::cerr << "Slepc is not available/installed" << std::endl;
+        throw std::invalid_argument( "invalid solver slepc package" );
 #endif
-            }
-            break;
+    }
+    break;
 
-        default:
-            std::cerr << "ERROR:  Unrecognized eigen solver package: "
-                      << solver_package
-                      << std::endl;
-            throw std::invalid_argument( "invalid solver package" );
-        }
+    default:
+        std::cerr << "ERROR:  Unrecognized eigen solver package: "
+                  << solver_package
+                  << std::endl;
+        throw std::invalid_argument( "invalid solver package" );
+    }
 
     return solvereigen_ptrtype();
 }
@@ -140,50 +141,54 @@ template <typename T>
 boost::shared_ptr<SolverEigen<T> >
 SolverEigen<T>::build( po::variables_map const& vm, std::string const& prefix )
 {
-   SolverPackage solver_package = SOLVERS_SLEPC;
-    if ( vm["backend"].template as<std::string>() == "petsc" )
-        {
-#if defined( FEELPP_HAS_PETSC )
-            solver_package = SOLVERS_SLEPC;
-#endif
-        }
-    else if ( vm["backend"].template as<std::string>() == "trilinos" )
-        {
-#if defined( FEELPP_HAS_TRILINOS )
-            solver_package = SOLVERS_TRILINOS;
-#endif
-        }
-    else
-        {
-            Log() << "[SolverNonLinear] solver " << vm["backend"].template as<std::string>() << " not available\n";
-            Log() << "[Backend] use fallback  gmm\n";
-#if defined( FEELPP_HAS_PETSC )
-            solver_package = SOLVERS_PETSC;
-#endif
-        }
-    // Build the appropriate solver
-    switch (solver_package)
-        {
+    SolverPackage solver_package = SOLVERS_SLEPC;
 
-        case SOLVERS_SLEPC:
-            {
+    if ( vm["backend"].template as<std::string>() == "petsc" )
+    {
+#if defined( FEELPP_HAS_PETSC )
+        solver_package = SOLVERS_SLEPC;
+#endif
+    }
+
+    else if ( vm["backend"].template as<std::string>() == "trilinos" )
+    {
+#if defined( FEELPP_HAS_TRILINOS )
+        solver_package = SOLVERS_TRILINOS;
+#endif
+    }
+
+    else
+    {
+        Log() << "[SolverNonLinear] solver " << vm["backend"].template as<std::string>() << " not available\n";
+        Log() << "[Backend] use fallback  gmm\n";
+#if defined( FEELPP_HAS_PETSC )
+        solver_package = SOLVERS_PETSC;
+#endif
+    }
+
+    // Build the appropriate solver
+    switch ( solver_package )
+    {
+
+    case SOLVERS_SLEPC:
+    {
 
 #if defined( FEELPP_HAS_SLEPC ) && defined( FEELPP_HAS_PETSC_H )
-                solvereigen_ptrtype ap(new SolverEigenSlepc<T>( vm, prefix ) );
-                return ap;
+        solvereigen_ptrtype ap( new SolverEigenSlepc<T>( vm, prefix ) );
+        return ap;
 #else
-                std::cerr << "Slepc is not available/installed" << std::endl;
-                throw std::invalid_argument( "invalid solver slepc package" );
+        std::cerr << "Slepc is not available/installed" << std::endl;
+        throw std::invalid_argument( "invalid solver slepc package" );
 #endif
-            }
-            break;
+    }
+    break;
 
-        default:
-            std::cerr << "ERROR:  Unrecognized eigen solver package: "
-                      << solver_package
-                      << std::endl;
-            throw std::invalid_argument( "invalid solver package" );
-        }
+    default:
+        std::cerr << "ERROR:  Unrecognized eigen solver package: "
+                  << solver_package
+                  << std::endl;
+        throw std::invalid_argument( "invalid solver package" );
+    }
 
     return solvereigen_ptrtype();
 }

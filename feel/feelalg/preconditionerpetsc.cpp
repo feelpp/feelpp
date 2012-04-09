@@ -33,16 +33,16 @@
 namespace Feel
 {
 template <typename T>
-void PreconditionerPetsc<T>::apply(const Vector<T> & x, Vector<T> & y)
+void PreconditionerPetsc<T>::apply( const Vector<T> & x, Vector<T> & y )
 {
-    VectorPetsc<T> & x_pvec = dynamic_cast<VectorPetsc<T>&>(const_cast<Vector<T>&>(x));
-    VectorPetsc<T> & y_pvec = dynamic_cast<VectorPetsc<T>&>(const_cast<Vector<T>&>(y));
+    VectorPetsc<T> & x_pvec = dynamic_cast<VectorPetsc<T>&>( const_cast<Vector<T>&>( x ) );
+    VectorPetsc<T> & y_pvec = dynamic_cast<VectorPetsc<T>&>( const_cast<Vector<T>&>( y ) );
 
     Vec x_vec = x_pvec.vec();
     Vec y_vec = y_pvec.vec();
 
-    int ierr = PCApply(M_pc,x_vec,y_vec);
-    CHKERRABORT(this->M_comm,ierr);
+    int ierr = PCApply( M_pc,x_vec,y_vec );
+    CHKERRABORT( this->M_comm,ierr );
 }
 
 
@@ -51,26 +51,27 @@ void PreconditionerPetsc<T>::apply(const Vector<T> & x, Vector<T> & y)
 template <typename T>
 void PreconditionerPetsc<T>::init ()
 {
-    if(!this->M_matrix)
+    if ( !this->M_matrix )
     {
         std::cerr << "ERROR: No matrix set for PreconditionerPetsc, but init() called" << std::endl;
     }
+
     this->M_matrix->close();
 
     // Clear the preconditioner in case it has been created in the past
-    if (!this->M_is_initialized)
+    if ( !this->M_is_initialized )
     {
         // Create the preconditioning object
-        int ierr = PCCreate(this->M_comm,&M_pc);
-        CHKERRABORT(this->M_comm,ierr);
+        int ierr = PCCreate( this->M_comm,&M_pc );
+        CHKERRABORT( this->M_comm,ierr );
 
-        MatrixPetsc<T> * pmatrix = dynamic_cast<MatrixPetsc<T>*>(this->M_matrix.get());
+        MatrixPetsc<T> * pmatrix = dynamic_cast<MatrixPetsc<T>*>( this->M_matrix.get() );
 
         M_mat = pmatrix->mat();
     }
 
-    int ierr = PCSetOperators(M_pc,M_mat,M_mat,(MatStructure)SAME_NONZERO_PATTERN);
-    CHKERRABORT(this->M_comm,ierr);
+    int ierr = PCSetOperators( M_pc,M_mat,M_mat,( MatStructure )SAME_NONZERO_PATTERN );
+    CHKERRABORT( this->M_comm,ierr );
 
     // Set the PCType.  Note: this used to be done *before* the call to
     // PCSetOperators(), and only when !M_is_initialized, but
@@ -79,7 +80,7 @@ void PreconditionerPetsc<T>::init ()
     // the operators have been set.
     // 2.) It should be safe to call set_petsc_preconditioner_type()
     // multiple times.
-    setPetscPreconditionerType(this->M_preconditioner_type, M_pc);
+    setPetscPreconditionerType( this->M_preconditioner_type, M_pc );
 
     this->M_is_initialized = true;
 }
@@ -99,21 +100,27 @@ void PreconditionerPetsc<T>::clear ()
 
 
 template <typename T>
-void PreconditionerPetsc<T>::setPetscPreconditionerType (const PreconditionerType & preconditioner_type, PC & pc)
+void PreconditionerPetsc<T>::setPetscPreconditionerType ( const PreconditionerType & preconditioner_type, PC & pc )
 {
     mpi::communicator world;
     int ierr = 0;
 
-    switch (preconditioner_type)
+    switch ( preconditioner_type )
     {
     case IDENTITY_PRECOND:
-        ierr = PCSetType (pc, (char*) PCNONE);      CHKERRABORT(PETSC_COMM_WORLD,ierr); break;
+        ierr = PCSetType ( pc, ( char* ) PCNONE );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        break;
 
     case CHOLESKY_PRECOND:
-        ierr = PCSetType (pc, (char*) PCCHOLESKY);  CHKERRABORT(PETSC_COMM_WORLD,ierr); break;
+        ierr = PCSetType ( pc, ( char* ) PCCHOLESKY );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        break;
 
     case ICC_PRECOND:
-        ierr = PCSetType (pc, (char*) PCICC);       CHKERRABORT(PETSC_COMM_WORLD,ierr); break;
+        ierr = PCSetType ( pc, ( char* ) PCICC );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        break;
 
     case ILU_PRECOND:
     {
@@ -122,20 +129,22 @@ void PreconditionerPetsc<T>::setPetscPreconditionerType (const PreconditionerTyp
         // change in parallel version
         if ( world.size() == 1 )
         {
-            ierr = PCSetType (pc, (char*) PCILU);
-            CHKERRABORT(PETSC_COMM_WORLD,ierr);
+            ierr = PCSetType ( pc, ( char* ) PCILU );
+            CHKERRABORT( PETSC_COMM_WORLD,ierr );
         }
+
         else
         {
             // But PETSc has no truly parallel ILU, instead you have to set
             // an actual parallel preconditioner (e.g. block Jacobi) and then
             // assign ILU sub-preconditioners.
-            ierr = PCSetType (pc, (char*) PCBJACOBI);
-            CHKERRABORT(PETSC_COMM_WORLD,ierr);
+            ierr = PCSetType ( pc, ( char* ) PCBJACOBI );
+            CHKERRABORT( PETSC_COMM_WORLD,ierr );
 
             // Set ILU as the sub preconditioner type
-            setPetscSubpreconditionerType(PCILU, pc);
+            setPetscSubpreconditionerType( PCILU, pc );
         }
+
         break;
     }
 
@@ -147,20 +156,22 @@ void PreconditionerPetsc<T>::setPetscPreconditionerType (const PreconditionerTyp
         // do be changed in parallel
         if ( world.size() == 1 )
         {
-            ierr = PCSetType (pc, (char*) PCLU);
-            CHKERRABORT(PETSC_COMM_WORLD,ierr);
+            ierr = PCSetType ( pc, ( char* ) PCLU );
+            CHKERRABORT( PETSC_COMM_WORLD,ierr );
         }
+
         else
         {
             // But PETSc has no truly parallel LU, instead you have to set
             // an actual parallel preconditioner (e.g. block Jacobi) and then
             // assign LU sub-preconditioners.
-            ierr = PCSetType (pc, (char*) PCBJACOBI);
-            CHKERRABORT(PETSC_COMM_WORLD,ierr);
+            ierr = PCSetType ( pc, ( char* ) PCBJACOBI );
+            CHKERRABORT( PETSC_COMM_WORLD,ierr );
 
             // Set ILU as the sub preconditioner type
-            setPetscSubpreconditionerType(PCLU, pc);
+            setPetscSubpreconditionerType( PCLU, pc );
         }
+
         break;
     }
 
@@ -169,56 +180,73 @@ void PreconditionerPetsc<T>::setPetscPreconditionerType (const PreconditionerTyp
         // In parallel, I think ASM uses ILU by default as the sub-preconditioner...
         // I tried setting a different sub-preconditioner here, but apparently the matrix
         // is not in the correct state (at this point) to call PCSetUp().
-        ierr = PCSetType (pc, (char*) PCASM);
-        CHKERRABORT(PETSC_COMM_WORLD,ierr);
+        ierr = PCSetType ( pc, ( char* ) PCASM );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
         break;
     }
 
     case JACOBI_PRECOND:
-        ierr = PCSetType (pc, (char*) PCJACOBI);    CHKERRABORT(PETSC_COMM_WORLD,ierr); break;
+        ierr = PCSetType ( pc, ( char* ) PCJACOBI );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        break;
 
     case BLOCK_JACOBI_PRECOND:
-        ierr = PCSetType (pc, (char*) PCBJACOBI);   CHKERRABORT(PETSC_COMM_WORLD,ierr); break;
+        ierr = PCSetType ( pc, ( char* ) PCBJACOBI );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        break;
 
     case SOR_PRECOND:
-        ierr = PCSetType (pc, (char*) PCSOR);       CHKERRABORT(PETSC_COMM_WORLD,ierr); break;
+        ierr = PCSetType ( pc, ( char* ) PCSOR );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        break;
 
     case EISENSTAT_PRECOND:
-        ierr = PCSetType (pc, (char*) PCEISENSTAT); CHKERRABORT(PETSC_COMM_WORLD,ierr); break;
+        ierr = PCSetType ( pc, ( char* ) PCEISENSTAT );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        break;
 
     case AMG_PRECOND:
-        ierr = PCSetType (pc, (char*) PCHYPRE);     CHKERRABORT(PETSC_COMM_WORLD,ierr); break;
+        ierr = PCSetType ( pc, ( char* ) PCHYPRE );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        break;
 
 #if !(PETSC_VERSION_LESS_THAN(2,1,2))
+
         // Only available for PETSC >= 2.1.2
     case USER_PRECOND:
-        ierr = PCSetType (pc, (char*) PCMAT);       CHKERRABORT(PETSC_COMM_WORLD,ierr); break;
+        ierr = PCSetType ( pc, ( char* ) PCMAT );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        break;
 #endif
 
     case SHELL_PRECOND:
-        ierr = PCSetType (pc, (char*) PCSHELL);     CHKERRABORT(PETSC_COMM_WORLD,ierr); break;
+        ierr = PCSetType ( pc, ( char* ) PCSHELL );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        break;
 
     default:
         std::cerr << "ERROR:  Unsupported PETSC Preconditioner: "
-                   << preconditioner_type       << std::endl
-                   << "Continuing with PETSC defaults" << std::endl;
+                  << preconditioner_type       << std::endl
+                  << "Continuing with PETSC defaults" << std::endl;
     }
 
     // Set additional options if we are doing AMG and
     // HYPRE is available
 #ifdef FEELPP_HAS_PETSC_HYPRE
-    if (preconditioner_type == AMG_PRECOND)
+
+    if ( preconditioner_type == AMG_PRECOND )
     {
-        ierr = PCHYPRESetType(pc, "boomeramg");
-        CHKERRABORT(PETSC_COMM_WORLD,ierr);
+        ierr = PCHYPRESetType( pc, "boomeramg" );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
     }
+
 #endif
 
     // Let the commandline override stuff
-    if (preconditioner_type != AMG_PRECOND)
+    if ( preconditioner_type != AMG_PRECOND )
     {
-        ierr = PCSetFromOptions(pc);
-        CHKERRABORT(PETSC_COMM_WORLD,ierr);
+        ierr = PCSetFromOptions( pc );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
     }
 }
 
@@ -226,9 +254,9 @@ void PreconditionerPetsc<T>::setPetscPreconditionerType (const PreconditionerTyp
 
 template <typename T>
 #if PETSC_VERSION_LESS_THAN(3,0,0)
-void PreconditionerPetsc<T>::setPetscSubpreconditionerType(PCType type, PC& pc)
+void PreconditionerPetsc<T>::setPetscSubpreconditionerType( PCType type, PC& pc )
 #else
-    void PreconditionerPetsc<T>::setPetscSubpreconditionerType(const PCType type, PC& pc)
+void PreconditionerPetsc<T>::setPetscSubpreconditionerType( const PCType type, PC& pc )
 #endif
 {
     // For catching PETSc error return codes
@@ -241,8 +269,8 @@ void PreconditionerPetsc<T>::setPetscSubpreconditionerType(PCType type, PC& pc)
     // "Matrix must be set first."
     //
     // error messages...
-    ierr = PCSetUp(pc);
-    CHKERRABORT(PETSC_COMM_WORLD,ierr);
+    ierr = PCSetUp( pc );
+    CHKERRABORT( PETSC_COMM_WORLD,ierr );
 
     // To store array of local KSP contexts on this processor
     KSP* subksps;
@@ -255,21 +283,21 @@ void PreconditionerPetsc<T>::setPetscSubpreconditionerType(PCType type, PC& pc)
     // int first_local;
 
     // Fill array of local KSP contexts
-    ierr = PCBJacobiGetSubKSP(pc, &n_local, PETSC_NULL, &subksps);
-    CHKERRABORT(PETSC_COMM_WORLD,ierr);
+    ierr = PCBJacobiGetSubKSP( pc, &n_local, PETSC_NULL, &subksps );
+    CHKERRABORT( PETSC_COMM_WORLD,ierr );
 
     // Loop over sub-ksp objects, set ILU preconditioner
-    for (int i=0; i<n_local; ++i)
+    for ( int i=0; i<n_local; ++i )
     {
         // Get pointer to sub KSP object's PC
         PC subpc;
 
-        ierr = KSPGetPC(subksps[i], &subpc);
-        CHKERRABORT(PETSC_COMM_WORLD,ierr);
+        ierr = KSPGetPC( subksps[i], &subpc );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
 
         // Set requested type on the sub PC
-        ierr = PCSetType(subpc, type);
-        CHKERRABORT(PETSC_COMM_WORLD,ierr);
+        ierr = PCSetType( subpc, type );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
     }
 
 }

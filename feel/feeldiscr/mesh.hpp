@@ -76,9 +76,9 @@ const size_type EXTRACTION_KEEP_EDGES_IDS                 = ( 1<<1 );
 const size_type EXTRACTION_KEEP_FACES_IDS                 = ( 1<<2 );
 const size_type EXTRACTION_KEEP_VOLUMES_IDS               = ( 1<<3 );
 const size_type EXTRACTION_KEEP_ALL_IDS                   = ( EXTRACTION_KEEP_POINTS_IDS |
-                                                              EXTRACTION_KEEP_EDGES_IDS |
-                                                              EXTRACTION_KEEP_FACES_IDS |
-                                                              EXTRACTION_KEEP_VOLUMES_IDS );
+        EXTRACTION_KEEP_EDGES_IDS |
+        EXTRACTION_KEEP_FACES_IDS |
+        EXTRACTION_KEEP_VOLUMES_IDS );
 
 /**
  * partitioner base class
@@ -97,22 +97,22 @@ template<typename Mesh> class Partitioner;
 template <typename GeoShape, typename T = double>
 class Mesh
     :
-        public mpl::if_<mpl::equal_to<mpl::int_<GeoShape::nDim>,mpl::int_<0> >,
-                        mpl::identity<Mesh0D<GeoShape > >,
-                        typename mpl::if_<mpl::equal_to<mpl::int_<GeoShape::nDim>,mpl::int_<1> >,
-                                          mpl::identity<Mesh1D<GeoShape > >,
-                                          typename mpl::if_<mpl::equal_to<mpl::int_<GeoShape::nDim>,mpl::int_<2> >,
-                                                            mpl::identity<Mesh2D<GeoShape> >,
-                                                            mpl::identity<Mesh3D<GeoShape> > >::type>::type>::type::type,
-        public boost::enable_shared_from_this< Mesh<GeoShape,T> >
+public mpl::if_<mpl::equal_to<mpl::int_<GeoShape::nDim>,mpl::int_<0> >,
+    mpl::identity<Mesh0D<GeoShape > >,
+    typename mpl::if_<mpl::equal_to<mpl::int_<GeoShape::nDim>,mpl::int_<1> >,
+    mpl::identity<Mesh1D<GeoShape > >,
+    typename mpl::if_<mpl::equal_to<mpl::int_<GeoShape::nDim>,mpl::int_<2> >,
+    mpl::identity<Mesh2D<GeoShape> >,
+    mpl::identity<Mesh3D<GeoShape> > >::type>::type>::type::type,
+public boost::enable_shared_from_this< Mesh<GeoShape,T> >
 {
     typedef typename mpl::if_<mpl::equal_to<mpl::int_<GeoShape::nDim>,mpl::int_<0> >,
-                              mpl::identity<Mesh0D<GeoShape> >,
-                              typename mpl::if_<mpl::equal_to<mpl::int_<GeoShape::nDim>,mpl::int_<1> >,
-                                                mpl::identity<Mesh1D<GeoShape> >,
-                                                typename mpl::if_<mpl::equal_to<mpl::int_<GeoShape::nDim>,mpl::int_<2> >,
-                                                                  mpl::identity<Mesh2D<GeoShape> >,
-                                                                  mpl::identity<Mesh3D<GeoShape> > >::type>::type>::type::type super;
+            mpl::identity<Mesh0D<GeoShape> >,
+            typename mpl::if_<mpl::equal_to<mpl::int_<GeoShape::nDim>,mpl::int_<1> >,
+            mpl::identity<Mesh1D<GeoShape> >,
+            typename mpl::if_<mpl::equal_to<mpl::int_<GeoShape::nDim>,mpl::int_<2> >,
+            mpl::identity<Mesh2D<GeoShape> >,
+            mpl::identity<Mesh3D<GeoShape> > >::type>::type>::type::type super;
 public:
 
 
@@ -176,14 +176,14 @@ public:
     typedef typename super::face_processor_type element_edge_type;
 
     typedef typename mpl::if_<mpl::bool_<GeoShape::is_simplex>,
-                              mpl::identity< Mesh< Simplex< GeoShape::nDim,1,GeoShape::nRealDim>, value_type > >,
-                              mpl::identity< Mesh< Hypercube<GeoShape::nDim,1,GeoShape::nRealDim>,value_type > > >::type::type P1_mesh_type;
+            mpl::identity< Mesh< Simplex< GeoShape::nDim,1,GeoShape::nRealDim>, value_type > >,
+            mpl::identity< Mesh< Hypercube<GeoShape::nDim,1,GeoShape::nRealDim>,value_type > > >::type::type P1_mesh_type;
 
     typedef boost::shared_ptr<P1_mesh_type> P1_mesh_ptrtype;
 
     typedef typename mpl::if_<mpl::bool_<GeoShape::is_simplex>,
-                              mpl::identity< Mesh< Simplex< GeoShape::nDim-1,nOrder,GeoShape::nRealDim>, value_type > >,
-                              mpl::identity< Mesh< Hypercube<GeoShape::nDim-1,nOrder,GeoShape::nRealDim>,value_type > > >::type::type trace_mesh_type;
+            mpl::identity< Mesh< Simplex< GeoShape::nDim-1,nOrder,GeoShape::nRealDim>, value_type > >,
+            mpl::identity< Mesh< Hypercube<GeoShape::nDim-1,nOrder,GeoShape::nRealDim>,value_type > > >::type::type trace_mesh_type;
     typedef typename boost::shared_ptr<trace_mesh_type> trace_mesh_ptrtype;
     //@}
 
@@ -199,39 +199,57 @@ public:
     /**
      * \return the topological dimension
      */
-    uint16_type dimension() const { return nDim; }
+    uint16_type dimension() const
+    {
+        return nDim;
+    }
 
     /**
      * \return geometric mapping
      */
-    gm_ptrtype const& gm() const { return _M_gm; }
+    gm_ptrtype const& gm() const
+    {
+        return _M_gm;
+    }
 
-/**
-     * \return geometric mapping of order 1
-     */
-    gm1_ptrtype const& gm1() const { return _M_gm1; }
+    /**
+         * \return geometric mapping of order 1
+         */
+    gm1_ptrtype const& gm1() const
+    {
+        return _M_gm1;
+    }
 
     /**
      * \return the geometric mapping
      */
-    gm_ptrtype& gm() { return _M_gm; }
+    gm_ptrtype& gm()
+    {
+        return _M_gm;
+    }
 
- /**
-     * \return the geometric mapping of order 1
-     */
-    gm1_ptrtype& gm1() { return _M_gm1; }
+    /**
+        * \return the geometric mapping of order 1
+        */
+    gm1_ptrtype& gm1()
+    {
+        return _M_gm1;
+    }
 
     /**
      * \return the reference convex associated with the element of the
      * mesh
      */
-    reference_convex_type referenceConvex() const { return reference_convex_type(); }
+    reference_convex_type referenceConvex() const
+    {
+        return reference_convex_type();
+    }
 
     /**
      * \return the face index of the face \p n in the element \p e
      */
     face_processor_type const& localFaceId( element_type const& e,
-                                       size_type const n ) const
+                                            size_type const n ) const
     {
         return _M_e2f[e.id()][n];
     }
@@ -240,7 +258,7 @@ public:
      * \return the face index of the face \p n in the element \p e
      */
     face_processor_type const& localFaceId( size_type const e,
-                                       size_type const n ) const
+                                            size_type const n ) const
     {
         return _M_e2f[e][n];
     }
@@ -248,11 +266,20 @@ public:
     /**
      * \return the world comm
      */
-    WorldComm const& worldComm() const { return _M_worldComm; }
+    WorldComm const& worldComm() const
+    {
+        return _M_worldComm;
+    }
 
-    void setWorldComm(WorldComm const& _worldComm ) { _M_worldComm = _worldComm; }
+    void setWorldComm( WorldComm const& _worldComm )
+    {
+        _M_worldComm = _worldComm;
+    }
 
-    mpi::communicator const& comm() const { return _M_worldComm.localComm(); }
+    mpi::communicator const& comm() const
+    {
+        return _M_worldComm.localComm();
+    }
 #endif
     //@}
 
@@ -272,7 +299,7 @@ public:
      * \return the face index of the face \p n in the element \p e
      */
     face_processor_type& localFaceId( element_type const& e,
-                                 size_type const n )
+                                      size_type const n )
     {
         return _M_e2f[e.id()][n];
     }
@@ -281,7 +308,7 @@ public:
      * \return the face index of the face \p n in the element \p e
      */
     face_processor_type& localFaceId( size_type const e,
-                                 size_type const n )
+                                      size_type const n )
     {
         return _M_e2f[e][n];
     }
@@ -304,23 +331,35 @@ public:
     /**
      * \return the marker names
      */
-    std::map<std::string, boost::tuple<int, int> > markerNames() const { return M_markername; }
+    std::map<std::string, boost::tuple<int, int> > markerNames() const
+    {
+        return M_markername;
+    }
 
     /**
      * \return a localization tool
      */
     struct Localization;
-    boost::shared_ptr<typename self_type::Localization> tool_localization() { return M_tool_localization;}
+    boost::shared_ptr<typename self_type::Localization> tool_localization()
+    {
+        return M_tool_localization;
+    }
 
     /**
      * \return the measure of the mesh (sum of the measure of the elements)
      */
-    value_type measure() const { return M_meas; }
+    value_type measure() const
+    {
+        return M_meas;
+    }
 
     /**
      * \return the measure of the mesh (sum of the measure of the elements)
      */
-    value_type measureBoundary() const { return M_measbdy; }
+    value_type measureBoundary() const
+    {
+        return M_measbdy;
+    }
 
     //@}
 
@@ -341,7 +380,7 @@ public:
      */
     void addMarkerName( std::string __name, int __id ,int __topoDim )
     {
-        auto data = boost::make_tuple(__id,__topoDim );
+        auto data = boost::make_tuple( __id,__topoDim );
         M_markername[__name]=data;
     }
 
@@ -394,29 +433,29 @@ public:
      * if faces -> update marker2 for this faces
      */
     template<typename IteratorRange>
-    void updateMarker2WithRange( IteratorRange const& range,flag_type flag)
+    void updateMarker2WithRange( IteratorRange const& range,flag_type flag )
     {
         const size_type iDim = boost::tuples::template element<0, IteratorRange>::type::value;
-        this->updateMarker2WithRange(range,flag,mpl::int_<iDim>());
+        this->updateMarker2WithRange( range,flag,mpl::int_<iDim>() );
     }
 
     /**
      * sub method of updateMarker2WithRange : MESH_ELEMENTS
      */
     template<typename IteratorRange>
-    void updateMarker2WithRange( IteratorRange const& range,flag_type flag, mpl::int_<MESH_ELEMENTS>/**/)
+    void updateMarker2WithRange( IteratorRange const& range,flag_type flag, mpl::int_<MESH_ELEMENTS>/**/ )
     {
         const size_type iDim = boost::tuples::template element<0, IteratorRange>::type::value;
-        this->updateMarker2WithRangeElements(range,flag);
+        this->updateMarker2WithRangeElements( range,flag );
     }
 
     /**
      * sub method of updateMarker2WithRange : MESH_FACES
      */
     template<typename IteratorRange>
-    void updateMarker2WithRange( IteratorRange const& range,flag_type flag, mpl::int_<MESH_FACES>/**/)
+    void updateMarker2WithRange( IteratorRange const& range,flag_type flag, mpl::int_<MESH_FACES>/**/ )
     {
-        this->updateMarker2WithRangeFaces(range,flag);
+        this->updateMarker2WithRangeFaces( range,flag );
     }
 
     /**
@@ -425,28 +464,28 @@ public:
      * if faces -> update marker3 for this faces
      */
     template<typename IteratorRange>
-    void updateMarker3WithRange( IteratorRange const& range,flag_type flag)
+    void updateMarker3WithRange( IteratorRange const& range,flag_type flag )
     {
         const size_type iDim = boost::tuples::template element<0, IteratorRange>::type::value;
-        this->updateMarker3WithRange(range,flag,mpl::int_<iDim>());
+        this->updateMarker3WithRange( range,flag,mpl::int_<iDim>() );
     }
 
     /**
      * sub method of updateMarker3WithRange : MESH_ELEMENTS
      */
     template<typename IteratorRange>
-    void updateMarker3WithRange( IteratorRange const& range,flag_type flag, mpl::int_<MESH_ELEMENTS>/**/)
+    void updateMarker3WithRange( IteratorRange const& range,flag_type flag, mpl::int_<MESH_ELEMENTS>/**/ )
     {
-        this->updateMarker3WithRangeElements(range,flag);
+        this->updateMarker3WithRangeElements( range,flag );
     }
 
     /**
      * sub method of updateMarker3WithRange : MESH_FACES
      */
     template<typename IteratorRange>
-    void updateMarker3WithRange( IteratorRange const& range,flag_type flag, mpl::int_<MESH_FACES> /**/)
+    void updateMarker3WithRange( IteratorRange const& range,flag_type flag, mpl::int_<MESH_FACES> /**/ )
     {
-        this->updateMarker3WithRangeFaces(range,flag);
+        this->updateMarker3WithRangeFaces( range,flag );
     }
 
     /**
@@ -462,7 +501,10 @@ public:
      * This procedure should work also with
      * \p comm().size() == 1
      */
-    void renumber() { renumber( mpl::bool_<(nDim > 1)>() ); }
+    void renumber()
+    {
+        renumber( mpl::bool_<( nDim > 1 )>() );
+    }
 
 
     /**
@@ -499,8 +541,8 @@ public:
      * is anticlockwise oriented. For the time being, this function
      * only applies to tetrahedra meshes
      */
-    void checkLocalPermutation(mpl::bool_<false>) const {};
-    void checkLocalPermutation(mpl::bool_<true>) const;
+    void checkLocalPermutation( mpl::bool_<false> ) const {};
+    void checkLocalPermutation( mpl::bool_<true> ) const;
 
 
     /**
@@ -513,19 +555,19 @@ public:
     void updateForUse();
 
     struct Inverse
-        :
+            :
         public mpl::if_<mpl::bool_<GeoShape::is_simplex>,
-                        mpl::identity<GeoMapInverse<nDim,nOrder,nRealDim,T,Simplex> >,
-                        mpl::identity<GeoMapInverse<nDim,nOrder,nRealDim,T,Hypercube> > >::type::type
+            mpl::identity<GeoMapInverse<nDim,nOrder,nRealDim,T,Simplex> >,
+            mpl::identity<GeoMapInverse<nDim,nOrder,nRealDim,T,Hypercube> > >::type::type
     {
         typedef typename mpl::if_<mpl::bool_<GeoShape::is_simplex>,
-                                  mpl::identity<GeoMapInverse<nDim,nOrder,nRealDim,T,Simplex> >,
-                                  mpl::identity<GeoMapInverse<nDim,nOrder,nRealDim,T,Hypercube> > >::type::type super;
+                mpl::identity<GeoMapInverse<nDim,nOrder,nRealDim,T,Simplex> >,
+                mpl::identity<GeoMapInverse<nDim,nOrder,nRealDim,T,Hypercube> > >::type::type super;
         typedef typename super::gic_type gic_type;
 
         typedef typename mpl::if_<mpl::bool_<GeoShape::is_simplex>,
-                                  mpl::identity<GeoMapInverse<nDim,1,nRealDim,T,Simplex> >,
-                                  mpl::identity<GeoMapInverse<nDim,1,nRealDim,T,Hypercube> > >::type::type super1;
+                mpl::identity<GeoMapInverse<nDim,1,nRealDim,T,Simplex> >,
+                mpl::identity<GeoMapInverse<nDim,1,nRealDim,T,Hypercube> > >::type::type super1;
         typedef typename super1::gic_type gic1_type;
 
         Inverse( boost::shared_ptr<self_type> const& m )
@@ -537,19 +579,20 @@ public:
         ~Inverse()
         {}
 
-        size_type nPointsInConvex(size_type i) const
+        size_type nPointsInConvex( size_type i ) const
         {
             return M_pts_cvx[i].size();
         }
-        void pointsInConvex(size_type i, std::vector<boost::tuple<size_type, uint16_type > > &itab) const
+        void pointsInConvex( size_type i, std::vector<boost::tuple<size_type, uint16_type > > &itab ) const
         {
             itab.resize( M_pts_cvx[i].size() );
             size_type j = 0;
-            for (map_iterator it = M_pts_cvx[i].begin(); it != M_pts_cvx[i].end(); ++it)
+
+            for ( map_iterator it = M_pts_cvx[i].begin(); it != M_pts_cvx[i].end(); ++it )
                 itab[j++] = boost::make_tuple( it->first, it->second );
         }
 
-        const std::vector<node_type> &referenceCoords(void)
+        const std::vector<node_type> &referenceCoords( void )
         {
             return M_ref_coords;
         }
@@ -602,47 +645,50 @@ public:
          */
         Localization() :
             M_mesh (),
-            M_kd_tree(new kdtree_type()),
-            IsInit(false),
-            M_doExtrapolation(true)
+            M_kd_tree( new kdtree_type() ),
+            IsInit( false ),
+            M_doExtrapolation( true )
 
         {
-            M_kd_tree->nbNearNeighbor(15);
+            M_kd_tree->nbNearNeighbor( 15 );
             M_resultAnalysis.clear();
         }
 
-        Localization(boost::shared_ptr<self_type> m, bool init_b = true ) :
+        Localization( boost::shared_ptr<self_type> m, bool init_b = true ) :
             M_mesh ( m ),
-            IsInit(init_b),
-            M_doExtrapolation(true)
+            IsInit( init_b ),
+            M_doExtrapolation( true )
         {
-            if (IsInit)
+            if ( IsInit )
                 init();
 
-            M_kd_tree->nbNearNeighbor(15);
+            M_kd_tree->nbNearNeighbor( 15 );
             M_resultAnalysis.clear();
         }
 
-        Localization(Localization const & L) :
-            M_mesh(L.M_mesh),
+        Localization( Localization const & L ) :
+            M_mesh( L.M_mesh ),
             //M_kd_tree(L.M_kd_tree),
-            M_kd_tree(new kdtree_type(*(L.M_kd_tree))),
-            M_geoGlob_Elts(L.M_geoGlob_Elts),
-            IsInit(L.IsInit),
-            M_resultAnalysis(L.M_resultAnalysis),
-            M_doExtrapolation(L.M_doExtrapolation)
+            M_kd_tree( new kdtree_type( *( L.M_kd_tree ) ) ),
+            M_geoGlob_Elts( L.M_geoGlob_Elts ),
+            IsInit( L.IsInit ),
+            M_resultAnalysis( L.M_resultAnalysis ),
+            M_doExtrapolation( L.M_doExtrapolation )
         {}
 
         /*--------------------------------------------------------------
          * Define the mesh whith or not init
          */
         void
-        setMesh(boost::shared_ptr<self_type> m,bool b=true)
+        setMesh( boost::shared_ptr<self_type> m,bool b=true )
         {
             M_mesh=m;
-            if (b)
+
+            if ( b )
                 init();
+
             else IsInit=b;
+
             M_resultAnalysis.clear();
         }
 
@@ -650,90 +696,120 @@ public:
          * Define if necessary to use extrapolation
          */
         void
-        setExtrapolation(bool b) { M_doExtrapolation = b; }
+        setExtrapolation( bool b )
+        {
+            M_doExtrapolation = b;
+        }
 
         /*--------------------------------------------------------------
          * Run the init function if necessary
          */
         void updateForUse()
         {
-            if (IsInit==false)
+            if ( IsInit==false )
                 init();
         }
 
         /*--------------------------------------------------------------
          * Access
          */
-        bool isInit() const { return IsInit;}
-        bool doExtrapolation() const { return M_doExtrapolation; }
+        bool isInit() const
+        {
+            return IsInit;
+        }
+        bool doExtrapolation() const
+        {
+            return M_doExtrapolation;
+        }
 
-        boost::shared_ptr<self_type> mesh() { return M_mesh; }
-        boost::shared_ptr<self_type> const& mesh() const { return M_mesh; }
+        boost::shared_ptr<self_type> mesh()
+        {
+            return M_mesh;
+        }
+        boost::shared_ptr<self_type> const& mesh() const
+        {
+            return M_mesh;
+        }
 
-        kdtree_ptrtype kdtree() { return M_kd_tree; }
-        kdtree_ptrtype const& kdtree() const { return M_kd_tree; }
+        kdtree_ptrtype kdtree()
+        {
+            return M_kd_tree;
+        }
+        kdtree_ptrtype const& kdtree() const
+        {
+            return M_kd_tree;
+        }
 
-        container_search_type const & result_analysis() const { return M_resultAnalysis;}
+        container_search_type const & result_analysis() const
+        {
+            return M_resultAnalysis;
+        }
 
-        container_search_iterator_type result_analysis_begin() { return M_resultAnalysis.begin();}
-        container_search_iterator_type result_analysis_end() { return M_resultAnalysis.end();}
+        container_search_iterator_type result_analysis_begin()
+        {
+            return M_resultAnalysis.begin();
+        }
+        container_search_iterator_type result_analysis_end()
+        {
+            return M_resultAnalysis.end();
+        }
 
         /*---------------------------------------------------------------
          * True if the node p is in mesh->element(id)
          */
-        boost::tuple<bool,node_type> isIn(size_type _id, const node_type & _pt) const;
-        boost::tuple<uint16_type,std::vector<bool> > isIn(std::vector<size_type> _ids, const node_type & _pt);
+        boost::tuple<bool,node_type> isIn( size_type _id, const node_type & _pt ) const;
+        boost::tuple<uint16_type,std::vector<bool> > isIn( std::vector<size_type> _ids, const node_type & _pt );
 
         /*---------------------------------------------------------------
          * Research only one element wich contains the node p
          */
-        boost::tuple<bool, size_type,node_type> searchElement(const node_type & p);
-        boost::tuple<bool, size_type,node_type> searchElement(const node_type & p,
-                                                              const matrix_node_type & setPoints,
-                                                              mpl::bool_<false> /**/ )
+        boost::tuple<bool, size_type,node_type> searchElement( const node_type & p );
+        boost::tuple<bool, size_type,node_type> searchElement( const node_type & p,
+                const matrix_node_type & setPoints,
+                mpl::bool_<false> /**/ )
         {
-            return searchElement(p);
+            return searchElement( p );
         }
 
         /*---------------------------------------------------------------
          * Research only one element wich contains the node p and which this elt have as geometric point contain setPoints
          */
-        boost::tuple<bool, size_type,node_type> searchElement(const node_type & p,
-                                                              const matrix_node_type & setPoints,
-                                                              mpl::bool_<true> /**/);
+        boost::tuple<bool, size_type,node_type> searchElement( const node_type & p,
+                const matrix_node_type & setPoints,
+                mpl::bool_<true> /**/ );
 
         /*---------------------------------------------------------------
          * Research all elements wich contains the node p
          */
-        boost::tuple<bool, std::list<boost::tuple<size_type,node_type> > > searchElements(const node_type & p);
+        boost::tuple<bool, std::list<boost::tuple<size_type,node_type> > > searchElements( const node_type & p );
 
         /*---------------------------------------------------------------
          * Research the element wich contains the node p, forall p in the
          * matrix_node_type m. The result is save by this object
          */
-        size_type run_analysis(const matrix_node_type & m,
-                               const size_type & eltHypothetical);
+        size_type run_analysis( const matrix_node_type & m,
+                                const size_type & eltHypothetical );
 
         /*---------------------------------------------------------------
          * Research the element wich contains the node p, forall p in the
          * matrix_node_type m. The result is save by this object
          */
-        size_type run_analysis(const matrix_node_type & m,
-                               const size_type & eltHypothetical,
-                               const matrix_node_type & setPoints,
-                               mpl::bool_<false> /**/)
+        size_type run_analysis( const matrix_node_type & m,
+                                const size_type & eltHypothetical,
+                                const matrix_node_type & setPoints,
+                                mpl::bool_<false> /**/ )
         {
-            return run_analysis(m,eltHypothetical);
+            return run_analysis( m,eltHypothetical );
         }
 
         /*---------------------------------------------------------------
          * Research the element wich contains the node p, forall p in the
          * matrix_node_type m. The result is save by this object
          */
-        size_type run_analysis(const matrix_node_type & m,
-                               const size_type & eltHypothetical,
-                               const matrix_node_type & setPoints,
-                               mpl::bool_<true> /**/);
+        size_type run_analysis( const matrix_node_type & m,
+                                const size_type & eltHypothetical,
+                                const matrix_node_type & setPoints,
+                                mpl::bool_<true> /**/ );
 
         /*---------------------------------------------------------------
          * Reset all data
@@ -754,8 +830,8 @@ public:
         /*---------------------------------------------------------------
          *search near elt in kd tree and get a sorted list
          */
-        void searchInKdTree(const node_type & p,
-                            std::list< std::pair<size_type, uint> > & listTri);
+        void searchInKdTree( const node_type & p,
+                             std::list< std::pair<size_type, uint> > & listTri );
 
     private:
 
@@ -867,7 +943,7 @@ typename Mesh<Shape, T>::trace_mesh_ptrtype
 Mesh<Shape, T>::trace( RangeT const& range )
 {
 
-    return Feel::createSubmesh(this->shared_from_this(), range);
+    return Feel::createSubmesh( this->shared_from_this(), range );
 
 }
 
@@ -895,8 +971,8 @@ Mesh<Shape, T>::createSubmesh( self_type& new_mesh,
     }
     // How the nodes on this mesh will be renumbered to nodes
     // on the new_mesh.
-    std::vector<size_type> new_node_numbers (this->numPoints());
-    std::vector<size_type> new_vertex (this->numPoints());
+    std::vector<size_type> new_node_numbers ( this->numPoints() );
+    std::vector<size_type> new_vertex ( this->numPoints() );
 
     std::fill ( new_node_numbers.begin(),
                 new_node_numbers.end(),
@@ -914,112 +990,117 @@ Mesh<Shape, T>::createSubmesh( self_type& new_mesh,
     size_type n_new_faces = 0;
 
     for ( Iterator it = begin_elt; it != end_elt; ++it )
+    {
+
+        element_type const& old_elem = *it;
+
+        // copy element so that we can modify it
+        element_type new_elem = old_elem;
+
+        // Loop over the nodes on this element.
+        for ( unsigned int n=0; n < old_elem.nPoints(); n++ )
         {
+            FEELPP_ASSERT ( old_elem.point( n ).id() < new_node_numbers.size() ).error( "invalid point id()" );
 
-            element_type const& old_elem = *it;
+            if ( new_node_numbers[old_elem.point( n ).id()] == invalid_size_type_value )
+            {
+                new_node_numbers[old_elem.point( n ).id()] = n_new_nodes;
 
-            // copy element so that we can modify it
-            element_type new_elem = old_elem;
+                Debug( 4015 ) << "[Mesh<Shape,T>::createSubmesh] insert point " << old_elem.point( n ) << "\n";
 
-            // Loop over the nodes on this element.
-            for (unsigned int n=0; n < old_elem.nPoints(); n++)
+                point_type pt( old_elem.point( n ) );
+                pt.setId( n_new_nodes );
+
+                // Add this node to the new mesh
+                new_mesh.addPoint ( pt );
+
+                Debug( 4015 ) << "[Mesh<Shape,T>::createSubmesh] number of  points " << new_mesh.numPoints() << "\n";
+
+                // Increment the new node counter
+                n_new_nodes++;
+
+                if ( n < element_type::numVertices )
                 {
-                    FEELPP_ASSERT (old_elem.point( n ).id() < new_node_numbers.size()).error( "invalid point id()" );
-
-                    if ( new_node_numbers[old_elem.point(n).id()] == invalid_size_type_value )
-                        {
-                            new_node_numbers[old_elem.point(n).id()] = n_new_nodes;
-
-                            Debug( 4015 ) << "[Mesh<Shape,T>::createSubmesh] insert point " << old_elem.point(n) << "\n";
-
-                            point_type pt( old_elem.point(n) );
-                            pt.setId( n_new_nodes );
-
-                            // Add this node to the new mesh
-                            new_mesh.addPoint (pt);
-
-                            Debug( 4015 ) << "[Mesh<Shape,T>::createSubmesh] number of  points " << new_mesh.numPoints() << "\n";
-
-                            // Increment the new node counter
-                            n_new_nodes++;
-
-                            if ( n < element_type::numVertices )
-                                {
-                                    FEELPP_ASSERT( new_vertex[old_elem.point(n).id()] == 0 ).error( "already seen this point?" );
-                                    new_vertex[old_elem.point(n).id()]=1;
-                                }
-                        }
-
-                    // Define this element's connectivity on the new mesh
-                    FEELPP_ASSERT (new_node_numbers[old_elem.point(n).id()] < new_mesh.numPoints()).error("invalid connectivity");
-
-                    Debug( 4015 ) << "[Mesh<Shape,T>::createSubmesh] adding point old(" << old_elem.point(n).id()
-                                  << ") as point new(" << new_node_numbers[old_elem.point(n).id()]
-                                  << ") in element " << new_elem.id() << "\n";
-
-                    new_elem.setPoint(n, new_mesh.point( new_node_numbers[old_elem.point(n).id()] ) );
-
+                    FEELPP_ASSERT( new_vertex[old_elem.point( n ).id()] == 0 ).error( "already seen this point?" );
+                    new_vertex[old_elem.point( n ).id()]=1;
                 }
+            }
 
-            // set id of element
-            new_elem.setId ( n_new_elem );
+            // Define this element's connectivity on the new mesh
+            FEELPP_ASSERT ( new_node_numbers[old_elem.point( n ).id()] < new_mesh.numPoints() ).error( "invalid connectivity" );
 
-            // increment the new element counter
-            n_new_elem++;
+            Debug( 4015 ) << "[Mesh<Shape,T>::createSubmesh] adding point old(" << old_elem.point( n ).id()
+                          << ") as point new(" << new_node_numbers[old_elem.point( n ).id()]
+                          << ") in element " << new_elem.id() << "\n";
 
+            new_elem.setPoint( n, new_mesh.point( new_node_numbers[old_elem.point( n ).id()] ) );
 
-            // Add an equivalent element type to the new_mesh
-            new_mesh.addElement( new_elem );
-
-
-            // Maybe add faces for this element
-            for (unsigned int s=0; s<old_elem.numTopologicalFaces; s++)
-                {
-                    if ( !old_elem.facePtr(s) ) continue;
-#if 1
-                    std::cout << "local face id: " << s
-                              << " global face id: " << old_elem.face(s).id() << "\n";
-#endif
-                    // only add face on the boundary: they have some data
-                    // (boundary ids) which cannot be retrieved otherwise
-                    //if ( old_elem.neighbor(s) == invalid_size_type_value )
-                    size_type global_face_id = old_elem.face(s).id();
-                    if ( this->hasFace( global_face_id ) )
-                    {
-
-                        //std::cout << "found face " << global_face_id << "\n";
-                        // get the corresponding face
-                        face_type const& old_face = old_elem.face(s);
-                        face_type new_face = old_face;
-
-                        // disconnect from elements of old mesh,
-                        // the connection will be redone in
-                        // \c updateForUse()
-                        new_face.disconnect();
-                        //std::cout << "disconnect face\n";
-                        // update points info
-                        for ( uint16_type p = 0;p < new_face.nPoints(); ++p )
-                            {
-#if 1
-                                std::cout << "add new point " << new_face.point(p).id() << " to face \n";
-                                std::cout << "add old point " << old_face.point(p).id() << " to face \n";
-                                std::cout << "new point id " << new_node_numbers[old_elem.point(old_elem.fToP(s,p)).id()] << "\n";
-#endif
-                                new_face.setPoint( p, new_mesh.point( new_node_numbers[old_elem.point(old_elem.fToP(s,p)).id()] ) );
-
-                            }
-                        new_face.setId( n_new_faces++ );
-#if 1
-                        std::cout << "face id" << new_face.id()
-                                  << " marker1 : " << new_face.marker()
-                                  << " old marker1 : " << old_face.marker()
-                                  << "\n";
-#endif
-                        // add it to the list of faces
-                        new_mesh.addFace( new_face );
-                    }
-                }
         }
+
+        // set id of element
+        new_elem.setId ( n_new_elem );
+
+        // increment the new element counter
+        n_new_elem++;
+
+
+        // Add an equivalent element type to the new_mesh
+        new_mesh.addElement( new_elem );
+
+
+        // Maybe add faces for this element
+        for ( unsigned int s=0; s<old_elem.numTopologicalFaces; s++ )
+        {
+            if ( !old_elem.facePtr( s ) ) continue;
+
+#if 1
+            std::cout << "local face id: " << s
+                      << " global face id: " << old_elem.face( s ).id() << "\n";
+#endif
+            // only add face on the boundary: they have some data
+            // (boundary ids) which cannot be retrieved otherwise
+            //if ( old_elem.neighbor(s) == invalid_size_type_value )
+            size_type global_face_id = old_elem.face( s ).id();
+
+            if ( this->hasFace( global_face_id ) )
+            {
+
+                //std::cout << "found face " << global_face_id << "\n";
+                // get the corresponding face
+                face_type const& old_face = old_elem.face( s );
+                face_type new_face = old_face;
+
+                // disconnect from elements of old mesh,
+                // the connection will be redone in
+                // \c updateForUse()
+                new_face.disconnect();
+
+                //std::cout << "disconnect face\n";
+                // update points info
+                for ( uint16_type p = 0; p < new_face.nPoints(); ++p )
+                {
+#if 1
+                    std::cout << "add new point " << new_face.point( p ).id() << " to face \n";
+                    std::cout << "add old point " << old_face.point( p ).id() << " to face \n";
+                    std::cout << "new point id " << new_node_numbers[old_elem.point( old_elem.fToP( s,p ) ).id()] << "\n";
+#endif
+                    new_face.setPoint( p, new_mesh.point( new_node_numbers[old_elem.point( old_elem.fToP( s,p ) ).id()] ) );
+
+                }
+
+                new_face.setId( n_new_faces++ );
+#if 1
+                std::cout << "face id" << new_face.id()
+                          << " marker1 : " << new_face.marker()
+                          << " old marker1 : " << old_face.marker()
+                          << "\n";
+#endif
+                // add it to the list of faces
+                new_mesh.addFace( new_face );
+            }
+        }
+    }
+
     new_mesh.setNumVertices( std::accumulate( new_vertex.begin(), new_vertex.end(), 0 ) );
 
     Debug( 4015 ) << "[Mesh<Shape,T>::createSubmesh] update face/edge info if necessary\n";
@@ -1041,8 +1122,8 @@ Mesh<Shape, T>::createP1mesh() const
 
     // How the nodes on this mesh will be renumbered to nodes
     // on the new_mesh.
-    std::vector<size_type> new_node_numbers (this->numPoints());
-    std::vector<size_type> new_vertex (this->numPoints());
+    std::vector<size_type> new_node_numbers ( this->numPoints() );
+    std::vector<size_type> new_vertex ( this->numPoints() );
 
     std::fill ( new_node_numbers.begin(),
                 new_node_numbers.end(),
@@ -1061,116 +1142,120 @@ Mesh<Shape, T>::createP1mesh() const
 
     // inherit the table of markersName
     BOOST_FOREACH( auto itMark, this->markerNames() )
-        {
-            new_mesh->addMarkerName( itMark.first,itMark.second.template get<0>(),itMark.second.template get<1>() );
-        }
+    {
+        new_mesh->addMarkerName( itMark.first,itMark.second.template get<0>(),itMark.second.template get<1>() );
+    }
 
     auto it = this->beginElementWithProcessId( this->comm().rank() );
     auto en = this->endElementWithProcessId( this->comm().rank() );
+
     for ( ; it != en; ++it )
+    {
+        element_type const& old_elem = *it;
+
+        // create a new element
+        typename P1_mesh_type::element_type new_elem;
+
+        // get element markers
+        new_elem.setMarker( old_elem.marker().value() );
+        new_elem.setMarker2( old_elem.marker2().value() );
+        new_elem.setMarker3( old_elem.marker3().value() );
+
+        // Loop over the P1 nodes on this element.
+        for ( unsigned int n=0; n < element_type::numVertices; n++ )
         {
-            element_type const& old_elem = *it;
+            //!!!!!FEELPP_ASSERT (old_elem.point( n ).id() < new_node_numbers.size()).error( "invalid point id()" );
 
-            // create a new element
-            typename P1_mesh_type::element_type new_elem;
+            if ( new_node_numbers[old_elem.point( n ).id()] == invalid_size_type_value )
+            {
+                new_node_numbers[old_elem.point( n ).id()] = n_new_nodes;
 
-            // get element markers
-            new_elem.setMarker(old_elem.marker().value());
-            new_elem.setMarker2(old_elem.marker2().value());
-            new_elem.setMarker3(old_elem.marker3().value());
+                Debug( 4015 ) << "[Mesh<Shape,T>::createP1mesh] insert point " << old_elem.point( n ) << "\n";
 
-            // Loop over the P1 nodes on this element.
-            for (unsigned int n=0; n < element_type::numVertices; n++)
+                typename P1_mesh_type::point_type pt( old_elem.point( n ) );
+                pt.setId( n_new_nodes );
+
+                // Add this node to the new mesh
+                new_mesh->addPoint( pt );
+
+                Debug( 4015 ) << "[Mesh<Shape,T>::createSubmesh] number of  points " << new_mesh->numPoints() << "\n";
+
+                // Increment the new node counter
+                n_new_nodes++;
+
+                if ( n < element_type::numVertices ) //???
                 {
-                    //!!!!!FEELPP_ASSERT (old_elem.point( n ).id() < new_node_numbers.size()).error( "invalid point id()" );
+                    FEELPP_ASSERT( new_vertex[old_elem.point( n ).id()] == 0 ).error( "already seen this point?" );
+                    new_vertex[old_elem.point( n ).id()]=1;
+                }
+            }
 
-                    if ( new_node_numbers[old_elem.point(n).id()] == invalid_size_type_value )
-                        {
-                            new_node_numbers[old_elem.point(n).id()] = n_new_nodes;
+            // Define this element's connectivity on the new mesh
+            FEELPP_ASSERT ( new_node_numbers[old_elem.point( n ).id()] < new_mesh->numPoints() ).error( "invalid connectivity" );
 
-                            Debug( 4015 ) << "[Mesh<Shape,T>::createP1mesh] insert point " << old_elem.point(n) << "\n";
+            Debug( 4015 ) << "[Mesh<Shape,T>::createP1mesh] adding point old(" << old_elem.point( n ).id()
+                          << ") as point new(" << new_node_numbers[old_elem.point( n ).id()]
+                          << ") in element " << new_elem.id() << "\n";
 
-                            typename P1_mesh_type::point_type pt( old_elem.point(n) );
-                            pt.setId( n_new_nodes);
+            new_elem.setPoint( n, new_mesh->point( new_node_numbers[old_elem.point( n ).id()] ) );
 
-                            // Add this node to the new mesh
-                            new_mesh->addPoint(pt);
+        } // end for n
 
-                            Debug( 4015 ) << "[Mesh<Shape,T>::createSubmesh] number of  points " << new_mesh->numPoints() << "\n";
+        // set id of element
+        new_elem.setId ( n_new_elem );
 
-                            // Increment the new node counter
-                            n_new_nodes++;
+        // increment the new element counter
+        n_new_elem++;
 
-                            if ( n < element_type::numVertices ) //???
-                                {
-                                    FEELPP_ASSERT( new_vertex[old_elem.point(n).id()] == 0 ).error( "already seen this point?" );
-                                    new_vertex[old_elem.point(n).id()]=1;
-                                }
-                        }
-
-                    // Define this element's connectivity on the new mesh
-                    FEELPP_ASSERT (new_node_numbers[old_elem.point(n).id()] < new_mesh->numPoints()).error("invalid connectivity");
-
-                    Debug( 4015 ) << "[Mesh<Shape,T>::createP1mesh] adding point old(" << old_elem.point(n).id()
-                                  << ") as point new(" << new_node_numbers[old_elem.point(n).id()]
-                                  << ") in element " << new_elem.id() << "\n";
-
-                    new_elem.setPoint(n, new_mesh->point( new_node_numbers[old_elem.point(n).id()] ) );
-
-                } // end for n
-
-            // set id of element
-            new_elem.setId ( n_new_elem );
-
-            // increment the new element counter
-            n_new_elem++;
-
-            // Add an equivalent element type to the new_mesh
-            new_mesh->addElement( new_elem );
+        // Add an equivalent element type to the new_mesh
+        new_mesh->addElement( new_elem );
 
 
-            /////////////////////
-            // Maybe add faces for this element
-            for (unsigned int s=0; s<old_elem.numTopologicalFaces; s++)
+        /////////////////////
+        // Maybe add faces for this element
+        for ( unsigned int s=0; s<old_elem.numTopologicalFaces; s++ )
+        {
+            if ( !old_elem.facePtr( s ) ) continue;
+
+            // only add face on the boundary: they have some data
+            // (boundary ids) which cannot be retrieved otherwise
+            //if ( old_elem.neighbor(s) == invalid_size_type_value )
+            size_type global_face_id = old_elem.face( s ).id();
+
+            if ( this->hasFace( global_face_id ) )
+            {
+
+                // get the corresponding face
+                face_type const& old_face = old_elem.face( s );
+                typename P1_mesh_type::face_type new_face;
+
+                // disconnect from elements of old mesh,
+                // the connection will be redone in
+                // \c updateForUse()
+                new_face.disconnect();
+
+                if ( old_face.isOnBoundary() ) new_face.setOnBoundary( true );
+
+                else new_face.setOnBoundary( false );
+
+                new_face.setMarker( old_face.marker().value() );
+                new_face.setMarker2( old_face.marker2().value() );
+                new_face.setMarker2( old_face.marker3().value() );
+
+                // update P1 points info
+                for ( uint16_type p = 0; p < face_type::numVertices; ++p )
                 {
-                    if ( !old_elem.facePtr(s) ) continue;
-
-                    // only add face on the boundary: they have some data
-                    // (boundary ids) which cannot be retrieved otherwise
-                    //if ( old_elem.neighbor(s) == invalid_size_type_value )
-                    size_type global_face_id = old_elem.face(s).id();
-                    if ( this->hasFace( global_face_id ) )
-                    {
-
-                        // get the corresponding face
-                        face_type const& old_face = old_elem.face(s);
-                        typename P1_mesh_type::face_type new_face;
-
-                        // disconnect from elements of old mesh,
-                        // the connection will be redone in
-                        // \c updateForUse()
-                        new_face.disconnect();
-
-                        if (old_face.isOnBoundary()) new_face.setOnBoundary( true );
-                        else new_face.setOnBoundary( false );
-
-                        new_face.setMarker(old_face.marker().value());
-                        new_face.setMarker2(old_face.marker2().value());
-                        new_face.setMarker2(old_face.marker3().value());
-
-                        // update P1 points info
-                        for ( uint16_type p = 0;p < face_type::numVertices; ++p )
-                            {
-                                new_face.setPoint( p, new_mesh->point( new_node_numbers[old_elem.point(old_elem.fToP(s,p)).id()] ) );
-                            }
-                        new_face.setId( n_new_faces++ );
-
-                        // add it to the list of faces
-                        new_mesh->addFace( new_face );
-                    }
+                    new_face.setPoint( p, new_mesh->point( new_node_numbers[old_elem.point( old_elem.fToP( s,p ) ).id()] ) );
                 }
 
-        } // end for it
+                new_face.setId( n_new_faces++ );
+
+                // add it to the list of faces
+                new_mesh->addFace( new_face );
+            }
+        }
+
+    } // end for it
 
     new_mesh->setNumVertices( std::accumulate( new_vertex.begin(), new_vertex.end(), 0 ) );
 

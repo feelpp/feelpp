@@ -35,93 +35,149 @@ namespace Feel
 void
 PetscPCFactorSetMatSolverPackage( PC & pc, MatSolverPackageType mspackt )
 {
-  int ierr = 0;
-  Debug(7010) << "[PetscPCFactorSetMatSolverPackage] :  " << mspackt << "\n";
-  switch (mspackt)
+    int ierr = 0;
+    Debug( 7010 ) << "[PetscPCFactorSetMatSolverPackage] :  " << mspackt << "\n";
+
+    switch ( mspackt )
     {
 #if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
+
     case MATSOLVER_SPOOLES :
-      ierr = PCFactorSetMatSolverPackage(pc, (char*) MATSOLVERSPOOLES);      CHKERRABORT(PETSC_COMM_WORLD,ierr); return;
+        ierr = PCFactorSetMatSolverPackage( pc, ( char* ) MATSOLVERSPOOLES );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        return;
 
     case MATSOLVER_SUPERLU :
-      ierr = PCFactorSetMatSolverPackage(pc, (char*) MATSOLVERSUPERLU);      CHKERRABORT(PETSC_COMM_WORLD,ierr); return;
+        ierr = PCFactorSetMatSolverPackage( pc, ( char* ) MATSOLVERSUPERLU );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        return;
 
     case MATSOLVER_SUPERLU_DIST :
-      ierr = PCFactorSetMatSolverPackage(pc, (char*) MATSOLVERSUPERLU_DIST); CHKERRABORT(PETSC_COMM_WORLD,ierr); return;
+        ierr = PCFactorSetMatSolverPackage( pc, ( char* ) MATSOLVERSUPERLU_DIST );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        return;
 
     case MATSOLVER_UMFPACK :
-      ierr = PCFactorSetMatSolverPackage(pc, (char*) MATSOLVERUMFPACK);      CHKERRABORT(PETSC_COMM_WORLD,ierr); return;
+        ierr = PCFactorSetMatSolverPackage( pc, ( char* ) MATSOLVERUMFPACK );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        return;
 
     case MATSOLVER_ESSL :
-      ierr = PCFactorSetMatSolverPackage(pc, (char*) MATSOLVERESSL);         CHKERRABORT(PETSC_COMM_WORLD,ierr); return;
+        ierr = PCFactorSetMatSolverPackage( pc, ( char* ) MATSOLVERESSL );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        return;
 
     case MATSOLVER_LUSOL :
-      ierr = PCFactorSetMatSolverPackage(pc, (char*) MATSOLVERLUSOL);        CHKERRABORT(PETSC_COMM_WORLD,ierr); return;
+        ierr = PCFactorSetMatSolverPackage( pc, ( char* ) MATSOLVERLUSOL );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        return;
 
     case MATSOLVER_MUMPS :
-      ierr = PCFactorSetMatSolverPackage(pc, (char*) MATSOLVERMUMPS);        CHKERRABORT(PETSC_COMM_WORLD,ierr); return;
+        ierr = PCFactorSetMatSolverPackage( pc, ( char* ) MATSOLVERMUMPS );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        return;
 
     case MATSOLVER_PASTIX :
-      ierr = PCFactorSetMatSolverPackage(pc, (char*) MATSOLVERPASTIX);       CHKERRABORT(PETSC_COMM_WORLD,ierr); return;
+        ierr = PCFactorSetMatSolverPackage( pc, ( char* ) MATSOLVERPASTIX );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        return;
 
     case MATSOLVER_MATLAB :
-      ierr = PCFactorSetMatSolverPackage(pc, (char*) MATSOLVERMATLAB);       CHKERRABORT(PETSC_COMM_WORLD,ierr); return;
+        ierr = PCFactorSetMatSolverPackage( pc, ( char* ) MATSOLVERMATLAB );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        return;
 
     case MATSOLVER_PETSC :
-      ierr = PCFactorSetMatSolverPackage(pc, (char*) MATSOLVERPETSC);        CHKERRABORT(PETSC_COMM_WORLD,ierr); return;
+        ierr = PCFactorSetMatSolverPackage( pc, ( char* ) MATSOLVERPETSC );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        return;
 
     case MATSOLVER_PLAPACK :
-      ierr = PCFactorSetMatSolverPackage(pc, (char*) MATSOLVERPLAPACK);      CHKERRABORT(PETSC_COMM_WORLD,ierr); return;
+        ierr = PCFactorSetMatSolverPackage( pc, ( char* ) MATSOLVERPLAPACK );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        return;
 #if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 1)
+
     case MATSOLVER_BAS :
-      ierr = PCFactorSetMatSolverPackage(pc, (char*) MATSOLVERBAS);          CHKERRABORT(PETSC_COMM_WORLD,ierr); return;
+        ierr = PCFactorSetMatSolverPackage( pc, ( char* ) MATSOLVERBAS );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        return;
 #endif
 
 #else // PETSC < 3.2
+
     case MATSOLVER_SPOOLES :
-      ierr = PCFactorSetMatSolverPackage(pc, (char*) MAT_SOLVER_SPOOLES);      CHKERRABORT(PETSC_COMM_WORLD,ierr); return;
+        ierr = PCFactorSetMatSolverPackage( pc, ( char* ) MAT_SOLVER_SPOOLES );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        return;
 
     case MATSOLVER_SUPERLU :
-      ierr = PCFactorSetMatSolverPackage(pc, (char*) MAT_SOLVER_SUPERLU);      CHKERRABORT(PETSC_COMM_WORLD,ierr); return;
+        ierr = PCFactorSetMatSolverPackage( pc, ( char* ) MAT_SOLVER_SUPERLU );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        return;
 
     case MATSOLVER_SUPERLU_DIST :
-      ierr = PCFactorSetMatSolverPackage(pc, (char*) MAT_SOLVER_SUPERLU_DIST); CHKERRABORT(PETSC_COMM_WORLD,ierr); return;
+        ierr = PCFactorSetMatSolverPackage( pc, ( char* ) MAT_SOLVER_SUPERLU_DIST );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        return;
 
     case MATSOLVER_UMFPACK :
-      ierr = PCFactorSetMatSolverPackage(pc, (char*) MAT_SOLVER_UMFPACK);      CHKERRABORT(PETSC_COMM_WORLD,ierr); return;
+        ierr = PCFactorSetMatSolverPackage( pc, ( char* ) MAT_SOLVER_UMFPACK );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        return;
 
     case MATSOLVER_ESSL :
-      ierr = PCFactorSetMatSolverPackage(pc, (char*) MAT_SOLVER_ESSL);         CHKERRABORT(PETSC_COMM_WORLD,ierr); return;
+        ierr = PCFactorSetMatSolverPackage( pc, ( char* ) MAT_SOLVER_ESSL );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        return;
 
     case MATSOLVER_LUSOL :
-      ierr = PCFactorSetMatSolverPackage(pc, (char*) MAT_SOLVER_LUSOL);        CHKERRABORT(PETSC_COMM_WORLD,ierr); return;
+        ierr = PCFactorSetMatSolverPackage( pc, ( char* ) MAT_SOLVER_LUSOL );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        return;
 
     case MATSOLVER_MUMPS :
-      ierr = PCFactorSetMatSolverPackage(pc, (char*) MAT_SOLVER_MUMPS);        CHKERRABORT(PETSC_COMM_WORLD,ierr); return;
+        ierr = PCFactorSetMatSolverPackage( pc, ( char* ) MAT_SOLVER_MUMPS );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        return;
 
     case MATSOLVER_PASTIX :
-      ierr = PCFactorSetMatSolverPackage(pc, (char*) MAT_SOLVER_PASTIX);       CHKERRABORT(PETSC_COMM_WORLD,ierr); return;
+        ierr = PCFactorSetMatSolverPackage( pc, ( char* ) MAT_SOLVER_PASTIX );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        return;
 
     case MATSOLVER_DSCPACK :
-      ierr = PCFactorSetMatSolverPackage(pc, (char*) MAT_SOLVER_DSCPACK);      CHKERRABORT(PETSC_COMM_WORLD,ierr); return;
+        ierr = PCFactorSetMatSolverPackage( pc, ( char* ) MAT_SOLVER_DSCPACK );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        return;
 
     case MATSOLVER_MATLAB :
-      ierr = PCFactorSetMatSolverPackage(pc, (char*) MAT_SOLVER_MATLAB);       CHKERRABORT(PETSC_COMM_WORLD,ierr); return;
+        ierr = PCFactorSetMatSolverPackage( pc, ( char* ) MAT_SOLVER_MATLAB );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        return;
 
     case MATSOLVER_PETSC :
-      ierr = PCFactorSetMatSolverPackage(pc, (char*) MAT_SOLVER_PETSC);        CHKERRABORT(PETSC_COMM_WORLD,ierr); return;
+        ierr = PCFactorSetMatSolverPackage( pc, ( char* ) MAT_SOLVER_PETSC );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        return;
 
     case MATSOLVER_PLAPACK :
-      ierr = PCFactorSetMatSolverPackage(pc, (char*) MAT_SOLVER_PLAPACK);      CHKERRABORT(PETSC_COMM_WORLD,ierr); return;
+        ierr = PCFactorSetMatSolverPackage( pc, ( char* ) MAT_SOLVER_PLAPACK );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        return;
 #if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 1)
+
     case MATSOLVER_BAS :
-      ierr = PCFactorSetMatSolverPackage(pc, (char*) MAT_SOLVER_BAS);          CHKERRABORT(PETSC_COMM_WORLD,ierr); return;
+        ierr = PCFactorSetMatSolverPackage( pc, ( char* ) MAT_SOLVER_BAS );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        return;
 #endif
 #endif
+
     default:
-      std::cerr << "ERROR:  Unsupported PETSC mat solver package: "
-		<< mspackt               << std::endl
-		<< "Continuing with PETSC defaults" << std::endl;
+        std::cerr << "ERROR:  Unsupported PETSC mat solver package: "
+                  << mspackt               << std::endl
+                  << "Continuing with PETSC defaults" << std::endl;
     }
 
 } // setPetscMatSolverPackageType

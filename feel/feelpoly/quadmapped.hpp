@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
 This file is part of the Feel library
 
@@ -107,48 +107,57 @@ public :
     permutation_points_type
     operator()( pointset_type const& /*pts*/ )
     {
-        permutation_points_type ppts(convex_type::numTopologicalFaces);
+        permutation_points_type ppts( convex_type::numTopologicalFaces );
+
         // loop over all permutations on the reference convex and
         // store all permutations of the pointset
-        for( int f = 0; f < convex_type::numTopologicalFaces; ++f )
-            {
-                __typeof__(  typename pointset_type::Face( *this, f ) ) facequad = typename pointset_type::Face( *this, f );
+        for ( int f = 0; f < convex_type::numTopologicalFaces; ++f )
+        {
+            __typeof__(  typename pointset_type::Face( *this, f ) ) facequad = typename pointset_type::Face( *this, f );
 
-                generate( ppts, facequad, f, mpl::int_<Dim>() );
-            }
+            generate( ppts, facequad, f, mpl::int_<Dim>() );
+        }
 
         return ppts;
     }
 
 private:
 
-    permutation_vector_type getVectorPermutation (face_permutation_type P) { return vector_permutation[P]; }
+    permutation_vector_type getVectorPermutation ( face_permutation_type P )
+    {
+        return vector_permutation[P];
+    }
 
-    permutation_matrix_type getMatrixPermutation (face_permutation_type P) { return matrix_permutation[P]; }
+    permutation_matrix_type getMatrixPermutation ( face_permutation_type P )
+    {
+        return matrix_permutation[P];
+    }
 
     void
     generate( permutation_points_type& ppts, typename pointset_type::Face const& pts, int f, mpl::int_<1> )
     {
-        vertex_permutation_type pbegin(vertex_permutation_type::IDENTITY);
-        vertex_permutation_type pend(vertex_permutation_type::N_PERMUTATIONS);
-        for( vertex_permutation_type p = pbegin; p < pend; ++p )
-            {
-                ppts[f].insert( std::make_pair(p, pts.points()) );
-                Debug( 5090 ) << "[quadmapped] ppts[" << f << "]["
-                              << p.value() << "]="
-                              << ppts[f].find(p)->second << "\n";
-            }
-   }
+        vertex_permutation_type pbegin( vertex_permutation_type::IDENTITY );
+        vertex_permutation_type pend( vertex_permutation_type::N_PERMUTATIONS );
+
+        for ( vertex_permutation_type p = pbegin; p < pend; ++p )
+        {
+            ppts[f].insert( std::make_pair( p, pts.points() ) );
+            Debug( 5090 ) << "[quadmapped] ppts[" << f << "]["
+                          << p.value() << "]="
+                          << ppts[f].find( p )->second << "\n";
+        }
+    }
     void
     generate( permutation_points_type& ppts, typename pointset_type::Face const& pts, int f, mpl::int_<2> )
     {
-        edge_permutation_type pbegin(edge_permutation_type::IDENTITY);
-        edge_permutation_type pend(edge_permutation_type::N_PERMUTATIONS);
-        for( edge_permutation_type p = pbegin; p < pend; ++p )
-            {
-                ppts[f].insert( std::make_pair(p, permutatePoints( pts.points(), p ) ) );
-                Debug( 5090 ) << "[quadmapped] ppts[" << f << "][" << p.value() << "]=" << ppts[f].find(p)->second << "\n";
-            }
+        edge_permutation_type pbegin( edge_permutation_type::IDENTITY );
+        edge_permutation_type pend( edge_permutation_type::N_PERMUTATIONS );
+
+        for ( edge_permutation_type p = pbegin; p < pend; ++p )
+        {
+            ppts[f].insert( std::make_pair( p, permutatePoints( pts.points(), p ) ) );
+            Debug( 5090 ) << "[quadmapped] ppts[" << f << "][" << p.value() << "]=" << ppts[f].find( p )->second << "\n";
+        }
     }
     void
     generate( permutation_points_type& ppts, typename pointset_type::Face const& pts, int f, mpl::int_<3> )
@@ -160,11 +169,12 @@ private:
         //generateFacePermutations( npts, mpl::bool_<false>() );
         face_permutation_type pbegin( face_permutation_type::IDENTITY );
         face_permutation_type pend( face_permutation_type::N_PERMUTATIONS );
-        for( face_permutation_type p = pbegin; p < pend; ++p )
-            {
-                ppts[f].insert( std::make_pair( p, permutatePoints( pts.points(), p ) ) );
-                Debug( 5090 ) << "[quadmapped] ppts[" << f << "][" << p.value() << "]=" << ppts[f].find(p)->second << "\n";
-            }
+
+        for ( face_permutation_type p = pbegin; p < pend; ++p )
+        {
+            ppts[f].insert( std::make_pair( p, permutatePoints( pts.points(), p ) ) );
+            Debug( 5090 ) << "[quadmapped] ppts[" << f << "][" << p.value() << "]=" << ppts[f].find( p )->second << "\n";
+        }
     }
 
     // Permutates points in the reference element that, when mapped to the
@@ -173,29 +183,30 @@ private:
                                   edge_permutation_type edge_perm )
     {
         if ( edge_perm != edge_permutation_type( edge_permutation_type::IDENTITY ) )
-            {
-                // this formula works with 1-point quadratures
-                for (int i=0; i <= (int(Gt.size2())-1)/2 - int(Gt.size2())%2; i++)
-                    ublas::column(Gt, i).swap( ublas::column(Gt, Gt.size2()-1-i) );
-            }
+        {
+            // this formula works with 1-point quadratures
+            for ( int i=0; i <= ( int( Gt.size2() )-1 )/2 - int( Gt.size2() )%2; i++ )
+                ublas::column( Gt, i ).swap( ublas::column( Gt, Gt.size2()-1-i ) );
+        }
 
         return Gt;
     }
 
     // Permutates points in the reference element that, when mapped to the
     // real one, match others generated in the same real face
-    points_type permutatePoints (nodes_type const& Gt,
-                                 face_permutation_type face_perm )
+    points_type permutatePoints ( nodes_type const& Gt,
+                                  face_permutation_type face_perm )
     {
         FEELPP_ASSERT( face_perm != face_permutation_type( face_permutation_type::NO_PERMUTATION ) )
-            ( face_perm ).error( "invalid permutation" );
+        ( face_perm ).error( "invalid permutation" );
 
         nodes_type res( Gt );
+
         if ( face_perm != face_permutation_type( face_permutation_type::IDENTITY ) )
-	    res = prod( Gt, getMatrixPermutation(face_perm) );
+            res = prod( Gt, getMatrixPermutation( face_perm ) );
 
         FEELPP_ASSERT( res.size1() == Gt.size1() &&
-                      res.size2() == Gt.size2() ) ( res )( Gt ).error ("invalid permutation operation" );
+                       res.size2() == Gt.size2() ) ( res )( Gt ).error ( "invalid permutation operation" );
         return res;
     }
 
@@ -203,22 +214,24 @@ private:
     {
         permutation_matrix_type P ( v.size(), v.size(), v.size()*v.size() );
         P.clear();
-        for (uint16_type i = 0; i < v.size(); ++i)
-            P(i,v(i)) = 1;
+
+        for ( uint16_type i = 0; i < v.size(); ++i )
+            P( i,v( i ) ) = 1;
 
         return P;
     }
 
     permutation_vector_type matrixToVectorPermutation ( permutation_matrix_type const& P )
     {
-        FEELPP_ASSERT(P.size1() == P.size2()).error("invalid permutation");
+        FEELPP_ASSERT( P.size1() == P.size2() ).error( "invalid permutation" );
 
         permutation_vector_type v ( P.size1() );
         v.clear();
-        for (uint16_type i = 0; i < v.size(); ++i)
-            for (uint16_type j = 0; j < v.size(); ++j)
-                if ( P(i,j) == 1 )
-                    v(i) = j;
+
+        for ( uint16_type i = 0; i < v.size(); ++i )
+            for ( uint16_type j = 0; j < v.size(); ++j )
+                if ( P( i,j ) == 1 )
+                    v( i ) = j;
 
         return v;
     }
@@ -228,7 +241,7 @@ private:
         matrix_permutation[out] = ublas::prod( matrix_permutation[first],
                                                matrix_permutation[second] );
 
-        vector_permutation[out] = matrixToVectorPermutation(matrix_permutation[out]);
+        vector_permutation[out] = matrixToVectorPermutation( matrix_permutation[out] );
     }
 
 
@@ -237,112 +250,114 @@ private:
     {
         //uint16_type npoints = n_side_points*(n_side_points+1)/2;
         //uint16_type n_side_points = (uint16_type) (-1 + math::sqrt( (double)8*npoints + 1 ))/2;
-        uint16_type n_side_points = (uint16_type)math::sqrt((double)npoints);
+        uint16_type n_side_points = ( uint16_type )math::sqrt( ( double )npoints );
         //FEELPP_ASSERT( npoints == (n_side_points-1)*(n_side_points-2)/2 )
         //FEELPP_ASSERT( npoints == (n_side_points)*(n_side_points))
         //( npoints )( n_side_points ).error( "invalid number of points" );
-        permutation_vector_type _vec(npoints);
+        permutation_vector_type _vec( npoints );
         _vec.clear();
+
         //define hypotenuse reverse permutation
-        for (uint16_type i = 0; i < n_side_points; ++i)
+        for ( uint16_type i = 0; i < n_side_points; ++i )
+        {
+            for ( uint16_type j = 0; j <= i; j++ )
             {
-                for (uint16_type j = 0; j <= i; j++)
-                    {
-                        uint16_type _first = i + j*(j-1)/2 + j*(n_side_points - j);
-                        uint16_type _last = i + (i-j)*(i-j-1)/2 + (i-j)*(n_side_points - (i-j));
+                uint16_type _first = i + j*( j-1 )/2 + j*( n_side_points - j );
+                uint16_type _last = i + ( i-j )*( i-j-1 )/2 + ( i-j )*( n_side_points - ( i-j ) );
 
-                        _vec(_first) = _last;
-                    }
+                _vec( _first ) = _last;
             }
+        }
 
-        vector_permutation[face_permutation_type(face_permutation_type::REVERSE_HYPOTENUSE)] = _vec;
-        matrix_permutation[face_permutation_type(face_permutation_type::REVERSE_HYPOTENUSE)] = vectorToMatrixPermutation(_vec);
+        vector_permutation[face_permutation_type( face_permutation_type::REVERSE_HYPOTENUSE )] = _vec;
+        matrix_permutation[face_permutation_type( face_permutation_type::REVERSE_HYPOTENUSE )] = vectorToMatrixPermutation( _vec );
 
         //define base reverse permutation
-        for (uint16_type i = 0; i < n_side_points; ++i)
-            {
-                uint16_type _begin = i*n_side_points - i*(i-1)/2;
-                uint16_type _end = (i+1)*n_side_points - (i+1)*i/2 - 1;
+        for ( uint16_type i = 0; i < n_side_points; ++i )
+        {
+            uint16_type _begin = i*n_side_points - i*( i-1 )/2;
+            uint16_type _end = ( i+1 )*n_side_points - ( i+1 )*i/2 - 1;
 
-                for (uint16_type j = 0; j <= n_side_points - i - 1; j++)
-                    _vec( _begin + j ) = _end - j;
-            }
+            for ( uint16_type j = 0; j <= n_side_points - i - 1; j++ )
+                _vec( _begin + j ) = _end - j;
+        }
 
-        vector_permutation[face_permutation_type(face_permutation_type::REVERSE_BASE)] = _vec;
-        matrix_permutation[face_permutation_type(face_permutation_type::REVERSE_BASE)] = vectorToMatrixPermutation(_vec);
+        vector_permutation[face_permutation_type( face_permutation_type::REVERSE_BASE )] = _vec;
+        matrix_permutation[face_permutation_type( face_permutation_type::REVERSE_BASE )] = vectorToMatrixPermutation( _vec );
 
-        setPermutation( (face_permutation_type)face_permutation_type::ROTATION_ANTICLOCK,
-                        (face_permutation_type)face_permutation_type::REVERSE_BASE,
-                        (face_permutation_type)face_permutation_type::REVERSE_HYPOTENUSE);
+        setPermutation( ( face_permutation_type )face_permutation_type::ROTATION_ANTICLOCK,
+                        ( face_permutation_type )face_permutation_type::REVERSE_BASE,
+                        ( face_permutation_type )face_permutation_type::REVERSE_HYPOTENUSE );
 
-        setPermutation( (face_permutation_type)face_permutation_type::ROTATION_CLOCKWISE,
-                        (face_permutation_type)face_permutation_type::REVERSE_HYPOTENUSE,
-                        (face_permutation_type)face_permutation_type::REVERSE_BASE);
+        setPermutation( ( face_permutation_type )face_permutation_type::ROTATION_CLOCKWISE,
+                        ( face_permutation_type )face_permutation_type::REVERSE_HYPOTENUSE,
+                        ( face_permutation_type )face_permutation_type::REVERSE_BASE );
 
-        setPermutation( (face_permutation_type)face_permutation_type::REVERSE_HEIGHT,
-                        (face_permutation_type)face_permutation_type::REVERSE_BASE,
-                        (face_permutation_type)face_permutation_type::ROTATION_CLOCKWISE);
+        setPermutation( ( face_permutation_type )face_permutation_type::REVERSE_HEIGHT,
+                        ( face_permutation_type )face_permutation_type::REVERSE_BASE,
+                        ( face_permutation_type )face_permutation_type::ROTATION_CLOCKWISE );
     }
 
     //Permutations for hexahedra
     void generateFacePermutations( uint16_type npoints, mpl::bool_<false> )
     {
         //uint16_type npoints = n_side_points*(n_side_points);
-        uint16_type n_side_points = (uint16_type)math::sqrt((double)npoints);
+        uint16_type n_side_points = ( uint16_type )math::sqrt( ( double )npoints );
         FEELPP_ASSERT( npoints == n_side_points*n_side_points )
-            ( npoints )( n_side_points ).error( "invalid number of points" );
-        permutation_vector_type _vec(npoints);
+        ( npoints )( n_side_points ).error( "invalid number of points" );
+        permutation_vector_type _vec( npoints );
         _vec.clear();
         //define base permutation (tau_2)
         uint16_type p=0;
 
-        for (int16_type i = n_side_points-1; i >= 0; --i)
+        for ( int16_type i = n_side_points-1; i >= 0; --i )
+        {
+            uint16_type _first = i*n_side_points;
+
+            for ( uint16_type j = 0; j <= n_side_points-1; j++ )
             {
-                uint16_type _first = i*n_side_points;
-
-                for (uint16_type j = 0; j <= n_side_points-1; j++)
-                    {
-                        _vec(p) = _first + j;
-                        p++;
-                    }
+                _vec( p ) = _first + j;
+                p++;
             }
+        }
 
-        vector_permutation[(face_permutation_type)face_permutation_type::REVERSE_BASE] = _vec;
-        matrix_permutation[(face_permutation_type)face_permutation_type::REVERSE_BASE] = vectorToMatrixPermutation(_vec);
+        vector_permutation[( face_permutation_type )face_permutation_type::REVERSE_BASE] = _vec;
+        matrix_permutation[( face_permutation_type )face_permutation_type::REVERSE_BASE] = vectorToMatrixPermutation( _vec );
 
         //define once anticlockwise permutation (tau_3)
         p=0;
-        for (int16_type i = n_side_points-1; i >= 0; --i)
+
+        for ( int16_type i = n_side_points-1; i >= 0; --i )
+        {
+            for ( uint16_type j = 0; j <= n_side_points-1; j++ )
             {
-                for (uint16_type j = 0; j <= n_side_points-1; j++)
-                    {
-                        _vec(p) = i + n_side_points*j;
-                        p++;
-                    }
+                _vec( p ) = i + n_side_points*j;
+                p++;
             }
+        }
 
-        vector_permutation[(face_permutation_type)face_permutation_type::ROTATION_ANTICLOCK] = _vec;
-        matrix_permutation[(face_permutation_type)face_permutation_type::ROTATION_ANTICLOCK] = vectorToMatrixPermutation(_vec);
+        vector_permutation[( face_permutation_type )face_permutation_type::ROTATION_ANTICLOCK] = _vec;
+        matrix_permutation[( face_permutation_type )face_permutation_type::ROTATION_ANTICLOCK] = vectorToMatrixPermutation( _vec );
 
-        setPermutation( (face_permutation_type)face_permutation_type::SECOND_DIAGONAL,
-                        (face_permutation_type)face_permutation_type::REVERSE_BASE,
-                        (face_permutation_type)face_permutation_type::ROTATION_ANTICLOCK);
+        setPermutation( ( face_permutation_type )face_permutation_type::SECOND_DIAGONAL,
+                        ( face_permutation_type )face_permutation_type::REVERSE_BASE,
+                        ( face_permutation_type )face_permutation_type::ROTATION_ANTICLOCK );
 
-        setPermutation( (face_permutation_type)face_permutation_type::REVERSE_HEIGHT,
-                        (face_permutation_type)face_permutation_type::SECOND_DIAGONAL,
-                        (face_permutation_type)face_permutation_type::ROTATION_ANTICLOCK);
+        setPermutation( ( face_permutation_type )face_permutation_type::REVERSE_HEIGHT,
+                        ( face_permutation_type )face_permutation_type::SECOND_DIAGONAL,
+                        ( face_permutation_type )face_permutation_type::ROTATION_ANTICLOCK );
 
-        setPermutation( (face_permutation_type)face_permutation_type::ROTATION_TWICE_CLOCKWISE,
-                        (face_permutation_type)face_permutation_type::REVERSE_HEIGHT,
-                        (face_permutation_type)face_permutation_type::REVERSE_BASE);
+        setPermutation( ( face_permutation_type )face_permutation_type::ROTATION_TWICE_CLOCKWISE,
+                        ( face_permutation_type )face_permutation_type::REVERSE_HEIGHT,
+                        ( face_permutation_type )face_permutation_type::REVERSE_BASE );
 
-        setPermutation( (face_permutation_type)face_permutation_type::PRINCIPAL_DIAGONAL,
-                        (face_permutation_type)face_permutation_type::REVERSE_HEIGHT,
-                        (face_permutation_type)face_permutation_type::ROTATION_ANTICLOCK);
+        setPermutation( ( face_permutation_type )face_permutation_type::PRINCIPAL_DIAGONAL,
+                        ( face_permutation_type )face_permutation_type::REVERSE_HEIGHT,
+                        ( face_permutation_type )face_permutation_type::ROTATION_ANTICLOCK );
 
-        setPermutation( (face_permutation_type)face_permutation_type::ROTATION_CLOCKWISE,
-                        (face_permutation_type)face_permutation_type::ROTATION_ANTICLOCK,
-                        (face_permutation_type)face_permutation_type::ROTATION_TWICE_CLOCKWISE);
+        setPermutation( ( face_permutation_type )face_permutation_type::ROTATION_CLOCKWISE,
+                        ( face_permutation_type )face_permutation_type::ROTATION_ANTICLOCK,
+                        ( face_permutation_type )face_permutation_type::ROTATION_TWICE_CLOCKWISE );
     }
 
 private:

@@ -20,13 +20,13 @@ inline
 po::options_description
 makeOptions()
 {
-    po::options_description gridoptions("Grid options");
+    po::options_description gridoptions( "Grid options" );
     gridoptions.add_options()
-        ("hsize", po::value<double>()->default_value( 0.1 ), "mesh size")
-        ("kappa", po::value<double>()->default_value( 1 ), "coefficient")
-        ("shape", Feel::po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (either simplex or hypercube)")
-        ("nu", po::value<double>()->default_value( 1 ), "grad.grad coefficient")
-        ;
+    ( "hsize", po::value<double>()->default_value( 0.1 ), "mesh size" )
+    ( "kappa", po::value<double>()->default_value( 1 ), "coefficient" )
+    ( "shape", Feel::po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (either simplex or hypercube)" )
+    ( "nu", po::value<double>()->default_value( 1 ), "grad.grad coefficient" )
+    ;
     return gridoptions.add( Feel::feel_options() );
 }
 
@@ -39,10 +39,10 @@ makeAbout()
                      "0.2",
                      "nD(n=1,2,3) Grid on simplices or simplex products",
                      Feel::AboutData::License_GPL,
-                     "Copyright (c) 2008-2009 Universite Joseph Fourier");
+                     "Copyright (c) 2008-2009 Universite Joseph Fourier" );
 
-    about.addAuthor("Abdoulaye Samake", "developer", "Abdoulaye.Samake@imag.fr", "");
-    about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
+    about.addAuthor( "Abdoulaye Samake", "developer", "Abdoulaye.Samake@imag.fr", "" );
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
     return about;
 
 }
@@ -50,7 +50,7 @@ makeAbout()
 template<int Dim>
 class Grid
     :
-    public Simget
+public Simget
 {
     typedef Simget super;
 public:
@@ -105,10 +105,13 @@ Grid<Dim>::run()
     std::cout << "Execute Grid<" << Dim << ">\n";
     std::vector<double> X( 2 );
     X[0] = meshSize;
+
     if ( shape == "hypercube" )
         X[1] = 1;
+
     else // default is simplex
         X[1] = 0;
+
     std::vector<double> Y( 3 );
     run( X.data(), X.size(), Y.data(), Y.size() );
 }
@@ -117,6 +120,7 @@ void
 Grid<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
 {
     if ( X[1] == 0 ) shape = "simplex";
+
     if ( X[1] == 1 ) shape = "hypercube";
 
     if ( !this->vm().count( "nochdir" ) )
@@ -126,29 +130,30 @@ Grid<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
                                        % Dim
                                        % Order
                                        % meshSize );
+
 #if 0
-    GeoTool::Node x1(0,0);
-    GeoTool::Node x2(1,1);
-    GeoTool::Rectangle Omega(meshSize,"Omega",x1,x2);
-    Omega.setMarker(_type="line",_name="Paroi",_markerAll=true);
-    Omega.setMarker(_type="surface",_name="Omega",_markerAll=true);
+    GeoTool::Node x1( 0,0 );
+    GeoTool::Node x2( 1,1 );
+    GeoTool::Rectangle Omega( meshSize,"Omega",x1,x2 );
+    Omega.setMarker( _type="line",_name="Paroi",_markerAll=true );
+    Omega.setMarker( _type="surface",_name="Omega",_markerAll=true );
 
     auto mesh = Omega.createMesh<mesh_type>( "omega_"+ mesh_type::shape_type::name() );
 #endif
 
     auto mesh = createGMSHMesh( _mesh=new mesh_type,
-                                _desc=domain( _name=(boost::format( "%1%-%2%" ) % shape % Dim).str() ,
-                                              _addmidpoint=false,
-                                              _usenames=false,
-                                              _shape=shape,
-                                              _dim=Dim,
-                                              _h=X[0],
-                                              _xmin=0.,
-                                              _xmax=1.,
-                                              _ymin=0.,
-                                              _ymax=1.,
-                                              _zmin=0.,
-                                              _zmax=1. ) );
+                                _desc=domain( _name=( boost::format( "%1%-%2%" ) % shape % Dim ).str() ,
+                                        _addmidpoint=false,
+                                        _usenames=false,
+                                        _shape=shape,
+                                        _dim=Dim,
+                                        _h=X[0],
+                                        _xmin=0.,
+                                        _xmax=1.,
+                                        _ymin=0.,
+                                        _ymax=1.,
+                                        _zmin=0.,
+                                        _zmax=1. ) );
 
 
     auto Xh = space_type::New( mesh );
@@ -161,12 +166,14 @@ Grid<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
         using namespace boost::assign;
         flags += 1,3;
     }
+
     else if ( Dim == 2 )
     {
         using namespace boost::assign;
         flags += 1,2,3,4;
     }
-    else if( Dim == 3 )
+
+    else if ( Dim == 3 )
     {
         using namespace boost::assign;
         flags += 6,15,19,23,27,28;
@@ -179,14 +186,14 @@ Grid<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
 
     auto A = M_backend->newMatrix( Xh, Xh ) ;
     form2( _test=Xh, _trial=Xh, _matrix=A, _init=true ) =
-        integrate( elements(mesh), kappa*gradt(u)*trans(grad(v)) + nu*idt(u)*id(v) );
+        integrate( elements( mesh ), kappa*gradt( u )*trans( grad( v ) ) + nu*idt( u )*id( v ) );
 
     auto B = M_backend->newMatrix( Xh, Xh ) ;
     form2( _test=Xh, _trial=Xh, _matrix=B, _init=true );
     BOOST_FOREACH( int marker, flags )
     {
         form2( Xh, Xh, B ) +=
-            integrate( markedfaces(mesh,marker), kappa*idt(u)*id(v) );
+            integrate( markedfaces( mesh,marker ), kappa*idt( u )*id( v ) );
     }
 
     int maxit = this->vm()["solvereigen-maxiter"].template as<int>();
@@ -212,7 +219,7 @@ Grid<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
               _spectrum=SMALLEST_MAGNITUDE,
               _verbose = true );
 
-    auto femodes = std::vector<decltype(Xh->element())>( modes.size(), Xh->element() );
+    auto femodes = std::vector<decltype( Xh->element() )>( modes.size(), Xh->element() );
 
     if ( !modes.empty() )
     {
@@ -227,21 +234,21 @@ Grid<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
     }
 
     auto exporter =  export_type::New( this->vm(),
-                                       (boost::format( "%1%-%2%-%3%" )
-                                        % this->about().appName()
-                                        % shape
-                                        % Dim).str() ) ;
+                                       ( boost::format( "%1%-%2%-%3%" )
+                                         % this->about().appName()
+                                         % shape
+                                         % Dim ).str() ) ;
 
     if ( exporter->doExport() )
     {
         Log() << "exportResults starts\n";
 
-        exporter->step(0)->setMesh( mesh );
+        exporter->step( 0 )->setMesh( mesh );
 
         int i = 0;
         BOOST_FOREACH( auto mode, femodes )
         {
-            exporter->step(0)->add( (boost::format( "mode-%1%" ) % i++).str(), mode );
+            exporter->step( 0 )->add( ( boost::format( "mode-%1%" ) % i++ ).str(), mode );
         }
 
         exporter->save();
@@ -255,6 +262,7 @@ main( int argc, char** argv )
     Environment env( argc, argv );
 
     Application app( argc, argv, makeAbout(), makeOptions() );
+
     if ( app.vm().count( "help" ) )
     {
         std::cout << app.optionsDescription() << "\n";

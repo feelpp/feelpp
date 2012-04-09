@@ -39,7 +39,8 @@
 
 namespace Feel
 {
-enum {
+enum
+{
 
     // default behavior - just loggs this assert
     // (a message is shown to the user to the console)
@@ -68,46 +69,71 @@ class AssertContext
 {
     typedef std::string string;
 public:
-    AssertContext() : _M_level( lvl_debug)
-        {}
+    AssertContext() : _M_level( lvl_debug )
+    {}
 
     // where the assertion failed: file & line
-    void setFileLine( const char * file, int line)
-        {
-            _M_file = file;
-            _M_line = line;
-        }
-    const string & getContextFile() const { return _M_file; }
-    int getContextLine() const { return _M_line; }
+    void setFileLine( const char * file, int line )
+    {
+        _M_file = file;
+        _M_line = line;
+    }
+    const string & getContextFile() const
+    {
+        return _M_file;
+    }
+    int getContextLine() const
+    {
+        return _M_line;
+    }
 
     // get/ set expression
-    void setExpression( const string & str) { _M_expression = str; }
-    const string & expression() const { return _M_expression; }
+    void setExpression( const string & str )
+    {
+        _M_expression = str;
+    }
+    const string & expression() const
+    {
+        return _M_expression;
+    }
 
     typedef std::pair< string, string> val_and_str;
     typedef std::vector< val_and_str> vals_array;
     // return values array as a vector of pairs:
     // [Value, corresponding string]
-    const vals_array & get_vals_array() const { return _M_vals; }
+    const vals_array & get_vals_array() const
+    {
+        return _M_vals;
+    }
     // adds one value and its corresponding string
-    void add_val( const string & val, const string & str)
-        {
-            _M_vals.push_back( val_and_str( val, str) );
-        }
+    void add_val( const string & val, const string & str )
+    {
+        _M_vals.push_back( val_and_str( val, str ) );
+    }
 
     // get/set level of assertion
-    void setLevel( int nLevel) { _M_level = nLevel; }
-    int get_level() const { return _M_level; }
+    void setLevel( int nLevel )
+    {
+        _M_level = nLevel;
+    }
+    int get_level() const
+    {
+        return _M_level;
+    }
 
     // get/set (user-friendly) message
-    void setLevelMsg( const char * strMsg)
-        {
-            if ( strMsg)
-                _M_msg = strMsg;
-            else
-                _M_msg.erase();
-        }
-    const string & get_level_msg() const { return _M_msg; }
+    void setLevelMsg( const char * strMsg )
+    {
+        if ( strMsg )
+            _M_msg = strMsg;
+
+        else
+            _M_msg.erase();
+    }
+    const string & get_level_msg() const
+    {
+        return _M_msg;
+    }
 
 private:
     // where the assertion occured
@@ -127,27 +153,27 @@ private:
 namespace SmartAssert
 {
 
-typedef void (*assert_function_type)( const AssertContext & context);
+typedef void ( *assert_function_type )( const AssertContext & context );
 
 // helpers
-std::string getTypeofLevel( int nLevel);
-void dumpContextSummary( const AssertContext & context, std::ostream & out);
-void dumpContextDetail( const AssertContext & context, std::ostream & out);
+std::string getTypeofLevel( int nLevel );
+void dumpContextSummary( const AssertContext & context, std::ostream & out );
+void dumpContextDetail( const AssertContext & context, std::ostream & out );
 
 // defaults
-void defaultWarnHandler( const AssertContext & context);
-void defaultDebugHandler( const AssertContext & context);
-void defaultErrorHandler( const AssertContext & context);
-void defaultFatalHandler( const AssertContext & context);
-void defaultLogger( const AssertContext & context);
+void defaultWarnHandler( const AssertContext & context );
+void defaultDebugHandler( const AssertContext & context );
+void defaultErrorHandler( const AssertContext & context );
+void defaultFatalHandler( const AssertContext & context );
+void defaultLogger( const AssertContext & context );
 
 } // namespace SmartAssert
 
 namespace Private
 {
 void initAssert();
-void setDefaultLogStream( std::ostream & out);
-void setDefaultLogName( const char * str);
+void setDefaultLogStream( std::ostream & out );
+void setDefaultLogName( const char * str );
 
 // allows finding if a value is of type 'const char *'
 // and is null; if so, we cannot print it to an ostream
@@ -155,28 +181,28 @@ void setDefaultLogName( const char * str);
 template< class T>
 struct isNullFinder
 {
-    bool is( const T &) const
-        {
-            return false;
-        }
+    bool is( const T & ) const
+    {
+        return false;
+    }
 };
 
 template<>
 struct isNullFinder< char*>
 {
-    bool is( char * const & val)
-        {
-            return val == 0;
-        }
+    bool is( char * const & val )
+    {
+        return val == 0;
+    }
 };
 
 template<>
 struct isNullFinder< const char*>
 {
-    bool is( const char * const & val)
-        {
-            return val == 0;
-        }
+    bool is( const char * const & val )
+    {
+        return val == 0;
+    }
 };
 
 
@@ -191,110 +217,110 @@ struct Assert
     Assert & SMART_ASSERT_A;
     Assert & SMART_ASSERT_B;
 
-    Assert( const char * expr)
-        : SMART_ASSERT_A( *this),
-          SMART_ASSERT_B( *this),
-          _M_needs_handling( true)
-        {
-            _M_context.setExpression( expr);
+    Assert( const char * expr )
+        : SMART_ASSERT_A( *this ),
+          SMART_ASSERT_B( *this ),
+          _M_needs_handling( true )
+    {
+        _M_context.setExpression( expr );
 
-            if ( ( logger() == 0) || handlers().size() < 4)
-            {
-                // used before main!
-                Private::initAssert();
-            }
-        }
-
-    Assert( const Assert & other)
-        : SMART_ASSERT_A( *this),
-          SMART_ASSERT_B( *this),
-          _M_context( other._M_context),
-          _M_needs_handling( true)
+        if ( ( logger() == 0 ) || handlers().size() < 4 )
         {
-            other._M_needs_handling = false;
+            // used before main!
+            Private::initAssert();
         }
+    }
+
+    Assert( const Assert & other )
+        : SMART_ASSERT_A( *this ),
+          SMART_ASSERT_B( *this ),
+          _M_context( other._M_context ),
+          _M_needs_handling( true )
+    {
+        other._M_needs_handling = false;
+    }
 
     ~Assert()
-        {
-            if ( _M_needs_handling)
-                handleAssert();
-        }
+    {
+        if ( _M_needs_handling )
+            handleAssert();
+    }
 
     template< class type>
-    Assert & printCurrentValue( const type & val, const char * msg);
+    Assert & printCurrentValue( const type & val, const char * msg );
 
-    Assert & printContext( const char * file, int line)
-        {
-            _M_context.setFileLine( file, line);
-            return *this;
-        }
+    Assert & printContext( const char * file, int line )
+    {
+        _M_context.setFileLine( file, line );
+        return *this;
+    }
 
-    Assert & msg( const char * strMsg)
-        {
-            _M_context.setLevelMsg( strMsg);
-            return *this;
-        }
+    Assert & msg( const char * strMsg )
+    {
+        _M_context.setLevelMsg( strMsg );
+        return *this;
+    }
 
-    Assert & level( int nLevel, const char * strMsg = 0)
-        {
-            _M_context.setLevel( nLevel);
-            _M_context.setLevelMsg( strMsg);
-            return *this;
-        }
+    Assert & level( int nLevel, const char * strMsg = 0 )
+    {
+        _M_context.setLevel( nLevel );
+        _M_context.setLevelMsg( strMsg );
+        return *this;
+    }
 
-    Assert & warn( const char * strMsg = 0)
-        {
-            return level( lvl_warn, strMsg);
-        }
+    Assert & warn( const char * strMsg = 0 )
+    {
+        return level( lvl_warn, strMsg );
+    }
 
-    Assert & debug( const char * strMsg = 0)
-        {
-            return level( lvl_debug, strMsg);
-        }
+    Assert & debug( const char * strMsg = 0 )
+    {
+        return level( lvl_debug, strMsg );
+    }
 
-    Assert & error( const char * strMsg = 0)
-        {
-            return level( lvl_error, strMsg);
-        }
+    Assert & error( const char * strMsg = 0 )
+    {
+        return level( lvl_error, strMsg );
+    }
 
-    Assert & fatal( const char * strMsg = 0)
-        {
-            return  level( lvl_fatal, strMsg);
-        }
+    Assert & fatal( const char * strMsg = 0 )
+    {
+        return  level( lvl_fatal, strMsg );
+    }
 
     // in this case, we set the default logger, and make it
     // write everything to this file
-    static void setLog( const char * strFileName)
-        {
-            Private::setDefaultLogName( strFileName);
-            logger() = &SmartAssert::defaultLogger;
-        }
+    static void setLog( const char * strFileName )
+    {
+        Private::setDefaultLogName( strFileName );
+        logger() = &SmartAssert::defaultLogger;
+    }
 
     // in this case, we set the default logger, and make it
     // write everything to this log
-    static void setLog( std::ostream & out)
-        {
-            Private::setDefaultLogStream( out);
-            logger() = &SmartAssert::defaultLogger;
-        }
+    static void setLog( std::ostream & out )
+    {
+        Private::setDefaultLogStream( out );
+        logger() = &SmartAssert::defaultLogger;
+    }
 
-    static void setLog( assert_function_type log)
-        {
-            logger() = log;
-        }
+    static void setLog( assert_function_type log )
+    {
+        logger() = log;
+    }
 
-    static void setHandler( int nLevel, assert_function_type handler)
-        {
-            handlers()[ nLevel] = handler;
-        }
+    static void setHandler( int nLevel, assert_function_type handler )
+    {
+        handlers()[ nLevel] = handler;
+    }
 
 private:
     // handles the current assertion.
     void handleAssert()
-        {
-            logger()( _M_context);
-            get_handler( _M_context.get_level() )( _M_context);
-        }
+    {
+        logger()( _M_context );
+        get_handler( _M_context.get_level() )( _M_context );
+    }
 
     /*
       IMPORTANT NOTE:
@@ -308,28 +334,30 @@ private:
 
     // the log
     static assert_function_type & logger()
-        {
-            static assert_function_type inst;
-            return inst;
-        }
+    {
+        static assert_function_type inst;
+        return inst;
+    }
 
     // the handler
     typedef std::map< int, assert_function_type> handlers_collection;
     static handlers_collection & handlers()
-        {
-            static handlers_collection inst;
-            return inst;
-        }
+    {
+        static handlers_collection inst;
+        return inst;
+    }
 
-    static assert_function_type get_handler( int nLevel)
-        {
-            handlers_collection::const_iterator found = handlers().find( nLevel);
-            if ( found != handlers().end() )
-                return found->second;
-            else
-                // we always assume the debug handler has been set
-                return handlers().find( lvl_debug)->second;
-        }
+    static assert_function_type get_handler( int nLevel )
+    {
+        handlers_collection::const_iterator found = handlers().find( nLevel );
+
+        if ( found != handlers().end() )
+            return found->second;
+
+        else
+            // we always assume the debug handler has been set
+            return handlers().find( lvl_debug )->second;
+    }
 
 private:
     AssertContext _M_context;
@@ -339,27 +367,30 @@ private:
 
 template<class type>
 Assert &
-Assert::printCurrentValue( const type & _val, const char * _msg)
+Assert::printCurrentValue( const type & _val, const char * _msg )
 {
     std::ostringstream out;
 
     Private::isNullFinder< type> f;
-    bool bIsNull = f.is( _val);
-    if ( !bIsNull)
+    bool bIsNull = f.is( _val );
+
+    if ( !bIsNull )
         out << _val;
+
     else
         // null string
         out << "null";
-    _M_context.add_val( out.str(), _msg);
+
+    _M_context.add_val( out.str(), _msg );
     return *this;
 }
 
 
 namespace SmartAssert
 {
-inline ::Feel::Assert make_assert( const char * expr)
+inline ::Feel::Assert make_assert( const char * expr )
 {
-    return ::Feel::Assert( expr);
+    return ::Feel::Assert( expr );
 }
 } // namespace SmartAssert
 

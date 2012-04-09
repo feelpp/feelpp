@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -33,32 +33,32 @@
 std::string
 createDomain( double h )
 {
-  std::ostringstream ostr;
-  ostr << "Mesh.MshFileVersion = 1;\n"
-       << "h=" << h << ";\n"
-       << "Point(1) = {-1,-1,0.0,h};\n"
-       << "Point(2) = { 1,-1,0.0,h};\n"
-       << "Point(3) = { 1, 1,0.0,h};\n"
-       << "Point(4) = {-1, 1,0.0,h};\n"
-       << "Line(1) = {1,2};\n"
-       << "Line(2) = {2,3};\n"
-       << "Line(3) = {3,4};\n"
-       << "Line(4) = {4,1};\n"
-       << "Line Loop(7) = {4,3,2,1};\n"
-       << "Plane Surface(8) = {7};\n"
-       << "Physical Line(1) = {1,2,3,4};\n"
-       << "Physical Surface(8) = {8};\n";
-  return ostr.str();
+    std::ostringstream ostr;
+    ostr << "Mesh.MshFileVersion = 1;\n"
+         << "h=" << h << ";\n"
+         << "Point(1) = {-1,-1,0.0,h};\n"
+         << "Point(2) = { 1,-1,0.0,h};\n"
+         << "Point(3) = { 1, 1,0.0,h};\n"
+         << "Point(4) = {-1, 1,0.0,h};\n"
+         << "Line(1) = {1,2};\n"
+         << "Line(2) = {2,3};\n"
+         << "Line(3) = {3,4};\n"
+         << "Line(4) = {4,1};\n"
+         << "Line Loop(7) = {4,3,2,1};\n"
+         << "Plane Surface(8) = {7};\n"
+         << "Physical Line(1) = {1,2,3,4};\n"
+         << "Physical Surface(8) = {8};\n";
+    return ostr.str();
 }
 
 int
 main( int argc, char** argv )
 {
-  MPI_Init(&argc, &argv);
+    MPI_Init( &argc, &argv );
 
-  Feel::StokesStabilized<1> test( argc, argv, makeAbout(), makeOptions());
+    Feel::StokesStabilized<1> test( argc, argv, makeAbout(), makeOptions() );
 
-  test.run();
+    test.run();
 }
 
 

@@ -42,23 +42,23 @@ inline
 Feel::po::options_description
 makeOptions()
 {
-    Feel::po::options_description daroptions("DAR options");
+    Feel::po::options_description daroptions( "DAR options" );
     daroptions.add_options()
-        ("penal", Feel::po::value<double>()->default_value( 0.5 ), "penalisation parameter")
-        ("f", Feel::po::value<double>()->default_value( 0 ), "forcing term")
-//        ("g", Feel::po::value<double>()->default_value( 0 ), "boundary term")
-        ("bx", Feel::po::value<double>()->default_value( 1.0 ), "convection X component")
-        ("by", Feel::po::value<double>()->default_value( 1.0 ), "convection Y component")
-        ("mu", Feel::po::value<double>()->default_value( 1.0 ), "reaction coefficient component")
-        ("geomap", Feel::po::value<int>()->default_value( 0 ), "type of geomap for integrals")
-        ("stiff", Feel::po::value<double>()->default_value( 1.0 ), "stiffness parameter of solution")
-        ("ring", Feel::po::value<bool>()->default_value( 0 ), "0 = square computational domain, 1 = quarter of a ring as computational domain")
-        //("hsize", Feel::po::value<double>()->default_value( 0.5 ), "first h value to start convergence")
-        ("bctype", Feel::po::value<int>()->default_value( 0 ), "0 = strong Dirichlet, 1 = weak Dirichlet")
-        ("bccoeff", Feel::po::value<double>()->default_value( 100.0 ), "coeff for weak Dirichlet conditions")
-        ("export-matlab", "export matrices and vectors in matlab format")
+    ( "penal", Feel::po::value<double>()->default_value( 0.5 ), "penalisation parameter" )
+    ( "f", Feel::po::value<double>()->default_value( 0 ), "forcing term" )
+    //        ("g", Feel::po::value<double>()->default_value( 0 ), "boundary term")
+    ( "bx", Feel::po::value<double>()->default_value( 1.0 ), "convection X component" )
+    ( "by", Feel::po::value<double>()->default_value( 1.0 ), "convection Y component" )
+    ( "mu", Feel::po::value<double>()->default_value( 1.0 ), "reaction coefficient component" )
+    ( "geomap", Feel::po::value<int>()->default_value( 0 ), "type of geomap for integrals" )
+    ( "stiff", Feel::po::value<double>()->default_value( 1.0 ), "stiffness parameter of solution" )
+    ( "ring", Feel::po::value<bool>()->default_value( 0 ), "0 = square computational domain, 1 = quarter of a ring as computational domain" )
+    //("hsize", Feel::po::value<double>()->default_value( 0.5 ), "first h value to start convergence")
+    ( "bctype", Feel::po::value<int>()->default_value( 0 ), "0 = strong Dirichlet, 1 = weak Dirichlet" )
+    ( "bccoeff", Feel::po::value<double>()->default_value( 100.0 ), "coeff for weak Dirichlet conditions" )
+    ( "export-matlab", "export matrices and vectors in matlab format" )
 
-        ;
+    ;
     return daroptions.add( Feel::feel_options() );
     //rm.add( Feel::benchmark_options() );
 }
@@ -80,10 +80,10 @@ makeAbout()
                            "0.1",
                            "Diffusion-Advection-Reaction benchmark",
                            Feel::AboutData::License_GPL,
-                           "Copyright (c) 2012 Universite de Grenoble 1 (Joseph Fourier)");
+                           "Copyright (c) 2012 Universite de Grenoble 1 (Joseph Fourier)" );
 
-    about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
-   return about;
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    return about;
 
 
 }
@@ -94,11 +94,12 @@ createRing( int Dim, int Order, double meshSize, std::string const& convex )
 {
     std::ostringstream ostr;
     std::ostringstream nameStr;
-    gmsh_ptrtype gmshp( new Gmsh(Dim, Order) );
+    gmsh_ptrtype gmshp( new Gmsh( Dim, Order ) );
     gmshp->setCharacteristicLength( meshSize );
     ostr << gmshp->preamble() << "\n";
 
-    switch( Dim ) {
+    switch ( Dim )
+    {
     case 2:
         ostr << "h=" << meshSize << ";\n"
              << "Point(1) = {0.1,0,0,h/2};\n"
@@ -116,37 +117,39 @@ createRing( int Dim, int Order, double meshSize, std::string const& convex )
              << "Physical Line(20) = {2};\n"
              << "Physical Line(30) = {3};\n"
              << "Physical Line(40) = {4};\n"
-//             << "Physical Line(20) = {1,2,4};\n"
+             //             << "Physical Line(20) = {1,2,4};\n"
              << "Physical Surface(7) = {6};\n";
         nameStr << "ring-" << convex;
-//        fname = __gmsh.generateSquare( "advectiondg2d", meshSize );//
+        //        fname = __gmsh.generateSquare( "advectiondg2d", meshSize );//
         break;
-// To be added for 3D something like:
-/*    case 3:
-        ostr << "h=" << meshSize << ";\n"
-             << "Point(1) = {-1,-1,-1,h};\n"
-             << "Point(2) = {-1, 1,-1,h};\n"
-             << "Point(3) = { 1, 1,-1,h};\n"
-             << "Point(4) = { 1,-1,-1,h};\n"
-             << "Line(1) = {1,4};\n"
-             << "Line(2) = {4,3};\n"
-             << "Line(3) = {3,2};\n"
-             << "Line(4) = {2,1};\n"
-             << "Line Loop(5) = {3,4,1,2};\n"
-             << "Plane Surface(6) = {5};\n"
-             << "Extrude Surface {6, {0,0,2}};\n"
-             << "Physical Surface(10) = {15,23,6,28};\n"
-             << "Physical Surface(20) = {19,27};\n"
-             << "Surface Loop(31) = {28,15,-6,19,23,27};\n"
-             << "Volume(1) = {31};\n"
-             << "Physical Volume(2) = {1};\n";
-        nameStr << "cube." << meshSize;
-        break;*/
+
+        // To be added for 3D something like:
+        /*    case 3:
+                ostr << "h=" << meshSize << ";\n"
+                     << "Point(1) = {-1,-1,-1,h};\n"
+                     << "Point(2) = {-1, 1,-1,h};\n"
+                     << "Point(3) = { 1, 1,-1,h};\n"
+                     << "Point(4) = { 1,-1,-1,h};\n"
+                     << "Line(1) = {1,4};\n"
+                     << "Line(2) = {4,3};\n"
+                     << "Line(3) = {3,2};\n"
+                     << "Line(4) = {2,1};\n"
+                     << "Line Loop(5) = {3,4,1,2};\n"
+                     << "Plane Surface(6) = {5};\n"
+                     << "Extrude Surface {6, {0,0,2}};\n"
+                     << "Physical Surface(10) = {15,23,6,28};\n"
+                     << "Physical Surface(20) = {19,27};\n"
+                     << "Surface Loop(31) = {28,15,-6,19,23,27};\n"
+                     << "Volume(1) = {31};\n"
+                     << "Physical Volume(2) = {1};\n";
+                nameStr << "cube." << meshSize;
+                break;*/
     default:
         std::ostringstream os;
         os << "invalid dimension: " << Dim;
         throw std::logic_error( os.str() );
     }
+
     gmshp->setPrefix( nameStr.str() );
     gmshp->setDescription( ostr.str() );
     return gmshp;
@@ -171,6 +174,7 @@ int main( int argc, char** argv )
 
     using namespace Feel;
     Application benchmark( argc, argv, makeAbout(), makeOptions() );
+
     if ( benchmark.vm().count( "help" ) )
     {
         std::cout << benchmark.optionsDescription() << "\n";
@@ -180,6 +184,6 @@ int main( int argc, char** argv )
     //benchmark.add( new DAR<1, 1, Continuous, Hypercube>( benchmark.vm(), benchmark.about() ) );
     benchmark.add( new DAR<2, 1, Continuous, Simplex>( benchmark.vm(), benchmark.about() ) );
     benchmark.run();
-    benchmark.printStats( std::cout, boost::assign::list_of( "e.l2")("n.space")("t.init")("t.assembly.vector")("t.assembly.matrix" )("t.solver")("t.integrate") );
+    benchmark.printStats( std::cout, boost::assign::list_of( "e.l2" )( "n.space" )( "t.init" )( "t.assembly.vector" )( "t.assembly.matrix" )( "t.solver" )( "t.integrate" ) );
 }
 

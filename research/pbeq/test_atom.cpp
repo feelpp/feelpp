@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
 This file is part of the Feel library
 
@@ -36,24 +36,26 @@ main( int argc, char** argv )
     Feel::Atom a;
     std::ifstream pqrfile;
 
-    if (argc == 1)
-        {
-            std::cout << "argc (here = " << argc << ", " << argv[0]
-                      << ") must be > 1"<<  std::endl;
-            return 1;
-        }
+    if ( argc == 1 )
+    {
+        std::cout << "argc (here = " << argc << ", " << argv[0]
+                  << ") must be > 1"<<  std::endl;
+        return 1;
+    }
 
-    pqrfile.open(argv[1], std::ifstream::in);
-    if (pqrfile.fail())
-        {
-            Feel::Log() << "failed to open " << argv[1] << "\n";
-            return 1;
-        }
+    pqrfile.open( argv[1], std::ifstream::in );
 
-    if (a.readPQRline(pqrfile) == 0)
-        {
-            a.showMe();
-        }
+    if ( pqrfile.fail() )
+    {
+        Feel::Log() << "failed to open " << argv[1] << "\n";
+        return 1;
+    }
+
+    if ( a.readPQRline( pqrfile ) == 0 )
+    {
+        a.showMe();
+    }
+
     else
         Feel::Log() << "Problems reading atom" << "\n";
 

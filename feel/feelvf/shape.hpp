@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -105,7 +105,7 @@ public:
 
     static const uint16_type nDim = Dim;
     static const uint16_type M = mpl::if_<mpl::equal_to<mpl::bool_<transpose>, mpl::bool_<true> >,
-                                          mpl::int_<1>, mpl::int_<nDim> >::type::value;
+                             mpl::int_<1>, mpl::int_<nDim> >::type::value;
     static const uint16_type N = mpl::if_<mpl::equal_to<mpl::bool_<transpose>, mpl::bool_<true> >, mpl::int_<nDim>, mpl::int_<1> >::type::value;
     static const uint16_type O = 1;
     static const bool is_transposed = transpose;
@@ -214,13 +214,13 @@ public:
     typedef TheShape original_shape_type;
 
     typedef typename mpl::if_<mpl::bool_<original_shape_type::is_scalar>,
-                              mpl::identity<Shape<original_shape_type::nDim,Scalar,!original_shape_type::is_transposed,original_shape_type::is_diagonalized> >,
-                              typename mpl::if_<mpl::bool_<original_shape_type::is_vectorial>,
-                                                mpl::identity<Shape<original_shape_type::nDim,Vectorial,!original_shape_type::is_transposed,original_shape_type::is_diagonalized> >,
-                                                typename mpl::if_<mpl::bool_<original_shape_type::is_tensor2>,
-                                                                  mpl::identity<Shape<original_shape_type::nDim,Tensor2,!original_shape_type::is_transposed,original_shape_type::is_diagonalized> >,
-                                                                  mpl::identity<Shape<original_shape_type::nDim,Tensor3,!original_shape_type::is_transposed,original_shape_type::is_diagonalized> >
-                                                                  >::type >::type >::type::type type;
+            mpl::identity<Shape<original_shape_type::nDim,Scalar,!original_shape_type::is_transposed,original_shape_type::is_diagonalized> >,
+            typename mpl::if_<mpl::bool_<original_shape_type::is_vectorial>,
+            mpl::identity<Shape<original_shape_type::nDim,Vectorial,!original_shape_type::is_transposed,original_shape_type::is_diagonalized> >,
+            typename mpl::if_<mpl::bool_<original_shape_type::is_tensor2>,
+            mpl::identity<Shape<original_shape_type::nDim,Tensor2,!original_shape_type::is_transposed,original_shape_type::is_diagonalized> >,
+            mpl::identity<Shape<original_shape_type::nDim,Tensor3,!original_shape_type::is_transposed,original_shape_type::is_diagonalized> >
+            >::type >::type >::type::type type;
 
     //@}
 };
@@ -237,11 +237,11 @@ public:
     typedef TheShape original_shape_type;
 
     typedef typename mpl::if_<mpl::bool_<original_shape_type::is_scalar>,
-                              mpl::identity<Shape<original_shape_type::nDim,Scalar,original_shape_type::is_transposed,original_shape_type::is_diagonalized> >,
-                              typename mpl::if_<mpl::bool_<original_shape_type::is_vectorial>,
-                                                mpl::identity<Shape<original_shape_type::nDim,Tensor2,original_shape_type::is_transposed,original_shape_type::is_diagonalized> >,
-                                                mpl::identity<Shape<original_shape_type::nDim,Vectorial,original_shape_type::is_transposed,original_shape_type::is_diagonalized> >
-                                                >::type >::type::type type;
+            mpl::identity<Shape<original_shape_type::nDim,Scalar,original_shape_type::is_transposed,original_shape_type::is_diagonalized> >,
+            typename mpl::if_<mpl::bool_<original_shape_type::is_vectorial>,
+            mpl::identity<Shape<original_shape_type::nDim,Tensor2,original_shape_type::is_transposed,original_shape_type::is_diagonalized> >,
+            mpl::identity<Shape<original_shape_type::nDim,Vectorial,original_shape_type::is_transposed,original_shape_type::is_diagonalized> >
+            >::type >::type::type type;
 
     //@}
 };
@@ -250,7 +250,7 @@ public:
 template<typename Left, typename Right>
 struct shape_op_samerank
 {
-    static const bool is_rank_ok = ((Left::M == Right::M) && (Left::N == Right::N));
+    static const bool is_rank_ok = ( ( Left::M == Right::M ) && ( Left::N == Right::N ) );
     BOOST_MPL_ASSERT_MSG( mpl::bool_<is_rank_ok>::value,
                           INVALID_TENSOR_OPERATION_SHOULD_BE_OF_SAME_RANK,
                           ( mpl::int_<Left::M>, mpl::int_<Left::N>,
@@ -263,20 +263,20 @@ struct shape_op_samerank
     static const bool is_transposed = Left::is_transposed && Right::is_transposed;
 
     typedef typename mpl::if_<mpl::bool_<Left::is_scalar>,
-                              mpl::identity<Shape<nDim,Scalar,is_transposed,is_diagonalized> >,
-                              typename mpl::if_<mpl::bool_<Left::is_vectorial>,
-                                                mpl::identity<Shape<nDim,Vectorial,is_transposed,is_diagonalized> >,
-                                                typename mpl::if_<mpl::bool_<Left::is_tensor2>,
-                                                                  mpl::identity<Shape<nDim,Tensor2,is_transposed,is_diagonalized> >,
-                                                                  mpl::identity<Shape<nDim,Tensor3,is_transposed,is_diagonalized> >
-                                                                  >::type >::type >::type::type type;
+            mpl::identity<Shape<nDim,Scalar,is_transposed,is_diagonalized> >,
+            typename mpl::if_<mpl::bool_<Left::is_vectorial>,
+            mpl::identity<Shape<nDim,Vectorial,is_transposed,is_diagonalized> >,
+            typename mpl::if_<mpl::bool_<Left::is_tensor2>,
+            mpl::identity<Shape<nDim,Tensor2,is_transposed,is_diagonalized> >,
+            mpl::identity<Shape<nDim,Tensor3,is_transposed,is_diagonalized> >
+            >::type >::type >::type::type type;
 
     static const int op = 0;
 
     template<bool left_is_zero, bool right_is_zero>
     struct is_zero
     {
-        static const bool value = (left_is_zero && right_is_zero);
+        static const bool value = ( left_is_zero && right_is_zero );
         static const bool update_and_eval_left = !left_is_zero;
         static const bool update_and_eval_right = !right_is_zero;
     };
@@ -290,39 +290,39 @@ struct shape_op_id
     static const bool is_transposed = Left::is_transposed && Right::is_transposed;
 
     typedef typename mpl::if_<mpl::bool_<Left::is_scalar>,
-                              mpl::identity<Shape<nDim,Scalar,is_transposed,is_diagonalized> >,
-                              typename mpl::if_<mpl::bool_<Left::is_vectorial>,
-                                                mpl::identity<Shape<nDim,Vectorial,is_transposed,is_diagonalized> >,
-                                                typename mpl::if_<mpl::bool_<Left::is_tensor2>,
-                                                                  mpl::identity<Shape<nDim,Tensor2,is_transposed,is_diagonalized> >,
-                                                                  mpl::identity<Shape<nDim,Tensor3,is_transposed,is_diagonalized> >
-                                                                  >::type >::type >::type::type type;
+            mpl::identity<Shape<nDim,Scalar,is_transposed,is_diagonalized> >,
+            typename mpl::if_<mpl::bool_<Left::is_vectorial>,
+            mpl::identity<Shape<nDim,Vectorial,is_transposed,is_diagonalized> >,
+            typename mpl::if_<mpl::bool_<Left::is_tensor2>,
+            mpl::identity<Shape<nDim,Tensor2,is_transposed,is_diagonalized> >,
+            mpl::identity<Shape<nDim,Tensor3,is_transposed,is_diagonalized> >
+            >::type >::type >::type::type type;
 
     static const int op = 0;
 
     template<bool left_is_zero, bool right_is_zero>
     struct is_zero
     {
-        static const bool value = (left_is_zero||right_is_zero);
+        static const bool value = ( left_is_zero||right_is_zero );
         static const bool update_and_eval_left = !value;
         static const bool update_and_eval_right = !value;
     };
 };
 
-struct INVALID_MULTIPLICATION{};
+struct INVALID_MULTIPLICATION {};
 template<int D, uint16_type M, uint16_type N>
 struct mn_to_shape
 {
     typedef typename mpl::if_<mpl::greater<mpl::int_<M>,
-                                           mpl::int_<N> >,
-                              mpl::identity<Shape<D, Vectorial, false, false> >,
-                              typename mpl::if_<mpl::greater<mpl::int_<N>,
-                                                             mpl::int_<M> >,
-                                                mpl::identity<Shape<D, Vectorial, true, false> >,
-                                                typename mpl::if_<mpl::equal_to<mpl::int_<N>,
-                                                                                mpl::int_<1> >,
-                                                                  mpl::identity<Shape<D, Scalar, false,false> >,
-                                                                  mpl::identity<Shape<D, Tensor2, false,false> > >::type>::type>::type::type type;
+            mpl::int_<N> >,
+            mpl::identity<Shape<D, Vectorial, false, false> >,
+            typename mpl::if_<mpl::greater<mpl::int_<N>,
+            mpl::int_<M> >,
+            mpl::identity<Shape<D, Vectorial, true, false> >,
+            typename mpl::if_<mpl::equal_to<mpl::int_<N>,
+            mpl::int_<1> >,
+            mpl::identity<Shape<D, Scalar, false,false> >,
+            mpl::identity<Shape<D, Tensor2, false,false> > >::type>::type>::type::type type;
 
 
 };
@@ -332,26 +332,26 @@ struct shape_op_mul
 {
 
     typedef typename mpl::if_<mpl::bool_<Left::is_scalar>,
-                              mpl::identity<Right>,
-                              typename mpl::if_<mpl::bool_<Right::is_scalar>,
-                                                mpl::identity<Left>,
+            mpl::identity<Right>,
+            typename mpl::if_<mpl::bool_<Right::is_scalar>,
+            mpl::identity<Left>,
 
-                                                // check that Left::N == Right::M
-                                                typename mpl::if_<mpl::equal_to<mpl::int_<Left::N>,
-                                                                                mpl::int_<Right::M> >,
-                                                                  mpl::identity<typename mn_to_shape<Left::nDim,
-                                                                                                     Left::M,
-                                                                                                     Right::N >::type >,
-                                                                  mpl::identity<typename shape_op_id<Left, Right>::type> >::type >::type>::type::type type;
+            // check that Left::N == Right::M
+            typename mpl::if_<mpl::equal_to<mpl::int_<Left::N>,
+            mpl::int_<Right::M> >,
+            mpl::identity<typename mn_to_shape<Left::nDim,
+            Left::M,
+            Right::N >::type >,
+            mpl::identity<typename shape_op_id<Left, Right>::type> >::type >::type>::type::type type;
 
     static const int op = mpl::if_<mpl::or_<mpl::bool_<Left::is_scalar>,
-                                            mpl::bool_<Right::is_scalar> >,
-                                   mpl::int_<0>,
-                                   mpl::int_<1> >::type::value;
+                     mpl::bool_<Right::is_scalar> >,
+                     mpl::int_<0>,
+                     mpl::int_<1> >::type::value;
     template<bool left_is_zero, bool right_is_zero>
     struct is_zero
     {
-        static const bool value = (left_is_zero||right_is_zero);
+        static const bool value = ( left_is_zero||right_is_zero );
         static const bool update_and_eval_left = !value;
         static const bool update_and_eval_right = !value;
     };
@@ -367,8 +367,8 @@ struct shape_op_div
                           ( Left, Right ) );
 
     typedef typename mpl::if_<mpl::bool_<Right::is_scalar>,
-                              mpl::identity<mpl::identity<Left> >,
-                              mpl::identity<shape_op_id<Left, Right> > >::type::type::type type;
+            mpl::identity<mpl::identity<Left> >,
+            mpl::identity<shape_op_id<Left, Right> > >::type::type::type type;
 
     static const int op = 0;
 

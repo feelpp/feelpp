@@ -59,16 +59,16 @@ inline
 Feel::po::options_description
 makeOptions()
 {
-    Feel::po::options_description stokesoptions("Stokes options");
+    Feel::po::options_description stokesoptions( "Stokes options" );
     stokesoptions.add_options()
-        ("penal", Feel::po::value<double>()->default_value( 0.5 ), "penalisation parameter")
-        ("f", Feel::po::value<double>()->default_value( 0 ), "forcing term")
-        ("mu", Feel::po::value<double>()->default_value( 1.0 ), "reaction coefficient component")
-        ("hsize", Feel::po::value<double>()->default_value( 0.1 ), "first h value to start convergence")
-        ("bctype", Feel::po::value<int>()->default_value( 0 ), "0 = strong Dirichlet, 1 = weak Dirichlet")
-        ("bccoeff", Feel::po::value<double>()->default_value( 100.0 ), "coeff for weak Dirichlet conditions")
-        ("export-matlab", "export matrix and vectors in matlab" )
-        ;
+    ( "penal", Feel::po::value<double>()->default_value( 0.5 ), "penalisation parameter" )
+    ( "f", Feel::po::value<double>()->default_value( 0 ), "forcing term" )
+    ( "mu", Feel::po::value<double>()->default_value( 1.0 ), "reaction coefficient component" )
+    ( "hsize", Feel::po::value<double>()->default_value( 0.1 ), "first h value to start convergence" )
+    ( "bctype", Feel::po::value<int>()->default_value( 0 ), "0 = strong Dirichlet, 1 = weak Dirichlet" )
+    ( "bccoeff", Feel::po::value<double>()->default_value( 100.0 ), "coeff for weak Dirichlet conditions" )
+    ( "export-matlab", "export matrix and vectors in matlab" )
+    ;
     return stokesoptions.add( Feel::feel_options() ) ;
 }
 
@@ -89,10 +89,10 @@ makeAbout()
                            "0.1",
                            "Stokes equation on simplices or simplex products",
                            Feel::AboutData::License_GPL,
-                           "Copyright (c) 2009-2010 Université de Grenoble 1 (Joseph Fourier)");
+                           "Copyright (c) 2009-2010 Université de Grenoble 1 (Joseph Fourier)" );
 
-    about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
-   return about;
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    return about;
 
 }
 
@@ -110,7 +110,7 @@ template<int Dim,
          template<uint16_type,uint16_type,uint16_type> class Entity>
 class Stokes
     :
-        public Application
+public Application
 {
     typedef Application super;
 public:
@@ -206,10 +206,10 @@ void
 Stokes<Dim, BasisU, BasisP, Entity>::run()
 {
     if ( this->vm().count( "help" ) )
-        {
-            std::cout << this->optionsDescription() << "\n";
-            return;
-        }
+    {
+        std::cout << this->optionsDescription() << "\n";
+        return;
+    }
 
     using namespace Feel::vf;
 
@@ -227,12 +227,12 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
      */
     mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
                                         _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
-                                        _desc=domain( _name= (boost::format( "%1%-%2%-%3%" ) % "hypercube" % Dim % 1).str() ,
-                                                      _shape="hypercube",
-                                                      _dim=Dim,
-                                                      _h=meshSize,
-                                                      _xmin=-1.,_xmax=1.,
-                                                      _ymin=-1.,_ymax=1. ) );
+                                        _desc=domain( _name= ( boost::format( "%1%-%2%-%3%" ) % "hypercube" % Dim % 1 ).str() ,
+                                                _shape="hypercube",
+                                                _dim=Dim,
+                                                _h=meshSize,
+                                                _xmin=-1.,_xmax=1.,
+                                                _ymin=-1.,_ymax=1. ) );
 
 
     /*
@@ -254,25 +254,26 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
 
     Log() << "Data Summary:\n";
     Log() << "   hsize = " << meshSize << "\n";
-    Log() << "  export = " << this->vm().count("export") << "\n";
+    Log() << "  export = " << this->vm().count( "export" ) << "\n";
     Log() << "      mu = " << mu << "\n";
     Log() << " bccoeff = " << penalbc << "\n";
 
-    Log() << "[stokes] space and functions construction "<<t.elapsed()<<" seconds \n"; t.restart() ;
+    Log() << "[stokes] space and functions construction "<<t.elapsed()<<" seconds \n";
+    t.restart() ;
 
     vector_ptrtype F( M_backend->newVector( Xh ) );
 
     //# marker5 #
-    auto deft = gradt(u);
-    auto def = grad(v);
+    auto deft = gradt( u );
+    auto def = grad( v );
     //# endmarker5 #
 
     //# marker6 #
     // total stress tensor (trial)
-    auto SigmaNt = -idt(p)*N()+mu*deft*N();
+    auto SigmaNt = -idt( p )*N()+mu*deft*N();
 
     // total stress tensor (test)
-    auto SigmaN = -id(p)*N()+mu*def*N();
+    auto SigmaN = -id( p )*N()+mu*def*N();
     //# endmarker6 #
 
     // u exact solution
@@ -282,34 +283,38 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     //duxdy = -exp(x)*(-y*sin(y)+2*cos(y))
     //duydx = exp(x)*y*sin(y)
     //duydy = exp(x)*(sin(y)+y*cos(y))
-    auto u1 = val(-exp(Px())*(Py()*cos(Py())+sin(Py())));
-    auto u2 = val(exp(Px())*Py()*sin(Py()));
-    auto u_exact = vec(u1,u2);
+    auto u1 = val( -exp( Px() )*( Py()*cos( Py() )+sin( Py() ) ) );
+    auto u2 = val( exp( Px() )*Py()*sin( Py() ) );
+    auto u_exact = vec( u1,u2 );
 
-    auto du_dx = val(-exp(Px())*(Py()*cos(Py())+sin(Py())));
-    auto du_dy = val(exp(Px())*(-Py()*sin(Py())+2.*cos(Py())));
-    auto dv_dx = val(exp(Px())*Py()*sin(Py()));
-    auto dv_dy = val(exp(Px())*(sin(Py())+Py()*cos(Py())));
-    auto grad_exact = (mat<2,2>(du_dx, du_dy, dv_dx, dv_dy));
+    auto du_dx = val( -exp( Px() )*( Py()*cos( Py() )+sin( Py() ) ) );
+    auto du_dy = val( exp( Px() )*( -Py()*sin( Py() )+2.*cos( Py() ) ) );
+    auto dv_dx = val( exp( Px() )*Py()*sin( Py() ) );
+    auto dv_dy = val( exp( Px() )*( sin( Py() )+Py()*cos( Py() ) ) );
+    auto grad_exact = ( mat<2,2>( du_dx, du_dy, dv_dx, dv_dy ) );
 
     // this is the exact solution which has zero mean : the mean of
     // cos(x)*sin(y) is sin(1)*(1-cos(1))) on [0,1]^2
     //auto p_exact = cos(Px())*sin(Py())-(sin(1.0)*(1.-cos(1.0)));
-    auto p_exact = 2.0*exp(Px())*sin(Py());
+    auto p_exact = 2.0*exp( Px() )*sin( Py() );
 
     // f is such that f = \Delta u_exact + \nabla p_exact
     //auto f = vec( (2*cos(Px())*cos(Py())-sin(Px())*sin(Py())),
     //              2*sin(Px())*sin(Py())+cos(Px())*cos(Py()) );
-    auto f = vec(0.*Px(),0.*Py()) ;
+    auto f = vec( 0.*Px(),0.*Py() ) ;
     boost::timer t_vector;
     // right hand side
     form1( Xh, F, _init=true );
-    Log() << "[stokes] init vector done in "<<t_vector.elapsed()<<" seconds \n"; t_vector.restart() ;
-    form1( Xh, F ) = integrate( elements(mesh), trans(f)*id(v) );
-    Log() << "[stokes] v terms done in "<<t_vector.elapsed()<<" seconds \n"; t_vector.restart() ;
-    form1( Xh, F ) += integrate( boundaryfaces(mesh), trans(u_exact)*(-SigmaN+penalbc*id(v)/hFace() ) );
-    Log() << "[stokes] bc terms done in "<<t_vector.elapsed()<<" seconds \n"; t_vector.restart() ;
-    Log() << "[stokes] vector local assembly done in "<<t.elapsed()<<" seconds \n"; t.restart() ;
+    Log() << "[stokes] init vector done in "<<t_vector.elapsed()<<" seconds \n";
+    t_vector.restart() ;
+    form1( Xh, F ) = integrate( elements( mesh ), trans( f )*id( v ) );
+    Log() << "[stokes] v terms done in "<<t_vector.elapsed()<<" seconds \n";
+    t_vector.restart() ;
+    form1( Xh, F ) += integrate( boundaryfaces( mesh ), trans( u_exact )*( -SigmaN+penalbc*id( v )/hFace() ) );
+    Log() << "[stokes] bc terms done in "<<t_vector.elapsed()<<" seconds \n";
+    t_vector.restart() ;
+    Log() << "[stokes] vector local assembly done in "<<t.elapsed()<<" seconds \n";
+    t.restart() ;
     boost::timer t_matrix;
     /*
      * Construction of the left hand side
@@ -319,25 +324,32 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
 
     //form2( Xh, Xh, D, _init=true )=integrate( elements(mesh), mu*trace(deft*trans(def)) );
     form2( Xh, Xh, D, _init=true );
-    Log() << "[stokes] init matrix done in "<<t_matrix.elapsed()<<" seconds \n"; t_matrix.restart() ;
+    Log() << "[stokes] init matrix done in "<<t_matrix.elapsed()<<" seconds \n";
+    t_matrix.restart() ;
 
-    form2( Xh, Xh, D )=integrate( elements(mesh), mu*(trans(dxt(u))*dx(v)+trans(dyt(u))*dy(v)) ) ;
-    Log() << "[stokes] v-v terms done in "<<t_matrix.elapsed()<<" seconds \n"; t_matrix.restart() ;
-    form2( Xh, Xh, D )+=integrate( elements(mesh), - div(v)*idt(p) + divt(u)*id(q) );
-    Log() << "[stokes] div v-p terms done in "<<t_matrix.elapsed()<<" seconds \n"; t_matrix.restart() ;
-    form2( Xh, Xh, D )+=integrate( elements(mesh), id(q)*idt(lambda) + idt(p)*id(nu) );
-    Log() << "[stokes] p-l terms done in "<<t_matrix.elapsed()<<" seconds \n"; t_matrix.restart() ;
-    form2( Xh, Xh, D )+=integrate( boundaryfaces(mesh),
-                                   -trans(SigmaNt)*id(v)
-                                   -trans(SigmaN)*idt(u)
-                                   +penalbc*trans(idt(u))*id(v)/hFace() );
-    Log() << "[stokes] weak bc terms done in "<<t_matrix.elapsed()<<" seconds \n"; t_matrix.restart() ;
+    form2( Xh, Xh, D )=integrate( elements( mesh ), mu*( trans( dxt( u ) )*dx( v )+trans( dyt( u ) )*dy( v ) ) ) ;
+    Log() << "[stokes] v-v terms done in "<<t_matrix.elapsed()<<" seconds \n";
+    t_matrix.restart() ;
+    form2( Xh, Xh, D )+=integrate( elements( mesh ), - div( v )*idt( p ) + divt( u )*id( q ) );
+    Log() << "[stokes] div v-p terms done in "<<t_matrix.elapsed()<<" seconds \n";
+    t_matrix.restart() ;
+    form2( Xh, Xh, D )+=integrate( elements( mesh ), id( q )*idt( lambda ) + idt( p )*id( nu ) );
+    Log() << "[stokes] p-l terms done in "<<t_matrix.elapsed()<<" seconds \n";
+    t_matrix.restart() ;
+    form2( Xh, Xh, D )+=integrate( boundaryfaces( mesh ),
+                                   -trans( SigmaNt )*id( v )
+                                   -trans( SigmaN )*idt( u )
+                                   +penalbc*trans( idt( u ) )*id( v )/hFace() );
+    Log() << "[stokes] weak bc terms done in "<<t_matrix.elapsed()<<" seconds \n";
+    t_matrix.restart() ;
 
     //# endmarker7 #
-    Log() << "[stokes] matrix local assembly done in "<<t.elapsed()<<" seconds \n"; t.restart() ;
+    Log() << "[stokes] matrix local assembly done in "<<t.elapsed()<<" seconds \n";
+    t.restart() ;
     D->close();
     F->close();
-    Log() << "[stokes] vector/matrix global assembly done in "<<t.elapsed()<<" seconds \n"; t.restart() ;
+    Log() << "[stokes] vector/matrix global assembly done in "<<t.elapsed()<<" seconds \n";
+    t.restart() ;
 
 
     if ( this->vm().count ( "export-matlab" ) )
@@ -352,40 +364,42 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
 
     size_type nnz = 0 ;
     std::vector<size_type> const& nNz = D->graph()->nNz() ;
-    for(auto iter = nNz.begin();iter!=nNz.end();++iter)
-      nnz += (*iter) ;
+
+    for ( auto iter = nNz.begin(); iter!=nNz.end(); ++iter )
+        nnz += ( *iter ) ;
+
     Log() << "[stokes] matrix NNZ "<< nnz << "\n";
 
-    Log() << "value of the Lagrange multiplier lambda= " << lambda(0) << "\n";
-    std::cout << "value of the Lagrange multiplier lambda= " << lambda(0) << "\n";
+    Log() << "value of the Lagrange multiplier lambda= " << lambda( 0 ) << "\n";
+    std::cout << "value of the Lagrange multiplier lambda= " << lambda( 0 ) << "\n";
 
-    double u_errorL2 = integrate( elements(mesh), trans(idv(u)-u_exact)*(idv(u)-u_exact) ).evaluate()( 0, 0 );
+    double u_errorL2 = integrate( elements( mesh ), trans( idv( u )-u_exact )*( idv( u )-u_exact ) ).evaluate()( 0, 0 );
     std::cout << "||u_error||_2 = " << math::sqrt( u_errorL2 ) << "\n";;
     Log() << "||u_error||_2 = " << math::sqrt( u_errorL2 ) << "\n";;
 
-    double u_errorSH1 = integrate( elements(mesh), trans(gradv(u)-grad_exact)*(gradv(u)-grad_exact) ).evaluate()( 0, 0 );
+    double u_errorSH1 = integrate( elements( mesh ), trans( gradv( u )-grad_exact )*( gradv( u )-grad_exact ) ).evaluate()( 0, 0 );
     std::cout << "||u_error||_H1 = " << math::sqrt( u_errorL2 + u_errorSH1 ) << "\n";;
     Log() << "||u_error||_H1 = " << math::sqrt( u_errorL2 + u_errorSH1 ) << "\n";;
 
-    double p_errorL2 = integrate( elements(mesh), (idv(p)-p_exact)*(idv(p)-p_exact) ).evaluate()( 0, 0 );
+    double p_errorL2 = integrate( elements( mesh ), ( idv( p )-p_exact )*( idv( p )-p_exact ) ).evaluate()( 0, 0 );
     std::cout << "||p_error||_2 = " << math::sqrt( p_errorL2 ) << "\n";;
     Log() << "||p_error||_2 = " << math::sqrt( p_errorL2 ) << "\n";;
 
     Log() << "[stokes] solve for D done\n";
 
-    double meas = integrate( elements(mesh), constant(1.0) ).evaluate()( 0, 0);
+    double meas = integrate( elements( mesh ), constant( 1.0 ) ).evaluate()( 0, 0 );
     Log() << "[stokes] measure(Omega)=" << meas << " (should be equal to 1)\n";
     std::cout << "[stokes] measure(Omega)=" << meas << " (should be equal to 1)\n";
 
-    double mean_p = integrate( elements(mesh), idv(p) ).evaluate()( 0, 0 )/meas;
+    double mean_p = integrate( elements( mesh ), idv( p ) ).evaluate()( 0, 0 )/meas;
     Log() << "[stokes] mean(p)=" << mean_p << "\n";
     std::cout << "[stokes] mean(p)=" << mean_p << "\n";
 
-    double mean_div_u = integrate( elements(mesh), divv(u) ).evaluate()( 0, 0 );
+    double mean_div_u = integrate( elements( mesh ), divv( u ) ).evaluate()( 0, 0 );
     Log() << "[stokes] mean_div(u)=" << mean_div_u << "\n";
     std::cout << "[stokes] mean_div(u)=" << mean_div_u << "\n";
 
-    double div_u_error_L2 = integrate( elements(mesh), divv(u)*divv(u) ).evaluate()( 0, 0 );
+    double div_u_error_L2 = integrate( elements( mesh ), divv( u )*divv( u ) ).evaluate()( 0, 0 );
     Log() << "[stokes] ||div(u)||_2=" << math::sqrt( div_u_error_L2 ) << "\n";
     std::cout << "[stokes] ||div(u)||=" << math::sqrt( div_u_error_L2 ) << "\n";
 
@@ -405,9 +419,9 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
 template<int Dim, typename BasisU, typename BasisP, template<uint16_type,uint16_type,uint16_type> class Entity>
 void
 Stokes<Dim, BasisU, BasisP, Entity>::solve( sparse_matrix_ptrtype const& D,
-                                   element_type& u,
-                                   vector_ptrtype const& F,
-                                   bool is_sym )
+        element_type& u,
+        vector_ptrtype const& F,
+        bool is_sym )
 {
     vector_ptrtype U( M_backend->newVector( u.functionSpace() ) );
     M_backend->solve( D, D, U, F, false );
@@ -436,7 +450,7 @@ main( int argc, char** argv )
 
     using namespace Feel;
     /* assertions handling */
-    Feel::Assert::setLog( "stokes.assert");
+    Feel::Assert::setLog( "stokes.assert" );
 
     const int nDim = 2;
     //typedef Feel::Stokes<nDim, Lagrange<2, Vectorial>,Lagrange<1, Scalar>, Simplex> stokes_type;

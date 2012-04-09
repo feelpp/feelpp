@@ -53,9 +53,9 @@ makeAbout()
                            "0.1",
                            "2D OPUS/EADS Benchmark (eigenvalue problems)",
                            Feel::AboutData::License_GPL,
-                           "Copyright (c) 2008-2009 Université de Grenoble 1 (Joseph Fourier)");
+                           "Copyright (c) 2008-2009 Université de Grenoble 1 (Joseph Fourier)" );
 
-    about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
     return about;
 
 }
@@ -83,11 +83,13 @@ public:
         super( argc, argv, ad, od )
     {
         if ( this->vm().count( "help" ) )
-            {
-                std::cout << this->optionsDescription() << "\n";
-                return;
-            }
+        {
+            std::cout << this->optionsDescription() << "\n";
+            return;
+        }
+
 #if 0
+
         if ( this->vm()["steady"].as<bool>() )
             this->changeRepository( boost::format( "%1%/P%2%P%3%P%4%/D_%5%/h_%6%/stab_%7%/steady" )
                                     % this->about().appName()
@@ -95,7 +97,8 @@ public:
                                     % this->vm()["fluid-flow-rate"].as<double>()
                                     % this->vm()["hsize"].as<double>()
                                     % this->vm()["stab"].as<bool>()
-                                    );
+                                  );
+
         else
             this->changeRepository( boost::format( "%1%/P%2%P%3%P%4%/D_%5%/h_%6%/stab_%7%/to_%8%_dt_%9%" )
                                     % this->about().appName()
@@ -105,77 +108,83 @@ public:
                                     % this->vm()["stab"].as<bool>()
                                     % this->vm()["bdf.time-order"].as<int>()
                                     % this->vm()["bdf.time-step"].as<double>()
-                                    );
+                                  );
+
 #endif
         M_opusmodel = opusmodel_ptrtype( new opusmodel_type( this->vm() ) );
-        Parameter h(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="2e-4:10:1e-3" );
+        Parameter h( _name="h",_type=CONT_ATTR,_cmdName="hsize",_values="2e-4:10:1e-3" );
         this->
-            addParameter( Parameter(_name="order",_type=DISC_ATTR,_latex="N_T",_values=boost::lexical_cast<std::string>( 2 ).c_str() ) )
-            .addParameter( Parameter(_name="kic",_type=CONT_ATTR,_latex="k_{\\mathrm{IC}}",_values="0.2:10:150") )
-            .addParameter( Parameter(_name="D",_type=CONT_ATTR,_latex="D",_values="1e-4:10:1e-3") )
-            .addParameter( h );
+        addParameter( Parameter( _name="order",_type=DISC_ATTR,_latex="N_T",_values=boost::lexical_cast<std::string>( 2 ).c_str() ) )
+        .addParameter( Parameter( _name="kic",_type=CONT_ATTR,_latex="k_{\\mathrm{IC}}",_values="0.2:10:150" ) )
+        .addParameter( Parameter( _name="D",_type=CONT_ATTR,_latex="D",_values="1e-4:10:1e-3" ) )
+        .addParameter( h );
 
         Log() << "parameter added\n";
         this->
-            addOutput( Output(_name="eigmin",_latex="\\alpha^{\\mathcal{N}}(\\mu)" ) )
-            .addOutput( Output(_name="eigmax",_latex="\\gamma^{\\mathcal{N}}(\\mu)" ) );
+        addOutput( Output( _name="eigmin",_latex="\\alpha^{\\mathcal{N}}(\\mu)" ) )
+        .addOutput( Output( _name="eigmax",_latex="\\gamma^{\\mathcal{N}}(\\mu)" ) );
         Log() << "output added\n";
 
     }
 
     void run()
+    {
+        std::cout << "start run()\n";
+        std::cout << "hsize=" << this->vm()["hsize"].as<double>() << std::endl;
+#if 0
+        //std::cout << "D=" << this->vm()["fluid-flow-rate"]. as<double>() << std::endl;
+        //std::cout << "kic=" << this->vm()["kic"].as<double>() << std::endl;
+        this->addParameterValue( 2 )
+        .addParameterValue( this->vm()["hsize"]. as<double>() )
+        .addParameterValue( this->vm()["fluid-flow-rate"]. as<double>() )
+        .addParameterValue( this->vm()["kic"]. as<double>() );
+        std::cout << "parameter defined\n";
+        RunStatus ierr = this->preProcessing();
+
+        if ( ierr == RUN_EXIT )
+            return;
+
+#endif
+        double eigmin, eigmax;
+        std::map<double, boost::tuple<double,double,double,int,double,double> > res = M_opusmodel->run();
+
+        boost::tie( boost::tuples::ignore, eigmin, eigmax, boost::tuples::ignore, boost::tuples::ignore, boost::tuples::ignore ) = res.begin()->second;
+
+#if 0
+        this->addOutputValue( eigmin ).addOutputValue( eigmax );
+        this->postProcessing();
+#endif
+
+        std::map<double, boost::tuple<double,double,double,int,double,double> > res2 = M_opusmodel->runq();
+
+        std::map<double, boost::tuple<double,double,double,int,double,double> >::iterator it = res.begin();
+        std::map<double, boost::tuple<double,double,double,int,double,double> >::iterator end = res.end();
+
+        for ( ; it != end; ++it )
         {
-            std::cout << "start run()\n";
-            std::cout << "hsize=" << this->vm()["hsize"].as<double>() << std::endl;
-#if 0
-            //std::cout << "D=" << this->vm()["fluid-flow-rate"]. as<double>() << std::endl;
-            //std::cout << "kic=" << this->vm()["kic"].as<double>() << std::endl;
-            this->addParameterValue( 2 )
-                .addParameterValue( this->vm()["hsize"]. as<double>() )
-                .addParameterValue( this->vm()["fluid-flow-rate"]. as<double>() )
-                .addParameterValue( this->vm()["kic"]. as<double>() );
-            std::cout << "parameter defined\n";
-            RunStatus ierr = this->preProcessing();
-            if ( ierr == RUN_EXIT )
-                return;
-#endif
-            double eigmin, eigmax;
-            std::map<double, boost::tuple<double,double,double,int,double,double> > res = M_opusmodel->run();
-
-            boost::tie( boost::tuples::ignore, eigmin, eigmax, boost::tuples::ignore, boost::tuples::ignore, boost::tuples::ignore ) = res.begin()->second;
-
-#if 0
-            this->addOutputValue( eigmin ).addOutputValue( eigmax );
-            this->postProcessing();
-#endif
-
-            std::map<double, boost::tuple<double,double,double,int,double,double> > res2 = M_opusmodel->runq();
-
-            std::map<double, boost::tuple<double,double,double,int,double,double> >::iterator it = res.begin();
-            std::map<double, boost::tuple<double,double,double,int,double,double> >::iterator end = res.end();
-            for( ; it != end; ++it )
-            {
-                std::cout <<"| " << std::setprecision(4) << it->second.get<0>()
-                          << " | " << std::setprecision(16) << it->second.get<01>()
-                          << " | " << it->second.get<4>()
-                          << " | " << it->second.get<2>()
-                          << " | " << it->second.get<5>()
-                          << " | " << it->second.get<3>()
-                          << " |\n";
-            }
-            std::map<double, boost::tuple<double,double,double,int,double,double> >::iterator it2 = res2.begin();
-            std::map<double, boost::tuple<double,double,double,int,double,double> >::iterator end2 = res2.end();
-            for( ; it2 != end2; ++it2 )
-            {
-                std::cout <<"| " << std::setprecision(4) << it2->second.get<0>()
-                          << " | " << std::setprecision(16) << it2->second.get<01>()
-                          << " | " << it2->second.get<4>()
-                          << " | " << it2->second.get<2>()
-                          << " | " << it2->second.get<5>()
-                          << " | " << it2->second.get<3>()
-                          << " |\n";
-            }
+            std::cout <<"| " << std::setprecision( 4 ) << it->second.get<0>()
+                      << " | " << std::setprecision( 16 ) << it->second.get<01>()
+                      << " | " << it->second.get<4>()
+                      << " | " << it->second.get<2>()
+                      << " | " << it->second.get<5>()
+                      << " | " << it->second.get<3>()
+                      << " |\n";
         }
+
+        std::map<double, boost::tuple<double,double,double,int,double,double> >::iterator it2 = res2.begin();
+        std::map<double, boost::tuple<double,double,double,int,double,double> >::iterator end2 = res2.end();
+
+        for ( ; it2 != end2; ++it2 )
+        {
+            std::cout <<"| " << std::setprecision( 4 ) << it2->second.get<0>()
+                      << " | " << std::setprecision( 16 ) << it2->second.get<01>()
+                      << " | " << it2->second.get<4>()
+                      << " | " << it2->second.get<2>()
+                      << " | " << it2->second.get<5>()
+                      << " | " << it2->second.get<3>()
+                      << " |\n";
+        }
+    }
 
 private:
 
@@ -192,9 +201,9 @@ main( int argc, char** argv )
     Feel::OpusAppEigs app( argc, argv,
                            Feel::makeAboutHeat1D(),
                            Feel::makeOptions() );
-                           //Feel::OpusData::makeOptions()
-                           //.add( Feel::opusModelOptions() )
-                           //.add( Feel::solvereigen_options() ) );
+    //Feel::OpusData::makeOptions()
+    //.add( Feel::opusModelOptions() )
+    //.add( Feel::solvereigen_options() ) );
 
     app.run();
 }

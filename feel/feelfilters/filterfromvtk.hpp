@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -63,8 +63,8 @@ namespace Feel
 template<typename MeshType>
 class FilterFromVtk
     :
-        public VisitorBase,
-        public Visitor<MeshType>
+public VisitorBase,
+public Visitor<MeshType>
 {
 
 public:
@@ -84,8 +84,8 @@ public:
 #if defined(FEELPP_HAS_VTK)
 
     typedef typename mpl::if_<mpl::equal_to<mpl::int_<MeshType::nDim>,mpl::int_<2> >,
-                              mpl::identity<vtkPolyData>,
-                              mpl::identity<vtkUnstructuredGrid> >::type::type vtkmesh_type;
+            mpl::identity<vtkPolyData>,
+            mpl::identity<vtkUnstructuredGrid> >::type::type vtkmesh_type;
 
 
 #endif /* FEELPP_HAS_VTK */
@@ -96,10 +96,10 @@ public:
     //@{
 
 #if defined(FEELPP_HAS_VTK)
-    FilterFromVtk( vtkmesh_type* __vtkmesh)
+    FilterFromVtk( vtkmesh_type* __vtkmesh )
     {
         _M_vtkmesh = vtkmesh_type::New();
-        _M_vtkmesh->CopyStructure(__vtkmesh);
+        _M_vtkmesh->CopyStructure( __vtkmesh );
     }
 #else
     FilterFromVtk()
@@ -114,7 +114,10 @@ public:
     }
 
 #if defined(FEELPP_HAS_VTK)
-    vtkmesh_type* getVtkMesh() {return _M_vtkmesh;}
+    vtkmesh_type* getVtkMesh()
+    {
+        return _M_vtkmesh;
+    }
 #endif /* FEELPP_HAS_VTK */
 
     //@}
@@ -154,8 +157,8 @@ private:
 template<typename MeshType>
 class FilterFromVtk3D
     :
-        public VisitorBase,
-        public Visitor<MeshType>
+public VisitorBase,
+public Visitor<MeshType>
 {
 
 public:
@@ -174,8 +177,8 @@ public:
     typedef typename mesh_type::element_type element_type;
 #if defined(FEELPP_HAS_VTK)
     typedef typename mpl::if_<mpl::equal_to<mpl::int_<MeshType::nDim>,mpl::int_<2> >,
-                              mpl::identity<vtkPolyData>,
-                              mpl::identity<vtkUnstructuredGrid> >::type::type vtkmesh_type;
+            mpl::identity<vtkPolyData>,
+            mpl::identity<vtkUnstructuredGrid> >::type::type vtkmesh_type;
 
 #endif /* FEELPP_HAS_VTK */
     //@}
@@ -185,10 +188,10 @@ public:
     //@{
 
 #if defined(FEELPP_HAS_VTK)
-    FilterFromVtk3D( vtkmesh_type* __vtkmesh)
+    FilterFromVtk3D( vtkmesh_type* __vtkmesh )
     {
         _M_vtkmesh = vtkmesh_type::New();
-        _M_vtkmesh->CopyStructure(__vtkmesh);
+        _M_vtkmesh->CopyStructure( __vtkmesh );
     }
 #else
     FilterFromVtk3D()
@@ -203,7 +206,10 @@ public:
     }
 
 #if defined(FEELPP_HAS_VTK)
-    vtkmesh_type* getVtkMesh() {return _M_vtkmesh;}
+    vtkmesh_type* getVtkMesh()
+    {
+        return _M_vtkmesh;
+    }
 #endif /* FEELPP_HAS_VTK */
 
     //@}
@@ -228,7 +234,7 @@ protected :
 
 private:
 
-//void visit( mesh_type* mesh, mpl::int_<2> );
+    //void visit( mesh_type* mesh, mpl::int_<2> );
     void visit( mesh_type* mesh, mpl::int_<3> );
 };
 
@@ -252,23 +258,26 @@ FilterFromVtk<MeshType>::visit( mesh_type* mesh, mpl::int_<2> )
 
     // add the points to the mesh
 
-    for( uint __i = 0; __i < __n;++__i )
+    for ( uint __i = 0; __i < __n; ++__i )
     {
         node_type __nd( 2 );
-        __nd[0] = _vtkMesh->GetPoint(__i)[0];
-        __nd[1] = _vtkMesh->GetPoint(__i)[1];
+        __nd[0] = _vtkMesh->GetPoint( __i )[0];
+        __nd[1] = _vtkMesh->GetPoint( __i )[1];
         point_type __pt( __i,__nd, false );
         __pt.marker() = 0;
-        if(__nd[0] == -1 || __nd[1] == -1 || __nd[0] + __nd[1] == 0)
+
+        if ( __nd[0] == -1 || __nd[1] == -1 || __nd[0] + __nd[1] == 0 )
 
         {
             __pt.setOnBoundary( true );
 
         }
+
         else
         {
             __pt.setOnBoundary( false );
         }
+
         mesh->addPoint( __pt );
     }
 
@@ -315,9 +324,9 @@ FilterFromVtk<MeshType>::visit( mesh_type* mesh, mpl::int_<2> )
 
     // add the elements to the mesh
 
-    for( uint __i = 0; __i < __nele;++__i )
+    for ( uint __i = 0; __i < __nele; ++__i )
     {
-        Debug(8099) << "[FilterFromVtk] element " << __i << "\n";
+        Debug( 8099 ) << "[FilterFromVtk] element " << __i << "\n";
         // Here we only have triangular elements of order 1
 
         element_type * pf = new element_type;
@@ -327,12 +336,12 @@ FilterFromVtk<MeshType>::visit( mesh_type* mesh, mpl::int_<2> )
 
         // Warning : Vtk orientation is not the same as Feel orientation !
 
-        pf->setPoint( 0, mesh->point( _vtkMesh->GetCell(__i)->GetPointId(0) ) );
-        pf->setPoint( 1, mesh->point( _vtkMesh->GetCell(__i)->GetPointId(1) ) );
-        pf->setPoint( 2, mesh->point( _vtkMesh->GetCell(__i)->GetPointId(2) ) );
-        Debug(8099) << "[FilterFromVtk] point 0 " << pf->point( 0 ).node() << " global id: " << pf->point( 0 ).id() << "\n"
-                    << "[FilterFromVtk] point 1 " << pf->point( 1 ).node() << " global id: " << pf->point( 1 ).id() << "\n"
-                    << "[FilterFromVtk] point 2 " << pf->point( 2 ).node() << " global id: " << pf->point( 2 ).id() << "\n";
+        pf->setPoint( 0, mesh->point( _vtkMesh->GetCell( __i )->GetPointId( 0 ) ) );
+        pf->setPoint( 1, mesh->point( _vtkMesh->GetCell( __i )->GetPointId( 1 ) ) );
+        pf->setPoint( 2, mesh->point( _vtkMesh->GetCell( __i )->GetPointId( 2 ) ) );
+        Debug( 8099 ) << "[FilterFromVtk] point 0 " << pf->point( 0 ).node() << " global id: " << pf->point( 0 ).id() << "\n"
+                      << "[FilterFromVtk] point 1 " << pf->point( 1 ).node() << " global id: " << pf->point( 1 ).id() << "\n"
+                      << "[FilterFromVtk] point 2 " << pf->point( 2 ).node() << " global id: " << pf->point( 2 ).id() << "\n";
         mesh->addElement( *pf );
         delete pf;
     }
@@ -375,25 +384,27 @@ FilterFromVtk3D<MeshType>::visit( mesh_type* mesh, mpl::int_<3> )
 
     // add the points to the mesh
 
-    for( uint __i = 0; __i < __n;++__i )
+    for ( uint __i = 0; __i < __n; ++__i )
     {
         node_type __nd( 3 );
-        __nd[0] = _vtkMesh->GetPoint(__i)[0];
-        __nd[1] = _vtkMesh->GetPoint(__i)[1];
-        __nd[2] = _vtkMesh->GetPoint(__i)[2];
+        __nd[0] = _vtkMesh->GetPoint( __i )[0];
+        __nd[1] = _vtkMesh->GetPoint( __i )[1];
+        __nd[2] = _vtkMesh->GetPoint( __i )[2];
         point_type __pt( __i,__nd, false );
 
-        if(__nd[0] == -1 || __nd[1] == -1 || __nd[2] == -1 || __nd[0] + __nd[1] + __nd[2] == 0)
+        if ( __nd[0] == -1 || __nd[1] == -1 || __nd[2] == -1 || __nd[0] + __nd[1] + __nd[2] == 0 )
 
         {
             __pt.setOnBoundary( true );
             __pt.marker() = 0;
         }
+
         else
         {
             __pt.setOnBoundary( false );
             __pt.marker() = 1;
         }
+
         mesh->addPoint( __pt );
     }
 
@@ -459,7 +470,7 @@ FilterFromVtk3D<MeshType>::visit( mesh_type* mesh, mpl::int_<3> )
 
     // add the elements to the mesh
 
-    for( uint __i = 0; __i < __nele;++__i )
+    for ( uint __i = 0; __i < __nele; ++__i )
     {
         // Here we only have triangular elements of order 1
 
@@ -470,16 +481,16 @@ FilterFromVtk3D<MeshType>::visit( mesh_type* mesh, mpl::int_<3> )
 
         // Warning : Vtk orientation is not the same as Feel orientation !
 
-        pf->setPoint( 0, mesh->point( _vtkMesh->GetCell(__i)->GetPointId(0) ) );
-        pf->setPoint( 1, mesh->point( _vtkMesh->GetCell(__i)->GetPointId(2) ) );
-        pf->setPoint( 2, mesh->point( _vtkMesh->GetCell(__i)->GetPointId(1) ) );
-        pf->setPoint( 3, mesh->point( _vtkMesh->GetCell(__i)->GetPointId(3) ) );
+        pf->setPoint( 0, mesh->point( _vtkMesh->GetCell( __i )->GetPointId( 0 ) ) );
+        pf->setPoint( 1, mesh->point( _vtkMesh->GetCell( __i )->GetPointId( 2 ) ) );
+        pf->setPoint( 2, mesh->point( _vtkMesh->GetCell( __i )->GetPointId( 1 ) ) );
+        pf->setPoint( 3, mesh->point( _vtkMesh->GetCell( __i )->GetPointId( 3 ) ) );
 
         mesh->addElement( *pf );
         delete pf;
     }
 
-    
+
     FEELPP_ASSERT( n_faces == mesh->numFaces() )( n_faces )( mesh->numFaces() ).error( "invalid face container size" );
 
     Debug( 8099 ) <<"[FilterFromVtk] done with element accumulation !\n";

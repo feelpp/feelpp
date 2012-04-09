@@ -127,34 +127,34 @@ public:
     }
 
     sparse_matrix_ptrtype
-    newMatrix(const size_type m,
-              const size_type n,
-              const size_type m_l,
-              const size_type n_l,
-              const size_type nnz=30,
-              const size_type noz=10,
-              size_type matrix_properties = NON_HERMITIAN )
+    newMatrix( const size_type m,
+               const size_type n,
+               const size_type m_l,
+               const size_type n_l,
+               const size_type nnz=30,
+               const size_type noz=10,
+               size_type matrix_properties = NON_HERMITIAN )
     {
-        sparse_matrix_ptrtype mat( new gmm_sparse_matrix_type(m,n) );
+        sparse_matrix_ptrtype mat( new gmm_sparse_matrix_type( m,n ) );
         mat->setMatrixProperties( matrix_properties );
         return mat;
     }
 
     sparse_matrix_ptrtype
-    newMatrix(const size_type m,
-              const size_type n,
-              const size_type m_l,
-              const size_type n_l,
-              graph_ptrtype const & graph,
-              size_type matrix_properties = NON_HERMITIAN)
+    newMatrix( const size_type m,
+               const size_type n,
+               const size_type m_l,
+               const size_type n_l,
+               graph_ptrtype const & graph,
+               size_type matrix_properties = NON_HERMITIAN )
     {
-        sparse_matrix_ptrtype mat( new gmm_sparse_matrix_type(m,n) );
+        sparse_matrix_ptrtype mat( new gmm_sparse_matrix_type( m,n ) );
         mat->setMatrixProperties( matrix_properties );
         return mat;
     }
 
     sparse_matrix_ptrtype
-    newMatrix( DataMap const& d1, DataMap const& d2, size_type matrix_properties = NON_HERMITIAN, bool init = true)
+    newMatrix( DataMap const& d1, DataMap const& d2, size_type matrix_properties = NON_HERMITIAN, bool init = true )
     {
         auto A = sparse_matrix_ptrtype( new gmm_sparse_matrix_type( d1.nGlobalElements(), d2.nGlobalElements() ) );
         A->setMatrixProperties( matrix_properties );
@@ -206,15 +206,31 @@ public:
 
 
     // -- SETTING OF OPTIONS --
-    void set_noisy    ( int noisy )        { M_iter.set_noisy( noisy );     }
-    void set_maxiter  ( int maxiter )      { M_iter.set_maxiter( maxiter ); }
-    void set_fillin   ( int fillin )       { M_fillin    = fillin;          }
-    void set_threshold( double threshold ) { M_threshold = threshold;       }
-    void set_tol      ( double tol )       { M_iter.set_resmax( tol );      }
+    void set_noisy    ( int noisy )
+    {
+        M_iter.set_noisy( noisy );
+    }
+    void set_maxiter  ( int maxiter )
+    {
+        M_iter.set_maxiter( maxiter );
+    }
+    void set_fillin   ( int fillin )
+    {
+        M_fillin    = fillin;
+    }
+    void set_threshold( double threshold )
+    {
+        M_threshold = threshold;
+    }
+    void set_tol      ( double tol )
+    {
+        M_iter.set_resmax( tol );
+    }
 
     void set_symmetric( bool isSymmetric )
     {
         M_isSymmetric = isSymmetric;
+
         if ( isSymmetric )
         {
             M_ilut.reset( 0 );
@@ -226,15 +242,19 @@ public:
     {
 #if defined(GMM_USES_SUPERLU) || defined(FEELPP_HAS_UMFPACK)
         M_isDirect = isDirect;
+
         if ( isDirect )
         {
             M_solver_type = "umfpack";
             M_ilut.reset( 0 );
             M_ilutp.reset( 0 );
         }
+
 #else
+
         if ( isDirect )
             std::cerr << "[BackendGmm] direct solver is not available\n";
+
 #endif
     }
 
@@ -261,7 +281,7 @@ public:
         gmm_sparse_matrix_type const& _A = dynamic_cast<gmm_sparse_matrix_type const&>( A );
         gmm_vector_type const& _x = dynamic_cast<gmm_vector_type const&>( x );
         gmm_vector_type& _b = dynamic_cast<gmm_vector_type&>( b );
-        gmm::mult( _A.mat(), _x.vec(), _b.vec());
+        gmm::mult( _A.mat(), _x.vec(), _b.vec() );
     }
 
     solve_return_type solve( sparse_matrix_type const& A,
@@ -287,22 +307,30 @@ public:
     value_type dot( const gmm_vector_type& f,
                     const gmm_vector_type& x ) const
     {
-        value_type result(0);
+        value_type result( 0 );
         typename gmm_vector_type::const_iterator fi;
         typename gmm_vector_type::const_iterator xi;
-        for( fi=f.begin(), xi=x.begin();
-             ( fi!=f.end() ) && ( xi!=x.end() );
-             ++fi, ++xi )
-            {
-                result += (*xi) * (*fi);
-            }
+
+        for ( fi=f.begin(), xi=x.begin();
+                ( fi!=f.end() ) && ( xi!=x.end() );
+                ++fi, ++xi )
+        {
+            result += ( *xi ) * ( *fi );
+        }
+
         return result;
     }
 
     // -- GETTING DETAILS ABOUT SOLVING --
-    bool converged() { return M_iter.converged(); }
+    bool converged()
+    {
+        return M_iter.converged();
+    }
 
-    size_type get_iteration() { return M_iter.get_iteration(); }
+    size_type get_iteration()
+    {
+        return M_iter.get_iteration();
+    }
 
     boost::shared_ptr<MatrixTriplet<T> > toTriplet( sparse_matrix_type const& m );
 
@@ -340,7 +368,7 @@ private:
 
 
 po::options_description backendgmm_options( std::string const& prefix = "",
-                                            BackendGmmDefaults defaults = BackendGmmDefaults() );
+        BackendGmmDefaults defaults = BackendGmmDefaults() );
 
 } // Feel
 

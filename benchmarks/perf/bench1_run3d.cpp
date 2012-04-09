@@ -41,12 +41,12 @@ Bench1::run3d()
 
 
     aMesh = createGMSHMesh( _mesh=new mesh_type,
-                           _desc=domain( _name=(boost::format( "%1%-%2%" ) % shape % Dim).str() ,
-                                         _usenames=true,
-                                         _shape=shape,
-                                         _dim=Dim,
-                                         _h=meshSize ),
-                           _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES );
+                            _desc=domain( _name=( boost::format( "%1%-%2%" ) % shape % Dim ).str() ,
+                                          _usenames=true,
+                                          _shape=shape,
+                                          _dim=Dim,
+                                          _h=meshSize ),
+                            _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES );
 
     Log() << "run3d starts" << "\n";
     bench1<mesh_type, 1>( aMesh );

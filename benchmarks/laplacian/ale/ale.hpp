@@ -60,10 +60,10 @@ inline
 Feel::po::options_description
 makeOptions()
 {
-    Feel::po::options_description meshHighOrderoptions("TestALE options");
+    Feel::po::options_description meshHighOrderoptions( "TestALE options" );
     meshHighOrderoptions.add_options()
-        ("hsize", Feel::po::value<double>()->default_value( 2 ), "meshsize")
-        ;
+    ( "hsize", Feel::po::value<double>()->default_value( 2 ), "meshsize" )
+    ;
 
     return meshHighOrderoptions.add( Feel::feel_options() );
 }
@@ -77,9 +77,9 @@ makeAbout()
                            "0.2",
                            "Test High order meshes",
                            Feel::AboutData::License_GPL,
-                           "Copyright (c) 2007 Universite Joseph Fourier");
+                           "Copyright (c) 2007 Universite Joseph Fourier" );
 
-    about.addAuthor("Goncalo Pena", "developer", "gpena@mat.uc.pt", "");
+    about.addAuthor( "Goncalo Pena", "developer", "gpena@mat.uc.pt", "" );
     return about;
 }
 
@@ -89,7 +89,7 @@ namespace Feel
 template< int N >
 class TestALE
     :
-        public ApplicationXML
+public ApplicationXML
 {
     typedef ApplicationXML super;
 
@@ -145,22 +145,25 @@ public:
         meshSize = this->vm()["hsize"].template as<double>();
 
         Parameter h;
+
         if ( N < 4 )
-            h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.1:0.05:0.5" );
+            h=Parameter( _name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.1:0.05:0.5" );
+
         else
-            h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.5:0.5:1" );
-        this->addParameter( Parameter(_name="order",_type=DISC_ATTR,_values=boost::lexical_cast<std::string>( N  ).c_str() ) )
-            .addParameter( h );
+            h=Parameter( _name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.5:0.5:1" );
+
+        this->addParameter( Parameter( _name="order",_type=DISC_ATTR,_values=boost::lexical_cast<std::string>( N  ).c_str() ) )
+        .addParameter( h );
 
         std::vector<Parameter> depend;
         std::vector<std::string> funcs;
-        depend.push_back(h);
+        depend.push_back( h );
         std::ostringstream oss;
         oss << "h**" << boost::lexical_cast<std::string>( N + 1  ) ;
-        funcs.push_back(oss.str());
+        funcs.push_back( oss.str() );
 
         this->
-            addOutput( Output(_name="norm_L2",_latex="\\left\\| . \\right\\|_{L^2}",_dependencies=depend,_funcs=funcs) );
+        addOutput( Output( _name="norm_L2",_latex="\\left\\| . \\right\\|_{L^2}",_dependencies=depend,_funcs=funcs ) );
         std::cout << "do_export = " << exporter->doExport() << "\n";
     }
 
@@ -175,21 +178,21 @@ public:
     void exportResults( double tn, pN_element_type& U )
     {
         if ( exporter->doExport() )
-            {
+        {
 #if 1
-                functionspace_ptrtype Wh = functionspace_type::New( U.functionSpace()->mesh() );
+            functionspace_ptrtype Wh = functionspace_type::New( U.functionSpace()->mesh() );
 
-                OperatorLagrangeP1<functionspace_type> I( Wh, M_backend );
+            OperatorLagrangeP1<functionspace_type> I( Wh, M_backend );
 
-                typename OperatorLagrangeP1<functionspace_type>::dual_image_space_ptrtype Yh( I.dualImageSpace() );
-                exporter->step(tn)->setMesh( Yh->mesh() );
+            typename OperatorLagrangeP1<functionspace_type>::dual_image_space_ptrtype Yh( I.dualImageSpace() );
+            exporter->step( tn )->setMesh( Yh->mesh() );
 
 #else
-                exporter->step(tn)->setMesh( U.mesh() );
+            exporter->step( tn )->setMesh( U.mesh() );
 #endif
-                exporter->step(tn)->add( "U", U );
-                exporter->save();
-            }
+            exporter->step( tn )->add( "U", U );
+            exporter->save();
+        }
     }
 
     /**
@@ -213,9 +216,9 @@ void
 TestALE<N>::run()
 {
     this->addParameterValue( N )
-        .addParameterValue( this->vm()["hsize"].template as<double>() );
+    .addParameterValue( this->vm()["hsize"].template as<double>() );
 
-    if (this->preProcessing() == RUN_EXIT) return;
+    if ( this->preProcessing() == RUN_EXIT ) return;
 
     boost::timer time;
     using namespace Feel::vf;
@@ -225,42 +228,47 @@ TestALE<N>::run()
       Define mesh for the curved boundaries
     */
     boost::shared_ptr<struct_mesh_type> struct_mesh( new struct_mesh_type );
-    GmshHypercubeDomain td(1,1,1,false);
+    GmshHypercubeDomain td( 1,1,1,false );
     td.setCharacteristicLength( meshSize );
     td.setX( std::make_pair( 0, 5 ) );
     std::string fname = td.generate( "boundary_description" );
     ImporterGmsh<struct_mesh_type> struct_import( fname );
     struct_mesh->accept( struct_import );
 
-    std::cout << "mesh generation in " << time.elapsed() << "s\n"; time.restart();
+    std::cout << "mesh generation in " << time.elapsed() << "s\n";
+    time.restart();
 
     /*
       Define functionspace for the boundaries as well as the polynomials that define it
     */
     struct_functionspace_ptrtype Xh = struct_functionspace_type::New( struct_mesh );
     struct_element_type bc_top( Xh, "bc_top" );
-    AUTO( f,  val(1.0 + 0.3*cos(Px()))  );
-    bc_top = vf::project( Xh, elements(Xh->mesh()), f );
+    AUTO( f,  val( 1.0 + 0.3*cos( Px() ) )  );
+    bc_top = vf::project( Xh, elements( Xh->mesh() ), f );
 
-    std::cout << "bc top in " << time.elapsed() << "s\n"; time.restart();
+    std::cout << "bc top in " << time.elapsed() << "s\n";
+    time.restart();
 
     struct_element_type bc_bottom( Xh, "bc_bottom" );
 
-    AUTO( f2, val(-1.1 - 0.3*cos(Px()))  );
+    AUTO( f2, val( -1.1 - 0.3*cos( Px() ) )  );
 
-    bc_bottom = vf::project( Xh, elements(Xh->mesh()), f2 );
+    bc_bottom = vf::project( Xh, elements( Xh->mesh() ), f2 );
 
-    std::cout << "bc bottom in " << time.elapsed() << "s\n"; time.restart();
+    std::cout << "bc bottom in " << time.elapsed() << "s\n";
+    time.restart();
 
     struct_element_type bc_reference_top( Xh, "bc_reference_top" );
-    bc_reference_top = vf::project( Xh, elements(Xh->mesh()), constant(1.0) );
+    bc_reference_top = vf::project( Xh, elements( Xh->mesh() ), constant( 1.0 ) );
 
-    std::cout << "ref bc top in " << time.elapsed() << "s\n"; time.restart();
+    std::cout << "ref bc top in " << time.elapsed() << "s\n";
+    time.restart();
 
     struct_element_type bc_reference_bottom( Xh, "bc_reference_bottom" );
-    bc_reference_bottom = vf::project( Xh, elements(Xh->mesh()), constant(-1.0) );
+    bc_reference_bottom = vf::project( Xh, elements( Xh->mesh() ), constant( -1.0 ) );
 
-    std::cout << "ref bc bottom in " << time.elapsed() << "s\n"; time.restart();
+    std::cout << "ref bc bottom in " << time.elapsed() << "s\n";
+    time.restart();
 
     struct_element_type bc_disp_top( Xh, "bc_top" );
     bc_disp_top = bc_top;
@@ -272,13 +280,14 @@ TestALE<N>::run()
     bc_disp_bottom -= bc_reference_bottom;
     bc_disp_bottom.updateGlobalValues();
 
-    std::cout << "bc disp top/bottom in " << time.elapsed() << "s\n"; time.restart();
+    std::cout << "bc disp top/bottom in " << time.elapsed() << "s\n";
+    time.restart();
     /*
       Define mesh for the domain
     */
     boost::shared_ptr<mesh_type> mesh( new mesh_type );
 
-    GmshHypercubeDomain td2(2,1,2,false);
+    GmshHypercubeDomain td2( 2,1,2,false );
     td2.setCharacteristicLength( meshSize );
     td2.setX( std::make_pair( 0, 5 ) );
     td2.setY( std::make_pair( -1, 1 ) );
@@ -286,81 +295,88 @@ TestALE<N>::run()
     ImporterGmsh<mesh_type> import( fname2 );
     mesh->accept( import );
 
-    std::cout << "Ah mesh in " << time.elapsed() << "s\n"; time.restart();
+    std::cout << "Ah mesh in " << time.elapsed() << "s\n";
+    time.restart();
 
     p1_functionspace_ptrtype Ah = p1_functionspace_type::New( mesh );
 
 
     //define set of flags
     std::map< std::string, std::vector<flag_type> > flagSet;
-    flagSet["fixed_bc"].push_back(3);
-    flagSet["fixed_bc"].push_back(1);
-    flagSet["moving_bc"].push_back(2);
-    flagSet["moving_bc"].push_back(4);
+    flagSet["fixed_bc"].push_back( 3 );
+    flagSet["fixed_bc"].push_back( 1 );
+    flagSet["moving_bc"].push_back( 2 );
+    flagSet["moving_bc"].push_back( 4 );
 
     //define set of polynomials that describe boundary
     std::vector<struct_element_type> polyBoundarySet;
-    polyBoundarySet.push_back(bc_disp_bottom);
-    polyBoundarySet.push_back(bc_disp_top);
+    polyBoundarySet.push_back( bc_disp_bottom );
+    polyBoundarySet.push_back( bc_disp_top );
 
 
     std::vector<struct_element_type> referencePolyBoundarySet;
-    referencePolyBoundarySet.push_back(bc_reference_bottom);
-    referencePolyBoundarySet.push_back(bc_reference_top);
+    referencePolyBoundarySet.push_back( bc_reference_bottom );
+    referencePolyBoundarySet.push_back( bc_reference_top );
 
-    std::cout << "Ah space in " << time.elapsed() << "s\n"; time.restart();
+    std::cout << "Ah space in " << time.elapsed() << "s\n";
+    time.restart();
 
     /*
       Create the ale map
     */
-    ALE< Simplex<2,N> > aleFactory( std::make_pair(0,5), mesh, this->vm() );
+    ALE< Simplex<2,N> > aleFactory( std::make_pair( 0,5 ), mesh, this->vm() );
 
     aleFactory.generateHighOrderMap( flagSet["moving_bc"], referencePolyBoundarySet, polyBoundarySet );
 
-    std::cout << "ALE ho map in " << time.elapsed() << "s\n"; time.restart();
+    std::cout << "ALE ho map in " << time.elapsed() << "s\n";
+    time.restart();
 
     MeshHighOrder< Simplex<2, N> > auxiliar_mesh ( mesh );
-    auxiliar_mesh.generateMesh(flagSet["moving_bc"], referencePolyBoundarySet);
+    auxiliar_mesh.generateMesh( flagSet["moving_bc"], referencePolyBoundarySet );
     boost::shared_ptr<new_mesh_type> aux_mesh = auxiliar_mesh.getMesh();
 
-    std::cout << "ALE ho map mesh in " << time.elapsed() << "s\n"; time.restart();
+    std::cout << "ALE ho map mesh in " << time.elapsed() << "s\n";
+    time.restart();
 
     pN_visualize_functionspace_ptrtype visH = pN_visualize_functionspace_type::New( aux_mesh );
-    pN_element_type aux_element( visH, "aux");
-    aux_element = vf::project( visH, elements(visH->mesh()), sin(Px())*cos(Py())*oneX() + sin(Py())*cos(Px())*oneY());
-    this->exportResults( 0.0, aux_element);
+    pN_element_type aux_element( visH, "aux" );
+    aux_element = vf::project( visH, elements( visH->mesh() ), sin( Px() )*cos( Py() )*oneX() + sin( Py() )*cos( Px() )*oneY() );
+    this->exportResults( 0.0, aux_element );
 
-    std::cout << "ALE visu in " << time.elapsed() << "s\n"; time.restart();
+    std::cout << "ALE visu in " << time.elapsed() << "s\n";
+    time.restart();
     /*
       Test ale map in boundary
     */
-    double error_bottom_first = math::sqrt(integrate( markedfaces( Ah->mesh(), 2 ),
-                                                      (trans(idv(aleFactory.getMap()))*oneX() - Px())*(trans(idv(aleFactory.getMap()))*oneX() - Px()),
-                                                      _Q<10>()
-                                                      ).evaluate()( 0, 0 ));
+    double error_bottom_first = math::sqrt( integrate( markedfaces( Ah->mesh(), 2 ),
+                                            ( trans( idv( aleFactory.getMap() ) )*oneX() - Px() )*( trans( idv( aleFactory.getMap() ) )*oneX() - Px() ),
+                                            _Q<10>()
+                                                     ).evaluate()( 0, 0 ) );
 
-    double error_bottom_second = math::sqrt(integrate( markedfaces( Ah->mesh(), 2 ),
-                                                       (trans(idv(aleFactory.getMap()))*oneY() - f2)*(trans(idv(aleFactory.getMap()))*oneY() - f2),
-                                                       _Q<10>()
-                                                      ).evaluate()( 0, 0 ));
+    double error_bottom_second = math::sqrt( integrate( markedfaces( Ah->mesh(), 2 ),
+                                 ( trans( idv( aleFactory.getMap() ) )*oneY() - f2 )*( trans( idv( aleFactory.getMap() ) )*oneY() - f2 ),
+                                 _Q<10>()
+                                                      ).evaluate()( 0, 0 ) );
 
-    std::cout << "error bottom in " << time.elapsed() << "s\n"; time.restart();
+    std::cout << "error bottom in " << time.elapsed() << "s\n";
+    time.restart();
     std::cout << "Error in first component of ALE map: " << error_bottom_first << "\n";
     std::cout << "Error in second component of ALE map: " << error_bottom_second << "\n";
 
 
 
-    double error_bottom = math::sqrt(integrate( markedfaces( Ah->mesh(), 2 ),
-                                                trans(idv(aleFactory.getMap()) - vec(Px(),f2) )*(idv(aleFactory.getMap()) - vec(Px(),f2) ),
-                                                _Q<10>()
-                                         ).evaluate()( 0, 0 ));
+    double error_bottom = math::sqrt( integrate( markedfaces( Ah->mesh(), 2 ),
+                                      trans( idv( aleFactory.getMap() ) - vec( Px(),f2 ) )*( idv( aleFactory.getMap() ) - vec( Px(),f2 ) ),
+                                      _Q<10>()
+                                               ).evaluate()( 0, 0 ) );
 
-    double error_top = math::sqrt(integrate( markedfaces( Ah->mesh(), 4 ),
-                                             trans(idv(aleFactory.getMap()) - vec(Px(),f))*(idv(aleFactory.getMap()) - vec(Px(),f)),
-                                             _Q<10>()
-                                      ).evaluate()( 0, 0 ));
+    double error_top = math::sqrt( integrate( markedfaces( Ah->mesh(), 4 ),
+                                   trans( idv( aleFactory.getMap() ) - vec( Px(),f ) )*( idv( aleFactory.getMap() ) - vec( Px(),f ) ),
+                                   _Q<10>()
+                                            ).evaluate()( 0, 0 ) );
 
-    std::cout << "error top in " << time.elapsed() << "s\n"; time.restart();
+    std::cout << "error top in " << time.elapsed() << "s\n";
+    time.restart();
     std::cout << "Error top in the boundary: " << error_top << "\n";
     std::cout << "Error bottom in the boundary: " << error_bottom << "\n";
     double errbdy = math::sqrt( error_top*error_top + error_bottom*error_bottom );
@@ -369,15 +385,17 @@ TestALE<N>::run()
 
 
     MeshMover<new_mesh_type> mesh_mover;
-    mesh_mover.apply(visH->mesh(), aleFactory.getDisplacement() );
+    mesh_mover.apply( visH->mesh(), aleFactory.getDisplacement() );
 
-    std::cout << "mesh move in " << time.elapsed() << "s\n"; time.restart();
+    std::cout << "mesh move in " << time.elapsed() << "s\n";
+    time.restart();
 
-    aux_element = vf::project( visH, elements(visH->mesh()), sin(Px())*cos(Py())*oneX() + sin(Py())*cos(Px())*oneY());
+    aux_element = vf::project( visH, elements( visH->mesh() ), sin( Px() )*cos( Py() )*oneX() + sin( Py() )*cos( Px() )*oneY() );
     aux_element.updateGlobalValues();
-    this->exportResults( 1.0, aux_element);
+    this->exportResults( 1.0, aux_element );
 
-    std::cout << "mesh moved visu in " << time.elapsed() << "s\n"; time.restart();
+    std::cout << "mesh moved visu in " << time.elapsed() << "s\n";
+    time.restart();
 
     this->addOutputValue( errbdy );
     this->postProcessing();

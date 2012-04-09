@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
    This file is part of the Feel library
 
@@ -41,104 +41,119 @@ Data::data_ptrtype
 Data::New( Feel::po::variables_map const& vm )
 {
     using namespace Feel;
+
     if ( vm["d"].as<int>() == 2 )
+    {
+        if ( vm["order-u"].as<int>() == 2 )
         {
-            if ( vm["order-u"].as<int>() == 2 )
-                {
-                    if ( vm["order-geo"].as<int>() == 1 )
-                        return data_ptrtype( new Turek<2,2,1>( vm ) );
-                    //else
-                    //return data_ptrtype( new Turek<2,2,2>( vm ) );
-                }
+            if ( vm["order-geo"].as<int>() == 1 )
+                return data_ptrtype( new Turek<2,2,1>( vm ) );
+
+            //else
+            //return data_ptrtype( new Turek<2,2,2>( vm ) );
+        }
+
 #if 1
-        }
+    }
+
 #else
-            else if ( vm["order-u"].as<int>() == 3 )
-                {
-                    if ( vm["order-geo"].as<int>() == 1 )
-                        //return data_ptrtype();//data_ptrtype( new Turek<2,3,1>( vm ) );
-                        return data_ptrtype( new Turek<2,3,1>( vm ) );
-                    else
-                        return data_ptrtype( new Turek<2,3,2>( vm ) );
-                }
-            else if ( vm["order-u"].as<int>() == 4 )
-                {
-                    if ( vm["order-geo"].as<int>() == 1 )
-                        return data_ptrtype( new Turek<2,4,1>( vm ) );
-                    else
-                        return data_ptrtype( new Turek<2,4,2>( vm ) );
-                }
-        }
-    else if ( vm["d"].as<int>() == 3 )
+
+        else if ( vm["order-u"].as<int>() == 3 )
         {
-            if ( vm["order-u"].as<int>() == 2 )
-                {
-                    if ( vm["order-geo"].as<int>() == 1 )
-                        //return data_ptrtype();
-                        return data_ptrtype( new Turek<3,2,1>( vm ) );
-                    else
-                        //return data_ptrtype();
-                        return data_ptrtype( new Turek<3,2,2>( vm ) );
-                }
-            else if ( vm["order-u"].as<int>() == 3 )
-                {
-                    if ( vm["order-geo"].as<int>() == 1 )
-                        return data_ptrtype( new Turek<3,3,1>( vm ) );
-                    else
-                    //return data_ptrtype();
-                        return data_ptrtype( new Turek<3,3,2>( vm ) );
-                }
-            else if ( vm["order-u"].as<int>() == 4 )
-                {
-                    if ( vm["order-geo"].as<int>() == 1 )
-                        return data_ptrtype( new Turek<3,4,1>( vm ) );
-                    else
-                        return data_ptrtype( new Turek<3,4,2>( vm ) );
-                }
+            if ( vm["order-geo"].as<int>() == 1 )
+                //return data_ptrtype();//data_ptrtype( new Turek<2,3,1>( vm ) );
+                return data_ptrtype( new Turek<2,3,1>( vm ) );
+
+            else
+                return data_ptrtype( new Turek<2,3,2>( vm ) );
         }
+
+        else if ( vm["order-u"].as<int>() == 4 )
+        {
+            if ( vm["order-geo"].as<int>() == 1 )
+                return data_ptrtype( new Turek<2,4,1>( vm ) );
+
+            else
+                return data_ptrtype( new Turek<2,4,2>( vm ) );
+        }
+    }
+
+    else if ( vm["d"].as<int>() == 3 )
+    {
+        if ( vm["order-u"].as<int>() == 2 )
+        {
+            if ( vm["order-geo"].as<int>() == 1 )
+                //return data_ptrtype();
+                return data_ptrtype( new Turek<3,2,1>( vm ) );
+
+            else
+                //return data_ptrtype();
+                return data_ptrtype( new Turek<3,2,2>( vm ) );
+        }
+
+        else if ( vm["order-u"].as<int>() == 3 )
+        {
+            if ( vm["order-geo"].as<int>() == 1 )
+                return data_ptrtype( new Turek<3,3,1>( vm ) );
+
+            else
+                //return data_ptrtype();
+                return data_ptrtype( new Turek<3,3,2>( vm ) );
+        }
+
+        else if ( vm["order-u"].as<int>() == 4 )
+        {
+            if ( vm["order-geo"].as<int>() == 1 )
+                return data_ptrtype( new Turek<3,4,1>( vm ) );
+
+            else
+                return data_ptrtype( new Turek<3,4,2>( vm ) );
+        }
+    }
+
 #endif
-throw std::logic_error("invalid solver specifications" );
+    throw std::logic_error( "invalid solver specifications" );
 }
 
 Feel::po::options_description
 Data::makeOptions()
 {
-    Feel::po::options_description turekoptions("Turek benchmark options");
+    Feel::po::options_description turekoptions( "Turek benchmark options" );
     turekoptions.add_options()
-        ("d", Feel::po::value<int>()->default_value( 2 ), "time step value")
+    ( "d", Feel::po::value<int>()->default_value( 2 ), "time step value" )
 
-        ("Re", Feel::po::value<double>()->default_value( 20 ), "Reynolds number")
-        ("rho", Feel::po::value<double>()->default_value( 1 ), "density (kg/m^3)")
-        ("nu", Feel::po::value<double>()->default_value( 1e-3 ), "dynamic viscosity (Pa s)")
-        ("inflow-type", Feel::po::value<int>()->default_value( 0 ), "inflow type : 0=steady Poiseuille, 1=unsteady Poiseuille")
-        ("cross-section-type", Feel::po::value<int>()->default_value( 0 ), "cross section type : 0=circular, 1=square")
+    ( "Re", Feel::po::value<double>()->default_value( 20 ), "Reynolds number" )
+    ( "rho", Feel::po::value<double>()->default_value( 1 ), "density (kg/m^3)" )
+    ( "nu", Feel::po::value<double>()->default_value( 1e-3 ), "dynamic viscosity (Pa s)" )
+    ( "inflow-type", Feel::po::value<int>()->default_value( 0 ), "inflow type : 0=steady Poiseuille, 1=unsteady Poiseuille" )
+    ( "cross-section-type", Feel::po::value<int>()->default_value( 0 ), "cross section type : 0=circular, 1=square" )
 
-        ("order-geo", Feel::po::value<int>()->default_value( 2 ), "order of geometry")
-        ("order-u", Feel::po::value<int>()->default_value( 2 ), "order of spatial discretisation (velocity)")
-        ("order-p", Feel::po::value<int>()->default_value( 1 ), "order of spatial discretisation (pressure)")
+    ( "order-geo", Feel::po::value<int>()->default_value( 2 ), "order of geometry" )
+    ( "order-u", Feel::po::value<int>()->default_value( 2 ), "order of spatial discretisation (velocity)" )
+    ( "order-p", Feel::po::value<int>()->default_value( 1 ), "order of spatial discretisation (pressure)" )
 
-        ("gamma-bc", Feel::po::value<double>()->default_value( 100 ), "penalisation parameter")
-        ("gamma-u", Feel::po::value<double>()->default_value( 10 ), "stabilisation parameter for velocity")
-        ("gamma-p", Feel::po::value<double>()->default_value( 10 ), "stabilisation parameter for velocity")
+    ( "gamma-bc", Feel::po::value<double>()->default_value( 100 ), "penalisation parameter" )
+    ( "gamma-u", Feel::po::value<double>()->default_value( 10 ), "stabilisation parameter for velocity" )
+    ( "gamma-p", Feel::po::value<double>()->default_value( 10 ), "stabilisation parameter for velocity" )
 
-        ("gamma-divdiv", Feel::po::value<double>()->default_value( 0.0 ), "stabilisation parameter for divergence jumps")
+    ( "gamma-divdiv", Feel::po::value<double>()->default_value( 0.0 ), "stabilisation parameter for divergence jumps" )
 
-        ("delta-divdiv", Feel::po::value<double>()->default_value( 0.0 ), "divergence penalty term")
+    ( "delta-divdiv", Feel::po::value<double>()->default_value( 0.0 ), "divergence penalty term" )
 
-        ("eps-pseudo-compress", Feel::po::value<double>()->default_value( 0.0 ), "pseudo compressibility term (pressure coefficient)")
-
-
-        ("linalg-same-prec", Feel::po::value<int>()->default_value( 1 ), "use same preconditioner")
-        ("init", Feel::po::value<int>()->default_value( 1 ), "initialize Navier-Stokes solver (0=zero, 1=Stokes)")
+    ( "eps-pseudo-compress", Feel::po::value<double>()->default_value( 0.0 ), "pseudo compressibility term (pressure coefficient)" )
 
 
-        ("hsize", Feel::po::value<double>()->default_value( 0.5 ), "first h value to start convergence")
-        ("h-cyl-scale", Feel::po::value<double>()->default_value( 5 ), "scale by which hsize is divided on the cylinder")
+    ( "linalg-same-prec", Feel::po::value<int>()->default_value( 1 ), "use same preconditioner" )
+    ( "init", Feel::po::value<int>()->default_value( 1 ), "initialize Navier-Stokes solver (0=zero, 1=Stokes)" )
 
-        ("export", Feel::po::value<int>()->default_value( 0 ), "export strategy (0=no export, 1=same mesh, 2=finest mesh)")
 
-        ("export-matlab", "export matrix and vectors in matlab" )
-        ;
+    ( "hsize", Feel::po::value<double>()->default_value( 0.5 ), "first h value to start convergence" )
+    ( "h-cyl-scale", Feel::po::value<double>()->default_value( 5 ), "scale by which hsize is divided on the cylinder" )
+
+    ( "export", Feel::po::value<int>()->default_value( 0 ), "export strategy (0=no export, 1=same mesh, 2=finest mesh)" )
+
+    ( "export-matlab", "export matrix and vectors in matlab" )
+    ;
     return turekoptions.add( Feel::feel_options() );
 }
 
@@ -150,9 +165,9 @@ Data::makeAbout()
                            "0.1",
                            "nD(n=2,3) Turek  benchmark",
                            Feel::AboutData::License_GPL,
-                           "Copyright (c) 2008 Université Joseph Fourier");
+                           "Copyright (c) 2008 Université Joseph Fourier" );
 
-    about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
     return about;
 
 }
@@ -198,42 +213,42 @@ Data::Data( int d )
 }
 
 Data::Data( Data const& data )
-  :
-  M_dimension( data.M_dimension ),
-  M_order_g( data.M_order_g),
-  M_order_u( data.M_order_u),
-  M_order_p( data.M_order_p),
-  M_h( data.M_h ),
-  M_hcyl_scale( data.M_hcyl_scale ),
+    :
+    M_dimension( data.M_dimension ),
+    M_order_g( data.M_order_g ),
+    M_order_u( data.M_order_u ),
+    M_order_p( data.M_order_p ),
+    M_h( data.M_h ),
+    M_hcyl_scale( data.M_hcyl_scale ),
 
 
 
 
-  M_gamma_p( data.M_gamma_p ),
-  M_gamma_u( data.M_gamma_u ),
+    M_gamma_p( data.M_gamma_p ),
+    M_gamma_u( data.M_gamma_u ),
 
-  M_gamma_divdiv( data.M_gamma_divdiv ),
+    M_gamma_divdiv( data.M_gamma_divdiv ),
 
-  M_delta_divdiv( data.M_delta_divdiv ),
+    M_delta_divdiv( data.M_delta_divdiv ),
 
-  M_eps_compress( 0.0 ),
+    M_eps_compress( 0.0 ),
 
-  M_use_same_prec( 1 ),
+    M_use_same_prec( 1 ),
 
-  M_init( INIT_WITH_ZERO ),
+    M_init( INIT_WITH_ZERO ),
 
-  M_export( EXPORT_LAGP1_MESH ),
+    M_export( EXPORT_LAGP1_MESH ),
 
-  M_H( data.M_H ),
-  M_D( data.M_D ),
-  M_Re( data.M_Re ),
-  M_nu( data.M_nu ),
-  M_rho( data.M_rho ),
-  M_inflow_type( data.M_inflow_type ),
-  M_cross_section_type( data.M_cross_section_type ),
+    M_H( data.M_H ),
+    M_D( data.M_D ),
+    M_Re( data.M_Re ),
+    M_nu( data.M_nu ),
+    M_rho( data.M_rho ),
+    M_inflow_type( data.M_inflow_type ),
+    M_cross_section_type( data.M_cross_section_type ),
 
-  M_dirichlet_velocity(),
-  M_dirichlet_pressure()
+    M_dirichlet_velocity(),
+    M_dirichlet_pressure()
 
 {
     M_dirichlet_velocity.push_back( "inflow" );
@@ -250,42 +265,42 @@ Data::Data( int d, Feel::po::variables_map const& vm )
     M_dirichlet_velocity(),
     M_dirichlet_pressure()
 {
-  M_dimension = d;
+    M_dimension = d;
 
-  M_order_g = vm["order-geo"].as<int>();
-  M_order_u = vm["order-u"].as<int>();
-  M_order_p = vm["order-u"].as<int>();
+    M_order_g = vm["order-geo"].as<int>();
+    M_order_u = vm["order-u"].as<int>();
+    M_order_p = vm["order-u"].as<int>();
 
-  M_h = vm["hsize"].as<double>();
-  M_hcyl_scale = vm["h-cyl-scale"].as<double>();
+    M_h = vm["hsize"].as<double>();
+    M_hcyl_scale = vm["h-cyl-scale"].as<double>();
 
-  M_H = 0.41;
-  M_D = 0.1;
+    M_H = 0.41;
+    M_D = 0.1;
 
-  M_Re = vm["Re"].as<double>();
-  M_nu = vm["nu"].as<double>();
-  M_rho = vm["rho"].as<double>();
-  M_inflow_type = vm["inflow-type"].as<int>();
-  M_cross_section_type = vm["cross-section-type"].as<int>();
-  M_dirichlet_velocity.push_back( "inflow" );
-  M_dirichlet_velocity.push_back( "wall" );
-  M_dirichlet_velocity.push_back( "cylinder" );
-  M_dirichlet_pressure.push_back( "outflow" );
+    M_Re = vm["Re"].as<double>();
+    M_nu = vm["nu"].as<double>();
+    M_rho = vm["rho"].as<double>();
+    M_inflow_type = vm["inflow-type"].as<int>();
+    M_cross_section_type = vm["cross-section-type"].as<int>();
+    M_dirichlet_velocity.push_back( "inflow" );
+    M_dirichlet_velocity.push_back( "wall" );
+    M_dirichlet_velocity.push_back( "cylinder" );
+    M_dirichlet_pressure.push_back( "outflow" );
 
-  M_gamma_bc = vm["gamma-bc"].as<double>();
-  M_gamma_p = vm["gamma-p"].as<double>();
-  M_gamma_u = vm["gamma-u"].as<double>();
-  M_gamma_divdiv = vm["gamma-divdiv"].as<double>();
-  M_delta_divdiv = vm["delta-divdiv"].as<double>();
-  M_eps_compress = vm["eps-pseudo-compress"].as<double>();
+    M_gamma_bc = vm["gamma-bc"].as<double>();
+    M_gamma_p = vm["gamma-p"].as<double>();
+    M_gamma_u = vm["gamma-u"].as<double>();
+    M_gamma_divdiv = vm["gamma-divdiv"].as<double>();
+    M_delta_divdiv = vm["delta-divdiv"].as<double>();
+    M_eps_compress = vm["eps-pseudo-compress"].as<double>();
 
-  M_use_same_prec = vm["linalg-same-prec"].as<int>();
-  M_init = vm["init"].as<int>();
-  M_export = vm["export"].as<int>();
+    M_use_same_prec = vm["linalg-same-prec"].as<int>();
+    M_init = vm["init"].as<int>();
+    M_export = vm["export"].as<int>();
 
 
 
-  print();
+    print();
 
 }
 Data::~Data()
@@ -332,63 +347,67 @@ Data::print() const
 double
 Data::scalingForce() const
 {
-  return  2./(this->rho()*Feel::math::pow(this->Ubar(),2)*this->D()*Feel::math::pow(this->H(),M_dimension-2));
+    return  2./( this->rho()*Feel::math::pow( this->Ubar(),2 )*this->D()*Feel::math::pow( this->H(),M_dimension-2 ) );
 }
 Data::node_type
 Data::xa() const
 {
-    switch( M_dimension )
-        {
-        case 2:
-            {
-                node_type xa( 2 );
-                xa[0]=0.15;
-                xa[1]=0.2;
-                return xa;
-            }
-            break;
-        case 3:
-            {
-                node_type xa( 3 );
-                xa[0]=0.45;
-                xa[1]=0.20;
-                xa[2]=0.205;
-                return xa;
-            }
-            break;
-        }
+    switch ( M_dimension )
+    {
+    case 2:
+    {
+        node_type xa( 2 );
+        xa[0]=0.15;
+        xa[1]=0.2;
+        return xa;
+    }
+    break;
+
+    case 3:
+    {
+        node_type xa( 3 );
+        xa[0]=0.45;
+        xa[1]=0.20;
+        xa[2]=0.205;
+        return xa;
+    }
+    break;
+    }
+
     return node_type();
 }
 Data::node_type
 Data::xe() const
 {
-  switch( M_dimension )
+    switch ( M_dimension )
     {
     case 2:
-      {
-	node_type xe( 2 );
-	xe[0]=0.25;
-	xe[1]=0.2;
-	return xe;
-      }
-      break;
-    case 3:
-      {
-	node_type xe( 3 );
-	xe[0]=0.55;
-	xe[1]=0.20;
-	xe[2]=0.205;
-	return xe;
-      }
-      break;
+    {
+        node_type xe( 2 );
+        xe[0]=0.25;
+        xe[1]=0.2;
+        return xe;
     }
-  return node_type();
+    break;
+
+    case 3:
+    {
+        node_type xe( 3 );
+        xe[0]=0.55;
+        xe[1]=0.20;
+        xe[2]=0.205;
+        return xe;
+    }
+    break;
+    }
+
+    return node_type();
 }
 
 void
 Data::createMatlabScript()
 {
-    std::ofstream M_matlab("data.m");
+    std::ofstream M_matlab( "data.m" );
 
     M_matlab <<"function data(Tspan) \n"
              <<"% % \n"
@@ -503,190 +522,198 @@ Data::createCylinder()
     std::ostringstream ostr;
     std::ostringstream nameStr;
 
-    switch( M_dimension )
+    switch ( M_dimension )
+    {
+    case 2:
+    {
+        ostr << "h=" << M_h << ";\n"
+             << "\n"
+             << "H=0.41;\n"
+             << "D=0.1;\n"
+             << "R=0.05;\n"
+             << "L=2.2;\n"
+             << "xc=0.2;\n"
+             << "yc=0.2;\n"
+             << "\n"
+             << "Point(1) = {0,0,0,h};\n"
+             << "Point(2) = {L,0,0,h};\n"
+             << "Point(3) = {L,H,0,h};\n"
+             << "Point(4) = {0,H,0,h};\n"
+             << "\n"
+             << "Line(1) = {1,2};\n"
+             << "Line(2) = {2,3};\n"
+             << "Line(3) = {3,4};\n"
+             << "Line(4) = {4,1};\n"
+             << "\n"
+             << "Line Loop(20)={1,2,3,4};\n";
+
+        if ( crossSectionType() == CROSS_SECTION_CIRCULAR )
         {
-        case 2:
-            {
-                ostr << "h=" << M_h << ";\n"
-                     << "\n"
-                     << "H=0.41;\n"
-                     << "D=0.1;\n"
-                     << "R=0.05;\n"
-                     << "L=2.2;\n"
-                     << "xc=0.2;\n"
-                     << "yc=0.2;\n"
-                     << "\n"
-                     << "Point(1) = {0,0,0,h};\n"
-                     << "Point(2) = {L,0,0,h};\n"
-                     << "Point(3) = {L,H,0,h};\n"
-                     << "Point(4) = {0,H,0,h};\n"
-                     << "\n"
-                     << "Line(1) = {1,2};\n"
-                     << "Line(2) = {2,3};\n"
-                     << "Line(3) = {3,4};\n"
-                     << "Line(4) = {4,1};\n"
-                     << "\n"
-                     << "Line Loop(20)={1,2,3,4};\n";
-
-                if( crossSectionType() == CROSS_SECTION_CIRCULAR )
-                    {
-                        ostr << "hcyl=h/" << M_hcyl_scale << ";\n"
-                             << "Point(5) = {xc,yc,0,hcyl};\n"
-                             << "Point(6) = {xc+R,yc,0,hcyl};\n"
-                             << "Point(7) = {xc-R,yc,0,hcyl};\n"
-                             << "Point(8) = {xc,yc+R,0,hcyl};\n"
-                             << "Point(9) = {xc,yc-R,0,hcyl};\n"
-                             << "\n"
-                             << "Point( 11 ) = {0.1, 0.2, 0, hcyl};\n"
-                             << "Point( 12 ) = {0.2, 0.3, 0, hcyl};\n"
-                             << "Point( 13 ) = {0.2, 0.1, 0, hcyl};\n"
-                             << "Point( 14 ) = {L, 0.1, 0, hcyl};\n"
-                             << "Point( 15 ) = {L, 0.3, 0, hcyl};\n"
-                             << "\n"
-                             << "Circle(5) = {6,5,8};\n"
-                             << "Circle(6) = {8,5,7};\n"
-                             << "Circle(7) = {7,5,9};\n"
-                             << "Circle(8) = {9,5,6};\n";
-                    }
-                else // CROSS_SECTION_SQUARE
-                    {
-                        ostr << "// square : \n"
-                             << "X=0.15; \n"
-                             << "Y=0.15; \n"
-                             << "Point(5) = {X,Y,0,hcyl}; \n"
-                             << "Point(6) = {X,Y+D,0,hcyl}; \n"
-                             << "Point(7) = {X+D,Y+D,0,hcyl}; \n"
-                             << "Point(8) = {X+D,Y,0,hcyl}; \n"
-                             << "Line(5) = {8,7}; \n"
-                             << "Line(6) = {7,6}; \n"
-                             << "Line(7) = {6,5}; \n"
-                             << "Line(8) = {5,8}; \n";
-                    }
-                ostr << "\n"
-                     << "\n"
-                     << "Line Loop(21) = {5,6,7,8};\n"
-                     << "\n"
-                     << "Plane Surface(30) = {20,-21};\n"
-                     << "\n"
-                     << "Physical Line(\"inflow\") = {4};\n"
-                     << "Physical Line(\"wall\") = {3,1};\n"
-                     << "Physical Line(\"cylinder\") = {5,6,7,8};\n"
-                     << "Physical Line(\"outflow\") = {2};\n"
-                     << "\n"
-                     << "Physical Surface(\"fluid\")={30};\n";
-
-                nameStr << "cylinder";
-            }
-            break;
-        case 3:
-            if(crossSectionType() == CROSS_SECTION_CIRCULAR){
-                ostr << "H=0.41;\n"
-                     << "D=0.1;\n"
-                     << "R=0.05;\n"
-                     << "L=2.5;\n"
-                     << "\n"
-                     << "//h=0.015625;\n"
-                     << "h= " << M_h << ";\n"
-                     << "\n"
-                     << "/*\n"
-                     << " *\n"
-                     << " */\n"
-                     << "Point(1) = {0,0,0,h};\n"
-                     << "Point(2) = {L,0,0,h};\n"
-                     << "Point(3) = {L,H,0,h};\n"
-                     << "Point(4) = {0,H,0,h};\n"
-                     << "\n"
-                     << "Line(1) = {1,2};\n"
-                     << "Line(2) = {2,3};\n"
-                     << "Line(3) = {3,4};\n"
-                     << "Line(4) = {4,1};\n"
-                     << "\n"
-                     << "Line Loop(1)={1,2,3,4};\n"
-                     << "\n"
-                     << "\n"
-                     << "/*\n"
-                     << " * cylinder points\n"
-                     << " */\n"
-                     << "hcyl=h/4;\n"
-                     << "Point(5) = {0.5,0.2,0,hcyl};\n"
-                     << "Point(6) = {0.55,0.2,0,hcyl};\n"
-                     << "Point(7) = {0.45,0.2,0,hcyl};\n"
-                     << "Point(8) = {0.5,0.25,0,hcyl};\n"
-                     << "Point(9) = {0.5,0.15,0,hcyl};\n"
-                     << "Point(10) = {0.535355339059327,0.235355339059327,0,hcyl};\n"
-                     << "Circle(5) = {7,5,10};\n"
-                     << "Circle(6) = {10,5,9};\n"
-                     << "Circle(7) = {9,5,7};\n"
-                     << "Line Loop(8) = {5,6,7};\n"
-                     << "Plane Surface(9) = {1,8};\n"
-                     << "\n"
-                     << "\n"
-                     << "Extrude Surface {9, {0.0,0.0,H}};\n"
-                     << "\n"
-                     << "\n"
-                     << "\n"
-                     << "inlet=40;\n"
-                     << "outlet=50;\n"
-                     << "wall=60;\n"
-                     << "cylinder=70;\n"
-                     << "Physical Surface(\"inflow\") = {33};\n"
-                     << "Physical Surface(\"wall\") = {29,9,21,46};\n"
-                     << "Physical Surface(\"outflow\") = {25};\n"
-                     << "Physical Surface(\"cylinder\") = {45,37,41};\n"
-                     << "\n"
-                     << "\n"
-                     << "Physical Volume( 1 ) = { 1 };\n";
-                nameStr << "cylinder";
-            }
-
-            else{
-                ostr <<"//Variables :\n"
-                    <<"H=0.41;\n"
-                    <<"D=0.1;\n"
-                    <<"L=2.5;\n"
-                    <<"X=0.45;\n"
-                    <<"Y=0.15;\n"
-                    <<"h="<< M_h <<";\n"
-                    <<"hcyl=h/"<< M_hcyl_scale <<";\n"
-                    <<"// Boundary :\n"
-                    <<"Point(1) = {0,0,0,h};\n"
-                    <<"Point(2) = {0,H,0,h};\n"
-                    <<"Point(3) = {L,H,0,h};\n"
-                    <<"Point(4) = {L,0,0,h};\n"
-                    <<"// Cylinder :\n"
-                    <<"Point(5) = {X,Y,0,hcyl};\n"
-                    <<"Point(6) = {X,Y+D,0,hcyl};\n"
-                    <<"Point(7) = {X+D,Y+D,0,hcyl};\n"
-                    <<"Point(8) = {X+D,Y,0,hcyl};\n"
-                    <<"Line(1) = {8,7};\n"
-                    <<"Line(2) = {7,6};\n"
-                    <<"Line(3) = {6,5};\n"
-                    <<"Line(4) = {5,8};\n"
-                    <<"Line(5) = {1,4};\n"
-                    <<"Line(6) = {4,3};\n"
-                    <<"Line(7) = {3,2};\n"
-                    <<"Line(8) = {2,1};\n"
-                    <<"Line Loop(9) = {5,6,7,8};\n"
-                    <<"Line Loop(11) = {4,1,2,3};\n"
-                    <<"Plane Surface(12) = {-9,11};\n"
-                    <<"Extrude {0,0,H} {\n"
-                    <<"  Surface{12};\n"
-                    <<"}\n"
-                    <<"Surface Loop(55) = {54,25,12,29,33,37,41,45,49,53};\n"
-                    <<"Volume(56) = {55};\n"
-                    <<"Physical Surface(\"inflow\") = {25};\n"
-                    <<"Physical Surface(\"outflow\") = {33};\n"
-                    <<"Physical Surface(\"wall\") = {54,29,12,37};\n"
-                    <<"Physical Surface(\"cylinder\") = {53,41,45,49};\n";
-
-                nameStr << "cylinder";
-            }
-            break;
-        default:
-            std::ostringstream os;
-            os << "invalid dimension: " << M_dimension;
-            throw std::logic_error( os.str() );
+            ostr << "hcyl=h/" << M_hcyl_scale << ";\n"
+                 << "Point(5) = {xc,yc,0,hcyl};\n"
+                 << "Point(6) = {xc+R,yc,0,hcyl};\n"
+                 << "Point(7) = {xc-R,yc,0,hcyl};\n"
+                 << "Point(8) = {xc,yc+R,0,hcyl};\n"
+                 << "Point(9) = {xc,yc-R,0,hcyl};\n"
+                 << "\n"
+                 << "Point( 11 ) = {0.1, 0.2, 0, hcyl};\n"
+                 << "Point( 12 ) = {0.2, 0.3, 0, hcyl};\n"
+                 << "Point( 13 ) = {0.2, 0.1, 0, hcyl};\n"
+                 << "Point( 14 ) = {L, 0.1, 0, hcyl};\n"
+                 << "Point( 15 ) = {L, 0.3, 0, hcyl};\n"
+                 << "\n"
+                 << "Circle(5) = {6,5,8};\n"
+                 << "Circle(6) = {8,5,7};\n"
+                 << "Circle(7) = {7,5,9};\n"
+                 << "Circle(8) = {9,5,6};\n";
         }
+
+        else // CROSS_SECTION_SQUARE
+        {
+            ostr << "// square : \n"
+                 << "X=0.15; \n"
+                 << "Y=0.15; \n"
+                 << "Point(5) = {X,Y,0,hcyl}; \n"
+                 << "Point(6) = {X,Y+D,0,hcyl}; \n"
+                 << "Point(7) = {X+D,Y+D,0,hcyl}; \n"
+                 << "Point(8) = {X+D,Y,0,hcyl}; \n"
+                 << "Line(5) = {8,7}; \n"
+                 << "Line(6) = {7,6}; \n"
+                 << "Line(7) = {6,5}; \n"
+                 << "Line(8) = {5,8}; \n";
+        }
+
+        ostr << "\n"
+             << "\n"
+             << "Line Loop(21) = {5,6,7,8};\n"
+             << "\n"
+             << "Plane Surface(30) = {20,-21};\n"
+             << "\n"
+             << "Physical Line(\"inflow\") = {4};\n"
+             << "Physical Line(\"wall\") = {3,1};\n"
+             << "Physical Line(\"cylinder\") = {5,6,7,8};\n"
+             << "Physical Line(\"outflow\") = {2};\n"
+             << "\n"
+             << "Physical Surface(\"fluid\")={30};\n";
+
+        nameStr << "cylinder";
+    }
+    break;
+
+    case 3:
+        if ( crossSectionType() == CROSS_SECTION_CIRCULAR )
+        {
+            ostr << "H=0.41;\n"
+                 << "D=0.1;\n"
+                 << "R=0.05;\n"
+                 << "L=2.5;\n"
+                 << "\n"
+                 << "//h=0.015625;\n"
+                 << "h= " << M_h << ";\n"
+                 << "\n"
+                 << "/*\n"
+                 << " *\n"
+                 << " */\n"
+                 << "Point(1) = {0,0,0,h};\n"
+                 << "Point(2) = {L,0,0,h};\n"
+                 << "Point(3) = {L,H,0,h};\n"
+                 << "Point(4) = {0,H,0,h};\n"
+                 << "\n"
+                 << "Line(1) = {1,2};\n"
+                 << "Line(2) = {2,3};\n"
+                 << "Line(3) = {3,4};\n"
+                 << "Line(4) = {4,1};\n"
+                 << "\n"
+                 << "Line Loop(1)={1,2,3,4};\n"
+                 << "\n"
+                 << "\n"
+                 << "/*\n"
+                 << " * cylinder points\n"
+                 << " */\n"
+                 << "hcyl=h/4;\n"
+                 << "Point(5) = {0.5,0.2,0,hcyl};\n"
+                 << "Point(6) = {0.55,0.2,0,hcyl};\n"
+                 << "Point(7) = {0.45,0.2,0,hcyl};\n"
+                 << "Point(8) = {0.5,0.25,0,hcyl};\n"
+                 << "Point(9) = {0.5,0.15,0,hcyl};\n"
+                 << "Point(10) = {0.535355339059327,0.235355339059327,0,hcyl};\n"
+                 << "Circle(5) = {7,5,10};\n"
+                 << "Circle(6) = {10,5,9};\n"
+                 << "Circle(7) = {9,5,7};\n"
+                 << "Line Loop(8) = {5,6,7};\n"
+                 << "Plane Surface(9) = {1,8};\n"
+                 << "\n"
+                 << "\n"
+                 << "Extrude Surface {9, {0.0,0.0,H}};\n"
+                 << "\n"
+                 << "\n"
+                 << "\n"
+                 << "inlet=40;\n"
+                 << "outlet=50;\n"
+                 << "wall=60;\n"
+                 << "cylinder=70;\n"
+                 << "Physical Surface(\"inflow\") = {33};\n"
+                 << "Physical Surface(\"wall\") = {29,9,21,46};\n"
+                 << "Physical Surface(\"outflow\") = {25};\n"
+                 << "Physical Surface(\"cylinder\") = {45,37,41};\n"
+                 << "\n"
+                 << "\n"
+                 << "Physical Volume( 1 ) = { 1 };\n";
+            nameStr << "cylinder";
+        }
+
+        else
+        {
+            ostr <<"//Variables :\n"
+                 <<"H=0.41;\n"
+                 <<"D=0.1;\n"
+                 <<"L=2.5;\n"
+                 <<"X=0.45;\n"
+                 <<"Y=0.15;\n"
+                 <<"h="<< M_h <<";\n"
+                 <<"hcyl=h/"<< M_hcyl_scale <<";\n"
+                 <<"// Boundary :\n"
+                 <<"Point(1) = {0,0,0,h};\n"
+                 <<"Point(2) = {0,H,0,h};\n"
+                 <<"Point(3) = {L,H,0,h};\n"
+                 <<"Point(4) = {L,0,0,h};\n"
+                 <<"// Cylinder :\n"
+                 <<"Point(5) = {X,Y,0,hcyl};\n"
+                 <<"Point(6) = {X,Y+D,0,hcyl};\n"
+                 <<"Point(7) = {X+D,Y+D,0,hcyl};\n"
+                 <<"Point(8) = {X+D,Y,0,hcyl};\n"
+                 <<"Line(1) = {8,7};\n"
+                 <<"Line(2) = {7,6};\n"
+                 <<"Line(3) = {6,5};\n"
+                 <<"Line(4) = {5,8};\n"
+                 <<"Line(5) = {1,4};\n"
+                 <<"Line(6) = {4,3};\n"
+                 <<"Line(7) = {3,2};\n"
+                 <<"Line(8) = {2,1};\n"
+                 <<"Line Loop(9) = {5,6,7,8};\n"
+                 <<"Line Loop(11) = {4,1,2,3};\n"
+                 <<"Plane Surface(12) = {-9,11};\n"
+                 <<"Extrude {0,0,H} {\n"
+                 <<"  Surface{12};\n"
+                 <<"}\n"
+                 <<"Surface Loop(55) = {54,25,12,29,33,37,41,45,49,53};\n"
+                 <<"Volume(56) = {55};\n"
+                 <<"Physical Surface(\"inflow\") = {25};\n"
+                 <<"Physical Surface(\"outflow\") = {33};\n"
+                 <<"Physical Surface(\"wall\") = {54,29,12,37};\n"
+                 <<"Physical Surface(\"cylinder\") = {53,41,45,49};\n";
+
+            nameStr << "cylinder";
+        }
+
+        break;
+
+    default:
+        std::ostringstream os;
+        os << "invalid dimension: " << M_dimension;
+        throw std::logic_error( os.str() );
+    }
+
     return std::make_pair( nameStr.str(), ostr.str() );
 }
 
@@ -703,32 +730,37 @@ Data::Inflow::operator()( uint16_type c1, uint16_type c2, node_type const& p, no
 {
 
     double time_term = 1.0;
+
     if ( M_data.inflowType() == INFLOW_UNSTEADY )
         time_term = sin( M_PI*M_time/8 );
 
     if ( M_data.d() == 2 )
+    {
+        switch ( c1 )
         {
-            switch ( c1 )
-                {
-                case 0:
-                    return 4*M_data.Um()*p[1]*(M_data.H()-p[1])*time_term/pow(M_data.H(),2);
-                case 1:
-                default:
-                    return 0;
-                }
+        case 0:
+            return 4*M_data.Um()*p[1]*( M_data.H()-p[1] )*time_term/pow( M_data.H(),2 );
+
+        case 1:
+        default:
+            return 0;
         }
-    else{
+    }
+
+    else
+    {
 
         // 3D
         switch ( c1 )
-            {
-            case 0:
-                return 16*M_data.Um()*p[1]*(M_data.H()-p[1])*p[2]*(M_data.H()-p[2])*time_term/pow(M_data.H(),4);
-            case 1:
-            case 2:
-            default:
-                return 0;
-            }
+        {
+        case 0:
+            return 16*M_data.Um()*p[1]*( M_data.H()-p[1] )*p[2]*( M_data.H()-p[2] )*time_term/pow( M_data.H(),4 );
+
+        case 1:
+        case 2:
+        default:
+            return 0;
+        }
     }
 }
 

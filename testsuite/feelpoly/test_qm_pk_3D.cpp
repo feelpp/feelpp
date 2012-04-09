@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -46,95 +46,100 @@ namespace mpl = boost::mpl;
 
 /** Streams **/
 //@{
-std::ofstream PK_x_log("PK_x_log_3D.log");
+std::ofstream PK_x_log( "PK_x_log_3D.log" );
 
-std::ofstream ost_x("Monom_x_3D.txt");
+std::ofstream ost_x( "Monom_x_3D.txt" );
 
 //@}
 
 
-double pow(double x, int i)
+double pow( double x, int i )
 {
-  double res = 1.0;
-  for(int l=1; l <= i; ++l)
-    res *= x;
-  return res;
+    double res = 1.0;
+
+    for ( int l=1; l <= i; ++l )
+        res *= x;
+
+    return res;
 
 }
 
 template<Feel::uint16_type N, typename T>
 void PK_Monom_N_opt()
 {
-  using namespace Feel;
+    using namespace Feel;
 
-  typedef T value_type;
+    typedef T value_type;
 
-  GaussLobatto<Simplex<3,1>, N, value_type> im;
+    GaussLobatto<Simplex<3,1>, N, value_type> im;
 
-  ublas::vector<value_type> x_i(ublas::row(im.points(),0));
+    ublas::vector<value_type> x_i( ublas::row( im.points(),0 ) );
 
-  const value_type tol = value_type(2.5) * type_traits<value_type>::epsilon();
+    const value_type tol = value_type( 2.5 ) * type_traits<value_type>::epsilon();
 
-  int Q = (N+3)/2+1;
+    int Q = ( N+3 )/2+1;
 
-  value_type error_x = 0.0;
-  value_type res_x;
-  int i_x=1;
-  value_type sum_x=0.0;
+    value_type error_x = 0.0;
+    value_type res_x;
+    int i_x=1;
+    value_type sum_x=0.0;
 
-  ost_x << "Number of Points on the tetraedra : " << Q << "^3 = "<< im.nPoints() <<  std::endl;
+    ost_x << "Number of Points on the tetraedra : " << Q << "^3 = "<< im.nPoints() <<  std::endl;
 
-  do{
-    if (i_x%2 == 0)
-      res_x = value_type(1.0)/value_type(i_x+3.0) + value_type(1.0)/value_type(i_x+1.0);
-    else
-      res_x = -value_type(2.0)/value_type(i_x+2.0);
+    do
+    {
+        if ( i_x%2 == 0 )
+            res_x = value_type( 1.0 )/value_type( i_x+3.0 ) + value_type( 1.0 )/value_type( i_x+1.0 );
 
-    sum_x = 0.0;
+        else
+            res_x = -value_type( 2.0 )/value_type( i_x+2.0 );
 
-    for(uint16_type l=0;l< x_i.size();++l)
-      sum_x += pow(x_i(l),i_x)*im.weight(l);
+        sum_x = 0.0;
 
-    error_x = math::abs(sum_x - res_x);
+        for ( uint16_type l=0; l< x_i.size(); ++l )
+            sum_x += pow( x_i( l ),i_x )*im.weight( l );
 
-    //  std::cout << "i = " << i_x <<"\nError = "<< error_x << "\nRes = "<< res_x << " - sum_x = "<< sum_x <<"\n";
-    ost_x << "i = " << i_x <<" Error = "<< error_x << "\n";
-    ++i_x;
-  }while(error_x <= tol);
+        error_x = math::abs( sum_x - res_x );
 
-  if ( i_x-2 < 2*Q-3  )
-      PK_x_log << "Q = " << Q << " ; i = " << i_x << " ; Error = " << error_x << std::endl;
+        //  std::cout << "i = " << i_x <<"\nError = "<< error_x << "\nRes = "<< res_x << " - sum_x = "<< sum_x <<"\n";
+        ost_x << "i = " << i_x <<" Error = "<< error_x << "\n";
+        ++i_x;
+    }
+    while ( error_x <= tol );
 
-  BOOST_TEST_MESSAGE( "check for order " << N << " that " << i_x-2 << " is greater than " << 2*Q-3 << " : error = " << error_x );
-  BOOST_CHECK( (i_x-2 >= 2*Q-3));
+    if ( i_x-2 < 2*Q-3  )
+        PK_x_log << "Q = " << Q << " ; i = " << i_x << " ; Error = " << error_x << std::endl;
+
+    BOOST_TEST_MESSAGE( "check for order " << N << " that " << i_x-2 << " is greater than " << 2*Q-3 << " : error = " << error_x );
+    BOOST_CHECK( ( i_x-2 >= 2*Q-3 ) );
 }
 
 template<Feel::int16_type P>
 void add_tests( test_suite* test )
 {
-  using namespace Feel;
-  using namespace std;
+    using namespace Feel;
+    using namespace std;
 
-  test->add( BOOST_TEST_CASE( ( PK_Monom_N_opt<P,double> ) ) );
+    test->add( BOOST_TEST_CASE( ( PK_Monom_N_opt<P,double> ) ) );
 #if defined( FEELPP_HAS_QD_REAL)
-  //test->add( BOOST_TEST_CASE( ( PK_Monom_N_opt<P,dd_real> ) ) );
-  //test->add( BOOST_TEST_CASE( ( PK_Monom_N_opt<P,qd_real> ) ) );
+    //test->add( BOOST_TEST_CASE( ( PK_Monom_N_opt<P,dd_real> ) ) );
+    //test->add( BOOST_TEST_CASE( ( PK_Monom_N_opt<P,qd_real> ) ) );
 #endif
 
-  add_tests<P+2>(test);
+    add_tests<P+2>( test );
 }
 
 template<>
 void add_tests<40>( test_suite* test )
 {
-  using namespace Feel;
-  using namespace std;
+    using namespace Feel;
+    using namespace std;
 
-  test->add( BOOST_TEST_CASE( ( PK_Monom_N_opt<40,double> ) ) );
+    test->add( BOOST_TEST_CASE( ( PK_Monom_N_opt<40,double> ) ) );
 
 #if defined( FEELPP_HAS_QD_REAL)
-  //test->add( BOOST_TEST_CASE( ( PK_Monom_N_opt<80,dd_real> ) ) );
-  //test->add( BOOST_TEST_CASE( ( PK_Monom_N_opt<80,qd_real> ) ) );
+    //test->add( BOOST_TEST_CASE( ( PK_Monom_N_opt<80,dd_real> ) ) );
+    //test->add( BOOST_TEST_CASE( ( PK_Monom_N_opt<80,qd_real> ) ) );
 #endif
 }
 
@@ -147,7 +152,7 @@ init_unit_test_suite( int /*argc*/, char** /*argv*/ )
     PK_x_log << "This file attempt to save the errors encountered while numerically integrating $x^i$ on the tetraedra !" << "\n\n";
 #if defined( FEELPP_HAS_QD_REAL)
     unsigned int old_cw;
-    fpu_fix_start(&old_cw);
+    fpu_fix_start( &old_cw );
 #endif
     add_tests<2>( test );
 

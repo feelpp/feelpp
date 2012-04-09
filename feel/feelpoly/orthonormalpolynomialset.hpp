@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -57,7 +57,7 @@ template<uint16_type Dim,
          typename T>
 class OrthonormalPolynomialSet<Dim, Order, RealDim, PolySetType, T, Simplex>
     :
-    public PolynomialSet<Dubiner<Dim, RealDim, Order, Normalized<true>, T, StorageUBlas>, PolySetType >
+public PolynomialSet<Dubiner<Dim, RealDim, Order, Normalized<true>, T, StorageUBlas>, PolySetType >
 {
     typedef PolynomialSet<Dubiner<Dim, RealDim, Order, Normalized<true>, T, StorageUBlas>, PolySetType > super;
 public:
@@ -118,15 +118,18 @@ public:
 
     {
         ublas::matrix<value_type> m( ublas::identity_matrix<value_type>( nComponents*convex_type::polyDims( nOrder ) ) );
+
         if ( is_tensor2 )
             std::cout << "[orthonormalpolynomialset] m = " << m << "\n";
-        if ( !(ublas::norm_frobenius( polyset_type::toMatrix( polyset_type::toType( m ) ) -
-                                      m ) < 1e-10 ) )
+
+        if ( !( ublas::norm_frobenius( polyset_type::toMatrix( polyset_type::toType( m ) ) -
+                                       m ) < 1e-10 ) )
             std::cout << "m1=" << m << "\n"
                       << "m2=" << polyset_type::toMatrix( polyset_type::toType( m ) ) << "\n"
                       << ublas::norm_frobenius( polyset_type::toMatrix( polyset_type::toType( m ) ) - m ) << "\n";
+
         FEELPP_ASSERT( ublas::norm_frobenius( polyset_type::toMatrix( polyset_type::toType( m ) ) -
-                                             m ) < 1e-10 )( m ).warn ( "invalid transformation" );
+                                              m ) < 1e-10 )( m ).warn ( "invalid transformation" );
         this->setCoefficient( polyset_type::toType( m ), true );
     }
 
@@ -138,11 +141,20 @@ public:
     /**
      * \return the family name of the polynomial set
      */
-    std::string familyName() const { return "dubiner"; }
+    std::string familyName() const
+    {
+        return "dubiner";
+    }
 
 
-    points_type points() const { return points_type(); }
-    points_type points( int f ) const { return points_type(); }
+    points_type points() const
+    {
+        return points_type();
+    }
+    points_type points( int f ) const
+    {
+        return points_type();
+    }
 };
 
 template<uint16_type Dim,
@@ -160,7 +172,7 @@ template<uint16_type Dim,
          typename T>
 class OrthonormalPolynomialSet<Dim, Order, RealDim, PolySetType, T, Hypercube>
     :
-    public PolynomialSet<Legendre<Dim, RealDim, Order, Normalized<true>, T>, PolySetType >
+public PolynomialSet<Legendre<Dim, RealDim, Order, Normalized<true>, T>, PolySetType >
 {
     typedef PolynomialSet<Legendre<Dim, RealDim, Order, Normalized<true>, T>, PolySetType > super;
 public:
@@ -222,10 +234,12 @@ public:
 
     {
         ublas::matrix<value_type> m( ublas::identity_matrix<value_type>( nComponents*convex_type::polyDims( nOrder ) ) );
+
         if ( is_tensor2 )
             std::cout << "[orthonormalpolynomialset] m = " << m << "\n";
+
         FEELPP_ASSERT( ublas::norm_frobenius( polyset_type::toMatrix( polyset_type::toType( m ) ) -
-                                             m ) < 1e-10 )( m ).warn ( "invalid transformation" );
+                                              m ) < 1e-10 )( m ).warn ( "invalid transformation" );
         this->setCoefficient( polyset_type::toType( m ), true );
     }
 
@@ -233,9 +247,18 @@ public:
     {
         return OrthonormalPolynomialSet<Dim, Order, RealDim, Scalar,T, Hypercube >();
     }
-    std::string familyName() const { return "legendre"; }
-    points_type points() const { return points_type(); }
-    points_type points( int f ) const { return points_type(); }
+    std::string familyName() const
+    {
+        return "legendre";
+    }
+    points_type points() const
+    {
+        return points_type();
+    }
+    points_type points( int f ) const
+    {
+        return points_type();
+    }
 };
 
 template<uint16_type Dim,
@@ -258,8 +281,8 @@ public:
     struct apply
     {
         typedef typename mpl::if_<mpl::bool_<Convex::is_simplex>,
-                                  mpl::identity<detail::OrthonormalPolynomialSet<N,Order,N,PolySetType,T,Simplex> >,
-                                  mpl::identity<detail::OrthonormalPolynomialSet<N,Order,N,PolySetType,T,Hypercube> > >::type::type result_type;
+                mpl::identity<detail::OrthonormalPolynomialSet<N,Order,N,PolySetType,T,Simplex> >,
+                mpl::identity<detail::OrthonormalPolynomialSet<N,Order,N,PolySetType,T,Hypercube> > >::type::type result_type;
         typedef result_type type;
     };
 

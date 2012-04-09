@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -75,14 +75,14 @@ Feel::AboutData
 makeAbout()
 {
     Feel::AboutData about( "twodomainsmt" ,
-                            "twodomainsmt" ,
-                            "0.1",
-                            "Two domain mass transport",
-                            Feel::AboutData::License_GPL,
-                            "Copyright (c) 2006 EPFL");
+                           "twodomainsmt" ,
+                           "0.1",
+                           "Two domain mass transport",
+                           Feel::AboutData::License_GPL,
+                           "Copyright (c) 2006 EPFL" );
 
-    about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
-    about.addAuthor("Martin Prosi", "developer", "martin.prosi@mate.polimi.it", "");
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    about.addAuthor( "Martin Prosi", "developer", "martin.prosi@mate.polimi.it", "" );
     return about;
 
 }
@@ -114,7 +114,7 @@ const uint16_type OUTFLOW_LUMEN = 8;
 
 class TwoDomainsMTApp
     :
-        public Application
+public Application
 {
     typedef Application super;
 public:
@@ -267,8 +267,8 @@ void
 TwoDomainsMTApp::concentrationInit( concentration_space_type::element_type& c_l,
                                     concentration_space_type::element_type& c_w )
 {
-    c_w = vf::project( Ch_wall, markedelements( *_M_mesh_c, WALL ), constant(0.01) );
-    c_l = vf::project( Ch_lumen, markedelements( *_M_mesh_c, LUMEN ), constant(1.00) );
+    c_w = vf::project( Ch_wall, markedelements( *_M_mesh_c, WALL ), constant( 0.01 ) );
+    c_l = vf::project( Ch_lumen, markedelements( *_M_mesh_c, LUMEN ), constant( 1.00 ) );
 
 }
 void
@@ -295,88 +295,91 @@ TwoDomainsMTApp::concentrationStep( value_type dt,
     double lhs_der_time = time_discr_lumen.derivateCoefficient( 0 );
 
     const int N_jacobi = 4;
+
     // Jacobi iteration
-    for( int iter = 1; iter < N_jacobi; ++iter )
+    for ( int iter = 1; iter < N_jacobi; ++iter )
+    {
+        alpha_l = ( ublas::scalar_vector<value_type>( alpha_l.size(), u_filt ) - c_map["P_l"] ) / D_L;
+        beta_l = ublas::element_prod( c_map["P_l"], c_w ) / ( D_L*porosity );
+
+        c_l_prev = time_discr_lumen.derivate();
+
+        //
+        // Lumen
+        //
+
+        vector_type F_l;
+        form( Ch_lumen, F_l ) = ( integrate( elements( *_M_mesh_c ), im1_type(),
+                                             idv( c_l_prev ) * id( c_l_v ) ) +
+                                  integrate( markedfaces( *_M_mesh_c, ENDOTHELIUM ), im1_type(),
+                                             dt * D_L*idv( beta_l ) * id( c_l_v ) )
+                                );
+        F_l.close();
+
+
+        sparse_matrix_type M_l;
+        form( Ch_lumen, Ch_lumen, M_l ) = ( integrate( elements( *_M_mesh_c ), im1_type(),
+                                            lhs_der_time*idt( c_l )*id( c_l_v )+
+                                            dt * D_L*( dot_gradt_grad( c_l, c_l_v ) ) +
+                                            dt * dot_idv_gradt( u_l, c_l )*id( c_l_v ) )  +
+
+                                            integrate( markedfaces( *_M_mesh_c, ENDOTHELIUM ), im1_type(),
+                                                    dt * D_L*idv( alpha_l ) * idt( c_l ) * id( c_l_v ) ) +
+
+                                            on( markedfaces( *_M_mesh_c, INFLOW_LUMEN ), c_l, F_l, constant( 1.0 ) ) +
+                                            on( markedfaces( *_M_mesh_c, INTERNAL_LUMEN ), c_l, F_l, constant( 1.0 ) ) );
+        M_l.close();
+
+        //timer.restart();
+        vector_type C_l( Ch_lumen->dof()->nDof(), Ch_lumen->dof()->nLocalDof() );
+        solver.solve( M_l, C_l, F_l, 1e-10, 1000 );
+
+        //copy C_l in c_l
+        for ( size_type i = 0; i < c_l.size(); ++i )
         {
-            alpha_l = (ublas::scalar_vector<value_type>( alpha_l.size(), u_filt) - c_map["P_l"]) / D_L;
-            beta_l = ublas::element_prod( c_map["P_l"], c_w ) / (D_L*porosity);
-
-            c_l_prev = time_discr_lumen.derivate();
-
-            //
-            // Lumen
-            //
-
-            vector_type F_l;
-            form( Ch_lumen, F_l ) = ( integrate( elements(*_M_mesh_c), im1_type(),
-                                               idv( c_l_prev ) * id( c_l_v ) ) +
-                                    integrate( markedfaces(*_M_mesh_c, ENDOTHELIUM), im1_type(),
-                                               dt * D_L*idv( beta_l ) * id( c_l_v ) )
-                                    );
-            F_l.close();
-
-
-            sparse_matrix_type M_l;
-            form( Ch_lumen, Ch_lumen, M_l ) = ( integrate( elements(*_M_mesh_c), im1_type(),
-                                                           lhs_der_time*idt(c_l)*id(c_l_v)+
-                                                           dt * D_L*(dot_gradt_grad( c_l, c_l_v ) ) +
-                                                           dt * dot_idv_gradt( u_l, c_l )*id( c_l_v ) )  +
-
-                                                integrate( markedfaces(*_M_mesh_c, ENDOTHELIUM), im1_type(),
-                                                           dt * D_L*idv( alpha_l ) * idt( c_l ) * id( c_l_v ) ) +
-
-                                                on( markedfaces( *_M_mesh_c, INFLOW_LUMEN ), c_l, F_l, constant(1.0) ) +
-                                                on( markedfaces( *_M_mesh_c, INTERNAL_LUMEN ), c_l, F_l, constant(1.0) ) );
-            M_l.close();
-
-            //timer.restart();
-            vector_type C_l( Ch_lumen->dof()->nDof(), Ch_lumen->dof()->nLocalDof() );
-            solver.solve( M_l, C_l, F_l, 1e-10, 1000 );
-            //copy C_l in c_l
-            for ( size_type i = 0; i < c_l.size(); ++i )
-                {
-                    c_l( i ) = C_l( i );
-                }
-
-            //Debug() << "[timer] solver time : " << timer.elapsed() << "\n";
-
-            alpha_w = - c_map["P_w"] / ( porosity * D_w ) - ublas::scalar_vector<value_type>( c_w.size(), Klag*u_filt/D_w );
-            beta_w = ublas::element_prod( c_map["P_w"], c_l ) / D_w;
-
-            //
-            // Wall
-            //
-            c_w_prev = time_discr_wall.derivate();
-            vector_type F_w;
-            form( Ch_wall, F_w ) = ( integrate( elements(*_M_mesh_c), im1_type(),
-                                                idv( c_w_prev ) * id( c_w_v ) ) +
-                                    integrate( markedfaces(*_M_mesh_c, ENDOTHELIUM), im1_type(),
-                                               dt * D_w*idv( beta_w ) * id( c_w_v ) )
-                                    );
-            F_w.close();
-
-
-            sparse_matrix_type M_w;
-            form( Ch_wall, Ch_wall, M_w ) = ( integrate( elements(*_M_mesh_c), im1_type(),
-                                                         (lhs_der_time+dt*k_w)*idt(c_w)*id(c_w_v)+
-                                                         dt * D_w*dot_gradt_grad( c_w, c_w_v ) +
-                                                         dt* Klag * dot_idv_gradt( u_w, c_w )*id( c_w_v ) ) +
-
-                                              integrate( markedfaces(*_M_mesh_c, ENDOTHELIUM), im1_type(),
-                                                         dt * D_w*idv( alpha_w ) * idt( c_w ) * id( c_w_v ) ) +
-
-                                              on( markedfaces( *_M_mesh_c, ADVENDITIA ), c_w, F_w, constant( 0.01 ) ) );
-            M_w.close();
-
-            //timer.restart();
-            vector_type C_w( Ch_wall->dof()->nDof(), Ch_wall->dof()->nLocalDof() );
-            solver.solve( M_w, C_w, F_w, 1e-10, 1000 );
-            //copy C_w in c_w
-            for ( size_type i = 0; i < c_w.size(); ++i )
-                {
-                    c_w( i ) = C_w( i );
-                }
+            c_l( i ) = C_l( i );
         }
+
+        //Debug() << "[timer] solver time : " << timer.elapsed() << "\n";
+
+        alpha_w = - c_map["P_w"] / ( porosity * D_w ) - ublas::scalar_vector<value_type>( c_w.size(), Klag*u_filt/D_w );
+        beta_w = ublas::element_prod( c_map["P_w"], c_l ) / D_w;
+
+        //
+        // Wall
+        //
+        c_w_prev = time_discr_wall.derivate();
+        vector_type F_w;
+        form( Ch_wall, F_w ) = ( integrate( elements( *_M_mesh_c ), im1_type(),
+                                            idv( c_w_prev ) * id( c_w_v ) ) +
+                                 integrate( markedfaces( *_M_mesh_c, ENDOTHELIUM ), im1_type(),
+                                            dt * D_w*idv( beta_w ) * id( c_w_v ) )
+                               );
+        F_w.close();
+
+
+        sparse_matrix_type M_w;
+        form( Ch_wall, Ch_wall, M_w ) = ( integrate( elements( *_M_mesh_c ), im1_type(),
+                                          ( lhs_der_time+dt*k_w )*idt( c_w )*id( c_w_v )+
+                                          dt * D_w*dot_gradt_grad( c_w, c_w_v ) +
+                                          dt* Klag * dot_idv_gradt( u_w, c_w )*id( c_w_v ) ) +
+
+                                          integrate( markedfaces( *_M_mesh_c, ENDOTHELIUM ), im1_type(),
+                                                  dt * D_w*idv( alpha_w ) * idt( c_w ) * id( c_w_v ) ) +
+
+                                          on( markedfaces( *_M_mesh_c, ADVENDITIA ), c_w, F_w, constant( 0.01 ) ) );
+        M_w.close();
+
+        //timer.restart();
+        vector_type C_w( Ch_wall->dof()->nDof(), Ch_wall->dof()->nLocalDof() );
+        solver.solve( M_w, C_w, F_w, 1e-10, 1000 );
+
+        //copy C_w in c_w
+        for ( size_type i = 0; i < c_w.size(); ++i )
+        {
+            c_w( i ) = C_w( i );
+        }
+    }
 
     time_discr_lumen.shiftRight( c_l );
     time_discr_wall.shiftRight( c_w );
@@ -427,51 +430,51 @@ TwoDomainsMTApp::solveSystem()
     velocity_lumen_space_type::P1Lagrange Uh_lumen_p1( Uh_lumen );
     velocity_wall_space_type::P1Lagrange Uh_wall_p1( Uh_wall );
 
-    for( double t = dt; t < T; t += dt )
-        {
-            // velocity in the Lumen (could have come from an NS code )
-            u_l = vf::project( Uh_lumen,
+    for ( double t = dt; t < T; t += dt )
+    {
+        // velocity in the Lumen (could have come from an NS code )
+        u_l = vf::project( Uh_lumen,
                            elements( *_M_mesh_u_lumen ),
-                           oneX()* (2.0/L_0)*u_filt*(2.0-(4.0/(L_0*L_0))*(Px()*Px()+Py()*Py()))*Px() +
-                           oneY()* (2.0/L_0)*u_filt*(2.0-(4.0/(L_0*L_0))*(Px()^(2)+Py()^(2))*Py() ) +
-                           oneZ()* 2.0*U_0*(1.0-(4.0/(L_0*L_0))*(Px()^(2)+Py()^(2)))*(1.0-(4.0*u_filt/(U_0*L_0))*Pz()));
+                           oneX()* ( 2.0/L_0 )*u_filt*( 2.0-( 4.0/( L_0*L_0 ) )*( Px()*Px()+Py()*Py() ) )*Px() +
+                           oneY()* ( 2.0/L_0 )*u_filt*( 2.0-( 4.0/( L_0*L_0 ) )*( Px()^( 2 )+Py()^( 2 ) )*Py() ) +
+                           oneZ()* 2.0*U_0*( 1.0-( 4.0/( L_0*L_0 ) )*( Px()^( 2 )+Py()^( 2 ) ) )*( 1.0-( 4.0*u_filt/( U_0*L_0 ) )*Pz() ) );
 
-            // velocity in the Arterial wall (could have come from an Darcy code )
-            u_w = vf::project( Uh_wall,
+        // velocity in the Arterial wall (could have come from an Darcy code )
+        u_w = vf::project( Uh_wall,
                            elements( *_M_mesh_u_wall ),
-                           oneX()* (Klag/porosity)*u_filt*(L_0/2.0)*Px()/(Px()*Px()+Py()*Py()) +
-                           oneY()* (Klag/porosity)*u_filt*(L_0/2.0)*Py()/(Px()*Px()+Py()*Py()) );
+                           oneX()* ( Klag/porosity )*u_filt*( L_0/2.0 )*Px()/( Px()*Px()+Py()*Py() ) +
+                           oneY()* ( Klag/porosity )*u_filt*( L_0/2.0 )*Py()/( Px()*Px()+Py()*Py() ) );
 
 
-            // update P (in the future may want to update D, k, f .... whatever)
-            c_map["P_w"] = vf::project( Ch_wall, elements( *_M_mesh_c ), constant(Pr));
-            c_map["P_l"] = vf::project( Ch_lumen, elements( *_M_mesh_c ), constant(Pr ));
+        // update P (in the future may want to update D, k, f .... whatever)
+        c_map["P_w"] = vf::project( Ch_wall, elements( *_M_mesh_c ), constant( Pr ) );
+        c_map["P_l"] = vf::project( Ch_lumen, elements( *_M_mesh_c ), constant( Pr ) );
 
-            //concentrationStep( dt, time_discr_lumen, time_discr_wall, c_l, u_l, c_w, u_w );
+        //concentrationStep( dt, time_discr_lumen, time_discr_wall, c_l, u_l, c_w, u_w );
 
 
-            velocity_lumen_space_type::P1Lagrange::p1_type::element_type u_l_p1 = Uh_lumen_p1( u_l );
-            velocity_wall_space_type::P1Lagrange::p1_type::element_type u_w_p1 = Uh_wall_p1( u_w );
+        velocity_lumen_space_type::P1Lagrange::p1_type::element_type u_l_p1 = Uh_lumen_p1( u_l );
+        velocity_wall_space_type::P1Lagrange::p1_type::element_type u_w_p1 = Uh_wall_p1( u_w );
 
-            timeset_type::step_ptrtype ts_step_wl = ts_wl->step( t );
-            ts_step_wl->setMesh( _M_mesh_c );
-            ts_step_wl->addNodalScalar( "c_wall_lumen", c_l.size(), c_l.begin(), c_l.end() );
-            //ts_step_wl->addNodalScalar( "c_w", c_l.size(), c_l.begin(), c_l.end() );
+        timeset_type::step_ptrtype ts_step_wl = ts_wl->step( t );
+        ts_step_wl->setMesh( _M_mesh_c );
+        ts_step_wl->addNodalScalar( "c_wall_lumen", c_l.size(), c_l.begin(), c_l.end() );
+        //ts_step_wl->addNodalScalar( "c_w", c_l.size(), c_l.begin(), c_l.end() );
 
-            timeset_type::step_ptrtype ts_step_l = ts_l->step( t );
-            ts_step_l->setMesh( Uh_lumen_p1.mesh() );
-            ts_step_l->addNodalVector( "u_lumen", u_l_p1.size(), u_l_p1.begin(), u_l_p1.end() );
-            //ts_step_l->addNodalVector( "u_l", u.size(), u.begin(), u.end() );
+        timeset_type::step_ptrtype ts_step_l = ts_l->step( t );
+        ts_step_l->setMesh( Uh_lumen_p1.mesh() );
+        ts_step_l->addNodalVector( "u_lumen", u_l_p1.size(), u_l_p1.begin(), u_l_p1.end() );
+        //ts_step_l->addNodalVector( "u_l", u.size(), u.begin(), u.end() );
 
-            timeset_type::step_ptrtype ts_step_w = ts_w->step( t );
-            ts_step_w->setMesh( Uh_wall_p1.mesh() );
-            ts_step_w->addNodalVector( "u_wall", u_w_p1.size(), u_w_p1.begin(), u_w_p1.end() );
-            //ts_step_w->addNodalVector( "u_l", u.size(), u.begin(), u.end() );
+        timeset_type::step_ptrtype ts_step_w = ts_w->step( t );
+        ts_step_w->setMesh( Uh_wall_p1.mesh() );
+        ts_step_w->addNodalVector( "u_wall", u_w_p1.size(), u_w_p1.begin(), u_w_p1.end() );
+        //ts_step_w->addNodalVector( "u_l", u.size(), u.begin(), u.end() );
 
-            wall_lumen.save();
-            wall.save();
-            lumen.save();
-        }
+        wall_lumen.save();
+        wall.save();
+        lumen.save();
+    }
 }
 } // Feel
 
@@ -479,12 +482,12 @@ int main( int argc,  char** argv )
 {
     using namespace Feel;
 
-    Feel::po::options_description test("twodomainsmt options");
+    Feel::po::options_description test( "twodomainsmt options" );
     test.add_options()
-        ("dt", Feel::po::value<double>()->default_value( 0.1 ), "time step value")
-        ("T", Feel::po::value<double>()->default_value( 1.0 ), "final Time")
-        ("nel", Feel::po::value<int>()->default_value( 9473 ), "number of elements")
-        ;
+    ( "dt", Feel::po::value<double>()->default_value( 0.1 ), "time step value" )
+    ( "T", Feel::po::value<double>()->default_value( 1.0 ), "final Time" )
+    ( "nel", Feel::po::value<int>()->default_value( 9473 ), "number of elements" )
+    ;
 
     TwoDomainsMTApp app( argc, argv, makeAbout(), test );
     Debug() << "N process: " << Application::nProcess() << "\n"

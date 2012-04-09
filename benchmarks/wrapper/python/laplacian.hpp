@@ -62,15 +62,15 @@ inline
 po::options_description
 makeOptions()
 {
-    po::options_description laplacianoptions("Laplacian options");
+    po::options_description laplacianoptions( "Laplacian options" );
     laplacianoptions.add_options()
-        ("hsize", po::value<double>()->default_value( 0.5 ), "mesh size")
-        ("nu", po::value<double>()->default_value( 1 ), "coef diffusion")
-        ("beta", po::value<double>()->default_value( 1 ), "coef reaction " )
-        ("gammabc", po::value<double>()->default_value( 20 ), "weak Dirichlet penalisation parameter " )
+    ( "hsize", po::value<double>()->default_value( 0.5 ), "mesh size" )
+    ( "nu", po::value<double>()->default_value( 1 ), "coef diffusion" )
+    ( "beta", po::value<double>()->default_value( 1 ), "coef reaction " )
+    ( "gammabc", po::value<double>()->default_value( 20 ), "weak Dirichlet penalisation parameter " )
 
-        ("weak", "use weak dirichlet conditions")
-        ;
+    ( "weak", "use weak dirichlet conditions" )
+    ;
     return laplacianoptions.add( Feel::feel_options() );
 }
 inline
@@ -82,11 +82,11 @@ makeAbout()
                      "0.2",
                      "nD(n=1,2,3) Laplacian on simplices or simplex products",
                      Feel::AboutData::License_GPL,
-                     "Copyright (c) 2008 Universit� Joseph Fourier");
+                     "Copyright (c) 2008 Universit� Joseph Fourier" );
 
-    about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
-    about.addAuthor("Benoit Perrimond", "developer", "Benoit.Perrimond@bvra.e.ujf-grenoble.fr", "");
-    about.addAuthor("Vincent Chabannes", "developer", "vincent.chabannes@gmail.com", "");
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    about.addAuthor( "Benoit Perrimond", "developer", "Benoit.Perrimond@bvra.e.ujf-grenoble.fr", "" );
+    about.addAuthor( "Vincent Chabannes", "developer", "vincent.chabannes@gmail.com", "" );
     return about;
 
 }
@@ -100,7 +100,7 @@ makeAbout()
 template<int Dim, int Order, int RDim = Dim, template<uint16_type,uint16_type,uint16_type> class Entity=Simplex>
 class Laplacian
     :
-    public Application
+public Application
 {
     typedef Application super;
 public:
@@ -154,8 +154,10 @@ public:
         //exporter( Exporter<mesh_type>::New( this->about().appName() ) )
     {
         this->setLogs();
+
         if ( M_use_weak_dirichlet )
             Log()  << "use weak Dirichlet BC\n";
+
         if ( exporter && exporter->doExport() )
             Log()  << "export results to ensight format\n";
     }
@@ -173,6 +175,7 @@ public:
     {
         if ( M_use_weak_dirichlet )
             Log()  << "use weak Dirichlet BC\n";
+
         if ( exporter->doExport() )
             Log()  << "export results to ensight format\n";
     }
@@ -220,13 +223,18 @@ Laplacian<Dim,Order,RDim,Entity>::createMesh( double meshSize )
 {
     mesh_ptrtype mesh( new mesh_type );
 
-    GmshHypercubeDomain td(entity_type::nDim,entity_type::nOrder,entity_type::nRealDim,entity_type::is_hypercube);
+    GmshHypercubeDomain td( entity_type::nDim,entity_type::nOrder,entity_type::nRealDim,entity_type::is_hypercube );
     td.setCharacteristicLength( meshSize );
     td.setX( std::make_pair( -1, 1 ) );
-    if((Dim==1) && (RDim==2))  td.setY( std::make_pair( 1, 1 ) );
-    if(Dim>=2)  td.setY( std::make_pair( -1, 1 ) );
-    if((Dim==2) && (RDim==3))  td.setZ( std::make_pair( 1, 1 ) );
-    if(Dim==3)  td.setZ( std::make_pair( -1, 1 ) );
+
+    if ( ( Dim==1 ) && ( RDim==2 ) )  td.setY( std::make_pair( 1, 1 ) );
+
+    if ( Dim>=2 )  td.setY( std::make_pair( -1, 1 ) );
+
+    if ( ( Dim==2 ) && ( RDim==3 ) )  td.setZ( std::make_pair( 1, 1 ) );
+
+    if ( Dim==3 )  td.setZ( std::make_pair( -1, 1 ) );
+
     std::string fname = td.generate( entity_type::name().c_str() );
 
     ImporterGmsh<mesh_type> import( fname );
@@ -247,7 +255,7 @@ Laplacian<Dim, Order, RDim, Entity>::run()
 template<int Dim, int Order, int RDim, template<uint16_type,uint16_type,uint16_type> class Entity>
 void
 Laplacian<Dim, Order, RDim, Entity>::run( const double* X, unsigned long P,
-                                          double* Y, unsigned long YN )
+        double* Y, unsigned long YN )
 {
     boost::timer t1;
 
@@ -269,7 +277,8 @@ Laplacian<Dim, Order, RDim, Entity>::run( const double* X, unsigned long P,
      * First we create the mesh
      */
     mesh_ptrtype mesh = createMesh( meshSize );
-    Log()  << "mesh created in " << t1.elapsed() << "s\n"; t1.restart();
+    Log()  << "mesh created in " << t1.elapsed() << "s\n";
+    t1.restart();
 
     /*
      * The function space and some associate elements are then defined
@@ -278,37 +287,41 @@ Laplacian<Dim, Order, RDim, Entity>::run( const double* X, unsigned long P,
     element_type u( Xh, "u" );
     element_type v( Xh, "v" );
     Log()  << "[functionspace] Number of dof " << Xh->nLocalDof() << "\n";
-    Log()  << "function space and elements created in " << t1.elapsed() << "s\n"; t1.restart();
+    Log()  << "function space and elements created in " << t1.elapsed() << "s\n";
+    t1.restart();
 
     exact_space_ptrtype Eh = exact_space_type::New( mesh );
     exact_element_type fproj( Eh, "f" );
     exact_element_type gproj( Eh, "g" );
     Log()  << "[functionspace] Number of dof " << Eh->nLocalDof() << "\n";
-    Log()  << "function space and elements created in " << t1.elapsed() << "s\n"; t1.restart();
+    Log()  << "function space and elements created in " << t1.elapsed() << "s\n";
+    t1.restart();
 
 
 
 
     value_type pi = M_PI;
-    AUTO( g, sin(pi*Px())*cos(pi*Py())*cos(pi*Pz()) );
-    AUTO( f, (pi*pi*Dim*nu+beta)*g );
+    AUTO( g, sin( pi*Px() )*cos( pi*Py() )*cos( pi*Pz() ) );
+    AUTO( f, ( pi*pi*Dim*nu+beta )*g );
     AUTO( zf, 0*Px()+0*Py() );
 
     int tag1,tag2;
-    if ( ( Dim == 1 ) || ( Dim == 2 ) )
-        {
-            tag1 = 1;
-            tag2 = 3;
-        }
-    else if ( Dim == 3 )
-        {
-            tag1 = 15;
-            tag2 = 23;
-        }
 
-    fproj = vf::project( Eh, elements(mesh), f );
-    gproj = vf::project( Eh, elements(mesh), g );
-    v = vf::project( Xh, elements(mesh), g );
+    if ( ( Dim == 1 ) || ( Dim == 2 ) )
+    {
+        tag1 = 1;
+        tag2 = 3;
+    }
+
+    else if ( Dim == 3 )
+    {
+        tag1 = 15;
+        tag2 = 23;
+    }
+
+    fproj = vf::project( Eh, elements( mesh ), f );
+    gproj = vf::project( Eh, elements( mesh ), g );
+    v = vf::project( Xh, elements( mesh ), g );
 
     // Construction of the right hand side
 
@@ -316,20 +329,22 @@ Laplacian<Dim, Order, RDim, Entity>::run( const double* X, unsigned long P,
 
 
     form1( _test=Xh, _vector=F, _init=true ) =
-        integrate( elements(mesh), idv(fproj)*id(v) );
-    if ( M_use_weak_dirichlet )
-        {
-            form1( Xh, F ) +=
-                integrate( markedfaces(mesh,tag1),
-                           zf*(-nu*grad(v)*N()+M_gammabc*id(v)/hFace() ) );
-            form1( Xh, F ) +=
-                integrate( markedfaces(mesh,tag2),
-                           zf*(-nu*grad(v)*N()+M_gammabc*id(v)/hFace() ) );
+        integrate( elements( mesh ), idv( fproj )*id( v ) );
 
-        }
+    if ( M_use_weak_dirichlet )
+    {
+        form1( Xh, F ) +=
+            integrate( markedfaces( mesh,tag1 ),
+                       zf*( -nu*grad( v )*N()+M_gammabc*id( v )/hFace() ) );
+        form1( Xh, F ) +=
+            integrate( markedfaces( mesh,tag2 ),
+                       zf*( -nu*grad( v )*N()+M_gammabc*id( v )/hFace() ) );
+
+    }
 
     F->close();
-    Log()  << "F assembled in " << t1.elapsed() << "s\n"; t1.restart();
+    Log()  << "F assembled in " << t1.elapsed() << "s\n";
+    t1.restart();
 
     //Construction of the left hand side
 
@@ -337,27 +352,31 @@ Laplacian<Dim, Order, RDim, Entity>::run( const double* X, unsigned long P,
 
 
     form2( Xh, Xh, D, _init=true );
-    Log()  << "D initialized in " << t1.elapsed() << "s\n";t1.restart();
+    Log()  << "D initialized in " << t1.elapsed() << "s\n";
+    t1.restart();
 
     form2( Xh, Xh, D ) +=
-        integrate( elements(mesh),
-                   nu*(gradt(u)*trans(grad(v)))
-                   + beta*(idt(u)*id(v)) );
-    Log()  << "D stiffness+mass assembled in " << t1.elapsed() << "s\n";t1.restart();
+        integrate( elements( mesh ),
+                   nu*( gradt( u )*trans( grad( v ) ) )
+                   + beta*( idt( u )*id( v ) ) );
+    Log()  << "D stiffness+mass assembled in " << t1.elapsed() << "s\n";
+    t1.restart();
+
     if ( M_use_weak_dirichlet )
-        {
+    {
 
-            form2( Xh, Xh, D ) += integrate( markedfaces(mesh,tag1),
-                                             ( - nu*trans(id(v))*(gradt(u)*N())
-                                               - nu*trans(idt(u))*(grad(v)*N())
-                                               + M_gammabc*trans(idt(u))*id(v)/hFace()) );
-            form2( Xh, Xh, D ) += integrate( markedfaces(mesh,tag2),
-                                             ( - nu*trans(id(v))*(gradt(u)*N())
-                                               - nu*trans(idt(u))*(grad(v)*N())
-                                               + M_gammabc*trans(idt(u))*id(v)/hFace()) );
-            Log()  << "D weak bc assembled in " << t1.elapsed() << "s\n";t1.restart();
+        form2( Xh, Xh, D ) += integrate( markedfaces( mesh,tag1 ),
+                                         ( - nu*trans( id( v ) )*( gradt( u )*N() )
+                                           - nu*trans( idt( u ) )*( grad( v )*N() )
+                                           + M_gammabc*trans( idt( u ) )*id( v )/hFace() ) );
+        form2( Xh, Xh, D ) += integrate( markedfaces( mesh,tag2 ),
+                                         ( - nu*trans( id( v ) )*( gradt( u )*N() )
+                                           - nu*trans( idt( u ) )*( grad( v )*N() )
+                                           + M_gammabc*trans( idt( u ) )*id( v )/hFace() ) );
+        Log()  << "D weak bc assembled in " << t1.elapsed() << "s\n";
+        t1.restart();
 
-        }
+    }
 
     D->close();
 
@@ -365,13 +384,13 @@ Laplacian<Dim, Order, RDim, Entity>::run( const double* X, unsigned long P,
 
 
     if ( ! M_use_weak_dirichlet )
-        {
-            t1.restart();
-            form2( Xh, Xh, D ) +=
-                on( markedfaces(mesh, tag1), u, F, g )+
-                on( markedfaces(mesh, tag2), u, F, g );
-            Log()  << "Strong Dirichlet assembled in " << t1.elapsed() << "s on faces " << tag1 << " and " << tag2 << " \n";
-        }
+    {
+        t1.restart();
+        form2( Xh, Xh, D ) +=
+            on( markedfaces( mesh, tag1 ), u, F, g )+
+            on( markedfaces( mesh, tag2 ), u, F, g );
+        Log()  << "Strong Dirichlet assembled in " << t1.elapsed() << "s on faces " << tag1 << " and " << tag2 << " \n";
+    }
 
     t1.restart();
 
@@ -380,8 +399,8 @@ Laplacian<Dim, Order, RDim, Entity>::run( const double* X, unsigned long P,
     Log()  << "solve in " << t1.elapsed() << "s\n";
     t1.restart();
 
-    double L2error2 =integrate( elements(mesh),
-                                (idv(u)-idv(gproj))*(idv(u)-idv(gproj))).evaluate()( 0, 0 );
+    double L2error2 =integrate( elements( mesh ),
+                                ( idv( u )-idv( gproj ) )*( idv( u )-idv( gproj ) ) ).evaluate()( 0, 0 );
     double L2error =   math::sqrt( L2error2 );
 
     Log()  << "||error||_L2=" << L2error << "\n";
@@ -389,8 +408,8 @@ Laplacian<Dim, Order, RDim, Entity>::run( const double* X, unsigned long P,
     t1.restart();
 
 
-    double semiH1error2 =integrate( elements(mesh),
-                                    (gradv(u)-gradv(gproj))*trans(gradv(u)-gradv(gproj)) ).evaluate()( 0, 0 ) ;
+    double semiH1error2 =integrate( elements( mesh ),
+                                    ( gradv( u )-gradv( gproj ) )*trans( gradv( u )-gradv( gproj ) ) ).evaluate()( 0, 0 ) ;
 
     Log()  << "semi H1 norm computed in " << t1.elapsed() << "s\n";
     t1.restart();
@@ -411,8 +430,8 @@ Laplacian<Dim, Order, RDim, Entity>::run( const double* X, unsigned long P,
 template<int Dim, int Order, int RDim, template<uint16_type,uint16_type,uint16_type> class Entity>
 void
 Laplacian<Dim, Order, RDim, Entity>::solve( sparse_matrix_ptrtype& D,
-                                            element_type& u,
-                                            vector_ptrtype& F )
+        element_type& u,
+        vector_ptrtype& F )
 {
     vector_ptrtype U( backend->newVector( u.functionSpace() ) );
     backend->solve( D, D, U, F );
@@ -425,18 +444,18 @@ void
 Laplacian<Dim, Order, RDim, Entity>::exportResults( element_type& U, element_type& v )
 {
     if ( exporter && exporter->doExport() )
-        {
-            Log()  << "exportResults starts\n";
+    {
+        Log()  << "exportResults starts\n";
 
-            exporter->step(0)->setMesh( U.functionSpace()->mesh() );
+        exporter->step( 0 )->setMesh( U.functionSpace()->mesh() );
 
-            exporter->step(0)->add( "pid",
-                           regionProcess( boost::shared_ptr<p0_space_type>( new p0_space_type( U.functionSpace()->mesh() ) ) ) );
-            exporter->step(0)->add( "u", U );
-            exporter->step(0)->add( "exact", v );
+        exporter->step( 0 )->add( "pid",
+                                  regionProcess( boost::shared_ptr<p0_space_type>( new p0_space_type( U.functionSpace()->mesh() ) ) ) );
+        exporter->step( 0 )->add( "u", U );
+        exporter->step( 0 )->add( "exact", v );
 
-            exporter->save();
-        }
+        exporter->save();
+    }
 } // Laplacian::export
 
 }

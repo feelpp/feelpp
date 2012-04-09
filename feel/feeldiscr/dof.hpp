@@ -101,14 +101,15 @@ public:
     //@{
 
     //! copy operator
-    Dof& operator=( Dof const & o)
+    Dof& operator=( Dof const & o )
+    {
+        if ( this != &o )
         {
-            if (this != &o )
-            {
-                super::operator=( o );
-            }
-            return *this;
+            super::operator=( o );
         }
+
+        return *this;
+    }
     //@}
 
     /** @name Accessors
@@ -116,24 +117,42 @@ public:
     //@{
 
     /// \return the global index
-    size_type index() const { return this->get<0>(); }
+    size_type index() const
+    {
+        return this->get<0>();
+    }
 
     /// \return the sign
-    int16_type sign() const { return this->get<1>(); }
+    int16_type sign() const
+    {
+        return this->get<1>();
+    }
 
     /// \return the entity type (0: vertex, 1:edge, 2:face, 3:volume)
-    uint16_type entity() const { return this->get<2>(); }
+    uint16_type entity() const
+    {
+        return this->get<2>();
+    }
 
     /// \return the location
-    bool isOnBoundary() const { return this->get<3>(); }
+    bool isOnBoundary() const
+    {
+        return this->get<3>();
+    }
 
     /// \return the marker
-    Marker1 marker() const { return this->get<4>(); }
+    Marker1 marker() const
+    {
+        return this->get<4>();
+    }
 
     /**
      * \return the coordinates
      */
-    ublas::vector<double> const& coords() const { return M_coords; }
+    ublas::vector<double> const& coords() const
+    {
+        return M_coords;
+    }
 
     //@}
 
@@ -146,9 +165,9 @@ public:
      */
     void
     setCoordinates( ublas::vector<double> const& coords )
-        {
-            M_coords = coords;
-        }
+    {
+        M_coords = coords;
+    }
     //@}
 
 
@@ -168,30 +187,30 @@ private:
 };
 
 typedef multi_index::multi_index_container<
-    Dof,
-    multi_index::indexed_by<
+Dof,
+multi_index::indexed_by<
 
-        // sort by less<int> on index()
-        multi_index::ordered_unique<multi_index::const_mem_fun<Dof,
-                                                               size_type,
-                                                               &Dof::index> >,
+// sort by less<int> on index()
+multi_index::ordered_unique<multi_index::const_mem_fun<Dof,
+size_type,
+&Dof::index> >,
 
-        // sort by less<int> on entity()
-        multi_index::ordered_non_unique<multi_index::tag<detail::by_entity>,
-                                        multi_index::const_mem_fun<Dof,
-                                                                   uint16_type,
-                                                                   &Dof::entity> >,
-        // sort by less<int> on location()
-        multi_index::ordered_non_unique<multi_index::tag<detail::by_location>,
-                                        multi_index::const_mem_fun<Dof,
-                                                                   bool,
-                                                                   &Dof::isOnBoundary> >,
-        // sort by less<int> on marker()
-        multi_index::ordered_non_unique<multi_index::tag<detail::by_marker>,
-                                        multi_index::const_mem_fun<Dof,
-                                                                   Marker1,
-                                                                   &Dof::marker> >
-        > > dof_container_type;
+// sort by less<int> on entity()
+multi_index::ordered_non_unique<multi_index::tag<detail::by_entity>,
+multi_index::const_mem_fun<Dof,
+uint16_type,
+&Dof::entity> >,
+// sort by less<int> on location()
+multi_index::ordered_non_unique<multi_index::tag<detail::by_location>,
+multi_index::const_mem_fun<Dof,
+bool,
+&Dof::isOnBoundary> >,
+// sort by less<int> on marker()
+multi_index::ordered_non_unique<multi_index::tag<detail::by_marker>,
+multi_index::const_mem_fun<Dof,
+Marker1,
+&Dof::marker> >
+> > dof_container_type;
 
 
 } // Feel

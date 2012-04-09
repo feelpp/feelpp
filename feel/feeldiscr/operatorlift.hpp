@@ -36,7 +36,7 @@ namespace Feel
 {
 
 /* use weak or strong Dirichlet condition */
-    // enum WeakDirichlet{ strong=0, weak=1 };
+// enum WeakDirichlet{ strong=0, weak=1 };
 /**
  * \class OperatorLift
  * \brief OperatorLift made easy
@@ -75,18 +75,20 @@ public :
      */
     //@{
 
-    OperatorLift(domain_space_ptrtype domainSpace,
-                 backend_ptrtype backend = Backend<double>::build(BACKEND_PETSC),
-                 double gamma = 20,
-                 WeakDirichlet dirichlet_type = WEAK
-                 )
+    OperatorLift( domain_space_ptrtype domainSpace,
+                  backend_ptrtype backend = Backend<double>::build( BACKEND_PETSC ),
+                  double gamma = 20,
+                  WeakDirichlet dirichlet_type = WEAK
+                )
         :
-        ol_type(domainSpace, domainSpace, backend),
-        M_backend(backend),
-        M_gamma(gamma),
-        M_dir(dirichlet_type),
-        M_matrix(M_backend->newMatrix( domainSpace, domainSpace ))
-    {  initMatrix();  }
+        ol_type( domainSpace, domainSpace, backend ),
+        M_backend( backend ),
+        M_gamma( gamma ),
+        M_dir( dirichlet_type ),
+        M_matrix( M_backend->newMatrix( domainSpace, domainSpace ) )
+    {
+        initMatrix();
+    }
 
     ~OperatorLift() {}
     //@}
@@ -103,85 +105,89 @@ public :
         typedef typename vf::detail::clean2_type<Args,tag::quad1, _Q< vf::ExpressionOrder<_range_type,_expr_type>::value_1 > >::type _quad1_type;
     };
 
-    BOOST_PARAMETER_MEMBER_FUNCTION((domain_element_type),
-                                    lift,
-                                    tag,
-                                    (required
-                                     (range,  *)
-                                     (expr,   *)
+    BOOST_PARAMETER_MEMBER_FUNCTION( ( domain_element_type ),
+                                     lift,
+                                     tag,
+                                     ( required
+                                       ( range,  * )
+                                       ( expr,   * )
                                      )
-                                    (optional
-                                     (quad,   *, (typename integrate_type<Args,decltype(elements(this->domainSpace()->mesh()))>::_quad_type()) )
-                                     (quad1,   *, (typename integrate_type<Args,decltype(elements(this->domainSpace()->mesh()))>::_quad1_type()) )
-                                     (geomap, *, GeomapStrategyType::GEOMAP_OPT )
-                                     ))
+                                     ( optional
+                                       ( quad,   *, ( typename integrate_type<Args,decltype( elements( this->domainSpace()->mesh() ) )>::_quad_type() ) )
+                                       ( quad1,   *, ( typename integrate_type<Args,decltype( elements( this->domainSpace()->mesh() ) )>::_quad1_type() ) )
+                                       ( geomap, *, GeomapStrategyType::GEOMAP_OPT )
+                                     ) )
 
     {
         using namespace vf;
 
         domain_element_type de = this->domainSpace()->element();
 
-        auto ie = M_backend->newVector(this->domainSpace());
+        auto ie = M_backend->newVector( this->domainSpace() );
 
         //weak dirichlet boundary conditions
 
-        form1(_test=this->domainSpace(), _vector=ie, _init=true);
+        form1( _test=this->domainSpace(), _vector=ie, _init=true );
 
-        if(M_dir == WEAK)
+        if ( M_dir == WEAK )
         {
 
-            form1(_test=this->domainSpace(), _vector=ie) +=
-                integrate(_range=range,
-                          _expr=expr*(-grad(this->domainSpace()->element() )*vf::N() +
-                                      M_gamma / vf::hFace() *id( this->domainSpace()->element() ) ),
-                          _quad=quad );
+            form1( _test=this->domainSpace(), _vector=ie ) +=
+                integrate( _range=range,
+                           _expr=expr*( -grad( this->domainSpace()->element() )*vf::N() +
+                                        M_gamma / vf::hFace() *id( this->domainSpace()->element() ) ),
+                           _quad=quad );
         }
 
-        M_matrixFull = M_backend->newMatrix(this->domainSpace(), this->domainSpace() );
+        M_matrixFull = M_backend->newMatrix( this->domainSpace(), this->domainSpace() );
 
         form2( _test=this->domainSpace(), _trial=this->domainSpace(), _matrix=M_matrixFull, _init=true );
 
-        if(M_dir == WEAK)
+        if ( M_dir == WEAK )
         {
 
-            form2 (_trial=this->domainSpace(),
-                   _test=this->domainSpace(),
-                   _matrix=M_matrixFull) +=
-                integrate( _range=range, _expr=
-                           (-trans(id(this->domainSpace()->element() ))*gradt(this->domainSpace()->element())*vf::N()
-                            -trans(idt(this->domainSpace()->element() ))* grad(this->domainSpace()->element())*vf::N()
-                            + M_gamma * trans(idt( this->domainSpace()->element() )) /*trial*/
-                            *id( this->domainSpace()->element() ) / vf::hFace()   /*test*/
-                            ));
+            form2 ( _trial=this->domainSpace(),
+                    _test=this->domainSpace(),
+                    _matrix=M_matrixFull ) +=
+                        integrate( _range=range, _expr=
+                                       ( -trans( id( this->domainSpace()->element() ) )*gradt( this->domainSpace()->element() )*vf::N()
+                                         -trans( idt( this->domainSpace()->element() ) )* grad( this->domainSpace()->element() )*vf::N()
+                                         + M_gamma * trans( idt( this->domainSpace()->element() ) ) /*trial*/
+                                         *id( this->domainSpace()->element() ) / vf::hFace()   /*test*/
+                                       ) );
 
         }
 
         M_matrixFull->close();
-        M_matrixFull->addMatrix(1., M_matrix );
+        M_matrixFull->addMatrix( 1., M_matrix );
 
-        if(M_dir == STRONG)
+        if ( M_dir == STRONG )
         {
-            form2 (_trial=this->domainSpace(),
-                   _test=this->domainSpace(),
-                   _matrix=M_matrixFull) +=  on( range , de, ie, expr );
+            form2 ( _trial=this->domainSpace(),
+                    _test=this->domainSpace(),
+                    _matrix=M_matrixFull ) +=  on( range , de, ie, expr );
         }
 
-        M_backend->solve(M_matrixFull, de, ie);
+        M_backend->solve( M_matrixFull, de, ie );
 
         return de;
     }
 
     template<typename Elts, typename RhsExpr>
     domain_element_type
-    operator()(Elts elts ,RhsExpr const& rhs_expr)
-    {   return this->lift(elts, rhs_expr);   }
+    operator()( Elts elts ,RhsExpr const& rhs_expr )
+    {
+        return this->lift( elts, rhs_expr );
+    }
 
 
 
     template<typename Elts, typename RhsExpr>
     void
-    operator()(Elts elts, domain_element_type& de, RhsExpr const& rhs_expr)
-    {   de = this->lift(elts, rhs_expr);   }
+    operator()( Elts elts, domain_element_type& de, RhsExpr const& rhs_expr )
+    {
+        de = this->lift( elts, rhs_expr );
+    }
 
     //@}
 
@@ -193,14 +199,14 @@ private :
         using namespace vf;
 
 
-        form2 (_trial=this->domainSpace(),
-               _test=this->domainSpace(),
-               _matrix=M_matrix,
-               _init=true) =
-            integrate(elements(this->domainSpace()->mesh()),
-                      trace( gradt(this->domainSpace()->element())
-                             * trans(grad(this->domainSpace()->element())))
-                      );
+        form2 ( _trial=this->domainSpace(),
+                _test=this->domainSpace(),
+                _matrix=M_matrix,
+                _init=true ) =
+                    integrate( elements( this->domainSpace()->mesh() ),
+                               trace( gradt( this->domainSpace()->element() )
+                                      * trans( grad( this->domainSpace()->element() ) ) )
+                             );
 
         M_matrix->close();
 
@@ -224,11 +230,11 @@ private :
 template<typename TDomainSpace>
 boost::shared_ptr< OperatorLift<TDomainSpace> >
 operatorLift( boost::shared_ptr<TDomainSpace> const& domainspace,
-              typename OperatorLift<TDomainSpace>::backend_ptrtype const& backend = Backend<double>::build(BACKEND_PETSC),
-              double gamma = 20, WeakDirichlet dirichlet_type = WEAK)
+              typename OperatorLift<TDomainSpace>::backend_ptrtype const& backend = Backend<double>::build( BACKEND_PETSC ),
+              double gamma = 20, WeakDirichlet dirichlet_type = WEAK )
 {
     typedef OperatorLift<TDomainSpace> Proj_type;
-    boost::shared_ptr<Proj_type> Lift( new Proj_type(domainspace, backend, gamma, dirichlet_type) );
+    boost::shared_ptr<Proj_type> Lift( new Proj_type( domainspace, backend, gamma, dirichlet_type ) );
     return Lift;
 }
 

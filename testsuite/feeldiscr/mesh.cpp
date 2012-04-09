@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -36,7 +36,9 @@ createGeometry( int Dim, double meshSize, double a, double b )
 {
     std::ostringstream ostr;
     std::ostringstream nameStr;
-    switch( Dim ) {
+
+    switch ( Dim )
+    {
     case 1:
         ostr << "Mesh.MshFileVersion = 1;\n"
              << "h=" << meshSize << ";\n"
@@ -48,6 +50,7 @@ createGeometry( int Dim, double meshSize, double a, double b )
              << "Physical Line(23) = {1};\n";
         nameStr << "line." << meshSize;
         break;
+
     case 2:
 #if 0
         ostr << "Mesh.MshFileVersion = 1;\n"
@@ -136,6 +139,7 @@ createGeometry( int Dim, double meshSize, double a, double b )
         nameStr << "triangle." << meshSize;
 
         break;
+
     case 3:
         ostr << "Mesh.MshFileVersion = 1;\n"
              << "h=" << meshSize << ";\n"
@@ -159,6 +163,7 @@ createGeometry( int Dim, double meshSize, double a, double b )
              << "Physical Volume(23) = {1};\n";
         nameStr << "cube." << meshSize;
         break;
+
     default:
         std::ostringstream os;
         os << "invalid dimension: " << Dim;

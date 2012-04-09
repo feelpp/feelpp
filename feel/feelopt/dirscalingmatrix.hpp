@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -62,7 +62,7 @@ public:
     typedef NumType value_type;
 
     typedef vector<value_type> vector_type;
-	typedef banded_matrix<value_type> matrix_type;
+    typedef banded_matrix<value_type> matrix_type;
 
     //@}
 
@@ -78,7 +78,7 @@ public:
         M_value(),
         M_jacobian(),
         M_trust_region_active( false )
-        {}
+    {}
 
     DirScalingMatrix( vector_type const& __lb, vector_type const& __ub )
         :
@@ -88,15 +88,15 @@ public:
         M_value( __lb.size(), __lb.size(), 0, 0 ),
         M_jacobian( __lb.size(), __lb.size(), 0, 0 ),
         M_trust_region_active( false )
-        {
-            GST_SMART_ASSERT( __lb.size() == __ub.size() )( __lb )( __ub )( "inconsistent bounds definition" );
-            GST_SMART_ASSERT( *std::min_element( M_lb_ub.begin(), M_lb_ub.end() ) >= 0 )
-                            ( M_lb )( M_ub )( "lower and upper bounds are not properly defined" );
-        }
+    {
+        GST_SMART_ASSERT( __lb.size() == __ub.size() )( __lb )( __ub )( "inconsistent bounds definition" );
+        GST_SMART_ASSERT( *std::min_element( M_lb_ub.begin(), M_lb_ub.end() ) >= 0 )
+        ( M_lb )( M_ub )( "lower and upper bounds are not properly defined" );
+    }
     DirScalingMatrix( DirScalingMatrix const & )
-        {}
+    {}
     ~DirScalingMatrix()
-        {}
+    {}
 
     //@}
 
@@ -112,13 +112,25 @@ public:
     //@{
 
     value_type zeta( vector_type const& __x ) const;
-    value_type zeta() const { return M_zeta; }
+    value_type zeta() const
+    {
+        return M_zeta;
+    }
 
-    matrix_type const& operator()() const { return M_value; }
+    matrix_type const& operator()() const
+    {
+        return M_value;
+    }
 
-    matrix_type const& jacobian() const { return M_jacobian; }
+    matrix_type const& jacobian() const
+    {
+        return M_jacobian;
+    }
 
-    bool isTrustRegionActive() const { return M_trust_region_active; }
+    bool isTrustRegionActive() const
+    {
+        return M_trust_region_active;
+    }
     //@}
 
     /** @name  Mutators
@@ -128,15 +140,15 @@ public:
     void update( value_type const&,  vector_type const&, vector_type const&, mode_type = WITH_JACOBIAN );
 
     void setBounds( vector_type const& __lb, vector_type const& __up )
-        {
-            GST_SMART_ASSERT( __lb.size() == __up.size() )( __lb )( __up )( "inconsistent bounds definition" );
-            M_lb = __lb;
-            M_ub = __up;
-            M_lb_ub = __up - __lb;
+    {
+        GST_SMART_ASSERT( __lb.size() == __up.size() )( __lb )( __up )( "inconsistent bounds definition" );
+        M_lb = __lb;
+        M_ub = __up;
+        M_lb_ub = __up - __lb;
 
-            GST_SMART_ASSERT( *std::min_element( M_lb_ub.begin(), M_lb_ub.end() ) >= 0 )
-                            ( M_lb )( M_ub )( "lower and upper bounds are not properly defined" );
-        }
+        GST_SMART_ASSERT( *std::min_element( M_lb_ub.begin(), M_lb_ub.end() ) >= 0 )
+        ( M_lb )( M_ub )( "lower and upper bounds are not properly defined" );
+    }
     //@}
 
     /** @name  Methods
@@ -150,16 +162,16 @@ public:
 protected:
 
     vector_type distanceToLB( vector_type const& __x ) const
-        {
-            GST_SMART_ASSERT( __x.size() == M_lb.size() )( __x )( M_lb )( "inconsistent bounds definition" );
-            return element_div( __x - M_lb, M_lb_ub );
-        }
+    {
+        GST_SMART_ASSERT( __x.size() == M_lb.size() )( __x )( M_lb )( "inconsistent bounds definition" );
+        return element_div( __x - M_lb, M_lb_ub );
+    }
 
     vector_type distanceToUB( vector_type const& __x ) const
-        {
-            GST_SMART_ASSERT( __x.size() == M_ub.size() )( __x )( M_ub )( "inconsistent bounds definition" );
-            return element_div( __x - M_ub, M_lb_ub );
-        }
+    {
+        GST_SMART_ASSERT( __x.size() == M_ub.size() )( __x )( M_ub )( "inconsistent bounds definition" );
+        return element_div( __x - M_ub, M_lb_ub );
+    }
 
 private:
 
@@ -182,7 +194,7 @@ DirScalingMatrix<NumType>::zeta( vector_type const& __x ) const
     M_zeta = 0.9;//M_options.zeta_min;
 
     M_zeta = std::max( M_zeta, std::max( ublas::norm_inf( distanceToLB( __x ) ),
-                                           ublas::norm_inf( distanceToUB( __x ) ) ) );
+                                         ublas::norm_inf( distanceToUB( __x ) ) ) );
     return M_zeta;
 }
 template<typename NumType>
@@ -209,31 +221,35 @@ DirScalingMatrix<NumType>::update( value_type const& __Delta,
         // we are in the trust region
         M_value = identity_matrix<value_type>( M_value.size1(), M_value.size2() );
     }
+
     else
     {
         M_trust_region_active = true;
 
-        for( size_t __i = 0; __i < __x.size(); ++__i )
-	    {
-            if( __s ( __i ) < 0 )
+        for ( size_t __i = 0; __i < __x.size(); ++__i )
+        {
+            if ( __s ( __i ) < 0 )
                 M_value ( __i, __i ) = M_zeta * std::min( 1. , __dl( __i ) ) / __Delta;
+
             else
                 M_value ( __i, __i ) = M_zeta * std::min( 1. , __du( __i ) ) / __Delta;
-	    }
+        }
     }
 
     if ( __mode == WITH_JACOBIAN )
     {
-        for( size_t i = 0; i < __x.size(); i++ )
+        for ( size_t i = 0; i < __x.size(); i++ )
         {
-            if ( (__s( i ) < 0) && (__x( i ) < M_lb(i) + __Delta) )
+            if ( ( __s( i ) < 0 ) && ( __x( i ) < M_lb( i ) + __Delta ) )
             {
                 M_jacobian ( i, i ) = M_zeta / __Delta;
             }
-            else if	( (__s ( i ) > 0) && (__x ( i ) > M_ub(i) - __Delta) )
+
+            else if	( ( __s ( i ) > 0 ) && ( __x ( i ) > M_ub( i ) - __Delta ) )
             {
                 M_jacobian ( i, i ) = -M_zeta / __Delta;
             }
+
             else
             {
                 M_jacobian ( i, i ) = 0;

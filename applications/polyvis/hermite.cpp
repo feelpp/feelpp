@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -35,7 +35,7 @@ namespace detail
 # define ORDERS_HERMITE BOOST_PP_TUPLE_TO_LIST(1,(3))
 # define DIMS_HERMITE BOOST_PP_TUPLE_TO_LIST(2,(1, 2))
 
-BOOST_PP_LIST_FOR_EACH_PRODUCT(HERMITE_FACTORY_OP, 3, (DIMS_HERMITE, ORDERS_HERMITE, SIMPLEX))
+BOOST_PP_LIST_FOR_EACH_PRODUCT( HERMITE_FACTORY_OP, 3, ( DIMS_HERMITE, ORDERS_HERMITE, SIMPLEX ) )
 }
 }
 

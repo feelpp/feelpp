@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -35,7 +35,8 @@
 namespace Feel
 {
 template<typename Poly, template<uint16_type> class PolySetType > class PolynomialSet;
-    namespace detail {
+namespace detail
+{
 template<uint16_type Dim,
          uint16_type Order,
          uint16_type RealDim,
@@ -43,7 +44,7 @@ template<uint16_type Dim,
          typename T,
          template<uint16_type,uint16_type,uint16_type> class Convex>
 class OrthonormalPolynomialSet;
-    }
+}
 /**
  * \class FiniteElement
  * \brief Finite element following Ciarlet framework
@@ -53,63 +54,63 @@ class OrthonormalPolynomialSet;
  *  @see
  */
 template<typename P,
-	template<class Pr,  template<class,uint16_type,class> class Pt> class PDual,
-	template<class,uint16_type,class> class Pts>
+         template<class Pr,  template<class,uint16_type,class> class Pt> class PDual,
+         template<class,uint16_type,class> class Pts>
 class FiniteElement :
-                    public mpl::if_<mpl::bool_<P::is_scalar>,
-                                    mpl::identity<PolynomialSet<P, Scalar> >,
-                                    mpl::identity<PolynomialSet<P, Vectorial> > >::type::type
+    public mpl::if_<mpl::bool_<P::is_scalar>,
+    mpl::identity<PolynomialSet<P, Scalar> >,
+    mpl::identity<PolynomialSet<P, Vectorial> > >::type::type
 {
-  typedef typename mpl::if_<mpl::bool_<P::is_scalar>,
-                            mpl::identity<PolynomialSet<P, Scalar> >,
-                            mpl::identity<PolynomialSet<P, Vectorial> > >::type::type super;
+    typedef typename mpl::if_<mpl::bool_<P::is_scalar>,
+            mpl::identity<PolynomialSet<P, Scalar> >,
+            mpl::identity<PolynomialSet<P, Vectorial> > >::type::type super;
 
 public:
 
-  /** @name Typedefs
-   */
-  //@{
+    /** @name Typedefs
+     */
+    //@{
 
-  typedef FiniteElement<P, PDual, Pts> self_type;
+    typedef FiniteElement<P, PDual, Pts> self_type;
 
-  typedef typename P::value_type value_type;
+    typedef typename P::value_type value_type;
 
-  typedef P primal_space_type;
+    typedef P primal_space_type;
 
-  /**
-   * Polynomial Set type: scalar or vectorial
-   */
-  typedef typename primal_space_type::polyset_type polyset_type;
+    /**
+     * Polynomial Set type: scalar or vectorial
+     */
+    typedef typename primal_space_type::polyset_type polyset_type;
 
-  static const bool is_modal = false;
+    static const bool is_modal = false;
 
-  typedef PDual<P, Pts> dual_space_type;
+    typedef PDual<P, Pts> dual_space_type;
 
-  typedef typename super::matrix_type matrix_type;
-  typedef typename super::points_type points_type;
-  typedef typename super::self_type polynomialset_type;
+    typedef typename super::matrix_type matrix_type;
+    typedef typename super::points_type points_type;
+    typedef typename super::self_type polynomialset_type;
 
-  typedef typename super::polynomial_type polynomial_type;
-  typedef typename super::polynomial_view_type polynomial_view_type;
+    typedef typename super::polynomial_type polynomial_type;
+    typedef typename super::polynomial_view_type polynomial_view_type;
 
-  //!< Total number of degrees of freedom (equal to refEle::nDof)
-  static const uint16_type nLocalDof = dual_space_type::nLocalDof;
-  //!< Number of degrees of freedom per vertex
-  static const uint16_type nDofPerVertex = dual_space_type::nDofPerVertex;
-  //!< Number of degrees  of freedom per edge
-  static const uint16_type nDofPerEdge = dual_space_type::nDofPerEdge;
-  //!< Number of degrees  of freedom per face
-  static const uint16_type nDofPerFace = dual_space_type::nDofPerFace;
-  //!< Number of degrees  of freedom per volume
-  static const uint16_type nDofPerVolume = dual_space_type::nDofPerVolume;
+    //!< Total number of degrees of freedom (equal to refEle::nDof)
+    static const uint16_type nLocalDof = dual_space_type::nLocalDof;
+    //!< Number of degrees of freedom per vertex
+    static const uint16_type nDofPerVertex = dual_space_type::nDofPerVertex;
+    //!< Number of degrees  of freedom per edge
+    static const uint16_type nDofPerEdge = dual_space_type::nDofPerEdge;
+    //!< Number of degrees  of freedom per face
+    static const uint16_type nDofPerFace = dual_space_type::nDofPerFace;
+    //!< Number of degrees  of freedom per volume
+    static const uint16_type nDofPerVolume = dual_space_type::nDofPerVolume;
 
-  static const uint16_type nDof = nLocalDof;
-  static const uint16_type nNodes = nDof;
-  static const uint16_type nDofGrad = super::nDim*nDof;
-  static const uint16_type nDofHess = super::nDim*super::nDim*nDof;
-    static const fem::transformation_type trans = (fem::transformation_type)mpl::if_<mpl::and_<mpl::bool_<P::convex_type::is_simplex>,mpl::equal_to<mpl::int_<super::nOrder>, mpl::int_<1> > >,
-                                                                                     mpl::int_<fem::LINEAR>,
-                                                                                     mpl::int_<fem::NONLINEAR> >::type::value;
+    static const uint16_type nDof = nLocalDof;
+    static const uint16_type nNodes = nDof;
+    static const uint16_type nDofGrad = super::nDim*nDof;
+    static const uint16_type nDofHess = super::nDim*super::nDim*nDof;
+    static const fem::transformation_type trans = ( fem::transformation_type )mpl::if_<mpl::and_<mpl::bool_<P::convex_type::is_simplex>,mpl::equal_to<mpl::int_<super::nOrder>, mpl::int_<1> > >,
+                                          mpl::int_<fem::LINEAR>,
+                                          mpl::int_<fem::NONLINEAR> >::type::value;
     //@}
 
     /** @name Constructors, destructor
@@ -118,7 +119,7 @@ public:
 
     FiniteElement( dual_space_type const& pdual )
         :
-        super(pdual.primalSpace()),
+        super( pdual.primalSpace() ),
         _M_dual( pdual ),
         _M_primal( _M_dual.primalSpace() )
     {
@@ -128,23 +129,25 @@ public:
         //std::cout << "[FiniteElement] A = " << A << "\n";
 
         ublas::matrix<value_type> D = ublas::identity_matrix<value_type>( A.size1(), A.size2() );
-        LU<ublas::matrix<value_type> > lu(A);
+        LU<ublas::matrix<value_type> > lu( A );
         ublas::matrix<value_type> C = lu.solve( D );
         //std::cout << "[FiniteElement] D = " << D << "\n";
         //std::cout << "[FiniteElement] C = " << C << "\n";
         Debug( 5030 ) << "is singular : " << lu.isNonsingular() << "\n"
                       << "det(A) =  " << lu.det() << "\n";
 #if 0
+
         if ( !lu.isNonsingular() )
         {
             std::cout << "A=" << A << "\n"
                       << "D=" << D << "\n"
                       << "C=" << C << "\n";
         }
+
 #endif
         FEELPP_ASSERT( lu.isNonsingular() )( A )( D )( C ).error( "vandermonde matrix is singular" );
 
-        this->setCoefficient( ublas::trans(C ) );
+        this->setCoefficient( ublas::trans( C ) );
 
         //_M_pset = polynomialset_type( _M_primal, C );
 
@@ -156,7 +159,7 @@ public:
     }
     FiniteElement( FiniteElement const & fe )
         :
-        super(fe),
+        super( fe ),
         _M_dual( fe._M_dual ),
         _M_primal( fe._M_primal )
     {}
@@ -178,6 +181,7 @@ public:
             _M_primal = fe._M_primal;
             _M_dual = fe._M_dual;
         }
+
         return *this;
     }
 
@@ -217,28 +221,40 @@ public:
     /**
      * \return the number of points associated with FE
      */
-    uint16_type nbPoints() const { return points().size2(); }
+    uint16_type nbPoints() const
+    {
+        return points().size2();
+    }
 
     /**
      * \return the polynomial set defining the finite element
      */
-     // Que devient cette fonction ??
-     // polynomialset_type const& functionShape() const { return _M_pset; }
+    // Que devient cette fonction ??
+    // polynomialset_type const& functionShape() const { return _M_pset; }
 
     /**
      * \return the dual basis of the finite element
      */
-    primal_space_type const& primal() const { return _M_primal; }
+    primal_space_type const& primal() const
+    {
+        return _M_primal;
+    }
 
     /**
      * \return the dual basis of the finite element
      */
-    dual_space_type const& dual() const { return _M_dual; }
+    dual_space_type const& dual() const
+    {
+        return _M_dual;
+    }
 
     /**
      * \return points associated with the lagrange finite element
      */
-    points_type const& points() const { return _M_dual.points(); }
+    points_type const& points() const
+    {
+        return _M_dual.points();
+    }
 
     /**
      * get the points associated with the finite element on a face \c
@@ -249,7 +265,10 @@ public:
      * \return points associated with a face of the lagrange finite
      * element
      */
-    points_type const& points( uint16_type f ) const { return _M_dual.points( f ); }
+    points_type const& points( uint16_type f ) const
+    {
+        return _M_dual.points( f );
+    }
 
     /**
      * \return the family name of the finite element

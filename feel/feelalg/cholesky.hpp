@@ -42,35 +42,41 @@ namespace ublas = boost::numeric::ublas;
  * \return nonzero if decompositon fails (the value ist 1 + the numer of the failing row)
  */
 template < class MATRIX, class TRIA >
-size_t cholesky_decompose(const MATRIX& A, TRIA& L)
+size_t cholesky_decompose( const MATRIX& A, TRIA& L )
 {
-  using namespace ublas;
+    using namespace ublas;
 
-  typedef typename MATRIX::value_type T;
+    typedef typename MATRIX::value_type T;
 
-  assert( A.size1() == A.size2() );
-  assert( A.size1() == L.size1() );
-  assert( A.size2() == L.size2() );
+    assert( A.size1() == A.size2() );
+    assert( A.size1() == L.size1() );
+    assert( A.size2() == L.size2() );
 
-  const size_t n = A.size1();
+    const size_t n = A.size1();
 
-  for (size_t k=0 ; k < n; k++) {
+    for ( size_t k=0 ; k < n; k++ )
+    {
 
-    double qL_kk = A(k,k) - inner_prod( project( row(L, k), range(0, k) ),
-                                        project( row(L, k), range(0, k) ) );
+        double qL_kk = A( k,k ) - inner_prod( project( row( L, k ), range( 0, k ) ),
+                                              project( row( L, k ), range( 0, k ) ) );
 
-    if (qL_kk <= 0) {
-      return 1 + k;
-    } else {
-      double L_kk = sqrt( qL_kk );
-      L(k,k) = L_kk;
+        if ( qL_kk <= 0 )
+        {
+            return 1 + k;
+        }
 
-      matrix_column<TRIA> cLk(L, k);
-      project( cLk, range(k+1, n) )
-        = ( project( column(A, k), range(k+1, n) )
-            - prod( project(L, range(k+1, n), range(0, k)),
-                    project(row(L, k), range(0, k) ) ) ) / L_kk;
+        else
+        {
+            double L_kk = sqrt( qL_kk );
+            L( k,k ) = L_kk;
+
+            matrix_column<TRIA> cLk( L, k );
+            project( cLk, range( k+1, n ) )
+                = ( project( column( A, k ), range( k+1, n ) )
+                    - prod( project( L, range( k+1, n ), range( 0, k ) ),
+                            project( row( L, k ), range( 0, k ) ) ) ) / L_kk;
+        }
     }
-  }
-  return 0;
+
+    return 0;
 }

@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -53,31 +53,48 @@ public:
     MatrixMass( int n )
         :
         _M_mat( n, n )
+    {
+        // Defining constants.
+
+        value_type sub  = 1.0/value_type( n+1 );
+        value_type diag = 4.0/value_type( n+1 );
+
+        for ( int __i = 0; __i < n; ++__i )
         {
-            // Defining constants.
+            if ( __i != 0 )
+                _M_mat( __i, __i-1 ) = sub;
 
-            value_type sub  = 1.0/value_type(n+1);
-            value_type diag = 4.0/value_type(n+1);
+            _M_mat( __i, __i ) = diag;
 
-            for (int __i = 0; __i < n; ++__i)
-            {
-                if ( __i != 0 )
-                    _M_mat( __i, __i-1 ) = sub;
-                _M_mat( __i, __i ) = diag;
-                if ( __i != n-1 )
-                    _M_mat( __i, __i+1 ) = sub;
-            }
+            if ( __i != n-1 )
+                _M_mat( __i, __i+1 ) = sub;
         }
+    }
 
     ~MatrixMass()
-        {
-        }
-    uint const * ia()const { return _M_mat.index1_data(); }
-    uint const * jaData()const { return _M_mat.index2_data(); }
-    double* valueData() { return _M_mat.value_data(); }
+    {
+    }
+    uint const * ia()const
+    {
+        return _M_mat.index1_data();
+    }
+    uint const * jaData()const
+    {
+        return _M_mat.index2_data();
+    }
+    double* valueData()
+    {
+        return _M_mat.value_data();
+    }
 
-    matrix_type const& matrix() const { return _M_mat; }
-    matrix_type &      matrix()       { return _M_mat; }
+    matrix_type const& matrix() const
+    {
+        return _M_mat;
+    }
+    matrix_type &      matrix()
+    {
+        return _M_mat;
+    }
 
 private:
     matrix_type _M_mat;
@@ -109,16 +126,31 @@ public:
     MatrixConvectionDiffusion( int nx, value_type __rho = 0.0 );
 
     ~MatrixConvectionDiffusion()
-        {
-            delete _M_mat;
-            delete _M_pattern;
-        }
-    uint const * iaData()const  { return _M_mat->Patt()->giveRawCSR_ia(); }
-    uint const * jaData()const  { return _M_mat->Patt()->giveRawCSR_ja(); }
-    double* valueData() { return _M_mat->giveRawCSR_value(); }
+    {
+        delete _M_mat;
+        delete _M_pattern;
+    }
+    uint const * iaData()const
+    {
+        return _M_mat->Patt()->giveRawCSR_ia();
+    }
+    uint const * jaData()const
+    {
+        return _M_mat->Patt()->giveRawCSR_ja();
+    }
+    double* valueData()
+    {
+        return _M_mat->giveRawCSR_value();
+    }
 
-    matrix_type const& matrix() const { return *_M_mat; }
-    matrix_type &      matrix()       { return *_M_mat; }
+    matrix_type const& matrix() const
+    {
+        return *_M_mat;
+    }
+    matrix_type &      matrix()
+    {
+        return *_M_mat;
+    }
 
 private:
     value_type _M_rho;

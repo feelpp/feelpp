@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -46,8 +46,10 @@ int main( int argc, char** argv )
 {
     const int S = 10;
     int N;
+
     if ( argc == 2 )
         N = std::atoi( argv[1] );
+
     else
         N = 100000;
 
@@ -83,20 +85,24 @@ int main( int argc, char** argv )
         mc3.assign( ublas::scalar_matrix<double>( mc3.size1(), mc3.size2(), 1 ) );
         mc3.assign( ublas::prod( ublas::trans( mc1 ), mc2 ) );
     }
+
     Log() << "ublas::prod : " << timer.elapsed() << "\n";
 
     timer.restart();
     dcm_t mc6( S, S );
+
     for ( int i = 0; i < N; ++i )
     {
         mc6.assign( ublas::scalar_matrix<double>( mc3.size1(), mc3.size2(), 1 ) );
         ublas::opb_prod( ublas::trans( mc1 ), mc2, mc6 );
     }
+
     Log() << "ublas::obp_prod : " << timer.elapsed() << "\n";
 
     timer.restart();
     dcm_t mc4( S, S );
 #if 0
+
     for ( int i = 0; i < N; ++i )
     {
         mc4.assign( ublas::scalar_matrix<double>( mc3.size1(), mc3.size2(), 1 ) );
@@ -104,6 +110,7 @@ int main( int argc, char** argv )
                     1.0, mc1, mc2,
                     0.0, mc4 );
     }
+
     Log() << "blas::gemm : " << timer.elapsed() << "\n";
 #endif
     Log() << "||mc3-mc4|| : " << ublas::norm_frobenius( mc3-mc4 ) << "\n";
@@ -113,6 +120,7 @@ int main( int argc, char** argv )
 
     dcm_t mc5( S, S );
 #if 0
+
     for ( int i = 0; i < N; ++i )
     {
         mc5.assign( ublas::scalar_matrix<double>( mc5.size1(), mc5.size2(), 1 ) );
@@ -120,6 +128,7 @@ int main( int argc, char** argv )
                     1.0, mc3, mc4,
                     0.0, mc5 );
     }
+
 #endif
     Log() << "blas::gemm mc3*mc4 : " << timer.elapsed() << "\n";
 
@@ -130,6 +139,7 @@ int main( int argc, char** argv )
         mc5.assign( ublas::scalar_matrix<double>( mc5.size1(), mc5.size2(), 1 ) );
         mc5.assign( prod( mc3, mc4 ) );
     }
+
     Log() << "ublas::prod mc3*mc4 : " << timer.elapsed() << "\n";
 
     timer.restart();
@@ -139,6 +149,7 @@ int main( int argc, char** argv )
         mc5.assign( ublas::scalar_matrix<double>( mc5.size1(), mc5.size2(), 1 ) );
         ublas::axpy_prod( mc3, mc4,mc5 );
     }
+
     Log() << "ublas::axpy_prod mc3*mc4 : " << timer.elapsed() << "\n";
 
 }

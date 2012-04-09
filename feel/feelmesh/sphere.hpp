@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -103,14 +103,14 @@ public:
     {
     }
 
-    Sphere (const Point& c,
-            const double   r)
+    Sphere ( const Point& c,
+             const double   r )
         :
         super(),
         _M_center( c ),
         _M_radius( r )
     {
-        assert (r > 0.);
+        assert ( r > 0. );
 
     }
 
@@ -135,13 +135,19 @@ public:
     /**
      * Returns the radius of the sphere.
      */
-    double radius() const { return _M_radius; }
+    double radius() const
+    {
+        return _M_radius;
+    }
 
 
     /**
      * @returns the center of the sphere.
      */
-    const Point& center() const { return _M_center; }
+    const Point& center() const
+    {
+        return _M_center;
+    }
 
 
 
@@ -155,12 +161,18 @@ public:
     /**
      * set the center.
      */
-    void setCenter( Point const& p ) { _M_center = p; }
+    void setCenter( Point const& p )
+    {
+        _M_center = p;
+    }
 
     /**
      * set the radius
      */
-    void setRadius( double r ) {  _M_radius = r ; }
+    void setRadius( double r )
+    {
+        _M_radius = r ;
+    }
 
 
     //@}
@@ -172,7 +184,7 @@ public:
     /**
      * Defines a sphere of radius r centered at c.
      */
-    void createFromCenterRadius (const Point& c, const double r)
+    void createFromCenterRadius ( const Point& c, const double r )
     {
         FEELPP_ASSERT( r > 0 )( r ).error( "radius negative" );
         this->setCenter( c );
@@ -184,12 +196,12 @@ public:
      * @returns true if other_sphere intersects this sphere,
      * false otherwise.
      */
-    bool intersects (const Sphere& other_sphere) const
+    bool intersects ( const Sphere& other_sphere ) const
     {
         FEELPP_ASSERT( _M_radius > 0 )( _M_radius ).error( "radius negative" );
         FEELPP_ASSERT( other_sphere.radius() > 0 )( other_sphere.radius() ).error( "radius negative" );
 
-        if ( Feel::distance( this->center(), other_sphere.center() ) < (this->radius() + other_sphere.radius()) )
+        if ( Feel::distance( this->center(), other_sphere.center() ) < ( this->radius() + other_sphere.radius() ) )
             return true;
 
         return false;
@@ -200,7 +212,7 @@ public:
      * @returns true if the point p is above the surface,
      * false otherwise.
      */
-    bool aboveSurface (const Point& p) const
+    bool aboveSurface ( const Point& p ) const
     {
         FEELPP_ASSERT( _M_radius > 0 )( _M_radius ).error( "radius negative" );
 
@@ -215,9 +227,9 @@ public:
      * @returns true if the point p is below the surface,
      * false otherwise.
      */
-    bool belowSurface (const Point& p) const
+    bool belowSurface ( const Point& p ) const
     {
-        return ( !this->aboveSurface (p) );
+        return ( !this->aboveSurface ( p ) );
     }
 
 
@@ -227,12 +239,12 @@ public:
      * the surface really means "very close" to account
      * for roundoff error.
      */
-    bool onSurface (const Point& p) const
+    bool onSurface ( const Point& p ) const
     {
         FEELPP_ASSERT( _M_radius > 0 )( _M_radius ).error( "radius negative" );
 
 
-        if ( std::abs( Feel::distance( p, this->center() ) - this->radius()) < 1.e-10)
+        if ( std::abs( Feel::distance( p, this->center() ) - this->radius() ) < 1.e-10 )
             return true;
 
         return false;
@@ -242,13 +254,13 @@ public:
     /**
      * @return the closest point on the surface to point p.
      */
-    Point closestPoint (const Point& p) const
+    Point closestPoint ( const Point& p ) const
     {
         FEELPP_ASSERT( _M_radius > 0 )( _M_radius ).error( "radius negative" );
 
         // get the normal from the surface in the direction
         // of p
-        Point normal = this->unitNormal (p);
+        Point normal = this->unitNormal ( p );
 
         // The closest point on the sphere is in the direction
         // of the normal a distance r from the center.
@@ -262,7 +274,7 @@ public:
      * @return a unit vector normal to the surface at
      * point p.
      */
-    Point unitNormal (const Point& p) const
+    Point unitNormal ( const Point& p ) const
     {
         FEELPP_ASSERT( _M_radius > 0 )( _M_radius ).error( "radius negative" );
 
@@ -281,17 +293,17 @@ public:
      * @returns the spherical coordinates for the
      * cartesian coordinates \p cart.
      */
-    Point surfaceCoords (const Point& cart) const
+    Point surfaceCoords ( const Point& cart ) const
     {
         // constant translation in the origin
-        const Point c (cart.node() - this->center().node() );
+        const Point c ( cart.node() - this->center().node() );
 
         // phi: special care, so that it gives 0..2pi results
-        const double phi = std::atan2(c(1), c(0));
+        const double phi = std::atan2( c( 1 ), c( 0 ) );
 
-        return Point(/* radius */ ublas::norm_2( c.node() ),
-                     /* theta  */ std::atan2( std::sqrt( c(0)*c(0) + c(1)*c(1) ), c(2) ),
-                     /* phi    */ ( (phi < 0)  ?  2.*M_PI+phi  :  phi ) );
+        return Point( /* radius */ ublas::norm_2( c.node() ),
+                                   /* theta  */ std::atan2( std::sqrt( c( 0 )*c( 0 ) + c( 1 )*c( 1 ) ), c( 2 ) ),
+                                   /* phi    */ ( ( phi < 0 )  ?  2.*M_PI+phi  :  phi ) );
     }
 
 
@@ -299,16 +311,16 @@ public:
      * @returns the cartesian coordinates for the
      * spherical coordinates \p sph.
      */
-    Point worldCoords (const Point& sph) const
+    Point worldCoords ( const Point& sph ) const
     {
-        const double r     = sph(0);
-        const double theta = sph(1);
-        const double phi   = sph(2);
+        const double r     = sph( 0 );
+        const double theta = sph( 1 );
+        const double phi   = sph( 2 );
 
         // constant translation out of the origin
-        return Point (/* x */ r*std::sin(theta)*std::cos(phi) + this->center()(0),
-                      /* y */ r*std::sin(theta)*std::sin(phi) + this->center()(1),
-                      /* z */ r*std::cos(theta)               + this->center()(2));
+        return Point ( /* x */ r*std::sin( theta )*std::cos( phi ) + this->center()( 0 ),
+                               /* y */ r*std::sin( theta )*std::sin( phi ) + this->center()( 1 ),
+                               /* z */ r*std::cos( theta )               + this->center()( 2 ) );
     }
 
 

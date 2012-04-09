@@ -125,7 +125,10 @@ public:
 
     //@}
 
-    expression_type const& expression() const { return M_expr; }
+    expression_type const& expression() const
+    {
+        return M_expr;
+    }
 
     /** @name Operator overloads
      */
@@ -138,14 +141,20 @@ public:
         typedef typename expression_type::template tensor<Geo_t, Basis_i_t, Basis_j_t> tensor_expr_type;
         typedef typename tensor_expr_type::value_type value_type;
         typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, detail::gmc<0> >,
-                                  mpl::identity<detail::gmc<0> >,
-                                  mpl::identity<detail::gmc<1> > >::type::type key_type;
+                mpl::identity<detail::gmc<0> >,
+                mpl::identity<detail::gmc<1> > >::type::type key_type;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
         typedef Shape<gmc_type::NDim, Scalar, false> shape;
 
-        template <class Args> struct sig { typedef value_type type; };
+        template <class Args> struct sig
+        {
+            typedef value_type type;
+        };
 
-        struct is_zero { static const bool value = tensor_expr_type::is_zero::value; };
+        struct is_zero
+        {
+            static const bool value = tensor_expr_type::is_zero::value;
+        };
 
         tensor( this_type const& expr,
                 Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
@@ -189,9 +198,9 @@ public:
             M_tensor_expr.update( geom );
         }
         void update( Geo_t const& geom, uint16_type face )
-            {
-                M_tensor_expr.update( geom, face );
-            }
+        {
+            M_tensor_expr.update( geom, face );
+        }
 
 
         value_type
@@ -303,10 +312,10 @@ public:
     //@{
     Expr<ComponentsExpr<Expr<ExprT> > >
     operator()( int c1 = 0, int c2 = 0 ) const
-        {
-            auto ex = ComponentsExpr<Expr<ExprT> >( Expr<ExprT>(M_expr), c1, c2 );
-            return Expr<ComponentsExpr<Expr<ExprT> > >( ex );
-        }
+    {
+        auto ex = ComponentsExpr<Expr<ExprT> >( Expr<ExprT>( M_expr ), c1, c2 );
+        return Expr<ComponentsExpr<Expr<ExprT> > >( ex );
+    }
 
     template<typename Geo_t, typename Basis_i_t = fusion::map<fusion::pair<detail::gmc<0>,boost::shared_ptr<detail::gmc<0> > >,fusion::pair<detail::gmc<1>,boost::shared_ptr<detail::gmc<1> > > >, typename Basis_j_t = Basis_i_t>
     struct tensor
@@ -317,9 +326,15 @@ public:
 
         typedef typename tensor_expr_type::shape shape;
 
-        template <class Args> struct sig { typedef value_type type; };
+        template <class Args> struct sig
+        {
+            typedef value_type type;
+        };
 
-        struct is_zero { static const bool value = tensor_expr_type::is_zero::value; };
+        struct is_zero
+        {
+            static const bool value = tensor_expr_type::is_zero::value;
+        };
 
         tensor( this_type const& expr,
                 Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
@@ -357,9 +372,9 @@ public:
             M_tensor_expr.update( geom );
         }
         void update( Geo_t const& geom, uint16_type face )
-            {
-                M_tensor_expr.update( geom, face );
-            }
+        {
+            M_tensor_expr.update( geom, face );
+        }
 
 
         value_type
@@ -431,9 +446,15 @@ public:
      */
     //@{
 
-    bool isSymetric() const { return M_expr.isSymetric(); }
+    bool isSymetric() const
+    {
+        return M_expr.isSymetric();
+    }
 
-    expression_type const& expression() const { return M_expr; }
+    expression_type const& expression() const
+    {
+        return M_expr;
+    }
 
     //@}
 
@@ -478,7 +499,7 @@ public:
     typename expression_type::value_type
     evaluate( bool parallel = true ) const
     {
-        return M_expr.evaluate(parallel);
+        return M_expr.evaluate( parallel );
     }
 
     typename expression_type::value_type
@@ -487,10 +508,10 @@ public:
         return M_expr.evaluateAndSum();
     }
     std::string expressionStr() const
-        {
-            return std::string();
-            //return M_expr.expressionStr();
-        }
+    {
+        return std::string();
+        //return M_expr.expressionStr();
+    }
 
 
     //@}
@@ -534,14 +555,14 @@ struct ExpressionOrder
     static const bool is_polynomial = ExprT::imIsPoly;
 #if 0
     static const int value = boost::mpl::if_< boost::mpl::bool_< ExprT::imIsPoly > ,
-                                               typename boost::mpl::if_< boost::mpl::greater< boost::mpl::int_<ExprT::imorder>,
-                                                                                              boost::mpl::int_<19> > ,
-                                                                         boost::mpl::int_<19>,
-                                                                         boost::mpl::int_<ExprT::imorder> >::type,
-                                               boost::mpl::int_<10> >::type::value;
+                     typename boost::mpl::if_< boost::mpl::greater< boost::mpl::int_<ExprT::imorder>,
+                     boost::mpl::int_<19> > ,
+                     boost::mpl::int_<19>,
+                     boost::mpl::int_<ExprT::imorder> >::type,
+                     boost::mpl::int_<10> >::type::value;
 #else
     // this is a very rough approximation
-    static const int value = (ExprT::imorder)?(ExprT::imorder*nOrderGeo):(nOrderGeo);
+    static const int value = ( ExprT::imorder )?( ExprT::imorder*nOrderGeo ):( nOrderGeo );
     static const int value_1 = ExprT::imorder;
 #endif
 
@@ -608,8 +629,14 @@ public:
 
         typedef typename tensor_expr_type::shape shape;
 
-        template <class Args> struct sig { typedef value_type type; };
-        struct is_zero { static const bool value = tensor_expr_type::is_zero::value; };
+        template <class Args> struct sig
+        {
+            typedef value_type type;
+        };
+        struct is_zero
+        {
+            static const bool value = tensor_expr_type::is_zero::value;
+        };
 
         tensor( this_type const& expr,
                 Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
@@ -649,9 +676,9 @@ public:
             M_tensor_expr.update( geom );
         }
         void update( Geo_t const& geom, uint16_type face )
-            {
-                M_tensor_expr.update( geom, face );
-            }
+        {
+            M_tensor_expr.update( geom, face );
+        }
 
 
         value_type
@@ -727,11 +754,20 @@ public:
      */
     //@{
 
-    bool isSymetric() const { return M_expr.isSymetric(); }
+    bool isSymetric() const
+    {
+        return M_expr.isSymetric();
+    }
 
-    expression_type const& expression() const { return M_expr; }
+    expression_type const& expression() const
+    {
+        return M_expr;
+    }
 
-    const std::string& tag() const { return M_tag; }
+    const std::string& tag() const
+    {
+        return M_tag;
+    }
 
     //@}
 
@@ -856,9 +892,15 @@ public:
 
         typedef typename Transpose<typename tensor_expr_type::shape>::type shape;
 
-        template <class Args> struct sig { typedef value_type type; };
+        template <class Args> struct sig
+        {
+            typedef value_type type;
+        };
 
-        struct is_zero { static const bool value = tensor_expr_type::is_zero::value; };
+        struct is_zero
+        {
+            static const bool value = tensor_expr_type::is_zero::value;
+        };
 
         tensor( this_type const& expr,
                 Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
@@ -896,9 +938,9 @@ public:
             M_tensor_expr.update( geom );
         }
         void update( Geo_t const& geom, uint16_type face )
-            {
-                M_tensor_expr.update( geom, face );
-            }
+        {
+            M_tensor_expr.update( geom, face );
+        }
 
 
         value_type
@@ -943,9 +985,15 @@ public:
      */
     //@{
 
-    bool isSymetric() const { return M_expr.isSymetric(); }
+    bool isSymetric() const
+    {
+        return M_expr.isSymetric();
+    }
 
-    expression_type const& expression() const { return M_expr; }
+    expression_type const& expression() const
+    {
+        return M_expr;
+    }
 
     //@}
 
@@ -1002,14 +1050,14 @@ public:
     };
 
     typedef typename mpl::if_<boost::is_reference_wrapper<T>,
-                              mpl::identity<T>,
-                              mpl::identity<mpl::identity<T> > >::type::type::type value_type;
+            mpl::identity<T>,
+            mpl::identity<mpl::identity<T> > >::type::type::type value_type;
 
     typedef Cst<T> expression_type;
 
-    explicit Cst(const T& value)
+    explicit Cst( const T& value )
         :
-        M_constant(value)
+        M_constant( value )
     {
     }
 
@@ -1025,8 +1073,14 @@ public:
         return M_constant;
     }
 
-    value_type evaluate() const { return M_constant; }
-    value_type evaluate(bool) const { return M_constant; }
+    value_type evaluate() const
+    {
+        return M_constant;
+    }
+    value_type evaluate( bool ) const
+    {
+        return M_constant;
+    }
 
     template<typename Geo_t, typename Basis_i_t=mpl::void_, typename Basis_j_t = Basis_i_t>
     struct tensor
@@ -1046,7 +1100,10 @@ public:
             typedef value_type type;
         };
 
-        struct is_zero { static const bool value = false; };
+        struct is_zero
+        {
+            static const bool value = false;
+        };
 
         tensor( expression_type const& expr,
                 Geo_t const& /*geom*/, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ )
@@ -1187,33 +1244,36 @@ public:
     typedef double value_type;
 
     One() {}
-    One( One const& /*__vff*/) {}
+    One( One const& /*__vff*/ ) {}
 
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t>
     struct tensor
     {
         typedef this_type expression_type;
         typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, detail::gmc<0> >,
-                                  mpl::identity<detail::gmc<0> >,
-                                  mpl::identity<detail::gmc<1> > >::type::type key_type;
+                mpl::identity<detail::gmc<0> >,
+                mpl::identity<detail::gmc<1> > >::type::type key_type;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::pointer gmc_ptrtype;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
         typedef Shape<gmc_type::nDim, Vectorial, false, false> shape;
-        static const bool theshape = (shape::M == gmc_type::nDim && shape::N == 1);
+        static const bool theshape = ( shape::M == gmc_type::nDim && shape::N == 1 );
         BOOST_MPL_ASSERT_MSG( theshape,
                               INVALID_TENSOR_SHAPE_SHOULD_BE_RANK_1,
-                              (mpl::int_<shape::M>, mpl::int_<shape::N> ) );
+                              ( mpl::int_<shape::M>, mpl::int_<shape::N> ) );
 
         typedef typename expression_type::value_type value_type;
 
         static const uint16_type nComponents = gmc_type::nDim;
-        static const int16_type vector_comp = (CType==-1)?1:CType;
+        static const int16_type vector_comp = ( CType==-1 )?1:CType;
 
         typedef typename mpl::if_<mpl::equal_to<mpl::int_<CType>,mpl::int_<-1> >,
-                                  mpl::identity<ublas::scalar_vector<scalar_type> >,
-                                  mpl::identity<ublas::unit_vector<scalar_type> > >::type::type vector_type;
+                mpl::identity<ublas::scalar_vector<scalar_type> >,
+                mpl::identity<ublas::unit_vector<scalar_type> > >::type::type vector_type;
 
-        struct is_zero { static const bool value = false; };
+        struct is_zero
+        {
+            static const bool value = false;
+        };
 
         tensor( expression_type const& /*expr*/,
                 Geo_t const& /*geom*/,
@@ -1221,25 +1281,25 @@ public:
                 Basis_j_t const& /*feu*/ )
             :
             M_one( nComponents, vector_comp )
-            {
-                //std::cout << "one = " << M_one << "\n";
-            }
+        {
+            //std::cout << "one = " << M_one << "\n";
+        }
         tensor( expression_type const& /*expr*/,
                 Geo_t const& /*geom*/,
                 Basis_i_t const& /*fev*/ )
             :
             M_one( nComponents, vector_comp )
-            {
-            }
+        {
+        }
         tensor( expression_type const& /*expr*/,
                 Geo_t const& /*geom*/ )
             :
             M_one( nComponents, vector_comp )
-            {
-//                 std::cout << "one = " << M_one << "\n"
-//                           << "M=" << shape::M << "\n"
-//                           << "N=" << shape::N << "\n";
-            }
+        {
+            //                 std::cout << "one = " << M_one << "\n"
+            //                           << "M=" << shape::M << "\n"
+            //                           << "N=" << shape::N << "\n";
+        }
         template<typename IM>
         void init( IM const& /*im*/ )
         {
@@ -1260,7 +1320,7 @@ public:
         FEELPP_STRONG_INLINE value_type
         evalijq( uint16_type /*i*/, uint16_type /*j*/, uint16_type c1, uint16_type /*c2*/, uint16_type /*q*/ ) const
         {
-            return (gmc_type::nDim>=c1)&&((c1==CType) || (CType==-1));
+            return ( gmc_type::nDim>=c1 )&&( ( c1==CType ) || ( CType==-1 ) );
             //return M_one[c1];
         }
         template<int PatternContext>
@@ -1268,20 +1328,20 @@ public:
         evalijq( uint16_type /*i*/, uint16_type /*j*/, uint16_type c1, uint16_type /*c2*/, uint16_type /*q*/,
                  mpl::int_<PatternContext> ) const
         {
-            return (gmc_type::nDim>=c1)&&((c1==CType) || (CType==-1));
+            return ( gmc_type::nDim>=c1 )&&( ( c1==CType ) || ( CType==-1 ) );
             //return M_one[c1];
         }
 
         FEELPP_STRONG_INLINE value_type
         evaliq( uint16_type /*i*/, uint16_type c1, uint16_type /*c2*/, uint16_type /*q*/ ) const
         {
-            return (gmc_type::nDim>=c1)&&((c1==CType) || (CType==-1));
+            return ( gmc_type::nDim>=c1 )&&( ( c1==CType ) || ( CType==-1 ) );
             //return M_one[c1];
         }
         FEELPP_STRONG_INLINE value_type
         evalq( uint16_type c1, uint16_type /*c2*/, uint16_type /*q*/ ) const
         {
-            return (gmc_type::nDim>=c1)&&((c1==CType) || (CType==-1));
+            return ( gmc_type::nDim>=c1 )&&( ( c1==CType ) || ( CType==-1 ) );
             //return M_one[c1];
         }
         vector_type M_one;
@@ -1370,12 +1430,17 @@ public:
     typedef typename ExprT::value_type value_type;
     typedef UnaryPlus<ExprT> this_type;
 
-    UnaryPlus(const ExprT& expr)
+    UnaryPlus( const ExprT& expr )
         :
-        M_expr(expr)
-    {;}
+        M_expr( expr )
+    {
+        ;
+    }
 
-    expression_type const& expression() const { return M_expr; }
+    expression_type const& expression() const
+    {
+        return M_expr;
+    }
 
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t>
     struct tensor
@@ -1384,7 +1449,10 @@ public:
         typedef typename tensor_expr_type::value_type value_type;
         typedef typename tensor_expr_type::shape shape;
 
-        struct is_zero { static const bool value = tensor_expr_type::is_zero::value; };
+        struct is_zero
+        {
+            static const bool value = tensor_expr_type::is_zero::value;
+        };
 
         tensor( this_type const& expr,
                 Geo_t const& geom,
@@ -1464,11 +1532,11 @@ protected:
 };
 template <class T> inline
 Expr< UnaryPlus< Expr<T> > >
-operator + (const Expr<T>& expr)
+operator + ( const Expr<T>& expr )
 {
     typedef UnaryPlus< Expr<T> > expr_t;
 
-    return Expr< expr_t >( expr_t(expr) );
+    return Expr< expr_t >( expr_t( expr ) );
 }
 
 /**
@@ -1502,12 +1570,17 @@ public:
     typedef typename ExprT::value_type value_type;
     typedef UnaryMinus<ExprT> this_type;
 
-    UnaryMinus(const ExprT& expr)
+    UnaryMinus( const ExprT& expr )
         :
-        M_expr(expr)
-    {;}
+        M_expr( expr )
+    {
+        ;
+    }
 
-    expression_type const& expression() const { return M_expr; }
+    expression_type const& expression() const
+    {
+        return M_expr;
+    }
 
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t>
     struct tensor
@@ -1516,7 +1589,10 @@ public:
         typedef typename tensor_expr_type::value_type value_type;
         typedef typename tensor_expr_type::shape shape;
 
-        struct is_zero { static const bool value = tensor_expr_type::is_zero::value; };
+        struct is_zero
+        {
+            static const bool value = tensor_expr_type::is_zero::value;
+        };
 
         tensor( this_type const& expr,
                 Geo_t const& geom,
@@ -1596,11 +1672,11 @@ protected:
 };
 template <class T> inline
 Expr< UnaryMinus< Expr<T> > >
-operator - (const Expr<T>& expr)
+operator - ( const Expr<T>& expr )
 {
     typedef UnaryMinus< Expr<T> > expr_t;
 
-    return Expr< expr_t >( expr_t(expr) );
+    return Expr< expr_t >( expr_t( expr ) );
 }
 
 template < typename ExprT1, typename ExprT2 >
@@ -1610,7 +1686,7 @@ public:
     static const size_type context = ExprT1::context | ExprT2::context;
     static const bool is_terminal = false;
 
-    static const uint16_type imorder = (ExprT1::imorder<ExprT2::imorder)*ExprT2::imorder + (ExprT1::imorder>=ExprT2::imorder)*ExprT1::imorder;
+    static const uint16_type imorder = ( ExprT1::imorder<ExprT2::imorder )*ExprT2::imorder + ( ExprT1::imorder>=ExprT2::imorder )*ExprT1::imorder;
     static const bool imIsPoly = ExprT1::imIsPoly && ExprT2::imIsPoly;
 
     template<typename Func>
@@ -1628,25 +1704,31 @@ public:
     typedef ExprT1 expression_1_type;
     typedef ExprT2 expression_2_type;
     typedef typename strongest_numeric_type<typename expression_1_type::value_type,
-                                            typename expression_2_type::value_type>::type value_type;
+            typename expression_2_type::value_type>::type value_type;
     explicit OpMax( expression_1_type const& __expr1, expression_2_type const& __expr2  )
         :
         M_expr_1( __expr1 ),
         M_expr_2( __expr2 )
-        {
-            Debug( 5051 ) << "OpMax::OpMax default constructor\n";
-        }
+    {
+        Debug( 5051 ) << "OpMax::OpMax default constructor\n";
+    }
 
     OpMax( OpMax const& __vfp  )
         :
         M_expr_1( __vfp.M_expr_1 ),
         M_expr_2( __vfp.M_expr_2 )
-        {
-            Debug( 5051 ) << "OpMax::OpMax copy constructor\n";
-        }
+    {
+        Debug( 5051 ) << "OpMax::OpMax copy constructor\n";
+    }
 
-    expression_1_type const& left() const { return M_expr_1; }
-    expression_2_type const& right() const { return M_expr_2; }
+    expression_1_type const& left() const
+    {
+        return M_expr_1;
+    }
+    expression_2_type const& right() const
+    {
+        return M_expr_2;
+    }
 
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t>
     struct tensor
@@ -1656,44 +1738,47 @@ public:
         typedef typename expression_2_type::template tensor<Geo_t, Basis_i_t, Basis_j_t> r_type;
 
         typedef typename strongest_numeric_type<typename l_type::value_type,
-                                                typename r_type::value_type>::type value_type;
+                typename r_type::value_type>::type value_type;
 
         typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, detail::gmc<0> >,
-                                  mpl::identity<detail::gmc<0> >,
-                                  mpl::identity<detail::gmc<1> > >::type::type key_type;
+                mpl::identity<detail::gmc<0> >,
+                mpl::identity<detail::gmc<1> > >::type::type key_type;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::pointer gmc_ptrtype;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
 
-        BOOST_MPL_ASSERT_MSG( (boost::is_same<typename l_type::shape, typename r_type::shape>::value ),
+        BOOST_MPL_ASSERT_MSG( ( boost::is_same<typename l_type::shape, typename r_type::shape>::value ),
                               INVALID_SHAPES_FOR_MIN,
                               ( mpl::int_<l_type::shape::M>,mpl::int_<l_type::shape::N>,mpl::int_<r_type::shape::M>,mpl::int_<r_type::shape::N> ) );
         typedef typename l_type::shape shape;
 
-        struct is_zero { static const bool value = false; };
+        struct is_zero
+        {
+            static const bool value = false;
+        };
 
         tensor( expression_type const& expr, Geo_t const& geom,
-                 Basis_i_t const& fev, Basis_j_t const& feu )
+                Basis_i_t const& fev, Basis_j_t const& feu )
             :
             M_gmc( fusion::at_key<key_type>( geom ).get() ),
             M_left( expr.left(),  geom, fev, feu ),
             M_right( expr.right(), geom, fev, feu )
-            {
-            }
+        {
+        }
         tensor( expression_type const& expr, Geo_t const& geom,
                 Basis_i_t const& fev )
             :
             M_gmc( fusion::at_key<key_type>( geom ).get() ),
             M_left( expr.left(),  geom, fev ),
             M_right( expr.right(), geom, fev )
-            {
-            }
+        {
+        }
         tensor( expression_type const& expr, Geo_t const& geom )
             :
             M_gmc( fusion::at_key<key_type>( geom ).get() ),
             M_left( expr.left(),  geom ),
             M_right( expr.right(), geom )
-            {
-            }
+        {
+        }
         template<typename IM>
         void init( IM const& im )
         {
@@ -1733,8 +1818,8 @@ public:
         evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q,
                  mpl::int_<PatternContext> ) const
         {
-            Feel::detail::ignore_unused_variable_warning(i);
-            Feel::detail::ignore_unused_variable_warning(j);
+            Feel::detail::ignore_unused_variable_warning( i );
+            Feel::detail::ignore_unused_variable_warning( j );
             return evalq( c1, c2, q );
         }
 
@@ -1769,20 +1854,20 @@ protected:
 template<typename ExprT1, typename ExprT2>
 inline
 Expr< OpMax<typename mpl::if_<boost::is_arithmetic<ExprT1>,
-                            mpl::identity<Cst<ExprT1> >,
-                            mpl::identity<ExprT1> >::type::type,
-            typename mpl::if_<boost::is_arithmetic<ExprT2>,
-                              mpl::identity<Cst<ExprT2> >,
-                              mpl::identity<ExprT2> >::type::type
-            > >
-max( ExprT1 const& __e1, ExprT2 const& __e2 )
+      mpl::identity<Cst<ExprT1> >,
+      mpl::identity<ExprT1> >::type::type,
+      typename mpl::if_<boost::is_arithmetic<ExprT2>,
+      mpl::identity<Cst<ExprT2> >,
+      mpl::identity<ExprT2> >::type::type
+      > >
+      max( ExprT1 const& __e1, ExprT2 const& __e2 )
 {
     typedef typename mpl::if_<boost::is_arithmetic<ExprT1>,
-                              mpl::identity<Cst<ExprT1> >,
-                              mpl::identity<ExprT1> >::type::type t1;
+            mpl::identity<Cst<ExprT1> >,
+            mpl::identity<ExprT1> >::type::type t1;
     typedef typename mpl::if_<boost::is_arithmetic<ExprT2>,
-                              mpl::identity<Cst<ExprT2> >,
-                              mpl::identity<ExprT2> >::type::type t2;
+            mpl::identity<Cst<ExprT2> >,
+            mpl::identity<ExprT2> >::type::type t2;
     typedef OpMax<t1, t2> expr_t;
     return Expr< expr_t >(  expr_t( t1( __e1 ), t2( __e2 ) ) );
 }
@@ -1794,7 +1879,7 @@ public:
     static const size_type context = ExprT1::context | ExprT2::context;
     static const bool is_terminal = false;
 
-    static const uint16_type imorder = (ExprT1::imorder<ExprT2::imorder)*ExprT2::imorder + (ExprT1::imorder>=ExprT2::imorder)*ExprT1::imorder;
+    static const uint16_type imorder = ( ExprT1::imorder<ExprT2::imorder )*ExprT2::imorder + ( ExprT1::imorder>=ExprT2::imorder )*ExprT1::imorder;
     static const bool imIsPoly = ExprT1::imIsPoly && ExprT2::imIsPoly;
 
     template<typename Func>
@@ -1813,26 +1898,32 @@ public:
     typedef ExprT1 expression_1_type;
     typedef ExprT2 expression_2_type;
     typedef typename strongest_numeric_type<typename expression_1_type::value_type,
-                                            typename expression_2_type::value_type>::type value_type;
+            typename expression_2_type::value_type>::type value_type;
 
     explicit OpMin( expression_1_type const& __expr1, expression_2_type const& __expr2  )
         :
         M_expr_1( __expr1 ),
         M_expr_2( __expr2 )
-        {
-            Debug( 5051 ) << "OpMin::OpMin default constructor\n";
-        }
+    {
+        Debug( 5051 ) << "OpMin::OpMin default constructor\n";
+    }
 
     OpMin( OpMin const& __vfp  )
         :
         M_expr_1( __vfp.M_expr_1 ),
         M_expr_2( __vfp.M_expr_2 )
-        {
-            Debug( 5051 ) << "OpMin::OpMin copy constructor\n";
-        }
+    {
+        Debug( 5051 ) << "OpMin::OpMin copy constructor\n";
+    }
 
-    expression_1_type const& left() const { return M_expr_1; }
-    expression_2_type const& right() const { return M_expr_2; }
+    expression_1_type const& left() const
+    {
+        return M_expr_1;
+    }
+    expression_2_type const& right() const
+    {
+        return M_expr_2;
+    }
 
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t>
     struct tensor
@@ -1842,44 +1933,47 @@ public:
         typedef typename expression_2_type::template tensor<Geo_t, Basis_i_t, Basis_j_t> r_type;
 
         typedef typename strongest_numeric_type<typename l_type::value_type,
-                                                typename r_type::value_type>::type value_type;
+                typename r_type::value_type>::type value_type;
 
         typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, detail::gmc<0> >,
-                                  mpl::identity<detail::gmc<0> >,
-                                  mpl::identity<detail::gmc<1> > >::type::type key_type;
+                mpl::identity<detail::gmc<0> >,
+                mpl::identity<detail::gmc<1> > >::type::type key_type;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::pointer gmc_ptrtype;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
 
-        BOOST_MPL_ASSERT_MSG( (boost::is_same<typename l_type::shape, typename r_type::shape>::value ),
+        BOOST_MPL_ASSERT_MSG( ( boost::is_same<typename l_type::shape, typename r_type::shape>::value ),
                               INVALID_SHAPES_FOR_MIN,
                               ( mpl::int_<l_type::shape::M>,mpl::int_<l_type::shape::N>,mpl::int_<r_type::shape::M>,mpl::int_<r_type::shape::N> ) );
         typedef typename l_type::shape shape;
 
-        struct is_zero { static const bool value = false; };
+        struct is_zero
+        {
+            static const bool value = false;
+        };
 
         tensor( expression_type const& expr, Geo_t const& geom,
-                 Basis_i_t const& fev, Basis_j_t const& feu )
+                Basis_i_t const& fev, Basis_j_t const& feu )
             :
             M_gmc( fusion::at_key<key_type>( geom ).get() ),
             M_left( expr.left(),  geom, fev, feu ),
             M_right( expr.right(), geom, fev, feu )
-            {
-            }
+        {
+        }
         tensor( expression_type const& expr, Geo_t const& geom,
                 Basis_i_t const& fev )
             :
             M_gmc( fusion::at_key<key_type>( geom ).get() ),
             M_left( expr.left(),  geom, fev ),
             M_right( expr.right(), geom, fev )
-            {
-            }
+        {
+        }
         tensor( expression_type const& expr, Geo_t const& geom )
             :
             M_gmc( fusion::at_key<key_type>( geom ).get() ),
             M_left( expr.left(),  geom ),
             M_right( expr.right(), geom )
-            {
-            }
+        {
+        }
         template<typename IM>
         void init( IM const& im )
         {
@@ -1953,19 +2047,19 @@ protected:
 template<typename ExprT1, typename ExprT2>
 inline
 Expr< OpMin<typename mpl::if_<boost::is_arithmetic<ExprT1>,
-                            mpl::identity<Cst<ExprT1> >,
-                            mpl::identity<ExprT1> >::type::type,
-            typename mpl::if_<boost::is_arithmetic<ExprT2>,
-                              mpl::identity<Cst<ExprT2> >,
-                              mpl::identity<ExprT2> >::type::type> >
-min( ExprT1 const& __e1, ExprT2 const& __e2 )
+      mpl::identity<Cst<ExprT1> >,
+      mpl::identity<ExprT1> >::type::type,
+      typename mpl::if_<boost::is_arithmetic<ExprT2>,
+      mpl::identity<Cst<ExprT2> >,
+      mpl::identity<ExprT2> >::type::type> >
+      min( ExprT1 const& __e1, ExprT2 const& __e2 )
 {
     typedef typename mpl::if_<boost::is_arithmetic<ExprT1>,
-                              mpl::identity<Cst<ExprT1> >,
-                              mpl::identity<ExprT1> >::type::type t1;
+            mpl::identity<Cst<ExprT1> >,
+            mpl::identity<ExprT1> >::type::type t1;
     typedef typename mpl::if_<boost::is_arithmetic<ExprT2>,
-                              mpl::identity<Cst<ExprT2> >,
-                              mpl::identity<ExprT2> >::type::type t2;
+            mpl::identity<Cst<ExprT2> >,
+            mpl::identity<ExprT2> >::type::type t2;
     typedef OpMin<t1, t2> expr_t;
     return Expr< expr_t >(  expr_t( t1( __e1 ), t2( __e2 ) ) );
 }
@@ -2012,22 +2106,31 @@ public:
         :
         M_expr_1( __expr1 ),
         M_expr_2( __expr2 )
-        {
-            Debug( 5051 ) << "Pow::Pow default constructor\n";
-        }
+    {
+        Debug( 5051 ) << "Pow::Pow default constructor\n";
+    }
 
     Pow( Pow const& __vfp  )
         :
         M_expr_1( __vfp.M_expr_1 ),
         M_expr_2( __vfp.M_expr_2 )
-        {
-            Debug( 5051 ) << "Pow::Pow copy constructor\n";
-        }
+    {
+        Debug( 5051 ) << "Pow::Pow copy constructor\n";
+    }
 
-    bool isSymetric() const { return false; }
+    bool isSymetric() const
+    {
+        return false;
+    }
 
-    expression_1_type const& left() const { return M_expr_1; }
-    expression_2_type const& right() const { return M_expr_2; }
+    expression_1_type const& left() const
+    {
+        return M_expr_1;
+    }
+    expression_2_type const& right() const
+    {
+        return M_expr_2;
+    }
 
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t>
     struct tensor
@@ -2037,30 +2140,33 @@ public:
         typedef typename expression_2_type::template tensor<Geo_t, Basis_i_t, Basis_j_t> r_type;
 
         typedef typename strongest_numeric_type<typename l_type::value_type,
-                                                typename r_type::value_type>::type value_type;
+                typename r_type::value_type>::type value_type;
 
 
         typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, detail::gmc<0> >,
-                                  mpl::identity<detail::gmc<0> >,
-                                  mpl::identity<detail::gmc<1> > >::type::type key_type;
+                mpl::identity<detail::gmc<0> >,
+                mpl::identity<detail::gmc<1> > >::type::type key_type;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::pointer gmc_ptrtype;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
         typedef typename l_type::shape shape;
 
         typedef typename Eigen::Matrix<value_type,shape::M,shape::N> loc_type;
 
-        struct is_zero { static const bool value = l_type::is_zero::value; };
+        struct is_zero
+        {
+            static const bool value = l_type::is_zero::value;
+        };
 
         tensor( expression_type const& expr, Geo_t const& geom,
-                 Basis_i_t const& fev, Basis_j_t const& feu )
+                Basis_i_t const& fev, Basis_j_t const& feu )
             :
             M_gmc( fusion::at_key<key_type>( geom ).get() ),
             M_left( expr.left(),  geom, fev, feu ),
             M_right( expr.right(), geom, fev, feu ),
             M_loc( boost::extents[M_gmc->nPoints()]  )
-            {
-                update( geom );
-            }
+        {
+            update( geom );
+        }
         tensor( expression_type const& expr, Geo_t const& geom,
                 Basis_i_t const& fev )
             :
@@ -2068,18 +2174,18 @@ public:
             M_left( expr.left(),  geom, fev ),
             M_right( expr.right(), geom, fev ),
             M_loc( boost::extents[M_gmc->nPoints()] )
-            {
-                update( geom );
-            }
+        {
+            update( geom );
+        }
         tensor( expression_type const& expr, Geo_t const& geom )
             :
             M_gmc( fusion::at_key<key_type>( geom ).get() ),
             M_left( expr.left(),  geom ),
             M_right( expr.right(), geom ),
             M_loc(  boost::extents[M_gmc->nPoints()] )
-            {
-                update( geom );
-            }
+        {
+            update( geom );
+        }
         template<typename IM>
         void init( IM const& im )
         {
@@ -2101,12 +2207,12 @@ public:
             M_right.update( geom );
 
             for ( int q = 0; q < npts; ++q )
-                for( int c1 = 0; c1 < shape::M; ++c1 )
-                    for( int c2 = 0; c2 < shape::N; ++c2 )
+                for ( int c1 = 0; c1 < shape::M; ++c1 )
+                    for ( int c2 = 0; c2 < shape::N; ++c2 )
                     {
                         value_type left = M_left.evalq( c1, c2, q );
                         value_type right = M_right.evalq( c1, c2, q );
-                        M_loc[q](c1,c2) = std::pow( left, right );
+                        M_loc[q]( c1,c2 ) = std::pow( left, right );
                     }
         }
         void update( Geo_t const& geom, uint16_type face )
@@ -2116,12 +2222,12 @@ public:
             M_right.update( geom, face );
 
             for ( int q = 0; q < M_gmc->nPoints(); ++q )
-                for( int c1 = 0; c1 < shape::M; ++c1 )
-                    for( int c2 = 0; c2 < shape::N; ++c2 )
+                for ( int c1 = 0; c1 < shape::M; ++c1 )
+                    for ( int c2 = 0; c2 < shape::N; ++c2 )
                     {
                         value_type left = M_left.evalq( c1, c2, q );
                         value_type right = M_right.evalq( c1, c2, q );
-                        M_loc[q](c1,c2) = std::pow( left, right );
+                        M_loc[q]( c1,c2 ) = std::pow( left, right );
                     }
         }
 
@@ -2135,8 +2241,8 @@ public:
         evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q,
                  mpl::int_<PatternContext> ) const
         {
-            Feel::detail::ignore_unused_variable_warning(i);
-            Feel::detail::ignore_unused_variable_warning(j);
+            Feel::detail::ignore_unused_variable_warning( i );
+            Feel::detail::ignore_unused_variable_warning( j );
             return evalq( c1, c2, q );
         }
 
@@ -2154,21 +2260,22 @@ public:
         value_type
         evalq( uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<0> ) const
         {
-            Feel::detail::ignore_unused_variable_warning(c1);
-            Feel::detail::ignore_unused_variable_warning(c2);
-            return M_loc[q](0,0);
+            Feel::detail::ignore_unused_variable_warning( c1 );
+            Feel::detail::ignore_unused_variable_warning( c2 );
+            return M_loc[q]( 0,0 );
         }
         value_type
         evalq( uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<1> ) const
         {
             if ( shape::M > shape::N )
-                return M_loc[q](c1,0);
-            return M_loc[q](0,c2);
+                return M_loc[q]( c1,0 );
+
+            return M_loc[q]( 0,c2 );
         }
         value_type
         evalq( uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<2> ) const
         {
-            return M_loc[q](c1,c2);
+            return M_loc[q]( c1,c2 );
         }
 
     private:
@@ -2189,19 +2296,19 @@ protected:
 template<typename ExprT1,  typename ExprT2>
 inline
 Expr< Pow<typename mpl::if_<boost::is_arithmetic<ExprT1>,
-                            mpl::identity<Cst<ExprT1> >,
-                            mpl::identity<ExprT1> >::type::type,
-          typename mpl::if_<boost::is_arithmetic<ExprT2>,
-                            mpl::identity<Cst<ExprT2> >,
-                            mpl::identity<ExprT2> >::type::type> >
-pow( ExprT1 const& __e1, ExprT2 const& __e2 )
+      mpl::identity<Cst<ExprT1> >,
+      mpl::identity<ExprT1> >::type::type,
+      typename mpl::if_<boost::is_arithmetic<ExprT2>,
+      mpl::identity<Cst<ExprT2> >,
+      mpl::identity<ExprT2> >::type::type> >
+      pow( ExprT1 const& __e1, ExprT2 const& __e2 )
 {
     typedef typename mpl::if_<boost::is_arithmetic<ExprT1>,
-                              mpl::identity<Cst<ExprT1> >,
-                              mpl::identity<ExprT1> >::type::type t1;
+            mpl::identity<Cst<ExprT1> >,
+            mpl::identity<ExprT1> >::type::type t1;
     typedef typename mpl::if_<boost::is_arithmetic<ExprT2>,
-                              mpl::identity<Cst<ExprT2> >,
-                              mpl::identity<ExprT2> >::type::type t2;
+            mpl::identity<Cst<ExprT2> >,
+            mpl::identity<ExprT2> >::type::type t2;
     typedef Pow<t1, t2> expr_t;
     return Expr< expr_t >(  expr_t( t1( __e1 ), t2( __e2 ) ) );
 }
@@ -2209,19 +2316,19 @@ pow( ExprT1 const& __e1, ExprT2 const& __e2 )
 template<typename ExprT1,  typename ExprT2>
 inline
 Expr< Pow<typename mpl::if_<boost::is_arithmetic<ExprT1>,
-                            mpl::identity<Cst<ExprT1> >,
-                            mpl::identity<ExprT1> >::type::type,
-          typename mpl::if_<boost::is_arithmetic<ExprT2>,
-                            mpl::identity<Cst<ExprT2> >,
-                            mpl::identity<ExprT2> >::type::type> >
-operator^( ExprT1 const& __e1, ExprT2 const& __e2 )
+      mpl::identity<Cst<ExprT1> >,
+      mpl::identity<ExprT1> >::type::type,
+      typename mpl::if_<boost::is_arithmetic<ExprT2>,
+      mpl::identity<Cst<ExprT2> >,
+      mpl::identity<ExprT2> >::type::type> >
+      operator^( ExprT1 const& __e1, ExprT2 const& __e2 )
 {
     typedef typename mpl::if_<boost::is_arithmetic<ExprT1>,
-                              mpl::identity<Cst<ExprT1> >,
-                              mpl::identity<ExprT1> >::type::type t1;
+            mpl::identity<Cst<ExprT1> >,
+            mpl::identity<ExprT1> >::type::type t1;
     typedef typename mpl::if_<boost::is_arithmetic<ExprT2>,
-                              mpl::identity<Cst<ExprT2> >,
-                              mpl::identity<ExprT2> >::type::type t2;
+            mpl::identity<Cst<ExprT2> >,
+            mpl::identity<ExprT2> >::type::type t2;
     typedef Pow<t1, t2> expr_t;
     return Expr< expr_t >(  expr_t( t1( __e1 ), t2( __e2 ) ) );
 }
@@ -2276,11 +2383,14 @@ public:
         typedef typename fusion::result_of::at_c<VecGeo_t,GeoId>::type Geo_t;
 
         typedef typename expression_type::template tensor<Geo_t,
-                                                          Basis_i_t,
-                                                          Basis_j_t> tensor_expr_type;
+                Basis_i_t,
+                Basis_j_t> tensor_expr_type;
         typedef typename tensor_expr_type::value_type value_type;
 
-        template <class Args> struct sig { typedef value_type type; };
+        template <class Args> struct sig
+        {
+            typedef value_type type;
+        };
 
         tensor( this_type const& expr,
                 VecGeo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
@@ -2353,7 +2463,10 @@ public:
      */
     //@{
 
-    expression_type const& expression() const { return M_expr; }
+    expression_type const& expression() const
+    {
+        return M_expr;
+    }
 
     //@}
 
@@ -2414,13 +2527,13 @@ public:
     template<typename Func>
     struct HasTestFunction
     {
-        static const bool result = (Type==0);
+        static const bool result = ( Type==0 );
     };
 
     template<typename Func>
     struct HasTrialFunction
     {
-        static const bool result = (Type==1);
+        static const bool result = ( Type==1 );
     };
 
 
@@ -2430,8 +2543,9 @@ public:
     {
         typename basis_type::iterator it = M_basis.begin();
         typename basis_type::iterator en = M_basis.end();
-        for( ; it != en; ++it )
-            for( uint16_type i = 0; i < it->second.size(); ++i )
+
+        for ( ; it != en; ++it )
+            for ( uint16_type i = 0; i < it->second.size(); ++i )
                 it->second[i]->updateGlobalValues();
     }
     GElem( GElem const& op )
@@ -2441,7 +2555,10 @@ public:
 
     }
 
-    basis_type const&  basis() const { return M_basis; }
+    basis_type const&  basis() const
+    {
+        return M_basis;
+    }
 
 
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t>
@@ -2449,18 +2566,18 @@ public:
     {
         typedef this_type expression_type;
         typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, detail::gmc<0> >,
-                                  mpl::identity<detail::gmc<0> >,
-                                  mpl::identity<detail::gmc<1> > >::type::type key_type;
+                mpl::identity<detail::gmc<0> >,
+                mpl::identity<detail::gmc<1> > >::type::type key_type;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::pointer gmc_ptrtype;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
 
         typedef typename mpl::if_<mpl::equal_to<mpl::int_<rank>,
-                                                mpl::int_<0> >,
-                                  mpl::identity<Shape<gmc_type::NDim, Scalar, false> >,
-                                  typename mpl::if_<mpl::equal_to<mpl::int_<rank>,
-                                                                  mpl::int_<1> >,
-                                                    mpl::identity<Shape<gmc_type::NDim, Vectorial, false> >,
-                                                    mpl::identity<Shape<gmc_type::NDim, Tensor2, false> > >::type>::type::type shape;
+                mpl::int_<0> >,
+                mpl::identity<Shape<gmc_type::NDim, Scalar, false> >,
+                typename mpl::if_<mpl::equal_to<mpl::int_<rank>,
+                mpl::int_<1> >,
+                mpl::identity<Shape<gmc_type::NDim, Vectorial, false> >,
+                mpl::identity<Shape<gmc_type::NDim, Tensor2, false> > >::type>::type::type shape;
         typedef typename fe_type::PreCompute pc_type;
         typedef boost::shared_ptr<pc_type> pc_ptrtype;
         typedef typename fe_type::template Context<context, fe_type, gm_type,geoelement_type,gmc_type::context> ctx_type;
@@ -2468,7 +2585,10 @@ public:
 
         typedef typename expression_type::value_type value_type;
 
-        struct is_zero { static const bool value = false; };
+        struct is_zero
+        {
+            static const bool value = false;
+        };
 
         tensor( expression_type const& expr,
                 Geo_t const& geom,
@@ -2478,12 +2598,12 @@ public:
             M_expr( expr ),
             M_pc( expr.basis().begin()->second[0]->functionSpace()->fe(), fusion::at_key<key_type>( geom )->xRefs() ),
             M_ctx( new ctx_type( expr.basis().begin()->second[0]->functionSpace()->fe(),
-                                 fusion::at_key<key_type>( geom ), (pc_ptrtype const&)M_pc ) ),
+                                 fusion::at_key<key_type>( geom ), ( pc_ptrtype const& )M_pc ) ),
             M_loc( expr.basis().begin()->second.size() )
-            {
-                for( uint16_type i = 0; i < M_loc.size(); ++i )
-                    M_loc[i].resize( boost::extents[M_pc.nPoints()][nComponents1][nComponents2] );
-            }
+        {
+            for ( uint16_type i = 0; i < M_loc.size(); ++i )
+                M_loc[i].resize( boost::extents[M_pc.nPoints()][nComponents1][nComponents2] );
+        }
         tensor( expression_type const& expr,
                 Geo_t const& geom,
                 Basis_i_t const& /*fev*/ )
@@ -2491,22 +2611,22 @@ public:
             M_expr( expr ),
             M_pc( expr.basis().begin()->second[0]->functionSpace()->fe(), fusion::at_key<key_type>( geom )->xRefs() ),
             M_ctx( new ctx_type( expr.basis().begin()->second[0]->functionSpace()->fe(),
-                                 fusion::at_key<key_type>( geom ), (pc_ptrtype const&)M_pc ) ),
+                                 fusion::at_key<key_type>( geom ), ( pc_ptrtype const& )M_pc ) ),
             M_loc( expr.basis().begin()->second.size() )
-            {
-                for( uint16_type i = 0; i < M_loc.size(); ++i )
-                    M_loc[i].resize( boost::extents[M_pc.nPoints()] );
-            }
+        {
+            for ( uint16_type i = 0; i < M_loc.size(); ++i )
+                M_loc[i].resize( boost::extents[M_pc.nPoints()] );
+        }
         tensor( expression_type const& expr,
                 Geo_t const& geom )
             :
             M_expr( expr ),
             M_pc( expr.basis().begin()->second[0]->functionSpace()->fe(), fusion::at_key<key_type>( geom )->xRefs() ),
             M_ctx( new ctx_type( expr.basis().begin()->second[0]->functionSpace()->fe(),
-                                 fusion::at_key<key_type>( geom ), (pc_ptrtype const&)M_pc ) ),
+                                 fusion::at_key<key_type>( geom ), ( pc_ptrtype const& )M_pc ) ),
             M_loc( expr.basis().begin()->second.size() )
         {
-            for( uint16_type i = 0; i < M_loc.size(); ++i )
+            for ( uint16_type i = 0; i < M_loc.size(); ++i )
                 M_loc[i].resize( boost::extents[M_pc.nPoints()] );
         }
         template<typename IM>
@@ -2525,36 +2645,39 @@ public:
         void update( Geo_t const& geom )
         {
             //Debug() << "[GElem] updating element " << fusion::at_key<key_type>( geom )->id() << "\n";
-            typename basis_type::iterator it = const_cast<basis_type&>(M_expr.basis()).find( fusion::at_key<key_type>( geom )->id() );
-            typename basis_type::iterator en = const_cast<basis_type&>(M_expr.basis()).end();
+            typename basis_type::iterator it = const_cast<basis_type&>( M_expr.basis() ).find( fusion::at_key<key_type>( geom )->id() );
+            typename basis_type::iterator en = const_cast<basis_type&>( M_expr.basis() ).end();
 
-            FEELPP_ASSERT( it != en )( fusion::at_key<key_type>( geom )->id() ).error ("invalid basis function to integrate" );
-            for( uint16_type i = 0; i < M_loc.size(); ++i )
-                {
-                    //M_loc[i] = it->second[i]->id( *M_ctx, M_pc, M_loc[i] );
-                }
+            FEELPP_ASSERT( it != en )( fusion::at_key<key_type>( geom )->id() ).error ( "invalid basis function to integrate" );
+
+            for ( uint16_type i = 0; i < M_loc.size(); ++i )
+            {
+                //M_loc[i] = it->second[i]->id( *M_ctx, M_pc, M_loc[i] );
+            }
         }
 
         value_type
         evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
             if ( Type == 0 )
-                return M_loc[i](c1,c2,q);
-            return M_loc[j](c1,c2,q);
+                return M_loc[i]( c1,c2,q );
+
+            return M_loc[j]( c1,c2,q );
         }
         template<int PatternContext>
         value_type
         evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<PatternContext> ) const
         {
             if ( Type == 0 )
-                return M_loc[i](c1,c2,q);
-            return M_loc[j](c1,c2,q);
+                return M_loc[i]( c1,c2,q );
+
+            return M_loc[j]( c1,c2,q );
         }
 
         value_type
         evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
-            return M_loc[i](c1,c2,q);
+            return M_loc[i]( c1,c2,q );
         }
         value_type
         evalq( uint16_type /*c1*/, uint16_type /*c2*/, uint16_type /*q*/ ) const

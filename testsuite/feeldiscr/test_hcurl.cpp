@@ -85,7 +85,7 @@ namespace Feel
 {
 /// Geometry for one-element meshes
 gmsh_ptrtype
-oneelement_geometry_ref( double h = 2)
+oneelement_geometry_ref( double h = 2 )
 {
     std::ostringstream costr;
     costr <<"Mesh.MshFileVersion = 2.2;\n"
@@ -106,10 +106,12 @@ oneelement_geometry_ref( double h = 2)
           <<"Line(1) = {1,2};\n"
           <<"Line(2) = {2,3};\n"
           <<"Line(3) = {3,1};\n";
+
     if ( std::abs( h - 2 ) < 1e-10 )
         costr <<"Transfinite Line{1} = 1;\n"
               <<"Transfinite Line{2} = 1;\n"
               <<"Transfinite Line{3} = 1;\n";
+
     costr <<"Line Loop(4) = {3,1,2};\n"
           <<"Plane Surface(5) = {4};\n"
           <<"Physical Line(\"hor\") = {1};\n"
@@ -118,10 +120,13 @@ oneelement_geometry_ref( double h = 2)
           <<"Physical Surface(9) = {5};\n";
 
     std::ostringstream nameStr;
+
     if ( std::abs( h - 2 ) < 1e-10 )
         nameStr << "one-elt-ref";
+
     else
         nameStr << "one-elt-mesh-ref";
+
     gmsh_ptrtype gmshp( new Gmsh );
     gmshp->setPrefix( nameStr.str() );
     gmshp->setDescription( costr.str() );
@@ -130,7 +135,7 @@ oneelement_geometry_ref( double h = 2)
 
 // homothetic transformation of reference element (center 0, rate 2)
 gmsh_ptrtype
-oneelement_geometry_real_1(double h = 2)
+oneelement_geometry_real_1( double h = 2 )
 {
     std::ostringstream costr;
     costr <<"Mesh.MshFileVersion = 2.2;\n"
@@ -151,6 +156,7 @@ oneelement_geometry_real_1(double h = 2)
           <<"Line(1) = {1,2};\n"
           <<"Line(2) = {2,3};\n"
           <<"Line(3) = {3,1};\n";
+
     if ( std::abs( h - 2 ) < 1e-10 )
         costr <<"Transfinite Line{1} = 1;\n"
               <<"Transfinite Line{2} = 1;\n"
@@ -164,10 +170,13 @@ oneelement_geometry_real_1(double h = 2)
           <<"Physical Surface(9) = {5};\n";
 
     std::ostringstream nameStr;
+
     if ( std::abs( h - 2 ) < 1e-10 )
         nameStr << "one-elt-real-homo";
+
     else
         nameStr << "one-elt-mesh-homo";
+
     gmsh_ptrtype gmshp( new Gmsh );
     gmshp->setPrefix( nameStr.str() );
     gmshp->setDescription( costr.str() );
@@ -176,7 +185,7 @@ oneelement_geometry_real_1(double h = 2)
 
 // Rotation of angle (pi/2)
 gmsh_ptrtype
-oneelement_geometry_real_2(double h = 2)
+oneelement_geometry_real_2( double h = 2 )
 {
     std::ostringstream costr;
     costr <<"Mesh.MshFileVersion = 2.2;\n"
@@ -197,10 +206,12 @@ oneelement_geometry_real_2(double h = 2)
           <<"Line(1) = {1,2};\n"
           <<"Line(2) = {2,3};\n"
           <<"Line(3) = {3,1};\n";
+
     if ( std::abs( h - 2 ) < 1e-10 )
         costr <<"Transfinite Line{1} = 1;\n"
               <<"Transfinite Line{2} = 1;\n"
               <<"Transfinite Line{3} = 1;\n";
+
     costr <<"Line Loop(4) = {3,1,2};\n"
           <<"Plane Surface(5) = {4};\n"
           <<"Physical Line(\"vert\") = {3};\n"
@@ -209,17 +220,20 @@ oneelement_geometry_real_2(double h = 2)
           <<"Physical Surface(9) = {5};\n";
 
     std::ostringstream nameStr;
+
     if ( std::abs( h - 2 ) < 1e-10 )
         nameStr << "one-elt-real-rot";
+
     else
         nameStr << "one-elt-mesh-rot";
+
     gmsh_ptrtype gmshp( new Gmsh );
     gmshp->setPrefix( nameStr.str() );
     gmshp->setDescription( costr.str() );
     return gmshp;
 }
 gmsh_ptrtype
-twoelement_geometry_(double h = 2)
+twoelement_geometry_( double h = 2 )
 {
     std::ostringstream costr;
     costr <<"Mesh.MshFileVersion = 2.2;\n"
@@ -245,19 +259,24 @@ twoelement_geometry_(double h = 2)
           << "Line(5) = {4, 3};\n"
           << "Line Loop(6) = {3, 1, 2};\n"
           << "Line Loop(8) = {5, -2, 4};\n";
+
     if ( std::abs( h - 2 ) < 1e-10 )
         costr << "Transfinite Line(1) = 1;\n"
               << "Transfinite Line(2) = 1;\n"
               << "Transfinite Line(3) = 1;\n"
               << "Transfinite Line(4) = 1;\n"
               << "Transfinite Line(5) = 1;\n";
+
     costr << "Plane Surface(11) = {6};\n"
           << "Plane Surface(12) = {8};\n";
     std::ostringstream nameStr;
+
     if ( std::abs( h - 2 ) < 1e-10 )
         nameStr << "two-elt-mesh";
+
     else
         nameStr << "two-elt-mesh-fine";
+
     gmsh_ptrtype gmshp( new Gmsh );
     gmshp->setPrefix( nameStr.str() );
     gmshp->setDescription( costr.str() );
@@ -275,13 +294,13 @@ inline
 po::options_description
 makeOptions()
 {
-    po::options_description testhcurloptions("test h_curl options");
+    po::options_description testhcurloptions( "test h_curl options" );
     testhcurloptions.add_options()
-        ("hsize", po::value<double>()->default_value( 0.1 ), "mesh size")
-        ("xmin", po::value<double>()->default_value( -1 ), "xmin of the reference element")
-        ("ymin", po::value<double>()->default_value( -1 ), "ymin of the reference element")
-        ("zmin", po::value<double>()->default_value( -1 ), "zmin of the reference element")
-        ;
+    ( "hsize", po::value<double>()->default_value( 0.1 ), "mesh size" )
+    ( "xmin", po::value<double>()->default_value( -1 ), "xmin of the reference element" )
+    ( "ymin", po::value<double>()->default_value( -1 ), "ymin of the reference element" )
+    ( "zmin", po::value<double>()->default_value( -1 ), "zmin of the reference element" )
+    ;
     return testhcurloptions.add( Feel::feel_options() );
 }
 
@@ -294,9 +313,9 @@ makeAbout()
                      "0.1",
                      "Test for h_curl space (Dim=2 Order=1)",
                      AboutData::License_GPL,
-                     "Copyright (c) 2009 Universite Joseph Fourier");
-    about.addAuthor("Cecile Daversin", "developer", "cecile.daversin@lncmi.cnrs.fr", "");
-    about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
+                     "Copyright (c) 2009 Universite Joseph Fourier" );
+    about.addAuthor( "Cecile Daversin", "developer", "cecile.daversin@lncmi.cnrs.fr", "" );
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
     return about;
 
 }
@@ -305,7 +324,7 @@ using namespace Feel;
 
 class TestHCurl
     :
-    public Application
+public Application
 {
     typedef Application super;
 
@@ -358,26 +377,26 @@ public:
         this->changeRepository( boost::format( "%1%/h_%2%/" )
                                 % this->about().appName()
                                 % this->vm()["hsize"].as<double>()
-                                );
+                              );
 
         oneelement_mesh_ref = createGMSHMesh( _mesh=new mesh_type,
-                                              _desc = oneelement_geometry_ref());
+                                              _desc = oneelement_geometry_ref() );
 
         // Homothetic transformation of reference element mesh (rate=2, center=(0;0) )
         oneelement_mesh_real_1 = createGMSHMesh( _mesh=new mesh_type,
-                                                 _desc = oneelement_geometry_real_1());
+                                 _desc = oneelement_geometry_real_1() );
 
         // Rotation of reference element mesh (angle=pi/2)
         oneelement_mesh_real_2 = createGMSHMesh( _mesh=new mesh_type,
-                                                 _desc = oneelement_geometry_real_2());
+                                 _desc = oneelement_geometry_real_2() );
 
     }
 
     /**
      * run the application
      */
-    void shape_functions(gmsh_ptrtype (*one_element_mesh)(double));
-    void projection(gmsh_ptrtype (*one_element_mesh_desc_fun)(double));
+    void shape_functions( gmsh_ptrtype ( *one_element_mesh )( double ) );
+    void projection( gmsh_ptrtype ( *one_element_mesh_desc_fun )( double ) );
 
     void testProjector();
     void exampleProblem1();
@@ -406,37 +425,37 @@ TestHCurl::exampleProblem1()
     // then a fine mesh which we use to export the basis function to
     // visualize them
     mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
-                                        _desc=domain( _name= (boost::format( "%1%-%2%-%3%" ) % "hypercube" % 2 % 1).str() ,
-                                                      _shape="hypercube",
-                                                      _usenames=true,
-                                                      _dim=2,
-                                                      _h=meshSize,
-                                                      _xmin=-1,_xmax=1,
-                                                      _ymin=-1,_ymax=1));
+                                        _desc=domain( _name= ( boost::format( "%1%-%2%-%3%" ) % "hypercube" % 2 % 1 ).str() ,
+                                                _shape="hypercube",
+                                                _usenames=true,
+                                                _dim=2,
+                                                _h=meshSize,
+                                                _xmin=-1,_xmax=1,
+                                                _ymin=-1,_ymax=1 ) );
 
     space_ptrtype Xh = space_type::New( mesh );
 
-    auto u_exact = (1-Py()*Py())*unitX() + (1-Px()*Px())*unitY();
-    auto f = (3-Py()*Py())*unitX() + (3-Px()*Px())*unitY();
+    auto u_exact = ( 1-Py()*Py() )*unitX() + ( 1-Px()*Px() )*unitY();
+    auto f = ( 3-Py()*Py() )*unitX() + ( 3-Px()*Px() )*unitY();
 
     auto hcurl = opProjection( _domainSpace=Xh, _imageSpace=Xh, _type=HCURL );
-    auto u_hcurl = hcurl->project( _expr=trans(f) );
-    auto u_exact_hcurl = hcurl->project( _expr=trans(u_exact) );
-    auto error_hcurl = hcurl->project( _expr=trans(u_exact-idv(u_hcurl)) );
+    auto u_hcurl = hcurl->project( _expr=trans( f ) );
+    auto u_exact_hcurl = hcurl->project( _expr=trans( u_exact ) );
+    auto error_hcurl = hcurl->project( _expr=trans( u_exact-idv( u_hcurl ) ) );
 
     std::cout << "error Hcurl: " << math::sqrt( hcurl->energy( error_hcurl, error_hcurl ) ) << "\n";
 
     std::string pro1_name = "problem1";
     export_ptrtype exporter_pro1( export_type::New( this->vm(),
-                                                     (boost::format( "%1%-%2%-%3%" )
-                                                      % this->about().appName()
-                                                      % (boost::format( "%1%-%2%-%3%" ) % "hypercube" % 2 % 1).str()
-                                                      % pro1_name).str() ) );
+                                  ( boost::format( "%1%-%2%-%3%" )
+                                    % this->about().appName()
+                                    % ( boost::format( "%1%-%2%-%3%" ) % "hypercube" % 2 % 1 ).str()
+                                    % pro1_name ).str() ) );
 
-    exporter_pro1->step(0)->setMesh( mesh );
-    exporter_pro1->step(0)->add( "proj_hcurl_u_exact", u_exact_hcurl );
-    exporter_pro1->step(0)->add( "proj_hcurl_u", u_hcurl );
-    exporter_pro1->step(0)->add( "error", error_hcurl);
+    exporter_pro1->step( 0 )->setMesh( mesh );
+    exporter_pro1->step( 0 )->add( "proj_hcurl_u_exact", u_exact_hcurl );
+    exporter_pro1->step( 0 )->add( "proj_hcurl_u", u_hcurl );
+    exporter_pro1->step( 0 )->add( "error", error_hcurl );
     exporter_pro1->save();
 
 }
@@ -448,35 +467,35 @@ TestHCurl::testProjector()
     // then a fine mesh which we use to export the basis function to
     // visualize them
     mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
-                                        _desc=domain( _name= (boost::format( "%1%-%2%-%3%" ) % "hypercube" % 2 % 1).str() ,
-                                                      _shape="hypercube",
-                                                      _usenames=true,
-                                                      _dim=2,
-                                                      _h=meshSize,
-                                                      _xmin=-1,_xmax=1,
-                                                      _ymin=-1,_ymax=1));
+                                        _desc=domain( _name= ( boost::format( "%1%-%2%-%3%" ) % "hypercube" % 2 % 1 ).str() ,
+                                                _shape="hypercube",
+                                                _usenames=true,
+                                                _dim=2,
+                                                _h=meshSize,
+                                                _xmin=-1,_xmax=1,
+                                                _ymin=-1,_ymax=1 ) );
 
     space_ptrtype Xh = space_type::New( mesh );
     lagrange_space_ptrtype Yh = lagrange_space_type::New( mesh );
 
-    auto E_exact = (cos(M_PI*Px())*sin(M_PI*Py())*unitX()-sin(M_PI*Px())*cos(M_PI*Py())*unitY());
-    auto curl_E_exact = -2.*M_PI*cos(M_PI*Px())*cos(M_PI*Py()); // -> z
-    auto f = (2*M_PI*M_PI+1)*(cos(M_PI*Px())*sin(M_PI*Py())*unitX()-sin(M_PI*Px())*cos(M_PI*Py())*unitY() );
+    auto E_exact = ( cos( M_PI*Px() )*sin( M_PI*Py() )*unitX()-sin( M_PI*Px() )*cos( M_PI*Py() )*unitY() );
+    auto curl_E_exact = -2.*M_PI*cos( M_PI*Px() )*cos( M_PI*Py() ); // -> z
+    auto f = ( 2*M_PI*M_PI+1 )*( cos( M_PI*Px() )*sin( M_PI*Py() )*unitX()-sin( M_PI*Px() )*cos( M_PI*Py() )*unitY() );
 
     auto l2 = opProjection( _domainSpace=Yh, _imageSpace=Yh, _type=L2 );
-    auto u_l2 = l2->project( _expr=trans(f) );
-    auto E_l2 = l2->project( _expr=trans(E_exact) );
-    auto error_l2 = l2->project( _expr=trans(E_exact-idv(u_l2)) );
+    auto u_l2 = l2->project( _expr=trans( f ) );
+    auto E_l2 = l2->project( _expr=trans( E_exact ) );
+    auto error_l2 = l2->project( _expr=trans( E_exact-idv( u_l2 ) ) );
 
     auto h1 = opProjection( _domainSpace=Yh, _imageSpace=Yh, _type=H1 );
-    auto u_h1 = h1->project( _expr=trans(f) );
-    auto E_h1 = h1->project( _expr=trans(E_exact) );
-    auto error_h1 = h1->project( _expr=trans(E_exact-idv(u_h1)) );
+    auto u_h1 = h1->project( _expr=trans( f ) );
+    auto E_h1 = h1->project( _expr=trans( E_exact ) );
+    auto error_h1 = h1->project( _expr=trans( E_exact-idv( u_h1 ) ) );
 
     auto hcurl = opProjection( _domainSpace=Xh, _imageSpace=Xh, _type=HCURL );
-    auto u_hcurl = hcurl->project( _expr=trans(f) );
-    auto E_hcurl = hcurl->project( _expr=trans(E_exact) );
-    auto error_hcurl = hcurl->project( _expr=trans(E_exact-idv(u_hcurl)) );
+    auto u_hcurl = hcurl->project( _expr=trans( f ) );
+    auto E_hcurl = hcurl->project( _expr=trans( E_exact ) );
+    auto error_hcurl = hcurl->project( _expr=trans( E_exact-idv( u_hcurl ) ) );
 
     std::cout << "error L2: " << math::sqrt( l2->energy( error_l2, error_l2 ) ) << "\n";
     std::cout << "error H1: " << math::sqrt( h1->energy( error_h1, error_h1 ) ) << "\n";
@@ -484,35 +503,35 @@ TestHCurl::testProjector()
 
     std::string proj_name = "projection";
     export_ptrtype exporter_proj( export_type::New( this->vm(),
-                                                     (boost::format( "%1%-%2%-%3%" )
-                                                      % this->about().appName()
-                                                      % (boost::format( "%1%-%2%-%3%" ) % "hypercube" % 2 % 1).str()
-                                                      % proj_name).str() ) );
+                                  ( boost::format( "%1%-%2%-%3%" )
+                                    % this->about().appName()
+                                    % ( boost::format( "%1%-%2%-%3%" ) % "hypercube" % 2 % 1 ).str()
+                                    % proj_name ).str() ) );
 
-    exporter_proj->step(0)->setMesh( mesh );
-    exporter_proj->step(0)->add( "proj_L2_u", u_l2 );
-    exporter_proj->step(0)->add( "proj_L2_E", E_l2 );
-    exporter_proj->step(0)->add( "proj_L2_error", error_l2 );
-    exporter_proj->step(0)->add( "proj_H1_u", u_h1 );
-    exporter_proj->step(0)->add( "proj_H1_E", E_h1 );
-    exporter_proj->step(0)->add( "proj_H1_error", error_h1 );
-    exporter_proj->step(0)->add( "proj_Hcurl_u", u_hcurl );
-    exporter_proj->step(0)->add( "proj_Hcurl_E", E_hcurl );
-    exporter_proj->step(0)->add( "proj_Hcurl_error", error_hcurl );
+    exporter_proj->step( 0 )->setMesh( mesh );
+    exporter_proj->step( 0 )->add( "proj_L2_u", u_l2 );
+    exporter_proj->step( 0 )->add( "proj_L2_E", E_l2 );
+    exporter_proj->step( 0 )->add( "proj_L2_error", error_l2 );
+    exporter_proj->step( 0 )->add( "proj_H1_u", u_h1 );
+    exporter_proj->step( 0 )->add( "proj_H1_E", E_h1 );
+    exporter_proj->step( 0 )->add( "proj_H1_error", error_h1 );
+    exporter_proj->step( 0 )->add( "proj_Hcurl_u", u_hcurl );
+    exporter_proj->step( 0 )->add( "proj_Hcurl_E", E_hcurl );
+    exporter_proj->step( 0 )->add( "proj_Hcurl_error", error_hcurl );
     exporter_proj->save();
 }
 void
-TestHCurl::shape_functions(gmsh_ptrtype (*one_element_mesh_desc_fun)(double))
+TestHCurl::shape_functions( gmsh_ptrtype ( *one_element_mesh_desc_fun )( double ) )
 {
     using namespace Feel::vf;
 
     mesh_ptrtype oneelement_mesh = createGMSHMesh( _mesh=new mesh_type,
-                                                   _desc = one_element_mesh_desc_fun(2) );
+                                   _desc = one_element_mesh_desc_fun( 2 ) );
 
     // then a fine mesh which we use to export the basis function to
     // visualize them
     mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
-                                        _desc=one_element_mesh_desc_fun(meshSize) );
+                                        _desc=one_element_mesh_desc_fun( meshSize ) );
 
     space_ptrtype Xh = space_type::New( oneelement_mesh );
 
@@ -522,64 +541,72 @@ TestHCurl::shape_functions(gmsh_ptrtype (*one_element_mesh_desc_fun)(double))
               << "NDof   = " << Xh->nLocalDof() << "\n";
 
     element_type U_ref( Xh, "U" );
-    element_type V_ref(Xh, "V");
+    element_type V_ref( Xh, "V" );
 
     // To store the shape functions
     // 0 : hypothenuse edge, 1 : vertical edge, 2 : horizontal edge
-    std::vector<element_type> u_vec(Xh->nLocalDof());
+    std::vector<element_type> u_vec( Xh->nLocalDof() );
 
     std::string shape_name = "shape_functions";
     export_ptrtype exporter_shape( export_type::New( this->vm(),
-                                                     (boost::format( "%1%-%2%-%3%" )
-                                                      % this->about().appName()
-                                                      % one_element_mesh_desc_fun(2)->prefix()
-                                                      % shape_name).str() ) );
+                                   ( boost::format( "%1%-%2%-%3%" )
+                                     % this->about().appName()
+                                     % one_element_mesh_desc_fun( 2 )->prefix()
+                                     % shape_name ).str() ) );
 
-    exporter_shape->step(0)->setMesh( mesh );
+    exporter_shape->step( 0 )->setMesh( mesh );
 
-    for( size_type i = 0;i < Xh->nLocalDof(); ++i )
-        {
-            // U_ref corresponds to shape function (on reference element)
-            U_ref.zero();
-            U_ref( i ) = 1;
+    for ( size_type i = 0; i < Xh->nLocalDof(); ++i )
+    {
+        // U_ref corresponds to shape function (on reference element)
+        U_ref.zero();
+        U_ref( i ) = 1;
 
-            u_vec[i] = U_ref;
+        u_vec[i] = U_ref;
 
-            std::ostringstream ostr;
-            ostr <<  one_element_mesh_desc_fun(2)->prefix()<< "-" << Xh->basis()->familyName() << "-" << i;
-            exporter_shape->step(0)->add( ostr.str(), U_ref );
-        }
+        std::ostringstream ostr;
+        ostr <<  one_element_mesh_desc_fun( 2 )->prefix()<< "-" << Xh->basis()->familyName() << "-" << i;
+        exporter_shape->step( 0 )->add( ostr.str(), U_ref );
+    }
+
     exporter_shape->save();
 
     auto F = M_backend->newVector( Xh );
 
     //// *********************** Check  alpha_i(N_j) evaluations  on reference element (with idv keyword) ********////
     int check_size = Xh->nLocalDof()*Xh->nLocalDof();
-    std::vector<double> checkidv(check_size);
-    std::vector<double> checkform1(check_size);
-    std::vector<std::string> edges = boost::assign::list_of("hypo")("vert")("hor");
-    for( int i = 0;i < Xh->nLocalDof(); ++i )
+    std::vector<double> checkidv( check_size );
+    std::vector<double> checkform1( check_size );
+    std::vector<std::string> edges = boost::assign::list_of( "hypo" )( "vert" )( "hor" );
+
+    for ( int i = 0; i < Xh->nLocalDof(); ++i )
     {
         int edgeid = 0;
         BOOST_FOREACH( std::string edge, edges )
         {
             BOOST_TEST_MESSAGE( "check integral evaluation on edges\n" );
             // on ref element
-            auto int_u_t = integrate( markedfaces(oneelement_mesh, edge), trans(T())*(JinvT())*idv(u_vec[i])).evaluate()(0,0);
+            auto int_u_t = integrate( markedfaces( oneelement_mesh, edge ), trans( T() )*( JinvT() )*idv( u_vec[i] ) ).evaluate()( 0,0 );
+
             if ( edgeid == i )
                 BOOST_CHECK_CLOSE( int_u_t, 1, 1e-14 );
+
             else
                 BOOST_CHECK_SMALL( int_u_t, 1e-14 );
+
             checkidv[3*i+edgeid] = int_u_t;
 
             BOOST_TEST_MESSAGE( "check linear form on edges\n" );
-            form1( _test=Xh, _vector=F, _init=true) = integrate( markedfaces(oneelement_mesh, edge),
-                                                                 trans(T())*(JinvT())*id(V_ref));
-            auto form_v_t = inner_product(u_vec[i], *F);
+            form1( _test=Xh, _vector=F, _init=true ) = integrate( markedfaces( oneelement_mesh, edge ),
+                    trans( T() )*( JinvT() )*id( V_ref ) );
+            auto form_v_t = inner_product( u_vec[i], *F );
+
             if ( edgeid == i )
                 BOOST_CHECK_CLOSE( form_v_t, 1, 1e-14 );
+
             else
                 BOOST_CHECK_SMALL( form_v_t, 1e-14 );
+
             checkform1[3*i+edgeid] = form_v_t;
 
             ++edgeid;
@@ -587,26 +614,28 @@ TestHCurl::shape_functions(gmsh_ptrtype (*one_element_mesh_desc_fun)(double))
         }
         BOOST_TEST_MESSAGE( "check integral evaluation on element using Stokes theorem\n" );
         // check the curl (should be either 1 or 0)
-        auto int_curlx_v = integrate( elements(oneelement_mesh), curlxv(u_vec[i])/detJ()).evaluate()(0,0);
-        auto int_v_t = integrate( boundaryfaces(oneelement_mesh), trans(T())*(JinvT())*idv(u_vec[i])).evaluate()(0,0);
+        auto int_curlx_v = integrate( elements( oneelement_mesh ), curlxv( u_vec[i] )/detJ() ).evaluate()( 0,0 );
+        auto int_v_t = integrate( boundaryfaces( oneelement_mesh ), trans( T() )*( JinvT() )*idv( u_vec[i] ) ).evaluate()( 0,0 );
         BOOST_CHECK_CLOSE( int_v_t, 1, 1e-13 );
         BOOST_CHECK_CLOSE( int_curlx_v, int_v_t, 1e-13 );
 
         BOOST_TEST_MESSAGE( "check linear form on element using Stokes theorem\n" );
-        form1( _test=Xh, _vector=F, _init=true) = integrate( elements(oneelement_mesh),curlx(V_ref)/detJ());
-        auto form_curlx_v = inner_product(u_vec[i], *F);
-        form1( _test=Xh, _vector=F, _init=true) = integrate( boundaryfaces(oneelement_mesh),trans(T())*(JinvT())*id(V_ref));
-        auto form_v_t = inner_product(u_vec[i], *F);
+        form1( _test=Xh, _vector=F, _init=true ) = integrate( elements( oneelement_mesh ),curlx( V_ref )/detJ() );
+        auto form_curlx_v = inner_product( u_vec[i], *F );
+        form1( _test=Xh, _vector=F, _init=true ) = integrate( boundaryfaces( oneelement_mesh ),trans( T() )*( JinvT() )*id( V_ref ) );
+        auto form_v_t = inner_product( u_vec[i], *F );
         BOOST_CHECK_CLOSE( form_v_t, 1, 1e-13 );
         BOOST_CHECK_CLOSE( form_curlx_v, form_v_t, 1e-13 );
 
 
     }
+
     BOOST_TEST_MESSAGE( " ********** Values of alpha_i (N_j ) = delta_{i,j}  ********** \n"
                         << "\n"
                         << " ********** Using idv keyword ********************* "
-                        << "\n");
-    for( int i = 0;i < 3; ++i )
+                        << "\n" );
+
+    for ( int i = 0; i < 3; ++i )
     {
         int edgeid = 0;
         BOOST_FOREACH( std::string edge, edges )
@@ -621,8 +650,9 @@ TestHCurl::shape_functions(gmsh_ptrtype (*one_element_mesh_desc_fun)(double))
     BOOST_TEST_MESSAGE( " ********** Values of alpha_i (N_j ) = delta_{i,j}  ********** \n"
                         << "\n"
                         << " ********** Using form1 keyword ********************* "
-                        << "\n");
-    for( int i = 0;i < 3; ++i )
+                        << "\n" );
+
+    for ( int i = 0; i < 3; ++i )
     {
         int edgeid = 0;
         BOOST_FOREACH( std::string edge, edges )
@@ -633,6 +663,7 @@ TestHCurl::shape_functions(gmsh_ptrtype (*one_element_mesh_desc_fun)(double))
         }
         BOOST_TEST_MESSAGE( "*********************************************** \n" );
     }
+
     //// ************************************************************************************ ////
 }
 
@@ -644,38 +675,38 @@ BOOST_AUTO_TEST_SUITE( space )
 BOOST_AUTO_TEST_CASE( test_hcurl_N0_ref )
 {
     BOOST_TEST_MESSAGE( "test_hcurl_N0 on reference element" );
-    Feel::TestHCurl t(boost::unit_test::framework::master_test_suite().argc,
-                      boost::unit_test::framework::master_test_suite().argv,
-                      Feel::makeAbout(), Feel::makeOptions() );
-    t.shape_functions(&Feel::oneelement_geometry_ref);
+    Feel::TestHCurl t( boost::unit_test::framework::master_test_suite().argc,
+                       boost::unit_test::framework::master_test_suite().argv,
+                       Feel::makeAbout(), Feel::makeOptions() );
+    t.shape_functions( &Feel::oneelement_geometry_ref );
     BOOST_TEST_MESSAGE( "test_hcurl_N0 on reference element done" );
 }
 BOOST_AUTO_TEST_CASE( test_hcurl_N0_real )
 {
     BOOST_TEST_MESSAGE( "test_hcurl_N0 on one real element" );
-    Feel::TestHCurl t(boost::unit_test::framework::master_test_suite().argc,
-                      boost::unit_test::framework::master_test_suite().argv,
-                      Feel::makeAbout(), Feel::makeOptions() );
-    t.shape_functions(&Feel::oneelement_geometry_real_1);
+    Feel::TestHCurl t( boost::unit_test::framework::master_test_suite().argc,
+                       boost::unit_test::framework::master_test_suite().argv,
+                       Feel::makeAbout(), Feel::makeOptions() );
+    t.shape_functions( &Feel::oneelement_geometry_real_1 );
     BOOST_TEST_MESSAGE( "test_hcurl_N0 on one real element done" );
 }
 
 BOOST_AUTO_TEST_CASE( test_hcurl_N0_real_2 )
 {
     BOOST_TEST_MESSAGE( "test_hcurl_N0 on one real element" );
-    Feel::TestHCurl t(boost::unit_test::framework::master_test_suite().argc,
-                      boost::unit_test::framework::master_test_suite().argv,
-                      Feel::makeAbout(), Feel::makeOptions() );
-    t.shape_functions(&Feel::oneelement_geometry_real_2);
+    Feel::TestHCurl t( boost::unit_test::framework::master_test_suite().argc,
+                       boost::unit_test::framework::master_test_suite().argv,
+                       Feel::makeAbout(), Feel::makeOptions() );
+    t.shape_functions( &Feel::oneelement_geometry_real_2 );
     BOOST_TEST_MESSAGE( "test_hcurl_N0 on one real element done" );
 }
 
 BOOST_AUTO_TEST_CASE( test_hcurl_projection )
 {
     BOOST_TEST_MESSAGE( "test_hcurl_N0 on one real element" );
-    Feel::TestHCurl t(boost::unit_test::framework::master_test_suite().argc,
-                      boost::unit_test::framework::master_test_suite().argv,
-                      Feel::makeAbout(), Feel::makeOptions() );
+    Feel::TestHCurl t( boost::unit_test::framework::master_test_suite().argc,
+                       boost::unit_test::framework::master_test_suite().argv,
+                       Feel::makeAbout(), Feel::makeOptions() );
     t.testProjector();
     BOOST_TEST_MESSAGE( "test_hcurl_N0 on one real element done" );
 }
@@ -683,9 +714,9 @@ BOOST_AUTO_TEST_CASE( test_hcurl_projection )
 BOOST_AUTO_TEST_CASE( test_hcurl_example_1 )
 {
     BOOST_TEST_MESSAGE( "test_hcurl on example 1" );
-    Feel::TestHCurl t(boost::unit_test::framework::master_test_suite().argc,
-                      boost::unit_test::framework::master_test_suite().argv,
-                      Feel::makeAbout(), Feel::makeOptions() );
+    Feel::TestHCurl t( boost::unit_test::framework::master_test_suite().argc,
+                       boost::unit_test::framework::master_test_suite().argv,
+                       Feel::makeAbout(), Feel::makeOptions() );
     t.exampleProblem1();
     BOOST_TEST_MESSAGE( "test_hcurl_N0 on example 1 done" );
 }

@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel Imaging project.
 
@@ -56,10 +56,10 @@ struct bbox
         :
         min( Dim ),
         max( Dim )
-        {
-            min = ublas::scalar_vector<double>( Dim, -1 );
-            max = ublas::scalar_vector<double>( Dim, 1 );
-        }
+    {
+        min = ublas::scalar_vector<double>( Dim, -1 );
+        max = ublas::scalar_vector<double>( Dim, 1 );
+    }
 
     /**
      * constructs the bounding box of a cloud of nodes
@@ -71,21 +71,23 @@ struct bbox
         min( Dim ),
         max( Dim ),
         eps( ublas::scalar_vector<double>( min.size(), 1e-10 ) )
+    {
+        min = __cp( 0 );
+        max = __cp( 0 );
+
+        for ( int __i = 1; __i < __cp.size(); ++__i )
         {
-            min = __cp( 0 );
-            max = __cp( 0 );
-            for ( int __i = 1; __i < __cp.size();++__i )
+            for ( int __d = 0; __d < Dim; ++__d )
             {
-                for ( int __d = 0; __d < Dim;++__d )
-                {
-                    min[__d] = ( __cp( __i )[__d] > min[__d] )?min[__d]: __cp( __i )[__d];
-                    max[__d] = ( __cp( __i )[__d] < max[__d] )?max[__d]: __cp( __i )[__d];
-                }
+                min[__d] = ( __cp( __i )[__d] > min[__d] )?min[__d]: __cp( __i )[__d];
+                max[__d] = ( __cp( __i )[__d] < max[__d] )?max[__d]: __cp( __i )[__d];
             }
-            // enlarge a tad the bounding box
-            min -= eps;
-            max += eps;
         }
+
+        // enlarge a tad the bounding box
+        min -= eps;
+        max += eps;
+    }
 
     /**
      * constructs the bounding box of a cloud of nodes
@@ -97,21 +99,23 @@ struct bbox
         min( Dim ),
         max( Dim ),
         eps( ublas::scalar_vector<double>( min.size(), 1e-10 ) )
+    {
+        min = bboxes[0]->min;
+        max = bboxes[0]->max;
+
+        for ( int __i = 1; __i < bboxes.size(); ++__i )
         {
-            min = bboxes[0]->min;
-            max = bboxes[0]->max;
-            for ( int __i = 1; __i < bboxes.size();++__i )
+            for ( int __d = 0; __d < Dim; ++__d )
             {
-                for ( int __d = 0; __d < Dim;++__d )
-                {
-                    min[__d] = ( bboxes[__i]->min[__d] > min[__d] )?min[__d]: bboxes[ __i ]->min[__d];
-                    max[__d] = ( bboxes[__i]->max[__d] < max[__d] )?max[__d]: bboxes[ __i ]->max[__d];
-                }
+                min[__d] = ( bboxes[__i]->min[__d] > min[__d] )?min[__d]: bboxes[ __i ]->min[__d];
+                max[__d] = ( bboxes[__i]->max[__d] < max[__d] )?max[__d]: bboxes[ __i ]->max[__d];
             }
-            // enlarge a tad the bounding box
-            min -= eps;
-            max += eps;
         }
+
+        // enlarge a tad the bounding box
+        min -= eps;
+        max += eps;
+    }
 
     /**
      * enlarge the bounding box
@@ -119,10 +123,10 @@ struct bbox
      * @param e size of enlargment of the bounding box
      */
     void enlarge( double e )
-        {
-            min -= ublas::scalar_vector<double>( min.size(), e );
-            max += ublas::scalar_vector<double>( min.size(), e );
-        }
+    {
+        min -= ublas::scalar_vector<double>( min.size(), e );
+        max += ublas::scalar_vector<double>( min.size(), e );
+    }
     node_type min;
     node_type max;
     node_type eps;
@@ -152,17 +156,17 @@ public:
     typedef boost::array<index_type, Dim> idx_type;
 
     typedef typename mpl::if_<mpl::equal<mpl::int_<Dim>, mpl::int_<1> >,
-                              mpl::identity<GeoElement1D<Dim, LinearLine, DefMarkerCommon> >,
-                              mpl::if_<mpl::equal<mpl::int_<Dim>, mpl::int_<2> >,
-                                       mpl::identity<GeoElement2D<Dim, LinearQuad, DefMarkerCommon> >,
-                                       mpl::if_<mpl::equal<mpl::int_<Dim>, mpl::int_<3> >,
-                                                mpl::identity<GeoElement3D<Dim, LinearHexa, DefMarkerCommon> > >::type::type element_type;
+            mpl::identity<GeoElement1D<Dim, LinearLine, DefMarkerCommon> >,
+            mpl::if_<mpl::equal<mpl::int_<Dim>, mpl::int_<2> >,
+            mpl::identity<GeoElement2D<Dim, LinearQuad, DefMarkerCommon> >,
+            mpl::if_<mpl::equal<mpl::int_<Dim>, mpl::int_<3> >,
+            mpl::identity<GeoElement3D<Dim, LinearHexa, DefMarkerCommon> > >::type::type element_type;
     typedef typename mpl::if_<mpl::equal<mpl::int_<Dim>, mpl::int_<1> >,
-                              mpl::identity<GeoElement0D<Dim, DefMarkerCommon> >,
-                              mpl::if_<mpl::equal<mpl::int_<Dim>, mpl::int_<2> >,
-                                       mpl::identity<GeoElement1D<Dim, LinearLine, DefMarkerCommon> >,
-                                       mpl::if_<mpl::equal<mpl::int_<Dim>, mpl::int_<3> >,
-                                                mpl::identity<GeoElement2D<Dim, LinearQuad, DefMarkerCommon> > >::type::type face_type;
+            mpl::identity<GeoElement0D<Dim, DefMarkerCommon> >,
+            mpl::if_<mpl::equal<mpl::int_<Dim>, mpl::int_<2> >,
+            mpl::identity<GeoElement1D<Dim, LinearLine, DefMarkerCommon> >,
+            mpl::if_<mpl::equal<mpl::int_<Dim>, mpl::int_<3> >,
+            mpl::identity<GeoElement2D<Dim, LinearQuad, DefMarkerCommon> > >::type::type face_type;
 
     //@}
 
@@ -174,36 +178,39 @@ public:
         :
         _M_shape( __shape ),
         _M_coord( __shape )
-        {
+    {
 #if 0
-            std::for_each( _M_coord.begin(), _M_coord.end(), lambda::bind( &node_type::resize,
-                                                                           lambda::_1,
-                                                                           Dim ) );
+        std::for_each( _M_coord.begin(), _M_coord.end(), lambda::bind( &node_type::resize,
+                       lambda::_1,
+                       Dim ) );
 #else
-            idx_type __idx;
-            node_type __pt( Dim );
+        idx_type __idx;
+        node_type __pt( Dim );
 
-            for ( index_type i = 0; i < _M_shape[0]; ++i)
+        for ( index_type i = 0; i < _M_shape[0]; ++i )
+        {
+            __idx[0] = i;
+            __pt[0] = __bbox.min[0]+i*( __bbox.max[0]-__bbox.min[0] )/( _M_shape[0]-1 );
+
+            for ( index_type j = 0; j < _M_shape[1]; ++j )
             {
-                __idx[0] = i;
-                __pt[0] = __bbox.min[0]+i*( __bbox.max[0]-__bbox.min[0] )/( _M_shape[0]-1 );
-                for ( index_type j = 0; j < _M_shape[1]; ++j)
+                __idx[1] = j;
+                __pt[1] = __bbox.min[1]+j*( __bbox.max[1]-__bbox.min[1] )/( _M_shape[1]-1 );
+
+                for ( index_type k = 0; k < _M_shape[2]; ++k )
                 {
-                    __idx[1] = j;
-                    __pt[1] = __bbox.min[1]+j*( __bbox.max[1]-__bbox.min[1] )/( _M_shape[1]-1 );
-                    for ( index_type k = 0; k < _M_shape[2]; ++k)
-                    {
-                        __idx[2] = k;
-                        __pt[2] = __bbox.min[2]+k*( __bbox.max[2]-__bbox.min[2] )/( _M_shape[2]-1 );
-                        _M_coord( __idx ).resize( Dim );
-                        _M_coord( __idx ) = __pt;
-                    }
+                    __idx[2] = k;
+                    __pt[2] = __bbox.min[2]+k*( __bbox.max[2]-__bbox.min[2] )/( _M_shape[2]-1 );
+                    _M_coord( __idx ).resize( Dim );
+                    _M_coord( __idx ) = __pt;
                 }
             }
-#endif
         }
+
+#endif
+    }
     ~StructuredGrid()
-        {}
+    {}
 
     //@}
 
@@ -220,7 +227,10 @@ public:
 
     /**
      */
-    size_type numElements() const { return _M_coord.num_elements(); }
+    size_type numElements() const
+    {
+        return _M_coord.num_elements();
+    }
 
     /**
      *
@@ -228,7 +238,10 @@ public:
      *
      * @return
      */
-    shape_type const& shape() const { return _M_shape; }
+    shape_type const& shape() const
+    {
+        return _M_shape;
+    }
 
     /**
      *
@@ -237,7 +250,10 @@ public:
      *
      * @return
      */
-    uint extent( uint __i ) const { return _M_shape[__i]; }
+    uint extent( uint __i ) const
+    {
+        return _M_shape[__i];
+    }
 
     /**
      *
@@ -246,9 +262,9 @@ public:
      * @return
      */
     node_type& operator()( idx_type const& __idx )
-        {
-            return _M_coord( __idx );
-        }
+    {
+        return _M_coord( __idx );
+    }
 
     /**
      *
@@ -257,9 +273,9 @@ public:
      * @return
      */
     node_type operator()( idx_type const& __idx ) const
-        {
-            return _M_coord( __idx );
-        }
+    {
+        return _M_coord( __idx );
+    }
 
     //@}
 
@@ -303,98 +319,117 @@ StructuredGrid<Dim, Order>::save( std::string const& prefix,
 {
     std::ofstream __ofs( ( prefix + ".geo" ).c_str() );
     __ofs <<
-        "Structured grid\n"
-        "Structured grid\n"
-        "node id off\n"
-        "element id off\n"
-        "coordinates\n"
+          "Structured grid\n"
+          "Structured grid\n"
+          "node id off\n"
+          "element id off\n"
+          "coordinates\n"
           << std::setw( 8 ) << 0 << "\n";
 
     __ofs <<
-        "part 1\n"
-        "structured block\n"
-        "block\n"
+          "part 1\n"
+          "structured block\n"
+          "block\n"
           << std::setw( 8 ) << _M_shape[0]
           << std::setw( 8 ) << _M_shape[1]
           << std::setw( 8 ) << _M_shape[2];
 
     idx_type __idx;
     size_t __count = 0;
-    for ( index_type i = 0; i < _M_shape[0]; ++i)
+
+    for ( index_type i = 0; i < _M_shape[0]; ++i )
     {
         __idx[0] = i;
-        for ( index_type j = 0; j < _M_shape[1]; ++j)
+
+        for ( index_type j = 0; j < _M_shape[1]; ++j )
         {
             __idx[1] = j;
-            for ( index_type k = 0; k < _M_shape[2]; ++k)
+
+            for ( index_type k = 0; k < _M_shape[2]; ++k )
             {
                 __idx[2] = k;
+
                 if ( __count ++ % 6 == 0 )
                     __ofs << "\n";
+
                 __ofs.precision( 5 );
                 __ofs.setf( std::ios::scientific );
                 __ofs << std::setw( 12 ) << _M_coord( __idx )[0];
             }
         }
     }
+
     //if ( __count-1 % 6 != 0 )
     //    __ofs << "\n";
     __count = 0;
-    for ( index_type i = 0; i < _M_shape[0]; ++i)
+
+    for ( index_type i = 0; i < _M_shape[0]; ++i )
     {
         __idx[0] = i;
-        for ( index_type j = 0; j < _M_shape[1]; ++j)
+
+        for ( index_type j = 0; j < _M_shape[1]; ++j )
         {
             __idx[1] = j;
-            for ( index_type k = 0; k < _M_shape[2]; ++k)
+
+            for ( index_type k = 0; k < _M_shape[2]; ++k )
             {
                 __idx[2] = k;
+
                 if ( __count ++ % 6 == 0 )
                     __ofs << "\n";
+
                 __ofs.precision( 5 );
                 __ofs.setf( std::ios::scientific );
                 __ofs << std::setw( 12 ) << _M_coord( __idx )[1];
             }
         }
     }
+
     //if ( __count-1 % 6 != 0 )
     //    __ofs << "\n";
     __count = 0;
-    for ( index_type i = 0; i < _M_shape[0]; ++i)
+
+    for ( index_type i = 0; i < _M_shape[0]; ++i )
     {
         __idx[0] = i;
-        for ( index_type j = 0; j < _M_shape[1]; ++j)
+
+        for ( index_type j = 0; j < _M_shape[1]; ++j )
         {
             __idx[1] = j;
-            for ( index_type k = 0; k < _M_shape[2]; ++k)
+
+            for ( index_type k = 0; k < _M_shape[2]; ++k )
             {
                 __idx[2] = k;
+
                 if ( __count ++ % 6 == 0 )
                     __ofs << "\n";
+
                 __ofs.precision( 5 );
                 __ofs.setf( std::ios::scientific );
                 __ofs << std::setw( 12 ) << _M_coord( __idx )[2];
             }
         }
     }
+
     __ofs << "\n";
 
     __ofs.close();
     __ofs.open( ( prefix + ".case" ).c_str() );
     __ofs <<
-        "FORMAT\n"
-        "type: ensight\n"
-        "GEOMETRY\n"
-        "model: toto.geo\n"
-        "VARIABLE\n";
-    for ( int i = 0;i < __f.size(); ++i )
+          "FORMAT\n"
+          "type: ensight\n"
+          "GEOMETRY\n"
+          "model: toto.geo\n"
+          "VARIABLE\n";
+
+    for ( int i = 0; i < __f.size(); ++i )
     {
         __ofs << "scalar per node: f" << i << " f" << i << ".001\n";
     }
 
     __ofs.close();
 
-    for ( int l = 0;l < __f.size(); ++l )
+    for ( int l = 0; l < __f.size(); ++l )
     {
         std::ostringstream __ostr;
         __ostr << "f" << l << ".001";
@@ -406,21 +441,27 @@ StructuredGrid<Dim, Order>::save( std::string const& prefix,
               << "part 1\n"
               << "block";
         __count = 0;
-        for ( index_type i = 0; i < _M_shape[0]; ++i)
+
+        for ( index_type i = 0; i < _M_shape[0]; ++i )
         {
             __idx[0] = i;
-            for ( index_type j = 0; j < _M_shape[1]; ++j)
+
+            for ( index_type j = 0; j < _M_shape[1]; ++j )
             {
                 __idx[1] = j;
-                for ( index_type k = 0; k < _M_shape[2]; ++k)
+
+                for ( index_type k = 0; k < _M_shape[2]; ++k )
                 {
                     __idx[2] = k;
+
                     if ( __count ++ % 6 == 0 )
                         __ofs << "\n";
+
                     __ofs << std::setw( 12 ) << __f[l]->operator()( __idx );
                 }
             }
         }
+
         __ofs.close();
     }
 } // end StructuredGrid<>::save

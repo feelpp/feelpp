@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -64,7 +64,7 @@ public:
      */
     //@{
 
-    GeoMapInverse( value_type eps = 1e-12)
+    GeoMapInverse( value_type eps = 1e-12 )
         :
         M_eps( eps ),
         M_tree()
@@ -107,7 +107,7 @@ public:
     /**
      * clear the kd-tree
      */
-    void clear(void)
+    void clear( void )
     {
         M_tree.clear();
     }
@@ -117,18 +117,19 @@ public:
      */
     template<class CONT>
     void
-    addPoints(const CONT &c)
+    addPoints( const CONT &c )
     {
-        M_tree.reserve( std::distance(c.begin(),c.end()) );
+        M_tree.reserve( std::distance( c.begin(),c.end() ) );
         typename CONT::const_iterator it = c.begin(), ite = c.end();
-        for (; it != ite; ++it)
+
+        for ( ; it != ite; ++it )
             M_tree.addPointWithId( it->node(), it->id(), 0 );
     }
 
     /**
      * @return Number of points.
      */
-    size_type nPoints(void) const
+    size_type nPoints( void ) const
     {
         return M_tree.nPoints();
     }
@@ -138,7 +139,7 @@ public:
      */
     size_type addPoint( typename node<value_type>::type const& p )
     {
-        return M_tree.addPoint(p);
+        return M_tree.addPoint( p );
     }
 
     /**
@@ -156,7 +157,7 @@ public:
      */
     void addPointWithId( boost::tuple<typename node<value_type>::type, size_type, uint16_type > const& p )
     {
-        M_tree.addPointWithId( boost::get<0>(p), boost::get<1>(p), boost::get<2>(p) );
+        M_tree.addPointWithId( boost::get<0>( p ), boost::get<1>( p ), boost::get<2>( p ) );
     }
 
     /**
@@ -167,7 +168,7 @@ public:
                  typename node<value_type>::type const& min,
                  typename node<value_type>::type const& max ) const
     {
-        M_tree.pointsInBox(ipts, min, max);
+        M_tree.pointsInBox( ipts, min, max );
         return ipts.size();
     }
 

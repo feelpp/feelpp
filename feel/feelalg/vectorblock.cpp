@@ -37,38 +37,41 @@ namespace Feel
 
 template <typename T>
 VectorBlockBase<T>::VectorBlockBase( vf::BlocksBase<vector_ptrtype> const & blockVec,
-                                   backend_type &backend,
-                                   bool copy_values )
+                                     backend_type &backend,
+                                     bool copy_values )
     :
     M_vec()
 {
     auto NR = blockVec.nRow();
 
     size_type _size = 0;
-    for (uint i=0;i<NR;++i)
-        _size += blockVec(i,0)->size();
 
-    M_vec = backend.newVector(_size,_size);
+    for ( uint i=0; i<NR; ++i )
+        _size += blockVec( i,0 )->size();
+
+    M_vec = backend.newVector( _size,_size );
     M_vec->zero();
 
-    if (copy_values)
+    if ( copy_values )
+    {
+        size_type start_i=0;
+
+        for ( uint i=0; i<NR; ++i )
         {
-            size_type start_i=0;
-            for (uint i=0;i<NR;++i)
-                {
-                    this->updateBlockVec(blockVec(i,0),start_i);
-                    start_i += blockVec(i,0)->size();
-                }
+            this->updateBlockVec( blockVec( i,0 ),start_i );
+            start_i += blockVec( i,0 )->size();
         }
+    }
 }
 
 template <typename T>
 void
-VectorBlockBase<T>::updateBlockVec(vector_ptrtype const& m, size_type start_i)
+VectorBlockBase<T>::updateBlockVec( vector_ptrtype const& m, size_type start_i )
 {
     const size_type size = m->size();
-    for (uint i=0;i<size;++i)
-        M_vec->set(start_i+i,m->operator()(i));
+
+    for ( uint i=0; i<size; ++i )
+        M_vec->set( start_i+i,m->operator()( i ) );
 }
 
 

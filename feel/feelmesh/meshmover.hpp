@@ -191,40 +191,42 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
     uint16_type nptsperelem = gm->points().size2();
     ublas::vector<value_type> val( fe_type::nComponents );
 
-    for( ; it_elt != en_elt; ++it_elt )
-        {
-            __c->update( *it_elt );
-            __ctx->update( __c );
-            std::fill( uvalues.data(), uvalues.data()+uvalues.num_elements(), m_type::Zero() );
-            u.id( *__ctx, uvalues );
+    for ( ; it_elt != en_elt; ++it_elt )
+    {
+        __c->update( *it_elt );
+        __ctx->update( __c );
+        std::fill( uvalues.data(), uvalues.data()+uvalues.num_elements(), m_type::Zero() );
+        u.id( *__ctx, uvalues );
 
-            for( uint16_type l =0; l < nptsperelem; ++l )
-                {
-                    for ( uint16_type comp = 0;comp < fe_type::nComponents;++comp )
-                        {
-                            val[ comp ] = uvalues[l](comp,0);
-                        }
-                    if ( points_done[ it_elt->point( l ).id() ] == false )
-                        {
-                            //std::cout << "Pt: " << thedof << "Elem " << it_elt->id() << " G=" << it_elt->G() << "\n";
-                            imesh->elements().modify( it_elt,
-                                                      lambda::bind( &element_type::applyDisplacement,
-                                                                    lambda::_1,
-                                                                    l,
-                                                                    val ) );
-                            points_done[it_elt->point( l ).id()] = true;
-                            //std::cout << "Pt: " << thedof << " Moved Elem " << it_elt->id() << " G=" << it_elt->G() << "\n";
-                        }
-                    else
-                        {
-                            imesh->elements().modify( it_elt,
-                                                      lambda::bind( &element_type::applyDisplacementG,
-                                                                    lambda::_1,
-                                                                    l,
-                                                                    val ) );
-                        }
-                }
+        for ( uint16_type l =0; l < nptsperelem; ++l )
+        {
+            for ( uint16_type comp = 0; comp < fe_type::nComponents; ++comp )
+            {
+                val[ comp ] = uvalues[l]( comp,0 );
+            }
+
+            if ( points_done[ it_elt->point( l ).id() ] == false )
+            {
+                //std::cout << "Pt: " << thedof << "Elem " << it_elt->id() << " G=" << it_elt->G() << "\n";
+                imesh->elements().modify( it_elt,
+                                          lambda::bind( &element_type::applyDisplacement,
+                                                        lambda::_1,
+                                                        l,
+                                                        val ) );
+                points_done[it_elt->point( l ).id()] = true;
+                //std::cout << "Pt: " << thedof << " Moved Elem " << it_elt->id() << " G=" << it_elt->G() << "\n";
+            }
+
+            else
+            {
+                imesh->elements().modify( it_elt,
+                                          lambda::bind( &element_type::applyDisplacementG,
+                                                        lambda::_1,
+                                                        l,
+                                                        val ) );
+            }
         }
+    }
 
     imesh->gm()->initCache( imesh.get() );
     imesh->gm1()->initCache( imesh.get() );

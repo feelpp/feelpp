@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -83,7 +83,7 @@ public:
     typedef DiracExpr expression_type;
     typedef typename expression_type::value_type value_type;
 
-struct eval
+    struct eval
     {
         //
         // some typedefs
@@ -131,23 +131,23 @@ struct eval
         _M_eltend( __elts.template get<2>() ),
         _M_pts( pts ),
         _M_expr( __expr )
-        {
-        }
+    {
+    }
     IntegratorDirac( IntegratorDirac const& ioe )
         :
         _M_eltbegin( ioe._M_eltbegin ),
         _M_eltend( ioe._M_eltend ),
         _M_pts( ioe._M_pts ),
         _M_expr( ioe._M_expr )
-        {
-        }
+    {
+    }
 
     ~IntegratorDirac() {}
 
     //@}
 
-     /** @name Accessors
-     */
+    /** @name Accessors
+    */
     //@{
 
 
@@ -155,13 +155,19 @@ struct eval
      * iterator that points at the beginning of the container that
      * holds the data that will apply the Dirichlet condition upon
      */
-    element_iterator beginElement() const { return _M_eltbegin; }
+    element_iterator beginElement() const
+    {
+        return _M_eltbegin;
+    }
 
     /**
      * iterator that points at the end of the container that
      * holds the data that will apply the Dirichlet condition upon
      */
-    element_iterator endElement() const { return _M_eltend; }
+    element_iterator endElement() const
+    {
+        return _M_eltend;
+    }
 
 
     //@}
@@ -220,29 +226,32 @@ template<typename ElementRange, typename Pts, typename DiracExpr>
 template<typename Elem1, typename Elem2, typename FormType>
 void
 IntegratorDirac<ElementRange, Pts,  DiracExpr>::assemble( boost::shared_ptr<Elem1> const& /*__u*/,
-                                                          boost::shared_ptr<Elem2> const& /*__v*/,
-                                                          FormType& __form,
-                                                          mpl::bool_<true> ) const
+        boost::shared_ptr<Elem2> const& /*__v*/,
+        FormType& __form,
+        mpl::bool_<true> ) const
 {
 #if 0
     std::map<std::string,std::pair<boost::timer,value_type> > timer;
     timer["init intvrho"].first.restart();
 
-    element_type v(M_Space, "v" );
+    element_type v( M_Space, "v" );
     std::fill( v.begin(), v.end(), .0 );
 
-    molecule_type::atoms_const_iterator_type atom(molecule.begin());
-    if (atom == molecule.end()) return;
+    molecule_type::atoms_const_iterator_type atom( molecule.begin() );
+
+    if ( atom == molecule.end() ) return;
 
     mesh_type::Inverse meshinv( M_mesh );
     std::vector<value_type> atomcharges( molecule.size() );
+
     /* initialisation of the mesh::inverse data structure */
     for ( size_type atomid = 0; atom != molecule.end(); ++atom, ++atomid )
-        {
-            meshinv.addPointWithId( element_prod( M_invStretch , atom->center() - M_translation ),
-                                    atomid );
-            atomcharges[atomid] = atom->charge();
-        }
+    {
+        meshinv.addPointWithId( element_prod( M_invStretch , atom->center() - M_translation ),
+                                atomid );
+        atomcharges[atomid] = atom->charge();
+    }
+
     meshinv.distribute();
 
     std::vector<bool> dof_done( molecule.size() );
@@ -274,7 +283,8 @@ IntegratorDirac<ElementRange, Pts,  DiracExpr>::assemble( boost::shared_ptr<Elem
     /* note: meshmover.hpp has this two lines: */
     if ( !v.areGlobalValuesUpdated() )
         v.updateGlobalValues();
-        /*shall we use this ?
+
+    /*shall we use this ?
     */
 
     timer["init intvrho"].second = timer["init intvrho"].first.elapsed();
@@ -283,51 +293,54 @@ IntegratorDirac<ElementRange, Pts,  DiracExpr>::assemble( boost::shared_ptr<Elem
     timer["intvrho"].first.restart();
 
     // size_type first_dof = M_Space->dof()->firstDof();
-    for( ; it != en; ++ it )
+    for ( ; it != en; ++ it )
+    {
+        __c->update( *it, __geopc );
+        meshinv.pointsInConvex( it->id(), itab );
+
+        if ( itab.size() == 0 )
+            continue;
+
+        for ( size_type i = 0; i < itab.size(); ++i )
         {
-            __c->update( *it, __geopc );
-            meshinv.pointsInConvex( it->id(), itab );
-            if (itab.size() == 0)
-                continue;
+            // get dof id in target dof table
+            size_type dof = itab[i];
 
-            for (size_type i = 0; i < itab.size(); ++i)
+            if ( !dof_done[dof] )
+            {
+                dof_done[dof]=true;
+                ublas::column( pts, 0 ) = meshinv.referenceCoords()[dof];
+                element_type::pc_type pc( v.functionSpace()->fe(), pts );
+                __geopc->update( pts );
+                __c->update( *it, __geopc );
+
+                for ( uint16_type loc_ind=0; loc_ind < basis_type::nLocalDof ; loc_ind++ )
                 {
-                    // get dof id in target dof table
-                    size_type dof = itab[i];
-                    if ( !dof_done[dof] )
+                    for ( uint16_type comp = 0; comp < basis_type::nComponents; ++comp )
+                    {
+                        size_type globaldof = boost::get<0>( M_Space->dof()->localToGlobal( it->id(), loc_ind, comp ) );
+
+                        // update only values on the processor
+                        if ( globaldof >= v.firstLocalIndex() &&
+                                globaldof < v.lastLocalIndex() )
                         {
-                            dof_done[dof]=true;
-                            ublas::column( pts, 0 ) = meshinv.referenceCoords()[dof];
-                            element_type::pc_type pc( v.functionSpace()->fe(), pts );
-                            __geopc->update( pts );
-                            __c->update( *it, __geopc );
-                            for (uint16_type loc_ind=0; loc_ind < basis_type::nLocalDof ; loc_ind++)
-                                {
-                                    for ( uint16_type comp = 0;comp < basis_type::nComponents;++comp )
-                                        {
-                                            size_type globaldof = boost::get<0>(M_Space->dof()->localToGlobal(it->id(), loc_ind, comp ));
+                            v.setGlobalValue( globaldof, 1 );
 
-                                            // update only values on the processor
-                                            if ( globaldof >= v.firstLocalIndex() &&
-                                                 globaldof < v.lastLocalIndex() )
-                                                {
-                                                    v.setGlobalValue( globaldof, 1 );
+                            element_type::id_type interpfunc( v.id( *__c, pc ) );
+                            //std::cout << "interpfunc :  " << interpfunc << "\n";
 
-                                                    element_type::id_type interpfunc( v.id( *__c, pc ) );
-                                                    //std::cout << "interpfunc :  " << interpfunc << "\n";
-
-                                                    rhs->add( globaldof, atomcharges[dof] * interpfunc( comp, 0, 0 ) );
-                                                    // Debug(  ) << "rhs( " << globaldof << ")=" << (*rhs)( globaldof )
-                                                    //           << " (just added " << atomcharges[dof] * interpfunc( comp, 0, 0 ) << " )" << "\n";
-                                                    v.setGlobalValue( globaldof, 0 );
-
-                                                }
-                                        }
-                                }
+                            rhs->add( globaldof, atomcharges[dof] * interpfunc( comp, 0, 0 ) );
+                            // Debug(  ) << "rhs( " << globaldof << ")=" << (*rhs)( globaldof )
+                            //           << " (just added " << atomcharges[dof] * interpfunc( comp, 0, 0 ) << " )" << "\n";
+                            v.setGlobalValue( globaldof, 0 );
 
                         }
+                    }
                 }
-        } // element
+
+            }
+        }
+    } // element
 
     timer["intvrho"].second = timer["intvrho"].first.elapsed();
     Log() << "[timer] intvrho(): " << timer["intvrho"].second << "\n";
@@ -341,11 +354,13 @@ IntegratorDirac<Elements, Pts, DiracExpr>::evaluate( mpl::int_<MESH_ELEMENTS> ) 
 
     pts_iterator ptit = _M_pts.begin();
     pts_iterator pten = _M_pts.end();
+
     /* initialisation of the mesh::inverse data structure */
     for ( size_type ptid = 0; ptit != pten; ++ptit, ++ptid )
-        {
-            meshinv.addPointWithId( ptit->node(), ptid );
-        }
+    {
+        meshinv.addPointWithId( ptit->node(), ptid );
+    }
+
     meshinv.distribute();
 
     std::vector<bool> dof_done( _M_pts.size() );
@@ -388,36 +403,38 @@ IntegratorDirac<Elements, Pts, DiracExpr>::evaluate( mpl::int_<MESH_ELEMENTS> ) 
     res.clear();
 
     // size_type first_dof = M_Space->dof()->firstDof();
-    for( ; it != en; ++ it )
+    for ( ; it != en; ++ it )
+    {
+        __c->update( *it, __geopc );
+        meshinv.pointsInConvex( it->id(), itab );
+
+        if ( itab.size() == 0 )
+            continue;
+
+        for ( size_type i = 0; i < itab.size(); ++i )
         {
-            __c->update( *it, __geopc );
-            meshinv.pointsInConvex( it->id(), itab );
-            if (itab.size() == 0)
-                continue;
+            // get dof id in target dof table
+            size_type dof = itab[i];
 
-            for (size_type i = 0; i < itab.size(); ++i)
+            if ( !dof_done[dof] )
+            {
+                dof_done[dof]=true;
+                ublas::column( pts, 0 ) = meshinv.referenceCoords()[dof];
+                element_type::pc_type pc( v.functionSpace()->fe(), pts );
+                __geopc->update( pts );
+                __c->update( *it, __geopc );
+
+                for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
                 {
-                    // get dof id in target dof table
-                    size_type dof = itab[i];
-                    if ( !dof_done[dof] )
-                        {
-                            dof_done[dof]=true;
-                            ublas::column( pts, 0 ) = meshinv.referenceCoords()[dof];
-                            element_type::pc_type pc( v.functionSpace()->fe(), pts );
-                            __geopc->update( pts );
-                            __c->update( *it, __geopc );
-
-                            for ( uint16_type c1 = 0;c1 < eval::shape::M;++c1 )
-                                {
-                                    for ( uint16_type c2 = 0;c2 < eval::shape::N;++c2 )
-                                        {
-                                            //res( c1, c2 ) += ;
-                                        }
-                                }
-
-                        }
+                    for ( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
+                    {
+                        //res( c1, c2 ) += ;
+                    }
                 }
-        } // element
+
+            }
+        }
+    } // element
 
     return res;
 }

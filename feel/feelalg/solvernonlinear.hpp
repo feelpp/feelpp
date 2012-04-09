@@ -81,21 +81,21 @@ public:
     typedef ublas::matrix<value_type> dense_matrix_type;
     typedef ublas::vector<value_type> dense_vector_type;
 
-    typedef boost::function<void (const vector_ptrtype& X,
-                                  vector_ptrtype& R)> residual_function_type;
-    typedef boost::function<void (const vector_ptrtype& X,
-                                  sparse_matrix_ptrtype& J)> jacobian_function_type;
-    typedef boost::function<void (const vector_ptrtype& X,
-                                  vector_ptrtype& R,
-                                  sparse_matrix_ptrtype& J)> matvec_function_type;
+    typedef boost::function<void ( const vector_ptrtype& X,
+                                   vector_ptrtype& R )> residual_function_type;
+    typedef boost::function<void ( const vector_ptrtype& X,
+                                   sparse_matrix_ptrtype& J )> jacobian_function_type;
+    typedef boost::function<void ( const vector_ptrtype& X,
+                                   vector_ptrtype& R,
+                                   sparse_matrix_ptrtype& J )> matvec_function_type;
 
     typedef boost::function<void ( dense_vector_type const& X,
-                                   dense_vector_type & R)> dense_residual_function_type;
+                                   dense_vector_type & R )> dense_residual_function_type;
     typedef boost::function<void ( dense_vector_type const& X,
-                                   dense_matrix_type& J)> dense_jacobian_function_type;
+                                   dense_matrix_type& J )> dense_jacobian_function_type;
     typedef boost::function<void ( dense_vector_type const& X,
                                    dense_vector_type& R,
-                                   dense_matrix_type& J)> dense_matvec_function_type;
+                                   dense_matrix_type& J )> dense_matvec_function_type;
 
 
     //@}
@@ -154,13 +154,19 @@ public:
     /**
      * \return the communicator
      */
-    mpi::communicator const& comm() const { return M_comm; }
+    mpi::communicator const& comm() const
+    {
+        return M_comm;
+    }
 
     /**
      * @returns true if the data structures are
      * initialized, false otherwise.
      */
-    bool initialized () const { return M_is_initialized; }
+    bool initialized () const
+    {
+        return M_is_initialized;
+    }
 
     /**
      * Release all memory and clear data structures.
@@ -171,18 +177,42 @@ public:
      * \return the preconditioner matrix structure
      * it may not be relevant to all non linear solvers
      */
-    virtual MatrixStructure precMatrixStructure() const { return M_prec_matrix_structure; }
+    virtual MatrixStructure precMatrixStructure() const
+    {
+        return M_prec_matrix_structure;
+    }
 
-    SolverNonLinearType getType() const { return M_snl_type; }
+    SolverNonLinearType getType() const
+    {
+        return M_snl_type;
+    }
 
-    double getAbsoluteResidualTol() const { return M_absoluteResidualTol; }
-    double getRelativeResidualTol() const { return M_relativeResidualTol; }
-    double getAbsoluteSolutionTol() const { return M_absoluteSolutionTol; }
+    double getAbsoluteResidualTol() const
+    {
+        return M_absoluteResidualTol;
+    }
+    double getRelativeResidualTol() const
+    {
+        return M_relativeResidualTol;
+    }
+    double getAbsoluteSolutionTol() const
+    {
+        return M_absoluteSolutionTol;
+    }
 
-    uint getNbItMax() const { return M_nbItMax; }
+    uint getNbItMax() const
+    {
+        return M_nbItMax;
+    }
 
-    int reuseJacobian() const { return M_reuse_jac; }
-    int reusePreconditioner() const { return M_reuse_prec; }
+    int reuseJacobian() const
+    {
+        return M_reuse_jac;
+    }
+    int reusePreconditioner() const
+    {
+        return M_reuse_prec;
+    }
 
     //@}
 
@@ -194,71 +224,94 @@ public:
      * \return the preconditioner matrix structure
      * it may not be relevant to all non linear solvers
      */
-    virtual void setPrecMatrixStructure( MatrixStructure mstruct  ) { M_prec_matrix_structure = mstruct; }
+    virtual void setPrecMatrixStructure( MatrixStructure mstruct  )
+    {
+        M_prec_matrix_structure = mstruct;
+    }
 
 
     /**
      * Select type of non linear solver : LINEAR_SEARCH, TRUST_REGION, ...
      */
-    void setType(SolverNonLinearType snl_type) { M_snl_type=snl_type; }
+    void setType( SolverNonLinearType snl_type )
+    {
+        M_snl_type=snl_type;
+    }
     /**
      * Returns the type of solver to use.
      */
-    SolverNonLinearType nlSolverType () const { return M_snl_type; }
+    SolverNonLinearType nlSolverType () const
+    {
+        return M_snl_type;
+    }
 
     /**
      * Sets the type of solver to use.
      */
-    void setKspSolverType (const SolverType st) { M_kspSolver_type = st; }
+    void setKspSolverType ( const SolverType st )
+    {
+        M_kspSolver_type = st;
+    }
 
     /**
      * Returns the type of solver to use.
      */
-    SolverType kspSolverType () const { return M_kspSolver_type; }
+    SolverType kspSolverType () const
+    {
+        return M_kspSolver_type;
+    }
 
     /**
      * Returns the type of preconditioner to use.
      */
     PreconditionerType preconditionerType () const
-        {
-            if ( M_preconditioner )
-                return M_preconditioner->type();
-            return M_preconditioner_type;
-        }
+    {
+        if ( M_preconditioner )
+            return M_preconditioner->type();
+
+        return M_preconditioner_type;
+    }
 
     /**
      * Sets the type of preconditioner to use.
      */
-    void setPreconditionerType (const PreconditionerType pct)
-        {
-            if ( M_preconditioner )
-                M_preconditioner->setType( pct );
-            else
-                M_preconditioner_type = pct;
-        }
+    void setPreconditionerType ( const PreconditionerType pct )
+    {
+        if ( M_preconditioner )
+            M_preconditioner->setType( pct );
+
+        else
+            M_preconditioner_type = pct;
+    }
 
     /**
      * Attaches a Preconditioner object to be used by the solver
      */
-    void attachPreconditioner(preconditioner_ptrtype preconditioner)
+    void attachPreconditioner( preconditioner_ptrtype preconditioner )
+    {
+        if ( this->M_is_initialized )
         {
-            if(this->M_is_initialized)
-            {
-                std::cerr<<"Preconditioner must be attached before the solver is initialized!"<<std::endl;
-            }
-
-            M_preconditioner_type = SHELL_PRECOND;
-            M_preconditioner = preconditioner;
+            std::cerr<<"Preconditioner must be attached before the solver is initialized!"<<std::endl;
         }
+
+        M_preconditioner_type = SHELL_PRECOND;
+        M_preconditioner = preconditioner;
+    }
 
     /**
      * Sets the type of preconditioner to use.
      */
-    void setMatSolverPackageType (const MatSolverPackageType mspackt) { M_matSolverPackage_type = mspackt; }
+    void setMatSolverPackageType ( const MatSolverPackageType mspackt )
+    {
+        M_matSolverPackage_type = mspackt;
+    }
     /**
      * Returns the type of preconditioner to use.
      */
-    MatSolverPackageType matSolverPackageType () const { return M_matSolverPackage_type; }
+    MatSolverPackageType matSolverPackageType () const
+    {
+        return M_matSolverPackage_type;
+    }
 
 
 
@@ -271,19 +324,35 @@ public:
      * when jac >= n, prec=-1 (rebuilt once at each new nonlinear iteration)
      * when jac >= n, prec=-1 (rebuilt once at each new nonlinear iteration)
      */
-    virtual void setReuse( int jac=1, int prec=1 ) { M_reuse_jac=jac; M_reuse_prec=prec; }
+    virtual void setReuse( int jac=1, int prec=1 )
+    {
+        M_reuse_jac=jac;
+        M_reuse_prec=prec;
+    }
 
     /**
      * Define values of tolerance for the non linear solver
      */
-    void setRelativeResidualTol(double tol) { M_relativeResidualTol = tol; }
-    void setAbsoluteResidualTol(double tol) { M_absoluteResidualTol = tol; }
-    void setAbsoluteSolutionTol(double tol) { M_absoluteSolutionTol = tol; }
+    void setRelativeResidualTol( double tol )
+    {
+        M_relativeResidualTol = tol;
+    }
+    void setAbsoluteResidualTol( double tol )
+    {
+        M_absoluteResidualTol = tol;
+    }
+    void setAbsoluteSolutionTol( double tol )
+    {
+        M_absoluteSolutionTol = tol;
+    }
 
     /**
      * Define the number max of iteration
      */
-    void setNbItMax(uint n) { M_nbItMax=n; }
+    void setNbItMax( uint n )
+    {
+        M_nbItMax=n;
+    }
     //@}
 
     /** @name  Methods
@@ -294,19 +363,19 @@ public:
      * Solves a sparse nonlinear system.
      */
     virtual std::pair<int, real_type> solve ( sparse_matrix_ptrtype&,  // System Jacobian Matrix
-                                              vector_ptrtype&, // Solution vector
-                                              vector_ptrtype&, // Residual vector
-                                              const double,      // Stopping tolerance
-                                              const unsigned int) = 0; // N. Iterations
+            vector_ptrtype&, // Solution vector
+            vector_ptrtype&, // Residual vector
+            const double,      // Stopping tolerance
+            const unsigned int ) = 0; // N. Iterations
 
     /**
      * Solves a sparse nonlinear system.
      */
     virtual std::pair<unsigned int, real_type> solve ( dense_matrix_type&,  // System Jacobian Matrix
-                                                       dense_vector_type&, // Solution vector
-                                                       dense_vector_type&, // Residual vector
-                                                       const double,      // Stopping tolerance
-                                                       const unsigned int) = 0; // N. Iterations
+            dense_vector_type&, // Solution vector
+            dense_vector_type&, // Residual vector
+            const double,      // Stopping tolerance
+            const unsigned int ) = 0; // N. Iterations
 
     /**
      * Function that computes the residual \p R(X) of the nonlinear system

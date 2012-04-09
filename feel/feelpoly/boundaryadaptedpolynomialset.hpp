@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -55,7 +55,7 @@ template<uint16_type Dim,
          typename T>
 class BoundaryAdaptedPolynomialSet<Dim, Order, PolySetType, T, Simplex>
     :
-    public PolynomialSet<BoundaryAdapted<Dim, Order, T>, PolySetType >
+public PolynomialSet<BoundaryAdapted<Dim, Order, T>, PolySetType >
 {
     typedef PolynomialSet<BoundaryAdapted<Dim, Order, T>, PolySetType > super;
 public:
@@ -113,8 +113,10 @@ public:
     {
 
         ublas::matrix<value_type> m( ublas::identity_matrix<value_type>( nComponents*convex_type::polyDims( nOrder ) ) );
+
         if ( is_tensor2 )
             std::cout << "[boundaryadaptedpolynomialset] m = " << m << "\n";
+
         this->setCoefficient( polyset_type::toType( m ), true );
     }
 
@@ -126,10 +128,19 @@ public:
     /**
      * \return the family name of the finite element
      */
-    std::string familyName() const { return "dubinerba"; }
+    std::string familyName() const
+    {
+        return "dubinerba";
+    }
 
-    points_type const& points() const { return this->basis().points(); }
-    points_type const& points( int f ) const { return this->basis().points( f ); }
+    points_type const& points() const
+    {
+        return this->basis().points();
+    }
+    points_type const& points( int f ) const
+    {
+        return this->basis().points( f );
+    }
 };
 
 template<uint16_type Dim,
@@ -151,7 +162,7 @@ template<uint16_type Dim,
          typename T>
 class BoundaryAdaptedPolynomialSet<Dim, Order, PolySetType, T, Hypercube>
     :
-    public PolynomialSet<TensorisedBoundaryAdapted<Dim, Order, T>, PolySetType >
+public PolynomialSet<TensorisedBoundaryAdapted<Dim, Order, T>, PolySetType >
 {
     typedef PolynomialSet<TensorisedBoundaryAdapted<Dim, Order, T>, PolySetType > super;
 public:
@@ -216,8 +227,10 @@ public:
 
     {
         ublas::matrix<value_type> m( ublas::identity_matrix<value_type>( nComponents*convex_type::polyDims( nOrder ) ) );
+
         if ( is_tensor2 )
             std::cout << "[boundaryadaptedpolynomialset] m = " << m << "\n";
+
         this->setCoefficient( polyset_type::toType( m ), true );
     }
 
@@ -229,10 +242,19 @@ public:
     /**
      * \return the family name of the finite element
      */
-    std::string familyName() const { return "tensorizedba"; }
+    std::string familyName() const
+    {
+        return "tensorizedba";
+    }
 
-    points_type const& points() const { return this->basis().points(); }
-    points_type const& points( int f ) const { return this->basis().points( f ); }
+    points_type const& points() const
+    {
+        return this->basis().points();
+    }
+    points_type const& points( int f ) const
+    {
+        return this->basis().points( f );
+    }
 };
 } // detail
 
@@ -249,8 +271,8 @@ public:
     struct apply
     {
         typedef typename mpl::if_<mpl::bool_<Convex::is_simplex>,
-                                  mpl::identity<detail::BoundaryAdaptedPolynomialSet<N,Order,PolySetType,T,Simplex> >,
-                                  mpl::identity<detail::BoundaryAdaptedPolynomialSet<N,Order,PolySetType,T,Hypercube> > >::type::type result_type;
+                mpl::identity<detail::BoundaryAdaptedPolynomialSet<N,Order,PolySetType,T,Simplex> >,
+                mpl::identity<detail::BoundaryAdaptedPolynomialSet<N,Order,PolySetType,T,Hypercube> > >::type::type result_type;
         typedef result_type type;
     };
 

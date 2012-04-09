@@ -59,13 +59,13 @@ ALE<Convex>::ALE( interval_type const& intX,
     M_timer.restart();
     size_type pattern = Pattern::COUPLED;
     form2( p1_fspace, p1_fspace, harmonic, _init=true, _pattern = pattern ) =
-        integrate( elements(reference_mesh),
-                   trace( trans(gradt(u))*grad(v) ) );
+        integrate( elements( reference_mesh ),
+                   trace( trans( gradt( u ) )*grad( v ) ) );
 
     form2( p1_fspace, p1_fspace, harmonic ) +=
-        integrate( boundaryfaces(reference_mesh),
-                   - trans((gradt(u)*N()))*id(v)
-                   );
+        integrate( boundaryfaces( reference_mesh ),
+                   - trans( ( gradt( u )*N() ) )*id( v )
+                 );
 
     harmonic->close();
 
@@ -174,17 +174,17 @@ ALE<Convex>::generateP1Map( p1_element_type& p )
 {
     using namespace Feel::vf;
     ExporterQuick<mesh_type> exp( "harmonic", "ensight" );
-    p1_element_type v( p1_fspace, "v");
+    p1_element_type v( p1_fspace, "v" );
     exp.save( 0, p );
     vector_ptrtype rhs( b->newVector( p1_fspace ) );
     rhs->zero();
     rhs->close();
 
-    form2( p1_fspace, p1_fspace, harmonic ) += on( boundaryfaces(reference_mesh), v, rhs, idv(p),
-                                                   ON_ELIMINATION );
+    form2( p1_fspace, p1_fspace, harmonic ) += on( boundaryfaces( reference_mesh ), v, rhs, idv( p ),
+            ON_ELIMINATION );
 
     vector_ptrtype U( b->newVector( p1_fspace ) );
-    b->solve(harmonic, harmonic, U, rhs);
+    b->solve( harmonic, harmonic, U, rhs );
     p = *U;
 
     exp.save( 1, p );

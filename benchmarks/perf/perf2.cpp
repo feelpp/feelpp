@@ -46,12 +46,12 @@ inline
 po::options_description
 makeOptions()
 {
-    po::options_description myintegralsoptions("MyIntegrals options");
+    po::options_description myintegralsoptions( "MyIntegrals options" );
     myintegralsoptions.add_options()
-     ("hsize", po::value<double>()->default_value( 0.2 ), "mesh size")
-     ("shape", Feel::po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (either simplex or hypercube)")
-       ("nthreads", po::value<int>()->default_value( 2 ), "nthreads")
-        ;
+    ( "hsize", po::value<double>()->default_value( 0.2 ), "mesh size" )
+    ( "shape", Feel::po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (either simplex or hypercube)" )
+    ( "nthreads", po::value<int>()->default_value( 2 ), "nthreads" )
+    ;
     return myintegralsoptions.add( Feel::feel_options() );
 }
 inline
@@ -63,9 +63,9 @@ makeAbout()
                      "0.3",
                      "nD(n=1,2,3) MyIntegrals on simplices or simplex products",
                      Feel::AboutData::License_GPL,
-                     "Copyright (c) 2008-2010 Universite Joseph Fourier");
+                     "Copyright (c) 2008-2010 Universite Joseph Fourier" );
 
-    about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
     return about;
 
 }
@@ -79,7 +79,7 @@ makeAbout()
 template<int Dim>
 class MyIntegrals
     :
-    public Simget
+public Simget
 {
     typedef Simget super;
 public:
@@ -98,8 +98,8 @@ public:
         super( vm, about ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( this->vm()["shape"].template as<std::string>()  ),
-	nthreads( this->vm()["nthreads"].template as<int>()  ),
-        backend( Backend<double>::build( this->vm()))
+        nthreads( this->vm()["nthreads"].template as<int>()  ),
+        backend( Backend<double>::build( this->vm() ) )
     {
     }
 
@@ -112,7 +112,7 @@ private:
     double meshSize;
     std::string shape;
     int nthreads;
-   boost::shared_ptr<Backend<double> > backend;
+    boost::shared_ptr<Backend<double> > backend;
 }; // MyIntegrals
 
 
@@ -124,10 +124,13 @@ MyIntegrals<Dim>::run()
     std::cout << "Execute MyIntegrals<" << Dim << ">\n";
     std::vector<double> X( 2 );
     X[0] = meshSize;
+
     if ( shape == "hypercube" )
         X[1] = 1;
+
     else // default is simplex
         X[1] = 0;
+
     std::vector<double> Y( 3 );
     run( X.data(), X.size(), Y.data(), Y.size() );
 }
@@ -138,6 +141,7 @@ MyIntegrals<Dim>::run( const double* X, unsigned long P, double* Y, unsigned lon
     using namespace Feel::vf;
 
     if ( X[1] == 0 ) shape = "simplex";
+
     if ( X[1] == 1 ) shape = "hypercube";
 
     if ( !this->vm().count( "nochdir" ) )
@@ -145,85 +149,88 @@ MyIntegrals<Dim>::run( const double* X, unsigned long P, double* Y, unsigned lon
                                        % this->about().appName()
                                        % shape
                                        % meshSize );
+
 #if defined(FEELPP_HAS_TBB)
     /*
      * First we create the mesh
      */
     tbb::tick_count t0 = tbb::tick_count::now();
     mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
-                                        _desc=domain( _name= (boost::format( "%1%-%2%" ) % shape % Dim).str() ,
-                                                      _shape=shape,
-                                                      _dim=Dim,
-                                                      _h=X[0] ) );
+                                        _desc=domain( _name= ( boost::format( "%1%-%2%" ) % shape % Dim ).str() ,
+                                                _shape=shape,
+                                                _dim=Dim,
+                                                _h=X[0] ) );
 
-   tbb::tick_count t1 = tbb::tick_count::now();
-    double t = (t1-t0).seconds();
+    tbb::tick_count t1 = tbb::tick_count::now();
+    double t = ( t1-t0 ).seconds();
     std::cout << "mesh: " << t << "s\n";
-   t0 = tbb::tick_count::now();
-    mesh->setComponents( MESH_PARTITION| MESH_UPDATE_FACES|MESH_UPDATE_EDGES);
+    t0 = tbb::tick_count::now();
+    mesh->setComponents( MESH_PARTITION| MESH_UPDATE_FACES|MESH_UPDATE_EDGES );
     //mesh->setComponents( 0 );
     //ProfilerStart( "/tmp/updateforuse.prof" );
     mesh->updateForUse();
     //ProfilerStop();
     t1 = tbb::tick_count::now();
-    t = (t1-t0).seconds();
+    t = ( t1-t0 ).seconds();
     std::cout << "update mesh: " << t << "s\n";
 
-    auto Xh = space_type::New(mesh);
+    auto Xh = space_type::New( mesh );
     auto u = Xh->element();
     auto M = backend->newMatrix( Xh, Xh );
-    u = vf::project( Xh, elements(mesh), Px()*Px()+Py()*Py()+Pz()*Pz() );
+    u = vf::project( Xh, elements( mesh ), Px()*Px()+Py()*Py()+Pz()*Pz() );
 
     double overhead = 0;//4.5e-2;
-   auto myformexpr = idt(u)*id(u)*Px()*cos(Py());
-   auto myexpr = vf::P()*trans(vf::P())*sin(Px())*cos(Py())*cos(Pz());
-   //auto myexpr = vf::P()*trans(vf::P())*idv(u);
-   std::cout << "nb elts in mesh =" << mesh->numElements() << std::endl;
+    auto myformexpr = idt( u )*id( u )*Px()*cos( Py() );
+    auto myexpr = vf::P()*trans( vf::P() )*sin( Px() )*cos( Py() )*cos( Pz() );
+    //auto myexpr = vf::P()*trans(vf::P())*idv(u);
+    std::cout << "nb elts in mesh =" << mesh->numElements() << std::endl;
     /*
      * Compute domain Area
      */
     //# marker1 #
     double local_domain_area;
 
-   form2(Xh,Xh,M,_init=true);
+    form2( Xh,Xh,M,_init=true );
 #if 1
     int n = tbb::task_scheduler_init::default_num_threads();
     double initt;
-    std::vector<double> speedup(n);
+    std::vector<double> speedup( n );
     {
         std::cout << 1 << " thread" << std::endl;
-        tbb::task_scheduler_init init(1);
-	std::cout << "is_active: " << init.is_active() << "\n";
-               tbb::task_scheduler_init init2(2);
-	std::cout << "is_activ2e: " << init2.is_active() << "\n";
+        tbb::task_scheduler_init init( 1 );
+        std::cout << "is_active: " << init.is_active() << "\n";
+        tbb::task_scheduler_init init2( 2 );
+        std::cout << "is_activ2e: " << init2.is_active() << "\n";
         t0 = tbb::tick_count::now();
         //local_domain_area = integrate( elements(mesh), trace(vf::P()*trans(vf::P()))*idv(u)).evaluate()(0,0);
-        auto res  = integrate( elements(mesh), myexpr, _Q<10>() ).evaluate();
-       local_domain_area = res(0,0);
-       //form2(Xh,Xh,M)=integrate( elements(mesh), myformexpr);
+        auto res  = integrate( elements( mesh ), myexpr, _Q<10>() ).evaluate();
+        local_domain_area = res( 0,0 );
+        //form2(Xh,Xh,M)=integrate( elements(mesh), myformexpr);
         t1 = tbb::tick_count::now();
-        initt = (t1-t0).seconds();
+        initt = ( t1-t0 ).seconds();
         std::cout << "time: " << initt << " for " << "1 thread" << std::endl;
         speedup[0] = 1;
     }
-   std::cout << "------------------------------------------------------------\n";
-    for( int p=this->vm()["nthreads"].template as<int>(); p<=n; ++p )
+    std::cout << "------------------------------------------------------------\n";
+
+    for ( int p=this->vm()["nthreads"].template as<int>(); p<=n; ++p )
     {
         std::cout << p << " threads" << std::endl;
-        tbb::task_scheduler_init init(p);
-	std::cout << "is_active: " << init.is_active() << "\n";
+        tbb::task_scheduler_init init( p );
+        std::cout << "is_active: " << init.is_active() << "\n";
         t0 = tbb::tick_count::now();
-       //form2(Xh,Xh,M)=integrate( elements(mesh),myformexpr );
-       auto res = integrate( elements(mesh), myexpr,_Q<10>()).evaluate();
-       local_domain_area = res(0,0);
+        //form2(Xh,Xh,M)=integrate( elements(mesh),myformexpr );
+        auto res = integrate( elements( mesh ), myexpr,_Q<10>() ).evaluate();
+        local_domain_area = res( 0,0 );
         t1 = tbb::tick_count::now();
-        double t = (t1-t0).seconds();
+        double t = ( t1-t0 ).seconds();
         speedup[p-1] = initt/t;
 
         std::cout << "time: " << t << " for " << p << " threads speedup=" << speedup[p-1] << std::endl;
         std::cout << "area = " << local_domain_area << std::endl;
-       std::cout << "------------------------------------------------------------\n";
+        std::cout << "------------------------------------------------------------\n";
     }
+
 #endif
 #endif // FEELPP_HAS_TBB
 } // MyIntegrals::run

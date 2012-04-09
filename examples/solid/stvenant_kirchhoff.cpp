@@ -49,23 +49,23 @@ inline
 Feel::po::options_description
 makeOptions()
 {
-    Feel::po::options_description stvenant_kirchhoffoptions("StVenant Kirchhoff solid model options");
+    Feel::po::options_description stvenant_kirchhoffoptions( "StVenant Kirchhoff solid model options" );
     stvenant_kirchhoffoptions.add_options()
-        ("dt", Feel::po::value<double>()->default_value( 1 ), "time step value")
-        ("ft", Feel::po::value<double>()->default_value( 1 ), "final time value")
-        ("omega", Feel::po::value<double>()->default_value( 2 ), "frequency")
-        ("lambda", Feel::po::value<double>()->default_value( 1 ), "exp() coefficient value for the Stvenant_Kirchhoff problem")
+    ( "dt", Feel::po::value<double>()->default_value( 1 ), "time step value" )
+    ( "ft", Feel::po::value<double>()->default_value( 1 ), "final time value" )
+    ( "omega", Feel::po::value<double>()->default_value( 2 ), "frequency" )
+    ( "lambda", Feel::po::value<double>()->default_value( 1 ), "exp() coefficient value for the Stvenant_Kirchhoff problem" )
 
-        ("order", Feel::po::value<int>()->default_value( 2 ), "order of time discretisation")
-        ("diff", Feel::po::value<double>()->default_value( 1 ), "diffusion parameter")
-        ("penal", Feel::po::value<double>()->default_value( 10 ), "penalisation parameter")
-        ("penalbc", Feel::po::value<double>()->default_value( 10 ), "penalisation parameter for the weak boundary conditions")
-        ("hsize", Feel::po::value<double>()->default_value( 0.5 ), "first h value to start convergence")
-        ("bctype", Feel::po::value<int>()->default_value( 1 ), "0 = strong Dirichlet, 1 = weak Dirichlet")
-        ("export", "export results(ensight, data file(1D)")
-        ("export-mesh-only", "export mesh only in ensight format")
-        ("export-matlab", "export matrix and vectors in matlab" )
-        ;
+    ( "order", Feel::po::value<int>()->default_value( 2 ), "order of time discretisation" )
+    ( "diff", Feel::po::value<double>()->default_value( 1 ), "diffusion parameter" )
+    ( "penal", Feel::po::value<double>()->default_value( 10 ), "penalisation parameter" )
+    ( "penalbc", Feel::po::value<double>()->default_value( 10 ), "penalisation parameter for the weak boundary conditions" )
+    ( "hsize", Feel::po::value<double>()->default_value( 0.5 ), "first h value to start convergence" )
+    ( "bctype", Feel::po::value<int>()->default_value( 1 ), "0 = strong Dirichlet, 1 = weak Dirichlet" )
+    ( "export", "export results(ensight, data file(1D)" )
+    ( "export-mesh-only", "export mesh only in ensight format" )
+    ( "export-matlab", "export matrix and vectors in matlab" )
+    ;
     return stvenant_kirchhoffoptions.add( Feel::feel_options() );
 }
 inline
@@ -77,9 +77,9 @@ makeAbout()
                            "0.2",
                            "nD(n=1,2,3) Stvenant_Kirchhoff model",
                            Feel::AboutData::License_GPL,
-                           "Copyright (c) 2008-2012 Université Joseph Fourier");
+                           "Copyright (c) 2008-2012 Université Joseph Fourier" );
 
-    about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
     return about;
 
 }
@@ -96,7 +96,7 @@ using namespace Feel::vf;
 template<int Dim, int Order>
 class StVenantKirchhoff
     :
-    public Application
+public Application
 {
     typedef Application super;
 public:
@@ -161,10 +161,10 @@ public:
         omega( this->vm()["omega"].template as<double>() )
     {
         if ( this->vm().count( "help" ) )
-            {
-                std::cout << this->optionsDescription() << "\n";
-                return;
-            }
+        {
+            std::cout << this->optionsDescription() << "\n";
+            return;
+        }
 
 
 
@@ -174,7 +174,7 @@ public:
                                 % entity_type::name()
                                 % Order
                                 % this->vm()["hsize"].template as<double>()
-                            );
+                              );
 
         /**
          * Physical data
@@ -182,8 +182,8 @@ public:
         M_time_order = this->vm()["order"].template as<int>();
         E = 21*1e5;
         sigma = 0.28;
-        mu = E/(2*(1+sigma));
-        lambda = E*sigma/((1+sigma)*(1-2*sigma));
+        mu = E/( 2*( 1+sigma ) );
+        lambda = E*sigma/( ( 1+sigma )*( 1-2*sigma ) );
         density = 1;
         gravity = -density*0.05;
 
@@ -191,12 +191,12 @@ public:
         Log() << "[data] ft=" << ft << "\n";
 
         mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
-                                            _desc=domain( _name=(boost::format( "beam-%1%" ) % Dim).str() ,
-                                                          _shape="hypercube",
-                                                          _usenames=true,
-                                                          _xmin=0., _xmax=20,
-                                                          _ymin=-1., _ymax=1.,
-                                                          _h=meshSize ),
+                                            _desc=domain( _name=( boost::format( "beam-%1%" ) % Dim ).str() ,
+                                                    _shape="hypercube",
+                                                    _usenames=true,
+                                                    _xmin=0., _xmax=20,
+                                                    _ymin=-1., _ymax=1.,
+                                                    _h=meshSize ),
                                             _update=MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK,
                                             _partitions=this->comm().size()  );
 
@@ -214,8 +214,8 @@ public:
 
 
     void updateResidual( const vector_ptrtype& X, vector_ptrtype& R );
-    void updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J);
-    void updateResidualJacobian( const vector_ptrtype& X, vector_ptrtype& R, sparse_matrix_ptrtype& J);
+    void updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J );
+    void updateResidualJacobian( const vector_ptrtype& X, vector_ptrtype& R, sparse_matrix_ptrtype& J );
 
 private:
 
@@ -270,38 +270,38 @@ StVenantKirchhoff<Dim, Order>::updateResidual( const vector_ptrtype& X, vector_p
     element_type v( M_Xh, "V" );
     u = *X;
 
-    auto g = constant(0.0);
-    auto defv = sym(gradv(u));
-    auto def=  sym(grad(u));
-    auto Id = (mat<Dim,Dim>( cst(1), cst(0), cst(0), cst(1.) ));
+    auto g = constant( 0.0 );
+    auto defv = sym( gradv( u ) );
+    auto def=  sym( grad( u ) );
+    auto Id = ( mat<Dim,Dim>( cst( 1 ), cst( 0 ), cst( 0 ), cst( 1. ) ) );
     //std::cout << "u = " << u << "\n";
 
-    auto eta = 0.1*Px()*( Px() -5 )*(Px()-2.5)*sin( omega*M_PI*cst_ref(time)  );
+    auto eta = 0.1*Px()*( Px() -5 )*( Px()-2.5 )*sin( omega*M_PI*cst_ref( time )  );
 
     form1( _test=M_Xh, _vector=R ) =
         integrate( elements( mesh ),
-                   .5*mu*(trace( (gradv(u)*trans(gradv(u)))*grad(v) ) )+
-                   .25*lambda*trace(gradv(u)*trans(gradv(u)))*div(v) -
-                   trans(gravity*oneY())*id(v) );
+                   .5*mu*( trace( ( gradv( u )*trans( gradv( u ) ) )*grad( v ) ) )+
+                   .25*lambda*trace( gradv( u )*trans( gradv( u ) ) )*div( v ) -
+                   trans( gravity*oneY() )*id( v ) );
 
     // force applied at the bottom
     form1( _test=M_Xh, _vector=R ) +=
         integrate( markedfaces( mesh, 2 ),
-                   -trans(eta*oneY())*id(v) );
+                   -trans( eta*oneY() )*id( v ) );
     form1( _test=M_Xh, _vector=R ) +=
         integrate( elements( mesh ),
-                   -density*trans(2*idv(*un)-idv(*un1)) *id(v) /(dt*dt)
-                   );
+                   -density*trans( 2*idv( *un )-idv( *un1 ) ) *id( v ) /( dt*dt )
+                 );
 
     M_oplin->apply( u, v );
 
     R->add( 1., v );
     Log() << "residual norm 2 = " << R->l2Norm() << "\n";
     Log() << "[updateResidual] done in " << ti.elapsed() << "s\n";
-                   }
+}
 template<int Dim, int Order>
 void
-StVenantKirchhoff<Dim, Order>::updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J)
+StVenantKirchhoff<Dim, Order>::updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J )
 {
     boost::timer ti;
     Log() << "[updateJacobian] start\n";
@@ -311,17 +311,19 @@ StVenantKirchhoff<Dim, Order>::updateJacobian( const vector_ptrtype& X, sparse_m
     element_type u( M_Xh, "U" );
     element_type v( M_Xh, "V" );
     u = *X;
+
     if ( !J ) J=M_backend->newMatrix( M_Xh, M_Xh );
+
     form2( _test=M_Xh, _trial=M_Xh, _matrix=J ) =
         integrate( elements( mesh ),
-                   .5*mu*(trace( (gradv(u)*trans(gradt(u)))*grad(v) ) )+
-                   .25*lambda*trace(gradv(u)*trans(gradt(u)))*div(v) );
+                   .5*mu*( trace( ( gradv( u )*trans( gradt( u ) ) )*grad( v ) ) )+
+                   .25*lambda*trace( gradv( u )*trans( gradt( u ) ) )*div( v ) );
     J->addMatrix( 1.0, M_oplin->mat() );
     Log() << "[updateJacobian] done in " << ti.elapsed() << "s\n";
 }
 template<int Dim, int Order>
 void
-StVenantKirchhoff<Dim, Order>::updateResidualJacobian( const vector_ptrtype& X, vector_ptrtype& R, sparse_matrix_ptrtype& J)
+StVenantKirchhoff<Dim, Order>::updateResidualJacobian( const vector_ptrtype& X, vector_ptrtype& R, sparse_matrix_ptrtype& J )
 {
 }
 
@@ -351,28 +353,28 @@ StVenantKirchhoff<Dim, Order>::run()
           << "gravity= " << gravity << "\n";
 
     M_oplin = opLinear( _domainSpace=M_Xh, _imageSpace=M_Xh, _backend=M_backend );
-    auto deft = sym(gradt(u));
-    auto def = sym(grad(v));
-    auto Id = (mat<Dim,Dim>( cst(1), cst(0), cst(0), cst(1.) ));
+    auto deft = sym( gradt( u ) );
+    auto def = sym( grad( v ) );
+    auto Id = ( mat<Dim,Dim>( cst( 1 ), cst( 0 ), cst( 0 ), cst( 1. ) ) );
     *M_oplin =
-        integrate( elements(mesh),
+        integrate( elements( mesh ),
                    //density*trans(idt(uu))*id(v)*M_bdf->derivateCoefficient( M_time_order, dt ) +
-                   density*trans(idt(u))*id(v)/(dt*dt)+
-                   lambda*divt(u)*div(v)  +
-                   2*mu*trace(trans(deft)*def)
-                   );
+                   density*trans( idt( u ) )*id( v )/( dt*dt )+
+                   lambda*divt( u )*div( v )  +
+                   2*mu*trace( trans( deft )*def )
+                 );
 
     *M_oplin +=
-        integrate( markedfaces(mesh,1),
-                   - trans((2*mu*deft+lambda*trace(deft)*Id )*N())*id(v)
-                   - trans((2*mu*def+lambda*trace(def)*Id )*N())*idt(u)
-                   + penalisation_bc*trans(idt(u))*id(v)/hFace() );
+        integrate( markedfaces( mesh,1 ),
+                   - trans( ( 2*mu*deft+lambda*trace( deft )*Id )*N() )*id( v )
+                   - trans( ( 2*mu*def+lambda*trace( def )*Id )*N() )*idt( u )
+                   + penalisation_bc*trans( idt( u ) )*id( v )/hFace() );
 
     *M_oplin +=
-        integrate( markedfaces(mesh,3),
-                   - trans((2*mu*deft+lambda*trace(deft)*Id )*N())*id(v)
-                   - trans((2*mu*def+lambda*trace(def)*Id )*N())*idt(u)
-                   + penalisation_bc*trans(idt(u))*id(v)/hFace() );
+        integrate( markedfaces( mesh,3 ),
+                   - trans( ( 2*mu*deft+lambda*trace( deft )*Id )*N() )*id( v )
+                   - trans( ( 2*mu*def+lambda*trace( def )*Id )*N() )*idt( u )
+                   + penalisation_bc*trans( idt( u ) )*id( v )/hFace() );
 
     M_backend->nlSolver()->residual = boost::bind( &self_type::updateResidual, boost::ref( *this ), _1, _2 );
     M_backend->nlSolver()->jacobian = boost::bind( &self_type::updateJacobian, boost::ref( *this ), _1, _2 );
@@ -387,23 +389,24 @@ StVenantKirchhoff<Dim, Order>::run()
 
     boost::timer ttotal;
     int iterations = 0;
-    for( time = dt, iterations = 0; time < ft; time +=dt, ++iterations )
-        {
-            boost::timer ti;
-            Log() << "============================================================\n";
-            Log() << "time: " << time << "s, iteration: " << iterations << "\n";
 
-            M_backend->nlSolve( _solution=U );
+    for ( time = dt, iterations = 0; time < ft; time +=dt, ++iterations )
+    {
+        boost::timer ti;
+        Log() << "============================================================\n";
+        Log() << "time: " << time << "s, iteration: " << iterations << "\n";
 
-            exportResults( time, U );
+        M_backend->nlSolve( _solution=U );
 
-            *un1 = *un;
-            *un = U;
+        exportResults( time, U );
 
-            M_bdf->shiftRight( U );
+        *un1 = *un;
+        *un = U;
 
-            Log() << "time spent in iteration :  " << ti.elapsed() << "s\n";
-        }
+        M_bdf->shiftRight( U );
+
+        Log() << "time spent in iteration :  " << ti.elapsed() << "s\n";
+    }
 
     Log() << "total time spent :  " << ttotal.elapsed() << "s\n";
     Log() << "total number of iterations :  " << iterations << "\n";
@@ -415,24 +418,24 @@ StVenantKirchhoff<Dim, Order>::run()
 
 template<int Dim, int Order>
 void
-StVenantKirchhoff<Dim, Order>::exportResults( double time, element_type& U)
+StVenantKirchhoff<Dim, Order>::exportResults( double time, element_type& U )
 {
 
     Log() << "exportResults starts\n";
 
-    exporter->step(time)->setMesh( U.functionSpace()->mesh() );
-    exporter->step(time)->add( "pid",
-                   regionProcess( boost::shared_ptr<p0_space_type>( new p0_space_type( U.functionSpace()->mesh() ) ) ) );
+    exporter->step( time )->setMesh( U.functionSpace()->mesh() );
+    exporter->step( time )->add( "pid",
+                                 regionProcess( boost::shared_ptr<p0_space_type>( new p0_space_type( U.functionSpace()->mesh() ) ) ) );
 
 #if MIXED
-    exporter->step(time)->add( "displ", U.template element<0>() );
-    exporter->step(time)->add( "veloc", U.template element<1>() );
+    exporter->step( time )->add( "displ", U.template element<0>() );
+    exporter->step( time )->add( "veloc", U.template element<1>() );
 #else
-    exporter->step(time)->add( "displ", U );
+    exporter->step( time )->add( "displ", U );
 #endif
 
     exporter->save();
-    exporter->step(time)->setState( STEP_ON_DISK );
+    exporter->step( time )->setState( STEP_ON_DISK );
 } // StVenantKirchhoff::export
 } // Feel
 

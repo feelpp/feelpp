@@ -39,20 +39,20 @@
 Feel::po::options_description
 makeOptions()
 {
-    Feel::po::options_description stokesoptions("Kovasznay Benchmark options");
+    Feel::po::options_description stokesoptions( "Kovasznay Benchmark options" );
     stokesoptions.add_options()
-        ("penal", Feel::po::value<double>()->default_value( 0.5 ), "penalisation parameter")
-        ("mu", Feel::po::value<double>()->default_value( 1.0/40. ), "viscosity coefficient (default from Sherwin/Karnyadakis book)")
-        ("beta", Feel::po::value<double>()->default_value( 0.0 ), "convection coefficient")
-        ("hsize", Feel::po::value<double>()->default_value( 0.1 ), "first h value to start convergence")
-        ("weak", "use weak Dirichlet")
-        ("bccoeff", Feel::po::value<double>()->default_value( 100.0 ), "coeff for weak Dirichlet conditions")
-        ("penalisation", Feel::po::value<double>()->default_value( 1 ), "penalisation parameter for equal order approximation")
-        ("stab-p", Feel::po::value<bool>()->default_value( true ), "0 = no stabilisation for equal order approx., 1 = stabilisation for equal order approx.")
-        ("stab-div", Feel::po::value<bool>()->default_value( false ), "0 = no stabilisation for divergence, 1 = stabilisation of divergence.")
+    ( "penal", Feel::po::value<double>()->default_value( 0.5 ), "penalisation parameter" )
+    ( "mu", Feel::po::value<double>()->default_value( 1.0/40. ), "viscosity coefficient (default from Sherwin/Karnyadakis book)" )
+    ( "beta", Feel::po::value<double>()->default_value( 0.0 ), "convection coefficient" )
+    ( "hsize", Feel::po::value<double>()->default_value( 0.1 ), "first h value to start convergence" )
+    ( "weak", "use weak Dirichlet" )
+    ( "bccoeff", Feel::po::value<double>()->default_value( 100.0 ), "coeff for weak Dirichlet conditions" )
+    ( "penalisation", Feel::po::value<double>()->default_value( 1 ), "penalisation parameter for equal order approximation" )
+    ( "stab-p", Feel::po::value<bool>()->default_value( true ), "0 = no stabilisation for equal order approx., 1 = stabilisation for equal order approx." )
+    ( "stab-div", Feel::po::value<bool>()->default_value( false ), "0 = no stabilisation for divergence, 1 = stabilisation of divergence." )
 
-        ("export-matlab", "export matrix and vectors in matlab" )
-        ;
+    ( "export-matlab", "export matrix and vectors in matlab" )
+    ;
     return stokesoptions.add( Feel::feel_options() ) ;
 }
 
@@ -72,9 +72,9 @@ makeAbout()
                            "0.2",
                            "Kovasznay benchmark",
                            Feel::AboutData::License_GPL,
-                           "Copyright (c) 2009-2010 Université de Grenoble 1 (Joseph Fourier)");
+                           "Copyright (c) 2009-2010 Université de Grenoble 1 (Joseph Fourier)" );
 
-    about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
     return about;
 }
 

@@ -98,9 +98,9 @@ public:
         M_range( r ),
         M_expr( __expr ),
         M_geomap_strategy( geomap_strategy )
-        {
-            Debug( 5065 ) << "Projector constructor from expression\n";
-        }
+    {
+        Debug( 5065 ) << "Projector constructor from expression\n";
+    }
 
 
     Projector( Projector const& __vfi )
@@ -109,9 +109,9 @@ public:
         M_range( __vfi.M_range ),
         M_expr( __vfi.M_expr ),
         M_geomap_strategy( __vfi.M_geomap_strategy )
-        {
-            Debug( 5065 ) << "Projector copy constructor\n";
-        }
+    {
+        Debug( 5065 ) << "Projector copy constructor\n";
+    }
 
     virtual ~Projector() {}
 
@@ -122,9 +122,9 @@ public:
     //@{
 
     element_type operator()( const bool sum = false ) const
-        {
-            return operator()( sum, idim_type() );
-        }
+    {
+        return operator()( sum, idim_type() );
+    }
 
     //@}
 
@@ -138,7 +138,10 @@ public:
      *
      * @return the variational expression
      */
-    expression_type const& expression() const { return M_expr; }
+    expression_type const& expression() const
+    {
+        return M_expr;
+    }
 
     //@}
 
@@ -213,9 +216,9 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
     // geometric mapping and reference finite element
     //
     typename gm_type::precompute_ptrtype __geopc( new typename gm_type::precompute_type( __v.functionSpace()->gm(),
-                                                                                         __fe->points() ) );
+            __fe->points() ) );
     typename gm1_type::precompute_ptrtype __geopc1( new typename gm1_type::precompute_type( __v.mesh()->gm1(),
-                                                                                            __fe->points() ) );
+            __fe->points() ) );
 
 
 
@@ -237,7 +240,7 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
 
     BOOST_MPL_ASSERT_MSG( mpl::bool_<is_rank_ok>::value,
                           INVALID_TENSOR_RANK,
-                          (mpl::int_<shape::M>, mpl::int_<FunctionSpaceType::nComponents>, shape ) );
+                          ( mpl::int_<shape::M>, mpl::int_<FunctionSpaceType::nComponents>, shape ) );
 
     map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c ) );
     t_expr_type tensor_expr( basis_type::isomorphism( M_expr ), mapgmc );
@@ -248,9 +251,10 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
 
     std::vector<bool> points_done( __v.functionSpace()->dof()->nLocalDof()/__v.nComponents );
     std::fill( points_done.begin(), points_done.end(),false );
+
     for ( ; it!=en ; ++it )
     {
-        switch( M_geomap_strategy )
+        switch ( M_geomap_strategy )
         {
         case GeomapStrategyType::GEOMAP_HO:
         {
@@ -258,38 +262,42 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
             map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c ) );
             tensor_expr.update( mapgmc );
 
-            for ( uint16_type __j = 0; __j < ndofv;++__j )
+            for ( uint16_type __j = 0; __j < ndofv; ++__j )
             {
-                for ( uint16_type c1 = 0; c1 < shape::M;++c1 )
+                for ( uint16_type c1 = 0; c1 < shape::M; ++c1 )
                     //for ( uint16_type c2 = 0; c2 < shape::N;++c2 )
                 {
                     if ( sum )
                         __v.plus_assign( it->id(), __j, c1, tensor_expr.evalq( c1, 0, __j ) );
+
                     else
                         __v.assign( it->id(), __j, c1, tensor_expr.evalq( c1, 0, __j ) );
                 }
             }
         }
         break;
+
         case GeomapStrategyType::GEOMAP_O1:
         {
             __c1->update( *it );
             map_gmc1_type mapgmc1( fusion::make_pair<detail::gmc<0> >( __c1 ) );
             tensor_expr1.update( mapgmc1 );
 
-            for ( uint16_type __j = 0; __j < ndofv;++__j )
+            for ( uint16_type __j = 0; __j < ndofv; ++__j )
             {
-                for ( uint16_type c1 = 0; c1 < shape::M;++c1 )
+                for ( uint16_type c1 = 0; c1 < shape::M; ++c1 )
                     //for ( uint16_type c2 = 0; c2 < shape::N;++c2 )
                 {
                     if ( sum )
                         __v.plus_assign( it->id(), __j, c1, tensor_expr1.evalq( c1, 0, __j ) );
+
                     else
                         __v.assign( it->id(), __j, c1, tensor_expr1.evalq( c1, 0, __j ) );
                 }
             }
         }
         break;
+
         case GeomapStrategyType::GEOMAP_OPT:
         {
             if ( it->isOnBoundary() )
@@ -299,31 +307,34 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
                 map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c ) );
                 tensor_expr.update( mapgmc );
 
-                for ( uint16_type __j = 0; __j < ndofv;++__j )
+                for ( uint16_type __j = 0; __j < ndofv; ++__j )
                 {
-                    for ( uint16_type c1 = 0; c1 < shape::M;++c1 )
+                    for ( uint16_type c1 = 0; c1 < shape::M; ++c1 )
                         //for ( uint16_type c2 = 0; c2 < shape::N;++c2 )
                     {
                         if ( sum )
                             __v.plus_assign( it->id(), __j, c1, tensor_expr.evalq( c1, 0, __j ) );
+
                         else
                             __v.assign( it->id(), __j, c1, tensor_expr.evalq( c1, 0, __j ) );
                     }
                 }
             }
+
             else
             {
                 __c1->update( *it );
                 map_gmc1_type mapgmc1( fusion::make_pair<detail::gmc<0> >( __c1 ) );
                 tensor_expr1.update( mapgmc1 );
 
-                for ( uint16_type __j = 0; __j < ndofv;++__j )
+                for ( uint16_type __j = 0; __j < ndofv; ++__j )
                 {
-                    for ( uint16_type c1 = 0; c1 < shape::M;++c1 )
+                    for ( uint16_type c1 = 0; c1 < shape::M; ++c1 )
                         //for ( uint16_type c2 = 0; c2 < shape::N;++c2 )
                     {
                         if ( sum )
                             __v.plus_assign( it->id(), __j, c1, tensor_expr1.evalq( c1, 0, __j ) );
+
                         else
                             __v.assign( it->id(), __j, c1, tensor_expr1.evalq( c1, 0, __j ) );
                     }
@@ -392,7 +403,7 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
     //
     // start
     //
-    Debug(5066)  << "assembling Dirichlet conditions\n";
+    Debug( 5066 )  << "assembling Dirichlet conditions\n";
 
     dof_type const* __dof = __v.functionSpace()->dof().get();
 
@@ -400,6 +411,7 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
 
     iterator_type __face_it, __face_en;
     boost::tie( boost::tuples::ignore, __face_it, __face_en ) = M_range;
+
     if ( __face_it == __face_en )
         return __v;
 
@@ -418,25 +430,26 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
     typedef typename gm1_type::precompute_ptrtype geopc1_ptrtype;
     typedef typename gm1_type::precompute_type geopc1_type;
 
-    Debug(5066)  << "[integratoron] numTopologicalFaces = " << geoelement_type::numTopologicalFaces << "\n";
+    Debug( 5066 )  << "[integratoron] numTopologicalFaces = " << geoelement_type::numTopologicalFaces << "\n";
     std::vector<std::map<permutation_type, geopc_ptrtype> > __geopc( geoelement_type::numTopologicalFaces );
     std::vector<std::map<permutation_type, geopc1_ptrtype> > __geopc1( geoelement_type::numTopologicalFaces );
+
     for ( uint16_type __f = 0; __f < geoelement_type::numTopologicalFaces; ++__f )
     {
-        for( permutation_type __p( permutation_type::IDENTITY );
-             __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
-            {
-                __geopc[__f][__p] = geopc_ptrtype(  new geopc_type( __gm, __fe->points( __f ) ) );
-                __geopc1[__f][__p] = geopc1_ptrtype(  new geopc1_type( __gm1, __fe->points( __f ) ) );
-                //Debug(5066) << "[geopc] FACE_ID = " << __f << " ref pts=" << __fe->dual().points( __f ) << "\n";
-                FEELPP_ASSERT( __geopc[__f][__p]->nPoints() ).error( "invalid number of points for geopc" );
-                FEELPP_ASSERT( __geopc1[__f][__p]->nPoints() ).error( "invalid number of points for geopc1" );
-            }
+        for ( permutation_type __p( permutation_type::IDENTITY );
+                __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
+        {
+            __geopc[__f][__p] = geopc_ptrtype(  new geopc_type( __gm, __fe->points( __f ) ) );
+            __geopc1[__f][__p] = geopc1_ptrtype(  new geopc1_type( __gm1, __fe->points( __f ) ) );
+            //Debug(5066) << "[geopc] FACE_ID = " << __f << " ref pts=" << __fe->dual().points( __f ) << "\n";
+            FEELPP_ASSERT( __geopc[__f][__p]->nPoints() ).error( "invalid number of points for geopc" );
+            FEELPP_ASSERT( __geopc1[__f][__p]->nPoints() ).error( "invalid number of points for geopc1" );
+        }
     }
 
     uint16_type __face_id = __face_it->pos_first();
-    gmc_ptrtype __c( new gmc_type( __gm, __face_it->element(0), __geopc, __face_id ) );
-    gmc1_ptrtype __c1( new gmc1_type( __gm1, __face_it->element(0), __geopc1, __face_id ) );
+    gmc_ptrtype __c( new gmc_type( __gm, __face_it->element( 0 ), __geopc, __face_id ) );
+    gmc1_ptrtype __c1( new gmc1_type( __gm1, __face_it->element( 0 ), __geopc1, __face_id ) );
 
     map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c ) );
     t_expr_type expr( basis_type::isomorphism( M_expr ), mapgmc );
@@ -447,94 +460,101 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
 
 
     size_type nbFaceDof = invalid_size_type_value;
+
     if ( !fe_type::is_modal )
         nbFaceDof = ( face_type::numVertices * fe_type::nDofPerVertex +
                       face_type::numEdges * fe_type::nDofPerEdge +
                       face_type::numFaces * fe_type::nDofPerFace );
+
     else
         nbFaceDof = face_type::numVertices * fe_type::nDofPerVertex;
 
-    Debug(5066)  << "[projector::operator(MESH_FACES)] nbFaceDof = " << nbFaceDof << "\n";
+    Debug( 5066 )  << "[projector::operator(MESH_FACES)] nbFaceDof = " << nbFaceDof << "\n";
 
     std::vector<int> dofs;
     std::vector<value_type> values;
 
-    for ( ;__face_it != __face_en; ++__face_it )
+    for ( ; __face_it != __face_en; ++__face_it )
     {
         FEELPP_ASSERT( __face_it->isOnBoundary() && !__face_it->isConnectedTo1() )
-            ( __face_it->marker() )
-            ( __face_it->isOnBoundary() )
-            ( __face_it->ad_first() )
-            ( __face_it->pos_first() )
-            ( __face_it->ad_second() )
-            ( __face_it->pos_second() )
-            ( __face_it->id() ).warn( "inconsistent data face" );
-        Debug(5066) << "[projector] FACE_ID = " << __face_it->id()
-                    << " element id= " << __face_it->ad_first()
-                    << " pos in elt= " << __face_it->pos_first()
-                    << " marker: " << __face_it->marker() << "\n";
-        Debug(5066) << "[projector] FACE_ID = " << __face_it->id() << " real pts=" << __face_it->G() << "\n";
+        ( __face_it->marker() )
+        ( __face_it->isOnBoundary() )
+        ( __face_it->ad_first() )
+        ( __face_it->pos_first() )
+        ( __face_it->ad_second() )
+        ( __face_it->pos_second() )
+        ( __face_it->id() ).warn( "inconsistent data face" );
+        Debug( 5066 ) << "[projector] FACE_ID = " << __face_it->id()
+                      << " element id= " << __face_it->ad_first()
+                      << " pos in elt= " << __face_it->pos_first()
+                      << " marker: " << __face_it->marker() << "\n";
+        Debug( 5066 ) << "[projector] FACE_ID = " << __face_it->id() << " real pts=" << __face_it->G() << "\n";
 
         uint16_type __face_id = __face_it->pos_first();
 
         std::pair<size_type,size_type> range_dof( std::make_pair( __v.start(),
-                                                                  __v.functionSpace()->nDof()) );
-        Debug(5066)  << "[projector] dof start = " << range_dof.first << "\n";
-        Debug(5066)  << "[projector] dof range = " << range_dof.second << "\n";
+                __v.functionSpace()->nDof() ) );
+        Debug( 5066 )  << "[projector] dof start = " << range_dof.first << "\n";
+        Debug( 5066 )  << "[projector] dof range = " << range_dof.second << "\n";
 
-        switch( M_geomap_strategy )
+        switch ( M_geomap_strategy )
         {
         default:
         case GeomapStrategyType::GEOMAP_OPT:
         case GeomapStrategyType::GEOMAP_HO:
         {
-            __c->update( __face_it->element(0), __face_id );
-            Debug(5066) << "[projector] FACE_ID = " << __face_it->id() << "  ref pts=" << __c->xRefs() << "\n";
-            Debug(5066) << "[projector] FACE_ID = " << __face_it->id() << " real pts=" << __c->xReal() << "\n";
+            __c->update( __face_it->element( 0 ), __face_id );
+            Debug( 5066 ) << "[projector] FACE_ID = " << __face_it->id() << "  ref pts=" << __c->xRefs() << "\n";
+            Debug( 5066 ) << "[projector] FACE_ID = " << __face_it->id() << " real pts=" << __c->xReal() << "\n";
 
             map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c ) );
 
             expr.update( mapgmc );
 
-            for ( uint16_type c1 = 0; c1 < shape::M;++c1 )
-                for ( uint16_type c2 = 0; c2 < shape::N;++c2 )
+            for ( uint16_type c1 = 0; c1 < shape::M; ++c1 )
+                for ( uint16_type c2 = 0; c2 < shape::N; ++c2 )
                 {
                     for ( uint16_type l = 0; l < nbFaceDof; ++l )
                     {
                         typename expression_type::value_type __value = expr.evalq( c1, c2, l );
 
                         size_type thedof =  __v.start() +
-                            boost::get<0>(__dof->faceLocalToGlobal( __face_it->id(), l, c1 ));
+                                            boost::get<0>( __dof->faceLocalToGlobal( __face_it->id(), l, c1 ) );
+
                         if ( sum )
                             __v( thedof ) +=  __value;
+
                         else
                             __v( thedof ) =  __value;
                     }
                 }
         }
         break;
+
         case GeomapStrategyType::GEOMAP_O1:
         {
-            __c1->update( __face_it->element(0), __face_id );
-            Debug(5066) << "[projector] FACE_ID = " << __face_it->id() << "  ref pts=" << __c1->xRefs() << "\n";
-            Debug(5066) << "[projector] FACE_ID = " << __face_it->id() << " real pts=" << __c1->xReal() << "\n";
+            __c1->update( __face_it->element( 0 ), __face_id );
+            Debug( 5066 ) << "[projector] FACE_ID = " << __face_it->id() << "  ref pts=" << __c1->xRefs() << "\n";
+            Debug( 5066 ) << "[projector] FACE_ID = " << __face_it->id() << " real pts=" << __c1->xReal() << "\n";
 
             map_gmc1_type mapgmc1( fusion::make_pair<detail::gmc<0> >( __c1 ) );
 
             expr1.update( mapgmc1 );
 
 
-            for ( uint16_type c1 = 0; c1 < shape::M;++c1 )
-                for ( uint16_type c2 = 0; c2 < shape::N;++c2 )
+            for ( uint16_type c1 = 0; c1 < shape::M; ++c1 )
+                for ( uint16_type c2 = 0; c2 < shape::N; ++c2 )
                 {
                     for ( uint16_type l = 0; l < nbFaceDof; ++l )
                     {
                         typename expression_type::value_type __value = expr1.evalq( c1, c2, l );
 
                         size_type thedof =  __v.start() +
-                            boost::get<0>(__dof->faceLocalToGlobal( __face_it->id(), l, c1 ));
+                                            boost::get<0>( __dof->faceLocalToGlobal( __face_it->id(), l, c1 ) );
+
                         if ( sum )
                             __v( thedof ) +=  __value;
+
                         else
                             __v( thedof ) =  __value;
                     }
@@ -544,6 +564,7 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
         }
 
     } // face_it
+
     return __v;
 }
 }
@@ -588,7 +609,7 @@ typename FunctionSpaceType::element_type
 project( boost::shared_ptr<FunctionSpaceType> const& __functionspace, Expr<ExprT> const& __expr,
          GeomapStrategyType geomap = GeomapStrategyType::GEOMAP_HO )
 {
-    return project( __functionspace, elements(__functionspace->mesh()), __expr, geomap );
+    return project( __functionspace, elements( __functionspace->mesh() ), __expr, geomap );
 }
 
 /**
@@ -605,7 +626,7 @@ sum( boost::shared_ptr<FunctionSpaceType> const& __functionspace,
 {
     typedef details::Projector<PROJ_NODAL, FunctionSpaceType, IteratorRange, Expr<ExprT> > proj_t;
     proj_t p( __functionspace, range_it, __expr, geomap );
-    return p(true);
+    return p( true );
 }
 
 /**
@@ -616,7 +637,7 @@ template<typename FunctionSpaceType, typename ExprT>
 typename FunctionSpaceType::element_type
 sum( boost::shared_ptr<FunctionSpaceType> const& __functionspace, Expr<ExprT> const& __expr )
 {
-    return sum( __functionspace, elements(__functionspace->mesh()), __expr );
+    return sum( __functionspace, elements( __functionspace->mesh() ), __expr );
 }
 
 /**
@@ -629,7 +650,7 @@ typename FunctionSpaceType::element_type
 project( FunctionSpaceType const& __functionspace, Expr<ExprT> const& __expr,
          GeomapStrategyType geomap = GeomapStrategyType::GEOMAP_HO )
 {
-    typedef __typeof__( __functionspace->mesh()->elementsRange()) IteratorRange;
+    typedef __typeof__( __functionspace->mesh()->elementsRange() ) IteratorRange;
     typedef details::Projector<PROJ_NODAL, FunctionSpaceType, IteratorRange, Expr<ExprT> > proj_t;
     proj_t p( __functionspace, __functionspace->mesh()->elementsRange(), __expr, geomap );
     return p();
@@ -660,8 +681,8 @@ struct project
 {
     typedef typename clean_type<Args,tag::space>::type the_space_type;
     typedef typename mpl::if_<is_shared_ptr<the_space_type>,
-                              mpl::identity<typename the_space_type::value_type>,
-                              mpl::identity<the_space_type> >::type::type _space_type;
+            mpl::identity<typename the_space_type::value_type>,
+            mpl::identity<the_space_type> >::type::type _space_type;
     typedef boost::shared_ptr<_space_type> _space_ptrtype;
     typedef typename _space_type::element_type element_type;
     //typedef typename clean_type<Args,tag::expr>::type _expr_type;
@@ -681,22 +702,22 @@ struct project
  * \arg sum sum the multiple nodal  contributions  if applicable (false by default)
  */
 BOOST_PARAMETER_FUNCTION(
-    (typename detail::project<Args>::element_type), // return type
+    ( typename detail::project<Args>::element_type ), // return type
     project,    // 2. function name
 
     tag,           // 3. namespace of tag types
 
-    (required
-     (space, *(boost::is_convertible<mpl::_,boost::shared_ptr<Feel::FunctionSpaceBase> >))
-     (expr, *)
-        ) // 4. one required parameter, and
+    ( required
+      ( space, *( boost::is_convertible<mpl::_,boost::shared_ptr<Feel::FunctionSpaceBase> > ) )
+      ( expr, * )
+    ) // 4. one required parameter, and
 
-    (optional
-     (range,          *, elements(space->mesh())  )
-     (geomap,         *, GeomapStrategyType::GEOMAP_OPT )
-     (accumulate,     *(boost::is_integral<mpl::_>), false )
-        )
+    ( optional
+      ( range,          *, elements( space->mesh() )  )
+      ( geomap,         *, GeomapStrategyType::GEOMAP_OPT )
+      ( accumulate,     *( boost::is_integral<mpl::_> ), false )
     )
+)
 {
 #if 0
     typedef typename detail::project<Args>::_space_type _space_type;
@@ -705,10 +726,10 @@ BOOST_PARAMETER_FUNCTION(
 
     typedef details::Projector<PROJ_NODAL, _space_type, _range_type, Expr<_expr_type> > proj_t;
     proj_t p( space, range, expr,geomap );
-    return p(sum);
+    return p( sum );
 #else
-//    if ( accumulate  )
-//return sum( space, range, expr, geomap );
+    //    if ( accumulate  )
+    //return sum( space, range, expr, geomap );
     return project_impl( space, range, expr, geomap );
 #endif
 }

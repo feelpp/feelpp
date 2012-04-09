@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -56,26 +56,56 @@ public:
     typedef element_type::gm_type             gm_type;
     typedef element_type::gm_ptrtype          gm_ptrtype;
 
-    heavysideFunction() : _M_elt(0), M_molecule(0), M_stretch(0), M_translation(0) {}
-    ~heavysideFunction() { _M_elt=0; M_molecule=0; M_stretch=0; M_translation=0;}
+    heavysideFunction() : _M_elt( 0 ), M_molecule( 0 ), M_stretch( 0 ), M_translation( 0 ) {}
+    ~heavysideFunction()
+    {
+        _M_elt=0;
+        M_molecule=0;
+        M_stretch=0;
+        M_translation=0;
+    }
 
     ublas::vector<double> operator()( nodes_type const& pointsOnRef ) const;
 
     value_type operator()( node_type const& pointOnRef ) const;
 
-    void setSmoothWindow( value_type const& sW);
+    void setSmoothWindow( value_type const& sW );
 
-    void setMolecule( molecule_type const* molecule ) { M_molecule = molecule;}
-    void unSetMolecule( ) { M_molecule = 0;}
+    void setMolecule( molecule_type const* molecule )
+    {
+        M_molecule = molecule;
+    }
+    void unSetMolecule( )
+    {
+        M_molecule = 0;
+    }
 
-    void setElement( element_type const* elt ) { _M_elt = elt;}
-    void unSetElement( ) { _M_elt = 0;}
+    void setElement( element_type const* elt )
+    {
+        _M_elt = elt;
+    }
+    void unSetElement( )
+    {
+        _M_elt = 0;
+    }
 
-    void setStretch( node_type const*  stretch) { M_stretch = stretch;}
-    void unSetStretch( ) { M_stretch = 0;}
+    void setStretch( node_type const*  stretch )
+    {
+        M_stretch = stretch;
+    }
+    void unSetStretch( )
+    {
+        M_stretch = 0;
+    }
 
-    void setTranslation( node_type const*  translation) { M_translation = translation;}
-    void unSetTranslation( ) { M_translation = 0;}
+    void setTranslation( node_type const*  translation )
+    {
+        M_translation = translation;
+    }
+    void unSetTranslation( )
+    {
+        M_translation = 0;
+    }
 
 private:
 

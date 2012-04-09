@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -53,7 +53,7 @@ public:
         Ap(),
         Ai(),
         Ax()
-        {}
+    {}
 
     Pimpl( Pimpl const& __p )
         :
@@ -62,7 +62,7 @@ public:
         Ap( __p.Ap ),
         Ai( __p.Ai ),
         Ax( __p.Ax )
-        {}
+    {}
 
     int nr;
     int nc;
@@ -115,7 +115,7 @@ SolverUMFPACK::reportInfo()
 void
 SolverUMFPACK::reportStatus( int status )
 {
-    umfpack_di_report_status( M_Control, status);
+    umfpack_di_report_status( M_Control, status );
 }
 void
 SolverUMFPACK::setStrategy( int strategy )
@@ -125,36 +125,39 @@ SolverUMFPACK::setStrategy( int strategy )
                         UMFPACK_STRATEGY_SYMMETRIC ||
                         UMFPACK_STRATEGY_2BY2 ) )
         M_Control [UMFPACK_STRATEGY] = strategy;
+
     else
         M_Control [UMFPACK_STRATEGY] = UMFPACK_STRATEGY_AUTO;
 }
 void
 SolverUMFPACK::setMatrix( const matrix_type& m )
 {
-    Debug(5100) << "[SolverUMFPACK::setMatrix] set matrix (nr="
-                << m.nrows() << ", nc=" << m.ncols() << ", nz=" << m.nz() << ")\n";
+    Debug( 5100 ) << "[SolverUMFPACK::setMatrix] set matrix (nr="
+                  << m.nrows() << ", nc=" << m.ncols() << ", nz=" << m.nz() << ")\n";
     boost::timer ti;
     int *Map = 0;
     M_p->nr = m.nrows();
     M_p->nc = m.ncols();
 
 
-    M_p->Ap.resize(m.ncols()+1);
-    M_p->Ai.resize(m.nz());
-    M_p->Ax.resize(m.nz());
+    M_p->Ap.resize( m.ncols()+1 );
+    M_p->Ai.resize( m.nz() );
+    M_p->Ax.resize( m.nz() );
 
     int status = umfpack_di_triplet_to_col ( m.nrows(), m.ncols(), m.nz(),
-                                             m.Ti(), m.Tj(), m.Tx(),
-                                             &M_p->Ap[0], &M_p->Ai[0], &M_p->Ax[0],
-                                             Map) ;
-    if (status != UMFPACK_OK)
-        {
-            reportInfo();
-            reportStatus( status );
-            Error() << "[SolverUMFPACK::setMatrix] set matrix failed\n";
+                 m.Ti(), m.Tj(), m.Tx(),
+                 &M_p->Ap[0], &M_p->Ai[0], &M_p->Ax[0],
+                 Map ) ;
 
-        }
-    Debug(5100) << "[SolverUMFPACK::setMatrix] set matrix done in " << ti.elapsed() << "\n";
+    if ( status != UMFPACK_OK )
+    {
+        reportInfo();
+        reportStatus( status );
+        Error() << "[SolverUMFPACK::setMatrix] set matrix failed\n";
+
+    }
+
+    Debug( 5100 ) << "[SolverUMFPACK::setMatrix] set matrix done in " << ti.elapsed() << "\n";
 }
 
 void
@@ -165,7 +168,7 @@ SolverUMFPACK::solve( array_type& __X, array_type const& __B )
 
     boost::timer ti;
 
-    Debug(5100) << "[SolverUMFPACK::solve] solve A x = b using UMFPACK version " << UMFPACK_VERSION << "\n";
+    Debug( 5100 ) << "[SolverUMFPACK::solve] solve A x = b using UMFPACK version " << UMFPACK_VERSION << "\n";
     int status = umfpack_di_solve( UMFPACK_A,
                                    &M_p->Ap[0],
                                    &M_p->Ai[0],
@@ -175,29 +178,32 @@ SolverUMFPACK::solve( array_type& __X, array_type const& __B )
                                    M_numeric,
                                    M_Control,
                                    M_Info );
-    if (status != UMFPACK_OK)
+
+    if ( status != UMFPACK_OK )
     {
         reportInfo();
         reportStatus( status );
         Error() << "[SolverUMFPACK::solve] solve failed\n";
     }
-    Debug(5100) << "[SolverUMFPACK::solve] solve in " << ti.elapsed() << "\n";
+
+    Debug( 5100 ) << "[SolverUMFPACK::solve] solve in " << ti.elapsed() << "\n";
 }
 void SolverUMFPACK::prepareSolve()
 {
     boost::timer ti;
-    Debug(5100) << "[SolverUMFPACK::solve] preparesolve starts\n";
+    Debug( 5100 ) << "[SolverUMFPACK::solve] preparesolve starts\n";
+
     if ( M_matrix_reset )
     {
         if ( M_symbolic )
         {
-            Debug(5100) << "[SolverUMFPACK::prepareSolve] Destroying symbolic factorization\n";
+            Debug( 5100 ) << "[SolverUMFPACK::prepareSolve] Destroying symbolic factorization\n";
 
             umfpack_di_free_symbolic( &M_symbolic );
             M_symbolic = 0;
         }
 
-        Debug(5100) << "[SolverUMFPACK::prepareSolve] computing symbolic factorization\n";
+        Debug( 5100 ) << "[SolverUMFPACK::prepareSolve] computing symbolic factorization\n";
         int status = umfpack_di_symbolic( M_p->nr,
                                           M_p->nc,
                                           &M_p->Ap[0],
@@ -206,38 +212,43 @@ void SolverUMFPACK::prepareSolve()
                                           &M_symbolic,
                                           M_Control,
                                           M_Info );
-        if (status != UMFPACK_OK)
+
+        if ( status != UMFPACK_OK )
         {
             reportInfo();
             reportStatus( status );
             Error() << "[SolverUMFPACK::prepareSolve] symbolic factorization failed\n";
         }
     }
+
     if ( M_matrix_reset || M_matrix_values_reset )
     {
         if ( M_numeric )
         {
-            Debug(5100) << "[SolverUMFPACK::prepareSolve] Destroying numeric factorization\n";
+            Debug( 5100 ) << "[SolverUMFPACK::prepareSolve] Destroying numeric factorization\n";
             umfpack_di_free_numeric( &M_numeric );
             M_numeric = 0;
         }
-        Debug(5100) << "[SolverUMFPACK::prepareSolve] computing numeric factorization\n";
+
+        Debug( 5100 ) << "[SolverUMFPACK::prepareSolve] computing numeric factorization\n";
         int status = umfpack_di_numeric( &M_p->Ap[0],
                                          &M_p->Ai[0],
                                          &M_p->Ax[0],
                                          M_symbolic, &M_numeric,
                                          M_Control,
                                          M_Info );
-        if (status != UMFPACK_OK)
+
+        if ( status != UMFPACK_OK )
         {
             reportInfo();
             reportStatus( status );
             Error() << "[SolverUMFPACK::prepareSolve] numeric factorization failed\n";
         }
     }
+
     M_matrix_reset = false;
     M_matrix_values_reset = false;
-    Debug(5100) << "[SolverUMFPACK::solve] preparesolve done in " << ti.elapsed() << "\n";
+    Debug( 5100 ) << "[SolverUMFPACK::solve] preparesolve done in " << ti.elapsed() << "\n";
 }
 
 }

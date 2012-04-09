@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -65,23 +65,56 @@ struct linalg_traits<ublas::vector<T, ublas::unbounded_array<T, std::allocator<T
     typedef typename this_type::const_iterator const_iterator;
     typedef abstract_dense storage_type;
     typedef linalg_true index_sorted;
-    static size_type size(const this_type &v) { return v.size(); }
-    static iterator begin(this_type &v) { return v.begin(); }
-    static const_iterator begin(const this_type &v) { return v.begin(); }
-    static iterator end(this_type &v) { return v.end(); }
-    static const_iterator end(const this_type &v) { return v.end(); }
-    static origin_type* origin(this_type &v) { return &v; }
-    static const origin_type* origin(const this_type &v) { return &v; }
-    static void clear(origin_type*, const iterator &it, const iterator &ite)
-    { std::fill(it, ite, value_type(0)); }
-    static void do_clear(this_type &v) { v.clear(); }
-    static value_type access(const origin_type *, const const_iterator &it,
-                             const const_iterator &, size_type i)
-    { return *( it+i ); }
-    static reference access(origin_type *, const iterator &it,
-                            const iterator &, size_type i)
-    { return *( it+i ); }
-    static void resize(this_type &v, size_type n) { v.resize(n, true); }
+    static size_type size( const this_type &v )
+    {
+        return v.size();
+    }
+    static iterator begin( this_type &v )
+    {
+        return v.begin();
+    }
+    static const_iterator begin( const this_type &v )
+    {
+        return v.begin();
+    }
+    static iterator end( this_type &v )
+    {
+        return v.end();
+    }
+    static const_iterator end( const this_type &v )
+    {
+        return v.end();
+    }
+    static origin_type* origin( this_type &v )
+    {
+        return &v;
+    }
+    static const origin_type* origin( const this_type &v )
+    {
+        return &v;
+    }
+    static void clear( origin_type*, const iterator &it, const iterator &ite )
+    {
+        std::fill( it, ite, value_type( 0 ) );
+    }
+    static void do_clear( this_type &v )
+    {
+        v.clear();
+    }
+    static value_type access( const origin_type *, const const_iterator &it,
+                              const const_iterator &, size_type i )
+    {
+        return *( it+i );
+    }
+    static reference access( origin_type *, const iterator &it,
+                             const iterator &, size_type i )
+    {
+        return *( it+i );
+    }
+    static void resize( this_type &v, size_type n )
+    {
+        v.resize( n, true );
+    }
 };
 
 
@@ -89,7 +122,7 @@ struct linalg_traits<ublas::vector<T, ublas::unbounded_array<T, std::allocator<T
 template <typename T>
 inline
 gmm::size_type
-nnz(const ublas::vector<T>& l)
+nnz( const ublas::vector<T>& l )
 {
     return l.size();
 }
@@ -119,38 +152,59 @@ struct linalg_traits<ublas::compressed_matrix<T, ublas::row_major> >
     typedef abstract_null_type row_iterator;
     typedef row_major sub_orientation;
     typedef linalg_true index_sorted;
-    static size_type nrows(const this_type &m) { return m.size1(); }
-    static size_type ncols(const this_type &m) { return m.size2(); }
-    static const_row_iterator row_begin(const this_type &m)
-    { return m.begin1(); }
-    static const_row_iterator row_end(const this_type &m)
-    { return m.end1(); }
-    static const_sub_row_type row(const const_row_iterator &it) {
+    static size_type nrows( const this_type &m )
+    {
+        return m.size1();
+    }
+    static size_type ncols( const this_type &m )
+    {
+        return m.size2();
+    }
+    static const_row_iterator row_begin( const this_type &m )
+    {
+        return m.begin1();
+    }
+    static const_row_iterator row_end( const this_type &m )
+    {
+        return m.end1();
+    }
+    static const_sub_row_type row( const const_row_iterator &it )
+    {
         return *it;
     }
-    static const origin_type* origin(const this_type &m) { return m.value_data().begin(); }
-    static void do_clear(this_type &m) { m.clear(); }
-    static value_type access(const const_row_iterator &itrow, size_type j)
-    { return itrow[j]; }
+    static const origin_type* origin( const this_type &m )
+    {
+        return m.value_data().begin();
+    }
+    static void do_clear( this_type &m )
+    {
+        m.clear();
+    }
+    static value_type access( const const_row_iterator &itrow, size_type j )
+    {
+        return itrow[j];
+    }
 };
 
 template <typename T>
 std::ostream &operator <<( std::ostream &o,
                            const ublas::compressed_matrix<T, ublas::row_major>& m )
 {
-    o << m; return o;
+    o << m;
+    return o;
 }
 /// \endcond detail
 } // gmm
 
-namespace std {
+namespace std
+{
 template <typename T>
 ostream &
-operator <<(std::ostream &o, const boost::numeric::ublas::vector<T>& m)
-  {
-      gmm::write(o,m);
-      return o;
-  }
+operator <<( std::ostream &o, const boost::numeric::ublas::vector<T>& m )
+{
+    gmm::write( o,m );
+    return o;
+}
 }
 namespace Feel
 {
@@ -189,10 +243,10 @@ public:
     typedef typename type_traits<value_type>::real_type real_type;
 
     typedef typename mpl::if_<boost::is_same<LayoutType, gmm::row_major>,
-                              mpl::identity<gmm::csr_matrix<value_type> >,
-                              typename mpl::if_<boost::is_same<LayoutType, gmm::col_major>,
-                                                mpl::identity<gmm::csc_matrix<value_type> >,
-                                                mpl::identity<boost::none_t> >::type>::type::type matrix_type;
+            mpl::identity<gmm::csr_matrix<value_type> >,
+            typename mpl::if_<boost::is_same<LayoutType, gmm::col_major>,
+            mpl::identity<gmm::csc_matrix<value_type> >,
+            mpl::identity<boost::none_t> >::type>::type::type matrix_type;
 
 
     static const bool is_row_major = boost::is_same<LayoutType,gmm::row_major>::value;
@@ -289,7 +343,10 @@ public:
     /**
      * \return true if matrix is initialized/usable, false otherwise
      */
-    bool isInitialized() const { return _M_is_initialized; }
+    bool isInitialized() const
+    {
+        return _M_is_initialized;
+    }
 
     /**
      * \c close the gmm matrix, that will copy the content of write
@@ -311,22 +368,34 @@ public:
     /**
      * Returns the read optimized gmm matrix.
      */
-    matrix_type const& mat () const { return _M_mat; }
+    matrix_type const& mat () const
+    {
+        return _M_mat;
+    }
 
     /**
      * Returns the read optimized gmm matrix.
      */
-    matrix_type & mat ()  { return _M_mat; }
+    matrix_type & mat ()
+    {
+        return _M_mat;
+    }
 
     /**
      * Returns the write optimized gmm matrix.
      */
-    write_matrix_type const& wmat () const { return _M_wmat; }
+    write_matrix_type const& wmat () const
+    {
+        return _M_wmat;
+    }
 
     /**
      * Returns the write optimized gmm matrix.
      */
-    write_matrix_type & wmat ()  { return _M_wmat; }
+    write_matrix_type & wmat ()
+    {
+        return _M_wmat;
+    }
 
 
 
@@ -351,12 +420,12 @@ public:
      * \p noz is the number of on-processor
      * nonzeros per row (defaults to 30).
      */
-    void init (const size_type m,
-               const size_type n,
-               const size_type m_l,
-               const size_type n_l,
-               const size_type nnz=30,
-               const size_type noz=10);
+    void init ( const size_type m,
+                const size_type n,
+                const size_type m_l,
+                const size_type n_l,
+                const size_type nnz=30,
+                const size_type noz=10 );
 
     /**
      * Initialize using sparsity structure computed by \p dof_map.
@@ -391,8 +460,8 @@ public:
     void zero ( size_type start1, size_type stop1, size_type start2, size_type stop2 )
     {
         gmm::clear( gmm::sub_matrix( _M_wmat,
-                                     gmm::sub_interval(start1, stop1-start1),
-                                     gmm::sub_interval(start2, stop2-start2) ) );
+                                     gmm::sub_interval( start1, stop1-start1 ),
+                                     gmm::sub_interval( start2, stop2-start2 ) ) );
     }
 
     /**
@@ -403,24 +472,24 @@ public:
      * store zero values in
      * non-existent fields.
      */
-    void add (const size_type i,
-              const size_type j,
-              const value_type& value)
+    void add ( const size_type i,
+               const size_type j,
+               const value_type& value )
     {
         _M_wmat( i, j ) += value;
     }
 
-   /**
-     * set \p value to the element
-     * \p (i,j).  Throws an error if
-     * the entry does not
-     * exist. Still, it is allowed to
-     * store zero values in
-     * non-existent fields.
-     */
-    void set (const size_type i,
-              const size_type j,
-              const value_type& value)
+    /**
+      * set \p value to the element
+      * \p (i,j).  Throws an error if
+      * the entry does not
+      * exist. Still, it is allowed to
+      * store zero values in
+      * non-existent fields.
+      */
+    void set ( const size_type i,
+               const size_type j,
+               const value_type& value )
     {
         _M_wmat( i, j ) = value;
     }
@@ -432,7 +501,7 @@ public:
      * matrix to the file named \p name.  If \p name
      * is not specified it is dumped to the screen.
      */
-    void printMatlab(const std::string name="NULL") const;
+    void printMatlab( const std::string name="NULL" ) const;
 
 
     /**
@@ -466,22 +535,22 @@ public:
      * for adding an element matrix
      * at assembly time
      */
-    void addMatrix(const ublas::matrix<T, ublas::row_major>&,
-                   const std::vector<size_type>&,
-                   const std::vector<size_type>&){}
+    void addMatrix( const ublas::matrix<T, ublas::row_major>&,
+                    const std::vector<size_type>&,
+                    const std::vector<size_type>& ) {}
 
     /**
      * Same, but assumes the row and column maps are the same.
      * Thus the matrix \p dm must be square.
      */
-    void addMatrix(const boost::numeric::ublas::matrix<T, ublas::row_major>&, const std::vector<size_type>&){}
+    void addMatrix( const boost::numeric::ublas::matrix<T, ublas::row_major>&, const std::vector<size_type>& ) {}
 
     /**
      * Add a Sparse matrix \p _X, scaled with \p _a, to \p this,
      * stores the result in \p this:
      * \f$\texttt{this} = \_a*\_X + \texttt{this} \f$.
      */
-    void addMatrix(value_type v, MatrixSparse<value_type>& _m );
+    void addMatrix( value_type v, MatrixSparse<value_type>& _m );
 
     /**
      * Add the full matrix to the
@@ -492,11 +561,11 @@ public:
     void addMatrix ( int* rows, int nrows,
                      int* cols, int ncols,
                      value_type* data )
-        {
-            // NOT IMPLEMENTED YET (gmm support should get dropped in fact)
-        }
+    {
+        // NOT IMPLEMENTED YET (gmm support should get dropped in fact)
+    }
 
-    void scale( const T a ){}
+    void scale( const T a ) {}
 
     /**
      * Returns the transpose of a matrix
@@ -536,7 +605,7 @@ public:
     /**
      * update a block matrix
      */
-    void updateBlockMat(boost::shared_ptr<MatrixSparse<value_type> > m, size_type start_i, size_type start_j)
+    void updateBlockMat( boost::shared_ptr<MatrixSparse<value_type> > m, size_type start_i, size_type start_j )
     {
 #warning todo!
     }
@@ -571,24 +640,28 @@ MatrixGmm<T, LayoutType>::zeroRows( std::vector<int> const& rows,
                                     Vector<value_type>& rhs,
                                     Context const& on_context )
 {
-    Feel::detail::ignore_unused_variable_warning(rhs);
-    Feel::detail::ignore_unused_variable_warning(vals);
+    Feel::detail::ignore_unused_variable_warning( rhs );
+    Feel::detail::ignore_unused_variable_warning( vals );
 
     gmm::resize( _M_wmat, gmm::mat_nrows( _M_mat ), gmm::mat_ncols( _M_mat ) );
     gmm::copy( _M_mat, _M_wmat );
-    for( size_type i = 0; i < rows.size(); ++i )
-        {
-            value_type value = 1.0;
-            if ( on_context.test( ON_ELIMINATION_KEEP_DIAGONAL ) )
-                value = _M_wmat.row( rows[i] ).r( rows[i] );
-            gmm::clear( gmm::mat_row(_M_wmat, rows[i] ) );
 
-            // set diagonal
-            _M_wmat.row( rows[i] ).w( rows[i], value );
+    for ( size_type i = 0; i < rows.size(); ++i )
+    {
+        value_type value = 1.0;
 
-            // multiply rhs by value of the diagonal entry value
-            rhs.set( rows[i], value * vals[i] );
-        }
+        if ( on_context.test( ON_ELIMINATION_KEEP_DIAGONAL ) )
+            value = _M_wmat.row( rows[i] ).r( rows[i] );
+
+        gmm::clear( gmm::mat_row( _M_wmat, rows[i] ) );
+
+        // set diagonal
+        _M_wmat.row( rows[i] ).w( rows[i], value );
+
+        // multiply rhs by value of the diagonal entry value
+        rhs.set( rows[i], value * vals[i] );
+    }
+
     gmm::copy( _M_wmat, _M_mat );
 
 }

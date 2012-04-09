@@ -36,39 +36,39 @@
 
 template<int Dim>
 void
-poiseuille(int argc, char** argv)
+poiseuille( int argc, char** argv )
 {
     double penalbc_u=100;
     double penalbc_p=10;
     double mu=1;
     // Declare the supported options.
     namespace po = boost::program_options;
-    po::options_description desc("Allowed options");
+    po::options_description desc( "Allowed options" );
     desc.add_options()
-        ("help", "produce help message")
-        ("mu", po::value<double>(&mu)->default_value( 1 ), "viscosity")
-        ("penalbc_u", po::value<double>(&penalbc_u)->default_value( 100 ), "penalisation u")
-        ("penalbc_p", po::value<double>(&penalbc_p)->default_value( 10 ), "penalisation p")
-        ;
+    ( "help", "produce help message" )
+    ( "mu", po::value<double>( &mu )->default_value( 1 ), "viscosity" )
+    ( "penalbc_u", po::value<double>( &penalbc_u )->default_value( 100 ), "penalisation u" )
+    ( "penalbc_p", po::value<double>( &penalbc_p )->default_value( 10 ), "penalisation p" )
+    ;
 
     po::variables_map vm;
-    po::store(po::parse_command_line(argc, argv, desc), vm);
-    po::notify(vm);
+    po::store( po::parse_command_line( argc, argv, desc ), vm );
+    po::notify( vm );
 
     using namespace Feel;
     using namespace Feel::vf;
-    Feel::Environment env(argc, argv );
+    Feel::Environment env( argc, argv );
     typedef Mesh<Simplex<2> > mesh_type;
     typedef FunctionSpace<mesh_type, bases<Lagrange<2,Vectorial>, Lagrange<1,Scalar> > > fs_type;
 
     auto mesh = createGMSHMesh( _mesh=new mesh_type,
-                                _desc=domain( _name=(boost::format("hypercube-%1%") % Dim).str(),
-                                              _usenames=false,
-                                              _shape="hypercube",
-                                              _dim=Dim,
-                                              _xmin=0,_xmax=4,
-                                              _ymin=0,_ymax=1,
-                                              _h=0.1 ) );
+                                _desc=domain( _name=( boost::format( "hypercube-%1%" ) % Dim ).str(),
+                                        _usenames=false,
+                                        _shape="hypercube",
+                                        _dim=Dim,
+                                        _xmin=0,_xmax=4,
+                                        _ymin=0,_ymax=1,
+                                        _h=0.1 ) );
     auto Xh = fs_type::New( mesh );
     auto U = Xh->element(); // velocity + pressure function
     auto u = U.element<0>(); // extract velocity
@@ -80,16 +80,16 @@ poiseuille(int argc, char** argv)
 
     //auto deft=.5*(gradt(u)+trans(gradt(u)));
     //auto def=.5*(grad(u)+trans(grad(u)));
-    auto deft=gradt(u);
-    auto def=grad(u);
-    auto SigmaNt = -idt(p)*N() + 2*deft*N();
-    auto SigmaN = -id(p)*N() + 2*def*N();
+    auto deft=gradt( u );
+    auto def=grad( u );
+    auto SigmaNt = -idt( p )*N() + 2*deft*N();
+    auto SigmaN = -id( p )*N() + 2*def*N();
 
 
     // Stokes matrix
     auto S = Backend<double>::build()->newMatrix( Xh, Xh );
-    form2(_test=Xh, _trial=Xh, _matrix=S, _init=true ) = integrate( elements(mesh), trace(deft*trans(def)) ) ;
-    form2(_test=Xh, _trial=Xh, _matrix=S ) += integrate( elements(mesh), - idt(p)*div(v) + id(q)*divt(u) );
+    form2( _test=Xh, _trial=Xh, _matrix=S, _init=true ) = integrate( elements( mesh ), trace( deft*trans( def ) ) ) ;
+    form2( _test=Xh, _trial=Xh, _matrix=S ) += integrate( elements( mesh ), - idt( p )*div( v ) + id( q )*divt( u ) );
     //form2(_test=Xh, _trial=Xh, _matrix=S ) += integrate( elements(mesh), 1e-6*idt(p)*id(q) );
     using namespace std;
     using namespace boost::assign; // bring 'operator+=()' into scope
@@ -98,32 +98,34 @@ poiseuille(int argc, char** argv)
     markers += 1,2,4; // insert values at the end of the container
     BOOST_FOREACH( int marker, markers )
     {
-        form2(_test=Xh, _trial=Xh, _matrix=S ) += integrate( markedfaces(mesh,marker), -trans(SigmaNt)*id(v ) );
-        form2(_test=Xh, _trial=Xh, _matrix=S ) += integrate( markedfaces(mesh,marker), -trans(SigmaN)*idt(v) );
-        form2(_test=Xh, _trial=Xh, _matrix=S ) += integrate( markedfaces(mesh,marker), penalbc_u*trans(idt(u))*id(v)/hFace() );
+        form2( _test=Xh, _trial=Xh, _matrix=S ) += integrate( markedfaces( mesh,marker ), -trans( SigmaNt )*id( v ) );
+        form2( _test=Xh, _trial=Xh, _matrix=S ) += integrate( markedfaces( mesh,marker ), -trans( SigmaN )*idt( v ) );
+        form2( _test=Xh, _trial=Xh, _matrix=S ) += integrate( markedfaces( mesh,marker ), penalbc_u*trans( idt( u ) )*id( v )/hFace() );
 
     }
     std::cout << "bilinear form created" << std::endl;
     // right hand side
     auto F = Backend<double>::build()->newVector( Xh );
+
     if ( Dim == 2 )
-        form1(_test=Xh, _vector=F,_init=true ) =
-            integrate( markedfaces(mesh,1),
-                       trans(vec(Py()*(1.-Py()),cst(0.)))*(-SigmaN+penalbc_u*id(v)/hFace() ) );
+        form1( _test=Xh, _vector=F,_init=true ) =
+            integrate( markedfaces( mesh,1 ),
+                       trans( vec( Py()*( 1.-Py() ),cst( 0. ) ) )*( -SigmaN+penalbc_u*id( v )/hFace() ) );
 
     if ( Dim == 3 )
-        form1(_test=Xh, _vector=F,_init=true ) =
-            integrate( markedfaces(mesh,1),
-                       trans(vec(Py()*Pz()*(1.-Py())*(1.-Pz()),cst(0.)))*(-SigmaN+penalbc_u*id(v)/hFace() ) );
+        form1( _test=Xh, _vector=F,_init=true ) =
+            integrate( markedfaces( mesh,1 ),
+                       trans( vec( Py()*Pz()*( 1.-Py() )*( 1.-Pz() ),cst( 0. ) ) )*( -SigmaN+penalbc_u*id( v )/hFace() ) );
+
     std::cout << "linear form created" << std::endl;
     Backend<double>::build()->solve( _matrix=S, _rhs=F, _solution=U );
     std::cout << "linear system solved" << std::endl;
 
 
-    auto exporter = Exporter<mesh_type,1>::New( "ensight", ( boost::format( "poiseuille-%1%") % Dim ).str() );
-    exporter->step(0)->setMesh( mesh );
-    exporter->step(0)->add( "u", u );
-    exporter->step(0)->add( "p", p );
+    auto exporter = Exporter<mesh_type,1>::New( "ensight", ( boost::format( "poiseuille-%1%" ) % Dim ).str() );
+    exporter->step( 0 )->setMesh( mesh );
+    exporter->step( 0 )->add( "u", u );
+    exporter->step( 0 )->add( "p", p );
     exporter->save();
     std::cout << "done" << std::endl;
 }

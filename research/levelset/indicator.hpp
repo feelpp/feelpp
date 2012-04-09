@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -70,8 +70,8 @@ public:
 
     /* space */
     typedef fusion::vector<fem::Lagrange<Dim, 0,
-                                         Scalar, Discontinuous, value_type> >
-    basis_i_type;
+            Scalar, Discontinuous, value_type> >
+            basis_i_type;
     typedef FunctionSpace<mesh_type, basis_i_type, value_type> space_i_type;
 
     typedef boost::shared_ptr<space_type> space_ptrtype;
@@ -99,9 +99,9 @@ public:
 
         // build P0 mass matrix once only, at construction
         M_massIndic =
-            integrate( elements(M_mesh), M_im,
-                       idt(M_kappa)*id(M_kappa)
-                       );
+            integrate( elements( M_mesh ), M_im,
+                       idt( M_kappa )*id( M_kappa )
+                     );
         M_massIndic.mat().close();
     }
 
@@ -165,16 +165,16 @@ Indicator<Space, Entity>::updateKappa( element_type const& phi )
     // --- sigma: node-wise sign of phi as P1 function
     element_type sigma(  M_spaceLS, "sigma" );
     sigma = vf::project( M_spaceLS,
-                         elements(M_mesh),
-                         sign(idv(phi))
-                         );
+                         elements( M_mesh ),
+                         sign( idv( phi ) )
+                       );
 
     // --- kappa: element-wise mean of sigma as P0-indicator function
     FsFunctionalLinear<space_i_type> rhsKappa( M_spaceIndic );
     rhsKappa =
-        integrate( elements(M_mesh), M_im,
-                   idv(sigma)*id(M_kappa)
-                   );
+        integrate( elements( M_mesh ), M_im,
+                   idv( sigma )*id( M_kappa )
+                 );
     M_massIndic.applyInverse( M_kappa, rhsKappa );
 }
 
@@ -190,9 +190,9 @@ Indicator<Space, Entity>::update( element_type const& phi )
 
     // --- indicatorGamma: 1 in elements crossed by interface, 0 elsewhere
     M_indicatorGamma = vf::project( M_spaceIndic,
-                                    elements(M_mesh),
-                                    chi( (idv(M_kappa) <  1.0-0.5/(Dim+1)) &&
-                                         (idv(M_kappa) > -1.0+0.5/(Dim+1)) ) );
+                                    elements( M_mesh ),
+                                    chi( ( idv( M_kappa ) <  1.0-0.5/( Dim+1 ) ) &&
+                                         ( idv( M_kappa ) > -1.0+0.5/( Dim+1 ) ) ) );
 } // Indicator::update
 
 
@@ -209,27 +209,27 @@ Indicator<Space, Entity>::update( element_type const& phiNew,
     // --- sigmaDelta: node-wise sign of phiOld*phiNew as P1 function
     element_type sigmaDelta(  M_spaceLS, "sigmaDelta" );
     sigmaDelta = vf::project( M_spaceLS,
-                              elements(M_mesh),
-                              sign(idv(phiOld)*idv(phiNew))
-                              );
+                              elements( M_mesh ),
+                              sign( idv( phiOld )*idv( phiNew ) )
+                            );
 
     // --- kappaDelta: element-wise mean of sigmaDelta as P0-indicator function
-    element_i_type kappaDelta( M_spaceIndic, "kappaDelta");
+    element_i_type kappaDelta( M_spaceIndic, "kappaDelta" );
     FsFunctionalLinear<space_i_type> rhsKappa( M_spaceIndic );
     rhsKappa =
-        integrate( elements(M_mesh), M_im,
-                   idv(sigmaDelta)*id(kappaDelta)
-                   );
+        integrate( elements( M_mesh ), M_im,
+                   idv( sigmaDelta )*id( kappaDelta )
+                 );
     M_massIndic.applyInverse( kappaDelta, rhsKappa );
 
     // --- indicatorChange: 1 in elements where phi changed sign, 0 elsewhere
     M_indicatorChange =
         vf::project( M_spaceIndic,
-                     elements(M_mesh),
-                     chi( ( (idv(M_kappa) <  1.0-0.5/(Dim+1)) &&
-                            (idv(M_kappa) > -1.0+0.5/(Dim+1)) ) ||
-                          (idv(kappaDelta) < 1.0-0.5/(Dim+1))   )
-                          );
+                     elements( M_mesh ),
+                     chi( ( ( idv( M_kappa ) <  1.0-0.5/( Dim+1 ) ) &&
+                            ( idv( M_kappa ) > -1.0+0.5/( Dim+1 ) ) ) ||
+                          ( idv( kappaDelta ) < 1.0-0.5/( Dim+1 ) )   )
+                   );
 
 } // Indicator::update(...)
 

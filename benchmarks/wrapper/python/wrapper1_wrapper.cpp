@@ -99,12 +99,12 @@ extern "C" {
 #endif
 
     /*
-*********************************************************************************
-*                                                                               *
-*                             wrapper1 function                                    *
-*                                                                               *
-*********************************************************************************
-*/
+    *********************************************************************************
+    *                                                                               *
+    *                             wrapper1 function                                    *
+    *                                                                               *
+    *********************************************************************************
+    */
 
     /* The wrapper information informs the NumericalMathFunction object that loads the wrapper of the
      * signatures of the wrapper functions. In particular, it hold the size of the input
@@ -115,13 +115,13 @@ extern "C" {
 
     /* The getInfo function is optional */
     FUNC_INFO( WRAPPERNAME ,
-               {
-                   //GET_EXCHANGED_DATA_FROM( p_state );
-                   //SET_INFORMATION_FROM_EXCHANGED_DATA( p_exchangedData );
-                   p_info->inSize_ = getNumberOfVariables ( p_exchangedData, WRAPPER_IN);
-                   p_info->outSize_ = getNumberOfVariables ( p_exchangedData, WRAPPER_OUT);
+    {
+        //GET_EXCHANGED_DATA_FROM( p_state );
+        //SET_INFORMATION_FROM_EXCHANGED_DATA( p_exchangedData );
+        p_info->inSize_ = getNumberOfVariables ( p_exchangedData, WRAPPER_IN );
+        p_info->outSize_ = getNumberOfVariables ( p_exchangedData, WRAPPER_OUT );
 
-               } )
+    } )
 
     /* The state creation/deletion functions allow the wrapper to create or delete a memory location
      * that it will manage itself. It can save in this location any information it needs. The OpenTURNS
@@ -138,19 +138,19 @@ extern "C" {
 
     /* The createState function is optional */
     FUNC_CREATESTATE( WRAPPERNAME ,
-                      {
-                          CHECK_WRAPPER_MODE( WRAPPER_STATICLINK );
-                          CHECK_WRAPPER_IN(   WRAPPER_ARGUMENTS  );
-                          CHECK_WRAPPER_OUT(  WRAPPER_ARGUMENTS  );
+    {
+        CHECK_WRAPPER_MODE( WRAPPER_STATICLINK );
+        CHECK_WRAPPER_IN(   WRAPPER_ARGUMENTS  );
+        CHECK_WRAPPER_OUT(  WRAPPER_ARGUMENTS  );
 
-                          *p_p_state = new Feel::Wrapper1App( Feel::makeWrapper1About() );
-                      } )
+        *p_p_state = new Feel::Wrapper1App( Feel::makeWrapper1About() );
+    } )
 
     /* The deleteState function is optional */
     FUNC_DELETESTATE( WRAPPERNAME ,
-                      {
-                          delete CAST( Feel::Wrapper1App*,p_state);
-                      } )
+    {
+        delete CAST( Feel::Wrapper1App*,p_state );
+    } )
 
 
 
@@ -183,9 +183,9 @@ extern "C" {
      * pre-computational operation, etc.
      */
     FUNC_INIT( WRAPPERNAME ,
-               {
+    {
 
-               } )
+    } )
 
 
 
@@ -199,9 +199,9 @@ extern "C" {
      * returns another vector.
      */
     FUNC_EXEC( WRAPPERNAME,
-               {
-                   FUNC_EXEC_BODY_IN_TEMPDIR( Feel::Wrapper1App, WRAPPERNAME  )
-               } )
+    {
+        FUNC_EXEC_BODY_IN_TEMPDIR( Feel::Wrapper1App, WRAPPERNAME  )
+    } )
 
     // do not use multithreading it breaks the wrapper
 #if 0
@@ -215,9 +215,9 @@ extern "C" {
      * to have all its work done, so it is not possible to get anymore information from it after that.
      */
     FUNC_FINALIZE( WRAPPERNAME ,
-                   {
+    {
 
-                   } )
+    } )
 
 
 #ifdef __cplusplus

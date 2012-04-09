@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -49,14 +49,17 @@ struct x2
     {
         ublas::vector<double> v( m.size2() );
         v.clear();
-        for( int i = 0; i < m.size2(); ++i )
-            {
-                 for( int j = 0;j < m.size1(); ++j )
-                     v( i ) += (j+2)*m(j,i)*m(j,i);
-                 if ( m.size1() == 2 )
-                     v(i) += 100*m(0,i)*m(1,i)+200*m(1,i)*m(0,i);
-                 //v( i ) = m(0,i)*m(0,i);
-            }
+
+        for ( int i = 0; i < m.size2(); ++i )
+        {
+            for ( int j = 0; j < m.size1(); ++j )
+                v( i ) += ( j+2 )*m( j,i )*m( j,i );
+
+            if ( m.size1() == 2 )
+                v( i ) += 100*m( 0,i )*m( 1,i )+200*m( 1,i )*m( 0,i );
+
+            //v( i ) = m(0,i)*m(0,i);
+        }
 
         return v;
     }
@@ -65,47 +68,47 @@ BOOST_AUTO_TEST_CASE( test_polynomial1D )
 {
 
 
-    ublas::matrix<double,ublas::column_major> pts( 1, 3);
-    pts(0,0 ) = 0;
+    ublas::matrix<double,ublas::column_major> pts( 1, 3 );
+    pts( 0,0 ) = 0;
     //pts(1,0 ) = 0;
-    pts(0,1 ) = -1;
-    pts(0,2 ) = 1;
+    pts( 0,1 ) = -1;
+    pts( 0,2 ) = 1;
     detail::OrthonormalPolynomialSet<1,1,2,Scalar> ps;
     Polynomial<detail::OrthonormalPolynomialSet<1,1,2,Scalar>, Scalar> p1 = project( ps, x2(), IM<1,3>() );
-    PolynomialSet<detail::OrthonormalPolynomialSet<1,1,2,Scalar>, Scalar> p(ps);
-    p.insert( p1.toSet(true) );
-    p.insert( p1.toSet(true) );
+    PolynomialSet<detail::OrthonormalPolynomialSet<1,1,2,Scalar>, Scalar> p( ps );
+    p.insert( p1.toSet( true ) );
+    p.insert( p1.toSet( true ) );
     std::cout << "p=" << p.coeff() << "\n"
               << "grad(p)(0)=" << p.gradient().evaluate( pts ) << "\n";
     std::cout << "hess(p)=" << p.gradient().gradient().coeff() << "\n"
               << "hess(p)(0)=" << p.gradient().gradient().evaluate( pts ) << "\n";
 
-    std::cout << "hess(p1) = " << p1.toSet(true).gradient().gradient().evaluate( pts ) << "\n";
+    std::cout << "hess(p1) = " << p1.toSet( true ).gradient().gradient().evaluate( pts ) << "\n";
 }
 
 BOOST_AUTO_TEST_CASE( test_polynomial2D )
 {
 
 
-    ublas::matrix<double,ublas::column_major> pts( 2, 4);
-    pts(0,0 ) = -1;
-    pts(1,0 ) = -1;
-    pts(0,1 ) =  1;
-    pts(1,1 ) = -1;
-    pts(0,2 ) = -1;
-    pts(1,2 ) =  1;
-    pts(0,3 ) =  0;
-    pts(1,3 ) =  0;
+    ublas::matrix<double,ublas::column_major> pts( 2, 4 );
+    pts( 0,0 ) = -1;
+    pts( 1,0 ) = -1;
+    pts( 0,1 ) =  1;
+    pts( 1,1 ) = -1;
+    pts( 0,2 ) = -1;
+    pts( 1,2 ) =  1;
+    pts( 0,3 ) =  0;
+    pts( 1,3 ) =  0;
     detail::OrthonormalPolynomialSet<2,2,2,Scalar> ps;
     Polynomial<detail::OrthonormalPolynomialSet<2,2,2,Scalar>, Scalar> p1 = project( ps, x2(), IM<2,3>() );
-    PolynomialSet<detail::OrthonormalPolynomialSet<2,2,2,Scalar>, Scalar> p(ps);
-    p.insert( p1.toSet(true) );
-    p.insert( p1.toSet(true) );
+    PolynomialSet<detail::OrthonormalPolynomialSet<2,2,2,Scalar>, Scalar> p( ps );
+    p.insert( p1.toSet( true ) );
+    p.insert( p1.toSet( true ) );
     std::cout << "p=" << p.coeff() << "\n"
               << "grad(p)(0)=" << p.gradient().evaluate( pts ) << "\n";
     std::cout << "hess(p)=" << p.gradient().gradient().coeff() << "\n"
               << "hess(p)(0)=" << p.gradient().gradient().evaluate( pts ) << "\n"
-              << "hess(p1) = " << p1.toSet(true).gradient().gradient().evaluate( pts ) << "\n";
+              << "hess(p1) = " << p1.toSet( true ).gradient().gradient().evaluate( pts ) << "\n";
 
     ublas::matrix<double,ublas::row_major> m = p.gradient().gradient().evaluate( pts );
     std::cout << "m=" << m << "\n";
@@ -114,25 +117,26 @@ BOOST_AUTO_TEST_CASE( test_polynomial2D )
     const int Q = m.size2();
     boost::multi_array<double,4> hessian( boost::extents[I][nDim][nDim][Q] );
     typedef boost::multi_array<double,4>::index index;
-    for(index i = 0; i < I; ++i)
-        for(index j = 0; j < nDim; ++j)
-            for(index k = 0; k < nDim; ++k)
-                for(index q = 0; q < Q; ++q)
-                    {
+
+    for ( index i = 0; i < I; ++i )
+        for ( index j = 0; j < nDim; ++j )
+            for ( index k = 0; k < nDim; ++k )
+                for ( index q = 0; q < Q; ++q )
+                {
 #if 1
-                        std::cout << "[precompute] hessian["
-                                  << i << "]["
-                                  << j << "]["
-                                  << k << "]["
-                                  << q << "]["
-                                  << nDim*nDim*I*(nDim*k+j)+nDim*nDim*i+nDim*j+k << "]="
-                                  << "\n";
+                    std::cout << "[precompute] hessian["
+                              << i << "]["
+                              << j << "]["
+                              << k << "]["
+                              << q << "]["
+                              << nDim*nDim*I*( nDim*k+j )+nDim*nDim*i+nDim*j+k << "]="
+                              << "\n";
 #endif // 0
 
-                        hessian[i][j][k][q] = m( nDim*nDim*I*(nDim*k+j)+nDim*nDim*i+nDim*j+k, q );
+                    hessian[i][j][k][q] = m( nDim*nDim*I*( nDim*k+j )+nDim*nDim*i+nDim*j+k, q );
 
-                        std::cout << hessian[i][j][k][q] << "\n";
-                    }
+                    std::cout << hessian[i][j][k][q] << "\n";
+                }
 
 
 }
@@ -141,24 +145,24 @@ BOOST_AUTO_TEST_CASE( test_polynomial3D )
 {
 
 
-    ublas::matrix<double,ublas::column_major> pts( 3, 4);
+    ublas::matrix<double,ublas::column_major> pts( 3, 4 );
 
     //1
-    pts(0,0 ) = -1;
-    pts(1,0 ) = -1;
-    pts(2,0 ) = -1;
+    pts( 0,0 ) = -1;
+    pts( 1,0 ) = -1;
+    pts( 2,0 ) = -1;
     //2
-    pts(0,1 ) =  1;
-    pts(1,1 ) = -1;
-    pts(2,1 ) = -1;
+    pts( 0,1 ) =  1;
+    pts( 1,1 ) = -1;
+    pts( 2,1 ) = -1;
     //3
-    pts(0,2 ) = -1;
-    pts(1,2 ) =  1;
-    pts(2,2 ) = -1;
+    pts( 0,2 ) = -1;
+    pts( 1,2 ) =  1;
+    pts( 2,2 ) = -1;
     // 4
-    pts(0,3 ) =  0;
-    pts(1,3 ) =  0;
-    pts(2,3 ) =  0;
+    pts( 0,3 ) =  0;
+    pts( 1,3 ) =  0;
+    pts( 2,3 ) =  0;
     detail::OrthonormalPolynomialSet<3,3,3,Scalar> ps;
     Polynomial<detail::OrthonormalPolynomialSet<3,3,3,Scalar>, Scalar> p = project( ps, x2(), IM<3,5>() );
     std::cout << "p=" << p.toSet().coeff() << "\n"

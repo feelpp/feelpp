@@ -66,7 +66,7 @@ template<int Dim,
          template<uint16_type,uint16_type,uint16_type> class Entity>
 class Laplacian
     :
-        public Simget
+public Simget
 {
     typedef Simget super;
 public:
@@ -96,7 +96,7 @@ public:
     typedef Exporter<mesh_type> export_type;
 
     Laplacian( std::string const& basis_name,
-            po::variables_map const& vm, AboutData const& ad )
+               po::variables_map const& vm, AboutData const& ad )
         :
         super( vm, ad ),
         M_backend(),
@@ -108,13 +108,19 @@ public:
     }
 
 
-    std::string name() const { return M_basis_name; }
+    std::string name() const
+    {
+        return M_basis_name;
+    }
 
     /**
      * run the convergence test
      */
     void run();
-    void run( const double* X, unsigned long P, double* Y, unsigned long N ) { run(); }
+    void run( const double* X, unsigned long P, double* Y, unsigned long N )
+    {
+        run();
+    }
 
 private:
 
@@ -171,18 +177,19 @@ Laplacian<Dim, BasisU, Entity>::run()
      */
     auto mesh = createGMSHMesh( _mesh=new mesh_type,
                                 _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
-                                _desc=domain( _name= (boost::format( "%1%-%2%-%3%" ) % "hypercube" % Dim % 1).str() ,
-                                              _shape="hypercube",
-                                              _usenames=true,
-                                              _convex=((!recombine)&&convex_type::is_hypercube)?"Hypercube":"Simplex",
-                                              _recombine=(recombine&&convex_type::is_hypercube), // generate quads which are not regular
-                                              _dim=Dim,
-                                              _h=M_meshSize,
-                                              _shear=shear,
-                                              _xmin=xmin,_xmax=xmax,
-                                              _ymin=ymin,_ymax=ymax ) );
+                                _desc=domain( _name= ( boost::format( "%1%-%2%-%3%" ) % "hypercube" % Dim % 1 ).str() ,
+                                        _shape="hypercube",
+                                        _usenames=true,
+                                        _convex=( ( !recombine )&&convex_type::is_hypercube )?"Hypercube":"Simplex",
+                                        _recombine=( recombine&&convex_type::is_hypercube ), // generate quads which are not regular
+                                        _dim=Dim,
+                                        _h=M_meshSize,
+                                        _shear=shear,
+                                        _xmin=xmin,_xmax=xmax,
+                                        _ymin=ymin,_ymax=ymax ) );
 
-    M_stats.put("t.init.mesh",t.elapsed());t.restart();
+    M_stats.put( "t.init.mesh",t.elapsed() );
+    t.restart();
     /*
      * The function space and some associate elements are then defined
      */
@@ -195,161 +202,190 @@ Laplacian<Dim, BasisU, Entity>::run()
 
     Log() << "Data Summary:\n";
     Log() << "   hsize = " << M_meshSize << "\n";
-    Log() << "  export = " << this->vm().count("export") << "\n";
+    Log() << "  export = " << this->vm().count( "export" ) << "\n";
     Log() << "      mu = " << mu << "\n";
     Log() << " bccoeff = " << penalbc << "\n";
     Log() << "[mesh]   number of elements: " << Xh->mesh()->numElements() << "\n";
     Log() << "[dof]         number of dof: " << Xh->nDof() << "\n";
     Log() << "[dof]    number of dof/proc: " << Xh->nLocalDof() << "\n";
 
-    M_stats.put("h",M_meshSize);
-    M_stats.put("n.space.nelts",Xh->mesh()->numElements());
-    M_stats.put("n.space.ndof",Xh->nLocalDof());
-    M_stats.put("t.init.space",t.elapsed());
-    Log() << "  -- time space and functions construction "<<t.elapsed()<<" seconds \n"; t.restart() ;
+    M_stats.put( "h",M_meshSize );
+    M_stats.put( "n.space.nelts",Xh->mesh()->numElements() );
+    M_stats.put( "n.space.ndof",Xh->nLocalDof() );
+    M_stats.put( "t.init.space",t.elapsed() );
+    Log() << "  -- time space and functions construction "<<t.elapsed()<<" seconds \n";
+    t.restart() ;
 
     double penalbc = this->vm()["bccoeff"].template as<value_type>();
     double mu = this->vm()["mu"].template as<value_type>();
 
     auto pi = M_PI;
-    auto u_exact = sin(pi*Px())*cos(pi*Py())*cos(pi*Pz());
-    auto grad_exact = pi*trans(cos(pi*Px())*cos(pi*Py())*cos(pi*Pz())*unitX()-sin(pi*Px())*sin(pi*Py())*cos(pi*Pz())*unitY()-sin(pi*Px())*cos(pi*Py())*sin(pi*Pz())*unitZ());
+    auto u_exact = sin( pi*Px() )*cos( pi*Py() )*cos( pi*Pz() );
+    auto grad_exact = pi*trans( cos( pi*Px() )*cos( pi*Py() )*cos( pi*Pz() )*unitX()-sin( pi*Px() )*sin( pi*Py() )*cos( pi*Pz() )*unitY()-sin( pi*Px() )*cos( pi*Py() )*sin( pi*Pz() )*unitZ() );
     auto f = Dim*pi*pi*u_exact; // -Delta u_exact
 
     boost::timer subt;
     // right hand side
     auto F = M_backend->newVector( Xh );
     form1( Xh, F, _init=true );
-    M_stats.put("t.init.vector",t.elapsed());
-    Log() << "  -- time for vector init done in "<<t.elapsed()<<" seconds \n"; t.restart() ;
-    form1( Xh, F ) = integrate( elements(mesh), trans(f)*id(v) );
-    M_stats.put("t.assembly.vector.source",subt.elapsed());subt.restart();
+    M_stats.put( "t.init.vector",t.elapsed() );
+    Log() << "  -- time for vector init done in "<<t.elapsed()<<" seconds \n";
+    t.restart() ;
+    form1( Xh, F ) = integrate( elements( mesh ), trans( f )*id( v ) );
+    M_stats.put( "t.assembly.vector.source",subt.elapsed() );
+    subt.restart();
 
     if ( this->vm()[ "bctype" ].template as<int>() == 1  )
     {
-        form1( Xh, F ) += integrate( _range=boundaryfaces(mesh), _expr=-trans(u_exact)*dn(u));
-        M_stats.put("t.assembly.vector.dirichlet1",subt.elapsed());subt.restart();
-        form1( Xh, F ) += integrate( _range=boundaryfaces(mesh), _expr=penalbc*inner(u_exact,id(v))/hFace() );
+        form1( Xh, F ) += integrate( _range=boundaryfaces( mesh ), _expr=-trans( u_exact )*dn( u ) );
+        M_stats.put( "t.assembly.vector.dirichlet1",subt.elapsed() );
+        subt.restart();
+        form1( Xh, F ) += integrate( _range=boundaryfaces( mesh ), _expr=penalbc*inner( u_exact,id( v ) )/hFace() );
         //form1( Xh, F ) += integrate( _range=boundaryfaces(mesh), _expr=penalbc*max(betacoeff,mu/hFace())*(trans(id(v))*N())*N());
-        M_stats.put("t.assembly.vector.dirichlet2",subt.elapsed());
-        Log() << "   o time for rhs weak dirichlet terms: " << subt.elapsed() << "\n";subt.restart();
+        M_stats.put( "t.assembly.vector.dirichlet2",subt.elapsed() );
+        Log() << "   o time for rhs weak dirichlet terms: " << subt.elapsed() << "\n";
+        subt.restart();
     }
-    M_stats.put("t.assembly.vector.total",t.elapsed());
-    Log() << "  -- time vector global assembly done in "<<t.elapsed()<<" seconds \n"; t.restart() ;
+
+    M_stats.put( "t.assembly.vector.total",t.elapsed() );
+    Log() << "  -- time vector global assembly done in "<<t.elapsed()<<" seconds \n";
+    t.restart() ;
 
     /*
      * Construction of the left hand side
      */
     size_type pattern = Pattern::COUPLED;
     size_type patternsym = Pattern::COUPLED;
+
     if ( this->vm()[ "faster" ].template as<int>() == 1 )
     {
         pattern = Pattern::COUPLED;
         patternsym = Pattern::COUPLED|Pattern::SYMMETRIC;
     }
+
     if ( this->vm()[ "faster" ].template as<int>() == 2 )
     {
         pattern = Pattern::DEFAULT;
         patternsym = Pattern::DEFAULT;
     }
+
     if ( this->vm()[ "faster" ].template as<int>() == 3 )
     {
         pattern = Pattern::DEFAULT;
         patternsym = Pattern::DEFAULT|Pattern::SYMMETRIC;
     }
+
     //# marker7 #
     t.restart();
     auto D = M_backend->newMatrix( Xh, Xh );
     form2( Xh, Xh, D, _init=true );
-    M_stats.put("t.init.matrix",t.elapsed());
-    Log() << "  -- time for matrix init done in "<<t.elapsed()<<" seconds \n"; t.restart() ;
+    M_stats.put( "t.init.matrix",t.elapsed() );
+    Log() << "  -- time for matrix init done in "<<t.elapsed()<<" seconds \n";
+    t.restart() ;
 
     subt.restart();
     t.restart();
 
-    form2( Xh, Xh, D, _pattern=patternsym ) =integrate( _range=elements(mesh),_expr=mu*(inner(gradt(u),grad(v))));
-    M_stats.put("t.assembly.matrix.diffusion",subt.elapsed());
-    Log() << "   o time for diffusion terms: " << subt.elapsed() << "\n";subt.restart();
+    form2( Xh, Xh, D, _pattern=patternsym ) =integrate( _range=elements( mesh ),_expr=mu*( inner( gradt( u ),grad( v ) ) ) );
+    M_stats.put( "t.assembly.matrix.diffusion",subt.elapsed() );
+    Log() << "   o time for diffusion terms: " << subt.elapsed() << "\n";
+    subt.restart();
 
     if ( this->vm()[ "bctype" ].template as<int>() == 1  )
     {
-        form2( Xh, Xh, D, _pattern=patternsym )+=integrate( _range=boundaryfaces(mesh),_expr=-trans(dnt(u))*id(v)-trans(dn(u))*idt(v) );
-        M_stats.put("t.assembly.matrix.dirichlet1",subt.elapsed());subt.restart();
-        form2( Xh, Xh, D, _pattern=patternsym )+=integrate( _range=boundaryfaces(mesh),_expr=+penalbc*inner(idt(u),id(v))/hFace() );
-        M_stats.put("t.assembly.matrix.dirichlet2",subt.elapsed());subt.restart();
-        Log() << "   o time for weak dirichlet terms: " << subt.elapsed() << "\n";subt.restart();
+        form2( Xh, Xh, D, _pattern=patternsym )+=integrate( _range=boundaryfaces( mesh ),_expr=-trans( dnt( u ) )*id( v )-trans( dn( u ) )*idt( v ) );
+        M_stats.put( "t.assembly.matrix.dirichlet1",subt.elapsed() );
+        subt.restart();
+        form2( Xh, Xh, D, _pattern=patternsym )+=integrate( _range=boundaryfaces( mesh ),_expr=+penalbc*inner( idt( u ),id( v ) )/hFace() );
+        M_stats.put( "t.assembly.matrix.dirichlet2",subt.elapsed() );
+        subt.restart();
+        Log() << "   o time for weak dirichlet terms: " << subt.elapsed() << "\n";
+        subt.restart();
     }
 
     //# endmarker7 #
     D->close();
     F->close();
+
     if ( this->vm()[ "bctype" ].template as<int>() == 0  )
     {
-        form2( Xh, Xh, D ) += on( _range=boundaryfaces(mesh), _element=u, _rhs=F, _expr=u_exact );
-        M_stats.put("t.assembly.matrix.dirichlet",subt.elapsed());
-        Log() << "   o time for strong dirichlet terms: " << subt.elapsed() << "\n";subt.restart();
+        form2( Xh, Xh, D ) += on( _range=boundaryfaces( mesh ), _element=u, _rhs=F, _expr=u_exact );
+        M_stats.put( "t.assembly.matrix.dirichlet",subt.elapsed() );
+        Log() << "   o time for strong dirichlet terms: " << subt.elapsed() << "\n";
+        subt.restart();
     }
-    M_stats.put("t.assembly.matrix.total",t.elapsed());
-    Log() << " -- time matrix global assembly done in "<<t.elapsed()<<" seconds \n"; t.restart() ;
+
+    M_stats.put( "t.assembly.matrix.total",t.elapsed() );
+    Log() << " -- time matrix global assembly done in "<<t.elapsed()<<" seconds \n";
+    t.restart() ;
 
 
 
     t.restart();
-    if ( !this->vm().count("no-solve") )
+
+    if ( !this->vm().count( "no-solve" ) )
     {
         auto r = M_backend->solve( _matrix=D, _solution=u, _rhs=F );
-        M_stats.put("d.solver.bool.converged",r.template get<0>());
-        M_stats.put("d.solver.int.nit",r.template get<1>());
-        M_stats.put("d.solver.double.residual",r.template get<2>());
+        M_stats.put( "d.solver.bool.converged",r.template get<0>() );
+        M_stats.put( "d.solver.int.nit",r.template get<1>() );
+        M_stats.put( "d.solver.double.residual",r.template get<2>() );
     }
-    M_stats.put("t.solver.total",t.elapsed());
-    Log() << " -- time for solver : "<<t.elapsed()<<" seconds \n";    t.restart();
+
+    M_stats.put( "t.solver.total",t.elapsed() );
+    Log() << " -- time for solver : "<<t.elapsed()<<" seconds \n";
+    t.restart();
 
 
-    double meas = integrate( _range=elements(mesh), _expr=constant(1.0) ).evaluate()( 0, 0);
+    double meas = integrate( _range=elements( mesh ), _expr=constant( 1.0 ) ).evaluate()( 0, 0 );
     Log() << "[laplacian] measure(Omega)=" << meas << " (should be equal to 4)\n";
     std::cout << "[laplacian] measure(Omega)=" << meas << " (should be equal to 4)\n";
 
-    double mean_u = integrate( elements(mesh), idv(u) ).evaluate()( 0, 0 )/meas;
+    double mean_u = integrate( elements( mesh ), idv( u ) ).evaluate()( 0, 0 )/meas;
     Log() << "[laplacian] mean(u)=" << mean_u << "\n";
     std::cout << "[laplacian] mean(u)=" << mean_u << "\n";
 
     // get the zero mean pressure
     u.add( - mean_u );
-    mean_u = integrate( elements(mesh), idv(u) ).evaluate()( 0, 0 )/meas;
+    mean_u = integrate( elements( mesh ), idv( u ) ).evaluate()( 0, 0 )/meas;
     Log() << "[laplacian] mean(u-mean(u))=" << mean_u << "\n";
     std::cout << "[laplacian] mean(u-mean(u))=" << mean_u << "\n";
-    double mean_uexact = integrate( elements(mesh), u_exact ).evaluate()( 0, 0 )/meas;
+    double mean_uexact = integrate( elements( mesh ), u_exact ).evaluate()( 0, 0 )/meas;
     std::cout << "[laplacian] mean(uexact)=" << mean_uexact << "\n";
-    M_stats.put("t.integrate.mean",t.elapsed());
+    M_stats.put( "t.integrate.mean",t.elapsed() );
     size_type nnz = 0 ;
     auto nNz = D->graph()->nNz() ;
-    for(auto iter = nNz.begin();iter!=nNz.end();++iter)
-      nnz += (*iter) ;
+
+    for ( auto iter = nNz.begin(); iter!=nNz.end(); ++iter )
+        nnz += ( *iter ) ;
+
     Log() << "[laplacian] matrix NNZ "<< nnz << "\n";
-    M_stats.put("n.matrix.nnz",nnz);
+    M_stats.put( "n.matrix.nnz",nnz );
 
     t.restart();
-    double u_errorL2 = integrate( _range=elements(mesh), _expr=trans(idv(u)-u_exact)*(idv(u)-u_exact) ).evaluate()( 0, 0 );
-    double u_exactL2 = integrate( _range=elements(mesh), _expr=trans(u_exact)*(u_exact) ).evaluate()( 0, 0 );
-    M_stats.put("t.integrate.l2norm",t.elapsed());t.restart();
+    double u_errorL2 = integrate( _range=elements( mesh ), _expr=trans( idv( u )-u_exact )*( idv( u )-u_exact ) ).evaluate()( 0, 0 );
+    double u_exactL2 = integrate( _range=elements( mesh ), _expr=trans( u_exact )*( u_exact ) ).evaluate()( 0, 0 );
+    M_stats.put( "t.integrate.l2norm",t.elapsed() );
+    t.restart();
     std::cout << "||u_error||_2 = " << math::sqrt( u_errorL2/u_exactL2 ) << "\n";;
     Log() << "||u_error||_2 = " << math::sqrt( u_errorL2/u_exactL2 ) << "\n";;
-    M_stats.put("e.l2.u",math::sqrt( u_errorL2/u_exactL2 ));
+    M_stats.put( "e.l2.u",math::sqrt( u_errorL2/u_exactL2 ) );
 
-    double u_errorsemiH1 = integrate( _range=elements(mesh),
-                                      _expr=trace((gradv(u)-grad_exact)*trans(gradv(u)-grad_exact))).evaluate()( 0, 0 );
-    double u_exactsemiH1 = integrate( _range=elements(mesh),
-                                      _expr=trace((grad_exact)*trans(grad_exact))).evaluate()( 0, 0 );
-    double u_error_H1 = math::sqrt( (u_errorL2+u_errorsemiH1)/(u_exactL2+u_exactsemiH1) );
-    M_stats.put("t.integrate.h1norm",t.elapsed());t.restart();
+    double u_errorsemiH1 = integrate( _range=elements( mesh ),
+                                      _expr=trace( ( gradv( u )-grad_exact )*trans( gradv( u )-grad_exact ) ) ).evaluate()( 0, 0 );
+    double u_exactsemiH1 = integrate( _range=elements( mesh ),
+                                      _expr=trace( ( grad_exact )*trans( grad_exact ) ) ).evaluate()( 0, 0 );
+    double u_error_H1 = math::sqrt( ( u_errorL2+u_errorsemiH1 )/( u_exactL2+u_exactsemiH1 ) );
+    M_stats.put( "t.integrate.h1norm",t.elapsed() );
+    t.restart();
     std::cout << "||u_error||_1= " << u_error_H1 << "\n";
-    M_stats.put("e.h1.u",u_error_H1);
+    M_stats.put( "e.h1.u",u_error_H1 );
 
     v = vf::project( Xh, elements( Xh->mesh() ), u_exact );
-    M_stats.put("t.export.projection",t.elapsed());t.restart();
+    M_stats.put( "t.export.projection",t.elapsed() );
+    t.restart();
     this->exportResults( u, v );
-    M_stats.put("t.export.total",t.elapsed());t.restart();
+    M_stats.put( "t.export.total",t.elapsed() );
+    t.restart();
 
 } // Laplacian::run
 

@@ -33,7 +33,7 @@ int
 main( int argc, char** argv )
 {
     Feel::CRBApp<Feel::ThermalBlock<2> > app( argc, argv,
-                                              Feel::makeThermalBlockAbout(),
-                                              Feel::makeThermalBlockOptions() );
+            Feel::makeThermalBlockAbout(),
+            Feel::makeThermalBlockOptions() );
     app.run();
 }

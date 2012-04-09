@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -79,19 +79,34 @@ public:
 
 
     //! thermal conductivity in \f$ W/(m*K) \f$
-    virtual double k() const { return -1;}
+    virtual double k() const
+    {
+        return -1;
+    }
 
     //! density in \f$ kg/m^3 \f$
-    virtual double rho() const { return 7000; }
+    virtual double rho() const
+    {
+        return 7000;
+    }
 
     //! thermal capacity in \f$ J/(kg*K) \f$
-    virtual double C() const { return -1; }
+    virtual double C() const
+    {
+        return -1;
+    }
 
     //! Poisson coefficient
-    virtual double nu() const { return 0.25; }
+    virtual double nu() const
+    {
+        return 0.25;
+    }
 
     //! Young modulus in \f$ Pa \f$
-    virtual double E() const { return 140e9; }
+    virtual double E() const
+    {
+        return 140e9;
+    }
 
 
     //@}
@@ -117,7 +132,8 @@ protected:
 private:
 
 };
-namespace {
+namespace
+{
 
 const bool material_castiron = MaterialLib::factory_type::instance().registerProduct( "CastIron", &detail::createMaterial<CastIron> );
 

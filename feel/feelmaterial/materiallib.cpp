@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -40,15 +40,16 @@ namespace Feel
 po::options_description material_options( std::string const& prefix )
 {
     std::string _prefix = prefix;
+
     if ( !_prefix.empty() )
         _prefix += "-";
 
-    po::options_description _options( "Material " + prefix + "  options");
+    po::options_description _options( "Material " + prefix + "  options" );
     _options.add_options()
-        // material library options
-        //((_prefix+"material-lib").c_str(), Feel::po::value<std::string>()->default_value( "stdmaterial.so" ), "Standard material library")
-        ((_prefix+"material").c_str(), Feel::po::value<std::string>()->default_value( "Air" ), "material")
-        ;
+    // material library options
+    //((_prefix+"material-lib").c_str(), Feel::po::value<std::string>()->default_value( "stdmaterial.so" ), "Standard material library")
+    ( ( _prefix+"material" ).c_str(), Feel::po::value<std::string>()->default_value( "Air" ), "material" )
+    ;
     return _options;
 }
 

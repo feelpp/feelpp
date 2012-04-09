@@ -79,109 +79,109 @@ using namespace Eigen;
 
 namespace Feel
 {
-    template<int Dim,
-             int Order,
-             int OrderGeo>
-    class meshAdaptation
+template<int Dim,
+         int Order,
+         int OrderGeo>
+class meshAdaptation
+{
+public:
+    static const bool isP1 = ( Order == 1 );
+
+    //typedef double value_type;
+    typedef Eigen::Matrix<double, Dim, 1> vectorN_type;
+    typedef Eigen::Matrix<double, Dim, Dim> matrixN_type;
+
+    //! linear algebra backend factory
+    typedef Backend<double> backend_type;
+    //! linear algebra backend factory shared_ptr<> type
+    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+
+    //! sparse matrix type associated with backend
+    typedef typename backend_type::sparse_matrix_type sparse_matrix_type;
+    //! sparse matrix type associated with backend (shared_ptr<> type)
+    typedef typename backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
+    //! vector type associated with backend
+    typedef typename backend_type::vector_type vector_type;
+    //! vector type associated with backend (shared_ptr<> type)
+    typedef typename backend_type::vector_ptrtype vector_ptrtype;
+
+    typedef Simplex<Dim,OrderGeo> convex_type;
+    //! mesh type
+    typedef Mesh<convex_type> mesh_type;
+    //! mesh shared_ptr<> type
+    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+
+    //! the exporter factory type
+    typedef Exporter<mesh_type> export_type;
+    //! the exporter factory (shared_ptr<> type)
+    typedef boost::shared_ptr<export_type> export_ptrtype;
+
+    typedef bases<Lagrange<Order, Scalar> > basis_type;
+    typedef FunctionSpace<mesh_type, basis_type> space_type;
+    //! the approximation function space type (shared_ptr<> type)
+    typedef boost::shared_ptr<space_type> space_ptrtype;
+    //! an element type of the approximation function space
+    typedef typename space_type::element_type element_type;
+
+    //! Scalar P0 space
+    typedef bases<Lagrange<0,Scalar, Discontinuous > > p0_basis_type;
+    typedef FunctionSpace<mesh_type, p0_basis_type> p0_space_type;
+    typedef boost::shared_ptr<p0_space_type> p0_space_ptrtype;
+    typedef typename p0_space_type::element_type p0_element_type;
+
+    //! Scalar P1 space
+    typedef bases<Lagrange<1, Scalar> > p1_basis_type;
+    typedef FunctionSpace<mesh_type, p1_basis_type> p1_space_type;
+    typedef boost::shared_ptr<p1_space_type> p1_space_ptrtype;
+    typedef typename p1_space_type::element_type p1_element_type;
+
+    //! Vectorial P1 space
+    typedef bases<Lagrange<1, Vectorial> > p1vec_basis_type;
+    typedef FunctionSpace<mesh_type, p1vec_basis_type> p1vec_space_type;
+    typedef boost::shared_ptr<p1vec_space_type> p1vec_space_ptrtype;
+    typedef typename p1vec_space_type::element_type p1vec_element_type;
+
+    typedef typename mesh_type::point_type point_type;
+
+    // Constructor
+    meshAdaptation( backend_ptrtype& backend )
+        :
+        M_backend( backend )
     {
-    public:
-        static const bool isP1 = (Order == 1);
+    }
 
-        //typedef double value_type;
-        typedef Eigen::Matrix<double, Dim, 1> vectorN_type;
-        typedef Eigen::Matrix<double, Dim, Dim> matrixN_type;
+    // // Generates a GMSH post processing file (for mesh adaptation)
+    std::string createPosfile( std::string name_var, const p1_element_type& bbNewMap, const mesh_ptrtype& mesh );
+    std::string createPosfileAnisotropic( std::string nameVar, const std::vector<p1_element_type>& bbNewMap, const mesh_ptrtype& mesh );
 
-        //! linear algebra backend factory
-        typedef Backend<double> backend_type;
-        //! linear algebra backend factory shared_ptr<> type
-        typedef boost::shared_ptr<backend_type> backend_ptrtype;
+    // // Adapt geofile for mesh adaptation
+    std::string createAdaptedGeo( std::string geofile, std::string name, std::vector<std::string> posfiles, bool aniso );
 
-        //! sparse matrix type associated with backend
-        typedef typename backend_type::sparse_matrix_type sparse_matrix_type;
-        //! sparse matrix type associated with backend (shared_ptr<> type)
-        typedef typename backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
-        //! vector type associated with backend
-        typedef typename backend_type::vector_type vector_type;
-        //! vector type associated with backend (shared_ptr<> type)
-        typedef typename backend_type::vector_ptrtype vector_ptrtype;
+    // // Build adapted mesh
+    std::string adaptedMesh( std::string geofile, std::string name, std::vector<std::string> posfiles , bool aniso );
 
-        typedef Simplex<Dim,OrderGeo> convex_type;
-        //! mesh type
-        typedef Mesh<convex_type> mesh_type;
-        //! mesh shared_ptr<> type
-        typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    // // Compute the metric for mesh adaptation using hessian matrix
+    void computeMetric( const double tol, const double h_min, const double h_max, const matrixN_type & hessian_matrix,
+                        matrixN_type & M, double & max_eigenvalue );
 
-        //! the exporter factory type
-        typedef Exporter<mesh_type> export_type;
-        //! the exporter factory (shared_ptr<> type)
-        typedef boost::shared_ptr<export_type> export_ptrtype;
+    // // Mesh adaptation from Hessian matrix
+    // // 1 : proj u Pk -> P1 and Hessian P1
+    // // 2 : Hessian P(k-2) and proj hessian P(k-2) -> P1 (possibility to choose L2 or H1 projection)
+    std::string adaptMeshHess1( element_type& U, const mesh_ptrtype& mesh, double meshSize,
+                                std::string name, std::string geofile, double tol, bool aniso );
 
-        typedef bases<Lagrange<Order, Scalar> > basis_type;
-        typedef FunctionSpace<mesh_type, basis_type> space_type;
-        //! the approximation function space type (shared_ptr<> type)
-        typedef boost::shared_ptr<space_type> space_ptrtype;
-        //! an element type of the approximation function space
-        typedef typename space_type::element_type element_type;
+    std::string adaptMeshHess2( element_type& U, const mesh_ptrtype& mesh, double meshSize,
+                                std::string name, std::string geofile, double tol, bool aniso );
+    std::string adaptMeshHess2( element_type& U, const mesh_ptrtype& mesh, double meshSize,
+                                std::string name, std::string geofile, double tol, bool aniso,
+                                mpl::bool_<true> );
+    std::string adaptMeshHess2( element_type& U, const mesh_ptrtype& mesh, double meshSize,
+                                std::string name, std::string geofile, double tol, bool aniso,
+                                mpl::bool_<false> );
+private :
+    backend_ptrtype M_backend;
 
-        //! Scalar P0 space
-        typedef bases<Lagrange<0,Scalar, Discontinuous > > p0_basis_type;
-        typedef FunctionSpace<mesh_type, p0_basis_type> p0_space_type;
-        typedef boost::shared_ptr<p0_space_type> p0_space_ptrtype;
-        typedef typename p0_space_type::element_type p0_element_type;
-
-        //! Scalar P1 space
-        typedef bases<Lagrange<1, Scalar> > p1_basis_type;
-        typedef FunctionSpace<mesh_type, p1_basis_type> p1_space_type;
-        typedef boost::shared_ptr<p1_space_type> p1_space_ptrtype;
-        typedef typename p1_space_type::element_type p1_element_type;
-
-        //! Vectorial P1 space
-        typedef bases<Lagrange<1, Vectorial> > p1vec_basis_type;
-        typedef FunctionSpace<mesh_type, p1vec_basis_type> p1vec_space_type;
-        typedef boost::shared_ptr<p1vec_space_type> p1vec_space_ptrtype;
-        typedef typename p1vec_space_type::element_type p1vec_element_type;
-
-        typedef typename mesh_type::point_type point_type;
-
-        // Constructor
-        meshAdaptation(backend_ptrtype& backend)
-            :
-            M_backend(backend)
-        {
-        }
-
-        // // Generates a GMSH post processing file (for mesh adaptation)
-        std::string createPosfile(std::string name_var, const p1_element_type& bbNewMap, const mesh_ptrtype& mesh);
-        std::string createPosfileAnisotropic(std::string nameVar, const std::vector<p1_element_type>& bbNewMap, const mesh_ptrtype& mesh);
-
-        // // Adapt geofile for mesh adaptation
-        std::string createAdaptedGeo(std::string geofile, std::string name, std::vector<std::string> posfiles, bool aniso);
-
-        // // Build adapted mesh
-        std::string adaptedMesh(std::string geofile, std::string name, std::vector<std::string> posfiles , bool aniso);
-
-        // // Compute the metric for mesh adaptation using hessian matrix
-        void computeMetric(const double tol, const double h_min, const double h_max, const matrixN_type & hessian_matrix,
-                            matrixN_type & M, double & max_eigenvalue);
-
-        // // Mesh adaptation from Hessian matrix
-        // // 1 : proj u Pk -> P1 and Hessian P1
-        // // 2 : Hessian P(k-2) and proj hessian P(k-2) -> P1 (possibility to choose L2 or H1 projection)
-        std::string adaptMeshHess1(element_type& U, const mesh_ptrtype& mesh, double meshSize,
-                                     std::string name, std::string geofile, double tol, bool aniso);
-
-        std::string adaptMeshHess2(element_type& U, const mesh_ptrtype& mesh, double meshSize,
-                                     std::string name, std::string geofile, double tol, bool aniso);
-        std::string adaptMeshHess2(element_type& U, const mesh_ptrtype& mesh, double meshSize,
-                                     std::string name, std::string geofile, double tol, bool aniso,
-                                     mpl::bool_<true>);
-        std::string adaptMeshHess2(element_type& U, const mesh_ptrtype& mesh, double meshSize,
-                                     std::string name, std::string geofile, double tol, bool aniso,
-                                     mpl::bool_<false>);
-    private :
-        backend_ptrtype M_backend;
-
-    };
+};
 }
 
 template<int Dim,
@@ -195,8 +195,8 @@ template<int Dim,
          int OrderGeo>
 std::string
 Feel::meshAdaptation<Dim,
-                      Order,
-                      OrderGeo>::createPosfile(std::string nameVar, const p1_element_type& bbNewMap, const mesh_ptrtype& mesh)
+     Order,
+     OrderGeo>::createPosfile( std::string nameVar, const p1_element_type& bbNewMap, const mesh_ptrtype& mesh )
 {
     using namespace Feel::vf;
 
@@ -205,170 +205,189 @@ Feel::meshAdaptation<Dim,
 
     p1_space_ptrtype P1h = p1_space_type::New( mesh );
 
-    std::ofstream newPosFile( (boost::format( "%1%.%2%" ) % nameVar %posFormat ).str() );
+    std::ofstream newPosFile( ( boost::format( "%1%.%2%" ) % nameVar %posFormat ).str() );
 
     newPosFile << "View \" background mesh \" { \n";
     auto eltIt = mesh->beginElement();
     auto eltEnd = mesh->endElement();
-    for ( ; eltIt != eltEnd; eltIt++)
+
+    for ( ; eltIt != eltEnd; eltIt++ )
+    {
+        std::vector<point_type> eltPoints( eltIt->nPoints() );
+
+        if ( Dim == 2 )
+            newPosFile << "ST(";
+
+        if ( Dim == 3 )
+            newPosFile << "SS(";
+
+        for ( int i=0; i < eltIt->nPoints(); i++ )
         {
-            std::vector<point_type> eltPoints( eltIt->nPoints() );
-            if (Dim == 2)
-                newPosFile << "ST(";
-            if (Dim == 3)
-                newPosFile << "SS(";
-            for (int i=0; i < eltIt->nPoints(); i++)
+            eltPoints[i] = eltIt->point( i );
+
+            for ( int j=0; j< Dim; j++ )
+            {
+                newPosFile << eltPoints[i]( j );
+
+                if ( Dim == 2 || ( Dim == 3 &&  j!=Dim-1 ) )
                 {
-                    eltPoints[i] = eltIt->point(i);
-                    for (int j=0; j< Dim; j++)
-                        {
-                            newPosFile << eltPoints[i](j);
-                            if ( Dim == 2 || (Dim == 3 &&  j!=Dim-1) )
-                                {
-                                    newPosFile << ", ";
-                                }
-                        }
-
-                    if (Dim == 2)
-                        newPosFile << "0"; //2D case => z coordinate = 0
-                    if (i!= eltIt->nPoints() - 1)
-                        newPosFile << ", ";
-                }
-
-            newPosFile << "){";
-
-            for (size_t k=0; k<eltPoints.size(); k++)
-                {
-                    auto dofIndex = P1h->dof()->localToGlobal( eltIt->id(), k).get<0>();
-                    newPosFile << bbNewMap[ dofIndex ];
-                    if ( k!= eltPoints.size() - 1)
-                        newPosFile << ", ";
-                }
-
-            newPosFile << "};\n";
-            eltPoints.clear();
-        }
-
-    newPosFile << "};";
-    newPosFile.close();
-
-    return (boost::format( "%1%.%2%" ) % nameVar %posFormat ).str();
-}
-
-template<int Dim,
-         int Order,
-         int OrderGeo>
-std::string
-Feel::meshAdaptation<Dim,
-                      Order,
-                      OrderGeo>::createPosfileAnisotropic(std::string nameVar, const std::vector<p1_element_type>& bbNewMap,
-                                                                  const mesh_ptrtype& mesh)
-{
-    using namespace Feel::vf;
-
-    std::string posFormat = "pos";
-    std::string mshFormat = "msh";
-
-    p1_space_ptrtype P1h = p1_space_type::New( mesh );
-
-    std::ofstream newPosFile( (boost::format( "%1%.%2%" ) % nameVar %posFormat ).str() );
-
-    newPosFile << "View \" background mesh \" { \n";
-    auto eltIt = mesh->beginElement();
-    auto eltEnd = mesh->endElement();
-    for ( ; eltIt != eltEnd; eltIt++)
-        {
-            std::vector<point_type> eltPoints( eltIt->nPoints() );
-	        newPosFile << "T";
-            if (Dim == 2)
-                newPosFile << "T";
-            else
-                newPosFile << "S";
-
-	        newPosFile << "(";
-            for (int i=0; i < eltIt->nPoints(); i++)
-                {
-                    eltPoints[i] = eltIt->point(i);
-                    for (int j=0; j< Dim; j++)
-                        {
-                            newPosFile << eltPoints[i](j);
-                            if ( Dim == 2 || (Dim == 3 &&  j!=Dim-1) )
-                                newPosFile << ", ";
-                        }
-                    if (Dim == 2)
-                        newPosFile << "0"; //2D case => z coordinate = 0
-                    if (i!= eltIt->nPoints() - 1)
-                        newPosFile << ", ";
-                }
-
-            newPosFile << "){";
-
-            for (size_t k=0; k<eltPoints.size(); k++)
-                {
-                    auto dofIndex = P1h->dof()->localToGlobal( eltIt->id(), k).get<0>();
-
-                    int num = 0;
-                    newPosFile << (bbNewMap[num++])[ dofIndex ];
                     newPosFile << ", ";
+                }
+            }
 
-                    newPosFile << (bbNewMap[num++])[ dofIndex ] << ", ";
+            if ( Dim == 2 )
+                newPosFile << "0"; //2D case => z coordinate = 0
 
-                    if (Dim == 3)
-                        newPosFile << (bbNewMap[num++])[ dofIndex ] << ", ";
-                    else
-                        newPosFile << "0, ";
-
-                    newPosFile << (bbNewMap[num++])[ dofIndex ] << ", ";
-                    newPosFile << (bbNewMap[num++])[ dofIndex ] << ", ";
-
-                    if (Dim == 3)
-                        {
-                            newPosFile << (bbNewMap[num++])[ dofIndex ] << ", ";
-                            newPosFile << (bbNewMap[num++])[ dofIndex ] << ", ";
-                            newPosFile << (bbNewMap[num++])[ dofIndex ] << ", ";
-                            newPosFile << (bbNewMap[num++])[ dofIndex ];
-                        }
-                    else
-                        {
-                            newPosFile << "0, ";
-                            newPosFile << "0, ";
-                            newPosFile << "0, ";
-                            newPosFile << "1";
-                        }
-
-                    if (k!= eltPoints.size() - 1)
-                        newPosFile << ", ";
-               }
-            newPosFile << "};\n";
-            eltPoints.clear();
+            if ( i!= eltIt->nPoints() - 1 )
+                newPosFile << ", ";
         }
+
+        newPosFile << "){";
+
+        for ( size_t k=0; k<eltPoints.size(); k++ )
+        {
+            auto dofIndex = P1h->dof()->localToGlobal( eltIt->id(), k ).get<0>();
+            newPosFile << bbNewMap[ dofIndex ];
+
+            if ( k!= eltPoints.size() - 1 )
+                newPosFile << ", ";
+        }
+
+        newPosFile << "};\n";
+        eltPoints.clear();
+    }
 
     newPosFile << "};";
     newPosFile.close();
 
-    return (boost::format( "%1%.%2%" ) % nameVar %posFormat ).str();
+    return ( boost::format( "%1%.%2%" ) % nameVar %posFormat ).str();
 }
 
 template<int Dim,
-         int Order,
-         int OrderGeo>
+int Order,
+int OrderGeo>
 std::string
 Feel::meshAdaptation<Dim,
-                      Order,
-                      OrderGeo>::createAdaptedGeo(std::string geofile, std::string name, std::vector<std::string> posfiles,
-                                                    bool aniso)
+     Order,
+     OrderGeo>::createPosfileAnisotropic( std::string nameVar, const std::vector<p1_element_type>& bbNewMap,
+             const mesh_ptrtype& mesh )
+{
+    using namespace Feel::vf;
+
+    std::string posFormat = "pos";
+    std::string mshFormat = "msh";
+
+    p1_space_ptrtype P1h = p1_space_type::New( mesh );
+
+    std::ofstream newPosFile( ( boost::format( "%1%.%2%" ) % nameVar %posFormat ).str() );
+
+    newPosFile << "View \" background mesh \" { \n";
+    auto eltIt = mesh->beginElement();
+    auto eltEnd = mesh->endElement();
+
+    for ( ; eltIt != eltEnd; eltIt++ )
+    {
+        std::vector<point_type> eltPoints( eltIt->nPoints() );
+        newPosFile << "T";
+
+        if ( Dim == 2 )
+            newPosFile << "T";
+
+        else
+            newPosFile << "S";
+
+        newPosFile << "(";
+
+        for ( int i=0; i < eltIt->nPoints(); i++ )
+        {
+            eltPoints[i] = eltIt->point( i );
+
+            for ( int j=0; j< Dim; j++ )
+            {
+                newPosFile << eltPoints[i]( j );
+
+                if ( Dim == 2 || ( Dim == 3 &&  j!=Dim-1 ) )
+                    newPosFile << ", ";
+            }
+
+            if ( Dim == 2 )
+                newPosFile << "0"; //2D case => z coordinate = 0
+
+            if ( i!= eltIt->nPoints() - 1 )
+                newPosFile << ", ";
+        }
+
+        newPosFile << "){";
+
+        for ( size_t k=0; k<eltPoints.size(); k++ )
+        {
+            auto dofIndex = P1h->dof()->localToGlobal( eltIt->id(), k ).get<0>();
+
+            int num = 0;
+            newPosFile << ( bbNewMap[num++] )[ dofIndex ];
+            newPosFile << ", ";
+
+            newPosFile << ( bbNewMap[num++] )[ dofIndex ] << ", ";
+
+            if ( Dim == 3 )
+                newPosFile << ( bbNewMap[num++] )[ dofIndex ] << ", ";
+
+            else
+                newPosFile << "0, ";
+
+            newPosFile << ( bbNewMap[num++] )[ dofIndex ] << ", ";
+            newPosFile << ( bbNewMap[num++] )[ dofIndex ] << ", ";
+
+            if ( Dim == 3 )
+            {
+                newPosFile << ( bbNewMap[num++] )[ dofIndex ] << ", ";
+                newPosFile << ( bbNewMap[num++] )[ dofIndex ] << ", ";
+                newPosFile << ( bbNewMap[num++] )[ dofIndex ] << ", ";
+                newPosFile << ( bbNewMap[num++] )[ dofIndex ];
+            }
+
+            else
+            {
+                newPosFile << "0, ";
+                newPosFile << "0, ";
+                newPosFile << "0, ";
+                newPosFile << "1";
+            }
+
+            if ( k!= eltPoints.size() - 1 )
+                newPosFile << ", ";
+        }
+
+        newPosFile << "};\n";
+        eltPoints.clear();
+    }
+
+    newPosFile << "};";
+    newPosFile.close();
+
+    return ( boost::format( "%1%.%2%" ) % nameVar %posFormat ).str();
+}
+
+template<int Dim,
+int Order,
+int OrderGeo>
+std::string
+Feel::meshAdaptation<Dim,
+     Order,
+     OrderGeo>::createAdaptedGeo( std::string geofile, std::string name, std::vector<std::string> posfiles,
+                                  bool aniso )
 {
     std::string accessGeofile = ( boost::format( "../../../../../geofiles/%1%.geo" ) % geofile ).str();
 
     ///// Transform inupt geofile into string
     std::ifstream stringToGeo;
     std::string geofileString;
-    stringToGeo.open(accessGeofile);
-    stringToGeo.seekg(0, std::ios::end);
-    geofileString.reserve(stringToGeo.tellg());
-    stringToGeo.seekg(0, std::ios::beg);
-    geofileString.assign((std::istreambuf_iterator<char>(stringToGeo)),
-                     std::istreambuf_iterator<char>());
+    stringToGeo.open( accessGeofile );
+    stringToGeo.seekg( 0, std::ios::end );
+    geofileString.reserve( stringToGeo.tellg() );
+    stringToGeo.seekg( 0, std::ios::beg );
+    geofileString.assign( ( std::istreambuf_iterator<char>( stringToGeo ) ),
+                          std::istreambuf_iterator<char>() );
     stringToGeo.close();
 
     int nbPosfiles = posfiles.size();
@@ -379,16 +398,17 @@ Feel::meshAdaptation<Dim,
     __exprFlist << "Field.([[:blank:]]*)([[:digit:]]*)([[:blank:]]*)..FieldsList([[:blank:]]*)=([[:blank:]]*).(([[:digit:]].?)*).;";
     __exprBgm << "Background[[:blank:]]Field([[:blank:]]*)=([[:blank:]]*)([[:digit:]]*);";
 
-    boost::regex exprAlgo(__exprAlgo.str().c_str());
-    boost::regex exprFlist(__exprFlist.str().c_str());
-    boost::regex exprBgm(__exprBgm.str().c_str());
-    std::list<boost::regex> endExpr = boost::assign::list_of(exprAlgo)(exprFlist)(exprBgm);
+    boost::regex exprAlgo( __exprAlgo.str().c_str() );
+    boost::regex exprFlist( __exprFlist.str().c_str() );
+    boost::regex exprBgm( __exprBgm.str().c_str() );
+    std::list<boost::regex> endExpr = boost::assign::list_of( exprAlgo )( exprFlist )( exprBgm );
 
     bool isInserted = false;
 
     /// Check each field appears in geo file (add missing ones)
     int i=1;
-    for (; i <= nbPosfiles ; i++)
+
+    for ( ; i <= nbPosfiles ; i++ )
     {
         std::ostringstream __expr1, __expr2;
         __expr1 << "Field.([[:blank:]]*)"<< i <<"([[:blank:]]*).([[:blank:]]*)=([[:blank:]]*)PostView;" ;
@@ -398,51 +418,57 @@ Feel::meshAdaptation<Dim,
         boost::regex expression2( __expr2.str().c_str() );
 
         boost::match_results<std::string::iterator> posFields;
-        bool fieldIsFoundL1 = boost::regex_search(geofileString.begin(), geofileString.end(), posFields, expression1);
-        bool fieldIsFoundL2 = boost::regex_search(geofileString.begin(), geofileString.end(), posFields, expression2);
+        bool fieldIsFoundL1 = boost::regex_search( geofileString.begin(), geofileString.end(), posFields, expression1 );
+        bool fieldIsFoundL2 = boost::regex_search( geofileString.begin(), geofileString.end(), posFields, expression2 );
 
         /// If field linked with i-eme posfile doesn't appear => add it
-        if (!(fieldIsFoundL1 && fieldIsFoundL2))
-            {
-                std::ostringstream __newExpr;
-                __newExpr << "Field[" << i << "] = PostView; \n";
-                __newExpr << "Field[" << i << "].IView = " << i-1 << ";\n";
-                std::string newExpr = __newExpr.str().c_str();
+        if ( !( fieldIsFoundL1 && fieldIsFoundL2 ) )
+        {
+            std::ostringstream __newExpr;
+            __newExpr << "Field[" << i << "] = PostView; \n";
+            __newExpr << "Field[" << i << "].IView = " << i-1 << ";\n";
+            std::string newExpr = __newExpr.str().c_str();
 
-                //// Place to add new field (always before algo, field_list and background lines)
-                boost::for_each( endExpr, [&isInserted, &geofileString, &newExpr]( boost::regex _expr)
-                                 {
-                                     boost::match_results<std::string::iterator> itExpr;
-                                     bool exprIsFound = boost::regex_search(geofileString.begin(), geofileString.end(), itExpr, _expr);
-                                     if (exprIsFound)
-                                         {
-                                             geofileString.insert(itExpr[0].first, newExpr.begin(), newExpr.end() );
-                                             isInserted = true;
-                                             return;
-                                         }
-                                 });
-                if (!isInserted)
-                    geofileString.insert(geofileString.end(), newExpr.begin(), newExpr.end() );
-            }
+            //// Place to add new field (always before algo, field_list and background lines)
+            boost::for_each( endExpr, [&isInserted, &geofileString, &newExpr]( boost::regex _expr )
+            {
+                boost::match_results<std::string::iterator> itExpr;
+                bool exprIsFound = boost::regex_search( geofileString.begin(), geofileString.end(), itExpr, _expr );
+
+                if ( exprIsFound )
+                {
+                    geofileString.insert( itExpr[0].first, newExpr.begin(), newExpr.end() );
+                    isInserted = true;
+                    return;
+                }
+            } );
+
+            if ( !isInserted )
+                geofileString.insert( geofileString.end(), newExpr.begin(), newExpr.end() );
+        }
     }
 
     ///// Check if algo, field list and background are defined
     std::ostringstream __newAlgo, __newList, __newBgm;
 
-    if (aniso)
+    if ( aniso )
         __newAlgo << "Field[" << i << "] = MinAniso;\n";
+
     else
         __newAlgo << "Field[" << i << "] = Min;\n";
 
     __newList << "Field[" << i << "].FieldsList = {";
 
     size_t j=1;
-    for (; j< posfiles.size(); j++)
+
+    for ( ; j< posfiles.size(); j++ )
         __newList << j << ", ";
+
     __newList << j <<"};\n";
 
-    if (posfiles.size() > 1)
+    if ( posfiles.size() > 1 )
         __newBgm << "Background Field = " << i << ";\n";
+
     else
         __newBgm << "Background Field = " << i-1 << ";\n";
 
@@ -451,74 +477,84 @@ Feel::meshAdaptation<Dim,
     std::string newBgm = __newBgm.str().c_str();
 
     std::list<std::string> newEndExpr;
-    if (posfiles.size() > 1)
-        {
-            newEndExpr.push_back(newAlgo);
-            newEndExpr.push_back(newList);
-            newEndExpr.push_back(newBgm);
-        }
+
+    if ( posfiles.size() > 1 )
+    {
+        newEndExpr.push_back( newAlgo );
+        newEndExpr.push_back( newList );
+        newEndExpr.push_back( newBgm );
+    }
+
     else
-        newEndExpr.push_back(newBgm);
+        newEndExpr.push_back( newBgm );
 
     std::list<std::string>::iterator itNew = newEndExpr.begin();
 
     //// Update place of matches (since fields have eventually been added)
     //// If fields have changed => algo, field list and background have to be replaced
     isInserted = false;
-    for (std::list<boost::regex>::iterator itExpr = endExpr.begin(); itExpr != endExpr.end(); itExpr++)
+
+    for ( std::list<boost::regex>::iterator itExpr = endExpr.begin(); itExpr != endExpr.end(); itExpr++ )
+    {
+        boost::match_results<std::string::iterator> itPlace;
+        bool exprIsFound = boost::regex_search( geofileString.begin(), geofileString.end(), itPlace, *itExpr );
+
+        if ( exprIsFound )
+            geofileString = boost::regex_replace( geofileString, *itExpr, *itNew );
+
+        else
         {
-            boost::match_results<std::string::iterator> itPlace;
-            bool exprIsFound = boost::regex_search(geofileString.begin(), geofileString.end(), itPlace, *itExpr);
-            if (exprIsFound)
-                geofileString = boost::regex_replace(geofileString, *itExpr, *itNew);
-            else
+            std::list<boost::regex>::iterator itNextExpr = itExpr;
+            itNextExpr++;
+
+            for ( ; itNextExpr != endExpr.end(); itNextExpr++ )
+            {
+                bool nextIsFound = boost::regex_search( geofileString.begin(), geofileString.end(), itPlace, *itNextExpr );
+
+                if ( nextIsFound )
                 {
-                    std::list<boost::regex>::iterator itNextExpr = itExpr;
-                    itNextExpr++;
-                    for ( ; itNextExpr != endExpr.end(); itNextExpr++)
-                        {
-                            bool nextIsFound = boost::regex_search(geofileString.begin(), geofileString.end(), itPlace, *itNextExpr);
-                            if (nextIsFound)
-                                {
-                                    geofileString.insert(itPlace[0].first, (*itNew).begin(), (*itNew).end() );
-                                    isInserted = true;
-                                    break;
-                                }
-                        }
-                    if (!isInserted)
-                        geofileString.insert(geofileString.end(), (*itNew).begin(), (*itNew).end() );
+                    geofileString.insert( itPlace[0].first, ( *itNew ).begin(), ( *itNew ).end() );
+                    isInserted = true;
+                    break;
                 }
-            itNew++;
+            }
+
+            if ( !isInserted )
+                geofileString.insert( geofileString.end(), ( *itNew ).begin(), ( *itNew ).end() );
         }
+
+        itNew++;
+    }
 
     ///// Geofile_s is complete => transform it into new file
     std::ofstream newGeofile;
-    if( boost::filesystem::exists((boost::format( "./new-%1%.geo" ) % geofile ).str()) )
-        remove((boost::format( "./new-%1%.geo" ) % geofile ).str().c_str() );
 
-    newGeofile.open((boost::format( "./new-%1%.geo" ) % geofile ).str());
+    if ( boost::filesystem::exists( ( boost::format( "./new-%1%.geo" ) % geofile ).str() ) )
+        remove( ( boost::format( "./new-%1%.geo" ) % geofile ).str().c_str() );
+
+    newGeofile.open( ( boost::format( "./new-%1%.geo" ) % geofile ).str() );
     newGeofile << geofileString;
     newGeofile.close();
 
-    std::string newAccessGeofile = (boost::format( "./new-%1%.geo" ) % geofile ).str();
+    std::string newAccessGeofile = ( boost::format( "./new-%1%.geo" ) % geofile ).str();
 
     return newAccessGeofile;
 }
 
 template<int Dim,
-         int Order,
-         int OrderGeo>
+int Order,
+int OrderGeo>
 std::string
 Feel::meshAdaptation<Dim,
-                     Order,
-                     OrderGeo>::adaptedMesh(std::string geofile, std::string name, std::vector<std::string> posfiles,
-                                             bool aniso)
+     Order,
+     OrderGeo>::adaptedMesh( std::string geofile, std::string name, std::vector<std::string> posfiles,
+                             bool aniso )
 {
     std::string accessGeofile = ( boost::format( "../../../../../geofiles/%1%.geo" ) % geofile ).str();
 
-    std::string prefix = (boost::format( "./%1%" ) % geofile ).str();
+    std::string prefix = ( boost::format( "./%1%" ) % geofile ).str();
     std::string mshFormat = "msh";
-    std::string newMeshName =  (boost::format( "%1%-%2%.%3%" ) % prefix % name % mshFormat ).str();
+    std::string newMeshName =  ( boost::format( "%1%-%2%.%3%" ) % prefix % name % mshFormat ).str();
 
     int nbPosfiles = posfiles.size();
 
@@ -526,7 +562,7 @@ Feel::meshAdaptation<Dim,
 #if FEELPP_HAS_GMSH
 #if defined(FEELPP_HAS_GMSH_H)
 
-    std::string geofileName = (boost::format( "%1%.geo" ) % geofile).str();
+    std::string geofileName = ( boost::format( "%1%.geo" ) % geofile ).str();
     std::string exeName = "";
 
     // Load geofile (.geo) and post processing (.pos) files
@@ -535,143 +571,151 @@ Feel::meshAdaptation<Dim,
 
     /// argv[0] is the executable name
     char *argExe = new char[exeName.size() + 1];
-    copy(exeName.begin(), exeName.end(), argExe);
+    copy( exeName.begin(), exeName.end(), argExe );
     argExe[exeName.size()] = '\0';
     argvGmsh[0] = argExe;
 
     /// argv[1] => geofile
     char *argGeo = new char[geofileName.size() + 1];
-    copy(geofileName.begin(), geofileName.end(), argGeo);
+    copy( geofileName.begin(), geofileName.end(), argGeo );
     argGeo[geofileName.size()] = '\0';
     argvGmsh[1] = argGeo;
 
     /// argv[2,...,n] => posfiles
-    for (int i=0; i<nbPosfiles; i++)
-        {
-            int j = i + 2; // Shift (0 = exe, 1 = geo)
-            char *argPos = new char[posfiles[i].size() + 1];
-            copy(posfiles[i].begin(), posfiles[i].end(), argPos);
-            argPos[posfiles[i].size()] = '\0';
-            argvGmsh[j] = argPos;
-        }
+    for ( int i=0; i<nbPosfiles; i++ )
+    {
+        int j = i + 2; // Shift (0 = exe, 1 = geo)
+        char *argPos = new char[posfiles[i].size() + 1];
+        copy( posfiles[i].begin(), posfiles[i].end(), argPos );
+        argPos[posfiles[i].size()] = '\0';
+        argvGmsh[j] = argPos;
+    }
 
     //// Initializing
-    GmshInitialize(argcGmsh, argvGmsh);
+    GmshInitialize( argcGmsh, argvGmsh );
 
-    GmshSetOption("Mesh", "Algorithm", 5.);
+    GmshSetOption( "Mesh", "Algorithm", 5. );
     ::GModel *m = new GModel();
 
     // Retreive list of files
-    for (unsigned int i = 0; i < CTX::instance()->files.size(); i++)
-        {
-            std::cout << "loaded files : " << CTX::instance()->files[i] << std::endl;
-            MergeFile(CTX::instance()->files[i]);
-        }
+    for ( unsigned int i = 0; i < CTX::instance()->files.size(); i++ )
+    {
+        std::cout << "loaded files : " << CTX::instance()->files[i] << std::endl;
+        MergeFile( CTX::instance()->files[i] );
+    }
 
     // /* Create Fields from PView list */
     ::FieldManager* myFieldManager = m->getFields();
     std::vector<int> idList;
 
-    for (unsigned int i = 0; i < ::PView::list.size(); i++)
+    for ( unsigned int i = 0; i < ::PView::list.size(); i++ )
+    {
+        ::PView *v = ::PView::list[i];
+
+        if ( v->getData()->hasModel( ::GModel::current() ) )
         {
-            ::PView *v = ::PView::list[i];
-            if (v->getData()->hasModel(::GModel::current()))
-                {
-                    Msg::Error("Cannot use view based on current mesh for background mesh: you might"
-                               " want to use a list-based view (.pos file) instead");
-                    return 0;
-                }
-
-            std::cout << "Add " << v->getData()->getFileName() << " as PostView" << std::endl;
-
-            /// Add new PView as post processing file
-            int id = myFieldManager->newId();
-            myFieldManager->newField(id, "PostView");
-
-            ::Field *f = myFieldManager->get(id);
-            f->options["IView"]->numericalValue(i);
-            idList.push_back(id);
+            Msg::Error( "Cannot use view based on current mesh for background mesh: you might"
+                        " want to use a list-based view (.pos file) instead" );
+            return 0;
         }
+
+        std::cout << "Add " << v->getData()->getFileName() << " as PostView" << std::endl;
+
+        /// Add new PView as post processing file
+        int id = myFieldManager->newId();
+        myFieldManager->newField( id, "PostView" );
+
+        ::Field *f = myFieldManager->get( id );
+        f->options["IView"]->numericalValue( i );
+        idList.push_back( id );
+    }
 
     // /* Create minAniso field, with all the posfiles (intersection) */
     int id = myFieldManager->newId();
 
-    if (aniso)
-        myFieldManager->newField(id, "MinAniso");
+    if ( aniso )
+        myFieldManager->newField( id, "MinAniso" );
+
     else
-        myFieldManager->newField(id, "Min");
-    ::Field *f = myFieldManager->get(id);
+        myFieldManager->newField( id, "Min" );
+
+    ::Field *f = myFieldManager->get( id );
 
     /// Erase (eventual) old list of field for MinAniso
     f->options["FieldsList"]->list().erase( f->options["FieldsList"]->list().begin(), f->options["FieldsList"]->list().end() );
     /// Copy idlist vector into algorithm fieldlist
-    std::copy(idList.begin(), idList.end(), std::back_inserter(f->options["FieldsList"]->list()) );
+    std::copy( idList.begin(), idList.end(), std::back_inserter( f->options["FieldsList"]->list() ) );
 
     // /* Now create the adapted mesh */
 
     /// Define background field from Fields
-    myFieldManager->setBackgroundFieldId(id);
-    f = myFieldManager->get(myFieldManager->getBackgroundField());
+    myFieldManager->setBackgroundFieldId( id );
+    f = myFieldManager->get( myFieldManager->getBackgroundField() );
 
     /// Algo for remeshing
     CTX::instance()->mesh.algo2d = ALGO_2D_BAMG;
-    if (Dim == 3)
+
+    if ( Dim == 3 )
         CTX::instance()->mesh.algo3d = ALGO_3D_MMG3D;
 
     m->deleteMesh(); //Delete current mesh
-    m->mesh(Dim);
+    m->mesh( Dim );
 
     std::cout << "New mesh built : " << newMeshName << std::endl;
-    m->writeMSH(newMeshName);
+    m->writeMSH( newMeshName );
     std::cout << m->getNumMeshVertices() << " vertices ";
     std::cout << m->getNumMeshElements() << " elements\n";
 
     //// Delete list of loaded files
-    CTX::instance()->files.erase(CTX::instance()->files.begin(), CTX::instance()->files.end());
+    CTX::instance()->files.erase( CTX::instance()->files.begin(), CTX::instance()->files.end() );
     //// Delete PView list
-    ::PView::list.erase(::PView::list.begin(), ::PView::list.end() );
+    ::PView::list.erase( ::PView::list.begin(), ::PView::list.end() );
 
 #else
-    std::string new_access_geofile = createAdaptedGeo(geofile, name, posfiles, aniso);
+    std::string new_access_geofile = createAdaptedGeo( geofile, name, posfiles, aniso );
 
     // Execute gmsh command to generate new mesh from new geofile built
     std::ostringstream __str;
     __str << "gmsh" << " " << newAccessGeofile << " "
-          << "-o " << newMeshName << " ";
-    for (int p=0; p<nbPosfiles; p++)
-        {
-            __str << posfiles[p] << " ";
-        }
-    if (aniso)
-        {
-            __str << "-algo bamg" << " ";
-            if( Dim == 3)
-                __str << "-algo mmg3d" << " ";
-        }
+    << "-o " << newMeshName << " ";
+
+    for ( int p=0; p<nbPosfiles; p++ )
+    {
+        __str << posfiles[p] << " ";
+    }
+
+    if ( aniso )
+    {
+        __str << "-algo bamg" << " ";
+
+        if ( Dim == 3 )
+            __str << "-algo mmg3d" << " ";
+    }
+
     __str << "-" << Dim;
 
-    ::system(__str.str().c_str());
+    ::system( __str.str().c_str() );
 #endif
 #else
-    throw std::invalid_argument("Gmsh is not available on this system");
+    throw std::invalid_argument( "Gmsh is not available on this system" );
 #endif
 
     return newMeshName;
 }
 
 template<int Dim,
-         int Order,
-         int OrderGeo>
+int Order,
+int OrderGeo>
 void
 Feel::meshAdaptation<Dim,
-                      Order,
-                      OrderGeo>::computeMetric(const double tol, const double hMin, const double hMax,
-                                                      const matrixN_type & hessianMatrix, matrixN_type & metric, double & maxEigenvalue)
+     Order,
+     OrderGeo>::computeMetric( const double tol, const double hMin, const double hMax,
+                               const matrixN_type & hessianMatrix, matrixN_type & metric, double & maxEigenvalue )
 {
     using namespace Feel::vf;
 
     Eigen::EigenSolver< matrixN_type > eigenSolver;
-    eigenSolver.compute(hessianMatrix);
+    eigenSolver.compute( hessianMatrix );
     vectorN_type eigenvalues = eigenSolver.eigenvalues().array().abs();
 
     /***** Use of Frey formula - bamg user manual
@@ -681,34 +725,38 @@ Feel::meshAdaptation<Dim,
     /***** Use of Alauzet formula - p35 Metric-Based Anisotropic Mesh Adaptation ****/
     //eigenvalues *= 1./(tol*norm);
     eigenvalues *= 1./tol;
-    eigenvalues *= 0.5*(Dim/(double) (Dim+1))*(Dim/(double) (Dim+1));
-    for (int i=0; i<Dim; i++)
-        {
-            eigenvalues(i)=std::min(std::max(eigenvalues(i),1/(hMax*hMax)), 1/(hMin*hMin));
-        }
+    eigenvalues *= 0.5*( Dim/( double ) ( Dim+1 ) )*( Dim/( double ) ( Dim+1 ) );
+
+    for ( int i=0; i<Dim; i++ )
+    {
+        eigenvalues( i )=std::min( std::max( eigenvalues( i ),1/( hMax*hMax ) ), 1/( hMin*hMin ) );
+    }
+
     /******/
 
     matrixN_type S = matrixN_type::Zero();
-    for (int i=0; i<Dim; i++)
-        S(i,i)=eigenvalues(i); //1/math::sqrt(eigenvalues(i));
+
+    for ( int i=0; i<Dim; i++ )
+        S( i,i )=eigenvalues( i ); //1/math::sqrt(eigenvalues(i));
 
     matrixN_type R = matrixN_type::Zero();
-    for (int j=0; j<Dim; j++)
-        for (int i=0; i<Dim; i++)
-            R(i,j)=real((eigenSolver.eigenvectors())(i,j)); // because eigenvectors are complex
 
-    metric = (R * S) * R.transpose(); // to be checked
+    for ( int j=0; j<Dim; j++ )
+        for ( int i=0; i<Dim; i++ )
+            R( i,j )=real( ( eigenSolver.eigenvectors() )( i,j ) ); // because eigenvectors are complex
+
+    metric = ( R * S ) * R.transpose(); // to be checked
     maxEigenvalue = eigenvalues.maxCoeff();
 }
 
 template<int Dim,
-         int Order,
-         int OrderGeo>
+int Order,
+int OrderGeo>
 std::string
 Feel::meshAdaptation<Dim,
-                      Order,
-                      OrderGeo>::adaptMeshHess1(element_type& var, const mesh_ptrtype& mesh, double meshSize, std::string name,
-                                                        std::string geofile, double tol, bool aniso)
+     Order,
+     OrderGeo>::adaptMeshHess1( element_type& var, const mesh_ptrtype& mesh, double meshSize, std::string name,
+                                std::string geofile, double tol, bool aniso )
 {
     using namespace Feel::vf;
 
@@ -717,13 +765,15 @@ Feel::meshAdaptation<Dim,
 
     // Store measure on each point
     int bbItemSize;
-    if (aniso)
+
+    if ( aniso )
         bbItemSize = Dim*Dim;
+
     else
         bbItemSize = 1;
 
     //cout << "n_bb_item=" << bbItemSize << endl;
-    std::vector<p1_element_type> bbNewMap(bbItemSize, P1h->element()); // map of adapted measures
+    std::vector<p1_element_type> bbNewMap( bbItemSize, P1h->element() ); // map of adapted measures
 
     // // Store max and min of solution U
     // double max_val = U.max();
@@ -734,122 +784,128 @@ Feel::meshAdaptation<Dim,
     // ******* From U in P1 space -> approximate components of hessian matrix on P1 space ******** //
     // Project u on P1 space
     auto varP1 = P1h->element();
-    varP1 = vf::project( P1h, elements(mesh), idv(var) );
+    varP1 = vf::project( P1h, elements( mesh ), idv( var ) );
 
     // First derivatives of U (P1) are P0
-    std::vector<p0_element_type> dvard1P0(Dim, P0h->element());
-    std::vector<p1_element_type> dvard1P1(Dim, P1h->element());
-    for (int i=0; i<Dim; i++)
-        {
-            dvard1P0[i] = vf::project(P0h, elements(mesh), gradv(varP1)(0,i) );
-            dvard1P1[i] = element_div( sum(P1h, idv(dvard1P0[i])*meas()), sum(P1h, meas() ) ); //L2 proj -> P1
-        }
+    std::vector<p0_element_type> dvard1P0( Dim, P0h->element() );
+    std::vector<p1_element_type> dvard1P1( Dim, P1h->element() );
+
+    for ( int i=0; i<Dim; i++ )
+    {
+        dvard1P0[i] = vf::project( P0h, elements( mesh ), gradv( varP1 )( 0,i ) );
+        dvard1P1[i] = element_div( sum( P1h, idv( dvard1P0[i] )*meas() ), sum( P1h, meas() ) ); //L2 proj -> P1
+    }
 
     // Second derivatives of proj_P1(U) are P0
-    std::vector<p0_element_type> hessP0(Dim*Dim, P0h->element());
-    std::vector<p1_element_type> hessP1(Dim*Dim, P1h->element());
-    for (int i=0; i<Dim; i++)
+    std::vector<p0_element_type> hessP0( Dim*Dim, P0h->element() );
+    std::vector<p1_element_type> hessP1( Dim*Dim, P1h->element() );
+
+    for ( int i=0; i<Dim; i++ )
+    {
+        for ( int j=0; j<Dim; j++ )
         {
-            for (int j=0; j<Dim; j++)
-                {
-                    // Hessian components are entered column by column
-                    hessP0[i+j*Dim] = vf::project(P0h, elements(mesh), gradv( dvard1P1[j] )(0,i) );
-                    hessP1[i+j*Dim] = element_div( sum(P1h, idv(hessP0[i+j*Dim])*meas()), sum(P1h, meas() ) ); //L2 proj -> P1
-                }
+            // Hessian components are entered column by column
+            hessP0[i+j*Dim] = vf::project( P0h, elements( mesh ), gradv( dvard1P1[j] )( 0,i ) );
+            hessP1[i+j*Dim] = element_div( sum( P1h, idv( hessP0[i+j*Dim] )*meas() ), sum( P1h, meas() ) ); //L2 proj -> P1
         }
+    }
+
     // ******************************************************************************************* //
 
     auto dofptItP1 = P1h->dof()->dofPointBegin();
     auto dofptEnP1 = P1h->dof()->dofPointEnd();
 
-    double hsizeMin = (1.0/1000)*meshSize;
+    double hsizeMin = ( 1.0/1000 )*meshSize;
     std::cout << "hsize min = " << hsizeMin << std::endl;
     double hsizeMax = 1000*meshSize;
     std::cout << "hsize max = " << hsizeMax << std::endl;
 
-    for ( ; dofptItP1 != dofptEnP1; dofptItP1++)
+    for ( ; dofptItP1 != dofptEnP1; dofptItP1++ )
+    {
+        auto dofptCoordP1 = dofptItP1->get<0>();
+        auto dofptIdP1 = dofptItP1->get<1>();
+
+        matrixN_type hessianMatrix;
+        Eigen::EigenSolver< matrixN_type > eigenSolver;
+
+        // Associate each dof with the P1 hessian matrix projection
+        for ( int i=0; i<Dim; i++ )
         {
-            auto dofptCoordP1 = dofptItP1->get<0>();
-            auto dofptIdP1 = dofptItP1->get<1>();
-
-            matrixN_type hessianMatrix;
-            Eigen::EigenSolver< matrixN_type > eigenSolver;
-
-            // Associate each dof with the P1 hessian matrix projection
-            for (int i=0; i<Dim; i++)
-                {
-                    for (int j=0; j<Dim; j++)
-                        {
-                            hessianMatrix(i,j) = (hessP1[i+j*Dim])[dofptIdP1];
-                        }
-                }
-
-            double maxEigenvalue;
-            matrixN_type metrics;
-            computeMetric(tol, hsizeMin, hsizeMax, hessianMatrix, metrics, maxEigenvalue);
-
-            if (aniso)
-                {
-                    for (int j=0; j<Dim; j++)
-                        {
-                            for (int i=0; i<Dim; i++)
-                                {
-                                    (bbNewMap[i+j*Dim])[dofptIdP1] = metrics(i,j);
-                                }
-                        }
-                }
-            else
-                {
-                    auto newHsize = 1.0/math::sqrt( maxEigenvalue);
-                    (bbNewMap[0])[dofptIdP1] = newHsize;
-                }
+            for ( int j=0; j<Dim; j++ )
+            {
+                hessianMatrix( i,j ) = ( hessP1[i+j*Dim] )[dofptIdP1];
+            }
         }
+
+        double maxEigenvalue;
+        matrixN_type metrics;
+        computeMetric( tol, hsizeMin, hsizeMax, hessianMatrix, metrics, maxEigenvalue );
+
+        if ( aniso )
+        {
+            for ( int j=0; j<Dim; j++ )
+            {
+                for ( int i=0; i<Dim; i++ )
+                {
+                    ( bbNewMap[i+j*Dim] )[dofptIdP1] = metrics( i,j );
+                }
+            }
+        }
+
+        else
+        {
+            auto newHsize = 1.0/math::sqrt( maxEigenvalue );
+            ( bbNewMap[0] )[dofptIdP1] = newHsize;
+        }
+    }
 
     /// Build posfile
     std::string posfileName;
-    if (aniso)
-        posfileName = createPosfileAnisotropic(name, bbNewMap, mesh);
+
+    if ( aniso )
+        posfileName = createPosfileAnisotropic( name, bbNewMap, mesh );
+
     else
-        posfileName = createPosfile(name, bbNewMap[0], mesh);
+        posfileName = createPosfile( name, bbNewMap[0], mesh );
 
     return posfileName;
 
 }
 
 template<int Dim,
-         int Order,
-         int OrderGeo>
+int Order,
+int OrderGeo>
 std::string
 Feel::meshAdaptation<Dim,
-                      Order,
-                      OrderGeo>::adaptMeshHess2(element_type& var, const mesh_ptrtype& mesh, double meshSize,
-                                         std::string name, std::string geofile, double tol, bool aniso)
+     Order,
+     OrderGeo>::adaptMeshHess2( element_type& var, const mesh_ptrtype& mesh, double meshSize,
+                                std::string name, std::string geofile, double tol, bool aniso )
 {
-    return adaptMeshHess2(var, mesh, meshSize, name, geofile, tol, aniso, Feel::mpl::bool_< isP1 >() );
+    return adaptMeshHess2( var, mesh, meshSize, name, geofile, tol, aniso, Feel::mpl::bool_< isP1 >() );
 }
 
 template<int Dim,
-         int Order,
-         int OrderGeo>
+int Order,
+int OrderGeo>
 std::string
 Feel::meshAdaptation<Dim,
-                      Order,
-                      OrderGeo>::adaptMeshHess2(element_type& var, const mesh_ptrtype& mesh, double meshSize,
-                                         std::string name, std::string geofile, double tol, bool aniso,
-                                                        mpl::bool_<true>)
+     Order,
+     OrderGeo>::adaptMeshHess2( element_type& var, const mesh_ptrtype& mesh, double meshSize,
+                                std::string name, std::string geofile, double tol, bool aniso,
+                                mpl::bool_<true> )
 {
-    return adaptMeshHess1(var, mesh, meshSize, name, geofile, tol, aniso);
+    return adaptMeshHess1( var, mesh, meshSize, name, geofile, tol, aniso );
 }
 
 template<int Dim,
-         int Order,
-         int OrderGeo>
+int Order,
+int OrderGeo>
 std::string
 Feel::meshAdaptation<Dim,
-                      Order,
-                      OrderGeo>::adaptMeshHess2(element_type& var, const mesh_ptrtype& mesh, double meshSize,
-                                                        std::string name, std::string geofile, double tol, bool aniso,
-                                                        mpl::bool_<false>)
+     Order,
+     OrderGeo>::adaptMeshHess2( element_type& var, const mesh_ptrtype& mesh, double meshSize,
+                                std::string name, std::string geofile, double tol, bool aniso,
+                                mpl::bool_<false> )
 {
     using namespace Feel::vf;
 
@@ -865,13 +921,15 @@ Feel::meshAdaptation<Dim,
 
     // Store measure on each point
     int bbItemSize; // = (aniso) ? Dim*Dim : 1;
-    if (aniso)
+
+    if ( aniso )
         bbItemSize = Dim*Dim;
+
     else
         bbItemSize = 1;
 
     //cout << "n_bb_item=" << bbItemSize << endl;
-    std::vector<p1_element_type> bbNewMap(bbItemSize, P1h->element()); // map of adapted measures
+    std::vector<p1_element_type> bbNewMap( bbItemSize, P1h->element() ); // map of adapted measures
 
     // Store max and min of solution U
     // double max_val = U.max();
@@ -880,96 +938,101 @@ Feel::meshAdaptation<Dim,
     // double norm = std::max(std::max(fabs(max_val),fabs(min_val)), cutoff);
 
     // Second derivatives of U are P(k-2)
-    std::vector<p_km2_element_type> dvard2Pkm2(Dim*Dim, Pkm2H->element() );
-    for (int i=0; i<Dim; i++)
-        {
-            for (int j=0; j<Dim; j++)
-                {
-                    dvard2Pkm2[i+j*Dim] = vf::project( Pkm2H, elements(mesh),hessv(var)(i,j));
-                }
-        }
+    std::vector<p_km2_element_type> dvard2Pkm2( Dim*Dim, Pkm2H->element() );
 
-    p1_element_type V(P1h, "V");
+    for ( int i=0; i<Dim; i++ )
+    {
+        for ( int j=0; j<Dim; j++ )
+        {
+            dvard2Pkm2[i+j*Dim] = vf::project( Pkm2H, elements( mesh ),hessv( var )( i,j ) );
+        }
+    }
+
+    p1_element_type V( P1h, "V" );
 
     /// Proj -> P1 for each hessian matrix components :
     /// Find \int proj_P1(U)V = \int UV \forall V
-    std::vector<p1_element_type> dvard2P1(Dim*Dim, P1h->element());
-    for (int i=0; i<Dim; i++)
+    std::vector<p1_element_type> dvard2P1( Dim*Dim, P1h->element() );
+
+    for ( int i=0; i<Dim; i++ )
+    {
+        for ( int j=0; j<Dim; j++ )
         {
-            for (int j=0; j<Dim; j++)
-                {
-                    auto FV = M_backend->newVector( P1h );
-                    form1( _test = P1h, _vector = FV, _init=true) =
-                        integrate( elements(mesh), idv(dvard2Pkm2[i+j*Dim])*id(V) );
-                    FV->close();
+            auto FV = M_backend->newVector( P1h );
+            form1( _test = P1h, _vector = FV, _init=true ) =
+                integrate( elements( mesh ), idv( dvard2Pkm2[i+j*Dim] )*id( V ) );
+            FV->close();
 
-                    auto MatrixV = M_backend->newMatrix( P1h, P1h );
-                    form2( _test= P1h, _trial= P1h, _matrix=MatrixV, _init=true ) =
-                        integrate( elements(mesh), idt(dvard2P1[i+j*Dim])*id(V) );
-                    MatrixV->close();
+            auto MatrixV = M_backend->newMatrix( P1h, P1h );
+            form2( _test= P1h, _trial= P1h, _matrix=MatrixV, _init=true ) =
+                integrate( elements( mesh ), idt( dvard2P1[i+j*Dim] )*id( V ) );
+            MatrixV->close();
 
-                    backend_type::build()->solve( _matrix=MatrixV, _solution=dvard2P1[i+j*Dim], _rhs=FV );
+            backend_type::build()->solve( _matrix=MatrixV, _solution=dvard2P1[i+j*Dim], _rhs=FV );
 
-                }
         }
+    }
 
     // ******************************************************************************************* //
 
     auto dofptItP1 = P1h->dof()->dofPointBegin();
     auto dofptEnP1 = P1h->dof()->dofPointEnd();
 
-    double hsizeMin = (1.0/10000)*meshSize;
+    double hsizeMin = ( 1.0/10000 )*meshSize;
     std::cout << "hsize min = " << hsizeMin << std::endl;
     double hsizeMax = 10000*meshSize;
     std::cout << "hsize max = " << hsizeMax << std::endl;
 
-    std::vector<p1_element_type> hessianComponents(4);
+    std::vector<p1_element_type> hessianComponents( 4 );
 
-    for ( ; dofptItP1 != dofptEnP1; dofptItP1++)
+    for ( ; dofptItP1 != dofptEnP1; dofptItP1++ )
+    {
+        auto dofptCoordP1 = dofptItP1->get<0>();
+        auto dofptIdP1 = dofptItP1->get<1>();
+
+        matrixN_type hessianMatrix;
+        Eigen::EigenSolver< matrixN_type > eigenSolver;
+
+        // Associate each dof with the P1 hessian matrix projection
+        for ( int i=0; i<Dim; i++ )
         {
-            auto dofptCoordP1 = dofptItP1->get<0>();
-            auto dofptIdP1 = dofptItP1->get<1>();
-
-            matrixN_type hessianMatrix;
-            Eigen::EigenSolver< matrixN_type > eigenSolver;
-
-            // Associate each dof with the P1 hessian matrix projection
-            for (int i=0; i<Dim; i++)
-                {
-                    for (int j=0; j<Dim; j++)
-                        {
-                            hessianMatrix(i,j) = (dvard2P1[i+j*Dim])[dofptIdP1];
-                        }
-                }
-
-            double maxEigenvalue;
-            matrixN_type metrics;
-            computeMetric(tol, hsizeMin, hsizeMax, hessianMatrix, metrics, maxEigenvalue);
-
-            if (aniso)
-                {
-                    for (int j=0; j<Dim; j++)
-                        {
-                            for (int i=0; i<Dim; i++)
-                                {
-                                    (bbNewMap[i+j*Dim])[dofptIdP1] = metrics(i,j);
-                                }
-                        }
-                }
-            else
-                {
-                    auto newHsize = 1.0/math::sqrt( maxEigenvalue);
-                    (bbNewMap[0])[dofptIdP1] = newHsize;
-
-                }
+            for ( int j=0; j<Dim; j++ )
+            {
+                hessianMatrix( i,j ) = ( dvard2P1[i+j*Dim] )[dofptIdP1];
+            }
         }
+
+        double maxEigenvalue;
+        matrixN_type metrics;
+        computeMetric( tol, hsizeMin, hsizeMax, hessianMatrix, metrics, maxEigenvalue );
+
+        if ( aniso )
+        {
+            for ( int j=0; j<Dim; j++ )
+            {
+                for ( int i=0; i<Dim; i++ )
+                {
+                    ( bbNewMap[i+j*Dim] )[dofptIdP1] = metrics( i,j );
+                }
+            }
+        }
+
+        else
+        {
+            auto newHsize = 1.0/math::sqrt( maxEigenvalue );
+            ( bbNewMap[0] )[dofptIdP1] = newHsize;
+
+        }
+    }
 
     /// Build posfile
     std::string posfileName;
-    if (aniso)
-        posfileName = createPosfileAnisotropic(name, bbNewMap, mesh);
+
+    if ( aniso )
+        posfileName = createPosfileAnisotropic( name, bbNewMap, mesh );
+
     else
-        posfileName = createPosfile(name, bbNewMap[0], mesh);
+        posfileName = createPosfile( name, bbNewMap[0], mesh );
 
     return posfileName;
 

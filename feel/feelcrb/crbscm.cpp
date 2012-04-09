@@ -36,23 +36,23 @@ namespace Feel
 Feel::po::options_description
 crbSCMOptions( std::string const& prefix )
 {
-    Feel::po::options_description crbscmoptions("CRB SCM Options");
+    Feel::po::options_description crbscmoptions( "CRB SCM Options" );
     crbscmoptions.add_options()
-        ("crb.scm.sampling-size"   , Feel::po::value<int>()->default_value( 100 ),       "Offline SCM sampling size " )
-        ("crb.scm.tol"   , Feel::po::value<double>()->default_value( 1e-6 ),       "Offline SCM tolerance" )
-        ("crb.scm.iter-max"   , Feel::po::value<int>()->default_value( 10 ),       "Offline SCM max number of K iterations" )
-        ("crb.scm.Mplus" , Feel::po::value<int>()->default_value( 10 ),       "M+ value" )
-        ("crb.scm.Malpha" , Feel::po::value<int>()->default_value( 10 ),       "M_alpha value" )
-        ("crb.scm.level" , Feel::po::value<int>()->default_value( 1 ),       "level for recursion in lower bound computations" )
-        ("crb.scm.strategy" , Feel::po::value<int>()->default_value( 2 ),       "scm strategy (0=patera, 1=maday, 2=prudhomme" )
-        ("crb.scm.rebuild-database" , Feel::po::value<bool>()->default_value( 0 ), "rebuild database (if it already exists)")
-        ;
+    ( "crb.scm.sampling-size"   , Feel::po::value<int>()->default_value( 100 ),       "Offline SCM sampling size " )
+    ( "crb.scm.tol"   , Feel::po::value<double>()->default_value( 1e-6 ),       "Offline SCM tolerance" )
+    ( "crb.scm.iter-max"   , Feel::po::value<int>()->default_value( 10 ),       "Offline SCM max number of K iterations" )
+    ( "crb.scm.Mplus" , Feel::po::value<int>()->default_value( 10 ),       "M+ value" )
+    ( "crb.scm.Malpha" , Feel::po::value<int>()->default_value( 10 ),       "M_alpha value" )
+    ( "crb.scm.level" , Feel::po::value<int>()->default_value( 1 ),       "level for recursion in lower bound computations" )
+    ( "crb.scm.strategy" , Feel::po::value<int>()->default_value( 2 ),       "scm strategy (0=patera, 1=maday, 2=prudhomme" )
+    ( "crb.scm.rebuild-database" , Feel::po::value<bool>()->default_value( 0 ), "rebuild database (if it already exists)" )
+    ;
 
 
 
     crbscmoptions
-        .add( solvereigen_options( "crb.scm" ) );
+    .add( solvereigen_options( "crb.scm" ) );
 
     return crbscmoptions;
-  }
+}
 }

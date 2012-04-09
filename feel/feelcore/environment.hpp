@@ -102,7 +102,7 @@ public:
      *  via @c main.
      *
      */
-    Environment(int& argc, char** &argv);
+    Environment( int& argc, char** &argv );
 
     /** Shuts down the Feel environment.
      *

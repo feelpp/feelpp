@@ -126,7 +126,10 @@ public:
     /**
      * \return \p true if MPI is initialized, \p false otherwise
      */
-    bool isMPIInitialized() const { return _S_is_mpi_initialized; }
+    bool isMPIInitialized() const
+    {
+        return _S_is_mpi_initialized;
+    }
 
     /** Determine if the MPI environment has already been initialized.
      *
@@ -134,7 +137,10 @@ public:
      *
      *  @returns @c true if the MPI environment has been initialized.
      */
-    static bool initialized() { return mpi::environment::initialized(); }
+    static bool initialized()
+    {
+        return mpi::environment::initialized();
+    }
 
     /** Determine if the MPI environment has already been finalized.
      *
@@ -142,7 +148,10 @@ public:
      *
      *  @returns @c true if the MPI environment has been finalized.
      */
-    static bool finalized() { return mpi::environment::finalized(); }
+    static bool finalized()
+    {
+        return mpi::environment::finalized();
+    }
 
     /** Retrieve the name of this processor.
      *
@@ -182,20 +191,20 @@ public:
 
 #if defined( FEELPP_HAS_MPI )
     template<class T>
-    static void Send(const T& obj, int proc, int tag, const MPI_Comm& comm = COMM_WORLD )
+    static void Send( const T& obj, int proc, int tag, const MPI_Comm& comm = COMM_WORLD )
     {
         std::ostringstream oss;
-        boost::archive::binary_oarchive oa(oss);
+        boost::archive::binary_oarchive oa( oss );
         oa << obj;
 
-        std::string str(oss.str());
+        std::string str( oss.str() );
         int size = str.size();
-        MPI_Ssend(&size, 1, MPI_INT, proc, tag, comm);
-        MPI_Ssend(&str[0], size, MPI_CHAR, proc, tag, comm);
+        MPI_Ssend( &size, 1, MPI_INT, proc, tag, comm );
+        MPI_Ssend( &str[0], size, MPI_CHAR, proc, tag, comm );
     }
 #else
     template<class T>
-    static void Send(const T& obj, int proc, int tag )
+    static void Send( const T& obj, int proc, int tag )
     {
         // dummy function, don't have to do anything
     }
@@ -207,28 +216,29 @@ public:
     static void Broadcast( T& obj, int root = 0, const MPI_Comm& comm = COMM_WORLD )
     {
         std::ostringstream oss;
-        boost::archive::binary_oarchive oa(oss);
+        boost::archive::binary_oarchive oa( oss );
         oa << obj;
 
-        std::string str(oss.str());
+        std::string str( oss.str() );
         int size = str.size();
-        MPI_Bcast(&size, 1, MPI_INT, root, comm);
+        MPI_Bcast( &size, 1, MPI_INT, root, comm );
 
         if ( Application::processId() != root )
             str.resize( size );
+
         Debug( 1010 ) << "[Application::Broadcast] str.size = " << str.size() << "\n";
         Debug( 1010 ) << "[Application::Broadcast] before str = " << str << "\n";
 
-        MPI_Bcast(&str[0], size, MPI_CHAR, root, comm);
+        MPI_Bcast( &str[0], size, MPI_CHAR, root, comm );
         Debug( 1010 ) << "[Application::Broadcast] after str = " << str << "\n";
 
         // deserialize for processId() != root
         if ( Application::processId() != root )
-            {
-                std::istringstream iss(str);
-                boost::archive::binary_iarchive ia(iss);
-                ia >> obj;
-            }
+        {
+            std::istringstream iss( str );
+            boost::archive::binary_iarchive ia( iss );
+            ia >> obj;
+        }
     }
 #else
     template<class T>
@@ -243,22 +253,22 @@ public:
 
 #if defined( FEELPP_HAS_MPI )
     template<class T>
-    static void Recv(T& obj, int proc, int tag, const MPI_Comm& comm = COMM_WORLD )
+    static void Recv( T& obj, int proc, int tag, const MPI_Comm& comm = COMM_WORLD )
     {
 
         int size;
         MPI_Status status;
-        MPI_Recv(&size, 1, MPI_INT, proc, tag, comm, &status);
-        std::string buf(size, ' ');
-        MPI_Recv(&buf[0], size, MPI_CHAR, proc, tag, comm, &status);
+        MPI_Recv( &size, 1, MPI_INT, proc, tag, comm, &status );
+        std::string buf( size, ' ' );
+        MPI_Recv( &buf[0], size, MPI_CHAR, proc, tag, comm, &status );
 
-        std::istringstream iss(buf);
-        boost::archive::binary_iarchive ia(iss);
+        std::istringstream iss( buf );
+        boost::archive::binary_iarchive ia( iss );
         ia >> obj;
     }
 #else
     template<class T>
-    static void Recv(T& obj, int proc, int tag )
+    static void Recv( T& obj, int proc, int tag )
     {
         // dummy function, don't have to do anything
     }
@@ -272,12 +282,18 @@ public:
     /**
      * @return the communicator
      */
-    static mpi::communicator const& comm() { return S_world; }
+    static mpi::communicator const& comm()
+    {
+        return S_world;
+    }
 
     /**
      * @return the barrier
      */
-    static void barrier() { S_world.barrier(); }
+    static void barrier()
+    {
+        S_world.barrier();
+    }
 
 
 protected:

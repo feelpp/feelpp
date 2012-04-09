@@ -180,7 +180,7 @@ createCircle( double hsize )
 
     //std::cout << "hsize = " << meshSize << std::endl;
 
-    Gmsh __gmsh(2,Order);
+    Gmsh __gmsh( 2,Order );
     std::string fname;
     std::ostringstream ostr;
     std::ostringstream nameStr;
@@ -249,8 +249,8 @@ createCircle( double hsize )
     __pt2.marker() = 0;
     mesh->addPoint( __pt2 );
 
-    __nd[0] = math::sqrt(2.)/2;
-    __nd[1] = math::sqrt(2.)/2;
+    __nd[0] = math::sqrt( 2. )/2;
+    __nd[1] = math::sqrt( 2. )/2;
     point_type __pt3( 3,__nd, true );
     __pt3.marker() = 0;
     mesh->addPoint( __pt3 );
@@ -261,8 +261,8 @@ createCircle( double hsize )
     __pt4.marker() = 0;
     mesh->addPoint( __pt4 );
 
-    __nd[0] = math::sqrt(2.)/2;;
-    __nd[1] = -math::sqrt(2.)/2;;
+    __nd[0] = math::sqrt( 2. )/2;;
+    __nd[1] = -math::sqrt( 2. )/2;;
     point_type __pt5( 5,__nd, true );
     __pt5.marker() = 0;
     mesh->addPoint( __pt5 );
@@ -297,7 +297,7 @@ createSimplex( double hsize )
     double meshSize = hsize;
     //std::cout << "hsize = " << meshSize << std::endl;
 
-    GmshSimplexDomain ts(2,Order);
+    GmshSimplexDomain ts( 2,Order );
     ts.setCharacteristicLength( meshSize );
     ts.setOrder( Order );
     std::string fname = ts.generate( "simplex" );
@@ -318,7 +318,7 @@ createSin( double hsize )
 
     //std::cout << "hsize = " << meshSize << std::endl;
 
-    Gmsh __gmsh(2,Order);
+    Gmsh __gmsh( 2,Order );
     std::string fname;
     std::ostringstream ostr;
     std::ostringstream nameStr;
@@ -349,7 +349,7 @@ createSin( double hsize )
 template<int Order, typename value_type = double>
 struct test_integration_circle
 {
-    test_integration_circle( double meshSize_=DEFAULT_MESH_SIZE ): meshSize(meshSize_) {}
+    test_integration_circle( double meshSize_=DEFAULT_MESH_SIZE ): meshSize( meshSize_ ) {}
     void operator()()
     {
         using namespace Feel;
@@ -361,91 +361,91 @@ struct test_integration_circle
         typename imesh<value_type,2,Order>::ptrtype mesh( createCircle<value_type,Order>( meshSize ) );
 
         t = 1.0;
-        value_type v0 = integrate( elements(mesh), mycst, _Q<Order-1>() ).evaluate()( 0, 0 );
+        value_type v0 = integrate( elements( mesh ), mycst, _Q<Order-1>() ).evaluate()( 0, 0 );
         std::cout.setf( std::ios::scientific );
         std::cout.precision( 15 );
         std::cout << "v0=" << v0 << "\n";
-        value_type v00 = ( integrate( boundaryelements(mesh), mycst ).evaluate()( 0, 0 )+
-                           integrate( internalelements(mesh), mycst ).evaluate()( 0, 0 ) );
+        value_type v00 = ( integrate( boundaryelements( mesh ), mycst ).evaluate()( 0, 0 )+
+                           integrate( internalelements( mesh ), mycst ).evaluate()( 0, 0 ) );
         std::cout << "v00=" << v00 << "\n";
-        std::cout << "[circle] v0 0 = " << integrate( boundaryfaces(mesh), N() ).evaluate() << "\n";
-        std::cout << "[circle] v0 0 = " << integrate( boundaryfaces(mesh),  N() ).evaluate() << "\n";
-        std::cout << "[circle] v0 1 = " << integrate( boundaryfaces(mesh),  vec( idf(f_Nx()), idf(f_Ny() ) ) ).evaluate() << "\n";
-        std::cout << "[circle] v0 2 = " << integrate( boundaryfaces(mesh),
-                                                        trans(vec(constant(1),Ny()))*one() ).evaluate() << "\n";
+        std::cout << "[circle] v0 0 = " << integrate( boundaryfaces( mesh ), N() ).evaluate() << "\n";
+        std::cout << "[circle] v0 0 = " << integrate( boundaryfaces( mesh ),  N() ).evaluate() << "\n";
+        std::cout << "[circle] v0 1 = " << integrate( boundaryfaces( mesh ),  vec( idf( f_Nx() ), idf( f_Ny() ) ) ).evaluate() << "\n";
+        std::cout << "[circle] v0 2 = " << integrate( boundaryfaces( mesh ),
+                  trans( vec( constant( 1 ),Ny() ) )*one() ).evaluate() << "\n";
 
-        std::cout << "[circle] v0 3 = " << integrate( boundaryfaces(mesh),
-                                                      mat<2,2>(Nx(),constant(1),constant(1),Ny())*vec(constant(1),constant(1)) ).evaluate() << "\n";
-        std::cout << "[circle] v0 4 (==v0 3) = " << integrate( boundaryfaces(mesh),
-                                                               mat<2,2>( idf(f_Nx()),constant(1),
-                                                                         constant(1),idf(f_Ny()) )*vec(constant(1),constant(1)) ).evaluate() << "\n";
-        value_type pi = 4.0*math::atan(1.0);
+        std::cout << "[circle] v0 3 = " << integrate( boundaryfaces( mesh ),
+                  mat<2,2>( Nx(),constant( 1 ),constant( 1 ),Ny() )*vec( constant( 1 ),constant( 1 ) ) ).evaluate() << "\n";
+        std::cout << "[circle] v0 4 (==v0 3) = " << integrate( boundaryfaces( mesh ),
+                  mat<2,2>( idf( f_Nx() ),constant( 1 ),
+                            constant( 1 ),idf( f_Ny() ) )*vec( constant( 1 ),constant( 1 ) ) ).evaluate() << "\n";
+        value_type pi = 4.0*math::atan( 1.0 );
         const value_type eps = 1000*Feel::type_traits<value_type>::epsilon();
 #if defined(USE_BOOST_TEST)
         BOOST_CHECK_SMALL( v0-pi, 1e-2 );
         BOOST_CHECK_SMALL( v0-v00, eps  );
 #else
-        FEELPP_ASSERT( math::abs( v0-pi) < 1e-2 )( v0 )( math::abs( v0-pi) )( 1e-2 ).warn ( "v0 != pi" );
-        FEELPP_ASSERT( math::abs( v0-v00) < 1e-2 )( v0 )( v00 )( math::abs( v0-v00) )( eps ).warn ( "v0 != pi" );
+        FEELPP_ASSERT( math::abs( v0-pi ) < 1e-2 )( v0 )( math::abs( v0-pi ) )( 1e-2 ).warn ( "v0 != pi" );
+        FEELPP_ASSERT( math::abs( v0-v00 ) < 1e-2 )( v0 )( v00 )( math::abs( v0-v00 ) )( eps ).warn ( "v0 != pi" );
 #endif /* USE_BOOST_TEST */
 
         typedef typename imesh<value_type,2,Order>::type mesh_type;
         typedef fusion::vector<Lagrange<Order+1, Scalar> > basis_type;
         typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
-        boost::shared_ptr<space_type> Xh( new space_type(mesh) );
+        boost::shared_ptr<space_type> Xh( new space_type( mesh ) );
         typename space_type::element_type u( Xh );
 
         // int ([-1,1],[-1,x]) 1 dx
-        u = vf::project( Xh, elements(mesh), constant(1.0) );
-        v0 = integrate( elements(mesh), idv( u ) ).evaluate()( 0, 0 );
+        u = vf::project( Xh, elements( mesh ), constant( 1.0 ) );
+        v0 = integrate( elements( mesh ), idv( u ) ).evaluate()( 0, 0 );
         std::cout << "int( 1 )=" << v0 << "  (should be pi)\n";
 #if defined(USE_BOOST_TEST)
-        BOOST_CHECK_SMALL( v0-pi, math::pow(meshSize,2*Order) );
+        BOOST_CHECK_SMALL( v0-pi, math::pow( meshSize,2*Order ) );
 #else
-        FEELPP_ASSERT( math::abs( v0-pi) < math::pow(meshSize,2*Order) )( v0 )( math::abs( v0-pi) )( math::pow(meshSize,2*Order) ).warn ( "v0 != pi" );
+        FEELPP_ASSERT( math::abs( v0-pi ) < math::pow( meshSize,2*Order ) )( v0 )( math::abs( v0-pi ) )( math::pow( meshSize,2*Order ) ).warn ( "v0 != pi" );
 #endif /* USE_BOOST_TEST */
 
-        u = vf::project( Xh, elements(mesh), Px()+Py()+1 );
-        node_type pt(2);
+        u = vf::project( Xh, elements( mesh ), Px()+Py()+1 );
+        node_type pt( 2 );
         pt[0] = 0.111;
         pt[1] = 0.111;
 
-        node_type pt2(2);
+        node_type pt2( 2 );
         pt2[0] = 0.111;
-        pt2[1] = math::sqrt(1-pt2[0]*pt2[0]-0.001);
+        pt2[1] = math::sqrt( 1-pt2[0]*pt2[0]-0.001 );
 
-        node_type pt3(2);
+        node_type pt3( 2 );
         pt3[0] = 0;
         pt3[1] = 1;
 
-        u = vf::project( Xh, elements(mesh), Px() );
-        std::cout << "error x=" << integrate( elements(mesh), (idv(u)-Px())*(idv(u)-Px()) ).evaluate()( 0, 0 ) << "\n";
+        u = vf::project( Xh, elements( mesh ), Px() );
+        std::cout << "error x=" << integrate( elements( mesh ), ( idv( u )-Px() )*( idv( u )-Px() ) ).evaluate()( 0, 0 ) << "\n";
 
-        u = vf::project( Xh, elements(mesh), Py() );
-        std::cout << "error y=" << integrate( elements(mesh), (idv(u)-Py())*(idv(u)-Py()) ).evaluate()( 0, 0 ) << "\n";
+        u = vf::project( Xh, elements( mesh ), Py() );
+        std::cout << "error y=" << integrate( elements( mesh ), ( idv( u )-Py() )*( idv( u )-Py() ) ).evaluate()( 0, 0 ) << "\n";
 
-        u = vf::project( Xh, elements(mesh), Px()*Px() );
-        std::cout << "error x^2=" << integrate( elements(mesh), (idv(u)-Px()*Px())*(idv(u)-Px()*Px()) ).evaluate()( 0, 0 ) << "\n";
+        u = vf::project( Xh, elements( mesh ), Px()*Px() );
+        std::cout << "error x^2=" << integrate( elements( mesh ), ( idv( u )-Px()*Px() )*( idv( u )-Px()*Px() ) ).evaluate()( 0, 0 ) << "\n";
 
-        u = vf::project( Xh, elements(mesh), Px()*Py() );
-        std::cout << "error xy=" << integrate( elements(mesh), (idv(u)-Px()*Py())*(idv(u)-Px()*Py()) ).evaluate()( 0, 0 ) << "\n";
+        u = vf::project( Xh, elements( mesh ), Px()*Py() );
+        std::cout << "error xy=" << integrate( elements( mesh ), ( idv( u )-Px()*Py() )*( idv( u )-Px()*Py() ) ).evaluate()( 0, 0 ) << "\n";
 
-        u = vf::project( Xh, elements(mesh), Py()*Py() );
-        std::cout << "error y^2=" << integrate( elements(mesh), (idv(u)-Py()*Py())*(idv(u)-Py()*Py()) ).evaluate()( 0, 0 ) << "\n";
+        u = vf::project( Xh, elements( mesh ), Py()*Py() );
+        std::cout << "error y^2=" << integrate( elements( mesh ), ( idv( u )-Py()*Py() )*( idv( u )-Py()*Py() ) ).evaluate()( 0, 0 ) << "\n";
 
 #if defined(USE_BOOST_TEST)
-        BOOST_CHECK_SMALL( (u(pt)(0,0,0)-(1+pt[0]+pt[1])), math::pow(meshSize,2*Order) );
+        BOOST_CHECK_SMALL( ( u( pt )( 0,0,0 )-( 1+pt[0]+pt[1] ) ), math::pow( meshSize,2*Order ) );
 #else
-        std::cout << "u(" << pt << ")-(1+pt[0]+pt[1]) = " << math::abs( u(pt)(0,0,0)-(1+pt[0]+pt[1]) ) << "\n";
-        std::cout << "u(" << pt2 << ")-(1+pt2[0]+pt2[1]) = " << math::abs( u(pt2)(0,0,0)-(1+pt2[0]+pt2[1]) ) << "\n";
-        std::cout << "u(" << pt3 << ")-(1+pt3[0]+pt3[1]) = " << math::abs( u(pt3)(0,0,0)-(1+pt3[0]+pt3[1]) ) << "\n";
+        std::cout << "u(" << pt << ")-(1+pt[0]+pt[1]) = " << math::abs( u( pt )( 0,0,0 )-( 1+pt[0]+pt[1] ) ) << "\n";
+        std::cout << "u(" << pt2 << ")-(1+pt2[0]+pt2[1]) = " << math::abs( u( pt2 )( 0,0,0 )-( 1+pt2[0]+pt2[1] ) ) << "\n";
+        std::cout << "u(" << pt3 << ")-(1+pt3[0]+pt3[1]) = " << math::abs( u( pt3 )( 0,0,0 )-( 1+pt3[0]+pt3[1] ) ) << "\n";
 #endif
-        v0 = integrate( elements(mesh), gradv( u )*vec(constant(1.0),constant(0.)) ).evaluate()( 0, 0 );
+        v0 = integrate( elements( mesh ), gradv( u )*vec( constant( 1.0 ),constant( 0. ) ) ).evaluate()( 0, 0 );
         std::cout << "int( dx(Px()) )=" << v0 << " (should be pi)\n";
 #if defined(USE_BOOST_TEST)
-        BOOST_CHECK_SMALL( v0-pi, math::pow(meshSize,2*Order) );
+        BOOST_CHECK_SMALL( v0-pi, math::pow( meshSize,2*Order ) );
 #else
-        FEELPP_ASSERT( math::abs( v0-pi) < math::pow(meshSize,2*Order) )( v0 )( math::abs( v0-pi) )( math::pow(meshSize,2*Order) ).warn ( "v0 != pi" );
+        FEELPP_ASSERT( math::abs( v0-pi ) < math::pow( meshSize,2*Order ) )( v0 )( math::abs( v0-pi ) )( math::pow( meshSize,2*Order ) ).warn ( "v0 != pi" );
 #endif /* USE_BOOST_TEST */
 
 
@@ -465,38 +465,38 @@ struct test_integration_sin
         using namespace Feel;
         using namespace Feel::vf;
         double meshSize = vm["hsize"].template as<double>();
-        GeomapStrategyType geomap = (GeomapStrategyType)vm["geomap"].template as<int>();
+        GeomapStrategyType geomap = ( GeomapStrategyType )vm["geomap"].template as<int>();
         int straighten = vm["straighten"].template as<int>();
         typedef typename imesh<value_type,Dim,Order>::type mesh_type;
 
         //typename imesh<value_type,Order>::ptrtype mesh( createSin<value_type,Order>( meshSize ) );
         auto mesh = createGMSHMesh( _mesh=new mesh_type,
-                                    _desc=domain( _name=(boost::format( "ellipsoid-%1%-%2%-%3%" ) % Dim % Order % straighten ).str() ,
-                                                  _usenames=true,
-                                                  _shape="ellipsoid",
-                                                  _xmin=-1,_xmax=1,
-                                                  _ymin=-1,_ymax=1,
-                                                  _zmin=-1,_zmax=1,
-                                                  _dim=Dim,
-                                                  _order=Order,
-                                                  _h=meshSize,
-                                                  _straighten=straighten  ));
+                                    _desc=domain( _name=( boost::format( "ellipsoid-%1%-%2%-%3%" ) % Dim % Order % straighten ).str() ,
+                                            _usenames=true,
+                                            _shape="ellipsoid",
+                                            _xmin=-1,_xmax=1,
+                                            _ymin=-1,_ymax=1,
+                                            _zmin=-1,_zmax=1,
+                                            _dim=Dim,
+                                            _order=Order,
+                                            _h=meshSize,
+                                            _straighten=straighten  ) );
 
         typedef fusion::vector<Lagrange<1, Scalar> > basis_type;
         typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
-        boost::shared_ptr<space_type> Xh( new space_type(mesh) );
+        boost::shared_ptr<space_type> Xh( new space_type( mesh ) );
         typename space_type::element_type u( Xh );
 
         // int ([-1,1],[-1,x]) 1 dx
-        u = vf::project( Xh, elements(mesh), constant(1.0) );
-        double v3 = integrate( _range=elements(mesh), _expr=cst(1.0), _quad=_Q<15>(), _geomap=geomap  ).evaluate()( 0, 0 );
-        double v0 = integrate( _range=elements(mesh), _expr=idv( u ), _quad=_Q<15>(), _geomap=geomap ).evaluate()( 0, 0 );
-        double v2 = integrate( _range=boundaryfaces(mesh), _expr=idv( u ), _quad=_Q<15>(), _geomap=geomap  ).evaluate()( 0, 0 );
+        u = vf::project( Xh, elements( mesh ), constant( 1.0 ) );
+        double v3 = integrate( _range=elements( mesh ), _expr=cst( 1.0 ), _quad=_Q<15>(), _geomap=geomap  ).evaluate()( 0, 0 );
+        double v0 = integrate( _range=elements( mesh ), _expr=idv( u ), _quad=_Q<15>(), _geomap=geomap ).evaluate()( 0, 0 );
+        double v2 = integrate( _range=boundaryfaces( mesh ), _expr=idv( u ), _quad=_Q<15>(), _geomap=geomap  ).evaluate()( 0, 0 );
         //double v0 = integrate( elements(mesh), idv( u ) ).evaluate()( 0, 0 );
         std::cout << "int( 1 )=" << v3 << "  (=pi) error= " << math::abs( v3 - M_PI ) << std::endl;
         std::cout << "int( u=1 )=" << v0 << "  (=pi) error= " << math::abs( v0 - M_PI ) << std::endl;
         std::cout << "int(boundary, 1 )=" << v2 << "  (=2*pi) error= " << math::abs( v2 - 2*M_PI ) << std::endl;
-        double v1 = integrate( _range=boundaryfaces(mesh), _expr=trans(vec(cst(1.),cst(1.)))*N(), _quad=_Q<(Order-1)*(Order-1)>()  ).evaluate()( 0, 0 );
+        double v1 = integrate( _range=boundaryfaces( mesh ), _expr=trans( vec( cst( 1. ),cst( 1. ) ) )*N(), _quad=_Q<( Order-1 )*( Order-1 )>()  ).evaluate()( 0, 0 );
         std::cout << "int( 1 .N )=" << v1 << "  (=pi) error= " << math::abs( v1 ) << std::endl;
         BOOST_CHECK_SMALL( v1, 1e-12 );
         //BOOST_CHECK_SMALL( math::abs( v0 - M_PI ), 3*exp(-4*Order));
@@ -508,13 +508,13 @@ inline
 Feel::po::options_description
 makeOptions()
 {
-    Feel::po::options_description integrationoptions("Test Integration options");
+    Feel::po::options_description integrationoptions( "Test Integration options" );
     integrationoptions.add_options()
-        ("hsize", Feel::po::value<double>()->default_value( 0.3 ), "h value")
-        ("order", Feel::po::value<int>()->default_value( 1 ), "geometry order ")
-        ("straighten", Feel::po::value<int>()->default_value( 0 ), "straighten mesh ")
-        ("geomap", Feel::po::value<int>()->default_value( 2 ), "high order integration (0=opt, 1=p1, 2=ho ")
-        ;
+    ( "hsize", Feel::po::value<double>()->default_value( 0.3 ), "h value" )
+    ( "order", Feel::po::value<int>()->default_value( 1 ), "geometry order " )
+    ( "straighten", Feel::po::value<int>()->default_value( 0 ), "straighten mesh " )
+    ( "geomap", Feel::po::value<int>()->default_value( 2 ), "high order integration (0=opt, 1=p1, 2=ho " )
+    ;
     return integrationoptions.add( Feel::feel_options() );
 }
 
@@ -524,12 +524,12 @@ makeAbout()
 {
     Feel::AboutData about( "test_integration_ho" ,
                            "test_integration_ho" ,
-                            "0.1",
+                           "0.1",
                            "integration tests",
                            Feel::AboutData::License_GPL,
-                           "Copyright (C) 2006,2007 Université Joseph Fourier (Grenoble I)");
+                           "Copyright (C) 2006,2007 Université Joseph Fourier (Grenoble I)" );
 
-    about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
     return about;
 
 }
@@ -547,7 +547,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_integration_ho, T, order_types )
     Feel::Application mpi( boost::unit_test::framework::master_test_suite().argc,
                            boost::unit_test::framework::master_test_suite().argv,
                            makeAbout(), makeOptions() );
-    Feel::Assert::setLog( "test_integration_ho.assert");
+    Feel::Assert::setLog( "test_integration_ho.assert" );
     std::cout << "Order=" << T::value << "/5,"
               << " hsize=" << mpi.vm()["hsize"].as<double>() << ","
               << " straighten=" << mpi.vm()["straighten"].as<int>() << ","
@@ -564,39 +564,47 @@ int
 main( int argc, char** argv )
 {
     Feel::Application mpi( argc, argv, makeAbout(), makeOptions() );
-    Feel::Assert::setLog( "test_integration.assert");
+    Feel::Assert::setLog( "test_integration.assert" );
 
     std::cout << "Order = " << mpi.vm()["order"].as<int>() << " / " << FEELPP_MESH_MAX_ORDER << "\n";
+
     if ( mpi.vm()["order"].as<int>() == 1 )
-        {
-            test_integration_sin<2,1,double> t1( mpi.vm()["hsize"].as<double>() ); t1();
-        }
+    {
+        test_integration_sin<2,1,double> t1( mpi.vm()["hsize"].as<double>() );
+        t1();
+    }
 
     else if ( mpi.vm()["order"].as<int>() == 2 )
-        {
+    {
 #if BOOST_PP_GREATER_EQUAL(FEELPP_MESH_MAX_ORDER, 2)
-            test_integration_sin<2,2,double> t2( mpi.vm()["hsize"].as<double>() ); t2();
+        test_integration_sin<2,2,double> t2( mpi.vm()["hsize"].as<double>() );
+        t2();
 #endif
-        }
+    }
 
     else if ( mpi.vm()["order"].as<int>() == 3 )
-        {
+    {
 #if BOOST_PP_GREATER_EQUAL(FEELPP_MESH_MAX_ORDER, 3)
-            test_integration_sin<2,3,double> t2( mpi.vm()["hsize"].as<double>() ); t2();
+        test_integration_sin<2,3,double> t2( mpi.vm()["hsize"].as<double>() );
+        t2();
 #endif
-        }
+    }
+
     else if ( mpi.vm()["order"].as<int>() == 4 )
-        {
+    {
 #if BOOST_PP_GREATER_EQUAL(FEELPP_MESH_MAX_ORDER, 4)
-            test_integration_sin<2,4,double> t2( mpi.vm()["hsize"].as<double>() ); t2();
+        test_integration_sin<2,4,double> t2( mpi.vm()["hsize"].as<double>() );
+        t2();
 #endif
-        }
+    }
+
     else if ( mpi.vm()["order"].as<int>() == 5 )
-        {
+    {
 #if BOOST_PP_GREATER_EQUAL(FEELPP_MESH_MAX_ORDER, 5)
-            test_integration_sin<2,5,double> t2( mpi.vm()["hsize"].as<double>() ); t2();
+        test_integration_sin<2,5,double> t2( mpi.vm()["hsize"].as<double>() );
+        t2();
 #endif
-        }
+    }
 
 }
 #endif // USE_BOOST_TEST

@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -54,7 +54,7 @@ public:
 
     typedef typename test_element_type::return_value_type return_value_type;
     typedef typename strongest_numeric_type<typename test_element_type::value_type,
-                                            typename trial_element_type::value_type>::type value_type;
+            typename trial_element_type::value_type>::type value_type;
 
     typedef ublas::matrix<value_type> matrix_type;
 
@@ -63,30 +63,42 @@ public:
         :
         _M_v ( v ),
         _M_u ( u ),
-        _M_exact_mass(_M_v.functionSpace()->basis()->coeff())
-        {
-            Debug( 5051 ) << "[" BOOST_PP_STRINGIZE(OpMass) "] default constructorn";
+        _M_exact_mass( _M_v.functionSpace()->basis()->coeff() )
+    {
+        Debug( 5051 ) << "[" BOOST_PP_STRINGIZE( OpMass ) "] default constructorn";
 
-            _M_exact_mass = ublas::prod( return_value_type::toMatrix( _M_v.functionSpace()->basis()->coeff() ),
-                                         ublas::trans( return_value_type::toMatrix( _M_v.functionSpace()->basis()->coeff() ) ) );
+        _M_exact_mass = ublas::prod( return_value_type::toMatrix( _M_v.functionSpace()->basis()->coeff() ),
+                                     ublas::trans( return_value_type::toMatrix( _M_v.functionSpace()->basis()->coeff() ) ) );
 
-        }
+    }
     OpMass( OpMass const& op )
         :
         _M_v ( op._M_v ),
         _M_u ( op._M_u ),
         _M_exact_mass( op._M_exact_mass )
         //_M_quad_mass() TO BE USED IF QUADRATURE IS NEEDED (transformation order >= 2)
-        {
-            Debug( 5051 ) << "[" BOOST_PP_STRINGIZE(OpMass) "] copy constructorn";
+    {
+        Debug( 5051 ) << "[" BOOST_PP_STRINGIZE( OpMass ) "] copy constructorn";
 
-        }
+    }
 
-    test_element_type const& testFunction() const { return _M_v; }
-    trial_element_type const& trialFunction() const { return _M_u; }
+    test_element_type const& testFunction() const
+    {
+        return _M_v;
+    }
+    trial_element_type const& trialFunction() const
+    {
+        return _M_u;
+    }
 
-    value_type exactMass( uint16_type i, uint16_type j ) const { return _M_exact_mass( i, j); }
-    matrix_type exactMass() const { return _M_exact_mass; }
+    value_type exactMass( uint16_type i, uint16_type j ) const
+    {
+        return _M_exact_mass( i, j );
+    }
+    matrix_type exactMass() const
+    {
+        return _M_exact_mass;
+    }
 
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t>
     struct tensor
@@ -152,7 +164,7 @@ inline Expr< OpMass< Element1, Element2> >
 mass( Element1 const& el1, Element2 const& el2 )
 {
     typedef OpMass< Element1, Element2> expr_t;
-    return Expr< expr_t >(  expr_t(el1, el2) );
+    return Expr< expr_t >(  expr_t( el1, el2 ) );
 }
 
 } // vf

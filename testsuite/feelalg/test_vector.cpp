@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -50,15 +50,15 @@ Feel::Environment env( boost::unit_test::framework::master_test_suite().argc,
 BOOST_AUTO_TEST_CASE( test1 )
 {
     using namespace Feel;
-    VectorUblas<double> v1(100), v2(100), v3(100);
-    v1.setConstant(1);
-    v2.setConstant(2);
+    VectorUblas<double> v1( 100 ), v2( 100 ), v3( 100 );
+    v1.setConstant( 1 );
+    v2.setConstant( 2 );
     BOOST_CHECK_CLOSE( v1.sqrt().sum(), v1.size(), 1e-10 );
-    BOOST_CHECK_CLOSE( v2.sqrt().sum(), sqrt(2)*v1.size(), 1e-10 );
-    BOOST_CHECK_CLOSE( v2.pow(2).sqrt().sum(), 2*v1.size(), 1e-10 );
+    BOOST_CHECK_CLOSE( v2.sqrt().sum(), sqrt( 2 )*v1.size(), 1e-10 );
+    BOOST_CHECK_CLOSE( v2.pow( 2 ).sqrt().sum(), 2*v1.size(), 1e-10 );
     v3.setZero();
     v3 = element_product( v1, v2 );
-    BOOST_CHECK_CLOSE( v3.sqrt().sum(), sqrt(2*1)*v1.size(), 1e-10 );
+    BOOST_CHECK_CLOSE( v3.sqrt().sum(), sqrt( 2*1 )*v1.size(), 1e-10 );
     BOOST_CHECK_CLOSE( v3.sum(), 2*1*v1.size(), 1e-10 );
 
 

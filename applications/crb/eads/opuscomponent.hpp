@@ -71,6 +71,7 @@ public:
         M_Q = vm[ostr.str()+".Q"].as<double>();
         M_h = vm[ostr.str()+".h"].as<double>();
         M_e = vm[ostr.str()+".e"].as<double>();
+
         if ( vm.find( ostr.str()+".flow-rate" ) != vm.end() )
             M_flow_rate = vm[ostr.str()+".flow-rate"].as<double>();
     }
@@ -103,50 +104,90 @@ public:
     OpusComponent& operator=( OpusComponent const& oc )
     {
         if ( this != &oc )
-            {
-                M_name = oc.M_name;
-                M_k = oc.M_k;
-                M_rhoC = oc.M_rhoC;
-                M_Q = oc.M_Q;
-                M_h = oc.M_h;
-                M_e = oc.M_e;
-                M_flow_rate = oc.M_flow_rate;
-            }
+        {
+            M_name = oc.M_name;
+            M_k = oc.M_k;
+            M_rhoC = oc.M_rhoC;
+            M_Q = oc.M_Q;
+            M_h = oc.M_h;
+            M_e = oc.M_e;
+            M_flow_rate = oc.M_flow_rate;
+        }
+
         return *this;
     }
     //! \return name of the component
-    std::string name() const { return M_name; }
+    std::string name() const
+    {
+        return M_name;
+    }
 
     //! \return conductivity of the component
-    double k() const { return M_k; }
+    double k() const
+    {
+        return M_k;
+    }
     //! set the conductivity of the component
-    void setK( double k ) { M_k = k; }
+    void setK( double k )
+    {
+        M_k = k;
+    }
 
     //! \return heat capacity of the component
-    double rhoC() const { return M_rhoC; }
+    double rhoC() const
+    {
+        return M_rhoC;
+    }
     //! set heat capacity of the component
-    void setRhoC( double r )  { M_rhoC = r; }
+    void setRhoC( double r )
+    {
+        M_rhoC = r;
+    }
 
     //! \return heat dissipated by the component
-    double Q() const { return M_Q; }
+    double Q() const
+    {
+        return M_Q;
+    }
     //! set heat dissipated by the component
-    void setQ( double q ) { M_Q = q; }
+    void setQ( double q )
+    {
+        M_Q = q;
+    }
 
     //! \return height of the component
-    double h() const { return M_h; }
+    double h() const
+    {
+        return M_h;
+    }
     //! set height of the component
-    void setH( double h )  {  M_h=h; }
+    void setH( double h )
+    {
+        M_h=h;
+    }
 
     //! \return width of the component
-    double e() const { return M_e; }
+    double e() const
+    {
+        return M_e;
+    }
     //! set width of the component
-    void setE( double e) { M_e = e; }
+    void setE( double e )
+    {
+        M_e = e;
+    }
 
     //! \return the flow rate
-    double flowRate() const { return M_flow_rate; }
+    double flowRate() const
+    {
+        return M_flow_rate;
+    }
 
     //! set the flow rate
-    void setFlowRate( double f ) { M_flow_rate = f; }
+    void setFlowRate( double f )
+    {
+        M_flow_rate = f;
+    }
 
     // load the property tree in the structure
     //void load( const boost::property_tree::ptree& pt );

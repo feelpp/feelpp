@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -98,29 +98,33 @@ struct UpdateFace
     void operator()( ElementType& element  ) const
     {
         if ( M_face.ad_first() == element.id() )
-            {
-                element.setFace( M_face.pos_first(), M_face );
-                if ( M_face.isConnectedTo1() )
-                    element.setNeighbor( M_face.pos_first(), M_face.ad_second(), M_face.proc_second() );
-                FEELPP_ASSERT( element.facePtr( M_face.pos_first() ) )
-                    ( M_face.pos_first() )
-                    ( M_face.ad_first() ).error( "invalid face" );
-            }
+        {
+            element.setFace( M_face.pos_first(), M_face );
+
+            if ( M_face.isConnectedTo1() )
+                element.setNeighbor( M_face.pos_first(), M_face.ad_second(), M_face.proc_second() );
+
+            FEELPP_ASSERT( element.facePtr( M_face.pos_first() ) )
+            ( M_face.pos_first() )
+            ( M_face.ad_first() ).error( "invalid face" );
+        }
+
         else if ( M_face.ad_second() == element.id() )
-            {
-                element.setFace( M_face.pos_second(), M_face );
-                element.setNeighbor( M_face.pos_second(), M_face.ad_first(), M_face.proc_first() );
-                FEELPP_ASSERT( element.facePtr( M_face.pos_second() ) )
-                    ( M_face.pos_second() )
-                    ( M_face.ad_second() ).error( "invalid face" );
-            }
+        {
+            element.setFace( M_face.pos_second(), M_face );
+            element.setNeighbor( M_face.pos_second(), M_face.ad_first(), M_face.proc_first() );
+            FEELPP_ASSERT( element.facePtr( M_face.pos_second() ) )
+            ( M_face.pos_second() )
+            ( M_face.ad_second() ).error( "invalid face" );
+        }
+
         else
-            {
-                FEELPP_ASSERT( 0 )
-                    ( M_face.ad_first() )( M_face.pos_first() )
-                    ( M_face.ad_second() )( M_face.pos_second() )
-                    ( element.id() ).error( "invalid face " );
-            }
+        {
+            FEELPP_ASSERT( 0 )
+            ( M_face.ad_first() )( M_face.pos_first() )
+            ( M_face.ad_second() )( M_face.pos_second() )
+            ( element.id() ).error( "invalid face " );
+        }
     }
 private:
     FaceType const& M_face;
@@ -174,8 +178,9 @@ struct UpdateFaceConnection1
     {
         //element.setOnBoundary( false );
         element.setConnection1( M_conn );
+
         if ( ( element.element0().marker() == element.element1().marker() ) &&
-             element.marker().value() == 0 )
+                element.marker().value() == 0 )
             element.setMarker( element.element0().marker().value() );
     }
 private:
@@ -239,7 +244,7 @@ private:
 
 struct update_id_in_partition_type
 {
-    update_id_in_partition_type(uint16_type pid, size_type id )
+    update_id_in_partition_type( uint16_type pid, size_type id )
         :
         _M_pid( pid ),
         _M_id( id )
@@ -249,9 +254,9 @@ struct update_id_in_partition_type
     {
         element.setIdInPartition( _M_pid, _M_id );
     }
-    private:
-        uint16_type _M_pid;
-        size_type _M_id;
+private:
+    uint16_type _M_pid;
+    size_type _M_id;
 };
 
 } // detail

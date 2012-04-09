@@ -98,9 +98,15 @@ public:
         return __expression.hessian( __i, __j );
     }
 
-    bool deps( int i ) const { return __expression.deps( i ); }
+    bool deps( int i ) const
+    {
+        return __expression.deps( i );
+    }
 
-    operator bool() const { return __expression.value() != value_type(0); }
+    operator bool() const
+    {
+        return __expression.value() != value_type( 0 );
+    }
 
     //@}
 
@@ -147,13 +153,28 @@ protected:
     const T constant_;
 
 public:
-    explicit ADCst(const T& value) : constant_(value) {;}
+    explicit ADCst( const T& value ) : constant_( value )
+    {
+        ;
+    }
 
-    value_type value()     const { return constant_;}
-    value_type grad( int __i ) const { return 0;}
-    value_type hessian( int __i, int __j ) const { return 0;}
+    value_type value()     const
+    {
+        return constant_;
+    }
+    value_type grad( int __i ) const
+    {
+        return 0;
+    }
+    value_type hessian( int __i, int __j ) const
+    {
+        return 0;
+    }
 
-    bool deps( int ) const { return false; }
+    bool deps( int ) const
+    {
+        return false;
+    }
 
 };
 
@@ -172,21 +193,36 @@ protected:
     const T& expr_;
 
 public:
-    ADUnaryPlus(const T& value) : expr_(value) {;}
+    ADUnaryPlus( const T& value ) : expr_( value )
+    {
+        ;
+    }
 
-    value_type value()     const { return expr_.value();}
-    value_type grad( int __i ) const { return expr_.grad(__i);}
-    value_type hessian( int __i, int __j ) const { return expr_.hessian( __i, __j );}
+    value_type value()     const
+    {
+        return expr_.value();
+    }
+    value_type grad( int __i ) const
+    {
+        return expr_.grad( __i );
+    }
+    value_type hessian( int __i, int __j ) const
+    {
+        return expr_.hessian( __i, __j );
+    }
 
-    bool deps( int i ) const { return expr_.deps( i ); }
+    bool deps( int i ) const
+    {
+        return expr_.deps( i );
+    }
 };
 template <class T> inline
 ADExpr< ADUnaryPlus< ADExpr<T> > >
-operator + (const ADExpr<T>& expr)
+operator + ( const ADExpr<T>& expr )
 {
     typedef ADUnaryPlus< ADExpr<T> > expr_t;
 
-    return ADExpr< expr_t >( expr_t(expr) );
+    return ADExpr< expr_t >( expr_t( expr ) );
 }
 
 
@@ -203,24 +239,39 @@ protected:
     const T& expr_;
 
 public:
-    ADUnaryMinus(const T& value) : expr_(value) {;}
+    ADUnaryMinus( const T& value ) : expr_( value )
+    {
+        ;
+    }
 
-    value_type value()     const { return - expr_.value();}
-    value_type grad( int __i ) const { return - expr_.grad( __i );}
-    value_type hessian( int __i, int __j ) const { return - expr_.hessian( __i, __j );}
+    value_type value()     const
+    {
+        return - expr_.value();
+    }
+    value_type grad( int __i ) const
+    {
+        return - expr_.grad( __i );
+    }
+    value_type hessian( int __i, int __j ) const
+    {
+        return - expr_.hessian( __i, __j );
+    }
 
-    bool deps( int i ) const { return expr_.deps( i ); }
+    bool deps( int i ) const
+    {
+        return expr_.deps( i );
+    }
 };
 
 
 
 template <class T> inline
 ADExpr< ADUnaryMinus< ADExpr<T> > >
-operator - (const ADExpr<T>& expr)
+operator - ( const ADExpr<T>& expr )
 {
     typedef ADUnaryMinus< ADExpr<T> > expr_t;
 
-    return ADExpr< expr_t >( expr_t(expr) );
+    return ADExpr< expr_t >( expr_t( expr ) );
 }
 
 }

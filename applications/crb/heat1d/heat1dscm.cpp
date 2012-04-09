@@ -57,9 +57,9 @@ makeAbout()
                            "0.1",
                            "1D/2D OPUS/EADS Benchmark",
                            Feel::AboutData::License_GPL,
-                           "Copyright (c) 2010-2011 Université de Grenoble 1 (Joseph Fourier)");
+                           "Copyright (c) 2010-2011 Université de Grenoble 1 (Joseph Fourier)" );
 
-    about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
     return about;
 
 }
@@ -89,12 +89,13 @@ public:
         super( argc, argv, ad, od )
     {
         if ( this->vm().count( "help" ) )
-            {
-                std::cout << this->optionsDescription() << "\n";
-                return;
-            }
+        {
+            std::cout << this->optionsDescription() << "\n";
+            return;
+        }
 
 #if 0
+
         if ( this->vm()["steady"].as<bool>() )
             this->changeRepository( boost::format( "%1%/P%2%P%3%P%4%/D_%5%/h_%6%/stab_%7%/steady" )
                                     % this->about().appName()
@@ -102,7 +103,8 @@ public:
                                     % this->vm()["fluid-flow-rate"].as<double>()
                                     % this->vm()["hsize"].as<double>()
                                     % this->vm()["stab"].as<bool>()
-                                    );
+                                  );
+
         else
             this->changeRepository( boost::format( "%1%/P%2%P%3%P%4%/D_%5%/h_%6%/stab_%7%/to_%8%_dt_%9%" )
                                     % this->about().appName()
@@ -112,7 +114,8 @@ public:
                                     % this->vm()["stab"].as<bool>()
                                     % this->vm()["bdf.time-order"].as<int>()
                                     % this->vm()["bdf.time-step"].as<double>()
-                                    );
+                                  );
+
 #endif
         M_opusmodel = opusmodel_ptrtype( new opusmodel_type( this->vm() ) );
         M_scm = scm_ptrtype( new scm_type( this->about().appName(), this->vm() ) );
@@ -123,85 +126,94 @@ public:
     }
 
     void run( std::ofstream& os, scm_type::parameter_type const& mu, int K )
-        {
-            std::cout << "------------------------------------------------------------\n";
-            double lb,lbti;
-            boost::tie( lb, lbti ) = M_scm->lb( mu, K );
-            double ub,ubti;
-            boost::tie( ub, ubti ) = M_scm->ub( mu, K );
-            double ex, exti;
-            boost::tie( ex, exti ) = M_scm->ex( mu );
-            std::cout << "lb=" << lb << " ub=" << ub << " ex=" << ex << "\n";
-            std::cout << (ex-lb)/(ub-lb) << "\n";
-            os << K << " "
-               << std::setprecision( 16) << lb << " "
-               << std::setprecision( 3 ) << lbti << " "
-               << std::setprecision( 16) << ub << " "
-               << std::setprecision( 3 ) << ubti << " "
-               << std::setprecision( 16) << ex << " "
-               << std::setprecision( 16) << (ub-lb)/(ub) << " "
-               << std::setprecision( 16) << (ex-lb)/(ex) << " "
-               << std::setprecision( 16) << (ub-ex)/(ex) << " "
-               << "\n";
-            std::cout << "------------------------------------------------------------\n";
-        }
+    {
+        std::cout << "------------------------------------------------------------\n";
+        double lb,lbti;
+        boost::tie( lb, lbti ) = M_scm->lb( mu, K );
+        double ub,ubti;
+        boost::tie( ub, ubti ) = M_scm->ub( mu, K );
+        double ex, exti;
+        boost::tie( ex, exti ) = M_scm->ex( mu );
+        std::cout << "lb=" << lb << " ub=" << ub << " ex=" << ex << "\n";
+        std::cout << ( ex-lb )/( ub-lb ) << "\n";
+        os << K << " "
+           << std::setprecision( 16 ) << lb << " "
+           << std::setprecision( 3 ) << lbti << " "
+           << std::setprecision( 16 ) << ub << " "
+           << std::setprecision( 3 ) << ubti << " "
+           << std::setprecision( 16 ) << ex << " "
+           << std::setprecision( 16 ) << ( ub-lb )/( ub ) << " "
+           << std::setprecision( 16 ) << ( ex-lb )/( ex ) << " "
+           << std::setprecision( 16 ) << ( ub-ex )/( ex ) << " "
+           << "\n";
+        std::cout << "------------------------------------------------------------\n";
+    }
     void run()
-        {
+    {
 
 #if 0
-            if ( this->vm()["scm-generate"].as<bool>() )
-                M_scm->offline();
 
-            scm_type::bounds_type bounds;
-            bounds =  M_scm->online();
+        if ( this->vm()["scm-generate"].as<bool>() )
+            M_scm->offline();
+
+        scm_type::bounds_type bounds;
+        bounds =  M_scm->online();
 #else
-            M_opusmodel->init();
-            std::vector<boost::tuple<double,double,double> > ckconv = M_scm->offline();
+        M_opusmodel->init();
+        std::vector<boost::tuple<double,double,double> > ckconv = M_scm->offline();
 
-            std::ofstream osck( (boost::format( "ckconv_K_%1%_Mp_%2%_Ma_%3%_Xi_%4%_L_%5%.dat" )
-                                 % M_scm->KMax()
-                                 % M_scm->Mplus()
-                                 % M_scm->Malpha()
-                                 % this->vm()["crb-scm-sampling-size"].as<int>()
-                                 % this->vm()["crb-scm-level"].as<int>() ).str().c_str() );
-            for( int k = 0; k < ckconv.size(); ++k )
-            {
-                osck << k << "  "  << std::setprecision( 16) << ckconv[k] << "\n";
-            }
+        std::ofstream osck( ( boost::format( "ckconv_K_%1%_Mp_%2%_Ma_%3%_Xi_%4%_L_%5%.dat" )
+                              % M_scm->KMax()
+                              % M_scm->Mplus()
+                              % M_scm->Malpha()
+                              % this->vm()["crb-scm-sampling-size"].as<int>()
+                              % this->vm()["crb-scm-level"].as<int>() ).str().c_str() );
 
-            scm_type::parameter_type mu( M_scm->Dmu() );
-            std::ofstream ofs( ( boost::format( "eval_K_%1%_Mp_%2%_Ma_%3%_Xi_%4%_L_%5%.dat" )
-                                 % M_scm->KMax()
-                                 % M_scm->Mplus()
-                                 % M_scm->Malpha()
-                                 % this->vm()["crb-scm-sampling-size"].as<int>()
-                                 % this->vm()["crb-scm-level"].as<int>() ).str().c_str() );
-                               ;
-#if 0
-            mu << 0.4, 10, 1, 1; run(ofs, mu, M_scm->KMax() );
-            mu << 0.9, 20, 1, 1; run(ofs, mu, M_scm->KMax() );
-            mu << 50, 20, 1, 1; run(ofs, mu, M_scm->KMax() );
-            mu << 1, 0.2, 1, 1; run(ofs, mu, M_scm->KMax() );
-            mu << 0.2, 3, 1, 1; run(ofs, mu, M_scm->KMax() );
-#endif
-            mu << 14.65866591112086, 27.07274082090771, 1, 1;run(ofs, mu, M_scm->KMax() );
-
-            std::ofstream ofs2( ( boost::format( "conv_K_%1%_Mp_%2%_Ma_%3%_Xi_%4%_L_%5%.dat" )
-                                  % M_scm->KMax()
-                                  % M_scm->Mplus()
-                                  % M_scm->Malpha()
-                                  % this->vm()["crb-scm-sampling-size"].as<int>()
-                                  % this->vm()["crb-scm-level"].as<int>() ).str().c_str() );
-            mu << 14.65866591112086, 27.07274082090771, 1, 1;
-            //mu << 0.2, 0.2, 1, 1;
-            for( int k = 1;k <= M_scm->KMax(); ++k )
-            {
-                run(ofs2, mu, k );
-            }
-
-#endif
-
+        for ( int k = 0; k < ckconv.size(); ++k )
+        {
+            osck << k << "  "  << std::setprecision( 16 ) << ckconv[k] << "\n";
         }
+
+        scm_type::parameter_type mu( M_scm->Dmu() );
+        std::ofstream ofs( ( boost::format( "eval_K_%1%_Mp_%2%_Ma_%3%_Xi_%4%_L_%5%.dat" )
+                             % M_scm->KMax()
+                             % M_scm->Mplus()
+                             % M_scm->Malpha()
+                             % this->vm()["crb-scm-sampling-size"].as<int>()
+                             % this->vm()["crb-scm-level"].as<int>() ).str().c_str() );
+        ;
+#if 0
+        mu << 0.4, 10, 1, 1;
+        run( ofs, mu, M_scm->KMax() );
+        mu << 0.9, 20, 1, 1;
+        run( ofs, mu, M_scm->KMax() );
+        mu << 50, 20, 1, 1;
+        run( ofs, mu, M_scm->KMax() );
+        mu << 1, 0.2, 1, 1;
+        run( ofs, mu, M_scm->KMax() );
+        mu << 0.2, 3, 1, 1;
+        run( ofs, mu, M_scm->KMax() );
+#endif
+        mu << 14.65866591112086, 27.07274082090771, 1, 1;
+        run( ofs, mu, M_scm->KMax() );
+
+        std::ofstream ofs2( ( boost::format( "conv_K_%1%_Mp_%2%_Ma_%3%_Xi_%4%_L_%5%.dat" )
+                              % M_scm->KMax()
+                              % M_scm->Mplus()
+                              % M_scm->Malpha()
+                              % this->vm()["crb-scm-sampling-size"].as<int>()
+                              % this->vm()["crb-scm-level"].as<int>() ).str().c_str() );
+        mu << 14.65866591112086, 27.07274082090771, 1, 1;
+
+        //mu << 0.2, 0.2, 1, 1;
+        for ( int k = 1; k <= M_scm->KMax(); ++k )
+        {
+            run( ofs2, mu, k );
+        }
+
+#endif
+
+    }
 
 private:
 

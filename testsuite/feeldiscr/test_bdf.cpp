@@ -39,9 +39,9 @@ makeAbout()
                            "0.1",
                            "Bdf test",
                            Feel::AboutData::License_LGPL,
-                           "Copyright (c) 2008 Universite Joseph Fourier");
+                           "Copyright (c) 2008 Universite Joseph Fourier" );
 
-    about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
     return about;
 
 }
@@ -64,13 +64,13 @@ public:
     {}
     void run()
     {
-        for( bdf.start(); bdf.isFinished() == false; bdf.next() )
-            {
-                bdf.shiftRight();
-                BdfBaseMetadata meta( bdf );
-                meta.save();
-                meta.load();
-            }
+        for ( bdf.start(); bdf.isFinished() == false; bdf.next() )
+        {
+            bdf.shiftRight();
+            BdfBaseMetadata meta( bdf );
+            meta.save();
+            meta.load();
+        }
 
     }
 private:

@@ -53,44 +53,47 @@ public :
 
     template <typename VectorType>
     self_type
-    operator<<(VectorType const& m) const
+    operator<<( VectorType const& m ) const
     {
         //typedef typename mpl::or_<is_shared_ptr<VectorType>, boost::is_pointer<VectorType> >::type is_ptr_or_shared_ptr;
-        self_type newBlock(*this);
+        self_type newBlock( *this );
         typedef is_shared_ptr<VectorType> is_shared_ptr;
-        newBlock.push_back(m,is_shared_ptr());
+        newBlock.push_back( m,is_shared_ptr() );
         return newBlock;
     }
 
     template <typename VectorType>
     void
-    push_back(VectorType const& m, mpl::bool_<true> )
+    push_back( VectorType const& m, mpl::bool_<true> )
     {
-        super_type::push_back(m);
+        super_type::push_back( m );
     }
 
 #if 0 //Don't work
     template <typename VectorType>
-    void push_back(VectorType const& m, mpl::bool_<false> )
+    void push_back( VectorType const& m, mpl::bool_<false> )
     {
         //self_type::operator<<(m.shared_from_this());
         auto m2=m.shared_from_this();
-        self_type::operator<<(m2);
+        self_type::operator<<( m2 );
     }
 #endif
 
-    void localize(vector_ptrtype const& vb)
+    void localize( vector_ptrtype const& vb )
     {
         size_type _start_i=0;
-        for (uint16_type i=0;i<this->nRow();++i)
+
+        for ( uint16_type i=0; i<this->nRow(); ++i )
+        {
+            size_type nBlockRow = this->operator()( i,0 )->size();
+
+            for ( size_type k=0; k<nBlockRow; ++k )
             {
-                size_type nBlockRow = this->operator()(i,0)->size();
-                for (size_type k=0;k<nBlockRow;++k)
-                    {
-                        this->operator()(i,0)->set(k, vb->operator()(_start_i+k) );
-                    }
-                _start_i += nBlockRow;
+                this->operator()( i,0 )->set( k, vb->operator()( _start_i+k ) );
             }
+
+            _start_i += nBlockRow;
+        }
     }
 
 
@@ -142,7 +145,7 @@ public:
 
     VectorBlockBase( VectorBlockBase const & vb )
         :
-        M_vec(vb.M_vec )
+        M_vec( vb.M_vec )
     {}
 
     ~VectorBlockBase()
@@ -157,9 +160,10 @@ public:
     VectorBlockBase operator=( VectorBlockBase const& vb )
     {
         if ( this != &vb )
-            {
-                M_vec = vb.M_vec;
-            }
+        {
+            M_vec = vb.M_vec;
+        }
+
         return *this;
     }
 
@@ -168,7 +172,10 @@ public:
     /** @name Accessors
      */
     //@{
-    vector_ptrtype getVector() { return M_vec; }
+    vector_ptrtype getVector()
+    {
+        return M_vec;
+    }
     //@}
 
     /** @name  Mutators
@@ -182,7 +189,7 @@ public:
      */
     //@{
 
-    void updateBlockVec(vector_ptrtype const & m, size_type start_i);
+    void updateBlockVec( vector_ptrtype const & m, size_type start_i );
 
     //@}
 
@@ -214,7 +221,7 @@ public:
                   backend_type &backend,
                   bool copy_values=true )
         :
-        super_type(blockVec,backend,copy_values)
+        super_type( blockVec,backend,copy_values )
     {}
 
     VectorBlock( VectorBlock const & vb )
@@ -224,13 +231,13 @@ public:
 
     VectorBlock operator=( VectorBlock const& vb )
     {
-        super_type::operator=(vb);
+        super_type::operator=( vb );
         return *this;
     }
 
     VectorBlock & operator = ( vector_ptrtype const& F )
     {
-        super_type::operator=(F);
+        super_type::operator=( F );
         return *this;
     }
 

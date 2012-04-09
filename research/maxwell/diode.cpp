@@ -40,12 +40,12 @@ using namespace Feel;
 using namespace Feel::vf;
 
 enum RKMethod
-    {
-        EULER_EXPLICIT = 0,
-        EULER_MODIFIED,
-        HEUN,
-        RK4
-    };
+{
+    EULER_EXPLICIT = 0,
+    EULER_MODIFIED,
+    HEUN,
+    RK4
+};
 
 /**
  * This routine returns the list of options using the
@@ -58,22 +58,22 @@ inline
 po::options_description
 makeOptions()
 {
-    po::options_description diodeoptions("Diode options");
+    po::options_description diodeoptions( "Diode options" );
     diodeoptions.add_options()
-        ("verbose", po::value<bool>()->default_value( 1 ), "verbose output")
-        ("geomap", po::value<int>()->default_value( 0 ), "type of geomap")
-        ("hsize", po::value<double>()->default_value( 0.5 ), "mesh size")
-        ("convex", Feel::po::value<std::string>()->default_value( "simplex" ), "shape of the convex used in the mesh (either simplex or hypercube)")
-        ("penaldir", Feel::po::value<double>()->default_value( 20 ), "penalisation parameter for the weak boundary conditions")
-        ("dt", Feel::po::value<double>()->default_value( 0.01 ), "timestep value")
-        ("Tfinal", Feel::po::value<double>()->default_value( 1 ), "final time")
-        ("rkmethod", Feel::po::value<int>()->default_value( 2 ), "rk method, 0=euler, 1=modified euler, 2=heun, 3=rk4")
-        ("theta", Feel::po::value<double>()->default_value( 0.0 ), "angle of propagation")
-        ("metalFlag", Feel::po::value<int>()->default_value( 1 ), "specify the flag of faces with metalic condition")
-        ("fieldFlag", Feel::po::value<int>()->default_value( 2 ), "specify the flag of faces where apply a field")
-        ("initfields", Feel::po::value<int>()->default_value( 1 ), "initialise the fields")
-        ("exportfreq", Feel::po::value<int>()->default_value( 1 ), "results exporting frequency")
-        ;
+    ( "verbose", po::value<bool>()->default_value( 1 ), "verbose output" )
+    ( "geomap", po::value<int>()->default_value( 0 ), "type of geomap" )
+    ( "hsize", po::value<double>()->default_value( 0.5 ), "mesh size" )
+    ( "convex", Feel::po::value<std::string>()->default_value( "simplex" ), "shape of the convex used in the mesh (either simplex or hypercube)" )
+    ( "penaldir", Feel::po::value<double>()->default_value( 20 ), "penalisation parameter for the weak boundary conditions" )
+    ( "dt", Feel::po::value<double>()->default_value( 0.01 ), "timestep value" )
+    ( "Tfinal", Feel::po::value<double>()->default_value( 1 ), "final time" )
+    ( "rkmethod", Feel::po::value<int>()->default_value( 2 ), "rk method, 0=euler, 1=modified euler, 2=heun, 3=rk4" )
+    ( "theta", Feel::po::value<double>()->default_value( 0.0 ), "angle of propagation" )
+    ( "metalFlag", Feel::po::value<int>()->default_value( 1 ), "specify the flag of faces with metalic condition" )
+    ( "fieldFlag", Feel::po::value<int>()->default_value( 2 ), "specify the flag of faces where apply a field" )
+    ( "initfields", Feel::po::value<int>()->default_value( 1 ), "initialise the fields" )
+    ( "exportfreq", Feel::po::value<int>()->default_value( 1 ), "results exporting frequency" )
+    ;
     return diodeoptions.add( Feel::feel_options() ).add( backend_options( "mass" ) );
 }
 
@@ -93,10 +93,10 @@ makeAbout()
                      "0.1",
                      "2D Diode",
                      Feel::AboutData::License_GPL,
-                     "Copyright (c) 2011 Universite Joseph Fourier");
+                     "Copyright (c) 2011 Universite Joseph Fourier" );
 
-    about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
-    about.addAuthor("Philippe Helluy", "developer", "helluy@math.unistra.fr", "");
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    about.addAuthor( "Philippe Helluy", "developer", "helluy@math.unistra.fr", "" );
     return about;
 
 }
@@ -124,7 +124,7 @@ gmsh_ptrtype diodegeo( double h, int Order, std::string const& convex );
  */
 class Diode
     :
-    public Simget
+public Simget
 {
     typedef Simget super;
 public:
@@ -192,7 +192,7 @@ public:
         meshSize( this->vm()["hsize"].as<double>() ),
         timeStep( this->vm()["dt"].as<double>() ),
         Tfinal( this->vm()["Tfinal"].as<double>() ),
-        rkmethod( (RKMethod)this->vm()["rkmethod"].as<int>() ),
+        rkmethod( ( RKMethod )this->vm()["rkmethod"].as<int>() ),
         convex( this->vm()["convex"].as<std::string>() )
     {
     }
@@ -206,25 +206,25 @@ public:
     template<typename BdyExpr>
     void
     FSolve( BdyExpr& wbdy, double dt,
-           element_type const& Ex, element_type const& Ey,element_type const& Bz,
-           element_type& Exstar, element_type& Eystar, element_type& Bzstar );
+            element_type const& Ex, element_type const& Ey,element_type const& Bz,
+            element_type& Exstar, element_type& Eystar, element_type& Bzstar );
 
     template<typename BdyExpr>
     void
-    EulerStep(double& time, double dt, BdyExpr& wbdy,
-              element_type& Ex, element_type& Ey,element_type& Bz);
+    EulerStep( double& time, double dt, BdyExpr& wbdy,
+               element_type& Ex, element_type& Ey,element_type& Bz );
     template<typename BdyExpr>
     void
-    EulerModifiedStep(double& time, double dt, BdyExpr& wbdy,
-                  element_type& Ex, element_type& Ey,element_type& Bz);
+    EulerModifiedStep( double& time, double dt, BdyExpr& wbdy,
+                       element_type& Ex, element_type& Ey,element_type& Bz );
     template<typename BdyExpr>
     void
-    HeunStep(double& time, double dt, BdyExpr& wbdy,
-                  element_type& Ex, element_type& Ey,element_type& Bz);
+    HeunStep( double& time, double dt, BdyExpr& wbdy,
+              element_type& Ex, element_type& Ey,element_type& Bz );
     template<typename BdyExpr>
     void
-    RK4Step(double& time, double dt, BdyExpr& wbdy,
-                  element_type& Ex, element_type& Ey,element_type& Bz);
+    RK4Step( double& time, double dt, BdyExpr& wbdy,
+             element_type& Ex, element_type& Ey,element_type& Bz );
 private:
 
     //! linear algebra backend
@@ -264,20 +264,20 @@ void
 Diode::checkDG( ExExpr expr )
 {
     // check continuity
-    auto ijump  = integrate( internalfaces(mesh), trans(jumpv(expr))*jumpv(expr)  ).evaluate()( 0, 0 );
+    auto ijump  = integrate( internalfaces( mesh ), trans( jumpv( expr ) )*jumpv( expr )  ).evaluate()( 0, 0 );
     std::cout << "continuity 1:" <<  math::sqrt( ijump ) << "\n";
 #if 1
-    auto v = vec(expr,expr,expr);
-    auto vL = vec(leftfacev(expr),leftfacev(expr),leftfacev(expr));
-    auto vR = vec(rightfacev(expr),rightfacev(expr),rightfacev(expr));
-    auto A1 = trans(vec( cst(1.), cst(1.), cst(1.0) ));
-    auto A2 = trans(vec( cst(1.), cst(1.), cst(1.0) ));
-    auto myjump1 = (A1*(vL-vR))*leftfacev(N());
-    auto myjump2 = (A2*(vL-vR))*leftfacev(N());
-    auto ijump1 = integrate( internalfaces(mesh), trans(myjump1)*myjump1  ).evaluate()( 0, 0 );
-    auto ijump2 = integrate( internalfaces(mesh), trans(myjump2)*myjump2  ).evaluate()( 0, 0 );
-    std::cout << "continuity 1:" << math::sqrt(ijump1) << "\n";;
-    std::cout << "continuity 2:" << math::sqrt(ijump2) << "\n";
+    auto v = vec( expr,expr,expr );
+    auto vL = vec( leftfacev( expr ),leftfacev( expr ),leftfacev( expr ) );
+    auto vR = vec( rightfacev( expr ),rightfacev( expr ),rightfacev( expr ) );
+    auto A1 = trans( vec( cst( 1. ), cst( 1. ), cst( 1.0 ) ) );
+    auto A2 = trans( vec( cst( 1. ), cst( 1. ), cst( 1.0 ) ) );
+    auto myjump1 = ( A1*( vL-vR ) )*leftfacev( N() );
+    auto myjump2 = ( A2*( vL-vR ) )*leftfacev( N() );
+    auto ijump1 = integrate( internalfaces( mesh ), trans( myjump1 )*myjump1  ).evaluate()( 0, 0 );
+    auto ijump2 = integrate( internalfaces( mesh ), trans( myjump2 )*myjump2  ).evaluate()( 0, 0 );
+    std::cout << "continuity 1:" << math::sqrt( ijump1 ) << "\n";;
+    std::cout << "continuity 2:" << math::sqrt( ijump2 ) << "\n";
 #endif
 }
 
@@ -297,72 +297,74 @@ Diode::FSolve( BdyExpr& wbdy,
     boost::timer ti;
     //Solve dtw*M = l(W)
     //l(W) = int (Ai di phi.w + bord)
-    auto w = vec(idv(Exn),idv(Eyn),idv(Bzn));
-    auto wR = vec(rightfacev(idv(Exn)),rightfacev(idv(Eyn)),rightfacev(idv(Bzn)));
-    auto wL = vec(leftfacev(idv(Exn)),leftfacev(idv(Eyn)),leftfacev(idv(Bzn)));
-    auto wMetal = vec(-leftfacev(idv(Exn)),-leftfacev(idv(Eyn)),leftfacev(idv(Bzn)));
+    auto w = vec( idv( Exn ),idv( Eyn ),idv( Bzn ) );
+    auto wR = vec( rightfacev( idv( Exn ) ),rightfacev( idv( Eyn ) ),rightfacev( idv( Bzn ) ) );
+    auto wL = vec( leftfacev( idv( Exn ) ),leftfacev( idv( Eyn ) ),leftfacev( idv( Bzn ) ) );
+    auto wMetal = vec( -leftfacev( idv( Exn ) ),-leftfacev( idv( Eyn ) ),leftfacev( idv( Bzn ) ) );
     auto lEx=form1( _test=Xh, _vector=F_Ex, _init=true );
     auto lEy=form1( _test=Xh, _vector=F_Ey, _init=true );
     auto lBz=form1( _test=Xh, _vector=F_Bz, _init=true );
 
     auto Anp_1 = vec( +Ny() * Ny() / 0.2e1, -Nx() * Ny() / 0.2e1, -Ny() / 0.2e1 );
-    auto Anp_2 = vec(-Nx() * Ny() / 0.2e1, Nx() * Nx() / 0.2e1, Nx() / 0.2e1 );
-    auto Anp_3 = vec( -Ny() / 0.2e1, Nx() / 0.2e1, cst(0.1e1 / 0.2e1) );
+    auto Anp_2 = vec( -Nx() * Ny() / 0.2e1, Nx() * Nx() / 0.2e1, Nx() / 0.2e1 );
+    auto Anp_3 = vec( -Ny() / 0.2e1, Nx() / 0.2e1, cst( 0.1e1 / 0.2e1 ) );
 
     auto Anm_1 = vec(  -Ny() * Ny() / 0.2e1, Nx() * Ny() / 0.2e1, -Ny() / 0.2e1 );
-    auto Anm_2 = vec( Nx() * Ny() / 0.2e1, -Nx() * Nx() / 0.2e1, Nx() / 0.2e1);
-    auto Anm_3 = vec( -Ny() / 0.2e1, Nx() / 0.2e1, cst(-0.1e1 / 0.2e1) );
+    auto Anm_2 = vec( Nx() * Ny() / 0.2e1, -Nx() * Nx() / 0.2e1, Nx() / 0.2e1 );
+    auto Anm_3 = vec( -Ny() / 0.2e1, Nx() / 0.2e1, cst( -0.1e1 / 0.2e1 ) );
 
-    auto v1 = vec( cst(1.0) , cst(0.0) , cst(0.0) );
-    auto v2 = vec( cst(0.0) , cst(1.0) , cst(0.0) );
-    auto v3 = vec( cst(0.0) , cst(0.0) , cst(1.0) );
+    auto v1 = vec( cst( 1.0 ) , cst( 0.0 ) , cst( 0.0 ) );
+    auto v2 = vec( cst( 0.0 ) , cst( 1.0 ) , cst( 0.0 ) );
+    auto v3 = vec( cst( 0.0 ) , cst( 0.0 ) , cst( 1.0 ) );
 
     auto u = Xh->element();
 
     //
     // Ex
     //
-    lEx = integrate( _range=elements( mesh ),  _expr=id(u)*dyv(Bzn) );
-    lEx += integrate( _range=internalfaces(mesh),
-                      _expr=(trans(Anm_1)*(wL-wR))*leftface(id(u))
-                      + (trans(Anp_1)*(wL-wR))*rightface(id(u)) );
+    lEx = integrate( _range=elements( mesh ),  _expr=id( u )*dyv( Bzn ) );
+    lEx += integrate( _range=internalfaces( mesh ),
+                      _expr=( trans( Anm_1 )*( wL-wR ) )*leftface( id( u ) )
+                            + ( trans( Anp_1 )*( wL-wR ) )*rightface( id( u ) ) );
     //lEx += integrate( boundaryfaces(mesh), trans(Anm_1)*(wL-wbdy)*id(u) );
     // lEx += integrate( markedfaces(mesh, this->vm()["metalFlag"].as<int>() ), trans(Anm_1)*(wL-wMetal)*id(u));
     // lEx += integrate( markedfaces(mesh, this->vm()["fieldFlag"].as<int>() ), trans(v1)*wbdy*id(u));
 
-    lEx += integrate( _range=markedfaces(mesh, "Metal" ), _expr=(trans(Anm_1)*(wL-wMetal))*id(u));
-    lEx += integrate( _range=markedfaces(mesh, "Dirichlet" ), _expr=(trans(Anm_1)*(wL-wbdy))*id(u));
+    lEx += integrate( _range=markedfaces( mesh, "Metal" ), _expr=( trans( Anm_1 )*( wL-wMetal ) )*id( u ) );
+    lEx += integrate( _range=markedfaces( mesh, "Dirichlet" ), _expr=( trans( Anm_1 )*( wL-wbdy ) )*id( u ) );
 
     //
     // Ey
     //
-    lEy = integrate( _range=elements( mesh ),  _expr=-id(u)*dxv(Bzn));
-    lEy += integrate( _range=internalfaces(mesh),
-                      _expr=(trans(Anm_2)*(wL-wR))*leftface(id(u))
-                      + (trans(Anp_2)*(wL-wR))*rightface(id(u)) );
+    lEy = integrate( _range=elements( mesh ),  _expr=-id( u )*dxv( Bzn ) );
+    lEy += integrate( _range=internalfaces( mesh ),
+                      _expr=( trans( Anm_2 )*( wL-wR ) )*leftface( id( u ) )
+                            + ( trans( Anp_2 )*( wL-wR ) )*rightface( id( u ) ) );
     //lEy += integrate( boundaryfaces(mesh), trans(Anm_2)*(wL-wbdy)*id(u) );
     // lEy += integrate( markedfaces(mesh, this->vm()["metalFlag"].as<int>() ), trans(Anm_3)*(wL-wMetal)*id(u));
     // lEy += integrate( markedfaces(mesh, this->vm()["fieldFlag"].as<int>() ), trans(v2)*wbdy*id(u));
 
-    lEy += integrate( _range=markedfaces(mesh, "Metal" ), _expr=(trans(Anm_2)*(wL-wMetal))*id(u));
-    lEy += integrate( _range=markedfaces(mesh, "Dirichlet" ), _expr=(trans(Anm_2)*(wL-wbdy))*id(u));
+    lEy += integrate( _range=markedfaces( mesh, "Metal" ), _expr=( trans( Anm_2 )*( wL-wMetal ) )*id( u ) );
+    lEy += integrate( _range=markedfaces( mesh, "Dirichlet" ), _expr=( trans( Anm_2 )*( wL-wbdy ) )*id( u ) );
 
     //
     // Bz
     //
-    lBz = integrate( _range=elements( mesh ),  _expr=-id(u)*dxv(Eyn) + id(u)*dyv(Exn) );
-    lBz += integrate( _range=internalfaces(mesh),
-                      _expr=(trans(Anm_3)*(wL-wR))*leftface(id(u))
-                      + (trans(Anp_3)*(wL-wR))*rightface(id(u)) );
+    lBz = integrate( _range=elements( mesh ),  _expr=-id( u )*dxv( Eyn ) + id( u )*dyv( Exn ) );
+    lBz += integrate( _range=internalfaces( mesh ),
+                      _expr=( trans( Anm_3 )*( wL-wR ) )*leftface( id( u ) )
+                            + ( trans( Anp_3 )*( wL-wR ) )*rightface( id( u ) ) );
     //lBz += integrate( boundaryfaces(mesh), trans(Anm_3)*(wL-wbdy)*id(u) );
     // lBz += integrate( markedfaces(mesh, this->vm()["metalFlag"].as<int>() ), trans(Anm_3)*(wL-wMetal)*id(u));
     // lBz += integrate( markedfaces(mesh, this->vm()["fieldFlag"].as<int>() ), trans(v3)*wbdy*id(u));
 
-    lBz += integrate( _range=markedfaces(mesh, "Metal" ), _expr=(trans(Anm_3)*(wL-wMetal))*id(u));
-    lBz += integrate( _range=markedfaces(mesh, "Dirichlet" ), _expr=(trans(Anm_3)*(wL-wbdy))*id(u));
+    lBz += integrate( _range=markedfaces( mesh, "Metal" ), _expr=( trans( Anm_3 )*( wL-wMetal ) )*id( u ) );
+    lBz += integrate( _range=markedfaces( mesh, "Dirichlet" ), _expr=( trans( Anm_3 )*( wL-wbdy ) )*id( u ) );
 
     if ( verbose )
-        std::cout << " -- assembly in " << ti.elapsed() << "s\n";ti.restart();
+        std::cout << " -- assembly in " << ti.elapsed() << "s\n";
+
+    ti.restart();
 
     //
     // Solve
@@ -377,25 +379,25 @@ Diode::FSolve( BdyExpr& wbdy,
 
 template<typename BdyExpr>
 void
-Diode::EulerStep(double& time,double dt,
-                 BdyExpr& wbdy,
-                 element_type& Ex, element_type& Ey,element_type& Bz)
+Diode::EulerStep( double& time,double dt,
+                  BdyExpr& wbdy,
+                  element_type& Ex, element_type& Ey,element_type& Bz )
 {
     auto Exstar = Xh->element();
     auto Eystar = Xh->element();
     auto Bzstar = Xh->element();
-    FSolve(wbdy, dt,Ex, Ey, Bz, Exstar, Eystar, Bzstar);
+    FSolve( wbdy, dt,Ex, Ey, Bz, Exstar, Eystar, Bzstar );
 
-    Ex.add(dt, Exstar);
-    Ey.add(dt, Eystar);
-    Bz.add(dt, Bzstar);
+    Ex.add( dt, Exstar );
+    Ey.add( dt, Eystar );
+    Bz.add( dt, Bzstar );
     time += dt;
 }
 template<typename BdyExpr>
 void
-Diode::EulerModifiedStep(double& time,double dt,
-                         BdyExpr& wbdy,
-                         element_type& Ex, element_type& Ey,element_type& Bz )
+Diode::EulerModifiedStep( double& time,double dt,
+                          BdyExpr& wbdy,
+                          element_type& Ex, element_type& Ey,element_type& Bz )
 {
     element_type Exstar = Xh->element();
     element_type Eystar = Xh->element();
@@ -403,26 +405,26 @@ Diode::EulerModifiedStep(double& time,double dt,
     element_type Exn = Ex;
     element_type Eyn = Ey;
     element_type Bzn = Bz;
-    FSolve(wbdy, dt, Ex, Ey, Bz, Exstar, Eystar, Bzstar);
+    FSolve( wbdy, dt, Ex, Ey, Bz, Exstar, Eystar, Bzstar );
 
-    Exn.add(dt/2.0, Exstar);
-    Eyn.add(dt/2.0, Eystar);
-    Bzn.add(dt/2.0, Bzstar);
+    Exn.add( dt/2.0, Exstar );
+    Eyn.add( dt/2.0, Eystar );
+    Bzn.add( dt/2.0, Bzstar );
     time += dt/2.0;
 
-    FSolve(wbdy, dt, Exn, Eyn, Bzn, Exstar, Eystar, Bzstar);
+    FSolve( wbdy, dt, Exn, Eyn, Bzn, Exstar, Eystar, Bzstar );
 
-    Ex.add(dt, Exstar);
-    Ey.add(dt, Eystar);
-    Bz.add(dt, Bzstar);
+    Ex.add( dt, Exstar );
+    Ey.add( dt, Eystar );
+    Bz.add( dt, Bzstar );
     time += dt/2.0;
 
 }
 template<typename BdyExpr>
 void
-Diode::HeunStep(double& time,double dt,
-                         BdyExpr& wbdy,
-                         element_type& Ex, element_type& Ey,element_type& Bz )
+Diode::HeunStep( double& time,double dt,
+                 BdyExpr& wbdy,
+                 element_type& Ex, element_type& Ey,element_type& Bz )
 {
     element_type Exstar = Xh->element();
     element_type Eystar = Xh->element();
@@ -430,28 +432,28 @@ Diode::HeunStep(double& time,double dt,
     element_type Exn = Ex;
     element_type Eyn = Ey;
     element_type Bzn = Bz;
-    FSolve(wbdy, dt, Ex, Ey, Bz, Exstar, Eystar, Bzstar);
+    FSolve( wbdy, dt, Ex, Ey, Bz, Exstar, Eystar, Bzstar );
 
-    Ex.add(dt/2.0, Exstar);
-    Ey.add(dt/2.0, Eystar);
-    Bz.add(dt/2.0, Bzstar);
-    Exn.add(dt, Exstar);
-    Eyn.add(dt, Eystar);
-    Bzn.add(dt, Bzstar);
+    Ex.add( dt/2.0, Exstar );
+    Ey.add( dt/2.0, Eystar );
+    Bz.add( dt/2.0, Bzstar );
+    Exn.add( dt, Exstar );
+    Eyn.add( dt, Eystar );
+    Bzn.add( dt, Bzstar );
     time += dt;
 
-    FSolve(wbdy, dt, Exn, Eyn, Bzn, Exstar, Eystar, Bzstar);
+    FSolve( wbdy, dt, Exn, Eyn, Bzn, Exstar, Eystar, Bzstar );
 
-    Ex.add(dt/2.0, Exstar);
-    Ey.add(dt/2.0, Eystar);
-    Bz.add(dt/2.0, Bzstar);
+    Ex.add( dt/2.0, Exstar );
+    Ey.add( dt/2.0, Eystar );
+    Bz.add( dt/2.0, Bzstar );
 
 }
 template<typename BdyExpr>
 void
-Diode::RK4Step(double& time,double dt,
-                         BdyExpr& wbdy,
-                         element_type& Ex, element_type& Ey,element_type& Bz )
+Diode::RK4Step( double& time,double dt,
+                BdyExpr& wbdy,
+                element_type& Ex, element_type& Ey,element_type& Bz )
 {
     element_type Exstar = Xh->element();
     element_type Eystar = Xh->element();
@@ -464,52 +466,52 @@ Diode::RK4Step(double& time,double dt,
     element_type Bzk = Bz;
 
     //k1
-    FSolve(wbdy, dt, Ex, Ey, Bz, Exk, Eyk, Bzk);
+    FSolve( wbdy, dt, Ex, Ey, Bz, Exk, Eyk, Bzk );
 
-    Ex.add(dt/6.0, Exk);
-    Ey.add(dt/6.0, Eyk);
-    Bz.add(dt/6.0, Bzk);
+    Ex.add( dt/6.0, Exk );
+    Ey.add( dt/6.0, Eyk );
+    Bz.add( dt/6.0, Bzk );
     Exstar=Exn;
     Eystar=Eyn;
     Bzstar=Bzn;
-    Exstar.add(dt/2.0, Exk);
-    Eystar.add(dt/2.0, Eyk);
-    Bzstar.add(dt/2.0, Bzk);
+    Exstar.add( dt/2.0, Exk );
+    Eystar.add( dt/2.0, Eyk );
+    Bzstar.add( dt/2.0, Bzk );
 
     //k2
     time += dt/2.0;
-    FSolve(wbdy, dt, Exstar, Eystar, Bzstar, Exk, Eyk, Bzk);
+    FSolve( wbdy, dt, Exstar, Eystar, Bzstar, Exk, Eyk, Bzk );
 
-    Ex.add(dt/3.0, Exk);
-    Ey.add(dt/3.0, Eyk);
-    Bz.add(dt/3.0, Bzk);
+    Ex.add( dt/3.0, Exk );
+    Ey.add( dt/3.0, Eyk );
+    Bz.add( dt/3.0, Bzk );
     Exstar=Exn;
     Eystar=Eyn;
     Bzstar=Bzn;
-    Exstar.add(dt/2.0, Exk);
-    Eystar.add(dt/2.0, Eyk);
-    Bzstar.add(dt/2.0, Bzk);
+    Exstar.add( dt/2.0, Exk );
+    Eystar.add( dt/2.0, Eyk );
+    Bzstar.add( dt/2.0, Bzk );
 
     //k3
     //FSolve(wbdy, Exstar, Eystar, Bzstar, Exk, Eyk, Bzk);
 
-    Ex.add(dt/3.0, Exk);
-    Ey.add(dt/3.0, Eyk);
-    Bz.add(dt/3.0, Bzk);
+    Ex.add( dt/3.0, Exk );
+    Ey.add( dt/3.0, Eyk );
+    Bz.add( dt/3.0, Bzk );
     Exstar=Exn;
     Eystar=Eyn;
     Bzstar=Bzn;
-    Exstar.add(dt, Exk);
-    Eystar.add(dt, Eyk);
-    Bzstar.add(dt, Bzk);
+    Exstar.add( dt, Exk );
+    Eystar.add( dt, Eyk );
+    Bzstar.add( dt, Bzk );
 
     //k4
     time += dt/2.0;
-    FSolve(wbdy, dt, Exstar, Eystar, Bzstar, Exk, Eyk, Bzk);
+    FSolve( wbdy, dt, Exstar, Eystar, Bzstar, Exk, Eyk, Bzk );
 
-    Ex.add(dt/6.0, Exk);
-    Ey.add(dt/6.0, Eyk);
-    Bz.add(dt/6.0, Bzk);
+    Ex.add( dt/6.0, Exk );
+    Ey.add( dt/6.0, Eyk );
+    Bz.add( dt/6.0, Bzk );
 
 }
 
@@ -523,9 +525,10 @@ Diode::run( const double* X, unsigned long P, double* Y, unsigned long N )
                                        % Order
                                        % OrderGeo
                                        % X[0] );
+
     mesh = createGMSHMesh( _mesh=new mesh_type,
                            _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
-                           _desc=diodegeo(X[0],OrderGeo,convex) );
+                           _desc=diodegeo( X[0],OrderGeo,convex ) );
 
     /**
      * The function space and some associated elements(functions) are then defined
@@ -545,21 +548,21 @@ Diode::run( const double* X, unsigned long P, double* Y, unsigned long N )
     auto v = Xh->element();
 
     using namespace Feel::vf;
-    double dt=std::min(0.1*meshSize/(Order+1),timeStep);
+    double dt=std::min( 0.1*meshSize/( Order+1 ),timeStep );
     //double dt = timeStep;
 
     double pi=M_PI;
     double k=2*pi; //=0;
     double theta=this->vm()["theta"].as<double>();
     //theta=0;
-    double vu=cos(theta);
-    double vv=sin(theta);
+    double vu=cos( theta );
+    double vv=sin( theta );
     double time = 0;
-    auto c=cos(k * (vu * Px() + vv * Py() - cst_ref(time)) + cst(pi/2.0));
+    auto c=cos( k * ( vu * Px() + vv * Py() - cst_ref( time ) ) + cst( pi/2.0 ) );
     auto Ex_exact = -vv*c;
     auto Ey_exact = vu*c;
     auto Bz_exact = c;
-    auto w_exact = vec(Ex_exact, Ey_exact, Bz_exact );
+    auto w_exact = vec( Ex_exact, Ey_exact, Bz_exact );
     F_Ex = M_backend->newVector( Xh );
     F_Ey = M_backend->newVector( Xh );
     F_Bz = M_backend->newVector( Xh );
@@ -567,77 +570,89 @@ Diode::run( const double* X, unsigned long P, double* Y, unsigned long N )
     // left hand side
     D=M_backend->newMatrix( Xh, Xh );
     auto a = form2( _test=Xh, _trial=Xh, _matrix=D, _init=true );
-    a = integrate( elements(mesh), idt(Ex)*id(u) );
+    a = integrate( elements( mesh ), idt( Ex )*id( u ) );
     //D->printMatlab("mass.m");
     auto backend = backend_type::build( this->vm() );
     auto exporter( export_type::New( this->vm(),
-                                     (boost::format( "%1%-%2%" )
-                                      % this->about().appName()
-                                      % convex).str() ) );
+                                     ( boost::format( "%1%-%2%" )
+                                       % this->about().appName()
+                                       % convex ).str() ) );
     auto L2ProjDisc = projector( Xh, Xh );
-    if ( this->vm()["initfields"].as<int>() == 1){
+
+    if ( this->vm()["initfields"].as<int>() == 1 )
+    {
         Ex = L2ProjDisc->project( Ex_exact );
         Ey = L2ProjDisc->project( Ey_exact );
         Bz = L2ProjDisc->project( Bz_exact );
     }
 
     auto L2Proj = projector( Xhc, Xhc );
-    Exc = L2Proj->project( idv(Ex) );
-    Eyc = L2Proj->project( idv(Ey) );
-    Bzc = L2Proj->project( idv(Bz) );
+    Exc = L2Proj->project( idv( Ex ) );
+    Eyc = L2Proj->project( idv( Ey ) );
+    Bzc = L2Proj->project( idv( Bz ) );
 
-    exporter->step(time)->setMesh( mesh );
+    exporter->step( time )->setMesh( mesh );
 
-    exporter->step(time)->add( "Exc", L2Proj->project(idv(Ex)) );
-    exporter->step(time)->add( "Eyc", L2Proj->project(idv(Ey)) );
-    exporter->step(time)->add( "Bzc", L2Proj->project(idv(Bz)) );
+    exporter->step( time )->add( "Exc", L2Proj->project( idv( Ex ) ) );
+    exporter->step( time )->add( "Eyc", L2Proj->project( idv( Ey ) ) );
+    exporter->step( time )->add( "Bzc", L2Proj->project( idv( Bz ) ) );
 
-    auto w = vec(idv(Ex),idv(Ey),idv(Bz));
-    auto wR = vec(rightfacev(idv(Ex)),rightfacev(idv(Ey)),rightfacev(idv(Bz)));
-    auto wL = vec(leftfacev(idv(Ex)),leftfacev(idv(Ey)),leftfacev(idv(Bz)));
+    auto w = vec( idv( Ex ),idv( Ey ),idv( Bz ) );
+    auto wR = vec( rightfacev( idv( Ex ) ),rightfacev( idv( Ey ) ),rightfacev( idv( Bz ) ) );
+    auto wL = vec( leftfacev( idv( Ex ) ),leftfacev( idv( Ey ) ),leftfacev( idv( Bz ) ) );
 
     std::cout<<rkmethod<<endl;
-    switch( rkmethod )
-        {
-        case EULER_EXPLICIT:
-            std::cout << "Euler explicit" << endl;
-            break;
-        case EULER_MODIFIED:
-            std::cout << "Euler modified" << endl;
-            break;
-        case HEUN:
-            std::cout << "Heun" << endl;
-            break;
-        case RK4:
-            std::cout << "RK4" << endl;
-            break;
-        }
+
+    switch ( rkmethod )
+    {
+    case EULER_EXPLICIT:
+        std::cout << "Euler explicit" << endl;
+        break;
+
+    case EULER_MODIFIED:
+        std::cout << "Euler modified" << endl;
+        break;
+
+    case HEUN:
+        std::cout << "Heun" << endl;
+        break;
+
+    case RK4:
+        std::cout << "RK4" << endl;
+        break;
+    }
 
     exporter->save();
     std::cout << "Saved initial/exact solution\n";
-    for( time = 0; time <= Tfinal; )
+
+    for ( time = 0; time <= Tfinal; )
     {
         std::cout << "============================================================" << std::endl;
         std::cout << "time = " << time << "s, dt=" << dt << ", final time=" << Tfinal << ",hsize = "<< meshSize <<", method : " << rkmethod <<std::endl;
-        switch( rkmethod )
-            {
-            case EULER_EXPLICIT:
-                std::cout<<"euler"<<std::endl;
-                EulerStep(time, dt, w_exact, Ex, Ey, Bz);
-                break;
-            case EULER_MODIFIED:
-                std::cout<<"euler modif"<<std::endl;
-                EulerModifiedStep(time, dt, w_exact, Ex, Ey, Bz);
-                break;
-            case HEUN:
-                std::cout<<"heun"<<std::endl;
-                HeunStep(time, dt, w_exact, Ex, Ey, Bz);
-                break;
-            case RK4:
-                std::cout<<"rk4"<<std::endl;
-                RK4Step(time, dt, w_exact, Ex, Ey, Bz);
-                break;
-                }
+
+        switch ( rkmethod )
+        {
+        case EULER_EXPLICIT:
+            std::cout<<"euler"<<std::endl;
+            EulerStep( time, dt, w_exact, Ex, Ey, Bz );
+            break;
+
+        case EULER_MODIFIED:
+            std::cout<<"euler modif"<<std::endl;
+            EulerModifiedStep( time, dt, w_exact, Ex, Ey, Bz );
+            break;
+
+        case HEUN:
+            std::cout<<"heun"<<std::endl;
+            HeunStep( time, dt, w_exact, Ex, Ey, Bz );
+            break;
+
+        case RK4:
+            std::cout<<"rk4"<<std::endl;
+            RK4Step( time, dt, w_exact, Ex, Ey, Bz );
+            break;
+        }
+
         /*
         std::cout << "||exact-Ex||_2 = "
                   << integrate(elements(mesh),
@@ -654,16 +669,18 @@ Diode::run( const double* X, unsigned long P, double* Y, unsigned long N )
         */
         // save
         counter++;
-        if (counter % exportf == 0){
-            std::cout<<"exporting results"<<std::endl;
-            exporter->step(time)->setMesh( mesh );
 
-            Exc = L2Proj->project( idv(Ex) );
-            Eyc = L2Proj->project( idv(Ey) );
-            Bzc = L2Proj->project( idv(Bz) );
-            exporter->step(time)->add( "Exc", Exc );
-            exporter->step(time)->add( "Eyc", Eyc );
-            exporter->step(time)->add( "Bzc", Bzc );
+        if ( counter % exportf == 0 )
+        {
+            std::cout<<"exporting results"<<std::endl;
+            exporter->step( time )->setMesh( mesh );
+
+            Exc = L2Proj->project( idv( Ex ) );
+            Eyc = L2Proj->project( idv( Ey ) );
+            Bzc = L2Proj->project( idv( Bz ) );
+            exporter->step( time )->add( "Exc", Exc );
+            exporter->step( time )->add( "Eyc", Eyc );
+            exporter->step( time )->add( "Bzc", Bzc );
 
             exporter->save();
         }
@@ -685,11 +702,13 @@ main( int argc, char** argv )
      */
     /** \code */
     Application app( argc, argv, makeAbout(), makeOptions() );
+
     if ( app.vm().count( "help" ) )
     {
         std::cout << app.optionsDescription() << "\n";
         return 0;
     }
+
     /** \endcode */
 
     /**

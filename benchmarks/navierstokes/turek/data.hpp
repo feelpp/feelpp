@@ -155,33 +155,96 @@ public:
      */
     //@{
 
-    Feel::po::variables_map vm() const { return M_vm; }
+    Feel::po::variables_map vm() const
+    {
+        return M_vm;
+    }
 
-    double d() const { return M_dimension; }
-    double h() const { return M_h; }
+    double d() const
+    {
+        return M_dimension;
+    }
+    double h() const
+    {
+        return M_h;
+    }
 
     //! returns the scale by which h() is divided on the cylinder
-    double hCylinderScale() const { return M_hcyl_scale; }
+    double hCylinderScale() const
+    {
+        return M_hcyl_scale;
+    }
 
-    double orderG() const {return M_order_g; }
-    double orderU() const {return M_order_u; }
-    double orderP() const {return M_order_p; }
+    double orderG() const
+    {
+        return M_order_g;
+    }
+    double orderU() const
+    {
+        return M_order_u;
+    }
+    double orderP() const
+    {
+        return M_order_p;
+    }
 
-    double gammaBc() const { return M_gamma_bc; }
-    double gammaU() const { return M_gamma_u; }
-    double gammaP() const { return M_gamma_p; }
-    double gammaDivDiv() const { return M_gamma_divdiv; }
-    double deltaDivDiv() const { return M_delta_divdiv; }
-    double epsPseudoCompressibility() const { return M_eps_compress; }
+    double gammaBc() const
+    {
+        return M_gamma_bc;
+    }
+    double gammaU() const
+    {
+        return M_gamma_u;
+    }
+    double gammaP() const
+    {
+        return M_gamma_p;
+    }
+    double gammaDivDiv() const
+    {
+        return M_gamma_divdiv;
+    }
+    double deltaDivDiv() const
+    {
+        return M_delta_divdiv;
+    }
+    double epsPseudoCompressibility() const
+    {
+        return M_eps_compress;
+    }
 
-    double H() const { return M_H; }
-    double D() const { return M_D; }
-    double Re() const { return M_Re; }
-    double rho() const { return M_rho; }
-    double nu() const { return M_nu; }
-    double mu() const { return M_rho*M_nu; }
-    std::vector<std::string> const& dirichletVelocityMarkers() const { return M_dirichlet_velocity; }
-    std::vector<std::string> const& dirichletPressureMarkers() const { return M_dirichlet_pressure; }
+    double H() const
+    {
+        return M_H;
+    }
+    double D() const
+    {
+        return M_D;
+    }
+    double Re() const
+    {
+        return M_Re;
+    }
+    double rho() const
+    {
+        return M_rho;
+    }
+    double nu() const
+    {
+        return M_nu;
+    }
+    double mu() const
+    {
+        return M_rho*M_nu;
+    }
+    std::vector<std::string> const& dirichletVelocityMarkers() const
+    {
+        return M_dirichlet_velocity;
+    }
+    std::vector<std::string> const& dirichletPressureMarkers() const
+    {
+        return M_dirichlet_pressure;
+    }
 
     /**
      * coordinates of the front point where the pressure difference is
@@ -204,7 +267,10 @@ public:
      *
      * @return the characteristic velocity
      */
-    double Ubar() const { return M_nu*M_Re/M_D; }
+    double Ubar() const
+    {
+        return M_nu*M_Re/M_D;
+    }
 
     /**
      * get the magnitude of the profile velocity for the 2D cylinder
@@ -212,7 +278,10 @@ public:
      *
      * @return the magnitude of the profile velocity
      */
-    double Um() const { return Feel::math::pow(3./2., M_dimension-1)*Ubar(); }
+    double Um() const
+    {
+        return Feel::math::pow( 3./2., M_dimension-1 )*Ubar();
+    }
 
     /**
      * \return the scalar coefficient for the dimensionalise the
@@ -223,25 +292,40 @@ public:
     /**
      * \return whether to use the same preconditioner
      */
-    int useSamePreconditioner() const { return M_use_same_prec; }
+    int useSamePreconditioner() const
+    {
+        return M_use_same_prec;
+    }
 
 
     /**
      * \return how to initialize the Navier-Stokes solver
      */
-    int init() const { return M_init; }
+    int init() const
+    {
+        return M_init;
+    }
 
     /**
      * \return the export strategy
      * 0 no export, 1 export with same mesh, 2 export on finer mesh
      */
-    int doExport() const { return M_export; }
+    int doExport() const
+    {
+        return M_export;
+    }
 
     //! return the type of inflow : steady or unsteady
-    int inflowType() const { return M_inflow_type; }
+    int inflowType() const
+    {
+        return M_inflow_type;
+    }
 
     //! \return the cross section type : circular or square
-    int crossSectionType() const { return M_cross_section_type; }
+    int crossSectionType() const
+    {
+        return M_cross_section_type;
+    }
 
     //@}
 
@@ -260,7 +344,10 @@ public:
 
     void createMatlabScript();
 
-    Inflow inflow( double& time ) const { return Inflow( *this, time ); }
+    Inflow inflow( double& time ) const
+    {
+        return Inflow( *this, time );
+    }
 
     void print() const;
 

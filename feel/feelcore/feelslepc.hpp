@@ -41,10 +41,10 @@ namespace Feel
 {
 namespace SLEPc
 {
-FEELPP_STRONG_INLINE int EPSDestroy (EPS& eps )
+FEELPP_STRONG_INLINE int EPSDestroy ( EPS& eps )
 {
 #if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
-    return ::EPSDestroy( &eps);
+    return ::EPSDestroy( &eps );
 #else
     return ::EPSDestroy( eps );
 #endif

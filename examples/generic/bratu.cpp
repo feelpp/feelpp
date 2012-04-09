@@ -51,22 +51,22 @@ inline
 Feel::po::options_description
 makeOptions()
 {
-    Feel::po::options_description bratuoptions("Bratu problem options");
+    Feel::po::options_description bratuoptions( "Bratu problem options" );
     bratuoptions.add_options()
-        ("dt", Feel::po::value<double>()->default_value( 1 ), "time step value")
-        ("ft", Feel::po::value<double>()->default_value( 1 ), "final time value")
-        ("lambda", Feel::po::value<double>()->default_value( 1 ), "exp() coefficient value for the Bratu problem")
+    ( "dt", Feel::po::value<double>()->default_value( 1 ), "time step value" )
+    ( "ft", Feel::po::value<double>()->default_value( 1 ), "final time value" )
+    ( "lambda", Feel::po::value<double>()->default_value( 1 ), "exp() coefficient value for the Bratu problem" )
 
-        ("order", Feel::po::value<int>()->default_value( 2 ), "order of time discretisation")
-        ("diff", Feel::po::value<double>()->default_value( 1 ), "diffusion parameter")
-        ("penal", Feel::po::value<double>()->default_value( 10 ), "penalisation parameter")
-        ("penalbc", Feel::po::value<double>()->default_value( 10 ), "penalisation parameter for the weak boundary conditions")
-        ("hsize", Feel::po::value<double>()->default_value( 0.5 ), "first h value to start convergence")
-        ("bctype", Feel::po::value<int>()->default_value( 1 ), "0 = strong Dirichlet, 1 = weak Dirichlet")
-        ("export", "export results(ensight, data file(1D)")
-        ("export-mesh-only", "export mesh only in ensight format")
-        ("export-matlab", "export matrix and vectors in matlab" )
-        ;
+    ( "order", Feel::po::value<int>()->default_value( 2 ), "order of time discretisation" )
+    ( "diff", Feel::po::value<double>()->default_value( 1 ), "diffusion parameter" )
+    ( "penal", Feel::po::value<double>()->default_value( 10 ), "penalisation parameter" )
+    ( "penalbc", Feel::po::value<double>()->default_value( 10 ), "penalisation parameter for the weak boundary conditions" )
+    ( "hsize", Feel::po::value<double>()->default_value( 0.5 ), "first h value to start convergence" )
+    ( "bctype", Feel::po::value<int>()->default_value( 1 ), "0 = strong Dirichlet, 1 = weak Dirichlet" )
+    ( "export", "export results(ensight, data file(1D)" )
+    ( "export-mesh-only", "export mesh only in ensight format" )
+    ( "export-matlab", "export matrix and vectors in matlab" )
+    ;
     return bratuoptions.add( Feel::feel_options() );
 }
 inline
@@ -78,9 +78,9 @@ makeAbout()
                            "0.1",
                            "nD(n=1,2,3) Bratu problem on simplices or simplex products",
                            Feel::AboutData::License_GPL,
-                           "Copyright (c) 2008 Université Joseph Fourier");
+                           "Copyright (c) 2008 Université Joseph Fourier" );
 
-    about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
     return about;
 
 }
@@ -101,7 +101,7 @@ template<int Dim,
          template<uint16_type> class FType>
 class Bratu
     :
-    public Application
+public Application
 {
     typedef Application super;
 public:
@@ -136,8 +136,8 @@ public:
         /*basis*/
 #if 0
         typedef typename mpl::if_<mpl::bool_<Conti::is_continuous>,
-                                  mpl::identity<fusion::vector<Lagrange<Order, FType> > >,
-                                  mpl::identity<fusion::vector<OrthonormalPolynomialSet<Order, FType> > > >::type::type basis_type;
+                mpl::identity<fusion::vector<Lagrange<Order, FType> > >,
+                mpl::identity<fusion::vector<OrthonormalPolynomialSet<Order, FType> > > >::type::type basis_type;
 #else
         typedef fusion::vector<Lagrange<Order, FType> > basis_type;
 
@@ -177,10 +177,10 @@ public:
         exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) )
     {
         if ( this->vm().count( "help" ) )
-            {
-                std::cout << this->optionsDescription() << "\n";
-                return;
-            }
+        {
+            std::cout << this->optionsDescription() << "\n";
+            return;
+        }
 
 
 
@@ -190,7 +190,7 @@ public:
                                 % entity_type::name()
                                 % Order
                                 % this->vm()["hsize"].template as<double>()
-                            );
+                              );
 
         mesh_ptrtype mesh = createMesh( meshSize );
 
@@ -209,8 +209,8 @@ public:
 
 
     void updateResidual( const vector_ptrtype& X, vector_ptrtype& R );
-    void updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J);
-    void updateResidualJacobian( const vector_ptrtype& X, vector_ptrtype& R, sparse_matrix_ptrtype& J);
+    void updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J );
+    void updateResidualJacobian( const vector_ptrtype& X, vector_ptrtype& R, sparse_matrix_ptrtype& J );
 
 private:
 
@@ -255,10 +255,12 @@ Bratu<Dim,Order,Cont,Entity,FType>::createMesh( double meshSize, double ymin, do
     mesh_ptrtype mesh( new mesh_type );
     //mesh->setRenumber( false );
 
-    GmshHypercubeDomain td(entity_type::nDim,entity_type::nOrder,entity_type::nRealDim,entity_type::is_hypercube);
+    GmshHypercubeDomain td( entity_type::nDim,entity_type::nOrder,entity_type::nRealDim,entity_type::is_hypercube );
     td.setCharacteristicLength( meshSize );
+
     if ( Dim >=2 )
         td.setY( std::make_pair( ymin, ymax ) );
+
     std::string fname = td.generate( entity_type::name().c_str() );
 
     ImporterGmsh<mesh_type> import( fname );
@@ -280,25 +282,25 @@ Bratu<Dim, Order, Cont, Entity, FType>::updateResidual( const vector_ptrtype& X,
     element_type v( M_Xh, "v" );
     im_type im;
     u = *X;
-    AUTO( g, constant(0.0) );
+    AUTO( g, constant( 0.0 ) );
     //std::cout << "u = " << u << "\n";
     *M_residual =
-        integrate( elements( mesh ), im, + gradv(u)*trans(grad(v)) + M_lambda*exp(idv(u))*id(v) ) +
-        integrate( boundaryfaces(mesh), im,
+        integrate( elements( mesh ), im, + gradv( u )*trans( grad( v ) ) + M_lambda*exp( idv( u ) )*id( v ) ) +
+        integrate( boundaryfaces( mesh ), im,
                    //integrate( markedfaces(mesh,1), im,
-                   ( - trans(id(v))*(gradv(u)*N())
-                     - trans(idv(u))*(grad(v)*N())
-                     + penalisation_bc*trans(idv(u))*id(v)/hFace())-
-                   g*( - grad(v)*N() + penalisation_bc*id(v)/hFace() )
-                   );
+                   ( - trans( id( v ) )*( gradv( u )*N() )
+                     - trans( idv( u ) )*( grad( v )*N() )
+                     + penalisation_bc*trans( idv( u ) )*id( v )/hFace() )-
+                   g*( - grad( v )*N() + penalisation_bc*id( v )/hFace() )
+                 );
 
     M_residual->close();
     *R = M_residual->container();
     Debug() << "[updateResidual] done in " << ti.elapsed() << "s\n";
-                   }
+}
 template<int Dim, int Order, typename Cont, template<uint16_type,uint16_type,uint16_type> class Entity, template<uint16_type> class FType>
 void
-Bratu<Dim, Order, Cont, Entity, FType>::updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J)
+Bratu<Dim, Order, Cont, Entity, FType>::updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J )
 {
     boost::timer ti;
     Debug() << "[updateJacobian] start\n";
@@ -309,16 +311,19 @@ Bratu<Dim, Order, Cont, Entity, FType>::updateJacobian( const vector_ptrtype& X,
     element_type v( M_Xh, "v" );
     u = *X;
     im_type im;
+
     if ( is_init == false )
-        {
-            *M_jac = integrate( elements( mesh ), im, M_lambda*(exp(idv(u)))*idt(u)*id(v) );
-            is_init = true;
-        }
+    {
+        *M_jac = integrate( elements( mesh ), im, M_lambda*( exp( idv( u ) ) )*idt( u )*id( v ) );
+        is_init = true;
+    }
+
     else
-        {
-            M_jac->matPtr()->zero();
-            *M_jac += integrate( elements( mesh ), im, M_lambda*(exp(idv(u)))*idt(u)*id(v) );
-        }
+    {
+        M_jac->matPtr()->zero();
+        *M_jac += integrate( elements( mesh ), im, M_lambda*( exp( idv( u ) ) )*idt( u )*id( v ) );
+    }
+
     M_jac->close();
     M_jac->matPtr()->addMatrix( 1.0, M_oplin->mat() );
     J = M_jac->matPtr();
@@ -326,7 +331,7 @@ Bratu<Dim, Order, Cont, Entity, FType>::updateJacobian( const vector_ptrtype& X,
 }
 template<int Dim, int Order, typename Cont, template<uint16_type,uint16_type,uint16_type> class Entity, template<uint16_type> class FType>
 void
-Bratu<Dim, Order, Cont, Entity, FType>::updateResidualJacobian( const vector_ptrtype& X, vector_ptrtype& R, sparse_matrix_ptrtype& J)
+Bratu<Dim, Order, Cont, Entity, FType>::updateResidualJacobian( const vector_ptrtype& X, vector_ptrtype& R, sparse_matrix_ptrtype& J )
 {
 }
 
@@ -351,11 +356,11 @@ Bratu<Dim, Order, Cont, Entity, FType>::run()
 
     M_oplin = oplin_ptrtype( new oplin_type( M_Xh, M_Xh, M_backend ) );
     *M_oplin =
-        integrate( elements( mesh ), im, gradt(u)*trans(grad(v)) ) +
-        integrate( boundaryfaces(mesh), im,
-                   ( - trans(id(v))*(gradt(u)*N())
-                     - trans(idt(u))*(grad(v)*N())
-                     + penalisation_bc*trans(idt(u))*id(v)/hFace()) );
+        integrate( elements( mesh ), im, gradt( u )*trans( grad( v ) ) ) +
+        integrate( boundaryfaces( mesh ), im,
+                   ( - trans( id( v ) )*( gradt( u )*N() )
+                     - trans( idt( u ) )*( grad( v )*N() )
+                     + penalisation_bc*trans( idt( u ) )*id( v )/hFace() ) );
     M_oplin->close();
 
     M_jac = oplin_ptrtype( new oplin_type( M_Xh, M_Xh, M_backend ) );
@@ -366,7 +371,7 @@ Bratu<Dim, Order, Cont, Entity, FType>::run()
     M_backend->nlSolver()->residual = boost::bind( &self_type::updateResidual, boost::ref( *this ), _1, _2 );
     M_backend->nlSolver()->jacobian = boost::bind( &self_type::updateJacobian, boost::ref( *this ), _1, _2 );
 
-    u = vf::project( M_Xh, elements(mesh), constant(0.) );
+    u = vf::project( M_Xh, elements( mesh ), constant( 0. ) );
 
     vector_ptrtype U( M_backend->newVector( u.functionSpace() ) );
     *U = u;
@@ -387,8 +392,8 @@ Bratu<Dim, Order, Cont, Entity, FType>::run()
 template<int Dim, int Order, typename Cont, template<uint16_type,uint16_type,uint16_type> class Entity, template<uint16_type> class FType>
 void
 Bratu<Dim, Order, Cont, Entity, FType>::solve( sparse_matrix_ptrtype& D,
-                                                   element_type& u,
-                                                   vector_ptrtype& F )
+        element_type& u,
+        vector_ptrtype& F )
 {
     vector_ptrtype U( M_backend->newVector( u.functionSpace() ) );
     *U = u;
@@ -403,94 +408,109 @@ template<int Dim, int Order, typename Cont, template<uint16_type,uint16_type,uin
 template<typename f1_type, typename f2_type, typename f3_type>
 void
 Bratu<Dim, Order, Cont, Entity,FType>::exportResults( double time,
-                                                     f1_type& U,
-                                                     f2_type& V,
-                                                     f3_type& E )
+        f1_type& U,
+        f2_type& V,
+        f3_type& E )
 {
 
     Log() << "exportResults starts\n";
 
-    exporter->step(time)->setMesh( U.functionSpace()->mesh() );
+    exporter->step( time )->setMesh( U.functionSpace()->mesh() );
+
     //exporter->step(time)->setMesh( this->createMesh( meshSize/2, 0.5, 1 ) );
     //exporter->step(time)->setMesh( this->createMesh( meshSize/Order, 0, 1 ) );
     //exporter->step(time)->setMesh( this->createMesh( meshSize, 0, 1 ) );
     if ( !this->vm().count( "export-mesh-only" ) )
-        {
-            exporter->step(time)->add( "pid",
-                           regionProcess( boost::shared_ptr<p0_space_type>( new p0_space_type( U.functionSpace()->mesh() ) ) ) );
+    {
+        exporter->step( time )->add( "pid",
+                                     regionProcess( boost::shared_ptr<p0_space_type>( new p0_space_type( U.functionSpace()->mesh() ) ) ) );
 
 
-            exporter->step(time)->add( "u", U );
-            exporter->step(time)->add( "v", V );
-            exporter->step(time)->add( "e", E );
-        }
+        exporter->step( time )->add( "u", U );
+        exporter->step( time )->add( "v", V );
+        exporter->step( time )->add( "e", E );
+    }
+
     exporter->save();
 
 
     if ( Dim == 1 )
+    {
+        std::ostringstream fname_u;
+        fname_u << "u-" << Application::processId() << "." << boost::format( "%.2f" ) % time << ".dat";
+        std::ofstream ofs3( fname_u.str().c_str() );
+        typename mesh_type::element_iterator it = U.functionSpace()->mesh()->beginElementWithProcessId( Application::processId() );
+        typename mesh_type::element_iterator en = U.functionSpace()->mesh()->endElementWithProcessId( Application::processId() );
+
+        if ( !U.areGlobalValuesUpdated() )
+            U.updateGlobalValues();
+
+        for ( ; it!=en; ++it )
         {
-            std::ostringstream fname_u;
-            fname_u << "u-" << Application::processId() << "." << boost::format( "%.2f" ) % time << ".dat";
-            std::ofstream ofs3( fname_u.str().c_str() );
-            typename mesh_type::element_iterator it = U.functionSpace()->mesh()->beginElementWithProcessId( Application::processId() );
-            typename mesh_type::element_iterator en = U.functionSpace()->mesh()->endElementWithProcessId( Application::processId() );
-            if ( !U.areGlobalValuesUpdated() )
-                U.updateGlobalValues();
-            for( ; it!=en; ++it )
-                {
-                    for( size_type i = 0; i < space<Cont>::type::basis_type::nLocalDof; ++i )
-                        {
-                            size_type dof0 = boost::get<0>( U.functionSpace()->dof()->localToGlobal( it->id(), i ) );
-                            ofs3 << std::setw( 5 ) << it->id() << " "
-                                 << std::setw( 5 ) << i << " "
-                                 << std::setw( 5 ) << dof0 << " "
-                                 << std::setw( 15 ) << U.globalValue( dof0 ) << " ";
-                            value_type a = it->point(0).node()[0];
-                            value_type b = it->point(1).node()[0];
-                            if ( i == 0 )
-                                ofs3 << a;
-                            else if ( i == 1 )
-                                ofs3 <<  b;
-                            else
-                                ofs3 <<  a + (i-1)*(b-a)/(space<Continuous>::type::basis_type::nLocalDof-1);
+            for ( size_type i = 0; i < space<Cont>::type::basis_type::nLocalDof; ++i )
+            {
+                size_type dof0 = boost::get<0>( U.functionSpace()->dof()->localToGlobal( it->id(), i ) );
+                ofs3 << std::setw( 5 ) << it->id() << " "
+                     << std::setw( 5 ) << i << " "
+                     << std::setw( 5 ) << dof0 << " "
+                     << std::setw( 15 ) << U.globalValue( dof0 ) << " ";
+                value_type a = it->point( 0 ).node()[0];
+                value_type b = it->point( 1 ).node()[0];
 
-                            ofs3 << "\n";
+                if ( i == 0 )
+                    ofs3 << a;
 
-                        }
-                }
-            ofs3.close();
+                else if ( i == 1 )
+                    ofs3 <<  b;
 
-            std::ostringstream fname_v;
-            fname_v << "values-" << Application::processId() << "." << boost::format( "%.2f" ) % time << ".dat";
-            std::ofstream ofs2( fname_v.str().c_str() );
-            it = V.functionSpace()->mesh()->beginElementWithProcessId( Application::processId() );
-            en = V.functionSpace()->mesh()->endElementWithProcessId(  Application::processId() );
-            if ( !V.areGlobalValuesUpdated() ) V.updateGlobalValues();
-            if ( !E.areGlobalValuesUpdated() ) E.updateGlobalValues();
-            for( ; it!=en; ++it )
-                {
-                    for( size_type i = 0; i < space<Continuous>::type::basis_type::nLocalDof; ++i )
-                        {
-                            size_type dof0 = boost::get<0>( V.functionSpace()->dof()->localToGlobal( it->id(), i ) );
-                            ofs2 << std::setw( 5 ) << it->id() << " "
-                                 << std::setw( 5 ) << i << " "
-                                 << std::setw( 5 ) << dof0 << " "
-                                 << std::setw( 15 ) << V.globalValue( dof0 ) << " "
-                                 << std::setw( 15 ) << E.globalValue( dof0 ) << " ";
-                            value_type a = it->point(0).node()[0];
-                            value_type b = it->point(1).node()[0];
-                            if ( i == 0 )
-                                ofs2 << a;
-                            else if ( i == 1 )
-                                ofs2 <<  b;
-                            else
-                                ofs2 <<  a + (i-1)*(b-a)/(space<Continuous>::type::basis_type::nLocalDof-1);
-                            ofs2 << "\n";
+                else
+                    ofs3 <<  a + ( i-1 )*( b-a )/( space<Continuous>::type::basis_type::nLocalDof-1 );
 
-                        }
-                }
+                ofs3 << "\n";
 
+            }
         }
+
+        ofs3.close();
+
+        std::ostringstream fname_v;
+        fname_v << "values-" << Application::processId() << "." << boost::format( "%.2f" ) % time << ".dat";
+        std::ofstream ofs2( fname_v.str().c_str() );
+        it = V.functionSpace()->mesh()->beginElementWithProcessId( Application::processId() );
+        en = V.functionSpace()->mesh()->endElementWithProcessId(  Application::processId() );
+
+        if ( !V.areGlobalValuesUpdated() ) V.updateGlobalValues();
+
+        if ( !E.areGlobalValuesUpdated() ) E.updateGlobalValues();
+
+        for ( ; it!=en; ++it )
+        {
+            for ( size_type i = 0; i < space<Continuous>::type::basis_type::nLocalDof; ++i )
+            {
+                size_type dof0 = boost::get<0>( V.functionSpace()->dof()->localToGlobal( it->id(), i ) );
+                ofs2 << std::setw( 5 ) << it->id() << " "
+                     << std::setw( 5 ) << i << " "
+                     << std::setw( 5 ) << dof0 << " "
+                     << std::setw( 15 ) << V.globalValue( dof0 ) << " "
+                     << std::setw( 15 ) << E.globalValue( dof0 ) << " ";
+                value_type a = it->point( 0 ).node()[0];
+                value_type b = it->point( 1 ).node()[0];
+
+                if ( i == 0 )
+                    ofs2 << a;
+
+                else if ( i == 1 )
+                    ofs2 <<  b;
+
+                else
+                    ofs2 <<  a + ( i-1 )*( b-a )/( space<Continuous>::type::basis_type::nLocalDof-1 );
+
+                ofs2 << "\n";
+
+            }
+        }
+
+    }
 
 
 } // Bratu::export

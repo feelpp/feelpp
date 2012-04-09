@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -55,11 +55,11 @@ int main( int argc,  char** argv )
 
     auto shape = "hypercube";
     auto aMesh = createGMSHMesh( _mesh=new mesh_type,
-                                 _desc=domain( _name=(boost::format( "%1%-%2%" ) % shape % nDim).str() ,
-                                               _usenames=true,
-                                               _shape=shape,
-                                               _dim=nDim,
-                                               _h=1 ) );
+                                 _desc=domain( _name=( boost::format( "%1%-%2%" ) % shape % nDim ).str() ,
+                                         _usenames=true,
+                                         _shape=shape,
+                                         _dim=nDim,
+                                         _h=1 ) );
 
     RegionTree __rt;
     typedef node<double>::type node_type;
@@ -69,15 +69,18 @@ int main( int argc,  char** argv )
     __rt.clear();
 
     BoundingBox<> bb( true );
+
     for ( size_type __i = 0; __i < aMesh->numElements(); ++__i )
     {
         bb.make( aMesh->element( __i ).G() );
-        for (unsigned k=0; k < min.size(); ++k)
+
+        for ( unsigned k=0; k < min.size(); ++k )
         {
             bb.min[k]-=EPS;
             bb.max[k]+=EPS;
         }
-        __rt.addBox(bb.min, bb.max, __i );
+
+        __rt.addBox( bb.min, bb.max, __i );
     }
 
     __rt.dump();

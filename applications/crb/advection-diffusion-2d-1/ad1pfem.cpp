@@ -34,8 +34,8 @@
 int main( int argc, char** argv )
 {
     Feel::PFemApp<Feel::AdvectionDiffusion> app( argc, argv,
-                                                 Feel::makeAdvectionDiffusionAbout( "ad1pfem" ),
-                                                 Feel::makeAdvectionDiffusionOptions()  );
+            Feel::makeAdvectionDiffusionAbout( "ad1pfem" ),
+            Feel::makeAdvectionDiffusionOptions()  );
     app.run();
 }
 

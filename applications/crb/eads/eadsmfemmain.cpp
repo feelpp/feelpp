@@ -32,13 +32,15 @@
 
 int main( int argc, char** argv )
 {
-    Feel::EadsMFemApp app(argc, argv,Feel::makeEadsAbout("eadsmfem"),Feel::makeEadsOptions());
+    Feel::EadsMFemApp app( argc, argv,Feel::makeEadsAbout( "eadsmfem" ),Feel::makeEadsOptions() );
+
     if ( app.vm().count( "help" ) )
     {
         std::cout << app.optionsDescription() << "\n";
         return 0;
     }
-    std::vector<double> X(7),Y(2);
+
+    std::vector<double> X( 7 ),Y( 2 );
     X[0]=app.vm()["ic1.k"].as<double>(); // kic
     X[1]=app.vm()["fluid.flow-rate"].as<double>(); // fluid flow rate
     X[2]=app.vm()["ic1.Q"].as<double>(); // Q

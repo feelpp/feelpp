@@ -27,7 +27,7 @@ template<uint16_type Dim>
 Geo0D<Dim>::Geo0D()
     :
     MeshEntityWithBoundary( 0 ),
-    _coor(Dim)
+    _coor( Dim )
 {
     _coor = ZeroVector( _coor.size() );
 }
@@ -36,7 +36,7 @@ template<uint16_type Dim>
 Geo0D<Dim>::Geo0D( uint16_type id, bool boundary )
     :
     MeshEntityWithBoundary( id, boundary ),
-    _coor(Dim)
+    _coor( Dim )
 {
     _coor = ZeroVector( _coor.size() );
 }
@@ -49,8 +49,10 @@ Geo0D<Dim>::Geo0D( uint16_type id, Real x, Real y, Real z, bool boundary )
 {
     if ( Dim < 2 )
         _coor[ 0 ] = x;
+
     if (  Dim < 3 )
         _coor[ 1 ] = y;
+
     if ( Dim == 3 )
         _coor[ 2 ] = z;
 }
@@ -69,6 +71,7 @@ Geo0D<Dim>::operator=( Geo0D<Dim> const & G )
 {
     if (  this == &G )
         return *this;
+
     _id = G._id;
     _boundary = G._boundary;
     _coor = G._coor;
@@ -81,12 +84,14 @@ Geo0D<Dim>::showMe( bool verbose, std::ostream & out ) const
 {
     out.setf( std::ios::scientific, std::ios::floatfield );
     out << " Geo0D object " << std::endl;
+
     if ( verbose )
     {
         unsigned i;
         out << " node:" << std::endl;
         out << node() << "\n";
     }
+
     out << "id = " << id() << "  ";
     out << "----- END OF Geo0D data ---" << std::endl << std::endl;
     return out;

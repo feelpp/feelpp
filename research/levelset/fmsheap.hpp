@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -52,19 +52,21 @@ public:
     void change( heap_entry_type in )
     {
         for ( heapvect_iter it=_M_heap.begin(); it != _M_heap.end(); ++it )
+        {
+            if ( it->second == in.second )
             {
-                if (it->second == in.second)
-                    {
-                        if ( farther( *it, in ) )
-                            {
-                                *it = in;
-                                make_heap( _M_heap.begin(),
-                                           _M_heap.end(),
-                                           farther );
-                            }
-                        return;
-                    }
+                if ( farther( *it, in ) )
+                {
+                    *it = in;
+                    make_heap( _M_heap.begin(),
+                               _M_heap.end(),
+                               farther );
+                }
+
+                return;
             }
+        }
+
         // if not found, push
         push( in );
     }
@@ -72,7 +74,7 @@ public:
     heap_entry_type pop()
     {
         // assert _M_heap.size() > 0
-        heap_entry_type out = *(_M_heap.begin());
+        heap_entry_type out = *( _M_heap.begin() );
         pop_heap( _M_heap.begin(), _M_heap.end(), farther );
         _M_heap.pop_back();
         return out;

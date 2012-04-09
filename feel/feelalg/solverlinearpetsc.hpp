@@ -91,20 +91,20 @@ extern "C" {
 extern "C"
 {
 #if PETSC_VERSION_LESS_THAN(3,0,1) && PETSC_VERSION_RELEASE
-  /**
-   * This function is called by PETSc to initialize the preconditioner.
-   * ctx will hold the Preconditioner.
-   */
-  PetscErrorCode __feel_petsc_preconditioner_setup (void * ctx);
+    /**
+     * This function is called by PETSc to initialize the preconditioner.
+     * ctx will hold the Preconditioner.
+     */
+    PetscErrorCode __feel_petsc_preconditioner_setup ( void * ctx );
 
-  /**
-   * This function is called by PETSc to acctually apply the preconditioner.
-   * ctx will hold the Preconditioner.
-   */
-  PetscErrorCode __feel_petsc_preconditioner_apply(void *ctx, Vec x, Vec y);
+    /**
+     * This function is called by PETSc to acctually apply the preconditioner.
+     * ctx will hold the Preconditioner.
+     */
+    PetscErrorCode __feel_petsc_preconditioner_apply( void *ctx, Vec x, Vec y );
 #else
-  PetscErrorCode __feel_petsc_preconditioner_setup (PC);
-  PetscErrorCode __feel_petsc_preconditioner_apply(PC, Vec x, Vec y);
+    PetscErrorCode __feel_petsc_preconditioner_setup ( PC );
+    PetscErrorCode __feel_petsc_preconditioner_apply( PC, Vec x, Vec y );
 #endif
 } // end extern "C"
 
@@ -141,7 +141,7 @@ public:
     /**
      *  Constructor. Initializes Petsc data structures
      */
-    SolverLinearPetsc ( po::variables_map const& vm);
+    SolverLinearPetsc ( po::variables_map const& vm );
 
     /**
      * Destructor.
@@ -161,7 +161,10 @@ public:
     /**
      * if \p cns is true, set the null space to be the constant values
      */
-    void setConstantNullSpace( bool cns ) { M_constant_null_space = cns; }
+    void setConstantNullSpace( bool cns )
+    {
+        M_constant_null_space = cns;
+    }
 
     /**
      * Call the Petsc solver.  It calls the method below, using the
@@ -177,12 +180,12 @@ public:
      */
     //std::pair<unsigned int, real_type>
     boost::tuple<bool,unsigned int, real_type>
-    solve (MatrixSparse<T>  const &mat,
-           Vector<T> & x,
-           Vector<T> const& b,
-           const double tolerance,
-           const unsigned int maxit,
-           bool transpose )
+    solve ( MatrixSparse<T>  const &mat,
+            Vector<T> & x,
+            Vector<T> const& b,
+            const double tolerance,
+            const unsigned int maxit,
+            bool transpose )
     {
         return this->solve( mat, mat, x, b, tolerance, maxit, transpose );
     }
@@ -214,26 +217,30 @@ public:
      */
     //std::pair<unsigned int, real_type>
     boost::tuple<bool,unsigned int, real_type>
-    solve (MatrixSparse<T>  const& mat,
-           MatrixSparse<T>  const& prec,
-           Vector<T> & x,
-           Vector<T> const& b,
-           const double tolerance,
-           const unsigned int maxit,
-           bool transpose );
+    solve ( MatrixSparse<T>  const& mat,
+            MatrixSparse<T>  const& prec,
+            Vector<T> & x,
+            Vector<T> const& b,
+            const double tolerance,
+            const unsigned int maxit,
+            bool transpose );
 
     /**
      * Returns the raw PETSc preconditioner context pointer.  This allows
      * you to specify the PCShellSetApply() and PCShellSetSetUp() functions
      * if you desire.  Just don't do anything crazy like calling PCDestroy()!
      */
-    PC pc() { this->init(); return _M_pc; }
+    PC pc()
+    {
+        this->init();
+        return _M_pc;
+    }
 
     /**
      * Fills the input vector with the sequence of residual norms
      * from the latest iterative solve.
      */
-    void getResidualHistory(std::vector<double>& hist);
+    void getResidualHistory( std::vector<double>& hist );
 
     /**
      * Returns just the initial residual for the solve just
@@ -288,12 +295,13 @@ template <typename T>
 inline
 SolverLinearPetsc<T>::SolverLinearPetsc ()
     :
-    M_constant_null_space(false)
+    M_constant_null_space( false )
 {
-    if (this->worldComm().globalSize() == 1)
-    this->setPreconditionerType(  LU_PRECOND );
-  else
-    this->setPreconditionerType( BLOCK_JACOBI_PRECOND );
+    if ( this->worldComm().globalSize() == 1 )
+        this->setPreconditionerType(  LU_PRECOND );
+
+    else
+        this->setPreconditionerType( BLOCK_JACOBI_PRECOND );
 }
 
 template <typename T>
@@ -301,7 +309,7 @@ inline
 SolverLinearPetsc<T>::SolverLinearPetsc ( po::variables_map const& vm )
     :
     super( vm ),
-    M_constant_null_space(false)
+    M_constant_null_space( false )
 {
 }
 
@@ -311,7 +319,7 @@ template <typename T>
 inline
 SolverLinearPetsc<T>::~SolverLinearPetsc ()
 {
-  this->clear ();
+    this->clear ();
 }
 } // Feel
 

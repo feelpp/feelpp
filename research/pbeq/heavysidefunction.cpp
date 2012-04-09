@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -34,66 +34,66 @@ namespace Feel
 {
 
 void
-heavysideFunction::setSmoothWindow( value_type const& sW)
+heavysideFunction::setSmoothWindow( value_type const& sW )
 {
     M_sW = sW;
     M_sW2 = sW*sW;
     M_2sW = 2*sW;
-    M_4sW3 = 1./(4*sW*sW*sW);
-    M_34sW2 = 3./(4*sW*sW);
+    M_4sW3 = 1./( 4*sW*sW*sW );
+    M_34sW2 = 3./( 4*sW*sW );
 }
 
 ublas::vector<value_type>
-heavysideFunction::operator()( nodes_type const& pointsOnRef) const
+heavysideFunction::operator()( nodes_type const& pointsOnRef ) const
 {
-    ublas::vector<value_type> result(pointsOnRef.size2());
+    ublas::vector<value_type> result( pointsOnRef.size2() );
     std::fill( result.begin(), result.end(), 1.0 );
 
     nodes_type pointsHat( transformToReal( pointsOnRef ) );
 
-    molecule_type::atoms_const_iterator_type atom(M_molecule->begin());
+    molecule_type::atoms_const_iterator_type atom( M_molecule->begin() );
     int i;
 
-    if (atom == M_molecule->end()) return result;
+    if ( atom == M_molecule->end() ) return result;
 
-    node_type Ellipse(pbeqspace_type::Dim);
-    node_type point(pbeqspace_type::Dim);
+    node_type Ellipse( pbeqspace_type::Dim );
+    node_type point( pbeqspace_type::Dim );
 
     value_type r, dr, dr2;
 
 
-    for (i = 0; i < pointsOnRef.size2(); ++i)
+    for ( i = 0; i < pointsOnRef.size2(); ++i )
+    {
+        point = element_prod( *M_stretch,column( pointsHat,i ) ) + ( *M_translation );
+
+        node_type mine( column( pointsHat,i ) );
+        //std::cout << "mine = " << mine(0)  << " "<< mine(1) << " " << mine(2) << std::endl;
+        //std::cout << "point = " << point(0)  << " "<< point(1) << " " << point(2) << std::endl;
+
+        for ( atom = M_molecule->begin(); atom != M_molecule->end(); ++atom )
         {
-            point = element_prod(*M_stretch,column(pointsHat,i)) + (*M_translation);
+            Ellipse =  point  - atom->center();
 
-            node_type mine(column(pointsHat,i));
-            //std::cout << "mine = " << mine(0)  << " "<< mine(1) << " " << mine(2) << std::endl;
-            //std::cout << "point = " << point(0)  << " "<< point(1) << " " << point(2) << std::endl;
+            r = norm_2( Ellipse );
 
-            for (atom = M_molecule->begin(); atom != M_molecule->end(); ++atom)
-                {
-                    Ellipse =  point  - atom->center();
+            if  ( r <= atom->radius() - M_sW )
+            {
+                result( i ) = 0;
+                break;
+            }
 
-                    r = norm_2(Ellipse);
+            if  ( M_sW == 0 || r >= atom->radius() + M_sW )
+                continue;
 
-                    if  ( r <= atom->radius() - M_sW )
-                        {
-                            result(i) = 0;
-                            break;
-                        }
+            dr  = r  - atom->radius() + M_sW;
+            dr2 = dr*dr;
 
-                    if  ( M_sW == 0 || r >= atom->radius() + M_sW )
-                        continue;
+            result( i ) *= - M_4sW3 * ( dr*dr2 ) + M_34sW2 * dr2;
 
-                    dr  = r  - atom->radius() + M_sW;
-                    dr2 = dr*dr;
-
-                    result(i) *= - M_4sW3 * ( dr*dr2 ) + M_34sW2 * dr2;
-
-                }
-
-            //std::cout << "result(" << i << ") = " << result(i) << std::endl;
         }
+
+        //std::cout << "result(" << i << ") = " << result(i) << std::endl;
+    }
 
 
     return result;
@@ -114,25 +114,26 @@ heavysideFunction::transformToReal( nodes_type const& Gt ) const
 
 
 heavysideFunction::value_type
-heavysideFunction::operator()( node_type const& pointHat) const
+heavysideFunction::operator()( node_type const& pointHat ) const
 {
-    node_type Ellipse(pbeqspace_type::Dim);
-    node_type point(pbeqspace_type::Dim);
+    node_type Ellipse( pbeqspace_type::Dim );
+    node_type point( pbeqspace_type::Dim );
 
-    point = element_prod(*M_stretch,pointHat) + (*M_translation);
+    point = element_prod( *M_stretch,pointHat ) + ( *M_translation );
 
-    molecule_type::atoms_const_iterator_type atom(M_molecule->begin());
-    for ( ; atom != M_molecule->end(); ++atom)
+    molecule_type::atoms_const_iterator_type atom( M_molecule->begin() );
+
+    for ( ; atom != M_molecule->end(); ++atom )
+    {
+        Ellipse =  point  - atom->center();
+
+        //if ( norm_inf(Ellipse) >  atom->radius() ) continue;
+
+        if  ( norm_2( Ellipse ) < atom->radius2() )
         {
-            Ellipse =  point  - atom->center();
-
-            //if ( norm_inf(Ellipse) >  atom->radius() ) continue;
-
-            if  ( norm_2(Ellipse) < atom->radius2() )
-                {
-                    return 0;
-                }
+            return 0;
         }
+    }
 
     return 1;
 }

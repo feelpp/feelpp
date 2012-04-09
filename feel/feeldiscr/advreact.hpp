@@ -40,7 +40,7 @@
 namespace Feel
 {
 
-    enum StabilizationMethods{NO, CIP, SGS, SUPG, GALS};
+enum StabilizationMethods {NO, CIP, SGS, SUPG, GALS};
 
 /**
  * \class AdvReact
@@ -88,7 +88,7 @@ public:
         M_rhs( space ),
         M_rhsStab( space ),
         M_updated( false ),
-        M_imposeBC(imposeBC),
+        M_imposeBC( imposeBC ),
         M_stabcoeff( 0.1 * std::pow( polyOrder, -3.5 ) )
     {
         M_StabMethod=GALS;
@@ -96,10 +96,14 @@ public:
 
     // setting of options
     void set_stabcoeff( double stabcoeff )
-    { M_stabcoeff = stabcoeff * std::pow( polyOrder, -3.5 ); }
+    {
+        M_stabcoeff = stabcoeff * std::pow( polyOrder, -3.5 );
+    }
 
-    void setStabMethod(StabilizationMethods Method )
-    { M_StabMethod=Method; }
+    void setStabMethod( StabilizationMethods Method )
+    {
+        M_StabMethod=Method;
+    }
 
     // update operator and rhs with given expressions
     template<typename Esigma, typename Ebeta,
@@ -109,7 +113,7 @@ public:
                  const Ef& f,
                  const Eg& g,
                  bool updateStabilization = true
-                 );
+               );
 
     // solve system, call not needed, but possible
     void solve();
@@ -148,159 +152,162 @@ private:
 template<class Space>
 template<typename Esigma, typename Ebeta,
          typename Ef, typename Eg>
-void AdvReact<Space>::update(const Esigma& sigma,
-                                              const Ebeta& beta,
-                                              const Ef& f,
-                                              const Eg& g,
-                                              bool updateStabilization
-                                              )
+void AdvReact<Space>::update( const Esigma& sigma,
+                              const Ebeta& beta,
+                              const Ef& f,
+                              const Eg& g,
+                              bool updateStabilization
+                            )
 {
     M_updated = true;
 
     using namespace Feel::vf;
 
     M_operator =
-        integrate( elements(M_mesh),
-                   ( val(sigma)*idt(M_phi) + gradt(M_phi)*val(beta) ) * id(M_phi)
-                   ) ;
-    if (M_imposeBC == true)
+        integrate( elements( M_mesh ),
+                   ( val( sigma )*idt( M_phi ) + gradt( M_phi )*val( beta ) ) * id( M_phi )
+                 ) ;
+
+    if ( M_imposeBC == true )
+    {
+        M_operator +=
+            integrate( boundaryfaces( M_mesh ),
+                       - chi( trans( beta )*N() < 0 ) * /* inflow */
+                       val( trans( beta )*N() ) * idt( M_phi ) * id( M_phi )
+                     );
+    }
+
+    if ( M_StabMethod != NO )
+    {
+        if ( updateStabilization )
         {
-            M_operator +=
-                integrate( boundaryfaces(M_mesh),
-                           - chi( trans(beta)*N() < 0 ) * /* inflow */
-                           val(trans(beta)*N()) * idt(M_phi) * id(M_phi)
-                           );
-        }
+            //good review of stabilization methods in [Chaple 2006]
+            if ( M_StabMethod== CIP && ( M_stabcoeff != 0.0 ) )
+            {
+                /* don't work properly in 3D (because of internalfaces) */
+                M_operatorStab=
+                    integrate( internalfaces( M_mesh ),
+                               val( M_stabcoeff*vf::pow( hFace(),2.0 ) *
+                                    abs( trans( beta )*N() ) ) *
+                               ( jumpt( gradt( M_phi ) ) * jump( grad( M_phi ) ) )
+                             );
+            }//Continuous Interior Penalty
 
-    if (M_StabMethod != NO)
-        {
-            if ( updateStabilization )
-                {
-                    //good review of stabilization methods in [Chaple 2006]
-                    if (M_StabMethod== CIP && (M_stabcoeff != 0.0) )
-                                {
-                                    /* don't work properly in 3D (because of internalfaces) */
-                                    M_operatorStab=
-                                        integrate( internalfaces(M_mesh),
-                                                   val( M_stabcoeff*vf::pow(hFace(),2.0) *
-                                                        abs(trans(beta)*N()) ) *
-                                                   (jumpt(gradt(M_phi)) * jump(grad(M_phi)))
-                                                   );
-                                }//Continuous Interior Penalty
+            else if ( M_StabMethod== SUPG )
+            {
+                AUTO( coeff, vf::h()/( 2*vf::sqrt( val( trans( beta ) )*val( beta ) ) ) );
+                AUTO( L_op, ( grad( M_phi )*val( beta ) ) );
+                AUTO( L_opt, ( gradt( M_phi )*val( beta ) + val( sigma )*idt( M_phi ) ) );
 
-                    else if (M_StabMethod== SUPG)
-                        {
-                            AUTO(coeff, vf::h()/(2*vf::sqrt(val(trans(beta))*val(beta))));
-                            AUTO(L_op, ( grad(M_phi)*val(beta) ) );
-                            AUTO(L_opt, ( gradt(M_phi)*val(beta) + val(sigma)*idt(M_phi) ) );
-
-                            M_operatorStab=
-                                integrate(elements(M_mesh),
-                                          coeff
-                                          * L_op
-                                          * L_opt );
+                M_operatorStab=
+                    integrate( elements( M_mesh ),
+                               coeff
+                               * L_op
+                               * L_opt );
 
 
-                            M_operatorStab+=
-                                integrate(boundaryfaces(M_mesh),
-                                          coeff
-                                          * L_op
-                                          * L_opt );
+                M_operatorStab+=
+                    integrate( boundaryfaces( M_mesh ),
+                               coeff
+                               * L_op
+                               * L_opt );
 
-                            M_rhsStab=
-                                integrate(elements(M_mesh),
-                                          coeff*L_op*val(f));
+                M_rhsStab=
+                    integrate( elements( M_mesh ),
+                               coeff*L_op*val( f ) );
 
 
-                            M_rhsStab+=
-                                integrate(boundaryfaces(M_mesh),
-                                          coeff*L_op*val(f) );
+                M_rhsStab+=
+                    integrate( boundaryfaces( M_mesh ),
+                               coeff*L_op*val( f ) );
 
-                        }//Streamline Upwind Petrov Galerkin
+            }//Streamline Upwind Petrov Galerkin
 
-                    else if (M_StabMethod== GALS)
-                        {
-                            auto coeff = val(1.0 / (2*vf::sqrt(trans(beta)*beta)/vf::h()+vf::abs(sigma)));
-                            auto L_op = (grad(M_phi)*val(beta) + val(sigma)*id(M_phi));
-                            auto L_opt = (gradt(M_phi)*val(beta) + val(sigma)*idt(M_phi));
+            else if ( M_StabMethod== GALS )
+            {
+                auto coeff = val( 1.0 / ( 2*vf::sqrt( trans( beta )*beta )/vf::h()+vf::abs( sigma ) ) );
+                auto L_op = ( grad( M_phi )*val( beta ) + val( sigma )*id( M_phi ) );
+                auto L_opt = ( gradt( M_phi )*val( beta ) + val( sigma )*idt( M_phi ) );
 
-                            M_operatorStab=
-                                integrate( elements(M_mesh),
-                                           coeff
-                                           * L_op
-                                           * L_opt );
+                M_operatorStab=
+                    integrate( elements( M_mesh ),
+                               coeff
+                               * L_op
+                               * L_opt );
 
-                            M_operatorStab+=
-                                integrate(boundaryfaces(M_mesh),
-                                          coeff
-                                          * L_op
-                                          * L_opt );
+                M_operatorStab+=
+                    integrate( boundaryfaces( M_mesh ),
+                               coeff
+                               * L_op
+                               * L_opt );
 
-                            M_rhsStab=
-                                integrate(elements(M_mesh),
-                                          coeff*L_op*val(f));
+                M_rhsStab=
+                    integrate( elements( M_mesh ),
+                               coeff*L_op*val( f ) );
 
-                            M_rhsStab+=
-                                integrate(boundaryfaces(M_mesh),
-                                          coeff*L_op*val(f) );
+                M_rhsStab+=
+                    integrate( boundaryfaces( M_mesh ),
+                               coeff*L_op*val( f ) );
 
-                        }//Galerkin Least Square
+            }//Galerkin Least Square
 
-                    else if (M_StabMethod== SGS)
-                        {
-                            AUTO(coeff, 1.0 / (2*vf::sqrt(val(trans(beta))*val(beta))/vf::h()+vf::abs(val(sigma))));
+            else if ( M_StabMethod== SGS )
+            {
+                AUTO( coeff, 1.0 / ( 2*vf::sqrt( val( trans( beta ) )*val( beta ) )/vf::h()+vf::abs( val( sigma ) ) ) );
 
-                            //                            AUTO(coeff_bound, 1.0 / (2*vf::sqrt(val(trans(beta))*val(beta))/vf::hFace()+vf::abs(val(sigma))));
+                //                            AUTO(coeff_bound, 1.0 / (2*vf::sqrt(val(trans(beta))*val(beta))/vf::hFace()+vf::abs(val(sigma))));
 
-                            AUTO(L_op, (grad(M_phi)* val(beta) - val(sigma) * id(M_phi) ) );
-                            AUTO(L_opt, ( gradt(M_phi)*val(beta) + val(sigma)*idt(M_phi) ) );
+                AUTO( L_op, ( grad( M_phi )* val( beta ) - val( sigma ) * id( M_phi ) ) );
+                AUTO( L_opt, ( gradt( M_phi )*val( beta ) + val( sigma )*idt( M_phi ) ) );
 
-                            M_operatorStab=
-                                integrate(elements(M_mesh),
-                                          coeff
-                                          * L_op
-                                          * L_opt );
+                M_operatorStab=
+                    integrate( elements( M_mesh ),
+                               coeff
+                               * L_op
+                               * L_opt );
 
-                            M_operatorStab+=
-                                integrate(boundaryfaces(M_mesh),
-                                          coeff
-                                          * L_op
-                                          * L_opt );
+                M_operatorStab+=
+                    integrate( boundaryfaces( M_mesh ),
+                               coeff
+                               * L_op
+                               * L_opt );
 
-                            M_rhsStab=
-                                integrate(elements(M_mesh),
-                                          coeff*L_op*val(f));
+                M_rhsStab=
+                    integrate( elements( M_mesh ),
+                               coeff*L_op*val( f ) );
 
-                            M_rhsStab+=
-                                integrate(boundaryfaces(M_mesh),
-                                          coeff*L_op*val(f) );
-                        }//Subgrid Scale method
+                M_rhsStab+=
+                    integrate( boundaryfaces( M_mesh ),
+                               coeff*L_op*val( f ) );
+            }//Subgrid Scale method
 
-                    //M_operatorStab.mat().printMatlab("M_advReact_stab.m");
-                    //M_rhsStab.container().printMatlab("M_rhs_stab.m");
-                }//update stabilization
-            M_operator.add(1.0, M_operatorStab);
+            //M_operatorStab.mat().printMatlab("M_advReact_stab.m");
+            //M_rhsStab.container().printMatlab("M_rhs_stab.m");
+        }//update stabilization
 
-        }//DoStabilize
+        M_operator.add( 1.0, M_operatorStab );
+
+    }//DoStabilize
+
     M_operator.mat().close();
     //M_operator.mat().printMatlab("M_advReact.m");
 
     M_rhs =
-        integrate( elements(M_mesh),
-                   val(f) * id(M_phi)
-                   );
+        integrate( elements( M_mesh ),
+                   val( f ) * id( M_phi )
+                 );
 
-    if (M_imposeBC == true)
-        {
-            M_rhs +=
-                integrate( boundaryfaces(M_mesh),
-                           val(- chi( trans(beta)*N() < 0 ) /* inflow */ *
-                               (trans(beta)*N())*(g) ) * id(M_phi)
-                           );
-        }
+    if ( M_imposeBC == true )
+    {
+        M_rhs +=
+            integrate( boundaryfaces( M_mesh ),
+                       val( - chi( trans( beta )*N() < 0 ) /* inflow */ *
+                            ( trans( beta )*N() )*( g ) ) * id( M_phi )
+                     );
+    }
 
-    if (M_StabMethod != NO)
-        M_rhs.add(M_rhsStab);
+    if ( M_StabMethod != NO )
+        M_rhs.add( M_rhsStab );
 
     //M_rhs.container().printMatlab("F_advReact.m");
 
@@ -314,6 +321,7 @@ void AdvReact<Space>::solve()
     {
         return;
     }
+
     M_updated = false;
 
     // -- solve

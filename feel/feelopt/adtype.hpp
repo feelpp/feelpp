@@ -51,7 +51,7 @@ struct ADVariable
 template<int N, template<int> class T>
 struct SListGenerator
 {
-    typedef STYPELIST_1(T<N>) VL;
+    typedef STYPELIST_1( T<N> ) VL;
     typedef typename ::St::STL::SAppend<VL,typename SListGenerator<N-1,T>::list_type>::Result list_type;
 };
 template<template<int> class T>

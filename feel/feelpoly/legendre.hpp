@@ -239,10 +239,11 @@ public:
     self_type const& operator=( self_type const& d )
     {
         if ( this != &d )
-            {
-                _M_pts = d._M_pts;
-                _S_D = d._S_D;
-            }
+        {
+            _M_pts = d._M_pts;
+            _S_D = d._S_D;
+        }
+
         return *this;
     }
 
@@ -268,29 +269,44 @@ public:
     /**
      * Number of polynomials in set
      */
-    size_type size() const { return convex_type::polyDims( nOrder ); }
+    size_type size() const
+    {
+        return convex_type::polyDims( nOrder );
+    }
 
     /**
      * \return the maximum degree of the Legendre polynomial to be
      * constructed
      */
-    uint16_type degree() const { return nOrder; }
+    uint16_type degree() const
+    {
+        return nOrder;
+    }
 
     /**
      * \return self as a basis
      */
-    self_type const& basis() const { return *this; }
+    self_type const& basis() const
+    {
+        return *this;
+    }
 
     /**
      * \return true if the Legendre polynomials are normalized, false
      * otherwise
      */
-    bool isNormalized() const { return is_normalized; }
+    bool isNormalized() const
+    {
+        return is_normalized;
+    }
 
     /**
      * \return the \c familyName()
      */
-    std::string familyName() const { return "legendre"; }
+    std::string familyName() const
+    {
+        return "legendre";
+    }
 
     //@}
 
@@ -369,12 +385,21 @@ public:
 private:
 private:
 
-    static value_type normalization( int i ) { return (is_normalized?math::sqrt( value_type( i ) + 0.5 ) : value_type(1)); }
-    static value_type normalization( int i, int j ) { return (is_normalized?math::sqrt( ( value_type( i ) + 0.5 ) *
-                                                                                        ( value_type( j ) + 0.5 ) ) : value_type(1)); }
-    static value_type normalization( int i, int j, int k ) { return (is_normalized?math::sqrt( ( value_type( i ) + 0.5 ) *
-                                                                                               ( value_type( j ) + 0.5 ) *
-                                                                                               ( value_type( k ) + 0.5 ) ) : value_type(1)); }
+    static value_type normalization( int i )
+    {
+        return ( is_normalized?math::sqrt( value_type( i ) + 0.5 ) : value_type( 1 ) );
+    }
+    static value_type normalization( int i, int j )
+    {
+        return ( is_normalized?math::sqrt( ( value_type( i ) + 0.5 ) *
+                                           ( value_type( j ) + 0.5 ) ) : value_type( 1 ) );
+    }
+    static value_type normalization( int i, int j, int k )
+    {
+        return ( is_normalized?math::sqrt( ( value_type( i ) + 0.5 ) *
+                                           ( value_type( j ) + 0.5 ) *
+                                           ( value_type( k ) + 0.5 ) ) : value_type( 1 ) );
+    }
     /**
      * Evaluation at a set of points of the expansion basis in 2D on
      * the triangle
@@ -382,12 +407,14 @@ private:
     static matrix_type
     evaluate( points_type const& __pts, mpl::int_<1> )
     {
-        matrix_type m ( JacobiBatchEvaluation<nOrder,value_type>( 0.0, 0.0, ublas::row(__pts, 0) ) );
+        matrix_type m ( JacobiBatchEvaluation<nOrder,value_type>( 0.0, 0.0, ublas::row( __pts, 0 ) ) );
+
         if ( is_normalized )
-            {
-                for ( uint16_type i = 0;i < m.size1(); ++i )
-                    ublas::row( m, i ) *= normalization( i );
-            }
+        {
+            for ( uint16_type i = 0; i < m.size1(); ++i )
+                ublas::row( m, i ) *= normalization( i );
+        }
+
         return m;
     }
 
@@ -399,15 +426,17 @@ private:
     static vector_matrix_type
     derivate( ublas::matrix_expression<AE> const& __pts, mpl::int_<1> )
     {
-        FEELPP_ASSERT( __pts().size1() == 1 )( __pts().size1() )( __pts().size2() ).error("invalid points");
+        FEELPP_ASSERT( __pts().size1() == 1 )( __pts().size1() )( __pts().size2() ).error( "invalid points" );
         // Debug() << "Expansion::derivate<1>] number of points " << __pts().size2() << "\n";
 
         vector_matrix_type D( 1 );
         D[0].resize( nOrder+1, __pts().size2() );
-        D[0] = JacobiBatchDerivation<nOrder,value_type>( 0.0, 0.0, ublas::row(__pts(),0) );
+        D[0] = JacobiBatchDerivation<nOrder,value_type>( 0.0, 0.0, ublas::row( __pts(),0 ) );
+
         if ( is_normalized )
             for ( uint16_type i = 0; i < nOrder+1; ++i )
                 ublas::row( D[0], i ) *= normalization( i );
+
         return D;
     }
 
@@ -494,30 +523,33 @@ Legendre<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::initDeriv
     typedef typename traits_type::points_type points_type;
     typedef typename traits_type::node_type node_type;
 #endif // 0
-    if ( _S_has_derivation == false )
-        {
-            _S_has_derivation = true;
 
-            reference_convex_type refconvex;
-            // constructor pointset for differentiation only in
-            // the interior(1)
-            diff_pointset_type diff_pts(1);
-            matrix_type A( evaluate( diff_pts.points() ) );
+    if ( _S_has_derivation == false )
+    {
+        _S_has_derivation = true;
+
+        reference_convex_type refconvex;
+        // constructor pointset for differentiation only in
+        // the interior(1)
+        diff_pointset_type diff_pts( 1 );
+        matrix_type A( evaluate( diff_pts.points() ) );
 
 #if 1
-            matrix_type D = ublas::identity_matrix<value_type>( A.size1(), A.size2()  );
-            LU<matrix_type> lu(A);
-            matrix_type C = lu.solve( D );
+        matrix_type D = ublas::identity_matrix<value_type>( A.size1(), A.size2()  );
+        LU<matrix_type> lu( A );
+        matrix_type C = lu.solve( D );
 
-            vector_matrix_type d ( derivate( diff_pts.points() ) );
-            _S_D.resize( d.size() );
-            for ( size_type i = 0; i < d.size(); ++i )
-                {
-                    _S_D[i] = ublas::prod( d[i], C );
-                    glas::clean( _S_D[i] );
-                }
-#endif
+        vector_matrix_type d ( derivate( diff_pts.points() ) );
+        _S_D.resize( d.size() );
+
+        for ( size_type i = 0; i < d.size(); ++i )
+        {
+            _S_D[i] = ublas::prod( d[i], C );
+            glas::clean( _S_D[i] );
         }
+
+#endif
+    }
 }
 
 template<uint16_type Dim,
@@ -537,14 +569,15 @@ Legendre<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::evaluate(
     matrix_type as( JacobiBatchEvaluation<nOrder, value_type>( 0.0, 0.0, eta1s ) );
     matrix_type bs( JacobiBatchEvaluation<nOrder, value_type>( 0.0, 0.0, eta2s ) );
 
-    for ( uint16_type cur = 0, i = 0; i < nOrder+1;++i )
+    for ( uint16_type cur = 0, i = 0; i < nOrder+1; ++i )
+    {
+        for ( uint16_type j = 0; j < nOrder+1; ++j,++cur )
         {
-            for ( uint16_type j = 0; j < nOrder+1; ++j,++cur )
-                {
-                    ublas::row( res, cur ) = normalization( i, j ) * ublas::element_prod( ublas::row( as, i),
-                                                                                          ublas::row( bs, j) );
-                }
+            ublas::row( res, cur ) = normalization( i, j ) * ublas::element_prod( ublas::row( as, i ),
+                                     ublas::row( bs, j ) );
         }
+    }
+
     return res;
 }
 
@@ -568,16 +601,16 @@ Legendre<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::derivate(
     matrix_type bs( JacobiBatchEvaluation<nOrder, value_type>( 0.0, 0.0, ublas::row( __pts(), 1 ) ) );
     matrix_type dbs( JacobiBatchDerivation<nOrder, value_type>( 0.0, 0.0, ublas::row( __pts(), 1 ) ) );
 
-    for ( uint16_type cur = 0, i = 0; i < nOrder+1;++i )
+    for ( uint16_type cur = 0, i = 0; i < nOrder+1; ++i )
+    {
+        for ( uint16_type j = 0; j < nOrder+1; ++j,++cur )
         {
-            for ( uint16_type j = 0; j < nOrder+1; ++j,++cur )
-                {
-                    ublas::row( res[0], cur ) = normalization( i, j ) * ublas::element_prod( ublas::row( das, i),
-                                                                                             ublas::row( bs, j) );
-                    ublas::row( res[1], cur ) = normalization( i, j ) * ublas::element_prod( ublas::row( as, i),
-                                                                                             ublas::row( dbs, j) );
-                }
+            ublas::row( res[0], cur ) = normalization( i, j ) * ublas::element_prod( ublas::row( das, i ),
+                                        ublas::row( bs, j ) );
+            ublas::row( res[1], cur ) = normalization( i, j ) * ublas::element_prod( ublas::row( as, i ),
+                                        ublas::row( dbs, j ) );
         }
+    }
 
     return res;
 }
@@ -601,20 +634,21 @@ Legendre<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::evaluate(
     matrix_type bs( JacobiBatchEvaluation<nOrder, value_type>( 0.0, 0.0, eta2s ) );
     matrix_type cs( JacobiBatchEvaluation<nOrder, value_type>( 0.0, 0.0, eta3s ) );
 
-    for ( uint16_type cur = 0, i = 0; i < nOrder+1;++i )
+    for ( uint16_type cur = 0, i = 0; i < nOrder+1; ++i )
+    {
+        for ( uint16_type j = 0; j < nOrder+1; ++j )
         {
-            for ( uint16_type j = 0; j < nOrder+1; ++j )
-                {
-                    for ( uint16_type k = 0; k < nOrder+1; ++k,++cur )
-                        {
-                            ublas::row( res, cur ) =
-                                normalization( i, j, k )*
-                                ublas::element_prod(ublas::element_prod( ublas::row( as, i),
-                                                                         ublas::row( bs, j) ),
-                                                    ublas::row( cs, k ) );
-                        }
-                }
+            for ( uint16_type k = 0; k < nOrder+1; ++k,++cur )
+            {
+                ublas::row( res, cur ) =
+                    normalization( i, j, k )*
+                    ublas::element_prod( ublas::element_prod( ublas::row( as, i ),
+                                         ublas::row( bs, j ) ),
+                                         ublas::row( cs, k ) );
+            }
         }
+    }
+
     return res;
 }
 
@@ -641,31 +675,31 @@ Legendre<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::derivate(
     matrix_type cs( JacobiBatchEvaluation<nOrder, value_type>( 0.0, 0.0, ublas::row( __pts(), 2 ) ) );
     matrix_type dcs( JacobiBatchDerivation<nOrder, value_type>( 0.0, 0.0, ublas::row( __pts(), 2 ) ) );
 
-    for ( uint16_type cur = 0, i = 0; i < nOrder+1;++i )
+    for ( uint16_type cur = 0, i = 0; i < nOrder+1; ++i )
+    {
+        for ( uint16_type j = 0; j < nOrder+1; ++j )
         {
-            for ( uint16_type j = 0; j < nOrder+1; ++j )
-                {
-                    for ( uint16_type k = 0; k < nOrder+1; ++k,++cur )
-                        {
-                            ublas::row( res[0], cur ) = ( normalization( i, j, k ) *
-                                                          ublas::element_prod( ublas::element_prod( ublas::row( das, i),
-                                                                                                    ublas::row( bs, j) ),
-                                                                               ublas::row( cs, k) ) );
+            for ( uint16_type k = 0; k < nOrder+1; ++k,++cur )
+            {
+                ublas::row( res[0], cur ) = ( normalization( i, j, k ) *
+                                              ublas::element_prod( ublas::element_prod( ublas::row( das, i ),
+                                                      ublas::row( bs, j ) ),
+                                                      ublas::row( cs, k ) ) );
 
-                            ublas::row( res[1], cur ) = ( normalization( i, j, k ) *
-                                                          ublas::element_prod( ublas::element_prod( ublas::row( as, i),
-                                                                                                    ublas::row( dbs, j) ),
-                                                                               ublas::row( cs, k) ) );
+                ublas::row( res[1], cur ) = ( normalization( i, j, k ) *
+                                              ublas::element_prod( ublas::element_prod( ublas::row( as, i ),
+                                                      ublas::row( dbs, j ) ),
+                                                      ublas::row( cs, k ) ) );
 
-                            ublas::row( res[2], cur ) = ( normalization( i, j, k ) *
-                                                          ublas::element_prod( ublas::element_prod( ublas::row( as, i),
-                                                                                                    ublas::row( bs, j) ),
-                                                                               ublas::row( dcs, k) ) );
+                ublas::row( res[2], cur ) = ( normalization( i, j, k ) *
+                                              ublas::element_prod( ublas::element_prod( ublas::row( as, i ),
+                                                      ublas::row( bs, j ) ),
+                                                      ublas::row( dcs, k ) ) );
 
 
-                        }
-                }
+            }
         }
+    }
 
     return res;
 }

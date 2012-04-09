@@ -132,49 +132,118 @@ public:
      */
     //@{
 
-    Feel::po::variables_map vm() const { return M_vm; }
+    Feel::po::variables_map vm() const
+    {
+        return M_vm;
+    }
 
-    bool isSteady() const { return M_is_steady; }
+    bool isSteady() const
+    {
+        return M_is_steady;
+    }
 
-    double d() const { return M_dimension; }
-    double h() const { return M_h; }
+    double d() const
+    {
+        return M_dimension;
+    }
+    double h() const
+    {
+        return M_h;
+    }
 
-    double orderTime() const {return M_order_time; }
-    double orderTemp() const {return M_order_temp; }
-    double orderU() const {return M_order_u; }
-    double orderP() const {return M_order_p; }
+    double orderTime() const
+    {
+        return M_order_time;
+    }
+    double orderTemp() const
+    {
+        return M_order_temp;
+    }
+    double orderU() const
+    {
+        return M_order_u;
+    }
+    double orderP() const
+    {
+        return M_order_p;
+    }
 
-    double gammaBc() const { return M_gamma_bc; }
-    double gammaU() const { return M_gamma_u; }
-    double gammaP() const { return M_gamma_p; }
-    double gammaTemp() const { return M_gamma_conv_T; }
-    double gammaDivDiv() const { return M_gamma_divdiv; }
-    double deltaDivDiv() const { return M_delta_divdiv; }
-    double epsPseudoCompressibility() const { return M_eps_compress; }
+    double gammaBc() const
+    {
+        return M_gamma_bc;
+    }
+    double gammaU() const
+    {
+        return M_gamma_u;
+    }
+    double gammaP() const
+    {
+        return M_gamma_p;
+    }
+    double gammaTemp() const
+    {
+        return M_gamma_conv_T;
+    }
+    double gammaDivDiv() const
+    {
+        return M_gamma_divdiv;
+    }
+    double deltaDivDiv() const
+    {
+        return M_delta_divdiv;
+    }
+    double epsPseudoCompressibility() const
+    {
+        return M_eps_compress;
+    }
 
-    OpusComponent const& component( std::string const& comp ) const { return M_components.find( comp )->second; }
-    OpusComponent& component( std::string const& comp ) { return M_components.find( comp )->second; }
+    OpusComponent const& component( std::string const& comp ) const
+    {
+        return M_components.find( comp )->second;
+    }
+    OpusComponent& component( std::string const& comp )
+    {
+        return M_components.find( comp )->second;
+    }
 
-    std::vector<std::string> const& dirichletTemperatureMarkers() const { return M_dirichlet_temp; }
-    std::vector<std::string> const& dirichletVelocityMarkers() const { return M_dirichlet_velocity; }
-    std::vector<std::string> const& dirichletPressureMarkers() const { return M_dirichlet_pressure; }
+    std::vector<std::string> const& dirichletTemperatureMarkers() const
+    {
+        return M_dirichlet_temp;
+    }
+    std::vector<std::string> const& dirichletVelocityMarkers() const
+    {
+        return M_dirichlet_velocity;
+    }
+    std::vector<std::string> const& dirichletPressureMarkers() const
+    {
+        return M_dirichlet_pressure;
+    }
 
     /**
      * \return whether to use the same preconditioner
      */
-    int useSamePreconditioner() const { return M_use_same_prec; }
+    int useSamePreconditioner() const
+    {
+        return M_use_same_prec;
+    }
 
 
     /**
      * \return how to initialize the Navier-Stokes solver
      */
-    int init() const { return M_init; }
+    int init() const
+    {
+        return M_init;
+    }
 
     /**
      * \return the export strategy
      * 0 no export, 1 export with same mesh, 2 export on finer mesh
      */
-    int doExport() const { return M_export; }
+    int doExport() const
+    {
+        return M_export;
+    }
 
     //@}
 
@@ -195,17 +264,20 @@ public:
 
     void createMatlabScript();
 
-    Inflow inflow( double& time ) const { return Inflow( *this, time ); }
+    Inflow inflow( double& time ) const
+    {
+        return Inflow( *this, time );
+    }
 
     void print() const;
 
     static Feel::po::options_description makeOptions();
 
     //! load the property tree
-    void load(const std::string &filename);
+    void load( const std::string &filename );
 
     //! save the property tree
-    void save(const std::string &filename);
+    void save( const std::string &filename );
 
     //@}
 

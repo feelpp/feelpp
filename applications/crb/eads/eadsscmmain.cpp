@@ -48,8 +48,8 @@ main( int argc, char** argv )
 {
 
     Feel::EadsSCMApp app( argc, argv,
-                          Feel::makeEadsAbout("eadsscm"),
-                          Feel::makeEadsSCMOptions());
+                          Feel::makeEadsAbout( "eadsscm" ),
+                          Feel::makeEadsSCMOptions() );
 
     app.run();
 
