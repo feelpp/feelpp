@@ -2065,6 +2065,15 @@ public:
             detail::ignore_unused_variable_warning( c2 );
             return curlx( i, c1, c2, q, mpl::int_<rank>() );
         }
+        value_type curlx( uint16_type i,  uint16_type c1, uint16_type c2, uint32_type q, mpl::int_<0> ) const
+        {
+            detail::ignore_unused_variable_warning(i);
+            detail::ignore_unused_variable_warning(q);
+            detail::ignore_unused_variable_warning(c1);
+            detail::ignore_unused_variable_warning(c2);
+            throw std::logic_error("invalid use of curl operator, field must be vectorial");
+            return 0;
+        }
         value_type curlx( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::int_<1> ) const
         {
             detail::ignore_unused_variable_warning( c1 );
@@ -2077,17 +2086,36 @@ public:
             detail::ignore_unused_variable_warning( c2 );
             return curly( i, c1, c2, q, mpl::int_<rank>() );
         }
+        value_type curly( uint16_type i,  uint16_type c1, uint16_type c2, uint32_type q, mpl::int_<0> ) const
+        {
+            detail::ignore_unused_variable_warning(i);
+            detail::ignore_unused_variable_warning(q);
+            detail::ignore_unused_variable_warning(c1);
+            detail::ignore_unused_variable_warning(c2);
+            throw std::logic_error("invalid use of curl operator, field must be vectorial");
+            return 0;
+        }
         value_type curly( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::int_<1> ) const
         {
             detail::ignore_unused_variable_warning( c1 );
             detail::ignore_unused_variable_warning( c2 );
             return _M_curl[i][q]( 1 );
         }
+
         value_type curlz( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q ) const
         {
             detail::ignore_unused_variable_warning( c1 );
             detail::ignore_unused_variable_warning( c2 );
             return curlz( i, c1, c2, q, mpl::int_<rank>() );
+        }
+        value_type curlz( uint16_type i,  uint16_type c1, uint16_type c2, uint32_type q, mpl::int_<0> ) const
+        {
+            detail::ignore_unused_variable_warning(i);
+            detail::ignore_unused_variable_warning(q);
+            detail::ignore_unused_variable_warning(c1);
+            detail::ignore_unused_variable_warning(c2);
+            throw std::logic_error("invalid use of curl operator, field must be vectorial");
+            return 0;
         }
         value_type curlz( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::int_<1> ) const
         {
