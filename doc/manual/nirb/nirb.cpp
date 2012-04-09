@@ -65,30 +65,30 @@ using namespace Feel::vf;
  */
 inline po::options_description makeOptions()
 {
-    po::options_description NIRBoptions("Nirb options");
+    po::options_description NIRBoptions( "Nirb options" );
     NIRBoptions.add_options()
-        // meshes parameters
-        ("hfinsize", po::value<double>()->default_value( 0.05 ), "fine mesh size")
-        ("hcoarsesize", po::value<double>()->default_value( 0.1 ), "coarse mesh size")
-        ("ReadingMeshes",po::value<int>()->default_value(0),"Reading meshes in file if set to 1 -- default value = 0")
-        // Reduced basis parameters
-        ("NbSnapshot",po::value<int>()->default_value(100),"numbers of snapshot computed")
-        ("sizeRB",po::value<int>()->default_value(15),"size of reduced basis")
+    // meshes parameters
+    ( "hfinsize", po::value<double>()->default_value( 0.05 ), "fine mesh size" )
+    ( "hcoarsesize", po::value<double>()->default_value( 0.1 ), "coarse mesh size" )
+    ( "ReadingMeshes",po::value<int>()->default_value( 0 ),"Reading meshes in file if set to 1 -- default value = 0" )
+    // Reduced basis parameters
+    ( "NbSnapshot",po::value<int>()->default_value( 100 ),"numbers of snapshot computed" )
+    ( "sizeRB",po::value<int>()->default_value( 15 ),"size of reduced basis" )
 
-        ("muMin", po::value<double>()->default_value( 0 ), "angle in [0,pi/2]")
-        ("muMax", po::value<double>()->default_value( M_PI/2.),"angle in [0,pi/2]")
-    
-        ("mu",po::value<double>()->default_value(1.),"angle in [0,pi/2]")
-    
-        ("Sampling",po::value<int>()->default_value(1),"Does not compute sampling if set to 0, (set to 1 by default)")
-        ("SamplingCoarse",po::value<int>()->default_value(0),"Compute Coarse sampling if set to 1, (set to 0 by default)")
+    ( "muMin", po::value<double>()->default_value( 0 ), "angle in [0,pi/2]" )
+    ( "muMax", po::value<double>()->default_value( M_PI/2. ),"angle in [0,pi/2]" )
 
-        ("Offline",po::value<int>()->default_value(1),"integer equal to 0 if the offline has not  to be done")
-    
-        ("ComputeError",po::value<int>()->default_value(1),"integer equal to 0 if the error computation has not to be done")
+    ( "mu",po::value<double>()->default_value( 1. ),"angle in [0,pi/2]" )
 
-        ("polynomialOrder",po::value<int>()->default_value(3),"polynomial order");
-        ;
+    ( "Sampling",po::value<int>()->default_value( 1 ),"Does not compute sampling if set to 0, (set to 1 by default)" )
+    ( "SamplingCoarse",po::value<int>()->default_value( 0 ),"Compute Coarse sampling if set to 1, (set to 0 by default)" )
+
+    ( "Offline",po::value<int>()->default_value( 1 ),"integer equal to 0 if the offline has not  to be done" )
+
+    ( "ComputeError",po::value<int>()->default_value( 1 ),"integer equal to 0 if the error computation has not to be done" )
+
+    ( "polynomialOrder",po::value<int>()->default_value( 3 ),"polynomial order" );
+    ;
     return NIRBoptions.add( Feel::feel_options() );
 }
 
@@ -108,13 +108,13 @@ inline AboutData makeAbout()
                      "0.2",
                      "Non intrusive reduced basis",
                      Feel::AboutData::License_GPL,
-                     "Copyright (c) 2011 Universite Joseph Fourier");
+                     "Copyright (c) 2011 Universite Joseph Fourier" );
 
-    about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
     return about;
 
 }
- 
+
 
 //-----------------------------------------
 //-----------------------------------------
@@ -125,11 +125,13 @@ int main( int argc, char** argv )
 {
     Environment env( argc, argv );
     Application app( argc, argv, makeAbout(), makeOptions() );
+
     if ( app.vm().count( "help" ) )
     {
         std::cout << app.optionsDescription() << "\n";
         return 0;
     }
+
     /**
      * register the simgets
      */
@@ -137,18 +139,21 @@ int main( int argc, char** argv )
     const int polynomialOrder =  app.vm()["polynomialOrder"].as<int>();
 
 
-    if(polynomialOrder == 1)
+    if ( polynomialOrder == 1 )
     {
         app.add( new NIRBTEST<1>( app.vm(), app.about() ) );
     }
-    else if(polynomialOrder == 2)
+
+    else if ( polynomialOrder == 2 )
     {
         app.add( new NIRBTEST<2>( app.vm(), app.about() ) );
     }
-    else if(polynomialOrder == 3)
+
+    else if ( polynomialOrder == 3 )
     {
         app.add( new NIRBTEST<3>( app.vm(), app.about() ) );
     }
+
     else
     {
         throw std::logic_error( "Error with polynomialOrder variable, this application allows only P1 P2 and P3" );

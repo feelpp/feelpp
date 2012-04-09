@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -40,9 +40,9 @@ Molecule::Molecule()
 }
 
 
-Molecule::Molecule(Molecule const& molecule)
+Molecule::Molecule( Molecule const& molecule )
     :
-    M_atoms(molecule.M_atoms)
+    M_atoms( molecule.M_atoms )
 {
 }
 
@@ -54,162 +54,173 @@ Molecule& Molecule::operator=( Molecule const& molecule )
 {
     if ( this != &molecule )
         M_atoms = molecule.M_atoms;
+
     return *this;
 }
 
 
-int Molecule::readPQRfile( std::string const filename)
+int Molecule::readPQRfile( std::string const filename )
 {
-  atom_type atom;
-  std::ifstream pqrfile;
-  std::string filename_pqr(filename);
-  filename_pqr.append(".pqr");
+    atom_type atom;
+    std::ifstream pqrfile;
+    std::string filename_pqr( filename );
+    filename_pqr.append( ".pqr" );
 
-  moleculeName = filename;
-  M_atoms.resize(0);
+    moleculeName = filename;
+    M_atoms.resize( 0 );
 
-  pqrfile.open(filename_pqr.c_str(), std::ifstream::in);
-  if (pqrfile.fail())
-      {
-          Log() << "readPQRfile::failed to open *" << filename << "*"
-                    << "\n";
-          return 1;
-      }
+    pqrfile.open( filename_pqr.c_str(), std::ifstream::in );
 
-  while (!pqrfile.eof())
-      {
-             clearRemarks("REMARK", pqrfile);
+    if ( pqrfile.fail() )
+    {
+        Log() << "readPQRfile::failed to open *" << filename << "*"
+              << "\n";
+        return 1;
+    }
 
-             if (pqrfile.eof()) continue;
+    while ( !pqrfile.eof() )
+    {
+        clearRemarks( "REMARK", pqrfile );
 
-             if (atom.readPQRline(pqrfile) == 0)
-                 M_atoms.push_back(atom);
-             else
-                 {
-                     Log() << "readPQRfile::problem reading atom " << "\n";
-                     return 1;
-                 }
-      }
+        if ( pqrfile.eof() ) continue;
 
-  return 0;
+        if ( atom.readPQRline( pqrfile ) == 0 )
+            M_atoms.push_back( atom );
+
+        else
+        {
+            Log() << "readPQRfile::problem reading atom " << "\n";
+            return 1;
+        }
+    }
+
+    return 0;
 
 }
 
-    /**
-     * read cha-crd and rad-crd files which look like
+/**
+ * read cha-crd and rad-crd files which look like
 * NONE *
 *                                      CREATED BY pqr2crd
 *
- 5084
-    1    1 GLY  N    -24.90000   6.97500   4.91400 SEG1  -2   -0.30000
+5084
+1    1 GLY  N    -24.90000   6.97500   4.91400 SEG1  -2   -0.30000
 
-     * retuns 0 if line read successfully, otherwise 1
-     * Note: path should be already in the filename, but not the extension (i.e., no "cha-crd" nor "rad-crd")
-     */
-int Molecule::readCRDfile( std::string const filename)
+ * retuns 0 if line read successfully, otherwise 1
+ * Note: path should be already in the filename, but not the extension (i.e., no "cha-crd" nor "rad-crd")
+ */
+int Molecule::readCRDfile( std::string const filename )
 {
-  atom_type atom;
-  std::ifstream chafile;
-  std::ifstream radfile;
-  std::string atmSTR;
+    atom_type atom;
+    std::ifstream chafile;
+    std::ifstream radfile;
+    std::string atmSTR;
 
-  moleculeName = filename;
-  M_atoms.resize(0);
+    moleculeName = filename;
+    M_atoms.resize( 0 );
 
-  int numAtoms(0);
+    int numAtoms( 0 );
 
-  std::ostringstream filename_cha_crd, filename_rad_crd;
-  filename_cha_crd << filename << "-charge.crd" ;
-  filename_rad_crd << filename << "-radius.crd" ;
+    std::ostringstream filename_cha_crd, filename_rad_crd;
+    filename_cha_crd << filename << "-charge.crd" ;
+    filename_rad_crd << filename << "-radius.crd" ;
 
 
-  chafile.open(filename_cha_crd.str().c_str(), std::ifstream::in);
-  radfile.open(filename_rad_crd.str().c_str(), std::ifstream::in);
-  if (chafile.fail() || chafile.eof())
-      {
-          Log() << "readCRDfile::failed to open *" << filename_cha_crd.str() << "*"
-                    << "\n";
-          return 1;
-      }
+    chafile.open( filename_cha_crd.str().c_str(), std::ifstream::in );
+    radfile.open( filename_rad_crd.str().c_str(), std::ifstream::in );
 
-  if (radfile.fail() || radfile.eof())
-      {
-          Log() << "readCRDfile::failed to open *" << filename_rad_crd.str() << "*"
-                    << "\n";
-          return 1;
-      }
+    if ( chafile.fail() || chafile.eof() )
+    {
+        Log() << "readCRDfile::failed to open *" << filename_cha_crd.str() << "*"
+              << "\n";
+        return 1;
+    }
 
-  atmSTR = clearRemarks("*", chafile);
-  numAtoms = atoi(atmSTR.c_str());
-  atmSTR = clearRemarks("*", radfile);
+    if ( radfile.fail() || radfile.eof() )
+    {
+        Log() << "readCRDfile::failed to open *" << filename_rad_crd.str() << "*"
+              << "\n";
+        return 1;
+    }
 
-  FEELPP_ASSERT( numAtoms == atoi(atmSTR.c_str())  ).error( "cha and rad files have different length" );
+    atmSTR = clearRemarks( "*", chafile );
+    numAtoms = atoi( atmSTR.c_str() );
+    atmSTR = clearRemarks( "*", radfile );
 
-  int ret;
-  while (! (chafile.eof() || radfile.eof())  )
-      {
-          ret = atom.readCRDlines(chafile,radfile);
-          if ( ret == 0)
-              M_atoms.push_back(atom);
-          if ( ret == -1)
-              {
-                  Log() << "readCRDfile::problem reading atom " << "\n";
-                  return 1;
-              }
-      }
+    FEELPP_ASSERT( numAtoms == atoi( atmSTR.c_str() )  ).error( "cha and rad files have different length" );
 
-  return 0;
+    int ret;
+
+    while ( ! ( chafile.eof() || radfile.eof() )  )
+    {
+        ret = atom.readCRDlines( chafile,radfile );
+
+        if ( ret == 0 )
+            M_atoms.push_back( atom );
+
+        if ( ret == -1 )
+        {
+            Log() << "readCRDfile::problem reading atom " << "\n";
+            return 1;
+        }
+    }
+
+    return 0;
 
 }
 
-    /**
-     * read part of an already opened dock4file which looks like
+/**
+ * read part of an already opened dock4file which looks like
 REMARK   1 PQR file generated by PDB2PQR (Version 1.2.1)
 REMARK   (...)
 ATOM      1  N   PRO     1     -15.656  10.553  -3.283 -0.0700 1.8500
 ATOM     (...)
 REMARK   (...)
-       and stops at the next REMARK
+   and stops at the next REMARK
 
-     * retuns 0 if line read successfully, 1 if it reached end of file,
-       something else if something happend
+ * retuns 0 if line read successfully, 1 if it reached end of file,
+   something else if something happend
 
-     * NOTE: this method only loads the new coordinates. Charges and positions should be in place already
-     */
+ * NOTE: this method only loads the new coordinates. Charges and positions should be in place already
+ */
 int Molecule::readDock4file(   std::ifstream& dock4file )
 {
 
     std::list<atom_type>::iterator it;
 
     std::string remStr;
-    bool const neglectChrRad(true);
+    bool const neglectChrRad( true );
 
-    if (dock4file.eof()) return 1;
+    if ( dock4file.eof() ) return 1;
 
     int ret;
-    for ( it=M_atoms.begin() ; it != M_atoms.end(); ++it )
-        {
-            remStr = clearRemarks("TER", dock4file);
-            if ( remStr.compare("REMARK") == 0)  // clear line if it was a remark and continue clearRemarks,
-                {
-                    std::getline(dock4file,remStr);
-                    remStr = clearRemarks("REMARK", dock4file);
-                }
 
-            ret = it ->readPQRline(dock4file, neglectChrRad);
-            if ( ret == -1 )
-                {
-                    Log() << "readDock4file:: problem reading atom " << "\n";
-                    std::cerr << "readDock4file:: problem reading atom " << "\n";
-                    showMe();
-                    return -1;
-                }
-            if ( ret == 1 )
-                {
-                    ++it;
-                    break;
-                }
+    for ( it=M_atoms.begin() ; it != M_atoms.end(); ++it )
+    {
+        remStr = clearRemarks( "TER", dock4file );
+
+        if ( remStr.compare( "REMARK" ) == 0 ) // clear line if it was a remark and continue clearRemarks,
+        {
+            std::getline( dock4file,remStr );
+            remStr = clearRemarks( "REMARK", dock4file );
         }
+
+        ret = it ->readPQRline( dock4file, neglectChrRad );
+
+        if ( ret == -1 )
+        {
+            Log() << "readDock4file:: problem reading atom " << "\n";
+            std::cerr << "readDock4file:: problem reading atom " << "\n";
+            showMe();
+            return -1;
+        }
+
+        if ( ret == 1 )
+        {
+            ++it;
+            break;
+        }
+    }
 
 
     if ( it == M_atoms.end() ) return 0;
@@ -227,17 +238,18 @@ int Molecule::readDock4file(   std::ifstream& dock4file )
 
 
 std::string Molecule::clearRemarks( std::string const remStr,
-                                          std::ifstream& file) const
+                                    std::ifstream& file ) const
 {
     std::string atmSTR;
     std::string remark;
 
     file >> atmSTR;
-    while ( !file.eof() && atmSTR.compare(remStr) == 0 )
-      {
-          std::getline(file,remark);
-          file >> atmSTR;
-      }
+
+    while ( !file.eof() && atmSTR.compare( remStr ) == 0 )
+    {
+        std::getline( file,remark );
+        file >> atmSTR;
+    }
 
     return atmSTR;
 }
@@ -246,7 +258,7 @@ std::string Molecule::clearRemarks( std::string const remStr,
 
 void Molecule::showMe() const
 {
-    int nA(M_atoms.size());
+    int nA( M_atoms.size() );
     Log() << "REMARK Molecule with  " << nA << " atoms" << "\n";
 
     std::list<atom_type>::const_iterator it;
@@ -256,40 +268,44 @@ void Molecule::showMe() const
 
 }
 
-void Molecule::domainMinMax(node_type& _min, node_type& _max) const
+void Molecule::domainMinMax( node_type& _min, node_type& _max ) const
 {
     uint16_type i;
-    std::list<atom_type>::const_iterator it (M_atoms.begin());
+    std::list<atom_type>::const_iterator it ( M_atoms.begin() );
 
     _min = it->center();
     _max = it->center();
 
     for (  ; it != M_atoms.end(); ++it )
-        for (i=0; i < Atom::dim; ++i)
-            {
-                if (_min[i] > it->center()[i] - it->radius()) _min[i] = it->center()[i] - it->radius()*1.1;
-                if (_max[i] < it->center()[i] + it->radius()) _max[i] = it->center()[i] + it->radius()*1.1;
-            }
+        for ( i=0; i < Atom::dim; ++i )
+        {
+            if ( _min[i] > it->center()[i] - it->radius() ) _min[i] = it->center()[i] - it->radius()*1.1;
+
+            if ( _max[i] < it->center()[i] + it->radius() ) _max[i] = it->center()[i] + it->radius()*1.1;
+        }
+
     return;
 }
 
 value_type Molecule::totalCharge() const
 {
-    value_type total(0);
-    std::list<atom_type>::const_iterator it (M_atoms.begin());
+    value_type total( 0 );
+    std::list<atom_type>::const_iterator it ( M_atoms.begin() );
 
     for (  ; it != M_atoms.end(); ++it )
         total += it->charge();
+
     return total;
 }
 
 value_type Molecule::totalAbsCharge() const
 {
-    value_type total(0);
-    std::list<atom_type>::const_iterator it (M_atoms.begin());
+    value_type total( 0 );
+    std::list<atom_type>::const_iterator it ( M_atoms.begin() );
 
     for (  ; it != M_atoms.end(); ++it )
-        total += std::abs(it->charge());
+        total += std::abs( it->charge() );
+
     return total;
 }
 

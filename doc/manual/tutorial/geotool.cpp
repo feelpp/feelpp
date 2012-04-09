@@ -44,33 +44,33 @@ void myexport( std::string const& name, boost::shared_ptr<MeshType> mesh )
     typedef Mesh<Simplex<2> > mesh_type;
     typedef Exporter<mesh_type> exporter_type;
     auto exporter = exporter_type::New( "gmsh", name );
-    exporter->step(0)->setMesh( mesh );
+    exporter->step( 0 )->setMesh( mesh );
     exporter->save();
 }
 
-int main(int argc, char**argv)
+int main( int argc, char**argv )
 {
-    Feel::Environment env(argc, argv );
+    Feel::Environment env( argc, argv );
     using namespace Feel;
     using namespace Feel::vf;
 
     typedef Mesh<Simplex<2> > mesh_type;
     typedef Exporter<mesh_type> exporter_type;
 
-    GeoTool::Rectangle R1( 0.1,"R1",GeoTool::Node(0,0),GeoTool::Node(1,1));
+    GeoTool::Rectangle R1( 0.1,"R1",GeoTool::Node( 0,0 ),GeoTool::Node( 1,1 ) );
 
-    GeoTool::Circle C1(0.1,"C1",GeoTool::Node(0.5,0.5),GeoTool::Node(0.75,0.75));
+    GeoTool::Circle C1( 0.1,"C1",GeoTool::Node( 0.5,0.5 ),GeoTool::Node( 0.75,0.75 ) );
 
     auto R1mesh = R1.createMesh<mesh_type>( "R1" );
     auto C1mesh = C1.createMesh<mesh_type>( "C1" );
-    auto R1mC1mesh = (R1-C1).createMesh<mesh_type>( "R1-C1" );
-    auto R1pC1mesh = (R1+C1).createMesh<mesh_type>( "R1+C1" );
+    auto R1mC1mesh = ( R1-C1 ).createMesh<mesh_type>( "R1-C1" );
+    auto R1pC1mesh = ( R1+C1 ).createMesh<mesh_type>( "R1+C1" );
 
 
-    myexport<mesh_type>("R1",R1mesh);
-    myexport<mesh_type>("C1",C1mesh);
-    myexport<mesh_type>("R1-C1",R1mC1mesh);
-    myexport<mesh_type>("R1+C1",R1pC1mesh);
+    myexport<mesh_type>( "R1",R1mesh );
+    myexport<mesh_type>( "C1",C1mesh );
+    myexport<mesh_type>( "R1-C1",R1mC1mesh );
+    myexport<mesh_type>( "R1+C1",R1pC1mesh );
 
 
 

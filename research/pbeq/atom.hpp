@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
 This file is part of the Feel library
 
@@ -104,26 +104,72 @@ public:
      */
 
 
-    node_type               const& center()  const { return M_center; }
-    uint16_type             const& id()      const { return M_id;     }
-    std::string             const& name()    const { return M_name;   }
-    std::string             const& peptide() const { return M_peptide;}
-    std::string             const& pepId()   const { return M_pepId;  }
-    value_type              const& charge()  const { return M_charge; }
-    value_type              const& radius()  const { return M_radius; }
-    value_type              const& radius2()  const { return M_radius2; }
+    node_type               const& center()  const
+    {
+        return M_center;
+    }
+    uint16_type             const& id()      const
+    {
+        return M_id;
+    }
+    std::string             const& name()    const
+    {
+        return M_name;
+    }
+    std::string             const& peptide() const
+    {
+        return M_peptide;
+    }
+    std::string             const& pepId()   const
+    {
+        return M_pepId;
+    }
+    value_type              const& charge()  const
+    {
+        return M_charge;
+    }
+    value_type              const& radius()  const
+    {
+        return M_radius;
+    }
+    value_type              const& radius2()  const
+    {
+        return M_radius2;
+    }
 
     /**
      * modifiers
      */
 
-    void setCenter (node_type               const& center ) { M_center = center;}
-    void setId     (uint16_type             const& id     ) { M_id     = id;    }
-    void setName   (std::string             const& name   ) { M_name   = name;  }
-    void setPeptide(std::string             const& peptide) { M_peptide=peptide;}
-    void setPepId  (std::string             const& pepId  ) { M_pepId  = pepId; }
-    void setCharge (value_type              const& charge ) { M_charge = charge;}
-    void setRadius (value_type              const& radius ) { M_radius = radius; M_radius2 = M_radius*M_radius;}
+    void setCenter ( node_type               const& center )
+    {
+        M_center = center;
+    }
+    void setId     ( uint16_type             const& id     )
+    {
+        M_id     = id;
+    }
+    void setName   ( std::string             const& name   )
+    {
+        M_name   = name;
+    }
+    void setPeptide( std::string             const& peptide )
+    {
+        M_peptide=peptide;
+    }
+    void setPepId  ( std::string             const& pepId  )
+    {
+        M_pepId  = pepId;
+    }
+    void setCharge ( value_type              const& charge )
+    {
+        M_charge = charge;
+    }
+    void setRadius ( value_type              const& radius )
+    {
+        M_radius = radius;
+        M_radius2 = M_radius*M_radius;
+    }
 
 
     //@}
@@ -131,31 +177,31 @@ public:
 
     /**
      * read one PQR line which looks like
-id name peptide pID      x       y       z     charge radius
-1  N   PRO     1     -15.656  10.553  -3.283 -0.0700 1.8500
+    id name peptide pID      x       y       z     charge radius
+    1  N   PRO     1     -15.656  10.553  -3.283 -0.0700 1.8500
      * retuns 0 if line read susscessfully, 1 if at end of file, otherwise -1
      * if neglectChrRad = true, charge and radius are read but neglected
      */
-    int readPQRline( std::istream& PQRline, bool const neglectChrRad = false);
+    int readPQRline( std::istream& PQRline, bool const neglectChrRad = false );
 
     /**
      * read one cha.crd  and one rad.crd lines which looks like
-ID id  peptide name   x       y        z       pName  pID charge
-1    1 GLY  N    -24.90000   6.97500   4.91400 SEG1  -2   -0.30000
+    ID id  peptide name   x       y        z       pName  pID charge
+    1    1 GLY  N    -24.90000   6.97500   4.91400 SEG1  -2   -0.30000
 
-ID id  peptide name   x       y        z       pName  pID radius
-1    1 GLY  N    -24.90000   6.97500   4.91400 SEG1  -2   1.8500
+    ID id  peptide name   x       y        z       pName  pID radius
+    1    1 GLY  N    -24.90000   6.97500   4.91400 SEG1  -2   1.8500
 
      * retuns 0 if line read susscessfully, 1 if at end of file, otherwise -1
      */
-    int readCRDlines( std::istream& chaline, std::istream& radline);
+    int readCRDlines( std::istream& chaline, std::istream& radline );
 
     void showMe() const;
 
 
 private:
 
-    value_type readCRDlineCenter(std::istream& line);
+    value_type readCRDlineCenter( std::istream& line );
 
     node_type               M_center;
     int16_type              M_ID; //

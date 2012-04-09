@@ -74,7 +74,7 @@ public:
     //@{
     static const uint16_type Dim = 2;
 
-  // #if FEELPP_GNUC_AT_LEAST(4,6)
+    // #if FEELPP_GNUC_AT_LEAST(4,6)
 #if 0
     static constexpr double kmin ;
     static constexpr double kmax ;
@@ -274,10 +274,16 @@ public:
     /**
      * \brief Returns the function space
      */
-    functionspace_ptrtype functionSpace() { return M_Th; }
+    functionspace_ptrtype functionSpace()
+    {
+        return M_Th;
+    }
 
     //! return the parameter space
-    parameterspace_ptrtype parameterSpace() const { return M_Dmu;}
+    parameterspace_ptrtype parameterSpace() const
+    {
+        return M_Dmu;
+    }
 
     /**
      * \brief compute the theta coefficient for both bilinear and linear form
@@ -289,49 +295,61 @@ public:
     /**
      * \brief return the coefficient vector
      */
-    theta_vector_type const& thetaAq() const { return M_thetaAq; }
+    theta_vector_type const& thetaAq() const
+    {
+        return M_thetaAq;
+    }
 
     /**
      * \brief return the coefficient vector
      */
-    theta_vector_type const& thetaMq() const { return M_thetaMq; }
+    theta_vector_type const& thetaMq() const
+    {
+        return M_thetaMq;
+    }
 
 
     /**
      * \brief return the coefficient vector
      */
-    std::vector<theta_vector_type> const& thetaL() const { return M_thetaL; }
+    std::vector<theta_vector_type> const& thetaL() const
+    {
+        return M_thetaL;
+    }
 
     /**
      * \brief return the coefficient vector \p q component
      *
      */
     value_type thetaAq( int q ) const
-        {
-            return M_thetaAq( q );
-        }
+    {
+        return M_thetaAq( q );
+    }
 
     /**
      * \brief return the coefficient vector \p q component
      *
      */
     value_type thetaMq( int q ) const
-        {
-            return M_thetaMq( q );
-        }
+    {
+        return M_thetaMq( q );
+    }
 
     /**
      * \return the \p q -th term of the \p l -th output
      */
     value_type thetaL( int l, int q ) const
-        {
-            return M_thetaL[l]( q );
-        }
+    {
+        return M_thetaL[l]( q );
+    }
 
     /**
      * return true if initialized (init() was called), false otherwise
      */
-    bool isInitialized() const { return M_is_initialized; }
+    bool isInitialized() const
+    {
+        return M_is_initialized;
+    }
 
     //@}
 
@@ -342,7 +360,10 @@ public:
     /**
      * set the mesh characteristic length to \p s
      */
-    void setMeshSize( double s ) { M_meshSize = s; }
+    void setMeshSize( double s )
+    {
+        M_meshSize = s;
+    }
 
     //@}
 
@@ -360,9 +381,9 @@ public:
      * \brief Returns the affine decomposition
      */
     affine_decomposition_type computeAffineDecomposition()
-        {
-            return boost::make_tuple(M_Mq, M_Aq, M_L );
-        }
+    {
+        return boost::make_tuple( M_Mq, M_Aq, M_L );
+    }
 
 
     /**
@@ -398,7 +419,7 @@ public:
     void run( const double * X, unsigned long N, double * Y, unsigned long P );
 
     //void exportResults( double time, temp_element_type& T, fluid_element_type& U, bool force_export = false );
-  void exportResults(double time, temp_element_type& T , parameter_type const& mu);
+    void exportResults( double time, temp_element_type& T , parameter_type const& mu );
 
 
     std::vector<double> sigmaQ( double k,double r, double Q );
@@ -436,37 +457,55 @@ public:
     /**
      * return true if we want to be in a steady state
      */
-    bool isSteady(){ return M_is_steady;}
+    bool isSteady()
+    {
+        return M_is_steady;
+    }
 
     /**
      * return value of the time step
      */
-    double timeStep() { return M_temp_bdf->timeStep();}
+    double timeStep()
+    {
+        return M_temp_bdf->timeStep();
+    }
 
     /**
      * return value of the time final
      */
-    double timeFinal() { return M_temp_bdf->timeFinal();}
+    double timeFinal()
+    {
+        return M_temp_bdf->timeFinal();
+    }
 
     /**
      * return value of the time initial
      */
-    double timeInitial() { return M_temp_bdf->timeInitial();}
+    double timeInitial()
+    {
+        return M_temp_bdf->timeInitial();
+    }
 
     /**
      * return value of the time order
      */
-    double timeOrder() { return M_temp_bdf->timeOrder();}
+    double timeOrder()
+    {
+        return M_temp_bdf->timeOrder();
+    }
 
     /**
      * return number of snapshots used
      */
-    int computeNumberOfSnapshots() { return M_temp_bdf->timeFinal()/M_temp_bdf->timeStep(); }
+    int computeNumberOfSnapshots()
+    {
+        return M_temp_bdf->timeFinal()/M_temp_bdf->timeStep();
+    }
 
     /**
      * return initialization filed used
      */
-    void initializationField(element_ptrtype& initial_field,parameter_type const& mu) ;
+    void initializationField( element_ptrtype& initial_field,parameter_type const& mu ) ;
 
     //@}
 
@@ -516,7 +555,7 @@ private:
     boost::shared_ptr<export_type> M_exporter;
     export_type::timeset_ptrtype M_timeSet;
 
-  sparse_matrix_ptrtype D,M,Mass,Mpod;
+    sparse_matrix_ptrtype D,M,Mass,Mpod;
     std::vector<vector_ptrtype> L;
     std::vector<sparse_matrix_ptrtype> M_Aq;
     std::vector<sparse_matrix_ptrtype> M_Mq;
@@ -533,7 +572,7 @@ private:
 };
 
 
-  //#if !FEELPP_GNUC_AT_LEAST(4,6)
+//#if !FEELPP_GNUC_AT_LEAST(4,6)
 template<int OrderU, int OrderP, int OrderT>
 const double
 OpusModelRB<OrderU,OrderP,OrderT>::kmin = 0.2;
@@ -556,7 +595,7 @@ OpusModelRB<OrderU,OrderP,OrderT>::Qmin=0;
 template<int OrderU, int OrderP, int OrderT>
 const double
 OpusModelRB<OrderU,OrderP,OrderT>::Qmax=1000000.;
-  //#endif
+//#endif
 
 typedef OpusModelRB<2,1,2> opusmodel212_type;
 }

@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -97,28 +97,28 @@ public:
      */
 #if defined( FEELPP_HAS_MPI )
     Application( int argc,
-                       char** argv,
-                       AboutData const& ad,
-                       MPI_Comm Comm = MPI_COMM_WORLD );
+                 char** argv,
+                 AboutData const& ad,
+                 MPI_Comm Comm = MPI_COMM_WORLD );
 #else
     Application( int argc,
-                       char** argv,
-                       AboutData const& ad );
+                 char** argv,
+                 AboutData const& ad );
 #endif
     /**
      * Initialize the epetra application and pass options to super classes
      */
 #if defined( FEELPP_HAS_MPI )
     Application( int argc,
-                       char** argv,
-                       AboutData const& ad,
-                       po::options_description const& od,
-                       MPI_Comm Comm = MPI_COMM_WORLD );
+                 char** argv,
+                 AboutData const& ad,
+                 po::options_description const& od,
+                 MPI_Comm Comm = MPI_COMM_WORLD );
 #else
     Application( int argc,
-                       char** argv,
-                       AboutData const& ad,
-                       po::options_description const& od );
+                 char** argv,
+                 AboutData const& ad,
+                 po::options_description const& od );
 #endif
     /**
      * Finalize the epetra application
@@ -141,7 +141,10 @@ public:
     /**
      * \return the Epetra comm type
      */
-    static comm_type const& comm() { return *_S_comm; }
+    static comm_type const& comm()
+    {
+        return *_S_comm;
+    }
 
     //@}
 

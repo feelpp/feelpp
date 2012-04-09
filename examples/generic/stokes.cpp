@@ -48,22 +48,22 @@ inline
 Feel::po::options_description
 makeOptions()
 {
-    Feel::po::options_description stokesoptions("Stokes options");
+    Feel::po::options_description stokesoptions( "Stokes options" );
     stokesoptions.add_options()
-        ("penal", Feel::po::value<double>()->default_value( 0.5 ), "penalisation parameter")
-        ("f", Feel::po::value<double>()->default_value( 0 ), "forcing term")
-        ("stab", Feel::po::value<bool>()->default_value( true ), "true to enable stabilisation, false otherwise")
-        ("bx", Feel::po::value<double>()->default_value( 1.0 ), "convection X component")
-        ("by", Feel::po::value<double>()->default_value( 0.0 ), "convection Y component")
-        ("bz", Feel::po::value<double>()->default_value( 0.0 ), "convection Z component")
-        ("mu", Feel::po::value<double>()->default_value( 1.0 ), "reaction coefficient component")
-        ("epsilon", Feel::po::value<double>()->default_value( 1.0 ), "diffusion coefficient")
-        ("hsize", Feel::po::value<double>()->default_value( 0.5 ), "first h value to start convergence")
-        ("bctype", Feel::po::value<int>()->default_value( 0 ), "0 = strong Dirichlet, 1 = weak Dirichlet")
-        ("bccoeff", Feel::po::value<double>()->default_value( 100.0 ), "coeff for weak Dirichlet conditions")
-        ("export", "export results(ensight, data file(1D)")
-        ("export-matlab", "export matrix and vectors in matlab" )
-        ;
+    ( "penal", Feel::po::value<double>()->default_value( 0.5 ), "penalisation parameter" )
+    ( "f", Feel::po::value<double>()->default_value( 0 ), "forcing term" )
+    ( "stab", Feel::po::value<bool>()->default_value( true ), "true to enable stabilisation, false otherwise" )
+    ( "bx", Feel::po::value<double>()->default_value( 1.0 ), "convection X component" )
+    ( "by", Feel::po::value<double>()->default_value( 0.0 ), "convection Y component" )
+    ( "bz", Feel::po::value<double>()->default_value( 0.0 ), "convection Z component" )
+    ( "mu", Feel::po::value<double>()->default_value( 1.0 ), "reaction coefficient component" )
+    ( "epsilon", Feel::po::value<double>()->default_value( 1.0 ), "diffusion coefficient" )
+    ( "hsize", Feel::po::value<double>()->default_value( 0.5 ), "first h value to start convergence" )
+    ( "bctype", Feel::po::value<int>()->default_value( 0 ), "0 = strong Dirichlet, 1 = weak Dirichlet" )
+    ( "bccoeff", Feel::po::value<double>()->default_value( 100.0 ), "coeff for weak Dirichlet conditions" )
+    ( "export", "export results(ensight, data file(1D)" )
+    ( "export-matlab", "export matrix and vectors in matlab" )
+    ;
     return stokesoptions.add( Feel::feel_options() ) ;
 }
 inline
@@ -75,10 +75,10 @@ makeAbout()
                            "0.2",
                            "Stokes equation on simplices or simplex products",
                            Feel::AboutData::License_GPL,
-                           "Copyright (c) 2007,2010 University Joseph Fourier Grenoble 1");
+                           "Copyright (c) 2007,2010 University Joseph Fourier Grenoble 1" );
 
-    about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
-   return about;
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    return about;
 
 }
 
@@ -91,7 +91,7 @@ namespace Feel
  */
 class Stokes
     :
-        public Application
+public Application
 {
     typedef Application super;
 public:
@@ -133,7 +133,7 @@ public:
     {
         Log() << "[Stokes] hsize = " << meshSize << "\n";
         Log() << "[Stokes] bccoeff = " << bcCoeff << "\n";
-        Log() << "[Stokes] export = " << this->vm().count("export") << "\n";
+        Log() << "[Stokes] export = " << this->vm().count( "export" ) << "\n";
 
         mu = this->vm()["mu"].as<value_type>();
         penalbc = this->vm()["bccoeff"].as<value_type>();
@@ -187,7 +187,7 @@ Stokes::createMesh( double meshSize )
     mesh_ptrtype mesh( new mesh_type );
 
 
-    GmshHypercubeDomain td(convex_type::nDim,convex_type::nOrder,convex_type::nRealDim,convex_type::is_hypercube);
+    GmshHypercubeDomain td( convex_type::nDim,convex_type::nOrder,convex_type::nRealDim,convex_type::is_hypercube );
     td.setCharacteristicLength( meshSize );
     std::string fname = td.generate( convex_type::name().c_str() );
 
@@ -203,10 +203,10 @@ void
 Stokes::run()
 {
     if ( this->vm().count( "help" ) )
-        {
-            std::cout << this->optionsDescription() << "\n";
-            return;
-        }
+    {
+        std::cout << this->optionsDescription() << "\n";
+        return;
+    }
 
     //    int maxIter = 10.0/meshSize;
     using namespace Feel::vf;
@@ -216,7 +216,7 @@ Stokes::run()
                             % convex_type::name()
                             % Order
                             % this->vm()["hsize"].as<double>()
-                            );
+                          );
 
     /*
      * First we create the mesh
@@ -251,16 +251,16 @@ Stokes::run()
 
     auto F= M_backend->newVector( Xh );
     timers["assembly"].first.restart();
-    auto deft = 0.5*( gradt(u)+trans(gradt(u)) );
-    auto def = 0.5*( grad(v)+trans(grad(v)) );
-    auto Id = (mat<Dim,Dim>( cst(1), cst(0), cst(0), cst(1.) ));
-    auto SigmaNt = (-idt(p)*N()+2*mu*deft*N());
-    auto SigmaN = (-id(p)*N()+2*mu*def*N());
+    auto deft = 0.5*( gradt( u )+trans( gradt( u ) ) );
+    auto def = 0.5*( grad( v )+trans( grad( v ) ) );
+    auto Id = ( mat<Dim,Dim>( cst( 1 ), cst( 0 ), cst( 0 ), cst( 1. ) ) );
+    auto SigmaNt = ( -idt( p )*N()+2*mu*deft*N() );
+    auto SigmaN = ( -id( p )*N()+2*mu*def*N() );
     auto g= oneX();
     form1( Xh, F, _init=true )  =
         //integrate( elements(mesh), im, trans(vec(cst(0.),cst(0.)))*id(v) ) +
-        integrate( markedfaces(mesh,4),
-                   trans(g)*(-SigmaN+penalbc*id(v)/hFace() ) );
+        integrate( markedfaces( mesh,4 ),
+                   trans( g )*( -SigmaN+penalbc*id( v )/hFace() ) );
 
     Log() << "[stokes] vector local assembly done\n";
     timers["assembly"].second = timers["assembly"].first.elapsed();
@@ -273,39 +273,44 @@ Stokes::run()
     form2( Xh, Xh, S, _init=true );
 
     if ( this->vm().count( "export-matlab" ) )
-        {
-            S->printMatlab( "S.m" );
-        }
+    {
+        S->printMatlab( "S.m" );
+    }
+
     auto D= M_backend->newMatrix( Xh, Xh );
     timers["assembly"].first.restart();
 
-    form2( Xh, Xh, D, _init=true ) = integrate( elements(mesh), mu*trace(deft*trans(def)) );
+    form2( Xh, Xh, D, _init=true ) = integrate( elements( mesh ), mu*trace( deft*trans( def ) ) );
 
-    form2( Xh, Xh, D ) += integrate( elements(mesh), - div(v)*idt(p) + divt(u)*id(q) );
-    form2( Xh, Xh, D ) += integrate( elements(mesh), id(q)*idt(lambda) + idt(p)*id(nu) );
-    form2( Xh, Xh, D ) += integrate( boundaryfaces(mesh), -trans(SigmaNt)*id(v) );
-    form2( Xh, Xh, D ) += integrate( boundaryfaces(mesh), -trans(SigmaN)*idt(u) );
-    form2( Xh, Xh, D ) += integrate( boundaryfaces(mesh), +penalbc*trans(idt(u))*id(v)/hFace() );
+    form2( Xh, Xh, D ) += integrate( elements( mesh ), - div( v )*idt( p ) + divt( u )*id( q ) );
+    form2( Xh, Xh, D ) += integrate( elements( mesh ), id( q )*idt( lambda ) + idt( p )*id( nu ) );
+    form2( Xh, Xh, D ) += integrate( boundaryfaces( mesh ), -trans( SigmaNt )*id( v ) );
+    form2( Xh, Xh, D ) += integrate( boundaryfaces( mesh ), -trans( SigmaN )*idt( u ) );
+    form2( Xh, Xh, D ) += integrate( boundaryfaces( mesh ), +penalbc*trans( idt( u ) )*id( v )/hFace() );
 
     Log() << "[stokes] matrix local assembly done\n";
     Log() << "[stokes] vector/matrix global assembly done\n";
+
     if ( this->vm().count( "export-matlab" ) )
-        {
-            F->printMatlab( "F.m" );
-            D->printMatlab( "D.m" );
-        }
+    {
+        F->printMatlab( "F.m" );
+        D->printMatlab( "D.m" );
+    }
+
 #if 0
+
     if ( M_bctype == 0 )
         form2( Xh, Xh, D ) +=
 #if 0
-            on( markedfaces(mesh,2), u.comp(X), F, constant(1.)  )+
-            on( markedfaces(mesh,2), u.comp(Y), F, constant(0.)  )+
+            on( markedfaces( mesh,2 ), u.comp( X ), F, constant( 1. )  )+
+            on( markedfaces( mesh,2 ), u.comp( Y ), F, constant( 0. )  )+
 #else
-            on( markedfaces(mesh,2), u, F, oneX()  )+
+            on( markedfaces( mesh,2 ), u, F, oneX()  )+
 #endif
-            on( markedfaces(mesh,1), u, F, cst(0.)*oneX()+cst(0.)*oneY() )+
-            on( markedfaces(mesh,3), u, F, cst(0.)*oneX()+cst(0.)*oneY() )+
-            on( markedfaces(mesh,4), u, F, cst(0.)*oneX()+cst(0.)*oneY() );
+            on( markedfaces( mesh,1 ), u, F, cst( 0. )*oneX()+cst( 0. )*oneY() )+
+            on( markedfaces( mesh,3 ), u, F, cst( 0. )*oneX()+cst( 0. )*oneY() )+
+            on( markedfaces( mesh,4 ), u, F, cst( 0. )*oneX()+cst( 0. )*oneY() );
+
 #endif
 
     Log() << "[stokes] dirichlet condition applied\n";
@@ -313,25 +318,26 @@ Stokes::run()
     timers["assembly_D"].second += timers["assembly"].first.elapsed();
 
     if ( this->vm().count( "export-matlab" ) )
-        {
-            F->printMatlab( "F_dir.m" );
-            D->printMatlab( "D_dir.m" );
-        }
+    {
+        F->printMatlab( "F_dir.m" );
+        D->printMatlab( "D_dir.m" );
+    }
 
     Log() << "[stokes] starting solve for D\n";
 
     timers["solver"].first.restart();
-    backend_type::build(this->vm())->solve( _matrix=D, _solution=U, _rhs=F );
+    backend_type::build( this->vm() )->solve( _matrix=D, _solution=U, _rhs=F );
     timers["solver"].second = timers["solver"].first.elapsed();
 
     if ( this->vm().count( "export-matlab" ) )
-        {
+    {
 
-            U.printMatlab( "U.m" );
-        }
+        U.printMatlab( "U.m" );
+    }
+
     Log() << "[stokes] solve for D done\n";
-    double meas = integrate( elements(mesh), constant(1.0) ).evaluate()( 0, 0);
-    double mean_p = integrate( elements(mesh), idv(p) ).evaluate()( 0, 0 )/meas;
+    double meas = integrate( elements( mesh ), constant( 1.0 ) ).evaluate()( 0, 0 );
+    double mean_p = integrate( elements( mesh ), idv( p ) ).evaluate()( 0, 0 )/meas;
     Log() << "[stokes] mean(p)=" << mean_p << "\n";
 
     this->exportResults( U );
@@ -360,9 +366,9 @@ Stokes::exportResults( space_type::element_type& U )
 {
     timers["export"].first.restart();
 
-    exporter->step(1.)->setMesh( U.functionSpace()->mesh() );
-    exporter->step(1.)->add( "u", U.element<0>() );
-    exporter->step(1.)->add( "p", U.element<1>() );
+    exporter->step( 1. )->setMesh( U.functionSpace()->mesh() );
+    exporter->step( 1. )->add( "u", U.element<0>() );
+    exporter->step( 1. )->add( "p", U.element<1>() );
     exporter->save();
 
     timers["export"].second = timers["export"].first.elapsed();
@@ -377,7 +383,7 @@ int
 main( int argc, char** argv )
 {
     /* assertions handling */
-    Feel::Assert::setLog( "stokes.assert");
+    Feel::Assert::setLog( "stokes.assert" );
 
     /* define and run application */
     Feel::Stokes stokes( argc, argv, makeAbout(), makeOptions() );

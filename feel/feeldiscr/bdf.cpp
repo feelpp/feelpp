@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -49,10 +49,11 @@ Bdf::Bdf( const UInt n )
     {
         std::ostringstream __ex;
         __ex << "Error: wrong BDF order\n"
-        << " you want to use BDF order " << n << "\n"
-        << " we support BDF order from 1 to " << BDF_MAX_ORDER << "\n";
+             << " you want to use BDF order " << n << "\n"
+             << " we support BDF order from 1 to " << BDF_MAX_ORDER << "\n";
         throw std::invalid_argument( __ex.str() );
     }
+
     switch ( n )
     {
     case 1:
@@ -60,6 +61,7 @@ Bdf::Bdf( const UInt n )
         _M_alpha[ 1 ] = 1.;
         _M_beta[ 0 ] = 1.; // u^{n+1} \approx u^n
         break;
+
     case 2:
         _M_alpha[ 0 ] = 3. / 2.;
         _M_alpha[ 1 ] = 2.;
@@ -67,6 +69,7 @@ Bdf::Bdf( const UInt n )
         _M_beta[ 0 ] = 2.;
         _M_beta[ 1 ] = -1.;
         break;
+
     case 3:
         _M_alpha[ 0 ] = 11. / 6.;
         _M_alpha[ 1 ] = 3.;
@@ -77,6 +80,7 @@ Bdf::Bdf( const UInt n )
         _M_beta[ 2 ] = 1.;
         break;
     }
+
     _M_unknowns.resize( n );
 }
 
@@ -144,7 +148,7 @@ Bdf::shiftRight( Vector const& __new_unk )
     using namespace boost::lambda;
     unknowns_type::reverse_iterator __it = boost::next( _M_unknowns.rbegin() );
     std::for_each( _M_unknowns.rbegin(), boost::prior( _M_unknowns.rend() ),
-                   (_1 = *var( __it ), ++var( __it ) ) );
+                   ( _1 = *var( __it ), ++var( __it ) ) );
     // u(t^{n}) coefficient is in _M_unknowns[0]
     _M_unknowns[0] = __new_unk;
 }
@@ -162,7 +166,7 @@ Bdf::derivate() const
     Vector __t( _M_unknowns[0].size() );
     __t = ZeroVector( __t.size() );
 
-    for ( UInt i = 0;i < _M_order;++i )
+    for ( UInt i = 0; i < _M_order; ++i )
         __t += _M_alpha[ i+1 ]*_M_unknowns[i];
 
     return __t;
@@ -174,7 +178,7 @@ Bdf::extrapolate() const
     Vector __t( _M_unknowns[0].size() );
     __t = ZeroVector( __t.size() );
 
-    for ( UInt i = 0;i < _M_order;++i )
+    for ( UInt i = 0; i < _M_order; ++i )
         __t +=  _M_beta[ i ] * _M_unknowns[ i ];
 
     return __t;

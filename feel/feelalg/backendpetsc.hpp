@@ -96,6 +96,7 @@ public:
         M_solver_petsc( vm )
     {
         std::string _prefix = prefix;
+
         if ( !_prefix.empty() )
             _prefix += "-";
     }
@@ -110,49 +111,54 @@ public:
         mpi::communicator commT;
 
         sparse_matrix_ptrtype mat;//( new petsc_sparse_matrix_type );
-        if (commT.size()>1) mat = sparse_matrix_ptrtype( new petscMPI_sparse_matrix_type(Yh->map(),Xh->map()));
-        else mat = sparse_matrix_ptrtype( new petsc_sparse_matrix_type(Yh->map(),Xh->map()) );
+
+        if ( commT.size()>1 ) mat = sparse_matrix_ptrtype( new petscMPI_sparse_matrix_type( Yh->map(),Xh->map() ) );
+
+        else mat = sparse_matrix_ptrtype( new petsc_sparse_matrix_type( Yh->map(),Xh->map() ) );
 
         mat->setMatrixProperties( matrix_properties );
         mat->init( Yh->nDof(), Xh->nDof(),
                    Yh->nLocalDofWithoutGhost(), Xh->nLocalDofWithoutGhost(),
-                   s->graph());
-                   //Yh->nLocalDof(), Xh->nLocalDof() );
+                   s->graph() );
+        //Yh->nLocalDof(), Xh->nLocalDof() );
 #if 0
         auto nSpace = DomainSpace::nSpaces;
 
-        std::vector < std::vector<int> > is(nSpace);
+        std::vector < std::vector<int> > is( nSpace );
         uint cptSpaces=0;
 
         //boost::tuple< typename DomainSpace::functionspace_vector_type, uint, std::vector < std::vector<int> > > hola;
         //        auto result = boost::make_tuple(Xh->functionSpaces(),cptSpaces,is);
-        auto result = boost::make_tuple(cptSpaces,is);
+        auto result = boost::make_tuple( cptSpaces,is );
         boost::fusion::fold( Xh->functionSpaces(), result, computeNDofForEachSpace() );
 
-        for (uint i = 0; i<nSpace;i++ )
-            {
-                //is[i].resize()
-            }
+        for ( uint i = 0; i<nSpace; i++ )
+        {
+            //is[i].resize()
+        }
+
 #endif
 
         return mat;
     }
 
     sparse_matrix_ptrtype
-    newMatrix(const size_type m,
-              const size_type n,
-              const size_type m_l,
-              const size_type n_l,
-              const size_type nnz=30,
-              const size_type noz=10,
-              size_type matrix_properties = NON_HERMITIAN)
+    newMatrix( const size_type m,
+               const size_type n,
+               const size_type m_l,
+               const size_type n_l,
+               const size_type nnz=30,
+               const size_type noz=10,
+               size_type matrix_properties = NON_HERMITIAN )
     {
         sparse_matrix_ptrtype mat;
-        if (this->comm().size()>1) mat = sparse_matrix_ptrtype( new petscMPI_sparse_matrix_type );
+
+        if ( this->comm().size()>1 ) mat = sparse_matrix_ptrtype( new petscMPI_sparse_matrix_type );
+
         else mat = sparse_matrix_ptrtype( new petsc_sparse_matrix_type );
 
         mat->setMatrixProperties( matrix_properties );
-        mat->init(m,n,m_l,n_l,nnz,noz);
+        mat->init( m,n,m_l,n_l,nnz,noz );
         return mat;
     }
 
@@ -160,35 +166,41 @@ public:
     newMatrix( DataMap const& domainmap,
                DataMap const& imagemap,
                size_type matrix_properties = NON_HERMITIAN,
-               bool init = true)
+               bool init = true )
     {
         sparse_matrix_ptrtype mat;
-        if (imagemap.worldComm().globalSize()>1) mat = sparse_matrix_ptrtype( new petscMPI_sparse_matrix_type(imagemap,domainmap,imagemap.worldComm()));
-        else mat = sparse_matrix_ptrtype( new petsc_sparse_matrix_type(imagemap,domainmap,imagemap.worldComm()));
+
+        if ( imagemap.worldComm().globalSize()>1 ) mat = sparse_matrix_ptrtype( new petscMPI_sparse_matrix_type( imagemap,domainmap,imagemap.worldComm() ) );
+
+        else mat = sparse_matrix_ptrtype( new petsc_sparse_matrix_type( imagemap,domainmap,imagemap.worldComm() ) );
 
         mat->setMatrixProperties( matrix_properties );
-        if (init)
-            {
-                mat->init( imagemap.nDof(), domainmap.nDof(),
-                           imagemap.nLocalDofWithoutGhost(), domainmap.nLocalDofWithoutGhost() );
-            }
+
+        if ( init )
+        {
+            mat->init( imagemap.nDof(), domainmap.nDof(),
+                       imagemap.nLocalDofWithoutGhost(), domainmap.nLocalDofWithoutGhost() );
+        }
+
         return mat;
     }
 
     sparse_matrix_ptrtype
-    newMatrix(const size_type m,
-              const size_type n,
-              const size_type m_l,
-              const size_type n_l,
-              graph_ptrtype const & graph,
-              size_type matrix_properties = NON_HERMITIAN)
+    newMatrix( const size_type m,
+               const size_type n,
+               const size_type m_l,
+               const size_type n_l,
+               graph_ptrtype const & graph,
+               size_type matrix_properties = NON_HERMITIAN )
     {
         sparse_matrix_ptrtype mat;
-        if (this->comm().size()>1) mat = sparse_matrix_ptrtype( new petscMPI_sparse_matrix_type );
+
+        if ( this->comm().size()>1 ) mat = sparse_matrix_ptrtype( new petscMPI_sparse_matrix_type );
+
         else mat = sparse_matrix_ptrtype( new petsc_sparse_matrix_type );
 
         mat->setMatrixProperties( matrix_properties );
-        mat->init(m,n,m_l,n_l,graph);
+        mat->init( m,n,m_l,n_l,graph );
         return mat;
     }
 
@@ -196,16 +208,18 @@ public:
     newZeroMatrix( DataMap const& domainmap,
                    DataMap const& imagemap )
     {
-        graph_ptrtype sparsity_graph( new graph_type(0,
-                                                     0, imagemap.nLocalDofWithoutGhost()-1,
-                                                     0, domainmap.nLocalDofWithoutGhost()-1,
-                                                     imagemap.worldComm()) );
+        graph_ptrtype sparsity_graph( new graph_type( 0,
+                                      0, imagemap.nLocalDofWithoutGhost()-1,
+                                      0, domainmap.nLocalDofWithoutGhost()-1,
+                                      imagemap.worldComm() ) );
         sparsity_graph->zero();
         sparsity_graph->close();
 
         sparse_matrix_ptrtype mat;
-        if (imagemap.worldComm().globalSize()>1) mat = sparse_matrix_ptrtype( new petscMPI_sparse_matrix_type(imagemap,domainmap,imagemap.worldComm()) );
-        else mat = sparse_matrix_ptrtype( new petsc_sparse_matrix_type(imagemap,domainmap,imagemap.worldComm()) );
+
+        if ( imagemap.worldComm().globalSize()>1 ) mat = sparse_matrix_ptrtype( new petscMPI_sparse_matrix_type( imagemap,domainmap,imagemap.worldComm() ) );
+
+        else mat = sparse_matrix_ptrtype( new petsc_sparse_matrix_type( imagemap,domainmap,imagemap.worldComm() ) );
 
         //mat->setMatrixProperties( matrix_properties );
         mat->init( imagemap.nDof(), domainmap.nDof(),
@@ -223,12 +237,14 @@ public:
                    const size_type m_l,
                    const size_type n_l )
     {
-        graph_ptrtype sparsity_graph( new graph_type( 0,0,m_l-1,0,n_l-1) );
+        graph_ptrtype sparsity_graph( new graph_type( 0,0,m_l-1,0,n_l-1 ) );
         sparsity_graph->zero();
         sparsity_graph->close();
 
         sparse_matrix_ptrtype mat;
-        if (this->comm().size()>1) mat = sparse_matrix_ptrtype( new petscMPI_sparse_matrix_type );
+
+        if ( this->comm().size()>1 ) mat = sparse_matrix_ptrtype( new petscMPI_sparse_matrix_type );
+
         else mat = sparse_matrix_ptrtype( new petsc_sparse_matrix_type );
 
         //mat->setMatrixProperties( matrix_properties );
@@ -241,16 +257,21 @@ public:
     static vector_ptrtype newVector( SpaceT const& space )
     {
         mpi::communicator theComm;
-        if (theComm.size()>1) return vector_ptrtype( new petscMPI_vector_type(space->map()) );
-        else return vector_ptrtype( new petsc_vector_type(space->map()) );
+
+        if ( theComm.size()>1 ) return vector_ptrtype( new petscMPI_vector_type( space->map() ) );
+
+        else return vector_ptrtype( new petsc_vector_type( space->map() ) );
+
         //return this->newVector(space->map());
         //return vector_ptrtype( new vector_type( space->nDof(), space->nLocalDof() ) );
     }
 
     vector_ptrtype newVector( DataMap const& dm )
     {
-        if (this->comm().size()>1) return vector_ptrtype( new petscMPI_vector_type(dm) );
-        else return vector_ptrtype( new petsc_vector_type(dm) );
+        if ( this->comm().size()>1 ) return vector_ptrtype( new petscMPI_vector_type( dm ) );
+
+        else return vector_ptrtype( new petsc_vector_type( dm ) );
+
         //return vector_ptrtype( new petsc_vector_type( dm.nGlobalElements(), dm.nMyElements() ) );
     }
 
@@ -296,7 +317,7 @@ public:
     static value_type dot( const vector_type& f,
                            const Vector& x )
     {
-        value_type result(0);
+        value_type result( 0 );
 
         // petsc dot here
 
@@ -362,7 +383,7 @@ BackendPetsc<T>::solve( sparse_matrix_type const& A,
     Debug( 7005 ) << "[BackendPetsc::solve] number of iterations : " << res.first << "\n";
     Debug( 7005 ) << "[BackendPetsc::solve]             residual : " << res.second << "\n";
 
-    bool converged = (res.first < this->maxIterations()) && (res.second < this->rTolerance());
+    bool converged = ( res.first < this->maxIterations() ) && ( res.second < this->rTolerance() );
     return boost::make_tuple( converged, res.first, res.second );
 } // BackendPetsc::solve
 

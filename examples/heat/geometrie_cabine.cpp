@@ -43,34 +43,34 @@ createRoom( int Dim, double meshSize )
 
 
 
-        ostr << "hTemp=" << meshSize << ";\n"
-             << "Point(1) = {-0.8,-0.4,0,hTemp};\n"
-             << "Point(2) = {0.8,-0.4,0,hTemp};\n"
-             << "Point(3) = {0.8,0.4,0,hTemp};\n"
-             << "Point(4) = {-0.8,0.4,0,hTemp};\n"
-             << "Line(1) = {1,2};\n"
-             << "Line(2) = {2,3};\n"
-             << "Line(3) = {3,4};\n"
-             << "Line(4) = {4,1};\n"
-             << "Line Loop(1) = {2,3,4,1};\n"
-             << "Plane Surface(3) = {1};\n"
-             << "Physical Line(11) = {4};\n"
-             << "Physical Line(12) = {2};\n"
-             << "Physical Line(13) = {1,3};\n"
-             << "Physical Surface(14) = {3};\n";
-//diriclet=11
-//neumann=12
-//autre=13
-//surface=14
+    ostr << "hTemp=" << meshSize << ";\n"
+         << "Point(1) = {-0.8,-0.4,0,hTemp};\n"
+         << "Point(2) = {0.8,-0.4,0,hTemp};\n"
+         << "Point(3) = {0.8,0.4,0,hTemp};\n"
+         << "Point(4) = {-0.8,0.4,0,hTemp};\n"
+         << "Line(1) = {1,2};\n"
+         << "Line(2) = {2,3};\n"
+         << "Line(3) = {3,4};\n"
+         << "Line(4) = {4,1};\n"
+         << "Line Loop(1) = {2,3,4,1};\n"
+         << "Plane Surface(3) = {1};\n"
+         << "Physical Line(11) = {4};\n"
+         << "Physical Line(12) = {2};\n"
+         << "Physical Line(13) = {1,3};\n"
+         << "Physical Surface(14) = {3};\n";
+    //diriclet=11
+    //neumann=12
+    //autre=13
+    //surface=14
 
-        nameStr << "room." << meshSize;
-//        break;
+    nameStr << "room." << meshSize;
+    //        break;
 
-//    default:
-//        std::ostringstream os;
-//        os << "invalid dimension: " << Dim;
-//        throw std::logic_error( os.str() );
-    
+    //    default:
+    //        std::ostringstream os;
+    //        os << "invalid dimension: " << Dim;
+    //        throw std::logic_error( os.str() );
+
 
     gmsh_ptrtype gmshp( new Gmsh );
     gmshp->setPrefix( nameStr.str() );

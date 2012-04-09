@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -73,7 +73,7 @@ public:
     typedef typename functionspace_type::element_type element_type;
 
     typedef typename functionspace_type::template Element<typename functionspace_type::value_type,
-                                                          typename VectorUblas<typename functionspace_type::value_type>::range::type > element_range_type;
+            typename VectorUblas<typename functionspace_type::value_type>::range::type > element_range_type;
 
 
     /**
@@ -87,7 +87,7 @@ public:
      * \param _failsafeParameter fail safe parameter value
      */
     Aitken( functionspace_ptrtype _Xh, double _failsafeParameter = 0.1  )
-    :
+        :
         Xh( _Xh ),
         failsafeParameter( _failsafeParameter ),
         previousParameter( _failsafeParameter ),
@@ -133,7 +133,7 @@ public:
     {
         previousResidual = residual;
         previousElement.zero();
-        previousElement.add(1.,elem);
+        previousElement.add( 1.,elem );
         /*previousElement = vf::project(previousElement.functionSpace(),
                                       elements(previousElement.mesh()),
                                       vf::idv(elem) );*/
@@ -154,7 +154,7 @@ public:
     {
         currentResidual = residual;
         currentElement.zero();
-        currentElement.add(1.,elem);
+        currentElement.add( 1.,elem );
         /*currentElement = vf::project(currentElement.functionSpace(),
                                      elements(currentElement.mesh()),
                                      vf::idv(elem) );*/
@@ -214,7 +214,7 @@ template< typename fs_type >
 double
 Aitken<fs_type>::calculateParameter()
 {
-    element_type aux( Xh, "aux");
+    element_type aux( Xh, "aux" );
 
     aux = currentResidual;
     aux -= previousResidual;
@@ -223,7 +223,7 @@ Aitken<fs_type>::calculateParameter()
 
     aux.scale( 1.0/scalar );
 
-    element_type aux2( Xh, "aux2");
+    element_type aux2( Xh, "aux2" );
 
     aux2 = currentElement;
     aux2 -= previousElement;
@@ -231,11 +231,13 @@ Aitken<fs_type>::calculateParameter()
     scalar = inner_product( previousResidual , aux );
     scalar = -previousParameter*scalar;
 #if 1
+
     if ( scalar > 1 )
         scalar = 1;//-failsafeParameter;
 
     if ( scalar < 0 )
         scalar = failsafeParameter;
+
 #endif
     previousParameter = scalar;
 

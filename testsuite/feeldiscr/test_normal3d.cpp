@@ -30,12 +30,12 @@ inline
 po::options_description
 makeOptions()
 {
-    po::options_description desc_options("test_normal3d options");
+    po::options_description desc_options( "test_normal3d options" );
     desc_options.add_options()
-        ("hsize", po::value<double>()->default_value( 0.4 ), "mesh size")
-        ("geomap", po::value<int>()->default_value( (int)GeomapStrategyType::GEOMAP_HO ), "geomap (0=opt, 1=p1, 2=ho)")
-        ("straighten", po::value<int>()->default_value( 0 ), "straighten mesh")
-        ;
+    ( "hsize", po::value<double>()->default_value( 0.4 ), "mesh size" )
+    ( "geomap", po::value<int>()->default_value( ( int )GeomapStrategyType::GEOMAP_HO ), "geomap (0=opt, 1=p1, 2=ho)" )
+    ( "straighten", po::value<int>()->default_value( 0 ), "straighten mesh" )
+    ;
     return desc_options.add( Feel::feel_options() );
 }
 
@@ -52,15 +52,15 @@ makeAbout()
                      "0.1",
                      "test normal 3d",
                      Feel::AboutData::License_GPL,
-                     "Copyright (c) 2010 Universite Joseph Fourier");
+                     "Copyright (c) 2010 Universite Joseph Fourier" );
 
-    about.addAuthor("Vincent Chabannes", "developer", "vincent.chabannes@imag.fr", "");
+    about.addAuthor( "Vincent Chabannes", "developer", "vincent.chabannes@imag.fr", "" );
     return about;
 }
 
 template <uint32_type orderGeo = 1>
 void
-runtest(Application_ptrtype test_app)
+runtest( Application_ptrtype test_app )
 {
     BOOST_MESSAGE( "================================================================================\n"
                    << "Order: " << orderGeo << "\n" );
@@ -79,42 +79,44 @@ runtest(Application_ptrtype test_app)
     double meshSize = test_app->vm()["hsize"].as<double>();
     bool exportResults = test_app->vm()["exporter.export"].as<bool>();
     int straighten = test_app->vm()["straighten"].as<int>();
-    GeomapStrategyType geomap = (GeomapStrategyType)test_app->vm()["geomap"].as<int>();
+    GeomapStrategyType geomap = ( GeomapStrategyType )test_app->vm()["geomap"].as<int>();
 
-    GeoTool::Node Centre(0,0,0);
-    GeoTool::Node Rayon( 1);
-    GeoTool::Node Dir(1,0,0);
-    GeoTool::Node Lg(5,0,0);
-    GeoTool::Cylindre C( meshSize,"UnCylindre",Centre,Dir,Rayon,Lg);
-    C.setMarker(_type="surface",_name="Inlet",_marker1=true);
-    C.setMarker(_type="surface",_name="Outlet",_marker2=true);
-    C.setMarker(_type="surface",_name="Wall",_marker3=true);
-    C.setMarker(_type="volume",_name="OmegaFluid",_markerAll=true);
+    GeoTool::Node Centre( 0,0,0 );
+    GeoTool::Node Rayon( 1 );
+    GeoTool::Node Dir( 1,0,0 );
+    GeoTool::Node Lg( 5,0,0 );
+    GeoTool::Cylindre C( meshSize,"UnCylindre",Centre,Dir,Rayon,Lg );
+    C.setMarker( _type="surface",_name="Inlet",_marker1=true );
+    C.setMarker( _type="surface",_name="Outlet",_marker2=true );
+    C.setMarker( _type="surface",_name="Wall",_marker3=true );
+    C.setMarker( _type="volume",_name="OmegaFluid",_markerAll=true );
 
     std::ostringstream __ostrData;
     __ostrData<<convex_type::name()<<"h"<<meshSize;
 
-    auto mesh_ = C.createMesh<mesh_type>("domain"+__ostrData.str(), 0 );
+    auto mesh_ = C.createMesh<mesh_type>( "domain"+__ostrData.str(), 0 );
     auto mesh=mesh_;
+
     if ( straighten )
         mesh = straightenMesh( _mesh=mesh_, _save=1 );
+
     //-----------------------------------------------------------//
 
     auto Xh = space_type::New( mesh );
     auto u = Xh->element();
 
     BOOST_MESSAGE( "testing Gauss formula on ( 1, 1, 1 )\n" );
-    u = vf::project(Xh,elements(mesh),vf::vec(cst(1.0),cst(1.0),cst(1.0)));
-    auto value1 = integrate(_range=elements(mesh),_expr=divv(u), _quad=_Q<15>(),_geomap=geomap).evaluate()(0,0);
-    auto value2 = integrate(_range=boundaryfaces(mesh),_expr=trans(idv(u))*N(),_quad=_Q<15>(),_geomap=geomap).evaluate()(0,0);
+    u = vf::project( Xh,elements( mesh ),vf::vec( cst( 1.0 ),cst( 1.0 ),cst( 1.0 ) ) );
+    auto value1 = integrate( _range=elements( mesh ),_expr=divv( u ), _quad=_Q<15>(),_geomap=geomap ).evaluate()( 0,0 );
+    auto value2 = integrate( _range=boundaryfaces( mesh ),_expr=trans( idv( u ) )*N(),_quad=_Q<15>(),_geomap=geomap ).evaluate()( 0,0 );
     BOOST_MESSAGE( "\n value (div) =" << value1 << "\n value (n) =" << value2 <<"\n" );
     BOOST_CHECK_SMALL( value1, 1e-12 );
     BOOST_CHECK_SMALL( value2, 1e-12 );
 
     BOOST_MESSAGE( "testing Gauss formula on ( vf::cos(M_PI*Px()/5.),vf::cos(M_PI*Py()/5.),vf::cos(M_PI*Py()/5.))\n" );
-    u = vf::project(Xh,elements(mesh),vf::vec( vf::cos(M_PI*Px()/5.),vf::cos(M_PI*Py()/5.),vf::cos(M_PI*Py()/5.)));
-    value1 = integrate(_range=elements(mesh),_expr=divv(u), _quad=_Q<15>(),_geomap=geomap).evaluate()(0,0);
-    value2 = integrate(_range=boundaryfaces(mesh),_expr=trans(idv(u))*N(),_quad=_Q<15>(),_geomap=geomap).evaluate()(0,0);
+    u = vf::project( Xh,elements( mesh ),vf::vec( vf::cos( M_PI*Px()/5. ),vf::cos( M_PI*Py()/5. ),vf::cos( M_PI*Py()/5. ) ) );
+    value1 = integrate( _range=elements( mesh ),_expr=divv( u ), _quad=_Q<15>(),_geomap=geomap ).evaluate()( 0,0 );
+    value2 = integrate( _range=boundaryfaces( mesh ),_expr=trans( idv( u ) )*N(),_quad=_Q<15>(),_geomap=geomap ).evaluate()( 0,0 );
     BOOST_MESSAGE( "\n value (div) =" << value1 << "\n value (n) =" << value2 <<"\n" );
     BOOST_CHECK_CLOSE( value1, value2, 1e-8 );
     //BOOST_CHECK_SMALL( value1-value2,1e-8);
@@ -123,7 +125,7 @@ runtest(Application_ptrtype test_app)
     if ( exportResults )
     {
         auto nnn = Xh->element();
-        nnn = vf::project(Xh,markedfaces(mesh,"Wall"),N());
+        nnn = vf::project( Xh,markedfaces( mesh,"Wall" ),N() );
         auto UNexporter = Exporter<mesh_type>::New( "gmsh"/*test_app->vm()*/, "ExportOOOO"+__ostrData.str() );
         UNexporter->step( 0 )->setMesh( mesh );
         UNexporter->step( 0 )->add( "u", u );
@@ -144,21 +146,21 @@ BOOST_AUTO_TEST_CASE( normal3d )
 
     using namespace Feel::vf;
 
-    auto test_app = Application_ptrtype( new Application_type(boost::unit_test::framework::master_test_suite().argc,
-                                                              boost::unit_test::framework::master_test_suite().argv,
-                                                              makeAbout(),
-                                                              makeOptions()
-                                                              ) );
+    auto test_app = Application_ptrtype( new Application_type( boost::unit_test::framework::master_test_suite().argc,
+                                         boost::unit_test::framework::master_test_suite().argv,
+                                         makeAbout(),
+                                         makeOptions()
+                                                             ) );
 
     test_app->changeRepository( boost::format( "/testsuite/feeldiscr/%1%/" )
                                 % test_app->about().appName()
-        );
+                              );
 
 
-    runtest<1>(test_app);
-    runtest<2>(test_app);
-    runtest<3>(test_app);
-    runtest<4>(test_app);
+    runtest<1>( test_app );
+    runtest<2>( test_app );
+    runtest<3>( test_app );
+    runtest<4>( test_app );
 
 
 }

@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -107,10 +107,12 @@ LevelSet::createMesh( double meshSize )
     td.setCharacteristicLength( meshSize );
     td.setX( std::make_pair( -1.0, 1.0 ) );
     td.setY( std::make_pair( -1.0, 1.0 ) );
+
     if ( Dim > 2 )
-        {
-            td.setZ( std::make_pair( -1.0, 1.0 ) );
-        }
+    {
+        td.setZ( std::make_pair( -1.0, 1.0 ) );
+    }
+
     std::string fname = td.generate( ENTITY<Dim,1,Dim>::name() );
 
     ImporterGmsh<mesh_type> import( fname );
@@ -129,10 +131,10 @@ void
 LevelSet::run()
 {
     if ( this->vm().count( "help" ) )
-        {
-            std::cout << this->optionsDescription() << "\n";
-            return;
-        }
+    {
+        std::cout << this->optionsDescription() << "\n";
+        return;
+    }
 
     this->changeRepository( boost::format( "%1%/h_%2%/dt_%3%" )
                             % this->about().appName()
@@ -141,7 +143,7 @@ LevelSet::run()
     this->setLogs();
 
     PsLogger psLogger( "ps.log" );
-    psLogger.log("t=0, start");
+    psLogger.log( "t=0, start" );
 
     using namespace Feel::vf;
 
@@ -149,9 +151,9 @@ LevelSet::run()
      * First we create the mesh
      */
     mesh_ptr_type mesh = createMesh( M_meshSize );
-    M_domainSize = integrate( elements(mesh), M_im,
-                              constant(1.0) ).evaluate()(0,0);
-    psLogger.log("t=0, meshed");
+    M_domainSize = integrate( elements( mesh ), M_im,
+                              constant( 1.0 ) ).evaluate()( 0,0 );
+    psLogger.log( "t=0, meshed" );
 
     /*
      * The function spaces and some associate elements are then defined
@@ -160,13 +162,13 @@ LevelSet::run()
     space_p_ptrtype space_p = space_p_type::New( mesh );
     space_i_ptrtype space_i = space_i_type::New( mesh );
     //space_i->dof()->showMe();
-    psLogger.log("t=0, spaces");
+    psLogger.log( "t=0, spaces" );
 
     element_p_type phi  ( space_p, "phi" );
     element_p_type phio ( space_p, "phio" );
     element_p_type psi  ( space_p, "psi" );
     element_i_type kappa( space_i, "kappa" );
-    psLogger.log("t=0, elements");
+    psLogger.log( "t=0, elements" );
 
     Debug() << "[LevelSet] h = " << M_meshSize << "\n";
     Debug() << "[LevelSet] N = " << space_p->nDof() << "\n";
@@ -189,7 +191,7 @@ LevelSet::run()
     backendSymmP1->set_maxiter( this->vm()["maxiter"].as<int>() );
     backendSymmP1->set_tol( this->vm()["tolerance"].as<double>() );
     backendSymmP1->set_fillin( this->vm()["fillin"].as<int>() );
-    backendSymmP1->set_threshold(this->vm()["threshold"].as<double>());
+    backendSymmP1->set_threshold( this->vm()["threshold"].as<double>() );
     backendSymmP1->set_symmetric( true );
 #endif
     backendS_ptrtype backendSymmP0( backend_type::build( this->vm() ) );
@@ -200,16 +202,16 @@ LevelSet::run()
     backendSymmP0->set_maxiter( this->vm()["maxiter"].as<int>() );
     backendSymmP0->set_tol( this->vm()["tolerance"].as<double>() );
     backendSymmP0->set_fillin( this->vm()["fillin"].as<int>() );
-    backendSymmP0->set_threshold(this->vm()["threshold"].as<double>());
+    backendSymmP0->set_threshold( this->vm()["threshold"].as<double>() );
     backendSymmP0->set_symmetric( true );
 #endif
-    psLogger.log("t=0, backends");
+    psLogger.log( "t=0, backends" );
 
-    typedef __typeof__( elements(mesh) ) IteratorRange;
-    ReinitializerFMS<space_p_type, IteratorRange> reinitializerFMS( space_p, elements(mesh) );
+    typedef __typeof__( elements( mesh ) ) IteratorRange;
+    ReinitializerFMS<space_p_type, IteratorRange> reinitializerFMS( space_p, elements( mesh ) );
     ReinitializerILP<space_p_type, ENTITY> reinitializerILP( space_p, backendSymmP1 );
     Indicator<space_p_type, ENTITY> indicator( space_p, space_i, backendSymmP0 );
-    psLogger.log("t=0, reinitializers");
+    psLogger.log( "t=0, reinitializers" );
 
     // -- initial condition
     value_type x0 = 0.5;
@@ -242,11 +244,11 @@ LevelSet::run()
 
     // circle Fujima-Ohmori on (-1,1)^2
     AUTO( phi0,
-          ( exp(-1.0) -
-            vf::exp( -9.0*trans(P()-1./3.*oneY())*(P()-1./3.*oneY()) ) )
-          / exp(-1.0) );
-    AUTO( phi1, vf::sqrt(trans(P()-1./3.*oneY())*(P()-1./3.*oneY())) - 1./3. );
-    value_type mass0 = pi*std::pow(1./3.,Dim)*(1.+Dim)/3.;
+          ( exp( -1.0 ) -
+            vf::exp( -9.0*trans( P()-1./3.*oneY() )*( P()-1./3.*oneY() ) ) )
+          / exp( -1.0 ) );
+    AUTO( phi1, vf::sqrt( trans( P()-1./3.*oneY() )*( P()-1./3.*oneY() ) ) - 1./3. );
+    value_type mass0 = pi*std::pow( 1./3.,Dim )*( 1.+Dim )/3.;
 
     // straight Fujima-Ohmori line y=0 on (-1,1)^2
     //     AUTO( phi0, Py() );
@@ -277,7 +279,7 @@ LevelSet::run()
     //                     -radius);
     //     value_type mass0 = pow(radius,2.0)*(4*pi/3+sqrt(3.)/2);
 
-    psi = vf::project( space_p, elements(mesh), phi0 );
+    psi = vf::project( space_p, elements( mesh ), phi0 );
 
     double massBefore = mass( psi );
     Debug() << "[LevelSet] mass before reinit = " << massBefore << "\n";
@@ -304,19 +306,19 @@ LevelSet::run()
 
     AdvReact<space_p_type, imOrder, ENTITY> advreact( space_p, backend );
     advreact.set_stabcoeff( this->vm()["stabcoeff"].as<double>() );
-    psLogger.log("t=0, advreact");
+    psLogger.log( "t=0, advreact" );
 
     //     AUTO( betax, 2*pi*(0.5-Py()) );
     //     AUTO( betay, 2*pi*(Px()-0.5) );
     //     AUTO( betax,  sin(2.0*pi*Py())*sin(2.0*pi*Px()) );
     //     AUTO( betay, -sin(3.0*pi*Px())*sin(1.0*pi*Py()) );
-    AUTO( betax, -2.0*pi*Py()*(1.0-vf::pow(Px(),2.0)) );
-    AUTO( betay,  2.0*pi*Px()*(1.0-vf::pow(Py(),2.0)) );
+    AUTO( betax, -2.0*pi*Py()*( 1.0-vf::pow( Px(),2.0 ) ) );
+    AUTO( betay,  2.0*pi*Px()*( 1.0-vf::pow( Py(),2.0 ) ) );
 
     //     AUTO( beta, betax*oneX()+betay*oneY() );
 
-    element_p_type vx = project( space_p, elements(mesh), betax );
-    element_p_type vy = project( space_p, elements(mesh), betay );
+    element_p_type vx = project( space_p, elements( mesh ), betax );
+    element_p_type vy = project( space_p, elements( mesh ), betay );
     //     AUTO( beta, idv(vx)*oneX()+idv(vy)*oneY() );
 
     double time        = 0;
@@ -339,103 +341,107 @@ LevelSet::run()
 
     // --- Time loop
     for ( int iter = 0; time-dt/2 < finalTime; ++iter, time += dt )
+    {
+        // --- update advreact
+        std::cout << "[LevelSet] update advreact\n" << std::flush;
+        M_timers["update"].first.restart();
+        double sign = time-dt/2 > finalTime/2 ? -1 : 1;
+
+        if ( this->vm().count( "bdf2" ) && ( doReinit ) )
         {
-            // --- update advreact
-            std::cout << "[LevelSet] update advreact\n" << std::flush;
-            M_timers["update"].first.restart();
-            double sign = time-dt/2 > finalTime/2 ? -1 : 1;
+            advReactUpdateBdf2( advreact, dt, sign, vx, vy, phi, phio, false );//!backend->reusePC() );
+        }
 
-            if ( this->vm().count( "bdf2" ) && ( doReinit ) )
-                {
-                    advReactUpdateBdf2( advreact, dt, sign, vx, vy, phi, phio, false );//!backend->reusePC() );
-                }
-            else
-                {
-                    advReactUpdateCN( advreact, dt, theta, sign, vx, vy, phi, false );// !backend->reusePC() );
-                }
+        else
+        {
+            advReactUpdateCN( advreact, dt, theta, sign, vx, vy, phi, false );// !backend->reusePC() );
+        }
 
-            M_timers["update"].second += M_timers["update"].first.elapsed();
-            Debug() << "[LevelSet] assembly time: "
-                    << M_timers["update"].first.elapsed() << "\n";
+        M_timers["update"].second += M_timers["update"].first.elapsed();
+        Debug() << "[LevelSet] assembly time: "
+                << M_timers["update"].first.elapsed() << "\n";
+        msg.str( "" );
+        msg << "t=" << time << " advreact update";
+        psLogger.log( msg.str() );
+
+        // --- solve advreact
+        std::cout << "[LevelSet] solve  advreact\n" << std::flush;
+        M_timers["solve"].first.restart();
+        advreact.solve();
+        M_timers["solve"].second += M_timers["solve"].first.elapsed();
+        Debug() << "[LevelSet] solving  time: "
+                << M_timers["solve"].first.elapsed() << "\n";
+        msg.str( "" );
+        msg << "t=" << time << " advreact solve";
+        psLogger.log( msg.str() );
+
+        psi = advreact.phi();
+
+        phio = phi;
+
+        Debug() << "[LevelSet] t = " << time << "\n";
+        std::cout << "[LevelSet] t = " << time << "\n";
+
+        massBefore = mass( psi );
+        Debug() << "[LevelSet] mass before reinit = " << massBefore << "\n";
+        Debug() << "[LevelSet]   rel. mass error  = "
+                << massBefore/mass0-1.0 << "\n";
+
+        // --- reinitialize
+        if ( reinitEvery == 0 )
+        {
+            double reinitIndicator =
+                integrate( elements( mesh ), M_im,
+                           chi( ( gradv( psi )*trans( gradv( psi ) ) <
+                                  mingrad2 )
+                                && ( pow( idv( psi ),2.0 ) < pow( h(),2.0 )*
+                                     ( gradv( psi )*trans( gradv( psi ) ) ) )
+                              ) ).evaluate()( 0,0 );
+            doReinit = ( reinitIndicator > 0.0 );
+        }
+
+        else
+        {
+            doReinit = ( ( iter+1 ) % reinitEvery == 0 );
+        }
+
+        if ( doReinit )
+        {
+            std::cout << "[LevelSet] reinitialize\n" << std::flush;
+            M_timers["reinit"].first.restart();
+            indicator.update( psi );
+            kappa = indicator.indicatorGamma();
+            phi = reinitializerILP( psi, kappa );
+            phi = reinitializerFMS( phi );
+            M_timers["reinit"].second +=
+                M_timers["reinit"].first.elapsed();
+
+            statsAfterReinit( psi, phi, massBefore, mass0 );
             msg.str( "" );
-            msg << "t=" << time << " advreact update";
+            msg << "t=" << time << " reinit";
             psLogger.log( msg.str() );
+        }
 
-            // --- solve advreact
-            std::cout << "[LevelSet] solve  advreact\n" << std::flush;
-            M_timers["solve"].first.restart();
-            advreact.solve();
-            M_timers["solve"].second += M_timers["solve"].first.elapsed();
-            Debug() << "[LevelSet] solving  time: "
-                    << M_timers["solve"].first.elapsed() << "\n";
-            msg.str( "" );
-            msg << "t=" << time << " advreact solve";
-            psLogger.log( msg.str() );
+        else
+        {
+            phi = psi;
+        }
 
-            psi = advreact.phi();
+        this->exportResults( iter+1, time, phi, psi, kappa, vx, vy );
+        msg.str( "" );
+        msg << "t=" << time << " export";
+        psLogger.log( msg.str() );
 
-            phio = phi;
-
-            Debug() << "[LevelSet] t = " << time << "\n";
-            std::cout << "[LevelSet] t = " << time << "\n";
-
-            massBefore = mass( psi );
-            Debug() << "[LevelSet] mass before reinit = " << massBefore << "\n";
-            Debug() << "[LevelSet]   rel. mass error  = "
-                    << massBefore/mass0-1.0 << "\n";
-
-            // --- reinitialize
-            if ( reinitEvery == 0 )
-                {
-                    double reinitIndicator =
-                        integrate( elements(mesh), M_im,
-                                   chi( ( gradv(psi)*trans(gradv(psi)) <
-                                          mingrad2 )
-                                        && ( pow(idv(psi),2.0) < pow(h(),2.0)*
-                                             ( gradv(psi)*trans(gradv(psi)) ) )
-                                        ) ).evaluate()(0,0);
-                    doReinit = ( reinitIndicator > 0.0 );
-                }
-            else
-                {
-                    doReinit = ( (iter+1) % reinitEvery == 0 );
-                }
-            if ( doReinit )
-                {
-                    std::cout << "[LevelSet] reinitialize\n" << std::flush;
-                    M_timers["reinit"].first.restart();
-                    indicator.update( psi );
-                    kappa = indicator.indicatorGamma();
-                    phi = reinitializerILP( psi, kappa );
-                    phi = reinitializerFMS( phi );
-                    M_timers["reinit"].second +=
-                        M_timers["reinit"].first.elapsed();
-
-                    statsAfterReinit( psi, phi, massBefore, mass0 );
-                    msg.str( "" );
-                    msg << "t=" << time << " reinit";
-                    psLogger.log( msg.str() );
-                }
-            else
-                {
-                    phi = psi;
-                }
-
-            this->exportResults( iter+1, time, phi, psi, kappa, vx, vy );
-            msg.str( "" );
-            msg << "t=" << time << " export";
-            psLogger.log( msg.str() );
-
-        } // time loop
+    } // time loop
 
     double forthBackL2 =
-        std::sqrt(integrate( elements(mesh), M_im,
-                             vf::pow( idv(phi) - phi1, 2.0 ) ).evaluate()(0,0));
+        std::sqrt( integrate( elements( mesh ), M_im,
+                              vf::pow( idv( phi ) - phi1, 2.0 ) ).evaluate()( 0,0 ) );
     Debug() << "[LevelSet] forth-back L2 error = " << forthBackL2 << "\n";
 
-    double signChgErr = integrate( elements(mesh), M_im,
-                                   chi(idv(phi)*phi1<0)
-                                   ).evaluate()(0,0);
+    double signChgErr = integrate( elements( mesh ), M_im,
+                                   chi( idv( phi )*phi1<0 )
+                                 ).evaluate()( 0,0 );
     Debug() << "[LevelSet] global sgn chg err = " << signChgErr << "\n";
     Debug() << "[LevelSet] gl.  sgn chg err/h = "
             << signChgErr/M_meshSize << "\n";
@@ -453,9 +459,9 @@ double
 LevelSet::mass( const element_p_type& psi )
 {
     using namespace Feel::vf;
-    return integrate( elements( *(psi.functionSpace()->mesh()) ), M_im,
-                      chi(idv(psi)<0)
-                      ).evaluate()(0,0);
+    return integrate( elements( *( psi.functionSpace()->mesh() ) ), M_im,
+                      chi( idv( psi )<0 )
+                    ).evaluate()( 0,0 );
 }
 
 void
@@ -471,17 +477,17 @@ LevelSet::exportResults( int iter,
 
     // -- EXPORT --
     if ( this->vm()["export"].as<int>() > 0 &&
-         iter % this->vm()["export"].as<int>() == 0 )
-        {
-            timeset_type::step_ptrtype timeStep = M_timeSet->step( time );
-            timeStep->setMesh( phi.functionSpace()->mesh() );
-            timeStep->add( "phi", phi );
-            timeStep->add( "psi", psi );
-            timeStep->add( "kappa", kappa );
-            timeStep->add( "vx", vx );
-            timeStep->add( "vy", vy );
-            M_exporter->save();
-        } // export
+            iter % this->vm()["export"].as<int>() == 0 )
+    {
+        timeset_type::step_ptrtype timeStep = M_timeSet->step( time );
+        timeStep->setMesh( phi.functionSpace()->mesh() );
+        timeStep->add( "phi", phi );
+        timeStep->add( "psi", psi );
+        timeStep->add( "kappa", kappa );
+        timeStep->add( "vx", vx );
+        timeStep->add( "vy", vy );
+        M_exporter->save();
+    } // export
 
     M_timers["export"].second += M_timers["export"].first.elapsed();
     Debug() << "[LevelSet] exporting time: "
@@ -504,25 +510,25 @@ LevelSet::statsAfterReinit( const element_p_type& psi,
             << "\n";
 
     double signChgErr =
-        integrate( elements( *(psi.functionSpace()->mesh()) ), M_im,
-                   chi(idv(phi)*idv(psi)<0)
-                   ).evaluate()(0,0);
+        integrate( elements( *( psi.functionSpace()->mesh() ) ), M_im,
+                   chi( idv( phi )*idv( psi )<0 )
+                 ).evaluate()( 0,0 );
     Debug() << "[LevelSet] sign change error  = " << signChgErr << "\n";
     Debug() << "[LevelSet] sign chg. error/h  = " << signChgErr/M_meshSize
             << "\n";
 
     double gradMag =
-        integrate( elements( *(psi.functionSpace()->mesh()) ), M_im,
-                   sqrt( gradv(phi)*trans(gradv(phi)) )
-                   ).evaluate()(0,0) / M_domainSize;
+        integrate( elements( *( psi.functionSpace()->mesh() ) ), M_im,
+                   sqrt( gradv( phi )*trans( gradv( phi ) ) )
+                 ).evaluate()( 0,0 ) / M_domainSize;
     Debug() << "[LevelSet] mean gradient magnitude = " << gradMag
             << "\n";
 
     double distDist =
-        std::sqrt(integrate( elements( *(psi.functionSpace()->mesh()) ), M_im,
-                             pow(sqrt( gradv(phi)*trans(gradv(phi)) ) - 1.0,
-                                 2.0)
-                             ).evaluate()(0,0));
+        std::sqrt( integrate( elements( *( psi.functionSpace()->mesh() ) ), M_im,
+                              pow( sqrt( gradv( phi )*trans( gradv( phi ) ) ) - 1.0,
+                                   2.0 )
+                            ).evaluate()( 0,0 ) );
     Debug() << "[LevelSet] distance from dist = " << distDist << "\n";
 
 } // LevelSet::statsAfterReinit

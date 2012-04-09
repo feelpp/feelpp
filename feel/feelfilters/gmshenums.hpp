@@ -97,27 +97,42 @@ public:
     /**
      * \return the type of ids
      */
-    int type() const { return M_type; }
+    int type() const
+    {
+        return M_type;
+    }
 
     /**
      * \return the number of ids
      */
-    int size() const { return M_id.size(); }
+    int size() const
+    {
+        return M_id.size();
+    }
 
     /**
      * \return the Feel id from the Gmsh id \p p
      */
-    int fromGmshId( int p ) const { return M_id.right.at(p); }
+    int fromGmshId( int p ) const
+    {
+        return M_id.right.at( p );
+    }
 
     /**
      * \return the Gmsh id from the Feel id \p p
      */
-    int toGmshId( int p ) const { return M_id.left.at(p); }
+    int toGmshId( int p ) const
+    {
+        return M_id.left.at( p );
+    }
 
     /**
      * \return the Gmsh id from the Feel id \p p
      */
-    int id( int p ) const { return M_id.left.at(p); }
+    int id( int p ) const
+    {
+        return M_id.left.at( p );
+    }
 
 private:
 
@@ -146,146 +161,171 @@ GmshOrdering<ConvexType>::GmshOrdering()
 {
     using namespace boost::assign;
     typedef typename id_type::relation relation;
+
     if ( ConvexType::nDim == 0 )
     {
         M_type = GMSH_POINT;
-        for( int i = 0; i < ConvexType::numPoints; ++i )
+
+        for ( int i = 0; i < ConvexType::numPoints; ++i )
             M_id.insert( id_type::value_type( i, i ) );
     }
+
     else if ( ConvexType::is_simplex )
     {
         if ( ConvexType::nDim == 1 )
         {
             M_type = detail::line_type[ConvexType::nOrder];
-            for( int i = 0; i < ConvexType::numPoints; ++i )
+
+            for ( int i = 0; i < ConvexType::numPoints; ++i )
                 M_id.insert( id_type::value_type( i, i ) );
         }
+
         if ( ConvexType::nDim == 2 )
         {
             M_type = detail::triangle_type[ConvexType::nOrder];
+
             if ( ConvexType::nOrder == 1 )
-                M_id = list_of<relation>(0,0)(1,1)(2,2);
+                M_id = list_of<relation>( 0,0 )( 1,1 )( 2,2 );
+
             //M_id+=0,1,2;
             if ( ConvexType::nOrder == 2 )
-                M_id = list_of<relation>(0,0)(1,1)(2,2)(3,4)(4,5)(5,3);
+                M_id = list_of<relation>( 0,0 )( 1,1 )( 2,2 )( 3,4 )( 4,5 )( 5,3 );
+
             //M_id += 0,1,2,5,3,4;
             if ( ConvexType::nOrder == 3 )
-                M_id = list_of<relation>(0,0)(1,1)(2,2)(3,5)(4,6)(5,7)(6,8)(7,3)(8,4)(9,9);
+                M_id = list_of<relation>( 0,0 )( 1,1 )( 2,2 )( 3,5 )( 4,6 )( 5,7 )( 6,8 )( 7,3 )( 8,4 )( 9,9 );
+
             //M_id += 0,1,2,7,8,3,4,5,6,9;
             if ( ConvexType::nOrder == 4 )
-                M_id = list_of<relation>(0,0)(1,1)(2,2)(3,6)(4,7)(5,8)(6,9)(7,10)(8,11)(9,3)(10,4)(11,5)(12,12)(13,13)(14,14);
+                M_id = list_of<relation>( 0,0 )( 1,1 )( 2,2 )( 3,6 )( 4,7 )( 5,8 )( 6,9 )( 7,10 )( 8,11 )( 9,3 )( 10,4 )( 11,5 )( 12,12 )( 13,13 )( 14,14 );
+
             //M_id += 0,1,2,9,10,11,3,4,5,6,7,8,12,13,14;
             if ( ConvexType::nOrder == 5 )
-                M_id = list_of<relation>(0,0)(1,1)(2,2)(3,7)(4,8)(5,9)(6,10)(7,11)(8,12)(9,13)(10,14)(11,3)(12,4)(13,5)(14,6)(15,15)(16,18)(17,16)(18,20)(19,19)(20,17);
+                M_id = list_of<relation>( 0,0 )( 1,1 )( 2,2 )( 3,7 )( 4,8 )( 5,9 )( 6,10 )( 7,11 )( 8,12 )( 9,13 )( 10,14 )( 11,3 )( 12,4 )( 13,5 )( 14,6 )( 15,15 )( 16,18 )( 17,16 )( 18,20 )( 19,19 )( 20,17 );
+
             //M_id += 0,1,2,11,12,13,14,3,4,5,6,7,8,9,10,15,16,17,19,20,18;
         }
+
         if ( ConvexType::nDim == 3 )
         {
             M_type = detail::tetrahedron_type[ConvexType::nOrder];
+
             if ( ConvexType::nOrder == 1 )
                 M_id = list_of<relation>
-                    (0,0)(1,1)(2,2)(3,3) // vertices
-                    ;
+                       ( 0,0 )( 1,1 )( 2,2 )( 3,3 ) // vertices
+                       ;
+
             //M_id+=0,1,2,3;
             if ( ConvexType::nOrder == 2 )
                 M_id = list_of<relation>
-                    (0,0)(1,1)(2,2)(3,3)  // vertices
-                    (4,5) // edge 0
-                    (5,6) // edge 1
-                    (6,4) // edge 2
-                    (7,7) // edge 3
-                    (8,9) // edge 4
-                    (9,8) // edge 5
-                    ;
+                       ( 0,0 )( 1,1 )( 2,2 )( 3,3 ) // vertices
+                       ( 4,5 ) // edge 0
+                       ( 5,6 ) // edge 1
+                       ( 6,4 ) // edge 2
+                       ( 7,7 ) // edge 3
+                       ( 8,9 ) // edge 4
+                       ( 9,8 ) // edge 5
+                       ;
+
             //M_id+=0,1,2,3,6,4,5,7,9,8;
             if ( ConvexType::nOrder == 3 )
                 M_id = list_of<relation>
-                    (0,0)(1,1)(2,2)(3,3) // vertices
-                    (4,6)(5,7)     // edge 0
-                    (6,8)(7,9)     // edge 1
-                    (8,4)(9,5)     // edge 2
-                    (10,11)(11,10) // edge 3
-                    (12,15)(13,14) // edge 4
-                    (14,13)(15,12) // edge 5
-                    (16,19)        // face 0
-                    (17,18)        // face 1
-                    (18,17)        // face 2
-                    (19,16)        // face 3
-                    ;
+                       ( 0,0 )( 1,1 )( 2,2 )( 3,3 ) // vertices
+                       ( 4,6 )( 5,7 ) // edge 0
+                       ( 6,8 )( 7,9 ) // edge 1
+                       ( 8,4 )( 9,5 ) // edge 2
+                       ( 10,11 )( 11,10 ) // edge 3
+                       ( 12,15 )( 13,14 ) // edge 4
+                       ( 14,13 )( 15,12 ) // edge 5
+                       ( 16,19 )      // face 0
+                       ( 17,18 )      // face 1
+                       ( 18,17 )      // face 2
+                       ( 19,16 )      // face 3
+                       ;
+
             if ( ConvexType::nOrder == 4 )
                 M_id = list_of<relation>
-                    (0,0)(1,1)(2,2)(3,3)  // vertices
-                    (4,7)(5,8)(6,9)       // edge 0
-                    (7,10)(8,11)(9,12)    // edge 1
-                    (10,4)(11,5)(12,6)    // edge 2
-                    (13,15)(14,14)(15,13) // edge 3
-                    (16,21)(17,20)(18,19) // edge 4
-                    (19,18)(20,17)(21,16) // edge 5
-                    (22,32)(23,33)(24,31) // face 0
-                    (25,28)(26,30)(27,29) // face 1
-                    (28,25)(29,26)(30,27) // face 2
-                    (31,22)(32,24)(33,23) // face 3
-                    (34,34)               // interior point
-                    ;
+                       ( 0,0 )( 1,1 )( 2,2 )( 3,3 ) // vertices
+                       ( 4,7 )( 5,8 )( 6,9 ) // edge 0
+                       ( 7,10 )( 8,11 )( 9,12 ) // edge 1
+                       ( 10,4 )( 11,5 )( 12,6 ) // edge 2
+                       ( 13,15 )( 14,14 )( 15,13 ) // edge 3
+                       ( 16,21 )( 17,20 )( 18,19 ) // edge 4
+                       ( 19,18 )( 20,17 )( 21,16 ) // edge 5
+                       ( 22,32 )( 23,33 )( 24,31 ) // face 0
+                       ( 25,28 )( 26,30 )( 27,29 ) // face 1
+                       ( 28,25 )( 29,26 )( 30,27 ) // face 2
+                       ( 31,22 )( 32,24 )( 33,23 ) // face 3
+                       ( 34,34 )             // interior point
+                       ;
+
             if ( ConvexType::nOrder > 4 )
-                for( int i = 0; i < ConvexType::numPoints; ++i )
+                for ( int i = 0; i < ConvexType::numPoints; ++i )
                     M_id.insert( id_type::value_type( i, i ) );
 
         }
     }
+
     else
     {
 
         if ( ConvexType::nDim == 1 )
         {
             M_type = detail::line_type[ConvexType::nOrder];
-            for( int i = 0; i < ConvexType::numPoints; ++i )
+
+            for ( int i = 0; i < ConvexType::numPoints; ++i )
                 M_id.insert( id_type::value_type( i, i ) );
         }
+
         if ( ConvexType::nDim == 2 )
         {
             M_type = detail::quad_type[ConvexType::nOrder];
+
             if ( ConvexType::nOrder == 1 )
-                M_id = list_of<relation>(0,0)(1,1)(2,2)(3,3);
+                M_id = list_of<relation>( 0,0 )( 1,1 )( 2,2 )( 3,3 );
+
             //M_id+=0,1,2,3;
             if ( ConvexType::nOrder == 2 )
-                M_id = list_of<relation>(0,0)(1,1)(2,2)(3,3) // vertices
-                    (4,4) // edge 0
-                    (5,5) // edge 1
-                    (6,6) // edge 2
-                    (7,7) // edge 3
-                    (8,8) // face 0
-                    ;
+                M_id = list_of<relation>( 0,0 )( 1,1 )( 2,2 )( 3,3 ) // vertices
+                       ( 4,4 ) // edge 0
+                       ( 5,5 ) // edge 1
+                       ( 6,6 ) // edge 2
+                       ( 7,7 ) // edge 3
+                       ( 8,8 ) // face 0
+                       ;
         }
+
         if ( ConvexType::nDim == 3 )
         {
             M_type = detail::hexa_type[ConvexType::nOrder];
+
             if ( ConvexType::nOrder == 1 )
-                M_id = list_of<relation>(0,0)(1,1)(2,2)(3,3)(4,4)(5,5)(6,6)(7,7);
+                M_id = list_of<relation>( 0,0 )( 1,1 )( 2,2 )( 3,3 )( 4,4 )( 5,5 )( 6,6 )( 7,7 );
 
             if ( ConvexType::nOrder == 2 )
                 M_id = list_of<relation>
-                    (0,0)(1,1)(2,2)(3,3)(4,4)(5,5)(6,6)(7,7) // vertices
-                    (8,8)   // edge 0
-                    (9,11)  // edge 1
-                    (10,13) // edge 2
-                    (11,9)  // edge 3
-                    (12,12) // edge 4
-                    (13,16) // edge 5
-                    (14,10) // edge 6
-                    (15,14) // edge 7
-                    (16,18) // edge 8
-                    (17,15) // edge 9
-                    (18,19) // edge 10
-                    (19,17) // edge 11
-                    (20,20) // face 0
-                    (21,21) // face 1
-                    (22,23) // face 2
-                    (23,24) // face 3
-                    (24,22) // face 4
-                    (25,25) // face 5
-                    (26,26) // volume 0
-                    ;
+                       ( 0,0 )( 1,1 )( 2,2 )( 3,3 )( 4,4 )( 5,5 )( 6,6 )( 7,7 ) // vertices
+                       ( 8,8 ) // edge 0
+                       ( 9,11 ) // edge 1
+                       ( 10,13 ) // edge 2
+                       ( 11,9 ) // edge 3
+                       ( 12,12 ) // edge 4
+                       ( 13,16 ) // edge 5
+                       ( 14,10 ) // edge 6
+                       ( 15,14 ) // edge 7
+                       ( 16,18 ) // edge 8
+                       ( 17,15 ) // edge 9
+                       ( 18,19 ) // edge 10
+                       ( 19,17 ) // edge 11
+                       ( 20,20 ) // face 0
+                       ( 21,21 ) // face 1
+                       ( 22,23 ) // face 2
+                       ( 23,24 ) // face 3
+                       ( 24,22 ) // face 4
+                       ( 25,25 ) // face 5
+                       ( 26,26 ) // volume 0
+                       ;
+
             //M_id+=0,1,2,3,4,5,6,7;
         }
 

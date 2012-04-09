@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the FeelV library
 
@@ -35,25 +35,27 @@
 
 #include "logs.hpp"
 
-BOOST_DEFINE_LOG(app, "app")
-BOOST_DEFINE_LOG(dbg, "app.dbg")
-BOOST_DEFINE_LOG(err, "app.err")
-BOOST_DEFINE_LOG(warn, "app.warn")
-BOOST_DEFINE_LOG(info, "info")
+BOOST_DEFINE_LOG( app, "app" )
+BOOST_DEFINE_LOG( dbg, "app.dbg" )
+BOOST_DEFINE_LOG( err, "app.err" )
+BOOST_DEFINE_LOG( warn, "app.warn" )
+BOOST_DEFINE_LOG( info, "info" )
 
 
 // *** Appenders
-void write_to_cout(const std::string &, const std::string &msg)
+void write_to_cout( const std::string &, const std::string &msg )
 {
     std::cout << msg;
 }
 
 
 // *** Modifiers
-void prefix_time(const std::string &, std::string & msg)
+void prefix_time( const std::string &, std::string & msg )
 {
-    char time_buff[ 20]; time_t t = time(0); tm details = *localtime( &t);
-    sprintf( time_buff, "%02d:%02d:%02d  ", details.tm_hour, details.tm_min, details.tm_sec);
+    char time_buff[ 20];
+    time_t t = time( 0 );
+    tm details = *localtime( &t );
+    sprintf( time_buff, "%02d:%02d:%02d  ", details.tm_hour, details.tm_min, details.tm_sec );
     msg = time_buff + msg;
 }
 
@@ -64,10 +66,10 @@ void init_logs()
     // Modifiers for all:
     // [type_of_message] original_message append_enter_if_needed
     //add_modifier("*", &prefix_time, INT_MAX );
-    add_modifier("*", &append_enter);
+    add_modifier( "*", &append_enter );
     // Modifiers for app and its ascendants
     // <time> [type_of_message] original_message append_enter_if_needed
-    add_modifier("*", &prepend_prefix);
+    add_modifier( "*", &prepend_prefix );
     // Modifiers for "app" only
     // <time> [Thread ID] [type_of_message] original_message append_enter_if_needed
     //add_modifier("app", &prepend_thread_id, 0);
@@ -76,7 +78,7 @@ void init_logs()
     // all messages are written to cout
     //add_appender("*", write_to_cout);
     // "app*" messages are written to file as well
-    add_appender("app*", write_to_file("report.txt") );
+    add_appender( "app*", write_to_file( "report.txt" ) );
     // 'app' only and dbg messages are written to Output Debug Window as well
 
     flush_log_cache();

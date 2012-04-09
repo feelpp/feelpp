@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -34,7 +34,10 @@
 
 namespace Feel
 {
-namespace detail { struct periodicity_base {}; }
+namespace detail
+{
+struct periodicity_base {};
+}
 
 /**
  * \class Periodic
@@ -105,7 +108,7 @@ public:
      */
     //@{
 
-    Periodic( node_type const& trans ) : M_trans( trans) {}
+    Periodic( node_type const& trans ) : M_trans( trans ) {}
     Periodic( Periodic const & p ) : M_trans( p.M_trans ) {}
     ~Periodic() {}
 
@@ -123,10 +126,16 @@ public:
     //@{
 
     //! return whether the condition is periodic or not
-    static bool isPeriodic()  { return is_periodic; }
+    static bool isPeriodic()
+    {
+        return is_periodic;
+    }
 
     //! return the translation condition that should be applied on Tag2
-    node_type const& translation()  { return M_trans; }
+    node_type const& translation()
+    {
+        return M_trans;
+    }
 
     //@}
 
@@ -183,10 +192,16 @@ public:
     //@{
 
     //! return whether the condition is periodic or not
-    static bool isPeriodic()  { return is_periodic; }
+    static bool isPeriodic()
+    {
+        return is_periodic;
+    }
 
     //! return the translation condition that should be applied on Tag2
-    node_type translation()  { return node_type(); }
+    node_type translation()
+    {
+        return node_type();
+    }
 
     //@}
 };

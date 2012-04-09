@@ -38,8 +38,14 @@ namespace details
 {
 struct SecondBasedTimer
 {
-    static void print(const double& val) { std::cout << "Time : " << val << "s\n"; }
-    static inline double  time() { return details::now(); }
+    static void print( const double& val )
+    {
+        std::cout << "Time : " << val << "s\n";
+    }
+    static inline double  time()
+    {
+        return details::now();
+    }
 };
 
 counter<double,SecondBasedTimer> const sec_timer = {};
@@ -50,20 +56,23 @@ namespace Feel
 {
 namespace time
 {
-inline void tic() { details::sec_timer.tic(); }
-
-inline double  toc( bool display = true)
+inline void tic()
 {
-    return details::sec_timer.toc(display);
+    details::sec_timer.tic();
+}
+
+inline double  toc( bool display = true )
+{
+    return details::sec_timer.toc( display );
 }
 } // time
 } // Feel
 
 namespace Feel
 {
-  // Convenience namespace injection from time:: into Feel::
-  using time::tic;
-  using time::toc;
+// Convenience namespace injection from time:: into Feel::
+using time::tic;
+using time::toc;
 }
 
 #endif /* FEELPP_TIMING_TIC_HPP */

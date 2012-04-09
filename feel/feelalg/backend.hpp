@@ -61,14 +61,14 @@
 
 namespace Feel
 {
-    /*enum  Pattern
+/*enum  Pattern
 {
-    DEFAULT   = 1 << 0,
-    EXTENDED  = 1 << 1,
-    COUPLED   = 1 << 2,
-    SYMMETRIC = 1 << 3
+DEFAULT   = 1 << 0,
+EXTENDED  = 1 << 1,
+COUPLED   = 1 << 2,
+SYMMETRIC = 1 << 3
 };
-    */
+*/
 ///! \cond detail
 namespace detail
 {
@@ -170,7 +170,7 @@ public:
 #else
         BackendType = BACKEND_GMM
 #endif
-        );
+    );
 
     /**
      * Builds a \p Backend
@@ -180,37 +180,37 @@ public:
     /**
      * instantiate a new sparse vector
      */
-    virtual sparse_matrix_ptrtype newMatrix(const size_type m,
-                                            const size_type n,
-                                            const size_type m_l,
-                                            const size_type n_l,
-                                            const size_type nnz=30,
-                                            const size_type noz=10,
-                                            size_type prop = NON_HERMITIAN ) = 0;
+    virtual sparse_matrix_ptrtype newMatrix( const size_type m,
+            const size_type n,
+            const size_type m_l,
+            const size_type n_l,
+            const size_type nnz=30,
+            const size_type noz=10,
+            size_type prop = NON_HERMITIAN ) = 0;
 
     /**
      * instantiate a new sparse vector
      */
-    virtual sparse_matrix_ptrtype newMatrix(const size_type m,
-                                            const size_type n,
-                                            const size_type m_l,
-                                            const size_type n_l,
-                                            graph_ptrtype const & graph,
-                                            size_type matrix_properties = NON_HERMITIAN) = 0;
+    virtual sparse_matrix_ptrtype newMatrix( const size_type m,
+            const size_type n,
+            const size_type m_l,
+            const size_type n_l,
+            graph_ptrtype const & graph,
+            size_type matrix_properties = NON_HERMITIAN ) = 0;
 
     /**
      * instantiate a new sparse vector
      */
-    sparse_matrix_ptrtype newMatrix(const size_type m,
-                                    const size_type n,
-                                    const size_type m_l,
-                                    const size_type n_l,
-                                    graph_ptrtype const & graph,
-                                    std::vector < std::vector<int> > indexSplit,
-                                    size_type matrix_properties = NON_HERMITIAN)
+    sparse_matrix_ptrtype newMatrix( const size_type m,
+                                     const size_type n,
+                                     const size_type m_l,
+                                     const size_type n_l,
+                                     graph_ptrtype const & graph,
+                                     std::vector < std::vector<int> > indexSplit,
+                                     size_type matrix_properties = NON_HERMITIAN )
     {
-        auto mat = this->newMatrix(m,n,m_l,n_l,graph,matrix_properties);
-        mat->setIndexSplit(indexSplit);
+        auto mat = this->newMatrix( m,n,m_l,n_l,graph,matrix_properties );
+        mat->setIndexSplit( indexSplit );
         return mat;
     }
 
@@ -219,9 +219,9 @@ public:
      * instantiate a new sparse vector
      */
     virtual sparse_matrix_ptrtype newMatrix( DataMap const& dm1,
-                                             DataMap const& dm2,
-                                             size_type prop = NON_HERMITIAN,
-                                             bool init = true ) = 0;
+            DataMap const& dm2,
+            size_type prop = NON_HERMITIAN,
+            bool init = true ) = 0;
 
     /**
      * instantiate a new sparse vector
@@ -230,12 +230,14 @@ public:
                                      DataMap const& imagemap,
                                      graph_ptrtype const & graph,
                                      size_type matrix_properties = NON_HERMITIAN,
-                                     bool init = true)
+                                     bool init = true )
     {
         auto mat = this->newMatrix( domainmap,imagemap, matrix_properties, false );
-        if (init) mat->init( imagemap.nDof(), domainmap.nDof(),
-                             imagemap.nLocalDofWithoutGhost(), domainmap.nLocalDofWithoutGhost(),
-                             graph);
+
+        if ( init ) mat->init( imagemap.nDof(), domainmap.nDof(),
+                                   imagemap.nLocalDofWithoutGhost(), domainmap.nLocalDofWithoutGhost(),
+                                   graph );
+
         mat->zero();
         // todo!
         //mat->setIndexSplit( trial->dofIndexSplit() );
@@ -258,89 +260,91 @@ public:
     /**
      * helper function
      */
-    BOOST_PARAMETER_MEMBER_FUNCTION((sparse_matrix_ptrtype),
-                                    newMatrix,
-                                    tag,
-                                    (required
-                                     (trial,*(boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> >))
-                                     (test,*(boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> >)))
-                                    (optional
-                                     (pattern,(size_type),Pattern::COUPLED)
-                                     (properties,(size_type),NON_HERMITIAN)
-                                     (buildGraphWithTranspose, (bool),false )
-                                     (pattern_block,    *, (vf::Blocks<1,1,size_type>(size_type(Pattern::HAS_NO_BLOCK_PATTERN)) ) )
-                                     (diag_is_nonzero,  *(boost::is_integral<mpl::_>), true)
-                                     (verbose,(int),0)
-                                        ))
+    BOOST_PARAMETER_MEMBER_FUNCTION( ( sparse_matrix_ptrtype ),
+                                     newMatrix,
+                                     tag,
+                                     ( required
+                                       ( trial,*( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
+                                       ( test,*( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) ) )
+                                     ( optional
+                                       ( pattern,( size_type ),Pattern::COUPLED )
+                                       ( properties,( size_type ),NON_HERMITIAN )
+                                       ( buildGraphWithTranspose, ( bool ),false )
+                                       ( pattern_block,    *, ( vf::Blocks<1,1,size_type>( size_type( Pattern::HAS_NO_BLOCK_PATTERN ) ) ) )
+                                       ( diag_is_nonzero,  *( boost::is_integral<mpl::_> ), true )
+                                       ( verbose,( int ),0 )
+                                     ) )
+    {
+
+        //auto mat = this->newMatrix( trial->map(), test->map(), properties, false );
+        auto mat = this->newMatrix( trial->mapOnOff(), test->mapOn(), properties, false );
+
+        if ( !buildGraphWithTranspose )
         {
+            auto s = stencil( _test=test,
+                              _trial=trial,
+                              _pattern=pattern,
+                              _pattern_block=pattern_block.getSetOfBlocks(),
+                              _diag_is_nonzero=diag_is_nonzero );
 
-            //auto mat = this->newMatrix( trial->map(), test->map(), properties, false );
-            auto mat = this->newMatrix( trial->mapOnOff(), test->mapOn(), properties, false );
-
-            if(!buildGraphWithTranspose)
-                {
-                    auto s = stencil( _test=test,
-                                      _trial=trial,
-                                      _pattern=pattern,
-                                      _pattern_block=pattern_block.getSetOfBlocks(),
-                                      _diag_is_nonzero=diag_is_nonzero );
-
-                    mat->init( test->nDof(), trial->nDof(),
-                               //test->nLocalDof(), trial->nLocalDof(),
-                               test->nLocalDofWithoutGhost(), trial->nLocalDofWithoutGhost(),
-                               s->graph() );
-                }
-            else
-                {
-                    // need to build inverse of pattern_block : to fix!
-                    auto s = stencil( _test=trial, _trial=test, _pattern=pattern );
-                    mat->init( test->nDof(), trial->nDof(),
-                               //test->nLocalDof(), trial->nLocalDof(),
-                               test->nLocalDofWithoutGhost(), trial->nLocalDofWithoutGhost(),
-                               s->graph()->transpose() );
-                }
-            mat->zero();
-            mat->setIndexSplit( trial->dofIndexSplit() );
-            return mat;
+            mat->init( test->nDof(), trial->nDof(),
+                       //test->nLocalDof(), trial->nLocalDof(),
+                       test->nLocalDofWithoutGhost(), trial->nLocalDofWithoutGhost(),
+                       s->graph() );
         }
+
+        else
+        {
+            // need to build inverse of pattern_block : to fix!
+            auto s = stencil( _test=trial, _trial=test, _pattern=pattern );
+            mat->init( test->nDof(), trial->nDof(),
+                       //test->nLocalDof(), trial->nLocalDof(),
+                       test->nLocalDofWithoutGhost(), trial->nLocalDofWithoutGhost(),
+                       s->graph()->transpose() );
+        }
+
+        mat->zero();
+        mat->setIndexSplit( trial->dofIndexSplit() );
+        return mat;
+    }
 
     template<typename DomainSpace, typename ImageSpace>
     sparse_matrix_ptrtype newMatrix( DomainSpace const& dm, ImageSpace const& im, sparse_matrix_ptrtype const& M, size_type prop = NON_HERMITIAN  )
-        {
-            sparse_matrix_ptrtype m = newMatrix( dm, im, prop  );
-            m->init( im->nDof(), dm->nDof(), im->nLocalDof(), dm->nLocalDof(), M->graph() );
-            return m;
-        }
+    {
+        sparse_matrix_ptrtype m = newMatrix( dm, im, prop  );
+        m->init( im->nDof(), dm->nDof(), im->nLocalDof(), dm->nLocalDof(), M->graph() );
+        return m;
+    }
 
     /**
      * instantiate a new block matrix sparse
      */
     template <int NR, int NC, typename BlockType=sparse_matrix_ptrtype >
     sparse_matrix_ptrtype newBlockMatrixImpl( vf::Blocks<NR,NC,BlockType> const & b,
-                                              bool copy_values=true,
-                                              bool diag_is_nonzero=true )
+            bool copy_values=true,
+            bool diag_is_nonzero=true )
     {
         typedef MatrixBlock<NR,NC,typename BlockType::element_type::value_type> matrix_block_type;
-        boost::shared_ptr<matrix_block_type> mb(new matrix_block_type( b, *this, copy_values, diag_is_nonzero ) );
+        boost::shared_ptr<matrix_block_type> mb( new matrix_block_type( b, *this, copy_values, diag_is_nonzero ) );
         return mb->getSparseMatrix();
     }
 
     /**
      * instantiate a new block matrix sparse
      */
-    BOOST_PARAMETER_MEMBER_FUNCTION((sparse_matrix_ptrtype),
-                                    newBlockMatrix,
-                                    tag,
-                                    (required
-                                     (block,*)
+    BOOST_PARAMETER_MEMBER_FUNCTION( ( sparse_matrix_ptrtype ),
+                                     newBlockMatrix,
+                                     tag,
+                                     ( required
+                                       ( block,* )
                                      )
-                                    (optional
-                                     (copy_values,*(boost::is_integral<mpl::_>),true)
-                                     (diag_is_nonzero,  *(boost::is_integral<mpl::_>), true)
+                                     ( optional
+                                       ( copy_values,*( boost::is_integral<mpl::_> ),true )
+                                       ( diag_is_nonzero,  *( boost::is_integral<mpl::_> ), true )
                                      )
-                                    )
+                                   )
     {
-        return newBlockMatrixImpl(block,copy_values,diag_is_nonzero);
+        return newBlockMatrixImpl( block,copy_values,diag_is_nonzero );
     }
 
     /**
@@ -351,39 +355,39 @@ public:
                                        bool copy_values=true )
     {
         typedef VectorBlock<NR,typename BlockType::element_type::value_type> vector_block_type;
-        boost::shared_ptr<vector_block_type> mb(new vector_block_type( b, *this, copy_values ) );
+        boost::shared_ptr<vector_block_type> mb( new vector_block_type( b, *this, copy_values ) );
         return mb->getVector();
     }
 
     /**
      * instantiate a new block matrix sparse
      */
-    BOOST_PARAMETER_MEMBER_FUNCTION((vector_ptrtype),
-                                    newBlockVector,
-                                    tag,
-                                    (required
-                                     (block,*)
+    BOOST_PARAMETER_MEMBER_FUNCTION( ( vector_ptrtype ),
+                                     newBlockVector,
+                                     tag,
+                                     ( required
+                                       ( block,* )
                                      )
-                                    (optional
-                                     (copy_values,*(boost::is_integral<mpl::_>),true)
+                                     ( optional
+                                       ( copy_values,*( boost::is_integral<mpl::_> ),true )
                                      )
-                                    )
+                                   )
     {
-        return newBlockVectorImpl(block,copy_values);
+        return newBlockVectorImpl( block,copy_values );
     }
 
 
     /**
      * instantiate a new zero matrix
      */
-    BOOST_PARAMETER_MEMBER_FUNCTION((sparse_matrix_ptrtype),
-                                    newZeroMatrix,
-                                    tag,
-                                    (required
-                                     (test,*)
-                                     (trial,*)
+    BOOST_PARAMETER_MEMBER_FUNCTION( ( sparse_matrix_ptrtype ),
+                                     newZeroMatrix,
+                                     tag,
+                                     ( required
+                                       ( test,* )
+                                       ( trial,* )
                                      )
-                                    )
+                                   )
     {
         //return this->newZeroMatrix( trial->map(), test->map() );
         return this->newZeroMatrix( trial->mapOnOff(), test->mapOn() );
@@ -405,9 +409,9 @@ public:
      */
     template<typename DomainSpace>
     vector_ptrtype newVector( DomainSpace const& dm  )
-        {
-            return this->newVector( dm->map() );
-        }
+    {
+        return this->newVector( dm->map() );
+    }
 
     //@}
 
@@ -425,22 +429,34 @@ public:
     /**
      * \return the type of linear solver
      */
-    std::string kspType() const { return M_ksp; }
+    std::string kspType() const
+    {
+        return M_ksp;
+    }
 
     /**
      * \return the type of preconditioner
      */
-    std::string pcType() const { return M_pc; }
+    std::string pcType() const
+    {
+        return M_pc;
+    }
 
     /**
      * return true if the null space is the constant values, false otherwise
      */
-    bool hasConstantNullSpace() const { return M_constant_null_space; }
+    bool hasConstantNullSpace() const
+    {
+        return M_constant_null_space;
+    }
 
     /**
      * \return the type of fieldsplitType
      */
-    std::string fieldsplitType() const { return M_fieldSplit; }
+    std::string fieldsplitType() const
+    {
+        return M_fieldSplit;
+    }
 
     /**
      * \return enum pc type from options
@@ -460,7 +476,10 @@ public:
     /**
      * \return the type of pcFactorMatSolverPackageType
      */
-    std::string pcFactorMatSolverPackageType() const { return M_pcFactorMatSolverPackage; }
+    std::string pcFactorMatSolverPackageType() const
+    {
+        return M_pcFactorMatSolverPackage;
+    }
 
     /**
      * \return enum MatSolverPackage type from options
@@ -470,38 +489,65 @@ public:
     /**
      * \return the type of preconditioner associated to the matrix
      */
-    MatrixStructure precMatrixStructure() const { return M_prec_matrix_structure; }
+    MatrixStructure precMatrixStructure() const
+    {
+        return M_prec_matrix_structure;
+    }
 
     /**
      * \return the relative tolerance
      */
-    value_type rTolerance() const { return M_rtolerance;}
+    value_type rTolerance() const
+    {
+        return M_rtolerance;
+    }
 
     /**
      * \return the divergence tolerance
      */
-    value_type dTolerance() const { return M_dtolerance;}
+    value_type dTolerance() const
+    {
+        return M_dtolerance;
+    }
 
     /**
      * \return the absolute tolerance
      */
-    value_type aTolerance() const { return M_atolerance;}
+    value_type aTolerance() const
+    {
+        return M_atolerance;
+    }
 
     /**
      * \return the maximum number of iterations
      */
-    size_type maxIterations() const { return M_maxit; }
+    size_type maxIterations() const
+    {
+        return M_maxit;
+    }
 
-    bool converged() const { return M_converged; }
+    bool converged() const
+    {
+        return M_converged;
+    }
 
-    size_type nIterations() const { return M_iteration; }
+    size_type nIterations() const
+    {
+        return M_iteration;
+    }
 
-    bool transpose() const { return M_transpose; }
+    bool transpose() const
+    {
+        return M_transpose;
+    }
 
     /**
      * \return the communicator
      */
-    mpi::communicator const& comm() const { return M_comm; }
+    mpi::communicator const& comm() const
+    {
+        return M_comm;
+    }
 
     //@}
 
@@ -513,56 +559,65 @@ public:
      * set tolerances: relative tolerance \p rtol, divergence tolerance \p dtol
      * and absolute tolerance \p atol
      */
-    BOOST_PARAMETER_MEMBER_FUNCTION((void),
-                                    setTolerances,
-                                    tag,
-                                    (required
-                                     (rtolerance, (double))
-                                        )
-                                    (optional
-                                     (maxit,      (size_type), 1000 )
-                                     (atolerance, (double),    1e-50)
-                                     (dtolerance, (double),    1e5)
-                                        ) )
-        {
-            M_rtolerance = rtolerance;
-            M_dtolerance = dtolerance;
-            M_atolerance = atolerance;
-            M_maxit = maxit;
-        }
+    BOOST_PARAMETER_MEMBER_FUNCTION( ( void ),
+                                     setTolerances,
+                                     tag,
+                                     ( required
+                                       ( rtolerance, ( double ) )
+                                     )
+                                     ( optional
+                                       ( maxit,      ( size_type ), 1000 )
+                                       ( atolerance, ( double ),    1e-50 )
+                                       ( dtolerance, ( double ),    1e5 )
+                                     ) )
+    {
+        M_rtolerance = rtolerance;
+        M_dtolerance = dtolerance;
+        M_atolerance = atolerance;
+        M_maxit = maxit;
+    }
 
     /**
      * set solver: krylov subspace method and preconditioners
      */
-    BOOST_PARAMETER_MEMBER_FUNCTION((void),
-                                    setSolverType,
-                                    tag,
-                                    (required
-                                     (ksp, (std::string))
-                                        )
-                                    (optional
-                                     (pc,      (std::string), "lu" )
-                                     (constant_null_space,      (bool), false )
-                                     (pcfactormatsolverpackage,  (std::string), "petsc" )
-                                        ) )
-        {
-            M_ksp = ksp;
-            M_pc = pc;
-            M_pcFactorMatSolverPackage = pcfactormatsolverpackage;
-            M_constant_null_space = constant_null_space;
-        }
+    BOOST_PARAMETER_MEMBER_FUNCTION( ( void ),
+                                     setSolverType,
+                                     tag,
+                                     ( required
+                                       ( ksp, ( std::string ) )
+                                     )
+                                     ( optional
+                                       ( pc,      ( std::string ), "lu" )
+                                       ( constant_null_space,      ( bool ), false )
+                                       ( pcfactormatsolverpackage,  ( std::string ), "petsc" )
+                                     ) )
+    {
+        M_ksp = ksp;
+        M_pc = pc;
+        M_pcFactorMatSolverPackage = pcfactormatsolverpackage;
+        M_constant_null_space = constant_null_space;
+    }
 
     /**
      * set the type of preconditioner associated to the matrix
      */
-    void setPrecMatrixStructure( MatrixStructure mstruct ) {  M_prec_matrix_structure = mstruct; }
+    void setPrecMatrixStructure( MatrixStructure mstruct )
+    {
+        M_prec_matrix_structure = mstruct;
+    }
 
     /**
      * \return the non linear solver
      */
-    solvernonlinear_ptrtype nlSolver() { return M_nlsolver; }
+    solvernonlinear_ptrtype nlSolver()
+    {
+        return M_nlsolver;
+    }
 
-    void setTranspose( bool transpose ) { M_transpose = transpose; }
+    void setTranspose( bool transpose )
+    {
+        M_transpose = transpose;
+    }
 
     //@}
 
@@ -585,9 +640,9 @@ public:
      * \return \f$ r = x^T * y \f$
      */
     real_type dot( vector_ptrtype const& x, vector_ptrtype const& y ) const
-        {
-            return this->dot( *x, *y );
-        }
+    {
+        return this->dot( *x, *y );
+    }
     /**
      * \return \f$ y = A * x \f$
      */
@@ -597,9 +652,9 @@ public:
      * \return \f$ y = A * x \f$
      */
     void prod( sparse_matrix_ptrtype const& A, vector_ptrtype const& x, vector_ptrtype& y ) const
-        {
-            this->prod( *A, *x, *y );
-        }
+    {
+        this->prod( *A, *x, *y );
+    }
 
     /**
      * solve for \f$P A x = P b\f$ where \f$P\f$ is an approximation
@@ -617,66 +672,70 @@ public:
      *
      * \warning some parameter may not be meaningful for all backends
      */
-    BOOST_PARAMETER_MEMBER_FUNCTION((solve_return_type),
-                                    solve,
-                                    tag,
-                                    (required
-                                     (matrix,(sparse_matrix_ptrtype))
-                                     (in_out(solution),*(mpl::or_<boost::is_convertible<mpl::_,vector_type&>,
-                                                         boost::is_convertible<mpl::_,vector_ptrtype> >))
-                                     (rhs,(vector_ptrtype)))
-                                    (optional
-                                     //(prec,(sparse_matrix_ptrtype), matrix )
-                                     (prec,(preconditioner_ptrtype), preconditioner(_matrix=matrix,_pc=LU_PRECOND,_backend=BACKEND_PETSC) )
-                                     (maxit,(size_type), M_maxit/*1000*/ )
-                                     (rtolerance,(double), M_rtolerance/*1e-13*/)
-                                     (atolerance,(double), M_atolerance/*1e-50*/)
-                                     (dtolerance,(double), M_dtolerance/*1e5*/)
-                                     (reuse_prec,(bool), M_reuse_prec )
-                                     (transpose,(bool), false )
-                                     (constant_null_space,(bool), false )
-                                     (pc,(std::string),M_pc/*"lu"*/)
-                                     (ksp,(std::string),M_ksp/*"gmres"*/)
-                                     (pcfactormatsolverpackage,(std::string), M_pcFactorMatSolverPackage)
-                                        )
-        )
+    BOOST_PARAMETER_MEMBER_FUNCTION( ( solve_return_type ),
+                                     solve,
+                                     tag,
+                                     ( required
+                                       ( matrix,( sparse_matrix_ptrtype ) )
+                                       ( in_out( solution ),*( mpl::or_<boost::is_convertible<mpl::_,vector_type&>,
+                                               boost::is_convertible<mpl::_,vector_ptrtype> > ) )
+                                       ( rhs,( vector_ptrtype ) ) )
+                                     ( optional
+                                       //(prec,(sparse_matrix_ptrtype), matrix )
+                                       ( prec,( preconditioner_ptrtype ), preconditioner( _matrix=matrix,_pc=LU_PRECOND,_backend=BACKEND_PETSC ) )
+                                       ( maxit,( size_type ), M_maxit/*1000*/ )
+                                       ( rtolerance,( double ), M_rtolerance/*1e-13*/ )
+                                       ( atolerance,( double ), M_atolerance/*1e-50*/ )
+                                       ( dtolerance,( double ), M_dtolerance/*1e5*/ )
+                                       ( reuse_prec,( bool ), M_reuse_prec )
+                                       ( transpose,( bool ), false )
+                                       ( constant_null_space,( bool ), false )
+                                       ( pc,( std::string ),M_pc/*"lu"*/ )
+                                       ( ksp,( std::string ),M_ksp/*"gmres"*/ )
+                                       ( pcfactormatsolverpackage,( std::string ), M_pcFactorMatSolverPackage )
+                                     )
+                                   )
+    {
+        this->setTolerances( _dtolerance=dtolerance,
+                             _rtolerance=rtolerance,
+                             _atolerance=atolerance,
+                             _maxit=maxit );
+
+        this->setSolverType( _pc=pc, _ksp=ksp,
+                             _constant_null_space=constant_null_space,
+                             _pcfactormatsolverpackage = pcfactormatsolverpackage );
+        this->attachPreconditioner( prec );
+        // make sure matrix and rhs are closed
+        matrix->close();
+        rhs->close();
+
+        // print them in matlab format
+        if ( !M_export.empty() )
         {
-            this->setTolerances( _dtolerance=dtolerance,
-                                 _rtolerance=rtolerance,
-                                 _atolerance=atolerance,
-                                 _maxit=maxit );
-
-            this->setSolverType( _pc=pc, _ksp=ksp,
-                                 _constant_null_space=constant_null_space,
-                                 _pcfactormatsolverpackage = pcfactormatsolverpackage);
-            this->attachPreconditioner( prec );
-            // make sure matrix and rhs are closed
-            matrix->close();
-            rhs->close();
-
-            // print them in matlab format
-            if ( !M_export.empty() )
-            {
-                matrix->printMatlab( M_export+"_A.m" );
-                rhs->printMatlab( M_export+"_b.m" );
-            }
-            vector_ptrtype _sol( this->newVector( detail::datamap(solution) ) );
-            // initialize
-            *_sol = detail::ref(solution);
-            this->setTranspose( transpose );
-            solve_return_type ret;
-            if ( reuse_prec == false )
-            {
-                this->setPrecMatrixStructure( SAME_NONZERO_PATTERN );
-                ret = solve( matrix, matrix, _sol, rhs );
-            }
-            else
-                ret = solve( matrix, matrix, _sol, rhs, reuse_prec );
-            //new
-            _sol->close();
-            detail::ref(solution) = *_sol;
-            return ret;
+            matrix->printMatlab( M_export+"_A.m" );
+            rhs->printMatlab( M_export+"_b.m" );
         }
+
+        vector_ptrtype _sol( this->newVector( detail::datamap( solution ) ) );
+        // initialize
+        *_sol = detail::ref( solution );
+        this->setTranspose( transpose );
+        solve_return_type ret;
+
+        if ( reuse_prec == false )
+        {
+            this->setPrecMatrixStructure( SAME_NONZERO_PATTERN );
+            ret = solve( matrix, matrix, _sol, rhs );
+        }
+
+        else
+            ret = solve( matrix, matrix, _sol, rhs, reuse_prec );
+
+        //new
+        _sol->close();
+        detail::ref( solution ) = *_sol;
+        return ret;
+    }
 
     /**
      * solve for \f$P A x = P b\f$ where \f$P\f$ is an approximation of
@@ -696,7 +755,7 @@ public:
                                      sparse_matrix_ptrtype const& P,
                                      vector_ptrtype& x,
                                      vector_ptrtype const& b
-        ) = 0;
+                                   ) = 0;
 
     /**
      * solve for \f$P A x = P b\f$ where \f$P\f$ is an approximation
@@ -718,65 +777,71 @@ public:
                              vector_ptrtype& x,
                              vector_ptrtype const& b,
                              bool reuse_prec
-        );
+                           );
 
     /**
      * solve for \f$P F(x)=0 b\f$
      */
-    BOOST_PARAMETER_MEMBER_FUNCTION((nl_solve_return_type),
-                                    nlSolve,
-                                    tag,
-                                    (required
-                                     (in_out(solution),*(mpl::or_<boost::is_convertible<mpl::_,vector_type&>,
-                                                                  boost::is_convertible<mpl::_,vector_ptrtype> >)))
-                                    (optional
-                                     (jacobian,(sparse_matrix_ptrtype), sparse_matrix_ptrtype())
-                                     (residual,(vector_ptrtype), vector_ptrtype())
-                                     //(prec,(sparse_matrix_ptrtype), jacobian )
-                                     (prec,(preconditioner_ptrtype), preconditioner(_pc=LU_PRECOND,_backend=BACKEND_PETSC) )
-                                     (maxit,(size_type), M_maxit/*1000*/ )
-                                     (rtolerance,(double), M_rtolerance/*1e-13*/)
-                                     (atolerance,(double), M_atolerance/*1e-50*/)
-                                     (dtolerance,(double), M_dtolerance/*1e5*/)
-                                     (reuse_prec,(bool), M_reuse_prec )
-                                     (reuse_jac,(bool), M_reuse_jac )
-                                     (transpose,(bool), false )
-                                     (pc,(std::string),M_pc/*"lu"*/)
-                                     (ksp,(std::string),M_ksp/*"gmres"*/)
-                                     (pcfactormatsolverpackage,(std::string), M_pcFactorMatSolverPackage)
-                                        )
-        )
+    BOOST_PARAMETER_MEMBER_FUNCTION( ( nl_solve_return_type ),
+                                     nlSolve,
+                                     tag,
+                                     ( required
+                                       ( in_out( solution ),*( mpl::or_<boost::is_convertible<mpl::_,vector_type&>,
+                                               boost::is_convertible<mpl::_,vector_ptrtype> > ) ) )
+                                     ( optional
+                                       ( jacobian,( sparse_matrix_ptrtype ), sparse_matrix_ptrtype() )
+                                       ( residual,( vector_ptrtype ), vector_ptrtype() )
+                                       //(prec,(sparse_matrix_ptrtype), jacobian )
+                                       ( prec,( preconditioner_ptrtype ), preconditioner( _pc=LU_PRECOND,_backend=BACKEND_PETSC ) )
+                                       ( maxit,( size_type ), M_maxit/*1000*/ )
+                                       ( rtolerance,( double ), M_rtolerance/*1e-13*/ )
+                                       ( atolerance,( double ), M_atolerance/*1e-50*/ )
+                                       ( dtolerance,( double ), M_dtolerance/*1e5*/ )
+                                       ( reuse_prec,( bool ), M_reuse_prec )
+                                       ( reuse_jac,( bool ), M_reuse_jac )
+                                       ( transpose,( bool ), false )
+                                       ( pc,( std::string ),M_pc/*"lu"*/ )
+                                       ( ksp,( std::string ),M_ksp/*"gmres"*/ )
+                                       ( pcfactormatsolverpackage,( std::string ), M_pcFactorMatSolverPackage )
+                                     )
+                                   )
+    {
+        this->setTolerances( _dtolerance=dtolerance,
+                             _rtolerance=rtolerance,
+                             _atolerance=atolerance,
+                             _maxit=maxit );
+        this->setSolverType( _pc=pc, _ksp=ksp,
+                             _pcfactormatsolverpackage = pcfactormatsolverpackage );
+        vector_ptrtype _sol( this->newVector( detail::datamap( solution ) ) );
+        // initialize
+        *_sol = detail::ref( solution );
+        this->setTranspose( transpose );
+        solve_return_type ret;
+
+        // this is done with nonlinerarsolver
+        if ( !residual )
         {
-            this->setTolerances( _dtolerance=dtolerance,
-                                 _rtolerance=rtolerance,
-                                 _atolerance=atolerance,
-                                 _maxit=maxit );
-            this->setSolverType( _pc=pc, _ksp=ksp,
-                                 _pcfactormatsolverpackage = pcfactormatsolverpackage);
-            vector_ptrtype _sol( this->newVector( detail::datamap(solution) ) );
-            // initialize
-            *_sol = detail::ref(solution);
-            this->setTranspose( transpose );
-            solve_return_type ret;
-            // this is done with nonlinerarsolver
-            if ( !residual )
-            {
-                residual = this->newVector( ( detail::datamap(solution) ) );
-                //this->nlSolver()->residual( _sol, residual );
-            }
-            if ( !jacobian )
-                this->nlSolver()->jacobian( _sol, jacobian );
-            if ( prec )
-                this->nlSolver()->attachPreconditioner( prec );
-            if ( reuse_prec == false && reuse_jac == false )
-                ret = nlSolve( jacobian, _sol, residual, rtolerance, maxit );
-            else
-                ret = nlSolve( jacobian, _sol, residual, rtolerance, maxit, reuse_prec, reuse_jac );
-            //new
-            _sol->close();
-            detail::ref(solution) = *_sol;
-            return ret;
+            residual = this->newVector( ( detail::datamap( solution ) ) );
+            //this->nlSolver()->residual( _sol, residual );
         }
+
+        if ( !jacobian )
+            this->nlSolver()->jacobian( _sol, jacobian );
+
+        if ( prec )
+            this->nlSolver()->attachPreconditioner( prec );
+
+        if ( reuse_prec == false && reuse_jac == false )
+            ret = nlSolve( jacobian, _sol, residual, rtolerance, maxit );
+
+        else
+            ret = nlSolve( jacobian, _sol, residual, rtolerance, maxit, reuse_prec, reuse_jac );
+
+        //new
+        _sol->close();
+        detail::ref( solution ) = *_sol;
+        return ret;
+    }
 
     /**
      * solve for the nonlinear problem \f$F( u ) = 0\f$
@@ -799,10 +864,10 @@ public:
     /**
      * Attaches a Preconditioner object to be used by the solver
      */
-    void attachPreconditioner(preconditioner_ptrtype preconditioner)
-        {
-            M_preconditioner = preconditioner;
-        }
+    void attachPreconditioner( preconditioner_ptrtype preconditioner )
+    {
+        M_preconditioner = preconditioner;
+    }
 
     //@}
 
@@ -871,8 +936,8 @@ po::options_description backend_options( std::string const& prefix = "" );
 namespace detail
 {
 class BackendManagerImpl:
-        public std::map<std::pair<BackendType,std::string>, backend_ptrtype >,
-        public boost::noncopyable
+    public std::map<std::pair<BackendType,std::string>, backend_ptrtype >,
+    public boost::noncopyable
 {
 public:
     typedef backend_ptrtype value_type;
@@ -885,23 +950,25 @@ typedef Feel::Singleton<BackendManagerImpl> BackendManager;
 
 
 BOOST_PARAMETER_FUNCTION(
-    (backend_ptrtype), // return type
+    ( backend_ptrtype ), // return type
     backend,           // 2. function name
     tag,               // 3. namespace of tag types
-    (optional
-     (vm,           (po::variables_map), po::variables_map())
-     (name,           *(std::string), "")
-     (kind,           *(BackendType), BACKEND_PETSC)
-     (rebuild,        (bool), false)
-        ))
+    ( optional
+      ( vm,           ( po::variables_map ), po::variables_map() )
+      ( name,           *( std::string ), "" )
+      ( kind,           *( BackendType ), BACKEND_PETSC )
+      ( rebuild,        ( bool ), false )
+    ) )
 {
-    Feel::detail::ignore_unused_variable_warning(args);
+    Feel::detail::ignore_unused_variable_warning( args );
 
     auto git = detail::BackendManager::instance().find( std::make_pair( kind, name ) );
-    if (  git != detail::BackendManager::instance().end() && (rebuild == false) )
+
+    if (  git != detail::BackendManager::instance().end() && ( rebuild == false ) )
     {
         return git->second;
     }
+
     else
     {
         auto b = Feel::backend_type::build( vm, name );

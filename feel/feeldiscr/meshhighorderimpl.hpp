@@ -77,7 +77,7 @@ template < class Convex >
 typename MeshHighOrder<Convex>::node_type
 MeshHighOrder<Convex>::affineEdge( node_type const& node1, node_type const& node2, double const& x ) const
 {
-    return ( 0.5*( (1-x)*node1 + (x+1)*node2 ) );
+    return ( 0.5*( ( 1-x )*node1 + ( x+1 )*node2 ) );
 }
 
 
@@ -88,23 +88,23 @@ MeshHighOrder<Convex>::createSwapEdgesMap ( mpl::bool_<true>  )
     // Construct a map that returns if for a given element and an edge,
     // the edge points should be inverted (for triangles only)
     for ( element_const_iterator elt = old_mesh->beginElement();
-          elt != old_mesh->endElement(); ++elt )
-        {
-            //check if point(0) is elt->point(1)
-            // if they are not the same, points need to be swapped
-            if ( elt->edge(0).point(0).id() != elt->point(1).id() )
-                M_swap_edges[elt->id()][0] = 1;
+            elt != old_mesh->endElement(); ++elt )
+    {
+        //check if point(0) is elt->point(1)
+        // if they are not the same, points need to be swapped
+        if ( elt->edge( 0 ).point( 0 ).id() != elt->point( 1 ).id() )
+            M_swap_edges[elt->id()][0] = 1;
 
-            //check if point(0) is elt->point(2)
-            // if they are not the same, points need to be swapped
-            if ( elt->edge(1).point(0).id() != elt->point(2).id() )
-                M_swap_edges[elt->id()][1] = 1;
+        //check if point(0) is elt->point(2)
+        // if they are not the same, points need to be swapped
+        if ( elt->edge( 1 ).point( 0 ).id() != elt->point( 2 ).id() )
+            M_swap_edges[elt->id()][1] = 1;
 
-            //check if point(0) is elt->point(0)
-            // if they are not the same, points need to be swapped
-            if ( elt->edge(2).point(0).id() != elt->point(0).id() )
-                M_swap_edges[elt->id()][2] = 1;
-        }
+        //check if point(0) is elt->point(0)
+        // if they are not the same, points need to be swapped
+        if ( elt->edge( 2 ).point( 0 ).id() != elt->point( 0 ).id() )
+            M_swap_edges[elt->id()][2] = 1;
+    }
 }
 
 template < class Convex >
@@ -114,25 +114,27 @@ MeshHighOrder<Convex>::createSwapEdgesMap ( mpl::bool_<false>  )
     // Construct a map that returns if for a given element and an edge,
     // the edge points should be inverted (for triangles only)
     for ( element_const_iterator elt = old_mesh->beginElement();
-          elt != old_mesh->endElement(); ++elt )
-        {
+            elt != old_mesh->endElement(); ++elt )
+    {
 #if 0
-            //check if point(0) is elt->point(1)
-            // if they are not the same, points need to be swapped
-            if ( elt->edge(0).point(0).id() != elt->point(1).id() )
-                M_swap_edges[elt->id()][0] = 1;
 
-            //check if point(0) is elt->point(2)
-            // if they are not the same, points need to be swapped
-            if ( elt->edge(1).point(0).id() != elt->point(2).id() )
-                M_swap_edges[elt->id()][1] = 1;
+        //check if point(0) is elt->point(1)
+        // if they are not the same, points need to be swapped
+        if ( elt->edge( 0 ).point( 0 ).id() != elt->point( 1 ).id() )
+            M_swap_edges[elt->id()][0] = 1;
 
-            //check if point(0) is elt->point(0)
-            // if they are not the same, points need to be swapped
-            if ( elt->edge(2).point(0).id() != elt->point(0).id() )
-                M_swap_edges[elt->id()][2] = 1;
+        //check if point(0) is elt->point(2)
+        // if they are not the same, points need to be swapped
+        if ( elt->edge( 1 ).point( 0 ).id() != elt->point( 2 ).id() )
+            M_swap_edges[elt->id()][1] = 1;
+
+        //check if point(0) is elt->point(0)
+        // if they are not the same, points need to be swapped
+        if ( elt->edge( 2 ).point( 0 ).id() != elt->point( 0 ).id() )
+            M_swap_edges[elt->id()][2] = 1;
+
 #endif
-        }
+    }
 }
 
 
@@ -149,8 +151,8 @@ void
 MeshHighOrder<Convex>::updatePts( ublas::vector<double> const& x, points_type const& pts,
                                   points_type& final_pts ) const
 {
-    ublas::row( final_pts, 0) += element_prod( ublas::row(pts, 0), x );
-    ublas::row( final_pts, 1) += element_prod( ublas::row(pts, 1), x );
+    ublas::row( final_pts, 0 ) += element_prod( ublas::row( pts, 0 ), x );
+    ublas::row( final_pts, 1 ) += element_prod( ublas::row( pts, 1 ), x );
 }
 
 
@@ -159,36 +161,36 @@ void
 MeshHighOrder<Convex>::addVertices( element_type const& elt, new_element_type& new_element,
                                     new_mesh_ptrtype& new_mesh, std::vector<bool>& vertexAdd ) const
 {
-    for ( uint16_type i = 0; i< element_type::numVertices; ++i)
+    for ( uint16_type i = 0; i< element_type::numVertices; ++i )
+    {
+        point_type old_point = elt.point( i );
+
+        point_type new_point( old_point.id(), old_point.node(), old_point.isOnBoundary() );
+        new_point.marker().assign( old_point.marker().value() );
+
+        // if the created point has not been added to the mesh then add it
+        if ( vertexAdd[ old_point.id() ] == 0 )
         {
-            point_type old_point = elt.point(i);
-
-            point_type new_point( old_point.id(), old_point.node(), old_point.isOnBoundary() );
-            new_point.marker().assign( old_point.marker().value() );
-
-            // if the created point has not been added to the mesh then add it
-            if ( vertexAdd[ old_point.id() ] == 0 )
-                {
-                    new_mesh->addPoint( new_point );
+            new_mesh->addPoint( new_point );
 
 #if !defined ( NDEBUG )
-                    Debug(1000) << "[AddPointToMesh] Vertex of id: " << new_point.id() << " has coordinates "
-                                << new_point.node();
+            Debug( 1000 ) << "[AddPointToMesh] Vertex of id: " << new_point.id() << " has coordinates "
+                          << new_point.node();
 #endif
 
-                    vertexAdd[ new_point.id() ] = 1;
-                }
-
-            // add point to the element it belongs
-            new_element.setPoint( i, new_mesh->point( new_point.id()) );
-
-#if !defined ( NDEBUG )
-            Debug(1002) << "[AddVertexElement] Add point: localId=" << i
-                        << " globalToMeshId=" << new_mesh->point( new_point.id()).id()
-                        << " to element " << new_element.id() << "\n";
-#endif
-
+            vertexAdd[ new_point.id() ] = 1;
         }
+
+        // add point to the element it belongs
+        new_element.setPoint( i, new_mesh->point( new_point.id() ) );
+
+#if !defined ( NDEBUG )
+        Debug( 1002 ) << "[AddVertexElement] Add point: localId=" << i
+                      << " globalToMeshId=" << new_mesh->point( new_point.id() ).id()
+                      << " to element " << new_element.id() << "\n";
+#endif
+
+    }
 }
 
 }

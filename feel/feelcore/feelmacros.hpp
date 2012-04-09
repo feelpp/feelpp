@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -46,9 +46,9 @@
   -# #FEELPP_ISLIKELY and #FEELPP_ISUNLIKELY
 */
 #ifdef __GNUC__
-  #define FEELPP_GNUC_AT_LEAST(x,y) ((__GNUC__>=x && __GNUC_MINOR__>=y) || __GNUC__>x)
+#define FEELPP_GNUC_AT_LEAST(x,y) ((__GNUC__>=x && __GNUC_MINOR__>=y) || __GNUC__>x)
 #else
-  #define FEELPP_GNUC_AT_LEAST(x,y) 0
+#define FEELPP_GNUC_AT_LEAST(x,y) 0
 #endif
 
 /**

@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -53,8 +53,8 @@ StVenantKirchhoff<Dim,Order>::StVenantKirchhoff( po::variables_map const& vm )
      */
     E = 21*1e5;
     sigma = 0.28;
-    mu = E/(2*(1+sigma));
-    lambda = E*sigma/((1+sigma)*(1-2*sigma));
+    mu = E/( 2*( 1+sigma ) );
+    lambda = E*sigma/( ( 1+sigma )*( 1-2*sigma ) );
     density = 1;
     gravity = -density*0.05;
 
@@ -114,18 +114,18 @@ StVenantKirchhoff<Dim, Order>::updateResidual( const vector_ptrtype& X, vector_p
 
     im_type im;
 
-    AUTO( g, constant(0.0) );
-    AUTO( defv, 0.5*( gradv(u)+trans(gradv(u)) ) );
-    AUTO( def, 0.5*( grad(v)+trans(grad(v)) ) );
-    AUTO( Id, (mat<Dim,Dim>( cst(1), cst(0), cst(0), cst(1.) )) );
+    AUTO( g, constant( 0.0 ) );
+    AUTO( defv, 0.5*( gradv( u )+trans( gradv( u ) ) ) );
+    AUTO( def, 0.5*( grad( v )+trans( grad( v ) ) ) );
+    AUTO( Id, ( mat<Dim,Dim>( cst( 1 ), cst( 0 ), cst( 0 ), cst( 1. ) ) ) );
     //std::cout << "u = " << u << "\n";
 
 
     *M_residual =
         integrate( elements( mesh ), im,
-                   .5*mu*(trace( (gradv(u)*trans(gradv(u)))*grad(v) ) )+
-                   .25*lambda*trace(gradv(u)*trans(gradv(u)))*div(v) -
-                   trans(gravity*oneY())*id(v) );
+                   .5*mu*( trace( ( gradv( u )*trans( gradv( u ) ) )*grad( v ) ) )+
+                   .25*lambda*trace( gradv( u )*trans( gradv( u ) ) )*div( v ) -
+                   trans( gravity*oneY() )*id( v ) );
 
 #if 0
     //AUTO( eta, 0.1*Px()*( Px() -5 )*(Px()-2.5)*sin( omega*M_PI*cst_ref(time)  ) );
@@ -133,19 +133,19 @@ StVenantKirchhoff<Dim, Order>::updateResidual( const vector_ptrtype& X, vector_p
     // force applied at the bottom
     *M_residual +=
         integrate( markedfaces( mesh, 2 ), im,
-                   -trans(eta*oneY())*id(v) );
+                   -trans( eta*oneY() )*id( v ) );
 #endif
 
     *M_residual +=
         integrate( elements( mesh ), im,
-                   - density*trans(idv( M_bdf->derivate( this->timeOrder(), this->dt() ).template element<1>() ) ) *id(v)
+                   - density*trans( idv( M_bdf->derivate( this->timeOrder(), this->dt() ).template element<1>() ) ) *id( v )
                    //-density*trans(2*idv(un->template element<0>())-idv(un1->template element<0>())) *id(v) /(this->dt()*this->dt())
-                   );
+                 );
     *M_residual +=
         integrate( elements( mesh ), im,
                    //+ trans(idv( u ))*id(vv)*M_bdf->derivateCoefficient( this->timeOrder(), 0, this->this->dt()() )
-                   - trans(idv( M_bdf->derivate( this->timeOrder(), this->dt() ).template element<0>() ) )*id(vv)
-                   );
+                   - trans( idv( M_bdf->derivate( this->timeOrder(), this->dt() ).template element<0>() ) )*id( vv )
+                 );
     FsFunctionalLinear<functionspace_type> flin( M_Xh, M_backend );
     M_oplin->apply( U, flin );
 
@@ -160,7 +160,7 @@ StVenantKirchhoff<Dim, Order>::updateResidual( const vector_ptrtype& X, vector_p
 }
 template<int Dim, int Order>
 void
-StVenantKirchhoff<Dim, Order>::updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J)
+StVenantKirchhoff<Dim, Order>::updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J )
 {
     boost::timer ti;
     Log() << "[updateJacobian] start\n";
@@ -177,27 +177,30 @@ StVenantKirchhoff<Dim, Order>::updateJacobian( const vector_ptrtype& X, sparse_m
     U = *X;
 
     im_type im;
+
     if ( is_init == false )
-        {
-            *M_jac = integrate( elements( mesh ), im,
-                                .5*mu*(trace( (gradv(u)*trans(gradt(u)))*grad(v) ) )+
-                                .25*lambda*trace(gradv(u)*trans(gradt(u)))*div(v)
+    {
+        *M_jac = integrate( elements( mesh ), im,
+                            .5*mu*( trace( ( gradv( u )*trans( gradt( u ) ) )*grad( v ) ) )+
+                            .25*lambda*trace( gradv( u )*trans( gradt( u ) ) )*div( v )
 
-                                + 0*trans(idt(u))*id(vv)
-                                + 0*trans(idt(uu))*id(v)
-                                + 0*trans(idt(uu))*id(vv)
+                            + 0*trans( idt( u ) )*id( vv )
+                            + 0*trans( idt( uu ) )*id( v )
+                            + 0*trans( idt( uu ) )*id( vv )
 
-                                );
+                          );
 
-            is_init = true;
-        }
+        is_init = true;
+    }
+
     else
-        {
-            M_jac->matPtr()->zero();
-            *M_jac += integrate( elements( mesh ), im,
-                                 .5*mu*(trace( (gradv(u)*trans(gradt(u)))*grad(v) ) )+
-                                 .25*lambda*trace(gradv(u)*trans(gradt(u)))*div(v) );
-        }
+    {
+        M_jac->matPtr()->zero();
+        *M_jac += integrate( elements( mesh ), im,
+                             .5*mu*( trace( ( gradv( u )*trans( gradt( u ) ) )*grad( v ) ) )+
+                             .25*lambda*trace( gradv( u )*trans( gradt( u ) ) )*div( v ) );
+    }
+
     M_jac->close();
     M_jac->matPtr()->addMatrix( 1.0, M_oplin->mat() );
     J = M_jac->matPtr();
@@ -205,7 +208,7 @@ StVenantKirchhoff<Dim, Order>::updateJacobian( const vector_ptrtype& X, sparse_m
 }
 template<int Dim, int Order>
 void
-StVenantKirchhoff<Dim, Order>::updateResidualJacobian( const vector_ptrtype& X, vector_ptrtype& R, sparse_matrix_ptrtype& J)
+StVenantKirchhoff<Dim, Order>::updateResidualJacobian( const vector_ptrtype& X, vector_ptrtype& R, sparse_matrix_ptrtype& J )
 {
 }
 
@@ -218,28 +221,28 @@ StVenantKirchhoff<Dim, Order>::initElastoStaticProblem()
 
     mesh_ptrtype mesh = M_Dh->mesh();
     im_type im;
-    *M_lfelas = integrate( elements( mesh ), im, trans(gravity*oneY())*id(v) );
+    *M_lfelas = integrate( elements( mesh ), im, trans( gravity*oneY() )*id( v ) );
     M_lfelas->close();
 
 
-    AUTO( deft, 0.5*( gradt(u)+trans(gradt(u)) ) );
-    AUTO( def, 0.5*( grad(v)+trans(grad(v)) ) );
-    AUTO( Id, (mat<Dim,Dim>( cst(1), cst(0), cst(0), cst(1.) )) );
+    AUTO( deft, 0.5*( gradt( u )+trans( gradt( u ) ) ) );
+    AUTO( def, 0.5*( grad( v )+trans( grad( v ) ) ) );
+    AUTO( Id, ( mat<Dim,Dim>( cst( 1 ), cst( 0 ), cst( 0 ), cst( 1. ) ) ) );
 
     *M_opelas =
-        integrate( elements(mesh), im,
-                   lambda*divt(u)*div(v)  +
-                   2*mu*trace(trans(deft)*def) );
+        integrate( elements( mesh ), im,
+                   lambda*divt( u )*div( v )  +
+                   2*mu*trace( trans( deft )*def ) );
 
     BOOST_FOREACH( std::string marker, this->dirichletMarkers() )
-        {
-            Log() << "[LinearElasticty::Dirichlet] weakbc boundary " << marker << " id : " << mesh->markerName( marker ) << "\n";
-            *M_opelas +=
-                integrate( markedfaces(mesh,mesh->markerName( marker )), im,
-                           - trans((2*mu*deft+lambda*trace(deft)*Id )*N())*id(v)
-                           - trans((2*mu*def+lambda*trace(def)*Id )*N())*idt(u)
-                           + this->gammaBc()*trans(idt(u))*id(v)/hFace() );
-        }
+    {
+        Log() << "[LinearElasticty::Dirichlet] weakbc boundary " << marker << " id : " << mesh->markerName( marker ) << "\n";
+        *M_opelas +=
+            integrate( markedfaces( mesh,mesh->markerName( marker ) ), im,
+                       - trans( ( 2*mu*deft+lambda*trace( deft )*Id )*N() )*id( v )
+                       - trans( ( 2*mu*def+lambda*trace( def )*Id )*N() )*idt( u )
+                       + this->gammaBc()*trans( idt( u ) )*id( v )/hFace() );
+    }
 
     M_opelas->close();
 
@@ -256,36 +259,36 @@ StVenantKirchhoff<Dim, Order>::initLinearPart()
     element_v_type vv = V.template element<1>();
 
 
-    AUTO( deft, 0.5*( gradt(u)+trans(gradt(u)) ) );
-    AUTO( def, 0.5*( grad(v)+trans(grad(v)) ) );
-    AUTO( Id, (mat<Dim,Dim>( cst(1), cst(0), cst(0), cst(1.) )) );
+    AUTO( deft, 0.5*( gradt( u )+trans( gradt( u ) ) ) );
+    AUTO( def, 0.5*( grad( v )+trans( grad( v ) ) ) );
+    AUTO( Id, ( mat<Dim,Dim>( cst( 1 ), cst( 0 ), cst( 0 ), cst( 1. ) ) ) );
 
     mesh_ptrtype mesh = M_Xh->mesh();
     im_type im;
 
     *M_oplin =
-        integrate( elements(mesh), im,
-                   density*trans(idt(uu))*id(v)*M_bdf->derivateCoefficient( this->timeOrder(), 0, this->dt() ) +
+        integrate( elements( mesh ), im,
+                   density*trans( idt( uu ) )*id( v )*M_bdf->derivateCoefficient( this->timeOrder(), 0, this->dt() ) +
 
-                   lambda*divt(u)*div(v)  +
-                   2*mu*trace(trans(deft)*def)
+                   lambda*divt( u )*div( v )  +
+                   2*mu*trace( trans( deft )*def )
 
 
 
-                   + trans(idt( u ))*id(vv)*M_bdf->derivateCoefficient( this->timeOrder(), 0, this->dt() )
+                   + trans( idt( u ) )*id( vv )*M_bdf->derivateCoefficient( this->timeOrder(), 0, this->dt() )
 
-                   - trans(idt(uu))*id(vv)
-                   );
+                   - trans( idt( uu ) )*id( vv )
+                 );
 
     BOOST_FOREACH( std::string marker, this->dirichletMarkers() )
-        {
-            Log() << "[LinearPart::Dirichlet] weakbc boundary " << marker << " id : " << mesh->markerName( marker ) << "\n";
-            *M_oplin +=
-                integrate( markedfaces(mesh,mesh->markerName( marker )), im,
-                           - trans((2*mu*deft+lambda*trace(deft)*Id )*N())*id(v)
-                           - trans((2*mu*def+lambda*trace(def)*Id )*N())*idt(u)
-                           + this->gammaBc()*trans(idt(u))*id(v)/hFace() );
-        }
+    {
+        Log() << "[LinearPart::Dirichlet] weakbc boundary " << marker << " id : " << mesh->markerName( marker ) << "\n";
+        *M_oplin +=
+            integrate( markedfaces( mesh,mesh->markerName( marker ) ), im,
+                       - trans( ( 2*mu*deft+lambda*trace( deft )*Id )*N() )*id( v )
+                       - trans( ( 2*mu*def+lambda*trace( def )*Id )*N() )*idt( u )
+                       + this->gammaBc()*trans( idt( u ) )*id( v )/hFace() );
+    }
 
     M_oplin->close();
     //M_oplin->mat().printMatlab( "oplin.m" );
@@ -332,7 +335,7 @@ StVenantKirchhoff<Dim, Order>::run()
     displacement_element_type d( M_Dh, "d" );
     this->linearSolve( M_opelas->matPtr(), d, M_lfelas->containerPtr() );
 
-    double d_norm2 = math::sqrt( integrate( elements(mesh), im, trans(idv(d))*(idv(d)) ).evaluate()( 0, 0) );
+    double d_norm2 = math::sqrt( integrate( elements( mesh ), im, trans( idv( d ) )*( idv( d ) ) ).evaluate()( 0, 0 ) );
 
     time = 0;
     exportResults( time, U, d );
@@ -348,47 +351,48 @@ StVenantKirchhoff<Dim, Order>::run()
     double error1 = 1;
     double error2 = 1;
     double error3 = 1;
+
     //for( time = this->dt(), iterations = 0; error1 >= 1e-6 || iterations <= 2; time +=this->dt(), ++iterations )
-    for( time += this->dt(), iterations = 1; time <= this->T(); time +=this->dt(), ++iterations )
+    for ( time += this->dt(), iterations = 1; time <= this->T(); time +=this->dt(), ++iterations )
         //while ( error1 >= 1e-6 && iterations <= 2 )
-        {
-            boost::timer ti;
-            Log() << "============================================================\n";
-            Log() << "time: " << time << "s, iteration: " << iterations << "\n";
+    {
+        boost::timer ti;
+        Log() << "============================================================\n";
+        Log() << "time: " << time << "s, iteration: " << iterations << "\n";
 
-            *Un = U;
-            this->updateResidual( Un, R );
-            this->updateJacobian( Un, J );
-
-
-            solve( J, U, R );
-
-            *un1 = *un;
-            *un = U;
-
-            M_bdf->shiftRight( U );
-
-            error1 = math::sqrt( integrate( elements(mesh), im, trans(idv(un->template element<0>())-idv(un1->template element<0>()))*(idv(un->template element<0>())-idv(un1->template element<0>()))).evaluate()( 0, 0) )/d_norm2;
-            error2 = math::sqrt( integrate( elements(mesh), im, trans(idv(U.template element<0>())-idv(d) )*(idv(U.template element<0>())-idv(d) ) ).evaluate()( 0, 0) )/d_norm2;
+        *Un = U;
+        this->updateResidual( Un, R );
+        this->updateJacobian( Un, J );
 
 
-            error3 = math::sqrt( integrate( elements(mesh), im,
-                                            trans(idv(M_bdf->unknown(0).template element<0>())-idv(M_bdf->unknown(1).template element<0>()))*
-                                            (idv(M_bdf->unknown(0).template element<0>())-idv(M_bdf->unknown(1).template element<0>()))).evaluate()( 0, 0) )/d_norm2;
+        solve( J, U, R );
 
-            Log() << "                      ||d||_0 = " << d_norm2 << "\n";
-            Log() << "                   ||d(t)||_0 = " << math::sqrt( integrate( elements(mesh), im, trans(idv(un->template element<0>()))*idv(un->template element<0>())).evaluate()( 0, 0) ) << "\n";
-            Log() << "||dh(t+1) - dh(t)||_0/||d||_0 = " << error1 << "\n";
-            Log() << "     ||dh(t) - dh||_0/||d||_0 = " << error2 << "\n";
-            Log() << "||dh(t+1) - dh(t)||_0/||d||_0 = (bdf) " << error3 << "\n";
+        *un1 = *un;
+        *un = U;
 
-            exportResults( time, U, d );
+        M_bdf->shiftRight( U );
 
-            Log() << "time spent in iteration :  " << ti.elapsed() << "s\n";
+        error1 = math::sqrt( integrate( elements( mesh ), im, trans( idv( un->template element<0>() )-idv( un1->template element<0>() ) )*( idv( un->template element<0>() )-idv( un1->template element<0>() ) ) ).evaluate()( 0, 0 ) )/d_norm2;
+        error2 = math::sqrt( integrate( elements( mesh ), im, trans( idv( U.template element<0>() )-idv( d ) )*( idv( U.template element<0>() )-idv( d ) ) ).evaluate()( 0, 0 ) )/d_norm2;
 
-            if ( error1  <= 1e-8 && iterations > 2 )
-                break;
-        }
+
+        error3 = math::sqrt( integrate( elements( mesh ), im,
+                                        trans( idv( M_bdf->unknown( 0 ).template element<0>() )-idv( M_bdf->unknown( 1 ).template element<0>() ) )*
+                                        ( idv( M_bdf->unknown( 0 ).template element<0>() )-idv( M_bdf->unknown( 1 ).template element<0>() ) ) ).evaluate()( 0, 0 ) )/d_norm2;
+
+        Log() << "                      ||d||_0 = " << d_norm2 << "\n";
+        Log() << "                   ||d(t)||_0 = " << math::sqrt( integrate( elements( mesh ), im, trans( idv( un->template element<0>() ) )*idv( un->template element<0>() ) ).evaluate()( 0, 0 ) ) << "\n";
+        Log() << "||dh(t+1) - dh(t)||_0/||d||_0 = " << error1 << "\n";
+        Log() << "     ||dh(t) - dh||_0/||d||_0 = " << error2 << "\n";
+        Log() << "||dh(t+1) - dh(t)||_0/||d||_0 = (bdf) " << error3 << "\n";
+
+        exportResults( time, U, d );
+
+        Log() << "time spent in iteration :  " << ti.elapsed() << "s\n";
+
+        if ( error1  <= 1e-8 && iterations > 2 )
+            break;
+    }
 
     Log() << "total time spent :  " << ttotal.elapsed() << "s\n";
     Log() << "total number of iterations :  " << iterations << "\n";
@@ -399,8 +403,8 @@ StVenantKirchhoff<Dim, Order>::run()
 template<int Dim, int Order>
 void
 StVenantKirchhoff<Dim, Order>::linearSolve( sparse_matrix_ptrtype& D,
-                                            displacement_element_type& u,
-                                            vector_ptrtype& F )
+        displacement_element_type& u,
+        vector_ptrtype& F )
 {
     vector_ptrtype U( M_backend->newVector( u.functionSpace() ) );
     *U = u;
@@ -455,9 +459,9 @@ StVenantKirchhoff<Dim, Order>::exportResults( double time, element_type& U, disp
 
         mesh_ptrtype mesh = M_Xh->mesh();
         im_type im;
-        double length = integrate( markedfaces(mesh,mesh->markerName( "right" )), im, constant( 1.0 )).evaluate()( 0, 0 );
-        double avg_displ = integrate( markedfaces(mesh,mesh->markerName( "right" )), im, sqrt(trans(idv( U.template element<0>() ))*idv( U.template element<0>() )) ).evaluate()( 0, 0 )/length;
-        double avg_displ_static = integrate( markedfaces(mesh,mesh->markerName( "right" )), im, sqrt(trans(idv( d ))*idv( d )) ).evaluate()( 0, 0 )/length;
+        double length = integrate( markedfaces( mesh,mesh->markerName( "right" ) ), im, constant( 1.0 ) ).evaluate()( 0, 0 );
+        double avg_displ = integrate( markedfaces( mesh,mesh->markerName( "right" ) ), im, sqrt( trans( idv( U.template element<0>() ) )*idv( U.template element<0>() ) ) ).evaluate()( 0, 0 )/length;
+        double avg_displ_static = integrate( markedfaces( mesh,mesh->markerName( "right" ) ), im, sqrt( trans( idv( d ) )*idv( d ) ) ).evaluate()( 0, 0 )/length;
 
         Log() << "[postProcess]                  length = " << length << "\n";
         Log() << "[postProcess]        avg_displacement = " << avg_displ << "\n";

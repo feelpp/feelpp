@@ -43,15 +43,15 @@ inline
 po::options_description
 makeOptions()
 {
-    po::options_description testoptions("Test options");
+    po::options_description testoptions( "Test options" );
     testoptions.add_options()
-        ("hsize", po::value<double>()->default_value( 0.05 ), "mesh size")
-        ("shape", Feel::po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (either simplex or hypercube)")
-        ("nu", po::value<double>()->default_value( 1 ), "grad.grad coefficient")
-        ("weakdir", po::value<int>()->default_value( 1 ), "use weak Dirichlet condition" )
-        ("penaldir", Feel::po::value<double>()->default_value( 10 ),
-         "penalisation parameter for the weak boundary Dirichlet formulation")
-        ;
+    ( "hsize", po::value<double>()->default_value( 0.05 ), "mesh size" )
+    ( "shape", Feel::po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (either simplex or hypercube)" )
+    ( "nu", po::value<double>()->default_value( 1 ), "grad.grad coefficient" )
+    ( "weakdir", po::value<int>()->default_value( 1 ), "use weak Dirichlet condition" )
+    ( "penaldir", Feel::po::value<double>()->default_value( 10 ),
+      "penalisation parameter for the weak boundary Dirichlet formulation" )
+    ;
     return testoptions.add( Feel::feel_options() );
 }
 
@@ -64,9 +64,9 @@ makeAbout()
                      "0.2",
                      "nD(n=1,2,3) Test Trace operations on simplices or simplex products",
                      Feel::AboutData::License_GPL,
-                     "Copyright (c) 2008-2009 Universite Joseph Fourier");
+                     "Copyright (c) 2008-2009 Universite Joseph Fourier" );
 
-    about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
     return about;
 
 }
@@ -82,7 +82,7 @@ struct imesh
 template<int Dim, int Order>
 class Test
     :
-    public Simget
+public Simget
 {
     typedef Simget super;
 public:
@@ -145,12 +145,16 @@ Test<Dim,Order>::run()
     std::cout << "Execute Test<" << Dim << "," << Order << ">\n";
     std::vector<double> X( 2 );
     X[0] = meshSize;
+
     if ( shape == "ellipsoid" )
         X[1] = 2;
+
     else if ( shape == "hypercube" )
         X[1] = 1;
+
     else // default is simplex
         X[1] = 0;
+
     std::vector<double> Y( 3 );
     run( X.data(), X.size(), Y.data(), Y.size() );
 }
@@ -159,7 +163,9 @@ void
 Test<Dim,Order>::run( const double* X, unsigned long P, double* Y, unsigned long N )
 {
     if ( X[1] == 0 ) shape = "simplex";
+
     if ( X[1] == 1 ) shape = "hypercube";
+
     if ( X[1] == 2 ) shape = "ellipsoid";
 
     if ( !this->vm().count( "nochdir" ) )
@@ -171,13 +177,13 @@ Test<Dim,Order>::run( const double* X, unsigned long P, double* Y, unsigned long
                                        % meshSize );
 
     mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
-                                        _desc=domain( _name=(boost::format( "%1%-%2%" ) % shape % Dim).str() ,
-                                                      _usenames=true,
-                                                      _convex=(convex_type::is_hypercube)?"Hypercube":"Simplex",
-                                                      _shape=shape,
-                                                      _order=Order,
-                                                      _dim=Dim,
-                                                      _h=X[0] ) );
+                                        _desc=domain( _name=( boost::format( "%1%-%2%" ) % shape % Dim ).str() ,
+                                                _usenames=true,
+                                                _convex=( convex_type::is_hypercube )?"Hypercube":"Simplex",
+                                                _shape=shape,
+                                                _order=Order,
+                                                _dim=Dim,
+                                                _h=X[0] ) );
 
     space_ptrtype Xh = space_type::New( mesh );
     auto u = Xh->element();
@@ -186,71 +192,71 @@ Test<Dim,Order>::run( const double* X, unsigned long P, double* Y, unsigned long
 
     double_type pi = M_PI;
 
-    auto g = sin(pi*Px())*cos(pi*Py())*cos(pi*Pz());
-    gproj = vf::project( Xh, elements(mesh), g );
+    auto g = sin( pi*Px() )*cos( pi*Py() )*cos( pi*Pz() );
+    gproj = vf::project( Xh, elements( mesh ), g );
 
     auto f = pi*pi*Dim*g;
 
-    auto trace_mesh = mesh->trace( boundaryfaces(mesh) );
-    auto Th = Xh->trace( boundaryfaces(mesh)) ;
+    auto trace_mesh = mesh->trace( boundaryfaces( mesh ) );
+    auto Th = Xh->trace( boundaryfaces( mesh ) ) ;
     auto t = vf::project( Th, elements( Th->mesh() ), g );
 
     auto op_trace = operatorTrace( Xh );
-    auto g_trace = op_trace->trace( _range=boundaryfaces(mesh), _expr=g);
+    auto g_trace = op_trace->trace( _range=boundaryfaces( mesh ), _expr=g );
 
-    double measure = integrate( elements( Th->mesh() ), cst(1.0), _quad=_Q<5>() ).evaluate()(0,0);
+    double measure = integrate( elements( Th->mesh() ), cst( 1.0 ), _quad=_Q<5>() ).evaluate()( 0,0 );
     std::cout << " -- measure  =" << measure << "\n";
-    double e1 = integrate( _range=elements( Th->mesh() ), _expr=idv(t), _quad=_Q<15>() ).evaluate()(0,0);
+    double e1 = integrate( _range=elements( Th->mesh() ), _expr=idv( t ), _quad=_Q<15>() ).evaluate()( 0,0 );
     std::cout << " -- |trace|  =" << e1 << "\n";
-    double e2 = integrate( _range=elements( Th->mesh() ), _expr=g, _quad=_Q<15>() ).evaluate()(0,0);
+    double e2 = integrate( _range=elements( Th->mesh() ), _expr=g, _quad=_Q<15>() ).evaluate()( 0,0 );
     std::cout << " -- |g|_bdy  =" << e2 << "\n";
-    double e3 = integrate( _range=boundaryfaces(mesh), _expr=g, _quad=_Q<15>() ).evaluate()(0,0);
+    double e3 = integrate( _range=boundaryfaces( mesh ), _expr=g, _quad=_Q<15>() ).evaluate()( 0,0 );
     std::cout << " -- |g|  =" << e3 << "\n";
-    double error = integrate( elements( Th->mesh() ), idv(t)-idv(g_trace) ).evaluate()(0,0);
+    double error = integrate( elements( Th->mesh() ), idv( t )-idv( g_trace ) ).evaluate()( 0,0 );
     std::cout << " -- |op_trace-trace|  =" << error << "\n";
 
-    std::vector<std::string> bdynames = boost::assign::list_of("Dirichlet")("Neumann");
+    std::vector<std::string> bdynames = boost::assign::list_of( "Dirichlet" )( "Neumann" );
     BOOST_FOREACH( auto bdy, bdynames )
     {
         std::cout << "============================================================\n";
         std::cout << "Boundary "  << bdy << "\n";
-        auto Lh = Xh->trace( markedfaces(mesh,bdy)) ;
+        auto Lh = Xh->trace( markedfaces( mesh,bdy ) ) ;
         auto l = vf::project( Lh, elements( Lh->mesh() ), g );
 
 
-        double measure = integrate( elements( Lh->mesh() ), cst(1.0), _quad=_Q<5>() ).evaluate()(0,0);
+        double measure = integrate( elements( Lh->mesh() ), cst( 1.0 ), _quad=_Q<5>() ).evaluate()( 0,0 );
         std::cout << " -- measure(" << bdy << ")  =" << measure << "\n";
-        double e1 = integrate( _range=elements( Lh->mesh() ), _expr=idv(l), _quad=_Q<15>() ).evaluate()(0,0);
+        double e1 = integrate( _range=elements( Lh->mesh() ), _expr=idv( l ), _quad=_Q<15>() ).evaluate()( 0,0 );
         std::cout << " -- |trace|(" << bdy << ")  =" << e1 << "\n";
-        double e2 = integrate( _range=elements( Lh->mesh() ), _expr=g, _quad=_Q<15>() ).evaluate()(0,0);
+        double e2 = integrate( _range=elements( Lh->mesh() ), _expr=g, _quad=_Q<15>() ).evaluate()( 0,0 );
         std::cout << " -- |g|_bdy(" << bdy << ")  =" << e2 << "\n";
-        double e3 = integrate( _range=markedfaces(mesh,bdy), _expr=g, _quad=_Q<15>() ).evaluate()(0,0);
+        double e3 = integrate( _range=markedfaces( mesh,bdy ), _expr=g, _quad=_Q<15>() ).evaluate()( 0,0 );
         std::cout << " -- |g|(" << bdy << ")  =" << e3 << "\n";
 
-        auto g2 = trans(vf::P())*vf::P();
+        auto g2 = trans( vf::P() )*vf::P();
         auto l2 = vf::project( Lh, elements( Lh->mesh() ), g2 );
-        double p1 = integrate( _range=elements( Lh->mesh() ), _expr=idv(l2), _quad=_Q<15>() ).evaluate()(0,0);
+        double p1 = integrate( _range=elements( Lh->mesh() ), _expr=idv( l2 ), _quad=_Q<15>() ).evaluate()( 0,0 );
         std::cout << " -- proj(x^2+y^2)(" << bdy << ")  =" << p1 << "\n";
-        double p2 = integrate( _range=elements( Lh->mesh() ),  _expr=g2, _quad=_Q<15>() ).evaluate()(0,0);
+        double p2 = integrate( _range=elements( Lh->mesh() ),  _expr=g2, _quad=_Q<15>() ).evaluate()( 0,0 );
         std::cout << " -- x^2+y^2(" << bdy << ")  =" << p2 << "\n";
-        double p3 = integrate( _range=markedfaces( Xh->mesh(), bdy ),  _expr=g2, _quad=_Q<15>() ).evaluate()(0,0);
+        double p3 = integrate( _range=markedfaces( Xh->mesh(), bdy ),  _expr=g2, _quad=_Q<15>() ).evaluate()( 0,0 );
         std::cout << " -- 2D(x^2+y^2)(" << bdy << ")  =" << p3 << "\n";
 
     }
 
 
     trace_export_ptrtype trace_exporter( trace_export_type::New( this->vm(),
-                                                                 (boost::format( "trace-%1%-%2%-%3%" )
-                                                                  % this->about().appName()
-                                                                  % shape
-                                                                  % Dim).str() ) );
+                                         ( boost::format( "trace-%1%-%2%-%3%" )
+                                           % this->about().appName()
+                                           % shape
+                                           % Dim ).str() ) );
 
     if ( trace_exporter->doExport() )
     {
         Log() << "trace export starts\n";
 
-        trace_exporter->step(0)->setMesh( trace_mesh );
-        trace_exporter->step(0)->add( "trace_g", t );
+        trace_exporter->step( 0 )->setMesh( trace_mesh );
+        trace_exporter->step( 0 )->add( "trace_g", t );
         trace_exporter->save();
         Log() << "trace export done\n";
     }
@@ -263,6 +269,7 @@ main( int argc, char** argv )
     Environment env( argc, argv );
 
     Application app( argc, argv, makeAbout(), makeOptions() );
+
     if ( app.vm().count( "help" ) )
     {
         std::cout << app.optionsDescription() << "\n";

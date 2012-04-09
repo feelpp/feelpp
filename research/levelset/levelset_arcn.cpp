@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -44,17 +44,17 @@ LevelSet::advReactUpdateCN( AdvReact<space_p_type, imOrder, ENTITY>& advReact,
 {
     using namespace Feel::vf;
 
-    AUTO( beta, idv(vx)*oneX()+idv(vy)*oneY() );
+    AUTO( beta, idv( vx )*oneX()+idv( vy )*oneY() );
 
     advReact.update( /* sigma = */ 1.0/dt,
-                     /* beta  = */ theta*sign*beta,
-                     /* f     = */ ( idv(phi)/dt
-                                     - (1.0-theta)*sign
-                                     * (gradv(phi)*(beta)) ),
-                     /* g     = */ ( idv(phi)
-                                     - sign*dt * (gradv(phi)*(beta)) ),
-                     /* updtJ = */ updateStabilization
-                     );
+                                   /* beta  = */ theta*sign*beta,
+                                   /* f     = */ ( idv( phi )/dt
+                                           - ( 1.0-theta )*sign
+                                           * ( gradv( phi )*( beta ) ) ),
+                                   /* g     = */ ( idv( phi )
+                                           - sign*dt * ( gradv( phi )*( beta ) ) ),
+                                   /* updtJ = */ updateStabilization
+                   );
 }
 
 

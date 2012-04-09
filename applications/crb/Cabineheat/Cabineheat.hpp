@@ -58,14 +58,14 @@ namespace Feel
 po::options_description
 makeCabineHeatOptions()
 {
-    po::options_description rbheatoptions("CabineHeat options");
+    po::options_description rbheatoptions( "CabineHeat options" );
     rbheatoptions.add_options()
-        ("hsize", po::value<double>()->default_value( 0.01 ), "mesh size")
-        ("mu1", po::value<double>()->default_value( 0.2 ), "mu1")
-        ("mu2", po::value<double>()->default_value( -1 ), "mu2")
-        ("mu3", po::value<double>()->default_value( 0.1 ), "mu3")
-        ("no-export", "don't export results")
-        ;
+    ( "hsize", po::value<double>()->default_value( 0.01 ), "mesh size" )
+    ( "mu1", po::value<double>()->default_value( 0.2 ), "mu1" )
+    ( "mu2", po::value<double>()->default_value( -1 ), "mu2" )
+    ( "mu3", po::value<double>()->default_value( 0.1 ), "mu3" )
+    ( "no-export", "don't export results" )
+    ;
     return rbheatoptions.add( Feel::feel_options() );
 }
 AboutData
@@ -76,9 +76,9 @@ makeCabineHeatAbout( std::string const& str = "CabineHeat" )
                            "0.1",
                            "CabineHeat Benchmark",
                            Feel::AboutData::License_GPL,
-                           "Copyright (c) 2010,2011 Université de Grenoble 1 (Joseph Fourier)");
+                           "Copyright (c) 2010,2011 Université de Grenoble 1 (Joseph Fourier)" );
 
-    about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
     return about;
 }
 
@@ -89,185 +89,185 @@ makeCabineHeatAbout( std::string const& str = "CabineHeat" )
 gmsh_ptrtype
 createGeo( double meshSize  )
 {
-std::ostringstream ostr;
+    std::ostringstream ostr;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////// MAILLAGE CABINE TOP ////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //////////////////////// MAILLAGE CABINE TOP ////////////////////////////////////////////////////////
 
-ostr << "lc1=" <<meshSize <<";\n"
+    ostr << "lc1=" <<meshSize <<";\n"
 
-<<"Point(1) = {-1.9, -0.05, 0, lc1};\n"
-<<"Point(2) = {1.9, -0.05,  0, lc1};\n"
-<<"Point(3) = {1.9, 0.05, 0, lc1} ;\n"
-<<"Point(4) = {1.9993749, 0.05,0, lc1} ;\n"
-<<"Point(5) = {1.812616, 0.845236,  0, lc1} ;\n"	
-<<"Point(6) = {1.3, 1.519868, 0, lc1} ;\n"
-<<"Point(7) = {0.46915, 2, 0, lc1} ;\n"	      // point on major axis of right side ellipse
-<<"Point(8) = {0.125, 1.996089, 0, lc1};\n"
-<<"Point(9) = {0.05, 1.9993749, 0, lc1};\n"
-<<"Point(10) = {0, 2, 0, lc1};\n"
-<<"Point(11) = {-1.9, 0.05, 0, lc1};\n"
-<<"Point(12) = {-1.9993749,0.05,0, lc1} ;\n"
-<<"Point(13) = {-1.812616, 0.845236,  0, lc1} ;\n"
-<<"Point(14) = {-1.3, 1.519868, 0, lc1} ;\n"
-<<"Point(15) = {-0.46915, 2, 0, lc1} ;\n"	// point on major axis of left side ellipse
-<<"Point(16) = {-0.125, 1.996089, 0, lc1} ;\n"
-<<"Point(17) = {-0.05, 1.9993749, 0, lc1} ;\n"
-<<"Point(18) = {-1.3, 2, 0, lc1};\n"		// left side ellipse center
-<<"Point(19) = {1.3, 2, 0, lc1};	\n"	// right side ellipse center
-<<"Point(20) = {0, 0, 0, lc1};	\n"	// center of circle
-<<"Point(21) = {0.05, 1.875, 0, lc1};\n"
-<<"Point(22) = {-0.05, 1.875, 0, lc1};\n"
+         <<"Point(1) = {-1.9, -0.05, 0, lc1};\n"
+         <<"Point(2) = {1.9, -0.05,  0, lc1};\n"
+         <<"Point(3) = {1.9, 0.05, 0, lc1} ;\n"
+         <<"Point(4) = {1.9993749, 0.05,0, lc1} ;\n"
+         <<"Point(5) = {1.812616, 0.845236,  0, lc1} ;\n"
+         <<"Point(6) = {1.3, 1.519868, 0, lc1} ;\n"
+         <<"Point(7) = {0.46915, 2, 0, lc1} ;\n"	      // point on major axis of right side ellipse
+         <<"Point(8) = {0.125, 1.996089, 0, lc1};\n"
+         <<"Point(9) = {0.05, 1.9993749, 0, lc1};\n"
+         <<"Point(10) = {0, 2, 0, lc1};\n"
+         <<"Point(11) = {-1.9, 0.05, 0, lc1};\n"
+         <<"Point(12) = {-1.9993749,0.05,0, lc1} ;\n"
+         <<"Point(13) = {-1.812616, 0.845236,  0, lc1} ;\n"
+         <<"Point(14) = {-1.3, 1.519868, 0, lc1} ;\n"
+         <<"Point(15) = {-0.46915, 2, 0, lc1} ;\n"	// point on major axis of left side ellipse
+         <<"Point(16) = {-0.125, 1.996089, 0, lc1} ;\n"
+         <<"Point(17) = {-0.05, 1.9993749, 0, lc1} ;\n"
+         <<"Point(18) = {-1.3, 2, 0, lc1};\n"		// left side ellipse center
+         <<"Point(19) = {1.3, 2, 0, lc1};	\n"	// right side ellipse center
+         <<"Point(20) = {0, 0, 0, lc1};	\n"	// center of circle
+         <<"Point(21) = {0.05, 1.875, 0, lc1};\n"
+         <<"Point(22) = {-0.05, 1.875, 0, lc1};\n"
 
-<<"Point (23) = {-1.55, 0.50, 0, lc1};\n"	//center of P1
-<<"Point (24) = {-1.55, 0.80, 0, lc1};\n"	// point on major axis of P1
-<<"Point (25) = {-1.55, 1.00, 0, lc1};\n"
-<<"Point (26) = {-1.55, 0.00, 0, lc1};\n"
-<<"Point (27) = {-1.35, 0.50, 0, lc1};\n"
-<<"Point (28) = {-1.75, 0.50, 0, lc1};\n"
+         <<"Point (23) = {-1.55, 0.50, 0, lc1};\n"	//center of P1
+         <<"Point (24) = {-1.55, 0.80, 0, lc1};\n"	// point on major axis of P1
+         <<"Point (25) = {-1.55, 1.00, 0, lc1};\n"
+         <<"Point (26) = {-1.55, 0.00, 0, lc1};\n"
+         <<"Point (27) = {-1.35, 0.50, 0, lc1};\n"
+         <<"Point (28) = {-1.75, 0.50, 0, lc1};\n"
 
-<<"Point (29) = {-1.05, 0.50, 0, lc1};\n"	//center of P2
-<<"Point (30) = {-1.05, 0.80, 0, lc1};\n"	// point on major axis of P2
-<<"Point (31) = {-1.05, 1.00, 0, lc1};\n"
-<<"Point (32) = {-1.05, 0.00, 0, lc1};\n"
-<<"Point (33) = {-0.85, 0.50, 0, lc1};\n"
-<<"Point (34) = {-1.25, 0.50, 0, lc1};\n"
+         <<"Point (29) = {-1.05, 0.50, 0, lc1};\n"	//center of P2
+         <<"Point (30) = {-1.05, 0.80, 0, lc1};\n"	// point on major axis of P2
+         <<"Point (31) = {-1.05, 1.00, 0, lc1};\n"
+         <<"Point (32) = {-1.05, 0.00, 0, lc1};\n"
+         <<"Point (33) = {-0.85, 0.50, 0, lc1};\n"
+         <<"Point (34) = {-1.25, 0.50, 0, lc1};\n"
 
-<<"Point (35) = {-0.55, 0.50, 0, lc1};\n"	//center of P3
-<<"Point (36) = {-0.55, 0.80, 0, lc1};\n"	// point on major axis of P3
-<<"Point (37) = {-0.55, 1.00, 0, lc1};\n"
-<<"Point (38) = {-0.55, 0.00, 0, lc1};\n"
-<<"Point (39) = {-0.35, 0.50, 0, lc1};\n"
-<<"Point (40) = {-0.75, 0.50, 0, lc1};\n"
+         <<"Point (35) = {-0.55, 0.50, 0, lc1};\n"	//center of P3
+         <<"Point (36) = {-0.55, 0.80, 0, lc1};\n"	// point on major axis of P3
+         <<"Point (37) = {-0.55, 1.00, 0, lc1};\n"
+         <<"Point (38) = {-0.55, 0.00, 0, lc1};\n"
+         <<"Point (39) = {-0.35, 0.50, 0, lc1};\n"
+         <<"Point (40) = {-0.75, 0.50, 0, lc1};\n"
 
-<<"Point (41) = { 0.55, 0.50, 0, lc1};\n"	//center of P4
-<<"Point (42) = { 0.55, 0.80, 0, lc1};\n"	// point on major axis of P4
-<<"Point (43) = { 0.55, 1.00, 0, lc1};\n"
-<<"Point (44) = { 0.55, 0.00, 0, lc1};\n"
-<<"Point (45) = { 0.75, 0.50, 0, lc1};\n"
-<<"Point (46) = { 0.35, 0.50, 0, lc1};\n"
+         <<"Point (41) = { 0.55, 0.50, 0, lc1};\n"	//center of P4
+         <<"Point (42) = { 0.55, 0.80, 0, lc1};\n"	// point on major axis of P4
+         <<"Point (43) = { 0.55, 1.00, 0, lc1};\n"
+         <<"Point (44) = { 0.55, 0.00, 0, lc1};\n"
+         <<"Point (45) = { 0.75, 0.50, 0, lc1};\n"
+         <<"Point (46) = { 0.35, 0.50, 0, lc1};\n"
 
-<<"Point (47) = { 1.05, 0.50, 0, lc1};\n"	//center of P5
-<<"Point (48) = { 1.05, 0.80, 0, lc1};\n"	// point on major axis of P5
-<<"Point (49) = { 1.05, 1.00, 0, lc1};\n"
-<<"Point (50) = { 1.05, 0.00, 0, lc1};\n"
-<<"Point (51) = { 1.25, 0.50, 0, lc1};\n"
-<<"Point (52) = { 0.85, 0.50, 0, lc1};\n"
+         <<"Point (47) = { 1.05, 0.50, 0, lc1};\n"	//center of P5
+         <<"Point (48) = { 1.05, 0.80, 0, lc1};\n"	// point on major axis of P5
+         <<"Point (49) = { 1.05, 1.00, 0, lc1};\n"
+         <<"Point (50) = { 1.05, 0.00, 0, lc1};\n"
+         <<"Point (51) = { 1.25, 0.50, 0, lc1};\n"
+         <<"Point (52) = { 0.85, 0.50, 0, lc1};\n"
 
-<<"Point (53) = { 1.55, 0.50, 0, lc1};\n"	//center of P6
-<<"Point (54) = { 1.55, 0.80, 0, lc1};\n"// point on major axis of P6
-<<"Point (55) = { 1.55, 1.00, 0, lc1};\n"
-<<"Point (56) = { 1.55, 0.00, 0, lc1};\n"
-<<"Point (57) = { 1.75, 0.50, 0, lc1};\n"
-<<"Point (58) = { 1.35, 0.50, 0, lc1};\n"
+         <<"Point (53) = { 1.55, 0.50, 0, lc1};\n"	//center of P6
+         <<"Point (54) = { 1.55, 0.80, 0, lc1};\n"// point on major axis of P6
+         <<"Point (55) = { 1.55, 1.00, 0, lc1};\n"
+         <<"Point (56) = { 1.55, 0.00, 0, lc1};\n"
+         <<"Point (57) = { 1.75, 0.50, 0, lc1};\n"
+         <<"Point (58) = { 1.35, 0.50, 0, lc1};\n"
 
-<<"Point(59)={-1.9993749,-0.05, 0, lc1};\n"		//Point(59)={-1.9993749,-0.05,0, lc1};
-<<"Point(60)={-1.130265, -1.65, 0, lc1};\n" //Point(60)={-1.130265, -1.65, 0, lc2};
-<<"Point(61)={ 1.130265, -1.65, 0, lc1};\n" //Point(61)={ 1.130265, -1.65, 0, lc2};
-<<"Point(62)={ 1.9993749,-0.05, 0, lc1};\n"		//Point(62)={ 1.9993749,-0.05,0, lc1};
+         <<"Point(59)={-1.9993749,-0.05, 0, lc1};\n"		//Point(59)={-1.9993749,-0.05,0, lc1};
+         <<"Point(60)={-1.130265, -1.65, 0, lc1};\n" //Point(60)={-1.130265, -1.65, 0, lc2};
+         <<"Point(61)={ 1.130265, -1.65, 0, lc1};\n" //Point(61)={ 1.130265, -1.65, 0, lc2};
+         <<"Point(62)={ 1.9993749,-0.05, 0, lc1};\n"		//Point(62)={ 1.9993749,-0.05,0, lc1};
 
-<<"Point(63)={-0.15,-1.65,0, lc1}; \n"         // bay inlet
-<<"Point(64)={ 0.20,-1.65,0, lc1};\n"
-<<"Point(65)={ 0.20,-1.55,0, lc1};\n"
-<<"Point(66)={-0.15,-1.55,0, lc1};\n"
+         <<"Point(63)={-0.15,-1.65,0, lc1}; \n"         // bay inlet
+         <<"Point(64)={ 0.20,-1.65,0, lc1};\n"
+         <<"Point(65)={ 0.20,-1.55,0, lc1};\n"
+         <<"Point(66)={-0.15,-1.55,0, lc1};\n"
 
-<<"Line(1) = {1,2} ;\n"
-<<"Line(2) = {2,3} ;\n"
-<<"Line(3) = {3,4} ;\n"
-<<"Line(4) = {11,1} ;\n"
-<<"Line(5) = {12,11} ;\n"
-<<"Circle (6) = {4, 20, 6};\n"
-<<"Ellipse (7) = {6, 19, 7, 8};\n"	     // Right HL ellipse
-<<"Circle (8) = {8, 20, 9};\n"
-<<"Circle (9) = {14, 20, 12};\n"
-<<"Ellipse (10) = {16, 18, 15, 14};\n"	 // Left HL ellipse
-<<"Circle (11) = {17, 20, 16};\n"
-<<"Line(12) = {9,21} ;\n"
-<<"Line(13) = {21,22} ;\n"
-<<"Line(14) = {22,17} ;\n"
-<<"Circle (15) = {6, 20, 8};\n"
-<<"Circle (16) = {9, 20, 17};\n"
-<<"Circle (17) = {16, 20, 14};\n"
-//creation passagers
-<<"Ellipse (18) = {26, 23, 24, 27};\n"     // P1
-<<"Ellipse (19) = {27, 23, 24, 25};\n"
-<<"Ellipse (20) = {25, 23, 24, 28};\n"
-<<"Ellipse (21) = {28, 23, 24, 26};\n"
-//
-<<"Ellipse (22) = {32, 29, 30, 33}; \n"    // p2
-<<"Ellipse (23) = {33, 29, 30, 31};\n"
-<<"Ellipse (24) = {31, 29, 30, 34};\n"
-<<"Ellipse (25) = {34, 29, 30, 32};\n"
-//
-<<"Ellipse (26) = {38, 35, 36, 39}; \n"    // p3
-<<"Ellipse (27) = {39, 35, 36, 37};\n"
-<<"Ellipse (28) = {37, 35, 36, 40};\n"
-<<"Ellipse (29) = {40, 35, 36, 38};\n"
-//
-<<"Ellipse (30) = {44, 41, 42, 45};\n"     // p4
-<<"Ellipse (31) = {45, 41, 42, 43};\n"
-<<"Ellipse (32) = {43, 41, 42, 46};\n"
-<<"Ellipse (33) = {46, 41, 42, 44};\n"
-//
-<<"Ellipse (34) = {50, 47, 48, 51};  \n"   // p5
-<<"Ellipse (35) = {51, 47, 48, 49};\n"
-<<"Ellipse (36) = {49, 47, 48, 52};\n"
-<<"Ellipse (37) = {52, 47, 48, 50};\n"
-//
-<<"Ellipse (38) = {56, 53, 54, 57}; \n"     // p6
-<<"Ellipse (39) = {57, 53, 54, 55};\n"
-<<"Ellipse (40) = {55, 53, 54, 58};\n"
-<<"Ellipse (41) = {58, 53, 54, 56};\n"
+         <<"Line(1) = {1,2} ;\n"
+         <<"Line(2) = {2,3} ;\n"
+         <<"Line(3) = {3,4} ;\n"
+         <<"Line(4) = {11,1} ;\n"
+         <<"Line(5) = {12,11} ;\n"
+         <<"Circle (6) = {4, 20, 6};\n"
+         <<"Ellipse (7) = {6, 19, 7, 8};\n"	     // Right HL ellipse
+         <<"Circle (8) = {8, 20, 9};\n"
+         <<"Circle (9) = {14, 20, 12};\n"
+         <<"Ellipse (10) = {16, 18, 15, 14};\n"	 // Left HL ellipse
+         <<"Circle (11) = {17, 20, 16};\n"
+         <<"Line(12) = {9,21} ;\n"
+         <<"Line(13) = {21,22} ;\n"
+         <<"Line(14) = {22,17} ;\n"
+         <<"Circle (15) = {6, 20, 8};\n"
+         <<"Circle (16) = {9, 20, 17};\n"
+         <<"Circle (17) = {16, 20, 14};\n"
+         //creation passagers
+         <<"Ellipse (18) = {26, 23, 24, 27};\n"     // P1
+         <<"Ellipse (19) = {27, 23, 24, 25};\n"
+         <<"Ellipse (20) = {25, 23, 24, 28};\n"
+         <<"Ellipse (21) = {28, 23, 24, 26};\n"
+         //
+         <<"Ellipse (22) = {32, 29, 30, 33}; \n"    // p2
+         <<"Ellipse (23) = {33, 29, 30, 31};\n"
+         <<"Ellipse (24) = {31, 29, 30, 34};\n"
+         <<"Ellipse (25) = {34, 29, 30, 32};\n"
+         //
+         <<"Ellipse (26) = {38, 35, 36, 39}; \n"    // p3
+         <<"Ellipse (27) = {39, 35, 36, 37};\n"
+         <<"Ellipse (28) = {37, 35, 36, 40};\n"
+         <<"Ellipse (29) = {40, 35, 36, 38};\n"
+         //
+         <<"Ellipse (30) = {44, 41, 42, 45};\n"     // p4
+         <<"Ellipse (31) = {45, 41, 42, 43};\n"
+         <<"Ellipse (32) = {43, 41, 42, 46};\n"
+         <<"Ellipse (33) = {46, 41, 42, 44};\n"
+         //
+         <<"Ellipse (34) = {50, 47, 48, 51};  \n"   // p5
+         <<"Ellipse (35) = {51, 47, 48, 49};\n"
+         <<"Ellipse (36) = {49, 47, 48, 52};\n"
+         <<"Ellipse (37) = {52, 47, 48, 50};\n"
+         //
+         <<"Ellipse (38) = {56, 53, 54, 57}; \n"     // p6
+         <<"Ellipse (39) = {57, 53, 54, 55};\n"
+         <<"Ellipse (40) = {55, 53, 54, 58};\n"
+         <<"Ellipse (41) = {58, 53, 54, 56};\n"
 
-//creation contour bay+entrees
-<<"Line(42)={59,1};\n"
-<<"Line(43)={2,62};\n"
+         //creation contour bay+entrees
+         <<"Line(42)={59,1};\n"
+         <<"Line(43)={2,62};\n"
 
-<<"Circle(44)={12,20,59};\n"    
-<<"Circle(45)={59,20,60};\n"	          //Circle(45)={59,20,60};
+         <<"Circle(44)={12,20,59};\n"
+         <<"Circle(45)={59,20,60};\n"	          //Circle(45)={59,20,60};
 
-<<"Line(46)={60,63};\n"
-<<"Line(47)={63,64};\n"
-<<"Line(48)={64,61};\n"
+         <<"Line(46)={60,63};\n"
+         <<"Line(47)={63,64};\n"
+         <<"Line(48)={64,61};\n"
 
-<<"Circle(49)={61,20,62};  \n" 	          //Circle(49)={61,20,62};  
-<<"Circle(50)={62,20,4}; \n"     
+         <<"Circle(49)={61,20,62};  \n" 	          //Circle(49)={61,20,62};
+         <<"Circle(50)={62,20,4}; \n"
 
-<<"Line(51)={64,65}; \n"                    // bay inlet
-<<"Line(52)={65,66};\n"
-<<"Line(53)={66,63};\n"
+         <<"Line(51)={64,65}; \n"                    // bay inlet
+         <<"Line(52)={65,66};\n"
+         <<"Line(53)={66,63};\n"
 
-<<"Line Loop(1) = {1,2,3,6,7,8,12,13,14,11,10,9,5,4} ; \n"    // Cabin Fluid
-<<"Line Loop(2) = {18,19,20,21} ;    \n"                      // P1
-<<"Line Loop(3) = {22,23,24,25} ; \n"                         // P2
-<<"Line Loop(4) = {26,27,28,29}; \n"                          // P3
-<<"Line Loop(5) = {30,31,32,33}; \n"                          // P4
-<<"Line Loop(6) = {34,35,36,37}; \n"                          // P5
-<<"Line Loop(7) = {38,39,40,41}; \n"                          // P6
+         <<"Line Loop(1) = {1,2,3,6,7,8,12,13,14,11,10,9,5,4} ; \n"    // Cabin Fluid
+         <<"Line Loop(2) = {18,19,20,21} ;    \n"                      // P1
+         <<"Line Loop(3) = {22,23,24,25} ; \n"                         // P2
+         <<"Line Loop(4) = {26,27,28,29}; \n"                          // P3
+         <<"Line Loop(5) = {30,31,32,33}; \n"                          // P4
+         <<"Line Loop(6) = {34,35,36,37}; \n"                          // P5
+         <<"Line Loop(7) = {38,39,40,41}; \n"                          // P6
 
-<<"Plane Surface(8) = {1,2,3,4,5,6,7};\n"		                // cabin fluid
+         <<"Plane Surface(8) = {1,2,3,4,5,6,7};\n"		                // cabin fluid
 
-<<"Line Loop(15) = {45,46,-53,-52,-51,48,49,-43,-1,-42};\n"   // eBay   
+         <<"Line Loop(15) = {45,46,-53,-52,-51,48,49,-43,-1,-42};\n"   // eBay
 
-<<"Physical Surface(\"cabin\") = {8};\n"
-<<"Physical Surface(\"bay_Surface\") = {26};\n"
+         <<"Physical Surface(\"cabin\") = {8};\n"
+         <<"Physical Surface(\"bay_Surface\") = {26};\n"
 
-<<"Physical Line(\"passenger1\") = {20, 19, 21, 18};\n"
-<<"Physical Line(\"passenger2\") = {24, 23, 25, 22};\n"
-<<"Physical Line(\"passenger3\") = {28, 27, 29, 26};\n"
-<<"Physical Line(\"passenger4\") = {32, 31, 33, 30};\n"
-<<"Physical Line(\"passenger5\") = {36, 35, 37, 34};\n"
-<<"Physical Line(\"passenger6\") = {40, 39, 41, 38};\n"
-<<"Physical Line(\"cabin_wall\") = {9, 6, 10, 7, 8, 11};\n"
-<<"Physical Line(\"plancher\") = {1};\n"
-<<"Physical Line(\"bay_wall\") = {45, 49, 48, 46};\n"
-<<"Physical Line(\"bay_inlet\") = {53, 52, 51};\n"
-<<"Physical Line(\"left_outlet\") = {5, 4};\n"
-<<"Physical Line(\"right_outlet\") = {3, 2};\n"
-<<"Physical Line(\"cabine_inlet\") = {14, 13, 12};\n"
-<<"\n";
+         <<"Physical Line(\"passenger1\") = {20, 19, 21, 18};\n"
+         <<"Physical Line(\"passenger2\") = {24, 23, 25, 22};\n"
+         <<"Physical Line(\"passenger3\") = {28, 27, 29, 26};\n"
+         <<"Physical Line(\"passenger4\") = {32, 31, 33, 30};\n"
+         <<"Physical Line(\"passenger5\") = {36, 35, 37, 34};\n"
+         <<"Physical Line(\"passenger6\") = {40, 39, 41, 38};\n"
+         <<"Physical Line(\"cabin_wall\") = {9, 6, 10, 7, 8, 11};\n"
+         <<"Physical Line(\"plancher\") = {1};\n"
+         <<"Physical Line(\"bay_wall\") = {45, 49, 48, 46};\n"
+         <<"Physical Line(\"bay_inlet\") = {53, 52, 51};\n"
+         <<"Physical Line(\"left_outlet\") = {5, 4};\n"
+         <<"Physical Line(\"right_outlet\") = {3, 2};\n"
+         <<"Physical Line(\"cabine_inlet\") = {14, 13, 12};\n"
+         <<"\n";
 
-///////////////////FIN MAILLAGE CABINE /////////////////////////////////////////////
+    ///////////////////FIN MAILLAGE CABINE /////////////////////////////////////////////
     gmsh_ptrtype gmshp( new Gmsh );
     gmshp->setPrefix( "Cabineheat" );
     gmshp->setDescription( ostr.str() );
@@ -360,7 +360,7 @@ public:
     //! copy constructor
     //Heat1D( Heat1D const & );
     //! destructor
-    ~CabineHeat(){}
+    ~CabineHeat() {}
 
     //! initialisation of the model
     void init();
@@ -378,7 +378,10 @@ public:
 
     // \return the number of terms in affine decomposition of left hand
     // side bilinear form
-    int Qa() const { return 1; }
+    int Qa() const
+    {
+        return 1;
+    }
 
     /**
      * there is at least one output which is the right hand side of the
@@ -386,21 +389,35 @@ public:
      *
      * \return number of outputs associated to the model
      */
-    int Nl() const { return 2; }
+    int Nl() const
+    {
+        return 2;
+    }
 
     /**
      * \param l the index of output
      * \return number of terms  in affine decomposition of the \p q th output term
      */
-    int Ql( int l ) const { if ( l == 0 ) return 4; return 1; }
+    int Ql( int l ) const
+    {
+        if ( l == 0 ) return 4;
+
+        return 1;
+    }
 
     /**
      * \brief Returns the function space
      */
-    space_ptrtype functionSpace() { return Xh; }
+    space_ptrtype functionSpace()
+    {
+        return Xh;
+    }
 
     //! return the parameter space
-    parameterspace_ptrtype parameterSpace() const { return M_Dmu;}
+    parameterspace_ptrtype parameterSpace() const
+    {
+        return M_Dmu;
+    }
 
     /**
      * \brief compute the theta coefficient for both bilinear and linear form
@@ -408,46 +425,52 @@ public:
      */
     boost::tuple<theta_vector_type, std::vector<theta_vector_type> >
     computeThetaq( parameter_type const& mu, double time=0 )
-        {
-            M_thetaAq.resize( Qa() );
-            M_thetaAq( 0 ) = mu(0);//k
-            M_thetaFq.resize( Nl() );
-            M_thetaFq[0].resize( Ql(0) );
-            M_thetaFq[0]( 0 ) = mu(1); // delta 1Flux_passenger(0->175)
-            M_thetaFq[0]( 1 ) = mu(2); // delta2
-	    M_thetaFq[0]( 2 ) = mu(3); // delta3
-	    M_thetaFq[0]( 3 ) = mu(4); // phi		
-            M_thetaFq[1].resize( Ql(1) );
-            M_thetaFq[1]( 0 ) = 1; //output 1
-            return boost::make_tuple( M_thetaAq, M_thetaFq );
-        }
+    {
+        M_thetaAq.resize( Qa() );
+        M_thetaAq( 0 ) = mu( 0 ); //k
+        M_thetaFq.resize( Nl() );
+        M_thetaFq[0].resize( Ql( 0 ) );
+        M_thetaFq[0]( 0 ) = mu( 1 ); // delta 1Flux_passenger(0->175)
+        M_thetaFq[0]( 1 ) = mu( 2 ); // delta2
+        M_thetaFq[0]( 2 ) = mu( 3 ); // delta3
+        M_thetaFq[0]( 3 ) = mu( 4 ); // phi
+        M_thetaFq[1].resize( Ql( 1 ) );
+        M_thetaFq[1]( 0 ) = 1; //output 1
+        return boost::make_tuple( M_thetaAq, M_thetaFq );
+    }
 
     /**
      * \brief return the coefficient vector
      */
-    theta_vector_type const& thetaAq() const { return M_thetaAq; }
+    theta_vector_type const& thetaAq() const
+    {
+        return M_thetaAq;
+    }
 
     /**
      * \brief return the coefficient vector
      */
-    std::vector<theta_vector_type> const& thetaFq() const { return M_thetaFq; }
+    std::vector<theta_vector_type> const& thetaFq() const
+    {
+        return M_thetaFq;
+    }
 
     /**
      * \brief return the coefficient vector \p q component
      *
      */
     value_type thetaAq( int q ) const
-        {
-            return M_thetaAq( q );
-        }
+    {
+        return M_thetaAq( q );
+    }
 
     /**
      * \return the \p q -th term of the \p l -th output
      */
     value_type thetaL( int l, int q ) const
-        {
-            return M_thetaFq[l]( q );
-        }
+    {
+        return M_thetaFq[l]( q );
+    }
 
     //@}
 
@@ -458,7 +481,10 @@ public:
     /**
      * set the mesh characteristic length to \p s
      */
-    void setMeshSize( double s ) { meshSize = s; }
+    void setMeshSize( double s )
+    {
+        meshSize = s;
+    }
 
 
     //@}
@@ -576,7 +602,7 @@ CabineHeat::CabineHeat()
     exporter( Exporter<mesh_type>::New( "ensight" ) ),
     M_Dmu( new parameterspace_type )
 {
-  this->init();
+    this->init();
 }
 
 
@@ -589,7 +615,7 @@ CabineHeat::CabineHeat( po::variables_map const& vm )
     exporter( Exporter<mesh_type>::New( vm, "cabineheat" ) ),
     M_Dmu( new parameterspace_type )
 {
-  this->init();
+    this->init();
 }
 void
 CabineHeat::init()
@@ -598,8 +624,8 @@ CabineHeat::init()
      * First we create the mesh
      */
     mesh = createGMSHMesh( _mesh=new mesh_type,
-                           _desc=createGeo(meshSize) ,
-			   _update=MESH_UPDATE_FACES | MESH_UPDATE_EDGES );
+                           _desc=createGeo( meshSize ) ,
+                           _update=MESH_UPDATE_FACES | MESH_UPDATE_EDGES );
 
     /*
      * The function space and some associate elements are then defined
@@ -616,7 +642,7 @@ CabineHeat::init()
     M_Fq[0].resize( 4 );
     M_Fq[0][0] = backend->newVector( Xh );
     M_Fq[0][1] = backend->newVector( Xh );
-    M_Fq[0][2] = backend->newVector( Xh );	
+    M_Fq[0][2] = backend->newVector( Xh );
     M_Fq[0][3] = backend->newVector( Xh );
 
     M_Fq[1].resize( 1 );
@@ -643,44 +669,44 @@ CabineHeat::init()
 
 
     // right hand side
-    form1( Xh, M_Fq[0][0], _init=true ) = integrate( markedfaces(mesh,"passenger1"), id(v) );
-    form1( Xh, M_Fq[0][0]) += integrate( markedfaces(mesh,"passenger2"), id(v) );
-    form1( Xh, M_Fq[0][0]) += integrate( markedfaces(mesh,"passenger3"), id(v) );
-    form1( Xh, M_Fq[0][0]) += integrate( markedfaces(mesh,"passenger4"), id(v) );
-    form1( Xh, M_Fq[0][0]) += integrate( markedfaces(mesh,"passenger5"), id(v) );
-    form1( Xh, M_Fq[0][0]) += integrate( markedfaces(mesh,"passenger6"), id(v) );
-	
-    form1( Xh, M_Fq[0][1], _init=true ) = integrate( markedfaces(mesh,"cabin_wall"), id(v) );
+    form1( Xh, M_Fq[0][0], _init=true ) = integrate( markedfaces( mesh,"passenger1" ), id( v ) );
+    form1( Xh, M_Fq[0][0] ) += integrate( markedfaces( mesh,"passenger2" ), id( v ) );
+    form1( Xh, M_Fq[0][0] ) += integrate( markedfaces( mesh,"passenger3" ), id( v ) );
+    form1( Xh, M_Fq[0][0] ) += integrate( markedfaces( mesh,"passenger4" ), id( v ) );
+    form1( Xh, M_Fq[0][0] ) += integrate( markedfaces( mesh,"passenger5" ), id( v ) );
+    form1( Xh, M_Fq[0][0] ) += integrate( markedfaces( mesh,"passenger6" ), id( v ) );
 
-    form1( Xh, M_Fq[0][2], _init=true) = integrate( markedfaces(mesh,"right_outlet"), id(v));		
-    form1( Xh, M_Fq[0][2]) += integrate( markedfaces(mesh,"left_outlet"), id(v));
-		
-    form1(Xh, M_Fq[0][3], _init=true ) = integrate( elements(mesh), id(v) );
+    form1( Xh, M_Fq[0][1], _init=true ) = integrate( markedfaces( mesh,"cabin_wall" ), id( v ) );
+
+    form1( Xh, M_Fq[0][2], _init=true ) = integrate( markedfaces( mesh,"right_outlet" ), id( v ) );
+    form1( Xh, M_Fq[0][2] ) += integrate( markedfaces( mesh,"left_outlet" ), id( v ) );
+
+    form1( Xh, M_Fq[0][3], _init=true ) = integrate( elements( mesh ), id( v ) );
     M_Fq[0][0]->close();
     M_Fq[0][1]->close();
     M_Fq[0][2]->close();
     M_Fq[0][3]->close();
 
     // output non compliant : mean temperature on plancher
-    double onplancher = integrate(markedfaces(mesh,"plancher"), cst(1.)).evaluate()(0,0);
-    	std::cout<<"onplancher"<<onplancher<<std::endl;
-    form1( Xh, M_Fq[1][0], _init=true ) = integrate( markedfaces(mesh,"plancher"), id(v)/onplancher);
+    double onplancher = integrate( markedfaces( mesh,"plancher" ), cst( 1. ) ).evaluate()( 0,0 );
+    std::cout<<"onplancher"<<onplancher<<std::endl;
+    form1( Xh, M_Fq[1][0], _init=true ) = integrate( markedfaces( mesh,"plancher" ), id( v )/onplancher );
     M_Fq[1][0]->close();
-	
-    form2( Xh, Xh, M_Aq[0], _init=true ) = integrate( elements(mesh),(gradt(u)*trans(grad(v))) );
-    form2( Xh, Xh, M_Aq[0]) += on( markedfaces(mesh,"cabine_inlet"), u, F, cst(20.) );
+
+    form2( Xh, Xh, M_Aq[0], _init=true ) = integrate( elements( mesh ),( gradt( u )*trans( grad( v ) ) ) );
+    form2( Xh, Xh, M_Aq[0] ) += on( markedfaces( mesh,"cabine_inlet" ), u, F, cst( 20. ) );
     M_Aq[0]->close();
-	
+
 
     M = backend->newMatrix( Xh, Xh );
 
     form2( Xh, Xh, M, _init=true ) =
-        integrate( elements(mesh), id(u)*idt(v) + grad(u)*trans(gradt(u)) );
+        integrate( elements( mesh ), id( u )*idt( v ) + grad( u )*trans( gradt( u ) ) );
     M->close();
-	
 
 
-////////////////////////////////////////////////////////////////////////////////
+
+    ////////////////////////////////////////////////////////////////////////////////
 
 
 } // Cabineheat::init
@@ -700,8 +726,8 @@ CabineHeat::computeAffineDecomposition()
 
 void
 CabineHeat::solve( sparse_matrix_ptrtype& D,
-               element_type& t,
-               vector_ptrtype& F )
+                   element_type& t,
+                   vector_ptrtype& F )
 {
     vector_ptrtype T( backend->newVector( t.functionSpace() ) );
     backend->solve( D, D, T, F );
@@ -716,9 +742,9 @@ CabineHeat::exportResults( element_type& U )
     {
         Log() << "exportResults starts\n";
 
-        exporter->step(0)->setMesh( U.functionSpace()->mesh() );
+        exporter->step( 0 )->setMesh( U.functionSpace()->mesh() );
 
-        exporter->step(0)->add( "u", U );
+        exporter->step( 0 )->add( "u", U );
 
         exporter->save();
     }
@@ -729,13 +755,16 @@ CabineHeat::update( parameter_type const& mu )
 {
 
     *D = *M_Aq[0];
-    for( size_type q = 0;q < M_Aq.size(); ++q )
+
+    for ( size_type q = 0; q < M_Aq.size(); ++q )
     {
         D->addMatrix( M_thetaAq[q], M_Aq[q] );
     }
+
     F->close();
     F->zero();
-    for( size_type q = 0;q < M_Fq[0].size(); ++q )
+
+    for ( size_type q = 0; q < M_Fq[0].size(); ++q )
     {
         F->add( M_thetaFq[0][q], M_Fq[0][q] );
     }
@@ -761,7 +790,7 @@ void
 CabineHeat::l2solve( vector_ptrtype& u, vector_ptrtype const& f )
 {
     //std::cout << "l2solve(u,f)\n";
-    backend->solve( _matrix=M,  _solution=u, _rhs=f);
+    backend->solve( _matrix=M,  _solution=u, _rhs=f );
     //std::cout << "l2solve(u,f) done\n";
 }
 
@@ -783,12 +812,14 @@ CabineHeat::run( const double * X, unsigned long N, double * Y, unsigned long P 
     Feel::ParameterSpace<5>::Element mu( M_Dmu );
     mu << X[0], X[1], X[2], X[3], X[4];
     static int do_init = true;
+
     if ( do_init )
     {
         meshSize = X[5];
         this->init();
         do_init = false;
     }
+
     this->solve( mu, pT );
 }
 
@@ -807,17 +838,20 @@ CabineHeat::output( int output_index, parameter_type const& mu )
 
     // (compliant) and (non compliant: mean temperature on plancher)
     double s=0;
-    if(output_index<4)
+
+    if ( output_index<4 )
     {
-        for(int i=0;i<Ql(output_index);i++)  s += M_thetaFq[output_index](i)*dot( M_Fq[output_index][i], U );
+        for ( int i=0; i<Ql( output_index ); i++ )  s += M_thetaFq[output_index]( i )*dot( M_Fq[output_index][i], U );
     }
-    else{
-      throw std::logic_error( "[Cabineheat::output] error with output_index : only 0 or 1 " );
+
+    else
+    {
+        throw std::logic_error( "[Cabineheat::output] error with output_index : only 0 or 1 " );
     }
-    
+
     return s;
 
-/////////////////////////////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
 }
 
 

@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -52,7 +52,8 @@ namespace gambit
 std::istream & eatline( std::istream & s )    // eat a whole line from std::istream
 {
     while ( s.get() != '\n' && s . good() )
-        {}
+    {}
+
     return s ;
 }
 
@@ -60,6 +61,7 @@ std::istream & eat_comments( std::istream & s )    //eat lines starting with '!%
 {
     char c = 'a';
     s.get( c ) ;
+
     while ( c == '!' ||
             c == '%' ||
             c == '#' ||
@@ -69,6 +71,7 @@ std::istream & eat_comments( std::istream & s )    //eat lines starting with '!%
         s >> eatline ;
         s.get( c ) ;
     }
+
     return s.putback( c ) ;
 }
 
@@ -80,29 +83,35 @@ std::istream & next_good_line( std::istream & s, std::string & line )
 }
 
 const int quad4::face[][2] = { {0, 1},
-                               {1, 2},
-                               {2, 3},
-                               {3, 0} };
+    {1, 2},
+    {2, 3},
+    {3, 0}
+};
 
 const int quad8::face[][3] = { {0, 1, 2},
-                               {2, 3, 4},
-                               {4, 5, 6},
-                               {6, 7, 0} };
+    {2, 3, 4},
+    {4, 5, 6},
+    {6, 7, 0}
+};
 const int tria3::face[][2] = { {0, 1},
-                               {1, 2},
-                               {2, 0} };
+    {1, 2},
+    {2, 0}
+};
 const int tria6::face[][3] = { {0, 1, 2},
-                               {2, 3, 4},
-                               {4, 5, 0} };
+    {2, 3, 4},
+    {4, 5, 0}
+};
 
 const int tetra4::face[][3] = { {1, 0, 2},
-                                {0, 1, 3},
-                                {1, 2, 3},
-                                {2, 0, 3} };
+    {0, 1, 3},
+    {1, 2, 3},
+    {2, 0, 3}
+};
 const int tetra10::face[][6] =  { {2, 1, 0, 3, 5, 4},
-                                  {0, 1, 2, 7, 9, 6},
-                                  {2, 4, 5, 8, 9, 7},
-                                  {5, 3, 0, 6, 9, 8} };
+    {0, 1, 2, 7, 9, 6},
+    {2, 4, 5, 8, 9, 7},
+    {5, 3, 0, 6, 9, 8}
+};
 bool
 read( std::string const& filename,
       nodes_type& nodes,
@@ -113,7 +122,7 @@ read( std::string const& filename,
                   << ":" << "\n";
 
 
-    std::ifstream file(filename.c_str() );
+    std::ifstream file( filename.c_str() );
 
     if ( file.fail() )
     {
@@ -134,6 +143,7 @@ read( std::string const& filename,
 
     std::map<std::string, int> groups;
     int thegroupid = 1;
+
     while ( next_good_line( file, line ).good() )
     {
         if ( line.find( "GAMBIT NEUTRAL FILE" ) != std::string::npos )
@@ -155,8 +165,10 @@ read( std::string const& filename,
 
             if ( ndfcd == 3 )
                 nodes.resize( 3*numnp );
+
             else
                 nodes.resize( 2*numnp );
+
             boundary.resize( numnp );
 
             elements.resize( nelem );
@@ -165,19 +177,23 @@ read( std::string const& filename,
 
         if ( line.find( "NODAL" ) != std::string::npos )
         {
-//            Debug( 8012 ) << sdummy << "\n";
+            //            Debug( 8012 ) << sdummy << "\n";
             Debug( 8012 ) << "Reading nodes coordinates ... " << "\n";
 
             int k = 0;
 
 
-            for (int inode = 0; inode < numnp; ++inode)
+            for ( int inode = 0; inode < numnp; ++inode )
             {
-                file >> k; k--;
+                file >> k;
+                k--;
+
                 if ( ndfcd == 3 ) // 3D
                     file >> nodes[3*k+0] >> nodes[3*k+1] >> nodes[3*k+2];
+
                 else // 2D
                     file >> nodes[2*k+0] >> nodes[2*k+1];
+
                 boundary[k].get<0>() = false;
                 boundary[k].get<1>() = 0;
             }
@@ -185,7 +201,7 @@ read( std::string const& filename,
             Debug( 8012 ) << "done." << "\n";
         }
 
-        if (line.find( "ELEMENTS/CELLS" ) != std::string::npos )
+        if ( line.find( "ELEMENTS/CELLS" ) != std::string::npos )
         {
             /**
                NE      Global element number (not required to be sequential or
@@ -201,12 +217,14 @@ read( std::string const& filename,
                NODE  List of nodes that define the element
             */
             Debug( 8012 ) << "Reading connectivity      ... " << "\n";
-            for (int ielem = 0; ielem < nelem; ++ielem)
+
+            for ( int ielem = 0; ielem < nelem; ++ielem )
             {
                 int k, ntype, ndp;
 
                 // NE
-                file >> k; k--;
+                file >> k;
+                k--;
 
                 // NTYPE
                 file >> ntype;
@@ -221,15 +239,18 @@ read( std::string const& filename,
                 for ( int i = 0; i < ndp; ++i )
                 {
                     int inode;
-                    file >> inode;--inode;
+                    file >> inode;
+                    --inode;
                     boost::get<2>( elements[k] )[i] = inode;
                 }
 
                 elements[k].get<3>() = boost::make_tuple( -1, -1 );
             }
+
             Debug( 8012 ) << "Reading connectivity done." << "\n";
         }
-        if (line.find( "ELEMENT GROUP" ) != std::string::npos )
+
+        if ( line.find( "ELEMENT GROUP" ) != std::string::npos )
         {
             Debug( 8012 ) << "Reading ELEMENT GROUP...." << "\n";
 
@@ -259,17 +280,19 @@ read( std::string const& filename,
                           << " with id " << thegroupid
                           << " and  " << nelgp << " elements\n";
 
-            for ( int i = 0;i < nelgp; ++i )
+            for ( int i = 0; i < nelgp; ++i )
             {
                 int nel;
-                file >> nel;--nel;
+                file >> nel;
+                --nel;
                 elements[nel].get<1>() = thegroupid;
             }
+
             Debug( 8012 ) << "Reading ELEMENT GROUP done" << "\n";
             thegroupid++;
         }
 
-        if (line.find( "BOUNDARY CONDITIONS" ) != std::string::npos )
+        if ( line.find( "BOUNDARY CONDITIONS" ) != std::string::npos )
         {
             /*
               NAME    Name of boundary-condition set
@@ -294,10 +317,11 @@ read( std::string const& filename,
 
             file >> itype >> nentry >> nvalues >> ibcode;
 
-            for (int kfr = 0; kfr < nentry; ++kfr)
+            for ( int kfr = 0; kfr < nentry; ++kfr )
             {
                 int nfr;
-                file >> nfr; nfr--;
+                file >> nfr;
+                nfr--;
 
 
                 if ( itype == 0 )
@@ -309,6 +333,7 @@ read( std::string const& filename,
                     boundary[kfr].get<0>() = true;
                     boundary[kfr].get<1>() = thegroupid;
                 }
+
                 else if ( itype == 1 )
                 {
                     /*
@@ -318,35 +343,39 @@ read( std::string const& filename,
                       (VALUES(I),I=1,NVALUES) Element/cell values
                     */
                     int type, face;
-                    file >> type >> face;--face;
+                    file >> type >> face;
+                    --face;
 
 
-                    switch( type )
+                    switch ( type )
                     {
-                        case Element::TRIANGLE:
-                            elements[nfr].get<3>() = boost::make_tuple( face, thegroupid );
+                    case Element::TRIANGLE:
+                        elements[nfr].get<3>() = boost::make_tuple( face, thegroupid );
 
-                            for ( int n = 0;n < 2; ++n )
-                            {
-                                Debug( 8013 )  << "node " << tria3::face[face][n] << " in element " << nfr
-                                               << " has  condition " << thegroupid << "\n";
-                                boundary[boost::get<2>( elements[nfr] )[tria3::face[face][n]]].get<0>() = true;
-                                boundary[boost::get<2>( elements[nfr] )[tria3::face[face][n]]].get<1>() = thegroupid;
-                            }
-                            break;
-                        case Element::TETRAHEDRON:
-                            for ( int n = 0;n < 3; ++n )
-                            {
-                                int g2l[]={ 3, 2, 1, 0 };
-                                elements[nfr].get<3>() = boost::make_tuple( g2l[face], thegroupid );
+                        for ( int n = 0; n < 2; ++n )
+                        {
+                            Debug( 8013 )  << "node " << tria3::face[face][n] << " in element " << nfr
+                                           << " has  condition " << thegroupid << "\n";
+                            boundary[boost::get<2>( elements[nfr] )[tria3::face[face][n]]].get<0>() = true;
+                            boundary[boost::get<2>( elements[nfr] )[tria3::face[face][n]]].get<1>() = thegroupid;
+                        }
 
-                                int local_index = Feel::details::tetra<1>::f2p( g2l[face], n );
-                                Debug( 8013 )  << "node " << local_index << " in element " << nfr
-                                               << " has  condition " << thegroupid << "\n";
-                                boundary[boost::get<2>( elements[nfr] )[local_index]].get<0>() = true;
-                                boundary[boost::get<2>( elements[nfr] )[local_index]].get<1>() = thegroupid;
-                            }
-                            break;
+                        break;
+
+                    case Element::TETRAHEDRON:
+                        for ( int n = 0; n < 3; ++n )
+                        {
+                            int g2l[]= { 3, 2, 1, 0 };
+                            elements[nfr].get<3>() = boost::make_tuple( g2l[face], thegroupid );
+
+                            int local_index = Feel::details::tetra<1>::f2p( g2l[face], n );
+                            Debug( 8013 )  << "node " << local_index << " in element " << nfr
+                                           << " has  condition " << thegroupid << "\n";
+                            boundary[boost::get<2>( elements[nfr] )[local_index]].get<0>() = true;
+                            boundary[boost::get<2>( elements[nfr] )[local_index]].get<1>() = thegroupid;
+                        }
+
+                        break;
 
                     }
 
@@ -354,6 +383,7 @@ read( std::string const& filename,
                 }
 
             }
+
             Debug( 8012 )  << "Reading " << frname << " BC(with id=" << thegroupid << ")   done." << "\n";
             ++thegroupid;
 

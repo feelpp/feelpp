@@ -45,21 +45,21 @@
 
 namespace Feel
 {
-    gmsh_ptrtype ddmethodGeometryLeft( int RDim, double hsize );
-    gmsh_ptrtype ddmethodGeometryRight( int RDim, double hsize );
+gmsh_ptrtype ddmethodGeometryLeft( int RDim, double hsize );
+gmsh_ptrtype ddmethodGeometryRight( int RDim, double hsize );
 using namespace Feel::vf;
 inline
 po::options_description
 makeOptions()
 {
-    po::options_description relaxationoptions("relaxation options");
+    po::options_description relaxationoptions( "relaxation options" );
     relaxationoptions.add_options()
-        ("hsize", po::value<double>()->default_value( 0.04 ), "mesh size")
-        ("shape", Feel::po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (either simplex or hypercube)")
-        ("maxIterations", po::value<double>()->default_value( 10 ), "maximal number of iterations")
-        ("additive", po::value<int>()->default_value( 0 ), "use additive method" )
-        ("tolerance", Feel::po::value<double>()->default_value( 1e-08 ),  " tolerance ")
-        ;
+    ( "hsize", po::value<double>()->default_value( 0.04 ), "mesh size" )
+    ( "shape", Feel::po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (either simplex or hypercube)" )
+    ( "maxIterations", po::value<double>()->default_value( 10 ), "maximal number of iterations" )
+    ( "additive", po::value<int>()->default_value( 0 ), "use additive method" )
+    ( "tolerance", Feel::po::value<double>()->default_value( 1e-08 ),  " tolerance " )
+    ;
     return relaxationoptions.add( Feel::feel_options() );
 }
 
@@ -72,16 +72,16 @@ makeAbout()
                      "0.2",
                      "nD(n=2,3) ddmethod on simplices or simplex products",
                      Feel::AboutData::License_GPL,
-                     "Copyright (c) 2011 Universite Joseph Fourier");
+                     "Copyright (c) 2011 Universite Joseph Fourier" );
 
-    about.addAuthor("Abdoulaye Samake", "developer", "abdoulaye.samake@imag.fr", "");
+    about.addAuthor( "Abdoulaye Samake", "developer", "abdoulaye.samake@imag.fr", "" );
     return about;
 }
 
 template<int Dim>
 class ddmethod
     :
-    public Simget
+public Simget
 {
     typedef Simget super;
 public:
@@ -111,28 +111,28 @@ public:
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( this->vm()["shape"].template as<std::string>() ),
         M_firstExporter( export_type::New( this->vm(),
-                                           (boost::format( "%1%-%2%-%3%" )
-                                            % this->about().appName()
-                                            % Dim
-                                            % int(1)).str() ) ),
-        M_secondExporter( export_type::New( this->vm(),
-                                            (boost::format( "%1%-%2%-%3%" )
+                                           ( boost::format( "%1%-%2%-%3%" )
                                              % this->about().appName()
                                              % Dim
-                                             % int(2)).str() ) ),
+                                             % int( 1 ) ).str() ) ),
+        M_secondExporter( export_type::New( this->vm(),
+                                            ( boost::format( "%1%-%2%-%3%" )
+                                              % this->about().appName()
+                                              % Dim
+                                              % int( 2 ) ).str() ) ),
         timers()
     {}
 
     template<typename DirichletExpr,
              typename RhsExpr,
              typename InterfaceExpr>
-    void localProblem(element_type& u,
-                      std::vector<int> const& dirichletFlags, DirichletExpr gD,
-                      RhsExpr f,
-                      std::vector<int> const& interfaceFlags, InterfaceExpr w );
+    void localProblem( element_type& u,
+                       std::vector<int> const& dirichletFlags, DirichletExpr gD,
+                       RhsExpr f,
+                       std::vector<int> const& interfaceFlags, InterfaceExpr w );
 
-    double l2Error(element_type& u);
-    double h1Error(element_type& u);
+    double l2Error( element_type& u );
+    double h1Error( element_type& u );
     void exportResults( element_type& u,element_type& v,double time );
     void run();
     void run( const double* X, unsigned long P, double* Y, unsigned long N );
@@ -162,10 +162,10 @@ template<typename DirichletExpr,
          typename RhsExpr,
          typename InterfaceExpr>
 void
-ddmethod<Dim>::localProblem(element_type& u,
-                              std::vector<int> const& dirichletFlags, DirichletExpr gD,
-                              RhsExpr f,
-                              std::vector<int> const& interfaceFlags, InterfaceExpr w )
+ddmethod<Dim>::localProblem( element_type& u,
+                             std::vector<int> const& dirichletFlags, DirichletExpr gD,
+                             RhsExpr f,
+                             std::vector<int> const& interfaceFlags, InterfaceExpr w )
 {
     auto Xh=u.functionSpace();
     auto mesh=Xh->mesh();
@@ -173,7 +173,7 @@ ddmethod<Dim>::localProblem(element_type& u,
     auto B = M_backend->newVector( Xh );
     timers["assembly"].first.restart();
     form1( _test=Xh,_vector=B, _init=true ) =
-        integrate( elements(mesh), f*id(v) );
+        integrate( elements( mesh ), f*id( v ) );
     B->close();
 
     timers["assembly"].second = timers["assembly"].first.elapsed();
@@ -182,19 +182,19 @@ ddmethod<Dim>::localProblem(element_type& u,
     auto A = M_backend->newMatrix( Xh, Xh );
     timers["assembly"].first.restart();
     form2( _test=Xh, _trial=Xh, _matrix=A, _init=true ) =
-        integrate( elements(mesh), gradt(u)*trans(grad(v)) );
+        integrate( elements( mesh ), gradt( u )*trans( grad( v ) ) );
     A->close();
     BOOST_FOREACH( int marker, dirichletFlags )
     {
         // std::cout << "apply strong dirichlet on   " << marker << std::endl;
         form2( Xh, Xh, A ) +=
-            on( markedfaces(mesh, marker) ,	u, B, gD );
+            on( markedfaces( mesh, marker ) ,	u, B, gD );
     }
     BOOST_FOREACH( int marker, interfaceFlags )
     {
         // std::cout << "apply interface condition on   " << marker << std::endl;
         form2( Xh, Xh, A ) +=
-            on( markedfaces(mesh, marker) ,	u, B, w );
+            on( markedfaces( mesh, marker ) ,	u, B, w );
     }
     timers["assembly"].second += timers["assembly"].first.elapsed();
     timers["assembly_A"].second = timers["assembly"].first.elapsed();
@@ -211,58 +211,59 @@ ddmethod<Dim>::localProblem(element_type& u,
 
 template<int Dim>
 double
-ddmethod<Dim>::l2Error(element_type& u)
+ddmethod<Dim>::l2Error( element_type& u )
 {
     auto Xh=u.functionSpace();
     auto mesh=Xh->mesh();
     value_type pi = M_PI;
-    auto g = sin(pi*Px())*cos(pi*Py())*cos(pi*Pz());
-    double L2error2 =integrate(elements(mesh), (idv(u)-g)*(idv(u)-g) ).evaluate()(0,0);
+    auto g = sin( pi*Px() )*cos( pi*Py() )*cos( pi*Pz() );
+    double L2error2 =integrate( elements( mesh ), ( idv( u )-g )*( idv( u )-g ) ).evaluate()( 0,0 );
     double error = math::sqrt( L2error2 );
     return error;
 }
 
 template<int Dim>
 double
-ddmethod<Dim>::h1Error(element_type& u)
+ddmethod<Dim>::h1Error( element_type& u )
 {
     auto Xh=u.functionSpace();
     auto mesh=Xh->mesh();
     value_type pi = M_PI;
-    auto gradg = trans( +pi*cos(pi*Px())*cos(pi*Py())*cos(pi*Pz())*unitX()
-                        -pi*sin(pi*Px())*sin(pi*Py())*cos(pi*Pz())*unitY()
-                        -pi*sin(pi*Px())*cos(pi*Py())*sin(pi*Pz())*unitZ() );
+    auto gradg = trans( +pi*cos( pi*Px() )*cos( pi*Py() )*cos( pi*Pz() )*unitX()
+                        -pi*sin( pi*Px() )*sin( pi*Py() )*cos( pi*Pz() )*unitY()
+                        -pi*sin( pi*Px() )*cos( pi*Py() )*sin( pi*Pz() )*unitZ() );
 
-    double semi_H1error =integrate(elements(mesh),
-                                   ( gradv(u)-gradg )*trans( (gradv(u)-gradg) ) ).evaluate()(0,0);
-    double L2error2 = std::pow( l2Error(u) , 2);
+    double semi_H1error =integrate( elements( mesh ),
+                                    ( gradv( u )-gradg )*trans( ( gradv( u )-gradg ) ) ).evaluate()( 0,0 );
+    double L2error2 = std::pow( l2Error( u ) , 2 );
     double error = math::sqrt( L2error2 + semi_H1error );
     return error;
 }
 
 template<int Dim>
 void
-ddmethod<Dim>::exportResults( element_type& u, element_type& v, double time)
+ddmethod<Dim>::exportResults( element_type& u, element_type& v, double time )
 {
     timers["export"].first.restart();
 
-    M_firstExporter->step(time)->setMesh( u.functionSpace()->mesh() );
-    M_firstExporter->step(time)->add( "solution", (boost::format( "solution-%1%" ) % int(1) ).str(), u );
+    M_firstExporter->step( time )->setMesh( u.functionSpace()->mesh() );
+    M_firstExporter->step( time )->add( "solution", ( boost::format( "solution-%1%" ) % int( 1 ) ).str(), u );
     M_firstExporter->save();
 
-    M_secondExporter->step(time)->setMesh( v.functionSpace()->mesh() );
-    M_secondExporter->step(time)->add( "solution",(boost::format( "solution-%1%" ) % int(2) ).str(), v );
+    M_secondExporter->step( time )->setMesh( v.functionSpace()->mesh() );
+    M_secondExporter->step( time )->add( "solution",( boost::format( "solution-%1%" ) % int( 2 ) ).str(), v );
     M_secondExporter->save();
 
-    std::ofstream ofs( (boost::format( "%1%.sos" ) % this->about().appName() ).str().c_str() );
+    std::ofstream ofs( ( boost::format( "%1%.sos" ) % this->about().appName() ).str().c_str() );
 
     if ( ofs )
     {
         ofs << "FORMAT:\n"
             << "type: master_server gold\n"
             << "SERVERS\n"
-            << "number of servers: " << int(2) << "\n";
-        for( int j = 1; j <= 2; ++ j )
+            << "number of servers: " << int( 2 ) << "\n";
+
+        for ( int j = 1; j <= 2; ++ j )
         {
             ofs << "#Server " << j << "\n";
             ofs << "machine id: " << mpi::environment::processor_name()  << "\n";
@@ -271,6 +272,7 @@ ddmethod<Dim>::exportResults( element_type& u, element_type& v, double time)
             ofs << "casefile: ddmethod-" << Dim << "-" << j << "-1_0.case\n";
         }
     }
+
     std::cout << "exportResults done" << std::endl;
     timers["export"].second = timers["export"].first.elapsed();
 } // ddmethod::export
@@ -284,10 +286,13 @@ ddmethod<Dim>::run()
     std::cout << "Execute ddmethod<" << Dim << ">\n";
     std::vector<double> X( 2 );
     X[0] = meshSize;
+
     if ( shape == "hypercube" )
         X[1] = 1;
+
     else // default is simplex
         X[1] = 0;
+
     std::vector<double> Y( 3 );
     run( X.data(), X.size(), Y.data(), Y.size() );
 }
@@ -296,6 +301,7 @@ void
 ddmethod<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
 {
     if ( X[1] == 0 ) shape = "simplex";
+
     if ( X[1] == 1 ) shape = "hypercube";
 
     value_type tolerance = this->vm()["tolerance"].template as<double>();
@@ -307,14 +313,15 @@ ddmethod<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
                                    % Dim
                                    % Order
                                    %this->meshSize );
+
     if ( Dim == 2 )
     {
 
         mesh1 = createGMSHMesh( _mesh=new mesh_type,
-                                _desc = ddmethodGeometryLeft(Dim,this->meshSize) );
+                                _desc = ddmethodGeometryLeft( Dim,this->meshSize ) );
 
         mesh2 = createGMSHMesh( _mesh=new mesh_type,
-                                _desc = ddmethodGeometryRight(Dim,this->meshSize) );
+                                _desc = ddmethodGeometryRight( Dim,this->meshSize ) );
 
     }
 
@@ -327,7 +334,8 @@ ddmethod<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
         interfaceFlags1+= 3;
         interfaceFlags2+= 1;
     }
-    else if( Dim == 3 )
+
+    else if ( Dim == 3 )
     {
         using namespace boost::assign;
         dirichletFlags1+= 2,3,4,5,6,7,8;
@@ -344,7 +352,7 @@ ddmethod<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
     auto uv = Xh1->element();
     auto uu = Xh2->element();
     value_type pi = M_PI;
-    auto g = sin(pi*Px())*cos(pi*Py())*cos(pi*Pz());
+    auto g = sin( pi*Px() )*cos( pi*Py() )*cos( pi*Pz() );
     auto f = pi*pi*Dim*g;
     bool additive = this->vm()["additive"].template as<int>();
     double L2erroru1 = 1.;
@@ -352,11 +360,12 @@ ddmethod<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
     double H1erroru1 = 2.;
     double H1erroru2 = 2.;
 
-    auto Ih12 = opInterpolation( _domainSpace=Xh1, _imageSpace=Xh2, _range=markedfaces(Xh2->mesh(),interfaceFlags2[0]) );
-    auto Ih21 = opInterpolation( _domainSpace=Xh2, _imageSpace=Xh1, _range=markedfaces(Xh1->mesh(),interfaceFlags1[0]) );
+    auto Ih12 = opInterpolation( _domainSpace=Xh1, _imageSpace=Xh2, _range=markedfaces( Xh2->mesh(),interfaceFlags2[0] ) );
+    auto Ih21 = opInterpolation( _domainSpace=Xh2, _imageSpace=Xh1, _range=markedfaces( Xh1->mesh(),interfaceFlags1[0] ) );
 
     unsigned int cpt = 0;
-    while( (L2erroru1 +L2erroru2 ) > tolerance && cpt <= maxIterations)
+
+    while ( ( L2erroru1 +L2erroru2 ) > tolerance && cpt <= maxIterations )
     {
 
         std::cout << "===============================\n";
@@ -376,39 +385,44 @@ ddmethod<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
         // {
         //     if(cpt==0) std::cout << " multiplicative method" << std::endl;
         // }
-        localProblem(u1,
-                     dirichletFlags1, g,
-                     f,
-                     interfaceFlags1,idv(uv) );
+        localProblem( u1,
+                      dirichletFlags1, g,
+                      f,
+                      interfaceFlags1,idv( uv ) );
         // if ( !additive )
         //    u1old = u1;
         Ih12->apply( u1, uu );
 
-        localProblem(u2,
-                     dirichletFlags2, g,
-                     f,
-                     interfaceFlags2,idv(uu) );
+        localProblem( u2,
+                      dirichletFlags2, g,
+                      f,
+                      interfaceFlags2,idv( uu ) );
 
         Ih21->apply( u2, uv );
 
         // compute L2error;
-        L2erroru1 = l2Error(u1);
-        L2erroru2 = l2Error(u2);
+        L2erroru1 = l2Error( u1 );
+        L2erroru2 = l2Error( u2 );
         // compute H1error;
-        H1erroru1 = h1Error(u1);
-        H1erroru2 = h1Error(u2);
+        H1erroru1 = h1Error( u1 );
+        H1erroru2 = h1Error( u2 );
         // export results
-        this->exportResults(u1,u2, cpt);
+        this->exportResults( u1,u2, cpt );
 
         ++cpt;
     }; // iteration loop
 
-  std::cout << "------end iteration--------\n";
-  std::cout << "number of iteration  : " << cpt-1 << std::endl;
-  std::cout << "L2erroru1  : " << L2erroru1  << std::endl;
-  std::cout << "L2erroru2  : " << L2erroru2  << std::endl;
-  std::cout << "H1erroru1  : " << H1erroru1  << std::endl;
-  std::cout << "H1erroru2  : " << H1erroru2  << std::endl;
+    std::cout << "------end iteration--------\n";
+
+    std::cout << "number of iteration  : " << cpt-1 << std::endl;
+
+    std::cout << "L2erroru1  : " << L2erroru1  << std::endl;
+
+    std::cout << "L2erroru2  : " << L2erroru2  << std::endl;
+
+    std::cout << "H1erroru1  : " << H1erroru1  << std::endl;
+
+    std::cout << "H1erroru2  : " << H1erroru2  << std::endl;
 
 } // ddmethod::run
 } // Feel
@@ -421,11 +435,13 @@ main( int argc, char** argv )
     using namespace Feel;
     Environment env( argc, argv );
     Application app( argc, argv, makeAbout(), makeOptions() );
+
     if ( app.vm().count( "help" ) )
     {
         std::cout << app.optionsDescription() << "\n";
         return 0;
     }
+
     ddmethod<2>  Relax( app.vm(), app.about() );
     Relax.run();
 

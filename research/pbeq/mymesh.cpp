@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -110,7 +110,7 @@ myMesh::getDescription( ) const
          << "//Physical Volume (3) = thesphere ;\n"
          << "\n"
          << " // Point Characteristic Description\n"
-        //<< getPointCharacteristicDescription()
+         //<< getPointCharacteristicDescription()
          << "\n"
          << "v1=newv; Volume(v1) = {theloops[1]} ;\n"
          << "v2=newv; Volume(v2) = {theloops[2],theloops[1]} ;\n"
@@ -127,22 +127,27 @@ myMesh::getPointCharacteristicDescription( ) const
 {
     int i;
     std::ostringstream ostr;
-    std::list<std::vector<double> >::const_iterator it(_M_ptChar.begin());
+    std::list<std::vector<double> >::const_iterator it( _M_ptChar.begin() );
 
-    if (it == _M_ptChar.end()) return ostr.str();
+    if ( it == _M_ptChar.end() ) return ostr.str();
 
     ostr << "fact = " << _M_factor << ";\n";
     ostr << "p1 = newp; Point(p1) = { ";
-    for (i=0; i< nDim; i++)
-        ostr << (*it)[i] << ", ";
+
+    for ( i=0; i< nDim; i++ )
+        ostr << ( *it )[i] << ", ";
+
     ostr << " fact};\n";
-    for (it++ ; it != _M_ptChar.end() ; it++)
-        {
-            ostr << "p = newp; Point(p) = { ";
-            for (i=0; i< nDim; i++)
-                ostr << (*it)[i] << ", ";
-            ostr << " fact};\n";
-        }
+
+    for ( it++ ; it != _M_ptChar.end() ; it++ )
+    {
+        ostr << "p = newp; Point(p) = { ";
+
+        for ( i=0; i< nDim; i++ )
+            ostr << ( *it )[i] << ", ";
+
+        ostr << " fact};\n";
+    }
 
     ostr << "Attractor Point {p1:p} = { h/2, h*fact,h};\n";
 

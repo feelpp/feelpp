@@ -34,73 +34,73 @@
 template<class E1, class E2>
 inline
 ADExpr< @STYPE@< ADExpr<E1>, ADExpr<E2> > >
-@OP@  (const ADExpr<E1> &v, const ADExpr<E2> &w)
+@OP@  ( const ADExpr<E1> &v, const ADExpr<E2> &w )
 {
-  typedef @STYPE@<ADExpr<E1>, ADExpr<E2> > expr_t;
-  return ADExpr<expr_t> (expr_t (v , w ));
+    typedef @STYPE@<ADExpr<E1>, ADExpr<E2> > expr_t;
+    return ADExpr<expr_t> ( expr_t ( v , w ) );
 }
 template<class E, int Nvar, int order, int Var>
 inline
 ADExpr<@STYPE@<ADExpr<E>,ADType<typename E::value_type, Nvar, order, Var> > >
-@OP@ (const ADExpr<E> &e,const ADType<typename E::value_type, Nvar, order, Var>& v)
+@OP@ ( const ADExpr<E> &e,const ADType<typename E::value_type, Nvar, order, Var>& v )
 {
-  typedef typename E::value_type A;
-  typedef @STYPE@<ADExpr<E>,ADType<typename E::value_type, Nvar, order, Var> > expr_t;
-  return ADExpr<expr_t>(expr_t (e, v ));
+    typedef typename E::value_type A;
+    typedef @STYPE@<ADExpr<E>,ADType<typename E::value_type, Nvar, order, Var> > expr_t;
+    return ADExpr<expr_t>( expr_t ( e, v ) );
 }
 
 template<typename A, int Nvar, int order, int Var1, int Var2>
 inline
 ADExpr<@STYPE@<ADType<A, Nvar, order, Var1>,ADType<A, Nvar, order, Var2> > >
-@OP@ (const ADType<A, Nvar, order, Var1> &e1,const ADType<A, Nvar, order, Var2>& e2)
+@OP@ ( const ADType<A, Nvar, order, Var1> &e1,const ADType<A, Nvar, order, Var2>& e2 )
 {
-  typedef @STYPE@<ADType<A, Nvar, order, Var1>,ADType<A, Nvar, order, Var2> > expr_t;
-  return ADExpr<expr_t>(expr_t (e1 , e2 ));
+    typedef @STYPE@<ADType<A, Nvar, order, Var1>,ADType<A, Nvar, order, Var2> > expr_t;
+    return ADExpr<expr_t>( expr_t ( e1 , e2 ) );
 }
 
 template<class E, int Nvar, int order, int Var>
 inline
 ADExpr<@STYPE@<ADType<typename E::value_type, Nvar, order, Var>,ADExpr<E> > >
-@OP@ (const ADType<typename E::value_type, Nvar, order, Var> &v, const ADExpr<E> &e)
+@OP@ ( const ADType<typename E::value_type, Nvar, order, Var> &v, const ADExpr<E> &e )
 {
-  typedef typename E::value_type A;
-  typedef @STYPE@<ADType<typename E::value_type, Nvar, order, Var>,ADExpr<E> > expr_t;
-  return ADExpr<expr_t> (expr_t (v , e ));
+    typedef typename E::value_type A;
+    typedef @STYPE@<ADType<typename E::value_type, Nvar, order, Var>,ADExpr<E> > expr_t;
+    return ADExpr<expr_t> ( expr_t ( v , e ) );
 }
 
 template<typename A, typename C, int Nvar, int order, int Var>
 inline
 ADExpr<@STYPE@<ADCst<C>,ADType<A, Nvar, order, Var> > >
-@OP@ (C a, const ADType<A, Nvar, order, Var> &e)
+@OP@ ( C a, const ADType<A, Nvar, order, Var> &e )
 {
-  typedef @STYPE@<ADCst<C>,ADType<A, Nvar, order, Var> > expr_t;
-  return ADExpr<expr_t> (expr_t (ADCst<C>(a), e  ));
+    typedef @STYPE@<ADCst<C>,ADType<A, Nvar, order, Var> > expr_t;
+    return ADExpr<expr_t> ( expr_t ( ADCst<C>( a ), e  ) );
 }
 
 template<typename A, typename C, int Nvar, int order, int Var>
 inline
 ADExpr<@STYPE@<ADType<A, Nvar, order, Var>,ADCst<C> > >
-@OP@ (const ADType<A, Nvar, order, Var> &e, C a)
+@OP@ ( const ADType<A, Nvar, order, Var> &e, C a )
 {
     typedef @STYPE@<ADType<A, Nvar, order, Var>,ADCst<C> > expr_t;
-    return ADExpr<expr_t>(expr_t (e ,ADCst<C>(a)));
+    return ADExpr<expr_t>( expr_t ( e ,ADCst<C>( a ) ) );
 }
 
 template<class E, class C>
 inline
 ADExpr<@STYPE@<ADCst<C>,ADExpr<E> > >
-@OP@ ( C t, const ADExpr<E> &e)
+@OP@ ( C t, const ADExpr<E> &e )
 {
-  typedef @STYPE@<ADCst<C>,ADExpr<E> > expr_t;
-  return ADExpr<expr_t> (expr_t (ADCst<C> (t),e ));
+    typedef @STYPE@<ADCst<C>,ADExpr<E> > expr_t;
+    return ADExpr<expr_t> ( expr_t ( ADCst<C> ( t ),e ) );
 }
 
 template<class E, class C>
 inline
 ADExpr<@STYPE@<ADExpr<E>,ADCst<C> > >
-@OP@ (const ADExpr<E> &e, C t)
+@OP@ ( const ADExpr<E> &e, C t )
 {
-  typedef @STYPE@<ADExpr<E>,ADCst<C> > expr_t;
-  return ADExpr<expr_t>(expr_t (e, ADCst<C> (t)));
+    typedef @STYPE@<ADExpr<E>,ADCst<C> > expr_t;
+    return ADExpr<expr_t>( expr_t ( e, ADCst<C> ( t ) ) );
 }
 

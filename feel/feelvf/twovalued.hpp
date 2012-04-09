@@ -102,8 +102,8 @@ public:
         //BOOST_MPL_ASSERT_MSG( map_size::value == 2, INVALID_GEOMAP, (map_size,Geo_t ));
 
         typedef typename mpl::if_<mpl::equal_to<map_size,mpl::int_<2> >,
-                                  detail::gmc<1>,
-                                  detail::gmc<0> >::type gmc1;
+                detail::gmc<1>,
+                detail::gmc<0> >::type gmc1;
 
         typedef typename fusion::result_of::value_at_key<Geo_t,detail::gmc<0> >::type left_gmc_ptrtype;
         typedef typename fusion::result_of::value_at_key<Geo_t,detail::gmc<0> >::type::element_type left_gmc_type;
@@ -119,9 +119,15 @@ public:
 
         typedef typename left_tensor_expr_type::shape shape;
 
-        struct is_zero { static const bool value = false; };
+        struct is_zero
+        {
+            static const bool value = false;
+        };
 
-        template <class Args> struct sig { typedef value_type type; };
+        template <class Args> struct sig
+        {
+            typedef value_type type;
+        };
 
         tensor( this_type const& expr,
                 Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
@@ -169,7 +175,7 @@ public:
 
             _M_gmc_left = fusion::at_key<detail::gmc<0> >( geom );
             _M_gmc_right =  fusion::at_key<gmc1 >( geom );
-            FEELPP_ASSERT( _M_gmc_left != _M_gmc_right )( _M_gmc_left->id() )( _M_gmc_right->id() ).error( "same geomap, something is wrong");
+            FEELPP_ASSERT( _M_gmc_left != _M_gmc_right )( _M_gmc_left->id() )( _M_gmc_right->id() ).error( "same geomap, something is wrong" );
 
             _M_left_map = fusion::make_map<detail::gmc<0> >( _M_gmc_left );
             _M_right_map = fusion::make_map<detail::gmc<0> >( _M_gmc_right );
@@ -183,7 +189,7 @@ public:
 
             _M_gmc_left = fusion::at_key<detail::gmc<0> >( geom );
             _M_gmc_right =  fusion::at_key<gmc1 >( geom );
-            FEELPP_ASSERT( _M_gmc_left != _M_gmc_right )( _M_gmc_left->id() )( _M_gmc_right->id() ).error( "same geomap, something is wrong");
+            FEELPP_ASSERT( _M_gmc_left != _M_gmc_right )( _M_gmc_left->id() )( _M_gmc_right->id() ).error( "same geomap, something is wrong" );
 
             _M_left_map = fusion::make_map<detail::gmc<0> >( _M_gmc_left );
             _M_right_map = fusion::make_map<detail::gmc<0> >( _M_gmc_right );
@@ -197,7 +203,7 @@ public:
 
             _M_gmc_left = fusion::at_key<detail::gmc<0> >( geom );
             _M_gmc_right =  fusion::at_key<gmc1 >( geom );
-            FEELPP_ASSERT( _M_gmc_left != _M_gmc_right )( _M_gmc_left->id() )( _M_gmc_right->id() ).error( "same geomap, something is wrong");
+            FEELPP_ASSERT( _M_gmc_left != _M_gmc_right )( _M_gmc_left->id() )( _M_gmc_right->id() ).error( "same geomap, something is wrong" );
 
             _M_left_map = fusion::make_map<detail::gmc<0> >( _M_gmc_left );
             _M_right_map = fusion::make_map<detail::gmc<0> >( _M_gmc_right );
@@ -213,7 +219,7 @@ public:
 
             _M_gmc_left = fusion::at_key<detail::gmc<0> >( geom );
             _M_gmc_right =  fusion::at_key<gmc1 >( geom );
-            FEELPP_ASSERT( _M_gmc_left != _M_gmc_right )( _M_gmc_left->id() )( _M_gmc_right->id() ).error( "same geomap, something is wrong");
+            FEELPP_ASSERT( _M_gmc_left != _M_gmc_right )( _M_gmc_left->id() )( _M_gmc_right->id() ).error( "same geomap, something is wrong" );
 
             _M_left_map = fusion::make_map<detail::gmc<0> >( _M_gmc_left );
             _M_right_map = fusion::make_map<detail::gmc<0> >( _M_gmc_right );
@@ -242,7 +248,7 @@ public:
                  mpl::int_<PatternContext> ) const
         {
             return _M_tensor_expr_left.evalq( c1, c2, q, mpl::int_<PatternContext>() ) +
-                _M_tensor_expr_right.evalq( c1, c2, q, mpl::int_<PatternContext>() );
+                   _M_tensor_expr_right.evalq( c1, c2, q, mpl::int_<PatternContext>() );
         }
 
 
@@ -251,7 +257,7 @@ public:
         {
             //Debug( 5051 ) << "sumv_left= " << _M_tensor_expr_left.evalq( q, c1, c2 ) << "\n"
             //<< "sumv_right= " << _M_tensor_expr_right.evalq( q, c1, c2 ) << "\n";
-            Feel::detail::ignore_unused_variable_warning(i);
+            Feel::detail::ignore_unused_variable_warning( i );
             value_type resl = _M_tensor_expr_left.evalq( c1, c2, q );
             value_type resr = _M_tensor_expr_right.evalq( c1, c2, q );
             value_type res = resl + resr;
@@ -284,9 +290,15 @@ public:
      */
     //@{
 
-    bool isSymetric() const { return _M_expr.isSymetric(); }
+    bool isSymetric() const
+    {
+        return _M_expr.isSymetric();
+    }
 
-    expression_type const& expression() const { return _M_expr; }
+    expression_type const& expression() const
+    {
+        return _M_expr;
+    }
 
     //@}
 
@@ -376,12 +388,12 @@ public:
         //BOOST_MPL_ASSERT_MSG( map_size::value == 2, INVALID_GEOMAP, (map_size,Geo_t ));
 
         typedef typename mpl::if_<mpl::equal_to<map_size,mpl::int_<2> >,
-                                  detail::gmc<1>,
-                                  detail::gmc<0> >::type gmc1;
+                detail::gmc<1>,
+                detail::gmc<0> >::type gmc1;
 
         typedef typename mpl::if_<typename fusion::result_of::has_key<Basis_i_t,detail::gmc<0> >,
-                                  mpl::identity<detail::gmc<0> >,
-                                  mpl::identity<detail::gmc<1> > >::type::type key_type;
+                mpl::identity<detail::gmc<0> >,
+                mpl::identity<detail::gmc<1> > >::type::type key_type;
         template<typename T>
         struct ttt
         {
@@ -393,8 +405,8 @@ public:
         };
         typedef typename fusion::result_of::value_at_key<Basis_i_t,key_type >::type::element_type e_type;
         typedef typename mpl::if_<boost::is_same<e_type,key_type >,
-                                  mpl::identity<yyy >,
-                                  mpl::identity<ttt<e_type> > >::type::type::type gmc_type;
+                mpl::identity<yyy >,
+                mpl::identity<ttt<e_type> > >::type::type::type gmc_type;
 
         typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
 
@@ -407,7 +419,10 @@ public:
 
         typedef typename tensor_expr_type::shape shape;
 
-        template <class Args> struct sig { typedef value_type type; };
+        template <class Args> struct sig
+        {
+            typedef value_type type;
+        };
 
         struct is_zero
         {
@@ -470,7 +485,7 @@ public:
         value_type
         evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
-            Feel::detail::ignore_unused_variable_warning(j);
+            Feel::detail::ignore_unused_variable_warning( j );
             return evaliq( i, c1, c2, q, fusion::result_of::has_key<Basis_i_t, detail::gmc<Side> >() );
         }
         template<int PatternContext>
@@ -478,7 +493,7 @@ public:
         evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q,
                  mpl::int_<PatternContext> ) const
         {
-            Feel::detail::ignore_unused_variable_warning(j);
+            Feel::detail::ignore_unused_variable_warning( j );
             return evaliq( i, c1, c2, q, fusion::result_of::has_key<Basis_i_t, detail::gmc<Side> >() );
         }
 
@@ -498,10 +513,10 @@ public:
         value_type
         evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q, mpl::false_ ) const
         {
-            Feel::detail::ignore_unused_variable_warning(i);
-            Feel::detail::ignore_unused_variable_warning(c1);
-            Feel::detail::ignore_unused_variable_warning(c2);
-            Feel::detail::ignore_unused_variable_warning(q);
+            Feel::detail::ignore_unused_variable_warning( i );
+            Feel::detail::ignore_unused_variable_warning( c1 );
+            Feel::detail::ignore_unused_variable_warning( c2 );
+            Feel::detail::ignore_unused_variable_warning( q );
             return value_type( 0 );
         }
 
@@ -516,9 +531,15 @@ public:
      */
     //@{
 
-    bool isSymetric() const { return _M_expr.isSymetric(); }
+    bool isSymetric() const
+    {
+        return _M_expr.isSymetric();
+    }
 
-    expression_type const& expression() const { return _M_expr; }
+    expression_type const& expression() const
+    {
+        return _M_expr;
+    }
 
     //@}
 
@@ -605,12 +626,12 @@ public:
         //BOOST_MPL_ASSERT_MSG( map_size::value == 2, INVALID_GEOMAP, (map_size,Geo_t ));
 
         typedef typename mpl::if_<mpl::equal_to<map_size,mpl::int_<2> >,
-                                  detail::gmc<1>,
-                                  detail::gmc<0> >::type gmc1;
+                detail::gmc<1>,
+                detail::gmc<0> >::type gmc1;
 
         typedef typename mpl::if_<typename fusion::result_of::has_key<Basis_j_t,detail::gmc<0> >,
-                                  mpl::identity<detail::gmc<0> >,
-                                  mpl::identity<detail::gmc<1> > >::type::type key_type;
+                mpl::identity<detail::gmc<0> >,
+                mpl::identity<detail::gmc<1> > >::type::type key_type;
 
         template<typename T>
         struct ttt
@@ -623,8 +644,8 @@ public:
         };
         typedef typename fusion::result_of::value_at_key<Basis_j_t,key_type >::type::element_type e_type;
         typedef typename mpl::if_<boost::is_same<e_type,key_type >,
-                                  mpl::identity<yyy >,
-                                  mpl::identity<ttt<e_type> > >::type::type::type gmc_type;
+                mpl::identity<yyy >,
+                mpl::identity<ttt<e_type> > >::type::type::type gmc_type;
 
         typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
 
@@ -636,7 +657,10 @@ public:
 
         typedef typename tensor_expr_type::shape shape;
 
-        template <class Args> struct sig { typedef value_type type; };
+        template <class Args> struct sig
+        {
+            typedef value_type type;
+        };
 
         struct is_zero
         {
@@ -671,8 +695,8 @@ public:
         }
         void update( Geo_t const& /*geom*/, Basis_i_t const& fev, Basis_j_t const& feu, mpl::false_ )
         {
-            Feel::detail::ignore_unused_variable_warning(fev);
-            Feel::detail::ignore_unused_variable_warning(feu);
+            Feel::detail::ignore_unused_variable_warning( fev );
+            Feel::detail::ignore_unused_variable_warning( feu );
         }
 
 
@@ -706,11 +730,11 @@ public:
         value_type
         evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::false_ ) const
         {
-            Feel::detail::ignore_unused_variable_warning(i);
-            Feel::detail::ignore_unused_variable_warning(j);
-            Feel::detail::ignore_unused_variable_warning(c1);
-            Feel::detail::ignore_unused_variable_warning(c2);
-            Feel::detail::ignore_unused_variable_warning(q);
+            Feel::detail::ignore_unused_variable_warning( i );
+            Feel::detail::ignore_unused_variable_warning( j );
+            Feel::detail::ignore_unused_variable_warning( c1 );
+            Feel::detail::ignore_unused_variable_warning( c2 );
+            Feel::detail::ignore_unused_variable_warning( q );
             return value_type( 0 );
         }
         template<int PatternContext>
@@ -725,11 +749,11 @@ public:
         evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q,
                  mpl::int_<PatternContext>, mpl::false_ ) const
         {
-            Feel::detail::ignore_unused_variable_warning(i);
-            Feel::detail::ignore_unused_variable_warning(j);
-            Feel::detail::ignore_unused_variable_warning(c1);
-            Feel::detail::ignore_unused_variable_warning(c2);
-            Feel::detail::ignore_unused_variable_warning(q);
+            Feel::detail::ignore_unused_variable_warning( i );
+            Feel::detail::ignore_unused_variable_warning( j );
+            Feel::detail::ignore_unused_variable_warning( c1 );
+            Feel::detail::ignore_unused_variable_warning( c2 );
+            Feel::detail::ignore_unused_variable_warning( q );
             return value_type( 0 );
         }
 
@@ -746,7 +770,10 @@ public:
      */
     //@{
 
-    expression_type const& expression() const { return _M_expr; }
+    expression_type const& expression() const
+    {
+        return _M_expr;
+    }
 
     //@}
 
@@ -779,7 +806,7 @@ private:
  * @author Christophe Prud'homme
  * @see
  */
-template<typename ExprT, double func(double,double)>
+template<typename ExprT, double func( double,double )>
 class FaceExprV
 {
 public:
@@ -836,8 +863,8 @@ public:
         //BOOST_MPL_ASSERT_MSG( map_size::value == 2, INVALID_GEOMAP, (map_size,Geo_t ));
 
         typedef typename mpl::if_<mpl::equal_to<map_size,mpl::int_<2> >,
-                                  detail::gmc<1>,
-                                  detail::gmc<0> >::type gmc1;
+                detail::gmc<1>,
+                detail::gmc<0> >::type gmc1;
 
         typedef typename fusion::result_of::value_at_key<Geo_t,detail::gmc<0> >::type left_gmc_ptrtype;
         typedef typename fusion::result_of::value_at_key<Geo_t,detail::gmc<0> >::type::element_type left_gmc_type;
@@ -853,9 +880,15 @@ public:
 
         typedef typename left_tensor_expr_type::shape shape;
 
-        template <class Args> struct sig { typedef value_type type; };
+        template <class Args> struct sig
+        {
+            typedef value_type type;
+        };
 
-        struct is_zero { static const bool value = false; };
+        struct is_zero
+        {
+            static const bool value = false;
+        };
 
         tensor( this_type const& expr,
                 Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
@@ -902,7 +935,7 @@ public:
 
             _M_gmc_left = fusion::at_key<detail::gmc<0> >( geom );
             _M_gmc_right =  fusion::at_key<gmc1 >( geom );
-            FEELPP_ASSERT( _M_gmc_left != _M_gmc_right )( _M_gmc_left->id() )( _M_gmc_right->id() ).error( "same geomap, something is wrong");
+            FEELPP_ASSERT( _M_gmc_left != _M_gmc_right )( _M_gmc_left->id() )( _M_gmc_right->id() ).error( "same geomap, something is wrong" );
 
             _M_left_map = fusion::make_map<detail::gmc<0> >( _M_gmc_left );
             _M_right_map = fusion::make_map<detail::gmc<0> >( _M_gmc_right );
@@ -916,7 +949,7 @@ public:
 
             _M_gmc_left = fusion::at_key<detail::gmc<0> >( geom );
             _M_gmc_right =  fusion::at_key<gmc1 >( geom );
-            FEELPP_ASSERT( _M_gmc_left != _M_gmc_right )( _M_gmc_left->id() )( _M_gmc_right->id() ).error( "same geomap, something is wrong");
+            FEELPP_ASSERT( _M_gmc_left != _M_gmc_right )( _M_gmc_left->id() )( _M_gmc_right->id() ).error( "same geomap, something is wrong" );
 
             _M_left_map = fusion::make_map<detail::gmc<0> >( _M_gmc_left );
             _M_right_map = fusion::make_map<detail::gmc<0> >( _M_gmc_right );
@@ -933,7 +966,7 @@ public:
 
             _M_gmc_left = fusion::at_key<detail::gmc<0> >( geom );
             _M_gmc_right =  fusion::at_key<gmc1 >( geom );
-            FEELPP_ASSERT( _M_gmc_left != _M_gmc_right )( _M_gmc_left->id() )( _M_gmc_right->id() ).error( "same geomap, something is wrong");
+            FEELPP_ASSERT( _M_gmc_left != _M_gmc_right )( _M_gmc_left->id() )( _M_gmc_right->id() ).error( "same geomap, something is wrong" );
 
             _M_left_map = fusion::make_map<detail::gmc<0> >( _M_gmc_left );
             _M_right_map = fusion::make_map<detail::gmc<0> >( _M_gmc_right );
@@ -995,9 +1028,15 @@ public:
      */
     //@{
 
-    bool isSymetric() const { return _M_expr.isSymetric(); }
+    bool isSymetric() const
+    {
+        return _M_expr.isSymetric();
+    }
 
-    expression_type const& expression() const { return _M_expr; }
+    expression_type const& expression() const
+    {
+        return _M_expr;
+    }
 
     //@}
 
@@ -1020,12 +1059,25 @@ private:
     expression_type  _M_expr;
 };
 
-namespace detail{
-inline double max( double a, double b ) { return std::max( a, b ); }
-inline double min( double a, double b ) { return std::min( a, b ); }
+namespace detail
+{
+inline double max( double a, double b )
+{
+    return std::max( a, b );
+}
+inline double min( double a, double b )
+{
+    return std::min( a, b );
+}
 
-inline double left( double a, double /*b*/ ) { return a; }
-inline double right( double /*a*/, double b ) { return b; }
+inline double left( double a, double /*b*/ )
+{
+    return a;
+}
+inline double right( double /*a*/, double b )
+{
+    return b;
+}
 }
 
 /// \endcond
@@ -1088,36 +1140,36 @@ rightfacet( ExprT const& v )
  */
 template<typename U>
 auto
-jump( U const& u ) -> decltype(leftface( u*N() ) + rightface( u*N() ))
+jump( U const& u ) -> decltype( leftface( u*N() ) + rightface( u*N() ) )
 {
-    return (leftface( u*N()) + rightface( u *N()));
+    return ( leftface( u*N() ) + rightface( u *N() ) );
 }
 /**
  *
  */
 template<typename U>
 auto
-jumpt( U const& u ) -> decltype(leftfacet( u*N() ) + rightfacet( u*N() ))
+jumpt( U const& u ) -> decltype( leftfacet( u*N() ) + rightfacet( u*N() ) )
 {
-    return (leftfacet( u*N()) + rightfacet( u*N()));
+    return ( leftfacet( u*N() ) + rightfacet( u*N() ) );
 }
 /**
  *
  */
 template<typename U>
 auto
-average( U const& u ) -> decltype(0.5*(leftface( u )+rightface( u )))
+average( U const& u ) -> decltype( 0.5*( leftface( u )+rightface( u ) ) )
 {
-    return 0.5*(leftface( u )+rightface( u ) );
+    return 0.5*( leftface( u )+rightface( u ) );
 }
 /**
  *
  */
 template<typename U>
 auto
-averaget( U const&u ) -> decltype(0.5*(leftfacet( u )+rightfacet( u )))
+averaget( U const&u ) -> decltype( 0.5*( leftfacet( u )+rightfacet( u ) ) )
 {
-    return 0.5*(leftfacet( u )+rightfacet( u ));
+    return 0.5*( leftfacet( u )+rightfacet( u ) );
 }
 #else
 #define jump( u )  (::Feel::vf::leftface((u)*::Feel::vf::N())+::Feel::vf::rightface((u)*::Feel::vf::N()))
@@ -1169,18 +1221,18 @@ rightfacev( ExprT const& v )
  */
 template<typename U>
 auto
-jumpv( U const& u ) -> decltype( (leftfacev(u*N())+rightfacev(u*N())) )
+jumpv( U const& u ) -> decltype( ( leftfacev( u*N() )+rightfacev( u*N() ) ) )
 {
-    return leftfacev(u*N())+rightfacev(u*N());
+    return leftfacev( u*N() )+rightfacev( u*N() );
 }
 /**
  *
  */
 template<typename U>
 auto
-averagev( U const& u ) -> decltype(.5*(leftfacev(u)+rightfacev(u)))
+averagev( U const& u ) -> decltype( .5*( leftfacev( u )+rightfacev( u ) ) )
 {
-    return .5*(leftfacev(u)+rightfacev(u));
+    return .5*( leftfacev( u )+rightfacev( u ) );
 }
 #else
 #define jumpv( u )  (::Feel::vf::leftfacev((u)*::Feel::vf::N())+::Feel::vf::rightfacev((u)*::Feel::vf::N()))

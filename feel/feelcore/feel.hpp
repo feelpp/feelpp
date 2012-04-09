@@ -128,7 +128,7 @@ namespace detail
    }
    \endcode
  */
-template <class T> inline void ignore_unused_variable_warning(const T&) { }
+template <class T> inline void ignore_unused_variable_warning( const T& ) { }
 }
 
 /*!  \page types_page Feel Types
@@ -195,17 +195,17 @@ struct integer
 {
     typedef mpl::list<signed char,signed short, signed int, signed long int, signed long long> builtins_;
     typedef typename mpl::base< typename mpl::lower_bound<
-          mpl::transform_view< builtins_, mpl::multiplies< mpl::sizeof_<mpl::placeholders::_1>, mpl::int_<8> >
-            >
-        , mpl::integral_c<size_t, bit_size>
-        >::type >::type iter_;
+    mpl::transform_view< builtins_, mpl::multiplies< mpl::sizeof_<mpl::placeholders::_1>, mpl::int_<8> >
+    >
+    , mpl::integral_c<size_t, bit_size>
+    >::type >::type iter_;
 
     typedef typename mpl::end<builtins_>::type last_;
     typedef typename mpl::eval_if<
-          boost::is_same<iter_,last_>
-        , mpl::identity< no_int<bit_size> >
-        , mpl::deref<iter_>
-        >::type type;
+    boost::is_same<iter_,last_>
+    , mpl::identity< no_int<bit_size> >
+    , mpl::deref<iter_>
+    >::type type;
 };
 
 template< int bit_size >
@@ -213,17 +213,17 @@ struct real
 {
     typedef mpl::list<float, double, long double> builtins_;
     typedef typename mpl::base< typename mpl::lower_bound<
-          mpl::transform_view< builtins_, mpl::multiplies< mpl::sizeof_<mpl::placeholders::_1>, mpl::int_<8> >
-            >
-        , mpl::integral_c<size_t, bit_size>
-        >::type >::type iter_;
+    mpl::transform_view< builtins_, mpl::multiplies< mpl::sizeof_<mpl::placeholders::_1>, mpl::int_<8> >
+    >
+    , mpl::integral_c<size_t, bit_size>
+    >::type >::type iter_;
 
     typedef typename mpl::end<builtins_>::type last_;
     typedef typename mpl::eval_if<
-          boost::is_same<iter_,last_>
-        , mpl::identity< no_int<bit_size> >
-        , mpl::deref<iter_>
-        >::type type;
+    boost::is_same<iter_,last_>
+    , mpl::identity< no_int<bit_size> >
+    , mpl::deref<iter_>
+    >::type type;
 };
 }
 #if 0
@@ -239,7 +239,7 @@ typedef boost::int8_t   int8_type;
 typedef boost::int16_t  int16_type;
 typedef boost::int32_t  int32_type;
 #if !defined( BOOST_NO_INT64_T )
-    typedef boost::int64_t  int64_type;
+typedef boost::int64_t  int64_type;
 #endif // BOOST_NO_INT64_T
 #endif // 0
 typedef detail::real<32>::type real32_type;
@@ -259,17 +259,17 @@ struct unsigned_integer
     //typedef mpl::list<unsigned char,unsigned short, long unsigned int, long unsigned int,  long unsigned long> builtins_;
     typedef mpl::list<unsigned char,unsigned short, unsigned int, unsigned long int,  unsigned long long> builtins_;
     typedef typename mpl::base< typename mpl::lower_bound<
-        mpl::transform_view< builtins_
-                             , mpl::multiplies< mpl::sizeof_<mpl::placeholders::_1>, mpl::int_<8> >
+    mpl::transform_view< builtins_
+    , mpl::multiplies< mpl::sizeof_<mpl::placeholders::_1>, mpl::int_<8> >
     >
-        , mpl::integral_c<size_t, bit_size>
+    , mpl::integral_c<size_t, bit_size>
     >::type >::type iter_;
 
     typedef typename mpl::end<builtins_>::type last_;
     typedef typename mpl::eval_if<
-        boost::is_same<iter_,last_>
-        , mpl::identity< no_int<bit_size> >
-        , mpl::deref<iter_>
+    boost::is_same<iter_,last_>
+    , mpl::identity< no_int<bit_size> >
+    , mpl::deref<iter_>
     >::type type;
 };
 }
@@ -361,9 +361,9 @@ namespace Feel
 namespace po = boost::program_options;
 
 std::string
-prefixvm(std::string const& prefix,
-         std::string const& opt,
-         std::string const& sep=".");
+prefixvm( std::string const& prefix,
+          std::string const& opt,
+          std::string const& sep="." );
 
 
 // alias for date_time namespaces
@@ -376,12 +376,12 @@ template<typename TheArgs>
 struct remove_all
 {
     typedef typename boost::remove_pointer<
-        typename boost::remove_const<
-            typename boost::remove_reference<
-                TheArgs
-                >::type
-            >::type
-        >::type type;
+    typename boost::remove_const<
+    typename boost::remove_reference<
+    TheArgs
+    >::type
+    >::type
+    >::type type;
 };
 }
 }
@@ -402,48 +402,61 @@ struct remove_all
 
 
 /// numeric_limits<dd_real> specialization.
-namespace std {
+namespace std
+{
 template<>
 struct numeric_limits<dd_real>
 {
-      static const bool is_specialized = true;
+    static const bool is_specialized = true;
 
-      static const int digits = 32;
-      static const int digits10 = 32;
-      static const bool is_signed = true;
-      static const bool is_integer = false;
-      static const bool is_exact = false;
-      static const int radix = __FLT_RADIX__;
-      static dd_real epsilon() throw()
-      { return dd_real::_eps; }
-      static dd_real round_error() throw()
-      { return 0.5; }
-      static dd_real min() throw()
-      { return dd_real::_eps; }
-    };
+    static const int digits = 32;
+    static const int digits10 = 32;
+    static const bool is_signed = true;
+    static const bool is_integer = false;
+    static const bool is_exact = false;
+    static const int radix = __FLT_RADIX__;
+    static dd_real epsilon() throw()
+    {
+        return dd_real::_eps;
+    }
+    static dd_real round_error() throw()
+    {
+        return 0.5;
+    }
+    static dd_real min() throw()
+    {
+        return dd_real::_eps;
+    }
+};
 
 /// numeric_limits<dd_real> specialization.
 template<>
 struct numeric_limits<qd_real>
 {
-      static const bool is_specialized = true;
+    static const bool is_specialized = true;
 
-      static const int digits = 64;
-      static const int digits10 = 64;
-      static const bool is_signed = true;
-      static const bool is_integer = false;
-      static const bool is_exact = false;
-      static const int radix = __FLT_RADIX__;
-      static qd_real epsilon() throw()
-      { return qd_real::_eps; }
-      static qd_real round_error() throw()
-      { return 0.5; }
+    static const int digits = 64;
+    static const int digits10 = 64;
+    static const bool is_signed = true;
+    static const bool is_integer = false;
+    static const bool is_exact = false;
+    static const int radix = __FLT_RADIX__;
+    static qd_real epsilon() throw()
+    {
+        return qd_real::_eps;
+    }
+    static qd_real round_error() throw()
+    {
+        return 0.5;
+    }
 
-      static qd_real min() throw()
-      { return qd_real::_eps; }
+    static qd_real min() throw()
+    {
+        return qd_real::_eps;
+    }
 
 
-    };
+};
 }
 
 #endif /* FEELPP_HAS_QD */
@@ -476,7 +489,7 @@ typedef mp_prec_t mp_precision_type;
  */
 inline void setMpPrecision( mp_precision_type __prec )
 {
-    mpfr_set_default_prec (__prec);
+    mpfr_set_default_prec ( __prec );
 }
 
 const mp_type mp_eps = mpfr::pow( mp_type(  2 ), -mp_type::GetDefaultPrecision()+1 );
@@ -494,7 +507,7 @@ namespace Feel
 {
 namespace detail
 {
-BOOST_DETAIL_IS_XXX_DEF(shared_ptr, boost::shared_ptr, 1)
+BOOST_DETAIL_IS_XXX_DEF( shared_ptr, boost::shared_ptr, 1 )
 }
 }
 

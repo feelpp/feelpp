@@ -136,7 +136,7 @@ public:
      */
     clone_ptrtype clone () const
     {
-        clone_ptrtype cloned_vector (new VectorEpetra<T>);
+        clone_ptrtype cloned_vector ( new VectorEpetra<T> );
 
         *cloned_vector = *this;
 
@@ -167,46 +167,47 @@ public:
 
 
 
-    value_type operator() (const size_type i) const
+    value_type operator() ( const size_type i ) const
     {
         checkInvariants();
-        FEELPP_ASSERT (this->isInitialized()).error( "vector not initialized" );
-        FEELPP_ASSERT ( ((i >= this->firstLocalIndex()) &&
-                       (i <  this->lastLocalIndex())) )( i )( this->firstLocalIndex() )( this->lastLocalIndex() ).warn( "invalid vector index" );
+        FEELPP_ASSERT ( this->isInitialized() ).error( "vector not initialized" );
+        FEELPP_ASSERT ( ( ( i >= this->firstLocalIndex() ) &&
+                          ( i <  this->lastLocalIndex() ) ) )( i )( this->firstLocalIndex() )( this->lastLocalIndex() ).warn( "invalid vector index" );
 
         value_type value=0.;
         int ierr=0, dummy;
         double* values;
 
-        ierr = _M_vec.ExtractView( &values, &dummy);
+        ierr = _M_vec.ExtractView( &values, &dummy );
 
         value = values[i - this->firstLocalIndex()];
-        return static_cast<value_type>(value);
+        return static_cast<value_type>( value );
 
     }
 
-    value_type& operator() (const size_type i)
+    value_type& operator() ( const size_type i )
     {
         checkInvariants();
-        FEELPP_ASSERT (this->isInitialized()).error( "vector not initialized" );
-        FEELPP_ASSERT ( ((i >= this->firstLocalIndex()) &&
-                       (i <  this->lastLocalIndex())) )( i )( this->firstLocalIndex() )( this->lastLocalIndex() ).warn( "invalid vector index" );
+        FEELPP_ASSERT ( this->isInitialized() ).error( "vector not initialized" );
+        FEELPP_ASSERT ( ( ( i >= this->firstLocalIndex() ) &&
+                          ( i <  this->lastLocalIndex() ) ) )( i )( this->firstLocalIndex() )( this->lastLocalIndex() ).warn( "invalid vector index" );
 
-        return _M_vec[0][ (int)i-this->firstLocalIndex() ];
+        return _M_vec[0][ ( int )i-this->firstLocalIndex() ];
 
     }
 
 
-    VectorEpetra& operator=( VectorEpetra const& v)
+    VectorEpetra& operator=( VectorEpetra const& v )
     {
         if ( &v != this )
-            {
-                super::operator=( v );
-                _M_emap = v.Map();
-                _M_vec = v.vec();
+        {
+            super::operator=( v );
+            _M_emap = v.Map();
+            _M_vec = v.vec();
 
-                this->M_is_initialized = true;
-            }
+            this->M_is_initialized = true;
+        }
+
         checkInvariants();
         return *this;
     }
@@ -215,10 +216,10 @@ public:
      * Addition operator.
      * Fast equivalent to \p U.add(1, V).
      */
-    Vector<T> & operator += (const Vector<T> &V)
+    Vector<T> & operator += ( const Vector<T> &V )
     {
 
-        this->add(1., V);
+        this->add( 1., V );
 
         return *this;
     }
@@ -227,10 +228,10 @@ public:
      * Subtraction operator.
      * Fast equivalent to \p U.add(-1, V).
      */
-    super & operator -= (const super &V)
+    super & operator -= ( const super &V )
     {
 
-        this->add(-1., V);
+        this->add( -1., V );
 
         return *this;
     }
@@ -251,15 +252,15 @@ public:
      */
     size_type size () const
     {
-        FEELPP_ASSERT (this->isInitialized()).error( "VectorEpetra not initialized" );
+        FEELPP_ASSERT ( this->isInitialized() ).error( "VectorEpetra not initialized" );
 
 
-        if (!this->isInitialized())
+        if ( !this->isInitialized() )
             return 0;
 
         int epetra_size=0;
         epetra_size = _M_vec.GlobalLength();
-        return static_cast<size_type>(epetra_size);
+        return static_cast<size_type>( epetra_size );
 
         return 0;
     }
@@ -269,12 +270,12 @@ public:
      */
     size_type localSize() const
     {
-        FEELPP_ASSERT (this->isInitialized()).error( "VectorEpetra not initialized" );
+        FEELPP_ASSERT ( this->isInitialized() ).error( "VectorEpetra not initialized" );
 
         int epetra_size=0;
         epetra_size = _M_vec.MyLength();
-        Debug(10010) << "[VectorEpetra::localSize] localSize= " << epetra_size  << "\n";
-        return static_cast<size_type>(epetra_size);
+        Debug( 10010 ) << "[VectorEpetra::localSize] localSize= " << epetra_size  << "\n";
+        return static_cast<size_type>( epetra_size );
     }
 
     /**
@@ -309,8 +310,8 @@ public:
     boost::shared_ptr<Epetra_Vector> epetraVector ()
     {
         double** V;
-        _M_vec.ExtractView(&V);
-        boost::shared_ptr<Epetra_Vector> EV(new Epetra_Vector(View,_M_vec.Map(),V[0] ));
+        _M_vec.ExtractView( &V );
+        boost::shared_ptr<Epetra_Vector> EV( new Epetra_Vector( View,_M_vec.Map(),V[0] ) );
         return EV;
     }
 
@@ -332,7 +333,7 @@ public:
      */
     void close ()
     {
-        FEELPP_ASSERT (this->isInitialized()).error( "VectorEpetra<> not initialized" );
+        FEELPP_ASSERT ( this->isInitialized() ).error( "VectorEpetra<> not initialized" );
 
         int ierr=0;
         ierr = _M_vec.GlobalAssemble( Add );
@@ -346,9 +347,9 @@ public:
      */
     void zero ()
     {
-        FEELPP_ASSERT (this->isInitialized()).error( "VectorEpetra<> not initialized" );
+        FEELPP_ASSERT ( this->isInitialized() ).error( "VectorEpetra<> not initialized" );
 
-        _M_vec.PutScalar(0.0);
+        _M_vec.PutScalar( 0.0 );
 
     }
 
@@ -363,19 +364,22 @@ public:
     /**
      * set the entries to the constant \p v
      */
-    void setConstant( value_type v ) { this->set( v ); }
+    void setConstant( value_type v )
+    {
+        this->set( v );
+    }
 
     /**
      * @returns the \p VectorEpetra to a pristine state.
      */
     void clear ()
     {
-        if (this->isInitialized()) //&& (this->_M_destroy_vec_on_exit))
-            {
-                _M_emap = Epetra_BlockMap( -1, 0, 0, _M_vec.Comm() );
-                _M_vec.ReplaceMap( _M_emap );
-                _M_vec.PutScalar(0.0);
-            }
+        if ( this->isInitialized() ) //&& (this->_M_destroy_vec_on_exit))
+        {
+            _M_emap = Epetra_BlockMap( -1, 0, 0, _M_vec.Comm() );
+            _M_vec.ReplaceMap( _M_emap );
+            _M_vec.PutScalar( 0.0 );
+        }
 
         this->M_is_closed = this->M_is_initialized = false;
     }
@@ -383,17 +387,17 @@ public:
     /**
      * \f$ v(i) = \mathrm{value} \forall i\f$
      */
-    void set ( const value_type& value);
+    void set ( const value_type& value );
 
     /**
      * v(i) = value
      */
-    void set ( size_type i, const value_type& value);
+    void set ( size_type i, const value_type& value );
 
     /**
      * v(i) += value
      */
-    void add ( size_type i, const value_type& value);
+    void add ( size_type i, const value_type& value );
 
     /**
      * v([i1,i2,...,in]) += [value1,...,valuen]
@@ -418,13 +422,13 @@ public:
      * \f$ U+=v \f$ where \p v is a std::vector<T>
      * and you want to specify WHERE to add it
      */
-    void addVector (const std::vector<value_type>& v,
-                    const std::vector<size_type>& dof_indices)
+    void addVector ( const std::vector<value_type>& v,
+                     const std::vector<size_type>& dof_indices )
     {
-        FEELPP_ASSERT (v.size() == dof_indices.size()).error( "invalid dof indices" );
+        FEELPP_ASSERT ( v.size() == dof_indices.size() ).error( "invalid dof indices" );
 
-        for (size_type i=0; i<v.size(); i++)
-            this->add (dof_indices[i], v[i]);
+        for ( size_type i=0; i<v.size(); i++ )
+            this->add ( dof_indices[i], v[i] );
     }
 
 
@@ -434,13 +438,13 @@ public:
      * want to specify WHERE to add
      * the \p Vector<T> V
      */
-    void addVector (const Vector<value_type>& V,
-                    const std::vector<size_type>& dof_indices)
+    void addVector ( const Vector<value_type>& V,
+                     const std::vector<size_type>& dof_indices )
     {
-        FEELPP_ASSERT (V.size() == dof_indices.size()).error( "invalid dof indices" );
+        FEELPP_ASSERT ( V.size() == dof_indices.size() ).error( "invalid dof indices" );
 
-        for (size_type i=0; i<V.size(); i++)
-            this->add (dof_indices[i], V(i));
+        for ( size_type i=0; i<V.size(); i++ )
+            this->add ( dof_indices[i], V( i ) );
     }
     //
     //
@@ -462,13 +466,13 @@ public:
      * want to specify WHERE to add
      * the ublas::vector<T> V
      */
-    void addVector (const ublas::vector<value_type>& V,
-                    const std::vector<size_type>& dof_indices)
+    void addVector ( const ublas::vector<value_type>& V,
+                     const std::vector<size_type>& dof_indices )
     {
-        FEELPP_ASSERT (V.size() == dof_indices.size()).error( "invalid dof indices" );
+        FEELPP_ASSERT ( V.size() == dof_indices.size() ).error( "invalid dof indices" );
 
-        for (size_type i=0; i<V.size(); i++)
-            this->add (dof_indices[i], V(i));
+        for ( size_type i=0; i<V.size(); i++ )
+            this->add ( dof_indices[i], V( i ) );
     }
 
     /**
@@ -476,16 +480,16 @@ public:
      * Addition of \p s to all components. Note
      * that \p s is a scalar and not a vector.
      */
-    void add (const value_type& v_in )
+    void add ( const value_type& v_in )
     {
-        value_type v = static_cast<value_type>(v_in);
-        const int n   = static_cast<int>(this->size());
+        value_type v = static_cast<value_type>( v_in );
+        const int n   = static_cast<int>( this->size() );
 
-        for( int i=0 ; i<n ; i++ )
-            {
-                _M_vec.SumIntoGlobalValues(1,&i,&v);    //indices are in global index space
-                //_M_vec.SumIntoMyValues(1,&v,&i);      //indices are in local index space
-            }
+        for ( int i=0 ; i<n ; i++ )
+        {
+            _M_vec.SumIntoGlobalValues( 1,&i,&v );  //indices are in global index space
+            //_M_vec.SumIntoMyValues(1,&v,&i);      //indices are in local index space
+        }
 
     }
 
@@ -494,10 +498,10 @@ public:
      * Simple vector addition, equal to the
      * \p operator +=.
      */
-    void add (const Vector<value_type>& v)
+    void add ( const Vector<value_type>& v )
     {
-        VectorEpetra* v_ptr = const_cast<VectorEpetra*>(dynamic_cast< VectorEpetra const*>(&v));
-        this->add (1., *v_ptr);
+        VectorEpetra* v_ptr = const_cast<VectorEpetra*>( dynamic_cast< VectorEpetra const*>( &v ) );
+        this->add ( 1., *v_ptr );
     }
 
     /**
@@ -505,17 +509,17 @@ public:
      * Simple vector addition, equal to the
      * \p operator +=.
      */
-    void add (const value_type& a_in, const Vector<value_type>& v_in)
+    void add ( const value_type& a_in, const Vector<value_type>& v_in )
     {
 
-        const value_type a = static_cast<value_type>(a_in);
-        const VectorEpetra<T>* v = dynamic_cast<const VectorEpetra<T>*>(&v_in);
+        const value_type a = static_cast<value_type>( a_in );
+        const VectorEpetra<T>* v = dynamic_cast<const VectorEpetra<T>*>( &v_in );
 
 
-        assert (v != NULL);
-        assert(this->size() == v->size());
+        assert ( v != NULL );
+        assert( this->size() == v->size() );
 
-        _M_vec.Update(a, v->_M_vec,1.);
+        _M_vec.Update( a, v->_M_vec,1. );
 
     }
 
@@ -523,8 +527,8 @@ public:
      * \f$ U=v \f$ where v is a DenseVector<T>
      * and you want to specify WHERE to insert it
      */
-    void insert (const std::vector<T>& v,
-                 const std::vector<size_type>& dof_indices)
+    void insert ( const std::vector<T>& v,
+                  const std::vector<size_type>& dof_indices )
     {
         //to be implemented
     }
@@ -535,8 +539,8 @@ public:
      * want to specify WHERE to insert
      * the Vector<T> V
      */
-    void insert (const Vector<T>& V,
-                 const std::vector<size_type>& dof_indices)
+    void insert ( const Vector<T>& V,
+                  const std::vector<size_type>& dof_indices )
     {
         //to be implemented
     }
@@ -547,8 +551,8 @@ public:
      * want to specify WHERE to insert
      * the DenseVector<T> V
      */
-    void insert (const ublas::vector<T>& /*V*/,
-                 const std::vector<size_type>& /*dof_indices*/)
+    void insert ( const ublas::vector<T>& /*V*/,
+                  const std::vector<size_type>& /*dof_indices*/ )
     {
         //to be implemented
     }
@@ -557,7 +561,7 @@ public:
      * Scale each element of the
      * vector by the given factor.
      */
-    void scale (const T /*factor*/)
+    void scale ( const T /*factor*/ )
     {
         //to be implemented
     }
@@ -567,7 +571,7 @@ public:
      * Creates a copy of the global vector in the
      * local vector \p v_local.
      */
-    void localize (std::vector<T>& /*v_local*/) const
+    void localize ( std::vector<T>& /*v_local*/ ) const
     {
         //to be implemented
     }
@@ -576,7 +580,7 @@ public:
      * Same, but fills a \p Vector<T> instead of
      * a \p std::vector.
      */
-    void localize (Vector<T>& /*v_local*/) const
+    void localize ( Vector<T>& /*v_local*/ ) const
     {
         //to be implemented
     }
@@ -586,8 +590,8 @@ public:
      * only information relevant to this processor, as
      * defined by the \p send_list.
      */
-    void localize (Vector<T>& /*v_local*/,
-                   const std::vector<size_type>& /*send_list*/) const
+    void localize ( Vector<T>& /*v_local*/,
+                    const std::vector<size_type>& /*send_list*/ ) const
     {
     }
 
@@ -595,9 +599,9 @@ public:
      * Updates a local vector with selected values from neighboring
      * processors, as defined by \p send_list.
      */
-    void localize (const size_type /*first_local_idx*/,
-                   const size_type /*last_local_idx*/,
-                   const std::vector<size_type>& /*send_list*/)
+    void localize ( const size_type /*first_local_idx*/,
+                    const size_type /*last_local_idx*/,
+                    const std::vector<size_type>& /*send_list*/ )
     {
         //to be implemented
     }
@@ -607,8 +611,8 @@ public:
      * default the data is sent to processor 0.  This method
      * is useful for outputting data from one processor.
      */
-    void localizeToOneProcessor (std::vector<T>& /*v_local*/,
-                                 const size_type /*proc_id*/=0) const
+    void localizeToOneProcessor ( std::vector<T>& /*v_local*/,
+                                  const size_type /*proc_id*/=0 ) const
     {
         //to be implemented
     }
@@ -620,14 +624,14 @@ public:
      */
     real_type min () const
     {
-        assert (this->isInitialized());
+        assert ( this->isInitialized() );
 
         double min=0.;
 
         _M_vec.MinValue( &min );
 
         // this return value is correct: VecMin returns a PetscReal
-        return static_cast<double>(min);
+        return static_cast<double>( min );
     }
 
     /**
@@ -637,14 +641,14 @@ public:
      */
     real_type max() const
     {
-        assert (this->isInitialized());
+        assert ( this->isInitialized() );
 
         double max=0.;
 
         _M_vec.MaxValue( &max );
 
         // this return value is correct: VecMin returns a PetscReal
-        return static_cast<double>(max);
+        return static_cast<double>( max );
     }
 
     /**
@@ -659,7 +663,7 @@ public:
 
         _M_vec.Norm1( &value );
 
-        return static_cast<Real>(value);
+        return static_cast<Real>( value );
     }
 
     /**
@@ -675,7 +679,7 @@ public:
 
         _M_vec.Norm2( &value );
 
-        return static_cast<Real>(value);
+        return static_cast<Real>( value );
 
     }
 
@@ -686,13 +690,13 @@ public:
      */
     real_type linftyNorm () const
     {
-        assert(this->closed());
+        assert( this->closed() );
 
         double value=0.;
 
         _M_vec.NormInf( &value );
 
-        return static_cast<Real>(value);
+        return static_cast<Real>( value );
 
     }
 
@@ -708,12 +712,12 @@ public:
 
         double const * pointers( _M_vec[0] );
 
-        for (int i(0); i < _M_vec.MyLength(); ++i , ++pointers)
+        for ( int i( 0 ); i < _M_vec.MyLength(); ++i , ++pointers )
             value += *pointers;
 
-        _M_vec.Comm().SumAll(&value, &global_sum, 1);
+        _M_vec.Comm().SumAll( &value, &global_sum, 1 );
 
-        return static_cast<Real>(global_sum);
+        return static_cast<Real>( global_sum );
 
 
     }
@@ -729,11 +733,11 @@ public:
     {
 
         int epetra_first = 0;
-        assert (this->isInitialized());
+        assert ( this->isInitialized() );
         //epetra_first = _M_vec.Map().MinMyGID();
         epetra_first = _M_vec.Map().MinLID();
-        Debug(10010) << "[VectorEpetra::firstLocalIndex] firstLocalIndex= " << epetra_first  << "\n";
-        return static_cast<size_type>(epetra_first);
+        Debug( 10010 ) << "[VectorEpetra::firstLocalIndex] firstLocalIndex= " << epetra_first  << "\n";
+        return static_cast<size_type>( epetra_first );
     }
 
 
@@ -747,11 +751,11 @@ public:
     size_type lastLocalIndex () const
     {
         int epetra_last = 0;
-        assert (this->isInitialized());
+        assert ( this->isInitialized() );
         //epetra_last = _M_vec.Map().MaxMyGID();
         epetra_last = _M_vec.Map().MaxLID();
-        Debug(10010) << "[VectorEpetra::lastLocalIndex] lastLocalIndex= " << epetra_last+1  << "\n";
-        return static_cast<size_type>(epetra_last)+1;
+        Debug( 10010 ) << "[VectorEpetra::lastLocalIndex] lastLocalIndex= " << epetra_last+1  << "\n";
+        return static_cast<size_type>( epetra_last )+1;
     }
 
     /**
@@ -759,7 +763,7 @@ public:
      * \param name filename of the matlab file
      * \sa MatrixEpetra::printMatlab
      */
-    void printMatlab (const std::string name) const;
+    void printMatlab ( const std::string name ) const;
 
     //   @}
 

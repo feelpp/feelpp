@@ -82,10 +82,10 @@ makeAbout()
                      "0.2",
                      "nD(n=1,2,3) Residual Estimator on Laplacian equation",
                      Feel::AboutData::License_GPL,
-                     "Copyright (c) 2010 Universite Joseph Fourier");
+                     "Copyright (c) 2010 Universite Joseph Fourier" );
 
-    about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
-    about.addAuthor("Stéphane Veys", "developer", "stephane.veys@gmail.com", "");
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    about.addAuthor( "Stéphane Veys", "developer", "stephane.veys@gmail.com", "" );
     return about;
 
 }
@@ -101,7 +101,7 @@ makeAbout()
 template<int Dim, int Order = 1>
 class ResidualEstimator
     :
-    public Simget
+public Simget
 {
     typedef Simget super;
 public:
@@ -180,8 +180,8 @@ public:
         tol( 1e-2 ),
         penaldir( 50 )
 
-        {
-        }
+    {
+    }
     ResidualEstimator( po::variables_map const& vm, AboutData const& about )
         :
         super( vm, about ),
@@ -200,110 +200,114 @@ public:
         tol( this->vm()["adapt-tolerance"].template as<double>() ),
         penaldir( this->vm()["penaldir"].template as<double>() )
 
-        {
-        }
+    {
+    }
 
     void run();
 
-    void run( const double* X, unsigned long P, double* Y, unsigned long N);
+    void run( const double* X, unsigned long P, double* Y, unsigned long N );
 
     // this function will move to the mesh library in the mesh class
     BOOST_PARAMETER_CONST_MEMBER_FUNCTION(
-        (mesh_ptrtype), // return type
+        ( mesh_ptrtype ), // return type
         adapt,    // 2. function name
 
         tag,           // 3. namespace of tag types
 
-        (required
-         (h, *) ) // 4. one required parameter, and
+        ( required
+          ( h, * ) ) // 4. one required parameter, and
 
-        (optional
-         (maxit,           *(boost::is_integral<mpl::_>), 10 )
-         (hmin,            *(boost::is_arithmetic<mpl::_>), 1e-2 )
-         (hmax,            *(boost::is_arithmetic<mpl::_>), 2 )
-         (model,           *, "")
-         (statistics,      *(boost::is_integral<mpl::_>), 0 )
-         (update,          *(boost::is_integral<mpl::_>), MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER )
-         (collapseOnBoundary, *(boost::is_integral<mpl::_>), true )
-         (collapseOnBoundaryTolerance, *(boost::is_arithmetic<mpl::_>), 1e-6 ) ) // 5. optional
-        )
-        {
+        ( optional
+          ( maxit,           *( boost::is_integral<mpl::_> ), 10 )
+          ( hmin,            *( boost::is_arithmetic<mpl::_> ), 1e-2 )
+          ( hmax,            *( boost::is_arithmetic<mpl::_> ), 2 )
+          ( model,           *, "" )
+          ( statistics,      *( boost::is_integral<mpl::_> ), 0 )
+          ( update,          *( boost::is_integral<mpl::_> ), MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER )
+          ( collapseOnBoundary, *( boost::is_integral<mpl::_> ), true )
+          ( collapseOnBoundaryTolerance, *( boost::is_arithmetic<mpl::_> ), 1e-6 ) ) // 5. optional
+    )
+    {
 #if defined (FEELPP_HAS_MADLIB_H)
-            saveGMSHMesh( _filename="inputmesh.msh",
-                          _parametricnodes=!model.empty(),
-                          _mesh=h.mesh() );
-            MAd::pGModel themodel = 0;
-            GM_create(&themodel,"theModel");
-            if ( !model.empty() )
-                GM_read( themodel, model );
-            else
-                GM_read( themodel, "inputmesh.msh" );
+        saveGMSHMesh( _filename="inputmesh.msh",
+                      _parametricnodes=!model.empty(),
+                      _mesh=h.mesh() );
+        MAd::pGModel themodel = 0;
+        GM_create( &themodel,"theModel" );
 
-            MAd::pMesh amesh = MAd::M_new(themodel);
-            MAd::M_load(amesh, "inputmesh.msh");
+        if ( !model.empty() )
+            GM_read( themodel, model );
 
-            MAd::PWLSField * sizeField = new MAd::PWLSField(amesh);
-            sizeField->setCurrentSize();
-            auto _elit = h.mesh()->beginElement();
-            auto _elen = h.mesh()->endElement();
-            for( ; _elit != _elen; ++_elit )
+        else
+            GM_read( themodel, "inputmesh.msh" );
+
+        MAd::pMesh amesh = MAd::M_new( themodel );
+        MAd::M_load( amesh, "inputmesh.msh" );
+
+        MAd::PWLSField * sizeField = new MAd::PWLSField( amesh );
+        sizeField->setCurrentSize();
+        auto _elit = h.mesh()->beginElement();
+        auto _elen = h.mesh()->endElement();
+
+        for ( ; _elit != _elen; ++_elit )
+        {
+            for ( int l = 0; l < _elit->numPoints; ++l )
             {
-                for( int l = 0; l < _elit->numPoints; ++l )
-                {
-                    int dof = h.functionSpace()->dof()->localToGlobal( _elit->id(), l, 0 ).get<0>();
-                    int pid = _elit->point( l ).id()+1;
-                    sizeField->setSize( pid , h(dof) );
-                }
+                int dof = h.functionSpace()->dof()->localToGlobal( _elit->id(), l, 0 ).get<0>();
+                int pid = _elit->point( l ).id()+1;
+                sizeField->setSize( pid , h( dof ) );
             }
+        }
 
-            MAd::MeshAdapter* ma = new MAd::MeshAdapter(amesh,sizeField);
+        MAd::MeshAdapter* ma = new MAd::MeshAdapter( amesh,sizeField );
 
-            ma->setMaxIterationsNumber( maxit );
-            ma->setEdgeLenSqBounds( 1.0/3.0, 3.0 );
-            ma->setNoSwapQuality( 0.1 );
-            ma->setSliverQuality( 0.02 );
-            ma->setSliverPermissionInESplit( true, 10. );
-            ma->setSliverPermissionInECollapse( true, 0.1 );
-            ma->snapVertices();
-  //ma->setEdgeLenSqBounds( hmin*hmin, hmax*hmax );
+        ma->setMaxIterationsNumber( maxit );
+        ma->setEdgeLenSqBounds( 1.0/3.0, 3.0 );
+        ma->setNoSwapQuality( 0.1 );
+        ma->setSliverQuality( 0.02 );
+        ma->setSliverPermissionInESplit( true, 10. );
+        ma->setSliverPermissionInECollapse( true, 0.1 );
+        ma->snapVertices();
+        //ma->setEdgeLenSqBounds( hmin*hmin, hmax*hmax );
 #if 1
-            ma->setGeoTracking( !model.empty() );
+        ma->setGeoTracking( !model.empty() );
 #if 0
-                                true,
-                                0,
-                                1.,
-                                false,
-                                false );
+        true,
+        0,
+        1.,
+        false,
+        false );
 #endif
 #endif
-            if ( statistics )
-            {
-                std::cout << "Statistics before optimization: \n";
-                ma->printStatistics(std::cout);
-                ma->writePos("meanRatioBefore.pos",MAd::OD_MEANRATIO);
-            }
 
-            // Optimize
-            // ---------
-            ma->run();
+        if ( statistics )
+    {
+        std::cout << "Statistics before optimization: \n";
+        ma->printStatistics( std::cout );
+            ma->writePos( "meanRatioBefore.pos",MAd::OD_MEANRATIO );
+        }
 
-            if ( statistics )
-            {
-                // Outputs final mesh
-                // -------------------
-                std::cout << "Statistics after optimization: \n";
-                ma->printStatistics(std::cout);
-                ma->writePos("meanRatioAfter.pos",MAd::OD_MEANRATIO);
-            }
-            MAd::M_writeMsh (amesh, "result.msh", 2, NULL);
+        // Optimize
+        // ---------
+        ma->run();
 
-            return loadGMSHMesh( _mesh=new mesh_type,
-                                 _filename="result.msh",
-                                 _update=update );
+        if ( statistics )
+    {
+        // Outputs final mesh
+        // -------------------
+        std::cout << "Statistics after optimization: \n";
+        ma->printStatistics( std::cout );
+            ma->writePos( "meanRatioAfter.pos",MAd::OD_MEANRATIO );
+        }
+        MAd::M_writeMsh ( amesh, "result.msh", 2, NULL );
+
+        return loadGMSHMesh( _mesh=new mesh_type,
+        _filename="result.msh",
+        _update=update );
 
 #endif // FEELPP_HAS_MADLIB_H
 
-        }
+    }
 
 private:
 
@@ -358,24 +362,30 @@ void
 ResidualEstimator<Dim,Order>::run()
 {
     if ( dim && dim != Dim ) return ;
+
     if ( order && order != Order ) return ;
+
     std::cout << "------------------------------------------------------------\n";
     std::cout << "Execute ResidualEstimator<" << Dim << ">\n";
     std::vector<double> X;
     X.push_back( meshSize );
+
     if ( shape == "hypercube" )
         X.push_back( 1 );
+
     else if ( shape == "ellipsoid" )
         X.push_back( 2 );
+
     else // default is simplex
         X.push_back( 0 );
+
     X.push_back( fn );
     X.push_back( alpha );
     X.push_back( beta );
     X.push_back( weakdir );
     X.push_back( penaldir );
     first_time=true;
-    X.push_back( first_time);
+    X.push_back( first_time );
     X.push_back( error_type );
     X.push_back( tol );
     std::vector<double> Y( 4 );
@@ -384,15 +394,19 @@ ResidualEstimator<Dim,Order>::run()
 }
 template<int Dim, int Order>
 void
-ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, unsigned long n)
+ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, unsigned long n )
 {
     /*
      * set parameters
      */
     meshSize = X[0];
+
     if ( X[1] == 0 ) shape = "simplex";
+
     if ( X[1] == 1 ) shape = "hypercube";
+
     if ( X[1] == 2 ) shape = "ellipsoid";
+
     fn = X[2];
     alpha = X[3];
     beta = X[4];
@@ -404,7 +418,8 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
 
     double estimatorH1, estimatorL2, estimator;
 
-    if(first_time){
+    if ( first_time )
+    {
         if ( !this->vm().count( "nochdir" ) )
             Environment::changeRepository( boost::format( "doc/tutorial/%1%/%2%-%3%/P%4%/h_%5%/" )
                                            % this->about().appName()
@@ -415,14 +430,14 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
 
         mesh = createGMSHMesh( _mesh=new mesh_type,
                                _parametricnodes=1,
-                               _desc=domain( _name=(boost::format( "%1%-%2%" ) % shape % Dim).str() ,
+                               _desc=domain( _name=( boost::format( "%1%-%2%" ) % shape % Dim ).str() ,
                                              _usenames=true,
                                              _shape=shape,
                                              _dim=Dim,
                                              _h=X[0] ),
                                _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES );
-        tag_Neumann = mesh->markerName("Neumann");
-        tag_Dirichlet = mesh->markerName("Dirichlet");
+        tag_Neumann = mesh->markerName( "Neumann" );
+        tag_Dirichlet = mesh->markerName( "Dirichlet" );
 
     }//end if(first_time)
 
@@ -448,27 +463,27 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
     //# marker1 #
     value_type pi = M_PI;
     //! deduce from expression the type of g (thanks to keyword 'auto')
-    auto fn1 = (1-Px()*Px())*(1-Py()*Py())*(1-Pz()*Pz())*exp(beta*Px());
-    auto fn2 = sin(alpha*pi*Px())*cos(alpha*pi*Py())*cos(alpha*pi*Pz())*exp(beta*Px());
-    auto g = chi(fn==1)*fn1 + chi(fn==2)*fn2;
+    auto fn1 = ( 1-Px()*Px() )*( 1-Py()*Py() )*( 1-Pz()*Pz() )*exp( beta*Px() );
+    auto fn2 = sin( alpha*pi*Px() )*cos( alpha*pi*Py() )*cos( alpha*pi*Pz() )*exp( beta*Px() );
+    auto g = chi( fn==1 )*fn1 + chi( fn==2 )*fn2;
     auto grad_g =
-        trans(chi(fn==1)*((-2*Px()*(1-Py()*Py())*(1-Pz()*Pz())*exp(beta*Px())+beta*fn1)*unitX()+
-                          -2*Py()*(1-Px()*Px())*(1-Pz()*Pz())*exp(beta*Px())*unitY()+
-                          -2*Pz()*(1-Px()*Px())*(1-Py()*Py())*exp(beta*Px())*unitZ())+
-              chi(fn==2)*(+(alpha*pi*cos(alpha*pi*Px())*cos(alpha*pi*Py())*cos(alpha*pi*Pz())*exp(beta*Px())+beta*fn2)*unitX()+
-                          -alpha*pi*sin(alpha*pi*Px())*sin(alpha*pi*Py())*cos(alpha*pi*Pz())*exp(beta*Px())*unitY()+
-                          -alpha*pi*sin(alpha*pi*Px())*cos(alpha*pi*Py())*sin(alpha*pi*Pz())*exp(beta*Px())*unitZ()));
+        trans( chi( fn==1 )*( ( -2*Px()*( 1-Py()*Py() )*( 1-Pz()*Pz() )*exp( beta*Px() )+beta*fn1 )*unitX()+
+                              -2*Py()*( 1-Px()*Px() )*( 1-Pz()*Pz() )*exp( beta*Px() )*unitY()+
+                              -2*Pz()*( 1-Px()*Px() )*( 1-Py()*Py() )*exp( beta*Px() )*unitZ() )+
+               chi( fn==2 )*( +( alpha*pi*cos( alpha*pi*Px() )*cos( alpha*pi*Py() )*cos( alpha*pi*Pz() )*exp( beta*Px() )+beta*fn2 )*unitX()+
+                              -alpha*pi*sin( alpha*pi*Px() )*sin( alpha*pi*Py() )*cos( alpha*pi*Pz() )*exp( beta*Px() )*unitY()+
+                              -alpha*pi*sin( alpha*pi*Px() )*cos( alpha*pi*Py() )*sin( alpha*pi*Pz() )*exp( beta*Px() )*unitZ() ) );
     //! deduce from expression the type of laplacian  (thanks to keyword 'auto')
     auto minus_laplacian_g =
-        (chi( fn == 1 )*( 2*(1-Py()*Py())*(1-Pz()*Pz())*exp(beta*Px()) + 4*beta*Px()*(1-Py()*Py())*(1-Pz()*Pz())*exp(beta*Px()) - beta*beta *fn1 +
-                          2*(1-Px()*Px())*(1-Pz()*Pz())*exp(beta*Px())*chi(Dim >= 2) +
-                          2*(1-Px()*Px())*(1-Py()*Py())*exp(beta*Px())*chi(Dim == 3) )  +
-         chi( fn == 2 )*  (
-             exp(beta*Px())*(Dim*alpha*alpha*pi*pi*sin(alpha*pi*Px())-beta*beta*sin(alpha*pi*Px())-2*beta*alpha*pi*cos(alpha*pi*Px()))*
-             ( cos(alpha*pi*Py())*chi(Dim>=2) + chi(Dim==1)) * ( cos(alpha*pi*Pz())*chi(Dim==3) + chi(Dim<=2) )
-             )
+        ( chi( fn == 1 )*( 2*( 1-Py()*Py() )*( 1-Pz()*Pz() )*exp( beta*Px() ) + 4*beta*Px()*( 1-Py()*Py() )*( 1-Pz()*Pz() )*exp( beta*Px() ) - beta*beta *fn1 +
+                           2*( 1-Px()*Px() )*( 1-Pz()*Pz() )*exp( beta*Px() )*chi( Dim >= 2 ) +
+                           2*( 1-Px()*Px() )*( 1-Py()*Py() )*exp( beta*Px() )*chi( Dim == 3 ) )  +
+          chi( fn == 2 )*  (
+              exp( beta*Px() )*( Dim*alpha*alpha*pi*pi*sin( alpha*pi*Px() )-beta*beta*sin( alpha*pi*Px() )-2*beta*alpha*pi*cos( alpha*pi*Px() ) )*
+              ( cos( alpha*pi*Py() )*chi( Dim>=2 ) + chi( Dim==1 ) ) * ( cos( alpha*pi*Pz() )*chi( Dim==3 ) + chi( Dim<=2 ) )
+          )
 
-            );
+        );
 
     //# endmarker1 #
     /** \endcode */
@@ -485,17 +500,19 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
     //# marker2 #
     vector_ptrtype F( M_backend->newVector( Xh ) );
     form1( _test=Xh, _vector=F, _init=true ) =
-        integrate( elements(mesh), minus_laplacian_g*id(v) )+
+        integrate( elements( mesh ), minus_laplacian_g*id( v ) )+
         integrate( markedfaces( mesh, tag_Neumann ),
-                   grad_g*vf::N()*id(v) );
+                   grad_g*vf::N()*id( v ) );
+
     //# endmarker2 #
     if ( this->comm().size() != 1 || weakdir )
     {
         //# marker41 #
         form1( _test=Xh, _vector=F ) +=
-            integrate( markedfaces(mesh,tag_Dirichlet), g*(-grad(v)*vf::N()+penaldir*id(v)/hFace()) );
+            integrate( markedfaces( mesh,tag_Dirichlet ), g*( -grad( v )*vf::N()+penaldir*id( v )/hFace() ) );
         //# endmarker41 #
     }
+
     F->close();
 
     /** \endcode */
@@ -512,7 +529,7 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
     //! assemble $\int_\Omega \nu \nabla u \cdot \nabla v$
     /** \code */
     form2( Xh, Xh, D, _init=true ) =
-        integrate( elements(mesh), gradt(u)*trans(grad(v)) );
+        integrate( elements( mesh ), gradt( u )*trans( grad( v ) ) );
     /** \endcode */
     //# endmarker3 #
 
@@ -526,14 +543,15 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
         /** \code */
         //# marker10 #
         form2( Xh, Xh, D ) +=
-            integrate( markedfaces(mesh,tag_Dirichlet),
-                       -(gradt(u)*vf::N())*id(v)
-                       -(grad(v)*vf::N())*idt(u)
-                       +penaldir*id(v)*idt(u)/hFace());
+            integrate( markedfaces( mesh,tag_Dirichlet ),
+                       -( gradt( u )*vf::N() )*id( v )
+                       -( grad( v )*vf::N() )*idt( u )
+                       +penaldir*id( v )*idt( u )/hFace() );
         D->close();
         //# endmarker10 #
         /** \endcode */
     }
+
     else
     {
         /** strong(algebraic) dirichlet conditions treatment for the boundaries marked 1 and 3
@@ -544,11 +562,12 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
         //# marker5 #
         D->close();
         form2( Xh, Xh, D ) +=
-            on( markedfaces(mesh, tag_Dirichlet), u, F, g );
+            on( markedfaces( mesh, tag_Dirichlet ), u, F, g );
         //# endmarker5 #
         /** \endcode */
 
     }
+
     /** \endcode */
 
 
@@ -561,16 +580,16 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
     //! compute the \f$L_2$ norm of the error
     /** \code */
     //# marker7 #
-    double L2exact = math::sqrt(integrate(elements(mesh),g*g ).evaluate()(0,0));
-    double L2error2 =integrate(elements(mesh),(idv(u)-g)*(idv(u)-g) ).evaluate()(0,0);
+    double L2exact = math::sqrt( integrate( elements( mesh ),g*g ).evaluate()( 0,0 ) );
+    double L2error2 =integrate( elements( mesh ),( idv( u )-g )*( idv( u )-g ) ).evaluate()( 0,0 );
     double L2error = math::sqrt( L2error2 );
-    double semiH1error2 = integrate(elements(mesh),(gradv(u)-grad_g)*(gradv(u)-grad_g)).evaluate()(0,0);
-    double H1error = math::sqrt(L2error2+semiH1error2);
-    double H1exact = math::sqrt(integrate(elements(mesh),g*g+grad_g*trans(grad_g) ).evaluate()(0,0));
+    double semiH1error2 = integrate( elements( mesh ),( gradv( u )-grad_g )*( gradv( u )-grad_g ) ).evaluate()( 0,0 );
+    double H1error = math::sqrt( L2error2+semiH1error2 );
+    double H1exact = math::sqrt( integrate( elements( mesh ),g*g+grad_g*trans( grad_g ) ).evaluate()( 0,0 ) );
 
 
-    auto RealL2ErrorP0 = integrate( elements(mesh), (idv(u)-g)*(idv(u)-g), _Q<10>() ).broken(P0h);
-    auto RealSemiH1ErrorP0 = integrate( elements(mesh), (gradv(u)-grad_g)* trans(gradv(u)-grad_g), _Q<10>() ).broken(P0h);
+    auto RealL2ErrorP0 = integrate( elements( mesh ), ( idv( u )-g )*( idv( u )-g ), _Q<10>() ).broken( P0h );
+    auto RealSemiH1ErrorP0 = integrate( elements( mesh ), ( gradv( u )-grad_g )* trans( gradv( u )-grad_g ), _Q<10>() ).broken( P0h );
     auto H1RealErrorP0 = RealL2ErrorP0;
     H1RealErrorP0 += RealSemiH1ErrorP0;
     H1RealErrorP0 = H1RealErrorP0.sqrt();
@@ -578,42 +597,49 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
     //the source terme is given by : minus_laplacian_g
 
 
-    auto term1 = vf::h()*(minus_laplacian_g+trace(hessv(u)));
-    auto term2 = jumpv(gradv(u));
-    auto term3 = gradv(u)*vf::N()-grad_g*N();
+    auto term1 = vf::h()*( minus_laplacian_g+trace( hessv( u ) ) );
+    auto term2 = jumpv( gradv( u ) );
+    auto term3 = gradv( u )*vf::N()-grad_g*N();
 
 
-    auto rho = integrate(elements(mesh), term1*term1, _Q<10>() ).broken(P0h).sqrt();
+    auto rho = integrate( elements( mesh ), term1*term1, _Q<10>() ).broken( P0h ).sqrt();
 
 
-    rho += integrate(internalfaces(mesh),0.25*vf::h()*term2*term2).broken( P0h ).sqrt();
+    rho += integrate( internalfaces( mesh ),0.25*vf::h()*term2*term2 ).broken( P0h ).sqrt();
 
-    rho += integrate( markedfaces(mesh,tag_Neumann),
+    rho += integrate( markedfaces( mesh,tag_Neumann ),
                       vf::h()*term3*term3 ).broken( P0h ).sqrt();
 
 
-    auto h=vf::project(P0h, elements(mesh), vf::h() );
-    auto npen=vf::project(P0h, elements(mesh), vf::nPEN() );
+    auto h=vf::project( P0h, elements( mesh ), vf::h() );
+    auto npen=vf::project( P0h, elements( mesh ), vf::nPEN() );
     auto H1estimator = rho;
 
     //if we use real error for adaptation then H1errorP1 will be the projection of H1RealErrorP0 on P1 space
     //else H1errorP1 will be the projection of H1estimator on P1 space
     p1_element_type H1errorP1;
-    if(error_type==2){
-      H1errorP1 = element_div( vf::sum( P1h, idv(H1RealErrorP0)*meas()), vf::sum( P1h, meas()) );
+
+    if ( error_type==2 )
+    {
+        H1errorP1 = element_div( vf::sum( P1h, idv( H1RealErrorP0 )*meas() ), vf::sum( P1h, meas() ) );
     }
-    else if(error_type==1){
-      H1errorP1 = element_div( vf::sum( P1h, idv(H1estimator)*meas()), vf::sum( P1h, meas()) );
+
+    else if ( error_type==1 )
+    {
+        H1errorP1 = element_div( vf::sum( P1h, idv( H1estimator )*meas() ), vf::sum( P1h, meas() ) );
     }
-    else{
-      std::cout<<"Problem with parameter adapt-error-type, please choice between 1 and 2"<<std::endl;
-      return;
+
+    else
+    {
+        std::cout<<"Problem with parameter adapt-error-type, please choice between 1 and 2"<<std::endl;
+        return;
     }
+
     //auto new_hsize=vf::project( P1h, elements(mesh), vf::pow(vf::pow(vf::h(),Order)*(1e-4)/idv(H1estimatorP1),1./Order));
     //auto new_hsize=vf::project( P1h, elements(mesh), vf::h()*(1e-2)/idv(H1estimatorP1) );
 
-    estimatorH1=math::sqrt(H1estimator.pow(2).sum());
-    estimatorL2=math::sqrt(element_product(H1estimator,h).pow(2).sum());
+    estimatorH1=math::sqrt( H1estimator.pow( 2 ).sum() );
+    estimatorL2=math::sqrt( element_product( H1estimator,h ).pow( 2 ).sum() );
 
 
     Y[0] = L2error/L2exact;
@@ -623,9 +649,9 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
 
     h_new = P1h->element();
 
-    h_new = vf::project( P1h, elements(mesh),
+    h_new = vf::project( P1h, elements( mesh ),
                          vf::max( vf::pow(
-                                      vf::pow( vf::h(),Order)*(tol)/idv(H1errorP1),
+                                      vf::pow( vf::h(),Order )*( tol )/idv( H1errorP1 ),
                                       1./Order ),
                                   this->vm()["adapt-hmin"].template as<double>() ) );
     /**********************end of residual estimaor*************/
@@ -635,28 +661,29 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
     /** \code */
     //! project the exact solution
     element_type exact_solution( Xh, "exact_solution" );
-    exact_solution = vf::project( Xh, elements(mesh), g );
+    exact_solution = vf::project( Xh, elements( mesh ), g );
     element_type u_minus_exact( Xh, "u-g" );
-    u_minus_exact = vf::project( Xh, elements(mesh), idv(u)-g );
+    u_minus_exact = vf::project( Xh, elements( mesh ), idv( u )-g );
 
 
     if ( exporter->doExport() )
     {
         Log() << "exportResults starts\n";
 
-        exporter->step(0)->setMesh( mesh );
-        exporter->step(0)->add( "unknown", u );
-        exporter->step(0)->add( "exact solution", exact_solution);
-        exporter->step(0)->add( "u - exact solution", u_minus_exact) ;
-        exporter->step(0)->add( "nPEN" , npen );
-        exporter->step(0)->add( "H1 error estimator P0" , H1estimator);
-        exporter->step(0)->add( "H1 Real error P0" , H1RealErrorP0);
-        exporter->step(0)->add( "H1 error P1 (used for determination of new hsize)" , H1errorP1);
-        exporter->step(0)->add( "new hsize" , h_new);
+        exporter->step( 0 )->setMesh( mesh );
+        exporter->step( 0 )->add( "unknown", u );
+        exporter->step( 0 )->add( "exact solution", exact_solution );
+        exporter->step( 0 )->add( "u - exact solution", u_minus_exact ) ;
+        exporter->step( 0 )->add( "nPEN" , npen );
+        exporter->step( 0 )->add( "H1 error estimator P0" , H1estimator );
+        exporter->step( 0 )->add( "H1 Real error P0" , H1RealErrorP0 );
+        exporter->step( 0 )->add( "H1 error P1 (used for determination of new hsize)" , H1errorP1 );
+        exporter->step( 0 )->add( "new hsize" , h_new );
 
         exporter->save();
         Log() << "exportResults done\n";
     }
+
     /** \endcode */
 
     Log()<< " real L2 error : "<<Y[0]<<"\n";
@@ -666,10 +693,12 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
 
 
     std::ostringstream geostr;
+
     if ( this->vm()["gmshmodel"].template as<bool>() )
     {
         if ( this->vm()["gmshgeo"].template as<bool>() )
             geostr << shape << "-" << Dim << ".geo";
+
         else
             geostr << shape << "-" << Dim << ".msh";
     }
@@ -677,7 +706,7 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
     mesh  = adapt( _h=h_new,
                    _model=geostr.str(),
                    _hmin=this->vm()["adapt-hmin"].template as<double>(),
-                   _hmax=this->vm()["adapt-hmax"].template as<double>());
+                   _hmax=this->vm()["adapt-hmax"].template as<double>() );
 } // ResidualEstimator::run
 
 

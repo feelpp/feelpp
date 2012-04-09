@@ -59,16 +59,16 @@ inline
 Feel::po::options_description
 makeOptions()
 {
-    Feel::po::options_description stokesoptions("Stokes options");
+    Feel::po::options_description stokesoptions( "Stokes options" );
     stokesoptions.add_options()
-        ("penal", Feel::po::value<double>()->default_value( 0.5 ), "penalisation parameter")
-        ("f", Feel::po::value<double>()->default_value( 0 ), "forcing term")
-        ("mu", Feel::po::value<double>()->default_value( 1.0 ), "reaction coefficient component")
-        ("hsize", Feel::po::value<double>()->default_value( 0.1 ), "first h value to start convergence")
-        ("bctype", Feel::po::value<int>()->default_value( 0 ), "0 = strong Dirichlet, 1 = weak Dirichlet")
-        ("bccoeff", Feel::po::value<double>()->default_value( 100.0 ), "coeff for weak Dirichlet conditions")
-        ("export-matlab", "export matrix and vectors in matlab" )
-        ;
+    ( "penal", Feel::po::value<double>()->default_value( 0.5 ), "penalisation parameter" )
+    ( "f", Feel::po::value<double>()->default_value( 0 ), "forcing term" )
+    ( "mu", Feel::po::value<double>()->default_value( 1.0 ), "reaction coefficient component" )
+    ( "hsize", Feel::po::value<double>()->default_value( 0.1 ), "first h value to start convergence" )
+    ( "bctype", Feel::po::value<int>()->default_value( 0 ), "0 = strong Dirichlet, 1 = weak Dirichlet" )
+    ( "bccoeff", Feel::po::value<double>()->default_value( 100.0 ), "coeff for weak Dirichlet conditions" )
+    ( "export-matlab", "export matrix and vectors in matlab" )
+    ;
     return stokesoptions.add( Feel::feel_options() ) ;
 }
 
@@ -89,10 +89,10 @@ makeAbout()
                            "0.1",
                            "Stokes equation on simplices or simplex products",
                            Feel::AboutData::License_GPL,
-                           "Copyright (c) 2009-2011 Université de Grenoble 1 (Joseph Fourier)");
+                           "Copyright (c) 2009-2011 Université de Grenoble 1 (Joseph Fourier)" );
 
-    about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
-   return about;
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    return about;
 
 }
 
@@ -108,7 +108,7 @@ using namespace Feel::vf;
  */
 class Stokes
     :
-        public Application
+public Application
 {
     typedef Application super;
 public:
@@ -196,8 +196,8 @@ Stokes::Stokes( int argc, char** argv, AboutData const& ad, po::options_descript
     super( argc, argv, ad, od ),
     M_backend( backend_type::build( this->vm() ) ),
     meshSize( this->vm()["hsize"].as<double>() ),
-    mu(this->vm()["mu"].as<value_type>()),
-    penalbc(this->vm()["bccoeff"].as<value_type>()),
+    mu( this->vm()["mu"].as<value_type>() ),
+    penalbc( this->vm()["bccoeff"].as<value_type>() ),
     exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) )
 {
 
@@ -222,7 +222,7 @@ Stokes::init()
 
     mesh = createGMSHMesh( _mesh=new mesh_type,
                            _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
-                           _desc=domain( _name= (boost::format( "%1%-%2%-%3%" ) % "hypercube" % convex_type().dimension() % 1).str() ,
+                           _desc=domain( _name= ( boost::format( "%1%-%2%-%3%" ) % "hypercube" % convex_type().dimension() % 1 ).str() ,
                                          _shape="hypercube",
                                          _dim=convex_type().dimension(),
                                          _h=meshSize ) );
@@ -238,12 +238,12 @@ Stokes::run()
 {
     this->init();
 
-    auto U = Xh->element("(u,p)");
-    auto V = Xh->element("(u,q)");
-    auto u = U.element<0>("u");
-    auto v = V.element<0>("u");
-    auto p = U.element<1>("p");
-    auto q = V.element<1>("p");
+    auto U = Xh->element( "(u,p)" );
+    auto V = Xh->element( "(u,q)" );
+    auto u = U.element<0>( "u" );
+    auto v = V.element<0>( "u" );
+    auto p = U.element<1>( "p" );
+    auto q = V.element<1>( "p" );
 
     auto lambda = U.element<2>();
     auto nu = V.element<2>();
@@ -251,7 +251,7 @@ Stokes::run()
 
     Log() << "Data Summary:\n";
     Log() << "   hsize = " << meshSize << "\n";
-    Log() << "  export = " << this->vm().count("export") << "\n";
+    Log() << "  export = " << this->vm().count( "export" ) << "\n";
     Log() << "      mu = " << mu << "\n";
     Log() << " bccoeff = " << penalbc << "\n";
 
@@ -259,33 +259,33 @@ Stokes::run()
 
 
     //# marker5 #
-    auto deft = gradt(u);
-    auto def = grad(v);
+    auto deft = gradt( u );
+    auto def = grad( v );
     //# endmarker5 #
 
     //# marker6 #
     // total stress tensor (trial)
-    auto SigmaNt = -idt(p)*N()+mu*deft*N();
+    auto SigmaNt = -idt( p )*N()+mu*deft*N();
 
     // total stress tensor (test)
-    auto SigmaN = -id(p)*N()+mu*def*N();
+    auto SigmaN = -id( p )*N()+mu*def*N();
     //# endmarker6 #
 
     // u exact solution
-    auto u_exact = vec(cos(Px())*cos(Py()), sin(Px())*sin(Py()));
+    auto u_exact = vec( cos( Px() )*cos( Py() ), sin( Px() )*sin( Py() ) );
 
     // this is the exact solution which has zero mean : the mean of
     // cos(x)*sin(y) is sin(1)*(1-cos(1))) on [0,1]^2
-    auto p_exact = cos(Px())*sin(Py())-(sin(1.0)*(1.-cos(1.0)));
+    auto p_exact = cos( Px() )*sin( Py() )-( sin( 1.0 )*( 1.-cos( 1.0 ) ) );
 
     // f is such that f = \Delta u_exact + \nabla p_exact
-    auto f = vec( (2*cos(Px())*cos(Py())-sin(Px())*sin(Py())),
-                  2*sin(Px())*sin(Py())+cos(Px())*cos(Py()) );
+    auto f = vec( ( 2*cos( Px() )*cos( Py() )-sin( Px() )*sin( Py() ) ),
+                  2*sin( Px() )*sin( Py() )+cos( Px() )*cos( Py() ) );
 
     // right hand side
     auto stokes_rhs = form1( _test=Xh, _vector=F, _init=true );
-    stokes_rhs = integrate( elements(mesh),inner(f,id(v)) );
-    stokes_rhs += integrate( boundaryfaces(mesh), inner(u_exact,-SigmaN+penalbc*id(v)/hFace() ) );
+    stokes_rhs = integrate( elements( mesh ),inner( f,id( v ) ) );
+    stokes_rhs += integrate( boundaryfaces( mesh ), inner( u_exact,-SigmaN+penalbc*id( v )/hFace() ) );
 
     Log() << "[stokes] vector local assembly done\n";
 
@@ -295,30 +295,34 @@ Stokes::run()
     //# marker7 #
     auto stokes = form2( _test=Xh, _trial=Xh, _matrix=D, _init=true );
     boost::timer chrono;
-    stokes = integrate( elements(mesh), mu*inner(deft,def) );
-    std::cout << "mu*inner(deft,def): " << chrono.elapsed() << "\n"; chrono.restart();
-    stokes +=integrate( elements(mesh), - div(v)*idt(p) + divt(u)*id(q) );
-    std::cout << "(u,p): " << chrono.elapsed() << "\n"; chrono.restart();
-    stokes +=integrate( elements(mesh), id(q)*idt(lambda) + idt(p)*id(nu) );
-    std::cout << "(lambda,p): " << chrono.elapsed() << "\n"; chrono.restart();
+    stokes = integrate( elements( mesh ), mu*inner( deft,def ) );
+    std::cout << "mu*inner(deft,def): " << chrono.elapsed() << "\n";
+    chrono.restart();
+    stokes +=integrate( elements( mesh ), - div( v )*idt( p ) + divt( u )*id( q ) );
+    std::cout << "(u,p): " << chrono.elapsed() << "\n";
+    chrono.restart();
+    stokes +=integrate( elements( mesh ), id( q )*idt( lambda ) + idt( p )*id( nu ) );
+    std::cout << "(lambda,p): " << chrono.elapsed() << "\n";
+    chrono.restart();
 
-    stokes +=integrate( boundaryfaces(mesh), -inner(SigmaNt,id(v)) );
-    stokes +=integrate( boundaryfaces(mesh), -inner(SigmaN,idt(u)) );
-    stokes +=integrate( boundaryfaces(mesh), +penalbc*inner(idt(u),id(v))/hFace() );
+    stokes +=integrate( boundaryfaces( mesh ), -inner( SigmaNt,id( v ) ) );
+    stokes +=integrate( boundaryfaces( mesh ), -inner( SigmaN,idt( u ) ) );
+    stokes +=integrate( boundaryfaces( mesh ), +penalbc*inner( idt( u ),id( v ) )/hFace() );
 
-    std::cout << "bc: " << chrono.elapsed() << "\n"; chrono.restart();
+    std::cout << "bc: " << chrono.elapsed() << "\n";
+    chrono.restart();
     //# endmarker7 #
 
     M_backend->solve( _matrix=D, _solution=U, _rhs=F );
 
-    U.save(_path=".");
-    u.save(_path=".");
-    p.save(_path=".");
-    V.load(_path=".");
-    v.load(_path=".");
-    q.load(_path=".");
-    std::cout << "||u-v||=" << (u-v).l2Norm() << "\n";
-    std::cout << "||p-q||=" << (p-q).l2Norm() << "\n";
+    U.save( _path="." );
+    u.save( _path="." );
+    p.save( _path="." );
+    V.load( _path="." );
+    v.load( _path="." );
+    q.load( _path="." );
+    std::cout << "||u-v||=" << ( u-v ).l2Norm() << "\n";
+    std::cout << "||p-q||=" << ( p-q ).l2Norm() << "\n";
     this->exportResults( u_exact, p_exact, U, V );
 
     Log() << "[dof]         number of dof: " << Xh->nDof() << "\n";
@@ -343,31 +347,31 @@ Stokes::exportResults( ExprUExact u_exact, ExprPExact p_exact,
     auto q = V.element<1>();
     auto nu = V.element<2>();
 
-    Log() << "value of the Lagrange multiplier lambda= " << lambda(0) << "\n";
-    std::cout << "value of the Lagrange multiplier lambda= " << lambda(0) << "\n";
+    Log() << "value of the Lagrange multiplier lambda= " << lambda( 0 ) << "\n";
+    std::cout << "value of the Lagrange multiplier lambda= " << lambda( 0 ) << "\n";
 
-    double u_errorL2 = integrate( elements(u.mesh()), trans(idv(u)-u_exact)*(idv(u)-u_exact) ).evaluate()( 0, 0 );
+    double u_errorL2 = integrate( elements( u.mesh() ), trans( idv( u )-u_exact )*( idv( u )-u_exact ) ).evaluate()( 0, 0 );
     std::cout << "||u_error||_2 = " << math::sqrt( u_errorL2 ) << "\n";;
 
 
-    double p_errorL2 = integrate( elements(u.mesh()), (idv(p)-p_exact)*(idv(p)-p_exact) ).evaluate()( 0, 0 );
+    double p_errorL2 = integrate( elements( u.mesh() ), ( idv( p )-p_exact )*( idv( p )-p_exact ) ).evaluate()( 0, 0 );
     std::cout << "||p_error||_2 = " << math::sqrt( p_errorL2 ) << "\n";;
 
     Log() << "[stokes] solve for D done\n";
 
-    double meas = integrate( elements(u.mesh()), cst(1.0) ).evaluate()( 0, 0);
+    double meas = integrate( elements( u.mesh() ), cst( 1.0 ) ).evaluate()( 0, 0 );
     Log() << "[stokes] measure(Omega)=" << meas << " (should be equal to 1)\n";
     std::cout << "[stokes] measure(Omega)=" << meas << " (should be equal to 1)\n";
 
-    double mean_p = integrate( elements(u.mesh()), idv(p) ).evaluate()( 0, 0 )/meas;
+    double mean_p = integrate( elements( u.mesh() ), idv( p ) ).evaluate()( 0, 0 )/meas;
     Log() << "[stokes] mean(p)=" << mean_p << "\n";
     std::cout << "[stokes] mean(p)=" << mean_p << "\n";
 
-    double mean_div_u = integrate( elements(u.mesh()), divv(u) ).evaluate()( 0, 0 );
+    double mean_div_u = integrate( elements( u.mesh() ), divv( u ) ).evaluate()( 0, 0 );
     Log() << "[stokes] mean_div(u)=" << mean_div_u << "\n";
     std::cout << "[stokes] mean_div(u)=" << mean_div_u << "\n";
 
-    double div_u_error_L2 = integrate( elements(u.mesh()), divv(u)*divv(u) ).evaluate()( 0, 0 );
+    double div_u_error_L2 = integrate( elements( u.mesh() ), divv( u )*divv( u ) ).evaluate()( 0, 0 );
     Log() << "[stokes] ||div(u)||_2=" << math::sqrt( div_u_error_L2 ) << "\n";
     std::cout << "[stokes] ||div(u)||=" << math::sqrt( div_u_error_L2 ) << "\n";
 
@@ -380,8 +384,8 @@ Stokes::exportResults( ExprUExact u_exact, ExprPExact p_exact,
         auto v = U.functionSpace()->functionSpace<0> ()->element();
         v = U.element<0>();
         exporter->step( 0 )->add( "u", U.element<0>() );
-        exporter->step( 0 )->add( "ux", v.comp(X) );
-        exporter->step( 0 )->add( "uy", v.comp(Y) );
+        exporter->step( 0 )->add( "ux", v.comp( X ) );
+        exporter->step( 0 )->add( "uy", v.comp( Y ) );
         exporter->step( 0 )->add( "u", U.element<0>() );
         exporter->step( 0 )->add( "p", U.element<1>() );
         exporter->step( 0 )->add( "u_exact", V.element<0>() );
@@ -397,7 +401,7 @@ main( int argc, char** argv )
 
     using namespace Feel;
     /* assertions handling */
-    Feel::Assert::setLog( "stokes.assert");
+    Feel::Assert::setLog( "stokes.assert" );
 
     // SOME BAD ELEMENTS
     // P1/P0 : locking

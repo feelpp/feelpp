@@ -39,22 +39,24 @@ createRoom( int Dim, double meshSize )
 {
     std::ostringstream ostr;
     std::ostringstream nameStr;
-    //    std::string fname;//
-    switch( Dim ) {
-    
-    // On rajoute le cas ou la dimension = 1
-    
-   case 1:
-     ostr << "hTemp=" << meshSize << ";\n"
-          << "Point (1) = {0, 0, 0, hTemp};\n"
-          << "Point (2) = {1, 0, 0, hTemp};\n"
-          << "Line (1) = {1, 2};\n"
-          << "Physical Point (1) = {1};\n"
-          << "Physical Point (2) = {2};\n"
-          << "Physical Line (10) = {1};\n";
 
-     nameStr << "room." << meshSize;
-     break;
+    //    std::string fname;//
+    switch ( Dim )
+    {
+
+        // On rajoute le cas ou la dimension = 1
+
+    case 1:
+        ostr << "hTemp=" << meshSize << ";\n"
+             << "Point (1) = {0, 0, 0, hTemp};\n"
+             << "Point (2) = {1, 0, 0, hTemp};\n"
+             << "Line (1) = {1, 2};\n"
+             << "Physical Point (1) = {1};\n"
+             << "Physical Point (2) = {2};\n"
+             << "Physical Line (10) = {1};\n";
+
+        nameStr << "room." << meshSize;
+        break;
 
 
     case 2:
@@ -81,6 +83,7 @@ createRoom( int Dim, double meshSize )
 
         nameStr << "room." << meshSize;
         break;
+
     case 3:
         ostr << "hTemp=" << meshSize << ";\n"
              << "Point (1) = {0, 0, 0, hTemp};\n"
@@ -109,11 +112,13 @@ createRoom( int Dim, double meshSize )
              << "Physical Volume(1) = {1};\n";
         nameStr << "room." << meshSize;
         break;
+
     default:
         std::ostringstream os;
         os << "invalid dimension: " << Dim;
         throw std::logic_error( os.str() );
     }
+
     gmsh_ptrtype gmshp( new Gmsh );
     gmshp->setPrefix( nameStr.str() );
     gmshp->setDescription( ostr.str() );

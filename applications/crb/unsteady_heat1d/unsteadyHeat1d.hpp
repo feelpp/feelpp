@@ -63,18 +63,18 @@ namespace Feel
 po::options_description
 makeUnsteadyHeat1DOptions()
 {
-    po::options_description unsteadyheat1doptions("UnsteadyHeat1D options");
+    po::options_description unsteadyheat1doptions( "UnsteadyHeat1D options" );
     unsteadyheat1doptions.add_options()
-        ("hsize", po::value<double>()->default_value( 0.01 ), "mesh size")
-        ("mu1", po::value<double>()->default_value( 0.2 ), "mu1")
-        ("mu2", po::value<double>()->default_value( 0.2 ), "mu2")
-        ("mu3", po::value<double>()->default_value( -1 ), "mu3")
-        ("mu4", po::value<double>()->default_value( 0.1 ), "mu4")
-        ("alpha" , po::value<double>()->default_value( 1 ), "temporal coefficient")
-        ("steady", po::value<bool>()->default_value(false), "if true then steady else unsteady")
-        ("no-export", "don't export results")
-        ;
-    return unsteadyheat1doptions.add( Feel::feel_options() ).add(bdf_options("unsteadyHeat1d"));
+    ( "hsize", po::value<double>()->default_value( 0.01 ), "mesh size" )
+    ( "mu1", po::value<double>()->default_value( 0.2 ), "mu1" )
+    ( "mu2", po::value<double>()->default_value( 0.2 ), "mu2" )
+    ( "mu3", po::value<double>()->default_value( -1 ), "mu3" )
+    ( "mu4", po::value<double>()->default_value( 0.1 ), "mu4" )
+    ( "alpha" , po::value<double>()->default_value( 1 ), "temporal coefficient" )
+    ( "steady", po::value<bool>()->default_value( false ), "if true then steady else unsteady" )
+    ( "no-export", "don't export results" )
+    ;
+    return unsteadyheat1doptions.add( Feel::feel_options() ).add( bdf_options( "unsteadyHeat1d" ) );
 }
 AboutData
 makeUnsteadyHeat1DAbout( std::string const& str = "unsteadyHeat1d" )
@@ -84,10 +84,10 @@ makeUnsteadyHeat1DAbout( std::string const& str = "unsteadyHeat1d" )
                            "0.1",
                            "unsteady 1D Heat Benchmark",
                            Feel::AboutData::License_GPL,
-                           "Copyright (c) 2010,2011 Université de Grenoble 1 (Joseph Fourier)");
+                           "Copyright (c) 2010,2011 Université de Grenoble 1 (Joseph Fourier)" );
 
-    about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
-    about.addAuthor("Stephane Veys", "developer", "stephane.veys@imag.fr", "");
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    about.addAuthor( "Stephane Veys", "developer", "stephane.veys@imag.fr", "" );
     return about;
 }
 
@@ -200,8 +200,8 @@ public:
     typedef parameterspace_type::sampling_ptrtype sampling_ptrtype;
 
     /* time discretization */
-	typedef Bdf<space_type>  bdf_type;
-	typedef boost::shared_ptr<bdf_type> bdf_ptrtype;
+    typedef Bdf<space_type>  bdf_type;
+    typedef boost::shared_ptr<bdf_type> bdf_ptrtype;
 
 
     typedef Eigen::VectorXd theta_vector_type;
@@ -223,7 +223,7 @@ public:
     //! copy constructor
     UnsteadyHeat1D( UnsteadyHeat1D const & );
     //! destructor
-    ~UnsteadyHeat1D(){}
+    ~UnsteadyHeat1D() {}
 
     //! initialisation of the model
     void init();
@@ -241,19 +241,31 @@ public:
 
     // \return the number of terms in affine decomposition of left hand
     // side bilinear form
-    int Qa() const { return 3; }
+    int Qa() const
+    {
+        return 3;
+    }
 
     // \return the number of terms in affine decomposition of bilinear form
     // associated to mass matrix
-    int Qm() const { return 1; }
+    int Qm() const
+    {
+        return 1;
+    }
 
     // \return the number of terms in affine decomposition of left hand
     // side bilinear form ( adjoint model )
-    int Qadu() const { return 3; }
+    int Qadu() const
+    {
+        return 3;
+    }
 
     // \return the number of terms in affine decomposition of right hand
     //  linear form ( adjoint model )
-    int Qfdu() const { return 1; }
+    int Qfdu() const
+    {
+        return 1;
+    }
 
 
     /**
@@ -262,81 +274,104 @@ public:
      *
      * \return number of outputs associated to the model
      */
-    int Nl() const { return 2; }
+    int Nl() const
+    {
+        return 2;
+    }
 
     /**
      * \param l the index of output
      * \return number of terms  in affine decomposition of the \p q th output term
      */
-    int Ql( int l ) const { if ( l == 0 ) return 2; return 1; }
+    int Ql( int l ) const
+    {
+        if ( l == 0 ) return 2;
+
+        return 1;
+    }
 
     /**
      * \brief Returns the function space
      */
-    space_ptrtype functionSpace() { return Xh; }
+    space_ptrtype functionSpace()
+    {
+        return Xh;
+    }
 
     //! return the parameter space
-    parameterspace_ptrtype parameterSpace() const { return M_Dmu;}
+    parameterspace_ptrtype parameterSpace() const
+    {
+        return M_Dmu;
+    }
 
     /**
      * \brief compute the theta coefficient for both bilinear and linear form
      * \param mu parameter to evaluate the coefficients
      */
     boost::tuple<theta_vector_type, theta_vector_type, std::vector<theta_vector_type> >
-    computeThetaq( parameter_type const& mu , double time=0)
-        {
-            M_thetaAq.resize( Qa() );
-            M_thetaAq( 0 ) = 1;
-            M_thetaAq( 1 ) = mu( 0 ); // k_1
-            M_thetaAq( 2 ) = mu( 1 ); // k_2
+    computeThetaq( parameter_type const& mu , double time=0 )
+    {
+        M_thetaAq.resize( Qa() );
+        M_thetaAq( 0 ) = 1;
+        M_thetaAq( 1 ) = mu( 0 ); // k_1
+        M_thetaAq( 2 ) = mu( 1 ); // k_2
 
-            M_thetaFq.resize( Nl() );
-            M_thetaFq[0].resize( Ql(0) );
-            M_thetaFq[0]( 0 ) = mu(2); // delta
-            M_thetaFq[0]( 1 ) = mu(3); // phi
+        M_thetaFq.resize( Nl() );
+        M_thetaFq[0].resize( Ql( 0 ) );
+        M_thetaFq[0]( 0 ) = mu( 2 ); // delta
+        M_thetaFq[0]( 1 ) = mu( 3 ); // phi
 
-            M_thetaFq[1].resize( Ql(1) );
-            M_thetaFq[1]( 0 ) = 1;
+        M_thetaFq[1].resize( Ql( 1 ) );
+        M_thetaFq[1]( 0 ) = 1;
 
-            M_thetaMq.resize( Qm() );
-            M_thetaMq( 0 ) = 1;
+        M_thetaMq.resize( Qm() );
+        M_thetaMq( 0 ) = 1;
 
 
-            M_thetaAq_du.resize( Qadu() );
-            M_thetaAq_du( 0 ) = 1;
-            M_thetaAq_du( 1 ) = mu( 0 ); // k_1
-            M_thetaAq_du( 2 ) = mu( 1 ); // k_2
+        M_thetaAq_du.resize( Qadu() );
+        M_thetaAq_du( 0 ) = 1;
+        M_thetaAq_du( 1 ) = mu( 0 ); // k_1
+        M_thetaAq_du( 2 ) = mu( 1 ); // k_2
 
-            M_thetaFq_du.resize( Qfdu() );
-            M_thetaFq_du( 0 ) = 1;
+        M_thetaFq_du.resize( Qfdu() );
+        M_thetaFq_du( 0 ) = 1;
 
-            return boost::make_tuple( M_thetaMq, M_thetaAq, M_thetaFq );
-        }
-
-    /**
-     * \brief return the coefficient vector
-     */
-    theta_vector_type const& thetaAq() const { return M_thetaAq; }
+        return boost::make_tuple( M_thetaMq, M_thetaAq, M_thetaFq );
+    }
 
     /**
      * \brief return the coefficient vector
      */
-    theta_vector_type const& thetaMq() const { return M_thetaMq; }
+    theta_vector_type const& thetaAq() const
+    {
+        return M_thetaAq;
+    }
+
+    /**
+     * \brief return the coefficient vector
+     */
+    theta_vector_type const& thetaMq() const
+    {
+        return M_thetaMq;
+    }
 
 
     /**
      * \brief return the coefficient vector
      */
-    std::vector<theta_vector_type> const& thetaFq() const { return M_thetaFq; }
+    std::vector<theta_vector_type> const& thetaFq() const
+    {
+        return M_thetaFq;
+    }
 
     /**
      * \brief return the coefficient vector \p q component
      *
      */
     value_type thetaAq( int q ) const
-        {
-            return M_thetaAq( q );
-        }
+    {
+        return M_thetaAq( q );
+    }
 
 
     /**
@@ -344,18 +379,18 @@ public:
      *
      */
     value_type thetaMq( int q ) const
-        {
-            return M_thetaMq( q );
-        }
+    {
+        return M_thetaMq( q );
+    }
 
 
     /**
      * \return the \p q -th term of the \p l -th output
      */
     value_type thetaL( int l, int q ) const
-        {
-            return M_thetaFq[l]( q );
-        }
+    {
+        return M_thetaFq[l]( q );
+    }
 
     //@}
 
@@ -366,7 +401,10 @@ public:
     /**
      * set the mesh characteristic length to \p s
      */
-    void setMeshSize( double s ) { meshSize = s; }
+    void setMeshSize( double s )
+    {
+        meshSize = s;
+    }
 
 
     //@}
@@ -396,19 +434,34 @@ public:
      * \param T the temperature field
      * \param output_index (optional) useful for the adjoint ( POD )
      */
-    void solve( parameter_type const& mu, element_ptrtype& T , int output_index=0);
+    void solve( parameter_type const& mu, element_ptrtype& T , int output_index=0 );
 
     //eigen_matrix_type snapshotsMatrix(){return M_snapshots_matrix;}
     //eigen_matrix_type dualSnapshotsMatrix(){return Mdu_snapshots_matrix;}
     //void fillSnapshotsMatrix (parameter_type const& mu, int output);
     void assemble();
     int computeNumberOfSnapshots();
-    double timeStep() { return  M_bdf->timeStep(); }
-    double timeFinal() { return M_bdf->timeFinal(); }
-    double timeInitial() { return M_bdf->timeInitial(); }
-    int timeOrder() { return M_bdf->timeOrder();  }
-    bool isSteady() {return M_is_steady;}
-    void initializationField( element_ptrtype& initial_field,parameter_type const& mu);
+    double timeStep()
+    {
+        return  M_bdf->timeStep();
+    }
+    double timeFinal()
+    {
+        return M_bdf->timeFinal();
+    }
+    double timeInitial()
+    {
+        return M_bdf->timeInitial();
+    }
+    int timeOrder()
+    {
+        return M_bdf->timeOrder();
+    }
+    bool isSteady()
+    {
+        return M_is_steady;
+    }
+    void initializationField( element_ptrtype& initial_field,parameter_type const& mu );
 
     /**
      * solve for a given parameter \p mu
@@ -430,10 +483,10 @@ public:
     /**
      * export results to ensight format (enabled by  --export cmd line options)
      */
-    void exportResults(double time, element_type& T );
+    void exportResults( double time, element_type& T );
 
 
-    void exportResults1d( double time, element_type& T, double s);
+    void exportResults1d( double time, element_type& T, double s );
 
     /**
      * returns the scalar product of the boost::shared_ptr vector x and
@@ -471,7 +524,7 @@ public:
      * Given the output index \p output_index and the parameter \p mu, return
      * the value of the corresponding FEM output
      */
-    value_type output( int output_index, parameter_type const& mu , bool export_output=false);
+    value_type output( int output_index, parameter_type const& mu , bool export_output=false );
 
     static const bool is_time_dependent = true;
 
@@ -519,7 +572,7 @@ private:
     theta_vector_type M_thetaFq_du;
 
 
-  bdf_ptrtype M_bdf;
+    bdf_ptrtype M_bdf;
     int M_Nsnap;
 
 };
@@ -532,7 +585,7 @@ UnsteadyHeat1D::UnsteadyHeat1D()
     meshSize( 0.01 ),
     M_Dmu( new parameterspace_type )
 {
-  this->init();
+    this->init();
 }
 
 
@@ -545,7 +598,7 @@ UnsteadyHeat1D::UnsteadyHeat1D( po::variables_map const& vm )
     meshSize( vm["hsize"].as<double>() ),
     M_Dmu( new parameterspace_type )
 {
-  this->init();
+    this->init();
 }
 void
 UnsteadyHeat1D::init()
@@ -556,7 +609,7 @@ UnsteadyHeat1D::init()
      * First we create the mesh
      */
     mesh = createGMSHMesh( _mesh=new mesh_type,
-                           _desc=createGeo(meshSize) );
+                           _desc=createGeo( meshSize ) );
 
 
 
@@ -568,7 +621,7 @@ UnsteadyHeat1D::init()
     pT = element_ptrtype( new element_type( Xh ) );
 
     //M_bdf = bdf_ptrtype( new bdf_type(M_vm ,Xh, " " ) );
-    M_bdf = bdf( _space=Xh, _vm=M_vm, _name="unsteadyHeat1d" , _prefix="unsteadyHeat1d");
+    M_bdf = bdf( _space=Xh, _vm=M_vm, _name="unsteadyHeat1d" , _prefix="unsteadyHeat1d" );
 
     M_Aq.resize( 3 );
     M_Aq[0] = backend->newMatrix( Xh, Xh );
@@ -591,7 +644,7 @@ UnsteadyHeat1D::init()
 
 
     using namespace Feel::vf;
-    
+
 
 
     Feel::ParameterSpace<4>::Element mu_min( M_Dmu );
@@ -607,15 +660,15 @@ UnsteadyHeat1D::init()
 
     Mpod = backend->newMatrix( Xh, Xh );
     form2( Xh, Xh, Mpod, _init=true ) =
-      //integrate( elements(mesh), id(u)*idt(v) );
-      integrate( elements(mesh), id(u)*idt(v) + grad(v)*trans(gradt(u)) );
+        //integrate( elements(mesh), id(u)*idt(v) );
+        integrate( elements( mesh ), id( u )*idt( v ) + grad( v )*trans( gradt( u ) ) );
     Mpod->close();
 
 
     M = backend->newMatrix( Xh, Xh );
     form2( Xh, Xh, M, _init=true ) =
-          integrate( elements(mesh), id(u)*idt(v) + grad(v)*trans(gradt(u)) );
-      //integrate( elements(mesh), id(u)*idt(v) );
+        integrate( elements( mesh ), id( u )*idt( v ) + grad( v )*trans( gradt( u ) ) );
+    //integrate( elements(mesh), id(u)*idt(v) );
     M->close();
 
 
@@ -639,7 +692,7 @@ UnsteadyHeat1D::computeNumberOfSnapshots()
 
 
 void
-UnsteadyHeat1D::initializationField( element_ptrtype& initial_field,parameter_type const& mu)
+UnsteadyHeat1D::initializationField( element_ptrtype& initial_field,parameter_type const& mu )
 {
     initial_field->zero();
 }
@@ -660,31 +713,31 @@ UnsteadyHeat1D::assemble()
 
 
     //mass matrix
-    form2( Xh, Xh, M_Mq[0], _init=true ) = integrate ( elements(mesh), alpha*idt(u)*id(v) );
+    form2( Xh, Xh, M_Mq[0], _init=true ) = integrate ( elements( mesh ), alpha*idt( u )*id( v ) );
     M_Mq[0]->close();
 
     // right hand side
-    form1( Xh, M_Fq[0][0], _init=true ) = integrate( markedfaces(mesh,"left"), id(v) );
-    form1( _test=Xh, _vector=M_Fq[0][1], _init=true ) = integrate( elements(mesh), id(v) );
+    form1( Xh, M_Fq[0][0], _init=true ) = integrate( markedfaces( mesh,"left" ), id( v ) );
+    form1( _test=Xh, _vector=M_Fq[0][1], _init=true ) = integrate( elements( mesh ), id( v ) );
     M_Fq[0][0]->close();
     M_Fq[0][1]->close();
 
     // output
-    form1( Xh, M_Fq[1][0], _init=true ) = integrate( markedelements(mesh,"k1_2"), id(v)/0.2 );
-    form1( Xh, M_Fq[1][0] ) += integrate( markedelements(mesh,"k2_1"), id(v)/0.2 );
+    form1( Xh, M_Fq[1][0], _init=true ) = integrate( markedelements( mesh,"k1_2" ), id( v )/0.2 );
+    form1( Xh, M_Fq[1][0] ) += integrate( markedelements( mesh,"k2_1" ), id( v )/0.2 );
     M_Fq[1][0]->close();
 
-    form2( Xh, Xh, M_Aq[0], _init=true ) = integrate( elements(mesh), 0.1*(gradt(u)*trans(grad(v)) ) );
-    form2( Xh, Xh, M_Aq[0] ) += integrate( markedfaces(mesh,"right"), idt(u)*id(v) );
+    form2( Xh, Xh, M_Aq[0], _init=true ) = integrate( elements( mesh ), 0.1*( gradt( u )*trans( grad( v ) ) ) );
+    form2( Xh, Xh, M_Aq[0] ) += integrate( markedfaces( mesh,"right" ), idt( u )*id( v ) );
 
     M_Aq[0]->close();
 
-    form2( Xh, Xh, M_Aq[1], _init=true ) = integrate( markedelements(mesh,"k1_1"), (gradt(u)*trans(grad(v)) ) );
-    form2( Xh, Xh, M_Aq[1] ) += integrate( markedelements(mesh,"k1_2"), (gradt(u)*trans(grad(v)) ) );
+    form2( Xh, Xh, M_Aq[1], _init=true ) = integrate( markedelements( mesh,"k1_1" ), ( gradt( u )*trans( grad( v ) ) ) );
+    form2( Xh, Xh, M_Aq[1] ) += integrate( markedelements( mesh,"k1_2" ), ( gradt( u )*trans( grad( v ) ) ) );
     M_Aq[1]->close();
 
-    form2( Xh, Xh, M_Aq[2], _init=true ) = integrate( markedelements(mesh,"k2_1"), (gradt(u)*trans(grad(v)) ) );
-    form2( Xh, Xh, M_Aq[2] ) += integrate( markedelements(mesh,"k2_2"), (gradt(u)*trans(grad(v)) ) );
+    form2( Xh, Xh, M_Aq[2], _init=true ) = integrate( markedelements( mesh,"k2_1" ), ( gradt( u )*trans( grad( v ) ) ) );
+    form2( Xh, Xh, M_Aq[2] ) += integrate( markedelements( mesh,"k2_2" ), ( gradt( u )*trans( grad( v ) ) ) );
     M_Aq[2]->close();
 
 
@@ -707,59 +760,65 @@ UnsteadyHeat1D::computeAffineDecomposition()
 
 
 void
-UnsteadyHeat1D::exportResults(double time, element_type& T )
+UnsteadyHeat1D::exportResults( double time, element_type& T )
 {
 #if 0
+
     if ( M_do_export )
     {
         Log() << "exportResults starts\n";
 
-        exporter->step(time)->setMesh( T.functionSpace()->mesh() );
+        exporter->step( time )->setMesh( T.functionSpace()->mesh() );
 
-        exporter->step(time)->add( "T", T );
+        exporter->step( time )->add( "T", T );
 
         exporter->save();
     }
+
 #endif
 } // Heat1d::export
 
 
 void
-UnsteadyHeat1D::exportResults1d( double time, element_type& T, double output)
+UnsteadyHeat1D::exportResults1d( double time, element_type& T, double output )
 {
     std::map<double,double> data;
-    for(auto it = T.functionSpace()->mesh()->beginElement( ),
+
+    for ( auto it = T.functionSpace()->mesh()->beginElement( ),
             en = T.functionSpace()->mesh()->endElement( );
-        it!=en; ++it )
+            it!=en; ++it )
     {
-        for( size_type i = 0; i < space_type::basis_type::nLocalDof; ++i )
+        for ( size_type i = 0; i < space_type::basis_type::nLocalDof; ++i )
         {
-            value_type a = it->point(0).node()[0];
-            value_type b = it->point(1).node()[0];
+            value_type a = it->point( 0 ).node()[0];
+            value_type b = it->point( 1 ).node()[0];
             value_type x = 0;
+
             if ( i == 0 )
                 x=a;
+
             else if ( i == 1 )
                 x=b;
-            else
-                x= a + (i-1)*(b-a)/(space_type::basis_type::nLocalDof-1);
 
-            data[x] = T.localToGlobal( it->id(), i, 0);
+            else
+                x= a + ( i-1 )*( b-a )/( space_type::basis_type::nLocalDof-1 );
+
+            data[x] = T.localToGlobal( it->id(), i, 0 );
         }
     }
 
     std::ostringstream fname_T;
-    std::ofstream ofs3( (boost::format("Solution_%.3f") % time).str().c_str() );
+    std::ofstream ofs3( ( boost::format( "Solution_%.3f" ) % time ).str().c_str() );
     BOOST_FOREACH( auto d, data )
     {
-        ofs3 <<std::setprecision(16)<< d.first << " " << d.second << "\n";
+        ofs3 <<std::setprecision( 16 )<< d.first << " " << d.second << "\n";
     }
     ofs3.close();
 
 
     std::ofstream output_file;
-    output_file.open("Output.dat",std::ios::out | std::ios::app);
-    output_file<<std::setprecision(16)<<time<<" "<<output<<"\n";
+    output_file.open( "Output.dat",std::ios::out | std::ios::app );
+    output_file<<std::setprecision( 16 )<<time<<" "<<output<<"\n";
 
 }
 
@@ -768,14 +827,15 @@ UnsteadyHeat1D::exportResults1d( double time, element_type& T, double output)
 
 
 void
-UnsteadyHeat1D::update( parameter_type const& mu,double bdf_coeff, element_type const& bdf_poly, int output_index)
+UnsteadyHeat1D::update( parameter_type const& mu,double bdf_coeff, element_type const& bdf_poly, int output_index )
 {
     //first direct model
     D->close();
     D->zero();
     *D = *M_Aq[0];
     D->scale( M_thetaAq[0] );
-    for( size_type q = 1;q < M_Aq.size(); ++q )
+
+    for ( size_type q = 1; q < M_Aq.size(); ++q )
     {
         D->addMatrix( M_thetaAq[q], M_Aq[q] );
     }
@@ -783,21 +843,22 @@ UnsteadyHeat1D::update( parameter_type const& mu,double bdf_coeff, element_type 
     F->close();
     F->zero();
 
-    for( size_type q = 0;q < M_Fq[output_index].size(); ++q )
+    for ( size_type q = 0; q < M_Fq[output_index].size(); ++q )
     {
         F->add( M_thetaFq[output_index][q], M_Fq[output_index][q] );
     }
 
-    auto vec_bdf_poly = backend->newVector(Xh);
+    auto vec_bdf_poly = backend->newVector( Xh );
+
     //add contribution from mass matrix
-    for( size_type q = 0;q < M_Mq.size(); ++q )
+    for ( size_type q = 0; q < M_Mq.size(); ++q )
     {
         //left hand side
         D->addMatrix( M_thetaMq[q]*bdf_coeff, M_Mq[q] );
         //right hand side
         *vec_bdf_poly = bdf_poly;
-        vec_bdf_poly->scale( M_thetaMq[q]);
-        F->addVector( *vec_bdf_poly, *M_Mq[q]);
+        vec_bdf_poly->scale( M_thetaMq[q] );
+        F->addVector( *vec_bdf_poly, *M_Mq[q] );
     }
 
 
@@ -825,21 +886,23 @@ UnsteadyHeat1D::solve( parameter_type const& mu, element_ptrtype& T , int output
 
     this->computeThetaq( mu );
 
-    M_bdf->initialize(*T);
+    M_bdf->initialize( *T );
 
-    if(M_is_steady)
+    if ( M_is_steady )
     {
         M_bdf->setSteady();
     }
 
-    double bdf_coeff = M_bdf->polyDerivCoefficient(0);
+    double bdf_coeff = M_bdf->polyDerivCoefficient( 0 );
 
     std::cout<<"  -- solving primal "<<std::endl;
-    for ( M_bdf->start(); !M_bdf->isFinished();M_bdf->next() )
+
+    for ( M_bdf->start(); !M_bdf->isFinished(); M_bdf->next() )
     {
         auto bdf_poly = M_bdf->polyDeriv();
         this->update( mu , bdf_coeff, bdf_poly );
-        auto ret = backend->solve( _matrix=D,  _solution=T, _rhs=F, _reuse_prec=(M_bdf->iteration() >=2));
+        auto ret = backend->solve( _matrix=D,  _solution=T, _rhs=F, _reuse_prec=( M_bdf->iteration() >=2 ) );
+
         if ( !ret.get<0>() )
         {
             Log()<<"WARNING : at time "<<M_bdf->time()<<" we have not converged ( nb_it : "<<ret.get<1>()<<" and residual : "<<ret.get<2>() <<" ) \n";
@@ -851,8 +914,10 @@ UnsteadyHeat1D::solve( parameter_type const& mu, element_ptrtype& T , int output
 #if( 0 )
         //this->exportResults(M_bdf->time(), *T );
         bool export_output=true;
-        double s = output(output_index,mu,export_output);
-        if( s != 0 && output_index==1) this->exportResults1d(M_bdf->time(),*T,s);
+        double s = output( output_index,mu,export_output );
+
+        if ( s != 0 && output_index==1 ) this->exportResults1d( M_bdf->time(),*T,s );
+
 #endif
 
         M_bdf->shiftRight( *T );
@@ -901,16 +966,18 @@ UnsteadyHeat1D::run( const double * X, unsigned long N, double * Y, unsigned lon
     Feel::ParameterSpace<4>::Element mu( M_Dmu );
     mu << X[0], X[1], X[2], X[3];
     static int do_init = true;
+
     if ( do_init )
     {
         meshSize = X[4];
         this->init();
         do_init = false;
     }
+
     this->solve( mu, pT );
 
-    double mean = integrate( elements(mesh),
-                             chi( (Px() >= -0.1) && (Px() <= 0.1) )*idv(*pT) ).evaluate()(0,0)/0.2;
+    double mean = integrate( elements( mesh ),
+                             chi( ( Px() >= -0.1 ) && ( Px() <= 0.1 ) )*idv( *pT ) ).evaluate()( 0,0 )/0.2;
     Y[0]=mean;
 }
 
@@ -922,7 +989,8 @@ UnsteadyHeat1D::output( int output_index, parameter_type const& mu, bool export_
 {
 
     using namespace vf;
-    if(!export_output)
+
+    if ( !export_output )
     {
         this->solve( mu, pT );
     }
@@ -936,15 +1004,16 @@ UnsteadyHeat1D::output( int output_index, parameter_type const& mu, bool export_
     double output=0;
 
     // right hand side (compliant)
-    if( output_index == 0 )
+    if ( output_index == 0 )
     {
-         output = M_thetaFq[0](0)*dot( M_Fq[0][0], U )+M_thetaFq[0](1)*dot( M_Fq[0][1], U );
+        output = M_thetaFq[0]( 0 )*dot( M_Fq[0][0], U )+M_thetaFq[0]( 1 )*dot( M_Fq[0][1], U );
     }
+
     // output
     if ( output_index == 1 )
     {
-        output = integrate( elements(mesh),
-			    chi( (Px() >= -0.1) && (Px() <= 0.1) )*idv(*pT) ).evaluate()(0,0)/0.2;
+        output = integrate( elements( mesh ),
+                            chi( ( Px() >= -0.1 ) && ( Px() <= 0.1 ) )*idv( *pT ) ).evaluate()( 0,0 )/0.2;
     }
 
     return output;

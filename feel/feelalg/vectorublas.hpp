@@ -135,13 +135,13 @@ public:
      */
     void init ( const size_type N,
                 const size_type n_local,
-                const bool      fast=false);
+                const bool      fast=false );
 
     /**
      * call init with n_local = N,
      */
     void init ( const size_type n,
-                const bool      fast=false);
+                const bool      fast=false );
 
     /**
      * init from a \p DataMap
@@ -153,7 +153,10 @@ public:
      * Creates a copy of this vector and returns it in an
      * \p shared_ptr<>.
      */
-    clone_ptrtype clone() const { return clone_ptrtype( new this_type( *this ) ); }
+    clone_ptrtype clone() const
+    {
+        return clone_ptrtype( new this_type( *this ) );
+    }
 
     //@}
 
@@ -164,7 +167,7 @@ public:
     /**
      *  \f$U = V\f$: copy all components.
      */
-    Vector<value_type>& operator= (const Vector<value_type> &V);
+    Vector<value_type>& operator= ( const Vector<value_type> &V );
 
     template<typename AE>
     VectorUblas<value_type, Storage>& operator=( ublas::vector_expression<AE> const& e )
@@ -179,12 +182,12 @@ public:
      */
     T operator()( size_type i ) const
     {
-        FEELPP_ASSERT (this->isInitialized()).error( "vector not initialized" );
-        FEELPP_ASSERT ( (i >= this->firstLocalIndex()) &&
-                      (i < this->lastLocalIndex()))
-            ( i )
-            ( this->firstLocalIndex() )
-            ( this->lastLocalIndex() ).error( "vector invalid index" );
+        FEELPP_ASSERT ( this->isInitialized() ).error( "vector not initialized" );
+        FEELPP_ASSERT ( ( i >= this->firstLocalIndex() ) &&
+                        ( i < this->lastLocalIndex() ) )
+        ( i )
+        ( this->firstLocalIndex() )
+        ( this->lastLocalIndex() ).error( "vector invalid index" );
 
         return _M_vec.operator()( i-this->firstLocalIndex() );
     }
@@ -194,12 +197,12 @@ public:
      */
     T& operator()( size_type i )
     {
-        FEELPP_ASSERT (this->isInitialized()).error( "vector not initialized" );
-        FEELPP_ASSERT ( (i >= this->firstLocalIndex()) &&
-                      (i <  this->lastLocalIndex()))
-            ( i )
-            ( this->firstLocalIndex() )
-            ( this->lastLocalIndex() ).error( "vector invalid index" );
+        FEELPP_ASSERT ( this->isInitialized() ).error( "vector not initialized" );
+        FEELPP_ASSERT ( ( i >= this->firstLocalIndex() ) &&
+                        ( i <  this->lastLocalIndex() ) )
+        ( i )
+        ( this->firstLocalIndex() )
+        ( this->lastLocalIndex() ).error( "vector invalid index" );
         this->outdateGlobalValues();
         return _M_vec.operator()( i-this->firstLocalIndex() );
     }
@@ -209,12 +212,12 @@ public:
      */
     T operator[]( size_type i ) const
     {
-        FEELPP_ASSERT (this->isInitialized()).error( "vector not initialized" );
-        FEELPP_ASSERT ( (i >= this->firstLocalIndex()) &&
-                      (i < this->lastLocalIndex()))
-            ( i )
-            ( this->firstLocalIndex() )
-            ( this->lastLocalIndex() ).error( "vector invalid index" );
+        FEELPP_ASSERT ( this->isInitialized() ).error( "vector not initialized" );
+        FEELPP_ASSERT ( ( i >= this->firstLocalIndex() ) &&
+                        ( i < this->lastLocalIndex() ) )
+        ( i )
+        ( this->firstLocalIndex() )
+        ( this->lastLocalIndex() ).error( "vector invalid index" );
 
         return _M_vec.operator()( i-this->firstLocalIndex() );
     }
@@ -224,12 +227,12 @@ public:
      */
     T& operator[]( size_type i )
     {
-        FEELPP_ASSERT (this->isInitialized()).error( "vector not initialized" );
-        FEELPP_ASSERT ( (i >= this->firstLocalIndex()) &&
-                      (i <=  this->lastLocalIndex()))
-            ( i )
-            ( this->firstLocalIndex() )
-            ( this->lastLocalIndex() ).error( "vector invalid index" );
+        FEELPP_ASSERT ( this->isInitialized() ).error( "vector not initialized" );
+        FEELPP_ASSERT ( ( i >= this->firstLocalIndex() ) &&
+                        ( i <=  this->lastLocalIndex() ) )
+        ( i )
+        ( this->firstLocalIndex() )
+        ( this->lastLocalIndex() ).error( "vector invalid index" );
         this->outdateGlobalValues();
         return _M_vec.operator()( i-this->firstLocalIndex() );
     }
@@ -238,7 +241,7 @@ public:
      * Addition operator.
      * Fast equivalent to \p U.add(1, V).
      */
-    Vector<T>& operator+=(const Vector<T>& v )
+    Vector<T>& operator+=( const Vector<T>& v )
     {
         checkInvariant();
         this->outdateGlobalValues();
@@ -250,7 +253,7 @@ public:
      * Subtraction operator.
      * Fast equivalent to \p U.add(-1, V).
      */
-    Vector<T>& operator-=(const Vector<T>& v)
+    Vector<T>& operator-=( const Vector<T>& v )
     {
         checkInvariant();
         this->outdateGlobalValues();
@@ -265,11 +268,23 @@ public:
      */
     //@{
 
-    iterator begin() { return _M_vec.begin(); }
-    const_iterator begin() const { return _M_vec.begin(); }
+    iterator begin()
+    {
+        return _M_vec.begin();
+    }
+    const_iterator begin() const
+    {
+        return _M_vec.begin();
+    }
 
-    iterator end() { return _M_vec.end(); }
-    const_iterator end() const { return _M_vec.end(); }
+    iterator end()
+    {
+        return _M_vec.end();
+    }
+    const_iterator end() const
+    {
+        return _M_vec.end();
+    }
 
     /**
      * if the vector is a range, return the first index of the range,
@@ -300,7 +315,10 @@ public:
     /**
      * \return true if vector is initialized/usable, false otherwise
      */
-    bool isInitialized() const { return true; }
+    bool isInitialized() const
+    {
+        return true;
+    }
 
     /**
      * \c close the ublas vector, that will copy the content of write
@@ -322,17 +340,26 @@ public:
     /**
      * Returns the read optimized ublas vector.
      */
-    vector_type const& vec () const { return _M_vec; }
+    vector_type const& vec () const
+    {
+        return _M_vec;
+    }
 
     /**
      * Returns the read optimized ublas vector.
      */
-    vector_type & vec ()  { return _M_vec; }
+    vector_type & vec ()
+    {
+        return _M_vec;
+    }
 
     /**
      * update global values array
      */
-    bool areGlobalValuesUpdated() const { return M_global_values_updated; }
+    bool areGlobalValuesUpdated() const
+    {
+        return M_global_values_updated;
+    }
 
     /**
      * update global values
@@ -347,7 +374,9 @@ public:
      * get the \p i -th global value
      */
     value_type globalValue( size_type i ) const
-        { return this->operator()( i ); }
+    {
+        return this->operator()( i );
+    }
     //{ return M_global_values( i ); }
 
     //@
@@ -360,17 +389,26 @@ public:
     /**
      * outdate global values array e.g. they must be update
      */
-    void outdateGlobalValues() { M_global_values_updated = false; }
+    void outdateGlobalValues()
+    {
+        M_global_values_updated = false;
+    }
 
     /**
      * set the \p i -th global value
      */
-    void setGlobalValue( size_type i, value_type v ) const { M_global_values( i ) = v; }
+    void setGlobalValue( size_type i, value_type v ) const
+    {
+        M_global_values( i ) = v;
+    }
 
     /**
      * set the entries to the constant \p v
      */
-    void setConstant( value_type v ) { _M_vec = ublas::scalar_vector<double>(_M_vec.size(), v ); }
+    void setConstant( value_type v )
+    {
+        _M_vec = ublas::scalar_vector<double>( _M_vec.size(), v );
+    }
 
     //@}
 
@@ -410,30 +448,30 @@ public:
     /**
      * Add \p value to the value already accumulated
      */
-    void add ( const size_type i, const value_type& value)
+    void add ( const size_type i, const value_type& value )
     {
         checkInvariant();
         this->outdateGlobalValues();
-        (*this)( i ) += value;
+        ( *this )( i ) += value;
     }
 
     /**
      * v([i1,i2,...,in]) += [value1,...,valuen]
      */
     void addVector ( int* i, int n, value_type* v )
-        {
-            for( int j = 0;j < n; ++j )
-                (*this)( i[j] ) += v[j];
-        }
+    {
+        for ( int j = 0; j < n; ++j )
+            ( *this )( i[j] ) += v[j];
+    }
 
     /**
      * set to \p value
      */
-    void set ( size_type i, const value_type& value)
+    void set ( size_type i, const value_type& value )
     {
         checkInvariant();
         this->outdateGlobalValues();
-        (*this)( i ) = value;
+        ( *this )( i ) = value;
     }
 
     /**
@@ -441,13 +479,14 @@ public:
      * and you
      * want to specify WHERE to add it
      */
-    void addVector (const std::vector<value_type>& v,
-                    const std::vector<size_type>& dof_indices)
+    void addVector ( const std::vector<value_type>& v,
+                     const std::vector<size_type>& dof_indices )
     {
-        FEELPP_ASSERT (v.size() == dof_indices.size()).error( "invalid dof indices" );
+        FEELPP_ASSERT ( v.size() == dof_indices.size() ).error( "invalid dof indices" );
         this->outdateGlobalValues();
-        for (size_type i=0; i<v.size(); i++)
-            this->add (dof_indices[i], v[i]);
+
+        for ( size_type i=0; i<v.size(); i++ )
+            this->add ( dof_indices[i], v[i] );
     }
 
     /**
@@ -456,13 +495,14 @@ public:
      * want to specify WHERE to add
      * the \p NumericVector<T> V
      */
-    void addVector (const Vector<value_type>& V,
-                    const std::vector<size_type>& dof_indices)
+    void addVector ( const Vector<value_type>& V,
+                     const std::vector<size_type>& dof_indices )
     {
-        FEELPP_ASSERT (V.size() == dof_indices.size()).error( "invalid dof indices" );
+        FEELPP_ASSERT ( V.size() == dof_indices.size() ).error( "invalid dof indices" );
         this->outdateGlobalValues();
-        for (size_type i=0; i<V.size(); i++)
-            this->add (dof_indices[i], V(i));
+
+        for ( size_type i=0; i<V.size(); i++ )
+            this->add ( dof_indices[i], V( i ) );
     }
 
 
@@ -470,8 +510,8 @@ public:
      * \f$ U+=A*V\f$, add the product of a \p MatrixSparse \p A
      * and a \p Vector \p V to \p this, where \p this=U.
      */
-    void addVector (const Vector<value_type>& /*V_in*/,
-                    const MatrixSparse<value_type>& /*A_in*/)
+    void addVector ( const Vector<value_type>& /*V_in*/,
+                     const MatrixSparse<value_type>& /*A_in*/ )
     {
         FEELPP_ASSERT( 0 ).error( "invalid call, not implemented yet" );
     }
@@ -482,21 +522,22 @@ public:
      * want to specify WHERE to add
      * the DenseVector<T> V
      */
-    void addVector (const ublas::vector<value_type>& V,
-                    const std::vector<size_type>& dof_indices)
+    void addVector ( const ublas::vector<value_type>& V,
+                     const std::vector<size_type>& dof_indices )
     {
-        FEELPP_ASSERT (V.size() == dof_indices.size()).error( "invalid dof indices" );
+        FEELPP_ASSERT ( V.size() == dof_indices.size() ).error( "invalid dof indices" );
         this->outdateGlobalValues();
-        for (size_type i=0; i<V.size(); i++)
-            this->add (dof_indices[i], V(i));
+
+        for ( size_type i=0; i<V.size(); i++ )
+            this->add ( dof_indices[i], V( i ) );
     }
 
     /**
      * \f$ U=v \f$ where v is a DenseVector<T>
      * and you want to specify WHERE to insert it
      */
-    void insert (const std::vector<T>& /*v*/,
-                 const std::vector<size_type>& /*dof_indices*/)
+    void insert ( const std::vector<T>& /*v*/,
+                  const std::vector<size_type>& /*dof_indices*/ )
     {
         FEELPP_ASSERT( 0 ).error( "invalid call, not implemented yet" );
     }
@@ -507,8 +548,8 @@ public:
      * want to specify WHERE to insert
      * the Vector<T> V
      */
-    void insert (const Vector<T>& /*V*/,
-                 const std::vector<size_type>& /*dof_indices*/)
+    void insert ( const Vector<T>& /*V*/,
+                  const std::vector<size_type>& /*dof_indices*/ )
     {
         FEELPP_ASSERT( 0 ).error( "invalid call, not implemented yet" );
     }
@@ -520,8 +561,8 @@ public:
      * want to specify WHERE to insert
      * the DenseVector<T> V
      */
-    void insert (const ublas::vector<T>& /*V*/,
-                 const std::vector<size_type>& /*dof_indices*/)
+    void insert ( const ublas::vector<T>& /*V*/,
+                  const std::vector<size_type>& /*dof_indices*/ )
     {
         FEELPP_ASSERT( 0 ).error( "invalid call, not implemented yet" );
     }
@@ -530,7 +571,7 @@ public:
      * Scale each element of the
      * vector by the given factor.
      */
-    void scale (const T factor)
+    void scale ( const T factor )
     {
         this->outdateGlobalValues();
         _M_vec.operator *=( factor );
@@ -542,7 +583,7 @@ public:
      * vector to the file named \p name.  If \p name
      * is not specified it is dumped to the screen.
      */
-    void printMatlab(const std::string name="NULL") const;
+    void printMatlab( const std::string name="NULL" ) const;
 
     void close() {}
 
@@ -554,18 +595,20 @@ public:
     {
         checkInvariant();
 
-        real_type local_min = *std::min_element(_M_vec.begin(), _M_vec.end());
+        real_type local_min = *std::min_element( _M_vec.begin(), _M_vec.end() );
 
         real_type global_min = local_min;
 
 
 
 #ifdef FEELPP_HAS_MPI
+
         if ( this->comm().size() > 1 )
-            {
-                MPI_Allreduce (&local_min, &global_min, 1,
-                               MPI_DOUBLE, MPI_MIN, this->comm());
-            }
+        {
+            MPI_Allreduce ( &local_min, &global_min, 1,
+                            MPI_DOUBLE, MPI_MIN, this->comm() );
+        }
+
 #endif
 
         return global_min;
@@ -578,7 +621,7 @@ public:
     {
         checkInvariant();
 
-        real_type local_max = *std::max_element(_M_vec.begin(), _M_vec.end());
+        real_type local_max = *std::max_element( _M_vec.begin(), _M_vec.end() );
 
         real_type global_max = local_max;
 
@@ -586,10 +629,11 @@ public:
 #ifdef FEELPP_HAS_MPI
 
         if ( this->comm().size() > 1 )
-            {
-                MPI_Allreduce (&local_max, &global_max, 1,
-                               MPI_DOUBLE, MPI_MAX, this->comm());
-            }
+        {
+            MPI_Allreduce ( &local_max, &global_max, 1,
+                            MPI_DOUBLE, MPI_MAX, this->comm() );
+        }
+
 #endif
 
         return global_max;
@@ -610,9 +654,10 @@ public:
 #ifdef FEELPP_HAS_MPI
 
         if ( this->comm().size() > 1 )
-            {
-                mpi::all_reduce( this->comm(), local_l1, global_l1, std::plus<double>() );
-            }
+        {
+            mpi::all_reduce( this->comm(), local_l1, global_l1, std::plus<double>() );
+        }
+
 #endif
 
         return global_l1;
@@ -633,9 +678,10 @@ public:
 #ifdef FEELPP_HAS_MPI
 
         if ( this->comm().size() > 1 )
-            {
-                mpi::all_reduce( this->comm(), local_norm2, global_norm2, std::plus<real_type>() );
-            }
+        {
+            mpi::all_reduce( this->comm(), local_norm2, global_norm2, std::plus<real_type>() );
+        }
+
 #endif
         return math::sqrt( global_norm2 );
     }
@@ -654,9 +700,10 @@ public:
 #ifdef FEELPP_HAS_MPI
 
         if ( this->comm().size() > 1 )
-            {
-                mpi::all_reduce( this->comm(), local_norminf, global_norminf, mpi::maximum<real_type>() );
-            }
+        {
+            mpi::all_reduce( this->comm(), local_norminf, global_norminf, mpi::maximum<real_type>() );
+        }
+
 #endif
         return global_norminf;
     }
@@ -676,9 +723,10 @@ public:
 #ifdef FEELPP_HAS_MPI
 
         if ( this->comm().size() > 1 )
-            {
-                mpi::all_reduce( this->comm(), local_sum, global_sum, std::plus<value_type>() );
-            }
+        {
+            mpi::all_reduce( this->comm(), local_sum, global_sum, std::plus<value_type>() );
+        }
+
 #endif
 
         return global_sum;
@@ -694,7 +742,7 @@ public:
     /**
      *@compute pow on each element of the vector.
      */
-    this_type pow(int n) const;
+    this_type pow( int n ) const;
 
 
     /**
@@ -702,12 +750,14 @@ public:
      * Addition of \p s to all components.
      * \note \p s is a scalar and not a vector.
      */
-    void add(const T& a)
+    void add( const T& a )
     {
         checkInvariant();
         this->outdateGlobalValues();
-        for( size_type i = 0; i < this->localSize(); ++i )
+
+        for ( size_type i = 0; i < this->localSize(); ++i )
             _M_vec.operator[]( i ) += a;
+
         return;
     }
 
@@ -715,7 +765,7 @@ public:
      * \f$U+=V\f$.
      * Simple vector addition, equal to the \p operator+=.
      */
-    void add(const Vector<T>& v)
+    void add( const Vector<T>& v )
     {
         checkInvariant();
         this->outdateGlobalValues();
@@ -728,12 +778,13 @@ public:
      * Simple vector addition, equal to the
      * \p operator +=.
      */
-    void add(const T& a, const Vector<T>& v)
+    void add( const T& a, const Vector<T>& v )
     {
         checkInvariant();
         this->outdateGlobalValues();
-        for( size_type i = 0; i < this->localSize(); ++i )
-            _M_vec.operator()( i ) += a*v( v.firstLocalIndex() + i);
+
+        for ( size_type i = 0; i < this->localSize(); ++i )
+            _M_vec.operator()( i ) += a*v( v.firstLocalIndex() + i );
 
         return;
     }
@@ -742,7 +793,7 @@ public:
      * Creates a copy of the global vector in the
      * local vector \p v_local.
      */
-    void localize ( std::vector<value_type>& /*v_local*/) const
+    void localize ( std::vector<value_type>& /*v_local*/ ) const
     {
         FEELPP_ASSERT( 0 ).error( "invalid call, not implemented yet" );
     }
@@ -751,25 +802,25 @@ public:
      * Creates a copy of the global vector in the
      * local vector \p v_local.
      */
-    void localize ( ublas::vector<value_type>& v_local) const;
+    void localize ( ublas::vector<value_type>& v_local ) const;
 
     /**
      * Creates a copy of the global vector in the
      * local vector \p v_local.
      */
-    void localize ( ublas::vector_range<ublas::vector<value_type> >& v_local) const;
+    void localize ( ublas::vector_range<ublas::vector<value_type> >& v_local ) const;
 
     /**
      * Creates a copy of the global vector in the
      * local vector \p v_local.
      */
-    void localize ( ublas::vector_slice<ublas::vector<value_type> >& v_local) const;
+    void localize ( ublas::vector_slice<ublas::vector<value_type> >& v_local ) const;
 
     /**
      * Same, but fills a \p NumericVector<T> instead of
      * a \p std::vector.
      */
-    void localize ( Vector<T>& v_local) const;
+    void localize ( Vector<T>& v_local ) const;
 
     /**
      * Creates a local vector \p v_local containing
@@ -783,9 +834,9 @@ public:
      * Updates a local vector with selected values from neighboring
      * processors, as defined by \p send_list.
      */
-    void localize (const size_type first_local_idx,
-                   const size_type last_local_idx,
-                   const std::vector<size_type>& send_list);
+    void localize ( const size_type first_local_idx,
+                    const size_type last_local_idx,
+                    const std::vector<size_type>& send_list );
 
     /**
      * Creates a local copy of the global vector in
@@ -837,17 +888,19 @@ VectorUblas<T>
 element_product( VectorUblas<T> const& v1, VectorUblas<T> const& v2 )
 {
     FEELPP_ASSERT( v1.localSize() == v2.localSize() &&
-                 v1.size() == v2.size() )
-        ( v1.localSize() )( v2.localSize() )
-        ( v1.size() )( v2.size() ).error( "incompatible vector sizes" );
+                   v1.size() == v2.size() )
+    ( v1.localSize() )( v2.localSize() )
+    ( v1.size() )( v2.size() ).error( "incompatible vector sizes" );
 
     typedef typename type_traits<T>::real_type real_type;
 
     VectorUblas<real_type> _t( v1.map() );
     size_type s = v1.localSize();
     size_type start = v1.firstLocalIndex();
-    for( size_type i = 0; i < s; ++i )
-        _t.operator()(start+i) = v1.operator()( start + i )* v2.operator()( start + i );
+
+    for ( size_type i = 0; i < s; ++i )
+        _t.operator()( start+i ) = v1.operator()( start + i )* v2.operator()( start + i );
+
     return _t;
 }
 

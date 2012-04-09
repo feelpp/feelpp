@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -94,7 +94,7 @@ public:
     //@{
 
     //! copy operator
-    PolyvisBase& operator=( PolyvisBase const & o);
+    PolyvisBase& operator=( PolyvisBase const & o );
 
     //@}
 
@@ -103,10 +103,16 @@ public:
     //@{
 
     //! return the variables map
-    po::variables_map vm() const { return M_vm; }
+    po::variables_map vm() const
+    {
+        return M_vm;
+    }
 
     //! return the polynomial name
-    std::string name() const { return M_pname; }
+    std::string name() const
+    {
+        return M_pname;
+    }
 
     //@}
 

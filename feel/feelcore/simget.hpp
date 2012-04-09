@@ -106,13 +106,14 @@ public:
     //@{
 
     //! copy operator
-    Simget& operator=( Simget const & o)
+    Simget& operator=( Simget const & o )
+    {
+        if ( this != &o )
         {
-            if (this != &o )
-            {
-            }
-            return *this;
         }
+
+        return *this;
+    }
     //@}
 
     /** @name Accessors
@@ -120,22 +121,40 @@ public:
     //@{
 
     //! return the name of the simget
-    virtual std::string name() const { return M_about.appName(); }
+    virtual std::string name() const
+    {
+        return M_about.appName();
+    }
 
     //! \return the mpi communicator
-    mpi::communicator comm() const { return M_comm; }
+    mpi::communicator comm() const
+    {
+        return M_comm;
+    }
 
     //! \return the \c variables_map
-    po::variables_map const& vm() const { return M_vm; }
+    po::variables_map const& vm() const
+    {
+        return M_vm;
+    }
 
     //! \return the \c AboutData object
-    AboutData const& about() const { return M_about; }
+    AboutData const& about() const
+    {
+        return M_about;
+    }
 
     //! return the mesh size
-    double meshSize() const { return M_meshSize; }
+    double meshSize() const
+    {
+        return M_meshSize;
+    }
 
     //! return the statistics associated to the simget after calling run
-    ptree::ptree const& stats() const { return M_stats; }
+    ptree::ptree const& stats() const
+    {
+        return M_stats;
+    }
 
     //@}
 
@@ -144,7 +163,10 @@ public:
     //@{
 
     //! set the mesh size
-    void setMeshSize( double h ) { M_meshSize= h; }
+    void setMeshSize( double h )
+    {
+        M_meshSize= h;
+    }
 
     //@}
 
@@ -165,7 +187,7 @@ public:
     /**
      * print statistics from simget
      */
-    void print( std::ostream& out, std::vector<ptree::ptree> & stats);
+    void print( std::ostream& out, std::vector<ptree::ptree> & stats );
 
     //@}
 
@@ -176,7 +198,7 @@ protected:
     /**
      * change repository.
      */
-    Simget& changeRepository( boost::format fmt);
+    Simget& changeRepository( boost::format fmt );
 
 protected:
     double M_meshSize;

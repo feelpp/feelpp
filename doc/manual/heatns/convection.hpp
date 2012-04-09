@@ -80,32 +80,32 @@ public:
 
     typedef Convection<Order_s, Order_p, Order_t> self_type;
 
-	// Definitions pour mesh
-	typedef Simplex<2> entity_type;
-	typedef Mesh<entity_type> mesh_type;
-	typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    // Definitions pour mesh
+    typedef Simplex<2> entity_type;
+    typedef Mesh<entity_type> mesh_type;
+    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
     typedef Backend<double> backend_type;
     typedef boost::shared_ptr<backend_type> backend_ptrtype;
 
-	typedef backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
+    typedef backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
     typedef backend_type::vector_ptrtype vector_ptrtype;
 
-	// space and associated elements definitions
-	typedef Lagrange<Order_s, Vectorial> basis_u_type; // velocity space
-	typedef Lagrange<Order_p, Scalar> basis_p_type; // pressure space
-	typedef Lagrange<Order_t, Scalar> basis_t_type; // temperature space
+    // space and associated elements definitions
+    typedef Lagrange<Order_s, Vectorial> basis_u_type; // velocity space
+    typedef Lagrange<Order_p, Scalar> basis_p_type; // pressure space
+    typedef Lagrange<Order_t, Scalar> basis_t_type; // temperature space
     typedef Lagrange<0, Scalar> basis_l_type; // multipliers for pressure space
 
-	typedef fusion::vector< basis_u_type , basis_p_type , basis_t_type,basis_l_type> basis_type;
+    typedef fusion::vector< basis_u_type , basis_p_type , basis_t_type,basis_l_type> basis_type;
 
 
-	typedef FunctionSpace<mesh_type, basis_type> space_type;
+    typedef FunctionSpace<mesh_type, basis_type> space_type;
     typedef boost::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
     typedef typename element_type::template sub_element<0>::type element_0_type;
-	typedef typename element_type::template sub_element<1>::type element_1_type;
-	typedef typename element_type::template sub_element<2>::type element_2_type;
+    typedef typename element_type::template sub_element<1>::type element_1_type;
+    typedef typename element_type::template sub_element<2>::type element_2_type;
     typedef typename element_type::template sub_element<3>::type element_3_type;
 
     typedef OperatorLinear<space_type,space_type> oplin_type;
@@ -113,27 +113,27 @@ public:
     typedef FsFunctionalLinear<space_type> funlin_type;
     typedef boost::shared_ptr<funlin_type> funlin_ptrtype;
 
-	// Definition pour les exportations
-	typedef Exporter<mesh_type> export_type;
+    // Definition pour les exportations
+    typedef Exporter<mesh_type> export_type;
 
-	// Constructeur
-	Convection( int argc , char** argv , AboutData const& , po::options_description const& );
+    // Constructeur
+    Convection( int argc , char** argv , AboutData const& , po::options_description const& );
 
     // destructor
     ~Convection();
 
-	// Definition de la procedure pour faire tourner le code
-	void run();
+    // Definition de la procedure pour faire tourner le code
+    void run();
 
     void updateResidual( const vector_ptrtype& X, vector_ptrtype& R );
-    void updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J);
+    void updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J );
 
-	// Definition de la procedure pour exporter les solutions
-	void exportResults( boost::format, element_type& U, double t );
+    // Definition de la procedure pour exporter les solutions
+    void exportResults( boost::format, element_type& U, double t );
 
 private:
     void initLinearOperator( sparse_matrix_ptrtype& L );
-    void updateJacobian1( const vector_ptrtype& X, sparse_matrix_ptrtype& J);
+    void updateJacobian1( const vector_ptrtype& X, sparse_matrix_ptrtype& J );
 private:
 
     backend_ptrtype M_backend;
@@ -148,11 +148,11 @@ private:
     vector_ptrtype F;
 
 
-	// Exporters
-	boost::shared_ptr<export_type> exporter;
+    // Exporters
+    boost::shared_ptr<export_type> exporter;
 
-	// Timers
-	std::map<std::string,std::pair<boost::timer,double> > timers;
+    // Timers
+    std::map<std::string,std::pair<boost::timer,double> > timers;
 
     std::vector <double> Grashofs;
     double M_current_Grashofs;

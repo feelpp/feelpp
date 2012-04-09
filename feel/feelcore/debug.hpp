@@ -34,8 +34,8 @@ namespace Feel
 class DebugStream;
 class NdebugStream;
 
-typedef DebugStream & (*LManipFunction)( DebugStream &); // manipulator function
-typedef NdebugStream & (*LNManipFunction)( NdebugStream&); // manipulator function
+typedef DebugStream & ( *LManipFunction )( DebugStream & ); // manipulator function
+typedef NdebugStream & ( *LNManipFunction )( NdebugStream& ); // manipulator function
 
 #ifdef __GNUC__
 # define FEELPP_FUNCINFO "[" << __PRETTY_FUNCTION__ << "] "
@@ -55,28 +55,28 @@ public:
 
     template<typename T>
     std::ostream& operator<< ( T const& __t )
-        {
-            __print ( __t, St::SInt2Type<St::STypeTraits<T>::isFundamental>() );
-            return _M_os;
-        }
+    {
+        __print ( __t, St::SInt2Type<St::STypeTraits<T>::isFundamental>() );
+        return _M_os;
+    }
     template<typename T>
     std::ostream& operator<< ( T const* __t )
-        {
-            //__print ( __t, St::SInt2Type<St::STypeTraits<T>::isFundamental>() );
-            _M_os << __t;
-            return _M_os;
-        }
+    {
+        //__print ( __t, St::SInt2Type<St::STypeTraits<T>::isFundamental>() );
+        _M_os << __t;
+        return _M_os;
+    }
 private:
     template<typename T>
     void __print ( T const& __t, St::SInt2Type<true> )
-        {
-            _M_os << __t;
-        }
+    {
+        _M_os << __t;
+    }
     template<typename T>
     void __print ( T const& __t, St::SInt2Type<false> )
-        {
+    {
 
-        }
+    }
 private:
     std::ostream& _M_os;
 };
@@ -94,29 +94,29 @@ public:
 
     struct Private;
 
-    typedef int (*stprintf)( const char* format, ... );
+    typedef int ( *stprintf )( const char* format, ... );
     //@}
 
     /** @name Constructors, destructor
      */
     //@{
 
-    DebugStream(int area = 0, int level = 1, bool print = true);
-    DebugStream(const char* initialString, int area = 0, int level = 1, bool print = true);
+    DebugStream( int area = 0, int level = 1, bool print = true );
+    DebugStream( const char* initialString, int area = 0, int level = 1, bool print = true );
     DebugStream( DebugStream const& );
     ~DebugStream();
 
     //@}
 
     /** @name  Methods
-	 */
-	//@{
+     */
+    //@{
 
     /** \return true if the stream prints the debug output, false otherwise */
     bool doPrint() const;
 
     //@}
-	void setFlush( stprintf = 0 );
+    void setFlush( stprintf = 0 );
 
     /** @name  Methods
      */
@@ -185,57 +185,117 @@ public:
     /** @name Constructors, destructor
      */
     //@{
-    typedef int (*stprintf)( const char* format, ... );
+    typedef int ( *stprintf )( const char* format, ... );
 
-    NdebugStream(){}
-    ~NdebugStream(){}
+    NdebugStream() {}
+    ~NdebugStream() {}
 
     //@}
 
-	/** @name  Methods
-	 */
-	//@{
+    /** @name  Methods
+     */
+    //@{
     static void attach( std::string const& ) {}
     static void attach( std::string const&, int ) {}
     static void detach( std::string const&, int ) {}
     static void detachAll() {}
-	void flush( stprintf = 0 ) {}
-    NdebugStream& operator<<( char const* ){ return *this; }
+    void flush( stprintf = 0 ) {}
+    NdebugStream& operator<<( char const* )
+    {
+        return *this;
+    }
 
-    NdebugStream& operator<<( bool ) { return *this; }
-    NdebugStream& operator<<( int16_type ) { return *this; }
-    NdebugStream& operator<<( int32_type ) { return *this; }
-    NdebugStream& operator<<( uint16_type ) { return *this; }
-    NdebugStream& operator<<( uint32_type ) { return *this; }
+    NdebugStream& operator<<( bool )
+    {
+        return *this;
+    }
+    NdebugStream& operator<<( int16_type )
+    {
+        return *this;
+    }
+    NdebugStream& operator<<( int32_type )
+    {
+        return *this;
+    }
+    NdebugStream& operator<<( uint16_type )
+    {
+        return *this;
+    }
+    NdebugStream& operator<<( uint32_type )
+    {
+        return *this;
+    }
 #if defined (__s390x__) || defined( __s390__ )
-    NdebugStream& operator<<( size_type ) { return *this; }
+    NdebugStream& operator<<( size_type )
+    {
+        return *this;
+    }
 #endif
 #if defined( __APPLE__ )
-    NdebugStream& operator<<( size_type ) { return *this; }
-    NdebugStream& operator<<( ptrdiff_t ) { return *this; }
+    NdebugStream& operator<<( size_type )
+    {
+        return *this;
+    }
+    NdebugStream& operator<<( ptrdiff_t )
+    {
+        return *this;
+    }
 #endif
 
 #if !defined( BOOST_NO_INT64_T )
-    NdebugStream& operator<<( uint64_type ) { return *this; }
-    NdebugStream& operator<<( int64_type ) { return *this; }
+    NdebugStream& operator<<( uint64_type )
+    {
+        return *this;
+    }
+    NdebugStream& operator<<( int64_type )
+    {
+        return *this;
+    }
 #endif
 
-    NdebugStream& operator<<( double ) { return *this; }
-    NdebugStream& operator<<( std::complex<double> ) { return *this; }
+    NdebugStream& operator<<( double )
+    {
+        return *this;
+    }
+    NdebugStream& operator<<( std::complex<double> )
+    {
+        return *this;
+    }
 #if defined(FEELPP_HAS_QD_H)
-    NdebugStream& operator<<( dd_real ) { return *this; }
-    NdebugStream& operator<<( qd_real ) { return *this; }
+    NdebugStream& operator<<( dd_real )
+    {
+        return *this;
+    }
+    NdebugStream& operator<<( qd_real )
+    {
+        return *this;
+    }
 #endif /* FEELPP_HAS_QD_H */
 
-    NdebugStream& operator<<( std::string const& ){ return *this; }
-    NdebugStream& operator<<( LManipFunction  ) { return *this; }
+    NdebugStream& operator<<( std::string const& )
+    {
+        return *this;
+    }
+    NdebugStream& operator<<( LManipFunction  )
+    {
+        return *this;
+    }
 
-	//@}
+    //@}
 };
 
-inline NdebugStream& perror( NdebugStream& s ) { return s; }
-inline NdebugStream& endl( NdebugStream& s )   { return s; }
-inline NdebugStream& flush( NdebugStream& s )    { return s; }
+inline NdebugStream& perror( NdebugStream& s )
+{
+    return s;
+}
+inline NdebugStream& endl( NdebugStream& s )
+{
+    return s;
+}
+inline NdebugStream& flush( NdebugStream& s )
+{
+    return s;
+}
 
 DebugStream Log( int area = 0, DebugStream::stprintf = 0 );
 DebugStream Log( bool cond, int area = 0, DebugStream::stprintf = 0 );
@@ -245,8 +305,14 @@ DebugStream Debug( int area = 0, DebugStream::stprintf = 0 );
 DebugStream Debug( bool cond, int area = 0, DebugStream::stprintf = 0 );
 #else
 #define Debug Ndebug
-inline NdebugStream Ndebug( int = 0, NdebugStream::stprintf = &printf ) { return NdebugStream(); }
-inline NdebugStream Ndebug( bool /*cond*/, int = 0, NdebugStream::stprintf = &printf ) { return NdebugStream(); }
+inline NdebugStream Ndebug( int = 0, NdebugStream::stprintf = &printf )
+{
+    return NdebugStream();
+}
+inline NdebugStream Ndebug( bool /*cond*/, int = 0, NdebugStream::stprintf = &printf )
+{
+    return NdebugStream();
+}
 #endif
 
 DebugStream Warning( int area = 0 );

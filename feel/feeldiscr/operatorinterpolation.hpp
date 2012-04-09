@@ -45,21 +45,22 @@ struct InterpolationConforme
 };
 
 
-namespace detailsup {
+namespace detailsup
+{
 
-    template < typename EltType >
-    size_type
-    idElt( EltType & elt,mpl::size_t<MESH_ELEMENTS> )
-    {
-        return elt.id();
-    }
+template < typename EltType >
+size_type
+idElt( EltType & elt,mpl::size_t<MESH_ELEMENTS> )
+{
+    return elt.id();
+}
 
-    template < typename EltType >
-    size_type
-    idElt( EltType & elt,mpl::size_t<MESH_FACES> )
-    {
-        return elt.element0().id();
-    }
+template < typename EltType >
+size_type
+idElt( EltType & elt,mpl::size_t<MESH_FACES> )
+{
+    return elt.element0().id();
+}
 
 
 } //detailsup
@@ -76,8 +77,8 @@ namespace detailsup {
 template<typename DomainSpaceType,
          typename ImageSpaceType,
          typename IteratorRange = boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-                                               typename MeshTraits<typename ImageSpaceType::mesh_type>::element_const_iterator,
-                                               typename MeshTraits<typename ImageSpaceType::mesh_type>::element_const_iterator>,
+         typename MeshTraits<typename ImageSpaceType::mesh_type>::element_const_iterator,
+         typename MeshTraits<typename ImageSpaceType::mesh_type>::element_const_iterator>,
          typename InterpType = InterpolationNonConforme >
 class OperatorInterpolation : public OperatorLinear<DomainSpaceType, ImageSpaceType >
 {
@@ -132,10 +133,10 @@ public:
 
 
     static const uint16_type nLocalDofInDualImageElt = mpl::if_< mpl::equal_to< idim_type ,mpl::size_t<MESH_ELEMENTS> >,
-                                                                 mpl::int_< image_basis_type::nLocalDof > ,
-                                                                 mpl::int_< image_mesh_type::face_type::numVertices*dual_image_space_type::fe_type::nDofPerVertex +
-                                                                            image_mesh_type::face_type::numEdges*dual_image_space_type::fe_type::nDofPerEdge +
-                                                                            image_mesh_type::face_type::numFaces*dual_image_space_type::fe_type::nDofPerFace > >::type::value;
+                             mpl::int_< image_basis_type::nLocalDof > ,
+                             mpl::int_< image_mesh_type::face_type::numVertices*dual_image_space_type::fe_type::nDofPerVertex +
+                             image_mesh_type::face_type::numEdges*dual_image_space_type::fe_type::nDofPerEdge +
+                             image_mesh_type::face_type::numFaces*dual_image_space_type::fe_type::nDofPerFace > >::type::value;
 
     // type conforme or non conforme
     typedef InterpType interpolation_type;
@@ -177,7 +178,7 @@ public:
     OperatorInterpolation( OperatorInterpolation const & oi )
         :
         super( oi ),
-        _M_range(oi._M_range)
+        _M_range( oi._M_range )
     {}
 
     ~OperatorInterpolation() {}
@@ -231,11 +232,11 @@ private:
 
 template<typename DomainSpaceType, typename ImageSpaceType,typename IteratorRange,typename InterpType>
 OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>::OperatorInterpolation( domain_space_ptrtype const& domainspace,
-                                                                                                        dual_image_space_ptrtype const& imagespace,
-                                                                                                        backend_ptrtype const& backend )
+        dual_image_space_ptrtype const& imagespace,
+        backend_ptrtype const& backend )
     :
     super( domainspace, imagespace, backend, false ),
-    _M_range( elements(imagespace->mesh() ) )
+    _M_range( elements( imagespace->mesh() ) )
 {
     update();
 }
@@ -243,9 +244,9 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
 
 template<typename DomainSpaceType, typename ImageSpaceType,typename IteratorRange,typename InterpType>
 OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>::OperatorInterpolation( domain_space_ptrtype const& domainspace,
-                                                                                                        dual_image_space_ptrtype const& imagespace,
-                                                                                                        IteratorRange const& r,
-                                                                                                        backend_ptrtype const& backend )
+        dual_image_space_ptrtype const& imagespace,
+        IteratorRange const& r,
+        backend_ptrtype const& backend )
     :
     super( domainspace, imagespace, backend, false ),
     _M_range( r )
@@ -262,17 +263,20 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
         return;
 
     // if same mesh but not same function space (e.g. different polynomial order, different basis)
-    if ( this->dualImageSpace()->mesh().get() == (image_mesh_type*)this->domainSpace()->mesh().get() )
-        {
-            this->updateSameMesh();
-        }
+    if ( this->dualImageSpace()->mesh().get() == ( image_mesh_type* )this->domainSpace()->mesh().get() )
+    {
+        this->updateSameMesh();
+    }
+
     else // no relation between meshes
-        {
-            if (this->dualImageSpace()->worldsComm()[0].localSize() > 1)
-                this->updateNoRelationMeshMPI();
-            else
-                this->updateNoRelationMesh();
-        }
+    {
+        if ( this->dualImageSpace()->worldsComm()[0].localSize() > 1 )
+            this->updateNoRelationMeshMPI();
+
+        else
+            this->updateNoRelationMesh();
+    }
+
     // close matrix after build
     this->mat().close();
 }
@@ -301,8 +305,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     const size_type lastcol_dof_on_proc = this->domainSpace()->dof()->lastDofGlobalCluster( proc_id );
 #endif
     graph_ptrtype sparsity_graph( new graph_type( nrow_dof_on_proc,
-                                                  firstrow_dof_on_proc, lastrow_dof_on_proc,
-                                                  firstcol_dof_on_proc, lastcol_dof_on_proc ) );
+                                  firstrow_dof_on_proc, lastrow_dof_on_proc,
+                                  firstcol_dof_on_proc, lastcol_dof_on_proc ) );
 
     auto const* imagedof = this->dualImageSpace()->dof().get();
     auto const* domaindof = this->domainSpace()->dof().get();
@@ -310,7 +314,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     auto const* domainbasis = this->domainSpace()->basis().get();
 
 
-    std::vector<bool> dof_done( nrow_dof_on_proc, false);
+    std::vector<bool> dof_done( nrow_dof_on_proc, false );
     std::vector< std::list<std::pair<size_type,double> > > memory_valueInMatrix( nrow_dof_on_proc );
 
     // Local assembly: compute the Mloc matrix by evaluating
@@ -327,74 +331,78 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
 
     iterator_type it, en;
     boost::tie( boost::tuples::ignore, it, en ) = _M_range;
-    for( ; it != en; ++ it )
+
+    for ( ; it != en; ++ it )
+    {
+        auto idElem = detailsup::idElt( *it,idim_type() );
+
+        // Global assembly
+        for ( uint16_type iloc = 0; iloc < nLocalDofInDualImageElt; ++iloc )
         {
-            auto idElem = detailsup::idElt(*it,idim_type());
+            for ( uint16_type comp = 0; comp < image_basis_type::nComponents; ++comp )
+            {
+                size_type i =  boost::get<0>( imagedof->localToGlobal( *it, iloc, comp ) );
 
-            // Global assembly
-            for ( uint16_type iloc = 0; iloc < nLocalDofInDualImageElt; ++iloc )
+                if ( !dof_done[i] )
                 {
-                    for ( uint16_type comp = 0;comp < image_basis_type::nComponents;++comp )
-                        {
-                            size_type i =  boost::get<0>(imagedof->localToGlobal( *it, iloc, comp ));
-                            if (!dof_done[i])
-                                {
 #if !defined(FEELPP_ENABLE_MPI_MODE) // NOT MPI
-                                    const auto ig1 = i;
-                                    const auto theproc = imagedof->worldComm().localRank();
+                    const auto ig1 = i;
+                    const auto theproc = imagedof->worldComm().localRank();
 #else // WITH MPI
-                                    const auto ig1 = imagedof->mapGlobalProcessToGlobalCluster()[i];
-                                    const auto theproc = imagedof->procOnGlobalCluster(ig1);
+                    const auto ig1 = imagedof->mapGlobalProcessToGlobalCluster()[i];
+                    const auto theproc = imagedof->procOnGlobalCluster( ig1 );
 #endif
-                                    auto& row = sparsity_graph->row(ig1);
-                                    row.get<0>() = theproc;
-                                    const size_type il1 = ig1 - imagedof->firstDofGlobalCluster( theproc );
-                                    row.get<1>() = il1;
-                                    //row.get<1>() = i;
+                    auto& row = sparsity_graph->row( ig1 );
+                    row.get<0>() = theproc;
+                    const size_type il1 = ig1 - imagedof->firstDofGlobalCluster( theproc );
+                    row.get<1>() = il1;
+                    //row.get<1>() = i;
 
-                                    uint16_type ilocprime=imagedof->localDofInElement(*it, iloc, comp) ;
+                    uint16_type ilocprime=imagedof->localDofInElement( *it, iloc, comp ) ;
 
-                                    for ( uint16_type jloc = 0; jloc < domain_basis_type::nLocalDof; ++jloc )
-                                        {
-                                            // get column
-                                            const size_type j =  boost::get<0>(domaindof->localToGlobal( idElem, jloc, comp ));
-                                            //up the pattern graph
+                    for ( uint16_type jloc = 0; jloc < domain_basis_type::nLocalDof; ++jloc )
+                    {
+                        // get column
+                        const size_type j =  boost::get<0>( domaindof->localToGlobal( idElem, jloc, comp ) );
+                        //up the pattern graph
 #if !defined(FEELPP_ENABLE_MPI_MODE) // NOT MPI
-                                                    row.get<2>().insert(j);
+                        row.get<2>().insert( j );
 #else // WITH MPI
-                                                    row.get<2>().insert(domaindof->mapGlobalProcessToGlobalCluster()[j]);
+                        row.get<2>().insert( domaindof->mapGlobalProcessToGlobalCluster()[j] );
 #endif
-                                            // get interpolated value
-                                            const value_type v = Mloc( domain_basis_type::nComponents1*jloc +
-                                                                       comp*domain_basis_type::nComponents1*domain_basis_type::nLocalDof +
-                                                                       comp,
-                                                                       ilocprime );
-                                            // save in matrux
-                                            memory_valueInMatrix[i].push_back(std::make_pair(j,v));
-                                        }
-                                    dof_done[i]=true;
-                                }
-                        }
+                        // get interpolated value
+                        const value_type v = Mloc( domain_basis_type::nComponents1*jloc +
+                                                   comp*domain_basis_type::nComponents1*domain_basis_type::nLocalDof +
+                                                   comp,
+                                                   ilocprime );
+                        // save in matrux
+                        memory_valueInMatrix[i].push_back( std::make_pair( j,v ) );
+                    }
+
+                    dof_done[i]=true;
                 }
+            }
         }
+    }
+
     //-----------------------------------------
-   // compute graph
+    // compute graph
     sparsity_graph->close();
     //-----------------------------------------
-   // create matrix
-    this->matPtr() = this->backend()->newMatrix(this->domainSpace()->mapOnOff(),
-                                                this->dualImageSpace()->mapOn(),
-                                                sparsity_graph  );
+    // create matrix
+    this->matPtr() = this->backend()->newMatrix( this->domainSpace()->mapOnOff(),
+                     this->dualImageSpace()->mapOn(),
+                     sparsity_graph  );
     //-----------------------------------------
 
-   // assemble matrix
-    for (size_type idx_i=0 ; idx_i<nrow_dof_on_proc;++idx_i)
+    // assemble matrix
+    for ( size_type idx_i=0 ; idx_i<nrow_dof_on_proc; ++idx_i )
+    {
+        for ( auto it_j=memory_valueInMatrix[idx_i].begin(),en_j=memory_valueInMatrix[idx_i].end() ; it_j!=en_j ; ++it_j )
         {
-            for (auto it_j=memory_valueInMatrix[idx_i].begin(),en_j=memory_valueInMatrix[idx_i].end() ; it_j!=en_j ; ++it_j)
-                {
-                    this->matPtr()->set(idx_i,it_j->first,it_j->second);
-                }
+            this->matPtr()->set( idx_i,it_j->first,it_j->second );
         }
+    }
 }
 
 //-----------------------------------------------------------------------------------------------------------------//
@@ -416,8 +424,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     const size_type lastcol_dof_on_proc = this->domainSpace()->dof()->lastDof( proc_id );
 
     graph_ptrtype sparsity_graph( new graph_type( n1_dof_on_proc,
-                                                  firstrow_dof_on_proc, lastrow_dof_on_proc,
-                                                  firstcol_dof_on_proc, lastcol_dof_on_proc ) );
+                                  firstrow_dof_on_proc, lastrow_dof_on_proc,
+                                  firstcol_dof_on_proc, lastcol_dof_on_proc ) );
 
     auto const* imagedof = this->dualImageSpace()->dof().get();
     auto const* domaindof = this->domainSpace()->dof().get();
@@ -433,13 +441,13 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
 
     //-----------------------------------------
     // usefull data
-    typename matrix_node<value_type>::type ptsReal( image_mesh_type::nRealDim, 1);
-    typename matrix_node<value_type>::type ptsRef(image_mesh_type::nRealDim , 1 );
+    typename matrix_node<value_type>::type ptsReal( image_mesh_type::nRealDim, 1 );
+    typename matrix_node<value_type>::type ptsRef( image_mesh_type::nRealDim , 1 );
     typename domain_mesh_type::Localization::container_search_iterator_type itanal,itanal_end;
     typename domain_mesh_type::Localization::container_output_iterator_type itL,itL_end;
-    typename matrix_node<value_type>::type MlocEval(domain_basis_type::nLocalDof*domain_basis_type::nComponents1,1);
+    typename matrix_node<value_type>::type MlocEval( domain_basis_type::nLocalDof*domain_basis_type::nComponents1,1 );
 
-    std::vector<bool> dof_done( this->dualImageSpace()->nDof(), false);
+    std::vector<bool> dof_done( this->dualImageSpace()->nDof(), false );
     std::vector< std::list<std::pair<size_type,double> > > memory_valueInMatrix( this->dualImageSpace()->nDof() );
 
     //-----------------------------------------
@@ -447,84 +455,89 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     iterator_type it, en;
     boost::tie( boost::tuples::ignore, it, en ) = _M_range;
     size_type eltIdLocalised = 0;
-    for( ; it != en; ++ it )
+
+    for ( ; it != en; ++ it )
+    {
+        for ( uint16_type iloc = 0; iloc < nLocalDofInDualImageElt; ++iloc )
         {
-            for ( uint16_type iloc = 0; iloc < nLocalDofInDualImageElt; ++iloc )
+            for ( uint16_type comp = 0; comp < image_basis_type::nComponents; ++comp )
+            {
+                size_type gdof =  boost::get<0>( imagedof->localToGlobal( *it, iloc, comp ) );
+
+                if ( !dof_done[gdof] )
                 {
-                    for ( uint16_type comp = 0;comp < image_basis_type::nComponents;++comp )
+                    //------------------------
+                    // get the graph row
+#if !defined(FEELPP_ENABLE_MPI_MODE) // NOT MPI
+                    const auto ig1 = gdof;
+                    const auto theproc = imagedof->worldComm().localRank();
+#else // WITH MPI
+                    const auto ig1 = imagedof->mapGlobalProcessToGlobalCluster()[gdof];
+                    const auto theproc = imagedof->procOnGlobalCluster( ig1 );
+#endif
+                    auto& row = sparsity_graph->row( ig1 );
+                    row.get<0>() = theproc;
+                    row.get<1>() = gdof;
+                    //------------------------
+                    // the dof point
+                    ublas::column( ptsReal,0 ) = boost::get<0>( imagedof->dofPoint( gdof ) );
+                    //------------------------
+                    // localisation process
+                    eltIdLocalised = __loc->run_analysis( ptsReal,eltIdLocalised,it->vertices()/*it->G()*/,mpl::bool_<interpolation_type::value>() );
+                    //------------------------
+                    // for each localised points
+                    itanal = __loc->result_analysis_begin();
+                    itanal_end = __loc->result_analysis_end();
+
+                    for ( ; itanal!=itanal_end; ++itanal )
+                    {
+                        itL=itanal->second.begin();
+
+                        ublas::column( ptsRef, 0 ) = boost::get<1>( *itL );
+
+                        MlocEval = domainbasis->evaluate( ptsRef );
+
+                        for ( uint16_type jloc = 0; jloc < domain_basis_type::nLocalDof; ++jloc )
                         {
-                            size_type gdof =  boost::get<0>(imagedof->localToGlobal( *it, iloc, comp ));
-                            if (!dof_done[gdof])
-                                {
-                                    //------------------------
-                                    // get the graph row
+                            //get global dof
+                            size_type j =  boost::get<0>( domaindof->localToGlobal( itanal->first,jloc,comp ) );
+                            value_type v = MlocEval( domain_basis_type::nComponents1*jloc
+                                                     + comp*domain_basis_type::nComponents1*domain_basis_type::nLocalDof
+                                                     + comp,
+                                                     0 );
 #if !defined(FEELPP_ENABLE_MPI_MODE) // NOT MPI
-                                    const auto ig1 = gdof;
-                                    const auto theproc = imagedof->worldComm().localRank();
+                            row.get<2>().insert( j );
 #else // WITH MPI
-                                    const auto ig1 = imagedof->mapGlobalProcessToGlobalCluster()[gdof];
-                                    const auto theproc = imagedof->procOnGlobalCluster(ig1);
+                            row.get<2>().insert( domaindof->mapGlobalProcessToGlobalCluster()[j] );
 #endif
-                                    auto& row = sparsity_graph->row(ig1);
-                                    row.get<0>() = theproc;
-                                    row.get<1>() = gdof;
-                                    //------------------------
-                                    // the dof point
-                                    ublas::column(ptsReal,0 ) = boost::get<0>(imagedof->dofPoint(gdof));
-                                    //------------------------
-                                    // localisation process
-                                    eltIdLocalised = __loc->run_analysis(ptsReal,eltIdLocalised,it->vertices()/*it->G()*/,mpl::bool_<interpolation_type::value>());
-                                    //------------------------
-                                    // for each localised points
-                                    itanal = __loc->result_analysis_begin();
-                                    itanal_end = __loc->result_analysis_end();
-                                    for ( ;itanal!=itanal_end;++itanal)
-                                        {
-                                            itL=itanal->second.begin();
-
-                                            ublas::column( ptsRef, 0 ) = boost::get<1>(*itL);
-
-                                            MlocEval = domainbasis->evaluate( ptsRef );
-
-                                            for ( uint16_type jloc = 0; jloc < domain_basis_type::nLocalDof; ++jloc )
-                                                {
-                                                    //get global dof
-                                                    size_type j =  boost::get<0>(domaindof->localToGlobal( itanal->first,jloc,comp ));
-                                                    value_type v = MlocEval( domain_basis_type::nComponents1*jloc
-                                                                             + comp*domain_basis_type::nComponents1*domain_basis_type::nLocalDof
-                                                                             + comp,
-                                                                             0 );
-#if !defined(FEELPP_ENABLE_MPI_MODE) // NOT MPI
-                                                    row.get<2>().insert(j);
-#else // WITH MPI
-                                                    row.get<2>().insert(domaindof->mapGlobalProcessToGlobalCluster()[j]);
-#endif
-                                                    memory_valueInMatrix[gdof].push_back(std::make_pair(j,v));
-                                                }
-                                        }
-                                    dof_done[gdof]=true;
-                                }
+                            memory_valueInMatrix[gdof].push_back( std::make_pair( j,v ) );
                         }
+                    }
+
+                    dof_done[gdof]=true;
                 }
-        } // for( ; it != en; ++ it )
+            }
+        }
+    } // for( ; it != en; ++ it )
 
     //-----------------------------------------
-   // compute graph
-   sparsity_graph->close();
+    // compute graph
+    sparsity_graph->close();
     //-----------------------------------------
-   // create matrix
-   this->matPtr() = this->backend()->newMatrix(this->dualImageSpace()->nDof(), this->domainSpace()->nDof() ,
-                                               this->dualImageSpace()->nLocalDof(), this->domainSpace()->nLocalDof(),
-                                               sparsity_graph );
+    // create matrix
+    this->matPtr() = this->backend()->newMatrix( this->dualImageSpace()->nDof(), this->domainSpace()->nDof() ,
+                     this->dualImageSpace()->nLocalDof(), this->domainSpace()->nLocalDof(),
+                     sparsity_graph );
+
     //-----------------------------------------
-   // assemble matrix
-   for (size_type idx_i=0 ; idx_i<this->dualImageSpace()->nDof() ;++idx_i)
-       {
-           for (auto it_j=memory_valueInMatrix[idx_i].begin(),en_j=memory_valueInMatrix[idx_i].end() ; it_j!=en_j ; ++it_j)
-               {
-                   this->matPtr()->set(idx_i,it_j->first,it_j->second);
-               }
-       }
+    // assemble matrix
+    for ( size_type idx_i=0 ; idx_i<this->dualImageSpace()->nDof() ; ++idx_i )
+    {
+        for ( auto it_j=memory_valueInMatrix[idx_i].begin(),en_j=memory_valueInMatrix[idx_i].end() ; it_j!=en_j ; ++it_j )
+        {
+            this->matPtr()->set( idx_i,it_j->first,it_j->second );
+        }
+    }
 
 }
 
@@ -553,11 +566,11 @@ opInterp( boost::shared_ptr<DomainSpaceType> const& domainspace,
           IteratorRange const& r,
           typename OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>::backend_ptrtype const& backend,
           InterpType /**/
-          )
+        )
 {
     typedef OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType> operatorinterpolation_type;
 
-    boost::shared_ptr<operatorinterpolation_type> opI( new operatorinterpolation_type(domainspace,imagespace,r,backend));
+    boost::shared_ptr<operatorinterpolation_type> opI( new operatorinterpolation_type( domainspace,imagespace,r,backend ) );
 
     return opI;
 }
@@ -571,41 +584,41 @@ struct compute_opInterpolation_return
     typedef typename boost::remove_reference<typename parameter::binding<Args, tag::imageSpace>::type>::type::element_type image_space_type;
 
     typedef typename boost::remove_const<
-        typename boost::remove_reference<
-            typename parameter::binding<Args,
-                                        tag::range,
-                                        typename OperatorInterpolation<domain_space_type, image_space_type>::range_iterator
-                                        >::type >::type >::type iterator_range_type;
+    typename boost::remove_reference<
+    typename parameter::binding<Args,
+             tag::range,
+             typename OperatorInterpolation<domain_space_type, image_space_type>::range_iterator
+             >::type >::type >::type iterator_range_type;
 
     typedef typename boost::remove_const<
-        typename boost::remove_reference<
-            typename parameter::binding<Args,
-                                        tag::type,
-                                        InterpolationNonConforme
-                                        >::type >::type >::type interpolation_type;
+    typename boost::remove_reference<
+    typename parameter::binding<Args,
+             tag::type,
+             InterpolationNonConforme
+             >::type >::type >::type interpolation_type;
 
 
     typedef boost::shared_ptr<OperatorInterpolation<domain_space_type, image_space_type,iterator_range_type,interpolation_type> > type;
 };
 
 BOOST_PARAMETER_FUNCTION(
-                         (typename compute_opInterpolation_return<Args>::type), // 1. return type
-                         opInterpolation,                        // 2. name of the function template
-                         tag,                                        // 3. namespace of tag types
-                         (required
-                          (domainSpace,    *(boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> >))
-                          (imageSpace,     *(boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> >))
-                          ) // required
-                         (optional
-                          (range,          *, elements(imageSpace->mesh())  )
-                          (backend,        *, Backend<typename compute_opInterpolation_return<Args>::domain_space_type::value_type>::build())
-                          (type,           *, InterpolationNonConforme()  )
-                          ) // optionnal
-                         )
+    ( typename compute_opInterpolation_return<Args>::type ), // 1. return type
+    opInterpolation,                        // 2. name of the function template
+    tag,                                        // 3. namespace of tag types
+    ( required
+      ( domainSpace,    *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
+      ( imageSpace,     *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
+    ) // required
+    ( optional
+      ( range,          *, elements( imageSpace->mesh() )  )
+      ( backend,        *, Backend<typename compute_opInterpolation_return<Args>::domain_space_type::value_type>::build() )
+      ( type,           *, InterpolationNonConforme()  )
+    ) // optionnal
+)
 {
-    Feel::detail::ignore_unused_variable_warning(args);
+    Feel::detail::ignore_unused_variable_warning( args );
 
-    return opInterp(domainSpace,imageSpace,range,backend,type);
+    return opInterp( domainSpace,imageSpace,range,backend,type );
 
 } // opInterpolation
 

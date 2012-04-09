@@ -43,21 +43,21 @@ void
 PartitionerMetis<Mesh>::doPartition ( mesh_type& mesh,
                                       const uint16_type n_pieces )
 {
-    FEELPP_ASSERT (n_pieces > 0)( n_pieces ).error( "the number of partitions should be >0" );
+    FEELPP_ASSERT ( n_pieces > 0 )( n_pieces ).error( "the number of partitions should be >0" );
 
     // Check for an easy return
-    if (n_pieces == 1)
-        {
-            this->singlePartition (mesh);
-            return;
-        }
+    if ( n_pieces == 1 )
+    {
+        this->singlePartition ( mesh );
+        return;
+    }
 
     // What to do if the Metis library IS NOT present
 #if !defined( FEELPP_HAS_METIS_H ) && !defined( FEELPP_HAS_METIS ) && !defined( FEELPP_HAS_METIS_METIS_H )
 
     std::cerr << "ERROR: The library has been built without"    << std::endl
               << "Metis support. "  << std::endl;
-    this->singlePartition (mesh);
+    this->singlePartition ( mesh );
     return;
 
     // What to do if the Metis library IS present
@@ -68,24 +68,24 @@ PartitionerMetis<Mesh>::doPartition ( mesh_type& mesh,
     // build the graph
     // the forward_map maps each active element id
     // into a contiguous block of indices for Metis
-    std::vector<size_type> forward_map (n_elem,  invalid_size_type_value );
+    std::vector<size_type> forward_map ( n_elem,  invalid_size_type_value );
 
     std::vector<int> xadj;
     std::vector<int> adjncy;
-    std::vector<int> options(5);
-    std::vector<int> vwgt(n_elem);
-    std::vector<int> part(n_elem);
+    std::vector<int> options( 5 );
+    std::vector<int> vwgt( n_elem );
+    std::vector<int> part( n_elem );
 
-    xadj.reserve(n_elem+1);
+    xadj.reserve( n_elem+1 );
 
     int
-        n = static_cast<int>(n_elem),  // number of "nodes" (elements)
-        //   in the graph
-        wgtflag = 2,                          // weights on vertices only,
-        //   none on edges
-        numflag = 0,                          // C-style 0-based numbering
-        nparts  = static_cast<int>(n_pieces), // number of subdomains to create
-        edgecut = 0;                          // the numbers of edges cut by the
+    n = static_cast<int>( n_elem ), // number of "nodes" (elements)
+    //   in the graph
+    wgtflag = 2,                          // weights on vertices only,
+    //   none on edges
+    numflag = 0,                          // C-style 0-based numbering
+    nparts  = static_cast<int>( n_pieces ), // number of subdomains to create
+    edgecut = 0;                          // the numbers of edges cut by the
     //   resulting partition
 
     // Set the options
@@ -102,14 +102,14 @@ PartitionerMetis<Mesh>::doPartition ( mesh_type& mesh,
 
         unsigned int el_num = 0;
 
-        for (; elem_it != elem_end; ++elem_it)
-            {
-                FEELPP_ASSERT (elem_it->id() < forward_map.size())( elem_it->id() )( forward_map.size() ).error( "invalid dimensions" );
+        for ( ; elem_it != elem_end; ++elem_it )
+        {
+            FEELPP_ASSERT ( elem_it->id() < forward_map.size() )( elem_it->id() )( forward_map.size() ).error( "invalid dimensions" );
 
-                forward_map[elem_it->id()] = el_num++;
-            }
+            forward_map[elem_it->id()] = el_num++;
+        }
 
-        FEELPP_ASSERT (el_num == n_elem)( el_num )( n_elem ).error( "incompatible number of elements" );
+        FEELPP_ASSERT ( el_num == n_elem )( el_num )( n_elem ).error( "incompatible number of elements" );
     }
 
 
@@ -125,69 +125,73 @@ PartitionerMetis<Mesh>::doPartition ( mesh_type& mesh,
 
         // This will be exact when there is no refinement and all the
         // elements are of the same type.
-        adjncy.reserve (n_elem * mesh.numLocalFaces() );
+        adjncy.reserve ( n_elem * mesh.numLocalFaces() );
 
-        for (; elem_it != elem_end; ++elem_it)
+        for ( ; elem_it != elem_end; ++elem_it )
+        {
+            const element_type* elem = boost::addressof( *elem_it );
+
+            FEELPP_ASSERT ( elem->id() < forward_map.size() ).error( "element id and forward_map incompatible" );
+            FEELPP_ASSERT ( forward_map[elem->id()] != invalid_size_type_value ).error( "forward_map problem" );
+
+            // maybe there is a better weight?
+            // The weight is used to define what a balanced graph is
+            vwgt[forward_map[elem->id()]] = elem->nPoints();
+
+            // The beginning of the adjacency array for this elem
+            xadj.push_back( adjncy.size() );
+
+            size_type counter = 0;
+
+            for ( uint16_type ms=0; ms < mesh.numLocalFaces(); ms++ )
             {
-                const element_type* elem = boost::addressof( *elem_it );
+                Debug( 4021 ) << "** element " << elem_it->id() << " face " << ms << " neighbor " << mesh.localFaceId( elem->id(), ms ).template get<1>() << "\n";
 
-                FEELPP_ASSERT (elem->id() < forward_map.size()).error( "element id and forward_map incompatible" );
-                FEELPP_ASSERT (forward_map[elem->id()] != invalid_size_type_value ).error( "forward_map problem" );
+                if ( mesh.localFaceId( elem->id(), ms ).template get<1>() != invalid_size_type_value )
+                    ++counter;
 
-                // maybe there is a better weight?
-                // The weight is used to define what a balanced graph is
-                vwgt[forward_map[elem->id()]] = elem->nPoints();
-
-                // The beginning of the adjacency array for this elem
-                xadj.push_back(adjncy.size());
-
-                size_type counter = 0;
-                for (uint16_type ms=0; ms < mesh.numLocalFaces(); ms++)
-                    {
-                        Debug( 4021 ) << "** element " << elem_it->id() << " face " << ms << " neighbor " << mesh.localFaceId( elem->id(), ms ).template get<1>() << "\n";
-                        if ( mesh.localFaceId( elem->id(), ms ).template get<1>() != invalid_size_type_value )
-                            ++counter;
-
-                    }
-                Debug( 4021 ) << "[PartitionerMetis] element " << elem->id() << " number of neighbors: " << counter << "\n";
-                FEELPP_ASSERT( counter >= 1 )( elem->id() )( counter ).error( "invalid neighboring data" );
-
-
-                // Loop over the element's neighbors.  An element
-                // adjacency corresponds to a face neighbor
-                for (uint16_type ms=0; ms < mesh.numLocalFaces(); ms++)
-                    {
-                        size_type neighbor_id = mesh.localFaceId( elem->id(), ms ).template get<1>();
-                        if ( neighbor_id != invalid_size_type_value )
-                            {
-                                FEELPP_ASSERT (neighbor_id < forward_map.size())
-                                ( neighbor_id )( forward_map.size() ).error( "problem with neighbor id and forward_map" );
-                                FEELPP_ASSERT (forward_map[neighbor_id] != invalid_size_type_value )
-                                ( (forward_map[neighbor_id] ) ).error( "invalid forward_map" );
-
-                                adjncy.push_back (forward_map[neighbor_id]);
-                            }
-                    }
             }
 
+            Debug( 4021 ) << "[PartitionerMetis] element " << elem->id() << " number of neighbors: " << counter << "\n";
+            FEELPP_ASSERT( counter >= 1 )( elem->id() )( counter ).error( "invalid neighboring data" );
+
+
+            // Loop over the element's neighbors.  An element
+            // adjacency corresponds to a face neighbor
+            for ( uint16_type ms=0; ms < mesh.numLocalFaces(); ms++ )
+            {
+                size_type neighbor_id = mesh.localFaceId( elem->id(), ms ).template get<1>();
+
+                if ( neighbor_id != invalid_size_type_value )
+                {
+                    FEELPP_ASSERT ( neighbor_id < forward_map.size() )
+                    ( neighbor_id )( forward_map.size() ).error( "problem with neighbor id and forward_map" );
+                    FEELPP_ASSERT ( forward_map[neighbor_id] != invalid_size_type_value )
+                    ( ( forward_map[neighbor_id] ) ).error( "invalid forward_map" );
+
+                    adjncy.push_back ( forward_map[neighbor_id] );
+                }
+            }
+        }
+
         // The end of the adjacency array for the last elem
-        xadj.push_back(adjncy.size());
+        xadj.push_back( adjncy.size() );
 
     } // done building the graph
 
     // Select which type of partitioning to create
 
     // Use recursive if the number of partitions is less than or equal to 8
-    if (n_pieces <= 8)
-        Metis::METIS_PartGraphRecursive(&n, &xadj[0], &adjncy[0], &vwgt[0], NULL,
-                                        &wgtflag, &numflag, &nparts, &options[0],
-                                        &edgecut, &part[0]);
+    if ( n_pieces <= 8 )
+        Metis::METIS_PartGraphRecursive( &n, &xadj[0], &adjncy[0], &vwgt[0], NULL,
+                                         &wgtflag, &numflag, &nparts, &options[0],
+                                         &edgecut, &part[0] );
 
     // Otherwise  use kway
     else
-        Metis::METIS_PartGraphKway(&n, &xadj[0], &adjncy[0], &vwgt[0], NULL,
-                                   &wgtflag, &numflag, &nparts, &options[0],
-                                   &edgecut, &part[0]);
+        Metis::METIS_PartGraphKway( &n, &xadj[0], &adjncy[0], &vwgt[0], NULL,
+                                    &wgtflag, &numflag, &nparts, &options[0],
+                                    &edgecut, &part[0] );
 
 
     // Assign the returned processor ids.  The part array contains
@@ -198,61 +202,66 @@ PartitionerMetis<Mesh>::doPartition ( mesh_type& mesh,
         element_iterator elem_it  = mesh.beginElement();
         element_iterator elem_end = mesh.endElement();
 
-        for (size_type i = 0; i < mesh.numElements(); ++i )
+        for ( size_type i = 0; i < mesh.numElements(); ++i )
+        {
+            element_iterator  elem_it = mesh.elementIterator( i, 0 );
+            element_type elem = *elem_it;
+
+            FEELPP_ASSERT ( elem.id() < forward_map.size() )( elem.id() )( forward_map.size() ).error( "invalid size" );
+            FEELPP_ASSERT ( forward_map[elem.id()] != invalid_size_type_value )( forward_map[elem.id()] ).error( "invalid forward map" );;
+            elem.setProcessId( static_cast<short int>( part[forward_map[elem.id()]] ) );
+
+
+            // update neighbor process id
+            for ( uint16_type ms=0; ms < mesh.numLocalFaces(); ms++ )
             {
-                element_iterator  elem_it = mesh.elementIterator( i, 0 );
-                element_type elem = *elem_it;
-
-                FEELPP_ASSERT ( elem.id() < forward_map.size() )( elem.id() )( forward_map.size() ).error( "invalid size" );
-                FEELPP_ASSERT ( forward_map[elem.id()] != invalid_size_type_value )( forward_map[elem.id()] ).error( "invalid forward map" );;
-                elem.setProcessId( static_cast<short int>(part[forward_map[elem.id()]]) );
-
-
-                // update neighbor process id
-                for (uint16_type ms=0; ms < mesh.numLocalFaces(); ms++)
-                    {
-                        size_type eid = mesh.localFaceId( elem, ms ).template get<1>();
-                        mesh.localFaceId( elem, ms ).template get<1>() = static_cast<short int>( part[forward_map[eid]] );
+                size_type eid = mesh.localFaceId( elem, ms ).template get<1>();
+                mesh.localFaceId( elem, ms ).template get<1>() = static_cast<short int>( part[forward_map[eid]] );
 #if 0
-                        size_type neighbor_id = elem.neighbor(ms).first;
-                        if ( neighbor_id != invalid_size_type_value )
-                            {
-                                FEELPP_ASSERT ( neighbor_id < forward_map.size() )( neighbor_id )( forward_map.size() ).error( "invalid size" );
-                                FEELPP_ASSERT ( forward_map[neighbor_id] != invalid_size_type_value )( forward_map[neighbor_id] ).error( "invalid forward map" );
+                size_type neighbor_id = elem.neighbor( ms ).first;
 
-                                elem.setNeighbor( ms, neighbor_id, static_cast<short int>(part[forward_map[neighbor_id]]) );
+                if ( neighbor_id != invalid_size_type_value )
+                {
+                    FEELPP_ASSERT ( neighbor_id < forward_map.size() )( neighbor_id )( forward_map.size() ).error( "invalid size" );
+                    FEELPP_ASSERT ( forward_map[neighbor_id] != invalid_size_type_value )( forward_map[neighbor_id] ).error( "invalid forward map" );
 
-                                Debug( 4021 ) << "[PartitionerMetis] neighbor element " << neighbor_id << " of element " << elem_it->id() << " is on proc " << elem.neighbor(ms).second << "\n";
+                    elem.setNeighbor( ms, neighbor_id, static_cast<short int>( part[forward_map[neighbor_id]] ) );
 
-                            }
+                    Debug( 4021 ) << "[PartitionerMetis] neighbor element " << neighbor_id << " of element " << elem_it->id() << " is on proc " << elem.neighbor( ms ).second << "\n";
+
+                }
+
 #endif
-                    }
+            }
 
 
-                // here we invalidate any pointers to *elem_it that
-                // are stored in other data sutrctures such as faces
-                mesh.elements().replace( elem_it, elem );
+            // here we invalidate any pointers to *elem_it that
+            // are stored in other data sutrctures such as faces
+            mesh.elements().replace( elem_it, elem );
 
 #if 0
-                // go through the faces and update the pointers to the
-                // element
-                element_type const& __element = *elem_it;
-                for ( size_type j = 0; j < numLocalFaces(); j++ )
-                    {
-                        detail::UpdateFaceConnection1<typename face_type::element_connectivity_type> update1( boost::make_tuple( boost::addressof( __element ), __element.id(), j ) );
-                        update1( __f );
+            // go through the faces and update the pointers to the
+            // element
+            element_type const& __element = *elem_it;
 
-                    }
-#endif
-                Debug( 4021 ) << "[PartitionerMetis] element " << elem_it->id() << " will be on proc " << elem_it->processId() << "\n";
+            for ( size_type j = 0; j < numLocalFaces(); j++ )
+            {
+                detail::UpdateFaceConnection1<typename face_type::element_connectivity_type> update1( boost::make_tuple( boost::addressof( __element ), __element.id(), j ) );
+                update1( __f );
 
             }
+
+#endif
+            Debug( 4021 ) << "[PartitionerMetis] element " << elem_it->id() << " will be on proc " << elem_it->processId() << "\n";
+
+        }
+
         for ( int i = 0; i < n_pieces; ++i )
-            {
-                size_type dist = std::distance( mesh.beginElementWithProcessId( i ),
-                                                mesh.endElementWithProcessId( i ) );
-                Debug( 4020 ) << "[PartitionerMetis] " << dist << " elts on proc " << i << "\n";
-            }
+        {
+            size_type dist = std::distance( mesh.beginElementWithProcessId( i ),
+                                            mesh.endElementWithProcessId( i ) );
+            Debug( 4020 ) << "[PartitionerMetis] " << dist << " elts on proc " << i << "\n";
+        }
     }
 #if 0
     // Assign the returned processor ids.  The part array contains
@@ -265,76 +274,85 @@ PartitionerMetis<Mesh>::doPartition ( mesh_type& mesh,
         Debug( 4020 ) << "[PartitionerMetis] " << " boundary faces  " << std::distance( face_it,face_end ) << "\n";
 
 
-        for (; face_it != face_end; ++face_it)
+        for ( ; face_it != face_end; ++face_it )
+        {
+            face_type  face = *face_it;
+
+            // boundary faces can belong to only one process id
+            if ( face.isOnBoundary() )
             {
-                face_type  face = *face_it;
+                FEELPP_ASSERT( face.isConnectedTo0() &&
+                               !face.isConnectedTo1() )
+                ( face.ad_first() )( face.pos_first() )
+                ( face.ad_second() )( face.pos_second() ).error( "invalid boundary face" );
 
-                // boundary faces can belong to only one process id
-                if ( face.isOnBoundary() )
-                    {
-                        FEELPP_ASSERT( face.isConnectedTo0() &&
-                                     !face.isConnectedTo1() )
-                            ( face.ad_first() )( face.pos_first() )
-                            ( face.ad_second() )( face.pos_second() ).error( "invalid boundary face" );
-
-                        Debug( 4021 ) << "[PartitionerMetis] face " << face.id() << " will be on proc " << face.element0().processId() << "\n";
-                        face.setProcessId( face.element0().processId() );
-                        mesh.faces().replace( face_it, face );
-                    }
-                else
-                    {
-                        Debug( 4021 ) << "[PartitionerMetis] face " << face.id() << " will be on proc " << face.element0().processId() << "\n";
-
-                        FEELPP_ASSERT( face.isConnectedTo0() &&
-                                     face.isConnectedTo1() )
-                            ( face.ad_first() )( face.pos_first() )
-                            ( face.ad_second() )( face.pos_second() ).error( "invalid internal face" );
-
-                        //
-                        // Assign process ids to faces. we don't
-                        // really about faces that don't belong to the
-                        // current processors as they won't be used by
-                        // the system.
-                        //
-                        uint16_type proc0 = face.element0().processId();
-                        uint16_type proc1 = face.element1().processId();
-                        if ( proc0 == proc1 )
-                            face.setProcessId( proc0 );
-                        else if ( proc0 == this->comm().rank() )
-                            face.setProcessId( proc0 );
-                        else if ( proc1 == this->comm().rank() )
-                            face.setProcessId( proc1 );
-                        else
-                            face.setProcessId( proc0 );
-
-                    }
-
-                FEELPP_ASSERT( face.element(0).facePtr( face.pos_first() ) )
-                    ( face.ad_first() )( face.pos_first() )( face.element(0).id() ).error( "invalid face in element" );
-                if ( face.isConnectedTo1() )
-                    FEELPP_ASSERT( face.element(1).facePtr( face.pos_second() ) )
-                        ( face.ad_second() )( face.pos_second() )( face.element(1).id() ).error( "invalid internal face in element" );
-
+                Debug( 4021 ) << "[PartitionerMetis] face " << face.id() << " will be on proc " << face.element0().processId() << "\n";
+                face.setProcessId( face.element0().processId() );
                 mesh.faces().replace( face_it, face );
             }
-        for ( int i = 0; i < n_pieces; ++i )
+
+            else
             {
-                std::pair<location_face_iterator, location_face_iterator> p = mesh.facesOnBoundary( i );
-                size_type dist = std::distance( p.first, p.second );
-                Debug( 4020 ) << "[PartitionerMetis] " << dist << " boundary faces on proc " << i << "\n";
+                Debug( 4021 ) << "[PartitionerMetis] face " << face.id() << " will be on proc " << face.element0().processId() << "\n";
+
+                FEELPP_ASSERT( face.isConnectedTo0() &&
+                               face.isConnectedTo1() )
+                ( face.ad_first() )( face.pos_first() )
+                ( face.ad_second() )( face.pos_second() ).error( "invalid internal face" );
+
+                //
+                // Assign process ids to faces. we don't
+                // really about faces that don't belong to the
+                // current processors as they won't be used by
+                // the system.
+                //
+                uint16_type proc0 = face.element0().processId();
+                uint16_type proc1 = face.element1().processId();
+
+                if ( proc0 == proc1 )
+                    face.setProcessId( proc0 );
+
+                else if ( proc0 == this->comm().rank() )
+                    face.setProcessId( proc0 );
+
+                else if ( proc1 == this->comm().rank() )
+                    face.setProcessId( proc1 );
+
+                else
+                    face.setProcessId( proc0 );
+
             }
+
+            FEELPP_ASSERT( face.element( 0 ).facePtr( face.pos_first() ) )
+            ( face.ad_first() )( face.pos_first() )( face.element( 0 ).id() ).error( "invalid face in element" );
+
+            if ( face.isConnectedTo1() )
+                FEELPP_ASSERT( face.element( 1 ).facePtr( face.pos_second() ) )
+                ( face.ad_second() )( face.pos_second() )( face.element( 1 ).id() ).error( "invalid internal face in element" );
+
+            mesh.faces().replace( face_it, face );
+        }
+
+        for ( int i = 0; i < n_pieces; ++i )
+        {
+            std::pair<location_face_iterator, location_face_iterator> p = mesh.facesOnBoundary( i );
+            size_type dist = std::distance( p.first, p.second );
+            Debug( 4020 ) << "[PartitionerMetis] " << dist << " boundary faces on proc " << i << "\n";
+        }
     }
 #endif // 0
+
     for ( int i = 0; i < n_pieces; ++i )
+    {
+        typename mesh_type::element_iterator pid_it = mesh.beginElementWithProcessId( i );
+        typename mesh_type::element_iterator pid_en = mesh.endElementWithProcessId( i );
+
+        while ( pid_it != pid_en )
         {
-            typename mesh_type::element_iterator pid_it = mesh.beginElementWithProcessId( i );
-            typename mesh_type::element_iterator pid_en = mesh.endElementWithProcessId( i );
-            while( pid_it != pid_en )
-                {
-                    Debug( 4021 ) << "piece " << i << " element " << pid_it->id() << " on proc " << pid_it->processId() << "\n";
-                    ++pid_it;
-                }
+            Debug( 4021 ) << "piece " << i << " element " << pid_it->id() << " on proc " << pid_it->processId() << "\n";
+            ++pid_it;
         }
+    }
 
 #endif
 
@@ -342,16 +360,17 @@ PartitionerMetis<Mesh>::doPartition ( mesh_type& mesh,
 }
 
 
-namespace{
-    FEELPP_NO_EXPORT void test()
-    {
-        typedef Mesh2D<Simplex<2, 1> > mesh_type;
+namespace
+{
+FEELPP_NO_EXPORT void test()
+{
+    typedef Mesh2D<Simplex<2, 1> > mesh_type;
 
-        //mesh_type mesh;
+    //mesh_type mesh;
 
 
-        //mesh.partition();
-    }
+    //mesh.partition();
+}
 }
 
 //

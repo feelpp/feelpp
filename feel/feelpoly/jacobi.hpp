@@ -46,7 +46,7 @@
 
 namespace Feel
 {
-  namespace ublas=boost::numeric::ublas;
+namespace ublas=boost::numeric::ublas;
 /**
  * \class Jacobi
  * \brief 1D Jacobi polynomial
@@ -102,16 +102,16 @@ public:
         :
         _M_a( a ),
         _M_b( b )
-        {}
+    {}
 
     Jacobi( Jacobi const & p )
         :
         _M_a( p._M_a ),
         _M_b( p._M_b )
-        {}
+    {}
 
     ~Jacobi()
-        {}
+    {}
 
     //@}
 
@@ -120,14 +120,15 @@ public:
     //@{
 
     self_type& operator=( self_type const& p )
+    {
+        if ( this != &p )
         {
-            if ( this != &p )
-            {
-                _M_a = p._M_a;
-                _M_b = p._M_b;
-            }
-            return *this;
+            _M_a = p._M_a;
+            _M_b = p._M_b;
         }
+
+        return *this;
+    }
 
     /**
      * Evaluates the nth jacobi polynomial with weight parameters a,b
@@ -148,7 +149,10 @@ public:
      */
     //@{
 
-    uint16_type degree() const { return N; }
+    uint16_type degree() const
+    {
+        return N;
+    }
 
     //@}
 
@@ -175,9 +179,9 @@ public:
      * \return the value of the jacobi polynomial at \c x
      */
     value_type value( value_type const& x ) const
-        {
-            return this->operator()( x );
-        }
+    {
+        return this->operator()( x );
+    }
 
     value_type derivate( value_type const& x ) const;
 
@@ -197,19 +201,23 @@ Jacobi<N, T>::operator()( value_type const& x ) const
 {
     const value_type one = 1.0;
     const value_type two = 2.0;
+
     if ( N == 0 )
         return one;
+
     else if ( N == 1 )
         return 0.5 * ( _M_a - _M_b + ( _M_a + _M_b + two ) * x );
+
     else  // N >= 2
     {
         value_type apb = _M_a + _M_b;
         value_type pn2 = one;
         value_type pn1 = 0.5 * ( _M_a - _M_b + ( apb + two ) * x );
         value_type p = 0.0;
+
         for ( int k = 2; k < N+1; ++k )
         {
-            value_type kv = value_type(k);
+            value_type kv = value_type( k );
             value_type a1 = two * kv * ( kv + apb ) * ( two * kv + apb - two );
             value_type a2 = ( two * kv + apb - one ) * ( _M_a * _M_a - _M_b * _M_b );
             value_type a3 = ( ( two * kv + apb - two )
@@ -222,6 +230,7 @@ Jacobi<N, T>::operator()( value_type const& x ) const
             pn2 = pn1;
             pn1 = p;
         }
+
         return p;
     }
 }
@@ -291,17 +300,17 @@ public:
         _M_degree( N ),
         _M_a( a ),
         _M_b( b )
-        {}
+    {}
 
     Jacobi( Jacobi const & p )
         :
         _M_degree( p._M_degree ),
         _M_a( p._M_a ),
         _M_b( p._M_b )
-        {}
+    {}
 
     ~Jacobi()
-        {}
+    {}
 
     //@}
 
@@ -310,15 +319,16 @@ public:
     //@{
 
     self_type& operator=( self_type const& p )
+    {
+        if ( this != &p )
         {
-            if ( this != &p )
-            {
-                _M_degree = p._M_degree;
-                _M_a = p._M_a;
-                _M_b = p._M_b;
-            }
-            return *this;
+            _M_degree = p._M_degree;
+            _M_a = p._M_a;
+            _M_b = p._M_b;
         }
+
+        return *this;
+    }
 
     /**
      * Evaluates the nth jacobi polynomial with weight parameters a,b
@@ -339,7 +349,10 @@ public:
      */
     //@{
 
-    uint16_type degree() const { return _M_degree; }
+    uint16_type degree() const
+    {
+        return _M_degree;
+    }
 
     //@}
 
@@ -347,7 +360,10 @@ public:
      */
     //@{
 
-    void setDegree( uint16_type N ) { _M_degree = N; }
+    void setDegree( uint16_type N )
+    {
+        _M_degree = N;
+    }
 
     //@}
 
@@ -367,9 +383,9 @@ public:
      * \return the value of the jacobi polynomial at \c x
      */
     value_type value( value_type const& x ) const
-        {
-            return this->operator()( x );
-        }
+    {
+        return this->operator()( x );
+    }
 
     value_type derivate( value_type const& x ) const;
 
@@ -391,19 +407,23 @@ Jacobi<T>::operator()( value_type const& x ) const
     const uint16_type N = this->_M_degree;
     const value_type one = 1.0;
     const value_type two = 2.0;
+
     if ( N == 0 )
         return one;
+
     else if ( N == 1 )
         return 0.5 * ( _M_a - _M_b + ( _M_a + _M_b + two ) * x );
+
     else  // N >= 2
     {
         value_type apb = _M_a + _M_b;
         value_type pn2 = one;
         value_type pn1 = 0.5 * ( _M_a - _M_b + ( apb + two ) * x );
         value_type p = 0.0;
+
         for ( uint16_type k = 2; k < N+1; ++k )
         {
-            value_type kv = value_type(k);
+            value_type kv = value_type( k );
             value_type a1 = two * kv * ( kv + apb ) * ( two * kv + apb - two );
             value_type a2 = ( two * kv + apb - one ) * ( _M_a * _M_a - _M_b * _M_b );
             value_type a3 = ( ( two * kv + apb - two )
@@ -416,6 +436,7 @@ Jacobi<T>::operator()( value_type const& x ) const
             pn2 = pn1;
             pn1 = p;
         }
+
         return p;
     }
 }
@@ -424,6 +445,7 @@ typename Jacobi<T>::value_type
 Jacobi<T>::derivate( value_type const& x ) const
 {
     const uint16_type N = this->_M_degree;
+
     if (  N == 0 )
         return 0.0;
 
@@ -447,11 +469,12 @@ JacobiBatchEvaluation( T a, T b, Matrix<T,Eigen::Dynamic,1> const& __pts )
     if ( N > 0 )
     {
         //ublas::col( res, 1 ) = 0.5 * ( ublas::scalar_vector<value_type>( res.size2(), a - b) + ( a + b + 2.0 ) * __pts );
-        res.col( 1 ) = 0.5*(res.col(1).Constant(res.rows(),a-b)+(a+b+2)*__pts);
+        res.col( 1 ) = 0.5*( res.col( 1 ).Constant( res.rows(),a-b )+( a+b+2 )*__pts );
         value_type apb = a + b;
+
         for ( int k = 2; k < N+1; ++k )
         {
-            value_type kv = value_type(k);
+            value_type kv = value_type( k );
             value_type a1 = 2.0 * kv * ( kv + apb ) * ( 2.0 * kv + apb - 2.0 );
             value_type a2 = ( 2.0 * kv + apb - 1.0 ) * ( a * a - b * b );
             value_type a3 = ( 2.0 * kv + apb - 2.0 ) * ( 2.0 * kv + apb - 1.0 ) * ( 2.0 * kv + apb );
@@ -461,11 +484,12 @@ JacobiBatchEvaluation( T a, T b, Matrix<T,Eigen::Dynamic,1> const& __pts )
             a4 = a4 / a1;
 
             res.col( k ) =
-                ( a2* res.col( k-1) +
-                  a3 * (__pts.cwise()*res.col(k-1)) -
-                  a4 * res.col(k-2) );
+                ( a2* res.col( k-1 ) +
+                  a3 * ( __pts.cwise()*res.col( k-1 ) ) -
+                  a4 * res.col( k-2 ) );
         }
     }
+
     return res.transpose();
 }
 template<typename T,uint16_type N, uint16_type Np>
@@ -481,11 +505,12 @@ JacobiBatchEvaluation( T a, T b, Matrix<T,Np,1> const& __pts )
     if ( N > 0 )
     {
         //ublas::col( res, 1 ) = 0.5 * ( ublas::scalar_vector<value_type>( res.size2(), a - b) + ( a + b + 2.0 ) * __pts );
-        res.col( 1 ) = 0.5*(res.col(1).Constant(res.rows(),a-b)+(a+b+2)*__pts);
+        res.col( 1 ) = 0.5*( res.col( 1 ).Constant( res.rows(),a-b )+( a+b+2 )*__pts );
         value_type apb = a + b;
+
         for ( int k = 2; k < N+1; ++k )
         {
-            value_type kv = value_type(k);
+            value_type kv = value_type( k );
             value_type a1 = 2.0 * kv * ( kv + apb ) * ( 2.0 * kv + apb - 2.0 );
             value_type a2 = ( 2.0 * kv + apb - 1.0 ) * ( a * a - b * b );
             value_type a3 = ( 2.0 * kv + apb - 2.0 ) * ( 2.0 * kv + apb - 1.0 ) * ( 2.0 * kv + apb );
@@ -495,11 +520,12 @@ JacobiBatchEvaluation( T a, T b, Matrix<T,Np,1> const& __pts )
             a4 = a4 / a1;
 
             res.col( k ) =
-                ( a2* res.col( k-1) +
-                  a3 * (__pts.cwise()*res.col(k-1)) -
-                  a4 * res.col(k-2) );
+                ( a2* res.col( k-1 ) +
+                  a3 * ( __pts.cwise()*res.col( k-1 ) ) -
+                  a4 * res.col( k-2 ) );
         }
     }
+
     return res.transpose();
 }
 #endif // 0 - Eigen
@@ -511,13 +537,15 @@ JacobiBatchEvaluation( T a, T b, ublas::vector<T> const& __pts )
     typedef T value_type;
     ublas::matrix<T> res( N+1, __pts.size() );
     ublas::row( res, 0 ) = ublas::scalar_vector<value_type>( res.size2(), 1.0 );
+
     if ( N > 0 )
     {
-        ublas::row( res, 1 ) = 0.5 * ( ublas::scalar_vector<value_type>( res.size2(), a - b) + ( a + b + 2.0 ) * __pts );
+        ublas::row( res, 1 ) = 0.5 * ( ublas::scalar_vector<value_type>( res.size2(), a - b ) + ( a + b + 2.0 ) * __pts );
         value_type apb = a + b;
+
         for ( int k = 2; k < N+1; ++k )
         {
-            value_type kv = value_type(k);
+            value_type kv = value_type( k );
             value_type a1 = 2.0 * kv * ( kv + apb ) * ( 2.0 * kv + apb - 2.0 );
             value_type a2 = ( 2.0 * kv + apb - 1.0 ) * ( a * a - b * b );
             value_type a3 = ( 2.0 * kv + apb - 2.0 ) * ( 2.0 * kv + apb - 1.0 ) * ( 2.0 * kv + apb );
@@ -527,10 +555,11 @@ JacobiBatchEvaluation( T a, T b, ublas::vector<T> const& __pts )
             a4 = a4 / a1;
 
             ublas::row( res, k ) = a2* ublas::row( res, k-1 ) +
-                                   a3 * ublas::element_prod(__pts, ublas::row( res, k-1 ) ) -
+                                   a3 * ublas::element_prod( __pts, ublas::row( res, k-1 ) ) -
                                    a4 * ublas::row( res, k-2 );
         }
     }
+
     return res;
 }
 
@@ -540,8 +569,9 @@ JacobiBatchDerivation( ublas::matrix<T>& res, T a, T b, ublas::vector<T> const& 
 {
     typedef T value_type;
     ublas::subrange( res, 1, N+1, 0, __pts.size() ) = JacobiBatchEvaluation<N-1, T>( a+1.0, b+1.0, __pts );
-    for ( uint16_type i = 1;i < N+1; ++i )
-        ublas::row( res, i ) *= 0.5*(a+b+value_type( i )+1.0);
+
+    for ( uint16_type i = 1; i < N+1; ++i )
+        ublas::row( res, i ) *= 0.5*( a+b+value_type( i )+1.0 );
 }
 
 template<uint16_type N, typename T>
@@ -571,15 +601,17 @@ JacobiBatchDerivation( T a, T b, Eigen::Matrix<T,Eigen::Dynamic,1> const& __pts 
 {
     typedef T value_type;
     Eigen::Matrix<T,N+1,Eigen::Dynamic> res( N+1, __pts.size() );
-    res.row(0).setZero();
+    res.row( 0 ).setZero();
 
     if ( N > 0 )
     {
-        res.block( 1, 0, N, __pts.size()) = JacobiBatchEvaluation<N-1, T>( a+1.0, b+1.0, __pts );
+        res.block( 1, 0, N, __pts.size() ) = JacobiBatchEvaluation<N-1, T>( a+1.0, b+1.0, __pts );
+
         //ublas::subrange( res, 1, N+1, 0, __pts.size() ) = JacobiBatchEvaluation<N-1, T>( a+1.0, b+1.0, __pts );
-        for ( uint16_type i = 1;i < N+1; ++i )
-            res.row( i ) *= 0.5*(a+b+value_type( i )+1.0);
+        for ( uint16_type i = 1; i < N+1; ++i )
+            res.row( i ) *= 0.5*( a+b+value_type( i )+1.0 );
     }
+
     return res;
 }
 template<typename T,
@@ -590,15 +622,17 @@ JacobiBatchDerivation( T a, T b, Eigen::Matrix<T,Ncols,1> const& __pts )
 {
     typedef T value_type;
     Eigen::Matrix<T,N+1,Ncols> res;
-    res.row(0).setZero();
+    res.row( 0 ).setZero();
 
     if ( N > 0 )
     {
-        res.block( 1, 0, N, __pts.size()) = JacobiBatchEvaluation<T,N-1,Ncols>( a+1.0, b+1.0, __pts );
+        res.block( 1, 0, N, __pts.size() ) = JacobiBatchEvaluation<T,N-1,Ncols>( a+1.0, b+1.0, __pts );
+
         //ublas::subrange( res, 1, N+1, 0, __pts.size() ) = JacobiBatchEvaluation<N-1, T>( a+1.0, b+1.0, __pts );
-        for ( uint16_type i = 1;i < N+1; ++i )
-            res.row( i ) *= 0.5*(a+b+value_type( i )+1.0);
+        for ( uint16_type i = 1; i < N+1; ++i )
+            res.row( i ) *= 0.5*( a+b+value_type( i )+1.0 );
     }
+
     return res;
 }
 template<typename T>
@@ -608,17 +642,19 @@ JacobiBatchDerivation( uint16_type N,
 {
     typedef T value_type;
     Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic> res( N+1, __pts.size() );
-    res.row(0).setZero();
+    res.row( 0 ).setZero();
 
     if ( N > 0 )
     {
-        res.block( 1, 0, N, __pts.size()) = JacobiBatchEvaluation<T>( N-1,
-                                                                      a+1.0,
-                                                                      b+1.0,
-                                                                      __pts );
-        for ( uint16_type i = 1;i < N+1; ++i )
-            res.row( i ) *= 0.5*(a+b+value_type( i )+1.0);
+        res.block( 1, 0, N, __pts.size() ) = JacobiBatchEvaluation<T>( N-1,
+                                             a+1.0,
+                                             b+1.0,
+                                             __pts );
+
+        for ( uint16_type i = 1; i < N+1; ++i )
+            res.row( i ) *= 0.5*( a+b+value_type( i )+1.0 );
     }
+
     return res;
 }
 #endif // 0 - Eigen
@@ -632,13 +668,15 @@ JacobiBatchEvaluation( uint16_type N, T a, T b, ublas::vector<T> const& __pts )
     typedef T value_type;
     ublas::matrix<T> res( N+1, __pts.size() );
     ublas::row( res, 0 ) = ublas::scalar_vector<value_type>( res.size2(), 1.0 );
+
     if ( N > 0 )
     {
-        ublas::row( res, 1 ) = 0.5 * ( ublas::scalar_vector<value_type>( res.size2(), a - b) + ( a + b + 2.0 ) * __pts );
+        ublas::row( res, 1 ) = 0.5 * ( ublas::scalar_vector<value_type>( res.size2(), a - b ) + ( a + b + 2.0 ) * __pts );
         value_type apb = a + b;
+
         for ( uint16_type k = 2; k < N+1; ++k )
         {
-            value_type kv = value_type(k);
+            value_type kv = value_type( k );
             value_type a1 = 2.0 * kv * ( kv + apb ) * ( 2.0 * kv + apb - 2.0 );
             value_type a2 = ( 2.0 * kv + apb - 1.0 ) * ( a * a - b * b );
             value_type a3 = ( 2.0 * kv + apb - 2.0 ) * ( 2.0 * kv + apb - 1.0 ) * ( 2.0 * kv + apb );
@@ -648,10 +686,11 @@ JacobiBatchEvaluation( uint16_type N, T a, T b, ublas::vector<T> const& __pts )
             a4 = a4 / a1;
 
             ublas::row( res, k ) = a2* ublas::row( res, k-1 ) +
-                                   a3 * ublas::element_prod(__pts, ublas::row( res, k-1 ) ) -
+                                   a3 * ublas::element_prod( __pts, ublas::row( res, k-1 ) ) -
                                    a4 * ublas::row( res, k-2 );
         }
     }
+
     return res;
 }
 
@@ -662,12 +701,15 @@ JacobiBatchDerivation( uint16_type N, T a, T b, ublas::vector<T> const& __pts )
     typedef T value_type;
     ublas::matrix<T> res( N+1, __pts.size() );
     ublas::row( res, 0 ) = ublas::scalar_vector<value_type>( res.size2(), 0.0 );
+
     if ( N > 0 )
     {
         ublas::subrange( res, 1, N+1, 0, __pts.size() ) = JacobiBatchEvaluation<T>( N-1, a+1.0, b+1.0, __pts );
-        for ( uint16_type i = 1;i < N+1; ++i )
-            ublas::row( res, i ) *= 0.5*(a+b+value_type( i )+1.0);
+
+        for ( uint16_type i = 1; i < N+1; ++i )
+            ublas::row( res, i ) *= 0.5*( a+b+value_type( i )+1.0 );
     }
+
     return res;
 }
 } // dyna
@@ -690,41 +732,48 @@ roots( JacobiP const& p, Vector& xr )
 
     if ( N != 0 )
     {
-    value_type eps = type_traits<value_type>::epsilon();
-    value_type r;
-    int max_iter = 30;
-    for ( int k = 0;k < N; ++k )
-    {
-        value_type pi = 4.0*math::atan( value_type( 1.0 ) );
-        // use k-th checbychev point to  initiliaze newton
-        r = -math::cos(( 2.0*value_type( k ) + 1.0) * pi / ( 2.0 * value_type( N ) ) );
-        // use average of r and xr[k-1] as starting point (see KS)
-        if ( k > 0 )
-            r = 0.5 * ( r + xr[k-1] );
-        int j = 0;
-        value_type jf = 2.0*eps;
-        value_type delta  = 2.0*eps;
-        do
+        value_type eps = type_traits<value_type>::epsilon();
+        value_type r;
+        int max_iter = 30;
+
+        for ( int k = 0; k < N; ++k )
         {
-            // use deflation as proposed in KS
-            value_type s = 0.0;
-            for ( int i = 0;i < k; ++i )
+            value_type pi = 4.0*math::atan( value_type( 1.0 ) );
+            // use k-th checbychev point to  initiliaze newton
+            r = -math::cos( ( 2.0*value_type( k ) + 1.0 ) * pi / ( 2.0 * value_type( N ) ) );
+
+            // use average of r and xr[k-1] as starting point (see KS)
+            if ( k > 0 )
+                r = 0.5 * ( r + xr[k-1] );
+
+            int j = 0;
+            value_type jf = 2.0*eps;
+            value_type delta  = 2.0*eps;
+
+            do
             {
-                s +=  value_type( 1.0 ) / ( r - xr[i] );
+                // use deflation as proposed in KS
+                value_type s = 0.0;
+
+                for ( int i = 0; i < k; ++i )
+                {
+                    s +=  value_type( 1.0 ) / ( r - xr[i] );
+                }
+
+                jf = p( r );
+                value_type jdf = p.derivate( r );
+                delta = jf / ( jdf - jf * s );
+
+                // newton step done
+                r = r - delta;
+
+                ++j;
             }
-             jf = p( r );
-            value_type jdf = p.derivate( r );
-            delta = jf / (jdf - jf * s);
+            while ( math::abs( jf ) > eps && j < max_iter );
 
-            // newton step done
-            r = r - delta;
-
-            ++j;
+            // store k-th root
+            xr[k] = r;
         }
-        while ( math::abs( jf ) > eps && j < max_iter );
-        // store k-th root
-        xr[k] = r;
-    }
     }
 }
 
@@ -733,6 +782,7 @@ T fact( T  n )
 {
     if ( n == 0.0 )
         return 1;
+
     return n*fact( n-1.0 );
 }
 template<int N, typename T, typename VectorW,  typename VectorN>
@@ -747,17 +797,17 @@ gaussjacobi( VectorW& wr, VectorN& xr, T a = T( 0.0 ), T b = T( 0.0 ) )
 
     const value_type two = 2.0;
     const value_type power = a+b+1.0;
-    value_type a1 = math::pow( two,power);
+    value_type a1 = math::pow( two,power );
     value_type a2 = fact( a+value_type( N ) );//gamma(a + m + 1);
     value_type a3 = fact( b+value_type( N ) );//gamma(b + m + 1);
     value_type a4 = fact( a+b+value_type( N ) );//gamma(a + b + m + 1);
-    value_type a5 = fact(value_type(N));
+    value_type a5 = fact( value_type( N ) );
     value_type a6 = a1 * a2 * a3;// / a4 / a5;
 
     for ( int k = 0; k < N; ++k )
     {
         value_type fp = p.derivate( xr[k] );
-        value_type dn = fp*fp*( 1.0  - xr[k]*xr[k])*a4*a5;
+        value_type dn = fp*fp*( 1.0  - xr[k]*xr[k] )*a4*a5;
 
         wr[k] =a6 / dn;
         //wr[k] = a6 / ( 1.0  - xr[k]*xr[k]) /  ( fp*fp );
@@ -780,25 +830,25 @@ gausslobattojacobi( VectorW& wr, VectorN& xr, T a = T( 0.0 ), T b = T( 0.0 ) )
 
     Jacobi<N-1, T> q( a, b );
 
-    VectorN prexr(N-2);
+    VectorN prexr( N-2 );
 
     roots( p, prexr );
 
     xr[0]= -1.0;
 
-    for(int i = 1; i < N-1;++i )
-      xr[i] = prexr[i-1];
+    for ( int i = 1; i < N-1; ++i )
+        xr[i] = prexr[i-1];
 
     xr[N-1]= 1.0;
 
     const value_type two = 2.0;
 
-    value_type a1 = math::pow( two,int(a+b+1.0));
+    value_type a1 = math::pow( two,int( a+b+1.0 ) );
     value_type a2 = fact( a+value_type( N ) -1.0 );//gamma(a + Q);
     value_type a3 = fact( b+value_type( N ) -1.0 );//gamma(b + Q);
 
     value_type a4 = fact( a+b+value_type( N ) );//gamma(a + b + m + 1);
-    value_type a5 = fact(value_type(N)-1.0)*(value_type(N)-1.0); // (Q-1)!(Q-1)
+    value_type a5 = fact( value_type( N )-1.0 )*( value_type( N )-1.0 ); // (Q-1)!(Q-1)
 
     value_type a6 = a1 * a2 * a3;// Numerateur
 
@@ -811,8 +861,8 @@ gausslobattojacobi( VectorW& wr, VectorN& xr, T a = T( 0.0 ), T b = T( 0.0 ) )
         wr[k] =a6 /dn ;
     }
 
-    wr[0] = wr[0]*(b+1.0);
-    wr[N-1] = wr[N-1]*(a+1.0);
+    wr[0] = wr[0]*( b+1.0 );
+    wr[N-1] = wr[N-1]*( a+1.0 );
 }
 
 namespace dyna
@@ -835,31 +885,32 @@ gausslobattojacobi( size_type N, VectorW& wr, VectorN& xr, T a = T( 0.0 ), T b =
 
     Feel::dyna::Jacobi<T> q( N-1, a, b );
 
-    VectorN prexr(N-2);
+    VectorN prexr( N-2 );
 
     roots( p, prexr );
 
     if ( !interior )
-        {
-            xr[0]= -1.0;
-            xr[N-1]= 1.0;
-        }
-    for(size_type i = 1-interior; i < N-(1+interior);++i )
-        xr[i] = prexr[i-(1-interior)];
+    {
+        xr[0]= -1.0;
+        xr[N-1]= 1.0;
+    }
+
+    for ( size_type i = 1-interior; i < N-( 1+interior ); ++i )
+        xr[i] = prexr[i-( 1-interior )];
 
 
     const value_type two = 2.0;
 
-    value_type a1 = math::pow( two,int(a+b+1.0));
+    value_type a1 = math::pow( two,int( a+b+1.0 ) );
     value_type a2 = fact( a+value_type( N ) -1.0 );//gamma(a + Q);
     value_type a3 = fact( b+value_type( N ) -1.0 );//gamma(b + Q);
 
     value_type a4 = fact( a+b+value_type( N ) );//gamma(a + b + m + 1);
-    value_type a5 = fact(value_type(N)-1.0)*(value_type(N)-1.0); // (Q-1)!(Q-1)
+    value_type a5 = fact( value_type( N )-1.0 )*( value_type( N )-1.0 ); // (Q-1)!(Q-1)
 
     value_type a6 = a1 * a2 * a3;// Numerateur
 
-    for ( int k = 1-interior; k < int(N-1-interior); ++k )
+    for ( int k = 1-interior; k < int( N-1-interior ); ++k )
     {
         value_type fq = q.value( xr[k] );
 
@@ -867,11 +918,12 @@ gausslobattojacobi( size_type N, VectorW& wr, VectorN& xr, T a = T( 0.0 ), T b =
 
         wr[k] =a6 /dn ;
     }
+
     if ( !interior )
-        {
-            wr[0] = wr[0]*(b+1.0);
-            wr[N-1] = wr[N-1]*(a+1.0);
-        }
+    {
+        wr[0] = wr[0]*( b+1.0 );
+        wr[N-1] = wr[N-1]*( a+1.0 );
+    }
 }
 
 }
@@ -892,23 +944,23 @@ left_gaussradaujacobi( VectorW& wr, VectorN& xr, T a = T( 0.0 ), T b = T( 0.0 ) 
 
     Jacobi<N-1, T> q( a, b );
 
-    VectorN prexr(N-1);
+    VectorN prexr( N-1 );
 
     roots( p, prexr );
 
     xr[0]= -1.0;
 
-    for(int i = 1; i < N;++i )
-      xr[i] = prexr[i-1];
+    for ( int i = 1; i < N; ++i )
+        xr[i] = prexr[i-1];
 
     const value_type two = 2.0;
 
-    value_type a1 = math::pow( two,int(a+b));
+    value_type a1 = math::pow( two,int( a+b ) );
     value_type a2 = fact( a+value_type( N ) -1.0 );//gamma(a + Q);
     value_type a3 = fact( b+value_type( N ) -1.0 );//gamma(b + Q);
 
     value_type a4 = fact( a+b+value_type( N ) );//gamma(a + b + m + 1);
-    value_type a5 = fact(value_type(N)-1.0)*(value_type(N)+b); // (Q-1)!(Q+b)
+    value_type a5 = fact( value_type( N )-1.0 )*( value_type( N )+b ); // (Q-1)!(Q+b)
 
     value_type a6 = a1 * a2 * a3;// Numerateur
 
@@ -918,10 +970,10 @@ left_gaussradaujacobi( VectorW& wr, VectorN& xr, T a = T( 0.0 ), T b = T( 0.0 ) 
 
         value_type dn = fq*fq*a4*a5;
 
-        wr[k] =a6*(1.0-xr[k]) /dn ;
+        wr[k] =a6*( 1.0-xr[k] ) /dn ;
     }
 
-    wr[0] = wr[0]*(b+1.0);
+    wr[0] = wr[0]*( b+1.0 );
 }
 
 
@@ -935,52 +987,54 @@ right_gaussradaujacobi( VectorW& wr, VectorN& xr, T a = T( 0.0 ), T b = T( 0.0 )
 
     Jacobi<N-1, T> q( a, b );
 
-    VectorN prexr(N-1);
+    VectorN prexr( N-1 );
 
     roots( p, prexr );
 
-    for(int i = 0; i < N-1;++i )
-      xr[i] = prexr[i];
+    for ( int i = 0; i < N-1; ++i )
+        xr[i] = prexr[i];
 
     xr[N-1]=1.0;
 
     const value_type two = 2.0;
 
-    value_type a1 = math::pow( two,int(a+b));
+    value_type a1 = math::pow( two,int( a+b ) );
     value_type a2 = fact( a+value_type( N ) -1.0 );//gamma(a + Q);
     value_type a3 = fact( b+value_type( N ) -1.0 );//gamma(b + Q);
 
     value_type a4 = fact( a+b+value_type( N ) );//gamma(a + b + m + 1);
-    value_type a5 = fact(value_type(N)-1.0)*(value_type(N)+a); // (Q-1)!(Q+a)
+    value_type a5 = fact( value_type( N )-1.0 )*( value_type( N )+a ); // (Q-1)!(Q+a)
 
     value_type a6 = a1 * a2 * a3;// numerator
 
     for ( int k = 0; k < N; ++k )
-      {
+    {
         value_type fq = q.value( xr[k] );
 
         value_type dn = fq*fq*a4*a5;
 
-        wr[k] =a6*(1.0+xr[k]) /dn ;
+        wr[k] =a6*( 1.0+xr[k] ) /dn ;
     }
 
-    wr[N-1] = wr[N-1]*(a+1.0);
+    wr[N-1] = wr[N-1]*( a+1.0 );
 }
 
 
 template<int N, typename T>
-T integrate( boost::function<T( T const&)> const& f )
+T integrate( boost::function<T( T const& )> const& f )
 {
     typedef T value_type;
-    ublas::vector<T> xr(Jacobi<N, T>::nOrder);
-    ublas::vector<T> wr(Jacobi<N, T>::nOrder);
+    ublas::vector<T> xr( Jacobi<N, T>::nOrder );
+    ublas::vector<T> wr( Jacobi<N, T>::nOrder );
 
     // get weights and nodes for Legendre polynomials
     details::gaussjacobi<N, T, ublas::vector<T> >( wr, xr );
 
     value_type res = 0.0;
-    for ( int k = 0;k < Jacobi<N, T>::nOrder; ++k)
+
+    for ( int k = 0; k < Jacobi<N, T>::nOrder; ++k )
         res += wr[k]*f( xr[k] );
+
     return res;
 }
 } // details

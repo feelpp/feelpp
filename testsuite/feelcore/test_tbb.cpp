@@ -54,68 +54,74 @@ class A
 public:
     A(  )  {}
     ~A() {}
-    void operator() ( const tbb::blocked_range<std::vector<double>::iterator >& r ) const  {
-        for ( auto i = r.begin(); i != r.end(); ++i ) {
-            *i += std::cos(*i)+std::sin(*i);
+    void operator() ( const tbb::blocked_range<std::vector<double>::iterator >& r ) const
+    {
+        for ( auto i = r.begin(); i != r.end(); ++i )
+        {
+            *i += std::cos( *i )+std::sin( *i );
         }
     }
 };
 class B
 {
 public:
-   B(  ): m(Eigen::Matrix<double,3,3>::Zero())
-     {}
-   B( B const&b  ): m(b.m)
-     {}
-   B( B& b, tbb::split )
-     :
-     m( Eigen::Matrix<double,3,3>::Zero())
-       {
-       }
-   
-   ~B() {}
-   void operator() ( const tbb::blocked_range<std::vector<double>::iterator >& r )
-     {
-        for ( auto i = r.begin(); i != r.end(); ++i ) 
-	  {
-	     m += Eigen::Matrix<double,3,3>::Constant(*i);
-	  }
-     }
-   void join( B const& other )
-     {
-	m += other.m;
-     }
-   Eigen::Matrix<double,3,3> m;
+    B(  ): m( Eigen::Matrix<double,3,3>::Zero() )
+    {}
+    B( B const&b  ): m( b.m )
+    {}
+    B( B& b, tbb::split )
+        :
+        m( Eigen::Matrix<double,3,3>::Zero() )
+    {
+    }
+
+    ~B() {}
+    void operator() ( const tbb::blocked_range<std::vector<double>::iterator >& r )
+    {
+        for ( auto i = r.begin(); i != r.end(); ++i )
+        {
+            m += Eigen::Matrix<double,3,3>::Constant( *i );
+        }
+    }
+    void join( B const& other )
+    {
+        m += other.m;
+    }
+    Eigen::Matrix<double,3,3> m;
 };
 
 BOOST_AUTO_TEST_CASE( test_tbb )
 {
 
     BOOST_TEST_MESSAGE( "Test TBB" );
-    std::vector<double> vs(N,M_PI),v(N,M_PI);
+    std::vector<double> vs( N,M_PI ),v( N,M_PI );
     tbb::blocked_range<std::vector<double>::iterator> r( v.begin(), v.end() );
     BOOST_CHECK_EQUAL( r.size(), N );
     tbb::tick_count serial_t0 = tbb::tick_count::now();
-    for( auto i = vs.begin();i != vs.end(); ++i )
+
+    for ( auto i = vs.begin(); i != vs.end(); ++i )
     {
-        *i += std::cos(*i)+std::sin(*i);
+        *i += std::cos( *i )+std::sin( *i );
     }
+
     tbb::tick_count serial_t1 = tbb::tick_count::now();
 
     int n = tbb::task_scheduler_init::default_num_threads();
-    for( int p=1; p<=n; ++p )
+
+    for ( int p=1; p<=n; ++p )
     {
         BOOST_TEST_MESSAGE( "[test_tbb] start tests with nthreads = " << p );
-        tbb::task_scheduler_init init(p);
+        tbb::task_scheduler_init init( p );
 
         tbb::tick_count parallel_t0 = tbb::tick_count::now();
         tbb::parallel_for( r, A() );
         tbb::tick_count parallel_t1 = tbb::tick_count::now();
 
-        BOOST_TEST_MESSAGE( "Serial version ran in " << (serial_t1 - serial_t0).seconds() << " seconds" << "\n"
-                            << "Parallel version ran in " <<  (parallel_t1 - parallel_t0).seconds() << " seconds" << "\n"
-                            << "Resulting in a speedup of " << (serial_t1 - serial_t0).seconds() / (parallel_t1 - parallel_t0).seconds() << "\n");
+        BOOST_TEST_MESSAGE( "Serial version ran in " << ( serial_t1 - serial_t0 ).seconds() << " seconds" << "\n"
+                            << "Parallel version ran in " <<  ( parallel_t1 - parallel_t0 ).seconds() << " seconds" << "\n"
+                            << "Resulting in a speedup of " << ( serial_t1 - serial_t0 ).seconds() / ( parallel_t1 - parallel_t0 ).seconds() << "\n" );
     }
+
     BOOST_TEST_MESSAGE( "Test TBB done" );
 
 }
@@ -123,35 +129,39 @@ BOOST_AUTO_TEST_CASE( test_tbb_reduce )
 {
 
     BOOST_TEST_MESSAGE( "Test TBB Reduce" );
-    std::vector<double> vs(N,M_PI),v(N,M_PI);
+    std::vector<double> vs( N,M_PI ),v( N,M_PI );
     tbb::blocked_range<std::vector<double>::iterator> r( v.begin(), v.end() );
     BOOST_CHECK_EQUAL( r.size(), N );
-   Eigen::Matrix<double,3,3> m;
+    Eigen::Matrix<double,3,3> m;
     tbb::tick_count serial_t0 = tbb::tick_count::now();
-   for( auto i = vs.begin();i != vs.end(); ++i )
-     {
+
+    for ( auto i = vs.begin(); i != vs.end(); ++i )
+    {
         m += Eigen::Matrix<double,3,3>::Constant( *i );
     }
+
     tbb::tick_count serial_t1 = tbb::tick_count::now();
-   std::cout << m << "\n";
-   
+    std::cout << m << "\n";
+
     int n = tbb::task_scheduler_init::default_num_threads();
-    for( int p=1; p<=n; ++p )
+
+    for ( int p=1; p<=n; ++p )
     {
         BOOST_TEST_MESSAGE( "[test_tbb_reduce] start tests with nthreads = " << p );
-        tbb::task_scheduler_init init(p);
+        tbb::task_scheduler_init init( p );
 
-       B b;
+        B b;
 
         tbb::tick_count parallel_t0 = tbb::tick_count::now();
         tbb::parallel_reduce( r, b );
         tbb::tick_count parallel_t1 = tbb::tick_count::now();
 
-       std::cout << b.m << "\n";
-        BOOST_TEST_MESSAGE( "Serial version ran in " << (serial_t1 - serial_t0).seconds() << " seconds" << "\n"
-                            << "Parallel version ran in " <<  (parallel_t1 - parallel_t0).seconds() << " seconds" << "\n"
-                            << "Resulting in a speedup of " << (serial_t1 - serial_t0).seconds() / (parallel_t1 - parallel_t0).seconds() << "\n");
+        std::cout << b.m << "\n";
+        BOOST_TEST_MESSAGE( "Serial version ran in " << ( serial_t1 - serial_t0 ).seconds() << " seconds" << "\n"
+                            << "Parallel version ran in " <<  ( parallel_t1 - parallel_t0 ).seconds() << " seconds" << "\n"
+                            << "Resulting in a speedup of " << ( serial_t1 - serial_t0 ).seconds() / ( parallel_t1 - parallel_t0 ).seconds() << "\n" );
     }
+
     BOOST_TEST_MESSAGE( "Test TBB reduce done" );
 
 }

@@ -21,12 +21,14 @@ PsLogger::PsLogger( std::string fileName, std::string format )
     M_command = command.str();
 }
 
-void PsLogger::log( std::string logMessage ) {
+void PsLogger::log( std::string logMessage )
+{
     if ( logMessage.length() > 0 )
     {
         std::stringstream command;
         command << "echo " << logMessage << " >> " << M_fileName << std::ends;
         system( command.str().c_str() );
     }
+
     system( M_command.c_str() );
 }

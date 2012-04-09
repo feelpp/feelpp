@@ -70,15 +70,15 @@ inline
 po::options_description
 makeOptions()
 {
-    po::options_description laplacianoptions("Laplacian options");
+    po::options_description laplacianoptions( "Laplacian options" );
     laplacianoptions.add_options()
-        ("hsize", po::value<double>()->default_value( 0.5 ), "mesh size")
-        ("shape", Feel::po::value<std::string>()->default_value( "simplex" ), "shape of the domain (either simplex or hypercube)")
-        ("nu", po::value<double>()->default_value( 1 ), "grad.grad coefficient")
-        ("weakdir", po::value<int>()->default_value( 1 ), "use weak Dirichlet condition" )
-        ("penaldir", Feel::po::value<double>()->default_value( 10 ),
-         "penalisation parameter for the weak boundary Dirichlet formulation")
-        ;
+    ( "hsize", po::value<double>()->default_value( 0.5 ), "mesh size" )
+    ( "shape", Feel::po::value<std::string>()->default_value( "simplex" ), "shape of the domain (either simplex or hypercube)" )
+    ( "nu", po::value<double>()->default_value( 1 ), "grad.grad coefficient" )
+    ( "weakdir", po::value<int>()->default_value( 1 ), "use weak Dirichlet condition" )
+    ( "penaldir", Feel::po::value<double>()->default_value( 10 ),
+      "penalisation parameter for the weak boundary Dirichlet formulation" )
+    ;
     return laplacianoptions.add( Feel::feel_options() );
 }
 
@@ -98,9 +98,9 @@ makeAbout()
                      "0.2",
                      "nD(n=1,2,3) Laplacian on simplices or simplex products",
                      Feel::AboutData::License_GPL,
-                     "Copyright (c) 2008-2009 Universite Joseph Fourier");
+                     "Copyright (c) 2008-2009 Universite Joseph Fourier" );
 
-    about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
     return about;
 
 }
@@ -118,7 +118,7 @@ makeAbout()
 template<int Dim>
 class BlocHeat
     :
-    public Simget
+public Simget
 {
     typedef Simget super;
 public:
@@ -209,10 +209,13 @@ BlocHeat<Dim>::run()
     std::cout << "Execute BlocHeat<" << Dim << ">\n";
     std::vector<double> X( 2 );
     X[0] = meshSize;
+
     if ( shape == "hypercube" )
         X[1] = 1;
+
     else // default is simplex
         X[1] = 0;
+
     std::vector<double> Y( 3 );
     run( X.data(), X.size(), Y.data(), Y.size() );
 }
@@ -234,7 +237,7 @@ BlocHeat<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
                                        % meshSize );
 
     auto mesh = createGMSHMesh( _mesh=new mesh_type,
-                                _desc = geo(_filename="MCS_heat.geo") );
+                                _desc = geo( _filename="MCS_heat.geo" ) );
     //auto mesh = GeoTool::createMeshFromGeoFile<mesh_type>("/u/e/effeindm/feel.src/examples/heat/MCS_heat.geo", "nameExport",meshSize);
 
     /**
@@ -246,8 +249,8 @@ BlocHeat<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
     element_type Tn( Xh, "Tn" );
     element_type v( Xh, "v" );
 
-   // Initialization of the terms :
-   Tn.zero();
+    // Initialization of the terms :
+    Tn.zero();
 
 
 
@@ -284,82 +287,83 @@ BlocHeat<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
     auto F = M_backend->newVector( Xh );
 
     export_ptrtype exporter( export_type::New( this->vm(),
-                                               (boost::format( "%1%-%2%-%3%" )
-                                                % this->about().appName()
-                                                % shape
-                                                % Dim).str() ) );
+                             ( boost::format( "%1%-%2%-%3%" )
+                               % this->about().appName()
+                               % shape
+                               % Dim ).str() ) );
+
     // Time loop :
-    for( double t= dt; t <= ft; t += dt )
+    for ( double t= dt; t <= ft; t += dt )
     {
-       std::cout<<"t =  "<<t<<std::endl;
+        std::cout<<"t =  "<<t<<std::endl;
 
 
-    form1( _test=Xh, _vector=F, _init=true ) =
-        integrate( markedfaces(mesh,11) ,0.1*id(v) )
-       +integrate( elements(mesh) ,factor*idv(Tn)*id(v) );
+        form1( _test=Xh, _vector=F, _init=true ) =
+            integrate( markedfaces( mesh,11 ) ,0.1*id( v ) )
+            +integrate( elements( mesh ) ,factor*idv( Tn )*id( v ) );
 
 
-    //# endmarker2 #
-    F->close();
+        //# endmarker2 #
+        F->close();
 
-    /** \endcode */
+        /** \endcode */
 
-    /**
-     * create the matrix that will hold the algebraic representation
-     * of the left hand side
-     */
-    //# marker3 #
-    /** \code */
-    sparse_matrix_ptrtype D( M_backend->newMatrix( Xh, Xh ) );
-    /** \endcode */
+        /**
+         * create the matrix that will hold the algebraic representation
+         * of the left hand side
+         */
+        //# marker3 #
+        /** \code */
+        sparse_matrix_ptrtype D( M_backend->newMatrix( Xh, Xh ) );
+        /** \endcode */
 
-    //! assemble $\int_\Omega \nu \nabla u \cdot \nabla v$
-    /** \code */
-    form2( Xh, Xh, D, _init=true ) =
-        integrate( elements(mesh), nu*gradt(T)*trans(grad(v)) )
-        + integrate( elements(mesh), factor*idt(T)*id(v));
-    /** \endcode */
-    //# endmarker3 #
+        //! assemble $\int_\Omega \nu \nabla u \cdot \nabla v$
+        /** \code */
+        form2( Xh, Xh, D, _init=true ) =
+            integrate( elements( mesh ), nu*gradt( T )*trans( grad( v ) ) )
+            + integrate( elements( mesh ), factor*idt( T )*id( v ) );
+        /** \endcode */
+        //# endmarker3 #
 
-    /** strong(algebraic) dirichlet conditions treatment for the boundaries marked 1 and 3
-     * -# first close the matrix (the matrix must be closed first before any manipulation )
-     * -# modify the matrix by cancelling out the rows and columns of D that are associated with the Dirichlet dof
-     */
-    /** \code */
-    //# marker5 #
-    D->close();
-    form2( Xh, Xh, D ) +=
-        on( markedfaces(mesh,10), T, F, cst(1.) );
-    //# endmarker5 #
-    /** \endcode */
+        /** strong(algebraic) dirichlet conditions treatment for the boundaries marked 1 and 3
+         * -# first close the matrix (the matrix must be closed first before any manipulation )
+         * -# modify the matrix by cancelling out the rows and columns of D that are associated with the Dirichlet dof
+         */
+        /** \code */
+        //# marker5 #
+        D->close();
+        form2( Xh, Xh, D ) +=
+            on( markedfaces( mesh,10 ), T, F, cst( 1. ) );
+        //# endmarker5 #
+        /** \endcode */
 
-    /** \endcode */
+        /** \endcode */
 
-    //! solve the system
-    /** \code */
-	//# marker6 #
-    backend_type::build()->solve( _matrix=D, _solution=T, _rhs=F );
-	//# endmarker6 #
-    /** \endcode */
+        //! solve the system
+        /** \code */
+        //# marker6 #
+        backend_type::build()->solve( _matrix=D, _solution=T, _rhs=F );
+        //# endmarker6 #
+        /** \endcode */
 
-    if ( exporter->doExport() )
-    {
-        Log() << "exportResults starts\n";
+        if ( exporter->doExport() )
+        {
+            Log() << "exportResults starts\n";
 
-        exporter->step(t)->setMesh( mesh );
+            exporter->step( t )->setMesh( mesh );
 
-        exporter->step(t)->add( "T", T );
+            exporter->step( t )->add( "T", T );
 
-        exporter->save();
-        Log() << "exportResults done\n";
+            exporter->save();
+            Log() << "exportResults done\n";
+        }
+
+        /** \endcode */
+        //Update:
+        Tn=T;
+        std::cout<<"T =  "<<Tn<<std::endl;
+
     }
-
-    /** \endcode */
-    //Update:
-    Tn=T;
-    std::cout<<"T =  "<<Tn<<std::endl;
-
-}
 
 } // BlocHeat::run
 
@@ -375,11 +379,13 @@ main( int argc, char** argv )
      */
     /** \code */
     Application app( argc, argv, makeAbout(), makeOptions() );
+
     if ( app.vm().count( "help" ) )
     {
         std::cout << app.optionsDescription() << "\n";
         return 0;
     }
+
     /** \endcode */
 
     /**

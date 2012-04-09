@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
 This file is part of the Feel library
 
@@ -34,21 +34,21 @@ namespace Feel
 {
 Atom::Atom( )
     :
-    M_center(dim)
+    M_center( dim )
 {
-    std::fill( M_center.begin(), M_center.end(), value_type(0));
+    std::fill( M_center.begin(), M_center.end(), value_type( 0 ) );
 }
 
 Atom::Atom( Atom const& atom )
     :
-    M_center  (atom.M_center),
-    M_id      (atom.M_id),
-    M_name    (atom.M_name),
-    M_peptide (atom.M_peptide),
-    M_pepId   (atom.M_pepId),
-    M_charge  (atom.M_charge),
-    M_radius  (atom.M_radius),
-    M_radius2  (atom.M_radius2)
+    M_center  ( atom.M_center ),
+    M_id      ( atom.M_id ),
+    M_name    ( atom.M_name ),
+    M_peptide ( atom.M_peptide ),
+    M_pepId   ( atom.M_pepId ),
+    M_charge  ( atom.M_charge ),
+    M_radius  ( atom.M_radius ),
+    M_radius2  ( atom.M_radius2 )
 {
 }
 
@@ -61,16 +61,17 @@ Atom&
 Atom::operator=( Atom const& atom )
 {
     if ( this != &atom )
-        {
-            M_center  = atom.M_center;
-            M_id      = atom.M_id;
-            M_name    = atom.M_name;
-            M_peptide = atom.M_peptide;
-            M_pepId   = atom.M_pepId;
-            M_charge  = atom.M_charge;
-            M_radius  = atom.M_radius;
-            M_radius2  = atom.M_radius2;
-        }
+    {
+        M_center  = atom.M_center;
+        M_id      = atom.M_id;
+        M_name    = atom.M_name;
+        M_peptide = atom.M_peptide;
+        M_pepId   = atom.M_pepId;
+        M_charge  = atom.M_charge;
+        M_radius  = atom.M_radius;
+        M_radius2  = atom.M_radius2;
+    }
+
     return *this;
 }
 
@@ -84,51 +85,54 @@ Atom::readPQRline( std::istream& PQRline, bool const neglectChrRad )
             >> M_peptide
             >> M_pepId;
 
-    for (int i(0); i< dim; i++)
+    for ( int i( 0 ); i< dim; i++ )
         PQRline >> M_center[i];
 
-    if (neglectChrRad)
-        {
-            std::string tmp;
-            std::getline(PQRline,tmp);
+    if ( neglectChrRad )
+    {
+        std::string tmp;
+        std::getline( PQRline,tmp );
 
-        } else {
-            PQRline >> M_charge
-                    >> M_radius;
+    }
 
-            M_radius2 = M_radius * M_radius;
+    else
+    {
+        PQRline >> M_charge
+                >> M_radius;
 
-            M_ID = -1;
-            M_pName = M_peptide;
-        }
+        M_radius2 = M_radius * M_radius;
+
+        M_ID = -1;
+        M_pName = M_peptide;
+    }
 
     if ( PQRline.eof() )
         return 1;
 
-    if (PQRline.fail())
-        {
-            showMe();
-            return -1;
-        }
+    if ( PQRline.fail() )
+    {
+        showMe();
+        return -1;
+    }
 
     return 0;
 
 }
 
 
-    /**
-     * read one cha.crd  and one rad.crd lines which looks like
+/**
+ * read one cha.crd  and one rad.crd lines which looks like
 ID id  peptide name   x       y        z       pName  pID charge
 1    1 GLY  N    -24.90000   6.97500   4.91400 SEG1  -2   -0.30000
 
 ID id  peptide name   x       y        z       pName  pID radius
 1    1 GLY  N    -24.90000   6.97500   4.91400 SEG1  -2   1.8500
 
-     * retuns 0 if line read susscessfully, otherwise 1
-     */
+ * retuns 0 if line read susscessfully, otherwise 1
+ */
 
 int
-Atom::readCRDlines( std::istream& chaline, std::istream& radline)
+Atom::readCRDlines( std::istream& chaline, std::istream& radline )
 {
     M_charge = readCRDlineCenter( chaline );
 
@@ -140,10 +144,10 @@ Atom::readCRDlines( std::istream& chaline, std::istream& radline)
         return 1;
 
     if ( chaline.fail() || radline.fail() )
-        {
-            showMe();
-            return -1;
-        }
+    {
+        showMe();
+        return -1;
+    }
 
     return 0;
 
@@ -159,7 +163,7 @@ Atom::readCRDlineCenter( std::istream& line )
          >> M_peptide
          >> M_name;
 
-    for (int i(0); i< dim; i++)
+    for ( int i( 0 ); i< dim; i++ )
         line >> M_center[i];
 
     line >> M_pName
@@ -180,7 +184,7 @@ void Atom::showMe() const
          << M_peptide << " "
          << M_pepId << " ";
 
-    for (int i(0); i< dim; i++)
+    for ( int i( 0 ); i< dim; i++ )
         ostr << M_center[i] << " ";
 
     ostr << M_charge << " "

@@ -54,17 +54,17 @@ class Hypercube  : public Convex<Dim,Order,RDim>
 
     typedef mpl::vector_c<size_type, 1, Order+1, ( Order+1 )*( Order+1 ), ( Order+1 )*( Order+1 )*( Order+1 ) , ( Order+1 )*( Order+1 )*( Order+1 )*( Order+1 )> points_t;
     typedef mpl::vector_c<size_type, 0, Order+1-2, ( Order+1-2 )*( Order+1-2 ), ( Order+1-2 )*( Order+1-2 )*( Order+1-2 ) , ( Order+1-2 )*( Order+1-2 )*( Order+1-2 )*( Order+1-2 )> points_interior_t;
-    typedef mpl::vector_c<size_type, 0, Order+1-2,                   Order+1-2,                         (Order+1-2), (Order+1-2)> points_edge_t;
-    typedef mpl::vector_c<size_type, 0,         0,     (Order+1-2)*(Order+1-2),             (Order+1-2)*(Order+1-2), (Order+1-2)*(Order+1-2) > points_face_t;
-    typedef mpl::vector_c<size_type, 0,         0,                           0, (Order+1-2)*(Order+1-2)*(Order+1-2), (Order+1-2)*(Order+1-2)*(Order+1-2) > points_volume_t;
+    typedef mpl::vector_c<size_type, 0, Order+1-2,                   Order+1-2,                         ( Order+1-2 ), ( Order+1-2 )> points_edge_t;
+    typedef mpl::vector_c<size_type, 0,         0,     ( Order+1-2 )*( Order+1-2 ),             ( Order+1-2 )*( Order+1-2 ), ( Order+1-2 )*( Order+1-2 ) > points_face_t;
+    typedef mpl::vector_c<size_type, 0,         0,                           0, ( Order+1-2 )*( Order+1-2 )*( Order+1-2 ), ( Order+1-2 )*( Order+1-2 )*( Order+1-2 ) > points_volume_t;
 
     template<uint16_type rdim>
     struct faces_t
     {
         typedef mpl::vector<boost::none_t,
-                            Hypercube<0, Order, rdim>,
-                            Hypercube<1, Order, rdim>,
-                            Hypercube<2, Order, rdim> > type;
+                Hypercube<0, Order, rdim>,
+                Hypercube<1, Order, rdim>,
+                Hypercube<2, Order, rdim> > type;
     };
     typedef mpl::vector<Hypercube<1, Order>, Hypercube<2, Order>, Hypercube<3, Order>, Hypercube<4, Order>, boost::none_t > elements_t;
 
@@ -96,24 +96,24 @@ public:
     static const uint16_type numNormals = mpl::at<normals_t, mpl::int_<nDim> >::type::value;
     static const uint16_type numVolumes = mpl::at<volumes_t, mpl::int_<nDim> >::type::value;
 
-    static const uint16_type nbPtsPerVertex = (nOrder==0)?0:1;
-    static const uint16_type nbPtsPerEdge = (nOrder==0)?((nDim==1)?1:0):mpl::at<points_edge_t, mpl::int_<nDim> >::type::value;
-    static const uint16_type nbPtsPerFace = (nOrder==0)?((nDim==2)?1:0):mpl::at<points_face_t, mpl::int_<nDim> >::type::value;
-    static const uint16_type nbPtsPerVolume = (nOrder==0)?((nDim==3)?1:0):mpl::at<points_volume_t, mpl::int_<nDim> >::type::value;
+    static const uint16_type nbPtsPerVertex = ( nOrder==0 )?0:1;
+    static const uint16_type nbPtsPerEdge = ( nOrder==0 )?( ( nDim==1 )?1:0 ):mpl::at<points_edge_t, mpl::int_<nDim> >::type::value;
+    static const uint16_type nbPtsPerFace = ( nOrder==0 )?( ( nDim==2 )?1:0 ):mpl::at<points_face_t, mpl::int_<nDim> >::type::value;
+    static const uint16_type nbPtsPerVolume = ( nOrder==0 )?( ( nDim==3 )?1:0 ):mpl::at<points_volume_t, mpl::int_<nDim> >::type::value;
     static const uint16_type numPoints = ( numVertices * nbPtsPerVertex +
                                            numEdges * nbPtsPerEdge +
                                            numFaces * nbPtsPerFace +
                                            numVolumes * nbPtsPerVolume );
 
     static const uint16_type orderSquare = boost::mpl::if_<boost::mpl::greater< boost::mpl::int_<Order>,
-                                                                                boost::mpl::int_<5> >,
-                                                           boost::mpl::int_<5>,
-                                                           typename boost::mpl::if_<boost::mpl::less< boost::mpl::int_<Order>,
-                                                                                                      boost::mpl::int_<1> >,
-                                                                                    boost::mpl::int_<1>,
-                                                                                    boost::mpl::int_<Order>
-                                                                                    >::type
-                                                                                    >::type::value;
+                             boost::mpl::int_<5> >,
+                             boost::mpl::int_<5>,
+                             typename boost::mpl::if_<boost::mpl::less< boost::mpl::int_<Order>,
+                             boost::mpl::int_<1> >,
+                             boost::mpl::int_<1>,
+                             boost::mpl::int_<Order>
+                             >::type
+                             >::type::value;
 
 
     typedef mpl::vector<boost::none_t, details::line<orderSquare>, details::quad<orderSquare>, details::hexa<orderSquare> > map_entity_to_point_t;
@@ -125,19 +125,19 @@ public:
     typedef no_permutation vertex_permutation_type;
 
     typedef typename mpl::if_<mpl::greater_equal<mpl::int_<nDim>, mpl::int_<2> >,
-                              mpl::identity<line_permutations>,
-                              mpl::identity<no_permutation> >::type::type edge_permutation_type;
+            mpl::identity<line_permutations>,
+            mpl::identity<no_permutation> >::type::type edge_permutation_type;
 
 
     typedef typename mpl::if_<mpl::equal_to<mpl::int_<nDim>, mpl::int_<3> >,
-                              mpl::identity<quadrangular_faces>,
-                              mpl::identity<no_permutation> >::type::type face_permutation_type;
+            mpl::identity<quadrangular_faces>,
+            mpl::identity<no_permutation> >::type::type face_permutation_type;
 
     typedef typename mpl::if_<mpl::equal_to<mpl::int_<nDim>, mpl::int_<2> >,
-                              mpl::identity<edge_permutation_type>,
-                              typename mpl::if_<mpl::equal_to<mpl::int_<nDim>, mpl::int_<3> >,
-                                                mpl::identity<face_permutation_type>,
-                                                mpl::identity<no_permutation> >::type>::type::type permutation_type;
+            mpl::identity<edge_permutation_type>,
+            typename mpl::if_<mpl::equal_to<mpl::int_<nDim>, mpl::int_<3> >,
+            mpl::identity<face_permutation_type>,
+            mpl::identity<no_permutation> >::type>::type::type permutation_type;
 
     template<uint16_type shape_dim, uint16_type O = Order,  uint16_type R=nDim>
     struct shape
@@ -149,32 +149,50 @@ public:
     /**
      * \return the topological dimension of the simplex
      */
-    uint16_type topologicalDimension() const { return topological_dimension; }
+    uint16_type topologicalDimension() const
+    {
+        return topological_dimension;
+    }
 
     /**
      * \return the dimension of the space where the simplex resides
      */
-    uint16_type dimension() const { return real_dimension; }
+    uint16_type dimension() const
+    {
+        return real_dimension;
+    }
 
     /**
      * Returns the number of points per vertex
      */
-    static uint16_type nPointsOnVertex() { return nbPtsPerVertex; }
+    static uint16_type nPointsOnVertex()
+    {
+        return nbPtsPerVertex;
+    }
 
     /**
      * Returns the number of points per edge
      */
-    static uint16_type nPointsOnEdge() { return nbPtsPerEdge; }
+    static uint16_type nPointsOnEdge()
+    {
+        return nbPtsPerEdge;
+    }
 
     /**
      * Returns the number of points per face
      */
-    static uint16_type nPointsOnFace() { return nbPtsPerFace; }
+    static uint16_type nPointsOnFace()
+    {
+        return nbPtsPerFace;
+    }
 
     /**
      * Returns the number of points per volume
      */
-    static uint16_type nPointsOnVolume() { return nbPtsPerVolume; }
+    static uint16_type nPointsOnVolume()
+    {
+        return nbPtsPerVolume;
+    }
 
     /**
      * \return the number of polynomials of total degree \c n on the
@@ -187,36 +205,45 @@ public:
     struct PolyDims
     {
         static const uint32_type value = mpl::if_<mpl::equal_to<mpl::int_<nDim>,mpl::int_<3> >,
-                                                  mpl::identity<mpl::int_<(N+1)*(N+1)*(N+1)> >,
-                                                  typename mpl::if_<mpl::equal_to<mpl::int_<nDim>,mpl::int_<2> >,
-                                                                    mpl::identity<mpl::int_<(N+1)*(N+1)> >,
-                                                                    mpl::identity<mpl::int_<(N+1)> > >::type>::type::value;
+                                 mpl::identity<mpl::int_<( N+1 )*( N+1 )*( N+1 )> >,
+                                 typename mpl::if_<mpl::equal_to<mpl::int_<nDim>,mpl::int_<2> >,
+                                 mpl::identity<mpl::int_<( N+1 )*( N+1 )> >,
+                                 mpl::identity<mpl::int_<( N+1 )> > >::type>::type::value;
     };
     static uint32_type polyDims( int n )
-        {
-            return uint32_type( math::pow( double(n+1), double(nDim) ) );
-        }
+    {
+        return uint32_type( math::pow( double( n+1 ), double( nDim ) ) );
+    }
 
     /**
      * Given an edge \p e in the element and the local index \p p (0
      * or 1) of a point in the edge \p e , \return the index in the
      * element of the point.
      */
-    static int e2p( int e,  int p ) { return edge_to_point_t::e2p( e, p ); }
+    static int e2p( int e,  int p )
+    {
+        return edge_to_point_t::e2p( e, p );
+    }
 
     /**
      * Given a face \p f in the element and the local index \p e of an
      * edge in the face \p f, \return the index in the element of the
      * edge.
      */
-    static int f2e( int f,  int e ) { return face_to_edge_t::f2e( f, e ); }
+    static int f2e( int f,  int e )
+    {
+        return face_to_edge_t::f2e( f, e );
+    }
 
     /**
      * Given a face \p f in the element and the local index \p p of a
      * point in the face \p f , \return the index in the element of
      * the point.
      */
-    static int f2p( int f,  int p ) { return face_to_point_t::f2p( f, p ); }
+    static int f2p( int f,  int p )
+    {
+        return face_to_point_t::f2p( f, p );
+    }
 
     /**
      * \return the name of the simplex product
@@ -234,9 +261,9 @@ public:
         return ostr.str();
     }
     static std::string type()
-        {
-            return "hypercube";
-        }
+    {
+        return "hypercube";
+    }
 };
 
 }

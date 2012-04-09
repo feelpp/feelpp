@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -98,7 +98,7 @@ public:
     typedef boost::shared_ptr<pressure_element_type> pressure_element_ptrtype;
     /* fluid */
     typedef fusion::vector<Lagrange<Order, Vectorial>,
-                           Lagrange<Order-1, Scalar> > fluid_basis_type;
+            Lagrange<Order-1, Scalar> > fluid_basis_type;
 
     typedef FunctionSpace<mesh_type, fluid_basis_type, value_type> fluid_functionspace_type;
     typedef boost::shared_ptr<fluid_functionspace_type> fluid_functionspace_ptrtype;
@@ -149,8 +149,8 @@ public:
     double normL2Div( fluid_element_type& U ) const;
 
     void updateResidual( const vector_ptrtype& X, vector_ptrtype& R );
-    void updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J);
-    void updateResidualJacobian( const vector_ptrtype& X, vector_ptrtype& R, sparse_matrix_ptrtype& J);
+    void updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J );
+    void updateResidualJacobian( const vector_ptrtype& X, vector_ptrtype& R, sparse_matrix_ptrtype& J );
 
     void updateLinearOperatorsBdf1( fluid_element_type& U );
     void updateLinearOperatorsBdf2( fluid_element_type& U );

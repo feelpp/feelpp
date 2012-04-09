@@ -53,18 +53,22 @@
 #endif
 
 #if defined( FEELPP_HAS_QD_H )
-qd_real floor(const qd_real &a);
-qd_real ceil(const qd_real &a);
-qd_real npwr(const qd_real &a, int n);
+qd_real floor( const qd_real &a );
+qd_real ceil( const qd_real &a );
+qd_real npwr( const qd_real &a, int n );
 #endif
 
 #if defined FEELPP_HAS_ARPREC
-inline mp_real_temp floor( mp_real const& m ) {
+inline mp_real_temp floor( mp_real const& m )
+{
     if ( m >0 ) return ::aint( m );
+
     return ::aint( m-1 );
 }
-inline mp_real_temp ceil( mp_real const& m ) {
+inline mp_real_temp ceil( mp_real const& m )
+{
     if ( m >0 )return ::aint( m+1 );
+
     return ::aint( m );
 }
 #endif // FEELPP_HAS_ARPREC
@@ -318,7 +322,7 @@ FEELPP_TRAITS_TYPE( T ) conj ( FEELPP_TRAITS_TYPE( T ) const& t)                
 /**
  * Generate the type traits
  */
-BOOST_PP_LIST_FOR_EACH_PRODUCT( FEELPP_TRAITS_OP, 1, (FEELPP_TRAITS_TYPES) )
+BOOST_PP_LIST_FOR_EACH_PRODUCT( FEELPP_TRAITS_OP, 1, ( FEELPP_TRAITS_TYPES ) )
 
 namespace math
 {
@@ -340,10 +344,10 @@ namespace math
   }                                                                                 \
   /**/
 #
-BOOST_PP_LIST_FOR_EACH_PRODUCT( FEELPP_UNARY_FUNCS_OP, 2, (BOOST_PP_LIST_FILTER(FEELPP_PRED_FUNC, 0, FEELPP_TRAITS_TYPES ), FEELPP_STD_FUNCS) )
-BOOST_PP_LIST_FOR_EACH_PRODUCT( FEELPP_UNARY_FUNCS_OP, 2, (BOOST_PP_LIST_FILTER(FEELPP_PRED_FUNC, 1, FEELPP_TRAITS_TYPES ), FEELPP_MP_FUNCS) )
-BOOST_PP_LIST_FOR_EACH_PRODUCT( FEELPP_UNARY_FUNCS_OP, 2, (BOOST_PP_LIST_FILTER(FEELPP_PRED_FUNC, 2, FEELPP_TRAITS_TYPES ), FEELPP_GLOBAL_FUNCS) )
-BOOST_PP_LIST_FOR_EACH_PRODUCT( FEELPP_UNARY_FUNCS_OP, 2, (BOOST_PP_LIST_FILTER(FEELPP_PRED_FUNC, 3, FEELPP_TRAITS_TYPES ), FEELPP_STDCOMPLEX_FUNCS) )
+BOOST_PP_LIST_FOR_EACH_PRODUCT( FEELPP_UNARY_FUNCS_OP, 2, ( BOOST_PP_LIST_FILTER( FEELPP_PRED_FUNC, 0, FEELPP_TRAITS_TYPES ), FEELPP_STD_FUNCS ) )
+BOOST_PP_LIST_FOR_EACH_PRODUCT( FEELPP_UNARY_FUNCS_OP, 2, ( BOOST_PP_LIST_FILTER( FEELPP_PRED_FUNC, 1, FEELPP_TRAITS_TYPES ), FEELPP_MP_FUNCS ) )
+BOOST_PP_LIST_FOR_EACH_PRODUCT( FEELPP_UNARY_FUNCS_OP, 2, ( BOOST_PP_LIST_FILTER( FEELPP_PRED_FUNC, 2, FEELPP_TRAITS_TYPES ), FEELPP_GLOBAL_FUNCS ) )
+BOOST_PP_LIST_FOR_EACH_PRODUCT( FEELPP_UNARY_FUNCS_OP, 2, ( BOOST_PP_LIST_FILTER( FEELPP_PRED_FUNC, 3, FEELPP_TRAITS_TYPES ), FEELPP_STDCOMPLEX_FUNCS ) )
 
 /**
  * Generate the binary functions for each type
@@ -361,9 +365,9 @@ BOOST_PP_LIST_FOR_EACH_PRODUCT( FEELPP_UNARY_FUNCS_OP, 2, (BOOST_PP_LIST_FILTER(
   }                                                                                              \
   /**/
 #
-BOOST_PP_LIST_FOR_EACH_PRODUCT( FEELPP_BINARY_FUNCS_OP, 2, (BOOST_PP_LIST_FILTER(FEELPP_PRED_FUNC, 0, FEELPP_TRAITS_TYPES ), FEELPP_STD_BINARY_FUNCS) )
-BOOST_PP_LIST_FOR_EACH_PRODUCT( FEELPP_BINARY_FUNCS_OP, 2, (BOOST_PP_LIST_FILTER(FEELPP_PRED_FUNC, 1, FEELPP_TRAITS_TYPES ), FEELPP_MP_BINARY_FUNCS) )
-BOOST_PP_LIST_FOR_EACH_PRODUCT( FEELPP_BINARY_FUNCS_OP, 2, (BOOST_PP_LIST_FILTER(FEELPP_PRED_FUNC, 2, FEELPP_TRAITS_TYPES ), FEELPP_GLOBAL_BINARY_FUNCS) )
+BOOST_PP_LIST_FOR_EACH_PRODUCT( FEELPP_BINARY_FUNCS_OP, 2, ( BOOST_PP_LIST_FILTER( FEELPP_PRED_FUNC, 0, FEELPP_TRAITS_TYPES ), FEELPP_STD_BINARY_FUNCS ) )
+BOOST_PP_LIST_FOR_EACH_PRODUCT( FEELPP_BINARY_FUNCS_OP, 2, ( BOOST_PP_LIST_FILTER( FEELPP_PRED_FUNC, 1, FEELPP_TRAITS_TYPES ), FEELPP_MP_BINARY_FUNCS ) )
+BOOST_PP_LIST_FOR_EACH_PRODUCT( FEELPP_BINARY_FUNCS_OP, 2, ( BOOST_PP_LIST_FILTER( FEELPP_PRED_FUNC, 2, FEELPP_TRAITS_TYPES ), FEELPP_GLOBAL_BINARY_FUNCS ) )
 } // math
 
 
@@ -374,12 +378,21 @@ BOOST_PP_LIST_FOR_EACH_PRODUCT( FEELPP_BINARY_FUNCS_OP, 2, (BOOST_PP_LIST_FILTER
 //
 // make dd_real/qd_real known to boost::lambda
 //
-namespace boost {
-namespace lambda {
-namespace detail {
+namespace boost
+{
+namespace lambda
+{
+namespace detail
+{
 
-template <> struct promote_code<dd_real> { static const int value = 6000; };
-template <> struct promote_code<qd_real> { static const int value = 7000; };
+template <> struct promote_code<dd_real>
+{
+    static const int value = 6000;
+};
+template <> struct promote_code<qd_real>
+{
+    static const int value = 7000;
+};
 
 } // namespace detail
 } // namespace lambda

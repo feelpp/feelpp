@@ -43,7 +43,7 @@
 
 namespace Feel
 {
-    namespace mpi=boost::mpi;
+namespace mpi=boost::mpi;
 
 /**
  * \class GraphCSR
@@ -116,8 +116,14 @@ public:
      */
     //@{
 
-    size_type nRows() const { return M_last_row_entry_on_proc+1; }
-    size_type nCols() const { return M_last_col_entry_on_proc+1; }
+    size_type nRows() const
+    {
+        return M_last_row_entry_on_proc+1;
+    }
+    size_type nCols() const
+    {
+        return M_last_col_entry_on_proc+1;
+    }
 
     /**
      * \return the first entry index on proc
@@ -167,21 +173,33 @@ public:
     /**
      * \return begin (rw) iterator on graph
      */
-    iterator begin() { return M_storage.begin(); }
+    iterator begin()
+    {
+        return M_storage.begin();
+    }
 
     /**
      * \return end (rw) iterator on graph
      */
-    iterator end() { return M_storage.end(); }
+    iterator end()
+    {
+        return M_storage.end();
+    }
 
     /**
      * \return begin (ro) iterator on graph
      */
-    const_iterator begin() const { return M_storage.begin(); }
+    const_iterator begin() const
+    {
+        return M_storage.begin();
+    }
     /**
      * \return end (ro) iterator on graph
      */
-    const_iterator end() const { return M_storage.end(); }
+    const_iterator end() const
+    {
+        return M_storage.end();
+    }
     /**
      * get the i-th row
      */
@@ -210,7 +228,10 @@ public:
     /**
      * \return the maximum number of non-zero entries per row
      */
-    size_type maxNnz() const { return M_max_nnz; }
+    size_type maxNnz() const
+    {
+        return M_max_nnz;
+    }
 
     /**
      * \return the array containing the number of non-zero entries per
@@ -247,12 +268,27 @@ public:
      * \return the communicator
      */
     //mpi::communicator const& comm() const { return M_comm; }
-    WorldComm const& worldComm() const { return M_worldComm; }
+    WorldComm const& worldComm() const
+    {
+        return M_worldComm;
+    }
 
-    nz_type const& ia() const { return M_ia; }
-    nz_type const& ja() const { return M_ja; }
-    std::vector<double> const& a() const { return M_a; }
-    std::vector<double>& a()  { return M_a; }
+    nz_type const& ia() const
+    {
+        return M_ia;
+    }
+    nz_type const& ja() const
+    {
+        return M_ja;
+    }
+    std::vector<double> const& a() const
+    {
+        return M_a;
+    }
+    std::vector<double>& a()
+    {
+        return M_a;
+    }
 
 
     //@}
@@ -262,11 +298,23 @@ public:
     //@{
 
 
-    void setFirstRowEntryOnProc( size_type entry ) { M_first_row_entry_on_proc = entry; }
-    void setFirstColEntryOnProc( size_type entry ) { M_first_col_entry_on_proc = entry; }
+    void setFirstRowEntryOnProc( size_type entry )
+    {
+        M_first_row_entry_on_proc = entry;
+    }
+    void setFirstColEntryOnProc( size_type entry )
+    {
+        M_first_col_entry_on_proc = entry;
+    }
 
-    void setLastRowEntryOnProc( size_type entry ) { M_last_row_entry_on_proc = entry; }
-    void setLastColEntryOnProc( size_type entry ) { M_last_col_entry_on_proc = entry; }
+    void setLastRowEntryOnProc( size_type entry )
+    {
+        M_last_row_entry_on_proc = entry;
+    }
+    void setLastColEntryOnProc( size_type entry )
+    {
+        M_last_col_entry_on_proc = entry;
+    }
 
 
     //@}
@@ -301,7 +349,7 @@ public:
      */
     void showMe( std::ostream& __out = std::cout ) const;
 
-    void printPython( std::string const& nameFile) const;
+    void printPython( std::string const& nameFile ) const;
 
     //@}
 

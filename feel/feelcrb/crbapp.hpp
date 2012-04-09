@@ -55,103 +55,116 @@ public:
     CRBApp( AboutData const& ad, po::options_description const& od )
         :
         super( ad, crbOptions().add( od ) )
-        {
-            this->init();
-        }
+    {
+        this->init();
+    }
 
     CRBApp( int argc, char** argv, AboutData const& ad, po::options_description const& od )
         :
         super( argc, argv, ad, crbOptions().add( od ) )
-        {
-            this->init();
-        }
+    {
+        this->init();
+    }
     void init()
+    {
+        std::srand( static_cast<unsigned>( std::time( 0 ) ) );
+        std::cerr << "[CRBApp] constructor " << this->about().appName()  << std::endl;
+
+        if ( this->vm().count( "crb.output-index" ) )
+            this->changeRepository( boost::format( "%1%/h_%2%/s_%3%" )
+                                    % this->about().appName()
+                                    % this->vm()["hsize"].template as<double>()
+                                    % this->vm()["crb.output-index"].template as<int>()
+                                  );
+
+        else
+            this->changeRepository( boost::format( "%1%/h_%2%/" )
+                                    % this->about().appName()
+                                    % this->vm()["hsize"].template as<double>()
+                                  );
+
+        std::cerr << "[CRBApp] ch repo" << std::endl;
+        this->setLogs();
+        std::cerr << "[CRBApp] set Logs" << std::endl;
+        opus = crbmodel_ptrtype( new crbmodel_type( this->vm() ) );
+        std::cerr << "[CRBApp] get model done" << std::endl;
+        crb = crb_ptrtype( new crb_type( this->about().appName(),
+                                         this->vm() ) );
+
+        std::cerr << "[CRBApp] get crb done" << std::endl;
+        crb->setTruthModel( opus );
+        std::cerr << "[CRBApp] constructor done" << std::endl;
+
+    }
+    void setOutput( int i = 0, CRBErrorType error_type = ( int )CRB_RESIDUAL , int maxiter = 10 )
+    {
+        auto  ckconv = crb->offline();
+
+        if ( ckconv.size() )
         {
-            std::srand(static_cast<unsigned>(std::time(0)));
-            std::cerr << "[CRBApp] constructor " << this->about().appName()  << std::endl;
-            if ( this->vm().count( "crb.output-index" ) )
-                this->changeRepository( boost::format( "%1%/h_%2%/s_%3%" )
-                                        % this->about().appName()
-                                        % this->vm()["hsize"].template as<double>()
-                                        % this->vm()["crb.output-index"].template as<int>()
-                    );
-            else
-                this->changeRepository( boost::format( "%1%/h_%2%/" )
-                                        % this->about().appName()
-                                        % this->vm()["hsize"].template as<double>()
-                    );
-            std::cerr << "[CRBApp] ch repo" << std::endl;
-            this->setLogs();
-            std::cerr << "[CRBApp] set Logs" << std::endl;
-            opus = crbmodel_ptrtype( new crbmodel_type(this->vm()) );
-            std::cerr << "[CRBApp] get model done" << std::endl;
-            crb = crb_ptrtype( new crb_type( this->about().appName(),
-                                             this->vm() ) );
-
-            std::cerr << "[CRBApp] get crb done" << std::endl;
-            crb->setTruthModel( opus );
-            std::cerr << "[CRBApp] constructor done" << std::endl;
-
-        }
-    void setOutput( int i = 0, CRBErrorType error_type = (int)CRB_RESIDUAL , int maxiter = 10)
-        {
-            auto  ckconv = crb->offline();
-
-            if ( ckconv.size() )
-            {
 #if 0
-                double max_ei=0;
-                double min_ei=0;
-                crb->computeErrorEstimationEfficiencyIndicator (opus->parameterSpace(), max_ei, min_ei,10);
+            double max_ei=0;
+            double min_ei=0;
+            crb->computeErrorEstimationEfficiencyIndicator ( opus->parameterSpace(), max_ei, min_ei,10 );
 #endif
-                for( auto it = ckconv.left.begin(); it != ckconv.left.end(); ++it )
-                {
-                    Log() << "ckconv[" << it->first <<"]=" << it->second << "\n";
-                }
+
+            for ( auto it = ckconv.left.begin(); it != ckconv.left.end(); ++it )
+            {
+                Log() << "ckconv[" << it->first <<"]=" << it->second << "\n";
             }
         }
+    }
     void run()
+    {
+        if ( this->vm().count( "help" ) )
         {
-            if ( this->vm().count( "help" ) )
-            {
-                std::cout << this->optionsDescription() << "\n";
-                return;
-            }
-            if ( !crb->isDBLoaded() )
-            {
-                std::cout << "No DB available, do offline computations first...\n";
-                crb->offline();
-            }
-            typename crb_type::sampling_ptrtype Sampling( new typename crb_type::sampling_type( opus->parameterSpace() ) );
-            Sampling->randomize( 10 );
-            int crb_error_type = crb->errorType();
-            int output_index = crb->outputIndex();
-            BOOST_FOREACH( auto mu, *Sampling )
-            {
-                double sfem = opus->output(output_index, mu);
-                int size = mu.size();
-                std::cout << "------------------------------------------------------------\n";
-                std::cout << "tolerance : " << this->vm()["crb.online-tolerance"].template as<double>() << "\n";
-                std::cout << "mu = [ ";
-                for(int i=0;i<size-1;i++) std::cout<< mu[i] <<" , ";
-                std::cout<< mu[size-1]<<" ] \n";
-                auto o = crb->run( mu,  this->vm()["crb.online-tolerance"].template as<double>() );
-                if(crb_error_type==2){
-                    std::cout << "output=" << o.get<0>() << " with " << o.get<2>() << " basis functions\n";
-                    std::cout << "output obtained using FEM : "<<sfem<<std::endl;
-                }
-                else{
-                    std::cout << "output=" << o.get<0>() << " with " << o.get<2>() << " basis functions  (error estimation on this output : " << o.get<1>()<<") \n";
-                    std::cout << "output obtained using FEM : "<<sfem<<std::endl;
-                }
-                std::cout << "------------------------------------------------------------\n";
-            }
+            std::cout << this->optionsDescription() << "\n";
+            return;
         }
+
+        if ( !crb->isDBLoaded() )
+        {
+            std::cout << "No DB available, do offline computations first...\n";
+            crb->offline();
+        }
+
+        typename crb_type::sampling_ptrtype Sampling( new typename crb_type::sampling_type( opus->parameterSpace() ) );
+        Sampling->randomize( 10 );
+        int crb_error_type = crb->errorType();
+        int output_index = crb->outputIndex();
+        BOOST_FOREACH( auto mu, *Sampling )
+        {
+            double sfem = opus->output( output_index, mu );
+            int size = mu.size();
+            std::cout << "------------------------------------------------------------\n";
+            std::cout << "tolerance : " << this->vm()["crb.online-tolerance"].template as<double>() << "\n";
+            std::cout << "mu = [ ";
+
+            for ( int i=0; i<size-1; i++ ) std::cout<< mu[i] <<" , ";
+
+            std::cout<< mu[size-1]<<" ] \n";
+            auto o = crb->run( mu,  this->vm()["crb.online-tolerance"].template as<double>() );
+
+            if ( crb_error_type==2 )
+            {
+                std::cout << "output=" << o.get<0>() << " with " << o.get<2>() << " basis functions\n";
+                std::cout << "output obtained using FEM : "<<sfem<<std::endl;
+            }
+
+            else
+            {
+                std::cout << "output=" << o.get<0>() << " with " << o.get<2>() << " basis functions  (error estimation on this output : " << o.get<1>()<<") \n";
+                std::cout << "output obtained using FEM : "<<sfem<<std::endl;
+            }
+
+            std::cout << "------------------------------------------------------------\n";
+        }
+    }
     void run( const double * X, unsigned long N,
               double * Y, unsigned long P )
-        {
-            crb->run(X, N, Y, P);
-        }
+    {
+        crb->run( X, N, Y, P );
+    }
 
     crbmodel_ptrtype opus;
     crb_ptrtype crb;

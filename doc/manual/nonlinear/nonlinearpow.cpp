@@ -45,17 +45,17 @@ inline
 Feel::po::options_description
 makeOptions()
 {
-    Feel::po::options_description nonlinearpowoptions("Nonlinearpow problem options");
+    Feel::po::options_description nonlinearpowoptions( "Nonlinearpow problem options" );
     nonlinearpowoptions.add_options()
-        ("lambda", Feel::po::value<int>()->default_value( 2 ), "power of u")
+    ( "lambda", Feel::po::value<int>()->default_value( 2 ), "power of u" )
 
-        ("penalbc", Feel::po::value<double>()->default_value( 10 ), "penalisation parameter for the weak boundary conditions")
-        ("hsize", Feel::po::value<double>()->default_value( 0.5 ), "first h value to start convergence")
+    ( "penalbc", Feel::po::value<double>()->default_value( 10 ), "penalisation parameter for the weak boundary conditions" )
+    ( "hsize", Feel::po::value<double>()->default_value( 0.5 ), "first h value to start convergence" )
 
-        ("export", "export results(ensight, data file(1D)")
-        ("export-mesh-only", "export mesh only in ensight format")
-        ("export-matlab", "export matrix and vectors in matlab" )
-        ;
+    ( "export", "export results(ensight, data file(1D)" )
+    ( "export-mesh-only", "export mesh only in ensight format" )
+    ( "export-matlab", "export matrix and vectors in matlab" )
+    ;
     return nonlinearpowoptions.add( Feel::feel_options() );
 }
 inline
@@ -67,9 +67,9 @@ makeAbout()
                            "0.1",
                            "nD(n=1,2,3) NonLinearUL problem",
                            Feel::AboutData::License_GPL,
-                           "Copyright (c) 2008-2009 Université Joseph Fourier");
+                           "Copyright (c) 2008-2009 Université Joseph Fourier" );
 
-    about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
     return about;
 
 }
@@ -88,7 +88,7 @@ template<int Dim,
          template<uint16_type,uint16_type,uint16_type> class Entity = Simplex>
 class NonLinearPow
     :
-        public Application
+public Application
 {
     typedef Application super;
 public:
@@ -153,7 +153,7 @@ public:
 
 
     void updateResidual( const vector_ptrtype& X, vector_ptrtype& R );
-    void updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J);
+    void updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J );
 
 private:
 
@@ -192,10 +192,10 @@ NonLinearPow<Dim,Order,Entity>::NonLinearPow( int argc, char** argv, AboutData c
 {
 
     if ( this->vm().count( "help" ) )
-        {
-            std::cout << this->optionsDescription() << "\n";
-            return;
-        }
+    {
+        std::cout << this->optionsDescription() << "\n";
+        return;
+    }
 
     this->changeRepository( boost::format( "doc/tutorial/%1%/%2%/P%3%/h_%4%/lambda_%5%" )
                             % this->about().appName()
@@ -203,13 +203,13 @@ NonLinearPow<Dim,Order,Entity>::NonLinearPow( int argc, char** argv, AboutData c
                             % Order
                             % this->vm()["hsize"].template as<double>()
                             % this->vm()["lambda"].template as<int>()
-                            );
+                          );
 
     mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
                                         _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
-                                        _desc=domain( _name= (boost::format( "%1%-%2%-%3%" ) % "hypercube" % Dim % 1).str() ,
-                                                      _shape="hypercube",
-                                                      _h=meshSize ),
+                                        _desc=domain( _name= ( boost::format( "%1%-%2%-%3%" ) % "hypercube" % Dim % 1 ).str() ,
+                                                _shape="hypercube",
+                                                _h=meshSize ),
                                         _partitions=this->comm().size()  );
     M_Xh = functionspace_ptrtype( functionspace_type::New( mesh ) );
 
@@ -228,22 +228,22 @@ NonLinearPow<Dim, Order, Entity>::updateResidual( const vector_ptrtype& X, vecto
     element_type v( M_Xh, "v" );
 
     u = *X;
-    auto g = constant(0.0);
+    auto g = constant( 0.0 );
 
     form1( _test=M_Xh, _vector=R ) =
-        integrate( elements( mesh ),  + gradv(u)*trans(grad(v)) + pow(idv(u),M_lambda)*id(v) +id(v), _Q<2*Order>() ) +
-        integrate( boundaryfaces(mesh),
-                   ( - trans(id(v))*(gradv(u)*N())
-                     - trans(idv(u))*(grad(v)*N())
-                     + penalisation_bc*trans(idv(u))*id(v)/hFace())-
-                   g*( - grad(v)*N() + penalisation_bc*id(v)/hFace() )
-                   );
+        integrate( elements( mesh ),  + gradv( u )*trans( grad( v ) ) + pow( idv( u ),M_lambda )*id( v ) +id( v ), _Q<2*Order>() ) +
+        integrate( boundaryfaces( mesh ),
+                   ( - trans( id( v ) )*( gradv( u )*N() )
+                     - trans( idv( u ) )*( grad( v )*N() )
+                     + penalisation_bc*trans( idv( u ) )*id( v )/hFace() )-
+                   g*( - grad( v )*N() + penalisation_bc*id( v )/hFace() )
+                 );
     R->close();
     Log() << "[updateResidual] done in " << ti.elapsed() << "s\n";
 }
 template<int Dim, int Order, template<uint16_type,uint16_type,uint16_type> class Entity>
 void
-NonLinearPow<Dim, Order, Entity>::updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J)
+NonLinearPow<Dim, Order, Entity>::updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J )
 {
     boost::timer ti;
     Log() << "[updateJacobian] start\n";
@@ -251,9 +251,11 @@ NonLinearPow<Dim, Order, Entity>::updateJacobian( const vector_ptrtype& X, spars
     element_type u( M_Xh, "u" );
     element_type v( M_Xh, "v" );
     u = *X;
+
     if ( !J ) J = M_backend->newMatrix( M_Xh, M_Xh );
-    form2(_test=M_Xh, _trial=M_Xh, _matrix=J )  =
-        integrate( elements( mesh ),  M_lambda*pow(idv(u),M_lambda-1)*idt(u)*id(v), _Q<2*Order>() );
+
+    form2( _test=M_Xh, _trial=M_Xh, _matrix=J )  =
+        integrate( elements( mesh ),  M_lambda*pow( idv( u ),M_lambda-1 )*idt( u )*id( v ), _Q<2*Order>() );
     J->addMatrix( 1.0, M_oplin->mat() );
     Log() << "[updateJacobian] done in " << ti.elapsed() << "s\n";
 }
@@ -272,17 +274,17 @@ NonLinearPow<Dim, Order, Entity>::run()
 
     M_oplin = oplin_ptrtype( new oplin_type( M_Xh, M_Xh, M_backend ) );
     *M_oplin =
-        integrate( elements( mesh ), gradt(u)*trans(grad(v)) ) +
-        integrate( boundaryfaces(mesh),
-                   ( - trans(id(v))*(gradt(u)*N())
-                     - trans(idt(u))*(grad(v)*N())
-                     + penalisation_bc*trans(idt(u))*id(v)/hFace()) );
+        integrate( elements( mesh ), gradt( u )*trans( grad( v ) ) ) +
+        integrate( boundaryfaces( mesh ),
+                   ( - trans( id( v ) )*( gradt( u )*N() )
+                     - trans( idt( u ) )*( grad( v )*N() )
+                     + penalisation_bc*trans( idt( u ) )*id( v )/hFace() ) );
     M_oplin->close();
 
     M_backend->nlSolver()->residual = boost::bind( &self_type::updateResidual, boost::ref( *this ), _1, _2 );
     M_backend->nlSolver()->jacobian = boost::bind( &self_type::updateJacobian, boost::ref( *this ), _1, _2 );
 
-    u = vf::project( M_Xh, elements(mesh), constant(0.) );
+    u = vf::project( M_Xh, elements( mesh ), constant( 0. ) );
 
     M_backend->nlSolve( _solution=u );
 
@@ -296,12 +298,14 @@ void
 NonLinearPow<Dim, Order, Entity>::exportResults( element_type& U )
 {
     Log() << "exportResults starts\n";
-    exporter->step(0)->setMesh( U.functionSpace()->mesh() );
+    exporter->step( 0 )->setMesh( U.functionSpace()->mesh() );
+
     if ( !this->vm().count( "export-mesh-only" ) )
-        {
-            exporter->step(0)->addRegions();
-            exporter->step(0)->add( "u", U );
-        }
+    {
+        exporter->step( 0 )->addRegions();
+        exporter->step( 0 )->add( "u", U );
+    }
+
     exporter->save();
 } // NonLinearPow::export
 } // Feel

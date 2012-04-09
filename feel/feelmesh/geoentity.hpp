@@ -49,7 +49,7 @@ class GeoEntity
     boost::equality_comparable<GeoEntity<Entity> >,
     boost::less_than_comparable<GeoEntity<Entity> >,
     boost::less_than_comparable<GeoEntity<Entity>, size_type>,
-    public Entity
+public Entity
 
 {
 public:
@@ -116,11 +116,11 @@ public:
         M_shape( Shape ),
         M_npids( 1 ),
         M_pid( 0 ),
-        M_pidInPartition(0),
+        M_pidInPartition( 0 ),
         M_neighor_pids(),
         M_idInPartition(),
         M_elist()
-        {}
+    {}
 
     explicit GeoEntity( size_type i,
                         size_type geometry = Geometry,
@@ -134,11 +134,11 @@ public:
         M_shape( shape ),
         M_npids( 1 ),
         M_pid( 0 ),
-        M_pidInPartition(0),
+        M_pidInPartition( 0 ),
         M_neighor_pids(),
         M_idInPartition(),
         M_elist()
-        {}
+    {}
 
     GeoEntity( GeoEntity const& __me )
         :
@@ -151,30 +151,31 @@ public:
         M_pid( __me.M_pid ),
         M_pidInPartition( __me.M_pidInPartition ),
         M_neighor_pids( __me.M_neighor_pids ),
-        M_idInPartition( __me.M_idInPartition),
+        M_idInPartition( __me.M_idInPartition ),
         M_elist( __me.M_elist )
-        {}
+    {}
 
     GeoEntity& operator=( GeoEntity const& __me )
+    {
+        if ( this != &__me )
         {
-            if ( this != &__me )
-            {
-                M_id = __me.M_id;
-                M_entity = __me.M_entity;
-                M_geometry = __me.M_geometry;
-                M_shape = __me.M_shape;
-                M_npids = __me.M_npids;
-                M_pid = __me.M_pid;
-                M_pidInPartition = __me.M_pidInPartition;
-                M_neighor_pids = __me.M_neighor_pids;
-                M_idInPartition = __me.M_idInPartition;
-                M_elist = __me.M_elist;
-            }
-            return *this;
+            M_id = __me.M_id;
+            M_entity = __me.M_entity;
+            M_geometry = __me.M_geometry;
+            M_shape = __me.M_shape;
+            M_npids = __me.M_npids;
+            M_pid = __me.M_pid;
+            M_pidInPartition = __me.M_pidInPartition;
+            M_neighor_pids = __me.M_neighor_pids;
+            M_idInPartition = __me.M_idInPartition;
+            M_elist = __me.M_elist;
         }
 
+        return *this;
+    }
+
     virtual ~GeoEntity()
-        {}
+    {}
 
     //@}
 
@@ -182,18 +183,18 @@ public:
      */
     //@{
     bool operator==( GeoEntity const& e ) const
-        {
-            return M_id == e.id();
-        };
+    {
+        return M_id == e.id();
+    };
     bool operator<( GeoEntity const& e ) const
-        {
-            return M_id < e.id();
-        };
+    {
+        return M_id < e.id();
+    };
 
     bool operator<( size_type __i ) const
-        {
-            return M_id < __i;
-        };
+    {
+        return M_id < __i;
+    };
 
     //@}
 
@@ -202,9 +203,9 @@ public:
     //@{
 
     size_type id() const
-        {
-            return M_id;
-        }
+    {
+        return M_id;
+    }
 
 
     /**
@@ -213,49 +214,70 @@ public:
      *
      * @return the dimension of the reference shape
      */
-    uint16_type refDim() const { return super::nDim; }
+    uint16_type refDim() const
+    {
+        return super::nDim;
+    }
 
     /**
      * number of points on the reference shape
      *
      * @return the number of points on the reference shape
      */
-    uint16_type nPoints() const { return super::numPoints; }
+    uint16_type nPoints() const
+    {
+        return super::numPoints;
+    }
 
     /**
      * number of vertices on the reference shape
      *
      * @return the number of vertices on the reference shape
      */
-    uint16_type nVertices() const { return super::numVertices; }
+    uint16_type nVertices() const
+    {
+        return super::numVertices;
+    }
 
     /**
      * number of edges on the reference shape
      *
      * @return the number of edges on the reference shape
      */
-    uint16_type nEdges() const { return super::numEdges; }
+    uint16_type nEdges() const
+    {
+        return super::numEdges;
+    }
 
     /**
      * number of faces on the reference shape
      *
      * @return the number of edges on the reference shape
      */
-    uint16_type nFaces() const { return super::numFaces; }
+    uint16_type nFaces() const
+    {
+        return super::numFaces;
+    }
 
     /**
      * number of faces on the reference shape
      *
      * @return the number of edges on the reference shape
      */
-    uint16_type nGeometricFaces() const { return super::numGeometricFaces; }
+    uint16_type nGeometricFaces() const
+    {
+        return super::numGeometricFaces;
+    }
 
     /**
      * number of normals on the reference shape
      *
      * @return the number of normals on the reference shape
      */
-    uint16_type nNormals() const { return super::numNormals; }
+    uint16_type nNormals() const
+    {
+        return super::numNormals;
+    }
 
 
     /**
@@ -264,77 +286,122 @@ public:
      *
      * @return true if the entoty has the shape \c __shape, false otherwise
      */
-    bool hasShape( size_type __shape ) const { return M_shape.test( __shape ); }
+    bool hasShape( size_type __shape ) const
+    {
+        return M_shape.test( __shape );
+    }
 
     /**
      * @return true of the entity is a volume
      */
-    bool isAVolume() const { return M_geometry.test( GEOMETRY_VOLUME ); }
+    bool isAVolume() const
+    {
+        return M_geometry.test( GEOMETRY_VOLUME );
+    }
 
     /**
      * @return true of the entity is a surface
      */
-    bool isASurface() const { return M_geometry.test( GEOMETRY_SURFACE ); }
+    bool isASurface() const
+    {
+        return M_geometry.test( GEOMETRY_SURFACE );
+    }
 
     /**
      * @return true of the entity is a line
      */
-    bool isALine() const { return M_geometry.test( GEOMETRY_LINE ); }
+    bool isALine() const
+    {
+        return M_geometry.test( GEOMETRY_LINE );
+    }
 
     /**
      * @return true of the entity is a point
      */
-    bool isAPoint() const { return M_geometry.test( GEOMETRY_POINT ); }
+    bool isAPoint() const
+    {
+        return M_geometry.test( GEOMETRY_POINT );
+    }
 
     /**
      * @return true of the entity is a shape point
      */
-    bool isAPointShape() const { return M_shape.test( SHAPE_POINT ); }
+    bool isAPointShape() const
+    {
+        return M_shape.test( SHAPE_POINT );
+    }
 
     /**
      * @return true of the entity is a shape line
      */
-    bool isALineShape() const { return M_shape.test( SHAPE_LINE ); }
+    bool isALineShape() const
+    {
+        return M_shape.test( SHAPE_LINE );
+    }
 
     /**
      * @return true of the entity is a triangle shape
      */
-    bool isATriangleShape() const { return M_shape.test( SHAPE_TRIANGLE ); }
+    bool isATriangleShape() const
+    {
+        return M_shape.test( SHAPE_TRIANGLE );
+    }
 
     /**
      * @return true of the entity is a quadrangle
      */
-    bool isAQuadrangleShape() const { return M_shape.test( SHAPE_QUAD ); }
+    bool isAQuadrangleShape() const
+    {
+        return M_shape.test( SHAPE_QUAD );
+    }
 
     /**
      * @return true of the entity is a tetrahedra shape
      */
-    bool isATetrahedraShape() const { return M_shape.test( SHAPE_TETRA ); }
+    bool isATetrahedraShape() const
+    {
+        return M_shape.test( SHAPE_TETRA );
+    }
 
     /**
      * @return true of the entity is a hexahedra
      */
-    bool isAHexahedraShape() const { return M_shape.test( SHAPE_HEXA ); }
+    bool isAHexahedraShape() const
+    {
+        return M_shape.test( SHAPE_HEXA );
+    }
 
     /**
      * @return true if the shape is linear, false otherwise
      */
-    bool isLinear() const { return M_shape.test( SHAPE_LINEAR ); }
+    bool isLinear() const
+    {
+        return M_shape.test( SHAPE_LINEAR );
+    }
 
     /**
      * @return true if the shape is bilinear, false otherwise
      */
-    bool isBilinear() const { return M_shape.test( SHAPE_BILINEAR ); }
+    bool isBilinear() const
+    {
+        return M_shape.test( SHAPE_BILINEAR );
+    }
 
     /**
      * @return true if the shape is quadratic, false otherwise
      */
-    bool isQuadratic() const { return M_shape.test( SHAPE_QUADRATIC ); }
+    bool isQuadratic() const
+    {
+        return M_shape.test( SHAPE_QUADRATIC );
+    }
 
     /**
      * @return true if the entity is internal, false otherwise
      */
-    bool isInternal() const { return M_entity.test( MESH_ENTITY_INTERNAL ); }
+    bool isInternal() const
+    {
+        return M_entity.test( MESH_ENTITY_INTERNAL );
+    }
 
 
     /**
@@ -342,9 +409,9 @@ public:
      * @return true if on boundary, false otherwise
      */
     bool isOnBoundary() const
-        {
-            return M_entity.test( MESH_ENTITY_BOUNDARY );
-        };
+    {
+        return M_entity.test( MESH_ENTITY_BOUNDARY );
+    };
 
     /**
      * \return \c true if ghost cell, \c false otherwise
@@ -354,62 +421,92 @@ public:
         //return (this->worldComm().localRank()!=M_pid);
         //mpi::communicator world;
         //return (world.rank()!=M_pid);
-        return (M_pidInPartition!=M_pid);
+        return ( M_pidInPartition!=M_pid );
     }
 
     /**
      * \return the processor id of the entity
      */
-    uint16_type processId() const { return M_pid; }
+    uint16_type processId() const
+    {
+        return M_pid;
+    }
 
     /**
      * set the processor id of the entity
      & \param pid processor id
      */
-    void setProcessId( uint16_type pid )  { M_pid = pid ; }
+    void setProcessId( uint16_type pid )
+    {
+        M_pid = pid ;
+    }
 
     /**
      * set the processor id of the entity
      & \param pid processor id
      */
-    void setProcessIdInPartition( uint16_type pid )  { M_pidInPartition = pid ; }
+    void setProcessIdInPartition( uint16_type pid )
+    {
+        M_pidInPartition = pid ;
+    }
 
     /**
      * \return the partition id
      */
-    uint16_type partitionId() const { return M_pid; }
+    uint16_type partitionId() const
+    {
+        return M_pid;
+    }
 
     /**
      * \return the number of partition the element is linked to including the
      * partition to which it belongs
      */
-    uint16_type numberOfPartitions() const { return M_npids; }
+    uint16_type numberOfPartitions() const
+    {
+        return M_npids;
+    }
 
     /**
      * \return the number of partition the element is linked to
      */
-    size_type numberOfNeighborPartitions() const { return M_neighor_pids.size(); }
+    size_type numberOfNeighborPartitions() const
+    {
+        return M_neighor_pids.size();
+    }
 
     /**
      * \return true if the element is linked to other partitions through one of
      * more of its faces
      */
-    bool isLinkedToOtherPartitions() const { return M_neighor_pids.size() > 0; }
+    bool isLinkedToOtherPartitions() const
+    {
+        return M_neighor_pids.size() > 0;
+    }
 
     /**
      * \return the number of partition the element is linked to
      */
-    std::vector<int> const& neighborPartitionIds() const { return M_neighor_pids; }
+    std::vector<int> const& neighborPartitionIds() const
+    {
+        return M_neighor_pids;
+    }
 
     /**
      * set id in a partition pid of the entity
      */
-    void setIdInPartition( uint16_type pid, size_type id )  { M_idInPartition.insert(std::make_pair( pid, id ) ); }
+    void setIdInPartition( uint16_type pid, size_type id )
+    {
+        M_idInPartition.insert( std::make_pair( pid, id ) );
+    }
 
     /**
      * \return the id of the entity in a partition pid
      */
-    size_type idInPartition(uint16_type pid ) const { return M_idInPartition.find(pid)->second; }
+    size_type idInPartition( uint16_type pid ) const
+    {
+        return M_idInPartition.find( pid )->second;
+    }
 
     /**
      * \return \c true if active, \c false otherwise
@@ -417,7 +514,10 @@ public:
      * \note for now it is a dummy function that returns always true,
      * will change when work on AMR starts
      */
-    bool active() const { return true; }
+    bool active() const
+    {
+        return true;
+    }
 
     /**
      * \return the measure of the entity
@@ -430,47 +530,54 @@ public:
      */
     //@{
     void setId( size_type id )
-        {
-            M_id = id;
-        }
+    {
+        M_id = id;
+    }
 
     /**
      * set the boundary flag
      * @param b true if the item is on the boundary, false otherwise
      */
     void setOnBoundary( bool b )
+    {
+        if ( b )
         {
-            if ( b )
-            {
-                M_entity.set( MESH_ENTITY_BOUNDARY );
-                M_entity.clear( MESH_ENTITY_INTERNAL );
-            }
-            else
-            {
-                M_entity.clear( MESH_ENTITY_BOUNDARY );
-                M_entity.set( MESH_ENTITY_INTERNAL );
-            }
+            M_entity.set( MESH_ENTITY_BOUNDARY );
+            M_entity.clear( MESH_ENTITY_INTERNAL );
         }
+
+        else
+        {
+            M_entity.clear( MESH_ENTITY_BOUNDARY );
+            M_entity.set( MESH_ENTITY_INTERNAL );
+        }
+    }
 
     /**
      * \return the number of partition the element is linked to including the
      * partition to which it belongs
      */
-    void setNumberOfPartitions( uint16_type np ) { M_npids = np; }
+    void setNumberOfPartitions( uint16_type np )
+    {
+        M_npids = np;
+    }
 
     /**
      * set the number of partition the element is linked to
      */
     void setNumberOfNeighborPartitions( uint16_type nep )
-        {
-            FEELPP_ASSERT( M_npids -1 == M_neighor_pids.size() )(M_npids)(M_neighor_pids).error( "invalid partitioning data" );
-            M_neighor_pids.size();
-        }
+    {
+        FEELPP_ASSERT( M_npids -1 == M_neighor_pids.size() )( M_npids )( M_neighor_pids ).error( "invalid partitioning data" );
+        M_neighor_pids.size();
+    }
 
     /**
      * \return the number of partition the element is linked to
      */
-    void setNeighborPartitionIds( std::vector<int> const& npids ) { M_neighor_pids = npids; }
+    void setNeighborPartitionIds( std::vector<int> const& npids )
+    {
+        M_neighor_pids = npids;
+    }
 
     //@}
 
@@ -482,40 +589,50 @@ public:
      * eToP(i,j) = localId of jth point on ith local edge
      */
     static uint16_type eToP( uint16_type const __localEdge, uint16_type const __point )
-        {
-            return super::e2p( __localEdge, __point );
-        }
+    {
+        return super::e2p( __localEdge, __point );
+    }
 
     /**
      * fToP(i,j) = localId of jth point on ith local edge
      */
     static uint16_type fToP( uint16_type const __localFace, uint16_type const __point )
-        {
-            return super::f2p( __localFace, __point );
-        }
+    {
+        return super::f2p( __localFace, __point );
+    }
 
     /**
      * fToE(i,j) = localId of jth edge on ith local face
      */
     static uint16_type fToE( uint16_type const __localFace, uint16_type const __edge )
-        {
-            return super::f2e( __localFace, __edge );
-        }
+    {
+        return super::f2e( __localFace, __edge );
+    }
 
     /**
      * add a new element to which the point belongs
      */
-    self_type& addElement( size_type e ) { M_elist.insert( e ); return *this; }
+    self_type& addElement( size_type e )
+    {
+        M_elist.insert( e );
+        return *this;
+    }
 
     /**
      * \return the number of elements whom the point belongs to
      */
-    size_type numberOfElements() const { return M_elist.size(); }
+    size_type numberOfElements() const
+    {
+        return M_elist.size();
+    }
 
     /**
      * \return the set of ids of elements whom the point belongs to
      */
-    std::set<size_type> const& elements() const { return M_elist; }
+    std::set<size_type> const& elements() const
+    {
+        return M_elist;
+    }
 
     //@}
 

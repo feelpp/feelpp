@@ -57,15 +57,15 @@ namespace Feel
 po::options_description
 makeHeat1DOptions()
 {
-    po::options_description heat1doptions("Heat1D options");
+    po::options_description heat1doptions( "Heat1D options" );
     heat1doptions.add_options()
-        ("hsize", po::value<double>()->default_value( 0.01 ), "mesh size")
-        ("mu1", po::value<double>()->default_value( 0.2 ), "mu1")
-        ("mu2", po::value<double>()->default_value( 0.2 ), "mu2")
-        ("mu3", po::value<double>()->default_value( -1 ), "mu3")
-        ("mu4", po::value<double>()->default_value( 0.1 ), "mu4")
-        ("no-export", "don't export results")
-        ;
+    ( "hsize", po::value<double>()->default_value( 0.01 ), "mesh size" )
+    ( "mu1", po::value<double>()->default_value( 0.2 ), "mu1" )
+    ( "mu2", po::value<double>()->default_value( 0.2 ), "mu2" )
+    ( "mu3", po::value<double>()->default_value( -1 ), "mu3" )
+    ( "mu4", po::value<double>()->default_value( 0.1 ), "mu4" )
+    ( "no-export", "don't export results" )
+    ;
     return heat1doptions.add( Feel::feel_options() );
 }
 AboutData
@@ -76,9 +76,9 @@ makeHeat1DAbout( std::string const& str = "heat1d" )
                            "0.1",
                            "1D Heat Benchmark",
                            Feel::AboutData::License_GPL,
-                           "Copyright (c) 2010,2011 Université de Grenoble 1 (Joseph Fourier)");
+                           "Copyright (c) 2010,2011 Université de Grenoble 1 (Joseph Fourier)" );
 
-    about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
     return about;
 }
 
@@ -207,7 +207,7 @@ public:
     //! copy constructor
     //Heat1D( Heat1D const & );
     //! destructor
-    ~Heat1D(){}
+    ~Heat1D() {}
 
     //! initialisation of the model
     void init();
@@ -225,7 +225,10 @@ public:
 
     // \return the number of terms in affine decomposition of left hand
     // side bilinear form
-    int Qa() const { return 3; }
+    int Qa() const
+    {
+        return 3;
+    }
 
     /**
      * there is at least one output which is the right hand side of the
@@ -233,21 +236,35 @@ public:
      *
      * \return number of outputs associated to the model
      */
-    int Nl() const { return 2; }
+    int Nl() const
+    {
+        return 2;
+    }
 
     /**
      * \param l the index of output
      * \return number of terms  in affine decomposition of the \p q th output term
      */
-    int Ql( int l ) const { if ( l == 0 ) return 2; return 1; }
+    int Ql( int l ) const
+    {
+        if ( l == 0 ) return 2;
+
+        return 1;
+    }
 
     /**
      * \brief Returns the function space
      */
-    space_ptrtype functionSpace() { return Xh; }
+    space_ptrtype functionSpace()
+    {
+        return Xh;
+    }
 
     //! return the parameter space
-    parameterspace_ptrtype parameterSpace() const { return M_Dmu;}
+    parameterspace_ptrtype parameterSpace() const
+    {
+        return M_Dmu;
+    }
 
     /**
      * \brief compute the theta coefficient for both bilinear and linear form
@@ -255,49 +272,55 @@ public:
      */
     boost::tuple<theta_vector_type, std::vector<theta_vector_type> >
     computeThetaq( parameter_type const& mu, double time=0 )
-        {
-            M_thetaAq.resize( Qa() );
-            M_thetaAq( 0 ) = 1;
-            M_thetaAq( 1 ) = mu( 0 ); // k_1
-            M_thetaAq( 2 ) = mu( 1 ); // k_2
+    {
+        M_thetaAq.resize( Qa() );
+        M_thetaAq( 0 ) = 1;
+        M_thetaAq( 1 ) = mu( 0 ); // k_1
+        M_thetaAq( 2 ) = mu( 1 ); // k_2
 
-            M_thetaFq.resize( Nl() );
-            M_thetaFq[0].resize( Ql(0) );
-            M_thetaFq[0]( 0 ) = mu(2); // delta
-            M_thetaFq[0]( 1 ) = mu(3); // phi
+        M_thetaFq.resize( Nl() );
+        M_thetaFq[0].resize( Ql( 0 ) );
+        M_thetaFq[0]( 0 ) = mu( 2 ); // delta
+        M_thetaFq[0]( 1 ) = mu( 3 ); // phi
 
-            M_thetaFq[1].resize( Ql(1) );
-            M_thetaFq[1]( 0 ) = 1;
+        M_thetaFq[1].resize( Ql( 1 ) );
+        M_thetaFq[1]( 0 ) = 1;
 
-            return boost::make_tuple( M_thetaAq, M_thetaFq );
-        }
-
-    /**
-     * \brief return the coefficient vector
-     */
-    theta_vector_type const& thetaAq() const { return M_thetaAq; }
+        return boost::make_tuple( M_thetaAq, M_thetaFq );
+    }
 
     /**
      * \brief return the coefficient vector
      */
-    std::vector<theta_vector_type> const& thetaFq() const { return M_thetaFq; }
+    theta_vector_type const& thetaAq() const
+    {
+        return M_thetaAq;
+    }
+
+    /**
+     * \brief return the coefficient vector
+     */
+    std::vector<theta_vector_type> const& thetaFq() const
+    {
+        return M_thetaFq;
+    }
 
     /**
      * \brief return the coefficient vector \p q component
      *
      */
     value_type thetaAq( int q ) const
-        {
-            return M_thetaAq( q );
-        }
+    {
+        return M_thetaAq( q );
+    }
 
     /**
      * \return the \p q -th term of the \p l -th output
      */
     value_type thetaL( int l, int q ) const
-        {
-            return M_thetaFq[l]( q );
-        }
+    {
+        return M_thetaFq[l]( q );
+    }
 
     //@}
 
@@ -308,7 +331,10 @@ public:
     /**
      * set the mesh characteristic length to \p s
      */
-    void setMeshSize( double s ) { meshSize = s; }
+    void setMeshSize( double s )
+    {
+        meshSize = s;
+    }
 
 
     //@}
@@ -426,7 +452,7 @@ Heat1D::Heat1D()
     exporter( Exporter<mesh_type>::New( "ensight" ) ),
     M_Dmu( new parameterspace_type )
 {
-  this->init();
+    this->init();
 }
 
 
@@ -439,7 +465,7 @@ Heat1D::Heat1D( po::variables_map const& vm )
     exporter( Exporter<mesh_type>::New( vm, "heat1d" ) ),
     M_Dmu( new parameterspace_type )
 {
-  this->init();
+    this->init();
 }
 void
 Heat1D::init()
@@ -448,7 +474,7 @@ Heat1D::init()
      * First we create the mesh
      */
     mesh = createGMSHMesh( _mesh=new mesh_type,
-                           _desc=createGeo(meshSize) );
+                           _desc=createGeo( meshSize ) );
 
     /*
      * The function space and some associate elements are then defined
@@ -499,31 +525,31 @@ Heat1D::init()
     Log() << "Number of dof " << Xh->nLocalDof() << "\n";
 
     // right hand side
-    form1( Xh, M_Fq[0][0], _init=true ) = integrate( markedfaces(mesh,mesh->markerName( "left" )), id(v) );
-    form1( _test=Xh, _vector=M_Fq[0][1], _init=true ) = integrate( elements(mesh), id(v) );
+    form1( Xh, M_Fq[0][0], _init=true ) = integrate( markedfaces( mesh,mesh->markerName( "left" ) ), id( v ) );
+    form1( _test=Xh, _vector=M_Fq[0][1], _init=true ) = integrate( elements( mesh ), id( v ) );
     M_Fq[0][0]->close();
     M_Fq[0][1]->close();
 
     // output
-    form1( Xh, M_Fq[1][0], _init=true ) = integrate( markedelements(mesh,"k1_2"), id(v)/0.2 );
-    form1( Xh, M_Fq[1][0] ) += integrate( markedelements(mesh,"k2_1"), id(v)/0.2 );
+    form1( Xh, M_Fq[1][0], _init=true ) = integrate( markedelements( mesh,"k1_2" ), id( v )/0.2 );
+    form1( Xh, M_Fq[1][0] ) += integrate( markedelements( mesh,"k2_1" ), id( v )/0.2 );
     M_Fq[1][0]->close();
 
-    form2( Xh, Xh, M_Aq[0], _init=true ) = integrate( elements(mesh), 0.1*(gradt(u)*trans(grad(v)) ) );
-    form2( Xh, Xh, M_Aq[0] ) += integrate( markedfaces(mesh,mesh->markerName( "right" ) ), id(u)*idt(v) );
+    form2( Xh, Xh, M_Aq[0], _init=true ) = integrate( elements( mesh ), 0.1*( gradt( u )*trans( grad( v ) ) ) );
+    form2( Xh, Xh, M_Aq[0] ) += integrate( markedfaces( mesh,mesh->markerName( "right" ) ), id( u )*idt( v ) );
     M_Aq[0]->close();
 
-    form2( Xh, Xh, M_Aq[1], _init=true ) = integrate( markedelements(mesh,mesh->markerName( "k1_1" )), (gradt(u)*trans(grad(v)) ) );
-    form2( Xh, Xh, M_Aq[1] ) += integrate( markedelements(mesh,mesh->markerName( "k1_2" )), (gradt(u)*trans(grad(v)) ) );
+    form2( Xh, Xh, M_Aq[1], _init=true ) = integrate( markedelements( mesh,mesh->markerName( "k1_1" ) ), ( gradt( u )*trans( grad( v ) ) ) );
+    form2( Xh, Xh, M_Aq[1] ) += integrate( markedelements( mesh,mesh->markerName( "k1_2" ) ), ( gradt( u )*trans( grad( v ) ) ) );
     M_Aq[1]->close();
 
-    form2( Xh, Xh, M_Aq[2], _init=true ) = integrate( markedelements(mesh,mesh->markerName( "k2_1" )), (gradt(u)*trans(grad(v)) ) );
-    form2( Xh, Xh, M_Aq[2] ) += integrate( markedelements(mesh,mesh->markerName( "k2_2" )), (gradt(u)*trans(grad(v)) ) );
+    form2( Xh, Xh, M_Aq[2], _init=true ) = integrate( markedelements( mesh,mesh->markerName( "k2_1" ) ), ( gradt( u )*trans( grad( v ) ) ) );
+    form2( Xh, Xh, M_Aq[2] ) += integrate( markedelements( mesh,mesh->markerName( "k2_2" ) ), ( gradt( u )*trans( grad( v ) ) ) );
     M_Aq[2]->close();
     M = backend->newMatrix( Xh, Xh );
 
     form2( Xh, Xh, M, _init=true ) =
-        integrate( elements(mesh), id(u)*idt(v) + grad(u)*trans(gradt(u)) );
+        integrate( elements( mesh ), id( u )*idt( v ) + grad( u )*trans( gradt( u ) ) );
     M->close();
 
 } // Heat1d::run
@@ -560,9 +586,9 @@ Heat1D::exportResults( element_type& U )
     {
         Log() << "exportResults starts\n";
 
-        exporter->step(0)->setMesh( U.functionSpace()->mesh() );
+        exporter->step( 0 )->setMesh( U.functionSpace()->mesh() );
 
-        exporter->step(0)->add( "u", U );
+        exporter->step( 0 )->add( "u", U );
 
         exporter->save();
     }
@@ -572,14 +598,17 @@ void
 Heat1D::update( parameter_type const& mu )
 {
     *D = *M_Aq[0];
-    for( size_type q = 1;q < M_Aq.size(); ++q )
+
+    for ( size_type q = 1; q < M_Aq.size(); ++q )
     {
         //std::cout << "[affine decomp] scale q=" << q << " with " << M_thetaAq[q] << "\n";
         D->addMatrix( M_thetaAq[q], M_Aq[q] );
     }
+
     F->close();
     F->zero();
-    for( size_type q = 0;q < M_Fq[0].size(); ++q )
+
+    for ( size_type q = 0; q < M_Fq[0].size(); ++q )
     {
         //std::cout << "[affine decomp] scale q=" << q << " with " << M_thetaFq[0][q] << "\n";
         F->add( M_thetaFq[0][q], M_Fq[0][q] );
@@ -609,7 +638,7 @@ void
 Heat1D::l2solve( vector_ptrtype& u, vector_ptrtype const& f )
 {
     //std::cout << "l2solve(u,f)\n";
-    backend->solve( _matrix=M,  _solution=u, _rhs=f);
+    backend->solve( _matrix=M,  _solution=u, _rhs=f );
     //std::cout << "l2solve(u,f) done\n";
 }
 
@@ -631,16 +660,18 @@ Heat1D::run( const double * X, unsigned long N, double * Y, unsigned long P )
     Feel::ParameterSpace<4>::Element mu( M_Dmu );
     mu << X[0], X[1], X[2], X[3];
     static int do_init = true;
+
     if ( do_init )
     {
         meshSize = X[4];
         this->init();
         do_init = false;
     }
+
     this->solve( mu, pT );
 
-    double mean = integrate( elements(mesh),
-                             chi( (Px() >= -0.1) && (Px() <= 0.1) )*idv(*pT) ).evaluate()(0,0)/0.2;
+    double mean = integrate( elements( mesh ),
+                             chi( ( Px() >= -0.1 ) && ( Px() <= 0.1 ) )*idv( *pT ) ).evaluate()( 0,0 )/0.2;
     Y[0]=mean;
 }
 
@@ -655,25 +686,27 @@ Heat1D::output( int output_index, parameter_type const& mu )
     *U = *pT;
 
     double output;
+
     // right hand side (compliant)
-    if( output_index == 0 )
+    if ( output_index == 0 )
     {
-        output = M_thetaFq[0](0)*dot( M_Fq[0][0], U )+M_thetaFq[0](1)*dot( M_Fq[0][1], U );
+        output = M_thetaFq[0]( 0 )*dot( M_Fq[0][0], U )+M_thetaFq[0]( 1 )*dot( M_Fq[0][1], U );
         //std::cout << "output0 c1 = " << s1 <<"\n";
         //double s2 = ( M_thetaFq[0](0)*integrate( markedfaces(mesh,mesh->markerName( "left" )), idv(*pT) ).evaluate()(0,0) +
-	//M_thetaFq[0](1)*integrate( elements(mesh), idv(*pT) ).evaluate()(0,0) );
+        //M_thetaFq[0](1)*integrate( elements(mesh), idv(*pT) ).evaluate()(0,0) );
         //std::cout << "output0 c2 = " << s2 <<"\n";
         //return s1;
     }
+
     // output
     if ( output_index == 1 )
     {
-      //double mean = integrate( elements(mesh),
-      //chi( (Px() >= -0.1) && (Px() <= 0.1) )*idv(*pT) ).evaluate()(0,0)/0.2;
+        //double mean = integrate( elements(mesh),
+        //chi( (Px() >= -0.1) && (Px() <= 0.1) )*idv(*pT) ).evaluate()(0,0)/0.2;
         //std::cout<<"output1 c1 = "<<mean<<std::endl;
 
-        output = ( integrate( markedelements(mesh,"k1_2"),idv(*pT) ).evaluate()(0,0)+
-                         integrate( markedelements(mesh,"k2_1"),idv(*pT) ).evaluate()(0,0) )/0.2;
+        output = ( integrate( markedelements( mesh,"k1_2" ),idv( *pT ) ).evaluate()( 0,0 )+
+                   integrate( markedelements( mesh,"k2_1" ),idv( *pT ) ).evaluate()( 0,0 ) )/0.2;
         //std::cout<<"output1 c2 = "<<meanT<<std::endl;
         //std::cout<<"output1 c3= "<< dot( M_Fq[1][0], U ) <<std::endl;
         //return meanT;

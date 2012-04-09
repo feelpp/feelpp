@@ -44,6 +44,7 @@ operator<<( DebugStream& __os, Eigen::Matrix<T,N1,N2> const& __n )
 
         __os << __str.str() << "\n";
     }
+
     return __os;
 }
 

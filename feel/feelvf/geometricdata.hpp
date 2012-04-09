@@ -286,8 +286,8 @@ const size_type jkp = vm::KB|vm::JACOBIAN|vm::POINT;
 //
 // Generate the code
 //
-BOOST_PP_LIST_FOR_EACH_PRODUCT(VF_ARRAY_GD, 1, (VF_GD))
-BOOST_PP_LIST_FOR_EACH_PRODUCT(VF_ARRAY_GD, 1, (VF_GD2))
+BOOST_PP_LIST_FOR_EACH_PRODUCT( VF_ARRAY_GD, 1, ( VF_GD ) )
+BOOST_PP_LIST_FOR_EACH_PRODUCT( VF_ARRAY_GD, 1, ( VF_GD2 ) )
 /// \endcond
 } // vf
 } // Feel

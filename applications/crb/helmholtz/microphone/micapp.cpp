@@ -5,7 +5,7 @@
 int main( int argc, char** argv )
 {
     Feel::OpusApp<Feel::Microphone> app( argc, argv,
-                                                      Feel::makeMicrophoneAbout( "mic" ),
-                                                      Feel::makeMicrophoneOptions()  );
+                                         Feel::makeMicrophoneAbout( "mic" ),
+                                         Feel::makeMicrophoneOptions()  );
     app.run();
 }

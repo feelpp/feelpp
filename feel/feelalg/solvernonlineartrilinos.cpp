@@ -28,7 +28,7 @@
  */
 
 #include <NOX.H>
-#include <NOX_Epetra.H>   
+#include <NOX_Epetra.H>
 #include <feel/feelalg/glas.hpp>
 #include <feel/feelalg/solvernonlineartrilinos.hpp>
 
@@ -38,14 +38,16 @@ namespace Feel
 
 class SolverNonLinearTrilinosInterface
     :
-        public NOX::Epetra::Interface::Required,
-        public NOX::Epetra::Interface::Jacobian {
+public NOX::Epetra::Interface::Required,
+public NOX::Epetra::Interface::Jacobian
+{
 
 private:
     SolverNonLinearTrilinos<double>* solver;
 
 public:
-    SolverNonLinearTrilinosInterface(SolverNonLinearTrilinos<double> * sol) {
+    SolverNonLinearTrilinosInterface( SolverNonLinearTrilinos<double> * sol )
+    {
         solver=sol;
     }
 
@@ -54,11 +56,12 @@ public:
                    NOX::Epetra::Interface::Required::FillType ft )
     {
         //printf("Entering computeF...\n");
-        boost::shared_ptr<Vector<double> > X( new VectorEpetra<double>(&x) );
-        boost::shared_ptr<Vector<double> > F( new VectorEpetra<double>(&x) );
+        boost::shared_ptr<Vector<double> > X( new VectorEpetra<double>( &x ) );
+        boost::shared_ptr<Vector<double> > F( new VectorEpetra<double>( &x ) );
 
-        if (solver->residual != NULL) solver->residual (X, F );
-        f=*(dynamic_cast<VectorEpetra<double>*>(F.get())->epetraVector());
+        if ( solver->residual != NULL ) solver->residual ( X, F );
+
+        f=*( dynamic_cast<VectorEpetra<double>*>( F.get() )->epetraVector() );
         //std::cout << "X.use_count()=" << X.use_count() << std::endl;
         //std::cout << "F.use_count()=" << F.use_count() << std::endl;
         return true;
@@ -67,12 +70,13 @@ public:
                           Epetra_Operator & Jac )
     {
         //printf("Entering computeJacobian...\n");
-        boost::shared_ptr<Vector<double> > X( new VectorEpetra<double>(&x));
+        boost::shared_ptr<Vector<double> > X( new VectorEpetra<double>( &x ) );
         //boost::shared_ptr<MatrixEpetra> M_Jac;
         boost::shared_ptr<MatrixSparse<double> > M_Jac;
-        if (solver->jacobian != NULL) solver->jacobian (X, M_Jac );
 
-        Jac = dynamic_cast<MatrixEpetra*>(M_Jac.get())->mat();
+        if ( solver->jacobian != NULL ) solver->jacobian ( X, M_Jac );
+
+        Jac = dynamic_cast<MatrixEpetra*>( M_Jac.get() )->mat();
         //std::cout << "X.use_count()=" << X.use_count() << std::endl;
         //std::cout << "M_Jac.use_count()=" << M_Jac.use_count() << std::endl;
         //printf("End computeJacobian...\n");
@@ -97,21 +101,21 @@ public:
 template <typename T>
 void SolverNonLinearTrilinos<T>::clear ()
 {
-    if (this->initialized())
-        {
-            this->M_is_initialized = false;
-        }
+    if ( this->initialized() )
+    {
+        this->M_is_initialized = false;
+    }
 }
 
 template <typename T>
 void SolverNonLinearTrilinos<T>::init ()
 {
-    if (!this->initialized())
-        {
-            this->M_is_initialized = true;
+    if ( !this->initialized() )
+    {
+        this->M_is_initialized = true;
 
 
-        }
+    }
 }
 
 template <typename T>
@@ -120,7 +124,7 @@ SolverNonLinearTrilinos<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System J
                                     vector_ptrtype& x_in,    // Solution vector
                                     vector_ptrtype& r_in,    // Residual vector
                                     const double,              // Stopping tolerance
-                                    const unsigned int)
+                                    const unsigned int )
 {
     //printf("Entering solve...\n");
     MatrixEpetra* jac = dynamic_cast<MatrixEpetra *>( jac_in.get() );
@@ -134,43 +138,43 @@ SolverNonLinearTrilinos<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System J
 
     // Create the top level parameter list
     Teuchos::RCP<Teuchos::ParameterList> nlParamsPtr =
-        Teuchos::rcp(new Teuchos::ParameterList);
-    Teuchos::ParameterList& nlParams = *(nlParamsPtr.get());
+        Teuchos::rcp( new Teuchos::ParameterList );
+    Teuchos::ParameterList& nlParams = *( nlParamsPtr.get() );
 
     // Set the nonlinear solver method
-    nlParams.set("Nonlinear Solver", "Line Search Based");
+    nlParams.set( "Nonlinear Solver", "Line Search Based" );
 
     // Set the printing parameters in the "Printing" sublist
-    Teuchos::ParameterList& printParams = nlParams.sublist("Printing");
-    printParams.set("Output Precision", 10);
-    printParams.set("Output Processor", 0);
-    printParams.set("Output Information",
-                    NOX::Utils::OuterIteration +
-                    NOX::Utils::OuterIterationStatusTest +
-                    NOX::Utils::InnerIteration +
-                    NOX::Utils::Parameters +
-                    NOX::Utils::Details +
-                    NOX::Utils::Warning);
+    Teuchos::ParameterList& printParams = nlParams.sublist( "Printing" );
+    printParams.set( "Output Precision", 10 );
+    printParams.set( "Output Processor", 0 );
+    printParams.set( "Output Information",
+                     NOX::Utils::OuterIteration +
+                     NOX::Utils::OuterIterationStatusTest +
+                     NOX::Utils::InnerIteration +
+                     NOX::Utils::Parameters +
+                     NOX::Utils::Details +
+                     NOX::Utils::Warning );
 
     // start definition of nonlinear solver parameters
     // Sublist for line search
-    Teuchos::ParameterList& searchParams = nlParams.sublist("Line Search");
-    searchParams.set("Method", "Polynomial");
+    Teuchos::ParameterList& searchParams = nlParams.sublist( "Line Search" );
+    searchParams.set( "Method", "Polynomial" );
 
     // Sublist for direction
-    Teuchos::ParameterList& dirParams = nlParams.sublist("Direction");
-    dirParams.set("Method", "Newton");
+    Teuchos::ParameterList& dirParams = nlParams.sublist( "Direction" );
+    dirParams.set( "Method", "Newton" );
 
-    Teuchos::ParameterList& newtonParams = dirParams.sublist("Newton");
-    newtonParams.set("Forcing Term Method", "Constant");
+    Teuchos::ParameterList& newtonParams = dirParams.sublist( "Newton" );
+    newtonParams.set( "Forcing Term Method", "Constant" );
 
     // Sublist for linear solver for the Newton method
-    Teuchos::ParameterList& lsParams = newtonParams.sublist("Linear Solver");
-    lsParams.set("Aztec Solver", "GMRES");
-    lsParams.set("Max Iterations", 800);
-    lsParams.set("Tolerance", 1e-7);
-    lsParams.set("Output Frequency", 50);
-    lsParams.set("Aztec Preconditioner", "ilu");
+    Teuchos::ParameterList& lsParams = newtonParams.sublist( "Linear Solver" );
+    lsParams.set( "Aztec Solver", "GMRES" );
+    lsParams.set( "Max Iterations", 800 );
+    lsParams.set( "Tolerance", 1e-7 );
+    lsParams.set( "Output Frequency", 50 );
+    lsParams.set( "Aztec Preconditioner", "ilu" );
 
     // -> A : Jacobian for the first iteration
     // -> InitialGuess : first value x0
@@ -180,72 +184,73 @@ SolverNonLinearTrilinos<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System J
     // has_ownership=false in order to let the matrix jac be destroyed by boost
     // and not by Teuchos::RCP
     Teuchos::RCP<Epetra_CrsMatrix> A =
-        Teuchos::rcp(((boost::shared_ptr<Epetra_CrsMatrix>)(jac->matrix())).get(),false);
+        Teuchos::rcp( ( ( boost::shared_ptr<Epetra_CrsMatrix> )( jac->matrix() ) ).get(),false );
 
     //std::cout << "A.has_ownership()=" << A.has_ownership() << std::endl;
 
     Teuchos::RCP<NOX::Epetra::Interface::Required> iReq =
-        Teuchos::rcp(new SolverNonLinearTrilinosInterface(this));
+        Teuchos::rcp( new SolverNonLinearTrilinosInterface( this ) );
     Teuchos::RCP<NOX::Epetra::Interface::Jacobian> iJac =
-        Teuchos::rcp(new SolverNonLinearTrilinosInterface(this));
+        Teuchos::rcp( new SolverNonLinearTrilinosInterface( this ) );
     Teuchos::RCP<NOX::Epetra::LinearSystemAztecOO> linSys =
-        Teuchos::rcp(new NOX::Epetra::LinearSystemAztecOO(printParams,
-                                                          lsParams,
-                                                          iReq,
-                                                          iJac,
-                                                          A,
-                                                          *InitialGuess));
+        Teuchos::rcp( new NOX::Epetra::LinearSystemAztecOO( printParams,
+                      lsParams,
+                      iReq,
+                      iJac,
+                      A,
+                      *InitialGuess ) );
 
     // Need a NOX::Epetra::Vector for constructor
-    NOX::Epetra::Vector noxInitGuess(*InitialGuess, NOX::DeepCopy);
+    NOX::Epetra::Vector noxInitGuess( *InitialGuess, NOX::DeepCopy );
     Teuchos::RCP<NOX::Epetra::Group> grpPtr =
-        Teuchos::rcp(new NOX::Epetra::Group(printParams,
-                                            iReq,
-                                            noxInitGuess,
-                                            linSys));
+        Teuchos::rcp( new NOX::Epetra::Group( printParams,
+                      iReq,
+                      noxInitGuess,
+                      linSys ) );
 
-  // Set up the status tests
+    // Set up the status tests
     Teuchos::RCP<NOX::StatusTest::NormF> testNormF =
-        Teuchos::rcp(new NOX::StatusTest::NormF(1.0e-7));
+        Teuchos::rcp( new NOX::StatusTest::NormF( 1.0e-7 ) );
     Teuchos::RCP<NOX::StatusTest::MaxIters> testMaxIters =
-        Teuchos::rcp(new NOX::StatusTest::MaxIters(20));
+        Teuchos::rcp( new NOX::StatusTest::MaxIters( 20 ) );
 
     // this will be the convergence test to be used
-  Teuchos::RCP<NOX::StatusTest::Combo> combo =
-      Teuchos::rcp(new NOX::StatusTest::Combo(NOX::StatusTest::Combo::OR,
-                                              testNormF, testMaxIters));
+    Teuchos::RCP<NOX::StatusTest::Combo> combo =
+        Teuchos::rcp( new NOX::StatusTest::Combo( NOX::StatusTest::Combo::OR,
+                      testNormF, testMaxIters ) );
 
-  // Create the solver
-  Teuchos::RCP<NOX::Solver::Generic> solver =
-      NOX::Solver::buildSolver(grpPtr, combo, nlParamsPtr);
+    // Create the solver
+    Teuchos::RCP<NOX::Solver::Generic> solver =
+        NOX::Solver::buildSolver( grpPtr, combo, nlParamsPtr );
 
-  // Solve the nonlinesar system
-  NOX::StatusTest::StatusType status = solver->solve();
+    // Solve the nonlinesar system
+    NOX::StatusTest::StatusType status = solver->solve();
 
-  if( NOX::StatusTest::Converged  != status )
-      std::cout << "\n" << "-- NOX solver did not converged --" << "\n";
-  else
-      std::cout << "\n" << "-- NOX solver converged --" << "\n";
+    if ( NOX::StatusTest::Converged  != status )
+        std::cout << "\n" << "-- NOX solver did not converged --" << "\n";
 
-  // Print the answer
-  std::cout << "\n" << "-- Parameter List From Solver --" << "\n";
-  solver->getList().print(cout);
+    else
+        std::cout << "\n" << "-- NOX solver converged --" << "\n";
 
-  // Get the Epetra_Vector with the final solution from the solver
-  const NOX::Epetra::Group & finalGroup =
-      dynamic_cast<const NOX::Epetra::Group&>(solver->getSolutionGroup());
-  const Epetra_Vector & finalSolution =
-      (dynamic_cast<const NOX::Epetra::Vector&>(finalGroup.getX())).getEpetraVector();
+    // Print the answer
+    std::cout << "\n" << "-- Parameter List From Solver --" << "\n";
+    solver->getList().print( cout );
 
-  //cout << "Computed solution : " << endl;
-  //cout << finalSolution;
-  x_in = boost::shared_ptr<VectorEpetra<T> > ( new VectorEpetra<T>(&finalSolution) );
+    // Get the Epetra_Vector with the final solution from the solver
+    const NOX::Epetra::Group & finalGroup =
+        dynamic_cast<const NOX::Epetra::Group&>( solver->getSolutionGroup() );
+    const Epetra_Vector & finalSolution =
+        ( dynamic_cast<const NOX::Epetra::Vector&>( finalGroup.getX() ) ).getEpetraVector();
 
-  //std::cout << "InitialGuess.use_count()=" << InitialGuess.use_count() << std::endl;
-  //std::cout << "jac.use_count()=" << jac->matrix().use_count() << std::endl;
-  //std::cout << "x_in.use_count()=" << x_in.use_count() << std::endl;
+    //cout << "Computed solution : " << endl;
+    //cout << finalSolution;
+    x_in = boost::shared_ptr<VectorEpetra<T> > ( new VectorEpetra<T>( &finalSolution ) );
 
-  return std::make_pair(1,finalGroup.getNormF());
+    //std::cout << "InitialGuess.use_count()=" << InitialGuess.use_count() << std::endl;
+    //std::cout << "jac.use_count()=" << jac->matrix().use_count() << std::endl;
+    //std::cout << "x_in.use_count()=" << x_in.use_count() << std::endl;
+
+    return std::make_pair( 1,finalGroup.getNormF() );
 }
 
 template <typename T>
@@ -254,7 +259,7 @@ SolverNonLinearTrilinos<T>::solve ( dense_matrix_type&  jac_in,  // System Jacob
                                     dense_vector_type& x_in,    // Solution vector
                                     dense_vector_type& r_in,    // Residual vector
                                     const double,              // Stopping tolerance
-                                    const unsigned int)
+                                    const unsigned int )
 {
 
 }

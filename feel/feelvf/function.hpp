@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -115,7 +115,10 @@ public:
      */
     //@{
 
-    const expression_type& fun() const { return M_fun; }
+    const expression_type& fun() const
+    {
+        return M_fun;
+    }
 
     //@}
 
@@ -126,17 +129,20 @@ public:
         typedef typename expression_type::value_type value_type;
 
         typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, detail::gmc<0> >,
-                                  mpl::identity<detail::gmc<0> >,
-                                  mpl::identity<detail::gmc<1> > >::type::type key_type;
+                mpl::identity<detail::gmc<0> >,
+                mpl::identity<detail::gmc<1> > >::type::type key_type;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::pointer gmc_ptrtype;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
         typedef typename mpl::if_<mpl::equal_to<mpl::int_<Func::rank>,mpl::int_<0> >,
-                                  mpl::identity<Shape<gmc_type::nDim, Scalar, false, false> >,
-                                  typename mpl::if_<mpl::equal_to<mpl::int_<Func::rank>,mpl::int_<1> >,
-                                                    mpl::identity<Shape<gmc_type::nDim, Vectorial, false, false> >,
-                                                    mpl::identity<Shape<gmc_type::nDim, Tensor2, false, false> > >::type >::type::type shape;
+                mpl::identity<Shape<gmc_type::nDim, Scalar, false, false> >,
+                typename mpl::if_<mpl::equal_to<mpl::int_<Func::rank>,mpl::int_<1> >,
+                mpl::identity<Shape<gmc_type::nDim, Vectorial, false, false> >,
+                mpl::identity<Shape<gmc_type::nDim, Tensor2, false, false> > >::type >::type::type shape;
 
-        struct is_zero { static const bool value = false; };
+        struct is_zero
+        {
+            static const bool value = false;
+        };
 
         tensor( this_type const& expr,
                 Geo_t const& geom, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ )

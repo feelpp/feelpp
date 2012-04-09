@@ -48,21 +48,27 @@ struct access_value
 template<>
 struct access_value<dd_real>
 {
-  access_value( dd_real val, int /*n*/)
-  {
-    v = val;
-  }
-  dd_real operator()() const { return v; }
-  dd_real v;
+    access_value( dd_real val, int /*n*/ )
+    {
+        v = val;
+    }
+    dd_real operator()() const
+    {
+        return v;
+    }
+    dd_real v;
 };
 template<>
 struct access_value<qd_real>
 {
-    access_value( qd_real val, int /*n*/)
-        {
-            v = val;
-        }
-    qd_real operator()() const { return v; }
+    access_value( qd_real val, int /*n*/ )
+    {
+        v = val;
+    }
+    qd_real operator()() const
+    {
+        return v;
+    }
     qd_real v;
 };
 #endif /*FEELPP_HAS_QD_REAL*/
@@ -71,11 +77,14 @@ struct access_value<qd_real>
 template<>
 struct access_value<mp_type>
 {
-    access_value( mp_type val, int /*n*/)
-        {
-            v = val;
-        }
-    mp_type operator()() const { return v; }
+    access_value( mp_type val, int /*n*/ )
+    {
+        v = val;
+    }
+    mp_type operator()() const
+    {
+        return v;
+    }
     mp_type v;
 };
 #endif /* FEELPP_HAS_MPFR */
@@ -83,31 +92,40 @@ struct access_value<mp_type>
 template<>
 struct access_value<double>
 {
-    access_value( double val, int /*n*/)
-        {
-            v = val;
-        }
-    double operator()() const { return v; }
+    access_value( double val, int /*n*/ )
+    {
+        v = val;
+    }
+    double operator()() const
+    {
+        return v;
+    }
     double v;
 };
 template<>
 struct access_value<int>
 {
-    access_value( int val, int /*n*/)
-        {
-            v = val;
-        }
-    double operator()() const { return v; }
+    access_value( int val, int /*n*/ )
+    {
+        v = val;
+    }
+    double operator()() const
+    {
+        return v;
+    }
     double v;
 };
 template<>
 struct access_value<node_type>
 {
-    access_value( node_type vec, int n)
-        {
-            v = vec[n];
-        }
-    double operator()() const { return v; }
+    access_value( node_type vec, int n )
+    {
+        v = vec[n];
+    }
+    double operator()() const
+    {
+        return v;
+    }
     double v;
 };
 /*!
@@ -174,8 +192,8 @@ public:
         _M_rhs( __rhs ),
         _M_expr( __expr ),
         _M_on_strategy( __on )
-        {
-        }
+    {
+    }
     IntegratorOnExpr( IntegratorOnExpr const& ioe )
         :
         _M_eltbegin( ioe._M_eltbegin ),
@@ -184,15 +202,15 @@ public:
         _M_rhs( ioe._M_rhs ),
         _M_expr( ioe._M_expr ),
         _M_on_strategy( ioe._M_on_strategy )
-        {
-        }
+    {
+    }
 
     ~IntegratorOnExpr() {}
 
     //@}
 
-     /** @name Accessors
-     */
+    /** @name Accessors
+    */
     //@{
 
 
@@ -200,13 +218,19 @@ public:
      * iterator that points at the beginning of the container that
      * holds the data that will apply the Dirichlet condition upon
      */
-    element_iterator beginElement() const { return _M_eltbegin; }
+    element_iterator beginElement() const
+    {
+        return _M_eltbegin;
+    }
 
     /**
      * iterator that points at the end of the container that
      * holds the data that will apply the Dirichlet condition upon
      */
-    element_iterator endElement() const { return _M_eltend; }
+    element_iterator endElement() const
+    {
+        return _M_eltend;
+    }
 
 
     //@}
@@ -256,14 +280,16 @@ template<typename ElementRange, typename Elem, typename RhsElem, typename OnExpr
 template<typename Elem1, typename Elem2, typename FormType>
 void
 IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_ptr<Elem1> const& /*__u*/,
-                                                                  boost::shared_ptr<Elem2> const& /*__v*/,
-                                                                  FormType& __form,
-                                                                  mpl::bool_<true> ) const
+        boost::shared_ptr<Elem2> const& /*__v*/,
+        FormType& __form,
+        mpl::bool_<true> ) const
 {
 #if 0
+
     if ( !boost::is_same<Elem1, typename Elem::functionspace_type>::value ||
-         !boost::is_same<Elem2, typename Elem::functionspace_type>::value )
+            !boost::is_same<Elem2, typename Elem::functionspace_type>::value )
         return;
+
 #endif
     Debug( 5066 ) << "call on::assemble() " << "\n";
     //
@@ -299,7 +325,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
     //
     // start
     //
-    Debug(5066)  << "assembling Dirichlet conditions\n";
+    Debug( 5066 )  << "assembling Dirichlet conditions\n";
     boost::timer __timer;
 
     dof_type const* __dof = _M_u.functionSpace()->dof().get();
@@ -319,128 +345,137 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
     typedef typename geoelement_type::permutation_type permutation_type;
     typedef typename gm_type::precompute_ptrtype geopc_ptrtype;
     typedef typename gm_type::precompute_type geopc_type;
-    Debug(5066)  << "[integratoron] numTopologicalFaces = " << geoelement_type::numTopologicalFaces << "\n";
+    Debug( 5066 )  << "[integratoron] numTopologicalFaces = " << geoelement_type::numTopologicalFaces << "\n";
     std::vector<std::map<permutation_type, geopc_ptrtype> > __geopc( geoelement_type::numTopologicalFaces );
+
     for ( uint16_type __f = 0; __f < geoelement_type::numTopologicalFaces; ++__f )
+    {
+        for ( permutation_type __p( permutation_type::IDENTITY );
+                __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
         {
-            for( permutation_type __p( permutation_type::IDENTITY );
-                 __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
-            {
-                __geopc[__f][__p] = geopc_ptrtype(  new geopc_type( __gm, __fe->points( __f ) ) );
-                //Debug(5066) << "[geopc] FACE_ID = " << __f << " ref pts=" << __fe->dual().points( __f ) << "\n";
-                FEELPP_ASSERT( __geopc[__f][__p]->nPoints() ).error( "invalid number of points" );
-            }
+            __geopc[__f][__p] = geopc_ptrtype(  new geopc_type( __gm, __fe->points( __f ) ) );
+            //Debug(5066) << "[geopc] FACE_ID = " << __f << " ref pts=" << __fe->dual().points( __f ) << "\n";
+            FEELPP_ASSERT( __geopc[__f][__p]->nPoints() ).error( "invalid number of points" );
         }
+    }
 
     uint16_type __face_id = __face_it->pos_first();
-    gmc_ptrtype __c( new gmc_type( __gm, __face_it->element(0), __geopc, __face_id ) );
+    gmc_ptrtype __c( new gmc_type( __gm, __face_it->element( 0 ), __geopc, __face_id ) );
 
     map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c ) );
     //t_expr_type expr( _M_expr, mapgmc );
 
 
-    Debug(5066)  << "face_type::numVertices = " << face_type::numVertices << ", fe_type::nDofPerVertex = " << fe_type::nDofPerVertex << "\n"
-                 << "face_type::numEdges = " << face_type::numEdges << ", fe_type::nDofPerEdge = " << fe_type::nDofPerEdge << "\n"
-                 << "face_type::numFaces = " << face_type::numFaces << ", fe_type::nDofPerFace = " << fe_type::nDofPerFace << "\n";
+    Debug( 5066 )  << "face_type::numVertices = " << face_type::numVertices << ", fe_type::nDofPerVertex = " << fe_type::nDofPerVertex << "\n"
+                   << "face_type::numEdges = " << face_type::numEdges << ", fe_type::nDofPerEdge = " << fe_type::nDofPerEdge << "\n"
+                   << "face_type::numFaces = " << face_type::numFaces << ", fe_type::nDofPerFace = " << fe_type::nDofPerFace << "\n";
 
     size_type nbFaceDof = invalid_size_type_value;
+
     if ( !fe_type::is_modal )
         nbFaceDof = ( face_type::numVertices * fe_type::nDofPerVertex +
                       face_type::numEdges * fe_type::nDofPerEdge +
                       face_type::numFaces * fe_type::nDofPerFace );
+
     else
         nbFaceDof = face_type::numVertices * fe_type::nDofPerVertex;
 
-    Debug(5066)  << "nbFaceDof = " << nbFaceDof << "\n";
+    Debug( 5066 )  << "nbFaceDof = " << nbFaceDof << "\n";
     //const size_type nbFaceDof = __fe->boundaryFE()->points().size2();
 
     std::vector<int> dofs;
     std::vector<value_type> values;
 
     for ( ;
-          __face_it != this->endElement();
-          ++__face_it )
-        {
-            FEELPP_ASSERT( __face_it->isOnBoundary() && !__face_it->isConnectedTo1() )
-                ( __face_it->marker() )
-                ( __face_it->isOnBoundary() )
-                ( __face_it->ad_first() )
-                ( __face_it->pos_first() )
-                ( __face_it->ad_second() )
-                ( __face_it->pos_second() )
-                ( __face_it->id() ).warn( "inconsistent data face" );
-            Debug(5066) << "FACE_ID = " << __face_it->id()
-                       << " element id= " << __face_it->ad_first()
-                       << " pos in elt= " << __face_it->pos_first()
-                       << " marker: " << __face_it->marker() << "\n";
-            Debug(5066) << "FACE_ID = " << __face_it->id() << " face pts=" << __face_it->G() << "\n";
+            __face_it != this->endElement();
+            ++__face_it )
+    {
+        FEELPP_ASSERT( __face_it->isOnBoundary() && !__face_it->isConnectedTo1() )
+        ( __face_it->marker() )
+        ( __face_it->isOnBoundary() )
+        ( __face_it->ad_first() )
+        ( __face_it->pos_first() )
+        ( __face_it->ad_second() )
+        ( __face_it->pos_second() )
+        ( __face_it->id() ).warn( "inconsistent data face" );
+        Debug( 5066 ) << "FACE_ID = " << __face_it->id()
+                      << " element id= " << __face_it->ad_first()
+                      << " pos in elt= " << __face_it->pos_first()
+                      << " marker: " << __face_it->marker() << "\n";
+        Debug( 5066 ) << "FACE_ID = " << __face_it->id() << " face pts=" << __face_it->G() << "\n";
 
-            uint16_type __face_id = __face_it->pos_first();
-            __c->update( __face_it->element(0), __face_id );
+        uint16_type __face_id = __face_it->pos_first();
+        __c->update( __face_it->element( 0 ), __face_id );
 
-            Debug(5066) << "FACE_ID = " << __face_it->id() << "  ref pts=" << __c->xRefs() << "\n";
-            Debug(5066) << "FACE_ID = " << __face_it->id() << " real pts=" << __c->xReal() << "\n";
+        Debug( 5066 ) << "FACE_ID = " << __face_it->id() << "  ref pts=" << __c->xRefs() << "\n";
+        Debug( 5066 ) << "FACE_ID = " << __face_it->id() << " real pts=" << __c->xReal() << "\n";
 
-            map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c ) );
+        map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c ) );
 
-            t_expr_type expr( _M_expr, mapgmc );
-            expr.update( mapgmc );
+        t_expr_type expr( _M_expr, mapgmc );
+        expr.update( mapgmc );
 
-            std::pair<size_type,size_type> range_dof( std::make_pair( _M_u.start(),
-                                                                      _M_u.functionSpace()->nDof()) );
-            Debug(5066)  << "[integratoron] dof start = " << range_dof.first << "\n";
-            Debug(5066)  << "[integratoron] dof range = " << range_dof.second << "\n";
+        std::pair<size_type,size_type> range_dof( std::make_pair( _M_u.start(),
+                _M_u.functionSpace()->nDof() ) );
+        Debug( 5066 )  << "[integratoron] dof start = " << range_dof.first << "\n";
+        Debug( 5066 )  << "[integratoron] dof range = " << range_dof.second << "\n";
 
-            for ( uint16_type c1 = 0; c1 < shape::M;++c1 )
-                for ( uint16_type c2 = 0; c2 < shape::N;++c2 )
+        for ( uint16_type c1 = 0; c1 < shape::M; ++c1 )
+            for ( uint16_type c2 = 0; c2 < shape::N; ++c2 )
+            {
+                for ( uint16_type l = 0; l < nbFaceDof; ++l )
+                {
+                    Debug( 5066 ) << "[integratoronexpr] local dof=" << l
+                                  << " |comp1=" << c1 << " comp 2= " << c2 << " | pt = " <<  __c->xReal( l ) << "\n";
+                    typename expression_type::value_type __value = expr.evalq( c1, c2, l );
+                    Debug( 5066 ) << "[integratoronexpr] value=" << __value << "\n";
+
+                    // global Dof
+                    size_type thedof =  _M_u.start() +
+                                        boost::get<0>( __dof->faceLocalToGlobal( __face_it->id(), l, c1 ) );
+
+                    //size_type thedof_nproc = __dof->dofNProc( thedof );
+                    if ( std::find( dofs.begin(),
+                                    dofs.end(),
+                                    thedof ) != dofs.end() )
+                        continue;
+
+                    if ( _M_on_strategy.test( ON_ELIMINATION ) )
                     {
-                        for ( uint16_type l = 0; l < nbFaceDof; ++l )
-                            {
-                                Debug(5066) << "[integratoronexpr] local dof=" << l
-                                            << " |comp1=" << c1 << " comp 2= " << c2 << " | pt = " <<  __c->xReal(l) << "\n";
-                                typename expression_type::value_type __value = expr.evalq( c1, c2, l );
-                                Debug(5066) << "[integratoronexpr] value=" << __value << "\n";
+                        Debug( 5066 ) << "Eliminating row " << thedof << " using value : " << __value << "\n";
 
-                                // global Dof
-                                size_type thedof =  _M_u.start() +
-                                    boost::get<0>(__dof->faceLocalToGlobal( __face_it->id(), l, c1 ));
-                                //size_type thedof_nproc = __dof->dofNProc( thedof );
-                                if ( std::find( dofs.begin(),
-                                                dofs.end(),
-                                                thedof ) != dofs.end() )
-                                    continue;
-                                if ( _M_on_strategy.test( ON_ELIMINATION ) )
-                                    {
-                                        Debug(5066) << "Eliminating row " << thedof << " using value : " << __value << "\n";
-
-                                        // this can be quite expensive depending on the
-                                        // matrix storage format.
-                                        //__form.diagonalize( thedof, range_dof, _M_rhs, __value, thedof_nproc );
+                        // this can be quite expensive depending on the
+                        // matrix storage format.
+                        //__form.diagonalize( thedof, range_dof, _M_rhs, __value, thedof_nproc );
 #if !defined(FEELPP_ENABLE_MPI_MODE)
-                                        dofs.push_back( thedof );
-                                        values.push_back( __value );
+                        dofs.push_back( thedof );
+                        values.push_back( __value );
 #else
-                                        // only the real dof ( not the ghosts )
-                                        if ( __form.testSpace()->mapOn().dofGlobalClusterIsOnProc(__form.testSpace()->mapOn().mapGlobalProcessToGlobalCluster(thedof)))
-                                            {
-                                                dofs.push_back( thedof );
-                                                values.push_back( __value );
-                                            }
+
+                        // only the real dof ( not the ghosts )
+                        if ( __form.testSpace()->mapOn().dofGlobalClusterIsOnProc( __form.testSpace()->mapOn().mapGlobalProcessToGlobalCluster( thedof ) ) )
+                        {
+                            dofs.push_back( thedof );
+                            values.push_back( __value );
+                        }
+
 #endif
 
 
-                                        //_M_rhs.set( thedof, __value );
-                                    }
-                                else if (  _M_on_strategy.test( ON_PENALISATION ) &&
-                                           !_M_on_strategy.test( ON_ELIMINATION ) )
-                                    {
-                                        __form.set( thedof, thedof, 1.0*1e30 );
-                                        _M_rhs->set( thedof, __value*1e30 );
-                                    }
-                            } // loop on space components
+                        //_M_rhs.set( thedof, __value );
+                    }
 
-                } // loop on face dof
-        }
+                    else if (  _M_on_strategy.test( ON_PENALISATION ) &&
+                               !_M_on_strategy.test( ON_ELIMINATION ) )
+                    {
+                        __form.set( thedof, thedof, 1.0*1e30 );
+                        _M_rhs->set( thedof, __value*1e30 );
+                    }
+                } // loop on space components
+
+            } // loop on face dof
+    }
+
     __form.zeroRows( dofs, values, *_M_rhs, _M_on_strategy );
 }
 
@@ -458,9 +493,9 @@ struct integratoron_type
 
 
     typedef IntegratorOnExpr<_range_type, _element_type, _rhs_type,
-                             typename mpl::if_<boost::is_arithmetic<_expr_type>,
-                                               mpl::identity<Expr<Cst<_expr_type> > >,
-                                               mpl::identity<_expr_type> >::type::type> type;
+            typename mpl::if_<boost::is_arithmetic<_expr_type>,
+            mpl::identity<Expr<Cst<_expr_type> > >,
+            mpl::identity<_expr_type> >::type::type> type;
     typedef Expr<type> expr_type;
 };
 
@@ -476,46 +511,47 @@ struct integratoron_type
  * \arg sum sum the multiple nodal  contributions  if applicable (false by default)
  */
 BOOST_PARAMETER_FUNCTION(
-    (typename detail::integratoron_type<Args>::expr_type), // return type
+    ( typename detail::integratoron_type<Args>::expr_type ), // return type
     on,    // 2. function name
 
     tag,           // 3. namespace of tag types
 
-    (required
-     (range, *  )
-     (element, *  )
-     (rhs, *  )
-     (expr,   *)
-        ) // 4. one required parameter, and
+    ( required
+      ( range, *  )
+      ( element, *  )
+      ( rhs, *  )
+      ( expr,   * )
+    ) // 4. one required parameter, and
 
-    (optional
-     (type,   (size_type), ON_ELIMINATION|ON_ELIMINATION_KEEP_DIAGONAL )
-     (verbose,   (bool), false )
-     )
+    ( optional
+      ( type,   ( size_type ), ON_ELIMINATION|ON_ELIMINATION_KEEP_DIAGONAL )
+      ( verbose,   ( bool ), false )
     )
+)
 {
-    typename detail::integratoron_type<Args>::type ion( range, element, rhs, expr, type);
+    typename detail::integratoron_type<Args>::type ion( range, element, rhs, expr, type );
     return typename detail::integratoron_type<Args>::expr_type( ion );
 }
 
 #else
-namespace detail{
+namespace detail
+{
 
 template<typename ElementRange, typename Elem, typename RhsElem, typename OnExpr>
 Expr<IntegratorOnExpr<ElementRange, Elem,RhsElem,
-                      typename mpl::if_<boost::is_arithmetic<OnExpr>,
-                                        mpl::identity<Expr<Cst<OnExpr> > >,
-                                        mpl::identity<OnExpr> >::type::type> >
-on( ElementRange const& __r,
-    Elem const& __u,
-    RhsElem&  __rhs,
-    OnExpr const& __e,
-    size_type __on,
-    mpl::bool_<false> )
+     typename mpl::if_<boost::is_arithmetic<OnExpr>,
+     mpl::identity<Expr<Cst<OnExpr> > >,
+     mpl::identity<OnExpr> >::type::type> >
+     on( ElementRange const& __r,
+         Elem const& __u,
+         RhsElem&  __rhs,
+         OnExpr const& __e,
+         size_type __on,
+         mpl::bool_<false> )
 {
     typedef typename mpl::if_<boost::is_arithmetic<OnExpr>,
-        mpl::identity<Expr<Cst<OnExpr> > >,
-        mpl::identity<OnExpr> >::type::type expr_type;
+            mpl::identity<Expr<Cst<OnExpr> > >,
+            mpl::identity<OnExpr> >::type::type expr_type;
     expr_type expr( __e );
     typedef IntegratorOnExpr<ElementRange, Elem,RhsElem, expr_type> expr_t;
     return Expr<expr_t>( expr_t( __r, __u, __rhs, expr, __on ) );
@@ -523,15 +559,15 @@ on( ElementRange const& __r,
 }
 template<typename ElementRange, typename Elem, typename RhsElem, typename OnExpr>
 Expr<IntegratorOnExpr<ElementRange, Elem, typename RhsElem::value_type,
-                      typename mpl::if_<boost::is_arithmetic<OnExpr>,
-                                        mpl::identity<Expr<Cst<OnExpr> > >,
-                                        mpl::identity<OnExpr> >::type::type> >
-on( ElementRange const& __r,
-    Elem const& __u,
-    RhsElem&  __rhs,
-    OnExpr const& __e,
-    size_type __on,
-    mpl::bool_<true> )
+     typename mpl::if_<boost::is_arithmetic<OnExpr>,
+     mpl::identity<Expr<Cst<OnExpr> > >,
+     mpl::identity<OnExpr> >::type::type> >
+     on( ElementRange const& __r,
+         Elem const& __u,
+         RhsElem&  __rhs,
+         OnExpr const& __e,
+         size_type __on,
+         mpl::bool_<true> )
 {
     return on( __r, __u, __rhs, __e, __on, mpl::bool_<false>() );
 }
@@ -551,17 +587,17 @@ on( ElementRange const& __r,
  */
 template<typename ElementRange, typename Elem, typename RhsElem, typename OnExpr>
 Expr<IntegratorOnExpr<ElementRange, Elem,
-                      typename mpl::if_<mpl::or_<is_shared_ptr<RhsElem>, boost::is_pointer<RhsElem> >,
-                                        mpl::identity<typename RhsElem::value_type>,
-                                        mpl::identity<RhsElem> >::type::type,
-                      typename mpl::if_<boost::is_arithmetic<OnExpr>,
-                                        mpl::identity<Expr<Cst<OnExpr> > >,
-                                        mpl::identity<OnExpr> >::type::type> >
-on( ElementRange const& __r,
-    Elem const& __u,
-    RhsElem&  __rhs,
-    OnExpr const& __e,
-    size_type __on = ON_ELIMINATION|ON_ELIMINATION_KEEP_DIAGONAL )
+     typename mpl::if_<mpl::or_<is_shared_ptr<RhsElem>, boost::is_pointer<RhsElem> >,
+     mpl::identity<typename RhsElem::value_type>,
+     mpl::identity<RhsElem> >::type::type,
+     typename mpl::if_<boost::is_arithmetic<OnExpr>,
+     mpl::identity<Expr<Cst<OnExpr> > >,
+     mpl::identity<OnExpr> >::type::type> >
+     on( ElementRange const& __r,
+         Elem const& __u,
+         RhsElem&  __rhs,
+         OnExpr const& __e,
+         size_type __on = ON_ELIMINATION|ON_ELIMINATION_KEEP_DIAGONAL )
 {
     return detail::on( __r, __u, __rhs, __e, __on,  mpl::or_<is_shared_ptr<RhsElem>, boost::is_pointer<RhsElem> >() );
 
@@ -569,17 +605,17 @@ on( ElementRange const& __r,
 
 template<typename ElementRange, typename Elem, typename RhsElem, typename OnExpr>
 Expr<IntegratorOnExpr<ElementRange, Elem,
-                      typename mpl::if_<mpl::or_<is_shared_ptr<RhsElem>, boost::is_pointer<RhsElem> >,
-                                        mpl::identity<typename RhsElem::value_type>,
-                                        mpl::identity<RhsElem> >::type::type,
-                      typename mpl::if_<boost::is_arithmetic<OnExpr>,
-                                        mpl::identity<Expr<Cst<OnExpr> > >,
-                                        mpl::identity<OnExpr> >::type::type> >
-on( ElementRange const& __r,
-    boost::shared_ptr<Elem>  __u,
-    boost::shared_ptr<RhsElem>  __rhs,
-    OnExpr const& __e,
-    size_type __on = ON_ELIMINATION|ON_ELIMINATION_KEEP_DIAGONAL )
+     typename mpl::if_<mpl::or_<is_shared_ptr<RhsElem>, boost::is_pointer<RhsElem> >,
+     mpl::identity<typename RhsElem::value_type>,
+     mpl::identity<RhsElem> >::type::type,
+     typename mpl::if_<boost::is_arithmetic<OnExpr>,
+     mpl::identity<Expr<Cst<OnExpr> > >,
+     mpl::identity<OnExpr> >::type::type> >
+     on( ElementRange const& __r,
+         boost::shared_ptr<Elem>  __u,
+         boost::shared_ptr<RhsElem>  __rhs,
+         OnExpr const& __e,
+         size_type __on = ON_ELIMINATION|ON_ELIMINATION_KEEP_DIAGONAL )
 {
     return detail::on( __r, __u, __rhs, __e, __on,  mpl::or_<is_shared_ptr<RhsElem>, boost::is_pointer<RhsElem> >() );
 

@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -58,11 +58,11 @@ const size_type STIFFNESS                = ( 1<<21 );
 
 
 typedef mpl::vector_c<size_type,
-                      JACOBIAN, KB, KB2, FIRST_DERIVATIVE, GRAD, SECOND_DERIVATIVE, HESSIAN,
-                      MEASURE, NORMAL, TANGENT, FIRST_DERIVATIVE_NORMAL, POINT,
-                      SYMM, UNSYMM,
-                      DIV,CURL,
-                      MASS, STIFFNESS> contexts;
+        JACOBIAN, KB, KB2, FIRST_DERIVATIVE, GRAD, SECOND_DERIVATIVE, HESSIAN,
+        MEASURE, NORMAL, TANGENT, FIRST_DERIVATIVE_NORMAL, POINT,
+        SYMM, UNSYMM,
+        DIV,CURL,
+        MASS, STIFFNESS> contexts;
 
 template<size_type Context>
 struct has_jacobian

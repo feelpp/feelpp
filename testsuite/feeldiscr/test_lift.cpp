@@ -55,15 +55,15 @@ inline
 po::options_description
 makeOptions()
 {
-    po::options_description testliftoptions("TestLift options");
+    po::options_description testliftoptions( "TestLift options" );
     testliftoptions.add_options()
-        ("hsize", po::value<double>()->default_value( 0.02 ), "mesh size")
-        ("shape", Feel::po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (either simplex or hypercube)")
-        ("nu", po::value<double>()->default_value( 1 ), "grad.grad coefficient")
-        ("weakdir", po::value<int>()->default_value( 1 ), "use weak Dirichlet condition" )
-        ("penaldir", Feel::po::value<double>()->default_value( 10 ),
-         "penalisation parameter for the weak boundary Dirichlet formulation")
-        ;
+    ( "hsize", po::value<double>()->default_value( 0.02 ), "mesh size" )
+    ( "shape", Feel::po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (either simplex or hypercube)" )
+    ( "nu", po::value<double>()->default_value( 1 ), "grad.grad coefficient" )
+    ( "weakdir", po::value<int>()->default_value( 1 ), "use weak Dirichlet condition" )
+    ( "penaldir", Feel::po::value<double>()->default_value( 10 ),
+      "penalisation parameter for the weak boundary Dirichlet formulation" )
+    ;
     return testliftoptions.add( Feel::feel_options() );
 }
 
@@ -77,9 +77,9 @@ makeAbout()
                      "0.2",
                      "nD(n=1,2,3) TestLift on simplices or simplex products",
                      Feel::AboutData::License_GPL,
-                     "Copyright (c) 2008-2009 Universite Joseph Fourier");
+                     "Copyright (c) 2008-2009 Universite Joseph Fourier" );
 
-    about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
     return about;
 
 }
@@ -88,7 +88,7 @@ makeAbout()
 template<int Dim>
 class TestLift
     :
-    public Simget
+public Simget
 {
     typedef Simget super;
 public:
@@ -148,10 +148,13 @@ TestLift<Dim>::run()
     std::cout << "Execute TestLift<" << Dim << ">\n";
     std::vector<double> X( 2 );
     X[0] = meshSize;
+
     if ( shape == "hypercube" )
         X[1] = 1;
+
     else // default is simplex
         X[1] = 0;
+
     std::vector<double> Y( 3 );
     run( X.data(), X.size(), Y.data(), Y.size() );
 }
@@ -160,6 +163,7 @@ void
 TestLift<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
 {
     if ( X[1] == 0 ) shape = "simplex";
+
     if ( X[1] == 1 ) shape = "hypercube";
 
     if ( !this->vm().count( "nochdir" ) )
@@ -172,18 +176,18 @@ TestLift<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
                                        % meshSize );
 
     auto mesh = createGMSHMesh( _mesh=new mesh_type,
-                                        _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
-                                        _desc=domain( _name=(boost::format( "%1%-%2%-%3%" ) % shape % Dim % 1).str() ,
-                                                      _usenames=true,
-                                                      _shape=shape,
-                                                      _dim=Dim,
-                                                      _h=X[0],
-                                                      _xmin=0.,
-                                                      _xmax=1.,
-                                                      _ymin=0.,
-                                                      _ymax=1.,
-                                                      _zmin=0.,
-                                                      _zmax=1.) );
+                                _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
+                                _desc=domain( _name=( boost::format( "%1%-%2%-%3%" ) % shape % Dim % 1 ).str() ,
+                                        _usenames=true,
+                                        _shape=shape,
+                                        _dim=Dim,
+                                        _h=X[0],
+                                        _xmin=0.,
+                                        _xmax=1.,
+                                        _ymin=0.,
+                                        _ymax=1.,
+                                        _zmin=0.,
+                                        _zmax=1. ) );
 
 
 
@@ -193,13 +197,13 @@ TestLift<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
 
     value_type pi = M_PI;
 
-    auto g = sin(pi*Px())*cos(pi*Py())*cos(pi*Pz());
+    auto g = sin( pi*Px() )*cos( pi*Py() )*cos( pi*Pz() );
 
-    auto f = cst(0.);
+    auto f = cst( 0. );
 
     bool weakdir = this->vm()["weakdir"].template as<int>();
 
-    WeakDirichlet dir_type = (WeakDirichlet)this->vm()["weakdir"].template as<int>();
+    WeakDirichlet dir_type = ( WeakDirichlet )this->vm()["weakdir"].template as<int>();
 
     value_type penaldir = this->vm()["penaldir"].template as<double>();
 
@@ -210,14 +214,14 @@ TestLift<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
     auto F =  M_backend->newVector( Xh ) ;
 
     form1( _test=Xh, _vector=F, _init=true ) =
-        integrate( elements(mesh), f*id(v) ) ;
+        integrate( elements( mesh ), f*id( v ) ) ;
 
     if ( this->comm().size() != 1 || weakdir )
     {
 
         form1( _test=Xh, _vector=F ) +=
-            integrate( markedfaces(mesh,"Dirichlet"),
-                       g*(-grad(v)*vf::N()+penaldir*id(v)/hFace()) );
+            integrate( markedfaces( mesh,"Dirichlet" ),
+                       g*( -grad( v )*vf::N()+penaldir*id( v )/hFace() ) );
 
     }
 
@@ -226,44 +230,45 @@ TestLift<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
     auto D = M_backend->newMatrix( Xh, Xh ) ;
 
     form2( Xh, Xh, D, _init=true ) =
-        integrate( elements(mesh), nu*gradt(u)*trans(grad(v)) );
+        integrate( elements( mesh ), nu*gradt( u )*trans( grad( v ) ) );
 
     if ( this->comm().size() != 1 || weakdir )
     {
 
         form2( Xh, Xh, D ) +=
-            integrate( markedfaces(mesh,"Dirichlet"),
-                       -(gradt(u)*vf::N())*id(v)
-                       -(grad(v)*vf::N())*idt(u)
-                       +penaldir*id(v)*idt(u)/hFace());
+            integrate( markedfaces( mesh,"Dirichlet" ),
+                       -( gradt( u )*vf::N() )*id( v )
+                       -( grad( v )*vf::N() )*idt( u )
+                       +penaldir*id( v )*idt( u )/hFace() );
 
         D->close();
     }
+
     else
     {
         D->close();
 
         form2( Xh, Xh, D ) +=
-            on( markedfaces(mesh, "Dirichlet"), u, F, g );
+            on( markedfaces( mesh, "Dirichlet" ), u, F, g );
 
     }
 
     backend_type::build()->solve( _matrix=D, _solution=u, _rhs=F );
 
-    auto op_lift = operatorLift(Xh, M_backend, 20.0, dir_type);
+    auto op_lift = operatorLift( Xh, M_backend, 20.0, dir_type );
 
-    auto glift = op_lift->lift( _range=markedfaces(mesh,"Dirichlet"),_expr=trans(g));
+    auto glift = op_lift->lift( _range=markedfaces( mesh,"Dirichlet" ),_expr=trans( g ) );
 
-    auto glift2 = (*op_lift)( _range=markedfaces(mesh,"Dirichlet"),_expr= g);
+    auto glift2 = ( *op_lift )( _range=markedfaces( mesh,"Dirichlet" ),_expr= g );
 
-    auto gproj =  vf::project(_space=Xh, _range=elements(mesh), _expr=g );
+    auto gproj =  vf::project( _space=Xh, _range=elements( mesh ), _expr=g );
 
-    double L2error2 =integrate(elements(mesh),
-                               (idv(u)-idv(glift))*(idv(u)-idv(glift)) ).evaluate()(0,0);
+    double L2error2 =integrate( elements( mesh ),
+                                ( idv( u )-idv( glift ) )*( idv( u )-idv( glift ) ) ).evaluate()( 0,0 );
 
 
-    double semi_H1error2 =integrate(elements(mesh),
-                                   ( gradv(u)-gradv(glift) )*trans( (gradv(u)-gradv(glift)) ) ).evaluate()(0,0);
+    double semi_H1error2 =integrate( elements( mesh ),
+                                     ( gradv( u )-gradv( glift ) )*trans( ( gradv( u )-gradv( glift ) ) ) ).evaluate()( 0,0 );
 
     double L2error =   math::sqrt( L2error2 );
 
@@ -274,21 +279,22 @@ TestLift<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
     Log() << "||error||_H1=" << H1error << "\n";
 
     auto exporter( export_type::New( this->vm(),
-                                               (boost::format( "%1%-%2%-%3%" )
-                                                % this->about().appName()
-                                                % shape
-                                                % Dim).str() ) );
+                                     ( boost::format( "%1%-%2%-%3%" )
+                                       % this->about().appName()
+                                       % shape
+                                       % Dim ).str() ) );
+
     if ( exporter->doExport() )
     {
         Log() << "exportResults starts\n";
 
-        exporter->step(0)->setMesh( mesh );
+        exporter->step( 0 )->setMesh( mesh );
 
-        exporter->step(0)->add( "u", u );
+        exporter->step( 0 )->add( "u", u );
 
-        exporter->step(0)->add( "glift", glift );
+        exporter->step( 0 )->add( "glift", glift );
 
-        exporter->step(0)->add( "g", gproj );
+        exporter->step( 0 )->add( "g", gproj );
 
         exporter->save();
 
@@ -304,6 +310,7 @@ main( int argc, char** argv )
     Environment env( argc, argv );
 
     Application app( argc, argv, makeAbout(), makeOptions() );
+
     if ( app.vm().count( "help" ) )
     {
         std::cout << app.optionsDescription() << "\n";

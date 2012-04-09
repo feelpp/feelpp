@@ -42,23 +42,23 @@ inline
 Feel::po::options_description
 makeOptions()
 {
-    Feel::po::options_description advectionoptions("Advection options");
+    Feel::po::options_description advectionoptions( "Advection options" );
     advectionoptions.add_options()
-        ("penal", Feel::po::value<double>()->default_value( 0.5 ), "penalisation parameter")
-        ("f", Feel::po::value<double>()->default_value( 0 ), "forcing term")
-//        ("g", Feel::po::value<double>()->default_value( 0 ), "boundary term")
-        ("bx", Feel::po::value<double>()->default_value( 1.0 ), "convection X component")
-        ("by", Feel::po::value<double>()->default_value( 1.0 ), "convection Y component")
-        ("mu", Feel::po::value<double>()->default_value( 1.0 ), "reaction coefficient component")
-        ("geomap", Feel::po::value<int>()->default_value( 0 ), "type of geomap for integrals")
-        ("stiff", Feel::po::value<double>()->default_value( 1.0 ), "stiffness parameter of solution")
-        ("ring", Feel::po::value<bool>()->default_value( 0 ), "0 = square computational domain, 1 = quarter of a ring as computational domain")
-        ("hsize", Feel::po::value<double>()->default_value( 0.5 ), "first h value to start convergence")
-        ("bctype", Feel::po::value<int>()->default_value( 0 ), "0 = strong Dirichlet, 1 = weak Dirichlet")
-        ("bccoeff", Feel::po::value<double>()->default_value( 100.0 ), "coeff for weak Dirichlet conditions")
-        ("export-matlab", "export matrices and vectors in matlab format")
+    ( "penal", Feel::po::value<double>()->default_value( 0.5 ), "penalisation parameter" )
+    ( "f", Feel::po::value<double>()->default_value( 0 ), "forcing term" )
+    //        ("g", Feel::po::value<double>()->default_value( 0 ), "boundary term")
+    ( "bx", Feel::po::value<double>()->default_value( 1.0 ), "convection X component" )
+    ( "by", Feel::po::value<double>()->default_value( 1.0 ), "convection Y component" )
+    ( "mu", Feel::po::value<double>()->default_value( 1.0 ), "reaction coefficient component" )
+    ( "geomap", Feel::po::value<int>()->default_value( 0 ), "type of geomap for integrals" )
+    ( "stiff", Feel::po::value<double>()->default_value( 1.0 ), "stiffness parameter of solution" )
+    ( "ring", Feel::po::value<bool>()->default_value( 0 ), "0 = square computational domain, 1 = quarter of a ring as computational domain" )
+    ( "hsize", Feel::po::value<double>()->default_value( 0.5 ), "first h value to start convergence" )
+    ( "bctype", Feel::po::value<int>()->default_value( 0 ), "0 = strong Dirichlet, 1 = weak Dirichlet" )
+    ( "bccoeff", Feel::po::value<double>()->default_value( 100.0 ), "coeff for weak Dirichlet conditions" )
+    ( "export-matlab", "export matrices and vectors in matlab format" )
 
-        ;
+    ;
     return advectionoptions.add( Feel::feel_options() ) ;
 }
 inline
@@ -66,15 +66,15 @@ Feel::AboutData
 makeAbout()
 {
     Feel::AboutData about( "advection" ,
-                            "advection" ,
-                            "0.3",
-                            "nD(n=1,2,3)Advection equation on simplices or simplex products using cG and dG",
-                            Feel::AboutData::License_GPL,
-                            "Copyright (c) 2006-2011 University Joseph Fourier");
+                           "advection" ,
+                           "0.3",
+                           "nD(n=1,2,3)Advection equation on simplices or simplex products using cG and dG",
+                           Feel::AboutData::License_GPL,
+                           "Copyright (c) 2006-2011 University Joseph Fourier" );
 
-    about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
-    about.addAuthor("Benjamin Stamm", "developer", "benjamin.stamm@epfl.ch", "");
-   return about;
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    about.addAuthor( "Benjamin Stamm", "developer", "benjamin.stamm@epfl.ch", "" );
+    return about;
 
 }
 
@@ -86,11 +86,12 @@ createRing( int Dim, int Order, double meshSize, std::string const& convex )
 {
     std::ostringstream ostr;
     std::ostringstream nameStr;
-    gmsh_ptrtype gmshp( new Gmsh(Dim, Order) );
+    gmsh_ptrtype gmshp( new Gmsh( Dim, Order ) );
     gmshp->setCharacteristicLength( meshSize );
     ostr << gmshp->preamble() << "\n";
 
-    switch( Dim ) {
+    switch ( Dim )
+    {
     case 2:
         ostr << "h=" << meshSize << ";\n"
              << "Point(1) = {0.1,0,0,h/2};\n"
@@ -108,37 +109,39 @@ createRing( int Dim, int Order, double meshSize, std::string const& convex )
              << "Physical Line(20) = {2};\n"
              << "Physical Line(30) = {3};\n"
              << "Physical Line(40) = {4};\n"
-//             << "Physical Line(20) = {1,2,4};\n"
+             //             << "Physical Line(20) = {1,2,4};\n"
              << "Physical Surface(7) = {6};\n";
         nameStr << "ring-" << convex;
-//        fname = __gmsh.generateSquare( "advectiondg2d", meshSize );//
+        //        fname = __gmsh.generateSquare( "advectiondg2d", meshSize );//
         break;
-// To be added for 3D something like:
-/*    case 3:
-        ostr << "h=" << meshSize << ";\n"
-             << "Point(1) = {-1,-1,-1,h};\n"
-             << "Point(2) = {-1, 1,-1,h};\n"
-             << "Point(3) = { 1, 1,-1,h};\n"
-             << "Point(4) = { 1,-1,-1,h};\n"
-             << "Line(1) = {1,4};\n"
-             << "Line(2) = {4,3};\n"
-             << "Line(3) = {3,2};\n"
-             << "Line(4) = {2,1};\n"
-             << "Line Loop(5) = {3,4,1,2};\n"
-             << "Plane Surface(6) = {5};\n"
-             << "Extrude Surface {6, {0,0,2}};\n"
-             << "Physical Surface(10) = {15,23,6,28};\n"
-             << "Physical Surface(20) = {19,27};\n"
-             << "Surface Loop(31) = {28,15,-6,19,23,27};\n"
-             << "Volume(1) = {31};\n"
-             << "Physical Volume(2) = {1};\n";
-        nameStr << "cube." << meshSize;
-        break;*/
+
+        // To be added for 3D something like:
+        /*    case 3:
+                ostr << "h=" << meshSize << ";\n"
+                     << "Point(1) = {-1,-1,-1,h};\n"
+                     << "Point(2) = {-1, 1,-1,h};\n"
+                     << "Point(3) = { 1, 1,-1,h};\n"
+                     << "Point(4) = { 1,-1,-1,h};\n"
+                     << "Line(1) = {1,4};\n"
+                     << "Line(2) = {4,3};\n"
+                     << "Line(3) = {3,2};\n"
+                     << "Line(4) = {2,1};\n"
+                     << "Line Loop(5) = {3,4,1,2};\n"
+                     << "Plane Surface(6) = {5};\n"
+                     << "Extrude Surface {6, {0,0,2}};\n"
+                     << "Physical Surface(10) = {15,23,6,28};\n"
+                     << "Physical Surface(20) = {19,27};\n"
+                     << "Surface Loop(31) = {28,15,-6,19,23,27};\n"
+                     << "Volume(1) = {31};\n"
+                     << "Physical Volume(2) = {1};\n";
+                nameStr << "cube." << meshSize;
+                break;*/
     default:
         std::ostringstream os;
         os << "invalid dimension: " << Dim;
         throw std::logic_error( os.str() );
     }
+
     gmshp->setPrefix( nameStr.str() );
     gmshp->setDescription( ostr.str() );
     return gmshp;
@@ -155,7 +158,7 @@ template<int Dim,
          template<uint16_type,uint16_type,uint16_type> class Entity>
 class Advection
     :
-        public Application
+public Application
 {
     typedef Application super;
 public:
@@ -190,7 +193,7 @@ public:
         backend( backend_type::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         bcCoeff( this->vm()["bccoeff"].template as<double>() ),
-        geomap( (GeomapStrategyType)this->vm()["geomap"].template as<int>() ),
+        geomap( ( GeomapStrategyType )this->vm()["geomap"].template as<int>() ),
         exporter( export_type::New( this->vm(), "advection" ) )
     {
         Log() << "[Advection] hsize = " << meshSize << "\n";
@@ -230,10 +233,10 @@ void
 Advection<Dim, Order, Cont, Entity>::run()
 {
     if ( this->vm().count( "help" ) )
-        {
-            std::cout << this->optionsDescription() << "\n";
-            return;
-        }
+    {
+        std::cout << this->optionsDescription() << "\n";
+        return;
+    }
 
     using namespace Feel::vf;
 
@@ -242,7 +245,7 @@ Advection<Dim, Order, Cont, Entity>::run()
                             % entity_type::name()
                             % Order
                             % meshSize
-                            );
+                          );
     value_type penalisation = this->vm()["penal"].template as<value_type>();
     int bctype = this->vm()["bctype"].template as<int>();
 
@@ -259,11 +262,12 @@ Advection<Dim, Order, Cont, Entity>::run()
     if ( ring )
         mesh = createGMSHMesh( _mesh=new mesh_type,
                                _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
-                               _desc=createRing(Dim,Order,meshSize,entity_type::name()) );
+                               _desc=createRing( Dim,Order,meshSize,entity_type::name() ) );
+
     else
         mesh = createGMSHMesh( _mesh=new mesh_type,
                                _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
-                               _desc=domain( _name=(boost::format( "hypercube-%1%" ) % Dim).str() ,
+                               _desc=domain( _name=( boost::format( "hypercube-%1%" ) % Dim ).str() ,
                                              _order=Order,
                                              _shape="hypercube",
                                              _dim=Dim,
@@ -278,72 +282,75 @@ Advection<Dim, Order, Cont, Entity>::run()
     auto v = Xh->element();
 
 
-    auto r = sqrt(Px()*Px()+Py()*Py());
+    auto r = sqrt( Px()*Px()+Py()*Py() );
     //auto r = sqrt(trans(P())*P());
-    auto beta = beta_x*(ring*Py()/r + !ring)*oneX()+beta_y*(-ring*Px()/r + !ring)*oneY();
+    auto beta = beta_x*( ring*Py()/r + !ring )*oneX()+beta_y*( -ring*Px()/r + !ring )*oneY();
     //auto beta = (ones<Dim,1>());
-    auto beta_N = (trans(N())*beta);
-    auto beta_abs = abs(beta_N);
-    auto beta_minus = constant(0.5)*(beta_abs-beta_N);
-    auto beta_plus = constant(0.5)*(beta_abs+beta_N);
-    auto g = ((!ring*exp(-mu*Px())*atan((Py()-	0.5)/stiff) + ring*exp(-mu*r*acos(Py()/r))*atan((r-0.5)/stiff)) );
-    auto f = ( constant(0.0) );
+    auto beta_N = ( trans( N() )*beta );
+    auto beta_abs = abs( beta_N );
+    auto beta_minus = constant( 0.5 )*( beta_abs-beta_N );
+    auto beta_plus = constant( 0.5 )*( beta_abs+beta_N );
+    auto g = ( ( !ring*exp( -mu*Px() )*atan( ( Py()-	0.5 )/stiff ) + ring*exp( -mu*r*acos( Py()/r ) )*atan( ( r-0.5 )/stiff ) ) );
+    auto f = ( constant( 0.0 ) );
 
     auto F = backend->newVector( Xh );
     form1( _test=Xh, _vector=F, _init=true )  =
-        integrate( elements(mesh), trans(f)*id(v) );
+        integrate( elements( mesh ), trans( f )*id( v ) );
+
     if ( bctype == 1 || !Cont::is_continuous )
     {
         form1( _test=Xh, _vector=F ) +=
-            integrate( _range=boundaryfaces(mesh), _expr=trans(beta_minus*g)*id(v),_geomap=geomap );
+            integrate( _range=boundaryfaces( mesh ), _expr=trans( beta_minus*g )*id( v ),_geomap=geomap );
     }
 
     auto D = backend->newMatrix( Xh, Xh );
     //size_type pattern = Pattern::COUPLED|Pattern::EXTENDED;
     size_type pattern = Pattern::COUPLED;
     form2( _test=Xh, _trial=Xh, _matrix=D, _init=true, _pattern=pattern ) =
-        integrate( _range=elements(mesh), _quad=_Q<2*Order>(),
+        integrate( _range=elements( mesh ), _quad=_Q<2*Order>(),
                    // -(u,beta*grad(v))+(mu*u,v)-(u,div(beta)*v)
-                   _expr=-trans(idt(u))*(grad(v)*beta) + mu*trans(idt(u))*id(v),
+                   _expr=-trans( idt( u ) )*( grad( v )*beta ) + mu*trans( idt( u ) )*id( v ),
                    //- idt(u)*id(v)*(dx(beta_x)+dy(beta_y))
                    _geomap=geomap
-                   );
+                 );
 
     if ( !Cont::is_continuous )
-        {
-            form2( _test=Xh, _trial=Xh, _matrix=D ) +=
-                integrate( _range=internalfaces(mesh), _quad=_Q<2*Order>(),
-                           // {beta u} . [v]
-                           //( trans(averaget(trans(beta)*idt(u))) * jump(trans(id(v))) )
-                           _expr=( averaget(trans(beta)*idt(u)) * jump(id(v)) )
-                           // penal*[u] . [v]
-                           + penalisation*beta_abs*( trans(jumpt(trans(idt(u))))*jump(trans(id(v))) ),
-                           _geomap=geomap);
-        }
+    {
+        form2( _test=Xh, _trial=Xh, _matrix=D ) +=
+            integrate( _range=internalfaces( mesh ), _quad=_Q<2*Order>(),
+                       // {beta u} . [v]
+                       //( trans(averaget(trans(beta)*idt(u))) * jump(trans(id(v))) )
+                       _expr=( averaget( trans( beta )*idt( u ) ) * jump( id( v ) ) )
+                             // penal*[u] . [v]
+                             + penalisation*beta_abs*( trans( jumpt( trans( idt( u ) ) ) )*jump( trans( id( v ) ) ) ),
+                       _geomap=geomap );
+    }
 
     else // continuous case: stabilization by interior penalty
     {
         form2( _test=Xh, _trial=Xh, _matrix=D ) +=
-            integrate( internalfaces(mesh),
+            integrate( internalfaces( mesh ),
                        // penal*[grad(u)] . [grad(v)]
-                       + penalisation*beta_abs*hFace()*hFace()*(trans(jumpt(gradt(u)))*jump(grad(v)) ) );
+                       + penalisation*beta_abs*hFace()*hFace()*( trans( jumpt( gradt( u ) ) )*jump( grad( v ) ) ) );
     }
 
     if ( bctype == 1 || !Cont::is_continuous )
-        {
-            form2( _test=Xh, _trial=Xh, _matrix=D ) +=
-                integrate( _range=boundaryfaces(mesh), _expr=beta_plus*trans(idt(u))*id(v),_geomap=geomap );
+    {
+        form2( _test=Xh, _trial=Xh, _matrix=D ) +=
+            integrate( _range=boundaryfaces( mesh ), _expr=beta_plus*trans( idt( u ) )*id( v ),_geomap=geomap );
 
-            D->close();
-            F->close();
-        }
+        D->close();
+        F->close();
+    }
+
     else if ( bctype == 0 )
-        {
-            D->close();
-            F->close();
-            form2( _test=Xh, _trial=Xh, _matrix=D ) +=
-                on( boundaryfaces(mesh), u, F, g );
-        }
+    {
+        D->close();
+        F->close();
+        form2( _test=Xh, _trial=Xh, _matrix=D ) +=
+            on( boundaryfaces( mesh ), u, F, g );
+    }
+
     if ( this->vm().count( "export-matlab" ) )
     {
         F->printMatlab( "F.m" );
@@ -352,8 +359,8 @@ Advection<Dim, Order, Cont, Entity>::run()
 
     backend->solve( _matrix=D, _solution=u, _rhs=F );
 
-    double c = integrate( internalfaces(mesh), trans(jumpv(idv(u)))*jumpv(idv(u))  ).evaluate()( 0, 0 );
-    double error = integrate( elements(mesh), trans(idv(u)-g)*(idv(u)-g) ).evaluate()( 0, 0 );
+    double c = integrate( internalfaces( mesh ), trans( jumpv( idv( u ) ) )*jumpv( idv( u ) )  ).evaluate()( 0, 0 );
+    double error = integrate( elements( mesh ), trans( idv( u )-g )*( idv( u )-g ) ).evaluate()( 0, 0 );
 
     Log() << "||error||_0 =" << error << "\n";
     std::cout << "c =" << c << "\n";
@@ -366,8 +373,8 @@ template<int Dim, int Order, typename Cont, template<uint16_type,uint16_type,uin
 template<typename f1_type, typename f2_type, typename f3_type>
 void
 Advection<Dim, Order, Cont, Entity>::exportResults( f1_type& U,
-                                                    f2_type& E,
-                                                    f3_type& beta )
+        f2_type& E,
+        f3_type& beta )
 {
     auto Xch = space<Continuous>::type::New( mesh );
     auto uEx = Xch->element();
@@ -377,15 +384,15 @@ Advection<Dim, Order, Cont, Entity>::exportResults( f1_type& U,
 
     auto L2Proj = projector( Xch, Xch );
     uEx = L2Proj->project( E );
-    uC = L2Proj->project( vf::idv(U) );
+    uC = L2Proj->project( vf::idv( U ) );
     auto L2Projv = projector( Xvch, Xvch );
-    betaC = L2Projv->project( trans(beta) );
+    betaC = L2Projv->project( trans( beta ) );
 
-    exporter->step(0)->setMesh( U.functionSpace()->mesh() );
-    exporter->step(0)->add( "u", U );
-    exporter->step(0)->add( "uC", uC );
-    exporter->step(0)->add( "exact", uEx );
-    exporter->step(0)->add( "beta", betaC );
+    exporter->step( 0 )->setMesh( U.functionSpace()->mesh() );
+    exporter->step( 0 )->add( "u", U );
+    exporter->step( 0 )->add( "uC", uC );
+    exporter->step( 0 )->add( "exact", uEx );
+    exporter->step( 0 )->add( "beta", betaC );
     exporter->save();
 
 } // Advection::export

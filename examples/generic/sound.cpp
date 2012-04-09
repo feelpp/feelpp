@@ -52,16 +52,16 @@ inline
 po::options_description
 makeOptions()
 {
-    po::options_description soundoptions("Sound options");
+    po::options_description soundoptions( "Sound options" );
     soundoptions.add_options()
-        ("kc2", Feel::po::value<double>()->default_value( 1 ), "k/c parameter")
-        ("sigma", Feel::po::value<double>()->default_value( 20 ), "shift parameter for the eigenvalue problem")
-        ("hsize", Feel::po::value<double>()->default_value( 0.5 ), "first h value to start convergence")
+    ( "kc2", Feel::po::value<double>()->default_value( 1 ), "k/c parameter" )
+    ( "sigma", Feel::po::value<double>()->default_value( 20 ), "shift parameter for the eigenvalue problem" )
+    ( "hsize", Feel::po::value<double>()->default_value( 0.5 ), "first h value to start convergence" )
 
-        ("export", "export results(ensight, data file(1D)")
-        ("export-mesh-only", "export mesh only in ensight format")
-        ("export-matlab", "export matrix and vectors in matlab" )
-        ;
+    ( "export", "export results(ensight, data file(1D)" )
+    ( "export-mesh-only", "export mesh only in ensight format" )
+    ( "export-matlab", "export matrix and vectors in matlab" )
+    ;
     return soundoptions.add( Feel::feel_options() );
 }
 inline
@@ -73,9 +73,9 @@ makeAbout()
                      "0.2",
                      "nD(n=1,2,3) acoustics in an amphitheater",
                      Feel::AboutData::License_GPL,
-                     "Copyright (c) 2007-2011 Universite Joseph Fourier");
+                     "Copyright (c) 2007-2011 Universite Joseph Fourier" );
 
-    about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
     return about;
 
 }
@@ -89,7 +89,7 @@ using namespace vf;
 template<int Dim, int Order>
 class Sound
     :
-    public Simget
+public Simget
 {
     typedef Simget super;
 public:
@@ -135,7 +135,10 @@ public:
     {
     }
 
-    std::string name() const { return M_name; }
+    std::string name() const
+    {
+        return M_name;
+    }
 
     /**
      * run the convergence test
@@ -143,7 +146,7 @@ public:
     void run();
 
     //! must be redefined, not used
-    void run(const double*, long unsigned int, double*, long unsigned int) {};
+    void run( const double*, long unsigned int, double*, long unsigned int ) {};
 private:
     std::string M_name;
 }; // Sound
@@ -160,7 +163,7 @@ Sound<Dim, Order>::run()
                             % entity_type::name()
                             % Order
                             % this->vm()["hsize"].template as<double>()
-                            );
+                          );
     //! backend
     auto backend = backend_type::build( this->vm() );
 
@@ -176,11 +179,12 @@ Sound<Dim, Order>::run()
      * First we create the mesh
      */
     auto mesh = createGMSHMesh( _mesh=new mesh_type,
-                                _desc = createRoom(Dim,this->meshSize()) );
+                                _desc = createRoom( Dim,this->meshSize() ) );
 
-    M_stats.put("h",this->meshSize());
-    M_stats.put("n.space.nelts",mesh->numElements());
-    M_stats.put("t.init.mesh",t.elapsed());t.restart();
+    M_stats.put( "h",this->meshSize() );
+    M_stats.put( "n.space.nelts",mesh->numElements() );
+    M_stats.put( "t.init.mesh",t.elapsed() );
+    t.restart();
 
     /*
      * The function space and some associate elements are then defined
@@ -189,17 +193,20 @@ Sound<Dim, Order>::run()
     auto u = Xh->element();
     auto v = Xh->element();
 
-    M_stats.put("n.space.ndof",Xh->nLocalDof());
-    M_stats.put("t.init.space",t.elapsed());t.restart();
+    M_stats.put( "n.space.ndof",Xh->nLocalDof() );
+    M_stats.put( "t.init.space",t.elapsed() );
+    t.restart();
 
     auto F = backend->newVector( Xh );
 
     if ( Dim == 2 )
-        form1( _test=Xh, _vector=F, _init=true )  = integrate( _range=markedfaces(mesh,2), _expr=val(Py()*(1-Py()))*id(v) );
-    else
-        form1( _test=Xh, _vector=F, _init=true )  = integrate( _range=markedfaces(mesh,51),  _expr=val(Py()*(1-Py())*Pz()*(1-Pz()))*id(v) );
+        form1( _test=Xh, _vector=F, _init=true )  = integrate( _range=markedfaces( mesh,2 ), _expr=val( Py()*( 1-Py() ) )*id( v ) );
 
-    M_stats.put("t.assembly.vector.total",t.elapsed());t.restart();
+    else
+        form1( _test=Xh, _vector=F, _init=true )  = integrate( _range=markedfaces( mesh,51 ),  _expr=val( Py()*( 1-Py() )*Pz()*( 1-Pz() ) )*id( v ) );
+
+    M_stats.put( "t.assembly.vector.total",t.elapsed() );
+    t.restart();
 
     /*
      * Construction of the left hand side
@@ -208,27 +215,30 @@ Sound<Dim, Order>::run()
 
     double kc2 = this->vm()["kc2"].template as<double>();
 
-    form2( _test=Xh, _trial=Xh, _matrix=D,_init=true ) = integrate( _range=elements(mesh),  _expr=( kc2*idt(u)*id(v)-gradt(u)*trans(grad(v))) );
+    form2( _test=Xh, _trial=Xh, _matrix=D,_init=true ) = integrate( _range=elements( mesh ),  _expr=( kc2*idt( u )*id( v )-gradt( u )*trans( grad( v ) ) ) );
     D->close();
 
-    M_stats.put("t.assembly.matrix.total",t.elapsed());
+    M_stats.put( "t.assembly.matrix.total",t.elapsed() );
 
     t.restart();
 
     backend->solve( _matrix=D, _solution=u, _rhs=F );
 
-    M_stats.put("t.solver.total",t.elapsed());t.restart();
+    M_stats.put( "t.solver.total",t.elapsed() );
+    t.restart();
 
     // eigen modes
     double sigma = this->vm()["sigma"].template as<double>();
     auto S = backend->newMatrix( Xh, Xh );
-    form2( _test=Xh, _trial=Xh, _matrix=S, _init=true ) = integrate( _range=elements(mesh),  _expr=gradt(u)*trans(grad(v)) );
+    form2( _test=Xh, _trial=Xh, _matrix=S, _init=true ) = integrate( _range=elements( mesh ),  _expr=gradt( u )*trans( grad( v ) ) );
 
-    M_stats.put("t.assembly.matrix.A",t.elapsed());t.restart();
+    M_stats.put( "t.assembly.matrix.A",t.elapsed() );
+    t.restart();
 
     auto M = backend->newMatrix( Xh, Xh );
-    form2( _test=Xh, _trial=Xh, _matrix=M, _init=true ) = integrate( _range=elements(mesh),  _expr=idt(u)*id(v));
-    M_stats.put("t.assembly.matrix.B",t.elapsed());t.restart();
+    form2( _test=Xh, _trial=Xh, _matrix=M, _init=true ) = integrate( _range=elements( mesh ),  _expr=idt( u )*id( v ) );
+    M_stats.put( "t.assembly.matrix.B",t.elapsed() );
+    t.restart();
 
 
     int maxit = this->vm()["solvereigen-maxiter"].template as<int>();
@@ -249,12 +259,12 @@ Sound<Dim, Order>::run()
         eigs( _matrixA=S,
               _matrixB=M,
               // this is a generalized Hermitian Eigenvalue Problem
-              _problem=(EigenProblemType)GHEP,
+              _problem=( EigenProblemType )GHEP,
               _nev=nev,
               _ncv=ncv,
               _maxit=maxit,
               _tolerance=tol,
-              _spectrum=(PositionOfSpectrum)this->vm()["solvereigen-position"].template as<int>());
+              _spectrum=( PositionOfSpectrum )this->vm()["solvereigen-position"].template as<int>() );
 
     element_type mode( Xh, "mode" );
 
@@ -267,17 +277,20 @@ Sound<Dim, Order>::run()
         mode = *modes.begin()->second.get<2>();
     }
 
-//    this->exportResults( u, mode );
-//    Log() << "[timer] run(): init (" << mesh->numElements() << " Elems): " << timers["init"].second << "\n";
-//    Log() << "[timer] run(): assembly (" << Xh->dof()->nDof() << " DOFs): " << timers["assembly"].second << "\n";
-    M_stats.put("t.eigensolver.total",t.elapsed());t.restart();
+    //    this->exportResults( u, mode );
+    //    Log() << "[timer] run(): init (" << mesh->numElements() << " Elems): " << timers["init"].second << "\n";
+    //    Log() << "[timer] run(): assembly (" << Xh->dof()->nDof() << " DOFs): " << timers["assembly"].second << "\n";
+    M_stats.put( "t.eigensolver.total",t.elapsed() );
+    t.restart();
 
-    exporter->step(0.)->setMesh( u.functionSpace()->mesh() );
+    exporter->step( 0. )->setMesh( u.functionSpace()->mesh() );
+
     if ( !this->vm().count( "export-mesh-only" ) )
     {
-        exporter->step(0.)->add( "p", u );
-        exporter->step(0.)->add( "mode", mode );
+        exporter->step( 0. )->add( "p", u );
+        exporter->step( 0. )->add( "mode", mode );
     }
+
     exporter->save();
 } // Sound::run
 } // Feel
@@ -291,18 +304,20 @@ main( int argc, char** argv )
     using namespace Feel;
 
     /* assertions handling */
-    Feel::Assert::setLog( "sound.assert");
+    Feel::Assert::setLog( "sound.assert" );
 
     Application sound( argc, argv, makeAbout(), makeOptions() );
+
     if ( sound.vm().count( "help" ) )
     {
         std::cout << sound.optionsDescription() << "\n";
         return 0;
     }
+
     sound.add( new Sound<2, 1>( "2D-P1", sound.vm(), sound.about() ) );
     sound.add( new Sound<3, 1>( "3D-P1", sound.vm(), sound.about() ) );
     sound.run();
-    sound.printStats( std::cout, boost::assign::list_of("n.space")("t.init")("t.assembly.vector")("t.assembly.matrix" )("t.solver")("t.eigensolver") );
+    sound.printStats( std::cout, boost::assign::list_of( "n.space" )( "t.init" )( "t.assembly.vector" )( "t.assembly.matrix" )( "t.solver" )( "t.eigensolver" ) );
 }
 
 

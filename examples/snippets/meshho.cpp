@@ -35,42 +35,42 @@ namespace Feel
 {
 
 }
-int main(int argc, char** argv)
+int main( int argc, char** argv )
 {
     double hsize = 2;
     // Declare the supported options.
     namespace po = boost::program_options;
-    po::options_description desc("Allowed options");
+    po::options_description desc( "Allowed options" );
     desc.add_options()
-        ("help", "produce help message")
-        ("hsize", po::value<double>(&hsize)->default_value( 2 ), "h size")
-        ;
+    ( "help", "produce help message" )
+    ( "hsize", po::value<double>( &hsize )->default_value( 2 ), "h size" )
+    ;
 
     po::variables_map vm;
-    po::store(po::parse_command_line(argc, argv, desc), vm);
-    po::notify(vm);
+    po::store( po::parse_command_line( argc, argv, desc ), vm );
+    po::notify( vm );
 
     using namespace Feel;
     using namespace Feel::vf;
-    Feel::Environment env(argc, argv );
+    Feel::Environment env( argc, argv );
     typedef Mesh<Simplex<2,4> > mesh_type;
 
     auto mesh = createGMSHMesh( _mesh=new mesh_type,
                                 _desc=domain( _name="ellipsoid-2",
-                                              _usenames=true,
-                                              _shape="ellipsoid",
-                                              _dim=2,
-                                              _order=4,
-                                              _h=hsize ),
+                                        _usenames=true,
+                                        _shape="ellipsoid",
+                                        _dim=2,
+                                        _order=4,
+                                        _h=hsize ),
                                 _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES );
     //straightenMesh( _mesh=mesh );
 
     //std::cout << "read mesh\n" << std::endl;
 
     std::cout << "ho  p1  opt " << std::endl
-              << std::setprecision( 16 ) << std::scientific << integrate( _range=elements(mesh), _quad=_Q<5>(), _expr=cst(1.), _geomap=GeomapStrategyType::GEOMAP_HO ).evaluate() << " "
-              << std::setprecision( 16 ) << std::scientific << integrate( _range=elements(mesh), _quad=_Q<5>(), _expr=cst(1.), _geomap=GeomapStrategyType::GEOMAP_O1 ).evaluate() << " "
-              << std::setprecision( 16 ) << std::scientific << integrate( _range=elements(mesh), _quad=_Q<5>(), _expr=cst(1.), _geomap=GeomapStrategyType::GEOMAP_OPT ).evaluate() << std::endl;
+              << std::setprecision( 16 ) << std::scientific << integrate( _range=elements( mesh ), _quad=_Q<5>(), _expr=cst( 1. ), _geomap=GeomapStrategyType::GEOMAP_HO ).evaluate() << " "
+              << std::setprecision( 16 ) << std::scientific << integrate( _range=elements( mesh ), _quad=_Q<5>(), _expr=cst( 1. ), _geomap=GeomapStrategyType::GEOMAP_O1 ).evaluate() << " "
+              << std::setprecision( 16 ) << std::scientific << integrate( _range=elements( mesh ), _quad=_Q<5>(), _expr=cst( 1. ), _geomap=GeomapStrategyType::GEOMAP_OPT ).evaluate() << std::endl;
 
 
 }

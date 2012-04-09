@@ -39,28 +39,33 @@ namespace Feel
 
 GmshSimplexDomain::GmshSimplexDomain( int dim, int order, DomainType dt )
     :
-    super(dim,order),
+    super( dim,order ),
     M_descr()
 {
-    switch (dt)
+    switch ( dt )
     {
     case GMSH_REAL_DOMAIN:
     {
 
         if ( this->dimension() >= 1 )
             this->M_I[0] = std::make_pair( 0, 1 );
+
         if ( this->dimension() >= 2 )
             this->M_I[1] = std::make_pair( 0, 1 );
+
         if ( this->dimension() >= 3 )
             this->M_I[2] = std::make_pair( 0, 1 );
     }
     break;
+
     case GMSH_REFERENCE_DOMAIN:
     {
         if ( this->dimension() >= 1 )
             this->M_I[0] = std::make_pair( -1, 1 );
+
         if ( this->dimension() >= 2 )
             this->M_I[1] = std::make_pair( -1, 1 );
+
         if ( this->dimension() >= 3 )
             this->M_I[2] = std::make_pair( -1, 1 );
     }
@@ -70,14 +75,17 @@ GmshSimplexDomain::GmshSimplexDomain( int dim, int order, DomainType dt )
 std::string
 GmshSimplexDomain::getDescription() const
 {
-    switch( this->dimension() )
+    switch ( this->dimension() )
     {
     case 1:
         return this->getDescription1D();
+
     case 2:
         return this->getDescription2D();
+
     case 3:
         return this->getDescription3D();
+
     default:
         return std::string();
     }
@@ -90,11 +98,13 @@ GmshSimplexDomain::getDescription1D() const
     ostr << this->preamble() << "\n";
     ostr << "Point(1) = {" << this->M_I[0].first << ",0,0,h};\n"
          << "Point(2) = {" << this->M_I[0].second << ",0,0,h};\n";
+
     if ( this->addMidPoint() )
     {
-        ostr << "Point(3) = {" << (this->M_I[0].second+this->M_I[0].first)/2 << ",0,0,h};\n"
+        ostr << "Point(3) = {" << ( this->M_I[0].second+this->M_I[0].first )/2 << ",0,0,h};\n"
              << "Line(1) = {1,3};\n"
              << "Line(2) = {3,2};\n";
+
         if ( this->usePhysicalNames() == false )
         {
             ostr    << "Physical Point(1) = {1};\n"
@@ -103,6 +113,7 @@ GmshSimplexDomain::getDescription1D() const
                     << "Physical Line(\"Mat1\") = {1};\n"
                     << "Physical Line(\"Mat2\") = {2};\n";
         }
+
         else
         {
             ostr    << "Physical Point(\"Dirichlet\") = {1};\n"
@@ -112,6 +123,7 @@ GmshSimplexDomain::getDescription1D() const
                     << "Physical Line(\"Mat2\") = {2};\n";
         }
     }
+
     else
     {
         if ( this->usePhysicalNames() == false )
@@ -121,6 +133,7 @@ GmshSimplexDomain::getDescription1D() const
                  << "Physical Point(3) = {2};\n"
                  << "Physical Line(\"Mat1\") = {1};\n";
         }
+
         else
         {
             ostr << "Line(1) = {1,2};\n"
@@ -129,6 +142,7 @@ GmshSimplexDomain::getDescription1D() const
                  << "Physical Line(\"Mat1\") = {1};\n";
         }
     }
+
     return ostr.str();
 }
 // 2D
@@ -143,12 +157,15 @@ GmshSimplexDomain::getDescription2D() const
          << "Line(1) = {1,2};\n"
          << "Line(2) = {2,3};\n"
          << "Line(3) = {3,1};\n";
+
     //if ( this->isReference() )
-    if ( this->h() >= (this->M_I[0].second-this->M_I[0].first) )
+    if ( this->h() >= ( this->M_I[0].second-this->M_I[0].first ) )
         ostr <<"Transfinite Line{1} = 1;\n"
              <<"Transfinite Line{2} = 1;\n"
              <<"Transfinite Line{3} = 1;\n";
+
     ostr << "Line Loop(4) = {3,1,2};\n";
+
     if ( this->usePhysicalNames() == false )
     {
         ostr << "Plane Surface(5) = {4};\n"
@@ -157,6 +174,7 @@ GmshSimplexDomain::getDescription2D() const
              << "Physical Line(8) = {3};\n"
              << "Physical Surface(9) = {5};\n";
     }
+
     else
     {
         ostr << "Plane Surface(5) = {4};\n"
@@ -164,6 +182,7 @@ GmshSimplexDomain::getDescription2D() const
              << "Physical Line(\"Neumann\") = {2,3};\n"
              << "Physical Surface(\"Mat1\") = {5};\n";
     }
+
     return ostr.str();
 }
 // 3D
@@ -190,8 +209,9 @@ GmshSimplexDomain::getDescription3D() const
          << "Plane Surface(13) = {12};" << "\n"
          << "Line Loop(14) = {4, -5, -1};" << "\n"
          << "Plane Surface(15) = {14};" << "\n";
+
     //if ( this->isReference() )
-    if ( this->h() >= (this->M_I[0].second-this->M_I[0].first) )
+    if ( this->h() >= ( this->M_I[0].second-this->M_I[0].first ) )
     {
         ostr << "Transfinite Line(1) = 1;\n"
              << "Transfinite Line(2) = 1;\n"
@@ -205,9 +225,11 @@ GmshSimplexDomain::getDescription3D() const
              << "Transfinite Surface(13)=1;\n"
              << "Transfinite Surface(15)=1;\n";
     }
+
     ostr << "Surface Loop(20) = {11, 13, 15, 5};" << "\n"
          << "Volume(21) = {20};" << "\n"
          << "" << "\n";
+
     if ( this->usePhysicalNames() == false )
     {
         ostr << "Physical Surface(16) = {11};" << "\n"
@@ -216,12 +238,14 @@ GmshSimplexDomain::getDescription3D() const
              << "Physical Surface(19) = {13};" << "\n"
              << "Physical Volume(22) = {21};" << "\n";
     }
+
     else
     {
         ostr << "Physical Surface(\"Neumann\") = {11,15,13};" << "\n"
              << "Physical Surface(\"Dirichlet\") = {5};" << "\n"
              << "Physical Volume(\"Mat1\") = {21};" << "\n";
     }
+
     return ostr.str();
 }
 

@@ -99,12 +99,12 @@ extern "C" {
 #endif
 
     /*
-*********************************************************************************
-*                                                                               *
-*                             @CRB_MODEL_WRAPPER_NAME@ function                                    *
-*                                                                               *
-*********************************************************************************
-*/
+    *********************************************************************************
+    *                                                                               *
+    *                             @CRB_MODEL_WRAPPER_NAME@ function                                    *
+    *                                                                               *
+    *********************************************************************************
+    */
 
     /* The wrapper information informs the NumericalMathFunction object that loads the wrapper of the
      * signatures of the wrapper functions. In particular, it hold the size of the input
@@ -115,10 +115,10 @@ extern "C" {
 
     /* The getInfo function is optional */
     FUNC_INFO( WRAPPERNAME ,
-               {
-                   p_info->inSize_ = getNumberOfVariables ( p_exchangedData, WRAPPER_IN);
-                   p_info->outSize_ = getNumberOfVariables ( p_exchangedData, WRAPPER_OUT);
-               } )
+    {
+        p_info->inSize_ = getNumberOfVariables ( p_exchangedData, WRAPPER_IN );
+        p_info->outSize_ = getNumberOfVariables ( p_exchangedData, WRAPPER_OUT );
+    } )
 
     /* The state creation/deletion functions allow the wrapper to create or delete a memory location
      * that it will manage itself. It can save in this location any information it needs. The OpenTURNS
@@ -135,24 +135,24 @@ extern "C" {
 
     /* The createState function is optional */
     FUNC_CREATESTATE( WRAPPERNAME ,
-                      {
-                          CHECK_WRAPPER_MODE( WRAPPER_STATICLINK );
-                          CHECK_WRAPPER_IN(   WRAPPER_ARGUMENTS  );
-                          CHECK_WRAPPER_OUT(  WRAPPER_ARGUMENTS  );
+    {
+        CHECK_WRAPPER_MODE( WRAPPER_STATICLINK );
+        CHECK_WRAPPER_IN(   WRAPPER_ARGUMENTS  );
+        CHECK_WRAPPER_OUT(  WRAPPER_ARGUMENTS  );
 
-                          auto app = new Feel::OpusApp<Feel::@CRB_MODEL_LONG_NAME@>( Feel::make@CRB_MODEL_LONG_NAME@About( "@CRB_MODEL_SHORT_NAME@" ),
-                                                                                      Feel::make@CRB_MODEL_LONG_NAME@Options() );
-                          app->setMode( @CRB_MODEL_WRAPPER_TYPE@ );
-                          *p_p_state = app;
+        auto app = new Feel::OpusApp<Feel::@CRB_MODEL_LONG_NAME@>( Feel::make@CRB_MODEL_LONG_NAME@About( "@CRB_MODEL_SHORT_NAME@" ),
+        Feel::make@CRB_MODEL_LONG_NAME@Options() );
+        app->setMode( @CRB_MODEL_WRAPPER_TYPE@ );
+        *p_p_state = app;
 
 
-                      } )
+    } )
 
     /* The deleteState function is optional */
     FUNC_DELETESTATE( WRAPPERNAME ,
-                      {
-                          delete CAST(Feel::OpusApp<Feel::@CRB_MODEL_LONG_NAME@>*,p_state);
-                      } )
+    {
+        delete CAST( Feel::OpusApp<Feel::@CRB_MODEL_LONG_NAME@>*,p_state );
+    } )
 
     /* Any function declared into the wrapper may declare three actual function prefixed with
      * 'init_', 'exec_' and 'finalize_' folowed by the name of the function, here 'opusheat1dcrb'.
@@ -180,8 +180,8 @@ extern "C" {
      * pre-computational operation, etc.
      */
     FUNC_INIT( WRAPPERNAME ,
-               {
-               } )
+    {
+    } )
 
 
 
@@ -195,9 +195,9 @@ extern "C" {
      * returns another vector.
      */
     FUNC_EXEC( WRAPPERNAME,
-               {
-                   CRB_FUNC_EXEC_BODY_IN_TEMPDIR( Feel::OpusApp<Feel::@CRB_MODEL_LONG_NAME@>, WRAPPERNAME )
-               } )
+    {
+        CRB_FUNC_EXEC_BODY_IN_TEMPDIR( Feel::OpusApp<Feel::@CRB_MODEL_LONG_NAME@>, WRAPPERNAME )
+    } )
 
     // do not use multithreading it breaks the wrapper
 #if 0
@@ -211,9 +211,9 @@ extern "C" {
      * to have all its work done, so it is not possible to get anymore information from it after that.
      */
     FUNC_FINALIZE( WRAPPERNAME ,
-                   {
+    {
 
-                   } )
+    } )
 
 
 #ifdef __cplusplus

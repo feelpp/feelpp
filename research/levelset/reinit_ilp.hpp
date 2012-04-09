@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -69,8 +69,8 @@ public:
 
     /* space */
     typedef fusion::vector<fem::Lagrange<Dim, 0,
-                                         Scalar, Discontinuous, value_type> >
-    basis_i_type;
+            Scalar, Discontinuous, value_type> >
+            basis_i_type;
     typedef FunctionSpace<mesh_type, basis_i_type, value_type> space_i_type;
 
     typedef boost::shared_ptr<space_type> space_ptrtype;
@@ -112,8 +112,8 @@ template<class Space,
          template<uint16_type,uint16_type,uint16_type> class Entity>
 typename ReinitializerILP<Space, Entity>::element_type
 ReinitializerILP<Space, Entity>::operator()
-    ( element_type const& phi,
-      element_i_type const& indicatorGamma )
+( element_type const& phi,
+  element_i_type const& indicatorGamma )
 {
     element_type phiNew;
     phiNew = phi;
@@ -123,26 +123,26 @@ ReinitializerILP<Space, Entity>::operator()
     M_mesh->updateMarker2( indicatorGamma );
 
     // matrix
-//     value_type eps = type_traits<value_type>::epsilon();
+    //     value_type eps = type_traits<value_type>::epsilon();
     M_massLSinterf =
-        integrate( marked2elements(M_mesh, 1), M_im,
-                   idt(phiNew) * id(phiNew)
-                   );
-//         integrate( marked2elements(M_mesh, 0), M_im,
-//                    eps * idt(phiNew) * id(phiNew)
-//                    );
+        integrate( marked2elements( M_mesh, 1 ), M_im,
+                   idt( phiNew ) * id( phiNew )
+                 );
+    //         integrate( marked2elements(M_mesh, 0), M_im,
+    //                    eps * idt(phiNew) * id(phiNew)
+    //                    );
     M_massLSinterf.mat().close();
 
     // rhs
     FsFunctionalLinear<space_type> rhs( M_spaceLS );
     rhs =
-        integrate( marked2elements(M_mesh, 1), M_im,
-                   idv(phi) / sqrt( gradv(phi)*trans(gradv(phi)) )
-                   * id(phiNew)
-                   );
-//         integrate( marked2elements(M_mesh, 0), M_im,
-//                    eps * idv(phi) * id(phiNew)
-//                    );
+        integrate( marked2elements( M_mesh, 1 ), M_im,
+                   idv( phi ) / sqrt( gradv( phi )*trans( gradv( phi ) ) )
+                   * id( phiNew )
+                 );
+    //         integrate( marked2elements(M_mesh, 0), M_im,
+    //                    eps * idv(phi) * id(phiNew)
+    //                    );
 
     // projection
     M_massLSinterf.applyInverse( phiNew, rhs );

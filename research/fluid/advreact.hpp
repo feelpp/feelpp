@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -83,24 +83,42 @@ public:
         M_updated( false ),
         M_timers(),
         M_stats(),
-        M_noisy(0),
-        M_maxiter(1000),
-        M_fillin(2),
-        M_threshold(1.e-3),
-        M_tol(2.e-10),
-        M_stabcoeff(0.5)
+        M_noisy( 0 ),
+        M_maxiter( 1000 ),
+        M_fillin( 2 ),
+        M_threshold( 1.e-3 ),
+        M_tol( 2.e-10 ),
+        M_stabcoeff( 0.5 )
     {
         M_stats["nelt"] = M_mesh->elements().size();
         M_stats["ndof"] = M_nTot;
     }
 
     // setting of options
-    void set_noisy( int noisy ) { M_noisy = noisy; }
-    void set_maxiter( int maxiter ) { M_maxiter = maxiter; }
-    void set_fillin( int fillin ) { M_fillin = fillin; }
-    void set_threshold( double threshold ) { M_threshold = threshold; }
-    void set_tol( double tol ) { M_tol = tol; }
-    void set_stabcoeff( double stabcoeff ) { M_stabcoeff = stabcoeff; }
+    void set_noisy( int noisy )
+    {
+        M_noisy = noisy;
+    }
+    void set_maxiter( int maxiter )
+    {
+        M_maxiter = maxiter;
+    }
+    void set_fillin( int fillin )
+    {
+        M_fillin = fillin;
+    }
+    void set_threshold( double threshold )
+    {
+        M_threshold = threshold;
+    }
+    void set_tol( double tol )
+    {
+        M_tol = tol;
+    }
+    void set_stabcoeff( double stabcoeff )
+    {
+        M_stabcoeff = stabcoeff;
+    }
 
     // update operator and rhs with given expressions
     template<typename Esigma,
@@ -164,7 +182,7 @@ template<typename Esigma,
          typename Ef, typename Eg>
 void AdvReact<Space, imOrder>::update( Esigma sigma,
                                        Ebetax betax, Ebetay betay,
-                                       Ef f, Eg g)
+                                       Ef f, Eg g )
 {
     M_updated = true;
 
@@ -174,35 +192,35 @@ void AdvReact<Space, imOrder>::update( Esigma sigma,
 
     value_type eps = type_traits<value_type>::epsilon();
     form( M_Xh, M_Xh, M_M ) =
-        integrate( elements(*M_mesh), im_type(),
-                   ( (sigma)*idt(M_phi)
-                     + ( (betax)*dxt(M_phi) + (betay)*dyt(M_phi) ) )
-                   * ( id(M_phi) +
-                       M_stabcoeff*h()/(sqrt(((betax)^2.0)+((betay)^2.0))+eps) *
-                       ((betax)*dx(M_phi) + (betay)*dy(M_phi))
-                       )
-                   )
-        + integrate( boundaryfaces(*M_mesh), im_type(),
-                     -chi(((betax)*Nx()+(betay)*Ny())<0)* /* inflow */
-                     ((betax)*Nx()+(betay)*Ny())*idt(M_phi)*id(M_phi)
-                     );
+        integrate( elements( *M_mesh ), im_type(),
+                   ( ( sigma )*idt( M_phi )
+                     + ( ( betax )*dxt( M_phi ) + ( betay )*dyt( M_phi ) ) )
+                   * ( id( M_phi ) +
+                       M_stabcoeff*h()/( sqrt( ( ( betax )^2.0 )+( ( betay )^2.0 ) )+eps ) *
+                       ( ( betax )*dx( M_phi ) + ( betay )*dy( M_phi ) )
+                     )
+                 )
+        + integrate( boundaryfaces( *M_mesh ), im_type(),
+                     -chi( ( ( betax )*Nx()+( betay )*Ny() )<0 )* /* inflow */
+                     ( ( betax )*Nx()+( betay )*Ny() )*idt( M_phi )*id( M_phi )
+                   );
     M_M.close();
-//     M_M.printMatlab("M_advreact.m");
+    //     M_M.printMatlab("M_advreact.m");
 
     VectorUblas<value_type> rhs( M_phi.size() );
 
     form( M_Xh, rhs ) =
-        integrate( elements(*M_mesh), im_type(),
-                   (f)
-                   * ( id(M_phi) +
-                       M_stabcoeff*h()/(sqrt(((betax)^2.0)+((betay)^2.0))+eps) *
-                       ((betax)*dx(M_phi) + (betay)*dy(M_phi))
-                       )
-                   )
-        + integrate( boundaryfaces(*M_mesh), im_type(),
-                     -chi(((betax)*Nx()+(betay)*Ny())<0)* /* inflow */
-                     ((betax)*Nx()+(betay)*Ny())*(g)*id(M_phi)
-                     );
+        integrate( elements( *M_mesh ), im_type(),
+                   ( f )
+                   * ( id( M_phi ) +
+                       M_stabcoeff*h()/( sqrt( ( ( betax )^2.0 )+( ( betay )^2.0 ) )+eps ) *
+                       ( ( betax )*dx( M_phi ) + ( betay )*dy( M_phi ) )
+                     )
+                 )
+        + integrate( boundaryfaces( *M_mesh ), im_type(),
+                     -chi( ( ( betax )*Nx()+( betay )*Ny() )<0 )* /* inflow */
+                     ( ( betax )*Nx()+( betay )*Ny() )*( g )*id( M_phi )
+                   );
 
     std::copy( rhs.begin(), rhs.end(), M_F.begin() );
 
@@ -215,9 +233,10 @@ void AdvReact<Space, imOrder>::solve()
 {
     // -- make sure solve is needed
     if ( !M_updated )
-        {
-            return;
-        }
+    {
+        return;
+    }
+
     M_updated = false;
 
     // -- solve
@@ -241,20 +260,21 @@ AdvReact<Space, imOrder>::solveNonSym( Mat const& D,
 {
     M_timers["solver"].first.restart();
 
-    gmm::iteration iter(M_tol);
-    iter.set_noisy(M_noisy);
-    iter.set_maxiter(M_maxiter);
+    gmm::iteration iter( M_tol );
+    iter.set_noisy( M_noisy );
+    iter.set_maxiter( M_maxiter );
 
     gmm::ilutp_precond<typename sparse_matrix_type::matrix_type>
-        P(D.mat(), M_fillin, M_threshold);
-//     gmm::diagonal_precond<typename sparse_matrix_type::matrix_type>
-//         P( D.mat() );
-//     gmm::identity_matrix P;
-    gmm::bicgstab( D.mat(), u, F, P, iter);
+    P( D.mat(), M_fillin, M_threshold );
+    //     gmm::diagonal_precond<typename sparse_matrix_type::matrix_type>
+    //         P( D.mat() );
+    //     gmm::identity_matrix P;
+    gmm::bicgstab( D.mat(), u, F, P, iter );
+
     if ( !iter.converged() )
-        {
-            std::cerr << "[AdvReact] nonsymmetric linear solver didn't converge\n";
-        }
+    {
+        std::cerr << "[AdvReact] nonsymmetric linear solver didn't converge\n";
+    }
 
     M_timers["solver"].second += M_timers["solver"].first.elapsed();
     Debug() << "[timer] solveNonSym(): " << M_timers["solver"].second << "\n";

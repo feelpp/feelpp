@@ -121,9 +121,9 @@ public:
     void close()
     {
         if ( ! M_vector->closed() )
-            {
-                M_vector->close();
-            }
+        {
+            M_vector->close();
+        }
 
     }
     void

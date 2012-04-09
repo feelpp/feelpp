@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -40,15 +40,15 @@ ExprBase::~ExprBase()
 std::string
 ExprBase::typeName() const
 {
-	return typeid(*this).name();
+    return typeid( *this ).name();
 }
 
 std::string
 ExprBase::toString() const
 {
     std::ostringstream oss;
-	this->toText(oss, false);
-	return oss.str();
+    this->toText( oss, false );
+    return oss.str();
 }
 
 } // Feel

@@ -92,12 +92,30 @@ public:
      */
     //@{
 
-    int nrows() const { return M_nr; }
-    int ncols() const { return M_nc; }
-    int nz() const { return M_Ti.size(); }
-    int const* Ti() const { return &M_Ti[0]; }
-    int const* Tj() const { return &M_Tj[0]; }
-    value_type const* Tx() const { return &M_Tx[0]; }
+    int nrows() const
+    {
+        return M_nr;
+    }
+    int ncols() const
+    {
+        return M_nc;
+    }
+    int nz() const
+    {
+        return M_Ti.size();
+    }
+    int const* Ti() const
+    {
+        return &M_Ti[0];
+    }
+    int const* Tj() const
+    {
+        return &M_Tj[0];
+    }
+    value_type const* Tx() const
+    {
+        return &M_Tx[0];
+    }
 
     //@}
 

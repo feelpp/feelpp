@@ -44,11 +44,12 @@ struct FEContextInit
 
     typedef typename mpl::if_<mpl::equal_to<mpl::int_<type>, mpl::int_<0> >, mpl::identity<typename FormContextType::test_fe_type>, mpl::identity<typename FormContextType::trial_fe_type> >::type::type fe_type;
     typedef boost::shared_ptr<fe_type> fe_ptrtype;
-    typedef typename mpl::if_<mpl::equal_to<mpl::int_<type>, mpl::int_<0> >, mpl::identity<typename FormContextType::test_fecontext_type>,mpl::identity<typename FormContextType::trial_fecontext_type> >::type::type fecontext_type; typedef boost::shared_ptr<fecontext_type> fecontext_ptrtype;
+    typedef typename mpl::if_<mpl::equal_to<mpl::int_<type>, mpl::int_<0> >, mpl::identity<typename FormContextType::test_fecontext_type>,mpl::identity<typename FormContextType::trial_fecontext_type> >::type::type fecontext_type;
+    typedef boost::shared_ptr<fecontext_type> fecontext_ptrtype;
 
     typedef typename mpl::if_<mpl::equal_to<mpl::int_<type>, mpl::int_<0> >,
-                              mpl::identity<typename FormContextType::test_geometric_mapping_context_ptrtype>,
-                              mpl::identity<typename FormContextType::trial_geometric_mapping_context_ptrtype> >::type::type geometric_mapping_context_ptrtype;
+            mpl::identity<typename FormContextType::test_geometric_mapping_context_ptrtype>,
+            mpl::identity<typename FormContextType::trial_geometric_mapping_context_ptrtype> >::type::type geometric_mapping_context_ptrtype;
 
     //typedef typename FormContextType::test_geometric_mapping_context_ptrtype geometric_mapping_context_ptrtype;
 
@@ -60,7 +61,7 @@ struct FEContextInit
     struct result;
 
     template<typename T>
-    struct result<FEContextInit(T)>
+    struct result<FEContextInit( T )>
     {
         typedef fusion::pair<typename boost::remove_reference<T>::type::first_type,fecontext_ptrtype> type;
     };
@@ -69,39 +70,39 @@ struct FEContextInit
         :
         _M_fe( fe ),
         _M_form( form )
-        {}
+    {}
     template<typename T>
     fusion::pair<typename boost::remove_reference<T>::type::first_type,fecontext_ptrtype>
-    operator()(T const& t) const
-        {
-            return operator()( t, mpl::int_<type>() );
-        }
+    operator()( T const& t ) const
+    {
+        return operator()( t, mpl::int_<type>() );
+    }
 
 private:
 
-// Test FE context
+    // Test FE context
     template<typename T>
     fusion::pair<typename boost::remove_reference<T>::type::first_type,fecontext_ptrtype>
-    operator()(T const& t, mpl::int_<0>) const
-        {
-            geometric_mapping_context_ptrtype gmcptr( t.second );
-            typedef typename boost::remove_reference<T>::type::first_type first_type;
-            return fusion::make_pair<first_type>(fecontext_ptrtype( new fecontext_type( _M_fe,
-                                                                                        gmcptr,
-                                                                                        _M_form.testPc( gmcptr->faceId(), gmcptr->permutation() ) ) ) );
-        }
+    operator()( T const& t, mpl::int_<0> ) const
+    {
+        geometric_mapping_context_ptrtype gmcptr( t.second );
+        typedef typename boost::remove_reference<T>::type::first_type first_type;
+        return fusion::make_pair<first_type>( fecontext_ptrtype( new fecontext_type( _M_fe,
+                                              gmcptr,
+                                              _M_form.testPc( gmcptr->faceId(), gmcptr->permutation() ) ) ) );
+    }
 
-// Trial FE context
+    // Trial FE context
     template<typename T>
     fusion::pair<typename boost::remove_reference<T>::type::first_type,fecontext_ptrtype>
-    operator()(T const& t, mpl::int_<1>) const
-        {
-            geometric_mapping_context_ptrtype gmcptr( t.second );
-            typedef typename boost::remove_reference<T>::type::first_type first_type;
-            return fusion::make_pair<first_type>(fecontext_ptrtype( new fecontext_type( _M_fe,
-                                                                                        gmcptr,
-                                                                                        _M_form.trialPc( gmcptr->faceId(), gmcptr->permutation() ) ) ) );
-        }
+    operator()( T const& t, mpl::int_<1> ) const
+    {
+        geometric_mapping_context_ptrtype gmcptr( t.second );
+        typedef typename boost::remove_reference<T>::type::first_type first_type;
+        return fusion::make_pair<first_type>( fecontext_ptrtype( new fecontext_type( _M_fe,
+                                              gmcptr,
+                                              _M_form.trialPc( gmcptr->faceId(), gmcptr->permutation() ) ) ) );
+    }
 
     fe_ptrtype const& _M_fe;
     form_type const& _M_form;
@@ -125,27 +126,27 @@ struct FEContextUpdate
         :
         _M_mapgmc( mapgmc ),
         _M_form( form )
-        {}
+    {}
 
     template<typename T>
-    void operator()( T& t) const
-        {
-            return operator()( t, mpl::int_<type>() );
-        }
+    void operator()( T& t ) const
+    {
+        return operator()( t, mpl::int_<type>() );
+    }
     template<typename T>
     void operator()( T& t, mpl::int_<0> ) const
-        {
-            typedef typename boost::remove_reference<T>::type::first_type first_type;
-            geometric_mapping_context_ptrtype gmcptr( fusion::at_key<first_type>( _M_mapgmc ) );
-            t.second->update( gmcptr, _M_form.testPc( gmcptr->faceId(), gmcptr->permutation()  ) );
-        }
+    {
+        typedef typename boost::remove_reference<T>::type::first_type first_type;
+        geometric_mapping_context_ptrtype gmcptr( fusion::at_key<first_type>( _M_mapgmc ) );
+        t.second->update( gmcptr, _M_form.testPc( gmcptr->faceId(), gmcptr->permutation()  ) );
+    }
     template<typename T>
     void operator()( T& t, mpl::int_<1> ) const
-        {
-            typedef typename boost::remove_reference<T>::type::first_type first_type;
-            geometric_mapping_context_ptrtype gmcptr( fusion::at_key<first_type>( _M_mapgmc ) );
-            t.second->update( gmcptr, _M_form.trialPc( gmcptr->faceId(), gmcptr->permutation()  ) );
-        }
+    {
+        typedef typename boost::remove_reference<T>::type::first_type first_type;
+        geometric_mapping_context_ptrtype gmcptr( fusion::at_key<first_type>( _M_mapgmc ) );
+        t.second->update( gmcptr, _M_form.trialPc( gmcptr->faceId(), gmcptr->permutation()  ) );
+    }
 
     map_geometric_mapping_context_type const& _M_mapgmc;
     form_type const& _M_form;
@@ -163,13 +164,13 @@ struct FEContextUpdateInCaseOfInterpolate
     //typedef typename FormContextType::map_trial_geometric_mapping_context_type map_trial_geometric_mapping_context_type;
 
     typedef typename mpl::if_<mpl::equal_to<mpl::int_<type>, mpl::int_<0> >,
-                              mpl::identity<typename FormContextType::test_geometric_mapping_context_ptrtype>,
-                              mpl::identity<typename FormContextType::trial_geometric_mapping_context_ptrtype> >::type::type geometric_mapping_context_ptrtype;
+            mpl::identity<typename FormContextType::test_geometric_mapping_context_ptrtype>,
+            mpl::identity<typename FormContextType::trial_geometric_mapping_context_ptrtype> >::type::type geometric_mapping_context_ptrtype;
 
 
     typedef typename mpl::if_<mpl::equal_to<mpl::int_<type>, mpl::int_<0> >,
-                              mpl::identity<typename FormContextType::map_test_geometric_mapping_context_type>,
-                              mpl::identity<typename FormContextType::map_trial_geometric_mapping_context_type> >::type::type map_geometric_mapping_context_type;
+            mpl::identity<typename FormContextType::map_test_geometric_mapping_context_type>,
+            mpl::identity<typename FormContextType::map_trial_geometric_mapping_context_type> >::type::type map_geometric_mapping_context_type;
 
 
     //typedef typename FormContextType::form_type form_type;
@@ -181,29 +182,29 @@ struct FEContextUpdateInCaseOfInterpolate
         :
         _M_mapgmc( mapgmc ),
         _M_form( form )
-        {}
+    {}
 
     template<typename T>
-    void operator()( T& t) const
-        {
-            return operator()( t, mpl::int_<type>() );
-        }
+    void operator()( T& t ) const
+    {
+        return operator()( t, mpl::int_<type>() );
+    }
     template<typename T>
     void operator()( T& t, mpl::int_<0> ) const
-        {
-            typedef typename boost::remove_reference<T>::type::first_type first_type;
-            geometric_mapping_context_ptrtype gmcptr( fusion::at_key<first_type>( _M_mapgmc ) );
-            //_M_form.precomputeBasisAtPoints(gmcptr->xRefs());
-            t.second->update( gmcptr, _M_form.testPc( gmcptr->faceId(), gmcptr->permutation()  ) );
-        }
+    {
+        typedef typename boost::remove_reference<T>::type::first_type first_type;
+        geometric_mapping_context_ptrtype gmcptr( fusion::at_key<first_type>( _M_mapgmc ) );
+        //_M_form.precomputeBasisAtPoints(gmcptr->xRefs());
+        t.second->update( gmcptr, _M_form.testPc( gmcptr->faceId(), gmcptr->permutation()  ) );
+    }
     template<typename T>
     void operator()( T& t, mpl::int_<1> ) const
-        {
-            typedef typename boost::remove_reference<T>::type::first_type first_type;
-            geometric_mapping_context_ptrtype gmcptr( fusion::at_key<first_type>( _M_mapgmc ) );
-            //_M_form.precomputeBasisAtPoints(gmcptr->xRefs());
-            t.second->update( gmcptr, _M_form.trialPc( gmcptr->faceId(), gmcptr->permutation()  ) );
-        }
+    {
+        typedef typename boost::remove_reference<T>::type::first_type first_type;
+        geometric_mapping_context_ptrtype gmcptr( fusion::at_key<first_type>( _M_mapgmc ) );
+        //_M_form.precomputeBasisAtPoints(gmcptr->xRefs());
+        t.second->update( gmcptr, _M_form.trialPc( gmcptr->faceId(), gmcptr->permutation()  ) );
+    }
 
     map_geometric_mapping_context_type const& _M_mapgmc;
     //map_trial_geometric_mapping_context_type const& _M_trial_mapgmc;
@@ -216,6 +217,6 @@ struct FEContextUpdateInCaseOfInterpolate
 
 }
 /// \endcond
-    } // vf
+} // vf
 }
 #endif /* __FEC_H */

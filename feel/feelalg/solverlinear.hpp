@@ -63,21 +63,30 @@ public:
     /**
      *  Constructor. Initializes Solver data structures
      */
-    SolverLinear (po::variables_map const& vm);
+    SolverLinear ( po::variables_map const& vm );
 
     /**
      * Destructor.
      */
     virtual ~SolverLinear ();
 
-    WorldComm const& worldComm() const { return M_worldComm; }
-    void setWorldComm(WorldComm const& worldComm) { M_worldComm=worldComm; }
+    WorldComm const& worldComm() const
+    {
+        return M_worldComm;
+    }
+    void setWorldComm( WorldComm const& worldComm )
+    {
+        M_worldComm=worldComm;
+    }
 
     /**
      * @returns true if the data structures are
      * initialized, false otherwise.
      */
-    bool initialized () const { return _M_is_initialized; }
+    bool initialized () const
+    {
+        return _M_is_initialized;
+    }
 
 
     /**
@@ -93,121 +102,160 @@ public:
     /**
      * return variables_map
      */
-    po::variables_map vm() const { return M_vm; }
+    po::variables_map vm() const
+    {
+        return M_vm;
+    }
 
     /**
      * \return the relative tolerance
      */
-    value_type rTolerance() const { return M_rtolerance;}
+    value_type rTolerance() const
+    {
+        return M_rtolerance;
+    }
 
     /**
      * \return the divergence tolerance
      */
-    value_type dTolerance() const { return M_dtolerance;}
+    value_type dTolerance() const
+    {
+        return M_dtolerance;
+    }
 
     /**
      * \return the absolute tolerance
      */
-    value_type aTolerance() const { return M_atolerance;}
+    value_type aTolerance() const
+    {
+        return M_atolerance;
+    }
 
     /**
      * Returns the type of solver to use.
      */
-    SolverType solverType () const { return _M_solver_type; }
+    SolverType solverType () const
+    {
+        return _M_solver_type;
+    }
 
     /**
      * \return the maximum number of iterations
      */
-    size_type maxIterations() const { return M_maxit; }
+    size_type maxIterations() const
+    {
+        return M_maxit;
+    }
 
     /**
      * set tolerances: relative tolerance \p rtol, divergence tolerance \p dtol
      * and absolute tolerance \p atol
      */
-    BOOST_PARAMETER_MEMBER_FUNCTION((void),
-                                    setTolerances,
-                                    tag,
-                                    (required
-                                     (rtolerance,(double))
-                                        )
-                                    (optional
-                                     (maxit,(size_type), 1000 )
-                                     (atolerance,(double), 1e-50)
-                                     (dtolerance,(double), 1e5)
-                                        ) )
-        {
-            M_rtolerance = rtolerance;
-            M_dtolerance = dtolerance;
-            M_atolerance = atolerance;
-            M_maxit=maxit;
-        }
+    BOOST_PARAMETER_MEMBER_FUNCTION( ( void ),
+                                     setTolerances,
+                                     tag,
+                                     ( required
+                                       ( rtolerance,( double ) )
+                                     )
+                                     ( optional
+                                       ( maxit,( size_type ), 1000 )
+                                       ( atolerance,( double ), 1e-50 )
+                                       ( dtolerance,( double ), 1e5 )
+                                     ) )
+    {
+        M_rtolerance = rtolerance;
+        M_dtolerance = dtolerance;
+        M_atolerance = atolerance;
+        M_maxit=maxit;
+    }
 
     /**
      * Sets the type of solver to use.
      */
-    void setSolverType (const SolverType st)
-        { _M_solver_type = st; }
+    void setSolverType ( const SolverType st )
+    {
+        _M_solver_type = st;
+    }
 
     /**
      * Returns the type of preconditioner to use.
      */
     PreconditionerType preconditionerType () const
-        {
-            if ( M_preconditioner )
-                return M_preconditioner->type();
-            return _M_preconditioner_type;
-        }
+    {
+        if ( M_preconditioner )
+            return M_preconditioner->type();
+
+        return _M_preconditioner_type;
+    }
 
     /**
      * Sets the type of preconditioner to use.
      */
-    void setPreconditionerType (const PreconditionerType pct)
-        {
-            if ( M_preconditioner )
-                M_preconditioner->setType( pct );
-            else
-                _M_preconditioner_type = pct;
-        }
+    void setPreconditionerType ( const PreconditionerType pct )
+    {
+        if ( M_preconditioner )
+            M_preconditioner->setType( pct );
+
+        else
+            _M_preconditioner_type = pct;
+    }
 
     /**
      * Attaches a Preconditioner object to be used by the solver
      */
-    void attachPreconditioner(preconditioner_ptrtype preconditioner)
+    void attachPreconditioner( preconditioner_ptrtype preconditioner )
+    {
+        if ( this->_M_is_initialized )
         {
-            if(this->_M_is_initialized)
-            {
-                std::cerr<<"Preconditioner must be attached before the solver is initialized!"<<std::endl;
-            }
-
-            _M_preconditioner_type = SHELL_PRECOND;
-            M_preconditioner = preconditioner;
+            std::cerr<<"Preconditioner must be attached before the solver is initialized!"<<std::endl;
         }
 
-    void setFieldSplitType( const FieldSplitType fst )
-        { _M_fieldSplit_type = fst; }
+        _M_preconditioner_type = SHELL_PRECOND;
+        M_preconditioner = preconditioner;
+    }
 
-    FieldSplitType fieldSplitType() const { return _M_fieldSplit_type; }
+    void setFieldSplitType( const FieldSplitType fst )
+    {
+        _M_fieldSplit_type = fst;
+    }
+
+    FieldSplitType fieldSplitType() const
+    {
+        return _M_fieldSplit_type;
+    }
 
     /**
      * Sets the type of preconditioner to use.
      */
-    void setMatSolverPackageType (const MatSolverPackageType mspackt) { M_matSolverPackage_type = mspackt; }
+    void setMatSolverPackageType ( const MatSolverPackageType mspackt )
+    {
+        M_matSolverPackage_type = mspackt;
+    }
     /**
      * Returns the type of preconditioner to use.
      */
-    MatSolverPackageType matSolverPackageType () const { return M_matSolverPackage_type; }
+    MatSolverPackageType matSolverPackageType () const
+    {
+        return M_matSolverPackage_type;
+    }
 
     /**
      * \return the preconditioner matrix structure
      * it may not be relevant to all non linear solvers
      */
-    virtual MatrixStructure precMatrixStructure() const { return M_prec_matrix_structure; }
+    virtual MatrixStructure precMatrixStructure() const
+    {
+        return M_prec_matrix_structure;
+    }
 
     /**
      * \return the preconditioner matrix structure
      * it may not be relevant to all non linear solvers
      */
-    virtual void setPrecMatrixStructure( MatrixStructure mstruct  ) { M_prec_matrix_structure = mstruct; }
+    virtual void setPrecMatrixStructure( MatrixStructure mstruct  )
+    {
+        M_prec_matrix_structure = mstruct;
+    }
 
     /**
      * This function calls the solver "_M_solver_type" preconditioned
@@ -225,13 +273,13 @@ public:
      */
     virtual /*std::pair<unsigned int, real_type>*/
     boost::tuple<bool,unsigned int, real_type>
-    solve (MatrixSparse<T> const& mat,
-           Vector<T>& x,
-           Vector<T> const& b,
-           const double tolerance,
-           const unsigned int maxit,
-           bool transpose
-        ) = 0;
+    solve ( MatrixSparse<T> const& mat,
+            Vector<T>& x,
+            Vector<T> const& b,
+            const double tolerance,
+            const unsigned int maxit,
+            bool transpose
+          ) = 0;
 
 
 
@@ -251,14 +299,14 @@ public:
      */
     virtual
     /*std::pair<unsigned int, real_type>*/boost::tuple<bool,unsigned int, real_type>
-    solve (MatrixSparse<T> const& mat,
-           MatrixSparse<T> const& prec,
-           Vector<T>& x,
-           Vector<T> const& b,
-           const double tolerance,
-           const unsigned int maxit,
-           bool transpose
-        ) = 0;
+    solve ( MatrixSparse<T> const& mat,
+            MatrixSparse<T> const& prec,
+            Vector<T>& x,
+            Vector<T> const& b,
+            const double tolerance,
+            const unsigned int maxit,
+            bool transpose
+          ) = 0;
 
 
 protected:
@@ -267,9 +315,9 @@ protected:
      * set initialized only for subclasses
      */
     void setInitialized( bool init )
-        {
-            _M_is_initialized = init;
-        }
+    {
+        _M_is_initialized = init;
+    }
 
 private:
 
@@ -335,10 +383,10 @@ template <typename T>
 inline
 SolverLinear<T>::SolverLinear () :
     M_worldComm(),
-    _M_solver_type         (GMRES),
-    _M_preconditioner_type (LU_PRECOND),
+    _M_solver_type         ( GMRES ),
+    _M_preconditioner_type ( LU_PRECOND ),
     M_preconditioner(),
-    _M_is_initialized      (false),
+    _M_is_initialized      ( false ),
     M_prec_matrix_structure( SAME_NONZERO_PATTERN )
 {
 }
@@ -348,9 +396,9 @@ inline
 SolverLinear<T>::SolverLinear ( po::variables_map const& vm ) :
     M_worldComm(),
     M_vm( vm ),
-    _M_solver_type         (GMRES),
-    _M_preconditioner_type (LU_PRECOND),
-    _M_is_initialized      (false),
+    _M_solver_type         ( GMRES ),
+    _M_preconditioner_type ( LU_PRECOND ),
+    _M_is_initialized      ( false ),
     M_prec_matrix_structure( SAME_NONZERO_PATTERN )
 {
 }

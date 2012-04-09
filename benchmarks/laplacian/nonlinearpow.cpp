@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -46,17 +46,17 @@ inline
 Feel::po::options_description
 makeOptions()
 {
-    Feel::po::options_description nonlinearpowoptions("Nonlinearpow problem options");
+    Feel::po::options_description nonlinearpowoptions( "Nonlinearpow problem options" );
     nonlinearpowoptions.add_options()
-        ("lambda", Feel::po::value<double>()->default_value( 2.0 ), "power of u")
+    ( "lambda", Feel::po::value<double>()->default_value( 2.0 ), "power of u" )
 
-        ("penalbc", Feel::po::value<double>()->default_value( 10 ), "penalisation parameter for the weak boundary conditions")
-        ("hsize", Feel::po::value<double>()->default_value( 0.5 ), "first h value to start convergence")
+    ( "penalbc", Feel::po::value<double>()->default_value( 10 ), "penalisation parameter for the weak boundary conditions" )
+    ( "hsize", Feel::po::value<double>()->default_value( 0.5 ), "first h value to start convergence" )
 
-        ("export", "export results(ensight, data file(1D)")
-        ("export-mesh-only", "export mesh only in ensight format")
-        ("export-matlab", "export matrix and vectors in matlab" )
-        ;
+    ( "export", "export results(ensight, data file(1D)" )
+    ( "export-mesh-only", "export mesh only in ensight format" )
+    ( "export-matlab", "export matrix and vectors in matlab" )
+    ;
     return nonlinearpowoptions.add( Feel::feel_options() );
 }
 inline
@@ -68,9 +68,9 @@ makeAbout()
                            "0.2",
                            "nD(n=1,2,3) NonLinearUL problem",
                            Feel::AboutData::License_GPL,
-                           "Copyright (c) 2008-2009 Université Joseph Fourier");
+                           "Copyright (c) 2008-2009 Université Joseph Fourier" );
 
-    about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
     return about;
 
 }
@@ -89,7 +89,7 @@ template<int Dim,
          template<uint16_type,uint16_type,uint16_type> class Entity = Simplex>
 class NonLinearPow
     :
-        public ApplicationXML
+public ApplicationXML
 {
     typedef ApplicationXML super;
 public:
@@ -147,7 +147,7 @@ public:
 
 
     void updateResidual( const vector_ptrtype& X, vector_ptrtype& R );
-    void updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J);
+    void updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J );
 
 private:
 
@@ -160,7 +160,7 @@ private:
     /**
      * export results to ensight format (enabled by  --export cmd line options)
      */
-    void exportResults( element_type& u , element_type& ue);
+    void exportResults( element_type& u , element_type& ue );
 
 private:
 
@@ -188,33 +188,33 @@ NonLinearPow<Dim,Order,Entity>::NonLinearPow( int argc, char** argv, AboutData c
     M_Xh(),
     exporter()
 {
-    Parameter h(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.04:0.08:0.2" );
+    Parameter h( _name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.04:0.08:0.2" );
     this->
-        addParameter( Parameter(_name="dim",_type=DISC_ATTR,_values=boost::lexical_cast<std::string>( Dim  ).c_str()) )
-        .addParameter( Parameter(_name="order",_type=DISC_ATTR,_values=boost::lexical_cast<std::string>( Order  ).c_str()) )
-        .addParameter( Parameter(_name="lambda",_type=DISC_ATTR,_latex="\\lambda",_values="1,2,3") )
-        .addParameter( h );
+    addParameter( Parameter( _name="dim",_type=DISC_ATTR,_values=boost::lexical_cast<std::string>( Dim  ).c_str() ) )
+    .addParameter( Parameter( _name="order",_type=DISC_ATTR,_values=boost::lexical_cast<std::string>( Order  ).c_str() ) )
+    .addParameter( Parameter( _name="lambda",_type=DISC_ATTR,_latex="\\lambda",_values="1,2,3" ) )
+    .addParameter( h );
 
     std::vector<Parameter> depend;
     std::vector<std::string> funcs;
-    depend.push_back(h);
+    depend.push_back( h );
     std::ostringstream oss;
     oss << "h**" << boost::lexical_cast<std::string>( Order + 1  ) ;
-    funcs.push_back(oss.str());
-    oss.str("");
+    funcs.push_back( oss.str() );
+    oss.str( "" );
     std::vector<std::string> funcs2;
     oss << "h**" << boost::lexical_cast<std::string>( Order ) ;
-    funcs2.push_back(oss.str());
+    funcs2.push_back( oss.str() );
 
     this->
-        addOutput( Output(_name="norm_L2",_latex="\\left\\| u \\right\\|_{L^2}",_dependencies=depend,_funcs=funcs) );
-        //.addOutput( Output(_name="norm_H1",_latex="\\left\\| u \\right\\|_{H^1}",_dependencies=depend,_funcs=funcs2) );
+    addOutput( Output( _name="norm_L2",_latex="\\left\\| u \\right\\|_{L^2}",_dependencies=depend,_funcs=funcs ) );
+    //.addOutput( Output(_name="norm_H1",_latex="\\left\\| u \\right\\|_{H^1}",_dependencies=depend,_funcs=funcs2) );
 
     mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
-                                        _desc=domain(_name="square",
-                                                     _shape="hypercube",
-                                                     _dim=Dim,
-                                                     _h=meshSize ) );
+                                        _desc=domain( _name="square",
+                                                _shape="hypercube",
+                                                _dim=Dim,
+                                                _h=meshSize ) );
     M_Xh = functionspace_ptrtype( functionspace_type::New( mesh ) );
 
     exporter = export_ptrtype( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) );
@@ -232,18 +232,18 @@ NonLinearPow<Dim, Order, Entity>::updateResidual( const vector_ptrtype& X, vecto
     element_type u( M_Xh, "u" );
     element_type v( M_Xh, "v" );
 
-    AUTO( g, (Px()*Px()+Py()*Py()) );
+    AUTO( g, ( Px()*Px()+Py()*Py() ) );
     u = *X;
 
     //*M_residual =
     form1( M_Xh, _vector=R ) =
         //integrate( elements( mesh ), _Q<4*Order>(), -(+ gradv(u)*trans(grad(v)) + pow(idv(u),M_lambda)*id(v) - (-4+pow(g,M_lambda))*id(v) ) ) +
-        integrate( elements( mesh ), _Q<4*Order>(), (+ gradv(u)*trans(grad(v)) + idv(u)*id(v) - (constant(-4.)+g)*id(v)) )+
-        integrate( boundaryfaces(mesh), _Q<2*Order>(),
-                   ( - id(v)*(gradv(u)*N())
+        integrate( elements( mesh ), _Q<4*Order>(), ( + gradv( u )*trans( grad( v ) ) + idv( u )*id( v ) - ( constant( -4. )+g )*id( v ) ) )+
+        integrate( boundaryfaces( mesh ), _Q<2*Order>(),
+                   ( - id( v )*( gradv( u )*N() )
                      //- idv(u)*(grad(v)*N())
-                     + M_penalisation_bc*(idv(u)-g)*id(v)/hFace())
-                   );
+                     + M_penalisation_bc*( idv( u )-g )*id( v )/hFace() )
+                 );
 
     //M_residual->close();
     R->close();
@@ -253,20 +253,20 @@ NonLinearPow<Dim, Order, Entity>::updateResidual( const vector_ptrtype& X, vecto
     //*R = M_residual->container();
 
     u = *X;
-    v = vf::project( M_Xh, elements(mesh), g );
-    double i1 = integrate( elements( mesh ), _Q<4*Order>(), (+ gradv(u)*trans(gradv(v)) + idv(u)*idv(v) - (constant(-4.)+g)*idv(v)) ).evaluate()( 0, 0 );
-    double i2 = integrate( boundaryfaces(mesh), _Q<2*Order>(),
-                           - idv(v)*(gradv(u)*N())
+    v = vf::project( M_Xh, elements( mesh ), g );
+    double i1 = integrate( elements( mesh ), _Q<4*Order>(), ( + gradv( u )*trans( gradv( v ) ) + idv( u )*idv( v ) - ( constant( -4. )+g )*idv( v ) ) ).evaluate()( 0, 0 );
+    double i2 = integrate( boundaryfaces( mesh ), _Q<2*Order>(),
+                           - idv( v )*( gradv( u )*N() )
                            //- idv(u)*(grad(v)*N())
-        ).evaluate()(0 , 0);
-    double i3 = integrate( boundaryfaces(mesh), _Q<2*Order>(),
-                           + M_penalisation_bc*(idv(u)-g)*idv(v)/hFace()).evaluate()(0 , 0);
+                         ).evaluate()( 0 , 0 );
+    double i3 = integrate( boundaryfaces( mesh ), _Q<2*Order>(),
+                           + M_penalisation_bc*( idv( u )-g )*idv( v )/hFace() ).evaluate()( 0 , 0 );
 
-    double i4 = integrate( elements( mesh ), _Q<4*Order>(), (+ gradv(u)*trans(gradv(v)) + idv(u)*idv(v) - (constant(-4.)+g)*idv(v)) ).evaluate()(0,0)+
-                 integrate( boundaryfaces(mesh), _Q<2*Order>(),
-                            - idv(v)*(gradv(u)*N())
-                            //- idv(u)*(grad(v)*N())
-                            + M_penalisation_bc*(idv(u)-g)*idv(v)/hFace()).evaluate()(0 , 0);
+    double i4 = integrate( elements( mesh ), _Q<4*Order>(), ( + gradv( u )*trans( gradv( v ) ) + idv( u )*idv( v ) - ( constant( -4. )+g )*idv( v ) ) ).evaluate()( 0,0 )+
+                integrate( boundaryfaces( mesh ), _Q<2*Order>(),
+                           - idv( v )*( gradv( u )*N() )
+                           //- idv(u)*(grad(v)*N())
+                           + M_penalisation_bc*( idv( u )-g )*idv( v )/hFace() ).evaluate()( 0 , 0 );
     vector_ptrtype V( M_backend->newVector( u.functionSpace() ) );
     *V = v;
     std::cout << "Residual  1 = " << i1 << "\n"
@@ -278,16 +278,16 @@ NonLinearPow<Dim, Order, Entity>::updateResidual( const vector_ptrtype& X, vecto
     vector_ptrtype R1( M_backend->newVector( u.functionSpace() ) );
     form1( M_Xh, _vector=R1 ) =
         //integrate( elements( mesh ), _Q<4*Order>(), -(+ gradv(u)*trans(grad(v)) + pow(idv(u),M_lambda)*id(v) - (-4+pow(g,M_lambda))*id(v) ) ) +
-        integrate( elements( mesh ), _Q<4*Order>(), (+ gradv(u)*trans(grad(v)) + idv(u)*id(v) - (constant(-4.)+g)*id(v)) );
+        integrate( elements( mesh ), _Q<4*Order>(), ( + gradv( u )*trans( grad( v ) ) + idv( u )*id( v ) - ( constant( -4. )+g )*id( v ) ) );
     R1->close();
 
     vector_ptrtype R2( M_backend->newVector( u.functionSpace() ) );
     form1( M_Xh, _vector=R2 ) =
-        integrate( boundaryfaces(mesh), _Q<2*Order>(),
-                   - id(v)*(gradv(u)*N())
+        integrate( boundaryfaces( mesh ), _Q<2*Order>(),
+                   - id( v )*( gradv( u )*N() )
                    //- idv(u)*(grad(v)*N())
                    //+ M_penalisation_bc*print("tt",(idv(u)-g)*id(v)/hFace())
-            );
+                 );
     R2->close();
     std::cout<< "Residual r1 = " << M_backend->dot( V, R1 ) << "\n";
     std::cout<< "Residual r2 = " << M_backend->dot( V, R2 ) << "\n";
@@ -297,7 +297,7 @@ NonLinearPow<Dim, Order, Entity>::updateResidual( const vector_ptrtype& X, vecto
 }
 template<int Dim, int Order, template<uint16_type,uint16_type,uint16_type> class Entity>
 void
-NonLinearPow<Dim, Order, Entity>::updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J)
+NonLinearPow<Dim, Order, Entity>::updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J )
 {
     boost::timer ti;
     Log() << "[updateJacobian] start\n";
@@ -306,30 +306,33 @@ NonLinearPow<Dim, Order, Entity>::updateJacobian( const vector_ptrtype& X, spars
     element_type u( M_Xh, "u" );
     element_type v( M_Xh, "v" );
     u = *X;
-    AUTO( g, (Px()*Px()+Py()*Py()) );
+    AUTO( g, ( Px()*Px()+Py()*Py() ) );
     //u = project( M_Xh, elements(mesh), g );
 #if 1
 
     //*M_jac = integrate( elements( mesh ), _Q<2*Order+2>(), gradt(u)*trans(grad(v))+M_lambda*pow(idv(u),M_lambda-1)*idt(u)*id(v) )
     *M_jac =
-        integrate( elements( mesh ), _Q<2*Order+2>(), gradt(u)*trans(grad(v)) + idt(u)*id(v) )+
-        integrate( boundaryfaces(mesh), _Q<2*Order>(),
-                   ( - id(v)*(gradt(u)*N())
+        integrate( elements( mesh ), _Q<2*Order+2>(), gradt( u )*trans( grad( v ) ) + idt( u )*id( v ) )+
+        integrate( boundaryfaces( mesh ), _Q<2*Order>(),
+                   ( - id( v )*( gradt( u )*N() )
                      //- idt(u)*(grad(v)*N())
-                     + M_penalisation_bc*idt(u)*id(v)/hFace() ) );
+                     + M_penalisation_bc*idt( u )*id( v )/hFace() ) );
 
     M_jac->close();
 #else
+
     if ( is_init == false )
-        {
-            *M_jac = integrate( elements( mesh ), _Q<2*Order+2>(), M_lambda*pow(idv(u),M_lambda-1)*idt(u)*id(v) );
-            is_init = true;
-        }
+    {
+        *M_jac = integrate( elements( mesh ), _Q<2*Order+2>(), M_lambda*pow( idv( u ),M_lambda-1 )*idt( u )*id( v ) );
+        is_init = true;
+    }
+
     else
-        {
-            M_jac->matPtr()->zero();
-            *M_jac += integrate( elements( mesh ), _Q<2*Order+2>(), M_lambda*pow(idv(u),M_lambda-1)*idt(u)*id(v) );
-        }
+    {
+        M_jac->matPtr()->zero();
+        *M_jac += integrate( elements( mesh ), _Q<2*Order+2>(), M_lambda*pow( idv( u ),M_lambda-1 )*idt( u )*id( v ) );
+    }
+
     M_jac->close();
     M_jac->matPtr()->addMatrix( 1.0, M_oplin->mat() );
 #endif
@@ -343,11 +346,11 @@ NonLinearPow<Dim, Order, Entity>::run()
 {
 
     this->addParameterValue( Dim )
-        .addParameterValue( Order )
-        .addParameterValue( this->vm()["lambda"].template as<double>() )
-        .addParameterValue( this->vm()["hsize"].template as<double>() );
+    .addParameterValue( Order )
+    .addParameterValue( this->vm()["lambda"].template as<double>() )
+    .addParameterValue( this->vm()["hsize"].template as<double>() );
 
-    if (this->preProcessing() == RUN_EXIT) return;
+    if ( this->preProcessing() == RUN_EXIT ) return;
 
     using namespace Feel::vf;
 
@@ -363,24 +366,24 @@ NonLinearPow<Dim, Order, Entity>::run()
 
     M_oplin = oplin_ptrtype( new oplin_type( M_Xh, M_Xh, M_backend ) );
     *M_oplin =
-        integrate( elements( mesh ), _Q<2*(Order-1)>(), gradt(u)*trans(grad(v)) ) +
-        integrate( boundaryfaces(mesh), _Q<2*Order>(),
-                   ( - id(v)*(gradt(u)*N())
-                     - idt(u)*(grad(v)*N())
-                     + M_penalisation_bc*idt(u)*id(v)/hFace() ) );
+        integrate( elements( mesh ), _Q<2*( Order-1 )>(), gradt( u )*trans( grad( v ) ) ) +
+        integrate( boundaryfaces( mesh ), _Q<2*Order>(),
+                   ( - id( v )*( gradt( u )*N() )
+                     - idt( u )*( grad( v )*N() )
+                     + M_penalisation_bc*idt( u )*id( v )/hFace() ) );
     M_oplin->close();
 
     M_jac = oplin_ptrtype( new oplin_type( M_Xh, M_Xh, M_backend ) );
     M_residual = funlin_ptrtype( new funlin_type( M_Xh, M_backend ) );
 
-    AUTO( u_exact, (Px()*Px()+Py()*Py()) );
+    AUTO( u_exact, ( Px()*Px()+Py()*Py() ) );
 
     M_backend->nlSolver()->residual = boost::bind( &self_type::updateResidual, boost::ref( *this ), _1, _2 );
     M_backend->nlSolver()->jacobian = boost::bind( &self_type::updateJacobian, boost::ref( *this ), _1, _2 );
 
     //u = vf::project( M_Xh, elements(mesh), constant(0.) );
-    u = vf::project( M_Xh, elements(mesh), u_exact );
-    ue = vf::project( M_Xh, elements(mesh), u_exact );
+    u = vf::project( M_Xh, elements( mesh ), u_exact );
+    ue = vf::project( M_Xh, elements( mesh ), u_exact );
 
     vector_ptrtype U( M_backend->newVector( u.functionSpace() ) );
     *U = u;
@@ -403,15 +406,15 @@ NonLinearPow<Dim, Order, Entity>::run()
 
     t1.restart();
 
-    double L2error2 = integrate( elements(mesh), _Q<2*Order>(),
-                                 (idv(u)-u_exact)*(idv(u)-u_exact) ).evaluate()( 0, 0 );
+    double L2error2 = integrate( elements( mesh ), _Q<2*Order>(),
+                                 ( idv( u )-u_exact )*( idv( u )-u_exact ) ).evaluate()( 0, 0 );
     double L2error = math::sqrt( L2error2 );
 
     std::cout << "||error||_L2=" << L2error << "\n";
     Log() << "||error||_L2=" << L2error << "\n";
     Log() << "L2 norm computed in " << t1.elapsed() << "s\n";
 
-    exportResults( u , ue);
+    exportResults( u , ue );
 
     this->addOutputValue( L2error );
     this->postProcessing();
@@ -433,15 +436,17 @@ NonLinearPow<Dim, Order, Entity>::solve( sparse_matrix_ptrtype& D, element_type&
 
 template<int Dim, int Order, template<uint16_type,uint16_type,uint16_type> class Entity>
 void
-NonLinearPow<Dim, Order, Entity>::exportResults( element_type& U , element_type& UE)
+NonLinearPow<Dim, Order, Entity>::exportResults( element_type& U , element_type& UE )
 {
     Log() << "exportResults starts\n";
-    exporter->step(0)->setMesh( U.functionSpace()->mesh() );
+    exporter->step( 0 )->setMesh( U.functionSpace()->mesh() );
+
     if ( !this->vm().count( "export-mesh-only" ) )
-        {
-            exporter->step(0)->add( "u", U );
-            exporter->step(0)->add( "ue", UE );
-        }
+    {
+        exporter->step( 0 )->add( "u", U );
+        exporter->step( 0 )->add( "ue", UE );
+    }
+
     exporter->save();
 } // NonLinearPow::export
 } // Feel

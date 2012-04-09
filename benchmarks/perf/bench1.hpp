@@ -60,7 +60,8 @@
 
 
 
-namespace Feel{
+namespace Feel
+{
 
 using namespace Feel::vf;
 
@@ -81,7 +82,7 @@ using namespace Feel::vf;
  */
 class Bench1
     :
-    public Application
+public Application
 {
 public:
 
@@ -104,9 +105,9 @@ public:
     //@{
 
     FEELPP_DONT_INLINE Bench1( int argc,
-                             char** argv,
-                             AboutData const& ad,
-                             po::options_description const& od );
+                               char** argv,
+                               AboutData const& ad,
+                               po::options_description const& od );
 
     FEELPP_DONT_INLINE ~Bench1();
 

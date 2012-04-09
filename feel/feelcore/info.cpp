@@ -80,28 +80,30 @@ Info::versionString()
 {
     static bool _created = false;
     static std::ostringstream ostr;
+
     if ( !_created )
-        {
-            ostr << FEELPP_VERSION_MAJOR << "."
-                 << FEELPP_VERSION_MINOR << "."
-                 << FEELPP_VERSION_MICRO << "-r"
-                 << FEELPP_REVISION << "-"
-                 << FEELPP_BUILDID;
-            _created = true;
-        }
+    {
+        ostr << FEELPP_VERSION_MAJOR << "."
+             << FEELPP_VERSION_MINOR << "."
+             << FEELPP_VERSION_MICRO << "-r"
+             << FEELPP_REVISION << "-"
+             << FEELPP_BUILDID;
+        _created = true;
+    }
+
     return ostr.str().c_str();
 }
 
 char const*
 Info::prefix()
 {
-    return stringize(FEELPP_PREFIX);
+    return stringize( FEELPP_PREFIX );
 }
 
 char const*
 Info::datadir()
 {
-    return stringize(FEELPP_DATADIR);
+    return stringize( FEELPP_DATADIR );
 }
 
 }

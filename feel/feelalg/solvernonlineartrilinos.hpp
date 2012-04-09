@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -58,7 +58,7 @@ namespace Feel
 template<typename T>
 class SolverNonLinearTrilinos
     :
-        public SolverNonLinear<T>
+public SolverNonLinear<T>
 {
     typedef SolverNonLinear<T> super;
 public:
@@ -84,9 +84,9 @@ public:
      */
     //@{
 
-      /**
-       *  Constructor. Initializes Trilinos data structures
-       */
+    /**
+     *  Constructor. Initializes Trilinos data structures
+     */
     SolverNonLinearTrilinos();
     SolverNonLinearTrilinos( SolverNonLinearTrilinos const & );
 
@@ -135,16 +135,16 @@ public:
      * same matrix for the system and preconditioner matrices.
      */
     virtual std::pair<int, real_type> solve ( sparse_matrix_ptrtype&,    // System Jacobian Matrix
-                                              vector_ptrtype&,          // Solution vector
-                                              vector_ptrtype&,          // Residual vector
-                                              const double,        // Stopping tolerance
-                                              const unsigned int); // N. Iterations
+            vector_ptrtype&,          // Solution vector
+            vector_ptrtype&,          // Residual vector
+            const double,        // Stopping tolerance
+            const unsigned int ); // N. Iterations
 
     virtual std::pair<unsigned int, real_type> solve ( dense_matrix_type&,    // System Jacobian Matrix
-                                                       dense_vector_type&,          // Solution vector
-                                                       dense_vector_type&,          // Residual vector
-                                                       const double,        // Stopping tolerance
-                                                       const unsigned int); // N. Iterations
+            dense_vector_type&,          // Solution vector
+            dense_vector_type&,          // Residual vector
+            const double,        // Stopping tolerance
+            const unsigned int ); // N. Iterations
 
 
 
@@ -174,7 +174,7 @@ template <typename T>
 inline
 SolverNonLinearTrilinos<T>::~SolverNonLinearTrilinos ()
 {
-  this->clear ();
+    this->clear ();
 }
 
 } // Feel

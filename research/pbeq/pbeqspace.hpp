@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -121,11 +121,11 @@ public:
                value_type const farFactor,
                value_type const farBnd,
                node_type& stretch,
-               node_type& translation);
+               node_type& translation );
 
     PbeqSpace( value_type const meshSize,
                value_type const farFactor,
-               value_type const farBnd);
+               value_type const farBnd );
 
     PbeqSpace( PbeqSpace const& tc );
 
@@ -141,48 +141,91 @@ public:
 
     void setUpInvStretch();
 
-    heavyside_element_type heavyside( molecule_type const& molecule) const;
+    heavyside_element_type heavyside( molecule_type const& molecule ) const;
 
-    heavyside_element_type fastHeavyside(molecule_type const& molecule) const;
+    heavyside_element_type fastHeavyside( molecule_type const& molecule ) const;
 
-    void intvrho(molecule_type const& molecule, vector_ptrtype rhs) const;
+    void intvrho( molecule_type const& molecule, vector_ptrtype rhs ) const;
 
-    heavyside_element_type chargeDensity( molecule_type const& molecule) const;
+    heavyside_element_type chargeDensity( molecule_type const& molecule ) const;
 
-    mesh_ptr_type mesh() { return M_mesh; }
+    mesh_ptr_type mesh()
+    {
+        return M_mesh;
+    }
 
-    space_ptrtype Xh()   { return M_Space;}          // Space for the FE function
+    space_ptrtype Xh()
+    {
+        return M_Space;   // Space for the FE function
+    }
 
-    heavyside_space_ptrtype HSpace()   { return M_HeavysideSpace;}  // Space for the Heavyside function
+    heavyside_space_ptrtype HSpace()
+    {
+        return M_HeavysideSpace;   // Space for the Heavyside function
+    }
 
 
     /**
      * load the mesh  as well as create the finite element spaces
      */
-    bool loadMesh( std::string const& meshname = entity_type::name().append(".msh") );
+    bool loadMesh( std::string const& meshname = entity_type::name().append( ".msh" ) );
 
     /**
      * create the mesh using mesh size \c meshSize as well as the finite element spaces
      */
-    void createMesh(bool const geoOnly=false);
+    void createMesh( bool const geoOnly=false );
 
     /** @name setters and getters
      */
     //@{
-    void setMeshSize(value_type const meshSize)       { M_meshSize = meshSize; }
-    void setFarFactor(value_type const farFactor)     { M_farFactor = farFactor; }
-    void setFarBnd(value_type const farBnd)           { M_farBnd = farBnd; }
-    void setStretch    (node_type const& stretch)     { M_stretch = stretch; setUpInvStretch(); }
-    void setTranslation(node_type const& translation) { M_translation = translation; }
-    void setSmoothWindow(value_type const& sW)        { M_sW = sW; }
+    void setMeshSize( value_type const meshSize )
+    {
+        M_meshSize = meshSize;
+    }
+    void setFarFactor( value_type const farFactor )
+    {
+        M_farFactor = farFactor;
+    }
+    void setFarBnd( value_type const farBnd )
+    {
+        M_farBnd = farBnd;
+    }
+    void setStretch    ( node_type const& stretch )
+    {
+        M_stretch = stretch;
+        setUpInvStretch();
+    }
+    void setTranslation( node_type const& translation )
+    {
+        M_translation = translation;
+    }
+    void setSmoothWindow( value_type const& sW )
+    {
+        M_sW = sW;
+    }
 
 
-    value_type meshSize() const  { return M_meshSize; }
-    value_type farFactor() const { return M_farFactor; }
-    value_type farBnd() const    { return M_farBnd; }
+    value_type meshSize() const
+    {
+        return M_meshSize;
+    }
+    value_type farFactor() const
+    {
+        return M_farFactor;
+    }
+    value_type farBnd() const
+    {
+        return M_farBnd;
+    }
 
-    node_type const& stretch()     const { return M_stretch; }
-    node_type const& translation() const { return M_translation; }
+    node_type const& stretch()     const
+    {
+        return M_stretch;
+    }
+    node_type const& translation() const
+    {
+        return M_translation;
+    }
 
     //@}
 
@@ -198,11 +241,11 @@ private:
      * centered in center with radius radius
      */
     heavyside_element_type heavyside( value_type const& radius,
-                                      node_type  const& center) const;
+                                      node_type  const& center ) const;
 
     heavyside_element_type chargeDensity( value_type const& radius,
                                           value_type const& charge,
-                                          node_type  const& center) const;
+                                          node_type  const& center ) const;
 
 private:
 

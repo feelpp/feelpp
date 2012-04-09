@@ -49,9 +49,9 @@ makeAbout()
                            "0.1",
                            "CabineHeat FEM model",
                            Feel::AboutData::License_GPL,
-                           "Copyright (c) 2010 Université de Grenoble 1 (Joseph Fourier)");
+                           "Copyright (c) 2010 Université de Grenoble 1 (Joseph Fourier)" );
 
-    about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
     return about;
 
 }
@@ -78,33 +78,33 @@ public:
         super( argc, argv, ad, od )
     {
         if ( this->vm().count( "help" ) )
-            {
-                std::cout << this->optionsDescription() << "\n";
-                return;
-            }
+        {
+            std::cout << this->optionsDescription() << "\n";
+            return;
+        }
 
         this->changeRepository( boost::format( "%1%/h_%2%/" )
                                 % this->about().appName()
                                 % this->vm()["hsize"].as<double>()
-            );
+                              );
 
         M_crbmodel = crbmodel_ptrtype( new crbmodel_type( this->vm() ) );
 
     }
 
     void run()
-        {
-            //M_crbmodel->solve();
-            Feel::ParameterSpace<3>::Element mu( M_crbmodel->parameterSpace() );
-            mu <<
-                this->vm()["mu1"].as<double>(),
+    {
+        //M_crbmodel->solve();
+        Feel::ParameterSpace<3>::Element mu( M_crbmodel->parameterSpace() );
+        mu <<
+           this->vm()["mu1"].as<double>(),
                 this->vm()["mu2"].as<double>(),
                 this->vm()["mu3"].as<double>(),
 
-            std::cout << "mu = " << mu << "\n";
-            M_crbmodel->solve( mu );
+                std::cout << "mu = " << mu << "\n";
+        M_crbmodel->solve( mu );
 
-        }
+    }
 
 private:
 

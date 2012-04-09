@@ -57,16 +57,22 @@ region( boost::shared_ptr<SpaceType> const& space,
     int pid = space->mesh()->comm().rank();
     typename SpaceType::mesh_type::element_const_iterator it = space->mesh()->beginElementWithProcessId( pid );
     typename SpaceType::mesh_type::element_const_iterator en = space->mesh()->endElementWithProcessId( pid );
-    for( ; it != en; ++it )
-        {
-            size_type dof_id = boost::get<0>( space->dof()->localToGlobal(it->id(),0, 0) );
-            if ( dof_id >= v.firstLocalIndex() &&
-                 dof_id < v.lastLocalIndex() )
-                v ( dof_id ) = expr( *it );
-        }
+
+    for ( ; it != en; ++it )
+    {
+        size_type dof_id = boost::get<0>( space->dof()->localToGlobal( it->id(),0, 0 ) );
+
+        if ( dof_id >= v.firstLocalIndex() &&
+                dof_id < v.lastLocalIndex() )
+            v ( dof_id ) = expr( *it );
+    }
+
     return v;
 }
-struct Region { virtual ~Region() {} };
+struct Region
+{
+    virtual ~Region() {}
+};
 
 /**
  *
@@ -75,7 +81,7 @@ struct Region { virtual ~Region() {} };
 template<typename SpaceType, typename Expr>
 typename SpaceType::element_type
 regionv( boost::shared_ptr<SpaceType> const& space,
-        Expr const& expr )
+         Expr const& expr )
 {
     BOOST_STATIC_ASSERT( SpaceType::fe_type::nOrder == 0 );
     typedef typename SpaceType::element_type element_type;
@@ -84,14 +90,16 @@ regionv( boost::shared_ptr<SpaceType> const& space,
     int pid = space->mesh()->comm().rank();
     typename SpaceType::mesh_type::element_const_iterator it = space->mesh()->beginElementWithProcessId( pid );
     typename SpaceType::mesh_type::element_const_iterator en = space->mesh()->endElementWithProcessId( pid );
-    for( ; it != en; ++it )
-        {
-            size_type dof_id = boost::get<0>( space->dof()->localToGlobal(it->id(),0, 0) );
 
-            if ( dof_id >= v.firstLocalIndex() &&
-                 dof_id < v.lastLocalIndex() )
-                v ( dof_id ) = expr( *it ).value();
-        }
+    for ( ; it != en; ++it )
+    {
+        size_type dof_id = boost::get<0>( space->dof()->localToGlobal( it->id(),0, 0 ) );
+
+        if ( dof_id >= v.firstLocalIndex() &&
+                dof_id < v.lastLocalIndex() )
+            v ( dof_id ) = expr( *it ).value();
+    }
+
     return v;
 }
 
@@ -115,9 +123,9 @@ struct RegionProcess : public Region
     template<typename SpaceType>
     typename SpaceType::element_type
     apply( boost::shared_ptr<SpaceType> const& space )
-        {
-            return regionProcess( space );
-        }
+    {
+        return regionProcess( space );
+    }
 };
 
 /**
@@ -139,9 +147,9 @@ struct RegionMarkre : public Region
     template<typename SpaceType>
     typename SpaceType::element_type
     apply( boost::shared_ptr<SpaceType> const& space )
-        {
-            return regionMarker( space );
-        }
+    {
+        return regionMarker( space );
+    }
 };
 
 /**
@@ -164,9 +172,9 @@ struct RegionMarker2 : public Region
     template<typename SpaceType>
     typename SpaceType::element_type
     apply( boost::shared_ptr<SpaceType> const& space )
-        {
-            return regionMarker2( space );
-        }
+    {
+        return regionMarker2( space );
+    }
 };
 
 /**
@@ -189,9 +197,9 @@ struct RegionMarker3 : public Region
     template<typename SpaceType>
     typename SpaceType::element_type
     apply( boost::shared_ptr<SpaceType> const& space )
-        {
-            return regionMarker3( space );
-        }
+    {
+        return regionMarker3( space );
+    }
 };
 
 } // Feel

@@ -49,20 +49,20 @@ inline
 Feel::po::options_description
 makeOptions()
 {
-    Feel::po::options_description onedoptions("OneD options");
+    Feel::po::options_description onedoptions( "OneD options" );
     onedoptions.add_options()
-        ("dt", Feel::po::value<double>()->default_value( 1e-5 ), "time step")
-        ("Tf", Feel::po::value<double>()->default_value( 1 ), "final time")
-        ("Kr", Feel::po::value<double>()->default_value( 1 ), "friction parameter")
-        ("rho", Feel::po::value<double>()->default_value( 1 ), "blood density")
-        ("E", Feel::po::value<double>()->default_value( 1e6 ), "artery yound modulus")
-        ("h0", Feel::po::value<double>()->default_value( 0.05 ), "artery thickness")
-        ("A0", Feel::po::value<double>()->default_value( 1.0 ), "artery at reference state (pressure=0)")
-        ("alpha", Feel::po::value<double>()->default_value( 1 ), "momentum-flux correction (coriolis coefficient)")
-        ("hsize", Feel::po::value<double>()->default_value( 0.1 ), "mesh size")
-        ("export", "export results(ensight, data file(1D)")
-        ("export-matlab", "export matrix and vectors in matlab" )
-        ;
+    ( "dt", Feel::po::value<double>()->default_value( 1e-5 ), "time step" )
+    ( "Tf", Feel::po::value<double>()->default_value( 1 ), "final time" )
+    ( "Kr", Feel::po::value<double>()->default_value( 1 ), "friction parameter" )
+    ( "rho", Feel::po::value<double>()->default_value( 1 ), "blood density" )
+    ( "E", Feel::po::value<double>()->default_value( 1e6 ), "artery yound modulus" )
+    ( "h0", Feel::po::value<double>()->default_value( 0.05 ), "artery thickness" )
+    ( "A0", Feel::po::value<double>()->default_value( 1.0 ), "artery at reference state (pressure=0)" )
+    ( "alpha", Feel::po::value<double>()->default_value( 1 ), "momentum-flux correction (coriolis coefficient)" )
+    ( "hsize", Feel::po::value<double>()->default_value( 0.1 ), "mesh size" )
+    ( "export", "export results(ensight, data file(1D)" )
+    ( "export-matlab", "export matrix and vectors in matlab" )
+    ;
     return onedoptions.add( Feel::feel_options() ) ;
 }
 inline
@@ -74,11 +74,11 @@ makeAbout()
                            "0.1",
                            "1D euler code for blood flow simulation",
                            Feel::AboutData::License_GPL,
-                           "Copyright (c) 2007 University Joseph Fourier Grenoble 1");
+                           "Copyright (c) 2007 University Joseph Fourier Grenoble 1" );
 
-    about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
-    about.addAuthor("Tiziano Passerini", "developer", "tiziano.passerini@polimit.it", "");
-   return about;
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    about.addAuthor( "Tiziano Passerini", "developer", "tiziano.passerini@polimit.it", "" );
+    return about;
 
 }
 
@@ -92,8 +92,8 @@ namespace Feel
  */
 class OneD
     :
-        //public Application
-        public Application
+    //public Application
+public Application
 {
     //typedef Application super;
     typedef Application super;
@@ -160,7 +160,7 @@ public:
         stats()
     {
         Log() << "[OneD] hsize = " << meshSize << "\n";
-        Log() << "[OneD] export = " << this->vm().count("export") << "\n";
+        Log() << "[OneD] export = " << this->vm().count( "export" ) << "\n";
 
         //timeSet->setTimeIncrement( 1.0 );
         //exporter->addTimeSet( timeSet );
@@ -211,15 +211,15 @@ OneD::createMesh( double meshSize )
     timers["mesh"].first.restart();
 
 
-    GeoTool::Node x1(0);
-    GeoTool::Node x2(1);
-    GeoTool::Line L(meshSize,"hola",x1,x2);
-    L.setMarker(_type="point",_name="Left",_marker1=true);
-    L.setMarker(_type="point",_name="Right",_marker2=true);
-    L.setMarker(_type="line",_name="Omega",_markerAll=true);
+    GeoTool::Node x1( 0 );
+    GeoTool::Node x2( 1 );
+    GeoTool::Line L( meshSize,"hola",x1,x2 );
+    L.setMarker( _type="point",_name="Left",_marker1=true );
+    L.setMarker( _type="point",_name="Right",_marker2=true );
+    L.setMarker( _type="line",_name="Omega",_markerAll=true );
 
 
-    auto mesh = L.createMesh<mesh_type>("hola");
+    auto mesh = L.createMesh<mesh_type>( "hola" );
 #if 0
     GmshHypercubeDomain<entity_type::nDim,entity_type::nOrder,entity_type::nRealDim,Simplex> td;
     td.setCharacteristicLength( meshSize );
@@ -240,10 +240,10 @@ void
 OneD::run()
 {
     if ( this->vm().count( "help" ) )
-        {
-            std::cout << this->optionsDescription() << "\n";
-            return;
-        }
+    {
+        std::cout << this->optionsDescription() << "\n";
+        return;
+    }
 
     //    int maxIter = 10.0/meshSize;
     using namespace Feel::vf;
@@ -253,7 +253,7 @@ OneD::run()
                             % entity_type::name()
                             % Order
                             % this->vm()["hsize"].as<double>()
-                            );
+                          );
     /*
      * logs will be in <feel repo>/<app name>/<entity>/P<p>/h_<h>
      */
@@ -289,7 +289,7 @@ OneD::run()
      */
     //im_type im;
 
-    value_type pi = 4.0*math::atan(1.0);
+    value_type pi = 4.0*math::atan( 1.0 );
 
     value_type dt = this->vm()["dt"].as<value_type>();
     value_type Tf = this->vm()["Tf"].as<value_type>();
@@ -297,7 +297,7 @@ OneD::run()
     value_type rho = this->vm()["rho"].as<value_type>();
     value_type E_coeff = this->vm()["E"].as<value_type>();
     value_type h0_coeff = this->vm()["h0"].as<value_type>();
-    value_type beta_coeff = E_coeff*h0_coeff*math::sqrt(pi)/(1-0.5*0.5);
+    value_type beta_coeff = E_coeff*h0_coeff*math::sqrt( pi )/( 1-0.5*0.5 );
     value_type A0_coeff = this->vm()["A0"].as<value_type>();
     value_type alpha = this->vm()["alpha"].as<value_type>();
     value_type Kr = this->vm()["Kr"].as<value_type>();
@@ -306,16 +306,16 @@ OneD::run()
 
 
 
-    AUTO( E , constant(E_coeff));
-    AUTO( h0 , constant(h0_coeff));
-    AUTO( A0 , constant(A0_coeff));
-    AUTO( beta , E*h0*math::sqrt(pi)/(1-0.5*0.5));
+    AUTO( E , constant( E_coeff ) );
+    AUTO( h0 , constant( h0_coeff ) );
+    AUTO( A0 , constant( A0_coeff ) );
+    AUTO( beta , E*h0*math::sqrt( pi )/( 1-0.5*0.5 ) );
 
 
     element_type Beta( Xh, "Beta" );
-    Beta = vf::project( Xh, elements(mesh), beta );
+    Beta = vf::project( Xh, elements( mesh ), beta );
     element_type Area0( Xh, "Area0" );
-    Area0 = vf::project( Xh, elements(mesh), A0 );
+    Area0 = vf::project( Xh, elements( mesh ), A0 );
 
     element_type FA( Xh, "FA" );
     element_type FQ( Xh, "FQ" );
@@ -329,268 +329,281 @@ OneD::run()
     sparse_matrix_ptrtype MQ( M_backend->newMatrix( Xh, Xh ) );
 
     form2( Xh, Xh, M, _init=true ) =
-        integrate( elements(*mesh),// im,
-                   idt(Qn)*id(Qn)
-                   );
+        integrate( elements( *mesh ), // im,
+                   idt( Qn )*id( Qn )
+                 );
 
     M->close();
 
     // initialization
-    An = ublas::scalar_vector<double>(An.size(), A0_coeff );
-    Qn = ublas::scalar_vector<double>(Qn.size(), 0 );
+    An = ublas::scalar_vector<double>( An.size(), A0_coeff );
+    Qn = ublas::scalar_vector<double>( Qn.size(), 0 );
 
     Log() << "----------------5----------------\n";
 
     int iteration = 1;
+
     // time loop
-    for( double t = dt; t < Tf; t+=dt, ++iteration )
+    for ( double t = dt; t < Tf; t+=dt, ++iteration )
+    {
+        Log() << "============================================================\n";
+        Log() << "time = " << t << "\n";
+
+        auto H = mat<2,2>( constant( 0 ), constant( 1 ),
+                           -alpha*( ( idv( Qn )/idv( An ) )^( 2 ) )+beta*sqrt( idv( An ) )/( 2*rho*A0 ), 2*alpha*idv( Qn )/idv( An ) );
+        auto F = vec( idv( Qn ), alpha*( idv( Qn )^( 2 ) )/idv( An ) + beta*pow( idv( An ),1.5 )/( 3*rho*A0 ) );
+        auto Fx = trans( vec( constant( 1. ),constant( 0. ) ) )*F;
+        auto Fy = trans( vec( constant( 0. ),constant( 1. ) ) )*F;
+
+        //FA = vf::project( Xh, elements(*mesh), Fx );
+        //FQ = vf::project( Xh, elements(*mesh), trans(vec(constant(0.),constant(1.)))*F);
+        form1( Xh, rhsA )  = integrate( elements( mesh ), Fx*id( An ) );
+        form1( Xh, rhsQ )  = integrate( elements( mesh ), Fy*id( Qn ) );
+        this->solve( M, FA, rhsA );
+        this->solve( M, FQ, rhsQ );
+
+        auto B = vec( constant( 0 ),
+                      Kr*idv( Qn )/idv( An )+
+                      idv( An )/( A0*rho )*( 2/3*sqrt( idv( An ) )-sqrt( A0 ) )*gradv( Beta )-
+                      beta*idv( An )/( rho*pow( A0,2 ) )*( 2/3*sqrt( idv( An ) )-sqrt( A0 ) )*gradv( Area0 ) );
+        auto BU = mat<2,2>( constant( 0 ), constant( 0 ),
+                            -Kr*idv( Qn )/pow( idv( An ),2 )+
+                            1.0/( A0*rho )*( 2/3*sqrt( idv( An ) )-sqrt( A0 ) )*gradv( Beta )+
+                            idv( An )/( A0*rho )*( 1/3*pow( idv( An ),-0.5 ) )*gradv( Beta )-
+
+                            beta/( rho*pow( A0,2 ) )*( 2/3*sqrt( idv( An ) )-sqrt( A0 ) )*gradv( Area0 )-
+                            beta*idv( An )/( rho*pow( A0,2 ) )*( 1/3*pow( idv( An ),-0.5 ) )*gradv( Area0 ), Kr/idv( An ) );
+        auto Flw = F-constant( dt/2 )*H*B;
+        auto Blw = B+constant( dt/2 )*BU*B;
+
+        auto rhs = dt*Flw*grad( An )
+                   - dt*dt/2*BU*vec( gradv( FA ),gradv( FQ ) )*id( An )
+                   - dt*dt/2*H*vec( gradv( FA ),gradv( FQ ) )*grad( An )
+                   - dt*Blw*id( Qn );
+
+
+
+        timers["assembly"].first.restart();
+        form1( Xh, rhsA )  = integrate( elements( *mesh ), idv( An )*id( An )+trans( vec( constant( 1. ),constant( 0. ) ) )*rhs );
+        form1( Xh, rhsQ )  = integrate( elements( *mesh ), idv( Qn )*id( An )+trans( vec( constant( 0. ),constant( 1. ) ) )*rhs );
+
+        timers["assembly"].second = timers["assembly"].first.elapsed();
+        timers["assembly_F"].second = timers["assembly"].first.elapsed();
+
+
+        timers["assembly"].first.restart();
+
+        //size_type pattern = Pattern::COUPLED|Pattern::EXTENDED;
+        size_type pattern = Pattern::COUPLED;
+        form2( Xh, Xh, MA, _init=true, _pattern=pattern ) =
+            integrate( elements( *mesh ),
+                       idt( Qn )*id( Qn )
+                     );
+
+        MA->close();
+        rhsA->close();
+        form2( Xh, Xh, MQ, _init=true, _pattern=pattern ) =
+            integrate( elements( *mesh ),
+                       idt( Qn )*id( Qn )
+                     );
+
+        MQ->close();
+        rhsQ->close();
+
+        // 1- compute the eigenvalues and eigenvectors
+        // define lambda and L
+        ublas::vector<value_type> ubar( 2 );
+        ubar[0] = Qn( 0.0 )/An( 0.0 );
+        ubar[1] = Qn( 1.0 )/An( 1.0 );
+        Log() << "ubar(z=0)=" << ubar[0]<< "\n";
+        Log() << "ubar(z=L)=" << ubar[1]<< "\n";
+
+        ublas::vector<value_type> c1( 2 );
+        c1[0] = math::sqrt( beta_coeff/( 2*rho*A0_coeff ) )*math::pow( An( 0. ), .25 );
+        c1[1] = math::sqrt( beta_coeff/( 2*rho*A0_coeff ) )*math::pow( An( 1. ), .25 );
+        ublas::vector<value_type> calpha( 2 );
+        calpha[0] = math::sqrt( c1[0]*c1[0]+ubar[0]*ubar[0]*alpha*( alpha-1 ) );
+        calpha[1] = math::sqrt( c1[1]*c1[1]+ubar[1]*ubar[1]*alpha*( alpha-1 ) );
+        ublas::matrix<double,ublas::row_major> L0( 2, 2 );
+        L0( 0, 0 )= calpha[0]-alpha*ubar[0];
+        L0( 0, 1 )= 1;
+        L0( 1, 0 )= -calpha[0]-alpha*ubar[0];
+        L0( 1, 1 )= 1;
+        ublas::matrix<double,ublas::row_major> L1( 2, 2 );
+        L1( 0, 0 )= calpha[1]-alpha*ubar[1];
+        L1( 0, 1 )= 1;
+        L1( 1, 0 )= -calpha[1]-alpha*ubar[1];
+        L1( 1, 1 )= 1;
+        Log() << "L(z=0)=" << L0 << "]\n";
+        Log() << "L(z=L)=" << L1 << "]\n";
+
+        ublas::vector<value_type> lambda0( 2 );
+        lambda0[0] = alpha*ubar[0]+calpha[0];
+        lambda0[1] = alpha*ubar[0]-calpha[0];
+        ublas::vector<value_type> lambda1( 2 );
+        lambda1[0] = alpha*ubar[1]+calpha[1];
+        lambda1[1] = alpha*ubar[1]-calpha[1];
+
+        Log() << "Lambda(z=0)=[" << lambda0[0] << "," << lambda0[1] << "]\n";
+        Log() << "Lambda(z=L)=[" << lambda1[0] << "," << lambda1[1] << "]\n";
+
+
+        // 2- compute the foot of the characteristic
+        // solve for dz_i/dt = lambda_i
+        ublas::vector<value_type> z0( 2 );
+        z0[0] = 0.0 - dt*lambda0[0];
+        z0[1] = 0.0 - dt*lambda0[1]; // this is inside (<0)
+        ublas::vector<value_type> z1( 2 );
+        z1[0] = 1.0 - dt*lambda1[0]; // this is inside(>0)
+        z1[1] = 1.0 - dt*lambda1[1];
+        Log() << "foot(z=0)=[" << z0[1] << "\n";
+        Log() << "foot(z=K)=[" << z1[0] << "\n";
+
+
+        // 3- solve the pseudo-characteristics variable ode
+        // dZ_i(t,z_i)/dt + G_i(Z_1,Z_2) = 0 i=1,2
+        // where G_i(Z1,Z2) = L B(U(zi))
+        ublas::vector<value_type> Z0( 2 );
+        Z0[0]=math::sin( 100*t ); // on Q
+        Z0[1]= L0( 1,0 )*An( z0[1] )+L0( 1,1 )*Qn( z0[1] )- // l_2 Un^*
+               dt*( L0( 1,0 )*0+ L0( 1,1 )*Kr*Qn( z0[1] )/An( z0[1] ) );
+
+        ublas::vector<value_type> Z1( 2 );
+        Z1[1]=L1( 1,0 )*A0_coeff; // absorbing condition (reference condition)
+        Z1[0]= L1( 0,0 )*An( z1[0] )+L0( 0,1 )*Qn( z1[0] )- // l_1 Un^*
+               dt*( L1( 0,0 )*0+ L1( 0,1 )*Kr*Qn( z1[0] )/An( z1[0] ) );
+
+        Log() << "Z(z=0)=" << Z0 << "\n";
+        Log() << "Z(z=L)=" << Z1 << "\n";
+
+        // WARNING: we simplified the L*B(U^*) because Beta
+        // and A0 are actually constant for the moment
+
+        //aaAn(z0[1])/(A0_coeff*rho)*(2/3*sqrt(An(z0[1]))-sqrt(A0_coeff))*gradv(Beta)-
+        //beta*idv(An)/(rho*pow(A0,2))*(2/3*sqrt(idv(An))-sqrt(A0))*gradv(Area0))
+
+        // 4- define A and Q value to be imposed at z=0 and z=L by solving
+        // a 2x2 system
+        // solve L [A;Q] = [Z_1;Z_2]
+        value_type Q_0=Z0[0];//(Z0[1]-L0(1,0)*Z0[0]/L0(0,0))/(L0(1,1)-L0(1,0)*L0(0,1)/L0(0,0));
+        value_type A_0=Z0[1]/L0( 1,0 )-L0( 1,1 )*Q_0/L0( 1,0 ); //-L0(0,1)*Q_0/L0(0,0) + Z0[0]/L0(0,0);
+        value_type Q_1=( Z1[1]-L1( 1,0 )*Z1[0]/L1( 0,0 ) )/( L1( 1,1 )-L1( 1,0 )*L1( 0,1 )/L1( 0,0 ) );
+        value_type A_1=-L1( 0,1 )*Q_1/L1( 0,0 ) + Z1[0]/L1( 0,0 );
+
+        Log() << "A(z=0)=" << A_0 << " Q(z=0)=" << Q_0 << "\n";
+        Log() << "A(z=L)=" << A_1 << " Q(z=L)=" << Q_1 << "\n";
+
+        form2( Xh, Xh, MA ) += on( markedfaces( mesh,"Left" ), Anp1, rhsA, constant( A_0 ) );
+        form2( Xh, Xh, MA ) += on( markedfaces( mesh,"Right" ), Anp1, rhsA, constant( A_1 ) );
+        form2( Xh, Xh, MQ ) += on( markedfaces( mesh,"Left" ), Qnp1, rhsQ, constant( Q_0 ) );
+        form2( Xh, Xh, MQ ) += on( markedfaces( mesh,"Right" ), Qnp1, rhsQ, constant( Q_1 ) );
+        timers["assembly"].second += timers["assembly"].first.elapsed();
+        timers["assembly_D"].second += timers["assembly"].first.elapsed();
+
+        if ( this->vm().count( "export-matlab" ) )
         {
-            Log() << "============================================================\n";
-            Log() << "time = " << t << "\n";
+            rhsA->printMatlab( "rhsA.m" );
+            rhsQ->printMatlab( "rhsB.m" );
+            MA->printMatlab( "MA.m" );
+            MQ->printMatlab( "MQ.m" );
 
-            auto H = mat<2,2>( constant(0), constant(1),
-                                 -alpha*((idv(Qn)/idv(An))^(2))+beta*sqrt(idv(An))/(2*rho*A0), 2*alpha*idv(Qn)/idv(An) );
-            auto F = vec( idv(Qn), alpha*(idv(Qn)^(2))/idv(An) + beta*pow(idv(An),1.5)/(3*rho*A0) );
-            auto Fx = trans(vec(constant(1.),constant(0.)))*F;
-            auto Fy = trans(vec(constant(0.),constant(1.)))*F;
-
-            //FA = vf::project( Xh, elements(*mesh), Fx );
-            //FQ = vf::project( Xh, elements(*mesh), trans(vec(constant(0.),constant(1.)))*F);
-            form1( Xh, rhsA )  = integrate( elements(mesh), Fx*id(An));
-            form1( Xh, rhsQ )  = integrate( elements(mesh), Fy*id(Qn));
-            this->solve( M, FA, rhsA );
-            this->solve( M, FQ, rhsQ );
-
-            auto B = vec( constant(0),
-                          Kr*idv(Qn)/idv(An)+
-                          idv(An)/(A0*rho)*(2/3*sqrt(idv(An))-sqrt(A0))*gradv(Beta)-
-                          beta*idv(An)/(rho*pow(A0,2))*(2/3*sqrt(idv(An))-sqrt(A0))*gradv(Area0));
-            auto BU = mat<2,2>( constant(0), constant(0),
-                                  -Kr*idv(Qn)/pow(idv(An),2)+
-                                  1.0/(A0*rho)*(2/3*sqrt(idv(An))-sqrt(A0))*gradv(Beta)+
-                                  idv(An)/(A0*rho)*(1/3*pow(idv(An),-0.5))*gradv(Beta)-
-
-                                  beta/(rho*pow(A0,2))*(2/3*sqrt(idv(An))-sqrt(A0))*gradv(Area0)-
-                                  beta*idv(An)/(rho*pow(A0,2))*(1/3*pow(idv(An),-0.5))*gradv(Area0), Kr/idv(An));
-            auto Flw = F-constant(dt/2)*H*B;
-            auto Blw = B+constant(dt/2)*BU*B;
-
-            auto rhs = dt*Flw*grad(An)
-                - dt*dt/2*BU*vec(gradv(FA),gradv(FQ))*id(An)
-                - dt*dt/2*H*vec(gradv(FA),gradv(FQ))*grad(An)
-                - dt*Blw*id(Qn);
+        }
 
 
+        this->solve( MA, Anp1, rhsA );
+        this->solve( MQ, Qnp1, rhsQ );
 
-            timers["assembly"].first.restart();
-            form1( Xh, rhsA )  = integrate( elements(*mesh), idv(An)*id(An)+trans(vec(constant(1.),constant(0.)))*rhs);
-            form1( Xh, rhsQ )  = integrate( elements(*mesh), idv(Qn)*id(An)+trans(vec(constant(0.),constant(1.)))*rhs);
+        {
+            std::ostringstream fname_u;
+            fname_u << "A-" << iteration << ".dat";
+            std::ofstream ofs3( fname_u.str().c_str() );
+            mesh_type::element_iterator it = Anp1.functionSpace()->mesh()->beginElementWithProcessId( Application::processId() );
+            mesh_type::element_iterator en = Anp1.functionSpace()->mesh()->endElementWithProcessId( Application::processId() );
+            Anp1.updateGlobalValues();
 
-            timers["assembly"].second = timers["assembly"].first.elapsed();
-            timers["assembly_F"].second = timers["assembly"].first.elapsed();
+            for ( ; it!=en; ++it )
+            {
+                const int nLocalDof = 2;
 
-
-            timers["assembly"].first.restart();
-
-            //size_type pattern = Pattern::COUPLED|Pattern::EXTENDED;
-            size_type pattern = Pattern::COUPLED;
-            form2( Xh, Xh, MA, _init=true, _pattern=pattern ) =
-                integrate( elements(*mesh),
-                           idt(Qn)*id(Qn)
-                           );
-
-            MA->close();
-            rhsA->close();
-            form2( Xh, Xh, MQ, _init=true, _pattern=pattern ) =
-                integrate( elements(*mesh),
-                           idt(Qn)*id(Qn)
-                           );
-
-            MQ->close();
-            rhsQ->close();
-
-            // 1- compute the eigenvalues and eigenvectors
-            // define lambda and L
-            ublas::vector<value_type> ubar(2);
-            ubar[0] = Qn(0.0)/An(0.0);
-            ubar[1] = Qn(1.0)/An(1.0);
-            Log() << "ubar(z=0)=" << ubar[0]<< "\n";
-            Log() << "ubar(z=L)=" << ubar[1]<< "\n";
-
-            ublas::vector<value_type> c1(2);
-            c1[0] = math::sqrt( beta_coeff/(2*rho*A0_coeff))*math::pow( An(0.), .25 );
-            c1[1] = math::sqrt( beta_coeff/(2*rho*A0_coeff))*math::pow( An(1.), .25 );
-            ublas::vector<value_type> calpha(2);
-            calpha[0] = math::sqrt( c1[0]*c1[0]+ubar[0]*ubar[0]*alpha*(alpha-1));
-            calpha[1] = math::sqrt( c1[1]*c1[1]+ubar[1]*ubar[1]*alpha*(alpha-1));
-            ublas::matrix<double,ublas::row_major> L0( 2, 2 );
-            L0( 0, 0 )= calpha[0]-alpha*ubar[0];
-            L0( 0, 1 )= 1;
-            L0( 1, 0 )= -calpha[0]-alpha*ubar[0];
-            L0( 1, 1 )= 1;
-            ublas::matrix<double,ublas::row_major> L1( 2, 2 );
-            L1( 0, 0 )= calpha[1]-alpha*ubar[1];
-            L1( 0, 1 )= 1;
-            L1( 1, 0 )= -calpha[1]-alpha*ubar[1];
-            L1( 1, 1 )= 1;
-            Log() << "L(z=0)=" << L0 << "]\n";
-            Log() << "L(z=L)=" << L1 << "]\n";
-
-            ublas::vector<value_type> lambda0(2);
-            lambda0[0] = alpha*ubar[0]+calpha[0];
-            lambda0[1] = alpha*ubar[0]-calpha[0];
-            ublas::vector<value_type> lambda1(2);
-            lambda1[0] = alpha*ubar[1]+calpha[1];
-            lambda1[1] = alpha*ubar[1]-calpha[1];
-
-            Log() << "Lambda(z=0)=[" << lambda0[0] << "," << lambda0[1] << "]\n";
-            Log() << "Lambda(z=L)=[" << lambda1[0] << "," << lambda1[1] << "]\n";
-
-
-            // 2- compute the foot of the characteristic
-            // solve for dz_i/dt = lambda_i
-            ublas::vector<value_type> z0( 2 );
-            z0[0] = 0.0 - dt*lambda0[0];
-            z0[1] = 0.0 - dt*lambda0[1]; // this is inside (<0)
-            ublas::vector<value_type> z1( 2 );
-            z1[0] = 1.0 - dt*lambda1[0]; // this is inside(>0)
-            z1[1] = 1.0 - dt*lambda1[1];
-            Log() << "foot(z=0)=[" << z0[1] << "\n";
-            Log() << "foot(z=K)=[" << z1[0] << "\n";
-
-
-            // 3- solve the pseudo-characteristics variable ode
-            // dZ_i(t,z_i)/dt + G_i(Z_1,Z_2) = 0 i=1,2
-            // where G_i(Z1,Z2) = L B(U(zi))
-            ublas::vector<value_type> Z0(2);
-            Z0[0]=math::sin(100*t); // on Q
-            Z0[1]= L0(1,0)*An(z0[1])+L0(1,1)*Qn(z0[1])- // l_2 Un^*
-                dt*( L0(1,0)*0+ L0(1,1)*Kr*Qn(z0[1])/An(z0[1]) );
-
-            ublas::vector<value_type> Z1(2);
-            Z1[1]=L1(1,0)*A0_coeff; // absorbing condition (reference condition)
-            Z1[0]= L1(0,0)*An(z1[0])+L0(0,1)*Qn(z1[0])- // l_1 Un^*
-                dt*( L1(0,0)*0+ L1(0,1)*Kr*Qn(z1[0])/An(z1[0]) );
-
-            Log() << "Z(z=0)=" << Z0 << "\n";
-            Log() << "Z(z=L)=" << Z1 << "\n";
-
-            // WARNING: we simplified the L*B(U^*) because Beta
-            // and A0 are actually constant for the moment
-
-            //aaAn(z0[1])/(A0_coeff*rho)*(2/3*sqrt(An(z0[1]))-sqrt(A0_coeff))*gradv(Beta)-
-            //beta*idv(An)/(rho*pow(A0,2))*(2/3*sqrt(idv(An))-sqrt(A0))*gradv(Area0))
-
-            // 4- define A and Q value to be imposed at z=0 and z=L by solving
-            // a 2x2 system
-            // solve L [A;Q] = [Z_1;Z_2]
-            value_type Q_0=Z0[0];//(Z0[1]-L0(1,0)*Z0[0]/L0(0,0))/(L0(1,1)-L0(1,0)*L0(0,1)/L0(0,0));
-            value_type A_0=Z0[1]/L0(1,0)-L0(1,1)*Q_0/L0(1,0);//-L0(0,1)*Q_0/L0(0,0) + Z0[0]/L0(0,0);
-            value_type Q_1=(Z1[1]-L1(1,0)*Z1[0]/L1(0,0))/(L1(1,1)-L1(1,0)*L1(0,1)/L1(0,0));
-            value_type A_1=-L1(0,1)*Q_1/L1(0,0) + Z1[0]/L1(0,0);
-
-            Log() << "A(z=0)=" << A_0 << " Q(z=0)=" << Q_0 << "\n";
-            Log() << "A(z=L)=" << A_1 << " Q(z=L)=" << Q_1 << "\n";
-
-            form2( Xh, Xh, MA ) += on( markedfaces(mesh,"Left"), Anp1, rhsA, constant(A_0) );
-            form2( Xh, Xh, MA ) += on( markedfaces(mesh,"Right"), Anp1, rhsA, constant(A_1) );
-            form2( Xh, Xh, MQ ) += on( markedfaces(mesh,"Left"), Qnp1, rhsQ, constant(Q_0) );
-            form2( Xh, Xh, MQ ) += on( markedfaces(mesh,"Right"), Qnp1, rhsQ, constant(Q_1) );
-            timers["assembly"].second += timers["assembly"].first.elapsed();
-            timers["assembly_D"].second += timers["assembly"].first.elapsed();
-
-            if ( this->vm().count( "export-matlab" ) )
+                for ( size_type i = 0; i < nLocalDof; ++i )
                 {
-                    rhsA->printMatlab( "rhsA.m" );
-                    rhsQ->printMatlab( "rhsB.m" );
-                    MA->printMatlab( "MA.m" );
-                    MQ->printMatlab( "MQ.m" );
+                    size_type dof0 = boost::get<0>( Anp1.functionSpace()->dof()->localToGlobal( it->id(), i ) );
+                    ofs3 << std::setw( 5 ) << it->id() << " "
+                         << std::setw( 5 ) << i << " "
+                         << std::setw( 5 ) << dof0 << " "
+                         << std::setw( 15 ) << Anp1.globalValue( dof0 ) << " ";
+                    value_type a = it->point( 0 ).node()[0];
+                    value_type b = it->point( 1 ).node()[0];
+
+                    if ( i == 0 )
+                        ofs3 << a;
+
+                    else if ( i == 1 )
+                        ofs3 <<  b;
+
+                    else
+                        ofs3 <<  a + ( i-1 )*( b-a )/( nLocalDof-1 );
+
+                    ofs3 << "\n";
 
                 }
-
-
-            this->solve( MA, Anp1, rhsA );
-            this->solve( MQ, Qnp1, rhsQ );
-
-            {
-                std::ostringstream fname_u;
-                fname_u << "A-" << iteration << ".dat";
-                std::ofstream ofs3( fname_u.str().c_str() );
-                mesh_type::element_iterator it = Anp1.functionSpace()->mesh()->beginElementWithProcessId( Application::processId() );
-                mesh_type::element_iterator en = Anp1.functionSpace()->mesh()->endElementWithProcessId( Application::processId() );
-                Anp1.updateGlobalValues();
-                for( ; it!=en; ++it )
-                    {
-                        const int nLocalDof = 2;
-                        for( size_type i = 0; i < nLocalDof; ++i )
-                            {
-                                size_type dof0 = boost::get<0>( Anp1.functionSpace()->dof()->localToGlobal( it->id(), i ) );
-                                ofs3 << std::setw( 5 ) << it->id() << " "
-                                     << std::setw( 5 ) << i << " "
-                                     << std::setw( 5 ) << dof0 << " "
-                                     << std::setw( 15 ) << Anp1.globalValue( dof0 ) << " ";
-                                value_type a = it->point(0).node()[0];
-                                value_type b = it->point(1).node()[0];
-                                if ( i == 0 )
-                                    ofs3 << a;
-                                else if ( i == 1 )
-                                    ofs3 <<  b;
-                                else
-                                    ofs3 <<  a + (i-1)*(b-a)/(nLocalDof-1);
-
-                                ofs3 << "\n";
-
-                            }
-                    }
-                ofs3.close();
             }
+
+            ofs3.close();
+        }
+        {
+            std::ostringstream fname_u;
+            fname_u << "Q-" << iteration << ".dat";
+            std::ofstream ofs3( fname_u.str().c_str() );
+            mesh_type::element_iterator it = Qnp1.functionSpace()->mesh()->beginElementWithProcessId( Application::processId() );
+            mesh_type::element_iterator en = Qnp1.functionSpace()->mesh()->endElementWithProcessId( Application::processId() );
+            Qnp1.updateGlobalValues();
+
+            for ( ; it!=en; ++it )
             {
-                std::ostringstream fname_u;
-                fname_u << "Q-" << iteration << ".dat";
-                std::ofstream ofs3( fname_u.str().c_str() );
-                mesh_type::element_iterator it = Qnp1.functionSpace()->mesh()->beginElementWithProcessId( Application::processId() );
-                mesh_type::element_iterator en = Qnp1.functionSpace()->mesh()->endElementWithProcessId( Application::processId() );
-                Qnp1.updateGlobalValues();
-                for( ; it!=en; ++it )
-                    {
-                        const int nLocalDof = 2;
-                        for( size_type i = 0; i < nLocalDof; ++i )
-                            {
-                                size_type dof0 = boost::get<0>( Qnp1.functionSpace()->dof()->localToGlobal( it->id(), i ) );
-                                ofs3 << std::setw( 5 ) << it->id() << " "
-                                     << std::setw( 5 ) << i << " "
-                                     << std::setw( 5 ) << dof0 << " "
-                                     << std::setw( 15 ) << Qnp1.globalValue( dof0 ) << " ";
-                                value_type a = it->point(0).node()[0];
-                                value_type b = it->point(1).node()[0];
-                                if ( i == 0 )
-                                    ofs3 << a;
-                                else if ( i == 1 )
-                                    ofs3 <<  b;
-                                else
-                                    ofs3 <<  a + (i-1)*(b-a)/(nLocalDof-1);
+                const int nLocalDof = 2;
 
-                                ofs3 << "\n";
+                for ( size_type i = 0; i < nLocalDof; ++i )
+                {
+                    size_type dof0 = boost::get<0>( Qnp1.functionSpace()->dof()->localToGlobal( it->id(), i ) );
+                    ofs3 << std::setw( 5 ) << it->id() << " "
+                         << std::setw( 5 ) << i << " "
+                         << std::setw( 5 ) << dof0 << " "
+                         << std::setw( 15 ) << Qnp1.globalValue( dof0 ) << " ";
+                    value_type a = it->point( 0 ).node()[0];
+                    value_type b = it->point( 1 ).node()[0];
 
-                            }
-                    }
-                ofs3.close();
+                    if ( i == 0 )
+                        ofs3 << a;
+
+                    else if ( i == 1 )
+                        ofs3 <<  b;
+
+                    else
+                        ofs3 <<  a + ( i-1 )*( b-a )/( nLocalDof-1 );
+
+                    ofs3 << "\n";
+
+                }
             }
-            this->exportResults( t, Anp1, Qnp1 );
 
-            An = Anp1;
-            Qn = Qnp1;
+            ofs3.close();
+        }
+        this->exportResults( t, Anp1, Qnp1 );
 
-            Log() << "[timer] run():     init: " << timers["init"].second << "\n";
-            Log() << "[timer] run(): assembly: " << timers["assembly"].second << "\n";
-            Log() << "[timer] run():     o D : " << timers["assembly_D"].second << "\n";
-            Log() << "[timer] run():     o F : " << timers["assembly_F"].second << "\n";
-            Log() << "[timer] run():     o M : " << timers["assembly_M"].second << "\n";
-            Log() << "[timer] run():     o L : " << timers["assembly_L"].second << "\n";
-            Log() << "[timer] run():     o i : " << timers["assembly_evaluate"].second << "\n";
-            Log() << "[timer] run():   solver: " << timers["solver"].second << "\n";
-            Log() << "[timer] run():   solver: " << timers["export"].second << "\n";
-        }// time loop
+        An = Anp1;
+        Qn = Qnp1;
+
+        Log() << "[timer] run():     init: " << timers["init"].second << "\n";
+        Log() << "[timer] run(): assembly: " << timers["assembly"].second << "\n";
+        Log() << "[timer] run():     o D : " << timers["assembly_D"].second << "\n";
+        Log() << "[timer] run():     o F : " << timers["assembly_F"].second << "\n";
+        Log() << "[timer] run():     o M : " << timers["assembly_M"].second << "\n";
+        Log() << "[timer] run():     o L : " << timers["assembly_L"].second << "\n";
+        Log() << "[timer] run():     o i : " << timers["assembly_evaluate"].second << "\n";
+        Log() << "[timer] run():   solver: " << timers["solver"].second << "\n";
+        Log() << "[timer] run():   solver: " << timers["export"].second << "\n";
+    }// time loop
 } // OneD::run
 
 void

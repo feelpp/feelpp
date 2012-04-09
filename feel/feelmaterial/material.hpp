@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -75,7 +75,10 @@ public:
     //@{
 
     //! \return the name of the material
-    std::string const& name() const { return M_name; }
+    std::string const& name() const
+    {
+        return M_name;
+    }
 
     //! thermal conductivity in \f$ W/(m*K) \f$
     virtual double k() const = 0;

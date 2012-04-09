@@ -59,14 +59,14 @@ namespace Feel
 po::options_description
 makeThermalBlockOptions()
 {
-    po::options_description thermalblockoptions("ThermalBlock options");
+    po::options_description thermalblockoptions( "ThermalBlock options" );
     thermalblockoptions.add_options()
-        ("hsize", po::value<double>()->default_value( 0.05 ), "mesh size")
-        ("nx", po::value<int>()->default_value( 3 ), "number of blocks in the x direction")
-        ("ny", po::value<int>()->default_value( 3 ), "number of blocks in the y direction")
-        ("gamma_dir", Feel::po::value<double>()->default_value( 10 ),
-         "penalisation parameter for the weak boundary Dirichlet formulation")
-        ;
+    ( "hsize", po::value<double>()->default_value( 0.05 ), "mesh size" )
+    ( "nx", po::value<int>()->default_value( 3 ), "number of blocks in the x direction" )
+    ( "ny", po::value<int>()->default_value( 3 ), "number of blocks in the y direction" )
+    ( "gamma_dir", Feel::po::value<double>()->default_value( 10 ),
+      "penalisation parameter for the weak boundary Dirichlet formulation" )
+    ;
     return thermalblockoptions.add( Feel::feel_options() );
 }
 
@@ -85,11 +85,11 @@ makeThermalBlockAbout( std::string const& str = "thermalBlock" )
                      "0.1",
                      "2D Heterogeneous Thermal Block Problem",
                      Feel::AboutData::License_GPL,
-                     "Copyright (c) 2011 Universite Joseph Fourier");
+                     "Copyright (c) 2011 Universite Joseph Fourier" );
 
-    about.addAuthor("Abdoulaye Samake", "main developer", "abdoulaye.samake@ujf-grenoble.fr", "");
-    about.addAuthor("Christophe Prud'homme", "contributor", "christophe.prudhomme@ujf-grenoble.fr", "");
-    about.addAuthor("Stephane Veys", "contributor", "stephane.veys@imag.fr", "");
+    about.addAuthor( "Abdoulaye Samake", "main developer", "abdoulaye.samake@ujf-grenoble.fr", "" );
+    about.addAuthor( "Christophe Prud'homme", "contributor", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    about.addAuthor( "Stephane Veys", "contributor", "stephane.veys@imag.fr", "" );
     return about;
 
 }
@@ -201,30 +201,39 @@ public:
 
     ThermalBlock( po::variables_map const& vm )
         :
-        M_vm (vm),
+        M_vm ( vm ),
         M_backend( backend_type::build( vm ) ),
         meshSize( vm["hsize"].as<double>() ),
         gamma_dir( M_vm["gamma_dir"].as<double>() ),
         M_Dmu( new parameterspace_type ),
         timers()
-        {
-            this->init();
-        }
+    {
+        this->init();
+    }
 
     //! initialisation of the model and definition of parameters values
     void init();
 
-    int numberOfBlocks() const { return nx*ny; }
-    int numberOfBlocksInX() const { return nx; }
-    int numberOfBlocksInY() const { return ny; }
+    int numberOfBlocks() const
+    {
+        return nx*ny;
+    }
+    int numberOfBlocksInX() const
+    {
+        return nx;
+    }
+    int numberOfBlocksInY() const
+    {
+        return ny;
+    }
 
     // std::map<std::string, boost::tuple<int, int> >
     // markerNames() const { return M_markername; }
 
 
-    double l2Error(element_type& u);
+    double l2Error( element_type& u );
 
-    double h1Error(element_type& u);
+    double h1Error( element_type& u );
 
     void exportResults( element_type& u );
 
@@ -241,7 +250,10 @@ public:
     int subdomainId( std::string const& ) const;
     // \return the number of terms in affine decomposition of left hand
     // side bilinear form
-    int Qa() const { return nx*ny+nx+1; }
+    int Qa() const
+    {
+        return nx*ny+nx+1;
+    }
 
     /**
      * \param l the index of output
@@ -250,12 +262,18 @@ public:
      * in our case we have 1 term : 1 * \int_south v
      * but if u!=0 on the north we add (nx+1) terms (those on the north from dirichlet condition)
      */
-    int Ql(int l) const {  return 1; }
+    int Ql( int l ) const
+    {
+        return 1;
+    }
 
     /**
      * \brief Returns the function space
      */
-    functionspace_ptrtype functionSpace() { return Xh; }
+    functionspace_ptrtype functionSpace()
+    {
+        return Xh;
+    }
 
     /**
      * there is at least one output which is the right hand side of the
@@ -264,39 +282,48 @@ public:
      *
      * \return number of outputs associated to the model
      */
-    int Nl() const { return 1; }
+    int Nl() const
+    {
+        return 1;
+    }
 
     //! return the parameter space
-    parameterspace_ptrtype parameterSpace() const { return M_Dmu;}
+    parameterspace_ptrtype parameterSpace() const
+    {
+        return M_Dmu;
+    }
 
     boost::tuple<theta_vector_type, std::vector<theta_vector_type> >
-    computeThetaq( parameter_type const& mu , double time=0)
+    computeThetaq( parameter_type const& mu , double time=0 )
+    {
+        M_thetaAq.resize( Qa() );
+
+        //mu_i inside the domain (all subdomains index)
+        for ( int i=0; i<nx*ny; i++ )
         {
-            M_thetaAq.resize( Qa() );
-
-            //mu_i inside the domain (all subdomains index)
-            for(int i=0;i<nx*ny;i++){
-                M_thetaAq( i ) = mu( i );
-                //std::cout<<"[computeThetaAq] M_thetaAq("<<i<<") = mu ("<<i<<")"<<std::endl;
-            }
-
-            //IMPORTANT REMARK, subdomain indices begin at 1 and not 0
-            int index_theta=nx*ny;
-            for(int i=0;i<north_subdomain_index.size();i++)
-            {
-                M_thetaAq( index_theta ) = mu ( north_subdomain_index[i]-1 );
-                //std::cout<<"M_thetaAq("<<index_theta<<") = mu ("<<north_subdomain_index[i]-1<< ")"<<std::endl;
-                index_theta++;
-            }
-
-            M_thetaAq( index_theta ) = 1;
-
-            M_thetaFq.resize( Nl() );
-            M_thetaFq[0].resize( Ql(0) );
-            for(int i=0;i<Ql(0);i++) M_thetaFq[0]( i ) = 1;
-
-            return boost::make_tuple( M_thetaAq, M_thetaFq );
+            M_thetaAq( i ) = mu( i );
+            //std::cout<<"[computeThetaAq] M_thetaAq("<<i<<") = mu ("<<i<<")"<<std::endl;
         }
+
+        //IMPORTANT REMARK, subdomain indices begin at 1 and not 0
+        int index_theta=nx*ny;
+
+        for ( int i=0; i<north_subdomain_index.size(); i++ )
+        {
+            M_thetaAq( index_theta ) = mu ( north_subdomain_index[i]-1 );
+            //std::cout<<"M_thetaAq("<<index_theta<<") = mu ("<<north_subdomain_index[i]-1<< ")"<<std::endl;
+            index_theta++;
+        }
+
+        M_thetaAq( index_theta ) = 1;
+
+        M_thetaFq.resize( Nl() );
+        M_thetaFq[0].resize( Ql( 0 ) );
+
+        for ( int i=0; i<Ql( 0 ); i++ ) M_thetaFq[0]( i ) = 1;
+
+        return boost::make_tuple( M_thetaAq, M_thetaFq );
+    }
 
 
     /**
@@ -304,30 +331,36 @@ public:
      *
      */
     value_type thetaAq( int q ) const
-        {
-            return M_thetaAq( q );
-        }
+    {
+        return M_thetaAq( q );
+    }
 
 
 
     /**
      * \brief return the coefficient vector
      */
-    std::vector<theta_vector_type> const& thetaFq() const { return M_thetaFq; }
+    std::vector<theta_vector_type> const& thetaFq() const
+    {
+        return M_thetaFq;
+    }
 
 
     /**
      * \return the \p q -th term of the \p l -th output
      */
-    value_type thetaL(int l, int q ) const
-        {
-            return M_thetaFq[l]( q );
-        }
+    value_type thetaL( int l, int q ) const
+    {
+        return M_thetaFq[l]( q );
+    }
 
     /**
      * set the mesh characteristic length to \p s
      */
-    void setMeshSize( double s ) { meshSize = s; }
+    void setMeshSize( double s )
+    {
+        meshSize = s;
+    }
 
 
     /**
@@ -459,10 +492,13 @@ thermalBlockGeometry( int nx, int ny, double hsize )
          << "//  Physical Line(t2+1)={t2};\n"
          << "  EndFor\n"
          << "EndFor\n";
-    for( int i = 1; i <= nx; ++i )
+
+    for ( int i = 1; i <= nx; ++i )
         ostr << "Physical Line(\"south_domain-"  << i << "\")={"<< i << "};\n";
-    for( int i = nx*ny+1, j=nx*(ny-1)+1; i<= nx*(ny+1); ++i,++j )
+
+    for ( int i = nx*ny+1, j=nx*( ny-1 )+1; i<= nx*( ny+1 ); ++i,++j )
         ostr << "  Physical Line(\"north_domain-" << j << "\") = {" << i << "};\n";
+
     ostr << "t3 = (ny+1)*nx;\n"
          << "t4 = 0;\n"
          << "For i In {0:nx}\n"
@@ -473,10 +509,13 @@ thermalBlockGeometry( int nx, int ny, double hsize )
          << "// Physical Line(t3+1)={t3};\n"
          << " EndFor\n"
          << "EndFor\n";
-    for( int i = 1, j=0, k=1; i <= ny; ++i, j += nx+1, k += nx )
-        ostr << "Physical Line(\"west_domain-"  << k << "\")={"<< nx*(ny+1)+j+1 << "};\n";
-    for( int i = 1, j=0, k=nx; i <= ny; ++i, j += nx+1, k += nx )
-        ostr << "Physical Line(\"east_domain-"  << k << "\")={"<< nx*(ny+2)+j+1 << "};\n";
+
+    for ( int i = 1, j=0, k=1; i <= ny; ++i, j += nx+1, k += nx )
+        ostr << "Physical Line(\"west_domain-"  << k << "\")={"<< nx*( ny+1 )+j+1 << "};\n";
+
+    for ( int i = 1, j=0, k=nx; i <= ny; ++i, j += nx+1, k += nx )
+        ostr << "Physical Line(\"east_domain-"  << k << "\")={"<< nx*( ny+2 )+j+1 << "};\n";
+
     ostr << "t5 = 0;\n"
          << "ne = (ny+1)*nx+1;\n"
          << "For j In {0:ny-1}\n"
@@ -486,8 +525,9 @@ thermalBlockGeometry( int nx, int ny, double hsize )
          << "  Plane Surface(t5)={t5};\n"
          << " EndFor\n"
          << "EndFor\n";
-    for( int i = 1, d= 1; i <= nx; ++i )
-        for( int j = 1; j <= ny; ++j, ++d )
+
+    for ( int i = 1, d= 1; i <= nx; ++i )
+        for ( int j = 1; j <= ny; ++j, ++d )
         {
             ostr << "  Physical Surface(\"domain-"<< d << "\")={" << d << "};\n";
         }
@@ -517,22 +557,23 @@ ThermalBlock::init()
     domainMarkers.clear();
     north_subdomain_index.clear();
     south_subdomain_index.clear();
-    for(auto it=names.begin(), en=names.end(); it!=en; ++it)
+
+    for ( auto it=names.begin(), en=names.end(); it!=en; ++it )
     {
-        if (it->first.find( "south_" ) != std::string::npos )
+        if ( it->first.find( "south_" ) != std::string::npos )
             southMarkers.push_back( it->first );
 
-        if (it->first.find( "north_" ) != std::string::npos )
+        if ( it->first.find( "north_" ) != std::string::npos )
             northMarkers.push_back( it->first );
 
-        if (it->first.find( "west_" ) != std::string::npos )
+        if ( it->first.find( "west_" ) != std::string::npos )
             westMarkers.push_back( it->first );
 
-        if (it->first.find( "east_" ) != std::string::npos )
+        if ( it->first.find( "east_" ) != std::string::npos )
             eastMarkers.push_back( it->first );
 
-        if ( (it->first.find( "domain-" ) != std::string::npos) &&
-             (it->first.find( "_" ) == std::string::npos) )
+        if ( ( it->first.find( "domain-" ) != std::string::npos ) &&
+                ( it->first.find( "_" ) == std::string::npos ) )
             domainMarkers.push_back( it->first );
     }
 
@@ -545,14 +586,16 @@ ThermalBlock::init()
 
     //  initialization
     M_Aq.resize( Qa() );
-    for(int i=0;i<Qa();i++)
+
+    for ( int i=0; i<Qa(); i++ )
     {
         M_Aq[i] = M_backend->newMatrix( Xh, Xh );
     }
 
     M_Fq.resize( 1 );
-    M_Fq[0].resize( Ql(0) );
-    for(int i=0;i<Ql(0);i++)
+    M_Fq[0].resize( Ql( 0 ) );
+
+    for ( int i=0; i<Ql( 0 ); i++ )
     {
         M_Fq[0][i] = M_backend->newVector( Xh );
     }
@@ -564,11 +607,13 @@ ThermalBlock::init()
     using namespace Feel::vf;
     Feel::ParameterSpace<nx*ny>::Element mu_min( M_Dmu );
     Feel::ParameterSpace<nx*ny>::Element mu_max( M_Dmu );
-    for(int i=0;i<nx*ny;i++)
+
+    for ( int i=0; i<nx*ny; i++ )
     {
         mu_min[i]=0.1;
         mu_max[i]=10;
     }
+
     M_Dmu->setMin( mu_min );
     M_Dmu->setMax( mu_max );
 
@@ -576,7 +621,7 @@ ThermalBlock::init()
     element_type u( Xh, "u" );
     element_type v( Xh, "v" );
 
-    form2( Xh, Xh, D,_init=true )=integrate(elements(mmesh),0*idt(v)*id(v), _Q<0>());
+    form2( Xh, Xh, D,_init=true )=integrate( elements( mmesh ),0*idt( v )*id( v ), _Q<0>() );
     D->close();
 
     Log() << "Number of dof " << Xh->nLocalDof() << "\n";
@@ -588,7 +633,7 @@ ThermalBlock::init()
     form1( Xh, M_Fq[0][0], _init=true ) ;
     BOOST_FOREACH( auto marker, southMarkers )
     {
-        form1( Xh, M_Fq[0][0] ) += integrate( markedfaces(mmesh,marker), id(v) );
+        form1( Xh, M_Fq[0][0] ) += integrate( markedfaces( mmesh,marker ), id( v ) );
         subdomain_index = subdomainId( marker );
         south_subdomain_index.push_back( subdomain_index );
     }
@@ -600,7 +645,7 @@ ThermalBlock::init()
     {
         Log() <<"[ThermalBlock::init] domain " << domain << "\n";
         form2( Xh, Xh, M_Aq[index],_init=true ) =
-            integrate(markedelements(mmesh, domain), gradt(u)*trans(grad(v) ));
+            integrate( markedelements( mmesh, domain ), gradt( u )*trans( grad( v ) ) );
         M_Aq[index]->close();
         Log() <<"[ThermalBlock::init] done with Aq[" << index << "]\n";
         index++;
@@ -612,14 +657,14 @@ ThermalBlock::init()
     BOOST_FOREACH( auto marker, northMarkers )
     {
         std::string sid = subdomainFromBoundary( marker );
-        form2( Xh, Xh, M_Aq[index], _init=true ) =  integrate(markedfaces(mmesh, marker ),
-                                                              -gradt(u)*vf::N()*id(v)
-                                                              -grad(u)*vf::N()*idt(v)
-            );
+        form2( Xh, Xh, M_Aq[index], _init=true ) =  integrate( markedfaces( mmesh, marker ),
+                -gradt( u )*vf::N()*id( v )
+                -grad( u )*vf::N()*idt( v )
+                                                             );
         M_Aq[index]->close();
         index++;
 
-        form2( Xh, Xh, M_Aq[last_index_Aq]) += integrate(markedfaces(mmesh, marker ),gamma_dir*idt(u)*id(v)/h() );
+        form2( Xh, Xh, M_Aq[last_index_Aq] ) += integrate( markedfaces( mmesh, marker ),gamma_dir*idt( u )*id( v )/h() );
 
         subdomain_index = subdomainId( marker );
         north_subdomain_index.push_back( subdomain_index );
@@ -629,7 +674,7 @@ ThermalBlock::init()
 
     M = M_backend->newMatrix( Xh, Xh );
     form2( Xh, Xh, M, _init=true ) =
-        integrate( elements(mmesh), id(u)*idt(v) + grad(u)*trans(gradt(u)) );
+        integrate( elements( mmesh ), id( u )*idt( v ) + grad( u )*trans( gradt( u ) ) );
     M->close();
 }//init()
 
@@ -648,14 +693,17 @@ void
 ThermalBlock::update( parameter_type const& mu )
 {
     D->zero();
-    for( size_type q = 0;q < M_Aq.size(); ++q )
+
+    for ( size_type q = 0; q < M_Aq.size(); ++q )
     {
         //std::cout << "[affine decomp] scale q=" << q << " with " << M_thetaAq[q] << "\n";
         D->addMatrix( M_thetaAq[q], M_Aq[q] );
     }
+
     F->close();
     F->zero();
-    for( size_type q = 0;q < M_Fq[0].size(); ++q )
+
+    for ( size_type q = 0; q < M_Fq[0].size(); ++q )
     {
         //std::cout << "[affine decomp] scale q=" << q << " with " << M_thetaFq[0][q] << "\n";
         F->add( M_thetaFq[0][q], M_Fq[0][q] );
@@ -727,10 +775,11 @@ ThermalBlock::output( int output_index, parameter_type const& mu )
     *U = *pT;
 
     // right hand side (compliant)
-    if( output_index == 0 )
+    if ( output_index == 0 )
     {
-        return M_thetaFq[0](0)*dot( M_Fq[0][0], U );
+        return M_thetaFq[0]( 0 )*dot( M_Fq[0][0], U );
     }
+
     return 0;
 }//output
 
@@ -742,7 +791,7 @@ ThermalBlock::subdomainFromBoundary( std::string const& boundary ) const
     typedef std::vector< std::string > split_vector_type;
 
     split_vector_type SplitVec; // #2: Search for tokens
-    boost::split( SplitVec, boundary, boost::is_any_of("_"), boost::token_compress_on );
+    boost::split( SplitVec, boundary, boost::is_any_of( "_" ), boost::token_compress_on );
     return SplitVec[1];
 }
 
@@ -752,20 +801,20 @@ ThermalBlock::subdomainId( std::string const& domain ) const
 {
     typedef std::vector< std::string > split_vector_type;
     split_vector_type SplitVec; // #2: Search for tokens
-    boost::split( SplitVec, domain, boost::is_any_of("-"), boost::token_compress_on );
-    return boost::lexical_cast<int>(SplitVec[1]);
+    boost::split( SplitVec, domain, boost::is_any_of( "-" ), boost::token_compress_on );
+    return boost::lexical_cast<int>( SplitVec[1] );
 }
 
 
 
 double
-ThermalBlock::l2Error(element_type& u)
+ThermalBlock::l2Error( element_type& u )
 {
     auto Xh=u.functionSpace();
     auto mesh=Xh->mesh();
     value_type pi = M_PI;
-    auto g = sin(pi*Px())*cos(pi*Py())*cos(pi*Pz());
-    double L2error2 =integrate(elements(mesh), (idv(u)-g)*(idv(u)-g) ).evaluate()(0,0);
+    auto g = sin( pi*Px() )*cos( pi*Py() )*cos( pi*Pz() );
+    double L2error2 =integrate( elements( mesh ), ( idv( u )-g )*( idv( u )-g ) ).evaluate()( 0,0 );
     double error = math::sqrt( L2error2 );
 
     return error;
@@ -773,18 +822,18 @@ ThermalBlock::l2Error(element_type& u)
 
 
 double
-ThermalBlock::h1Error(element_type& u)
+ThermalBlock::h1Error( element_type& u )
 {
     auto Xh=u.functionSpace();
     auto mesh=Xh->mesh();
     value_type pi = M_PI;
-    auto gradg = trans( +pi*cos(pi*Px())*cos(pi*Py())*cos(pi*Pz())*unitX()+
-                        -pi*sin(pi*Px())*sin(pi*Py())*cos(pi*Pz())*unitY()+
-                        -pi*sin(pi*Px())*cos(pi*Py())*sin(pi*Pz())*unitZ() );
+    auto gradg = trans( +pi*cos( pi*Px() )*cos( pi*Py() )*cos( pi*Pz() )*unitX()+
+                        -pi*sin( pi*Px() )*sin( pi*Py() )*cos( pi*Pz() )*unitY()+
+                        -pi*sin( pi*Px() )*cos( pi*Py() )*sin( pi*Pz() )*unitZ() );
 
-    double semi_H1error =integrate(elements(mesh),
-                                   ( gradv(u)-gradg )*trans( (gradv(u)-gradg) ) ).evaluate()(0,0);
-    double L2error2 = std::pow( l2Error(u) , 2);
+    double semi_H1error =integrate( elements( mesh ),
+                                    ( gradv( u )-gradg )*trans( ( gradv( u )-gradg ) ) ).evaluate()( 0,0 );
+    double L2error2 = std::pow( l2Error( u ) , 2 );
     double error = math::sqrt( L2error2 + semi_H1error );
 
     return error;
@@ -797,8 +846,8 @@ ThermalBlock::exportResults( element_type& u )
 {
     Log() << "exportResults starts\n";
     auto exporter = export_type::New( M_vm, "thermalblock" );
-    exporter->step(0)->setMesh( u.mesh() );
-    exporter->step(0)->add( "u", u );
+    exporter->step( 0 )->setMesh( u.mesh() );
+    exporter->step( 0 )->add( "u", u );
     exporter->save();
 
     Log() << "exportResults done\n";
@@ -822,7 +871,7 @@ void
 ThermalBlock::run( const double* X, unsigned long P, double* Y, unsigned long N )
 {
     std::cout<<"[thermalblock.hpp] WARNING : function run is to implement, you can't use it"<<std::endl;
-    exit(0);
+    exit( 0 );
 } // ThermalBlock::run
 
 
@@ -847,19 +896,20 @@ ThermalBlock::checkout( const double* X, unsigned long P, double* Y, unsigned lo
     //std::srand(static_cast<unsigned>(std::time(0)));
 
     std::map<std::string,double> K;
-    for(auto it=domainMarkers.begin(), en=domainMarkers.end();it!=en;++it)
+
+    for ( auto it=domainMarkers.begin(), en=domainMarkers.end(); it!=en; ++it )
     {
         //        K.insert( std::make_pair( *it, std::exp( std::log(0.1)+(std::log(10)-std::log(0.1))*((double(std::rand())/double(RAND_MAX))) ) ) );
-        K.insert( std::make_pair( *it, 1.));
+        K.insert( std::make_pair( *it, 1. ) );
     }
 
     value_type pi = M_PI;
-    auto g = sin(pi*Px())*cos(pi*Py())*cos(pi*Pz());
+    auto g = sin( pi*Px() )*cos( pi*Py() )*cos( pi*Pz() );
     auto f = pi*pi*2*g;
 
-    auto gradg = trans( +pi*cos(pi*Px())*cos(pi*Py())*cos(pi*Pz())*unitX()+
-                        -pi*sin(pi*Px())*sin(pi*Py())*cos(pi*Pz())*unitY()+
-                        -pi*sin(pi*Px())*cos(pi*Py())*sin(pi*Pz())*unitZ() );
+    auto gradg = trans( +pi*cos( pi*Px() )*cos( pi*Py() )*cos( pi*Pz() )*unitX()+
+                        -pi*sin( pi*Px() )*sin( pi*Py() )*cos( pi*Pz() )*unitY()+
+                        -pi*sin( pi*Px() )*cos( pi*Py() )*sin( pi*Pz() )*unitZ() );
 
     auto mygrad =  gradg*vf::N();
 
@@ -875,7 +925,7 @@ ThermalBlock::checkout( const double* X, unsigned long P, double* Y, unsigned lo
     BOOST_FOREACH( auto domain, domainMarkers )
     {
         std::cout << domain << " K[" << domain << "]=" << K[domain] << std::endl;
-        form1( Xh, B ) += integrate(markedelements(mmesh, domain),K[domain]*pi*pi*2*g*id(v), _Q<10>());
+        form1( Xh, B ) += integrate( markedelements( mmesh, domain ),K[domain]*pi*pi*2*g*id( v ), _Q<10>() );
     }
 
     BOOST_FOREACH( auto marker, southMarkers )
@@ -883,7 +933,7 @@ ThermalBlock::checkout( const double* X, unsigned long P, double* Y, unsigned lo
         // std::cout << "Building rhs for marker " << marker << std::endl;
         std::string sid = subdomainFromBoundary( marker );
         std::cout << marker << " K[" << sid << "]=" << K[sid] << std::endl;
-        form1( Xh, B ) +=  integrate(markedfaces(mmesh, marker ),K[sid]*mygrad*id(v), _Q<10>())  ;
+        form1( Xh, B ) +=  integrate( markedfaces( mmesh, marker ),K[sid]*mygrad*id( v ), _Q<10>() )  ;
     }
 
     BOOST_FOREACH( auto marker, northMarkers )
@@ -891,7 +941,7 @@ ThermalBlock::checkout( const double* X, unsigned long P, double* Y, unsigned lo
         // std::cout << "Building rhs for marker " << marker << std::endl;
         std::string sid = subdomainFromBoundary( marker );
         std::cout << marker << " K[" << sid << "]=" << K[sid] << std::endl;
-        form1( Xh, B ) +=  integrate(markedfaces(mmesh, marker ), g*(-K[sid]*grad(v)*vf::N()+gamma_dir*id(v)/hFace())), _Q<10>()  ;
+        form1( Xh, B ) +=  integrate( markedfaces( mmesh, marker ), g*( -K[sid]*grad( v )*vf::N()+gamma_dir*id( v )/hFace() ) ), _Q<10>()  ;
     }
 
     BOOST_FOREACH( auto marker, westMarkers )
@@ -899,7 +949,7 @@ ThermalBlock::checkout( const double* X, unsigned long P, double* Y, unsigned lo
         // std::cout << "Building rhs for marker " << marker << std::endl;
         std::string sid = subdomainFromBoundary( marker );
         std::cout << marker << " K[" << sid << "]=" << K[sid] << std::endl;
-        form1( Xh, B ) +=  integrate(markedfaces(mmesh, marker ),K[sid]*mygrad*id(v), _Q<10>())  ;
+        form1( Xh, B ) +=  integrate( markedfaces( mmesh, marker ),K[sid]*mygrad*id( v ), _Q<10>() )  ;
     }
 
     BOOST_FOREACH( auto marker, eastMarkers )
@@ -907,7 +957,7 @@ ThermalBlock::checkout( const double* X, unsigned long P, double* Y, unsigned lo
         // std::cout << "Building rhs for marker " << marker << std::endl;
         std::string sid = subdomainFromBoundary( marker );
         std::cout << marker << " K[" << sid << "]=" << K[sid] << std::endl;
-        form1( Xh, B ) +=  integrate(markedfaces(mmesh, marker ), K[sid]*mygrad*id(v),_Q<10>())  ;
+        form1( Xh, B ) +=  integrate( markedfaces( mmesh, marker ), K[sid]*mygrad*id( v ),_Q<10>() )  ;
     }
 
 
@@ -921,7 +971,7 @@ ThermalBlock::checkout( const double* X, unsigned long P, double* Y, unsigned lo
     {
         // std::cout << "Building lhs for domain " << domain << std::endl;
         std::cout << domain << " K[" << domain << "]=" << K[domain] << std::endl;
-        form2( Xh, Xh, A ) += integrate(markedelements(mmesh, domain), K[domain]*gradt(u)*trans(grad(v) ));
+        form2( Xh, Xh, A ) += integrate( markedelements( mmesh, domain ), K[domain]*gradt( u )*trans( grad( v ) ) );
     }
     BOOST_FOREACH( auto marker, northMarkers )
     {
@@ -929,10 +979,10 @@ ThermalBlock::checkout( const double* X, unsigned long P, double* Y, unsigned lo
         std::string sid = subdomainFromBoundary( marker );
         std::cout << marker << " K[" << sid << "]=" << K[sid] << std::endl;
         // std::cout << "ident " << sid << std::endl;
-        form2( _test=Xh, _trial=Xh, _matrix=A ) +=  integrate(markedfaces(mmesh, marker ),
-                                                              -K[sid]*gradt(u)*vf::N()*id(v)
-                                                              -K[sid]*grad(u)*vf::N()*idt(v)
-                                                              +gamma_dir*idt(u)*id(v)/hFace() );
+        form2( _test=Xh, _trial=Xh, _matrix=A ) +=  integrate( markedfaces( mmesh, marker ),
+                -K[sid]*gradt( u )*vf::N()*id( v )
+                -K[sid]*grad( u )*vf::N()*idt( v )
+                +gamma_dir*idt( u )*id( v )/hFace() );
     }
     std::cout << "Building lhs done\n";
 
@@ -950,8 +1000,8 @@ ThermalBlock::checkout( const double* X, unsigned long P, double* Y, unsigned lo
 
     BOOST_FOREACH( auto domain, domainMarkers )
     {
-        L2error2 += integrate(markedelements(mmesh, domain), (idv(u)-g)*(idv(u)-g), _Q<15>() ).evaluate()(0,0);
-        temp = integrate(markedelements(mmesh, domain), (idv(u)-g)*(idv(u)-g), _Q<15>() ).evaluate()(0,0);
+        L2error2 += integrate( markedelements( mmesh, domain ), ( idv( u )-g )*( idv( u )-g ), _Q<15>() ).evaluate()( 0,0 );
+        temp = integrate( markedelements( mmesh, domain ), ( idv( u )-g )*( idv( u )-g ), _Q<15>() ).evaluate()( 0,0 );
         std::cout << "L2error(" << domain <<")=" << math::sqrt( temp ) << "\n";
         temp = 0;
     }
@@ -971,16 +1021,17 @@ ThermalBlock::checkout( const double* X, unsigned long P, double* Y, unsigned lo
     // std::cout << "myerror=" << myerror << "\n";
 
     export_ptrtype exporter( export_type::New( M_vm,
-                                               (boost::format( "thermalblock-%1%-%2%" )
-                                                % Order
-                                                % 2).str() ) );
+                             ( boost::format( "thermalblock-%1%-%2%" )
+                               % Order
+                               % 2 ).str() ) );
+
     if ( exporter->doExport() )
     {
         Log() << "exportResults starts\n";
 
-        exporter->step(0)->setMesh( mmesh );
+        exporter->step( 0 )->setMesh( mmesh );
 
-        exporter->step(0)->add( "u", u );
+        exporter->step( 0 )->add( "u", u );
         // exporter->step(0)->add( "g", e );
         exporter->save();
         Log() << "exportResults done\n";

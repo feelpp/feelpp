@@ -56,11 +56,11 @@ class MeshBase;
 template<uint16_type Dim, typename T = double>
 class Geo0D
     :
-        public boost::equality_comparable<Geo0D<Dim,T> >,
-        public boost::less_than_comparable<Geo0D<Dim,T> >,
-        public boost::less_than_comparable<Geo0D<Dim,T>, size_type>,
-        public GeoEntity<Simplex<0, 1, Dim> >,
-        public node<T, Dim>::type
+public boost::equality_comparable<Geo0D<Dim,T> >,
+public boost::less_than_comparable<Geo0D<Dim,T> >,
+public boost::less_than_comparable<Geo0D<Dim,T>, size_type>,
+public GeoEntity<Simplex<0, 1, Dim> >,
+public node<T, Dim>::type
 {
     typedef GeoEntity<Simplex<0, 1, Dim> > super;
     typedef typename node<T, Dim>::type super2;
@@ -114,15 +114,17 @@ public:
     Geo0D( value_type x, value_type y, value_type z )
         :
         super( 0, MESH_ENTITY_INTERNAL ),
-        super2(Dim),
+        super2( Dim ),
         M_is_vertex( false )
-        {
-            this->operator[]( 0 ) = x;
-            if (  Dim >= 2 )
-                this->operator[]( 1 ) = y;
-            if ( Dim == 3 )
-                this->operator[]( 2 ) = z;
-        }
+    {
+        this->operator[]( 0 ) = x;
+
+        if (  Dim >= 2 )
+            this->operator[]( 1 ) = y;
+
+        if ( Dim == 3 )
+            this->operator[]( 2 ) = z;
+    }
 
 
     /**
@@ -146,10 +148,10 @@ public:
     Geo0D( node_type const& __x )
         :
         super( 0, MESH_ENTITY_INTERNAL ),
-        super2(__x),
+        super2( __x ),
         M_is_vertex( false )
-        {
-        }
+    {
+    }
 
     /**
      * the point coordinate expression
@@ -161,10 +163,10 @@ public:
     Geo0D( ublas::vector_expression<AE> const& __expr )
         :
         super( 0, MESH_ENTITY_INTERNAL ),
-        super2(__expr),
+        super2( __expr ),
         M_is_vertex( false )
-        {
-        }
+    {
+    }
 
     /**
      * copy constructor
@@ -183,103 +185,141 @@ public:
 
     template<typename AE>
     Geo0D & operator=( ublas::vector_expression<AE> const& expr )
-        {
-            super2::operator=( expr );
-            return *this;
-        }
+    {
+        super2::operator=( expr );
+        return *this;
+    }
     template<typename AE>
     Geo0D & operator+=( ublas::vector_expression<AE> const& expr )
-        {
-            super2::operator+=( expr );
-            return *this;
-        }
+    {
+        super2::operator+=( expr );
+        return *this;
+    }
 
     value_type& operator()( int i )
-        {
-            return this->operator[](i);
-        }
+    {
+        return this->operator[]( i );
+    }
 
     value_type  operator()( int i ) const
-        {
-            return this->operator[](i);
-        }
+    {
+        return this->operator[]( i );
+    }
 
     /**
      * \return \p true if point is a vertex, \p false otherwise
      * \attention DO NOT USE YET, returns always false
      */
-    bool isVertex() const { return M_is_vertex; }
+    bool isVertex() const
+    {
+        return M_is_vertex;
+    }
 
     /**
      * set the point as a vertex or not using \p v
      */
     void  setAsVertex( bool v )
-        {
-            M_is_vertex = v;
-        }
+    {
+        M_is_vertex = v;
+    }
 
     /**
      * set the mesh to which this geometric entity belongs to
      */
     void setMesh( MeshBase const* m )
-        {
-            M_mesh = m;
-        }
+    {
+        M_mesh = m;
+    }
 
     /**
      * \return the mesh to which this geometric entity belongs to
      */
-    MeshBase const* mesh() const { return M_mesh; }
+    MeshBase const* mesh() const
+    {
+        return M_mesh;
+    }
 
     /**
      * @return the node data structure
      */
-    Geo0D const& node() const { return *this; }
+    Geo0D const& node() const
+    {
+        return *this;
+    }
 
     /**
      * @return the node data structure
      */
-    matrix_node_type G() const { matrix_node_type __G( Dim, 1 ); ublas::column( __G, 0 ) = *this; return __G; }
+    matrix_node_type G() const
+    {
+        matrix_node_type __G( Dim, 1 );
+        ublas::column( __G, 0 ) = *this;
+        return __G;
+    }
 
     /**
      * @return the node data structure
      */
-    matrix_node_type vertices() const { return this->G(); }
+    matrix_node_type vertices() const
+    {
+        return this->G();
+    }
 
     /**
      * \return the measure of a point
      */
-    value_type measure() const { return 0; }
+    value_type measure() const
+    {
+        return 0;
+    }
 
     /**
      * \return \p true if the point has parametric coordinates
      */
-    bool isParametric() const { return M_is_parametric; }
+    bool isParametric() const
+    {
+        return M_is_parametric;
+    }
 
     /**
      * \return the geometric dimension of the entity the point belongs to
      */
-    int gDim() const { return M_gdim; }
+    int gDim() const
+    {
+        return M_gdim;
+    }
 
     /**
      * \return the geometric dimension of the entity the point belongs to
      */
-    int gTag() const { return M_gtag; }
+    int gTag() const
+    {
+        return M_gtag;
+    }
 
     /**
      * \return the parametric coordinates
      */
-    parametric_node_type const& parametricCoordinates() const { return M_uv; }
+    parametric_node_type const& parametricCoordinates() const
+    {
+        return M_uv;
+    }
 
     /**
      * \return the first parametric coordinates
      */
-    value_type u() const { return M_uv[0]; }
+    value_type u() const
+    {
+        return M_uv[0];
+    }
 
     /**
      * \return the first parametric coordinates
      */
-    value_type v() const { return M_uv[1]; }
+    value_type v() const
+    {
+        return M_uv[1];
+    }
 
     /**
      * set the node coordinates
@@ -287,27 +327,27 @@ public:
      * @param __n the node coordinates
      */
     void setNode( node_type const& __n )
-        {
-            *this = __n;
-        }
+    {
+        *this = __n;
+    }
 
     /**
      * \return true if points are equal, false otherwise
      */
     bool operator==( Geo0D const& geo0d ) const
-        {
-            return this->id() == geo0d.id();
-        }
+    {
+        return this->id() == geo0d.id();
+    }
 
     bool operator<( Geo0D const& e ) const
-        {
-            return this->id() < e.id();
-        };
+    {
+        return this->id() < e.id();
+    };
 
     bool operator<( size_type __i ) const
-        {
-            return this->id() < __i;
-        };
+    {
+        return this->id() < __i;
+    };
 
     /**
      * show the information about the Geo0D
@@ -324,30 +364,57 @@ public:
      * creating faces (points) in 1D.
      */
     void setPoint( uint16_type const /*i*/, self_type const & p )
-        {
-            *this = p;
-        }
+    {
+        *this = p;
+    }
 
     /**
      * translate the point by \p trans
      */
     self_type& translate( node_type const& trans )
-        {
-            *this += trans;
-            return *this;
-        }
+    {
+        *this += trans;
+        return *this;
+    }
 
-    Marker1 const& marker() const { return M_marker1; }
-    Marker1& marker() { return M_marker1; }
-    void setMarker( flag_type v ) { return M_marker1.assign( v ); }
+    Marker1 const& marker() const
+    {
+        return M_marker1;
+    }
+    Marker1& marker()
+    {
+        return M_marker1;
+    }
+    void setMarker( flag_type v )
+    {
+        return M_marker1.assign( v );
+    }
 
-    Marker2 const& marker2() const { return M_marker2; }
-    Marker2& marker2() { return M_marker2; }
-    void setMarker2( flag_type v ) { return M_marker2.assign( v ); }
+    Marker2 const& marker2() const
+    {
+        return M_marker2;
+    }
+    Marker2& marker2()
+    {
+        return M_marker2;
+    }
+    void setMarker2( flag_type v )
+    {
+        return M_marker2.assign( v );
+    }
 
-    Marker3 const& marker3() const { return M_marker3; }
-    Marker3& marker3() { return M_marker3; }
-    void setMarker3( flag_type v ) { return M_marker3.assign( v ); }
+    Marker3 const& marker3() const
+    {
+        return M_marker3;
+    }
+    Marker3& marker3()
+    {
+        return M_marker3;
+    }
+    void setMarker3( flag_type v )
+    {
+        return M_marker3.assign( v );
+    }
 
     /**
      * set the tags associated to the points
@@ -356,35 +423,54 @@ public:
      * - tags[2] particular region
      */
     void setTags( std::vector<int> const& tags )
-        {
-            this->setMarker( tags[0] );
-            if ( tags.size() > 1 )
-                this->setMarker2( tags[1] );
-            if ( tags.size() > 2 )
-                this->setProcessId( tags[2] );
-        }
+    {
+        this->setMarker( tags[0] );
+
+        if ( tags.size() > 1 )
+            this->setMarker2( tags[1] );
+
+        if ( tags.size() > 2 )
+            this->setProcessId( tags[2] );
+    }
 
     /**
      * set the geometric dimension of the entity the points belongs to
      */
-    void setGDim( int gdim ) { M_gdim = gdim; M_is_parametric = true; }
+    void setGDim( int gdim )
+    {
+        M_gdim = gdim;
+        M_is_parametric = true;
+    }
 
     /**
      * set the geometric tag of the entity the points belongs to
      */
-    void setGTag( int gtag ) { M_gtag = gtag; M_is_parametric = true;  }
+    void setGTag( int gtag )
+    {
+        M_gtag = gtag;
+        M_is_parametric = true;
+    }
 
     /**
      * set the parametric coordinates of the node (if it is on an point, edge or
      * surface geometric entity)
      */
-    void setParametricCoordinates( parametric_node_type const& x ) { M_uv = x; M_is_parametric = true; }
+    void setParametricCoordinates( parametric_node_type const& x )
+    {
+        M_uv = x;
+        M_is_parametric = true;
+    }
 
     /**
      * set the parametric coordinates of the node (if it is on an point, edge or
      * surface geometric entity)
      */
-    void setParametricCoordinates( value_type u, value_type v ) { M_uv[0] = u; M_uv[1] = v; M_is_parametric = true; }
+    void setParametricCoordinates( value_type u, value_type v )
+    {
+        M_uv[0] = u;
+        M_uv[1] = v;
+        M_is_parametric = true;
+    }
 
 private:
     bool M_is_vertex;
@@ -414,7 +500,7 @@ template<uint16_type Dim, typename T>
 Geo0D<Dim, T>::Geo0D()
     :
     super( 0, MESH_ENTITY_INTERNAL ),
-    super2(Dim),
+    super2( Dim ),
     M_is_vertex( false ),
     M_is_parametric( false ),
     M_marker1(),
@@ -422,7 +508,7 @@ Geo0D<Dim, T>::Geo0D()
     M_marker3(),
     M_gdim( 0 ),
     M_gtag( 0 ),
-    M_uv(2)
+    M_uv( 2 )
 {
     this->clear();
 }
@@ -431,14 +517,14 @@ template<uint16_type Dim, typename T>
 Geo0D<Dim, T>::Geo0D( size_type id, bool boundary, bool is_vertex )
     :
     super( id, MESH_ENTITY_INTERNAL ),
-    super2(Dim),
+    super2( Dim ),
     M_is_vertex( is_vertex ),
     M_marker1(),
     M_marker2(),
     M_marker3(),
     M_gdim( 0 ),
     M_gtag( 0 ),
-    M_uv(2)
+    M_uv( 2 )
 {
     this->clear();
     this->setOnBoundary( boundary );
@@ -448,7 +534,7 @@ template<uint16_type Dim, typename T>
 Geo0D<Dim, T>::Geo0D( size_type id, value_type x, value_type y, value_type z, bool boundary, bool is_vertex )
     :
     super( id, MESH_ENTITY_INTERNAL ),
-    super2(Dim),
+    super2( Dim ),
     M_is_vertex( is_vertex ),
     M_is_parametric( false ),
     M_marker1(),
@@ -456,11 +542,13 @@ Geo0D<Dim, T>::Geo0D( size_type id, value_type x, value_type y, value_type z, bo
     M_marker3(),
     M_gdim( 0 ),
     M_gtag( 0 ),
-    M_uv(2)
+    M_uv( 2 )
 {
     this->operator[]( 0 ) = x;
+
     if (  Dim >= 2 )
         this->operator[]( 1 ) = y;
+
     if ( Dim == 3 )
         this->operator[]( 2 ) = z;
 
@@ -471,7 +559,7 @@ template<uint16_type Dim, typename T>
 Geo0D<Dim, T>::Geo0D( size_type id, node_type const& __p, bool boundary, bool is_vertex )
     :
     super( id, MESH_ENTITY_INTERNAL ),
-    super2(__p ),
+    super2( __p ),
     M_is_vertex( is_vertex ),
     M_is_parametric( false ),
     M_marker1(),
@@ -479,7 +567,7 @@ Geo0D<Dim, T>::Geo0D( size_type id, node_type const& __p, bool boundary, bool is
     M_marker3(),
     M_gdim( 0 ),
     M_gtag( 0 ),
-    M_uv(2)
+    M_uv( 2 )
 {
     FEELPP_ASSERT( __p.size() == Dim )( __p )( Dim ).error( "invalid node" );
 
@@ -508,8 +596,9 @@ Geo0D<Dim, T>::operator=( Geo0D<Dim, T> const & G )
 {
     if (  this == &G )
         return *this;
+
     super::operator=( G );
-    super2::operator=(G);
+    super2::operator=( G );
     M_is_vertex = G.M_is_vertex;
     M_is_parametric = G.M_is_parametric;
     M_marker1 = G.M_marker1;
@@ -546,12 +635,16 @@ operator<<( DebugStream& __os, Geo0D<Dim, T> const& __n )
 
         __os << __str.str() << "\n";
     }
+
     return __os;
 }
 template<uint16_type Dim, typename T>
 inline
 NdebugStream&
-operator<<( NdebugStream& __os, Geo0D<Dim, T> const& __n ) { return __os; }
+operator<<( NdebugStream& __os, Geo0D<Dim, T> const& __n )
+{
+    return __os;
+}
 
 
 template<typename T>
@@ -580,17 +673,26 @@ distance( Geo0D<3,T> const& p1, Geo0D<3,T> const& p2 )
 template<typename T>
 inline
 Geo0D<1,T>
-middle( Geo0D<1,T> const& p1, Geo0D<1,T> const& p2 ) { return ( p1+p2 )/2; }
+middle( Geo0D<1,T> const& p1, Geo0D<1,T> const& p2 )
+{
+    return ( p1+p2 )/2;
+}
 
 template<typename T>
 inline
 Geo0D<2,T>
-middle( Geo0D<2,T> const& p1, Geo0D<2,T> const& p2 ) { return ( p1+p2 )/2; }
+middle( Geo0D<2,T> const& p1, Geo0D<2,T> const& p2 )
+{
+    return ( p1+p2 )/2;
+}
 
 template<typename T>
 inline
 Geo0D<3,T>
-middle( Geo0D<3,T> const& p1, Geo0D<3,T> const& p2 ) { return ( p1+p2 )/2; }
+middle( Geo0D<3,T> const& p1, Geo0D<3,T> const& p2 )
+{
+    return ( p1+p2 )/2;
+}
 
 template<typename E1,typename E2>
 inline
@@ -598,12 +700,12 @@ ublas::vector<double>
 cross( ublas::vector_expression<E1>  _p1,
        ublas::vector_expression<E2>  _p2 )
 {
-    ublas::vector<double> v(3);
-    ublas::vector<double> p1(_p1);
-    ublas::vector<double> p2(_p2);
-    v(0) = p1(1)*p2(2)-p1(2)*p2(1);
-    v(1) = p1(2)*p2(0)-p1(0)*p2(2);
-    v(2) = p1(0)*p2(1)-p1(1)*p2(0);
+    ublas::vector<double> v( 3 );
+    ublas::vector<double> p1( _p1 );
+    ublas::vector<double> p2( _p2 );
+    v( 0 ) = p1( 1 )*p2( 2 )-p1( 2 )*p2( 1 );
+    v( 1 ) = p1( 2 )*p2( 0 )-p1( 0 )*p2( 2 );
+    v( 2 ) = p1( 0 )*p2( 1 )-p1( 1 )*p2( 0 );
     return v;
 }
 
@@ -613,10 +715,10 @@ ublas::vector<double>
 cross( Geo0D<3,T> p1,
        Geo0D<3,T> p2 )
 {
-    ublas::vector<double> v(3);
-    v(0) = p1(1)*p2(2) - p1(2)*p2(1);
-    v(1) = p1(2)*p2(0) - p1(0)*p2(2);
-    v(2) = p1(0)*p2(1) - p1(1)*p2(0);
+    ublas::vector<double> v( 3 );
+    v( 0 ) = p1( 1 )*p2( 2 ) - p1( 2 )*p2( 1 );
+    v( 1 ) = p1( 2 )*p2( 0 ) - p1( 0 )*p2( 2 );
+    v( 2 ) = p1( 0 )*p2( 1 ) - p1( 1 )*p2( 0 );
     return v;
 }
 

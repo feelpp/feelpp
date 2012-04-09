@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -32,21 +32,21 @@
 int
 main( int argc, char** argv )
 {
-  //MPI_Init(&argc, &argv);
+    //MPI_Init(&argc, &argv);
 
-  Feel::TestALE<1> mesh1( argc, argv, makeAbout(), makeOptions());
-  mesh1.run();
+    Feel::TestALE<1> mesh1( argc, argv, makeAbout(), makeOptions() );
+    mesh1.run();
     /*
-  Feel::TestALE<2> mesh2( argc, argv, makeAbout(), makeOptions());
-  mesh2.run();
-  */
-  /*
-  Feel::TestALE<3> mesh3( argc, argv, makeAbout(), makeOptions());
-  mesh3.run();
+    Feel::TestALE<2> mesh2( argc, argv, makeAbout(), makeOptions());
+    mesh2.run();
+    */
+    /*
+    Feel::TestALE<3> mesh3( argc, argv, makeAbout(), makeOptions());
+    mesh3.run();
 
-  Feel::TestALE<4> mesh4( argc, argv, makeAbout(), makeOptions());
-  mesh4.run();
-  */
+    Feel::TestALE<4> mesh4( argc, argv, makeAbout(), makeOptions());
+    mesh4.run();
+    */
 }
 
 

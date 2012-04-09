@@ -51,14 +51,14 @@ inline
 Feel::po::options_description
 makeOptions()
 {
-    Feel::po::options_description periodicoptions("Periodic Laplacian options");
+    Feel::po::options_description periodicoptions( "Periodic Laplacian options" );
     periodicoptions.add_options()
-        ("hsize", Feel::po::value<double>()->default_value( 0.1 ), "mesh size in domain")
+    ( "hsize", Feel::po::value<double>()->default_value( 0.1 ), "mesh size in domain" )
 
-        ("penalbc", Feel::po::value<double>()->default_value( 10 ), "penalisation parameter for the weak boundary conditions")
+    ( "penalbc", Feel::po::value<double>()->default_value( 10 ), "penalisation parameter for the weak boundary conditions" )
 
-        ("export-matlab", "export matrix and vectors in matlab" )
-        ;
+    ( "export-matlab", "export matrix and vectors in matlab" )
+    ;
     return periodicoptions.add( Feel::feel_options() );
 }
 inline
@@ -70,9 +70,9 @@ makeAbout()
                            "0.1",
                            "nD(n=1,2,3) Periodic Laplacian on simplices or simplex products",
                            Feel::AboutData::License_GPL,
-                           "Copyright (c) 2008-2010 Université Joseph Fourier");
+                           "Copyright (c) 2008-2010 Université Joseph Fourier" );
 
-    about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
     return about;
 
 }
@@ -89,7 +89,7 @@ using namespace vf;
 template<int Dim, int Order>
 class PeriodicLaplacian
     :
-    public Application
+public Application
 {
     typedef Application super;
 public:
@@ -179,10 +179,10 @@ PeriodicLaplacian<Dim,Order>::PeriodicLaplacian( int argc, char** argv, AboutDat
     timers()
 {
     if ( this->vm().count( "help" ) )
-        {
-            std::cout << this->optionsDescription() << "\n";
-            return;
-        }
+    {
+        std::cout << this->optionsDescription() << "\n";
+        return;
+    }
 
 
 
@@ -191,12 +191,12 @@ PeriodicLaplacian<Dim,Order>::PeriodicLaplacian( int argc, char** argv, AboutDat
                             % entity_type::name()
                             % Order
                             % h
-                            );
+                          );
 
     Log() << "create mesh\n";
     const std::string shape = "hypercube";
     mesh = createGMSHMesh( _mesh=new mesh_type,
-                           _desc=domain( _name=(boost::format( "%1%-%2%" ) % shape % Dim).str() ,
+                           _desc=domain( _name=( boost::format( "%1%-%2%" ) % shape % Dim ).str() ,
                                          _usenames=false,
                                          _shape=shape,
                                          _dim=Dim,
@@ -205,7 +205,7 @@ PeriodicLaplacian<Dim,Order>::PeriodicLaplacian( int argc, char** argv, AboutDat
 
 
     Log() << "create space\n";
-    node_type trans(2);
+    node_type trans( 2 );
     trans[0]=0;
     trans[1]=2;
     Xh = functionspace_type::New( _mesh=mesh, _periodicity=Periodic<2,4,value_type>( trans ) );
@@ -231,67 +231,67 @@ PeriodicLaplacian<Dim, Order>::run()
 #if 0
     AUTO( g, Px()*Py()+2*Px()+1 );
     AUTO( grad_g, vec(
-                      Py()+2,
-                      Px()
-                      )
-          );
+              Py()+2,
+              Px()
+          )
+        );
     AUTO( f, 0 );
 #else
-    auto g = sin(M_PI*Px())*cos(M_PI*Py());
-    auto grad_g = vec( +M_PI*cos(M_PI*Px())*cos(M_PI*Py()),
-                       -M_PI*sin(M_PI*Px())*sin(M_PI*Py()) );
+    auto g = sin( M_PI*Px() )*cos( M_PI*Py() );
+    auto grad_g = vec( +M_PI*cos( M_PI*Px() )*cos( M_PI*Py() ),
+                       -M_PI*sin( M_PI*Px() )*sin( M_PI*Py() ) );
     auto f = 2*M_PI*M_PI*g;
 #endif
 
     sparse_matrix_ptrtype M( M_backend->newMatrix( Xh, Xh ) );
 
-    form2( Xh, Xh, M, _init=true ) = integrate( _range=elements( mesh ), _expr=gradt(u)*trans(grad(v)), _quad=_Q<2*(Order-1)>() );
+    form2( Xh, Xh, M, _init=true ) = integrate( _range=elements( mesh ), _expr=gradt( u )*trans( grad( v ) ), _quad=_Q<2*( Order-1 )>() );
     form2( Xh, Xh, M ) += integrate( _range=markedfaces( mesh, 1 ),
-                                     _expr=-gradt(u)*N()*id(v)
-                                     -grad(v)*N()*idt(u)
-                                     + penalisation_bc*id(u)*idt(v)/hFace(),
-                                     _quad=_Q<2*(Order-1)>());
+                                     _expr=-gradt( u )*N()*id( v )
+                                           -grad( v )*N()*idt( u )
+                                           + penalisation_bc*id( u )*idt( v )/hFace(),
+                                     _quad=_Q<2*( Order-1 )>() );
     form2( Xh, Xh, M ) += integrate( _range=markedfaces( mesh, 3 ),
-                                     _expr=-gradt(u)*N()*id(v)
-                                     -grad(v)*N()*idt(u)
-                                     + penalisation_bc*id(u)*idt(v)/hFace(),
-                                     _quad=_Q<2*(Order-1)>() );
+                                     _expr=-gradt( u )*N()*id( v )
+                                           -grad( v )*N()*idt( u )
+                                           + penalisation_bc*id( u )*idt( v )/hFace(),
+                                     _quad=_Q<2*( Order-1 )>() );
 
     M->close();
 
-    double area = integrate( _range=elements(mesh), _expr=constant(1.0) ).evaluate()( 0, 0);
-    double mean = integrate( _range=elements(mesh), _expr=g ).evaluate()( 0, 0)/area;
+    double area = integrate( _range=elements( mesh ), _expr=constant( 1.0 ) ).evaluate()( 0, 0 );
+    double mean = integrate( _range=elements( mesh ), _expr=g ).evaluate()( 0, 0 )/area;
     Log() << "int g  = " << mean << "\n";
     vector_ptrtype F( M_backend->newVector( Xh ) );
-    form1( Xh, F, _init=true ) = ( integrate( _range=elements( mesh ), _expr=f*id(v) )
+    form1( Xh, F, _init=true ) = ( integrate( _range=elements( mesh ), _expr=f*id( v ) )
                                    //+integrate( boundaryfaces( mesh ), _Q<Order+5>(), (trans(grad_g)*N())*id(v) )
 
-                                   );
+                                 );
     F->close();
 
     if ( this->vm().count( "export-matlab" ) )
-        {
-            M->printMatlab( "M.m" );
-            F->printMatlab( "F.m" );
-        }
+    {
+        M->printMatlab( "M.m" );
+        F->printMatlab( "F.m" );
+    }
 
     backend_type::build( this->vm() )->solve( _matrix=M, _solution=u, _rhs=F );
 
     Log() << "area   = " << area << "\n";
-    Log() << "int g  = " << integrate( elements(mesh), g ).evaluate()( 0, 0)/area << "\n";
-    Log() << "int u  = " << integrate( elements(mesh), idv(u) ).evaluate()( 0, 0)/area << "\n";
-    Log() << "error  = " << math::sqrt( integrate( elements(mesh), (idv(u)-g)*(idv(u)-g) ).evaluate()( 0, 0) ) << "\n";
-    double bdy1 = integrate( markedfaces(mesh,2), idv(u) ).evaluate()( 0, 0);
-    double bdy2 = integrate( markedfaces(mesh,4), idv(u) ).evaluate()( 0, 0);
+    Log() << "int g  = " << integrate( elements( mesh ), g ).evaluate()( 0, 0 )/area << "\n";
+    Log() << "int u  = " << integrate( elements( mesh ), idv( u ) ).evaluate()( 0, 0 )/area << "\n";
+    Log() << "error  = " << math::sqrt( integrate( elements( mesh ), ( idv( u )-g )*( idv( u )-g ) ).evaluate()( 0, 0 ) ) << "\n";
+    double bdy1 = integrate( markedfaces( mesh,2 ), idv( u ) ).evaluate()( 0, 0 );
+    double bdy2 = integrate( markedfaces( mesh,4 ), idv( u ) ).evaluate()( 0, 0 );
     Log() << "error mean periodic  boundary 1 - 2  = " << math::abs( bdy1-bdy2 ) << "\n";
 
-    v = vf::project( Xh, elements(mesh), g );
+    v = vf::project( Xh, elements( mesh ), g );
 
     element_type e( Xh, "e" );
-    e = vf::project( Xh, elements(mesh), idv(u)-g );
+    e = vf::project( Xh, elements( mesh ), idv( u )-g );
 
     element_type j( Xh, "Py" );
-    j = vf::project( Xh, elements(mesh), Py() );
+    j = vf::project( Xh, elements( mesh ), Py() );
 
 
     exportResults( u, v, e, j );
@@ -308,11 +308,11 @@ PeriodicLaplacian<Dim, Order>::exportResults( element_type& U, element_type& V, 
 
     Log() << "exportResults starts\n";
 
-    exporter->step(1.)->setMesh( U.functionSpace()->mesh() );
-    exporter->step(1.)->add( "u", U );
-    exporter->step(1.)->add( "exact", V );
-    exporter->step(1.)->add( "error", E );
-    exporter->step(1.)->add( "f", F );
+    exporter->step( 1. )->setMesh( U.functionSpace()->mesh() );
+    exporter->step( 1. )->add( "u", U );
+    exporter->step( 1. )->add( "exact", V );
+    exporter->step( 1. )->add( "error", E );
+    exporter->step( 1. )->add( "f", F );
 
     exporter->save();
     timers["export"].second = timers["export"].first.elapsed();

@@ -100,13 +100,13 @@ public:
                      bool copy_values=true,
                      bool diag_is_nonzero=true );
 
-    void mergeBlockGraph(graph_ptrtype & globGraphb, matrix_ptrtype m,
-                         size_type start_i, size_type start_j);
+    void mergeBlockGraph( graph_ptrtype & globGraphb, matrix_ptrtype m,
+                          size_type start_i, size_type start_j );
 
     MatrixBlockBase( MatrixBlockBase const & mb )
         :
         super( mb ),
-        M_mat(mb.M_mat )
+        M_mat( mb.M_mat )
     {}
 
     ~MatrixBlockBase()
@@ -121,9 +121,10 @@ public:
     MatrixBlockBase operator=( MatrixBlockBase const& mb )
     {
         if ( this != &mb )
-            {
-                M_mat = mb.M_mat;
-            }
+        {
+            M_mat = mb.M_mat;
+        }
+
         return *this;
     }
 
@@ -132,7 +133,10 @@ public:
     /** @name Accessors
      */
     //@{
-    matrix_ptrtype getSparseMatrix() { return M_mat; }
+    matrix_ptrtype getSparseMatrix()
+    {
+        return M_mat;
+    }
     //@}
 
     /** @name  Mutators
@@ -154,12 +158,12 @@ public:
      * \p noz is the number of on-processor
      * nonzeros per row (defaults to 30).
      */
-    void init (const size_type m,
-               const size_type n,
-               const size_type m_l,
-               const size_type n_l,
-               const size_type nnz=30,
-               const size_type noz=10);
+    void init ( const size_type m,
+                const size_type n,
+                const size_type m_l,
+                const size_type n_l,
+                const size_type nnz=30,
+                const size_type noz=10 );
 
     /**
      * Initialize using sparsity structure computed by \p dof_map.
@@ -225,9 +229,9 @@ public:
      * not exist. Still, it is allowed to store
      * zero values in non-existent fields.
      */
-    void set (const size_type i,
-              const size_type j,
-              const value_type& value);
+    void set ( const size_type i,
+               const size_type j,
+               const value_type& value );
 
     /**
      * Add \p value to the element
@@ -237,9 +241,9 @@ public:
      * store zero values in
      * non-existent fields.
      */
-    void add (const size_type i,
-              const size_type j,
-              const value_type& value);
+    void add ( const size_type i,
+               const size_type j,
+               const value_type& value );
 
     /**
      * Add the full matrix to the
@@ -247,9 +251,9 @@ public:
      * for adding an element matrix
      * at assembly time
      */
-    void addMatrix (const ublas::matrix<value_type> &dm,
-                    const std::vector<size_type> &rows,
-                    const std::vector<size_type> &cols);
+    void addMatrix ( const ublas::matrix<value_type> &dm,
+                     const std::vector<size_type> &rows,
+                     const std::vector<size_type> &cols );
 
     /**
      * Add the full matrix to the
@@ -265,10 +269,10 @@ public:
      * Same, but assumes the row and column maps are the same.
      * Thus the matrix \p dm must be square.
      */
-    void addMatrix (const ublas::matrix<value_type> &dm,
-                    const std::vector<size_type> &dof_indices)
+    void addMatrix ( const ublas::matrix<value_type> &dm,
+                     const std::vector<size_type> &dof_indices )
     {
-        this->addMatrix (dm, dof_indices, dof_indices);
+        this->addMatrix ( dm, dof_indices, dof_indices );
     }
 
 
@@ -277,7 +281,7 @@ public:
      * stores the result in \p this:
      * \f$\texttt{this} = \_a*\_X + \texttt{this} \f$.
      */
-    void addMatrix (const value_type, MatrixSparse<value_type> &);
+    void addMatrix ( const value_type, MatrixSparse<value_type> & );
 
     void scale ( const value_type );
 
@@ -292,8 +296,8 @@ public:
      * entries that are not in the sparsity pattern of the matrix),
      * use the \p el function.
      */
-    value_type operator () (const size_type i,
-                            const size_type j) const;
+    value_type operator () ( const size_type i,
+                             const size_type j ) const;
 
     /**
      *
@@ -354,23 +358,23 @@ public:
      * in a uniform style, regardless of matrix/solver
      * package being used.
      */
-    void print(std::ostream& os=std::cout) const;
+    void print( std::ostream& os=std::cout ) const;
 
     /**
      * Same as the print method above, but allows you
      * to print to a stream in the standard syntax.
      */
     template <typename U>
-    friend std::ostream& operator << (std::ostream& os, const MatrixSparse<U>& m);
+    friend std::ostream& operator << ( std::ostream& os, const MatrixSparse<U>& m );
 
     /**
      * Print the contents of the matrix to the screen
      * in a package-personalized style, if available.
      */
-    void printPersonal(std::ostream& /*os*/=std::cout) const
+    void printPersonal( std::ostream& /*os*/=std::cout ) const
     {
         std::cerr << "ERROR: Not Implemented in base class yet!" << std::endl;
-        FEELPP_ASSERT( 0 ).error("invalid call");
+        FEELPP_ASSERT( 0 ).error( "invalid call" );
     }
 
     /**
@@ -379,21 +383,21 @@ public:
      * matrix to the file named \p name.  If \p name
      * is not specified it is dumped to the screen.
      */
-    void printMatlab(const std::string name="NULL") const;
+    void printMatlab( const std::string name="NULL" ) const;
 
     /**
      * This function creates a matrix called "submatrix" which is defined
      * by the row and column indices given in the "rows" and "cols" entries.
      * Currently this operation is only defined for the PetscMatrix type.
      */
-    void createSubmatrix(MatrixSparse<value_type>& submatrix,
-                         const std::vector<size_type>& rows,
-                         const std::vector<size_type>& cols) const
+    void createSubmatrix( MatrixSparse<value_type>& submatrix,
+                          const std::vector<size_type>& rows,
+                          const std::vector<size_type>& cols ) const
     {
-        this->_get_submatrix(submatrix,
-                             rows,
-                             cols,
-                             false); // false means DO NOT REUSE submatrix
+        this->_get_submatrix( submatrix,
+                              rows,
+                              cols,
+                              false ); // false means DO NOT REUSE submatrix
     }
 
     /**
@@ -402,14 +406,14 @@ public:
      * it again.  This should hopefully be more efficient if you are frequently
      * extracting submatrices of the same size.
      */
-    void reinitSubmatrix(MatrixSparse<value_type>& submatrix,
-                                 const std::vector<size_type>& rows,
-                                 const std::vector<size_type>& cols) const
+    void reinitSubmatrix( MatrixSparse<value_type>& submatrix,
+                          const std::vector<size_type>& rows,
+                          const std::vector<size_type>& cols ) const
     {
-        this->_get_submatrix(submatrix,
-                             rows,
-                             cols,
-                             true); // true means REUSE submatrix
+        this->_get_submatrix( submatrix,
+                              rows,
+                              cols,
+                              true ); // true means REUSE submatrix
     }
 
     /**
@@ -421,7 +425,7 @@ public:
      */
     void zeroRows( std::vector<int> const& rows, std::vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context );
 
-    void updateBlockMat(boost::shared_ptr<MatrixSparse<value_type> > m, size_type start_i, size_type start_j);
+    void updateBlockMat( boost::shared_ptr<MatrixSparse<value_type> > m, size_type start_i, size_type start_j );
 
     //@}
 
@@ -458,7 +462,7 @@ public:
                   bool copy_values=true,
                   bool diag_is_nonzero=true )
         :
-        super_type(blockSet,backend,copy_values,diag_is_nonzero)
+        super_type( blockSet,backend,copy_values,diag_is_nonzero )
     {}
 
     MatrixBlock( MatrixBlock const & mb )
@@ -468,13 +472,13 @@ public:
 
     MatrixBlock operator=( MatrixBlock const& mb )
     {
-        super_type::operator=(mb);
+        super_type::operator=( mb );
         return *this;
     }
 
     MatrixBlock & operator = ( matrix_ptrtype const& M )
     {
-        super_type::operator=(M);
+        super_type::operator=( M );
         return *this;
     }
 

@@ -64,7 +64,7 @@ checkCreateGmshMesh( std::string const& shape, std::string const& convex = "Simp
     mesh_ptrtype mesh;
     // simplex
     mesh = createGMSHMesh( _mesh=new mesh_type,
-                           _desc=domain( _name=(boost::format( "%1%-%2%-%3%" )  % shape % convex % Dim).str() ,
+                           _desc=domain( _name=( boost::format( "%1%-%2%-%3%" )  % shape % convex % Dim ).str() ,
                                          _convex=convex,
                                          _usenames=true,
                                          _addmidpoint=false,
@@ -150,21 +150,22 @@ class tbb_check_mesh
 public:
     tbb_check_mesh()
         :
-        count(0)
-        {}
+        count( 0 )
+    {}
     tbb_check_mesh( tbb_check_mesh& o, tbb::split )
         :
-        count(o.count)
-        {}
+        count( o.count )
+    {}
     void operator() ( const tbb::blocked_range<elt_iterator >& r )
+    {
+        for ( auto _elt = r.begin(); _elt != r.end(); ++_elt, ++count )
         {
-            for( auto _elt = r.begin(); _elt != r.end(); ++_elt, ++count )
-            {
-
-            }
 
         }
-    void join( tbb_check_mesh& other ) {
+
+    }
+    void join( tbb_check_mesh& other )
+    {
         count += other.count;
     }
     double count;
@@ -182,11 +183,11 @@ BOOST_AUTO_TEST_CASE( gmshgeo_tbb )
                                       _order=1,
                                       _h=0.2 ) );
     std::vector<boost::reference_wrapper<const mesh_type::element_type> > v;
-    BOOST_FOREACH(const mesh_type::element_type& i,mesh->elements())
-        v.push_back(boost::cref(i));
-    tbb::blocked_range<decltype(v.begin())> r(v.begin(), v.end());
+    BOOST_FOREACH( const mesh_type::element_type& i,mesh->elements() )
+    v.push_back( boost::cref( i ) );
+    tbb::blocked_range<decltype( v.begin() )> r( v.begin(), v.end() );
     BOOST_TEST_MESSAGE( "range size=" << r.size() << "\n" );
-    tbb_check_mesh<decltype(v.begin())> counter;
+    tbb_check_mesh<decltype( v.begin() )> counter;
     tbb::tick_count parallel_t0 = tbb::tick_count::now();
     tbb::parallel_reduce( r, counter );
     tbb::tick_count parallel_t1 = tbb::tick_count::now();
@@ -195,16 +196,18 @@ BOOST_AUTO_TEST_CASE( gmshgeo_tbb )
 
     tbb::tick_count serial_t0 = tbb::tick_count::now();
     int count = 0;
-    for( auto _elt = mesh->beginElement(); _elt != mesh->endElement(); ++_elt, ++count )
+
+    for ( auto _elt = mesh->beginElement(); _elt != mesh->endElement(); ++_elt, ++count )
     {
 
     }
+
     tbb::tick_count serial_t1 = tbb::tick_count::now();
     BOOST_CHECK_EQUAL( count, mesh->numElements() );
 
-    BOOST_TEST_MESSAGE( "Serial version ran in " << (serial_t1 - serial_t0).seconds() << " seconds" << "\n"
-                        << "Parallel version ran in " <<  (parallel_t1 - parallel_t0).seconds() << " seconds" << "\n"
-                        << "Resulting in a speedup of " << (serial_t1 - serial_t0).seconds() / (parallel_t1 - parallel_t0).seconds() << "\n");
+    BOOST_TEST_MESSAGE( "Serial version ran in " << ( serial_t1 - serial_t0 ).seconds() << " seconds" << "\n"
+                        << "Parallel version ran in " <<  ( parallel_t1 - parallel_t0 ).seconds() << " seconds" << "\n"
+                        << "Resulting in a speedup of " << ( serial_t1 - serial_t0 ).seconds() / ( parallel_t1 - parallel_t0 ).seconds() << "\n" );
 
 }
 #endif // FEELPP_HAS_TBB
@@ -218,7 +221,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( gmshimportexport, T, dim_types )
     mesh_ptrtype mesh,meshimp;
     // simplex
     mesh = createGMSHMesh( _mesh=new mesh_type,
-                           _desc=domain( _name=(boost::format( "simplex-%1%" )  % T::value).str() ,
+                           _desc=domain( _name=( boost::format( "simplex-%1%" )  % T::value ).str() ,
                                          _usenames=true,
                                          _addmidpoint=false,
                                          _shape="simplex",
@@ -230,7 +233,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( gmshimportexport, T, dim_types )
     typedef Exporter<mesh_type> export_type;
     typedef boost::shared_ptr<export_type> export_ptrtype;
     export_ptrtype exporter( Exporter<mesh_type>::New( "gmsh", estr.str() ) );
-    exporter->step(0)->setMesh( mesh );
+    exporter->step( 0 )->setMesh( mesh );
     exporter->save();
     std::ostringstream fstr;
     fstr << "gmshexp-" << T::value << "-1_0.msh";
@@ -252,7 +255,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( gmshimportexport, T, dim_types )
     BOOST_CHECK_EQUAL( std::distance( dirichlet1.get<1>(), dirichlet1.get<2>() ),
                        std::distance( dirichlet2.get<1>(), dirichlet2.get<2>() ) );
     BOOST_WARN_EQUAL( std::distance( mesh->beginFaceOnBoundary(), mesh->endFaceOnBoundary() ),
-                       std::distance( meshimp->beginFaceOnBoundary(), meshimp->endFaceOnBoundary() ) );
+                      std::distance( meshimp->beginFaceOnBoundary(), meshimp->endFaceOnBoundary() ) );
     BOOST_CHECK_EQUAL( std::distance( mesh->beginElement(), mesh->endElement() ),
                        std::distance( meshimp->beginElement(), meshimp->endElement() ) );
     BOOST_TEST_MESSAGE( "[gmshimportexport] for dimension " << T::value << " done.\n" );
@@ -286,7 +289,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( meditimport, T, dim_types )
     typedef Exporter<mesh_type> export_type;
     typedef boost::shared_ptr<export_type> export_ptrtype;
     export_ptrtype exporter( Exporter<mesh_type>::New( "gmsh", estr.str() ) );
-    exporter->step(0)->setMesh( mesh );
+    exporter->step( 0 )->setMesh( mesh );
     exporter->save();
     std::ostringstream fstr;
     fstr << "gmshexp-" << T::value << "-1_0.msh";
@@ -296,21 +299,21 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( meditimport, T, dim_types )
                             _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES );
 
     auto neumann1 = markedfaces( mesh, "Neumann" );
-    auto neumann2 = markedfaces( meshimp, mesh->markerName("Neumann") );
+    auto neumann2 = markedfaces( meshimp, mesh->markerName( "Neumann" ) );
     BOOST_CHECK_EQUAL( std::distance( neumann1.get<1>(), neumann1.get<2>() ),
-					  std::distance( neumann2.get<1>(), neumann2.get<2>() ) );
+                       std::distance( neumann2.get<1>(), neumann2.get<2>() ) );
     auto dirichlet1 = markedfaces( mesh, "Dirichlet" );
-    auto dirichlet2 = markedfaces( meshimp, mesh->markerName("Dirichlet") );
+    auto dirichlet2 = markedfaces( meshimp, mesh->markerName( "Dirichlet" ) );
     BOOST_CHECK_EQUAL( std::distance( dirichlet1.get<1>(), dirichlet1.get<2>() ),
-					  std::distance( dirichlet2.get<1>(), dirichlet2.get<2>() ) );
+                       std::distance( dirichlet2.get<1>(), dirichlet2.get<2>() ) );
     BOOST_CHECK_EQUAL( std::distance( mesh->beginFaceOnBoundary(), mesh->endFaceOnBoundary() ),
-					  std::distance( meshimp->beginFaceOnBoundary(), meshimp->endFaceOnBoundary() ) );
+                       std::distance( meshimp->beginFaceOnBoundary(), meshimp->endFaceOnBoundary() ) );
     BOOST_CHECK_EQUAL( std::distance( mesh->beginElement(), mesh->endElement() ),
-					  std::distance( meshimp->beginElement(), meshimp->endElement() ) );
-    BOOST_CHECK_EQUAL(integrate( elements(mesh), cst(1.) ).evaluate(),
-                      integrate( elements(meshimp), cst(1.) ).evaluate() );
-    BOOST_CHECK_EQUAL(integrate( boundaryfaces(mesh), cst(1.) ).evaluate() ,
-                     integrate( boundaryfaces(meshimp), cst(1.) ).evaluate() );
+                       std::distance( meshimp->beginElement(), meshimp->endElement() ) );
+    BOOST_CHECK_EQUAL( integrate( elements( mesh ), cst( 1. ) ).evaluate(),
+                       integrate( elements( meshimp ), cst( 1. ) ).evaluate() );
+    BOOST_CHECK_EQUAL( integrate( boundaryfaces( mesh ), cst( 1. ) ).evaluate() ,
+                       integrate( boundaryfaces( meshimp ), cst( 1. ) ).evaluate() );
 }
 
 BOOST_AUTO_TEST_SUITE_END()

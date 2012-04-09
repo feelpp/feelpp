@@ -67,9 +67,9 @@ using namespace Feel;
 namespace Feel
 {
 typedef parameter::parameters<
-    parameter::required<tag::convex_type, boost::is_base_and_derived<ConvexBase,_> >,
-    parameter::required<tag::basis_type, boost::is_class<_> >
-    > polyvis_signature;
+parameter::required<tag::convex_type, boost::is_base_and_derived<ConvexBase,_> >,
+          parameter::required<tag::basis_type, boost::is_class<_> >
+          > polyvis_signature;
 
 //Generates one-element mesh for reference element (works independently from gmsh version)
 gmsh_ptrtype oneelement_geometry_ref();
@@ -88,14 +88,14 @@ gmsh_ptrtype oneelement_geometry_real();
  * \endcode
  */
 template<
-    typename A0,
-    typename A1,
-    typename A2 = parameter::void_,
-    typename A3 = parameter::void_,
-    typename A4 = parameter::void_>
+typename A0,
+         typename A1,
+         typename A2 = parameter::void_,
+         typename A3 = parameter::void_,
+         typename A4 = parameter::void_>
 class Polyvis
     :
-    public PolyvisBase
+public PolyvisBase
 {
     typedef PolyvisBase super;
 public:
@@ -192,50 +192,50 @@ private:
 }; // Polyvis
 
 template<
-    typename A0,
-    typename A1,
-    typename A2,
-    typename A3,
-    typename A4>
+typename A0,
+         typename A1,
+         typename A2,
+         typename A3,
+         typename A4>
 const uint16_type Polyvis<A0,A1,A2,A3,A4>::Order;
 
 template<
-    typename A0,
-    typename A1,
-    typename A2,
-    typename A3,
-    typename A4>
+typename A0,
+         typename A1,
+         typename A2,
+         typename A3,
+         typename A4>
 void
 Polyvis<A0,A1,A2,A3,A4>::run()
 {
     // First we create the mesh with one element
     mesh_ptrtype oneelement_mesh = createGMSHMesh( _mesh=new mesh_type,
-                                                   _desc=domain( _name="one-elt",
-                                                                 _shape="simplex",
-                                                                 _dim=Dim,
-                                                                 _h=2.0,
-                                                                 _addmidpoint=false,
-                                                                 _xmin=this->vm()["xmin"].template as<double>(),
-                                                                 _ymin=this->vm()["ymin"].template as<double>(),
-                                                                 _zmin=this->vm()["zmin"].template as<double>() ) );
+                                   _desc=domain( _name="one-elt",
+                                           _shape="simplex",
+                                           _dim=Dim,
+                                           _h=2.0,
+                                           _addmidpoint=false,
+                                           _xmin=this->vm()["xmin"].template as<double>(),
+                                           _ymin=this->vm()["ymin"].template as<double>(),
+                                           _zmin=this->vm()["zmin"].template as<double>() ) );
 
 #if 0
     mesh_ptrtype oneelement_mesh_ref = createGMSHMesh( _mesh=new mesh_type,
-                                                   _desc = oneelement_geometry_ref());
+                                       _desc = oneelement_geometry_ref() );
 
     mesh_ptrtype oneelement_mesh_real = createGMSHMesh( _mesh=new mesh_type,
-                                                   _desc = oneelement_geometry_real());
+                                        _desc = oneelement_geometry_real() );
 #endif
     // then a fine mesh which we use to export the basis function to
     // visualize them
     mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
                                         _desc=domain( _name="fine",
-                                                      _shape="simplex",
-                                                      _dim=Dim,
-                                                      _h=meshSize,
-                                                      _xmin=this->vm()["xmin"].template as<double>(),
-                                                      _ymin=this->vm()["ymin"].template as<double>(),
-                                                      _zmin=this->vm()["zmin"].template as<double>() ) );
+                                                _shape="simplex",
+                                                _dim=Dim,
+                                                _h=meshSize,
+                                                _xmin=this->vm()["xmin"].template as<double>(),
+                                                _ymin=this->vm()["ymin"].template as<double>(),
+                                                _zmin=this->vm()["zmin"].template as<double>() ) );
     /** \endcode */
 
     using namespace Feel::vf;
@@ -257,33 +257,33 @@ Polyvis<A0,A1,A2,A3,A4>::run()
 
     // set the mesh of the exporter, we use the fine mesh and the
     // exporter does all the interpolation
-    exporter->step(0)->setMesh( mesh );
+    exporter->step( 0 )->setMesh( mesh );
 
-    for( size_type i = 0;i < Xh_ref->nLocalDof(); ++i )
-        {
-            U.zero();
-            U( i ) = 1;
+    for ( size_type i = 0; i < Xh_ref->nLocalDof(); ++i )
+    {
+        U.zero();
+        U( i ) = 1;
 #if 0 // for rtk
-            using namespace vf;
-            std::cout << "flux " << i << " = " << integrate( boundaryfaces(oneelement_mesh_ref),
-                                                             trans(idv(U))*N(), _Q<4>() ).evaluate()( 0, 0 ) << "\n";;
-            std::cout << "div " << i << " = " << integrate( elements(oneelement_mesh_ref),
-                                                            divv(U), _Q<4>() ).evaluate()( 0, 0 ) << "\n";
+        using namespace vf;
+        std::cout << "flux " << i << " = " << integrate( boundaryfaces( oneelement_mesh_ref ),
+                  trans( idv( U ) )*N(), _Q<4>() ).evaluate()( 0, 0 ) << "\n";;
+        std::cout << "div " << i << " = " << integrate( elements( oneelement_mesh_ref ),
+                  divv( U ), _Q<4>() ).evaluate()( 0, 0 ) << "\n";
 #endif
-            std::ostringstream ostr;
-            ostr << Xh_ref->basis()->familyName() << "-" << i;
-            exporter->step(0)->add( ostr.str(), U );
-        }
+        std::ostringstream ostr;
+        ostr << Xh_ref->basis()->familyName() << "-" << i;
+        exporter->step( 0 )->add( ostr.str(), U );
+    }
 
     exporter->save();
 
 } // Polyvis::run
 template<
-    typename A0,
-    typename A1,
-    typename A2,
-    typename A3,
-    typename A4>
+typename A0,
+         typename A1,
+         typename A2,
+         typename A3,
+         typename A4>
 const uint16_type Polyvis<A0,A1,A2,A3,A4>::Dim;
 
 

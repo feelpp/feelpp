@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -54,7 +54,7 @@ namespace ublas = boost::numeric::ublas;
 template<typename Space>
 class Functional
     :
-        public boost::addable<Functional<Space> >
+public boost::addable<Functional<Space> >
 {
     typedef boost::addable<Functional<Space> > super;
 public:
@@ -103,7 +103,7 @@ public:
     //template<class AE>
     Functional( space_type const& P,
                 matrix_type const& coeff )
-                //ublas::matrix_expression<AE> const& coeff )
+    //ublas::matrix_expression<AE> const& coeff )
         :
         super(),
         _M_p( P ),
@@ -111,7 +111,7 @@ public:
     {
         //FEELPP_ASSERT( _M_coeff.size1() == nComponents && _M_coeff.size2() == _M_p.polynomialDimensionPerComponent() )
         //( _M_coeff.size1() )( _M_coeff.size2() )( _M_p.polynomialDimension() ).error( "invalid coefficient size" );
-//         FEELPP_ASSERT( _M_coeff.size2() == 1 )( _M_coeff.size2() ).error( "there should be only one column" );
+        //         FEELPP_ASSERT( _M_coeff.size2() == 1 )( _M_coeff.size2() ).error( "there should be only one column" );
     }
 
     Functional( Functional const & __f )
@@ -139,6 +139,7 @@ public:
             _M_p = __f._M_p;
             _M_coeff = __f._M_coeff;
         }
+
         return *this;
     }
 
@@ -146,7 +147,7 @@ public:
      * add to another functional
      * it generates automatically operator+ thanks to addable
      */
-    self_type& operator+=(const self_type& __f )
+    self_type& operator+=( const self_type& __f )
     {
         _M_coeff += __f.M_coeff;
         return *this;
@@ -162,9 +163,9 @@ public:
     virtual matrix_type operator()( polynomial_type const& p ) const
     {
         FEELPP_ASSERT( p.coeff().size2()  == _M_coeff.size2() )
-            ( p.coeff() )( _M_coeff ).error( "invalid polynomial" );
+        ( p.coeff() )( _M_coeff ).error( "invalid polynomial" );
 
-        return ublas::prod( p.coeff(), ublas::trans(_M_coeff) );
+        return ublas::prod( p.coeff(), ublas::trans( _M_coeff ) );
     }
 
     //@}
@@ -176,13 +177,19 @@ public:
     /**
      * \return the dimension of the polynomial space
      */
-    uint16_type size() const { return _M_coeff.size2(); }
+    uint16_type size() const
+    {
+        return _M_coeff.size2();
+    }
 
     /**
      * \return the coefficient of the functional in the basis
      * associated with the polynomial space
      */
-    rep_type const& coeff() const { return _M_coeff; }
+    rep_type const& coeff() const
+    {
+        return _M_coeff;
+    }
 
     //@}
 

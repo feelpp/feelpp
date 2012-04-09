@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -40,20 +40,20 @@ Feel::AboutData
 makeAbout()
 {
     Feel::AboutData about( "test_matrix" ,
-                            "test_matrix" ,
-                            "0.1",
-                            "matrix test",
-                            Feel::AboutData::License_LGPL,
-                            "Copyright (c) 2005,2006 EPFL");
+                           "test_matrix" ,
+                           "0.1",
+                           "matrix test",
+                           Feel::AboutData::License_LGPL,
+                           "Copyright (c) 2005,2006 EPFL" );
 
-    about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
     return about;
 
 }
 #if defined(FEELPP_HAS_PETSC_H)
 class test_matrixpetsc
     :
-    public Application
+public Application
 {
 public:
 
@@ -84,7 +84,7 @@ public:
         */
         int Istart;
         int Iend;
-        MatGetOwnershipRange(mat.mat(),&Istart,&Iend);
+        MatGetOwnershipRange( mat.mat(),&Istart,&Iend );
         Debug() << "Istart = "<< Istart << "\n";
         Debug() << "Iend = "<< Iend << "\n";
 
@@ -102,7 +102,7 @@ public:
 
         */
 
-        for (int I=Istart; I<Iend; I++)
+        for ( int I=Istart; I<Iend; I++ )
         {
             int J;
             double v = -1.0;
@@ -110,32 +110,38 @@ public:
             int j = I - i*n;
             Debug() << "I= " << I << "\n";
 
-            if (i>0)
-                {
-                    J = I - n+1;
-                    Debug() << "1 J= " << J << "\n";
-                    mat.set(I,J,v);
-                }
-            if (i<m-1)
-                {
-                    J = I + n-1;
-                    Debug() << "2 J= " << J << "\n";
-                    mat.set(I,J,v);
-                }
-            if (j>0)
-                {
-                    J = I - 1;
-                    Debug() << "3 J= " << J << "\n";
-                    mat.set(I,J,v);
-                }
-            if (j<n-1)
-                {
-                    J = I + 1;
-                    Debug() << "4 J= " << J << "\n";
-                    mat.set(I,J,v);
-                }
-            v = 4.0; mat.set(I,I,v);
+            if ( i>0 )
+            {
+                J = I - n+1;
+                Debug() << "1 J= " << J << "\n";
+                mat.set( I,J,v );
+            }
+
+            if ( i<m-1 )
+            {
+                J = I + n-1;
+                Debug() << "2 J= " << J << "\n";
+                mat.set( I,J,v );
+            }
+
+            if ( j>0 )
+            {
+                J = I - 1;
+                Debug() << "3 J= " << J << "\n";
+                mat.set( I,J,v );
+            }
+
+            if ( j<n-1 )
+            {
+                J = I + 1;
+                Debug() << "4 J= " << J << "\n";
+                mat.set( I,J,v );
+            }
+
+            v = 4.0;
+            mat.set( I,I,v );
         }
+
         Debug() << "closing petsc matrix\n";
         mat.close();
         Debug() << "closing petsc matrix done\n";
@@ -143,7 +149,7 @@ public:
         Debug() << "saving petsc matrix in matlab\n";
         //mat.printMatlab("m");
         //mat.printMatlab(std::string("/tmp/mat.m") );
-        mat.printMatlab("mat.m");
+        mat.printMatlab( "mat.m" );
         Debug() << "saving petsc matrix in matlab done\n";
 
     }
@@ -160,6 +166,6 @@ int main( int argc, char** argv )
 #else
 int main( int /*argc*/, char** /*argv*/ )
 {
-  return EXIT_SUCCESS;
+    return EXIT_SUCCESS;
 }
 #endif

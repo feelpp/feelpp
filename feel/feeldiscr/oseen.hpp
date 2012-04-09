@@ -116,7 +116,7 @@ public:
            const std::set<flag_type>& neumannFlags,
            bool weak_dirichlet = true,
            bool export_matlab = false
-        );
+         );
 
     Oseen( const space_ptrtype& space,
            const backend_ptrtype& backend,
@@ -124,45 +124,45 @@ public:
            const std::set<flag_type>& neumannFlags,
            po::variables_map const& vm,
            std::string const& prefix = ""
-        );
+         );
 
     // setting of options
     void setBCCoeffDiff( value_type bccoeffdiff )
-        {
-            M_bcCoeffDiff = bccoeffdiff;
-        }
+    {
+        M_bcCoeffDiff = bccoeffdiff;
+    }
 
     void setBCCoeffConv( value_type bccoeffconv )
-        {
-            M_bcCoeffConv = bccoeffconv;
-        }
+    {
+        M_bcCoeffConv = bccoeffconv;
+    }
 
     void setStabCoeffDiv( value_type stabcoeffdiv )
-        {
-            M_stabCoeffDiv = stabcoeffdiv;
-        }
+    {
+        M_stabCoeffDiv = stabcoeffdiv;
+    }
 
     void setStabCoeffP( value_type stabcoeffp )
-        {
-            M_stabCoeffP = stabcoeffp;
-        }
+    {
+        M_stabCoeffP = stabcoeffp;
+    }
 
     void decouplePstab( element_p_type& pStab, value_type theta )
-        {
-            M_pStab = &pStab;
-            M_thetaPstab = theta;
-        }
+    {
+        M_pStab = &pStab;
+        M_thetaPstab = theta;
+    }
 
     void couplePstab()
-        {
-            M_pStab = 0;
-            M_thetaPstab = -1.0;
-        }
+    {
+        M_pStab = 0;
+        M_thetaPstab = -1.0;
+    }
 
     void setEpsCompress( value_type epscompress )
-        {
-            M_epsCompress = epscompress;
-        }
+    {
+        M_epsCompress = epscompress;
+    }
 
     void setDivDivCoeff( value_type divdivcoeff );
 
@@ -187,24 +187,24 @@ public:
 
     // results
     const element_u_type& velocity()
-        {
-            solve();
-            return u;
-        }
+    {
+        solve();
+        return u;
+    }
     const element_p_type& pressure()
-        {
-            solve();
-            return p;
-        }
+    {
+        solve();
+        return p;
+    }
 
     element_type& solution()
-        {
-            return M_sol;
-        }
+    {
+        return M_sol;
+    }
     const element_type& solution() const
-        {
-            return M_sol;
-        }
+    {
+        return M_sol;
+    }
 
     value_type stabilizationEnergy() const;
 
@@ -300,12 +300,12 @@ Oseen<Space, imOrder, Entity>::Oseen( const space_ptrtype& space,
 
     Debug( 10000 ) << "[Oseen::Oseen] -(p,div v) + (q,div u)\n";
     form2( _test=M_space, _trial=M_space, _matrix=M_matrixAu, _init=true ) =
-        integrate( elements(M_mesh),
-                   - div(v) * idt(p)
-            )+
-        integrate( elements(M_mesh),
-                   + id(q)  * divt(u)
-            );
+        integrate( elements( M_mesh ),
+                   - div( v ) * idt( p )
+                 )+
+        integrate( elements( M_mesh ),
+                   + id( q )  * divt( u )
+                 );
 
 
     //M_matrixStab.close();
@@ -350,6 +350,7 @@ Oseen<Space, imOrder, Entity>::Oseen( const space_ptrtype& space,
     M_export_matlab( true )
 {
     std::string _prefix = prefix;
+
     if ( !_prefix.empty() )
         _prefix += "-";
 
@@ -369,12 +370,12 @@ Oseen<Space, imOrder, Entity>::Oseen( const space_ptrtype& space,
 
     Debug( 10000 ) << "[Oseen::Oseen] -(p,div v) + (q,div u)\n";
     form2( _test=M_space, _trial=M_space, _matrix=M_matrixAu, _init=true ) =
-        integrate( elements(M_mesh),
-                   - div(v) * idt(p)
-            )+
-        integrate( elements(M_mesh),
-                   + id(q)  * divt(u)
-            );
+        integrate( elements( M_mesh ),
+                   - div( v ) * idt( p )
+                 )+
+        integrate( elements( M_mesh ),
+                   + id( q )  * divt( u )
+                 );
 
     //M_matrixStab.close();
 
@@ -393,13 +394,14 @@ Oseen<Space, imOrder, Entity>::setDivDivCoeff( value_type divdivcoeff )
     element_u_type& v = u;
 
     value_type delta = divdivcoeff - M_divDivCoeff;
+
     if ( delta != 0.0 )
     {
         Debug( 10000 ) << "[Oseen::set_divdivcoeff] (h gamma div u,div v)\n";
         form2( _test=M_space, _trial=M_space, _matrix=M_matrixAu ) +=
-            integrate( elements(M_mesh),
-                       h()*delta*div(v)*divt(u)
-                );
+            integrate( elements( M_mesh ),
+                       h()*delta*div( v )*divt( u )
+                     );
         M_divDivCoeff = divdivcoeff;
     }
 }
@@ -421,16 +423,16 @@ template<typename ItRange, typename EsigmaInc,
          typename EnuInc, typename EnuAbs,
          typename Ebeta, typename Ef, typename Ec, typename Eg,
          typename EnoSlip>
-void Oseen<Space, imOrder, Entity>::update(const ItRange& itRange,
-                                           const EsigmaInc& sigmaInc,
-                                           const EnuInc& nuInc,
-                                           const EnuAbs& nuAbs,
-                                           const Ebeta& beta,
-                                           const Ef& f,
-                                           const Ec& c,
-                                           const Eg& g,
-                                           const EnoSlip& noSlip,
-                                           bool updateStabilization )
+void Oseen<Space, imOrder, Entity>::update( const ItRange& itRange,
+        const EsigmaInc& sigmaInc,
+        const EnuInc& nuInc,
+        const EnuAbs& nuAbs,
+        const Ebeta& beta,
+        const Ef& f,
+        const Ec& c,
+        const Eg& g,
+        const EnoSlip& noSlip,
+        bool updateStabilization )
 {
     element_u_type& v = u;
     element_p_type& q = p;
@@ -439,35 +441,35 @@ void Oseen<Space, imOrder, Entity>::update(const ItRange& itRange,
 
     using namespace Feel::vf;
 
-    auto bcCoeffVeloFull = (nuAbs)*(noSlip)*M_bcCoeffDiff/hFace()-chi( ( trans(beta)*N() ) < 0 ) * trans(beta)*N();
-    auto bcCoeffVeloNorm = M_bcCoeffConv * vf::max( vf::sqrt( trans(beta)*(beta) ), (nuAbs)/hFace() );
+    auto bcCoeffVeloFull = ( nuAbs )*( noSlip )*M_bcCoeffDiff/hFace()-chi( ( trans( beta )*N() ) < 0 ) * trans( beta )*N();
+    auto bcCoeffVeloNorm = M_bcCoeffConv * vf::max( vf::sqrt( trans( beta )*( beta ) ), ( nuAbs )/hFace() );
 
     // --- right hand side rhs
 
     // rhs volume terms
     Debug( 10000 ) << "[Oseen::update] (f,v)+(c,q)\n";
     form1( M_space, M_vectorRhsFull, _init=true ) =
-        integrate( elements(M_mesh), val(trans(f))*id(v) + val(c)*id(q) );
+        integrate( elements( M_mesh ), val( trans( f ) )*id( v ) + val( c )*id( q ) );
     Debug( 10000 ) << "[Oseen::update] (f,v)+(c,q) done\n";
 
     if ( M_weak_dirichlet )
     {
         // rhs boundary terms
-        for( auto diriIter = M_dirichletFlags.begin(),
-                 diriEnd = M_dirichletFlags.end();
-             diriIter != diriEnd; ++diriIter )
+        for ( auto diriIter = M_dirichletFlags.begin(),
+                diriEnd = M_dirichletFlags.end();
+                diriIter != diriEnd; ++diriIter )
         {
             Debug( 10000 ) << "[Oseen::update] <bc(g),v>_Gamma_"
                            << *diriIter << "\n";
             form1( M_space, M_vectorRhsFull ) +=
-                integrate( markedfaces(M_mesh, *diriIter),
-                           ( -val(noSlip)*( val(nuAbs)*trans(N())
-                                            *( grad(v)+trans(grad(v)) )
-                                            + id(q)*trans(N()))
-                             + val(bcCoeffVeloFull)*trans(id(v))
-                             + val(bcCoeffVeloNorm)*(trans(id(v))*N())*trans(N()))
-                           * val(g)
-                    );
+                integrate( markedfaces( M_mesh, *diriIter ),
+                           ( -val( noSlip )*( val( nuAbs )*trans( N() )
+                                              *( grad( v )+trans( grad( v ) ) )
+                                              + id( q )*trans( N() ) )
+                             + val( bcCoeffVeloFull )*trans( id( v ) )
+                             + val( bcCoeffVeloNorm )*( trans( id( v ) )*N() )*trans( N() ) )
+                           * val( g )
+                         );
             Debug( 10000 ) << "[Oseen::update] <bc(g),v>_Gamma_"
                            << *diriIter << " done\n";
         }
@@ -479,9 +481,9 @@ void Oseen<Space, imOrder, Entity>::update(const ItRange& itRange,
     Debug( 10000 ) << "[Oseen::update] adding (nu D(u),D(v)) + (sigma u,v)\n";
     form2( M_space, M_space, _matrix=M_matrixAu ) +=
         integrate( itRange,
-                   val(nuInc)*trace(grad(v)*(gradt(u)+trans(gradt(u))))
-                   + val(sigmaInc)*trans(id(v))*idt(u)
-            );
+                   val( nuInc )*trace( grad( v )*( gradt( u )+trans( gradt( u ) ) ) )
+                   + val( sigmaInc )*trans( id( v ) )*idt( u )
+                 );
     Debug( 10000 ) << "[Oseen::update] adding (nu D(u),D(v)) + (sigma u,v) done\n";
 
     //M_matrixFull = M_matrixAu;
@@ -490,123 +492,136 @@ void Oseen<Space, imOrder, Entity>::update(const ItRange& itRange,
     // convective terms
     Debug( 10000 ) << "[Oseen::update] ((beta*grad)u,v)\n";
     form2( M_space, M_space, M_matrixFull, _init=true ) =
-        integrate( elements(M_mesh),
-                   trans(id(v)) * ( gradt(u)*val(beta) )
-            );
+        integrate( elements( M_mesh ),
+                   trans( id( v ) ) * ( gradt( u )*val( beta ) )
+                 );
 #if 0
+
     // --- stabilization matrices
     if ( ( M_stabCoeffDiv != 0.0 ) ||
-         ( M_stabCoeffP   != 0.0 ) ||
-         ( M_epsCompress  != 0.0 ) )
+            ( M_stabCoeffP   != 0.0 ) ||
+            ( M_epsCompress  != 0.0 ) )
     {
         if ( updateStabilization )
         {
             form2( M_space, M_space, M_matrixStab, _init=true );
 #if 1
+
             if ( M_stabCoeffDiv != 0.0 )
             {
                 Debug( 10000 ) << "[Oseen::update] <gamma_div [div u],[div v]>_Gamma_int\n";
                 form( M_space, M_space, M_matrixStab ) +=
-                    integrate( internalfaces(M_mesh), typename im<imOrder-1>::type(),
-                               val( M_stabCoeffDiv * vf::pow(hFace(),2.0) *
-                                    vf::sqrt(trans(beta)*(beta) ) )
-                               * trans(jump(div(v))) * jumpt(divt(u))
-                        );
+                    integrate( internalfaces( M_mesh ), typename im<imOrder-1>::type(),
+                               val( M_stabCoeffDiv * vf::pow( hFace(),2.0 ) *
+                                    vf::sqrt( trans( beta )*( beta ) ) )
+                               * trans( jump( div( v ) ) ) * jumpt( divt( u ) )
+                             );
             }
+
             if ( M_stabCoeffP != 0.0 )
             {
                 Debug( 10000 ) << "[Oseen::update] <gamma_p [grad p],[grad q]>_Gamma_int\n";
                 M_stabWeightP =
-                    vf::project( M_space_i, elements(M_mesh),
-                                 M_stabCoeffP * vf::pow(h(),3.0) /
-                                 max( h() * vf::sqrt( trans(beta) * (beta) ),
-                                      (nuAbs) )
-                        );
+                    vf::project( M_space_i, elements( M_mesh ),
+                                 M_stabCoeffP * vf::pow( h(),3.0 ) /
+                                 max( h() * vf::sqrt( trans( beta ) * ( beta ) ),
+                                      ( nuAbs ) )
+                               );
+
                 if ( M_pStab )
                 {
                     form( M_space, M_space, M_matrixStab ) +=
-                        integrate( internalfaces(M_mesh),
+                        integrate( internalfaces( M_mesh ),
                                    typename im<2*pOrder-2>::type(),
                                    val( M_thetaPstab
                                         * maxface( idv( M_stabWeightP ) ) )
-                                   * ( leftface  (grad (q)*N()) *
-                                       leftfacet (gradt(p)*N()) +
-                                       rightface (grad (q)*N()) *
-                                       rightfacet(gradt(p)*N()) )
-                            );
+                                   * ( leftface  ( grad ( q )*N() ) *
+                                       leftfacet ( gradt( p )*N() ) +
+                                       rightface ( grad ( q )*N() ) *
+                                       rightfacet( gradt( p )*N() ) )
+                                 );
                 }
+
                 else
                 {
                     form( M_space, M_space, M_matrixStab ) +=
-                        integrate( internalfaces(M_mesh),
+                        integrate( internalfaces( M_mesh ),
                                    typename im<2*pOrder-2>::type(),
                                    maxface( idv( M_stabWeightP ) )
-                                   * jump(grad(q)) * jumpt(gradt(p))
-                            );
+                                   * jump( grad( q ) ) * jumpt( gradt( p ) )
+                                 );
                 }
             }
+
 #endif
+
             if ( M_epsCompress > 0 )
             {
                 Debug() << "[Oseen] adding pseudo compressibility term with coeff= " << M_epsCompress << "\n";
                 form( M_space, M_space, M_matrixStab ) +=
-                    integrate( elements(M_mesh), typename im<2*pOrder>::type(),
-                               M_epsCompress * id(q) * idt(p)
-                        );
+                    integrate( elements( M_mesh ), typename im<2*pOrder>::type(),
+                               M_epsCompress * id( q ) * idt( p )
+                             );
                 Debug() << "[Oseen] adding pseudo compressibility term with coeff= " << M_epsCompress << " done\n";
             }
+
             M_matrixStab->close();
         }
 
     }
+
 #endif
 
 #if 0
+
     if ( M_pStab && ( M_stabCoeffP != 0.0 ) )
     {
         Debug( 10000 ) << "[Oseen::update] added rhs stab\n";
         const int staborder = 2*pOrder-2;
         form( M_space, *M_vectorRhsFull ) +=
-            integrate( internalfaces(M_mesh), typename im<staborder>::type(),
-                       val( maxface( idv(M_stabWeightP) ) )
-                       * ( - ( leftface  (grad (q)*N()) *
-                               rightfacev(gradv(*M_pStab)*N()) +
-                               rightface (grad (q)*N()) *
-                               leftfacev (gradv(*M_pStab)*N()) )
+            integrate( internalfaces( M_mesh ), typename im<staborder>::type(),
+                       val( maxface( idv( M_stabWeightP ) ) )
+                       * ( - ( leftface  ( grad ( q )*N() ) *
+                               rightfacev( gradv( *M_pStab )*N() ) +
+                               rightface ( grad ( q )*N() ) *
+                               leftfacev ( gradv( *M_pStab )*N() ) )
                            + ( M_thetaPstab - 1.0 )
-                           * ( ( leftface  (grad (q)*N()) *
-                                 leftfacev (gradv(*M_pStab)*N()) +
-                                 rightface (grad (q)*N()) *
-                                 rightfacev (gradv(*M_pStab)*N()) )
-                               )
-                           )
-                );
+                           * ( ( leftface  ( grad ( q )*N() ) *
+                                 leftfacev ( gradv( *M_pStab )*N() ) +
+                                 rightface ( grad ( q )*N() ) *
+                                 rightfacev ( gradv( *M_pStab )*N() ) )
+                             )
+                         )
+                     );
         Debug( 10000 ) << "[Oseen::update] added rhs stab done\n";
     }
+
 #endif
+
     // boundary terms
-    for( auto diriIter = M_dirichletFlags.begin(),
-             diriEnd = M_dirichletFlags.end();
-         diriIter != diriEnd; ++diriIter )
+    for ( auto diriIter = M_dirichletFlags.begin(),
+            diriEnd = M_dirichletFlags.end();
+            diriIter != diriEnd; ++diriIter )
     {
         if ( M_weak_dirichlet )
         {
             Debug( 10000 ) << "[Oseen::update] <bc(u),v>_Gamma_"
                            << *diriIter << "\n";
             form2( M_space, M_space, M_matrixFull ) +=
-                integrate( markedfaces(M_mesh, *diriIter),
-                           -val(noSlip)*( val((nuAbs)*trans(N()))
-                                          *( (grad(v)+trans(grad(v))) *idt(u) +
-                                             (gradt(u)+trans(gradt(u)))*id(v) )
-                                          + id(q)*trans(N())*idt(u)
-                                          - idt(p)*trans(N())*id(v) )
-                           + val(bcCoeffVeloFull)*(trans(id(v))*idt(u))
-                           + val(bcCoeffVeloNorm)
-                           * (trans(id(v))*N()) * (trans(N())*idt(u))
-                    );
+                integrate( markedfaces( M_mesh, *diriIter ),
+                           -val( noSlip )*( val( ( nuAbs )*trans( N() ) )
+                                            *( ( grad( v )+trans( grad( v ) ) ) *idt( u ) +
+                                               ( gradt( u )+trans( gradt( u ) ) )*id( v ) )
+                                            + id( q )*trans( N() )*idt( u )
+                                            - idt( p )*trans( N() )*id( v ) )
+                           + val( bcCoeffVeloFull )*( trans( id( v ) )*idt( u ) )
+                           + val( bcCoeffVeloNorm )
+                           * ( trans( id( v ) )*N() ) * ( trans( N() )*idt( u ) )
+                         );
             Debug( 10000 ) << "[Oseen::update] <bc(u),v>_Gamma_"
                            << *diriIter << " done\n";
         }
+
         else
         {
             M_matrixFull->close();
@@ -614,7 +629,7 @@ void Oseen<Space, imOrder, Entity>::update(const ItRange& itRange,
             Debug( 10000 ) << "[Oseen::update] on(u)_Gamma_"
                            << *diriIter << "\n";
             form2( M_space, M_space, M_matrixFull ) +=
-                on( markedfaces( *M_mesh, *diriIter),
+                on( markedfaces( *M_mesh, *diriIter ),
                     u, *M_vectorRhsFull, g );
             Debug( 10000 ) << "[Oseen::update] on(u)_Gamma_"
                            << *diriIter << "done \n";
@@ -652,6 +667,7 @@ void Oseen<Space, imOrder, Entity>::solve()
     {
         return;
     }
+
     M_updated = false;
 
 #if 0
@@ -677,8 +693,8 @@ template<class Space, uint16_type imOrder,
          template<uint16_type,uint16_type,uint16_type> class Entity>
 void
 Oseen<Space, imOrder, Entity>::solveNonSym( sparse_matrix_ptrtype const& D,
-                                            element_type  & u,
-                                            vector_ptrtype  const& F )
+        element_type  & u,
+        vector_ptrtype  const& F )
 {
     M_backend->solve( _matrix=D, _solution=u, _rhs=F );
 } // Oseen::solveNonSym

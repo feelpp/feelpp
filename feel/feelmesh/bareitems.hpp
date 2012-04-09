@@ -211,7 +211,7 @@ inline
 std::pair<BarePoint, bool>
 makeBarePoint( size_type const i )
 {
-    return std::make_pair(BarePoint( i ), true );
+    return std::make_pair( BarePoint( i ), true );
 }
 /**
  *  \ingroup BareItemsBuilder
@@ -237,6 +237,7 @@ makeBareEdge( size_type const i, size_type const j )
     {
         return std::make_pair( BareEdge( i, j ), true );
     }
+
     else
     {
         return std::make_pair( BareEdge( j, i ), false );
@@ -457,13 +458,16 @@ struct cmpBareItem<BareFace>
     {
         if ( e2.first > e1.first )
             return true;
+
         if ( e2.first == e1.first )
         {
             if ( e2.second > e1.second )
                 return true;
+
             if ( e2.second == e1.second )
                 return e2.third > e1.third;
         }
+
         return false;
     }
 };
@@ -509,7 +513,10 @@ public:
     bool isThereDel( BareItem const & );
 
     //!< The # of entities ones actually stored.
-    size_type howMany() const { return container::size(); }
+    size_type howMany() const
+    {
+        return container::size();
+    }
 
     //!< Max size_type currently in use
     size_type maxId() const
@@ -517,7 +524,7 @@ public:
         return _M_id_count;
     }
 
-     //!< Writes info in output
+    //!< Writes info in output
     void showMe() const;
 
 private:
@@ -551,7 +558,7 @@ BareItem getItem( std::pair<BareItem, size_type> const & i )
 //                   BareItemsHandler
 template <class BareItem>
 BareItemsHandler<BareItem>::BareItemsHandler()
-        :
+    :
     _M_id_count( 0 )
 { }
 
@@ -570,11 +577,13 @@ bool
 BareItemsHandler<BareItem>::setId( const BareItem & s, size_type const id )
 {
     const_iterator i = find( s );
+
     if ( i != container::end() )
     {
         i->second = id;
         return true;
     }
+
     else
     {
         return false;
@@ -588,8 +597,10 @@ typename BareItemsHandler<BareItem>::size_type
 BareItemsHandler<BareItem>::id( const BareItem & s ) const
 {
     const_iterator i = find( s );
+
     if ( i != container::end() )
         return i->second;
+
     else
         return 0;
 }
@@ -600,8 +611,10 @@ std::pair<typename BareItemsHandler<BareItem>::size_type, bool>
 BareItemsHandler<BareItem>::addIfNotThere( const BareItem & s )
 {
     std::pair<typename BareItemsHandler<BareItem>::iterator, bool> i( insert( std::make_pair( s, _M_id_count ) ) );
+
     if ( i.second )
         ++_M_id_count;
+
     return std::make_pair( ( i.first ) ->second, i.second );
 }
 
@@ -617,10 +630,10 @@ BareItemsHandler<BareItem>::addIfNotThere( const BareItem & s, const size_type i
     // id count should grow +1
     //FEELPP_ASSERT( _M_id_count == id )( _M_id_count )( id ).error ( "invalid item id" );
     if ( i.second )
-        {
-            _M_id_count = id;
-            ++_M_id_count;
-        }
+    {
+        _M_id_count = id;
+        ++_M_id_count;
+    }
 
     // for consistency with other version.
     return std::make_pair( id, i.second );

@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -87,7 +87,10 @@ public:
     /**
      * \return the communicator
      */
-    mpi::communicator const& comm() const { return M_comm; }
+    mpi::communicator const& comm() const
+    {
+        return M_comm;
+    }
 
     /**
      * create object \p partitioner from factory
@@ -109,7 +112,10 @@ public:
      * the subdomain_id of each element.  This number is reserved for things
      * like material properties, etc.
      */
-    void partition ( Mesh& mesh ) { partition( mesh, M_comm.size() ); }
+    void partition ( Mesh& mesh )
+    {
+        partition( mesh, M_comm.size() );
+    }
 
     /**
      * Partition the \p mesh_type into \p n parts.  If the user does not specify
@@ -128,9 +134,9 @@ public:
      * scratch.  The default behavior is to simply call this->partition(n)
      */
     void repartition ( mesh_type& mesh )
-        {
-            repartition( mesh, M_comm.size() );
-        }
+    {
+        repartition( mesh, M_comm.size() );
+    }
 
 
     /**
@@ -150,25 +156,25 @@ protected:
      * to processor 0.  Is is provided as a separate function
      * so that derived classes may use it without reimplementing it.
      */
-    void singlePartition (mesh_type& mesh);
+    void singlePartition ( mesh_type& mesh );
 
     /**
      * This is the actual partitioning method which must be overloaded
      * in derived classes.  It is called via the public partition()
      * method above by the user.
      */
-    virtual void doPartition(mesh_type& mesh,
-                             const size_type n) = 0;
+    virtual void doPartition( mesh_type& mesh,
+                              const size_type n ) = 0;
 
     /**
      * This is the actual re-partitioning method which can be overloaded
      * in derived classes.  Note that the default behavior is to simply
      * call the partition function.
      */
-    virtual void doRepartition (mesh_type& mesh,
-                                const size_type n)
+    virtual void doRepartition ( mesh_type& mesh,
+                                 const size_type n )
     {
-        this->doPartition (mesh, n);
+        this->doPartition ( mesh, n );
     }
 
 private:
@@ -179,7 +185,7 @@ private:
 template<typename Mesh>
 void
 Partitioner<Mesh>::partition ( mesh_type& mesh,
-                               size_type n)
+                               size_type n )
 {
     // Set the number of partitions in the mesh
     mesh.setNumberOfPartitions( n );
@@ -193,7 +199,7 @@ Partitioner<Mesh>::partition ( mesh_type& mesh,
 template<typename Mesh>
 void
 Partitioner<Mesh>::repartition ( mesh_type& mesh,
-                                 size_type n)
+                                 size_type n )
 {
     // Set the number of partitions in the mesh
     mesh.setNumberOfPartitions( n );
@@ -206,12 +212,12 @@ Partitioner<Mesh>::repartition ( mesh_type& mesh,
 
 template<typename Mesh>
 void
-Partitioner<Mesh>::singlePartition (mesh_type& mesh)
+Partitioner<Mesh>::singlePartition ( mesh_type& mesh )
 {
     element_iterator       elem_it  = mesh.beginElement();
     const element_iterator elem_end = mesh.endElement();
 
-    for ( ; elem_it != elem_end; ++elem_it)
+    for ( ; elem_it != elem_end; ++elem_it )
     {
         element_type elt = *elem_it;
         elt.setProcessId( 0 );

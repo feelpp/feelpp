@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -82,7 +82,7 @@ public:
     virtual double k() const
     {
         double T = 273; // K (default)
-        return pow(10,(0.8616*log10(abs(T))-3.7142));
+        return pow( 10,( 0.8616*log10( abs( T ) )-3.7142 ) );
     }
 
     //! density in \f$ kg/m^3 \f$
@@ -93,13 +93,23 @@ public:
     }
 
     //! thermal capacity in \f$ J/(kg*K) \f$
-    virtual double C() const { double T=273; return 0.0769*T+1076.9; }
+    virtual double C() const
+    {
+        double T=273;
+        return 0.0769*T+1076.9;
+    }
 
     //! Poisson coefficient
-    virtual double nu() const { return 1.7*1e-5; }
+    virtual double nu() const
+    {
+        return 1.7*1e-5;
+    }
 
     //! Young modulus in \f$ Pa \f$
-    virtual double E() const { return -1; }
+    virtual double E() const
+    {
+        return -1;
+    }
 
 
     //@}

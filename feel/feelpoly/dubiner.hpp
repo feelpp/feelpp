@@ -110,8 +110,8 @@ struct DubinerTraits
     typedef typename Convex<nConvexOrderDiff>::reference_type diff_reference_convex_type;
 
     typedef typename mpl::if_<mpl::equal_to<mpl::int_<nDim>, mpl::int_<2> >,
-                              mpl::identity<PointSetWarpBlend<diff_convex_type, nConvexOrderDiff, value_type> >,
-                              mpl::identity<PointSetEquiSpaced<diff_convex_type, nConvexOrderDiff, value_type> > >::type::type diff_pointset_type;
+            mpl::identity<PointSetWarpBlend<diff_convex_type, nConvexOrderDiff, value_type> >,
+            mpl::identity<PointSetEquiSpaced<diff_convex_type, nConvexOrderDiff, value_type> > >::type::type diff_pointset_type;
 
     /*
      * storage policy
@@ -246,10 +246,11 @@ public:
     self_type const& operator=( self_type const& d )
     {
         if ( this != &d )
-            {
-                _M_pts = d._M_pts;
-                _S_D = d._S_D;
-            }
+        {
+            _M_pts = d._M_pts;
+            _S_D = d._S_D;
+        }
+
         return *this;
     }
 
@@ -275,29 +276,44 @@ public:
     /**
      * Number of polynomials in set
      */
-    size_type size() const { return convex_type::polyDims( nOrder ); }
+    size_type size() const
+    {
+        return convex_type::polyDims( nOrder );
+    }
 
     /**
      * \return the maximum degree of the Dubiner polynomial to be
      * constructed
      */
-    uint16_type degree() const { return nOrder; }
+    uint16_type degree() const
+    {
+        return nOrder;
+    }
 
     /**
      * \return self as a basis
      */
-    self_type const& basis() const { return *this; }
+    self_type const& basis() const
+    {
+        return *this;
+    }
 
     /**
      * \return true if the Dubiner polynomials are normalized, false
      * otherwise
      */
-    bool isNormalized() const { return is_normalized; }
+    bool isNormalized() const
+    {
+        return is_normalized;
+    }
 
     /**
      * \return the \c familyName()
      */
-    std::string familyName() const { return "dubiner"; }
+    std::string familyName() const
+    {
+        return "dubiner";
+    }
 
     //@}
 
@@ -384,12 +400,14 @@ private:
     static matrix_type
     evaluate( points_type const& __pts, mpl::int_<1> )
     {
-        matrix_type m ( JacobiBatchEvaluation<nOrder,value_type>( 0.0, 0.0, ublas::row(__pts, 0) ) );
+        matrix_type m ( JacobiBatchEvaluation<nOrder,value_type>( 0.0, 0.0, ublas::row( __pts, 0 ) ) );
+
         if ( is_normalized )
-            {
-                for ( uint16_type i = 0;i < m.size1(); ++i )
-                    ublas::row( m, i ) *= math::sqrt(value_type( i )+0.5);
-            }
+        {
+            for ( uint16_type i = 0; i < m.size1(); ++i )
+                ublas::row( m, i ) *= math::sqrt( value_type( i )+0.5 );
+        }
+
         return m;
     }
 
@@ -401,15 +419,17 @@ private:
     static vector_matrix_type
     derivate( ublas::matrix_expression<AE> const& __pts, mpl::int_<1> )
     {
-        FEELPP_ASSERT( __pts().size1() == 1 )( __pts().size1() )( __pts().size2() ).error("invalid points");
+        FEELPP_ASSERT( __pts().size1() == 1 )( __pts().size1() )( __pts().size2() ).error( "invalid points" );
         // Debug() << "Expansion::derivate<1>] number of points " << __pts().size2() << "\n";
 
         vector_matrix_type D( 1 );
         D[0].resize( nOrder+1, __pts().size2() );
-        D[0] = JacobiBatchDerivation<nOrder,value_type>( 0.0, 0.0, ublas::row(__pts(),0) );
+        D[0] = JacobiBatchDerivation<nOrder,value_type>( 0.0, 0.0, ublas::row( __pts(),0 ) );
+
         if ( is_normalized )
             for ( uint16_type i = 0; i < nOrder+1; ++i )
                 ublas::row( D[0], i ) *= math::sqrt( value_type( i )+0.5 );
+
         return D;
     }
 
@@ -497,30 +517,33 @@ Dubiner<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::initDeriva
     typedef typename traits_type::points_type points_type;
     typedef typename traits_type::node_type node_type;
 #endif // 0
-    if ( _S_has_derivation == false )
-        {
-            _S_has_derivation = true;
 
-            reference_convex_type refconvex;
-            // constructor pointset for differentiation only in
-            // the interior(1)
-            diff_pointset_type diff_pts(1);
-            matrix_type A( evaluate( diff_pts.points() ) );
+    if ( _S_has_derivation == false )
+    {
+        _S_has_derivation = true;
+
+        reference_convex_type refconvex;
+        // constructor pointset for differentiation only in
+        // the interior(1)
+        diff_pointset_type diff_pts( 1 );
+        matrix_type A( evaluate( diff_pts.points() ) );
 
 #if 1
-            matrix_type D = ublas::identity_matrix<value_type>( A.size1(), A.size2()  );
-            LU<matrix_type> lu(A);
-            matrix_type C = lu.solve( D );
+        matrix_type D = ublas::identity_matrix<value_type>( A.size1(), A.size2()  );
+        LU<matrix_type> lu( A );
+        matrix_type C = lu.solve( D );
 
-            vector_matrix_type d ( derivate( diff_pts.points() ) );
-            _S_D.resize( d.size() );
-            for ( size_type i = 0; i < d.size(); ++i )
-                {
-                    _S_D[i] = ublas::prod( d[i], C );
-                    glas::clean( _S_D[i] );
-                }
-#endif
+        vector_matrix_type d ( derivate( diff_pts.points() ) );
+        _S_D.resize( d.size() );
+
+        for ( size_type i = 0; i < d.size(); ++i )
+        {
+            _S_D[i] = ublas::prod( d[i], C );
+            glas::clean( _S_D[i] );
         }
+
+#endif
+    }
 }
 
 template<uint16_type Dim,
@@ -543,36 +566,40 @@ Dubiner<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::evaluate( 
 
     matrix_type as( JacobiBatchEvaluation<nOrder, value_type>( 0.0, 0.0, eta1s ) );
     std::vector<matrix_type> bs( nOrder+1 );
+
     for ( int i = 0; i < nOrder+1; ++i )
-        {
-            bs[ i ].resize( nOrder-i, eta2s.size() );
-            bs[ i ] = dyna::JacobiBatchEvaluation( nOrder-i, value_type( 2*i+1 ), value_type( 0.0 ), eta2s );
-        }
+    {
+        bs[ i ].resize( nOrder-i, eta2s.size() );
+        bs[ i ] = dyna::JacobiBatchEvaluation( nOrder-i, value_type( 2*i+1 ), value_type( 0.0 ), eta2s );
+    }
 
 
     details::scalings<nOrder, T> scalings( eta2s );
 
 
-    for ( uint16_type cur = 0, k = 0; k < nOrder+1;++k )
+    for ( uint16_type cur = 0, k = 0; k < nOrder+1; ++k )
+    {
+        for ( uint16_type i = 0; i < k+1; ++i,++cur )
         {
-            for ( uint16_type i = 0; i < k+1; ++i,++cur )
-                {
-                    uint16_type ii = k-i;
-                    uint16_type jj = i;
+            uint16_type ii = k-i;
+            uint16_type jj = i;
 
-                    if ( is_normalized )
-                        {
-                            value_type normalization = math::sqrt( (value_type(ii)+0.5)*(value_type(ii+jj)+1.0) );
-                            for ( uint16_type l = 0; l < as.size2(); ++l )
-                                res( cur, l ) = normalization*as( ii,l)*scalings()(ii,l)*bs[ii](jj,l);
-                        }
-                    else
-                        {
-                            for ( uint16_type l = 0; l < as.size2(); ++l )
-                                res( cur, l ) = as( ii,l)*scalings()(ii,l)*bs[ii](jj,l);
-                        }
-                }
+            if ( is_normalized )
+            {
+                value_type normalization = math::sqrt( ( value_type( ii )+0.5 )*( value_type( ii+jj )+1.0 ) );
+
+                for ( uint16_type l = 0; l < as.size2(); ++l )
+                    res( cur, l ) = normalization*as( ii,l )*scalings()( ii,l )*bs[ii]( jj,l );
+            }
+
+            else
+            {
+                for ( uint16_type l = 0; l < as.size2(); ++l )
+                    res( cur, l ) = as( ii,l )*scalings()( ii,l )*bs[ii]( jj,l );
+            }
         }
+    }
+
     return res;
 }
 
@@ -604,61 +631,69 @@ Dubiner<Dim, RealDim,  Degree, NormalizationPolicy, T, StoragePolicy>::derivate(
     //std::cout << "das= " << das <<  "\n";
     std::vector<matrix_type> bs( nOrder+1 );
     std::vector<matrix_type> dbs( nOrder+1 );
-    for ( uint16_type i = 0; i < nOrder+1; ++i )
-        {
-            bs[ i ].resize( nOrder-i, eta2s.size() );
-            dbs[ i ].resize( nOrder-i, eta2s.size() );
-            bs[ i ] = dyna::JacobiBatchEvaluation( nOrder-i, value_type( 2*i+1 ), value_type( 0.0 ), eta2s );
-            dbs[ i ] = dyna::JacobiBatchDerivation( nOrder-i, value_type( 2*i+1 ), value_type( 0.0 ), eta2s );
 
-            //std::cout << "dbs["<< i << "]= " << dbs[i] <<  "\n";
-        }
+    for ( uint16_type i = 0; i < nOrder+1; ++i )
+    {
+        bs[ i ].resize( nOrder-i, eta2s.size() );
+        dbs[ i ].resize( nOrder-i, eta2s.size() );
+        bs[ i ] = dyna::JacobiBatchEvaluation( nOrder-i, value_type( 2*i+1 ), value_type( 0.0 ), eta2s );
+        dbs[ i ] = dyna::JacobiBatchDerivation( nOrder-i, value_type( 2*i+1 ), value_type( 0.0 ), eta2s );
+
+        //std::cout << "dbs["<< i << "]= " << dbs[i] <<  "\n";
+    }
+
     details::scalings<nOrder, T> scalings( eta2s );
     //std::cout << "scalings = " << scalings() << "\n";
     ublas::vector<value_type> one( ublas::scalar_vector<value_type>( eta1s.size(), 1.0 ) );
     ublas::vector<value_type> tmp( ublas::scalar_vector<value_type>( eta1s.size(), 1.0 ) );
+
     // assemble Dubiner polynomials components
     for ( uint16_type k = 0, cur = 0; k < nOrder+1; ++k )
+    {
+        for ( uint16_type i = 0; i < k+1; ++i, ++cur )
         {
-            for ( uint16_type i = 0; i < k+1; ++i, ++cur )
-                {
-                    uint16_type ii = k-i;
-                    uint16_type jj = i;
+            uint16_type ii = k-i;
+            uint16_type jj = i;
 
 
-                    // x derivation
-                    ublas::row( res[0], cur ) = ublas::element_prod( ublas::row( das, ii ),
-                                                                     ublas::row( bs[ii], jj ) );
-                    if ( ii > 0 )
-                        ublas::row( res[0], cur ) = element_prod( ublas::row( res[0], cur ),
-                                                                  ublas::row( scalings(), ii-1 ) );
+            // x derivation
+            ublas::row( res[0], cur ) = ublas::element_prod( ublas::row( das, ii ),
+                                        ublas::row( bs[ii], jj ) );
 
-                    // y derivation
-                    ublas::row( res[1], cur ) = ublas::element_prod( ublas::row( das, ii ),
-                                                                     ublas::row( bs[ii], jj ) );
-                    ublas::row( res[1], cur ) = 0.5 * element_prod( ublas::row( res[1], cur ), ( one+eta1s ) );
-                    if ( ii > 0 )
-                        ublas::row( res[1], cur ) = element_prod( ublas::row( res[1], cur ),
-                                                                  ublas::row( scalings(), ii-1 ) );
+            if ( ii > 0 )
+                ublas::row( res[0], cur ) = element_prod( ublas::row( res[0], cur ),
+                                            ublas::row( scalings(), ii-1 ) );
 
-                    // derivate (1-x)^ii
-                    tmp = ublas::element_prod( ublas::row( scalings(), ii ),
-                                               ublas::row( dbs[ii], jj ) );
-                    if ( ii > 0 )
-                        tmp -= 0.5 * ii * ublas::element_prod( ublas::row( scalings(), ii-1 ),
-                                                               ublas::row( bs[ii], jj ) );
-                    // add contrib to y derivation
-                    ublas::row( res[1], cur ) += ublas::element_prod( ublas::row( as, ii ), tmp );
+            // y derivation
+            ublas::row( res[1], cur ) = ublas::element_prod( ublas::row( das, ii ),
+                                        ublas::row( bs[ii], jj ) );
+            ublas::row( res[1], cur ) = 0.5 * element_prod( ublas::row( res[1], cur ), ( one+eta1s ) );
 
-                    // orthonormalize if required
-                    if ( is_normalized )
-                        {
-                            value_type normalization = math::sqrt( (value_type(ii)+0.5)*(value_type(ii+jj)+1.0) );
-                            ublas::row( res[0], cur ) *= normalization;
-                            ublas::row( res[1], cur ) *= normalization;
-                        }
-                }
+            if ( ii > 0 )
+                ublas::row( res[1], cur ) = element_prod( ublas::row( res[1], cur ),
+                                            ublas::row( scalings(), ii-1 ) );
+
+            // derivate (1-x)^ii
+            tmp = ublas::element_prod( ublas::row( scalings(), ii ),
+                                       ublas::row( dbs[ii], jj ) );
+
+            if ( ii > 0 )
+                tmp -= 0.5 * ii * ublas::element_prod( ublas::row( scalings(), ii-1 ),
+                                                       ublas::row( bs[ii], jj ) );
+
+            // add contrib to y derivation
+            ublas::row( res[1], cur ) += ublas::element_prod( ublas::row( as, ii ), tmp );
+
+            // orthonormalize if required
+            if ( is_normalized )
+            {
+                value_type normalization = math::sqrt( ( value_type( ii )+0.5 )*( value_type( ii+jj )+1.0 ) );
+                ublas::row( res[0], cur ) *= normalization;
+                ublas::row( res[1], cur ) *= normalization;
+            }
         }
+    }
+
     return res;
 }
 
@@ -686,54 +721,58 @@ Dubiner<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::evaluate( 
     matrix_type as( JacobiBatchEvaluation<nOrder, value_type>( 0.0, 0.0, eta1s ) );
     std::vector<matrix_type> bs( nOrder+1 );
     ublas::matrix<matrix_type> cs( nOrder+1, nOrder+1 );
-    for ( int i = 0; i < nOrder+1; ++i )
-        {
-            bs[ i ].resize( nOrder-i, eta2s.size() );
-            bs[ i ] = dyna::JacobiBatchEvaluation( nOrder-i, value_type( 2*i+1 ), value_type( 0.0 ), eta2s );
 
-            for ( int j = 0; j < nOrder+1-i;++j )
-                {
-                    cs( i, j ).resize( nOrder-i-j, eta3s.size() );
-                    cs( i, j ) = dyna::JacobiBatchEvaluation( nOrder-i-j,
-                                                              value_type( 2*( i+j+1 ) ), value_type( 0.0 ), eta3s );
-                }
+    for ( int i = 0; i < nOrder+1; ++i )
+    {
+        bs[ i ].resize( nOrder-i, eta2s.size() );
+        bs[ i ] = dyna::JacobiBatchEvaluation( nOrder-i, value_type( 2*i+1 ), value_type( 0.0 ), eta2s );
+
+        for ( int j = 0; j < nOrder+1-i; ++j )
+        {
+            cs( i, j ).resize( nOrder-i-j, eta3s.size() );
+            cs( i, j ) = dyna::JacobiBatchEvaluation( nOrder-i-j,
+                         value_type( 2*( i+j+1 ) ), value_type( 0.0 ), eta3s );
         }
+    }
 
 
     details::scalings<nOrder, T> scalings2( eta2s );
     details::scalings<nOrder, T> scalings3( eta3s );
 
-    for ( uint16_type cur = 0, k = 0; k < nOrder+1;++k )
+    for ( uint16_type cur = 0, k = 0; k < nOrder+1; ++k )
+    {
+        for ( uint16_type i = 0; i < k+1; ++i )
         {
-            for ( uint16_type i = 0; i < k+1; ++i )
+            for ( uint16_type j = 0; j < k+1-i; ++j,++cur )
+            {
+                uint16_type ii = k-i-j;
+                uint16_type jj = j;
+                uint16_type kk = i;
+
+
+                if ( is_normalized )
                 {
-                    for ( uint16_type j = 0; j < k+1-i; ++j,++cur )
-                        {
-                            uint16_type ii = k-i-j;
-                            uint16_type jj = j;
-                            uint16_type kk = i;
+                    value_type normalization = math::sqrt( ( value_type( ii )+0.5 )*
+                                                           ( value_type( ii+jj )+1.0 )*
+                                                           ( value_type( ii+jj+kk )+1.5 ) );
 
-
-                            if ( is_normalized )
-                                {
-                                    value_type normalization = math::sqrt( (value_type(ii)+0.5)*
-                                                                           (value_type(ii+jj)+1.0)*
-                                                                           (value_type(ii+jj+kk )+1.5) );
-                                    for ( uint16_type l = 0; l < as.size2(); ++l )
-                                        res( cur, l ) = normalization*( as( ii,l)*
-                                                                        scalings2()(ii,l)*bs[ii](jj,l)*
-                                                                        scalings3()(ii+jj,l)*cs( ii, jj )(kk,l) );
-                                }
-                            else
-                                {
-                                    for ( uint16_type l = 0; l < as.size2(); ++l )
-                                        res( cur, l ) = as( ii,l)*
-                                            scalings2()(ii,l)*bs[ii](jj,l)*
-                                            scalings3()(ii+jj,l)*cs( ii, jj )(kk,l);
-                                }
-                        }
+                    for ( uint16_type l = 0; l < as.size2(); ++l )
+                        res( cur, l ) = normalization*( as( ii,l )*
+                                                        scalings2()( ii,l )*bs[ii]( jj,l )*
+                                                        scalings3()( ii+jj,l )*cs( ii, jj )( kk,l ) );
                 }
+
+                else
+                {
+                    for ( uint16_type l = 0; l < as.size2(); ++l )
+                        res( cur, l ) = as( ii,l )*
+                                        scalings2()( ii,l )*bs[ii]( jj,l )*
+                                        scalings3()( ii+jj,l )*cs( ii, jj )( kk,l );
+                }
+            }
         }
+    }
+
     return res;
 }
 
@@ -768,23 +807,24 @@ Dubiner<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::derivate( 
     std::vector<matrix_type> dbs( nOrder+1 );
     ublas::matrix<matrix_type> cs( nOrder+1, nOrder+1 );
     ublas::matrix<matrix_type> dcs( nOrder+1, nOrder+1 );
-    for ( int i = 0; i < nOrder+1; ++i )
-        {
-            bs[ i ].resize( nOrder-i, eta2s.size() );
-            dbs[ i ].resize( nOrder-i, eta2s.size() );
-            bs[ i ] = dyna::JacobiBatchEvaluation( nOrder-i, value_type( 2*i+1 ), value_type( 0.0 ), eta2s );
-            dbs[ i ] = dyna::JacobiBatchDerivation( nOrder-i, value_type( 2*i+1 ), value_type( 0.0 ), eta2s );
 
-            for ( int j = 0; j < nOrder+1-i;++j )
-                {
-                    cs( i, j ).resize( nOrder-i-j, eta3s.size() );
-                    dcs( i, j ).resize( nOrder-i-j, eta3s.size() );
-                    cs( i, j ) = dyna::JacobiBatchEvaluation( nOrder-i-j,
-                                                              value_type( 2*( i+j+1 ) ), value_type( 0.0 ), eta3s );
-                    dcs( i, j ) = dyna::JacobiBatchDerivation( nOrder-i-j,
-                                                               value_type( 2*( i+j+1 ) ), value_type( 0.0 ), eta3s );
-                }
+    for ( int i = 0; i < nOrder+1; ++i )
+    {
+        bs[ i ].resize( nOrder-i, eta2s.size() );
+        dbs[ i ].resize( nOrder-i, eta2s.size() );
+        bs[ i ] = dyna::JacobiBatchEvaluation( nOrder-i, value_type( 2*i+1 ), value_type( 0.0 ), eta2s );
+        dbs[ i ] = dyna::JacobiBatchDerivation( nOrder-i, value_type( 2*i+1 ), value_type( 0.0 ), eta2s );
+
+        for ( int j = 0; j < nOrder+1-i; ++j )
+        {
+            cs( i, j ).resize( nOrder-i-j, eta3s.size() );
+            dcs( i, j ).resize( nOrder-i-j, eta3s.size() );
+            cs( i, j ) = dyna::JacobiBatchEvaluation( nOrder-i-j,
+                         value_type( 2*( i+j+1 ) ), value_type( 0.0 ), eta3s );
+            dcs( i, j ) = dyna::JacobiBatchDerivation( nOrder-i-j,
+                          value_type( 2*( i+j+1 ) ), value_type( 0.0 ), eta3s );
         }
+    }
 
 
     details::scalings<nOrder, T> scalings2( eta2s );
@@ -795,119 +835,136 @@ Dubiner<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::derivate( 
     ublas::vector<value_type> tmp( ublas::scalar_vector<value_type>( eta1s.size(), 1.0 ) );
 
 
-    for ( uint16_type cur = 0, k = 0; k < nOrder+1;++k )
+    for ( uint16_type cur = 0, k = 0; k < nOrder+1; ++k )
+    {
+        for ( uint16_type i = 0; i < k+1; ++i )
         {
-            for ( uint16_type i = 0; i < k+1; ++i )
+            for ( uint16_type j = 0; j < k+1-i; ++j,++cur )
+            {
+                uint16_type ii = k-i-j;
+                uint16_type jj = j;
+                uint16_type kk = i;
+
+
+                // x derivation
+                ublas::row( res[0], cur ) = ublas::element_prod( ublas::row( das, ii ),
+                                            ublas::row( bs[ii], jj ) );
+                ublas::row( res[0], cur ) = element_prod( ublas::row( res[0], cur ),
+                                            ublas::row( cs( ii, jj ), kk ) );
+
+                if ( ii > 0 )
+                    ublas::row( res[0], cur ) = element_prod( ublas::row( res[0], cur ),
+                                                ublas::row( scalings2(), ii-1 ) );
+
+                if ( ii+jj > 0 )
+                    ublas::row( res[0], cur ) = element_prod( ublas::row( res[0], cur ),
+                                                ublas::row( scalings3(), ii+jj-1 ) );
+
+                // y derivation
+                ublas::row( res[1], cur ) = ublas::element_prod( ublas::row( das, ii ),
+                                            ublas::row( bs[ii], jj ) );
+                ublas::row( res[1], cur ) = element_prod( ublas::row( res[1], cur ),
+                                            ublas::row( cs( ii, jj ), kk ) );
+                ublas::row( res[1], cur ) = 0.5 * element_prod( ublas::row( res[1], cur ),
+                                            ( one+eta1s ) );
+
+                if ( ii > 0 )
+                    ublas::row( res[1], cur ) = element_prod( ublas::row( res[1], cur ),
+                                                ublas::row( scalings2(), ii-1 ) );
+
+                if ( ii+jj > 0 )
+                    ublas::row( res[1], cur ) = element_prod( ublas::row( res[1], cur ),
+                                                ublas::row( scalings3(), ii+jj-1 ) );
+
+                // derivate (1-x)^ii
+                tmp = ublas::element_prod( ublas::row( scalings2(), ii ),
+                                           ublas::row( dbs[ii], jj ) );
+
+                if ( ii > 0 )
+                    tmp -= 0.5 * ii * ublas::element_prod( ublas::row( scalings2(), ii-1 ),
+                                                           ublas::row( bs[ii], jj ) );
+
+                tmp = ublas::element_prod( tmp,
+                                           ublas::row( as, ii ) );
+                tmp = ublas::element_prod( tmp,
+                                           ublas::row( cs( ii, jj ), kk ) );
+
+                if ( ii+jj > 0 )
+                    tmp = ublas::element_prod( tmp,
+                                               ublas::row( scalings3(), ii+jj-1 ) );
+
+                // add contrib to y derivation
+                ublas::row( res[1], cur ) += tmp;
+
+                // z derivation
+                ublas::row( res[2], cur ) = ublas::element_prod( ublas::row( das, ii ),
+                                            ublas::row( bs[ii], jj ) );
+                ublas::row( res[2], cur ) = element_prod( ublas::row( res[2], cur ),
+                                            ublas::row( cs( ii, jj ), kk ) );
+                ublas::row( res[2], cur ) = 0.5 * element_prod( ublas::row( res[2], cur ),
+                                            ( one+eta1s ) );
+
+                if ( ii > 0 )
+                    ublas::row( res[2], cur ) = element_prod( ublas::row( res[2], cur ),
+                                                ublas::row( scalings2(), ii-1 ) );
+
+                if ( ii+jj > 0 )
+                    ublas::row( res[2], cur ) = element_prod( ublas::row( res[2], cur ),
+                                                ublas::row( scalings3(), ii+jj-1 ) );
+
+                // derivate (1-x)^ii
+                tmp = ublas::element_prod( ublas::row( scalings2(), ii ),
+                                           ublas::row( dbs[ii], jj ) );
+
+                if ( ii > 0 )
+                    tmp -= 0.5 * ii * ublas::element_prod( ublas::row( scalings2(), ii-1 ),
+                                                           ublas::row( bs[ii], jj ) );
+
+                tmp = ublas::element_prod( tmp,
+                                           ublas::row( as, ii ) );
+                tmp = ublas::element_prod( tmp,
+                                           ublas::row( cs( ii, jj ), kk ) );
+                tmp = 0.5 * element_prod( tmp, ( one+eta2s ) );
+
+                if ( ii+jj > 0 )
+                    tmp = ublas::element_prod( tmp,
+                                               ublas::row( scalings3(), ii+jj-1 ) );
+
+                // add contrib to z derivation
+                ublas::row( res[2], cur ) += tmp;
+
+                // derivate (1-x)^ii
+                tmp = ublas::element_prod( ublas::row( scalings3(), ii+jj ),
+                                           ublas::row( dcs( ii, jj ), kk ) );
+
+                if ( ii+jj > 0 )
+                    tmp -= 0.5*( ii+jj )*ublas::element_prod( ublas::row( cs( ii, jj ), kk ),
+                            ublas::row( scalings3(), ii+jj-1 ) );
+
+                tmp = ublas::element_prod( tmp,
+                                           ublas::row( as, ii ) );
+                tmp = ublas::element_prod( tmp,
+                                           ublas::row( bs[ ii ], jj ) );
+                tmp = ublas::element_prod( tmp,
+                                           ublas::row( scalings2(), ii ) );
+
+                // add contrib to z derivation
+                ublas::row( res[2], cur ) += tmp;
+
+                if ( is_normalized )
                 {
-                    for ( uint16_type j = 0; j < k+1-i; ++j,++cur )
-                        {
-                            uint16_type ii = k-i-j;
-                            uint16_type jj = j;
-                            uint16_type kk = i;
+                    value_type normalization = math::sqrt( ( value_type( ii )+0.5 )*
+                                                           ( value_type( ii+jj )+1.0 )*
+                                                           ( value_type( ii+jj+kk )+1.5 ) );
 
-
-                            // x derivation
-                            ublas::row( res[0], cur ) = ublas::element_prod( ublas::row( das, ii ),
-                                                                             ublas::row( bs[ii], jj ) );
-                            ublas::row( res[0], cur ) = element_prod( ublas::row( res[0], cur ),
-                                                                      ublas::row( cs( ii, jj ), kk ) );
-                            if ( ii > 0 )
-                                ublas::row( res[0], cur ) = element_prod( ublas::row( res[0], cur ),
-                                                                          ublas::row( scalings2(), ii-1 ) );
-
-                            if ( ii+jj > 0 )
-                                ublas::row( res[0], cur ) = element_prod( ublas::row( res[0], cur ),
-                                                                          ublas::row( scalings3(), ii+jj-1 ) );
-
-                            // y derivation
-                            ublas::row( res[1], cur ) = ublas::element_prod( ublas::row( das, ii ),
-                                                                             ublas::row( bs[ii], jj ) );
-                            ublas::row( res[1], cur ) = element_prod( ublas::row( res[1], cur ),
-                                                                      ublas::row( cs( ii, jj ), kk ) );
-                            ublas::row( res[1], cur ) = 0.5 * element_prod( ublas::row( res[1], cur ),
-                                                                            ( one+eta1s ) );
-                            if ( ii > 0 )
-                                ublas::row( res[1], cur ) = element_prod( ublas::row( res[1], cur ),
-                                                                          ublas::row( scalings2(), ii-1 ) );
-                            if ( ii+jj > 0 )
-                                ublas::row( res[1], cur ) = element_prod( ublas::row( res[1], cur ),
-                                                                          ublas::row( scalings3(), ii+jj-1 ) );
-                            // derivate (1-x)^ii
-                            tmp = ublas::element_prod( ublas::row( scalings2(), ii ),
-                                                       ublas::row( dbs[ii], jj ) );
-                            if ( ii > 0 )
-                                tmp -= 0.5 * ii * ublas::element_prod( ublas::row( scalings2(), ii-1 ),
-                                                                       ublas::row( bs[ii], jj ) );
-                            tmp = ublas::element_prod( tmp,
-                                                       ublas::row( as, ii ) );
-                            tmp = ublas::element_prod( tmp,
-                                                       ublas::row( cs( ii, jj ), kk ) );
-                            if ( ii+jj > 0 )
-                                tmp = ublas::element_prod( tmp,
-                                                           ublas::row( scalings3(), ii+jj-1 ) );
-                            // add contrib to y derivation
-                            ublas::row( res[1], cur ) += tmp;
-
-                            // z derivation
-                            ublas::row( res[2], cur ) = ublas::element_prod( ublas::row( das, ii ),
-                                                                             ublas::row( bs[ii], jj ) );
-                            ublas::row( res[2], cur ) = element_prod( ublas::row( res[2], cur ),
-                                                                      ublas::row( cs( ii, jj ), kk ) );
-                            ublas::row( res[2], cur ) = 0.5 * element_prod( ublas::row( res[2], cur ),
-                                                                            ( one+eta1s ) );
-                            if ( ii > 0 )
-                                ublas::row( res[2], cur ) = element_prod( ublas::row( res[2], cur ),
-                                                                          ublas::row( scalings2(), ii-1 ) );
-                            if ( ii+jj > 0 )
-                                ublas::row( res[2], cur ) = element_prod( ublas::row( res[2], cur ),
-                                                                          ublas::row( scalings3(), ii+jj-1 ) );
-                            // derivate (1-x)^ii
-                            tmp = ublas::element_prod( ublas::row( scalings2(), ii ),
-                                                       ublas::row( dbs[ii], jj ) );
-                            if ( ii > 0 )
-                                tmp -= 0.5 * ii * ublas::element_prod( ublas::row( scalings2(), ii-1 ),
-                                                                       ublas::row( bs[ii], jj ) );
-                            tmp = ublas::element_prod( tmp,
-                                                       ublas::row( as, ii ) );
-                            tmp = ublas::element_prod( tmp,
-                                                       ublas::row( cs( ii, jj ), kk ) );
-                            tmp = 0.5 * element_prod( tmp, ( one+eta2s ) );
-                            if ( ii+jj > 0 )
-                                tmp = ublas::element_prod( tmp,
-                                                           ublas::row( scalings3(), ii+jj-1 ) );
-                            // add contrib to z derivation
-                            ublas::row( res[2], cur ) += tmp;
-
-                            // derivate (1-x)^ii
-                            tmp = ublas::element_prod( ublas::row( scalings3(), ii+jj ),
-                                                       ublas::row( dcs( ii, jj ), kk ) );
-                            if ( ii+jj > 0 )
-                                tmp -= 0.5*( ii+jj )*ublas::element_prod( ublas::row( cs( ii, jj ), kk ),
-                                                                          ublas::row( scalings3(), ii+jj-1 ) );
-
-                            tmp = ublas::element_prod( tmp,
-                                                       ublas::row( as, ii ) );
-                            tmp = ublas::element_prod( tmp,
-                                                       ublas::row( bs[ ii ], jj ) );
-                            tmp = ublas::element_prod( tmp,
-                                                       ublas::row( scalings2(), ii ) );
-
-                            // add contrib to z derivation
-                            ublas::row( res[2], cur ) += tmp;
-
-                            if ( is_normalized )
-                                {
-                                    value_type normalization = math::sqrt( (value_type(ii)+0.5)*
-                                                                           (value_type(ii+jj)+1.0)*
-                                                                           (value_type(ii+jj+kk )+1.5) );
-
-                                    ublas::row( res[0], cur ) *= normalization;
-                                    ublas::row( res[1], cur ) *= normalization;
-                                    ublas::row( res[2], cur ) *= normalization;
-                                }
-                        }
+                    ublas::row( res[0], cur ) *= normalization;
+                    ublas::row( res[1], cur ) *= normalization;
+                    ublas::row( res[2], cur ) *= normalization;
                 }
+            }
         }
+    }
+
     return res;
 }
 

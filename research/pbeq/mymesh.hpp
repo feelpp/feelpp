@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -63,17 +63,17 @@ public:
     myMesh()
         :
         super(),
-        _M_factor (1),
-        _M_farfactor(1),
-        _M_farBnd(2)
+        _M_factor ( 1 ),
+        _M_farfactor( 1 ),
+        _M_farBnd( 2 )
     {}
 
     myMesh( myMesh const & td )
         :
         super( td ),
-        _M_factor (td._M_factor),
-        _M_farfactor(td._M_farfactor),
-        _M_farBnd(td._M_farBnd)
+        _M_factor ( td._M_factor ),
+        _M_farfactor( td._M_farfactor ),
+        _M_farBnd( td._M_farBnd )
     {}
 
     ~myMesh()
@@ -102,7 +102,7 @@ public:
     /** sets the far boundary characteristic length
      */
     void setFarCharacteristic( double const&  farfactor,
-                               double const&  farBnd)
+                               double const&  farBnd )
     {
         _M_farfactor = farfactor;
         _M_farBnd = farBnd;
@@ -111,7 +111,7 @@ public:
     /** adds a point (ptChar[0],ptChar[1],ptChar[2])
         with characteristic length set by setPointCharacteristic
      */
-    void setPointCharacteristic( double const&  factor)
+    void setPointCharacteristic( double const&  factor )
     {
         _M_factor = factor;
     }
@@ -120,7 +120,7 @@ public:
     void setPointCharacteristic( std::vector<double> const&  ptChar )
     {
         FEELPP_ASSERT( this->nDim != ptChar.size() )( this->nDim ).error( "invalid dimension" );
-        _M_ptChar.push_back(ptChar);
+        _M_ptChar.push_back( ptChar );
     }
 
     //@}

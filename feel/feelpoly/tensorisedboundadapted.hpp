@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -134,28 +134,29 @@ public:
 
         // get the points for each faces
         for ( uint16_type e = _M_refconvex.entityRange( nDim-1 ).begin();
-              e < _M_refconvex.entityRange( nDim-1 ).end();
-              ++e )
-            {
-                _M_pts_face[e] = pts.pointsBySubEntity(nDim-1, e, 1);
-            }
+                e < _M_refconvex.entityRange( nDim-1 ).end();
+                ++e )
+        {
+            _M_pts_face[e] = pts.pointsBySubEntity( nDim-1, e, 1 );
+        }
 
         matrix_type A( ublas::trans( evaluate( pts.points() ) ) );
         matrix_type D = ublas::identity_matrix<value_type>( A.size1(), A.size2()  );
-        LU<matrix_type> lu(A);
+        LU<matrix_type> lu( A );
         matrix_type C = lu.solve( D );
         vector_matrix_type d ( derivate( pts.points() ) );
         _M_D.resize( d.size() );
+
         for ( size_type i = 0; i < d.size(); ++i )
-            {
-                _M_D[i] = ublas::prod( d[i], C );
-                glas::clean( _M_D[i] );
-            }
+        {
+            _M_D[i] = ublas::prod( d[i], C );
+            glas::clean( _M_D[i] );
+        }
     }
 
     TensorisedBoundaryAdapted( TensorisedBoundaryAdapted const & d )
         :
-        _M_refconvex(d._M_refconvex),
+        _M_refconvex( d._M_refconvex ),
         _M_pts( d._M_pts ),
         _M_pts_face( d._M_pts_face )
     {
@@ -171,12 +172,18 @@ public:
      * Access to the points of the reference convex associated
      **/
 
-    points_type points() {return _M_pts;}
+    points_type points()
+    {
+        return _M_pts;
+    }
 
     /**
      * Access to the points associated with the face \c f
      **/
-    points_type const& points( int f ) const {return _M_pts_face[f];}
+    points_type const& points( int f ) const
+    {
+        return _M_pts_face[f];
+    }
 
     /** @name Operator overloads
      */
@@ -189,6 +196,7 @@ public:
             _M_pts = d._M_pts;
             _M_D = d._M_D;
         }
+
         return *this;
     }
 
@@ -214,17 +222,26 @@ public:
      * \return the maximum degree of the TensorisedBoundaryAdapted polynomial to be
      * constructed
      */
-    uint_type degree() const { return nOrder; }
+    uint_type degree() const
+    {
+        return nOrder;
+    }
 
     /**
      * \return self as a basis
      */
-    self_type const& basis() const { return *this; }
+    self_type const& basis() const
+    {
+        return *this;
+    }
 
     /**
      * \return the family name of the finite element
      */
-    std::string familyName() const { return "tensorizedboundaryadapted"; }
+    std::string familyName() const
+    {
+        return "tensorizedboundaryadapted";
+    }
 
 
     //@}
@@ -302,7 +319,7 @@ private:
     matrix_type
     evaluate( points_type const& __pts, mpl::int_<1> ) const
     {
-        return _M_pfunc.evaluate_1( ublas::row(__pts,0) );
+        return _M_pfunc.evaluate_1( ublas::row( __pts,0 ) );
     }
 
     /**
@@ -312,11 +329,11 @@ private:
     vector_matrix_type
     derivate( ublas::matrix_expression<AE> const& __pts, mpl::int_<1> ) const
     {
-        FEELPP_ASSERT( __pts().size1() == 1 )( __pts().size1() )( __pts().size2() ).error("invalid points");
+        FEELPP_ASSERT( __pts().size1() == 1 )( __pts().size1() )( __pts().size2() ).error( "invalid points" );
 
         vector_matrix_type D( 1 );
         D[0].resize( nOrder+1, __pts().size2() );
-        D[0] = _M_pfunc.derivate_1( ublas::row(__pts(),0) );
+        D[0] = _M_pfunc.derivate_1( ublas::row( __pts(),0 ) );
 
         return D;
     }
@@ -369,8 +386,8 @@ TensorisedBoundaryAdapted<Dim, Degree,  T, StoragePolicy>::evaluate( points_type
     vector_type eta1s = ublas::row( __pts, 0 );
     vector_type eta2s = ublas::row( __pts, 1 );
 
-    matrix_type psi_1( _M_pfunc.evaluate_1(eta1s) );
-    matrix_type psi_2( _M_pfunc.evaluate_1(eta2s) );
+    matrix_type psi_1( _M_pfunc.evaluate_1( eta1s ) );
+    matrix_type psi_2( _M_pfunc.evaluate_1( eta2s ) );
 
     /*
 
@@ -387,13 +404,13 @@ TensorisedBoundaryAdapted<Dim, Degree,  T, StoragePolicy>::evaluate( points_type
     /* 4 Vertex */
 
     /* A */
-    ublas::row(res,0) = ublas::element_prod(ublas::row(psi_1,0)      , ublas::row(psi_2,0) );
+    ublas::row( res,0 ) = ublas::element_prod( ublas::row( psi_1,0 )      , ublas::row( psi_2,0 ) );
     /* B */
-    ublas::row(res,1) = ublas::element_prod(ublas::row(psi_1,nOrder) , ublas::row(psi_2,0) );
+    ublas::row( res,1 ) = ublas::element_prod( ublas::row( psi_1,nOrder ) , ublas::row( psi_2,0 ) );
     /* C */
-    ublas::row(res,2) = ublas::element_prod(ublas::row(psi_1,0)      , ublas::row(psi_2,nOrder) );
+    ublas::row( res,2 ) = ublas::element_prod( ublas::row( psi_1,0 )      , ublas::row( psi_2,nOrder ) );
     /* D */
-    ublas::row(res,3) = ublas::element_prod(ublas::row(psi_1,nOrder) , ublas::row(psi_2,nOrder) );
+    ublas::row( res,3 ) = ublas::element_prod( ublas::row( psi_1,nOrder ) , ublas::row( psi_2,nOrder ) );
 
     /* Global index */
     uint_type G_i = 3;
@@ -401,46 +418,50 @@ TensorisedBoundaryAdapted<Dim, Degree,  T, StoragePolicy>::evaluate( points_type
     /* Edges */
     //@{
     /* AB = (nOrder-1) */
-    for(uint_type p = 1; p < nOrder; ++p)
-        {
-            ++G_i;
-            ublas::row(res,G_i) = ublas::element_prod(ublas::row(psi_1,p) , ublas::row(psi_2,0) );
-        }
+    for ( uint_type p = 1; p < nOrder; ++p )
+    {
+        ++G_i;
+        ublas::row( res,G_i ) = ublas::element_prod( ublas::row( psi_1,p ) , ublas::row( psi_2,0 ) );
+    }
 
     /* AC = (nOrder-1)*/
-    for(uint_type q = 1; q < nOrder; ++q)
-        {
-            ++G_i;
-            ublas::row(res,G_i) = ublas::element_prod(ublas::row(psi_1,0) , ublas::row(psi_2,q) );
-            if (q%2==0)
-                ublas::row(res,G_i)*= value_type(-1.0);
-        }
+    for ( uint_type q = 1; q < nOrder; ++q )
+    {
+        ++G_i;
+        ublas::row( res,G_i ) = ublas::element_prod( ublas::row( psi_1,0 ) , ublas::row( psi_2,q ) );
+
+        if ( q%2==0 )
+            ublas::row( res,G_i )*= value_type( -1.0 );
+    }
 
     /* CD = (nOrder-1) */
-    for(uint_type p = 1; p < nOrder; ++p)
-        {
-            ++G_i;
-            ublas::row(res,G_i) = ublas::element_prod(ublas::row(psi_1,p) , ublas::row(psi_2,nOrder) );
-            if (p%2==0)
-                ublas::row(res,G_i)*= value_type(-1.0);
-        }
+    for ( uint_type p = 1; p < nOrder; ++p )
+    {
+        ++G_i;
+        ublas::row( res,G_i ) = ublas::element_prod( ublas::row( psi_1,p ) , ublas::row( psi_2,nOrder ) );
+
+        if ( p%2==0 )
+            ublas::row( res,G_i )*= value_type( -1.0 );
+    }
 
     /* BD = (nOrder-1)*/
-    for(uint_type q = 1; q < nOrder; ++q)
-        {
-            ++G_i;
-            ublas::row(res,G_i) = ublas::element_prod(ublas::row(psi_1,nOrder) , ublas::row(psi_2,q) );
-        }
+    for ( uint_type q = 1; q < nOrder; ++q )
+    {
+        ++G_i;
+        ublas::row( res,G_i ) = ublas::element_prod( ublas::row( psi_1,nOrder ) , ublas::row( psi_2,q ) );
+    }
+
     //@}
 
     /* Interior : (N-1)*(N-1) */
     //@{
-    for(uint_type p = 1; p < nOrder; ++p)
-        for(uint_type q = 1; q < nOrder; ++q)
-            {
-                ++G_i;
-                ublas::row(res,G_i) = ublas::element_prod(ublas::row(psi_1,p) , ublas::row(psi_2,q) );
-            }
+    for ( uint_type p = 1; p < nOrder; ++p )
+        for ( uint_type q = 1; q < nOrder; ++q )
+        {
+            ++G_i;
+            ublas::row( res,G_i ) = ublas::element_prod( ublas::row( psi_1,p ) , ublas::row( psi_2,q ) );
+        }
+
     //@}
 
     return res;
@@ -462,26 +483,26 @@ TensorisedBoundaryAdapted<Dim, Degree,  T, StoragePolicy>::derivate( ublas::matr
     vector_type eta1s = ublas::row( __pts(), 0 );
     vector_type eta2s = ublas::row( __pts(), 1 );
 
-    matrix_type psi_1( _M_pfunc.evaluate_1(eta1s) );
-    matrix_type psi_2( _M_pfunc.evaluate_1(eta2s) );
+    matrix_type psi_1( _M_pfunc.evaluate_1( eta1s ) );
+    matrix_type psi_2( _M_pfunc.evaluate_1( eta2s ) );
 
-    matrix_type dpsi_1( _M_pfunc.derivate_1(eta1s) );
-    matrix_type dpsi_2( _M_pfunc.derivate_1(eta2s) );
+    matrix_type dpsi_1( _M_pfunc.derivate_1( eta1s ) );
+    matrix_type dpsi_2( _M_pfunc.derivate_1( eta2s ) );
 
     /* 4 Vertex */
 
     /* A */
-    ublas::row(res[0],0) = ublas::element_prod(ublas::row(dpsi_1,0)      , ublas::row(psi_2,0) );
-    ublas::row(res[1],0) = ublas::element_prod(ublas::row(psi_1,0)      , ublas::row(dpsi_2,0) );
+    ublas::row( res[0],0 ) = ublas::element_prod( ublas::row( dpsi_1,0 )      , ublas::row( psi_2,0 ) );
+    ublas::row( res[1],0 ) = ublas::element_prod( ublas::row( psi_1,0 )      , ublas::row( dpsi_2,0 ) );
     /* B */
-    ublas::row(res[0],1) = ublas::element_prod(ublas::row(dpsi_1,nOrder) , ublas::row(psi_2,0) );
-    ublas::row(res[1],1) = ublas::element_prod(ublas::row(psi_1,nOrder) , ublas::row(dpsi_2,0) );
+    ublas::row( res[0],1 ) = ublas::element_prod( ublas::row( dpsi_1,nOrder ) , ublas::row( psi_2,0 ) );
+    ublas::row( res[1],1 ) = ublas::element_prod( ublas::row( psi_1,nOrder ) , ublas::row( dpsi_2,0 ) );
     /* C */
-    ublas::row(res[0],2) = ublas::element_prod(ublas::row(dpsi_1,0)      , ublas::row(psi_2,nOrder) );
-    ublas::row(res[1],2) = ublas::element_prod(ublas::row(psi_1,0)      , ublas::row(dpsi_2,nOrder) );
+    ublas::row( res[0],2 ) = ublas::element_prod( ublas::row( dpsi_1,0 )      , ublas::row( psi_2,nOrder ) );
+    ublas::row( res[1],2 ) = ublas::element_prod( ublas::row( psi_1,0 )      , ublas::row( dpsi_2,nOrder ) );
     /* D */
-    ublas::row(res[0],3) = ublas::element_prod(ublas::row(dpsi_1,nOrder) , ublas::row(psi_2,nOrder) );
-    ublas::row(res[1],3) = ublas::element_prod(ublas::row(psi_1,nOrder) , ublas::row(dpsi_2,nOrder) );
+    ublas::row( res[0],3 ) = ublas::element_prod( ublas::row( dpsi_1,nOrder ) , ublas::row( psi_2,nOrder ) );
+    ublas::row( res[1],3 ) = ublas::element_prod( ublas::row( psi_1,nOrder ) , ublas::row( dpsi_2,nOrder ) );
 
     /* Global index */
     uint_type G_i = 3;
@@ -489,47 +510,49 @@ TensorisedBoundaryAdapted<Dim, Degree,  T, StoragePolicy>::derivate( ublas::matr
     /* Edges */
     //@{
     /* AB = (nOrder-1) */
-    for(uint_type p = 1; p < nOrder; ++p)
-        {
-            ++G_i;
-            ublas::row(res[0],G_i) = ublas::element_prod(ublas::row(dpsi_1,p) , ublas::row(psi_2,0) );
-            ublas::row(res[1],G_i) = ublas::element_prod(ublas::row(psi_1,p) , ublas::row(dpsi_2,0) );
-        }
+    for ( uint_type p = 1; p < nOrder; ++p )
+    {
+        ++G_i;
+        ublas::row( res[0],G_i ) = ublas::element_prod( ublas::row( dpsi_1,p ) , ublas::row( psi_2,0 ) );
+        ublas::row( res[1],G_i ) = ublas::element_prod( ublas::row( psi_1,p ) , ublas::row( dpsi_2,0 ) );
+    }
 
     /* AC = (nOrder-1)*/
-    for(uint_type q = 1; q < nOrder; ++q)
-        {
-            ++G_i;
-            ublas::row(res[0],G_i) = ublas::element_prod(ublas::row(dpsi_1,0) , ublas::row(psi_2,q) );
-            ublas::row(res[1],G_i) = ublas::element_prod(ublas::row(psi_1,0) , ublas::row(dpsi_2,q) );
-        }
+    for ( uint_type q = 1; q < nOrder; ++q )
+    {
+        ++G_i;
+        ublas::row( res[0],G_i ) = ublas::element_prod( ublas::row( dpsi_1,0 ) , ublas::row( psi_2,q ) );
+        ublas::row( res[1],G_i ) = ublas::element_prod( ublas::row( psi_1,0 ) , ublas::row( dpsi_2,q ) );
+    }
 
     /* CD = (nOrder-1) */
-    for(uint_type p = 1; p < nOrder; ++p)
-        {
-            ++G_i;
-            ublas::row(res[0],G_i) = ublas::element_prod(ublas::row(dpsi_1,p) , ublas::row(psi_2,nOrder) );
-            ublas::row(res[1],G_i) = ublas::element_prod(ublas::row(psi_1,p) , ublas::row(dpsi_2,nOrder) );
-        }
+    for ( uint_type p = 1; p < nOrder; ++p )
+    {
+        ++G_i;
+        ublas::row( res[0],G_i ) = ublas::element_prod( ublas::row( dpsi_1,p ) , ublas::row( psi_2,nOrder ) );
+        ublas::row( res[1],G_i ) = ublas::element_prod( ublas::row( psi_1,p ) , ublas::row( dpsi_2,nOrder ) );
+    }
 
     /* BD = (nOrder-1)*/
-    for(uint_type q = 1; q < nOrder; ++q)
-        {
-            ++G_i;
-            ublas::row(res[0],G_i) = ublas::element_prod(ublas::row(dpsi_1,nOrder) , ublas::row(psi_2,q) );
-            ublas::row(res[1],G_i) = ublas::element_prod(ublas::row(psi_1,nOrder) , ublas::row(dpsi_2,q) );
-        }
+    for ( uint_type q = 1; q < nOrder; ++q )
+    {
+        ++G_i;
+        ublas::row( res[0],G_i ) = ublas::element_prod( ublas::row( dpsi_1,nOrder ) , ublas::row( psi_2,q ) );
+        ublas::row( res[1],G_i ) = ublas::element_prod( ublas::row( psi_1,nOrder ) , ublas::row( dpsi_2,q ) );
+    }
+
     //@}
 
     /* Interior : (N-1)*(N-1) */
     //@{
-    for(uint_type p = 1; p < nOrder; ++p)
-        for(uint_type q = 1; q < nOrder; ++q)
-            {
-                ++G_i;
-                ublas::row(res[0],G_i) = ublas::element_prod(ublas::row(dpsi_1,p) , ublas::row(psi_2,q) );
-                ublas::row(res[1],G_i) = ublas::element_prod(ublas::row(psi_1,p) , ublas::row(dpsi_2,q) );
-            }
+    for ( uint_type p = 1; p < nOrder; ++p )
+        for ( uint_type q = 1; q < nOrder; ++q )
+        {
+            ++G_i;
+            ublas::row( res[0],G_i ) = ublas::element_prod( ublas::row( dpsi_1,p ) , ublas::row( psi_2,q ) );
+            ublas::row( res[1],G_i ) = ublas::element_prod( ublas::row( psi_1,p ) , ublas::row( dpsi_2,q ) );
+        }
+
     //@}
 
     return res;
@@ -548,9 +571,9 @@ TensorisedBoundaryAdapted<Dim, Degree,  T, StoragePolicy>::evaluate( points_type
     ublas::vector<value_type> eta2s = ublas::row( __pts, 1 );
     ublas::vector<value_type> eta3s = ublas::row( __pts, 2 );
 
-    matrix_type psi_1( _M_pfunc.evaluate_1(eta1s) );
-    matrix_type psi_2( _M_pfunc.evaluate_1(eta2s) );
-    matrix_type psi_3( _M_pfunc.evaluate_1(eta3s) );
+    matrix_type psi_1( _M_pfunc.evaluate_1( eta1s ) );
+    matrix_type psi_2( _M_pfunc.evaluate_1( eta2s ) );
+    matrix_type psi_3( _M_pfunc.evaluate_1( eta3s ) );
 
     /*
 
@@ -572,29 +595,29 @@ TensorisedBoundaryAdapted<Dim, Degree,  T, StoragePolicy>::evaluate( points_type
     /* 8 Vertex */
 
     /* A */
-    ublas::row(res,0) =
-        ublas::element_prod(ublas::element_prod(ublas::row(psi_1,0), ublas::row(psi_2,0) ), ublas::row(psi_3,0));
+    ublas::row( res,0 ) =
+        ublas::element_prod( ublas::element_prod( ublas::row( psi_1,0 ), ublas::row( psi_2,0 ) ), ublas::row( psi_3,0 ) );
     /* B */
-    ublas::row(res,1) =
-        ublas::element_prod(ublas::element_prod(ublas::row(psi_1,nOrder), ublas::row(psi_2,0) ), ublas::row(psi_3,0));
+    ublas::row( res,1 ) =
+        ublas::element_prod( ublas::element_prod( ublas::row( psi_1,nOrder ), ublas::row( psi_2,0 ) ), ublas::row( psi_3,0 ) );
     /* C */
-    ublas::row(res,2) =
-        ublas::element_prod(ublas::element_prod(ublas::row(psi_1,nOrder), ublas::row(psi_2,nOrder) ), ublas::row(psi_3,0));
+    ublas::row( res,2 ) =
+        ublas::element_prod( ublas::element_prod( ublas::row( psi_1,nOrder ), ublas::row( psi_2,nOrder ) ), ublas::row( psi_3,0 ) );
     /* D */
-    ublas::row(res,3) =
-        ublas::element_prod(ublas::element_prod(ublas::row(psi_1,0), ublas::row(psi_2,nOrder) ), ublas::row(psi_3,0));
+    ublas::row( res,3 ) =
+        ublas::element_prod( ublas::element_prod( ublas::row( psi_1,0 ), ublas::row( psi_2,nOrder ) ), ublas::row( psi_3,0 ) );
     /* E */
-    ublas::row(res,4) =
-        ublas::element_prod(ublas::element_prod(ublas::row(psi_1,0), ublas::row(psi_2,0) ), ublas::row(psi_3,nOrder));
+    ublas::row( res,4 ) =
+        ublas::element_prod( ublas::element_prod( ublas::row( psi_1,0 ), ublas::row( psi_2,0 ) ), ublas::row( psi_3,nOrder ) );
     /* F */
-    ublas::row(res,5) =
-        ublas::element_prod(ublas::element_prod(ublas::row(psi_1,nOrder), ublas::row(psi_2,0) ), ublas::row(psi_3,nOrder));
+    ublas::row( res,5 ) =
+        ublas::element_prod( ublas::element_prod( ublas::row( psi_1,nOrder ), ublas::row( psi_2,0 ) ), ublas::row( psi_3,nOrder ) );
     /* G */
-    ublas::row(res,6) =
-        ublas::element_prod(ublas::element_prod(ublas::row(psi_1,nOrder), ublas::row(psi_2,nOrder) ), ublas::row(psi_3,nOrder));
+    ublas::row( res,6 ) =
+        ublas::element_prod( ublas::element_prod( ublas::row( psi_1,nOrder ), ublas::row( psi_2,nOrder ) ), ublas::row( psi_3,nOrder ) );
     /* H */
-    ublas::row(res,7) =
-        ublas::element_prod(ublas::element_prod(ublas::row(psi_1,0), ublas::row(psi_2,nOrder) ), ublas::row(psi_3,nOrder));
+    ublas::row( res,7 ) =
+        ublas::element_prod( ublas::element_prod( ublas::row( psi_1,0 ), ublas::row( psi_2,nOrder ) ), ublas::row( psi_3,nOrder ) );
 
 
     /* Global index */
@@ -604,111 +627,112 @@ TensorisedBoundaryAdapted<Dim, Degree,  T, StoragePolicy>::evaluate( points_type
     //@{
     /* AB : (nOrder-1) */
 
-    for(uint_type p = 1; p < nOrder; ++p)
-        {
-            ++G_i;
-            ublas::row(res,G_i) =
-                ublas::element_prod(ublas::element_prod(ublas::row(psi_1,p), ublas::row(psi_2,0) ), ublas::row(psi_3,0));
-        }
+    for ( uint_type p = 1; p < nOrder; ++p )
+    {
+        ++G_i;
+        ublas::row( res,G_i ) =
+            ublas::element_prod( ublas::element_prod( ublas::row( psi_1,p ), ublas::row( psi_2,0 ) ), ublas::row( psi_3,0 ) );
+    }
 
     /* BC : (nOrder-1) */
 
-    for(uint_type p = 1; p < nOrder; ++p)
-        {
-            ++G_i;
-            ublas::row(res,G_i) =
-                ublas::element_prod(ublas::element_prod(ublas::row(psi_1,nOrder), ublas::row(psi_2,p) ), ublas::row(psi_3,0));
-        }
+    for ( uint_type p = 1; p < nOrder; ++p )
+    {
+        ++G_i;
+        ublas::row( res,G_i ) =
+            ublas::element_prod( ublas::element_prod( ublas::row( psi_1,nOrder ), ublas::row( psi_2,p ) ), ublas::row( psi_3,0 ) );
+    }
 
     /* DC : (nOrder-1) */
 
-    for(uint_type p = 1; p < nOrder; ++p)
-        {
-            ++G_i;
-            ublas::row(res,G_i) =
-                ublas::element_prod(ublas::element_prod(ublas::row(psi_1,p), ublas::row(psi_2,nOrder) ), ublas::row(psi_3,0));
-        }
+    for ( uint_type p = 1; p < nOrder; ++p )
+    {
+        ++G_i;
+        ublas::row( res,G_i ) =
+            ublas::element_prod( ublas::element_prod( ublas::row( psi_1,p ), ublas::row( psi_2,nOrder ) ), ublas::row( psi_3,0 ) );
+    }
 
     /* AD : (nOrder-1) */
 
-    for(uint_type p = 1; p < nOrder; ++p)
-        {
-            ++G_i;
-            ublas::row(res,G_i) =
-                ublas::element_prod(ublas::element_prod(ublas::row(psi_1,0), ublas::row(psi_2,p) ), ublas::row(psi_3,0));
-        }
+    for ( uint_type p = 1; p < nOrder; ++p )
+    {
+        ++G_i;
+        ublas::row( res,G_i ) =
+            ublas::element_prod( ublas::element_prod( ublas::row( psi_1,0 ), ublas::row( psi_2,p ) ), ublas::row( psi_3,0 ) );
+    }
 
     /* AE : (nOrder-1) */
 
-    for(uint_type p = 1; p < nOrder; ++p)
-        {
-            ++G_i;
-            ublas::row(res,G_i) =
-                ublas::element_prod(ublas::element_prod(ublas::row(psi_1,0), ublas::row(psi_2,0) ), ublas::row(psi_3,p));
-        }
+    for ( uint_type p = 1; p < nOrder; ++p )
+    {
+        ++G_i;
+        ublas::row( res,G_i ) =
+            ublas::element_prod( ublas::element_prod( ublas::row( psi_1,0 ), ublas::row( psi_2,0 ) ), ublas::row( psi_3,p ) );
+    }
 
     /* BF : (nOrder-1) */
 
-    for(uint_type p = 1; p < nOrder; ++p)
-        {
-            ++G_i;
-            ublas::row(res,G_i) =
-                ublas::element_prod(ublas::element_prod(ublas::row(psi_1,nOrder), ublas::row(psi_2,0) ), ublas::row(psi_3,p));
-        }
+    for ( uint_type p = 1; p < nOrder; ++p )
+    {
+        ++G_i;
+        ublas::row( res,G_i ) =
+            ublas::element_prod( ublas::element_prod( ublas::row( psi_1,nOrder ), ublas::row( psi_2,0 ) ), ublas::row( psi_3,p ) );
+    }
 
     /* CG : (nOrder-1) */
 
-    for(uint_type p = 1; p < nOrder; ++p)
-        {
-            ++G_i;
-            ublas::row(res,G_i) =
-                ublas::element_prod(ublas::element_prod(ublas::row(psi_1,nOrder), ublas::row(psi_2,nOrder) ), ublas::row(psi_3,p));
-        }
+    for ( uint_type p = 1; p < nOrder; ++p )
+    {
+        ++G_i;
+        ublas::row( res,G_i ) =
+            ublas::element_prod( ublas::element_prod( ublas::row( psi_1,nOrder ), ublas::row( psi_2,nOrder ) ), ublas::row( psi_3,p ) );
+    }
 
     /* DH : (nOrder-1) */
 
-    for(uint_type p = 1; p < nOrder; ++p)
-        {
-            ++G_i;
-            ublas::row(res,G_i) =
-                ublas::element_prod(ublas::element_prod(ublas::row(psi_1,0), ublas::row(psi_2,nOrder) ), ublas::row(psi_3,p));
-        }
+    for ( uint_type p = 1; p < nOrder; ++p )
+    {
+        ++G_i;
+        ublas::row( res,G_i ) =
+            ublas::element_prod( ublas::element_prod( ublas::row( psi_1,0 ), ublas::row( psi_2,nOrder ) ), ublas::row( psi_3,p ) );
+    }
 
     /* EF : (nOrder-1) */
 
-    for(uint_type p = 1; p < nOrder; ++p)
-        {
-            ++G_i;
-            ublas::row(res,G_i) =
-                ublas::element_prod(ublas::element_prod(ublas::row(psi_1,p), ublas::row(psi_2,0) ), ublas::row(psi_3,nOrder));
-        }
+    for ( uint_type p = 1; p < nOrder; ++p )
+    {
+        ++G_i;
+        ublas::row( res,G_i ) =
+            ublas::element_prod( ublas::element_prod( ublas::row( psi_1,p ), ublas::row( psi_2,0 ) ), ublas::row( psi_3,nOrder ) );
+    }
 
     /* FG : (nOrder-1) */
 
-    for(uint_type p = 1; p < nOrder; ++p)
-        {
-            ++G_i;
-            ublas::row(res,G_i) =
-                ublas::element_prod(ublas::element_prod(ublas::row(psi_1,nOrder), ublas::row(psi_2,p) ), ublas::row(psi_3,nOrder));
-        }
+    for ( uint_type p = 1; p < nOrder; ++p )
+    {
+        ++G_i;
+        ublas::row( res,G_i ) =
+            ublas::element_prod( ublas::element_prod( ublas::row( psi_1,nOrder ), ublas::row( psi_2,p ) ), ublas::row( psi_3,nOrder ) );
+    }
 
     /* HG : (nOrder-1) */
 
-    for(uint_type p = 1; p < nOrder; ++p)
-        {
-            ++G_i;
-            ublas::row(res,G_i) =
-                ublas::element_prod(ublas::element_prod(ublas::row(psi_1,p), ublas::row(psi_2,nOrder) ), ublas::row(psi_3,nOrder));
-        }
+    for ( uint_type p = 1; p < nOrder; ++p )
+    {
+        ++G_i;
+        ublas::row( res,G_i ) =
+            ublas::element_prod( ublas::element_prod( ublas::row( psi_1,p ), ublas::row( psi_2,nOrder ) ), ublas::row( psi_3,nOrder ) );
+    }
 
     /* EH : (nOrder-1) */
 
-    for(uint_type p = 1; p < nOrder; ++p)
-        {
-            ++G_i;
-            ublas::row(res,G_i) =
-                ublas::element_prod(ublas::element_prod(ublas::row(psi_1,0), ublas::row(psi_2,p) ), ublas::row(psi_3,nOrder));
-        }
+    for ( uint_type p = 1; p < nOrder; ++p )
+    {
+        ++G_i;
+        ublas::row( res,G_i ) =
+            ublas::element_prod( ublas::element_prod( ublas::row( psi_1,0 ), ublas::row( psi_2,p ) ), ublas::row( psi_3,nOrder ) );
+    }
+
     //@}
 
 
@@ -717,76 +741,77 @@ TensorisedBoundaryAdapted<Dim, Degree,  T, StoragePolicy>::evaluate( points_type
 
     /* ABCD */
 
-    for(uint_type p = 1; p < nOrder; ++p)
-        for(uint_type q = 1; q < nOrder; ++q)
-            {
-                ++G_i;
-                ublas::row(res,G_i) =
-                    ublas::element_prod(ublas::element_prod(ublas::row(psi_1,p) , ublas::row(psi_2,q) ), ublas::row(psi_3,0));
-            }
+    for ( uint_type p = 1; p < nOrder; ++p )
+        for ( uint_type q = 1; q < nOrder; ++q )
+        {
+            ++G_i;
+            ublas::row( res,G_i ) =
+                ublas::element_prod( ublas::element_prod( ublas::row( psi_1,p ) , ublas::row( psi_2,q ) ), ublas::row( psi_3,0 ) );
+        }
 
     /* ABFE */
 
-    for(uint_type p = 1; p < nOrder; ++p)
-        for(uint_type q = 1; q < nOrder; ++q)
-            {
-                ++G_i;
-                ublas::row(res,G_i) =
-                    ublas::element_prod(ublas::element_prod(ublas::row(psi_1,p) , ublas::row(psi_2,0) ), ublas::row(psi_3,q));
-            }
+    for ( uint_type p = 1; p < nOrder; ++p )
+        for ( uint_type q = 1; q < nOrder; ++q )
+        {
+            ++G_i;
+            ublas::row( res,G_i ) =
+                ublas::element_prod( ublas::element_prod( ublas::row( psi_1,p ) , ublas::row( psi_2,0 ) ), ublas::row( psi_3,q ) );
+        }
 
     /* BCGF */
 
-    for(uint_type p = 1; p < nOrder; ++p)
-        for(uint_type q = 1; q < nOrder; ++q)
-            {
-                ++G_i;
-                ublas::row(res,G_i) =
-                    ublas::element_prod(ublas::element_prod(ublas::row(psi_1,nOrder) , ublas::row(psi_2,p) ), ublas::row(psi_3,q));
-            }
+    for ( uint_type p = 1; p < nOrder; ++p )
+        for ( uint_type q = 1; q < nOrder; ++q )
+        {
+            ++G_i;
+            ublas::row( res,G_i ) =
+                ublas::element_prod( ublas::element_prod( ublas::row( psi_1,nOrder ) , ublas::row( psi_2,p ) ), ublas::row( psi_3,q ) );
+        }
 
     /* CGHD */
 
-    for(uint_type p = 1; p < nOrder; ++p)
-        for(uint_type q = 1; q < nOrder; ++q)
-            {
-                ++G_i;
-                ublas::row(res,G_i) =
-                    ublas::element_prod(ublas::element_prod(ublas::row(psi_1,p) , ublas::row(psi_2,nOrder) ), ublas::row(psi_3,q));
-            }
+    for ( uint_type p = 1; p < nOrder; ++p )
+        for ( uint_type q = 1; q < nOrder; ++q )
+        {
+            ++G_i;
+            ublas::row( res,G_i ) =
+                ublas::element_prod( ublas::element_prod( ublas::row( psi_1,p ) , ublas::row( psi_2,nOrder ) ), ublas::row( psi_3,q ) );
+        }
 
     /* ADHE */
 
-    for(uint_type p = 1; p < nOrder; ++p)
-        for(uint_type q = 1; q < nOrder; ++q)
-            {
-                ++G_i;
-                ublas::row(res,G_i) =
-                    ublas::element_prod(ublas::element_prod(ublas::row(psi_1,0) , ublas::row(psi_2,p) ), ublas::row(psi_3,q));
-            }
+    for ( uint_type p = 1; p < nOrder; ++p )
+        for ( uint_type q = 1; q < nOrder; ++q )
+        {
+            ++G_i;
+            ublas::row( res,G_i ) =
+                ublas::element_prod( ublas::element_prod( ublas::row( psi_1,0 ) , ublas::row( psi_2,p ) ), ublas::row( psi_3,q ) );
+        }
 
     /* EFGH */
 
-    for(uint_type p = 1; p < nOrder; ++p)
-        for(uint_type q = 1; q < nOrder; ++q)
-            {
-                ++G_i;
-                ublas::row(res,G_i) =
-                    ublas::element_prod(ublas::element_prod(ublas::row(psi_1,p) , ublas::row(psi_2,q) ), ublas::row(psi_3,nOrder));
-            }
+    for ( uint_type p = 1; p < nOrder; ++p )
+        for ( uint_type q = 1; q < nOrder; ++q )
+        {
+            ++G_i;
+            ublas::row( res,G_i ) =
+                ublas::element_prod( ublas::element_prod( ublas::row( psi_1,p ) , ublas::row( psi_2,q ) ), ublas::row( psi_3,nOrder ) );
+        }
+
     //@}
 
 
     /* Interior : (N-1)^3 */
 
-    for(uint_type p = 1; p < nOrder; ++p)
-        for(uint_type q = 1; q < nOrder; ++q)
-            for(uint_type r = 1; r < nOrder; ++r)
-                {
-                    ++G_i;
-                    ublas::row(res,G_i) =
-                        ublas::element_prod(ublas::element_prod(ublas::row(psi_1,p) , ublas::row(psi_2,q) ), ublas::row(psi_3,r));
-                }
+    for ( uint_type p = 1; p < nOrder; ++p )
+        for ( uint_type q = 1; q < nOrder; ++q )
+            for ( uint_type r = 1; r < nOrder; ++r )
+            {
+                ++G_i;
+                ublas::row( res,G_i ) =
+                    ublas::element_prod( ublas::element_prod( ublas::row( psi_1,p ) , ublas::row( psi_2,q ) ), ublas::row( psi_3,r ) );
+            }
 
     return res;
 }
@@ -809,72 +834,72 @@ TensorisedBoundaryAdapted<Dim, Degree,  T, StoragePolicy>::derivate( ublas::matr
     vector_type eta2s = ublas::row( __pts(), 1 );
     vector_type eta3s = ublas::row( __pts(), 2 );
 
-    matrix_type psi_1( _M_pfunc.evaluate_1(eta1s) );
-    matrix_type dpsi_1( _M_pfunc.derivate_1(eta1s) );
+    matrix_type psi_1( _M_pfunc.evaluate_1( eta1s ) );
+    matrix_type dpsi_1( _M_pfunc.derivate_1( eta1s ) );
 
-    matrix_type psi_2( _M_pfunc.evaluate_1(eta2s) );
-    matrix_type dpsi_2( _M_pfunc.derivate_1(eta2s) );
+    matrix_type psi_2( _M_pfunc.evaluate_1( eta2s ) );
+    matrix_type dpsi_2( _M_pfunc.derivate_1( eta2s ) );
 
-    matrix_type psi_3( _M_pfunc.evaluate_1(eta3s) );
-    matrix_type dpsi_3( _M_pfunc.derivate_1(eta3s) );
+    matrix_type psi_3( _M_pfunc.evaluate_1( eta3s ) );
+    matrix_type dpsi_3( _M_pfunc.derivate_1( eta3s ) );
 
     /* 8 Vertex */
 
-    ublas::row(res[0],0) =
-        ublas::element_prod(ublas::element_prod(ublas::row(dpsi_1,0), ublas::row(psi_2,0) ), ublas::row(psi_3,0));
-    ublas::row(res[1],0) =
-        ublas::element_prod(ublas::element_prod(ublas::row(psi_1,0), ublas::row(dpsi_2,0) ), ublas::row(psi_3,0));
-    ublas::row(res[2],0) =
-        ublas::element_prod(ublas::element_prod(ublas::row(psi_1,0), ublas::row(psi_2,0) ), ublas::row(dpsi_3,0));
+    ublas::row( res[0],0 ) =
+        ublas::element_prod( ublas::element_prod( ublas::row( dpsi_1,0 ), ublas::row( psi_2,0 ) ), ublas::row( psi_3,0 ) );
+    ublas::row( res[1],0 ) =
+        ublas::element_prod( ublas::element_prod( ublas::row( psi_1,0 ), ublas::row( dpsi_2,0 ) ), ublas::row( psi_3,0 ) );
+    ublas::row( res[2],0 ) =
+        ublas::element_prod( ublas::element_prod( ublas::row( psi_1,0 ), ublas::row( psi_2,0 ) ), ublas::row( dpsi_3,0 ) );
 
-    ublas::row(res[0],1) =
-        ublas::element_prod(ublas::element_prod(ublas::row(dpsi_1,nOrder), ublas::row(psi_2,0) ), ublas::row(psi_3,0));
-    ublas::row(res[1],1) =
-        ublas::element_prod(ublas::element_prod(ublas::row(psi_1,nOrder), ublas::row(dpsi_2,0) ), ublas::row(psi_3,0));
-    ublas::row(res[2],1) =
-        ublas::element_prod(ublas::element_prod(ublas::row(psi_1,nOrder), ublas::row(psi_2,0) ), ublas::row(dpsi_3,0));
+    ublas::row( res[0],1 ) =
+        ublas::element_prod( ublas::element_prod( ublas::row( dpsi_1,nOrder ), ublas::row( psi_2,0 ) ), ublas::row( psi_3,0 ) );
+    ublas::row( res[1],1 ) =
+        ublas::element_prod( ublas::element_prod( ublas::row( psi_1,nOrder ), ublas::row( dpsi_2,0 ) ), ublas::row( psi_3,0 ) );
+    ublas::row( res[2],1 ) =
+        ublas::element_prod( ublas::element_prod( ublas::row( psi_1,nOrder ), ublas::row( psi_2,0 ) ), ublas::row( dpsi_3,0 ) );
 
-    ublas::row(res[0],2) =
-        ublas::element_prod(ublas::element_prod(ublas::row(dpsi_1,nOrder), ublas::row(psi_2,nOrder) ), ublas::row(psi_3,0));
-    ublas::row(res[1],2) =
-        ublas::element_prod(ublas::element_prod(ublas::row(psi_1,nOrder), ublas::row(dpsi_2,nOrder) ), ublas::row(psi_3,0));
-    ublas::row(res[2],2) =
-        ublas::element_prod(ublas::element_prod(ublas::row(psi_1,nOrder), ublas::row(psi_2,nOrder) ), ublas::row(dpsi_3,0));
+    ublas::row( res[0],2 ) =
+        ublas::element_prod( ublas::element_prod( ublas::row( dpsi_1,nOrder ), ublas::row( psi_2,nOrder ) ), ublas::row( psi_3,0 ) );
+    ublas::row( res[1],2 ) =
+        ublas::element_prod( ublas::element_prod( ublas::row( psi_1,nOrder ), ublas::row( dpsi_2,nOrder ) ), ublas::row( psi_3,0 ) );
+    ublas::row( res[2],2 ) =
+        ublas::element_prod( ublas::element_prod( ublas::row( psi_1,nOrder ), ublas::row( psi_2,nOrder ) ), ublas::row( dpsi_3,0 ) );
 
-    ublas::row(res[0],3) =
-        ublas::element_prod(ublas::element_prod(ublas::row(dpsi_1,0), ublas::row(psi_2,nOrder) ), ublas::row(psi_3,0));
-    ublas::row(res[1],3) =
-        ublas::element_prod(ublas::element_prod(ublas::row(psi_1,0), ublas::row(dpsi_2,nOrder) ), ublas::row(psi_3,0));
-    ublas::row(res[2],3) =
-        ublas::element_prod(ublas::element_prod(ublas::row(psi_1,0), ublas::row(psi_2,nOrder) ), ublas::row(dpsi_3,0));
+    ublas::row( res[0],3 ) =
+        ublas::element_prod( ublas::element_prod( ublas::row( dpsi_1,0 ), ublas::row( psi_2,nOrder ) ), ublas::row( psi_3,0 ) );
+    ublas::row( res[1],3 ) =
+        ublas::element_prod( ublas::element_prod( ublas::row( psi_1,0 ), ublas::row( dpsi_2,nOrder ) ), ublas::row( psi_3,0 ) );
+    ublas::row( res[2],3 ) =
+        ublas::element_prod( ublas::element_prod( ublas::row( psi_1,0 ), ublas::row( psi_2,nOrder ) ), ublas::row( dpsi_3,0 ) );
 
-    ublas::row(res[0],4) =
-        ublas::element_prod(ublas::element_prod(ublas::row(dpsi_1,0), ublas::row(psi_2,0) ), ublas::row(psi_3,nOrder));
-    ublas::row(res[1],4) =
-        ublas::element_prod(ublas::element_prod(ublas::row(psi_1,0), ublas::row(dpsi_2,0) ), ublas::row(psi_3,nOrder));
-    ublas::row(res[2],4) =
-        ublas::element_prod(ublas::element_prod(ublas::row(psi_1,0), ublas::row(psi_2,0) ), ublas::row(dpsi_3,nOrder));
+    ublas::row( res[0],4 ) =
+        ublas::element_prod( ublas::element_prod( ublas::row( dpsi_1,0 ), ublas::row( psi_2,0 ) ), ublas::row( psi_3,nOrder ) );
+    ublas::row( res[1],4 ) =
+        ublas::element_prod( ublas::element_prod( ublas::row( psi_1,0 ), ublas::row( dpsi_2,0 ) ), ublas::row( psi_3,nOrder ) );
+    ublas::row( res[2],4 ) =
+        ublas::element_prod( ublas::element_prod( ublas::row( psi_1,0 ), ublas::row( psi_2,0 ) ), ublas::row( dpsi_3,nOrder ) );
 
-    ublas::row(res[0],5) =
-        ublas::element_prod(ublas::element_prod(ublas::row(dpsi_1,nOrder), ublas::row(psi_2,0) ), ublas::row(psi_3,nOrder));
-    ublas::row(res[1],5) =
-        ublas::element_prod(ublas::element_prod(ublas::row(psi_1,nOrder), ublas::row(dpsi_2,0) ), ublas::row(psi_3,nOrder));
-    ublas::row(res[2],5) =
-        ublas::element_prod(ublas::element_prod(ublas::row(psi_1,nOrder), ublas::row(psi_2,0) ), ublas::row(dpsi_3,nOrder));
+    ublas::row( res[0],5 ) =
+        ublas::element_prod( ublas::element_prod( ublas::row( dpsi_1,nOrder ), ublas::row( psi_2,0 ) ), ublas::row( psi_3,nOrder ) );
+    ublas::row( res[1],5 ) =
+        ublas::element_prod( ublas::element_prod( ublas::row( psi_1,nOrder ), ublas::row( dpsi_2,0 ) ), ublas::row( psi_3,nOrder ) );
+    ublas::row( res[2],5 ) =
+        ublas::element_prod( ublas::element_prod( ublas::row( psi_1,nOrder ), ublas::row( psi_2,0 ) ), ublas::row( dpsi_3,nOrder ) );
 
-    ublas::row(res[0],6) =
-        ublas::element_prod(ublas::element_prod(ublas::row(dpsi_1,nOrder), ublas::row(psi_2,nOrder) ), ublas::row(psi_3,nOrder));
-    ublas::row(res[1],6) =
-        ublas::element_prod(ublas::element_prod(ublas::row(psi_1,nOrder), ublas::row(dpsi_2,nOrder) ), ublas::row(psi_3,nOrder));
-    ublas::row(res[2],6) =
-        ublas::element_prod(ublas::element_prod(ublas::row(psi_1,nOrder), ublas::row(psi_2,nOrder) ), ublas::row(dpsi_3,nOrder));
+    ublas::row( res[0],6 ) =
+        ublas::element_prod( ublas::element_prod( ublas::row( dpsi_1,nOrder ), ublas::row( psi_2,nOrder ) ), ublas::row( psi_3,nOrder ) );
+    ublas::row( res[1],6 ) =
+        ublas::element_prod( ublas::element_prod( ublas::row( psi_1,nOrder ), ublas::row( dpsi_2,nOrder ) ), ublas::row( psi_3,nOrder ) );
+    ublas::row( res[2],6 ) =
+        ublas::element_prod( ublas::element_prod( ublas::row( psi_1,nOrder ), ublas::row( psi_2,nOrder ) ), ublas::row( dpsi_3,nOrder ) );
 
-    ublas::row(res[0],7) =
-        ublas::element_prod(ublas::element_prod(ublas::row(dpsi_1,0), ublas::row(psi_2,nOrder) ), ublas::row(psi_3,nOrder));
-    ublas::row(res[1],7) =
-        ublas::element_prod(ublas::element_prod(ublas::row(psi_1,0), ublas::row(dpsi_2,nOrder) ), ublas::row(psi_3,nOrder));
-    ublas::row(res[2],7) =
-        ublas::element_prod(ublas::element_prod(ublas::row(psi_1,0), ublas::row(psi_2,nOrder) ), ublas::row(dpsi_3,nOrder));
+    ublas::row( res[0],7 ) =
+        ublas::element_prod( ublas::element_prod( ublas::row( dpsi_1,0 ), ublas::row( psi_2,nOrder ) ), ublas::row( psi_3,nOrder ) );
+    ublas::row( res[1],7 ) =
+        ublas::element_prod( ublas::element_prod( ublas::row( psi_1,0 ), ublas::row( dpsi_2,nOrder ) ), ublas::row( psi_3,nOrder ) );
+    ublas::row( res[2],7 ) =
+        ublas::element_prod( ublas::element_prod( ublas::row( psi_1,0 ), ublas::row( psi_2,nOrder ) ), ublas::row( dpsi_3,nOrder ) );
 
 
     /* Global index */
@@ -884,159 +909,160 @@ TensorisedBoundaryAdapted<Dim, Degree,  T, StoragePolicy>::derivate( ublas::matr
     //@{
     /* AB : (nOrder-1) */
 
-    for(uint_type p = 1; p < nOrder; ++p)
-        {
-            ++G_i;
-            ublas::row(res[0],G_i) =
-                ublas::element_prod(ublas::element_prod(ublas::row(dpsi_1,p), ublas::row(psi_2,0) ), ublas::row(psi_3,0));
-            ublas::row(res[1],G_i) =
-                ublas::element_prod(ublas::element_prod(ublas::row(psi_1,p), ublas::row(dpsi_2,0) ), ublas::row(psi_3,0));
-            ublas::row(res[2],G_i) =
-                ublas::element_prod(ublas::element_prod(ublas::row(psi_1,p), ublas::row(psi_2,0) ), ublas::row(dpsi_3,0));
-        }
+    for ( uint_type p = 1; p < nOrder; ++p )
+    {
+        ++G_i;
+        ublas::row( res[0],G_i ) =
+            ublas::element_prod( ublas::element_prod( ublas::row( dpsi_1,p ), ublas::row( psi_2,0 ) ), ublas::row( psi_3,0 ) );
+        ublas::row( res[1],G_i ) =
+            ublas::element_prod( ublas::element_prod( ublas::row( psi_1,p ), ublas::row( dpsi_2,0 ) ), ublas::row( psi_3,0 ) );
+        ublas::row( res[2],G_i ) =
+            ublas::element_prod( ublas::element_prod( ublas::row( psi_1,p ), ublas::row( psi_2,0 ) ), ublas::row( dpsi_3,0 ) );
+    }
 
     /* BC : (nOrder-1) */
 
-    for(uint_type p = 1; p < nOrder; ++p)
-        {
-            ++G_i;
-            ublas::row(res[0],G_i) =
-                ublas::element_prod(ublas::element_prod(ublas::row(dpsi_1,nOrder), ublas::row(psi_2,p) ), ublas::row(psi_3,0));
-            ublas::row(res[1],G_i) =
-                ublas::element_prod(ublas::element_prod(ublas::row(psi_1,nOrder), ublas::row(dpsi_2,p) ), ublas::row(psi_3,0));
-            ublas::row(res[2],G_i) =
-                ublas::element_prod(ublas::element_prod(ublas::row(psi_1,nOrder), ublas::row(psi_2,p) ), ublas::row(dpsi_3,0));
-        }
+    for ( uint_type p = 1; p < nOrder; ++p )
+    {
+        ++G_i;
+        ublas::row( res[0],G_i ) =
+            ublas::element_prod( ublas::element_prod( ublas::row( dpsi_1,nOrder ), ublas::row( psi_2,p ) ), ublas::row( psi_3,0 ) );
+        ublas::row( res[1],G_i ) =
+            ublas::element_prod( ublas::element_prod( ublas::row( psi_1,nOrder ), ublas::row( dpsi_2,p ) ), ublas::row( psi_3,0 ) );
+        ublas::row( res[2],G_i ) =
+            ublas::element_prod( ublas::element_prod( ublas::row( psi_1,nOrder ), ublas::row( psi_2,p ) ), ublas::row( dpsi_3,0 ) );
+    }
 
     /* DC : (nOrder-1) */
 
-    for(uint_type p = 1; p < nOrder; ++p)
-        {
-            ++G_i;
-            ublas::row(res[0],G_i) =
-                ublas::element_prod(ublas::element_prod(ublas::row(dpsi_1,p), ublas::row(psi_2,nOrder) ), ublas::row(psi_3,0));
-            ublas::row(res[1],G_i) =
-                ublas::element_prod(ublas::element_prod(ublas::row(psi_1,p), ublas::row(dpsi_2,nOrder) ), ublas::row(psi_3,0));
-            ublas::row(res[2],G_i) =
-                ublas::element_prod(ublas::element_prod(ublas::row(psi_1,p), ublas::row(psi_2,nOrder) ), ublas::row(dpsi_3,0));
-        }
+    for ( uint_type p = 1; p < nOrder; ++p )
+    {
+        ++G_i;
+        ublas::row( res[0],G_i ) =
+            ublas::element_prod( ublas::element_prod( ublas::row( dpsi_1,p ), ublas::row( psi_2,nOrder ) ), ublas::row( psi_3,0 ) );
+        ublas::row( res[1],G_i ) =
+            ublas::element_prod( ublas::element_prod( ublas::row( psi_1,p ), ublas::row( dpsi_2,nOrder ) ), ublas::row( psi_3,0 ) );
+        ublas::row( res[2],G_i ) =
+            ublas::element_prod( ublas::element_prod( ublas::row( psi_1,p ), ublas::row( psi_2,nOrder ) ), ublas::row( dpsi_3,0 ) );
+    }
 
     /* AD : (nOrder-1) */
 
-    for(uint_type p = 1; p < nOrder; ++p)
-        {
-            ++G_i;
-            ublas::row(res[0],G_i) =
-                ublas::element_prod(ublas::element_prod(ublas::row(dpsi_1,0), ublas::row(psi_2,p) ), ublas::row(psi_3,0));
-            ublas::row(res[1],G_i) =
-                ublas::element_prod(ublas::element_prod(ublas::row(psi_1,0), ublas::row(dpsi_2,p) ), ublas::row(psi_3,0));
-            ublas::row(res[2],G_i) =
-                ublas::element_prod(ublas::element_prod(ublas::row(psi_1,0), ublas::row(psi_2,p) ), ublas::row(dpsi_3,0));
-        }
+    for ( uint_type p = 1; p < nOrder; ++p )
+    {
+        ++G_i;
+        ublas::row( res[0],G_i ) =
+            ublas::element_prod( ublas::element_prod( ublas::row( dpsi_1,0 ), ublas::row( psi_2,p ) ), ublas::row( psi_3,0 ) );
+        ublas::row( res[1],G_i ) =
+            ublas::element_prod( ublas::element_prod( ublas::row( psi_1,0 ), ublas::row( dpsi_2,p ) ), ublas::row( psi_3,0 ) );
+        ublas::row( res[2],G_i ) =
+            ublas::element_prod( ublas::element_prod( ublas::row( psi_1,0 ), ublas::row( psi_2,p ) ), ublas::row( dpsi_3,0 ) );
+    }
 
     /* AE : (nOrder-1) */
 
-    for(uint_type p = 1; p < nOrder; ++p)
-        {
-            ++G_i;
-            ublas::row(res[0],G_i) =
-                ublas::element_prod(ublas::element_prod(ublas::row(dpsi_1,0), ublas::row(psi_2,0) ), ublas::row(psi_3,p));
-            ublas::row(res[1],G_i) =
-                ublas::element_prod(ublas::element_prod(ublas::row(psi_1,0), ublas::row(dpsi_2,0) ), ublas::row(psi_3,p));
-            ublas::row(res[2],G_i) =
-                ublas::element_prod(ublas::element_prod(ublas::row(psi_1,0), ublas::row(psi_2,0) ), ublas::row(dpsi_3,p));
-        }
+    for ( uint_type p = 1; p < nOrder; ++p )
+    {
+        ++G_i;
+        ublas::row( res[0],G_i ) =
+            ublas::element_prod( ublas::element_prod( ublas::row( dpsi_1,0 ), ublas::row( psi_2,0 ) ), ublas::row( psi_3,p ) );
+        ublas::row( res[1],G_i ) =
+            ublas::element_prod( ublas::element_prod( ublas::row( psi_1,0 ), ublas::row( dpsi_2,0 ) ), ublas::row( psi_3,p ) );
+        ublas::row( res[2],G_i ) =
+            ublas::element_prod( ublas::element_prod( ublas::row( psi_1,0 ), ublas::row( psi_2,0 ) ), ublas::row( dpsi_3,p ) );
+    }
 
     /* BF : (nOrder-1) */
 
-    for(uint_type p = 1; p < nOrder; ++p)
-        {
-            ++G_i;
-            ublas::row(res[0],G_i) =
-                ublas::element_prod(ublas::element_prod(ublas::row(dpsi_1,nOrder), ublas::row(psi_2,0) ), ublas::row(psi_3,p));
-            ublas::row(res[1],G_i) =
-                ublas::element_prod(ublas::element_prod(ublas::row(psi_1,nOrder), ublas::row(dpsi_2,0) ), ublas::row(psi_3,p));
-            ublas::row(res[2],G_i) =
-                ublas::element_prod(ublas::element_prod(ublas::row(psi_1,nOrder), ublas::row(psi_2,0) ), ublas::row(dpsi_3,p));
-        }
+    for ( uint_type p = 1; p < nOrder; ++p )
+    {
+        ++G_i;
+        ublas::row( res[0],G_i ) =
+            ublas::element_prod( ublas::element_prod( ublas::row( dpsi_1,nOrder ), ublas::row( psi_2,0 ) ), ublas::row( psi_3,p ) );
+        ublas::row( res[1],G_i ) =
+            ublas::element_prod( ublas::element_prod( ublas::row( psi_1,nOrder ), ublas::row( dpsi_2,0 ) ), ublas::row( psi_3,p ) );
+        ublas::row( res[2],G_i ) =
+            ublas::element_prod( ublas::element_prod( ublas::row( psi_1,nOrder ), ublas::row( psi_2,0 ) ), ublas::row( dpsi_3,p ) );
+    }
 
     /* CG : (nOrder-1) */
 
-    for(uint_type p = 1; p < nOrder; ++p)
-        {
-            ++G_i;
-            ublas::row(res[0],G_i) =
-                ublas::element_prod(ublas::element_prod(ublas::row(dpsi_1,nOrder), ublas::row(psi_2,nOrder) ), ublas::row(psi_3,p));
-            ublas::row(res[1],G_i) =
-                ublas::element_prod(ublas::element_prod(ublas::row(psi_1,nOrder), ublas::row(dpsi_2,nOrder) ), ublas::row(psi_3,p));
-            ublas::row(res[2],G_i) =
-                ublas::element_prod(ublas::element_prod(ublas::row(psi_1,nOrder), ublas::row(psi_2,nOrder) ), ublas::row(dpsi_3,p));
-        }
+    for ( uint_type p = 1; p < nOrder; ++p )
+    {
+        ++G_i;
+        ublas::row( res[0],G_i ) =
+            ublas::element_prod( ublas::element_prod( ublas::row( dpsi_1,nOrder ), ublas::row( psi_2,nOrder ) ), ublas::row( psi_3,p ) );
+        ublas::row( res[1],G_i ) =
+            ublas::element_prod( ublas::element_prod( ublas::row( psi_1,nOrder ), ublas::row( dpsi_2,nOrder ) ), ublas::row( psi_3,p ) );
+        ublas::row( res[2],G_i ) =
+            ublas::element_prod( ublas::element_prod( ublas::row( psi_1,nOrder ), ublas::row( psi_2,nOrder ) ), ublas::row( dpsi_3,p ) );
+    }
 
     /* DH : (nOrder-1) */
 
-    for(uint_type p = 1; p < nOrder; ++p)
-        {
-            ++G_i;
-            ublas::row(res[0],G_i) =
-                ublas::element_prod(ublas::element_prod(ublas::row(dpsi_1,0), ublas::row(psi_2,nOrder) ), ublas::row(psi_3,p));
-            ublas::row(res[1],G_i) =
-                ublas::element_prod(ublas::element_prod(ublas::row(psi_1,0), ublas::row(dpsi_2,nOrder) ), ublas::row(psi_3,p));
-            ublas::row(res[2],G_i) =
-                ublas::element_prod(ublas::element_prod(ublas::row(psi_1,0), ublas::row(psi_2,nOrder) ), ublas::row(dpsi_3,p));
-        }
+    for ( uint_type p = 1; p < nOrder; ++p )
+    {
+        ++G_i;
+        ublas::row( res[0],G_i ) =
+            ublas::element_prod( ublas::element_prod( ublas::row( dpsi_1,0 ), ublas::row( psi_2,nOrder ) ), ublas::row( psi_3,p ) );
+        ublas::row( res[1],G_i ) =
+            ublas::element_prod( ublas::element_prod( ublas::row( psi_1,0 ), ublas::row( dpsi_2,nOrder ) ), ublas::row( psi_3,p ) );
+        ublas::row( res[2],G_i ) =
+            ublas::element_prod( ublas::element_prod( ublas::row( psi_1,0 ), ublas::row( psi_2,nOrder ) ), ublas::row( dpsi_3,p ) );
+    }
 
     /* EF : (nOrder-1) */
 
-    for(uint_type p = 1; p < nOrder; ++p)
-        {
-            ++G_i;
-            ublas::row(res[0],G_i) =
-                ublas::element_prod(ublas::element_prod(ublas::row(dpsi_1,p), ublas::row(psi_2,0) ), ublas::row(psi_3,nOrder));
-            ublas::row(res[1],G_i) =
-                ublas::element_prod(ublas::element_prod(ublas::row(psi_1,p), ublas::row(dpsi_2,0) ), ublas::row(psi_3,nOrder));
-            ublas::row(res[2],G_i) =
-                ublas::element_prod(ublas::element_prod(ublas::row(psi_1,p), ublas::row(psi_2,0) ), ublas::row(dpsi_3,nOrder));
-        }
+    for ( uint_type p = 1; p < nOrder; ++p )
+    {
+        ++G_i;
+        ublas::row( res[0],G_i ) =
+            ublas::element_prod( ublas::element_prod( ublas::row( dpsi_1,p ), ublas::row( psi_2,0 ) ), ublas::row( psi_3,nOrder ) );
+        ublas::row( res[1],G_i ) =
+            ublas::element_prod( ublas::element_prod( ublas::row( psi_1,p ), ublas::row( dpsi_2,0 ) ), ublas::row( psi_3,nOrder ) );
+        ublas::row( res[2],G_i ) =
+            ublas::element_prod( ublas::element_prod( ublas::row( psi_1,p ), ublas::row( psi_2,0 ) ), ublas::row( dpsi_3,nOrder ) );
+    }
 
     /* FG : (nOrder-1) */
 
-    for(uint_type p = 1; p < nOrder; ++p)
-        {
-            ++G_i;
-            ublas::row(res[0],G_i) =
-                ublas::element_prod(ublas::element_prod(ublas::row(dpsi_1,nOrder), ublas::row(psi_2,p) ), ublas::row(psi_3,nOrder));
-            ublas::row(res[1],G_i) =
-                ublas::element_prod(ublas::element_prod(ublas::row(psi_1,nOrder), ublas::row(dpsi_2,p) ), ublas::row(psi_3,nOrder));
-            ublas::row(res[2],G_i) =
-                ublas::element_prod(ublas::element_prod(ublas::row(psi_1,nOrder), ublas::row(psi_2,p) ), ublas::row(dpsi_3,nOrder));
-        }
+    for ( uint_type p = 1; p < nOrder; ++p )
+    {
+        ++G_i;
+        ublas::row( res[0],G_i ) =
+            ublas::element_prod( ublas::element_prod( ublas::row( dpsi_1,nOrder ), ublas::row( psi_2,p ) ), ublas::row( psi_3,nOrder ) );
+        ublas::row( res[1],G_i ) =
+            ublas::element_prod( ublas::element_prod( ublas::row( psi_1,nOrder ), ublas::row( dpsi_2,p ) ), ublas::row( psi_3,nOrder ) );
+        ublas::row( res[2],G_i ) =
+            ublas::element_prod( ublas::element_prod( ublas::row( psi_1,nOrder ), ublas::row( psi_2,p ) ), ublas::row( dpsi_3,nOrder ) );
+    }
 
     /* HG : (nOrder-1) */
 
-    for(uint_type p = 1; p < nOrder; ++p)
-        {
-            ++G_i;
-            ublas::row(res[0],G_i) =
-                ublas::element_prod(ublas::element_prod(ublas::row(dpsi_1,p), ublas::row(psi_2,nOrder) ), ublas::row(psi_3,nOrder));
-            ublas::row(res[1],G_i) =
-                ublas::element_prod(ublas::element_prod(ublas::row(psi_1,p), ublas::row(dpsi_2,nOrder) ), ublas::row(psi_3,nOrder));
-            ublas::row(res[2],G_i) =
-                ublas::element_prod(ublas::element_prod(ublas::row(psi_1,p), ublas::row(psi_2,nOrder) ), ublas::row(dpsi_3,nOrder));
-        }
+    for ( uint_type p = 1; p < nOrder; ++p )
+    {
+        ++G_i;
+        ublas::row( res[0],G_i ) =
+            ublas::element_prod( ublas::element_prod( ublas::row( dpsi_1,p ), ublas::row( psi_2,nOrder ) ), ublas::row( psi_3,nOrder ) );
+        ublas::row( res[1],G_i ) =
+            ublas::element_prod( ublas::element_prod( ublas::row( psi_1,p ), ublas::row( dpsi_2,nOrder ) ), ublas::row( psi_3,nOrder ) );
+        ublas::row( res[2],G_i ) =
+            ublas::element_prod( ublas::element_prod( ublas::row( psi_1,p ), ublas::row( psi_2,nOrder ) ), ublas::row( dpsi_3,nOrder ) );
+    }
 
     /* EH : (nOrder-1) */
 
-    for(uint_type p = 1; p < nOrder; ++p)
-        {
-            ++G_i;
-            ublas::row(res[0],G_i) =
-                ublas::element_prod(ublas::element_prod(ublas::row(dpsi_1,0), ublas::row(psi_2,p) ), ublas::row(psi_3,nOrder));
-            ublas::row(res[1],G_i) =
-                ublas::element_prod(ublas::element_prod(ublas::row(psi_1,0), ublas::row(dpsi_2,p) ), ublas::row(psi_3,nOrder));
-            ublas::row(res[2],G_i) =
-                ublas::element_prod(ublas::element_prod(ublas::row(psi_1,0), ublas::row(psi_2,p) ), ublas::row(dpsi_3,nOrder));
-        }
+    for ( uint_type p = 1; p < nOrder; ++p )
+    {
+        ++G_i;
+        ublas::row( res[0],G_i ) =
+            ublas::element_prod( ublas::element_prod( ublas::row( dpsi_1,0 ), ublas::row( psi_2,p ) ), ublas::row( psi_3,nOrder ) );
+        ublas::row( res[1],G_i ) =
+            ublas::element_prod( ublas::element_prod( ublas::row( psi_1,0 ), ublas::row( dpsi_2,p ) ), ublas::row( psi_3,nOrder ) );
+        ublas::row( res[2],G_i ) =
+            ublas::element_prod( ublas::element_prod( ublas::row( psi_1,0 ), ublas::row( psi_2,p ) ), ublas::row( dpsi_3,nOrder ) );
+    }
+
     //@}
 
 
@@ -1045,104 +1071,105 @@ TensorisedBoundaryAdapted<Dim, Degree,  T, StoragePolicy>::derivate( ublas::matr
 
     /* ABCD */
 
-    for(uint_type p = 1; p < nOrder; ++p)
-        for(uint_type q = 1; q < nOrder; ++q)
-            {
-                ++G_i;
-                ublas::row(res[0],G_i) =
-                    ublas::element_prod(ublas::element_prod(ublas::row(dpsi_1,p) , ublas::row(psi_2,q) ), ublas::row(psi_3,0));
-                ublas::row(res[1],G_i) =
-                    ublas::element_prod(ublas::element_prod(ublas::row(psi_1,p) , ublas::row(dpsi_2,q) ), ublas::row(psi_3,0));
-                ublas::row(res[2],G_i) =
-                    ublas::element_prod(ublas::element_prod(ublas::row(psi_1,p) , ublas::row(psi_2,q) ), ublas::row(dpsi_3,0));
-            }
+    for ( uint_type p = 1; p < nOrder; ++p )
+        for ( uint_type q = 1; q < nOrder; ++q )
+        {
+            ++G_i;
+            ublas::row( res[0],G_i ) =
+                ublas::element_prod( ublas::element_prod( ublas::row( dpsi_1,p ) , ublas::row( psi_2,q ) ), ublas::row( psi_3,0 ) );
+            ublas::row( res[1],G_i ) =
+                ublas::element_prod( ublas::element_prod( ublas::row( psi_1,p ) , ublas::row( dpsi_2,q ) ), ublas::row( psi_3,0 ) );
+            ublas::row( res[2],G_i ) =
+                ublas::element_prod( ublas::element_prod( ublas::row( psi_1,p ) , ublas::row( psi_2,q ) ), ublas::row( dpsi_3,0 ) );
+        }
 
     /* ABFE */
 
-    for(uint_type p = 1; p < nOrder; ++p)
-        for(uint_type q = 1; q < nOrder; ++q)
-            {
-                ++G_i;
-                ublas::row(res[0],G_i) =
-                    ublas::element_prod(ublas::element_prod(ublas::row(dpsi_1,p) , ublas::row(psi_2,0) ), ublas::row(psi_3,q));
-                ublas::row(res[1],G_i) =
-                    ublas::element_prod(ublas::element_prod(ublas::row(psi_1,p) , ublas::row(dpsi_2,0) ), ublas::row(psi_3,q));
-                ublas::row(res[2],G_i) =
-                    ublas::element_prod(ublas::element_prod(ublas::row(psi_1,p) , ublas::row(psi_2,0) ), ublas::row(dpsi_3,q));
-            }
+    for ( uint_type p = 1; p < nOrder; ++p )
+        for ( uint_type q = 1; q < nOrder; ++q )
+        {
+            ++G_i;
+            ublas::row( res[0],G_i ) =
+                ublas::element_prod( ublas::element_prod( ublas::row( dpsi_1,p ) , ublas::row( psi_2,0 ) ), ublas::row( psi_3,q ) );
+            ublas::row( res[1],G_i ) =
+                ublas::element_prod( ublas::element_prod( ublas::row( psi_1,p ) , ublas::row( dpsi_2,0 ) ), ublas::row( psi_3,q ) );
+            ublas::row( res[2],G_i ) =
+                ublas::element_prod( ublas::element_prod( ublas::row( psi_1,p ) , ublas::row( psi_2,0 ) ), ublas::row( dpsi_3,q ) );
+        }
 
     /* BCGF */
 
-    for(uint_type p = 1; p < nOrder; ++p)
-        for(uint_type q = 1; q < nOrder; ++q)
-            {
-                ++G_i;
-                ublas::row(res[0],G_i) =
-                    ublas::element_prod(ublas::element_prod(ublas::row(dpsi_1,nOrder) , ublas::row(psi_2,p) ), ublas::row(psi_3,q));
-                ublas::row(res[1],G_i) =
-                    ublas::element_prod(ublas::element_prod(ublas::row(psi_1,nOrder) , ublas::row(dpsi_2,p) ), ublas::row(psi_3,q));
-                ublas::row(res[2],G_i) =
-                    ublas::element_prod(ublas::element_prod(ublas::row(psi_1,nOrder) , ublas::row(psi_2,p) ), ublas::row(dpsi_3,q));
-            }
+    for ( uint_type p = 1; p < nOrder; ++p )
+        for ( uint_type q = 1; q < nOrder; ++q )
+        {
+            ++G_i;
+            ublas::row( res[0],G_i ) =
+                ublas::element_prod( ublas::element_prod( ublas::row( dpsi_1,nOrder ) , ublas::row( psi_2,p ) ), ublas::row( psi_3,q ) );
+            ublas::row( res[1],G_i ) =
+                ublas::element_prod( ublas::element_prod( ublas::row( psi_1,nOrder ) , ublas::row( dpsi_2,p ) ), ublas::row( psi_3,q ) );
+            ublas::row( res[2],G_i ) =
+                ublas::element_prod( ublas::element_prod( ublas::row( psi_1,nOrder ) , ublas::row( psi_2,p ) ), ublas::row( dpsi_3,q ) );
+        }
 
     /* CGHD */
 
-    for(uint_type p = 1; p < nOrder; ++p)
-        for(uint_type q = 1; q < nOrder; ++q)
-            {
-                ++G_i;
-                ublas::row(res[0],G_i) =
-                    ublas::element_prod(ublas::element_prod(ublas::row(dpsi_1,p) , ublas::row(psi_2,nOrder) ), ublas::row(psi_3,q));
-                ublas::row(res[1],G_i) =
-                    ublas::element_prod(ublas::element_prod(ublas::row(psi_1,p) , ublas::row(dpsi_2,nOrder) ), ublas::row(psi_3,q));
-                ublas::row(res[2],G_i) =
-                    ublas::element_prod(ublas::element_prod(ublas::row(psi_1,p) , ublas::row(psi_2,nOrder) ), ublas::row(dpsi_3,q));
-            }
+    for ( uint_type p = 1; p < nOrder; ++p )
+        for ( uint_type q = 1; q < nOrder; ++q )
+        {
+            ++G_i;
+            ublas::row( res[0],G_i ) =
+                ublas::element_prod( ublas::element_prod( ublas::row( dpsi_1,p ) , ublas::row( psi_2,nOrder ) ), ublas::row( psi_3,q ) );
+            ublas::row( res[1],G_i ) =
+                ublas::element_prod( ublas::element_prod( ublas::row( psi_1,p ) , ublas::row( dpsi_2,nOrder ) ), ublas::row( psi_3,q ) );
+            ublas::row( res[2],G_i ) =
+                ublas::element_prod( ublas::element_prod( ublas::row( psi_1,p ) , ublas::row( psi_2,nOrder ) ), ublas::row( dpsi_3,q ) );
+        }
 
     /* ADHE */
 
-    for(uint_type p = 1; p < nOrder; ++p)
-        for(uint_type q = 1; q < nOrder; ++q)
-            {
-                ++G_i;
-                ublas::row(res[0],G_i) =
-                    ublas::element_prod(ublas::element_prod(ublas::row(dpsi_1,0) , ublas::row(psi_2,p) ), ublas::row(psi_3,q));
-                ublas::row(res[1],G_i) =
-                    ublas::element_prod(ublas::element_prod(ublas::row(psi_1,0) , ublas::row(dpsi_2,p) ), ublas::row(psi_3,q));
-                ublas::row(res[2],G_i) =
-                    ublas::element_prod(ublas::element_prod(ublas::row(psi_1,0) , ublas::row(psi_2,p) ), ublas::row(dpsi_3,q));
-            }
+    for ( uint_type p = 1; p < nOrder; ++p )
+        for ( uint_type q = 1; q < nOrder; ++q )
+        {
+            ++G_i;
+            ublas::row( res[0],G_i ) =
+                ublas::element_prod( ublas::element_prod( ublas::row( dpsi_1,0 ) , ublas::row( psi_2,p ) ), ublas::row( psi_3,q ) );
+            ublas::row( res[1],G_i ) =
+                ublas::element_prod( ublas::element_prod( ublas::row( psi_1,0 ) , ublas::row( dpsi_2,p ) ), ublas::row( psi_3,q ) );
+            ublas::row( res[2],G_i ) =
+                ublas::element_prod( ublas::element_prod( ublas::row( psi_1,0 ) , ublas::row( psi_2,p ) ), ublas::row( dpsi_3,q ) );
+        }
 
     /* EFGH */
 
-    for(uint_type p = 1; p < nOrder; ++p)
-        for(uint_type q = 1; q < nOrder; ++q)
-            {
-                ++G_i;
-                ublas::row(res[0],G_i) =
-                    ublas::element_prod(ublas::element_prod(ublas::row(dpsi_1,p) , ublas::row(psi_2,q) ), ublas::row(psi_3,nOrder));
-                ublas::row(res[1],G_i) =
-                    ublas::element_prod(ublas::element_prod(ublas::row(psi_1,p) , ublas::row(dpsi_2,q) ), ublas::row(psi_3,nOrder));
-                ublas::row(res[2],G_i) =
-                    ublas::element_prod(ublas::element_prod(ublas::row(psi_1,p) , ublas::row(psi_2,q) ), ublas::row(dpsi_3,nOrder));
-            }
+    for ( uint_type p = 1; p < nOrder; ++p )
+        for ( uint_type q = 1; q < nOrder; ++q )
+        {
+            ++G_i;
+            ublas::row( res[0],G_i ) =
+                ublas::element_prod( ublas::element_prod( ublas::row( dpsi_1,p ) , ublas::row( psi_2,q ) ), ublas::row( psi_3,nOrder ) );
+            ublas::row( res[1],G_i ) =
+                ublas::element_prod( ublas::element_prod( ublas::row( psi_1,p ) , ublas::row( dpsi_2,q ) ), ublas::row( psi_3,nOrder ) );
+            ublas::row( res[2],G_i ) =
+                ublas::element_prod( ublas::element_prod( ublas::row( psi_1,p ) , ublas::row( psi_2,q ) ), ublas::row( dpsi_3,nOrder ) );
+        }
+
     //@}
 
 
     /* Interior : (N-1)^3 */
 
-    for(uint_type p = 1; p < nOrder; ++p)
-        for(uint_type q = 1; q < nOrder; ++q)
-            for(uint_type r = 1; r < nOrder; ++r)
-                {
-                    ++G_i;
-                    ublas::row(res[0],G_i) =
-                        ublas::element_prod(ublas::element_prod(ublas::row(dpsi_1,p) , ublas::row(psi_2,q) ), ublas::row(psi_3,r));
-                    ublas::row(res[1],G_i) =
-                        ublas::element_prod(ublas::element_prod(ublas::row(psi_1,p) , ublas::row(dpsi_2,q) ), ublas::row(psi_3,r));
-                    ublas::row(res[2],G_i) =
-                        ublas::element_prod(ublas::element_prod(ublas::row(psi_1,p) , ublas::row(psi_2,q) ), ublas::row(dpsi_3,r));
-                }
+    for ( uint_type p = 1; p < nOrder; ++p )
+        for ( uint_type q = 1; q < nOrder; ++q )
+            for ( uint_type r = 1; r < nOrder; ++r )
+            {
+                ++G_i;
+                ublas::row( res[0],G_i ) =
+                    ublas::element_prod( ublas::element_prod( ublas::row( dpsi_1,p ) , ublas::row( psi_2,q ) ), ublas::row( psi_3,r ) );
+                ublas::row( res[1],G_i ) =
+                    ublas::element_prod( ublas::element_prod( ublas::row( psi_1,p ) , ublas::row( dpsi_2,q ) ), ublas::row( psi_3,r ) );
+                ublas::row( res[2],G_i ) =
+                    ublas::element_prod( ublas::element_prod( ublas::row( psi_1,p ) , ublas::row( psi_2,q ) ), ublas::row( dpsi_3,r ) );
+            }
 
 
     return res;

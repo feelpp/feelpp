@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -63,7 +63,9 @@ public:
     /** @name Typedefs
      */
     //@{
-    struct Element; struct Leaf; struct Node;
+    struct Element;
+    struct Leaf;
+    struct Node;
 
     typedef ublas::vector<double> node_type;
     //in the following template, the last size_type corresponds to the global index of node in the mesh
@@ -90,17 +92,17 @@ public:
         M_pts(),
         M_node_search(),
         M_PtsNearest(),
-        M_distanceMax(INT_MAX),
-        M_nbPtMax(4)
+        M_distanceMax( INT_MAX ),
+        M_nbPtMax( 4 )
     {}
     KDTree( KDTree const & tree )
         :
         M_tree( tree.M_tree ),
         M_pts( tree.M_pts ),
-        M_node_search(tree.M_node_search),
-        M_PtsNearest(tree.M_PtsNearest),
-        M_distanceMax(tree.M_distanceMax),
-        M_nbPtMax(tree.M_nbPtMax)
+        M_node_search( tree.M_node_search ),
+        M_PtsNearest( tree.M_PtsNearest ),
+        M_distanceMax( tree.M_distanceMax ),
+        M_nbPtMax( tree.M_nbPtMax )
     {}
 
     ~KDTree()
@@ -178,15 +180,15 @@ public:
     /**
      * reserve memory for the index/node pair
      */
-    void reserve(size_type n)
+    void reserve( size_type n )
     {
-        M_pts.reserve(n);
+        M_pts.reserve( n );
     }
 
     /**
      * define the max number of point for the research( Default is 4 )
      */
-    void nbNearNeighbor(size_type n)
+    void nbNearNeighbor( size_type n )
     {
         M_nbPtMax=n;
     }
@@ -198,16 +200,17 @@ public:
     size_type addPoint( node_type const& n, size_type indice_global=0 )
     {
         size_type i = M_pts.size();
-        addPointWithId(n,i,0,indice_global);
+        addPointWithId( n,i,0,indice_global );
         return i;
     }
     /**
      * insert a new point, with an associated number.
      */
-    void addPointWithId(const node_type& n, size_type i, uint16_type comp, size_type indice_global=0  )
+    void addPointWithId( const node_type& n, size_type i, uint16_type comp, size_type indice_global=0  )
     {
-        if (M_tree)
+        if ( M_tree )
             clearTree();
+
         M_pts.push_back( boost::make_tuple( n, i, comp,indice_global ) );
     }
     /**
@@ -216,12 +219,12 @@ public:
      */
     void pointsInBox( points_type &inpts,
                       const node_type &min,
-                      const node_type &max);
+                      const node_type &max );
 
     /**
      * search the neighbors points of M_node_search in the kd-tree
      */
-    void search(const node_type & node_);
+    void search( const node_type & node_ );
 
     /**
      * print the result of the research
@@ -231,7 +234,7 @@ public:
     /**
      * print in a file the scatterplot with the cuts of hyperplan (2d et 3d)
      */
-    void writeLatexData(std::string __nameFile = "kdtreeData.tex");
+    void writeLatexData( std::string __nameFile = "kdtreeData.tex" );
     //@}
 
 
@@ -245,12 +248,12 @@ private:
     /**
      * Run the the research of M_node_search neighbors(recursive)
      */
-    void run_search( Element * tree, uint16_type iter);
+    void run_search( Element * tree, uint16_type iter );
 
     /**
      * Updating the list of nearest points
      */
-    void update_Pts_search(const index_node_type & p);
+    void update_Pts_search( const index_node_type & p );
 
 private:
     Element* M_tree;

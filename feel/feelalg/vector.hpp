@@ -67,15 +67,15 @@ public:
     /**
      * Constructor. Set dimension to \p n and initialize all elements with zero.
      */
-    Vector (const size_type n, WorldComm const& _worldComm = WorldComm());
+    Vector ( const size_type n, WorldComm const& _worldComm = WorldComm() );
 
     /**
      * Constructor. Set local dimension to \p n_local, the global dimension
      * to \p n, and initialize all elements with zero.
      */
-    Vector (const size_type n,
-            const size_type n_local,
-            WorldComm const& _worldComm = WorldComm() );
+    Vector ( const size_type n,
+             const size_type n_local,
+             WorldComm const& _worldComm = WorldComm() );
 
     /**
      * Destructor, deallocates memory. Made virtual to allow
@@ -83,20 +83,32 @@ public:
      */
     virtual ~Vector ();
 
-    DataMap const& map() const { return M_map; }
-    void setMap( DataMap const& d ) { M_map=d; }
+    DataMap const& map() const
+    {
+        return M_map;
+    }
+    void setMap( DataMap const& d )
+    {
+        M_map=d;
+    }
 
     /**
      * @returns true if the vector has been initialized,
      * false otherwise.
      */
-    virtual bool isInitialized() const { return M_is_initialized; }
+    virtual bool isInitialized() const
+    {
+        return M_is_initialized;
+    }
 
     /**
      * @returns true if the vector is closed and ready for
      * computation, false otherwise.
      */
-    virtual bool closed() const { return M_is_closed; }
+    virtual bool closed() const
+    {
+        return M_is_closed;
+    }
 
     /**
      * Call the assemble functions
@@ -127,12 +139,18 @@ public:
     /**
      * set the entries to 0
      */
-    virtual void setZero() { this->zero(); }
+    virtual void setZero()
+    {
+        this->zero();
+    }
 
     /**
      * set the entries to 1
      */
-    virtual void setOnes() { this->setConstant( 1 ); }
+    virtual void setOnes()
+    {
+        this->setConstant( 1 );
+    }
 
     /**
      * Creates a copy of this vector and returns it in an \p shared_ptr<>.
@@ -153,15 +171,15 @@ public:
      * zeros.
      */
 
-    virtual void init (const size_type,
-                       const size_type,
-                       const bool = false);
+    virtual void init ( const size_type,
+                        const size_type,
+                        const bool = false );
 
     /**
      * call init with n_local = N,
      */
-    virtual void init (const size_type,
-                       const bool = false);
+    virtual void init ( const size_type,
+                        const bool = false );
 
 
     // surement a virtualiser!!!
@@ -189,17 +207,17 @@ public:
     /**
      * \f$U(0-N) = s\f$: fill all components.
      */
-    Vector<T> & operator= (const T s);
+    Vector<T> & operator= ( const T s );
 
     /**
      *  \f$U = V\f$: copy all components.
      */
-    virtual Vector<T> & operator= (const Vector<T> &V);
+    virtual Vector<T> & operator= ( const Vector<T> &V );
 
     /**
      *  \f$U = V\f$: copy all components.
      */
-    Vector<T> & operator= (const std::vector<T> &v);
+    Vector<T> & operator= ( const std::vector<T> &v );
 
     /**
      * \return the sum of the components of the vector
@@ -294,34 +312,37 @@ public:
     /**
      * \return the communicator
      */
-    WorldComm const& comm() const { return M_map.comm(); }
+    WorldComm const& comm() const
+    {
+        return M_map.comm();
+    }
 
     /**
      * Access components, returns \p U(i).
      */
-    virtual T operator() (const size_type i) const = 0;
+    virtual T operator() ( const size_type i ) const = 0;
 
     /**
      * Addition operator.
      * Fast equivalent to \p U.add(1, V).
      */
-    virtual Vector<T> & operator += (const Vector<value_type> &V) = 0;
+    virtual Vector<T> & operator += ( const Vector<value_type> &V ) = 0;
 
     /**
      * Subtraction operator.
      * Fast equivalent to \p U.add(-1, V).
      */
-    virtual Vector<T> & operator -= (const Vector<value_type> &V) = 0;
+    virtual Vector<T> & operator -= ( const Vector<value_type> &V ) = 0;
 
     /**
      * v(i) = value
      */
-    virtual void set (const size_type i, const value_type& value) = 0;
+    virtual void set ( const size_type i, const value_type& value ) = 0;
 
     /**
      * v(i) += value
      */
-    virtual void add (const size_type i, const value_type& value) = 0;
+    virtual void add ( const size_type i, const value_type& value ) = 0;
 
     /**
      * v([i1,i2,...,in]) += [value1,...,valuen]
@@ -333,38 +354,38 @@ public:
      * Addition of \p s to all components. Note
      * that \p s is a scalar and not a vector.
      */
-    virtual void add (const value_type& s) = 0;
+    virtual void add ( const value_type& s ) = 0;
 
     /**
      * \f$U+=V\f$:
      * Simple vector addition, equal to the
      * \p operator +=.
      */
-    virtual void add (const Vector<value_type>& V) = 0;
+    virtual void add ( const Vector<value_type>& V ) = 0;
 
     /**
      * \f$U+=a*V\f$.
      * Simple vector addition, equal to the
      * \p operator +=.
      */
-    virtual void add (const value_type& a, const Vector<value_type>& v) = 0;
+    virtual void add ( const value_type& a, const Vector<value_type>& v ) = 0;
 
     /**
      * \f$U+=a*V\f$.
      * Simple vector addition, equal to the
      * \p operator +=.
      */
-    void add (const value_type& a, const boost::shared_ptr<Vector<value_type> >& v)
-        {
-            add( a, *v );
-        }
+    void add ( const value_type& a, const boost::shared_ptr<Vector<value_type> >& v )
+    {
+        add( a, *v );
+    }
     /**
      * \f$ U+=v \f$ where v is a ublas::vector<T>
      * and you
      * want to specify WHERE to add it
      */
-    virtual void addVector (const std::vector<T>& v,
-                            const std::vector<size_type>& dof_indices) = 0;
+    virtual void addVector ( const std::vector<T>& v,
+                             const std::vector<size_type>& dof_indices ) = 0;
 
     /**
      * \f$U+=V\f$, where U and V are type
@@ -372,39 +393,39 @@ public:
      * want to specify WHERE to add
      * the Vector<T> V
      */
-    virtual void addVector (const Vector<T>& V,
-                            const std::vector<size_type>& dof_indices) = 0;
+    virtual void addVector ( const Vector<T>& V,
+                             const std::vector<size_type>& dof_indices ) = 0;
 
     /**
      * \f$U+=A*V\f$, add the product of a \p SparseMatrix \p A
      * and a \p Vector \p V to \p this, where \p this=U.
      */
-    virtual void addVector (const Vector<T>& V_in,
-                            const MatrixSparse<T>& A_in ) = 0;
+    virtual void addVector ( const Vector<T>& V_in,
+                             const MatrixSparse<T>& A_in ) = 0;
 
     /**
      * \f$U+=A*V\f$, add the product of a \p SparseMatrix \p A
      * and a \p Vector \p V to \p this, where \p this=U.
      */
-    void addVector (const boost::shared_ptr<Vector<T> >& V_in,
-                    const boost::shared_ptr<MatrixSparse<T> >& A_in )
-        {
-            addVector( *V_in, *A_in );
-        }
+    void addVector ( const boost::shared_ptr<Vector<T> >& V_in,
+                     const boost::shared_ptr<MatrixSparse<T> >& A_in )
+    {
+        addVector( *V_in, *A_in );
+    }
 
     /**
      * \f$U+=A*V\f$, add the product of a \p MatrixShell \p A
      * and a \p Vector \p V to \p this, where \p this=U.
      */
-    void addVector (const Vector<T>& V_in,
-                    const MatrixShell<T>& A_in );
+    void addVector ( const Vector<T>& V_in,
+                     const MatrixShell<T>& A_in );
 
     /**
      * \f$U+=A*V\f$, add the product of a \p MatrixShell \p A
      * and a \p Vector \p V to \p this, where \p this=U.
      */
-    void addVector (const boost::shared_ptr<Vector<T> >& V_in,
-                            const boost::shared_ptr<MatrixShell<T> >& A_in );
+    void addVector ( const boost::shared_ptr<Vector<T> >& V_in,
+                     const boost::shared_ptr<MatrixShell<T> >& A_in );
 
 #if 0
     /**
@@ -413,16 +434,16 @@ public:
      * want to specify WHERE to add
      * the DenseVector<T> V
      */
-    virtual void addVector (const DenseVector<T>& V,
-                            const std::vector<size_type>& dof_indices) = 0;
+    virtual void addVector ( const DenseVector<T>& V,
+                             const std::vector<size_type>& dof_indices ) = 0;
 #endif
 
     /**
      * \f$ U=v \f$ where v is a DenseVector<T>
      * and you want to specify WHERE to insert it
      */
-    virtual void insert (const std::vector<T>& v,
-                         const std::vector<size_type>& dof_indices) = 0;
+    virtual void insert ( const std::vector<T>& v,
+                          const std::vector<size_type>& dof_indices ) = 0;
 
     /**
      * \f$U=V\f$, where U and V are type
@@ -430,8 +451,8 @@ public:
      * want to specify WHERE to insert
      * the Vector<T> V
      */
-    virtual void insert (const Vector<T>& V,
-                         const std::vector<size_type>& dof_indices) = 0;
+    virtual void insert ( const Vector<T>& V,
+                          const std::vector<size_type>& dof_indices ) = 0;
 
     /**
      * \f$ U+=V \f$ where U and V are type
@@ -439,42 +460,42 @@ public:
      * want to specify WHERE to insert
      * the DenseVector<T> V
      */
-    virtual void insert (const ublas::vector<T>& V,
-                         const std::vector<size_type>& dof_indices) = 0;
+    virtual void insert ( const ublas::vector<T>& V,
+                          const std::vector<size_type>& dof_indices ) = 0;
 
     /**
      * Scale each element of the
      * vector by the given factor.
      */
-    virtual void scale (const T factor) = 0;
+    virtual void scale ( const T factor ) = 0;
 
     /**
      * Creates a copy of the global vector in the
      * local vector \p v_local.
      */
-    virtual void localize (std::vector<T>& v_local) const = 0;
+    virtual void localize ( std::vector<T>& v_local ) const = 0;
 
     /**
      * Same, but fills a \p Vector<T> instead of
      * a \p std::vector.
      */
-    virtual void localize (Vector<T>& v_local) const = 0;
+    virtual void localize ( Vector<T>& v_local ) const = 0;
 
     /**
      * Creates a local vector \p v_local containing
      * only information relevant to this processor, as
      * defined by the \p send_list.
      */
-    virtual void localize (Vector<T>& v_local,
-                           const std::vector<size_type>& send_list) const = 0;
+    virtual void localize ( Vector<T>& v_local,
+                            const std::vector<size_type>& send_list ) const = 0;
 
     /**
      * Updates a local vector with selected values from neighboring
      * processors, as defined by \p send_list.
      */
-    virtual void localize (const size_type first_local_idx,
-                           const size_type last_local_idx,
-                           const std::vector<size_type>& send_list) = 0;
+    virtual void localize ( const size_type first_local_idx,
+                            const size_type last_local_idx,
+                            const std::vector<size_type>& send_list ) = 0;
 
     /**
      * Creates a local copy of the global vector in
@@ -482,8 +503,8 @@ public:
      * default the data is sent to processor 0.  This method
      * is useful for outputting data from one processor.
      */
-    virtual void localizeToOneProcessor (std::vector<T>& v_local,
-                                         const size_type proc_id=0) const = 0;
+    virtual void localizeToOneProcessor ( std::vector<T>& v_local,
+                                          const size_type proc_id=0 ) const = 0;
 
     /**
      * @returns \p -1 when \p this is equivalent to \p other_vector,
@@ -493,22 +514,22 @@ public:
      * no threshold is given, the \p Application \p TOLERANCE
      * is used.
      */
-    virtual int compare (const Vector<T> &other_vector,
-                         const real_type threshold = 1e-10 ) const;
+    virtual int compare ( const Vector<T> &other_vector,
+                          const real_type threshold = 1e-10 ) const;
 
 
 
     /**
      * Prints the contents of the vector to the screen.
      */
-    virtual void print(std::ostream& os=std::cout) const;
+    virtual void print( std::ostream& os=std::cout ) const;
 
     /**
      * Same as above but allows you to use stream syntax.
      */
-    friend std::ostream& operator << (std::ostream& os, const Vector<T>& v)
+    friend std::ostream& operator << ( std::ostream& os, const Vector<T>& v )
     {
-        v.print(os);
+        v.print( os );
         return os;
     }
 
@@ -518,7 +539,7 @@ public:
      * matrix to the file named \p name.  If \p name
      * is not specified it is dumped to the screen.
      */
-    virtual void printMatlab(const std::string name="NULL") const
+    virtual void printMatlab( const std::string name="NULL" ) const
     {
         std::cerr << "ERROR: Not Implemented in base class yet!" << std::endl;
         std::cerr << "ERROR writing MATLAB file " << name << std::endl;
@@ -573,22 +594,25 @@ typename type_traits<T>::real_type
 inner_product( Vector<T> const& v1, Vector<T> const& v2 )
 {
     FEELPP_ASSERT( v1.localSize() == v2.localSize() &&
-                 v1.size() == v2.size() )
-        ( v1.localSize() )( v2.localSize() )
-        ( v1.size() )( v2.size() ).error( "incompatible vector sizes" );
+                   v1.size() == v2.size() )
+    ( v1.localSize() )( v2.localSize() )
+    ( v1.size() )( v2.size() ).error( "incompatible vector sizes" );
 
     typedef typename type_traits<T>::real_type real_type;
 
     size_type s = v1.localSize();
     real_type res = 0;
     size_type start = v1.firstLocalIndex();
-    for( size_type i = 0; i < s; ++i )
+
+    for ( size_type i = 0; i < s; ++i )
         res += v1( start + i )* v2( start + i );
 
     real_type global_res = res;
 #if defined( FEELPP_HAS_MPI )
+
     if ( v1.comm().size() > 1 )
         mpi::all_reduce( v1.comm(), res, global_res, std::plus<real_type>() );
+
 #endif
     return global_res;
 }

@@ -50,48 +50,93 @@ public:
 
     WorldComm();
 
-    WorldComm(int _color);
+    WorldComm( int _color );
 
-    WorldComm(std::vector<int> const& _colorWorld);
+    WorldComm( std::vector<int> const& _colorWorld );
 
     WorldComm( WorldComm const& _wc );
 
     WorldComm( communicator_type const& _globalComm,
                int _color,
-               bool _isActive);
+               bool _isActive );
 
-    communicator_type const& globalComm() const { return *this; }
-    communicator_type const& localComm() const { return M_localComm; }
-    communicator_type const& godComm() const { return M_godComm; }
-    communicator_type const& comm() const { return M_localComm; }
+    communicator_type const& globalComm() const
+    {
+        return *this;
+    }
+    communicator_type const& localComm() const
+    {
+        return M_localComm;
+    }
+    communicator_type const& godComm() const
+    {
+        return M_godComm;
+    }
+    communicator_type const& comm() const
+    {
+        return M_localComm;
+    }
 
-    int globalSize() const { return this->globalComm().size(); }
-    int localSize() const { return this->localComm().size(); }
-    int godSize() const { return this->godComm().size(); }
+    int globalSize() const
+    {
+        return this->globalComm().size();
+    }
+    int localSize() const
+    {
+        return this->localComm().size();
+    }
+    int godSize() const
+    {
+        return this->godComm().size();
+    }
 
-    int globalRank() const { return this->globalComm().rank(); }
-    int localRank() const { return this->localComm().rank(); }
-    int godRank() const { return this->godComm().rank(); }
+    int globalRank() const
+    {
+        return this->globalComm().rank();
+    }
+    int localRank() const
+    {
+        return this->localComm().rank();
+    }
+    int godRank() const
+    {
+        return this->godComm().rank();
+    }
 
 
-    std::vector<int> const& mapColorWorld() const { return M_mapColorWorld; }
-    std::vector<int> const& mapLocalRankToGlobalRank() const { return M_mapLocalRankToGlobalRank; }
-    std::vector<int> const& mapGlobalRankToGodRank() const { return M_mapGlobalRankToGodRank; }
+    std::vector<int> const& mapColorWorld() const
+    {
+        return M_mapColorWorld;
+    }
+    std::vector<int> const& mapLocalRankToGlobalRank() const
+    {
+        return M_mapLocalRankToGlobalRank;
+    }
+    std::vector<int> const& mapGlobalRankToGodRank() const
+    {
+        return M_mapGlobalRankToGodRank;
+    }
 
-    int masterRank() const { return M_masterRank; }
+    int masterRank() const
+    {
+        return M_masterRank;
+    }
 
-    WorldComm subWorldComm(int color) const;
+    WorldComm subWorldComm( int color ) const;
 
-    bool isActive() const { return M_isActive[this->godRank()]; }
+    bool isActive() const
+    {
+        return M_isActive[this->godRank()];
+    }
 
-    int localColorToGlobalRank(int _color,int _localRank) const;
+    int localColorToGlobalRank( int _color,int _localRank ) const;
 
     /**
      * showMe
      */
     void showMe( std::ostream& __out = std::cout ) const;
 
-    WorldComm operator+(WorldComm const & _worldComm) const;
+    WorldComm operator+( WorldComm const & _worldComm ) const;
 
 private :
 

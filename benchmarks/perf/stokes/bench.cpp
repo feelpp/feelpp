@@ -42,33 +42,33 @@ inline
 Feel::po::options_description
 makeOptions()
 {
-    Feel::po::options_description stokesoptions("Stokes options");
+    Feel::po::options_description stokesoptions( "Stokes options" );
     stokesoptions.add_options()
-        ("faster", Feel::po::value<int>()->default_value( 2 ), "use coupled(0) or default(1) pattern or default/symmetric(2) pattern")
-        ("penal", Feel::po::value<double>()->default_value( 0.5 ), "penalisation parameter")
-        ("f", Feel::po::value<double>()->default_value( 0 ), "forcing term")
-        ("mu", Feel::po::value<double>()->default_value( 1.0/40 ), "reaction coefficient component")
-        ("bctype", Feel::po::value<int>()->default_value( 0 ), "0 = strong Dirichlet, 1 = weak Dirichlet")
-        ("bccoeff", Feel::po::value<double>()->default_value( 400.0 ), "coeff for weak Dirichlet conditions")
-        ("beta", Feel::po::value<double>()->default_value( 0.0 ), "convection coefficient")
-        ("shear", Feel::po::value<double>()->default_value( 0.0 ), "shear coeff")
-        ("recombine", Feel::po::value<bool>()->default_value( false ), "recombine triangle into quads")
-        ("export-matlab", "export matrix and vectors in matlab" )
-        ("no-solve", "dont solve the system" )
-        ("extra-terms", "dont solve the system" )
-        ;
+    ( "faster", Feel::po::value<int>()->default_value( 2 ), "use coupled(0) or default(1) pattern or default/symmetric(2) pattern" )
+    ( "penal", Feel::po::value<double>()->default_value( 0.5 ), "penalisation parameter" )
+    ( "f", Feel::po::value<double>()->default_value( 0 ), "forcing term" )
+    ( "mu", Feel::po::value<double>()->default_value( 1.0/40 ), "reaction coefficient component" )
+    ( "bctype", Feel::po::value<int>()->default_value( 0 ), "0 = strong Dirichlet, 1 = weak Dirichlet" )
+    ( "bccoeff", Feel::po::value<double>()->default_value( 400.0 ), "coeff for weak Dirichlet conditions" )
+    ( "beta", Feel::po::value<double>()->default_value( 0.0 ), "convection coefficient" )
+    ( "shear", Feel::po::value<double>()->default_value( 0.0 ), "shear coeff" )
+    ( "recombine", Feel::po::value<bool>()->default_value( false ), "recombine triangle into quads" )
+    ( "export-matlab", "export matrix and vectors in matlab" )
+    ( "no-solve", "dont solve the system" )
+    ( "extra-terms", "dont solve the system" )
+    ;
     return stokesoptions.add( Feel::feel_options() );
 }
 
 inline
 Feel::po::options_description
-makeBenchmarkOptions(std::string const& bench)
+makeBenchmarkOptions( std::string const& bench )
 {
-    Feel::po::options_description benchoptions("Stokes benchmark options");
+    Feel::po::options_description benchoptions( "Stokes benchmark options" );
     benchoptions.add_options()
-        (Feel::prefixvm(bench,"bctype").c_str(), Feel::po::value<int>()->default_value( 0 ), "0 = strong Dirichlet, 1 = weak Dirichlet")
-        (Feel::prefixvm(bench,"bccoeff").c_str(), Feel::po::value<double>()->default_value( 400.0 ), "coeff for weak Dirichlet conditions")
-        ;
+    ( Feel::prefixvm( bench,"bctype" ).c_str(), Feel::po::value<int>()->default_value( 0 ), "0 = strong Dirichlet, 1 = weak Dirichlet" )
+    ( Feel::prefixvm( bench,"bccoeff" ).c_str(), Feel::po::value<double>()->default_value( 400.0 ), "coeff for weak Dirichlet conditions" )
+    ;
     return benchoptions.add( Feel::benchmark_options( bench ) );
 }
 
@@ -89,10 +89,10 @@ makeAbout()
                            "0.1",
                            "Stokes equation on simplices or simplex products",
                            Feel::AboutData::License_GPL,
-                           "Copyright (c) 2009-2011 Universite de Grenoble 1 (Joseph Fourier)");
+                           "Copyright (c) 2009-2011 Universite de Grenoble 1 (Joseph Fourier)" );
 
-    about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
-   return about;
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    return about;
 
 }
 namespace Feel
@@ -119,18 +119,20 @@ int main( int argc, char** argv )
 {
 
     using namespace Feel;
-    std::vector<std::string> boptions = boost::assign::list_of("2D-CR1P0-Simplex")("2D-CR1P0-Hypercube")("2D-P2P1-Simplex")("2D-P2P1-Hypercube");
+    std::vector<std::string> boptions = boost::assign::list_of( "2D-CR1P0-Simplex" )( "2D-CR1P0-Hypercube" )( "2D-P2P1-Simplex" )( "2D-P2P1-Hypercube" );
     auto cmdoptions = makeOptions();
     BOOST_FOREACH( auto o, boptions )
     {
         cmdoptions.add( makeBenchmarkOptions( o ) );
     }
     Application benchmark( argc, argv, makeAbout(), cmdoptions );
+
     if ( benchmark.vm().count( "help" ) )
     {
         std::cout << benchmark.optionsDescription() << "\n";
         return 0;
     }
+
     benchmark.add( new Stokes<2, CrouzeixRaviart<1, Vectorial>,Lagrange<0, Scalar,Discontinuous>, Simplex>( "2D-CR1P0-Simplex",benchmark.vm(),benchmark.about() ) );
     benchmark.add( new Stokes<2, CrouzeixRaviart<1, Vectorial>,Lagrange<0, Scalar,Discontinuous>, Hypercube>( "2D-CR1P0-Hypercube",benchmark.vm(),benchmark.about() ) );
     benchmark.add( new Stokes<2, Lagrange<2, Vectorial>,Lagrange<1, Scalar>, Simplex>( "2D-P2P1-Simplex", benchmark.vm(), benchmark.about() ) );
@@ -139,5 +141,5 @@ int main( int argc, char** argv )
 
 
     benchmark.run();
-    benchmark.printStats( std::cout, boost::assign::list_of( "e.l2")("e.h1")("n.space")("n.matrix")("t.init")("t.assembly.vector")("t.assembly.matrix" )("t.solver")("d.solver") );
+    benchmark.printStats( std::cout, boost::assign::list_of( "e.l2" )( "e.h1" )( "n.space" )( "n.matrix" )( "t.init" )( "t.assembly.vector" )( "t.assembly.matrix" )( "t.solver" )( "d.solver" ) );
 }
