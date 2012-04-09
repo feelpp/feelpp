@@ -59,29 +59,29 @@ inline
 Feel::po::options_description
 makeOptions()
 {
-  Feel::po::options_description stokesStabilizedoptions("StokesStabilized options");
-  stokesStabilizedoptions.add_options()
-    ("nu", Feel::po::value<double>()->default_value( 0.01 ), "viscosity value")
-    ("hsize", Feel::po::value<double>()->default_value( 1 ), "first h value to start convergence")
-    ("penalisation", Feel::po::value<double>()->default_value( 1.0 ), "penalisation parameter")
-    ("export", "export results(ensight, data file(1D)")
-    ("bctype", Feel::po::value<int>()->default_value( 0 ), "bc")
-    ("b", Feel::po::value<double>()->default_value( 0 ), "b")
-    ("matrix", Feel::po::value<bool>()->default_value( 0 ), "print matrix")
-    ("errors", Feel::po::value<bool>()->default_value( 1 ), "print errors")
-    ("timings", Feel::po::value<bool>()->default_value( 1 ), "print timings")
-    ("graphics", Feel::po::value<bool>()->default_value( 0 ), "export graphics")
+    Feel::po::options_description stokesStabilizedoptions( "StokesStabilized options" );
+    stokesStabilizedoptions.add_options()
+    ( "nu", Feel::po::value<double>()->default_value( 0.01 ), "viscosity value" )
+    ( "hsize", Feel::po::value<double>()->default_value( 1 ), "first h value to start convergence" )
+    ( "penalisation", Feel::po::value<double>()->default_value( 1.0 ), "penalisation parameter" )
+    ( "export", "export results(ensight, data file(1D)" )
+    ( "bctype", Feel::po::value<int>()->default_value( 0 ), "bc" )
+    ( "b", Feel::po::value<double>()->default_value( 0 ), "b" )
+    ( "matrix", Feel::po::value<bool>()->default_value( 0 ), "print matrix" )
+    ( "errors", Feel::po::value<bool>()->default_value( 1 ), "print errors" )
+    ( "timings", Feel::po::value<bool>()->default_value( 1 ), "print timings" )
+    ( "graphics", Feel::po::value<bool>()->default_value( 0 ), "export graphics" )
 
     ;
-  Feel::po::options_description solveroptions("algebraic solver options");
-  solveroptions.add_options()
-    ("tolerance", Feel::po::value<double>()->default_value( 1.e-15 ), "tolerance of the iterative solvers")
-    ("maxiter", Feel::po::value<int>()->default_value( 200 ), "set maximum number of iterations")
-    ("residual", Feel::po::value<std::string>()->default_value( "" ), "test of residual for GMRES")
-    ("drop_tolerance", Feel::po::value<double>()->default_value( 1.e-5 ), "drop tolerance for the preconditioner")
-    ("fillin", Feel::po::value<int>()->default_value( 1 ), "fillin for the preconditioner")
+    Feel::po::options_description solveroptions( "algebraic solver options" );
+    solveroptions.add_options()
+    ( "tolerance", Feel::po::value<double>()->default_value( 1.e-15 ), "tolerance of the iterative solvers" )
+    ( "maxiter", Feel::po::value<int>()->default_value( 200 ), "set maximum number of iterations" )
+    ( "residual", Feel::po::value<std::string>()->default_value( "" ), "test of residual for GMRES" )
+    ( "drop_tolerance", Feel::po::value<double>()->default_value( 1.e-5 ), "drop tolerance for the preconditioner" )
+    ( "fillin", Feel::po::value<int>()->default_value( 1 ), "fillin for the preconditioner" )
     ;
-  return stokesStabilizedoptions.add( solveroptions ).add( Feel::feel_options() );
+    return stokesStabilizedoptions.add( solveroptions ).add( Feel::feel_options() );
 }
 inline
 Feel::AboutData
@@ -92,9 +92,9 @@ makeAbout()
                            "0.1",
                            "Stabilized Stokes (interior penalty) solver",
                            Feel::AboutData::License_GPL,
-                           "Copyright (c) 2007 Universite Joseph Fourier");
+                           "Copyright (c) 2007 Universite Joseph Fourier" );
 
-    about.addAuthor("Goncalo Pena", "developer", "goncalo.pena@epfl.ch", "");
+    about.addAuthor( "Goncalo Pena", "developer", "goncalo.pena@epfl.ch", "" );
     return about;
 
 }
@@ -105,7 +105,7 @@ namespace Feel
 template< int Order >
 class StokesStabilized
     :
-        public Application
+public Application
 {
     typedef Application super;
 
@@ -138,8 +138,8 @@ public:
 
     /*basis*/
     typedef fusion::vector<fem::Lagrange<Dim, uOrder, Vectorial, Continuous, double, Simplex, PointSetWarpBlend>,
-                           fem::Lagrange<Dim, pOrder, Scalar, Continuous, double, Simplex, PointSetWarpBlend>
-                           > basis_type;
+            fem::Lagrange<Dim, pOrder, Scalar, Continuous, double, Simplex, PointSetWarpBlend>
+            > basis_type;
 
     /*space*/
     typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
@@ -176,7 +176,7 @@ public:
     {
         Debug() << "[StokesStabilized] hsize = " << meshSize << "\n";
         Debug() << "[StokesStabilized] nu = " << nu << "\n";
-        Debug() << "[StokesStabilized] export = " << this->vm().count("export") << "\n";
+        Debug() << "[StokesStabilized] export = " << this->vm().count( "export" ) << "\n";
 
     }
 
@@ -239,7 +239,7 @@ StokesStabilized<Order>::run( )
                             % Dim
                             % uOrder % pOrder
                             % this->vm()["hsize"].template as<double>()
-                            );
+                          );
     /*
      * logs will be in <feel repo>/<app name>/<entity>/P<p>/h_<h>
      */
@@ -266,7 +266,7 @@ StokesStabilized<Order>::run( )
 
     std::cout << "Number of dofs: " << Xh->nDof() << "\n";
 
-    double pi = 4.0 * math::atan(double(1.0));
+    double pi = 4.0 * math::atan( double( 1.0 ) );
     const double penalisation = this->vm()["penalisation"].template as<double>();
     const double tolerance = this->vm()["tolerance"].template as<double>();
     const int maxiter = this->vm()["maxiter"].template as<int>();
@@ -277,32 +277,32 @@ StokesStabilized<Order>::run( )
 
     const double drop_tolerance = this->vm()["drop_tolerance"].template as<double>();
     const std::string residual = this->vm()["residual"].template as<std::string>();
-    double lambda = 1./(2.*nu) - math::sqrt( 1./(4.*nu*nu) + 4.*pi*pi);
+    double lambda = 1./( 2.*nu ) - math::sqrt( 1./( 4.*nu*nu ) + 4.*pi*pi );
 
     const bool printErrors = this->vm()["errors"].template as<bool>();
     const bool printTimings = this->vm()["timings"].template as<bool>();
     const bool exportGraphics = this->vm()["graphics"].template as<bool>();
 
-    AUTO( u1, val(1. - exp( lambda * Px() ) * cos(2.*pi*Py())) );
-    AUTO( u2, val((lambda/(2.*pi)) * exp( lambda * Px() ) * sin(2.*pi*Py())) );
+    AUTO( u1, val( 1. - exp( lambda * Px() ) * cos( 2.*pi*Py() ) ) );
+    AUTO( u2, val( ( lambda/( 2.*pi ) ) * exp( lambda * Px() ) * sin( 2.*pi*Py() ) ) );
 
-    AUTO( u_exact, u1*oneX() + u2*oneY());
+    AUTO( u_exact, u1*oneX() + u2*oneY() );
 
-    AUTO( du_dx, val(-lambda*exp( lambda * Px() )*cos(2.*pi*Py())));
-    AUTO( du_dy, val(2*pi*exp( lambda * Px() )*sin(2.*pi*Py())));
-    AUTO( dv_dx, val((lambda*lambda/(2*pi))*exp( lambda * Px() )*sin(2.*pi*Py())));
-    AUTO( dv_dy, val(lambda*exp( lambda * Px() )*cos(2.*pi*Py())));
+    AUTO( du_dx, val( -lambda*exp( lambda * Px() )*cos( 2.*pi*Py() ) ) );
+    AUTO( du_dy, val( 2*pi*exp( lambda * Px() )*sin( 2.*pi*Py() ) ) );
+    AUTO( dv_dx, val( ( lambda*lambda/( 2*pi ) )*exp( lambda * Px() )*sin( 2.*pi*Py() ) ) );
+    AUTO( dv_dy, val( lambda*exp( lambda * Px() )*cos( 2.*pi*Py() ) ) );
 
-    AUTO( grad_exact, (mat<2,2>(du_dx, du_dy, dv_dx, dv_dy)) );
+    AUTO( grad_exact, ( mat<2,2>( du_dx, du_dy, dv_dx, dv_dy ) ) );
 
-    AUTO( beta, b*(oneX() + oneY()) );
+    AUTO( beta, b*( oneX() + oneY() ) );
 
-    AUTO( convection, grad_exact*beta);
+    AUTO( convection, grad_exact*beta );
 
-    AUTO( p_exact, val((1-exp(2.*lambda*Px()))/2.0) );
+    AUTO( p_exact, val( ( 1-exp( 2.*lambda*Px() ) )/2.0 ) );
 
-    AUTO( f1, val(exp( lambda * Px() )*((lambda*lambda - 4.*pi*pi)*nu*cos(2.*pi*Py()) - lambda*exp( lambda * Px() ))) );
-    AUTO( f2, val(exp( lambda * Px() )*nu*(lambda/(2.*pi))*sin(2.*pi*Py())*(-lambda*lambda +4*pi*pi)) );
+    AUTO( f1, val( exp( lambda * Px() )*( ( lambda*lambda - 4.*pi*pi )*nu*cos( 2.*pi*Py() ) - lambda*exp( lambda * Px() ) ) ) );
+    AUTO( f2, val( exp( lambda * Px() )*nu*( lambda/( 2.*pi ) )*sin( 2.*pi*Py() )*( -lambda*lambda +4*pi*pi ) ) );
 
     AUTO( f, f1*oneX() + f2*oneY() + convection );
 
@@ -311,46 +311,49 @@ StokesStabilized<Order>::run( )
     mpi::timer timer;
 
     timer.restart();
-    sparse_matrix_ptrtype Dcst( M_backend->newMatrix(Xh,Xh));
+    sparse_matrix_ptrtype Dcst( M_backend->newMatrix( Xh,Xh ) );
 
 
-    form2( Xh, Xh, Dcst, _init=true, _pattern = pattern ) = integrate( elements(mesh), typename MyIm<2*uOrder-1>::type(),
-                                                                       (nu*(trace(trans(gradt(u))*grad(v))) + trans(gradt(u)*beta)*id(v)
-                                                                        - div( v ) * idt( p )
-                                                                        + divt( u ) * id( q ) )
-                                                                       );
+    form2( Xh, Xh, Dcst, _init=true, _pattern = pattern ) = integrate( elements( mesh ), typename MyIm<2*uOrder-1>::type(),
+            ( nu*( trace( trans( gradt( u ) )*grad( v ) ) ) + trans( gradt( u )*beta )*id( v )
+              - div( v ) * idt( p )
+              + divt( u ) * id( q ) )
+                                                                     );
 
 
     double aux = timer.elapsed();
 
-    double p_term = double(uOrder);
-    p_term = math::pow(p_term, 7./2.);
-    double p_term2 = math::pow(double(uOrder), 1./2.);
+    double p_term = double( uOrder );
+    p_term = math::pow( p_term, 7./2. );
+    double p_term2 = math::pow( double( uOrder ), 1./2. );
 
     timer.restart();
+
     if ( b == 0 )
-        form2( Xh, Xh, Dcst ) += integrate( internalfaces(mesh), typename MyIm<2*(pOrder-1)>::type(),
-                                            constant(penalisation)*hFace()*hFace()
-                                            *(trans(jumpt(gradt(p)))*jump(grad(q)))
+        form2( Xh, Xh, Dcst ) += integrate( internalfaces( mesh ), typename MyIm<2*( pOrder-1 )>::type(),
+                                            constant( penalisation )*hFace()*hFace()
+                                            *( trans( jumpt( gradt( p ) ) )*jump( grad( q ) ) )
                                             /p_term
-                                            );
+                                          );
+
     else
-        form2( Xh, Xh, Dcst ) += integrate( internalfaces(mesh), typename MyIm<2*(pOrder-1)>::type(),
-                                            constant(penalisation)*hFace()*hFace()*vf::min(1,b*hFace()/(nu*p_term2))
-                                            *(trans(jumpt(gradt(p)))*jump(grad(q)))
-                                            /(p_term*b)
-                                            );
+        form2( Xh, Xh, Dcst ) += integrate( internalfaces( mesh ), typename MyIm<2*( pOrder-1 )>::type(),
+                                            constant( penalisation )*hFace()*hFace()*vf::min( 1,b*hFace()/( nu*p_term2 ) )
+                                            *( trans( jumpt( gradt( p ) ) )*jump( grad( q ) ) )
+                                            /( p_term*b )
+                                          );
+
     if ( printTimings == 1 )
         std::cout << "Stabilisation term assembly: " << timer.elapsed() << "\n";
 
     timer.restart();
-    form2( Xh, Xh, Dcst ) += integrate( boundaryfaces(mesh), typename MyIm<uOrder+pOrder>::type(),
-                                        trans(idt(p)*N())*id(v)
-                                        );
+    form2( Xh, Xh, Dcst ) += integrate( boundaryfaces( mesh ), typename MyIm<uOrder+pOrder>::type(),
+                                        trans( idt( p )*N() )*id( v )
+                                      );
 
-    form2( Xh, Xh, Dcst ) += integrate( boundaryfaces(mesh), typename MyIm<2*uOrder-1>::type(),
-                                        - nu*trans(gradt(u)*N())*id(v)
-                                        );
+    form2( Xh, Xh, Dcst ) += integrate( boundaryfaces( mesh ), typename MyIm<2*uOrder-1>::type(),
+                                        - nu*trans( gradt( u )*N() )*id( v )
+                                      );
     aux += timer.elapsed();
 
     if ( printTimings == 1 )
@@ -364,12 +367,12 @@ StokesStabilized<Order>::run( )
 
 
     if ( printMatrix )
-        Dcst->printMatlab("Dcst.m");
+        Dcst->printMatlab( "Dcst.m" );
 
     timer.restart();
-    vector_ptrtype Fcst(M_backend->newVector(Xh));
-    form1(Xh, Fcst, _init=true) = integrate( elements(mesh), typename MyIm<20>::type(),
-                                             trans(f)*id(v)
+    vector_ptrtype Fcst( M_backend->newVector( Xh ) );
+    form1( Xh, Fcst, _init=true ) = integrate( elements( mesh ), typename MyIm<20>::type(),
+                                    trans( f )*id( v )
                                              );
 
     Fcst->close();
@@ -378,49 +381,49 @@ StokesStabilized<Order>::run( )
         std::cout << "RHS assembly: " << timer.elapsed() << "\n";
 
     timer.restart();
-    form2( Xh, Xh, Dcst ) += on( boundaryfaces(mesh), U.template element<0>(), Fcst, u_exact );
+    form2( Xh, Xh, Dcst ) += on( boundaryfaces( mesh ), U.template element<0>(), Fcst, u_exact );
 
     if ( printTimings == 1 )
         std::cout << "Boundary conditions: " << timer.elapsed() << "\n";
 
 
     if ( printTimings == 0 )
-        {
+    {
 
-            backend_ptrtype ns( backend_type::build( this->vm() ) );
+        backend_ptrtype ns( backend_type::build( this->vm() ) );
 #if 0
-            ns.set_residual(residual);
-            ns.set_verbose("all");
-            ns.set_tol(tolerance);
-            ns.set_maxiter(maxiter);
-            ns.set_fillin(fillin);
-            ns.set_drop(drop_tolerance);
+        ns.set_residual( residual );
+        ns.set_verbose( "all" );
+        ns.set_tol( tolerance );
+        ns.set_maxiter( maxiter );
+        ns.set_fillin( fillin );
+        ns.set_drop( drop_tolerance );
 
 
-            PreconditionerIfpack ns_prec( ns.get_options(), "ILU" );
-            ns_prec.buildPreconditioner( *Dcst );
+        PreconditionerIfpack ns_prec( ns.get_options(), "ILU" );
+        ns_prec.buildPreconditioner( *Dcst );
 
-            op_mat_ptrtype nsOp = new op_mat_type( Dcst, ns.get_options(), "NS", ns_prec.getPrec() );
-            vector_ptrtype X( M_backend->newVector(Xh));
-            X->zero();
-            X->close();
+        op_mat_ptrtype nsOp = new op_mat_type( Dcst, ns.get_options(), "NS", ns_prec.getPrec() );
+        vector_ptrtype X( M_backend->newVector( Xh ) );
+        X->zero();
+        X->close();
 
-            std::cout << "Solve linear system...\n";
-            nsOp->ApplyInverse( Fcst->vec(), X->vec() );
+        std::cout << "Solve linear system...\n";
+        nsOp->ApplyInverse( Fcst->vec(), X->vec() );
 
-            backend_type::Epetra2Ublas( *X, U );
+        backend_type::Epetra2Ublas( *X, U );
 
 #else
-            vector_ptrtype X( M_backend->newVector(Xh));
-            X->zero();
-            X->close();
-            ns->solve( Dcst, Dcst, X, Fcst );
-            U = *X;
+        vector_ptrtype X( M_backend->newVector( Xh ) );
+        X->zero();
+        X->close();
+        ns->solve( Dcst, Dcst, X, Fcst );
+        U = *X;
 
 #endif
 
 
-        }
+    }
 
     double area = 0;
     double p_l1_error = 0;
@@ -431,61 +434,62 @@ StokesStabilized<Order>::run( )
 
 
     if ( printTimings == 0 )
-        {
-            area = integrate( elements(mesh), typename MyIm<1>::type(),
-                              constant(1.0) ).evaluate()(0,0);
+    {
+        area = integrate( elements( mesh ), typename MyIm<1>::type(),
+                          constant( 1.0 ) ).evaluate()( 0,0 );
 
-            p_l1_error = integrate( elements(mesh), typename MyIm<8*pOrder>::type(),
-                                    idv(U.template element<1>()) - p_exact).evaluate()(0,0);
+        p_l1_error = integrate( elements( mesh ), typename MyIm<8*pOrder>::type(),
+                                idv( U.template element<1>() ) - p_exact ).evaluate()( 0,0 );
 
-            mean_value = p_l1_error / area;
+        mean_value = p_l1_error / area;
 
-            p_error = integrate( elements(mesh), typename MyIm<8*pOrder>::type(),
-                                 (idv(U.template element<1>()) - p_exact - constant(mean_value) )^2
-                                 ).evaluate()(0,0);
-        }
+        p_error = integrate( elements( mesh ), typename MyIm<8*pOrder>::type(),
+                             ( idv( U.template element<1>() ) - p_exact - constant( mean_value ) )^2
+                           ).evaluate()( 0,0 );
+    }
 
     timer.restart();
-    double L2_u_error = integrate( elements(mesh), typename MyIm<8*uOrder>::type(),
-                                   trans(idv(U.template element<0>())-u_exact)
-                                   *(idv(U.template element<0>())-u_exact)
-                                   ).evaluate()(0,0);
-    if (printTimings)
+    double L2_u_error = integrate( elements( mesh ), typename MyIm<8*uOrder>::type(),
+                                   trans( idv( U.template element<0>() )-u_exact )
+                                   *( idv( U.template element<0>() )-u_exact )
+                                 ).evaluate()( 0,0 );
+
+    if ( printTimings )
         std::cout << "Timing L2 error for the velocity: " << timer.elapsed() << "\n";
 
     if ( printTimings == 0 )
-        {
-            H1_u_error = integrate( elements(mesh), typename MyIm<8*uOrder>::type(),
-                                    trace( (gradv( U.template element<0>())-grad_exact)
-                                           *trans(gradv( U.template element<0>())-grad_exact) )
-                                    ).evaluate()(0,0);
+    {
+        H1_u_error = integrate( elements( mesh ), typename MyIm<8*uOrder>::type(),
+                                trace( ( gradv( U.template element<0>() )-grad_exact )
+                                       *trans( gradv( U.template element<0>() )-grad_exact ) )
+                              ).evaluate()( 0,0 );
 
 
-            divergence = integrate( elements(mesh), typename MyIm<2*(uOrder-1)>::type(),
-                                    trace(gradv(U.template element<0>()))
-                                    *trace(gradv(U.template element<0>()))
-                                    ).evaluate()(0,0);
+        divergence = integrate( elements( mesh ), typename MyIm<2*( uOrder-1 )>::type(),
+                                trace( gradv( U.template element<0>() ) )
+                                *trace( gradv( U.template element<0>() ) )
+                              ).evaluate()( 0,0 );
 
-        }
+    }
 
-    if (exportGraphics)
-        {
-            this->exportResults( 0, U );
+    if ( exportGraphics )
+    {
+        this->exportResults( 0, U );
 
-            V.template element<0>() = project( Xh->template functionSpace<0>(), elements(mesh), u_exact );
-            V.template element<1>() = project( Xh->template functionSpace<1>(), elements(mesh), p_exact );
+        V.template element<0>() = project( Xh->template functionSpace<0>(), elements( mesh ), u_exact );
+        V.template element<1>() = project( Xh->template functionSpace<1>(), elements( mesh ), p_exact );
 
 
-            this->exportResults( 1, V );
-        }
+        this->exportResults( 1, V );
+    }
 
-    if (printErrors)
-        {
-            std::cout << "L2 error for the pressure: " << math::sqrt(p_error) << "\n";
-            std::cout << "L2 error for the velocity: " << math::sqrt(L2_u_error) << "\n";
-            std::cout << "H1 error for the velocity: " << math::sqrt(H1_u_error + L2_u_error) << "\n";
-            std::cout << "divergence for the velocity: " << math::sqrt(divergence) << "\n";
-        }
+    if ( printErrors )
+    {
+        std::cout << "L2 error for the pressure: " << math::sqrt( p_error ) << "\n";
+        std::cout << "L2 error for the velocity: " << math::sqrt( L2_u_error ) << "\n";
+        std::cout << "H1 error for the velocity: " << math::sqrt( H1_u_error + L2_u_error ) << "\n";
+        std::cout << "divergence for the velocity: " << math::sqrt( divergence ) << "\n";
+    }
 
 
 } // StokesStabilized::run
@@ -494,12 +498,12 @@ StokesStabilized<Order>::run( )
 template<int Order>
 void
 StokesStabilized<Order>::exportResults( double time,
-                                        element_type& U)
+                                        element_type& U )
 {
-    exporter->step(time)->setMesh( U.functionSpace()->mesh() );
-    exporter->step(time)->add( "u", U.template element<0>().comp(X) );
-    exporter->step(time)->add( "v", U.template element<0>().comp(Y) );
-    exporter->step(time)->add( "pressure", U.template element<1>() );
+    exporter->step( time )->setMesh( U.functionSpace()->mesh() );
+    exporter->step( time )->add( "u", U.template element<0>().comp( X ) );
+    exporter->step( time )->add( "v", U.template element<0>().comp( Y ) );
+    exporter->step( time )->add( "pressure", U.template element<1>() );
     exporter->save();
 } // StokesStabilized::export
 

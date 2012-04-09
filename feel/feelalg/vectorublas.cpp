@@ -91,7 +91,7 @@ struct fake<ublas::vector_range<ublas::vector<double> > >: public ublas::vector_
     }
     fake( ublas::vector<double>& v, ublas::slice const& r )
         :
-        ublas::vector_range<ublas::vector<double> >( v, ublas::range(r.start(), r.size() ) )
+        ublas::vector_range<ublas::vector<double> >( v, ublas::range( r.start(), r.size() ) )
     {
     }
 };
@@ -101,14 +101,14 @@ struct fake<ublas::vector_slice<ublas::vector<double> > >: public ublas::vector_
 {
     fake( ublas::vector<double>& v, ublas::slice const& r )
         :
-        ublas::vector_slice<ublas::vector<double> >( ublas::project(v, r ) )
-        {
-        }
+        ublas::vector_slice<ublas::vector<double> >( ublas::project( v, r ) )
+    {
+    }
     fake( ublas::vector<double>& v, ublas::range const& r )
         :
         ublas::vector_slice<ublas::vector<double> >( v, ublas::slice( r.start(),1,r.size() ) )
-        {
-        }
+    {
+    }
 
 };
 
@@ -287,22 +287,23 @@ VectorUblas<T,Storage>::start( ) const
 
 template <typename T, typename Storage>
 Vector<T> &
-VectorUblas<T,Storage>::operator= (const Vector<value_type> &V)
+VectorUblas<T,Storage>::operator= ( const Vector<value_type> &V )
 {
     checkInvariant();
     FEELPP_ASSERT( this->localSize() == V.localSize() )( this->localSize() )( V.localSize() ).error ( "invalid vector size" );
     FEELPP_ASSERT( this->firstLocalIndex() == V.firstLocalIndex() &&
-                 this->lastLocalIndex() == V.lastLocalIndex() )
-        ( this->firstLocalIndex() )( this->lastLocalIndex() )
-        ( this->vec().size() )
-        ( V.firstLocalIndex() )( V.lastLocalIndex() ).warn( "may be vector invalid  copy" );
+                   this->lastLocalIndex() == V.lastLocalIndex() )
+    ( this->firstLocalIndex() )( this->lastLocalIndex() )
+    ( this->vec().size() )
+    ( V.firstLocalIndex() )( V.lastLocalIndex() ).warn( "may be vector invalid  copy" );
 
-    for( size_type i = 0; i < this->localSize(); ++i )
-        {
-            _M_vec.operator()( i ) = V( V.firstLocalIndex() + i );
-            //_M_vec.operator()( i ) = V(  i );
+    for ( size_type i = 0; i < this->localSize(); ++i )
+    {
+        _M_vec.operator()( i ) = V( V.firstLocalIndex() + i );
+        //_M_vec.operator()( i ) = V(  i );
 
-        }
+    }
+
     this->outdateGlobalValues();
 
     return *this;
@@ -314,13 +315,15 @@ VectorUblas<T,Storage>::init ( const size_type n,
                                const size_type n_local,
                                const bool      fast )
 {
-    FEELPP_ASSERT (n_local <= n)
-        ( n_local )( n )
-        ( this->comm().rank() )
-        ( this->comm().size() ).error( "Invalid local vector size" );
+    FEELPP_ASSERT ( n_local <= n )
+    ( n_local )( n )
+    ( this->comm().rank() )
+    ( this->comm().size() ).error( "Invalid local vector size" );
+
     // Clear the data structures if already initialized
-    if (this->isInitialized())
+    if ( this->isInitialized() )
         this->clear();
+
     super1::init( n, n_local, fast );
 
     M_global_values_updated = false;
@@ -341,7 +344,7 @@ VectorUblas<T,Storage>::init ( const size_type n,
 
 
     // Zero the components unless directed otherwise
-    if (!fast)
+    if ( !fast )
         this->zero();
 
 }
@@ -350,17 +353,17 @@ template<typename T, typename Storage>
 void
 VectorUblas<T,Storage>::init( DataMap const& dm )
 {
-    super1::init(dm);
+    super1::init( dm );
     this->init( dm.nDof(), dm.nLocalDofWithGhost(), false );
 }
 
 
 template<typename T, typename Storage>
 void
-VectorUblas<T,Storage>::init (const size_type n,
-                              const bool      fast )
+VectorUblas<T,Storage>::init ( const size_type n,
+                               const bool      fast )
 {
-    this->init(n,n,fast);
+    this->init( n,n,fast );
 }
 
 template<typename T, typename Storage>
@@ -378,7 +381,7 @@ VectorUblas<T,Storage>::close() const
 
 template<typename T, typename Storage>
 void
-VectorUblas<T,Storage>::printMatlab(const std::string filename ) const
+VectorUblas<T,Storage>::printMatlab( const std::string filename ) const
 {
     std::string name = filename;
     std::string separator = " , ";
@@ -388,47 +391,50 @@ VectorUblas<T,Storage>::printMatlab(const std::string filename ) const
 
     if ( i <= 0 )
         name = filename + ".m";
+
     else
+    {
+        if ( ( unsigned int ) i != filename.size() - 2 ||
+                filename[ i + 1 ] != 'm' )
         {
-            if ( ( unsigned int ) i != filename.size() - 2 ||
-                 filename[ i + 1 ] != 'm' )
-                {
-                    Debug( 5600 ) << "[VectorUblas::printMatlab] adding .m extension to given file name '"
-                                  << filename << "'\n";
-                    name = filename + ".m";
-                }
+            Debug( 5600 ) << "[VectorUblas::printMatlab] adding .m extension to given file name '"
+                          << filename << "'\n";
+            name = filename + ".m";
         }
+    }
 
 
     ublas::vector<value_type> v_local;
     this->localizeToOneProcessor ( v_local, 0 );
 
     if ( this->comm().rank() == 0 )
+    {
+        std::ofstream file_out( name.c_str() );
+
+        FEELPP_ASSERT( file_out )( filename ).error( "[VectorUblas::printMatlab] ERROR: File cannot be opened for writing." );
+
+        file_out << "F = [ ";
+        file_out.precision( 16 );
+        file_out.setf( std::ios::scientific );
+
+        for ( size_type i = 0; i < this->size(); ++i )
         {
-            std::ofstream file_out( name.c_str() );
-
-            FEELPP_ASSERT( file_out)( filename ).error("[VectorUblas::printMatlab] ERROR: File cannot be opened for writing.");
-
-            file_out << "F = [ ";
-            file_out.precision( 16 );
-            file_out.setf( std::ios::scientific );
-            for (size_type i = 0; i < this->size(); ++i)
-                {
-                    file_out << v_local[i] << separator << std::endl;
-                }
-            file_out << "];" << std::endl;
+            file_out << v_local[i] << separator << std::endl;
         }
+
+        file_out << "];" << std::endl;
+    }
 }
 
 
 template <typename T, typename Storage>
 void
-VectorUblas<T,Storage>::localize (Vector<T>& v_local_in) const
+VectorUblas<T,Storage>::localize ( Vector<T>& v_local_in ) const
 
 {
     checkInvariant();
 
-    VectorUblas<T,Storage>* v_local = dynamic_cast<VectorUblas<T,Storage>*>(&v_local_in);
+    VectorUblas<T,Storage>* v_local = dynamic_cast<VectorUblas<T,Storage>*>( &v_local_in );
     FEELPP_ASSERT( v_local != 0 ).error ( "dynamic_cast failed: invalid vector object" );
 
 #if 0
@@ -449,11 +455,11 @@ VectorUblas<T,Storage>::localize (Vector<T>& v_local_in) const
 
     // Call localize on the vector's values.  This will help
     // prevent code duplication
-    localize (v_local->_M_vec);
+    localize ( v_local->_M_vec );
 
 #ifndef FEELPP_HAS_MPI
 
-    FEELPP_ASSERT (this->localSize() == this->size())( this->localSize() )( this->size() ).error( "invalid size in non MPI mode" );
+    FEELPP_ASSERT ( this->localSize() == this->size() )( this->localSize() )( this->size() ).error( "invalid size in non MPI mode" );
 
 #endif
 }
@@ -462,100 +468,102 @@ VectorUblas<T,Storage>::localize (Vector<T>& v_local_in) const
 
 template <typename T, typename Storage >
 void VectorUblas<T,Storage>::localize ( Vector<T>& v_local_in,
-                                        const std::vector<size_type>&) const
+                                        const std::vector<size_type>& ) const
 {
     checkInvariant();
 
     // We don't support the send list.  Call the less efficient localize(v_local_in)
-    localize (v_local_in);
+    localize ( v_local_in );
 }
 
 
 
 template <typename T,typename Storage>
 void
-VectorUblas<T,Storage>::localize (const size_type first_local_idx,
-                                  const size_type last_local_idx,
-                                  const std::vector<size_type>& send_list)
+VectorUblas<T,Storage>::localize ( const size_type first_local_idx,
+                                   const size_type last_local_idx,
+                                   const std::vector<size_type>& send_list )
 {
     // Only good for serial vectors
-    FEELPP_ASSERT (this->size() == this->localSize())( this->size() )( this->localSize() ).error("invalid local/global size" );
-    FEELPP_ASSERT (last_local_idx > first_local_idx)( last_local_idx )( first_local_idx ).error("invalid first/last local indices");
-    FEELPP_ASSERT (send_list.size() <= this->size())( send_list.size() )( this->size() ).error("invalid send list size" );
-    FEELPP_ASSERT (last_local_idx < this->size())( last_local_idx )( this->size() ).error( "invalid last local index" );
-    Feel::detail::ignore_unused_variable_warning(send_list);
+    FEELPP_ASSERT ( this->size() == this->localSize() )( this->size() )( this->localSize() ).error( "invalid local/global size" );
+    FEELPP_ASSERT ( last_local_idx > first_local_idx )( last_local_idx )( first_local_idx ).error( "invalid first/last local indices" );
+    FEELPP_ASSERT ( send_list.size() <= this->size() )( send_list.size() )( this->size() ).error( "invalid send list size" );
+    FEELPP_ASSERT ( last_local_idx < this->size() )( last_local_idx )( this->size() ).error( "invalid last local index" );
+    Feel::detail::ignore_unused_variable_warning( send_list );
 
     const size_type size       = this->size();
-    const size_type local_size = (last_local_idx - first_local_idx + 1);
+    const size_type local_size = ( last_local_idx - first_local_idx + 1 );
 
     // Don't bother for serial cases
-    if ((first_local_idx == 0) &&
-        (local_size == size))
+    if ( ( first_local_idx == 0 ) &&
+            ( local_size == size ) )
         return;
+
 #if 0
 
     // Build a parallel vector, initialize it with the local
     // parts of (*this)
     VectorUblas<T,Storage> parallel_vec;
 
-    parallel_vec.init (size, local_size);
+    parallel_vec.init ( size, local_size );
 
     // Copy part of *this into the parallel_vec
-    for (size_type i=first_local_idx; i<=last_local_idx; i++)
-        parallel_vec.operator()(i) = this->operator()(i);
+    for ( size_type i=first_local_idx; i<=last_local_idx; i++ )
+        parallel_vec.operator()( i ) = this->operator()( i );
 
     // localize like normal
-    parallel_vec.localize (*this, send_list);
+    parallel_vec.localize ( *this, send_list );
 #endif
 }
 
 template <typename T, typename Storage>
 void
-VectorUblas<T, Storage>::localize ( ublas::vector_range<ublas::vector<value_type> >& /*v_local*/) const
+VectorUblas<T, Storage>::localize ( ublas::vector_range<ublas::vector<value_type> >& /*v_local*/ ) const
 {
 }
 
 template <typename T, typename Storage>
 void
-VectorUblas<T, Storage>::localize ( ublas::vector_slice<ublas::vector<value_type> >& /*v_local*/) const
+VectorUblas<T, Storage>::localize ( ublas::vector_slice<ublas::vector<value_type> >& /*v_local*/ ) const
 {
 }
 
 template <typename T, typename Storage>
 void
-VectorUblas<T, Storage>::localize ( ublas::vector<value_type>& v_local) const
+VectorUblas<T, Storage>::localize ( ublas::vector<value_type>& v_local ) const
 {
     checkInvariant();
 
-    v_local.resize(this->size());
+    v_local.resize( this->size() );
     ublas::vector<value_type> v_local_in( this->size() );
 
 #ifdef FEELPP_HAS_MPI
 
-    if( this->comm().size() > 1 )
+    if ( this->comm().size() > 1 )
+    {
+        std::fill ( v_local.begin(), v_local.end(), value_type( 0. ) );
+        std::fill ( v_local_in.begin(), v_local_in.end(), value_type( 0. ) );
+
+        for ( size_type i=0; i< this->localSize(); i++ )
         {
-            std::fill (v_local.begin(), v_local.end(), value_type(0.) );
-            std::fill (v_local_in.begin(), v_local_in.end(), value_type(0.) );
-
-            for (size_type i=0; i< this->localSize(); i++)
-                {
-                    v_local_in[i+this->firstLocalIndex()] = _M_vec.operator[]( i );
-                }
-
-            MPI_Allreduce (&v_local_in[0], &v_local[0], v_local.size(),
-                           MPI_DOUBLE, MPI_SUM, this->comm());
-            Debug( 5600 ) << "[VectorUblas::localize] Allreduce size = " << v_local.size() << "\n";
-
+            v_local_in[i+this->firstLocalIndex()] = _M_vec.operator[]( i );
         }
+
+        MPI_Allreduce ( &v_local_in[0], &v_local[0], v_local.size(),
+                        MPI_DOUBLE, MPI_SUM, this->comm() );
+        Debug( 5600 ) << "[VectorUblas::localize] Allreduce size = " << v_local.size() << "\n";
+
+    }
+
     else
-        {
-            FEELPP_ASSERT (this->localSize() == this->size())( this->localSize() )( this->size() ).error( "invalid size in non MPI mode" );
-            std::copy( this->begin(), this->end(), v_local.begin() );
-        }
+    {
+        FEELPP_ASSERT ( this->localSize() == this->size() )( this->localSize() )( this->size() ).error( "invalid size in non MPI mode" );
+        std::copy( this->begin(), this->end(), v_local.begin() );
+    }
 
 #else
 
-    FEELPP_ASSERT (this->localSize() == this->size())( this->localSize() )( this->size() ).error( "invalid size in non MPI mode" );
+    FEELPP_ASSERT ( this->localSize() == this->size() )( this->localSize() )( this->size() ).error( "invalid size in non MPI mode" );
 
 #endif
 }
@@ -565,34 +573,35 @@ VectorUblas<T, Storage>::localize ( ublas::vector<value_type>& v_local) const
 template <typename T, typename Storage>
 void
 VectorUblas<T,Storage>::localizeToOneProcessor ( ublas::vector<value_type>& v_local,
-                                                 const size_type pid) const
+        const size_type pid ) const
 {
     checkInvariant();
 
-    v_local.resize(this->size());
-    std::fill (v_local.begin(), v_local.end(), 0.);
+    v_local.resize( this->size() );
+    std::fill ( v_local.begin(), v_local.end(), 0. );
 
     ublas::vector<value_type> v_tmp( this->size() );
-    std::fill (v_tmp.begin(), v_tmp.end(), 0.);
+    std::fill ( v_tmp.begin(), v_tmp.end(), 0. );
 
-    for (size_type i=0; i< this->localSize(); i++)
+    for ( size_type i=0; i< this->localSize(); i++ )
         v_tmp[i+this->firstLocalIndex()] = this->operator()( this->firstLocalIndex()+i );
 
 #ifdef FEELPP_HAS_MPI
 
     if ( this->comm().size() > 1 )
-        {
-            MPI_Reduce (&v_tmp[0], &v_local[0], v_local.size(),
-                        MPI_DOUBLE, MPI_SUM, pid, this->comm());
-        }
+    {
+        MPI_Reduce ( &v_tmp[0], &v_local[0], v_local.size(),
+                     MPI_DOUBLE, MPI_SUM, pid, this->comm() );
+    }
+
     else
-        {
-            std::copy( v_tmp.begin(), v_tmp.end(), v_local.begin() );
-        }
+    {
+        std::copy( v_tmp.begin(), v_tmp.end(), v_local.begin() );
+    }
 
 #else
 
-    FEELPP_ASSERT ( this->localSize() == this->size())( this->localSize() )( this->size() ).error( "invalid size in non MPI mode" );
+    FEELPP_ASSERT ( this->localSize() == this->size() )( this->localSize() )( this->size() ).error( "invalid size in non MPI mode" );
     FEELPP_ASSERT ( pid == 0  )( pid ).error( "invalid pid in non MPI mode" );
 
 #endif
@@ -600,7 +609,7 @@ VectorUblas<T,Storage>::localizeToOneProcessor ( ublas::vector<value_type>& v_lo
 template <typename T, typename Storage>
 void
 VectorUblas<T,Storage>::localizeToOneProcessor ( std::vector<value_type>& v_local,
-                                                 const size_type proc_id ) const
+        const size_type proc_id ) const
 {
     ublas::vector<T> ublasvector;
     localizeToOneProcessor( ublasvector, proc_id );
@@ -612,16 +621,16 @@ template <typename T, typename Storage>
 void
 VectorUblas<T,Storage>::checkInvariant() const
 {
-    FEELPP_ASSERT (this->isInitialized()).error( "vector not initialized" );
+    FEELPP_ASSERT ( this->isInitialized() ).error( "vector not initialized" );
     FEELPP_ASSERT ( this->localSize() <= this->size() )
-        ( this->size() )( this->localSize() ).error( "vector invalid size" );
-    FEELPP_ASSERT (_M_vec.size() == this->localSize())
-        (_M_vec.size())(this->localSize()).error( "vector invalid size" );
-    FEELPP_ASSERT ((this->lastLocalIndex() - this->firstLocalIndex() ) == this->localSize())
-        (this->size())
-        (this->lastLocalIndex())
-        (this->firstLocalIndex())
-        (this->localSize()).error( "vector invalid size" );
+    ( this->size() )( this->localSize() ).error( "vector invalid size" );
+    FEELPP_ASSERT ( _M_vec.size() == this->localSize() )
+    ( _M_vec.size() )( this->localSize() ).error( "vector invalid size" );
+    FEELPP_ASSERT ( ( this->lastLocalIndex() - this->firstLocalIndex() ) == this->localSize() )
+    ( this->size() )
+    ( this->lastLocalIndex() )
+    ( this->firstLocalIndex() )
+    ( this->localSize() ).error( "vector invalid size" );
 }
 
 namespace detail
@@ -635,14 +644,14 @@ struct Sqrt
     Sqrt( VectorType const& _in, VectorType& _out )
         :
         M_in( _in ), M_out( _out )
-        { }
+    { }
     void operator() ( const tbb::blocked_range<size_t>& r ) const
+    {
+        for ( size_t i = r.begin(); i != r.end(); ++i )
         {
-            for ( size_t i = r.begin(); i != r.end(); ++i )
-            {
-                M_out[i] = math::sqrt( M_in[i] );
-            }
+            M_out[i] = math::sqrt( M_in[i] );
         }
+    }
 };
 #endif // FEELPP_HAS_TBB
 } //detail
@@ -653,11 +662,13 @@ VectorUblas<T,Storage>::sqrt() const
     this_type _tmp( this->map() );
 
 #if defined( FEELPP_HAS_TBB )
-    tbb::parallel_for( tbb::blocked_range<size_t>(0, this->localSize() ),
+    tbb::parallel_for( tbb::blocked_range<size_t>( 0, this->localSize() ),
                        detail::Sqrt<this_type>( *this, _tmp ) );
 #else
-    for(int i = 0; i < (int)this->localSize(); ++i )
-        _tmp[i] = math::sqrt( this->operator[](i) );
+
+    for ( int i = 0; i < ( int )this->localSize(); ++i )
+        _tmp[i] = math::sqrt( this->operator[]( i ) );
+
 #endif // FEELPP_HAS_TBB
 
     return _tmp;
@@ -665,11 +676,13 @@ VectorUblas<T,Storage>::sqrt() const
 
 template <typename T, typename Storage>
 typename VectorUblas<T,Storage>::this_type
-VectorUblas<T,Storage>::pow(int n) const
+VectorUblas<T,Storage>::pow( int n ) const
 {
     this_type _out( this->map() );
-    for(int i = 0; i < (int)this->localSize(); ++i )
-        _out[i] = math::pow( this->operator[](i), n );
+
+    for ( int i = 0; i < ( int )this->localSize(); ++i )
+        _out[i] = math::pow( this->operator[]( i ), n );
+
     return _out;
 }
 

@@ -52,7 +52,7 @@ struct OseenDefaults
         DIVDIV_COEFF( 0.0 ),
         WEAK_DIRICHLET( true ),
         EXPORT_MATLAB( false )
-        {}
+    {}
 
     // coefficient for diffusive terms of weak Dirichlet conditions
     double BC_COEFF_DIFF;

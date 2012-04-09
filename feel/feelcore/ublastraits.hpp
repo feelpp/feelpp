@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -36,11 +36,17 @@
 
 #include <boost/numeric/ublas/traits.hpp>
 
-namespace boost { namespace numeric { namespace ublas {
+namespace boost
+{
+namespace numeric
+{
+namespace ublas
+{
 
 #if defined( FEELPP_HAS_MPFR )
 template<>
-struct type_traits<Feel::mp_type> {
+struct type_traits<Feel::mp_type>
+{
     typedef type_traits<Feel::mp_type> self_type;
     typedef Feel::mp_type value_type;
     typedef const value_type &const_reference;
@@ -53,68 +59,79 @@ struct type_traits<Feel::mp_type> {
 
     static
     BOOST_UBLAS_INLINE
-    real_type real (const_reference t) {
+    real_type real ( const_reference t )
+    {
         return t;
     }
     static
     BOOST_UBLAS_INLINE
-    real_type imag (const_reference /*t*/) {
+    real_type imag ( const_reference /*t*/ )
+    {
         return 0;
     }
     static
     BOOST_UBLAS_INLINE
-    value_type conj (const_reference t) {
+    value_type conj ( const_reference t )
+    {
         return t;
     }
 
     static
     BOOST_UBLAS_INLINE
-    real_type abs (const_reference t) {
-        return ::abs (t);
+    real_type abs ( const_reference t )
+    {
+        return ::abs ( t );
     }
 
     static
     BOOST_UBLAS_INLINE
-    value_type sqrt (const_reference t) {
-        return ::sqrt (t);
+    value_type sqrt ( const_reference t )
+    {
+        return ::sqrt ( t );
     }
 
     static
     BOOST_UBLAS_INLINE
-    value_type type_sqrt (const_reference t) {
-        return ::sqrt (t);
+    value_type type_sqrt ( const_reference t )
+    {
+        return ::sqrt ( t );
     }
 
     static
     BOOST_UBLAS_INLINE
-    real_type norm_1 (const_reference t) {
-        return self_type::abs (t);
+    real_type norm_1 ( const_reference t )
+    {
+        return self_type::abs ( t );
     }
     static
     BOOST_UBLAS_INLINE
-    real_type norm_2 (const_reference t) {
-        return self_type::abs (t);
+    real_type norm_2 ( const_reference t )
+    {
+        return self_type::abs ( t );
     }
     static
     BOOST_UBLAS_INLINE
-    real_type norm_inf (const_reference t) {
-        return self_type::abs (t);
+    real_type norm_inf ( const_reference t )
+    {
+        return self_type::abs ( t );
     }
 
     static
     BOOST_UBLAS_INLINE
-    bool equals (const_reference t1, const_reference t2) {
-        return self_type::norm_inf (t1 - t2) < BOOST_UBLAS_TYPE_CHECK_EPSILON *
-            (std::max) ((std::max) (self_type::norm_inf (t1),
-                                    self_type::norm_inf (t2)),
-                        BOOST_UBLAS_TYPE_CHECK_MIN);
+    bool equals ( const_reference t1, const_reference t2 )
+    {
+        return self_type::norm_inf ( t1 - t2 ) < BOOST_UBLAS_TYPE_CHECK_EPSILON *
+               ( std::max ) ( ( std::max ) ( self_type::norm_inf ( t1 ),
+                                             self_type::norm_inf ( t2 ) ),
+                              BOOST_UBLAS_TYPE_CHECK_MIN );
     }
 };
 #endif // FEELPP_HAS_MPFR
 
 #if defined ( FEELPP_HAS_QD_REAL )
 template<>
-struct type_traits<qd_real> {
+struct type_traits<qd_real>
+{
     typedef type_traits<qd_real> self_type;
     typedef qd_real value_type;
     typedef const value_type &const_reference;
@@ -127,67 +144,78 @@ struct type_traits<qd_real> {
 
     static
     BOOST_UBLAS_INLINE
-    real_type real (const_reference t) {
+    real_type real ( const_reference t )
+    {
         return t;
     }
     static
     BOOST_UBLAS_INLINE
-    real_type imag (const_reference /*t*/) {
+    real_type imag ( const_reference /*t*/ )
+    {
         return 0;
     }
     static
     BOOST_UBLAS_INLINE
-    value_type conj (const_reference t) {
+    value_type conj ( const_reference t )
+    {
         return t;
     }
 
     static
     BOOST_UBLAS_INLINE
-    real_type abs (const_reference t) {
-        return ::abs (t);
+    real_type abs ( const_reference t )
+    {
+        return ::abs ( t );
     }
 
     static
     BOOST_UBLAS_INLINE
-    value_type sqrt (const_reference t) {
-        return ::sqrt (t);
+    value_type sqrt ( const_reference t )
+    {
+        return ::sqrt ( t );
     }
 
     static
     BOOST_UBLAS_INLINE
-    value_type type_sqrt (const_reference t) {
-        return ::sqrt (t);
+    value_type type_sqrt ( const_reference t )
+    {
+        return ::sqrt ( t );
     }
 
     static
     BOOST_UBLAS_INLINE
-    real_type norm_1 (const_reference t) {
-        return self_type::abs (t);
+    real_type norm_1 ( const_reference t )
+    {
+        return self_type::abs ( t );
     }
     static
     BOOST_UBLAS_INLINE
-    real_type norm_2 (const_reference t) {
-        return self_type::abs (t);
+    real_type norm_2 ( const_reference t )
+    {
+        return self_type::abs ( t );
     }
     static
     BOOST_UBLAS_INLINE
-    real_type norm_inf (const_reference t) {
-        return self_type::abs (t);
+    real_type norm_inf ( const_reference t )
+    {
+        return self_type::abs ( t );
     }
 
     static
     BOOST_UBLAS_INLINE
-    bool equals (const_reference t1, const_reference t2) {
-        return self_type::norm_inf (t1 - t2) < BOOST_UBLAS_TYPE_CHECK_EPSILON *
-            (std::max) ((std::max) (self_type::norm_inf (t1),
-                                    self_type::norm_inf (t2)),
-                        BOOST_UBLAS_TYPE_CHECK_MIN);
+    bool equals ( const_reference t1, const_reference t2 )
+    {
+        return self_type::norm_inf ( t1 - t2 ) < BOOST_UBLAS_TYPE_CHECK_EPSILON *
+               ( std::max ) ( ( std::max ) ( self_type::norm_inf ( t1 ),
+                                             self_type::norm_inf ( t2 ) ),
+                              BOOST_UBLAS_TYPE_CHECK_MIN );
     }
 };
 #endif /* FEELPP_HAS_QD_REAL */
 #if defined ( FEELPP_HAS_DD_REAL )
 template<>
-struct type_traits<dd_real> {
+struct type_traits<dd_real>
+{
     typedef type_traits<dd_real> self_type;
     typedef dd_real value_type;
     typedef const value_type &const_reference;
@@ -200,67 +228,78 @@ struct type_traits<dd_real> {
 
     static
     BOOST_UBLAS_INLINE
-    real_type real (const_reference t) {
+    real_type real ( const_reference t )
+    {
         return t;
     }
     static
     BOOST_UBLAS_INLINE
-    real_type imag (const_reference /*t*/) {
+    real_type imag ( const_reference /*t*/ )
+    {
         return 0;
     }
     static
     BOOST_UBLAS_INLINE
-    value_type conj (const_reference t) {
+    value_type conj ( const_reference t )
+    {
         return t;
     }
 
     static
     BOOST_UBLAS_INLINE
-    real_type abs (const_reference t) {
-        return ::abs (t);
+    real_type abs ( const_reference t )
+    {
+        return ::abs ( t );
     }
     static
     BOOST_UBLAS_INLINE
-    value_type sqrt (const_reference t) {
-        return ::sqrt (t);
-    }
-
-    static
-    BOOST_UBLAS_INLINE
-    value_type type_sqrt (const_reference t) {
-        return ::sqrt (t);
+    value_type sqrt ( const_reference t )
+    {
+        return ::sqrt ( t );
     }
 
     static
     BOOST_UBLAS_INLINE
-    real_type norm_1 (const_reference t) {
-        return self_type::abs (t);
-    }
-    static
-    BOOST_UBLAS_INLINE
-    real_type norm_2 (const_reference t) {
-        return self_type::abs (t);
-    }
-    static
-    BOOST_UBLAS_INLINE
-    real_type norm_inf (const_reference t) {
-        return self_type::abs (t);
+    value_type type_sqrt ( const_reference t )
+    {
+        return ::sqrt ( t );
     }
 
     static
     BOOST_UBLAS_INLINE
-    bool equals (const_reference t1, const_reference t2) {
-        return self_type::norm_inf (t1 - t2) < BOOST_UBLAS_TYPE_CHECK_EPSILON *
-            (std::max) ((std::max) (self_type::norm_inf (t1),
-                                    self_type::norm_inf (t2)),
-                        BOOST_UBLAS_TYPE_CHECK_MIN);
+    real_type norm_1 ( const_reference t )
+    {
+        return self_type::abs ( t );
+    }
+    static
+    BOOST_UBLAS_INLINE
+    real_type norm_2 ( const_reference t )
+    {
+        return self_type::abs ( t );
+    }
+    static
+    BOOST_UBLAS_INLINE
+    real_type norm_inf ( const_reference t )
+    {
+        return self_type::abs ( t );
+    }
+
+    static
+    BOOST_UBLAS_INLINE
+    bool equals ( const_reference t1, const_reference t2 )
+    {
+        return self_type::norm_inf ( t1 - t2 ) < BOOST_UBLAS_TYPE_CHECK_EPSILON *
+               ( std::max ) ( ( std::max ) ( self_type::norm_inf ( t1 ),
+                                             self_type::norm_inf ( t2 ) ),
+                              BOOST_UBLAS_TYPE_CHECK_MIN );
     }
 };
 #endif /* FEELPP_HAS_DD_REAL */
 
 #if defined ( FEELPP_HAS_MP_REAL )
 template<>
-struct type_traits<mp_real> {
+struct type_traits<mp_real>
+{
     typedef type_traits<mp_real> self_type;
     typedef mp_real value_type;
     typedef const value_type &const_reference;
@@ -273,62 +312,74 @@ struct type_traits<mp_real> {
 
     static
     BOOST_UBLAS_INLINE
-    real_type real (const_reference t) {
+    real_type real ( const_reference t )
+    {
         return t;
     }
     static
     BOOST_UBLAS_INLINE
-    real_type imag (const_reference /*t*/) {
+    real_type imag ( const_reference /*t*/ )
+    {
         return 0;
     }
     static
     BOOST_UBLAS_INLINE
-    value_type conj (const_reference t) {
+    value_type conj ( const_reference t )
+    {
         return t;
     }
 
     static
     BOOST_UBLAS_INLINE
-    real_type abs (const_reference t) {
-        return ::abs (t);
+    real_type abs ( const_reference t )
+    {
+        return ::abs ( t );
     }
     static
     BOOST_UBLAS_INLINE
-    value_type sqrt (const_reference t) {
-        return ::sqrt (t);
-    }
-
-    static
-    BOOST_UBLAS_INLINE
-    value_type type_sqrt (const_reference t) {
-        return ::sqrt (t);
+    value_type sqrt ( const_reference t )
+    {
+        return ::sqrt ( t );
     }
 
     static
     BOOST_UBLAS_INLINE
-    real_type norm_1 (const_reference t) {
-        return self_type::abs (t);
-    }
-    static
-    BOOST_UBLAS_INLINE
-    real_type norm_2 (const_reference t) {
-        return self_type::abs (t);
-    }
-    static
-    BOOST_UBLAS_INLINE
-    real_type norm_inf (const_reference t) {
-        return self_type::abs (t);
+    value_type type_sqrt ( const_reference t )
+    {
+        return ::sqrt ( t );
     }
 
     static
     BOOST_UBLAS_INLINE
-    bool equals (const_reference t1, const_reference t2) {
-        return self_type::norm_inf (t1 - t2) < BOOST_UBLAS_TYPE_CHECK_EPSILON *
-            (std::max) ((std::max) (self_type::norm_inf (t1),
-                                    self_type::norm_inf (t2)),
-                        BOOST_UBLAS_TYPE_CHECK_MIN);
+    real_type norm_1 ( const_reference t )
+    {
+        return self_type::abs ( t );
+    }
+    static
+    BOOST_UBLAS_INLINE
+    real_type norm_2 ( const_reference t )
+    {
+        return self_type::abs ( t );
+    }
+    static
+    BOOST_UBLAS_INLINE
+    real_type norm_inf ( const_reference t )
+    {
+        return self_type::abs ( t );
+    }
+
+    static
+    BOOST_UBLAS_INLINE
+    bool equals ( const_reference t1, const_reference t2 )
+    {
+        return self_type::norm_inf ( t1 - t2 ) < BOOST_UBLAS_TYPE_CHECK_EPSILON *
+               ( std::max ) ( ( std::max ) ( self_type::norm_inf ( t1 ),
+                                             self_type::norm_inf ( t2 ) ),
+                              BOOST_UBLAS_TYPE_CHECK_MIN );
     }
 };
 #endif /* FEELPP_HAS_MP_REAL */
-}}}
+}
+}
+}
 #endif /* FEELPP_UBLAS_TRAITS_HPP */

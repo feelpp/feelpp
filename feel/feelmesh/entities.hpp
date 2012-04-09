@@ -45,45 +45,45 @@ enum FaceLocation { INTERNAL = false, ON_BOUNDARY = true };
  * \enum GeoEntityContext
  */
 enum GeoEntityContext
-    {
-        MESH_ENTITY_INTERNAL          = ( 1<<0 ), /**< internal entity */
-        MESH_ENTITY_BOUNDARY          = ( 1<<1 )  /**< boundary entity */
-    };
+{
+    MESH_ENTITY_INTERNAL          = ( 1<<0 ), /**< internal entity */
+    MESH_ENTITY_BOUNDARY          = ( 1<<1 )  /**< boundary entity */
+};
 
 /**
  * \enum ReferenceGeometry
  *
  */
 enum ReferenceGeometry
-    {
-        GEOMETRY_POINT    = ( 1<<0 ), /**< point entity */
-        GEOMETRY_LINE     = ( 1<<1 ), /**< line entity */
-        GEOMETRY_SURFACE  = ( 1<<2 ), /**< surface entity */
-        GEOMETRY_VOLUME   = ( 1<<3 ), /**< volume entity */
-        GEOMETRY_4        = ( 1<<4 ), /**< hypercube entity */
-        GEOMETRY_5        = ( 1<<5 )  /**< hypercube entity */
-    };
+{
+    GEOMETRY_POINT    = ( 1<<0 ), /**< point entity */
+    GEOMETRY_LINE     = ( 1<<1 ), /**< line entity */
+    GEOMETRY_SURFACE  = ( 1<<2 ), /**< surface entity */
+    GEOMETRY_VOLUME   = ( 1<<3 ), /**< volume entity */
+    GEOMETRY_4        = ( 1<<4 ), /**< hypercube entity */
+    GEOMETRY_5        = ( 1<<5 )  /**< hypercube entity */
+};
 
 /**
  * \enum ReferenceShapes
  *
  */
 enum ReferenceShapes
-    {
-        SHAPE_LINEAR   = ( 1<<0 ),
-        SHAPE_BILINEAR = ( 1<<1 ),
-        SHAPE_QUADRATIC= ( 1<<2 ),
-        SHAPE_NONE     = ( 1<<3 ),
-        SHAPE_POINT    = ( 1<<4 ),
-        SHAPE_LINE     = ( 1<<5 ),
-        SHAPE_TRIANGLE = ( 1<<6 ),
-        SHAPE_QUAD     = ( 1<<7 ),
-        SHAPE_HEXA     = ( 1<<8 ),
-        SHAPE_PRISM    = ( 1<<9 ),
-        SHAPE_TETRA    = ( 1<<10 ),
-        SHAPE_SP4      = ( 1<<11 ),
-        SHAPE_SP5      = ( 1<<12 )
-    };
+{
+    SHAPE_LINEAR   = ( 1<<0 ),
+    SHAPE_BILINEAR = ( 1<<1 ),
+    SHAPE_QUADRATIC= ( 1<<2 ),
+    SHAPE_NONE     = ( 1<<3 ),
+    SHAPE_POINT    = ( 1<<4 ),
+    SHAPE_LINE     = ( 1<<5 ),
+    SHAPE_TRIANGLE = ( 1<<6 ),
+    SHAPE_QUAD     = ( 1<<7 ),
+    SHAPE_HEXA     = ( 1<<8 ),
+    SHAPE_PRISM    = ( 1<<9 ),
+    SHAPE_TETRA    = ( 1<<10 ),
+    SHAPE_SP4      = ( 1<<11 ),
+    SHAPE_SP5      = ( 1<<12 )
+};
 
 /**
  * @defgroup GeoEntites Basis Reference Shapes
@@ -101,15 +101,15 @@ class EntityRange
     struct num
     {
         typedef typename mpl::if_<mpl::equal_to<mpl::int_<td>, mpl::int_<0> >,
-                                  mpl::int_<E::numVertices>,
-                                  typename mpl::if_<mpl::equal_to<mpl::int_<td>, mpl::int_<1> >,
-                                                    mpl::int_<E::numEdges>,
-                                                    typename mpl::if_<mpl::equal_to<mpl::int_<td>, mpl::int_<2> >,
-                                                                      mpl::int_<E::numGeometricFaces>,
-                                                                      mpl::int_<E::numVolumes>
-                                                                      >::type // int_<2>
-                                                    >::type // int_<1>
-                                  >::type type;
+                mpl::int_<E::numVertices>,
+                typename mpl::if_<mpl::equal_to<mpl::int_<td>, mpl::int_<1> >,
+                mpl::int_<E::numEdges>,
+                typename mpl::if_<mpl::equal_to<mpl::int_<td>, mpl::int_<2> >,
+                mpl::int_<E::numGeometricFaces>,
+                mpl::int_<E::numVolumes>
+                >::type // int_<2>
+                >::type // int_<1>
+                >::type type;
         static const uint16_type value = type::value;
     };
     uint16_type d;
@@ -123,19 +123,32 @@ public:
     EntityRange( EntityRange const& r ) : d( r.d ) {}
     ~EntityRange() {}
 
-    uint16_type topologicalDimension() const { return d; }
+    uint16_type topologicalDimension() const
+    {
+        return d;
+    }
 
-    void setTopologicalDimension( uint16_type td ) { d = td; check_invariant(); }
+    void setTopologicalDimension( uint16_type td )
+    {
+        d = td;
+        check_invariant();
+    }
 
-    uint16_type begin() const { return 0; }
+    uint16_type begin() const
+    {
+        return 0;
+    }
     uint16_type end() const
     {
         if ( d == 0 )
             return num<0>::value;
+
         if ( d == 1 )
             return num<1>::value;
+
         if ( d == 2 )
             return num<2>::value;
+
         if ( d == 3 )
             return num<3>::value;
 
@@ -176,10 +189,18 @@ struct no_permutation: public boost::detail::identifier<uint16_type, no_permutat
     static const uint16_type N_PERMUTATIONS       = 2; //!< number of permutations
     typedef boost::detail::identifier<uint16_type, no_permutation> super;
     typedef super::value_type value_type;
-    no_permutation()                           : super(IDENTITY) {}
-    explicit no_permutation( value_type v )    : super(v) {}
-    no_permutation & operator=( value_type v ) { this->assign(v); return *this; }
-    no_permutation& operator++() { this->assign( this->value()+1 ); return *this; }
+    no_permutation()                           : super( IDENTITY ) {}
+    explicit no_permutation( value_type v )    : super( v ) {}
+    no_permutation & operator=( value_type v )
+    {
+        this->assign( v );
+        return *this;
+    }
+    no_permutation& operator++()
+    {
+        this->assign( this->value()+1 );
+        return *this;
+    }
 };
 
 
@@ -197,10 +218,18 @@ struct line_permutations: public boost::detail::identifier<uint16_type, line_per
     static const uint16_type N_PERMUTATIONS       = 3; //!< number of permutations
     typedef boost::detail::identifier<uint16_type, line_permutations> super;
     typedef super::value_type value_type;
-    line_permutations()                           : super(IDENTITY) {}
-    explicit line_permutations( value_type v )    : super(v) {}
-    line_permutations& operator=( value_type v ) { this->assign(v); return *this; }
-    line_permutations& operator++() { this->assign( this->value()+1 ); return *this; }
+    line_permutations()                           : super( IDENTITY ) {}
+    explicit line_permutations( value_type v )    : super( v ) {}
+    line_permutations& operator=( value_type v )
+    {
+        this->assign( v );
+        return *this;
+    }
+    line_permutations& operator++()
+    {
+        this->assign( this->value()+1 );
+        return *this;
+    }
 };
 
 enum line_permutations_dummy {};
@@ -222,11 +251,19 @@ struct triangular_faces_type: public boost::detail::identifier<uint16_type, tria
 
     typedef boost::detail::identifier<uint16_type, triangular_faces_type> super;
     typedef super::value_type value_type;
-    triangular_faces_type()                           : super(IDENTITY){}
-    explicit triangular_faces_type( value_type v )    : super(v){}
+    triangular_faces_type()                           : super( IDENTITY ) {}
+    explicit triangular_faces_type( value_type v )    : super( v ) {}
     ///triangular_faces_type( triangular_faces_type const& tft ) : super( tft ) { value( tft.value() ); }
-    triangular_faces_type & operator=( value_type v ) { this->assign(v); return *this; }
-    triangular_faces_type& operator++() { this->assign( this->value()+1 ); return *this; }
+    triangular_faces_type & operator=( value_type v )
+    {
+        this->assign( v );
+        return *this;
+    }
+    triangular_faces_type& operator++()
+    {
+        this->assign( this->value()+1 );
+        return *this;
+    }
 };
 
 struct quadrangular_faces: public boost::detail::identifier<uint16_type, quadrangular_faces>
@@ -247,11 +284,19 @@ struct quadrangular_faces: public boost::detail::identifier<uint16_type, quadran
 
     typedef boost::detail::identifier<uint16_type, quadrangular_faces> super;
     typedef super::value_type value_type;
-    quadrangular_faces()                           : super(IDENTITY){}
-    explicit quadrangular_faces( value_type v )    : super(v){}
+    quadrangular_faces()                           : super( IDENTITY ) {}
+    explicit quadrangular_faces( value_type v )    : super( v ) {}
     //quadrangular_faces( quadrangular_faces const& tft ) : super( tft ) { value( tft.value() ); }
-    quadrangular_faces & operator=( value_type v ) { this->assign(v); return *this; }
-    quadrangular_faces& operator++() { this->assign( this->value()+1 ); return *this; }
+    quadrangular_faces & operator=( value_type v )
+    {
+        this->assign( v );
+        return *this;
+    }
+    quadrangular_faces& operator++()
+    {
+        this->assign( this->value()+1 );
+        return *this;
+    }
 };
 /// \endcond
 

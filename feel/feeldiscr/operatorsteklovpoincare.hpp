@@ -69,11 +69,11 @@ public :
      */
     //@{
 
-    OperatorSteklovPc(space_ptrtype Xh, backend_ptrtype backend = Backend<double>::build(BACKEND_PETSC))
+    OperatorSteklovPc( space_ptrtype Xh, backend_ptrtype backend = Backend<double>::build( BACKEND_PETSC ) )
         :
-        super_type(Xh, Xh, backend),
-        M_backend(backend),
-        M_Xh(Xh)
+        super_type( Xh, Xh, backend ),
+        M_backend( backend ),
+        M_Xh( Xh )
     {}
 
     ~OperatorSteklovPc() {}
@@ -92,33 +92,34 @@ public :
     };
 
     BOOST_PARAMETER_MEMBER_FUNCTION(
-                                    (value_type),
-                                    steklovpc,
-                                    tag,
-                                    (required
-                                     (domain,  *)
-                                      (image, *)
-                                     )
-                                    (optional
-                                     (quad,   *, (typename integrate_type<Args,decltype(elements(this->M_Xh->mesh()))>::_quad_type()) )
-                                     (quad1,   *, (typename integrate_type<Args,decltype(elements(this->M_Xh->mesh()))>::_quad1_type()) )
-                                     (geomap, *, GeomapStrategyType::GEOMAP_OPT )
-                                     ))
+        ( value_type ),
+        steklovpc,
+        tag,
+        ( required
+          ( domain,  * )
+          ( image, * )
+        )
+        ( optional
+          ( quad,   *, ( typename integrate_type<Args,decltype( elements( this->M_Xh->mesh() ) )>::_quad_type() ) )
+          ( quad1,   *, ( typename integrate_type<Args,decltype( elements( this->M_Xh->mesh() ) )>::_quad1_type() ) )
+          ( geomap, *, GeomapStrategyType::GEOMAP_OPT )
+        ) )
 
     {
         using namespace vf;
 
-        auto op_lift = operatorLift(this->M_Xh,this->M_backend);
-        auto domain_lift = op_lift->lift( _range=this->M_Xh->mesh(),_expr=idv(domain));
-        auto image_lift = op_lift->lift( _range=this->M_Xh->mesh(),_expr=idv(image));
-        value_type steklovpcr = integrate(_range=elements(this->M_Xh->mesh()), _expr=gradv(domain_lift)*trans(gradv(image_lift)), _quad=quad, _quad1=quad1 );
+        auto op_lift = operatorLift( this->M_Xh,this->M_backend );
+        auto domain_lift = op_lift->lift( _range=this->M_Xh->mesh(),_expr=idv( domain ) );
+        auto image_lift = op_lift->lift( _range=this->M_Xh->mesh(),_expr=idv( image ) );
+        value_type steklovpcr = integrate( _range=elements( this->M_Xh->mesh() ), _expr=gradv( domain_lift )*trans( gradv( image_lift ) ), _quad=quad, _quad1=quad1 );
         return steklovpcr;
     }
 
     template<typename First, typename Second>
     value_type
-    operator()(First const& first ,Second const& second)
-    {   return this->steklovpc(first, second);
+    operator()( First const& first ,Second const& second )
+    {
+        return this->steklovpc( first, second );
     }
 
     //@}
@@ -141,10 +142,10 @@ private :
 template<typename space_type>
 boost::shared_ptr< OperatorSteklovPc<space_type> >
 operatorSteklPc( boost::shared_ptr<space_type> const& space,
-                 typename OperatorSteklovPc<space_type>::backend_ptrtype const& backend = Backend<double>::build(BACKEND_PETSC))
+                 typename OperatorSteklovPc<space_type>::backend_ptrtype const& backend = Backend<double>::build( BACKEND_PETSC ) )
 {
     typedef OperatorSteklovPc<space_type> StekPc_type;
-    boost::shared_ptr<StekPc_type> Steklov( new StekPc_type(space, backend) );
+    boost::shared_ptr<StekPc_type> Steklov( new StekPc_type( space, backend ) );
     return Steklov;
 }
 

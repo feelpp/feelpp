@@ -54,11 +54,11 @@ struct GetContext
     struct result;
 
     template<typename Lhs, typename Rhs>
-    struct result<GetContext(Lhs,Rhs)>
+    struct result<GetContext( Lhs,Rhs )>
 #if BOOST_VERSION < 104200
-        : boost::remove_reference<Lhs>
+: boost::remove_reference<Lhs>
 #else
-        : boost::remove_reference<Rhs>
+: boost::remove_reference<Rhs>
 #endif
     {
 
@@ -83,7 +83,7 @@ struct GetContext
 #else
     Rhs
 #endif
-    operator()(const Lhs& lhs, const Rhs& rhs) const
+    operator()( const Lhs& lhs, const Rhs& rhs ) const
     {
         return lhs | rhs;
     }
@@ -94,11 +94,11 @@ struct GetImOrder
     struct result;
 
     template<typename Lhs, typename Rhs>
-    struct result<GetImOrder(Lhs,Rhs)>
+    struct result<GetImOrder( Lhs,Rhs )>
 #if BOOST_VERSION < 104200
-        : boost::remove_reference<Lhs>
+: boost::remove_reference<Lhs>
 #else
-        : boost::remove_reference<Rhs>
+: boost::remove_reference<Rhs>
 #endif
     {
 
@@ -117,9 +117,9 @@ struct GetImOrder
 #else
     Rhs
 #endif
-    operator()(const Lhs& lhs, const Rhs& rhs) const
-        {
-        }
+    operator()( const Lhs& lhs, const Rhs& rhs ) const
+    {
+    }
 };
 struct GetImIsPoly
 {
@@ -127,11 +127,11 @@ struct GetImIsPoly
     struct result;
 
     template<typename Lhs, typename Rhs>
-    struct result<GetImIsPoly(Lhs,Rhs)>
+    struct result<GetImIsPoly( Lhs,Rhs )>
 #if BOOST_VERSION < 104200
-        : boost::remove_reference<Lhs>
+: boost::remove_reference<Lhs>
 #else
-        : boost::remove_reference<Rhs>
+: boost::remove_reference<Rhs>
 #endif
     {
 
@@ -150,9 +150,9 @@ struct GetImIsPoly
 #else
     Rhs
 #endif
-    operator()(const Lhs& lhs, const Rhs& rhs) const
-        {
-        }
+    operator()( const Lhs& lhs, const Rhs& rhs ) const
+    {
+    }
 };
 template<typename Func>
 struct ExprHasTestFunction
@@ -161,11 +161,11 @@ struct ExprHasTestFunction
     struct result;
 
     template<typename Lhs, typename Rhs>
-    struct result<ExprHasTestFunction(Lhs,Rhs)>
+    struct result<ExprHasTestFunction( Lhs,Rhs )>
 #if BOOST_VERSION < 104200
-        : boost::remove_reference<Lhs>
+: boost::remove_reference<Lhs>
 #else
-        : boost::remove_reference<Rhs>
+: boost::remove_reference<Rhs>
 #endif
     {
 
@@ -183,15 +183,15 @@ struct ExprHasTestFunction
 #else
     Rhs
 #endif
-    operator()(const Lhs& lhs, const Rhs& rhs) const
-        {
+    operator()( const Lhs& lhs, const Rhs& rhs ) const
+    {
 #if 0
-            typedef typename boost::remove_reference<Lhs>::type lhs_noref_type;
-            typedef typename boost::remove_reference<Rhs>::type rhs_noref_type;
-            return ( lhs_noref_type::template ExprHasTestFunction<Func>::result ||
-                     lhs_noref_type::template ExprHasTestFunction<Func>::result );
+        typedef typename boost::remove_reference<Lhs>::type lhs_noref_type;
+        typedef typename boost::remove_reference<Rhs>::type rhs_noref_type;
+        return ( lhs_noref_type::template ExprHasTestFunction<Func>::result ||
+                 lhs_noref_type::template ExprHasTestFunction<Func>::result );
 #endif
-        }
+    }
 };
 template<typename Func>
 struct ExprHasTrialFunction
@@ -200,11 +200,11 @@ struct ExprHasTrialFunction
     struct result;
 
     template<typename Lhs, typename Rhs>
-    struct result<ExprHasTrialFunction(Lhs,Rhs)>
+    struct result<ExprHasTrialFunction( Lhs,Rhs )>
 #if BOOST_VERSION < 104200
-        : boost::remove_reference<Lhs>
+: boost::remove_reference<Lhs>
 #else
-        : boost::remove_reference<Rhs>
+: boost::remove_reference<Rhs>
 #endif
     {
 
@@ -222,13 +222,13 @@ struct ExprHasTrialFunction
 #else
     Rhs
 #endif
-    operator()(const Lhs& lhs, const Rhs& rhs) const
-        {
+    operator()( const Lhs& lhs, const Rhs& rhs ) const
+    {
 #if 0
-            return ( Lhs::template HasTrialFunction<Func>::result ||
-                     Rhs::template HasTrialFunction<Func>::result );
+        return ( Lhs::template HasTrialFunction<Func>::result ||
+                 Rhs::template HasTrialFunction<Func>::result );
 #endif
-        }
+    }
 };
 template<typename Geo_t, typename Basis_i_t, typename Basis_j_t>
 struct initialize_expression_gij
@@ -237,7 +237,7 @@ struct initialize_expression_gij
     struct result;
 
     template<typename ExprT>
-    struct result<initialize_expression_gij(ExprT)>
+    struct result<initialize_expression_gij( ExprT )>
     {
         typedef typename boost::remove_reference<ExprT>::type::template tensor<Geo_t, Basis_i_t, Basis_j_t> type;
     };
@@ -266,7 +266,7 @@ struct initialize_expression_gi
     struct result;
 
     template<typename ExprT>
-    struct result<initialize_expression_gi(ExprT)>
+    struct result<initialize_expression_gi( ExprT )>
     {
         typedef typename boost::remove_reference<ExprT>::type::template tensor<Geo_t, Basis_i_t> type;
     };
@@ -294,7 +294,7 @@ struct initialize_expression_g
     struct result;
 
     template<typename ExprT>
-    struct result<initialize_expression_g(ExprT)>
+    struct result<initialize_expression_g( ExprT )>
     {
         typedef typename boost::remove_reference<ExprT>::type::template tensor<Geo_t> type;
     };
@@ -326,7 +326,7 @@ struct update_expression_gij
     {}
 
     template <typename ExprT>
-    void operator()(ExprT& expr) const
+    void operator()( ExprT& expr ) const
     {
         expr.update( M_geom, M_fev, M_feu );
     }
@@ -344,7 +344,7 @@ struct update_expression_gi
     {}
 
     template <typename ExprT>
-    void operator()(ExprT& expr) const
+    void operator()( ExprT& expr ) const
     {
         expr.update( M_geom, M_fev );
     }
@@ -411,12 +411,12 @@ struct evaluate_expression_gij
 
     template<typename ExprT, typename V>
 #if BOOST_VERSION < 104200
-    struct result<evaluate_expression_gij<T>(ExprT,V)>
+    struct result<evaluate_expression_gij<T>( ExprT,V )>
 #else
-    struct result<evaluate_expression_gij<T>(V,ExprT)>
+    struct result<evaluate_expression_gij<T>( V,ExprT )>
 #endif
-        :
-        boost::remove_reference<V>
+:
+    boost::remove_reference<V>
     {};
     evaluate_expression_gij( uint16_type indexi , uint16_type indexj, uint16_type c1, uint16_type q )
         :
@@ -444,7 +444,7 @@ struct evaluate_expression_gij
     template <typename ExprT>
     T
 #if BOOST_VERSION < 104200
-    operator()(ExprT const& expr, T const& res ) const
+    operator()( ExprT const& expr, T const& res ) const
 #else
     operator()( T const& res, ExprT const& expr ) const
 #endif
@@ -453,6 +453,7 @@ struct evaluate_expression_gij
 
         if ( M_current == M_index )
             ret = expr.evalijq( M_indexi, M_indexj, 0, 0, M_q );
+
         ++M_current;
         return ret;
     }
@@ -473,12 +474,12 @@ struct evaluate_expression_gi
 
     template<typename ExprT,typename V>
 #if BOOST_VERSION < 104200
-    struct result<evaluate_expression_gi<T>(ExprT,V)>
+    struct result<evaluate_expression_gi<T>( ExprT,V )>
 #else
-    struct result<evaluate_expression_gi<T>(V,ExprT)>
+    struct result<evaluate_expression_gi<T>( V,ExprT )>
 #endif
-        :
-        boost::remove_reference<V>
+:
+    boost::remove_reference<V>
     {};
 
     evaluate_expression_gi( uint16_type indexi, uint16_type c1, uint16_type q )
@@ -513,6 +514,7 @@ struct evaluate_expression_gi
 
         if ( M_current == M_index )
             ret = expr.evaliq( M_indexi, 0, 0, M_q );
+
         ++M_current;
         return ret;
 
@@ -533,12 +535,12 @@ struct evaluate_expression_g
 
     template<typename ExprT,typename V>
 #if BOOST_VERSION < 104200
-    struct result<evaluate_expression_g<T>(ExprT,V)>
+    struct result<evaluate_expression_g<T>( ExprT,V )>
 #else
-    struct result<evaluate_expression_g<T>(V,ExprT)>
+    struct result<evaluate_expression_g<T>( V,ExprT )>
 #endif
-        :
-        boost::remove_reference<V>
+:
+    boost::remove_reference<V>
     {};
 
     evaluate_expression_g( uint16_type c1, uint16_type q )
@@ -563,7 +565,7 @@ struct evaluate_expression_g
     template <typename ExprT>
     T
 #if BOOST_VERSION < 104200
-    operator()(ExprT const& expr, T const& res ) const
+    operator()( ExprT const& expr, T const& res ) const
 #else
     operator()( T const& res, ExprT const& expr ) const
 #endif
@@ -572,6 +574,7 @@ struct evaluate_expression_g
 
         if ( M_current == M_index )
             ret = expr.evalq( 0, 0, M_q );
+
         ++M_current;
         return ret;
     }
@@ -651,8 +654,14 @@ public:
      */
     //@{
 
-    expression_vector_type const&  expression() const { return M_expr; }
-    expression_vector_type      &  expression()       { return M_expr; }
+    expression_vector_type const&  expression() const
+    {
+        return M_expr;
+    }
+    expression_vector_type      &  expression()
+    {
+        return M_expr;
+    }
 
     //@}
 
@@ -676,10 +685,10 @@ public:
         typedef this_type expression_type;
         typedef typename expression_type::expression_vector_type expression_vector_type;
         typedef Shape<expression_type::vector_size, Vectorial, false, false> shape;
-        static const bool theshape = (shape::M == expression_type::vector_size && shape::N == 1);
+        static const bool theshape = ( shape::M == expression_type::vector_size && shape::N == 1 );
         BOOST_MPL_ASSERT_MSG( theshape,
                               INVALID_TENSOR_SHAPE_SHOULD_BE_RANK_1,
-                              (mpl::int_<shape::M>, mpl::int_<shape::N> ) );
+                              ( mpl::int_<shape::M>, mpl::int_<shape::N> ) );
 
         typedef typename boost::remove_reference<typename fusion::result_of::at<expression_vector_type, boost::mpl::int_<0> >::type>::type::value_type value_type;
         //typedef typename expression_type::value_type value_type;
@@ -693,7 +702,10 @@ public:
         typedef typename mpl::transform<expression_vector_type, ExpressionToTensor<mpl::_1>, mpl::back_inserter<fusion::vector<> > >::type tensor_vector_type;
 
 
-        struct is_zero { static const bool value = false; };
+        struct is_zero
+        {
+            static const bool value = false;
+        };
 
         tensor( expression_type const& expr,
                 Geo_t const& geom,
@@ -701,25 +713,25 @@ public:
                 Basis_j_t const& feu )
             :
             M_expr( fusion::transform( expr.expression(), initialize_expression_gij<Geo_t,Basis_i_t,Basis_j_t>( geom, fev, feu ) ) )
-            {
+        {
 
-                update( geom, fev, feu );
-            }
+            update( geom, fev, feu );
+        }
         tensor( expression_type const& expr,
                 Geo_t const& geom,
                 Basis_i_t const& fev )
             :
             M_expr( fusion::transform( expr.expression(), initialize_expression_gi<Geo_t,Basis_i_t>( geom, fev ) ) )
-            {
-                update( geom, fev );
-            }
+        {
+            update( geom, fev );
+        }
         tensor( expression_type const& expr,
                 Geo_t const& geom )
             :
             M_expr( fusion::transform( expr.expression(), initialize_expression_g<Geo_t>( geom ) ) )
-            {
-                update( geom );
-            }
+        {
+            update( geom );
+        }
         template<typename IM>
         void init( IM const& im )
         {
@@ -746,14 +758,14 @@ public:
         value_type
         evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type /*c2*/, uint16_type q ) const
         {
-            return fusion::accumulate( M_expr, value_type(0), detail::evaluate_expression_gij<value_type>( i, j, c1, q  ) );
+            return fusion::accumulate( M_expr, value_type( 0 ), detail::evaluate_expression_gij<value_type>( i, j, c1, q  ) );
         }
         template<int PatternContext>
         value_type
         evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type /*c2*/, uint16_type q,
                  mpl::int_<PatternContext> ) const
         {
-            return fusion::accumulate( M_expr, value_type(0),
+            return fusion::accumulate( M_expr, value_type( 0 ),
                                        detail::evaluate_expression_gij<value_type>( i, j, c1, q  ) );
 
         }
@@ -761,12 +773,12 @@ public:
         value_type
         evaliq( uint16_type i, uint16_type c1, uint16_type /*c2*/, uint16_type q ) const
         {
-            return fusion::accumulate( M_expr, value_type(0), detail::evaluate_expression_gi<value_type>( i, c1, q ) );
+            return fusion::accumulate( M_expr, value_type( 0 ), detail::evaluate_expression_gi<value_type>( i, c1, q ) );
         }
         value_type
         evalq( uint16_type c1, uint16_type /*c2*/, uint16_type q ) const
         {
-            return fusion::accumulate( M_expr, value_type(0), detail::evaluate_expression_g<value_type>( c1, q ) );
+            return fusion::accumulate( M_expr, value_type( 0 ), detail::evaluate_expression_g<value_type>( c1, q ) );
         }
         tensor_vector_type M_expr;
     };
@@ -902,8 +914,14 @@ public:
      */
     //@{
 
-    expression_matrix_type const&  expression() const { return M_expr; }
-    expression_matrix_type      &  expression()       { return M_expr; }
+    expression_matrix_type const&  expression() const
+    {
+        return M_expr;
+    }
+    expression_matrix_type      &  expression()
+    {
+        return M_expr;
+    }
 
     //@}
 
@@ -929,10 +947,10 @@ public:
         typedef Shape<expression_type::matrix_size1, Tensor2, false, false> shape;
 
 #if 0
-        static const bool theshape = (shape::M == expression_type::matrix_size && shape::N == 1);
+        static const bool theshape = ( shape::M == expression_type::matrix_size && shape::N == 1 );
         BOOST_MPL_ASSERT_MSG( theshape,
                               INVALID_TENSOR_SHAPE_SHOULD_BE_RANK_1,
-                              (mpl::int_<shape::M>, mpl::int_<shape::N> ) );
+                              ( mpl::int_<shape::M>, mpl::int_<shape::N> ) );
 #endif
 
         typedef typename boost::remove_reference<typename fusion::result_of::at<expression_matrix_type, boost::mpl::int_<0> >::type>::type::value_type value_type;
@@ -949,7 +967,10 @@ public:
         typedef typename mpl::transform<expression_matrix_type, ExpressionToTensor<mpl::_1>, mpl::back_inserter<fusion::vector<> > >::type tensor_matrix_type;
 
 
-        struct is_zero { static const bool value = false; };
+        struct is_zero
+        {
+            static const bool value = false;
+        };
 
         tensor( expression_type const& expr,
                 Geo_t const& geom,
@@ -957,25 +978,25 @@ public:
                 Basis_j_t const& feu )
             :
             M_expr( fusion::transform( expr.expression(), initialize_expression_gij<Geo_t,Basis_i_t,Basis_j_t>( geom, fev, feu ) ) )
-            {
+        {
 
-                update( geom, fev, feu );
-            }
+            update( geom, fev, feu );
+        }
         tensor( expression_type const& expr,
                 Geo_t const& geom,
                 Basis_i_t const& fev )
             :
             M_expr( fusion::transform( expr.expression(), initialize_expression_gi<Geo_t,Basis_i_t>( geom, fev ) ) )
-            {
-                update( geom, fev );
-            }
+        {
+            update( geom, fev );
+        }
         tensor( expression_type const& expr,
                 Geo_t const& geom )
             :
             M_expr( fusion::transform( expr.expression(), initialize_expression_g<Geo_t>( geom ) ) )
-            {
-                update( geom );
-            }
+        {
+            update( geom );
+        }
         template<typename IM>
         void init( IM const& im )
         {
@@ -1002,32 +1023,32 @@ public:
         value_type
         evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
-            return fusion::accumulate( M_expr, value_type(0),
+            return fusion::accumulate( M_expr, value_type( 0 ),
                                        detail::evaluate_expression_gij<value_type>( expression_type::matrix_size2,
-                                                                                       i, j, c1, c2, q ) );
+                                               i, j, c1, c2, q ) );
         }
         template<int PatternContext>
         value_type
         evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q,
                  mpl::int_<PatternContext> ) const
         {
-            return fusion::accumulate( M_expr, value_type(0),
+            return fusion::accumulate( M_expr, value_type( 0 ),
                                        detail::evaluate_expression_gij<value_type>( expression_type::matrix_size2,
-                                                                                       i, j, c1, c2, q ) );
+                                               i, j, c1, c2, q ) );
         }
 
         value_type
         evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
-            return fusion::accumulate( M_expr, value_type(0),
+            return fusion::accumulate( M_expr, value_type( 0 ),
                                        detail::evaluate_expression_gi<value_type>( expression_type::matrix_size2, i, c1, c2, q ) );
 
         }
         value_type
         evalq( uint16_type c1, uint16_type c2, uint16_type q ) const
         {
-            return fusion::accumulate( M_expr, value_type(0), detail::evaluate_expression_g<value_type>( expression_type::matrix_size2,
-                                                                                                         c1, c2, q ) );
+            return fusion::accumulate( M_expr, value_type( 0 ), detail::evaluate_expression_g<value_type>( expression_type::matrix_size2,
+                                       c1, c2, q ) );
         }
         tensor_matrix_type M_expr;
     };

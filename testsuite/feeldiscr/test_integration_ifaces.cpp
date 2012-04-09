@@ -88,15 +88,15 @@ struct test_integration_internal_faces_v: public Application
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( this->vm()["shape"].template as<std::string>() ),
         mesh()
-        {
-            mesh = createGMSHMesh( _mesh=new mesh_type,
-                                   _desc=domain( _name=(boost::format( "%1%-%2%" ) % shape % Dim).str() ,
-                                                 _usenames=true,
-                                                 _convex=(convex_type::is_hypercube)?"Hypercube":"Simplex",
-                                                 _shape=shape,
-                                                 _dim=Dim,
-                                                 _h=meshSize ) );
-        }
+    {
+        mesh = createGMSHMesh( _mesh=new mesh_type,
+                               _desc=domain( _name=( boost::format( "%1%-%2%" ) % shape % Dim ).str() ,
+                                             _usenames=true,
+                                             _convex=( convex_type::is_hypercube )?"Hypercube":"Simplex",
+                                             _shape=shape,
+                                             _dim=Dim,
+                                             _h=meshSize ) );
+    }
     void operator()()
     {
         using namespace Feel::vf;
@@ -106,18 +106,18 @@ struct test_integration_internal_faces_v: public Application
         space_ptrtype Xh = space_type::New( mesh );
 
         // int ([-1,1],[-1,x]) 1 dx
-        value_type meas = integrate( elements(mesh), cst(1.) ).evaluate()( 0, 0 );
-        value_type v0 = integrate( elements(mesh), vf::min(constant(1.0),constant(2.0)) ).evaluate()( 0, 0 );
+        value_type meas = integrate( elements( mesh ), cst( 1. ) ).evaluate()( 0, 0 );
+        value_type v0 = integrate( elements( mesh ), vf::min( constant( 1.0 ),constant( 2.0 ) ) ).evaluate()( 0, 0 );
 
 #if defined(USE_BOOST_TEST)
         BOOST_CHECK_CLOSE( v0, meas, eps );
 #else
-        FEELPP_ASSERT( math::abs( v0-1.0) < eps )( v0 )( math::abs( v0-1.0) )( eps ).warn ( "v0 != 1" );
+        FEELPP_ASSERT( math::abs( v0-1.0 ) < eps )( v0 )( math::abs( v0-1.0 ) )( eps ).warn ( "v0 != 1" );
 #endif /* USE_BOOST_TEST */
 
-        value_type v1 = integrate( internalfaces(mesh), jumpv(trans(2*P())) ).evaluate()( 0, 0 );
-        value_type v1l = integrate( internalfaces(mesh), leftfacev(trans(2*P())*N()) ).evaluate()( 0, 0 );
-        value_type v1r = integrate( internalfaces(mesh), rightfacev(trans(2*P())*N()) ).evaluate()( 0, 0 );
+        value_type v1 = integrate( internalfaces( mesh ), jumpv( trans( 2*P() ) ) ).evaluate()( 0, 0 );
+        value_type v1l = integrate( internalfaces( mesh ), leftfacev( trans( 2*P() )*N() ) ).evaluate()( 0, 0 );
+        value_type v1r = integrate( internalfaces( mesh ), rightfacev( trans( 2*P() )*N() ) ).evaluate()( 0, 0 );
 
 #if defined(USE_BOOST_TEST)
         BOOST_TEST_MESSAGE( "int jump(2*X^t) =" << v1 << "\n" );
@@ -126,25 +126,25 @@ struct test_integration_internal_faces_v: public Application
         BOOST_TEST_MESSAGE( "int right(2*X^t) =" << v1r << "\n" );
         BOOST_CHECK_CLOSE( v1l, -v1r, eps );
 #else
-        FEELPP_ASSERT( math::abs( v1-0.0) < eps )( v1 )( math::abs( v1-0.0) )( eps ).warn ( "v1 != 0" );
+        FEELPP_ASSERT( math::abs( v1-0.0 ) < eps )( v1 )( math::abs( v1-0.0 ) )( eps ).warn ( "v1 != 0" );
 #endif /* USE_BOOST_TEST */
 
-        auto normp = vf::sqrt(trans(P())*P());
+        auto normp = vf::sqrt( trans( P() )*P() );
         auto vnormp = normp*unitX()+normp*unitY()+normp*unitZ();
-        value_type v2 = integrate( internalfaces(mesh), leftfacev(trans(vnormp)*N())+rightfacev(trans(vnormp)*N()) ).evaluate()( 0, 0 );
+        value_type v2 = integrate( internalfaces( mesh ), leftfacev( trans( vnormp )*N() )+rightfacev( trans( vnormp )*N() ) ).evaluate()( 0, 0 );
 #if defined(USE_BOOST_TEST)
         BOOST_TEST_MESSAGE( "int jump(vnormp) =" << v2 << "\n" );
         BOOST_CHECK_SMALL( v2, eps );
 #else
-        FEELPP_ASSERT( math::abs( v2-0.0) < eps )( v2 )( math::abs( v2-0.0) )( eps ).warn ( "v2 != 0" );
+        FEELPP_ASSERT( math::abs( v2-0.0 ) < eps )( v2 )( math::abs( v2-0.0 ) )( eps ).warn ( "v2 != 0" );
 #endif /* USE_BOOST_TEST */
 
-        value_type v3 = integrate( internalfaces(mesh),
-                                   leftfacev(vf::sqrt(trans(P()*P())*(P()*P())))-rightfacev(vf::sqrt(trans(P()*P())*(P()*P()))) ).evaluate()( 0, 0 );
+        value_type v3 = integrate( internalfaces( mesh ),
+                                   leftfacev( vf::sqrt( trans( P()*P() )*( P()*P() ) ) )-rightfacev( vf::sqrt( trans( P()*P() )*( P()*P() ) ) ) ).evaluate()( 0, 0 );
 #if defined(USE_BOOST_TEST)
         BOOST_CHECK_SMALL( v3, eps );
 #else
-        FEELPP_ASSERT( math::abs( v3-0.0) < eps )( v3 )( math::abs( v3-0.0) )( eps ).warn ( "v3 != 0" );
+        FEELPP_ASSERT( math::abs( v3-0.0 ) < eps )( v3 )( math::abs( v3-0.0 ) )( eps ).warn ( "v3 != 0" );
 #endif /* USE_BOOST_TEST */
 
         element_type u( Xh, "u" );
@@ -154,40 +154,40 @@ struct test_integration_internal_faces_v: public Application
         //auto u_exact = Px();
         u = vf::project( Xh, elements( mesh ), u_exact );
 
-        double avgv = integrate( internalfaces(mesh), averagev(idv(u)-(u_exact)) ).evaluate()( 0, 0 );
+        double avgv = integrate( internalfaces( mesh ), averagev( idv( u )-( u_exact ) ) ).evaluate()( 0, 0 );
         BOOST_TEST_MESSAGE( "avg(v-uexact)=" << avgv << "\n" );
-        double avgv1 = integrate( internalfaces(mesh), .5*(leftfacev(idv(u)-(u_exact))+rightfacev(idv(u)-(u_exact))) ).evaluate()( 0, 0 );
+        double avgv1 = integrate( internalfaces( mesh ), .5*( leftfacev( idv( u )-( u_exact ) )+rightfacev( idv( u )-( u_exact ) ) ) ).evaluate()( 0, 0 );
         BOOST_TEST_MESSAGE( ".5*(left(v-uexact)+right(v-uexact))=" << avgv1 << "\n" );
-        double avgv2 = integrate( internalfaces(mesh), .5*(leftfacev(idv(u))-leftfacev(u_exact)+rightfacev(idv(u))-rightfacev(u_exact))).evaluate()( 0, 0 );
+        double avgv2 = integrate( internalfaces( mesh ), .5*( leftfacev( idv( u ) )-leftfacev( u_exact )+rightfacev( idv( u ) )-rightfacev( u_exact ) ) ).evaluate()( 0, 0 );
         BOOST_CHECK_SMALL( avgv, eps );
         BOOST_CHECK_SMALL( avgv1, eps );
         BOOST_CHECK_SMALL( avgv2, eps );
 
 
-        double leftv = integrate( internalfaces(mesh), leftfacev(idv(u)-(u_exact)) ).evaluate()( 0, 0);
-        double rightv = integrate( internalfaces(mesh), rightfacev(idv(u)-(u_exact))).evaluate()( 0, 0);
+        double leftv = integrate( internalfaces( mesh ), leftfacev( idv( u )-( u_exact ) ) ).evaluate()( 0, 0 );
+        double rightv = integrate( internalfaces( mesh ), rightfacev( idv( u )-( u_exact ) ) ).evaluate()( 0, 0 );
         BOOST_TEST_MESSAGE( "leftv=" << leftv << "\n" );
         BOOST_CHECK_SMALL( leftv, eps );
         BOOST_TEST_MESSAGE( "rightv=" << rightv << "\n" );
         BOOST_CHECK_SMALL( rightv, eps );
 
 
-        double n_jumpun = integrate( internalfaces(mesh), trans(leftfacev(N()))*jumpv(idv(u)) ).evaluate()( 0, 0 );
+        double n_jumpun = integrate( internalfaces( mesh ), trans( leftfacev( N() ) )*jumpv( idv( u ) ) ).evaluate()( 0, 0 );
         BOOST_CHECK_SMALL( n_jumpun, eps );
-        double n_leftun_rightun = integrate( internalfaces(mesh), trans(leftfacev(N()))*(leftfacev(idv(u)*N())+rightfacev(idv(u)*N())) ).evaluate()( 0, 0 );
+        double n_leftun_rightun = integrate( internalfaces( mesh ), trans( leftfacev( N() ) )*( leftfacev( idv( u )*N() )+rightfacev( idv( u )*N() ) ) ).evaluate()( 0, 0 );
         BOOST_CHECK_SMALL( n_leftun_rightun, eps );
 
         BOOST_CHECK_CLOSE( n_leftun_rightun, n_jumpun, eps );
 
-        double left_n = integrate( internalfaces(mesh), leftfacev(N())).evaluate()( 0, 0 );
-        double right_n = integrate( internalfaces(mesh), rightfacev(N())).evaluate()( 0, 0);
+        double left_n = integrate( internalfaces( mesh ), leftfacev( N() ) ).evaluate()( 0, 0 );
+        double right_n = integrate( internalfaces( mesh ), rightfacev( N() ) ).evaluate()( 0, 0 );
         BOOST_CHECK_CLOSE( left_n, -right_n, eps );
 
-        u = vf::project( Xh, elements( mesh ), cst(1.));
-        double leftv_1 = integrate( internalfaces(mesh), leftfacev(idv(u))).evaluate()( 0, 0);
-        double rightv_1 = integrate( internalfaces(mesh), rightfacev(idv(u))).evaluate()( 0, 0);
-        double sumv_1 = integrate( internalfaces(mesh),  rightfacev(idv(u))+leftfacev(idv(u))).evaluate()( 0, 0);
-        double avgv_1 = integrate( internalfaces(mesh),  averagev(idv(u))).evaluate()( 0, 0);
+        u = vf::project( Xh, elements( mesh ), cst( 1. ) );
+        double leftv_1 = integrate( internalfaces( mesh ), leftfacev( idv( u ) ) ).evaluate()( 0, 0 );
+        double rightv_1 = integrate( internalfaces( mesh ), rightfacev( idv( u ) ) ).evaluate()( 0, 0 );
+        double sumv_1 = integrate( internalfaces( mesh ),  rightfacev( idv( u ) )+leftfacev( idv( u ) ) ).evaluate()( 0, 0 );
+        double avgv_1 = integrate( internalfaces( mesh ),  averagev( idv( u ) ) ).evaluate()( 0, 0 );
         BOOST_CHECK_CLOSE( leftv_1, rightv_1, eps );
         BOOST_CHECK_CLOSE( leftv_1+rightv_1, sumv_1, eps );
         BOOST_CHECK_CLOSE( 2*avgv_1, sumv_1, eps );
@@ -217,15 +217,15 @@ struct test_integration_internal_faces_lf : public Application
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( this->vm()["shape"].template as<std::string>() ),
         mesh()
-        {
-            mesh = createGMSHMesh( _mesh=new mesh_type,
-                                   _desc=domain( _name=(boost::format( "%1%-%2%" ) % shape % Dim).str() ,
-                                                 _usenames=true,
-                                                 _convex=(convex_type::is_hypercube)?"Hypercube":"Simplex",
-                                                 _shape=shape,
-                                                 _dim=Dim,
-                                                 _h=meshSize ) );
-        }
+    {
+        mesh = createGMSHMesh( _mesh=new mesh_type,
+                               _desc=domain( _name=( boost::format( "%1%-%2%" ) % shape % Dim ).str() ,
+                                             _usenames=true,
+                                             _convex=( convex_type::is_hypercube )?"Hypercube":"Simplex",
+                                             _shape=shape,
+                                             _dim=Dim,
+                                             _h=meshSize ) );
+    }
 
     void operator()()
     {
@@ -245,10 +245,10 @@ struct test_integration_internal_faces_lf : public Application
 
 
         auto F = backend->newVector( Xh );
-        form1( _test=Xh, _vector=F, _init=true ) = integrate( internalfaces(mesh),
-                                                              //print(trans(print(leftface(id(u)*print(N(),"leftN:")),"leftuN=")+print(rightface(id(u)*print(N(),"rightN:")),"rightuN=")),"leftuN+rightuN=" )*print(leftfacev(N()),"leftN=")
-                                                              trans(leftface(id(u)*N())+rightface(id(u)*N()))*leftfacev(N())
-            );
+        form1( _test=Xh, _vector=F, _init=true ) = integrate( internalfaces( mesh ),
+                //print(trans(print(leftface(id(u)*print(N(),"leftN:")),"leftuN=")+print(rightface(id(u)*print(N(),"rightN:")),"rightuN=")),"leftuN+rightuN=" )*print(leftfacev(N()),"leftN=")
+                trans( leftface( id( u )*N() )+rightface( id( u )*N() ) )*leftfacev( N() )
+                                                            );
 
         F->close();
         F->printMatlab( "F.m" );
@@ -258,33 +258,33 @@ struct test_integration_internal_faces_lf : public Application
         BOOST_CHECK_SMALL( jumpu_F, eps );
 
 #if 1
-        form1( _test=Xh, _vector=F, _init=true ) = integrate( internalfaces(mesh),
-                                                              (jump(grad(u))) );
+        form1( _test=Xh, _vector=F, _init=true ) = integrate( internalfaces( mesh ),
+                ( jump( grad( u ) ) ) );
         double jump_gradu_F = inner_product( u, *F );
         BOOST_TEST_MESSAGE ( "jump(grad(u) u^T F = " << jump_gradu_F << "\n" );
         BOOST_CHECK_SMALL( jump_gradu_F, eps );
 
-        form1( Xh, F, _init=true ) = integrate( internalfaces(mesh), leftface(grad(u)*N()));
+        form1( Xh, F, _init=true ) = integrate( internalfaces( mesh ), leftface( grad( u )*N() ) );
         double left_gradu_n = inner_product( u, *F );
-        form1( Xh, F, _init=true ) = integrate( internalfaces(mesh), rightface(grad(u)*N()));
+        form1( Xh, F, _init=true ) = integrate( internalfaces( mesh ), rightface( grad( u )*N() ) );
         double right_gradu_n = inner_product( u, *F );
         BOOST_TEST_MESSAGE(  "jump(left(grad(u)*N)) u^T F = " << left_gradu_n << "\n" );
         BOOST_TEST_MESSAGE(  "jump(right(grad(u)*N)) u^T F = " << right_gradu_n << "\n" );
         BOOST_CHECK_CLOSE( left_gradu_n, -right_gradu_n, eps*100 );
 
-        u = vf::project( Xh, elements( mesh ), cst(1.));
-        form1( Xh, F, _init=true ) = integrate( internalfaces(mesh), leftface(id(u)));
+        u = vf::project( Xh, elements( mesh ), cst( 1. ) );
+        form1( Xh, F, _init=true ) = integrate( internalfaces( mesh ), leftface( id( u ) ) );
         double left_1 = inner_product( u, *F );
         BOOST_TEST_MESSAGE(  "left(id(u)) u^T F = " << left_1 << "\n" );
-        form1( Xh, F, _init=true ) = integrate( internalfaces(mesh), rightface(id(u)));
+        form1( Xh, F, _init=true ) = integrate( internalfaces( mesh ), rightface( id( u ) ) );
         double right_1 = inner_product( u, *F );
         BOOST_TEST_MESSAGE(  "right(id(u)) u^T F = " << right_1 << "\n" );
         BOOST_CHECK_CLOSE( left_1, right_1, eps );
 
-        form1( Xh, F, _init=true ) = integrate( internalfaces(mesh), trans(N())*jump(id(u)));
+        form1( Xh, F, _init=true ) = integrate( internalfaces( mesh ), trans( N() )*jump( id( u ) ) );
         BOOST_CHECK_SMALL( inner_product( u, *F ), eps );
 
-        form1( Xh, F, _init=true ) = integrate( internalfaces(mesh), jump(grad(u)));
+        form1( Xh, F, _init=true ) = integrate( internalfaces( mesh ), jump( grad( u ) ) );
         BOOST_CHECK_SMALL( inner_product( u, *F ), eps );
 #endif
 
@@ -299,11 +299,11 @@ inline
 Feel::po::options_description
 makeOptions()
 {
-    Feel::po::options_description integrationoptions("Test Integration 2D/3D options");
+    Feel::po::options_description integrationoptions( "Test Integration 2D/3D options" );
     integrationoptions.add_options()
-        ("hsize", Feel::po::value<double>()->default_value( 3 ), "h value")
-        ("shape", Feel::po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (hypercube, simplex, ellipsoid)")
-        ;
+    ( "hsize", Feel::po::value<double>()->default_value( 3 ), "h value" )
+    ( "shape", Feel::po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (hypercube, simplex, ellipsoid)" )
+    ;
     return integrationoptions.add( Feel::feel_options() );
 }
 
@@ -313,12 +313,12 @@ makeAbout()
 {
     Feel::AboutData about( "test_integration_ifaces" ,
                            "test_integration_ifaces" ,
-                            "0.2",
+                           "0.2",
                            "1D/2D/3D internal faces integration tests",
                            Feel::AboutData::License_GPL,
-                           "Copyright (C) 2006-2010 Université Joseph Fourier (Grenoble I)");
+                           "Copyright (C) 2006-2010 Université Joseph Fourier (Grenoble I)" );
 
-    about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
     return about;
 
 }
@@ -337,8 +337,8 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_integration_ifaces_v, T, dim_types )
 {
     BOOST_TEST_MESSAGE( "Test integration on internal faces v (" << T::value << "D)" );
     Feel::test_integration_internal_faces_v<double,T::value> t( boost::unit_test::framework::master_test_suite().argc,
-                                                                boost::unit_test::framework::master_test_suite().argv,
-                                                                makeAbout(), makeOptions() );
+            boost::unit_test::framework::master_test_suite().argv,
+            makeAbout(), makeOptions() );
     t();
     BOOST_TEST_MESSAGE( "Test integration on internal faces v (" << T::value << "D) done." );
 }
@@ -347,8 +347,8 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_integration_ifaces_lf, T, dim_types )
 {
     BOOST_TEST_MESSAGE( "Test integration on internal faces in linear forms (" << T::value << "D)" );
     Feel::test_integration_internal_faces_lf<double,T::value> t( boost::unit_test::framework::master_test_suite().argc,
-                                                                 boost::unit_test::framework::master_test_suite().argv,
-                                                                 makeAbout(), makeOptions() );
+            boost::unit_test::framework::master_test_suite().argv,
+            makeAbout(), makeOptions() );
     t();
     BOOST_TEST_MESSAGE( "Test integration on internal faces in linear forms (" << T::value << "D) done" );
 }
@@ -359,7 +359,7 @@ int BOOST_TEST_CALL_DECL
 main( int argc, char* argv[] )
 {
     Feel::Environment env( argc, argv );
-    Feel::Assert::setLog( "test_integration_ifaces.assert");
+    Feel::Assert::setLog( "test_integration_ifaces.assert" );
     int ret = ::boost::unit_test::unit_test_main( &init_unit_test, argc, argv );
 
     return ret;
@@ -373,7 +373,7 @@ test_suite*
 init_unit_test_suite( int argc, char** argv )
 {
     mpi = boost::shared_ptr<Feel::Application>( new Feel::Application( argc, argv, makeAbout(), makeOptions() ) );
-    Feel::Assert::setLog( "test_integration.assert");
+    Feel::Assert::setLog( "test_integration.assert" );
     test_suite* test = BOOST_TEST_SUITE( "2D Generic finite element solver test suite" );
 
     test->add( BOOST_TEST_CASE( ( test_integration_internal_faces<double>( mpi->vm()["hsize"].as<double>() ) ) ) );
@@ -385,7 +385,7 @@ int
 main( int argc, char** argv )
 {
     Feel::Application mpi( argc, argv, makeAbout(), makeOptions() );
-    Feel::Assert::setLog( "test_integration_ifaces.assert");
+    Feel::Assert::setLog( "test_integration_ifaces.assert" );
 
     test_integration_internal_faces<double> c ( mpi.vm()["hsize"].as<double>() );
     c();

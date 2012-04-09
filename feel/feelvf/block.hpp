@@ -70,16 +70,16 @@ public:
         _M_lc( __jc ),
         _M_gr( __gic ),
         _M_gc( __gjc )
-        {}
+    {}
     Block( Block const & __b )
         :
         _M_lr( __b._M_lr ),
         _M_lc( __b._M_lc ),
         _M_gr( __b._M_gr ),
         _M_gc( __b._M_gc )
-        {}
+    {}
     ~Block()
-        {}
+    {}
 
     //@}
 
@@ -88,16 +88,17 @@ public:
     //@{
 
     Block& operator=( Block const& __b )
+    {
+        if ( FEELPP_ISLIKELY( this != &__b ) )
         {
-            if ( FEELPP_ISLIKELY( this != &__b ) )
-            {
-                _M_lr = __b._M_lr;
-                _M_lc = __b._M_lc;
-                _M_gr = __b._M_gr;
-                _M_gc = __b._M_gc;
-            }
-            return *this;
+            _M_lr = __b._M_lr;
+            _M_lc = __b._M_lc;
+            _M_gr = __b._M_gr;
+            _M_gc = __b._M_gc;
         }
+
+        return *this;
+    }
 
 
     //@}
@@ -106,11 +107,23 @@ public:
      */
     //@{
 
-    uint16_type localRow() const { return _M_lr; }
-    uint16_type localColumn() const { return _M_lc; }
+    uint16_type localRow() const
+    {
+        return _M_lr;
+    }
+    uint16_type localColumn() const
+    {
+        return _M_lc;
+    }
 
-    size_type globalRowStart() const { return _M_gr; }
-    size_type globalColumnStart() const { return _M_gc; }
+    size_type globalRowStart() const
+    {
+        return _M_gr;
+    }
+    size_type globalColumnStart() const
+    {
+        return _M_gc;
+    }
 
     //@}
 
@@ -118,11 +131,23 @@ public:
      */
     //@{
 
-    void setLocalRow( uint16_type __lr ) { _M_lr = __lr; }
-    void setLocalColumn( uint16_type __lc ) { _M_lc = __lc; }
+    void setLocalRow( uint16_type __lr )
+    {
+        _M_lr = __lr;
+    }
+    void setLocalColumn( uint16_type __lc )
+    {
+        _M_lc = __lc;
+    }
 
-    void setGlobalRowStart( size_type __r ) { _M_gr = __r; }
-    void setGlobalColumnStart( size_type __c ) { _M_gc = __c; }
+    void setGlobalRowStart( size_type __r )
+    {
+        _M_gr = __r;
+    }
+    void setGlobalColumnStart( size_type __c )
+    {
+        _M_gc = __c;
+    }
 
     //@}
 
@@ -190,54 +215,54 @@ struct BlocksBase
     //typedef boost::shared_ptr<matrix_type> matrix_ptrtype;
     BlocksBase()
         :
-        M_nRow(0),
-        M_nCol(0),
-        M_vec(1),
-        M_cptToBuild(0)
+        M_nRow( 0 ),
+        M_nCol( 0 ),
+        M_vec( 1 ),
+        M_cptToBuild( 0 )
     {}
 
-    BlocksBase(uint16_type nr,uint16_type nc)
+    BlocksBase( uint16_type nr,uint16_type nc )
         :
-        M_nRow(nr),
-        M_nCol(nc),
-        M_vec(nr*nc),
-        M_cptToBuild(0)
+        M_nRow( nr ),
+        M_nCol( nc ),
+        M_vec( nr*nc ),
+        M_cptToBuild( 0 )
     {}
 
-    BlocksBase(uint16_type nr,uint16_type nc,block_type /*const&*/ a)
+    BlocksBase( uint16_type nr,uint16_type nc,block_type /*const&*/ a )
         :
-        M_nRow(nr),
-        M_nCol(nc),
-        M_vec(nr*nc, a),
-        M_cptToBuild(0)
+        M_nRow( nr ),
+        M_nCol( nc ),
+        M_vec( nr*nc, a ),
+        M_cptToBuild( 0 )
     {}
 
-    BlocksBase(BlocksBase<T> const& b)
+    BlocksBase( BlocksBase<T> const& b )
         :
-        M_nRow(b.M_nRow),
-        M_nCol(b.M_nCol),
-        M_vec(b.M_vec),
-        M_cptToBuild(b.M_cptToBuild)
+        M_nRow( b.M_nRow ),
+        M_nCol( b.M_nCol ),
+        M_vec( b.M_vec ),
+        M_cptToBuild( b.M_cptToBuild )
     {}
 
     BlocksBase<T>
-    operator<<(block_type const& m)  const
+    operator<<( block_type const& m )  const
     {
-        BlocksBase<T> newBlock(*this);
+        BlocksBase<T> newBlock( *this );
         newBlock.M_vec[M_cptToBuild]=m;
-        ++(newBlock.M_cptToBuild);
+        ++( newBlock.M_cptToBuild );
         return newBlock;
     }
 
     void
-    push_back(block_type const& m)
+    push_back( block_type const& m )
     {
         M_vec[M_cptToBuild]=m;
         ++M_cptToBuild;
     }
 #if 0
     void
-    operator<<(block_type const& m)
+    operator<<( block_type const& m )
     {
         M_vec[M_cptToBuild]=m;
         ++M_cptToBuild;
@@ -246,36 +271,46 @@ struct BlocksBase
 #endif
 
     block_type &
-    operator()(uint16_type c1,uint16_type c2)
+    operator()( uint16_type c1,uint16_type c2 )
     {
         return M_vec[c1*M_nCol+c2];
     }
 
     block_type
-    operator()(uint16_type c1,uint16_type c2) const
+    operator()( uint16_type c1,uint16_type c2 ) const
     {
         return M_vec[c1*M_nCol+c2];
     }
 
     std::vector<block_type>
-    getSetOfBlocks() const { return M_vec; }
+    getSetOfBlocks() const
+    {
+        return M_vec;
+    }
 
-    uint16_type nRow() const { return M_nRow; }
-    uint16_type nCol() const { return M_nCol; }
+    uint16_type nRow() const
+    {
+        return M_nRow;
+    }
+    uint16_type nCol() const
+    {
+        return M_nCol;
+    }
 
     void reset()
     {
         M_cptToBuild=0;
         M_vec.clear();
-        M_vec.resize(this->nRow()*this->nCol());
+        M_vec.resize( this->nRow()*this->nCol() );
     }
 
-    void merge(uint16_type c1,uint16_type c2,BlocksBase<T> /*const&*/ b)
+    void merge( uint16_type c1,uint16_type c2,BlocksBase<T> /*const&*/ b )
     {
         uint16_type nRb = b.nRow(), nCb = b.nCol();
-        for (uint16_type i=0;i<nRb;++i)
-            for (uint16_type j=0;j<nCb;++j)
-                this->operator()(c1+i,c2+j) = b(i,j);
+
+        for ( uint16_type i=0; i<nRb; ++i )
+            for ( uint16_type j=0; j<nCb; ++j )
+                this->operator()( c1+i,c2+j ) = b( i,j );
     }
 
 private :
@@ -297,37 +332,37 @@ struct Blocks : public BlocksBase<T>
 
     Blocks()
         :
-        super_type(NR,NC)
+        super_type( NR,NC )
     {}
 
-    Blocks(block_type const& a)
+    Blocks( block_type const& a )
         :
-        super_type(NR,NC, a)
+        super_type( NR,NC, a )
     {}
 
-    Blocks(super_type const& a)
+    Blocks( super_type const& a )
         :
-        super_type(a)
+        super_type( a )
     {}
 
     Blocks<NR,NC,T>
-    operator<<(block_type const& m) const
+    operator<<( block_type const& m ) const
     {
-        Blocks<NR,NC,T> newBlock = super_type::operator<<(m) ;
+        Blocks<NR,NC,T> newBlock = super_type::operator<<( m ) ;
         return newBlock;
     }
 
     void
-    push_back(block_type const& m)
+    push_back( block_type const& m )
     {
-        super_type::push_back(m);
+        super_type::push_back( m );
     }
 
 #if 0
     void
-    operator<<(block_type const& m)
+    operator<<( block_type const& m )
     {
-        super_type::operator<<(m);
+        super_type::operator<<( m );
     }
 #endif
 

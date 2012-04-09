@@ -33,8 +33,8 @@ int
 main( int argc, char** argv )
 {
     Feel::CRBApp<Feel::AdvectionDiffusion> app( argc, argv,
-                                                Feel::makeAdvectionDiffusionAbout("ad1crb"),
-                                                Feel::makeAdvectionDiffusionOptions());
+            Feel::makeAdvectionDiffusionAbout( "ad1crb" ),
+            Feel::makeAdvectionDiffusionOptions() );
     app.run();
 }
 

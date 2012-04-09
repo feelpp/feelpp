@@ -45,14 +45,14 @@ inline
 po::options_description
 makeOptions()
 {
-    po::options_description myintegralsoptions("MyFunctionSpace options");
+    po::options_description myintegralsoptions( "MyFunctionSpace options" );
     myintegralsoptions.add_options()
-        ("hsize", po::value<double>()->default_value( 0.2 ), "mesh size")
-        ("dim", po::value<int>()->default_value( 0 ), "mesh dimension (0: all dimensions, 1,2 or 3)")
-        ("order", po::value<int>()->default_value( 0 ), "approximation order (0: all orders, 1,2,3,4 or 5)")
-        ("shape", Feel::po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (either simplex, hypercube or ellipsoid)")
-        ("alpha", Feel::po::value<double>()->default_value( 3 ), "Regularity coefficient for function f")
-        ;
+    ( "hsize", po::value<double>()->default_value( 0.2 ), "mesh size" )
+    ( "dim", po::value<int>()->default_value( 0 ), "mesh dimension (0: all dimensions, 1,2 or 3)" )
+    ( "order", po::value<int>()->default_value( 0 ), "approximation order (0: all orders, 1,2,3,4 or 5)" )
+    ( "shape", Feel::po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (either simplex, hypercube or ellipsoid)" )
+    ( "alpha", Feel::po::value<double>()->default_value( 3 ), "Regularity coefficient for function f" )
+    ;
     return myintegralsoptions.add( Feel::feel_options() );
 }
 inline
@@ -64,9 +64,9 @@ makeAbout()
                      "0.3",
                      "nD(n=1,2,3) MyFunctionSpace on simplices or simplex products",
                      Feel::AboutData::License_GPL,
-                     "Copyright (c) 2008-2010 Universite Joseph Fourier");
+                     "Copyright (c) 2008-2010 Universite Joseph Fourier" );
 
-    about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
     return about;
 
 }
@@ -80,7 +80,7 @@ makeAbout()
 template<int Dim, int Order = 2>
 class MyFunctionSpace
     :
-    public Simget
+public Simget
 {
     typedef Simget super;
 public:
@@ -92,10 +92,10 @@ public:
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
     //! function space that holds piecewise constant (\f$P_0\f$) functions (e.g. to store material properties or partitioning
-	//# marker1 #
+    //# marker1 #
     typedef FunctionSpace<mesh_type,bases<Lagrange<0,Scalar,Discontinuous> > >
     p0_space_type;
-	//# endmarker1 #
+    //# endmarker1 #
 
     //! an element type of the \f$P_0\f$ discontinuous function space
     typedef typename p0_space_type::element_type p0_element_type;
@@ -146,17 +146,23 @@ void
 MyFunctionSpace<Dim,Order>::run()
 {
     if ( dim && dim != Dim ) return;
+
     if ( order && order != Order ) return;
+
     std::cout << "------------------------------------------------------------\n";
     std::cout << "Execute MyFunctionSpace<" << Dim << ">\n";
     std::vector<double> X( 2 );
     X[0] = meshSize;
+
     if ( shape == "hypercube" )
         X[1] = 1;
+
     else if ( shape == "ellipsoid" )
         X[1] = 2;
+
     else // default is simplex
         X[1] = 0;
+
     std::vector<double> Y( 3 );
     run( X.data(), X.size(), Y.data(), Y.size() );
 }
@@ -167,7 +173,9 @@ MyFunctionSpace<Dim, Order>::run( const double* X, unsigned long P, double* Y, u
     using namespace Feel::vf;
 
     if ( X[1] == 0 ) shape = "simplex";
+
     if ( X[1] == 1 ) shape = "hypercube";
+
     if ( X[1] == 2 ) shape = "ellipsoid";
 
     Environment::changeRepository( boost::format( "doc/tutorial/%1%/%2%/h_%3%/" )
@@ -179,15 +187,15 @@ MyFunctionSpace<Dim, Order>::run( const double* X, unsigned long P, double* Y, u
     //# marker31 #
     //! create the mesh
     mesh_ptrtype mesh =
-		createGMSHMesh( _mesh=new mesh_type,
-						//_update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
+        createGMSHMesh( _mesh=new mesh_type,
+                        //_update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
                         _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES,
-                        _desc=domain( _name= (boost::format( "%1%-%2%-%3%" ) % shape % Dim % Order).str() ,
+                        _desc=domain( _name= ( boost::format( "%1%-%2%-%3%" ) % shape % Dim % Order ).str() ,
                                       _shape=shape,
                                       _dim=Dim,
                                       _order=Order,
                                       _h=X[0] ),
-                        _partitions=this->comm().size());
+                        _partitions=this->comm().size() );
 
     //# endmarker31 #
     /**
@@ -197,64 +205,64 @@ MyFunctionSpace<Dim, Order>::run( const double* X, unsigned long P, double* Y, u
     // function space \f$ X_h \f$
     //# marker32 #
     space_ptrtype Xh = space_type::New( mesh );
-	//# endmarker32 #
+    //# endmarker32 #
 
-	//# marker33 #
+    //# marker33 #
     // an element of the function space X_h
     auto u = Xh->element( "u" );
     // another element of the function space X_h
     element_type v( Xh, "v" );
     auto w = Xh->element( "w" );
-	//# endmarker33 #
+    //# endmarker33 #
     /** \endcode */
 
     value_type alpha = this->vm()["alpha"].template as<double>();
     value_type pi = M_PI;
 
     //# marker4 #
-    auto g = sin(2*pi*Px())*cos(2*pi*Py())*cos(2*pi*Pz());
-    auto f =(1-Px()*Px())*(1-Py()*Py())*(1-Pz()*Pz())*pow(trans(vf::P())*vf::P(),(alpha/2.0));
+    auto g = sin( 2*pi*Px() )*cos( 2*pi*Py() )*cos( 2*pi*Pz() );
+    auto f =( 1-Px()*Px() )*( 1-Py()*Py() )*( 1-Pz()*Pz() )*pow( trans( vf::P() )*vf::P(),( alpha/2.0 ) );
     //# endmarker4 #
 
     //# marker5 #
-    u = vf::project( Xh, elements(mesh), g );
-    v = vf::project( Xh, elements(mesh), f );
-    w = vf::project( Xh, elements(mesh), idv(u)-g );
+    u = vf::project( Xh, elements( mesh ), g );
+    v = vf::project( Xh, elements( mesh ), f );
+    w = vf::project( Xh, elements( mesh ), idv( u )-g );
     //# endmarker5 #
 
     //# marker6 #
-    double L2g2 = integrate( elements(mesh), g*g ).evaluate()(0,0);
-    double L2uerror2 = integrate( elements(mesh), (idv(u)-g)*(idv(u)-g) ).evaluate()(0,0);
+    double L2g2 = integrate( elements( mesh ), g*g ).evaluate()( 0,0 );
+    double L2uerror2 = integrate( elements( mesh ), ( idv( u )-g )*( idv( u )-g ) ).evaluate()( 0,0 );
     Log() << "||u-g||_0=" << math::sqrt( L2uerror2/L2g2 ) << "\n";
-    double L2f2 = integrate( elements(mesh), f*f ).evaluate()(0,0);
-    double L2verror2 = integrate( elements(mesh), (idv(v)-f)*(idv(v)-f) ).evaluate()(0,0);
+    double L2f2 = integrate( elements( mesh ), f*f ).evaluate()( 0,0 );
+    double L2verror2 = integrate( elements( mesh ), ( idv( v )-f )*( idv( v )-f ) ).evaluate()( 0,0 );
     Log() << "||v-f||_0=" << math::sqrt( L2verror2/L2f2 ) << "\n";
     //# endmarker6 #
 
     //# marker7 #
     // exporting to paraview or gmsh
     std::cout << "exporting\n" << std::endl;
-    exporter = export_ptrtype( export_type::New( this->vm(), (boost::format( "%1%-%2%-%3%-%4%" ) % this->about().appName() % shape % Dim % Order).str() ) );
+    exporter = export_ptrtype( export_type::New( this->vm(), ( boost::format( "%1%-%2%-%3%-%4%" ) % this->about().appName() % shape % Dim % Order ).str() ) );
     std::cout << "exporting mesh \n" << std::endl;
-    exporter->step(0)->setMesh( mesh );
+    exporter->step( 0 )->setMesh( mesh );
     auto P0h = p0_space_type::New( mesh );
     std::cout << "saving pid\n" << std::endl;
-    exporter->step(0)->add( "pid", regionProcess( P0h ) );
+    exporter->step( 0 )->add( "pid", regionProcess( P0h ) );
 #if 1
-    exporter->step(0)->add( "g", u );
-    exporter->step(0)->add( "u-g", w );
-    exporter->step(0)->add( "f", v );
+    exporter->step( 0 )->add( "g", u );
+    exporter->step( 0 )->add( "u-g", w );
+    exporter->step( 0 )->add( "f", v );
 #endif
     exporter->save();
     //# endmarker7 #
 
     // saving and loading function
-    u.save(_path=".");
-    std::cout << "after saving ||u||^2_2=" << integrate( _range=elements(mesh), _expr=idv(u)*idv(u) ).evaluate() << "\n";
+    u.save( _path="." );
+    std::cout << "after saving ||u||^2_2=" << integrate( _range=elements( mesh ), _expr=idv( u )*idv( u ) ).evaluate() << "\n";
     u.zero();
-    std::cout << "after zeroing out ||u||^2_2=" << integrate( _range=elements(mesh), _expr=idv(u)*idv(u) ).evaluate() << "\n";
-    u.load(_path=".");
-    std::cout << "after loading ||u||^2_2=" << integrate( _range=elements(mesh), _expr=idv(u)*idv(u) ).evaluate() << "\n";
+    std::cout << "after zeroing out ||u||^2_2=" << integrate( _range=elements( mesh ), _expr=idv( u )*idv( u ) ).evaluate() << "\n";
+    u.load( _path="." );
+    std::cout << "after loading ||u||^2_2=" << integrate( _range=elements( mesh ), _expr=idv( u )*idv( u ) ).evaluate() << "\n";
 } // MyFunctionSpace::run
 
 int
@@ -262,7 +270,7 @@ main( int argc, char** argv )
 {
     Feel::Environment env( argc, argv );
 
-    Feel::Assert::setLog( "myfunctionspace.assert");
+    Feel::Assert::setLog( "myfunctionspace.assert" );
     Application app( argc, argv, makeAbout(), makeOptions() );
 
     if ( app.vm().count( "help" ) )
@@ -287,7 +295,7 @@ main( int argc, char** argv )
 #else
     app.add( new MyFunctionSpace<2,3>( app.vm(), app.about() ) );
     //app.add( new MyFunctionSpace<3,3>( app.vm(), app.about() ) );
-// need to be debugged
+    // need to be debugged
 #if 0
 
     app.add( new MyFunctionSpace<3,2>( app.vm(), app.about() ) );

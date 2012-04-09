@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -81,12 +81,12 @@ public:
     RegionTree()
         :
         _M_root( 0 )
-        {}
+    {}
 
     ~RegionTree()
-        {
-            destroy();
-        }
+    {
+        destroy();
+    }
 
     //@}
 
@@ -101,7 +101,10 @@ public:
      */
     //@{
 
-    size_type nbBoxes() const { return _M_boxes.size(); }
+    size_type nbBoxes() const
+    {
+        return _M_boxes.size();
+    }
 
 
     //@}
@@ -123,23 +126,27 @@ public:
      * \param max max coordinates for bounding box
      * \param id id of the element stored in the bounding box
      */
-    void addBox( node_type min, node_type max, size_type id=size_type(-1) );
+    void addBox( node_type min, node_type max, size_type id=size_type( -1 ) );
 
     /**
        clear the tree
     */
-    void clear() { destroy(); _M_boxes.clear(); }
+    void clear()
+    {
+        destroy();
+        _M_boxes.clear();
+    }
 
 
-    void findIntersectingBoxes(const node_type& bmin, const node_type& bmax, pbox_set_type& boxlst);
-    void findContainingBoxes(const node_type& bmin, const node_type& bmax, pbox_set_type& boxlst);
-    void findContainedBoxes(const node_type& bmin, const node_type& bmax, pbox_set_type& boxlst);
-    void findBoxesAtPoint(const node_type& P, pbox_set_type& boxlst);
+    void findIntersectingBoxes( const node_type& bmin, const node_type& bmax, pbox_set_type& boxlst );
+    void findContainingBoxes( const node_type& bmin, const node_type& bmax, pbox_set_type& boxlst );
+    void findContainedBoxes( const node_type& bmin, const node_type& bmax, pbox_set_type& boxlst );
+    void findBoxesAtPoint( const node_type& P, pbox_set_type& boxlst );
 
-    void findIntersectingBoxes(const node_type& bmin, const node_type& bmax, std::vector<size_type>& idvec);
-    void findContainingBoxes(const node_type& bmin, const node_type& bmax, std::vector<size_type>& idvec);
-    void findContainedBoxes(const node_type& bmin, const node_type& bmax, std::vector<size_type>& idvec);
-    void findBoxesAtPoint(const node_type& P, std::vector<size_type>& idvec);
+    void findIntersectingBoxes( const node_type& bmin, const node_type& bmax, std::vector<size_type>& idvec );
+    void findContainingBoxes( const node_type& bmin, const node_type& bmax, std::vector<size_type>& idvec );
+    void findContainedBoxes( const node_type& bmin, const node_type& bmax, std::vector<size_type>& idvec );
+    void findBoxesAtPoint( const node_type& P, std::vector<size_type>& idvec );
     void dump();
 
     //@}
@@ -153,13 +160,13 @@ private:
 
 
 
-    void operator=(const RegionTree&) {} /* non-copiable */
-    RegionTree(const RegionTree&) {} /*non-copiable */
+    void operator=( const RegionTree& ) {} /* non-copiable */
+    RegionTree( const RegionTree& ) {} /*non-copiable */
 
     void build();
     void destroy();
 
-    static void toIdVector(pbox_set_type const& bs, std::vector<size_type>& idvec);
+    static void toIdVector( pbox_set_type const& bs, std::vector<size_type>& idvec );
 
     element_base* _M_root;
 

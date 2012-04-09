@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -52,30 +52,36 @@ public:
     typedef OpDot<LeftExprType, RightExprType> this_type;
     typedef this_type self_type;
     typedef typename mpl::if_<mpl::greater<mpl::sizeof_<typename left_expression_type::value_type>,
-                                           mpl::sizeof_<typename right_expression_type::value_type> >,
-                              mpl::identity<typename left_expression_type::value_type>,
-                              mpl::identity<typename right_expression_type::value_type> >::type::type value_type;
+            mpl::sizeof_<typename right_expression_type::value_type> >,
+            mpl::identity<typename left_expression_type::value_type>,
+            mpl::identity<typename right_expression_type::value_type> >::type::type value_type;
 
     OpDot ( left_expression_type const& left,
             right_expression_type const& right )
         :
         _M_left ( left ),
         _M_right ( right )
-        {
-            Debug( 5051 ) << "[" BOOST_PP_STRINGIZE(OpDot) "] default constructor\n";
+    {
+        Debug( 5051 ) << "[" BOOST_PP_STRINGIZE( OpDot ) "] default constructor\n";
 
-        }
+    }
     OpDot( OpDot const& op )
         :
         _M_left ( op._M_left ),
         _M_right ( op._M_right )
-        {
-            Debug( 5051 ) << "[" BOOST_PP_STRINGIZE(OpDot) "] copy constructor\n";
+    {
+        Debug( 5051 ) << "[" BOOST_PP_STRINGIZE( OpDot ) "] copy constructor\n";
 
-        }
+    }
 
-    left_expression_type const& left() const { return _M_left; }
-    right_expression_type const& right() const { return _M_right; }
+    left_expression_type const& left() const
+    {
+        return _M_left;
+    }
+    right_expression_type const& right() const
+    {
+        return _M_right;
+    }
 
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t>
     struct tensor
@@ -84,7 +90,7 @@ public:
         typedef typename LeftExprType::template tensor<Geo_t, Basis_i_t, Basis_j_t> l_type;
         typedef typename RightExprType::template tensor<Geo_t, Basis_i_t, Basis_j_t> r_type;
         typedef typename strongest_numeric_type<typename l_type::value_type,
-                                                typename r_type::value_type>::type value_type;
+                typename r_type::value_type>::type value_type;
         BOOST_STATIC_ASSERT( ( boost::is_same<typename l_type::return_value_type,
                                typename r_type::return_value_type>::value ) );
 
@@ -146,15 +152,17 @@ public:
 
             // fail for g++ 4.2
 #if 0
-            BOOST_MPL_ASSERT_MSG( rank == uint16_type::rank+1, INVALID_INDEX_RANK, (mpl::int_<uint16_type::rank>, mpl::int_<rank>) );
-            BOOST_MPL_ASSERT_MSG( rank == uint16_type::rank+1, INVALID_INDEX_RANK, (mpl::int_<uint16_type::rank>, mpl::int_<rank>) );
+            BOOST_MPL_ASSERT_MSG( rank == uint16_type::rank+1, INVALID_INDEX_RANK, ( mpl::int_<uint16_type::rank>, mpl::int_<rank> ) );
+            BOOST_MPL_ASSERT_MSG( rank == uint16_type::rank+1, INVALID_INDEX_RANK, ( mpl::int_<uint16_type::rank>, mpl::int_<rank> ) );
 #endif
-            for( int c = 0; c < return_value_type::nComponentsLast; ++c )
-                {
-                    i_up.setIndex( rank-1, c );
-                    j_up.setIndex( rank-1, c );
-                    res += _M_left( i_up, j_up, q ) * _M_right( i_up, j_up, q );
-                }
+
+            for ( int c = 0; c < return_value_type::nComponentsLast; ++c )
+            {
+                i_up.setIndex( rank-1, c );
+                j_up.setIndex( rank-1, c );
+                res += _M_left( i_up, j_up, q ) * _M_right( i_up, j_up, q );
+            }
+
             return res;
         }
 
@@ -185,7 +193,7 @@ inline Expr< OpDot< LeftExprType, RightExprType> >
 dot( LeftExprType const& left, RightExprType const& right  )
 {
     typedef OpDot<LeftExprType, RightExprType> expr_t;
-    return Expr< expr_t >(  expr_t(left, right) );
+    return Expr< expr_t >(  expr_t( left, right ) );
 }
 // template <class LeftExprType, typename RightExprType>
 // inline Expr< OpDot< LeftExprType, RightExprType> >

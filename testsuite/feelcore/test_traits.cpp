@@ -40,12 +40,12 @@ using boost::unit_test::test_suite;
 template<typename value_type>
 void check( value_type x )
 {
-  BOOST_CHECK( Feel::math::abs( x ) < Feel::type_traits<value_type>::epsilon() );
+    BOOST_CHECK( Feel::math::abs( x ) < Feel::type_traits<value_type>::epsilon() );
 }
 
 BOOST_AUTO_TEST_CASE( test_functions )
 {
-  using namespace Feel;
+    using namespace Feel;
 
 # define FEELPP_CHECK_UNARY_FUNCS_OP_STD(_,TF) \
   FEELPP_CHECK_UNARY_FUNCS_OP_CODE_STD TF      \
@@ -55,7 +55,7 @@ BOOST_AUTO_TEST_CASE( test_functions )
   check( Feel::math::FEELPP_FUNC_NAME( F )( FEELPP_TRAITS_TYPE( T )( 1.0 ) ) - std::FEELPP_FUNC_NONS( F )( FEELPP_TRAITS_TYPE( T )( 1.0 ) ) ); \
   /**/
 #
-BOOST_PP_LIST_FOR_EACH_PRODUCT( FEELPP_CHECK_UNARY_FUNCS_OP_STD, 2, (BOOST_PP_LIST_FILTER(FEELPP_PRED_FUNC, 0, FEELPP_TRAITS_TYPES ), FEELPP_STD_FUNCS) );
+    BOOST_PP_LIST_FOR_EACH_PRODUCT( FEELPP_CHECK_UNARY_FUNCS_OP_STD, 2, ( BOOST_PP_LIST_FILTER( FEELPP_PRED_FUNC, 0, FEELPP_TRAITS_TYPES ), FEELPP_STD_FUNCS ) );
 
 # define FEELPP_CHECK_UNARY_FUNCS_OP_GLOBAL(_,TF) \
   FEELPP_CHECK_UNARY_FUNCS_OP_CODE_GLOBAL TF      \
@@ -65,7 +65,7 @@ BOOST_PP_LIST_FOR_EACH_PRODUCT( FEELPP_CHECK_UNARY_FUNCS_OP_STD, 2, (BOOST_PP_LI
   check( Feel::math::FEELPP_FUNC_NAME( F )( FEELPP_TRAITS_TYPE( T )( 1.0 ) ) - ::FEELPP_FUNC_NONS( F )( FEELPP_TRAITS_TYPE( T )( 1.0 ) ) ); \
   /**/
 #
-BOOST_PP_LIST_FOR_EACH_PRODUCT( FEELPP_CHECK_UNARY_FUNCS_OP_GLOBAL, 2, (BOOST_PP_LIST_FILTER(FEELPP_PRED_FUNC, 1, FEELPP_TRAITS_TYPES ), FEELPP_GLOBAL_FUNCS) );
+    BOOST_PP_LIST_FOR_EACH_PRODUCT( FEELPP_CHECK_UNARY_FUNCS_OP_GLOBAL, 2, ( BOOST_PP_LIST_FILTER( FEELPP_PRED_FUNC, 1, FEELPP_TRAITS_TYPES ), FEELPP_GLOBAL_FUNCS ) );
 }
 
 BOOST_AUTO_TEST_CASE( test_promote )
@@ -91,10 +91,10 @@ BOOST_AUTO_TEST_CASE( test_promote )
     // multiples types: not working properly yet
     //BOOST_MPL_ASSERT(( boost::is_same< strongest_numeric_type<float,double,long double, std::complex<double> >::type, std::complex<long double> > ));
 
-    BOOST_MPL_ASSERT(( boost::is_same< strongest_numeric_type<double, std::complex<double> >::type, std::complex<double> > ));
-    BOOST_MPL_ASSERT(( boost::is_same< strongest_numeric_type<std::complex<float>, double  >::type, std::complex<double> > ));
+    BOOST_MPL_ASSERT( ( boost::is_same< strongest_numeric_type<double, std::complex<double> >::type, std::complex<double> > ) );
+    BOOST_MPL_ASSERT( ( boost::is_same< strongest_numeric_type<std::complex<float>, double  >::type, std::complex<double> > ) );
 
-    BOOST_MPL_ASSERT(( boost::is_same< strongest_numeric_type<std::complex<float>, std::complex<double>  >::type, std::complex<double> > ));
+    BOOST_MPL_ASSERT( ( boost::is_same< strongest_numeric_type<std::complex<float>, std::complex<double>  >::type, std::complex<double> > ) );
 
 
 
@@ -107,7 +107,7 @@ BOOST_AUTO_TEST_CASE( test_promote )
     BOOST_CHECK( ( !boost::is_same<strongest_numeric_type<qd_real, dd_real>::type, dd_real>::type::value ) );
 
     // multiples types
-    BOOST_MPL_ASSERT(( boost::is_same< strongest_numeric_type<float,double,dd_real, qd_real>::type, qd_real> ));
+    BOOST_MPL_ASSERT( ( boost::is_same< strongest_numeric_type<float,double,dd_real, qd_real>::type, qd_real> ) );
 #endif
 }
 

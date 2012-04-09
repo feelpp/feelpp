@@ -33,13 +33,14 @@ namespace Feel
 po::options_description pfemapp_options( std::string const& prefix )
 {
     std::string _prefix = prefix;
+
     if ( !_prefix.empty() )
         _prefix += "-";
 
-    po::options_description _options( "PfemApp " + prefix + " options");
+    po::options_description _options( "PfemApp " + prefix + " options" );
     _options.add_options()
-        ((_prefix+"mu-type").c_str(), Feel::po::value<int>()->default_value( 0 ), "type of parameter (0=random, 1=min, 2=middle, >=3 max)")
-        ;
+    ( ( _prefix+"mu-type" ).c_str(), Feel::po::value<int>()->default_value( 0 ), "type of parameter (0=random, 1=min, 2=middle, >=3 max)" )
+    ;
 
     return _options;
 }

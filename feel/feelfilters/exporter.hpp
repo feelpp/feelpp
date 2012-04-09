@@ -43,10 +43,10 @@ namespace Feel
  * \enum
  */
 enum file_type
-    {
-        ASCII  = 0,
-        BINARY = 1
-    };
+{
+    ASCII  = 0,
+    BINARY = 1
+};
 
 /**
  * \class Exporter
@@ -74,8 +74,8 @@ enum file_type
 template<typename MeshType, int N = 1>
 class Exporter
     :
-        public VisitorBase,
-        public Visitor<MeshType>
+public VisitorBase,
+public Visitor<MeshType>
 {
 public:
 
@@ -168,38 +168,59 @@ public:
     /**
      * \return true if doing the export, false otherwise
      */
-    bool doExport() const { return M_do_export; }
+    bool doExport() const
+    {
+        return M_do_export;
+    }
 
     /**
      * \return the type of exporter
      */
-    std::string const& type() const { return M_type; }
+    std::string const& type() const
+    {
+        return M_type;
+    }
 
     /**
      * \return the prefix of the exported file names
      */
-    std::string const& prefix() const { return M_prefix; }
+    std::string const& prefix() const
+    {
+        return M_prefix;
+    }
 
     /**
      * \return the frequency at which the results are saved
      */
-    int freq() const { return M_freq; }
+    int freq() const
+    {
+        return M_freq;
+    }
 
 
     /**
      * \return the frequency at which the results are saved
      */
-    int cptOfSave() const { return M_cptOfSave; }
+    int cptOfSave() const
+    {
+        return M_cptOfSave;
+    }
 
     /**
      * \return the file type format (ASCII or BINARY)
      */
-    file_type fileType() const { return M_ft; }
+    file_type fileType() const
+    {
+        return M_ft;
+    }
 
     /**
      * \return the path to the saved files
      */
-    std::string path() const { return M_path; }
+    std::string path() const
+    {
+        return M_path;
+    }
 
     //@}
 
@@ -210,7 +231,10 @@ public:
     /**
      * set the doExport to \p do_export
      */
-    void setDoExport( bool do_export ) {  M_do_export = do_export; }
+    void setDoExport( bool do_export )
+    {
+        M_do_export = do_export;
+    }
 
     /**
      * set the options from the \p variables_map \p vm as well as the prefix \p
@@ -260,20 +284,39 @@ public:
         return this;
     }
 
-    timeset_iterator beginTimeSet() { return M_ts_set.begin(); }
-    timeset_iterator endTimeSet() { return M_ts_set.end(); }
+    timeset_iterator beginTimeSet()
+    {
+        return M_ts_set.begin();
+    }
+    timeset_iterator endTimeSet()
+    {
+        return M_ts_set.end();
+    }
 
-    timeset_const_iterator beginTimeSet() const { return M_ts_set.begin(); }
-    timeset_const_iterator endTimeSet() const { return M_ts_set.end(); }
+    timeset_const_iterator beginTimeSet() const
+    {
+        return M_ts_set.begin();
+    }
+    timeset_const_iterator endTimeSet() const
+    {
+        return M_ts_set.end();
+    }
 
 
-    timeset_ptrtype defaultTimeSet() { return M_ts_set.front(); }
-    timeset_ptrtype timeSet( int ts ) { return M_ts_set[ts]; }
+    timeset_ptrtype defaultTimeSet()
+    {
+        return M_ts_set.front();
+    }
+    timeset_ptrtype timeSet( int ts )
+    {
+        return M_ts_set[ts];
+    }
 
     step_ptrtype step( double time )
     {
         if ( this->cptOfSave() % this->freq()  )
             return M_ts_set.back()->step( time, true );
+
         else
             return M_ts_set.back()->step( time, false );
     }
@@ -281,6 +324,7 @@ public:
     {
         if ( M_cptOfSave % this->freq()  )
             return M_ts_set[s]->step( time, true );
+
         else
             return M_ts_set[s]->step( time, false );
     }
@@ -314,31 +358,37 @@ public:
     {
         auto __ts_it = this->beginTimeSet();
         auto __ts_en = this->endTimeSet();
-        for( ; __ts_it != __ts_en ; ++__ts_it )
-            {
-                auto filename = this->path()+"/"+prefix()+".timeset";
-                (*__ts_it)->save(filename);
-            }
+
+        for ( ; __ts_it != __ts_en ; ++__ts_it )
+        {
+            auto filename = this->path()+"/"+prefix()+".timeset";
+            ( *__ts_it )->save( filename );
+        }
+
         ++M_cptOfSave;
     }
 
     /**
      * reload from file set of time which are been exported
      */
-    void restart(double __time)
+    void restart( double __time )
     {
         auto __ts_it = this->beginTimeSet();
         auto __ts_en = this->endTimeSet();
-        for( ; __ts_it != __ts_en ; ++__ts_it )
-            {
-                auto filename = this->path()+"/"+prefix()+".timeset";
-                (*__ts_it)->load(filename,__time);
 
-                M_cptOfSave = (*__ts_it)->numberOfTotalSteps()+1;
-            }
+        for ( ; __ts_it != __ts_en ; ++__ts_it )
+        {
+            auto filename = this->path()+"/"+prefix()+".timeset";
+            ( *__ts_it )->load( filename,__time );
+
+            M_cptOfSave = ( *__ts_it )->numberOfTotalSteps()+1;
+        }
     }
 
-    WorldComm const& worldComm() const { return M_worldComm; }
+    WorldComm const& worldComm() const
+    {
+        return M_worldComm;
+    }
 
 
     //@}

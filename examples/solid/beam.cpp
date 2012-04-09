@@ -49,17 +49,17 @@ inline
 Feel::po::options_description
 makeOptions()
 {
-    Feel::po::options_description beamoptions("Beam options");
+    Feel::po::options_description beamoptions( "Beam options" );
     beamoptions.add_options()
-        ("hsize", Feel::po::value<double>()->default_value( 0.01 ), "first h value to start convergence")
-        ("beta", Feel::po::value<double>()->default_value( 1.0 ), "beta value in -Delta u + beta u = f")
-        ("bccoeff", Feel::po::value<double>()->default_value( 100.0 ), "coeff for weak Dirichlet conditions")
-        ("bctype", Feel::po::value<int>()->default_value( 1 ), "Dirichlet condition type(0=elimination,1=penalisation, 2=weak")
-        ("scale", Feel::po::value<double>()->default_value( 10 ), "scale factor for mesh mover")
-        ("export", "export results(ensight, data file(1D)")
-        ("export-matlab", "export matrix and vectors in matlab" )
+    ( "hsize", Feel::po::value<double>()->default_value( 0.01 ), "first h value to start convergence" )
+    ( "beta", Feel::po::value<double>()->default_value( 1.0 ), "beta value in -Delta u + beta u = f" )
+    ( "bccoeff", Feel::po::value<double>()->default_value( 100.0 ), "coeff for weak Dirichlet conditions" )
+    ( "bctype", Feel::po::value<int>()->default_value( 1 ), "Dirichlet condition type(0=elimination,1=penalisation, 2=weak" )
+    ( "scale", Feel::po::value<double>()->default_value( 10 ), "scale factor for mesh mover" )
+    ( "export", "export results(ensight, data file(1D)" )
+    ( "export-matlab", "export matrix and vectors in matlab" )
 
-        ;
+    ;
     return beamoptions.add( Feel::feel_options() );
 }
 inline
@@ -71,9 +71,9 @@ makeAbout()
                            "0.2",
                            "Linear elasticity model for a beam",
                            Feel::AboutData::License_GPL,
-                           "Copyright (c) 2007-2012 Universite Joseph Fourier");
+                           "Copyright (c) 2007-2012 Universite Joseph Fourier" );
 
-    about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
     return about;
 
 }
@@ -84,7 +84,7 @@ namespace Feel
 template<int nDim, int nOrder>
 class Beam
     :
-    public Application
+public Application
 {
     typedef Application super;
 public:
@@ -136,7 +136,7 @@ public:
         Log() << "[Beam] beta = " << beta << "\n";
         Log() << "[Beam] bccoeff = " << bcCoeff << "\n";
         Log() << "[Beam] bctype = " <<  M_bctype << "\n";
-        Log() << "[Beam] export = " << this->vm().count("export") << "\n";
+        Log() << "[Beam] export = " << this->vm().count( "export" ) << "\n";
 
     }
 
@@ -144,10 +144,11 @@ public:
     {
         std::map<std::string,std::pair<boost::timer,double> >::iterator it = timers.begin();
         std::map<std::string,std::pair<boost::timer,double> >::iterator en = timers.end();
-        for( ; it != en; ++it )
-            {
-                Log() << it->first << " : " << it->second.second << " s elapsed\n";
-            }
+
+        for ( ; it != en; ++it )
+        {
+            Log() << it->first << " : " << it->second.second << " s elapsed\n";
+        }
     }
 
     /**
@@ -181,28 +182,29 @@ void
 Beam<nDim,nOrder>::run()
 {
     if ( this->vm().count( "help" ) )
-        {
-            std::cout << this->optionsDescription() << "\n";
-            return;
-        }
+    {
+        std::cout << this->optionsDescription() << "\n";
+        return;
+    }
+
     this->changeRepository( boost::format( "%1%/%2%/P%3%/%4%/" )
-                           % this->about().appName()
-                           % entity_type::name()
-                           % nOrder
-                           % this->vm()["hsize"].template as<double>()
-                           );
+                            % this->about().appName()
+                            % entity_type::name()
+                            % nOrder
+                            % this->vm()["hsize"].template as<double>()
+                          );
     using namespace Feel::vf;
 
     /*
      * First we create the mesh
      */
     mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
-                                        _desc=domain( _name=(boost::format( "beam-%1%" ) % nDim).str() ,
-                                                      _shape="hypercube",
-                                                      _usenames=true,
-                                                      _xmin=0., _xmax=0.351,
-                                                      _ymin=0., _ymax=0.02,
-                                                      _h=meshSize ),
+                                        _desc=domain( _name=( boost::format( "beam-%1%" ) % nDim ).str() ,
+                                                _shape="hypercube",
+                                                _usenames=true,
+                                                _xmin=0., _xmax=0.351,
+                                                _ymin=0., _ymax=0.02,
+                                                _h=meshSize ),
                                         _update=MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK,
                                         _partitions=this->comm().size()  );
     /*
@@ -226,13 +228,13 @@ Beam<nDim,nOrder>::run()
     const double E = 1.4e6;
     const double sigma = 0.4;
 #endif
-    const double mu = E/(2*(1+sigma));
-    const double lambda = E*sigma/((1+sigma)*(1-2*sigma));
+    const double mu = E/( 2*( 1+sigma ) );
+    const double lambda = E*sigma/( ( 1+sigma )*( 1-2*sigma ) );
     const double density = 1e3;
     const double gravity = -2;//-density*0.05;
     Log() << "lambda = " << lambda << "\n"
-              << "mu     = " << mu << "\n"
-              << "gravity= " << gravity << "\n";
+          << "mu     = " << mu << "\n"
+          << "gravity= " << gravity << "\n";
 
     /*
      * Construction of the right hand side
@@ -243,13 +245,16 @@ Beam<nDim,nOrder>::run()
     vector_ptrtype F( M_backend->newVector( Xh ) );
     F->zero();
     timers["assembly"].first.restart();
+
     if ( this->vm().count( "export-matlab" ) )
         F->printMatlab( "F0.m" );
 
-    form1( Xh, F, _init=true ) =   integrate( elements(mesh), trans(gravity*oneY())*id(v) );
+    form1( Xh, F, _init=true ) =   integrate( elements( mesh ), trans( gravity*oneY() )*id( v ) );
     F->close();
+
     if ( this->vm().count( "export-matlab" ) )
         F->printMatlab( "F1.m" );
+
     timers["assembly"].second = timers["assembly"].first.elapsed();
 
     /*
@@ -257,37 +262,39 @@ Beam<nDim,nOrder>::run()
      */
     sparse_matrix_ptrtype D( M_backend->newMatrix( Xh, Xh ) );
     timers["assembly"].first.restart();
-    auto deft = 0.5*( gradt(u)+trans(gradt(u)) );
-    auto def = 0.5*( grad(v)+trans(grad(v)) );
+    auto deft = 0.5*( gradt( u )+trans( gradt( u ) ) );
+    auto def = 0.5*( grad( v )+trans( grad( v ) ) );
     form2( Xh, Xh, D, _init=true ) =
-        integrate( elements(mesh),
-                   lambda*divt(u)*div(v)  +
-                   2*mu*trace(trans(deft)*def) );
+        integrate( elements( mesh ),
+                   lambda*divt( u )*div( v )  +
+                   2*mu*trace( trans( deft )*def ) );
+
     if ( M_bctype == 1 ) // weak Dirichlet bc
-        {
-            auto Id = (mat<nDim,nDim>( cst(1), cst(0), cst(0), cst(1.) ));
-            form2( Xh, Xh, D ) +=
-                integrate( markedfaces(mesh,1),
-                           - trans((2*mu*deft+lambda*trace(deft)*Id )*N())*id(v)
-                           - trans((2*mu*def+lambda*trace(def)*Id )*N())*idt(u)
-                           + bcCoeff*trans(idt(u))*id(v)/hFace() );
-        }
+    {
+        auto Id = ( mat<nDim,nDim>( cst( 1 ), cst( 0 ), cst( 0 ), cst( 1. ) ) );
+        form2( Xh, Xh, D ) +=
+            integrate( markedfaces( mesh,1 ),
+                       - trans( ( 2*mu*deft+lambda*trace( deft )*Id )*N() )*id( v )
+                       - trans( ( 2*mu*def+lambda*trace( def )*Id )*N() )*idt( u )
+                       + bcCoeff*trans( idt( u ) )*id( v )/hFace() );
+    }
 
     if ( M_bctype == 0 )
-        form2( Xh, Xh, D ) += on( markedfaces(mesh,(nDim==2)?1:23), u, F, constant(0)*one() );
+        form2( Xh, Xh, D ) += on( markedfaces( mesh,( nDim==2 )?1:23 ), u, F, constant( 0 )*one() );
 
     if ( this->vm().count( "export-matlab" ) )
-        {
-            F->printMatlab( "F2.m" );
-            D->printMatlab( "elas.m" );
-        }
+    {
+        F->printMatlab( "F2.m" );
+        D->printMatlab( "elas.m" );
+    }
+
     timers["assembly"].second += timers["assembly"].first.elapsed();
 
     M_backend->solve( _matrix=D, _solution=u, _rhs=F );
 
-    auto i1 = integrate( markedfaces(mesh,3), idv(u) ).evaluate();
+    auto i1 = integrate( markedfaces( mesh,3 ), idv( u ) ).evaluate();
     std::cout << "deflection: " << i1/0.02 << "\n";
-    v = vf::project( Xh, elements(Xh->mesh()), P() );
+    v = vf::project( Xh, elements( Xh->mesh() ), P() );
 
     this->exportResults( 0, u, v );
 #if 0
@@ -297,10 +304,10 @@ Beam<nDim,nOrder>::run()
 
     element_type w( Xh, "w" );
 
-    for(int i = 1; i < 5; ++i )
+    for ( int i = 1; i < 5; ++i )
     {
         w = vf::project( Xh,
-                         elements(Xh->mesh()),
+                         elements( Xh->mesh() ),
                          P() );
         this->exportResults( i, u, w );
         meshmove.apply( Xh->mesh(), u );
@@ -326,9 +333,9 @@ Beam<nDim,nOrder>::exportResults( double time, element_type const& u, element_ty
 {
     timers["export"].first.restart();
 
-    exporter->step(time)->setMesh( u.functionSpace()->mesh() );
-    exporter->step(time)->add( "displ", u );
-    exporter->step(time)->add( "P", v );
+    exporter->step( time )->setMesh( u.functionSpace()->mesh() );
+    exporter->step( time )->add( "displ", u );
+    exporter->step( time )->add( "P", v );
     exporter->save();
     timers["export"].second = timers["export"].first.elapsed();
 } // Beam::export
@@ -341,7 +348,7 @@ main( int argc, char** argv )
     const int nDim = 2;
     const int nOrder = 3;
 
-    Feel::Beam<nDim,nOrder> beam( argc, argv, makeAbout(), makeOptions());
+    Feel::Beam<nDim,nOrder> beam( argc, argv, makeAbout(), makeOptions() );
     beam.run();
 }
 

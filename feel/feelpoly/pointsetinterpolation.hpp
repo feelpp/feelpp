@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -73,8 +73,8 @@ public:
     static const uint32_type topological_dimension = convex_type::topological_dimension;
 
     typedef mpl::if_< mpl::bool_< is_simplex >,
-                      Simplex<Dim, Order, Dim> ,
-                      Hypercube<Dim, Order, Dim> > conv_order_type;
+            Simplex<Dim, Order, Dim> ,
+            Hypercube<Dim, Order, Dim> > conv_order_type;
 
     typedef Reference<convex_type, Dim, convexOrder, Dim, value_type> RefElem;
 
@@ -126,47 +126,58 @@ public:
         FEELPP_ASSERT( _M_eid[e].size() )( e ).error( "no points defined on this entity" );
 
         return ublas::project( this->points(),
-                               ublas::range(0,Dim),
+                               ublas::range( 0,Dim ),
                                ublas::range( *_M_eid[e].begin(), *_M_eid[e].rbegin() + 1 ) );
     }
 
-    range_type interiorRangeById( uint16_type e, uint16_type id) const
+    range_type interiorRangeById( uint16_type e, uint16_type id ) const
     {
         uint16_type numEntities = 1;
 
         if ( e == 0 )
             numEntities = convex_type::numVertices;
+
         else if ( e == 1 )
             numEntities = convex_type::numEdges;
+
         else if ( e == 2 )
             numEntities = convex_type::numFaces;
 
         uint16_type N = _M_eid[e].size()/numEntities;
 
-        return std::make_pair(*_M_eid[e].begin() + id*N, *_M_eid[e].begin() + (id+1)*N );
+        return std::make_pair( *_M_eid[e].begin() + id*N, *_M_eid[e].begin() + ( id+1 )*N );
     }
 
-    ublas::matrix_range<nodes_type const> interiorPointsById( uint16_type e, uint16_type id) const
+    ublas::matrix_range<nodes_type const> interiorPointsById( uint16_type e, uint16_type id ) const
     {
-        range_type position = interiorRangeById(e, id);
+        range_type position = interiorRangeById( e, id );
 
         ublas::matrix_range<nodes_type const> G = ublas::project( this->points(),
-                                                                  ublas::range(0, Dim),
-                                                                  ublas::range( position.first, position.second ) );
+                ublas::range( 0, Dim ),
+                ublas::range( position.first, position.second ) );
 
         return G;
     }
 
-    uint32_type entityIds( int i, int j ) const { return _M_eid[i][j]; }
+    uint32_type entityIds( int i, int j ) const
+    {
+        return _M_eid[i][j];
+    }
 
-    uint32_type numEntities( int i ) const { return _M_eid[i].size(); }
+    uint32_type numEntities( int i ) const
+    {
+        return _M_eid[i].size();
+    }
 
-    range_type const& pointToEntity( int p ) const { return _M_pt_to_entity[p]; }
+    range_type const& pointToEntity( int p ) const
+    {
+        return _M_pt_to_entity[p];
+    }
 
     //Returns the local indices of all the subentities that compose the entity
     index_map_type entityToLocal ( uint16_type top_dim, uint16_type local_id, bool boundary = 0 )
     {
-        index_map_type indices(top_dim+1);
+        index_map_type indices( top_dim+1 );
 
         if ( top_dim == 0 && boundary )
         {
@@ -174,59 +185,62 @@ public:
 
             indices[0].push_back( pair.first );
         }
+
         else
         {
             if ( !boundary && top_dim > 0 )
-                {
-                    if ( numEntities( top_dim ) != 0 )
-                        indices[top_dim].push_back(local_id);
-                }
+            {
+                if ( numEntities( top_dim ) != 0 )
+                    indices[top_dim].push_back( local_id );
+            }
+
             else
+            {
+                if ( top_dim > 0 )
                 {
-                    if (top_dim > 0 )
+                    //For the time being, this definition works, but in a more general framework,
+                    //a entity should be created here with the respective top_dim
+                    //in order to retrieve the number of vertices, edges, faces.
+
+                    //number of vertices, number of edges and number of faces in the volume
+                    std::map<uint16_type, uint16_type> numPointsInEntity;
+
+                    numPointsInEntity[0] = ( is_simplex )?( top_dim+1 ):( 2 + ( top_dim-1 )*( 2+3*( top_dim-2 ) ) );
+                    numPointsInEntity[1] = ( 2 + ( top_dim-1 )*( 1+2*is_simplex + ( 5-4*is_simplex )*( top_dim-1 ) ) )/2;
+                    numPointsInEntity[2] = 6-2*is_simplex;
+
+                    for ( uint16_type i=0; i < numPointsInEntity[0] ; i++ )
+                    {
+                        if ( top_dim == 1 )
+                            indices[0].push_back( RefConv.e2p( local_id, i ) );
+
+                        else if ( top_dim == 2 )
+                            indices[0].push_back( RefConv.f2p( local_id, i ) );
+                    }
+
+                    if ( ( top_dim == 2 ) && ( _M_eid[1].size() != 0 ) )
+                    {
+                        for ( uint16_type i=0; i < numPointsInEntity[1] ; i++ )
+                            indices[1].push_back( RefConv.f2e( local_id, i ) );
+                    }
+
+                    if ( top_dim == 3 )
+                    {
+                        for ( uint16_type k=0; k<numPointsInEntity.size(); k++ )
                         {
-                            //For the time being, this definition works, but in a more general framework,
-                            //a entity should be created here with the respective top_dim
-                            //in order to retrieve the number of vertices, edges, faces.
-
-                            //number of vertices, number of edges and number of faces in the volume
-                            std::map<uint16_type, uint16_type> numPointsInEntity;
-
-                            numPointsInEntity[0] = (is_simplex)?(top_dim+1):( 2 + (top_dim-1)*(2+3*(top_dim-2)) );
-                            numPointsInEntity[1] = (2 + (top_dim-1)*(1+2*is_simplex + (5-4*is_simplex)*(top_dim-1)))/2;
-                            numPointsInEntity[2] = 6-2*is_simplex;
-
-                            for ( uint16_type i=0; i < numPointsInEntity[0] ; i++ )
+                            for ( uint16_type i=0; i < numPointsInEntity[k]; i++ )
                             {
-                                if ( top_dim == 1 )
-                                    indices[0].push_back( RefConv.e2p(local_id, i) );
-                                else if ( top_dim == 2 )
-                                    indices[0].push_back( RefConv.f2p(local_id, i) );
-                            }
-
-                            if ( ( top_dim == 2) && (_M_eid[1].size() != 0 ) )
-                            {
-                                for ( uint16_type i=0; i < numPointsInEntity[1] ; i++ )
-                                    indices[1].push_back( RefConv.f2e(local_id, i) );
-                            }
-
-                            if ( top_dim == 3 )
-                            {
-                                for ( uint16_type k=0; k<numPointsInEntity.size(); k++ )
-                                {
-                                    for ( uint16_type i=0; i < numPointsInEntity[k]; i++ )
-                                    {
-                                        indices[k].push_back(i);
-                                    }
-                                }
-                            }
-
-                            if ( _M_eid[top_dim].size() )
-                            {
-                                indices[top_dim].push_back(local_id);
+                                indices[k].push_back( i );
                             }
                         }
+                    }
+
+                    if ( _M_eid[top_dim].size() )
+                    {
+                        indices[top_dim].push_back( local_id );
+                    }
                 }
+            }
         }
 
         return indices;
@@ -239,49 +253,67 @@ public:
 
         uint16_type matrix_size = 0;
 
-        if (index_list[0].size() != 0 )
+        if ( index_list[0].size() != 0 )
             matrix_size +=index_list[0].size()*nbPtsPerVertex;
 
-        if ( (top_dim>=1) && (index_list[1].size() != 0) )
+        if ( ( top_dim>=1 ) && ( index_list[1].size() != 0 ) )
             matrix_size +=index_list[1].size()*nbPtsPerEdge;
 
-        if ( (top_dim >=2) && (index_list[2].size() != 0) )
+        if ( ( top_dim >=2 ) && ( index_list[2].size() != 0 ) )
             matrix_size +=index_list[2].size()*nbPtsPerFace;
 
-        if ( (top_dim ==3) && (index_list[3].size() != 0) )
+        if ( ( top_dim ==3 ) && ( index_list[3].size() != 0 ) )
             matrix_size +=nbPtsPerVolume;
 
-        points_type G (Dim, matrix_size);
+        points_type G ( Dim, matrix_size );
 
         for ( uint16_type i=0, p=0; i < top_dim+1; i++ )
         {
             if ( index_list[i].size() )
+            {
+                for ( uint16_type j=0; j < index_list[i].size(); j++ )
                 {
-                    for ( uint16_type j=0; j < index_list[i].size(); j++ )
-                        {
-                            points_type aux = interiorPointsById(i, index_list[i][j]);
+                    points_type aux = interiorPointsById( i, index_list[i][j] );
 
-                            ublas::subrange( G, 0, Dim, p, p+aux.size2() ) = aux;
+                    ublas::subrange( G, 0, Dim, p, p+aux.size2() ) = aux;
 
-                            p+=aux.size2();
-                        }
+                    p+=aux.size2();
                 }
+            }
         }
 
         return G;
     }
 
-    index_map_type getEid () { return _M_eid; }
+    index_map_type getEid ()
+    {
+        return _M_eid;
+    }
 
-    std::vector<range_type> getPtE() { return _M_pt_to_entity; }
+    std::vector<range_type> getPtE()
+    {
+        return _M_pt_to_entity;
+    }
 
-    void setEid ( index_map_type eid ) { _M_eid = eid; }
+    void setEid ( index_map_type eid )
+    {
+        _M_eid = eid;
+    }
 
-    void setPtE ( std::vector<range_type> pt_ent ) { _M_pt_to_entity = pt_ent; }
+    void setPtE ( std::vector<range_type> pt_ent )
+    {
+        _M_pt_to_entity = pt_ent;
+    }
 
-    void addToEid ( uint16_type p, uint16_type q) { _M_eid[p].push_back(q); }
+    void addToEid ( uint16_type p, uint16_type q )
+    {
+        _M_eid[p].push_back( q );
+    }
 
-    void addToPtE ( uint16_type p, range_type q ) { _M_pt_to_entity[p] = q; }
+    void addToPtE ( uint16_type p, range_type q )
+    {
+        _M_pt_to_entity[p] = q;
+    }
 
     FEELPP_DEFINE_VISITABLE();
 

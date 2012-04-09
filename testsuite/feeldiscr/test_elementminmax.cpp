@@ -71,24 +71,24 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( elementminmax1, T, dim_types )
     // the triangle obtained by halving [0,1]^2,
     // or the tetrahedron obtained in a similar way from the cube [0,1]^3
     mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
-                                        _desc=domain( _name=(boost::format( "elementminmax1-%1%" )  % T::value).str() ,
-                                                      _shape="simplex",
-                                                      _h=2.0 ),
+                                        _desc=domain( _name=( boost::format( "elementminmax1-%1%" )  % T::value ).str() ,
+                                                _shape="simplex",
+                                                _h=2.0 ),
                                         _update=MESH_CHECK|MESH_UPDATE_EDGES|MESH_UPDATE_FACES );
 
     typedef FunctionSpace<mesh_type,bases<Lagrange<1, Scalar> > > space_type;
     typedef boost::shared_ptr<space_type> space_ptrtype;
     space_ptrtype Xh = space_type::New( mesh );
     auto u = Xh->element();
-    u = vf::project( Xh, elements(mesh), vf::sqrt(Px()*Px() + Py()*Py() + Pz()*Pz()) );
+    u = vf::project( Xh, elements( mesh ), vf::sqrt( Px()*Px() + Py()*Py() + Pz()*Pz() ) );
 
     double maximum = u.max();
     double minimum = u.min();
     const double eps = 1000*Feel::type_traits<double>::epsilon();
 
 #if defined(USE_BOOST_TEST)
-    BOOST_CHECK_CLOSE( maximum, 1.0, 2e-1);
-    BOOST_CHECK_SMALL( minimum, 2e-1);
+    BOOST_CHECK_CLOSE( maximum, 1.0, 2e-1 );
+    BOOST_CHECK_SMALL( minimum, 2e-1 );
 #endif
 }
 
@@ -105,10 +105,10 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( elementminmax2, T, dim_types )
     // the triangle obtained by halving [0,1]^2,
     // or the tetrahedron obtained in a similar way from the cube [0,1]^3
     mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
-                                        _desc=domain( _name=(boost::format( "elementminmax2-%1%" )  % T::value).str() ,
-                                                      _shape="simplex",
-                                                      _dim=T::value,
-                                                      _h=0.2 ),
+                                        _desc=domain( _name=( boost::format( "elementminmax2-%1%" )  % T::value ).str() ,
+                                                _shape="simplex",
+                                                _dim=T::value,
+                                                _h=0.2 ),
                                         _update=MESH_CHECK|MESH_UPDATE_EDGES|MESH_UPDATE_FACES );
 
 
@@ -116,7 +116,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( elementminmax2, T, dim_types )
     typedef boost::shared_ptr<space_type> space_ptrtype;
     space_ptrtype Xh = space_type::New( mesh );
     auto u = Xh->element();
-    u = vf::project( Xh, elements(mesh), vf::sqrt(Px()*Px() + Py()*Py() + Pz()*Pz()) );
+    u = vf::project( Xh, elements( mesh ), vf::sqrt( Px()*Px() + Py()*Py() + Pz()*Pz() ) );
 
     typedef FunctionSpace<mesh_type,bases<Lagrange<0, Scalar, Discontinuous> > > p0_space_type;
     typedef boost::shared_ptr<p0_space_type> p0_space_ptrtype;
@@ -124,8 +124,8 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( elementminmax2, T, dim_types )
 
     auto maxPerElem = P0h->element();
     auto minPerElem = P0h->element();
-    maxPerElem = u.max(P0h);
-    minPerElem = u.min(P0h);
+    maxPerElem = u.max( P0h );
+    minPerElem = u.min( P0h );
 
     double maximum = maxPerElem.max();
     double minimum = minPerElem.min();
@@ -133,8 +133,8 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( elementminmax2, T, dim_types )
     const double eps = 1000*Feel::type_traits<double>::epsilon();
 
 #if defined(USE_BOOST_TEST)
-    BOOST_CHECK_CLOSE( maximum, 1.0, 2e-1);
-    BOOST_CHECK_SMALL( minimum, 2e-1);
+    BOOST_CHECK_CLOSE( maximum, 1.0, 2e-1 );
+    BOOST_CHECK_SMALL( minimum, 2e-1 );
 #endif
 
     std::cout << "\n";

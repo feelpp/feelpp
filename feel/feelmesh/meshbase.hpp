@@ -42,13 +42,13 @@ namespace Feel
  * \c updateForUse()
  */
 enum MeshComponents
-    {
-        MESH_UPDATE_EDGES     = (1 << 0),
-        MESH_UPDATE_FACES     = (1 << 1),
-        MESH_CHECK            = (1 << 2),
-        MESH_PARTITION        = (1 << 3),
-        MESH_RENUMBER         = (1 << 4)
-    };
+{
+    MESH_UPDATE_EDGES     = ( 1 << 0 ),
+    MESH_UPDATE_FACES     = ( 1 << 1 ),
+    MESH_CHECK            = ( 1 << 2 ),
+    MESH_PARTITION        = ( 1 << 3 ),
+    MESH_RENUMBER         = ( 1 << 4 )
+};
 const uint16_type MESH_ALL_COMPONENTS = MESH_UPDATE_EDGES | MESH_UPDATE_FACES | MESH_CHECK | MESH_PARTITION | MESH_RENUMBER;
 const uint16_type MESH_COMPONENTS_DEFAULTS = MESH_RENUMBER | MESH_CHECK;
 
@@ -119,7 +119,10 @@ public:
      * \return \p true if the mesh is ready for use, \p false
      * otherwise
      */
-    bool isUpdatedForUse() const { return M_is_updated; }
+    bool isUpdatedForUse() const
+    {
+        return M_is_updated;
+    }
 
     /**
      * \return the number of elements
@@ -139,12 +142,18 @@ public:
     /**
      * \return the number of vertices
      */
-    size_type numVertices() const { return M_n_vertices; }
+    size_type numVertices() const
+    {
+        return M_n_vertices;
+    }
 
     /**
      * Returns the number of partitions.
      */
-    uint16_type numberOfPartitions() const { return M_n_parts; }
+    uint16_type numberOfPartitions() const
+    {
+        return M_n_parts;
+    }
 
     /**
      * \return \c true if mesh is partitioned, \c false otherwise
@@ -156,14 +165,20 @@ public:
      * the mesh data structure.
      * \sa Context, MeshComponents
      */
-    Context const& components() const { return M_components; }
+    Context const& components() const
+    {
+        return M_components;
+    }
 
     /**
      * \return an integer(stored  in a \p Context) that encodes the components to be updated by
      * the mesh data structure.
      * \sa Context, MeshComponents
      */
-    Context&       components() { return M_components; }
+    Context&       components()
+    {
+        return M_components;
+    }
 
     /**
      * \return the measure of the mesh
@@ -173,7 +188,10 @@ public:
     /**
      * \return true if the mesh has parametric nodes
      */
-    bool isParametric() const { return M_is_parametric; }
+    bool isParametric() const
+    {
+        return M_is_parametric;
+    }
 
     //@}
 
@@ -184,12 +202,18 @@ public:
     /**
      * set the number of partitions
      */
-    void setNumberOfPartitions( uint16_type n ) { M_n_parts = n; }
+    void setNumberOfPartitions( uint16_type n )
+    {
+        M_n_parts = n;
+    }
 
     /**
      * set the number of vertices
      */
-    void setNumVertices( size_type n ) { M_n_vertices = n ; }
+    void setNumVertices( size_type n )
+    {
+        M_n_vertices = n ;
+    }
 
     /**
      * set the components to be updated by \c updateForUse()
@@ -203,7 +227,10 @@ public:
     /**
      * set if the mesh is parametric ( e.g. has parametric nodes )
      */
-    void setParametric( bool x ) { M_is_parametric = x; }
+    void setParametric( bool x )
+    {
+        M_is_parametric = x;
+    }
 
     //@}
 
@@ -238,16 +265,22 @@ public:
     /**
      * \return the world comm
      */
-    WorldComm const& worldComm() const { return M_worldComm; }
+    WorldComm const& worldComm() const
+    {
+        return M_worldComm;
+    }
 
-    virtual void setWorldComm(WorldComm const& _worldComm ) = 0;
+    virtual void setWorldComm( WorldComm const& _worldComm ) = 0;
 
-    void setWorldCommMeshBase(WorldComm const& _worldComm )
+    void setWorldCommMeshBase( WorldComm const& _worldComm )
     {
         M_worldComm = _worldComm;
     }
 
-    mpi::communicator const& comm() const { return M_worldComm.localComm(); }
+    mpi::communicator const& comm() const
+    {
+        return M_worldComm.localComm();
+    }
 
     //@}
 
@@ -258,7 +291,10 @@ protected:
     /**
      * set to the flag whether the mesh is updated for proper use
      */
-    void setUpdatedForUse( bool u ) { M_is_updated = u; }
+    void setUpdatedForUse( bool u )
+    {
+        M_is_updated = u;
+    }
 
     /**
      * After loading/defining a mesh, we want to have as much locality

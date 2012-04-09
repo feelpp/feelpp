@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -44,9 +44,9 @@ namespace Feel
  * is equal to the first first coefficient of the polynomial
  */
 template<
-    typename Poly,
-    template<uint16_type> class PsetType
-    >
+typename Poly,
+         template<uint16_type> class PsetType
+         >
 typename Poly::value_type
 integrate( Polynomial<Poly, PsetType> const& p )
 {
@@ -84,7 +84,7 @@ template<typename Poly, template<uint16_type> class Type>
 Polynomial<Poly, Type>
 dy( Polynomial<Poly, Type> const& p )
 {
-    BOOST_STATIC_ASSERT( (Polynomial<Poly,Type>::nDim >= 2) );
+    BOOST_STATIC_ASSERT( ( Polynomial<Poly,Type>::nDim >= 2 ) );
     return Polynomial<Poly, Type>( Poly(), ublas::prod( p.coeff(), p.basis().d( 1 ) ), true );
 }
 /**
@@ -96,7 +96,7 @@ template<typename Poly, template<uint16_type> class Type>
 PolynomialSet<Poly, Type>
 dy( PolynomialSet<Poly, Type> const& p )
 {
-    BOOST_STATIC_ASSERT( (Polynomial<Poly,Type>::nDim >= 2) );
+    BOOST_STATIC_ASSERT( ( Polynomial<Poly,Type>::nDim >= 2 ) );
     return PolynomialSet<Poly, Type>( Poly(), ublas::prod( p.coeff(), p.basis().d( 1 ) ), true );
 }
 /**
@@ -108,7 +108,7 @@ template<typename Poly, template<uint16_type> class Type>
 Polynomial<Poly, Type>
 dz( Polynomial<Poly, Type> const& p )
 {
-    BOOST_STATIC_ASSERT( (Polynomial<Poly,Type>::nDim >= 3) );
+    BOOST_STATIC_ASSERT( ( Polynomial<Poly,Type>::nDim >= 3 ) );
     return Polynomial<Poly, Type>( Poly(), ublas::prod( p.coeff(), p.basis().d( 2 ) ), true );
 }
 /**
@@ -120,7 +120,7 @@ template<typename Poly, template<uint16_type> class Type>
 PolynomialSet<Poly, Type>
 dz( PolynomialSet<Poly, Type> const& p )
 {
-    BOOST_STATIC_ASSERT( (PolynomialSet<Poly,Type>::nDim >= 3) );
+    BOOST_STATIC_ASSERT( ( PolynomialSet<Poly,Type>::nDim >= 3 ) );
     return PolynomialSet<Poly, Type>( Poly(), ublas::prod( p.coeff(), p.basis().d( 2 ) ), true );
 }
 /**
@@ -138,6 +138,7 @@ gradient( Polynomial<Poly, Scalar> const& p )
     const int ndof = p.coeff().size2();
     ublas::matrix<value_type> c ( nDim*nDim, ndof );
     c.clear();
+
     for ( int i = 0; i <nDim; ++i )
         ublas::row( c, nDim*i+i ) = ublas::row( ublas::prod( p.coeff(), p.basis().d( i ) ), 0 );
 
@@ -159,6 +160,7 @@ gradient( Polynomial<Poly, Vectorial> const& p )
     const int ndof = p.coeff().size2();
     ublas::matrix<value_type> c ( nComponents, ndof );
     c.clear();
+
     for ( int i = 0; i < nDim; ++i )
         for ( int j = 0; j < nDim; ++j )
             ublas::row( c, nComponents*i+nDim*j ) = ublas::row( ublas::prod( p[j].coeff(), p.basis().d( i ) ), 0 );
@@ -181,12 +183,14 @@ gradient( PolynomialSet<Poly, Scalar> const& p )
     const int n2 = p.coeff().size2();
     ublas::matrix<value_type> c ( nDim*nDim*n1, n2 );
     c.clear();
+
     for ( int i = 0; i <nDim; ++i )
-        {
-            ublas::project( c,
-                            ublas::slice( nDim*n1*i+i, nDim, n1 ),
-                            ublas::slice( 0, 1, n2 ) )  = ublas::prod( p.coeff(), p.basis().d( i ) );
-        }
+    {
+        ublas::project( c,
+                        ublas::slice( nDim*n1*i+i, nDim, n1 ),
+                        ublas::slice( 0, 1, n2 ) )  = ublas::prod( p.coeff(), p.basis().d( i ) );
+    }
+
     return PolynomialSet<Poly, Vectorial>( Poly(), c, true );
 }
 /**
@@ -206,13 +210,15 @@ gradient( PolynomialSet<Poly, Vectorial> const& p )
     const int n2 = p.coeff().size2();
     ublas::matrix<value_type> c ( nComponents*n1, n2 );
     c.clear();
+
     for ( int i = 0; i <nDim; ++i )
         for ( int j = 0; j < nDim; ++j )
-            {
-                ublas::project( c,
-                                ublas::slice( nDim*n1*i+i, nDim, n1 ),
-                                ublas::slice( 0, 1, n2 ) )  = ublas::prod( p.coeff(), p.basis().d( i ) );
-            }
+        {
+            ublas::project( c,
+                            ublas::slice( nDim*n1*i+i, nDim, n1 ),
+                            ublas::slice( 0, 1, n2 ) )  = ublas::prod( p.coeff(), p.basis().d( i ) );
+        }
+
     return PolynomialSet<Poly, Tensor2>( Poly(), c, true );
 }
 /**
@@ -232,13 +238,15 @@ hessian( PolynomialSet<Poly, Scalar> const& p )
     const int n2 = p.coeff().size2();
     ublas::matrix<value_type> c ( nComponents*nComponents*n1, n2 );
     c.clear();
+
     for ( int i = 0; i <nDim; ++i )
         for ( int j = 0; j < nDim; ++j )
-            {
-                ublas::project( c,
-                                ublas::slice( nComponents*n1*(nDim*j+i), nComponents, n1 ),
-                                ublas::slice( 0, 1, n2 ) )  = ublas::prod( p.coeff(), p.d( i, j ) );
-            }
+        {
+            ublas::project( c,
+                            ublas::slice( nComponents*n1*( nDim*j+i ), nComponents, n1 ),
+                            ublas::slice( 0, 1, n2 ) )  = ublas::prod( p.coeff(), p.d( i, j ) );
+        }
+
     return PolynomialSet<Poly, Tensor2>( Poly(), c, true );
 }
 
@@ -256,10 +264,11 @@ divergence( Polynomial<Poly, Vectorial> const& p )
     typedef typename Poly::value_type value_type;
 
     ublas::matrix<value_type> c ( ublas::zero_matrix<value_type>( 1, p.coeff().size2() ) );
+
     for ( int i = 0; i <nDim; ++i )
-        {
-            ublas::noalias( c ) += ublas::prod( p[i].coeff(), p.basis().d(i) );
-        }
+    {
+        ublas::noalias( c ) += ublas::prod( p[i].coeff(), p.basis().d( i ) );
+    }
 
     return Polynomial<Poly, Scalar>( Poly(), c, true );
 }
@@ -277,11 +286,13 @@ divergence( PolynomialSet<Poly, Vectorial> const& p )
     typedef typename Poly::value_type value_type;
 
     ublas::matrix<value_type> c ( ublas::zero_matrix<value_type>( p.coeff().size1()/nComponents,
-                                                                  p.coeff().size2() ) );
+                                  p.coeff().size2() ) );
+
     for ( int i = 0; i <nComponents; ++i )
-        {
-            ublas::noalias( c ) += ublas::prod( p[i].coeff(), p.basis().d(i) );
-        }
+    {
+        ublas::noalias( c ) += ublas::prod( p[i].coeff(), p.basis().d( i ) );
+    }
+
     return PolynomialSet<Poly, Scalar>( Poly(), c, true );
 }
 /**
@@ -454,7 +465,7 @@ unite( Poly1<P, Type> const& pset1,
     typedef typename res_type::value_type value_type;
 
     FEELPP_ASSERT( pset1.coeff().size2() == pset2.coeff().size2() )
-        ( pset1.coeff().size2() )( pset2.coeff().size2() ).error( "incompatible size" );
+    ( pset1.coeff().size2() )( pset2.coeff().size2() ).error( "incompatible size" );
 
     ublas::matrix<value_type> M( pset1.coeff().size1()+pset2.coeff().size1(), pset1.coeff().size2() );
     project( M,
@@ -467,27 +478,31 @@ unite( Poly1<P, Type> const& pset1,
     M = res_type::polyset_type::toMatrix( M );
 #if 0
     std::cout << "before SVD M = " << M << "\n";
-    Eigen::MatrixXd A (Eigen::MatrixXd::Zero( M.size1(), M.size2()));
-    for(int i = 0; i < M.size1(); ++i )
-        for(int j = 0; j < M.size2(); ++j )
+    Eigen::MatrixXd A ( Eigen::MatrixXd::Zero( M.size1(), M.size2() ) );
+
+    for ( int i = 0; i < M.size1(); ++i )
+        for ( int j = 0; j < M.size2(); ++j )
         {
-            A(i,j) = M(i,j);
+            A( i,j ) = M( i,j );
         }
-    Eigen::SVD<Eigen::MatrixXd> svdOfA(A);
+
+    Eigen::SVD<Eigen::MatrixXd> svdOfA( A );
     std::cout << "SVDofA.S() = " << svdOfA.singularValues() << "\n";
     std::cout << "SVDofA.V() = " << svdOfA.matrixV().transpose() << "\n";
 #endif
     SVD<ublas::matrix<value_type> > svd( M );
 #if 0
     //std::cout << "S() = " << svd.S() << "\n";
-    ublas::matrix<value_type> m (svdOfA.singularValues().size(), M.size2() );
-    for(int i = 0; i < m.size1(); ++i )
-        for(int j = 0; j < m.size2(); ++j )
+    ublas::matrix<value_type> m ( svdOfA.singularValues().size(), M.size2() );
+
+    for ( int i = 0; i < m.size1(); ++i )
+        for ( int j = 0; j < m.size2(); ++j )
         {
-            m(i,j) = svdOfA.matrixV()( j, i );
+            m( i,j ) = svdOfA.matrixV()( j, i );
         }
+
 #else
-    ublas::matrix<value_type> m (ublas::subrange( svd.V(), 0, svd.S().size(), 0, M.size2() ) );
+    ublas::matrix<value_type> m ( ublas::subrange( svd.V(), 0, svd.S().size(), 0, M.size2() ) );
 #endif
     return res_type( P(), res_type::polyset_type::toType( m ), true  );
 }

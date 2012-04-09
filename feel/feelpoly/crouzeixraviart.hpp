@@ -62,7 +62,7 @@ template<uint16_type N,
          typename T = double>
 class RannacherTurekPolynomialSet
     :
-        public MomentPolynomialSet<N, 2, N, PolySetType, T, Hypercube>
+public MomentPolynomialSet<N, 2, N, PolySetType, T, Hypercube>
 {
     typedef MomentPolynomialSet<N, 2, N, PolySetType, T, Hypercube> super;
 
@@ -85,20 +85,21 @@ public:
         super()
     {
         Moment<2,2,Hypercube<2> > m;
-        for( int c = 0; c < nComponents; ++c )
+
+        for ( int c = 0; c < nComponents; ++c )
         {
             // 1
-            this->insert( m.template pick<PolySetType>( 0, c ).toSet(true), c==0 );
+            this->insert( m.template pick<PolySetType>( 0, c ).toSet( true ), c==0 );
             // x
-            this->insert( m.template pick<PolySetType>( 1, c ).toSet(true) );
+            this->insert( m.template pick<PolySetType>( 1, c ).toSet( true ) );
             // y
-            this->insert( m.template pick<PolySetType>( 3, c ).toSet(true) );
+            this->insert( m.template pick<PolySetType>( 3, c ).toSet( true ) );
             // x^2 - y^2
-            Polynomial<Moment<2,2,Hypercube<2> >, PolySetType> p(m);
+            Polynomial<Moment<2,2,Hypercube<2> >, PolySetType> p( m );
             p = m.template pick<PolySetType>( 2, c );
             p -= m.template pick<PolySetType>( 6, c );
             //std::cout << "x^2-y^2:" << p.coeff() << "\n";
-            this->insert( p.toSet(true) );
+            this->insert( p.toSet( true ) );
         }
 
     }
@@ -109,7 +110,7 @@ public:
 template<typename Basis, template<class, uint16_type, class> class PointSetType>
 class CrouzeixRaviartDual
     :
-        public DualBasis<Basis>
+public DualBasis<Basis>
 {
     typedef DualBasis<Basis> super;
 public:
@@ -137,11 +138,11 @@ public:
 
     static const uint16_type nbPtsPerVertex = 0;
     static const uint16_type nbPtsPerEdge = mpl::if_<mpl::equal_to<mpl::int_<nDim>,mpl::int_<2> >,
-                                                     mpl::int_<reference_convex_type::nbPtsPerEdge>,
-                                                     mpl::int_<0> >::type::value;
+                             mpl::int_<reference_convex_type::nbPtsPerEdge>,
+                             mpl::int_<0> >::type::value;
     static const uint16_type nbPtsPerFace = mpl::if_<mpl::equal_to<mpl::int_<nDim>,mpl::int_<3> >,
-                                                     mpl::int_<reference_convex_type::nbPtsPerFace>,
-                                                     mpl::int_<0> >::type::value;
+                             mpl::int_<reference_convex_type::nbPtsPerFace>,
+                             mpl::int_<0> >::type::value;
     static const uint16_type nbPtsPerVolume = 0;
     static const uint16_type numPoints = ( reference_convex_type::numGeometricFaces*nbPtsPerFace+
                                            reference_convex_type::numEdges*nbPtsPerEdge );
@@ -162,80 +163,88 @@ public:
     static const uint16_type nLocalDof = numPoints;
 
     static const uint16_type nFacesInConvex = mpl::if_< mpl::equal_to<mpl::int_<nDim>, mpl::int_<1> >,
-                                                        mpl::int_<nVertices>,
-                                                        typename mpl::if_<mpl::equal_to<mpl::int_<nDim>, mpl::int_<2> >,
-                                                                          mpl::int_<nEdges>,
-                                                                          mpl::int_<nFaces> >::type >::type::value;
+                             mpl::int_<nVertices>,
+                             typename mpl::if_<mpl::equal_to<mpl::int_<nDim>, mpl::int_<2> >,
+                             mpl::int_<nEdges>,
+                             mpl::int_<nFaces> >::type >::type::value;
 
 
     CrouzeixRaviartDual( primal_space_type const& primal )
         :
-    super( primal ),
-    _M_convex_ref(),
-    _M_eid(_M_convex_ref.topologicalDimension()+1),
-    _M_pts( nDim, numPoints ),
-    _M_points_face( nFacesInConvex ),
-    _M_fset( primal )
-{
+        super( primal ),
+        _M_convex_ref(),
+        _M_eid( _M_convex_ref.topologicalDimension()+1 ),
+        _M_pts( nDim, numPoints ),
+        _M_points_face( nFacesInConvex ),
+        _M_fset( primal )
+    {
 #if 1
-    std::cout << "Lagrange finite element: \n";
-    std::cout << " o- dim   = " << nDim << "\n";
-    std::cout << " o- order = " << nOrder << "\n";
-    std::cout << " o- numPoints      = " << numPoints << "\n";
-    std::cout << " o- nbPtsPerVertex = " << (int)nbPtsPerVertex << "\n";
-    std::cout << " o- nbPtsPerEdge   = " << (int)nbPtsPerEdge << "\n";
-    std::cout << " o- nbPtsPerFace   = " << (int)nbPtsPerFace << "\n";
-    std::cout << " o- nbPtsPerVolume = " << (int)nbPtsPerVolume << "\n";
+        std::cout << "Lagrange finite element: \n";
+        std::cout << " o- dim   = " << nDim << "\n";
+        std::cout << " o- order = " << nOrder << "\n";
+        std::cout << " o- numPoints      = " << numPoints << "\n";
+        std::cout << " o- nbPtsPerVertex = " << ( int )nbPtsPerVertex << "\n";
+        std::cout << " o- nbPtsPerEdge   = " << ( int )nbPtsPerEdge << "\n";
+        std::cout << " o- nbPtsPerFace   = " << ( int )nbPtsPerFace << "\n";
+        std::cout << " o- nbPtsPerVolume = " << ( int )nbPtsPerVolume << "\n";
 #endif
-    equispaced_pointset_type epts;
-    // in d-dimension, consider only the d-1 entity mid-points
-    int d = _M_convex_ref.topologicalDimension()-1;
-    int p = 0;
-    // loop on each entity forming the convex of topological
-    // dimension d
-    for ( int e = _M_convex_ref.entityRange( d ).begin();
-          e < _M_convex_ref.entityRange( d ).end();
-          ++e )
+        equispaced_pointset_type epts;
+        // in d-dimension, consider only the d-1 entity mid-points
+        int d = _M_convex_ref.topologicalDimension()-1;
+        int p = 0;
+
+        // loop on each entity forming the convex of topological
+        // dimension d
+        for ( int e = _M_convex_ref.entityRange( d ).begin();
+                e < _M_convex_ref.entityRange( d ).end();
+                ++e )
         {
-            _M_points_face[e] = epts.pointsBySubEntity(nDim-1, e, 0);
+            _M_points_face[e] = epts.pointsBySubEntity( nDim-1, e, 0 );
             ublas::subrange( _M_pts, 0, nDim, p, p+_M_points_face[e].size2() ) = _M_points_face[e];
             p+=_M_points_face[e].size2();
         }
-    //std::cout << "[CrouzeixRaviartDual] points= " << _M_pts << "\n";
-    setFset( primal, _M_pts, mpl::bool_<primal_space_type::is_scalar>() );
+
+        //std::cout << "[CrouzeixRaviartDual] points= " << _M_pts << "\n";
+        setFset( primal, _M_pts, mpl::bool_<primal_space_type::is_scalar>() );
 
 
-}
+    }
 
-    points_type const& points() const { return _M_pts; }
-    points_type const& points(uint16_type f ) const { return _M_points_face[f]; }
+    points_type const& points() const
+    {
+        return _M_pts;
+    }
+    points_type const& points( uint16_type f ) const
+    {
+        return _M_points_face[f];
+    }
 
 
-matrix_type operator()( primal_space_type const& pset ) const
-{
-    return _M_fset( pset );
-}
+    matrix_type operator()( primal_space_type const& pset ) const
+    {
+        return _M_fset( pset );
+    }
 private:
 
-void setFset( primal_space_type const& primal, points_type const& __pts, mpl::bool_<true> )
-{
-    _M_fset.setFunctionalSet( functional::PointsEvaluation<primal_space_type>( primal,
-                                                                               __pts ) );
-}
+    void setFset( primal_space_type const& primal, points_type const& __pts, mpl::bool_<true> )
+    {
+        _M_fset.setFunctionalSet( functional::PointsEvaluation<primal_space_type>( primal,
+                                  __pts ) );
+    }
 
-void setFset( primal_space_type const& primal, points_type const& __pts, mpl::bool_<false> )
-{
-    _M_fset.setFunctionalSet( functional::ComponentsPointsEvaluation<primal_space_type>( primal,
-                                                                                         __pts ) );
-}
+    void setFset( primal_space_type const& primal, points_type const& __pts, mpl::bool_<false> )
+    {
+        _M_fset.setFunctionalSet( functional::ComponentsPointsEvaluation<primal_space_type>( primal,
+                                  __pts ) );
+    }
 
 
 private:
-reference_convex_type _M_convex_ref;
-std::vector<std::vector<uint16_type> > _M_eid;
-points_type _M_pts;
-std::vector<points_type> _M_points_face;
-FunctionalSet<primal_space_type> _M_fset;
+    reference_convex_type _M_convex_ref;
+    std::vector<std::vector<uint16_type> > _M_eid;
+    points_type _M_pts;
+    std::vector<points_type> _M_points_face;
+    FunctionalSet<primal_space_type> _M_fset;
 
 
 };
@@ -256,17 +265,17 @@ template<uint16_type N,
          uint16_type TheTAG=0 >
 class CrouzeixRaviart
     :
-    public FiniteElement<typename mpl::if_<mpl::bool_<Convex<N,1,N>::is_simplex>,
-                                           mpl::identity<Feel::detail::OrthonormalPolynomialSet<N, 1, RealDim, PolySetType, T, Convex> >,
-                                           mpl::identity<fem::detail::RannacherTurekPolynomialSet<N, PolySetType, T> > >::type::type,
-                         detail::CrouzeixRaviartDual,
-                         PointSetEquiSpaced >
+public FiniteElement<typename mpl::if_<mpl::bool_<Convex<N,1,N>::is_simplex>,
+    mpl::identity<Feel::detail::OrthonormalPolynomialSet<N, 1, RealDim, PolySetType, T, Convex> >,
+    mpl::identity<fem::detail::RannacherTurekPolynomialSet<N, PolySetType, T> > >::type::type,
+    detail::CrouzeixRaviartDual,
+    PointSetEquiSpaced >
 {
     typedef FiniteElement<typename mpl::if_<mpl::bool_<Convex<N,1,N>::is_simplex>,
-                                            mpl::identity<Feel::detail::OrthonormalPolynomialSet<N, 1, RealDim, PolySetType, T, Convex> >,
-                                            mpl::identity<fem::detail::RannacherTurekPolynomialSet<N, PolySetType, T> > >::type::type,
-                          detail::CrouzeixRaviartDual,
-                          PointSetEquiSpaced > super;
+            mpl::identity<Feel::detail::OrthonormalPolynomialSet<N, 1, RealDim, PolySetType, T, Convex> >,
+            mpl::identity<fem::detail::RannacherTurekPolynomialSet<N, PolySetType, T> > >::type::type,
+            detail::CrouzeixRaviartDual,
+            PointSetEquiSpaced > super;
 public:
 
     BOOST_STATIC_ASSERT( N > 1 );
@@ -306,11 +315,11 @@ public:
 
     static const uint16_type nbPtsPerVertex = 0;
     static const uint16_type nbPtsPerEdge = mpl::if_<mpl::equal_to<mpl::int_<nDim>,mpl::int_<2> >,
-                                                    mpl::int_<reference_convex_type::nbPtsPerEdge>,
-                                                    mpl::int_<0> >::type::value;
+                             mpl::int_<reference_convex_type::nbPtsPerEdge>,
+                             mpl::int_<0> >::type::value;
     static const uint16_type nbPtsPerFace = mpl::if_<mpl::equal_to<mpl::int_<nDim>,mpl::int_<3> >,
-                                                    mpl::int_<reference_convex_type::nbPtsPerFace>,
-                                                    mpl::int_<0> >::type::value;
+                             mpl::int_<reference_convex_type::nbPtsPerFace>,
+                             mpl::int_<0> >::type::value;
     static const uint16_type nbPtsPerVolume = 0;
     static const uint16_type numPoints = ( reference_convex_type::numGeometricFaces*nbPtsPerFace+
                                            reference_convex_type::numEdges*nbPtsPerEdge );
@@ -349,7 +358,10 @@ public:
     /**
      * \return the reference convex associated with the lagrange polynomials
      */
-    reference_convex_type const& referenceConvex() const { return _M_refconvex; }
+    reference_convex_type const& referenceConvex() const
+    {
+        return _M_refconvex;
+    }
 
     //@}
 
@@ -367,21 +379,24 @@ public:
     /**
      * \return the family name of the finite element
      */
-    std::string familyName() const { return "CrouzeixRaviart"; }
+    std::string familyName() const
+    {
+        return "CrouzeixRaviart";
+    }
 
     template<typename ExprType>
     static auto
     isomorphism( ExprType& expr ) -> decltype( expr )
-        {
-            return expr;
-            //return expr;
-        }
+    {
+        return expr;
+        //return expr;
+    }
     //@}
 
 
 
 protected:
-reference_convex_type _M_refconvex;
+    reference_convex_type _M_refconvex;
 private:
 
 };
@@ -416,8 +431,8 @@ public:
     struct apply
     {
         typedef typename mpl::if_<mpl::bool_<Convex::is_simplex>,
-                                  mpl::identity<fem::CrouzeixRaviart<N,RealDim,PolySetType,T,Simplex,TheTAG> >,
-                                  mpl::identity<fem::CrouzeixRaviart<N,RealDim,PolySetType,T,Hypercube,TheTAG> > >::type::type result_type;
+                mpl::identity<fem::CrouzeixRaviart<N,RealDim,PolySetType,T,Simplex,TheTAG> >,
+                mpl::identity<fem::CrouzeixRaviart<N,RealDim,PolySetType,T,Hypercube,TheTAG> > >::type::type result_type;
         typedef result_type type;
     };
 

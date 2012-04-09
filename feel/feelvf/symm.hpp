@@ -83,13 +83,13 @@ public:
     explicit Sym( expression_type const & __expr )
         :
         _M_expr( __expr )
-        {}
+    {}
     Sym( Sym const & te )
         :
         _M_expr( te._M_expr )
-        {}
+    {}
     ~Sym()
-        {}
+    {}
 
     //@}
 
@@ -118,7 +118,10 @@ public:
      */
     //@{
 
-    expression_type const& expression() const { return _M_expr; }
+    expression_type const& expression() const
+    {
+        return _M_expr;
+    }
 
     //@}
 
@@ -130,82 +133,94 @@ public:
 
         typedef typename tensor_expr_type::shape shape;
 
-        template <class Args> struct sig { typedef value_type type; };
+        template <class Args> struct sig
+        {
+            typedef value_type type;
+        };
 
-        struct is_zero { static const bool value = tensor_expr_type::is_zero::value; };
+        struct is_zero
+        {
+            static const bool value = tensor_expr_type::is_zero::value;
+        };
 
         tensor( this_type const& expr,
                 Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
             :
             M_tensor_expr( expr.expression(), geom, fev, feu )
-            {
-            }
+        {
+        }
 
         tensor( this_type const& expr,
                 Geo_t const& geom, Basis_i_t const& fev )
             :
             M_tensor_expr( expr.expression(), geom, fev )
-            {
-            }
+        {
+        }
 
         tensor( this_type const& expr, Geo_t const& geom )
             :
             M_tensor_expr( expr.expression(), geom )
-            {
-            }
+        {
+        }
 
         template<typename IM>
         void init( IM const& im )
-            {
-                M_tensor_expr.init( im );
-            }
+        {
+            M_tensor_expr.init( im );
+        }
         void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
-            {
-                M_tensor_expr.update( geom, fev, feu );
-            }
+        {
+            M_tensor_expr.update( geom, fev, feu );
+        }
         void update( Geo_t const& geom, Basis_i_t const& fev )
-            {
-                M_tensor_expr.update( geom, fev );
-            }
+        {
+            M_tensor_expr.update( geom, fev );
+        }
         void update( Geo_t const& geom )
-            {
-                M_tensor_expr.update( geom );
-            }
+        {
+            M_tensor_expr.update( geom );
+        }
         void update( Geo_t const& geom, uint16_type face )
-            {
-                M_tensor_expr.update( geom, face );
-            }
+        {
+            M_tensor_expr.update( geom, face );
+        }
 
         value_type
         evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q ) const
-            {
-                value_type a = M_tensor_expr.evalijq( i, j, c1, c2, q );
-                value_type at = M_tensor_expr.evalijq( i, j, c2, c1, q );
-                if ( Part == 1 )
-                    return 0.5*(a+at);
-                else
-                    return 0.5*(a-at);
-            }
+        {
+            value_type a = M_tensor_expr.evalijq( i, j, c1, c2, q );
+            value_type at = M_tensor_expr.evalijq( i, j, c2, c1, q );
+
+            if ( Part == 1 )
+                return 0.5*( a+at );
+
+            else
+                return 0.5*( a-at );
+        }
         value_type
         evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const
-            {
-                value_type a = M_tensor_expr.evaliq( i, c1, c2, q );
-                value_type at = M_tensor_expr.evaliq( i, c2, c1, q );
-                if ( Part == 1 )
-                    return 0.5*(a+at);
-                else
-                    return 0.5*(a-at);
-            }
+        {
+            value_type a = M_tensor_expr.evaliq( i, c1, c2, q );
+            value_type at = M_tensor_expr.evaliq( i, c2, c1, q );
+
+            if ( Part == 1 )
+                return 0.5*( a+at );
+
+            else
+                return 0.5*( a-at );
+        }
         value_type
         evalq( uint16_type c1, uint16_type c2, uint16_type q ) const
-            {
-                value_type a = M_tensor_expr.evalq( c1, c2, q );
-                value_type at = M_tensor_expr.evalq( c2, c1, q );
-                if ( Part == 1 )
-                    return 0.5*(a+at);
-                else
-                    return 0.5*(a-at);
-            }
+        {
+            value_type a = M_tensor_expr.evalq( c1, c2, q );
+            value_type at = M_tensor_expr.evalq( c2, c1, q );
+
+            if ( Part == 1 )
+                return 0.5*( a+at );
+
+            else
+                return 0.5*( a-at );
+        }
 
     private:
         tensor_expr_type M_tensor_expr;

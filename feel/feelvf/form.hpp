@@ -81,9 +81,9 @@ struct is_matrix_ptr : mpl::false_ {};
 
 template <class MatrixType>
 struct is_matrix_ptr<boost::shared_ptr<MatrixType> >
-    :
+        :
         boost::is_base_of<MatrixSparse<typename MatrixType::value_type>,
-                          MatrixType>
+        MatrixType>
 {};
 
 template <class VectorType>
@@ -91,9 +91,9 @@ struct is_vector_ptr : mpl::false_ {};
 
 template <class VectorType>
 struct is_vector_ptr<boost::shared_ptr<VectorType> >
-    :
+        :
         boost::is_base_of<Vector<typename VectorType::value_type>,
-                          VectorType>
+        VectorType>
 {};
 
 
@@ -113,8 +113,8 @@ struct compute_form1_return
     typedef typename boost::remove_reference<typename parameter::binding<Args, tag::test>::type>::type::element_type test_type;
     typedef typename boost::remove_reference<typename parameter::binding<Args, tag::vector>::type>::type::element_type vector_type;
     typedef vf::detail::LinearForm<test_type,
-                                   vector_type,
-                                   vector_type> type;
+            vector_type,
+            vector_type> type;
 #else
     typedef typename parameter::value_type<Args, tag::test>::type test_type;
     typedef typename parameter::value_type<Args, tag::vector>::type vector_type;
@@ -126,40 +126,40 @@ struct compute_form1_return
 /// \endcond
 //boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> >
 BOOST_PARAMETER_FUNCTION(
-                         (typename compute_form1_return<Args>::type), // 1. return type
-                         form1,                                       // 2. name of the function template
-                         tag,                                        // 3. namespace of tag types
-                         (required                                   // 4. one required parameter, and
-                          (test,             *(boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> >))
-                          (in_out(vector),   *( detail::is_vector_ptr<mpl::_> ) ) ) // required
-                         (optional                                   //    four optional parameters, with defaults
-                          (init,             *(boost::is_integral<mpl::_>), false )
-                          (do_threshold,     *(boost::is_integral<mpl::_>), bool(false) )
-                          (threshold,        *(boost::is_floating_point<mpl::_>), type_traits<double>::epsilon() )
-                          (rowstart,         *(boost::is_integral<mpl::_>), 0 )
-                          )
-                         )
+    ( typename compute_form1_return<Args>::type ), // 1. return type
+    form1,                                       // 2. name of the function template
+    tag,                                        // 3. namespace of tag types
+    ( required                                  // 4. one required parameter, and
+      ( test,             *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
+      ( in_out( vector ),   *( detail::is_vector_ptr<mpl::_> ) ) ) // required
+    ( optional                                  //    four optional parameters, with defaults
+      ( init,             *( boost::is_integral<mpl::_> ), false )
+      ( do_threshold,     *( boost::is_integral<mpl::_> ), bool( false ) )
+      ( threshold,        *( boost::is_floating_point<mpl::_> ), type_traits<double>::epsilon() )
+      ( rowstart,         *( boost::is_integral<mpl::_> ), 0 )
+    )
+)
 {
     //Feel::detail::ignore_unused_variable_warning(boost_parameter_enabler_argument);
-    Feel::detail::ignore_unused_variable_warning(args);
+    Feel::detail::ignore_unused_variable_warning( args );
     //return form( test, *vector, init, false, 1e-16 );
     return form( test, *vector, rowstart, init, do_threshold, threshold );
 } // form
 
 BOOST_PARAMETER_FUNCTION(
-                         (typename compute_form1_return<Args>::type), // 1. return type
-                         lform,                                       // 2. name of the function template
-                         tag,                                        // 3. namespace of tag types
-                         (required                                   // 4. one required parameter, and
-                          (test,             *(boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> >))
-                          (in_out(vector),   *( detail::is_vector_ptr<mpl::_> ) ) ) // required
-                         (optional                                   //    four optional parameters, with defaults
-                          (init,             *(boost::is_integral<mpl::_>), false )
-                          (do_threshold,     *(boost::is_integral<mpl::_>), bool(false) )
-                          (threshold,        *(boost::is_floating_point<mpl::_>), type_traits<double>::epsilon() )
-                          (rowstart,         *(boost::is_integral<mpl::_>), 0 )
-                          )
-                         )
+    ( typename compute_form1_return<Args>::type ), // 1. return type
+    lform,                                       // 2. name of the function template
+    tag,                                        // 3. namespace of tag types
+    ( required                                  // 4. one required parameter, and
+      ( test,             *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
+      ( in_out( vector ),   *( detail::is_vector_ptr<mpl::_> ) ) ) // required
+    ( optional                                  //    four optional parameters, with defaults
+      ( init,             *( boost::is_integral<mpl::_> ), false )
+      ( do_threshold,     *( boost::is_integral<mpl::_> ), bool( false ) )
+      ( threshold,        *( boost::is_floating_point<mpl::_> ), type_traits<double>::epsilon() )
+      ( rowstart,         *( boost::is_integral<mpl::_> ), 0 )
+    )
+)
 {
     //return form( test, *vector, init, false, 1e-16 );
     return form( test, *vector, rowstart, init, do_threshold, threshold );
@@ -175,64 +175,64 @@ struct compute_form2_return<Args, mpl::false_>
 {
     typedef typename parameter::value_type<Args, tag::test>::type::element_type::value_type value_type;
     typedef vf::detail::BilinearForm<typename parameter::value_type<Args, tag::test>::type::element_type,
-                                     typename parameter::value_type<Args, tag::trial>::type::element_type,
-                                     //typename parameter::value_type<Args, tag::matrix>::type::element_type,
-                                     VectorUblas<value_type> > type;
+            typename parameter::value_type<Args, tag::trial>::type::element_type,
+            //typename parameter::value_type<Args, tag::matrix>::type::element_type,
+            VectorUblas<value_type> > type;
 };
 template<typename Args>
 struct compute_form2_return<Args, mpl::true_>
 {
     typedef typename parameter::value_type<Args, tag::test>::type::element_type::value_type value_type;
     typedef vf::detail::BilinearForm<typename parameter::value_type<Args, tag::test>::type::element_type,
-                                     typename parameter::value_type<Args, tag::test>::type::element_type,
-                                     //typename parameter::value_type<Args, tag::vector>::type::element_type,
-                                     VectorUblas<value_type> > type;
+            typename parameter::value_type<Args, tag::test>::type::element_type,
+            //typename parameter::value_type<Args, tag::vector>::type::element_type,
+            VectorUblas<value_type> > type;
 };
 /// \endcond
 
 #if 0
 BOOST_PARAMETER_FUNCTION(
-                         (typename compute_form2_return<Args,mpl::bool_<boost::is_same<typename parameter::value_type<Args, tag::trial>::type, boost::parameter::void_>::value> >::type), // 1. return type
-                         form2,                                       // 2. name of the function template
-                         tag,                                        // 3. namespace of tag types
-                         (required                                   // 4. one required parameter, and
-                          (test,             *(boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> >))
-                          (trial,            *(boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> >))
-                          (in_out(matrix),   *( detail::is_matrix_ptr<mpl::_> ) ) ) // required
-                         (optional                                   //    four optional parameters, with defaults
-                          (init,             *(boost::is_integral<mpl::_>), false )
-                          (do_threshold,     *(boost::is_integral<mpl::_>), bool(false) )
-                          (threshold,        *(boost::is_floating_point<mpl::_>), type_traits<double>::epsilon() )
-                          (pattern,          *(boost::is_integral<mpl::_>), size_type(Pattern::COUPLED) )
-                          (do_threshold,     *(boost::is_integral<mpl::_>), bool(false) )
-                          (threshold,        *(boost::is_floating_point<mpl::_>), type_traits<double>::epsilon() )
-                          )
-                         )
+    ( typename compute_form2_return<Args,mpl::bool_<boost::is_same<typename parameter::value_type<Args, tag::trial>::type, boost::parameter::void_>::value> >::type ), // 1. return type
+    form2,                                       // 2. name of the function template
+    tag,                                        // 3. namespace of tag types
+    ( required                                  // 4. one required parameter, and
+      ( test,             *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
+      ( trial,            *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
+      ( in_out( matrix ),   *( detail::is_matrix_ptr<mpl::_> ) ) ) // required
+    ( optional                                  //    four optional parameters, with defaults
+      ( init,             *( boost::is_integral<mpl::_> ), false )
+      ( do_threshold,     *( boost::is_integral<mpl::_> ), bool( false ) )
+      ( threshold,        *( boost::is_floating_point<mpl::_> ), type_traits<double>::epsilon() )
+      ( pattern,          *( boost::is_integral<mpl::_> ), size_type( Pattern::COUPLED ) )
+      ( do_threshold,     *( boost::is_integral<mpl::_> ), bool( false ) )
+      ( threshold,        *( boost::is_floating_point<mpl::_> ), type_traits<double>::epsilon() )
+    )
+)
 {
-    Feel::detail::ignore_unused_variable_warning(args);
+    Feel::detail::ignore_unused_variable_warning( args );
     //return form( test, trial, *matrix, init, false, 1e-16, pattern );
     return form( test, trial, *matrix, init, do_threshold, threshold, pattern );
     //return form( test, trial, *matrix, init, false, threshold, pattern );
     //return form( test, trial, *matrix, init, false, threshold, 0 );
 } //
 #else
-BOOST_PARAMETER_FUNCTION((typename compute_form2_return<Args,mpl::bool_<boost::is_same<typename parameter::value_type<Args, tag::trial>::type, boost::parameter::void_>::value> >::type), // 1. return type
-                         form2,                                       // 2. name of the function template
-                         tag,                                        // 3. namespace of tag types
-                         (required                                   // 4. one required parameter, and
-                          (test,             *)
-                          (trial,            *)
-                          (in_out(matrix),   *)
+BOOST_PARAMETER_FUNCTION( ( typename compute_form2_return<Args,mpl::bool_<boost::is_same<typename parameter::value_type<Args, tag::trial>::type, boost::parameter::void_>::value> >::type ), // 1. return type
+                          form2,                                       // 2. name of the function template
+                          tag,                                        // 3. namespace of tag types
+                          ( required                                  // 4. one required parameter, and
+                            ( test,             * )
+                            ( trial,            * )
+                            ( in_out( matrix ),   * )
                           ) // required
-                         (optional                                   //    four optional parameters, with defaults
-                          (init,             *(boost::is_integral<mpl::_>), false )
-                          (pattern,          *(boost::is_integral<mpl::_>), size_type(Pattern::COUPLED) )
-                          (rowstart,         *(boost::is_integral<mpl::_>), 0 )
-                          (colstart,         *(boost::is_integral<mpl::_>), 0 )
+                          ( optional                                  //    four optional parameters, with defaults
+                            ( init,             *( boost::is_integral<mpl::_> ), false )
+                            ( pattern,          *( boost::is_integral<mpl::_> ), size_type( Pattern::COUPLED ) )
+                            ( rowstart,         *( boost::is_integral<mpl::_> ), 0 )
+                            ( colstart,         *( boost::is_integral<mpl::_> ), 0 )
                           ) // optional
-                         )
+                        )
 {
-    Feel::detail::ignore_unused_variable_warning(args);
+    Feel::detail::ignore_unused_variable_warning( args );
     //return form( test, trial, *matrix, init, false, 1e-16, pattern );
     bool do_threshold = false;
     double threshold = 1e-16;
@@ -245,20 +245,20 @@ BOOST_PARAMETER_FUNCTION((typename compute_form2_return<Args,mpl::bool_<boost::i
 
 #if 0
 BOOST_PARAMETER_FUNCTION(
-                         (typename compute_form2_return<Args,mpl::bool_<boost::is_same<typename parameter::value_type<Args, tag::trial>::type, boost::parameter::void_>::value> >::type), // 1. return type
-                         blform,                                       // 2. name of the function template
-                         tag,                                        // 3. namespace of tag types
-                         (required                                   // 4. one required parameter, and
-                          (test,             *(boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> >))
-                          (trial,            *(boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> >))
-                          (in_out(matrix),   *( detail::is_matrix_ptr<mpl::_> ) ) ) // required
-                         (optional                                   //    four optional parameters, with defaults
-                          (init,             *(boost::is_integral<mpl::_>), false )
-                          (do_threshold,     *(boost::is_integral<mpl::_>), bool(false) )
-                          (threshold,        *(boost::is_floating_point<mpl::_>), type_traits<double>::epsilon() )
-                          (pattern,          *(boost::is_integral<mpl::_>), size_type(Pattern::COUPLED) )
-                          )
-                         )
+    ( typename compute_form2_return<Args,mpl::bool_<boost::is_same<typename parameter::value_type<Args, tag::trial>::type, boost::parameter::void_>::value> >::type ), // 1. return type
+    blform,                                       // 2. name of the function template
+    tag,                                        // 3. namespace of tag types
+    ( required                                  // 4. one required parameter, and
+      ( test,             *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
+      ( trial,            *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
+      ( in_out( matrix ),   *( detail::is_matrix_ptr<mpl::_> ) ) ) // required
+    ( optional                                  //    four optional parameters, with defaults
+      ( init,             *( boost::is_integral<mpl::_> ), false )
+      ( do_threshold,     *( boost::is_integral<mpl::_> ), bool( false ) )
+      ( threshold,        *( boost::is_floating_point<mpl::_> ), type_traits<double>::epsilon() )
+      ( pattern,          *( boost::is_integral<mpl::_> ), size_type( Pattern::COUPLED ) )
+    )
+)
 {
     return form( test, trial, *matrix, init, do_threshold, threshold, pattern );
     //return form( test, trial, *matrix, init, false, 1e-16, pattern );

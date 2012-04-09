@@ -55,7 +55,7 @@ CRBDB::CRBDB( std::string prefixdir,
     M_isloaded( false )
 {
     //std::cout << prefixdir << "," << name << "\n";
-    this->setDBFilename( (boost::format( "%1%.crbdb" ) % dbprefix ).str() );
+    this->setDBFilename( ( boost::format( "%1%.crbdb" ) % dbprefix ).str() );
     //std::cout << "database name " << dbFilename() << "\n";
 
 
@@ -76,13 +76,14 @@ CRBDB::~CRBDB()
 fs::path
 CRBDB::dbSystemPath() const
 {
-    std::vector<std::string> sysdir = boost::assign::list_of(Feel::Info::prefix())("/usr")("/usr/local")("/opt/local");
+    std::vector<std::string> sysdir = boost::assign::list_of( Feel::Info::prefix() )( "/usr" )( "/usr/local" )( "/opt/local" );
     BOOST_FOREACH( auto dir, sysdir )
     {
         // generate the local repository db path
-        std::string syspath = (boost::format( "%1%/share/feel/db/crb/%2%/" )
-                               % dir
-                               % M_prefixdir).str();
+        std::string syspath = ( boost::format( "%1%/share/feel/db/crb/%2%/" )
+                                % dir
+                                % M_prefixdir ).str();
+
         //std::cout << "Look for " << syspath  << "\n";
         if ( fs::exists( syspath ) )
             return syspath;
@@ -93,9 +94,9 @@ fs::path
 CRBDB::dbLocalPath() const
 {
     // generate the local repository db path
-    std::string localpath = (boost::format( "%1%/db/crb/%2%/" )
-                             % Feel::Environment::rootRepository()
-                             % M_prefixdir).str();
+    std::string localpath = ( boost::format( "%1%/db/crb/%2%/" )
+                              % Feel::Environment::rootRepository()
+                              % M_prefixdir ).str();
     fs::path rep_path = localpath;
     fs::create_directories( rep_path );
 

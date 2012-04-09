@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -125,13 +125,17 @@ public:
             _M_fset = fset._M_fset;
             _M_mat = fset._M_mat;
         }
+
         return *this;
     }
 
     /**
      * \return the i-th functional
      */
-    functional_type const& operator()( uint16_type i ) const { return _M_fset[i]; }
+    functional_type const& operator()( uint16_type i ) const
+    {
+        return _M_fset[i];
+    }
 
     /**
      * \return the value of the functional set applied to a polynomial
@@ -153,7 +157,10 @@ public:
      * \return the function space from which the functionals take
      * their values
      */
-    space_type const& functionSpace() const { return _M_space; }
+    space_type const& functionSpace() const
+    {
+        return _M_space;
+    }
 
     /**
      * This works only if the basis is orthonormal
@@ -161,7 +168,10 @@ public:
      * \return the representation of the functional set using basis
      * of the function space.
      */
-    matrix_type const& rep() const { return _M_mat; }
+    matrix_type const& rep() const
+    {
+        return _M_mat;
+    }
 
 
     //@}
@@ -173,7 +183,10 @@ public:
     /**
      * set the function space
      */
-    void setFunctionSpace( space_type const& __space ) { _M_space = __space; }
+    void setFunctionSpace( space_type const& __space )
+    {
+        _M_space = __space;
+    }
 
     /**
      * set the Functional set
@@ -188,20 +201,24 @@ public:
             // update matrix associated with functionals applied to the
             // basis of the function space
             _M_mat = ublas::zero_matrix<value_type>( fset.size(), fset[0].coeff().size2() );
+
             //std::cout << "mat size" << _M_mat << "\n";
             for ( uint16_type i = 0; i < fset.size(); ++i )
             {
                 //std::cout << "Functional " << i << "=" << fset[i].coeff() << "\n";
                 ublas::row( _M_mat, i ) = ublas::row( fset[i].coeff(), 0 );
             }
+
             //std::cout << "mat size" << _M_mat << "\n";
 
         }
+
         else
         {
             // update matrix associated with functionals applied to the
             // basis of the function space
             _M_mat = ublas::zero_matrix<value_type>( space_type::nComponents*fset.size(), fset[0].coeff().size2() );
+
             for ( uint16_type i = 0; i < fset.size(); ++i )
             {
                 ublas::project( _M_mat,

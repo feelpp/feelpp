@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -39,37 +39,37 @@
 #if FEELPP_HAS_DLOPEN
 
 #if FEELPP_HAS_DLFCN_H
-  #include <dlfcn.h>
+#include <dlfcn.h>
 #else
-  #if defined(__CYGWIN__)
-    #define RTLD_LAZY     1
-    #define RTLD_NOW      2
-    #define RTLD_LOCAL    0
-    #define RTLD_GLOBAL   4
-    #define RTLD_NOLOAD   0
-    #define RTLD_NODELETE 0
-  #elif defined(__APPLE__)
-    #define RTLD_LAZY     0x1
-    #define RTLD_NOW      0x2
-    #define RTLD_LOCAL    0x4
-    #define RTLD_GLOBAL   0x8
-    #define RTLD_NOLOAD   0x10
-    #define RTLD_NODELETE 0x80
-  #elif defined(__linux__)
-    #define RTLD_LAZY     0x00001
-    #define RTLD_NOW      0x00002
-    #define RTLD_LOCAL    0x00000
-    #define RTLD_GLOBAL   0x00100
-    #define RTLD_NOLOAD   0x00004
-    #define RTLD_NODELETE 0x01000
-  #endif
-  #if defined(c_plusplus) || defined(__cplusplus)
-  extern "C" {
-  #endif
-  extern void *dlopen(const char *, int);
-  #if defined(c_plusplus) || defined(__cplusplus)
-  }
-  #endif
+#if defined(__CYGWIN__)
+#define RTLD_LAZY     1
+#define RTLD_NOW      2
+#define RTLD_LOCAL    0
+#define RTLD_GLOBAL   4
+#define RTLD_NOLOAD   0
+#define RTLD_NODELETE 0
+#elif defined(__APPLE__)
+#define RTLD_LAZY     0x1
+#define RTLD_NOW      0x2
+#define RTLD_LOCAL    0x4
+#define RTLD_GLOBAL   0x8
+#define RTLD_NOLOAD   0x10
+#define RTLD_NODELETE 0x80
+#elif defined(__linux__)
+#define RTLD_LAZY     0x00001
+#define RTLD_NOW      0x00002
+#define RTLD_LOCAL    0x00000
+#define RTLD_GLOBAL   0x00100
+#define RTLD_NOLOAD   0x00004
+#define RTLD_NODELETE 0x01000
+#endif
+#if defined(c_plusplus) || defined(__cplusplus)
+extern "C" {
+#endif
+    extern void *dlopen( const char *, int );
+#if defined(c_plusplus) || defined(__cplusplus)
+}
+#endif
 #endif
 
 #ifndef RTLD_LAZY
@@ -115,41 +115,52 @@ static void * my_dlopen(const char *name, int mode) {
 #define dlopen my_dlopen
 */
 
-static void OPENMPI_dlopen_libmpi(void)
+static void OPENMPI_dlopen_libmpi( void )
 {
-  int mode = RTLD_NOW | RTLD_GLOBAL | RTLD_NOLOAD;
-  void *handle = 0;
+    int mode = RTLD_NOW | RTLD_GLOBAL | RTLD_NOLOAD;
+    void *handle = 0;
 #if defined(__CYGWIN__)
-  if (!handle)
-    handle = dlopen("cygmpi.dll", mode);
-  if (!handle)
-    handle = dlopen("mpi.dll", mode);
+
+    if ( !handle )
+        handle = dlopen( "cygmpi.dll", mode );
+
+    if ( !handle )
+        handle = dlopen( "mpi.dll", mode );
+
 #elif defined(__APPLE__)
-  /* Mac OS X */
-  if (!handle)
-    handle = dlopen("libmpi.1.dylib", mode);
-  if (!handle)
-    handle = dlopen("libmpi.0.dylib", mode);
-  if (!handle)
-    handle = dlopen("libmpi.dylib", mode);
+
+    /* Mac OS X */
+    if ( !handle )
+        handle = dlopen( "libmpi.1.dylib", mode );
+
+    if ( !handle )
+        handle = dlopen( "libmpi.0.dylib", mode );
+
+    if ( !handle )
+        handle = dlopen( "libmpi.dylib", mode );
+
 #else
-  /* GNU/Linux and others */
-  if (!handle)
-    handle = dlopen("libmpi.so.1", mode);
-  if (!handle)
-    handle = dlopen("libmpi.so.0", mode);
-  if (!handle)
-    handle = dlopen("libmpi.so", mode);
+
+    /* GNU/Linux and others */
+    if ( !handle )
+        handle = dlopen( "libmpi.so.1", mode );
+
+    if ( !handle )
+        handle = dlopen( "libmpi.so.0", mode );
+
+    if ( !handle )
+        handle = dlopen( "libmpi.so", mode );
+
 #endif
 }
 #if 0
 static PetscErrorCode
-PyPetsc_PetscInitialize(int *argc,char ***args,
-                        const char file[],
-                        const char help[])
+PyPetsc_PetscInitialize( int *argc,char ***args,
+                         const char file[],
+                         const char help[] )
 {
-  OPENMPI_dlopen_libmpi();
-  return PetscInitialize(argc,args,file,help);
+    OPENMPI_dlopen_libmpi();
+    return PetscInitialize( argc,args,file,help );
 }
 #undef  PetscInitialize
 #define PetscInitialize PyPetsc_PetscInitialize

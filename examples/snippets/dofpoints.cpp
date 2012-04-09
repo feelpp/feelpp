@@ -33,20 +33,20 @@
 #include <feel/feelfilters/gmsh.hpp>
 #include <feel/feelvf/vf.hpp>
 
-int main(int argc, char** argv)
+int main( int argc, char** argv )
 {
     using namespace Feel;
     using namespace Feel::vf;
-    Feel::Environment env(argc, argv );
+    Feel::Environment env( argc, argv );
     typedef Mesh<Simplex<2> > mesh_type;
     typedef FunctionSpace<mesh_type,bases<Lagrange<2,Vectorial> > > fs_type;
 
     auto mesh = createGMSHMesh( _mesh=new mesh_type,
                                 _desc=domain( _name="hypercube-2",
-                                              _usenames=true,
-                                              _shape="hypercube",
-                                              _dim=2,
-                                              _h=2 ) );
+                                        _usenames=true,
+                                        _shape="hypercube",
+                                        _dim=2,
+                                        _h=2 ) );
     auto Xh = fs_type::New( mesh );
     auto B = Xh->element();
 
@@ -55,7 +55,7 @@ int main(int argc, char** argv)
     auto dofpt_it = Xh->dof()->dofPointBegin();
     auto dofpt_en = Xh->dof()->dofPointEnd();
 
-    for( ; dofpt_it != dofpt_en; ++dofpt_it )
+    for ( ; dofpt_it != dofpt_en; ++dofpt_it )
     {
         // the data structure associated with each dot point is a tuple containing:
         //   - the dof point coordinate
@@ -66,14 +66,14 @@ int main(int argc, char** argv)
         auto dofpt_comp = dofpt_it->get<2>();
 
         // do something with the coordinate and store it in the proper vector entry in B
-        auto r = vec( (Px()-dofpt_coord[0])*(Px()-dofpt_coord[0]),
-                      (Py()-dofpt_coord[1])*(Py()-dofpt_coord[1]) );
-        auto I = integrate( elements(mesh), r ).evaluate();
+        auto r = vec( ( Px()-dofpt_coord[0] )*( Px()-dofpt_coord[0] ),
+                      ( Py()-dofpt_coord[1] )*( Py()-dofpt_coord[1] ) );
+        auto I = integrate( elements( mesh ), r ).evaluate();
         std::cout << "I = " << I << "\n";
         B[dofpt_id] = I( dofpt_comp, 0 );
         std::cout << "Dof coordinate[" << dofpt_id << "]=" << dofpt_coord << ", component=" << dofpt_comp << "\n";
         std::cout << "B[" << dofpt_id << "]=" << B[dofpt_id] << "\n";
 
-  }
+    }
 }
 //# endmarker1 #

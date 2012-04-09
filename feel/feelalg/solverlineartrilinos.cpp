@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
    This file is part of the Feel library
 
@@ -37,16 +37,17 @@ template <typename T>
 void
 SolverLinearTrilinos<T>::init()
 {
-    if (!this->initialized())
-        {
-            this->setInitialized( true );
+    if ( !this->initialized() )
+    {
+        this->setInitialized( true );
 
-            M_Solver.SetParameters( M_List, true );
-        }
+        M_Solver.SetParameters( M_List, true );
+    }
+
     // AztecOO defined a certain number of output parameters, and store them
     // in a double vector called status.
     double status[AZ_STATUS_SIZE];
-    solver.GetAllAztecStatus(status);
+    solver.GetAllAztecStatus( status );
 }
 
 template <typename T>
@@ -66,19 +67,19 @@ SolverLinearTrilinos<T>::getOptions()
 template <typename T>
 std::pair<unsigned int, real_type>
 SolverLinearTrilinos<T>::solve ( MatrixSparse<T>  const& matrix,
-                              Vector<T> & solution,
-                              Vector<T> const& rhs,
-                              const double tol,
-                              const unsigned int m_its )
+                                 Vector<T> & solution,
+                                 Vector<T> const& rhs,
+                                 const double tol,
+                                 const unsigned int m_its )
 {
-    Debug(10010) << "Matrix solver...\n";
+    Debug( 10010 ) << "Matrix solver...\n";
 
     setRHS( rhs );
     setLHS( solution );
     setUserOperator( matrix );
 
     M_Solver.SetParameters( M_List, true );
-    M_Solver.Iterate( m_its, tol);
+    M_Solver.Iterate( m_its, tol );
 
     return std::make_pair( M_Solver.NumIters(), M_Solver.TrueResidual() );
 }
@@ -86,11 +87,11 @@ SolverLinearTrilinos<T>::solve ( MatrixSparse<T>  const& matrix,
 template <typename T>
 std::pair<unsigned int, real_type>
 SolverLinearTrilinos<T>::solve (  MatrixSparse<T> const& matrix,
-                               MatrixSparse<T> const& preconditioner,
-                               Vector<T>& solution,
-                               Vector<T> const& rhs,
-                               const double tol,
-                               const unsigned int m_its)
+                                  MatrixSparse<T> const& preconditioner,
+                                  Vector<T>& solution,
+                                  Vector<T> const& rhs,
+                                  const double tol,
+                                  const unsigned int m_its )
 {
     std::cout << "Matrix solver with preconditioner...\n";
 
@@ -99,7 +100,7 @@ SolverLinearTrilinos<T>::solve (  MatrixSparse<T> const& matrix,
     setUserOperator( matrix );
 
     M_Solver.SetParameters( M_List, true );
-    M_Solver.Iterate( m_its, tol);
+    M_Solver.Iterate( m_its, tol );
 
     return std::make_pair( M_Solver.NumIters(), M_Solver.TrueResidual() );
 }

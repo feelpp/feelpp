@@ -5,7 +5,7 @@
 int main( int argc, char** argv )
 {
     Feel::OpusApp<Feel::UnsteadyHeat1D> app( argc, argv,
-                                                      Feel::makeUnsteadyHeat1DAbout( "unsteadyHeat1d" ),
-                                                      Feel::makeUnsteadyHeat1DOptions()  );
+            Feel::makeUnsteadyHeat1DAbout( "unsteadyHeat1d" ),
+            Feel::makeUnsteadyHeat1DOptions()  );
     app.run();
 }

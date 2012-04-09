@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -70,7 +70,8 @@ template<typename VectorType>
 void printVector( VectorType vector, std::string name,
                   std::ostream& os = std::cout )
 {
-    for (int i=0; i<vector.size(); ++i) {
+    for ( int i=0; i<vector.size(); ++i )
+    {
         os << name << "[" << i << "] = " << vector[i] << std::endl;
     }
 }
@@ -80,10 +81,14 @@ void printMatrix( MatrixType matrix, std::string name,
                   std::ostream& os = std::cout )
 {
     os << name << " =" << std::endl;
-    for (int i=0; i<matrix.size1(); ++i) {
-        for (int j=0; j<matrix.size2(); ++j) {
-            os << matrix(i,j) << " ";
+
+    for ( int i=0; i<matrix.size1(); ++i )
+    {
+        for ( int j=0; j<matrix.size2(); ++j )
+        {
+            os << matrix( i,j ) << " ";
         }
+
         os << std::endl;
     }
 }
@@ -93,22 +98,22 @@ inline
 Feel::po::options_description
 makeOptions()
 {
-    Feel::po::options_description testoptions("test convergence options");
+    Feel::po::options_description testoptions( "test convergence options" );
     testoptions.add_options()
-        ("hsize", Feel::po::value<double>()->default_value( 0.5 ), "first h value to start convergence")
-        ("nmesh", Feel::po::value<int>()->default_value( 3 ), "number of meshes to build ")
-        ("beta", Feel::po::value<double>()->default_value( 1.0 ), "beta value in -Delta u + beta u = f")
-        ("bccoeff", Feel::po::value<double>()->default_value( 100.0 ), "coeff for weak Dirichlet conditions")
-        ("bctype", Feel::po::value<int>()->default_value( 0 ), "Dirichlet condition type(0=elimination,1=penalisation, 2=weak")
-        ("testall", "run all test cases")
-        ("export", "export results(ensight, data file(1D)")
+    ( "hsize", Feel::po::value<double>()->default_value( 0.5 ), "first h value to start convergence" )
+    ( "nmesh", Feel::po::value<int>()->default_value( 3 ), "number of meshes to build " )
+    ( "beta", Feel::po::value<double>()->default_value( 1.0 ), "beta value in -Delta u + beta u = f" )
+    ( "bccoeff", Feel::po::value<double>()->default_value( 100.0 ), "coeff for weak Dirichlet conditions" )
+    ( "bctype", Feel::po::value<int>()->default_value( 0 ), "Dirichlet condition type(0=elimination,1=penalisation, 2=weak" )
+    ( "testall", "run all test cases" )
+    ( "export", "export results(ensight, data file(1D)" )
 
-        ;
-    Feel::po::options_description solveroptions("algebraic solver options");
+    ;
+    Feel::po::options_description solveroptions( "algebraic solver options" );
     solveroptions.add_options()
-        ("verbose", Feel::po::value<int>()->default_value( 0 ), "(=0,1,2) print solver iterations")
-        ("maxiter", Feel::po::value<int>()->default_value( 1000 ), "set maximum number of iterations")
-        ;
+    ( "verbose", Feel::po::value<int>()->default_value( 0 ), "(=0,1,2) print solver iterations" )
+    ( "maxiter", Feel::po::value<int>()->default_value( 1000 ), "set maximum number of iterations" )
+    ;
     return testoptions.add( solveroptions );
 }
 inline
@@ -116,14 +121,14 @@ Feel::AboutData
 makeAbout()
 {
     Feel::AboutData about( "test_convergence" ,
-                            "test_convergence" ,
-                            "0.1",
-                            "Convergence test in nD(n=1,2,3) for elliptic PDEs",
-                            Feel::AboutData::License_GPL,
-                            "Copyright (c) 2005-2006 EPFL");
+                           "test_convergence" ,
+                           "0.1",
+                           "Convergence test in nD(n=1,2,3) for elliptic PDEs",
+                           Feel::AboutData::License_GPL,
+                           "Copyright (c) 2005-2006 EPFL" );
 
-    about.addAuthor("Christoph Winkelmann", "developer", "christoph.winkelmann@epfl.ch", "");
-    about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
+    about.addAuthor( "Christoph Winkelmann", "developer", "christoph.winkelmann@epfl.ch", "" );
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
     return about;
 
 }
@@ -138,7 +143,7 @@ template< typename value_type,
           int imOrder>
 class TestConvergence
     :
-        public Application
+public Application
 {
     typedef Application super;
 public:
@@ -188,7 +193,7 @@ public:
         Debug() << "[TestConvergence] bccoeff = " << bcCoeff << "\n";
         Debug() << "[TestConvergence] nmesh = " << nMesh << "\n";
         Debug() << "[TestConvergence] bctype = " << this->vm()["bctype"].template as<int>() << "\n";
-        Debug() << "[TestConvergence] export = " << this->vm().count("export") << "\n";
+        Debug() << "[TestConvergence] export = " << this->vm().count( "export" ) << "\n";
 
         timeSet->setTimeIncrement( 1.0 );
         exporter->addTimeSet( timeSet );
@@ -210,7 +215,7 @@ public:
         Debug() << "[TestConvergence] bccoeff = " << bcCoeff << "\n";
         Debug() << "[TestConvergence] nmesh = " << nMesh << "\n";
         Debug() << "[TestConvergence] bctype = " << this->vm()["bctype"].template as<int>() << "\n";
-        Debug() << "[TestConvergence] export = " << this->vm().count("export") << "\n";
+        Debug() << "[TestConvergence] export = " << this->vm().count( "export" ) << "\n";
 
         timeSet->setTimeIncrement( 1.0 );
         exporter->addTimeSet( timeSet );
@@ -231,8 +236,8 @@ public:
         Debug() << "[TestConvergence] beta = " << beta << "\n";
         Debug() << "[TestConvergence] bccoeff = " << bcCoeff << "\n";
         Debug() << "[TestConvergence] nmesh = " << nMesh << "\n";
-        Debug() << "[TestConvergence] bcweak = " << this->vm().count("bcweak") << "\n";
-        Debug() << "[TestConvergence] export = " << this->vm().count("export") << "\n";
+        Debug() << "[TestConvergence] bcweak = " << this->vm().count( "bcweak" ) << "\n";
+        Debug() << "[TestConvergence] export = " << this->vm().count( "export" ) << "\n";
 
         timeSet->setTimeIncrement( 1.0 );
         exporter->addTimeSet( timeSet );
@@ -307,7 +312,8 @@ TestConvergence<value_type,Basis,gtOrder, imOrder>::createMesh( double meshSize 
     std::ostringstream ostr;
     std::ostringstream nameStr;
 
-    switch( dim ) {
+    switch ( dim )
+    {
     case 2:
         ostr << "h=" << meshSize << ";\n"
              << "Point(1) = {-1,-1,0,h};\n"
@@ -325,6 +331,7 @@ TestConvergence<value_type,Basis,gtOrder, imOrder>::createMesh( double meshSize 
              << "Physical Surface(6) = {5};\n";
         nameStr << "square." << meshSize;
         break;
+
     case 3:
         ostr << "h=" << meshSize << ";\n"
              << "Point(1) = {-1,-1,-1,h};\n"
@@ -345,11 +352,13 @@ TestConvergence<value_type,Basis,gtOrder, imOrder>::createMesh( double meshSize 
              << "Physical Volume(2) = {1};\n";
         nameStr << "cube." << meshSize;
         break;
+
     default:
         std::ostringstream os;
         os << "invalid dimension: " << dim;
         throw std::logic_error( os.str() );
     }
+
     std::string fname = __gmsh.generate( nameStr.str(), ostr.str() );
     ImporterGmsh<mesh_type> import( fname );
     mesh->accept( import );
@@ -366,28 +375,35 @@ void
 TestConvergence<value_type,Basis,gtOrder, imOrder>::run()
 {
     if ( this->vm().count( "help" ) )
-        {
-            std::cout << this->optionsDescription() << "\n";
-            return;
-        }
+    {
+        std::cout << this->optionsDescription() << "\n";
+        return;
+    }
 
-    std::vector<value_type> h(nMesh);
-    std::vector<value_type> err(nMesh);
-    std::vector<value_type> order(nMesh);
-    std::vector<value_type> time(nMesh);
+    std::vector<value_type> h( nMesh );
+    std::vector<value_type> err( nMesh );
+    std::vector<value_type> order( nMesh );
+    std::vector<value_type> time( nMesh );
 
     value_type meshSize = initialMeshSize;
 
-    for(int iMesh = 0; iMesh<nMesh; ++iMesh, meshSize /= 2.0 ) {
+    for ( int iMesh = 0; iMesh<nMesh; ++iMesh, meshSize /= 2.0 )
+    {
         h[iMesh] = meshSize;
-        err[iMesh] = this->onceTest(iMesh, meshSize);
-        if (iMesh == 0) {
+        err[iMesh] = this->onceTest( iMesh, meshSize );
+
+        if ( iMesh == 0 )
+        {
             order[iMesh] = 0;
-        } else {
-            order[iMesh] = std::log(err[iMesh]/err[iMesh-1]) /
-                std::log(  h[iMesh]/  h[iMesh-1]);
+        }
+
+        else
+        {
+            order[iMesh] = std::log( err[iMesh]/err[iMesh-1] ) /
+                           std::log(  h[iMesh]/  h[iMesh-1] );
         }
     }
+
     int width = 20;
     std::cout << std::setw( width/2 ) << std::right << "h"
               << std::setw( width/2 ) << std::right << "P"
@@ -396,7 +412,9 @@ TestConvergence<value_type,Basis,gtOrder, imOrder>::run()
               << std::setw( width/1 ) << std::right << "ass. time(s)"
               << std::setw( width/1 ) << std::right << "sol. time(s)"
               << std::endl;
-    for(int iMesh = 0; iMesh<nMesh; ++iMesh) {
+
+    for ( int iMesh = 0; iMesh<nMesh; ++iMesh )
+    {
         std::cout << std::setw( width/2 ) << std::right << h[iMesh]
                   << std::setw( width/2 ) << std::right << feOrder
                   << std::setw( width/1 ) << std::right << err[iMesh]
@@ -410,10 +428,12 @@ TestConvergence<value_type,Basis,gtOrder, imOrder>::run()
 #if USE_BOOST_TEST
     BOOST_CHECK( order[nMesh-1] >= feOrder + 1 - orderTol );
 #else
+
     if ( order[nMesh-1] < feOrder + 1 - orderTol )
         std::cout << "[FAILURE] wrong L2 convergence order for FE<"
                   << dim << "," << feOrder << ">\n"
                   << "[FAILURE] order should have been " << feOrder + 1 << "\n";
+
 #endif
 } // TestConvergence::run
 
@@ -447,8 +467,8 @@ TestConvergence<value_type,Basis,gtOrder, imOrder>::onceTest( int iMesh, double 
     IM_PK<dim, imOrder> im;
 
     // -- EXACT SOLUTION --
-    __typeof__(     sin(pi*Px())*cos(pi*Py())*cos(pi*Pz()) )
-        exact_sol = sin(pi*Px())*cos(pi*Py())*cos(pi*Pz());
+    __typeof__(     sin( pi*Px() )*cos( pi*Py() )*cos( pi*Pz() ) )
+    exact_sol = sin( pi*Px() )*cos( pi*Py() )*cos( pi*Pz() );
 
     // -- RIGHT HAND SIDE --
     VectorUblas<value_type> F( u.size() );
@@ -461,18 +481,19 @@ TestConvergence<value_type,Basis,gtOrder, imOrder>::onceTest( int iMesh, double 
     sparse_matrix_type D;
     BilinearForm<space_type, space_type, sparse_matrix_type> vf_D( Xh, Xh, D );
     timers[iMesh]["assembly"].first.restart();
-    vf_D =   integrate( elements(*mesh), im,
+    vf_D =   integrate( elements( *mesh ), im,
                         //+ dot( gradt(u), grad(v) )
-                        dxt(u)*dx(v)+ dyt(u)*dy(v)+dzt(u)*dz(v)
+                        dxt( u )*dx( v )+ dyt( u )*dy( v )+dzt( u )*dz( v )
                         - div( v ) * idt( p )
                         - divt( u ) * id( q )
-                        + 1e-6*idt(p)*id(q) );
+                        + 1e-6*idt( p )*id( q ) );
+
     if ( this->vm()[ "bctype" ].template as<int>() == 0 ||
-         this->vm()[ "bctype" ].template as<int>() == 1 )
+            this->vm()[ "bctype" ].template as<int>() == 1 )
         vf_D +=
-            on( markedfaces(*mesh,10), u, F, oneX(),
+            on( markedfaces( *mesh,10 ), u, F, oneX(),
                 on_strategy_type( this->vm()["bctype"].template as<int>() ) ) +
-            on( markedfaces(*mesh,20), u, F, 0,
+            on( markedfaces( *mesh,20 ), u, F, 0,
                 on_strategy_type( this->vm()["bctype"].template as<int>() ) );
 
     D.close();
@@ -502,25 +523,26 @@ template< typename value_type,
 template<typename Mat, typename Vec1, typename Vec2>
 void
 TestConvergence<value_type,Basis,gtOrder, imOrder>::solveNonSym( int iMesh,
-                                                                 Mat const& D,
-                                                                 Vec1& u,
-                                                                 Vec2 const& F )
+        Mat const& D,
+        Vec1& u,
+        Vec2 const& F )
 {
     timers[iMesh]["solver"].first.restart();
 
-    gmm::iteration iter(2.0E-10);
+    gmm::iteration iter( 2.0E-10 );
     iter.set_noisy( this->vm()["verbose"].template as<int>() );
     iter.set_maxiter( this->vm()["maxiter"].template as<int>() );
     // incomplete LU with k fill-in and threshold preconditioner.
     // Efficient but could be costly.
-    gmm::ilut_precond<typename sparse_matrix_type::matrix_type> P(D.mat(), 2, 1e-3);
+    gmm::ilut_precond<typename sparse_matrix_type::matrix_type> P( D.mat(), 2, 1e-3 );
 
     // Conjugate gradient
-    gmm::bicgstab( D.mat(), u.container(), F, P, iter);
+    gmm::bicgstab( D.mat(), u.container(), F, P, iter );
+
     if ( !iter.converged() )
-        {
-            std::cout << "stiffness solver didn't converge" << std::endl;
-        }
+    {
+        std::cout << "stiffness solver didn't converge" << std::endl;
+    }
 
     timers[iMesh]["solver"].second = timers[iMesh]["solver"].first.elapsed();
 } // TestConvergence::solveNonSym
@@ -531,26 +553,27 @@ template< typename value_type,
 template<typename Mat, typename Vec1, typename Vec2>
 void
 TestConvergence<value_type,Basis,gtOrder, imOrder>::solveSym( int iMesh,
-                                                              Mat const& D,
-                                                              Vec1& u,
-                                                              Vec2 const& F )
+        Mat const& D,
+        Vec1& u,
+        Vec2 const& F )
 {
     timers[iMesh]["solver"].first.restart();
 
-    gmm::iteration iter(2.0E-10);
+    gmm::iteration iter( 2.0E-10 );
     iter.set_noisy( this->vm()["verbose"].template as<int>() );
     iter.set_maxiter( this->vm()["maxiter"].template as<int>() );
     // incomplete LU with k fill-in and threshold preconditioner.
     // Efficient but could be costly.
-    gmm::ildltt_precond<typename sparse_matrix_type::matrix_type> P(D.mat(), 2, 1e-3);
+    gmm::ildltt_precond<typename sparse_matrix_type::matrix_type> P( D.mat(), 2, 1e-3 );
 
     // Conjugate gradient
-    gmm::cg( D.mat(), u.container(), F, P, iter);
+    gmm::cg( D.mat(), u.container(), F, P, iter );
 
     if ( !iter.converged() )
-        {
-            std::cout << "mass solver didn't converge" << std::endl;
-        }
+    {
+        std::cout << "mass solver didn't converge" << std::endl;
+    }
+
     //std::cout << "iterations count = " << iter.get_iteration() << std::endl;
 
     timers[iMesh]["solver"].second = timers[iMesh]["solver"].first.elapsed();
@@ -561,26 +584,28 @@ template< typename value_type,
           int imOrder>
 void
 TestConvergence<value_type,Basis,gtOrder, imOrder>::exportResults( int iMesh,
-                                                                   element_0_type const& u,
-                                                                   element_1_type const& p )
+        element_0_type const& u,
+        element_1_type const& p )
 
 {
     timers[iMesh]["export"].first.restart();
+
     // -- EXPORT --
     if ( this->vm().count( "export" ) )
-        {
+    {
 #if 0
-            // interpolate on the P1 associated space
-            typename space_type::template P1Lagrange<0> p1lag( u.functionSpace() );
-            typename space_type::template P1Lagrange<0>::p1_type::element_type u_p1 = p1lag( u );
+        // interpolate on the P1 associated space
+        typename space_type::template P1Lagrange<0> p1lag( u.functionSpace() );
+        typename space_type::template P1Lagrange<0>::p1_type::element_type u_p1 = p1lag( u );
 
-            typename timeset_type::step_ptrtype timeStep = timeSet->step( float(Nstep) );
-            timeStep->setMesh( p1lag.mesh() );
-            timeStep->addNodalVector( "u", u_p1.size(), u_p1.begin(), u_p1.end()  );
-            //timeStep->addNodalScalar( "p", p.size(), p.begin(), p.end()  );
-            exporter->save();
+        typename timeset_type::step_ptrtype timeStep = timeSet->step( float( Nstep ) );
+        timeStep->setMesh( p1lag.mesh() );
+        timeStep->addNodalVector( "u", u_p1.size(), u_p1.begin(), u_p1.end()  );
+        //timeStep->addNodalScalar( "p", p.size(), p.begin(), p.end()  );
+        exporter->save();
 #endif
-        } // export
+    } // export
+
     timers[iMesh]["export"].second = timers[iMesh]["export"].first.elapsed();
 } // TestConvergence::export
 } // Feel
@@ -596,18 +621,18 @@ struct lagrange_test_suite : public test_suite
     {
 
         typedef TestConvergence<double,
-                                fusion::vector<fem::Lagrange<geoDim, feOrder, Vectorial, Continuous, double>,
-                                               fem::Lagrange<geoDim, feOrder, Scalar, Continuous, double> >,
-                                gtOrder,
-                                imOrder> type;
+                fusion::vector<fem::Lagrange<geoDim, feOrder, Vectorial, Continuous, double>,
+                fem::Lagrange<geoDim, feOrder, Scalar, Continuous, double> >,
+                gtOrder,
+                imOrder> type;
     };
     template<typename AboutType, typename OptionsType>
     lagrange_test_suite( int argc, char** argv, AboutType const& about, OptionsType const& options )
         :
-        test_suite("lagrange basis convergence testsuite")
+        test_suite( "lagrange basis convergence testsuite" )
     {
         // 2D
-        add( BOOST_TEST_CASE( (typename tc<2,1,2>::type( argc, argv, about, options )) ) );
+        add( BOOST_TEST_CASE( ( typename tc<2,1,2>::type( argc, argv, about, options ) ) ) );
         //add( BOOST_TEST_CASE( (typename tc<2,2,4>::type( argc, argv, about, options )) ) );
         //add( BOOST_TEST_CASE( (typename tc<2,5,10>::type( argc, argv, about, options )) ) );
 
@@ -624,7 +649,7 @@ init_unit_test_suite( int argc, char* argv[] )
     test_suite* test = BOOST_TEST_SUITE( "Elliptic finite element solver convergence test suite" );
 
 
-    BOOST_MESSAGE("Convergence test for scalar Lagrange basis functions");
+    BOOST_MESSAGE( "Convergence test for scalar Lagrange basis functions" );
     test->add( new lagrange_test_suite( argc, argv, makeAbout(), makeOptions() ) );
     //BOOST_MESSAGE("Convergence test for vectorial Lagrange basis functions");
     //test->add( new lagrange_test_suite<Vectorial>( argc, argv, makeAbout(), makeOptions() ) );
@@ -639,20 +664,27 @@ main( int argc, char* argv[] )
     using namespace Feel;
 
 #if 0
-    try {
+
+    try
+    {
         TestConvergence<double, 2, 1, gtOrder, 2> app( argc, argv, makeAbout(), makeOptions() );
         app.run();
     }
-    catch(std::exception& e) {
+
+    catch ( std::exception& e )
+    {
         std::cerr << "error: " << e.what() << "\n";
         return 1;
     }
-    catch(...) {
+
+    catch ( ... )
+    {
         std::cerr << "Exception of unknown type!\n";
     }
+
 #else
     typedef fusion::vector<fem::Lagrange<2, 2, Vectorial, Continuous, double>,
-        fem::Lagrange<2, 1, Scalar, Continuous, double> > basis_type;
+            fem::Lagrange<2, 1, Scalar, Continuous, double> > basis_type;
     TestConvergence<double, basis_type,gtOrder, 2> app( argc, argv, makeAbout(), makeOptions() );
     app.run();
 #endif

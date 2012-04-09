@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -55,7 +55,7 @@ class PointSet : public VisitableBase<>
 {
     typedef VisitableBase<> super;
 
- public:
+public:
 
     typedef Convex convex_type;
     typedef T value_type;
@@ -72,37 +72,37 @@ class PointSet : public VisitableBase<>
         _M_npoints( 0 ),
         _M_points(),
         _M_points_face( Convex::numTopologicalFaces )
-        {}
+    {}
 
-    PointSet(const self_type& P)
+    PointSet( const self_type& P )
         :
         super(),
         _M_npoints( P.nPoints() ),
         _M_points( P.points() ),
         _M_points_face( P._M_points_face )
-        {}
+    {}
 
-    PointSet(uint32_type Npoints)
+    PointSet( uint32_type Npoints )
         :
         super(),
-        _M_npoints(Npoints),
-        _M_points(Convex::nDim, Npoints),
+        _M_npoints( Npoints ),
+        _M_points( Convex::nDim, Npoints ),
         _M_points_face( Convex::numTopologicalFaces )
-        {}
+    {}
 
-    PointSet(uint32_type Npoints, uint16_type Dim)
+    PointSet( uint32_type Npoints, uint16_type Dim )
         :
         super(),
-        _M_npoints(Npoints),
-        _M_points(Dim, Npoints),
+        _M_npoints( Npoints ),
+        _M_points( Dim, Npoints ),
         _M_points_face( Convex::numTopologicalFaces )
-        {}
+    {}
 
-    PointSet(nodes_type const& SomePoints)
+    PointSet( nodes_type const& SomePoints )
         :
         super(),
-        _M_npoints(SomePoints.size2()),
-        _M_points(SomePoints),
+        _M_npoints( SomePoints.size2() ),
+        _M_points( SomePoints ),
         _M_points_face( Convex::numTopologicalFaces )
     {}
 
@@ -110,21 +110,34 @@ class PointSet : public VisitableBase<>
     {}
 
     self_type& operator=( self_type const& p )
+    {
+        if ( this != &p )
         {
-            if ( this != &p )
-                {
-                    _M_npoints = p._M_npoints;
-                    _M_points = p._M_points;
-                    _M_points_face = p._M_points_face;
-                }
-            return *this;
+            _M_npoints = p._M_npoints;
+            _M_points = p._M_points;
+            _M_points_face = p._M_points_face;
         }
 
+        return *this;
+    }
 
-    uint32_type nPoints() const { return _M_npoints; }
-    nodes_type const& points() const { return _M_points; }
-    ublas::matrix_column<nodes_type const> point( uint32_type __i ) const { return ublas::column( _M_points, __i ); }
-    ublas::matrix_column<nodes_type> point( uint32_type __i ) { return ublas::column( _M_points, __i ); }
+
+    uint32_type nPoints() const
+    {
+        return _M_npoints;
+    }
+    nodes_type const& points() const
+    {
+        return _M_points;
+    }
+    ublas::matrix_column<nodes_type const> point( uint32_type __i ) const
+    {
+        return ublas::column( _M_points, __i );
+    }
+    ublas::matrix_column<nodes_type> point( uint32_type __i )
+    {
+        return ublas::column( _M_points, __i );
+    }
 
 
     nodes_type const& points( uint16_type f ) const
@@ -178,34 +191,35 @@ class PointSet : public VisitableBase<>
         ofs << "p=path.path(";
 
         for ( uint16_type i = 0; i < Convex::numEdges; ++i )
+        {
+            for ( uint16_type  j = 0; j < 2; ++j )
             {
-                for(uint16_type  j = 0; j < 2; ++j )
-                    {
-                        node_type x( 2 );
+                node_type x( 2 );
 
-                        if ( Convex::nRealDim == 1 )
-                            {
-                                x( 0 ) = RefConv.edgeVertex(i,j)(0);
-                                x( 1 ) = value_type( 0 );
-                            }
+                if ( Convex::nRealDim == 1 )
+                {
+                    x( 0 ) = RefConv.edgeVertex( i,j )( 0 );
+                    x( 1 ) = value_type( 0 );
+                }
 
-                        if ( Convex::nRealDim == 2 )
-                            {
-                                x = RefConv.edgeVertex( i, j );
-                            }
+                if ( Convex::nRealDim == 2 )
+                {
+                    x = RefConv.edgeVertex( i, j );
+                }
 
-                        if ( Convex::nRealDim == 3 )
-                            {
-                                x(0) = RefConv.edgeVertex( i, j )(0)+RefConv.edgeVertex( i, j )(1)*std::cos(M_PI/4);
-                                x(1) = RefConv.edgeVertex( i, j )(2)+RefConv.edgeVertex( i, j )(1)*std::sin(M_PI/4);
-                            }
+                if ( Convex::nRealDim == 3 )
+                {
+                    x( 0 ) = RefConv.edgeVertex( i, j )( 0 )+RefConv.edgeVertex( i, j )( 1 )*std::cos( M_PI/4 );
+                    x( 1 ) = RefConv.edgeVertex( i, j )( 2 )+RefConv.edgeVertex( i, j )( 1 )*std::sin( M_PI/4 );
+                }
 
-                        if ( j == 0 )
-                            ofs << "path.moveto(" << double( x( 0 ) )<< "," << double( x( 1 ) ) << "),\n";
-                        else if ( j == 1 )
-                            ofs << "path.lineto(" << double( x( 0 ) )<< "," << double( x( 1 ) ) << "),\n";
-                    }
+                if ( j == 0 )
+                    ofs << "path.moveto(" << double( x( 0 ) )<< "," << double( x( 1 ) ) << "),\n";
+
+                else if ( j == 1 )
+                    ofs << "path.lineto(" << double( x( 0 ) )<< "," << double( x( 1 ) ) << "),\n";
             }
+        }
 
         ofs << "path.closepath() )\n";
 
@@ -214,30 +228,30 @@ class PointSet : public VisitableBase<>
             << "c.stroke(p, [style.linewidth.Thin])\n";
 
         for ( uint16_type i = 0; i < nPoints(); ++i )
+        {
+            node_type x( 2 );
+
+            if ( Convex::nRealDim == 1 )
             {
-                node_type x( 2 );
-
-                if ( Convex::nRealDim == 1 )
-                    {
-                        x( 0 ) = this->point( i )( 0 );
-                        x( 1 ) = value_type( 0 );
-                    }
-
-                if ( Convex::nRealDim == 2 )
-                    {
-                        x = this->point( i );
-                    }
-
-                if ( Convex::nRealDim == 3 )
-                    {
-                        x(0) = this->point( i )(0) + this->point( i )(1)*std::cos(M_PI/4);
-                        x(1) = this->point( i )(2) + this->point( i )(1)*std::sin(M_PI/4);
-                    }
-
-
-                ofs << "c.fill ( path.circle(" << double( x( 0 ) ) << "," << double( x( 1 ) )<< ", 0.02 ),[deco.filled([color.rgb.red])])\n";
-                ofs << "c.text( " << double( x( 0 )+0.025 ) << "," << double( x( 1 )+0.025 )<< ", r\"{\\scriptsize " << i << "}\")\n";
+                x( 0 ) = this->point( i )( 0 );
+                x( 1 ) = value_type( 0 );
             }
+
+            if ( Convex::nRealDim == 2 )
+            {
+                x = this->point( i );
+            }
+
+            if ( Convex::nRealDim == 3 )
+            {
+                x( 0 ) = this->point( i )( 0 ) + this->point( i )( 1 )*std::cos( M_PI/4 );
+                x( 1 ) = this->point( i )( 2 ) + this->point( i )( 1 )*std::sin( M_PI/4 );
+            }
+
+
+            ofs << "c.fill ( path.circle(" << double( x( 0 ) ) << "," << double( x( 1 ) )<< ", 0.02 ),[deco.filled([color.rgb.red])])\n";
+            ofs << "c.text( " << double( x( 0 )+0.025 ) << "," << double( x( 1 )+0.025 )<< ", r\"{\\scriptsize " << i << "}\")\n";
+        }
 
         ofs << "c.writeEPSfile(\"" << getName() << "_" << getPointsInfo()
             << "\", document.paperformat.A4)\n";
@@ -250,7 +264,11 @@ protected:
     /**
      * set the points of the pointset
      */
-    void setPoints( nodes_type const& pts ) { _M_points = pts; _M_npoints = pts.size2(); }
+    void setPoints( nodes_type const& pts )
+    {
+        _M_points = pts;
+        _M_npoints = pts.size2();
+    }
 
     /**
      * set the pointset at face \c f using nodes \c n

@@ -82,9 +82,9 @@ FEELPP_STRONG_INLINE int VecDestroy( Vec& vec )
 FEELPP_STRONG_INLINE int VecScatterDestroy( VecScatter& scatter )
 {
 #if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
-    return ::VecScatterDestroy(&scatter);
+    return ::VecScatterDestroy( &scatter );
 #else
-    return ::VecScatterDestroy(scatter);
+    return ::VecScatterDestroy( scatter );
 #endif
 
 
@@ -106,7 +106,7 @@ FEELPP_STRONG_INLINE int ISDestroy( IS& is )
     return ::ISDestroy( is );
 #endif
 }
-FEELPP_STRONG_INLINE int KSPDestroy (KSP& ksp )
+FEELPP_STRONG_INLINE int KSPDestroy ( KSP& ksp )
 {
 #if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
     return ::KSPDestroy( &ksp );
@@ -114,16 +114,16 @@ FEELPP_STRONG_INLINE int KSPDestroy (KSP& ksp )
     return ::KSPDestroy( ksp );
 #endif
 }
-FEELPP_STRONG_INLINE int PCDestroy (PC& pc )
+FEELPP_STRONG_INLINE int PCDestroy ( PC& pc )
 {
 #if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
-    return ::PCDestroy( &pc);
+    return ::PCDestroy( &pc );
 #else
     return ::PCDestroy( pc );
 #endif
 }
 
-FEELPP_STRONG_INLINE int MatNullSpaceDestroy(MatNullSpace& nullsp )
+FEELPP_STRONG_INLINE int MatNullSpaceDestroy( MatNullSpace& nullsp )
 {
 #if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
     return ::MatNullSpaceDestroy( &nullsp );
@@ -131,16 +131,16 @@ FEELPP_STRONG_INLINE int MatNullSpaceDestroy(MatNullSpace& nullsp )
     return ::MatNullSpaceDestroy( nullsp );
 #endif
 }
-FEELPP_STRONG_INLINE int SNESDestroy (SNES& snes )
+FEELPP_STRONG_INLINE int SNESDestroy ( SNES& snes )
 {
 #if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
-    return ::SNESDestroy( &snes);
+    return ::SNESDestroy( &snes );
 #else
     return ::SNESDestroy( snes );
 #endif
 }
 
-FEELPP_STRONG_INLINE int PetscViewerDestroy (PetscViewer& petsc_viewer)
+FEELPP_STRONG_INLINE int PetscViewerDestroy ( PetscViewer& petsc_viewer )
 {
 #if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
     return ::PetscViewerDestroy( &petsc_viewer );

@@ -41,3 +41,4 @@
 /subdirs
 /tools
 /usb_modeswitch.conf
+*.orig

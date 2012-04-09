@@ -72,7 +72,7 @@ template<int _OrderU,
          typename Entity = Simplex<2,1> >
 class Kovasznay
     :
-        public ApplicationXML
+public ApplicationXML
 {
     typedef ApplicationXML super;
 public:
@@ -80,7 +80,7 @@ public:
     static const uint16_type Dim  = 2;
     static const uint16_type OrderU = _OrderU;
     static const uint16_type OrderP = _OrderP;
-    static const bool is_equal_order = (OrderU==OrderP);
+    static const bool is_equal_order = ( OrderU==OrderP );
 
     typedef double value_type;
 
@@ -158,10 +158,10 @@ private:
 private:
 
     template<typename element_1_type, typename StabExpr>
-    void addPressureStabilisation(element_1_type& p, element_1_type& q, StabExpr& stabexpr );
+    void addPressureStabilisation( element_1_type& p, element_1_type& q, StabExpr& stabexpr );
 
     template<typename element_0_type, typename StabExpr>
-    void addDivergenceStabilisation(element_0_type& u, element_0_type& v, StabExpr& stabexpr );
+    void addDivergenceStabilisation( element_0_type& u, element_0_type& v, StabExpr& stabexpr );
 
 }; // Kovasznay
 
@@ -178,78 +178,92 @@ Kovasznay<_OrderU, _OrderP, Entity>::Kovasznay( int argc, char** argv, AboutData
     M_weak_dirichlet = this->vm().count( "weak" );
     mu = this->vm()["mu"].template as<value_type>();
     Parameter h;
-    switch( OrderU )
+
+    switch ( OrderU )
     {
     case 1:
-        h = Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.02:0.025:0.05" );
+        h = Parameter( _name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.02:0.025:0.05" );
         break;
+
     case 2:
-        h = Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.02:0.025:0.1" );
+        h = Parameter( _name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.02:0.025:0.1" );
         break;
 
     case 3:
-        h = Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.035:0.025:0.2" );
+        h = Parameter( _name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.035:0.025:0.2" );
         break;
     }
+
     this->
-        //addParameter( Parameter(_name="mu",_type=CONT_ATTR,_latex="\\mu", _values=boost::lexical_cast<std::string>( mu ).c_str()))
-        addParameter( Parameter(_name="convex",_type=DISC_ATTR,_values= boost::lexical_cast<std::string>( convex_type::is_simplex  ).c_str()) )
-        .addParameter( Parameter(_name="dim",_type=DISC_ATTR,_values=boost::lexical_cast<std::string>( Dim  ).c_str()) )
-        .addParameter( Parameter(_name="orderU",_type=DISC_ATTR,_values=boost::lexical_cast<std::string>( OrderU  ).c_str()) )
-        .addParameter( Parameter(_name="orderP",_type=DISC_ATTR,_values=boost::lexical_cast<std::string>( OrderP  ).c_str()) )
-        .addParameter( h );
+    //addParameter( Parameter(_name="mu",_type=CONT_ATTR,_latex="\\mu", _values=boost::lexical_cast<std::string>( mu ).c_str()))
+    addParameter( Parameter( _name="convex",_type=DISC_ATTR,_values= boost::lexical_cast<std::string>( convex_type::is_simplex  ).c_str() ) )
+    .addParameter( Parameter( _name="dim",_type=DISC_ATTR,_values=boost::lexical_cast<std::string>( Dim  ).c_str() ) )
+    .addParameter( Parameter( _name="orderU",_type=DISC_ATTR,_values=boost::lexical_cast<std::string>( OrderU  ).c_str() ) )
+    .addParameter( Parameter( _name="orderP",_type=DISC_ATTR,_values=boost::lexical_cast<std::string>( OrderP  ).c_str() ) )
+    .addParameter( h );
 
     std::vector<Parameter> depend;
     std::vector<std::string> funcs;
-    depend.push_back(h);
+    depend.push_back( h );
     std::ostringstream oss;
+
     if ( OrderP == OrderU )
         oss << "h**" << boost::lexical_cast<std::string>( OrderP  );
+
     else if ( OrderP == OrderU-1 )
         oss << "h**" << boost::lexical_cast<std::string>( OrderU  );
+
     else if ( OrderP == OrderU-2 )
         oss << "h**" << boost::lexical_cast<std::string>( OrderP+1  );
-    funcs.push_back(oss.str());
+
+    funcs.push_back( oss.str() );
     std::vector<std::string> divfuncs;
-    oss.str("");
+    oss.str( "" );
+
     if ( OrderP == OrderU )
         oss << "h**" << boost::lexical_cast<std::string>( OrderP-1./2.  );
+
     else if ( OrderP == OrderU-1 )
         oss << "h**" << boost::lexical_cast<std::string>( OrderU-1./2.  );
+
     else if ( OrderP == OrderU-2 )
         oss << "h**" << boost::lexical_cast<std::string>( OrderP+1-1./2.  );
-    divfuncs.push_back(oss.str());
+
+    divfuncs.push_back( oss.str() );
 
 
-    oss.str("");
+    oss.str( "" );
     std::vector<std::string> funcs2;
     oss << "h**" << boost::lexical_cast<std::string>( OrderP+1 ) ;
-    funcs2.push_back(oss.str());
-    oss.str("");
+    funcs2.push_back( oss.str() );
+    oss.str( "" );
     std::vector<std::string> funcs3;
+
     if ( OrderP == OrderU-2 )
         oss << "h**" << boost::lexical_cast<std::string>( OrderU ) ;
+
     else
         oss << "h**" << boost::lexical_cast<std::string>( OrderU+1 ) ;
-    funcs3.push_back(oss.str());
+
+    funcs3.push_back( oss.str() );
 
     this->
-        addOutput( Output(_name="norm_L2_u",_latex="\\left\\| u \\right\\|_{L^2}",_dependencies=depend,_funcs=funcs3) )
-        .addOutput( Output(_name="norm_H1_u",_latex="\\left\\| u \\right\\|_{H^1}",_dependencies=depend,_funcs=funcs) )
-        .addOutput( Output(_name="norm_L2_divu",_latex="\\left\\| \\nabla \\cdot u \\right\\|_{L^2}",_dependencies=depend,_funcs=divfuncs) )
-        .addOutput( Output(_name="norm_L2_p",_latex="\\left\\| p \\right\\|_{L^2}",_dependencies=depend,_funcs=funcs2) );
+    addOutput( Output( _name="norm_L2_u",_latex="\\left\\| u \\right\\|_{L^2}",_dependencies=depend,_funcs=funcs3 ) )
+    .addOutput( Output( _name="norm_H1_u",_latex="\\left\\| u \\right\\|_{H^1}",_dependencies=depend,_funcs=funcs ) )
+    .addOutput( Output( _name="norm_L2_divu",_latex="\\left\\| \\nabla \\cdot u \\right\\|_{L^2}",_dependencies=depend,_funcs=divfuncs ) )
+    .addOutput( Output( _name="norm_L2_p",_latex="\\left\\| p \\right\\|_{L^2}",_dependencies=depend,_funcs=funcs2 ) );
 
 
-    M_lambda = 1./(2.*mu) - math::sqrt( 1./(4.*mu*mu) + 4.*M_PI*M_PI);
+    M_lambda = 1./( 2.*mu ) - math::sqrt( 1./( 4.*mu*mu ) + 4.*M_PI*M_PI );
     penalbc = this->vm()["bccoeff"].template as<value_type>();
     M_beta = this->vm()["beta"].template as<value_type>();
 
     this->//addParameterValue( mu )
-        addParameterValue( convex_type::is_simplex )
-        .addParameterValue( Dim )
-        .addParameterValue( OrderU )
-        .addParameterValue( OrderP )
-        .addParameterValue( this->vm()["hsize"].template as<double>() );
+    addParameterValue( convex_type::is_simplex )
+    .addParameterValue( Dim )
+    .addParameterValue( OrderU )
+    .addParameterValue( OrderP )
+    .addParameterValue( this->vm()["hsize"].template as<double>() );
 
     boost::timer t;
 
@@ -262,13 +276,14 @@ Kovasznay<_OrderU, _OrderP, Entity>::Kovasznay( int argc, char** argv, AboutData
                            _desc=domain( _name="square",
                                          _shape="hypercube",
                                          _usenames=true,
-                                         _convex=(convex_type::is_hypercube)?"Hypercube":"Simplex",
+                                         _convex=( convex_type::is_hypercube )?"Hypercube":"Simplex",
                                          _dim=Dim,
                                          _h=meshSize,
                                          _xmin=-0.5,_xmax=1.,
                                          _ymin=-0.5,_ymax=1.5 ) );
 
-    Log() << "mesh created in " << t.elapsed() << "s\n"; t.restart();
+    Log() << "mesh created in " << t.elapsed() << "s\n";
+    t.restart();
 
     /*
      * The function space and some associate elements are then defined
@@ -280,10 +295,10 @@ Kovasznay<_OrderU, _OrderP, Entity>::Kovasznay( int argc, char** argv, AboutData
 
     // project in V the exact solution (v,q) are just views over V
     double pi = M_PI;
-    auto u1 = val(1. - exp( M_lambda * Px() ) * cos(2.*pi*Py()));
-    auto u2 = val((M_lambda/(2.*pi)) * exp( M_lambda * Px() ) * sin(2.*pi*Py()));
-    auto u_exact = vec(u1,u2);
-    auto p_exact = val((1-exp(2.*M_lambda*Px()))/2.0);
+    auto u1 = val( 1. - exp( M_lambda * Px() ) * cos( 2.*pi*Py() ) );
+    auto u2 = val( ( M_lambda/( 2.*pi ) ) * exp( M_lambda * Px() ) * sin( 2.*pi*Py() ) );
+    auto u_exact = vec( u1,u2 );
+    auto p_exact = val( ( 1-exp( 2.*M_lambda*Px() ) )/2.0 );
 
     auto v = V.template element<0>();
     auto q = V.template element<1>();
@@ -292,10 +307,11 @@ Kovasznay<_OrderU, _OrderP, Entity>::Kovasznay( int argc, char** argv, AboutData
 
     Log() << "Data Summary:\n";
     Log() << "   hsize = " << meshSize << "\n";
-    Log() << "  export = " << this->vm().count("export") << "\n";
+    Log() << "  export = " << this->vm().count( "export" ) << "\n";
     Log() << "      mu = " << mu << "\n";
     Log() << " bccoeff = " << penalbc << "\n";
-    Log() << "Xh and elements created in " << t.elapsed() << "s\n"; t.restart();
+    Log() << "Xh and elements created in " << t.elapsed() << "s\n";
+    t.restart();
     Log() << "[dof]         number of dof: " << Xh->nDof() << "\n";
     Log() << "[dof]    number of dof/proc: " << Xh->nLocalDof() << "\n";
     Log() << "[dof]      number of dof(U): " << Xh->template functionSpace<0>()->nDof()  << "\n";
@@ -305,7 +321,8 @@ Kovasznay<_OrderU, _OrderP, Entity>::Kovasznay( int argc, char** argv, AboutData
 
     F = vector_ptrtype( M_backend->newVector( Xh ) );
     D = sparse_matrix_ptrtype(  M_backend->newMatrix( Xh, Xh ) );
-    Log() << "D and F allocated in " << t.elapsed() << "s\n"; t.restart();
+    Log() << "D and F allocated in " << t.elapsed() << "s\n";
+    t.restart();
 }
 
 
@@ -313,8 +330,8 @@ template<int _OrderU, int _OrderP, typename Entity>
 template<typename element_1_type, typename PressureStabExpr>
 void
 Kovasznay<_OrderU, _OrderP, Entity>::addPressureStabilisation( element_1_type& p,
-                                                    element_1_type& q,
-                                                    PressureStabExpr& p_stabexpr )
+        element_1_type& q,
+        PressureStabExpr& p_stabexpr )
 {
 
     if ( is_equal_order && this->vm()["stab-p"].template as<bool>() )
@@ -324,10 +341,11 @@ Kovasznay<_OrderU, _OrderP, Entity>::addPressureStabilisation( element_1_type& p
               << OrderU << ", orderP=" << OrderP << " )\n";
         size_type pattern = Pattern::COUPLED|Pattern::EXTENDED;
         form2( Xh, Xh, D, _pattern=pattern )  +=
-            integrate( internalfaces(mesh),
-                       (p_stabexpr)*(trans(jumpt(gradt(p)))*jump(grad(q))),
+            integrate( internalfaces( mesh ),
+                       ( p_stabexpr )*( trans( jumpt( gradt( p ) ) )*jump( grad( q ) ) ),
                        _Q<2*OrderP+2>() );
-        Log() << "[assembly] form2 D equal order stabilisation terms in " << t.elapsed() << "s\n"; t.restart();
+        Log() << "[assembly] form2 D equal order stabilisation terms in " << t.elapsed() << "s\n";
+        t.restart();
     }
 
 }
@@ -336,10 +354,11 @@ template<int _OrderU, int _OrderP, typename Entity>
 template<typename element_0_type, typename DivStabExpr>
 void
 Kovasznay<_OrderU, _OrderP, Entity>::addDivergenceStabilisation( element_0_type& u,
-                                                      element_0_type& v,
-                                                      DivStabExpr& d_stabexpr )
+        element_0_type& v,
+        DivStabExpr& d_stabexpr )
 {
 #if 0
+
     if ( this->vm()["stab-div"].template as<bool>() )
     {
         boost::timer t;
@@ -347,10 +366,12 @@ Kovasznay<_OrderU, _OrderP, Entity>::addDivergenceStabilisation( element_0_type&
               << OrderU << ", orderP=" << OrderP << " )\n";
         size_type pattern = Pattern::COUPLED|Pattern::EXTENDED;
         form2( Xh, Xh, D, _pattern=pattern )  +=
-            integrate( internalfaces(mesh),
-                       (d_stabexpr)*(trans(jumpt(divt(u)))*jump(div(v))) );
-        Log() << "[assembly] form2 D divergence stabilisation terms in " << t.elapsed() << "s\n"; t.restart();
+            integrate( internalfaces( mesh ),
+                       ( d_stabexpr )*( trans( jumpt( divt( u ) ) )*jump( div( v ) ) ) );
+        Log() << "[assembly] form2 D divergence stabilisation terms in " << t.elapsed() << "s\n";
+        t.restart();
     }
+
 #endif
 }
 
@@ -368,57 +389,60 @@ Kovasznay<_OrderU, _OrderP, Entity>::buildRhs()
     auto nu = V.template element<2>();
 #endif
 
-    auto deft = .5*(gradt(u)+trans(gradt(u)));
-    auto def = .5*(grad(v)+trans(grad(v)));
+    auto deft = .5*( gradt( u )+trans( gradt( u ) ) );
+    auto def = .5*( grad( v )+trans( grad( v ) ) );
 
     // total stress tensor (trial)
-    auto SigmaNt = (-idt(p)*N()+2*mu*deft*N());
-    auto SigmaN = (-id(p)*N()+2*mu*def*N());
+    auto SigmaNt = ( -idt( p )*N()+2*mu*deft*N() );
+    auto SigmaN = ( -id( p )*N()+2*mu*def*N() );
 
     //
     // the Kovasznay flow (2D)
     //
     // total stress tensor (test)
     double pi = M_PI;
-    auto u1 = val(1. - exp( M_lambda * Px() ) * cos(2.*pi*Py()));
-    auto u2 = val((M_lambda/(2.*pi)) * exp( M_lambda * Px() ) * sin(2.*pi*Py()));
-    auto u_exact = vec(u1,u2);
+    auto u1 = val( 1. - exp( M_lambda * Px() ) * cos( 2.*pi*Py() ) );
+    auto u2 = val( ( M_lambda/( 2.*pi ) ) * exp( M_lambda * Px() ) * sin( 2.*pi*Py() ) );
+    auto u_exact = vec( u1,u2 );
 
-    auto du_dx = val(-M_lambda*exp( M_lambda * Px() )*cos(2.*pi*Py()));
-    auto du_dy = val(2*pi*exp( M_lambda * Px() )*sin(2.*pi*Py()));
-    auto dv_dx = val((M_lambda*M_lambda/(2*pi))*exp( M_lambda * Px() )*sin(2.*pi*Py()));
-    auto dv_dy = val(M_lambda*exp( M_lambda * Px() )*cos(2.*pi*Py()));
-    auto grad_exact = (mat<2,2>(du_dx, du_dy, dv_dx, dv_dy));
+    auto du_dx = val( -M_lambda*exp( M_lambda * Px() )*cos( 2.*pi*Py() ) );
+    auto du_dy = val( 2*pi*exp( M_lambda * Px() )*sin( 2.*pi*Py() ) );
+    auto dv_dx = val( ( M_lambda*M_lambda/( 2*pi ) )*exp( M_lambda * Px() )*sin( 2.*pi*Py() ) );
+    auto dv_dy = val( M_lambda*exp( M_lambda * Px() )*cos( 2.*pi*Py() ) );
+    auto grad_exact = ( mat<2,2>( du_dx, du_dy, dv_dx, dv_dy ) );
     auto div_exact = du_dx + dv_dy;
 
-    auto beta = vec(cst(M_beta),cst(M_beta));
+    auto beta = vec( cst( M_beta ),cst( M_beta ) );
     auto convection = grad_exact*beta;
 
-    auto p_exact = val((1-exp(2.*M_lambda*Px()))/2.0);
+    auto p_exact = val( ( 1-exp( 2.*M_lambda*Px() ) )/2.0 );
 
-    auto f1 = val(exp( M_lambda * Px() )*((M_lambda*M_lambda - 4.*pi*pi)*mu*cos(2.*pi*Py()) - M_lambda*exp( M_lambda * Px() )));
-    auto f2 = val(exp( M_lambda * Px() )*mu*(M_lambda/(2.*pi))*sin(2.*pi*Py())*(-M_lambda*M_lambda +4*pi*pi));
+    auto f1 = val( exp( M_lambda * Px() )*( ( M_lambda*M_lambda - 4.*pi*pi )*mu*cos( 2.*pi*Py() ) - M_lambda*exp( M_lambda * Px() ) ) );
+    auto f2 = val( exp( M_lambda * Px() )*mu*( M_lambda/( 2.*pi ) )*sin( 2.*pi*Py() )*( -M_lambda*M_lambda +4*pi*pi ) );
 
-    auto f = vec(f1,f2)+ convection;
+    auto f = vec( f1,f2 )+ convection;
 
-    double pmean = integrate( elements(mesh), p_exact ).evaluate()( 0, 0 )/mesh->measure();
+    double pmean = integrate( elements( mesh ), p_exact ).evaluate()( 0, 0 )/mesh->measure();
 
-    form1( Xh, F, _init=true ) =integrate( elements(mesh), trans(f)*id(v) );
+    form1( Xh, F, _init=true ) =integrate( elements( mesh ), trans( f )*id( v ) );
 #if defined(WITH_LAGRANGE_MULTIPLIERS)
     // impose pmean mean value for the solution through the lagrange multipliers
-    form1( Xh, F ) += integrate( elements(mesh), pmean*id(nu) );
+    form1( Xh, F ) += integrate( elements( mesh ), pmean*id( nu ) );
 #endif
+
     if ( M_weak_dirichlet )
     {
-        form1( Xh, F )+= integrate( boundaryfaces(mesh),
-                                    trans(u_exact)*(-SigmaN+
-                                                    penalbc*id(v)/hFace() +
-                                                    penalbc*(trans(id(v))*N())*N()*
-                                                    max(M_beta,mu/hFace()) ) );
-                                                    //max(sqrt(trans(beta)*beta),mu/hFace()) ) );
+        form1( Xh, F )+= integrate( boundaryfaces( mesh ),
+                                    trans( u_exact )*( -SigmaN+
+                                            penalbc*id( v )/hFace() +
+                                            penalbc*( trans( id( v ) )*N() )*N()*
+                                            max( M_beta,mu/hFace() ) ) );
+        //max(sqrt(trans(beta)*beta),mu/hFace()) ) );
     }
+
     Log() << "[stokes] vector local assembly done\n";
-    Log() << "form1 F created in " << t.elapsed() << "s\n"; t.restart();
+    Log() << "form1 F created in " << t.elapsed() << "s\n";
+    t.restart();
 
 }
 template<int _OrderU, int _OrderP, typename Entity>
@@ -437,40 +461,42 @@ Kovasznay<_OrderU, _OrderP, Entity>::buildLhs()
 #endif
 
 
-    auto deft = .5*(gradt(u)+trans(gradt(u)));
-    auto def = .5*(grad(v)+trans(grad(v)));
+    auto deft = .5*( gradt( u )+trans( gradt( u ) ) );
+    auto def = .5*( grad( v )+trans( grad( v ) ) );
 
     // total stress tensor (trial)
-    auto SigmaNt = (-idt(p)*N()+2*mu*deft*N());
-    auto SigmaN = (-id(p)*N()+2*mu*def*N());
+    auto SigmaNt = ( -idt( p )*N()+2*mu*deft*N() );
+    auto SigmaN = ( -id( p )*N()+2*mu*def*N() );
 
     double pi = M_PI;
-    auto u1 = val(1. - exp( M_lambda * Px() ) * cos(2.*pi*Py()));
-    auto u2 = val((M_lambda/(2.*pi)) * exp( M_lambda * Px() ) * sin(2.*pi*Py()));
-    auto u_exact = vec(u1,u2);
+    auto u1 = val( 1. - exp( M_lambda * Px() ) * cos( 2.*pi*Py() ) );
+    auto u2 = val( ( M_lambda/( 2.*pi ) ) * exp( M_lambda * Px() ) * sin( 2.*pi*Py() ) );
+    auto u_exact = vec( u1,u2 );
 
-    auto du_dx = val(-M_lambda*exp( M_lambda * Px() )*cos(2.*pi*Py()));
-    auto du_dy = val(2*pi*exp( M_lambda * Px() )*sin(2.*pi*Py()));
-    auto dv_dx = val((M_lambda*M_lambda/(2*pi))*exp( M_lambda * Px() )*sin(2.*pi*Py()));
-    auto dv_dy = val(M_lambda*exp( M_lambda * Px() )*cos(2.*pi*Py()));
-    auto grad_exact = (mat<2,2>(du_dx, du_dy, dv_dx, dv_dy));
+    auto du_dx = val( -M_lambda*exp( M_lambda * Px() )*cos( 2.*pi*Py() ) );
+    auto du_dy = val( 2*pi*exp( M_lambda * Px() )*sin( 2.*pi*Py() ) );
+    auto dv_dx = val( ( M_lambda*M_lambda/( 2*pi ) )*exp( M_lambda * Px() )*sin( 2.*pi*Py() ) );
+    auto dv_dy = val( M_lambda*exp( M_lambda * Px() )*cos( 2.*pi*Py() ) );
+    auto grad_exact = ( mat<2,2>( du_dx, du_dy, dv_dx, dv_dy ) );
     auto div_exact = du_dx + dv_dy;
 
-    auto beta = vec(cst(M_beta),cst(M_beta));
+    auto beta = vec( cst( M_beta ),cst( M_beta ) );
     auto convection = grad_exact*beta;
 
-    auto p_exact = val((1-exp(2.*M_lambda*Px()))/2.0);
+    auto p_exact = val( ( 1-exp( 2.*M_lambda*Px() ) )/2.0 );
 
-    auto f1 = val(exp( M_lambda * Px() )*((M_lambda*M_lambda - 4.*pi*pi)*mu*cos(2.*pi*Py()) - M_lambda*exp( M_lambda * Px() )));
-    auto f2 = val(exp( M_lambda * Px() )*mu*(M_lambda/(2.*pi))*sin(2.*pi*Py())*(-M_lambda*M_lambda +4*pi*pi));
+    auto f1 = val( exp( M_lambda * Px() )*( ( M_lambda*M_lambda - 4.*pi*pi )*mu*cos( 2.*pi*Py() ) - M_lambda*exp( M_lambda * Px() ) ) );
+    auto f2 = val( exp( M_lambda * Px() )*mu*( M_lambda/( 2.*pi ) )*sin( 2.*pi*Py() )*( -M_lambda*M_lambda +4*pi*pi ) );
 
-    auto f = vec(f1,f2)+ convection;
+    auto f = vec( f1,f2 )+ convection;
 
     size_type pattern = Pattern::COUPLED;
-    if ( (is_equal_order &&
-          this->vm()["stab-p"].template as<bool>()) ||
-         this->vm()["stab-div"].template as<bool>())
+
+    if ( ( is_equal_order &&
+            this->vm()["stab-p"].template as<bool>() ) ||
+            this->vm()["stab-div"].template as<bool>() )
         pattern |= Pattern::EXTENDED;
+
     Feel::Context graph( pattern );
     Log() << "[stokes] test : " << ( graph.test ( Pattern::DEFAULT ) || graph.test ( Pattern::EXTENDED ) ) << "\n";
     Log() << "[stokes]  : graph.test ( Pattern::DEFAULT )=" <<  graph.test ( Pattern::DEFAULT ) << "\n";
@@ -478,39 +504,47 @@ Kovasznay<_OrderU, _OrderP, Entity>::buildLhs()
     Log() << "[stokes]  : graph.test ( Pattern::EXTENDED)=" <<  graph.test ( Pattern::EXTENDED ) << "\n";
     Log() << "[assembly] add diffusion terms\n";
     form2( Xh, Xh, D, _init=true, _pattern=pattern );
-    Log() << "[assembly] form2 D init in " << t.elapsed() << "s\n"; t.restart();
-    form2( Xh, Xh, D )+= integrate( elements(mesh), 2*mu*trace(deft*trans(def)) + trans(gradt(u)*beta)*id(v) );
-    Log() << "[assembly] form2 D convection and viscous terms in " << t.elapsed() << "s\n"; t.restart();
+    Log() << "[assembly] form2 D init in " << t.elapsed() << "s\n";
+    t.restart();
+    form2( Xh, Xh, D )+= integrate( elements( mesh ), 2*mu*trace( deft*trans( def ) ) + trans( gradt( u )*beta )*id( v ) );
+    Log() << "[assembly] form2 D convection and viscous terms in " << t.elapsed() << "s\n";
+    t.restart();
     Log() << "[assembly] add velocity/pressure terms\n";
-    form2( Xh, Xh, D )+=integrate( elements(mesh),- div(v)*idt(p) + divt(u)*id(q) );
-    Log() << "[assembly] form2 D velocity/pressure terms in " << t.elapsed() << "s\n"; t.restart();
+    form2( Xh, Xh, D )+=integrate( elements( mesh ),- div( v )*idt( p ) + divt( u )*id( q ) );
+    Log() << "[assembly] form2 D velocity/pressure terms in " << t.elapsed() << "s\n";
+    t.restart();
     Log() << "[assembly] add lagrange multipliers terms for zero mean pressure\n";
 #if defined(WITH_LAGRANGE_MULTIPLIERS)
-    form2( Xh, Xh, D )+=integrate( elements(mesh), id(q)*idt(lambda) + idt(p)*id(nu) );
-    Log() << "[assembly] form2 D pressure/multipliers terms in " << t.elapsed() << "s\n"; t.restart();
+    form2( Xh, Xh, D )+=integrate( elements( mesh ), id( q )*idt( lambda ) + idt( p )*id( nu ) );
+    Log() << "[assembly] form2 D pressure/multipliers terms in " << t.elapsed() << "s\n";
+    t.restart();
 #endif
+
     if ( M_weak_dirichlet )
     {
         Log() << "[assembly] add terms for weak Dirichlet condition handling\n";
-        form2( Xh, Xh, D )+=integrate( boundaryfaces(mesh), -trans(SigmaNt)*id(v) );
-        form2( Xh, Xh, D )+=integrate( boundaryfaces(mesh), -trans(SigmaN)*idt(u) );
-        form2( Xh, Xh, D )+=integrate( boundaryfaces(mesh), +penalbc*trans(idt(u))*id(v)/hFace() );
-        form2( Xh, Xh, D )+=integrate( boundaryfaces(mesh), +penalbc*(trans(idt(u))*N())*(trans(id(v))*N())*max(M_beta,mu/hFace()) );
-        Log() << "[assembly] form2 D boundary terms in " << t.elapsed() << "s\n"; t.restart();
+        form2( Xh, Xh, D )+=integrate( boundaryfaces( mesh ), -trans( SigmaNt )*id( v ) );
+        form2( Xh, Xh, D )+=integrate( boundaryfaces( mesh ), -trans( SigmaN )*idt( u ) );
+        form2( Xh, Xh, D )+=integrate( boundaryfaces( mesh ), +penalbc*trans( idt( u ) )*id( v )/hFace() );
+        form2( Xh, Xh, D )+=integrate( boundaryfaces( mesh ), +penalbc*( trans( idt( u ) )*N() )*( trans( id( v ) )*N() )*max( M_beta,mu/hFace() ) );
+        Log() << "[assembly] form2 D boundary terms in " << t.elapsed() << "s\n";
+        t.restart();
     }
 
     if ( math::abs( M_beta ) < 1e-10 )
     {
-        double pterm = math::pow(double(OrderU), 7./2.);
-        auto p_stabexpr = M_stabP*hFace()*hFace()*hFace()/(pterm);
+        double pterm = math::pow( double( OrderU ), 7./2. );
+        auto p_stabexpr = M_stabP*hFace()*hFace()*hFace()/( pterm );
         this->addPressureStabilisation( p, q, p_stabexpr  );
     }
+
     else
     {
-        double pterm = math::pow(double(OrderU), 4.);
-        auto p_stabexpr = M_stabP*hFace()*hFace()*hFace()/max(mu*pterm,hFace()*M_beta);
+        double pterm = math::pow( double( OrderU ), 4. );
+        auto p_stabexpr = M_stabP*hFace()*hFace()*hFace()/max( mu*pterm,hFace()*M_beta );
         this->addPressureStabilisation( p, q, p_stabexpr  );
     }
+
     //auto d_stabexpr = M_stabD*hFace()*hFace()/math::pow(double(OrderU), 7./2.);
     //this->addDivergenceStabilisation( u, v, d_stabexpr  );
 
@@ -518,40 +552,46 @@ Kovasznay<_OrderU, _OrderP, Entity>::buildLhs()
 
     D->close();
     F->close();
+
     if ( !M_weak_dirichlet )
     {
         form2( Xh, Xh, D ) += on( boundaryfaces( mesh ), u, F, u_exact );
     }
+
     Log() << "[stokes] vector/matrix global assembly done\n";
-    Log() << "form2 D created in " << t.elapsed() << "s\n"; t.restart();
+    Log() << "form2 D created in " << t.elapsed() << "s\n";
+    t.restart();
 
 }
 template<int _OrderU, int _OrderP, typename Entity>
 void
 Kovasznay<_OrderU, _OrderP, Entity>::run()
 {
-    if (this->preProcessing() == RUN_EXIT) return;
+    if ( this->preProcessing() == RUN_EXIT ) return;
 
     using namespace Feel::vf;
 
     this->buildRhs();
     this->buildLhs();
 
-    if( this->vm().count( "export-matlab" ) )
+    if ( this->vm().count( "export-matlab" ) )
     {
         boost::timer t;
         D->printMatlab( "D.m" );
         F->printMatlab( "F.m" );
-        Log() << "system saved in " << t.elapsed() << "s\n"; t.restart();
+        Log() << "system saved in " << t.elapsed() << "s\n";
+        t.restart();
     }
 
     boost::timer t;
     M_backend->solve( _matrix=D, _solution=U, _rhs=F, _rtolerance=1e-14 );
 
-    Log() << "system solved in " << t.elapsed() << "s\n"; t.restart();
+    Log() << "system solved in " << t.elapsed() << "s\n";
+    t.restart();
 
     this->exportResults( U, V );
-    Log() << "postprocessing done in " << t.elapsed() << "s\n"; t.restart();
+    Log() << "postprocessing done in " << t.elapsed() << "s\n";
+    t.restart();
 
     this->postProcessing();
 
@@ -562,39 +602,39 @@ void
 Kovasznay<_OrderU, _OrderP, Entity>::exportResults( element_type& U, element_type& V )
 {
     const double pi = M_PI;
-    auto u1 = val(1. - exp( M_lambda * Px() ) * cos(2.*pi*Py()));
-    auto u2 = val((M_lambda/(2.*pi)) * exp( M_lambda * Px() ) * sin(2.*pi*Py()));
-    auto u_exact = vec(u1,u2);
+    auto u1 = val( 1. - exp( M_lambda * Px() ) * cos( 2.*pi*Py() ) );
+    auto u2 = val( ( M_lambda/( 2.*pi ) ) * exp( M_lambda * Px() ) * sin( 2.*pi*Py() ) );
+    auto u_exact = vec( u1,u2 );
 
-    auto du_dx = val(-M_lambda*exp( M_lambda * Px() )*cos(2.*pi*Py()));
-    auto du_dy = val(2*pi*exp( M_lambda * Px() )*sin(2.*pi*Py()));
-    auto dv_dx = val((M_lambda*M_lambda/(2*pi))*exp( M_lambda * Px() )*sin(2.*pi*Py()));
-    auto dv_dy = val(M_lambda*exp( M_lambda * Px() )*cos(2.*pi*Py()));
-    auto grad_exact = (mat<2,2>(du_dx, du_dy, dv_dx, dv_dy));
+    auto du_dx = val( -M_lambda*exp( M_lambda * Px() )*cos( 2.*pi*Py() ) );
+    auto du_dy = val( 2*pi*exp( M_lambda * Px() )*sin( 2.*pi*Py() ) );
+    auto dv_dx = val( ( M_lambda*M_lambda/( 2*pi ) )*exp( M_lambda * Px() )*sin( 2.*pi*Py() ) );
+    auto dv_dy = val( M_lambda*exp( M_lambda * Px() )*cos( 2.*pi*Py() ) );
+    auto grad_exact = ( mat<2,2>( du_dx, du_dy, dv_dx, dv_dy ) );
     auto div_exact = du_dx + dv_dy;
 
-    auto p_exact = val((1-exp(2.*M_lambda*Px()))/2.0);
+    auto p_exact = val( ( 1-exp( 2.*M_lambda*Px() ) )/2.0 );
 
     auto u = U.template element<0>();
     auto p = U.template element<1>();
-    double u_error_L2_2 = integrate( elements(mesh),
-                                     trans(idv(u)-u_exact)*(idv(u)-u_exact) ).evaluate()( 0, 0 );
-    double uex_L2_2 = integrate( elements(mesh), trans(u_exact)*(u_exact) ).evaluate()( 0, 0 );
+    double u_error_L2_2 = integrate( elements( mesh ),
+                                     trans( idv( u )-u_exact )*( idv( u )-u_exact ) ).evaluate()( 0, 0 );
+    double uex_L2_2 = integrate( elements( mesh ), trans( u_exact )*( u_exact ) ).evaluate()( 0, 0 );
     double u_errorL2 = math::sqrt( u_error_L2_2/uex_L2_2 );
     std::cout << "||u_error||_0/||uex||_0 = " << u_errorL2 << "\n";;
 
 
-    double u_errorsemiH1 = integrate( elements(mesh),
-                                      trace((gradv(u)-grad_exact)*trans(gradv(u)-grad_exact))).evaluate()( 0, 0 );
+    double u_errorsemiH1 = integrate( elements( mesh ),
+                                      trace( ( gradv( u )-grad_exact )*trans( gradv( u )-grad_exact ) ) ).evaluate()( 0, 0 );
     double u_error_H1 = math::sqrt( u_error_L2_2+u_errorsemiH1 );
-    double uex_semiH1_2 = integrate( elements(mesh), trace((grad_exact)*trans(grad_exact))).evaluate()( 0, 0 );
+    double uex_semiH1_2 = integrate( elements( mesh ), trace( ( grad_exact )*trans( grad_exact ) ) ).evaluate()( 0, 0 );
     double uex_H1 = math::sqrt( uex_L2_2+uex_semiH1_2 );
     double u_errorH1 = u_error_H1/uex_H1;
     std::cout << "||u_error||_1/||uex||_1 = " << u_errorH1 << "\n";
 
 
-    double mean_p = integrate( elements(mesh), idv(p) ).evaluate()( 0, 0 )/mesh->measure();
-    double mean_pexact = integrate( elements(mesh), p_exact ).evaluate()( 0, 0 )/mesh->measure();
+    double mean_p = integrate( elements( mesh ), idv( p ) ).evaluate()( 0, 0 )/mesh->measure();
+    double mean_pexact = integrate( elements( mesh ), p_exact ).evaluate()( 0, 0 )/mesh->measure();
     Log() << "[stokes] mean(p)=" << mean_p << "\n";
     Log() << "[stokes] mean(p_exact)=" << mean_pexact << "\n";
     std::cout << "[stokes] mean(p)=" << mean_p << "\n";
@@ -604,9 +644,9 @@ Kovasznay<_OrderU, _OrderP, Entity>::exportResults( element_type& U, element_typ
     Log() << "[stokes] measure(Omega)=" << mesh->measure() << " (should be equal to 3)\n";
     std::cout << "[stokes] measure(Omega)=" << mesh->measure() << " (should be equal to 3)\n";
 
-    double p_errorL2_2 = integrate( elements(mesh),
-                                    ((idv(p)-mean_p)-(p_exact-mean_pexact))*((idv(p)-mean_p)-(p_exact-mean_pexact)) ).evaluate()( 0, 0 );
-    double pex_L2 = integrate( elements(mesh), (p_exact-mean_pexact)*(p_exact-mean_pexact) ).evaluate()( 0, 0 );
+    double p_errorL2_2 = integrate( elements( mesh ),
+                                    ( ( idv( p )-mean_p )-( p_exact-mean_pexact ) )*( ( idv( p )-mean_p )-( p_exact-mean_pexact ) ) ).evaluate()( 0, 0 );
+    double pex_L2 = integrate( elements( mesh ), ( p_exact-mean_pexact )*( p_exact-mean_pexact ) ).evaluate()( 0, 0 );
     double p_errorL2 = math::sqrt( p_errorL2_2/pex_L2 );
     std::cout << "||p_error||_0/||pex||_0 = " <<  p_errorL2 << "\n";;
 
@@ -614,13 +654,13 @@ Kovasznay<_OrderU, _OrderP, Entity>::exportResults( element_type& U, element_typ
 
 
 
-    double mean_div_u = integrate( elements(mesh), divv(u) ).evaluate()( 0, 0 );
+    double mean_div_u = integrate( elements( mesh ), divv( u ) ).evaluate()( 0, 0 );
     Log() << "[stokes] mean_div(u)=" << mean_div_u << "\n";
     std::cout << "[stokes] mean_div(u)=" << mean_div_u << "\n";
 
-    double div_u_errorL2_2 = integrate( elements(mesh), divv(u)*divv(u) ).evaluate()( 0, 0 );
-    double uex_div_L2 = integrate( elements(mesh), div_exact ).evaluate()( 0, 0 );
-    double uex_n_L2 = integrate( boundaryfaces(mesh), trans(u_exact)*N() ).evaluate()( 0, 0 );
+    double div_u_errorL2_2 = integrate( elements( mesh ), divv( u )*divv( u ) ).evaluate()( 0, 0 );
+    double uex_div_L2 = integrate( elements( mesh ), div_exact ).evaluate()( 0, 0 );
+    double uex_n_L2 = integrate( boundaryfaces( mesh ), trans( u_exact )*N() ).evaluate()( 0, 0 );
     std::cout << "[stokes] ||div(uexact)||=" << uex_div_L2 << "\n";
     std::cout << "[stokes] ||uexact,n||=" << uex_n_L2 << "\n";
     double div_u_errorL2 = math::sqrt( div_u_errorL2_2 );
@@ -628,17 +668,17 @@ Kovasznay<_OrderU, _OrderP, Entity>::exportResults( element_type& U, element_typ
     std::cout << "[stokes] ||div(u)||=" << div_u_errorL2 << "\n";
 
     this->addOutputValue( u_errorL2 )
-        .addOutputValue( u_errorH1 )
-        .addOutputValue( div_u_errorL2 )
-        .addOutputValue( p_errorL2 );
+    .addOutputValue( u_errorH1 )
+    .addOutputValue( div_u_errorL2 )
+    .addOutputValue( p_errorL2 );
 
     if ( exporter->doExport() )
     {
-        exporter->step(0)->setMesh( U.functionSpace()->mesh() );
-        exporter->step(0)->add( "u", U.template element<0>() );
-        exporter->step(0)->add( "p", U.template element<1>() );
-        exporter->step(0)->add( "u_exact", V.template element<0>() );
-        exporter->step(0)->add( "p_exact", V.template element<1>() );
+        exporter->step( 0 )->setMesh( U.functionSpace()->mesh() );
+        exporter->step( 0 )->add( "u", U.template element<0>() );
+        exporter->step( 0 )->add( "p", U.template element<1>() );
+        exporter->step( 0 )->add( "u_exact", V.template element<0>() );
+        exporter->step( 0 )->add( "p_exact", V.template element<1>() );
         exporter->save();
     }
 } // Kovasznay::export

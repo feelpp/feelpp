@@ -88,7 +88,7 @@ namespace vf
 template < typename ExprT1 >
 class Val
     :
-        public UnaryFunctor<typename ExprT1::value_type>
+public UnaryFunctor<typename ExprT1::value_type>
 {
 public:
 
@@ -121,8 +121,8 @@ public:
     VF_CHECK_ARITHMETIC_TYPE()
 
     explicit Val( expression_1_type const& __expr1  )
-    :
-    super( "value", functordomain_ptrtype(new UnboundedDomain<value_type>() )),
+        :
+        super( "value", functordomain_ptrtype( new UnboundedDomain<value_type>() ) ),
         _M_expr_1( __expr1 )
     {
         Debug( 5051 ) << "Val::Val default constructorn";
@@ -130,21 +130,27 @@ public:
 
     Val( Val const& __vfp  )
         :
-        super( "value", functordomain_ptrtype(new UnboundedDomain<value_type>() )),
+        super( "value", functordomain_ptrtype( new UnboundedDomain<value_type>() ) ),
         _M_expr_1( __vfp._M_expr_1 )
     {
         Debug( 5051 ) << "Val::Val copy constructorn";
     }
 
-    bool isSymetric() const { return false; }
+    bool isSymetric() const
+    {
+        return false;
+    }
 
     void eval( int nx, value_type const* x, value_type* f ) const
     {
-        for( int i = 0; i < nx; ++i )
+        for ( int i = 0; i < nx; ++i )
             f[i] = x[i];
     }
 
-    expression_1_type const& expression() const { return _M_expr_1; }
+    expression_1_type const& expression() const
+    {
+        return _M_expr_1;
+    }
 
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t>
     struct tensor
@@ -154,13 +160,16 @@ public:
         typedef typename expression_1_type::template tensor<Geo_t> tensor2_expr_type;
         typedef typename tensor2_expr_type::value_type value_type;
         typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, detail::gmc<0> >,
-                                  mpl::identity<detail::gmc<0> >,
-                                  mpl::identity<detail::gmc<1> > >::type::type key_type;
+                mpl::identity<detail::gmc<0> >,
+                mpl::identity<detail::gmc<1> > >::type::type key_type;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::pointer gmc_ptrtype;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
         typedef typename tensor2_expr_type::shape shape;
 
-        struct is_zero { static const bool value = tensor2_expr_type::is_zero::value; };
+        struct is_zero
+        {
+            static const bool value = tensor2_expr_type::is_zero::value;
+        };
 
         template<typename ExprT>
         tensor( ExprT const& expr, Geo_t const& geom, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ )
@@ -205,9 +214,10 @@ public:
         void update( Geo_t const& geom )
         {
             _M_expr.update( geom );
+
             for ( int q = 0; q < _M_gmc->nPoints(); ++q )
-                for( int c1 = 0; c1 < shape::M; ++c1 )
-                    for( int c2 = 0; c2 < shape::N; ++c2 )
+                for ( int c1 = 0; c1 < shape::M; ++c1 )
+                    for ( int c2 = 0; c2 < shape::N; ++c2 )
                     {
                         _M_loc[q][c1][c2] = _M_expr.evalq( c1, c2, q );
                     }
@@ -215,9 +225,10 @@ public:
         void update( Geo_t const& geom, uint16_type face )
         {
             _M_expr.update( geom, face );
+
             for ( int q = 0; q < _M_gmc->nPoints(); ++q )
-                for( int c1 = 0; c1 < shape::M; ++c1 )
-                    for( int c2 = 0; c2 < shape::N; ++c2 )
+                for ( int c1 = 0; c1 < shape::M; ++c1 )
+                    for ( int c2 = 0; c2 < shape::N; ++c2 )
                     {
                         _M_loc[q][c1][c2] = _M_expr.evalq( c1, c2, q );
                     }
@@ -250,8 +261,8 @@ public:
         value_type
         evalq( uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<0> ) const
         {
-            Feel::detail::ignore_unused_variable_warning(c1);
-            Feel::detail::ignore_unused_variable_warning(c2);
+            Feel::detail::ignore_unused_variable_warning( c1 );
+            Feel::detail::ignore_unused_variable_warning( c2 );
             return _M_loc[q][0][0];
         }
         value_type
@@ -259,6 +270,7 @@ public:
         {
             if ( shape::M > shape::N )
                 return _M_loc[q][c1][0];
+
             return _M_loc[q][0][c2];
         }
         value_type
@@ -287,13 +299,13 @@ protected:
 template<typename ExprT1>
 inline
 Expr< Val<typename mpl::if_<boost::is_arithmetic<ExprT1>,
-                            mpl::identity<Cst<ExprT1> >,
-                            mpl::identity<ExprT1> >::type::type > >
-val( ExprT1 const& __e1 )
+      mpl::identity<Cst<ExprT1> >,
+      mpl::identity<ExprT1> >::type::type > >
+      val( ExprT1 const& __e1 )
 {
     typedef typename mpl::if_<boost::is_arithmetic<ExprT1>,
-        mpl::identity<Cst<ExprT1> >,
-        mpl::identity<ExprT1> >::type::type t1;
+            mpl::identity<Cst<ExprT1> >,
+            mpl::identity<ExprT1> >::type::type t1;
     typedef Val<t1> expr_t;
     return Expr< expr_t >(  expr_t( t1( __e1 ) ) );
 }

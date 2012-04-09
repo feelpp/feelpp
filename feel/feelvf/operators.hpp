@@ -713,13 +713,13 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
             typedef VF_OPERATOR_NAME( O )< ELEM, VF_OP_TYPE_OBJECT(T)> expr_t; \
             return Expr< expr_t >(  expr_t(*expr) );                     \
         }                                                               \
-
-    /**/
+ 
+/**/
 #
 //
 // Generate the code
 //
-BOOST_PP_LIST_FOR_EACH_PRODUCT(VF_ARRAY_OPERATOR, 2, (VF_OPERATORS, VF_OPERATORS_TYPE))
+BOOST_PP_LIST_FOR_EACH_PRODUCT( VF_ARRAY_OPERATOR, 2, ( VF_OPERATORS, VF_OPERATORS_TYPE ) )
 /// \endcond
 }
 }

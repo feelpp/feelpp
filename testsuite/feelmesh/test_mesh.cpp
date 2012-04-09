@@ -59,7 +59,7 @@ typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 }
 struct test_mesh_filters
 {
-    test_mesh_filters( double meshSize_=1 ): meshSize(meshSize_), mesh()
+    test_mesh_filters( double meshSize_=1 ): meshSize( meshSize_ ), mesh()
     {
         BOOST_TEST_MESSAGE( "setup mesh" );
         BOOST_CHECK( meshSize_ <= 1 );
@@ -103,13 +103,17 @@ struct test_mesh_filters
 
         nameStr << "triangle." << meshSize;
         BOOST_TEST_CHECKPOINT( "Described mesh name" );
-        try {
+
+        try
+        {
             fname = __gmsh.generate( nameStr.str(), ostr.str() );
         }
-        catch( ... )
-            {
-                std::cout << "Caught exception\n";
-            }
+
+        catch ( ... )
+        {
+            std::cout << "Caught exception\n";
+        }
+
         BOOST_TEST_CHECKPOINT( "Generating mesh with h=" << meshSize );
         /* Mesh */
 
@@ -143,54 +147,57 @@ struct test_mesh_filters
         {
             Feel::MeshTraits<detail::mesh_type>::location_face_const_iterator it = mesh->beginInternalFace();
             Feel::MeshTraits<detail::mesh_type>::location_face_const_iterator en = mesh->endInternalFace();
+
             //BOOST_CHECK( std::distance( it, en ) == 1 );
-            for( ; it != en; ++it )
-                {
-                    // the face must be connected with two elements
-                    BOOST_CHECK( it->isConnectedTo0() &&
-                                 it->isConnectedTo1() );
-                    // check that the points coordinates are the same for the face vertices
-                    int face_0 = it->pos_first();
-                    int face_1 = it->pos_second();
-                    Feel::node<double>::type n00 = it->element(0).point( it->element(0).fToP( face_0, 0 ) ).node();
-                    Feel::node<double>::type n10 = it->element(1).point( it->element(1).fToP( face_1, 1 ) ).node();
-                    FEELPP_ASSERT( ublas::norm_2( n00 - n10 ) < 1e-15 )
-                        ( it->id() )
-                        ( it->element( 0 ).G() )
-                        ( face_0 )
-                        ( it->element(0).fToP( face_0, 0 ) )
-                        ( it->element( 1 ).G() )
-                        ( face_1 )
-                        ( it->element(1).fToP( face_1, 1 ) )
-                        ( n00 )
-                        ( n10 )
-                        ( ublas::norm_2( n00 - n10 ) ).warn( "check failed" );
-                    BOOST_CHECK( ublas::norm_2( n00 - n10 ) < 1e-15 );
-                    Feel::node<double>::type n01 = it->element(0).point( it->element(0).fToP( face_0, 1 ) ).node();
-                    Feel::node<double>::type n11 = it->element(1).point( it->element(1).fToP( face_1, 0 ) ).node();
-                    FEELPP_ASSERT( ublas::norm_2( n01 - n11 ) < 1e-15 )
-                        ( it->id() )
-                        ( it->element( 0 ).G() )
-                        ( face_0 )
-                        ( it->element(0).fToP( face_0, 1 ) )
-                        ( it->element( 1 ).G() )
-                        ( face_1 )
-                        ( it->element(1).fToP( face_1, 0 ) )
-                        ( face_1 )
-                        ( n01 )( n11 )( ublas::norm_2( n01 - n11 ) ).warn( "check failed" );
-                    BOOST_CHECK( ublas::norm_2( n01 - n11 ) < 1e-15 );
-                }
+            for ( ; it != en; ++it )
+            {
+                // the face must be connected with two elements
+                BOOST_CHECK( it->isConnectedTo0() &&
+                             it->isConnectedTo1() );
+                // check that the points coordinates are the same for the face vertices
+                int face_0 = it->pos_first();
+                int face_1 = it->pos_second();
+                Feel::node<double>::type n00 = it->element( 0 ).point( it->element( 0 ).fToP( face_0, 0 ) ).node();
+                Feel::node<double>::type n10 = it->element( 1 ).point( it->element( 1 ).fToP( face_1, 1 ) ).node();
+                FEELPP_ASSERT( ublas::norm_2( n00 - n10 ) < 1e-15 )
+                ( it->id() )
+                ( it->element( 0 ).G() )
+                ( face_0 )
+                ( it->element( 0 ).fToP( face_0, 0 ) )
+                ( it->element( 1 ).G() )
+                ( face_1 )
+                ( it->element( 1 ).fToP( face_1, 1 ) )
+                ( n00 )
+                ( n10 )
+                ( ublas::norm_2( n00 - n10 ) ).warn( "check failed" );
+                BOOST_CHECK( ublas::norm_2( n00 - n10 ) < 1e-15 );
+                Feel::node<double>::type n01 = it->element( 0 ).point( it->element( 0 ).fToP( face_0, 1 ) ).node();
+                Feel::node<double>::type n11 = it->element( 1 ).point( it->element( 1 ).fToP( face_1, 0 ) ).node();
+                FEELPP_ASSERT( ublas::norm_2( n01 - n11 ) < 1e-15 )
+                ( it->id() )
+                ( it->element( 0 ).G() )
+                ( face_0 )
+                ( it->element( 0 ).fToP( face_0, 1 ) )
+                ( it->element( 1 ).G() )
+                ( face_1 )
+                ( it->element( 1 ).fToP( face_1, 0 ) )
+                ( face_1 )
+                ( n01 )( n11 )( ublas::norm_2( n01 - n11 ) ).warn( "check failed" );
+                BOOST_CHECK( ublas::norm_2( n01 - n11 ) < 1e-15 );
+            }
+
             it = mesh->beginFaceOnBoundary();
             en = mesh->endFaceOnBoundary();
+
             //BOOST_CHECK( std::distance( it, en ) == 4 );
-            for( ; it != en; ++it )
-                {
-                    BOOST_CHECK( it->isConnectedTo0() &&
-                                 !it->isConnectedTo1() );
-                    BOOST_CHECK( it->marker().value() == 31 ||
-                                 it->marker().value() == 32 ||
-                                 it->marker().value() == 33 );
-                }
+            for ( ; it != en; ++it )
+            {
+                BOOST_CHECK( it->isConnectedTo0() &&
+                             !it->isConnectedTo1() );
+                BOOST_CHECK( it->marker().value() == 31 ||
+                             it->marker().value() == 32 ||
+                             it->marker().value() == 33 );
+            }
         }
         BOOST_TEST_MESSAGE( "testing mesh elements" );
         // elements
@@ -209,16 +216,17 @@ struct test_mesh_filters
             geopc_ptrtype __geopc( new geopc_type( __gm, ref_conv.points() ) );
             Feel::MeshTraits<detail::mesh_type>::element_const_iterator it = mesh->beginElement();
             Feel::MeshTraits<detail::mesh_type>::element_const_iterator en = mesh->endElement();
-            //BOOST_CHECK( std::distance( it, en ) == 1 );
-            for( ; it != en; ++it )
-                {
-                    // check that the geometric transformation from
-                    // the current gives back the vertices of the
-                    // element
-                    gmc_ptrtype __c( new gmc_type( __gm, *it, __geopc ) );
 
-                    BOOST_CHECK( ublas::norm_frobenius( __c->xReal() - it->G() ) < 1e-15 );
-                }
+            //BOOST_CHECK( std::distance( it, en ) == 1 );
+            for ( ; it != en; ++it )
+            {
+                // check that the geometric transformation from
+                // the current gives back the vertices of the
+                // element
+                gmc_ptrtype __c( new gmc_type( __gm, *it, __geopc ) );
+
+                BOOST_CHECK( ublas::norm_frobenius( __c->xReal() - it->G() ) < 1e-15 );
+            }
         }
         BOOST_TEST_MESSAGE( "testing mesh for h=" << meshSize << " done" );
     }
@@ -293,23 +301,27 @@ BOOST_AUTO_TEST_CASE( test_mesh_lmethod )
     auto pen = mesh.endPoint();
 
 
-    while( pit != pen )
+    while ( pit != pen )
     {
 #if 0
         auto eit = pit->beginElement();
         auto een = pit->endElement();
-        while( eit != een )
+
+        while ( eit != een )
         {
             auto element = mesh->element( *eit );
-            for( int f = 0; f < eit->nDim; ++f )
+
+            for ( int f = 0; f < eit->nDim; ++f )
             {
                 // plocal local id of the vertex in the element
                 auto face = mesh->face( element->v2f( plocal, f ) );
 
 
             }
+
             ++eit;
         }
+
 #endif
         ++pit;
     }

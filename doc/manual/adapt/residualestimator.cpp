@@ -38,26 +38,26 @@ inline
 po::options_description
 makeOptions()
 {
-    po::options_description residualestimatoroptions("ResidualEstimator options");
+    po::options_description residualestimatoroptions( "ResidualEstimator options" );
     residualestimatoroptions.add_options()
-        ("hsize", po::value<double>()->default_value( 0.1 ), "mesh size")
-        ("dim", po::value<int>()->default_value( 2 ), "dimension of the geometry( 0: all three, 1, 2 or 3")
-        ("order", po::value<int>()->default_value( 0 ), "order of finite element approximation, 0: execute all registered orders")
-        ("shape", Feel::po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (either simplex or hypercube)")
-        ("weakdir", po::value<int>()->default_value( 1 ), "use weak Dirichlet condition" )
-        ("penaldir", Feel::po::value<double>()->default_value( 50 ),
-         "penalisation parameter for the weak boundary Dirichlet formulation")
-        ("alpha", Feel::po::value<double>()->default_value( 3 ), "Regularity coefficient for function f")
-        ("beta", Feel::po::value<double>()->default_value( 1 ), "Coefficient for exponential")
-        ("fn", Feel::po::value<int>()->default_value( 1 ), "example function to be run")
-        ("adapt-error-type", Feel::po::value<int>()->default_value(1),"type of error (=1 error indicator, =2 exact error)")
-        ("adapt-tolerance", Feel::po::value<double>()->default_value(1e-2),"tolerence parameter on the error for mesh adaptation")
-        ("adapt-hmax", Feel::po::value<double>()->default_value(2),"maximum acceptable h")
-        ("adapt-hmin", Feel::po::value<double>()->default_value(1e-5),"minimum acceptable h")
-        ("gmshmodel", Feel::po::value<bool>()->default_value(false),"enable gmsh model")
-        ("gmshgeo", Feel::po::value<bool>()->default_value(false),"enable gmsh model geo file")
+    ( "hsize", po::value<double>()->default_value( 0.1 ), "mesh size" )
+    ( "dim", po::value<int>()->default_value( 2 ), "dimension of the geometry( 0: all three, 1, 2 or 3" )
+    ( "order", po::value<int>()->default_value( 0 ), "order of finite element approximation, 0: execute all registered orders" )
+    ( "shape", Feel::po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (either simplex or hypercube)" )
+    ( "weakdir", po::value<int>()->default_value( 1 ), "use weak Dirichlet condition" )
+    ( "penaldir", Feel::po::value<double>()->default_value( 50 ),
+      "penalisation parameter for the weak boundary Dirichlet formulation" )
+    ( "alpha", Feel::po::value<double>()->default_value( 3 ), "Regularity coefficient for function f" )
+    ( "beta", Feel::po::value<double>()->default_value( 1 ), "Coefficient for exponential" )
+    ( "fn", Feel::po::value<int>()->default_value( 1 ), "example function to be run" )
+    ( "adapt-error-type", Feel::po::value<int>()->default_value( 1 ),"type of error (=1 error indicator, =2 exact error)" )
+    ( "adapt-tolerance", Feel::po::value<double>()->default_value( 1e-2 ),"tolerence parameter on the error for mesh adaptation" )
+    ( "adapt-hmax", Feel::po::value<double>()->default_value( 2 ),"maximum acceptable h" )
+    ( "adapt-hmin", Feel::po::value<double>()->default_value( 1e-5 ),"minimum acceptable h" )
+    ( "gmshmodel", Feel::po::value<bool>()->default_value( false ),"enable gmsh model" )
+    ( "gmshgeo", Feel::po::value<bool>()->default_value( false ),"enable gmsh model geo file" )
 
-        ;
+    ;
     return residualestimatoroptions.add( Feel::feel_options() );
 }
 
@@ -73,11 +73,13 @@ main( int argc, char** argv )
      */
     /** \code */
     Application app( argc, argv, makeAbout(), makeOptions() );
+
     if ( app.vm().count( "help" ) )
     {
         std::cout << app.optionsDescription() << "\n";
         return 0;
     }
+
     /** \endcode */
 
     /**

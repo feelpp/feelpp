@@ -65,9 +65,9 @@ public :
      */
     //@{
 
-    OperatorTrace(functionspace_ptrtype domainSpace)
+    OperatorTrace( functionspace_ptrtype domainSpace )
         :
-        M_domainSpace(domainSpace)
+        M_domainSpace( domainSpace )
     {
     }
 
@@ -84,12 +84,12 @@ public :
         typedef typename vf::detail::clean2_type<Args,tag::range,IntEltsDefault>::type _range_type;
     };
 
-    BOOST_PARAMETER_MEMBER_FUNCTION((trace_element_type),
-                                    trace,
-                                    tag,
-                                    (required
-                                     (range,  *)
-                                     (expr,   *)
+    BOOST_PARAMETER_MEMBER_FUNCTION( ( trace_element_type ),
+                                     trace,
+                                     tag,
+                                     ( required
+                                       ( range,  * )
+                                       ( expr,   * )
                                      ) )
 
     {
@@ -100,7 +100,7 @@ public :
 
         trace_element_type te = Th->element();
 
-        te = vf::project(_space=Th, _range=elements( Th->mesh() ), _expr=expr );
+        te = vf::project( _space=Th, _range=elements( Th->mesh() ), _expr=expr );
 
         return te;
     }
@@ -125,7 +125,7 @@ boost::shared_ptr< OperatorTrace<self_type> >
 operatorTrace( boost::shared_ptr<self_type> const& domainspace )
 {
     typedef OperatorTrace<self_type> Trace_type;
-    boost::shared_ptr<Trace_type> trace( new Trace_type(domainspace) );
+    boost::shared_ptr<Trace_type> trace( new Trace_type( domainspace ) );
     return trace;
 }
 

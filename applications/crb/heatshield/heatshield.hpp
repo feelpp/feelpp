@@ -64,17 +64,17 @@ namespace Feel
 po::options_description
 makeHeatShieldOptions()
 {
-    po::options_description heatshieldoptions("HeatShield options");
+    po::options_description heatshieldoptions( "HeatShield options" );
     heatshieldoptions.add_options()
     // mesh parameters
-    ("hsize", Feel::po::value<double>()->default_value( 1e-1 ),
-     "first h value to start convergence")
-    ("steady", Feel::po::value<bool>()->default_value(true),
-     "if true : steady else unsteady")
-    ("do-export", Feel::po::value<bool>()->default_value( false ),
-     "export results if true")
-      ;
-    return heatshieldoptions.add( Feel::feel_options() ).add(bdf_options("heatshield"));
+    ( "hsize", Feel::po::value<double>()->default_value( 1e-1 ),
+      "first h value to start convergence" )
+    ( "steady", Feel::po::value<bool>()->default_value( true ),
+      "if true : steady else unsteady" )
+    ( "do-export", Feel::po::value<bool>()->default_value( false ),
+      "export results if true" )
+    ;
+    return heatshieldoptions.add( Feel::feel_options() ).add( bdf_options( "heatshield" ) );
 }
 AboutData
 makeHeatShieldAbout( std::string const& str = "heatShield" )
@@ -84,10 +84,10 @@ makeHeatShieldAbout( std::string const& str = "heatShield" )
                            "0.1",
                            "heat shield Benchmark",
                            Feel::AboutData::License_GPL,
-                           "Copyright (c) 2010,2011 Université de Grenoble 1 (Joseph Fourier)");
+                           "Copyright (c) 2010,2011 Université de Grenoble 1 (Joseph Fourier)" );
 
-    about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
-    about.addAuthor("Stephane Veys", "developer", "stephane.veys@imag.fr", "");
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    about.addAuthor( "Stephane Veys", "developer", "stephane.veys@imag.fr", "" );
     return about;
 }
 
@@ -113,7 +113,7 @@ public:
     static const uint16_type Order = 1;
     static const uint16_type ParameterSpaceDimension = 2;
     static const bool is_time_dependent = true;
-    
+
     //@}
 
     /** @name Typedefs
@@ -192,7 +192,7 @@ public:
     //! copy constructor
     HeatShield( HeatShield const & );
     //! destructor
-    ~HeatShield(){}
+    ~HeatShield() {}
 
     //! initialization of the model
     void init();
@@ -210,11 +210,17 @@ public:
 
     // \return the number of terms in affine decomposition of left hand
     // side bilinear form
-    int Qa() const { return 3; }
+    int Qa() const
+    {
+        return 3;
+    }
 
     // \return the number of terms in affine decomposition of bilinear form
     // associated to mass matrix
-    int Qm() const { return 1; }
+    int Qm() const
+    {
+        return 1;
+    }
 
     /**
      * there is at least one output which is the right hand side of the
@@ -223,94 +229,115 @@ public:
      * \return number of outputs associated to the model
      * in our case we have a compliant output and 2 others outputs : average temperature on boundaries
      */
-    int Nl() const { return 2; }
+    int Nl() const
+    {
+        return 2;
+    }
 
     /**
      * \param l the index of output
      * \return number of terms  in affine decomposition of the \p q th output term
      * in our case no outputs depend on parameters
      */
-    int Ql( int l ) const { return 1;  }
+    int Ql( int l ) const
+    {
+        return 1;
+    }
 
     /**
      * \brief Returns the function space
      */
-    space_ptrtype functionSpace() { return Xh; }
+    space_ptrtype functionSpace()
+    {
+        return Xh;
+    }
 
     //! return the parameter space
-    parameterspace_ptrtype parameterSpace() const { return M_Dmu;}
+    parameterspace_ptrtype parameterSpace() const
+    {
+        return M_Dmu;
+    }
 
     /**
      * \brief compute the theta coefficient for both bilinear and linear form
      * \param mu parameter to evaluate the coefficients
      */
     boost::tuple<theta_vector_type, theta_vector_type, std::vector<theta_vector_type> >
-    computeThetaq( parameter_type const& mu , double time=1e30)
-        {
-            double biot_out   = mu( 0 );
-            double biot_in    = mu( 1 );
+    computeThetaq( parameter_type const& mu , double time=1e30 )
+    {
+        double biot_out   = mu( 0 );
+        double biot_in    = mu( 1 );
 
-	    M_thetaMq.resize( Qm() );
-	    M_thetaMq( 0 )=1;
+        M_thetaMq.resize( Qm() );
+        M_thetaMq( 0 )=1;
 
-            M_thetaAq.resize( Qa() );
-            M_thetaAq( 0 ) = 1 ;
-            M_thetaAq( 1 ) = biot_out ;
-            M_thetaAq( 2 ) = biot_in;
+        M_thetaAq.resize( Qa() );
+        M_thetaAq( 0 ) = 1 ;
+        M_thetaAq( 1 ) = biot_out ;
+        M_thetaAq( 2 ) = biot_in;
 
-            M_thetaFq.resize( Nl() );
+        M_thetaFq.resize( Nl() );
 
-            M_thetaFq[0].resize( Ql(0) );
-	    M_thetaFq[0]( 0 ) = biot_out;
+        M_thetaFq[0].resize( Ql( 0 ) );
+        M_thetaFq[0]( 0 ) = biot_out;
 
-            M_thetaFq[1].resize( Ql(1) );
-            M_thetaFq[1]( 0 ) = 1./surface;
+        M_thetaFq[1].resize( Ql( 1 ) );
+        M_thetaFq[1]( 0 ) = 1./surface;
 
-            return boost::make_tuple( M_thetaMq, M_thetaAq, M_thetaFq );
-        }
-
-    /**
-     * \brief return the coefficient vector
-     */
-    theta_vector_type const& thetaAq() const { return M_thetaAq; }
+        return boost::make_tuple( M_thetaMq, M_thetaAq, M_thetaFq );
+    }
 
     /**
      * \brief return the coefficient vector
      */
-    theta_vector_type const& thetaMq() const { return M_thetaMq; }
+    theta_vector_type const& thetaAq() const
+    {
+        return M_thetaAq;
+    }
+
+    /**
+     * \brief return the coefficient vector
+     */
+    theta_vector_type const& thetaMq() const
+    {
+        return M_thetaMq;
+    }
 
 
     /**
      * \brief return the coefficient vector
      */
-    std::vector<theta_vector_type> const& thetaFq() const { return M_thetaFq; }
+    std::vector<theta_vector_type> const& thetaFq() const
+    {
+        return M_thetaFq;
+    }
 
     /**
      * \brief return the coefficient vector \p q component
      *
      */
     value_type thetaAq( int q ) const
-        {
-            return M_thetaAq( q );
-        }
+    {
+        return M_thetaAq( q );
+    }
 
     /**
      * \brief return the coefficient vector \p q component
      *
      */
     value_type thetaMq( int q ) const
-        {
-            return M_thetaMq( q );
-        }
+    {
+        return M_thetaMq( q );
+    }
 
 
     /**
      * \return the \p q -th term of the \p l -th output
      */
     value_type thetaL( int l, int q ) const
-        {
-            return M_thetaFq[l]( q );
-        }
+    {
+        return M_thetaFq[l]( q );
+    }
 
     //@}
 
@@ -321,7 +348,10 @@ public:
     /**
      * set the mesh characteristic length to \p s
      */
-    void setMeshSize( double s ) { meshSize = s; }
+    void setMeshSize( double s )
+    {
+        meshSize = s;
+    }
 
 
     //@}
@@ -354,12 +384,27 @@ public:
 
     void assemble();
     int computeNumberOfSnapshots();
-    double timeFinal() {return M_bdf->timeFinal();}
-    double timeStep() { return  M_bdf->timeStep(); }
-    double timeInitial() {return M_bdf->timeInitial();}
-    int timeOrder() {return M_bdf->timeOrder(); }
-    void initializationField( element_ptrtype& initial_field, parameter_type const& mu);
-    bool isSteady() {return M_is_steady;}
+    double timeFinal()
+    {
+        return M_bdf->timeFinal();
+    }
+    double timeStep()
+    {
+        return  M_bdf->timeStep();
+    }
+    double timeInitial()
+    {
+        return M_bdf->timeInitial();
+    }
+    int timeOrder()
+    {
+        return M_bdf->timeOrder();
+    }
+    void initializationField( element_ptrtype& initial_field, parameter_type const& mu );
+    bool isSteady()
+    {
+        return M_is_steady;
+    }
 
 
     /**
@@ -376,13 +421,13 @@ public:
     /**
      * update the PDE system with respect to \param mu
      */
-    void update( parameter_type const& mu,double bdf_coeff, element_type const& bdf_poly, int output_index=0) ;
+    void update( parameter_type const& mu,double bdf_coeff, element_type const& bdf_poly, int output_index=0 ) ;
     //@}
 
     /**
      * export results to ensight format (enabled by  --export cmd line options)
      */
-    void exportResults(double time, element_type& T , parameter_type const& mu);
+    void exportResults( double time, element_type& T , parameter_type const& mu );
 
     void solve( sparse_matrix_ptrtype& ,element_type& ,vector_ptrtype&  );
 
@@ -473,7 +518,7 @@ HeatShield::HeatShield()
     do_export( false ),
     M_Dmu( new parameterspace_type )
 {
-  this->init();
+    this->init();
 }
 
 HeatShield::HeatShield( po::variables_map const& vm )
@@ -486,7 +531,7 @@ HeatShield::HeatShield( po::variables_map const& vm )
     do_export( vm["do-export"].as<bool>() ),
     M_Dmu( new parameterspace_type )
 {
-  this->init();
+    this->init();
 }
 
 
@@ -494,56 +539,56 @@ HeatShield::HeatShield( po::variables_map const& vm )
 
 
 gmsh_ptrtype
-HeatShield::createGeo( double hsize)
+HeatShield::createGeo( double hsize )
 {
-  gmsh_ptrtype gmshp( new Gmsh );
+    gmsh_ptrtype gmshp( new Gmsh );
     std::ostringstream ostr;
     double H = hsize;
     double h = H;//hsize/4;
     ostr <<"Point (1) = {0,  0, 0, "<<H<<"};\n"
-	 <<"Point (2) = {10, 0, 0, "<<H<<"};\n"
-	 <<"Point (3) = {10, 4, 0, "<<H<<"};\n"
-	 <<"Point (4) = {0,  4, 0, "<<H<<"};\n"
-	 <<"Point (10) = {1, 1, 0, "<<h<<"};\n"
-	 <<"Point (11) = {3, 1, 0, "<<h<<"};\n"
-	 <<"Point (12) = {3, 3, 0, "<<h<<"};\n"
-	 <<"Point (13) = {1, 3, 0, "<<h<<"};\n"
-	 <<"Point (20) = {4, 1, 0, "<<h<<"};\n"
-	 <<"Point (21) = {6, 1, 0, "<<h<<"};\n"
-	 <<"Point (22) = {6, 3, 0, "<<h<<"};\n"
-	 <<"Point (23) = {4, 3, 0, "<<h<<"};\n"
-	 <<"Point (30) = {7, 1, 0, "<<h<<"};\n"
-	 <<"Point (31) = {9, 1, 0, "<<h<<"};\n"
-	 <<"Point (32) = {9, 3, 0, "<<h<<"};\n"
-	 <<"Point (33) = {7, 3, 0, "<<h<<"};\n"
-	 <<"Line (101) = {1,2};\n"
-	 <<"Line (102) = {2,3};\n"
-	 <<"Line (103) = {3,4};\n"
-	 <<"Line (104) = {4,1};\n"
-	 <<"Line (110) = {10,11};\n"
-	 <<"Line (111) = {11,12};\n"
-	 <<"Line (112) = {12,13};\n"
-	 <<"Line (113) = {13,10};\n"
-	 <<"Line (120) = {20,21};\n"
-	 <<"Line (121) = {21,22};\n"
-	 <<"Line (122) = {22,23};\n"
-	 <<"Line (123) = {23,20};\n"
-	 <<"Line (130) = {30,31};\n"
-	 <<"Line (131) = {31,32};\n"
-	 <<"Line (132) = {32,33};\n"
-	 <<"Line (133) = {33,30};\n"
-	 <<"Line Loop (201) = {101, 102, 103, 104};\n"
-	 <<"Line Loop (210) = {110, 111, 112, 113};\n"
-	 <<"Line Loop (220) = {120, 121, 122, 123};\n"
-	 <<"Line Loop (230) = {130, 131, 132, 133};\n"
-	 <<"Plane Surface (300) = {201,-210,-220,-230};\n"
-	 <<"Physical Line (\"left\") = {104};\n"
-	 <<"Physical Line (\"right\") = {102};\n"
-	 <<"Physical Line (\"bottom\") = {101};\n"
-	 <<"Physical Line (\"top\") = {103};\n"
-	 <<"Physical Line (\"gamma_holes\") = {110,111,112,113, 120,121,122,123, 130,131,132,133};\n"
-	 <<"Physical Surface (\"Omega\") = {300};\n"
-      ;
+         <<"Point (2) = {10, 0, 0, "<<H<<"};\n"
+         <<"Point (3) = {10, 4, 0, "<<H<<"};\n"
+         <<"Point (4) = {0,  4, 0, "<<H<<"};\n"
+         <<"Point (10) = {1, 1, 0, "<<h<<"};\n"
+         <<"Point (11) = {3, 1, 0, "<<h<<"};\n"
+         <<"Point (12) = {3, 3, 0, "<<h<<"};\n"
+         <<"Point (13) = {1, 3, 0, "<<h<<"};\n"
+         <<"Point (20) = {4, 1, 0, "<<h<<"};\n"
+         <<"Point (21) = {6, 1, 0, "<<h<<"};\n"
+         <<"Point (22) = {6, 3, 0, "<<h<<"};\n"
+         <<"Point (23) = {4, 3, 0, "<<h<<"};\n"
+         <<"Point (30) = {7, 1, 0, "<<h<<"};\n"
+         <<"Point (31) = {9, 1, 0, "<<h<<"};\n"
+         <<"Point (32) = {9, 3, 0, "<<h<<"};\n"
+         <<"Point (33) = {7, 3, 0, "<<h<<"};\n"
+         <<"Line (101) = {1,2};\n"
+         <<"Line (102) = {2,3};\n"
+         <<"Line (103) = {3,4};\n"
+         <<"Line (104) = {4,1};\n"
+         <<"Line (110) = {10,11};\n"
+         <<"Line (111) = {11,12};\n"
+         <<"Line (112) = {12,13};\n"
+         <<"Line (113) = {13,10};\n"
+         <<"Line (120) = {20,21};\n"
+         <<"Line (121) = {21,22};\n"
+         <<"Line (122) = {22,23};\n"
+         <<"Line (123) = {23,20};\n"
+         <<"Line (130) = {30,31};\n"
+         <<"Line (131) = {31,32};\n"
+         <<"Line (132) = {32,33};\n"
+         <<"Line (133) = {33,30};\n"
+         <<"Line Loop (201) = {101, 102, 103, 104};\n"
+         <<"Line Loop (210) = {110, 111, 112, 113};\n"
+         <<"Line Loop (220) = {120, 121, 122, 123};\n"
+         <<"Line Loop (230) = {130, 131, 132, 133};\n"
+         <<"Plane Surface (300) = {201,-210,-220,-230};\n"
+         <<"Physical Line (\"left\") = {104};\n"
+         <<"Physical Line (\"right\") = {102};\n"
+         <<"Physical Line (\"bottom\") = {101};\n"
+         <<"Physical Line (\"top\") = {103};\n"
+         <<"Physical Line (\"gamma_holes\") = {110,111,112,113, 120,121,122,123, 130,131,132,133};\n"
+         <<"Physical Surface (\"Omega\") = {300};\n"
+         ;
     std::ostringstream nameStr;
     nameStr.precision( 3 );
     nameStr << "heatshield_geo";
@@ -555,9 +600,9 @@ HeatShield::createGeo( double hsize)
 
 
 
-void HeatShield::initializationField( element_ptrtype& initial_field , parameter_type const& mu)
+void HeatShield::initializationField( element_ptrtype& initial_field , parameter_type const& mu )
 {
-  initial_field->setZero();
+    initial_field->setZero();
 }
 
 void HeatShield::init()
@@ -565,14 +610,14 @@ void HeatShield::init()
 
 
     using namespace Feel::vf;
- 
+
     /*
      * First we create the mesh
      */
     mesh = createGMSHMesh ( _mesh = new mesh_type,
-                            _desc = createGeo( meshSize),
+                            _desc = createGeo( meshSize ),
                             _update=MESH_UPDATE_FACES | MESH_UPDATE_EDGES );
-   
+
     /*
      * The function space and some associate elements are then defined
      */
@@ -584,10 +629,10 @@ void HeatShield::init()
 
 
 
-    surface = integrate( _range=elements(mesh), _expr=cst(1.) ).evaluate()(0,0);
+    surface = integrate( _range=elements( mesh ), _expr=cst( 1. ) ).evaluate()( 0,0 );
     std::cout<<"surface : "<<surface<<std::endl;
 
-    M_bdf = bdf( _space=Xh, _vm=M_vm, _name="heatshield" , _prefix="heatshield");
+    M_bdf = bdf( _space=Xh, _vm=M_vm, _name="heatshield" , _prefix="heatshield" );
 
     M_Aq.resize( this->Qa() );
     M_Mq.resize( this->Qm() );
@@ -631,17 +676,17 @@ void HeatShield::assemble()
 
 
     M_Aq[0] = backend->newMatrix( _test=Xh, _trial=Xh );
-    form2( _test=Xh, _trial=Xh, _matrix=M_Aq[0]) = integrate( _range= elements(mesh), _expr= gradt(u)*trans(grad(v)) );
+    form2( _test=Xh, _trial=Xh, _matrix=M_Aq[0] ) = integrate( _range= elements( mesh ), _expr= gradt( u )*trans( grad( v ) ) );
 
-    M_Aq[1] = backend->newMatrix( _test=Xh, _trial=Xh , _matrix=M_Aq[0]);
-    M_Aq[2] = backend->newMatrix( _test=Xh, _trial=Xh , _matrix=M_Aq[0]);
+    M_Aq[1] = backend->newMatrix( _test=Xh, _trial=Xh , _matrix=M_Aq[0] );
+    M_Aq[2] = backend->newMatrix( _test=Xh, _trial=Xh , _matrix=M_Aq[0] );
 
-    form2( _test=Xh, _trial=Xh, _matrix=M_Aq[1])  = integrate( _range= markedfaces(mesh, "left"), _expr= idt(u)*id(v) );
-    form2( _test=Xh, _trial=Xh, _matrix=M_Aq[2]) += integrate( _range= markedfaces(mesh, "gamma_holes"), _expr= idt(u)*id(v) );
+    form2( _test=Xh, _trial=Xh, _matrix=M_Aq[1] )  = integrate( _range= markedfaces( mesh, "left" ), _expr= idt( u )*id( v ) );
+    form2( _test=Xh, _trial=Xh, _matrix=M_Aq[2] ) += integrate( _range= markedfaces( mesh, "gamma_holes" ), _expr= idt( u )*id( v ) );
 
-    form1( _test=Xh, _vector=M_Fq[0][0] ) = integrate( _range=markedfaces(mesh,"left"), _expr= id(v) ) ;
-    form1( _test=Xh, _vector=M_Fq[1][0] ) = integrate( _range=elements(mesh), _expr= id(v) ) ;
-    
+    form1( _test=Xh, _vector=M_Fq[0][0] ) = integrate( _range=markedfaces( mesh,"left" ), _expr= id( v ) ) ;
+    form1( _test=Xh, _vector=M_Fq[1][0] ) = integrate( _range=elements( mesh ), _expr= id( v ) ) ;
+
     M_Aq[0]->close();
     M_Aq[1]->close();
     M_Aq[2]->close();
@@ -650,20 +695,20 @@ void HeatShield::assemble()
     M_Fq[1][0]->close();
 
     //mass matrix
-    M_Mq[0] = backend->newMatrix( _test=Xh, _trial=Xh , _matrix=M_Aq[0]);    
-    form2( _test=Xh, _trial=Xh, _matrix=M_Mq[0] ) = integrate ( _range=elements(mesh), _expr=idt(u)*id(v) );
+    M_Mq[0] = backend->newMatrix( _test=Xh, _trial=Xh , _matrix=M_Aq[0] );
+    form2( _test=Xh, _trial=Xh, _matrix=M_Mq[0] ) = integrate ( _range=elements( mesh ), _expr=idt( u )*id( v ) );
     M_Mq[0]->close();
 
 
     //for scalarProduct
     M = backend->newMatrix( _test=Xh, _trial=Xh );
     form2( Xh, Xh, M ) =
-      integrate( elements(mesh), id(u)*idt(v) + grad(u)*trans(gradt(v)) );
+        integrate( elements( mesh ), id( u )*idt( v ) + grad( u )*trans( gradt( v ) ) );
     M->close();
 
     Mpod = backend->newMatrix( _test=Xh, _trial=Xh );
     form2( Xh, Xh, Mpod ) =
-      integrate( elements(mesh), id(u)*idt(v) + grad(u)*trans(gradt(v)) );
+        integrate( elements( mesh ), id( u )*idt( v ) + grad( u )*trans( gradt( v ) ) );
     Mpod->close();
 
 
@@ -673,21 +718,21 @@ void HeatShield::assemble()
 typename HeatShield::sparse_matrix_ptrtype
 HeatShield::newMatrix() const
 {
-  return backend->newMatrix( Xh, Xh , M_Aq[0] );
+    return backend->newMatrix( Xh, Xh , M_Aq[0] );
 }
 
 
 typename HeatShield::affine_decomposition_type
 HeatShield::computeAffineDecomposition()
 {
-  return boost::make_tuple(M_Mq, M_Aq, M_Fq );
-  //return boost::make_tuple( M_Aq, M_Fq );
+    return boost::make_tuple( M_Mq, M_Aq, M_Fq );
+    //return boost::make_tuple( M_Aq, M_Fq );
 }
 
 
 void HeatShield::solve( sparse_matrix_ptrtype& D,
-               element_type& u,
-               vector_ptrtype& F )
+                        element_type& u,
+                        vector_ptrtype& F )
 {
 
     vector_ptrtype U( backend->newVector( u.functionSpace() ) );
@@ -696,25 +741,27 @@ void HeatShield::solve( sparse_matrix_ptrtype& D,
 }
 
 
-void HeatShield::exportResults(double time, element_type& T, parameter_type const& mu )
+void HeatShield::exportResults( double time, element_type& T, parameter_type const& mu )
 {
-        Log() << "exportResults starts\n";
-	std::string exp_name = "Model_T" + (boost::format("_%1%") %time).str();
-	export_ptrtype exporter;
-	exporter = export_ptrtype( Exporter<mesh_type>::New( "ensight", exp_name  ) );
-	exporter->step(time)->setMesh( T.functionSpace()->mesh() );
-	std::string mu_str;
-	for(int i=0;i<mu.size();i++)
-        {
-	  mu_str= mu_str + (boost::format("_%1%") %mu[i]).str() ;
-	}
-	std::string name = "T_with_parameters_"+mu_str;
-	exporter->step(time)->add(name, T );
-        exporter->save();
+    Log() << "exportResults starts\n";
+    std::string exp_name = "Model_T" + ( boost::format( "_%1%" ) %time ).str();
+    export_ptrtype exporter;
+    exporter = export_ptrtype( Exporter<mesh_type>::New( "ensight", exp_name  ) );
+    exporter->step( time )->setMesh( T.functionSpace()->mesh() );
+    std::string mu_str;
+
+    for ( int i=0; i<mu.size(); i++ )
+    {
+        mu_str= mu_str + ( boost::format( "_%1%" ) %mu[i] ).str() ;
+    }
+
+    std::string name = "T_with_parameters_"+mu_str;
+    exporter->step( time )->add( name, T );
+    exporter->save();
 }
 
 
-void HeatShield::update( parameter_type const& mu,double bdf_coeff, element_type const& bdf_poly, int output_index)
+void HeatShield::update( parameter_type const& mu,double bdf_coeff, element_type const& bdf_poly, int output_index )
 {
 
     D->close();
@@ -722,7 +769,8 @@ void HeatShield::update( parameter_type const& mu,double bdf_coeff, element_type
 
     *D = *M_Aq[0];
     D->scale( M_thetaAq[0] );
-    for( size_type q = 1;q < M_Aq.size(); ++q )
+
+    for ( size_type q = 1; q < M_Aq.size(); ++q )
     {
         D->addMatrix( M_thetaAq[q] , M_Aq[q] );
     }
@@ -730,22 +778,23 @@ void HeatShield::update( parameter_type const& mu,double bdf_coeff, element_type
     F->close();
     F->zero();
 
-    for( size_type q = 0;q < M_Fq[output_index].size(); ++q )
+    for ( size_type q = 0; q < M_Fq[output_index].size(); ++q )
     {
         F->add( M_thetaFq[output_index][q], M_Fq[output_index][q] );
     }
 
-      auto vec_bdf_poly = backend->newVector(Xh);
-      //add contribution from mass matrix
-      for( size_type q = 0;q < M_Mq.size(); ++q )
-      {
+    auto vec_bdf_poly = backend->newVector( Xh );
+
+    //add contribution from mass matrix
+    for ( size_type q = 0; q < M_Mq.size(); ++q )
+    {
         //left hand side
         D->addMatrix( M_thetaMq[q]*bdf_coeff, M_Mq[q] );
         //right hand side
         *vec_bdf_poly = bdf_poly;
-        vec_bdf_poly->scale( M_thetaMq[q]);
-        F->addVector( *vec_bdf_poly, *M_Mq[q]);
-      }
+        vec_bdf_poly->scale( M_thetaMq[q] );
+        F->addVector( *vec_bdf_poly, *M_Mq[q] );
+    }
 
 }
 
@@ -762,41 +811,42 @@ void HeatShield::solve( parameter_type const& mu )
 void HeatShield::solve( parameter_type const& mu, element_ptrtype& T, int output_index )
 {
 
-  
+
 
     using namespace Feel::vf;
 
-    initializationField(T,mu);
-    initializationField(pT,mu);
+    initializationField( T,mu );
+    initializationField( pT,mu );
 
     assemble();
-    
+
     element_type v( Xh, "v" );//test functions
 
-    M_bdf->initialize(*T);
-    if(M_is_steady)
+    M_bdf->initialize( *T );
+
+    if ( M_is_steady )
     {
         M_bdf->setSteady();
     }
 
-    double bdf_coeff = M_bdf->polyDerivCoefficient(0);
+    double bdf_coeff = M_bdf->polyDerivCoefficient( 0 );
 
     for ( M_bdf->start(); !M_bdf->isFinished() ; M_bdf->next() )
     {
 
         this->computeThetaq( mu, M_bdf->time() );
-	auto bdf_poly = M_bdf->polyDeriv();
+        auto bdf_poly = M_bdf->polyDeriv();
         this->update( mu , bdf_coeff, bdf_poly );
 
-	backend->solve( _matrix=D,  _solution=T, _rhs=F );
+        backend->solve( _matrix=D,  _solution=T, _rhs=F );
 
-	if( do_export )
-	{
-	    exportResults( M_bdf->time(), *T , mu);
-	    export_number++;
-	}
+        if ( do_export )
+        {
+            exportResults( M_bdf->time(), *T , mu );
+            export_number++;
+        }
 
-	M_bdf->shiftRight( *T );
+        M_bdf->shiftRight( *T );
 
     }
 
@@ -807,7 +857,7 @@ void HeatShield::solve( parameter_type const& mu, element_ptrtype& T, int output
 int
 HeatShield::computeNumberOfSnapshots()
 {
-    return M_bdf->timeFinal()/M_bdf->timeStep();    
+    return M_bdf->timeFinal()/M_bdf->timeStep();
 }
 
 
@@ -846,14 +896,16 @@ void HeatShield::run( const double * X, unsigned long N, double * Y, unsigned lo
     Feel::ParameterSpace<ParameterSpaceDimension>::Element mu( M_Dmu );
     mu << X[0], X[1], X[2];
     static int do_init = true;
+
     if ( do_init )
     {
         this->init();
         do_init = false;
     }
+
     this->solve( mu, pT );
 
-    double mean = integrate( elements(mesh),idv(*pT) ).evaluate()(0,0);
+    double mean = integrate( elements( mesh ),idv( *pT ) ).evaluate()( 0,0 );
     Y[0]=mean;
 }
 
@@ -867,22 +919,26 @@ double HeatShield::output( int output_index, parameter_type const& mu, bool expo
     element_type u( Xh, "u" );
     element_type v( Xh, "v" );
 
-    if( !export_outputs)
+    if ( !export_outputs )
     {
         this->solve( mu, pT );
     }
 
     vector_ptrtype U( backend->newVector( Xh ) );
     *U = *pT;
-    
+
     double s=0;
-    if(output_index<2)
+
+    if ( output_index<2 )
     {
-        for(int i=0;i<Ql(output_index);i++)  s += M_thetaFq[output_index](i)*dot( M_Fq[output_index][i], U );
+        for ( int i=0; i<Ql( output_index ); i++ )  s += M_thetaFq[output_index]( i )*dot( M_Fq[output_index][i], U );
     }
-    else{
-      throw std::logic_error( "[HeatShield::output] error with output_index : only 0 or 1 " );
+
+    else
+    {
+        throw std::logic_error( "[HeatShield::output] error with output_index : only 0 or 1 " );
     }
+
     return s ;
 }
 

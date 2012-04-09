@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -89,29 +89,35 @@ void toPython( RefEntity const& e, std::string str = "simplex" )
 
     for ( int i = 0; i < RefEntity::numEdges; ++i )
     {
-        for(int j = 0; j < 2; ++j )
+        for ( int j = 0; j < 2; ++j )
         {
             node_type x( 2 );
+
             if ( RefEntity::nRealDim == 1 )
             {
-                x( 0 ) = e.edgeVertex(i,j)(0);
+                x( 0 ) = e.edgeVertex( i,j )( 0 );
                 x( 1 ) = value_type( 0 );
             }
+
             if ( RefEntity::nRealDim == 2 )
             {
                 x = e.edgeVertex( i, j );
             }
+
             if ( RefEntity::nRealDim == 3 )
             {
-                x(0) = e.edgeVertex( i, j )(0)+e.edgeVertex( i, j )(1)*std::cos(M_PI/4);
-                x(1) = e.edgeVertex( i, j )(2)+e.edgeVertex( i, j )(1)*std::sin(M_PI/4);
+                x( 0 ) = e.edgeVertex( i, j )( 0 )+e.edgeVertex( i, j )( 1 )*std::cos( M_PI/4 );
+                x( 1 ) = e.edgeVertex( i, j )( 2 )+e.edgeVertex( i, j )( 1 )*std::sin( M_PI/4 );
             }
+
             if ( j == 0 )
                 ofs << "path.moveto(" << double( x( 0 ) )<< "," << double( x( 1 ) ) << "),\n";
+
             else if ( j == 1 )
                 ofs << "path.lineto(" << double( x( 0 ) )<< "," << double( x( 1 ) ) << "),\n";
         }
     }
+
     ofs << "path.closepath() )\n";
     ofs << "c = canvas.canvas()\n"
         << "c.stroke(p, [style.linewidth.Thin])\n";
@@ -119,23 +125,28 @@ void toPython( RefEntity const& e, std::string str = "simplex" )
     for ( int i = 0; i < RefEntity::numPoints; ++i )
     {
         node_type x( 2 );
+
         if ( RefEntity::nRealDim == 1 )
         {
             x( 0 ) = e.point( i )( 0 );
             x( 1 ) = value_type( 0 );
         }
+
         if ( RefEntity::nRealDim == 2 )
         {
             x = e.point( i );
         }
+
         if ( RefEntity::nRealDim == 3 )
         {
-            x(0) = e.point( i )(0)+e.point( i )(1)*std::cos(M_PI/4);
-            x(1) = e.point( i )(2)+e.point( i )(1)*std::sin(M_PI/4);
+            x( 0 ) = e.point( i )( 0 )+e.point( i )( 1 )*std::cos( M_PI/4 );
+            x( 1 ) = e.point( i )( 2 )+e.point( i )( 1 )*std::sin( M_PI/4 );
         }
+
         ofs << "c.fill ( path.circle(" << double( x( 0 ) ) << "," << double( x( 1 ) )<< ", 0.05 ),[deco.filled([color.grey.black])])\n";
-        ofs << "c.text(" << double(x(0)) << "," << double(x(1)) << ", \"" << i << "\")\n";
+        ofs << "c.text(" << double( x( 0 ) ) << "," << double( x( 1 ) ) << ", \"" << i << "\")\n";
     }
+
     ofs << "c.writePDFfile(\"" << str << "_" << RefEntity::nDim
         << "_" << RefEntity::nOrder
         << "_" << RefEntity::nRealDim

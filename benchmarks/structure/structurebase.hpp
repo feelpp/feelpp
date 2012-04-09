@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -85,25 +85,58 @@ public:
      */
     //@{
 
-    Feel::po::variables_map vm() const { return M_vm; }
+    Feel::po::variables_map vm() const
+    {
+        return M_vm;
+    }
 
-    double d() const { return M_dimension; }
-    double h() const { return M_h; }
+    double d() const
+    {
+        return M_dimension;
+    }
+    double h() const
+    {
+        return M_h;
+    }
 
     /* time discretisation data */
-    double T0() const { return M_T0; }
-    double T() const { return M_T; }
-    double dt() const { return M_dt; }
+    double T0() const
+    {
+        return M_T0;
+    }
+    double T() const
+    {
+        return M_T;
+    }
+    double dt() const
+    {
+        return M_dt;
+    }
 
-    int spaceOrder() const { return M_sorder; }
-    int timeOrder() const { return M_torder; }
+    int spaceOrder() const
+    {
+        return M_sorder;
+    }
+    int timeOrder() const
+    {
+        return M_torder;
+    }
 
     //! penalisation parameter for weak Dirichlet handling
-    double gammaBc() const { return M_gammabc; }
+    double gammaBc() const
+    {
+        return M_gammabc;
+    }
 
-    int nSubSteps() const { return M_nsubsteps; }
+    int nSubSteps() const
+    {
+        return M_nsubsteps;
+    }
 
-    std::vector<std::string> const& dirichletMarkers() const { return M_dirichlet; }
+    std::vector<std::string> const& dirichletMarkers() const
+    {
+        return M_dirichlet;
+    }
 
     //@}
 

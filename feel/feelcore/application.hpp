@@ -170,7 +170,10 @@ public:
      *
      * @return the options description
      */
-    po::options_description const& optionsDescription() const { return _M_desc; }
+    po::options_description const& optionsDescription() const
+    {
+        return _M_desc;
+    }
 
     /**
      * get the variable map
@@ -178,7 +181,10 @@ public:
      *
      * @return the variable map
      */
-    po::variables_map const& vm() const { return _M_vm; }
+    po::variables_map const& vm() const
+    {
+        return _M_vm;
+    }
 
     /**
      * get the about data of the application
@@ -187,12 +193,18 @@ public:
      * @return the about data ofthe application
      * @see AboutData
      */
-    AboutData const& about() const { return _M_about; }
+    AboutData const& about() const
+    {
+        return _M_about;
+    }
 
     /**
      * \return the number of options unrecognized by \p boost::program_options
      */
-    int unknownArgc() const { return _M_to_pass_further.size()+1; }
+    int unknownArgc() const
+    {
+        return _M_to_pass_further.size()+1;
+    }
 
     /**
      * \return the \c char** of unrecognized options
@@ -202,17 +214,26 @@ public:
     /**
      * \return the number of processes
      */
-    uint16_type nProcess() { return uint16_type(M_comm->size()); }
+    uint16_type nProcess()
+    {
+        return uint16_type( M_comm->size() );
+    }
 
     /**
      * \return the id of the current process
      */
-    uint16_type processId() { return uint16_type(M_comm->rank()); }
+    uint16_type processId()
+    {
+        return uint16_type( M_comm->rank() );
+    }
 
-     /**
-     * \return \p true if MPI is initialized, \p false otherwise
-     */
-    bool isMPIInitialized() const { return mpi::environment::initialized(); }
+    /**
+    * \return \p true if MPI is initialized, \p false otherwise
+    */
+    bool isMPIInitialized() const
+    {
+        return mpi::environment::initialized();
+    }
 
     /** Determine if the MPI environment has already been initialized.
      *
@@ -220,7 +241,10 @@ public:
      *
      *  @returns @c true if the MPI environment has been initialized.
      */
-    static bool initialized() { return mpi::environment::initialized(); }
+    static bool initialized()
+    {
+        return mpi::environment::initialized();
+    }
 
     /** Determine if the MPI environment has already been finalized.
      *
@@ -228,7 +252,10 @@ public:
      *
      *  @returns @c true if the MPI environment has been finalized.
      */
-    static bool finalized() { return mpi::environment::finalized(); }
+    static bool finalized()
+    {
+        return mpi::environment::finalized();
+    }
 
     /** Retrieve the name of this processor.
      *
@@ -253,19 +280,31 @@ public:
     std::string rootRepository() const;
 
     //! \return the \c begin() iterator
-    simget_iterator begin() { return M_simgets.begin(); }
+    simget_iterator begin()
+    {
+        return M_simgets.begin();
+    }
 
     //! \return the \c end() iterator
-    simget_iterator end() { return M_simgets.end(); }
+    simget_iterator end()
+    {
+        return M_simgets.end();
+    }
 
     //! \return the number of simgets
-    size_type nSimgets() const { return M_simgets.size(); }
+    size_type nSimgets() const
+    {
+        return M_simgets.size();
+    }
 
     /**
      * \return true if the verbose command line/config option is used, false
      * otherwise
      */
-    bool verbose() const { return _M_vm.count( "verbose" ); }
+    bool verbose() const
+    {
+        return _M_vm.count( "verbose" );
+    }
 
     //@}
 
@@ -312,17 +351,26 @@ public:
     /**
      * @return the communicator
      */
-    mpi::communicator& comm() { return *M_comm; }
+    mpi::communicator& comm()
+    {
+        return *M_comm;
+    }
 
     /**
      * @return the communicator
      */
-    mpi::communicator const& comm() const { return *M_comm; }
+    mpi::communicator const& comm() const
+    {
+        return *M_comm;
+    }
 
     /**
      * @return the barrier
      */
-    void barrier() { M_comm->barrier(); }
+    void barrier()
+    {
+        M_comm->barrier();
+    }
 
     /**
      * add a new simget to the application

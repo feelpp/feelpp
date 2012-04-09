@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -37,21 +37,21 @@ namespace vf
 double FunctorDomain::lowerBound() const
 {
     FEELPP_ASSERT( true )( "FunctorDomain::lowerBound() called for a domain without "
-                          "a lower bound" );
+                           "a lower bound" );
     return 0.0;
 }
 
 double FunctorDomain::upperBound() const
 {
     FEELPP_ASSERT( true )( "FunctorDomain::upperBound() called for a domain without "
-                          "a upper bound" );
+                           "a upper bound" );
     return 0.0;
 }
 
 double FunctorDomain::excludedPoint() const
 {
     FEELPP_ASSERT( true )( "FunctorDomain::excludedPoint() called for a domain without "
-                          "an excluded point" );
+                           "an excluded point" );
     return 0.0;
 }
 /// \endcond

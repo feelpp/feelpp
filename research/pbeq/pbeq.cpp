@@ -38,10 +38,10 @@ void
 Pbeq::loadFE()
 {
     if ( this->vm().count( "help" ) )
-        {
-            std::cout << this->optionsDescription() << "\n";
-            return;
-        }
+    {
+        std::cout << this->optionsDescription() << "\n";
+        return;
+    }
 
     changeToMeshRepository();
 
@@ -55,23 +55,24 @@ Pbeq::loadFE()
      */
 
     // the reference compuational domain is composed by a dense sphere
-    M_pbeqspace.setMeshSize (this->vm()["hsize"].as<value_type>());
-    M_pbeqspace.setFarFactor(this->vm()["farfactor"].as<value_type>());
-    M_pbeqspace.setFarBnd   (this->vm()["farBnd"].as<value_type>());
+    M_pbeqspace.setMeshSize ( this->vm()["hsize"].as<value_type>() );
+    M_pbeqspace.setFarFactor( this->vm()["farfactor"].as<value_type>() );
+    M_pbeqspace.setFarBnd   ( this->vm()["farBnd"].as<value_type>() );
 
 
     if ( Application::processId() == 0 )
-        {
-            if ( !( this->vm().count( "meshReuse" ) && M_pbeqspace.loadMesh( ) ) )
-                M_pbeqspace.createMesh(this->vm().count( "geoOnly" ) );
-        }
+    {
+        if ( !( this->vm().count( "meshReuse" ) && M_pbeqspace.loadMesh( ) ) )
+            M_pbeqspace.createMesh( this->vm().count( "geoOnly" ) );
+    }
+
     application_type::barrier();
 
     if ( Application::processId() != 0 )
-        {
-            if ( !M_pbeqspace.loadMesh( ) )
-                throw std::logic_error( "could not load mesh on processor != 0" );
-        }
+    {
+        if ( !M_pbeqspace.loadMesh( ) )
+            throw std::logic_error( "could not load mesh on processor != 0" );
+    }
 }
 
 template<typename Mat, typename Vec1, typename Vec2>
@@ -95,12 +96,12 @@ Pbeq::solve( Mat const& D,
 
 template<typename Etype, typename Ktype>
 void
-Pbeq::getPBMatrix(sparse_matrix_ptrtype& PB,
-                  element_type const& u,
-                  element_type const& v,
-                  Etype const& Epsilon,
-                  Ktype const& kappa2 /*,
-                                        vector_ptrtype& F */)
+Pbeq::getPBMatrix( sparse_matrix_ptrtype& PB,
+                   element_type const& u,
+                   element_type const& v,
+                   Etype const& Epsilon,
+                   Ktype const& kappa2 /*,
+                                        vector_ptrtype& F */ )
 {
     using namespace Feel::vf;
 
@@ -108,11 +109,11 @@ Pbeq::getPBMatrix(sparse_matrix_ptrtype& PB,
 
     size_type pattern = Pattern::COUPLED;
     form2( M_pbeqspace.Xh(), M_pbeqspace.Xh(), PB, _init=true, _pattern=pattern ) =
-        integrate( elements(*M_pbeqspace.mesh()), im,
-                   Epsilon*( M_jacInvStr2[0] * dxt(u) * dx(v) +
-                             M_jacInvStr2[1] * dyt(u) * dy(v) +
-                             M_jacInvStr2[2] * dzt(u) * dz(v) )
-                   +  kappa2*idt(u)*id(v) );
+        integrate( elements( *M_pbeqspace.mesh() ), im,
+                   Epsilon*( M_jacInvStr2[0] * dxt( u ) * dx( v ) +
+                             M_jacInvStr2[1] * dyt( u ) * dy( v ) +
+                             M_jacInvStr2[2] * dzt( u ) * dz( v ) )
+                   +  kappa2*idt( u )*id( v ) );
 
     PB->close();
 
@@ -150,33 +151,35 @@ Pbeq::getPBMatrix(sparse_matrix_ptrtype& PB,
 
 int
 Pbeq::initMolecule( std::string const& moleculeName,
-                    molecule_type& _molecule) const
+                    molecule_type& _molecule ) const
 {
     std::ostringstream file;
     file << this->vm()["molDir"].as<std::string>()
-            << "/"
-            << moleculeName;
-    int mol_read(1);
+         << "/"
+         << moleculeName;
+    int mol_read( 1 );
 
-    switch ( M_filetype ) {
+    switch ( M_filetype )
+    {
     case molecule_type::PQR:
-        mol_read = _molecule.readPQRfile(file.str());
+        mol_read = _molecule.readPQRfile( file.str() );
         break;
+
     case molecule_type::CRD:
-        mol_read = _molecule.readCRDfile(file.str());
+        mol_read = _molecule.readCRDfile( file.str() );
         break;
     }
 
-    if (mol_read == 0)
-        {
-            Log() << "Molecule " << moleculeName << " has " << _molecule.size() << " atoms \n";
-            _molecule.showMe();
-            return _molecule.size();
-        }
+    if ( mol_read == 0 )
+    {
+        Log() << "Molecule " << moleculeName << " has " << _molecule.size() << " atoms \n";
+        _molecule.showMe();
+        return _molecule.size();
+    }
 
     Log() << "problem in reading "
-            << file.str()
-            << "\n";
+          << file.str()
+          << "\n";
 
     //_molecule.showMe();
 
@@ -186,36 +189,39 @@ Pbeq::initMolecule( std::string const& moleculeName,
 } // initMolecule
 
 void
-Pbeq::setDomain( molecule_type const& _molecule)
+Pbeq::setDomain( molecule_type const& _molecule )
 {
 
-    uint16_type const dim(pbeqspace_type::Dim);
-    node_type _min(dim),  _max(dim);
-    node_type  stretch(dim), translation(dim);
-    FEELPP_ASSERT( this->vm()["farBnd"].as<value_type>() > 0 )(dim).error( "invalid farBnd" );
+    uint16_type const dim( pbeqspace_type::Dim );
+    node_type _min( dim ),  _max( dim );
+    node_type  stretch( dim ), translation( dim );
+    FEELPP_ASSERT( this->vm()["farBnd"].as<value_type>() > 0 )( dim ).error( "invalid farBnd" );
 
-    _molecule.domainMinMax(_min,_max);
+    _molecule.domainMinMax( _min,_max );
 
-    stretch     = (_max - _min)/2;
-    translation = (_max + _min)/2;
+    stretch     = ( _max - _min )/2;
+    translation = ( _max + _min )/2;
 
     Log() << "i  \tmin,   \tmax, \tstretch,\ttranslation " << "\n";
-    for ( int i(0); i < dim; i++ )
+
+    for ( int i( 0 ); i < dim; i++ )
         Log() << i <<"\t"<<  _min[i] <<"\t"<<  _max[i] <<"\t"<< stretch[i] <<"\t\t"<< translation[i]
-                  << "\n";
+              << "\n";
 
     M_detJac = stretch[0];
-    for (int i = 1; i < dim; i++)
+
+    for ( int i = 1; i < dim; i++ )
         M_detJac *= stretch[i];
 
-    FEELPP_ASSERT( M_detJac > 0 )(dim).error( "invalid sign of the Jacobian" );
+    FEELPP_ASSERT( M_detJac > 0 )( dim ).error( "invalid sign of the Jacobian" );
 
-    M_jacInvStr2.resize(dim);
-    for (int i = 0; i < dim; i++)
-        M_jacInvStr2[i] = M_detJac/(stretch[i]*stretch[i]);
+    M_jacInvStr2.resize( dim );
 
-    M_pbeqspace.setStretch(stretch);
-    M_pbeqspace.setTranslation(translation);
+    for ( int i = 0; i < dim; i++ )
+        M_jacInvStr2[i] = M_detJac/( stretch[i]*stretch[i] );
+
+    M_pbeqspace.setStretch( stretch );
+    M_pbeqspace.setTranslation( translation );
 
 }
 
@@ -228,7 +234,7 @@ Pbeq::setCoeffs()
     pdie = this->vm()["pdie"].as<value_type>();
     sdie = this->vm()["sdie"].as<value_type>();
     temp = this->vm()["temp"].as<value_type>();
-    Kappab   = 8*3.1415926*this->vm()["IonStr"].  as<value_type>() / (Kb*temp*sdie);
+    Kappab   = 8*3.1415926*this->vm()["IonStr"].  as<value_type>() / ( Kb*temp*sdie );
 
 
     // rhsCoeff = 4 \pi e_c / (Kb*T) * detJac
@@ -241,13 +247,13 @@ Pbeq::setCoeffs()
 
 
 int
-Pbeq::setReceptor(std::string const& receptorName)
+Pbeq::setReceptor( std::string const& receptorName )
 {
 
-    changeToSolutionRepository(receptorName);
+    changeToSolutionRepository( receptorName );
     setCoeffs();
 
-    initMolecule(receptorName,M_receptor);
+    initMolecule( receptorName,M_receptor );
 
     setDomain( M_receptor );
 
@@ -258,13 +264,13 @@ Pbeq::setReceptor(std::string const& receptorName)
 }
 
 int
-Pbeq::setLigand(std::string const& ligandName)
+Pbeq::setLigand( std::string const& ligandName )
 {
-    return initMolecule(ligandName,M_ligand);
+    return initMolecule( ligandName,M_ligand );
 }
 
 int
-Pbeq::setReclusterFile(std::string const& reclusterName)
+Pbeq::setReclusterFile( std::string const& reclusterName )
 {
 
     std::ostringstream file;
@@ -273,15 +279,15 @@ Pbeq::setReclusterFile(std::string const& reclusterName)
          << reclusterName
          << ".pdb.dock4";
 
-    M_dock4file.open(file.str().c_str(), std::ifstream::in);
+    M_dock4file.open( file.str().c_str(), std::ifstream::in );
 
-    if (M_dock4file.fail())
-      {
-          Log() << "setReclusterFile::failed to open *" << reclusterName << "*"
-                  << "\n at " << file.str()
-                  << "\n";
-          return -1;
-      }
+    if ( M_dock4file.fail() )
+    {
+        Log() << "setReclusterFile::failed to open *" << reclusterName << "*"
+              << "\n at " << file.str()
+              << "\n";
+        return -1;
+    }
 
     if ( M_dock4file.eof() ) return -1;
 
@@ -308,19 +314,19 @@ Pbeq::deltaAndHeavisyde( molecule_type const       &myMolecule,
 
     timers["assembly"].first.restart();
 
-    F = M_backend->newVector(M_pbeqspace.Xh() );
+    F = M_backend->newVector( M_pbeqspace.Xh() );
 
-    M_pbeqspace.intvrho(myMolecule,F);
+    M_pbeqspace.intvrho( myMolecule,F );
     F->close();
 
     // Checking consistency of the right hand side
     Log() << myMolecule.name() << " total charge = " << myMolecule.totalCharge() << " == " << F->sum() << " = sum(F)\n";
 
-    FEELPP_ASSERT(  std::abs(myMolecule.totalCharge() -  F->sum())
-                  < (myMolecule.totalAbsCharge() +  F->l1Norm())  * 1.e-9  ).error( "total charge and sum(F) are different" );
+    FEELPP_ASSERT(  std::abs( myMolecule.totalCharge() -  F->sum() )
+                    < ( myMolecule.totalAbsCharge() +  F->l1Norm() )  * 1.e-9  ).error( "total charge and sum(F) are different" );
 
 
-    F->scale(rhsCoeff* M_detJac);
+    F->scale( rhsCoeff* M_detJac );
 
     timers["assembly"].second = timers["assembly"].first.elapsed();
     Log() << "[timer] rhs assembly: " << timers["assembly"].second << "\n";
@@ -334,19 +340,19 @@ Pbeq::deltaAndHeavisyde( molecule_type const       &myMolecule,
 
     timers["heavyside"].first.restart();
 
-    H.reset( new heavyside_element_type( M_pbeqspace.fastHeavyside( myMolecule )) );
+    H.reset( new heavyside_element_type( M_pbeqspace.fastHeavyside( myMolecule ) ) );
     //H.reset( new heavyside_element_type( M_pbeqspace.heavyside( myMolecule )) );
 
     // Checking consistency (to be checked agains other hsize's)
     im_type im;
-    double domain_size = integrate( elements(*M_pbeqspace.mesh()), im, constant(1.0)).evaluate()(0,0);
-    double intH        = integrate( elements(*M_pbeqspace.mesh()), im, idv(*H) ).evaluate()(0,0);
+    double domain_size = integrate( elements( *M_pbeqspace.mesh() ), im, constant( 1.0 ) ).evaluate()( 0,0 );
+    double intH        = integrate( elements( *M_pbeqspace.mesh() ), im, idv( *H ) ).evaluate()( 0,0 );
 
     //
 
     Log() << "domain_size = " << M_detJac*domain_size
-            << " intH = " << M_detJac*intH
-            << "\n";
+          << " intH = " << M_detJac*intH
+          << "\n";
 
 
 
@@ -364,7 +370,7 @@ Pbeq::buildSystemAndSolve( element_type        & u,
                            element_type   const& v,
                            Etype          const& Epsilon,
                            Ktype          const& kappa2,
-                           vector_ptrtype const& F)
+                           vector_ptrtype const& F )
 {
 
     /* vector_ptrtype  F( M_backend->newVector(M_pbeqspace.Xh()) );
@@ -376,7 +382,7 @@ Pbeq::buildSystemAndSolve( element_type        & u,
     sparse_matrix_ptrtype PB;
     PB = M_backend->newMatrix( M_pbeqspace.Xh(), M_pbeqspace.Xh() );
 
-    getPBMatrix(PB, u, v, Epsilon, kappa2);
+    getPBMatrix( PB, u, v, Epsilon, kappa2 );
 
     timers["assembly"].second = timers["assembly"].first.elapsed();
     Log() << "[timer] assembly: " << timers["assembly"].second << "\n";
@@ -389,29 +395,30 @@ Pbeq::buildSystemAndSolve( element_type        & u,
     this->solve( PB, u, F, false );
 
     if ( this->vm().count( "export-matlab" ) )
-        {
-            std::ostringstream ostr;
-            ostr.precision( 3 );
-            ostr << "F.m" ;
-            F->printMatlab( ostr.str() );
+    {
+        std::ostringstream ostr;
+        ostr.precision( 3 );
+        ostr << "F.m" ;
+        F->printMatlab( ostr.str() );
 
-            if ( Application::processId() == 0 )
-                std::cout  << "Returning now, only checking matrices \n"
-                   << std::flush;
-            exit(0);
+        if ( Application::processId() == 0 )
+            std::cout  << "Returning now, only checking matrices \n"
+                       << std::flush;
 
-        }
+        exit( 0 );
 
-    return postProcess(u, F, rhsCoeff);
+    }
+
+    return postProcess( u, F, rhsCoeff );
 
 }
 
 value_type
-Pbeq::solveReceptor(std::string const& receptorName)
+Pbeq::solveReceptor( std::string const& receptorName )
 {
     using namespace Feel::vf;
 
-    setReceptor(receptorName);
+    setReceptor( receptorName );
     FEELPP_ASSERT(  M_receptor.size() > 0 ).error( "Receptor has zero length" );
 
     element_type u( M_pbeqspace.Xh(), "u" );
@@ -421,32 +428,32 @@ Pbeq::solveReceptor(std::string const& receptorName)
      * Construction of the left hand side components
      */
 
-    value_type jacKbsquare (M_detJac*Kappab*Kappab);
-    AUTO(Epsilon, pdie + (sdie-pdie)* idv(*M_H_receptor));
-    AUTO(kappa2, jacKbsquare* idv(*M_H_receptor));
+    value_type jacKbsquare ( M_detJac*Kappab*Kappab );
+    AUTO( Epsilon, pdie + ( sdie-pdie )* idv( *M_H_receptor ) );
+    AUTO( kappa2, jacKbsquare* idv( *M_H_receptor ) );
 
     // unused. Why?
-    value_type K (Kb/std::sqrt(sdie));
+    value_type K ( Kb/std::sqrt( sdie ) );
 
     /*
      *  solvated solution
      */
 
-    value_type solvatedEnergy = buildSystemAndSolve(u, v, Epsilon, kappa2, M_F_receptor);
+    value_type solvatedEnergy = buildSystemAndSolve( u, v, Epsilon, kappa2, M_F_receptor );
 
 
     /*
      *  Vacuum solution
      */
     v=u;
-    value_type  vacuumEnergy = buildSystemAndSolve(v, u, pdie, kappa2, M_F_receptor);
+    value_type  vacuumEnergy = buildSystemAndSolve( v, u, pdie, kappa2, M_F_receptor );
 
     /*
      *  export results
      */
 
     if ( this->vm().count( "export" ) )
-        exportResults(*M_H_receptor,*M_H_receptor,u,v, M_F_receptor);
+        exportResults( *M_H_receptor,*M_H_receptor,u,v, M_F_receptor );
 
     return solvatedEnergy - vacuumEnergy;
 
@@ -471,12 +478,12 @@ Pbeq::solveLigand()
      * Construction of the left hand side components
      */
 
-    value_type jacKbsquare (M_detJac*Kappab*Kappab);
-    AUTO(Epsilon, pdie + (sdie-pdie) * idv(*H) * idv(*M_H_receptor) );
-    AUTO(kappa2, jacKbsquare * idv(*H) * idv(*M_H_receptor));
+    value_type jacKbsquare ( M_detJac*Kappab*Kappab );
+    AUTO( Epsilon, pdie + ( sdie-pdie ) * idv( *H ) * idv( *M_H_receptor ) );
+    AUTO( kappa2, jacKbsquare * idv( *H ) * idv( *M_H_receptor ) );
 
     // unused. Why?
-    value_type K (Kb/std::sqrt(sdie));
+    value_type K ( Kb/std::sqrt( sdie ) );
 
 
     // solutions
@@ -488,21 +495,21 @@ Pbeq::solveLigand()
      *  solvated solution
      */
 
-    value_type solvatedEnergy = buildSystemAndSolve(u, v, Epsilon, kappa2, F);
+    value_type solvatedEnergy = buildSystemAndSolve( u, v, Epsilon, kappa2, F );
 
     /*
      *  Vacuum solution
      */
 
     v=u;
-    value_type  vacuumEnergy = buildSystemAndSolve(v, u, pdie, kappa2, F);
+    value_type  vacuumEnergy = buildSystemAndSolve( v, u, pdie, kappa2, F );
 
     /*
      *  export results
      */
 
     if ( this->vm().count( "export" ) )
-        exportResults(*M_H_receptor,*H,u,v,F);
+        exportResults( *M_H_receptor,*H,u,v,F );
 
     return solvatedEnergy - vacuumEnergy;
 
@@ -510,7 +517,7 @@ Pbeq::solveLigand()
 
 
 value_type
-Pbeq::postProcess(element_type const& u, vector_ptrtype const& F, value_type const& rhsCoeff) const
+Pbeq::postProcess( element_type const& u, vector_ptrtype const& F, value_type const& rhsCoeff ) const
 {
     using namespace Feel::vf;
 
@@ -531,7 +538,7 @@ Pbeq::postProcess(element_type const& u, vector_ptrtype const& F, value_type con
     //value_type output(boost::numeric::ublas::inner_prod( *F, u ));
     value_type output = F->dot( u );
 #else
-    value_type output(inner_product( *F, u ));
+    value_type output( inner_product( *F, u ) );
 #endif
 
     //\Delta G_{ele} = 1/2 K_B*T /ec * \int_\Omega u \rho
@@ -539,9 +546,9 @@ Pbeq::postProcess(element_type const& u, vector_ptrtype const& F, value_type con
       if ( Application::processId() == 0 )
         std::cout << "inner_prod ( F, u ) = " << output << "\n" << std::flush;
     */
-    Log() << "Energy = " << 1./(8.* 3.1415926 *rhsCoeff*rhsCoeff) << "*" << output << "\n";
+    Log() << "Energy = " << 1./( 8.* 3.1415926 *rhsCoeff*rhsCoeff ) << "*" << output << "\n";
 
-    output = 1./(8.* 3.1415926 *rhsCoeff*rhsCoeff) * output;
+    output = 1./( 8.* 3.1415926 *rhsCoeff*rhsCoeff ) * output;
 
     Log() << "Energy = " << output << "\n";
     /*
@@ -560,7 +567,7 @@ Pbeq::postProcess(element_type const& u, vector_ptrtype const& F, value_type con
 void
 Pbeq::exportResults( heavyside_element_type& H0, heavyside_element_type& H1,
                      element_type& u, element_type& v,
-                     vector_ptrtype F)
+                     vector_ptrtype F )
 {
     timers["export"].first.restart();
 
@@ -593,11 +600,11 @@ Pbeq::changeToMeshRepository()
                             % this->vm()["hsize"].as<value_type>()
                             % this->vm()["farfactor"].as<value_type>()
                             % this->vm()["farBnd"].as<value_type>()
-                            );
+                          );
 }
 
 void
-Pbeq::changeToSolutionRepository(std::string const& receptorName)
+Pbeq::changeToSolutionRepository( std::string const& receptorName )
 {
     this->changeRepository( boost::format( "%1%/h_%2%/farF_%3%/farB_%4%/%5%/" )
                             % this->about().appName()
@@ -605,7 +612,7 @@ Pbeq::changeToSolutionRepository(std::string const& receptorName)
                             % this->vm()["farfactor"].as<value_type>()
                             % this->vm()["farBnd"].as<value_type>()
                             % receptorName
-                            );
+                          );
 
 }
 

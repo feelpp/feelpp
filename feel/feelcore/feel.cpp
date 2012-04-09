@@ -37,8 +37,10 @@ prefixvm( std::string const& prefix,
           std::string const& sep )
 {
     std::string o = prefix;
+
     if ( !o.empty() )
         o += sep;
+
     return o+opt;
 }
 

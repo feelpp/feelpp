@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -61,15 +61,15 @@ createMLPreconditioner( Epetra_RowMatrix const& mat, po::variables_map const& vm
     // solver is an AztecOO object
     Teuchos::ParameterList MList;
     // default values for smoothed aggregation
-    ML_Epetra::SetDefaults("SA",MList);
-    MList.set("max levels", vm["max-levels"].as<int>() );
-    MList.set("increasing or decreasing",vm["increasing-or-decreasing"].as<std::string>());
-    MList.set("aggregation: type", vm["aggregation-type"].as<std::string>() );
-    MList.set("coarse: type",vm["coarse-type"].as<std::string>() );
+    ML_Epetra::SetDefaults( "SA",MList );
+    MList.set( "max levels", vm["max-levels"].as<int>() );
+    MList.set( "increasing or decreasing",vm["increasing-or-decreasing"].as<std::string>() );
+    MList.set( "aggregation: type", vm["aggregation-type"].as<std::string>() );
+    MList.set( "coarse: type",vm["coarse-type"].as<std::string>() );
 
     return boost::shared_ptr<ML_Epetra::MultiLevelPreconditioner>( new ML_Epetra::MultiLevelPreconditioner( mat,
-                                                                                                            MList,
-                                                                                                            true) );
+            MList,
+            true ) );
 }
 
 } // trilinos

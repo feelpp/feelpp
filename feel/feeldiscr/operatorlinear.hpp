@@ -67,16 +67,16 @@ public:
     struct domain_element: public super::domain_space_type::template Element<T,Storage> {};
 
     typedef typename domain_space_type::template Element<typename domain_space_type::value_type,
-                                                         typename VectorUblas<typename domain_space_type::value_type>::range::type > domain_element_range_type;
+            typename VectorUblas<typename domain_space_type::value_type>::range::type > domain_element_range_type;
 
     typedef typename domain_space_type::template Element<typename domain_space_type::value_type,
-                                                         typename VectorUblas<typename domain_space_type::value_type>::slice::type > domain_element_slice_type;
+            typename VectorUblas<typename domain_space_type::value_type>::slice::type > domain_element_slice_type;
 
     typedef typename dual_image_space_type::template Element<typename dual_image_space_type::value_type,
-                                                             typename VectorUblas<typename dual_image_space_type::value_type>::range::type > dual_image_element_range_type;
+            typename VectorUblas<typename dual_image_space_type::value_type>::range::type > dual_image_element_range_type;
 
     typedef typename dual_image_space_type::template Element<typename dual_image_space_type::value_type,
-                                                             typename VectorUblas<typename dual_image_space_type::value_type>::slice::type > dual_image_element_slice_type;
+            typename VectorUblas<typename dual_image_space_type::value_type>::slice::type > dual_image_element_slice_type;
 
     //template<typename T, typename Storage>
     //struct dual_image_element: public super::dual_image_space_type::template Element<T,Storage> {};
@@ -96,22 +96,23 @@ public:
         M_matrix()
     {
         if ( deep_copy )
-            {
-                M_matrix = new matrix_type( *ol.M_matrix );
-            }
+        {
+            M_matrix = new matrix_type( *ol.M_matrix );
+        }
+
         else
-            {
-                M_matrix = ol.M_matrix;
-            }
+        {
+            M_matrix = ol.M_matrix;
+        }
     }
     OperatorLinear( domain_space_ptrtype     domainSpace,
                     dual_image_space_ptrtype dualImageSpace,
                     backend_ptrtype          backend,
-                    bool buildMatrix = true) :
+                    bool buildMatrix = true ) :
         super_type( domainSpace, dualImageSpace ),
         M_backend( backend )
     {
-        if (buildMatrix) M_matrix = M_backend->newMatrix( _trial=domainSpace, _test=dualImageSpace );
+        if ( buildMatrix ) M_matrix = M_backend->newMatrix( _trial=domainSpace, _test=dualImageSpace );
     }
 
     ~OperatorLinear() {}
@@ -125,7 +126,8 @@ public:
         this->setDomainSpace( domainSpace );
         this->setDualImageSpace( dualImageSpace );
         M_backend = backend;
-        if (buildMatrix) M_matrix = M_backend->newMatrix( _trial=domainSpace, _test=dualImageSpace );
+
+        if ( buildMatrix ) M_matrix = M_backend->newMatrix( _trial=domainSpace, _test=dualImageSpace );
     }
 
     // apply the operator: ie := Op de
@@ -138,6 +140,7 @@ public:
         {
             M_matrix->close();
         }
+
         vector_ptrtype _v1( M_backend->newVector( de.map() ) );
         *_v1 = de;
         vector_ptrtype _v2( M_backend->newVector( ie.space()->map() ) );
@@ -153,6 +156,7 @@ public:
         {
             M_matrix->close();
         }
+
         vector_ptrtype _v1( M_backend->newVector( de.map() ) );
         *_v1 = de;
         vector_ptrtype _v2( M_backend->newVector( ie.space()->map() ) );
@@ -162,12 +166,13 @@ public:
 
     double
     energy( const typename domain_space_type::element_type & de,
-            const typename dual_image_space_type::element_type & ie) const
+            const typename dual_image_space_type::element_type & ie ) const
     {
         if ( ! M_matrix->closed() )
         {
             M_matrix->close();
         }
+
         vector_ptrtype _v1( M_backend->newVector( de.map() ) );
         *_v1 = de;
         vector_ptrtype _v2( M_backend->newVector( ie.map() ) );
@@ -179,13 +184,14 @@ public:
 
 
     void
-    apply(const typename domain_space_type::element_type & de,
-           typename dual_image_space_type::element_type & ie)
+    apply( const typename domain_space_type::element_type & de,
+           typename dual_image_space_type::element_type & ie )
     {
         if ( ! M_matrix->closed() )
         {
             M_matrix->close();
         }
+
         vector_ptrtype _v1( M_backend->newVector( de.map() ) );
         *_v1 = de;
         vector_ptrtype _v2( M_backend->newVector( ie.map() ) );
@@ -198,12 +204,13 @@ public:
     //apply( const typename domain_space_type::template Element<typename domain_space_type::value_type,
     //       typename VectorUblas<typename domain_space_type::value_type>::range::type > & de,
     apply( const domain_element_range_type & de,
-           typename dual_image_space_type::element_type & ie)
+           typename dual_image_space_type::element_type & ie )
     {
         if ( ! M_matrix->closed() )
         {
             M_matrix->close();
         }
+
         vector_ptrtype _v1( M_backend->newVector( de.map() ) );
         *_v1 = de;
         vector_ptrtype _v2( M_backend->newVector( ie.map() ) );
@@ -213,12 +220,13 @@ public:
 
     void
     apply( const typename domain_space_type::element_type & de,
-           dual_image_element_range_type & ie)
+           dual_image_element_range_type & ie )
     {
         if ( ! M_matrix->closed() )
         {
             M_matrix->close();
         }
+
         vector_ptrtype _v1( M_backend->newVector( de.map() ) );
         *_v1 = de;
         vector_ptrtype _v2( M_backend->newVector( ie.map() ) );
@@ -229,12 +237,13 @@ public:
 
     void
     apply( const domain_element_range_type & de,
-           dual_image_element_range_type & ie)
+           dual_image_element_range_type & ie )
     {
         if ( ! M_matrix->closed() )
         {
             M_matrix->close();
         }
+
         vector_ptrtype _v1( M_backend->newVector( de.map() ) );
         *_v1 = de;
         vector_ptrtype _v2( M_backend->newVector( ie.map() ) );
@@ -245,12 +254,13 @@ public:
 
     void
     apply( const domain_element_slice_type & de,
-           typename dual_image_space_type::element_type & ie)
+           typename dual_image_space_type::element_type & ie )
     {
         if ( ! M_matrix->closed() )
         {
             M_matrix->close();
         }
+
         vector_ptrtype _v1( M_backend->newVector( de.map() ) );
         *_v1 = de;
         vector_ptrtype _v2( M_backend->newVector( ie.map() ) );
@@ -260,12 +270,13 @@ public:
 
     void
     apply( const typename domain_space_type::element_type & de,
-           dual_image_element_slice_type & ie)
+           dual_image_element_slice_type & ie )
     {
         if ( ! M_matrix->closed() )
         {
             M_matrix->close();
         }
+
         vector_ptrtype _v1( M_backend->newVector( de.map() ) );
         *_v1 = de;
         vector_ptrtype _v2( M_backend->newVector( ie.map() ) );
@@ -276,12 +287,13 @@ public:
 
     void
     apply( /*const*/ domain_element_slice_type /*&*/ de,
-           dual_image_element_slice_type /*&*/ ie)
+                     dual_image_element_slice_type /*&*/ ie )
     {
         if ( ! M_matrix->closed() )
         {
             M_matrix->close();
         }
+
         vector_ptrtype _v1( M_backend->newVector( de.map() ) );
         *_v1 = de;
         vector_ptrtype _v2( M_backend->newVector( ie.map() ) );
@@ -290,13 +302,14 @@ public:
     }
 #if 0
     void
-    apply(const typename domain_space_type::element_type::component_type & de,
-           typename dual_image_space_type::element_type & ie)
+    apply( const typename domain_space_type::element_type::component_type & de,
+           typename dual_image_space_type::element_type & ie )
     {
         if ( ! M_matrix->closed() )
         {
             M_matrix->close();
         }
+
         vector_ptrtype _v1( M_backend->newVector( de.map() ) );
         *_v1 = de;
         vector_ptrtype _v2( M_backend->newVector( ie.map() ) );
@@ -310,12 +323,13 @@ public:
 
     void
     apply( const domain_element_range_type & de,
-           dual_image_element_slice_type & ie)
+           dual_image_element_slice_type & ie )
     {
         if ( ! M_matrix->closed() )
         {
             M_matrix->close();
         }
+
         vector_ptrtype _v1( M_backend->newVector( de.map() ) );
         *_v1 = de;
         vector_ptrtype _v2( M_backend->newVector( ie.map() ) );
@@ -325,12 +339,13 @@ public:
 
     void
     apply( const domain_element_slice_type & de,
-           dual_image_element_range_type & ie)
+           dual_image_element_range_type & ie )
     {
         if ( ! M_matrix->closed() )
         {
             M_matrix->close();
         }
+
         vector_ptrtype _v1( M_backend->newVector( de.map() ) );
         *_v1 = de;
         vector_ptrtype _v2( M_backend->newVector( ie.map() ) );
@@ -351,6 +366,7 @@ public:
         {
             M_matrix->close();
         }
+
         vector_ptrtype _v1( M_backend->newVector( de.map() ) );
         *_v1 = de;
         //vector_ptrtype _v2( M_backend->newVector( ie.space()->map() ) );
@@ -360,23 +376,23 @@ public:
     }
 #endif
     template <typename T1 = typename domain_space_type::element_type,
-              typename T2 = typename dual_image_space_type::element_type >
+             typename T2 = typename dual_image_space_type::element_type >
     T2
-    operator()(T1 & de)
+    operator()( T1 & de )
     {
-        T2 elt_image(this->dualImageSpace(),"oio");
-        this->apply(de,elt_image);
+        T2 elt_image( this->dualImageSpace(),"oio" );
+        this->apply( de,elt_image );
 
         return elt_image;
     }
 
     template <typename T1 = typename domain_space_type::element_type,
-              typename T2 = typename dual_image_space_type::element_type >
+             typename T2 = typename dual_image_space_type::element_type >
     T2
-    operator()(boost::shared_ptr<T1> de)
+    operator()( boost::shared_ptr<T1> de )
     {
-        T2 elt_image(this->dualImageSpace(),"oio");
-        this->apply(*de,elt_image);
+        T2 elt_image( this->dualImageSpace(),"oio" );
+        this->apply( *de,elt_image );
 
         return elt_image;
     }
@@ -391,6 +407,7 @@ public:
         {
             M_matrix->close();
         }
+
         vector_ptrtype _v1( M_backend->newVector( de.map() ) );
         vector_ptrtype _v2( M_backend->newVector( ie.space()->map() ) );
         *_v2 = ie.container();
@@ -398,11 +415,13 @@ public:
         de = *_v1;
 
 #if 0
+
         if ( !M_backend->converged() )
         {
             std::cerr << "[OperatorLinear::applyInverse] "
                       << "solver failed to converge" << std::endl;
         }
+
 #endif
     }
 
@@ -421,12 +440,12 @@ public:
 
         domain_element_type de = this->domainSpace()->element();
 
-        auto ie = M_backend->newVector(this->dualImageSpace());
-        form1(_test=this->dualImageSpace(), _vector=ie ) =
-            integrate(elements(this->domainSpace()->mesh()),
-                      rhs_expr * id( this->dualImageSpace()->element() ) );
+        auto ie = M_backend->newVector( this->dualImageSpace() );
+        form1( _test=this->dualImageSpace(), _vector=ie ) =
+            integrate( elements( this->domainSpace()->mesh() ),
+                       rhs_expr * id( this->dualImageSpace()->element() ) );
 
-        M_backend->solve(M_matrix, de, ie);
+        M_backend->solve( M_matrix, de, ie );
 
         return de;
     }
@@ -466,9 +485,9 @@ public:
     void close()
     {
         if ( ! M_matrix->closed() )
-            {
-                M_matrix->close();
-            }
+        {
+            M_matrix->close();
+        }
 
     }
     // retrieve underlying matrix
@@ -512,20 +531,20 @@ public:
     OperatorLinear& add( T const& scalar, boost::shared_ptr<OperatorLinear> ol )
     {
         this->close();
-        this->add(scalar, *ol);
+        this->add( scalar, *ol );
         return *this;
     }
 
     OperatorLinear& operator+( boost::shared_ptr<OperatorLinear> ol )
     {
         this->close();
-        this->add(1.0, *ol);
+        this->add( 1.0, *ol );
         return *this;
     }
     OperatorLinear& operator+( OperatorLinear const& ol )
     {
         this->close();
-        this->add(1.0, ol);
+        this->add( 1.0, ol );
         return *this;
     }
 
@@ -547,23 +566,23 @@ struct compute_opLinear_return
 };
 
 BOOST_PARAMETER_FUNCTION(
-    (typename compute_opLinear_return<Args>::type), // 1. return type
+    ( typename compute_opLinear_return<Args>::type ), // 1. return type
     opLinear,                        // 2. name of the function template
     tag,                                        // 3. namespace of tag types
-    (required
-     (domainSpace,    *(boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> >))
-     (imageSpace,     *(boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> >))
-        ) // required
-    (optional
-     (backend,        *, Backend<typename compute_opLinear_return<Args>::domain_space_type::value_type>::build())
-        ) // optionnal
-    )
+    ( required
+      ( domainSpace,    *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
+      ( imageSpace,     *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
+    ) // required
+    ( optional
+      ( backend,        *, Backend<typename compute_opLinear_return<Args>::domain_space_type::value_type>::build() )
+    ) // optionnal
+)
 {
-    Feel::detail::ignore_unused_variable_warning(args);
+    Feel::detail::ignore_unused_variable_warning( args );
     typedef OperatorLinear<typename compute_opLinear_return<Args>::domain_space_type,
-                           typename compute_opLinear_return<Args>::image_space_type> operatorlinear_type;
+            typename compute_opLinear_return<Args>::image_space_type> operatorlinear_type;
 
-    boost::shared_ptr<operatorlinear_type> opI( new operatorlinear_type(domainSpace,imageSpace,backend));
+    boost::shared_ptr<operatorlinear_type> opI( new operatorlinear_type( domainSpace,imageSpace,backend ) );
 
     return opI;
 

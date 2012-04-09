@@ -42,53 +42,53 @@ namespace Feel
 Feel::po::options_description
 OpusData::makeOptions()
 {
-    Feel::po::options_description opusoptions("Opus benchmark #1 options");
+    Feel::po::options_description opusoptions( "Opus benchmark #1 options" );
     opusoptions.add_options()
-        ("steady", Feel::po::value<bool>()->default_value( 1 ), "compute the steady state")
-        ("stab", Feel::po::value<bool>()->default_value( 0 ), "compute with stabilisation")
+    ( "steady", Feel::po::value<bool>()->default_value( 1 ), "compute the steady state" )
+    ( "stab", Feel::po::value<bool>()->default_value( 0 ), "compute with stabilisation" )
 
-        ("d", Feel::po::value<int>()->default_value( 2 ), "time step value")
+    ( "d", Feel::po::value<int>()->default_value( 2 ), "time step value" )
 
-        ("order-geo", Feel::po::value<int>()->default_value( 2 ), "order of geometry")
-        ("order-time", Feel::po::value<int>()->default_value( 1 ), "order of time discretisation (time)")
-        ("order-temp", Feel::po::value<int>()->default_value( 2 ), "order of spatial discretisation (temperature)")
-        ("order-u", Feel::po::value<int>()->default_value( 2 ), "order of spatial discretisation (velocity)")
-        ("order-p", Feel::po::value<int>()->default_value( 1 ), "order of spatial discretisation (pressure)")
-        ("gamma-bc", Feel::po::value<double>()->default_value( 20 ), "penalisation parameter")
-        ("gamma-u", Feel::po::value<double>()->default_value( 10 ), "stabilisation parameter for velocity")
-        ("gamma-p", Feel::po::value<double>()->default_value( 10 ), "stabilisation parameter for velocity")
-        ("gamma-t", Feel::po::value<double>()->default_value( 0.01 ), "stabilisation parameter for heat convection")
-        ("gamma-divdiv", Feel::po::value<double>()->default_value( 0.0 ), "stabilisation parameter for divergence jumps")
+    ( "order-geo", Feel::po::value<int>()->default_value( 2 ), "order of geometry" )
+    ( "order-time", Feel::po::value<int>()->default_value( 1 ), "order of time discretisation (time)" )
+    ( "order-temp", Feel::po::value<int>()->default_value( 2 ), "order of spatial discretisation (temperature)" )
+    ( "order-u", Feel::po::value<int>()->default_value( 2 ), "order of spatial discretisation (velocity)" )
+    ( "order-p", Feel::po::value<int>()->default_value( 1 ), "order of spatial discretisation (pressure)" )
+    ( "gamma-bc", Feel::po::value<double>()->default_value( 20 ), "penalisation parameter" )
+    ( "gamma-u", Feel::po::value<double>()->default_value( 10 ), "stabilisation parameter for velocity" )
+    ( "gamma-p", Feel::po::value<double>()->default_value( 10 ), "stabilisation parameter for velocity" )
+    ( "gamma-t", Feel::po::value<double>()->default_value( 0.01 ), "stabilisation parameter for heat convection" )
+    ( "gamma-divdiv", Feel::po::value<double>()->default_value( 0.0 ), "stabilisation parameter for divergence jumps" )
 
-        ("delta-divdiv", Feel::po::value<double>()->default_value( 0.0 ), "divergence penalty term")
+    ( "delta-divdiv", Feel::po::value<double>()->default_value( 0.0 ), "divergence penalty term" )
 
-        ("eps-pseudo-compress", Feel::po::value<double>()->default_value( 0.0 ), "pseudo compressibility term (pressure coefficient)")
+    ( "eps-pseudo-compress", Feel::po::value<double>()->default_value( 0.0 ), "pseudo compressibility term (pressure coefficient)" )
 
 
-        ("linalg-same-prec", Feel::po::value<int>()->default_value( 1 ), "use same preconditioner")
-        ("init", Feel::po::value<int>()->default_value( 1 ), "initialize Navier-Stokes solver (0=zero, 1=Stokes)")
+    ( "linalg-same-prec", Feel::po::value<int>()->default_value( 1 ), "use same preconditioner" )
+    ( "init", Feel::po::value<int>()->default_value( 1 ), "initialize Navier-Stokes solver (0=zero, 1=Stokes)" )
 
-        ("hsize", Feel::po::value<double>()->default_value( 0.5 ), "first h value to start convergence")
+    ( "hsize", Feel::po::value<double>()->default_value( 0.5 ), "first h value to start convergence" )
 
-        ("exportresults", Feel::po::value<int>()->default_value( 0 ), "export strategy (0=no export, 1=same mesh, 2=finest mesh)")
-        ("export-profiles", "export 1D profiles" )
+    ( "exportresults", Feel::po::value<int>()->default_value( 0 ), "export strategy (0=no export, 1=same mesh, 2=finest mesh)" )
+    ( "export-profiles", "export 1D profiles" )
 
-        ("export-matlab", "export matrix and vectors in matlab" )
-        ("rb-nmax", Feel::po::value<int>()->default_value( 2 ), "Sampling dimension")
-        ("rb-taille", Feel::po::value<int>()->default_value( 2 ), "taille")
-        ("rb-epsilon1", Feel::po::value<double>()->default_value( 1e-3 ), "Estimator accuracy")
-        ("rb-epsilon2", Feel::po::value<double>()->default_value( 1e-3 ), "Estimator accuracy")
-        ("rb-tau", Feel::po::value<double>()->default_value( 1 ), "trust constant")
-        ("mufile", Feel::po::value<std::string>()->default_value("Echanti.txt"),"file of parameters")
-        ("pmu", "many parameters" )
-        ("rb", "reduced basis mode" )
-        ("adap", "construction adaptatif" )
-        ("orth", "with process Gramm Schmidt Orthonormalisation" )
-        ;
+    ( "export-matlab", "export matrix and vectors in matlab" )
+    ( "rb-nmax", Feel::po::value<int>()->default_value( 2 ), "Sampling dimension" )
+    ( "rb-taille", Feel::po::value<int>()->default_value( 2 ), "taille" )
+    ( "rb-epsilon1", Feel::po::value<double>()->default_value( 1e-3 ), "Estimator accuracy" )
+    ( "rb-epsilon2", Feel::po::value<double>()->default_value( 1e-3 ), "Estimator accuracy" )
+    ( "rb-tau", Feel::po::value<double>()->default_value( 1 ), "trust constant" )
+    ( "mufile", Feel::po::value<std::string>()->default_value( "Echanti.txt" ),"file of parameters" )
+    ( "pmu", "many parameters" )
+    ( "rb", "reduced basis mode" )
+    ( "adap", "construction adaptatif" )
+    ( "orth", "with process Gramm Schmidt Orthonormalisation" )
+    ;
 
     return opusoptions
-        .add( makeComponentOptions() )
-        .add( bdf_options("temperature") );
+           .add( makeComponentOptions() )
+           .add( bdf_options( "temperature" ) );
 }
 
 OpusData::OpusData( int d )
@@ -129,11 +129,11 @@ OpusData::OpusData( int d )
 
 
 {
-    M_components.insert( std::make_pair("PCB", OpusComponent( "pcb", /*k*/0.2,    /*rhoC*/2*1e6,   /*Q*/0,   /*h*/13*1e-2, /*e*/2*1e-3 )) );
-    M_components.insert( std::make_pair("IC1", OpusComponent( "ic1", /*k*/10,     /*rhoC*/1.4*1e6, /*Q*/1e6, /*h*/2*1e-2,  /*e*/2*1e-3 )) );
-    M_components.insert( std::make_pair("IC2", OpusComponent( "ic2", /*k*/10,     /*rhoC*/1.4*1e6, /*Q*/1e6, /*h*/2*1e-2,  /*e*/2*1e-3 )) );
+    M_components.insert( std::make_pair( "PCB", OpusComponent( "pcb", /*k*/0.2,    /*rhoC*/2*1e6,   /*Q*/0,   /*h*/13*1e-2, /*e*/2*1e-3 ) ) );
+    M_components.insert( std::make_pair( "IC1", OpusComponent( "ic1", /*k*/10,     /*rhoC*/1.4*1e6, /*Q*/1e6, /*h*/2*1e-2,  /*e*/2*1e-3 ) ) );
+    M_components.insert( std::make_pair( "IC2", OpusComponent( "ic2", /*k*/10,     /*rhoC*/1.4*1e6, /*Q*/1e6, /*h*/2*1e-2,  /*e*/2*1e-3 ) ) );
     //M_components.insert( std::make_pair("AIR", OpusComponent( "air", /*k*/3*1e-2, /*rhoC*/1100,     /*Q*/0,   /*h*/13*1e-2, /*e*/5*1e-2 )) );
-    M_components.insert( std::make_pair("AIR", OpusComponent( "air", /*k*/3*1e-2, /*rhoC*/1100,     /*Q*/0,   /*h*/13*1e-2, /*e*/4*1e-3, /*flow rate*/5e-3 )) );
+    M_components.insert( std::make_pair( "AIR", OpusComponent( "air", /*k*/3*1e-2, /*rhoC*/1100,     /*Q*/0,   /*h*/13*1e-2, /*e*/4*1e-3, /*flow rate*/5e-3 ) ) );
 
     M_dirichlet_velocity.push_back( "Gamma_4_AIR1" );
     M_dirichlet_velocity.push_back( "Gamma_4_AIR4" );
@@ -148,11 +148,11 @@ OpusData::OpusData( OpusData const& opusdata )
     :
     M_is_steady( opusdata.M_is_steady ),
     M_dimension( opusdata.M_dimension ),
-    M_order_g( opusdata.M_order_g),
+    M_order_g( opusdata.M_order_g ),
     M_order_time( opusdata.M_order_time ),
     M_order_temp( opusdata.M_order_temp ),
-    M_order_u( opusdata.M_order_u),
-    M_order_p( opusdata.M_order_p),
+    M_order_u( opusdata.M_order_u ),
+    M_order_p( opusdata.M_order_p ),
     M_h( opusdata.M_h ),
 
     M_gamma_p( opusdata.M_gamma_p ),
@@ -226,10 +226,10 @@ OpusData::OpusData( int d, Feel::po::variables_map const& vm )
     M_init = vm["init"].as<int>();
     M_export = vm["exportresults"].as<int>();
 
-    M_components.insert( std::make_pair("PCB", OpusComponent( "pcb", vm )) );
-    M_components.insert( std::make_pair("IC1", OpusComponent( "ic1", vm )) );
-    M_components.insert( std::make_pair("IC2", OpusComponent( "ic2", vm )) );
-    M_components.insert( std::make_pair("AIR", OpusComponent( "air", vm )) );
+    M_components.insert( std::make_pair( "PCB", OpusComponent( "pcb", vm ) ) );
+    M_components.insert( std::make_pair( "IC1", OpusComponent( "ic1", vm ) ) );
+    M_components.insert( std::make_pair( "IC2", OpusComponent( "ic2", vm ) ) );
+    M_components.insert( std::make_pair( "AIR", OpusComponent( "air", vm ) ) );
 
     print();
 
@@ -263,15 +263,15 @@ OpusData::print() const
     Feel::Log() << "export = " << this->doExport() << "\n";
 
     std::ostringstream ostr;
-    ostr << this->component("PCB") << "\n"
-         << this->component("IC1") << "\n"
-         << this->component("IC2") << "\n"
-         << this->component("AIR") << "\n";
+    ostr << this->component( "PCB" ) << "\n"
+         << this->component( "IC1" ) << "\n"
+         << this->component( "IC2" ) << "\n"
+         << this->component( "AIR" ) << "\n";
     Feel::Log() << ostr.str();
 }
 
 void
-OpusData::load(const std::string &filename)
+OpusData::load( const std::string &filename )
 {
 #if 0
     // Create an empty property tree object
@@ -280,28 +280,28 @@ OpusData::load(const std::string &filename)
 
     // Load the XML file into the property tree. If reading fails
     // (cannot open file, parse error), an exception is thrown.
-    read_xml(filename, pt);
+    read_xml( filename, pt );
 
-    M_is_steady = pt.get<bool>("opus.eads.fem.discretisation.time.steady", true);
+    M_is_steady = pt.get<bool>( "opus.eads.fem.discretisation.time.steady", true );
 
-    M_order_time = pt.get<int>("opus.eads.fem.discretisation.time.order", 2);
-    M_order_temp = pt.get<int>("opus.eads.fem.discretisation.temperature.order", 2);
-    M_order_u = pt.get<int>("opus.eads.fem.discretisation.velocity.order", 2);
-    M_order_p = pt.get<int>("opus.eads.fem.discretisation.pressure.order", 2);
+    M_order_time = pt.get<int>( "opus.eads.fem.discretisation.time.order", 2 );
+    M_order_temp = pt.get<int>( "opus.eads.fem.discretisation.temperature.order", 2 );
+    M_order_u = pt.get<int>( "opus.eads.fem.discretisation.velocity.order", 2 );
+    M_order_p = pt.get<int>( "opus.eads.fem.discretisation.pressure.order", 2 );
 
-    M_h = pt.get<double>("opus.eads.fem.mesh.h", 1);
-    M_order_g = pt.get<int>("opus.eads.fem.mesh.order", 1);
+    M_h = pt.get<double>( "opus.eads.fem.mesh.h", 1 );
+    M_order_g = pt.get<int>( "opus.eads.fem.mesh.order", 1 );
 
-    M_gamma_bc = pt.get<double>("opus.eads.fem.discretisation.dirichlet.gamma.bc", 10);
-    M_gamma_p = pt.get<double>("opus.eads.fem.discretisation.dirichlet.gamma.p", 10);
-    M_gamma_u = pt.get<double>("opus.eads.fem.discretisation.dirichlet.gamma.u", 10);
+    M_gamma_bc = pt.get<double>( "opus.eads.fem.discretisation.dirichlet.gamma.bc", 10 );
+    M_gamma_p = pt.get<double>( "opus.eads.fem.discretisation.dirichlet.gamma.p", 10 );
+    M_gamma_u = pt.get<double>( "opus.eads.fem.discretisation.dirichlet.gamma.u", 10 );
     //M_gamma_divdiv = vm["gamma-divdiv"].as<double>();
     //M_delta_divdiv = vm["delta-divdiv"].as<double>();
     //M_eps_compress = vm["eps-pseudo-compress"].as<double>();
 
     //M_use_same_prec = vm["linalg-same-prec"].as<int>();
-    M_init = pt.get<double>("opus.eads.fem.discretisation.time.init", 0);
-    M_export = pt.get<double>("opus.eads.fem.export", 0);
+    M_init = pt.get<double>( "opus.eads.fem.discretisation.time.init", 0 );
+    M_export = pt.get<double>( "opus.eads.fem.export", 0 );
 
     M_components["PCB"].load( pt );
     M_components["IC1"].load( pt );
@@ -311,28 +311,28 @@ OpusData::load(const std::string &filename)
 }
 
 void
-OpusData::save(const std::string &filename)
+OpusData::save( const std::string &filename )
 {
 #if 0
     // Create an empty property tree object
     using boost::property_tree::ptree;
     ptree pt;
 
-    pt.put("opus.eads.fem.discretisation.time.steady", M_is_steady );
-    pt.put("opus.eads.fem.discretisation.time.order", M_order_time );
-    pt.put("opus.eads.fem.discretisation.temperature.order", M_order_temp );
-    pt.put("opus.eads.fem.discretisation.velocity.order", M_order_u);
-    pt.put("opus.eads.fem.discretisation.pressure.order", M_order_p);
+    pt.put( "opus.eads.fem.discretisation.time.steady", M_is_steady );
+    pt.put( "opus.eads.fem.discretisation.time.order", M_order_time );
+    pt.put( "opus.eads.fem.discretisation.temperature.order", M_order_temp );
+    pt.put( "opus.eads.fem.discretisation.velocity.order", M_order_u );
+    pt.put( "opus.eads.fem.discretisation.pressure.order", M_order_p );
 
-    pt.put("opus.eads.fem.mesh.h", M_h );
-    pt.put("opus.eads.fem.mesh.order", M_order_g );
+    pt.put( "opus.eads.fem.mesh.h", M_h );
+    pt.put( "opus.eads.fem.mesh.order", M_order_g );
 
-    pt.put("opus.eads.fem.discretisation.dirichlet.gamma.bc", M_gamma_bc);
-    pt.put("opus.eads.fem.discretisation.dirichlet.gamma.p", M_gamma_p);
-    pt.put("opus.eads.fem.discretisation.dirichlet.gamma.u", M_gamma_u);
+    pt.put( "opus.eads.fem.discretisation.dirichlet.gamma.bc", M_gamma_bc );
+    pt.put( "opus.eads.fem.discretisation.dirichlet.gamma.p", M_gamma_p );
+    pt.put( "opus.eads.fem.discretisation.dirichlet.gamma.u", M_gamma_u );
 
-    pt.put("opus.eads.fem.discretisation.time.init", M_init );
-    pt.put("opus.eads.fem.export", M_export);
+    pt.put( "opus.eads.fem.discretisation.time.init", M_init );
+    pt.put( "opus.eads.fem.export", M_export );
 
     M_components["PCB"].save( pt );
     M_components["IC1"].save( pt );
@@ -341,14 +341,14 @@ OpusData::save(const std::string &filename)
 
 
     // Write the property tree to the XML file.
-    write_xml(filename, pt);
+    write_xml( filename, pt );
 #endif
 }
 
 void
 OpusData::createMatlabScript()
 {
-    std::ofstream M_matlab("opusdata.m");
+    std::ofstream M_matlab( "opusdata.m" );
 
     M_matlab <<"function opusdata(Tspan) \n"
              <<"% % \n"
@@ -374,9 +374,9 @@ OpusData::createMatlabScript()
              <<"    % OpusData : \n"
              <<"disp('opusdata :');\n"
              <<"%    [Tzero,Tfinal,dt,time_order]=bdf();\n"
-        //<<"    Re=" << M_Re << "; \n"
-        //<<"    h=" << M_h << "; \n"
-        //<<"    hcyl_scale=" << M_hcyl_scale << "; \n"
+             //<<"    Re=" << M_Re << "; \n"
+             //<<"    h=" << M_h << "; \n"
+             //<<"    hcyl_scale=" << M_hcyl_scale << "; \n"
              <<"    dimension=" << M_dimension << "; \n"
              <<"    dt=" << M_vm["bdf.time-step"].as<double>() << "; \n"
              <<"IndexL=Matrix(:,1)>=Tspan(1) & Matrix(:,1)<= Tspan(2);\n"
@@ -396,7 +396,7 @@ OpusData::createMatlabScript()
              <<"\n"
              <<"% Plotting graphs \n"
              <<"\n"
-        //<<"            title(['Simplex_" << M_dimension << "_" << M_order_g << "/P2P1/h_" <<M_h << "_" << M_hcyl_scale << "/Re_" << M_Re << "']); \n"
+             //<<"            title(['Simplex_" << M_dimension << "_" << M_order_g << "/P2P1/h_" <<M_h << "_" << M_hcyl_scale << "/Re_" << M_Re << "']); \n"
              <<"    % First value \n"
              <<"        % Drag coefficient \n"
              <<"            subplot(3,2,1) \n"
@@ -472,9 +472,9 @@ OpusData::createMesh( double h, bool ref )
           << "// Integrated circuit : IC\n"
           << "//\n"
           << "// thickness\n"
-          << "e_IC  = " << this->component("IC1").e() << "*m;\n"
+          << "e_IC  = " << this->component( "IC1" ).e() << "*m;\n"
           << "// length\n"
-          << "L_IC  = " << this->component("IC1").h() << "*m;\n"
+          << "L_IC  = " << this->component( "IC1" ).h() << "*m;\n"
           << "// position of the first IC\n"
           << "h_1   = 20*mm;\n"
           << "// position of the second IC\n"
@@ -485,25 +485,27 @@ OpusData::createMesh( double h, bool ref )
           << "// PCB\n"
           << "//\n"
           << "// thickness\n"
-          << "e_PCB = " << this->component("PCB").e() << "*m;\n"
+          << "e_PCB = " << this->component( "PCB" ).e() << "*m;\n"
           << "// height\n"
-          << "h_PCB = " << this->component("PCB").h() << "*m;\n"
+          << "h_PCB = " << this->component( "PCB" ).h() << "*m;\n"
           << "\n"
           << "\n"
           << "//\n"
           << "// Air\n"
           << "//\n"
           << "// thickness\n";
+
     if ( ref )
         costr << "e_A = " << 5e-2 << "*m;\n";
-    else
-        costr << "e_A = " << this->component("AIR").e() << "*m;\n";
 
-        //<< "e_A = " << 5e-2 << "*m;\n"
-        //<< "e_A = " << 2e-2 << "*m;\n"
-        //<< "e_A = " << 4e-3 << "*m;\n"
+    else
+        costr << "e_A = " << this->component( "AIR" ).e() << "*m;\n";
+
+    //<< "e_A = " << 5e-2 << "*m;\n"
+    //<< "e_A = " << 2e-2 << "*m;\n"
+    //<< "e_A = " << 4e-3 << "*m;\n"
     costr << "h=" << h << "*mm - 1e-8;\n"
-        //<< "h=" << 1 << "*mm - 1e-8;\n"
+          //<< "h=" << 1 << "*mm - 1e-8;\n"
           << "// Surface\n"
           << "Include \"geometry_heat.geo\";\n";
 
@@ -511,103 +513,103 @@ OpusData::createMesh( double h, bool ref )
     std::ostringstream nameStr;
     std::ofstream ostr( "geometry_heat.geo" );
     ostr
-        << "/**\n"
-        << " * Geometry for the Opus model\n"
-        << " */\n"
-        << "p1=newp;Point(p1) = {0,0,0,h};\n"
-        << "p2=newp;Point(p2) = {e_PCB,0,0,h};\n"
-        << "\n"
-        << "p3=newp;Point(p3) = {e_PCB,h_1,0,h};\n"
-        << "p4=newp;Point(p4) = {e_PCB,h_1+L_IC,0,h};\n"
-        << "\n"
-        << "p5=newp;Point(p5) = {e_PCB,h_2,0,h};\n"
-        << "p6=newp;Point(p6) = {e_PCB,h_2+L_IC,0,h};\n"
-        << "\n"
-        << "p7=newp;Point(p7) = {e_PCB,h_PCB,0,h};\n"
-        << "p8=newp;Point(p8) = {0,h_PCB,0,h};\n"
-        << "\n"
-        << "air_p1=p2;\n"
-        << "air_p21=newp;Point(air_p21) = {e_PCB+e_IC,0,0,h};\n"
-        << "air_p22=newp;Point(air_p22) = {e_PCB+e_A,0,0,h};\n"
-        << "air_p31=newp;Point(air_p31) = {e_PCB+e_A,h_PCB,0,h};\n"
-        << "air_p32=newp;Point(air_p32) = {e_PCB+e_IC,h_PCB,0,h};\n"
-        << "air_p4=p7;\n"
-        << "\n"
-        << "air_p5=p3;\n"
-        << "air_p51=newp;Point(air_p51) = {e_PCB+e_IC,h_1,0,h};\n"
-        << "air_p6=p4;\n"
-        << "air_p61=newp;Point(air_p61) = {e_PCB+e_IC,h_1+L_IC,0,h};\n"
-        << "\n"
-        << "air_p7=p5;\n"
-        << "air_p71=newp;Point(air_p71) = {e_PCB+e_IC,h_2,0,h};\n"
-        << "air_p8=p6;\n"
-        << "air_p81=newp;Point(air_p81) = {e_PCB+e_IC,h_2+L_IC,0,h};\n"
-        << "\n"
-        << "ic1_p1=p3;\n"
-        << "ic1_p2=air_p51;\n"
-        << "ic1_p3=air_p61;\n"
-        << "ic1_p4=p4;\n"
-        << "\n"
-        << "ic2_p1=p5;\n"
-        << "ic2_p2=air_p71;\n"
-        << "ic2_p3=air_p81;\n"
-        << "ic2_p4=p6;\n"
-        << "\n"
-        << "Line(1) = {1, 2};\n"
-        << "Line(2) = {2, 9};\n"
-        << "Line(3) = {9, 10};\n"
-        << "Line(4) = {10, 11};\n"
-        << "Line(5) = {11, 12};\n"
-        << "Line(6) = {12, 7};\n"
-        << "Line(7) = {7, 8};\n"
-        << "Line(8) = {7, 8};\n"
-        << "Line(9) = {8, 1};\n"
-        << "Line(10) = {2, 3};\n"
-        << "Line(11) = {3, 4};\n"
-        << "Line(12) = {4, 5};\n"
-        << "Line(13) = {5, 6};\n"
-        << "Line(14) = {6, 7};\n"
-        << "Line(15) = {9, 13};\n"
-        << "Line(16) = {13, 14};\n"
-        << "Line(17) = {14, 15};\n"
-        << "Line(18) = {15, 16};\n"
-        << "Line(19) = {16, 12};\n"
-        << "Line(20) = {3, 13};\n"
-        << "Line(21) = {4, 14};\n"
-        << "Line(22) = {5, 15};\n"
-        << "Line(23) = {6, 16};\n"
-        << "Line Loop(24) = {4, 5, -19, -18, -17, -16, -15, 3};\n"
-        << "Plane Surface(25) = {24};\n"
-        << "Line Loop(26) = {19, 6, -14, 23};\n"
-        << "Plane Surface(27) = {26};\n"
-        << "Line Loop(28) = {18, -23, -13, 22};\n"
-        << "Plane Surface(29) = {28};\n"
-        << "Line Loop(30) = {17, -22, -12, 21};\n"
-        << "Plane Surface(31) = {30};\n"
-        << "Line Loop(32) = {16, -21, -11, 20};\n"
-        << "Plane Surface(33) = {32};\n"
-        << "Line Loop(34) = {10, 20, -15, -2};\n"
-        << "Plane Surface(35) = {34};\n"
-        << "Line Loop(36) = {9, 1, 10, 11, 12, 13, 14, 7};\n"
-        << "Plane Surface(37) = {36};\n"
-        << "\n"
-        << "//Physical Line(38) = {10, 11, 12, 13, 14};\n"
-        << "Physical Line(\"Gamma_1\") = {9};\n"
-        << "Physical Line(\"Gamma_2\") = {4};\n"
-        << "Physical Line(\"Gamma_IC1_PCB\") = {11};\n"
-        << "Physical Line(\"Gamma_IC2_PCB\") = {13};\n"
-        << "\n"
-        << "Physical Line(\"Gamma_4_AIR1\") = {2};\n"
-        << "Physical Line(\"Gamma_4_AIR4\") = {3};\n"
-        << "Physical Line(\"Gamma_3_AIR4\") = {5};\n"
-        << "Physical Line(\"Gamma_3_AIR3\") = {6};\n"
-        << "Physical Line(\"Gamma_3_PCB\") = {7};\n"
-        << "Physical Line(\"Gamma_4_PCB\") = {1};\n"
-        << "Physical Surface(\"PCB\") = {37};\n"
-        << "Physical Surface(\"AIR123\") = {35, 31, 27};\n"
-        << "Physical Surface(\"IC1\") = {33};\n"
-        << "Physical Surface(\"IC2\") = {29};\n"
-        << "Physical Surface(\"AIR4\") = {25};\n";
+            << "/**\n"
+            << " * Geometry for the Opus model\n"
+            << " */\n"
+            << "p1=newp;Point(p1) = {0,0,0,h};\n"
+            << "p2=newp;Point(p2) = {e_PCB,0,0,h};\n"
+            << "\n"
+            << "p3=newp;Point(p3) = {e_PCB,h_1,0,h};\n"
+            << "p4=newp;Point(p4) = {e_PCB,h_1+L_IC,0,h};\n"
+            << "\n"
+            << "p5=newp;Point(p5) = {e_PCB,h_2,0,h};\n"
+            << "p6=newp;Point(p6) = {e_PCB,h_2+L_IC,0,h};\n"
+            << "\n"
+            << "p7=newp;Point(p7) = {e_PCB,h_PCB,0,h};\n"
+            << "p8=newp;Point(p8) = {0,h_PCB,0,h};\n"
+            << "\n"
+            << "air_p1=p2;\n"
+            << "air_p21=newp;Point(air_p21) = {e_PCB+e_IC,0,0,h};\n"
+            << "air_p22=newp;Point(air_p22) = {e_PCB+e_A,0,0,h};\n"
+            << "air_p31=newp;Point(air_p31) = {e_PCB+e_A,h_PCB,0,h};\n"
+            << "air_p32=newp;Point(air_p32) = {e_PCB+e_IC,h_PCB,0,h};\n"
+            << "air_p4=p7;\n"
+            << "\n"
+            << "air_p5=p3;\n"
+            << "air_p51=newp;Point(air_p51) = {e_PCB+e_IC,h_1,0,h};\n"
+            << "air_p6=p4;\n"
+            << "air_p61=newp;Point(air_p61) = {e_PCB+e_IC,h_1+L_IC,0,h};\n"
+            << "\n"
+            << "air_p7=p5;\n"
+            << "air_p71=newp;Point(air_p71) = {e_PCB+e_IC,h_2,0,h};\n"
+            << "air_p8=p6;\n"
+            << "air_p81=newp;Point(air_p81) = {e_PCB+e_IC,h_2+L_IC,0,h};\n"
+            << "\n"
+            << "ic1_p1=p3;\n"
+            << "ic1_p2=air_p51;\n"
+            << "ic1_p3=air_p61;\n"
+            << "ic1_p4=p4;\n"
+            << "\n"
+            << "ic2_p1=p5;\n"
+            << "ic2_p2=air_p71;\n"
+            << "ic2_p3=air_p81;\n"
+            << "ic2_p4=p6;\n"
+            << "\n"
+            << "Line(1) = {1, 2};\n"
+            << "Line(2) = {2, 9};\n"
+            << "Line(3) = {9, 10};\n"
+            << "Line(4) = {10, 11};\n"
+            << "Line(5) = {11, 12};\n"
+            << "Line(6) = {12, 7};\n"
+            << "Line(7) = {7, 8};\n"
+            << "Line(8) = {7, 8};\n"
+            << "Line(9) = {8, 1};\n"
+            << "Line(10) = {2, 3};\n"
+            << "Line(11) = {3, 4};\n"
+            << "Line(12) = {4, 5};\n"
+            << "Line(13) = {5, 6};\n"
+            << "Line(14) = {6, 7};\n"
+            << "Line(15) = {9, 13};\n"
+            << "Line(16) = {13, 14};\n"
+            << "Line(17) = {14, 15};\n"
+            << "Line(18) = {15, 16};\n"
+            << "Line(19) = {16, 12};\n"
+            << "Line(20) = {3, 13};\n"
+            << "Line(21) = {4, 14};\n"
+            << "Line(22) = {5, 15};\n"
+            << "Line(23) = {6, 16};\n"
+            << "Line Loop(24) = {4, 5, -19, -18, -17, -16, -15, 3};\n"
+            << "Plane Surface(25) = {24};\n"
+            << "Line Loop(26) = {19, 6, -14, 23};\n"
+            << "Plane Surface(27) = {26};\n"
+            << "Line Loop(28) = {18, -23, -13, 22};\n"
+            << "Plane Surface(29) = {28};\n"
+            << "Line Loop(30) = {17, -22, -12, 21};\n"
+            << "Plane Surface(31) = {30};\n"
+            << "Line Loop(32) = {16, -21, -11, 20};\n"
+            << "Plane Surface(33) = {32};\n"
+            << "Line Loop(34) = {10, 20, -15, -2};\n"
+            << "Plane Surface(35) = {34};\n"
+            << "Line Loop(36) = {9, 1, 10, 11, 12, 13, 14, 7};\n"
+            << "Plane Surface(37) = {36};\n"
+            << "\n"
+            << "//Physical Line(38) = {10, 11, 12, 13, 14};\n"
+            << "Physical Line(\"Gamma_1\") = {9};\n"
+            << "Physical Line(\"Gamma_2\") = {4};\n"
+            << "Physical Line(\"Gamma_IC1_PCB\") = {11};\n"
+            << "Physical Line(\"Gamma_IC2_PCB\") = {13};\n"
+            << "\n"
+            << "Physical Line(\"Gamma_4_AIR1\") = {2};\n"
+            << "Physical Line(\"Gamma_4_AIR4\") = {3};\n"
+            << "Physical Line(\"Gamma_3_AIR4\") = {5};\n"
+            << "Physical Line(\"Gamma_3_AIR3\") = {6};\n"
+            << "Physical Line(\"Gamma_3_PCB\") = {7};\n"
+            << "Physical Line(\"Gamma_4_PCB\") = {1};\n"
+            << "Physical Surface(\"PCB\") = {37};\n"
+            << "Physical Surface(\"AIR123\") = {35, 31, 27};\n"
+            << "Physical Surface(\"IC1\") = {33};\n"
+            << "Physical Surface(\"IC2\") = {29};\n"
+            << "Physical Surface(\"AIR4\") = {25};\n";
 
     nameStr << "opusthermal";
     gmshp->setPrefix( nameStr.str() );
@@ -630,9 +632,9 @@ OpusData::createMeshLine( double h )
           << "// Integrated circuit : IC\n"
           << "//\n"
           << "// thickness\n"
-          << "e_IC  = " << this->component("IC1").e() << "*m;\n"
+          << "e_IC  = " << this->component( "IC1" ).e() << "*m;\n"
           << "// length\n"
-          << "L_IC  = " << this->component("IC1").h() << "*m;\n"
+          << "L_IC  = " << this->component( "IC1" ).h() << "*m;\n"
           << "// position of the first IC\n"
           << "h_1   = 20*mm;\n"
           << "// position of the second IC\n"
@@ -643,16 +645,16 @@ OpusData::createMeshLine( double h )
           << "// PCB\n"
           << "//\n"
           << "// thickness\n"
-          << "e_PCB = " << this->component("PCB").e() << "*m;\n"
+          << "e_PCB = " << this->component( "PCB" ).e() << "*m;\n"
           << "// height\n"
-          << "h_PCB = " << this->component("PCB").h() << "*m;\n"
+          << "h_PCB = " << this->component( "PCB" ).h() << "*m;\n"
           << "\n"
           << "\n"
           << "//\n"
           << "// Air\n"
           << "//\n"
           << "// thickness\n"
-          << "e_A = " << this->component("AIR").e() << "*m;\n";
+          << "e_A = " << this->component( "AIR" ).e() << "*m;\n";
 
     ostr << "Include \"constantsline.geo\";"
          << "\n"
@@ -688,9 +690,9 @@ OpusData::createMeshCrossSection2( double h )
           << "// Integrated circuit : IC\n"
           << "//\n"
           << "// thickness\n"
-          << "e_IC  = " << this->component("IC1").e() << "*m;\n"
+          << "e_IC  = " << this->component( "IC1" ).e() << "*m;\n"
           << "// length\n"
-          << "L_IC  = " << this->component("IC1").h() << "*m;\n"
+          << "L_IC  = " << this->component( "IC1" ).h() << "*m;\n"
           << "// position of the first IC\n"
           << "h_1   = 20*mm;\n"
           << "// position of the second IC\n"
@@ -701,16 +703,16 @@ OpusData::createMeshCrossSection2( double h )
           << "// PCB\n"
           << "//\n"
           << "// thickness\n"
-          << "e_PCB = " << this->component("PCB").e() << "*m;\n"
+          << "e_PCB = " << this->component( "PCB" ).e() << "*m;\n"
           << "// height\n"
-          << "h_PCB = " << this->component("PCB").h() << "*m;\n"
+          << "h_PCB = " << this->component( "PCB" ).h() << "*m;\n"
           << "\n"
           << "\n"
           << "//\n"
           << "// Air\n"
           << "//\n"
           << "// thickness\n"
-          << "e_A = " << this->component("AIR").e() << "*m;\n";
+          << "e_A = " << this->component( "AIR" ).e() << "*m;\n";
 
     ostr << "Include \"constantscs2.geo\";"
          << "\n"
@@ -744,9 +746,9 @@ OpusData::createMeshAir( double h )
           << "// Integrated circuit : IC\n"
           << "//\n"
           << "// thickness\n"
-          << "e_IC  = " << this->component("IC1").e() << "*m;\n"
+          << "e_IC  = " << this->component( "IC1" ).e() << "*m;\n"
           << "// length\n"
-          << "L_IC  = " << this->component("IC1").h() << "*m;\n"
+          << "L_IC  = " << this->component( "IC1" ).h() << "*m;\n"
           << "// position of the first IC\n"
           << "h_1   = 20*mm;\n"
           << "// position of the second IC\n"
@@ -757,19 +759,19 @@ OpusData::createMeshAir( double h )
           << "// PCB\n"
           << "//\n"
           << "// thickness\n"
-          << "e_PCB = " << this->component("PCB").e() << "*m;\n"
+          << "e_PCB = " << this->component( "PCB" ).e() << "*m;\n"
           << "// height\n"
-          << "h_PCB = " << this->component("PCB").h() << "*m;\n"
+          << "h_PCB = " << this->component( "PCB" ).h() << "*m;\n"
           << "\n"
           << "\n"
           << "//\n"
           << "// Air\n"
           << "//\n"
           << "// thickness\n"
-          << "e_A = " << this->component("AIR").e() << "*m;\n"
+          << "e_A = " << this->component( "AIR" ).e() << "*m;\n"
           << "\n"
           << "h=" << M_vm["fluid.hsize"].as<double>() << "*mm - 1e-8;\n"
-        //<< "h=" << 1 << "*mm - 1e-8;\n"
+          //<< "h=" << 1 << "*mm - 1e-8;\n"
           << "Include \"geometry_air.geo\";\n"
           << "Physical Surface(\"AIR\") = {25};\n\n";
 
@@ -869,33 +871,39 @@ OpusData::Inflow::operator()( uint16_type c1, uint16_type c2, node_type const& p
 {
 #if 0
     double time_term = 1.0;
+
     if ( M_opusdata.inflowType() == INFLOW_UNSTEADY )
         time_term = sin( M_PI*M_time/8 );
 
     if ( M_opusdata.d() == 2 )
+    {
+        switch ( c1 )
         {
-            switch ( c1 )
-                {
-                case 0:
-                    return 4*M_opusdata.Um()*p[1]*(M_opusdata.H()-p[1])*time_term/pow(M_opusdata.H(),2);
-                case 1:
-                default:
-                    return 0;
-                }
+        case 0:
+            return 4*M_opusdata.Um()*p[1]*( M_opusdata.H()-p[1] )*time_term/pow( M_opusdata.H(),2 );
+
+        case 1:
+        default:
+            return 0;
         }
-    else{
+    }
+
+    else
+    {
 
         // 3D
         switch ( c1 )
-            {
-            case 0:
-                return 16*M_opusdata.Um()*p[1]*(M_opusdata.H()-p[1])*p[2]*(M_opusdata.H()-p[2])*time_term/pow(M_opusdata.H(),4);
-            case 1:
-            case 2:
-            default:
-                return 0;
-            }
+        {
+        case 0:
+            return 16*M_opusdata.Um()*p[1]*( M_opusdata.H()-p[1] )*p[2]*( M_opusdata.H()-p[2] )*time_term/pow( M_opusdata.H(),4 );
+
+        case 1:
+        case 2:
+        default:
+            return 0;
+        }
     }
+
 #endif // 0
 }
 

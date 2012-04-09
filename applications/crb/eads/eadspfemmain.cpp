@@ -40,15 +40,16 @@ int
 main( int argc, char** argv )
 {
     Feel::PFemApp<Feel::OpusModelRB<2,1,2> > app( argc, argv,
-                                                  Feel::makeEadsAbout( "eadspfem" ),
-                                                  Feel::makeEadsOptions() );
+            Feel::makeEadsAbout( "eadspfem" ),
+            Feel::makeEadsOptions() );
+
     if ( app.vm().count( "help" ) )
     {
         std::cout << app.optionsDescription() << "\n";
         return 0;
     }
 
-    std::vector<double> X(7),Y(2);
+    std::vector<double> X( 7 ),Y( 2 );
     X[0]=10; // kic
     X[1]=1e-2; // fluid flow rate
     X[2]=1e6; // Q

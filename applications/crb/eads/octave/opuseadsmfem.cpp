@@ -32,45 +32,52 @@
 
 static boost::shared_ptr<Feel::EadsMFemApp> app;
 
-DEFUN_DLD (opuseadsmfem, args, nargout, "Opus EADS Test Case")
+DEFUN_DLD ( opuseadsmfem, args, nargout, "Opus EADS Test Case" )
 {
     int nargin = args.length ();
-    if (nargin != 1)
+
+    if ( nargin != 1 )
         print_usage ();
+
     else
     {
-        NDArray A = args(0).array_value ();
+        NDArray A = args( 0 ).array_value ();
         dim_vector dims = A.dims();
-        dim_vector ydims(2);
-        ydims(0)=dims(0);
-        ydims(1)=2;
+        dim_vector ydims( 2 );
+        ydims( 0 )=dims( 0 );
+        ydims( 1 )=2;
 
-        NDArray Y(ydims);
+        NDArray Y( ydims );
         {
             static bool is_init = false;
+
             if ( !is_init )
             {
-                app = boost::shared_ptr<Feel::EadsMFemApp>( new Feel::EadsMFemApp( Feel::makeEadsAbout("eadsmfem"),
-                                                                                   Feel::OpusData::makeOptions() ) );
+                app = boost::shared_ptr<Feel::EadsMFemApp>( new Feel::EadsMFemApp( Feel::makeEadsAbout( "eadsmfem" ),
+                        Feel::OpusData::makeOptions() ) );
                 is_init = true;
             }
 
 
-            for( int i = 0; i < dims(0); ++i )
+            for ( int i = 0; i < dims( 0 ); ++i )
             {
-                std::vector<double> x( dims(1) );
-                for( int j = 0; j < dims(1); ++j )
-                    x[j] = A(i,j);
+                std::vector<double> x( dims( 1 ) );
+
+                for ( int j = 0; j < dims( 1 ); ++j )
+                    x[j] = A( i,j );
+
                 std::vector<double> y( 2 );
-                app->run( x.data(), dims(1), y.data(), 2 );
-                Y(i,0)=y[0];
-                Y(i,1)=y[1];
+                app->run( x.data(), dims( 1 ), y.data(), 2 );
+                Y( i,0 )=y[0];
+                Y( i,1 )=y[1];
             }
         }
+
         //MPI_Finalize();
-        if (! error_state)
-            return octave_value (Y);
+        if ( ! error_state )
+            return octave_value ( Y );
     }
+
     return octave_value_list ();
 }
 

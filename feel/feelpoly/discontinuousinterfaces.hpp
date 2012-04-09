@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -97,10 +97,11 @@ public:
     //! copy operator
     DiscontinuousInterfaces & operator=( DiscontinuousInterfaces const &  d )
     {
-        if (this != &d )
-            {
-                M_d_faces = d.M_d_faces;
-            }
+        if ( this != &d )
+        {
+            M_d_faces = d.M_d_faces;
+        }
+
         return *this;
     }
 
@@ -110,7 +111,10 @@ public:
      */
     //@{
 
-    discontinuity_markers_type const& discontinuityMarkers() const { return M_d_faces; }
+    discontinuity_markers_type const& discontinuityMarkers() const
+    {
+        return M_d_faces;
+    }
 
 
     //@}
@@ -147,14 +151,14 @@ public:
         {}
         template<typename T>
 #if BOOST_VERSION < 104200
-        result_type operator()(const T& t, const size_type& start )
+        result_type operator()( const T& t, const size_type& start )
 #else
         result_type operator()( const size_type& start, const T& t )
 #endif
         {
             boost::tuple<size_type,size_type,size_type> disc = boost::make_tuple( mpl::at<T,mpl::int_<0> >::type::value,
-                                                                                  mpl::at<T,mpl::int_<1> >::type::value,
-                                                                                  mpl::at<T,mpl::int_<2> >::type::value );
+                    mpl::at<T,mpl::int_<1> >::type::value,
+                    mpl::at<T,mpl::int_<2> >::type::value );
 
             return build( disc, start );
         }
@@ -184,49 +188,55 @@ public:
             Debug( 5015 ) << "[DiscontinuousInterfaces::build] n_elements = " << std::distance( fit, fen )
                           << " with marker " << boost::get<1>( marker ) << "\n";
 #if 0
-            while( fit != fen )
+
+            while ( fit != fen )
+            {
+                if ( fit->marker().value() != boost::get<1>( marker ) )
                 {
-                    if ( fit->marker().value() != boost::get<1>( marker ) )
-                        {
-                            ++fit;
-                            continue;
-                        }
-
-                    Debug(5015) << "found element with marker " << fit->marker().value() << "\n";
-                    typename element_type::face_const_iterator it, en;
-                    boost::tie( it, en ) = fit->faces();
-
-
-                    for( ;it != en; ++it )
-                        {
-                            Debug(5015) << "face with marker " << (*it)->marker().value() << "\n";
-                            //if ( (*it)->marker().value() == boost::get<0>( marker ) )
-                                {
-                                    Debug( 5015 ) << "------------------------------------------------------------\n";
-                                    Debug( 5015 ) << "face " << (*it)->id()
-                                                  << " marker = " << boost::get<0>( marker )
-                                                  << " elt marker 0 = " << boost::get<1>( marker )
-                                                  << " elt marker 1 = " << boost::get<2>( marker ) << "\n";
-                                    Debug( 5015 ) << "element marker " << fit->marker() << "\n";
-
-                                    addVertexDof( *fit, *(*it), next_free_dof, 0, mpl::bool_<fe_type::nDofPerVertex>() );
-                                    addEdgeDof( *fit, *(*it), next_free_dof, 0, mpl::bool_<fe_type::nDofPerEdge>(), mpl::int_<mesh_type::nDim>() );
-
-
-                                }
-                        }
                     ++fit;
+                    continue;
                 }
+
+                Debug( 5015 ) << "found element with marker " << fit->marker().value() << "\n";
+                typename element_type::face_const_iterator it, en;
+                boost::tie( it, en ) = fit->faces();
+
+
+                for ( ; it != en; ++it )
+                {
+                    Debug( 5015 ) << "face with marker " << ( *it )->marker().value() << "\n";
+                    //if ( (*it)->marker().value() == boost::get<0>( marker ) )
+                    {
+                        Debug( 5015 ) << "------------------------------------------------------------\n";
+                        Debug( 5015 ) << "face " << ( *it )->id()
+                                      << " marker = " << boost::get<0>( marker )
+                                      << " elt marker 0 = " << boost::get<1>( marker )
+                                      << " elt marker 1 = " << boost::get<2>( marker ) << "\n";
+                        Debug( 5015 ) << "element marker " << fit->marker() << "\n";
+
+                        addVertexDof( *fit, *( *it ), next_free_dof, 0, mpl::bool_<fe_type::nDofPerVertex>() );
+                        addEdgeDof( *fit, *( *it ), next_free_dof, 0, mpl::bool_<fe_type::nDofPerEdge>(), mpl::int_<mesh_type::nDim>() );
+
+
+                    }
+                }
+
+                ++fit;
+            }
+
 #else
             boost::tie( fit, fen ) = M_mesh.elementsRange();
-            while( fit != fen )
+
+            while ( fit != fen )
+            {
+                if ( fit->marker().value() == ( int )boost::get<1>( marker ) )
                 {
-                    if ( fit->marker().value() == (int)boost::get<1>( marker ) )
-                        {
-                            M_dof.addDofFromElement( *fit, next_free_dof, 0 );
-                        }
-                    ++fit;
+                    M_dof.addDofFromElement( *fit, next_free_dof, 0 );
                 }
+
+                ++fit;
+            }
+
 #endif
             //n_dof = next_free_dof-start;
             n_dof = next_free_dof;
@@ -238,56 +248,62 @@ public:
             Debug( 5015 ) << "[DiscontinuousInterfaces::build] n_elements = " << std::distance( fit, fen )
                           << " with marker " << boost::get<2>( marker ) << "\n";
 #if 0
-            while( fit != fen )
+
+            while ( fit != fen )
+            {
+                if ( fit->marker().value() != boost::get<2>( marker ) )
                 {
-                    if ( fit->marker().value() != boost::get<2>( marker ) )
-                        {
-                            ++fit;
-                            continue;
-                        }
-
-                    Debug(5015) << "found element with marker " << fit->marker().value() << "\n";
-                    typename element_type::face_const_iterator it, en;
-                    boost::tie( it, en ) = fit->faces();
-
-
-                    for( ;it != en; ++it )
-                        {
-                            Debug(5015) << "face with marker " << (*it)->marker().value() << "\n";
-                            //if ( (*it)->marker().value() == boost::get<0>( marker ) )
-                                {
-                                    Debug( 5015 ) << "------------------------------------------------------------\n";
-                                    Debug( 5015 ) << "face " << (*it)->id()
-                                                  << " marker = " << boost::get<0>( marker )
-                                                  << " elt marker 0 = " << boost::get<1>( marker )
-                                                  << " elt marker 1 = " << boost::get<2>( marker ) << "\n";
-                                    Debug( 5015 ) << "element marker " << fit->marker() << "\n";
-
-                                    addVertexDof( *fit, *(*it), next_free_dof, n_dof, mpl::bool_<fe_type::nDofPerVertex>() );
-                                    addEdgeDof( *fit, *(*it), next_free_dof, n_dof, mpl::bool_<fe_type::nDofPerEdge>(), mpl::int_<mesh_type::nDim>() );
-
-
-                                }
-
-                        }
                     ++fit;
+                    continue;
                 }
+
+                Debug( 5015 ) << "found element with marker " << fit->marker().value() << "\n";
+                typename element_type::face_const_iterator it, en;
+                boost::tie( it, en ) = fit->faces();
+
+
+                for ( ; it != en; ++it )
+                {
+                    Debug( 5015 ) << "face with marker " << ( *it )->marker().value() << "\n";
+                    //if ( (*it)->marker().value() == boost::get<0>( marker ) )
+                    {
+                        Debug( 5015 ) << "------------------------------------------------------------\n";
+                        Debug( 5015 ) << "face " << ( *it )->id()
+                                      << " marker = " << boost::get<0>( marker )
+                                      << " elt marker 0 = " << boost::get<1>( marker )
+                                      << " elt marker 1 = " << boost::get<2>( marker ) << "\n";
+                        Debug( 5015 ) << "element marker " << fit->marker() << "\n";
+
+                        addVertexDof( *fit, *( *it ), next_free_dof, n_dof, mpl::bool_<fe_type::nDofPerVertex>() );
+                        addEdgeDof( *fit, *( *it ), next_free_dof, n_dof, mpl::bool_<fe_type::nDofPerEdge>(), mpl::int_<mesh_type::nDim>() );
+
+
+                    }
+
+                }
+
+                ++fit;
+            }
+
 #else
 
             typedef typename DofType::dof_map_type dof_map_type;
             dof_map_type m1( M_dof.mapGDof() );
             M_dof.clearMapGDof();
             boost::tie( fit, fen ) = M_mesh.elementsRange();
-            while( fit != fen )
+
+            while ( fit != fen )
+            {
+                if ( fit->marker().value() == boost::get<2>( marker ) )
                 {
-                    if ( fit->marker().value() == boost::get<2>( marker ) )
-                        {
-                            M_dof.addDofFromElement( *fit, next_free_dof );
-                        }
-                    ++fit;
+                    M_dof.addDofFromElement( *fit, next_free_dof );
                 }
+
+                ++fit;
+            }
+
 #if 0
-             dof_map_type m2( M_dof.mapGDof() );
+            dof_map_type m2( M_dof.mapGDof() );
             M_dof.clearMapGDof();
             std::merge( m1.begin(), m1.end(), m2.begin(), m2.end(), M_dof.mapGDof().begin() );
 #else
@@ -295,16 +311,20 @@ public:
             M_dof.clearMapGDof();
             typename dof_map_type::iterator it = m1.begin();
             typename dof_map_type::iterator en = m1.end();
-            for( ; it != en; ++it )
-                {
-                    M_dof.mapGDof().insert( *it );
-                }
+
+            for ( ; it != en; ++it )
+            {
+                M_dof.mapGDof().insert( *it );
+            }
+
             it = m2.begin();
             en = m2.end();
-            for( ; it != en; ++it )
-                {
-                    M_dof.mapGDof().insert( *it );
-                }
+
+            for ( ; it != en; ++it )
+            {
+                M_dof.mapGDof().insert( *it );
+            }
+
             Debug( 5015 ) << "size dictionnary = " << M_dof.mapGDof().size() << " next_free_dof = " << next_free_dof+n_dof << "\n";
 #endif
 #endif
@@ -322,40 +342,44 @@ public:
         addVertexDof( element_type const& elt, face_type const& face, size_type& next_free_dof, size_type shift, mpl::bool_<true> )
         {
             uint16_type iFaEl = invalid_uint16_type_value;
+
             if ( face.ad_first() == elt.id() )
                 iFaEl = face.pos_first();
+
             else if ( face.ad_second() == elt.id() )
                 iFaEl = face.pos_second();
 
             for ( uint16_type iVeFa = 0; iVeFa < face_type::numVertices; ++iVeFa )
+            {
+                // local vertex number (in element)
+                uint16_type iVeEl = element_type::fToP( iFaEl, iVeFa );
+                Feel::detail::ignore_unused_variable_warning( iVeEl );
+
+                FEELPP_ASSERT( iVeEl != invalid_uint16_type_value ).error( "invalid local dof" );
+
+                // Loop number of Dof per vertex
+                for ( uint16_type l = 0; l < fe_type::nDofPerVertex; ++l )
                 {
-                    // local vertex number (in element)
-                    uint16_type iVeEl = element_type::fToP( iFaEl, iVeFa );
-                    Feel::detail::ignore_unused_variable_warning(iVeEl);
+                    uint16_type lid = iVeEl * fe_type::nDofPerVertex + l;
+                    const size_type gDof = ( elt.point( iVeEl ).id() ) * fe_type::nDofPerVertex + l;
 
-                    FEELPP_ASSERT( iVeEl != invalid_uint16_type_value ).error( "invalid local dof" );
+                    Debug( 5015 ) << "add vertex discontinuous dof " << next_free_dof << " in element " << elt.id() << " lid = " << lid << "\n";
+                    bool inserted = M_dof.insertDof( elt.id(), lid, iVeEl, boost::make_tuple( 0, 0, gDof ), 0, next_free_dof, 1, false, shift );
 
-                    // Loop number of Dof per vertex
-                    for ( uint16_type l = 0; l < fe_type::nDofPerVertex; ++l )
-                        {
-                            uint16_type lid = iVeEl * fe_type::nDofPerVertex + l;
-                            const size_type gDof = ( elt.point( iVeEl ).id() ) * fe_type::nDofPerVertex + l;
+                    if ( shift )
+                    {
+                        FEELPP_ASSERT( inserted == false )( elt.id() )
+                        ( lid )( gDof )( next_free_dof ).error( "should have inserted unique dof" );
+                    }
 
-                            Debug( 5015 ) << "add vertex discontinuous dof " << next_free_dof << " in element " << elt.id() << " lid = " << lid << "\n";
-                            bool inserted = M_dof.insertDof( elt.id(), lid, iVeEl, boost::make_tuple(0, 0, gDof), 0, next_free_dof, 1, false, shift );
-                            if ( shift )
-                                {
-                                    FEELPP_ASSERT( inserted == false )( elt.id() )
-                                        ( lid )( gDof )( next_free_dof ).error( "should have inserted unique dof" );
-                                }
-                            Debug( 5015 ) << "vertex discontinuous dof inserted : " << inserted << "\n";
+                    Debug( 5015 ) << "vertex discontinuous dof inserted : " << inserted << "\n";
 
-                            Debug( 5015 ) << "added vertex discontinuous dof " <<  elt.id() << ", "
-                                          <<  lid << ", "
-                                          << boost::get<0>(M_dof.localToGlobal( elt.id(), lid, 0 )) << "\n";
-                        }
-
+                    Debug( 5015 ) << "added vertex discontinuous dof " <<  elt.id() << ", "
+                                  <<  lid << ", "
+                                  << boost::get<0>( M_dof.localToGlobal( elt.id(), lid, 0 ) ) << "\n";
                 }
+
+            }
 
 
         }
@@ -377,27 +401,29 @@ public:
         addEdgeDof( element_type const& elt, face_type const& face, size_type& next_free_dof, size_type shift, mpl::bool_<true>, mpl::int_<2> )
         {
             uint16_type iFaEl = invalid_uint16_type_value;
+
             if ( face.ad_first() == elt.id() )
                 iFaEl = face.pos_first();
+
             else if ( face.ad_second() == elt.id() )
                 iFaEl = face.pos_second();
 
             // Loop number of Dof per edge
             for ( uint16_type l = 0; l < fe_type::nDofPerEdge; ++l )
-                {
-                    uint16_type lid = element_type::numVertices*fe_type::nDofPerVertex + iFaEl * fe_type::nDofPerEdge + l;
-                    const size_type gDof = ( elt.edge( iFaEl ).id() ) * fe_type::nDofPerEdge + l;
+            {
+                uint16_type lid = element_type::numVertices*fe_type::nDofPerVertex + iFaEl * fe_type::nDofPerEdge + l;
+                const size_type gDof = ( elt.edge( iFaEl ).id() ) * fe_type::nDofPerEdge + l;
 
-                    Debug( 5015 ) << "add edge discontinuous dof " << next_free_dof << " in element " << elt.id() << " lid = " << lid << "\n";
-                    bool inserted = M_dof.insertDof( elt.id(), lid, iFaEl, boost::make_tuple(1, 0, gDof), 0, next_free_dof, 1, false, shift );
-                    Debug( 5015 ) << "edge discontinuous dof inserted (1 or 0) : " << inserted << "\n";
+                Debug( 5015 ) << "add edge discontinuous dof " << next_free_dof << " in element " << elt.id() << " lid = " << lid << "\n";
+                bool inserted = M_dof.insertDof( elt.id(), lid, iFaEl, boost::make_tuple( 1, 0, gDof ), 0, next_free_dof, 1, false, shift );
+                Debug( 5015 ) << "edge discontinuous dof inserted (1 or 0) : " << inserted << "\n";
 
-                    Debug( 5015 ) << "added edge discontinuous dof "
-                                  <<  elt.id() << ", "
-                                  <<  lid << ", "
-                                  << boost::get<0>( M_dof.localToGlobal( elt.id(), lid, 0 ) ) << "\n";
+                Debug( 5015 ) << "added edge discontinuous dof "
+                              <<  elt.id() << ", "
+                              <<  lid << ", "
+                              << boost::get<0>( M_dof.localToGlobal( elt.id(), lid, 0 ) ) << "\n";
 
-                }
+            }
 
         }
     private:

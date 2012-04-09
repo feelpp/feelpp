@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -56,26 +56,26 @@ inline
 Feel::po::options_description
 makeOptions()
 {
-    Feel::po::options_description splittingoptions("Splitting options");
+    Feel::po::options_description splittingoptions( "Splitting options" );
     splittingoptions.add_options()
-        ("dt", Feel::po::value<double>()->default_value( 0.1 ), "time step value")
-        ("ft", Feel::po::value<double>()->default_value( 1 ), "Final time value")
-        ("nu", Feel::po::value<double>()->default_value( 1 ), "viscosity value")
-        ("ulid", Feel::po::value<double>()->default_value( 1 ), "lid velocity")
-        ("peps", Feel::po::value<double>()->default_value( 0. ), "epsilon for pressure term")
-        ("hsize", Feel::po::value<double>()->default_value( 0.5 ), "first h value to start convergence")
-        ("bccoeff", Feel::po::value<double>()->default_value( 100.0 ), "coeff for weak Dirichlet conditions")
-        ("bctype", Feel::po::value<int>()->default_value( 0 ), "Dirichlet condition type(0=elimination,1=penalisation, 2=weak")
-        ("divtol", Feel::po::value<double>()->default_value( 1.e10 ), "divergence tolerance")
+    ( "dt", Feel::po::value<double>()->default_value( 0.1 ), "time step value" )
+    ( "ft", Feel::po::value<double>()->default_value( 1 ), "Final time value" )
+    ( "nu", Feel::po::value<double>()->default_value( 1 ), "viscosity value" )
+    ( "ulid", Feel::po::value<double>()->default_value( 1 ), "lid velocity" )
+    ( "peps", Feel::po::value<double>()->default_value( 0. ), "epsilon for pressure term" )
+    ( "hsize", Feel::po::value<double>()->default_value( 0.5 ), "first h value to start convergence" )
+    ( "bccoeff", Feel::po::value<double>()->default_value( 100.0 ), "coeff for weak Dirichlet conditions" )
+    ( "bctype", Feel::po::value<int>()->default_value( 0 ), "Dirichlet condition type(0=elimination,1=penalisation, 2=weak" )
+    ( "divtol", Feel::po::value<double>()->default_value( 1.e10 ), "divergence tolerance" )
 
-        ;
-    Feel::po::options_description convdomoptions("Convection dominated options");
+    ;
+    Feel::po::options_description convdomoptions( "Convection dominated options" );
     convdomoptions.add_options()
-        ("supg", "Steamline Upwind Petrov Galerkin formulation")
-        ("gals", "Galerkin Least Square formulation")
-        ("dwg", "Douglas Wang formulation")
-        ("ls", Feel::po::value<double>()->default_value( 0 ), "control symmetric coefficient, SUPG=0, GALS=1, DWG=-1")
-        ;
+    ( "supg", "Steamline Upwind Petrov Galerkin formulation" )
+    ( "gals", "Galerkin Least Square formulation" )
+    ( "dwg", "Douglas Wang formulation" )
+    ( "ls", Feel::po::value<double>()->default_value( 0 ), "control symmetric coefficient, SUPG=0, GALS=1, DWG=-1" )
+    ;
     return splittingoptions.add( convdomoptions ).add( Feel::feel_options() );
 }
 inline
@@ -83,14 +83,14 @@ Feel::AboutData
 makeAbout()
 {
     Feel::AboutData about( "splitting" ,
-                            "splitting" ,
-                            "0.1",
-                            "2D and 3D Cavity Problem in Splitting Approach",
-                            Feel::AboutData::License_GPL,
-                            "Copyright (c) 2006 EPFL");
+                           "splitting" ,
+                           "0.1",
+                           "2D and 3D Cavity Problem in Splitting Approach",
+                           Feel::AboutData::License_GPL,
+                           "Copyright (c) 2006 EPFL" );
 
-    about.addAuthor("Christoph Winkelmann", "developer", "christoph.winkelmann@epfl.ch", "");
-    about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
+    about.addAuthor( "Christoph Winkelmann", "developer", "christoph.winkelmann@epfl.ch", "" );
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
     return about;
 
 }
@@ -212,18 +212,23 @@ Splitting<Dim>::createMesh( double meshSize )
     std::ostringstream ostr;
     std::ostringstream nameStr;
     std::string fname;
-    switch( Dim ) {
+
+    switch ( Dim )
+    {
     case 2:
         fname = __gmsh.generateSquare( "splitting2d", meshSize );
         break;
+
     case 3:
         fname = __gmsh.generateCube( "splitting3d", meshSize );
         break;
+
     default:
         std::ostringstream os;
         os << "invalid dimension: " << Dim;
         throw std::logic_error( os.str() );
     }
+
     ImporterGmsh<mesh_type> import( fname );
     mesh->accept( import );
     timers["mesh"].second = timers["mesh"].first.elapsed();
@@ -237,15 +242,15 @@ void
 Splitting<Dim>::run()
 {
     if ( this->vm().count( "help" ) )
-        {
-            std::cout << this->optionsDescription() << "\n";
-            return;
-        }
+    {
+        std::cout << this->optionsDescription() << "\n";
+        return;
+    }
 
     this->changeRepository( boost::format( "%1%/h_%2%/Re_%3%" )
                             % this->about().appName()
                             % meshSize
-                            % (1./nu) );
+                            % ( 1./nu ) );
     using namespace Feel::vf;
 
     /*
@@ -293,17 +298,17 @@ Splitting<Dim>::run()
     //       factorization preconditioner doesn't have a problem either, as
     //       it would encounter a zero pivot only at the last step, where the
     //       factorization would in fact be complete. So peps = 0 is safe.
-    form2( Uh, Uh, Ap, _init=true ) = integrate( elements(mesh), im_p_type(),
-                                                 gradt(p)*trans(grad(q))+ peps*idt(p)*id(p)
-                                                 );
+    form2( Uh, Uh, Ap, _init=true ) = integrate( elements( mesh ), im_p_type(),
+                                      gradt( p )*trans( grad( q ) )+ peps*idt( p )*id( p )
+                                               );
     Ap->close();
 
     // --- Construction of velocity mass matrix Mu
 #if VELOCITY_UPDATE
     sparse_matrix_ptrtype Mu( M_backend->newMatrix( Uh, Uh ) );
-    form2( Uh, Uh, Mu, _init=true ) = integrate( elements(mesh), im_u_type(),
-                                                trans(idt(U))*id(U)
-                                                );
+    form2( Uh, Uh, Mu, _init=true ) = integrate( elements( mesh ), im_u_type(),
+                                      trans( idt( U ) )*id( U )
+                                               );
     Mu->close();
 #endif
 
@@ -314,117 +319,123 @@ Splitting<Dim>::run()
     // --- Construction of velocity diffusion-reaction matrix Lu
     sparse_matrix_ptrtype Lu( M_backend->newMatrix( Uh, Uh ) );
     form2( Uh, Uh, Lu, _init=true ) =
-        integrate( elements(mesh), im_u_type(),
-                   nu*dt*trace(gradt(u)*trans(grad(u)))+
-                   trans(idt(u))*id(u) );
+        integrate( elements( mesh ), im_u_type(),
+                   nu*dt*trace( gradt( u )*trans( grad( u ) ) )+
+                   trans( idt( u ) )*id( u ) );
+
     if ( bctype == 2 ) // weak bc
-        {
-            form2( Uh, Uh, Lu ) +=
-                integrate( boundaryfaces(mesh), im_u_type(),
-                           nu*dt*(- trans(gradt(u)*N())*id(u)
-                                  - trans(grad(u)*N())*idt(u)
-                                  + bcCoeff/hFace() * trans(idt(u)) * id(u) )
-                           );
-        }
+    {
+        form2( Uh, Uh, Lu ) +=
+            integrate( boundaryfaces( mesh ), im_u_type(),
+                       nu*dt*( - trans( gradt( u )*N() )*id( u )
+                               - trans( grad( u )*N() )*idt( u )
+                               + bcCoeff/hFace() * trans( idt( u ) ) * id( u ) )
+                     );
+    }
+
     Lu->close();
 
     // --- Time loop
     for ( int iter = 0;
-          time < this->vm()["ft"].template as<double>();
-          ++iter, time += dt )
+            time < this->vm()["ft"].template as<double>();
+            ++iter, time += dt )
+    {
+        double divTol = this->vm()["divtol"].template as<double>();
+        double divError = 2*divTol + 1;
+        int subiter = 0;
+
+        while ( divError > divTol )
         {
-            double divTol = this->vm()["divtol"].template as<double>();
-            double divError = 2*divTol + 1;
-            int subiter = 0;
-            while ( divError > divTol )
-                {
-                    ++subiter;
-                    timers["assembly"].first.restart();
+            ++subiter;
+            timers["assembly"].first.restart();
 
-                    // --- update rhs for solve for intermediate ux and uy
-                    form1( Uh, F, _init=true ) = integrate( elements(mesh), im_u_type(),
-                                                           (trans(idv(u))-dt*grad(p))*id(u)
-                                                           );
+            // --- update rhs for solve for intermediate ux and uy
+            form1( Uh, F, _init=true ) = integrate( elements( mesh ), im_u_type(),
+                                                    ( trans( idv( u ) )-dt*grad( p ) )*id( u )
+                                                  );
 
-                    // --- Construction of convection operator on velocity
-                    //     space
-                    sparse_matrix_ptrtype Ac( M_backend->newMatrix( Uh, Uh ) );
-                    form2( Uh, Uh, Ac, _init=true ) =
-                        integrate( elements(mesh), im_u_type(),
-                                   dt*trans( gradt(u)*idv(Un) )*id(u) );
-                    Ac->close();
+            // --- Construction of convection operator on velocity
+            //     space
+            sparse_matrix_ptrtype Ac( M_backend->newMatrix( Uh, Uh ) );
+            form2( Uh, Uh, Ac, _init=true ) =
+                integrate( elements( mesh ), im_u_type(),
+                           dt*trans( gradt( u )*idv( Un ) )*id( u ) );
+            Ac->close();
 
-                    // --- Construction of convection-diffusion-reaction
-                    //     operators on velocity space Aux and Auy
-                    sparse_matrix_ptrtype Aux( M_backend->newMatrix( Uh, Uh ) );
+            // --- Construction of convection-diffusion-reaction
+            //     operators on velocity space Aux and Auy
+            sparse_matrix_ptrtype Aux( M_backend->newMatrix( Uh, Uh ) );
 #warning TODO
-                    //gmm::add(Lu.mat(), Ac.mat(),Aux.wmat());
+            //gmm::add(Lu.mat(), Ac.mat(),Aux.wmat());
 
-                    switch ( bctype )
-                        {
-                        case 0: // elimination
-                        case 1: // penalisation
-                            // use last arg 'false' to tell the form to
-                            // _not_ initialise its representation
-                            form2( Uh, Uh, Aux ) +=
-                                on( markedfaces(mesh,10), u, F,
-                                    oneX() );
-                            break;
-                        case 2: // weak
-                            form1( Uh, F ) +=
-                                integrate( markedfaces(mesh,20), im_u_type(),
-                                           dt*nu*trans(oneX())* ( bcCoeff/hFace()*id(u)- grad(u)*N() ) );
-                            break;
-                        default: // wrong
-                            std::ostringstream os;
-                            os << "invalid bctype: " << bctype;
-                            throw std::logic_error( os.str() );
-                        }
-                    Aux->close();
+            switch ( bctype )
+            {
+            case 0: // elimination
+            case 1: // penalisation
+                // use last arg 'false' to tell the form to
+                // _not_ initialise its representation
+                form2( Uh, Uh, Aux ) +=
+                    on( markedfaces( mesh,10 ), u, F,
+                        oneX() );
+                break;
 
-                    timers["assembly"].second += timers["assembly"].first.elapsed();
+            case 2: // weak
+                form1( Uh, F ) +=
+                    integrate( markedfaces( mesh,20 ), im_u_type(),
+                               dt*nu*trans( oneX() )* ( bcCoeff/hFace()*id( u )- grad( u )*N() ) );
+                break;
 
-                    /*
-                     * Solution phase
-                     */
-                    // --- solve for u
-                    this->solve( Aux, Un, F );
+            default: // wrong
+                std::ostringstream os;
+                os << "invalid bctype: " << bctype;
+                throw std::logic_error( os.str() );
+            }
+
+            Aux->close();
+
+            timers["assembly"].second += timers["assembly"].first.elapsed();
+
+            /*
+             * Solution phase
+             */
+            // --- solve for u
+            this->solve( Aux, Un, F );
 
 
-                    // rhs for pressure increment
-                    form1( Yh, fp, _init=true ) = integrate( elements(mesh), im_p_type(), -divv(Un)*id(p)/dt );
+            // rhs for pressure increment
+            form1( Yh, fp, _init=true ) = integrate( elements( mesh ), im_p_type(), -divv( Un )*id( p )/dt );
 
-                    // --- solve for pressure increment phi
-                    this->solve( Ap, phi, fp );
+            // --- solve for pressure increment phi
+            this->solve( Ap, phi, fp );
 
-                    divError = math::sqrt(integrate( elements(mesh), im_p_type(),
-                                                     divv(Un)^2 ).evaluate()(0,0));
-                    std::cout << "[Splitting] ||div u||_2 = " << divError << std::endl;
+            divError = math::sqrt( integrate( elements( mesh ), im_p_type(),
+                                              divv( Un )^2 ).evaluate()( 0,0 ) );
+            std::cout << "[Splitting] ||div u||_2 = " << divError << std::endl;
 
-                    // --- update pressure
-                    p += phi;
+            // --- update pressure
+            p += phi;
 
 #if VELOCITY_UPDATE
-                    // --- update velocity
-                    form1( Uh, F ) = integrate( elements(mesh), im_u_type(),
-                                               (trans(idv(Un))-dt*gradv(phi))*id(U)
-                                               );
+            // --- update velocity
+            form1( Uh, F ) = integrate( elements( mesh ), im_u_type(),
+                                        ( trans( idv( Un ) )-dt*gradv( phi ) )*id( U )
+                                      );
 
-                    this->solve( Mu, Un, F );
+            this->solve( Mu, Un, F );
 
-                    divError = std::sqrt(integrate( elements(mesh), im_p_type(),
-                                                    divv(Un)^2 ).evaluate());
-                    std::cout << "[Splitting] ||div u||_2 = " << divError << std::endl;
+            divError = std::sqrt( integrate( elements( mesh ), im_p_type(),
+                                             divv( Un )^2 ).evaluate() );
+            std::cout << "[Splitting] ||div u||_2 = " << divError << std::endl;
 #endif
 
-                } // inner loop
+        } // inner loop
 
-            U = Un;
+        U = Un;
 
-            this->exportResults( time, U, p );
+        this->exportResults( time, U, p );
 
-            Log() << "[Splitting] t = " << time << ", " << subiter << " subiterations" << "\n";
-        } // time loop
+        Log() << "[Splitting] t = " << time << ", " << subiter << " subiterations" << "\n";
+    } // time loop
 
     Log() << "[timer] run():     init: " << timers["init"].second << "\n";
     Log() << "[timer] run(): assembly: " << timers["assembly"].second << "\n";
@@ -478,13 +489,13 @@ Splitting<Dim>::exportResults( double time, element_U_type& U, element_p_type& p
 
     // -- EXPORT --
     if ( this->vm().count( "export" ) )
-        {
-            typename timeset_type::step_ptrtype timeStep = timeSet->step( time );
-            timeStep->setMesh( U.functionSpace()->mesh() );
-            timeStep->add( "u", U );
-            timeStep->add( "p", p );
-            exporter->save();
-        } // export
+    {
+        typename timeset_type::step_ptrtype timeStep = timeSet->step( time );
+        timeStep->setMesh( U.functionSpace()->mesh() );
+        timeStep->add( "u", U );
+        timeStep->add( "p", p );
+        exporter->save();
+    } // export
 
     timers["export"].second = timers["export"].first.elapsed();
     Log() << "[timer] exportResults(): " << timers["export"].second << "\n";

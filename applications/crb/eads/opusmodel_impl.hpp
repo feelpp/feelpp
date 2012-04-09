@@ -119,9 +119,9 @@ OpusModel<OrderU,OrderP,OrderT>::init()
                                   _force_rebuild = M_force_rebuild );
     Log() << "Imported mesh line\n";
     M_mesh_cross_section_2 = createGMSHMesh( _mesh=new mesh12_type,
-                                             _desc =  this->data()->createMeshCrossSection2( 0.2 ),
-                                             _update = MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
-                                             _force_rebuild = M_force_rebuild );
+                             _desc =  this->data()->createMeshCrossSection2( 0.2 ),
+                             _update = MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
+                             _force_rebuild = M_force_rebuild );
     Log() << "[init] Imported mesh cross section 2\n";
 
     M_P1h = p1_functionspace_type::New( M_mesh_line );
@@ -130,8 +130,8 @@ OpusModel<OrderU,OrderP,OrderT>::init()
     Log() << "[init] P0 mesh\n";
     typedef typename node<double>::type node_type;
 
-    node_type period(2);
-    period[0]=this->data()->component("PCB").e()+this->data()->component("AIR").e();
+    node_type period( 2 );
+    period[0]=this->data()->component( "PCB" ).e()+this->data()->component( "AIR" ).e();
     period[1]=0;
     Log() << "[init] period=" << period[0] << "," << period[1] << "\n";
     M_Th = temp_functionspace_type::New( _mesh=M_mesh,
@@ -176,30 +176,33 @@ OpusModel<OrderU,OrderP,OrderT>::~OpusModel()
 
 template<int OrderU, int OrderP, int OrderT>
 void
-OpusModel<OrderU,OrderP,OrderT>::run (const double * X, unsigned long N,
-                                      double * Y, unsigned long P)
+OpusModel<OrderU,OrderP,OrderT>::run ( const double * X, unsigned long N,
+                                       double * Y, unsigned long P )
 {
     Log() << "[OpusModel::run] input/output relationship\n";
 
-    for( int i = 0;i < N; ++i )
+    for ( int i = 0; i < N; ++i )
         Log() << "[OpusModel::run] X[" << i << "]=" << X[i] << "\n";
 
-    this->data()->component("IC1").setK( X[0] );
-    this->data()->component("IC2").setK( X[0] );
-    this->data()->component("AIR").setFlowRate( X[1] );
-    this->data()->component("IC1").setQ( X[2] );
-    this->data()->component("IC2").setQ( X[2] );
+    this->data()->component( "IC1" ).setK( X[0] );
+    this->data()->component( "IC2" ).setK( X[0] );
+    this->data()->component( "AIR" ).setFlowRate( X[1] );
+    this->data()->component( "IC1" ).setQ( X[2] );
+    this->data()->component( "IC2" ).setQ( X[2] );
 
     Log() << "[OpusModel::run] parameters set\n";
+
     // check if the mesh size or e_a have been changed since last run, if yes
     // then the geometry and mesh need to be rebuilt
     if ( ( math::abs( M_meshsize - X[5] ) > 1e-5 ) ||
-         ( math::abs( this->data()->component("AIR").e() - X[4] ) > 1e-10 ) )
+            ( math::abs( this->data()->component( "AIR" ).e() - X[4] ) > 1e-10 ) )
         M_force_rebuild = true;
+
     else
         M_force_rebuild = false;
+
     M_force_rebuild = true;
-    this->data()->component("AIR").setE( X[4] );
+    this->data()->component( "AIR" ).setE( X[4] );
     M_meshsize = X[5];
 
     this->data()->print();
@@ -222,7 +225,8 @@ OpusModel<OrderU,OrderP,OrderT>::run (const double * X, unsigned long N,
     Y[0]=s1;
     Y[1]=s2;
     Log() << "[OpusModel::run] run done, set outputs\n";
-    for( int i = 0;i < P; ++i )
+
+    for ( int i = 0; i < P; ++i )
         Log() << "[OpusModel::run] Y[" << i << "]=" << Y[i] << "\n";
 
 }
@@ -243,23 +247,23 @@ OpusModel<OrderU,OrderP,OrderT>::run()
 
     k = p0_element_ptrtype( new p0_element_type( M_P0h, "k" ) );
     *k = vf::project( M_P0h, elements( M_P0h->mesh() ),
-                      chi( emarker() == M_Th->mesh()->markerName( "PCB" ) )*this->data()->component("PCB").k()+
-                      chi( emarker() == M_Th->mesh()->markerName( "AIR123" ) )*this->data()->component("AIR").k()+
-                      chi( emarker() == M_Th->mesh()->markerName( "AIR4" ) )*this->data()->component("AIR").k()+
-                      chi( emarker() == M_Th->mesh()->markerName( "IC1" ) )*this->data()->component("IC1").k()+
-                      chi( emarker() == M_Th->mesh()->markerName( "IC2" ) )*this->data()->component("IC2").k());
+                      chi( emarker() == M_Th->mesh()->markerName( "PCB" ) )*this->data()->component( "PCB" ).k()+
+                      chi( emarker() == M_Th->mesh()->markerName( "AIR123" ) )*this->data()->component( "AIR" ).k()+
+                      chi( emarker() == M_Th->mesh()->markerName( "AIR4" ) )*this->data()->component( "AIR" ).k()+
+                      chi( emarker() == M_Th->mesh()->markerName( "IC1" ) )*this->data()->component( "IC1" ).k()+
+                      chi( emarker() == M_Th->mesh()->markerName( "IC2" ) )*this->data()->component( "IC2" ).k() );
     rhoC = p0_element_ptrtype( new p0_element_type( M_P0h, "rhoC" ) );
     *rhoC = vf::project( M_P0h, elements( M_P0h->mesh() ),
-                         chi( emarker() == M_Th->mesh()->markerName( "PCB" ) )*this->data()->component("PCB").rhoC()+
-                         chi( emarker() == M_Th->mesh()->markerName( "AIR123" ) )*this->data()->component("AIR").rhoC()+
-                         chi( emarker() == M_Th->mesh()->markerName( "AIR4" ) )*this->data()->component("AIR").rhoC()+
-                         chi( emarker() == M_Th->mesh()->markerName( "IC1" ) )*this->data()->component("IC1").rhoC() +
-                         chi( emarker() == M_Th->mesh()->markerName( "IC2" ) )*this->data()->component("IC2").rhoC() );
+                         chi( emarker() == M_Th->mesh()->markerName( "PCB" ) )*this->data()->component( "PCB" ).rhoC()+
+                         chi( emarker() == M_Th->mesh()->markerName( "AIR123" ) )*this->data()->component( "AIR" ).rhoC()+
+                         chi( emarker() == M_Th->mesh()->markerName( "AIR4" ) )*this->data()->component( "AIR" ).rhoC()+
+                         chi( emarker() == M_Th->mesh()->markerName( "IC1" ) )*this->data()->component( "IC1" ).rhoC() +
+                         chi( emarker() == M_Th->mesh()->markerName( "IC2" ) )*this->data()->component( "IC2" ).rhoC() );
 
     Q = p0_element_ptrtype( new p0_element_type( M_P0h, "Q" ) );
     *Q = vf::project( M_P0h, elements( M_P0h->mesh() ),
-                      chi( emarker() == M_Th->mesh()->markerName( "IC1" ) )*this->data()->component("IC1").Q() +
-                      chi( emarker() == M_Th->mesh()->markerName( "IC2" ) )*this->data()->component("IC2").Q() );
+                      chi( emarker() == M_Th->mesh()->markerName( "IC1" ) )*this->data()->component( "IC1" ).Q() +
+                      chi( emarker() == M_Th->mesh()->markerName( "IC2" ) )*this->data()->component( "IC2" ).Q() );
     Log() << "[OpusModel::OpusModel] P0 functions allocated\n";
 
 
@@ -269,9 +273,9 @@ OpusModel<OrderU,OrderP,OrderT>::run()
     os6.width( 15 );
     os6.setf( std::ios::right );
 
-    double surf1 = integrate( markedelements(M_mesh,M_mesh->markerName( "IC2" )),constant(1.0),_Q<0>()).evaluate()(0,0);
-    double len2 = ( integrate( markedfaces(M_mesh,M_mesh->markerName( "Gamma_3_AIR3" )),constant(1.0),_Q<0>()).evaluate()(0,0) +
-                    integrate( markedfaces(M_mesh,M_mesh->markerName( "Gamma_3_AIR4" )),constant(1.0),_Q<0>()).evaluate()(0,0) );
+    double surf1 = integrate( markedelements( M_mesh,M_mesh->markerName( "IC2" ) ),constant( 1.0 ),_Q<0>() ).evaluate()( 0,0 );
+    double len2 = ( integrate( markedfaces( M_mesh,M_mesh->markerName( "Gamma_3_AIR3" ) ),constant( 1.0 ),_Q<0>() ).evaluate()( 0,0 ) +
+                    integrate( markedfaces( M_mesh,M_mesh->markerName( "Gamma_3_AIR4" ) ),constant( 1.0 ),_Q<0>() ).evaluate()( 0,0 ) );
     std::ofstream outputs( "outputs.dat" );
     std::ostringstream os ;
     Log() << "output file set\n";
@@ -287,9 +291,9 @@ OpusModel<OrderU,OrderP,OrderT>::run()
     fluid_element_1_type p = U.template element<1>();
 
     double flow_rate = this->vm()["fluid.flow-rate"].template as<double>();
-    double e_AIR = this->data()->component("AIR").e();
-    double e_PCB = this->data()->component("PCB").e();
-    double e_IC = this->data()->component("IC1").e();
+    double e_AIR = this->data()->component( "AIR" ).e();
+    double e_PCB = this->data()->component( "PCB" ).e();
+    double e_IC = this->data()->component( "IC1" ).e();
     //double L_IC = this->data()->component("IC1").h();
 
     Log() << "[opusmodel] flow_rate = " << flow_rate << "\n";
@@ -297,148 +301,157 @@ OpusModel<OrderU,OrderP,OrderT>::run()
     Log() << "[opusmodel] e_PCB = " << e_PCB << "\n";
     Log() << "[opusmodel] e_IC = " << e_IC << "\n";
     double time = M_temp_bdf->timeInitial();
-    auto chi_AIR = chi( Px() >= e_PCB+e_IC);
-    auto ft = constant(1.0-( !this->data()->isSteady() )*math::exp(-time/3.0 ) );
-    auto vy = ft*constant(3.)/(2.*(e_AIR-e_IC))*flow_rate*(1.-vf::pow((Px()-((e_AIR+e_IC)/2+e_PCB))/((e_AIR-e_IC)/2),2));
+    auto chi_AIR = chi( Px() >= e_PCB+e_IC );
+    auto ft = constant( 1.0-( !this->data()->isSteady() )*math::exp( -time/3.0 ) );
+    auto vy = ft*constant( 3. )/( 2.*( e_AIR-e_IC ) )*flow_rate*( 1.-vf::pow( ( Px()-( ( e_AIR+e_IC )/2+e_PCB ) )/( ( e_AIR-e_IC )/2 ),2 ) );
 
-    u = vf::project( M_Xh->template functionSpace<0>(), markedelements( M_Xh->mesh(), "AIR4" ), vec(constant(0.),vy) );
-    p = vf::project( M_Xh->template functionSpace<1>(), markedelements( M_Xh->mesh(), "AIR4" ), constant(0.) );
+    u = vf::project( M_Xh->template functionSpace<0>(), markedelements( M_Xh->mesh(), "AIR4" ), vec( constant( 0. ),vy ) );
+    p = vf::project( M_Xh->template functionSpace<1>(), markedelements( M_Xh->mesh(), "AIR4" ), constant( 0. ) );
 
 
     Log() << "fluid and temperature fields set\n";
-    if ( !this->data()->isSteady() )
-        {
-            if ( M_temp_bdf->timeInitial() > 0.0 )
-                {
-                    T = M_temp_bdf->unknown( 0 );
-                }
-            else
-                {
-                    M_temp_bdf->initialize( T );
-                }
 
-            if ( M_fluid_bdf->timeInitial() > 0.0 )
-                {
-                    U = M_fluid_bdf->unknown( 0 );
-                }
-            else
-                {
-                    M_fluid_bdf->initialize( U );
-                }
-        }
-    else
+    if ( !this->data()->isSteady() )
+    {
+        if ( M_temp_bdf->timeInitial() > 0.0 )
         {
-            M_temp_bdf->setSteady();
-            M_fluid_bdf->setSteady();
+            T = M_temp_bdf->unknown( 0 );
         }
+
+        else
+        {
+            M_temp_bdf->initialize( T );
+        }
+
+        if ( M_fluid_bdf->timeInitial() > 0.0 )
+        {
+            U = M_fluid_bdf->unknown( 0 );
+        }
+
+        else
+        {
+            M_fluid_bdf->initialize( U );
+        }
+    }
+
+    else
+    {
+        M_temp_bdf->setSteady();
+        M_fluid_bdf->setSteady();
+    }
+
     Log() << "[initialization] done in " << ti.elapsed() << "\n";
 
-    for( M_temp_bdf->start(), M_fluid_bdf->start() ;
-         ( M_temp_bdf->isFinished() == false ) && ( M_fluid_bdf->isFinished() == false );
-         M_temp_bdf->next(), M_fluid_bdf->next() )
+    for ( M_temp_bdf->start(), M_fluid_bdf->start() ;
+            ( M_temp_bdf->isFinished() == false ) && ( M_fluid_bdf->isFinished() == false );
+            M_temp_bdf->next(), M_fluid_bdf->next() )
+    {
+        Log() << "============================================================\n";
+        Log() << "time(T): " << M_temp_bdf->time() << "s, iteration: " << M_temp_bdf->iteration() << " order:"  << M_temp_bdf->timeOrder() << "\n";
+        Log() << "time(U): " << M_fluid_bdf->time() << "s, iteration: " << M_fluid_bdf->iteration() << " order:"  << M_fluid_bdf->timeOrder() << "\n";
+        std::cout << "============================================================\n";
+        std::cout << "time(T): " << M_temp_bdf->time() << "s, iteration: " << M_temp_bdf->iteration() << " order:"  << M_temp_bdf->timeOrder() << "\n";
+        std::cout << "time(U): " << M_fluid_bdf->time() << "s, iteration: " << M_fluid_bdf->iteration() << " order:"  << M_fluid_bdf->timeOrder() << "\n";
+
+        // Fluide
+        ti.restart();
+        M_fluid->update( M_fluid_bdf->time() );
+        Log() << "[fluid] update done in " << ti.elapsed() << "\n";
+        ti.restart();
+        M_fluid->solve( U );
+        //M_exporter->step(time)->setMesh( U.functionSpace()->mesh() );
+        M_exporter_fluid->step( M_fluid_bdf->time() )->setMesh( U.functionSpace()->mesh() );
+        M_exporter_fluid->step( M_fluid_bdf->time() )->add( "Velocity",  U.template element<0>() );
+        M_exporter_fluid->step( M_fluid_bdf->time() )->add( "Pressure",  U.template element<1>() );
+        M_exporter_fluid->save();
+
+        Log() << "[fluid] solve done in " << ti.elapsed() << "\n";
+
+        // Thermal
+        ti.restart();
+
+        double thetime = M_temp_bdf->time();
+
+        M_thermal->update( thetime,
+                           ( !this->data()->isSteady() )*idv( *rhoC )*M_temp_bdf->polyDerivCoefficient( 0 ), // mass
+                           ( idv( *k ) ), // diff
+                           ( idv( *rhoC )*idv( U.template element<0>() ) ), // conv
+                           //( print(idv(*Q)*(1.0-vf::exp(-cst_ref(thetime))),"Q=") + // source term
+                           ( print( idv( *Q ),"Q=" ) + // source term
+                             ( !this->data()->isSteady() )*print( idv( *rhoC )*print( idv( M_temp_bdf->polyDeriv() ),"Tn=" ),"rhoc*Tn" ) ) // bdf contrib
+                         );
+
+        Log() << "[thermal] update done in " << ti.elapsed() << "\n";
+        ti.restart();
+        M_thermal->solve( T );
+
+        Log() << "[thermal] solve done in " << ti.elapsed() << "\n";
+
+        // export results
+        ti.restart();
+        this->exportResults( thetime, T, U );
+
+        Log() << "[export] export done in " << ti.elapsed() << "\n";
+
+        ti.restart();
+        //double surf1 = integrate( markedelements(M_mesh,M_mesh->markerName( "IC2" )), _Q<0>(),constant(1.0)).evaluate()(0,0);
+        double surf1_exact = this->data()->component( "IC2" ).e()*this->data()->component( "IC2" ).h();
+
+        if ( math::abs( surf1_exact - surf1 ) > 1e-10 )
         {
-            Log() << "============================================================\n";
-            Log() << "time(T): " << M_temp_bdf->time() << "s, iteration: " << M_temp_bdf->iteration() << " order:"  << M_temp_bdf->timeOrder() << "\n";
-            Log() << "time(U): " << M_fluid_bdf->time() << "s, iteration: " << M_fluid_bdf->iteration() << " order:"  << M_fluid_bdf->timeOrder() << "\n";
-            std::cout << "============================================================\n";
-            std::cout << "time(T): " << M_temp_bdf->time() << "s, iteration: " << M_temp_bdf->iteration() << " order:"  << M_temp_bdf->timeOrder() << "\n";
-            std::cout << "time(U): " << M_fluid_bdf->time() << "s, iteration: " << M_fluid_bdf->iteration() << " order:"  << M_fluid_bdf->timeOrder() << "\n";
-
-            // Fluide
-            ti.restart();
-            M_fluid->update( M_fluid_bdf->time() );
-            Log() << "[fluid] update done in " << ti.elapsed() << "\n";
-            ti.restart();
-            M_fluid->solve( U );
-            //M_exporter->step(time)->setMesh( U.functionSpace()->mesh() );
-            M_exporter_fluid->step(M_fluid_bdf->time())->setMesh( U.functionSpace()->mesh() );
-            M_exporter_fluid->step(M_fluid_bdf->time())->add( "Velocity",  U.template element<0>() );
-            M_exporter_fluid->step(M_fluid_bdf->time())->add( "Pressure",  U.template element<1>() );
-            M_exporter_fluid->save();
-
-            Log() << "[fluid] solve done in " << ti.elapsed() << "\n";
-
-            // Thermal
-            ti.restart();
-
-            double thetime = M_temp_bdf->time();
-
-            M_thermal->update( thetime,
-                               (!this->data()->isSteady())*idv(*rhoC)*M_temp_bdf->polyDerivCoefficient(0), // mass
-                               (idv(*k)),    // diff
-                               (idv(*rhoC)*idv(U.template element<0>())), // conv
-                               //( print(idv(*Q)*(1.0-vf::exp(-cst_ref(thetime))),"Q=") + // source term
-                               ( print(idv(*Q),"Q=") + // source term
-                                 (!this->data()->isSteady())*print(idv(*rhoC)*print(idv( M_temp_bdf->polyDeriv() ),"Tn="),"rhoc*Tn") ) // bdf contrib
-                               );
-
-            Log() << "[thermal] update done in " << ti.elapsed() << "\n";
-            ti.restart();
-            M_thermal->solve( T );
-
-            Log() << "[thermal] solve done in " << ti.elapsed() << "\n";
-
-            // export results
-            ti.restart();
-            this->exportResults( thetime, T, U );
-
-            Log() << "[export] export done in " << ti.elapsed() << "\n";
-
-            ti.restart();
-            //double surf1 = integrate( markedelements(M_mesh,M_mesh->markerName( "IC2" )), _Q<0>(),constant(1.0)).evaluate()(0,0);
-            double surf1_exact = this->data()->component("IC2").e()*this->data()->component("IC2").h();
-            if ( math::abs( surf1_exact - surf1 ) > 1e-10 )
-                {
-                    Log() << "[s1] Invalid IC surface computation\n";
-                    Log() << "[s1] surface = " << surf1 << "\n";
-                    Log() << "[s1] surface(exact) = " << surf1_exact << "\n";
-                }
-            s1 = integrate( markedelements(M_mesh,M_mesh->markerName( "IC2" )), idv(T),_Q<OrderT>()).evaluate()(0,0)/surf1;
-            //double len2 = integrate( markedfaces(M_mesh,M_mesh->markerName( "Gamma_3_AIR4" )), _Q<0>(),constant(1.0)).evaluate()(0,0);
-            double len2_exact = this->data()->component("AIR").e();
-            if ( math::abs( len2_exact - len2 ) > 1e-10 )
-                {
-                    Log() << "[s2] Invalid Gamma_3_AIR4 length computation\n";
-                    Log() << "[s2] length = " << len2 << "\n";
-                    Log() << "[s2] length(exact) = " << len2_exact << "\n";
-                }
-            s2 = ( integrate( markedfaces(M_mesh,M_mesh->markerName( "Gamma_3_AIR3" )), idv(T),_Q<OrderT>()).evaluate()(0,0)+
-                   integrate( markedfaces(M_mesh,M_mesh->markerName( "Gamma_3_AIR4" )), idv(T),_Q<OrderT>()).evaluate()(0,0) )/len2;
-            outputs.precision( 10 );
-            outputs.setf( std::ios_base::scientific, std::ios_base::floatfield );
-            outputs.width( 15 );
-            outputs << s1 << " " << s2 << std::endl;
-            Log() << "[s1,s2] postprocess done in " << ti.elapsed() << "\n";
-            Log() << "s1=" << s1 << "\n";
-            Log() << "s2=" << s2 << "\n";
-            std::cout << "s1=" << s1 << " s2=" << s2 << "\n";
-            os6 << M_temp_bdf->time() << " "  << s1 << "  "  << s2 << std::endl;
-
-            AUTO(N_IC_PCB,vec(constant(-1.),constant(0.)) );
-            double meas_PCB = integrate( markedfaces( M_mesh, M_mesh->markerName( "Gamma_IC1_PCB" ) ),constant(1.0),_Q<0>()).evaluate()(0,0) ;
-            double mean_jump_1 = integrate( markedfaces( M_mesh, M_mesh->markerName( "Gamma_IC1_PCB" ) ),
-                                            trans(jumpv(idv(T)))*N_IC_PCB,_Q<OrderT>()).evaluate()(0,0)/meas_PCB;
-            double mean_jump_2 = integrate( markedfaces( M_mesh, M_mesh->markerName( "Gamma_IC2_PCB" ) ),
-                                            trans(jumpv(idv(T)))*N_IC_PCB,_Q<OrderT>()).evaluate()(0,0)/meas_PCB;
-
-            Log() <<  "meas(Gamma_IC1_PCB) = " << meas_PCB << "\n";
-            Log() <<  "mean([[T]],IC1) = " << mean_jump_1 << "\n";
-            Log() <<  "mean([[T]],IC2) = " << mean_jump_2 << "\n";
-
-            Log() << "flux between IC1 and PCB = " << integrate( markedfaces( M_mesh, M_mesh->markerName( "Gamma_IC1_PCB" ) ),
-                                                                 jumpv(idv(*k)*gradv(T)),_Q<OrderT-1>()).evaluate()(0,0) << "\n";
-            Log() << "flux between IC2 and PCB = " << integrate( markedfaces( M_mesh, M_mesh->markerName( "Gamma_IC2_PCB" ) ),
-                                                                 jumpv(idv(*k)*gradv(T)),_Q<OrderT-1>()).evaluate()(0,0) << "\n";
-            Log() << "[k]_{IC2 and PCB} = " << integrate( markedfaces( M_mesh, M_mesh->markerName( "Gamma_IC2_PCB" ) ),
-                                                          jumpv(idv(*k))*N_IC_PCB,_Q<0>()).evaluate()(0,0) << "\n";
-
-
-            ti.restart();
-            M_temp_bdf->shiftRight( T );
-            M_fluid_bdf->shiftRight( U );
-            Log() << "[bdf] shifRight done in " << ti.elapsed() << "\n";
-            Log() << "time spent in iteration = " << M_temp_bdf->realTimePerIteration() << "s\n";
+            Log() << "[s1] Invalid IC surface computation\n";
+            Log() << "[s1] surface = " << surf1 << "\n";
+            Log() << "[s1] surface(exact) = " << surf1_exact << "\n";
         }
+
+        s1 = integrate( markedelements( M_mesh,M_mesh->markerName( "IC2" ) ), idv( T ),_Q<OrderT>() ).evaluate()( 0,0 )/surf1;
+        //double len2 = integrate( markedfaces(M_mesh,M_mesh->markerName( "Gamma_3_AIR4" )), _Q<0>(),constant(1.0)).evaluate()(0,0);
+        double len2_exact = this->data()->component( "AIR" ).e();
+
+        if ( math::abs( len2_exact - len2 ) > 1e-10 )
+        {
+            Log() << "[s2] Invalid Gamma_3_AIR4 length computation\n";
+            Log() << "[s2] length = " << len2 << "\n";
+            Log() << "[s2] length(exact) = " << len2_exact << "\n";
+        }
+
+        s2 = ( integrate( markedfaces( M_mesh,M_mesh->markerName( "Gamma_3_AIR3" ) ), idv( T ),_Q<OrderT>() ).evaluate()( 0,0 )+
+               integrate( markedfaces( M_mesh,M_mesh->markerName( "Gamma_3_AIR4" ) ), idv( T ),_Q<OrderT>() ).evaluate()( 0,0 ) )/len2;
+        outputs.precision( 10 );
+        outputs.setf( std::ios_base::scientific, std::ios_base::floatfield );
+        outputs.width( 15 );
+        outputs << s1 << " " << s2 << std::endl;
+        Log() << "[s1,s2] postprocess done in " << ti.elapsed() << "\n";
+        Log() << "s1=" << s1 << "\n";
+        Log() << "s2=" << s2 << "\n";
+        std::cout << "s1=" << s1 << " s2=" << s2 << "\n";
+        os6 << M_temp_bdf->time() << " "  << s1 << "  "  << s2 << std::endl;
+
+        AUTO( N_IC_PCB,vec( constant( -1. ),constant( 0. ) ) );
+        double meas_PCB = integrate( markedfaces( M_mesh, M_mesh->markerName( "Gamma_IC1_PCB" ) ),constant( 1.0 ),_Q<0>() ).evaluate()( 0,0 ) ;
+        double mean_jump_1 = integrate( markedfaces( M_mesh, M_mesh->markerName( "Gamma_IC1_PCB" ) ),
+                                        trans( jumpv( idv( T ) ) )*N_IC_PCB,_Q<OrderT>() ).evaluate()( 0,0 )/meas_PCB;
+        double mean_jump_2 = integrate( markedfaces( M_mesh, M_mesh->markerName( "Gamma_IC2_PCB" ) ),
+                                        trans( jumpv( idv( T ) ) )*N_IC_PCB,_Q<OrderT>() ).evaluate()( 0,0 )/meas_PCB;
+
+        Log() <<  "meas(Gamma_IC1_PCB) = " << meas_PCB << "\n";
+        Log() <<  "mean([[T]],IC1) = " << mean_jump_1 << "\n";
+        Log() <<  "mean([[T]],IC2) = " << mean_jump_2 << "\n";
+
+        Log() << "flux between IC1 and PCB = " << integrate( markedfaces( M_mesh, M_mesh->markerName( "Gamma_IC1_PCB" ) ),
+                jumpv( idv( *k )*gradv( T ) ),_Q<OrderT-1>() ).evaluate()( 0,0 ) << "\n";
+        Log() << "flux between IC2 and PCB = " << integrate( markedfaces( M_mesh, M_mesh->markerName( "Gamma_IC2_PCB" ) ),
+                jumpv( idv( *k )*gradv( T ) ),_Q<OrderT-1>() ).evaluate()( 0,0 ) << "\n";
+        Log() << "[k]_{IC2 and PCB} = " << integrate( markedfaces( M_mesh, M_mesh->markerName( "Gamma_IC2_PCB" ) ),
+                jumpv( idv( *k ) )*N_IC_PCB,_Q<0>() ).evaluate()( 0,0 ) << "\n";
+
+
+        ti.restart();
+        M_temp_bdf->shiftRight( T );
+        M_fluid_bdf->shiftRight( U );
+        Log() << "[bdf] shifRight done in " << ti.elapsed() << "\n";
+        Log() << "time spent in iteration = " << M_temp_bdf->realTimePerIteration() << "s\n";
+    }
 
 }
 
@@ -454,18 +467,18 @@ OpusModel<OrderU,OrderP,OrderT>::exportResults( double time, temp_element_type& 
     osstr<<j;
 
     if ( force_export || this->data()->doExport() )
-        {
-            //M_exporter->step(time)->setMesh( U.functionSpace()->mesh() );
-            M_exporter->step(time)->setMesh( T.functionSpace()->mesh() );
-            M_exporter->step(time)->add( "Domains", *domains );
-            M_exporter->step(time)->add( "k", *k );
-            M_exporter->step(time)->add( "rhoC", *rhoC );
-            M_exporter->step(time)->add( "Q", *Q );
-            M_exporter->step(time)->add( "Temperature", T );
-            M_exporter->step(time)->add( "TVelocity",  U.template element<0>() );
-            M_exporter->step(time)->add( "TPressure",  U.template element<1>() );
-            M_exporter->save();
-        }
+    {
+        //M_exporter->step(time)->setMesh( U.functionSpace()->mesh() );
+        M_exporter->step( time )->setMesh( T.functionSpace()->mesh() );
+        M_exporter->step( time )->add( "Domains", *domains );
+        M_exporter->step( time )->add( "k", *k );
+        M_exporter->step( time )->add( "rhoC", *rhoC );
+        M_exporter->step( time )->add( "Q", *Q );
+        M_exporter->step( time )->add( "Temperature", T );
+        M_exporter->step( time )->add( "TVelocity",  U.template element<0>() );
+        M_exporter->step( time )->add( "TPressure",  U.template element<1>() );
+        M_exporter->save();
+    }
 }
 
 /** \\@} */

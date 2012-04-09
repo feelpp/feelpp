@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -40,37 +40,37 @@ FEELPP_NO_EXPORT
 po::options_description
 serialOptions()
 {
-    po::options_description serial("Serial application options");
+    po::options_description serial( "Serial application options" );
     return serial;
 }
 
 Application::Application( int argc,
-                                      char** argv,
-                                      AboutData const& ad )
+                          char** argv,
+                          AboutData const& ad )
     :
     super( argc, argv, ad, serialOptions(), true )
 {
 
 #if defined(FEELPP_HAS_TAU)
-    TAU_PROFILE_SET_NODE(_S_process_id);
+    TAU_PROFILE_SET_NODE( _S_process_id );
 #endif /* FEELPP_HAS_TAU */
 }
 
 
 Application::Application( int argc,
-                                      char** argv,
-                                      AboutData const& ad,
-                                      po::options_description const& od )
+                          char** argv,
+                          AboutData const& ad,
+                          po::options_description const& od )
     :
     super( argc, argv, ad, serialOptions().add( od ), true )
 
 {
 #if defined(FEELPP_HAS_TAU)
-    TAU_PROFILE_SET_NODE(_S_process_id);
+    TAU_PROFILE_SET_NODE( _S_process_id );
 #endif /* FEELPP_HAS_TAU */
 }
 
-Application::Application(Application const& a )
+Application::Application( Application const& a )
     :
     super( a )
 {

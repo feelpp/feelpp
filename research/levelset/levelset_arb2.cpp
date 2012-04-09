@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -44,7 +44,7 @@ LevelSet::advReactUpdateBdf2( AdvReact<space_p_type, imOrder, ENTITY>& advReact,
 {
     using namespace Feel::vf;
 
-    AUTO( beta, idv(vx)*oneX()+idv(vy)*oneY() );
+    AUTO( beta, idv( vx )*oneX()+idv( vy )*oneY() );
 
     // coefficients for BDF2
     const double bdf2_0 =  1.5/dt;
@@ -52,13 +52,13 @@ LevelSet::advReactUpdateBdf2( AdvReact<space_p_type, imOrder, ENTITY>& advReact,
     const double bdf2_2 = -0.5/dt;
 
     advReact.update( /* sigma = */ bdf2_0,
-                     /* beta  = */ sign*beta,
-                     /* f     = */ ( idv(phi )*bdf2_1 +
-                                     idv(phio)*bdf2_2 ),
-                     /* g     = */ ( idv(phi)
-                                     - sign*dt * (gradv(phi)*(beta)) ),
-                     /* updtJ = */ updateStabilization
-                     );
+                                   /* beta  = */ sign*beta,
+                                   /* f     = */ ( idv( phi )*bdf2_1 +
+                                           idv( phio )*bdf2_2 ),
+                                   /* g     = */ ( idv( phi )
+                                           - sign*dt * ( gradv( phi )*( beta ) ) ),
+                                   /* updtJ = */ updateStabilization
+                   );
 }
 
 } // Feel

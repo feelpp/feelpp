@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
 This file is part of the Feel library
 
@@ -49,7 +49,7 @@ value_type lebesgueConstant()
     typedef Lagrange<Order,Scalar,PointSetType>::template apply<Dim, value_type, Convex>::type basis_type;
     basis_type _M_basis;
 
-    PointSetEquiSpaced<convex_type, 100 - 80*(Dim-2), value_type> test;
+    PointSetEquiSpaced<convex_type, 100 - 80*( Dim-2 ), value_type> test;
 
     return ublas::norm_1( _M_basis.evaluate( test.points() ) );
 };

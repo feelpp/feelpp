@@ -41,11 +41,11 @@ inline
 Feel::po::options_description
 makeOptions()
 {
-    Feel::po::options_description mymeshoptions("MyMesh options");
+    Feel::po::options_description mymeshoptions( "MyMesh options" );
     mymeshoptions.add_options()
-        ("hsize", Feel::po::value<double>()->default_value( 0.1 ), "mesh size")
-        ("shape", Feel::po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (either simplex or hypercube)")
-        ;
+    ( "hsize", Feel::po::value<double>()->default_value( 0.1 ), "mesh size" )
+    ( "shape", Feel::po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (either simplex or hypercube)" )
+    ;
 
     // return the options mymeshoptions and the feel_options defined
     // internally by Feel
@@ -60,11 +60,11 @@ makeAbout()
                            "0.2",
                            "my first Feel application",
                            Feel::AboutData::License_GPL,
-                           "Copyright (c) 2008-2010 Universite Joseph Fourier");
+                           "Copyright (c) 2008-2010 Universite Joseph Fourier" );
 
-    about.addAuthor("Christophe Prud'homme",
-                    "developer",
-                    "christophe.prudhomme@ujf-grenoble.fr", "");
+    about.addAuthor( "Christophe Prud'homme",
+                     "developer",
+                     "christophe.prudhomme@ujf-grenoble.fr", "" );
     return about;
 }
 
@@ -122,10 +122,13 @@ MyMesh<Dim>::run()
     std::cout << "Execute MyMesh<" << Dim << ">\n";
     std::vector<double> X( 2 );
     X[0] = meshSize;
+
     if ( shape == "hypercube" )
         X[1] = 1;
+
     else // default is simplex
         X[1] = 0;
+
     std::vector<double> Y( 3 );
     run( X.data(), X.size(), Y.data(), Y.size() );
 }
@@ -134,6 +137,7 @@ void
 MyMesh<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
 {
     if ( X[1] == 0 ) shape = "simplex";
+
     if ( X[1] == 1 ) shape = "hypercube";
 
     Environment::changeRepository( boost::format( "doc/tutorial/%1%/%2%-%3%/h_%4%/" )
@@ -145,23 +149,26 @@ MyMesh<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
     //# marker4 #
     auto mesh = createGMSHMesh( _mesh=new mesh_type,
                                 _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
-                                _desc=domain( _name=(boost::format( "%1%-%2%" ) % shape % Dim).str() ,
-                                              _shape=shape,
-                                              _dim=Dim,
-                                              _h=X[0] ),
-                                _partitions=this->comm().size());
+                                _desc=domain( _name=( boost::format( "%1%-%2%" ) % shape % Dim ).str() ,
+                                        _shape=shape,
+                                        _dim=Dim,
+                                        _h=X[0] ),
+                                _partitions=this->comm().size() );
     //# endmarker4 #
 
     int ne = std::distance( mesh->beginElementWithProcessId( this->comm().rank() ),
                             mesh->endElementWithProcessId( this->comm().rank() ) );
     Log() << "Local number of elements: " << ne << "\n";
     int gne;
-    mpi::all_reduce( this->comm(), ne, gne, [] ( int x, int y ) { return x + y; } );
+    mpi::all_reduce( this->comm(), ne, gne, [] ( int x, int y )
+    {
+        return x + y;
+    } );
     Log() << "Global number of elements: " << gne << "\n";
 
     //# marker62 #
-    exporter->step(0)->setMesh( mesh );
-    exporter->step(0)->addRegions();
+    exporter->step( 0 )->setMesh( mesh );
+    exporter->step( 0 )->addRegions();
     exporter->save();
     //# endmarker62 #
 }
@@ -174,6 +181,7 @@ int main( int argc, char** argv )
     Feel::Environment env( argc, argv );
 
     Application app( argc, argv, makeAbout(), makeOptions() );
+
     if ( app.vm().count( "help" ) )
     {
         std::cout << app.optionsDescription() << "\n";

@@ -59,10 +59,10 @@ BOOST_AUTO_TEST_CASE( test_context )
     //FEELPP_DECLARE_FLAGS( onct, on_context_type );
 
 
-    onct |= (ON_ELIMINATION|ON_ELIMINATION_SYMMETRIC);
-    BOOST_CHECK_EQUAL( onct.testFlag(ON_ELIMINATION), true );
-    BOOST_CHECK_EQUAL( onct.testFlag(ON_ELIMINATION_KEEP_DIAGONAL), false );
-    BOOST_CHECK_EQUAL( onct.testFlag(ON_ELIMINATION_SYMMETRIC), true );
+    onct |= ( ON_ELIMINATION|ON_ELIMINATION_SYMMETRIC );
+    BOOST_CHECK_EQUAL( onct.testFlag( ON_ELIMINATION ), true );
+    BOOST_CHECK_EQUAL( onct.testFlag( ON_ELIMINATION_KEEP_DIAGONAL ), false );
+    BOOST_CHECK_EQUAL( onct.testFlag( ON_ELIMINATION_SYMMETRIC ), true );
 #endif
 }
 

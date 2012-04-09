@@ -29,81 +29,98 @@
 template <class Expr> class @NAME@
 {
 public:
-  enum { nvar = Expr::nvar };
-  typedef typename Expr::value_type value_type;
+    enum { nvar = Expr::nvar };
+    typedef typename Expr::value_type value_type;
 protected:
-  @NAME@ () {}
+    @NAME@ () {}
 
-  Expr expr_;
+    Expr expr_;
 public:
 
-    @NAME@ (const Expr & expr) : expr_(expr) {;}
+    @NAME@ ( const Expr & expr ) : expr_( expr )
+    {
+        ;
+    }
 
 
     template<int isFundamental, typename Expr_>
     struct Value
     {
 
-      typedef typename Expr_::value_type value_type;
-       static value_type signum( value_type a )
+        typedef typename Expr_::value_type value_type;
+        static value_type signum( value_type a )
         {
-          if ( abs(a) < std::numeric_limits<value_type>::epsilon() )
-            return value_type(0);
-          return a/abs(a);
+            if ( abs( a ) < std::numeric_limits<value_type>::epsilon() )
+                return value_type( 0 );
+
+            return a/abs( a );
         }
-	static value_type value( Expr_ const& expr_ )
-	    {
-		return @FCT@( expr_.value() );
-	    }
-       static value_type grad( Expr_ const& expr_, int __i )
-	    {
-		return @GRDI@;
-	    }
-     static value_type hessian( Expr_ const& expr_, int __i, int __j )
-	    {
-		return @HESSIJ@;
-	    }
+        static value_type value( Expr_ const& expr_ )
+        {
+            return @FCT@( expr_.value() );
+        }
+        static value_type grad( Expr_ const& expr_, int __i )
+        {
+            return @GRDI@;
+        }
+        static value_type hessian( Expr_ const& expr_, int __i, int __j )
+        {
+            return @HESSIJ@;
+        }
     };
     template<typename Expr_>
     struct Value<true, Expr_>
     {
-	typedef typename Expr_::value_type value_type;
-       static value_type signum( value_type a )
+        typedef typename Expr_::value_type value_type;
+        static value_type signum( value_type a )
         {
-          if ( std::abs(a) < std::numeric_limits<value_type>::epsilon() )
-            return value_type(0);
-          return a/std::abs(a);
+            if ( std::abs( a ) < std::numeric_limits<value_type>::epsilon() )
+                return value_type( 0 );
+
+            return a/std::abs( a );
         }
-	static value_type value( Expr_ const& expr_ )
-	    {
-		return std::@FCT@( expr_.value() );
-	    }
-       static value_type grad( Expr_ const& expr_, int __i )
-	    {
-		return @GRDI_STD@;
-	    }
-     static value_type hessian( Expr_ const& expr_, int __i, int __j )
-	    {
-		return @HESSIJ_STD@;
-	    }
+        static value_type value( Expr_ const& expr_ )
+        {
+            return std::@FCT@( expr_.value() );
+        }
+        static value_type grad( Expr_ const& expr_, int __i )
+        {
+            return @GRDI_STD@;
+        }
+        static value_type hessian( Expr_ const& expr_, int __i, int __j )
+        {
+            return @HESSIJ_STD@;
+        }
     };
 
-    inline value_type value() const  { return Value<true/*boost::type_traits::is_fundamental<value_type>::value*/,Expr>::value(expr_);}
-    inline value_type grad(int __i) const {return  Value<true/*boost::type_traits::is_fundamental<value_type>::value*/,Expr>::grad(expr_, __i); }
-    inline value_type hessian(int __i, int __j) const {return  Value<true/*boost::type_traits::is_fundamental<value_type>::value*/,Expr>::hessian(expr_, __i, __j); }
-    inline bool deps(int __i) const {return expr_.deps( __i ) ; }
+    inline value_type value() const
+    {
+        return Value<true/*boost::type_traits::is_fundamental<value_type>::value*/,Expr>::value( expr_ );
+    }
+    inline value_type grad( int __i ) const
+    {
+        return  Value<true/*boost::type_traits::is_fundamental<value_type>::value*/,Expr>::grad( expr_, __i );
+    }
+    inline value_type hessian( int __i, int __j ) const
+    {
+        return  Value<true/*boost::type_traits::is_fundamental<value_type>::value*/,Expr>::hessian( expr_, __i, __j );
+    }
+    inline bool deps( int __i ) const
+    {
+        return expr_.deps( __i ) ;
+    }
 };
 
 template <class Expr> inline ADExpr< @NAME@< ADExpr<Expr> > >
-@FCT@ (const ADExpr<Expr>& expr)
+@FCT@ ( const ADExpr<Expr>& expr )
 {
     typedef @NAME@< ADExpr<Expr> > expr_t;
-    return ADExpr< expr_t >(  expr_t(expr) );
+    return ADExpr< expr_t >(  expr_t( expr ) );
 }
 
 template <class T, int Nvar, int Order, int Var> inline ADExpr< @NAME@< ADType<T, Nvar, Order, Var> > >
-@FCT@ (const ADType<T, Nvar, Order, Var>& x)
+@FCT@ ( const ADType<T, Nvar, Order, Var>& x )
 {
     typedef @NAME@< ADType<T, Nvar, Order, Var> > expr_t;
-    return ADExpr< expr_t >(  expr_t(x) );
+    return ADExpr< expr_t >(  expr_t( x ) );
 }

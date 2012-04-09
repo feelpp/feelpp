@@ -30,39 +30,39 @@
 #include <feel/feelfilters/gmsh.hpp>
 #include <feel/feelvf/vf.hpp>
 
-int main(int argc, char** argv)
+int main( int argc, char** argv )
 {
     // Declare the supported options.
     namespace po = boost::program_options;
-    po::options_description desc("Allowed options");
+    po::options_description desc( "Allowed options" );
 
     desc.add_options()
-        ("help", "produce help message")
-        ("filename", po::value<std::string>()->default_value( "Cylref.geo" ), "name of the file to load")
-        ("depends", po::value<std::string>()->default_value( "Cylref.mesh" ), "copy files (space,comma,semi-colon,ddot separated) necessary to generate the mesh")
-        ;
+    ( "help", "produce help message" )
+    ( "filename", po::value<std::string>()->default_value( "Cylref.geo" ), "name of the file to load" )
+    ( "depends", po::value<std::string>()->default_value( "Cylref.mesh" ), "copy files (space,comma,semi-colon,ddot separated) necessary to generate the mesh" )
+    ;
 
     po::variables_map vm;
-    po::store(po::parse_command_line(argc, argv, desc), vm);
-    po::notify(vm);
+    po::store( po::parse_command_line( argc, argv, desc ), vm );
+    po::notify( vm );
 
     using namespace Feel;
     using namespace Feel::vf;
-    Feel::Environment env(argc, argv );
+    Feel::Environment env( argc, argv );
     typedef Mesh<Simplex<3> > mesh_type;
     std::string mesh_name=vm["filename"].as<std::string>();
 
     auto mesh = createGMSHMesh( _mesh=new mesh_type,
-                                _desc=geo( _filename=mesh_name,_depends=vm["depends"].as<std::string>()),
+                                _desc=geo( _filename=mesh_name,_depends=vm["depends"].as<std::string>() ),
                                 _physical_are_elementary_regions=true,
                                 _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES );
 
     std::cout << "mesh " << mesh_name << " loaded\n" << std::endl;
 
     std::cout << "volume =" << std::endl
-              << integrate( elements(mesh), cst(1.) ).evaluate() << "\n";
+              << integrate( elements( mesh ), cst( 1. ) ).evaluate() << "\n";
     std::cout << "surface =" << std::endl
-              << integrate( boundaryfaces(mesh), cst(1.) ).evaluate() << "\n";
+              << integrate( boundaryfaces( mesh ), cst( 1. ) ).evaluate() << "\n";
 
 
 }

@@ -60,14 +60,16 @@ Environment::Environment()
 #if defined ( FEELPP_HAS_PETSC_H )
     PetscTruth is_petsc_initialized;
     PetscInitialized( &is_petsc_initialized );
+
     if ( !is_petsc_initialized )
     {
         i_initialized = true;
         int ierr = PetscInitializeNoArguments();
 
-        boost::ignore_unused_variable_warning(ierr);
-        CHKERRABORT(world,ierr);
+        boost::ignore_unused_variable_warning( ierr );
+        CHKERRABORT( world,ierr );
     }
+
     // make sure that petsc do not catch signals and hence do not print long
     //and often unuseful messages
     PetscPopSignalHandler();
@@ -88,17 +90,19 @@ Environment::Environment( int& argc, char**& argv )
 #if defined ( FEELPP_HAS_PETSC_H )
     PetscTruth is_petsc_initialized;
     PetscInitialized( &is_petsc_initialized );
+
     if ( !is_petsc_initialized )
     {
         i_initialized = true;
 #if defined( FEELPP_HAS_SLEPC )
-        int ierr = SlepcInitialize(&argc,&argv, PETSC_NULL, PETSC_NULL );
+        int ierr = SlepcInitialize( &argc,&argv, PETSC_NULL, PETSC_NULL );
 #else
         int ierr = PetscInitialize( &argc, &argv, PETSC_NULL, PETSC_NULL );
 #endif
-        boost::ignore_unused_variable_warning(ierr);
-        CHKERRABORT(world,ierr);
+        boost::ignore_unused_variable_warning( ierr );
+        CHKERRABORT( world,ierr );
     }
+
     // make sure that petsc do not catch signals and hence do not print long
     //and often unuseful messages
     PetscPopSignalHandler();
@@ -120,6 +124,7 @@ Environment::~Environment()
 #if defined ( FEELPP_HAS_PETSC_H )
         PetscTruth is_petsc_initialized;
         PetscInitialized( &is_petsc_initialized );
+
         if ( is_petsc_initialized )
         {
 #if defined( FEELPP_HAS_SLEPC )
@@ -128,6 +133,7 @@ Environment::~Environment()
             PetscFinalize();
 #endif // FEELPP_HAS_SLEPC
         }
+
 #endif // FEELPP_HAS_PETSC_H
     }
 
@@ -166,16 +172,19 @@ std::string
 Environment::rootRepository()
 {
     std::string env;
+
     if ( ::getenv( "FEELPP_REPOSITORY" ) )
     {
         env = ::getenv( "FEELPP_REPOSITORY" );
     }
+
     else
     {
         // by default create $HOME/feel
         env = ::getenv( "HOME" );
         env += "/feel";
     }
+
     return env;
 }
 std::string
@@ -185,8 +194,10 @@ Environment::localGeoRepository()
 
     rep_path = Environment::rootRepository();
     rep_path /= "geo";
+
     if ( !fs::exists( rep_path ) )
         fs::create_directory( rep_path );
+
     return rep_path.string();
 }
 boost::tuple<std::string,bool>
@@ -194,7 +205,7 @@ Environment::systemGeoRepository()
 {
     fs::path rep_path;
 
-    rep_path = BOOST_PP_STRINGIZE(INSTALL_PREFIX);
+    rep_path = BOOST_PP_STRINGIZE( INSTALL_PREFIX );
     rep_path /= "share/feel/geo";
     return boost::make_tuple( rep_path.string(), fs::exists( rep_path ) );
 }
@@ -206,8 +217,10 @@ Environment::localConfigRepository()
 
     rep_path = Environment::rootRepository();
     rep_path /= "config";
+
     if ( !fs::exists( rep_path ) )
         fs::create_directory( rep_path );
+
     return rep_path.string();
 }
 boost::tuple<std::string,bool>
@@ -215,7 +228,7 @@ Environment::systemConfigRepository()
 {
     fs::path rep_path;
 
-    rep_path = BOOST_PP_STRINGIZE(INSTALL_PREFIX);
+    rep_path = BOOST_PP_STRINGIZE( INSTALL_PREFIX );
     rep_path /= "share/feel/config";
     return boost::make_tuple( rep_path.string(), fs::exists( rep_path ) );
 }
@@ -226,6 +239,7 @@ Environment::changeRepository( boost::format fmt, std::string const& logfilename
     fs::path rep_path;
 
     rep_path = Environment::rootRepository();
+
     if ( !fs::exists( rep_path ) )
         fs::create_directory( rep_path );
 
@@ -233,27 +247,28 @@ Environment::changeRepository( boost::format fmt, std::string const& logfilename
 
     split_vector_type dirs; // #2: Search for tokens
     std::string fmtstr = fmt.str();
-    boost::split( dirs, fmtstr, boost::is_any_of("/") );
+    boost::split( dirs, fmtstr, boost::is_any_of( "/" ) );
 
     BOOST_FOREACH( std::string const& dir, dirs )
-        {
-            //Debug( 1000 ) << "[Application::Application] option: " << s << "\n";
-            rep_path = rep_path / dir;
-            if (!fs::exists( rep_path ) )
-                fs::create_directory( rep_path );
-        }
+    {
+        //Debug( 1000 ) << "[Application::Application] option: " << s << "\n";
+        rep_path = rep_path / dir;
+
+        if ( !fs::exists( rep_path ) )
+            fs::create_directory( rep_path );
+    }
 
     ::chdir( rep_path.string().c_str() );
 
-    setLogs(logfilename);
+    setLogs( logfilename );
 }
 
 po::variables_map
 Environment::vm( po::options_description const& desc )
 {
     po::variables_map vm;
-	po::store(po::parse_command_line(0, (char**)0, desc), vm);
-	po::notify(vm);
+    po::store( po::parse_command_line( 0, ( char** )0, desc ), vm );
+    po::notify( vm );
 
     return vm;
 }

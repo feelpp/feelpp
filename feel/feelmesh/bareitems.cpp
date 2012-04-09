@@ -40,28 +40,33 @@ makeBareFace( size_type const i, size_type const j, size_type const k )
         {
             return std::make_pair( BareFace( i, j, k ), true );
         }
+
         else
         {
             return std::make_pair( BareFace( i, k, j ), false );
         }
     }
+
     else if ( j < k && j < i )
     {
         if ( k < i )
         {
             return std::make_pair( BareFace( j, k, i ), true );
         }
+
         else
         {
             return std::make_pair( BareFace( j, i, k ), false );
         }
     }
+
     else
     {
         if ( i < j )
         {
             return std::make_pair( BareFace( k, i, j ), true );
         }
+
         else
         {
             return std::make_pair( BareFace( k, j, i ), false );

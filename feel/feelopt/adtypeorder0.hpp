@@ -83,7 +83,7 @@ public:
     }
 
     template<typename ExprT>
-    ADType (const ADExpr<ExprT>& expr)
+    ADType ( const ADExpr<ExprT>& expr )
         :
         _M_val( 0 )
     {
@@ -118,20 +118,20 @@ public:
 
     This& operator=( T const& );
     This& operator=( This const& );
-    template <class ExprT> This& operator=(const ADExpr<ExprT>& expr);
+    template <class ExprT> This& operator=( const ADExpr<ExprT>& expr );
 
     //! implements unary + \f$ +x \f$
     ADExpr< ADUnaryPlus< This > > operator+ () const
     {
         typedef ADUnaryPlus<This> expr_t;
-        return ADExpr<expr_t> (expr_t (*this));
+        return ADExpr<expr_t> ( expr_t ( *this ) );
     }
 
     //! implements unary - \f$ -x \f$
     ADExpr< ADUnaryMinus< This > > operator- () const
     {
         typedef ADUnaryMinus<This> expr_t;
-        return ADExpr<expr_t> (expr_t (*this));
+        return ADExpr<expr_t> ( expr_t ( *this ) );
     }
 
 #define AD_UNARY_OP( op )                       \
@@ -222,7 +222,7 @@ ADType<T, Nvar, 0, Var>::operator=( This const& sad )
 template<typename T,int Nvar, int Var>
 template <class ExprT>
 ADType<T,Nvar, 0, Var> &
-ADType<T,Nvar, 0, Var>::operator=(const ADExpr<ExprT>& expr)
+ADType<T,Nvar, 0, Var>::operator=( const ADExpr<ExprT>& expr )
 {
     _M_val = expr.value();
     return *this;
@@ -230,16 +230,16 @@ ADType<T,Nvar, 0, Var>::operator=(const ADExpr<ExprT>& expr)
 
 
 template <
-    class T,
-    int Nvar,
-    int Var
-    >
+class T,
+      int Nvar,
+      int Var
+      >
 DebugStream&
 operator << ( DebugStream& __os, const Feel::ADType<T, Nvar, 0, Var>& a )
 {
     std::ostringstream __o;
-    __o.setf(std::ios::fixed,std::ios::floatfield);
-    __o.width(12);
+    __o.setf( std::ios::fixed,std::ios::floatfield );
+    __o.width( 12 );
     __o << "value    = " << a.value() << "  \n";
     __os << __o.str();
     return __os;
@@ -248,10 +248,10 @@ operator << ( DebugStream& __os, const Feel::ADType<T, Nvar, 0, Var>& a )
 //------------------------------- AD ostream operator ------------------------------------------
 template <class T, int Nvar, int Var>
 std::ostream&
-operator << ( std::ostream& os, const Feel::ADType<T, Nvar, 0, Var>& a)
+operator << ( std::ostream& os, const Feel::ADType<T, Nvar, 0, Var>& a )
 {
-    os.setf(std::ios::fixed,std::ios::floatfield);
-    os.width(12);
+    os.setf( std::ios::fixed,std::ios::floatfield );
+    os.width( 12 );
     os << "value    = " << a.value() << "  \n";
     return os;
 }

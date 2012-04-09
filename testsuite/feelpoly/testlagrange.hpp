@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -83,11 +83,13 @@ public:
     {
         std::ostringstream os;
         os << "lagrange." << FE::nDim << "." << FE::nOrder;
+
         //BOOST_CHECK( fe.familyName() == os.str() );
         if ( fe.name() != os.str() )
-            {
-                std::cout << "[FAILURE] invalid name : " << fe.name() << " instead of " << os.str() << "\n";
-            }
+        {
+            std::cout << "[FAILURE] invalid name : " << fe.name() << " instead of " << os.str() << "\n";
+        }
+
         checkIdentity();
         //BOOST_MESSAGE( "checkDiff()\n" );
         checkDiff();
@@ -105,6 +107,7 @@ protected:
 
         ublas::vector<value_type> error( FE::nDim );
         ublas::vector<matrix_type> der( fe.derivate( fe.points() ) );
+
         for ( int i = 0; i < FE::nDim; ++i )
             error[i] = ublas::norm_frobenius( der[i] - fe.derivate( i ).evaluate( fe.points() ) );
 

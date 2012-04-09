@@ -33,15 +33,16 @@ namespace Feel
 po::options_description opusapp_options( std::string const& prefix )
 {
     std::string _prefix = prefix;
+
     if ( !_prefix.empty() )
         _prefix += ".";
 
-    po::options_description _options( "Application " + prefix + " options");
+    po::options_description _options( "Application " + prefix + " options" );
     _options.add_options()
-        ((_prefix+"run.mode").c_str(), Feel::po::value<int>()->default_value( 2 ), "execution mode: pfem=0, scm=1, crb=2")
-        ((_prefix+"run.sampling.size").c_str(), Feel::po::value<int>()->default_value( 10 ), "size of sampling in parameter space")
-        ((_prefix+"run.sampling.mode").c_str(), Feel::po::value<int>()->default_value( 10 ), "type of sampling in parameter space (random=0, equidistributed=1)")
-        ;
+    ( ( _prefix+"run.mode" ).c_str(), Feel::po::value<int>()->default_value( 2 ), "execution mode: pfem=0, scm=1, crb=2" )
+    ( ( _prefix+"run.sampling.size" ).c_str(), Feel::po::value<int>()->default_value( 10 ), "size of sampling in parameter space" )
+    ( ( _prefix+"run.sampling.mode" ).c_str(), Feel::po::value<int>()->default_value( 10 ), "type of sampling in parameter space (random=0, equidistributed=1)" )
+    ;
 
     return _options;
 }

@@ -43,23 +43,23 @@ inline
 Feel::po::options_description
 makeOptions()
 {
-    Feel::po::options_description laplacianoptions("Laplacian options");
+    Feel::po::options_description laplacianoptions( "Laplacian options" );
     laplacianoptions.add_options()
-        ("faster", Feel::po::value<int>()->default_value( 1 ), "use coupled(0) or default(1) pattern or default/symmetric(2) pattern")
-        ("penal", Feel::po::value<double>()->default_value( 0.5 ), "penalisation parameter")
-        ("f", Feel::po::value<double>()->default_value( 0 ), "forcing term")
-        ("mu", Feel::po::value<double>()->default_value( 1.0/40 ), "reaction coefficient component")
-        ("bctype", Feel::po::value<int>()->default_value( 0 ), "0 = strong Dirichlet, 1 = weak Dirichlet")
-        ("bccoeff", Feel::po::value<double>()->default_value( 400.0 ), "coeff for weak Dirichlet conditions")
-        ("beta", Feel::po::value<double>()->default_value( 0.0 ), "convection coefficient")
-        ("shear", Feel::po::value<double>()->default_value( 0.0 ), "shear coeff")
-        ("recombine", Feel::po::value<bool>()->default_value( false ), "recombine triangle into quads")
-        ("export-matlab", "export matrix and vectors in matlab" )
-        ("no-solve", "dont solve the system" )
-        ("extra-terms", "dont solve the system" )
-        ;
+    ( "faster", Feel::po::value<int>()->default_value( 1 ), "use coupled(0) or default(1) pattern or default/symmetric(2) pattern" )
+    ( "penal", Feel::po::value<double>()->default_value( 0.5 ), "penalisation parameter" )
+    ( "f", Feel::po::value<double>()->default_value( 0 ), "forcing term" )
+    ( "mu", Feel::po::value<double>()->default_value( 1.0/40 ), "reaction coefficient component" )
+    ( "bctype", Feel::po::value<int>()->default_value( 0 ), "0 = strong Dirichlet, 1 = weak Dirichlet" )
+    ( "bccoeff", Feel::po::value<double>()->default_value( 400.0 ), "coeff for weak Dirichlet conditions" )
+    ( "beta", Feel::po::value<double>()->default_value( 0.0 ), "convection coefficient" )
+    ( "shear", Feel::po::value<double>()->default_value( 0.0 ), "shear coeff" )
+    ( "recombine", Feel::po::value<bool>()->default_value( false ), "recombine triangle into quads" )
+    ( "export-matlab", "export matrix and vectors in matlab" )
+    ( "no-solve", "dont solve the system" )
+    ( "extra-terms", "dont solve the system" )
+    ;
     return laplacianoptions.add( Feel::feel_options() )
-        .add( Feel::benchmark_options( "2D-CR1-Hypercube" ) ).add( Feel::benchmark_options( "2D-P1-Hypercube" ) ).add( Feel::benchmark_options( "2D-P2-Hypercube" ) );
+           .add( Feel::benchmark_options( "2D-CR1-Hypercube" ) ).add( Feel::benchmark_options( "2D-P1-Hypercube" ) ).add( Feel::benchmark_options( "2D-P2-Hypercube" ) );
 }
 
 
@@ -79,10 +79,10 @@ makeAbout()
                            "0.1",
                            "Laplacian equation on simplices or simplex products",
                            Feel::AboutData::License_GPL,
-                           "Copyright (c) 2009-2011 Universite de Grenoble 1 (Joseph Fourier)");
+                           "Copyright (c) 2009-2011 Universite de Grenoble 1 (Joseph Fourier)" );
 
-    about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
-   return about;
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    return about;
 
 }
 namespace Feel
@@ -101,6 +101,7 @@ int main( int argc, char** argv )
 
     using namespace Feel;
     Application benchmark( argc, argv, makeAbout(), makeOptions() );
+
     if ( benchmark.vm().count( "help" ) )
     {
         std::cout << benchmark.optionsDescription() << "\n";
@@ -120,5 +121,5 @@ int main( int argc, char** argv )
     benchmark.add( new Laplacian<2, CrouzeixRaviart<1, Scalar>, Hypercube>( "2D-CR1-Hypercube", benchmark.vm(), benchmark.about() ) );
 #endif
     benchmark.run();
-    benchmark.printStats( std::cout, boost::assign::list_of( "e.l2")("e.h1")("n.space")("n.matrix")("t.init")("t.assembly.vector")("t.assembly.matrix" )("t.solver")("d.solver")("t.integrate")("t.export") );
+    benchmark.printStats( std::cout, boost::assign::list_of( "e.l2" )( "e.h1" )( "n.space" )( "n.matrix" )( "t.init" )( "t.assembly.vector" )( "t.assembly.matrix" )( "t.solver" )( "d.solver" )( "t.integrate" )( "t.export" ) );
 }

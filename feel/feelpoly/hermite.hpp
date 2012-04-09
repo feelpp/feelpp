@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -57,7 +57,7 @@ namespace details
 template<typename Basis, template<class, uint16_type, class> class PointSetType>
 class HermiteDual
     :
-        public DualBasis<Basis>
+public DualBasis<Basis>
 {
     typedef DualBasis<Basis> super;
 public:
@@ -94,9 +94,9 @@ public:
     static const uint16_type nEdges = reference_convex_type::numEdges;
     static const uint16_type nNormals = reference_convex_type::numNormals;
 
-    static const uint16_type nbPtsPerVertex = (nDim+1);//reference_convex_type::nbPtsPerVertex;
+    static const uint16_type nbPtsPerVertex = ( nDim+1 ); //reference_convex_type::nbPtsPerVertex;
     static const uint16_type nbPtsPerEdge = 0;//reference_convex_type::nbPtsPerEdge;
-    static const uint16_type nbPtsPerFace = (nDim==2)?1:0;//reference_convex_type::nbPtsPerFace;
+    static const uint16_type nbPtsPerFace = ( nDim==2 )?1:0; //reference_convex_type::nbPtsPerFace;
     static const uint16_type nbPtsPerVolume = 0;//reference_convex_type::nbPtsPerVolume;
     static const uint16_type numPoints = nVertices*nbPtsPerVertex+nGeometricFaces*nbPtsPerFace;
 
@@ -117,16 +117,16 @@ public:
     static const uint16_type nLocalDof =  nDofPerVertex*nVertices + nDofPerFace*nGeometricFaces;
 
     static const uint16_type nFacesInConvex = mpl::if_< mpl::equal_to<mpl::int_<nDim>, mpl::int_<1> >,
-                                                        mpl::int_<nVertices>,
-                                                        typename mpl::if_<mpl::equal_to<mpl::int_<nDim>, mpl::int_<2> >,
-                                                                          mpl::int_<nEdges>,
-                                                                          mpl::int_<nFaces> >::type >::type::value;
+                             mpl::int_<nVertices>,
+                             typename mpl::if_<mpl::equal_to<mpl::int_<nDim>, mpl::int_<2> >,
+                             mpl::int_<nEdges>,
+                             mpl::int_<nFaces> >::type >::type::value;
 
     HermiteDual( primal_space_type const& primal )
         :
         super( primal ),
         _M_convex_ref(),
-        _M_eid(_M_convex_ref.topologicalDimension()+1),
+        _M_eid( _M_convex_ref.topologicalDimension()+1 ),
         _M_pts( nDim, nLocalDof ),
         _M_points_face( nFacesInConvex ),
         _M_fset( primal )
@@ -153,29 +153,34 @@ public:
         //_M_pts = pts.points();
 
         int i = 0;
+
         for ( uint16_type e = _M_convex_ref.entityRange( 0 ).begin();
-              e < _M_convex_ref.entityRange( 0 ).end();
-              ++e )
+                e < _M_convex_ref.entityRange( 0 ).end();
+                ++e )
         {
-            _M_points_face[e] = pts.pointsBySubEntity(0, e, 1);
-            points_type _pts = pts.pointsBySubEntity(0, e, 1);
-            for( int j = 0;j < _pts.size2(); ++j, ++i )
+            _M_points_face[e] = pts.pointsBySubEntity( 0, e, 1 );
+            points_type _pts = pts.pointsBySubEntity( 0, e, 1 );
+
+            for ( int j = 0; j < _pts.size2(); ++j, ++i )
             {
                 ublas::column( _M_pts, i ) = ublas::column( _pts, j );
-                Debug(5045) << "pts " << i << " = " <<  ublas::column( _M_pts, i ) << "\n";
+                Debug( 5045 ) << "pts " << i << " = " <<  ublas::column( _M_pts, i ) << "\n";
             }
         }
-        for( int j = 0; j < nDim; ++j )
+
+        for ( int j = 0; j < nDim; ++j )
         {
             ublas::subrange( _M_pts, 0, nDim, i, i+nDim+1 ) = ublas::subrange( _M_pts, 0, nDim, 0, nDim+1 );
             i+=nDim+1;
         }
+
         if ( nDim == 2 )
         {
-            points_type _pts = pts.pointsBySubEntity(2, 0, 0);
+            points_type _pts = pts.pointsBySubEntity( 2, 0, 0 );
             ublas::column( _M_pts, i ) = ublas::column( _pts, 0 );
-            Debug(5045) << "pts " << i << " = " <<  ublas::column( _M_pts, i ) << "\n";
+            Debug( 5045 ) << "pts " << i << " = " <<  ublas::column( _M_pts, i ) << "\n";
         }
+
         //std::cout << "pts = " << _M_pts << "\n";
         setFset( primal, _M_pts, mpl::bool_<primal_space_type::is_scalar>() );
     }
@@ -183,7 +188,10 @@ public:
     {
 
     }
-    points_type const& points() const { return _M_pts; }
+    points_type const& points() const
+    {
+        return _M_pts;
+    }
 
     points_type const& points( uint16_type f ) const
     {
@@ -208,23 +216,25 @@ private:
 
     void setFset( primal_space_type const& primal, points_type const& __pts, mpl::bool_<true> )
     {
-        int nfs = 1+nDim+((nDim==2)?1:0);
+        int nfs = 1+nDim+( ( nDim==2 )?1:0 );
         std::vector<std::vector<Functional<primal_space_type> > > pd( nfs );
         points_type pts1 = ublas::project( __pts,
-                                           ublas::range(0,nDim),
+                                           ublas::range( 0,nDim ),
                                            ublas::range( 0, nDim+1 ) );
         pd[0] = functional::PointsEvaluation<primal_space_type>( primal, pts1 );
+
         //std::cout << "pd[" << 0 << "].size()=" << pd[0].size() << "\n";
-        for( int d = 0; d < nDim; ++d )
+        for ( int d = 0; d < nDim; ++d )
         {
             pd[d+1] = functional::PointsDerivative<primal_space_type>( primal, d, pts1 );
             //std::cout << "pd[" << d+1 << "].size()=" << pd[d+1].size() << "\n";
         }
+
         if ( nDim == 2 )
         {
             points_type pts3 = ublas::project( __pts,
-                                               ublas::range(0,nDim),
-                                               ublas::range( (nDim+1)*(nDim+1), numPoints ) );
+                                               ublas::range( 0,nDim ),
+                                               ublas::range( ( nDim+1 )*( nDim+1 ), numPoints ) );
             //std::cout << "pts3 = " << pts3 << "\n";
             pd[3] = functional::PointsEvaluation<primal_space_type>( primal, pts3 );
             //std::cout << "pd[2]=" << pd[3][0].coeff() << "\n";
@@ -232,11 +242,13 @@ private:
 
         std::vector<Functional<primal_space_type> > fs( nLocalDof );
         typename std::vector<Functional<primal_space_type> >::iterator it = fs.begin();
-        for( int i = 0; i < nfs; ++i )
+
+        for ( int i = 0; i < nfs; ++i )
         {
             //std::cout << "pd[" << i << "].size()=" << pd[i].size() << "\n";
             it = std::copy( pd[i].begin(), pd[i].end(), it );
         }
+
         _M_fset.setFunctionalSet( fs );
     }
 
@@ -290,7 +302,7 @@ template<uint16_type N,
          template<class, uint16_type, class> class Pts = PointSetEquiSpaced >
 class Hermite
     :
-    public FiniteElement<detail::OrthonormalPolynomialSet<N, N, O, PolySetType, T, Convex>, details::HermiteDual, Pts >
+public FiniteElement<detail::OrthonormalPolynomialSet<N, N, O, PolySetType, T, Convex>, details::HermiteDual, Pts >
 {
     typedef FiniteElement<detail::OrthonormalPolynomialSet<N, N, O, PolySetType, T, Convex>, details::HermiteDual, Pts > super;
 public:
@@ -325,8 +337,8 @@ public:
     typedef Hermite<N, O, Scalar, T, Convex,  Pts> component_basis_type;
 
     typedef typename mpl::if_<mpl::equal_to<mpl::int_<nDim>, mpl::int_<1> >,
-                              mpl::identity<boost::none_t>,
-                              mpl::identity< Hermite<N-1, O, Scalar, T, Convex,  Pts> > >::type::type face_basis_type;
+            mpl::identity<boost::none_t>,
+            mpl::identity< Hermite<N-1, O, Scalar, T, Convex,  Pts> > >::type::type face_basis_type;
 
     typedef boost::shared_ptr<face_basis_type> face_basis_ptrtype;
 
@@ -378,12 +390,18 @@ public:
     /**
      * \return the reference convex associated with the hermite polynomials
      */
-    reference_convex_type const& referenceConvex() const { return _M_refconvex; }
+    reference_convex_type const& referenceConvex() const
+    {
+        return _M_refconvex;
+    }
 
     /**
      * \return the family name of the finite element
      */
-    std::string familyName() const { return "hermite"; }
+    std::string familyName() const
+    {
+        return "hermite";
+    }
 
     //@}
 
@@ -403,10 +421,10 @@ public:
                            GPhi& g_phi_t, const bool do_gradient,
                            HPhi& h_phi_t, const bool do_hessian
 
-        )
-        {
-            transform ( *gmc, *pc, phi_t, g_phi_t, do_gradient, h_phi_t, do_hessian );
-        }
+                         )
+    {
+        transform ( *gmc, *pc, phi_t, g_phi_t, do_gradient, h_phi_t, do_hessian );
+    }
     template<typename GMContext, typename PC, typename Phi, typename GPhi, typename HPhi >
     static void transform( GMContext const& gmc,
                            PC const& pc,
@@ -414,46 +432,50 @@ public:
                            GPhi& g_phi_t, const bool do_gradient,
                            HPhi& h_phi_t, const bool do_hessian
 
-        )
+                         )
+    {
+        //phi_t = phi; return ;
+        typename GMContext::gm_type::matrix_type const& B = gmc.B( 0 );
+        std::fill( phi_t.data(), phi_t.data()+phi_t.num_elements(), value_type( 0 ) );
+
+        if ( do_gradient )
+            std::fill( g_phi_t.data(), g_phi_t.data()+g_phi_t.num_elements(), value_type( 0 ) );
+
+        if ( do_hessian )
+            std::fill( h_phi_t.data(), h_phi_t.data()+g_phi_t.num_elements(), value_type( 0 ) );
+
+        const uint16_type Q = gmc.nPoints();//_M_grad.size2();
+
+        // transform
+        for ( uint16_type i = numPoints; i < nLocalDof; i+=nDim )
         {
-            //phi_t = phi; return ;
-            typename GMContext::gm_type::matrix_type const& B = gmc.B( 0 );
-            std::fill( phi_t.data(), phi_t.data()+phi_t.num_elements(), value_type(0));
-            if ( do_gradient )
-                std::fill( g_phi_t.data(), g_phi_t.data()+g_phi_t.num_elements(), value_type(0));
-            if ( do_hessian )
-                std::fill( h_phi_t.data(), h_phi_t.data()+g_phi_t.num_elements(), value_type(0));
-
-            const uint16_type Q = gmc.nPoints();//_M_grad.size2();
-
-            // transform
-            for ( uint16_type i = numPoints; i < nLocalDof; i+=nDim )
+            for ( uint16_type l = 0; l < nDim; ++l )
             {
-                for ( uint16_type l = 0; l < nDim; ++l )
+                for ( uint16_type p = 0; p < nDim; ++p )
                 {
-                    for ( uint16_type p = 0; p < nDim; ++p )
+                    for ( uint16_type q = 0; q < Q; ++q )
                     {
-                        for ( uint16_type q = 0; q < Q; ++q )
+                        // \warning : here the transformation depends on the
+                        // numbering of the degrees of freedom of the finite
+                        // element
+                        phi_t[i+l][0][0][q] += B( l, p ) * pc.phi( i+p,0,0,q );
+
+                        if ( do_gradient )
                         {
-                            // \warning : here the transformation depends on the
-                            // numbering of the degrees of freedom of the finite
-                            // element
-                            phi_t[i+l][0][0][q] += B( l, p ) * pc.phi(i+p,0,0,q);
-                            if ( do_gradient )
+                            for ( uint16_type j = 0; j < nDim; ++j )
                             {
-                                for ( uint16_type j = 0; j < nDim; ++j )
-                                {
-                                    g_phi_t[i+l][0][p][q] += B( l, j ) * pc.grad(i+j,0,p,q);
-                                }
+                                g_phi_t[i+l][0][p][q] += B( l, j ) * pc.grad( i+j,0,p,q );
                             }
-                            if ( do_hessian )
-                            {
-                            }
+                        }
+
+                        if ( do_hessian )
+                        {
                         }
                     }
                 }
             }
         }
+    }
     //@}
 
 private:
@@ -499,8 +521,8 @@ public:
     struct apply
     {
         typedef typename mpl::if_<mpl::bool_<Convex::is_simplex>,
-                                  mpl::identity<fem::Hermite<N,Order,PolySetType,T,Simplex, Pts> >,
-                                  mpl::identity<fem::Hermite<N,Order,PolySetType,T,Hypercube, Pts> > >::type::type result_type;
+                mpl::identity<fem::Hermite<N,Order,PolySetType,T,Simplex, Pts> >,
+                mpl::identity<fem::Hermite<N,Order,PolySetType,T,Hypercube, Pts> > >::type::type result_type;
         typedef result_type type;
     };
 

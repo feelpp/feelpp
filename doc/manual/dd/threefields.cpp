@@ -50,19 +50,19 @@ inline
 po::options_description
 makeOptions()
 {
-    po::options_description threefieldsoptions("ThreeFields options");
+    po::options_description threefieldsoptions( "ThreeFields options" );
     threefieldsoptions.add_options()
-        ("hsize1", po::value<double>()->default_value( 0.03 ), "mesh size for first domain")
-        ("hsize2", po::value<double>()->default_value( 0.02 ), "mesh size for second domain")
-        ("hsize3", po::value<double>()->default_value( 0.01 ), "mesh size for interface")
-        ("split", po::value<double>()->default_value( 0.5 ), "interface between subdomains")
-        ("shape", Feel::po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (either simplex or hypercube)")
-        ("coeff", po::value<double>()->default_value( 1 ), "grad.grad coefficient")
-        ("weakdir", po::value<int>()->default_value( 1 ), "use weak Dirichlet condition" )
-        ("penaldir", Feel::po::value<double>()->default_value( 10 ),
-         "penalisation parameter for the weak boundary Dirichlet formulation"),
-        ("export-matlab", "export matrix and vectors in matlab" )
-        ;
+    ( "hsize1", po::value<double>()->default_value( 0.03 ), "mesh size for first domain" )
+    ( "hsize2", po::value<double>()->default_value( 0.02 ), "mesh size for second domain" )
+    ( "hsize3", po::value<double>()->default_value( 0.01 ), "mesh size for interface" )
+    ( "split", po::value<double>()->default_value( 0.5 ), "interface between subdomains" )
+    ( "shape", Feel::po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (either simplex or hypercube)" )
+    ( "coeff", po::value<double>()->default_value( 1 ), "grad.grad coefficient" )
+    ( "weakdir", po::value<int>()->default_value( 1 ), "use weak Dirichlet condition" )
+    ( "penaldir", Feel::po::value<double>()->default_value( 10 ),
+      "penalisation parameter for the weak boundary Dirichlet formulation" ),
+      ( "export-matlab", "export matrix and vectors in matlab" )
+      ;
     return threefieldsoptions.add( Feel::feel_options() );
 }
 
@@ -78,9 +78,9 @@ makeAbout()
                      "0.2",
                      "nD(n=2,3) ThreeFields using threefields",
                      Feel::AboutData::License_GPL,
-                     "Copyright (c) 2011 Universite Joseph Fourier");
+                     "Copyright (c) 2011 Universite Joseph Fourier" );
 
-    about.addAuthor("Abdoulaye Samake", "developer", "Abdoulaye.Samake@imag.fr", "");
+    about.addAuthor( "Abdoulaye Samake", "developer", "Abdoulaye.Samake@imag.fr", "" );
     return about;
 
 }
@@ -96,7 +96,7 @@ makeAbout()
 template<int Dim, int Order1, int Order2, int Order3>
 class ThreeFields
     :
-    public Simget
+public Simget
 {
     typedef Simget super;
 public:
@@ -165,25 +165,25 @@ public:
         shape( this->vm()["shape"].template as<std::string>() ),
         timers(),
         M_firstExporter( export_type::New( this->vm(),
-                                           (boost::format( "%1%-%2%-%3%" )
-                                            % this->about().appName()
-                                            % Dim
-                                            % int(1)).str() ) ),
-        M_secondExporter( export_type::New( this->vm(),
-                                            (boost::format( "%1%-%2%-%3%" )
+                                           ( boost::format( "%1%-%2%-%3%" )
                                              % this->about().appName()
                                              % Dim
-                                             % int(2)).str() ) ),
+                                             % int( 1 ) ).str() ) ),
+        M_secondExporter( export_type::New( this->vm(),
+                                            ( boost::format( "%1%-%2%-%3%" )
+                                              % this->about().appName()
+                                              % Dim
+                                              % int( 2 ) ).str() ) ),
         M_trace1_exporter( trace_export_type::New( this->vm(),
-                                                   (boost::format( "%1%-%2%-%3%" )
-                                                    % this->about().appName()
-                                                    % Dim
-                                                    % int(3)).str() ) ),
+                           ( boost::format( "%1%-%2%-%3%" )
+                             % this->about().appName()
+                             % Dim
+                             % int( 3 ) ).str() ) ),
         M_trace2_exporter( trace_export_type::New( this->vm(),
-                                                   (boost::format( "%1%-%2%-%3%" )
-                                                    % this->about().appName()
-                                                    % Dim
-                                                    % int(4)).str() ) )
+                           ( boost::format( "%1%-%2%-%3%" )
+                             % this->about().appName()
+                             % Dim
+                             % int( 4 ) ).str() ) )
     {}
 
     mesh_ptrtype createMesh(  double xmin, double xmax, double meshsize, int id );
@@ -221,18 +221,18 @@ ThreeFields<Dim, Order1, Order2, Order3>::createMesh(  double xmin, double xmax,
 
     mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
                                         _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
-                                        _desc=domain( _name=(boost::format( "%1%-%2%-%3%" ) % shape % Dim % id).str() ,
-                                                      _addmidpoint=false,
-                                                      _usenames=false,
-                                                      _shape=this->shape,
-                                                      _dim=Dim,
-                                                      _h=meshsize,
-                                                      _xmin=xmin,
-                                                      _xmax=xmax,
-                                                      _ymin=0.,
-                                                      _ymax=1.,
-                                                      _zmin=0.,
-                                                      _zmax=1.) );
+                                        _desc=domain( _name=( boost::format( "%1%-%2%-%3%" ) % shape % Dim % id ).str() ,
+                                                _addmidpoint=false,
+                                                _usenames=false,
+                                                _shape=this->shape,
+                                                _dim=Dim,
+                                                _h=meshsize,
+                                                _xmin=xmin,
+                                                _xmax=xmax,
+                                                _ymin=0.,
+                                                _ymax=1.,
+                                                _zmin=0.,
+                                                _zmax=1. ) );
 
     return mesh;
 } // ThreeFields::createMesh
@@ -243,15 +243,16 @@ ThreeFields<Dim, Order1, Order2, Order3>::createMesh( double meshSize, double in
 {
     trace_mesh_ptrtype mesh( new trace_mesh_type );
 
-    Gmsh __gmsh(Dim-1);
+    Gmsh __gmsh( Dim-1 );
     __gmsh.setOrder( GMSH_ORDER_ONE );
     std::ostringstream ostr;
     std::ostringstream nameStr;
-    __gmsh.setRecombine(false);
+    __gmsh.setRecombine( false );
     __gmsh.setCharacteristicLength( meshSize );
     ostr << __gmsh.preamble() << "\n";
 
-    switch( Dim ) {
+    switch ( Dim )
+    {
     case 2:
         ostr << "a=" << interface << ";\n"
              << "Point(1) = {a,0,0,h};\n"
@@ -262,6 +263,7 @@ ThreeFields<Dim, Order1, Order2, Order3>::createMesh( double meshSize, double in
              << "Physical Line(\"Mat1\") = {1};\n";
         nameStr << "interface2D";
         break;
+
     case 3:
         ostr << "a=" << interface << ";\n"
              << "Point(1) = {a,0,0,h};\n"
@@ -277,11 +279,13 @@ ThreeFields<Dim, Order1, Order2, Order3>::createMesh( double meshSize, double in
              << "Physical Surface(\"Mat1\") = {6};\n";
         nameStr << "interface3D";
         break;
+
     default:
         std::ostringstream os;
         os << "invalid dimension: " << Dim;
         throw std::logic_error( os.str() );
     }
+
     std::string fname = __gmsh.generate( nameStr.str(), ostr.str() );
     ImporterGmsh<trace_mesh_type> import( fname );
     mesh->accept( import );
@@ -299,49 +303,50 @@ ThreeFields<Dim, Order1, Order2, Order3>::exportResults( element1_type& u, eleme
     auto mesh1=Xh1->mesh();
     auto Xh2=v.functionSpace();
     auto mesh2=Xh2->mesh();
-    auto trace_mesh1 = mesh1->trace( markedfaces(mesh1,gamma1) );
-    auto trace_mesh2 = mesh2->trace( markedfaces(mesh2,gamma2) );
+    auto trace_mesh1 = mesh1->trace( markedfaces( mesh1,gamma1 ) );
+    auto trace_mesh2 = mesh2->trace( markedfaces( mesh2,gamma2 ) );
 
     double pi = M_PI;
     using namespace vf;
-    auto g = sin(pi*Px())*cos(pi*Py())*cos(pi*Pz());
+    auto g = sin( pi*Px() )*cos( pi*Py() )*cos( pi*Pz() );
 
     auto e1 = Xh1->element();
-    e1 = vf::project( Xh1, elements(mesh1), g );
+    e1 = vf::project( Xh1, elements( mesh1 ), g );
 
     auto e2 = Xh2->element();
-    e2 = vf::project( Xh2, elements(mesh2), g );
+    e2 = vf::project( Xh2, elements( mesh2 ), g );
 
     Log() << "exportResults starts\n";
     timers["export"].first.restart();
 
-    M_firstExporter->step(0)->setMesh( mesh1 );
-    M_firstExporter->step(0)->add( "solution", (boost::format( "solution-%1%" ) % int(1) ).str(), u );
-    M_firstExporter->step(0)->add( "exact", (boost::format( "exact-%1%" ) % int(1) ).str(), e1 );
+    M_firstExporter->step( 0 )->setMesh( mesh1 );
+    M_firstExporter->step( 0 )->add( "solution", ( boost::format( "solution-%1%" ) % int( 1 ) ).str(), u );
+    M_firstExporter->step( 0 )->add( "exact", ( boost::format( "exact-%1%" ) % int( 1 ) ).str(), e1 );
     M_firstExporter->save();
 
-    M_secondExporter->step(0)->setMesh( mesh2 );
-    M_secondExporter->step(0)->add( "solution",(boost::format( "solution-%1%" ) % int(2) ).str(), v );
-    M_secondExporter->step(0)->add( "exact",(boost::format( "exact-%1%" ) % int(2) ).str(), e2 );
+    M_secondExporter->step( 0 )->setMesh( mesh2 );
+    M_secondExporter->step( 0 )->add( "solution",( boost::format( "solution-%1%" ) % int( 2 ) ).str(), v );
+    M_secondExporter->step( 0 )->add( "exact",( boost::format( "exact-%1%" ) % int( 2 ) ).str(), e2 );
     M_secondExporter->save();
 
-    M_trace1_exporter->step(0)->setMesh( trace_mesh1 );
-    M_trace1_exporter->step(0)->add( "trace1",(boost::format( "solution-%1%" ) % int(3) ).str(), t1 );
+    M_trace1_exporter->step( 0 )->setMesh( trace_mesh1 );
+    M_trace1_exporter->step( 0 )->add( "trace1",( boost::format( "solution-%1%" ) % int( 3 ) ).str(), t1 );
     M_trace1_exporter->save();
 
-    M_trace2_exporter->step(0)->setMesh( trace_mesh2 );
-    M_trace2_exporter->step(0)->add( "trace2",(boost::format( "solution-%1%" ) % int(4) ).str(), t2 );
+    M_trace2_exporter->step( 0 )->setMesh( trace_mesh2 );
+    M_trace2_exporter->step( 0 )->add( "trace2",( boost::format( "solution-%1%" ) % int( 4 ) ).str(), t2 );
     M_trace2_exporter->save();
 
-    std::ofstream ofs( (boost::format( "%1%.sos" ) % this->about().appName() ).str().c_str() );
+    std::ofstream ofs( ( boost::format( "%1%.sos" ) % this->about().appName() ).str().c_str() );
 
     if ( ofs )
     {
         ofs << "FORMAT:\n"
             << "type: master_server gold\n"
             << "SERVERS\n"
-            << "number of servers: " << int(2) << "\n";
-        for( int j = 1; j <= 2; ++ j )
+            << "number of servers: " << int( 2 ) << "\n";
+
+        for ( int j = 1; j <= 2; ++ j )
         {
             ofs << "#Server " << j << "\n";
             ofs << "machine id: " << mpi::environment::processor_name()  << "\n";
@@ -365,10 +370,13 @@ ThreeFields<Dim, Order1, Order2, Order3>::run()
     std::vector<double> X( 3 );
     X[0] = mesh1Size;
     X[1] = mesh2Size;
+
     if ( shape == "hypercube" )
         X[2] = 1;
+
     else // default is simplex
         X[2] = 0;
+
     std::vector<double> Y( 3 );
     run( X.data(), X.size(), Y.data(), Y.size() );
 }
@@ -378,6 +386,7 @@ void
 ThreeFields<Dim, Order1, Order2, Order3>::run( const double* X, unsigned long P, double* Y, unsigned long N )
 {
     if ( X[2] == 0 ) shape = "simplex";
+
     if ( X[2] == 1 ) shape = "hypercube";
 
     if ( !this->vm().count( "nochdir" ) )
@@ -393,13 +402,13 @@ ThreeFields<Dim, Order1, Order2, Order3>::run( const double* X, unsigned long P,
                                        % mesh3Size );
 
     std::cout << "create meshes starts\n";
-    mesh_ptrtype mesh1 = createMesh(0.,split,mesh1Size,1);
-    mesh_ptrtype mesh2 = createMesh(split,1.,mesh2Size,2);
+    mesh_ptrtype mesh1 = createMesh( 0.,split,mesh1Size,1 );
+    mesh_ptrtype mesh2 = createMesh( split,1.,mesh2Size,2 );
 
-    auto trace_mesh1 = mesh1->trace( markedfaces(mesh1,gamma1) );
-    auto trace_mesh2 = mesh2->trace( markedfaces(mesh2,gamma2) );
+    auto trace_mesh1 = mesh1->trace( markedfaces( mesh1,gamma1 ) );
+    auto trace_mesh2 = mesh2->trace( markedfaces( mesh2,gamma2 ) );
 
-    trace_mesh_ptrtype interface_mesh = createMesh(mesh3Size,split);
+    trace_mesh_ptrtype interface_mesh = createMesh( mesh3Size,split );
 
     std::cout << "create meshes done\n";
 
@@ -411,7 +420,8 @@ ThreeFields<Dim, Order1, Order2, Order3>::run( const double* X, unsigned long P,
         gamma1 = 3;
         gamma2 = 1;
     }
-    else if( Dim == 3 )
+
+    else if ( Dim == 3 )
     {
         using namespace boost::assign;
         outside1 += 6,15,19,23,28;
@@ -428,11 +438,11 @@ ThreeFields<Dim, Order1, Order2, Order3>::run( const double* X, unsigned long P,
     auto u2 = Xh2->element();
     auto v2 = Xh2->element();
 
-    auto Lh1 = trace1_space_type::New( mesh1->trace( markedfaces(mesh1,gamma1) ) );
+    auto Lh1 = trace1_space_type::New( mesh1->trace( markedfaces( mesh1,gamma1 ) ) );
     auto mu1 = Lh1->element();
     auto nu1 = Lh1->element();
 
-    auto Lh2 = trace2_space_type::New( mesh2->trace( markedfaces(mesh2,gamma2) ) );
+    auto Lh2 = trace2_space_type::New( mesh2->trace( markedfaces( mesh2,gamma2 ) ) );
     auto mu2 = Lh2->element();
     auto nu2 = Lh2->element();
 
@@ -442,15 +452,17 @@ ThreeFields<Dim, Order1, Order2, Order3>::run( const double* X, unsigned long P,
 
     // buildGraphWithTranspose ask
     bool buildGraphWithTrans1=false, buildGraphWithTrans2=false;
-    if(mu.size() > mu1.size()) buildGraphWithTrans1=true;
-    if(mu.size() > mu2.size()) buildGraphWithTrans2=true;
+
+    if ( mu.size() > mu1.size() ) buildGraphWithTrans1=true;
+
+    if ( mu.size() > mu2.size() ) buildGraphWithTrans2=true;
 
     value_type pi = M_PI;
-    auto g = sin(pi*Px())*cos(pi*Py())*cos(pi*Pz());
+    auto g = sin( pi*Px() )*cos( pi*Py() )*cos( pi*Pz() );
 
-    auto gradg = trans( +pi*cos(pi*Px())*cos(pi*Py())*cos(pi*Pz())*unitX()
-                        -pi*sin(pi*Px())*sin(pi*Py())*cos(pi*Pz())*unitY()
-                        -pi*sin(pi*Px())*cos(pi*Py())*sin(pi*Pz())*unitZ() );
+    auto gradg = trans( +pi*cos( pi*Px() )*cos( pi*Py() )*cos( pi*Pz() )*unitX()
+                        -pi*sin( pi*Px() )*sin( pi*Py() )*cos( pi*Pz() )*unitY()
+                        -pi*sin( pi*Px() )*cos( pi*Py() )*sin( pi*Pz() )*unitZ() );
 
     auto f = pi*pi*Dim*g;
 
@@ -463,13 +475,13 @@ ThreeFields<Dim, Order1, Order2, Order3>::run( const double* X, unsigned long P,
 
     auto F1 = M_backend->newVector( Xh1 );
     form1( _test=Xh1, _vector=F1, _init=true ) =
-        integrate( elements(mesh1), f*id(v1) );
+        integrate( elements( mesh1 ), f*id( v1 ) );
 
     BOOST_FOREACH( int marker, outside1 )
     {
         form1( _test=Xh1, _vector=F1 ) +=
-            integrate( markedfaces(mesh1,marker),
-                       g*(-grad(v1)*vf::N()+penaldir*id(v1)/hFace()) );
+            integrate( markedfaces( mesh1,marker ),
+                       g*( -grad( v1 )*vf::N()+penaldir*id( v1 )/hFace() ) );
     }
 
     timers["assemby_F1"].second = timers["assemby_F1"].first.elapsed();
@@ -483,15 +495,15 @@ ThreeFields<Dim, Order1, Order2, Order3>::run( const double* X, unsigned long P,
     auto D1 = M_backend->newMatrix( Xh1, Xh1 );
 
     form2( _trial=Xh1, _test=Xh1, _matrix=D1, _init=true ) =
-        integrate( elements(mesh1), coeff*gradt(u1)*trans(grad(v1)) );
+        integrate( elements( mesh1 ), coeff*gradt( u1 )*trans( grad( v1 ) ) );
 
     BOOST_FOREACH( int marker, outside1 )
     {
         form2( _trial=Xh1, _test=Xh1, _matrix=D1 ) +=
-            integrate( markedfaces(mesh1,marker),
-                       -(gradt(u1)*vf::N())*id(v1)
-                       -(grad(v1)*vf::N())*idt(u1)
-                       +penaldir*id(v1)*idt(u1)/hFace());
+            integrate( markedfaces( mesh1,marker ),
+                       -( gradt( u1 )*vf::N() )*id( v1 )
+                       -( grad( v1 )*vf::N() )*idt( u1 )
+                       +penaldir*id( v1 )*idt( u1 )/hFace() );
     }
 
     timers["assemby_D1"].second = timers["assemby_D1"].first.elapsed();
@@ -507,7 +519,7 @@ ThreeFields<Dim, Order1, Order2, Order3>::run( const double* X, unsigned long P,
 
     auto B1 = M_backend->newMatrix( Xh1, Lh1 );
     form2( _trial=Xh1, _test=Lh1, _matrix=B1, _init=true ) +=
-        integrate( elements(Lh->mesh()), -idt(u1)*id(nu1) );
+        integrate( elements( Lh->mesh() ), -idt( u1 )*id( nu1 ) );
 
     timers["assemby_B1"].second = timers["assemby_B1"].first.elapsed();
     std::cout << "assemby_B1 done in " << timers["assemby_B1"].second << "s\n";
@@ -522,7 +534,7 @@ ThreeFields<Dim, Order1, Order2, Order3>::run( const double* X, unsigned long P,
 
     auto C1 = M_backend->newMatrix( Lh, Lh1, _buildGraphWithTranspose=!buildGraphWithTrans1 );
     form2( _trial=Lh, _test=Lh1, _matrix=C1, _init=true ) +=
-        integrate( elements(Lh->mesh()), idt(mu)*id(nu1) );
+        integrate( elements( Lh->mesh() ), idt( mu )*id( nu1 ) );
 
     timers["assemby_C1"].second = timers["assemby_C1"].first.elapsed();
     std::cout << "assemby_C1 done in " << timers["assemby_C1"].second << "s\n";
@@ -537,13 +549,13 @@ ThreeFields<Dim, Order1, Order2, Order3>::run( const double* X, unsigned long P,
 
     auto F2 = M_backend->newVector( Xh2 );
     form1( _test=Xh2, _vector=F2, _init=true ) =
-        integrate( elements(mesh2), f*id(v2) );
+        integrate( elements( mesh2 ), f*id( v2 ) );
 
     BOOST_FOREACH( int marker, outside2 )
     {
         form1( _test=Xh2, _vector=F2 ) +=
-            integrate( markedfaces(mesh2,marker),
-                       g*(-grad(v2)*vf::N()+penaldir*id(v2)/hFace()) );
+            integrate( markedfaces( mesh2,marker ),
+                       g*( -grad( v2 )*vf::N()+penaldir*id( v2 )/hFace() ) );
     }
 
     timers["assemby_F2"].second = timers["assemby_F2"].first.elapsed();
@@ -557,15 +569,15 @@ ThreeFields<Dim, Order1, Order2, Order3>::run( const double* X, unsigned long P,
     auto D2 = M_backend->newMatrix( Xh2, Xh2 );
 
     form2( _trial=Xh2, _test=Xh2, _matrix=D2, _init=true ) =
-        integrate( elements(mesh2), coeff*gradt(u2)*trans(grad(v2)) );
+        integrate( elements( mesh2 ), coeff*gradt( u2 )*trans( grad( v2 ) ) );
 
     BOOST_FOREACH( int marker, outside2 )
     {
         form2( _trial=Xh2, _test=Xh2, _matrix=D2 ) +=
-            integrate( markedfaces(mesh2,marker),
-                       -(gradt(u2)*vf::N())*id(v2)
-                       -(grad(v2)*vf::N())*idt(u2)
-                       +penaldir*id(v2)*idt(u2)/hFace());
+            integrate( markedfaces( mesh2,marker ),
+                       -( gradt( u2 )*vf::N() )*id( v2 )
+                       -( grad( v2 )*vf::N() )*idt( u2 )
+                       +penaldir*id( v2 )*idt( u2 )/hFace() );
     }
 
     timers["assemby_D2"].second = timers["assemby_D2"].first.elapsed();
@@ -573,6 +585,7 @@ ThreeFields<Dim, Order1, Order2, Order3>::run( const double* X, unsigned long P,
 
     D2->close();
     std::cout << "matrix D2 assembly done\n";
+
     if ( this->vm().count( "export-matlab" ) )
         D2->printMatlab( "D2.m" );
 
@@ -581,7 +594,7 @@ ThreeFields<Dim, Order1, Order2, Order3>::run( const double* X, unsigned long P,
 
     auto B2 = M_backend->newMatrix( Xh2, Lh2 );
     form2( _trial=Xh2, _test=Lh2, _matrix=B2, _init=true ) +=
-        integrate( elements(Lh->mesh()), -idt(u2)*id(nu2) );
+        integrate( elements( Lh->mesh() ), -idt( u2 )*id( nu2 ) );
 
     timers["assemby_B2"].second = timers["assemby_B2"].first.elapsed();
     std::cout << "assemby_B2 done in " << timers["assemby_B2"].second << "s\n";
@@ -597,7 +610,7 @@ ThreeFields<Dim, Order1, Order2, Order3>::run( const double* X, unsigned long P,
 
     auto C2 = M_backend->newMatrix( Lh, Lh2,_buildGraphWithTranspose=!buildGraphWithTrans2 );
     form2( _trial=Lh, _test=Lh2, _matrix=C2, _init=true ) +=
-        integrate( elements(Lh->mesh()), idt(mu)*id(nu2) );
+        integrate( elements( Lh->mesh() ), idt( mu )*id( nu2 ) );
 
     timers["assemby_C2"].second = timers["assemby_C2"].first.elapsed();
     std::cout << "assemby_C2 done in " << timers["assemby_C2"].second << "s\n";
@@ -613,7 +626,7 @@ ThreeFields<Dim, Order1, Order2, Order3>::run( const double* X, unsigned long P,
 
     auto B1t = M_backend->newMatrix( Lh1, Xh1, _buildGraphWithTranspose=true );
 
-    B1->transpose(B1t);
+    B1->transpose( B1t );
 
     timers["assemby_B1t"].second = timers["assemby_B1t"].first.elapsed();
     std::cout << "assemby_B1t done in " << timers["assemby_B1t"].second << "s\n";
@@ -626,7 +639,7 @@ ThreeFields<Dim, Order1, Order2, Order3>::run( const double* X, unsigned long P,
 
     auto B2t = M_backend->newMatrix( Lh2, Xh2, _buildGraphWithTranspose=true );
 
-    B2->transpose(B2t);
+    B2->transpose( B2t );
 
     timers["assemby_B2t"].second = timers["assemby_B2t"].first.elapsed();
     std::cout << "assemby_B2t done in " << timers["assemby_B2t"].second << "s\n";
@@ -641,7 +654,7 @@ ThreeFields<Dim, Order1, Order2, Order3>::run( const double* X, unsigned long P,
 
     auto C1t = M_backend->newMatrix( Lh1, Lh, _buildGraphWithTranspose=buildGraphWithTrans1 );
 
-    C1->transpose(C1t);
+    C1->transpose( C1t );
 
     timers["assemply_C1t"].second = timers["assemply_C1t"].first.elapsed();
     std::cout << "[timer] assemply_C1t: " << timers["assemply_C1t"].second << "\n";
@@ -654,7 +667,7 @@ ThreeFields<Dim, Order1, Order2, Order3>::run( const double* X, unsigned long P,
 
     auto C2t = M_backend->newMatrix( Lh2, Lh, _buildGraphWithTranspose=buildGraphWithTrans2 );
 
-    C2->transpose(C2t);
+    C2->transpose( C2t );
 
     timers["assemply_C2t"].second = timers["assemply_C2t"].first.elapsed();
     std::cout << "[timer] assemply_C2t: " << timers["assemply_C2t"].second << "\n";
@@ -684,12 +697,12 @@ ThreeFields<Dim, Order1, Order2, Order3>::run( const double* X, unsigned long P,
     timers["assemply_Block"].first.restart();
 
     auto myb = Blocks<5,5>()<< D1 << B1t << zero31 << zero41 << zero51
-                                   << B1 << zero22 << C1 << zero42 << zero52
-                                   << zero13 << C1t << zero33 << C2t << zero53
-                                   << zero14 << zero24 << C2 << zero44 << B2
-                                   << zero15 << zero25 << zero35 << B2t << D2 ;
+               << B1 << zero22 << C1 << zero42 << zero52
+               << zero13 << C1t << zero33 << C2t << zero53
+               << zero14 << zero24 << C2 << zero44 << B2
+               << zero15 << zero25 << zero35 << B2t << D2 ;
 
-    auto AbB = M_backend->newBlockMatrix(myb);
+    auto AbB = M_backend->newBlockMatrix( myb );
 
     timers["assemply_Block"].second = timers["assemply_Block"].first.elapsed();
     std::cout << "[timer] assemply_Block: " << timers["assemply_Block"].second << "\n";
@@ -708,11 +721,11 @@ ThreeFields<Dim, Order1, Order2, Order3>::run( const double* X, unsigned long P,
                                      u1.size()+u2.size()+mu.size()+mu1.size()+mu2.size() );
 
 
-    for (size_type i = 0 ; i < F1->size(); ++ i)
-        FbB->set(i, (*F1)(i) );
+    for ( size_type i = 0 ; i < F1->size(); ++ i )
+        FbB->set( i, ( *F1 )( i ) );
 
-    for (size_type i = 0 ; i < F2->size(); ++ i)
-        FbB->set(u1.size()+mu1.size()+mu.size()+mu2.size()+i, (*F2)(i) );
+    for ( size_type i = 0 ; i < F2->size(); ++ i )
+        FbB->set( u1.size()+mu1.size()+mu.size()+mu2.size()+i, ( *F2 )( i ) );
 
 
     std::cout <<"***********************************************\n";
@@ -722,7 +735,7 @@ ThreeFields<Dim, Order1, Order2, Order3>::run( const double* X, unsigned long P,
 
     if ( this->vm().count( "export-matlab" ) )
     {
-        AbB->printMatlab("AbB.m");
+        AbB->printMatlab( "AbB.m" );
         FbB->printMatlab( "FbB.m" );
         F1->printMatlab( "F1.m" );
         F2->printMatlab( "F2.m" );
@@ -731,45 +744,45 @@ ThreeFields<Dim, Order1, Order2, Order3>::run( const double* X, unsigned long P,
     std::cout << "solve starts\n";
     timers["solve"].first.restart();
 
-    M_backend->solve(_matrix=AbB,_solution=UbB, _rhs=FbB );
+    M_backend->solve( _matrix=AbB,_solution=UbB, _rhs=FbB );
 
     timers["solve"].second = timers["solve"].first.elapsed();
     std::cout << "[timer] solve: " << timers["solve"].second << "\n";
 
 
-    for (size_type i = 0 ; i < u1.size(); ++ i)
-        u1.set(i, (*UbB)(i) );
+    for ( size_type i = 0 ; i < u1.size(); ++ i )
+        u1.set( i, ( *UbB )( i ) );
 
-    for (size_type i = 0 ; i < mu1.size(); ++ i)
-        mu1.set(i, (*UbB)(u1.size()+i) );
+    for ( size_type i = 0 ; i < mu1.size(); ++ i )
+        mu1.set( i, ( *UbB )( u1.size()+i ) );
 
-    for (size_type i = 0 ; i < mu.size(); ++ i)
-        mu.set(i, (*UbB)(u1.size()+mu1.size()+i) );
+    for ( size_type i = 0 ; i < mu.size(); ++ i )
+        mu.set( i, ( *UbB )( u1.size()+mu1.size()+i ) );
 
-    for (size_type i = 0 ; i < mu2.size(); ++ i)
-        mu2.set(i, (*UbB)(u1.size()+mu1.size()+mu.size()+i) );
+    for ( size_type i = 0 ; i < mu2.size(); ++ i )
+        mu2.set( i, ( *UbB )( u1.size()+mu1.size()+mu.size()+i ) );
 
-    for (size_type i = 0 ; i < u2.size(); ++ i)
-        u2.set(i, (*UbB)(u1.size()+mu1.size()+mu.size()+mu2.size()+i) );
+    for ( size_type i = 0 ; i < u2.size(); ++ i )
+        u2.set( i, ( *UbB )( u1.size()+mu1.size()+mu.size()+mu2.size()+i ) );
 
     // compute errors
-    double L2error12 =integrate(elements(mesh1),(idv(u1)-g)*(idv(u1)-g) ).evaluate()(0,0);
+    double L2error12 =integrate( elements( mesh1 ),( idv( u1 )-g )*( idv( u1 )-g ) ).evaluate()( 0,0 );
     double L2error1 =   math::sqrt( L2error12 );
 
-    double L2error22 =integrate(elements(mesh2),(idv(u2)-g)*(idv(u2)-g) ).evaluate()(0,0);
+    double L2error22 =integrate( elements( mesh2 ),( idv( u2 )-g )*( idv( u2 )-g ) ).evaluate()( 0,0 );
     double L2error2 =   math::sqrt( L2error22 );
 
-    double semi_H1error1 =integrate(elements(mesh1),
-                                    ( gradv(u1)-gradg )*trans( (gradv(u1)-gradg) ) ).evaluate()(0,0);
+    double semi_H1error1 =integrate( elements( mesh1 ),
+                                     ( gradv( u1 )-gradg )*trans( ( gradv( u1 )-gradg ) ) ).evaluate()( 0,0 );
 
-    double semi_H1error2 =integrate(elements(mesh2),
-                                    ( gradv(u2)-gradg )*trans( (gradv(u2)-gradg) ) ).evaluate()(0,0);
+    double semi_H1error2 =integrate( elements( mesh2 ),
+                                     ( gradv( u2 )-gradg )*trans( ( gradv( u2 )-gradg ) ) ).evaluate()( 0,0 );
 
     double H1error1 = math::sqrt( L2error12 + semi_H1error1 );
 
     double H1error2 = math::sqrt( L2error22 + semi_H1error2 );
 
-    double global_error = math::sqrt(L2error12 + L2error22 + semi_H1error1 + semi_H1error2);
+    double global_error = math::sqrt( L2error12 + L2error22 + semi_H1error1 + semi_H1error2 );
 
     std::cout << "----------L2 errors---------- \n" ;
     std::cout << "||u1_error||_L2=" << L2error1 << "\n";
@@ -787,15 +800,15 @@ ThreeFields<Dim, Order1, Order2, Order3>::run( const double* X, unsigned long P,
     Log() << "||u2_error||_H1=" << H1error2 << "\n";
     Log() << "||u_error||_H1=" << global_error << "\n";
 
-    this->exportResults(u1,u2,mu1,mu2);
+    this->exportResults( u1,u2,mu1,mu2 );
 
     auto interface_exporter = trace_export_type::New( this->vm(),
-                                                      (boost::format( "interface_%1%-%2%" )
-                                                       % this->about().appName()
-                                                       % Dim ).str() ) ;
+                              ( boost::format( "interface_%1%-%2%" )
+                                % this->about().appName()
+                                % Dim ).str() ) ;
 
-    interface_exporter->step(0)->setMesh( interface_mesh );
-    interface_exporter->step(0)->add("mu", mu);
+    interface_exporter->step( 0 )->setMesh( interface_mesh );
+    interface_exporter->step( 0 )->add( "mu", mu );
     interface_exporter->save();
 
 } // ThreeFields::run
@@ -806,6 +819,7 @@ main( int argc, char** argv )
     Environment env( argc, argv );
 
     Application app( argc, argv, makeAbout(), makeOptions() );
+
     if ( app.vm().count( "help" ) )
     {
         std::cout << app.optionsDescription() << "\n";

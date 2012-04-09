@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -70,10 +70,10 @@ public:
         super( argc, argv, ad, od )
     {
         if ( this->vm().count( "help" ) )
-            {
-                std::cout << this->optionsDescription() << "\n";
-                return;
-            }
+        {
+            std::cout << this->optionsDescription() << "\n";
+            return;
+        }
 
         this->changeRepository( boost::format( "benchmarks/convergence/%1%/%2%/Simplex_%3%_1/P%4%/h_%5%" )
                                 % this->about().appName()
@@ -81,7 +81,7 @@ public:
                                 % 2 //% this->vm()["dim"].as<int>()
                                 % this->vm()["sorder"].as<int>()
                                 % this->vm()["hsize"].as<double>()
-                            );
+                              );
 
 
         M_structure = structure_type::New( this->vm() );
@@ -91,7 +91,10 @@ public:
 
     }
 
-    void run() { M_structure->run(); }
+    void run()
+    {
+        M_structure->run();
+    }
 
 private:
 

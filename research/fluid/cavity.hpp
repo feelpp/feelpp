@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -57,23 +57,23 @@ inline
 Feel::po::options_description
 makeOptions()
 {
-    Feel::po::options_description cavityoptions("Cavity options");
+    Feel::po::options_description cavityoptions( "Cavity options" );
     cavityoptions.add_options()
-        ("dt", Feel::po::value<double>()->default_value( 0.1 ), "time step value")
-        ("ft", Feel::po::value<double>()->default_value( 10 ), "final time value")
+    ( "dt", Feel::po::value<double>()->default_value( 0.1 ), "time step value" )
+    ( "ft", Feel::po::value<double>()->default_value( 10 ), "final time value" )
 
-        ("nu", Feel::po::value<double>()->default_value( 0.01 ), "viscosity value")
-        ("rho", Feel::po::value<double>()->default_value( 1.0 ), "fluid density value")
+    ( "nu", Feel::po::value<double>()->default_value( 0.01 ), "viscosity value" )
+    ( "rho", Feel::po::value<double>()->default_value( 1.0 ), "fluid density value" )
 
-        ("fixpointtol", Feel::po::value<double>()->default_value( 1.e6 ),
-         "Convergence tolerance for fixed point sub-iterations")
-        ("fixpointmaxiter", Feel::po::value<int>()->default_value( 10 ),
-         "Maximum number of fixed point sub-iterations")
+    ( "fixpointtol", Feel::po::value<double>()->default_value( 1.e6 ),
+      "Convergence tolerance for fixed point sub-iterations" )
+    ( "fixpointmaxiter", Feel::po::value<int>()->default_value( 10 ),
+      "Maximum number of fixed point sub-iterations" )
 
-        ("peps", Feel::po::value<double>()->default_value( 0 ), "epsilong for pressure term")
-        ("hsize", Feel::po::value<double>()->default_value( 0.5 ), "first h value to start convergence")
-        ("export", Feel::po::value<int>()->default_value( 1 ), "export results(ensight, data file(1D)")
-        ;
+    ( "peps", Feel::po::value<double>()->default_value( 0 ), "epsilong for pressure term" )
+    ( "hsize", Feel::po::value<double>()->default_value( 0.5 ), "first h value to start convergence" )
+    ( "export", Feel::po::value<int>()->default_value( 1 ), "export results(ensight, data file(1D)" )
+    ;
     return cavityoptions.add( Feel::feel_options() );
 }
 inline
@@ -85,9 +85,9 @@ makeAbout()
                            "0.1",
                            "2D and 3D Driven Cavity",
                            Feel::AboutData::License_GPL,
-                           "Copyright (c) 2007,2008 Université Joseph Fourier");
+                           "Copyright (c) 2007,2008 Université Joseph Fourier" );
 
-    about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
     return about;
 
 }
@@ -179,7 +179,7 @@ public:
         Log() << "[Cavity] hsize = " << meshSize << "\n";
         Log() << "[Cavity] M_nu = " << M_nu << "\n";
         Log() << "[Cavity] M_rho = " << M_rho << "\n";
-        Log() << "[Cavity] export = " << this->vm().count("export") << "\n";
+        Log() << "[Cavity] export = " << this->vm().count( "export" ) << "\n";
     }
     /**
      * create the mesh using mesh size \c meshSize
@@ -221,7 +221,7 @@ Cavity<Dim>::createMesh( double meshSize )
     mesh_ptrtype mesh( new mesh_type );
 
     Gmsh gmsh;
-    ImporterGmsh<mesh_type> import( gmsh.generate( entity_type::name().c_str(), createCavity( meshSize) ) );
+    ImporterGmsh<mesh_type> import( gmsh.generate( entity_type::name().c_str(), createCavity( meshSize ) ) );
     mesh->accept( import );
     timers["mesh"].second = timers["mesh"].first.elapsed();
     Log() << "[timer] createMesh(): " << timers["mesh"].second << "\n";
@@ -234,10 +234,10 @@ void
 Cavity<Dim>::run()
 {
     if ( this->vm().count( "help" ) )
-        {
-            std::cout << this->optionsDescription() << "\n";
-            return;
-        }
+    {
+        std::cout << this->optionsDescription() << "\n";
+        return;
+    }
 
     //    int maxIter = 10.0/meshSize;
     using namespace Feel::vf;
@@ -247,7 +247,7 @@ Cavity<Dim>::run()
                             % 2 % 1
                             % this->vm()["hsize"].template as<double>()
                             % this->vm()["nu"].template as<double>()
-                            );
+                          );
     /*
      * First we create the mesh
      */
@@ -282,8 +282,10 @@ Cavity<Dim>::run()
 
     std::set<flag_type> dirichletFlags;
     std::set<flag_type> neumannFlags;
-    for( flag_type flag=1; flag<=2; ++flag ) {
-        dirichletFlags.insert(flag);
+
+    for ( flag_type flag=1; flag<=2; ++flag )
+    {
+        dirichletFlags.insert( flag );
     }
 
     Oseen<space_type, imOrder, Simplex> oseen( Xh, M_backendNS, dirichletFlags, neumannFlags, this->vm() );
@@ -291,50 +293,52 @@ Cavity<Dim>::run()
 
     TimerMap timers;
     timers["timer overall time"].restart();
-    for( double t = dt; t <= ft; t += dt )
-        {
-            timers["timer per iteration"].restart();
 
-            Log() << "--------------------------------------------------------------------------------\n";
-            Log() << "T = " << t << "s\n";
-            Log() << "ft = " << ft << "s, dt = " << dt << ", M_nu = " << M_nu << "\n";
+    for ( double t = dt; t <= ft; t += dt )
+    {
+        timers["timer per iteration"].restart();
 
-            timers["timer oseen update per iteration"].reset();
-            timers["timer oseen update"].restart();
+        Log() << "--------------------------------------------------------------------------------\n";
+        Log() << "T = " << t << "s\n";
+        Log() << "ft = " << ft << "s, dt = " << dt << ", M_nu = " << M_nu << "\n";
 
-            // store the last time step approximation
-            //Un = oseen.solution();
+        timers["timer oseen update per iteration"].reset();
+        timers["timer oseen update"].restart();
 
-            oseen.update( /* itRan = */ elements(*mesh),
-                          /* sigma = */ constant(1.0/dt),
-                          /* nuInc = */ M_nu,
-                          /* nuAbs = */ M_nu,
-                          ///* beta  = */ idv( oseen.velocity() ),
-                          /* beta  = */ constant( 0 )*oneX(),
-                          /* f     = */ idv( oseen.velocity() )/dt,
-                          /* c     = */ constant(peps),
-                          /* g     = */ chi( (Py() > 0.99) && (Px() > 0.01 && Px() < 0.99 ) )*oneX(),
-                          /* noSlip= */ 1.0,
-                          /* updtJ = */ true  );
-            timers["timer oseen update per iteration"].accumulate();
-            timers["timer oseen update"].accumulate();
+        // store the last time step approximation
+        //Un = oseen.solution();
 
-            timers["timer solve per iteration"].reset();
-            timers["timer solve"].restart();
-            oseen.solve();
-            timers["timer solve per iteration"].accumulate();
-            timers["timer solve"].accumulate();
+        oseen.update( /* itRan = */ elements( *mesh ),
+                                    /* sigma = */ constant( 1.0/dt ),
+                                    /* nuInc = */ M_nu,
+                                    /* nuAbs = */ M_nu,
+                                    ///* beta  = */ idv( oseen.velocity() ),
+                                    /* beta  = */ constant( 0 )*oneX(),
+                                    /* f     = */ idv( oseen.velocity() )/dt,
+                                    /* c     = */ constant( peps ),
+                                    /* g     = */ chi( ( Py() > 0.99 ) && ( Px() > 0.01 && Px() < 0.99 ) )*oneX(),
+                                    /* noSlip= */ 1.0,
+                                    /* updtJ = */ true  );
+        timers["timer oseen update per iteration"].accumulate();
+        timers["timer oseen update"].accumulate();
 
-            Log() << "[Cavity] t = " << t << "\n";
-            //Log() << "[Cavity] #subiter = " << subiter << "\n";
+        timers["timer solve per iteration"].reset();
+        timers["timer solve"].restart();
+        oseen.solve();
+        timers["timer solve per iteration"].accumulate();
+        timers["timer solve"].accumulate();
 
-            this->exportResults( t, oseen.solution() );
+        Log() << "[Cavity] t = " << t << "\n";
+        //Log() << "[Cavity] #subiter = " << subiter << "\n";
 
-            timers["timer overall time"].accumulate();
+        this->exportResults( t, oseen.solution() );
 
-            timers.report( std::string("cavity") );
-        }
-    timers.report( std::string("cavity") );
+        timers["timer overall time"].accumulate();
+
+        timers.report( std::string( "cavity" ) );
+    }
+
+    timers.report( std::string( "cavity" ) );
 
 } // Cavity::run
 
@@ -344,30 +348,30 @@ Cavity<Dim>::exportResults( double time, element_type& u )
 {
     double dt = this->vm()["dt"].template as<double>();
 
-    if ( int(time/dt) % this->vm()["export"].template as<int>() == 0 )
-        {
-            typename timeset_type::step_ptrtype timeStep = timeSet->step( time );
-            timeStep->setMesh( u.functionSpace()->mesh() );
-            timeStep->add( "Velocity", u.template element<0>() );
-            timeStep->add( "Presssure", u.template element<1>() );
-            exporter->save();
+    if ( int( time/dt ) % this->vm()["export"].template as<int>() == 0 )
+    {
+        typename timeset_type::step_ptrtype timeStep = timeSet->step( time );
+        timeStep->setMesh( u.functionSpace()->mesh() );
+        timeStep->add( "Velocity", u.template element<0>() );
+        timeStep->add( "Presssure", u.template element<1>() );
+        exporter->save();
 
-        }
+    }
 } // Cavity::export
 } // Feel
 
-    /*
-      Reminder:
-      idt, gradt, ... is used to refer to a trial function (or vector field)
-	  eg.: idt(u) represents _any_ function of type u
-      id, grad, ...   is used to refer to a test function (or vector field)
-      idv, gradv, ... is the _value_ of the argument
-      eg.: idv(u) is the value of the instance u
+/*
+  Reminder:
+  idt, gradt, ... is used to refer to a trial function (or vector field)
+  eg.: idt(u) represents _any_ function of type u
+  id, grad, ...   is used to refer to a test function (or vector field)
+  idv, gradv, ... is the _value_ of the argument
+  eg.: idv(u) is the value of the instance u
 
-      trans is the transpose of the argument
+  trans is the transpose of the argument
 
-      in this example, you have that
-      idt(u) \equiv idt(v)
-      id(u)  \equiv id(v)
-      BUT idv(u) \neq idv(v) !!!
-    */
+  in this example, you have that
+  idt(u) \equiv idt(v)
+  id(u)  \equiv id(v)
+  BUT idv(u) \neq idv(v) !!!
+*/

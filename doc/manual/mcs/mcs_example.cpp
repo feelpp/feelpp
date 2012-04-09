@@ -45,10 +45,10 @@ inline
 po::options_description
 makeOptions()
 {
-    po::options_description myappoptions("MyMCSApp options");
+    po::options_description myappoptions( "MyMCSApp options" );
     myappoptions.add_options()
-        ("dt", po::value<double>()->default_value( 1 ), "time step value")
-        ;
+    ( "dt", po::value<double>()->default_value( 1 ), "time step value" )
+    ;
 
     // return the options myappoptions and the feel_options defined
     // internally by Feel
@@ -74,11 +74,11 @@ makeAbout()
                      "0.1",
                      "my first Feel application",
                      AboutData::License_GPL,
-                     "Copyright (c) 2008 Universite Joseph Fourier");
+                     "Copyright (c) 2008 Universite Joseph Fourier" );
 
-    about.addAuthor("Christophe Prud'homme",
-                    "developer",
-                    "christophe.prudhomme@ujf-grenoble.fr", "");
+    about.addAuthor( "Christophe Prud'homme",
+                     "developer",
+                     "christophe.prudhomme@ujf-grenoble.fr", "" );
     return about;
 }
 //# endmarker3 #
@@ -104,8 +104,8 @@ public:
      * constructor about data and options description
      */
     MyMCSApp( int argc, char** argv,
-           AboutData const&,
-           po::options_description const&  );
+              AboutData const&,
+              po::options_description const&  );
 
     /**
      * This function is responsible for the actual work done by MyMCSApp.
@@ -115,14 +115,14 @@ public:
 //# endmarker4 #
 
 //# marker5 #
-MyMCSApp::MyMCSApp(int argc, char** argv,
-             AboutData const& ad )
+MyMCSApp::MyMCSApp( int argc, char** argv,
+                    AboutData const& ad )
     :
     Application( argc, argv, ad )
 {}
-MyMCSApp::MyMCSApp(int argc, char** argv,
-             AboutData const& ad,
-             po::options_description const& od )
+MyMCSApp::MyMCSApp( int argc, char** argv,
+                    AboutData const& ad,
+                    po::options_description const& od )
     :
     Application( argc, argv, ad, od )
 {}
@@ -136,12 +136,13 @@ void MyMCSApp::run()
      */
     /** \code */
     if ( this->vm().count( "help" ) )
-        {
-            std::cout << this->optionsDescription() << "\n";
-            return;
-        }
+    {
+        std::cout << this->optionsDescription() << "\n";
+        return;
+    }
+
     /** \endcode */
-//# endmarker6 #
+    //# endmarker6 #
     /**
      * store all subsequent data files in a HOME/feel/doc/tutorial/myapp/
      */

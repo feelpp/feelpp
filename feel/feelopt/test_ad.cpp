@@ -31,9 +31,9 @@ int main()
 {
     using namespace Feel;
 
-    ADType<double,3,2,0> x(1. );
-    ADType<double,3,2,1> y(1. );
-    ADType<double,3,2,2> z(1. );
-    ADType<double,3,2> __g = sin(M_PI*x)*cos(M_PI*y)*cos(M_PI*z);
+    ADType<double,3,2,0> x( 1. );
+    ADType<double,3,2,1> y( 1. );
+    ADType<double,3,2,2> z( 1. );
+    ADType<double,3,2> __g = sin( M_PI*x )*cos( M_PI*y )*cos( M_PI*z );
     std::cout << "g=" << __g << "\n";
 }

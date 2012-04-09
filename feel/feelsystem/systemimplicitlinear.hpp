@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -88,16 +88,17 @@ public:
      */
     //@{
 
-    SystemImplicitLinear& operator=( SystemImplicitLinear const & o)
+    SystemImplicitLinear& operator=( SystemImplicitLinear const & o )
     {
-        if (this != &o )
-            {
-                super::operator=( o );
+        if ( this != &o )
+        {
+            super::operator=( o );
 
 
-                M_lhs = o.M_lhs;
-                M_rhs = o.M_rhs;
-            }
+            M_lhs = o.M_lhs;
+            M_rhs = o.M_rhs;
+        }
+
         return *this;
     }
     //@}
@@ -107,16 +108,28 @@ public:
     //@{
 
     //! \return left hand side (lhs) matrix
-    sparse_matrix_ptrtype const& lhs() const { return M_lhs; }
+    sparse_matrix_ptrtype const& lhs() const
+    {
+        return M_lhs;
+    }
 
     //! \return left hand side (lhs) matrix
-    sparse_matrix_ptrtype& lhs() { return M_lhs; }
+    sparse_matrix_ptrtype& lhs()
+    {
+        return M_lhs;
+    }
 
     //! \return right hand side (rhs) vector
-    vector_ptrtype const& rhs() const { return M_rhs; }
+    vector_ptrtype const& rhs() const
+    {
+        return M_rhs;
+    }
 
     //! \return right hand side (rhs) vector
-    vector_ptrtype& rhs() { return M_rhs; }
+    vector_ptrtype& rhs()
+    {
+        return M_rhs;
+    }
 
 
     //@}
@@ -158,7 +171,7 @@ private:
 };
 template<typename SpaceType>
 SystemImplicitLinear<SpaceType>::SystemImplicitLinear( functionspace_ptrtype const& Xh,
-                                                       po::variables_map const& vm )
+        po::variables_map const& vm )
     :
     super( Xh, vm ),
     M_lhs( this->backend()->newMatrix( Xh, Xh ) ),

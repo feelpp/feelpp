@@ -71,7 +71,7 @@ makefin( double hsize )
          << "Line Loop (20) = {12, 4, 5, -10};\n"
          << "Plane Surface (20) = {20};\n"
 
-        // physical entities
+         // physical entities
          << "Physical Line (1) = {1, 2};\n"
          << "Physical Line (2) = {3, 4, 5, 6, 7, 8};\n"
          << "Physical Surface (1) = {16};\n"
@@ -84,7 +84,7 @@ makefin( double hsize )
     nameStr.precision( 3 );
     nameStr << "fin";
 
-    gmsh_ptrtype gmshp( new Gmsh);
+    gmsh_ptrtype gmshp( new Gmsh );
     gmshp->setPrefix( nameStr.str() );
     gmshp->setDescription( ostr.str() );
     return gmshp;

@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -79,9 +79,9 @@ public:
      *  \brief create a new instance
      */
     static Iteration<NumericalType>* New()
-        {
-            return new Iteration<NumericalType>;
-        }
+    {
+        return new Iteration<NumericalType>;
+    }
 
     Iteration( Iteration const& iter )
         :
@@ -90,16 +90,16 @@ public:
         __residual( iter.__residual ),
         __precision( iter.__precision ),
         __norm_init( iter.__norm_init )
-        {
-            // do nothing here
-        }
+    {
+        // do nothing here
+    }
 
 
     //! destructor
     virtual ~Iteration()
-        {
-            // do nothing here
-        }
+    {
+        // do nothing here
+    }
 
     //@}
 
@@ -109,23 +109,24 @@ public:
 
     //! copy operator
     Iteration& operator=( Iteration<NumericalType> const& iter )
+    {
+        if ( this == &iter )
         {
-            if ( this == &iter )
-            {
-                return *this;
-            }
-            __precision = iter.__precision;
-            __max_iter = iter.__max_iter;
-            __residual = iter.__residual;
-            __norm_init = iter.__norm_init;
             return *this;
         }
 
+        __precision = iter.__precision;
+        __max_iter = iter.__max_iter;
+        __residual = iter.__residual;
+        __norm_init = iter.__norm_init;
+        return *this;
+    }
+
     //! prefix ++ operator
     void operator++() throw()
-        {
-            ++__iterations;
-        }
+    {
+        ++__iterations;
+    }
 
     //@}
 
@@ -133,36 +134,42 @@ public:
      */
     //@{
 
-    int numberOfIterations() const { return __iterations; }
+    int numberOfIterations() const
+    {
+        return __iterations;
+    }
 
     /**
        \brief get the Residual
     */
     real_type residual() const throw()
-        {
-            return __residual;
-        }
+    {
+        return __residual;
+    }
 
     real_type relativePrecision() const
-        {
-            return __precision;
-        }
+    {
+        return __precision;
+    }
 
     int maximumNumberOfIterations() const
-        {
-            return __max_iter;
-        }
+    {
+        return __max_iter;
+    }
 
     NumericalType initialResidual() const
-        {
-            return __norm_init;
-        }
+    {
+        return __norm_init;
+    }
 
     real_type relaxation () const
-        {
-            return _M_relaxation;
-        }
-    int iteration() const { return __iterations; }
+    {
+        return _M_relaxation;
+    }
+    int iteration() const
+    {
+        return __iterations;
+    }
 
     /** @name  Mutators
      */
@@ -173,32 +180,32 @@ public:
        @param m max number of iterations to perform
     */
     void setMaximumNumberOfIterations( int m ) throw()
-        {
-            __max_iter = m;
-        }
+    {
+        __max_iter = m;
+    }
 
     //! set the relative precision to reach
     /**
        @param p precision
     */
     void setRelativePrecision( NumericalType p ) throw()
-        {
-            __precision = p;
-        }
+    {
+        __precision = p;
+    }
 
     //! initial norm for the residual
     /*!
       \param ninit initial norm for  the residual
     */
     void setInitialResidual( NumericalType ninit ) throw()
-        {
-            __norm_init = ninit;
-        }
+    {
+        __norm_init = ninit;
+    }
 
     void setRelaxation ( real_type __w )
-        {
-            _M_relaxation = __w;
-        }
+    {
+        _M_relaxation = __w;
+    }
     //@}
 
     /** @name  Methods
@@ -218,84 +225,90 @@ public:
      * @return false if not finished and true otherwise
      */
     bool isFinished( NumericalType r, bool verbose = false ) //throw(SExceptionSolverHasNotConverged)
+    {
+        bool ret = false;
+
+        if ( this->isConverged( r ) )
         {
-            bool ret = false;
-            if ( this->isConverged( r ) )
-            {
-                ret = true;
-            }
-            else if ( __iterations >= __max_iter)
-            {
-                ret = true;
-            }
-            else
-            {
-#if 0
-                handleEvents( true );
-                std::string why = "Solver has not converged";
-                SExceptionSolverHasNotConverged __e( why.c_str(), LOCATION );
-                __e.setNumberOfIterations( __iterations );
-                __e.setResidual( __residual );
-                throw __e;
-#endif
-            }
-
-            handleEvents( ret, verbose );
-
-            return ret;
+            ret = true;
         }
+
+        else if ( __iterations >= __max_iter )
+        {
+            ret = true;
+        }
+
+        else
+        {
+#if 0
+            handleEvents( true );
+            std::string why = "Solver has not converged";
+            SExceptionSolverHasNotConverged __e( why.c_str(), LOCATION );
+            __e.setNumberOfIterations( __iterations );
+            __e.setResidual( __residual );
+            throw __e;
+#endif
+        }
+
+        handleEvents( ret, verbose );
+
+        return ret;
+    }
 
 
     template<typename VectorX>
-    bool isFinished(const VectorX& r, bool verbose = false ) //throw(SExceptionSolverHasNotConverged)
+    bool isFinished( const VectorX& r, bool verbose = false ) //throw(SExceptionSolverHasNotConverged)
+    {
+        bool ret = false;
+
+        if ( this->isConverged( r ) )
         {
-            bool ret = false;
-            if ( this->isConverged( r ) )
-            {
-                ret = true;
-            }
-            else if ( __iterations >= __max_iter)
-            {
-                ret = true;
-            }
-            else
-            {
-#if 0
-                handleEvents( true );
-                std::string why = "Solver has not converged";
-                SExceptionSolverHasNotConverged __e( why.c_str(), LOCATION );
-                __e.setNumberOfIterations( __iterations );
-                __e.setResidual( __residual );
-                throw __e;
-#endif
-            }
-
-            handleEvents( ret, verbose );
-
-            return ret;
+            ret = true;
         }
+
+        else if ( __iterations >= __max_iter )
+        {
+            ret = true;
+        }
+
+        else
+        {
+#if 0
+            handleEvents( true );
+            std::string why = "Solver has not converged";
+            SExceptionSolverHasNotConverged __e( why.c_str(), LOCATION );
+            __e.setNumberOfIterations( __iterations );
+            __e.setResidual( __residual );
+            throw __e;
+#endif
+        }
+
+        handleEvents( ret, verbose );
+
+        return ret;
+    }
 
     bool isConverged( NumericalType r ) throw()
-        {
-            __residual = r / __norm_init;
-            return ( __residual <= __precision );
-        }
+    {
+        __residual = r / __norm_init;
+        return ( __residual <= __precision );
+    }
 
     template<typename VectorX> bool isConverged( VectorX const& x ) throw()
-        {
-            __residual = ublas::norm_2( x ) / __norm_init;
-            return ( __residual <= __precision );
-        }
+    {
+        __residual = ublas::norm_2( x ) / __norm_init;
+        return ( __residual <= __precision );
+    }
 
     bool isFirst() const
-        {
-            return ( __iterations == 0 );
-        }
+    {
+        return ( __iterations == 0 );
+    }
 
     void reset()
-        {
-            __iterations = 0;
-        }
+    {
+        __iterations = 0;
+    }
 
     //@}
 
@@ -313,35 +326,37 @@ protected:
         __precision( 0 ),
         __norm_init( 1.0 ),
         _M_relaxation( 1.0 )
-        {
-            // do nothing here
-        }
+    {
+        // do nothing here
+    }
 
     virtual void handleEvents( bool __is_finished, bool verbose )
+    {
+        if ( __iterations == 0 )
         {
-            if ( __iterations == 0 )
-            {
-                //SEvent  startEv( IterationStarted, new IterationStarted<value_type>( __residual, __iterations) );
-                //SSubject::notifyObservers( &startEv );
-                if ( verbose )
-                    std::cout << "iteration " << __iterations << " : " << residual() << "\n";
-            }
-
-            if ( __is_finished == true )
-            {
-                //SEvent  finishEv( IterationFinished, new IterationFinished<value_type>( __residual, __iterations) );
-                //SSubject::notifyObservers( &finishEv );
-                if ( verbose )
-                    std::cout << "iteration " << __iterations << " : " << residual() << "\n";
-            }
-            else
-            {
-                if ( verbose )
-                    std::cout << "iteration " << __iterations << " : " << residual() << "\n";
-                //SEvent  aEvent( IterationUpdated, new IterationUpdated<value_type>( __residual, __iterations) );
-                //SSubject::notifyObservers( &aEvent );
-            }
+            //SEvent  startEv( IterationStarted, new IterationStarted<value_type>( __residual, __iterations) );
+            //SSubject::notifyObservers( &startEv );
+            if ( verbose )
+                std::cout << "iteration " << __iterations << " : " << residual() << "\n";
         }
+
+        if ( __is_finished == true )
+        {
+            //SEvent  finishEv( IterationFinished, new IterationFinished<value_type>( __residual, __iterations) );
+            //SSubject::notifyObservers( &finishEv );
+            if ( verbose )
+                std::cout << "iteration " << __iterations << " : " << residual() << "\n";
+        }
+
+        else
+        {
+            if ( verbose )
+                std::cout << "iteration " << __iterations << " : " << residual() << "\n";
+
+            //SEvent  aEvent( IterationUpdated, new IterationUpdated<value_type>( __residual, __iterations) );
+            //SSubject::notifyObservers( &aEvent );
+        }
+    }
 private:
 
     int __iterations;

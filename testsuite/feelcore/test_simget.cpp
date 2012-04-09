@@ -61,10 +61,10 @@ inline
 po::options_description
 makeOptions()
 {
-    po::options_description simgetoptions("test_simget options");
+    po::options_description simgetoptions( "test_simget options" );
     simgetoptions.add_options()
-        ("hsize", po::value<double>()->default_value( 0.5 ), "mesh size")
-        ;
+    ( "hsize", po::value<double>()->default_value( 0.5 ), "mesh size" )
+    ;
     return simgetoptions.add( Feel::feel_options() );
 }
 
@@ -78,9 +78,9 @@ makeAbout()
                      "0.1",
                      "SimGet tests",
                      Feel::AboutData::License_GPL,
-                     "Copyright (c) 2010 Université Joseph Fourier");
+                     "Copyright (c) 2010 Université Joseph Fourier" );
 
-    about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
     return about;
 
 }
@@ -95,10 +95,10 @@ public:
         :
         Simget( vm, about ),
         meshSize( this->vm()["hsize"].as<double>() )
-        {
-        }
+    {
+    }
     void run() {}
-    void run(const double*, long unsigned int, double*, long unsigned int) {}
+    void run( const double*, long unsigned int, double*, long unsigned int ) {}
 private:
     double meshSize;
 };

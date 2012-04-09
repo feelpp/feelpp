@@ -30,5 +30,5 @@
 
 namespace Feel
 {
-    template class OpusModelRB<2,1,1>;
+template class OpusModelRB<2,1,1>;
 }

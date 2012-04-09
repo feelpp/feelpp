@@ -36,10 +36,10 @@ inline
 po::options_description
 makeOptions()
 {
-    po::options_description mympiappoptions("MyMpiApp options");
+    po::options_description mympiappoptions( "MyMpiApp options" );
     mympiappoptions.add_options()
-        ("dt", po::value<double>()->default_value( 1 ), "time step value")
-        ;
+    ( "dt", po::value<double>()->default_value( 1 ), "time step value" )
+    ;
 
     // return the options mympiappoptions and the feel_options defined
     // internally by Feel
@@ -54,11 +54,11 @@ makeAbout()
                      "0.1",
                      "my first Feel application",
                      AboutData::License_GPL,
-                     "Copyright (c) 2008-2012 Universite Joseph Fourier");
+                     "Copyright (c) 2008-2012 Universite Joseph Fourier" );
 
-    about.addAuthor("Christophe Prud'homme",
-                    "developer",
-                    "christophe.prudhomme@ujf-grenoble.fr", "");
+    about.addAuthor( "Christophe Prud'homme",
+                     "developer",
+                     "christophe.prudhomme@ujf-grenoble.fr", "" );
     return about;
 }
 
@@ -76,8 +76,8 @@ public:
      * constructor about data and options description
      */
     MyMpiApp( int argc, char** argv,
-           AboutData const&,
-           po::options_description const&  );
+              AboutData const&,
+              po::options_description const&  );
 
     /**
      * must be redefined by ApplicationMpi subclass
@@ -85,24 +85,24 @@ public:
     void run();
 };
 
-MyMpiApp::MyMpiApp(int argc, char** argv,
-             AboutData const& ad )
+MyMpiApp::MyMpiApp( int argc, char** argv,
+                    AboutData const& ad )
     :
     ApplicationMpi( argc, argv, ad )
 {}
-MyMpiApp::MyMpiApp(int argc, char** argv,
-             AboutData const& ad,
-             po::options_description const& od )
+MyMpiApp::MyMpiApp( int argc, char** argv,
+                    AboutData const& ad,
+                    po::options_description const& od )
     :
     ApplicationMpi( argc, argv, ad, od )
 {}
 void MyMpiApp::run()
 {
     if ( this->vm().count( "help" ) )
-        {
-            std::cout << this->optionsDescription() << "\n";
-            return;
-        }
+    {
+        std::cout << this->optionsDescription() << "\n";
+        return;
+    }
 
     this->changeRepository( boost::format( "%1%/" )
                             % this->about().appName() );

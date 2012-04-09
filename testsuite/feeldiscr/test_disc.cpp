@@ -88,107 +88,107 @@ struct test_disc: public Application
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( this->vm()["shape"].template as<std::string>() ),
         mesh()
-        {
-            mesh = createGMSHMesh( _mesh=new mesh_type,
-                                   _desc=createMesh(),
-                                   _update=MESH_CHECK|MESH_UPDATE_EDGES|MESH_UPDATE_FACES);
-            Xh = space_type::New( mesh );
-        }
+    {
+        mesh = createGMSHMesh( _mesh=new mesh_type,
+                               _desc=createMesh(),
+                               _update=MESH_CHECK|MESH_UPDATE_EDGES|MESH_UPDATE_FACES );
+        Xh = space_type::New( mesh );
+    }
     gmsh_ptrtype createMesh()
-        {
-            std::ostringstream ostr;
-            ostr << "Mesh.MshFileVersion = " << 2 << ";\n"
-                 << "a=" << -1 << ";\n"
-                 << "b=" << 1 << ";\n"
-                 << "c=" << -1 << ";\n"
-                 << "d=" << 1 << ";\n"
-                 << "h=" << meshSize << ";\n"
-                 << "Point(1) = {a,c,0.0,h};\n"
-                 << "Point(2) = {b,c,0.0,h};\n"
-                 << "Point(3) = {b,d,0.0,h};\n"
-                 << "Point(4) = {a,d,0.0,h};\n"
-                 << "Point(5) = {0,c,0.0,h};\n"
-                 << "Point(6) = {0,d,0.0,h};\n"
-                 << "Point(7) = {a,0,0.0,h};\n"
-                 << "Point(8) = {b,0,0.0,h};\n"
-                 << "Point(9) = {0,0,0.0,h};\n"
-                 << "Line(1) = {1,5};\n"
-                 << "Line(2) = {5,2};\n"
-                 << "Line(3) = {2,8};\n"
-                 << "Line(4) = {8,3};\n"
-                 << "Line(5) = {3,6};\n"
-                 << "Line(6) = {6,4};\n"
-                 << "Line(7) = {4,7};\n"
-                 << "Line(8) = {7,1};\n"
-                 << "/* discontinuity (vertical line) */\n"
-                 << "Line(9) = {5, 9};\n"
-                 << "Line(10) = {9, 6};\n"
-                 << "/* horizontal line through square */\n"
-                 << "Line(11) = {7, 9};\n"
-                 << "Line(12) = {9, 8};\n"
-                 << "\n"
-                 << "Line Loop(19) = {3, -12, -9, 2};\n"
-                 << "Plane Surface(20) = {19};\n"
-                 << "Line Loop(21) = {4, 5, -10, 12};\n"
-                 << "Plane Surface(22) = {21};\n"
-                 << "Line Loop(23) = {6, 7, 11, 10};\n"
-                 << "Plane Surface(24) = {23};\n"
-                 << "Line Loop(25) = {8, 1, 9, -11};\n"
-                 << "Plane Surface(26) = {25};\n"
-                 << "\n"
-                 << "Physical Line(\"Tflux\") = {3, 4};\n"
-                 << "Physical Line(\"Tfixed\") = {8, 7};\n"
-                 << "Physical Line(\"Tinsulated\") = {1, 2, 6, 5};\n"
-                 << "Physical Line(\"Tdiscontinuity\") = {10, 9};\n"
-                 << "Physical Line(\"Tline\") = {11, 12};\n"
-                 << "\n"
-                 << "Physical Surface(\"k1\") = {20, 22};\n"
-                 << "Physical Surface(\"k2\") = {24, 26};\n";
+    {
+        std::ostringstream ostr;
+        ostr << "Mesh.MshFileVersion = " << 2 << ";\n"
+             << "a=" << -1 << ";\n"
+             << "b=" << 1 << ";\n"
+             << "c=" << -1 << ";\n"
+             << "d=" << 1 << ";\n"
+             << "h=" << meshSize << ";\n"
+             << "Point(1) = {a,c,0.0,h};\n"
+             << "Point(2) = {b,c,0.0,h};\n"
+             << "Point(3) = {b,d,0.0,h};\n"
+             << "Point(4) = {a,d,0.0,h};\n"
+             << "Point(5) = {0,c,0.0,h};\n"
+             << "Point(6) = {0,d,0.0,h};\n"
+             << "Point(7) = {a,0,0.0,h};\n"
+             << "Point(8) = {b,0,0.0,h};\n"
+             << "Point(9) = {0,0,0.0,h};\n"
+             << "Line(1) = {1,5};\n"
+             << "Line(2) = {5,2};\n"
+             << "Line(3) = {2,8};\n"
+             << "Line(4) = {8,3};\n"
+             << "Line(5) = {3,6};\n"
+             << "Line(6) = {6,4};\n"
+             << "Line(7) = {4,7};\n"
+             << "Line(8) = {7,1};\n"
+             << "/* discontinuity (vertical line) */\n"
+             << "Line(9) = {5, 9};\n"
+             << "Line(10) = {9, 6};\n"
+             << "/* horizontal line through square */\n"
+             << "Line(11) = {7, 9};\n"
+             << "Line(12) = {9, 8};\n"
+             << "\n"
+             << "Line Loop(19) = {3, -12, -9, 2};\n"
+             << "Plane Surface(20) = {19};\n"
+             << "Line Loop(21) = {4, 5, -10, 12};\n"
+             << "Plane Surface(22) = {21};\n"
+             << "Line Loop(23) = {6, 7, 11, 10};\n"
+             << "Plane Surface(24) = {23};\n"
+             << "Line Loop(25) = {8, 1, 9, -11};\n"
+             << "Plane Surface(26) = {25};\n"
+             << "\n"
+             << "Physical Line(\"Tflux\") = {3, 4};\n"
+             << "Physical Line(\"Tfixed\") = {8, 7};\n"
+             << "Physical Line(\"Tinsulated\") = {1, 2, 6, 5};\n"
+             << "Physical Line(\"Tdiscontinuity\") = {10, 9};\n"
+             << "Physical Line(\"Tline\") = {11, 12};\n"
+             << "\n"
+             << "Physical Surface(\"k1\") = {20, 22};\n"
+             << "Physical Surface(\"k2\") = {24, 26};\n";
 
-            gmsh_ptrtype gmshp( new gmsh_type );
-            gmshp->setPrefix( "hypercube-2" );
-            gmshp->setDescription( ostr.str() );
+        gmsh_ptrtype gmshp( new gmsh_type );
+        gmshp->setPrefix( "hypercube-2" );
+        gmshp->setDescription( ostr.str() );
 
-            return gmshp;
-        }
+        return gmshp;
+    }
 
     void operator()()
-        {
-            using namespace Feel::vf;
-            auto u = Xh->element();
+    {
+        using namespace Feel::vf;
+        auto u = Xh->element();
 
-            // this is the way to take into account the discontinuity at x = 0
-            // properly
-            u = vf::project(Xh, elements(mesh),
-                            (emarker()==mesh->markerName("k2"))*(2-Px())+
-                            (emarker()==mesh->markerName("k1"))*Px() );
-            BOOST_TEST_MESSAGE( "here\n" );
-            double len1 = integrate( markedfaces( mesh, "Tdiscontinuity" ), cst(1.0) ).evaluate()(0,0);
-            BOOST_CHECK_CLOSE( len1, 2, 1e-12 );
-            BOOST_TEST_MESSAGE( "here 1\n" );
-            double len11 = integrate( markedfaces( mesh, "Tdiscontinuity" ), leftfacev(cst(1.0))+rightfacev(cst(1.)) ).evaluate()(0,0);
-            BOOST_CHECK_CLOSE( len11, 4, 1e-12 );
-            BOOST_TEST_MESSAGE( "here 2\n" );
-            double len2 = integrate( markedfaces( mesh, "Tline" ), cst(1.0) ).evaluate()(0,0);
-            BOOST_CHECK_CLOSE( len2, 2, 1e-12 );
-            auto int1 = integrate( markedfaces( mesh, "Tdiscontinuity" ), jumpv( idv( u ) ) ).evaluate();
-            BOOST_CHECK_CLOSE( int1(0,0), 4, 1e-12 );
-            BOOST_CHECK_SMALL( int1(1,0), 1e-12 );
-            auto int2 = integrate( markedfaces( mesh, "Tdiscontinuity" ), leftfacev( idv( u ) )+rightfacev( idv( u ) ) ).evaluate();
-            BOOST_CHECK_CLOSE( int2(0,0), 4, 1e-12 );
+        // this is the way to take into account the discontinuity at x = 0
+        // properly
+        u = vf::project( Xh, elements( mesh ),
+                         ( emarker()==mesh->markerName( "k2" ) )*( 2-Px() )+
+                         ( emarker()==mesh->markerName( "k1" ) )*Px() );
+        BOOST_TEST_MESSAGE( "here\n" );
+        double len1 = integrate( markedfaces( mesh, "Tdiscontinuity" ), cst( 1.0 ) ).evaluate()( 0,0 );
+        BOOST_CHECK_CLOSE( len1, 2, 1e-12 );
+        BOOST_TEST_MESSAGE( "here 1\n" );
+        double len11 = integrate( markedfaces( mesh, "Tdiscontinuity" ), leftfacev( cst( 1.0 ) )+rightfacev( cst( 1. ) ) ).evaluate()( 0,0 );
+        BOOST_CHECK_CLOSE( len11, 4, 1e-12 );
+        BOOST_TEST_MESSAGE( "here 2\n" );
+        double len2 = integrate( markedfaces( mesh, "Tline" ), cst( 1.0 ) ).evaluate()( 0,0 );
+        BOOST_CHECK_CLOSE( len2, 2, 1e-12 );
+        auto int1 = integrate( markedfaces( mesh, "Tdiscontinuity" ), jumpv( idv( u ) ) ).evaluate();
+        BOOST_CHECK_CLOSE( int1( 0,0 ), 4, 1e-12 );
+        BOOST_CHECK_SMALL( int1( 1,0 ), 1e-12 );
+        auto int2 = integrate( markedfaces( mesh, "Tdiscontinuity" ), leftfacev( idv( u ) )+rightfacev( idv( u ) ) ).evaluate();
+        BOOST_CHECK_CLOSE( int2( 0,0 ), 4, 1e-12 );
 
-            u = vf::project(Xh, elements(mesh),
-                            (emarker()==mesh->markerName("k2"))*(2-Px())*Py()-
-                            (emarker()==mesh->markerName("k1"))*Px()*Py() );
-            auto int3 = integrate( markedfaces( mesh, "Tdiscontinuity" ), jumpv( idv( u ) ) ).evaluate();
-            BOOST_CHECK_SMALL( int3(0,0), 1e-12 );
-            BOOST_CHECK_SMALL( int3(1,0), 1e-12 );
+        u = vf::project( Xh, elements( mesh ),
+                         ( emarker()==mesh->markerName( "k2" ) )*( 2-Px() )*Py()-
+                         ( emarker()==mesh->markerName( "k1" ) )*Px()*Py() );
+        auto int3 = integrate( markedfaces( mesh, "Tdiscontinuity" ), jumpv( idv( u ) ) ).evaluate();
+        BOOST_CHECK_SMALL( int3( 0,0 ), 1e-12 );
+        BOOST_CHECK_SMALL( int3( 1,0 ), 1e-12 );
 
-            u = vf::project(Xh, elements(mesh), sin(Px()) );
-            auto int4 = integrate( markedfaces( mesh, "Tdiscontinuity" ), jumpv( idv( u ) ) ).evaluate();
-            BOOST_CHECK_SMALL( int3(0,0), 1e-12 );
-            BOOST_CHECK_SMALL( int3(1,0), 1e-12 );
-        }
+        u = vf::project( Xh, elements( mesh ), sin( Px() ) );
+        auto int4 = integrate( markedfaces( mesh, "Tdiscontinuity" ), jumpv( idv( u ) ) ).evaluate();
+        BOOST_CHECK_SMALL( int3( 0,0 ), 1e-12 );
+        BOOST_CHECK_SMALL( int3( 1,0 ), 1e-12 );
+    }
     boost::shared_ptr<Feel::Backend<double> > backend;
     double meshSize;
     std::string shape;
@@ -201,11 +201,11 @@ inline
 Feel::po::options_description
 makeOptions()
 {
-    Feel::po::options_description integrationoptions("Test Function Space features options");
+    Feel::po::options_description integrationoptions( "Test Function Space features options" );
     integrationoptions.add_options()
-        ("hsize", Feel::po::value<double>()->default_value( 0.1 ), "h value")
-        ("shape", Feel::po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (hypercube, simplex, ellipsoid)")
-        ;
+    ( "hsize", Feel::po::value<double>()->default_value( 0.1 ), "h value" )
+    ( "shape", Feel::po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (hypercube, simplex, ellipsoid)" )
+    ;
     return integrationoptions.add( Feel::feel_options() );
 }
 
@@ -215,12 +215,12 @@ makeAbout()
 {
     Feel::AboutData about( "test_disc" ,
                            "test_disc" ,
-                            "0.2",
+                           "0.2",
                            "1D/2D/3D functionspace features checks",
                            Feel::AboutData::License_GPL,
-                           "Copyright (C) 2010 Université Joseph Fourier (Grenoble I)");
+                           "Copyright (C) 2010 Université Joseph Fourier (Grenoble I)" );
 
-    about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
     return about;
 
 }
@@ -238,8 +238,8 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_disc, T, dim_types )
 {
     BOOST_TEST_MESSAGE( "Test disc (" << T::value << "D)" );
     Feel::test_disc<double,T::value> t( boost::unit_test::framework::master_test_suite().argc,
-                                           boost::unit_test::framework::master_test_suite().argv,
-                                           makeAbout(), makeOptions() );
+                                        boost::unit_test::framework::master_test_suite().argv,
+                                        makeAbout(), makeOptions() );
     t();
     BOOST_TEST_MESSAGE( "Test disc (" << T::value << "D) done." );
 }
@@ -253,7 +253,7 @@ int BOOST_TEST_CALL_DECL
 main( int argc, char* argv[] )
 {
     Feel::Environment env( argc, argv );
-    Feel::Assert::setLog( "test_disc.assert");
+    Feel::Assert::setLog( "test_disc.assert" );
     int ret = ::boost::unit_test::unit_test_main( &init_unit_test, argc, argv );
 
     return ret;

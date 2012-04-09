@@ -58,14 +58,17 @@ GmshHypercubeDomain::~GmshHypercubeDomain()
 std::string
 GmshHypercubeDomain::getDescription() const
 {
-    switch( this->dimension() )
+    switch ( this->dimension() )
     {
     case 1:
         return this->getDescription1D();
+
     case 2:
         return this->getDescription2D();
+
     case 3:
         return this->getDescription3D();
+
     default:
         return std::string();
     }
@@ -77,27 +80,38 @@ GmshHypercubeDomain::getDescription1D() const
     std::ostringstream ostr;
     ostr << this->preamble();
     ostr << "Point(1) = {" << this->M_I[0].first << ",";
+
     if ( M_rdim == this->dimension() + 1 )
         ostr << this->M_I[1].first;
+
     else
         ostr << 0;
+
     ostr << ",0,h};\n"
          << "Point(2) = {" << this->M_I[0].second << ",";
+
     if ( M_rdim == this->dimension() + 1 )
         ostr << this->M_I[1].second;
+
     else
         ostr << 0;
+
     ostr << ",0,h};\n";
+
     if ( this->addMidPoint() )
     {
-        ostr << "Point(3) = {" << (this->M_I[0].second+this->M_I[0].first)/2 << ",";
+        ostr << "Point(3) = {" << ( this->M_I[0].second+this->M_I[0].first )/2 << ",";
+
         if ( M_rdim == this->dimension() + 1 )
-            ostr << (this->M_I[1].second+this->M_I[1].first)/2;
+            ostr << ( this->M_I[1].second+this->M_I[1].first )/2;
+
         else
             ostr << 0;
+
         ostr << ",0,h};\n"
              << "Line(1) = {1,3};\n"
              << "Line(2) = {3,2};\n";
+
         if ( this->usePhysicalNames() == false )
         {
             ostr  << "Physical Point(1) = {1};\n"
@@ -106,6 +120,7 @@ GmshHypercubeDomain::getDescription1D() const
                   << "Physical Line(\"Mat1\") = {1};\n"
                   << "Physical Line(\"Mat2\") = {2};\n";
         }
+
         else
         {
             ostr  << "Physical Point(\"Dirichlet\") = {1};\n"
@@ -115,6 +130,7 @@ GmshHypercubeDomain::getDescription1D() const
                   << "Physical Line(\"Mat2\") = {2};\n";
         }
     }
+
     else
     {
         if ( this->usePhysicalNames() == false )
@@ -124,6 +140,7 @@ GmshHypercubeDomain::getDescription1D() const
                  << "Physical Point(3) = {2};\n"
                  << "Physical Line(\"Mat1\") = {1};\n";
         }
+
         else
         {
             ostr << "Line(1) = {1,2};\n"
@@ -132,6 +149,7 @@ GmshHypercubeDomain::getDescription1D() const
                  << "Physical Line(\"Mat1\") = {1};\n";
         }
     }
+
     return ostr.str();
 }
 // 2D
@@ -157,6 +175,7 @@ GmshHypercubeDomain::getDescription2D() const
          << "Line(4) = {3,4};\n"
          << "Line Loop(5) = {1,2,3,4};\n"
          << "Plane Surface(6) = {5};\n";
+
     if ( this->usePhysicalNames() == false )
     {
         ostr << "Physical Line(1) = {1};\n"
@@ -165,6 +184,7 @@ GmshHypercubeDomain::getDescription2D() const
              << "Physical Line(4) = {4};\n"
              << "Physical Surface(6) = {6};\n";
     }
+
     else
     {
         ostr << "Physical Line(\"Dirichlet\") = {1,3};\n"
@@ -184,6 +204,7 @@ GmshHypercubeDomain::getDescription2D() const
              << "Transfinite Surface {6} = {1,2,3,4};\n"
              << "Recombine Surface {6};\n";
     }
+
     return ostr.str();
 }
 // 3D
@@ -212,6 +233,7 @@ GmshHypercubeDomain::getDescription3D() const
          << "\n"
          << "Extrude Surface {6, {0,0,f-e} } {\n"
          << "  Layers { {(f-e)/h}, {1.0} };\n";
+
     if ( M_use_hypercube )
         ostr << "  Recombine;\n";
 
@@ -220,6 +242,7 @@ GmshHypercubeDomain::getDescription3D() const
          << "Physical Line(2) = {2};\n"
          << "Physical Line(3) = {3};\n"
          << "Physical Line(4) = {4};\n";
+
     if ( this->usePhysicalNames() == false )
     {
         ostr << "Physical Surface(6) = {6};\n"
@@ -230,12 +253,14 @@ GmshHypercubeDomain::getDescription3D() const
              << "Physical Surface(28) = {28};\n"
              << "Physical Volume(30) = {1};\n";
     }
+
     else
     {
         ostr << "Physical Surface(\"Neumann\") = {6,19,27,28};\n"
              << "Physical Surface(\"Dirichlet\") = {15,23};\n"
              << "Physical Volume(\"Mat1\") = {1};\n";
     }
+
     if ( M_use_hypercube )
     {
         ostr << "nx = 1/h;\n"
@@ -254,6 +279,7 @@ GmshHypercubeDomain::getDescription3D() const
              << "//Transfinite Surface {28} = {6,10,14,5};\n"
              << "Recombine Surface {27,23,6,19,15,28};\n";
     }
+
     return ostr.str();
 }
 

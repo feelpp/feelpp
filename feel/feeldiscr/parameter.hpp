@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -41,13 +41,13 @@ namespace Feel
 namespace parameter = boost::parameter;
 
 
-BOOST_PARAMETER_TEMPLATE_KEYWORD(mesh_type)
-BOOST_PARAMETER_TEMPLATE_KEYWORD(expansion_type)
-BOOST_PARAMETER_TEMPLATE_KEYWORD(bases_list)
-BOOST_PARAMETER_TEMPLATE_KEYWORD(basis_type)
-BOOST_PARAMETER_TEMPLATE_KEYWORD(domain_value_type)
-BOOST_PARAMETER_TEMPLATE_KEYWORD(periodicity_type)
-BOOST_PARAMETER_TEMPLATE_KEYWORD(continuity_type)
+BOOST_PARAMETER_TEMPLATE_KEYWORD( mesh_type )
+BOOST_PARAMETER_TEMPLATE_KEYWORD( expansion_type )
+BOOST_PARAMETER_TEMPLATE_KEYWORD( bases_list )
+BOOST_PARAMETER_TEMPLATE_KEYWORD( basis_type )
+BOOST_PARAMETER_TEMPLATE_KEYWORD( domain_value_type )
+BOOST_PARAMETER_TEMPLATE_KEYWORD( periodicity_type )
+BOOST_PARAMETER_TEMPLATE_KEYWORD( continuity_type )
 
 }
 #endif /* __parameter_H */

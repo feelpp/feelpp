@@ -58,15 +58,15 @@ inline
 po::options_description
 makeOptions()
 {
-    po::options_description laplacianoptions("Laplacian options");
+    po::options_description laplacianoptions( "Laplacian options" );
     laplacianoptions.add_options()
-        ("hsize", po::value<double>()->default_value( 0.5 ), "mesh size")
-        ("shape", Feel::po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (either simplex or hypercube)")
-        ("nu", po::value<double>()->default_value( 1 ), "grad.grad coefficient")
-        ("weakdir", po::value<int>()->default_value( 1 ), "use weak Dirichlet condition" )
-        ("penaldir", Feel::po::value<double>()->default_value( 10 ),
-         "penalisation parameter for the weak boundary Dirichlet formulation")
-        ;
+    ( "hsize", po::value<double>()->default_value( 0.5 ), "mesh size" )
+    ( "shape", Feel::po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (either simplex or hypercube)" )
+    ( "nu", po::value<double>()->default_value( 1 ), "grad.grad coefficient" )
+    ( "weakdir", po::value<int>()->default_value( 1 ), "use weak Dirichlet condition" )
+    ( "penaldir", Feel::po::value<double>()->default_value( 10 ),
+      "penalisation parameter for the weak boundary Dirichlet formulation" )
+    ;
     return laplacianoptions.add( Feel::feel_options() );
 }
 
@@ -86,9 +86,9 @@ makeAbout()
                      "0.2",
                      "nD(n=1,2,3) Laplacian on simplices or simplex products",
                      Feel::AboutData::License_GPL,
-                     "Copyright (c) 2008-2009 Universite Joseph Fourier");
+                     "Copyright (c) 2008-2009 Universite Joseph Fourier" );
 
-    about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
     return about;
 
 }
@@ -105,7 +105,7 @@ makeAbout()
 template<int Dim>
 class Laplacian
     :
-    public Simget
+public Simget
 {
     typedef Simget super;
 public:
@@ -171,10 +171,13 @@ Laplacian<Dim>::run()
     std::cout << "Execute Laplacian<" << Dim << ">\n";
     std::vector<double> X( 2 );
     X[0] = meshSize;
+
     if ( shape == "hypercube" )
         X[1] = 1;
+
     else // default is simplex
         X[1] = 0;
+
     std::vector<double> Y( 3 );
     run( X.data(), X.size(), Y.data(), Y.size() );
 }
@@ -183,6 +186,7 @@ void
 Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
 {
     if ( X[1] == 0 ) shape = "simplex";
+
     if ( X[1] == 1 ) shape = "hypercube";
 
     if ( !this->vm().count( "nochdir" ) )
@@ -194,12 +198,12 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
                                        % meshSize );
 
     mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
-                                        _desc=domain( _name=(boost::format( "%1%-%2%" ) % shape % Dim).str() ,
-                                                      _usenames=true,
-                                                      _shape=shape,
-                                                      _h=X[0],
-                                                      _xmin=-1,
-                                                      _ymin=-1),
+                                        _desc=domain( _name=( boost::format( "%1%-%2%" ) % shape % Dim ).str() ,
+                                                _usenames=true,
+                                                _shape=shape,
+                                                _h=X[0],
+                                                _xmin=-1,
+                                                _ymin=-1 ),
                                         _update=MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK,
                                         _partitions=this->comm().size()  );
 
@@ -224,8 +228,8 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
     //# marker1 #
     value_type pi = M_PI;
     //! deduce from expression the type of g (thanks to keyword 'auto')
-    auto g = sin(pi*Px())*cos(pi*Py())*cos(pi*Pz());
-    gproj = vf::project( Xh, elements(mesh), g );
+    auto g = sin( pi*Px() )*cos( pi*Py() )*cos( pi*Pz() );
+    gproj = vf::project( Xh, elements( mesh ), g );
 
     //! deduce from expression the type of f (thanks to keyword 'auto')
     auto f = pi*pi*Dim*g;
@@ -245,20 +249,22 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
      */
     /** \code */
     //# marker2 #
-    auto F = backend(_vm=this->vm())->newVector( Xh );
+    auto F = backend( _vm=this->vm() )->newVector( Xh );
     form1( _test=Xh, _vector=F, _init=true ) =
-        integrate( _range=elements(mesh), _expr=f*id(v) )+
+        integrate( _range=elements( mesh ), _expr=f*id( v ) )+
         integrate( _range=markedfaces( mesh, "Neumann" ),
-                   _expr=nu*gradv(gproj)*vf::N()*id(v) );
+                   _expr=nu*gradv( gproj )*vf::N()*id( v ) );
+
     //# endmarker2 #
     if ( weak_dirichlet )
     {
         //# marker41 #
         form1( _test=Xh, _vector=F ) +=
-            integrate( _range=markedfaces(mesh,"Dirichlet"),
-                       _expr=g*(-grad(v)*vf::N()+penaldir*id(v)/hFace()) );
+            integrate( _range=markedfaces( mesh,"Dirichlet" ),
+                       _expr=g*( -grad( v )*vf::N()+penaldir*id( v )/hFace() ) );
         //# endmarker41 #
     }
+
     F->close();
 
     /** \endcode */
@@ -274,57 +280,59 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
 
     //! assemble $\int_\Omega \nu \nabla u \cdot \nabla v$
     /** \code */
-    form2( _test=Xh, _trial=Xh, _matrix=D) =
-        integrate( _range=elements(mesh), _expr=nu*gradt(u)*trans(grad(v)) );
+    form2( _test=Xh, _trial=Xh, _matrix=D ) =
+        integrate( _range=elements( mesh ), _expr=nu*gradt( u )*trans( grad( v ) ) );
     /** \endcode */
     //# endmarker3 #
 
     if ( weak_dirichlet )
-        {
-            /** weak dirichlet conditions treatment for the boundaries marked 1 and 3
-             * -# assemble \f$\int_{\partial \Omega} -\nabla u \cdot \mathbf{n} v\f$
-             * -# assemble \f$\int_{\partial \Omega} -\nabla v \cdot \mathbf{n} u\f$
-             * -# assemble \f$\int_{\partial \Omega} \frac{\gamma}{h} u v\f$
-             */
-            /** \code */
-            //# marker10 #
-            form2( _test=Xh, _trial=Xh, _matrix=D ) +=
-                integrate( _range=markedfaces(mesh,"Dirichlet"),
-                           _expr= ( -(gradt(u)*vf::N())*id(v)
-                                    -(grad(v)*vf::N())*idt(u)
-                                    +penaldir*id(v)*idt(u)/hFace() ) );
-            //# endmarker10 #
-            /** \endcode */
-        }
-    else
-        {
-            /** strong(algebraic) dirichlet conditions treatment for the boundaries marked 1 and 3
-             * -# first close the matrix (the matrix must be closed first before any manipulation )
-             * -# modify the matrix by cancelling out the rows and columns of D that are associated with the Dirichlet dof
-             */
-            /** \code */
-            //# marker5 #
-            form2( _test=Xh, _trial=Xh, _matrix=D ) +=
-                on( _range=markedfaces(mesh, "Dirichlet"),
-                    _element=u, _rhs=F, _expr=g );
-            //# endmarker5 #
-            /** \endcode */
+    {
+        /** weak dirichlet conditions treatment for the boundaries marked 1 and 3
+         * -# assemble \f$\int_{\partial \Omega} -\nabla u \cdot \mathbf{n} v\f$
+         * -# assemble \f$\int_{\partial \Omega} -\nabla v \cdot \mathbf{n} u\f$
+         * -# assemble \f$\int_{\partial \Omega} \frac{\gamma}{h} u v\f$
+         */
+        /** \code */
+        //# marker10 #
+        form2( _test=Xh, _trial=Xh, _matrix=D ) +=
+            integrate( _range=markedfaces( mesh,"Dirichlet" ),
+                       _expr= ( -( gradt( u )*vf::N() )*id( v )
+                                -( grad( v )*vf::N() )*idt( u )
+                                +penaldir*id( v )*idt( u )/hFace() ) );
+        //# endmarker10 #
+        /** \endcode */
+    }
 
-        }
+    else
+    {
+        /** strong(algebraic) dirichlet conditions treatment for the boundaries marked 1 and 3
+         * -# first close the matrix (the matrix must be closed first before any manipulation )
+         * -# modify the matrix by cancelling out the rows and columns of D that are associated with the Dirichlet dof
+         */
+        /** \code */
+        //# marker5 #
+        form2( _test=Xh, _trial=Xh, _matrix=D ) +=
+            on( _range=markedfaces( mesh, "Dirichlet" ),
+                _element=u, _rhs=F, _expr=g );
+        //# endmarker5 #
+        /** \endcode */
+
+    }
+
     /** \endcode */
 
     //! solve the system
     /** \code */
-	//# marker6 #
-    backend(_rebuild=true,_vm=this->vm())->solve( _matrix=D, _solution=u, _rhs=F );
-	//# endmarker6 #
+    //# marker6 #
+    backend( _rebuild=true,_vm=this->vm() )->solve( _matrix=D, _solution=u, _rhs=F );
+    //# endmarker6 #
     /** \endcode */
 
     //! compute the \f$L_2$ norm of the error
     /** \code */
     //# marker7 #
-    double L2error2 =integrate(_range=elements(mesh),
-                               _expr=(idv(u)-g)*(idv(u)-g) ).evaluate()(0,0);
+    double L2error2 =integrate( _range=elements( mesh ),
+                                _expr=( idv( u )-g )*( idv( u )-g ) ).evaluate()( 0,0 );
     double L2error =   math::sqrt( L2error2 );
 
 
@@ -336,26 +344,28 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
     /** \code */
     //! project the exact solution
     element_type e( Xh, "e" );
-    e = vf::project( Xh, elements(mesh), g );
+    e = vf::project( Xh, elements( mesh ), g );
 
     export_ptrtype exporter( export_type::New( this->vm(),
-                                               (boost::format( "%1%-%2%-%3%" )
-                                                % this->about().appName()
-                                                % shape
-                                                % Dim).str() ) );
+                             ( boost::format( "%1%-%2%-%3%" )
+                               % this->about().appName()
+                               % shape
+                               % Dim ).str() ) );
+
     if ( exporter->doExport() )
     {
         Log() << "exportResults starts\n";
 
-        exporter->step(0)->setMesh( mesh );
+        exporter->step( 0 )->setMesh( mesh );
 
-        exporter->step(0)->addRegions();
-        exporter->step(0)->add( "u", u );
-        exporter->step(0)->add( "g", e );
+        exporter->step( 0 )->addRegions();
+        exporter->step( 0 )->add( "u", u );
+        exporter->step( 0 )->add( "g", e );
 
         exporter->save();
         Log() << "exportResults done\n";
     }
+
     /** \endcode */
 } // Laplacian::run
 
@@ -371,11 +381,13 @@ main( int argc, char** argv )
      */
     /** \code */
     Application app( argc, argv, makeAbout(), makeOptions() );
+
     if ( app.vm().count( "help" ) )
     {
         std::cout << app.optionsDescription() << "\n";
         return 0;
     }
+
     /** \endcode */
 
     /**
@@ -384,6 +396,7 @@ main( int argc, char** argv )
     /** \code */
     if ( app.nProcess() == 1 )
         app.add( new Laplacian<1>( app.vm(), app.about() ) );
+
     app.add( new Laplacian<2>( app.vm(), app.about() ) );
     app.add( new Laplacian<3>( app.vm(), app.about() ) );
     /** \endcode */

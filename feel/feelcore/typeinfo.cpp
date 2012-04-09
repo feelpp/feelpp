@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -37,14 +37,14 @@ namespace Feel
 TypeInfo::TypeInfo()
 {
     class Nil {};
-    _M_info = &typeid(Nil);
+    _M_info = &typeid( Nil );
     assert( _M_info != 0 );
 
 }
 
-TypeInfo::TypeInfo(const std::type_info& ti)
+TypeInfo::TypeInfo( const std::type_info& ti )
     :
-    _M_info(&ti)
+    _M_info( &ti )
 {
     assert( _M_info != 0 );
 }
@@ -62,10 +62,10 @@ TypeInfo::~TypeInfo()
 }
 
 bool
-TypeInfo::before(const TypeInfo& rhs) const
+TypeInfo::before( const TypeInfo& rhs ) const
 {
     assert( _M_info != 0 );
-    return _M_info->before(*rhs._M_info);
+    return _M_info->before( *rhs._M_info );
 }
 
 const std::type_info&

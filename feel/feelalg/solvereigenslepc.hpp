@@ -155,7 +155,7 @@ public:
      * @computes and returns the relative error
      * ||A*x-lambda*x||/|lambda*x| of the ith eigenpair.
      */
-    real_type relativeError (unsigned int i);
+    real_type relativeError ( unsigned int i );
 
     //@}
 
@@ -184,11 +184,11 @@ public:
      * converged eigen values and the number of the iterations carried
      * out by the eigen solver.
      */
-    solve_return_type  solve (MatrixSparse<T> &matrix_A,
-                              int nev,
-                              int ncv,
-                              const double tol,
-                              const unsigned int m_its);
+    solve_return_type  solve ( MatrixSparse<T> &matrix_A,
+                               int nev,
+                               int ncv,
+                               const double tol,
+                               const unsigned int m_its );
 
     /**
      * This function calls the SLEPc solver to compute the eigenpairs
@@ -199,12 +199,12 @@ public:
      * values and the number of the iterations carried out by the
      * eigen solver.
      */
-    solve_return_type  solve (MatrixSparse<T> &matrix_A,
-                              MatrixSparse<T> &matrix_B,
-                              int nev,
-                              int ncv,
-                              const double tol,
-                              const unsigned int m_its);
+    solve_return_type  solve ( MatrixSparse<T> &matrix_A,
+                               MatrixSparse<T> &matrix_B,
+                               int nev,
+                               int ncv,
+                               const double tol,
+                               const unsigned int m_its );
 
 
 

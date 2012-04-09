@@ -112,9 +112,9 @@ public:
     virtual void diagonal( vector_type& v ) const = 0;
 
     void diagonal ( boost::shared_ptr<Vector<T> >& dest ) const
-        {
-            this->diagonal( *dest );
-        }
+    {
+        this->diagonal( *dest );
+    }
 
     //! Multiplies the matrix with in and stores the result in out.
     virtual void multVector( vector_type const& in, vector_type& out ) const = 0;
@@ -125,18 +125,18 @@ public:
      */
     void multVector ( const boost::shared_ptr<Vector<T> >& arg,
                       boost::shared_ptr<Vector<T> >& dest ) const
-        {
-            this->multVector( *arg, *dest );
-        }
+    {
+        this->multVector( *arg, *dest );
+    }
 
     //! Multiplies the matrix with in and adds the result to out.
     virtual void multAddVector( vector_type const& in, vector_type& out ) const = 0;
 
     void multAddVector ( const boost::shared_ptr<Vector<T> >& arg,
                          boost::shared_ptr<Vector<T> >& dest ) const
-        {
-            this->multAddVector( *arg, *dest );
-        }
+    {
+        this->multAddVector( *arg, *dest );
+    }
     //@}
 
 

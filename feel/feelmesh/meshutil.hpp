@@ -51,8 +51,8 @@ template<typename MeshType>
 struct TempEntityContainer
 {
     typedef typename mpl::if_<mpl::equal_to<mpl::int_<MeshType::nDim>, mpl::int_<3> >,
-                              mpl::identity<BareFace>,
-                              mpl::identity<BareEdge> >::type::type entity_type;
+            mpl::identity<BareFace>,
+            mpl::identity<BareEdge> >::type::type entity_type;
     typedef std::map<entity_type, std::pair<size_type, size_type >, cmpBareItem<entity_type> > type;
 };
 template<typename Ele, int Dim>
@@ -76,15 +76,18 @@ struct MakeBareEntity<Ele, 3>
         size_type i1 = ( _M_element.point( 0 ) ).id();
         size_type i2 = ( _M_element.point( 1 ) ).id();
         size_type i3 = ( _M_element.point( 2 ) ).id();
+
         if ( Ele::face_type::numVertices == 4 )
-            {
-                size_type i4 = ( _M_element.point( 3 ) ).id();
-                bface = makeBareFace( i1, i2, i3, i4 ).first;
-            }
+        {
+            size_type i4 = ( _M_element.point( 3 ) ).id();
+            bface = makeBareFace( i1, i2, i3, i4 ).first;
+        }
+
         else
-            {
-                bface = makeBareFace( i1, i2, i3 ).first;
-            }
+        {
+            bface = makeBareFace( i1, i2, i3 ).first;
+        }
+
         return bface;
     }
     entity_type
@@ -98,16 +101,19 @@ struct MakeBareEntity<Ele, 3>
         i1 = ( _M_element.point( i1 ) ).id();
         i2 = ( _M_element.point( i2 ) ).id();
         i3 = ( _M_element.point( i3 ) ).id();
+
         if ( numVertices == 4 )
         {
             size_type i4 = _M_element.fToP( j, 3 );
             i4 = ( _M_element.point( i4 ) ).id();
             bface = ( makeBareItem( i1, i2, i3, i4 ) ).first;
         }
+
         else
         {
             bface = ( makeBareItem( i1, i2, i3 ) ).first;
         }
+
         return bface;
     }
     Ele const& _M_element;
@@ -202,15 +208,18 @@ struct MakeBareEntityFromFace<Ele, 3>
         size_type i1 = ( _M_element.point( 0 ) ).id();
         size_type i2 = ( _M_element.point( 1 ) ).id();
         size_type i3 = ( _M_element.point( 2 ) ).id();
+
         if ( numVertices == 4 )
         {
             size_type i4 = ( _M_element.point( 3 ) ).id();
             bface = ( makeBareItem( i1, i2, i3, i4 ) ).first;
         }
+
         else
         {
             bface = ( makeBareItem( i1, i2, i3 ) ).first;
         }
+
         return bface;
     }
     Ele const& _M_element;
@@ -260,11 +269,11 @@ typedef std::pair<Point, Point> MeshBoundingBox;
 template<typename MeshType>
 inline
 MeshBoundingBox
-boundingBox (const MeshType& mesh)
+boundingBox ( const MeshType& mesh )
 {
     // processor bounding box with no arguments
     // computes the global bounding box
-    return processorBoundingBox(mesh);
+    return processorBoundingBox( mesh );
 }
 
 
@@ -274,14 +283,14 @@ boundingBox (const MeshType& mesh)
 template<typename MeshType>
 inline
 Sphere
-boundingSphere (const MeshType& mesh)
+boundingSphere ( const MeshType& mesh )
 {
-    MeshBoundingBox bbox = boundingBox(mesh);
+    MeshBoundingBox bbox = boundingBox( mesh );
 
-    const double diag = Feel::distance( bbox.second, bbox.first);
-    const Point cent = Feel::middle( bbox.second, bbox.first);
+    const double diag = Feel::distance( bbox.second, bbox.first );
+    const Point cent = Feel::middle( bbox.second, bbox.first );
 
-    return Sphere (cent, .5*diag);
+    return Sphere ( cent, .5*diag );
 
 }
 
@@ -293,26 +302,28 @@ boundingSphere (const MeshType& mesh)
 template<typename MeshType>
 inline
 MeshBoundingBox
-processorBoundingBox (const MeshType& mesh,
-                      const size_type pid = invalid_size_type_value )
+processorBoundingBox ( const MeshType& mesh,
+                       const size_type pid = invalid_size_type_value )
 {
-    FEELPP_ASSERT (mesh.numPoints() != 0).error( "mesh has no points" );
+    FEELPP_ASSERT ( mesh.numPoints() != 0 ).error( "mesh has no points" );
 
-    Point min(1.e30,   1.e30,  1.e30);
-    Point max(-1.e30, -1.e30, -1.e30);
+    Point min( 1.e30,   1.e30,  1.e30 );
+    Point max( -1.e30, -1.e30, -1.e30 );
 
     // By default no processor is specified and we compute
     // the bounding box for the whole domain.
-    if (pid == invalid_size_type_value)
+    if ( pid == invalid_size_type_value )
     {
         Debug( 4100 ) << "[processorBoundingBox] np pid given\n";
-        for (unsigned int n=0; n<mesh.numPoints(); n++)
-            for (unsigned int i=0; i<mesh.dimension(); i++)
+
+        for ( unsigned int n=0; n<mesh.numPoints(); n++ )
+            for ( unsigned int i=0; i<mesh.dimension(); i++ )
             {
-                min(i) = std::min(min(i), mesh.point(n)(i));
-                max(i) = std::max(max(i), mesh.point(n)(i));
+                min( i ) = std::min( min( i ), mesh.point( n )( i ) );
+                max( i ) = std::max( max( i ), mesh.point( n )( i ) );
             }
     }
+
     // if a specific processor id is specified then we need
     // to only consider those elements living on that processor
     else
@@ -321,22 +332,24 @@ processorBoundingBox (const MeshType& mesh,
         typename MeshType::element_iterator it = mesh.beginElementWithProcessId( pid );
         typename MeshType::element_iterator en = mesh.endElementWithProcessId( pid );
 
-        for (; it != en; ++it)
-            for (unsigned int n=0; n< MeshType::element_type::numPoints; n++)
-                for (unsigned int i=0; i<mesh.dimension(); i++)
+        for ( ; it != en; ++it )
+            for ( unsigned int n=0; n< MeshType::element_type::numPoints; n++ )
+                for ( unsigned int i=0; i<mesh.dimension(); i++ )
                 {
-                    min(i) = std::min(min(i), mesh.point(n)(i));
-                    max(i) = std::max(max(i), mesh.point(n)(i));
+                    min( i ) = std::min( min( i ), mesh.point( n )( i ) );
+                    max( i ) = std::max( max( i ), mesh.point( n )( i ) );
                 }
     }
-    for (unsigned int i=mesh.dimension(); i< min.node().size(); i++)
+
+    for ( unsigned int i=mesh.dimension(); i< min.node().size(); i++ )
     {
         min( i ) = 0;
         max( i ) = 0;
     }
+
     Debug( 4100 ) << "[processorBoundingBox] min= " << min << "\n";
     Debug( 4100 ) << "[processorBoundingBox] max= " << max << "\n";
-    const MeshBoundingBox ret_val(min, max);
+    const MeshBoundingBox ret_val( min, max );
 
     return ret_val;
 }
@@ -347,18 +360,18 @@ processorBoundingBox (const MeshType& mesh,
 template<typename MeshType>
 inline
 Sphere
-processorBoundingSphere (const MeshType& mesh,
-                         const size_type pid = invalid_size_type_value)
+processorBoundingSphere ( const MeshType& mesh,
+                          const size_type pid = invalid_size_type_value )
 {
-  MeshBoundingBox bbox = processorBoundingBox(mesh,pid);
+    MeshBoundingBox bbox = processorBoundingBox( mesh,pid );
 
-  const Real  diag = Feel::distance( bbox.second, bbox.first);
-  const Point cent = Feel::middle(bbox.second, bbox.first);
+    const Real  diag = Feel::distance( bbox.second, bbox.first );
+    const Point cent = Feel::middle( bbox.second, bbox.first );
 
-  Debug( 4100 ) << "[processorBoundingSphere] processor " << mesh.comm().rank() << "\n";
-  Debug( 4100 ) << "[processorBoundingSphere] center " << cent << "\n";
-  Debug( 4100 ) << "[processorBoundingSphere] radius " << 0.5*diag << "\n";
-  return Sphere (cent, .5*diag);
+    Debug( 4100 ) << "[processorBoundingSphere] processor " << mesh.comm().rank() << "\n";
+    Debug( 4100 ) << "[processorBoundingSphere] center " << cent << "\n";
+    Debug( 4100 ) << "[processorBoundingSphere] radius " << 0.5*diag << "\n";
+    return Sphere ( cent, .5*diag );
 }
 
 

@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -50,37 +50,46 @@ public:
     typedef T value_type;
 
     FunctorDomain()
-        {}
+    {}
 
     virtual ~FunctorDomain()
-        {}
+    {}
 
-    virtual bool hasLowerBound() const {return false;}
+    virtual bool hasLowerBound() const
+    {
+        return false;
+    }
 
     virtual value_type lowerBound() const
-        {
-            FEELPP_ASSERT( true )( "FunctorDomain::lowerBound() called for a domain without "
-                                  "a lower bound" );
-            return 0.0;
-        }
+    {
+        FEELPP_ASSERT( true )( "FunctorDomain::lowerBound() called for a domain without "
+                               "a lower bound" );
+        return 0.0;
+    }
 
-    virtual bool hasUpperBound() const {return false;}
+    virtual bool hasUpperBound() const
+    {
+        return false;
+    }
 
     virtual value_type upperBound() const
-        {
-            FEELPP_ASSERT( true )( "FunctorDomain::upperBound() called for a domain without "
-                                  "a upper bound" );
-            return 0.0;
-        }
+    {
+        FEELPP_ASSERT( true )( "FunctorDomain::upperBound() called for a domain without "
+                               "a upper bound" );
+        return 0.0;
+    }
 
-    virtual bool hasExcludedPoint() const {return false;}
+    virtual bool hasExcludedPoint() const
+    {
+        return false;
+    }
 
     virtual value_type excludedPoint() const
-        {
-            FEELPP_ASSERT( true )( "FunctorDomain::excludedPoint() called for a domain without "
-                                  "an excluded point" );
-            return 0.0;
-        }
+    {
+        FEELPP_ASSERT( true )( "FunctorDomain::excludedPoint() called for a domain without "
+                               "an excluded point" );
+        return 0.0;
+    }
 
 };
 template<typename T = double>
@@ -95,7 +104,7 @@ public:
     UnboundedDomain()
         :
         super()
-        {}
+    {}
 };
 
 template<typename T = double>
@@ -110,11 +119,17 @@ public:
     PositiveDomain()
         :
         super()
-        {}
+    {}
 
-    virtual bool hasLowerBound() const {return true;}
+    virtual bool hasLowerBound() const
+    {
+        return true;
+    }
 
-    virtual value_type lowerBound() const {return 0.0;}
+    virtual value_type lowerBound() const
+    {
+        return 0.0;
+    }
 };
 
 template<typename T = double>
@@ -126,20 +141,32 @@ public:
 
     typedef typename super::value_type value_type;
 
-    BoundedDomain(const value_type& lower, const value_type& upper)
+    BoundedDomain( const value_type& lower, const value_type& upper )
         :
         super(),
         lower_( lower ),
         upper_( upper )
-        {}
+    {}
 
-    virtual bool hasLowerBound() const {return true;}
+    virtual bool hasLowerBound() const
+    {
+        return true;
+    }
 
-    virtual value_type lowerBound() const {return lower_;}
+    virtual value_type lowerBound() const
+    {
+        return lower_;
+    }
 
-    virtual bool hasUpperBound() const {return true;}
+    virtual bool hasUpperBound() const
+    {
+        return true;
+    }
 
-    virtual value_type upperBound() const {return upper_;}
+    virtual value_type upperBound() const
+    {
+        return upper_;
+    }
 
 private:
     value_type lower_;
@@ -156,15 +183,21 @@ public:
 
     typedef typename super::value_type value_type;
 
-    LowerBoundedDomain(const value_type& lower)
+    LowerBoundedDomain( const value_type& lower )
         :
         super(),
         lower_( lower )
-        {}
+    {}
 
-    virtual bool hasLowerBound() const {return true;}
+    virtual bool hasLowerBound() const
+    {
+        return true;
+    }
 
-    virtual value_type lowerBound() const {return lower_;}
+    virtual value_type lowerBound() const
+    {
+        return lower_;
+    }
 
 private:
     value_type lower_;
@@ -182,11 +215,17 @@ public:
     NonzeroDomain()
         :
         super()
-        {}
+    {}
 
-    virtual bool hasExcludedPoint() const {return true;}
+    virtual bool hasExcludedPoint() const
+    {
+        return true;
+    }
 
-    virtual value_type excludedPoint() const {return 0.0;}
+    virtual value_type excludedPoint() const
+    {
+        return 0.0;
+    }
 };
 /// \endcond
 }

@@ -60,10 +60,13 @@ thermalBlockGeometry( int nx, int ny, double hsize )
          << "//  Physical Line(t2+1)={t2};\n"
          << "  EndFor\n"
          << "EndFor\n";
-    for( int i = 1; i <= nx; ++i )
+
+    for ( int i = 1; i <= nx; ++i )
         ostr << "Physical Line(\"south_domain-"  << i << "\")={"<< i << "};\n";
-    for( int i = nx*ny+1, j=nx*(ny-1)+1; i<= nx*(ny+1); ++i,++j )
+
+    for ( int i = nx*ny+1, j=nx*( ny-1 )+1; i<= nx*( ny+1 ); ++i,++j )
         ostr << "  Physical Line(\"north_domain-" << j << "\") = {" << i << "};\n";
+
     ostr << "t3 = (ny+1)*nx;\n"
          << "t4 = 0;\n"
          << "For i In {0:nx}\n"
@@ -74,10 +77,13 @@ thermalBlockGeometry( int nx, int ny, double hsize )
          << "// Physical Line(t3+1)={t3};\n"
          << " EndFor\n"
          << "EndFor\n";
-    for( int i = 1, j=0, k=1; i <= ny; ++i, j += nx+1, k += nx )
-        ostr << "Physical Line(\"west_domain-"  << k << "\")={"<< nx*(ny+1)+j+1 << "};\n";
-    for( int i = 1, j=0, k=nx; i <= ny; ++i, j += nx+1, k += nx )
-        ostr << "Physical Line(\"east_domain-"  << k << "\")={"<< nx*(ny+2)+j+1 << "};\n";
+
+    for ( int i = 1, j=0, k=1; i <= ny; ++i, j += nx+1, k += nx )
+        ostr << "Physical Line(\"west_domain-"  << k << "\")={"<< nx*( ny+1 )+j+1 << "};\n";
+
+    for ( int i = 1, j=0, k=nx; i <= ny; ++i, j += nx+1, k += nx )
+        ostr << "Physical Line(\"east_domain-"  << k << "\")={"<< nx*( ny+2 )+j+1 << "};\n";
+
     ostr << "t5 = 0;\n"
          << "ne = (ny+1)*nx+1;\n"
          << "For j In {0:ny-1}\n"
@@ -87,8 +93,9 @@ thermalBlockGeometry( int nx, int ny, double hsize )
          << "  Plane Surface(t5)={t5};\n"
          << " EndFor\n"
          << "EndFor\n";
-    for( int i = 1, d= 1; i <= nx; ++i )
-        for( int j = 1; j <= ny; ++j, ++d )
+
+    for ( int i = 1, d= 1; i <= nx; ++i )
+        for ( int j = 1; j <= ny; ++j, ++d )
         {
             ostr << "  Physical Surface(\"domain-"<< d << "\")={" << d << "};\n";
         }

@@ -43,11 +43,11 @@ inline
 po::options_description
 makeOptions()
 {
-    po::options_description myintegralsoptions("MyIntegrals options");
+    po::options_description myintegralsoptions( "MyIntegrals options" );
     myintegralsoptions.add_options()
-        ("hsize", po::value<double>()->default_value( 0.2 ), "mesh size")
-        ("shape", Feel::po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (either simplex or hypercube)")
-        ;
+    ( "hsize", po::value<double>()->default_value( 0.2 ), "mesh size" )
+    ( "shape", Feel::po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (either simplex or hypercube)" )
+    ;
     return myintegralsoptions.add( Feel::feel_options() );
 }
 //# endmarker8 #
@@ -62,9 +62,9 @@ makeAbout()
                      "0.3",
                      "nD(n=1,2,3) MyIntegrals on simplices or simplex products",
                      Feel::AboutData::License_GPL,
-                     "Copyright (c) 2008-2010 Universite Joseph Fourier");
+                     "Copyright (c) 2008-2010 Universite Joseph Fourier" );
 
-    about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
     return about;
 }
 //# endmarker9 #
@@ -78,7 +78,7 @@ makeAbout()
 template<int Dim>
 class MyIntegrals
     :
-    public Simget
+public Simget
 {
     typedef Simget super;
 public:
@@ -96,11 +96,11 @@ public:
         shape( this->vm()["shape"].template as<std::string>()  )
     {}
 
-	//# marker10 #
+    //# marker10 #
     void run();
 
     void run( const double* X, unsigned long P, double* Y, unsigned long N );
-	//# endmarker10 #
+    //# endmarker10 #
 
 private:
 
@@ -117,12 +117,16 @@ MyIntegrals<Dim>::run()
     std::cout << "Execute MyIntegrals<" << Dim << ">\n";
     std::vector<double> X( 2 );
     X[0] = meshSize;
+
     if ( shape == "ellipsoid" )
         X[1] = 2;
+
     else if ( shape == "hypercube" )
         X[1] = 1;
+
     else // default is simplex
         X[1] = 0;
+
     std::vector<double> Y( 3 );
     run( X.data(), X.size(), Y.data(), Y.size() );
 }
@@ -133,7 +137,9 @@ MyIntegrals<Dim>::run( const double* X, unsigned long P, double* Y, unsigned lon
     using namespace Feel::vf;
 
     if ( X[1] == 0 ) shape = "simplex";
+
     if ( X[1] == 1 ) shape = "hypercube";
+
     if ( X[1] == 2 ) shape = "ellipsoid";
 
     if ( !this->vm().count( "nochdir" ) )
@@ -145,33 +151,34 @@ MyIntegrals<Dim>::run( const double* X, unsigned long P, double* Y, unsigned lon
     /*
      * First we create the mesh
      */
-	//# marker11 #
+    //# marker11 #
     mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
                                         _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES,
-                                        _desc=domain( _name= (boost::format( "%1%-%2%" ) % shape % Dim).str() ,
-                                                      _shape=shape,
-                                                      _order=1,
-                                                      _dim=Dim,
-                                                      _h=X[0] ),
-                                        _partitions=this->comm().size());
+                                        _desc=domain( _name= ( boost::format( "%1%-%2%" ) % shape % Dim ).str() ,
+                                                _shape=shape,
+                                                _order=1,
+                                                _dim=Dim,
+                                                _h=X[0] ),
+                                        _partitions=this->comm().size() );
 
-	//# endmarker11 #
+    //# endmarker11 #
 
     /*
      * Compute domain Area
      */
     //# marker1 #
-    double local_domain_area = integrate( _range=elements(mesh),
-                                          _expr=constant(1.0)).evaluate(false)(0,0);
+    double local_domain_area = integrate( _range=elements( mesh ),
+                                          _expr=constant( 1.0 ) ).evaluate( false )( 0,0 );
 
     //# endmarker1 #
     //# marker2 #
-    double global_domain_area= integrate( _range=elements(mesh),
-                                          _expr=constant(1.0)).evaluate()(0,0);
+    double global_domain_area= integrate( _range=elements( mesh ),
+                                          _expr=constant( 1.0 ) ).evaluate()( 0,0 );
     //# endmarker2 #
     //# marker3 #
     Log() << "int_Omega 1 = " << global_domain_area
           << "[ " << local_domain_area << " ]\n";
+
     //# endmarker3 #
     if ( Dim > 1 )
     {
@@ -179,10 +186,10 @@ MyIntegrals<Dim>::run( const double* X, unsigned long P, double* Y, unsigned lon
          * Compute domain perimeter
          */
         //# marker4 #
-        double local_boundary_length =  integrate( boundaryfaces(mesh),
-                                                  constant(1.0)).evaluate(false)(0,0);
-        double global_boundary_length = integrate( boundaryfaces(mesh),
-                                                  constant(1.0)).evaluate()(0,0);
+        double local_boundary_length =  integrate( boundaryfaces( mesh ),
+                                        constant( 1.0 ) ).evaluate( false )( 0,0 );
+        double global_boundary_length = integrate( boundaryfaces( mesh ),
+                                        constant( 1.0 ) ).evaluate()( 0,0 );
         Log() << "int_BoundaryOmega (1)= " << global_boundary_length
               << "[ " << local_boundary_length << " ]\n";
         //# endmarker4 #
@@ -194,35 +201,35 @@ MyIntegrals<Dim>::run( const double* X, unsigned long P, double* Y, unsigned lon
      * \note Pz() = 0 in 2D
      */
     //# marker5 #
-    double local_intf = integrate( elements(mesh),
+    double local_intf = integrate( elements( mesh ),
                                    Px()*Px() + Py()*Py() + Pz()*Pz() // trans(P())*P()
-                                   ).evaluate(false)(0,0);
-    double global_intf = integrate( elements(mesh),
+                                 ).evaluate( false )( 0,0 );
+    double global_intf = integrate( elements( mesh ),
                                     Px()*Px() + Py()*Py() + Pz()*Pz() // trans(P())*P()
-                                   ).evaluate()(0,0);
+                                  ).evaluate()( 0,0 );
     //# endmarker5 #
     Log() << "int_Omega (x^2+y^2+z^2) = " << global_intf
           << "[ " << local_intf << " ]\n";
 
     //# marker6 #
-    double global_intsin = integrate( elements(mesh),
-                                     sin( Px()*Px() + Py()*Py() + Pz()*Pz() )
-                                    ).evaluate()(0,0);
-    double local_intsin = integrate( elements(mesh),
-                                     sin( Px()*Px() + Py()*Py() + Pz()*Pz() ) ).evaluate(false)(0,0);
+    double global_intsin = integrate( elements( mesh ),
+                                      sin( Px()*Px() + Py()*Py() + Pz()*Pz() )
+                                    ).evaluate()( 0,0 );
+    double local_intsin = integrate( elements( mesh ),
+                                     sin( Px()*Px() + Py()*Py() + Pz()*Pz() ) ).evaluate( false )( 0,0 );
     //# endmarker6 #
     Log() << "int_Omega (sin(x^2+y^2+z^2)) [with order 4 max exact integration]= " << global_intsin << "\n";
     Log() << "int_Omega[" << this->comm().rank() << "] (sin(x^2+y^2+z^2)) [with order 4 max exact integration]= " << local_intsin << "\n";
 
 
     //# marker7 #
-    double local_intsin2 = integrate( elements(mesh),
+    double local_intsin2 = integrate( elements( mesh ),
                                       sin( Px()*Px() + Py()*Py() + Pz()*Pz() ),
                                       _Q<2>()
-                                    ).evaluate(false)(0,0);
-    double global_intsin2 = integrate( elements(mesh),
+                                    ).evaluate( false )( 0,0 );
+    double global_intsin2 = integrate( elements( mesh ),
                                        sin( Px()*Px() + Py()*Py() + Pz()*Pz() ),
-                                       _Q<2>()).evaluate()(0,0);
+                                       _Q<2>() ).evaluate()( 0,0 );
     //# endmarker7 #
     Log() << "int_Omega (sin(x^2+y^2+z^2)) [with order 2 max exact integration] = " << global_intsin2
           << "[ " << local_intsin2 << " ]\n";

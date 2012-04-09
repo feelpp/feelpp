@@ -63,15 +63,15 @@ inline
 po::options_description
 makeOptions()
 {
-    po::options_description laplacianvoptions("Laplacian Vectorial options");
+    po::options_description laplacianvoptions( "Laplacian Vectorial options" );
     laplacianvoptions.add_options()
-        ("hsize", po::value<double>()->default_value( 0.5 ), "mesh size")
-        ("nu", po::value<double>()->default_value( 1 ), "coef diffusion")
-        ("beta", po::value<double>()->default_value( 1 ), "coef reaction " )
+    ( "hsize", po::value<double>()->default_value( 0.5 ), "mesh size" )
+    ( "nu", po::value<double>()->default_value( 1 ), "coef diffusion" )
+    ( "beta", po::value<double>()->default_value( 1 ), "coef reaction " )
 
-        ("weak", "fully weak formulation (including Dirichlet conditions)" )
-        ("export-matlab", "export matrix and vectors in matlab" )
-        ;
+    ( "weak", "fully weak formulation (including Dirichlet conditions)" )
+    ( "export-matlab", "export matrix and vectors in matlab" )
+    ;
     return laplacianvoptions.add( Feel::feel_options() );
 }
 inline
@@ -83,11 +83,11 @@ makeAbout()
                      "0.2",
                      "nD(n=1,2,3) Laplacian Vectorial on simplices or simplex products",
                      Feel::AboutData::License_GPL,
-                     "Copyright (c) 2008 Université Joseph Fourier");
+                     "Copyright (c) 2008 Université Joseph Fourier" );
 
-    about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
-    about.addAuthor("Benoit Perrimond", "developer", "Benoit.Perrimond@bvra.e.ujf-grenoble.fr", "");
-    about.addAuthor("Vincent Chabannes", "developer", "vincent.chabannes@gmail.com", "");
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    about.addAuthor( "Benoit Perrimond", "developer", "Benoit.Perrimond@bvra.e.ujf-grenoble.fr", "" );
+    about.addAuthor( "Vincent Chabannes", "developer", "vincent.chabannes@gmail.com", "" );
     return about;
 
 }
@@ -101,7 +101,7 @@ makeAbout()
 template<int Dim, int Order, int RDim>
 class LaplacianV
     :
-    public ApplicationXML
+public ApplicationXML
 {
     typedef ApplicationXML super;
 public:
@@ -149,37 +149,40 @@ public:
     {
 
         Parameter h;
-        if (Dim == 1)
-            h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.01:0.09:0.2" );
-        else if (Dim == 2)
-            h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.04:0.09:0.2" );
+
+        if ( Dim == 1 )
+            h=Parameter( _name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.01:0.09:0.2" );
+
+        else if ( Dim == 2 )
+            h=Parameter( _name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.04:0.09:0.2" );
+
+        else if ( Order < 5 )
+            h=Parameter( _name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.06:0.09:0.2" );
+
         else
-            if (Order < 5)
-                h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.06:0.09:0.2" );
-            else
-                h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.1:0.15:0.2" );
+            h=Parameter( _name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.1:0.15:0.2" );
 
         this->
-            addParameter( Parameter(_name="dim",_type=DISC_ATTR,_values=boost::lexical_cast<std::string>( Dim  ).c_str()) )
-            .addParameter( Parameter(_name="order",_type=DISC_ATTR,_values=boost::lexical_cast<std::string>( Order  ).c_str()) )
-            .addParameter( Parameter(_name="beta",_type=CONT_ATTR,_latex="\\beta",_values="0.01:1:10") )
-            .addParameter( Parameter(_name="nu",_type=CONT_ATTR,_latex="\\nu",_values="0.01:1:10") )
-            .addParameter( h );
+        addParameter( Parameter( _name="dim",_type=DISC_ATTR,_values=boost::lexical_cast<std::string>( Dim  ).c_str() ) )
+        .addParameter( Parameter( _name="order",_type=DISC_ATTR,_values=boost::lexical_cast<std::string>( Order  ).c_str() ) )
+        .addParameter( Parameter( _name="beta",_type=CONT_ATTR,_latex="\\beta",_values="0.01:1:10" ) )
+        .addParameter( Parameter( _name="nu",_type=CONT_ATTR,_latex="\\nu",_values="0.01:1:10" ) )
+        .addParameter( h );
 
         std::vector<Parameter> depend;
         std::vector<std::string> funcs;
-        depend.push_back(h);
+        depend.push_back( h );
         std::ostringstream oss;
         oss << "h**" << boost::lexical_cast<std::string>( Order + 1  ) ;
-        funcs.push_back(oss.str());
-        oss.str("");
+        funcs.push_back( oss.str() );
+        oss.str( "" );
         std::vector<std::string> funcs2;
         oss << "h**" << boost::lexical_cast<std::string>( Order ) ;
-        funcs2.push_back(oss.str());
+        funcs2.push_back( oss.str() );
 
         this->
-            addOutput( Output(_name="norm_L2",_latex="\\left\\| . \\right\\|_{L^2}",_dependencies=depend,_funcs=funcs) )
-            .addOutput( Output(_name="norm_H1",_latex="\\left\\| . \\right\\|_{H^1}",_dependencies=depend,_funcs=funcs2) );
+        addOutput( Output( _name="norm_L2",_latex="\\left\\| . \\right\\|_{L^2}",_dependencies=depend,_funcs=funcs ) )
+        .addOutput( Output( _name="norm_H1",_latex="\\left\\| . \\right\\|_{H^1}",_dependencies=depend,_funcs=funcs2 ) );
 
     }
 
@@ -224,11 +227,14 @@ LaplacianV<Dim,Order, RDim>::createMesh( double meshSize )
 {
     mesh_ptrtype mesh( new mesh_type );
 
-    GmshHypercubeDomain td(entity_type::nDim,entity_type::nOrder,entity_type::nRealDim,entity_type::is_hypercube);
+    GmshHypercubeDomain td( entity_type::nDim,entity_type::nOrder,entity_type::nRealDim,entity_type::is_hypercube );
     td.setCharacteristicLength( meshSize );
     td.setX( std::make_pair( -1, 1 ) );
-    if(Dim>=2)  td.setY( std::make_pair( -1, 1 ) );
-    if(Dim==3)  td.setZ( std::make_pair( -1, 1 ) );
+
+    if ( Dim>=2 )  td.setY( std::make_pair( -1, 1 ) );
+
+    if ( Dim==3 )  td.setZ( std::make_pair( -1, 1 ) );
+
     std::string fname = td.generate( entity_type::name().c_str() );
 
     ImporterGmsh<mesh_type> import( fname );
@@ -243,12 +249,12 @@ void
 LaplacianV<Dim, Order, RDim>::run()
 {
     this->addParameterValue( Dim )
-        .addParameterValue( Order )
-        .addParameterValue( this->vm()["beta"].template as<double>() )
-        .addParameterValue( this->vm()["nu"].template as<double>() )
-        .addParameterValue( this->vm()["hsize"].template as<double>() );
+    .addParameterValue( Order )
+    .addParameterValue( this->vm()["beta"].template as<double>() )
+    .addParameterValue( this->vm()["nu"].template as<double>() )
+    .addParameterValue( this->vm()["hsize"].template as<double>() );
 
-    if (this->preProcessing() == RUN_EXIT) return;
+    if ( this->preProcessing() == RUN_EXIT ) return;
 
     //    int maxIter = 10.0/meshSize;
     using namespace Feel::vf;
@@ -271,69 +277,79 @@ LaplacianV<Dim, Order, RDim>::run()
 
 
     value_type pi = M_PI;
-    AUTO( g, sin(pi*Px())*cos(pi*Py())*cos(pi*Pz())*one() );
-    AUTO( f, (pi*pi*Dim+1)*g );
+    AUTO( g, sin( pi*Px() )*cos( pi*Py() )*cos( pi*Pz() )*one() );
+    AUTO( f, ( pi*pi*Dim+1 )*g );
     AUTO( zf, 0*one() );
 
     boost::timer t1;
 
     int tag1,tag2;
+
     if ( ( Dim == 1 ) || ( Dim == 2 ) )
-        {
-            tag1 = 1;
-            tag2 = 3;
-        }
+    {
+        tag1 = 1;
+        tag2 = 3;
+    }
+
     else if ( Dim == 3 )
-        {
-            tag1 = 15;
-            tag2 = 23;
-        }
+    {
+        tag1 = 15;
+        tag2 = 23;
+    }
+
     // Construction of the right hand side
 
     vector_ptrtype F( backend->newVector( Xh ) );
 
     form1( _test=Xh, _vector=F, _init=true ) =
-        integrate( elements(mesh),
-                   trans(f)*id(v) );
+        integrate( elements( mesh ),
+                   trans( f )*id( v ) );
     double M_gammabc = 20;
-    if ( this->vm().count( "weak" ) )
-        {
-            form1( Xh, F ) +=
-                integrate( markedfaces(mesh,tag1),
-                           trans(zf)*(-nu*grad(v)*N()+M_gammabc*id(v)/hFace() ) );
-            form1( Xh, F ) +=
-                integrate( markedfaces(mesh,tag2),
-                           trans(zf)*(-nu*grad(v)*N()+M_gammabc*id(v)/hFace() ) );
 
-        }
+    if ( this->vm().count( "weak" ) )
+    {
+        form1( Xh, F ) +=
+            integrate( markedfaces( mesh,tag1 ),
+                       trans( zf )*( -nu*grad( v )*N()+M_gammabc*id( v )/hFace() ) );
+        form1( Xh, F ) +=
+            integrate( markedfaces( mesh,tag2 ),
+                       trans( zf )*( -nu*grad( v )*N()+M_gammabc*id( v )/hFace() ) );
+
+    }
+
     F->close();
-    Log() << "F assembled in " << t1.elapsed() << "s\n"; t1.restart();
+    Log() << "F assembled in " << t1.elapsed() << "s\n";
+    t1.restart();
 
     //Construction of the left hand side
 
     sparse_matrix_ptrtype D( backend->newMatrix( Xh, Xh ) );
 
-    form2( Xh, Xh, D, _init=true);
-    Log() << "D initialized in " << t1.elapsed() << "s\n";t1.restart();
+    form2( Xh, Xh, D, _init=true );
+    Log() << "D initialized in " << t1.elapsed() << "s\n";
+    t1.restart();
 
     form2( Xh, Xh, D ) +=
-        integrate( elements(mesh),
-                   nu*(trace(gradt(u)*trans(grad(v))))
-                   + beta*(trans(idt(u))*id(v)) );
-    Log() << "D stiffness+mass assembled in " << t1.elapsed() << "s\n";t1.restart();
+        integrate( elements( mesh ),
+                   nu*( trace( gradt( u )*trans( grad( v ) ) ) )
+                   + beta*( trans( idt( u ) )*id( v ) ) );
+    Log() << "D stiffness+mass assembled in " << t1.elapsed() << "s\n";
+    t1.restart();
 
     if ( this->vm().count( "weak" ) )
     {
-        form2( Xh, Xh, D ) += integrate( markedfaces(mesh,tag1),
-                                         ( - nu*trans(id(v))*(gradt(u)*N())
-                                           - nu*trans(idt(u))*(grad(v)*N())
-                                           + M_gammabc*trans(idt(u))*id(v)/hFace()) );
-        form2( Xh, Xh, D ) += integrate( markedfaces(mesh,tag2),
-                                         ( - nu*trans(id(v))*(gradt(u)*N())
-                                           - nu*trans(idt(u))*(grad(v)*N())
-                                           + M_gammabc*trans(idt(u))*id(v)/hFace()) );
-        Log() << "D weak bc assembled in " << t1.elapsed() << "s\n";t1.restart();
+        form2( Xh, Xh, D ) += integrate( markedfaces( mesh,tag1 ),
+                                         ( - nu*trans( id( v ) )*( gradt( u )*N() )
+                                           - nu*trans( idt( u ) )*( grad( v )*N() )
+                                           + M_gammabc*trans( idt( u ) )*id( v )/hFace() ) );
+        form2( Xh, Xh, D ) += integrate( markedfaces( mesh,tag2 ),
+                                         ( - nu*trans( id( v ) )*( gradt( u )*N() )
+                                           - nu*trans( idt( u ) )*( grad( v )*N() )
+                                           + M_gammabc*trans( idt( u ) )*id( v )/hFace() ) );
+        Log() << "D weak bc assembled in " << t1.elapsed() << "s\n";
+        t1.restart();
     }
+
     D->close();
 
 
@@ -341,23 +357,26 @@ LaplacianV<Dim, Order, RDim>::run()
     if ( !this->vm().count( "weak" ) )
     {
         form2( Xh, Xh, D ) +=
-            on( markedfaces(mesh, tag1), u, F, zf )+
-            on( markedfaces(mesh, tag2), u, F, zf );
-        Log() << "D strong bc assembled in " << t1.elapsed() << "s\n";t1.restart();
+            on( markedfaces( mesh, tag1 ), u, F, zf )+
+            on( markedfaces( mesh, tag2 ), u, F, zf );
+        Log() << "D strong bc assembled in " << t1.elapsed() << "s\n";
+        t1.restart();
     }
 
 
-    if( this->vm().count( "export-matlab" ) )
+    if ( this->vm().count( "export-matlab" ) )
     {
         D->printMatlab( "D.m" );
         F->printMatlab( "F.m" );
     }
+
     this->solve( D, u, F );
 
-    Log() << "solve in " << t1.elapsed() << "s\n"; t1.restart();
+    Log() << "solve in " << t1.elapsed() << "s\n";
+    t1.restart();
 
-    double L2error2 =integrate( elements(mesh),
-                                trans(idv(u)-g)*(idv(u)-g) ).evaluate()( 0, 0 );
+    double L2error2 =integrate( elements( mesh ),
+                                trans( idv( u )-g )*( idv( u )-g ) ).evaluate()( 0, 0 );
     double L2error =   math::sqrt( L2error2 );
 
     Log() << "||error||_L2=" << L2error << "\n";
@@ -365,9 +384,9 @@ LaplacianV<Dim, Order, RDim>::run()
     t1.restart();
 
 
-    v = vf::project( Xh, elements(mesh), g );
-    double semiH1error2 =integrate( elements(mesh),
-                                    trace((gradv(u)-gradv(v))*trans(gradv(u)-gradv(v))) ).evaluate()( 0, 0 ) ;
+    v = vf::project( Xh, elements( mesh ), g );
+    double semiH1error2 =integrate( elements( mesh ),
+                                    trace( ( gradv( u )-gradv( v ) )*trans( gradv( u )-gradv( v ) ) ) ).evaluate()( 0, 0 ) ;
 
     Log() << "semi H1 norm computed in " << t1.elapsed() << "s\n";
     t1.restart();
@@ -390,8 +409,8 @@ LaplacianV<Dim, Order, RDim>::run()
 template<int Dim, int Order, int RDim>
 void
 LaplacianV<Dim, Order, RDim>::solve( sparse_matrix_ptrtype& D,
-                              element_type& u,
-                              vector_ptrtype& F )
+                                     element_type& u,
+                                     vector_ptrtype& F )
 {
 
 
@@ -409,12 +428,12 @@ LaplacianV<Dim, Order, RDim>::exportResults( element_type& U, element_type& E )
 
     if ( exporter->doExport() )
     {
-        exporter->step(0)->setMesh( U.functionSpace()->mesh() );
+        exporter->step( 0 )->setMesh( U.functionSpace()->mesh() );
 
-        exporter->step(0)->add( "pid",
-                                regionProcess( boost::shared_ptr<p0_space_type>( new p0_space_type( U.functionSpace()->mesh() ) ) ) );
-        exporter->step(0)->add( "u", U );
-        exporter->step(0)->add( "exact", E );
+        exporter->step( 0 )->add( "pid",
+                                  regionProcess( boost::shared_ptr<p0_space_type>( new p0_space_type( U.functionSpace()->mesh() ) ) ) );
+        exporter->step( 0 )->add( "u", U );
+        exporter->step( 0 )->add( "exact", E );
 
         exporter->save();
     }

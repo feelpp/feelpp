@@ -118,7 +118,10 @@ public:
      *
      * @return order of the BDF
      */
-    BDFTimeScheme order() const { return _M_order; }
+    BDFTimeScheme order() const
+    {
+        return _M_order;
+    }
 
     /**
        Initialize all the entries of the unknown vector to be derived with the
@@ -202,58 +205,62 @@ Bdf<SpaceType>::Bdf( space_ptrtype const& __space )
     _M_alpha( BDF_MAX_ORDER ),
     _M_beta( BDF_MAX_ORDER )
 {
-    for( int i = 0; i < BDF_MAX_ORDER; ++i )
-        {
-            _M_alpha[ i ].resize( i+2 );
-            _M_beta[ i ].resize( i+1 );
-        }
+    for ( int i = 0; i < BDF_MAX_ORDER; ++i )
+    {
+        _M_alpha[ i ].resize( i+2 );
+        _M_beta[ i ].resize( i+1 );
+    }
 
     for ( int i = 0; i < BDF_MAX_ORDER; ++i )
+    {
+        if (  i == 0 ) // BDF_ORDER_ONE:
         {
-            if (  i == 0 ) // BDF_ORDER_ONE:
-                {
-                    _M_alpha[i][ 0 ] = 1.; // Backward Euler
-                    _M_alpha[i][ 1 ] = 1.;
-                    _M_beta[i][ 0 ] = 1.; // u^{n+1} \approx u^n
-                }
-            else if ( i == 1 ) // BDF_ORDER_TWO:
-                {
-                    _M_alpha[i][ 0 ] = 3. / 2.;
-                    _M_alpha[i][ 1 ] = 2.;
-                    _M_alpha[i][ 2 ] = -1. / 2.;
-                    _M_beta[i][ 0 ] = 2.;
-                    _M_beta[i][ 1 ] = -1.;
-                }
-            else if ( i == 2 ) // BDF_ORDER_THREE:
-                {
-                    _M_alpha[i][ 0 ] = 11. / 6.;
-                    _M_alpha[i][ 1 ] = 3.;
-                    _M_alpha[i][ 2 ] = -3. / 2.;
-                    _M_alpha[i][ 3 ] = 1. / 3.;
-                    _M_beta[i][ 0 ] = 3.;
-                    _M_beta[i][ 1 ] = -3.;
-                    _M_beta[i][ 2 ] = 1.;
-                }
-            else if ( i == 3 ) /// BDF_ORDER_FOUR:
-                {
-                    _M_alpha[i][ 0 ] = 25. / 12.;
-                    _M_alpha[i][ 1 ] = 4.;
-                    _M_alpha[i][ 2 ] = -3.;
-                    _M_alpha[i][ 3 ] = 4. / 3.;
-                    _M_alpha[i][ 4 ] = -1. / 4.;
-                    _M_beta[i][ 0 ] = 4.;
-                    _M_beta[i][ 1 ] = -6.;
-                    _M_beta[i][ 2 ] = 4.;
-                    _M_beta[i][ 3 ] = -1.;
-                }
+            _M_alpha[i][ 0 ] = 1.; // Backward Euler
+            _M_alpha[i][ 1 ] = 1.;
+            _M_beta[i][ 0 ] = 1.; // u^{n+1} \approx u^n
         }
 
-    _M_unknowns.resize( BDF_MAX_ORDER );
-    for ( uint8_type __i = 0; __i < ( uint8_type )BDF_MAX_ORDER; ++__i )
+        else if ( i == 1 ) // BDF_ORDER_TWO:
         {
-            _M_unknowns[__i] = unknown_type( new element_type( _M_space ) );
-            _M_unknowns[__i]->zero();
+            _M_alpha[i][ 0 ] = 3. / 2.;
+            _M_alpha[i][ 1 ] = 2.;
+            _M_alpha[i][ 2 ] = -1. / 2.;
+            _M_beta[i][ 0 ] = 2.;
+            _M_beta[i][ 1 ] = -1.;
         }
+
+        else if ( i == 2 ) // BDF_ORDER_THREE:
+        {
+            _M_alpha[i][ 0 ] = 11. / 6.;
+            _M_alpha[i][ 1 ] = 3.;
+            _M_alpha[i][ 2 ] = -3. / 2.;
+            _M_alpha[i][ 3 ] = 1. / 3.;
+            _M_beta[i][ 0 ] = 3.;
+            _M_beta[i][ 1 ] = -3.;
+            _M_beta[i][ 2 ] = 1.;
+        }
+
+        else if ( i == 3 ) /// BDF_ORDER_FOUR:
+        {
+            _M_alpha[i][ 0 ] = 25. / 12.;
+            _M_alpha[i][ 1 ] = 4.;
+            _M_alpha[i][ 2 ] = -3.;
+            _M_alpha[i][ 3 ] = 4. / 3.;
+            _M_alpha[i][ 4 ] = -1. / 4.;
+            _M_beta[i][ 0 ] = 4.;
+            _M_beta[i][ 1 ] = -6.;
+            _M_beta[i][ 2 ] = 4.;
+            _M_beta[i][ 3 ] = -1.;
+        }
+    }
+
+    _M_unknowns.resize( BDF_MAX_ORDER );
+
+    for ( uint8_type __i = 0; __i < ( uint8_type )BDF_MAX_ORDER; ++__i )
+    {
+        _M_unknowns[__i] = unknown_type( new element_type( _M_space ) );
+        _M_unknowns[__i]->zero();
+    }
 }
 
 
@@ -302,7 +309,7 @@ template <typename SpaceType>
 double
 Bdf<SpaceType>::derivateCoefficient( int n, size_type i, double dt ) const
 {
-    FEELPP_ASSERT( i < size_type(n + 1) ).error( "Error in specification of the time derivative coefficient for the BDF formula (out of range error)" );
+    FEELPP_ASSERT( i < size_type( n + 1 ) ).error( "Error in specification of the time derivative coefficient for the BDF formula (out of range error)" );
     return _M_alpha[n-1][ i ]/dt;
 }
 
@@ -334,7 +341,7 @@ Bdf<SpaceType>::shiftRight( typename space_type::template Element<value_type, co
     using namespace boost::lambda;
     typename unknowns_type::reverse_iterator __it = boost::next( _M_unknowns.rbegin() );
     std::for_each( _M_unknowns.rbegin(), boost::prior( _M_unknowns.rend() ),
-                   (*lambda::_1 = *(*lambda::var( __it )), ++lambda::var( __it ) ) );
+                   ( *lambda::_1 = *( *lambda::var( __it ) ), ++lambda::var( __it ) ) );
     // u(t^{n}) coefficient is in _M_unknowns[0]
     *_M_unknowns[0] = __new_unk;
 
@@ -354,7 +361,7 @@ Bdf<SpaceType>::derivate( int n, scalar_type dt ) const
     element_type __t( _M_space );
     __t.zero();
 
-    __t.add( (1./dt), derivate( n ) );
+    __t.add( ( 1./dt ), derivate( n ) );
 
     return __t;
 }
@@ -368,7 +375,8 @@ Bdf<SpaceType>::derivate( int n ) const
 
     FEELPP_ASSERT( __t.size() == _M_space->nDof() )( __t.size() )( _M_space->nDof() ).error( "invalid space element size" );
     FEELPP_ASSERT( __t.size() == _M_unknowns[0]->size() )( __t.size() )( _M_unknowns[0]->size() ).error( "invalid space element size" );
-    for ( uint8_type i = 0;i < n;++i )
+
+    for ( uint8_type i = 0; i < n; ++i )
         __t.add( _M_alpha[n-1][ i+1 ], *_M_unknowns[i] );
 
     return __t;
@@ -384,7 +392,7 @@ Bdf<SpaceType>::extrapolate( int n ) const
     FEELPP_ASSERT( __t.size() == _M_space->nDof() )( __t.size() )( _M_space->nDof() ).error( "invalid space element size" );
     FEELPP_ASSERT( __t.size() == _M_unknowns[0]->size() )( __t.size() )( _M_unknowns[0]->size() ).error( "invalid space element size" );
 
-    for ( uint8_type i = 0;i < n;++i )
+    for ( uint8_type i = 0; i < n; ++i )
         __t.add(  _M_beta[n-1][ i ],  *_M_unknowns[ i ] );
 
     return __t;

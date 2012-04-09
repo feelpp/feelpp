@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -89,7 +89,10 @@ public:
     /**
      * \return the value
      */
-    value_type& operator()( size_type /*i*/ ) { return _M_vec; }
+    value_type& operator()( size_type /*i*/ )
+    {
+        return _M_vec;
+    }
 
     //@}
 
@@ -127,7 +130,10 @@ public:
     /**
      * \return true if vector is initialized/usable, false otherwise
      */
-    bool isInitialized() const { return true; }
+    bool isInitialized() const
+    {
+        return true;
+    }
 
     /**
      * \c close the gmm vector, that will copy the content of write
@@ -149,12 +155,18 @@ public:
     /**
      * Returns the read optimized gmm vector.
      */
-    vector_type const& vec () const { return _M_vec; }
+    vector_type const& vec () const
+    {
+        return _M_vec;
+    }
 
     /**
      * Returns the read optimized gmm vector.
      */
-    vector_type & vec ()  { return _M_vec; }
+    vector_type & vec ()
+    {
+        return _M_vec;
+    }
 
     //@}
 
@@ -197,8 +209,8 @@ public:
     /**
      * Add \p value to the value already accumulated
      */
-    void add (const unsigned int /*i*/,
-              const value_type value)
+    void add ( const unsigned int /*i*/,
+               const value_type value )
     {
         _M_vec += value;
     }
@@ -206,8 +218,8 @@ public:
     /**
      * set to \p value
      */
-    void set (const unsigned int /*i*/,
-              const value_type value)
+    void set ( const unsigned int /*i*/,
+               const value_type value )
     {
         _M_vec = value;
     }
@@ -220,7 +232,7 @@ public:
      * vector to the file named \p name.  If \p name
      * is not specified it is dumped to the screen.
      */
-    void printMatlab(const std::string name="NULL") const;
+    void printMatlab( const std::string name="NULL" ) const;
 
 
     //@}
@@ -246,7 +258,7 @@ VectorValue<T>::close() const
 
 template<typename T>
 void
-VectorValue<T>::printMatlab(const std::string /*filename*/ ) const
+VectorValue<T>::printMatlab( const std::string /*filename*/ ) const
 {
 }
 

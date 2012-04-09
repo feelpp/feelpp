@@ -70,15 +70,15 @@ inline
 po::options_description
 makeOptions()
 {
-    po::options_description laplacianoptions("Laplacian options");
+    po::options_description laplacianoptions( "Laplacian options" );
     laplacianoptions.add_options()
-        ("hsize", po::value<double>()->default_value( 0.5 ), "mesh size")
-        ("shape", Feel::po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (either simplex or hypercube)")
-        ("nu", po::value<double>()->default_value( 1 ), "grad.grad coefficient")
-        ("weakdir", po::value<int>()->default_value( 1 ), "use weak Dirichlet condition" )
-        ("penaldir", Feel::po::value<double>()->default_value( 10 ),
-         "penalisation parameter for the weak boundary Dirichlet formulation")
-        ;
+    ( "hsize", po::value<double>()->default_value( 0.5 ), "mesh size" )
+    ( "shape", Feel::po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (either simplex or hypercube)" )
+    ( "nu", po::value<double>()->default_value( 1 ), "grad.grad coefficient" )
+    ( "weakdir", po::value<int>()->default_value( 1 ), "use weak Dirichlet condition" )
+    ( "penaldir", Feel::po::value<double>()->default_value( 10 ),
+      "penalisation parameter for the weak boundary Dirichlet formulation" )
+    ;
     return laplacianoptions.add( Feel::feel_options() );
 }
 
@@ -98,9 +98,9 @@ makeAbout()
                      "0.2",
                      "nD(n=1,2,3) Laplacian on simplices or simplex products",
                      Feel::AboutData::License_GPL,
-                     "Copyright (c) 2008-2009 Universite Joseph Fourier");
+                     "Copyright (c) 2008-2009 Universite Joseph Fourier" );
 
-    about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
     return about;
 
 }
@@ -118,7 +118,7 @@ makeAbout()
 template<int Dim>
 class BlocHeat
     :
-    public Simget
+public Simget
 {
     typedef Simget super;
 public:
@@ -209,10 +209,13 @@ BlocHeat<Dim>::run()
     std::cout << "Execute BlocHeat<" << Dim << ">\n";
     std::vector<double> X( 2 );
     X[0] = meshSize;
+
     if ( shape == "hypercube" )
         X[1] = 1;
+
     else // default is simplex
         X[1] = 0;
+
     std::vector<double> Y( 3 );
     run( X.data(), X.size(), Y.data(), Y.size() );
 }
@@ -221,6 +224,7 @@ void
 BlocHeat<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
 {
     if ( X[1] == 0 ) shape = "simplex";
+
     if ( X[1] == 1 ) shape = "hypercube";
 
     if ( !this->vm().count( "nochdir" ) )
@@ -231,7 +235,7 @@ BlocHeat<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
                                        % Order
                                        % meshSize );
 
-    auto mesh = GeoTool::createMeshFromGeoFile<mesh_type>("MCS_heat.geo", "nameExport",meshSize);
+    auto mesh = GeoTool::createMeshFromGeoFile<mesh_type>( "MCS_heat.geo", "nameExport",meshSize );
 
     /**
      * The function space and some associated elements(functions) are then defined
@@ -240,7 +244,7 @@ BlocHeat<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
     space_ptrtype Xh = space_type::New( mesh );
     element_type T( Xh, "T" );
     element_type v( Xh, "v" );
-   
+
 
     /** \endcode */
 
@@ -250,7 +254,7 @@ BlocHeat<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
      */
     /** \code */
     //# marker1 #
-  
+
     //! deduce from expression the type of f (thanks to keyword 'auto')
     auto f = 0;
     //# endmarker1 #
@@ -272,7 +276,7 @@ BlocHeat<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
     auto F = M_backend->newVector( Xh );
 
     form1( _test=Xh, _vector=F, _init=true ) =
-        integrate( markedfaces(mesh,11) ,0.1*id(v) );
+        integrate( markedfaces( mesh,11 ) ,0.1*id( v ) );
 
 
     //# endmarker2 #
@@ -292,8 +296,8 @@ BlocHeat<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
     //! assemble $\int_\Omega \nu \nabla u \cdot \nabla v$
     /** \code */
     form2( Xh, Xh, D, _init=true ) =
-        integrate( elements(mesh), nu*gradt(T)*trans(grad(v)) )
-        + integrate( elements(mesh), idt(T)*id(v) ) ;
+        integrate( elements( mesh ), nu*gradt( T )*trans( grad( v ) ) )
+        + integrate( elements( mesh ), idt( T )*id( v ) ) ;
     /** \endcode */
     //# endmarker3 #
 
@@ -305,7 +309,7 @@ BlocHeat<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
     //# marker5 #
     D->close();
     form2( Xh, Xh, D ) +=
-        on( markedfaces(mesh,10), T, F, cst(1.) );
+        on( markedfaces( mesh,10 ), T, F, cst( 1. ) );
     //# endmarker5 #
     /** \endcode */
 
@@ -313,27 +317,29 @@ BlocHeat<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
 
     //! solve the system
     /** \code */
-	//# marker6 #
+    //# marker6 #
     backend_type::build()->solve( _matrix=D, _solution=T, _rhs=F );
-	//# endmarker6 #
+    //# endmarker6 #
     /** \endcode */
 
     export_ptrtype exporter( export_type::New( this->vm(),
-                                               (boost::format( "%1%-%2%-%3%" )
-                                                % this->about().appName()
-                                                % shape
-                                                % Dim).str() ) );
+                             ( boost::format( "%1%-%2%-%3%" )
+                               % this->about().appName()
+                               % shape
+                               % Dim ).str() ) );
+
     if ( exporter->doExport() )
     {
         Log() << "exportResults starts\n";
 
-        exporter->step(0)->setMesh( mesh );
+        exporter->step( 0 )->setMesh( mesh );
 
-        exporter->step(0)->add( "T", T );
+        exporter->step( 0 )->add( "T", T );
 
         exporter->save();
         Log() << "exportResults done\n";
     }
+
     /** \endcode */
 } // BlocHeat::run
 
@@ -349,11 +355,13 @@ main( int argc, char** argv )
      */
     /** \code */
     Application app( argc, argv, makeAbout(), makeOptions() );
+
     if ( app.vm().count( "help" ) )
     {
         std::cout << app.optionsDescription() << "\n";
         return 0;
     }
+
     /** \endcode */
 
     /**

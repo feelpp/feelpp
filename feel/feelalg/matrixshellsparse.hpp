@@ -85,13 +85,19 @@ public:
      * @returns \p m, the row-dimension of
      * the matrix where the marix is \f$ M \times N \f$.
      */
-    virtual size_type size1 () const { return M_m->size1(); }
+    virtual size_type size1 () const
+    {
+        return M_m->size1();
+    }
 
     /**
      * @returns \p n, the column-dimension of
      * the matrix where the marix is \f$ M \times N \f$.
      */
-    virtual size_type size2 () const { return M_m->size2(); }
+    virtual size_type size2 () const
+    {
+        return M_m->size2();
+    }
 
     //@}
 

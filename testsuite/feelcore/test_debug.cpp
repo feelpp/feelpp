@@ -41,7 +41,7 @@ main()
     // export DEBUG=2000
     // then execute test_debug
     //
-    Feel::Debug(2000) << "AREA 2000 is now enabled\n";
+    Feel::Debug( 2000 ) << "AREA 2000 is now enabled\n";
 
     showMe( Feel::Debug( 2000 ) );
 }

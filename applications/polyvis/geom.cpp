@@ -34,35 +34,35 @@ namespace Feel
 {
 gmsh_ptrtype
 oneelement_geometry_ref()
-  {
-      std::ostringstream costr;
-      costr <<"Mesh.MshFileVersion = 2.2;\n"
-            <<"Mesh.CharacteristicLengthExtendFromBoundary=1;\n"
-            <<"Mesh.CharacteristicLengthFromPoints=1;\n"
-            <<"Mesh.ElementOrder=1;\n"
-            <<"Mesh.SecondOrderIncomplete = 0;\n"
-            <<"Mesh.Algorithm = 6;\n"
-            <<"Mesh.OptimizeNetgen=1;\n"
-            <<"// partitioning data\n"
-            <<"Mesh.Partitioner=1;\n"
-            <<"Mesh.NbPartitions=1;\n"
-            <<"Mesh.MshFilePartitioned=0;\n"
-            <<"h=2;\n"
-            <<"Point(1) = {-1,-1,0,h};\n"
-            <<"Point(2) = {1,-1,0,h};\n"
-            <<"Point(3) = {-1,1,0,h};\n"
-            <<"Line(1) = {1,2};\n"
-            <<"Line(2) = {2,3};\n"
-            <<"Line(3) = {3,1};\n"
-            <<"Transfinite Line{1} = 1;\n"
-            <<"Transfinite Line{2} = 1;\n"
-            <<"Transfinite Line{3} = 1;\n"
-            <<"Line Loop(4) = {3,1,2};\n"
-            <<"Plane Surface(5) = {4};\n"
-            <<"Physical Line(\"hor\") = {1};\n"
-            <<"Physical Line(\"hypo\") = {2};\n"
-            <<"Physical Line(\"vert\") = {3};\n"
-            <<"Physical Surface(9) = {5};\n";
+{
+    std::ostringstream costr;
+    costr <<"Mesh.MshFileVersion = 2.2;\n"
+          <<"Mesh.CharacteristicLengthExtendFromBoundary=1;\n"
+          <<"Mesh.CharacteristicLengthFromPoints=1;\n"
+          <<"Mesh.ElementOrder=1;\n"
+          <<"Mesh.SecondOrderIncomplete = 0;\n"
+          <<"Mesh.Algorithm = 6;\n"
+          <<"Mesh.OptimizeNetgen=1;\n"
+          <<"// partitioning data\n"
+          <<"Mesh.Partitioner=1;\n"
+          <<"Mesh.NbPartitions=1;\n"
+          <<"Mesh.MshFilePartitioned=0;\n"
+          <<"h=2;\n"
+          <<"Point(1) = {-1,-1,0,h};\n"
+          <<"Point(2) = {1,-1,0,h};\n"
+          <<"Point(3) = {-1,1,0,h};\n"
+          <<"Line(1) = {1,2};\n"
+          <<"Line(2) = {2,3};\n"
+          <<"Line(3) = {3,1};\n"
+          <<"Transfinite Line{1} = 1;\n"
+          <<"Transfinite Line{2} = 1;\n"
+          <<"Transfinite Line{3} = 1;\n"
+          <<"Line Loop(4) = {3,1,2};\n"
+          <<"Plane Surface(5) = {4};\n"
+          <<"Physical Line(\"hor\") = {1};\n"
+          <<"Physical Line(\"hypo\") = {2};\n"
+          <<"Physical Line(\"vert\") = {3};\n"
+          <<"Physical Surface(9) = {5};\n";
 
     std::ostringstream nameStr;
     nameStr << "one-elt-ref";
@@ -70,40 +70,40 @@ oneelement_geometry_ref()
     gmshp->setPrefix( nameStr.str() );
     gmshp->setDescription( costr.str() );
     return gmshp;
-  }
+}
 
 
 gmsh_ptrtype
 oneelement_geometry_real()
-  {
-      std::ostringstream costr;
-      costr <<"Mesh.MshFileVersion = 2.2;\n"
-            <<"Mesh.CharacteristicLengthExtendFromBoundary=1;\n"
-            <<"Mesh.CharacteristicLengthFromPoints=1;\n"
-            <<"Mesh.ElementOrder=1;\n"
-            <<"Mesh.SecondOrderIncomplete = 0;\n"
-            <<"Mesh.Algorithm = 6;\n"
-            <<"Mesh.OptimizeNetgen=1;\n"
-            <<"// partitioning data\n"
-            <<"Mesh.Partitioner=1;\n"
-            <<"Mesh.NbPartitions=1;\n"
-            <<"Mesh.MshFilePartitioned=0;\n"
-            <<"h=2;\n"
-            <<"Point(1) = {-2,-2,0,h};\n"
-            <<"Point(2) = {2,-2,0,h};\n"
-            <<"Point(3) = {-2,2,0,h};\n"
-            <<"Line(1) = {1,2};\n"
-            <<"Line(2) = {2,3};\n"
-            <<"Line(3) = {3,1};\n"
-            <<"Transfinite Line{1} = 1;\n"
-            <<"Transfinite Line{2} = 1;\n"
-            <<"Transfinite Line{3} = 1;\n"
-            <<"Line Loop(4) = {3,1,2};\n"
-            <<"Plane Surface(5) = {4};\n"
-            <<"Physical Line(\"hor\") = {1};\n"
-            <<"Physical Line(\"hypo\") = {2};\n"
-            <<"Physical Line(\"vert\") = {3};\n"
-            <<"Physical Surface(9) = {5};\n";
+{
+    std::ostringstream costr;
+    costr <<"Mesh.MshFileVersion = 2.2;\n"
+          <<"Mesh.CharacteristicLengthExtendFromBoundary=1;\n"
+          <<"Mesh.CharacteristicLengthFromPoints=1;\n"
+          <<"Mesh.ElementOrder=1;\n"
+          <<"Mesh.SecondOrderIncomplete = 0;\n"
+          <<"Mesh.Algorithm = 6;\n"
+          <<"Mesh.OptimizeNetgen=1;\n"
+          <<"// partitioning data\n"
+          <<"Mesh.Partitioner=1;\n"
+          <<"Mesh.NbPartitions=1;\n"
+          <<"Mesh.MshFilePartitioned=0;\n"
+          <<"h=2;\n"
+          <<"Point(1) = {-2,-2,0,h};\n"
+          <<"Point(2) = {2,-2,0,h};\n"
+          <<"Point(3) = {-2,2,0,h};\n"
+          <<"Line(1) = {1,2};\n"
+          <<"Line(2) = {2,3};\n"
+          <<"Line(3) = {3,1};\n"
+          <<"Transfinite Line{1} = 1;\n"
+          <<"Transfinite Line{2} = 1;\n"
+          <<"Transfinite Line{3} = 1;\n"
+          <<"Line Loop(4) = {3,1,2};\n"
+          <<"Plane Surface(5) = {4};\n"
+          <<"Physical Line(\"hor\") = {1};\n"
+          <<"Physical Line(\"hypo\") = {2};\n"
+          <<"Physical Line(\"vert\") = {3};\n"
+          <<"Physical Surface(9) = {5};\n";
 
     std::ostringstream nameStr;
     nameStr << "one-elt-real";
@@ -111,6 +111,6 @@ oneelement_geometry_real()
     gmshp->setPrefix( nameStr.str() );
     gmshp->setDescription( costr.str() );
     return gmshp;
-  }
+}
 
 }

@@ -32,11 +32,11 @@
 namespace  Feel
 {
 enum MESH_CHANGES
-    {
-        MESH_CHANGES_POINTS_COORDINATES = 0,
-        MESH_CHANGES_CONNECTIVITY       = 1,
-        MESH_CHANGES_PARTITION          = 2
-    };
+{
+    MESH_CHANGES_POINTS_COORDINATES = 0,
+    MESH_CHANGES_CONNECTIVITY       = 1,
+    MESH_CHANGES_PARTITION          = 2
+};
 
 }
 #endif /* __MeshEnums_H */

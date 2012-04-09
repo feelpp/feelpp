@@ -27,6 +27,10 @@
    \date 2006-05-24
  */
 
-namespace Feel{ namespace {
-    void f() {}
-} }
+namespace Feel
+{
+namespace
+{
+void f() {}
+}
+}
