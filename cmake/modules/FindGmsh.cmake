@@ -43,7 +43,7 @@ endif()
 #message(STATUS "Gmsh headers : ${FEELPP_HAS_GMSH_H}, ${CMAKE_REQUIRED_INCLUDES}" )
 
 
-FIND_LIBRARY(GMSH_LIBRARY NAMES Gmsh gmsh-2.5.1 gmsh
+FIND_LIBRARY(GMSH_LIBRARY NAMES Gmsh gmsh-2.5.1 gmsh1 gmsh
   PATH
   /usr/lib
   /usr/local/lib
