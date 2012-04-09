@@ -21,6 +21,17 @@
  - fixed issue 2: http://code.google.com/p/feelpp/issues/detail?id=2&can=1
  - fixed issue 9: http://code.google.com/p/feelpp/issues/detail?id=9&can=1
 
+** Library
+
+*** feelmesh
+ - added 2D and 3D mesh adaptation using Gmsh
+
+*** feelfilters
+ - support for mesh generation directly from Gmsh library
+
+** Documentation
+
+
 
 * New in 0.91.1
 
