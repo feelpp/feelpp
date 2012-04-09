@@ -77,18 +77,18 @@ inline
 po::options_description
 makeOptions()
 {
-    po::options_description laplacianoptions("Aitken testsuite options");
+    po::options_description laplacianoptions( "Aitken testsuite options" );
     laplacianoptions.add_options()
-        ("hsize", po::value<double>()->default_value( 0.02 ), "mesh size")
-        ("shape", Feel::po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (either simplex or hypercube)")
-        ("relaxmethod", po::value<int>()->default_value( 0 ), "use DD (=0) or DN (=1) method" )
-        ("additive", po::value<int>()->default_value( 0 ), "use relax_aik additive method" )
-        ("x1max", Feel::po::value<double>()->default_value( 1.25 ),  " x1max for first subdomain")
-        ("x2min", Feel::po::value<double>()->default_value( 1.25 ), " x2min for second subdomain")
-        ("tol", Feel::po::value<double>()->default_value( 1e-06 ),  " tolerance ")
-        ("imax", Feel::po::value<double>()->default_value( 50 ), " maximum number of iteration")
-        ("theta", Feel::po::value<double>()->default_value( 1. ), " relaxation parameter")
-        ;
+    ( "hsize", po::value<double>()->default_value( 0.02 ), "mesh size" )
+    ( "shape", Feel::po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (either simplex or hypercube)" )
+    ( "relaxmethod", po::value<int>()->default_value( 0 ), "use DD (=0) or DN (=1) method" )
+    ( "additive", po::value<int>()->default_value( 0 ), "use relax_aik additive method" )
+    ( "x1max", Feel::po::value<double>()->default_value( 1.25 ),  " x1max for first subdomain" )
+    ( "x2min", Feel::po::value<double>()->default_value( 1.25 ), " x2min for second subdomain" )
+    ( "tol", Feel::po::value<double>()->default_value( 1e-06 ),  " tolerance " )
+    ( "imax", Feel::po::value<double>()->default_value( 50 ), " maximum number of iteration" )
+    ( "theta", Feel::po::value<double>()->default_value( 1. ), " relaxation parameter" )
+    ;
     return laplacianoptions.add( Feel::feel_options() );
 }
 
@@ -108,14 +108,15 @@ makeAbout()
                      "0.2",
                      "nD(n=1,2,3) Aitken relaxation",
                      Feel::AboutData::License_GPL,
-                     "Copyright (c) 2011 Universite Joseph Fourier");
+                     "Copyright (c) 2011 Universite Joseph Fourier" );
 
-    about.addAuthor("Abdoulaye Samake", "developer", "abdoulaye.samake@ujf-grenoble.fr", "");
+    about.addAuthor( "Abdoulaye Samake", "developer", "abdoulaye.samake@ujf-grenoble.fr", "" );
     return about;
 
 }
 
-enum DDMethod{
+enum DDMethod
+{
     // Dirichlet-Dirichlet
     DD = 0,
     // Dirichlet-Neumann
@@ -133,7 +134,7 @@ enum DDMethod{
 template<int Dim>
 class TestAitken
     :
-    public Simget
+public Simget
 {
     typedef Simget super;
 public:
@@ -199,11 +200,11 @@ public:
     template<typename DirichletExpr,
              typename RhsExpr,
              typename InterfaceExpr>
-    void localProblem(element_type& u,
-                      std::vector<int> const& dirichletFlags, DirichletExpr gD,
-                      RhsExpr f,
-                      std::vector<int> const& interfaceFlags, InterfaceExpr w,
-                      DDMethod choice );
+    void localProblem( element_type& u,
+                       std::vector<int> const& dirichletFlags, DirichletExpr gD,
+                       RhsExpr f,
+                       std::vector<int> const& interfaceFlags, InterfaceExpr w,
+                       DDMethod choice );
     void run();
 
     void run( const double* X, unsigned long P, double* Y, unsigned long N );
@@ -239,7 +240,7 @@ template<typename DirichletExpr,
          typename RhsExpr,
          typename InterfaceExpr>
 void
-TestAitken<Dim>::localProblem(element_type& u,
+TestAitken<Dim>::localProblem( element_type& u,
                                std::vector<int> const& dirichletFlags, DirichletExpr gD,
                                RhsExpr f,
                                std::vector<int> const& interfaceFlags, InterfaceExpr w,
@@ -250,19 +251,19 @@ TestAitken<Dim>::localProblem(element_type& u,
 
     auto Xh=u.functionSpace();
     auto mesh=Xh->mesh();
-    element_type v(Xh,"v");
+    element_type v( Xh,"v" );
 
     auto B = M_backend->newVector( Xh );
 
     form1( _test=Xh,_vector=B, _init=true ) =
-        integrate( elements(mesh), f*id(v) );
+        integrate( elements( mesh ), f*id( v ) );
 
-    if( choice == DDMethod::DN )
+    if ( choice == DDMethod::DN )
     {
         BOOST_FOREACH( int marker, interfaceFlags )
         {
             form1( _test=Xh,_vector=B ) +=
-                integrate( markedfaces(mesh, marker), w*id(v) );
+                integrate( markedfaces( mesh, marker ), w*id( v ) );
         }
     }
 
@@ -273,21 +274,22 @@ TestAitken<Dim>::localProblem(element_type& u,
     timers["assembly"].first.restart();
 
     form2( _test=Xh, _trial=Xh, _matrix=A, _init=true ) =
-        integrate( elements(mesh), gradt(u )*trans(grad(v)) );
+        integrate( elements( mesh ), gradt( u )*trans( grad( v ) ) );
 
     A->close();
 
     BOOST_FOREACH( int marker, dirichletFlags )
     {
         form2( Xh, Xh, A ) +=
-            on( markedfaces(mesh, marker) ,	u, B, gD );
+            on( markedfaces( mesh, marker ) ,	u, B, gD );
     }
-    if( choice == DDMethod::DD )
+
+    if ( choice == DDMethod::DD )
     {
         BOOST_FOREACH( int marker, interfaceFlags )
         {
             form2( Xh, Xh, A ) +=
-                on( markedfaces(mesh, marker) ,	u, B, w );
+                on( markedfaces( mesh, marker ) ,	u, B, w );
         }
     }
 
@@ -303,10 +305,13 @@ TestAitken<Dim>::run()
     std::cout << "Execute TestAitken<" << Dim << ">\n";
     std::vector<double> X( 2 );
     X[0] = meshSize;
+
     if ( shape == "hypercube" )
         X[1] = 1;
+
     else // default is simplex
         X[1] = 0;
+
     std::vector<double> Y( 3 );
     run( X.data(), X.size(), Y.data(), Y.size() );
 }
@@ -315,6 +320,7 @@ void
 TestAitken<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
 {
     if ( X[1] == 0 ) shape = "simplex";
+
     if ( X[1] == 1 ) shape = "hypercube";
 
     if ( !this->vm().count( "nochdir" ) )
@@ -338,35 +344,35 @@ TestAitken<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long
 
     mesh_ptrtype mesh1 = createGMSHMesh( _mesh=new mesh_type,
                                          _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
-                                         _desc=domain( _name=(boost::format( "%1%-%2%-%3%-%4%" ) % shape % Dim % 1 % k0).str() ,
-                                                       _addmidpoint=false,
-                                                       _usenames=false,
-                                                       _shape=shape,
-                                                       _dim=Dim,
-                                                       _h=X[0],
-                                                       _xmin=0.,
-                                                       _xmax=x1max,
-                                                       _ymin=0.,
-                                                       _ymax=2.,
-                                                       _zmin=0.,
-                                                       _zmax=2.
-                                                       ) );
+                                         _desc=domain( _name=( boost::format( "%1%-%2%-%3%-%4%" ) % shape % Dim % 1 % k0 ).str() ,
+                                                 _addmidpoint=false,
+                                                 _usenames=false,
+                                                 _shape=shape,
+                                                 _dim=Dim,
+                                                 _h=X[0],
+                                                 _xmin=0.,
+                                                 _xmax=x1max,
+                                                 _ymin=0.,
+                                                 _ymax=2.,
+                                                 _zmin=0.,
+                                                 _zmax=2.
+                                                     ) );
 
     mesh_ptrtype mesh2 = createGMSHMesh( _mesh=new mesh_type,
                                          _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
-                                         _desc=domain( _name=(boost::format( "%1%-%2%-%3%-%4%" ) % shape % Dim % 1 % k1).str() ,
-                                                       _addmidpoint=false,
-                                                       _usenames=false,
-                                                       _shape=shape,
-                                                       _dim=Dim,
-                                                       _h=X[0],
-                                                       _xmin=x2min,
-                                                       _xmax=2.,
-                                                       _ymin=0.,
-                                                       _ymax=2.,
-                                                       _zmin=0.,
-                                                       _zmax=2.
-                                                       ) );
+                                         _desc=domain( _name=( boost::format( "%1%-%2%-%3%-%4%" ) % shape % Dim % 1 % k1 ).str() ,
+                                                 _addmidpoint=false,
+                                                 _usenames=false,
+                                                 _shape=shape,
+                                                 _dim=Dim,
+                                                 _h=X[0],
+                                                 _xmin=x2min,
+                                                 _xmax=2.,
+                                                 _ymin=0.,
+                                                 _ymax=2.,
+                                                 _zmin=0.,
+                                                 _zmax=2.
+                                                     ) );
 
 
 
@@ -378,6 +384,7 @@ TestAitken<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long
         interfaceFlags1 += 3;
         interfaceFlags2 += 1;
     }
+
     else if ( Dim == 2 )
     {
         using namespace boost::assign;
@@ -386,7 +393,8 @@ TestAitken<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long
         interfaceFlags1+= 3;
         interfaceFlags2+= 1;
     }
-    else if( Dim == 3 )
+
+    else if ( Dim == 3 )
     {
         using namespace boost::assign;
         dirichletFlags1+= 6,15,19,23,28;
@@ -408,7 +416,7 @@ TestAitken<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long
     auto lambda = Xh2->element();
     auto residual = Xh2->element();
 
-    AitkenType relaxmethod = (AitkenType)this->vm()["relaxmethod"].template as<int>();
+    AitkenType relaxmethod = ( AitkenType )this->vm()["relaxmethod"].template as<int>();
     auto aitkenRelax =  aitken( _space= Xh2,
                                 _type=relaxmethod,
                                 _initial_theta=theta,
@@ -417,12 +425,12 @@ TestAitken<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long
 
     value_type pi = M_PI;
 
-    auto g = sin(pi*Px())*cos(pi*Py())*cos(pi*Pz());
+    auto g = sin( pi*Px() )*cos( pi*Py() )*cos( pi*Pz() );
     auto f = pi*pi*Dim*g;
 
-    auto gradg = trans( +pi*cos(pi*Px())*cos(pi*Py())*cos(pi*Pz())*unitX()+
-                        -pi*sin(pi*Px())*sin(pi*Py())*cos(pi*Pz())*unitY()+
-                        -pi*sin(pi*Px())*cos(pi*Py())*sin(pi*Pz())*unitZ() );
+    auto gradg = trans( +pi*cos( pi*Px() )*cos( pi*Py() )*cos( pi*Pz() )*unitX()+
+                        -pi*sin( pi*Px() )*sin( pi*Py() )*cos( pi*Pz() )*unitY()+
+                        -pi*sin( pi*Px() )*cos( pi*Py() )*sin( pi*Pz() )*unitZ() );
 
 
     bool additive = this->vm()["additive"].template as<int>();
@@ -433,12 +441,12 @@ TestAitken<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long
     double error1 = 2.;
     double error2 = 2.;
 
-    auto Ih12 = opInterpolation( _domainSpace=Xh1, _imageSpace=Xh2, _range=markedfaces(Xh2->mesh(), interfaceFlags2[0]) );
-    auto Ih21 = opInterpolation( _domainSpace=Xh2, _imageSpace=Xh1, _range=markedfaces(Xh1->mesh(), interfaceFlags1[0]) );
+    auto Ih12 = opInterpolation( _domainSpace=Xh1, _imageSpace=Xh2, _range=markedfaces( Xh2->mesh(), interfaceFlags2[0] ) );
+    auto Ih21 = opInterpolation( _domainSpace=Xh2, _imageSpace=Xh1, _range=markedfaces( Xh1->mesh(), interfaceFlags1[0] ) );
 
     aitkenRelax.restart();
 
-    while(!aitkenRelax.isFinished() &&  aitkenRelax.nIterations() <= imax)
+    while ( !aitkenRelax.isFinished() &&  aitkenRelax.nIterations() <= imax )
     {
 
 
@@ -453,34 +461,35 @@ TestAitken<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long
         u1old = u1;
 
 
-        if( additive )
+        if ( additive )
         {
 
-            if(aitkenRelax.nIterations()==1) Log() << "test_aitken additive method" << "\n";
+            if ( aitkenRelax.nIterations()==1 ) Log() << "test_aitken additive method" << "\n";
         }
+
         else
         {
-            if(aitkenRelax.nIterations()==1) Log() << "test_aiken multiplicative method" << "\n";
+            if ( aitkenRelax.nIterations()==1 ) Log() << "test_aiken multiplicative method" << "\n";
         }
 
 
         Ih21->apply( u2, uu );
 
-        localProblem(u1,
-                     dirichletFlags1, /*dirichlet*/g,
-                     /*rhs*/f,
-                     /**/interfaceFlags1,idv(uu),
-                     DDMethod::DD );
+        localProblem( u1,
+                      dirichletFlags1, /*dirichlet*/g,
+                      /*rhs*/f,
+                      /**/interfaceFlags1,idv( uu ),
+                      DDMethod::DD );
 
         if ( !additive )
             u1old = u1;
 
         lambda = u2;
 
-        localProblem(u2,
-                     dirichletFlags2, /*dirichlet*/g,
+        localProblem( u2,
+                      dirichletFlags2, /*dirichlet*/g,
                       /*rhs*/f,
-                      /**/ interfaceFlags2,gradv(u1old)*vf::N(),
+                      /**/ interfaceFlags2,gradv( u1old )*vf::N(),
                       DDMethod::DN );
 
 
@@ -490,22 +499,22 @@ TestAitken<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long
 
         aitkenRelax.printInfo();
 
-        aitkenRelax.saveConvergenceHistory(std::string("history.dat"));
+        aitkenRelax.saveConvergenceHistory( std::string( "history.dat" ) );
 
         ++aitkenRelax;
 
-        double L2error1 =integrate(elements(mesh1), (idv(u1)-g)*(idv(u1)-g) ).evaluate()(0,0);
+        double L2error1 =integrate( elements( mesh1 ), ( idv( u1 )-g )*( idv( u1 )-g ) ).evaluate()( 0,0 );
         err1 = math::sqrt( L2error1 );
 
-        double  L2error2 =integrate(elements(mesh2), (idv(u2)-g)*(idv(u2)-g) ).evaluate()(0,0);
+        double  L2error2 =integrate( elements( mesh2 ), ( idv( u2 )-g )*( idv( u2 )-g ) ).evaluate()( 0,0 );
         err2 = math::sqrt( L2error2 );
 
         double semi_H1error1 = 2.;
         double semi_H1error2 = 2.;
 
 
-        semi_H1error1 =integrate(elements(mesh1), ( gradv(u1)-gradg )*trans( (gradv(u1)-gradg) ) ).evaluate()(0,0);
-        semi_H1error2 =integrate(elements(mesh2), ( gradv(u2)-gradg )*trans(( gradv(u2)-gradg) ) ).evaluate()(0,0);
+        semi_H1error1 =integrate( elements( mesh1 ), ( gradv( u1 )-gradg )*trans( ( gradv( u1 )-gradg ) ) ).evaluate()( 0,0 );
+        semi_H1error2 =integrate( elements( mesh2 ), ( gradv( u2 )-gradg )*trans( ( gradv( u2 )-gradg ) ) ).evaluate()( 0,0 );
 
         error1 = math::sqrt( L2error1 + semi_H1error1 );
         error2 = math::sqrt( L2error2 + semi_H1error2 );
@@ -513,32 +522,34 @@ TestAitken<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long
     }; // iteration loop
 
     export_ptrtype exporter( export_type::New( this->vm(),
-                                               (boost::format( "%1%-%2%-%3%-%4%" )
-                                                % this->about().appName()
-                                                % shape
-                                                % k0
-                                                % Dim).str() ) );
+                             ( boost::format( "%1%-%2%-%3%-%4%" )
+                               % this->about().appName()
+                               % shape
+                               % k0
+                               % Dim ).str() ) );
+
     export_ptrtype exporter1( export_type::New( this->vm(),
-                                                (boost::format( "%1%-%2%-%3%-%4%" )
-                                                 % this->about().appName()
-                                                 % shape
-                                                 % k1
-                                                 % Dim).str() ) );
+                              ( boost::format( "%1%-%2%-%3%-%4%" )
+                                % this->about().appName()
+                                % shape
+                                % k1
+                                % Dim ).str() ) );
 
 
     if ( exporter->doExport() )
     {
         Log() << "exportResults starts\n";
-        exporter->step(0)->setMesh( mesh1 );
-        exporter->step(0)->add( "u1", u1 );
+        exporter->step( 0 )->setMesh( mesh1 );
+        exporter->step( 0 )->add( "u1", u1 );
         exporter->save();
-        exporter1->step(1)->setMesh( mesh2 );
-        exporter1->step(1)->add( "u2", u2 );
+        exporter1->step( 1 )->setMesh( mesh2 );
+        exporter1->step( 1 )->add( "u2", u2 );
         exporter1->save();
 
 
         Log() << "exportResults done\n";
     }
+
     /** \endcode */
 } // TestAitken::run
 
@@ -554,11 +565,13 @@ main( int argc, char** argv )
      */
     /** \code */
     Application app( argc, argv, makeAbout(), makeOptions() );
+
     if ( app.vm().count( "help" ) )
     {
         std::cout << app.optionsDescription() << "\n";
         return 0;
     }
+
     /** \endcode */
     using namespace Feel::vf;
 

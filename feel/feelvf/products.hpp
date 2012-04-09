@@ -60,7 +60,7 @@ public:
     {
         static const bool result =
             ExprL::template HasTestFunction<Func>::result ||
-            ExprR::template HasTestFunction<Func>::result ;
+        ExprR::template HasTestFunction<Func>::result ;
     };
 
     template<typename Func>
@@ -68,7 +68,7 @@ public:
     {
         static const bool result =
             ExprL::template HasTrialFunction<Func>::result||
-            ExprR::template HasTrialFunction<Func>::result ;
+        ExprR::template HasTrialFunction<Func>::result ;
     };
 
 
@@ -93,14 +93,14 @@ public:
         :
         _M_left_expr( left_expr ),
         _M_right_expr( right_expr )
-        {}
+    {}
     Product( Product const & te )
-    :
-    _M_left_expr( te._M_left_expr ),
-    _M_right_expr( te._M_right_expr )
-        {}
+        :
+        _M_left_expr( te._M_left_expr ),
+        _M_right_expr( te._M_right_expr )
+    {}
     ~Product()
-        {}
+    {}
 
     //@}
 
@@ -129,8 +129,14 @@ public:
      */
     //@{
 
-    left_expression_type const& left() const { return _M_left_expr; }
-    right_expression_type const& right() const { return _M_right_expr; }
+    left_expression_type const& left() const
+    {
+        return _M_left_expr;
+    }
+    right_expression_type const& right() const
+    {
+        return _M_right_expr;
+    }
 
     //@}
 
@@ -147,115 +153,127 @@ public:
         typedef Shape<left_shape::nDim,Scalar,false,false> shape;
         static const bool l_is_terminal = left_expression_type::is_terminal;
         static const bool r_is_terminal = right_expression_type::is_terminal;
-        template <class Args> struct sig { typedef value_type type; };
+        template <class Args> struct sig
+        {
+            typedef value_type type;
+        };
 
-        struct is_zero { static const bool value = l_tensor_expr_type::is_zero::value || r_tensor_expr_type::is_zero::value; };
+        struct is_zero
+        {
+            static const bool value = l_tensor_expr_type::is_zero::value || r_tensor_expr_type::is_zero::value;
+        };
 
         tensor( this_type const& expr,
                 Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
             :
             M_l_tensor_expr( expr.left(), geom, fev, feu ),
             M_r_tensor_expr( expr.right(), geom, fev, feu )
-            {
-            }
+        {
+        }
 
         tensor( this_type const& expr,
                 Geo_t const& geom, Basis_i_t const& fev )
             :
             M_l_tensor_expr( expr.left(), geom, fev ),
             M_r_tensor_expr( expr.right(), geom, fev )
-            {
-            }
+        {
+        }
 
         tensor( this_type const& expr, Geo_t const& geom )
             :
             M_l_tensor_expr( expr.left(), geom ),
             M_r_tensor_expr( expr.right(), geom )
-            {
-            }
+        {
+        }
 
         template<typename IM>
         void init( IM const& im )
-            {
-                M_l_tensor_expr.init( im );
-                M_r_tensor_expr.init( im );
-            }
+        {
+            M_l_tensor_expr.init( im );
+            M_r_tensor_expr.init( im );
+        }
         void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
-            {
-                M_l_tensor_expr.update( geom, fev, feu );
-                M_r_tensor_expr.update( geom, fev, feu );
-            }
+        {
+            M_l_tensor_expr.update( geom, fev, feu );
+            M_r_tensor_expr.update( geom, fev, feu );
+        }
         void update( Geo_t const& geom, Basis_i_t const& fev )
-            {
-                M_l_tensor_expr.update( geom, fev );
-                M_r_tensor_expr.update( geom, fev );
-            }
+        {
+            M_l_tensor_expr.update( geom, fev );
+            M_r_tensor_expr.update( geom, fev );
+        }
         void update( Geo_t const& geom )
-            {
-                M_l_tensor_expr.update( geom );
-                M_r_tensor_expr.update( geom );
-            }
+        {
+            M_l_tensor_expr.update( geom );
+            M_r_tensor_expr.update( geom );
+        }
         void update( Geo_t const& geom, uint16_type face )
-            {
-                M_l_tensor_expr.update( geom, face );
-                M_r_tensor_expr.update( geom, face );
-            }
+        {
+            M_l_tensor_expr.update( geom, face );
+            M_r_tensor_expr.update( geom, face );
+        }
 
         value_type
         evalijq( uint16_type i, uint16_type j, uint16_type cc1, uint16_type cc2, uint16_type q ) const
-            {
-                return evalijq( i, j, cc1, cc2, q, typename mpl::and_<mpl::bool_<l_is_terminal>,mpl::bool_<l_is_terminal> >::type() );
-            }
+        {
+            return evalijq( i, j, cc1, cc2, q, typename mpl::and_<mpl::bool_<l_is_terminal>,mpl::bool_<l_is_terminal> >::type() );
+        }
         value_type
         evalijq( uint16_type i, uint16_type j, uint16_type cc1, uint16_type cc2, uint16_type q, mpl::bool_<0> ) const
+        {
+            double res = 0;
+
+            if ( Type == 1 )
             {
-                double res = 0;
-                if ( Type == 1 )
-                {
-                    for( int c2 = 0; c2 < left_shape::N; ++ c2 )
-                        for( int c1 = 0; c1 < left_shape::M; ++ c1 )
-                        {
-                            res += M_l_tensor_expr.evalijq( i, j, c1, c2, q )*M_r_tensor_expr.evalijq( i, j, c1, c2, q );
-                        }
-                }
-                return res;
+                for ( int c2 = 0; c2 < left_shape::N; ++ c2 )
+                    for ( int c1 = 0; c1 < left_shape::M; ++ c1 )
+                    {
+                        res += M_l_tensor_expr.evalijq( i, j, c1, c2, q )*M_r_tensor_expr.evalijq( i, j, c1, c2, q );
+                    }
             }
+
+            return res;
+        }
         value_type
         evalijq( uint16_type i, uint16_type j, uint16_type cc1, uint16_type cc2, uint16_type q, mpl::bool_<1> ) const
+        {
+            //if ( Type == 1 )
             {
-                //if ( Type == 1 )
-                {
-                    return (M_l_tensor_expr.evalijq(i,j,q).adjoint()*M_r_tensor_expr.evalijq(i,j,q)).trace();
-                }
+                return ( M_l_tensor_expr.evalijq( i,j,q ).adjoint()*M_r_tensor_expr.evalijq( i,j,q ) ).trace();
             }
+        }
         value_type
         evaliq( uint16_type i, uint16_type cc1, uint16_type cc2, uint16_type q ) const
+        {
+            double res = 0;
+
+            if ( Type == 1 )
             {
-                double res = 0;
-                if ( Type == 1 )
-                {
-                    for( int c2 = 0; c2 < left_shape::N; ++ c2 )
-                        for( int c1 = 0; c1 < left_shape::M; ++ c1 )
-                        {
-                            res += M_l_tensor_expr.evaliq( i, c1, c2, q )*M_r_tensor_expr.evaliq( i, c1, c2, q );
-                        }
-                }
-                return res;
+                for ( int c2 = 0; c2 < left_shape::N; ++ c2 )
+                    for ( int c1 = 0; c1 < left_shape::M; ++ c1 )
+                    {
+                        res += M_l_tensor_expr.evaliq( i, c1, c2, q )*M_r_tensor_expr.evaliq( i, c1, c2, q );
+                    }
             }
+
+            return res;
+        }
         value_type
         evalq( uint16_type cc1, uint16_type cc2, uint16_type q ) const
+        {
+            double res = 0;
+
+            if ( Type == 1 )
             {
-                double res = 0;
-                if ( Type == 1 )
-                {
-                    for( int c2 = 0; c2 < left_shape::N; ++ c2 )
-                        for( int c1 = 0; c1 < left_shape::M; ++ c1 )
-                        {
-                            res += M_l_tensor_expr.evalq( c1, c2, q )*M_r_tensor_expr.evalq( c1, c2, q );
-                        }
-                }
-                return res;
+                for ( int c2 = 0; c2 < left_shape::N; ++ c2 )
+                    for ( int c1 = 0; c1 < left_shape::M; ++ c1 )
+                    {
+                        res += M_l_tensor_expr.evalq( c1, c2, q )*M_r_tensor_expr.evalq( c1, c2, q );
+                    }
             }
+
+            return res;
+        }
 
     private:
         l_tensor_expr_type M_l_tensor_expr;

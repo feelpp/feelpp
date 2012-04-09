@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -37,7 +37,10 @@ namespace Feel
 // import fusion namespace in Feel
 namespace fusion = boost::fusion;
 
-namespace detail { struct continuity_base {}; }
+namespace detail
+{
+struct continuity_base {};
+}
 /**
  * \class Continuous
  * \brief describe continuous functions
@@ -86,11 +89,12 @@ public:
     //@{
 
     //! copy operator
-    Continuous& operator=( Continuous const & o)
+    Continuous& operator=( Continuous const & o )
     {
-        if (this != &o )
-            {
-            }
+        if ( this != &o )
+        {
+        }
+
         return *this;
     }
     //@}
@@ -131,7 +135,7 @@ public:
             M_dof( D )
         {}
         template<typename T>
-        result_type operator()(const T& t, const size_type& start ) const
+        result_type operator()( const T& t, const size_type& start ) const
         {
             //return build( T::value, start );
             return start;

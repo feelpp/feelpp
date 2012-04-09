@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -39,11 +39,14 @@ class Flag
 {
     int i;
 public:
-    inline Flag(int i);
-    inline operator int() const { return i; }
+    inline Flag( int i );
+    inline operator int() const
+    {
+        return i;
+    }
 };
 
-inline Flag::Flag(int ai) : i(ai) {}
+inline Flag::Flag( int ai ) : i( ai ) {}
 
 
 template<typename Enum>
@@ -54,33 +57,110 @@ class Flags
 public:
     typedef Enum enum_type;
 
-    inline Flags(const Flags &f) : i(f.i) {}
-    inline Flags(Enum f) : i(f) {}
-    inline Flags(Zero = 0) : i(0) {}
-    inline Flags(Flag f) : i(f) {}
+    inline Flags( const Flags &f ) : i( f.i ) {}
+    inline Flags( Enum f ) : i( f ) {}
+    inline Flags( Zero = 0 ) : i( 0 ) {}
+    inline Flags( Flag f ) : i( f ) {}
 
-    inline Flags &operator=(const Flags &f) { i = f.i; return *this; }
-    inline Flags &operator&=(int mask) { i &= mask; return *this; }
-    inline Flags &operator&=(unsigned int mask) { i &= mask; return *this; }
-    inline Flags &operator|=(Flags f) { i |= f.i; return *this; }
-    inline Flags &operator|=(Enum f) { i |= f; return *this; }
-    inline Flags &operator^=(Flags f) { i ^= f.i; return *this; }
-    inline Flags &operator^=(Enum f) { i ^= f; return *this; }
+    inline Flags &operator=( const Flags &f )
+    {
+        i = f.i;
+        return *this;
+    }
+    inline Flags &operator&=( int mask )
+    {
+        i &= mask;
+        return *this;
+    }
+    inline Flags &operator&=( unsigned int mask )
+    {
+        i &= mask;
+        return *this;
+    }
+    inline Flags &operator|=( Flags f )
+    {
+        i |= f.i;
+        return *this;
+    }
+    inline Flags &operator|=( Enum f )
+    {
+        i |= f;
+        return *this;
+    }
+    inline Flags &operator^=( Flags f )
+    {
+        i ^= f.i;
+        return *this;
+    }
+    inline Flags &operator^=( Enum f )
+    {
+        i ^= f;
+        return *this;
+    }
 
-    inline operator int() const { return i; }
+    inline operator int() const
+    {
+        return i;
+    }
 
-    inline Flags operator|(Flags f) const { Flags g; g.i = i | f.i; return g; }
-    inline Flags operator|(Enum f) const { Flags g; g.i = i | f; return g; }
-    inline Flags operator^(Flags f) const { Flags g; g.i = i ^ f.i; return g; }
-    inline Flags operator^(Enum f) const { Flags g; g.i = i ^ f; return g; }
-    inline Flags operator&(int mask) const { Flags g; g.i = i & mask; return g; }
-    inline Flags operator&(unsigned int mask) const { Flags g; g.i = i & mask; return g; }
-    inline Flags operator&(Enum f) const { Flags g; g.i = i & f; return g; }
-    inline Flags operator~() const { Flags g; g.i = ~i; return g; }
+    inline Flags operator|( Flags f ) const
+    {
+        Flags g;
+        g.i = i | f.i;
+        return g;
+    }
+    inline Flags operator|( Enum f ) const
+    {
+        Flags g;
+        g.i = i | f;
+        return g;
+    }
+    inline Flags operator^( Flags f ) const
+    {
+        Flags g;
+        g.i = i ^ f.i;
+        return g;
+    }
+    inline Flags operator^( Enum f ) const
+    {
+        Flags g;
+        g.i = i ^ f;
+        return g;
+    }
+    inline Flags operator&( int mask ) const
+    {
+        Flags g;
+        g.i = i & mask;
+        return g;
+    }
+    inline Flags operator&( unsigned int mask ) const
+    {
+        Flags g;
+        g.i = i & mask;
+        return g;
+    }
+    inline Flags operator&( Enum f ) const
+    {
+        Flags g;
+        g.i = i & f;
+        return g;
+    }
+    inline Flags operator~() const
+    {
+        Flags g;
+        g.i = ~i;
+        return g;
+    }
 
-    inline bool operator!() const { return !i; }
+    inline bool operator!() const
+    {
+        return !i;
+    }
 
-    inline bool testFlag(Enum f) const { return i & f; }
+    inline bool testFlag( Enum f ) const
+    {
+        return i & f;
+    }
 
 };
 

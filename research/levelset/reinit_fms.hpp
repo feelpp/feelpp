@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -81,37 +81,41 @@ public:
         // Precompute some data in the reference element for
         // geometric mapping and reference finite element
         typename gm_type::precompute_ptrtype
-            __geopc( new typename gm_type::precompute_type(__functionspace->gm(),
-                                                           __fe->points() ) );
+        __geopc( new typename gm_type::precompute_type( __functionspace->gm(),
+                 __fe->points() ) );
 
         const uint16_type ndofv = functionspace_type::fe_type::nDof;
         iterator_type it, en;
         boost::tie( boost::tuples::ignore, it, en ) = _M_range;
 
         gm_context_ptrtype __c( new gm_context_type( __functionspace->gm(),
-                                                     *it,
-                                                     __geopc ) );
+                                *it,
+                                __geopc ) );
+
         // acquire neighborship and node coordinates
         for ( ; it!=en ; ++it )
+        {
+            __c->update( *it, __geopc );
+            map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
+            t_expr_type tensor_expr( vf::P(), mapgmc );
+            std::vector<size_type> indices( ndofv );
+
+            for ( uint16_type __j = 0; __j < ndofv; ++__j )
             {
-                __c->update( *it, __geopc );
-                map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
-                t_expr_type tensor_expr( vf::P(), mapgmc );
-                std::vector<size_type> indices( ndofv );
-                for ( uint16_type __j = 0; __j < ndofv;++__j )
-                    {
-                        size_type index = boost::get<0>(_M_functionspace->dof()->localToGlobal( it->id(), __j, 0 ));
-                        indices[__j] = index;
-                        for ( uint16_type c = 0; c < Dim; ++c )
-                            _M_coords[index][c] = tensor_expr.evalq( c, 0, __j );
-                    }
-                for ( uint16_type __j = 0; __j < ndofv;++__j )
-                    for ( uint16_type __k = __j+1; __k < ndofv;++__k )
-                        {
-                            _M_neighbors[indices[__j]].insert( indices[__k] );
-                            _M_neighbors[indices[__k]].insert( indices[__j] );
-                        }
+                size_type index = boost::get<0>( _M_functionspace->dof()->localToGlobal( it->id(), __j, 0 ) );
+                indices[__j] = index;
+
+                for ( uint16_type c = 0; c < Dim; ++c )
+                    _M_coords[index][c] = tensor_expr.evalq( c, 0, __j );
             }
+
+            for ( uint16_type __j = 0; __j < ndofv; ++__j )
+                for ( uint16_type __k = __j+1; __k < ndofv; ++__k )
+                {
+                    _M_neighbors[indices[__j]].insert( indices[__k] );
+                    _M_neighbors[indices[__k]].insert( indices[__j] );
+                }
+        }
     }
 
     ReinitializerFMS( ReinitializerFMS const& __vfi )
@@ -120,9 +124,9 @@ public:
         _M_range( __vfi._M_range ),
         _M_neighbors( __vfi._M_neighbors ),
         _M_coords( __vfi._M_coords )
-        {
-            Debug( 5065 ) << "ReinitializerFMS copy constructor\n";
-        }
+    {
+        Debug( 5065 ) << "ReinitializerFMS copy constructor\n";
+    }
 
     virtual ~ReinitializerFMS() {}
 
@@ -184,10 +188,10 @@ private:
 template<typename FunctionSpaceType, typename Iterator>
 typename ReinitializerFMS<FunctionSpaceType, Iterator>::element_type
 ReinitializerFMS<FunctionSpaceType, Iterator>::operator()
-    ( element_type const& phi ) const
+( element_type const& phi ) const
 {
 
-//     Debug() << "[ReinitFMS] operator()\n";
+    //     Debug() << "[ReinitFMS] operator()\n";
 
     element_type __v( _M_functionspace );
     __v.clear();
@@ -214,20 +218,25 @@ ReinitializerFMS<FunctionSpaceType, Iterator>::operator()
     // element, thus valid only for P1 elements
     std::set<size_type> done;
     std::vector<status_type> status( __v.size(), FAR );
+
     for ( ; it!=en ; ++it )
     {
         uint16_type nPlus = 0;
         uint16_type nMinus = 0;
         std::vector<size_type> indices( ndofv );
-        for ( uint16_type __j = 0; __j < ndofv;++__j )
+
+        for ( uint16_type __j = 0; __j < ndofv; ++__j )
         {
-            size_type index = phi.start() + boost::get<0>(_M_functionspace->dof()->localToGlobal( it->id(), __j, 0 ));
+            size_type index = phi.start() + boost::get<0>( _M_functionspace->dof()->localToGlobal( it->id(), __j, 0 ) );
             indices[__j] = index;
+
             if ( phi[index] < 0.0 )
                 ++nMinus;
+
             else if ( phi[index] > 0.0 )
                 ++nPlus;
         }
+
         if ( nPlus != ndofv && nMinus != ndofv )
             for ( uint16_type __j = 0; __j < ndofv; ++__j )
             {
@@ -241,10 +250,11 @@ ReinitializerFMS<FunctionSpaceType, Iterator>::operator()
 
     // initialize close distances in heap and mark close points in status array
     for ( std::set<size_type>::iterator dit = done.begin();
-          dit != done.end(); ++dit )
+            dit != done.end(); ++dit )
     {
         fmsHeapUpdate( *dit, __v, status, theHeap );
     } // loop over done points
+
     done.clear(); // not needed any more, save memory...
 
     // marching loop
@@ -252,7 +262,7 @@ ReinitializerFMS<FunctionSpaceType, Iterator>::operator()
     {
         // mark closest done and save distance
         typename details::FmsHeap<value_type>::heap_entry_type
-            newAccepted = theHeap.pop();
+        newAccepted = theHeap.pop();
         uint16_type newIdx = newAccepted.second;
         status[newIdx] = DONE;
         __v[newIdx] = newAccepted.first;
@@ -274,17 +284,19 @@ fmsHeapUpdate( size_type idDone,
                std::vector<status_type>& status,
                details::FmsHeap<value_type>& theHeap ) const
 {
-    std::set<size_type> const & nbrs = _M_neighbors.find(idDone)->second;
+    std::set<size_type> const & nbrs = _M_neighbors.find( idDone )->second;
     std::set<size_type>::const_iterator n0it;
     std::vector<size_type> ids( 1, idDone );
+
     for ( n0it = nbrs.begin(); n0it != nbrs.end(); ++n0it )
     {
         if ( status[*n0it] == FAR )
             status[*n0it] = CLOSE;
+
         if ( status[*n0it] == CLOSE )
         {
             // one neighbor
-            ids.push_back(*n0it);
+            ids.push_back( *n0it );
             value_type phiNew = fmsDistN( ids, __v );
             ids.pop_back();
 
@@ -308,29 +320,36 @@ fmsDistRec( std::vector<size_type> & ids,
     if ( ids.size() >= Dim )
         return phiOld;
 
-    value_type phiNew(phiOld);
+    value_type phiNew( phiOld );
 
-    std::set<size_type> const & nbrs = _M_neighbors.find(idClose)->second;
+    std::set<size_type> const & nbrs = _M_neighbors.find( idClose )->second;
     std::set<size_type>::const_iterator nit;
+
     for ( nit = nbrs.begin(); nit != nbrs.end(); ++nit )
     {
         if ( status[*nit] != DONE )
             continue;
+
         bool unique = true;
+
         for ( std::vector<size_type>::const_iterator idsit=ids.begin();
-              idsit != ids.end(); ++idsit )
+                idsit != ids.end(); ++idsit )
             unique &= ( *idsit != *nit );
+
         if ( !unique ) // points must be unique
             continue;
-        if ( _M_neighbors.find(ids[0])->second.find(*nit) ==
-             _M_neighbors.find(ids[0])->second.end() )
-            continue;
-        // one neighbor more
-        ids.push_back(*nit);
 
-        ids.push_back(idClose);
+        if ( _M_neighbors.find( ids[0] )->second.find( *nit ) ==
+                _M_neighbors.find( ids[0] )->second.end() )
+            continue;
+
+        // one neighbor more
+        ids.push_back( *nit );
+
+        ids.push_back( idClose );
         value_type phiCand = fmsDistN( ids, __v );
         ids.pop_back();
+
         if ( phiCand != 0.0 )
             phiNew = closerOne( phiCand, phiNew );
 
@@ -338,6 +357,7 @@ fmsDistRec( std::vector<size_type> & ids,
 
         ids.pop_back();
     }
+
     return phiNew;
 } // fmsDistRec
 
@@ -355,37 +375,48 @@ fmsDistN( std::vector<size_type> const & ids,
     point_type grad;
     value_type n_rest = 1.0;
     std::vector<std::vector<value_type> >
-        q( nPts, std::vector<value_type>( nPts, 0.0 ) );
+    q( nPts, std::vector<value_type>( nPts, 0.0 ) );
     std::vector<value_type> n( nPts, 0.0 );
     value_type eps = type_traits<value_type>::epsilon();
+
     for ( uint32_type i=0; i<nPts; ++i )
     {
         basis[i] = _M_coords[ids[i+1]] - _M_coords[ids[0]];
+
         for ( uint32_type j=0; j<i; j++ )
         {
             q[i][j] = dot( basis[i], basis[j] );
             basis[i] -= q[i][j]*basis[j];
         }
-        wNorm[i] = 1.0/norm(basis[i]);
+
+        wNorm[i] = 1.0/norm( basis[i] );
         basis[i] *= wNorm[i];
+
         if ( i<nPts-1 )
         {
             n[i] = __v[ids[i+1]]-__v[ids[0]];
+
             for ( uint32_type k=0; k<i; ++k )
                 n[i] -= ( __v[ids[k+1]] - __v[ids[0]] ) * q[i][k] * wNorm[k];
+
             n[i] *= wNorm[i];
             n_rest -= n[i]*n[i];
         }
+
         else
         {
             if ( n_rest < -10.0*eps )
                 return 0.0;
+
             else if ( n_rest < 0.0 )
                 n_rest = 0.0;
+
             n[i] = sqrt( n_rest );
+
             if ( __v[ids[0]] < 0.0 )
                 n[i] *= -1.0;
         }
+
         grad += n[i]*basis[i];
     }
 
@@ -397,17 +428,21 @@ fmsDistN( std::vector<size_type> const & ids,
     value_type lambdaTot = 0.0;
     bool inside = true;
     uint32_type j=nPts-1;
+
     while ( j > 0 )
-        {
-            --j;
-            lambda[j] = dot( dx, basis[j] ) - lambda[nPts-1]*n[j];
-            for ( uint32_type i=j+1; i<nPts-1; ++i )
-                lambda[j] -= lambda[i] * q[i][j];
-            lambda[j] *= wNorm[j];
-            lambdaTot += lambda[j];
-            inside &= lambda[j] >= 0.0;
-            // inside &= lambda[j] <= 1.0 // for line products
-        }
+    {
+        --j;
+        lambda[j] = dot( dx, basis[j] ) - lambda[nPts-1]*n[j];
+
+        for ( uint32_type i=j+1; i<nPts-1; ++i )
+            lambda[j] -= lambda[i] * q[i][j];
+
+        lambda[j] *= wNorm[j];
+        lambdaTot += lambda[j];
+        inside &= lambda[j] >= 0.0;
+        // inside &= lambda[j] <= 1.0 // for line products
+    }
+
     inside &= lambdaTot <= 1.0; // simplex assumed!
 
     return inside ? __v[ids[0]] + dot( grad, dx ) : 0.0;

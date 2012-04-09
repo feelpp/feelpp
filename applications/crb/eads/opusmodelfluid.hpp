@@ -107,7 +107,7 @@ public:
     typedef boost::shared_ptr<pressure_element_type> pressure_element_ptrtype;
     /* fluid */
     typedef fusion::vector<fem::Lagrange<Dim, Order, Vectorial, Continuous, double, Simplex>,
-                           fem::Lagrange<Dim, Order-1, Scalar, Continuous, double, Simplex> > fluid_basis_type;
+            fem::Lagrange<Dim, Order-1, Scalar, Continuous, double, Simplex> > fluid_basis_type;
 
     typedef FunctionSpace<mesh_type, fluid_basis_type, value_type> fluid_functionspace_type;
     typedef boost::shared_ptr<fluid_functionspace_type> fluid_functionspace_ptrtype;
@@ -159,8 +159,8 @@ public:
     double normL2Div( fluid_element_type& U ) const;
 
     void updateResidual( const vector_ptrtype& X, vector_ptrtype& R );
-    void updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J);
-    void updateResidualJacobian( const vector_ptrtype& X, vector_ptrtype& R, sparse_matrix_ptrtype& J);
+    void updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J );
+    void updateResidualJacobian( const vector_ptrtype& X, vector_ptrtype& R, sparse_matrix_ptrtype& J );
 
     void updateLinearOperatorsBdf1( fluid_element_type& U );
     void updateLinearOperatorsBdf2( fluid_element_type& U );

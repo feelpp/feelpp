@@ -73,15 +73,15 @@ inline
 po::options_description
 makeOptions()
 {
-    po::options_description laplacianoptions("Laplacian options");
+    po::options_description laplacianoptions( "Laplacian options" );
     laplacianoptions.add_options()
-        ("hsize", po::value<double>()->default_value( 0.5 ), "mesh size")
-        ("shape", po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (hypercube, simplex, ellipsoid)")
-        ("nu", po::value<double>()->default_value( 1 ), "grad.grad coefficient")
-        ("weakdir", po::value<int>()->default_value( 1 ), "use weak Dirichlet condition" )
-        ("penaldir", Feel::po::value<double>()->default_value( 10 ),
-         "penalisation parameter for the weak boundary Dirichlet formulation")
-        ;
+    ( "hsize", po::value<double>()->default_value( 0.5 ), "mesh size" )
+    ( "shape", po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (hypercube, simplex, ellipsoid)" )
+    ( "nu", po::value<double>()->default_value( 1 ), "grad.grad coefficient" )
+    ( "weakdir", po::value<int>()->default_value( 1 ), "use weak Dirichlet condition" )
+    ( "penaldir", Feel::po::value<double>()->default_value( 10 ),
+      "penalisation parameter for the weak boundary Dirichlet formulation" )
+    ;
     return laplacianoptions.add( Feel::feel_options() );
 }
 
@@ -101,9 +101,9 @@ makeAbout()
                      "0.2",
                      "nD(n=1,2,3) Test_Mixed on simplices or simplex products",
                      Feel::AboutData::License_GPL,
-                     "Copyright (c) 2008-2010 Universite Joseph Fourier");
+                     "Copyright (c) 2008-2010 Universite Joseph Fourier" );
 
-    about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
     return about;
 
 }
@@ -120,7 +120,7 @@ makeAbout()
 template<int Dim, int Order>
 class TestMixed
     :
-    public Application
+public Application
 {
     typedef Application super;
 public:
@@ -206,10 +206,11 @@ TestMixed<Dim,Order>::run()
      */
     /** \code */
     if ( this->vm().count( "help" ) )
-        {
-            std::cout << this->optionsDescription() << "\n";
-            return;
-        }
+    {
+        std::cout << this->optionsDescription() << "\n";
+        return;
+    }
+
     /** \endcode */
 
     /**
@@ -223,20 +224,20 @@ TestMixed<Dim,Order>::run()
                             % Order
                             % shape
                             % meshSize
-                            );
+                          );
     /** \endcode */
     /**
      * First we create the mesh
      */
     /** \code */
     mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
-                                        _desc=domain( _name=(boost::format( "%1%-%2%" ) % shape % Dim).str() ,
-                                                      _usenames=true,
-                                                      _convex=(convex_type::is_hypercube)?"Hypercube":"Simplex",
-                                                      _shape=shape,
-                                                      _dim=Dim,
-                                                      _xmin=-1.,_ymin=-1.,_zmin=-1.,
-                                                      _h=meshSize ),
+                                        _desc=domain( _name=( boost::format( "%1%-%2%" ) % shape % Dim ).str() ,
+                                                _usenames=true,
+                                                _convex=( convex_type::is_hypercube )?"Hypercube":"Simplex",
+                                                _shape=shape,
+                                                _dim=Dim,
+                                                _xmin=-1.,_ymin=-1.,_zmin=-1.,
+                                                _h=meshSize ),
                                         _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER );
     /** \endcode */
 
@@ -250,8 +251,8 @@ TestMixed<Dim,Order>::run()
     p_element_type p( Yh, "p" );
     /** \endcode */
 
-    u = vf::project( Xh, elements(mesh), P() );
-    p = vf::project( Yh, elements(mesh), cst(1.) );
+    u = vf::project( Xh, elements( mesh ), P() );
+    p = vf::project( Yh, elements( mesh ), cst( 1. ) );
 
     vector_ptrtype U = M_backend->newVector( Xh );
     *U = u;
@@ -259,21 +260,22 @@ TestMixed<Dim,Order>::run()
     vector_ptrtype Q = M_backend->newVector( Yh );
     vector_ptrtype P = M_backend->newVector( Yh );
     *P = p;
-    U->close();P->close();
+    U->close();
+    P->close();
     //P->printMatlab( "P.m" );
     //U->printMatlab( "U.m" );
 
-    double meas = integrate( elements(mesh), cst(1.) ).evaluate()( 0, 0 );
+    double meas = integrate( elements( mesh ), cst( 1. ) ).evaluate()( 0, 0 );
 
-    double res =  integrate( elements(mesh), divv(u)*idv(p) ).evaluate()( 0,0 ) ;
+    double res =  integrate( elements( mesh ), divv( u )*idv( p ) ).evaluate()( 0,0 ) ;
     BOOST_CHECK_CLOSE( res, Dim*meas, 5e-11 );
     BOOST_TEST_MESSAGE( "[(u,p)] res = " << res << " (must be equal to " << Dim*meas << ")\n" );
 
-    res =  integrate( elements(mesh), divv(u)*divv(u) ).evaluate()( 0,0 ) ;
+    res =  integrate( elements( mesh ), divv( u )*divv( u ) ).evaluate()( 0,0 ) ;
     BOOST_CHECK_CLOSE( res, Dim*Dim*meas, 5e-11 );
     BOOST_TEST_MESSAGE( "[(u,u)] res = " << res << " (must be equal to " << Dim*Dim*meas << ")\n" );
 
-    res =  integrate( elements(mesh), idv(p)*idv(p) ).evaluate()( 0,0 ) ;
+    res =  integrate( elements( mesh ), idv( p )*idv( p ) ).evaluate()( 0,0 ) ;
     BOOST_CHECK_CLOSE( res, meas, 5e-11 );
     BOOST_TEST_MESSAGE( "[(p,p)] res = " << res << " (must be equal to " << meas << ")\n" );
 
@@ -281,7 +283,7 @@ TestMixed<Dim,Order>::run()
         auto D = M_backend->newMatrix( Xh, Yh );
         BOOST_CHECK_EQUAL( D->size1(), Yh->nLocalDof() );
         BOOST_CHECK_EQUAL( D->size2(), Xh->nLocalDof() );
-        form2( _trial=Xh, _test=Yh, _matrix=D, _init=true)= integrate( elements(mesh), divt(u)*id(p) );
+        form2( _trial=Xh, _test=Yh, _matrix=D, _init=true )= integrate( elements( mesh ), divt( u )*id( p ) );
         D->close();
         //D->printMatlab( "D.m" );
         D->multVector( U, Q );
@@ -290,8 +292,8 @@ TestMixed<Dim,Order>::run()
         BOOST_CHECK_CLOSE( res, Dim*meas, 5e-13 );
         BOOST_TEST_MESSAGE( "[D(p,u)] res = " << res << " (must be equal to " << Dim*meas << ")\n" );
 
-        form2( _trial=Xh, _test=Yh, _matrix=D, _init=true)=
-            integrate( elements(mesh), -grad(p)*idt(u) );
+        form2( _trial=Xh, _test=Yh, _matrix=D, _init=true )=
+            integrate( elements( mesh ), -grad( p )*idt( u ) );
 
         D->close();
         //D->printMatlab( "Dg.m" );
@@ -300,8 +302,8 @@ TestMixed<Dim,Order>::run()
         BOOST_CHECK_SMALL( res, 1e-13 );
         BOOST_TEST_MESSAGE( "[Dg(p,u)] res = " << res << " (must be equal to " << 0 << ")\n" );
 
-        form2( _trial=Xh, _test=Yh, _matrix=D, _init=true)=
-            integrate( boundaryfaces(mesh), trans(idt(u))*N()*id(p) );
+        form2( _trial=Xh, _test=Yh, _matrix=D, _init=true )=
+            integrate( boundaryfaces( mesh ), trans( idt( u ) )*N()*id( p ) );
 
         D->close();
         //D->printMatlab( "Db.m" );
@@ -312,7 +314,7 @@ TestMixed<Dim,Order>::run()
 
         vector_ptrtype F( M_backend->newVector( Yh ) );
         BOOST_CHECK_EQUAL( F->size(), Yh->nLocalDof() );
-        form1( _test=Yh, _vector=F, _init=true)= integrate( elements(mesh), divv(u)*id(p) );
+        form1( _test=Yh, _vector=F, _init=true )= integrate( elements( mesh ), divv( u )*id( p ) );
 
         F->close();
         //F->printMatlab( "Fu.m" );
@@ -325,7 +327,7 @@ TestMixed<Dim,Order>::run()
         sparse_matrix_ptrtype D( M_backend->newMatrix( Yh, Xh ) );
         BOOST_CHECK_EQUAL( D->size1(), Xh->nLocalDof() );
         BOOST_CHECK_EQUAL( D->size2(), Yh->nLocalDof() );
-        form2( _test=Xh, _trial=Yh, _matrix=D, _init=true)= integrate( elements(mesh), div(u)*idt(p) );
+        form2( _test=Xh, _trial=Yh, _matrix=D, _init=true )= integrate( elements( mesh ), div( u )*idt( p ) );
 
         D->close();
         //D->printMatlab( "Dt.m" );
@@ -337,7 +339,7 @@ TestMixed<Dim,Order>::run()
 
         vector_ptrtype F( M_backend->newVector( Xh ) );
         BOOST_CHECK_EQUAL( F->size(), Xh->nLocalDof() );
-        form1( _test=Xh, _vector=F, _init=true)= integrate( elements(mesh), div(u)*idv(p) );
+        form1( _test=Xh, _vector=F, _init=true )= integrate( elements( mesh ), div( u )*idv( p ) );
 
         F->close();
         //F->printMatlab( "Fp.m" );
@@ -351,7 +353,7 @@ TestMixed<Dim,Order>::run()
         sparse_matrix_ptrtype D( M_backend->newMatrix( Xh, Xh ) );
         BOOST_CHECK_EQUAL( D->size1(), Xh->nLocalDof() );
         BOOST_CHECK_EQUAL( D->size2(), Xh->nLocalDof() );
-        form2( _trial=Xh, _test=Xh, _matrix=D, _init=true)= integrate( elements(mesh), divt(u)*div(u) );
+        form2( _trial=Xh, _test=Xh, _matrix=D, _init=true )= integrate( elements( mesh ), divt( u )*div( u ) );
         D->close();
         //D->printMatlab( "divdiv.m" );
         D->multVector( U, V );
@@ -364,7 +366,7 @@ TestMixed<Dim,Order>::run()
         sparse_matrix_ptrtype D( M_backend->newMatrix( Yh, Yh ) );
         BOOST_CHECK_EQUAL( D->size1(), Yh->nLocalDof() );
         BOOST_CHECK_EQUAL( D->size2(), Yh->nLocalDof() );
-        form2( _trial=Yh, _test=Yh, _matrix=D, _init=true)= integrate( elements(mesh), idt(p)*id(p) );
+        form2( _trial=Yh, _test=Yh, _matrix=D, _init=true )= integrate( elements( mesh ), idt( p )*id( p ) );
         D->close();
         //D->printMatlab( "idid.m" );
         D->multVector( P, Q );
@@ -426,7 +428,7 @@ int BOOST_TEST_CALL_DECL
 main( int argc, char* argv[] )
 {
     Feel::Environment env( argc, argv );
-    Feel::Assert::setLog( "test_mixed.assert");
+    Feel::Assert::setLog( "test_mixed.assert" );
     int ret = ::boost::unit_test::unit_test_main( &init_unit_test, argc, argv );
 
     return ret;

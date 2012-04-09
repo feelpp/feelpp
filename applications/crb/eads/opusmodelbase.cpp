@@ -32,23 +32,23 @@
 namespace Feel
 {
 
-    OpusModelBase::OpusModelBase()
-        :
-        M_data( new opusdata_type( 2 ) )
-    {}
+OpusModelBase::OpusModelBase()
+    :
+    M_data( new opusdata_type( 2 ) )
+{}
 
-    OpusModelBase::OpusModelBase( po::variables_map const& vm )
-        :
-        M_data( new opusdata_type( 2, vm ) )
-    {}
+OpusModelBase::OpusModelBase( po::variables_map const& vm )
+    :
+    M_data( new opusdata_type( 2, vm ) )
+{}
 
 
-    OpusModelBase::OpusModelBase( OpusModelBase const & o )
-        :
-        M_data( o.M_data )
-    {}
+OpusModelBase::OpusModelBase( OpusModelBase const & o )
+    :
+    M_data( o.M_data )
+{}
 
-    OpusModelBase::~OpusModelBase()
-    {}
+OpusModelBase::~OpusModelBase()
+{}
 
 }

@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
 This file is part of the Feel library
 
@@ -79,8 +79,8 @@ public :
     static const bool is_hypercube = Convex::is_hypercube;
 
     typedef mpl::if_< mpl::bool_< is_simplex >,
-                      Simplex<Dim, Order, /*nRealDim*/Dim> ,
-                      Hypercube<Dim, Order, /*nRealDim*/Dim> > conv_order_type;
+            Simplex<Dim, Order, /*nRealDim*/Dim> ,
+            Hypercube<Dim, Order, /*nRealDim*/Dim> > conv_order_type;
 
     typedef Reference<Convex, Dim, convexOrder, Dim/*nRealDim*/, value_type> RefElem;
 
@@ -101,7 +101,7 @@ public :
 
     PointSetEquiSpaced( int interior = 0 )
         :
-        super(numPoints, Dim),
+        super( numPoints, Dim ),
         _M_eid()
     {
         _M_eid.resize( topological_dimension + 1 );
@@ -110,37 +110,40 @@ public :
         nodes_type pts( Dim, numPoints );
 
         if ( interior == 0 && Order > 0 )
+        {
+            // loop on each convex of topological dimension <= to the current convex
+            // where we build the polynomial set
+            for ( uint16_type d = 0, p = 0; d < topological_dimension+1; ++d )
             {
-                // loop on each convex of topological dimension <= to the current convex
-                // where we build the polynomial set
-                for ( uint16_type d = 0, p = 0; d < topological_dimension+1; ++d )
+                // loop on each entity forming the convex of topological
+                // dimension d
+                for ( int e = RefConv.entityRange( d ).begin();
+                        e < RefConv.entityRange( d ).end();
+                        ++e )
+                {
+                    nodes_type Gt ( makePoints( d, e ) );
+
+                    if ( Gt.size2() )
                     {
-                        // loop on each entity forming the convex of topological
-                        // dimension d
-                        for ( int e = RefConv.entityRange( d ).begin();
-                              e < RefConv.entityRange( d ).end();
-                              ++e )
-                            {
-                                nodes_type Gt ( makePoints( d, e ) );
-                                if ( Gt.size2() )
-                                    {
-                                        ublas::subrange( pts, 0, Dim, p, p+Gt.size2() ) = Gt;
+                        ublas::subrange( pts, 0, Dim, p, p+Gt.size2() ) = Gt;
 
-                                        for ( size_type j = 0; j < Gt.size2(); ++j )
-                                            {
-                                                addToEid( d, p+j );
-                                                addToPtE( p+j, std::make_pair( d, e ) );
-                                            }
+                        for ( size_type j = 0; j < Gt.size2(); ++j )
+                        {
+                            addToEid( d, p+j );
+                            addToPtE( p+j, std::make_pair( d, e ) );
+                        }
 
-                                        p+=Gt.size2();
-                                    }
-                            }
+                        p+=Gt.size2();
                     }
-
-                this->setPoints( pts );
+                }
             }
+
+            this->setPoints( pts );
+        }
+
         else if ( interior == 1 && Order > 0 )
             this->setPoints( makePoints( Dim, 0 ) );
+
         else if ( Order == 0 )
             this->setPoints( glas::average( RefConv.vertices() ) );
 
@@ -154,102 +157,116 @@ public :
         FEELPP_ASSERT( _M_eid[e].size() )( e ).error( "no points defined on this entity" );
 
         return ublas::project( this->points(),
-                               ublas::range(0,Dim),
+                               ublas::range( 0,Dim ),
                                ublas::range( *_M_eid[e].begin(), *_M_eid[e].rbegin() + 1 ) );
     }
 
-    std::pair<uint16_type, uint16_type> interiorRangeById( uint16_type e, uint16_type id) const
+    std::pair<uint16_type, uint16_type> interiorRangeById( uint16_type e, uint16_type id ) const
     {
         uint16_type numEntities = 1;
 
         if ( e == 0 )
             numEntities = Convex::numVertices;
+
         else if ( e == 1 )
             numEntities = Convex::numEdges;
+
         else if ( e == 2 )
             numEntities = Convex::numFaces;
 
         uint16_type N = _M_eid[e].size()/numEntities;
 
-        return std::make_pair(*_M_eid[e].begin() + id*N, *_M_eid[e].begin() + (id+1)*N );
+        return std::make_pair( *_M_eid[e].begin() + id*N, *_M_eid[e].begin() + ( id+1 )*N );
     }
 
-    ublas::matrix_range<nodes_type const> interiorPointsById( uint16_type e, uint16_type id) const
+    ublas::matrix_range<nodes_type const> interiorPointsById( uint16_type e, uint16_type id ) const
     {
-        std::pair<uint16_type, uint16_type> position = interiorRangeById(e, id);
+        std::pair<uint16_type, uint16_type> position = interiorRangeById( e, id );
 
         ublas::matrix_range<nodes_type const> G = ublas::project( this->points(),
-                                                                  ublas::range(0, Dim),
-                                                                  ublas::range( position.first, position.second ) );
+                ublas::range( 0, Dim ),
+                ublas::range( position.first, position.second ) );
 
         return G;
     }
 
-    uint32_type entityIds( int i, int j ) const { return _M_eid[i][j]; }
+    uint32_type entityIds( int i, int j ) const
+    {
+        return _M_eid[i][j];
+    }
 
-    uint32_type numEntities( int i ) const { return _M_eid[i].size(); }
+    uint32_type numEntities( int i ) const
+    {
+        return _M_eid[i].size();
+    }
 
-    std::pair<uint16_type, uint16_type> const& pointToEntity( int p ) const { return _M_pt_to_entity[p]; }
+    std::pair<uint16_type, uint16_type> const& pointToEntity( int p ) const
+    {
+        return _M_pt_to_entity[p];
+    }
 
     //Returns the local indices of all the subentities that compose the entity
     index_map_type entityToLocal ( uint16_type top_dim, uint16_type local_id, bool boundary = 0 ) const
     {
-        index_map_type indices(top_dim+1);
+        index_map_type indices( top_dim+1 );
 
         if ( top_dim == 0 && boundary )
-            {
-                range_type pair = interiorRangeById( top_dim, local_id );
+        {
+            range_type pair = interiorRangeById( top_dim, local_id );
 
-                indices[0].push_back( pair.first );
-            }
+            indices[0].push_back( pair.first );
+        }
+
         else
+        {
+            if ( !boundary && top_dim > 0 )
             {
-                if ( !boundary && top_dim > 0 )
-                    {
-                        if ( numEntities( top_dim ) != 0 )
-                            indices[top_dim].push_back(local_id);
-                    }
-                else
-                    {
-                        if (top_dim > 0 )
-                            {
-                                //For the time being, this definition works, but in a more general framework,
-                                //a entity shoulkd be created here with the respective top_dim
-                                //in order to retrieve the number of vertices, edges, faces.
-
-                                //number of vertices, number of edges and number of faces in the volume
-                                std::map<uint16_type, uint16_type> numPointsInEntity;
-
-                                numPointsInEntity[0] = (uint16_type) (is_simplex)?(top_dim+1):( 2 + (top_dim-1)*(2+3*(top_dim-2)) );
-                                numPointsInEntity[1] = (uint16_type) (2 + (top_dim-1)*(1+2*is_simplex + (5-4*is_simplex)*(top_dim-1)))/2;
-                                numPointsInEntity[2] = (uint16_type) 6-2*is_simplex;
-
-                                for ( uint16_type i=0; i < numPointsInEntity[0] ; i++ )
-                                    {
-                                        if ( top_dim == 1 )
-                                            indices[0].push_back( RefConv.e2p(local_id, i) );
-                                        else if ( top_dim == 2 )
-                                            indices[0].push_back( RefConv.f2p(local_id, i) );
-                                    }
-
-                                if ( ( top_dim == 2) && (_M_eid[1].size() != 0 ) )
-                                    {
-                                        for ( uint16_type i=0; i < numPointsInEntity[1] ; i++ )
-                                            indices[1].push_back( RefConv.f2e(local_id, i) );
-                                    }
-
-                                if ( top_dim == 3 )
-                                    {
-                                        for ( uint16_type k=0; k<numPointsInEntity.size(); k++ )
-                                            for ( uint16_type i=0; i < numPointsInEntity[k]; i++ )
-                                                    indices[k].push_back(i);
-                                    }
-
-                                if ( _M_eid[top_dim].size() )
-                                    indices[top_dim].push_back(local_id);
-                            }
-                    }
+                if ( numEntities( top_dim ) != 0 )
+                    indices[top_dim].push_back( local_id );
             }
+
+            else
+            {
+                if ( top_dim > 0 )
+                {
+                    //For the time being, this definition works, but in a more general framework,
+                    //a entity shoulkd be created here with the respective top_dim
+                    //in order to retrieve the number of vertices, edges, faces.
+
+                    //number of vertices, number of edges and number of faces in the volume
+                    std::map<uint16_type, uint16_type> numPointsInEntity;
+
+                    numPointsInEntity[0] = ( uint16_type ) ( is_simplex )?( top_dim+1 ):( 2 + ( top_dim-1 )*( 2+3*( top_dim-2 ) ) );
+                    numPointsInEntity[1] = ( uint16_type ) ( 2 + ( top_dim-1 )*( 1+2*is_simplex + ( 5-4*is_simplex )*( top_dim-1 ) ) )/2;
+                    numPointsInEntity[2] = ( uint16_type ) 6-2*is_simplex;
+
+                    for ( uint16_type i=0; i < numPointsInEntity[0] ; i++ )
+                    {
+                        if ( top_dim == 1 )
+                            indices[0].push_back( RefConv.e2p( local_id, i ) );
+
+                        else if ( top_dim == 2 )
+                            indices[0].push_back( RefConv.f2p( local_id, i ) );
+                    }
+
+                    if ( ( top_dim == 2 ) && ( _M_eid[1].size() != 0 ) )
+                    {
+                        for ( uint16_type i=0; i < numPointsInEntity[1] ; i++ )
+                            indices[1].push_back( RefConv.f2e( local_id, i ) );
+                    }
+
+                    if ( top_dim == 3 )
+                    {
+                        for ( uint16_type k=0; k<numPointsInEntity.size(); k++ )
+                            for ( uint16_type i=0; i < numPointsInEntity[k]; i++ )
+                                indices[k].push_back( i );
+                    }
+
+                    if ( _M_eid[top_dim].size() )
+                        indices[top_dim].push_back( local_id );
+                }
+            }
+        }
 
         return indices;
     }
@@ -261,49 +278,67 @@ public :
 
         uint16_type matrix_size = 0;
 
-        if (index_list[0].size() != 0 )
+        if ( index_list[0].size() != 0 )
             matrix_size +=index_list[0].size()*nbPtsPerVertex;
 
-        if ( (top_dim >= 1) && (index_list[1].size() != 0) )
+        if ( ( top_dim >= 1 ) && ( index_list[1].size() != 0 ) )
             matrix_size +=index_list[1].size()*nbPtsPerEdge;
 
-        if ( (top_dim >= 2) && (index_list[2].size() != 0) )
+        if ( ( top_dim >= 2 ) && ( index_list[2].size() != 0 ) )
             matrix_size +=index_list[2].size()*nbPtsPerFace;
 
-        if ( (top_dim == 3) && (index_list[3].size() != 0) )
+        if ( ( top_dim == 3 ) && ( index_list[3].size() != 0 ) )
             matrix_size +=nbPtsPerVolume;
 
-        points_type G (Dim, matrix_size);
+        points_type G ( Dim, matrix_size );
 
         for ( uint16_type i=0, p=0; i < top_dim+1; i++ )
         {
             if ( index_list[i].size() )
+            {
+                for ( uint16_type j=0; j < index_list[i].size(); j++ )
                 {
-                    for ( uint16_type j=0; j < index_list[i].size(); j++ )
-                        {
-                            points_type aux = interiorPointsById(i, index_list[i][j]);
+                    points_type aux = interiorPointsById( i, index_list[i][j] );
 
-                            ublas::subrange( G, 0, Dim, p, p+aux.size2() ) = aux;
+                    ublas::subrange( G, 0, Dim, p, p+aux.size2() ) = aux;
 
-                            p+=aux.size2();
-                        }
+                    p+=aux.size2();
                 }
+            }
         }
 
         return G;
     }
 
-    index_map_type getEid () { return _M_eid; }
+    index_map_type getEid ()
+    {
+        return _M_eid;
+    }
 
-    std::vector<range_type> getPtE() { return _M_pt_to_entity; }
+    std::vector<range_type> getPtE()
+    {
+        return _M_pt_to_entity;
+    }
 
-    void setEid ( index_map_type eid ) { _M_eid = eid; }
+    void setEid ( index_map_type eid )
+    {
+        _M_eid = eid;
+    }
 
-    void setPtE ( std::vector<range_type> pt_ent ) { _M_pt_to_entity = pt_ent; }
+    void setPtE ( std::vector<range_type> pt_ent )
+    {
+        _M_pt_to_entity = pt_ent;
+    }
 
-    void addToEid ( uint16_type p, uint16_type q) { _M_eid[p].push_back(q); }
+    void addToEid ( uint16_type p, uint16_type q )
+    {
+        _M_eid[p].push_back( q );
+    }
 
-    void addToPtE ( uint16_type p, range_type q ) { _M_pt_to_entity[p] = q; }
+    void addToPtE ( uint16_type p, range_type q )
+    {
+        _M_pt_to_entity[p] = q;
+    }
 
     FEELPP_DEFINE_VISITABLE();
 
@@ -316,71 +351,77 @@ private:
     {
         // vertices
         if ( topo_dim == 0 )
-            {
-                points_type G( RefConv.vertices().size1(), 1 );
-                ublas::column( G, 0 ) = ublas::column( RefConv.vertices(), __id );
-                return G;
-            }
+        {
+            points_type G( RefConv.vertices().size1(), 1 );
+            ublas::column( G, 0 ) = ublas::column( RefConv.vertices(), __id );
+            return G;
+        }
 
         // interior points of the convex
         else if ( topo_dim == topological_dimension )
-            {
-                if ( __id == 0 )
-                    return makeLattice<Shape>( interior );
-                throw std::logic_error( "cannot make those points" );
-                return points_type();
-            }
+        {
+            if ( __id == 0 )
+                return makeLattice<Shape>( interior );
+
+            throw std::logic_error( "cannot make those points" );
+            return points_type();
+        }
+
         // all the other points
         else
+        {
+            points_type G;
+            points_type Gret;
+
+            if ( topo_dim == 1 )
             {
-                points_type G;
-                points_type Gret;
-                if ( topo_dim == 1 )
-                    {
-                        G = makeLattice<SHAPE_LINE>( 1 );
-                        Gret.resize(nRealDim, G.size2() );
+                G = makeLattice<SHAPE_LINE>( 1 );
+                Gret.resize( nRealDim, G.size2() );
 
-                        if ( is_simplex )
-                            {
-                                pt_to_entity_tetrahedron<Shape, 1> p_to_e( __id );
+                if ( is_simplex )
+                {
+                    pt_to_entity_tetrahedron<Shape, 1> p_to_e( __id );
 
-                                for ( size_type i = 0; i < G.size2(); ++i )
-                                    ublas::column( Gret, i ) = p_to_e( ublas::column( G, i ) );
-                            }
-                        else
-                            {
-                                pt_to_entity_hexahedron<Shape, 1> p_to_e( __id );
+                    for ( size_type i = 0; i < G.size2(); ++i )
+                        ublas::column( Gret, i ) = p_to_e( ublas::column( G, i ) );
+                }
 
-                                for ( size_type i = 0; i < G.size2(); ++i )
-                                    ublas::column( Gret, i ) = p_to_e( ublas::column( G, i ) );
-                            }
+                else
+                {
+                    pt_to_entity_hexahedron<Shape, 1> p_to_e( __id );
 
-                        return Gret;
-                    }
-                else if ( topo_dim == 2 )
-                    {
-                        if ( is_simplex )
-                            {
-                                G = makeLattice<SHAPE_TRIANGLE>( 1 );
-                                Gret.resize( nRealDim, G.size2() );
-                                pt_to_entity_tetrahedron<Shape, 2> p_to_e( __id );
+                    for ( size_type i = 0; i < G.size2(); ++i )
+                        ublas::column( Gret, i ) = p_to_e( ublas::column( G, i ) );
+                }
 
-                                for ( size_type i = 0; i < G.size2(); ++i )
-                                    ublas::column( Gret, i ) = p_to_e( ublas::column( G, i ) );
-                            }
-                        else
-                            {
-                                G = makeLattice<SHAPE_QUAD>( 1 );
-                                Gret.resize( nRealDim, G.size2() );
-                                pt_to_entity_hexahedron<Shape, 2> p_to_e( __id );
-
-                                for ( size_type i = 0; i < G.size2(); ++i )
-                                    ublas::column( Gret, i ) = p_to_e( ublas::column( G, i ) );
-                            }
-
-                        return Gret;
-                    }
+                return Gret;
             }
+
+            else if ( topo_dim == 2 )
+            {
+                if ( is_simplex )
+                {
+                    G = makeLattice<SHAPE_TRIANGLE>( 1 );
+                    Gret.resize( nRealDim, G.size2() );
+                    pt_to_entity_tetrahedron<Shape, 2> p_to_e( __id );
+
+                    for ( size_type i = 0; i < G.size2(); ++i )
+                        ublas::column( Gret, i ) = p_to_e( ublas::column( G, i ) );
+                }
+
+                else
+                {
+                    G = makeLattice<SHAPE_QUAD>( 1 );
+                    Gret.resize( nRealDim, G.size2() );
+                    pt_to_entity_hexahedron<Shape, 2> p_to_e( __id );
+
+                    for ( size_type i = 0; i < G.size2(); ++i )
+                        ublas::column( Gret, i ) = p_to_e( ublas::column( G, i ) );
+                }
+
+                return Gret;
+            }
+        }
 
         return points_type();
     }
@@ -391,18 +432,23 @@ private:
         points_type G;
 
         if ( Order > 0 )
-            {
-                if ( shape == SHAPE_LINE )
-                    G = make_line_points( interior );
-                else if ( shape == SHAPE_TRIANGLE )
-                    G = make_triangle_points( interior );
-                else if ( shape == SHAPE_TETRA )
-                    G = make_tetrahedron_points( interior );
-                else if ( shape == SHAPE_QUAD )
-                    return make_quad_points( interior );
-                else if ( shape == SHAPE_HEXA )
-                    return make_hexa_points( interior );
-            }
+        {
+            if ( shape == SHAPE_LINE )
+                G = make_line_points( interior );
+
+            else if ( shape == SHAPE_TRIANGLE )
+                G = make_triangle_points( interior );
+
+            else if ( shape == SHAPE_TETRA )
+                G = make_tetrahedron_points( interior );
+
+            else if ( shape == SHAPE_QUAD )
+                return make_quad_points( interior );
+
+            else if ( shape == SHAPE_HEXA )
+                return make_hexa_points( interior );
+        }
+
         else if ( Order == 0 )
             G = glas::average( RefConv.vertices() );
 
@@ -433,6 +479,7 @@ private:
     {
         if ( interior == 1 )
             return std::max( 0, ( int( Order )+1-2*interior )*( int( Order )+1-2*interior ) );
+
         return ( Order+1 )*( Order+1 );
     }
 
@@ -440,6 +487,7 @@ private:
     {
         if ( interior == 1 )
             return std::max( 0, ( int( Order )+1-2*interior )*( int( Order )+1-2*interior )*( int( Order )+1-2*interior ) );
+
         return ( Order+1 )*( Order+1 )*( Order+1 );
     }
 
@@ -449,17 +497,18 @@ private:
         points_type G;
 
         if ( Order > 0 )
+        {
+            ublas::vector<node_type> h ( 1 );
+            h( 0 ) = RefConv.vertex( 1 ) - RefConv.vertex( 0 );
+
+            G.resize( Dim, n_line_points( interior ) );
+
+            for ( int i = interior, indp = 0; i < int( Order )+1-interior; ++i, ++indp )
             {
-                ublas::vector<node_type> h ( 1 );
-                h( 0 ) = RefConv.vertex( 1 ) - RefConv.vertex( 0 );
-
-                G.resize( Dim, n_line_points( interior ) );
-
-                for ( int i = interior, indp = 0; i < int( Order )+1-interior; ++i, ++indp )
-                    {
-                        ublas::column( G, indp ) = RefConv.vertex( 0 ) + ( h(0) * value_type(i) )/value_type(Order);
-                    }
+                ublas::column( G, indp ) = RefConv.vertex( 0 ) + ( h( 0 ) * value_type( i ) )/value_type( Order );
             }
+        }
+
         else
             G = glas::average( RefConv.vertices() );
 
@@ -473,22 +522,23 @@ private:
         points_type G;
 
         if ( Order > 0 )
+        {
+            ublas::vector<node_type> h ( 2 );
+            h( 0 ) = RefConv.vertex( 1 ) - RefConv.vertex( 0 );
+            h( 1 ) = RefConv.vertex( 2 ) - RefConv.vertex( 0 );
+
+            G.resize( Dim, n_triangle_points( interior ) );
+
+            for ( int i = interior, p = 0; i < int( Order )+1-interior; ++i )
             {
-                ublas::vector<node_type> h ( 2 );
-                h( 0 ) = RefConv.vertex( 1 ) - RefConv.vertex( 0 );
-                h( 1 ) = RefConv.vertex( 2 ) - RefConv.vertex( 0 );
-
-                G.resize( Dim, n_triangle_points( interior ) );
-
-                for ( int i = interior, p = 0; i < int( Order )+1-interior; ++i )
-                    {
-                        for ( int j = interior; j < int( Order ) + 1 - i-interior; ++j, ++p )
-                            {
-                                ublas::column( G, p ) = RefConv.vertex( 0 ) + ( value_type(i) * h( 1 )  +
-                                                                                value_type(j) * h( 0 ) )/ value_type(Order);
-                            }
-                    }
+                for ( int j = interior; j < int( Order ) + 1 - i-interior; ++j, ++p )
+                {
+                    ublas::column( G, p ) = RefConv.vertex( 0 ) + ( value_type( i ) * h( 1 )  +
+                                            value_type( j ) * h( 0 ) )/ value_type( Order );
+                }
             }
+        }
+
         else
             G = glas::average( RefConv.vertices() );
 
@@ -501,28 +551,29 @@ private:
         points_type G;
 
         if ( Order > 0 )
+        {
+            ublas::vector<node_type> h ( 3 );
+            h( 0 ) = RefConv.vertex( 1 ) - RefConv.vertex( 0 );
+            h( 1 ) = RefConv.vertex( 2 ) - RefConv.vertex( 0 );
+            h( 2 ) = RefConv.vertex( 3 ) - RefConv.vertex( 0 );
+
+            G.resize( Dim, n_tetrahedron_points( interior ) );
+
+            for ( int i = interior, p = 0; i < int( Order )+1-interior; ++i )
             {
-                ublas::vector<node_type> h ( 3 );
-                h( 0 ) = RefConv.vertex( 1 ) - RefConv.vertex( 0 );
-                h( 1 ) = RefConv.vertex( 2 ) - RefConv.vertex( 0 );
-                h( 2 ) = RefConv.vertex( 3 ) - RefConv.vertex( 0 );
-
-                G.resize( Dim, n_tetrahedron_points( interior ) );
-
-                for ( int i = interior, p = 0; i < int( Order )+1-interior; ++i )
+                for ( int j = interior; j < int( Order ) + 1 - i - interior; ++j )
+                {
+                    for ( int k = interior; k < int( Order ) + 1 - i - j - interior; ++k, ++p )
                     {
-                        for ( int j = interior; j < int( Order ) + 1 - i - interior; ++j )
-                            {
-                                for ( int k = interior; k < int( Order ) + 1 - i - j - interior; ++k, ++p )
-                                    {
-                                        ublas::column( G, p ) = RefConv.vertex( 0 ) + ( value_type(i) * h( 2 ) +
-                                                                                        value_type(j) * h( 1 ) +
-                                                                                        value_type(k) * h( 0 ) ) / value_type(Order);
+                        ublas::column( G, p ) = RefConv.vertex( 0 ) + ( value_type( i ) * h( 2 ) +
+                                                value_type( j ) * h( 1 ) +
+                                                value_type( k ) * h( 0 ) ) / value_type( Order );
 
-                                    }
-                            }
                     }
+                }
             }
+        }
+
         else
             G = glas::average( RefConv.vertices() );
 
@@ -533,23 +584,26 @@ private:
     make_quad_points( int interior = 0 )
     {
         if ( Order > 0 )
-            {
-                ublas::vector<node_type> h ( 2 );
-                h( 0 ) = RefConv.vertex( 1 ) - RefConv.vertex( 0 );
-                h( 1 ) = RefConv.vertex( 3 ) - RefConv.vertex( 0 );
+        {
+            ublas::vector<node_type> h ( 2 );
+            h( 0 ) = RefConv.vertex( 1 ) - RefConv.vertex( 0 );
+            h( 1 ) = RefConv.vertex( 3 ) - RefConv.vertex( 0 );
 
-                Debug( 4005 ) << "n quad pts = " << n_quad_points( interior ) << "\n";
-                points_type G( Dim, n_quad_points( interior ) );
-                for ( int i = interior, p = 0; i < int( Order )+1-interior;++i )
-                    {
-                        for ( int j = interior; j < int( Order ) + 1 -interior;++j, ++p )
-                            {
-                                ublas::column( G, p ) = RefConv.vertex( 0 ) + ( value_type(i) * h( 0 )  +
-                                                                                value_type(j) * h( 1 ) )/ value_type(Order);
-                            }
-                    }
-                return G;
+            Debug( 4005 ) << "n quad pts = " << n_quad_points( interior ) << "\n";
+            points_type G( Dim, n_quad_points( interior ) );
+
+            for ( int i = interior, p = 0; i < int( Order )+1-interior; ++i )
+            {
+                for ( int j = interior; j < int( Order ) + 1 -interior; ++j, ++p )
+                {
+                    ublas::column( G, p ) = RefConv.vertex( 0 ) + ( value_type( i ) * h( 0 )  +
+                                            value_type( j ) * h( 1 ) )/ value_type( Order );
+                }
             }
+
+            return G;
+        }
+
         else
             return glas::average( RefConv.vertices() );
     }
@@ -558,30 +612,32 @@ private:
     make_hexa_points( int interior = 0 )
     {
         if ( Order > 0 )
+        {
+            ublas::vector<node_type> h ( 3 );
+            h( 0 ) = RefConv.vertex( 1 ) - RefConv.vertex( 0 );
+            h( 1 ) = RefConv.vertex( 3 ) - RefConv.vertex( 0 );
+            h( 2 ) = RefConv.vertex( 4 ) - RefConv.vertex( 0 );
+
+            points_type G( Dim, n_hexa_points( interior ) );
+            Debug( 4005 ) << "n hexa pts = " << n_hexa_points( interior ) << "\n";
+
+            for ( int i = interior, p = 0; i < int( Order )+1-interior; ++i )
             {
-                ublas::vector<node_type> h ( 3 );
-                h( 0 ) = RefConv.vertex( 1 ) - RefConv.vertex( 0 );
-                h( 1 ) = RefConv.vertex( 3 ) - RefConv.vertex( 0 );
-                h( 2 ) = RefConv.vertex( 4 ) - RefConv.vertex( 0 );
-
-                points_type G( Dim, n_hexa_points( interior ) );
-                Debug( 4005 ) << "n hexa pts = " << n_hexa_points( interior ) << "\n";
-                for ( int i = interior, p = 0; i < int( Order )+1-interior;++i )
+                for ( int j = interior; j < int( Order ) + 1 - interior; ++j )
+                {
+                    for ( int k = interior; k < int( Order ) + 1 - interior; ++k, ++p )
                     {
-                        for ( int j = interior; j < int( Order ) + 1 - interior; ++j )
-                            {
-                                for ( int k = interior; k < int( Order ) + 1 - interior; ++k, ++p )
-                                    {
-                                        ublas::column( G, p ) = RefConv.vertex( 0 ) + ( value_type(i) * h( 0 ) +
-                                                                                        value_type(j) * h( 1 ) +
-                                                                                        value_type(k) * h( 2 ) ) / value_type(Order);
+                        ublas::column( G, p ) = RefConv.vertex( 0 ) + ( value_type( i ) * h( 0 ) +
+                                                value_type( j ) * h( 1 ) +
+                                                value_type( k ) * h( 2 ) ) / value_type( Order );
 
-                                    }
-                            }
                     }
-
-                return G;
+                }
             }
+
+            return G;
+        }
+
         else
             return glas::average( RefConv.vertices() );
     }
@@ -629,7 +685,7 @@ private:
         node_type
         operator()( node_type const& x ) const
         {
-            return u + 0.5*(x[ 0 ]+1.0) * diff[ 0 ] + 0.5*(x[ 1 ]+1.0) * diff[ 1 ];
+            return u + 0.5*( x[ 0 ]+1.0 ) * diff[ 0 ] + 0.5*( x[ 1 ]+1.0 ) * diff[ 1 ];
         }
         node_type u, v, w;
         ublas::vector<node_type> diff;
@@ -647,15 +703,15 @@ private:
             v( Entity<shape, value_type>().vertex( vert_ids[ 1 ] ) ),
             w( Entity<shape, value_type>().vertex( vert_ids[ 3 ] ) ),
             diff( 2 )
-            {
-                diff[0] = v-u;
-                diff[1] = w-u;
-            }
+        {
+            diff[0] = v-u;
+            diff[1] = w-u;
+        }
         node_type
         operator()( node_type const& x ) const
-            {
-                return u + 0.5*(x[ 0 ]+1.0) * diff[ 0 ] + 0.5*(x[ 1 ]+1.0) * diff[ 1 ];
-            }
+        {
+            return u + 0.5*( x[ 0 ]+1.0 ) * diff[ 0 ] + 0.5*( x[ 1 ]+1.0 ) * diff[ 1 ];
+        }
         node_type u, v, w;
         ublas::vector<node_type> diff;
     };
@@ -675,12 +731,12 @@ private:
     struct pt_to_entity_tetrahedron
     {
         typedef typename mpl::if_<mpl::equal_to<mpl::size_t<shape>, mpl::size_t<SHAPE_LINE> >,
-                                  mpl::identity<mpl::vector<boost::none_t,pt_to_edge<shape>,pt_to_edge<shape> > >,
-                                  typename mpl::if_<mpl::equal_to<mpl::size_t<shape>, mpl::size_t<SHAPE_TRIANGLE> >,
-                                                    mpl::identity<mpl::vector<boost::none_t, pt_to_edge<shape>, pt_to_element<shape> > >,
-                                                    mpl::identity<mpl::vector<boost::none_t, pt_to_edge<shape>, pt_to_face_tetrahedron<shape>, pt_to_element<shape> > >
-        >::type // 2
-        >::type::type _type;
+                mpl::identity<mpl::vector<boost::none_t,pt_to_edge<shape>,pt_to_edge<shape> > >,
+                typename mpl::if_<mpl::equal_to<mpl::size_t<shape>, mpl::size_t<SHAPE_TRIANGLE> >,
+                mpl::identity<mpl::vector<boost::none_t, pt_to_edge<shape>, pt_to_element<shape> > >,
+                mpl::identity<mpl::vector<boost::none_t, pt_to_edge<shape>, pt_to_face_tetrahedron<shape>, pt_to_element<shape> > >
+                >::type // 2
+                >::type::type _type;
         typedef typename mpl::at<_type, mpl::int_<topo_dim> >::type mapping_type;
         typedef mpl::vector<boost::none_t, edge_to_point_t, face_to_point_t> list_v;
 
@@ -700,24 +756,24 @@ private:
     struct pt_to_entity_hexahedron
     {
         typedef typename mpl::if_<mpl::equal_to<mpl::size_t<shape>, mpl::size_t<SHAPE_LINE> >,
-                                  mpl::identity<mpl::vector<boost::none_t,pt_to_edge<shape>,pt_to_edge<shape> > >,
-                                  typename mpl::if_<mpl::equal_to<mpl::size_t<shape>, mpl::size_t<SHAPE_QUAD> >,
-                                                    mpl::identity<mpl::vector<boost::none_t, pt_to_edge<shape>, pt_to_element<shape> > >,
-                                                    mpl::identity<mpl::vector<boost::none_t, pt_to_edge<shape>, pt_to_face_hexahedron<shape>, pt_to_element<shape> > >
-        >::type // 2
-        >::type::type _type;
+                mpl::identity<mpl::vector<boost::none_t,pt_to_edge<shape>,pt_to_edge<shape> > >,
+                typename mpl::if_<mpl::equal_to<mpl::size_t<shape>, mpl::size_t<SHAPE_QUAD> >,
+                mpl::identity<mpl::vector<boost::none_t, pt_to_edge<shape>, pt_to_element<shape> > >,
+                mpl::identity<mpl::vector<boost::none_t, pt_to_edge<shape>, pt_to_face_hexahedron<shape>, pt_to_element<shape> > >
+                >::type // 2
+                >::type::type _type;
         typedef typename mpl::at<_type, mpl::int_<topo_dim> >::type mapping_type;
         typedef mpl::vector<boost::none_t, edge_to_point_t, face_to_point_t> list_v;
 
         pt_to_entity_hexahedron( uint16_type entity_id )
             :
             mapping( typename mpl::at<list_v, mpl::int_<topo_dim> >::type().entity( topo_dim, entity_id ) )
-            {}
+        {}
 
         node_type operator()( node_type const& x ) const
-            {
-                return mapping( x );
-            }
+        {
+            return mapping( x );
+        }
         mapping_type mapping;
     };
 

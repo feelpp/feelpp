@@ -135,7 +135,7 @@ public:
     {
         typedef FormContextBase<GeomapContext, IM, GeomapExprContext> super;
 
-public:
+    public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
         typedef Context<GeomapContext,ExprT,IM,GeomapExprContext> form_context_type;
@@ -173,9 +173,9 @@ public:
         typedef typename space_type::fe_type trial_fe_type;
         typedef boost::shared_ptr<test_fe_type> test_fe_ptrtype;
         typedef typename test_fe_type::template Context< test_geometric_mapping_context_type::context,
-                                                         test_fe_type,
-                                                         test_geometric_mapping_type,
-                                                         mesh_element_type> test_fecontext_type;
+                test_fe_type,
+                test_geometric_mapping_type,
+                mesh_element_type> test_fecontext_type;
         typedef test_fecontext_type trial_fecontext_type;
 
 #if 0
@@ -188,8 +188,8 @@ public:
 
 #if 0
         typedef typename mpl::if_<mpl::equal_to<map_size,mpl::int_<2> >,
-                                  gmc<1>,
-                                  gmc<0> >::type gmc1;
+                gmc<1>,
+                gmc<0> >::type gmc1;
 #else
         typedef typename super::gmc1 gmc1;
 #endif
@@ -213,9 +213,9 @@ public:
 #endif
 
         typedef typename mpl::if_<mpl::equal_to<map_size, mpl::int_<1> >,
-                                  mpl::identity<fusion::map<fusion::pair<gmc<0>, test_fecontext_ptrtype> > >,
-                                  mpl::identity<fusion::map<fusion::pair<gmc<0>, test_fecontext_ptrtype>,
-                                                            fusion::pair<gmc<1>, test_fecontext_ptrtype> > > >::type::type map_test_fecontext_type;
+                mpl::identity<fusion::map<fusion::pair<gmc<0>, test_fecontext_ptrtype> > >,
+                mpl::identity<fusion::map<fusion::pair<gmc<0>, test_fecontext_ptrtype>,
+                fusion::pair<gmc<1>, test_fecontext_ptrtype> > > >::type::type map_test_fecontext_type;
 
         typedef fusion::map<fusion::pair<gmc<0>, test_fecontext_ptrtype> > map_left_test_fecontext_type;
         typedef fusion::map<fusion::pair<gmc<1>, test_fecontext_ptrtype> > map_right_test_fecontext_type;
@@ -231,9 +231,9 @@ public:
 
 
         typedef typename test_fe_type::template Context< test_geometric_mapping_context_type::context,
-                                                         test_fe_type,
-                                                         test_geometric_mapping_type,
-                                                         mesh_element_type>::template Index<> test_index_type;
+                test_fe_type,
+                test_geometric_mapping_type,
+                mesh_element_type>::template Index<> test_index_type;
 
 
         //typedef typename ExprT::template tensor<map_geometric_mapping_context_type, map0_test_fecontext_type> eval0_expr_type;
@@ -305,7 +305,7 @@ public:
                                         std::vector<boost::tuple<size_type,size_type> > const& indexLocalToQuad )
         {
             M_integrator = im;
-            this->updateInCaseOfInterpolate( gmcTest, gmcTrial, gmcExpr, indexLocalToQuad);
+            this->updateInCaseOfInterpolate( gmcTest, gmcTrial, gmcExpr, indexLocalToQuad );
         }
 
 
@@ -317,21 +317,27 @@ public:
 
         void integrate()
         {
-            integrate(mpl::int_<fusion::result_of::size<GeomapContext>::type::value>() );
+            integrate( mpl::int_<fusion::result_of::size<GeomapContext>::type::value>() );
         }
 
-        void integrateInCaseOfInterpolate(std::vector<boost::tuple<size_type,size_type> > const& indexLocalToQuad,
-                                          bool isFirstExperience)
+        void integrateInCaseOfInterpolate( std::vector<boost::tuple<size_type,size_type> > const& indexLocalToQuad,
+                                           bool isFirstExperience )
         {
             integrateInCaseOfInterpolate( mpl::int_<fusion::result_of::size<GeomapContext>::type::value>(),
                                           indexLocalToQuad, isFirstExperience );
         }
 
 
-        void assemble() { assemble( _M_gmc_left->id());  }
+        void assemble()
+        {
+            assemble( _M_gmc_left->id() );
+        }
         void assemble( size_type elt_0 );
 
-        void assemble( mpl::int_<2> ) { assemble( _M_gmc_left->id(), _M_gmc_right->id() );  }
+        void assemble( mpl::int_<2> )
+        {
+            assemble( _M_gmc_left->id(), _M_gmc_right->id() );
+        }
         void assemble( size_type elt_0, size_type elt_1 );
 
         /**
@@ -340,9 +346,9 @@ public:
          */
         template<typename Pts>
         void precomputeBasisAtPoints( Pts const& pts )
-            {
-                _M_test_pc = test_precompute_ptrtype( new test_precompute_type( _M_form.testSpace()->fe(), pts ) );
-            }
+        {
+            _M_test_pc = test_precompute_ptrtype( new test_precompute_type( _M_form.testSpace()->fe(), pts ) );
+        }
 
         /**
          * precompute the basis function associated with the test and
@@ -351,10 +357,10 @@ public:
          */
         template<typename Pts>
         void precomputeBasisAtPoints( uint16_type __f, permutation_type const& __p, Pts const& pts )
-            {
-                _M_test_pc_face[__f][__p] = test_precompute_ptrtype( new test_precompute_type( _M_form.testSpace()->fe(), pts ) );
-                //FEELPP_ASSERT( _M_test_pc_face.find(__f )->second )( __f ).error( "invalid test precompute type" );
-            }
+        {
+            _M_test_pc_face[__f][__p] = test_precompute_ptrtype( new test_precompute_type( _M_form.testSpace()->fe(), pts ) );
+            //FEELPP_ASSERT( _M_test_pc_face.find(__f )->second )( __f ).error( "invalid test precompute type" );
+        }
         /**
          * Return the structure that holds the test basis functions
          * evaluated at a previously given set of points on the face of
@@ -364,19 +370,20 @@ public:
          */
         test_precompute_ptrtype const& testPc( uint16_type __f,
                                                permutation_type __p = permutation_type( permutation_type::NO_PERMUTATION ) ) const
-            {
-                if ( __f == invalid_uint16_type_value )
-                    return  _M_test_pc;
-                //FEELPP_ASSERT( _M_test_pc_face.find(__f )->second )( __f ).error( "invalid test precompute type" );
-                return _M_test_pc_face.find(__f )->second.find( __p )->second;
-            }
+        {
+            if ( __f == invalid_uint16_type_value )
+                return  _M_test_pc;
+
+            //FEELPP_ASSERT( _M_test_pc_face.find(__f )->second )( __f ).error( "invalid test precompute type" );
+            return _M_test_pc_face.find( __f )->second.find( __p )->second;
+        }
 
         template<typename PtsSet>
         std::map<uint16_type, std::map<permutation_type,test_precompute_ptrtype> >
         precomputeTestBasisAtPoints( PtsSet const& pts )
         {
             typedef typename boost::is_same< permutation_type, typename QuadMapped<PtsSet>::permutation_type>::type is_same_permuation_type;
-            return precomputeTestBasisAtPoints(pts, mpl::bool_<is_same_permuation_type::value>() );
+            return precomputeTestBasisAtPoints( pts, mpl::bool_<is_same_permuation_type::value>() );
         }
 
 
@@ -391,23 +398,24 @@ public:
         template<typename PtsSet>
         std::map<uint16_type, std::map<permutation_type,test_precompute_ptrtype> >
         precomputeTestBasisAtPoints( PtsSet const& pts, mpl::bool_<true> )
+        {
+            QuadMapped<PtsSet> qm;
+            typedef typename QuadMapped<PtsSet>::permutation_type permutation_type;
+            typename QuadMapped<PtsSet>::permutation_points_type ppts( qm( pts ) );
+
+            std::map<uint16_type, std::map<permutation_type,test_precompute_ptrtype> > testpc;
+
+            for ( uint16_type __f = 0; __f < pts.nFaces(); ++__f )
             {
-                QuadMapped<PtsSet> qm;
-                typedef typename QuadMapped<PtsSet>::permutation_type permutation_type;
-                typename QuadMapped<PtsSet>::permutation_points_type ppts( qm( pts ) );
-
-                std::map<uint16_type, std::map<permutation_type,test_precompute_ptrtype> > testpc;
-
-                for ( uint16_type __f = 0; __f < pts.nFaces(); ++__f )
+                for ( permutation_type __p( permutation_type::IDENTITY );
+                        __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
                 {
-                    for( permutation_type __p( permutation_type::IDENTITY );
-                         __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
-                    {
-                        testpc[__f][__p] = test_precompute_ptrtype( new test_precompute_type( _M_form.testSpace()->fe(), ppts[__f].find(__p)->second ) );
-                    }
+                    testpc[__f][__p] = test_precompute_ptrtype( new test_precompute_type( _M_form.testSpace()->fe(), ppts[__f].find( __p )->second ) );
                 }
-                return testpc;
             }
+
+            return testpc;
+        }
 
     private:
 
@@ -418,7 +426,7 @@ public:
 
         void integrateInCaseOfInterpolate( mpl::int_<1>,
                                            std::vector<boost::tuple<size_type,size_type> > const& indexLocalToQuad,
-                                           bool isFirstExperience);
+                                           bool isFirstExperience );
 
     private:
 
@@ -476,7 +484,7 @@ public:
                 value_type threshold = type_traits<value_type>::epsilon()  );
 
     ~LinearForm()
-        {}
+    {}
 
 
 
@@ -493,7 +501,7 @@ public:
      * for the \p LinearForm.
      */
     template <class ExprT>
-    LinearForm& operator=( Expr<ExprT> const& expr);
+    LinearForm& operator=( Expr<ExprT> const& expr );
 
     /**
      * Construct the linear form given by the expression \p expr
@@ -503,7 +511,7 @@ public:
      * expression \p expr.
      */
     template <class ExprT>
-    LinearForm& operator+=( Expr<ExprT> const& expr);
+    LinearForm& operator+=( Expr<ExprT> const& expr );
 
 #if 0
     /**
@@ -513,25 +521,28 @@ public:
     LinearForm<component_fespace_type,
                vector_type,
                typename component_type::container_type>
-    operator()( component_type& __u )
-        {
-            typedef typename component_type::container_type container_type;
+               operator()( component_type& __u )
+    {
+        typedef typename component_type::container_type container_type;
 
-            typedef LinearForm<component_fespace_type, vector_type,
-                               container_type> vflf_type;
+        typedef LinearForm<component_fespace_type, vector_type,
+                container_type> vflf_type;
 
-            list_block_type __list_block;
-            __list_block.push_back( Block( 0, 0,
-                                           __u.start(), 0 ) );
-            return vflf_type( __u, _M_F, __list_block, false );
+        list_block_type __list_block;
+        __list_block.push_back( Block( 0, 0,
+                                       __u.start(), 0 ) );
+        return vflf_type( __u, _M_F, __list_block, false );
 
-        }
+    }
 #endif
 
     /**
      * \return the entry \f$M_{i,j}\f$
      */
-    value_type operator()( size_type i ) const { return _M_F( i ); }
+    value_type operator()( size_type i ) const
+    {
+        return _M_F( i );
+    }
 
     //@}
 
@@ -542,48 +553,73 @@ public:
     /**
     * \return the test function space
      */
-    space_ptrtype const& functionSpace() const { return _M_X; }
+    space_ptrtype const& functionSpace() const
+    {
+        return _M_X;
+    }
 
     /**
     * \return the test function space
      */
-    space_ptrtype const& testSpace() const { return _M_X; }
+    space_ptrtype const& testSpace() const
+    {
+        return _M_X;
+    }
 
     /**
      * Geometric transformation
      */
-    gm_ptrtype const& gm() const { return _M_X->gm(); }
+    gm_ptrtype const& gm() const
+    {
+        return _M_X->gm();
+    }
 
     /**
      * Geometric transformation
      */
-    gm1_ptrtype const& gm1() const { return _M_X->gm1(); }
+    gm1_ptrtype const& gm1() const
+    {
+        return _M_X->gm1();
+    }
 
-   /**
-     * Return the structure that holds the test basis functions
-     * evaluated at a previously given set of points on a face of the
-     * reference element
-     * \see precomputeBasisAtPoints()
-     */
+    /**
+      * Return the structure that holds the test basis functions
+      * evaluated at a previously given set of points on a face of the
+      * reference element
+      * \see precomputeBasisAtPoints()
+      */
     test_precompute_ptrtype const& testPc( uint16_type __f,
                                            permutation_type __p = permutation_type( permutation_type::NO_PERMUTATION ) ) const
     {
         if ( __f == invalid_uint16_type_value )
             return  _M_test_pc;
+
         return _M_test_pc_face.find( __f )->second.find( __p )->second;
     }
 
-    vector_type& representation() const { return _M_F; }
+    vector_type& representation() const
+    {
+        return _M_F;
+    }
 
-    list_block_type const& blockList() const { return _M_lb; }
+    list_block_type const& blockList() const
+    {
+        return _M_lb;
+    }
 
-    size_type rowStartInVector() const { return _M_row_startInVector; }
+    size_type rowStartInVector() const
+    {
+        return _M_row_startInVector;
+    }
 
 
     /**
      * \return \c true if threshold applies, false otherwise
      */
-    bool doThreshold( value_type const& v ) const { return ( math::abs( v ) > _M_threshold ); }
+    bool doThreshold( value_type const& v ) const
+    {
+        return ( math::abs( v ) > _M_threshold );
+    }
 
     //@}
 
@@ -604,13 +640,19 @@ public:
      * set a threshold value for the matrix entries associated with the
      * bilinear form
      */
-    void setThreshold( value_type eps ) { _M_threshold = eps; }
+    void setThreshold( value_type eps )
+    {
+        _M_threshold = eps;
+    }
 
     /**
      * set the threshold strategy, true threshold the matrix entries,
      * false do not threshold
      */
-    void setDoThreshold( bool do_threshold ) { _M_do_threshold = do_threshold; }
+    void setDoThreshold( bool do_threshold )
+    {
+        _M_do_threshold = do_threshold;
+    }
 
     //@}
 
@@ -628,11 +670,11 @@ public:
         _M_test_pc = test_precompute_ptrtype( new test_precompute_type( functionSpace()->fe(), pts ) );
     }
 
-   /**
-     * precompute the basis function associated with the test and
-     * trial space at a set of points on a face of the reference
-     * element
-     */
+    /**
+      * precompute the basis function associated with the test and
+      * trial space at a set of points on a face of the reference
+      * element
+      */
     template<typename Pts>
     void precomputeBasisAtPoints( uint16_type __f, permutation_type __p, Pts const& pts )
     {
@@ -646,10 +688,11 @@ public:
     void add( size_type i,  value_type const& v )
     {
         if ( _M_do_threshold )
-            {
-                if ( doThreshold( v ) )
-                    _M_F.add( i+this->rowStartInVector(), v );
-            }
+        {
+            if ( doThreshold( v ) )
+                _M_F.add( i+this->rowStartInVector(), v );
+        }
+
         else
             _M_F.add( i+this->rowStartInVector(), v );
     }
@@ -660,8 +703,8 @@ public:
      */
     void addVector( int* i, int n,  value_type* v )
     {
-        if (this->rowStartInVector()!=0)
-            for (int k = 0; k< n ; ++k)
+        if ( this->rowStartInVector()!=0 )
+            for ( int k = 0; k< n ; ++k )
                 i[k]+=this->rowStartInVector();
 
         _M_F.addVector( i, n, v );
@@ -671,7 +714,10 @@ public:
      * set value \p v at position (\p i) of the vector
      * associated with the linear form
      */
-    void set( size_type i,  value_type const& v ) { _M_F.set( i, v ); }
+    void set( size_type i,  value_type const& v )
+    {
+        _M_F.set( i, v );
+    }
 
 
     //@}
@@ -707,7 +753,7 @@ LinearForm<SpaceType, VectorType, ElemContType>::LinearForm( LinearForm const & 
     _M_X( __vf._M_X ),
     _M_F( __vf._M_F ),
     _M_lb( __vf._M_lb ),
-    _M_row_startInVector(__vf._M_row_startInVector),
+    _M_row_startInVector( __vf._M_row_startInVector ),
     _M_test_pc(),
     _M_test_pc_face(),
     _M_do_threshold( __vf._M_do_threshold ),
@@ -722,25 +768,25 @@ LinearForm<SpaceType, VectorType, ElemContType>::LinearForm( LinearForm const & 
 
 template<typename SpaceType, typename VectorType,  typename ElemContType>
 LinearForm<SpaceType, VectorType, ElemContType>::LinearForm( space_ptrtype const& __X,
-                                                             vector_type& __F,
-                                                             size_type rowstart,
-                                                             bool init,
-                                                             bool do_threshold,
-                                                             value_type threshold  )
+        vector_type& __F,
+        size_type rowstart,
+        bool init,
+        bool do_threshold,
+        value_type threshold  )
     :
     _M_X( __X ),
     _M_F( __F ),
     _M_lb(),
-    _M_row_startInVector(rowstart),
+    _M_row_startInVector( rowstart ),
     _M_do_threshold( do_threshold ),
     _M_threshold( threshold )
 {
 
-    for( uint16_type __i = 0;__i < _M_X->qDim(); ++__i)
+    for ( uint16_type __i = 0; __i < _M_X->qDim(); ++__i )
     {
         _M_lb.push_back( Block( __i, 0,
                                 __i*_M_X->nDofPerComponent(),
-                                0 ));
+                                0 ) );
         Debug( 5050 ) << "[linearform::linearform] block: "
                       << Block( __i, 0, __i*_M_X->nDofPerComponent(), 0 )  << "\n";
     }
@@ -751,17 +797,17 @@ LinearForm<SpaceType, VectorType, ElemContType>::LinearForm( space_ptrtype const
 
 template<typename SpaceType, typename VectorType,  typename ElemContType>
 LinearForm<SpaceType, VectorType, ElemContType>::LinearForm( space_ptrtype const& __X,
-                                                             vector_type& __F,
-                                                             list_block_type const& __lb,
-                                                             size_type rowstart,
-                                                             bool init,
-                                                             bool do_threshold,
-                                                             value_type threshold )
+        vector_type& __F,
+        list_block_type const& __lb,
+        size_type rowstart,
+        bool init,
+        bool do_threshold,
+        value_type threshold )
     :
     _M_X( __X ),
     _M_F( __F ),
     _M_lb( __lb ),
-    _M_row_startInVector(rowstart),
+    _M_row_startInVector( rowstart ),
     _M_do_threshold( do_threshold ),
     _M_threshold( threshold )
 {
@@ -791,52 +837,59 @@ struct LFAssign
     template<typename SpaceType>
     void operator()( boost::shared_ptr<SpaceType> const& X ) const
     {
-        if (_M_lf.testSpace()->worldsComm()[_M_index].isActive())
+        if ( _M_lf.testSpace()->worldsComm()[_M_index].isActive() )
+        {
+            Debug( 5050 ) << "expression has test functions ? :"
+                          << ExprType::template HasTestFunction<typename SpaceType::reference_element_type>::result
+                    << "\n";
+
+            if ( !ExprType::template HasTestFunction<typename SpaceType::reference_element_type>::result )
             {
-                Debug(5050) << "expression has test functions ? :"
-                            << ExprType::template HasTestFunction<typename SpaceType::reference_element_type>::result
-                            << "\n";
-                if ( !ExprType::template HasTestFunction<typename SpaceType::reference_element_type>::result )
-                    {
-                        ++_M_index;
-                        return;
-                    }
-
-                list_block_type __list_block;
-                // with mpi, dof start to 0 (thanks to the LocalToGlobal mapping).
-                if (_M_lf.testSpace()->worldsComm()[_M_index].globalSize()>1)
-                    __list_block.push_back( Block( 0, 0, 0, 0 ) );
-                else
-                    __list_block.push_back( Block( 0, 0, _M_Xh->nDofStart( _M_index ), 0 ) );
-
-                LinearForm<SpaceType,typename LFType::vector_type, typename LFType::element_type> lf( X,
-                                                                                                      _M_lf.representation(),
-                                                                                                      __list_block,
-                                                                                                      _M_lf.rowStartInVector(),
-                                                                                                      false );
-                //
-                // in composite integration, make sure that if _M_init is \p
-                // true for the first space, it is set to \p false for the
-                // next spaces otherwise it will erase/clear to 0 the previous
-                // assemblies
-                //
-                if ( _M_init )
-                    {
-                        // assembly
-                        lf = _M_expr;
-
-                        // make sure we won't erase the assembly we just did
-                        _M_init = false;
-                    }
-                else
-                    {
-                        lf += _M_expr;
-                    }
+                ++_M_index;
+                return;
             }
+
+            list_block_type __list_block;
+
+            // with mpi, dof start to 0 (thanks to the LocalToGlobal mapping).
+            if ( _M_lf.testSpace()->worldsComm()[_M_index].globalSize()>1 )
+                __list_block.push_back( Block( 0, 0, 0, 0 ) );
+
+            else
+                __list_block.push_back( Block( 0, 0, _M_Xh->nDofStart( _M_index ), 0 ) );
+
+            LinearForm<SpaceType,typename LFType::vector_type, typename LFType::element_type> lf( X,
+                    _M_lf.representation(),
+                    __list_block,
+                    _M_lf.rowStartInVector(),
+                    false );
+
+            //
+            // in composite integration, make sure that if _M_init is \p
+            // true for the first space, it is set to \p false for the
+            // next spaces otherwise it will erase/clear to 0 the previous
+            // assemblies
+            //
+            if ( _M_init )
+            {
+                // assembly
+                lf = _M_expr;
+
+                // make sure we won't erase the assembly we just did
+                _M_init = false;
+            }
+
+            else
+            {
+                lf += _M_expr;
+            }
+        }
+
         else // not active : there is the init case with a close in zero
-            {
-                if (_M_init) _M_lf.representation().zero();
-            }
+        {
+            if ( _M_init ) _M_lf.representation().zero();
+        }
+
         ++_M_index;
     }
 private:
@@ -852,7 +905,9 @@ private:
 template<typename LFType, typename TheSpaceType, typename ExprType>
 LFAssign<LFType,TheSpaceType,ExprType>
 make_lfassign( LFType& lf, TheSpaceType const& Xh, ExprType const& expr, bool init )
-{ return LFAssign<LFType,TheSpaceType,ExprType>( lf, Xh, expr, init ); }
+{
+    return LFAssign<LFType,TheSpaceType,ExprType>( lf, Xh, expr, init );
+}
 
 
 
@@ -869,22 +924,25 @@ void
 LinearForm<SpaceType, VectorType, ElemContType>::assign( Expr<ExprT> const& __expr, bool init, mpl::bool_<false> )
 {
     if ( _M_lb.empty() )
-        {
-            _M_lb.push_back( Block( 0, 0, 0, 0 ) );
-        }
-    if ( init )
-        {
-            typename list_block_type::const_iterator __bit = _M_lb.begin();
-            typename list_block_type::const_iterator __ben = _M_lb.end();
-            for ( ; __bit != __ben; ++__bit )
-                {
-                    Debug( 5050 ) << "LinearForm:: block: " << *__bit << "\n";
-                    size_type g_ic_start = __bit->globalRowStart();
-                    Debug( 5050 ) << "LinearForm:: g_ic_start: " << g_ic_start << "\n";
+    {
+        _M_lb.push_back( Block( 0, 0, 0, 0 ) );
+    }
 
-                    _M_F.zero( g_ic_start,g_ic_start + _M_X->nDof() );
-                }
+    if ( init )
+    {
+        typename list_block_type::const_iterator __bit = _M_lb.begin();
+        typename list_block_type::const_iterator __ben = _M_lb.end();
+
+        for ( ; __bit != __ben; ++__bit )
+        {
+            Debug( 5050 ) << "LinearForm:: block: " << *__bit << "\n";
+            size_type g_ic_start = __bit->globalRowStart();
+            Debug( 5050 ) << "LinearForm:: g_ic_start: " << g_ic_start << "\n";
+
+            _M_F.zero( g_ic_start,g_ic_start + _M_X->nDof() );
         }
+    }
+
     __expr.assemble( _M_X, *this );
     //vector_range_type r( _M_F, ublas::range( _M_v.start(),_M_v.start()+ _M_v.size() ) );
     //std::cout << "r = " << r << "\n";
@@ -897,7 +955,7 @@ LinearForm<SpaceType, VectorType, ElemContType>::operator=( Expr<ExprT> const& _
 {
     // loop(fusion::for_each) over sub-functionspaces in SpaceType
     // pass expression and initialize
-    this->assign( __expr, true, mpl::bool_<(SpaceType::nSpaces > 1)>() );
+    this->assign( __expr, true, mpl::bool_<( SpaceType::nSpaces > 1 )>() );
     return *this;
 }
 template<typename SpaceType, typename VectorType,  typename ElemContType>
@@ -905,7 +963,7 @@ template<typename ExprT>
 LinearForm<SpaceType, VectorType, ElemContType>&
 LinearForm<SpaceType, VectorType, ElemContType>::operator+=( Expr<ExprT> const& __expr )
 {
-    this->assign( __expr, false, mpl::bool_<(SpaceType::nSpaces > 1)>() );
+    this->assign( __expr, false, mpl::bool_<( SpaceType::nSpaces > 1 )>() );
     return *this;
 }
 

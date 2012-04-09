@@ -35,39 +35,50 @@
 
 namespace Feel
 {
-  namespace details
-  {
-    //////////////////////////////////////////////////////////////////////////////
-    // counter<R,T> is an implementation detail that gather and store cycles or
-    // seconds measures between tic and toc calls.
-    //////////////////////////////////////////////////////////////////////////////
-    template<class R,class T> class counter
+namespace details
+{
+//////////////////////////////////////////////////////////////////////////////
+// counter<R,T> is an implementation detail that gather and store cycles or
+// seconds measures between tic and toc calls.
+//////////////////////////////////////////////////////////////////////////////
+template<class R,class T> class counter
+{
+public :
+    typedef T timer_type;
+    typedef R type;
+
+    void  tic() const
     {
-      public :
-      typedef T timer_type;
-      typedef R type;
+        times().push( time() );
+    }
 
-      void  tic() const { times().push(time()); }
-
-      type toc( bool display ) const
-      {
-        BOOST_ASSERT_MSG(!empty(), "Unbalanced timing calls");
+    type toc( bool display ) const
+    {
+        BOOST_ASSERT_MSG( !empty(), "Unbalanced timing calls" );
         type t = time()-times().top();
         times().pop();
-        if(display) timer_type::print(t);
+
+        if ( display ) timer_type::print( t );
+
         return t;
-      }
+    }
 
-      bool  empty() const { return times().empty();   }
-      type  time()  const { return timer_type::time();  }
+    bool  empty() const
+    {
+        return times().empty();
+    }
+    type  time()  const
+    {
+        return timer_type::time();
+    }
 
-      std::stack<type>& times() const
-      {
+    std::stack<type>& times() const
+    {
         static std::stack<type> local;
         return local;
-      }
-    };
-  }
+    }
+};
+}
 }
 
 #endif /* FEELPP_TIMING_TIMER_HPP */

@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -54,11 +54,11 @@ void test_csr_boost()
     int n = 3;
     using namespace boost::numeric::ublas;
 
-    compressed_matrix<double, column_major> m ( n, n, n*n);
+    compressed_matrix<double, column_major> m ( n, n, n*n );
 
-    for (unsigned i = 0; i < m.size1 (); ++ i)
-        for (unsigned j = 0; j < m.size2 (); ++ j)
-            m (i, j) = 3 * i + j;
+    for ( unsigned i = 0; i < m.size1 (); ++ i )
+        for ( unsigned j = 0; j < m.size2 (); ++ j )
+            m ( i, j ) = 3 * i + j;
 
     std::cout << m << std::endl;
 
@@ -66,11 +66,11 @@ void test_csr_boost()
     double Control [UMFPACK_CONTROL], Info [UMFPACK_INFO];
     void *Symbolic, *Numeric ;
 
-    status = umfpack_dl_symbolic (n, n, ( const long int* )&m.index1_data()[0], ( const long int* )&m.index2_data()[0], &m.value_data()[0],
-                                  &Symbolic, Control, Info) ;
+    status = umfpack_dl_symbolic ( n, n, ( const long int* )&m.index1_data()[0], ( const long int* )&m.index2_data()[0], &m.value_data()[0],
+                                   &Symbolic, Control, Info ) ;
     status = umfpack_dl_numeric ( ( const long int* )&m.index1_data()[0], ( const long int* )&m.index2_data()[0], &m.value_data()[0],
-                                  Symbolic, &Numeric, Control, Info) ;
-    umfpack_di_defaults (Control) ;
+                                  Symbolic, &Numeric, Control, Info ) ;
+    umfpack_di_defaults ( Control ) ;
 
     vector<double> x( n );
     x = scalar_vector<double>( n, 1 );
@@ -79,8 +79,8 @@ void test_csr_boost()
     b = prod( m, x );
     Feel::Debug( 10000 ) << "b = A * x\n";
 
-    status = umfpack_dl_solve (UMFPACK_A, ( const long int* )&m.index1_data()[0], ( const long int* )&m.index2_data()[0], &m.value_data()[0],
-                               &x[0], &b[0], Numeric, Control, Info) ;
+    status = umfpack_dl_solve ( UMFPACK_A, ( const long int* )&m.index1_data()[0], ( const long int* )&m.index2_data()[0], &m.value_data()[0],
+                                &x[0], &b[0], Numeric, Control, Info ) ;
 
 
     Feel::Debug( 10000 ) << "solver A x = b\n";
@@ -116,7 +116,8 @@ void test_convdiff()
     double Ax[] = { 36, 0, 0,
                     1,  36,     0,
                     0,      36, 0,
-                        0,  0, 36};
+                    0,  0, 36
+                  };
     using namespace Feel;
 
     std::vector<uint> __ap( n+1 ), __ai( 12 );
@@ -127,9 +128,11 @@ void test_convdiff()
 
     Debug( 10000 ) << "copying done\n";
     ublas::compressed_matrix<double, ublas::column_major> __matrix( n, n );
-    for ( int i = 0;i < n; ++i )
+
+    for ( int i = 0; i < n; ++i )
     {
         int j = Ap[i];
+
         while ( j != Ap[i+1] )
         {
             __matrix( Ai[j], i ) = Ax[j];
@@ -145,9 +148,9 @@ void test_convdiff()
     double Control [UMFPACK_CONTROL], Info [UMFPACK_INFO];
     void *Symbolic, *Numeric ;
 
-    status = umfpack_dl_symbolic (n, n, Ap, Ai, Ax, &Symbolic, Control, Info) ;
-    status = umfpack_dl_numeric (Ap, Ai, Ax, Symbolic, &Numeric, Control, Info) ;
-    umfpack_di_defaults (Control) ;
+    status = umfpack_dl_symbolic ( n, n, Ap, Ai, Ax, &Symbolic, Control, Info ) ;
+    status = umfpack_dl_numeric ( Ap, Ai, Ax, Symbolic, &Numeric, Control, Info ) ;
+    umfpack_di_defaults ( Control ) ;
 #endif
 
     Debug( 10000 ) << "UMFPACK solver created\n";
@@ -162,7 +165,7 @@ void test_convdiff()
     // solution should be x=[1 1 1 1 1]^T
 
     //__solver.solve( x, b );
-    status = umfpack_dl_solve (UMFPACK_A, Ap, Ai, Ax, &x[0], &b[0], Numeric, Control, Info) ;
+    status = umfpack_dl_solve ( UMFPACK_A, Ap, Ai, Ax, &x[0], &b[0], Numeric, Control, Info ) ;
 
 
     Debug( 10000 ) << "solver A x = b\n";
@@ -202,9 +205,11 @@ void test_umfpack()
     SolverUMFPACK __solver;
 
     ublas::compressed_matrix<double, ublas::column_major> __matrix( n, n );
-    for ( int i = 0;i < n; ++i )
+
+    for ( int i = 0; i < n; ++i )
     {
         int j = Ap[i];
+
         while ( j != Ap[i+1] )
         {
             __matrix( Ai[j], i ) = Ax[j];

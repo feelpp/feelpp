@@ -89,7 +89,7 @@ public:
     //@{
 
     //! copy operator
-    ApplicationXML& operator=( ApplicationXML const & o);
+    ApplicationXML& operator=( ApplicationXML const & o );
     //@}
 
     /** @name Accessors
@@ -134,8 +134,8 @@ public:
     ApplicationXML& addParameterValue( T const& val )
     {
         char sci_val[11];
-        sprintf(sci_val,"%.5e",(double)val);
-        M_parameter_values.push_back( std::string(sci_val) );
+        sprintf( sci_val,"%.5e",( double )val );
+        M_parameter_values.push_back( std::string( sci_val ) );
         return *this;
     }
 

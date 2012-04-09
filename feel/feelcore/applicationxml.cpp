@@ -42,7 +42,7 @@ makeOptions()
 {
     po::options_description xml( "XML application options" );
     xml.add_options()
-        ("capabilities", "generate xml file describing the capabilities");
+    ( "capabilities", "generate xml file describing the capabilities" );
 
     return xml;
 }
@@ -72,13 +72,14 @@ ApplicationXML::~ApplicationXML()
 ApplicationXML&
 ApplicationXML::operator=( ApplicationXML const& app )
 {
-    if (this != &app )
-        {
-            M_params = app.M_params;
-            M_outputs = app.M_outputs;
-            M_parameter_values = app.M_parameter_values;
-            M_output_values = app.M_output_values;
-        }
+    if ( this != &app )
+    {
+        M_params = app.M_params;
+        M_outputs = app.M_outputs;
+        M_parameter_values = app.M_parameter_values;
+        M_output_values = app.M_output_values;
+    }
+
     return *this;
 }
 
@@ -86,59 +87,68 @@ ApplicationXML::RunStatus
 ApplicationXML::preProcessing()
 {
     Debug( 1000 ) << "start preprocessing\n";
+
     if ( this->vm().count( "help" ) )
-        {
-            std::cout << this->optionsDescription() << "\n";
-            return RUN_EXIT;
-        }
+    {
+        std::cout << this->optionsDescription() << "\n";
+        return RUN_EXIT;
+    }
 
     if ( this->vm().count( "capabilities" ) )
-		{
-			Debug( 1000 ) << "Writing capabilities..." << "\n";
-            std::cerr << "Writing capabilities..." << "\n";
-            fs::path rep_path;
-            std::string fmtstr = (boost::format( "%1%/" ) % "xml").str();
-            rep_path = rootRepository();
-            rep_path = rep_path / fmtstr;
-            if ( !fs::exists( rep_path ) )
-                fs::create_directory( rep_path );
-            rep_path = rep_path / "xml_response.xml";
-            std::cerr << "Writing xml..." << "\n";
-			xmlParser::writeResponse( rep_path.string(),
-                                      this->about().appName(),
-                                      M_params,
-                                      M_outputs);
-            std::cerr << "preparing repository..." << "\n";
-            std::string rep="";
-            for (unsigned int i=0; i<M_params.size(); i++) {
-                Debug( 1000 ) << "rep = " << rep << "\n";
-                rep+=M_params[i].getName();
-                rep+="_";
-                rep+=M_parameter_values[i];
-                rep+="/";
-            }
-            std::cerr << "changing to repository" << rep << "\n";
-            this->changeRepository( boost::format( "%1%/%2%" )
-                                    % this->about().appName()
-                                    % rep
-                                    );
-            Debug( 1000 ) << "Capabilities written..." << "\n";
-            std::cerr << "Capabilities written..." << "\n";
-			return RUN_EXIT;
-		}
+    {
+        Debug( 1000 ) << "Writing capabilities..." << "\n";
+        std::cerr << "Writing capabilities..." << "\n";
+        fs::path rep_path;
+        std::string fmtstr = ( boost::format( "%1%/" ) % "xml" ).str();
+        rep_path = rootRepository();
+        rep_path = rep_path / fmtstr;
+
+        if ( !fs::exists( rep_path ) )
+            fs::create_directory( rep_path );
+
+        rep_path = rep_path / "xml_response.xml";
+        std::cerr << "Writing xml..." << "\n";
+        xmlParser::writeResponse( rep_path.string(),
+                                  this->about().appName(),
+                                  M_params,
+                                  M_outputs );
+        std::cerr << "preparing repository..." << "\n";
+        std::string rep="";
+
+        for ( unsigned int i=0; i<M_params.size(); i++ )
+        {
+            Debug( 1000 ) << "rep = " << rep << "\n";
+            rep+=M_params[i].getName();
+            rep+="_";
+            rep+=M_parameter_values[i];
+            rep+="/";
+        }
+
+        std::cerr << "changing to repository" << rep << "\n";
+        this->changeRepository( boost::format( "%1%/%2%" )
+                                % this->about().appName()
+                                % rep
+                              );
+        Debug( 1000 ) << "Capabilities written..." << "\n";
+        std::cerr << "Capabilities written..." << "\n";
+        return RUN_EXIT;
+    }
 
     std::string rep="";
-    for (unsigned int i=0; i<M_params.size(); i++) {
+
+    for ( unsigned int i=0; i<M_params.size(); i++ )
+    {
         Debug( 1000 ) << "rep = " << rep << "\n";
         rep+=M_params[i].getName();
         rep+="_";
         rep+=M_parameter_values[i];
         rep+="/";
     }
-	this->changeRepository( boost::format( "%1%/%2%" )
-							% this->about().appName()
-							% rep
-                            );
+
+    this->changeRepository( boost::format( "%1%/%2%" )
+                            % this->about().appName()
+                            % rep
+                          );
 
     return RUN_CONTINUE;
 }
@@ -146,13 +156,15 @@ void
 ApplicationXML::postProcessing()
 {
     fs::path rep_path;
-    std::string fmtstr = (boost::format( "%1%/" ) % "xml").str();
+    std::string fmtstr = ( boost::format( "%1%/" ) % "xml" ).str();
     rep_path = rootRepository();
     rep_path = rep_path / fmtstr;
+
     if ( !fs::exists( rep_path ) )
         fs::create_directory( rep_path );
+
     rep_path = rep_path / "xml_result.xml";
-	xmlParser::writeResult( rep_path.string(),
+    xmlParser::writeResult( rep_path.string(),
                             this->about().appName(),
                             M_params,
                             M_outputs,
@@ -166,9 +178,9 @@ ApplicationXML::postProcessing()
         rep+=M_parameter_values[i];
         rep+="/";
     }
-	this->changeRepository( boost::format( "%1%/%2%" )
-							% this->about().appName()
-							% rep
+    this->changeRepository( boost::format( "%1%/%2%" )
+    						% this->about().appName()
+    						% rep
                             );
     */
 }

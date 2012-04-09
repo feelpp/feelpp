@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -54,7 +54,7 @@ namespace Feel
 template<typename MeshType>
 class ExporterGnuplot
     :
-        public Exporter<MeshType>
+public Exporter<MeshType>
 {
 public:
 
@@ -62,10 +62,10 @@ public:
      * Define enumerations to set plotting properties on construction
      */
     enum PlottingProperties
-        {
-            GRID_ON    = 1,
-            PNG_OUTPUT = 2
-        };
+    {
+        GRID_ON    = 1,
+        PNG_OUTPUT = 2
+    };
 
     /** @name Typedefs
      */
@@ -124,18 +124,27 @@ public:
     /**
      * Set title of plot
      */
-    void setTitle( std::string const& title ) { M_title = title; }
+    void setTitle( std::string const& title )
+    {
+        M_title = title;
+    }
 
     /**
      * Turn grid on or off.
      */
-    void useGrid( bool grid ) { M_grid = grid; }
+    void useGrid( bool grid )
+    {
+        M_grid = grid;
+    }
 
 
     /**
      * Write output to a .png file useing gnuplot
      */
-    void setPngOutput( bool png_output ) { M_png_output = png_output; }
+    void setPngOutput( bool png_output )
+    {
+        M_png_output = png_output;
+    }
 
     Exporter<MeshType>* setOptions( po::variables_map const& vm, std::string const& exp_prefix = "" )
     {

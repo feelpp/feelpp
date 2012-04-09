@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -21,11 +21,11 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
- /**
-   \file exprbase.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
-   \date 2010-04-21
- */
+/**
+  \file exprbase.hpp
+  \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  \date 2010-04-21
+*/
 #ifndef __ExprBase_H
 #define __ExprBase_H 1
 
@@ -104,12 +104,12 @@ public:
      * Write a simple text description suitable
      * for output to a terminal
      */
-    virtual std::ostream& toText(std::ostream& os, bool paren) const = 0 ;
+    virtual std::ostream& toText( std::ostream& os, bool paren ) const = 0 ;
 
     /**
      * Write in a form suitable for LaTeX formatting
      */
-    virtual std::ostream& toLatex(std::ostream& os, bool paren) const = 0 ;
+    virtual std::ostream& toLatex( std::ostream& os, bool paren ) const = 0 ;
 
     /**
      * write the expression into a std::string

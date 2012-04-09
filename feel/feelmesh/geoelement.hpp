@@ -52,10 +52,13 @@ public:
     };
     typedef boost::tuple<size_type, size_type, uint16_type> element_connectivity_type;
 
-    boost::none_t element( uint16_type /* e */ ) const { return boost::none_t(); }
+    boost::none_t element( uint16_type /* e */ ) const
+    {
+        return boost::none_t();
+    }
 
-    SubFaceOfNone(){}
-    SubFaceOfNone( SubFaceOfNone const& ){}
+    SubFaceOfNone() {}
+    SubFaceOfNone( SubFaceOfNone const& ) {}
 
     virtual ~SubFaceOfNone() {}
 
@@ -123,6 +126,7 @@ public:
             M_element1 = sf.M_element1;
 
         }
+
         return *this;
     }
     SubFaceOf& operator=( SubFaceOfNone const& /*sf*/ )
@@ -133,28 +137,60 @@ public:
     {
         if ( e == 0 )
             return *boost::get<0>( M_element0 );
+
         else
             return *boost::get<0>( M_element1 );
     }
 
-    entity_type const& element0() const { return *boost::get<0>( M_element0 ); }
-    entity_type const& element1() const { return *boost::get<0>( M_element1 ); }
+    entity_type const& element0() const
+    {
+        return *boost::get<0>( M_element0 );
+    }
+    entity_type const& element1() const
+    {
+        return *boost::get<0>( M_element1 );
+    }
 
-    size_type ad_first() const { return boost::get<1>( M_element0 ); }
-    uint16_type pos_first() const { return boost::get<2>( M_element0 ); }
-    size_type proc_first() const { return boost::get<3>( M_element0 ); }
+    size_type ad_first() const
+    {
+        return boost::get<1>( M_element0 );
+    }
+    uint16_type pos_first() const
+    {
+        return boost::get<2>( M_element0 );
+    }
+    size_type proc_first() const
+    {
+        return boost::get<3>( M_element0 );
+    }
 
-    size_type ad_second() const { return boost::get<1>( M_element1 ); }
-    uint16_type pos_second() const { return boost::get<2>( M_element1 ); }
-    size_type proc_second() const { return boost::get<3>( M_element1 ); }
+    size_type ad_second() const
+    {
+        return boost::get<1>( M_element1 );
+    }
+    uint16_type pos_second() const
+    {
+        return boost::get<2>( M_element1 );
+    }
+    size_type proc_second() const
+    {
+        return boost::get<3>( M_element1 );
+    }
 
-    element_connectivity_type const& connection0() const { return M_element0; }
-    element_connectivity_type const& connection1() const { return M_element1; }
+    element_connectivity_type const& connection0() const
+    {
+        return M_element0;
+    }
+    element_connectivity_type const& connection1() const
+    {
+        return M_element1;
+    }
 
     void setConnection( uint16_type f, element_connectivity_type const& connect )
     {
         if ( f == 0 )
             M_element0 = connect;
+
         else
             M_element1 = connect;
 
@@ -164,14 +200,23 @@ public:
     {
         M_element0 = connect;
     }
-    void setConnection1( element_connectivity_type const& connect ) { M_element1 = connect; }
+    void setConnection1( element_connectivity_type const& connect )
+    {
+        M_element1 = connect;
+    }
 
-    bool isConnectedTo0() const { return ( boost::get<1>( M_element0 ) != invalid_size_type_value &&
-                                           boost::get<2>( M_element0 ) != invalid_uint16_type_value &&
-                                           boost::get<3>( M_element0 ) != invalid_size_type_value ); }
-    bool isConnectedTo1() const { return ( boost::get<1>( M_element1 ) != invalid_size_type_value &&
-                                           boost::get<2>( M_element1 ) != invalid_uint16_type_value &&
-                                           boost::get<3>( M_element1 ) != invalid_size_type_value ); }
+    bool isConnectedTo0() const
+    {
+        return ( boost::get<1>( M_element0 ) != invalid_size_type_value &&
+                 boost::get<2>( M_element0 ) != invalid_uint16_type_value &&
+                 boost::get<3>( M_element0 ) != invalid_size_type_value );
+    }
+    bool isConnectedTo1() const
+    {
+        return ( boost::get<1>( M_element1 ) != invalid_size_type_value &&
+                 boost::get<2>( M_element1 ) != invalid_uint16_type_value &&
+                 boost::get<3>( M_element1 ) != invalid_size_type_value );
+    }
 
 
     bool
@@ -190,14 +235,14 @@ public:
 
     void disconnect()
     {
-        M_element0 = boost::make_tuple( (ElementType const*)0,
-                                         invalid_size_type_value,
-                                         invalid_uint16_type_value,
-                                         invalid_size_type_value );
-        M_element1 = boost::make_tuple( (ElementType const*)0,
-                                         invalid_size_type_value,
-                                         invalid_uint16_type_value,
-                                         invalid_size_type_value );
+        M_element0 = boost::make_tuple( ( ElementType const* )0,
+                                        invalid_size_type_value,
+                                        invalid_uint16_type_value,
+                                        invalid_size_type_value );
+        M_element1 = boost::make_tuple( ( ElementType const* )0,
+                                        invalid_size_type_value,
+                                        invalid_uint16_type_value,
+                                        invalid_size_type_value );
     }
 
 private:
@@ -218,13 +263,13 @@ private:
  *       but this is not handled yet, fixes in regionmesh1D needed
  */
 template <uint16_type Dim,
-          typename SubFace = SubFaceOfNone,
-          typename T = double>
+         typename SubFace = SubFaceOfNone,
+         typename T = double>
 class GeoElement0D
     :
-        //public GeoND<Dim, GEOSHAPE, T, GeoElement0D<Dim, SubFaceOfNone, T> >,
-        public Geo0D<Dim,T>,
-    public SubFace
+    //public GeoND<Dim, GEOSHAPE, T, GeoElement0D<Dim, SubFaceOfNone, T> >,
+public Geo0D<Dim,T>,
+public SubFace
 {
 public:
 
@@ -296,17 +341,26 @@ public:
     }
 
     //void setMesh( MeshBase const* m ) { super::setMesh( m ); }
-    MeshBase const* mesh() const { return super::mesh(); }
+    MeshBase const* mesh() const
+    {
+        return super::mesh();
+    }
 
     /**
      * \return id
      */
-    size_type id() const { return super::id(); }
+    size_type id() const
+    {
+        return super::id();
+    }
 
     /**
      * \return process id
      */
-    uint16_type processId() const { return super::processId(); }
+    uint16_type processId() const
+    {
+        return super::processId();
+    }
 
     /**
      * \return \p true if interprocess domain face, \p false otherwise
@@ -319,48 +373,78 @@ public:
     /**
      * \return \c true if on the boundary, \c false otherwise
      */
-    bool isOnBoundary() const { return super::isOnBoundary(); }
+    bool isOnBoundary() const
+    {
+        return super::isOnBoundary();
+    }
 
     /**
      * \return \c true if ghost cell, \c false otherwise
      */
-    bool isGhostCell() const { return super::isGhostCell(); }
+    bool isGhostCell() const
+    {
+        return super::isGhostCell();
+    }
 
     /**
      * \return the point associated to the face
      */
-    geo0d_type const& point( uint16_type /*i*/ ) const { return M_facept; }
+    geo0d_type const& point( uint16_type /*i*/ ) const
+    {
+        return M_facept;
+    }
 
     /**
      * set the geometrical point associated to the face
      */
     //void setPoint( uint16_type /*i*/, GeoElement0D<Dim,SubFaceOfNone,T> const& e ) { M_facept = e; }
-    void setPoint( uint16_type /*i*/, geo0d_type const& e ) { M_facept = e; }
+    void setPoint( uint16_type /*i*/, geo0d_type const& e )
+    {
+        M_facept = e;
+    }
 
     /**
      * \return marker1() index
      */
-    Marker1 const& marker() const { return super::marker(); }
+    Marker1 const& marker() const
+    {
+        return super::marker();
+    }
     /**
      * \return marker1() index
      */
-    Marker1& marker() { return super::marker(); }
+    Marker1& marker()
+    {
+        return super::marker();
+    }
     /**
      * \return marker2() index
      */
-    Marker2 const& marker2() const { return super::marker2(); }
+    Marker2 const& marker2() const
+    {
+        return super::marker2();
+    }
     /**
      * \return marker2() index
      */
-    Marker2& marker2() { return super::marker2(); }
+    Marker2& marker2()
+    {
+        return super::marker2();
+    }
     /**
      * \return marker3() index
      */
-    Marker3 const& marker3() const { return super::marker3(); }
+    Marker3 const& marker3() const
+    {
+        return super::marker3();
+    }
     /**
      * \return marker3() index
      */
-    Marker3& marker3() { return super::marker3(); }
+    Marker3& marker3()
+    {
+        return super::marker3();
+    }
 
 
 
@@ -384,8 +468,8 @@ template<uint16_type Dim,
          typename T = double>
 class GeoElement1D
     :
-    public GeoND<Dim, GEOSHAPE, T, GeoElement0D<Dim, SubFaceOfNone, T> >,
-    public SubFace
+public GeoND<Dim, GEOSHAPE, T, GeoElement0D<Dim, SubFaceOfNone, T> >,
+public SubFace
 {
 public:
 
@@ -400,16 +484,16 @@ public:
     static const uint16_type nOrder = super::nOrder;
     static const uint16_type nRealDim = super::nRealDim;
 
-    static const bool condition = (Dim==nRealDim);
-    BOOST_MPL_ASSERT_MSG( (condition), INVALID_ELEMENT_REAL_DIMENSION, ( mpl::int_<Dim>, mpl::int_<nRealDim>, GEOSHAPE ) );
+    static const bool condition = ( Dim==nRealDim );
+    BOOST_MPL_ASSERT_MSG( ( condition ), INVALID_ELEMENT_REAL_DIMENSION, ( mpl::int_<Dim>, mpl::int_<nRealDim>, GEOSHAPE ) );
 
     typedef GEOSHAPE GeoShape;
     typedef GeoElement1D<Dim, GEOSHAPE, SubFace, T > self_type;
     //typedef typename SubFace::template Element<self_type>::type element_type;
     typedef self_type element_type;
     typedef typename mpl::if_<mpl::equal_to<mpl::int_<nDim>,mpl::int_<1> >,
-                              mpl::identity<GeoElement0D<Dim, SubFaceOf<self_type>, T> >,
-                              mpl::identity<GeoElement0D<Dim, SubFaceOfNone, T> > >::type::type point_type;
+            mpl::identity<GeoElement0D<Dim, SubFaceOf<self_type>, T> >,
+            mpl::identity<GeoElement0D<Dim, SubFaceOfNone, T> > >::type::type point_type;
     typedef point_type GeoBElement;
 
     static const uint16_type numLocalVertices = super::numLocalVertices;
@@ -432,7 +516,7 @@ public:
         super( id ),
         super2(),
         M_vertices( numLocalVertices, 0 ),
-        M_vertex_permutation(numLocalVertices)
+        M_vertex_permutation( numLocalVertices )
     {
     }
     /**
@@ -443,7 +527,7 @@ public:
         super( g ),
         super2( g ),
         M_vertices( g.M_vertices ),
-        M_vertex_permutation(g.M_vertex_permutation)
+        M_vertex_permutation( g.M_vertex_permutation )
     {}
 
     /**
@@ -464,18 +548,25 @@ public:
             M_vertices = g.M_vertices;
             M_vertex_permutation = g.M_vertex_permutation;
         }
+
         return *this;
     }
 
 
     //void setMesh( MeshBase const* m ) { super::setMesh( m ); }
-    MeshBase const* mesh() const { return super::mesh(); }
+    MeshBase const* mesh() const
+    {
+        return super::mesh();
+    }
 
 
     /**
      * \return \c true if on the boundary, \c false otherwise
      */
-    size_type id() const { return super::id(); }
+    size_type id() const
+    {
+        return super::id();
+    }
 
     /**
      * \return \p true if interprocess domain face, \p false otherwise
@@ -488,17 +579,26 @@ public:
     /**
      * \return \c true if on the boundary, \c false otherwise
      */
-    bool isOnBoundary() const { return super::isOnBoundary(); }
+    bool isOnBoundary() const
+    {
+        return super::isOnBoundary();
+    }
 
     /**
      * \return \c true if ghost cell, \c false otherwise
      */
-    bool isGhostCell() const { return super::isGhostCell(); }
+    bool isGhostCell() const
+    {
+        return super::isGhostCell();
+    }
 
     /**
      * \return process id
      */
-    uint16_type processId() const { return super::processId(); }
+    uint16_type processId() const
+    {
+        return super::processId();
+    }
 
     void setMap( uint8_type k_1, uint8_type k_2 )
     {
@@ -510,10 +610,22 @@ public:
         return M_map[ k_1 ];
     }
 
-    Marker1 const& marker() const { return super::marker(); }
-    Marker1& marker() { return super::marker(); }
-    Marker2 const& marker2() const { return super::marker2(); }
-    Marker3 const& marker3() const { return super::marker3(); }
+    Marker1 const& marker() const
+    {
+        return super::marker();
+    }
+    Marker1& marker()
+    {
+        return super::marker();
+    }
+    Marker2 const& marker2() const
+    {
+        return super::marker2();
+    }
+    Marker3 const& marker3() const
+    {
+        return super::marker3();
+    }
 
     /**
      * Inserts a point as face of the edge geometric element
@@ -600,8 +712,8 @@ template<uint16_type Dim,
          typename T = double>
 class GeoElement2D
     :
-    public GeoND<Dim, GEOSHAPE, T, GeoElement0D<Dim, SubFaceOfNone, T> >,
-        public SubFace
+public GeoND<Dim, GEOSHAPE, T, GeoElement0D<Dim, SubFaceOfNone, T> >,
+public SubFace
 {
 public:
 
@@ -613,8 +725,8 @@ public:
     static const uint16_type nOrder = super::nOrder;
     static const uint16_type nRealDim = super::nRealDim;
 
-    static const bool condition = (Dim==nRealDim);
-    BOOST_MPL_ASSERT_MSG( (condition), INVALID_ELEMENT_REAL_DIMENSION, ( mpl::int_<Dim>, mpl::int_<nRealDim>, GEOSHAPE ) );
+    static const bool condition = ( Dim==nRealDim );
+    BOOST_MPL_ASSERT_MSG( ( condition ), INVALID_ELEMENT_REAL_DIMENSION, ( mpl::int_<Dim>, mpl::int_<nRealDim>, GEOSHAPE ) );
 
     //! Number of element edges
     static const uint16_type numLocalEdges = super::numEdges;
@@ -628,10 +740,10 @@ public:
     typedef GeoElement1D<Dim, entity_face_type, SubFaceOf<self_type>, T > edge_type;
     typedef GeoElement0D<Dim, SubFaceOfNone, T> point_type;
 #if 0
-    BOOST_MPL_ASSERT_MSG( (boost::is_same<point_type,typename edge_type::point_type>::value),
+    BOOST_MPL_ASSERT_MSG( ( boost::is_same<point_type,typename edge_type::point_type>::value ),
                           INCOMPATIBLE_POINT_TYPE,
-                          (point_type, typename edge_type::point_type, edge_type, element_type, self_type ) );
-    BOOST_STATIC_ASSERT( (boost::is_same<point_type,typename edge_type::point_type>::value) );
+                          ( point_type, typename edge_type::point_type, edge_type, element_type, self_type ) );
+    BOOST_STATIC_ASSERT( ( boost::is_same<point_type,typename edge_type::point_type>::value ) );
 #endif // 0
     typedef typename super::node_type node_type;
 
@@ -652,10 +764,10 @@ public:
         M_edges( numLocalEdges ),
         M_edge_permutation( numLocalEdges )
     {
-        std::fill( M_edges.begin(), M_edges.end(), (edge_type*)0 );
+        std::fill( M_edges.begin(), M_edges.end(), ( edge_type* )0 );
         std::fill( M_edge_permutation.begin(),
                    M_edge_permutation.end(),
-                   edge_permutation_type(edge_permutation_type::IDENTITY) );
+                   edge_permutation_type( edge_permutation_type::IDENTITY ) );
     }
 
     /**
@@ -687,20 +799,39 @@ public:
             M_edges = g.M_edges;
             M_edge_permutation = g.M_edge_permutation;
         }
+
         return *this;
     }
 
     //void setMesh( MeshBase const* m ) { super::setMesh( m ); }
-    MeshBase const* mesh() const { return super::mesh(); }
+    MeshBase const* mesh() const
+    {
+        return super::mesh();
+    }
     /**
      * \return \c true if on the boundary, \c false otherwise
      */
-    size_type id() const { return super::id(); }
+    size_type id() const
+    {
+        return super::id();
+    }
 
-    Marker1 const& marker() const { return super::marker(); }
-    Marker1& marker() { return super::marker(); }
-    Marker2 const& marker2() const { return super::marker2(); }
-    Marker3 const& marker3() const { return super::marker3(); }
+    Marker1 const& marker() const
+    {
+        return super::marker();
+    }
+    Marker1& marker()
+    {
+        return super::marker();
+    }
+    Marker2 const& marker2() const
+    {
+        return super::marker2();
+    }
+    Marker3 const& marker3() const
+    {
+        return super::marker3();
+    }
 
     /**
      * \return \p true if interprocess domain face, \p false otherwise
@@ -713,17 +844,26 @@ public:
     /**
      * \return \c true if on the boundary, \c false otherwise
      */
-    bool isOnBoundary() const { return super::isOnBoundary(); }
+    bool isOnBoundary() const
+    {
+        return super::isOnBoundary();
+    }
 
     /**
      * \return \c true if ghost cell, \c false otherwise
      */
-    bool isGhostCell() const { return super::isGhostCell(); }
+    bool isGhostCell() const
+    {
+        return super::isGhostCell();
+    }
 
     /**
      * \return process id
      */
-    uint16_type processId() const { return super::processId(); }
+    uint16_type processId() const
+    {
+        return super::processId();
+    }
 
 
 
@@ -849,8 +989,8 @@ template<uint16_type Dim,
          typename T = double>
 class GeoElement3D
     :
-    public GeoND<Dim, GEOSHAPE, T, GeoElement0D<Dim, SubFaceOfNone, T> >,
-    public SubFaceOfNone
+public GeoND<Dim, GEOSHAPE, T, GeoElement0D<Dim, SubFaceOfNone, T> >,
+public SubFaceOfNone
 {
 public:
 
@@ -928,27 +1068,46 @@ public:
     GeoElement3D& operator=( GeoElement3D const& g )
     {
         if ( this != &g )
-            {
-                super::operator=( g );
-                M_edges = g.M_edges;
-                M_faces = g.M_faces;
-                M_edge_permutation = g.M_edge_permutation;
-                M_face_permutation = g.M_face_permutation;
-            }
+        {
+            super::operator=( g );
+            M_edges = g.M_edges;
+            M_faces = g.M_faces;
+            M_edge_permutation = g.M_edge_permutation;
+            M_face_permutation = g.M_face_permutation;
+        }
+
         return *this;
     }
 
     //void setMesh( MeshBase const* m ) { super::setMesh( m ); }
-    MeshBase const* mesh() const { return super::mesh(); }
+    MeshBase const* mesh() const
+    {
+        return super::mesh();
+    }
     /**
      * \return \c true if on the boundary, \c false otherwise
      */
-    size_type id() const { return super::id(); }
+    size_type id() const
+    {
+        return super::id();
+    }
 
-    Marker1 const& marker() const { return super::marker(); }
-    Marker1& marker() { return super::marker(); }
-    Marker2 const& marker2() const { return super::marker2(); }
-    Marker3 const& marker3() const { return super::marker3(); }
+    Marker1 const& marker() const
+    {
+        return super::marker();
+    }
+    Marker1& marker()
+    {
+        return super::marker();
+    }
+    Marker2 const& marker2() const
+    {
+        return super::marker2();
+    }
+    Marker3 const& marker3() const
+    {
+        return super::marker3();
+    }
 
     /**
      * \return \p true if interprocess domain face, \p false otherwise
@@ -961,22 +1120,43 @@ public:
     /**
      * \return \c true if on the boundary, \c false otherwise
      */
-    bool isOnBoundary() const { return super::isOnBoundary(); }
+    bool isOnBoundary() const
+    {
+        return super::isOnBoundary();
+    }
 
     /**
      * \return \c true if ghost cell, \c false otherwise
      */
-    bool isGhostCell() const { return super::isGhostCell(); }
+    bool isGhostCell() const
+    {
+        return super::isGhostCell();
+    }
 
     /**
      * \return process id
      */
-    uint16_type processId() const { return super::processId(); }
+    uint16_type processId() const
+    {
+        return super::processId();
+    }
 
-    size_type ad_first() const { return invalid_size_type_value; }
-    uint16_type pos_first() const { return invalid_uint16_type_value; }
-    size_type ad_second() const { return invalid_size_type_value; }
-    uint16_type pos_second() const { return invalid_uint16_type_value; }
+    size_type ad_first() const
+    {
+        return invalid_size_type_value;
+    }
+    uint16_type pos_first() const
+    {
+        return invalid_uint16_type_value;
+    }
+    size_type ad_second() const
+    {
+        return invalid_size_type_value;
+    }
+    uint16_type pos_second() const
+    {
+        return invalid_uint16_type_value;
+    }
 
     edge_type const& edge( uint16_type i ) const
     {
@@ -1048,7 +1228,10 @@ public:
     /**
      * Inserts a face.
      */
-    void setFace( uint16_type const i, face_type const & p ) { M_faces[i] = const_cast<face_type*>( boost::addressof( p ) ); }
+    void setFace( uint16_type const i, face_type const & p )
+    {
+        M_faces[i] = const_cast<face_type*>( boost::addressof( p ) );
+    }
 
     void setFacePermutation( uint16_type i, face_permutation_type o )
     {

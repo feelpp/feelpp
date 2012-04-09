@@ -74,7 +74,7 @@ namespace ublas = boost::numeric::ublas;
 
 // forward declarations
 template <typename T> class MatrixSparse;
-template <typename T> inline std::ostream& operator << (std::ostream& os, const MatrixSparse<T>& m);
+template <typename T> inline std::ostream& operator << ( std::ostream& os, const MatrixSparse<T>& m );
 
 
 /**
@@ -114,7 +114,7 @@ public:
      */
     MatrixSparse ();
 
-    MatrixSparse(DataMap const& dmRow, DataMap const& dmCol, WorldComm const& worldComm=WorldComm());
+    MatrixSparse( DataMap const& dmRow, DataMap const& dmCol, WorldComm const& worldComm=WorldComm() );
 
     /**
      * Destructor. Free all memory, but do not release the memory of
@@ -125,28 +125,43 @@ public:
     /**
      * Return datamap for rows
      */
-    DataMap const& mapRow() const { return M_mapRow; }
+    DataMap const& mapRow() const
+    {
+        return M_mapRow;
+    }
 
     /**
      * Return datamap for cols
      */
-    DataMap const& mapCol() const { return M_mapCol; }
+    DataMap const& mapCol() const
+    {
+        return M_mapCol;
+    }
 
-    void setMapRow( DataMap const& d ) { M_mapRow=d; }
-    void setMapCol( DataMap const& d ) { M_mapCol=d; }
+    void setMapRow( DataMap const& d )
+    {
+        M_mapRow=d;
+    }
+    void setMapCol( DataMap const& d )
+    {
+        M_mapCol=d;
+    }
 
     /**
      * @returns true if the matrix has been initialized,
      * false otherwise.
      */
-    virtual bool isInitialized() const { return _M_is_initialized; }
+    virtual bool isInitialized() const
+    {
+        return _M_is_initialized;
+    }
 
     /**
      * Updates the matrix sparsity pattern. When your \p
      * MatrixSparse<T> implementation does not need this data simply
      * do not overload this method.
      */
-    virtual void updateSparsityPattern (const std::vector<std::vector<size_type> >&) {}
+    virtual void updateSparsityPattern ( const std::vector<std::vector<size_type> >& ) {}
 
     /**
      * Initialize a Sparse matrix that is of global dimension \f$ m
@@ -155,12 +170,12 @@ public:
      * 30).  \p noz is the number of on-processor nonzeros per row
      * (defaults to 10).
      */
-    virtual void init (const size_type m,
-                       const size_type n,
-                       const size_type m_l,
-                       const size_type n_l,
-                       const size_type nnz=30,
-                       const size_type noz=10) = 0;
+    virtual void init ( const size_type m,
+                        const size_type n,
+                        const size_type m_l,
+                        const size_type n_l,
+                        const size_type nnz=30,
+                        const size_type noz=10 ) = 0;
 
     /**
      * Initialize using sparsity structure computed by \p dof_map.
@@ -176,109 +191,148 @@ public:
      *
      */
     template<typename DomainSpace, typename ImageSpace>
-    void initIndexSplit(DomainSpace const& dm, ImageSpace const& im)
+    void initIndexSplit( DomainSpace const& dm, ImageSpace const& im )
     {
         auto nSpace = DomainSpace::element_type::nSpaces;
-        if (nSpace>1)
-            {
-                //std::cout << "\n Debug : nSpace " << nSpace << "\n";
-                std::vector < std::vector<int> > is(nSpace);
-                uint cptSpaces=0;
-                uint start=0;
-                auto result = boost::make_tuple(cptSpaces,start);
 
-                std::vector < std::vector<int> > indexSplit(nSpace);
-                //detail::computeNDofForEachSpace cndof(nSpace);
-                //detail::computeNDofForEachSpace cndof(indexSplit);
-                boost::fusion::fold( dm->functionSpaces(), result,  cndof );
+        if ( nSpace>1 )
+        {
+            //std::cout << "\n Debug : nSpace " << nSpace << "\n";
+            std::vector < std::vector<int> > is( nSpace );
+            uint cptSpaces=0;
+            uint start=0;
+            auto result = boost::make_tuple( cptSpaces,start );
 
-                this->setIndexSplit(indexSplit);
-            }
+            std::vector < std::vector<int> > indexSplit( nSpace );
+            //detail::computeNDofForEachSpace cndof(nSpace);
+            //detail::computeNDofForEachSpace cndof(indexSplit);
+            boost::fusion::fold( dm->functionSpaces(), result,  cndof );
+
+            this->setIndexSplit( indexSplit );
+        }
 
     }
 #endif
     /**
      *
      */
-    virtual void setIndexSplit(std::vector< std::vector<int> > const &_indexSplit ) { M_IndexSplit=_indexSplit;}
+    virtual void setIndexSplit( std::vector< std::vector<int> > const &_indexSplit )
+    {
+        M_IndexSplit=_indexSplit;
+    }
 
     /**
      *
      */
-    std::vector< std::vector<int> > indexSplit() const { return M_IndexSplit;}
+    std::vector< std::vector<int> > indexSplit() const
+    {
+        return M_IndexSplit;
+    }
 
     /**
      * \return true if matrix has a graph, false otherwise
      */
-    bool hasGraph() const { return _M_graph != 0; }
+    bool hasGraph() const
+    {
+        return _M_graph != 0;
+    }
 
     /**
      * \return the graph associated to the sparse matrix
      */
-    graph_ptrtype const& graph() const { return _M_graph; }
+    graph_ptrtype const& graph() const
+    {
+        return _M_graph;
+    }
 
     /**
      * set the graph associated to the sparse matrix
      */
-    void setGraph( graph_ptrtype const& graph ) { _M_graph = graph; }
+    void setGraph( graph_ptrtype const& graph )
+    {
+        _M_graph = graph;
+    }
 
     /**
      * set matrix properties, @see MatrixProperties
      */
     void setMatrixProperties( size_type p )
-        {
-            M_mprop = (size_type)p;
-            checkProperties();
-        }
+    {
+        M_mprop = ( size_type )p;
+        checkProperties();
+    }
     /**
      * \return true if matrix is hermitian, false otherwise
      */
-    bool isHermitian() const { checkProperties(); return M_mprop.test( HERMITIAN ); }
+    bool isHermitian() const
+    {
+        checkProperties();
+        return M_mprop.test( HERMITIAN );
+    }
 
     /**
      * \return true if matrix is non hermitian, false otherwise
      */
-    bool isNonHermitian() const { checkProperties(); return M_mprop.test( NON_HERMITIAN ); }
+    bool isNonHermitian() const
+    {
+        checkProperties();
+        return M_mprop.test( NON_HERMITIAN );
+    }
 
     /**
      * \return true if matrix is positive definite, false otherwise
      */
-    bool isHermitianPositiveDefinite() const { checkProperties(); return M_mprop.test( HERMITIAN | POSITIVE_DEFINITE ); }
+    bool isHermitianPositiveDefinite() const
+    {
+        checkProperties();
+        return M_mprop.test( HERMITIAN | POSITIVE_DEFINITE );
+    }
 
     /**
      * \return true if matrix is singular, false otherwise
      */
-    bool isSingular() const { checkProperties(); return M_mprop.test( SINGULAR ); }
+    bool isSingular() const
+    {
+        checkProperties();
+        return M_mprop.test( SINGULAR );
+    }
 
     /**
      * \return true if matrix is singular, false otherwise
      */
-    bool isPositiveDefinite() const { checkProperties(); return M_mprop.test( POSITIVE_DEFINITE ); }
+    bool isPositiveDefinite() const
+    {
+        checkProperties();
+        return M_mprop.test( POSITIVE_DEFINITE );
+    }
 
     bool haveConsistentProperties() const
-        {
-            bool p1 = M_mprop.test( SINGULAR ) && M_mprop.test( POSITIVE_DEFINITE );
-            bool p2 = M_mprop.test( HERMITIAN ) && M_mprop.test( NON_HERMITIAN );
-            return (p1 == false) && (p2 == false);
-        }
+    {
+        bool p1 = M_mprop.test( SINGULAR ) && M_mprop.test( POSITIVE_DEFINITE );
+        bool p2 = M_mprop.test( HERMITIAN ) && M_mprop.test( NON_HERMITIAN );
+        return ( p1 == false ) && ( p2 == false );
+    }
     void checkProperties() const
+    {
+        if ( !haveConsistentProperties() )
         {
-            if ( !haveConsistentProperties() )
-            {
-                std::ostringstream ostr;
-                ostr << "Invalid matrix properties:\n"
-                     << "           HERMITIAN: " << isHermitian() << "\n"
-                     << "       NON_HERMITIAN: " << isNonHermitian() << "\n"
-                     << "            SINGULAR: " << isSingular() << "\n"
-                     << "   POSITIVE_DEFINITE: " << isPositiveDefinite() << "\n";
-                throw std::logic_error( ostr.str() );
-            }
+            std::ostringstream ostr;
+            ostr << "Invalid matrix properties:\n"
+                 << "           HERMITIAN: " << isHermitian() << "\n"
+                 << "       NON_HERMITIAN: " << isNonHermitian() << "\n"
+                 << "            SINGULAR: " << isSingular() << "\n"
+                 << "   POSITIVE_DEFINITE: " << isPositiveDefinite() << "\n";
+            throw std::logic_error( ostr.str() );
         }
+    }
     /**
      * \return the communicator
      */
     //mpi::communicator const& comm() const { return M_comm; }
-    WorldComm const& comm() const { return M_worldComm; }
+    WorldComm const& comm() const
+    {
+        return M_worldComm;
+    }
 
     /**
      * Release all memory and return to a state just like after having
@@ -333,9 +387,9 @@ public:
      * not exist. Still, it is allowed to store
      * zero values in non-existent fields.
      */
-    virtual void set (const size_type i,
-                      const size_type j,
-                      const value_type& value) = 0;
+    virtual void set ( const size_type i,
+                       const size_type j,
+                       const value_type& value ) = 0;
 
     /**
      * Add \p value to the element
@@ -345,9 +399,9 @@ public:
      * store zero values in
      * non-existent fields.
      */
-    virtual void add (const size_type i,
-                      const size_type j,
-                      const value_type& value) = 0;
+    virtual void add ( const size_type i,
+                       const size_type j,
+                       const value_type& value ) = 0;
 
     /**
      * Add the full matrix to the
@@ -355,9 +409,9 @@ public:
      * for adding an element matrix
      * at assembly time
      */
-    virtual void addMatrix (const ublas::matrix<value_type> &dm,
-                            const std::vector<size_type> &rows,
-                            const std::vector<size_type> &cols) = 0;
+    virtual void addMatrix ( const ublas::matrix<value_type> &dm,
+                             const std::vector<size_type> &rows,
+                             const std::vector<size_type> &cols ) = 0;
 
     /**
      * Add the full matrix to the
@@ -373,22 +427,22 @@ public:
      * Same, but assumes the row and column maps are the same.
      * Thus the matrix \p dm must be square.
      */
-    virtual void addMatrix (const ublas::matrix<value_type> &dm,
-                            const std::vector<size_type> &dof_indices) = 0;
+    virtual void addMatrix ( const ublas::matrix<value_type> &dm,
+                             const std::vector<size_type> &dof_indices ) = 0;
 
     /**
      * Add a Sparse matrix \p _X, scaled with \p _a, to \p this,
      * stores the result in \p this:
      * \f$\texttt{this} = \_a*\_X + \texttt{this} \f$.
      */
-    virtual void addMatrix (const T, MatrixSparse<T> &) = 0;
+    virtual void addMatrix ( const T, MatrixSparse<T> & ) = 0;
 
     /**
      * Add a Sparse matrix \p _X, scaled with \p _a, to \p this,
      * stores the result in \p this:
      * \f$\texttt{this} = \_a*\_X + \texttt{this} \f$.
      */
-    void addMatrix (const T& s, boost::shared_ptr<MatrixSparse<T> > & m )
+    void addMatrix ( const T& s, boost::shared_ptr<MatrixSparse<T> > & m )
     {
         this->addMatrix( s, *m );
     }
@@ -408,9 +462,9 @@ public:
      */
     void multVector ( const boost::shared_ptr<Vector<T> >& arg,
                       boost::shared_ptr<Vector<T> >& dest ) const
-        {
-            this->multVector( *arg, *dest );
-        }
+    {
+        this->multVector( *arg, *dest );
+    }
 
     /**
      * Multiplies the matrix with \p arg and adds the result to \p dest.
@@ -430,8 +484,8 @@ public:
      * entries that are not in the sparsity pattern of the matrix),
      * use the \p el function.
      */
-    virtual T operator () (const size_type i,
-                           const size_type j) const = 0;
+    virtual T operator () ( const size_type i,
+                            const size_type j ) const = 0;
 
     virtual MatrixSparse<T> & operator = ( MatrixSparse<value_type> const& M ) = 0;
     MatrixSparse<T> & operator = ( boost::shared_ptr<MatrixSparse<value_type> > const& M )
@@ -442,12 +496,15 @@ public:
     /**
      * Copies the diagonal part of the matrix into \p dest.
      */
-    virtual void diagonal (Vector<T>& dest) const = 0;
+    virtual void diagonal ( Vector<T>& dest ) const = 0;
 
     /**
      * Copies the diagonal part of the matrix into \p dest.
      */
-    void diagonal (boost::shared_ptr<Vector<T> >& dest) const { diagonal(*dest); }
+    void diagonal ( boost::shared_ptr<Vector<T> >& dest ) const
+    {
+        diagonal( *dest );
+    }
 
     /**
      * Returns the transpose of a matrix
@@ -460,11 +517,11 @@ public:
      * \return the transpose of the matrix
      */
     boost::shared_ptr<MatrixSparse<T> > transpose() const
-        {
-            boost::shared_ptr<MatrixSparse<T> > Mt;
-            transpose( *Mt );
-            return Mt;
-        }
+    {
+        boost::shared_ptr<MatrixSparse<T> > Mt;
+        transpose( *Mt );
+        return Mt;
+    }
 
     /**
      * Returns the transpose of a matrix
@@ -473,9 +530,9 @@ public:
      * \param Mt the matrix transposed
      */
     void transpose( boost::shared_ptr<MatrixSparse<value_type> >& Mt ) const
-        {
-            this->transpose( *Mt );
-        }
+    {
+        this->transpose( *Mt );
+    }
 
     /**
      * Returns the symmetric part of the matrix
@@ -486,9 +543,9 @@ public:
      * Returns the symmetric part of the matrix
      */
     void symmetricPart( boost::shared_ptr<MatrixSparse<value_type> >& Ms ) const
-        {
-            symmetricPart( *Ms );
-        }
+    {
+        symmetricPart( *Ms );
+    }
 
     /**
      * compute the A scalar product \f$v^T A u\f$
@@ -513,9 +570,9 @@ public:
     real_type energy ( vector_ptrtype const& v,
                        vector_ptrtype const& u,
                        bool _transpose = false ) const
-        {
-            return this->energy( *v, *u, _transpose );
-        }
+    {
+        return this->energy( *v, *u, _transpose );
+    }
 
     /**
      * Return the l1-norm of the matrix, that is
@@ -549,23 +606,23 @@ public:
      * in a uniform style, regardless of matrix/solver
      * package being used.
      */
-    void print(std::ostream& os=std::cout) const;
+    void print( std::ostream& os=std::cout ) const;
 
     /**
      * Same as the print method above, but allows you
      * to print to a stream in the standard syntax.
      */
     template <typename U>
-    friend std::ostream& operator << (std::ostream& os, const MatrixSparse<U>& m);
+    friend std::ostream& operator << ( std::ostream& os, const MatrixSparse<U>& m );
 
     /**
      * Print the contents of the matrix to the screen
      * in a package-personalized style, if available.
      */
-    virtual void printPersonal(std::ostream& /*os*/=std::cout) const
+    virtual void printPersonal( std::ostream& /*os*/=std::cout ) const
     {
         std::cerr << "ERROR: Not Implemented in base class yet!" << std::endl;
-        FEELPP_ASSERT( 0 ).error("invalid call");
+        FEELPP_ASSERT( 0 ).error( "invalid call" );
     }
 
     /**
@@ -574,11 +631,11 @@ public:
      * matrix to the file named \p name.  If \p name
      * is not specified it is dumped to the screen.
      */
-    virtual void printMatlab(const std::string name="NULL") const
+    virtual void printMatlab( const std::string name="NULL" ) const
     {
         std::cerr << "ERROR: Not Implemented in base class yet!" << std::endl;
         std::cerr << "ERROR writing MATLAB file " << name << std::endl;
-        FEELPP_ASSERT( 0 ).error("invalid call");
+        FEELPP_ASSERT( 0 ).error( "invalid call" );
     }
 
     /**
@@ -586,14 +643,14 @@ public:
      * by the row and column indices given in the "rows" and "cols" entries.
      * Currently this operation is only defined for the PetscMatrix type.
      */
-    virtual void createSubmatrix(MatrixSparse<T>& submatrix,
-                                 const std::vector<size_type>& rows,
-                                 const std::vector<size_type>& cols) const
+    virtual void createSubmatrix( MatrixSparse<T>& submatrix,
+                                  const std::vector<size_type>& rows,
+                                  const std::vector<size_type>& cols ) const
     {
-        this->_get_submatrix(submatrix,
-                             rows,
-                             cols,
-                             false); // false means DO NOT REUSE submatrix
+        this->_get_submatrix( submatrix,
+                              rows,
+                              cols,
+                              false ); // false means DO NOT REUSE submatrix
     }
 
     /**
@@ -602,14 +659,14 @@ public:
      * it again.  This should hopefully be more efficient if you are frequently
      * extracting submatrices of the same size.
      */
-    virtual void reinitSubmatrix(MatrixSparse<T>& submatrix,
-                                 const std::vector<size_type>& rows,
-                                 const std::vector<size_type>& cols) const
+    virtual void reinitSubmatrix( MatrixSparse<T>& submatrix,
+                                  const std::vector<size_type>& rows,
+                                  const std::vector<size_type>& cols ) const
     {
-        this->_get_submatrix(submatrix,
-                             rows,
-                             cols,
-                             true); // true means REUSE submatrix
+        this->_get_submatrix( submatrix,
+                              rows,
+                              cols,
+                              true ); // true means REUSE submatrix
     }
 
     /**
@@ -624,7 +681,7 @@ public:
     /**
      * update a block matrix
      */
-    virtual void  updateBlockMat(boost::shared_ptr<MatrixSparse<T> > m, size_type start_i, size_type start_j) = 0;
+    virtual void  updateBlockMat( boost::shared_ptr<MatrixSparse<T> > m, size_type start_i, size_type start_j ) = 0;
 
 
     /**
@@ -636,24 +693,25 @@ public:
     }
 #if 0
     template<typename DomainSpace, typename ImageSpace>
-    void updateIndexSplit(DomainSpace const& dm, ImageSpace const& im)
+    void updateIndexSplit( DomainSpace const& dm, ImageSpace const& im )
     {
         auto nSpace = DomainSpace::element_type::nSpaces;
-        if (nSpace>1)
-            {
-                //std::cout << "\n Debug : nSpace " << nSpace << "\n";
-                std::vector < std::vector<int> > is(nSpace);
-                uint cptSpaces=0;
-                uint start=0;
-                auto result = boost::make_tuple(cptSpaces,start);
 
-                std::vector < std::vector<int> > indexSplit(nSpace);
-                //detail::computeNDofForEachSpace cndof(nSpace);
-                detail::computeNDofForEachSpace cndof(indexSplit);
-                boost::fusion::fold( dm->functionSpaces(), result,  cndof );
+        if ( nSpace>1 )
+        {
+            //std::cout << "\n Debug : nSpace " << nSpace << "\n";
+            std::vector < std::vector<int> > is( nSpace );
+            uint cptSpaces=0;
+            uint start=0;
+            auto result = boost::make_tuple( cptSpaces,start );
 
-                this->setIndexSplit(indexSplit);
-            }
+            std::vector < std::vector<int> > indexSplit( nSpace );
+            //detail::computeNDofForEachSpace cndof(nSpace);
+            detail::computeNDofForEachSpace cndof( indexSplit );
+            boost::fusion::fold( dm->functionSpaces(), result,  cndof );
+
+            this->setIndexSplit( indexSplit );
+        }
     }
 #endif
 protected:
@@ -662,14 +720,14 @@ protected:
      * routines.  Note that this function must be redefined in derived classes
      * for it to work properly!
      */
-    virtual void _get_submatrix(MatrixSparse<T>& ,
-                                const std::vector<size_type>& ,
-                                const std::vector<size_type>& ,
-                                const bool) const
+    virtual void _get_submatrix( MatrixSparse<T>& ,
+                                 const std::vector<size_type>& ,
+                                 const std::vector<size_type>& ,
+                                 const bool ) const
     {
         std::cerr << "Error! This function is not yet implemented in the base class!"
                   << std::endl;
-        FEELPP_ASSERT( 0 ).error("invalid call");
+        FEELPP_ASSERT( 0 ).error( "invalid call" );
     }
 
     //! mpi communicator
@@ -706,15 +764,15 @@ typedef boost::shared_ptr<d_sparse_matrix_type> d_sparse_matrix_ptrtype;
 template <typename T>
 inline
 MatrixSparse<T>::MatrixSparse () :
-    _M_is_initialized(false),
+    _M_is_initialized( false ),
     M_mprop( NON_HERMITIAN )
 {}
 
 template <typename T>
 inline
-MatrixSparse<T>::MatrixSparse (DataMap const& dmRow, DataMap const& dmCol, WorldComm const& worldComm ) :
+MatrixSparse<T>::MatrixSparse ( DataMap const& dmRow, DataMap const& dmCol, WorldComm const& worldComm ) :
     M_worldComm( worldComm ),
-    _M_is_initialized(false),
+    _M_is_initialized( false ),
     M_mprop( NON_HERMITIAN ),
     M_mapRow( dmRow ),
     M_mapCol( dmCol )
@@ -729,14 +787,15 @@ MatrixSparse<T>::~MatrixSparse ()
 
 template <typename T>
 inline
-void MatrixSparse<T>::print(std::ostream& os) const
+void MatrixSparse<T>::print( std::ostream& os ) const
 {
-    assert (this->isInitialized());
+    assert ( this->isInitialized() );
 
-    for (size_type i=0; i<this->size1(); i++)
+    for ( size_type i=0; i<this->size1(); i++ )
     {
-        for (size_type j=0; j<this->size2(); j++)
-            os << std::setw(8) << (*this)(i,j) << " ";
+        for ( size_type j=0; j<this->size2(); j++ )
+            os << std::setw( 8 ) << ( *this )( i,j ) << " ";
+
         os << std::endl;
     }
 }
@@ -746,7 +805,7 @@ void MatrixSparse<T>::multVector ( const Vector<T>& arg,
                                    Vector<T>& dest ) const
 {
     dest.zero();
-    this->multAddVector(arg,dest);
+    this->multAddVector( arg,dest );
 }
 
 
@@ -757,7 +816,7 @@ void MatrixSparse<T>::multAddVector ( const Vector<T>& arg,
 {
     /* This functionality is actually implemented in the \p
        Vector class.  */
-    dest.addVector(arg,*this);
+    dest.addVector( arg,*this );
 }
 
 
@@ -765,23 +824,27 @@ void MatrixSparse<T>::multAddVector ( const Vector<T>& arg,
 // Full specialization for Complex datatypes
 template <>
 inline
-void MatrixSparse<std::complex<double> >::print(std::ostream& os) const
+void MatrixSparse<std::complex<double> >::print( std::ostream& os ) const
 {
     // std::complex<>::operator<<() is defined, but use this form
 
     std::cout << "Real part:" << std::endl;
-    for (size_type i=0; i<this->size1(); i++)
+
+    for ( size_type i=0; i<this->size1(); i++ )
     {
-        for (size_type j=0; j<this->size2(); j++)
-            os << std::setw(8) << (*this)(i,j).real() << " ";
+        for ( size_type j=0; j<this->size2(); j++ )
+            os << std::setw( 8 ) << ( *this )( i,j ).real() << " ";
+
         os << std::endl;
     }
 
     os << std::endl << "Imaginary part:" << std::endl;
-    for (size_type i=0; i<this->size1(); i++)
+
+    for ( size_type i=0; i<this->size1(); i++ )
     {
-        for (size_type j=0; j<this->size2(); j++)
-            os << std::setw(8) << (*this)(i,j).imag() << " ";
+        for ( size_type j=0; j<this->size2(); j++ )
+            os << std::setw( 8 ) << ( *this )( i,j ).imag() << " ";
+
         os << std::endl;
     }
 }
@@ -792,9 +855,9 @@ void MatrixSparse<std::complex<double> >::print(std::ostream& os) const
 // the partial specialization of the print() member.
 template <typename T>
 inline
-std::ostream& operator << (std::ostream& os, const MatrixSparse<T>& m)
+std::ostream& operator << ( std::ostream& os, const MatrixSparse<T>& m )
 {
-    m.print(os);
+    m.print( os );
     return os;
 }
 

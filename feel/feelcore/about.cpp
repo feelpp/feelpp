@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
     kate: space-indent on; indent-width 4; mixedindent off; indent-mode cstyle; encoding utf-8;
    This file is part of the Feel library
 
@@ -50,14 +50,14 @@ AboutPerson::task() const
 std::string
 AboutPerson::emailAddress() const
 {
-   return _M_EmailAddress;
+    return _M_EmailAddress;
 }
 
 
 std::string
 AboutPerson::webAddress() const
 {
-   return _M_WebAddress;
+    return _M_WebAddress;
 }
 
 
@@ -65,12 +65,12 @@ class AboutDataPrivate
 {
 public:
     AboutDataPrivate()
-        {}
-  AboutDataPrivate( AboutDataPrivate const& /* d */ )
-        {}
+    {}
+    AboutDataPrivate( AboutDataPrivate const& /* d */ )
+    {}
     ~AboutDataPrivate()
-        {
-        }
+    {
+    }
 };
 
 AboutData::AboutData( const char*  appName,
@@ -82,25 +82,30 @@ AboutData::AboutData( const char*  appName,
                       const char*  text,
                       const char*  homePageAddress,
                       const char*  bugsEmailAddress
-			) :
-  _M_ProgramName( programName ),
-  _M_Version( version ),
-  _M_ShortDescription( shortDescription ),
-  _M_LicenseKey( licenseType ),
-  _M_CopyrightStatement( copyrightStatement ),
-  _M_OtherText( text ),
-  _M_HomepageAddress( homePageAddress ),
-  _M_BugEmailAddress( bugsEmailAddress ),
-  _M_LicenseText (),
-  d( new AboutDataPrivate )
+                    ) :
+    _M_ProgramName( programName ),
+    _M_Version( version ),
+    _M_ShortDescription( shortDescription ),
+    _M_LicenseKey( licenseType ),
+    _M_CopyrightStatement( copyrightStatement ),
+    _M_OtherText( text ),
+    _M_HomepageAddress( homePageAddress ),
+    _M_BugEmailAddress( bugsEmailAddress ),
+    _M_LicenseText (),
+    d( new AboutDataPrivate )
 {
-    if( appName ) {
-        const char *p = ::strrchr(appName, '/');
-        if( p )
+    if ( appName )
+    {
+        const char *p = ::strrchr( appName, '/' );
+
+        if ( p )
             _M_AppName = p+1;
+
         else
             _M_AppName = appName;
-    } else
+    }
+
+    else
         _M_AppName = "";
 }
 AboutData::AboutData( AboutData const& ad )
@@ -127,99 +132,100 @@ AboutData::~AboutData()
 
 void
 AboutData::addAuthor( std::string const & name, std::string const & task,
-		    std::string const & emailAddress, std::string const & webAddress )
+                      std::string const & emailAddress, std::string const & webAddress )
 {
-    _M_AuthorList.push_back(AboutPerson(name,task,emailAddress,webAddress));
+    _M_AuthorList.push_back( AboutPerson( name,task,emailAddress,webAddress ) );
 
 }
 
 void
 AboutData::addCredit( std::string const & name, std::string const & task,
-		    std::string const & emailAddress, std::string const & webAddress )
+                      std::string const & emailAddress, std::string const & webAddress )
 {
-  _M_CreditList.push_back(AboutPerson(name,task,emailAddress,webAddress));
+    _M_CreditList.push_back( AboutPerson( name,task,emailAddress,webAddress ) );
 }
 
 void
 AboutData::setLicenseText( std::string const & licenseText )
 {
-  _M_LicenseText = licenseText;
-  _M_LicenseKey = License_Custom;
+    _M_LicenseText = licenseText;
+    _M_LicenseKey = License_Custom;
 }
 
 void
 AboutData::setAppName( std::string const & appName )
 {
-  _M_AppName = appName;
+    _M_AppName = appName;
 }
 
 void
 AboutData::setProgramName( const char* programName )
 {
-  _M_ProgramName = programName;
+    _M_ProgramName = programName;
 }
 
 void
 AboutData::setVersion( const char* version )
 {
-  _M_Version = version;
+    _M_Version = version;
 }
 
 void
 AboutData::setShortDescription( std::string const & shortDescription )
 {
-  _M_ShortDescription = shortDescription;
+    _M_ShortDescription = shortDescription;
 }
 
 void
-AboutData::setLicense( LicenseKey licenseKey)
+AboutData::setLicense( LicenseKey licenseKey )
 {
-  _M_LicenseKey = licenseKey;
+    _M_LicenseKey = licenseKey;
 }
 
 void
 AboutData::setCopyrightStatement( std::string const & copyrightStatement )
 {
-  _M_CopyrightStatement = copyrightStatement;
+    _M_CopyrightStatement = copyrightStatement;
 }
 
 void
 AboutData::setOtherText( std::string const & otherText )
 {
-  _M_OtherText = otherText;
+    _M_OtherText = otherText;
 }
 
 void
 AboutData::setHomepage( std::string const & homepage )
 {
-  _M_HomepageAddress = homepage;
+    _M_HomepageAddress = homepage;
 }
 
 void
 AboutData::setBugAddress( std::string const & bugAddress )
 {
-  _M_BugEmailAddress = bugAddress;
+    _M_BugEmailAddress = bugAddress;
 }
 
 void
 AboutData::setProductName( std::string const & productName )
 {
-  _M_ProductName = productName;
+    _M_ProductName = productName;
 }
 
 std::string
 AboutData::appName() const
 {
-   return _M_AppName;
+    return _M_AppName;
 }
 
 std::string
 AboutData::productName() const
 {
-   if ( !_M_ProductName.empty() )
-      return _M_ProductName;
-   else
-      return appName();
+    if ( !_M_ProductName.empty() )
+        return _M_ProductName;
+
+    else
+        return appName();
 }
 
 std::string
@@ -231,7 +237,7 @@ AboutData::programName() const
 std::string
 AboutData::version() const
 {
-   return _M_Version;
+    return _M_Version;
 }
 
 std::string
@@ -243,25 +249,25 @@ AboutData::shortDescription() const
 std::string
 AboutData::homepage() const
 {
-   return _M_HomepageAddress;
+    return _M_HomepageAddress;
 }
 
 std::string
 AboutData::bugAddress() const
 {
-   return _M_BugEmailAddress;
+    return _M_BugEmailAddress;
 }
 
 const std::vector<AboutPerson>&
 AboutData::authors() const
 {
-   return _M_AuthorList;
+    return _M_AuthorList;
 }
 
 const std::vector<AboutPerson>&
 AboutData::credits() const
 {
-   return _M_CreditList;
+    return _M_CreditList;
 }
 std::string
 AboutData::otherText() const
@@ -274,40 +280,48 @@ std::string
 AboutData::license() const
 {
     std::string result;
-    if (!copyrightStatement().empty())
+
+    if ( !copyrightStatement().empty() )
         result = copyrightStatement() + "\n\n";
 
     std::string l;
     std::string f;
+
     switch ( _M_LicenseKey )
     {
-        case License_GPL_V2:
-            l = "GPL v2";
-            break;
-        case License_LGPL_V2:
-            l = "LGPL v2";
-            break;
-        case License_BSD:
-            l = "BSD License";
-            break;
-        case License_Artistic:
-            l = "Artistic License";
-            break;
-        case License_QPL_V1_0:
-            l = "QPL v1.0";
-            break;
-        case License_Custom:
-            if ( !_M_LicenseText.empty() )
-                return( _M_LicenseText);
-            // fall through
-        default:
-            result += "No licensing terms for this program have been specified.\n"
-                "Please check the documentation or the source for any\n"
-                "licensing terms.\n";
-            return result;
+    case License_GPL_V2:
+        l = "GPL v2";
+        break;
+
+    case License_LGPL_V2:
+        l = "LGPL v2";
+        break;
+
+    case License_BSD:
+        l = "BSD License";
+        break;
+
+    case License_Artistic:
+        l = "Artistic License";
+        break;
+
+    case License_QPL_V1_0:
+        l = "QPL v1.0";
+        break;
+
+    case License_Custom:
+        if ( !_M_LicenseText.empty() )
+            return( _M_LicenseText );
+
+        // fall through
+    default:
+        result += "No licensing terms for this program have been specified.\n"
+                  "Please check the documentation or the source for any\n"
+                  "licensing terms.\n";
+        return result;
     }
 
-    if (!l.empty())
+    if ( !l.empty() )
         result += "This program is distributed under the terms of the " + l;
 
     return result;

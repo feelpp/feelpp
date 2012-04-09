@@ -42,7 +42,7 @@ namespace ublas = boost::numeric::ublas;
 
 /** \brief make a immutable triangular adaptor from a matrix
  *
- * \usage: 
+ * \usage:
 <code>
  A = triangular< lower >(B);
  A = triangular(B, lower());
@@ -50,133 +50,139 @@ namespace ublas = boost::numeric::ublas;
  */
 template < class TYPE, class MATRIX >
 ublas::triangular_adaptor<const MATRIX, TYPE>
-triangular(const MATRIX & A, const TYPE& uplo = TYPE())
+triangular( const MATRIX & A, const TYPE& uplo = TYPE() )
 {
-  return ublas::triangular_adaptor<const MATRIX, TYPE>(A);
+    return ublas::triangular_adaptor<const MATRIX, TYPE>( A );
 }
 
 /** \brief make a immutable banded adaptor from a matrix
  *
- * \usage: 
+ * \usage:
 <code>
  A = banded(B, lower, upper);
 </code>
  */
 template < class MATRIX >
 ublas::banded_adaptor<const MATRIX>
-banded(const MATRIX & A, const size_t lower, const size_t upper)
+banded( const MATRIX & A, const size_t lower, const size_t upper )
 {
-  return ublas::banded_adaptor<const MATRIX>(A, lower, upper);
+    return ublas::banded_adaptor<const MATRIX>( A, lower, upper );
 }
 
-/** \brief fill lower triangular matrix L 
+/** \brief fill lower triangular matrix L
  */
 template < class MATRIX >
-void fill_symm(MATRIX & L, const size_t bands = std::numeric_limits<size_t>::max() )
+void fill_symm( MATRIX & L, const size_t bands = std::numeric_limits<size_t>::max() )
 {
-  typedef typename MATRIX::size_type size_type;
-  
-  assert(L.size1() == L.size2());
+    typedef typename MATRIX::size_type size_type;
 
-  size_type size = L.size1();
-  for (size_type i=0; i<size; i++) {
-    for (size_type j = ((i>bands)?(i-bands):0); j<i; j++) {
-      L(i,j) = 1 + ((double) i)*j + ((double) j)*j;
+    assert( L.size1() == L.size2() );
+
+    size_type size = L.size1();
+
+    for ( size_type i=0; i<size; i++ )
+    {
+        for ( size_type j = ( ( i>bands )?( i-bands ):0 ); j<i; j++ )
+        {
+            L( i,j ) = 1 + ( ( double ) i )*j + ( ( double ) j )*j;
+        }
+
+        L( i,i ) = 20*size;
     }
-    L(i,i) = 20*size;
-  }
 
-  return;
+    return;
 }
 
-int main(int argc, char * argv[] )
+int main( int argc, char * argv[] )
 {
-  size_t size = 10;
-  if (argc > 1)
-    size = ::atoi (argv [1]);
-  boost::timer  t1;
-  double pr, de;
+    size_t size = 10;
 
-  typedef double DBL;
-  {
-    // use dense matrix
-    ublas::matrix<DBL> A (size, size);
-    ublas::matrix<DBL> T (size, size);
-    ublas::matrix<DBL> L (size, size);
+    if ( argc > 1 )
+        size = ::atoi ( argv [1] );
 
-    A = ublas::zero_matrix<DBL>(size, size);
+    boost::timer  t1;
+    double pr, de;
 
-    fill_symm(T);
-    t1.restart();
-    A = ublas::prod(T, trans(T));
-    pr = t1.elapsed();
-    t1.restart();
-    size_t res = cholesky_decompose(A, L);
-    de = t1.elapsed();
+    typedef double DBL;
+    {
+        // use dense matrix
+        ublas::matrix<DBL> A ( size, size );
+        ublas::matrix<DBL> T ( size, size );
+        ublas::matrix<DBL> L ( size, size );
 
-    std::cout << res << ": " 
-              << ublas::norm_inf(L-T) 
-              << " (deco: " << de << " sec)"
-              << " (prod: " << pr << " sec)"
-              << " " << size
-              << std::endl;
-  }
+        A = ublas::zero_matrix<DBL>( size, size );
 
-  {
-    // use dense triangular matrices
-    ublas::triangular_matrix<DBL, ublas::lower> A (size, size);
-    ublas::triangular_matrix<DBL, ublas::lower> T (size, size);
-    ublas::triangular_matrix<DBL, ublas::lower> L (size, size);
-    
-    A = ublas::zero_matrix<DBL> (size, size) ;
-    A = triangular<ublas::lower>( ublas::zero_matrix<DBL> (size, size) );
-    A = triangular( ublas::zero_matrix<DBL> (size, size), ublas::lower() );
+        fill_symm( T );
+        t1.restart();
+        A = ublas::prod( T, trans( T ) );
+        pr = t1.elapsed();
+        t1.restart();
+        size_t res = cholesky_decompose( A, L );
+        de = t1.elapsed();
 
-    fill_symm(T);
-    t1.restart();
-    A = triangular<ublas::lower>( ublas::prod(T, trans(T)) );
-    pr = t1.elapsed();
-    t1.restart();
-    size_t res = cholesky_decompose(A, L);
-    de = t1.elapsed();
+        std::cout << res << ": "
+                  << ublas::norm_inf( L-T )
+                  << " (deco: " << de << " sec)"
+                  << " (prod: " << pr << " sec)"
+                  << " " << size
+                  << std::endl;
+    }
 
-    std::cout << res << ": " 
-              << ublas::norm_inf(L-T) 
-              << " (deco: " << de << " sec)"
-              << " (prod: " << pr << " sec)"
-              << " " << size
-              << std::endl;
-  }
+    {
+        // use dense triangular matrices
+        ublas::triangular_matrix<DBL, ublas::lower> A ( size, size );
+        ublas::triangular_matrix<DBL, ublas::lower> T ( size, size );
+        ublas::triangular_matrix<DBL, ublas::lower> L ( size, size );
 
-  {
-    // use banded matrices matrix
-    typedef ublas::banded_matrix<DBL> MAT;
+        A = ublas::zero_matrix<DBL> ( size, size ) ;
+        A = triangular<ublas::lower>( ublas::zero_matrix<DBL> ( size, size ) );
+        A = triangular( ublas::zero_matrix<DBL> ( size, size ), ublas::lower() );
 
-    size_t bands = std::min<size_t>( size, 50 );
-    MAT A (size, size, bands, 0);
-    MAT T (size, size, bands, 0);
-    MAT L (size, size, bands, 0);
-    
-    A = ublas::zero_matrix<DBL> (size, size) ;
-    A = banded( ublas::zero_matrix<DBL> (size, size), bands, 0 );
+        fill_symm( T );
+        t1.restart();
+        A = triangular<ublas::lower>( ublas::prod( T, trans( T ) ) );
+        pr = t1.elapsed();
+        t1.restart();
+        size_t res = cholesky_decompose( A, L );
+        de = t1.elapsed();
 
-    fill_symm(T, bands);
-    t1.restart();
-    A = banded( ublas::prod(T, trans(T)), bands, 0 );
-    pr = t1.elapsed();
-    t1.restart();
-    size_t res = cholesky_decompose(A, L);
-    de = t1.elapsed();
+        std::cout << res << ": "
+                  << ublas::norm_inf( L-T )
+                  << " (deco: " << de << " sec)"
+                  << " (prod: " << pr << " sec)"
+                  << " " << size
+                  << std::endl;
+    }
 
-    std::cout << res << ": " 
-              << ublas::norm_inf(L-T) 
-              << " (deco: " << de << " sec)"
-              << " (prod: " << pr << " sec)"
-              << " " << size
-              << std::endl;
-  }
+    {
+        // use banded matrices matrix
+        typedef ublas::banded_matrix<DBL> MAT;
 
-  return EXIT_SUCCESS;
+        size_t bands = std::min<size_t>( size, 50 );
+        MAT A ( size, size, bands, 0 );
+        MAT T ( size, size, bands, 0 );
+        MAT L ( size, size, bands, 0 );
+
+        A = ublas::zero_matrix<DBL> ( size, size ) ;
+        A = banded( ublas::zero_matrix<DBL> ( size, size ), bands, 0 );
+
+        fill_symm( T, bands );
+        t1.restart();
+        A = banded( ublas::prod( T, trans( T ) ), bands, 0 );
+        pr = t1.elapsed();
+        t1.restart();
+        size_t res = cholesky_decompose( A, L );
+        de = t1.elapsed();
+
+        std::cout << res << ": "
+                  << ublas::norm_inf( L-T )
+                  << " (deco: " << de << " sec)"
+                  << " (prod: " << pr << " sec)"
+                  << " " << size
+                  << std::endl;
+    }
+
+    return EXIT_SUCCESS;
 }
 
 

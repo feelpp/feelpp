@@ -62,16 +62,16 @@ inline
 po::options_description
 makeOptions()
 {
-    po::options_description laplacianoptions("Laplacian options");
+    po::options_description laplacianoptions( "Laplacian options" );
     laplacianoptions.add_options()
-        ("hsize", po::value<double>()->default_value( 0.5 ), "mesh size")
-        ("shape", po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (hypercube, simplex, ellipsoid)")
-        ("nu", po::value<double>()->default_value( 1 ), "coef diffusion")
-        ("beta", po::value<double>()->default_value( 1 ), "coef reaction " )
-        ("gammabc", po::value<double>()->default_value( 80 ), "weak Dirichlet penalisation parameter " )
-        ("penal", Feel::po::value<double>()->default_value( 10 ), "jump penalisation parameter for dG")
-        ("weak", Feel::po::value<bool>()->default_value( true ), "use weak dirichlet conditions")
-        ;
+    ( "hsize", po::value<double>()->default_value( 0.5 ), "mesh size" )
+    ( "shape", po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (hypercube, simplex, ellipsoid)" )
+    ( "nu", po::value<double>()->default_value( 1 ), "coef diffusion" )
+    ( "beta", po::value<double>()->default_value( 1 ), "coef reaction " )
+    ( "gammabc", po::value<double>()->default_value( 80 ), "weak Dirichlet penalisation parameter " )
+    ( "penal", Feel::po::value<double>()->default_value( 10 ), "jump penalisation parameter for dG" )
+    ( "weak", Feel::po::value<bool>()->default_value( true ), "use weak dirichlet conditions" )
+    ;
     return laplacianoptions.add( Feel::feel_options() );
 }
 inline
@@ -83,11 +83,11 @@ makeAbout()
                      "0.2",
                      "nD(n=1,2,3) Laplacian on simplices or simplex products",
                      Feel::AboutData::License_GPL,
-                     "Copyright (c) 2008-2010 Université Joseph Fourier");
+                     "Copyright (c) 2008-2010 Université Joseph Fourier" );
 
-    about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
-    about.addAuthor("Benoit Perrimond", "developer", "Benoit.Perrimond@bvra.e.ujf-grenoble.fr", "");
-    about.addAuthor("Vincent Chabannes", "developer", "vincent.chabannes@gmail.com", "");
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    about.addAuthor( "Benoit Perrimond", "developer", "Benoit.Perrimond@bvra.e.ujf-grenoble.fr", "" );
+    about.addAuthor( "Vincent Chabannes", "developer", "vincent.chabannes@gmail.com", "" );
     return about;
 
 }
@@ -101,7 +101,7 @@ makeAbout()
 template<int Dim, int Order, int RDim = Dim, typename ContinuityType = Continuous, template<uint16_type,uint16_type,uint16_type> class Entity=Simplex>
 class Laplacian
     :
-    public ApplicationXML
+public ApplicationXML
 {
     typedef ApplicationXML super;
 public:
@@ -157,61 +157,74 @@ public:
     {
         if ( M_use_weak_dirichlet )
             Log() << "use weak Dirichlet BC\n";
+
         if ( exporter->doExport() )
             Log() << "export results to ensight format\n";
+
         Parameter h;
-        if (Dim == 1)           //=== 1D ===
-            if (Order < 5)
-                h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.01:0.09:0.1" );
+
+        if ( Dim == 1 )         //=== 1D ===
+            if ( Order < 5 )
+                h=Parameter( _name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.01:0.09:0.1" );
+
             else
-                h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.08:0.09:0.4" );
-        else if (Dim == 2)      //=== 2D ===
-            if (Order < 5)
-                h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.03:0.09:0.1" );
+                h=Parameter( _name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.08:0.09:0.4" );
+
+        else if ( Dim == 2 )    //=== 2D ===
+            if ( Order < 5 )
+                h=Parameter( _name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.03:0.09:0.1" );
+
             else
-                h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.06:0.09:0.1" );
+                h=Parameter( _name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.06:0.09:0.1" );
+
         else
+
             //=== 3D ===
-            switch( Order )
+            switch ( Order )
             {
             case 1:
-                h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.05:0.02:0.4" );
+                h=Parameter( _name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.05:0.02:0.4" );
                 break;
+
             case 2:
-                h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.2:0.02:0.8" );
+                h=Parameter( _name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.2:0.02:0.8" );
                 break;
+
             case 3:
-                h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.15:0.02:0.8" );
+                h=Parameter( _name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.15:0.02:0.8" );
                 break;
+
             case 4:
-                h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.1:0.02:0.4" );
+                h=Parameter( _name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.1:0.02:0.4" );
                 break;
+
             case 5:
-                h=Parameter(_name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.05:0.1:0.6" );
+                h=Parameter( _name="h",_type=CONT_ATTR,_cmdName="hsize",_values="0.05:0.1:0.6" );
                 break;
             }
+
         this->
-            addParameter( Parameter(_name="cont",_type=DISC_ATTR,_values=boost::lexical_cast<std::string>( ContinuityType::is_continuous ).c_str() ) )
-            .addParameter( Parameter(_name="dim",_type=DISC_ATTR,_values=boost::lexical_cast<std::string>( Dim  ).c_str()) )
-            .addParameter( Parameter(_name="order",_type=DISC_ATTR,_values=boost::lexical_cast<std::string>( Order  ).c_str() ) )
-            .addParameter( Parameter(_name="beta",_type=CONT_ATTR,_latex="\\beta",_values="0.01:1:10") )
-            .addParameter( Parameter(_name="nu",_type=CONT_ATTR,_latex="\\nu",_values="0.01:1:10") )
-            .addParameter( h );
+        addParameter( Parameter( _name="cont",_type=DISC_ATTR,_values=boost::lexical_cast<std::string>( ContinuityType::is_continuous ).c_str() ) )
+        .addParameter( Parameter( _name="dim",_type=DISC_ATTR,_values=boost::lexical_cast<std::string>( Dim  ).c_str() ) )
+        .addParameter( Parameter( _name="order",_type=DISC_ATTR,_values=boost::lexical_cast<std::string>( Order  ).c_str() ) )
+        .addParameter( Parameter( _name="beta",_type=CONT_ATTR,_latex="\\beta",_values="0.01:1:10" ) )
+        .addParameter( Parameter( _name="nu",_type=CONT_ATTR,_latex="\\nu",_values="0.01:1:10" ) )
+        .addParameter( h );
 
         std::vector<Parameter> depend;
         std::vector<std::string> funcs;
-        depend.push_back(h);
+        depend.push_back( h );
         std::ostringstream oss;
         oss << "h**" << boost::lexical_cast<std::string>( Order + 1  ) ;
-        funcs.push_back(oss.str());
-        oss.str("");
+        funcs.push_back( oss.str() );
+        oss.str( "" );
         std::vector<std::string> funcs2;
         oss << "h**" << boost::lexical_cast<std::string>( Order ) ;
-        funcs2.push_back(oss.str());
+        funcs2.push_back( oss.str() );
 
         this->
-            addOutput( Output(_name="norm_L2",_latex="\\left\\| . \\right\\|_{L^2}",_dependencies=depend,_funcs=funcs) )
-            .addOutput( Output(_name="norm_H1",_latex="\\left\\| . \\right\\|_{H^1}",_dependencies=depend,_funcs=funcs2) );
+        addOutput( Output( _name="norm_L2",_latex="\\left\\| . \\right\\|_{L^2}",_dependencies=depend,_funcs=funcs ) )
+        .addOutput( Output( _name="norm_H1",_latex="\\left\\| . \\right\\|_{H^1}",_dependencies=depend,_funcs=funcs2 ) );
 
     }
 
@@ -247,13 +260,13 @@ Laplacian<Dim, Order, RDim, ContinuityType, Entity>::run()
     boost::timer t1;
 
     this->addParameterValue( ContinuityType::is_continuous )
-        .addParameterValue( Dim )
-        .addParameterValue( Order )
-        .addParameterValue( this->vm()["beta"].template as<double>() )
-        .addParameterValue( this->vm()["nu"].template as<double>() )
-        .addParameterValue( this->vm()["hsize"].template as<double>() );
+    .addParameterValue( Dim )
+    .addParameterValue( Order )
+    .addParameterValue( this->vm()["beta"].template as<double>() )
+    .addParameterValue( this->vm()["nu"].template as<double>() )
+    .addParameterValue( this->vm()["hsize"].template as<double>() );
 
-    if (this->preProcessing() == RUN_EXIT) return;
+    if ( this->preProcessing() == RUN_EXIT ) return;
 
     using namespace Feel::vf;
 
@@ -261,15 +274,16 @@ Laplacian<Dim, Order, RDim, ContinuityType, Entity>::run()
      * First we create the mesh
      */
     mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
-                                        _desc=domain( _name=(boost::format( "%1%-%2%" ) % shape % Dim).str() ,
-                                                      _usenames=true,
-                                                      _convex=(entity_type::is_hypercube)?"Hypercube":"Simplex",
-                                                      _shape=shape,
-                                                      _dim=Dim,
-                                                      _xmin=-1.,_ymin=-1.,_zmin=-1.,
-                                                      _h=meshSize ),
+                                        _desc=domain( _name=( boost::format( "%1%-%2%" ) % shape % Dim ).str() ,
+                                                _usenames=true,
+                                                _convex=( entity_type::is_hypercube )?"Hypercube":"Simplex",
+                                                _shape=shape,
+                                                _dim=Dim,
+                                                _xmin=-1.,_ymin=-1.,_zmin=-1.,
+                                                _h=meshSize ),
                                         _update=MESH_CHECK| MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_RENUMBER );
-    Log() << "mesh created in " << t1.elapsed() << "s\n"; t1.restart();
+    Log() << "mesh created in " << t1.elapsed() << "s\n";
+    t1.restart();
 
     /*
      * The function space and some associate elements are then defined
@@ -278,13 +292,15 @@ Laplacian<Dim, Order, RDim, ContinuityType, Entity>::run()
     auto u = Xh->element();
     auto v = Xh->element();
     Log() << "[functionspace] Number of dof " << Xh->nLocalDof() << "\n";
-    Log() << "function space and elements created in " << t1.elapsed() << "s\n"; t1.restart();
+    Log() << "function space and elements created in " << t1.elapsed() << "s\n";
+    t1.restart();
 
     exact_space_ptrtype Eh = exact_space_type::New( mesh );
     exact_element_type fproj( Eh, "f" );
     exact_element_type gproj( Eh, "g" );
     Log() << "[functionspace] Number of dof " << Eh->nLocalDof() << "\n";
-    Log() << "function space and elements created in " << t1.elapsed() << "s\n"; t1.restart();
+    Log() << "function space and elements created in " << t1.elapsed() << "s\n";
+    t1.restart();
 
 
     value_type nu = this->vm()["nu"].template as<double>();
@@ -292,15 +308,15 @@ Laplacian<Dim, Order, RDim, ContinuityType, Entity>::run()
 
 
     value_type pi = M_PI;
-    auto g = sin(pi*Px())*cos(pi*Py())*cos(pi*Pz());
-    auto gradg = trans( +pi*cos(pi*Px())*cos(pi*Py())*cos(pi*Pz())*unitX()+
-                        -pi*sin(pi*Px())*sin(pi*Py())*cos(pi*Pz())*unitY()+
-                        -pi*sin(pi*Px())*cos(pi*Py())*sin(pi*Pz())*unitZ() );
-    auto f = (pi*pi*Dim*nu+beta)*g;
+    auto g = sin( pi*Px() )*cos( pi*Py() )*cos( pi*Pz() );
+    auto gradg = trans( +pi*cos( pi*Px() )*cos( pi*Py() )*cos( pi*Pz() )*unitX()+
+                        -pi*sin( pi*Px() )*sin( pi*Py() )*cos( pi*Pz() )*unitY()+
+                        -pi*sin( pi*Px() )*cos( pi*Py() )*sin( pi*Pz() )*unitZ() );
+    auto f = ( pi*pi*Dim*nu+beta )*g;
 
-    fproj = vf::project( Eh, elements(mesh), f );
-    gproj = vf::project( Eh, elements(mesh), g );
-    v = vf::project( Xh, elements(mesh), g );
+    fproj = vf::project( Eh, elements( mesh ), f );
+    gproj = vf::project( Eh, elements( mesh ), g );
+    v = vf::project( Xh, elements( mesh ), g );
 
     // Construction of the right hand side
 
@@ -308,56 +324,63 @@ Laplacian<Dim, Order, RDim, ContinuityType, Entity>::run()
 
 
     form1( _test=Xh, _vector=F, _init=true ) =
-        integrate( elements(mesh), f*id(v) )+
-        integrate( markedfaces( mesh, "Neumann" ), nu*gradg*vf::N()*id(v) );
+        integrate( elements( mesh ), f*id( v ) )+
+        integrate( markedfaces( mesh, "Neumann" ), nu*gradg*vf::N()*id( v ) );
+
     if ( M_use_weak_dirichlet || ( ContinuityType::is_continuous == false ) )
-        {
-            form1( Xh, F ) +=
-                integrate( markedfaces(mesh,"Dirichlet"),
-                           g*(-nu*grad(v)*N()+M_gammabc*id(v)/hFace() ) );
-        }
+    {
+        form1( Xh, F ) +=
+            integrate( markedfaces( mesh,"Dirichlet" ),
+                       g*( -nu*grad( v )*N()+M_gammabc*id( v )/hFace() ) );
+    }
 
     F->close();
-    Log() << "F assembled in " << t1.elapsed() << "s\n"; t1.restart();
+    Log() << "F assembled in " << t1.elapsed() << "s\n";
+    t1.restart();
 
     //Construction of the left hand side
 
     auto D = backend->newMatrix( Xh, Xh );
 
 
-    size_type pattern = (ContinuityType::is_continuous?Pattern::COUPLED:Pattern::COUPLED|Pattern::EXTENDED );
+    size_type pattern = ( ContinuityType::is_continuous?Pattern::COUPLED:Pattern::COUPLED|Pattern::EXTENDED );
     form2( _trial=Xh, _test=Xh, _matrix=D, _init=true, _pattern=pattern );
-    Log() << "D initialized in " << t1.elapsed() << "s\n";t1.restart();
+    Log() << "D initialized in " << t1.elapsed() << "s\n";
+    t1.restart();
 
     form2( Xh, Xh, D ) +=
-        integrate( elements(mesh),
-                   nu*(gradt(u)*trans(grad(v)))
-                   + beta*(idt(u)*id(v)) );
-    Log() << "D stiffness+mass assembled in " << t1.elapsed() << "s\n";t1.restart();
+        integrate( elements( mesh ),
+                   nu*( gradt( u )*trans( grad( v ) ) )
+                   + beta*( idt( u )*id( v ) ) );
+    Log() << "D stiffness+mass assembled in " << t1.elapsed() << "s\n";
+    t1.restart();
+
     if ( ContinuityType::is_continuous == false )
     {
         value_type penalisation = this->vm()["penal"].template as<value_type>();
-        form2( Xh, Xh, D ) +=integrate( internalfaces(mesh),
+        form2( Xh, Xh, D ) +=integrate( internalfaces( mesh ),
                                         // - {grad(u)} . [v]
-                                        -averaget(gradt(u))*jump(id(v))
+                                        -averaget( gradt( u ) )*jump( id( v ) )
                                         // - [u] . {grad(v)}
-                                        -average(grad(v))*jumpt(idt(u))
+                                        -average( grad( v ) )*jumpt( idt( u ) )
                                         // penal*[u] . [v]/h_face
-                                        + penalisation* (trans(jumpt(idt(u)))*jump(id(v)) )/hFace()
-            );
-        Log() << "D consistency and stabilization terms assembled in " << t1.elapsed() << "s\n";t1.restart();
+                                        + penalisation* ( trans( jumpt( idt( u ) ) )*jump( id( v ) ) )/hFace()
+                                      );
+        Log() << "D consistency and stabilization terms assembled in " << t1.elapsed() << "s\n";
+        t1.restart();
     }
 
     if ( M_use_weak_dirichlet || ( ContinuityType::is_continuous == false ) )
-        {
+    {
 
-            form2( Xh, Xh, D ) += integrate( markedfaces(mesh,mesh->markerName("Dirichlet")),
-                                             ( - nu*trans(id(v))*(gradt(u)*N())
-                                               - nu*trans(idt(u))*(grad(v)*N())
-                                               + M_gammabc*trans(idt(u))*id(v)/hFace()) );
-            Log() << "D weak bc assembled in " << t1.elapsed() << "s\n";t1.restart();
+        form2( Xh, Xh, D ) += integrate( markedfaces( mesh,mesh->markerName( "Dirichlet" ) ),
+                                         ( - nu*trans( id( v ) )*( gradt( u )*N() )
+                                           - nu*trans( idt( u ) )*( grad( v )*N() )
+                                           + M_gammabc*trans( idt( u ) )*id( v )/hFace() ) );
+        Log() << "D weak bc assembled in " << t1.elapsed() << "s\n";
+        t1.restart();
 
-        }
+    }
 
     D->close();
 
@@ -365,13 +388,13 @@ Laplacian<Dim, Order, RDim, ContinuityType, Entity>::run()
 
 
     if ( ( M_use_weak_dirichlet == false )  && ContinuityType::is_continuous )
-        {
-            t1.restart();
-            form2( Xh, Xh, D ) +=
-                on( markedfaces(mesh, "Dirichlet"), u, F, g );
+    {
+        t1.restart();
+        form2( Xh, Xh, D ) +=
+            on( markedfaces( mesh, "Dirichlet" ), u, F, g );
 
-            Log() << "Strong Dirichlet assembled in " << t1.elapsed() << "s on faces " << mesh->markerName("Dirichlet") << " \n";
-        }
+        Log() << "Strong Dirichlet assembled in " << t1.elapsed() << "s on faces " << mesh->markerName( "Dirichlet" ) << " \n";
+    }
 
     t1.restart();
 
@@ -380,8 +403,8 @@ Laplacian<Dim, Order, RDim, ContinuityType, Entity>::run()
     Log() << "solve in " << t1.elapsed() << "s\n";
     t1.restart();
 
-    double L2error2 =integrate( elements(mesh),
-                                (idv(u)-g)*(idv(u)-g)).evaluate()( 0, 0 );
+    double L2error2 =integrate( elements( mesh ),
+                                ( idv( u )-g )*( idv( u )-g ) ).evaluate()( 0, 0 );
     double L2error =   math::sqrt( L2error2 );
 
     Log() << "||error||_L2=" << L2error << "\n";
@@ -389,8 +412,8 @@ Laplacian<Dim, Order, RDim, ContinuityType, Entity>::run()
     t1.restart();
 
 
-    double semiH1error2 =integrate( elements(mesh),
-                                    (gradv(u)-gradg)*trans(gradv(u)-gradg) ).evaluate()( 0, 0 ) ;
+    double semiH1error2 =integrate( elements( mesh ),
+                                    ( gradv( u )-gradg )*trans( gradv( u )-gradg ) ).evaluate()( 0, 0 ) ;
 
     Log() << "semi H1 norm computed in " << t1.elapsed() << "s\n";
     t1.restart();
@@ -415,17 +438,17 @@ void
 Laplacian<Dim, Order, RDim, ContinuityType, Entity>::exportResults( element_type& U, element_type& v )
 {
     if ( exporter->doExport() )
-        {
-            Log() << "exportResults starts\n";
+    {
+        Log() << "exportResults starts\n";
 
-            exporter->step(0)->setMesh( U.functionSpace()->mesh() );
+        exporter->step( 0 )->setMesh( U.functionSpace()->mesh() );
 
-            exporter->step(0)->add( "pid",
-                           regionProcess( boost::shared_ptr<p0_space_type>( new p0_space_type( U.functionSpace()->mesh() ) ) ) );
-            exporter->step(0)->add( "u", U );
-            exporter->step(0)->add( "exact", v );
+        exporter->step( 0 )->add( "pid",
+                                  regionProcess( boost::shared_ptr<p0_space_type>( new p0_space_type( U.functionSpace()->mesh() ) ) ) );
+        exporter->step( 0 )->add( "u", U );
+        exporter->step( 0 )->add( "exact", v );
 
-            exporter->save();
-        }
+        exporter->save();
+    }
 } // Laplacian::export
 

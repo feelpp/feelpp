@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -51,12 +51,13 @@ unsigned int fact( unsigned int   n )
 {
     if ( n == 0 )
         return 1;
+
     return n*fact( n-1 );
 }
 template<typename T>
 T f( T const& t )
 {
-  return sin(t);
+    return sin( t );
 }
 template<Feel::uint16_type N, typename T>
 class TestJacobi
@@ -74,43 +75,48 @@ public:
 
         boost::timer __timer;
 
-        for(int n = 0; n < 10000; ++n )
+        for ( int n = 0; n < 10000; ++n )
         {
             Jacobi<N, T> p( 0.0, 0.0 );
-            value_type v = value_type( double(fact( N+0 ))/value_type( double(fact( N )*fact( 0 )) ) );
+            value_type v = value_type( double( fact( N+0 ) )/value_type( double( fact( N )*fact( 0 ) ) ) );
             BOOST_CHECK( Feel::math::abs( p( 1.0 ) - v ) < _M_factor_eps*Feel::type_traits<T>::epsilon() );
             //BOOST_CHECK( Feel::math::abs( Jacobi<N, T>( 1.0, 0.0, 1.0 ) -
             //( fact( n-0 )/( fact( n )*fact(0 ) ) ) ) < Feel::type_traits<T>::epsilon() );
 
             if ( N > 0 )
-                {
-                    // check derivation with derivation relation in KS book appendix A p 351
-                    Jacobi<N-1, T> dp( 1.0, 1.0 );
-                    value_type dp2 = 0.5 * ( 0.0 + 0.0 + value_type(N) + 1.0 ) * dp( 0.6 );
-                    BOOST_CHECK( Feel::math::abs( p.derivate( 0.6 ) - dp2 ) <  _M_factor_eps*Feel::type_traits<T>::epsilon() );
-                }
+            {
+                // check derivation with derivation relation in KS book appendix A p 351
+                Jacobi<N-1, T> dp( 1.0, 1.0 );
+                value_type dp2 = 0.5 * ( 0.0 + 0.0 + value_type( N ) + 1.0 ) * dp( 0.6 );
+                BOOST_CHECK( Feel::math::abs( p.derivate( 0.6 ) - dp2 ) <  _M_factor_eps*Feel::type_traits<T>::epsilon() );
+            }
+
             BOOST_CHECK( Feel::math::abs( Feel::details::integrate<N,T>( f<T> ) - 0.0 ) < _M_factor_eps*Feel::type_traits<T>::epsilon() );
 
         }
+
         std::cout << "meta::jacobi test done in " << __timer.elapsed()/1000 << "\n";
         __timer.restart();
-        for(int n = 0; n < 10000; ++n )
+
+        for ( int n = 0; n < 10000; ++n )
         {
             dyna::Jacobi<T> p( N, 0.0, 0.0 );
-            value_type v = value_type( double(fact( N+0 ))/value_type( double(fact( N )*fact( 0 )) ) );
+            value_type v = value_type( double( fact( N+0 ) )/value_type( double( fact( N )*fact( 0 ) ) ) );
             BOOST_CHECK( Feel::math::abs( p( 1.0 ) - v ) < _M_factor_eps*Feel::type_traits<T>::epsilon() );
             //BOOST_CHECK( Feel::math::abs( Jacobi<N, T>( 1.0, 0.0, 1.0 ) -
             //( fact( n-0 )/( fact( n )*fact(0 ) ) ) ) < Feel::type_traits<T>::epsilon() );
 
             if ( N > 0 )
-                {
-                    // check derivation with derivation relation in KS book appendix A p 351
-                    dyna::Jacobi<T> dp( uint16_type(N-1), 1.0, 1.0 );
-                    value_type dp2 = 0.5 * ( 0.0 + 0.0 + value_type(N) + 1.0 ) * dp( 0.6 );
-                    BOOST_CHECK( Feel::math::abs( p.derivate( 0.6 ) - dp2 ) <  _M_factor_eps*Feel::type_traits<T>::epsilon() );
-                }
+            {
+                // check derivation with derivation relation in KS book appendix A p 351
+                dyna::Jacobi<T> dp( uint16_type( N-1 ), 1.0, 1.0 );
+                value_type dp2 = 0.5 * ( 0.0 + 0.0 + value_type( N ) + 1.0 ) * dp( 0.6 );
+                BOOST_CHECK( Feel::math::abs( p.derivate( 0.6 ) - dp2 ) <  _M_factor_eps*Feel::type_traits<T>::epsilon() );
+            }
+
             BOOST_CHECK( Feel::math::abs( Feel::details::integrate<N,T>( f<T> ) - 0.0 ) < _M_factor_eps*Feel::type_traits<T>::epsilon() );
         }
+
         std::cout << "dyna::jacobi test done in " << __timer.elapsed()/1000 << "\n";
 
         {
@@ -121,29 +127,32 @@ public:
             ublas::matrix<T> P ( JacobiBatchEvaluation<N, T>( 0, 0, pts ) );
             BOOST_CHECK( P.size1() == N+1 );
             BOOST_CHECK( P.size2() == 2 );
-            value_type v = value_type( double(fact( N+0 ))/value_type( double(fact( N )*fact( 0 )) ) );
+            value_type v = value_type( double( fact( N+0 ) )/value_type( double( fact( N )*fact( 0 ) ) ) );
             BOOST_CHECK( Feel::math::abs( p( 1.0 ) - v ) < _M_factor_eps*Feel::type_traits<T>::epsilon() );
             BOOST_CHECK( Feel::math::abs( P( N, 0 ) - v ) < _M_factor_eps*Feel::type_traits<T>::epsilon() );
+
             if ( pts.size() > 0 )
                 BOOST_CHECK( Feel::math::abs( P( N, 1 ) - v ) < _M_factor_eps*Feel::type_traits<T>::epsilon() );
 
             if ( N > 0 )
+            {
+                // check derivation with derivation relation in KS book appendix A p 351
+                Jacobi<N-1, T> dp( 1.0, 1.0 );
+                value_type dp2 = 0.5 * ( 0.0 + 0.0 + value_type( N ) + 1.0 ) * dp( 0.6 );
+                BOOST_CHECK( Feel::math::abs( p.derivate( 0.6 ) - dp2 ) <  _M_factor_eps*Feel::type_traits<T>::epsilon() );
+                ublas::vector<T> pts( 2 );
+                pts[0] = 0.6;
+                pts[1] = 0.6;
+                ublas::matrix<T> dP ( JacobiBatchDerivation<N, T>( 0.0, 0.0, pts ) );
+
+                if ( Feel::math::abs( dP( N, 0 ) - dp2 ) > Feel::type_traits<T>::epsilon() )
                 {
-                    // check derivation with derivation relation in KS book appendix A p 351
-                    Jacobi<N-1, T> dp( 1.0, 1.0 );
-                    value_type dp2 = 0.5 * ( 0.0 + 0.0 + value_type(N) + 1.0 ) * dp( 0.6 );
-                    BOOST_CHECK( Feel::math::abs( p.derivate( 0.6 ) - dp2 ) <  _M_factor_eps*Feel::type_traits<T>::epsilon() );
-                    ublas::vector<T> pts( 2 );
-                    pts[0] = 0.6;
-                    pts[1] = 0.6;
-                    ublas::matrix<T> dP ( JacobiBatchDerivation<N, T>( 0.0, 0.0, pts ) );
-                    if ( Feel::math::abs( dP( N, 0 ) - dp2 ) > Feel::type_traits<T>::epsilon() )
-                        {
-                            std::cout << "dP( N, 0 ) = " <<  dP( N, 0 ) << "\n"
-                                      << "dp2 = " << dp2 << "\n";
-                        }
-                    BOOST_CHECK( Feel::math::abs( dP( N, 0 ) - dp2 ) < _M_factor_eps*Feel::type_traits<T>::epsilon() );
+                    std::cout << "dP( N, 0 ) = " <<  dP( N, 0 ) << "\n"
+                              << "dp2 = " << dp2 << "\n";
                 }
+
+                BOOST_CHECK( Feel::math::abs( dP( N, 0 ) - dp2 ) < _M_factor_eps*Feel::type_traits<T>::epsilon() );
+            }
         }
     }
 };
@@ -151,20 +160,20 @@ public:
 template<Feel::uint16_type N, typename T>
 class TestDubiner
 {
-  public:
+public:
     typedef T value_type;
     TestDubiner()
     {}
     void operator()() const
     {
-      using namespace Feel;
-      Dubiner<2,2,N,Normalized<true>,T> dubexp;
-      ublas::matrix<T,ublas::column_major> pts( 2,2  );
-      ublas::column( pts, 0 )  = ublas::scalar_vector<value_type>( pts.size2(), 1.0 );
-      ublas::column( pts, 1 )  = ublas::scalar_vector<value_type>( pts.size2(), 1.0 );
-      std::cout << "[batch] dubexp at pts =  " << dubexp.evaluate( pts ) << "\n";
-      std::cout << "[batch] dubexp derivation at pts =  " << dubexp.derivate( pts ) << "\n";
-      Dubiner<2,2,N> dub;
+        using namespace Feel;
+        Dubiner<2,2,N,Normalized<true>,T> dubexp;
+        ublas::matrix<T,ublas::column_major> pts( 2,2  );
+        ublas::column( pts, 0 )  = ublas::scalar_vector<value_type>( pts.size2(), 1.0 );
+        ublas::column( pts, 1 )  = ublas::scalar_vector<value_type>( pts.size2(), 1.0 );
+        std::cout << "[batch] dubexp at pts =  " << dubexp.evaluate( pts ) << "\n";
+        std::cout << "[batch] dubexp derivation at pts =  " << dubexp.derivate( pts ) << "\n";
+        Dubiner<2,2,N> dub;
     }
 };
 
@@ -185,52 +194,52 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_dubiner_double, T, test_types )
 }
 #if 0
 #if 1
-    //
-    // TestJacobi
-    //
-    TestJacobi<0, double> a;
-    TestJacobi<1, double> b;
-    TestJacobi<2, double> c;
-    TestJacobi<10, double> d;
-    //test->add( BOOST_TEST_CASE( ( TestJacobi<15, Feel::real96_type>(50.0) )  ) );
+//
+// TestJacobi
+//
+TestJacobi<0, double> a;
+TestJacobi<1, double> b;
+TestJacobi<2, double> c;
+TestJacobi<10, double> d;
+//test->add( BOOST_TEST_CASE( ( TestJacobi<15, Feel::real96_type>(50.0) )  ) );
 
 #if defined( FEELPP_HAS_QD_REAL)
-    unsigned int old_cw;
-    fpu_fix_start(&old_cw);
+unsigned int old_cw;
+fpu_fix_start( &old_cw );
 
-    TestJacobi<0, qd_real> a_qd;
-    TestJacobi<1, qd_real> b_qd;
-    TestJacobi<2, qd_real> c_qd;
-    test->add( BOOST_TEST_CASE( ( TestJacobi<4, qd_real>() )  ) );
-    test->add( BOOST_TEST_CASE( ( TestJacobi<10, qd_real>() )  ) );
-    //test->add( BOOST_TEST_CASE( ( TestJacobi<15, qd_real>() )  ) );
+TestJacobi<0, qd_real> a_qd;
+TestJacobi<1, qd_real> b_qd;
+TestJacobi<2, qd_real> c_qd;
+test->add( BOOST_TEST_CASE( ( TestJacobi<4, qd_real>() )  ) );
+test->add( BOOST_TEST_CASE( ( TestJacobi<10, qd_real>() )  ) );
+//test->add( BOOST_TEST_CASE( ( TestJacobi<15, qd_real>() )  ) );
 #endif /* FEELPP_HAS_QD_REAL */
 
-    //
-    // TestDubiner
-    //
-    BOOST_TEST_MESSAGE( "o- TestDubiner<0, double>()" );
+//
+// TestDubiner
+//
+BOOST_TEST_MESSAGE( "o- TestDubiner<0, double>()" );
 TestDubiner<0, double> d0;
-    BOOST_TEST_MESSAGE( "o- TestDubiner<1, double>()" );
-    TestDubiner<1, double> d1;
+BOOST_TEST_MESSAGE( "o- TestDubiner<1, double>()" );
+TestDubiner<1, double> d1;
 #else
-    //test->add( BOOST_TEST_CASE( ( TestJacobi<1, double>() )  ) );
-    //test->add( BOOST_TEST_CASE( ( TestJacobi<10, double>() )  ) );
+//test->add( BOOST_TEST_CASE( ( TestJacobi<1, double>() )  ) );
+//test->add( BOOST_TEST_CASE( ( TestJacobi<10, double>() )  ) );
 
 #if defined( FEELPP_HAS_QD_REAL)
-    unsigned int old_cw;
-    fpu_fix_start(&old_cw);
+unsigned int old_cw;
+fpu_fix_start( &old_cw );
 
-    test->add( BOOST_TEST_CASE( ( TestJacobi<0, qd_real>() )  ) );
-    //test->add( BOOST_TEST_CASE( ( TestJacobi<1, qd_real>() )  ) );
-    //test->add( BOOST_TEST_CASE( ( TestJacobi<2, qd_real>() )  ) );
-    //test->add( BOOST_TEST_CASE( ( TestJacobi<4, qd_real>() )  ) );
-    test->add( BOOST_TEST_CASE( ( TestJacobi<10, qd_real>() )  ) );
-    //test->add( BOOST_TEST_CASE( ( TestJacobi<15, qd_real>() )  ) );
+test->add( BOOST_TEST_CASE( ( TestJacobi<0, qd_real>() )  ) );
+//test->add( BOOST_TEST_CASE( ( TestJacobi<1, qd_real>() )  ) );
+//test->add( BOOST_TEST_CASE( ( TestJacobi<2, qd_real>() )  ) );
+//test->add( BOOST_TEST_CASE( ( TestJacobi<4, qd_real>() )  ) );
+test->add( BOOST_TEST_CASE( ( TestJacobi<10, qd_real>() )  ) );
+//test->add( BOOST_TEST_CASE( ( TestJacobi<15, qd_real>() )  ) );
 #endif /* FEELPP_HAS_QD_REAL */
 
 #endif
-    //    return test;
+//    return test;
 }
 #endif
 

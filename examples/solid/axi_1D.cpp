@@ -44,14 +44,14 @@ inline
 Feel::po::options_description
 makeOptions()
 {
-    Feel::po::options_description elaxioptions("Elaxi options");
+    Feel::po::options_description elaxioptions( "Elaxi options" );
     elaxioptions.add_options()
-        ("hsize", Feel::po::value<double>()->default_value( 0.25 ), "first h value to start convergence")
-        ("bctype", Feel::po::value<int>()->default_value( 1 ), "0 = strong Dirichlet, 1 = weak Dirichlet")
-        ("bccoeff", Feel::po::value<double>()->default_value( 1.0e+5 ), "coeff for weak Dirichlet conditions")
-        ("export", "export results(ensight, data file(1D)")
-        ("export-matlab", "export matrix and vectors in matlab" )
-        ;
+    ( "hsize", Feel::po::value<double>()->default_value( 0.25 ), "first h value to start convergence" )
+    ( "bctype", Feel::po::value<int>()->default_value( 1 ), "0 = strong Dirichlet, 1 = weak Dirichlet" )
+    ( "bccoeff", Feel::po::value<double>()->default_value( 1.0e+5 ), "coeff for weak Dirichlet conditions" )
+    ( "export", "export results(ensight, data file(1D)" )
+    ( "export-matlab", "export matrix and vectors in matlab" )
+    ;
     return elaxioptions.add( Feel::feel_options() ) ;
 }
 inline
@@ -63,11 +63,11 @@ makeAbout()
                            "0.1",
                            "Elasticity axisym  on simplices or simplex products",
                            Feel::AboutData::License_GPL,
-                           "Copyright (c) 2007 University Joseph Fourier Grenoble 1");
+                           "Copyright (c) 2007 University Joseph Fourier Grenoble 1" );
 
-    about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
-    about.addAuthor("Vuk Milisic", "developer", "vuk.milisic@imag.fr", "");
-   return about;
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    about.addAuthor( "Vuk Milisic", "developer", "vuk.milisic@imag.fr", "" );
+    return about;
 
 }
 
@@ -90,7 +90,7 @@ template<int Order,
          template<uint16_type,uint16_type,uint16_type> class Entity = Simplex>
 class Elaxi
     :
-        public Application
+public Application
 {
     typedef Application super;
 public:
@@ -132,7 +132,7 @@ public:
     Elaxi( int argc, char** argv, AboutData const& ad, po::options_description const& od )
         :
         super( argc, argv, ad, od ),
-        M_backend( backend_type::build( this->vm() )),
+        M_backend( backend_type::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         bcCoeff( this->vm()["bccoeff"].template as<double>() ),
         exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) ),
@@ -141,7 +141,7 @@ public:
     {
         Log() << "[Elaxi] hsize = " << meshSize << "\n";
         Log() << "[Elaxi] bccoeff = " << bcCoeff << "\n";
-        Log() << "[Elaxi] export = " << this->vm().count("export") << "\n";
+        Log() << "[Elaxi] export = " << this->vm().count( "export" ) << "\n";
 
     }
 
@@ -176,10 +176,10 @@ void
 Elaxi<Order, Entity>::run()
 {
     if ( this->vm().count( "help" ) )
-        {
-            std::cout << this->optionsDescription() << "\n";
-            return;
-        }
+    {
+        std::cout << this->optionsDescription() << "\n";
+        return;
+    }
 
     //    int maxIter = 10.0/meshSize;
     using namespace Feel::vf;
@@ -189,7 +189,7 @@ Elaxi<Order, Entity>::run()
                             % entity_type::name()
                             % Order
                             % this->vm()["hsize"].template as<double>()
-                            );
+                          );
     /*
      * logs will be in <feel repo>/<app name>/<entity>/P<p>/h_<h>
      */
@@ -200,10 +200,10 @@ Elaxi<Order, Entity>::run()
      */
     mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
                                         _desc=domain( _name="axi_1D",
-                                                      _shape="hypercube",
-                                                      _usenames=true,
-                                                      _ymin=1, _ymax=2,
-                                                      _h=meshSize ),
+                                                _shape="hypercube",
+                                                _usenames=true,
+                                                _ymin=1, _ymax=2,
+                                                _h=meshSize ),
                                         _update=MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK,
                                         _partitions=this->comm().size()  );
 
@@ -222,7 +222,7 @@ Elaxi<Order, Entity>::run()
     element_type V( Xh, "v" );
     element_type Phi( Xh, "Phi" );
     Uk.zero();
-    element_type poids(Xh, "p");
+    element_type poids( Xh, "p" );
 
     element_0_type u0 = U.template element<0>();
     element_0_type v0 = V.template element<0>();
@@ -233,7 +233,7 @@ Elaxi<Order, Entity>::run()
     element_1_type phi1 = Phi.template element<1>();
 
 
-    phi0=vf::project(Xh->template functionSpace<0>(),elements(mesh), Py());
+    phi0=vf::project( Xh->template functionSpace<0>(),elements( mesh ), Py() );
     phi1.zero();
 
 
@@ -250,8 +250,8 @@ Elaxi<Order, Entity>::run()
     const double tol = 1e-5;
     const double E = 21*1e5;
     const double sigma = 0.28;
-    const double mu = E/(2*(1+sigma));
-    const double lambda = E*sigma/((1+sigma)*(1-2*sigma));
+    const double mu = E/( 2*( 1+sigma ) );
+    const double lambda = E*sigma/( ( 1+sigma )*( 1-2*sigma ) );
     const double density = 50;
     //    const double gravity = -density*9.81;
     const double gravity = -1.0;
@@ -286,7 +286,8 @@ Elaxi<Order, Entity>::run()
     std::cout << "====================Newton========================\n---->Start\n";
     Log() << "====================Newton========================\n---->Start\n";
 
-    while ((error>tol) && (counter_it_newt <max_it_newt)){
+    while ( ( error>tol ) && ( counter_it_newt <max_it_newt ) )
+    {
 
         std::cout << "iteration #" << counter_it_newt << "\n";
         std::cout << "error=     " << error << "\n";
@@ -302,14 +303,14 @@ Elaxi<Order, Entity>::run()
         timers["assembly"].first.restart();
 
         form2( _test=Xh, _trial=Xh, _matrix=D ) =
-            integrate( elements(mesh), 2.0*(
+            integrate( elements( mesh ), 2.0*(
                            //idt(u1)*id(v1)/Py()
-                           idt(u0)*id(v0)/Py()
-                           +dyt(u0)*dy(v0)*Py()
-                           +dxt(u0)*dx(v0)*Py()
-                           +dyt(u1)*dy(v1)*Py()
-                           +dxt(u1)*dx(v1)*Py()
-                           ));
+                           idt( u0 )*id( v0 )/Py()
+                           +dyt( u0 )*dy( v0 )*Py()
+                           +dxt( u0 )*dx( v0 )*Py()
+                           +dyt( u1 )*dy( v1 )*Py()
+                           +dxt( u1 )*dx( v1 )*Py()
+                       ) );
 
 
         Log() << "[elaxi] matrix local assembly done\n";
@@ -322,7 +323,7 @@ Elaxi<Order, Entity>::run()
          *  (depending on the newton iterations)
          */
         //(*rhs)=(*vec_gravity);
-        (*rhs).zero();
+        ( *rhs ).zero();
 #if 1
         std::cout << "phi0"<< phi0.l2Norm()<<"\n";
         //      phi0.print();
@@ -331,15 +332,15 @@ Elaxi<Order, Entity>::run()
 #endif
 
         form1( _test=Xh, _vector=newt_nl_source_term ) =
-            integrate( elements(mesh), 2.0*(
+            integrate( elements( mesh ), 2.0*(
                            //idv(phi1)*id(v1)/Py()
-                           dyv(phi1)*dy(v1)*val(Py())
-                           ));
+                           dyv( phi1 )*dy( v1 )*val( Py() )
+                       ) );
 
 #if 0
         newt_nl_source_term->print();
 #endif
-        rhs->add(-1.0,newt_nl_source_term);
+        rhs->add( -1.0,newt_nl_source_term );
         rhs->close();
 
         std::cout << "rhs->l2Norm= " << rhs->l2Norm() << "\n";
@@ -347,8 +348,8 @@ Elaxi<Order, Entity>::run()
         std::cout << "----> Block marked dofs\n";
 
         form2( _test=Xh, _trial=Xh, _matrix=D ) +=
-            on( _range=boundaryfaces(mesh), _element=u0, _rhs=rhs, _expr=constant(0.))+
-            on( _range=boundaryfaces(mesh), _element=u1, _rhs=rhs, _expr=constant(0.));
+            on( _range=boundaryfaces( mesh ), _element=u0, _rhs=rhs, _expr=constant( 0. ) )+
+            on( _range=boundaryfaces( mesh ), _element=u1, _rhs=rhs, _expr=constant( 0. ) );
 
         std::cout << "rhs->l2Norm= " << rhs->l2Norm() << "\n";
 
@@ -390,9 +391,9 @@ Elaxi<Order, Entity>::exportResults( double time, element_type& U )
     timers["export"].first.restart();
 
 
-    exporter->step(time)->setMesh( U.functionSpace()->mesh() );
-    exporter->step(time)->add( "u0", U.template element<0>());
-    exporter->step(time)->add( "u1", U.template element<1>());
+    exporter->step( time )->setMesh( U.functionSpace()->mesh() );
+    exporter->step( time )->add( "u0", U.template element<0>() );
+    exporter->step( time )->add( "u1", U.template element<1>() );
     exporter->save();
 
     timers["export"].second = timers["export"].first.elapsed();
@@ -416,7 +417,7 @@ main( int argc, char** argv )
     typedef Feel::Elaxi<nOrder, Simplex> elaxi_type;
 
     /* assertions handling */
-    Feel::Assert::setLog( "elaxi.assert");
+    Feel::Assert::setLog( "elaxi.assert" );
 
     /* define and run application */
     elaxi_type elaxi( argc, argv, makeAbout(), makeOptions() );

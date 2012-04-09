@@ -85,11 +85,11 @@ public:
 
         typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
         mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
-                                            _desc=domain( _name=(boost::format( "%1%-%2%" ) % "hypercube" % Dim).str() ,
-                                                          _usenames=true,
-                                                          _shape="hypercube",
-                                                          _dim=Dim,
-                                                          _h=0.2 ) );
+                                            _desc=domain( _name=( boost::format( "%1%-%2%" ) % "hypercube" % Dim ).str() ,
+                                                    _usenames=true,
+                                                    _shape="hypercube",
+                                                    _dim=Dim,
+                                                    _h=0.2 ) );
 
         boost::shared_ptr<scalar_space_type> Xh( new scalar_space_type( mesh ) );
         auto u = Xh->element( "u" );
@@ -102,15 +102,17 @@ public:
 
 #if USE_BOOST_TEST
         BOOST_CHECK( Dim*u.nDof() == U.nDof() );
+
         for ( int i = 0; i < Dim; ++i )
-            {
-                BOOST_CHECK( U.comp((ComponentType)i).is_scalar );
-                U.comp((ComponentType)i) = ublas::scalar_vector<T>( U.comp((ComponentType)i).nDof(), i+1 );
-                BOOST_CHECK( u.nDof() == U.comp((ComponentType)i).nDof() );
-                BOOST_CHECK( u.size() == U.comp((ComponentType)i).size() );
-                u = U.comp((ComponentType)i);
-                BOOST_CHECK_SMALL( ublas::norm_inf( u.vec() - ublas::scalar_vector<T>( u.size(), i+1 ) ), eps );
-            }
+        {
+            BOOST_CHECK( U.comp( ( ComponentType )i ).is_scalar );
+            U.comp( ( ComponentType )i ) = ublas::scalar_vector<T>( U.comp( ( ComponentType )i ).nDof(), i+1 );
+            BOOST_CHECK( u.nDof() == U.comp( ( ComponentType )i ).nDof() );
+            BOOST_CHECK( u.size() == U.comp( ( ComponentType )i ).size() );
+            u = U.comp( ( ComponentType )i );
+            BOOST_CHECK_SMALL( ublas::norm_inf( u.vec() - ublas::scalar_vector<T>( u.size(), i+1 ) ), eps );
+        }
+
 #endif
 
     }
@@ -122,8 +124,8 @@ class TestSpace2
 public:
     typedef Mesh<Simplex<Dim, 1> > mesh_type;
     typedef fusion::vector<Lagrange<2, Vectorial>,
-                           Lagrange<1, Scalar>,
-                           Lagrange<1, Scalar> > basis_type;
+            Lagrange<1, Scalar>,
+            Lagrange<1, Scalar> > basis_type;
     typedef FunctionSpace<mesh_type, basis_type, T> space_type;
 
     TestSpace2()
@@ -135,11 +137,11 @@ public:
 
         typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
         mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
-                                            _desc=domain( _name=(boost::format( "%1%-%2%" ) % "hypercube" % Dim).str() ,
-                                                          _usenames=true,
-                                                          _shape="hypercube",
-                                                          _dim=Dim,
-                                                          _h=0.2 ) );
+                                            _desc=domain( _name=( boost::format( "%1%-%2%" ) % "hypercube" % Dim ).str() ,
+                                                    _usenames=true,
+                                                    _shape="hypercube",
+                                                    _dim=Dim,
+                                                    _h=0.2 ) );
 
 
         boost::shared_ptr<space_type> Xh( space_type::New( mesh ) );
@@ -150,8 +152,8 @@ public:
 #endif
 
         BOOST_CHECK( Xh->nDof() == ( Xh->template functionSpace<0>()->nDof() +
-                                      Xh->template functionSpace<1>()->nDof() +
-                                      Xh->template functionSpace<2>()->nDof() ) );
+                                     Xh->template functionSpace<1>()->nDof() +
+                                     Xh->template functionSpace<2>()->nDof() ) );
 
 
         BOOST_CHECK( Xh->template functionSpace<1>()->nDof() == Xh->template functionSpace<2>()->nDof() );
@@ -190,44 +192,46 @@ public:
                      U.template element<0>().size() == U.template functionSpace<0>()->nDof() );
         BOOST_CHECK( U.template element<1>().start() == U.template functionSpace<0>()->nDof() &&
                      U.template element<1>().size() == U.template functionSpace<1>()->nDof() );
-        BOOST_CHECK( U.template element<2>().start() == (U.template functionSpace<0>()->nDof() + U.template functionSpace<1>()->nDof()) &&
+        BOOST_CHECK( U.template element<2>().start() == ( U.template functionSpace<0>()->nDof() + U.template functionSpace<1>()->nDof() ) &&
                      U.template element<2>().size() == U.template functionSpace<2>()->nDof() );
 #else
         FEELPP_ASSERT( U.template element<0>().start() == 0 &&
-                     U.template element<0>().size() == U.template functionSpace<0>()->nDof() )
-            ( U.template element<0>().start() )
-            ( U.template element<0>().size() )
-            ( U.template functionSpace<0>()->nDof() ).warn( "invalid size" );
+                       U.template element<0>().size() == U.template functionSpace<0>()->nDof() )
+        ( U.template element<0>().start() )
+        ( U.template element<0>().size() )
+        ( U.template functionSpace<0>()->nDof() ).warn( "invalid size" );
         FEELPP_ASSERT( U.template element<1>().start() == U.template functionSpace<0>()->nDof() &&
-                     U.template element<1>().size() == U.template functionSpace<1>()->nDof() )
-            ( U.template element<1>().start() )
-            ( U.template functionSpace<0>()->nDof() )
-            ( U.template element<1>().size() )
-            ( U.template functionSpace<1>()->nDof() ).warn( "invalid size 2");
-        FEELPP_ASSERT( U.template element<2>().start() == (U.template functionSpace<0>()->nDof() + U.template functionSpace<1>()->nDof()) &&
-                     U.template element<2>().size() == U.template functionSpace<2>()->nDof() )
-            ( U.template element<2>().start() )
-            ( U.template functionSpace<0>()->nDof() + U.template functionSpace<1>()->nDof() )
-            ( U.template element<2>().size() )
-            ( U.template functionSpace<2>()->nDof()  ).warn( "invalid size 3" );
+                       U.template element<1>().size() == U.template functionSpace<1>()->nDof() )
+        ( U.template element<1>().start() )
+        ( U.template functionSpace<0>()->nDof() )
+        ( U.template element<1>().size() )
+        ( U.template functionSpace<1>()->nDof() ).warn( "invalid size 2" );
+        FEELPP_ASSERT( U.template element<2>().start() == ( U.template functionSpace<0>()->nDof() + U.template functionSpace<1>()->nDof() ) &&
+                       U.template element<2>().size() == U.template functionSpace<2>()->nDof() )
+        ( U.template element<2>().start() )
+        ( U.template functionSpace<0>()->nDof() + U.template functionSpace<1>()->nDof() )
+        ( U.template element<2>().size() )
+        ( U.template functionSpace<2>()->nDof()  ).warn( "invalid size 3" );
 
 #endif
 
 #if 0
+
         if ( Dim == 2 )
-            {
-                auto ux = U.template element<0>().comp(X);
-                auto uy = U.template element<0>().comp(Y);
-                ux = ublas::scalar_vector<double>( ux.size(), -1 );
-                //std::cout << "ux=" << ux << "\n";
-                uy = ublas::scalar_vector<double>( uy.size(), -2 );
-                //std::cout << "uy=" << uy << "\n";
-                U.template element<1>() = ublas::scalar_vector<double>( U.template element<1>().size(), -3 );
-                //std::cout << "U<1>=" << U.template element<1>() << "\n";
-                U.template element<2>() = ublas::scalar_vector<double>( U.template element<2>().size(), -4 );
-                //std::cout << "U<2>=" << U.template element<2>() << "\n";
-                //std::cout << "U=" << U << "\n";
-            }
+        {
+            auto ux = U.template element<0>().comp( X );
+            auto uy = U.template element<0>().comp( Y );
+            ux = ublas::scalar_vector<double>( ux.size(), -1 );
+            //std::cout << "ux=" << ux << "\n";
+            uy = ublas::scalar_vector<double>( uy.size(), -2 );
+            //std::cout << "uy=" << uy << "\n";
+            U.template element<1>() = ublas::scalar_vector<double>( U.template element<1>().size(), -3 );
+            //std::cout << "U<1>=" << U.template element<1>() << "\n";
+            U.template element<2>() = ublas::scalar_vector<double>( U.template element<2>().size(), -4 );
+            //std::cout << "U<2>=" << U.template element<2>() << "\n";
+            //std::cout << "U=" << U << "\n";
+        }
+
 #endif
 
     }
@@ -250,11 +254,11 @@ public:
 
         typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
         mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
-                                            _desc=domain( _name=(boost::format( "%1%-%2%" ) % "hypercube" % Dim).str() ,
-                                                          _usenames=true,
-                                                          _shape="hypercube",
-                                                          _dim=Dim,
-                                                          _h=0.2 ) );
+                                            _desc=domain( _name=( boost::format( "%1%-%2%" ) % "hypercube" % Dim ).str() ,
+                                                    _usenames=true,
+                                                    _shape="hypercube",
+                                                    _dim=Dim,
+                                                    _h=0.2 ) );
 
 
 
@@ -267,8 +271,10 @@ public:
 #endif
         BOOST_CHECK( Xh->is_scalar == false );
         BOOST_CHECK( Xh->is_vectorial == true );
+
         if ( Dim == 2 )
             BOOST_CHECK_EQUAL( Xh->nDof(), mesh->numEdges() );
+
         if ( Dim == 3 )
             BOOST_CHECK_EQUAL( Xh->nDof(), mesh->numFaces() );
 
@@ -283,7 +289,7 @@ class TestBASpace
 public:
     TestBASpace()
     {
-      // std::cout << "Testing " << Dim << " D Boundary adapted construction of order " << N << "\n";
+        // std::cout << "Testing " << Dim << " D Boundary adapted construction of order " << N << "\n";
     }
 
     void operator()() const
@@ -298,25 +304,25 @@ public:
         BOOST_STATIC_ASSERT( scalar_space_type::N_COMPONENTS == 1 );
 
         //std::cout << "antes vectorial\n";
-	//        typedef FunctionSpace<mesh_type, fusion::vector<detail::BoundaryAdaptedPolynomialSet<Dim, N, Vectorial, T> >, T> vectorial_space_type;
-	//	BOOST_STATIC_ASSERT( vectorial_space_type::nDim == Dim );
-	//        BOOST_STATIC_ASSERT( vectorial_space_type::N_COMPONENTS == Dim );
+        //        typedef FunctionSpace<mesh_type, fusion::vector<detail::BoundaryAdaptedPolynomialSet<Dim, N, Vectorial, T> >, T> vectorial_space_type;
+        //	BOOST_STATIC_ASSERT( vectorial_space_type::nDim == Dim );
+        //        BOOST_STATIC_ASSERT( vectorial_space_type::N_COMPONENTS == Dim );
 
         typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
         std::string fname;
 #if 1
-        std::cout << std::setfill('=') << std::setw(81) << "\n";
-        std::cout << std::setfill(' ') << "Testing " << Dim << " D Boundary adapted construction of order " << N << "\n";
+        std::cout << std::setfill( '=' ) << std::setw( 81 ) << "\n";
+        std::cout << std::setfill( ' ' ) << "Testing " << Dim << " D Boundary adapted construction of order " << N << "\n";
 #endif
         std::cout << " Generate Meshes !\n";
 
         mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
-                                            _desc=domain( _name=(boost::format( "%1%-%2%" ) % "hypercube" % Dim).str() ,
-                                                          _usenames=true,
-                                                          _shape="hypercube",
-                                                          _dim=Dim,
-                                                          _h=0.2 ) );
+                                            _desc=domain( _name=( boost::format( "%1%-%2%" ) % "hypercube" % Dim ).str() ,
+                                                    _usenames=true,
+                                                    _shape="hypercube",
+                                                    _dim=Dim,
+                                                    _h=0.2 ) );
 
 
         std::cout << "Construct Space ...\n";
@@ -336,13 +342,55 @@ BOOST_AUTO_TEST_SUITE( space )
 Feel::Environment env( boost::unit_test::framework::master_test_suite().argc,
                        boost::unit_test::framework::master_test_suite().argv );
 
-BOOST_AUTO_TEST_CASE( test_space1_11 ) { BOOST_TEST_MESSAGE( "test_space1_11" );   Feel::TestSpace1<1, 1, double> t;t(); BOOST_TEST_MESSAGE( "test_space1_11 done" );}
-BOOST_AUTO_TEST_CASE( test_space1_12 ) { BOOST_TEST_MESSAGE( "test_space1_12" );   Feel::TestSpace1<1, 2, double> t;t(); BOOST_TEST_MESSAGE( "test_space1_12 done" );}
-BOOST_AUTO_TEST_CASE( test_space1_21 ) { BOOST_TEST_MESSAGE( "test_space1_21" );   Feel::TestSpace1<2, 1, double> t;t(); BOOST_TEST_MESSAGE( "test_space1_21 done" );}
-BOOST_AUTO_TEST_CASE( test_space1_22 ) { BOOST_TEST_MESSAGE( "test_space1_22" );   Feel::TestSpace1<2, 2, double> t;t(); BOOST_TEST_MESSAGE( "test_space1_22 done" );}
-BOOST_AUTO_TEST_CASE( test_space1_32 ) { BOOST_TEST_MESSAGE( "test_space1_32" );   Feel::TestSpace1<3, 2, double> t;t(); BOOST_TEST_MESSAGE( "test_space1_32 done" );}
-BOOST_AUTO_TEST_CASE( test_space2_2 ) { BOOST_TEST_MESSAGE( "test_space2_2" );   Feel::TestSpace2<2, double> t;t(); BOOST_TEST_MESSAGE( "test_space2_2 done" );}
-BOOST_AUTO_TEST_CASE( test_space2_3 ) { BOOST_TEST_MESSAGE( "test_space2_3" );   Feel::TestSpace2<3, double> t;t(); BOOST_TEST_MESSAGE( "test_space2_3 done" );}
+BOOST_AUTO_TEST_CASE( test_space1_11 )
+{
+    BOOST_TEST_MESSAGE( "test_space1_11" );
+    Feel::TestSpace1<1, 1, double> t;
+    t();
+    BOOST_TEST_MESSAGE( "test_space1_11 done" );
+}
+BOOST_AUTO_TEST_CASE( test_space1_12 )
+{
+    BOOST_TEST_MESSAGE( "test_space1_12" );
+    Feel::TestSpace1<1, 2, double> t;
+    t();
+    BOOST_TEST_MESSAGE( "test_space1_12 done" );
+}
+BOOST_AUTO_TEST_CASE( test_space1_21 )
+{
+    BOOST_TEST_MESSAGE( "test_space1_21" );
+    Feel::TestSpace1<2, 1, double> t;
+    t();
+    BOOST_TEST_MESSAGE( "test_space1_21 done" );
+}
+BOOST_AUTO_TEST_CASE( test_space1_22 )
+{
+    BOOST_TEST_MESSAGE( "test_space1_22" );
+    Feel::TestSpace1<2, 2, double> t;
+    t();
+    BOOST_TEST_MESSAGE( "test_space1_22 done" );
+}
+BOOST_AUTO_TEST_CASE( test_space1_32 )
+{
+    BOOST_TEST_MESSAGE( "test_space1_32" );
+    Feel::TestSpace1<3, 2, double> t;
+    t();
+    BOOST_TEST_MESSAGE( "test_space1_32 done" );
+}
+BOOST_AUTO_TEST_CASE( test_space2_2 )
+{
+    BOOST_TEST_MESSAGE( "test_space2_2" );
+    Feel::TestSpace2<2, double> t;
+    t();
+    BOOST_TEST_MESSAGE( "test_space2_2 done" );
+}
+BOOST_AUTO_TEST_CASE( test_space2_3 )
+{
+    BOOST_TEST_MESSAGE( "test_space2_3" );
+    Feel::TestSpace2<3, double> t;
+    t();
+    BOOST_TEST_MESSAGE( "test_space2_3 done" );
+}
 
 //BOOST_AUTO_TEST_CASE( test_space_rt_1 ) { BOOST_TEST_MESSAGE( "test_space_rt_1" );   Feel::TestSpaceRT<2> t;t(); BOOST_TEST_MESSAGE( "test_space_rt_1 done" );}
 //BOOST_AUTO_TEST_CASE( test_space_rt_2 ) { BOOST_TEST_MESSAGE( "test_space_rt_2" );   Feel::TestSpaceRT<3> t;t(); BOOST_TEST_MESSAGE( "test_space_rt_2 done" );}
@@ -353,7 +401,7 @@ int BOOST_TEST_CALL_DECL
 main( int argc, char* argv[] )
 {
     Feel::Environment env( argc, argv );
-    Feel::Assert::setLog( "test_space.assert");
+    Feel::Assert::setLog( "test_space.assert" );
     int ret = ::boost::unit_test::unit_test_main( &init_unit_test, argc, argv );
 
     return ret;
@@ -361,19 +409,25 @@ main( int argc, char* argv[] )
 #endif
 
 #else
-int main( int argc, char** argv)
+int main( int argc, char** argv )
 {
     Feel::Environment env( argc, argv );
 
-    Feel::Assert::setLog( "test_space.assert");
+    Feel::Assert::setLog( "test_space.assert" );
 #if 0
-    Feel::TestSpace1<1, 2, double> t11;t11();
-    Feel::TestSpace1<2, 2, double> t12;t12();
-    Feel::TestSpace1<3, 2, double> t13;t13();
-    Feel::TestSpace2<2, double> t21;t21();
-    Feel::TestSpace2<3, double> t22;t22();
+    Feel::TestSpace1<1, 2, double> t11;
+    t11();
+    Feel::TestSpace1<2, 2, double> t12;
+    t12();
+    Feel::TestSpace1<3, 2, double> t13;
+    t13();
+    Feel::TestSpace2<2, double> t21;
+    t21();
+    Feel::TestSpace2<3, double> t22;
+    t22();
 #endif
-    Feel::TestSpaceRT<3> trt;trt();
+    Feel::TestSpaceRT<3> trt;
+    trt();
 
 }
 #endif

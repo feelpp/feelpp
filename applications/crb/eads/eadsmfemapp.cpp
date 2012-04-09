@@ -33,67 +33,69 @@
 
 namespace Feel
 {
-    void
-    EadsMFemApp::init()
+void
+EadsMFemApp::init()
+{
+    if ( this->vm().count( "help" ) )
     {
-        if ( this->vm().count( "help" ) )
-            {
-                std::cout << this->optionsDescription() << "\n";
-                return;
-            }
+        std::cout << this->optionsDescription() << "\n";
+        return;
+    }
 
-        if ( this->vm()["steady"].as<bool>() )
-            {
-                std::cout << "[EadsMFemApp::init] steady case" << std::endl;
-                this->changeRepository( boost::format( "%1%/P%2%P%3%P%4%/D_%5%/e_%6%/h_%7%/stab_%8%/steady" )
-                                        % this->about().appName()
-                                        % this->vm()["order-u"].as<int>() % this->vm()["order-p"].as<int>() % this->vm()["order-temp"].as<int>()
-                                        % this->vm()["fluid.flow-rate"].as<double>()
-                                        % this->vm()["air.e"].as<double>()
-                                        % this->vm()["hsize"].as<double>()
-                                        % this->vm()["stab"].as<bool>()
-                                        );
-            }
-        else
-            {
-                std::cout << "[EadsMFemApp::init] unsteady case" << std::endl;
-                this->changeRepository( boost::format( "%1%/P%2%P%3%P%4%/D_%5%/h_%6%/stab_%7%/to_%8%_dt_%9%" )
-                                        % this->about().appName()
-                                        % this->vm()["order-u"].as<int>() % this->vm()["order-p"].as<int>()  % this->vm()["order-temp"].as<int>()
-                                        % this->vm()["fluid.flow-rate"].as<double>()
-                                        % this->vm()["hsize"].as<double>()
-                                        % this->vm()["stab"].as<bool>()
-                                        % this->vm()["bdf.order"].as<int>()
-                                        % this->vm()["bdf.time-step"].as<double>()
-                                        );
-            }
-        std::cout << "[EadsMFemApp::init] changing repository done" << std::endl;
-        std::cout << "[EadsMFemApp::init] building model" << std::endl;
-        opus = OpusModelFactory::New( this->vm() );
-        std::cout << "[EadsMFemApp] building model done\n";
-    }
-    void
-    EadsMFemApp::run()
+    if ( this->vm()["steady"].as<bool>() )
     {
-        std::cout << "[EadsMFemApp::run] running model\n";
-        std::vector<double> X(7),Y(2);
-        X[0]=this->vm()["ic1.k"].as<double>(); // kic
-        X[1]=this->vm()["fluid.flow-rate"].as<double>(); // fluid flow rate
-        X[2]=this->vm()["ic1.Q"].as<double>(); // Q
-        X[3]=100;
-        X[4]=this->vm()["air.e"].as<double>(); // ea
-        X[5]=this->vm()["hsize"].as<double>(); // h
-        X[6]=this->vm()["order-temp"].as<int>(); // polynomial order
-        opus->run( X.data(), X.size(), Y.data(), Y.size() );
-        //M_opus->run();
-        std::cout << "[EadsMFemApp::run] running model done\n";
+        std::cout << "[EadsMFemApp::init] steady case" << std::endl;
+        this->changeRepository( boost::format( "%1%/P%2%P%3%P%4%/D_%5%/e_%6%/h_%7%/stab_%8%/steady" )
+                                % this->about().appName()
+                                % this->vm()["order-u"].as<int>() % this->vm()["order-p"].as<int>() % this->vm()["order-temp"].as<int>()
+                                % this->vm()["fluid.flow-rate"].as<double>()
+                                % this->vm()["air.e"].as<double>()
+                                % this->vm()["hsize"].as<double>()
+                                % this->vm()["stab"].as<bool>()
+                              );
     }
-    void
-    EadsMFemApp::run( const double * X, unsigned long N,
-                      double * Y, unsigned long P )
-    {
 
-        opus->run(X, N, Y, P);
+    else
+    {
+        std::cout << "[EadsMFemApp::init] unsteady case" << std::endl;
+        this->changeRepository( boost::format( "%1%/P%2%P%3%P%4%/D_%5%/h_%6%/stab_%7%/to_%8%_dt_%9%" )
+                                % this->about().appName()
+                                % this->vm()["order-u"].as<int>() % this->vm()["order-p"].as<int>()  % this->vm()["order-temp"].as<int>()
+                                % this->vm()["fluid.flow-rate"].as<double>()
+                                % this->vm()["hsize"].as<double>()
+                                % this->vm()["stab"].as<bool>()
+                                % this->vm()["bdf.order"].as<int>()
+                                % this->vm()["bdf.time-step"].as<double>()
+                              );
     }
+
+    std::cout << "[EadsMFemApp::init] changing repository done" << std::endl;
+    std::cout << "[EadsMFemApp::init] building model" << std::endl;
+    opus = OpusModelFactory::New( this->vm() );
+    std::cout << "[EadsMFemApp] building model done\n";
+}
+void
+EadsMFemApp::run()
+{
+    std::cout << "[EadsMFemApp::run] running model\n";
+    std::vector<double> X( 7 ),Y( 2 );
+    X[0]=this->vm()["ic1.k"].as<double>(); // kic
+    X[1]=this->vm()["fluid.flow-rate"].as<double>(); // fluid flow rate
+    X[2]=this->vm()["ic1.Q"].as<double>(); // Q
+    X[3]=100;
+    X[4]=this->vm()["air.e"].as<double>(); // ea
+    X[5]=this->vm()["hsize"].as<double>(); // h
+    X[6]=this->vm()["order-temp"].as<int>(); // polynomial order
+    opus->run( X.data(), X.size(), Y.data(), Y.size() );
+    //M_opus->run();
+    std::cout << "[EadsMFemApp::run] running model done\n";
+}
+void
+EadsMFemApp::run( const double * X, unsigned long N,
+                  double * Y, unsigned long P )
+{
+
+    opus->run( X, N, Y, P );
+}
 
 }

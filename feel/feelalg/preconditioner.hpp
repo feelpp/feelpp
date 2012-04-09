@@ -80,11 +80,11 @@ public:
 
     //! copy constructor
     Preconditioner( Preconditioner const & o )
-    :
-    M_matrix( o.M_matrix ),
-    M_preconditioner_type( o.M_preconditioner_type ),
-    M_is_initialized( o.M_is_initialized )
-        {}
+        :
+        M_matrix( o.M_matrix ),
+        M_preconditioner_type( o.M_preconditioner_type ),
+        M_is_initialized( o.M_is_initialized )
+    {}
 
     //! destructor
     ~Preconditioner();
@@ -103,16 +103,17 @@ public:
     //@{
 
     //! copy operator
-    Preconditioner& operator=( Preconditioner const & o)
+    Preconditioner& operator=( Preconditioner const & o )
+    {
+        if ( this != &o )
         {
-            if (this != &o )
-            {
-                M_matrix = o.M_matrix;
-                M_is_initialized = o.M_is_initialized;
-                M_preconditioner_type = o.M_preconditioner_type;
-            }
-            return *this;
+            M_matrix = o.M_matrix;
+            M_is_initialized = o.M_is_initialized;
+            M_preconditioner_type = o.M_preconditioner_type;
         }
+
+        return *this;
+    }
     //@}
 
     /** @name Accessors
@@ -123,22 +124,25 @@ public:
      * @returns true if the data structures are
      * initialized, false otherwise.
      */
-    bool initialized () const { return M_is_initialized; }
+    bool initialized () const
+    {
+        return M_is_initialized;
+    }
 
     /**
      * Computes the preconditioned vector "y" based on input "x".
      * Usually by solving Py=x to get the action of P^-1 x.
      */
-    virtual void apply(const Vector<T> & x, Vector<T> & y) = 0;
+    virtual void apply( const Vector<T> & x, Vector<T> & y ) = 0;
 
     /**
      * Computes the preconditioned vector "y" based on input "x".
      * Usually by solving Py=x to get the action of P^-1 x.
      */
     void apply( vector_ptrtype const& x, vector_ptrtype& y )
-        {
-            this->apply( *x, *y );
-        }
+    {
+        this->apply( *x, *y );
+    }
 
     /**
      * Release all memory and clear data structures.
@@ -150,7 +154,10 @@ public:
     /**
      * Returns the type of preconditioner to use.
      */
-    PreconditionerType type () const { return M_preconditioner_type; }
+    PreconditionerType type () const
+    {
+        return M_preconditioner_type;
+    }
 
 
 
@@ -164,12 +171,12 @@ public:
     /**
      * Sets the matrix P to be preconditioned.
      */
-    void setMatrix( sparse_matrix_ptrtype  mat);
+    void setMatrix( sparse_matrix_ptrtype  mat );
 
     /**
      * Sets the type of preconditioner to use.
      */
-    void setType (const PreconditionerType pct);
+    void setType ( const PreconditionerType pct );
 
     //@}
 
@@ -209,10 +216,10 @@ typedef boost::shared_ptr<Preconditioner<double> > preconditioner_ptrtype;
 template <typename T>
 FEELPP_STRONG_INLINE
 Preconditioner<T>::Preconditioner ()
-  :
+    :
     M_matrix(),
-    M_preconditioner_type (ILU_PRECOND),
-    M_is_initialized      (false)
+    M_preconditioner_type ( ILU_PRECOND ),
+    M_is_initialized      ( false )
 {
 }
 
@@ -222,7 +229,7 @@ template <typename T>
 FEELPP_STRONG_INLINE
 Preconditioner<T>::~Preconditioner ()
 {
-  this->clear ();
+    this->clear ();
 }
 
 template <typename T>
@@ -236,25 +243,27 @@ Preconditioner<T>::setMatrix( sparse_matrix_ptrtype mat )
 
 template <typename T>
 void
-Preconditioner<T>::setType (const PreconditionerType pct)
+Preconditioner<T>::setType ( const PreconditionerType pct )
 {
-  M_is_initialized = false;
-  M_preconditioner_type = pct;
+    M_is_initialized = false;
+    M_preconditioner_type = pct;
 }
 
-BOOST_PARAMETER_MEMBER_FUNCTION((boost::shared_ptr<Preconditioner<double> >),
-                                preconditioner,
-                                tag,
-                                (required
-                                 (pc,(PreconditionerType)))
-                                (optional
-                                 (matrix,(d_sparse_matrix_ptrtype),d_sparse_matrix_ptrtype())
-                                 (backend,(BackendType), BACKEND_PETSC )))
+BOOST_PARAMETER_MEMBER_FUNCTION( ( boost::shared_ptr<Preconditioner<double> > ),
+                                 preconditioner,
+                                 tag,
+                                 ( required
+                                   ( pc,( PreconditionerType ) ) )
+                                 ( optional
+                                   ( matrix,( d_sparse_matrix_ptrtype ),d_sparse_matrix_ptrtype() )
+                                   ( backend,( BackendType ), BACKEND_PETSC ) ) )
 {
-    boost::shared_ptr<Preconditioner<double> > p = Preconditioner<double>::build(backend);
+    boost::shared_ptr<Preconditioner<double> > p = Preconditioner<double>::build( backend );
     p->setType( pc );
+
     if ( matrix )
-        p->setMatrix(matrix);
+        p->setMatrix( matrix );
+
     return p;
 }
 

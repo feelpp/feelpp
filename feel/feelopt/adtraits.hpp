@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -46,52 +46,52 @@
 namespace Feel
 {
 #if defined( FEELPP_USES_BOOST_INTERVAL )
-     using namespace boost::numeric;
-     using namespace boost::numeric::interval_lib;
+using namespace boost::numeric;
+using namespace boost::numeric::interval_lib;
 
-      template<class T>
-      class my_checking_base
-         :
-         public boost::numeric::interval_lib::checking_base<T>
-      {
-      public:
-         static bool is_nan(const T& x)
-            {
-               //return std::numeric_limits<T>::has_quiet_NaN && (x != x);
-               return false;
-            }
-         static bool is_empty(const T& l, const T& u)
-            {
-               //return !(l <= u); // safety for partial orders
-               return false;
-            }
-      };
-      typedef boost::numeric::interval_lib::policies<boost::numeric::interval_lib::save_state<boost::numeric::interval_lib::rounded_transc_exact<double> >, my_checking_base<double> > interval_policy_exact_type;
-      typedef boost::numeric::interval_lib::policies<boost::numeric::interval_lib::save_state<boost::numeric::interval_lib::rounded_transc_opp<double> >, my_checking_base<double> > interval_policy_opp_type;
-      typedef boost::numeric::interval_lib::policies<boost::numeric::interval_lib::save_state<boost::numeric::interval_lib::rounded_transc_std<double> >, my_checking_base<double> > interval_policy_std_type;
+template<class T>
+class my_checking_base
+    :
+public boost::numeric::interval_lib::checking_base<T>
+{
+public:
+    static bool is_nan( const T& x )
+    {
+        //return std::numeric_limits<T>::has_quiet_NaN && (x != x);
+        return false;
+    }
+    static bool is_empty( const T& l, const T& u )
+    {
+        //return !(l <= u); // safety for partial orders
+        return false;
+    }
+};
+typedef boost::numeric::interval_lib::policies<boost::numeric::interval_lib::save_state<boost::numeric::interval_lib::rounded_transc_exact<double> >, my_checking_base<double> > interval_policy_exact_type;
+typedef boost::numeric::interval_lib::policies<boost::numeric::interval_lib::save_state<boost::numeric::interval_lib::rounded_transc_opp<double> >, my_checking_base<double> > interval_policy_opp_type;
+typedef boost::numeric::interval_lib::policies<boost::numeric::interval_lib::save_state<boost::numeric::interval_lib::rounded_transc_std<double> >, my_checking_base<double> > interval_policy_std_type;
 
-      typedef boost::numeric::interval_lib::default_policies<double>::type interval_policy_default_type;
+typedef boost::numeric::interval_lib::default_policies<double>::type interval_policy_default_type;
 
-      template<class T, class P>
-      struct interval
-      {
-         typedef boost::numeric::interval<T,P> type;
-      };
+template<class T, class P>
+struct interval
+{
+    typedef boost::numeric::interval<T,P> type;
+};
 #endif // FEELPP_USES_BOOST_INTERVAL
 
-      template <class A, class B>
-      class SNumericalTraits
-      {
-      public:
-      };
+template <class A, class B>
+class SNumericalTraits
+{
+public:
+};
 
-      //Specialization
-      template <class T>
-      class SNumericalTraits<T,T>
-      {
-      public:
-         typedef T promote;
-      };
+//Specialization
+template <class T>
+class SNumericalTraits<T,T>
+{
+public:
+    typedef T promote;
+};
 
 #define NUMERICAL_TRAITS(type1,type2,type3)      \
 template <> class SNumericalTraits<type1,type2> { \
@@ -119,12 +119,12 @@ INTERVAL_TRAITS ( std );
 #undef INTERVAL_TRAITS
 #endif // FEELPP_USES_BOOST_INTERVAL
 
-NUMERICAL_TRAITS(double,std::complex<float>,std::complex<double>)
-NUMERICAL_TRAITS(double,float,double)
-NUMERICAL_TRAITS(double,long,double)
-NUMERICAL_TRAITS(double,int,double)
-NUMERICAL_TRAITS(float,long,float)
-NUMERICAL_TRAITS(float,int,float)
+NUMERICAL_TRAITS( double,std::complex<float>,std::complex<double> )
+NUMERICAL_TRAITS( double,float,double )
+NUMERICAL_TRAITS( double,long,double )
+NUMERICAL_TRAITS( double,int,double )
+NUMERICAL_TRAITS( float,long,float )
+NUMERICAL_TRAITS( float,int,float )
 
 
 #if defined( FEELPP_USES_BOOST_INTERVAL )
@@ -132,10 +132,10 @@ NUMERICAL_TRAITS(float,int,float)
    SDebugStream& operator<<( SDebugStream& o, Feel::interval_## TYPE ##_type  const& e );    \
    SNDebugStream& operator<<( SNDebugStream& o, Feel::interval_## TYPE ##_type const& e );
 
-   FEELPP_INTERVAL_DEBUG(default);
-   FEELPP_INTERVAL_DEBUG(std);
-   FEELPP_INTERVAL_DEBUG(opp);
-   FEELPP_INTERVAL_DEBUG(exact);
+FEELPP_INTERVAL_DEBUG( default );
+FEELPP_INTERVAL_DEBUG( std );
+FEELPP_INTERVAL_DEBUG( opp );
+FEELPP_INTERVAL_DEBUG( exact );
 #undef FEELPP_INTERVAL_DEBUG
 
 #endif // FEELPP_USES_BOOST_INTERVAL
@@ -144,12 +144,12 @@ NUMERICAL_TRAITS(float,int,float)
 namespace std
 {
 #if defined( FEELPP_USES_BOOST_INTERVAL )
-  template<typename T, typename P>
-  std::ostream& operator<< ( std::ostream& __os, boost::numeric::interval<T,P> const& __i )
-  {
-        __os << '[' << __i.lower() << ',' << __i.upper() << ']';
-        return __os;
-  }
+template<typename T, typename P>
+std::ostream& operator<< ( std::ostream& __os, boost::numeric::interval<T,P> const& __i )
+{
+    __os << '[' << __i.lower() << ',' << __i.upper() << ']';
+    return __os;
+}
 #endif // FEELPP_USES_BOOST_INTERVAL
 }
 #endif /* __ADTraits_H */

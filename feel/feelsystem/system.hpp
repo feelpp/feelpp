@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -77,10 +77,11 @@ public:
     System& operator=( System const& s )
     {
         if ( this != &s )
-            {
-                M_Xh = s.M_Xh;
-                M_vm = s.M_vm;
-            }
+        {
+            M_Xh = s.M_Xh;
+            M_vm = s.M_vm;
+        }
+
         return *this;
     }
 
@@ -91,10 +92,16 @@ public:
     //@{
 
     //! \return the variables map
-    po::variables_map const& vm() const { return M_vm; }
+    po::variables_map const& vm() const
+    {
+        return M_vm;
+    }
 
     //! \return the function space
-    functionspace_ptrtype const& functionSpace() const { return M_Xh; }
+    functionspace_ptrtype const& functionSpace() const
+    {
+        return M_Xh;
+    }
 
     //@}
 
@@ -103,10 +110,16 @@ public:
     //@{
 
     //! set the variables map
-    void setVm( po::variables_map const& vm ) { M_vm = vm; }
+    void setVm( po::variables_map const& vm )
+    {
+        M_vm = vm;
+    }
 
     //! set the function space
-    void setFunctionSpace( functionspace_ptrtype const& Xh ) { M_Xh = Xh; }
+    void setFunctionSpace( functionspace_ptrtype const& Xh )
+    {
+        M_Xh = Xh;
+    }
 
     //@}
 

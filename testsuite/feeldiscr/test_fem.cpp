@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -54,7 +54,7 @@ const int Order = 1;
 
 template<typename FE>
 struct
-test_lagrange
+        test_lagrange
 {
     void operator()() const
     {
@@ -63,7 +63,8 @@ test_lagrange
 
         Gmsh __gmsh;
         std::string fname;
-        if (Dim == 2)
+
+        if ( Dim == 2 )
         {
             std::ostringstream ostr;
             ostr << "h=" << 0.1 << ";\n"
@@ -83,6 +84,7 @@ test_lagrange
 
             fname = __gmsh.generate( "square", ostr.str() );
         }
+
         else
         {
             std::ostringstream ostr;
@@ -154,37 +156,37 @@ init_unit_test_suite( int /*argc*/, char** /*argv*/ )
     a();
 
     // 1D simplex
-//     test->add( BOOST_TEST_CASE( ( test_lagrange<fem::PK<1, 1, real96_type> >() ) ) );
-//     test->add( BOOST_TEST_CASE( ( test_lagrange<fem::PK<1, 2, real96_type> >() ) ) );
-//     test->add( BOOST_TEST_CASE( ( test_lagrange<fem::PK<1, 3, real96_type> >() ) ) );
-//     test->add( BOOST_TEST_CASE( ( test_lagrange<fem::PK<1, 4, real96_type> >() ) ) );
-//     test->add( BOOST_TEST_CASE( ( test_lagrange<fem::PK<1, 5, real96_type> >() ) ) );
-//
-//     // 2D simplex
-//     test->add( BOOST_TEST_CASE( ( test_lagrange<fem::PK<2, 1, real96_type> >() ) ) );
-//     test->add( BOOST_TEST_CASE( ( test_lagrange<fem::PK<2, 2, real96_type> >() ) ) );
+    //     test->add( BOOST_TEST_CASE( ( test_lagrange<fem::PK<1, 1, real96_type> >() ) ) );
+    //     test->add( BOOST_TEST_CASE( ( test_lagrange<fem::PK<1, 2, real96_type> >() ) ) );
+    //     test->add( BOOST_TEST_CASE( ( test_lagrange<fem::PK<1, 3, real96_type> >() ) ) );
+    //     test->add( BOOST_TEST_CASE( ( test_lagrange<fem::PK<1, 4, real96_type> >() ) ) );
+    //     test->add( BOOST_TEST_CASE( ( test_lagrange<fem::PK<1, 5, real96_type> >() ) ) );
+    //
+    //     // 2D simplex
+    //     test->add( BOOST_TEST_CASE( ( test_lagrange<fem::PK<2, 1, real96_type> >() ) ) );
+    //     test->add( BOOST_TEST_CASE( ( test_lagrange<fem::PK<2, 2, real96_type> >() ) ) );
     //test->add( BOOST_TEST_CASE( (test_lagrange<fem::Lagrange<2, 1, real96_type> >())  ) );
-//     test->add( BOOST_TEST_CASE( ( test_lagrange<fem::PK<2, 4, real96_type> >() ) ) );
-//     test->add( BOOST_TEST_CASE( ( test_lagrange<fem::PK<2, 5, real96_type> >() ) ) );
-//
-//     // 3D simplex
-//     test->add( BOOST_TEST_CASE( ( test_lagrange<fem::PK<3, 1, real96_type> >() ) ) );
-//     test->add( BOOST_TEST_CASE( ( test_lagrange<fem::PK<3, 2, real96_type> >() ) ) );
-//     test->add( BOOST_TEST_CASE( ( test_lagrange<fem::PK<3, 3, real96_type> >() ) ) );
-//     test->add( BOOST_TEST_CASE( ( test_lagrange<fem::PK<3, 4, real96_type> >() ) ) );
-//     test->add( BOOST_TEST_CASE( ( test_lagrange<fem::PK<3, 5, real96_type> >() ) ) );
+    //     test->add( BOOST_TEST_CASE( ( test_lagrange<fem::PK<2, 4, real96_type> >() ) ) );
+    //     test->add( BOOST_TEST_CASE( ( test_lagrange<fem::PK<2, 5, real96_type> >() ) ) );
+    //
+    //     // 3D simplex
+    //     test->add( BOOST_TEST_CASE( ( test_lagrange<fem::PK<3, 1, real96_type> >() ) ) );
+    //     test->add( BOOST_TEST_CASE( ( test_lagrange<fem::PK<3, 2, real96_type> >() ) ) );
+    //     test->add( BOOST_TEST_CASE( ( test_lagrange<fem::PK<3, 3, real96_type> >() ) ) );
+    //     test->add( BOOST_TEST_CASE( ( test_lagrange<fem::PK<3, 4, real96_type> >() ) ) );
+    //     test->add( BOOST_TEST_CASE( ( test_lagrange<fem::PK<3, 5, real96_type> >() ) ) );
 
-//     test->add( BOOST_TEST_CASE( ( test_lagrange<fem::P3p<2, dd_real,  Simplex> >() ) ) );
+    //     test->add( BOOST_TEST_CASE( ( test_lagrange<fem::P3p<2, dd_real,  Simplex> >() ) ) );
 
 
 
     return test;
 }
 #else
-int main(int /*argc*/, char** /*argv*/ )
+int main( int /*argc*/, char** /*argv*/ )
 {
-  test_lagrange<fem::Lagrange<2, 1, Scalar, Continuous, double> > a;
-  a();
+    test_lagrange<fem::Lagrange<2, 1, Scalar, Continuous, double> > a;
+    a();
 
 }
 #endif

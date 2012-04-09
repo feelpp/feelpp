@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -112,7 +112,7 @@ BOOST_AUTO_TEST_CASE( lag35scr64s )
 }
 BOOST_AUTO_TEST_CASE( lag310scr64s )
 {
-    TestLagrange<fem::Lagrange<3, 3, 10, Scalar, Continuous, real64_type, Simplex> > t(1e-9);
+    TestLagrange<fem::Lagrange<3, 3, 10, Scalar, Continuous, real64_type, Simplex> > t( 1e-9 );
     t();
 }
 
@@ -211,17 +211,17 @@ void test_scalar_continuous_simplex( test_suite* test )
     test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<1, 1, 10, Scalar, Continuous, real64_type, Simplex> >() ) ) );
 
     // 2D simplex
-    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<2, 2, 1, Scalar, Continuous, real64_type, Simplex> >())  ) );
-    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<2, 2, 2, Scalar, Continuous, real64_type, Simplex> >())  ) );
-    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<2, 2, 10, Scalar, Continuous, real64_type, Simplex> >())  ) );
+    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<2, 2, 1, Scalar, Continuous, real64_type, Simplex> >() )  ) );
+    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<2, 2, 2, Scalar, Continuous, real64_type, Simplex> >() )  ) );
+    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<2, 2, 10, Scalar, Continuous, real64_type, Simplex> >() )  ) );
 
     // 3D simplex
-    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<3, 3, 1, Scalar, Continuous, real64_type, Simplex> >())  ) );
-    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<3, 3, 2, Scalar, Continuous, real64_type, Simplex> >())  ) );
-    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<3, 3, 3, Scalar, Continuous, real64_type, Simplex> >())  ) );
+    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<3, 3, 1, Scalar, Continuous, real64_type, Simplex> >() )  ) );
+    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<3, 3, 2, Scalar, Continuous, real64_type, Simplex> >() )  ) );
+    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<3, 3, 3, Scalar, Continuous, real64_type, Simplex> >() )  ) );
 #else
 
-    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<3, 3, 3, Scalar, Continuous, qd_real, Simplex> >())  ) );
+    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<3, 3, 3, Scalar, Continuous, qd_real, Simplex> >() )  ) );
 
 #endif
 }
@@ -235,14 +235,14 @@ void test_scalar_continuous_simplex_product( test_suite* test )
     test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<1, 1, 10, Scalar, Continuous, real64_type, Hypercube> >() ) ) );
 
     // 2D simplex
-    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<2, 2, 1, Scalar, Continuous, real64_type, Hypercube> >())  ) );
-    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<2, 2, 2, Scalar, Continuous, real64_type, Hypercube> >())  ) );
-    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<2, 2, 10, Scalar, Continuous, real64_type, Hypercube> >())  ) );
+    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<2, 2, 1, Scalar, Continuous, real64_type, Hypercube> >() )  ) );
+    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<2, 2, 2, Scalar, Continuous, real64_type, Hypercube> >() )  ) );
+    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<2, 2, 10, Scalar, Continuous, real64_type, Hypercube> >() )  ) );
 
     // 3D simplex
-    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<3, 3, 1, Scalar, Continuous, real64_type, Hypercube> >())  ) );
-    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<3, 3, 2, Scalar, Continuous, real64_type, Hypercube> >())  ) );
-    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<3, 3, 3, Scalar, Continuous, real64_type, Hypercube> >())  ) );
+    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<3, 3, 1, Scalar, Continuous, real64_type, Hypercube> >() )  ) );
+    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<3, 3, 2, Scalar, Continuous, real64_type, Hypercube> >() )  ) );
+    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<3, 3, 3, Scalar, Continuous, real64_type, Hypercube> >() )  ) );
 
 
 #endif
@@ -253,7 +253,7 @@ init_unit_test_suite( int argc, char* argv[] )
 {
 #if defined( FEELPP_HAS_QD_QD_H )
     unsigned int old_cw;
-    fpu_fix_start(&old_cw);
+    fpu_fix_start( &old_cw );
 #endif
 
     test_suite* test = BOOST_TEST_SUITE( "Finite element test suite" );
@@ -286,25 +286,34 @@ int main( int argc, char* argv[] )
     ( ( ( TestLagrange<fem::Lagrange<1, 1,10, Scalar, Continuous, real64_type, Hypercube> >() ) ) );
 
     // 2D simplex
-    ( ( ( TestLagrange<fem::Lagrange<2, 2, 1, Scalar, Continuous, real64_type, Hypercube> >())  ) );
-    ( ( ( TestLagrange<fem::Lagrange<2, 2, 2, Scalar, Continuous, real64_type, Hypercube> >())  ) );
-    ( ( ( TestLagrange<fem::Lagrange<2, 2,10, Scalar, Continuous, real64_type, Hypercube> >())  ) );
+    ( ( ( TestLagrange<fem::Lagrange<2, 2, 1, Scalar, Continuous, real64_type, Hypercube> >() )  ) );
+    ( ( ( TestLagrange<fem::Lagrange<2, 2, 2, Scalar, Continuous, real64_type, Hypercube> >() )  ) );
+    ( ( ( TestLagrange<fem::Lagrange<2, 2,10, Scalar, Continuous, real64_type, Hypercube> >() )  ) );
 
     // 3D simplex
-    ( ( ( TestLagrange<fem::Lagrange<3, 3, 1, Scalar, Continuous, real64_type, Hypercube> >())  ) );
-    ( ( ( TestLagrange<fem::Lagrange<3, 3, 2, Scalar, Continuous, real64_type, Hypercube> >())  ) );
-    ( ( ( TestLagrange<fem::Lagrange<3, 3, 3, Scalar, Continuous, real64_type, Hypercube> >())  ) );
+    ( ( ( TestLagrange<fem::Lagrange<3, 3, 1, Scalar, Continuous, real64_type, Hypercube> >() )  ) );
+    ( ( ( TestLagrange<fem::Lagrange<3, 3, 2, Scalar, Continuous, real64_type, Hypercube> >() )  ) );
+    ( ( ( TestLagrange<fem::Lagrange<3, 3, 3, Scalar, Continuous, real64_type, Hypercube> >() )  ) );
 #else
 #if defined( FEELPP_HAS_QD_QD_H )
 
     unsigned int old_cw;
-    fpu_fix_start(&old_cw);
+    fpu_fix_start( &old_cw );
 
-    {TestLagrange<fem::Lagrange<2, 2, 1, Scalar, Continuous, qd_real, Simplex> > a; a();}
-    {TestLagrange<fem::Lagrange<2, 2, 3, Scalar, Continuous, dd_real, Simplex> > a; a();}
-    {TestLagrange<fem::Lagrange<3, 3, 1, Scalar, Continuous, qd_real, Simplex> > a; a();}
+    {
+        TestLagrange<fem::Lagrange<2, 2, 1, Scalar, Continuous, qd_real, Simplex> > a;
+        a();
+    }
+    {
+        TestLagrange<fem::Lagrange<2, 2, 3, Scalar, Continuous, dd_real, Simplex> > a;
+        a();
+    }
+    {
+        TestLagrange<fem::Lagrange<3, 3, 1, Scalar, Continuous, qd_real, Simplex> > a;
+        a();
+    }
 
-    fpu_fix_end(&old_cw);
+    fpu_fix_end( &old_cw );
 
 #endif /* FEELPP_HAS_QD_QD_H  */
 

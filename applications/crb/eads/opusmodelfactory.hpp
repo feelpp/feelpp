@@ -88,11 +88,12 @@ public:
     //@{
 
     //! copy operator
-    OpusModelFactory& operator=( OpusModelFactory const & o)
+    OpusModelFactory& operator=( OpusModelFactory const & o )
     {
-        if (this != &o )
-            {
-            }
+        if ( this != &o )
+        {
+        }
+
         return *this;
     }
     //@}

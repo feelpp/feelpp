@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -59,8 +59,8 @@ public:
     /** @name Constants
     */
     //@{
-        static const uint16_type nDim = primal_space_type::nDim;
-        static const uint16_type nOrder = primal_space_type::nOrder;
+    static const uint16_type nDim = primal_space_type::nDim;
+    static const uint16_type nOrder = primal_space_type::nOrder;
     //@}
     /** @name Constructors, destructor
      */
@@ -86,14 +86,18 @@ public:
 
     self_type const& operator=( self_type const& dual )
     {
-      if ( this != &dual )
-      {
-        _M_primal = dual._M_primal;
-      }
-      return *this;
+        if ( this != &dual )
+        {
+            _M_primal = dual._M_primal;
+        }
+
+        return *this;
     }
 
-    basis_type const& operator()() const { return _M_primal.basis(); }
+    basis_type const& operator()() const
+    {
+        return _M_primal.basis();
+    }
 
     //@}
 
@@ -101,9 +105,15 @@ public:
      */
     //@{
 
-    primal_space_type const& primalSpace() const { return _M_primal; }
+    primal_space_type const& primalSpace() const
+    {
+        return _M_primal;
+    }
 
-    basis_type const& basis() const { return _M_primal.basis(); }
+    basis_type const& basis() const
+    {
+        return _M_primal.basis();
+    }
 
     //@}
 
@@ -128,7 +138,7 @@ protected:
 
 private:
 
-  primal_space_type _M_primal;
+    primal_space_type _M_primal;
 };
 } // Feel
 

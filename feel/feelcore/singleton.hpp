@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
    This file is part of the Feel library
 
@@ -106,6 +106,7 @@ Singleton<T>::instance()
     {
         makeInstance();
     }
+
     return *_S_instance;
 }
 
@@ -121,6 +122,7 @@ Singleton<T>::makeInstance()
             feeltime_policy::onDeadReference();
             _S_destroyed = false;
         }
+
         _S_instance = creation_policy::create();
         feeltime_policy::scheduleDestruction( _S_instance, &destroySingleton );
     }

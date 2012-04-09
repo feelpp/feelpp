@@ -125,10 +125,19 @@ public:
     ~OpusModelFluidOseen() {}
 
     // return air density (kg/m^3)
-    double rho() const { return 1.204; }
+    double rho() const
+    {
+        return 1.204;
+    }
     //! \return air viscosity (kg/(m·s))
-    double nu() const { return 1.78* 1e-5; }
-    void setFluidFlowRate( double r ) { M_flow_rate = r; }
+    double nu() const
+    {
+        return 1.78* 1e-5;
+    }
+    void setFluidFlowRate( double r )
+    {
+        M_flow_rate = r;
+    }
 #if 0
     template< typename MassExpr,
               typename DiffExpr,
@@ -145,8 +154,8 @@ private:
 
     void initLinearOperators();
     void updateResidual( const vector_ptrtype& X, vector_ptrtype& R );
-    void updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J);
-    void updateResidualJacobian( const vector_ptrtype& X, vector_ptrtype& R, sparse_matrix_ptrtype& J);
+    void updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J );
+    void updateResidualJacobian( const vector_ptrtype& X, vector_ptrtype& R, sparse_matrix_ptrtype& J );
 private:
 
     backend_ptrtype M_backend;
@@ -185,10 +194,10 @@ OpusModelFluidOseen<SpaceType>::OpusModelFluidOseen( po::variables_map const& vm
     FEELPP_ASSERT( M_Xh != 0 ).error( "[OpusModelFluidOseen] invalid functionspace_ptrtype" );
 
     M_D = M_backend->newMatrix( M_Xh, M_Xh );
-    FEELPP_ASSERT( M_D != 0 ).error( "invalid matrix");
+    FEELPP_ASSERT( M_D != 0 ).error( "invalid matrix" );
 
     M_F = M_backend->newVector( M_Xh );
-    FEELPP_ASSERT( M_F != 0 ).error( "invalid vector");
+    FEELPP_ASSERT( M_F != 0 ).error( "invalid vector" );
 
     M_backend->nlSolver()->residual = boost::bind( &self_type::updateResidual, boost::ref( *this ), _1, _2 );
     M_backend->nlSolver()->jacobian = boost::bind( &self_type::updateJacobian, boost::ref( *this ), _1, _2 );
@@ -222,18 +231,18 @@ OpusModelFluidOseen<SpaceType>::initLinearOperators()
 
     Log() << "[OpusModelFluidOseen::initLinearOperators] space+elements init done in " << ti.elapsed() << "s\n";
     ti.restart();
-    std::cout << "perimeter:"  << integrate( _range=boundaryfaces(mesh), _expr=cst(1.0)).evaluate()( 0, 0) << std::endl;
+    std::cout << "perimeter:"  << integrate( _range=boundaryfaces( mesh ), _expr=cst( 1.0 ) ).evaluate()( 0, 0 ) << std::endl;
     //M_mass_v = op_vector_ptrtype( new op_vector_type( M_Xh->template functionSpace<0>(), M_Xh->template functionSpace<0>(), M_backend ) );
     //M_mass_s = op_scalar_ptrtype( new op_scalar_type( M_Xh->template functionSpace<1>(), M_Xh->template functionSpace<1>(), M_backend ) );
     M_oplin = oplin_ptrtype( new oplin_type( M_Xh, M_Xh, M_backend ) );
-    auto deft=  sym(gradt(u));
-    auto def = sym(grad(u));
-    auto defv = sym(gradv(u));
-    auto Id = (mat<Dim,Dim>( cst(1), cst(0), cst(0), cst(1.) ));
-    auto Sigmat = -idt(p)*Id + 2*this->nu()*deft;
-    auto SigmaNt = (-idt(p)*N()+2*this->nu()*deft*N());
-    auto SigmaN = (-id(p)*N()+2*this->nu()*def*N());
-    auto SigmaNv = (-idv(p)*N()+2*this->nu()*defv*N());
+    auto deft=  sym( gradt( u ) );
+    auto def = sym( grad( u ) );
+    auto defv = sym( gradv( u ) );
+    auto Id = ( mat<Dim,Dim>( cst( 1 ), cst( 0 ), cst( 0 ), cst( 1. ) ) );
+    auto Sigmat = -idt( p )*Id + 2*this->nu()*deft;
+    auto SigmaNt = ( -idt( p )*N()+2*this->nu()*deft*N() );
+    auto SigmaN = ( -id( p )*N()+2*this->nu()*def*N() );
+    auto SigmaNv = ( -idv( p )*N()+2*this->nu()*defv*N() );
 
     //*M_mass_v = integrate( elements(mesh), _Q<2*uOrder+2*(GeoOrder-1)>(), trans(idt(u))*id(v) );
     //M_mass_v->close();
@@ -243,18 +252,18 @@ OpusModelFluidOseen<SpaceType>::initLinearOperators()
     // oplin
     Log() << "[OpusModelFluidOseen::add element stokes terms] (nu * (nabla u+ nabla^T u)  : nabla v)\n";
     *M_oplin =
-        integrate( _range=elements(mesh), _expr=trace(Sigmat*trans(grad(v))) );
+        integrate( _range=elements( mesh ), _expr=trace( Sigmat*trans( grad( v ) ) ) );
     Log() << "[OpusModelFluidOseen::add element stokes terms] (nu * (nabla u+ nabla^T u)  : nabla v) done in " << ti.elapsed() << "s\n";
     ti.restart();
 
     Log() << "[OpusModelFluidOseen::add element stokes terms] ( p, div(v) ) + ( div(u), q )\n";
-    *M_oplin += integrate( _range=elements(mesh), _expr=divt(u)*id(q) );
+    *M_oplin += integrate( _range=elements( mesh ), _expr=divt( u )*id( q ) );
     Log() << "[OpusModelFluidOseen::add element stokes terms] ( p, div(v) ) + ( div(u), q ) done in " << ti.elapsed()<< "s\n";
     ti.restart();
 
 #if 1
     *M_oplin +=
-        integrate( _range=elements(mesh), _expr=this->data()->epsPseudoCompressibility()*idt(p)*id(q) );
+        integrate( _range=elements( mesh ), _expr=this->data()->epsPseudoCompressibility()*idt( p )*id( q ) );
     Log() << "[OpusModelFluidOseen::add element stokes terms] ( epsilon p, q) ) done in " << ti.elapsed() << "s\n";
 #endif
     ti.restart();
@@ -262,30 +271,30 @@ OpusModelFluidOseen<SpaceType>::initLinearOperators()
     BOOST_FOREACH( std::string marker, this->data()->dirichletVelocityMarkers() )
     {
         std::cout << "  -- dirichlet marker: "  << marker << "\n";
-        std::cout << "  -- dirichlet perimeter:"  << integrate( _range=markedfaces(mesh,marker), _expr=cst(1.0)).evaluate()( 0, 0) << std::endl;
+        std::cout << "  -- dirichlet perimeter:"  << integrate( _range=markedfaces( mesh,marker ), _expr=cst( 1.0 ) ).evaluate()( 0, 0 ) << std::endl;
     }
     BOOST_FOREACH( std::string marker, this->data()->dirichletVelocityMarkers() )
-        {
-            Log() << "[OpusModelFluidOseen::add weakbc boundary terms velocity] boundary " << marker << " id : " << mesh->markerName( marker ) << "\n";
-            Log() << "[OpusModelFluidOseen::add weakbc boundary terms velocity] " << mesh->markerName( marker )
-                  << " : nelts: " << std::distance( markedfaces(mesh,marker).get<1>(),
-                                                    markedfaces(mesh,marker).get<2>() ) << "\n";
-            std::cout << "[OpusModelFluidOseen::add weakbc boundary terms velocity] " << mesh->markerName( marker )
-                      << " : nelts: " << std::distance( markedfaces(mesh,marker).get<1>(),
-                                                        markedfaces(mesh,marker).get<2>() ) << "\n";
-            std::cerr << " -- bdy " << marker << " terms 1" << std::endl;
-            *M_oplin +=
-                integrate( _range=markedfaces(mesh, marker ),
-                           _expr=-trans(SigmaNt)*id(v)-trans(SigmaN)*idt(u) );
-            std::cerr << " -- bdy " << marker << " terms 1 done" << std::endl;
-            std::cerr << " -- bdy " << marker << " terms 2" << std::endl;
-            *M_oplin +=
-                integrate( _range=markedfaces(mesh, marker ),
-                           _expr=this->data()->gammaBc()*trans(idt(u))*id(v)/hFace());
-            std::cerr << " -- bdy " << marker << " terms 2 done" << std::endl;
-            Log() << "[OpusModelFluidOseen::initLinearOperators] oplin marked faces with marker " << marker << " integration done in " << ti.elapsed() << "s\n";
-            ti.restart();
-        }
+    {
+        Log() << "[OpusModelFluidOseen::add weakbc boundary terms velocity] boundary " << marker << " id : " << mesh->markerName( marker ) << "\n";
+        Log() << "[OpusModelFluidOseen::add weakbc boundary terms velocity] " << mesh->markerName( marker )
+              << " : nelts: " << std::distance( markedfaces( mesh,marker ).get<1>(),
+                                                markedfaces( mesh,marker ).get<2>() ) << "\n";
+        std::cout << "[OpusModelFluidOseen::add weakbc boundary terms velocity] " << mesh->markerName( marker )
+                  << " : nelts: " << std::distance( markedfaces( mesh,marker ).get<1>(),
+                          markedfaces( mesh,marker ).get<2>() ) << "\n";
+        std::cerr << " -- bdy " << marker << " terms 1" << std::endl;
+        *M_oplin +=
+            integrate( _range=markedfaces( mesh, marker ),
+                       _expr=-trans( SigmaNt )*id( v )-trans( SigmaN )*idt( u ) );
+        std::cerr << " -- bdy " << marker << " terms 1 done" << std::endl;
+        std::cerr << " -- bdy " << marker << " terms 2" << std::endl;
+        *M_oplin +=
+            integrate( _range=markedfaces( mesh, marker ),
+                       _expr=this->data()->gammaBc()*trans( idt( u ) )*id( v )/hFace() );
+        std::cerr << " -- bdy " << marker << " terms 2 done" << std::endl;
+        Log() << "[OpusModelFluidOseen::initLinearOperators] oplin marked faces with marker " << marker << " integration done in " << ti.elapsed() << "s\n";
+        ti.restart();
+    }
 
     M_oplin->close();
     Log() << "[OpusModelFluidOseen::initLinearOperators] oplin close in " << ti.elapsed() << "s\n";
@@ -296,7 +305,7 @@ OpusModelFluidOseen<SpaceType>::initLinearOperators()
 template<typename SpaceType>
 void
 OpusModelFluidOseen<SpaceType>::updateResidual( const vector_ptrtype& X,
-                                                vector_ptrtype& R )
+        vector_ptrtype& R )
 {
     using namespace vf;
     boost::timer ti;
@@ -316,25 +325,25 @@ OpusModelFluidOseen<SpaceType>::updateResidual( const vector_ptrtype& X,
 
     U = *X;
 
-    auto deft = sym(gradt(u));
-    auto def = sym(grad(u));
-    auto Id = (mat<Dim,Dim>( cst(1), cst(0), cst(0), cst(1.) ));
-    auto SigmaNt = (-idt(p)*N()+2*this->nu()*deft*N());
-    auto SigmaN = (-id(p)*N()+2*this->nu()*def*N());
-    auto beta= idv(u);
+    auto deft = sym( gradt( u ) );
+    auto def = sym( grad( u ) );
+    auto Id = ( mat<Dim,Dim>( cst( 1 ), cst( 0 ), cst( 0 ), cst( 1. ) ) );
+    auto SigmaNt = ( -idt( p )*N()+2*this->nu()*deft*N() );
+    auto SigmaN = ( -id( p )*N()+2*this->nu()*def*N() );
+    auto beta= idv( u );
     // add the right hand side contribution from the non-homogeneous
     // Dirichlet contribution
     *M_residual =
-        integrate( _range=elements(mesh),
+        integrate( _range=elements( mesh ),
                    _expr=this->rho()* ( //trans(idv(u))*id(v)*M_bdf->polyDerivCoefficient(0) +
-                       trans(gradv(u)*idv(u))*id(v)
-                       //- trans(idv( M_bdf->polyDeriv().template element<0>() ) ) *id(v)
-                       ) );
+                             trans( gradv( u )*idv( u ) )*id( v )
+                             //- trans(idv( M_bdf->polyDeriv().template element<0>() ) ) *id(v)
+                         ) );
 
-    double e_AIR = this->data()->component("AIR").e();
-    double e_PCB = this->data()->component("PCB").e();
-    double e_IC = this->data()->component("IC1").e();
-    double L_IC = this->data()->component("IC1").h();
+    double e_AIR = this->data()->component( "AIR" ).e();
+    double e_PCB = this->data()->component( "PCB" ).e();
+    double e_IC = this->data()->component( "IC1" ).e();
+    double L_IC = this->data()->component( "IC1" ).h();
     Log() << "[OpusModelFluidOseen] e_AIR = " << e_AIR << "\n";
     Log() << "[OpusModelFluidOseen] e_PCB = " << e_PCB << "\n";
     Log() << "[OpusModelFluidOseen] e_IC = " << e_IC << "\n";
@@ -342,20 +351,20 @@ OpusModelFluidOseen<SpaceType>::updateResidual( const vector_ptrtype& X,
     Log() << "[OpusModelFluidOseen] flow rate = " << M_current_flow_rate << "\n";
     Log() << "[OpusModelFluidOseen] gamm bc = " << this->data()->gammaBc() << "\n";
 
-    auto ft = (constant(1.0)-vf::exp(-M_time ) );
-    auto vy = (constant(3.)/(2.*(e_AIR)))*M_current_flow_rate*(1.0-vf::pow((Px()-((e_AIR)/2.+e_PCB))/((e_AIR)/2.),2.))*ft;
+    auto ft = ( constant( 1.0 )-vf::exp( -M_time ) );
+    auto vy = ( constant( 3. )/( 2.*( e_AIR ) ) )*M_current_flow_rate*( 1.0-vf::pow( ( Px()-( ( e_AIR )/2.+e_PCB ) )/( ( e_AIR )/2. ),2. ) )*ft;
 
     *M_residual +=
-        integrate( markedfaces(mesh, "Gamma_4_AIR" ),
+        integrate( markedfaces( mesh, "Gamma_4_AIR" ),
                    //- this->gammaBc()*max(sqrt(trans(beta)*beta),this->nu()/hFace())*(trans(idf(this->inflow(time)))*N())*(trans(id(v))*N())
                    //-trans(vec( 4*this->Um()*Py()*(this->H()-Py())/math::pow(this->H(),2), constant(0.)))*( -SigmaN+this->gammaBc()*id(v)/hFace() ) );
-                   - trans(vec(constant(0.),vy))*( -SigmaN+this->data()->gammaBc()*id(v)/hFace() ) );
-                   //trans(vec(constant(0),(constant(3)/(2*(e_AIR)))*M_current_flow_rate*(1-vf::pow((Px()-((e_AIR)/2+e_PCB))/((e_AIR)/2),2))))*( -SigmaN+this->gammaBc()*id(v)/hFace() ) );
+                   - trans( vec( constant( 0. ),vy ) )*( -SigmaN+this->data()->gammaBc()*id( v )/hFace() ) );
+    //trans(vec(constant(0),(constant(3)/(2*(e_AIR)))*M_current_flow_rate*(1-vf::pow((Px()-((e_AIR)/2+e_PCB))/((e_AIR)/2),2))))*( -SigmaN+this->gammaBc()*id(v)/hFace() ) );
 
 #if 0
     *M_residual +=
-        integrate( markedfaces(mesh,mesh->markerName( "Gamma_3_AIR4" )),
-                   trans( 101.56*1e3 * N()) * id(v) );
+        integrate( markedfaces( mesh,mesh->markerName( "Gamma_3_AIR4" ) ),
+                   trans( 101.56*1e3 * N() ) * id( v ) );
 #endif
 
     FsFunctionalLinear<fluid_functionspace_type> flin( M_Xh, M_backend );
@@ -364,15 +373,17 @@ OpusModelFluidOseen<SpaceType>::updateResidual( const vector_ptrtype& X,
     M_residual->add( flin );
     M_residual->close();
     *R = M_residual->container();
+
     if ( this->vm().count( "export-matlab" ) )
         R->printMatlab( "R.m" );
+
     Log() << "[updateResidual] done in " << ti.elapsed() << "s\n";
 }
 
 template<typename SpaceType>
 void
 OpusModelFluidOseen<SpaceType>::updateJacobian( const vector_ptrtype& X,
-                                                sparse_matrix_ptrtype& J)
+        sparse_matrix_ptrtype& J )
 {
     using namespace vf;
     boost::timer ti;
@@ -391,34 +402,37 @@ OpusModelFluidOseen<SpaceType>::updateJacobian( const vector_ptrtype& X,
     //fluid_element_2_type lambda = U.template element<2>();
     U = *X;
 
-    auto convectionTerms = (trans(val(gradv(u)*this->rho())*idt(u)) + trans(gradt(u)*val(idv(u)*this->rho()) ) )*id(v);
+    auto convectionTerms = ( trans( val( gradv( u )*this->rho() )*idt( u ) ) + trans( gradt( u )*val( idv( u )*this->rho() ) ) )*id( v );
+
     if ( is_init == false )
-        {
-            *M_jac = integrate( elements( mesh ),
-                                //this->rho()*trans(idt(u))*id(v)*M_bdf->polyDerivCoefficient( 0 ) +
-                                convectionTerms);
-                                //0*trans(gradt(u)*idv(u))*id(v) );
-            *M_jac += integrate( elements( mesh ),
-                                 +0*div(v)*idt(p)+0*divt(u)*id(q) +0*idt(p)*id(q) );
+    {
+        *M_jac = integrate( elements( mesh ),
+                            //this->rho()*trans(idt(u))*id(v)*M_bdf->polyDerivCoefficient( 0 ) +
+                            convectionTerms );
+        //0*trans(gradt(u)*idv(u))*id(v) );
+        *M_jac += integrate( elements( mesh ),
+                             +0*div( v )*idt( p )+0*divt( u )*id( q ) +0*idt( p )*id( q ) );
 #if 0
-            *M_jac += integrate( elements( mesh ),
-                                 +0*idt(lambda)*id(p)+0*id(lambda)*idt(p) );
+        *M_jac += integrate( elements( mesh ),
+                             +0*idt( lambda )*id( p )+0*id( lambda )*idt( p ) );
 #endif
-            //this->rho()*trans(gradt(u)*idv(u))*id(v) );
-            is_init = true;
-        }
+        //this->rho()*trans(gradt(u)*idv(u))*id(v) );
+        is_init = true;
+    }
+
     else
-        {
-            M_jac->matPtr()->zero();
-            *M_jac += integrate( elements( mesh ),
-                                 //this->rho()*trans(idt(u))*id(v)*M_bdf->polyDerivCoefficient( 0 ) +
-                                 convectionTerms);
-                                 //0*trans(gradt(u)*idv(u))*id(v) );
-        }
+    {
+        M_jac->matPtr()->zero();
+        *M_jac += integrate( elements( mesh ),
+                             //this->rho()*trans(idt(u))*id(v)*M_bdf->polyDerivCoefficient( 0 ) +
+                             convectionTerms );
+        //0*trans(gradt(u)*idv(u))*id(v) );
+    }
+
 #if 0
-    AUTO( beta, idv(u) );
+    AUTO( beta, idv( u ) );
     *M_jac += integrate( boundaryfaces( mesh ),
-                         this->gammaBc()*max(sqrt(trans(beta)*beta),this->nu()/hFace())*(trans(idt(u))*N())*(trans(id(v))*N()) );
+                         this->gammaBc()*max( sqrt( trans( beta )*beta ),this->nu()/hFace() )*( trans( idt( u ) )*N() )*( trans( id( v ) )*N() ) );
 #endif
     M_jac->close();
 
@@ -432,7 +446,7 @@ OpusModelFluidOseen<SpaceType>::updateJacobian( const vector_ptrtype& X,
 template<typename SpaceType>
 void
 OpusModelFluidOseen<SpaceType>::updateResidualJacobian( const vector_ptrtype& X, vector_ptrtype& R,
-                                                        sparse_matrix_ptrtype& J)
+        sparse_matrix_ptrtype& J )
 {
 }
 
@@ -447,7 +461,7 @@ OpusModelFluidOseen<SpaceType>::update( MassExpr const& mass_coeff, // rank-0
                                         DiffExpr const& diff_coeff, // rank-0
                                         ConvExpr const& conv_coeff, // rank-1 (column vector)
                                         RhsExpr const& rhs_coeff    // rank-0
-                                        )
+                                      )
 {
 }
 #else
@@ -463,28 +477,28 @@ template<typename SpaceType>
 void
 OpusModelFluidOseen<SpaceType>::solve( fluid_element_type& U )
 {
-    int Ncont=10+std::ceil(std::log10(M_flow_rate));
+    int Ncont=10+std::ceil( std::log10( M_flow_rate ) );
 
-    for( int i = 0;i < Ncont; ++i )
-        {
-            int denom = (Ncont==1)?1:Ncont-1;
-            M_current_flow_rate = math::exp( math::log(1e-4)+i*(math::log(M_flow_rate)-math::log(1e-4))/denom );
-            Log() << "[oseen] Computing fluid flow for flow rate:" << M_current_flow_rate << " ("  << i << ") / " << M_flow_rate << "("  << Ncont << ")\n";
+    for ( int i = 0; i < Ncont; ++i )
+    {
+        int denom = ( Ncont==1 )?1:Ncont-1;
+        M_current_flow_rate = math::exp( math::log( 1e-4 )+i*( math::log( M_flow_rate )-math::log( 1e-4 ) )/denom );
+        Log() << "[oseen] Computing fluid flow for flow rate:" << M_current_flow_rate << " ("  << i << ") / " << M_flow_rate << "("  << Ncont << ")\n";
 
-            auto R = M_backend->newVector( U.functionSpace() );
-            auto J = M_backend->newMatrix( U.functionSpace(), U.functionSpace() );
-            M_backend->nlSolve( _jacobian=J, _solution=U, _residual=R );
-            using namespace Feel::vf;
-            double inflow = integrate( markedfaces(M_Xh->mesh(),"Gamma_4_AIR" ),
-                                       -trans(idv(U.template element<0>()))*N() ).evaluate()(0,0);
-            double outflow = integrate( markedfaces(M_Xh->mesh(),"Gamma_3_AIR" ),
-                                        trans(idv(U.template element<0>()))*N() ).evaluate()(0,0);
-            double wallflow = integrate( markedfaces(M_Xh->mesh(),"Gamma_1" ),
-                                         trans(idv(U.template element<0>()))*N() ).evaluate()(0,0);
-            wallflow += integrate( markedfaces(M_Xh->mesh(),"Gamma_2" ),
-                                   trans(idv(U.template element<0>()))*N() ).evaluate()(0,0);
-            Log() << "[oseen] inflow=" << inflow <<  " outflow=" << outflow << "  wallflow ="  << wallflow << " umax = " << U.template element<0>().linftyNorm() << "\n";
-        }
+        auto R = M_backend->newVector( U.functionSpace() );
+        auto J = M_backend->newMatrix( U.functionSpace(), U.functionSpace() );
+        M_backend->nlSolve( _jacobian=J, _solution=U, _residual=R );
+        using namespace Feel::vf;
+        double inflow = integrate( markedfaces( M_Xh->mesh(),"Gamma_4_AIR" ),
+                                   -trans( idv( U.template element<0>() ) )*N() ).evaluate()( 0,0 );
+        double outflow = integrate( markedfaces( M_Xh->mesh(),"Gamma_3_AIR" ),
+                                    trans( idv( U.template element<0>() ) )*N() ).evaluate()( 0,0 );
+        double wallflow = integrate( markedfaces( M_Xh->mesh(),"Gamma_1" ),
+                                     trans( idv( U.template element<0>() ) )*N() ).evaluate()( 0,0 );
+        wallflow += integrate( markedfaces( M_Xh->mesh(),"Gamma_2" ),
+                               trans( idv( U.template element<0>() ) )*N() ).evaluate()( 0,0 );
+        Log() << "[oseen] inflow=" << inflow <<  " outflow=" << outflow << "  wallflow ="  << wallflow << " umax = " << U.template element<0>().linftyNorm() << "\n";
+    }
 }
 
 /** \\@} */

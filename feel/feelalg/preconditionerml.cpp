@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
 This file is part of the Feel library
 
@@ -38,9 +38,9 @@ PreconditionerML::PreconditionerML( list_type options )
     :
     M_Prec(),
     M_List(),
-    M_precType("MultiGrid")
+    M_precType( "MultiGrid" )
 {
-    ML_Epetra::SetDefaults("SA", M_List);
+    ML_Epetra::SetDefaults( "SA", M_List );
     /*
     M_List.set("max levels", 5);
     M_List.set("increasing or decreasing", "increasing");
@@ -50,7 +50,7 @@ PreconditionerML::PreconditionerML( list_type options )
     M_List.set("coarse: type","Amesos-KLU");
     */
 
-    M_List.set("output", 0);
+    M_List.set( "output", 0 );
 }
 
 PreconditionerML::PreconditionerML( PreconditionerML const& tc )
@@ -66,8 +66,8 @@ PreconditionerML::buildPreconditioner( sparse_matrix_ptrtype& A )
     epetra_sparse_matrix_type* A_ptr = dynamic_cast<epetra_sparse_matrix_type*>( A.get() );
 
     M_Prec = boost::shared_ptr<prec_type>( new prec_type( A_ptr->mat(),
-                                                          M_List,
-                                                          true) );
+                                           M_List,
+                                           true ) );
 
     return 0;
 }

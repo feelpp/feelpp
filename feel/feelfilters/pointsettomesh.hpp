@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -67,8 +67,8 @@ namespace Feel
 template<typename Convex, typename T>
 class PointSetToMesh
     :
-        public VisitorBase,
-        public Visitor<PointSet<Convex, T> >
+public VisitorBase,
+public Visitor<PointSet<Convex, T> >
 {
     typedef VisitorBase super1;
     typedef Visitor<PointSet<Convex, T> > super2;
@@ -140,7 +140,10 @@ public:
      */
     //@{
 
-    mesh_ptrtype mesh() { return _M_mesh; }
+    mesh_ptrtype mesh()
+    {
+        return _M_mesh;
+    }
 
     //@}
 
@@ -194,22 +197,26 @@ PointSetToMesh<Convex, T>::visit( pointset_type* pset, mpl::int_<1> )
     _M_mesh = mesh_ptrtype( new mesh_type );
 
     size_type __npts = pset->nPoints();
-    for( uint __i = 0; __i < __npts;++__i )
+
+    for ( uint __i = 0; __i < __npts; ++__i )
     {
         node_type __nd( 1 );
-        __nd = pset->point(__i);
+        __nd = pset->point( __i );
 
         point_type __pt( __i,__nd, false );
         __pt.marker() = 0;
-        if( __nd[0] == -1 || __nd[0] == 1 )
-            {
-                __pt.setOnBoundary( true );
-            }
-        else
-            {
-                __pt.setOnBoundary( false );
 
-            }
+        if ( __nd[0] == -1 || __nd[0] == 1 )
+        {
+            __pt.setOnBoundary( true );
+        }
+
+        else
+        {
+            __pt.setOnBoundary( false );
+
+        }
+
         _M_mesh->addPoint( __pt );
     }
 
@@ -241,7 +248,8 @@ PointSetToMesh<Convex, T>::visit( pointset_type* pset, mpl::int_<1> )
     delete pf1;
 
     size_type __nele = __npts-1;
-    for( uint __i = 0; __i < __nele;++__i )
+
+    for ( uint __i = 0; __i < __nele; ++__i )
     {
         element_type  pf;
 
@@ -249,30 +257,33 @@ PointSetToMesh<Convex, T>::visit( pointset_type* pset, mpl::int_<1> )
         pf.marker() = 0;
 
         if ( __nele == 1 )
-            {
-                pf.setPoint( 0, _M_mesh->point( __i ) );
-                pf.setPoint( 1, _M_mesh->point( __i+1 ) );
-            }
+        {
+            pf.setPoint( 0, _M_mesh->point( __i ) );
+            pf.setPoint( 1, _M_mesh->point( __i+1 ) );
+        }
+
         else if ( __i == 0 )
-            {
-                pf.setPoint( 0, _M_mesh->point( __i ) );
-                pf.setPoint( 1, _M_mesh->point( __i+2) );
-            }
+        {
+            pf.setPoint( 0, _M_mesh->point( __i ) );
+            pf.setPoint( 1, _M_mesh->point( __i+2 ) );
+        }
+
         else if ( __i == __nele-1 )
-            {
-                pf.setPoint( 0, _M_mesh->point( __i+1 ) );
-                pf.setPoint( 1, _M_mesh->point( 1 ) );
-            }
+        {
+            pf.setPoint( 0, _M_mesh->point( __i+1 ) );
+            pf.setPoint( 1, _M_mesh->point( 1 ) );
+        }
+
         else
-            {
-                pf.setPoint( 0, _M_mesh->point( __i+1 ) );
-                pf.setPoint( 1, _M_mesh->point( __i+2 ) );
-            }
+        {
+            pf.setPoint( 0, _M_mesh->point( __i+1 ) );
+            pf.setPoint( 1, _M_mesh->point( __i+2 ) );
+        }
 
         element_type const& e  = _M_mesh->addElement( pf );
         Debug( 8099 ) << "o element " << e.id() << "\n"
-                      << "  p1 = " << e.point(0).node() << "\n"
-                      << "  p2 = " << e.point(1).node() << "\n";
+                      << "  p1 = " << e.point( 0 ).node() << "\n"
+                      << "  p2 = " << e.point( 1 ).node() << "\n";
     }
 
 
@@ -303,21 +314,24 @@ PointSetToMesh<Convex, T>::visit( pointset_type* pset, mpl::int_<2> )
     vtkPoints *newPoints = vtkPoints::New();
 
     if ( _M_vertices )
+    {
+        Debug( 8099 ) << "adding vertices\n" << _M_vertices.get() << "\n";
+
+        for ( size_type i = 0; i < _M_vertices->size2(); ++i )
         {
-            Debug( 8099 ) << "adding vertices\n" << _M_vertices.get() << "\n";
-            for ( size_type i = 0; i < _M_vertices->size2(); ++i )
-                {
-                    newPoints->InsertNextPoint( _M_vertices.get()( 0, i ), _M_vertices.get()( 1, i ), 0 );
-                }
+            newPoints->InsertNextPoint( _M_vertices.get()( 0, i ), _M_vertices.get()( 1, i ), 0 );
         }
+    }
+
     std::vector<double> perturbation( pset->nPoints() );
-    for(size_type i=0 ; i< pset->nPoints() ; ++i)
-        {
-            perturbation[i] = std::rand()*1e-6/RAND_MAX;
-            uint16_type index = newPoints->InsertNextPoint( pset->points()(0,i)+perturbation[i], pset->points()(1,i), 0 );
-            Debug( 8098 ) << "Inserting point with id " << index << "\n";
-            Debug( 8098 ) << "pset.point( " << i << " )= " << pset->point( i ) << "\n";
-        }
+
+    for ( size_type i=0 ; i< pset->nPoints() ; ++i )
+    {
+        perturbation[i] = std::rand()*1e-6/RAND_MAX;
+        uint16_type index = newPoints->InsertNextPoint( pset->points()( 0,i )+perturbation[i], pset->points()( 1,i ), 0 );
+        Debug( 8098 ) << "Inserting point with id " << index << "\n";
+        Debug( 8098 ) << "pset.point( " << i << " )= " << pset->point( i ) << "\n";
+    }
 
     vtkPolyData *polyData = vtkPolyData::New();
     polyData->SetPoints( newPoints );
@@ -346,32 +360,33 @@ PointSetToMesh<Convex, T>::visit( pointset_type* pset, mpl::int_<2> )
     Debug( 8098 ) << "Number of cells  = " << Nelem   << "\n";
     Debug( 8098 ) << "Number of points  = " << Npts   << "\n";
 
-    for(int i=0; i< Npts; ++i)
-        {
-            // revert back the perturbation
-            outMesh->GetPoints()->SetPoint( i,
-                                            outMesh->GetPoints()->GetPoint(i)[0]- perturbation[i],
-                                            outMesh->GetPoints()->GetPoint(i)[1],
-                                            outMesh->GetPoints()->GetPoint(i)[2] );
-        }
-    for(int i=0; i< Nelem; ++i)
-        {
-            //  std::cout << "\nLa cellule num�ro : " << i << " compte " << outMesh->GetCell(i)->GetNumberOfPoints() << " points." << "\n";
-            Debug( 8098 ) << "Element Id = " << i << "\n";
-            Debug( 8098 ) << "Point 0 (" <<  (int)outMesh->GetCell(i)->GetPointId(0) <<") =" ;
-            Debug( 8098 ) << "(" << outMesh->GetCell(i)->GetPoints()->GetPoint(0)[0] << " , "
-                          << outMesh->GetCell(i)->GetPoints()->GetPoint(0)[1]<< ")" << "\n";
-            Debug( 8098 ) << "Point 1 (" <<  (int)outMesh->GetCell(i)->GetPointId(1) <<") =" ;
-            Debug( 8098 ) << "(" << outMesh->GetCell(i)->GetPoints()->GetPoint(1)[0] << " , "
-                          << outMesh->GetCell(i)->GetPoints()->GetPoint(1)[1]<< ")" << "\n";
-            Debug( 8098 ) << "Point 2 (" <<  (int)outMesh->GetCell(i)->GetPointId(2) <<") =" ;
-            Debug( 8098 ) << "(" << outMesh->GetCell(i)->GetPoints()->GetPoint(2)[0] << " , "
-                          << outMesh->GetCell(i)->GetPoints()->GetPoint(2)[1]<< ")" << "\n";
+    for ( int i=0; i< Npts; ++i )
+    {
+        // revert back the perturbation
+        outMesh->GetPoints()->SetPoint( i,
+                                        outMesh->GetPoints()->GetPoint( i )[0]- perturbation[i],
+                                        outMesh->GetPoints()->GetPoint( i )[1],
+                                        outMesh->GetPoints()->GetPoint( i )[2] );
+    }
 
-            Debug( 8098 ) << outMesh->GetCell(i)->GetNumberOfEdges() << "\n";
-            Debug( 8098 ) << (int)outMesh->GetCell(i)->GetEdge(0)->GetPointId(0) << "\n";
-            Debug( 8098 ) << (int)outMesh->GetCell(i)->GetEdge(0)->GetPointId(1) << "\n";
-        }
+    for ( int i=0; i< Nelem; ++i )
+    {
+        //  std::cout << "\nLa cellule num�ro : " << i << " compte " << outMesh->GetCell(i)->GetNumberOfPoints() << " points." << "\n";
+        Debug( 8098 ) << "Element Id = " << i << "\n";
+        Debug( 8098 ) << "Point 0 (" <<  ( int )outMesh->GetCell( i )->GetPointId( 0 ) <<") =" ;
+        Debug( 8098 ) << "(" << outMesh->GetCell( i )->GetPoints()->GetPoint( 0 )[0] << " , "
+                      << outMesh->GetCell( i )->GetPoints()->GetPoint( 0 )[1]<< ")" << "\n";
+        Debug( 8098 ) << "Point 1 (" <<  ( int )outMesh->GetCell( i )->GetPointId( 1 ) <<") =" ;
+        Debug( 8098 ) << "(" << outMesh->GetCell( i )->GetPoints()->GetPoint( 1 )[0] << " , "
+                      << outMesh->GetCell( i )->GetPoints()->GetPoint( 1 )[1]<< ")" << "\n";
+        Debug( 8098 ) << "Point 2 (" <<  ( int )outMesh->GetCell( i )->GetPointId( 2 ) <<") =" ;
+        Debug( 8098 ) << "(" << outMesh->GetCell( i )->GetPoints()->GetPoint( 2 )[0] << " , "
+                      << outMesh->GetCell( i )->GetPoints()->GetPoint( 2 )[1]<< ")" << "\n";
+
+        Debug( 8098 ) << outMesh->GetCell( i )->GetNumberOfEdges() << "\n";
+        Debug( 8098 ) << ( int )outMesh->GetCell( i )->GetEdge( 0 )->GetPointId( 0 ) << "\n";
+        Debug( 8098 ) << ( int )outMesh->GetCell( i )->GetEdge( 0 )->GetPointId( 1 ) << "\n";
+    }
 
 
 
@@ -398,16 +413,17 @@ PointSetToMesh<Convex, T>::visit( pointset_type* pset, mpl::int_<3> )
 
     //if ( _M_add_bdy_pts )
     if ( 0 )
-        {
-            newPoints->InsertNextPoint( -1, -1, -1 );
-            newPoints->InsertNextPoint(  1, -1, -1 );
-            newPoints->InsertNextPoint( -1,  1, -1 );
-            newPoints->InsertNextPoint( -1, -1,  1 );
-        }
-    for( size_type i=0 ; i< pset->nPoints() ; ++i)
-        {
-            newPoints->InsertNextPoint(pset->points()(0,i), pset->points()(1,i), pset->points()(2,i) );
-        }
+    {
+        newPoints->InsertNextPoint( -1, -1, -1 );
+        newPoints->InsertNextPoint(  1, -1, -1 );
+        newPoints->InsertNextPoint( -1,  1, -1 );
+        newPoints->InsertNextPoint( -1, -1,  1 );
+    }
+
+    for ( size_type i=0 ; i< pset->nPoints() ; ++i )
+    {
+        newPoints->InsertNextPoint( pset->points()( 0,i ), pset->points()( 1,i ), pset->points()( 2,i ) );
+    }
 
     // create more points
 
@@ -416,7 +432,7 @@ PointSetToMesh<Convex, T>::visit( pointset_type* pset, mpl::int_<3> )
 
     vtkDelaunay3D *delaunay3D = vtkDelaunay3D::New();
     delaunay3D->SetInput( polyData );
-    delaunay3D->SetOffset(5);
+    delaunay3D->SetOffset( 5 );
 
     Debug( 8098 ) <<"[PointSetToMesh::visit(<3>)] Offset = " << delaunay3D->GetOffset() << "\n";
     delaunay3D->Update();

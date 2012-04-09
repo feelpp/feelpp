@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -93,8 +93,8 @@ public:
     {
 
         //_M_ones = 1;
-        for( int i = 0;i < M; ++i )
-            for( int j = 0;j < N; ++j )
+        for ( int i = 0; i < M; ++i )
+            for ( int j = 0; j < N; ++j )
                 _M_ones[i][j] = 1;
     }
 
@@ -133,7 +133,10 @@ public:
     //@{
 
     //blitz::Array<value_type,2> ones() const { return _M_ones; }
-    boost::multi_array<value_type,2> const& ones() const { return _M_ones; }
+    boost::multi_array<value_type,2> const& ones() const
+    {
+        return _M_ones;
+    }
 
     //@}
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t>
@@ -143,47 +146,53 @@ public:
         typedef typename expression_type::value_type value_type;
         typedef value_type return_value_type;
         typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, detail::gmc<0> >,
-                                  mpl::identity<detail::gmc<0> >,
-                                  mpl::identity<detail::gmc<1> > >::type::type key_type;
+                mpl::identity<detail::gmc<0> >,
+                mpl::identity<detail::gmc<1> > >::type::type key_type;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::pointer gmc_ptrtype;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
 
         struct INVALID_SHAPE {};
-        static const bool eq11 = (M==1)&&(N==1);
-        static const bool eqD1 = (M==gmc_type::nDim)&&(N==1);
-        static const bool eq1D = (M==1)&&(N==gmc_type::nDim);
-        static const bool eqDD = (M==gmc_type::nDim)&&(N==gmc_type::nDim);
+        static const bool eq11 = ( M==1 )&&( N==1 );
+        static const bool eqD1 = ( M==gmc_type::nDim )&&( N==1 );
+        static const bool eq1D = ( M==1 )&&( N==gmc_type::nDim );
+        static const bool eqDD = ( M==gmc_type::nDim )&&( N==gmc_type::nDim );
         typedef typename mpl::if_< mpl::bool_<eq11>,
-                                   mpl::identity<Shape<gmc_type::nDim, Scalar, false, false> >,
-                                   typename mpl::if_< mpl::bool_<eqD1>,
-                                                      mpl::identity<Shape<gmc_type::nDim, Vectorial, false, false> >,
-                                                      typename mpl::if_< mpl::bool_<eq1D>,
-                                                                         mpl::identity<Shape<gmc_type::nDim, Vectorial, true, false> >,
-                                                                         typename mpl::if_< mpl::bool_<eqDD>,
-                                                                                            mpl::identity<Shape<gmc_type::nDim, Tensor2, false, false> >,
-                                                                                            mpl::identity<INVALID_SHAPE> >::type>::type>::type>::type::type shape;
+                mpl::identity<Shape<gmc_type::nDim, Scalar, false, false> >,
+                typename mpl::if_< mpl::bool_<eqD1>,
+                mpl::identity<Shape<gmc_type::nDim, Vectorial, false, false> >,
+                typename mpl::if_< mpl::bool_<eq1D>,
+                mpl::identity<Shape<gmc_type::nDim, Vectorial, true, false> >,
+                typename mpl::if_< mpl::bool_<eqDD>,
+                mpl::identity<Shape<gmc_type::nDim, Tensor2, false, false> >,
+                mpl::identity<INVALID_SHAPE> >::type>::type>::type>::type::type shape;
 
 
-        template <class Args> struct sig { typedef value_type type; };
+        template <class Args> struct sig
+        {
+            typedef value_type type;
+        };
 
-        struct is_zero { static const bool value = false; };
+        struct is_zero
+        {
+            static const bool value = false;
+        };
 
         tensor( this_type const& expr,Geo_t const&, Basis_i_t const&, Basis_j_t const& )
             :
-            _M_expr(expr)
+            _M_expr( expr )
         {
             //std::cout << "tensor::ones = " << _M_expr.ones() << "\n";
         }
 
         tensor( this_type const& expr,Geo_t const&, Basis_i_t const& )
             :
-            _M_expr(expr)
+            _M_expr( expr )
         {
         }
 
         tensor( this_type const& expr, Geo_t const&  )
             :
-            _M_expr(expr)
+            _M_expr( expr )
         {
         }
 
@@ -201,10 +210,10 @@ public:
         value_type
         evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
-            Feel::detail::ignore_unused_variable_warning(i);
-            Feel::detail::ignore_unused_variable_warning(j);
-            Feel::detail::ignore_unused_variable_warning(q);
-            return eval( c1, c2, mpl::int_<shape::rank>());
+            Feel::detail::ignore_unused_variable_warning( i );
+            Feel::detail::ignore_unused_variable_warning( j );
+            Feel::detail::ignore_unused_variable_warning( q );
+            return eval( c1, c2, mpl::int_<shape::rank>() );
         }
 
         template<int PatternContext>
@@ -212,31 +221,31 @@ public:
         evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q,
                  mpl::int_<PatternContext> ) const
         {
-            Feel::detail::ignore_unused_variable_warning(i);
-            Feel::detail::ignore_unused_variable_warning(j);
-            Feel::detail::ignore_unused_variable_warning(q);
-            return eval( c1, c2, mpl::int_<shape::rank>());
+            Feel::detail::ignore_unused_variable_warning( i );
+            Feel::detail::ignore_unused_variable_warning( j );
+            Feel::detail::ignore_unused_variable_warning( q );
+            return eval( c1, c2, mpl::int_<shape::rank>() );
         }
 
         value_type
         evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
-            Feel::detail::ignore_unused_variable_warning(i);
-            Feel::detail::ignore_unused_variable_warning(q);
-            return eval( c1, c2, mpl::int_<shape::rank>());
+            Feel::detail::ignore_unused_variable_warning( i );
+            Feel::detail::ignore_unused_variable_warning( q );
+            return eval( c1, c2, mpl::int_<shape::rank>() );
         }
         value_type
         evalq( uint16_type c1, uint16_type c2, uint16_type q ) const
         {
-            Feel::detail::ignore_unused_variable_warning(q);
-            return eval( c1, c2, mpl::int_<shape::rank>());
+            Feel::detail::ignore_unused_variable_warning( q );
+            return eval( c1, c2, mpl::int_<shape::rank>() );
         }
     private:
         value_type
         eval( int c1, int c2, mpl::int_<0> ) const
         {
-            Feel::detail::ignore_unused_variable_warning(c1);
-            Feel::detail::ignore_unused_variable_warning(c2);
+            Feel::detail::ignore_unused_variable_warning( c1 );
+            Feel::detail::ignore_unused_variable_warning( c2 );
             return _M_expr.ones()[0][0];
         }
         value_type
@@ -244,6 +253,7 @@ public:
         {
             if ( shape::is_transposed )
                 return _M_expr.ones()[0][c2];
+
             return _M_expr.ones()[c1][0];
         }
         value_type

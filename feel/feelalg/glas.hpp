@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -113,9 +113,9 @@ struct norm_inf_adaptor
 {
     template<typename E>
     Real operator()( E const& __v ) const
-        {
-            return norm_inf( __v );
-        }
+    {
+        return norm_inf( __v );
+    }
 };
 
 /**
@@ -176,6 +176,7 @@ operator<<( DebugStream& __os, node<real64_type>::type const& __n )
 
         __os << __str.str() << "\n";
     }
+
     return __os;
 }
 inline
@@ -199,6 +200,7 @@ operator<<( DebugStream& __os, node<dd_real>::type const& __n )
 
         __os << __str.str() << "\n";
     }
+
     return __os;
 }
 inline
@@ -220,6 +222,7 @@ operator<<( DebugStream& __os, node<qd_real>::type const& __n )
 
         __os << __str.str() << "\n";
     }
+
     return __os;
 }
 inline
@@ -245,6 +248,7 @@ operator<<( DebugStream& __os, ublas::vector<T> const& __n )
 
         __os << __str.str() << "\n";
     }
+
     return __os;
 }
 template<typename T>
@@ -267,6 +271,7 @@ operator<<( DebugStream& __os, ublas::matrix<T, Orient> const& __n )
 
         __os << __str.str() << "\n";
     }
+
     return __os;
 }
 template<typename T,typename Orient>
@@ -283,18 +288,18 @@ operator<<( NdebugStream& __os, ublas::matrix<T,Orient> const& /*__n*/ )
 //
 #if defined( FEELPP_SIZET_SAME_AS_UINT )
 typedef ublas::compressed_matrix<double,
-                                 ublas::row_major > csr_matrix_type;
+        ublas::row_major > csr_matrix_type;
 typedef ublas::compressed_matrix<double,
-                                 ublas::column_major > csc_matrix_type;
+        ublas::column_major > csc_matrix_type;
 #else
 typedef ublas::compressed_matrix<double,
-                                 ublas::row_major, 0,
-                                 ublas::unbounded_array<int>,
-                                 ublas::unbounded_array<double> > csr_matrix_type;
+        ublas::row_major, 0,
+        ublas::unbounded_array<int>,
+        ublas::unbounded_array<double> > csr_matrix_type;
 typedef ublas::compressed_matrix<double,
-                                 ublas::column_major, 0,
-                                 ublas::unbounded_array<int>,
-                                 ublas::unbounded_array<double> > csc_matrix_type;
+        ublas::column_major, 0,
+        ublas::unbounded_array<int>,
+        ublas::unbounded_array<double> > csc_matrix_type;
 #endif
 
 /**
@@ -307,15 +312,16 @@ void spy( MatrixType const& __m, std::string const &filename )
     std::string name = filename;
     std::string separator = " , ";
 
-            // check on the file name
+    // check on the file name
     int i = filename.find( "." );
 
     if ( i <= 0 )
         name = filename + ".m";
+
     else
     {
         if ( ( unsigned int ) i != filename.size() - 2 ||
-               filename[ i + 1 ] != 'm' )
+                filename[ i + 1 ] != 'm' )
         {
             std::cerr << "Wrong file name ";
             name = filename + ".m";
@@ -324,18 +330,20 @@ void spy( MatrixType const& __m, std::string const &filename )
 
     std::ofstream file_out( name.c_str() );
 
-    FEELPP_ASSERT( file_out)( filename ).error("[Feel::spy] ERROR: File cannot be opened for writing.");
+    FEELPP_ASSERT( file_out )( filename ).error( "[Feel::spy] ERROR: File cannot be opened for writing." );
 
     file_out << "S = [ ";
+
     for ( typename MatrixType::const_iterator1 i1=__m.begin1();
-          i1!=__m.end1(); ++i1 )
+            i1!=__m.end1(); ++i1 )
     {
         for ( typename MatrixType::const_iterator2 i2=i1.begin();
-              i2!=i1.end(); ++i2 )
+                i2!=i1.end(); ++i2 )
             file_out << i2.index1() + 1 << separator
-                    << i2.index2() + 1 << separator
-                    << *i2  << std::endl;
+                     << i2.index2() + 1 << separator
+                     << *i2  << std::endl;
     }
+
     file_out << "];" << std::endl;
     file_out << "I=S(:,1); J=S(:,2); S=S(:,3);" << std::endl;
     file_out << "A=sparse(I,J,S); spy(A);" << std::endl;
@@ -351,10 +359,12 @@ ublas::matrix<T,Orien>
 average( ublas::matrix<T, Orien> const& m )
 {
     ublas::matrix<T, Orien> v( m.size1(), 1 );
-    ublas::scalar_vector<T> avg( m.size2(), T(1) );
-    T n_val = int(m.size2());
-    for( size_type i = 0; i < v.size1(); ++i )
+    ublas::scalar_vector<T> avg( m.size2(), T( 1 ) );
+    T n_val = int( m.size2() );
+
+    for ( size_type i = 0; i < v.size1(); ++i )
         v( i, 0 ) = ublas::inner_prod( ublas::row( m, i ), avg )/n_val;
+
     return v;
 }
 template<typename T>
@@ -377,17 +387,19 @@ linspace( T const& __a, T const& __b, size_type __N, int interior = 0 )
 {
     size_type N = __N-2*interior;
     ublas::vector<T> v( N );
-    T h = (__b-__a)/T(__N-1);
-    T a = __a+T(interior)*h;
+    T h = ( __b-__a )/T( __N-1 );
+    T a = __a+T( interior )*h;
     //T b = __b-T(interior)*h;
 #if 0
     size_type i = 0;
     std::for_each( v.begin(),
                    v.end(),
-                   ( lambda::_1 = a+lambda::var(i)*h, ++lambda::var(i) ) );
+                   ( lambda::_1 = a+lambda::var( i )*h, ++lambda::var( i ) ) );
 #else
-    for( size_type i = 0; i < N; ++i )
-        v[i]=a+T(i)*h;
+
+    for ( size_type i = 0; i < N; ++i )
+        v[i]=a+T( i )*h;
+
 #endif
     return v;
 }
@@ -399,10 +411,10 @@ randomize( T& t )
 {
     typedef typename T::value_type value_type;
     typedef boost::minstd_rand base_generator_type;
-    base_generator_type generator(42u);
-    boost::uniform_real<value_type> uni_dist(0.0,1.0);
+    base_generator_type generator( 42u );
+    boost::uniform_real<value_type> uni_dist( 0.0,1.0 );
     typedef boost::variate_generator<base_generator_type&, boost::uniform_real<value_type> >  rand_type;
-    rand_type uni(generator, uni_dist);
+    rand_type uni( generator, uni_dist );
 
     std::for_each( t.data().begin(),
                    t.data().end(),

@@ -40,24 +40,24 @@ namespace Feel
  */
 #if 0
 enum ZeroOutOptions
-    {
-        PENALISATION                = 0x1, /**< penalisation */
-        ELIMINATION                 = 0x2 /**< elimination */
-    };
+{
+    PENALISATION                = 0x1, /**< penalisation */
+    ELIMINATION                 = 0x2 /**< elimination */
+};
 enum EliminationOptions
-    {
-        ELIMINATION_KEEP_DIAGONAL   = 0x1, /**< enables elimination and keep diagonal entry(ie don't put 1), modify rhs accordingly */
-        ELIMINATION_SYMMETRIC       = 0x2  /**< enables elimination and make a symmetric elimination */
-    };
+{
+    ELIMINATION_KEEP_DIAGONAL   = 0x1, /**< enables elimination and keep diagonal entry(ie don't put 1), modify rhs accordingly */
+    ELIMINATION_SYMMETRIC       = 0x2  /**< enables elimination and make a symmetric elimination */
+};
 #else
 enum on_context_type
-    {
-        ON_NONE                        = 0x0, /**< none */
-        ON_ELIMINATION                 = 0x1, /**< elimination */
-        ON_PENALISATION                = 0x2, /**< penalisation */
-        ON_ELIMINATION_KEEP_DIAGONAL   = 0x4, /**< enables elimination and keep diagonal entry(ie don't put 1), modify rhs accordingly */
-        ON_ELIMINATION_SYMMETRIC       = 0x8  /**< enables elimination and make a symmetric elimination */
-    };
+{
+    ON_NONE                        = 0x0, /**< none */
+    ON_ELIMINATION                 = 0x1, /**< elimination */
+    ON_PENALISATION                = 0x2, /**< penalisation */
+    ON_ELIMINATION_KEEP_DIAGONAL   = 0x4, /**< enables elimination and keep diagonal entry(ie don't put 1), modify rhs accordingly */
+    ON_ELIMINATION_SYMMETRIC       = 0x8  /**< enables elimination and make a symmetric elimination */
+};
 #endif
 
 enum   MatrixProperties
@@ -73,11 +73,11 @@ enum   MatrixProperties
  * At the moment, we support GMM(serial), PETSC and TRILINOS(serial and parallel)
  */
 enum BackendType
-    {
-        BACKEND_GMM = 0,
-        BACKEND_PETSC,
-        BACKEND_TRILINOS
-    };
+{
+    BACKEND_GMM = 0,
+    BACKEND_PETSC,
+    BACKEND_TRILINOS
+};
 
 /**
  * Defines an \p enum for iterative solver types
@@ -101,7 +101,8 @@ enum SolverType {CG=0,
                  RICHARDSON,
                  CHEBYSHEV,
 
-                 INVALID_SOLVER};
+                 INVALID_SOLVER
+                };
 
 /**
  * Defines an \p enum for preconditioner types
@@ -121,7 +122,8 @@ enum PreconditionerType {IDENTITY_PRECOND =0,
                          USER_PRECOND,
                          SHELL_PRECOND,
                          FIELDSPLIT_PRECOND,
-                         INVALID_PRECONDITIONER};
+                         INVALID_PRECONDITIONER
+                        };
 
 
 /**
@@ -129,38 +131,39 @@ enum PreconditionerType {IDENTITY_PRECOND =0,
  */
 enum FieldSplitType {ADDITIVE=0,
                      MULTIPLICATIVE,
-                     SCHUR};
+                     SCHUR
+                    };
 
 /**
  * indicates the structure of the matrix versus preconditioner
  */
 enum MatrixStructure
-    {
-        SAME_NONZERO_PATTERN,
-        DIFFERENT_NONZERO_PATTERN,
-        SAME_PRECONDITIONER,
-        SUBSET_NONZERO_PATTERN,
-        INVALID_STRUCTURE
-    };
+{
+    SAME_NONZERO_PATTERN,
+    DIFFERENT_NONZERO_PATTERN,
+    SAME_PRECONDITIONER,
+    SUBSET_NONZERO_PATTERN,
+    INVALID_STRUCTURE
+};
 /**
  * Defines an \p enum for iterative eigenproblem solver types
  */
 enum EigenSolverType
-    {
-        POWER=0,
-        LAPACK,
-        SUBSPACE,
-        ARNOLDI,
-        LANCZOS,
-        KRYLOVSCHUR,
-        // SLEPc optional packages
-        ARPACK,
-        // EPSBLZPACK,
-        // EPSPLANSO,
-        // EPSTRLAN,
+{
+    POWER=0,
+    LAPACK,
+    SUBSPACE,
+    ARNOLDI,
+    LANCZOS,
+    KRYLOVSCHUR,
+    // SLEPc optional packages
+    ARPACK,
+    // EPSBLZPACK,
+    // EPSPLANSO,
+    // EPSTRLAN,
 
-        INVALID_EIGENSOLVER
-    }; // EigenSolverType
+    INVALID_EIGENSOLVER
+}; // EigenSolverType
 
 /**
  * Defines an \p enum for eigenproblem types.  This can be Hermitian (HEP),
@@ -173,7 +176,8 @@ enum EigenProblemType {NHEP=0,
                        GHEP,
                        PGNHEP,
 
-                       INVALID_EIGENPROBLEMTYPE};
+                       INVALID_EIGENPROBLEMTYPE
+                      };
 
 
 
@@ -188,7 +192,8 @@ enum PositionOfSpectrum {LARGEST_MAGNITUDE=0,
                          LARGEST_IMAGINARY,
                          SMALLEST_IMAGINARY,
 
-                         INVALID_Postion_of_Spectrum};
+                         INVALID_Postion_of_Spectrum
+                        };
 
 /**
  * Spectral transform type
@@ -196,68 +201,69 @@ enum PositionOfSpectrum {LARGEST_MAGNITUDE=0,
 enum SpectralTransformType {SHIFT=0,
                             SINVERT,
                             FOLD,
-                            CAYLEY };
+                            CAYLEY
+                           };
 /**
  * Defines an \p enum for various linear solver packages.  This
  * allows for run-time switching between solver packages
  *
  */
 enum SolverPackage
-    {
-        SOLVERS_FEEL=0,
-        SOLVERS_GMM,
-        SOLVERS_PETSC,
-        SOLVERS_TRILINOS,
-        SOLVERS_SLEPC,
-        SOLVER_INVALID_PACKAGE
-    };
+{
+    SOLVERS_FEEL=0,
+    SOLVERS_GMM,
+    SOLVERS_PETSC,
+    SOLVERS_TRILINOS,
+    SOLVERS_SLEPC,
+    SOLVER_INVALID_PACKAGE
+};
 
 /**
  * Define an \p enum for non linear solver type
  * if SELECT_IN_ARGLIST the choice is done by the arguments in the line command
  */
 enum SolverNonLinearType
-    {
-        SELECT_IN_ARGLIST=0,
-        LINE_SEARCH,
-        TRUST_REGION
-    };
+{
+    SELECT_IN_ARGLIST=0,
+    LINE_SEARCH,
+    TRUST_REGION
+};
 
 /**
  *
  */
 enum AitkenType
-    {
-        AITKEN_STANDARD=0,
-        AITKEN_METHOD_1=1,
-        FIXED_RELAXATION_METHOD=2
-    };
+{
+    AITKEN_STANDARD=0,
+    AITKEN_METHOD_1=1,
+    FIXED_RELAXATION_METHOD=2
+};
 /**
  *
  */
 enum WeakDirichlet
-    {
-        STRONG=0,
-        WEAK=1
-    };
+{
+    STRONG=0,
+    WEAK=1
+};
 
 
 enum MatSolverPackageType
-    {
-        MATSOLVER_SPOOLES=0,
-        MATSOLVER_SUPERLU,
-        MATSOLVER_SUPERLU_DIST,
-        MATSOLVER_UMFPACK,
-        MATSOLVER_ESSL,
-        MATSOLVER_LUSOL,
-        MATSOLVER_MUMPS,
-        MATSOLVER_PASTIX,
-        MATSOLVER_DSCPACK,
-        MATSOLVER_MATLAB,
-        MATSOLVER_PETSC,
-        MATSOLVER_PLAPACK,
-        MATSOLVER_BAS
-    };
+{
+    MATSOLVER_SPOOLES=0,
+    MATSOLVER_SUPERLU,
+    MATSOLVER_SUPERLU_DIST,
+    MATSOLVER_UMFPACK,
+    MATSOLVER_ESSL,
+    MATSOLVER_LUSOL,
+    MATSOLVER_MUMPS,
+    MATSOLVER_PASTIX,
+    MATSOLVER_DSCPACK,
+    MATSOLVER_MATLAB,
+    MATSOLVER_PETSC,
+    MATSOLVER_PLAPACK,
+    MATSOLVER_BAS
+};
 
 } // Feel
 #endif /* __FeelAlgEnums_H */

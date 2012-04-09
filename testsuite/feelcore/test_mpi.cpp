@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -33,13 +33,13 @@ Feel::AboutData
 makeAbout()
 {
     Feel::AboutData about( "test_mpi" ,
-                            "test_mpi" ,
-                            "0.1",
-                            "MPI test",
-                            Feel::AboutData::License_LGPL,
-                            "Copyright (c) 2005,2006 EPFL");
+                           "test_mpi" ,
+                           "0.1",
+                           "MPI test",
+                           Feel::AboutData::License_LGPL,
+                           "Copyright (c) 2005,2006 EPFL" );
 
-    about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
     return about;
 
 }
@@ -47,10 +47,10 @@ int main( int argc, char** argv )
 {
     using namespace Feel;
 
-    Feel::po::options_description test("test options");
+    Feel::po::options_description test( "test options" );
     test.add_options()
-        ("testall", "run all test cases")
-        ;
+    ( "testall", "run all test cases" )
+    ;
 #if defined( FEELPP_HAS_PETSC_H )
     //MPI_Init( &argc, &argv );
     //PetscInitialize (&argc, &argv, PETSC_NULL, PETSC_NULL);

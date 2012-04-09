@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -60,26 +60,26 @@ EthierSteinman::oseenUpdateBdf2( Oseen<space_u_type, space_p_type, imOrder, ENTI
     const double bdf2_2 = -0.5/dt;
 
     oseen.update( /* itRan = */ marked2elements( *uxn.functionSpace()->mesh(),
-                                                 1 ),
-                  /* sigma = */ 0.0,
-                  /* nuInc = */ 0.0,
-                  /* nuAbs = */ M_mu,
+                                1 ),
+                                /* sigma = */ 0.0,
+                                /* nuInc = */ 0.0,
+                                /* nuAbs = */ M_mu,
 
-                  /* beta  = */ ( idv(uxn)*oneX()
-                                  + idv(uyn)*oneY()
-//                                   + idv(uzn)*oneZ()
-                                  ),
-                  /* f     = */ ( (idv(ux )*bdf2_1 + idv(uxo)*bdf2_2 )*oneX()
-                                  + (idv(uy )*bdf2_1 + idv(uyo)*bdf2_2 )*oneY()
-//                                   + (idv(uz )*bdf2_1 + idv(uzo)*bdf2_2 )*oneZ()
-                                  ),
-                  /* c     = */ epsCompress*idv(pn),
-                  /* g     = */ ( idv(ux0)*oneX()
-                                  + idv(uy0)*oneY()
-//                                   + idv(uz0)*oneZ()
-                                  ),
-                  /* noSlip= */ 1.0,
-                  /* updtJ = */ updateStabilization );
+                                /* beta  = */ ( idv( uxn )*oneX()
+                                        + idv( uyn )*oneY()
+                                        //                                   + idv(uzn)*oneZ()
+                                              ),
+                                /* f     = */ ( ( idv( ux )*bdf2_1 + idv( uxo )*bdf2_2 )*oneX()
+                                        + ( idv( uy )*bdf2_1 + idv( uyo )*bdf2_2 )*oneY()
+                                        //                                   + (idv(uz )*bdf2_1 + idv(uzo)*bdf2_2 )*oneZ()
+                                              ),
+                                /* c     = */ epsCompress*idv( pn ),
+                                /* g     = */ ( idv( ux0 )*oneX()
+                                        + idv( uy0 )*oneY()
+                                        //                                   + idv(uz0)*oneZ()
+                                              ),
+                                /* noSlip= */ 1.0,
+                                /* updtJ = */ updateStabilization );
 
 }
 

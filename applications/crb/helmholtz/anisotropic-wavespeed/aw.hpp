@@ -57,13 +57,13 @@ namespace Feel
 po::options_description
 makeAnisotropicWavespeedOptions()
 {
-    po::options_description AnisotropicWavespeedoptions("helmholtz Anisotropic Wavespeed options");
+    po::options_description AnisotropicWavespeedoptions( "helmholtz Anisotropic Wavespeed options" );
     AnisotropicWavespeedoptions.add_options()
-        ("hsize", po::value<double>()->default_value( 0.1 ), "mesh size")
-        ("mu1", po::value<double>()->default_value( 1 ), "diffusion in y direction [0.8;1.2]")
-        ("mu2", po::value<double>()->default_value( 0.1 ), "wave speed [10;50]")
-        ("gamma-dir", po::value<double>()->default_value( 50 ), "penalisation coefficient for weak Dirichlet condition")
-        ;
+    ( "hsize", po::value<double>()->default_value( 0.1 ), "mesh size" )
+    ( "mu1", po::value<double>()->default_value( 1 ), "diffusion in y direction [0.8;1.2]" )
+    ( "mu2", po::value<double>()->default_value( 0.1 ), "wave speed [10;50]" )
+    ( "gamma-dir", po::value<double>()->default_value( 50 ), "penalisation coefficient for weak Dirichlet condition" )
+    ;
     return AnisotropicWavespeedoptions;
 }
 AboutData
@@ -74,9 +74,9 @@ makeAnisotropicWavespeedAbout( std::string const& str = "aw" )
                            "0.1",
                            "Helmholtz anisotropic wavespeed (2D)",
                            Feel::AboutData::License_GPL,
-                           "Copyright (c) 2011 Université de Grenoble 1 (Joseph Fourier)");
+                           "Copyright (c) 2011 Université de Grenoble 1 (Joseph Fourier)" );
 
-    about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
     return about;
 }
 
@@ -167,7 +167,7 @@ public:
     //! copy constructor
     //AnisotropicWavespeed( AnisotropicWavespeed const & );
     //! destructor
-    ~AnisotropicWavespeed(){}
+    ~AnisotropicWavespeed() {}
 
     //! initialisation of the model
     void init();
@@ -185,7 +185,10 @@ public:
 
     // \return the number of terms in affine decomposition of left hand
     // side bilinear form
-    int Qa() const { return 3; }
+    int Qa() const
+    {
+        return 3;
+    }
 
     /**
      * there is at least one output which is the right hand side of the
@@ -193,67 +196,85 @@ public:
      *
      * \return number of outputs associated to the model
      */
-    int Nl() const { return 1; }
+    int Nl() const
+    {
+        return 1;
+    }
 
     /**
      * \param l the index of output
      * \return number of terms  in affine decomposition of the \p q th output term
      */
-    int Ql( int l ) const { return 1; }
+    int Ql( int l ) const
+    {
+        return 1;
+    }
 
     /**
      * \brief Returns the function space
      */
-    space_ptrtype functionSpace() { return Xh; }
+    space_ptrtype functionSpace()
+    {
+        return Xh;
+    }
 
     //! return the parameter space
-    parameterspace_ptrtype parameterSpace() const { return M_Dmu;}
+    parameterspace_ptrtype parameterSpace() const
+    {
+        return M_Dmu;
+    }
 
     /**
      * \brief compute the theta coefficient for both bilinear and linear form
      * \param mu parameter to evaluate the coefficients
      */
     boost::tuple<theta_vector_type, std::vector<theta_vector_type> >
-    computeThetaq( parameter_type const& mu , double time=0)
-        {
-            M_thetaAq.resize( Qa() );
-            M_thetaAq( 0 ) = 1;
-            M_thetaAq( 1 ) = mu(0);
-            M_thetaAq( 2 ) = -mu(1);
+    computeThetaq( parameter_type const& mu , double time=0 )
+    {
+        M_thetaAq.resize( Qa() );
+        M_thetaAq( 0 ) = 1;
+        M_thetaAq( 1 ) = mu( 0 );
+        M_thetaAq( 2 ) = -mu( 1 );
 
-            M_thetaFq.resize( Nl() );
-            M_thetaFq[0].resize( Ql(0) );
-            M_thetaFq[0]( 0 ) = mu(0);
+        M_thetaFq.resize( Nl() );
+        M_thetaFq[0].resize( Ql( 0 ) );
+        M_thetaFq[0]( 0 ) = mu( 0 );
 
-            return boost::make_tuple( M_thetaAq, M_thetaFq );
-        }
-
-    /**
-     * \brief return the coefficient vector
-     */
-    theta_vector_type const& thetaAq() const { return M_thetaAq; }
+        return boost::make_tuple( M_thetaAq, M_thetaFq );
+    }
 
     /**
      * \brief return the coefficient vector
      */
-    std::vector<theta_vector_type> const& thetaFq() const { return M_thetaFq; }
+    theta_vector_type const& thetaAq() const
+    {
+        return M_thetaAq;
+    }
+
+    /**
+     * \brief return the coefficient vector
+     */
+    std::vector<theta_vector_type> const& thetaFq() const
+    {
+        return M_thetaFq;
+    }
 
     /**
      * \brief return the coefficient vector \p q component
      *
      */
     value_type thetaAq( int q ) const
-        {
-            return M_thetaAq( q );
-        }
+    {
+        return M_thetaAq( q );
+    }
 
     /**
      * \return the \p q -th term of the \p l -th output
      */
     value_type thetaL( int l, int q ) const
-        {
-            return M_thetaFq[l]( q );
-        }
+    {
+        return M_thetaFq[l]( q );
+    }
 
     //@}
 
@@ -264,7 +285,10 @@ public:
     /**
      * set the mesh characteristic length to \p s
      */
-    void setMeshSize( double s ) { meshSize = s; }
+    void setMeshSize( double s )
+    {
+        meshSize = s;
+    }
 
 
     //@}
@@ -385,7 +409,7 @@ AnisotropicWavespeed::AnisotropicWavespeed()
     exporter( Exporter<mesh_type>::New( "ensight" ) ),
     M_Dmu( new parameterspace_type )
 {
-  this->init();
+    this->init();
 }
 
 
@@ -400,7 +424,7 @@ AnisotropicWavespeed::AnisotropicWavespeed( po::variables_map const& vm )
     exporter( Exporter<mesh_type>::New( vm, "AnisotropicWavespeed" ) ),
     M_Dmu( new parameterspace_type )
 {
-  this->init();
+    this->init();
 }
 void
 AnisotropicWavespeed::init()
@@ -411,13 +435,13 @@ AnisotropicWavespeed::init()
     M_is_initialized = true;
     Log() << "[AW::init] starting...\n";
     // geometry is a ]0,1[x]0,1[
-    GeoTool::Node x1(0,0);
-    GeoTool::Node x2(1,1);
-    GeoTool::Rectangle R( meshSize,"Omega",x1,x2);
-    R.setMarker(_type="line",_name="Top",_marker4=true,_marker2=true,_marker3=true);
-    R.setMarker(_type="line",_name="Bottom",_marker1=true);
-    R.setMarker(_type="surface",_name="Omega",_markerAll=true);
-    mesh = R.createMesh<mesh_type>("Omega");
+    GeoTool::Node x1( 0,0 );
+    GeoTool::Node x2( 1,1 );
+    GeoTool::Rectangle R( meshSize,"Omega",x1,x2 );
+    R.setMarker( _type="line",_name="Top",_marker4=true,_marker2=true,_marker3=true );
+    R.setMarker( _type="line",_name="Bottom",_marker1=true );
+    R.setMarker( _type="surface",_name="Omega",_markerAll=true );
+    mesh = R.createMesh<mesh_type>( "Omega" );
 
 
     /*
@@ -435,7 +459,7 @@ AnisotropicWavespeed::init()
 
 
     M_Fq.resize( Nl() );
-    M_Fq[0].resize( Ql(0) );
+    M_Fq[0].resize( Ql( 0 ) );
     M_Fq[0][0] = backend->newVector( Xh );
 
     D = backend->newMatrix( Xh, Xh );
@@ -456,25 +480,25 @@ AnisotropicWavespeed::init()
     Log() << "Number of dof " << Xh->nLocalDof() << "\n";
 
     // right hand side
-    form1( Xh, M_Fq[0][0], _init=true ) = integrate( elements(mesh), id(v) );
+    form1( Xh, M_Fq[0][0], _init=true ) = integrate( elements( mesh ), id( v ) );
     M_Fq[0][0]->close();
 
-    form2( Xh, Xh, M_Aq[0], _init=true ) = integrate( elements(mesh), dxt(u)*dx(v));
+    form2( Xh, Xh, M_Aq[0], _init=true ) = integrate( elements( mesh ), dxt( u )*dx( v ) );
     M_Aq[0]->close();
 
-    form2( Xh, Xh, M_Aq[1], _init=true ) = integrate( elements(mesh), dyt(u)*dy(v));
+    form2( Xh, Xh, M_Aq[1], _init=true ) = integrate( elements( mesh ), dyt( u )*dy( v ) );
     // Dirichlet condition apply to Bottom, only y-dir terms non zero because of normal being N()=(Nx(),Ny()) = (0,-1)
     // thus the simplification below with the signs which should -Ny() = +1
-    form2( Xh, Xh, M_Aq[1] ) += integrate( markedfaces(mesh,"Bottom"), dyt(u)*id(v)+dy(u)*idt(v)+M_gammabc*idt(u)*id(v)/hFace());
+    form2( Xh, Xh, M_Aq[1] ) += integrate( markedfaces( mesh,"Bottom" ), dyt( u )*id( v )+dy( u )*idt( v )+M_gammabc*idt( u )*id( v )/hFace() );
     M_Aq[1]->close();
 
-    form2( Xh, Xh, M_Aq[2], _init=true ) = integrate( elements(mesh), idt(u)*id(v));
+    form2( Xh, Xh, M_Aq[2], _init=true ) = integrate( elements( mesh ), idt( u )*id( v ) );
     M_Aq[2]->close();
 
     M = backend->newMatrix( Xh, Xh );
 
     form2( Xh, Xh, M, _init=true ) =
-        integrate( elements(mesh), id(u)*idt(v) + grad(u)*trans(gradt(u)) );
+        integrate( elements( mesh ), id( u )*idt( v ) + grad( u )*trans( gradt( u ) ) );
     M->close();
 
 
@@ -497,8 +521,8 @@ AnisotropicWavespeed::computeAffineDecomposition()
 
 void
 AnisotropicWavespeed::solve( sparse_matrix_ptrtype& D,
-                           element_type& u,
-                           vector_ptrtype& F )
+                             element_type& u,
+                             vector_ptrtype& F )
 {
     backend->solve( _matrix=D, _solution=u, _rhs=F );
 } // AnisotropicWavespeed::solve
@@ -511,9 +535,9 @@ AnisotropicWavespeed::exportResults( element_type& U )
     {
         Log() << "exportResults starts\n";
 
-        exporter->step(0)->setMesh( U.functionSpace()->mesh() );
+        exporter->step( 0 )->setMesh( U.functionSpace()->mesh() );
 
-        exporter->step(0)->add( "u", U );
+        exporter->step( 0 )->add( "u", U );
 
         exporter->save();
     }
@@ -523,14 +547,17 @@ void
 AnisotropicWavespeed::update( parameter_type const& mu )
 {
     *D = *M_Aq[0];
-    for( size_type q = 1;q < M_Aq.size(); ++q )
+
+    for ( size_type q = 1; q < M_Aq.size(); ++q )
     {
         //std::cout << "[affine decomp] scale q=" << q << " with " << M_thetaAq[q] << "\n";
         D->addMatrix( M_thetaAq[q], M_Aq[q] );
     }
+
     F->close();
     F->zero();
-    for( size_type q = 0;q < M_Fq[0].size(); ++q )
+
+    for ( size_type q = 0; q < M_Fq[0].size(); ++q )
     {
         //std::cout << "[affine decomp] scale q=" << q << " with " << M_thetaFq[0][q] << "\n";
         F->add( M_thetaFq[0][q], M_Fq[0][q] );
@@ -582,16 +609,18 @@ AnisotropicWavespeed::run( const double * X, unsigned long N, double * Y, unsign
     Feel::ParameterSpace<2>::Element mu( M_Dmu );
     mu << X[0], X[1];
     static int do_init = true;
+
     if ( do_init )
     {
         meshSize = X[2];
         this->init();
         do_init = false;
     }
+
     this->solve( mu, pT );
 
 
-    Y[0]=M_thetaFq[0](0)*integrate( elements(mesh), idv(*pT) ).evaluate()(0,0);
+    Y[0]=M_thetaFq[0]( 0 )*integrate( elements( mesh ), idv( *pT ) ).evaluate()( 0,0 );
 }
 
 
@@ -605,9 +634,9 @@ AnisotropicWavespeed::output( int output_index, parameter_type const& mu )
     *U = *pT;
 
     // right hand side (compliant)
-    if( output_index == 0 )
+    if ( output_index == 0 )
     {
-        double s1 = M_thetaFq[0](0)*dot( M_Fq[0][0], U );
+        double s1 = M_thetaFq[0]( 0 )*dot( M_Fq[0][0], U );
         return s1;
     }
 

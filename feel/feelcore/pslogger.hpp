@@ -26,8 +26,8 @@ public:
 
 private:
 
-  std::string M_fileName;
-  std::string M_command;
+    std::string M_fileName;
+    std::string M_command;
 
 };
 

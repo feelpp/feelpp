@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -151,7 +151,7 @@ void resize( FEELPP_GLAS_TRAITS_VECTOR_TYPE( V )<FEELPP_TRAITS_TYPE( T )>& t, si
 /**
  * Generate the type traits
  */
-BOOST_PP_LIST_FOR_EACH_PRODUCT( FEELPP_GLAS_TRAITS_VECTOR_OP, 2, (FEELPP_TRAITS_TYPES, FEELPP_GLAS_TRAITS_VECTOR_TYPES) );
+BOOST_PP_LIST_FOR_EACH_PRODUCT( FEELPP_GLAS_TRAITS_VECTOR_OP, 2, ( FEELPP_TRAITS_TYPES, FEELPP_GLAS_TRAITS_VECTOR_TYPES ) );
 
 /*
  * Matrices
@@ -216,7 +216,7 @@ void resize( FEELPP_GLAS_TRAITS_MATRIX_TYPE( V )( FEELPP_TRAITS_TYPE( T ) )& t, 
 /**
  * Generate the type traits
  */
-BOOST_PP_LIST_FOR_EACH_PRODUCT( FEELPP_GLAS_TRAITS_MATRIX_OP, 2, (FEELPP_TRAITS_TYPES, FEELPP_GLAS_TRAITS_MATRIX_TYPES) );
+BOOST_PP_LIST_FOR_EACH_PRODUCT( FEELPP_GLAS_TRAITS_MATRIX_OP, 2, ( FEELPP_TRAITS_TYPES, FEELPP_GLAS_TRAITS_MATRIX_TYPES ) );
 
 } // glas
 /// \endcond detail

@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -48,98 +48,106 @@ namespace mpl = boost::mpl;
 
 /** Streams **/
 //@{
-std::ofstream PK_x_log("PK_x_log.dat");
-std::ofstream PK_y_log("PK_y_log.dat");
+std::ofstream PK_x_log( "PK_x_log.dat" );
+std::ofstream PK_y_log( "PK_y_log.dat" );
 
-std::ofstream ost_x("Monom_x.txt");
-std::ofstream ost_y("Monom_y.txt");
+std::ofstream ost_x( "Monom_x.txt" );
+std::ofstream ost_y( "Monom_y.txt" );
 //@}
 
 
-double pow(double x, int i)
+double pow( double x, int i )
 {
-  double res = 1.0;
-  for(int l=1; l <= i; ++l)
-    res *= x;
-  return res;
+    double res = 1.0;
+
+    for ( int l=1; l <= i; ++l )
+        res *= x;
+
+    return res;
 
 }
 
 template<Feel::uint16_type N, typename T>
 void PK_Monom_N_opt()
 {
-  using namespace Feel;
+    using namespace Feel;
 
-  typedef T value_type;
+    typedef T value_type;
 
-  GaussLobatto<Simplex<2,1>, N, value_type> im;
+    GaussLobatto<Simplex<2,1>, N, value_type> im;
 
-  ublas::vector<value_type> x_i(ublas::row(im.points(),0));
-  ublas::vector<value_type> y_i(ublas::row(im.points(),1));
+    ublas::vector<value_type> x_i( ublas::row( im.points(),0 ) );
+    ublas::vector<value_type> y_i( ublas::row( im.points(),1 ) );
 
-  const value_type tol = value_type(2.5) * type_traits<value_type>::epsilon();
+    const value_type tol = value_type( 2.5 ) * type_traits<value_type>::epsilon();
 
-  uint16_type Q = (uint16_type)sqrt(im.nPoints());
+    uint16_type Q = ( uint16_type )sqrt( im.nPoints() );
 
-  value_type error_x = 0.0,error_y = 0.0;
-  value_type res_x, res_y;
-  uint16_type i_x=1,i_y=1;
-  value_type sum_x=0.0,sum_y=0.0;
+    value_type error_x = 0.0,error_y = 0.0;
+    value_type res_x, res_y;
+    uint16_type i_x=1,i_y=1;
+    value_type sum_x=0.0,sum_y=0.0;
 
-  ost_x << "Number of Points on the triangle : " << Q << "^2 = "<< im.nPoints() <<  std::endl;
-  ost_y << "Number of Points on the triangle : " << Q << "^2 = "<< im.nPoints() <<  std::endl;
+    ost_x << "Number of Points on the triangle : " << Q << "^2 = "<< im.nPoints() <<  std::endl;
+    ost_y << "Number of Points on the triangle : " << Q << "^2 = "<< im.nPoints() <<  std::endl;
 
-  do{
-    if (i_x%2 == 0)
-      res_x = value_type(2.0)/value_type(i_x+1.0);
-    else
-      res_x = -value_type(2.0)/value_type(i_x+2.0);
+    do
+    {
+        if ( i_x%2 == 0 )
+            res_x = value_type( 2.0 )/value_type( i_x+1.0 );
 
-    sum_x = 0.0;
+        else
+            res_x = -value_type( 2.0 )/value_type( i_x+2.0 );
 
-    for(uint16_type l=0;l< x_i.size();++l)
-      sum_x += pow(x_i(l),i_x)*im.weight(l);
+        sum_x = 0.0;
 
-    error_x = math::abs(sum_x - res_x);
+        for ( uint16_type l=0; l< x_i.size(); ++l )
+            sum_x += pow( x_i( l ),i_x )*im.weight( l );
 
-    ost_x << "i = " << i_x <<" Error = "<< error_x << "\n";
-    ++i_x;
-  }while(error_x <= tol);
+        error_x = math::abs( sum_x - res_x );
 
-  if ( i_x-2 < 2*Q-3  )
-    PK_x_log << "Q = " << Q << " ; i = " << i_x << " ; Error = " << error_x << std::endl;
+        ost_x << "i = " << i_x <<" Error = "<< error_x << "\n";
+        ++i_x;
+    }
+    while ( error_x <= tol );
 
-  do{
-    if (i_y%2 == 0)
-      res_y = value_type(2.0)/value_type(i_y+1.0);
-    else
-      res_y = value_type(1.0)/value_type(i_y+1.0)*( ( 2.0/(value_type(i_y+2.0) ) ) - value_type(2.0));
+    if ( i_x-2 < 2*Q-3  )
+        PK_x_log << "Q = " << Q << " ; i = " << i_x << " ; Error = " << error_x << std::endl;
 
-    sum_y = 0.0;
+    do
+    {
+        if ( i_y%2 == 0 )
+            res_y = value_type( 2.0 )/value_type( i_y+1.0 );
 
-    for(uint16_type l=0;l< x_i.size();++l)
-      sum_y += pow(y_i(l),i_y)*im.weight(l);
+        else
+            res_y = value_type( 1.0 )/value_type( i_y+1.0 )*( ( 2.0/( value_type( i_y+2.0 ) ) ) - value_type( 2.0 ) );
 
-    error_y = math::abs(sum_y - res_y);
+        sum_y = 0.0;
 
-    ost_y << "i = " << i_y <<" Error = "<< error_y << "\n";
+        for ( uint16_type l=0; l< x_i.size(); ++l )
+            sum_y += pow( y_i( l ),i_y )*im.weight( l );
 
-    ++i_y;
-  }while(error_y <= tol);
+        error_y = math::abs( sum_y - res_y );
+
+        ost_y << "i = " << i_y <<" Error = "<< error_y << "\n";
+
+        ++i_y;
+    }
+    while ( error_y <= tol );
 
 
-  if ( i_y-2 < 2*Q-2  )
-    PK_y_log << "Q = " << Q << " ; i = " << i_y << " ; Error = " << error_y << std::endl;
+    if ( i_y-2 < 2*Q-2  )
+        PK_y_log << "Q = " << Q << " ; i = " << i_y << " ; Error = " << error_y << std::endl;
 
-  BOOST_CHECK( (i_x-2 >= 2*Q-3) && (i_y-2 >= 2*Q-2) );
+    BOOST_CHECK( ( i_x-2 >= 2*Q-3 ) && ( i_y-2 >= 2*Q-2 ) );
 }
 
 typedef boost::mpl::list<boost::mpl::int_<0>,
-                         boost::mpl::int_<1>,
-                         boost::mpl::int_<2>,
-                         boost::mpl::int_<10>,
-                         boost::mpl::int_<40>,
-                         boost::mpl::int_<80> > test_types;
+        boost::mpl::int_<1>,
+        boost::mpl::int_<2>,
+        boost::mpl::int_<10>,
+        boost::mpl::int_<40>,
+        boost::mpl::int_<80> > test_types;
 
 BOOST_AUTO_TEST_CASE_TEMPLATE( PK_Monom_N_opt_double, T, test_types )
 {
@@ -151,29 +159,29 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( PK_Monom_N_opt_double, T, test_types )
 template<Feel::int16_type P>
 void add_tests( test_suite* test )
 {
-  using namespace Feel;
-  using namespace std;
+    using namespace Feel;
+    using namespace std;
 
-  test->add( BOOST_TEST_CASE( ( PK_Monom_N_opt<P,double> ) ) );
+    test->add( BOOST_TEST_CASE( ( PK_Monom_N_opt<P,double> ) ) );
 #if defined( FEELPP_HAS_QD_REAL)
-  //test->add( BOOST_TEST_CASE( ( PK_Monom_N_opt<P,dd_real> ) ) );
-  //test->add( BOOST_TEST_CASE( ( PK_Monom_N_opt<P,qd_real> ) ) );
+    //test->add( BOOST_TEST_CASE( ( PK_Monom_N_opt<P,dd_real> ) ) );
+    //test->add( BOOST_TEST_CASE( ( PK_Monom_N_opt<P,qd_real> ) ) );
 #endif
 
-  add_tests<P+2>(test);
+    add_tests<P+2>( test );
 }
 
 template<>
 void add_tests<80>( test_suite* test )
 {
-  using namespace Feel;
-  using namespace std;
+    using namespace Feel;
+    using namespace std;
 
-  test->add( BOOST_TEST_CASE( ( PK_Monom_N_opt<80,double> ) ) );
+    test->add( BOOST_TEST_CASE( ( PK_Monom_N_opt<80,double> ) ) );
 
 #if defined( FEELPP_HAS_QD_REAL)
-  //test->add( BOOST_TEST_CASE( ( PK_Monom_N_opt<80,dd_real> ) ) );
-  //test->add( BOOST_TEST_CASE( ( PK_Monom_N_opt<80,qd_real> ) ) );
+    //test->add( BOOST_TEST_CASE( ( PK_Monom_N_opt<80,dd_real> ) ) );
+    //test->add( BOOST_TEST_CASE( ( PK_Monom_N_opt<80,qd_real> ) ) );
 #endif
 }
 
@@ -188,7 +196,7 @@ init_unit_test_suite( int /*argc*/, char** /*argv*/ )
 
 #if defined( FEELPP_HAS_QD_REAL)
     unsigned int old_cw;
-    fpu_fix_start(&old_cw);
+    fpu_fix_start( &old_cw );
 #endif
     add_tests<2>( test );
 

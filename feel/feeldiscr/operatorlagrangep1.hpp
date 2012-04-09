@@ -61,10 +61,10 @@ struct SpaceToLagrangeP1Space
     typedef Mesh<image_convex_type> image_mesh_type;
 
     typedef typename mpl::if_<mpl::bool_<domain_space_type::is_scalar>,
-                              mpl::identity<typename SelectConvex<Scalar>::type>,
-                              typename mpl::if_<mpl::bool_<domain_space_type::is_vectorial>,
-                                                mpl::identity<typename SelectConvex<Vectorial>::type>,
-                                                mpl::identity<typename SelectConvex<Tensor2>::type> >::type>::type::type basis_type;
+            mpl::identity<typename SelectConvex<Scalar>::type>,
+            typename mpl::if_<mpl::bool_<domain_space_type::is_vectorial>,
+            mpl::identity<typename SelectConvex<Vectorial>::type>,
+            mpl::identity<typename SelectConvex<Tensor2>::type> >::type>::type::type basis_type;
 
 
     typedef FunctionSpace<image_mesh_type, fusion::vector<basis_type> > image_space_type;
@@ -82,7 +82,7 @@ template<typename SpaceType>
 class OperatorLagrangeP1
     :
     //public OperatorInterpolation<SpaceType, typename detail::SpaceToLagrangeP1Space<SpaceType>::image_space_type>
-    public OperatorLinear<SpaceType, typename detail::SpaceToLagrangeP1Space<SpaceType>::image_space_type>
+public OperatorLinear<SpaceType, typename detail::SpaceToLagrangeP1Space<SpaceType>::image_space_type>
 {
     //typedef OperatorInterpolation<SpaceType, typename detail::SpaceToLagrangeP1Space<SpaceType>::image_space_type> super;
     typedef OperatorLinear<SpaceType, typename detail::SpaceToLagrangeP1Space<SpaceType>::image_space_type> super;
@@ -167,13 +167,14 @@ public:
     OperatorLagrangeP1 const&  operator=( OperatorLagrangeP1 const& lp1 )
     {
         if ( this != &lp1 )
-            {
-                _M_el2el = lp1._M_el2el;
-                _M_el2pt = lp1._M_el2pt;
-                _M_pset = lp1._M_pset;
-                _M_gmpc = lp1._M_gmpc;
-                _M_p2m = lp1._M_p2m;
-            }
+        {
+            _M_el2el = lp1._M_el2el;
+            _M_el2pt = lp1._M_el2pt;
+            _M_pset = lp1._M_pset;
+            _M_gmpc = lp1._M_gmpc;
+            _M_p2m = lp1._M_p2m;
+        }
+
         return *this;
     }
 
@@ -255,7 +256,7 @@ private:
 //
 template<typename space_type>
 OperatorLagrangeP1<space_type>::OperatorLagrangeP1( domain_space_ptrtype const& space,
-                                                    backend_ptrtype const& backend )
+        backend_ptrtype const& backend )
     :
     super( space,
            dual_image_space_ptrtype( new dual_image_space_type( image_mesh_ptrtype( new image_mesh_type ) ) ),
@@ -266,7 +267,7 @@ OperatorLagrangeP1<space_type>::OperatorLagrangeP1( domain_space_ptrtype const& 
     _M_el2pt(),
     _M_pset( 0 ),
     _M_gmpc( new typename gm_type::precompute_type( this->domainSpace()->mesh()->gm(),
-                                                    _M_pset.points() ) ),
+             _M_pset.points() ) ),
     _M_p2m()
 {
     // create a triangulation of the current convex
@@ -283,7 +284,7 @@ OperatorLagrangeP1<space_type>::OperatorLagrangeP1( domain_space_ptrtype const& 
     _M_p2m.mesh()->components().clear ( MESH_CHECK );
     _M_p2m.mesh()->updateForUse();
 
-    Debug(5035) << "[P1 Lagrange] Pointset " << _M_pset.points() << "\n";
+    Debug( 5035 ) << "[P1 Lagrange] Pointset " << _M_pset.points() << "\n";
 
     typedef typename image_mesh_type::point_type point_type;
     typedef typename image_mesh_type::element_type element_type;
@@ -293,7 +294,7 @@ OperatorLagrangeP1<space_type>::OperatorLagrangeP1( domain_space_ptrtype const& 
 
     std::vector<bool> pts_done(  this->domainSpace()->nLocalDof()/domain_space_type::nComponents, false );
     size_type ne = this->domainSpace()->mesh()->numElements() * _M_p2m.mesh()->numElements();
-    std::vector<boost::tuple<size_type, uint16_type, size_type> > dofindices( image_mesh_type::element_type::numVertices*ne, boost::make_tuple(0,0,0) );
+    std::vector<boost::tuple<size_type, uint16_type, size_type> > dofindices( image_mesh_type::element_type::numVertices*ne, boost::make_tuple( 0,0,0 ) );
     std::vector<bool> eltid_done(  this->domainSpace()->nLocalDof(), false );
 
     // construct the mesh
@@ -307,139 +308,143 @@ OperatorLagrangeP1<space_type>::OperatorLagrangeP1( domain_space_ptrtype const& 
 
 
     for ( size_type elid = 0, pt_image_id = 0; it != en; ++it )
+    {
+        Debug( 5035 ) << "=========================================\n";
+        Debug( 5035 ) << "global element " << it->id() << " oriented ok ? : " << it->isAnticlockwiseOriented() << "\n";
+        Debug( 5035 ) << "global element G=" << it->G() << "\n";
+
+        gmc->update( *it );
+
+        // accumulate the local mesh in element *it in the new mesh
+        typename image_mesh_type::element_const_iterator itl = _M_p2m.mesh()->beginElement();
+        typename image_mesh_type::element_const_iterator enl = _M_p2m.mesh()->endElement();
+
+        for ( ; itl != enl; ++itl, ++elid )
         {
-            Debug(5035) << "=========================================\n";
-            Debug(5035) << "global element " << it->id() << " oriented ok ? : " << it->isAnticlockwiseOriented() << "\n";
-            Debug(5035) << "global element G=" << it->G() << "\n";
+            Debug( 5035 ) << "************************************\n";
+            Debug( 5035 ) << "local elt = " << elid << "\n";
+            Debug( 5035 ) << "local element " << itl->id() << " oriented ok ? : " << itl->isAnticlockwiseOriented() << "\n";
+            Debug( 5035 ) << "local element G=" << itl->G() << "\n";
 
-            gmc->update( *it );
+            //_M_el2pt[elid].resize( domain_mesh_type::element_type::numVertices );
+            element_type elt;
 
-            // accumulate the local mesh in element *it in the new mesh
-            typename image_mesh_type::element_const_iterator itl = _M_p2m.mesh()->beginElement();
-            typename image_mesh_type::element_const_iterator enl = _M_p2m.mesh()->endElement();
-            for( ; itl != enl; ++itl, ++elid )
+            elt.setId( elid );
+            elt.setMarker( it->marker().value() );
+
+            // accumulate the points
+            for ( int p = 0; p < image_mesh_type::element_type::numVertices; ++p )
+            {
+                Debug( 5035 ) << "local In original element, vertex number " << itl->point( p ).id() << "\n";
+                uint16_type localptid = itl->point( p ).id();;//p;//it->point( p ).id(); //itl->point( p ).id();
+                uint16_type localptid_dof = localDof( it, localptid );
+                size_type ptid = boost::get<0>( this->domainSpace()->dof()->localToGlobal( it->id(),
+                                                localptid_dof, 0 ) );
+                FEELPP_ASSERT( ptid < this->domainSpace()->nLocalDof()/domain_space_type::nComponents )( ptid )( this->domainSpace()->nLocalDof()/domain_space_type::nComponents ).warn( "invalid domain dof index" );
+                //if ( pts_done[ptid] == false )
                 {
-                    Debug(5035) << "************************************\n";
-                    Debug(5035) << "local elt = " << elid << "\n";
-                    Debug(5035) << "local element " << itl->id() << " oriented ok ? : " << itl->isAnticlockwiseOriented() << "\n";
-                    Debug(5035) << "local element G=" << itl->G() << "\n";
-
-                    //_M_el2pt[elid].resize( domain_mesh_type::element_type::numVertices );
-                    element_type elt;
-
-                    elt.setId( elid );
-                    elt.setMarker( it->marker().value() );
-                    // accumulate the points
-                    for( int p = 0; p < image_mesh_type::element_type::numVertices; ++p )
-                        {
-                            Debug(5035) << "local In original element, vertex number " << itl->point( p ).id() << "\n";
-                            uint16_type localptid = itl->point( p ).id();;//p;//it->point( p ).id(); //itl->point( p ).id();
-                            uint16_type localptid_dof = localDof( it, localptid );
-                            size_type ptid = boost::get<0>(this->domainSpace()->dof()->localToGlobal( it->id(),
-                                                                                                      localptid_dof, 0 ));
-                            FEELPP_ASSERT( ptid < this->domainSpace()->nLocalDof()/domain_space_type::nComponents )( ptid )( this->domainSpace()->nLocalDof()/domain_space_type::nComponents ).warn( "invalid domain dof index" );
-                            //if ( pts_done[ptid] == false )
-                            {
-                                dofindices[pt_image_id] = boost::make_tuple( elid, p, ptid );
-                                pt_image_id++;
-                                //pts_done[ptid] = pt_image_id;
-                            }
-
-                            //point_type __pt( ptid, gmc->xReal(localptid) );
-                            point_type __pt( ptid,
-                                             boost::get<0>(this->domainSpace()->dof()->dofPoint( ptid ))  );
-
-                            Debug(5035) << "[OperatorLagrangeP1] element id "
-                                        << elid << "\n";
-
-                            Debug(5035) << "[OperatorLagrangeP1] local point id "
-                                        << localptid << " coord " << itl->point( p ).node() << "\n";
-                            Debug(5035) << "[OperatorLagrangeP1] point local id "
-                                        << localptid << " global id " << ptid << "\n"
-                                        << " localptid_dof = " << localptid_dof << "\n";
-                            Debug(5035) << "[OperatorLagrangeP1] adding point "
-                                        << __pt.id() << " : " << __pt.node() << "\n";
-                            Debug(5035) << "[OperatorLagrangeP1] domain point gid "
-                                      << boost::get<1>(this->domainSpace()->dof()->dofPoint( ptid ))
-                                //<< " lid: " << boost::get<2>(this->domainSpace()->dof()->dofPoint( ptid ))
-                                      << " coords: " << boost::get<0>(this->domainSpace()->dof()->dofPoint( ptid )) << "\n";
-                            FEELPP_ASSERT( ublas::norm_2( boost::get<0>(this->domainSpace()->dof()->dofPoint( ptid ))-__pt.node()) < 1e-10 )
-                                (boost::get<0>(this->domainSpace()->dof()->dofPoint( ptid )))
-                                (__pt.node())
-                                (elid)
-                                (itl->id())
-                                (localptid)
-                                (localptid_dof)
-                                (ptid).warn( "inconsistent point coordinates" );
-
-
-                            _M_mesh->addPoint( __pt );
-
-                            elt.setPoint( p, _M_mesh->point( ptid ) );
-                            //elt.setPoint( localptid, _M_mesh->point( ptid ) );
-                            //_M_el2pt[elid][p] = localptid;
-                            //FEELPP_ASSERT( ublas::norm_2( _M_mesh->point( ptid ).node(), __pt.node() ) ).error("invalid point");
-#if 1
-                            FEELPP_ASSERT( ublas::norm_2( boost::get<0>(this->domainSpace()->dof()->dofPoint( ptid ))-elt.point(p).node()) < 1e-10 )
-                                (boost::get<0>(this->domainSpace()->dof()->dofPoint( ptid )))
-                                (p)
-                                (elt.point(p).node())
-                                (elid)
-                                (itl->id())
-                                (localptid)
-                                (localptid_dof)
-                                (ptid).warn( "[after] inconsistent point coordinates" );
-
-                            FEELPP_ASSERT( ublas::norm_2( elt.point(p).node()-ublas::column( elt.G(), p ) ) < 1e-10 )
-                                (p)
-                                (elt.point(p).node())
-                                (elid)
-                                (elt.G()).warn( "[after] inconsistent point coordinates" );
-#endif
-                        }
-#if 0
-                    static const int nDim = element_type::nDim;
-                    ublas::vector<double> D( nDim + 1, 0 );
-                    typename matrix_node<value_type>::type M( nDim+1,nDim+1);
-                    typename matrix_node<value_type>::type P( nDim,nDim+1);
-                    typename matrix_node<value_type>::type P0( nDim,nDim+1);
-                    std::fill( M.data().begin(), M.data().end(), value_type( 1.0 ) );
-
-                    for( int p = 0; p < element_type::numVertices; ++p )
-                        {
-                            ublas::column( P0, p ) = elt.vertex( p );
-                        }
-                    ublas::subrange( M, 0, nDim, 0, nDim+1 ) = P0;
-                    double meas_times = details::det( M, mpl::int_<nDim+1>() );
-                    FEELPP_ASSERT( meas_times > 0 )( elt.id() )( elt.G() ).warn( "negative area" );
-#else
-                    //FEELPP_ASSERT( elt.isAnticlockwiseOriented() )( elt.id() )( elt.G() ).warn( "negative area" );
-                    //FEELPP_ASSERT( ublas::norm_inf( elt.G()- it->G() ) < 1e-10 )( it->G() )( elt.G() ).warn( "global: not same element" );
-                    //FEELPP_ASSERT( ublas::norm_inf( elt.G()- itl->G() ) < 1e-10 )( itl->G() )( elt.G() ).warn( "local: not same element" );
-#endif
-                    //_M_el2el[it->id()].push_back( elt.id() );
-                    _M_mesh->addElement ( elt );
+                    dofindices[pt_image_id] = boost::make_tuple( elid, p, ptid );
+                    pt_image_id++;
+                    //pts_done[ptid] = pt_image_id;
                 }
-        }
 
-    Debug(5035) << "[P1 Lagrange] Number of points in mesh: " << _M_mesh->numPoints() << "\n";
+                //point_type __pt( ptid, gmc->xReal(localptid) );
+                point_type __pt( ptid,
+                                 boost::get<0>( this->domainSpace()->dof()->dofPoint( ptid ) )  );
+
+                Debug( 5035 ) << "[OperatorLagrangeP1] element id "
+                              << elid << "\n";
+
+                Debug( 5035 ) << "[OperatorLagrangeP1] local point id "
+                              << localptid << " coord " << itl->point( p ).node() << "\n";
+                Debug( 5035 ) << "[OperatorLagrangeP1] point local id "
+                              << localptid << " global id " << ptid << "\n"
+                              << " localptid_dof = " << localptid_dof << "\n";
+                Debug( 5035 ) << "[OperatorLagrangeP1] adding point "
+                              << __pt.id() << " : " << __pt.node() << "\n";
+                Debug( 5035 ) << "[OperatorLagrangeP1] domain point gid "
+                              << boost::get<1>( this->domainSpace()->dof()->dofPoint( ptid ) )
+                              //<< " lid: " << boost::get<2>(this->domainSpace()->dof()->dofPoint( ptid ))
+                              << " coords: " << boost::get<0>( this->domainSpace()->dof()->dofPoint( ptid ) ) << "\n";
+                FEELPP_ASSERT( ublas::norm_2( boost::get<0>( this->domainSpace()->dof()->dofPoint( ptid ) )-__pt.node() ) < 1e-10 )
+                ( boost::get<0>( this->domainSpace()->dof()->dofPoint( ptid ) ) )
+                ( __pt.node() )
+                ( elid )
+                ( itl->id() )
+                ( localptid )
+                ( localptid_dof )
+                ( ptid ).warn( "inconsistent point coordinates" );
+
+
+                _M_mesh->addPoint( __pt );
+
+                elt.setPoint( p, _M_mesh->point( ptid ) );
+                //elt.setPoint( localptid, _M_mesh->point( ptid ) );
+                //_M_el2pt[elid][p] = localptid;
+                //FEELPP_ASSERT( ublas::norm_2( _M_mesh->point( ptid ).node(), __pt.node() ) ).error("invalid point");
+#if 1
+                FEELPP_ASSERT( ublas::norm_2( boost::get<0>( this->domainSpace()->dof()->dofPoint( ptid ) )-elt.point( p ).node() ) < 1e-10 )
+                ( boost::get<0>( this->domainSpace()->dof()->dofPoint( ptid ) ) )
+                ( p )
+                ( elt.point( p ).node() )
+                ( elid )
+                ( itl->id() )
+                ( localptid )
+                ( localptid_dof )
+                ( ptid ).warn( "[after] inconsistent point coordinates" );
+
+                FEELPP_ASSERT( ublas::norm_2( elt.point( p ).node()-ublas::column( elt.G(), p ) ) < 1e-10 )
+                ( p )
+                ( elt.point( p ).node() )
+                ( elid )
+                ( elt.G() ).warn( "[after] inconsistent point coordinates" );
+#endif
+            }
+
+#if 0
+            static const int nDim = element_type::nDim;
+            ublas::vector<double> D( nDim + 1, 0 );
+            typename matrix_node<value_type>::type M( nDim+1,nDim+1 );
+            typename matrix_node<value_type>::type P( nDim,nDim+1 );
+            typename matrix_node<value_type>::type P0( nDim,nDim+1 );
+            std::fill( M.data().begin(), M.data().end(), value_type( 1.0 ) );
+
+            for ( int p = 0; p < element_type::numVertices; ++p )
+            {
+                ublas::column( P0, p ) = elt.vertex( p );
+            }
+
+            ublas::subrange( M, 0, nDim, 0, nDim+1 ) = P0;
+            double meas_times = details::det( M, mpl::int_<nDim+1>() );
+            FEELPP_ASSERT( meas_times > 0 )( elt.id() )( elt.G() ).warn( "negative area" );
+#else
+            //FEELPP_ASSERT( elt.isAnticlockwiseOriented() )( elt.id() )( elt.G() ).warn( "negative area" );
+            //FEELPP_ASSERT( ublas::norm_inf( elt.G()- it->G() ) < 1e-10 )( it->G() )( elt.G() ).warn( "global: not same element" );
+            //FEELPP_ASSERT( ublas::norm_inf( elt.G()- itl->G() ) < 1e-10 )( itl->G() )( elt.G() ).warn( "local: not same element" );
+#endif
+            //_M_el2el[it->id()].push_back( elt.id() );
+            _M_mesh->addElement ( elt );
+        }
+    }
+
+    Debug( 5035 ) << "[P1 Lagrange] Number of points in mesh: " << _M_mesh->numPoints() << "\n";
 
     _M_mesh->setNumVertices( _M_mesh->numPoints() );
     //_M_mesh->setRenumber( false );
     //_M_mesh->updateForUse( MESH_UPDATE_EDGES );
     _M_mesh->components().clear ( MESH_RENUMBER );
 
-    for( size_type i = 0; i < this->domainSpace()->nLocalDof()/domain_space_type::nComponents; ++i )
-        {
-            //dofindices[i] = _M_mesh->point( i ).id();//boost::get<1>(this->domainSpace()->dof()->dofPoint( i ));
-            FEELPP_ASSERT(ublas::norm_2( boost::get<0>(this->domainSpace()->dof()->dofPoint( i ))-
-                                       _M_mesh->point( i ).node()
-                                       ) < 1e-10 )
-                (boost::get<0>(this->domainSpace()->dof()->dofPoint( i )))
-                (_M_mesh->point( i ).node())
-                (i).warn( "[mesh] check inconsistent point coordinates" );
-            //Debug(5035) << "dofindices[" << i << "]=" << boost::get<0>( dofindices[i] ) << "," << boost::get<1>( dofindices[i] ) << "\n";
-        }
+    for ( size_type i = 0; i < this->domainSpace()->nLocalDof()/domain_space_type::nComponents; ++i )
+    {
+        //dofindices[i] = _M_mesh->point( i ).id();//boost::get<1>(this->domainSpace()->dof()->dofPoint( i ));
+        FEELPP_ASSERT( ublas::norm_2( boost::get<0>( this->domainSpace()->dof()->dofPoint( i ) )-
+                                      _M_mesh->point( i ).node()
+                                    ) < 1e-10 )
+        ( boost::get<0>( this->domainSpace()->dof()->dofPoint( i ) ) )
+        ( _M_mesh->point( i ).node() )
+        ( i ).warn( "[mesh] check inconsistent point coordinates" );
+        //Debug(5035) << "dofindices[" << i << "]=" << boost::get<0>( dofindices[i] ) << "," << boost::get<1>( dofindices[i] ) << "\n";
+    }
 
     // construct the p1 space and set the operator
     this->init( this->domainSpace(),
@@ -447,15 +452,16 @@ OperatorLagrangeP1<space_type>::OperatorLagrangeP1( domain_space_ptrtype const& 
                 backend,
                 false );
 
-    for( size_type i = 0; i < this->domainSpace()->nLocalDof()/domain_space_type::nComponents; ++i )
-        {
-            FEELPP_ASSERT(ublas::norm_2( boost::get<0>(this->domainSpace()->dof()->dofPoint( i ))-
-                                       _M_mesh->point( i ).node()
-                                       ) < 1e-10 )
-                (boost::get<0>(this->domainSpace()->dof()->dofPoint( i )))
-                (_M_mesh->point( i ).node())
-                (i).warn( "[mesh2] check inconsistent point coordinates" );
-        }
+    for ( size_type i = 0; i < this->domainSpace()->nLocalDof()/domain_space_type::nComponents; ++i )
+    {
+        FEELPP_ASSERT( ublas::norm_2( boost::get<0>( this->domainSpace()->dof()->dofPoint( i ) )-
+                                      _M_mesh->point( i ).node()
+                                    ) < 1e-10 )
+        ( boost::get<0>( this->domainSpace()->dof()->dofPoint( i ) ) )
+        ( _M_mesh->point( i ).node() )
+        ( i ).warn( "[mesh2] check inconsistent point coordinates" );
+    }
+
     //
     // Update generates the matrix associated with the interpolation operator
     // comment out for now
@@ -463,30 +469,33 @@ OperatorLagrangeP1<space_type>::OperatorLagrangeP1( domain_space_ptrtype const& 
     this->update();
 #endif // 0
 
-    for( size_type i = 0; i < this->domainSpace()->nLocalDof()/domain_space_type::nComponents; ++i )
-        {
-            FEELPP_ASSERT(ublas::norm_2( boost::get<0>(this->domainSpace()->dof()->dofPoint( i ))-
-                                       _M_mesh->point( i ).node()
-                                       ) < 1e-10 )
-                (boost::get<0>(this->domainSpace()->dof()->dofPoint( i )))
-                (_M_mesh->point( i ).node())
-                (i).warn( "[mesh3] check inconsistent point coordinates" );
-        }
+    for ( size_type i = 0; i < this->domainSpace()->nLocalDof()/domain_space_type::nComponents; ++i )
+    {
+        FEELPP_ASSERT( ublas::norm_2( boost::get<0>( this->domainSpace()->dof()->dofPoint( i ) )-
+                                      _M_mesh->point( i ).node()
+                                    ) < 1e-10 )
+        ( boost::get<0>( this->domainSpace()->dof()->dofPoint( i ) ) )
+        ( _M_mesh->point( i ).node() )
+        ( i ).warn( "[mesh3] check inconsistent point coordinates" );
+    }
+
 #if 0
-    for( size_type i = 0; i < this->domainSpace()->nLocalDof()/domain_space_type::nComponents; ++i )
-        {
-            FEELPP_ASSERT( boost::get<1>(this->domainSpace()->dof()->dofPoint( i )) ==
-                         boost::get<1>(this->dualImageSpace()->dof()->dofPoint( i )) )
-                (boost::get<0>(this->domainSpace()->dof()->dofPoint( i )))
-                (boost::get<0>(this->dualImageSpace()->dof()->dofPoint( i )))
-                (i).warn( "check inconsistent point id" );
-            FEELPP_ASSERT( ublas::norm_2( boost::get<0>(this->domainSpace()->dof()->dofPoint( i ))-
-                                        boost::get<0>(this->dualImageSpace()->dof()->dofPoint( i ))
-                                        ) < 1e-10 )
-                (boost::get<0>(this->domainSpace()->dof()->dofPoint( i )))
-                (boost::get<0>(this->dualImageSpace()->dof()->dofPoint( i )))
-                (i).warn( "check inconsistent point coordinates" );
-        }
+
+    for ( size_type i = 0; i < this->domainSpace()->nLocalDof()/domain_space_type::nComponents; ++i )
+    {
+        FEELPP_ASSERT( boost::get<1>( this->domainSpace()->dof()->dofPoint( i ) ) ==
+                       boost::get<1>( this->dualImageSpace()->dof()->dofPoint( i ) ) )
+        ( boost::get<0>( this->domainSpace()->dof()->dofPoint( i ) ) )
+        ( boost::get<0>( this->dualImageSpace()->dof()->dofPoint( i ) ) )
+        ( i ).warn( "check inconsistent point id" );
+        FEELPP_ASSERT( ublas::norm_2( boost::get<0>( this->domainSpace()->dof()->dofPoint( i ) )-
+                                      boost::get<0>( this->dualImageSpace()->dof()->dofPoint( i ) )
+                                    ) < 1e-10 )
+        ( boost::get<0>( this->domainSpace()->dof()->dofPoint( i ) ) )
+        ( boost::get<0>( this->dualImageSpace()->dof()->dofPoint( i ) ) )
+        ( i ).warn( "check inconsistent point coordinates" );
+    }
+
 #endif
     this->check();
 
@@ -506,28 +515,31 @@ OperatorLagrangeP1<space_type>::operator()( element_type const& u ) const
 {
     typename image_space_type::element_type res( this->dualImageSpace(), u.name() );
     //res.resize( _M_mesh->numPoints() );
-    res = ublas::scalar_vector<value_type>( res.size(), value_type(0) );
+    res = ublas::scalar_vector<value_type>( res.size(), value_type( 0 ) );
     // construct the mesh
     typename domain_mesh_type::element_const_iterator it = this->domainSpace()->mesh()->beginElement();
     typename domain_mesh_type::element_const_iterator en = this->domainSpace()->mesh()->endElement();
-    for ( ; it != en; ++it )
-        {
-            gmc_ptrtype gmc( new gmc_type( this->domainSpace()->mesh()->gm(), *it, _M_gmpc ) );
-            typename matrix_node<value_type>::type u_at_pts = u.id( *gmc );
 
-            typename std::list<size_type>::const_iterator ite = _M_el2el[it->id()].begin();
-            typename std::list<size_type>::const_iterator ene = _M_el2el[it->id()].end();
-            for( ; ite != ene; ++ite )
+    for ( ; it != en; ++it )
+    {
+        gmc_ptrtype gmc( new gmc_type( this->domainSpace()->mesh()->gm(), *it, _M_gmpc ) );
+        typename matrix_node<value_type>::type u_at_pts = u.id( *gmc );
+
+        typename std::list<size_type>::const_iterator ite = _M_el2el[it->id()].begin();
+        typename std::list<size_type>::const_iterator ene = _M_el2el[it->id()].end();
+
+        for ( ; ite != ene; ++ite )
+        {
+            typename domain_mesh_type::element_type const& elt = _M_mesh->element( *ite );
+
+            for ( int c = 0; c < nComponents; ++c )
+                for ( int p = 0; p < domain_mesh_type::element_type::numVertices; ++p )
                 {
-                    typename domain_mesh_type::element_type const& elt = _M_mesh->element( *ite );
-                    for( int c = 0; c < nComponents; ++c )
-                        for( int p = 0; p < domain_mesh_type::element_type::numVertices; ++p )
-                            {
-                                size_type ptid = boost::get<0>(this->dualImageSpace()->dof()->localToGlobal( elt.id(), p, c ));
-                                res( ptid ) = ublas::column( u_at_pts, _M_el2pt[*ite][p] )( nComponents*c+c );
-                            }
+                    size_type ptid = boost::get<0>( this->dualImageSpace()->dof()->localToGlobal( elt.id(), p, c ) );
+                    res( ptid ) = ublas::column( u_at_pts, _M_el2pt[*ite][p] )( nComponents*c+c );
                 }
         }
+    }
 
     return res;
 }
@@ -536,43 +548,45 @@ OperatorLagrangeP1<space_type>::operator()( element_type const& u ) const
 template<typename space_type>
 uint16_type
 OperatorLagrangeP1<space_type>::localDof( typename domain_mesh_type::element_const_iterator it,
-                                                   uint16_type localptid,
-                                                   mpl::bool_<true> ) const
+        uint16_type localptid,
+        mpl::bool_<true> ) const
 {
     typedef typename domain_mesh_type::element_type::edge_permutation_type edge_permutation_type;
     uint16_type localptid_dof = localptid;
+
     if ( domain_mesh_type::nDim == 2 &&
-         _M_pset.pointToEntity( localptid ).first == 1 &&
-         it->edgePermutation( _M_pset.pointToEntity( localptid ).second ) == edge_permutation_type::REVERSE_PERMUTATION )
-        {
-            //size_type edge_id = it->edge( _M_pset.pointToEntity( localptid ).second ).id();
-            uint16_type edge_id = _M_pset.pointToEntity( localptid ).second;
+            _M_pset.pointToEntity( localptid ).first == 1 &&
+            it->edgePermutation( _M_pset.pointToEntity( localptid ).second ) == edge_permutation_type::REVERSE_PERMUTATION )
+    {
+        //size_type edge_id = it->edge( _M_pset.pointToEntity( localptid ).second ).id();
+        uint16_type edge_id = _M_pset.pointToEntity( localptid ).second;
 
-            uint16_type l = localptid - ( domain_mesh_type::element_type::numVertices * domain_fe_type::nDofPerVertex +
-                                          edge_id * domain_fe_type::nDofPerEdge );
+        uint16_type l = localptid - ( domain_mesh_type::element_type::numVertices * domain_fe_type::nDofPerVertex +
+                                      edge_id * domain_fe_type::nDofPerEdge );
 
-            FEELPP_ASSERT( l != invalid_uint16_type_value && ( l < domain_fe_type::nDofPerEdge ) )
-                ( l )
-                ( domain_fe_type::nDofPerEdge )
-                (localptid)
-                (_M_pset.pointToEntity( localptid ).second)
-                (domain_mesh_type::element_type::numVertices * domain_fe_type::nDofPerVertex +
-                 edge_id * domain_fe_type::nDofPerEdge ).error( "invalid value" );
+        FEELPP_ASSERT( l != invalid_uint16_type_value && ( l < domain_fe_type::nDofPerEdge ) )
+        ( l )
+        ( domain_fe_type::nDofPerEdge )
+        ( localptid )
+        ( _M_pset.pointToEntity( localptid ).second )
+        ( domain_mesh_type::element_type::numVertices * domain_fe_type::nDofPerVertex +
+          edge_id * domain_fe_type::nDofPerEdge ).error( "invalid value" );
 
-            localptid_dof = ( domain_mesh_type::element_type::numVertices * domain_fe_type::nDofPerVertex +
-                              edge_id * domain_fe_type::nDofPerEdge +
-                              domain_fe_type::nDofPerEdge - 1 - l );
+        localptid_dof = ( domain_mesh_type::element_type::numVertices * domain_fe_type::nDofPerVertex +
+                          edge_id * domain_fe_type::nDofPerEdge +
+                          domain_fe_type::nDofPerEdge - 1 - l );
 
-            FEELPP_ASSERT( localptid_dof != invalid_uint16_type_value &&
-                         ( localptid_dof < domain_fe_type::nLocalDof ) )
-                ( l )
-                (localptid)
-                (localptid_dof)
-                (domain_fe_type::nLocalDof)
-                (_M_pset.pointToEntity( localptid ).second)
-                (domain_mesh_type::element_type::numVertices * domain_fe_type::nDofPerVertex +
-                 edge_id * domain_fe_type::nDofPerEdge ).error( "invalid value" );
-        }
+        FEELPP_ASSERT( localptid_dof != invalid_uint16_type_value &&
+                       ( localptid_dof < domain_fe_type::nLocalDof ) )
+        ( l )
+        ( localptid )
+        ( localptid_dof )
+        ( domain_fe_type::nLocalDof )
+        ( _M_pset.pointToEntity( localptid ).second )
+        ( domain_mesh_type::element_type::numVertices * domain_fe_type::nDofPerVertex +
+          edge_id * domain_fe_type::nDofPerEdge ).error( "invalid value" );
+    }
+
     return localptid_dof;
 }
 

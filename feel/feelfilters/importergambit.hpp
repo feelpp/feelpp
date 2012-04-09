@@ -126,34 +126,34 @@ enum
 
 struct quad4
 {
-  static const int face[][2];
+    static const int face[][2];
 };
 
 
 struct quad8
 {
-  static const int face[][3];
+    static const int face[][3];
 };
 
 struct tria3
 {
-  static const int face[][2];
+    static const int face[][2];
 };
 
 struct tria6
 {
-static const int face[][3];
+    static const int face[][3];
 };
 
 
 struct tetra4
 {
-  static const int face[][3];
+    static const int face[][3];
 };
 
 struct tetra10
 {
-  static const int face[][6];
+    static const int face[][6];
 };
 
 typedef std::vector<double> nodes_type;
@@ -187,7 +187,7 @@ bool read( std::string const& filename,
 template<typename MeshType>
 class ImporterGambit
     :
-    public Importer<MeshType>
+public Importer<MeshType>
 
 {
     typedef Importer<MeshType> super;
@@ -279,15 +279,18 @@ ImporterGambit<MeshType>::visit( mesh_type* mesh )
     uint16_type ncoord = mesh_type::nDim;
 
     // add the points to the mesh
-    for( uint __i = 0; __i < nodes.size()/ncoord;++__i )
-        {
-            node_type __n( ncoord );
-            for( uint16_type j = 0; j < ncoord; ++j )
-                __n[j] = nodes[ncoord*__i+j];
-            point_type __pt( __i, __n, boundary[ __i ].get<0>() );
-            __pt.setMarker( boundary[__i].get<1>() );
-            mesh->addPoint( __pt );
-        }
+    for ( uint __i = 0; __i < nodes.size()/ncoord; ++__i )
+    {
+        node_type __n( ncoord );
+
+        for ( uint16_type j = 0; j < ncoord; ++j )
+            __n[j] = nodes[ncoord*__i+j];
+
+        point_type __pt( __i, __n, boundary[ __i ].get<0>() );
+        __pt.setMarker( boundary[__i].get<1>() );
+        mesh->addPoint( __pt );
+    }
+
     std::vector<int> __n_vertices( nodes.size()/ncoord );
     __n_vertices.assign( nodes.size()/ncoord, 0 );
 
@@ -295,84 +298,94 @@ ImporterGambit<MeshType>::visit( mesh_type* mesh )
     __n_b_vertices.assign(  nodes.size()/ncoord , 0 );
 
     // add the element to the mesh
-    for( size_type __i = 0; __i < __elements.size();++__i )
+    for ( size_type __i = 0; __i < __elements.size(); ++__i )
+    {
+        //pe = &( mesh->addElement() );
+        element_type pe;
+
+        pe.marker().assign( ( __elements[__i].get<1>() ) );
+
+        // this handle linear and quadratic elements
+        for ( uint n = 0; n < __elements[__i].get<2>().size(); ++n )
         {
-            //pe = &( mesh->addElement() );
-            element_type pe;
+            pe.setPoint( n, mesh->point( boost::get<2>( __elements[__i] )[n] ) );
+            __n_vertices[ boost::get<2>( __elements[__i] )[n] ] = 1;
+        }
 
-            pe.marker().assign( ( __elements[__i].get<1>() ) );
+        mesh->addElement( pe );
 
-            // this handle linear and quadratic elements
-            for ( uint n = 0;n < __elements[__i].get<2>().size(); ++n )
+        // add face of the element if it is on a boundary of
+        // the domain
+        if ( __elements[__i].get<3>().get<0>() != -1 )
+        {
+            face_type pf;
+            pf.setOnBoundary( true );
+
+            // local id of the face in the element
+            uint16_type numface = __elements[__i].get<3>().get<0>();
+            Debug( 8012 ) << "adding face " << numface
+                          << " on boundary : " << __elements[__i].get<3>().get<1>() << "\n";
+
+            pf.marker().assign( ( __elements[__i].get<3>().get<1>() ) );
+
+            if ( mesh_type::nDim == 2 && __elements[__i].get<2>().size() == 3 ) // linear triangle 3-node
+            {
+                Debug( 8012 ) << "setting for edge from triangle  : " << __i << " face : " << numface << "\n";
+
+                for ( int n = 0; n < 3; ++n )
                 {
-                    pe.setPoint( n, mesh->point( boost::get<2>( __elements[__i] )[n] ) );
-                    __n_vertices[ boost::get<2>( __elements[__i] )[n] ] = 1;
+                    pf.setPoint( n, mesh->point( boost::get<2>( __elements[__i] )[gambit::tria3::face[numface][n]] ) );
+                    __n_vertices[boost::get<2>( __elements[__i] )[gambit::tria3::face[numface][n]] ] = 1;
+                    __n_b_vertices[boost::get<2>( __elements[__i] )[gambit::tria3::face[numface][n]] ] = 1;
                 }
-            mesh->addElement( pe );
-            // add face of the element if it is on a boundary of
-            // the domain
-            if ( __elements[__i].get<3>().get<0>() != -1 )
+
+                Debug( 8012 ) << "added face on boundary ("
+                              << pf.isOnBoundary() << ") with id :" << pf.id()
+                              << " n1: " << mesh->point( boost::get<2>( __elements[__i] )[gambit::tria3::face[numface][0]]   ).node()
+                              << " n2: " << mesh->point( boost::get<2>( __elements[__i] )[gambit::tria3::face[numface][1]]  ).node() << "\n";
+            }
+
+            else if ( mesh_type::nDim == 2 && __elements[__i].get<2>().size() == 6 ) // quadratic triangle 6-node
+                for ( int n = 0; n < 3; ++n )
+                    pf.setPoint( n, mesh->point( boost::get<2>( __elements[__i] )[gambit::tria6::face[numface][n]] ) );
+
+            else if ( mesh_type::nDim == 2 && __elements[__i].get<2>().size() == 4 ) // linear quadrangle 4-node
+                for ( int n = 0; n < 2; ++n )
+                    pf.setPoint( n, mesh->point( boost::get<2>( __elements[__i] )[gambit::quad4::face[numface][n]] ) );
+
+            else if ( mesh_type::nDim == 2 && __elements[__i].get<2>().size() == 8 ) // quadratic triangle 8-node
+                for ( int n = 0; n < 3; ++n )
+                    pf.setPoint( n, mesh->point( boost::get<2>( __elements[__i] )[gambit::quad8::face[numface][n]] ) );
+
+            else if ( mesh_type::nDim == 3 && __elements[__i].get<2>().size() == 4 ) // linear tetra 4-node
+            {
+                for ( int n = 0; n < 3; ++n )
                 {
-                    face_type pf;
-                    pf.setOnBoundary( true );
-
-                    // local id of the face in the element
-                    uint16_type numface = __elements[__i].get<3>().get<0>();
-                    Debug( 8012 ) << "adding face " << numface
-                                  << " on boundary : " << __elements[__i].get<3>().get<1>() << "\n";
-
-                    pf.marker().assign( ( __elements[__i].get<3>().get<1>() ) );
-
-                    if ( mesh_type::nDim == 2 && __elements[__i].get<2>().size() == 3 ) // linear triangle 3-node
-                        {
-                            Debug( 8012 ) << "setting for edge from triangle  : " << __i << " face : " << numface << "\n";
-                            for ( int n = 0;n < 3; ++n )
-                                {
-                                    pf.setPoint( n, mesh->point( boost::get<2>( __elements[__i] )[gambit::tria3::face[numface][n]] ) );
-                                    __n_vertices[boost::get<2>( __elements[__i] )[gambit::tria3::face[numface][n]] ] = 1;
-                                    __n_b_vertices[boost::get<2>( __elements[__i] )[gambit::tria3::face[numface][n]] ] = 1;
-                                }
-                            Debug( 8012 ) << "added face on boundary ("
-                                          << pf.isOnBoundary() << ") with id :" << pf.id()
-                                          << " n1: " << mesh->point( boost::get<2>( __elements[__i] )[gambit::tria3::face[numface][0]]   ).node()
-                                          << " n2: " << mesh->point( boost::get<2>( __elements[__i] )[gambit::tria3::face[numface][1]]  ).node() << "\n";
-                        }
-                    else if ( mesh_type::nDim == 2 && __elements[__i].get<2>().size() == 6 ) // quadratic triangle 6-node
-                        for ( int n = 0;n < 3; ++n )
-                            pf.setPoint( n, mesh->point( boost::get<2>( __elements[__i] )[gambit::tria6::face[numface][n]] ) );
-                    else if ( mesh_type::nDim == 2 && __elements[__i].get<2>().size() == 4 ) // linear quadrangle 4-node
-                        for ( int n = 0;n < 2; ++n )
-                            pf.setPoint( n, mesh->point( boost::get<2>( __elements[__i] )[gambit::quad4::face[numface][n]] ) );
-                    else if ( mesh_type::nDim == 2 && __elements[__i].get<2>().size() == 8 ) // quadratic triangle 8-node
-                        for ( int n = 0;n < 3; ++n )
-                            pf.setPoint( n, mesh->point( boost::get<2>( __elements[__i] )[gambit::quad8::face[numface][n]] ) );
-                    else if ( mesh_type::nDim == 3 && __elements[__i].get<2>().size() == 4 ) // linear tetra 4-node
-                        {
-                            for ( int n = 0;n < 3; ++n )
-                                {
-                                    int g2l[]={ 3, 2, 1, 0 };
-                                    int local_index = Feel::details::tetra<1/*mesh_type::nOrder*/>::f2p( g2l[numface], n );//gambit::tetra4::face[numface][n];
-                                    int index = boost::get<2>( __elements[__i])[local_index];
-                                    pf.setPoint( n, mesh->point( index ) );
-                                    __n_vertices[index] = 1;
-                                    __n_b_vertices[index] = 1;
-                                }
-                            Debug( 8012 ) << "added face on boundary ("
-                                          << pf.isOnBoundary() << ") with id :" << pf.id()
-                                          << " n1: " << mesh->point( boost::get<2>( __elements[__i] )[gambit::tetra4::face[numface][0]]   ).node()
-                                          << " n2: " << mesh->point( boost::get<2>( __elements[__i] )[gambit::tetra4::face[numface][1]]  ).node() << "\n";
-                        }
-                    else if ( mesh_type::nDim == 3 && __elements[__i].get<2>().size() == 10 ) // quadratic tetra 10-node
-                        for ( int n = 0;n < 6; ++n )
-                            pf.setPoint( n, mesh->point( boost::get<2>( __elements[__i] )[gambit::tetra10::face[numface][n]] ) );
-
-
-                    mesh->addFace( pf );
-
-
+                    int g2l[]= { 3, 2, 1, 0 };
+                    int local_index = Feel::details::tetra<1/*mesh_type::nOrder*/>::f2p( g2l[numface], n );//gambit::tetra4::face[numface][n];
+                    int index = boost::get<2>( __elements[__i] )[local_index];
+                    pf.setPoint( n, mesh->point( index ) );
+                    __n_vertices[index] = 1;
+                    __n_b_vertices[index] = 1;
                 }
+
+                Debug( 8012 ) << "added face on boundary ("
+                              << pf.isOnBoundary() << ") with id :" << pf.id()
+                              << " n1: " << mesh->point( boost::get<2>( __elements[__i] )[gambit::tetra4::face[numface][0]]   ).node()
+                              << " n2: " << mesh->point( boost::get<2>( __elements[__i] )[gambit::tetra4::face[numface][1]]  ).node() << "\n";
+            }
+
+            else if ( mesh_type::nDim == 3 && __elements[__i].get<2>().size() == 10 ) // quadratic tetra 10-node
+                for ( int n = 0; n < 6; ++n )
+                    pf.setPoint( n, mesh->point( boost::get<2>( __elements[__i] )[gambit::tetra10::face[numface][n]] ) );
+
+
+            mesh->addFace( pf );
+
 
         }
+
+    }
 }
 
 #if 0
@@ -389,8 +402,9 @@ ImporterGambit<MeshType>::visit( mesh_type* mesh,
     gambit::read( this->filename(), nodes, boundary, __elements );
 
     Debug( 8012 ) << " o- inserting " << nodes.size()/3 << " points to mesh" << "\n";
+
     // add the points to the mesh
-    for( uint __i = 0; __i < nodes.size()/3;++__i )
+    for ( uint __i = 0; __i < nodes.size()/3; ++__i )
     {
         node_type __n( 3 );
         __n[0] = nodes[3*__i];
@@ -408,19 +422,22 @@ ImporterGambit<MeshType>::visit( mesh_type* mesh,
     __n_b_vertices.assign(  nodes.size()/3 , 0 );
 
     Debug( 8012 ) << " o- inserting " << __elements.size() << " elements to mesh" << "\n";
+
     // add the element to the mesh
-    for( uint __i = 0; __i < __elements.size();++__i )
+    for ( uint __i = 0; __i < __elements.size(); ++__i )
     {
         element_type pv;
         pv.setId( __i );
 
         pv.marker().assign( ( __elements[__i].get<1>() ) );
+
         // this handle linear and quadratic elements
-        for ( uint n = 0;n < __elements[__i].get<2>().size(); ++n )
+        for ( uint n = 0; n < __elements[__i].get<2>().size(); ++n )
         {
             pv.setPoint( n, mesh->point( boost::get<2>( __elements[__i] )[n] ) );
             __n_vertices[ boost::get<2>( __elements[__i] )[n] ] = 1;
         }
+
         Debug( 8013 ) << " o- inserted element " << pv.id() << " in mesh ("  << pv.marker() << ")\n";
 
         mesh->addElement( pv );
@@ -438,23 +455,25 @@ ImporterGambit<MeshType>::visit( mesh_type* mesh,
 
 
             if ( __elements[__i].get<2>().size() == 4 ) // linear tetra 4-node
-                for ( int n = 0;n < 3; ++n )
+                for ( int n = 0; n < 3; ++n )
                 {
-                    int g2l[]={ 3, 2, 1, 0 };
+                    int g2l[]= { 3, 2, 1, 0 };
                     int local_index = Feel::details::tetra::f2p( g2l[numface], n );//gambit::tetra4::face[numface][n];
-                  int index = boost::get<2>( __elements[__i])[local_index];
-                  pf.setPoint( n, mesh->point( index ) );
+                    int index = boost::get<2>( __elements[__i] )[local_index];
+                    pf.setPoint( n, mesh->point( index ) );
                     __n_vertices[index] = 1;
                     __n_b_vertices[index] = 1;
                 }
+
             else if ( __elements[__i].get<2>().size() == 10 ) // quadratic tetra 10-node
-                for ( int n = 0;n < 6; ++n )
+                for ( int n = 0; n < 6; ++n )
                     pf.setPoint( n, mesh->point( boost::get<2>( __elements[__i] )[gambit::tetra10::face[numface][n]] ) );
 
             pf.setOnBoundary( true );
             mesh->addFace( pf );
         }
     }
+
     mesh->setNumVertices( std::accumulate( __n_vertices.begin(), __n_vertices.end(), 0 ) );
     Debug( 8012 ) << " o- number of vertices : " << mesh->numVertices() << "\n";
 }

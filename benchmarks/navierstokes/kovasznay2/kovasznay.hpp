@@ -47,7 +47,7 @@ namespace Feel
 {
 class Kovasznay
     :
-        public Application
+public Application
 {
     typedef Application super;
 public:
@@ -69,7 +69,7 @@ public:
 
     /* bases */
     typedef bases<Lagrange<uOrder, Vectorial, Continuous>,
-                  Lagrange<pOrder, Scalar, Continuous> > basis_type;
+            Lagrange<pOrder, Scalar, Continuous> > basis_type;
     typedef bases<Lagrange<0, Scalar, Discontinuous> > basis_i_type;
 
     /* spaces */

@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -98,13 +98,14 @@ public:
     //@{
 
     //! copy operator
-    SystemImplicit& operator=( SystemImplicit const & o)
+    SystemImplicit& operator=( SystemImplicit const & o )
     {
-        if (this != &o )
-            {
-                super::operator=( o );
-                M_backend = o.M_backend;
-            }
+        if ( this != &o )
+        {
+            super::operator=( o );
+            M_backend = o.M_backend;
+        }
+
         return *this;
     }
     //@}
@@ -114,10 +115,16 @@ public:
     //@{
 
     //! set the backend
-    backend_ptrtype& backend() { return M_backend; }
+    backend_ptrtype& backend()
+    {
+        return M_backend;
+    }
 
     //! \return the backend
-    backend_ptrtype const& backend() const { return M_backend; }
+    backend_ptrtype const& backend() const
+    {
+        return M_backend;
+    }
 
     //@}
 
@@ -126,7 +133,10 @@ public:
     //@{
 
     //! set the backend
-    void backend( backend_ptrtype const& b ) { M_backend = b; }
+    void backend( backend_ptrtype const& b )
+    {
+        M_backend = b;
+    }
 
     //@}
 
@@ -149,7 +159,7 @@ private:
 };
 template<typename SpaceType>
 SystemImplicit<SpaceType>::SystemImplicit( functionspace_ptrtype const& Xh,
-                                           po::variables_map const& vm )
+        po::variables_map const& vm )
     :
     super( Xh, vm ),
     M_backend( backend_type::build( vm ) )

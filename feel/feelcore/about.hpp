@@ -93,7 +93,7 @@ public:
         _M_Task(),
         _M_EmailAddress(),
         _M_WebAddress()
-        {}
+    {}
 
     /**
      * @internal
@@ -105,19 +105,20 @@ public:
         _M_Task( ap._M_Task ),
         _M_EmailAddress( ap._M_EmailAddress ),
         _M_WebAddress( ap._M_WebAddress )
-        {}
+    {}
 
     AboutPerson& operator=( AboutPerson const& __ap )
+    {
+        if ( this != & __ap )
         {
-            if ( this != & __ap )
-            {
-                _M_Name = __ap._M_Name;
-                _M_Task = __ap._M_Task;
-                _M_EmailAddress = __ap._M_EmailAddress;
-                _M_WebAddress = __ap._M_WebAddress;
-            }
-            return *this;
+            _M_Name = __ap._M_Name;
+            _M_Task = __ap._M_Task;
+            _M_EmailAddress = __ap._M_EmailAddress;
+            _M_WebAddress = __ap._M_WebAddress;
         }
+
+        return *this;
+    }
     /**
      * The person's name
      * @return the person's name (can be std::string, if it has been
@@ -230,7 +231,7 @@ public:
                const char* text = "",
                const char* homePageAddress = "",
                const char* bugsEmailAddress = "feel-dev@webmail.polimi.it"
-               );
+             );
 
     AboutData( AboutData const& ad );
 
@@ -338,7 +339,7 @@ public:
      *
      * @param licenseKey The license identifier.
      */
-    void setLicense( LicenseKey licenseKey);
+    void setLicense( LicenseKey licenseKey );
 
     /**
      * Defines the copyright statement to show when displaying the license.

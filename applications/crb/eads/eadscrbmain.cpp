@@ -35,8 +35,9 @@ int
 main( int argc, char** argv )
 {
     Feel::OpusApp<Feel::OpusModelRB<2,1,2> > app( argc, argv,
-                                                  Feel::makeEadsAbout( "eadscrb" ),
-                                                  Feel::makeEadsOptions() );
+            Feel::makeEadsAbout( "eadscrb" ),
+            Feel::makeEadsOptions() );
+
     if ( app.vm().count( "help" ) )
     {
         std::cout << app.optionsDescription() << "\n";

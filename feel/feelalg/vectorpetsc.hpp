@@ -44,7 +44,7 @@ extern "C"
 #if defined(MPICH_NAME)
 #if !defined( MPICH_HAVE_MPI_WIN )
 #define MPICH_HAVE_MPI_WIN
-  struct MPI_Win {};
+    struct MPI_Win {};
 #endif
 #endif
 #include <petscmat.h>
@@ -103,35 +103,35 @@ public:
     /**
      * Constructor. Set dimension to \p n and initialize all elements with zero.
      */
-    VectorPetsc (const size_type n, WorldComm const& _worldComm = WorldComm())
+    VectorPetsc ( const size_type n, WorldComm const& _worldComm = WorldComm() )
         :
         super( n, _worldComm ),
         _M_destroy_vec_on_exit( true )
     {
-        this->init(n, n, false);
+        this->init( n, n, false );
     }
 
     /**
      * Constructor. Set local dimension to \p n_local, the global dimension
      * to \p n, and initialize all elements with zero.
      */
-    VectorPetsc (const size_type n,
-                 const size_type n_local,
-                 WorldComm const& _worldComm = WorldComm())
+    VectorPetsc ( const size_type n,
+                  const size_type n_local,
+                  WorldComm const& _worldComm = WorldComm() )
         :
         super( n, n_local, _worldComm ),
         _M_destroy_vec_on_exit( true )
     {
-        this->init(n, n_local, false);
+        this->init( n, n_local, false );
     }
 
     VectorPetsc ( DataMap const& dm, bool doInit=true )
         :
-        super(dm),
+        super( dm ),
         _M_destroy_vec_on_exit( true )
     {
-        if (doInit)
-            this->init(dm.nDof(), dm.nLocalDofWithoutGhost(), false);
+        if ( doInit )
+            this->init( dm.nDof(), dm.nLocalDofWithoutGhost(), false );
     }
 
 
@@ -142,7 +142,7 @@ public:
      * This allows ownership of v to remain with the original creator,
      * and to simply provide additional functionality with the VectorPetsc.
      */
-    VectorPetsc(Vec v)
+    VectorPetsc( Vec v )
         :
         super(),
         _M_destroy_vec_on_exit( false )
@@ -151,9 +151,9 @@ public:
         this->M_is_initialized = true;
     }
 
-    VectorPetsc(Vec v, DataMap const& dm)
+    VectorPetsc( Vec v, DataMap const& dm )
         :
-        super(dm),
+        super( dm ),
         _M_destroy_vec_on_exit( false )
     {
         this->_M_vec = v;
@@ -175,7 +175,7 @@ public:
      */
     clone_ptrtype clone () const
     {
-        clone_ptrtype cloned_vector (new VectorPetsc<T>);
+        clone_ptrtype cloned_vector ( new VectorPetsc<T> );
 
         *cloned_vector = *this;
 
@@ -195,17 +195,17 @@ public:
      * On \p fast==false, the vector is filled by
      * zeros.
      */
-    void init (const size_type N,
-               const size_type n_local,
-               const bool         fast=false);
+    void init ( const size_type N,
+                const size_type n_local,
+                const bool         fast=false );
 
     /**
      * call init with n_local = N,
      */
-    void init (const size_type N,
-               const bool         fast=false)
+    void init ( const size_type N,
+                const bool         fast=false )
     {
-        this->init(N,N,fast);
+        this->init( N,N,fast );
     }
 
     //@}
@@ -214,25 +214,25 @@ public:
      */
     //@{
 
-    value_type operator() (const size_type i) const
+    value_type operator() ( const size_type i ) const
     {
-        FEELPP_ASSERT (this->isInitialized()).error( "vector not initialized" );
-        FEELPP_ASSERT ( ((i >= this->firstLocalIndex()) &&
-                       (i <  this->lastLocalIndex())) )( i )( this->firstLocalIndex() )( this->lastLocalIndex() ).error( "invalid vector index" );
+        FEELPP_ASSERT ( this->isInitialized() ).error( "vector not initialized" );
+        FEELPP_ASSERT ( ( ( i >= this->firstLocalIndex() ) &&
+                          ( i <  this->lastLocalIndex() ) ) )( i )( this->firstLocalIndex() )( this->lastLocalIndex() ).error( "invalid vector index" );
 
         int ierr=0;
         PetscScalar *values, value=0.;
 
 
-        ierr = VecGetArray(_M_vec, &values);
-        CHKERRABORT(this->comm(),ierr);
+        ierr = VecGetArray( _M_vec, &values );
+        CHKERRABORT( this->comm(),ierr );
 
         value = values[i - this->firstLocalIndex()];
 
-        ierr = VecRestoreArray (_M_vec, &values);
-        CHKERRABORT(this->comm(),ierr);
+        ierr = VecRestoreArray ( _M_vec, &values );
+        CHKERRABORT( this->comm(),ierr );
 
-        return static_cast<value_type>(value);
+        return static_cast<value_type>( value );
     }
 
 
@@ -240,11 +240,11 @@ public:
      * Addition operator.
      * Fast equivalent to \p U.add(1, V).
      */
-    Vector<T> & operator += (const Vector<value_type> &V)
+    Vector<T> & operator += ( const Vector<value_type> &V )
     {
-        FEELPP_ASSERT(this->closed()).error( "vector is not closed" );
+        FEELPP_ASSERT( this->closed() ).error( "vector is not closed" );
 
-        this->add(1., V);
+        this->add( 1., V );
 
         return *this;
     }
@@ -253,11 +253,11 @@ public:
      * Subtraction operator.
      * Fast equivalent to \p U.add(-1, V).
      */
-    Vector<T> & operator -= (const Vector<value_type> &V)
+    Vector<T> & operator -= ( const Vector<value_type> &V )
     {
-        FEELPP_ASSERT(this->closed()).error( "vector is not closed" );
+        FEELPP_ASSERT( this->closed() ).error( "vector is not closed" );
 
-        this->add(-1., V);
+        this->add( -1., V );
 
         return *this;
     }
@@ -268,7 +268,10 @@ public:
      */
     //@{
 
-    bool destroy_vec_on_exit() const {return _M_destroy_vec_on_exit;}
+    bool destroy_vec_on_exit() const
+    {
+        return _M_destroy_vec_on_exit;
+    }
 
     /**
      * @return dimension of the vector. This
@@ -279,16 +282,16 @@ public:
      */
     size_type size () const
     {
-        FEELPP_ASSERT (this->isInitialized()).error( "VectorPetsc not initialized" );
+        FEELPP_ASSERT ( this->isInitialized() ).error( "VectorPetsc not initialized" );
 
 
-        if (!this->isInitialized())
+        if ( !this->isInitialized() )
             return 0;
 
         int petsc_size=0;
-        int ierr = VecGetSize(_M_vec, &petsc_size);
-        CHKERRABORT(this->comm(),ierr);
-        return static_cast<size_type>(petsc_size);
+        int ierr = VecGetSize( _M_vec, &petsc_size );
+        CHKERRABORT( this->comm(),ierr );
+        return static_cast<size_type>( petsc_size );
     }
     /**
      * @return the local size of the vector
@@ -296,13 +299,13 @@ public:
      */
     size_type localSize() const
     {
-        FEELPP_ASSERT (this->isInitialized()).error( "VectorPetsc not initialized" );
+        FEELPP_ASSERT ( this->isInitialized() ).error( "VectorPetsc not initialized" );
 
         int petsc_size=0;
-        int ierr = VecGetLocalSize(_M_vec, &petsc_size);
-        CHKERRABORT(this->comm(),ierr);
+        int ierr = VecGetLocalSize( _M_vec, &petsc_size );
+        CHKERRABORT( this->comm(),ierr );
 
-        return static_cast<size_type>(petsc_size);
+        return static_cast<size_type>( petsc_size );
     }
 
     /**
@@ -310,8 +313,16 @@ public:
      * not required in user-level code. Just don't do anything crazy like
      * calling VecDestroy()!
      */
-    Vec vec () const { FEELPP_ASSERT (_M_vec != 0).error( "invalid petsc vector" ); return _M_vec; }
-    Vec& vec ()  { FEELPP_ASSERT (_M_vec != 0).error( "invalid petsc vector" ); return _M_vec; }
+    Vec vec () const
+    {
+        FEELPP_ASSERT ( _M_vec != 0 ).error( "invalid petsc vector" );
+        return _M_vec;
+    }
+    Vec& vec ()
+    {
+        FEELPP_ASSERT ( _M_vec != 0 ).error( "invalid petsc vector" );
+        return _M_vec;
+    }
 
     //@}
 
@@ -331,14 +342,14 @@ public:
      */
     void close ()
     {
-        FEELPP_ASSERT (this->isInitialized()).error( "VectorPetsc<> not initialized" );
+        FEELPP_ASSERT ( this->isInitialized() ).error( "VectorPetsc<> not initialized" );
 
         int ierr=0;
 
-        ierr = VecAssemblyBegin(_M_vec);
-        CHKERRABORT(this->comm(),ierr);
-        ierr = VecAssemblyEnd(_M_vec);
-        CHKERRABORT(this->comm(),ierr);
+        ierr = VecAssemblyBegin( _M_vec );
+        CHKERRABORT( this->comm(),ierr );
+        ierr = VecAssemblyEnd( _M_vec );
+        CHKERRABORT( this->comm(),ierr );
 
         this->M_is_closed = true;
     }
@@ -360,7 +371,10 @@ public:
     /**
      * set the entries to the constant \p v
      */
-    void setConstant( value_type v ) { this->set( v ); }
+    void setConstant( value_type v )
+    {
+        this->set( v );
+    }
 
     /**
      * @returns the \p VectorPetsc<T> to a pristine state.
@@ -370,17 +384,17 @@ public:
     /**
      * \f$ v(i) = \mathrm{value} \forall i\f$
      */
-    void set ( const value_type& value);
+    void set ( const value_type& value );
 
     /**
      * v(i) = value
      */
-    void set ( size_type i, const value_type& value);
+    void set ( size_type i, const value_type& value );
 
     /**
      * v(i) += value
      */
-    void add ( size_type i, const value_type& value);
+    void add ( size_type i, const value_type& value );
 
     /**
      * v([i1,i2,...,in]) += [value1,...,valuen]
@@ -392,13 +406,13 @@ public:
      * and you
      * want to specify WHERE to add it
      */
-    void addVector (const std::vector<value_type>& v,
-                    const std::vector<size_type>& dof_indices)
+    void addVector ( const std::vector<value_type>& v,
+                     const std::vector<size_type>& dof_indices )
     {
-        FEELPP_ASSERT (v.size() == dof_indices.size()).error( "invalid dof indices" );
+        FEELPP_ASSERT ( v.size() == dof_indices.size() ).error( "invalid dof indices" );
 
-        for (size_type i=0; i<v.size(); i++)
-            this->add (dof_indices[i], v[i]);
+        for ( size_type i=0; i<v.size(); i++ )
+            this->add ( dof_indices[i], v[i] );
     }
 
     /**
@@ -407,13 +421,13 @@ public:
      * want to specify WHERE to add
      * the \p NumericVector<T> V
      */
-    void addVector (const Vector<value_type>& V,
-                    const std::vector<size_type>& dof_indices)
+    void addVector ( const Vector<value_type>& V,
+                     const std::vector<size_type>& dof_indices )
     {
-        FEELPP_ASSERT (V.size() == dof_indices.size()).error( "invalid dof indices" );
+        FEELPP_ASSERT ( V.size() == dof_indices.size() ).error( "invalid dof indices" );
 
-        for (size_type i=0; i<V.size(); i++)
-            this->add (dof_indices[i], V(i));
+        for ( size_type i=0; i<V.size(); i++ )
+            this->add ( dof_indices[i], V( i ) );
     }
 
 
@@ -421,14 +435,14 @@ public:
      * \f$ U+=A*V\f$, add the product of a \p MatrixSparse \p A
      * and a \p Vector \p V to \p this, where \p this=U.
      */
-    void addVector (const Vector<value_type>& V_in,
-                    const MatrixSparse<value_type>& A_in)
+    void addVector ( const Vector<value_type>& V_in,
+                     const MatrixSparse<value_type>& A_in )
     {
-        const VectorPetsc<T>* V = dynamic_cast<const VectorPetsc<T>*>(&V_in);
-        const MatrixPetsc<T>* A = dynamic_cast<const MatrixPetsc<T>*>(&A_in);
+        const VectorPetsc<T>* V = dynamic_cast<const VectorPetsc<T>*>( &V_in );
+        const MatrixPetsc<T>* A = dynamic_cast<const MatrixPetsc<T>*>( &A_in );
 
-        assert (V != 0);
-        assert (A != 0);
+        assert ( V != 0 );
+        assert ( A != 0 );
 
         int ierr=0;
 
@@ -436,8 +450,8 @@ public:
 
         // The const_cast<> is not elegant, but it is required since PETSc
         // is not const-correct.
-        ierr = MatMultAdd(const_cast<MatrixPetsc<T>*>(A)->mat(), V->_M_vec, _M_vec, _M_vec);
-        CHKERRABORT(this->comm(),ierr);
+        ierr = MatMultAdd( const_cast<MatrixPetsc<T>*>( A )->mat(), V->_M_vec, _M_vec, _M_vec );
+        CHKERRABORT( this->comm(),ierr );
     }
 
 
@@ -447,21 +461,21 @@ public:
      * want to specify WHERE to add
      * the DenseVector<T> V
      */
-    void addVector (const ublas::vector<value_type>& V,
-                    const std::vector<size_type>& dof_indices)
+    void addVector ( const ublas::vector<value_type>& V,
+                     const std::vector<size_type>& dof_indices )
     {
-        FEELPP_ASSERT (V.size() == dof_indices.size()).error( "invalid dof indices" );
+        FEELPP_ASSERT ( V.size() == dof_indices.size() ).error( "invalid dof indices" );
 
-        for (size_type i=0; i<V.size(); i++)
-            this->add (dof_indices[i], V(i));
+        for ( size_type i=0; i<V.size(); i++ )
+            this->add ( dof_indices[i], V( i ) );
     }
 
     /**
      * \f$ U=v \f$ where v is a DenseVector<T>
      * and you want to specify WHERE to insert it
      */
-    void insert (const std::vector<T>& /*v*/,
-                         const std::vector<size_type>& /*dof_indices*/)
+    void insert ( const std::vector<T>& /*v*/,
+                  const std::vector<size_type>& /*dof_indices*/ )
     {
         FEELPP_ASSERT( 0 ).error( "invalid call, not implemented yet" );
     }
@@ -472,8 +486,8 @@ public:
      * want to specify WHERE to insert
      * the Vector<T> V
      */
-    void insert (const Vector<T>& V,
-                 const std::vector<size_type>& dof_indices);
+    void insert ( const Vector<T>& V,
+                  const std::vector<size_type>& dof_indices );
 
 
     /**
@@ -482,14 +496,14 @@ public:
      * want to specify WHERE to insert
      * the DenseVector<T> V
      */
-    void insert (const ublas::vector<T>& V,
-                 const std::vector<size_type>& dof_indices);
+    void insert ( const ublas::vector<T>& V,
+                  const std::vector<size_type>& dof_indices );
 
     /**
      * Scale each element of the
      * vector by the given factor.
      */
-    void scale (const T factor);
+    void scale ( const T factor );
 
 
     /**
@@ -497,21 +511,21 @@ public:
      * Addition of \p s to all components. Note
      * that \p s is a scalar and not a vector.
      */
-    void add (const value_type& v_in );
+    void add ( const value_type& v_in );
 
     /**
      * \f$ U+=V \f$ .
      * Simple vector addition, equal to the
      * \p operator +=.
      */
-    void add (const Vector<value_type>& v);
+    void add ( const Vector<value_type>& v );
 
     /**
      * \f$ U+=a*V \f$ .
      * Simple vector addition, equal to the
      * \p operator +=.
      */
-    void add (const value_type& a_in, const Vector<value_type>& v_in);
+    void add ( const value_type& a_in, const Vector<value_type>& v_in );
 
     /**
      * @return the minimum element in the vector.
@@ -559,14 +573,14 @@ public:
      */
     size_type firstLocalIndex () const
     {
-        assert (this->isInitialized());
+        assert ( this->isInitialized() );
 
         int ierr=0, petsc_first=0, petsc_last=0;
 
-        ierr = VecGetOwnershipRange (_M_vec, &petsc_first, &petsc_last);
-        CHKERRABORT(this->comm(),ierr);
+        ierr = VecGetOwnershipRange ( _M_vec, &petsc_first, &petsc_last );
+        CHKERRABORT( this->comm(),ierr );
 
-        return static_cast<size_type>(petsc_first);
+        return static_cast<size_type>( petsc_first );
     }
 
 
@@ -577,43 +591,43 @@ public:
      */
     size_type lastLocalIndex () const
     {
-        assert (this->isInitialized());
+        assert ( this->isInitialized() );
 
         int ierr=0, petsc_first=0, petsc_last=0;
 
-        ierr = VecGetOwnershipRange (_M_vec, &petsc_first, &petsc_last);
-        CHKERRABORT(this->comm(),ierr);
+        ierr = VecGetOwnershipRange ( _M_vec, &petsc_first, &petsc_last );
+        CHKERRABORT( this->comm(),ierr );
 
-        return static_cast<size_type>(petsc_last);
+        return static_cast<size_type>( petsc_last );
     }
 
     /**
      * Creates a copy of the global vector in the
      * local vector \p v_local.
      */
-    void localize (std::vector<T>& v_local) const;
+    void localize ( std::vector<T>& v_local ) const;
 
     /**
      * Same, but fills a \p Vector<T> instead of
      * a \p std::vector.
      */
-    void localize (Vector<T>& v_local) const;
+    void localize ( Vector<T>& v_local ) const;
 
     /**
      * Creates a local vector \p v_local containing
      * only information relevant to this processor, as
      * defined by the \p send_list.
      */
-    void localize (Vector<T>& v_local,
-                   const std::vector<size_type>& send_list) const;
+    void localize ( Vector<T>& v_local,
+                    const std::vector<size_type>& send_list ) const;
 
     /**
      * Updates a local vector with selected values from neighboring
      * processors, as defined by \p send_list.
      */
-    void localize (const size_type first_local_idx,
-                   const size_type last_local_idx,
-                   const std::vector<size_type>& send_list);
+    void localize ( const size_type first_local_idx,
+                    const size_type last_local_idx,
+                    const std::vector<size_type>& send_list );
 
     /**
      * Creates a local copy of the global vector in
@@ -621,8 +635,8 @@ public:
      * default the data is sent to processor 0.  This method
      * is useful for outputting data from one processor.
      */
-    void localizeToOneProcessor (std::vector<T>& v_local,
-                                 const size_type proc_id=0) const;
+    void localizeToOneProcessor ( std::vector<T>& v_local,
+                                  const size_type proc_id=0 ) const;
 
 
     /**
@@ -630,7 +644,7 @@ public:
      *  prints the vector to the file named \p name.  If \p name is
      *  not specified it is dumped to the screen.
      */
-    void printMatlab(const std::string name="NULL") const;
+    void printMatlab( const std::string name="NULL" ) const;
 
     //@}
 
@@ -641,15 +655,15 @@ protected:
 public:
 
     // disable
-    VectorPetsc( VectorPetsc const & v)
+    VectorPetsc( VectorPetsc const & v )
         :
         super( v ),
         _M_destroy_vec_on_exit( true )
     {
-        FEELPP_ASSERT(v.closed()).error( "copied vector is not closed" );
+        FEELPP_ASSERT( v.closed() ).error( "copied vector is not closed" );
 
-        VecDuplicate(v._M_vec, &_M_vec);
-        VecCopy(v._M_vec, _M_vec);
+        VecDuplicate( v._M_vec, &_M_vec );
+        VecCopy( v._M_vec, _M_vec );
         this->M_is_initialized = true;
         this->close();
     }
@@ -672,85 +686,86 @@ private:
 template <typename T>
 inline
 void
-VectorPetsc<T>::init (const size_type n,
-                      const size_type n_local,
-                      const bool fast)
+VectorPetsc<T>::init ( const size_type n,
+                       const size_type n_local,
+                       const bool fast )
 {
     int ierr=0;
-    int petsc_n=static_cast<int>(n);
-    int petsc_n_local=static_cast<int>(n_local);
+    int petsc_n=static_cast<int>( n );
+    int petsc_n_local=static_cast<int>( n_local );
 
 
     // Clear initialized vectors
-    if (this->isInitialized())
+    if ( this->isInitialized() )
         this->clear();
 
 
     // create a sequential vector if on only 1 processor
-    if (n_local == n)
-        {
-            ierr = VecCreateSeq (PETSC_COMM_SELF, petsc_n, &_M_vec);
-            CHKERRABORT(PETSC_COMM_SELF,ierr);
+    if ( n_local == n )
+    {
+        ierr = VecCreateSeq ( PETSC_COMM_SELF, petsc_n, &_M_vec );
+        CHKERRABORT( PETSC_COMM_SELF,ierr );
 
-            ierr = VecSetFromOptions (_M_vec);
-            CHKERRABORT(PETSC_COMM_SELF,ierr);
-        }
+        ierr = VecSetFromOptions ( _M_vec );
+        CHKERRABORT( PETSC_COMM_SELF,ierr );
+    }
+
     // otherwise create an MPI-enabled vector
     else
-        {
-            FEELPP_ASSERT(n_local < n)( n_local )( n ).error( "invalid local size" );
+    {
+        FEELPP_ASSERT( n_local < n )( n_local )( n ).error( "invalid local size" );
 
-            ierr = VecCreateMPI (this->comm(), petsc_n_local, petsc_n,
-                                 &_M_vec);
-            CHKERRABORT(this->comm(),ierr);
+        ierr = VecCreateMPI ( this->comm(), petsc_n_local, petsc_n,
+                              &_M_vec );
+        CHKERRABORT( this->comm(),ierr );
 
-            ierr = VecSetFromOptions (_M_vec);
-            CHKERRABORT(this->comm(),ierr);
-        }
+        ierr = VecSetFromOptions ( _M_vec );
+        CHKERRABORT( this->comm(),ierr );
+    }
 
     this->M_is_initialized = true;
 
 
-    if (fast == false)
+    if ( fast == false )
         this->zero ();
 }
 template <typename T>
 void
-VectorPetsc<T>::set ( const value_type& value)
+VectorPetsc<T>::set ( const value_type& value )
 {
     int ierr=0;
-    PetscScalar petsc_value = static_cast<PetscScalar>(value);
+    PetscScalar petsc_value = static_cast<PetscScalar>( value );
 
-    ierr = VecSet (_M_vec, petsc_value );
-    CHKERRABORT(this->comm(),ierr);
+    ierr = VecSet ( _M_vec, petsc_value );
+    CHKERRABORT( this->comm(),ierr );
 }
 template <typename T>
 void
-VectorPetsc<T>::set ( size_type i, const value_type& value)
+VectorPetsc<T>::set ( size_type i, const value_type& value )
 {
-    FEELPP_ASSERT(i<size())( i )( size() ).error( "invalid index" );
+    FEELPP_ASSERT( i<size() )( i )( size() ).error( "invalid index" );
 
 
     int ierr=0;
-    int i_val = static_cast<int>(i);
-    PetscScalar petsc_value = static_cast<PetscScalar>(value);
+    int i_val = static_cast<int>( i );
+    PetscScalar petsc_value = static_cast<PetscScalar>( value );
 
-    ierr = VecSetValues (_M_vec, 1, &i_val, &petsc_value, INSERT_VALUES);
-    CHKERRABORT(this->comm(),ierr);
+    ierr = VecSetValues ( _M_vec, 1, &i_val, &petsc_value, INSERT_VALUES );
+    CHKERRABORT( this->comm(),ierr );
 }
 
 template <typename T>
 void
-VectorPetsc<T>::add (const size_type i, const value_type& value)
+VectorPetsc<T>::add ( const size_type i, const value_type& value )
 {
-    FEELPP_ASSERT(i<size())( i )( size() ).error( "invalid index" );
+    FEELPP_ASSERT( i<size() )( i )( size() ).error( "invalid index" );
 
     int ierr=0;
-    int i_val = static_cast<int>(i);
-    PetscScalar petsc_value = static_cast<PetscScalar>(value);
+    int i_val = static_cast<int>( i );
+    PetscScalar petsc_value = static_cast<PetscScalar>( value );
 
-    ierr = VecSetValues (_M_vec, 1, &i_val, &petsc_value, ADD_VALUES);
-    CHKERRABORT(this->comm(),ierr);
+    ierr = VecSetValues ( _M_vec, 1, &i_val, &petsc_value, ADD_VALUES );
+    CHKERRABORT( this->comm(),ierr );
 }
 
 template <typename T>
@@ -760,8 +775,8 @@ VectorPetsc<T>::addVector ( int* i, int n, value_type* v )
     //FEELPP_ASSERT(n<=size())( n )( size() ).error( "invalid local index array size" );
 
     int ierr=0;
-    ierr = VecSetValues (_M_vec, n, i, v, ADD_VALUES);
-    CHKERRABORT(this->comm(),ierr);
+    ierr = VecSetValues ( _M_vec, n, i, v, ADD_VALUES );
+    CHKERRABORT( this->comm(),ierr );
 
 }
 
@@ -784,23 +799,26 @@ public:
         super()
     {}
 
-    VectorPetscMPI(Vec v, DataMap const& dm);
+    VectorPetscMPI( Vec v, DataMap const& dm );
 
-    VectorPetscMPI(DataMap const& dm );
+    VectorPetscMPI( DataMap const& dm );
 
-    ~VectorPetscMPI() { this->clear(); }
+    ~VectorPetscMPI()
+    {
+        this->clear();
+    }
 
-    void init(const size_type N,
-              const size_type n_local,
-              const bool fast=false);
+    void init( const size_type N,
+               const size_type n_local,
+               const bool fast=false );
 
-    value_type operator() (const size_type i) const;
+    value_type operator() ( const size_type i ) const;
 
-    void set(size_type i, const value_type& value);
+    void set( size_type i, const value_type& value );
 
-    void add(const size_type i, const value_type& value);
+    void add( const size_type i, const value_type& value );
 
-    void addVector(int* i, int n, value_type* v );
+    void addVector( int* i, int n, value_type* v );
 
     void clear();
 

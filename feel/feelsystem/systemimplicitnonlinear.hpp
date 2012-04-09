@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -94,14 +94,15 @@ public:
     //@{
 
     //! copy operator
-    SystemImplicitNonLinear& operator=( SystemImplicitNonLinear const & o)
+    SystemImplicitNonLinear& operator=( SystemImplicitNonLinear const & o )
     {
-        if (this != &o )
-            {
-                super::operator=( o );
-                M_J = o.M_J;
-                M_R = o.M_R;
-            }
+        if ( this != &o )
+        {
+            super::operator=( o );
+            M_J = o.M_J;
+            M_R = o.M_R;
+        }
+
         return *this;
     }
     //@}
@@ -111,16 +112,28 @@ public:
     //@{
 
     //! \return the jacobian matrix
-    sparse_matrix_ptrtype const& jacobian() const { return M_J; }
+    sparse_matrix_ptrtype const& jacobian() const
+    {
+        return M_J;
+    }
 
     //! \return the jacobian matrix
-    sparse_matrix_ptrtype& jacobian() { return M_J; }
-
-     //! \return the residual
-    vector_ptrtype const& residual() const { return M_R; }
+    sparse_matrix_ptrtype& jacobian()
+    {
+        return M_J;
+    }
 
     //! \return the residual
-    vector_ptrtype & residual() { return M_R; }
+    vector_ptrtype const& residual() const
+    {
+        return M_R;
+    }
+
+    //! \return the residual
+    vector_ptrtype & residual()
+    {
+        return M_R;
+    }
 
     //@}
 
@@ -139,7 +152,7 @@ public:
     virtual void updateResidual( const vector_ptrtype& X, vector_ptrtype& R ) = 0;
 
     //! function that update the jacobian at each non linear iteration
-    virtual void updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J) = 0;
+    virtual void updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J ) = 0;
 
     //! default implementation that solves the nonlinear system
     void solve( element_type& u )
@@ -167,7 +180,7 @@ private:
 };
 template<typename SpaceType>
 SystemImplicitNonLinear<SpaceType>::SystemImplicitNonLinear( functionspace_ptrtype const& Xh,
-                                                             po::variables_map const& vm )
+        po::variables_map const& vm )
     :
     super( Xh, vm ),
     M_J( M_backend->newMatrix( Xh, Xh ) ),

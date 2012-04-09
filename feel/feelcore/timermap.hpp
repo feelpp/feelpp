@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -37,10 +37,25 @@ struct TimerPair : public std::pair<boost::timer, double>
 {
 public:
 
-    double elapsed()  { second = first.elapsed(); return second; }
-    void accumulate() { second += first.elapsed(); first.restart(); }
-    void restart() { first.restart(); }
-    void reset() { first.restart(); second = 0; }
+    double elapsed()
+    {
+        second = first.elapsed();
+        return second;
+    }
+    void accumulate()
+    {
+        second += first.elapsed();
+        first.restart();
+    }
+    void restart()
+    {
+        first.restart();
+    }
+    void reset()
+    {
+        first.restart();
+        second = 0;
+    }
 };
 /**
  * \class TimerMap
@@ -104,10 +119,11 @@ public:
     void report( PrefixType const& prefix )
     {
         const_iterator it;
+
         for ( it=this->begin(); it!=this->end(); ++it )
-            {
-                Debug() << prefix << " "  << it->first << ": " << it->second.second << "\n";
-            }
+        {
+            Debug() << prefix << " "  << it->first << ": " << it->second.second << "\n";
+        }
     }
 
     //@}

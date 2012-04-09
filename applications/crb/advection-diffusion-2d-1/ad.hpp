@@ -57,13 +57,13 @@ namespace Feel
 po::options_description
 makeAdvectionDiffusionOptions()
 {
-    po::options_description AdvectionDiffusionoptions("AdvectionDiffusion options");
+    po::options_description AdvectionDiffusionoptions( "AdvectionDiffusion options" );
     AdvectionDiffusionoptions.add_options()
-        ("hsize", po::value<double>()->default_value( 0.1 ), "mesh size")
-        ("mu1", po::value<double>()->default_value( 1 ), "lenght of the channel in [1;10]")
-        ("mu2", po::value<double>()->default_value( 0.1 ), "Peclet number in [0.1;100]")
-        ("no-export", "don't export results")
-        ;
+    ( "hsize", po::value<double>()->default_value( 0.1 ), "mesh size" )
+    ( "mu1", po::value<double>()->default_value( 1 ), "lenght of the channel in [1;10]" )
+    ( "mu2", po::value<double>()->default_value( 0.1 ), "Peclet number in [0.1;100]" )
+    ( "no-export", "don't export results" )
+    ;
     return AdvectionDiffusionoptions.add( Feel::feel_options() );
 }
 AboutData
@@ -74,9 +74,9 @@ makeAdvectionDiffusionAbout( std::string const& str = "AdvectionDiffusion" )
                            "0.1",
                            "2D steady Advection-Diffusion",
                            Feel::AboutData::License_GPL,
-                           "Copyright (c) 2011 Université de Grenoble 1 (Joseph Fourier)");
+                           "Copyright (c) 2011 Université de Grenoble 1 (Joseph Fourier)" );
 
-    about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
     return about;
 }
 
@@ -200,7 +200,7 @@ public:
     //! copy constructor
     //AdvectionDiffusion( AdvectionDiffusion const & );
     //! destructor
-    ~AdvectionDiffusion(){}
+    ~AdvectionDiffusion() {}
 
     //! initialisation of the model
     void init();
@@ -218,7 +218,10 @@ public:
 
     // \return the number of terms in affine decomposition of left hand
     // side bilinear form
-    int Qa() const { return 5; }
+    int Qa() const
+    {
+        return 5;
+    }
 
     /**
      * there is at least one output which is the right hand side of the
@@ -226,69 +229,87 @@ public:
      *
      * \return number of outputs associated to the model
      */
-    int Nl() const { return 1; }
+    int Nl() const
+    {
+        return 1;
+    }
 
     /**
      * \param l the index of output
      * \return number of terms  in affine decomposition of the \p q th output term
      */
-    int Ql( int l ) const { return 1; }
+    int Ql( int l ) const
+    {
+        return 1;
+    }
 
     /**
      * \brief Returns the function space
      */
-    space_ptrtype functionSpace() { return Xh; }
+    space_ptrtype functionSpace()
+    {
+        return Xh;
+    }
 
     //! return the parameter space
-    parameterspace_ptrtype parameterSpace() const { return M_Dmu;}
+    parameterspace_ptrtype parameterSpace() const
+    {
+        return M_Dmu;
+    }
 
     /**
      * \brief compute the theta coefficient for both bilinear and linear form
      * \param mu parameter to evaluate the coefficients
      */
     boost::tuple<theta_vector_type, std::vector<theta_vector_type> >
-    computeThetaq( parameter_type const& mu , double time=0)
-        {
-            M_thetaAq.resize( Qa() );
-            M_thetaAq( 0 ) = 1;
-            M_thetaAq( 1 ) = 1./(mu(0)*mu(1));
-            M_thetaAq( 2 ) = mu(0)/mu(1);
-            M_thetaAq( 3 ) = 1./(mu(0)*mu(0)*mu(1));
-            M_thetaAq( 4 ) = 1./mu(1);
+    computeThetaq( parameter_type const& mu , double time=0 )
+    {
+        M_thetaAq.resize( Qa() );
+        M_thetaAq( 0 ) = 1;
+        M_thetaAq( 1 ) = 1./( mu( 0 )*mu( 1 ) );
+        M_thetaAq( 2 ) = mu( 0 )/mu( 1 );
+        M_thetaAq( 3 ) = 1./( mu( 0 )*mu( 0 )*mu( 1 ) );
+        M_thetaAq( 4 ) = 1./mu( 1 );
 
-            M_thetaFq.resize( Nl() );
-            M_thetaFq[0].resize( Ql(0) );
-            M_thetaFq[0]( 0 ) = mu(0);
+        M_thetaFq.resize( Nl() );
+        M_thetaFq[0].resize( Ql( 0 ) );
+        M_thetaFq[0]( 0 ) = mu( 0 );
 
-            return boost::make_tuple( M_thetaAq, M_thetaFq );
-        }
-
-    /**
-     * \brief return the coefficient vector
-     */
-    theta_vector_type const& thetaAq() const { return M_thetaAq; }
+        return boost::make_tuple( M_thetaAq, M_thetaFq );
+    }
 
     /**
      * \brief return the coefficient vector
      */
-    std::vector<theta_vector_type> const& thetaFq() const { return M_thetaFq; }
+    theta_vector_type const& thetaAq() const
+    {
+        return M_thetaAq;
+    }
+
+    /**
+     * \brief return the coefficient vector
+     */
+    std::vector<theta_vector_type> const& thetaFq() const
+    {
+        return M_thetaFq;
+    }
 
     /**
      * \brief return the coefficient vector \p q component
      *
      */
     value_type thetaAq( int q ) const
-        {
-            return M_thetaAq( q );
-        }
+    {
+        return M_thetaAq( q );
+    }
 
     /**
      * \return the \p q -th term of the \p l -th output
      */
     value_type thetaL( int l, int q ) const
-        {
-            return M_thetaFq[l]( q );
-        }
+    {
+        return M_thetaFq[l]( q );
+    }
 
     //@}
 
@@ -299,7 +320,10 @@ public:
     /**
      * set the mesh characteristic length to \p s
      */
-    void setMeshSize( double s ) { meshSize = s; }
+    void setMeshSize( double s )
+    {
+        meshSize = s;
+    }
 
 
     //@}
@@ -350,7 +374,7 @@ public:
     /**
      * export results to ensight format (enabled by  --export cmd line options)
      */
-  void exportResults( element_type& u , parameter_type const& mu );
+    void exportResults( element_type& u , parameter_type const& mu );
 
     void solve( sparse_matrix_ptrtype& ,element_type& ,vector_ptrtype&  );
 
@@ -422,7 +446,7 @@ AdvectionDiffusion::AdvectionDiffusion()
     export_number( 0 ),
     M_Dmu( new parameterspace_type )
 {
-  this->init();
+    this->init();
 }
 
 
@@ -435,21 +459,21 @@ AdvectionDiffusion::AdvectionDiffusion( po::variables_map const& vm )
     export_number( 0 ),
     M_Dmu( new parameterspace_type )
 {
-  this->init();
+    this->init();
 }
 void
 AdvectionDiffusion::init()
 {
     // geometry is a ]0,1[x]0,1[
-    GeoTool::Node x1(0,0);
-    GeoTool::Node x2(1,1);
-    GeoTool::Rectangle R( meshSize,"Omega",x1,x2);
-    R.setMarker(_type="line",_name="Inflow",_marker4=true);
-    R.setMarker(_type="line",_name="Bottom",_marker1=true);
-    R.setMarker(_type="line",_name="Top",_marker3=true);
-    R.setMarker(_type="line",_name="Outflow",_marker2=true);
-    R.setMarker(_type="surface",_name="Omega",_markerAll=true);
-    mesh = R.createMesh<mesh_type>("Omega");
+    GeoTool::Node x1( 0,0 );
+    GeoTool::Node x2( 1,1 );
+    GeoTool::Rectangle R( meshSize,"Omega",x1,x2 );
+    R.setMarker( _type="line",_name="Inflow",_marker4=true );
+    R.setMarker( _type="line",_name="Bottom",_marker1=true );
+    R.setMarker( _type="line",_name="Top",_marker3=true );
+    R.setMarker( _type="line",_name="Outflow",_marker2=true );
+    R.setMarker( _type="surface",_name="Omega",_markerAll=true );
+    mesh = R.createMesh<mesh_type>( "Omega" );
 
 
     /*
@@ -469,7 +493,7 @@ AdvectionDiffusion::init()
 
 
     M_Fq.resize( Nl() );
-    M_Fq[0].resize( Ql(0) );
+    M_Fq[0].resize( Ql( 0 ) );
     M_Fq[0][0] = backend->newVector( Xh );
 
     D = backend->newMatrix( Xh, Xh );
@@ -490,30 +514,30 @@ AdvectionDiffusion::init()
     std::cout << "Number of dof " << Xh->nLocalDof() << "\n";
 
     // right hand side
-    form1( Xh, M_Fq[0][0], _init=true ) = integrate( markedfaces(mesh, "Bottom"), id(v) );
+    form1( Xh, M_Fq[0][0], _init=true ) = integrate( markedfaces( mesh, "Bottom" ), id( v ) );
     M_Fq[0][0]->close();
 
-    form2( Xh, Xh, M_Aq[0], _init=true ) = integrate( elements(mesh), Py()*dxt(u)*id(v));
+    form2( Xh, Xh, M_Aq[0], _init=true ) = integrate( elements( mesh ), Py()*dxt( u )*id( v ) );
     M_Aq[0]->close();
 
-    form2( Xh, Xh, M_Aq[1], _init=true ) = integrate( elements(mesh), dxt(u)*dx(v));
+    form2( Xh, Xh, M_Aq[1], _init=true ) = integrate( elements( mesh ), dxt( u )*dx( v ) );
     M_Aq[1]->close();
 
-    form2( Xh, Xh, M_Aq[2], _init=true ) = integrate( elements(mesh), dyt(u)*dy(v));
-    form2( Xh, Xh, M_Aq[2] ) += integrate( markedfaces(mesh,"Top"),
-                                           - dyt(u)*Ny()*id(v) - dy(u)*Ny()*idt(v) + 20*idt(u)*id(v)/hFace() );
+    form2( Xh, Xh, M_Aq[2], _init=true ) = integrate( elements( mesh ), dyt( u )*dy( v ) );
+    form2( Xh, Xh, M_Aq[2] ) += integrate( markedfaces( mesh,"Top" ),
+                                           - dyt( u )*Ny()*id( v ) - dy( u )*Ny()*idt( v ) + 20*idt( u )*id( v )/hFace() );
     M_Aq[2]->close();
 
-    form2( Xh, Xh, M_Aq[3], _init=true ) = integrate( markedfaces(mesh,"Inflow"),
-                                                      - dxt(u)*Nx()*id(v) - dx(u)*Nx()*idt(v) );
+    form2( Xh, Xh, M_Aq[3], _init=true ) = integrate( markedfaces( mesh,"Inflow" ),
+                                           - dxt( u )*Nx()*id( v ) - dx( u )*Nx()*idt( v ) );
     M_Aq[3]->close();
-    form2( Xh, Xh, M_Aq[4], _init=true ) = integrate( markedfaces(mesh,"Inflow"),
-                                                      20*idt(u)*id(v)/hFace() );
+    form2( Xh, Xh, M_Aq[4], _init=true ) = integrate( markedfaces( mesh,"Inflow" ),
+                                           20*idt( u )*id( v )/hFace() );
     M_Aq[4]->close();
     M = backend->newMatrix( Xh, Xh );
 
     form2( Xh, Xh, M, _init=true ) =
-        integrate( elements(mesh), id(u)*idt(v) + grad(u)*trans(gradt(u)) );
+        integrate( elements( mesh ), id( u )*idt( v ) + grad( u )*trans( gradt( u ) ) );
     M->close();
 
 } // AdvectionDiffusion::run
@@ -549,19 +573,19 @@ AdvectionDiffusion::exportResults( element_type& U , parameter_type const& mu )
         Log() << "exportResults starts\n";
 
         std::string exp_name;
-	export_ptrtype exporter;
-	std::string mu_str;
+        export_ptrtype exporter;
+        std::string mu_str;
 
-	for(int i=0;i<mu.size();i++)
+        for ( int i=0; i<mu.size(); i++ )
         {
-	  mu_str= mu_str + (boost::format("_%1%") %mu[i]).str() ;
-	}
+            mu_str= mu_str + ( boost::format( "_%1%" ) %mu[i] ).str() ;
+        }
 
-	exp_name = "solution_with_parameters_" + mu_str;
+        exp_name = "solution_with_parameters_" + mu_str;
 
-	exporter = export_ptrtype( Exporter<mesh_type>::New( "ensight", exp_name  ) );
-	exporter->step(0)->setMesh( U.functionSpace()->mesh() );
-        exporter->step(0)->add( "u", U );
+        exporter = export_ptrtype( Exporter<mesh_type>::New( "ensight", exp_name  ) );
+        exporter->step( 0 )->setMesh( U.functionSpace()->mesh() );
+        exporter->step( 0 )->add( "u", U );
         exporter->save();
     }
 } // AdvectionDiffusion::export
@@ -570,14 +594,17 @@ void
 AdvectionDiffusion::update( parameter_type const& mu )
 {
     *D = *M_Aq[0];
-    for( size_type q = 1;q < M_Aq.size(); ++q )
+
+    for ( size_type q = 1; q < M_Aq.size(); ++q )
     {
         //std::cout << "[affine decomp] scale q=" << q << " with " << M_thetaAq[q] << "\n";
         D->addMatrix( M_thetaAq[q], M_Aq[q] );
     }
+
     F->close();
     F->zero();
-    for( size_type q = 0;q < M_Fq[0].size(); ++q )
+
+    for ( size_type q = 0; q < M_Fq[0].size(); ++q )
     {
         //std::cout << "[affine decomp] scale q=" << q << " with " << M_thetaFq[0][q] << "\n";
         F->add( M_thetaFq[0][q], M_Fq[0][q] );
@@ -602,33 +629,37 @@ AdvectionDiffusion::solve( parameter_type const& mu, element_ptrtype& T )
     backend->solve( _matrix=D,  _solution=T, _rhs=F );
     export_number++;
 #if 0
-	    std::ofstream file;
-	    std::string mu_str;
-	    for(int i=0;i<mu.size();i++)
-            {
-	      mu_str= mu_str + (boost::format("_%1%") %mu[i]).str() ;
-	    }
-	    std::string number =  (boost::format("Exp_%1%") %export_number).str();
-	    std::string name = "PFEMsolution" + mu_str + number;
-	    file.open(name,std::ios::out);
-	    for(int i=0;i<T->size();i++) file<<T->operator()(i)<<"\n";
-	    file.close();
+    std::ofstream file;
+    std::string mu_str;
 
-	    
-	    std::cout<<"pfem solution ok"<<std::endl;
-	    std::ofstream file_matrix;
-	    name = "PFEMmatrix" + mu_str + number;
-	    file_matrix.open(name,std::ios::out);
-	    file_matrix<<*D;
-	    file_matrix.close();
+    for ( int i=0; i<mu.size(); i++ )
+    {
+        mu_str= mu_str + ( boost::format( "_%1%" ) %mu[i] ).str() ;
+    }
 
-	    std::cout<<"pfem matrix ok"<<std::endl;
-	    name = "PFEMrhs" + mu_str + number;
-	    std::ofstream file_rhs;
-	    file_rhs.open(name,std::ios::out);
-	    file_rhs<<*F;
-	    file_rhs.close();
-	    std::cout<<"pfem rhs ok"<<std::endl;
+    std::string number =  ( boost::format( "Exp_%1%" ) %export_number ).str();
+    std::string name = "PFEMsolution" + mu_str + number;
+    file.open( name,std::ios::out );
+
+    for ( int i=0; i<T->size(); i++ ) file<<T->operator()( i )<<"\n";
+
+    file.close();
+
+
+    std::cout<<"pfem solution ok"<<std::endl;
+    std::ofstream file_matrix;
+    name = "PFEMmatrix" + mu_str + number;
+    file_matrix.open( name,std::ios::out );
+    file_matrix<<*D;
+    file_matrix.close();
+
+    std::cout<<"pfem matrix ok"<<std::endl;
+    name = "PFEMrhs" + mu_str + number;
+    std::ofstream file_rhs;
+    file_rhs.open( name,std::ios::out );
+    file_rhs<<*F;
+    file_rhs.close();
+    std::cout<<"pfem rhs ok"<<std::endl;
 #endif
 
 }
@@ -660,16 +691,18 @@ AdvectionDiffusion::run( const double * X, unsigned long N, double * Y, unsigned
     Feel::ParameterSpace<2>::Element mu( M_Dmu );
     mu << X[0], X[1];
     static int do_init = true;
+
     if ( do_init )
     {
         meshSize = X[2];
         this->init();
         do_init = false;
     }
+
     this->solve( mu, pT );
 
 
-    Y[0]=M_thetaFq[0](0)*integrate( markedfaces(mesh, "Bottom"), idv(*pT) ).evaluate()(0,0);
+    Y[0]=M_thetaFq[0]( 0 )*integrate( markedfaces( mesh, "Bottom" ), idv( *pT ) ).evaluate()( 0,0 );
 }
 
 
@@ -685,12 +718,14 @@ AdvectionDiffusion::output( int output_index, parameter_type const& mu )
     double output=0;
 
     // right hand side (compliant)
-    if( output_index == 0 )
+    if ( output_index == 0 )
     {
-        output = M_thetaFq[0](0)*dot( M_Fq[0][0], U );
+        output = M_thetaFq[0]( 0 )*dot( M_Fq[0][0], U );
     }
-    else{
-      throw std::logic_error( "[AdvectionDiffusion::output] error with output_index : only 0 " );
+
+    else
+    {
+        throw std::logic_error( "[AdvectionDiffusion::output] error with output_index : only 0 " );
     }
 
     return output;

@@ -45,11 +45,11 @@ makeEadsAbout( std::string const& str )
                            "0.1",
                            "2D OPUS/EADS Benchmark",
                            Feel::AboutData::License_GPL,
-                           "Copyright (c) 2008-2010 Université de Grenoble 1 (Joseph Fourier)");
+                           "Copyright (c) 2008-2010 Université de Grenoble 1 (Joseph Fourier)" );
 
-    about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
-    about.addAuthor("Sylvain Vallaghe", "developer", "sylvain.vallaghe@ujf-grenoble.fr", "");
-    about.addAuthor("Stéphane Veys", "developer", "stephane.veys@ujf-grenoble.fr", "");
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    about.addAuthor( "Sylvain Vallaghe", "developer", "sylvain.vallaghe@ujf-grenoble.fr", "" );
+    about.addAuthor( "Stéphane Veys", "developer", "stephane.veys@ujf-grenoble.fr", "" );
 
     return about;
 
@@ -61,52 +61,52 @@ Feel::po::options_description opusModelFluidOptions();
 Feel::po::options_description
 opusModelFluidOptions()
 {
-    Feel::po::options_description fluidoptions("Fluid Model Options");
+    Feel::po::options_description fluidoptions( "Fluid Model Options" );
     fluidoptions.add_options()
-        ("fluid.hsize"   , Feel::po::value<double>()->default_value( 0.5 ),     "Fluid mesh size")
-        ("fluid.flow-rate"   , Feel::po::value<double>()->default_value( 5e-3 ),     "Fluid flow rate");
+    ( "fluid.hsize"   , Feel::po::value<double>()->default_value( 0.5 ),     "Fluid mesh size" )
+    ( "fluid.flow-rate"   , Feel::po::value<double>()->default_value( 5e-3 ),     "Fluid flow rate" );
     fluidoptions
-        .add( backend_options( "fluid" ) );
+    .add( backend_options( "fluid" ) );
     return fluidoptions;
 }
 
 Feel::po::options_description
 opusModelThermalOptions()
 {
-    Feel::po::options_description thermaloptions("Thermal Model Options");
+    Feel::po::options_description thermaloptions( "Thermal Model Options" );
     thermaloptions.add_options()
-        ("thermal.T0"   , Feel::po::value<double>()->default_value( 300 ),       "initial and at Gamma_4 boundary temperature" )
-        ("thermal.c"   , Feel::po::value<double>()->default_value( 100 ),       "thermal conductance (1e30 means no resistance)" )
-        ("thermal.gamma-temp", Feel::po::value<double>()->default_value( 2.5e-2 ), "stabilization parameter" )
-        ("thermal.stab", Feel::po::value<bool>()->default_value( 0 ),              "0=no stabilisation, 1=CIP stabilization" )
-        ("thermal.distance-disc", Feel::po::value<double>()->default_value( 1e-6 ), "distance to temperature discontinuity" );
+    ( "thermal.T0"   , Feel::po::value<double>()->default_value( 300 ),       "initial and at Gamma_4 boundary temperature" )
+    ( "thermal.c"   , Feel::po::value<double>()->default_value( 100 ),       "thermal conductance (1e30 means no resistance)" )
+    ( "thermal.gamma-temp", Feel::po::value<double>()->default_value( 2.5e-2 ), "stabilization parameter" )
+    ( "thermal.stab", Feel::po::value<bool>()->default_value( 0 ),              "0=no stabilisation, 1=CIP stabilization" )
+    ( "thermal.distance-disc", Feel::po::value<double>()->default_value( 1e-6 ), "distance to temperature discontinuity" );
 
     thermaloptions
-        .add( backend_options( "thermal" ) );
+    .add( backend_options( "thermal" ) );
 
 #if defined( FEELPP_HAS_SLEPC )
     thermaloptions
-        .add( solvereigen_options( "thermal-coerc" ) )
-        .add( solvereigen_options( "thermal-cont" ) );
+    .add( solvereigen_options( "thermal-coerc" ) )
+    .add( solvereigen_options( "thermal-cont" ) );
 #endif
 
     return thermaloptions;
 }
 
-  Feel::po::options_description makeEadsOptions()
+Feel::po::options_description makeEadsOptions()
 {
-  Feel::po::options_description options("Eads Model Options");
+    Feel::po::options_description options( "Eads Model Options" );
 #if 1
     options
-        .add( opusModelThermalOptions() )
-        .add( opusModelFluidOptions() );
+    .add( opusModelThermalOptions() )
+    .add( opusModelFluidOptions() );
 
 #endif
     return options.add( backend_options( "backend.crb.fem" ) )
-        .add( backend_options( "backend.crb.norm" ) )
-        //.add( Feel::bdf_options() )
-        .add( Feel::OpusData::makeOptions() )
-        .add( Feel::feel_options() );
+           .add( backend_options( "backend.crb.norm" ) )
+           //.add( Feel::bdf_options() )
+           .add( Feel::OpusData::makeOptions() )
+           .add( Feel::feel_options() );
 }
 
 }

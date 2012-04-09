@@ -100,8 +100,8 @@ public:
 
     /* temperature */
     typedef DiscontinuousInterfaces<fusion::vector<mpl::vector<mpl::int_<3>, mpl::int_<11>, mpl::int_<13> >,
-                                                   mpl::vector<mpl::int_<4>, mpl::int_<11>, mpl::int_<14> >
-                                                   > >  discontinuity_type;
+            mpl::vector<mpl::int_<4>, mpl::int_<11>, mpl::int_<14> >
+            > >  discontinuity_type;
 #if defined( OPUS_WITH_THERMAL_DISCONTINUITY )
     typedef fusion::vector<Lagrange<OrderT, Scalar, discontinuity_type> > temp_basis_type;
 #else
@@ -154,7 +154,7 @@ public:
     typedef boost::shared_ptr<pressure_element_type> pressure_element_ptrtype;
     /* fluid */
     typedef fusion::vector<Lagrange<OrderU, Vectorial>,
-                           Lagrange<OrderP, Scalar> > fluid_basis_type;
+            Lagrange<OrderP, Scalar> > fluid_basis_type;
 
     typedef FunctionSpace<mesh_type, fluid_basis_type, value_type> fluid_functionspace_type;
     typedef boost::shared_ptr<fluid_functionspace_type> fluid_functionspace_ptrtype;
@@ -197,7 +197,7 @@ public:
     //@}
 
     /** @name Operator overloads
-fa     */
+    fa     */
     //@{
 
 

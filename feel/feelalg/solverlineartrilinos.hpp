@@ -94,25 +94,25 @@ public:
 
     void clear()
     {
-        if (this->initialized())
-            {
-                this->setInitialized( false );
-            }
+        if ( this->initialized() )
+        {
+            this->setInitialized( false );
+        }
     }
 
     void init()
     {
-        if (!this->initialized())
-            {
-                this->setInitialized( true );
+        if ( !this->initialized() )
+        {
+            this->setInitialized( true );
 
-                M_Solver.SetParameters( M_List, true );
+            M_Solver.SetParameters( M_List, true );
 
-                // AztecOO defined a certain number of output parameters, and store them
-                // in a double vector called status.
-                double status[AZ_STATUS_SIZE];
-                M_Solver.GetAllAztecStatus(status);
-            }
+            // AztecOO defined a certain number of output parameters, and store them
+            // in a double vector called status.
+            double status[AZ_STATUS_SIZE];
+            M_Solver.GetAllAztecStatus( status );
+        }
     }
 
     void setOptions( list_type _list )
@@ -134,18 +134,18 @@ public:
             const unsigned int m_its,
             bool transpose = false )
     {
-        Debug(10100) << "Matrix solver...\n";
+        Debug( 10100 ) << "Matrix solver...\n";
 
         setRHS( rhs );
         setLHS( solution );
         setUserOperator( matrix );
 
         M_Solver.SetParameters( M_List, true );
-        M_Solver.Iterate( m_its, tol);
+        M_Solver.Iterate( m_its, tol );
 
         //return std::make_pair( M_Solver.NumIters(), M_Solver.TrueResidual() );
 #warning todo!
-        return boost::make_tuple(true, M_Solver.NumIters(), M_Solver.TrueResidual() );
+        return boost::make_tuple( true, M_Solver.NumIters(), M_Solver.TrueResidual() );
     }
 
     //std::pair<unsigned int, real_type>
@@ -158,18 +158,18 @@ public:
              const unsigned int m_its,
              bool transpose = false )
     {
-        Debug(10100) << "Matrix solver with preconditioner...\n";
+        Debug( 10100 ) << "Matrix solver with preconditioner...\n";
 
         setRHS( rhs );
         setLHS( solution );
         setUserOperator( matrix );
 
         M_Solver.SetParameters( M_List, true );
-        M_Solver.Iterate( m_its, tol);
+        M_Solver.Iterate( m_its, tol );
 
         //return std::make_pair( M_Solver.NumIters(), M_Solver.TrueResidual() );
 #warning todo!
-        return boost::make_tuple(true, M_Solver.NumIters(), M_Solver.TrueResidual() );
+        return boost::make_tuple( true, M_Solver.NumIters(), M_Solver.TrueResidual() );
 
     }
 
@@ -181,14 +181,14 @@ public:
             const unsigned int m_its,
             bool transpose = false )
     {
-        Debug(10100) << "Operator solver...\n";
+        Debug( 10100 ) << "Operator solver...\n";
 
         setRHS( rhs );
         setLHS( solution );
         setUserOperator( op );
 
         M_Solver.SetParameters( M_List, true );
-        M_Solver.Iterate( m_its, tol);
+        M_Solver.Iterate( m_its, tol );
 
         return std::make_pair( M_Solver.NumIters(), M_Solver.TrueResidual() );
     }
@@ -199,16 +199,16 @@ public:
             Epetra_MultiVector & solution,
             Epetra_MultiVector const& rhs,
             const double tol,
-            const unsigned int m_its)
+            const unsigned int m_its )
     {
-        Debug(10100) << "Operator solver...\n";
+        Debug( 10100 ) << "Operator solver...\n";
 
         setRHS( rhs );
         setLHS( solution );
         setUserOperator( op );
 
         M_Solver.SetParameters( M_List, true );
-        M_Solver.Iterate( m_its, tol);
+        M_Solver.Iterate( m_its, tol );
 
         return std::make_pair( M_Solver.NumIters(), M_Solver.TrueResidual() );
     }
@@ -223,17 +223,17 @@ public:
             const double tol,
             const unsigned int m_its )
     {
-        Debug(10100) << "Operator solver with preconditioner...\n";
+        Debug( 10100 ) << "Operator solver with preconditioner...\n";
 
         setRHS( rhs );
         setLHS( solution );
         setUserOperator( op1 );
 
-	if ( op2.get() != 0 )
-        	M_Solver.SetPrecOperator( &(*op2) );
+        if ( op2.get() != 0 )
+            M_Solver.SetPrecOperator( &( *op2 ) );
 
         M_Solver.SetParameters( M_List, true );
-        M_Solver.Iterate( m_its, tol);
+        M_Solver.Iterate( m_its, tol );
 
         return std::make_pair( M_Solver.NumIters(), M_Solver.TrueResidual() );
     }
@@ -250,14 +250,14 @@ private:
     {
         setUserOperator( mpl::bool_<
                          mpl::or_< boost::is_same< operator_type, MatrixSparse<T> >,
-                                   boost::is_same< operator_type, MatrixEpetra > >::value >(),
+                         boost::is_same< operator_type, MatrixEpetra > >::value >(),
                          D );
     }
 
     void setUserOperator( mpl::bool_<true>, MatrixSparse<T> const& A )
     {
-        Debug(10100) << "Set matrix operator...\n";
-        sparse_matrix_type* A_ptr = const_cast<sparse_matrix_type *>( dynamic_cast< sparse_matrix_type const*>(&A) );
+        Debug( 10100 ) << "Set matrix operator...\n";
+        sparse_matrix_type* A_ptr = const_cast<sparse_matrix_type *>( dynamic_cast< sparse_matrix_type const*>( &A ) );
 
         M_Solver.SetUserMatrix( &A_ptr->mat() );
     }
@@ -267,31 +267,31 @@ private:
     template< typename operator_type >
     void setUserOperator( mpl::bool_<false>, operator_type const& A )
     {
-        Debug(10100) << "Set epetra operator...\n";
+        Debug( 10100 ) << "Set epetra operator...\n";
 
-        M_Solver.SetUserOperator( &(*A) );
+        M_Solver.SetUserOperator( &( *A ) );
     }
 
 
     void setRHS( Vector<T> const& x )
     {
-        VectorEpetra<T>* aux = const_cast< VectorEpetra<T>* >( dynamic_cast<VectorEpetra<T> const*>(&x) );
+        VectorEpetra<T>* aux = const_cast< VectorEpetra<T>* >( dynamic_cast<VectorEpetra<T> const*>( &x ) );
 
-        M_Solver.SetRHS( &aux->vec());
+        M_Solver.SetRHS( &aux->vec() );
     }
 
     void setLHS( Vector<T>& x )
     {
         VectorEpetra<T>* aux = dynamic_cast< VectorEpetra<T>* >( &x );
 
-        M_Solver.SetLHS( &aux->vec());
+        M_Solver.SetLHS( &aux->vec() );
     }
 
     void setRHS( Epetra_MultiVector const& x )
     {
-        Epetra_MultiVector* aux = const_cast< Epetra_MultiVector* >( dynamic_cast<Epetra_MultiVector const*>(&x) );
+        Epetra_MultiVector* aux = const_cast< Epetra_MultiVector* >( dynamic_cast<Epetra_MultiVector const*>( &x ) );
 
-        M_Solver.SetRHS( &(*aux) );
+        M_Solver.SetRHS( &( *aux ) );
     }
 
     void setLHS( Epetra_MultiVector& x )

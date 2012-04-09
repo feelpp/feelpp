@@ -74,7 +74,7 @@ typename imesh<Dim, Order, RDim>::ptrtype
 createMesh( double hsize )
 {
     return createGMSHMesh( _mesh=new typename imesh<Dim, Order, RDim>::type,
-                           _desc=domain( _name=(boost::format( "%1%-%2%" )  % "hypercube" % Dim).str() ,
+                           _desc=domain( _name=( boost::format( "%1%-%2%" )  % "hypercube" % Dim ).str() ,
                                          _addmidpoint=false,
                                          _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES,
                                          _shape="hypercube",
@@ -91,7 +91,7 @@ struct test_interpolation
 
     test_interpolation( double meshSize_=DEFAULT_MESH_SIZE )
         :
-        meshSize(meshSize_),
+        meshSize( meshSize_ ),
         mesh( createMesh<Dim,GeoOrder,Dim>( meshSize ) )
     {}
     void operator()()
@@ -103,61 +103,67 @@ struct test_interpolation
 
         typedef fusion::vector<Lagrange<Order, Scalar> > basis_type;
         typedef FunctionSpace<mesh_type, basis_type> space_type;
-        boost::shared_ptr<space_type> Xh( new space_type(mesh) );
+        boost::shared_ptr<space_type> Xh( new space_type( mesh ) );
         typename space_type::element_type u( Xh );
 
-        u = vf::project( Xh, elements(*mesh), constant(1.0) );
+        u = vf::project( Xh, elements( *mesh ), constant( 1.0 ) );
 
-        node_type pt(Dim);
+        node_type pt( Dim );
         pt[0] = 0.11;
+
         if ( Dim >= 2 )
             pt[1] = 0.11;
+
         if ( Dim >= 3 )
             pt[2] = 0.11;
-        double v0 = u( pt )(0,0,0);
+
+        double v0 = u( pt )( 0,0,0 );
 #if defined(USE_BOOST_TEST)
         BOOST_CHECK_SMALL( v0-1.0, eps );
 #else
-        FEELPP_ASSERT( math::abs( v0-1.0) < eps )( v0 )( math::abs( v0-1.0) )( eps ).warn ( "v0 != 1" );
+        FEELPP_ASSERT( math::abs( v0-1.0 ) < eps )( v0 )( math::abs( v0-1.0 ) )( eps ).warn ( "v0 != 1" );
 #endif /* USE_BOOST_TEST */
 
-        u = vf::project( Xh, elements(*mesh), constant(2.0) - Px()*Px()-Py()*Py()-Pz()*Pz() );
+        u = vf::project( Xh, elements( *mesh ), constant( 2.0 ) - Px()*Px()-Py()*Py()-Pz()*Pz() );
         pt[0] = 0.5;
+
         if ( Dim >= 2 )
             pt[1] = 0.5;
+
         if ( Dim >= 3 )
             pt[2] = 0.5;
 
-        double v1 = u( pt )(0,0,0);
+        double v1 = u( pt )( 0,0,0 );
         double v1_ex = 2-Dim*0.5*0.5;
 #if defined(USE_BOOST_TEST)
         BOOST_CHECK_SMALL( v1-v1_ex, eps );
 #else
-        FEELPP_ASSERT( math::abs( v1-v1_ex) < eps )( v1 )( math::abs( v1-v1_ex) )( eps ).warn ( "v1 != v0_ex" );
+        FEELPP_ASSERT( math::abs( v1-v1_ex ) < eps )( v1 )( math::abs( v1-v1_ex ) )( eps ).warn ( "v1 != v0_ex" );
 #endif /* USE_BOOST_TEST */
         auto gradient( u.grad( pt ) );
-        double g_v1_x = gradient(0,0,0);
+        double g_v1_x = gradient( 0,0,0 );
         double g_v1_ex_x = -2*0.5;
 #if defined(USE_BOOST_TEST)
         BOOST_CHECK_SMALL( g_v1_x-g_v1_ex_x, eps );
 #else
-        FEELPP_ASSERT( math::abs( g_v1_x-g_v1_ex_x) < eps )( g_v1_x )( math::abs( g_v1_x-g_v1_ex_x) )( eps ).warn ( "g_v1 != g_v1_ex" );
+        FEELPP_ASSERT( math::abs( g_v1_x-g_v1_ex_x ) < eps )( g_v1_x )( math::abs( g_v1_x-g_v1_ex_x ) )( eps ).warn ( "g_v1 != g_v1_ex" );
 #endif /* USE_BOOST_TEST */
 
         if ( Dim >= 2 )
-            {
-                double g_v1_y = gradient(0,1,0);
+        {
+            double g_v1_y = gradient( 0,1,0 );
 #if defined(USE_BOOST_TEST)
-                BOOST_CHECK_SMALL( g_v1_y-g_v1_ex_x, eps );
+            BOOST_CHECK_SMALL( g_v1_y-g_v1_ex_x, eps );
 #endif /* USE_BOOST_TEST */
-            }
+        }
+
         if ( Dim >= 3 )
-            {
-                double g_v1_z = gradient(0,2,0);
+        {
+            double g_v1_z = gradient( 0,2,0 );
 #if defined(USE_BOOST_TEST)
-                BOOST_CHECK_SMALL( g_v1_z-g_v1_ex_x, eps );
+            BOOST_CHECK_SMALL( g_v1_z-g_v1_ex_x, eps );
 #endif /* USE_BOOST_TEST */
-            }
+        }
 
 
     }
@@ -175,7 +181,7 @@ struct test_interpolation_op
     typedef typename imesh<Dim, GeoOrder>::type mesh_type;
     test_interpolation_op( double meshSize_=DEFAULT_MESH_SIZE )
         :
-        meshSize(meshSize_),
+        meshSize( meshSize_ ),
         mesh( createMesh<Dim,GeoOrder,Dim>( meshSize ) )
     {}
     void operator()()
@@ -190,21 +196,21 @@ struct test_interpolation_op
 
         typedef fusion::vector<Lagrange<Order+2+GeoOrder-1, Scalar> > basis_type;
         typedef FunctionSpace<mesh_type, basis_type> space_type;
-        boost::shared_ptr<space_type> Xh( new space_type(mesh) );
+        boost::shared_ptr<space_type> Xh( new space_type( mesh ) );
 
         typename space_type::element_type u( Xh, "u" );
 
-        AUTO(u_exact, Px()*Px() );
-        u = vf::project( Xh, elements(*mesh), u_exact);
+        AUTO( u_exact, Px()*Px() );
+        u = vf::project( Xh, elements( *mesh ), u_exact );
 
         typename imesh<Dim,GeoOrder,RDim>::ptrtype mesh1( createMesh<Dim,GeoOrder,RDim>( meshSize/2 ) );
         typedef typename imesh<Dim,GeoOrder,RDim>::type mesh1_type;
 
         typedef fusion::vector<Lagrange<Order+GeoOrder-1, Scalar> > imagebasis_type;
         typedef FunctionSpace<mesh1_type, imagebasis_type> imagespace_type;
-        boost::shared_ptr<imagespace_type> Yh( new imagespace_type(mesh1) );
+        boost::shared_ptr<imagespace_type> Yh( new imagespace_type( mesh1 ) );
         typename imagespace_type::element_type v( Yh, "v" );
-        BOOST_MESSAGE(  "[test_interpolation_op] functionspace allocated\n");
+        BOOST_MESSAGE(  "[test_interpolation_op] functionspace allocated\n" );
 
         typedef Backend<double> backend_type;
         typedef boost::shared_ptr<backend_type> backend_ptrtype;
@@ -213,35 +219,35 @@ struct test_interpolation_op
 #else
         backend_ptrtype backend( Backend<double>::build( BACKEND_GMM ) );
 #endif
-        BOOST_MESSAGE(  "[test_interpolation_op] backend allocated\n");
+        BOOST_MESSAGE(  "[test_interpolation_op] backend allocated\n" );
 
         OperatorInterpolation<space_type, imagespace_type> I( Xh, Yh, backend );
 
 
-        BOOST_MESSAGE(  "[test_interpolation_op] OI allocated\n");
+        BOOST_MESSAGE(  "[test_interpolation_op] OI allocated\n" );
         FsFunctionalLinear<imagespace_type> fsv( Yh );
-        BOOST_MESSAGE(  "[test_interpolation_op] FSV allocated\n");
+        BOOST_MESSAGE(  "[test_interpolation_op] FSV allocated\n" );
         I.apply( u, fsv );
-        BOOST_MESSAGE(  "[test_interpolation_op] applied OI \n");
+        BOOST_MESSAGE(  "[test_interpolation_op] applied OI \n" );
 
         auto y = Yh->element();
-        auto Ih = opInterpolation( _domainSpace=Xh, _imageSpace=Yh, _range=elements(Yh->mesh()) );
+        auto Ih = opInterpolation( _domainSpace=Xh, _imageSpace=Yh, _range=elements( Yh->mesh() ) );
         Ih->apply( u, y );
 
         interpolate( Yh, u, v );
-        BOOST_MESSAGE(  "[test_interpolation_op] interpolate\n");
+        BOOST_MESSAGE(  "[test_interpolation_op] interpolate\n" );
 
 
         typename imagespace_type::element_type w( Yh, "w" );
         w = fsv.container();
 
-        double err = math::sqrt( integrate( elements( Yh->mesh() ), (idv(w)-idv(y))*(idv(w)-idv(y)) ).evaluate()( 0, 0 ) );
+        double err = math::sqrt( integrate( elements( Yh->mesh() ), ( idv( w )-idv( y ) )*( idv( w )-idv( y ) ) ).evaluate()( 0, 0 ) );
         BOOST_MESSAGE(  "[err] ||w-y||_2 = " << err << "\n" );
         BOOST_CHECK_SMALL( err, 1e-12 );
 
         //std::cout << "w=" << w << "\n" );
-        value_type xw = math::sqrt( integrate( elements( mesh1 ), (u_exact-idv(w))*(u_exact-idv(w)) ).evaluate()( 0, 0 ) );
-        value_type vw = math::sqrt( integrate( elements( mesh1 ), (idv(v)-idv(w))*(idv(v)-idv(w)) ).evaluate()( 0, 0) );
+        value_type xw = math::sqrt( integrate( elements( mesh1 ), ( u_exact-idv( w ) )*( u_exact-idv( w ) ) ).evaluate()( 0, 0 ) );
+        value_type vw = math::sqrt( integrate( elements( mesh1 ), ( idv( v )-idv( w ) )*( idv( v )-idv( w ) ) ).evaluate()( 0, 0 ) );
         BOOST_MESSAGE(  "[test_interpolation_op] ||x-w||_2 = " << xw << "\n" );
         BOOST_MESSAGE(  "[test_interpolation_op] ||v-w||_2 = " << vw << "\n" );
 
@@ -267,7 +273,7 @@ struct test_interpolation_op_2
     typedef double value_type;
     test_interpolation_op_2( double meshSize_=DEFAULT_MESH_SIZE )
         :
-        meshSize(meshSize_) ,
+        meshSize( meshSize_ ) ,
         mesh( createMesh<DimDomain,1,RealDimDomain>( meshSize ) )
     {}
     void operator()()
@@ -286,17 +292,17 @@ struct test_interpolation_op_2
 #if 0
         typedef fusion::vector<Lagrange<OrderDomain, Scalar> > domain_basis_type;
         typedef FunctionSpace<mesh_type, domain_basis_type> domain_space_type;
-        boost::shared_ptr<domain_space_type> Xh( new domain_space_type(mesh) );
+        boost::shared_ptr<domain_space_type> Xh( new domain_space_type( mesh ) );
 
         typename domain_space_type::element_type u( Xh, "u" );
 
-        u = vf::project( Xh, elements(mesh), Px() );
+        u = vf::project( Xh, elements( mesh ), Px() );
 
         typename imesh<DimImage,1,RealDimImage>::ptrtype image_mesh( createMesh<DimImage,1,RealDimImage>( meshSize/2 ) );
 
         typedef fusion::vector<Lagrange<Order, Scalar> > imagebasis_type;
         typedef FunctionSpace<mesh_type, imagebasis_type> imagespace_type;
-        boost::shared_ptr<imagespace_type> Yh( new imagespace_type(mesh1) );
+        boost::shared_ptr<imagespace_type> Yh( new imagespace_type( mesh1 ) );
         typename imagespace_type::element_type v( Yh, "v" );
 
         typedef Backend<double> backend_type;
@@ -314,8 +320,8 @@ struct test_interpolation_op_2
         typename imagespace_type::element_type w( Yh, "w" );
         w = fsv.container();
         //std::cout << "w=" << w << "\n" );
-        value_type xw = math::sqrt( integrate( elements( mesh1 ), IM<Dim,Order,value_type,Simplex>(), (Px()-idv(w))*(Px()-idv(w)) ).evaluate()( 0, 0 ) );
-        value_type vw = math::sqrt( integrate( elements( mesh1 ), IM<Dim,Order,value_type,Simplex>(), (idv(v)-idv(w))*(idv(v)-idv(w)) ).evaluate()( 0, 0) );
+        value_type xw = math::sqrt( integrate( elements( mesh1 ), IM<Dim,Order,value_type,Simplex>(), ( Px()-idv( w ) )*( Px()-idv( w ) ) ).evaluate()( 0, 0 ) );
+        value_type vw = math::sqrt( integrate( elements( mesh1 ), IM<Dim,Order,value_type,Simplex>(), ( idv( v )-idv( w ) )*( idv( v )-idv( w ) ) ).evaluate()( 0, 0 ) );
         BOOST_MESSAGE(  "[test_interpolation_op] ||x-w||_2 = " << xw << "\n" );
         BOOST_MESSAGE(  "[test_interpolation_op] ||v-w||_2 = " << vw << "\n" );
 
@@ -340,7 +346,7 @@ struct test_lagrange_p1_op
     typedef typename imesh<Dim,GeoOrder,Dim>::type mesh_type;
     test_lagrange_p1_op( double meshSize_=DEFAULT_MESH_SIZE )
         :
-        meshSize(meshSize_),
+        meshSize( meshSize_ ),
         mesh( createMesh<Dim, GeoOrder, Dim>( meshSize ) )
 
     {}
@@ -358,11 +364,11 @@ struct test_lagrange_p1_op
 
         typedef fusion::vector<Lagrange<Order, Scalar> > basis_type;
         typedef FunctionSpace<mesh_type, basis_type> space_type;
-        boost::shared_ptr<space_type> Xh( new space_type(mesh) );
+        boost::shared_ptr<space_type> Xh( new space_type( mesh ) );
 
-        typename space_type::element_type u( Xh, (boost::format( "u_%1%.%2%.%3%" ) % Dim % Order % GeoOrder ).str() );
+        typename space_type::element_type u( Xh, ( boost::format( "u_%1%.%2%.%3%" ) % Dim % Order % GeoOrder ).str() );
 
-        u = vf::project( Xh, elements(*mesh), Px() );
+        u = vf::project( Xh, elements( *mesh ), Px() );
 
 #if 0
         std::ostringstream ostr1;
@@ -380,9 +386,9 @@ struct test_lagrange_p1_op
         OperatorLagrangeP1<space_type> I( Xh, backend );
         typedef typename OperatorLagrangeP1<space_type>::dual_image_space_type::mesh_type image_mesh_type;
         typename OperatorLagrangeP1<space_type>::dual_image_space_ptrtype Yh( I.dualImageSpace() );
-        typename OperatorLagrangeP1<space_type>::dual_image_space_type::element_type w( Yh, (boost::format( "w_%1%.%2%.%3%" ) % Dim % Order % GeoOrder ).str() );
-        typename OperatorLagrangeP1<space_type>::dual_image_space_type::element_type e( Yh, (boost::format( "w_%1%.%2%.%3%" ) % Dim % Order % GeoOrder ).str() );
-        typename OperatorLagrangeP1<space_type>::dual_image_space_type::element_type yy( Yh, (boost::format( "yy_%1%.%2%.%3%" ) % Dim % Order % GeoOrder ).str() );
+        typename OperatorLagrangeP1<space_type>::dual_image_space_type::element_type w( Yh, ( boost::format( "w_%1%.%2%.%3%" ) % Dim % Order % GeoOrder ).str() );
+        typename OperatorLagrangeP1<space_type>::dual_image_space_type::element_type e( Yh, ( boost::format( "w_%1%.%2%.%3%" ) % Dim % Order % GeoOrder ).str() );
+        typename OperatorLagrangeP1<space_type>::dual_image_space_type::element_type yy( Yh, ( boost::format( "yy_%1%.%2%.%3%" ) % Dim % Order % GeoOrder ).str() );
 
         FsFunctionalLinear<typename OperatorLagrangeP1<space_type>::dual_image_space_type> fsv( Yh );
         I.apply( u, fsv );
@@ -393,15 +399,15 @@ struct test_lagrange_p1_op
 
         value_type xw = math::sqrt( integrate( elements( Yh->mesh() ),
                                                IM<Dim,2*Order,value_type,Simplex>(),
-                                               (Px()-idv(w))*(Px()-idv(w)) ).evaluate()( 0, 0 ) );
+                                               ( Px()-idv( w ) )*( Px()-idv( w ) ) ).evaluate()( 0, 0 ) );
         BOOST_MESSAGE(  "[test_lagrange_p1_op] ||x-w||_2 = " << xw << "\n" );
         e=w;
-        e.setName( (boost::format( "e_%1%.%2%.%3% " ) % Dim % Order % GeoOrder ).str() );
+        e.setName( ( boost::format( "e_%1%.%2%.%3% " ) % Dim % Order % GeoOrder ).str() );
         e-=u;
         //std::cout << "e=" << e << "\n" );
         BOOST_MESSAGE(  "[test_lagrange_p1_op] ||x-w||_infty = " << e.linftyNorm() << "\n" );
 
-        yy = vf::project( Yh, elements(Yh->mesh()), Px() );
+        yy = vf::project( Yh, elements( Yh->mesh() ), Px() );
         std::ostringstream ostr;
         ostr << "olagp1-" << Dim << "." << Order << "." << GeoOrder;
         ExporterQuick<image_mesh_type> exp( ostr.str(), "ensight" );
@@ -415,10 +421,10 @@ inline
 Feel::po::options_description
 makeOptions()
 {
-    Feel::po::options_description integrationoptions("Test Integration options");
+    Feel::po::options_description integrationoptions( "Test Integration options" );
     integrationoptions.add_options()
-        ("hsize", Feel::po::value<double>()->default_value( 0.3 ), "h value")
-        ;
+    ( "hsize", Feel::po::value<double>()->default_value( 0.3 ), "h value" )
+    ;
     return integrationoptions.add( Feel::feel_options() );
 }
 
@@ -428,12 +434,12 @@ makeAbout()
 {
     Feel::AboutData about( "test_interpolation" ,
                            "test_interpolation" ,
-                            "0.1",
+                           "0.1",
                            "interpolation tests",
                            Feel::AboutData::License_GPL,
-                           "Copyright (C) 2007, 2008 Université Joseph Fourier (Grenoble I)");
+                           "Copyright (C) 2007, 2008 Université Joseph Fourier (Grenoble I)" );
 
-    about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
     return about;
 
 }
@@ -446,7 +452,7 @@ init_unit_test_suite( int argc, char** argv )
 {
     //boost::mpi::environment( argc, argv );
     mpiapp = boost::shared_ptr<Feel::Application>( new Feel::Application( argc, argv, makeAbout(), makeOptions() ) );
-    Feel::Assert::setLog( "test_integration.assert");
+    Feel::Assert::setLog( "test_integration.assert" );
     test_suite* test = BOOST_TEST_SUITE( "Interpolation test suite" );
 
 #if 1
@@ -475,21 +481,76 @@ BOOST_AUTO_TEST_SUITE( interpolation )
 Feel::Environment env( boost::unit_test::framework::master_test_suite().argc,
                        boost::unit_test::framework::master_test_suite().argv );
 
-BOOST_AUTO_TEST_CASE( test_interpolation12 ) { BOOST_MESSAGE( "test_interpolation<1,2>"); test_interpolation<1,2> t( 0.1 ); t(); }
-BOOST_AUTO_TEST_CASE( test_interpolation22 ) { BOOST_MESSAGE( "test_interpolation<2,2>"); test_interpolation<2,2> t( 0.1 ); t(); }
-BOOST_AUTO_TEST_CASE( test_interpolation32 ) { BOOST_MESSAGE( "test_interpolation<3,2>"); test_interpolation<3,2> t( 0.1 ); t(); }
-BOOST_AUTO_TEST_CASE( test_interpolation222 ) { BOOST_MESSAGE( "test_interpolation<2,2,2>"); test_interpolation<2,2,2> t( 0.1 ); t(); }
-BOOST_AUTO_TEST_CASE( test_interpolation_op111 ) { BOOST_MESSAGE( "test_interpolation_op<1,2,1>"); test_interpolation_op<1,2,1> t( 0.1 ); t(); }
-BOOST_AUTO_TEST_CASE( test_interpolation_op212 ) { BOOST_MESSAGE( "test_interpolation_op<2,1,2>"); test_interpolation_op<2,1,2> t( 0.1 ); t(); }
-BOOST_AUTO_TEST_CASE( test_interpolation_op313 ) { BOOST_MESSAGE( "test_interpolation_op<3,1,3>"); test_interpolation_op<3,1,3> t( 0.1 ); t(); }
+BOOST_AUTO_TEST_CASE( test_interpolation12 )
+{
+    BOOST_MESSAGE( "test_interpolation<1,2>" );
+    test_interpolation<1,2> t( 0.1 );
+    t();
+}
+BOOST_AUTO_TEST_CASE( test_interpolation22 )
+{
+    BOOST_MESSAGE( "test_interpolation<2,2>" );
+    test_interpolation<2,2> t( 0.1 );
+    t();
+}
+BOOST_AUTO_TEST_CASE( test_interpolation32 )
+{
+    BOOST_MESSAGE( "test_interpolation<3,2>" );
+    test_interpolation<3,2> t( 0.1 );
+    t();
+}
+BOOST_AUTO_TEST_CASE( test_interpolation222 )
+{
+    BOOST_MESSAGE( "test_interpolation<2,2,2>" );
+    test_interpolation<2,2,2> t( 0.1 );
+    t();
+}
+BOOST_AUTO_TEST_CASE( test_interpolation_op111 )
+{
+    BOOST_MESSAGE( "test_interpolation_op<1,2,1>" );
+    test_interpolation_op<1,2,1> t( 0.1 );
+    t();
+}
+BOOST_AUTO_TEST_CASE( test_interpolation_op212 )
+{
+    BOOST_MESSAGE( "test_interpolation_op<2,1,2>" );
+    test_interpolation_op<2,1,2> t( 0.1 );
+    t();
+}
+BOOST_AUTO_TEST_CASE( test_interpolation_op313 )
+{
+    BOOST_MESSAGE( "test_interpolation_op<3,1,3>" );
+    test_interpolation_op<3,1,3> t( 0.1 );
+    t();
+}
 //BOOST_AUTO_TEST_CASE( test_interpolation_op112 ) { BOOST_MESSAGE( "test_interpolation_op<1,1,2>"); test_interpolation_op<1,1,2> t( 0.1 ); t(); }
 BOOST_AUTO_TEST_SUITE_END()
 
 #if 0
-BOOST_AUTO_TEST_CASE( test_lagrange_p1_op21 ) { BOOST_MESSAGE( "test_lagrange_p1_op<2,1>"); test_lagrange_p1_op<2,1> t( 0.1 ); t(); }
-BOOST_AUTO_TEST_CASE( test_lagrange_p1_op22 ) { BOOST_MESSAGE( "test_lagrange_p1_op<2,2>"); test_lagrange_p1_op<2,2> t( 0.1 ); t(); }
-BOOST_AUTO_TEST_CASE( test_lagrange_p1_op25 ) { BOOST_MESSAGE( "test_lagrange_p1_op<2,5>"); test_lagrange_p1_op<2,5> t( 0.1 ); t(); }
-BOOST_AUTO_TEST_CASE( test_lagrange_p1_op232 ) { BOOST_MESSAGE( "test_lagrange_p1_op<2,3,2>"); test_lagrange_p1_op<2,3,2> t( 0.1 ); t(); }
+BOOST_AUTO_TEST_CASE( test_lagrange_p1_op21 )
+{
+    BOOST_MESSAGE( "test_lagrange_p1_op<2,1>" );
+    test_lagrange_p1_op<2,1> t( 0.1 );
+    t();
+}
+BOOST_AUTO_TEST_CASE( test_lagrange_p1_op22 )
+{
+    BOOST_MESSAGE( "test_lagrange_p1_op<2,2>" );
+    test_lagrange_p1_op<2,2> t( 0.1 );
+    t();
+}
+BOOST_AUTO_TEST_CASE( test_lagrange_p1_op25 )
+{
+    BOOST_MESSAGE( "test_lagrange_p1_op<2,5>" );
+    test_lagrange_p1_op<2,5> t( 0.1 );
+    t();
+}
+BOOST_AUTO_TEST_CASE( test_lagrange_p1_op232 )
+{
+    BOOST_MESSAGE( "test_lagrange_p1_op<2,3,2>" );
+    test_lagrange_p1_op<2,3,2> t( 0.1 );
+    t();
+}
 #endif
 #endif // 0
 #else
@@ -497,7 +558,7 @@ int
 main( int argc, char** argv )
 {
     Feel::Application mpiapp( argc, argv, makeAbout(), makeOptions() );
-    Feel::Assert::setLog( "test_interpolation.assert");
+    Feel::Assert::setLog( "test_interpolation.assert" );
 
 #if 1
     test_interpolation_op<1,1,1,1> t( mpiapp.vm()["hsize"].as<double>() );

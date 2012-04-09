@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -143,7 +143,10 @@ public:
     /**
      * \return true if matrix is initialized/usable, false otherwise
      */
-    bool isInitialized() const { return true; }
+    bool isInitialized() const
+    {
+        return true;
+    }
 
     /**
      * \c close the gmm matrix, that will copy the content of write
@@ -165,22 +168,34 @@ public:
     /**
      * Returns the read optimized gmm matrix.
      */
-    matrix_type const& mat () const { return _M_mat; }
+    matrix_type const& mat () const
+    {
+        return _M_mat;
+    }
 
     /**
      * Returns the read optimized gmm matrix.
      */
-    matrix_type & mat ()  { return _M_mat; }
+    matrix_type & mat ()
+    {
+        return _M_mat;
+    }
 
     /**
      * Returns the write optimized gmm matrix.
      */
-    matrix_type const& wmat () const { return _M_mat; }
+    matrix_type const& wmat () const
+    {
+        return _M_mat;
+    }
 
     /**
      * Returns the write optimized gmm matrix.
      */
-    matrix_type & wmat ()  { return _M_mat; }
+    matrix_type & wmat ()
+    {
+        return _M_mat;
+    }
 
 
 
@@ -205,13 +220,15 @@ public:
      * \p noz is the number of on-processor
      * nonzeros per row (defaults to 30).
      */
-    void init (const unsigned int /*m*/,
-               const unsigned int /*n*/,
-               const unsigned int /*m_l*/,
-               const unsigned int /*n_l*/,
-               const unsigned int /*nnz*/=30,
-               const unsigned int /*noz*/=10)
-    { this->zero(); }
+    void init ( const unsigned int /*m*/,
+                const unsigned int /*n*/,
+                const unsigned int /*m_l*/,
+                const unsigned int /*n_l*/,
+                const unsigned int /*nnz*/=30,
+                const unsigned int /*noz*/=10 )
+    {
+        this->zero();
+    }
 
     /**
      * Release all memory and return
@@ -241,9 +258,9 @@ public:
     /**
      * Add \p value to the value already accumulated
      */
-    void add (const unsigned int /*i*/,
-              const unsigned int /*j*/,
-              const value_type value)
+    void add ( const unsigned int /*i*/,
+               const unsigned int /*j*/,
+               const value_type value )
     {
         _M_mat += value;
     }
@@ -251,9 +268,9 @@ public:
     /**
      * set to \p value
      */
-    void set (const unsigned int /*i*/,
-              const unsigned int /*j*/,
-              const value_type value)
+    void set ( const unsigned int /*i*/,
+               const unsigned int /*j*/,
+               const value_type value )
     {
         _M_mat = value;
     }
@@ -266,7 +283,7 @@ public:
      * matrix to the file named \p name.  If \p name
      * is not specified it is dumped to the screen.
      */
-    void printMatlab(const std::string name="NULL") const;
+    void printMatlab( const std::string name="NULL" ) const;
 
 
     /**
@@ -328,7 +345,7 @@ MatrixValue<T>::close() const
 
 template<typename T>
 void
-MatrixValue<T>::printMatlab(const std::string /*filename*/ ) const
+MatrixValue<T>::printMatlab( const std::string /*filename*/ ) const
 {
 }
 

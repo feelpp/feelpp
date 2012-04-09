@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -48,59 +48,59 @@ Feel::po::options_description
 makeOptions()
 {
     Feel::po::options_description
-        ethiersteinmanoptions("EthierSteinman options");
+    ethiersteinmanoptions( "EthierSteinman options" );
     ethiersteinmanoptions.add_options()
-        ("dt", Feel::po::value<double>()->default_value( 0.025 ),
-         "time step value")
-        ("ft", Feel::po::value<double>()->default_value( 0.1 ),
-         "Final time value")
-        ("mu", Feel::po::value<double>()->default_value( 1.0 ),
-         "viscosity of fluid")
-        ("hsize", Feel::po::value<double>()->default_value( 0.1 ),
-         "first h value to start convergence")
-        ("bccoeffdiff", Feel::po::value<double>()->default_value( 100.0 ),
-         "coefficient for diffusive weak Dirichlet boundary terms")
-        ("bccoeffconv", Feel::po::value<double>()->default_value( 100.0 ),
-         "coefficient for convective weak Dirichlet boundary terms")
-        ("fixpointtol", Feel::po::value<double>()->default_value( 0.025 ),
-         "Convergence tolerance for fixed point sub-iterations")
-        ("maxsubiter", Feel::po::value<int>()->default_value( 1 ),
-         "maximal number of fixed point sub-iterations")
-        ("divdivcoeff", Feel::po::value<double>()->default_value( 0.0 ),
-         "coefficient for ( div u , div v ) term in matrix")
-        ("stabcoeff-div", Feel::po::value<double>()->default_value( 0.0 ),
-         "interior penalty stabilization coefficient for divergence")
-        ("stabcoeff-p", Feel::po::value<double>()->default_value( 0.1 ),
-         "interior penalty stabilization coefficient for pressure")
-        ("stabtheta", Feel::po::value<double>()->default_value( -1.0 ),
-         "stabilization decoupling coefficient (no decoupling for values < 0)")
-        ("epscompress", Feel::po::value<double>()->default_value( 0.0 ),
-         "coefficient of compressibility term")
-        ("export", Feel::po::value<int>()->default_value( 0 ),
-         "stride for result export (0=no export)")
-        ("bdf1", "use BDF1 time stepping")
-        ;
+    ( "dt", Feel::po::value<double>()->default_value( 0.025 ),
+      "time step value" )
+    ( "ft", Feel::po::value<double>()->default_value( 0.1 ),
+      "Final time value" )
+    ( "mu", Feel::po::value<double>()->default_value( 1.0 ),
+      "viscosity of fluid" )
+    ( "hsize", Feel::po::value<double>()->default_value( 0.1 ),
+      "first h value to start convergence" )
+    ( "bccoeffdiff", Feel::po::value<double>()->default_value( 100.0 ),
+      "coefficient for diffusive weak Dirichlet boundary terms" )
+    ( "bccoeffconv", Feel::po::value<double>()->default_value( 100.0 ),
+      "coefficient for convective weak Dirichlet boundary terms" )
+    ( "fixpointtol", Feel::po::value<double>()->default_value( 0.025 ),
+      "Convergence tolerance for fixed point sub-iterations" )
+    ( "maxsubiter", Feel::po::value<int>()->default_value( 1 ),
+      "maximal number of fixed point sub-iterations" )
+    ( "divdivcoeff", Feel::po::value<double>()->default_value( 0.0 ),
+      "coefficient for ( div u , div v ) term in matrix" )
+    ( "stabcoeff-div", Feel::po::value<double>()->default_value( 0.0 ),
+      "interior penalty stabilization coefficient for divergence" )
+    ( "stabcoeff-p", Feel::po::value<double>()->default_value( 0.1 ),
+      "interior penalty stabilization coefficient for pressure" )
+    ( "stabtheta", Feel::po::value<double>()->default_value( -1.0 ),
+      "stabilization decoupling coefficient (no decoupling for values < 0)" )
+    ( "epscompress", Feel::po::value<double>()->default_value( 0.0 ),
+      "coefficient of compressibility term" )
+    ( "export", Feel::po::value<int>()->default_value( 0 ),
+      "stride for result export (0=no export)" )
+    ( "bdf1", "use BDF1 time stepping" )
+    ;
 
-    Feel::po::options_description solveroptions("algebraic solver options");
+    Feel::po::options_description solveroptions( "algebraic solver options" );
     solveroptions.add_options()
-        ("tolerance", Feel::po::value<double>()->default_value( 2.e-10 ),
-         "solver tolerance")
-        ("verbose", Feel::po::value<int>()->default_value( 0 ),
-         "(=0,1,2) print solver iterations")
-        ("maxiter", Feel::po::value<int>()->default_value( 1000 ),
-         "set maximum number of iterations")
-        ("fillin", Feel::po::value<int>()->default_value( 20 ),
-         "fill-in for incomplete factorizations")
-        ("threshold", Feel::po::value<double>()->default_value( 1.e-4 ),
-         "threshold for incomplete factorizations")
-        ("solver", Feel::po::value<std::string>()->default_value( "gmres" ),
-         "solver type")
-        ("precond", Feel::po::value<std::string>()->default_value( "ilutp" ),
-         "preconditioner type")
-        ("restart", Feel::po::value<int>()->default_value( 200 ),
-         "gmres restart")
-        ("direct", "use direct solver")
-      ;
+    ( "tolerance", Feel::po::value<double>()->default_value( 2.e-10 ),
+      "solver tolerance" )
+    ( "verbose", Feel::po::value<int>()->default_value( 0 ),
+      "(=0,1,2) print solver iterations" )
+    ( "maxiter", Feel::po::value<int>()->default_value( 1000 ),
+      "set maximum number of iterations" )
+    ( "fillin", Feel::po::value<int>()->default_value( 20 ),
+      "fill-in for incomplete factorizations" )
+    ( "threshold", Feel::po::value<double>()->default_value( 1.e-4 ),
+      "threshold for incomplete factorizations" )
+    ( "solver", Feel::po::value<std::string>()->default_value( "gmres" ),
+      "solver type" )
+    ( "precond", Feel::po::value<std::string>()->default_value( "ilutp" ),
+      "preconditioner type" )
+    ( "restart", Feel::po::value<int>()->default_value( 200 ),
+      "gmres restart" )
+    ( "direct", "use direct solver" )
+    ;
     return ethiersteinmanoptions.add( solveroptions );
 }
 
@@ -109,14 +109,14 @@ Feel::AboutData
 makeAbout()
 {
     Feel::AboutData about( "ethiersteinman" ,
-                            "ethiersteinman" ,
-                            "0.1",
-                            "Ethier Steinman Benchmark",
-                            Feel::AboutData::License_GPL,
-                            "Copyright (c) 2007 EPFL");
+                           "ethiersteinman" ,
+                           "0.1",
+                           "Ethier Steinman Benchmark",
+                           Feel::AboutData::License_GPL,
+                           "Copyright (c) 2007 EPFL" );
 
-    about.addAuthor("Christoph Winkelmann", "developer",
-                    "christoph.winkelmann@epfl.ch", "");
+    about.addAuthor( "Christoph Winkelmann", "developer",
+                     "christoph.winkelmann@epfl.ch", "" );
     return about;
 
 }
@@ -125,7 +125,7 @@ namespace Feel
 {
 class EthierSteinman
     :
-        public ApplicationSerial
+public ApplicationSerial
 {
     typedef ApplicationSerial super;
 public:
@@ -147,17 +147,17 @@ public:
 
     /* bases */
     typedef fusion::vector<fem::Lagrange<Dim, uOrder,
-                                         Vectorial, Continuous,
-                                         double, ENTITY> > basis_U_type;
+            Vectorial, Continuous,
+            double, ENTITY> > basis_U_type;
     typedef fusion::vector<fem::Lagrange<Dim, uOrder,
-                                         Scalar, Continuous,
-                                         double, ENTITY> > basis_u_type;
+            Scalar, Continuous,
+            double, ENTITY> > basis_u_type;
     typedef fusion::vector<fem::Lagrange<Dim, pOrder,
-                                         Scalar, Continuous,
-                                         double, ENTITY> > basis_p_type;
+            Scalar, Continuous,
+            double, ENTITY> > basis_p_type;
     typedef fusion::vector<fem::Lagrange<Dim, 0,
-                                         Scalar, Discontinuous,
-                                         double, ENTITY> > basis_i_type;
+            Scalar, Discontinuous,
+            double, ENTITY> > basis_i_type;
 
     /* spaces */
     typedef FunctionSpace<mesh_type, basis_U_type, value_type> space_U_type;

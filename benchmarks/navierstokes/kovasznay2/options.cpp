@@ -35,40 +35,40 @@
 Feel::po::options_description
 makeOptions()
 {
-    Feel::po::options_description kovasznayoptions("Kovasznay options");
+    Feel::po::options_description kovasznayoptions( "Kovasznay options" );
     kovasznayoptions.add_options()
-        ("nu", Feel::po::value<double>()->default_value( 1.0 ),
-         "viscosity")
-        ("hsize", Feel::po::value<double>()->default_value( 0.5 ),
-         "first h value to start convergence")
-        ("fixpointtol", Feel::po::value<double>()->default_value( 0.025 ),
-         "Convergence tolerance for fixed point sub-iterations")
-        ("maxsubiter", Feel::po::value<int>()->default_value( 1 ),
-         "maximal number of fixed point sub-iterations")
-        ("stabtheta", Feel::po::value<double>()->default_value( 1.5 ),
-         "stabilization decoupling coefficient")
-        ("doexport", Feel::po::value<int>()->default_value( 0 ),
-         "stride for result export (0=no export)")
-        ;
+    ( "nu", Feel::po::value<double>()->default_value( 1.0 ),
+      "viscosity" )
+    ( "hsize", Feel::po::value<double>()->default_value( 0.5 ),
+      "first h value to start convergence" )
+    ( "fixpointtol", Feel::po::value<double>()->default_value( 0.025 ),
+      "Convergence tolerance for fixed point sub-iterations" )
+    ( "maxsubiter", Feel::po::value<int>()->default_value( 1 ),
+      "maximal number of fixed point sub-iterations" )
+    ( "stabtheta", Feel::po::value<double>()->default_value( 1.5 ),
+      "stabilization decoupling coefficient" )
+    ( "doexport", Feel::po::value<int>()->default_value( 0 ),
+      "stride for result export (0=no export)" )
+    ;
 
     // modification of defaults from oseen and backends
     // to defaults more sensible for Kovasznay
     Feel::OseenDefaults oseenDefs;
     oseenDefs.STAB_COEFF_P = 0.01; // P2P2
     Feel::BackendGmmDefaults beGmmOsDefs;
-//     beGmmOsDefs.solver_type = "gmres";
+    //     beGmmOsDefs.solver_type = "gmres";
     beGmmOsDefs.fillin = 20;
     beGmmOsDefs.threshold = 1.e-4;
     Feel::BackendGmmDefaults beGmmSyDefs;
-//     beGmmOsDefs.solver_type = "cg";
+    //     beGmmOsDefs.solver_type = "cg";
     beGmmSyDefs.pc_type = "id";
 
     return kovasznayoptions
-        .add( Feel::oseen_options( std::string(), oseenDefs ) )
-        .add( Feel::backend_adaptive_reuse_pc_options( "oseen" ) )
-        .add( Feel::backendgmm_options( "oseen", beGmmOsDefs ) )
-        .add( Feel::backend_adaptive_reuse_pc_options( "symm" ) )
-        .add( Feel::backendgmm_options( "symm", beGmmSyDefs ) );
+           .add( Feel::oseen_options( std::string(), oseenDefs ) )
+           .add( Feel::backend_adaptive_reuse_pc_options( "oseen" ) )
+           .add( Feel::backendgmm_options( "oseen", beGmmOsDefs ) )
+           .add( Feel::backend_adaptive_reuse_pc_options( "symm" ) )
+           .add( Feel::backendgmm_options( "symm", beGmmSyDefs ) );
 }
 
 
@@ -80,12 +80,12 @@ makeAbout()
                            "0.1",
                            "Kovasznay benchmark",
                            Feel::AboutData::License_GPL,
-                           "Copyright (c) 2011 Université Joseph Fourier");
+                           "Copyright (c) 2011 Université Joseph Fourier" );
 
-    about.addAuthor("Christoph Winkelmann", "developer",
-                    "christoph.winkelmann@epfl.ch", "");
-    about.addAuthor("Christophe Prud'homme", "developer",
-                    "christophe.prudhomme@ujf-grenoble.fr", "");
+    about.addAuthor( "Christoph Winkelmann", "developer",
+                     "christoph.winkelmann@epfl.ch", "" );
+    about.addAuthor( "Christophe Prud'homme", "developer",
+                     "christophe.prudhomme@ujf-grenoble.fr", "" );
     return about;
 
 }

@@ -54,20 +54,20 @@ inline
 Feel::po::options_description
 makeOptions()
 {
-    Feel::po::options_description resistanceoptions("Resistance Laplacian options");
+    Feel::po::options_description resistanceoptions( "Resistance Laplacian options" );
     resistanceoptions.add_options()
-        ("hsize", Feel::po::value<double>()->default_value( 0.1 ), "mesh size in domain")
-        ("penalbc", Feel::po::value<double>()->default_value( 10 ), "penalisation parameter for the weak boundary conditions")
+    ( "hsize", Feel::po::value<double>()->default_value( 0.1 ), "mesh size in domain" )
+    ( "penalbc", Feel::po::value<double>()->default_value( 10 ), "penalisation parameter for the weak boundary conditions" )
 
-        ("T0", Feel::po::value<double>()->default_value( 300 ), "Temperature imposed at the left wall")
-        ("k1", Feel::po::value<double>()->default_value( 0.2 ), "conductivity of material 1")
-        ("k2", Feel::po::value<double>()->default_value( 2 ), "conductivity of material 2")
-        ("conductance", Feel::po::value<double>()->default_value( 100 ), "Conductance between the domain 1 and 2(temperature discontinuity)")
-        ("Q", Feel::po::value<double>()->default_value( 1000 ), "Heat flux")
+    ( "T0", Feel::po::value<double>()->default_value( 300 ), "Temperature imposed at the left wall" )
+    ( "k1", Feel::po::value<double>()->default_value( 0.2 ), "conductivity of material 1" )
+    ( "k2", Feel::po::value<double>()->default_value( 2 ), "conductivity of material 2" )
+    ( "conductance", Feel::po::value<double>()->default_value( 100 ), "Conductance between the domain 1 and 2(temperature discontinuity)" )
+    ( "Q", Feel::po::value<double>()->default_value( 1000 ), "Heat flux" )
 
 
-        ("export-matlab", "export matrix and vectors in matlab" )
-        ;
+    ( "export-matlab", "export matrix and vectors in matlab" )
+    ;
     return resistanceoptions.add( Feel::feel_options() );
 }
 inline
@@ -79,9 +79,9 @@ makeAbout()
                            "0.1",
                            "nD(n=1,2,3) Resistance Laplacian on simplices or simplex products",
                            Feel::AboutData::License_GPL,
-                           "Copyright (c) 2008-2010 Université Joseph Fourier");
+                           "Copyright (c) 2008-2010 Université Joseph Fourier" );
 
-    about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
     return about;
 
 }
@@ -100,7 +100,7 @@ using namespace vf;
 template<int Dim, int Order>
 class ResistanceLaplacian
     :
-        public Application
+public Application
 {
     typedef Application super;
 public:
@@ -229,14 +229,14 @@ ResistanceLaplacian<Dim,Order>::ResistanceLaplacian( int argc, char** argv, Abou
                             % entity_type::name()
                             % Order
                             % h
-        );
+                          );
 
     Log() << "create mesh\n";
     mesh = createMesh();
     line_mesh = createLine();
 
     Log() << "create space\n";
-    node_type trans(2);
+    node_type trans( 2 );
     trans[0]=0;
     trans[1]=2;
     Xh = functionspace_type::New( _mesh=mesh );
@@ -365,24 +365,24 @@ ResistanceLaplacian<Dim, Order>::run()
     double c= this->vm()["conductance"].template as<double>();
     double Q= this->vm()["Q"].template as<double>();
     form2( Xh, Xh, M, _init=true ) = ( integrate( markedelements( mesh,  mesh->markerName( "k1" ) ),
-                                                  k1*gradt(u)*trans(grad(v)) )+
+                                       k1*gradt( u )*trans( grad( v ) ) )+
                                        integrate( markedelements( mesh,  mesh->markerName( "k2" ) ),
-                                                  k2*gradt(u)*trans(grad(v)) ) );
+                                               k2*gradt( u )*trans( grad( v ) ) ) );
 
     form2( Xh, Xh, M ) += integrate( markedfaces( mesh, mesh->markerName( "Tfixed" ) ),
-                                     -k1*gradt(u)*N()*id(v)
-                                     -k1*grad(v)*N()*idt(u)
-                                     + penalisation_bc*id(u)*idt(v)/hFace() );
-    auto N21 = vec(constant(-1.),constant(0.));
+                                     -k1*gradt( u )*N()*id( v )
+                                     -k1*grad( v )*N()*idt( u )
+                                     + penalisation_bc*id( u )*idt( v )/hFace() );
+    auto N21 = vec( constant( -1. ),constant( 0. ) );
     form2( Xh, Xh, M ) += integrate( markedfaces( mesh, mesh->markerName( "Tdiscontinuity" ) ),
-                                     c*(trans(jump(id(v)))*N21)*(trans(jumpt( idt( u ) ))*N21) );
+                                     c*( trans( jump( id( v ) ) )*N21 )*( trans( jumpt( idt( u ) ) )*N21 ) );
 
     M->close();
 
     vector_ptrtype F( M_backend->newVector( Xh ) );
-    form1( Xh, F, _init=true ) = ( integrate( markedfaces( mesh, mesh->markerName( "Tflux" ) ), Q*id(v) )+
+    form1( Xh, F, _init=true ) = ( integrate( markedfaces( mesh, mesh->markerName( "Tflux" ) ), Q*id( v ) )+
                                    integrate( markedfaces( mesh, mesh->markerName( "Tfixed" ) ),
-                                              T0*(-k1*grad(v)*N()+ penalisation_bc*id(v)/hFace() ) ) );
+                                           T0*( -k1*grad( v )*N()+ penalisation_bc*id( v )/hFace() ) ) );
 
     F->close();
 
@@ -394,9 +394,9 @@ ResistanceLaplacian<Dim, Order>::run()
 
     this->solve( M, u, F );
 
-    double meas = integrate( markedfaces( mesh, mesh->markerName( "Tdiscontinuity" ) ),constant(1.0)).evaluate()(0,0) ;
+    double meas = integrate( markedfaces( mesh, mesh->markerName( "Tdiscontinuity" ) ),constant( 1.0 ) ).evaluate()( 0,0 ) ;
     double mean_jump = integrate( markedfaces( mesh, mesh->markerName( "Tdiscontinuity" ) ),
-                                  trans(jumpv(idv(u)))*N21).evaluate()(0,0);
+                                  trans( jumpv( idv( u ) ) )*N21 ).evaluate()( 0,0 );
     std::cout <<  "int ([[T]]) = " << mean_jump << "\n";
     Log() <<  "int ([[T]]) = " << mean_jump << "\n";
     std::cout <<  "mean([[T]]) = " << mean_jump/meas << "\n";
@@ -406,11 +406,11 @@ ResistanceLaplacian<Dim, Order>::run()
     p0_element_type k( P0h, "k" );
 
     k = vf::project( P0h, elements( mesh ),
-                     (emarker()==mesh->markerName( "k1" ))*k1 +
-                     (emarker()==mesh->markerName( "k2" ))*k2 );
+                     ( emarker()==mesh->markerName( "k1" ) )*k1 +
+                     ( emarker()==mesh->markerName( "k2" ) )*k2 );
     std::cout << "flux = " << integrate( markedfaces( mesh, mesh->markerName( "Tdiscontinuity" ) ),
-                                         leftfacev(idv(k)*gradv(u)*N())+
-                                         rightfacev(idv(k)*gradv(u)*N())).evaluate()(0,0) << "\n";
+                                         leftfacev( idv( k )*gradv( u )*N() )+
+                                         rightfacev( idv( k )*gradv( u )*N() ) ).evaluate()( 0,0 ) << "\n";
 
 
     exportResults( k, u, u, u );
@@ -445,15 +445,15 @@ ResistanceLaplacian<Dim, Order>::exportResults( p0_element_type& k, element_type
 
     Log() << "exportResults starts\n";
 
-    exporter->step(1.)->setMesh( U.functionSpace()->mesh() );
-    exporter->step(1.)->add( "k", k );
-    exporter->step(1.)->add( "u", U );
+    exporter->step( 1. )->setMesh( U.functionSpace()->mesh() );
+    exporter->step( 1. )->add( "k", k );
+    exporter->step( 1. )->add( "u", U );
     //exporter->step(1.)->add( "exact", V );
 
 
     typename vectorial_functionspace_type::element_type g( Yh, "grad u" );
-    g = vf::project( Yh, elements( Yh->mesh() ), trans(gradv(U)) );
-    exporter->step(1.)->add( "grad(u)", g );
+    g = vf::project( Yh, elements( Yh->mesh() ), trans( gradv( U ) ) );
+    exporter->step( 1. )->add( "grad(u)", g );
 
     exporter->save();
     timers["export"].second = timers["export"].first.elapsed();
@@ -461,13 +461,15 @@ ResistanceLaplacian<Dim, Order>::exportResults( p0_element_type& k, element_type
 
     std::ofstream os( "profile.dat" );
     os.precision( 4 );
-    os.width(10 );
+    os.width( 10 );
     os.setf( std::ios::right );
-    for( size_type i = 0; i < line_mesh->numPoints(); ++i )
+
+    for ( size_type i = 0; i < line_mesh->numPoints(); ++i )
     {
         if ( i != 1 )
             os  << line_mesh->point( i ).node()[0] << " " << U( line_mesh->point( i ).node() ) << std::endl;
     }
+
     // this is the last point of the 1D mesh ie y = 0.13m
     os  << line_mesh->point( 1 ).node()[0] << " " << U( line_mesh->point( 1 ).node() ) << std::endl;
 

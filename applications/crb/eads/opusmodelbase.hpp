@@ -90,12 +90,13 @@ public:
     //@{
 
     //! copy operator
-    OpusModelBase& operator=( OpusModelBase const & o)
+    OpusModelBase& operator=( OpusModelBase const & o )
     {
-        if (this != &o )
-            {
-                M_data = o.M_data;
-            }
+        if ( this != &o )
+        {
+            M_data = o.M_data;
+        }
+
         return *this;
     }
     //@}
@@ -105,10 +106,16 @@ public:
     //@{
 
     //! \return the data associated with the opus model
-    opusdata_ptrtype data() const { return M_data; }
+    opusdata_ptrtype data() const
+    {
+        return M_data;
+    }
 
     //! return the variables_map
-    po::variables_map vm() { return M_data->vm(); }
+    po::variables_map vm()
+    {
+        return M_data->vm();
+    }
 
     //@}
 
@@ -117,7 +124,10 @@ public:
     //@{
 
     //! set the data for the model
-    void setData( opusdata_ptrtype data ) { M_data = data; }
+    void setData( opusdata_ptrtype data )
+    {
+        M_data = data;
+    }
 
     //@}
 

@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -50,7 +50,7 @@ namespace functional
 template<typename Space>
 class PointEvaluation
     :
-        public Functional<Space>
+public Functional<Space>
 {
     typedef Functional<Space> super;
 public:
@@ -85,7 +85,7 @@ public:
 template<typename Space>
 class ComponentPointEvaluation
     :
-        public Functional<Space>
+public Functional<Space>
 {
     typedef Functional<Space> super;
 public:
@@ -111,11 +111,11 @@ public:
                   << "[ComponentPointEvaluation] eval = " << b.evaluate( __pt ) << "\n"
                   << "[ComponentPointEvaluation] eval = " << b.basis()( __pt ) << "\n"
                   << "[ComponentPointEvaluation] bvals=" << ublas::project( b.evaluate( __pt ),
-                                                 ublas::slice( __c, space_type::nComponents, b.polynomialDimensionPerComponent() ),
-                                                 ublas::slice( 0, 0, 1 ) ) << "\n"
+                          ublas::slice( __c, space_type::nComponents, b.polynomialDimensionPerComponent() ),
+                          ublas::slice( 0, 0, 1 ) ) << "\n"
                   << "[ComponentPointEvaluation] m = " << ublas::project( m,
-                                                                          ublas::slice( __c, 0, 1 ),
-                                                                          ublas::slice( 0, 1, b.polynomialDimensionPerComponent() ) )
+                          ublas::slice( __c, 0, 1 ),
+                          ublas::slice( 0, 1, b.polynomialDimensionPerComponent() ) )
                   << "\n";
 #endif
         ublas::row( m, __c ) = ublas::column( b.basis()( __pt ), 0 );
@@ -140,7 +140,7 @@ public:
 template<typename Space>
 class PointDerivative
     :
-        public Functional<Space>
+public Functional<Space>
 {
     typedef Functional<Space> super;
 public:
@@ -155,7 +155,7 @@ public:
         super()
     {}
     PointDerivative( space_type const& b, int i, node_type const& __pt )
-        : super( b, ublas::trans(b.derivate( i ).evaluate(  __pt ) ) )
+        : super( b, ublas::trans( b.derivate( i ).evaluate(  __pt ) ) )
     {
 
     }
@@ -179,8 +179,8 @@ public:
  */
 template<typename Space>
 struct PointsEvaluation
-    :
-        public std::vector<Functional<Space> >
+        :
+    public std::vector<Functional<Space> >
 {
     typedef std::vector<Functional<Space> > super;
 public:
@@ -200,7 +200,7 @@ public:
         for ( uint16_type c = 0; c < __pts.size2(); ++c )
         {
             //std::cout << "[PointsEvaluation] eval at point " << ublas::column( __pts, c)  << "\n";
-          this->push_back( PointEvaluation<Space>( b, ublas::column( __pts, c) ) );
+            this->push_back( PointEvaluation<Space>( b, ublas::column( __pts, c ) ) );
         }
 
     }
@@ -225,8 +225,8 @@ public:
  */
 template<typename Space>
 struct PointsDerivative
-    :
-        public std::vector<Functional<Space> >
+        :
+    public std::vector<Functional<Space> >
 {
     typedef std::vector<Functional<Space> > super;
 public:
@@ -246,7 +246,7 @@ public:
         for ( uint16_type c = 0; c < __pts.size2(); ++c )
         {
             //std::cout << "[PointsDerivative] eval at point " << ublas::column( __pts, c)  << "\n";
-            this->push_back( PointDerivative<Space>( b, i, ublas::column( __pts, c) ) );
+            this->push_back( PointDerivative<Space>( b, i, ublas::column( __pts, c ) ) );
         }
 
     }
@@ -270,8 +270,8 @@ public:
  */
 template<typename Space>
 struct PointsGradient
-    :
-        public std::vector<Functional<Space> >
+        :
+    public std::vector<Functional<Space> >
 {
     typedef std::vector<Functional<Space> > super;
 public:
@@ -291,7 +291,7 @@ public:
         for ( uint16_type c = 0; c < __pts.size2(); ++c )
         {
             for ( int j = 0; j < __pts.size1(); ++j )
-                this->push_back( PointDerivative<Space>( b, j, ublas::column( __pts, c) ) );
+                this->push_back( PointDerivative<Space>( b, j, ublas::column( __pts, c ) ) );
         }
 
     }
@@ -315,7 +315,7 @@ public:
  */
 template<typename Space>
 struct ComponentsPointsEvaluation
-    :
+        :
     public std::vector<Functional<Space> >
 {
     typedef std::vector<Functional<Space> > super;
@@ -342,7 +342,7 @@ public:
             for ( uint16_type pt = 0; pt < __pts.size2(); ++pt )
             {
                 //std::cout << "[ComponentsPointsEvaluation] eval at point " << ublas::column( __pts, c)  << "\n";
-                this->push_back( ComponentPointEvaluation<Space>( b, c, ublas::column( __pts, pt) ) );
+                this->push_back( ComponentPointEvaluation<Space>( b, c, ublas::column( __pts, pt ) ) );
             }
         }
 
@@ -359,7 +359,7 @@ public:
  */
 template<typename Space>
 struct DirectionalComponentPointEvaluation
-    :
+        :
     public Functional<Space>
 {
     typedef Functional<Space> super;
@@ -384,10 +384,12 @@ public:
         ublas::matrix<value_type> m( d.size(), b.basis().size() );
         ublas::matrix<value_type> pts( __pt.size(), 1 );
         ublas::column( pts, 0 ) = __pt;
-        for( int i = 0; i < d.size(); ++i )
-            {
-                ublas::row( m, i ) = d(i) * ublas::column( b.basis().evaluate( pts ), 0 );
-            }
+
+        for ( int i = 0; i < d.size(); ++i )
+        {
+            ublas::row( m, i ) = d( i ) * ublas::column( b.basis().evaluate( pts ), 0 );
+        }
+
         this->setCoefficient( m );
     }
 }; // DirectionalComponentPointEvaluation
@@ -401,7 +403,7 @@ public:
  */
 template<typename Space>
 struct DirectionalComponentPointsEvaluation
-    :
+        :
     public std::vector<Functional<Space> >
 {
     typedef std::vector<Functional<Space> > super;
@@ -428,16 +430,18 @@ public:
                                           points_type const& __pts )
         : super()
     {
-        for( int j = 0; j < __pts.size2(); ++j )
+        for ( int j = 0; j < __pts.size2(); ++j )
+        {
+            ublas::matrix<value_type> m( ublas::zero_matrix<value_type>( d.size(), b.basis().size() ) );
+
+            for ( int i = 0; i < d.size(); ++i )
             {
-                ublas::matrix<value_type> m( ublas::zero_matrix<value_type>( d.size(), b.basis().size() ) );
-                for( int i = 0; i < d.size(); ++i )
-                    {
-                        ublas::row( m, i ) = d(i) * ublas::column( b.basis()( ublas::column( __pts, j) ), 0 );
-                    }
-                //std::cout << "[DirectionalComponentPointsEvaluation] m " << j << " = " << m << "\n";
-                this->push_back( functional_type( b, m ) );
+                ublas::row( m, i ) = d( i ) * ublas::column( b.basis()( ublas::column( __pts, j ) ), 0 );
             }
+
+            //std::cout << "[DirectionalComponentPointsEvaluation] m " << j << " = " << m << "\n";
+            this->push_back( functional_type( b, m ) );
+        }
     }
 }; // DirectionalComponentPointsEvaluation
 

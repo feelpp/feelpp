@@ -118,7 +118,10 @@ public:
      */
     //@{
 
-    expression_type const& expression() const { return _M_expr; }
+    expression_type const& expression() const
+    {
+        return _M_expr;
+    }
 
     //@}
 
@@ -130,13 +133,19 @@ public:
         typedef typename tensor_expr_type::value_type value_type;
 
         typedef typename tensor_expr_type::shape expr_shape;
-        BOOST_MPL_ASSERT_MSG( (boost::is_same<mpl::int_<expr_shape::M>,mpl::int_<expr_shape::N> >::value), INVALID_TENSOR_SHOULD_BE_RANK_2_OR_0, (mpl::int_<expr_shape::M>, mpl::int_<expr_shape::N>) );
+        BOOST_MPL_ASSERT_MSG( ( boost::is_same<mpl::int_<expr_shape::M>,mpl::int_<expr_shape::N> >::value ), INVALID_TENSOR_SHOULD_BE_RANK_2_OR_0, ( mpl::int_<expr_shape::M>, mpl::int_<expr_shape::N> ) );
         typedef Shape<expr_shape::nDim,Scalar,false,false> shape;
 
 
-        template <class Args> struct sig { typedef value_type type; };
+        template <class Args> struct sig
+        {
+            typedef value_type type;
+        };
 
-        struct is_zero { static const bool value = tensor_expr_type::is_zero::value; };
+        struct is_zero
+        {
+            static const bool value = tensor_expr_type::is_zero::value;
+        };
 
         tensor( this_type const& expr,
                 Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
@@ -191,8 +200,10 @@ public:
         evalijq( uint16_type i, uint16_type j, uint16_type /*c1*/, uint16_type /*c2*/, uint16_type q ) const
         {
             value_type res = value_type( 0 );
-            for( uint16_type l = 0; l < expr_shape::M; ++l )
+
+            for ( uint16_type l = 0; l < expr_shape::M; ++l )
                 res += _M_tensor_expr.evalijq( i, j, l, l, q );
+
             return res;
         }
         template<int PatternContext>
@@ -201,8 +212,10 @@ public:
                  mpl::int_<PatternContext> ) const
         {
             value_type res = value_type( 0 );
-            for( uint16_type l = 0; l < expr_shape::M; ++l )
+
+            for ( uint16_type l = 0; l < expr_shape::M; ++l )
                 res += _M_tensor_expr.evalijq( i, j, l, l, q, mpl::int_<PatternContext>() );
+
             return res;
         }
 
@@ -210,8 +223,10 @@ public:
         evaliq( uint16_type i, uint16_type /*c1*/, uint16_type /*c2*/, uint16_type q ) const
         {
             value_type res = value_type( 0 );
-            for( uint16_type l = 0; l < expr_shape::M; ++l )
+
+            for ( uint16_type l = 0; l < expr_shape::M; ++l )
                 res += _M_tensor_expr.evaliq( i, l, l, q );
+
             return res;
         }
 
@@ -219,8 +234,10 @@ public:
         evalq( uint16_type /*c1*/, uint16_type /*c2*/, uint16_type q ) const
         {
             value_type res = value_type( 0 );
-            for( uint16_type l = 0; l < expr_shape::M; ++l )
+
+            for ( uint16_type l = 0; l < expr_shape::M; ++l )
                 res += _M_tensor_expr.evalq( l, l, q );
+
             return res;
         }
 

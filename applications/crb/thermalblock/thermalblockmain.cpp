@@ -37,11 +37,13 @@ main( int argc, char** argv )
     using namespace Feel;
     Environment env( argc, argv );
     Application app( argc, argv, makeAbout(), makeOptions() );
+
     if ( app.vm().count( "help" ) )
     {
         std::cout << app.optionsDescription() << "\n";
         return 0;
     }
+
     // app.add( new ThermalBlock<2>( app.vm(), app.about() ) );
     // app.run();
     ThermalBlock<2>  Thermal( app.vm(), app.about() );

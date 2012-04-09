@@ -39,7 +39,7 @@ diodegeo( double h, int Order, std::string const& convex )
 {
     std::ostringstream ostr;
     std::ostringstream nameStr;
-    gmsh_ptrtype gmshp( new Gmsh(2, Order) );
+    gmsh_ptrtype gmshp( new Gmsh( 2, Order ) );
     gmshp->setCharacteristicLength( h );
     ostr << gmshp->preamble() << "\n"
          << "Point(1) = {0, 0, 0, h};\n"
@@ -65,6 +65,7 @@ diodegeo( double h, int Order, std::string const& convex )
          << "Circle(10) = {7, 4, 10};\n"
          << "//Physical Line(8) = {1,2,3,4,5,9,10,8};\n"
          << "//Physical Line(8) = {1};\n";
+
     if ( convex == "simplex" )
     {
         ostr << "Line Loop(11) = {1, 2, -3, 4, 5, 10, -9, 8};\n"
@@ -74,6 +75,7 @@ diodegeo( double h, int Order, std::string const& convex )
              << "Physical Line(\"Metal\") = {2,3,4,5,8,9,10};\n"
              << "Physical Surface(\"Omega\") = {12};\n";
     }
+
     if ( convex == "hypercube" )
     {
         ostr << "Line Loop(1) = {1, 8, 7, 2};\n"

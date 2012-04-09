@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -60,7 +60,7 @@ public:
     //@{
 
     TypeInfo();
-    TypeInfo(const std::type_info&); // non-explicit
+    TypeInfo( const std::type_info& ); // non-explicit
     TypeInfo( TypeInfo const & );
     ~TypeInfo();
 
@@ -98,7 +98,7 @@ public:
 
 
     //! Compatibility functions
-    bool before(const TypeInfo& rhs) const;
+    bool before( const TypeInfo& rhs ) const;
 
 
     //@}
@@ -108,23 +108,35 @@ private:
     const std::type_info* _M_info;
 };
 
-inline bool operator==(const TypeInfo& lhs, const TypeInfo& rhs)
-{ return lhs.typeInfo() == rhs.typeInfo(); }
+inline bool operator==( const TypeInfo& lhs, const TypeInfo& rhs )
+{
+    return lhs.typeInfo() == rhs.typeInfo();
+}
 
-inline bool operator<(const TypeInfo& lhs, const TypeInfo& rhs)
-{ return lhs.before(rhs); }
+inline bool operator<( const TypeInfo& lhs, const TypeInfo& rhs )
+{
+    return lhs.before( rhs );
+}
 
-inline bool operator!=(const TypeInfo& lhs, const TypeInfo& rhs)
-{ return !(lhs == rhs); }
+inline bool operator!=( const TypeInfo& lhs, const TypeInfo& rhs )
+{
+    return !( lhs == rhs );
+}
 
-inline bool operator>(const TypeInfo& lhs, const TypeInfo& rhs)
-{ return rhs < lhs; }
+inline bool operator>( const TypeInfo& lhs, const TypeInfo& rhs )
+{
+    return rhs < lhs;
+}
 
-inline bool operator<=(const TypeInfo& lhs, const TypeInfo& rhs)
-{ return !(lhs > rhs); }
+inline bool operator<=( const TypeInfo& lhs, const TypeInfo& rhs )
+{
+    return !( lhs > rhs );
+}
 
-inline bool operator>=(const TypeInfo& lhs, const TypeInfo& rhs)
-{ return !(lhs < rhs); }
+inline bool operator>=( const TypeInfo& lhs, const TypeInfo& rhs )
+{
+    return !( lhs < rhs );
+}
 
 }// end namespace Feel
 

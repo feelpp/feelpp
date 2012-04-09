@@ -37,7 +37,7 @@ nonOverlapGeometryLeft( double hsize )
     std::ostringstream nameStr;
     gmsh_ptrtype gmshp( new Gmsh );
     gmshp->setOrder( GMSH_ORDER_ONE );
-    gmshp->setRecombine(false);
+    gmshp->setRecombine( false );
     gmshp->setCharacteristicLength( hsize );
     ostr << gmshp->preamble() << "\n";
 
@@ -57,7 +57,7 @@ nonOverlapGeometryLeft( double hsize )
          << "Physical Line(3) = {1};\n"
          << "Physical Line(4) = {4};\n"
          << "Physical Surface(\"Mat1\") = {6};\n";
- nameStr << "leftgeo2D";
+    nameStr << "leftgeo2D";
 
     gmshp->setPrefix( nameStr.str() );
     gmshp->setDescription( ostr.str() );
@@ -71,7 +71,7 @@ nonOverlapGeometryRight( double hsize )
     std::ostringstream nameStr;
     gmsh_ptrtype gmshp( new Gmsh );
     gmshp->setOrder( GMSH_ORDER_ONE );
-    gmshp->setRecombine(false);
+    gmshp->setRecombine( false );
     gmshp->setCharacteristicLength( hsize );
     ostr << gmshp->preamble() << "\n";
 
@@ -90,11 +90,11 @@ nonOverlapGeometryRight( double hsize )
          << "Physical Line(3) = {2};\n"
          << "Physical Line(4) = {3};\n"
          << "Physical Surface(\"Mat1\") = {6};\n";
-nameStr << "rightgeo2D";
+    nameStr << "rightgeo2D";
 
-     gmshp->setPrefix( nameStr.str() );
-     gmshp->setDescription( ostr.str() );
-     return gmshp;
+    gmshp->setPrefix( nameStr.str() );
+    gmshp->setDescription( ostr.str() );
+    return gmshp;
 
 }
 

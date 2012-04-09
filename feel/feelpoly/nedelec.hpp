@@ -79,13 +79,15 @@ struct times_rotx
     {
 #if 0
         std::cout << "times_x(pts) : " << __pts << std::endl;
-        std::cout << "times_x(pts) : " << _M_p.evaluate(__pts) << std::endl;
+        std::cout << "times_x(pts) : " << _M_p.evaluate( __pts ) << std::endl;
         std::cout << "times_x(coeff) : " << _M_p.coefficients() << std::endl;
 #endif
+
         // __pts[c] * p( __pts )
         if ( _M_c == 0 )
             return ublas::element_prod( ublas::row( __pts, 1 ),
                                         ublas::row( _M_p.evaluate( __pts ), 0 ) );
+
         // c == 1
         return ublas::element_prod( -ublas::row( __pts, 0 ),
                                     ublas::row( _M_p.evaluate( __pts ), 0 ) );
@@ -117,7 +119,7 @@ template<uint16_type N,
          template<uint16_type, uint16_type, uint16_type> class Convex = Simplex>
 class NedelecPolynomialSet
     :
-        public detail::OrthonormalPolynomialSet<N, O+1, N, Vectorial, T, Convex>
+public detail::OrthonormalPolynomialSet<N, O+1, N, Vectorial, T, Convex>
 {
     typedef detail::OrthonormalPolynomialSet<N, O+1, N, Vectorial, T, Convex> super;
 
@@ -152,7 +154,7 @@ public:
         std::cout << "[NPset] O = " << O << "\n";
         uint16_type dim_Pkp1 = convex_type::polyDims( nOrder );
         uint16_type dim_Pk = convex_type::polyDims( nOrder-1 );
-        uint16_type dim_Pkm1 = (nOrder==1)?0:convex_type::polyDims( nOrder-2 );
+        uint16_type dim_Pkm1 = ( nOrder==1 )?0:convex_type::polyDims( nOrder-2 );
 #if 1
         std::cout << "[NPset] dim_Pkp1 = " << dim_Pkp1 << "\n";
         std::cout << "[NPset] dim_Pk   = " << dim_Pk << "\n";
@@ -175,20 +177,20 @@ public:
         // x P_k \ P_{k-1}
         IMGeneral<convex_type::nDim, 2*nOrder,value_type> im;
         //std::cout << "[RTPset] im.points() = " << im.points() << std::endl;
-        ublas::matrix<value_type> xPkc( nComponents*(dim_Pk-dim_Pkm1),Pk.coeff().size2() );
+        ublas::matrix<value_type> xPkc( nComponents*( dim_Pk-dim_Pkm1 ),Pk.coeff().size2() );
 
         //std::cout << "[RTPset] before xPkc = " << xPkc << "\n";
-        for( int l = dim_Pkm1, i = 0; l < dim_Pk; ++l, ++i )
+        for ( int l = dim_Pkm1, i = 0; l < dim_Pk; ++l, ++i )
+        {
+            for ( int j = 0; j < convex_type::nDim; ++j )
             {
-                for( int j = 0; j < convex_type::nDim; ++j )
-                    {
-                        detail::times_rotx<scalar_polynomial_type> xp( Pk.polynomial( l ), j );
-                        ublas::row(xPkc,i*nComponents+j)=
-                            ublas::row( Feel::project( Pkp1,
-                                                       xp,
-                                                       im ).coeff(), 0);
-                    }
+                detail::times_rotx<scalar_polynomial_type> xp( Pk.polynomial( l ), j );
+                ublas::row( xPkc,i*nComponents+j )=
+                    ublas::row( Feel::project( Pkp1,
+                                               xp,
+                                               im ).coeff(), 0 );
             }
+        }
 
 
         //std::cout << "[RTPset] after xPkc = " << xPkc << "\n";
@@ -215,7 +217,7 @@ template<typename Basis,
          template<class, uint16_type, class> class PointSetType>
 class NedelecDual
     :
-        public DualBasis<Basis>
+public DualBasis<Basis>
 {
     typedef DualBasis<Basis> super;
 public:
@@ -262,7 +264,7 @@ public:
         :
         super( primal ),
         _M_convex_ref(),
-        _M_eid(_M_convex_ref.topologicalDimension()+1),
+        _M_eid( _M_convex_ref.topologicalDimension()+1 ),
         _M_pts( nDim, numPoints ),
         _M_pts_per_face( convex_type::numTopologicalFaces ),
         _M_fset( primal )
@@ -272,31 +274,33 @@ public:
         std::cout << " o- dim   = " << nDim << "\n";
         std::cout << " o- order = " << nOrder << "\n";
         std::cout << " o- numPoints      = " << numPoints << "\n";
-        std::cout << " o- nbPtsPerVertex = " << (int)nbPtsPerVertex << "\n";
-        std::cout << " o- nbPtsPerEdge   = " << (int)nbPtsPerEdge << "\n";
-        std::cout << " o- nbPtsPerFace   = " << (int)nbPtsPerFace << "\n";
-        std::cout << " o- nbPtsPerVolume = " << (int)nbPtsPerVolume << "\n";
+        std::cout << " o- nbPtsPerVertex = " << ( int )nbPtsPerVertex << "\n";
+        std::cout << " o- nbPtsPerEdge   = " << ( int )nbPtsPerEdge << "\n";
+        std::cout << " o- nbPtsPerFace   = " << ( int )nbPtsPerFace << "\n";
+        std::cout << " o- nbPtsPerVolume = " << ( int )nbPtsPerVolume << "\n";
         std::cout << " o- nLocalDof      = " << nLocalDof << "\n";
 #endif
 
         // loop on each entity forming the convex of topological
         // dimension nDim-1 ( the faces)
         for ( int p = 0, e = _M_convex_ref.entityRange( nDim-1 ).begin();
-              e < _M_convex_ref.entityRange( nDim-1 ).end();
-              ++e )
+                e < _M_convex_ref.entityRange( nDim-1 ).end();
+                ++e )
+        {
+            points_type Gt ( _M_convex_ref.makePoints( nDim-1, e ) );
+            _M_pts_per_face[e] =  Gt ;
+
+            if ( Gt.size2() )
             {
-                points_type Gt ( _M_convex_ref.makePoints( nDim-1, e ) );
-                _M_pts_per_face[e] =  Gt ;
-                if ( Gt.size2() )
-                    {
-                        //Debug() << "Gt = " << Gt << "\n";
-                        //Debug() << "p = " << p << "\n";
-                        ublas::subrange( _M_pts, 0, nDim, p, p+Gt.size2() ) = Gt;
-                        //for ( size_type j = 0; j < Gt.size2(); ++j )
-                        //_M_eid[d].push_back( p+j );
-                        p+=Gt.size2();
-                    }
+                //Debug() << "Gt = " << Gt << "\n";
+                //Debug() << "p = " << p << "\n";
+                ublas::subrange( _M_pts, 0, nDim, p, p+Gt.size2() ) = Gt;
+                //for ( size_type j = 0; j < Gt.size2(); ++j )
+                //_M_eid[d].push_back( p+j );
+                p+=Gt.size2();
             }
+        }
+
         //std::cout << "[RT Dual] done 1\n";
         // compute  \f$ \ell_e( U ) = (U * n[e]) (edge_pts(e)) \f$
         typedef Functional<primal_space_type> functional_type;
@@ -308,8 +312,10 @@ public:
         {
             // bring 'operator+=()' into scope
             using namespace boost::assign;
+
             if ( nDim == 2 )
                 j += 2.8284271247461903,2.0,2.0;
+
             if ( nDim == 3 )
                 j+= 3.464101615137754, 2, 2, 2;
         }
@@ -318,12 +324,12 @@ public:
         {
             // loopover the each edge entities and add the correponding functionals
             for ( int e = _M_convex_ref.entityRange( nDim-1 ).begin();
-                  e < _M_convex_ref.entityRange( nDim-1 ).end();
-                  ++e )
+                    e < _M_convex_ref.entityRange( nDim-1 ).end();
+                    ++e )
             {
                 typedef Feel::functional::DirectionalComponentPointsEvaluation<primal_space_type> dcpe_type;
-                std::cout << "tangent " << e << ":" << _M_convex_ref.tangent(e) << "\n";
-                node_type dir= _M_convex_ref.tangent(e)*j[e];
+                std::cout << "tangent " << e << ":" << _M_convex_ref.tangent( e ) << "\n";
+                node_type dir= _M_convex_ref.tangent( e )*j[e];
                 //node_type dir= _M_convex_ref.tangent(e);
 
                 //dcpe_type __dcpe( primal, 1, dir, pts_per_face[e] );
@@ -331,31 +337,34 @@ public:
                 std::copy( __dcpe.begin(), __dcpe.end(), std::back_inserter( fset ) );
             }
         }
+
         //std::cout << "[RT Dual] done 2" << std::endl;
         if ( nOrder-1 > 0 )
+        {
+            // we need more equations : add interior moment
+            // indeed the space is orthogonal to Pk-1
+            uint16_type dim_Pkp1 = convex_type::polyDims( nOrder );
+            uint16_type dim_Pk = convex_type::polyDims( nOrder-1 );
+            uint16_type dim_Pm1 = convex_type::polyDims( nOrder-2 );
+
+            Pkp1_v_type Pkp1;
+
+            vectorial_polynomialset_type Pkm1 ( Pkp1.polynomialsUpToDimension( dim_Pm1 ) );
+
+            //std::cout << "Pkm1 = " << Pkm1.coeff() << "\n";
+            //std::cout << "Primal = " << primal.coeff() << "\n";
+            for ( int i = 0; i < Pkm1.polynomialDimension(); ++i )
             {
-                // we need more equations : add interior moment
-                // indeed the space is orthogonal to Pk-1
-                uint16_type dim_Pkp1 = convex_type::polyDims( nOrder );
-                uint16_type dim_Pk = convex_type::polyDims( nOrder-1 );
-                uint16_type dim_Pm1 = convex_type::polyDims( nOrder-2 );
-
-                Pkp1_v_type Pkp1;
-
-                vectorial_polynomialset_type Pkm1 ( Pkp1.polynomialsUpToDimension( dim_Pm1 ) );
-                //std::cout << "Pkm1 = " << Pkm1.coeff() << "\n";
-                //std::cout << "Primal = " << primal.coeff() << "\n";
-                for( int i = 0; i < Pkm1.polynomialDimension(); ++i )
-                    {
-                        typedef functional::IntegralMoment<primal_space_type, vectorial_polynomialset_type> fim_type;
-                        //typedef functional::IntegralMoment<Pkp1_v_type, vectorial_polynomialset_type> fim_type;
-                        //std::cout << "P(" << i << ")=" << Pkm1.polynomial( i ).coeff() << "\n";
-                        fset.push_back( fim_type( primal, Pkm1.polynomial( i ) ) );
-                    }
+                typedef functional::IntegralMoment<primal_space_type, vectorial_polynomialset_type> fim_type;
+                //typedef functional::IntegralMoment<Pkp1_v_type, vectorial_polynomialset_type> fim_type;
+                //std::cout << "P(" << i << ")=" << Pkm1.polynomial( i ).coeff() << "\n";
+                fset.push_back( fim_type( primal, Pkm1.polynomial( i ) ) );
             }
+        }
+
         //std::cout << "[RT Dual] done 3, n fset = " << fset.size() << std::endl;
         _M_fset.setFunctionalSet( fset );
-//        std::cout << "[RT DUAL matrix] mat = " << _M_fset.rep() << "\n";
+        //        std::cout << "[RT DUAL matrix] mat = " << _M_fset.rep() << "\n";
         //std::cout << "[RT Dual] done 4\n";
 
     }
@@ -365,7 +374,10 @@ public:
      */
     //pointset_type const& pointSet() const { return M_pset; }
 
-    points_type const& points() const { return _M_pts; }
+    points_type const& points() const
+    {
+        return _M_pts;
+    }
 
 
     matrix_type operator()( primal_space_type const& pset ) const
@@ -424,14 +436,14 @@ template<uint16_type N,
          uint16_type TheTAG = 0 >
 class Nedelec
     :
-        public FiniteElement<NedelecPolynomialSet<N, O, T, Convex>,
-                             detail::NedelecDual,
-                             PointSetEquiSpaced >,
-        public boost::enable_shared_from_this<Nedelec<N,O,T,Convex> >
+public FiniteElement<NedelecPolynomialSet<N, O, T, Convex>,
+    detail::NedelecDual,
+    PointSetEquiSpaced >,
+public boost::enable_shared_from_this<Nedelec<N,O,T,Convex> >
 {
     typedef FiniteElement<NedelecPolynomialSet<N, O, T, Convex>,
-                          detail::NedelecDual,
-                          PointSetEquiSpaced > super;
+            detail::NedelecDual,
+            PointSetEquiSpaced > super;
 public:
 
     BOOST_STATIC_ASSERT( N > 1 );
@@ -441,7 +453,7 @@ public:
     //@{
 
     static const uint16_type nDim = N;
-//static const bool isTransformationEquivalent = false;
+    //static const bool isTransformationEquivalent = false;
     static const bool isTransformationEquivalent = true;
     static const bool isContinuous = true;
     typedef Continuous continuity_type;
@@ -472,11 +484,11 @@ public:
     static const uint16_type nOrder =  dual_space_type::nOrder;
     static const uint16_type nbPtsPerVertex = 0;
     static const uint16_type nbPtsPerEdge = mpl::if_<mpl::equal_to<mpl::int_<nDim>,mpl::int_<2> >,
-                                                     mpl::int_<reference_convex_type::nbPtsPerEdge>,
-                                                     mpl::int_<0> >::type::value;
+                             mpl::int_<reference_convex_type::nbPtsPerEdge>,
+                             mpl::int_<0> >::type::value;
     static const uint16_type nbPtsPerFace = mpl::if_<mpl::equal_to<mpl::int_<nDim>,mpl::int_<3> >,
-                                                     mpl::int_<reference_convex_type::nbPtsPerFace>,
-                                                     mpl::int_<0> >::type::value;
+                             mpl::int_<reference_convex_type::nbPtsPerFace>,
+                             mpl::int_<0> >::type::value;
     static const uint16_type nbPtsPerVolume = 0;
     static const uint16_type numPoints = ( reference_convex_type::numGeometricFaces*nbPtsPerFace+
                                            reference_convex_type::numEdges*nbPtsPerEdge );
@@ -530,9 +542,15 @@ public:
     /**
      * \return the reference convex associated with the lagrange polynomials
      */
-    reference_convex_type const& referenceConvex() const { return M_refconvex; }
+    reference_convex_type const& referenceConvex() const
+    {
+        return M_refconvex;
+    }
 
-    std::string familyName() const { return "nedelec"; }
+    std::string familyName() const
+    {
+        return "nedelec";
+    }
 
     //@}
 
@@ -549,13 +567,13 @@ public:
 
     template<typename ExprType>
     static auto
-    isomorphism( ExprType expr ) -> decltype( Feel::vf::detJ()*(trans(Feel::vf::JinvT())*expr)*Feel::vf::Nref() )
+    isomorphism( ExprType expr ) -> decltype( Feel::vf::detJ()*( trans( Feel::vf::JinvT() )*expr )*Feel::vf::Nref() )
     //isomorphism( ExprType& expr ) -> decltype( expr )
-        {
-            using namespace Feel::vf;
-            return detJ()*(trans(JinvT())*expr)*Nref();
-            //return expr;
-        }
+    {
+        using namespace Feel::vf;
+        return detJ()*( trans( JinvT() )*expr )*Nref();
+        //return expr;
+    }
 #if 0
     /**
      *
@@ -564,32 +582,33 @@ public:
     template<typename ExprType, typename ContextType>
     std::vector<value_type>
     interpolate( boost::shared_ptr<ContextType>& ctx, ExprType & expr )
+    {
+        using namespace Feel::vf;
+        typedef boost::shared_ptr<ContextType> gmc_ptrtype;
+        typedef fusion::map<fusion::pair<detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
+
+        std::vector<value_type> v( nLocalDof );
+
+        // First deal with the face dof
+        for ( int face = 0; face < numTopologicalFaces; ++face )
         {
-            using namespace Feel::vf;
-            typedef boost::shared_ptr<ContextType> gmc_ptrtype;
-            typedef fusion::map<fusion::pair<detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
+            // update the geomap at dof on face
+            ctx->update( _face=face, _element=ctx->id() );
 
-            std::vector<value_type> v( nLocalDof );
+            map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( ctx ) );
+            expr.update( mapgmc, face );
 
-            // First deal with the face dof
-            for( int face = 0; face < numTopologicalFaces; ++face )
+            for ( int q = 0; q < nDofPerFace; ++q )
             {
-                // update the geomap at dof on face
-                ctx->update( _face=face, _element=ctx->id() );
-
-                map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( ctx ) );
-                expr.update( mapgmc, face );
-
-                for(int q = 0; q < nDofPerFace; ++q )
-                {
-                    int ldof = nDofPerFace*face+i;
-                    v[ldof] = expr.evalq(0,0,i);
-                }
+                int ldof = nDofPerFace*face+i;
+                v[ldof] = expr.evalq( 0,0,i );
             }
-            // evaluate expr \cdot n  on each face
-
-            // evaluate moments of the expression
         }
+
+        // evaluate expr \cdot n  on each face
+
+        // evaluate moments of the expression
+    }
 
     template<typename GMContext, typename PC, typename Phi, typename GPhi, typename HPhi >
     static void transform( boost::shared_ptr<GMContext> gmc,  boost::shared_ptr<PC> const& pc,
@@ -597,10 +616,10 @@ public:
                            GPhi& g_phi_t, const bool do_gradient,
                            HPhi& h_phi_t, const bool do_hessian
 
-        )
-        {
-            transform ( *gmc, *pc, phi_t, g_phi_t, do_gradient, h_phi_t, do_hessian );
-        }
+                         )
+    {
+        transform ( *gmc, *pc, phi_t, g_phi_t, do_gradient, h_phi_t, do_hessian );
+    }
     template<typename GMContext, typename PC, typename Phi, typename GPhi, typename HPhi >
     static void transform( GMContext const& gmc,
                            PC const& pc,
@@ -608,81 +627,87 @@ public:
                            GPhi& g_phi_t, const bool do_gradient,
                            HPhi& h_phi_t, const bool do_hessian
 
-        )
-        {
-            //phi_t = phi; return ;
-            typename GMContext::gm_type::matrix_type const B = gmc.B( 0 );
-            typename GMContext::gm_type::matrix_type const K = gmc.K( 0 );
-            typename GMContext::gm_type::matrix_type JB( K/gmc.J(0) );
+                         )
+    {
+        //phi_t = phi; return ;
+        typename GMContext::gm_type::matrix_type const B = gmc.B( 0 );
+        typename GMContext::gm_type::matrix_type const K = gmc.K( 0 );
+        typename GMContext::gm_type::matrix_type JB( K/gmc.J( 0 ) );
 #if 0
-            std::cout << "K= " << gmc.K(0) << "\n";
-            std::cout << "B= " << B << "\n";
-            std::cout << "J= " << gmc.J(0) << "\n";
-            std::cout << "JB= " << JB << "\n";
+        std::cout << "K= " << gmc.K( 0 ) << "\n";
+        std::cout << "B= " << B << "\n";
+        std::cout << "J= " << gmc.J( 0 ) << "\n";
+        std::cout << "JB= " << JB << "\n";
 #endif
-            std::fill( phi_t.data(), phi_t.data()+phi_t.num_elements(), value_type(0));
-            if ( do_gradient )
+        std::fill( phi_t.data(), phi_t.data()+phi_t.num_elements(), value_type( 0 ) );
+
+        if ( do_gradient )
+        {
+            //std::cout << "compute gradient\n";
+            std::fill( g_phi_t.data(), g_phi_t.data()+g_phi_t.num_elements(), value_type( 0 ) );
+        }
+
+        if ( do_hessian )
+            std::fill( h_phi_t.data(), h_phi_t.data()+h_phi_t.num_elements(), value_type( 0 ) );
+
+        const uint16_type Q = gmc.nPoints();//_M_grad.size2();
+
+        // transform
+        for ( uint16_type i = 0; i < nLocalDof; ++i )
+        {
+            for ( uint16_type l = 0; l < nDim; ++l )
             {
-                //std::cout << "compute gradient\n";
-                std::fill( g_phi_t.data(), g_phi_t.data()+g_phi_t.num_elements(), value_type(0));
+
+                for ( uint16_type p = 0; p < nDim; ++p )
+                {
+                    for ( uint16_type q = 0; q < Q; ++q )
+                    {
+                        // \warning : here the transformation depends on the
+                        // numbering of the degrees of freedom of the finite
+                        // element
+                        //phi_t[i][l][0][q] =  pc.phi(i,l,0,q);
+                        phi_t[i][l][0][q] += JB( l, p ) * pc.phi( i,p,0,q );
+                        //phi_t[i][l][0][q] = gmc.J( 0 ) * B( p, l ) * pc.phi(i,p,0,q);
+                        //std::cout << "pc[" << i << "][" << l << "][" << q << "]=" << pc.phi(i,l,0,q) << "\n";
+                        //std::cout << "phi_t[" << i << "][" << l << "][" << q << "]=" << phi_t[i][l][0][q] << "\n";
+                    }
+                }
             }
-            if ( do_hessian )
-                std::fill( h_phi_t.data(), h_phi_t.data()+h_phi_t.num_elements(), value_type(0));
 
-            const uint16_type Q = gmc.nPoints();//_M_grad.size2();
-
-            // transform
-            for ( uint16_type i = 0; i < nLocalDof; ++i )
+            //if ( do_gradient )
             {
-                for ( uint16_type l = 0; l < nDim; ++l )
-                {
 
-                    for ( uint16_type p = 0; p < nDim; ++p )
-                    {
-                        for ( uint16_type q = 0; q < Q; ++q )
-                        {
-                            // \warning : here the transformation depends on the
-                            // numbering of the degrees of freedom of the finite
-                            // element
-                            //phi_t[i][l][0][q] =  pc.phi(i,l,0,q);
-                            phi_t[i][l][0][q] += JB( l, p ) * pc.phi(i,p,0,q);
-                            //phi_t[i][l][0][q] = gmc.J( 0 ) * B( p, l ) * pc.phi(i,p,0,q);
-                            //std::cout << "pc[" << i << "][" << l << "][" << q << "]=" << pc.phi(i,l,0,q) << "\n";
-                            //std::cout << "phi_t[" << i << "][" << l << "][" << q << "]=" << phi_t[i][l][0][q] << "\n";
-                        }
-                    }
-                }
-                //if ( do_gradient )
+                for ( uint16_type p = 0; p < nDim; ++p )
                 {
-
-                    for ( uint16_type p = 0; p < nDim; ++p )
+                    for ( uint16_type r = 0; r < nDim; ++r )
                     {
-                        for ( uint16_type r = 0; r < nDim; ++r )
+                        for ( uint16_type s = 0; s < Q; ++s )
                         {
-                            for ( uint16_type s = 0; s < Q; ++s )
+                            g_phi_t[i][p][r][s] = 0;
+
+                            for ( uint16_type q = 0; q < nDim; ++q )
                             {
-                                g_phi_t[i][p][r][s] = 0;
-                                for ( uint16_type q = 0; q < nDim; ++q )
-                                {
-                                    g_phi_t[i][p][r][s] += JB( p, q ) * pc.grad(i,q,r,s);
-                                    //g_phi_t[i][p][r][s] = pc.grad(i,p,r,s);
+                                g_phi_t[i][p][r][s] += JB( p, q ) * pc.grad( i,q,r,s );
+                                //g_phi_t[i][p][r][s] = pc.grad(i,p,r,s);
 
-                                    //std::cout << "J G[" << i << "][" << q << "][" << r << "][" << s << "=" << JB( p, q ) * pc.grad(i,q,r,s) << "\n";
-                                }
+                                //std::cout << "J G[" << i << "][" << q << "][" << r << "][" << s << "=" << JB( p, q ) * pc.grad(i,q,r,s) << "\n";
                             }
-                            //std::cout << "g_phi_t[" << i << "][" << p << "][" << r << "][" << 0 << "=" << g_phi_t[i][p][r][0] << "\n";
-
                         }
+
+                        //std::cout << "g_phi_t[" << i << "][" << p << "][" << r << "][" << 0 << "=" << g_phi_t[i][p][r][0] << "\n";
+
                     }
                 }
-                if ( do_hessian )
-                {
-                }
+            }
+
+            if ( do_hessian )
+            {
             }
         }
+    }
 #endif
 
-//@}
+    //@}
 
 
 
@@ -723,8 +748,8 @@ public:
     struct apply
     {
         typedef typename mpl::if_<mpl::bool_<Convex::is_simplex>,
-                                  mpl::identity<fem::Nedelec<N,Order,T,Simplex,TheTAG> >,
-                                  mpl::identity<fem::Nedelec<N,Order,T,Hypercube,TheTAG> > >::type::type result_type;
+                mpl::identity<fem::Nedelec<N,Order,T,Simplex,TheTAG> >,
+                mpl::identity<fem::Nedelec<N,Order,T,Hypercube,TheTAG> > >::type::type result_type;
         typedef result_type type;
     };
 

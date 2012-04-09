@@ -72,13 +72,14 @@ public:
     //@{
 
     //! copy operator
-    FunctionSpaceBase& operator=( FunctionSpaceBase const & o)
+    FunctionSpaceBase& operator=( FunctionSpaceBase const & o )
+    {
+        if ( this != &o )
         {
-            if (this != &o )
-            {
-            }
-            return *this;
         }
+
+        return *this;
+    }
     //@}
 
     /** @name Accessors

@@ -32,37 +32,42 @@
 #define ALL_MODELS 0
 namespace Feel
 {
-    OpusModelFactory::opusmodel_ptrtype
-    OpusModelFactory::New( Feel::po::variables_map const& vm )
+OpusModelFactory::opusmodel_ptrtype
+OpusModelFactory::New( Feel::po::variables_map const& vm )
+{
+    using namespace Feel;
+    int order_temp = vm["order-temp"].as<int>();
+
+    switch ( order_temp  )
     {
-        using namespace Feel;
-        int order_temp = vm["order-temp"].as<int>();
-        switch( order_temp  )
-        {
-        case 1:
+    case 1:
 #if ALL_MODELS
-            return opusmodel_ptrtype( new OpusModel<2,1,1>( vm ) );
+        return opusmodel_ptrtype( new OpusModel<2,1,1>( vm ) );
 #endif
 #if OPUS_WITH_THERMAL_ORDER >= 2
-        case 2:
-            return opusmodel_ptrtype( new OpusModel<2,1,2>( vm ) );
+
+    case 2:
+        return opusmodel_ptrtype( new OpusModel<2,1,2>( vm ) );
 #endif
 #if ALL_MODELS
 #if OPUS_WITH_THERMAL_ORDER >= 3
-        case 3:
-            return opusmodel_ptrtype( new OpusModel<2,1,3>( vm ) );
+
+    case 3:
+        return opusmodel_ptrtype( new OpusModel<2,1,3>( vm ) );
 #endif
 #if OPUS_WITH_THERMAL_ORDER >= 4
-        case 4:
-            return opusmodel_ptrtype( new OpusModel<2,1,4>( vm ) );
+
+    case 4:
+        return opusmodel_ptrtype( new OpusModel<2,1,4>( vm ) );
 #endif
 #endif
-        default:
-            std::cout << "Approximation order for temperature: " << order_temp << "\n";
-            std::cout << "fallback to order 1\n";
-            //return opusmodel_ptrtype( new OpusModel<2,1,1>() );
+
+    default:
+        std::cout << "Approximation order for temperature: " << order_temp << "\n";
+        std::cout << "fallback to order 1\n";
+        //return opusmodel_ptrtype( new OpusModel<2,1,1>() );
 
 
-        }
     }
+}
 }

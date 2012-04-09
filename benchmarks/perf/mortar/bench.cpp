@@ -42,17 +42,17 @@ inline
 Feel::po::options_description
 makeOptions()
 {
-    Feel::po::options_description mortaroptions("Mortar options");
+    Feel::po::options_description mortaroptions( "Mortar options" );
     mortaroptions.add_options()
-        ("coeff", Feel::po::value<double>()->default_value( 1 ), "grad.grad coefficient")
-        ("weakdir", Feel::po::value<int>()->default_value( 1 ), "use weak Dirichlet condition" )
-        ("penaldir", Feel::po::value<double>()->default_value( 10 ),"penalisation parameter for the weak boundary Dirichlet formulation")
-        ("shear", Feel::po::value<double>()->default_value( 0.0 ), "shear coeff")
-        ("recombine", Feel::po::value<bool>()->default_value( false ), "recombine triangle into quads")
-        ;
+    ( "coeff", Feel::po::value<double>()->default_value( 1 ), "grad.grad coefficient" )
+    ( "weakdir", Feel::po::value<int>()->default_value( 1 ), "use weak Dirichlet condition" )
+    ( "penaldir", Feel::po::value<double>()->default_value( 10 ),"penalisation parameter for the weak boundary Dirichlet formulation" )
+    ( "shear", Feel::po::value<double>()->default_value( 0.0 ), "shear coeff" )
+    ( "recombine", Feel::po::value<bool>()->default_value( false ), "recombine triangle into quads" )
+    ;
     return mortaroptions.add( Feel::feel_options() )
-        .add( Feel::benchmark_options( "2D-P2-P2" ) );//.add( Feel::benchmark_options( "2D-P2-P3" ) ).add( Feel::benchmark_options( "2D-P3-P2" ) )
-        // .add( Feel::benchmark_options( "3D-P2-P2" )).add( Feel::benchmark_options( "3D-P3-P3" ));
+           .add( Feel::benchmark_options( "2D-P2-P2" ) );//.add( Feel::benchmark_options( "2D-P2-P3" ) ).add( Feel::benchmark_options( "2D-P3-P2" ) )
+    // .add( Feel::benchmark_options( "3D-P2-P2" )).add( Feel::benchmark_options( "3D-P3-P3" ));
 }
 
 inline
@@ -64,10 +64,10 @@ makeAbout()
                            "0.1",
                            "nD(n=2,3) Mortar using mortar",
                            Feel::AboutData::License_GPL,
-                           "Copyright (c) 2011 Universite Joseph Fourier");
+                           "Copyright (c) 2011 Universite Joseph Fourier" );
 
-    about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
-    about.addAuthor("Abdoulaye Samake", "developer", "abdoulaye.samake@e.ujf-grenoble.fr", "");
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    about.addAuthor( "Abdoulaye Samake", "developer", "abdoulaye.samake@e.ujf-grenoble.fr", "" );
     return about;
 
 }
@@ -90,19 +90,21 @@ int main( int argc, char** argv )
     //Environment env( argc, argv );
 
     Application benchmark( argc, argv, makeAbout(), makeOptions() );
+
     if ( benchmark.vm().count( "help" ) )
     {
         std::cout << benchmark.optionsDescription() << "\n";
         return 0;
     }
+
     // app.add( new Mortar<2,2,2>( app.vm(), app.about() ) );
-    benchmark.add( new Mortar<2,2,2>("2D-P2-P2", benchmark.vm(), benchmark.about() ) );
+    benchmark.add( new Mortar<2,2,2>( "2D-P2-P2", benchmark.vm(), benchmark.about() ) );
 #if  0
-    benchmark.add( new Mortar<2,2,3>("2D-P2-P3", benchmark.vm(), benchmark.about() ) );
-    benchmark.add( new Mortar<2,3,2>("2D-P3-P2", benchmark.vm(), benchmark.about() ) );
-    benchmark.add( new Mortar<3,2,2>("3D-P2-P2", benchmark.vm(), benchmark.about() ) );
-    benchmark.add( new Mortar<3,3,3>("3D-P3-P3", benchmark.vm(), benchmark.about() ) );
+    benchmark.add( new Mortar<2,2,3>( "2D-P2-P3", benchmark.vm(), benchmark.about() ) );
+    benchmark.add( new Mortar<2,3,2>( "2D-P3-P2", benchmark.vm(), benchmark.about() ) );
+    benchmark.add( new Mortar<3,2,2>( "3D-P2-P2", benchmark.vm(), benchmark.about() ) );
+    benchmark.add( new Mortar<3,3,3>( "3D-P3-P3", benchmark.vm(), benchmark.about() ) );
 #endif
     benchmark.run();
-    benchmark.printStats( std::cout, boost::assign::list_of("e.l2")("e.h1")("t.init")("t.assembly")("t.solver"));
+    benchmark.printStats( std::cout, boost::assign::list_of( "e.l2" )( "e.h1" )( "t.init" )( "t.assembly" )( "t.solver" ) );
 }

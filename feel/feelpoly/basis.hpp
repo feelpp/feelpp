@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -208,108 +208,115 @@ std::vector<typename Basis<Tag, T>::matrix_type>  Basis<Tag, T>::_S_D;
 template<typename PrimalBasis>
 static void initDerivation( PrimalBasis const& basis )
 {
-    initDerivation( basis, mpl::bool_<boost::is_same<value_type,double>::value>());
+    initDerivation( basis, mpl::bool_<boost::is_same<value_type,double>::value>() );
 }
 
 template<typename PrimalBasis>
-static void initDerivation( PrimalBasis const& basis, mpl::bool_<false>)
+static void initDerivation( PrimalBasis const& basis, mpl::bool_<false> )
 {
 
     if ( _S_has_derivation == false )
-        {
-            _S_has_derivation = true;
+    {
+        _S_has_derivation = true;
 
-            reference_convex_type refconvex;
+        reference_convex_type refconvex;
 
-            // constructor pointset for differentiation only in
-            // the interior(1)
-            diff_pointset_type diff_pts(1);
+        // constructor pointset for differentiation only in
+        // the interior(1)
+        diff_pointset_type diff_pts( 1 );
 
-            matrix_type A( sub_type::evaluate( diff_pts.points() ) );
+        matrix_type A( sub_type::evaluate( diff_pts.points() ) );
 #if 1
-            matrix_type D = ublas::identity_matrix<value_type>( A.size1(), A.size2()  );
+        matrix_type D = ublas::identity_matrix<value_type>( A.size1(), A.size2()  );
 
-            LU<matrix_type> lu(A);
+        LU<matrix_type> lu( A );
 
-            matrix_type C = lu.solve( D );
+        matrix_type C = lu.solve( D );
 
-            vector_matrix_type d ( sub_type::derivate( diff_pts.points() ) );
-            _S_D.resize( d.size() );
-            for ( size_type i = 0; i < d.size(); ++i )
-                {
-                    _S_D[i] = ublas::prod( d[i], C );
-                    glas::clean( _S_D[i] );
-                }
+        vector_matrix_type d ( sub_type::derivate( diff_pts.points() ) );
+        _S_D.resize( d.size() );
+
+        for ( size_type i = 0; i < d.size(); ++i )
+        {
+            _S_D[i] = ublas::prod( d[i], C );
+            glas::clean( _S_D[i] );
+        }
+
 #else
-            ublas::permutation_matrix<value_type> perm(A.size1());
-            ublas::lu_factorize(A);
-            _S_D = sub_type::derivate( diff_pts.points() );
-            for ( size_type i = 0; i < _S_D.size(); ++i )
-                {
-                    ublas::lu_substitute( ublas::matrix_expression<matrix_type>(_S_D[i]), A );
-                    glas::clean( _S_D[i] );
-                }
+        ublas::permutation_matrix<value_type> perm( A.size1() );
+        ublas::lu_factorize( A );
+        _S_D = sub_type::derivate( diff_pts.points() );
+
+        for ( size_type i = 0; i < _S_D.size(); ++i )
+        {
+            ublas::lu_substitute( ublas::matrix_expression<matrix_type>( _S_D[i] ), A );
+            glas::clean( _S_D[i] );
+        }
+
 #endif
 
-        }
+    }
 }
 
 template<typename PrimalBasis>
-static void initDerivation(PrimalBasis const& basis, mpl::bool_<true>)
+static void initDerivation( PrimalBasis const& basis, mpl::bool_<true> )
 {
     if ( _S_has_derivation == false )
-        {
-            _S_has_derivation = true;
+    {
+        _S_has_derivation = true;
 
-            typename qd_basis_type::reference_convex_type refconvex;
+        typename qd_basis_type::reference_convex_type refconvex;
 
-            qd_diff_pointset_type diff_pts(1);
+        qd_diff_pointset_type diff_pts( 1 );
 
-            typename qd_basis_type::matrix_type A( qd_basis_type::evaluate( diff_pts.points() ) );
+        typename qd_basis_type::matrix_type A( qd_basis_type::evaluate( diff_pts.points() ) );
 #if 1
-            typename qd_basis_type::matrix_type D = ublas::identity_matrix<value_type>( A.size1(), A.size2()  );
-            LU<typename qd_basis_type::matrix_type> lu(A);
-            typename qd_basis_type::matrix_type C = lu.solve( D );
+        typename qd_basis_type::matrix_type D = ublas::identity_matrix<value_type>( A.size1(), A.size2()  );
+        LU<typename qd_basis_type::matrix_type> lu( A );
+        typename qd_basis_type::matrix_type C = lu.solve( D );
 
-            typename qd_basis_type::vector_matrix_type d ( qd_basis_type::derivate( diff_pts.points() ) );
-            std::vector<typename qd_basis_type::matrix_type> _qd_derivatives_matrix;
+        typename qd_basis_type::vector_matrix_type d ( qd_basis_type::derivate( diff_pts.points() ) );
+        std::vector<typename qd_basis_type::matrix_type> _qd_derivatives_matrix;
 
-            _qd_derivatives_matrix.resize(d.size());
-            _S_D.resize(_qd_derivatives_matrix.size());
+        _qd_derivatives_matrix.resize( d.size() );
+        _S_D.resize( _qd_derivatives_matrix.size() );
 
-            for ( size_type i = 0; i < d.size(); ++i )
-                {
-                    _qd_derivatives_matrix[i] = ublas::prod( d[i], C);
-                    glas::clean( _qd_derivatives_matrix[i] );
+        for ( size_type i = 0; i < d.size(); ++i )
+        {
+            _qd_derivatives_matrix[i] = ublas::prod( d[i], C );
+            glas::clean( _qd_derivatives_matrix[i] );
 
-                    _S_D[i].resize(_qd_derivatives_matrix[i].size1(),_qd_derivatives_matrix[i].size2());
+            _S_D[i].resize( _qd_derivatives_matrix[i].size1(),_qd_derivatives_matrix[i].size2() );
 
-                    for(size_type j = 0; j < _S_D[i].size1(); ++j )
-                        for(size_type k = 0; k < _S_D[i].size2(); ++k )
-                            _S_D[i](j,k) = value_type(_qd_derivatives_matrix[i](j,k));
+            for ( size_type j = 0; j < _S_D[i].size1(); ++j )
+                for ( size_type k = 0; k < _S_D[i].size2(); ++k )
+                    _S_D[i]( j,k ) = value_type( _qd_derivatives_matrix[i]( j,k ) );
 
-                    glas::clean( _S_D[i] );
-                }
-#else
-            ublas::permutation_matrix<typename qd_basis_type::value_type> perm(A.size1());
-            ublas::lu_factorize(A);
-            typename qd_basis_type::vector_matrix_type d ( qd_basis_type::derivate( diff_pts.points() ) );
-
-            _S_D.resize(d.size());
-            for ( size_type i = 0; i < d.size(); ++i )
-                {
-                    ublas::lu_substitute( ublas::matrix_expression<matrix_type>(d[i]), A );
-
-                    _S_D[i].resize(d[i].size1(),d[i].size2());
-
-                    for(size_type j = 0; j < _S_D[i].size1(); ++j )
-                        for(size_type k = 0; k < _S_D[i].size2(); ++k )
-                            _S_D[i](j,k) = value_type(d[i](j,k));
-
-                    glas::clean( _S_D[i] );
-                }
-#endif
+            glas::clean( _S_D[i] );
         }
+
+#else
+        ublas::permutation_matrix<typename qd_basis_type::value_type> perm( A.size1() );
+        ublas::lu_factorize( A );
+        typename qd_basis_type::vector_matrix_type d ( qd_basis_type::derivate( diff_pts.points() ) );
+
+        _S_D.resize( d.size() );
+
+        for ( size_type i = 0; i < d.size(); ++i )
+        {
+            ublas::lu_substitute( ublas::matrix_expression<matrix_type>( d[i] ), A );
+
+            _S_D[i].resize( d[i].size1(),d[i].size2() );
+
+            for ( size_type j = 0; j < _S_D[i].size1(); ++j )
+                for ( size_type k = 0; k < _S_D[i].size2(); ++k )
+                    _S_D[i]( j,k ) = value_type( d[i]( j,k ) );
+
+            glas::clean( _S_D[i] );
+        }
+
+#endif
+    }
 }
 
 #else
@@ -332,39 +339,44 @@ Basis<Tag, T>::initDerivation( PrimalBasis const& basis )
     typedef typename traits_type::matrix_node_type matrix_node_type;
     typedef typename traits_type::points_type points_type;
     typedef typename traits_type::node_type node_type;
-    if ( _S_has_derivation == false )
-        {
-            _S_has_derivation = true;
 
-            reference_convex_type refconvex;
-            // constructor pointset for differentiation only in
-            // the interior(1)
-            diff_pointset_type diff_pts(1);
-            matrix_type A( basis.evaluate( diff_pts.points() ) );
+    if ( _S_has_derivation == false )
+    {
+        _S_has_derivation = true;
+
+        reference_convex_type refconvex;
+        // constructor pointset for differentiation only in
+        // the interior(1)
+        diff_pointset_type diff_pts( 1 );
+        matrix_type A( basis.evaluate( diff_pts.points() ) );
 
 #if 1
-            matrix_type D = ublas::identity_matrix<value_type>( A.size1(), A.size2()  );
-            LU<matrix_type> lu(A);
-            matrix_type C = lu.solve( D );
+        matrix_type D = ublas::identity_matrix<value_type>( A.size1(), A.size2()  );
+        LU<matrix_type> lu( A );
+        matrix_type C = lu.solve( D );
 
-            vector_matrix_type d ( basis.derivate( diff_pts.points() ) );
-            _S_D.resize( d.size() );
-            for ( size_type i = 0; i < d.size(); ++i )
-                {
-                    _S_D[i] = ublas::prod( d[i], C );
-                    glas::clean( _S_D[i] );
-                }
-#else
-            ublas::permutation_matrix<double> perm(A.size1());
-            ublas::lu_factorize(A);
-            _S_D = basis.derivate( diff_pts.points() );
-            for ( size_type i = 0; i < d.size(); ++i )
-                {
-                    ublas::lu_substitute(_S_D[i], A );
-                    glas::clean( _S_D[i] );
-                }
-#endif
+        vector_matrix_type d ( basis.derivate( diff_pts.points() ) );
+        _S_D.resize( d.size() );
+
+        for ( size_type i = 0; i < d.size(); ++i )
+        {
+            _S_D[i] = ublas::prod( d[i], C );
+            glas::clean( _S_D[i] );
         }
+
+#else
+        ublas::permutation_matrix<double> perm( A.size1() );
+        ublas::lu_factorize( A );
+        _S_D = basis.derivate( diff_pts.points() );
+
+        for ( size_type i = 0; i < d.size(); ++i )
+        {
+            ublas::lu_substitute( _S_D[i], A );
+            glas::clean( _S_D[i] );
+        }
+
+#endif
+    }
 }
 #endif // FEELPP_HAS_QD_REAL
 

@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -53,22 +53,22 @@ public:
         super( argc, argv, ad, od )
     {
         if ( this->vm().count( "help" ) )
-            {
-                std::cout << this->optionsDescription() << "\n";
-                return;
-            }
+        {
+            std::cout << this->optionsDescription() << "\n";
+            return;
+        }
 
         this->changeRepository( boost::format( "%1%/Re_%8%/Simplex_%2%_%3%/P%4%P%5%/h_%6%_%7%/to_%9%_dt_%10%" )
                                 % this->about().appName()
                                 % this->vm()["d"].as<int>()
                                 % this->vm()["order-geo"].as<int>()
-                                % this->vm()["order-u"].as<int>() % (this->vm()["order-u"].as<int>() - 1)
+                                % this->vm()["order-u"].as<int>() % ( this->vm()["order-u"].as<int>() - 1 )
                                 % this->vm()["hsize"].as<double>()
                                 % this->vm()["h-cyl-scale"].as<double>()
                                 % this->vm()["Re"].as<double>()
                                 % this->vm()["bdf.time-order"].as<int>()
                                 % this->vm()["bdf.time-step"].as<double>()
-                            );
+                              );
 
 
         M_turek = Data::New( this->vm() );
@@ -78,7 +78,10 @@ public:
 
     }
 
-    void run() { M_turek->run(); }
+    void run()
+    {
+        M_turek->run();
+    }
 
 private:
 
@@ -95,20 +98,24 @@ int
 main( int argc, char** argv )
 {
 #if 0
-    try
-        {
-            Feel::TurekApp app( argc, argv, Data::makeAbout(), Data::makeOptions() );
 
-            app.run();
-        }
-    catch( std::logic_error const& e )
-        {
-            std::cout << "std::logic_error caught: " << std::endl;
-        }
-    catch( ... )
-        {
-            std::cout << "exception caught: " << std::endl;
-        }
+    try
+    {
+        Feel::TurekApp app( argc, argv, Data::makeAbout(), Data::makeOptions() );
+
+        app.run();
+    }
+
+    catch ( std::logic_error const& e )
+    {
+        std::cout << "std::logic_error caught: " << std::endl;
+    }
+
+    catch ( ... )
+    {
+        std::cout << "exception caught: " << std::endl;
+    }
+
 #else
     Feel::TurekApp app( argc, argv, Data::makeAbout(), Data::makeOptions() );
 

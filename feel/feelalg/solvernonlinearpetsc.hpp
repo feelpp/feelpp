@@ -72,7 +72,7 @@ namespace Feel
 template<typename T>
 class SolverNonLinearPetsc
     :
-        public SolverNonLinear<T>
+public SolverNonLinear<T>
 {
     typedef SolverNonLinear<T> super;
 public:
@@ -98,9 +98,9 @@ public:
      */
     //@{
 
-      /**
-       *  Constructor. Initializes Petsc data structures
-       */
+    /**
+     *  Constructor. Initializes Petsc data structures
+     */
     SolverNonLinearPetsc();
     SolverNonLinearPetsc( SolverNonLinearPetsc const & );
 
@@ -149,25 +149,37 @@ public:
      * same matrix for the system and preconditioner matrices.
      */
     virtual std::pair<int, real_type> solve ( sparse_matrix_ptrtype&,    // System Jacobian Matrix
-                                              vector_ptrtype&,          // Solution vector
-                                              vector_ptrtype&,          // Residual vector
-                                              const double,        // Stopping tolerance
-                                              const unsigned int); // N. Iterations
+            vector_ptrtype&,          // Solution vector
+            vector_ptrtype&,          // Residual vector
+            const double,        // Stopping tolerance
+            const unsigned int ); // N. Iterations
 
     virtual std::pair<unsigned int, real_type> solve ( dense_matrix_type&,    // System Jacobian Matrix
-                                                       dense_vector_type&,          // Solution vector
-                                                       dense_vector_type&,          // Residual vector
-                                                       const double,        // Stopping tolerance
-                                                       const unsigned int); // N. Iterations
+            dense_vector_type&,          // Solution vector
+            dense_vector_type&,          // Residual vector
+            const double,        // Stopping tolerance
+            const unsigned int ); // N. Iterations
 
 
 
     //@}
-    DataMap const& mapRow() const { return M_mapRow;}
-    DataMap const& mapCol() const { return M_mapCol;}
+    DataMap const& mapRow() const
+    {
+        return M_mapRow;
+    }
+    DataMap const& mapCol() const
+    {
+        return M_mapCol;
+    }
 
-    void setMapRow(DataMap const& d) { M_mapRow=d;}
-    void setMapCol(DataMap const& d) { M_mapCol=d;}
+    void setMapRow( DataMap const& d )
+    {
+        M_mapRow=d;
+    }
+    void setMapCol( DataMap const& d )
+    {
+        M_mapCol=d;
+    }
 
 private:
     /**
@@ -223,7 +235,7 @@ template <typename T>
 inline
 SolverNonLinearPetsc<T>::~SolverNonLinearPetsc ()
 {
-  this->clear ();
+    this->clear ();
 }
 
 } // Feel

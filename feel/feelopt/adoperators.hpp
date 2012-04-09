@@ -42,29 +42,48 @@ template <class L, class R>
 class ADBinaryAdd
 {
 public:
-  enum { nvar = L::nvar };
-  typedef typename L::value_type value_type_L;
+    enum { nvar = L::nvar };
+    typedef typename L::value_type value_type_L;
 
-  typedef typename R::value_type value_type_R;
+    typedef typename R::value_type value_type_R;
 
-  typedef typename SNumericalTraits<value_type_L,value_type_R>::promote value_type;
+    typedef typename SNumericalTraits<value_type_L,value_type_R>::promote value_type;
 
 protected:
-  ADBinaryAdd() {}
+    ADBinaryAdd() {}
 
-  const L& __left; const R& __right;
+    const L& __left;
+    const R& __right;
 
 public:
-  ADBinaryAdd(const L& left, const R& rigth) : __left(left), __right(rigth) {;}
-  ~ADBinaryAdd() {;}
+    ADBinaryAdd( const L& left, const R& rigth ) : __left( left ), __right( rigth )
+    {
+        ;
+    }
+    ~ADBinaryAdd()
+    {
+        ;
+    }
 
 
-  value_type value() const {return __left.value() + __right.value();}
-  value_type grad( int __i ) const {return __left.grad( __i ) + __right.grad( __i );}
-   value_type hessian( int __i, int __j ) const { return __left.hessian(__i, __j) + __right.hessian( __i, __j); }
+    value_type value() const
+    {
+        return __left.value() + __right.value();
+    }
+    value_type grad( int __i ) const
+    {
+        return __left.grad( __i ) + __right.grad( __i );
+    }
+    value_type hessian( int __i, int __j ) const
+    {
+        return __left.hessian( __i, __j ) + __right.hessian( __i, __j );
+    }
 
 
-  bool deps( int i ) const { return __left.deps( i ) || __right.deps( i ); }
+    bool deps( int i ) const
+    {
+        return __left.deps( i ) || __right.deps( i );
+    }
 };
 
 #define AD_BIN_ADD_CST(TYPE)                                                          \
@@ -125,11 +144,11 @@ public:                                                                         
   bool deps( int i ) const { return __right.deps( i ); }                               \
 };
 
-AD_BIN_ADD_CST(int)
-AD_BIN_ADD_CST(long int)
-AD_BIN_ADD_CST(float)
-AD_BIN_ADD_CST(double)
-AD_BIN_ADD_CST(long double)
+AD_BIN_ADD_CST( int )
+AD_BIN_ADD_CST( long int )
+AD_BIN_ADD_CST( float )
+AD_BIN_ADD_CST( double )
+AD_BIN_ADD_CST( long double )
 
 #undef AD_BIN_ADD_CST
 
@@ -138,26 +157,45 @@ template <class L, class R>
 class ADBinarySubtract
 {
 public:
-   enum { nvar = L::nvar };
-   typedef typename L::value_type value_type_L;
-   typedef typename R::value_type value_type_R;
-   typedef typename SNumericalTraits<value_type_L,value_type_R>::promote value_type;
+    enum { nvar = L::nvar };
+    typedef typename L::value_type value_type_L;
+    typedef typename R::value_type value_type_R;
+    typedef typename SNumericalTraits<value_type_L,value_type_R>::promote value_type;
 
 protected:
-   ADBinarySubtract() {}
+    ADBinarySubtract() {}
 
-   const L& __left; const R& __right;
+    const L& __left;
+    const R& __right;
 
 public:
-   ADBinarySubtract(const L& left, const R& rigth) : __left(left), __right(rigth) {;}
-   ~ADBinarySubtract() {;}
+    ADBinarySubtract( const L& left, const R& rigth ) : __left( left ), __right( rigth )
+    {
+        ;
+    }
+    ~ADBinarySubtract()
+    {
+        ;
+    }
 
 
-   value_type value() const {return __left.value() - __right.value();}
-   value_type grad( int __i) const {return __left.grad(__i) - __right.grad(__i);}
-   value_type hessian( int __i, int __j ) const {return __left.hessian(__i, __j) - __right.hessian( __i, __j);}
+    value_type value() const
+    {
+        return __left.value() - __right.value();
+    }
+    value_type grad( int __i ) const
+    {
+        return __left.grad( __i ) - __right.grad( __i );
+    }
+    value_type hessian( int __i, int __j ) const
+    {
+        return __left.hessian( __i, __j ) - __right.hessian( __i, __j );
+    }
 
-  bool deps( int i ) const { return __left.deps( i ) || __right.deps( i ); }
+    bool deps( int i ) const
+    {
+        return __left.deps( i ) || __right.deps( i );
+    }
 };
 
 #define AD_BIN_SUB_CST(TYPE)                                                             \
@@ -218,11 +256,11 @@ public:                                                                         
   bool deps( int i ) const { return __right.deps( i ); }                                  \
 };
 
-AD_BIN_SUB_CST(int)
-AD_BIN_SUB_CST(long int)
-AD_BIN_SUB_CST(float)
-AD_BIN_SUB_CST(double)
-AD_BIN_SUB_CST(long double)
+AD_BIN_SUB_CST( int )
+AD_BIN_SUB_CST( long int )
+AD_BIN_SUB_CST( float )
+AD_BIN_SUB_CST( double )
+AD_BIN_SUB_CST( long double )
 
 #undef AD_BIN_SUB_CST
 
@@ -231,29 +269,45 @@ template <class L, class R>
 class ADBinaryMultiply
 {
 public:
-  enum { nvar = R::nvar };
-  typedef typename L::value_type value_type_L;
-  typedef typename R::value_type value_type_R;
-  typedef typename SNumericalTraits<value_type_L,value_type_R>::promote value_type;
+    enum { nvar = R::nvar };
+    typedef typename L::value_type value_type_L;
+    typedef typename R::value_type value_type_R;
+    typedef typename SNumericalTraits<value_type_L,value_type_R>::promote value_type;
 
- protected:
-  ADBinaryMultiply() {}
+protected:
+    ADBinaryMultiply() {}
 
-  const L& __left; const R& __right;
+    const L& __left;
+    const R& __right;
 
- public:
-  ADBinaryMultiply(const L& left, const R& rigth) : __left(left), __right(rigth) {;}
-  ~ADBinaryMultiply() {;}
+public:
+    ADBinaryMultiply( const L& left, const R& rigth ) : __left( left ), __right( rigth )
+    {
+        ;
+    }
+    ~ADBinaryMultiply()
+    {
+        ;
+    }
 
-  value_type value() const {return __left.value() * __right.value() ;}
-  value_type grad(int i) const {return  __left.grad(i) * __right.value() + __right.grad(i) * __left.value();}
-  value_type hessian( int __i, int __j ) const
-  {
-     return ( __left.hessian( __i, __j)*__right.value() + __left.grad(__i) * __right.grad(__j) +
-              __left.grad(__j) * __right.grad(__i) + __left.value()*__right.hessian( __i, __j) );
-  }
+    value_type value() const
+    {
+        return __left.value() * __right.value() ;
+    }
+    value_type grad( int i ) const
+    {
+        return  __left.grad( i ) * __right.value() + __right.grad( i ) * __left.value();
+    }
+    value_type hessian( int __i, int __j ) const
+    {
+        return ( __left.hessian( __i, __j )*__right.value() + __left.grad( __i ) * __right.grad( __j ) +
+                 __left.grad( __j ) * __right.grad( __i ) + __left.value()*__right.hessian( __i, __j ) );
+    }
 
-  bool deps( int i ) const { return __left.deps( i ) || __right.deps( i ); }
+    bool deps( int i ) const
+    {
+        return __left.deps( i ) || __right.deps( i );
+    }
 };
 
 #define AD_BIN_MUL_CST(TYPE)                                                                \
@@ -311,45 +365,62 @@ public:                                                                         
    bool deps( int i ) const { return __right.deps( i ); }                                    \
 };
 
-AD_BIN_MUL_CST(int)
-AD_BIN_MUL_CST(long int)
-AD_BIN_MUL_CST(float)
-AD_BIN_MUL_CST(double)
-AD_BIN_MUL_CST(long double)
+AD_BIN_MUL_CST( int )
+AD_BIN_MUL_CST( long int )
+AD_BIN_MUL_CST( float )
+AD_BIN_MUL_CST( double )
+AD_BIN_MUL_CST( long double )
 
 #undef AD_BIN_MUL_CST
 
 //------------------------------- AD division operators ------------------------------------------
-template <class L, class R> class ADBinaryDivide {
+template <class L, class R> class ADBinaryDivide
+{
 public:
-   enum { nvar = R::nvar };
-   typedef typename L::value_type value_type_L;
-   typedef typename R::value_type value_type_R;
-   typedef typename SNumericalTraits<value_type_L,value_type_R>::promote value_type;
+    enum { nvar = R::nvar };
+    typedef typename L::value_type value_type_L;
+    typedef typename R::value_type value_type_R;
+    typedef typename SNumericalTraits<value_type_L,value_type_R>::promote value_type;
 
 protected:
-   ADBinaryDivide() {}
+    ADBinaryDivide() {}
 
-   const L& __left; const R& __right;
+    const L& __left;
+    const R& __right;
 
 public:
-   ADBinaryDivide(const L& left, const R& rigth) : __left(left), __right(rigth) {;}
-   ~ADBinaryDivide() {;}
+    ADBinaryDivide( const L& left, const R& rigth ) : __left( left ), __right( rigth )
+    {
+        ;
+    }
+    ~ADBinaryDivide()
+    {
+        ;
+    }
 
 
-   value_type value() const {return __left.value() / __right.value();}
-   value_type grad(int i) const {return  (__left.grad(i) / __right.value() ) - __right.grad(i) * __left.value() / (__right.value() * __right.value()) ;}
+    value_type value() const
+    {
+        return __left.value() / __right.value();
+    }
+    value_type grad( int i ) const
+    {
+        return  ( __left.grad( i ) / __right.value() ) - __right.grad( i ) * __left.value() / ( __right.value() * __right.value() ) ;
+    }
 
-  value_type hessian( int __i, int __j ) const
-  {
-    return -( - __left.hessian(__i,__j)*__right.value()*__right.value() +
-              __left.grad( __j )* __right.grad( __i ) * __right.value() +
-              __left.grad( __i )* __right.grad( __j ) * __right.value() -
-              value_type(2.0) * __left.value()* __right.grad( __i ) * __right.grad( __j ) +
-              __left.value() * __right.value() * __right.hessian( __i, __j ) ) / ( __right.value()*__right.value()*__right.value() );
-  };
+    value_type hessian( int __i, int __j ) const
+    {
+        return -( - __left.hessian( __i,__j )*__right.value()*__right.value() +
+                  __left.grad( __j )* __right.grad( __i ) * __right.value() +
+                  __left.grad( __i )* __right.grad( __j ) * __right.value() -
+                  value_type( 2.0 ) * __left.value()* __right.grad( __i ) * __right.grad( __j ) +
+                  __left.value() * __right.value() * __right.hessian( __i, __j ) ) / ( __right.value()*__right.value()*__right.value() );
+    };
 
-    bool deps( int i ) const { return __left.deps( i ) || __right.deps( i ); }
+    bool deps( int i ) const
+    {
+        return __left.deps( i ) || __right.deps( i );
+    }
 };
 
 #define AD_BIN_DIV_CST(TYPE)                                                                                           \
@@ -412,11 +483,11 @@ public:                                                                         
   bool deps( int i ) const { return __right.deps( i ); }                                                                \
 };
 
-AD_BIN_DIV_CST(int)
-AD_BIN_DIV_CST(long int)
-AD_BIN_DIV_CST(float)
-AD_BIN_DIV_CST(double)
-AD_BIN_DIV_CST(long double)
+AD_BIN_DIV_CST( int )
+AD_BIN_DIV_CST( long int )
+AD_BIN_DIV_CST( float )
+AD_BIN_DIV_CST( double )
+AD_BIN_DIV_CST( long double )
 
 #undef AD_BIN_DIV_CST
 
@@ -426,30 +497,43 @@ template <class L, class R>
 class ADBinaryPow
 {
 public:
-  enum { nvar = R::nvar };
-  typedef typename L::value_type value_type_L;
-  typedef typename R::value_type value_type_R;
+    enum { nvar = R::nvar };
+    typedef typename L::value_type value_type_L;
+    typedef typename R::value_type value_type_R;
 
-  typedef typename SNumericalTraits<value_type_L,value_type_R>::promote value_type;
+    typedef typename SNumericalTraits<value_type_L,value_type_R>::promote value_type;
 
 protected:
-  ADBinaryPow() {}
+    ADBinaryPow() {}
 
-  const L& __left; const R& __right;
+    const L& __left;
+    const R& __right;
 
 public:
-  ADBinaryPow(const L& left, const R& rigth) : __left(left), __right(rigth) {;}
-  ~ADBinaryPow() {;}
+    ADBinaryPow( const L& left, const R& rigth ) : __left( left ), __right( rigth )
+    {
+        ;
+    }
+    ~ADBinaryPow()
+    {
+        ;
+    }
 
 
-  value_type value() const {return std::pow( __left.value(), __right.value() );}
-  value_type grad(int i) const
-  {
-    return  (__right.grad(i)*std::log(__left.value())+__right.value()*__left.grad(i)/__left.value())
-      *std::pow( __left.value(), __right.value() );
-  }
+    value_type value() const
+    {
+        return std::pow( __left.value(), __right.value() );
+    }
+    value_type grad( int i ) const
+    {
+        return  ( __right.grad( i )*std::log( __left.value() )+__right.value()*__left.grad( i )/__left.value() )
+                *std::pow( __left.value(), __right.value() );
+    }
 
-  bool deps( int i ) const { return __left.deps( i ) || __right.deps( i ); }
+    bool deps( int i ) const
+    {
+        return __left.deps( i ) || __right.deps( i );
+    }
 };
 
 
@@ -457,30 +541,43 @@ template <class L>
 class ADBinaryPow<L, ADCst<typename L::value_type> >
 {
 public:
-  enum { nvar = L::nvar };
-  typedef typename L::value_type value_type;
-  typedef ADCst<value_type> R;
+    enum { nvar = L::nvar };
+    typedef typename L::value_type value_type;
+    typedef ADCst<value_type> R;
 
 protected:
-  ADBinaryPow() {}
+    ADBinaryPow() {}
 
-  const L& __left; const  R __right;
+    const L& __left;
+    const  R __right;
 
 public:
-  ADBinaryPow(const L& left, const R& rigth) : __left(left), __right(rigth) {;}
-  ~ADBinaryPow() {;}
+    ADBinaryPow( const L& left, const R& rigth ) : __left( left ), __right( rigth )
+    {
+        ;
+    }
+    ~ADBinaryPow()
+    {
+        ;
+    }
 
 
-  value_type value() const {return std::pow(__left.value(),__right.value()) ;}
-  value_type grad(int i) const
-  {
-    return  (__right.value()*__left.grad(i)/__left.value())*std::pow( __left.value(), __right.value() );
-  }
-  value_type hessian(int i, int j) const
-  {
-    //return  std::pow(__left.value(),__right.value())*std::pow(__right.value(),2)*__left.grad(i)*__left.grad(j)/std::pow(__left.value(),2) + std::pow(__left.value(),__right.value())*__right.value()*__left.hessian(i,j)/__left.value() - std::pow(__left.value(),__right.value())*__right.value()*
-  }
-  bool deps( int i ) const { return __left.deps( i ); }
+    value_type value() const
+    {
+        return std::pow( __left.value(),__right.value() ) ;
+    }
+    value_type grad( int i ) const
+    {
+        return  ( __right.value()*__left.grad( i )/__left.value() )*std::pow( __left.value(), __right.value() );
+    }
+    value_type hessian( int i, int j ) const
+    {
+        //return  std::pow(__left.value(),__right.value())*std::pow(__right.value(),2)*__left.grad(i)*__left.grad(j)/std::pow(__left.value(),2) + std::pow(__left.value(),__right.value())*__right.value()*__left.hessian(i,j)/__left.value() - std::pow(__left.value(),__right.value())*__right.value()*
+    }
+    bool deps( int i ) const
+    {
+        return __left.deps( i );
+    }
 };
 
 
@@ -488,31 +585,45 @@ template <class R>
 class ADBinaryPow< ADCst<typename R::value_type>, R>
 {
 public:
-   enum { nvar = R::nvar };
-   typedef typename R::value_type value_type;
-   typedef ADCst<value_type> L;
+    enum { nvar = R::nvar };
+    typedef typename R::value_type value_type;
+    typedef ADCst<value_type> L;
 
 protected:
-   ADBinaryPow() {}
+    ADBinaryPow() {}
 
-   const L __left; const R& __right;
+    const L __left;
+    const R& __right;
 
 public:
-   ADBinaryPow(const L& left, const R& rigth) : __left(left), __right(rigth) {;}
-   ~ADBinaryPow() {;}
+    ADBinaryPow( const L& left, const R& rigth ) : __left( left ), __right( rigth )
+    {
+        ;
+    }
+    ~ADBinaryPow()
+    {
+        ;
+    }
 
-   const value_type value() const {return std::pow(__left.value(),__right.value());}
-   value_type grad(int i) const
-   {
-      return (__right.grad(i)*std::log(__left.value()))*std::pow( __left.value(), __right.value() );
-   }
+    const value_type value() const
+    {
+        return std::pow( __left.value(),__right.value() );
+    }
+    value_type grad( int i ) const
+    {
+        return ( __right.grad( i )*std::log( __left.value() ) )*std::pow( __left.value(), __right.value() );
+    }
 
-   value_type hessian(int i, int j) const
-  { return std::pow(__left.value(),__right.value()-2.0)*__right.value()*__right.value()*__left.grad(i)*__left.grad(j) +
-      std::pow(__left.value(),__right.value()-1.0)*__right.value()*__left.hessian(i,j) -
-      std::pow(__left.value(),__right.value()-2.0)*__right.value()*__left.grad(i)*__left.grad(j);
-  }
-  bool deps( int i ) const { return __right.deps( i );}
+    value_type hessian( int i, int j ) const
+    {
+        return std::pow( __left.value(),__right.value()-2.0 )*__right.value()*__right.value()*__left.grad( i )*__left.grad( j ) +
+               std::pow( __left.value(),__right.value()-1.0 )*__right.value()*__left.hessian( i,j ) -
+               std::pow( __left.value(),__right.value()-2.0 )*__right.value()*__left.grad( i )*__left.grad( j );
+    }
+    bool deps( int i ) const
+    {
+        return __right.deps( i );
+    }
 };
 
 template <class L>
@@ -527,59 +638,73 @@ public:
 protected:
     ADBinaryPow() {}
 
-    const L& __left; const R __right;
+    const L& __left;
+    const R __right;
 
 public:
-    ADBinaryPow(const L& left, const R& rigth) : __left(left), __right(rigth) {;}
-    ~ADBinaryPow() {;}
+    ADBinaryPow( const L& left, const R& rigth ) : __left( left ), __right( rigth )
+    {
+        ;
+    }
+    ~ADBinaryPow()
+    {
+        ;
+    }
 
     template<int isFundamental, typename L_, typename R_>
     struct Value
     {
         typedef typename L_::value_type value_type;
         static value_type value( L_ const& __left, R_ const& __right )
-            {
-                return pow(__left.value(),__right.value());
-            }
+        {
+            return pow( __left.value(),__right.value() );
+        }
         static value_type grad( L_ const& __left, R_ const& __right, int __i )
-            {
-                return value_type(__right.value())*pow( __left.value(), __right.value()-1);
-            }
+        {
+            return value_type( __right.value() )*pow( __left.value(), __right.value()-1 );
+        }
         static value_type hessian( L_ const& __left, R_ const& __right, int i, int j )
-            {
-                return pow(__left.value(),__right.value()-2.0)*__right.value()*__right.value()*__left.grad(i)*__left.grad(j) +
-                    pow(__left.value(),__right.value()-1.0)*__right.value()*__left.hessian(i,j) -
-                    pow(__left.value(),__right.value()-2.0)*__right.value()*__left.grad(i)*__left.grad(j);
-            }
+        {
+            return pow( __left.value(),__right.value()-2.0 )*__right.value()*__right.value()*__left.grad( i )*__left.grad( j ) +
+                   pow( __left.value(),__right.value()-1.0 )*__right.value()*__left.hessian( i,j ) -
+                   pow( __left.value(),__right.value()-2.0 )*__right.value()*__left.grad( i )*__left.grad( j );
+        }
     };
     template<typename L_, typename R_>
     struct Value<1, L_, R_>
     {
         typedef typename L_::value_type value_type;
         static value_type value( L_ const& __left, R_ const& __right )
-            {
-                return std::pow(__left.value(),__right.value());
-            }
-        static value_type grad( L_ const& __left, R_ const& __right, int __i )
-            {
-                return __right.value()*std::pow( __left.value(), __right.value()-1);
-            }
-        static value_type hessian( L_ const& __left, R_ const& __right, int i, int j )
-            {
-                return std::pow(__left.value(),__right.value()-2.0)*__right.value()*__right.value()*__left.grad(i)*__left.grad(j) +
-                    std::pow(__left.value(),__right.value()-1.0)*__right.value()*__left.hessian(i,j) -
-                    std::pow(__left.value(),__right.value()-2.0)*__right.value()*__left.grad(i)*__left.grad(j);
-            }
-    };
-    value_type value() const {return Value<true/**/,L,R>::value(__left, __right);}
-    value_type grad(int i) const
         {
-            return Value<true/**/,L,R>::grad(__left, __right, i);
+            return std::pow( __left.value(),__right.value() );
         }
-    value_type hessian(int i, int j) const
-        { return Value<true/**/,L,R>::hessian(__left, __right, i, j);;
+        static value_type grad( L_ const& __left, R_ const& __right, int __i )
+        {
+            return __right.value()*std::pow( __left.value(), __right.value()-1 );
         }
-    bool deps( int i ) const { return __left.deps( i ); }
+        static value_type hessian( L_ const& __left, R_ const& __right, int i, int j )
+        {
+            return std::pow( __left.value(),__right.value()-2.0 )*__right.value()*__right.value()*__left.grad( i )*__left.grad( j ) +
+                   std::pow( __left.value(),__right.value()-1.0 )*__right.value()*__left.hessian( i,j ) -
+                   std::pow( __left.value(),__right.value()-2.0 )*__right.value()*__left.grad( i )*__left.grad( j );
+        }
+    };
+    value_type value() const
+    {
+        return Value<true/**/,L,R>::value( __left, __right );
+    }
+    value_type grad( int i ) const
+    {
+        return Value<true/**/,L,R>::grad( __left, __right, i );
+    }
+    value_type hessian( int i, int j ) const
+    {
+        return Value<true/**/,L,R>::hessian( __left, __right, i, j );;
+    }
+    bool deps( int i ) const
+    {
+        return __left.deps( i );
+    }
 };
 
 

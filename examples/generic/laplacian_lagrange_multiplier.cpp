@@ -51,14 +51,14 @@ inline
 Feel::po::options_description
 makeOptions()
 {
-    Feel::po::options_description laplacian_mloptions("LaplacianLM options");
+    Feel::po::options_description laplacian_mloptions( "LaplacianLM options" );
     laplacian_mloptions.add_options()
-        ("hsize", Feel::po::value<double>()->default_value( 0.1 ), "mesh size in domain")
+    ( "hsize", Feel::po::value<double>()->default_value( 0.1 ), "mesh size in domain" )
 
-        ("penalbc", Feel::po::value<double>()->default_value( 10 ), "penalisation parameter for the weak boundary conditions")
+    ( "penalbc", Feel::po::value<double>()->default_value( 10 ), "penalisation parameter for the weak boundary conditions" )
 
-        ("export-matlab", "export matrix and vectors in matlab" )
-        ;
+    ( "export-matlab", "export matrix and vectors in matlab" )
+    ;
     return laplacian_mloptions.add( Feel::feel_options() );
 }
 inline
@@ -70,10 +70,10 @@ makeAbout()
                            "0.1",
                            "nD(n=1,2,3) LaplacianLM on simplices or simplex products",
                            Feel::AboutData::License_GPL,
-                           "Copyright (c) 2008 Université Joseph Fourier");
+                           "Copyright (c) 2008 Université Joseph Fourier" );
 
-    about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
-    about.addAuthor("Mourad Ismail", "developer", "mourad.ismail@ujf-grenoble.fr", "");
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    about.addAuthor( "Mourad Ismail", "developer", "mourad.ismail@ujf-grenoble.fr", "" );
     return about;
 
 }
@@ -90,7 +90,7 @@ using namespace vf;
 template<int Dim, int Order>
 class LaplacianLM
     :
-    public Application
+public Application
 {
     typedef Application super;
 public:
@@ -117,7 +117,7 @@ public:
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
     typedef fusion::vector<Lagrange<Order, Scalar>,
-                           Lagrange<0, Scalar> > basis_type;
+            Lagrange<0, Scalar> > basis_type;
 
     /*space*/
     typedef FunctionSpace<mesh_type, basis_type, value_type> functionspace_type;
@@ -189,10 +189,10 @@ LaplacianLM<Dim,Order>::LaplacianLM( int argc, char** argv, AboutData const& ad,
     timers()
 {
     if ( this->vm().count( "help" ) )
-        {
-            std::cout << this->optionsDescription() << "\n";
-            return;
-        }
+    {
+        std::cout << this->optionsDescription() << "\n";
+        return;
+    }
 
 
 
@@ -201,11 +201,11 @@ LaplacianLM<Dim,Order>::LaplacianLM( int argc, char** argv, AboutData const& ad,
                             % entity_type::name()
                             % Order
                             % h
-                            );
+                          );
 
     Log() << "create mesh\n";
     mesh = createGMSHMesh( _mesh=new mesh_type,
-                           _desc=domain( _name=(boost::format( "hypercube-%1%" )  % Dim).str() ,
+                           _desc=domain( _name=( boost::format( "hypercube-%1%" )  % Dim ).str() ,
                                          _usenames=true,
                                          _shape="hypercube",
                                          _h=h ),
@@ -243,45 +243,46 @@ LaplacianLM<Dim, Order>::run()
     element_1_type nu = V.template element<1>() ;
 
     auto pi = constants::pi<double>();
-    auto g= sin(pi*Px())*cos(pi*Py())*cos(pi*Pz());;
+    auto g= sin( pi*Px() )*cos( pi*Py() )*cos( pi*Pz() );;
     auto grad_g = vec(
-        +pi*cos(pi*Px())*cos(pi*Py()),
-        -pi*sin(pi*Px())*sin(pi*Py())
-        );
+                      +pi*cos( pi*Px() )*cos( pi*Py() ),
+                      -pi*sin( pi*Px() )*sin( pi*Py() )
+                  );
     auto f = 2*pi*pi*g;
 
     auto M = M_backend->newMatrix( Xh, Xh );
 
     form2( _test=Xh, _trial=Xh, _matrix=M ) = integrate( _range=elements( mesh ),
-                                                _expr=gradt(u)*trans(grad(v)) + id(u)*idt(lambda) + idt(u)*id(nu) + 0*idt(lambda)*id(nu));
+            _expr=gradt( u )*trans( grad( v ) ) + id( u )*idt( lambda ) + idt( u )*id( nu ) + 0*idt( lambda )*id( nu ) );
 
-    double area = integrate( _range=elements(mesh), _expr=constant(1.0) ).evaluate()(0,0);
-    double mean = integrate( _range=elements(mesh), _expr=g ).evaluate()( 0, 0)/area;
+    double area = integrate( _range=elements( mesh ), _expr=constant( 1.0 ) ).evaluate()( 0,0 );
+    double mean = integrate( _range=elements( mesh ), _expr=g ).evaluate()( 0, 0 )/area;
     Log() << "int g  = " << mean << "\n";
     vector_ptrtype F( M_backend->newVector( Xh ) );
-    form1( Xh, F ) = ( integrate( _range=elements( mesh ), _expr=f*id(v) )+
-                       integrate( _range=boundaryfaces( mesh ), _expr=(trans(grad_g)*N())*id(v) ) +
-                       integrate( _range=elements( mesh ), _expr=mean*id(nu) )
-        );
+    form1( Xh, F ) = ( integrate( _range=elements( mesh ), _expr=f*id( v ) )+
+                       integrate( _range=boundaryfaces( mesh ), _expr=( trans( grad_g )*N() )*id( v ) ) +
+                       integrate( _range=elements( mesh ), _expr=mean*id( nu ) )
+                     );
+
     if ( this->vm().count( "export-matlab" ) )
-        {
-            M->printMatlab( "M.m" );
-            F->printMatlab( "F.m" );
-        }
+    {
+        M->printMatlab( "M.m" );
+        F->printMatlab( "F.m" );
+    }
 
     M_backend->solve( _matrix=M, _solution=U, _rhs=F );
 
     Log() << "lambda = " << lambda( 0 ) << "\n";
     Log() << "area   = " << area << "\n";
-    Log() << "int g  = " << integrate( _range=elements(mesh), _expr=g ).evaluate()( 0, 0)/area << "\n";
-    Log() << "int u  = " << integrate( _range=elements(mesh), _expr=idv(u) ).evaluate()( 0, 0)/area << "\n";
-    Log() << "error  = " << math::sqrt( integrate( _range=elements(mesh), _expr=(idv(u)-g)*(idv(u)-g) ).evaluate()( 0, 0) ) << "\n";
+    Log() << "int g  = " << integrate( _range=elements( mesh ), _expr=g ).evaluate()( 0, 0 )/area << "\n";
+    Log() << "int u  = " << integrate( _range=elements( mesh ), _expr=idv( u ) ).evaluate()( 0, 0 )/area << "\n";
+    Log() << "error  = " << math::sqrt( integrate( _range=elements( mesh ), _expr=( idv( u )-g )*( idv( u )-g ) ).evaluate()( 0, 0 ) ) << "\n";
 
-    v = vf::project( _space=Xh->template functionSpace<0>(), _range=elements(mesh), _expr=g );
+    v = vf::project( _space=Xh->template functionSpace<0>(), _range=elements( mesh ), _expr=g );
 
     element_type E( Xh, "e" );
     element_0_type e = E.template element<0>();
-    e = vf::project( _space=Xh->template functionSpace<0>(), _range=elements(mesh), _expr=idv(u)-g );
+    e = vf::project( _space=Xh->template functionSpace<0>(), _range=elements( mesh ), _expr=idv( u )-g );
 
     exportResults( U, V, E );
 
@@ -296,10 +297,10 @@ LaplacianLM<Dim, Order>::exportResults( element_type& U, element_type& V, elemen
     timers["export"].first.restart();
 
     Log() << "exportResults starts\n";
-    exporter->step(0)->setMesh( U.functionSpace()->mesh() );
-    exporter->step(0)->add( "u", U.template element<0>() );
-    exporter->step(0)->add( "exact", V.template element<0>() );
-    exporter->step(0)->add( "error", E.template element<0>() );
+    exporter->step( 0 )->setMesh( U.functionSpace()->mesh() );
+    exporter->step( 0 )->add( "u", U.template element<0>() );
+    exporter->step( 0 )->add( "exact", V.template element<0>() );
+    exporter->step( 0 )->add( "error", E.template element<0>() );
     //exporter->step(0)->add( "l", U.template element<1>() );
 
     exporter->save();

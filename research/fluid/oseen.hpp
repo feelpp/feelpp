@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -106,23 +106,41 @@ public:
         M_updated( false ),
         M_timers(),
         M_stats(),
-        M_noisy(0),
-        M_maxiter(1000),
-        M_fillin(2),
-        M_threshold(1.e-3),
-        M_tol(2.e-10)
+        M_noisy( 0 ),
+        M_maxiter( 1000 ),
+        M_fillin( 2 ),
+        M_threshold( 1.e-3 ),
+        M_tol( 2.e-10 )
     {
         M_stats["nelt"] = M_mesh->elements().size();
         M_stats["ndof"] = M_nTot;
     }
 
     // setting of options
-    void set_noisy( int noisy ) { M_noisy = noisy; }
-    void set_maxiter( int maxiter ) { M_maxiter = maxiter; }
-    void set_fillin( int fillin ) { M_fillin = fillin; }
-    void set_threshold( double threshold ) { M_threshold = threshold; }
-    void set_bccoeff( double bccoeff ) { M_bcCoeff = bccoeff; }
-    void set_tol( double tol ) { M_tol = tol; }
+    void set_noisy( int noisy )
+    {
+        M_noisy = noisy;
+    }
+    void set_maxiter( int maxiter )
+    {
+        M_maxiter = maxiter;
+    }
+    void set_fillin( int fillin )
+    {
+        M_fillin = fillin;
+    }
+    void set_threshold( double threshold )
+    {
+        M_threshold = threshold;
+    }
+    void set_bccoeff( double bccoeff )
+    {
+        M_bcCoeff = bccoeff;
+    }
+    void set_tol( double tol )
+    {
+        M_tol = tol;
+    }
 
     // update operator and rhs with given expressions
     template<typename Esigma, typename Enu,
@@ -202,9 +220,9 @@ template<typename Esigma, typename Enu,
          typename Efx, typename Efy,
          typename Egx, typename Egy>
 void Oseen<Space_u, Space_p, imOrder>::update( Esigma sigma, Enu nu,
-                                               Ebetax betax, Ebetay betay,
-                                               Efx fx, Efy fy,
-                                               Egx gx, Egy gy )
+        Ebetax betax, Ebetay betay,
+        Efx fx, Efy fy,
+        Egx gx, Egy gy )
 {
     M_updated = true;
 
@@ -215,50 +233,50 @@ void Oseen<Space_u, Space_p, imOrder>::update( Esigma sigma, Enu nu,
     // --- Construction of velocity convection-diffusion-reaction matrix Lu
     sparse_matrix_type Lu;
     form( M_Xh, M_Xh, Lu ) =
-        integrate( elements(*M_mesh), im_type(),
-                   (nu)*(dxt(ux)*dx(ux) + dyt(ux)*dy(ux))
-                   + ( (sigma)*idt(ux) +
-                       (betax)*dxt(ux) +
-                       (betay)*dyt(ux) ) * id(ux)
-                   );
+        integrate( elements( *M_mesh ), im_type(),
+                   ( nu )*( dxt( ux )*dx( ux ) + dyt( ux )*dy( ux ) )
+                   + ( ( sigma )*idt( ux ) +
+                       ( betax )*dxt( ux ) +
+                       ( betay )*dyt( ux ) ) * id( ux )
+                 );
     // use last arg 'false'
     // to tell the form to _not_ initialise its representation
     form( M_Xh, M_Xh, Lu, false ) +=
-        integrate( boundaryfaces(*M_mesh), im_type(),
-                   (nu)*(- (gradt(ux)*N())*id (ux)
-                         - (grad (ux)*N())*idt(ux)
-                         + M_bcCoeff/hFace() * idt(ux) * id(ux) )
-                   );
+        integrate( boundaryfaces( *M_mesh ), im_type(),
+                   ( nu )*( - ( gradt( ux )*N() )*id ( ux )
+                            - ( grad ( ux )*N() )*idt( ux )
+                            + M_bcCoeff/hFace() * idt( ux ) * id( ux ) )
+                 );
 
     // --- Construction of derivative matrices Dx and Dy
     sparse_matrix_type Dx;
     form( M_Xh, M_Yh, Dx ) =
-        integrate( elements(*M_mesh), im_type(),
-                   -dx(ux)*idt(p)
-                   );
+        integrate( elements( *M_mesh ), im_type(),
+                   -dx( ux )*idt( p )
+                 );
     // use last arg 'false'
     // to tell the form to _not_ initialise its representation
     form( M_Xh, M_Yh, Dx, false ) +=
-        integrate( boundaryfaces(*M_mesh), im_type(),
-                   id(ux)*Nx()*idt(p)
-                   );
+        integrate( boundaryfaces( *M_mesh ), im_type(),
+                   id( ux )*Nx()*idt( p )
+                 );
     Dx.close();
-//     Dx.printMatlab("Dx.m");
-//     std::cout << "Dx: " << Dx.size1() << "x" << Dx.size2() << std::endl;
+    //     Dx.printMatlab("Dx.m");
+    //     std::cout << "Dx: " << Dx.size1() << "x" << Dx.size2() << std::endl;
 
     sparse_matrix_type Dy;
     form( M_Xh, M_Yh, Dy ) =
-        integrate( elements(*M_mesh), im_type(),
-                   -dy(uy)*idt(p)
-                   );
+        integrate( elements( *M_mesh ), im_type(),
+                   -dy( uy )*idt( p )
+                 );
     // use last arg 'false'
     // to tell the form to _not_ initialise its representation
     form( M_Xh, M_Yh, Dy, false ) +=
-        integrate( boundaryfaces(*M_mesh), im_type(),
-                   id(uy)*Ny()*idt(p)
-                   );
+        integrate( boundaryfaces( *M_mesh ), im_type(),
+                   id( uy )*Ny()*idt( p )
+                 );
     Dy.close();
-//     Dy.printMatlab("Dy.m");
+    //     Dy.printMatlab("Dy.m");
 
     /*
      * Construction of the right hand side
@@ -269,62 +287,62 @@ void Oseen<Space_u, Space_p, imOrder>::update( Esigma sigma, Enu nu,
     VectorUblas<value_type> rhsx( ux.size() );
     VectorUblas<value_type> rhsy( uy.size() );
 
-    form( M_Xh, rhsx ) = integrate( elements(*M_mesh), im_type(),
-                                    (fx)*id(ux)
-                                    );
+    form( M_Xh, rhsx ) = integrate( elements( *M_mesh ), im_type(),
+                                    ( fx )*id( ux )
+                                  );
     // use last arg 'false' to tell the form to
     // _not_ initialise its representation
     form( M_Xh, rhsx, false ) +=
-        integrate( boundaryfaces(*M_mesh), im_type(),
-                   (nu)*(gx)*( M_bcCoeff/hFace()*id(ux) - grad(ux)*N() )
-                   );
+        integrate( boundaryfaces( *M_mesh ), im_type(),
+                   ( nu )*( gx )*( M_bcCoeff/hFace()*id( ux ) - grad( ux )*N() )
+                 );
 
-    form( M_Xh, rhsy ) = integrate( elements(*M_mesh), im_type(),
-                                    (fy)*id(uy)
-                                    );
+    form( M_Xh, rhsy ) = integrate( elements( *M_mesh ), im_type(),
+                                    ( fy )*id( uy )
+                                  );
     // use last arg 'false' to tell the form to
     // _not_ initialise its representation
     form( M_Xh, rhsy, false ) +=
-        integrate( boundaryfaces(*M_mesh), im_type(),
-                   (nu)*(gy)*( M_bcCoeff/hFace()*id(uy) -grad(uy)*N() )
-                   );
+        integrate( boundaryfaces( *M_mesh ), im_type(),
+                   ( nu )*( gy )*( M_bcCoeff/hFace()*id( uy ) -grad( uy )*N() )
+                 );
 
     // --- Construction of convection-diffusion-reaction
     //     operators on velocity space Auxx, Auxy and Auyy
     sparse_matrix_type Auxx( Lu );
     form( M_Xh, M_Xh, Auxx, false ) +=
-        integrate( elements(*M_mesh), im_type(),
-                   (nu)*dx(ux)*dxt(ux)
-                   ) +
-        integrate( boundaryfaces(*M_mesh), im_type(),
-                   vf::sqrt(((betax)^2.0)+((betay)^2.0))
-                   *M_bcCoeff*idt(ux)*id(ux)*(Nx()^2.0) -
-                   (nu)*dxt(ux)*Nx()*id(ux)
-                   );
+        integrate( elements( *M_mesh ), im_type(),
+                   ( nu )*dx( ux )*dxt( ux )
+                 ) +
+        integrate( boundaryfaces( *M_mesh ), im_type(),
+                   vf::sqrt( ( ( betax )^2.0 )+( ( betay )^2.0 ) )
+                   *M_bcCoeff*idt( ux )*id( ux )*( Nx()^2.0 ) -
+                   ( nu )*dxt( ux )*Nx()*id( ux )
+                 );
     Auxx.close();
 
     sparse_matrix_type Auxy;
     form( M_Xh, M_Xh, Auxy ) =
-        integrate( elements(*M_mesh), im_type(),
-                   (nu)*dxt(uy)*dy(ux)
-                   ) +
-        integrate( boundaryfaces(*M_mesh), im_type(),
-                   -(nu)*dxt(uy)*Ny()*id(ux)
-                   );
+        integrate( elements( *M_mesh ), im_type(),
+                   ( nu )*dxt( uy )*dy( ux )
+                 ) +
+        integrate( boundaryfaces( *M_mesh ), im_type(),
+                   -( nu )*dxt( uy )*Ny()*id( ux )
+                 );
     Auxy.close();
 
     sparse_matrix_type Auyy( Lu );
     // use last arg 'false' to tell the form to
     // _not_ initialise its representation
     form( M_Xh, M_Xh, Auyy, false ) +=
-        integrate( elements(*M_mesh), im_type(),
-                   (nu)*dy(uy)*dyt(uy)
-                   ) +
-        integrate( boundaryfaces(*M_mesh), im_type(),
-                   vf::sqrt(((betax)^2.0)+((betay)^2.0))
-                   *M_bcCoeff*idt(uy)*id(uy)*(Ny()^2.0) -
-                   (nu)*dyt(uy)*Ny()*id(uy)
-                   );
+        integrate( elements( *M_mesh ), im_type(),
+                   ( nu )*dy( uy )*dyt( uy )
+                 ) +
+        integrate( boundaryfaces( *M_mesh ), im_type(),
+                   vf::sqrt( ( ( betax )^2.0 )+( ( betay )^2.0 ) )
+                   *M_bcCoeff*idt( uy )*id( uy )*( Ny()^2.0 ) -
+                   ( nu )*dyt( uy )*Ny()*id( uy )
+                 );
     Auyy.close();
 
     M_timers["assembly"].second += M_timers["assembly"].first.elapsed();
@@ -351,7 +369,7 @@ void Oseen<Space_u, Space_p, imOrder>::update( Esigma sigma, Enu nu,
     gmm::copy( gmm::transposed( gmm::scaled( Dy.mat(), -1.0 ) ),
                gmm::sub_matrix( M_M.wmat(), gmmRangeP,  gmmRangeUy ) );
     M_M.close();
-//     M_M.printMatlab("M_oseen.m");
+    //     M_M.printMatlab("M_oseen.m");
 
     // --- Build rhs vector
     std::copy( rhsx.begin(), rhsx.end(), M_F.begin() );
@@ -364,9 +382,10 @@ void Oseen<Space_u, Space_p, imOrder>::solve()
 {
     // -- make sure solve is needed
     if ( !M_updated )
-        {
-            return;
-        }
+    {
+        return;
+    }
+
     M_updated = false;
 
     // -- solve
@@ -390,25 +409,26 @@ template<class Space_u, class Space_p, uint16_type imOrder>
 template<typename Mat, typename Vec1, typename Vec2>
 void
 Oseen<Space_u, Space_p, imOrder>::solveNonSym( Mat const& D,
-                                               Vec1& u,
-                                               Vec2 const& F )
+        Vec1& u,
+        Vec2 const& F )
 {
     M_timers["solver"].first.restart();
 
-    gmm::iteration iter(M_tol);
-    iter.set_noisy(M_noisy);
-    iter.set_maxiter(M_maxiter);
+    gmm::iteration iter( M_tol );
+    iter.set_noisy( M_noisy );
+    iter.set_maxiter( M_maxiter );
 
     gmm::ilutp_precond<typename sparse_matrix_type::matrix_type>
-        P(D.mat(), M_fillin, M_threshold);
-//     gmm::diagonal_precond<typename sparse_matrix_type::matrix_type>
-//         P( D.mat() );
-//     gmm::identity_matrix P;
-    gmm::bicgstab( D.mat(), u, F, P, iter);
+    P( D.mat(), M_fillin, M_threshold );
+    //     gmm::diagonal_precond<typename sparse_matrix_type::matrix_type>
+    //         P( D.mat() );
+    //     gmm::identity_matrix P;
+    gmm::bicgstab( D.mat(), u, F, P, iter );
+
     if ( !iter.converged() )
-        {
-            std::cerr << "[Oseen] nonsymmetric linear solver didn't converge\n";
-        }
+    {
+        std::cerr << "[Oseen] nonsymmetric linear solver didn't converge\n";
+    }
 
     M_timers["solver"].second = M_timers["solver"].first.elapsed();
     Debug() << "[timer] solveNonSym(): " << M_timers["solver"].second << "\n";

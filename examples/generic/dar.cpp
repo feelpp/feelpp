@@ -47,25 +47,25 @@ inline
 Feel::po::options_description
 makeOptions()
 {
-    Feel::po::options_description daroptions("Dar options");
+    Feel::po::options_description daroptions( "Dar options" );
     daroptions.add_options()
-        ("penal", Feel::po::value<double>()->default_value( 0.5 ), "penalisation parameter")
-        ("f", Feel::po::value<double>()->default_value( 0 ), "forcing term")
-        ("stab", Feel::po::value<bool>()->default_value( true ), "true to enable stabilisation, false otherwise")
-        ("bx", Feel::po::value<double>()->default_value( 1.0 ), "convection X component")
-        ("by", Feel::po::value<double>()->default_value( 0.0 ), "convection Y component")
-        ("bz", Feel::po::value<double>()->default_value( 0.0 ), "convection Z component")
-        ("mu", Feel::po::value<double>()->default_value( 1.0 ), "reaction coefficient component")
-        ("epsilon", Feel::po::value<double>()->default_value( 1.0 ), "diffusion coefficient")
-        ("hsize", Feel::po::value<double>()->default_value( 0.5 ), "first h value to start convergence")
-        ("bctype", Feel::po::value<int>()->default_value( 0 ), "0 = strong Dirichlet, 1 = weak Dirichlet")
-        ("on-sym", Feel::po::value<bool>()->default_value( true ), "true: on() is symmetric, false otherwise")
-        ("on-diag", Feel::po::value<bool>()->default_value( true ), "true: on() keep diagonal value , false otherwise")
+    ( "penal", Feel::po::value<double>()->default_value( 0.5 ), "penalisation parameter" )
+    ( "f", Feel::po::value<double>()->default_value( 0 ), "forcing term" )
+    ( "stab", Feel::po::value<bool>()->default_value( true ), "true to enable stabilisation, false otherwise" )
+    ( "bx", Feel::po::value<double>()->default_value( 1.0 ), "convection X component" )
+    ( "by", Feel::po::value<double>()->default_value( 0.0 ), "convection Y component" )
+    ( "bz", Feel::po::value<double>()->default_value( 0.0 ), "convection Z component" )
+    ( "mu", Feel::po::value<double>()->default_value( 1.0 ), "reaction coefficient component" )
+    ( "epsilon", Feel::po::value<double>()->default_value( 1.0 ), "diffusion coefficient" )
+    ( "hsize", Feel::po::value<double>()->default_value( 0.5 ), "first h value to start convergence" )
+    ( "bctype", Feel::po::value<int>()->default_value( 0 ), "0 = strong Dirichlet, 1 = weak Dirichlet" )
+    ( "on-sym", Feel::po::value<bool>()->default_value( true ), "true: on() is symmetric, false otherwise" )
+    ( "on-diag", Feel::po::value<bool>()->default_value( true ), "true: on() keep diagonal value , false otherwise" )
 
-        ("bccoeff", Feel::po::value<double>()->default_value( 100.0 ), "coeff for weak Dirichlet conditions")
-        ("export", "export results(ensight, data file(1D)")
-        ("export-matlab", "export matrix and vectors in matlab" )
-        ;
+    ( "bccoeff", Feel::po::value<double>()->default_value( 100.0 ), "coeff for weak Dirichlet conditions" )
+    ( "export", "export results(ensight, data file(1D)" )
+    ( "export-matlab", "export matrix and vectors in matlab" )
+    ;
     return daroptions.add( Feel::feel_options() ) ;
 }
 inline
@@ -77,10 +77,10 @@ makeAbout()
                            "0.1",
                            "Dar equation on simplices or simplex products",
                            Feel::AboutData::License_GPL,
-                           "Copyright (c) 2007 University Joseph Fourier Grenoble 1");
+                           "Copyright (c) 2007 University Joseph Fourier Grenoble 1" );
 
-    about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
-   return about;
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    return about;
 
 }
 
@@ -152,7 +152,7 @@ public:
     {
         Log() << "[Dar] hsize = " << meshSize << "\n";
         Log() << "[Dar] bccoeff = " << bcCoeff << "\n";
-        Log() << "[Dar] export = " << this->vm().count("export") << "\n";
+        Log() << "[Dar] export = " << this->vm().count( "export" ) << "\n";
 
 
     }
@@ -210,7 +210,7 @@ Dar<Dim,Order,Cont,Entity>::createMesh( double meshSize )
     timers["mesh"].first.restart();
     mesh_ptr_type mesh( new mesh_type );
 
-    GmshHypercubeDomain td(entity_type::nDim,entity_type::nOrder,entity_type::nRealDim,entity_type::is_hypercube);
+    GmshHypercubeDomain td( entity_type::nDim,entity_type::nOrder,entity_type::nRealDim,entity_type::is_hypercube );
     td.setCharacteristicLength( meshSize );
     std::string fname = td.generate( entity_type::name().c_str() );
 
@@ -227,10 +227,10 @@ void
 Dar<Dim, Order, Cont, Entity>::run()
 {
     if ( this->vm().count( "help" ) )
-        {
-            std::cout << this->optionsDescription() << "\n";
-            return;
-        }
+    {
+        std::cout << this->optionsDescription() << "\n";
+        return;
+    }
 
     //    int maxIter = 10.0/meshSize;
     using namespace Feel::vf;
@@ -240,7 +240,7 @@ Dar<Dim, Order, Cont, Entity>::run()
                             % entity_type::name()
                             % Order
                             % this->vm()["hsize"].template as<double>()
-                            );
+                          );
     /*
      * logs will be in <feel repo>/<app name>/<entity>/P<p>/h_<h>
      */
@@ -274,19 +274,22 @@ Dar<Dim, Order, Cont, Entity>::run()
     double beta_x = this->vm()["bx"].template as<value_type>();
     double beta_y = this->vm()["by"].template as<value_type>();
     double beta_z = this->vm()["bz"].template as<value_type>();
+
     if ( Dim == 1 )
-        {
-            beta_y = 0;
-            beta_z = 0;
-        }
+    {
+        beta_y = 0;
+        beta_z = 0;
+    }
+
     if ( Dim == 2 )
-        {
-            beta_z = 0;
-        }
+    {
+        beta_z = 0;
+    }
+
     value_type mu = this->vm()["mu"].template as<value_type>();
     value_type epsilon = this->vm()["epsilon"].template as<value_type>();
     bool stab = this->vm()["stab"].template as<bool>();
-    value_type pi = 4.0*math::atan(1.0);
+    value_type pi = 4.0*math::atan( 1.0 );
 
     Log() << "Data Summary:\n";
     Log() << "    beta = (" << beta_x << ", " << beta_y << ", " << beta_z << ");\n";
@@ -296,20 +299,20 @@ Dar<Dim, Order, Cont, Entity>::run()
 
 
     //AUTO( beta , vec(constant(beta_x),constant(beta_y),constant(beta_z)) );
-    AUTO( beta , vec(constant(beta_x),constant(beta_y)) );
-    AUTO( g ,    sin(pi*Px())*cos(pi*Py())*cos(pi*Pz()));
+    AUTO( beta , vec( constant( beta_x ),constant( beta_y ) ) );
+    AUTO( g ,    sin( pi*Px() )*cos( pi*Py() )*cos( pi*Pz() ) );
 #if 0
-    AUTO( grad_g, vec( +pi*cos(pi*Px())*cos(pi*Py())*cos(pi*Pz()),
-                       -pi*sin(pi*Px())*sin(pi*Py())*cos(pi*Pz()),
-                       -pi*sin(pi*Px())*cos(pi*Py())*sin(pi*Pz()) ) );
+    AUTO( grad_g, vec( +pi*cos( pi*Px() )*cos( pi*Py() )*cos( pi*Pz() ),
+                       -pi*sin( pi*Px() )*sin( pi*Py() )*cos( pi*Pz() ),
+                       -pi*sin( pi*Px() )*cos( pi*Py() )*sin( pi*Pz() ) ) );
 #else
-    AUTO( grad_g, vec( +pi*cos(pi*Px())*cos(pi*Py())*cos(pi*Pz()),
-                       -pi*sin(pi*Px())*sin(pi*Py())*cos(pi*Pz()) ) );
+    AUTO( grad_g, vec( +pi*cos( pi*Px() )*cos( pi*Py() )*cos( pi*Pz() ),
+                       -pi*sin( pi*Px() )*sin( pi*Py() )*cos( pi*Pz() ) ) );
 #endif
-    AUTO( f , 2*(pi*pi)*epsilon*g+ trans(beta)*grad_g + mu*g );
-    AUTO( delta, constant(1.0)/(1.0/h() + epsilon/(h()*h()) ) );
-    AUTO( Aepsi, (-epsilon*trace(hess(v))+ grad(v)*beta + mu*id(v)) );
-    AUTO( Aepsit, (-epsilon*trace(hesst(u))+ gradt(u)*beta + mu*idt(u)) );
+    AUTO( f , 2*( pi*pi )*epsilon*g+ trans( beta )*grad_g + mu*g );
+    AUTO( delta, constant( 1.0 )/( 1.0/h() + epsilon/( h()*h() ) ) );
+    AUTO( Aepsi, ( -epsilon*trace( hess( v ) )+ grad( v )*beta + mu*id( v ) ) );
+    AUTO( Aepsit, ( -epsilon*trace( hesst( u ) )+ gradt( u )*beta + mu*idt( u ) ) );
 
 
     Xh->dof()->showMe();
@@ -317,7 +320,7 @@ Dar<Dim, Order, Cont, Entity>::run()
     backend_ptrtype backend( backend_type::build( this->vm() ) );
     vector_ptrtype F( backend->newVector( Xh->map() ) );
     timers["assembly"].first.restart();
-    form1( Xh, F, _init=true )  = integrate( _range=elements(mesh), _expr=f*id(v) + stab*delta*f*Aepsi, _quad=_Q<imOrder>() );
+    form1( Xh, F, _init=true )  = integrate( _range=elements( mesh ), _expr=f*id( v ) + stab*delta*f*Aepsi, _quad=_Q<imOrder>() );
     Log() << "[dar] vector local assembly done\n";
     timers["assembly"].second = timers["assembly"].first.elapsed();
     timers["assembly_F"].second = timers["assembly"].first.elapsed();
@@ -331,48 +334,55 @@ Dar<Dim, Order, Cont, Entity>::run()
     //size_type pattern = Pattern::COUPLED|Pattern::EXTENDED;
     size_type pattern = Pattern::COUPLED;
     form2( Xh, Xh, D, _init=true, _pattern=pattern ) =
-        integrate( _range=elements(mesh),
-                   _expr=epsilon*gradt(u)*trans(grad(v)) +(gradt(u)*beta)*id(v) + mu*idt(u)*id(v)
-                   // stabilisation
-                   + stab*delta*Aepsi*Aepsit,
+        integrate( _range=elements( mesh ),
+                   _expr=epsilon*gradt( u )*trans( grad( v ) ) +( gradt( u )*beta )*id( v ) + mu*idt( u )*id( v )
+                         // stabilisation
+                         + stab*delta*Aepsi*Aepsit,
                    _quad=_Q<imOrder>()
-                   );
+                 );
     Log() << "[dar] matrix local assembly done\n";
     D->close();
     F->close();
     Log() << "[dar] vector/matrix global assembly done\n";
+
     if ( this->vm().count( "export-matlab" ) )
-        {
-            F->printMatlab( "F.m" );
-            D->printMatlab( "D.m" );
-        }
+    {
+        F->printMatlab( "F.m" );
+        D->printMatlab( "D.m" );
+    }
+
     bool on_sym = this->vm()["on-sym"].template as<bool>();
     bool on_diag = this->vm()["on-diag"].template as<bool>();
     size_type on_op = ON_ELIMINATION;
+
     if ( on_sym )
         on_op |= ON_ELIMINATION_SYMMETRIC;
+
     if ( on_diag )
         on_op |= ON_ELIMINATION_KEEP_DIAGONAL;
+
     Log() << "On() operation : " << on_op << "\n";
-    form2( Xh, Xh, D ) += on( boundaryfaces(mesh), u, F, g, on_op );
+    form2( Xh, Xh, D ) += on( boundaryfaces( mesh ), u, F, g, on_op );
 
     Log() << "[dar] dirichlet condition applied\n";
     timers["assembly"].second += timers["assembly"].first.elapsed();
     timers["assembly_D"].second += timers["assembly"].first.elapsed();
 
     if ( this->vm().count( "export-matlab" ) )
-        {
-            F->printMatlab( "F_dir.m" );
-            D->printMatlab( "D_dir.m" );
-        }
+    {
+        F->printMatlab( "F_dir.m" );
+        D->printMatlab( "D_dir.m" );
+    }
 
     Log() << "[dar] starting solve for D\n";
     this->solve( D, u, F, ( bctype == 1 || !Cont::is_continuous ) );
-    if ( this->vm().count( "export-matlab" ) )
-        {
 
-            u.printMatlab( "u.m" );
-        }
+    if ( this->vm().count( "export-matlab" ) )
+    {
+
+        u.printMatlab( "u.m" );
+    }
+
     Log() << "[dar] solve for D done\n";
 
     typename space<Continuous>::ptrtype Xch = space<Continuous>::type::New( mesh );
@@ -380,47 +390,51 @@ Dar<Dim, Order, Cont, Entity>::run()
     sparse_matrix_ptrtype M( backend->newMatrix( Xch->map(), Xch->map() ) );
     vector_ptrtype L( backend->newVector( Xch->map() ) );
     timers["assembly"].first.restart();
-    form2( Xch, Xch, M, _init=true, _pattern=pattern ) = integrate( _range=elements( mesh ), _expr=idt(uEx)*id(uEx), _quad=_Q<imOrder>() );
+    form2( Xch, Xch, M, _init=true, _pattern=pattern ) = integrate( _range=elements( mesh ), _expr=idt( uEx )*id( uEx ), _quad=_Q<imOrder>() );
     M->close();
     timers["assembly_M"].second += timers["assembly"].first.elapsed();
 
-    form1( Xch, L, _init=true ) = integrate( _range=elements( mesh ), _expr=g*id(uEx), _quad=_Q<imOrder>() );
+    form1( Xch, L, _init=true ) = integrate( _range=elements( mesh ), _expr=g*id( uEx ), _quad=_Q<imOrder>() );
     L->close();
     timers["assembly"].second += timers["assembly"].first.elapsed();
     timers["assembly_L"].second += timers["assembly"].first.elapsed();
-    if ( this->vm().count( "export-matlab" ) )
-        {
-            M->printMatlab( "M.m" );
-            L->printMatlab( "L.m" );
 
-        }
+    if ( this->vm().count( "export-matlab" ) )
+    {
+        M->printMatlab( "M.m" );
+        L->printMatlab( "L.m" );
+
+    }
 
     this->solve( M, uEx, L, true );
-    if ( this->vm().count( "export-matlab" ) )
-        {
 
-            uEx.printMatlab( "uEx.m" );
-        }
+    if ( this->vm().count( "export-matlab" ) )
+    {
+
+        uEx.printMatlab( "uEx.m" );
+    }
+
     timers["assembly"].first.restart();
-    double error = integrate( _range=elements(mesh), _expr=(idv(u)-g)*(idv(u)-g), _quad=_Q<imOrder>() ).evaluate()( 0, 0 );
+    double error = integrate( _range=elements( mesh ), _expr=( idv( u )-g )*( idv( u )-g ), _quad=_Q<imOrder>() ).evaluate()( 0, 0 );
     double global_error = 0;
     mpi::all_reduce( Application::comm(), error, global_error, std::plus<double>() );
     timers["assembly"].second += timers["assembly"].first.elapsed();
     timers["assembly_evaluate"].second += timers["assembly"].first.elapsed();
 
-    Log() << "local  ||error||_0 =" << math::sqrt(error) << "\n";
-    Log() << "global ||error||_0 = " << math::sqrt(global_error) << "\n";
+    Log() << "local  ||error||_0 =" << math::sqrt( error ) << "\n";
+    Log() << "global ||error||_0 = " << math::sqrt( global_error ) << "\n";
 
     if ( Cont::is_continuous )
         this->exportResults( u, u, uEx );
-    else
-        {
 
-            form1( Xch, L, _init=true ) = integrate( _range=elements( mesh ), _expr=idv(u)*id(uEx ), _quad=_Q<imOrder>() );
-            typename space<Continuous>::element_type uc( Xch, "uc" );
-            this->solve( M, uc, L, true );
-            this->exportResults( u, uc, uEx );
-        }
+    else
+    {
+
+        form1( Xch, L, _init=true ) = integrate( _range=elements( mesh ), _expr=idv( u )*id( uEx ), _quad=_Q<imOrder>() );
+        typename space<Continuous>::element_type uc( Xch, "uc" );
+        this->solve( M, uc, L, true );
+        this->exportResults( u, uc, uEx );
+    }
 
     Log() << "[timer] run():     init: " << timers["init"].second << "\n";
     Log() << "[timer] run(): assembly: " << timers["assembly"].second << "\n";
@@ -459,16 +473,16 @@ template<int Dim, int Order, typename Cont, template<uint16_type,uint16_type,uin
 template<typename f1_type, typename f2_type, typename f3_type>
 void
 Dar<Dim, Order, Cont, Entity>::exportResults( f1_type& U,
-                                                    f2_type& V,
-                                                    f3_type& E )
+        f2_type& V,
+        f3_type& E )
 {
     timers["export"].first.restart();
 
 
-    exporter->step(1)->setMesh( U.functionSpace()->mesh() );
-    exporter->step(1)->add( "u", U );
-    exporter->step(1)->add( "v", V );
-    exporter->step(1)->add( "e", E );
+    exporter->step( 1 )->setMesh( U.functionSpace()->mesh() );
+    exporter->step( 1 )->add( "u", U );
+    exporter->step( 1 )->add( "v", V );
+    exporter->step( 1 )->add( "e", E );
     exporter->save();
 
     timers["export"].second = timers["export"].first.elapsed();
@@ -493,7 +507,7 @@ main( int argc, char** argv )
     typedef Feel::Dar<nDim, nOrder, MyContinuity, Simplex> dar_type;
 
     /* assertions handling */
-    Feel::Assert::setLog( "dar.assert");
+    Feel::Assert::setLog( "dar.assert" );
 
     /* define and run application */
     dar_type dar( argc, argv, makeAbout(), makeOptions() );

@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -49,7 +49,7 @@ namespace Feel
 
 class Pbeq
     :
-        public application_type
+public application_type
 
 {
     typedef application_type super;
@@ -85,7 +85,7 @@ public:
         M_backend( backend_type::build( this->vm() ) ),
         exporter( new ExporterEnsight<mesh_type>( "pbeq" ) ),
         timeSet( new timeset_type( "pbeq" ) ),
-        M_countExports(0),
+        M_countExports( 0 ),
         timers(),
         stats()
     {
@@ -108,19 +108,25 @@ public:
      * run the simulation
      */
     void loadFE();
-    value_type solveReceptor(std::string const& receptorName);
+    value_type solveReceptor( std::string const& receptorName );
 
     value_type solveLigand();
 
-    int setReceptor(std::string const& receptorName);
+    int setReceptor( std::string const& receptorName );
 
-    int setLigand  (std::string const& ligandName);
-    int setReclusterFile(std::string const& reclusterFile);
+    int setLigand  ( std::string const& ligandName );
+    int setReclusterFile( std::string const& reclusterFile );
     int recluster();
 
-    void setUsePQR() { M_filetype = molecule_type::PQR; }
+    void setUsePQR()
+    {
+        M_filetype = molecule_type::PQR;
+    }
 
-    void setUseCRD() { M_filetype = molecule_type::CRD; }
+    void setUseCRD()
+    {
+        M_filetype = molecule_type::CRD;
+    }
 
 private:
 
@@ -129,7 +135,7 @@ private:
      */
     void exportResults( heavyside_element_type& H0, heavyside_element_type& H1,
                         element_type& u, element_type& v,
-                        vector_ptrtype F);
+                        vector_ptrtype F );
 
     template<typename Mat, typename Vec1, typename Vec2>
     void solve( Mat const& D,
@@ -138,22 +144,22 @@ private:
                 bool is_sym  );
 
     template<typename Etype, typename Ktype>
-    void getPBMatrix(sparse_matrix_ptrtype& PB,
-                     element_type const& u,
-                     element_type const& v,
-                     Etype const& Epsilon,
-                     Ktype const& kappa2 /*,
-                                           vector_ptrtype& F*/);
+    void getPBMatrix( sparse_matrix_ptrtype& PB,
+                      element_type const& u,
+                      element_type const& v,
+                      Etype const& Epsilon,
+                      Ktype const& kappa2 /*,
+                                           vector_ptrtype& F*/ );
 
-    value_type postProcess(element_type const& u, vector_ptrtype const& F, value_type const& rhsCoeff) const;
+    value_type postProcess( element_type const& u, vector_ptrtype const& F, value_type const& rhsCoeff ) const;
 
     void changeToMeshRepository();
-    void changeToSolutionRepository(std::string const& receptorName);
+    void changeToSolutionRepository( std::string const& receptorName );
 
     int initMolecule( std::string const& moleculeName,
-                      molecule_type& _molecule) const;
+                      molecule_type& _molecule ) const;
 
-    void setDomain( molecule_type const& _molecule);
+    void setDomain( molecule_type const& _molecule );
     void setCoeffs();
 
 

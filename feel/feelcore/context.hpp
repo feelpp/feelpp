@@ -76,7 +76,7 @@ public:
     explicit Context( size_type c )
         :
         _M_context( c )
-        {}
+    {}
 
     /**
      * copy constructor
@@ -85,14 +85,14 @@ public:
     Context( Context const & c )
         :
         _M_context( c._M_context )
-        {}
+    {}
 
     /**
      * destructor
      *
      */
     ~Context()
-        {}
+    {}
 
     //@}
 
@@ -106,13 +106,14 @@ public:
      * @return the context
      */
     Context& operator=( Context const& __c )
+    {
+        if (  this != &__c )
         {
-            if (  this != &__c )
-            {
-                _M_context = __c._M_context;
-            }
-            return *this;
+            _M_context = __c._M_context;
         }
+
+        return *this;
+    }
 
     /**
      * assignment operator
@@ -120,17 +121,20 @@ public:
      * @return the context
      */
     Context& operator=( size_type __c )
-        {
-            _M_context = __c;
-            return *this;
-        }
+    {
+        _M_context = __c;
+        return *this;
+    }
 
     /**
      * get the context
      *
      * @return the context
      */
-    size_type operator()() const { return _M_context; }
+    size_type operator()() const
+    {
+        return _M_context;
+    }
 
     //@}
 
@@ -143,7 +147,10 @@ public:
      *
      * @return the context value
      */
-    size_type context() const { return _M_context; }
+    size_type context() const
+    {
+        return _M_context;
+    }
 
 
     //@}
@@ -157,7 +164,10 @@ public:
      *
      * @param __v context value
      */
-    void setContext( size_type __v ) { _M_context = __v ; }
+    void setContext( size_type __v )
+    {
+        _M_context = __v ;
+    }
 
 
     //@}
@@ -167,12 +177,27 @@ public:
     //@{
 
 
-    bool test( size_type b ) const { return (_M_context&b)!=0; }
-    template<typename T> bool test( T b ) const { return (_M_context&size_type(b))!=0; }
-    void set( size_type b )	{ _M_context |= b; }
+    bool test( size_type b ) const
+    {
+        return ( _M_context&b )!=0;
+    }
+    template<typename T> bool test( T b ) const
+    {
+        return ( _M_context&size_type( b ) )!=0;
+    }
+    void set( size_type b )
+    {
+        _M_context |= b;
+    }
     void set( size_type b, bool v );
-    void clear( size_type b )	{ _M_context &= (uint)(~b); }
-    void reset() { _M_context = 0;}
+    void clear( size_type b )
+    {
+        _M_context &= ( uint )( ~b );
+    }
+    void reset()
+    {
+        _M_context = 0;
+    }
 
     //@}
 

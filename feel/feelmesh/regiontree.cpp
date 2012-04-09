@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -40,50 +40,53 @@ typedef node<double>::type node_type;
 struct RegionTree::element_base
 {
     enum { RECTS_PER_LEAF=8 };
-    bool isleaf() const { return isleaf_; }
+    bool isleaf() const
+    {
+        return isleaf_;
+    }
     element_base( bool leaf,
                   const node_type& rmin_,
-                  const node_type& rmax_)
+                  const node_type& rmax_ )
         :
-        isleaf_(leaf),
-        rmin(rmin_),
-        rmax(rmax_)
-        {}
+        isleaf_( leaf ),
+        rmin( rmin_ ),
+        rmax( rmax_ )
+    {}
 
     bool isleaf_;
     node_type rmin, rmax;
 };
 
 struct tree_node
-    :
-        public RegionTree::element_base
+        :
+    public RegionTree::element_base
 {
     tree_node( const node_type& bmin,
-          const node_type& bmax,
-          RegionTree::element_base *left_,
-          RegionTree::element_base *right_)
-      :
-        RegionTree::element_base(false, bmin, bmax),
-        left(left_),
-        right(right_)
-        {}
+               const node_type& bmax,
+               RegionTree::element_base *left_,
+               RegionTree::element_base *right_ )
+        :
+        RegionTree::element_base( false, bmin, bmax ),
+        left( left_ ),
+        right( right_ )
+    {}
 
     element_base *left;
     element_base *right;
 };
 
 struct leaf
-    :
+        :
     public RegionTree::element_base
 {
     leaf( const node_type& bmin,
           const node_type& bmax,
           RegionTree::pbox_container_type& lst_ )
         :
-        RegionTree::element_base(true, bmin, bmax)
-        {
-            lst.swap(lst_);
-        }
+        RegionTree::element_base( true, bmin, bmax )
+    {
+        lst.swap( lst_ );
+    }
 
     RegionTree::pbox_container_type lst;
 };
@@ -96,7 +99,8 @@ updateBox( node_type& bmin, node_type& bmax,
 {
     node_type::iterator itmin = bmin.begin();
     node_type::iterator itmax = bmax.begin();
-    for (size_type i=0; i < a.size(); ++i)
+
+    for ( size_type i=0; i < a.size(); ++i )
     {
         bmin[i] = std::min( bmin[i], a[i] );
         bmax[i] = std::max( bmax[i], b[i] );
@@ -105,42 +109,44 @@ updateBox( node_type& bmin, node_type& bmax,
 
 FEELPP_NO_EXPORT
 bool
-r1_ge_r2(const node_type& min1, const node_type& max1,
-         const node_type& min2, const node_type& max2)
+r1_ge_r2( const node_type& min1, const node_type& max1,
+          const node_type& min2, const node_type& max2 )
 {
-    for (size_type i=0; i < min1.size(); ++i)
+    for ( size_type i=0; i < min1.size(); ++i )
     {
-        if (!(min1[i] <= min2[i] && max1[i] >= max2[i]))
+        if ( !( min1[i] <= min2[i] && max1[i] >= max2[i] ) )
             return false;
     }
+
     return true;
 }
 
 FEELPP_NO_EXPORT
 bool
-r1_inter_r2(const node_type& min1, const node_type& max1,
-            const node_type& min2, const node_type& max2)
+r1_inter_r2( const node_type& min1, const node_type& max1,
+             const node_type& min2, const node_type& max2 )
 {
-    for (size_type i=0; i < min1.size(); ++i)
+    for ( size_type i=0; i < min1.size(); ++i )
     {
-        if (max1[i] < min2[i] || min1[i] > max2[i])
+        if ( max1[i] < min2[i] || min1[i] > max2[i] )
             return false;
     }
+
     return true;
 }
 
 /* some predicates for searches */
 struct FEELPP_NO_EXPORT intersection_p
 {
-    intersection_p(const node_type& min_, const node_type& max_)
+    intersection_p( const node_type& min_, const node_type& max_ )
         :
-        min(min_),
-        max(max_)
-        {}
-    bool operator()(const node_type& min2, const node_type& max2)
-        {
-            return r1_inter_r2(min,max,min2,max2);
-        }
+        min( min_ ),
+        max( max_ )
+    {}
+    bool operator()( const node_type& min2, const node_type& max2 )
+    {
+        return r1_inter_r2( min,max,min2,max2 );
+    }
 
     const node_type min,max;
 
@@ -149,16 +155,16 @@ struct FEELPP_NO_EXPORT intersection_p
 /* match boxes containing [min..max] */
 struct FEELPP_NO_EXPORT contains_p
 {
-    contains_p(const node_type& min_, const node_type& max_)
+    contains_p( const node_type& min_, const node_type& max_ )
         :
-        min(min_),
-        max(max_)
-        {}
+        min( min_ ),
+        max( max_ )
+    {}
 
-    bool operator()(const node_type& min2, const node_type& max2)
-        {
-            return r1_ge_r2(min2,max2,min,max);
-        }
+    bool operator()( const node_type& min2, const node_type& max2 )
+    {
+        return r1_ge_r2( min2,max2,min,max );
+    }
 
     const node_type min,max;
 };
@@ -166,42 +172,44 @@ struct FEELPP_NO_EXPORT contains_p
 /* match boxes contained in [min..max] */
 struct FEELPP_NO_EXPORT contained_p
 {
-    contained_p(const node_type& min_, const node_type& max_)
+    contained_p( const node_type& min_, const node_type& max_ )
         :
-        min(min_),
-        max(max_)
-        {}
-    bool operator()(const node_type& min2, const node_type& max2)
-        {
-            FEELPP_ASSERT( min.size() == min2.size() &&
-                         min.size() == max2.size() &&
-                         max.size() == min2.size() &&
-                         max.size() == max2.size() )
+        min( min_ ),
+        max( max_ )
+    {}
+    bool operator()( const node_type& min2, const node_type& max2 )
+    {
+        FEELPP_ASSERT( min.size() == min2.size() &&
+                       min.size() == max2.size() &&
+                       max.size() == min2.size() &&
+                       max.size() == max2.size() )
 
-                ( min.size() )( max.size() )( min2.size() )( max2.size() ).error( "invalid box size" );
+        ( min.size() )( max.size() )( min2.size() )( max2.size() ).error( "invalid box size" );
 
-            return r1_ge_r2(min,max,min2,max2);
-        }
+        return r1_ge_r2( min,max,min2,max2 );
+    }
 
     const node_type min,max;
 };
 
 struct FEELPP_NO_EXPORT has_point_p
 {
-    has_point_p(const node_type& P_) : P(P_) {}
+    has_point_p( const node_type& P_ ) : P( P_ ) {}
 
-    bool operator()(const node_type& min2, const node_type& max2)
+    bool operator()( const node_type& min2, const node_type& max2 )
+    {
+        FEELPP_ASSERT( P.size() == min2.size() &&
+                       P.size() == max2.size() )
+        ( P.size() )( min2.size() )( max2.size() ).error( "invalid point size" );
+
+        for ( size_type i=0; i < P.size(); ++i )
         {
-            FEELPP_ASSERT( P.size() == min2.size() &&
-                         P.size() == max2.size() )
-                ( P.size() )( min2.size() )( max2.size() ).error( "invalid point size" );
-            for (size_type i=0; i < P.size(); ++i)
-            {
-                if (P[i] < min2[i] || P[i] > max2[i])
-                    return false;
-            }
-            return true;
+            if ( P[i] < min2[i] || P[i] > max2[i] )
+                return false;
         }
+
+        return true;
+    }
 
     const node_type P;
 };
@@ -209,46 +217,48 @@ struct FEELPP_NO_EXPORT has_point_p
 
 template <typename Predicate>
 FEELPP_NO_EXPORT void findMatchingBoxes( RegionTree::element_base *n,
-                                        RegionTree::pbox_set_type& boxlst,
-                                        Predicate p )
+        RegionTree::pbox_set_type& boxlst,
+        Predicate p )
 {
     Debug( 4010 ) << "find_matching_boxes_: "
-            << n->rmin << ".."
-            << n->rmax << "\n";
+                  << n->rmin << ".."
+                  << n->rmax << "\n";
 
-    if (n->isleaf())
+    if ( n->isleaf() )
     {
         Debug( 4010 ) << "findMatchingBoxes in leaf\n";
 
-        const leaf *rl = static_cast<leaf*>(n);
+        const leaf *rl = static_cast<leaf*>( n );
 
         for ( RegionTree::pbox_container_type::const_iterator it = rl->lst.begin();
-              it != rl->lst.end();
-              ++it)
+                it != rl->lst.end();
+                ++it )
         {
-            Debug( 4010 ) << "  ->match(" << (*it)->id << "="
-                    << (*it)->min << "," << (*it)->max << " -> "
-                    << p((*it)->min, (*it)->max) << "\n";
+            Debug( 4010 ) << "  ->match(" << ( *it )->id << "="
+                          << ( *it )->min << "," << ( *it )->max << " -> "
+                          << p( ( *it )->min, ( *it )->max ) << "\n";
 
-            if (p((*it)->min, (*it)->max))
+            if ( p( ( *it )->min, ( *it )->max ) )
             {
-                boxlst.insert(*it);
+                boxlst.insert( *it );
             }
         }
     }
+
     else
     {
         Debug( 4010 ) << "findMatchingBoxes in branch\n";
 
-        const tree_node *rn = static_cast<tree_node*>(n);
+        const tree_node *rn = static_cast<tree_node*>( n );
 
-        if ( p(rn->left->rmin,rn->left->rmax) )
+        if ( p( rn->left->rmin,rn->left->rmax ) )
         {
-            findMatchingBoxes(rn->left, boxlst, p);
+            findMatchingBoxes( rn->left, boxlst, p );
         }
-        if ( p(rn->right->rmin,rn->right->rmax) )
+
+        if ( p( rn->right->rmin,rn->right->rmax ) )
         {
-            findMatchingBoxes(rn->right, boxlst, p);
+            findMatchingBoxes( rn->right, boxlst, p );
         }
     }
 }
@@ -260,8 +270,8 @@ RegionTree::addBox( node_type min, node_type max, size_type id )
     box_index_type bi;
     bi.min = min;
     bi.max = max;
-    bi.id = (id + 1) ? id : _M_boxes.size();
-    _M_boxes.push_back(bi);
+    bi.id = ( id + 1 ) ? id : _M_boxes.size();
+    _M_boxes.push_back( bi );
 }
 void
 RegionTree::findIntersectingBoxes( const node_type& bmin,
@@ -269,9 +279,11 @@ RegionTree::findIntersectingBoxes( const node_type& bmin,
                                    pbox_set_type& boxes )
 {
     boxes.clear();
-    if (!_M_root)
+
+    if ( !_M_root )
         build();
-    findMatchingBoxes( _M_root, boxes, intersection_p(bmin,bmax));
+
+    findMatchingBoxes( _M_root, boxes, intersection_p( bmin,bmax ) );
     Debug( 4010 )<< "findIntersectingBoxes : found " << boxes.size() << " matches\n";
 }
 void
@@ -280,8 +292,8 @@ RegionTree::findIntersectingBoxes( const node_type& bmin,
                                    std::vector<size_type>& idvec )
 {
     pbox_set_type bs;
-    findIntersectingBoxes(bmin, bmax, bs);
-    toIdVector(bs, idvec);
+    findIntersectingBoxes( bmin, bmax, bs );
+    toIdVector( bs, idvec );
 }
 void
 RegionTree::findContainingBoxes( const node_type& bmin,
@@ -289,9 +301,11 @@ RegionTree::findContainingBoxes( const node_type& bmin,
                                  pbox_set_type& boxes )
 {
     boxes.clear();
-    if (!_M_root)
+
+    if ( !_M_root )
         build();
-    findMatchingBoxes( _M_root, boxes, contains_p(bmin,bmax));
+
+    findMatchingBoxes( _M_root, boxes, contains_p( bmin,bmax ) );
     Debug( 4010 )<< "findContainingBoxes : found " << boxes.size() << " matches\n";
 }
 void
@@ -301,7 +315,7 @@ RegionTree::findContainingBoxes( const node_type& bmin,
 {
     pbox_set_type bs;
     findContainingBoxes( bmin, bmax, bs );
-    toIdVector(bs, idvec);
+    toIdVector( bs, idvec );
 }
 void
 RegionTree::findContainedBoxes( const node_type& bmin,
@@ -309,9 +323,11 @@ RegionTree::findContainedBoxes( const node_type& bmin,
                                 pbox_set_type& boxes )
 {
     boxes.clear();
-    if (!_M_root)
+
+    if ( !_M_root )
         build();
-    findMatchingBoxes( _M_root, boxes, contained_p(bmin,bmax));
+
+    findMatchingBoxes( _M_root, boxes, contained_p( bmin,bmax ) );
     Debug( 4010 )<< "findContainedBoxes : found " << boxes.size() << " matches\n";
 }
 void
@@ -320,17 +336,19 @@ RegionTree::findContainedBoxes( const node_type& bmin,
                                 std::vector<size_type>& idvec )
 {
     pbox_set_type bs;
-    findContainedBoxes(bmin, bmax, bs);
-    toIdVector(bs, idvec);
+    findContainedBoxes( bmin, bmax, bs );
+    toIdVector( bs, idvec );
 }
 void
 RegionTree::findBoxesAtPoint( const node_type& P,
                               pbox_set_type& boxes )
 {
     boxes.clear();
-    if (!_M_root)
+
+    if ( !_M_root )
         build();
-    findMatchingBoxes( _M_root, boxes, has_point_p(P) );
+
+    findMatchingBoxes( _M_root, boxes, has_point_p( P ) );
     Debug( 4010 )<< "findBoxesAtPointb : found " << boxes.size() << " matches\n";
 }
 
@@ -339,18 +357,19 @@ RegionTree::findBoxesAtPoint( const node_type& P,
                               std::vector<size_type>& idvec )
 {
     pbox_set_type bs;
-    findBoxesAtPoint(P, bs);
-    toIdVector(bs, idvec);
+    findBoxesAtPoint( P, bs );
+    toIdVector( bs, idvec );
 }
 
 void
-RegionTree::toIdVector(pbox_set_type const& bs, std::vector<size_type>& idvec)
+RegionTree::toIdVector( pbox_set_type const& bs, std::vector<size_type>& idvec )
 {
-    idvec.reserve(bs.size());
-    idvec.resize(0);
+    idvec.reserve( bs.size() );
+    idvec.resize( 0 );
+
     for ( pbox_set_type::const_iterator it=bs.begin(); it != bs.end(); ++it )
     {
-        idvec.push_back((*it)->id);
+        idvec.push_back( ( *it )->id );
     }
 }
 
@@ -367,40 +386,44 @@ splitTest( const RegionTree::pbox_container_type& b,
            size_type dir,
            scalar_type& split_v )
 {
-    scalar_type v = bmin[dir] + (bmax[dir] - bmin[dir])/2;
+    scalar_type v = bmin[dir] + ( bmax[dir] - bmin[dir] )/2;
     split_v = v;
     size_type cnt = 0;
 
     Debug( 4010 ) << "[enter]Split_test: dir=" << dir
-            << ", split_v=" << v
-            << ", bmin=" << bmin
-            << ", bmax=" << bmax << "\n";
+                  << ", split_v=" << v
+                  << ", bmin=" << bmin
+                  << ", bmax=" << bmax << "\n";
 
     RegionTree::pbox_container_type::const_iterator it = b.begin();
     RegionTree::pbox_container_type::const_iterator en = b.end();
+
     while ( it != en )
     {
-        if ((*it)->max[dir] < v)
+        if ( ( *it )->max[dir] < v )
         {
-            if (cnt == 0)
+            if ( cnt == 0 )
             {
-                split_v = (*it)->max[dir];
+                split_v = ( *it )->max[dir];
             }
+
             else
             {
-                split_v = std::max((*it)->max[dir],split_v);
+                split_v = std::max( ( *it )->max[dir],split_v );
             }
+
             cnt++;
         }
+
         ++it;
     }
 
     Debug( 4010 ) << "[exit] Split_test cnt = " << cnt
-            << ", b.size()=" << b.size()
-            << ", split_v=" << split_v << "\n";
+                  << ", b.size()=" << b.size()
+                  << ", split_v=" << split_v << "\n";
 
-    return (cnt > 0 && cnt < b.size());
-  }
+    return ( cnt > 0 && cnt < b.size() );
+}
 /*
   there are many flavors of rtree ... this one is more or less a quadtree
   where splitting does not occurs at predefined positions (hence the split_test
@@ -411,31 +434,34 @@ RegionTree::element_base*
 build( RegionTree::pbox_container_type& b,
        const node_type& bmin,
        const node_type& bmax,
-       size_type last_dir)
+       size_type last_dir )
 {
     size_type N=bmin.size();
     scalar_type split_v;
-    size_type split_dir = (last_dir+1)%N;
+    size_type split_dir = ( last_dir+1 )%N;
 
     Debug( 4010 ) << " build_tree_ [b.size=" << b.size() << "],"
-            << "bmin=" << bmin << ", "
-            << "bmax=" << bmax << "\n";
+                  << "bmin=" << bmin << ", "
+                  << "bmax=" << bmax << "\n";
 
     bool split_ok = false;
-    if (b.size() > RegionTree::element_base::RECTS_PER_LEAF)
+
+    if ( b.size() > RegionTree::element_base::RECTS_PER_LEAF )
     {
-        for (size_type itry=0; itry < N; ++itry)
+        for ( size_type itry=0; itry < N; ++itry )
         {
             Debug( 4010 ) << "split_test: dir=" << split_dir << "\n";
 
-            if ( splitTest(b, bmin, bmax, split_dir, split_v) )
+            if ( splitTest( b, bmin, bmax, split_dir, split_v ) )
             {
                 split_ok = true;
                 break;
             }
-            split_dir = (split_dir+1)%N;
+
+            split_dir = ( split_dir+1 )%N;
         }
     }
+
     if ( split_ok )
     {
         size_type cnt1=0,cnt2=0;
@@ -444,15 +470,17 @@ build( RegionTree::pbox_container_type& b,
 
         RegionTree::pbox_container_type::const_iterator it = b.begin();
         RegionTree::pbox_container_type::const_iterator en = b.end();
+
         while ( it != en )
         {
-            Debug( 4010 ) << " . test box" << (*it)->min[split_dir] << ".." << (*it)->max[split_dir] << "\n";
+            Debug( 4010 ) << " . test box" << ( *it )->min[split_dir] << ".." << ( *it )->max[split_dir] << "\n";
 
-            if ((*it)->min[split_dir] < split_v)
+            if ( ( *it )->min[split_dir] < split_v )
             {
                 cnt1++;
             }
-            if ((*it)->max[split_dir] > split_v)
+
+            if ( ( *it )->max[split_dir] > split_v )
             {
                 cnt2++;
             }
@@ -466,48 +494,53 @@ build( RegionTree::pbox_container_type& b,
         FEELPP_ASSERT( cnt2 )( cnt2 ).error( "counter 2 is 0" );
         FEELPP_ASSERT( cnt1+cnt2 >= b.size() )( cnt1 )( cnt2 )( cnt1+cnt2 )( b.size() ).error( "counter sum should be greater or equal to the number of boxes" );
 
-        RegionTree::pbox_container_type v1(cnt1);
-        RegionTree::pbox_container_type v2(cnt2);
-        node_type bmin1(bmax), bmax1(bmin);
-        node_type bmin2(bmax), bmax2(bmin);
+        RegionTree::pbox_container_type v1( cnt1 );
+        RegionTree::pbox_container_type v2( cnt2 );
+        node_type bmin1( bmax ), bmax1( bmin );
+        node_type bmin2( bmax ), bmax2( bmin );
         cnt1 = cnt2 = 0;
 
         it = b.begin();
         en = b.end();
+
         while ( it != en )
         {
-            if ((*it)->min[split_dir] < split_v)
+            if ( ( *it )->min[split_dir] < split_v )
             {
                 v1[cnt1++] = *it;
-                updateBox( bmin1, bmax1,(*it)->min,(*it)->max );
+                updateBox( bmin1, bmax1,( *it )->min,( *it )->max );
                 Debug( 4010 ) << "update_box bmin1=" << bmin1 << ", bmax1=" << bmax1 << "\n";
             }
-            if ((*it)->max[split_dir] > split_v)
+
+            if ( ( *it )->max[split_dir] > split_v )
             {
                 v2[cnt2++] = *it;
-                updateBox(bmin2,bmax2,(*it)->min,(*it)->max);
+                updateBox( bmin2,bmax2,( *it )->min,( *it )->max );
             }
 
             ++it;
         }
-        for (size_type k=0; k < N; ++k)
+
+        for ( size_type k=0; k < N; ++k )
         {
-            bmin1[k] = std::max(bmin1[k],bmin[k]);
-            bmax1[k] = std::min(bmax1[k],bmax[k]);
-            bmin2[k] = std::max(bmin2[k],bmin[k]);
-            bmax2[k] = std::min(bmax2[k],bmax[k]);
+            bmin1[k] = std::max( bmin1[k],bmin[k] );
+            bmax1[k] = std::min( bmax1[k],bmax[k] );
+            bmin2[k] = std::max( bmin2[k],bmin[k] );
+            bmax2[k] = std::min( bmax2[k],bmax[k] );
         }
-        bmax1[split_dir] = std::min(bmax1[split_dir], split_v);
-        bmin2[split_dir] = std::max(bmin2[split_dir], split_v);
-        FEELPP_ASSERT(cnt1 == v1.size())( cnt1 )( v1.size() ).error( "sizes should be equal" );;
-        FEELPP_ASSERT(cnt2 == v2.size())( cnt2 )( v2.size() ).error( "sizes should be equal" );;
-        return new tree_node(bmin,bmax,
-                             build(v1, bmin1, bmax1, split_dir),
-                             build(v2, bmin2, bmax2, split_dir));
+
+        bmax1[split_dir] = std::min( bmax1[split_dir], split_v );
+        bmin2[split_dir] = std::max( bmin2[split_dir], split_v );
+        FEELPP_ASSERT( cnt1 == v1.size() )( cnt1 )( v1.size() ).error( "sizes should be equal" );;
+        FEELPP_ASSERT( cnt2 == v2.size() )( cnt2 )( v2.size() ).error( "sizes should be equal" );;
+        return new tree_node( bmin,bmax,
+                              build( v1, bmin1, bmax1, split_dir ),
+                              build( v2, bmin2, bmax2, split_dir ) );
     }
+
     else
     {
-        return new leaf(bmin,bmax,b);
+        return new leaf( bmin,bmax,b );
     }
 }
 
@@ -532,14 +565,16 @@ RegionTree::build()
     // and store the boxes address in the pbox_container_type
     box_container_type::const_iterator it=_M_boxes.begin();
     box_container_type::const_iterator en=_M_boxes.end();
-    while( it != en )
+
+    while ( it != en )
     {
         updateBox( bmin, bmax,
-                   (*it).min,(*it).max );
-        *b_it++ = &(*it);
+                   ( *it ).min,( *it ).max );
+        *b_it++ = &( *it );
 
         ++it;
     }
+
     // build a tree view of the boxes
     _M_root = Feel::build( b, bmin, bmax, 0 );
 
@@ -549,51 +584,57 @@ RegionTree::build()
 
 FEELPP_NO_EXPORT
 void
-dump( RegionTree::element_base *p, int level, size_type& count)
+dump( RegionTree::element_base *p, int level, size_type& count )
 {
-    if (!p)
+    if ( !p )
         return;
 
     std::cout << level << "|";
 
-    for (int i=0; i < level; ++i)
+    for ( int i=0; i < level; ++i )
         std::cout << "  ";
 
     std::cout << "span=" << p->rmin << ".." << p->rmax << " ";
 
-    if (p->isleaf())
+    if ( p->isleaf() )
     {
-        leaf *rl = static_cast<leaf*>(p);
+        leaf *rl = static_cast<leaf*>( p );
 
         std::cout << "Leaf [" << rl->lst.size() << " elts] = ";
 
-        for (size_type i=0; i < rl->lst.size(); ++i)
+        for ( size_type i=0; i < rl->lst.size(); ++i )
             std::cout << " " << rl->lst[i]->id;
+
         std::cout << "\n";
 
         count += rl->lst.size();
     }
+
     else
     {
         std::cout << "Node\n";
-        const tree_node *rn = static_cast<tree_node*>(p);
-        if (rn->left)
+        const tree_node *rn = static_cast<tree_node*>( p );
+
+        if ( rn->left )
         {
-            dump(rn->left, level+1, count);
+            dump( rn->left, level+1, count );
         }
-        if (rn->right)
+
+        if ( rn->right )
         {
-            dump(rn->right, level+1, count);
+            dump( rn->right, level+1, count );
         }
     }
-  }
+}
 
 void
 RegionTree::dump()
 {
     std::cout << "tree dump follows\n";
-    if (!_M_root)
+
+    if ( !_M_root )
         build();
+
     size_type count = 0;
     Feel::dump( _M_root, 0, count );
 
@@ -604,27 +645,30 @@ RegionTree::dump()
 
 FEELPP_NO_EXPORT
 void
-destroy( RegionTree::element_base *n)
+destroy( RegionTree::element_base *n )
 {
-    if (n->isleaf())
+    if ( n->isleaf() )
     {
-        delete static_cast<leaf*>(n);
+        delete static_cast<leaf*>( n );
     }
+
     else
     {
-        const tree_node *rn = static_cast<tree_node*>(n);
+        const tree_node *rn = static_cast<tree_node*>( n );
 
-        if (rn->left)
+        if ( rn->left )
         {
-            destroy(rn->left);
+            destroy( rn->left );
         }
-        if (rn->right)
+
+        if ( rn->right )
         {
-            destroy(rn->right);
+            destroy( rn->right );
         }
+
         delete rn;
-      }
-  }
+    }
+}
 
 void
 RegionTree::destroy()

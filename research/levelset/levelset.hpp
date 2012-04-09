@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -53,7 +53,7 @@ namespace Feel
 {
 class LevelSet
     :
-        public Application
+public Application
 {
     typedef Application super;
 public:
@@ -74,13 +74,13 @@ public:
 
     /* bases */
     typedef fusion::vector<fem::Lagrange<Dim, pOrder,
-                                         Scalar, Continuous,
-                                         double, ENTITY> >
-    basis_p_type;
+            Scalar, Continuous,
+            double, ENTITY> >
+            basis_p_type;
     typedef fusion::vector<fem::Lagrange<Dim, 0,
-                                         Scalar, Discontinuous,
-                                         double, ENTITY> >
-    basis_i_type;
+            Scalar, Discontinuous,
+            double, ENTITY> >
+            basis_i_type;
 
     /* spaces */
     typedef FunctionSpace<mesh_type, basis_p_type, value_type> space_p_type;

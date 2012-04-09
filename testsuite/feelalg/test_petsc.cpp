@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -52,13 +52,13 @@ Feel::AboutData
 makeAbout()
 {
     Feel::AboutData about( "test_petsc" ,
-                            "test_petsc" ,
-                            "0.1",
-                            "test_petsc",
-                            Feel::AboutData::License_GPL,
-                            "Copyright (c) 2007 Université Joseph Fourier Grenoble 1");
+                           "test_petsc" ,
+                           "0.1",
+                           "test_petsc",
+                           Feel::AboutData::License_GPL,
+                           "Copyright (c) 2007 Université Joseph Fourier Grenoble 1" );
 
-    about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
     return about;
 
 }
@@ -77,7 +77,7 @@ init_unit_test_suite( int argc, char** argv )
 {
     test_suite* test= BOOST_TEST_SUITE( "PETSC Unit Test" );
 
-    Feel::Application app(argc,argv,makeAbout());
+    Feel::Application app( argc,argv,makeAbout() );
 
     // this example will pass cause we know ahead of time number of expected failures
     test->add( BOOST_TEST_CASE( &petsc_snes ), 0 );

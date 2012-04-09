@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -42,42 +42,42 @@ template<typename P> class FunctionalSet;
 template<typename Poly>
 class ConstrainedPolynomialSet
     :
-    public mpl::if_<mpl::bool_<Poly::is_scalar>,
-                    mpl::identity<PolynomialSet<Poly> >,
-                    mpl::identity<PolynomialSet<Poly, Vectorial> > >::type::type
+public mpl::if_<mpl::bool_<Poly::is_scalar>,
+    mpl::identity<PolynomialSet<Poly> >,
+    mpl::identity<PolynomialSet<Poly, Vectorial> > >::type::type
 {
     typedef typename mpl::if_<mpl::bool_<Poly::is_scalar>,
-                              mpl::identity<PolynomialSet<Poly> >,
-                              mpl::identity<PolynomialSet<Poly, Vectorial> > >::type::type super;
+            mpl::identity<PolynomialSet<Poly> >,
+            mpl::identity<PolynomialSet<Poly, Vectorial> > >::type::type super;
 public:
-/** @name Constants
- */
-//@{
+    /** @name Constants
+     */
+    //@{
 
-static const uint16_type nDim = super::nDim;
-static const uint16_type nOrder = super::nOrder;
-static const bool is_vectorial = super::is_vectorial;
-static const bool is_scalar = super::is_scalar;
-static const uint16_type nComponents = super::nComponents;
-//@}
+    static const uint16_type nDim = super::nDim;
+    static const uint16_type nOrder = super::nOrder;
+    static const bool is_vectorial = super::is_vectorial;
+    static const bool is_scalar = super::is_scalar;
+    static const uint16_type nComponents = super::nComponents;
+    //@}
 
-/** @name Typedefs
- */
-//@{
-typedef ConstrainedPolynomialSet<Poly> self_type;
-typedef Poly space_type;
-typedef typename super::value_type value_type;
-typedef typename super::basis_type basis_type;
+    /** @name Typedefs
+     */
+    //@{
+    typedef ConstrainedPolynomialSet<Poly> self_type;
+    typedef Poly space_type;
+    typedef typename super::value_type value_type;
+    typedef typename super::basis_type basis_type;
 
-typedef typename super::polyset_type polyset_type;
-typedef Functional<space_type> constraint_type;
-typedef FunctionalSet<space_type> constraintset_type;
+    typedef typename super::polyset_type polyset_type;
+    typedef Functional<space_type> constraint_type;
+    typedef FunctionalSet<space_type> constraintset_type;
 
 
-typedef PolynomialSet<space_type, Scalar> component_type;
-typedef typename mpl::if_<mpl::bool_<is_scalar>,
-                          mpl::identity<Polynomial<space_type> >,
-                          mpl::identity<Polynomial<space_type, Vectorial> > >::type::type polynomial_type;
+    typedef PolynomialSet<space_type, Scalar> component_type;
+    typedef typename mpl::if_<mpl::bool_<is_scalar>,
+            mpl::identity<Polynomial<space_type> >,
+            mpl::identity<Polynomial<space_type, Vectorial> > >::type::type polynomial_type;
 
     typedef typename super::convex_type convex_type;
     typedef typename basis_type::matrix_type matrix_type;
@@ -109,16 +109,16 @@ typedef typename mpl::if_<mpl::bool_<is_scalar>,
         // apply svd to determine the intersection of the kernels of
         // the linear functionals
         if ( is_vectorial )
-            {
-                //m = vectorialToMatrix( m, nComponents );
-                std::cout << "[ConstrainedPolynomialSet] v2m(m) = " << m << "\n";
-            }
+        {
+            //m = vectorialToMatrix( m, nComponents );
+            std::cout << "[ConstrainedPolynomialSet] v2m(m) = " << m << "\n";
+        }
 
         SVD<matrix_type> svd( m );
 
         //extract the coefficients of V associated with the null
         //singular values
-        matrix_type mv (ublas::subrange( svd.V(), svd.S().size(), svd.V().size1(), 0, m.size2() ) );
+        matrix_type mv ( ublas::subrange( svd.V(), svd.S().size(), svd.V().size1(), 0, m.size2() ) );
         //std::cout << "[ConstrainedPolynomialSet] mv = " << mv << "\n";
         this->setCoefficient( polyset_type::toType( mv ), true  );
 

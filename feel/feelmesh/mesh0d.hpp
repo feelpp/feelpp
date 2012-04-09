@@ -75,10 +75,10 @@ namespace Feel
 template<typename Shape>
 class Mesh0D
     :
-        public VisitableBase<>,
-        public MeshBase,
-        public Elements<Shape>,
-        public Points<Shape::nRealDim>
+public VisitableBase<>,
+public MeshBase,
+public Elements<Shape>,
+public Points<Shape::nRealDim>
 {
     // check at compilation time that the shape has indeed dimension 1
     BOOST_STATIC_ASSERT( Shape::nDim == 1 );
@@ -159,11 +159,12 @@ public:
     Mesh0D& operator=( Mesh0D const& m )
     {
         if ( this != &m )
-            {
-                super::operator=( m );
-                super_elements::operator=( m );
-                super_points::operator=( m );
-            }
+        {
+            super::operator=( m );
+            super_elements::operator=( m );
+            super_points::operator=( m );
+        }
+
         return *this;
     }
 
@@ -187,28 +188,43 @@ public:
     /**
      * \return the number of elements
      */
-    size_type numElements() const { return this->elements().size(); }
+    size_type numElements() const
+    {
+        return this->elements().size();
+    }
 
     /**
      * \return the number of faces in an element
      */
-    size_type numLocalFaces() const { return super_elements::element_type::numLocalFaces; }
+    size_type numLocalFaces() const
+    {
+        return super_elements::element_type::numLocalFaces;
+    }
 
     /**
      * \return the number of vertices in an element
      */
-    size_type numLocalVertices() const { return super_elements::element_type::numLocalVertices; }
+    size_type numLocalVertices() const
+    {
+        return super_elements::element_type::numLocalVertices;
+    }
 
     /**
      * \return the number of faces
      */
-    size_type numFaces() const { return 0; }
+    size_type numFaces() const
+    {
+        return 0;
+    }
 
 
     /**
      * \return the number of points
      */
-    size_type numPoints() const { return this->points().size(); }
+    size_type numPoints() const
+    {
+        return this->points().size();
+    }
 
     //@}
 
@@ -248,7 +264,10 @@ protected:
      * dummy  implementation
      * \see Mesh
      */
-    void renumber() { FEELPP_ASSERT( 0 ).error( "invalid call" ); }
+    void renumber()
+    {
+        FEELPP_ASSERT( 0 ).error( "invalid call" );
+    }
 
 
     /**

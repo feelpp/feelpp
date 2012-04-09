@@ -39,14 +39,14 @@ inline
 Feel::po::options_description
 makeOptions()
 {
-    Feel::po::options_description linelaxioptions("LinElAxi options");
+    Feel::po::options_description linelaxioptions( "LinElAxi options" );
     linelaxioptions.add_options()
-        ("hsize", Feel::po::value<double>()->default_value( 0.1 ), "first h value to start convergence")
-        ("bctype", Feel::po::value<int>()->default_value( 1 ), "0 = strong Dirichlet, 1 = weak Dirichlet")
-        ("bccoeff", Feel::po::value<double>()->default_value( 1.0e+5 ), "coeff for weak Dirichlet conditions")
-        ("gr", Feel::po::value<double>()->default_value( 1.0 ), "component in r of the surfacic force")
-        ("gz", Feel::po::value<double>()->default_value( 1.0 ), "component in z of the surfacic force")
-        ;
+    ( "hsize", Feel::po::value<double>()->default_value( 0.1 ), "first h value to start convergence" )
+    ( "bctype", Feel::po::value<int>()->default_value( 1 ), "0 = strong Dirichlet, 1 = weak Dirichlet" )
+    ( "bccoeff", Feel::po::value<double>()->default_value( 1.0e+5 ), "coeff for weak Dirichlet conditions" )
+    ( "gr", Feel::po::value<double>()->default_value( 1.0 ), "component in r of the surfacic force" )
+    ( "gz", Feel::po::value<double>()->default_value( 1.0 ), "component in z of the surfacic force" )
+    ;
     return linelaxioptions.add( Feel::feel_options() ) ;
 }
 inline
@@ -58,10 +58,10 @@ makeAbout()
                            "0.1",
                            "Elasticity axisym  on simplices or simplex products",
                            Feel::AboutData::License_GPL,
-                           "Copyright (c) 2012 University Joseph Fourier Grenoble 1");
+                           "Copyright (c) 2012 University Joseph Fourier Grenoble 1" );
 
-    about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
-   return about;
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    return about;
 
 }
 
@@ -71,7 +71,7 @@ namespace Feel
 template<int Order>
 class LinElAxi
     :
-        public Application
+public Application
 {
     typedef Application super;
 public:
@@ -103,14 +103,14 @@ public:
     LinElAxi( int argc, char** argv, AboutData const& ad, po::options_description const& od )
         :
         super( argc, argv, ad, od ),
-        M_backend( backend_type::build( this->vm() )),
+        M_backend( backend_type::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         bcCoeff( this->vm()["bccoeff"].template as<double>() ),
         exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) )
     {
         Log() << "[LinElAxi] hsize = " << meshSize << "\n";
         Log() << "[LinElAxi] bccoeff = " << bcCoeff << "\n";
-        Log() << "[LinElAxi] export = " << this->vm().count("export") << "\n";
+        Log() << "[LinElAxi] export = " << this->vm().count( "export" ) << "\n";
 
     }
 
@@ -143,29 +143,30 @@ void
 LinElAxi<Order>::run()
 {
     tic();
+
     if ( this->vm().count( "help" ) )
-        {
-            std::cout << this->optionsDescription() << "\n";
-            return;
-        }
+    {
+        std::cout << this->optionsDescription() << "\n";
+        return;
+    }
 
     this->changeRepository( boost::format( "%1%/%2%/P%3%/h_%4%/" )
                             % this->about().appName()
                             % entity_type::name()
                             % Order
                             % this->vm()["hsize"].template as<double>()
-                            );
+                          );
     /*
      * First we create the mesh
      */
     tic();
     mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
                                         _desc=domain( _name="beamaxi",
-                                                      _shape="hypercube",
-                                                      _usenames=true,
-                                                      _xmin=0, _xmax=1,
-                                                      _ymin=0, _ymax=10,
-                                                      _h=meshSize ),
+                                                _shape="hypercube",
+                                                _usenames=true,
+                                                _xmin=0, _xmax=1,
+                                                _ymin=0, _ymax=10,
+                                                _h=meshSize ),
                                         _update=MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK,
                                         _partitions=this->comm().size()  );
     toc();
@@ -195,8 +196,8 @@ LinElAxi<Order>::run()
     const double tol = 1e-5;
     const double E = 21*1e5;
     const double sigma = 0.28;
-    const double mu = E/(2*(1+sigma));
-    const double lambda = E*sigma/((1+sigma)*(1-2*sigma));
+    const double mu = E/( 2*( 1+sigma ) );
+    const double lambda = E*sigma/( ( 1+sigma )*( 1-2*sigma ) );
     const double density = 50;
     //    const double gravity = -density*9.81;
     const double gravity = -1.0;
@@ -220,28 +221,28 @@ LinElAxi<Order>::run()
 
     using namespace Feel::vf;
     form1( _test=Xh, _vector=rhs ) =
-        integrate( _range=elements(mesh), _expr=gravity*id(vz)*Px() );
+        integrate( _range=elements( mesh ), _expr=gravity*id( vz )*Px() );
     form1( _test=Xh, _vector=rhs ) +=
-        integrate( _range=markedfaces(mesh,"Dirichlet"),
-                   _expr=gr*id(vr)*Px()+gz*id(vz)*Px() );
+        integrate( _range=markedfaces( mesh,"Dirichlet" ),
+                   _expr=gr*id( vr )*Px()+gz*id( vz )*Px() );
 
     form2( _test=Xh, _trial=Xh, _matrix=lhs ) =
-        integrate( _range=elements(mesh),
-                   _expr=Px()*lambda*(dxt(ur)+idt(ur)/Px()+
-                                      dyt(uz))*(dx(vr)+idt(vr)/Px()));
+        integrate( _range=elements( mesh ),
+                   _expr=Px()*lambda*( dxt( ur )+idt( ur )/Px()+
+                                       dyt( uz ) )*( dx( vr )+idt( vr )/Px() ) );
     form2( _test=Xh, _trial=Xh, _matrix=lhs ) +=
-        integrate( _range=elements(mesh),
-                   _expr=Px()*mu*(2*(dxt(ur)*dx(vr)+idt(ur)*id(vr)/(Px()*Px()))+
-                                  dyt(ur)*dy(vr)+dxt(uz)*dy(vr)));
+        integrate( _range=elements( mesh ),
+                   _expr=Px()*mu*( 2*( dxt( ur )*dx( vr )+idt( ur )*id( vr )/( Px()*Px() ) )+
+                                   dyt( ur )*dy( vr )+dxt( uz )*dy( vr ) ) );
     form2( _test=Xh, _trial=Xh, _matrix=lhs ) +=
-        integrate( _range=elements(mesh),
-                   _expr=(Px()*mu*(dyt(ur)*dx(vz)+dxt(uz)*dx(vz)+2*dyt(uz)*dy(vz))+
-                          Px()*lambda*(dxt(ur)+idt(ur)/Px()+dyt(uz))*dy(vz)));
+        integrate( _range=elements( mesh ),
+                   _expr=( Px()*mu*( dyt( ur )*dx( vz )+dxt( uz )*dx( vz )+2*dyt( uz )*dy( vz ) )+
+                           Px()*lambda*( dxt( ur )+idt( ur )/Px()+dyt( uz ) )*dy( vz ) ) );
 
 
     form2( _test=Xh, _trial=Xh, _matrix=lhs ) +=
-        on( _range=markedfaces(mesh,"Neumann"), _element=uz, _rhs=rhs, _expr=cst(0.))+
-        on( _range=markedfaces(mesh,"Neumann"), _element=ur, _rhs=rhs, _expr=cst(0.));
+        on( _range=markedfaces( mesh,"Neumann" ), _element=uz, _rhs=rhs, _expr=cst( 0. ) )+
+        on( _range=markedfaces( mesh,"Neumann" ), _element=ur, _rhs=rhs, _expr=cst( 0. ) );
     M_backend->solve( _matrix=lhs, _solution=U, _rhs=rhs );
 
 
@@ -262,15 +263,15 @@ LinElAxi<Order>::exportResults( double time, element_type& U )
     auto uz = U.template element<1>();
     disp_space_ptrtype Dh = disp_space_type::New( mesh );
     auto disp = Dh->element();
-    disp = vf::project( _range=elements(mesh), _space=Dh, _expr=vec(idv(ur),idv(uz)));
+    disp = vf::project( _range=elements( mesh ), _space=Dh, _expr=vec( idv( ur ),idv( uz ) ) );
 
-    exporter->step(time)->setMesh( mesh );
-    exporter->step(time)->add( "ur", ur);
-    exporter->step(time)->add( "uz", uz);
-    exporter->step(time)->add( "displacement", disp);
+    exporter->step( time )->setMesh( mesh );
+    exporter->step( time )->add( "ur", ur );
+    exporter->step( time )->add( "uz", uz );
+    exporter->step( time )->add( "displacement", disp );
 
     exporter->save();
-    Log() << "[timer] exportResults(): " << toc(false) << "\n";
+    Log() << "[timer] exportResults(): " << toc( false ) << "\n";
 } // LinElAxi::export
 
 
@@ -289,7 +290,7 @@ main( int argc, char** argv )
     typedef Feel::LinElAxi<2> linelaxi_type;
 
     /* assertions handling */
-    Feel::Assert::setLog( "linelaxi.assert");
+    Feel::Assert::setLog( "linelaxi.assert" );
 
     /* define and run application */
     linelaxi_type linelaxi( argc, argv, makeAbout(), makeOptions() );

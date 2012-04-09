@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -52,25 +52,25 @@ EthierSteinman::oseenUpdateBdf1( Oseen<space_u_type, space_p_type, imOrder, ENTI
     value_type epsCompress = this->vm()["epscompress"].as<double>();
 
     oseen.update( /* itRan = */ marked2elements( *uxn.functionSpace()->mesh(),
-                                                 1 ),
-                  /* sigma = */ 0.0,
-                  /* nuInc = */ 0.0,
-                  /* nuAbs = */ M_mu,
-                  /* beta  = */ ( idv(uxn)*oneX()
-                                  + idv(uyn)*oneY()
-//                                   + idv(uzn)*oneZ()
-                                  ),
-                  /* f     = */ ( (idv(ux)/dt)*oneX()
-                                  + (idv(uy)/dt)*oneY()
-//                                   + (idv(uz)/dt)*oneZ()
-                                  ),
-                  /* c     = */ epsCompress*idv(pn),
-                  /* g     = */ ( idv(ux0)*oneX()
-                                  + idv(uy0)*oneY()
-//                                   + idv(uz0)*oneZ()
-                                  ),
-                  /* noSlip= */ 1.0,
-                  /* updtJ = */ updateStabilization );
+                                1 ),
+                                /* sigma = */ 0.0,
+                                /* nuInc = */ 0.0,
+                                /* nuAbs = */ M_mu,
+                                /* beta  = */ ( idv( uxn )*oneX()
+                                        + idv( uyn )*oneY()
+                                        //                                   + idv(uzn)*oneZ()
+                                              ),
+                                /* f     = */ ( ( idv( ux )/dt )*oneX()
+                                        + ( idv( uy )/dt )*oneY()
+                                        //                                   + (idv(uz)/dt)*oneZ()
+                                              ),
+                                /* c     = */ epsCompress*idv( pn ),
+                                /* g     = */ ( idv( ux0 )*oneX()
+                                        + idv( uy0 )*oneY()
+                                        //                                   + idv(uz0)*oneZ()
+                                              ),
+                                /* noSlip= */ 1.0,
+                                /* updtJ = */ updateStabilization );
 }
 
 } // Feel

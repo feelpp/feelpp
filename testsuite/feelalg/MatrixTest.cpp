@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -35,40 +35,43 @@ namespace Feel
 //
 MatrixMass::MatrixMass( int n )
     :
-    _M_mat(0),
-    _M_pattern(0),
+    _M_mat( 0 ),
+    _M_pattern( 0 ),
     _M_val()
 {
     // Defining constants.
 
-    value_type sub  = 1.0/value_type(n+1);
-    value_type diag = 4.0/value_type(n+1);
+    value_type sub  = 1.0/value_type( n+1 );
+    value_type diag = 4.0/value_type( n+1 );
 
     // Defining the number of nonzero matrix elements.
 
     int nnz = 3*n-2;
 
-    std::vector<uint> __ia(n+1), __ja(nnz);
+    std::vector<uint> __ia( n+1 ), __ja( nnz );
     _M_val.resize( nnz );
 
     __ia[0] = 0;
     int __j = 0;
-    for (int __i = 0; __i < n; ++__i)
-    {
-	if (__i != 0)
-	{
-	    _M_val[__j] =  sub;
-	    __ja[__j++] = __i-1;
-	}
-	_M_val[__j] =  diag;
-	__ja[__j++] = __i;
 
-	if ( __i != (n-1) )
-	{
-	    _M_val[__j] =  sub;
-	    __ja[__j++] = __i+1;
-	}
-	__ia[__i+1] = __j;
+    for ( int __i = 0; __i < n; ++__i )
+    {
+        if ( __i != 0 )
+        {
+            _M_val[__j] =  sub;
+            __ja[__j++] = __i-1;
+        }
+
+        _M_val[__j] =  diag;
+        __ja[__j++] = __i;
+
+        if ( __i != ( n-1 ) )
+        {
+            _M_val[__j] =  sub;
+            __ja[__j++] = __i+1;
+        }
+
+        __ia[__i+1] = __j;
     }
 
     _M_pattern = new CSRPatt( nnz, n, n, __ia, __ja );
@@ -84,35 +87,36 @@ MatrixMass::MatrixMass( int n )
 MatrixConvectionDiffusion::MatrixConvectionDiffusion( int nx, value_type __rho )
     :
     _M_rho( __rho ),
-    _M_mat(0),
-    _M_pattern(0),
+    _M_mat( 0 ),
+    _M_pattern( 0 ),
     _M_val()
 {
 
     int N = nx*nx;
     int nnz = 5*N-4*nx;
 
-    std::vector<uint> __ia(N+1), __ja(nnz);
+    std::vector<uint> __ia( N+1 ), __ja( nnz );
     _M_val.resize( nnz );
 
     __ia[0] = 0;
     int i = 0;
 
-    value_type h  = 1.0/value_type(nx+1);
+    value_type h  = 1.0/value_type( nx+1 );
     value_type h2 = h*h;
     value_type dd = 4.0/h2;
     value_type df = -1.0/h2;
     value_type dl = df - 0.5*_M_rho/h;
     value_type du = df + 0.5*_M_rho/h;
 
-    for (int j = 0; j < N; j++)
+    for ( int j = 0; j < N; j++ )
     {
-        if (j >= nx)
+        if ( j >= nx )
         {
             _M_val[i] = df;
             __ja[i++]=j-nx;
         }
-        if ((j%nx) != 0)
+
+        if ( ( j%nx ) != 0 )
         {
             _M_val[i] = du;
             __ja[i++] = j-1;
@@ -121,18 +125,21 @@ MatrixConvectionDiffusion::MatrixConvectionDiffusion( int nx, value_type __rho )
         _M_val[i] = dd;
         __ja[i++] = j;
 
-        if (((j+1)%nx) != 0)
+        if ( ( ( j+1 )%nx ) != 0 )
         {
             _M_val[i] = dl;
             __ja[i++] = j+1;
         }
-        if (j < N-nx)
+
+        if ( j < N-nx )
         {
             _M_val[i] = df;
             __ja[i++] = j+nx;
         }
+
         __ia[j+1]=i;
     }
+
     _M_pattern = new CSRPatt( nnz, N, N, __ia, __ja );
     _M_mat = new CSRMatr<CSRPatt, double>( *_M_pattern, _M_val );
     assert( _M_mat != 0 );

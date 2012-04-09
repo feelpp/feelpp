@@ -75,7 +75,7 @@ public:
         Debug() << "testing Interp with file format version " << version << "\n";
         std::string fname;
         //GmshHypercubeDomain<entity_type::nDim,entity_type::nOrder,Entity> td;
-        GmshSimplexDomain td(entity_type::nDim,entity_type::nOrder);
+        GmshSimplexDomain td( entity_type::nDim,entity_type::nOrder );
         td.setVersion( version );
         td.setCharacteristicLength( hsize );
         fname = td.generate( entity_type::name().c_str() );
@@ -89,7 +89,7 @@ public:
 
         ref_entity_type refelem;
         typename gm_type::precompute_ptrtype __geopc( new typename gm_type::precompute_type( M_mesh->gm(),
-                                                                                             refelem.points() ) );
+                refelem.points() ) );
 
         typename mesh_type::Inverse meshinv( M_mesh );
 
@@ -100,34 +100,38 @@ public:
 
         boost::tie( boost::tuples::ignore, el_it, el_en ) = elements( *M_mesh );
         std::cout << "refelem = " << refelem.points() << "\n";
-        for( ; el_it != el_en; ++el_it )
+
+        for ( ; el_it != el_en; ++el_it )
+        {
+            gmc_type gmc( M_mesh->gm(), *el_it, __geopc );
+            gic_type gic( M_mesh->gm(), *el_it );
+
+            meshinv.pointsInConvex( el_it->id(), itab );
+
+            for ( int q = 0; q < itab.size(); ++q )
             {
-                gmc_type gmc( M_mesh->gm(), *el_it, __geopc );
-                gic_type gic( M_mesh->gm(), *el_it );
+                std::cout << "xref = " << meshinv.referenceCoords()[boost::get<0>( itab[q] )] << "\n";
 
-                meshinv.pointsInConvex( el_it->id(), itab );
-
-                for( int q = 0; q < itab.size(); ++q )
-                    {
-                        std::cout << "xref = " << meshinv.referenceCoords()[boost::get<0>(itab[q])] << "\n";
-
-                    }
-                for( int q = 0; q < refelem.points().size2(); ++q )
-                    {
-                        std::cout << "gmc xref " << q << " = " << gmc.xRef( q ) << "\n";
-                        std::cout << "is in gmc? = " << gmc.geometricMapping()->isIn( gmc.xRef( q ) ) << "\n";
-
-                        gic.setXReal( gmc.xReal(q) );
-
-                        typename ref_entity_type::points_type pts( Dim, 1 );
-                        ublas::column( pts, 0 ) = gic.xRef();
-                        std::cout << "gic xref " << q << " = " << gic.xRef() << "\n";
-                        std::cout << "is in gic? = " << gic.geometricMapping()->isIn( gic.xRef() ) << "\n";
-                    }
-                FEELPP_ASSERT( gic.isIn() )
-                    ( refelem.points() )( gmc.xReal() )
-                    ( el_it->id() ).error( "invalid geometric transformation inversion" );
             }
+
+            for ( int q = 0; q < refelem.points().size2(); ++q )
+            {
+                std::cout << "gmc xref " << q << " = " << gmc.xRef( q ) << "\n";
+                std::cout << "is in gmc? = " << gmc.geometricMapping()->isIn( gmc.xRef( q ) ) << "\n";
+
+                gic.setXReal( gmc.xReal( q ) );
+
+                typename ref_entity_type::points_type pts( Dim, 1 );
+                ublas::column( pts, 0 ) = gic.xRef();
+                std::cout << "gic xref " << q << " = " << gic.xRef() << "\n";
+                std::cout << "is in gic? = " << gic.geometricMapping()->isIn( gic.xRef() ) << "\n";
+            }
+
+            FEELPP_ASSERT( gic.isIn() )
+            ( refelem.points() )( gmc.xReal() )
+            ( el_it->id() ).error( "invalid geometric transformation inversion" );
+        }
+
         Debug() << "testing Interp with file format version " << version << " done\n";
     }
 private:
@@ -136,14 +140,15 @@ private:
 int
 main( int argc, char** argv )
 {
-    Feel::Assert::setLog( "assertions.log");
-    boost::mpi::environment env(argc, argv);
+    Feel::Assert::setLog( "assertions.log" );
+    boost::mpi::environment env( argc, argv );
     TestInterp<2,Simplex> test_interp;
 
     if ( argc == 2 )
-        {
-            test_interp.test( std::atof( argv[1] ), FEELPP_GMSH_FORMAT_VERSION );
-        }
+    {
+        test_interp.test( std::atof( argv[1] ), FEELPP_GMSH_FORMAT_VERSION );
+    }
+
     else
         test_interp.test( 2.0, FEELPP_GMSH_FORMAT_VERSION );
 }

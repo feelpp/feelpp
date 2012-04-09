@@ -58,15 +58,15 @@ namespace Feel
 po::options_description
 makeRbHeatOptions()
 {
-    po::options_description rbheatoptions("RbHeat options");
+    po::options_description rbheatoptions( "RbHeat options" );
     rbheatoptions.add_options()
-        ("hsize", po::value<double>()->default_value( 0.01 ), "mesh size")
-        ("mu1", po::value<double>()->default_value( 0.2 ), "mu1")
-        ("mu2", po::value<double>()->default_value( 0.2 ), "mu2")
-        ("mu3", po::value<double>()->default_value( -1 ), "mu3")
-        ("mu4", po::value<double>()->default_value( 0.1 ), "mu4")
-        ("no-export", "don't export results")
-        ;
+    ( "hsize", po::value<double>()->default_value( 0.01 ), "mesh size" )
+    ( "mu1", po::value<double>()->default_value( 0.2 ), "mu1" )
+    ( "mu2", po::value<double>()->default_value( 0.2 ), "mu2" )
+    ( "mu3", po::value<double>()->default_value( -1 ), "mu3" )
+    ( "mu4", po::value<double>()->default_value( 0.1 ), "mu4" )
+    ( "no-export", "don't export results" )
+    ;
     return rbheatoptions.add( Feel::feel_options() );
 }
 AboutData
@@ -77,9 +77,9 @@ makeRbHeatAbout( std::string const& str = "rbheat" )
                            "0.1",
                            "RbHeat Benchmark",
                            Feel::AboutData::License_GPL,
-                           "Copyright (c) 2010,2011 Université de Grenoble 1 (Joseph Fourier)");
+                           "Copyright (c) 2010,2011 Université de Grenoble 1 (Joseph Fourier)" );
 
-    about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
     return about;
 }
 
@@ -90,36 +90,36 @@ makeRbHeatAbout( std::string const& str = "rbheat" )
 gmsh_ptrtype
 createGeo( double meshSize  )
 {
-std::ostringstream ostr;
+    std::ostringstream ostr;
 
     ostr << "p=" << meshSize << ";\n"
-	 <<"Point(1) = {-0.5,0,0,p};\n"
-	 <<"Point(2) = {0,0,0,p};\n"
-	 <<"Point(3) = {0.5,0,0,p};\n"
-	 <<"Point(4) = {0.5,0.5,0,p};\n"
-	 <<"Point(5) = {0,0.5,0,p};\n"
-	 <<"Point(6) = {-0.5,0.5,0,p};\n"
-	 <<"\n"
-	 <<"Line(1) = {1,2};\n"
-	 <<"Line(2) = {2,3};\n"
-	 <<"Line(3) = {3,4};\n"
-	 <<"Line(4) = {4,5};\n"
-	 <<"Line(5) = {5,6};\n"
-	 <<"Line(6) = {6,1};\n"
-	 <<"Line(7) = {2,5};\n"
+         <<"Point(1) = {-0.5,0,0,p};\n"
+         <<"Point(2) = {0,0,0,p};\n"
+         <<"Point(3) = {0.5,0,0,p};\n"
+         <<"Point(4) = {0.5,0.5,0,p};\n"
+         <<"Point(5) = {0,0.5,0,p};\n"
+         <<"Point(6) = {-0.5,0.5,0,p};\n"
+         <<"\n"
+         <<"Line(1) = {1,2};\n"
+         <<"Line(2) = {2,3};\n"
+         <<"Line(3) = {3,4};\n"
+         <<"Line(4) = {4,5};\n"
+         <<"Line(5) = {5,6};\n"
+         <<"Line(6) = {6,1};\n"
+         <<"Line(7) = {2,5};\n"
 
-	 <<"Line Loop(1) = {1,7,5,6};\n"
-	 <<"Line Loop(2) = {2,3,4,-7};\n"
-	 <<"Plane Surface(3) = {1};\n"
-	 <<"Plane Surface(4) = {2};\n"
+         <<"Line Loop(1) = {1,7,5,6};\n"
+         <<"Line Loop(2) = {2,3,4,-7};\n"
+         <<"Plane Surface(3) = {1};\n"
+         <<"Plane Surface(4) = {2};\n"
 
-	 <<"Physical Line(\"left\") = {6};\n"
-	 <<"Physical Line(\"right\")={3};\n"
-	 <<"Physical Line(\"hautbas\")={1,2,4,5};\n"
-	 <<"Physical Line(\"interface\") = {7};\n"
-	 <<"Physical Surface(\"maille1\") = {3};\n"
-	 <<"Physical Surface(\"maille2\") = {4};\n"
-	 <<"\n";
+         <<"Physical Line(\"left\") = {6};\n"
+         <<"Physical Line(\"right\")={3};\n"
+         <<"Physical Line(\"hautbas\")={1,2,4,5};\n"
+         <<"Physical Line(\"interface\") = {7};\n"
+         <<"Physical Surface(\"maille1\") = {3};\n"
+         <<"Physical Surface(\"maille2\") = {4};\n"
+         <<"\n";
 
     gmsh_ptrtype gmshp( new Gmsh );
     gmshp->setPrefix( "rbheat" );
@@ -213,7 +213,7 @@ public:
     //! copy constructor
     //Heat1D( Heat1D const & );
     //! destructor
-    ~RbHeat(){}
+    ~RbHeat() {}
 
     //! initialisation of the model
     void init();
@@ -231,7 +231,10 @@ public:
 
     // \return the number of terms in affine decomposition of left hand
     // side bilinear form
-    int Qa() const { return 3; }
+    int Qa() const
+    {
+        return 3;
+    }
 
     /**
      * there is at least one output which is the right hand side of the
@@ -239,75 +242,95 @@ public:
      *
      * \return number of outputs associated to the model
      */
-    int Nl() const { return 2; }
+    int Nl() const
+    {
+        return 2;
+    }
 
     /**
      * \param l the index of output
      * \return number of terms  in affine decomposition of the \p q th output term
      */
-    int Ql( int l ) const { if ( l == 0 ) return 2; return 1; }
+    int Ql( int l ) const
+    {
+        if ( l == 0 ) return 2;
+
+        return 1;
+    }
 
     /**
      * \brief Returns the function space
      */
-    space_ptrtype functionSpace() { return Xh; }
+    space_ptrtype functionSpace()
+    {
+        return Xh;
+    }
 
     //! return the parameter space
-    parameterspace_ptrtype parameterSpace() const { return M_Dmu;}
+    parameterspace_ptrtype parameterSpace() const
+    {
+        return M_Dmu;
+    }
 
     /**
      * \brief compute the theta
 
 
- coefficient for both bilinear and linear form
+    coefficient for both bilinear and linear form
      * \param mu parameter to evaluate the coefficients
      */
     boost::tuple<theta_vector_type, std::vector<theta_vector_type> >
     computeThetaq( parameter_type const& mu, double time=0 )
-        {
-	  
-            M_thetaAq.resize( Qa() );
-            M_thetaAq( 0 ) = 1;
-            M_thetaAq( 1 ) = mu( 0 ); // k_1
-            M_thetaAq( 2 ) = mu( 1 ); // k_2
+    {
 
-            M_thetaFq.resize( Nl() );
-            M_thetaFq[0].resize( Ql(0) );
-            M_thetaFq[0]( 0 ) = mu(2); // delta
-            M_thetaFq[0]( 1 ) = mu(3); // phi
+        M_thetaAq.resize( Qa() );
+        M_thetaAq( 0 ) = 1;
+        M_thetaAq( 1 ) = mu( 0 ); // k_1
+        M_thetaAq( 2 ) = mu( 1 ); // k_2
 
-            M_thetaFq[1].resize( Ql(1) );
-            M_thetaFq[1]( 0 ) = 1;
+        M_thetaFq.resize( Nl() );
+        M_thetaFq[0].resize( Ql( 0 ) );
+        M_thetaFq[0]( 0 ) = mu( 2 ); // delta
+        M_thetaFq[0]( 1 ) = mu( 3 ); // phi
 
-            return boost::make_tuple( M_thetaAq, M_thetaFq );
-        }
+        M_thetaFq[1].resize( Ql( 1 ) );
+        M_thetaFq[1]( 0 ) = 1;
 
-    /**
-     * \brief return the coefficient vector
-     */
-    theta_vector_type const& thetaAq() const { return M_thetaAq; }
+        return boost::make_tuple( M_thetaAq, M_thetaFq );
+    }
 
     /**
      * \brief return the coefficient vector
      */
-    std::vector<theta_vector_type> const& thetaFq() const { return M_thetaFq; }
+    theta_vector_type const& thetaAq() const
+    {
+        return M_thetaAq;
+    }
+
+    /**
+     * \brief return the coefficient vector
+     */
+    std::vector<theta_vector_type> const& thetaFq() const
+    {
+        return M_thetaFq;
+    }
 
     /**
      * \brief return the coefficient vector \p q component
      *
      */
     value_type thetaAq( int q ) const
-        {
-            return M_thetaAq( q );
-        }
+    {
+        return M_thetaAq( q );
+    }
 
     /**
      * \return the \p q -th term of the \p l -th output
      */
     value_type thetaL( int l, int q ) const
-        {
-            return M_thetaFq[l]( q );
-        }
+    {
+        return M_thetaFq[l]( q );
+    }
 
     //@}
 
@@ -318,7 +341,10 @@ public:
     /**
      * set the mesh characteristic length to \p s
      */
-    void setMeshSize( double s ) { meshSize = s; }
+    void setMeshSize( double s )
+    {
+        meshSize = s;
+    }
 
 
     //@}
@@ -436,7 +462,7 @@ RbHeat::RbHeat()
     exporter( Exporter<mesh_type>::New( "ensight" ) ),
     M_Dmu( new parameterspace_type )
 {
-  this->init();
+    this->init();
 }
 
 
@@ -449,7 +475,7 @@ RbHeat::RbHeat( po::variables_map const& vm )
     exporter( Exporter<mesh_type>::New( vm, "rbHeat" ) ),
     M_Dmu( new parameterspace_type )
 {
-  this->init();
+    this->init();
 }
 void
 RbHeat::init()
@@ -458,8 +484,8 @@ RbHeat::init()
      * First we create the mesh
      */
     mesh = createGMSHMesh( _mesh=new mesh_type,
-                           _desc=createGeo(meshSize) ,
-			   _update=MESH_UPDATE_FACES | MESH_UPDATE_EDGES );
+                           _desc=createGeo( meshSize ) ,
+                           _update=MESH_UPDATE_FACES | MESH_UPDATE_EDGES );
 
     /*
      * The function space and some associate elements are then defined
@@ -504,48 +530,48 @@ RbHeat::init()
 
     //Test mesh generation.
 #if 0
-    double surface_left = integrate( _range= markedfaces(mesh,"left"), _expr=cst(1.) ).evaluate()(0,0);
+    double surface_left = integrate( _range= markedfaces( mesh,"left" ), _expr=cst( 1. ) ).evaluate()( 0,0 );
     std::cout<<"left = "<<surface_left<<std::endl;
 
-    double surface_right = integrate( _range= markedfaces(mesh,"right"), _expr=cst(1.) ).evaluate()(0,0);
+    double surface_right = integrate( _range= markedfaces( mesh,"right" ), _expr=cst( 1. ) ).evaluate()( 0,0 );
     std::cout<<"right = "<<surface_right<<std::endl;
 
-    double surface__haut_bas = integrate( _range= markedfaces(mesh,"hautbas"), _expr=cst(1.) ).evaluate()(0,0);
+    double surface__haut_bas = integrate( _range= markedfaces( mesh,"hautbas" ), _expr=cst( 1. ) ).evaluate()( 0,0 );
     std::cout<<"hautbas = "<<surface__haut_bas<<std::endl;
 
-    double surface__maille1 = integrate( _range= markedelements(mesh,"maille1"), _expr=cst(1.) ).evaluate()(0,0);
+    double surface__maille1 = integrate( _range= markedelements( mesh,"maille1" ), _expr=cst( 1. ) ).evaluate()( 0,0 );
     std::cout<<"maille1 = "<<surface__maille1<<std::endl;
-    
-    double surface__maille2 = integrate( _range= markedelements(mesh,"maille2"), _expr=cst(1.) ).evaluate()(0,0);
+
+    double surface__maille2 = integrate( _range= markedelements( mesh,"maille2" ), _expr=cst( 1. ) ).evaluate()( 0,0 );
     std::cout<<"maille2 = "<<surface__maille2<<std::endl;
 #endif
 
     // right hand side
-    form1( Xh, M_Fq[0][0], _init=true ) = integrate( markedfaces(mesh,"left"), id(v) );
-    form1( _test=Xh, _vector=M_Fq[0][1], _init=true ) = integrate( elements(mesh), id(v) );
+    form1( Xh, M_Fq[0][0], _init=true ) = integrate( markedfaces( mesh,"left" ), id( v ) );
+    form1( _test=Xh, _vector=M_Fq[0][1], _init=true ) = integrate( elements( mesh ), id( v ) );
     M_Fq[0][0]->close();
     M_Fq[0][1]->close();
 
     // output
-    form1( Xh, M_Fq[1][0], _init=true ) = integrate( markedfaces(mesh,"interface"), id(v)/0.5 );
+    form1( Xh, M_Fq[1][0], _init=true ) = integrate( markedfaces( mesh,"interface" ), id( v )/0.5 );
     M_Fq[1][0]->close();
 
-    form2( Xh, Xh, M_Aq[0], _init=true ) = integrate( elements(mesh), 0.1*(gradt(u)*trans(grad(v)) ) );
-    form2( Xh, Xh, M_Aq[0] ) += integrate( markedfaces(mesh,"right"), id(u)*idt(v) );
+    form2( Xh, Xh, M_Aq[0], _init=true ) = integrate( elements( mesh ), 0.1*( gradt( u )*trans( grad( v ) ) ) );
+    form2( Xh, Xh, M_Aq[0] ) += integrate( markedfaces( mesh,"right" ), id( u )*idt( v ) );
     M_Aq[0]->close();
 
-    form2( Xh, Xh, M_Aq[1], _init=true ) = integrate( markedelements(mesh,"maille1"), (gradt(u)*trans(grad(v)) ) );
+    form2( Xh, Xh, M_Aq[1], _init=true ) = integrate( markedelements( mesh,"maille1" ), ( gradt( u )*trans( grad( v ) ) ) );
     M_Aq[1]->close();
 
-    form2( Xh, Xh, M_Aq[2], _init=true ) = integrate( markedelements(mesh,"maille2"), (gradt(u)*trans(grad(v)) ) );
+    form2( Xh, Xh, M_Aq[2], _init=true ) = integrate( markedelements( mesh,"maille2" ), ( gradt( u )*trans( grad( v ) ) ) );
     M_Aq[2]->close();
     M = backend->newMatrix( Xh, Xh );
 
     form2( Xh, Xh, M, _init=true ) =
-        integrate( elements(mesh), id(u)*idt(v) + grad(u)*trans(gradt(u)) );
+        integrate( elements( mesh ), id( u )*idt( v ) + grad( u )*trans( gradt( u ) ) );
     M->close();
 
-////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////
 
 
 } // RbHeat::init
@@ -582,9 +608,9 @@ RbHeat::exportResults( element_type& U )
     {
         Log() << "exportResults starts\n";
 
-        exporter->step(0)->setMesh( U.functionSpace()->mesh() );
+        exporter->step( 0 )->setMesh( U.functionSpace()->mesh() );
 
-        exporter->step(0)->add( "u", U );
+        exporter->step( 0 )->add( "u", U );
 
         exporter->save();
     }
@@ -595,13 +621,16 @@ RbHeat::update( parameter_type const& mu )
 {
 
     *D = *M_Aq[0];
-    for( size_type q = 1;q < M_Aq.size(); ++q )
+
+    for ( size_type q = 1; q < M_Aq.size(); ++q )
     {
         D->addMatrix( M_thetaAq[q], M_Aq[q] );
     }
+
     F->close();
     F->zero();
-    for( size_type q = 0;q < M_Fq[0].size(); ++q )
+
+    for ( size_type q = 0; q < M_Fq[0].size(); ++q )
     {
         F->add( M_thetaFq[0][q], M_Fq[0][q] );
     }
@@ -627,7 +656,7 @@ void
 RbHeat::l2solve( vector_ptrtype& u, vector_ptrtype const& f )
 {
     //std::cout << "l2solve(u,f)\n";
-    backend->solve( _matrix=M,  _solution=u, _rhs=f);
+    backend->solve( _matrix=M,  _solution=u, _rhs=f );
     //std::cout << "l2solve(u,f) done\n";
 }
 
@@ -650,12 +679,14 @@ RbHeat::run( const double * X, unsigned long N, double * Y, unsigned long P )
     Feel::ParameterSpace<4>::Element mu( M_Dmu );
     mu << X[0], X[1], X[2], X[3];
     static int do_init = true;
+
     if ( do_init )
     {
         meshSize = X[4];
         this->init();
         do_init = false;
     }
+
     this->solve( mu, pT );
 }
 
@@ -675,23 +706,27 @@ RbHeat::output( int output_index, parameter_type const& mu )
 
     // (compliant) and (mean temperature on interface)
     double s=0;
-    if(output_index<2)
+
+    if ( output_index<2 )
     {
-        for(int i=0;i<Ql(output_index);i++)  s += M_thetaFq[output_index](i)*dot( M_Fq[output_index][i], U );
+        for ( int i=0; i<Ql( output_index ); i++ )  s += M_thetaFq[output_index]( i )*dot( M_Fq[output_index][i], U );
     }
-    else{
-      throw std::logic_error( "[Rbheat::output] error with output_index : only 0 or 1 " );
+
+    else
+    {
+        throw std::logic_error( "[Rbheat::output] error with output_index : only 0 or 1 " );
     }
+
     return s ;
-   
 
-	//double meanT=0;
- 
-	//meanT = (integrate( markedfaces(mesh,"interface"),idv(*pT)).evaluate()(0,0))/0.5;
 
-    	//return meanT;
+    //double meanT=0;
 
-/////////////////////////////////////////////////////////////////////////////////////////////////////
+    //meanT = (integrate( markedfaces(mesh,"interface"),idv(*pT)).evaluate()(0,0))/0.5;
+
+    //return meanT;
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
 }
 
 

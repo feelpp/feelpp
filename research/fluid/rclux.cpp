@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -52,31 +52,31 @@ inline
 Feel::po::options_description
 makeOptions()
 {
-    Feel::po::options_description rcluxoptions("Rclux options");
+    Feel::po::options_description rcluxoptions( "Rclux options" );
     rcluxoptions.add_options()
-        // mesh parameters
-        ("hsize", Feel::po::value<double>()->default_value( 0.5 ), "first h value to start convergence")
+    // mesh parameters
+    ( "hsize", Feel::po::value<double>()->default_value( 0.5 ), "first h value to start convergence" )
 
-        ("bccoeff", Feel::po::value<double>()->default_value( 100.0 ), "coeff for weak Dirichlet conditions")
-        ("peps", Feel::po::value<double>()->default_value( 0. ), "epsilon for pressure term")
-        ("divtol", Feel::po::value<double>()->default_value( 1.e10 ), "divergence tolerance")
+    ( "bccoeff", Feel::po::value<double>()->default_value( 100.0 ), "coeff for weak Dirichlet conditions" )
+    ( "peps", Feel::po::value<double>()->default_value( 0. ), "epsilon for pressure term" )
+    ( "divtol", Feel::po::value<double>()->default_value( 1.e10 ), "divergence tolerance" )
 
-        ("dt", Feel::po::value<double>()->default_value( 0.05 ), "time step value")
-        ("ft", Feel::po::value<double>()->default_value( 1 ), "Final time value")
+    ( "dt", Feel::po::value<double>()->default_value( 0.05 ), "time step value" )
+    ( "ft", Feel::po::value<double>()->default_value( 1 ), "Final time value" )
 
-        ("umax", Feel::po::value<double>()->default_value( 0.1 ), "amplitude of the poiseuille profile (m/s)")
-        ("c0", Feel::po::value<double>()->default_value( 100 ), "concentration at inflow (mol/m^3)")
+    ( "umax", Feel::po::value<double>()->default_value( 0.1 ), "amplitude of the poiseuille profile (m/s)" )
+    ( "c0", Feel::po::value<double>()->default_value( 100 ), "concentration at inflow (mol/m^3)" )
 
-        // default values: water
-        ("viscosity", Feel::po::value<double>()->default_value( 0.001 ), "viscosity value ()")
-        ("density", Feel::po::value<double>()->default_value( 1000 ), "density value ()")
+    // default values: water
+    ( "viscosity", Feel::po::value<double>()->default_value( 0.001 ), "viscosity value ()" )
+    ( "density", Feel::po::value<double>()->default_value( 1000 ), "density value ()" )
 
-        //
-        ("transport", "add transport equation" )
+    //
+    ( "transport", "add transport equation" )
 
-        // export in matlab
-        ("export-matlab", "export matrix and vectors in matlab" )
-        ;
+    // export in matlab
+    ( "export-matlab", "export matrix and vectors in matlab" )
+    ;
     return rcluxoptions.add( Feel::feel_options() );
 }
 inline
@@ -88,9 +88,9 @@ makeAbout()
                            "0.1",
                            "2D",
                            Feel::AboutData::License_GPL,
-                           "Copyright (c) 2008 Université Joseph Fourier");
+                           "Copyright (c) 2008 Université Joseph Fourier" );
 
-    about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
     return about;
 
 }
@@ -106,7 +106,7 @@ namespace Feel
  */
 class Rclux
     :
-    public Application
+public Application
 {
     typedef Application super;
 public:
@@ -191,7 +191,7 @@ public:
                                 % this->about().appName()
                                 % entity_type::name()
                                 % this->vm()["hsize"].as<double>()
-                                );
+                              );
         using namespace Feel::vf;
 
 
@@ -280,10 +280,10 @@ void
 Rclux::run()
 {
     if ( this->vm().count( "help" ) )
-        {
-            std::cout << this->optionsDescription() << "\n";
-            return;
-        }
+    {
+        std::cout << this->optionsDescription() << "\n";
+        return;
+    }
 
     using namespace Feel::vf;
 
@@ -323,25 +323,27 @@ Rclux::run()
     //       factorization preconditioner doesn't have a problem either, as
     //       it would encounter a zero pivot only at the last step, where the
     //       factorization would in fact be complete. So peps = 0 is safe.
-    form2( Ph, Ph, Ap, _init=true ) = integrate( elements(mesh), im_p_type(),
-                                                 gradt(p)*trans(grad(q))+ peps*idt(p)*id(p)
-                                                 )
-        +
-        integrate( markedfaces(mesh,mesh->markerName( "outflow" ) ), im_p_type(),
-                   - trans(gradt(p)*N())*id(p)
-                   - trans(grad(p)*N())*idt(p)
-                   + bcCoeff/hFace() * trans(idt(p)) * id(p) );
+    form2( Ph, Ph, Ap, _init=true ) = integrate( elements( mesh ), im_p_type(),
+                                      gradt( p )*trans( grad( q ) )+ peps*idt( p )*id( p )
+                                               )
+                                      +
+                                      integrate( markedfaces( mesh,mesh->markerName( "outflow" ) ), im_p_type(),
+                                              - trans( gradt( p )*N() )*id( p )
+                                              - trans( grad( p )*N() )*idt( p )
+                                              + bcCoeff/hFace() * trans( idt( p ) ) * id( p ) );
 
     Ap->close();
+
     if ( this->vm().count( "export-matlab" ) )
         Ap->printMatlab( "Ap.m" );
+
     Log() << "pressure matrix assembled\n";
     // --- Construction of velocity mass matrix Mu
 #if VELOCITY_UPDATE
     sparse_matrix_ptrtype Mu( M_backendu->newMatrix( Vh, Vh ) );
-    form2( Vh, Vh, Mu, _init=true ) = integrate( elements(mesh), im_u_type(),
-                                                 trans(idt(v))*id(u)
-                                                 );
+    form2( Vh, Vh, Mu, _init=true ) = integrate( elements( mesh ), im_u_type(),
+                                      trans( idt( v ) )*id( u )
+                                               );
     Mu->close();
 #endif
 
@@ -353,124 +355,131 @@ Rclux::run()
     // --- Construction of velocity diffusion-reaction matrix Lu
     sparse_matrix_ptrtype Lu( M_backendu->newMatrix( Vh, Vh ) );
     form2( Vh, Vh, Lu, _init=true ) =
-        integrate( elements(mesh), im_u_type(),
-                   viscosity*dt*trace(gradt(u)*trans(grad(u)))+
-                   density*trans(idt(u))*id(u) )+
-        integrate( markedfaces(mesh,mesh->markerName( "wall" ) ), im_u_type(),
-                   viscosity*dt*(- trans(gradt(u)*N())*id(u)
-                                 - trans(grad(u)*N())*idt(u)
-                                 + bcCoeff/hFace() * trans(idt(u)) * id(u) )
-                   )+
-        integrate( markedfaces(mesh,mesh->markerName( "inflow" ) ), im_u_type(),
-                   viscosity*dt*(- trans(gradt(u)*N())*id(u)
-                                 - trans(grad(u)*N())*idt(u)
-                                 + bcCoeff/hFace() * trans(idt(u)) * id(u) )
-                   );
+        integrate( elements( mesh ), im_u_type(),
+                   viscosity*dt*trace( gradt( u )*trans( grad( u ) ) )+
+                   density*trans( idt( u ) )*id( u ) )+
+        integrate( markedfaces( mesh,mesh->markerName( "wall" ) ), im_u_type(),
+                   viscosity*dt*( - trans( gradt( u )*N() )*id( u )
+                                  - trans( grad( u )*N() )*idt( u )
+                                  + bcCoeff/hFace() * trans( idt( u ) ) * id( u ) )
+                 )+
+        integrate( markedfaces( mesh,mesh->markerName( "inflow" ) ), im_u_type(),
+                   viscosity*dt*( - trans( gradt( u )*N() )*id( u )
+                                  - trans( grad( u )*N() )*idt( u )
+                                  + bcCoeff/hFace() * trans( idt( u ) ) * id( u ) )
+                 );
     Lu->close();
+
     if ( this->vm().count( "export-matlab" ) )
         Lu->printMatlab( "Lu.m" );
 
     Log() << "velocity diffusion reaction matrix assembled\n";
+
     // --- Time loop
     for ( int iter = 0;
-          time < this->vm()["ft"].as<double>();
-          ++iter, time += dt )
+            time < this->vm()["ft"].as<double>();
+            ++iter, time += dt )
+    {
+        Log() << "============================================================\n";
+        Log() << "Time: " << time << "s" << " dt=" << dt << " ft=" << this->vm()["ft"].as<double>() << "\n";
+        double divTol = this->vm()["divtol"].as<double>();
+        double divError = 2*divTol + 1;
+        int subiter = 0;
+
+        while ( divError > divTol )
         {
-            Log() << "============================================================\n";
-            Log() << "Time: " << time << "s" << " dt=" << dt << " ft=" << this->vm()["ft"].as<double>() << "\n";
-            double divTol = this->vm()["divtol"].as<double>();
-            double divError = 2*divTol + 1;
-            int subiter = 0;
-            while ( divError > divTol )
-                {
-                    ++subiter;
+            ++subiter;
 
-                    // --- update rhs for solve for intermediate ux and uy
-                    form1( Vh, F, _init=true ) = integrate( elements(mesh), im_u_type(),
-                                                            (density*trans(idv(un))-dt*gradv(pn))*id(u)
-                                                            );
+            // --- update rhs for solve for intermediate ux and uy
+            form1( Vh, F, _init=true ) = integrate( elements( mesh ), im_u_type(),
+                                                    ( density*trans( idv( un ) )-dt*gradv( pn ) )*id( u )
+                                                  );
 
-                    // --- Construction of convection operator on velocity
-                    //     space
-                    sparse_matrix_ptrtype A( M_backendu->newMatrix( Vh, Vh ) );
-                    form2( Vh, Vh, A, _init=true ) =
-                        integrate( elements(mesh), im_u_type(),
-                                   density*dt*trans( gradt(u)*idv(un) )*id(u) );
-                    A->close();
+            // --- Construction of convection operator on velocity
+            //     space
+            sparse_matrix_ptrtype A( M_backendu->newMatrix( Vh, Vh ) );
+            form2( Vh, Vh, A, _init=true ) =
+                integrate( elements( mesh ), im_u_type(),
+                           density*dt*trans( gradt( u )*idv( un ) )*id( u ) );
+            A->close();
 
 
-                    // --- Construction of convection-diffusion-reaction
-                    A->addMatrix( 1.0, *Lu );
+            // --- Construction of convection-diffusion-reaction
+            A->addMatrix( 1.0, *Lu );
 
-                    double umax = this->vm()["umax"].as<double>();
-                    AUTO( inflow, vec( constant(0.), umax*(1.0-(Px()^(2))/(r1*r1)) ) );
-                    form1( Vh, F ) += integrate( markedfaces(mesh,mesh->markerName( "inflow" ) ), im_u_type(),
-                                                 dt*viscosity*trans(inflow)* ( bcCoeff/hFace()*id(u)- grad(u)*N() ) );
+            double umax = this->vm()["umax"].as<double>();
+            AUTO( inflow, vec( constant( 0. ), umax*( 1.0-( Px()^( 2 ) )/( r1*r1 ) ) ) );
+            form1( Vh, F ) += integrate( markedfaces( mesh,mesh->markerName( "inflow" ) ), im_u_type(),
+                                         dt*viscosity*trans( inflow )* ( bcCoeff/hFace()*id( u )- grad( u )*N() ) );
 
-                    if ( this->vm().count( "export-matlab" ) )
-                        {
-                            A->printMatlab( "A.m" );
-                            F->printMatlab( "F.m" );
-                        }
-                    /*
-                     * Solution phase
-                     */
-                    // --- solve for u
-                    this->solve( M_backendu, A, un, F );
+            if ( this->vm().count( "export-matlab" ) )
+            {
+                A->printMatlab( "A.m" );
+                F->printMatlab( "F.m" );
+            }
 
-                    Log() << "solve for cdr matrix done\n";
+            /*
+             * Solution phase
+             */
+            // --- solve for u
+            this->solve( M_backendu, A, un, F );
 
-                    // rhs for pressure increment
-                    form1( Ph, fp, _init=true ) = integrate( elements(mesh), im_p_type(), -divv(un)*id(p)/dt );
+            Log() << "solve for cdr matrix done\n";
 
-                    if ( this->vm().count( "export-matlab" ) )
-                        {
-                            fp->printMatlab( "fp.m" );
-                        }
-                    // --- solve for pressure increment phi
-                    this->solve( M_backendp, Ap, p, fp );
-                    Log() << "solve for pressure matrix done\n";
+            // rhs for pressure increment
+            form1( Ph, fp, _init=true ) = integrate( elements( mesh ), im_p_type(), -divv( un )*id( p )/dt );
 
-                    divError = math::sqrt(integrate( elements(mesh), im_p_type(),
-                                                     divv(un)^2 ).evaluate()(0,0));
-                    Log() << "[Splitting] ||div u||_2 = " << divError << "\n";
+            if ( this->vm().count( "export-matlab" ) )
+            {
+                fp->printMatlab( "fp.m" );
+            }
 
-                    // --- update pressure
-                    pn += p;
+            // --- solve for pressure increment phi
+            this->solve( M_backendp, Ap, p, fp );
+            Log() << "solve for pressure matrix done\n";
+
+            divError = math::sqrt( integrate( elements( mesh ), im_p_type(),
+                                              divv( un )^2 ).evaluate()( 0,0 ) );
+            Log() << "[Splitting] ||div u||_2 = " << divError << "\n";
+
+            // --- update pressure
+            pn += p;
 
 #if VELOCITY_UPDATE
-                    // --- update velocity
-                    form1( Vh, F ) = integrate( elements(mesh), im_u_type(),
-                                                (trans(idv(un))-dt*gradv(phi))*id(U)
-                                                );
+            // --- update velocity
+            form1( Vh, F ) = integrate( elements( mesh ), im_u_type(),
+                                        ( trans( idv( un ) )-dt*gradv( phi ) )*id( U )
+                                      );
 
-                    this->solve( M_backendu, Mu, un, F );
+            this->solve( M_backendu, Mu, un, F );
 
-                    divError = std::sqrt(integrate( elements(mesh), im_p_type(),
-                                                    divv(un)^2 ).evaluate());
-                    Log() << "[Splitting] ||div u||_2 = " << divError << "\n";
+            divError = std::sqrt( integrate( elements( mesh ), im_p_type(),
+                                             divv( un )^2 ).evaluate() );
+            Log() << "[Splitting] ||div u||_2 = " << divError << "\n";
 #endif
 
-                } // inner loop
-            Log() << "inner divergence loop done\n";
-            u = un;
-            if ( this->vm().count( "transport" ) )
-                {
-                    double c0 = this->vm()["c0"].as<double>();
-                    //vec(constant(0.), (r1-Px())*(r1+Px())/(r1*r1) ) );
-                    //AUTO( g, constant(1.0)*(chi(time < T/2.0) ) );
-                    M_advreact->update( /* sigma */ constant( 1. )/dt, //+k*I*chi( emarker()==mesh->markerName( "" ) ),
-                                        /* beta */  idv(u),
-                                        /* f */     idv(cn)/dt,
-                                        /* g */     constant( c0 ) );
+        } // inner loop
 
-                    M_advreact->solve();
+        Log() << "inner divergence loop done\n";
+        u = un;
 
-                    cn = M_advreact->phi();
-                }
+        if ( this->vm().count( "transport" ) )
+        {
+            double c0 = this->vm()["c0"].as<double>();
+            //vec(constant(0.), (r1-Px())*(r1+Px())/(r1*r1) ) );
+            //AUTO( g, constant(1.0)*(chi(time < T/2.0) ) );
+            M_advreact->update( /* sigma */ constant( 1. )/dt, //+k*I*chi( emarker()==mesh->markerName( "" ) ),
+                                            /* beta */  idv( u ),
+                                            /* f */     idv( cn )/dt,
+                                            /* g */     constant( c0 ) );
 
-            this->exportResults( time, cn, un, pn );
+            M_advreact->solve();
+
+            cn = M_advreact->phi();
         }
+
+        this->exportResults( time, cn, un, pn );
+    }
 
 
 } // Rclux::run

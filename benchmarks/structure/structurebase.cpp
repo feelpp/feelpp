@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -45,43 +45,46 @@ StructureBase::New( Feel::po::variables_map const& vm )
 {
     Log() << "Creating new structure model and solver\n";
     using namespace Feel;
-    if ( vm["d"].as<int>() == 2 )
-        {
-            if ( vm["sorder"].as<int>() == 3 )
-                {
-                    return structure_ptrtype( new StVenantKirchhoff<2,3>( vm ) );
-                }
-            else if ( vm["sorder"].as<int>() == 8 )
-                {
-                    return structure_ptrtype( new StVenantKirchhoff<2,8>( vm ) );
-                }
-        }
-    else if ( vm["d"].as<int>() == 3 )
-        {
 
+    if ( vm["d"].as<int>() == 2 )
+    {
+        if ( vm["sorder"].as<int>() == 3 )
+        {
+            return structure_ptrtype( new StVenantKirchhoff<2,3>( vm ) );
         }
+
+        else if ( vm["sorder"].as<int>() == 8 )
+        {
+            return structure_ptrtype( new StVenantKirchhoff<2,8>( vm ) );
+        }
+    }
+
+    else if ( vm["d"].as<int>() == 3 )
+    {
+
+    }
 }
 
 Feel::po::options_description
 StructureBase::makeOptions()
 {
-    Feel::po::options_description structureoptions("Structure benchmark options");
+    Feel::po::options_description structureoptions( "Structure benchmark options" );
     structureoptions.add_options()
-        ("d", Feel::po::value<int>()->default_value( 2 ), "time step value")
-        ("dt", Feel::po::value<double>()->default_value( 1 ), "time step value")
-        ("nsubdt", Feel::po::value<int>()->default_value( 2 ), "number of sub time steps to save")
-        ("ft", Feel::po::value<double>()->default_value( 1 ), "final time value")
+    ( "d", Feel::po::value<int>()->default_value( 2 ), "time step value" )
+    ( "dt", Feel::po::value<double>()->default_value( 1 ), "time step value" )
+    ( "nsubdt", Feel::po::value<int>()->default_value( 2 ), "number of sub time steps to save" )
+    ( "ft", Feel::po::value<double>()->default_value( 1 ), "final time value" )
 
-        ("sorder", Feel::po::value<int>()->default_value( 8 ), "order of space discretisation for the displacement")
-        ("torder", Feel::po::value<int>()->default_value( 2 ), "order of time discretisation")
+    ( "sorder", Feel::po::value<int>()->default_value( 8 ), "order of space discretisation for the displacement" )
+    ( "torder", Feel::po::value<int>()->default_value( 2 ), "order of time discretisation" )
 
-        ("gammabc", Feel::po::value<double>()->default_value( 10 ), "penalisation parameter for weak Dirichlet condition")
+    ( "gammabc", Feel::po::value<double>()->default_value( 10 ), "penalisation parameter for weak Dirichlet condition" )
 
-        ("hsize", Feel::po::value<double>()->default_value( 0.5 ), "first h value to start convergence")
-        ("mesh-type", Feel::po::value<int>()->default_value( 1 ), "0 = oplagp1, 1 = Xh mesh")
-        ("export", "export results(ensight, data file(1D)")
-        ("export-matlab", "export matrix and vectors in matlab" )
-        ;
+    ( "hsize", Feel::po::value<double>()->default_value( 0.5 ), "first h value to start convergence" )
+    ( "mesh-type", Feel::po::value<int>()->default_value( 1 ), "0 = oplagp1, 1 = Xh mesh" )
+    ( "export", "export results(ensight, data file(1D)" )
+    ( "export-matlab", "export matrix and vectors in matlab" )
+    ;
     return structureoptions.add( Feel::feel_options() );
 }
 
@@ -93,9 +96,9 @@ StructureBase::makeAbout()
                            "0.1",
                            "nD(n=2,3) structure  benchmark",
                            Feel::AboutData::License_GPL,
-                           "Copyright (c) 2008 Université Joseph Fourier");
+                           "Copyright (c) 2008 Université Joseph Fourier" );
 
-    about.addAuthor("Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "");
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
     return about;
 
 }
@@ -186,7 +189,8 @@ StructureBase::createMesh()
     std::ostringstream ostr;
     std::ostringstream nameStr;
 
-    switch( M_dimension ) {
+    switch ( M_dimension )
+    {
     case 2:
         ostr << "h=" << M_h << ";\n"
              << "\n"
@@ -216,8 +220,10 @@ StructureBase::createMesh()
 
         nameStr << "structure";
         break;
+
     case 3:
         break;
+
     default:
         std::ostringstream os;
         os << "invalid dimension: " << M_dimension;
@@ -241,28 +247,32 @@ double
 StructureBase::Inflow::operator()( uint16_type c1, uint16_type c2, node_type const& p, node_type const& /*n*/ ) const
 {
     if ( M_data.d() == 2 )
+    {
+        switch ( c1 )
         {
-            switch ( c1 )
-                {
-                case 0:
-                    return 4*M_data.Um()*p[1]*(M_data.H()-p[1])/pow(M_data.H(),2);
-                case 1:
-                default:
-                    return 0;
-                }
+        case 0:
+            return 4*M_data.Um()*p[1]*( M_data.H()-p[1] )/pow( M_data.H(),2 );
+
+        case 1:
+        default:
+            return 0;
         }
-    else{
+    }
+
+    else
+    {
 
         // 3D
         switch ( c1 )
-            {
-            case 0:
-                return 16*M_data.Um()*p[1]*(M_data.H()-p[1])*p[2]*(M_data.H()-p[2])/pow(M_data.H(),4);
-            case 1:
-            case 2:
-            default:
-                return 0;
-            }
+        {
+        case 0:
+            return 16*M_data.Um()*p[1]*( M_data.H()-p[1] )*p[2]*( M_data.H()-p[2] )/pow( M_data.H(),4 );
+
+        case 1:
+        case 2:
+        default:
+            return 0;
+        }
     }
 }
 #endif

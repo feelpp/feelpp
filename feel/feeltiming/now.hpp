@@ -42,8 +42,8 @@ typedef Feel::uint64_type  cycles_t;
 double    now()
 {
     struct timeval tp;
-    gettimeofday(&tp,NULL);
-    return double(tp.tv_sec) + double(tp.tv_usec)*1e-6;
+    gettimeofday( &tp,NULL );
+    return double( tp.tv_sec ) + double( tp.tv_usec )*1e-6;
 }
 
 //inline cycles_t read_cycles();

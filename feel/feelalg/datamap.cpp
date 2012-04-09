@@ -30,7 +30,7 @@
 
 namespace Feel
 {
-DataMap::DataMap(WorldComm const& _worldComm)
+DataMap::DataMap( WorldComm const& _worldComm )
     :
     M_closed( false ),
     _M_n_dofs( 0 ),
@@ -43,7 +43,7 @@ DataMap::DataMap(WorldComm const& _worldComm)
     M_myglobalelements(),
     M_mapGlobalProcessToGlobalCluster(),
     M_mapGlobalClusterToGlobalProcess(),
-    M_worldComm(_worldComm)
+    M_worldComm( _worldComm )
 {
     //std::cout << "\nDataMap : build empty! on godrank " << this->worldComm().godRank() << std::endl;
     _M_n_localWithoutGhost_df.resize( this->worldComm().globalSize() );
@@ -53,7 +53,7 @@ DataMap::DataMap(WorldComm const& _worldComm)
     _M_first_df_globalcluster.resize( this->worldComm().globalSize() );
     _M_last_df_globalcluster.resize( this->worldComm().globalSize() );
 }
-    DataMap::DataMap( size_type n, size_type n_local, WorldComm const& _worldComm )
+DataMap::DataMap( size_type n, size_type n_local, WorldComm const& _worldComm )
     :
     M_closed( false ),
     _M_n_dofs( n ),
@@ -66,7 +66,7 @@ DataMap::DataMap(WorldComm const& _worldComm)
     M_myglobalelements(),
     M_mapGlobalProcessToGlobalCluster(),
     M_mapGlobalClusterToGlobalProcess(),
-    M_worldComm(_worldComm)
+    M_worldComm( _worldComm )
 {
     _M_n_localWithoutGhost_df.resize( this->worldComm().globalSize() );
     _M_n_localWithGhost_df.resize( this->worldComm().globalSize() );
@@ -75,99 +75,104 @@ DataMap::DataMap(WorldComm const& _worldComm)
     _M_first_df_globalcluster.resize( this->worldComm().globalSize() );
     _M_last_df_globalcluster.resize( this->worldComm().globalSize() );
 
-    FEELPP_ASSERT (n_local <= n)
-        ( n_local )( n )
-        ( this->worldComm().globalRank() )
-        ( this->worldComm().globalSize() ).error( "Invalid local vector size" );
+    FEELPP_ASSERT ( n_local <= n )
+    ( n_local )( n )
+    ( this->worldComm().globalRank() )
+    ( this->worldComm().globalSize() ).error( "Invalid local vector size" );
 
     _M_n_dofs = n;
 
 #ifdef FEELPP_HAS_MPI
-    std::vector<int> local_sizes     ( this->worldComm().size(), 0);
-    std::vector<int> local_sizes_send( this->worldComm().size(), 0);
+    std::vector<int> local_sizes     ( this->worldComm().size(), 0 );
+    std::vector<int> local_sizes_send( this->worldComm().size(), 0 );
 
     if ( this->worldComm().size() > 1 )
-        {
+    {
 #if !defined(FEELPP_ENABLE_MPI_MODE)
-            local_sizes_send[this->worldComm().rank()] = n_local;
+        local_sizes_send[this->worldComm().rank()] = n_local;
 #if 1
-            MPI_Allreduce (&local_sizes_send[0],
-                           &local_sizes[0],
-                           local_sizes.size(),
-                           MPI_INT,
-                           MPI_SUM,
-                           this->worldComm() );
+        MPI_Allreduce ( &local_sizes_send[0],
+                        &local_sizes[0],
+                        local_sizes.size(),
+                        MPI_INT,
+                        MPI_SUM,
+                        this->worldComm() );
 #else
-            mpi::all_reduce( this->worldComm(), local_sizes_send, local_sizes, std::plus<std::vector<int> >() );
+        mpi::all_reduce( this->worldComm(), local_sizes_send, local_sizes, std::plus<std::vector<int> >() );
 #endif
-            std::vector<int> M_recvcounts( this->worldComm().size() );
-            std::vector<int> M_displs( this->worldComm().size() );
+        std::vector<int> M_recvcounts( this->worldComm().size() );
+        std::vector<int> M_displs( this->worldComm().size() );
 
-            int _local_index = 0;
-            for ( int p=0; p<this->worldComm().size(); p++ )
-                {
-                    // size of data per processor
-                    M_recvcounts[p] = local_sizes[p];
-                    Debug( 5600 ) << "VectorUblas::init M_recvcounts[" <<p<< "]=" << M_recvcounts[p] << "\n";
+        int _local_index = 0;
 
-                    // first index on the p-th processor
-                    M_displs[p] = _local_index;
-                    Debug( 5600 ) << "VectorUblas::init M_displs[" <<p<< "]=" << M_displs[p] << "\n";
+        for ( int p=0; p<this->worldComm().size(); p++ )
+        {
+            // size of data per processor
+            M_recvcounts[p] = local_sizes[p];
+            Debug( 5600 ) << "VectorUblas::init M_recvcounts[" <<p<< "]=" << M_recvcounts[p] << "\n";
 
-                    _local_index += local_sizes[p];
+            // first index on the p-th processor
+            M_displs[p] = _local_index;
+            Debug( 5600 ) << "VectorUblas::init M_displs[" <<p<< "]=" << M_displs[p] << "\n";
 
-                    _M_first_df[p] = _local_index;
-                    _M_last_df[p] = _local_index+n_local-1;
-                }
+            _local_index += local_sizes[p];
+
+            _M_first_df[p] = _local_index;
+            _M_last_df[p] = _local_index+n_local-1;
+        }
+
 #else // defined(FEELPP_ENABLE_MPI_MODE)
 
-            // Vincent TODO!
+        // Vincent TODO!
 
 #endif
 
-        }
-    else // sequential
-        {
-            local_sizes[this->worldComm().rank()] = n_local;
+    }
 
-            _M_first_df[this->worldComm().rank()] = 0;
-            _M_last_df[this->worldComm().rank()] = n_local-1;
-            // mpi
-            _M_n_localWithoutGhost_df[this->worldComm().rank()]=n_local;
-            _M_n_localWithGhost_df[this->worldComm().rank()]=n_local;
-            _M_first_df_globalcluster[this->worldComm().rank()]=0;
-            _M_last_df_globalcluster[this->worldComm().rank()]=n_local-1;
-            // todo! : les map
-            M_mapGlobalProcessToGlobalCluster.resize(n_local);
-            M_mapGlobalClusterToGlobalProcess.resize(n_local);
-        }
+    else // sequential
+    {
+        local_sizes[this->worldComm().rank()] = n_local;
+
+        _M_first_df[this->worldComm().rank()] = 0;
+        _M_last_df[this->worldComm().rank()] = n_local-1;
+        // mpi
+        _M_n_localWithoutGhost_df[this->worldComm().rank()]=n_local;
+        _M_n_localWithGhost_df[this->worldComm().rank()]=n_local;
+        _M_first_df_globalcluster[this->worldComm().rank()]=0;
+        _M_last_df_globalcluster[this->worldComm().rank()]=n_local-1;
+        // todo! : les map
+        M_mapGlobalProcessToGlobalCluster.resize( n_local );
+        M_mapGlobalClusterToGlobalProcess.resize( n_local );
+    }
+
     if ( n == invalid_size_type_value )
         _M_n_dofs = _M_last_df[this->worldComm().rank()]+1;
+
 #  ifdef DEBUG
     // Make sure all the local sizes sum up to the global
     // size, otherwise there is big trouble!
     int sum=0;
 
-    for (int p=0; p< this->worldComm().size(); p++)
+    for ( int p=0; p< this->worldComm().size(); p++ )
         sum += local_sizes[p];
 
     if ( n != invalid_size_type_value )
-        FEELPP_ASSERT (sum == static_cast<int>(n))
-            ( sum )( n )
-            ( this->worldComm().rank() )
-            ( this->worldComm().size() ).warn( "invalid distributed vector construction" );
+        FEELPP_ASSERT ( sum == static_cast<int>( n ) )
+        ( sum )( n )
+        ( this->worldComm().rank() )
+        ( this->worldComm().size() ).warn( "invalid distributed vector construction" );
 
 #  endif
 
 #else
 
     // No other options without MPI!
-    if (n != n_local)
-        {
-            std::cerr << "ERROR:  MPI is required for n != n_local!"
-                      << std::endl;
-            //error();
-        }
+    if ( n != n_local )
+    {
+        std::cerr << "ERROR:  MPI is required for n != n_local!"
+                  << std::endl;
+        //error();
+    }
 
 #endif
 
@@ -188,11 +193,11 @@ DataMap::DataMap( DataMap const & dm )
     _M_n_localWithGhost_df( dm._M_n_localWithGhost_df ),
     _M_first_df( dm._M_first_df ),
     _M_last_df( dm._M_last_df ),
-    _M_first_df_globalcluster( dm._M_first_df_globalcluster),
-    _M_last_df_globalcluster( dm._M_last_df_globalcluster),
+    _M_first_df_globalcluster( dm._M_first_df_globalcluster ),
+    _M_last_df_globalcluster( dm._M_last_df_globalcluster ),
     M_myglobalelements(),
-    M_mapGlobalProcessToGlobalCluster(dm.M_mapGlobalProcessToGlobalCluster),
-    M_mapGlobalClusterToGlobalProcess(dm.M_mapGlobalClusterToGlobalProcess),
+    M_mapGlobalProcessToGlobalCluster( dm.M_mapGlobalProcessToGlobalCluster ),
+    M_mapGlobalClusterToGlobalProcess( dm.M_mapGlobalClusterToGlobalProcess ),
     M_worldComm( dm.M_worldComm )
 {}
 DataMap::~DataMap()
@@ -202,20 +207,21 @@ DataMap&
 DataMap::operator=( DataMap const& dm )
 {
     if ( this != &dm )
-        {
-            M_worldComm = dm.M_worldComm;
-            M_closed = dm.M_closed;
-            _M_n_dofs = dm._M_n_dofs;
-            _M_n_localWithoutGhost_df = dm._M_n_localWithoutGhost_df;
-            _M_n_localWithGhost_df = dm._M_n_localWithGhost_df;
-            _M_first_df = dm._M_first_df;
-            _M_last_df = dm._M_last_df;
-            _M_first_df_globalcluster = dm._M_first_df_globalcluster;
-            _M_last_df_globalcluster = dm._M_last_df_globalcluster;
-            M_myglobalelements = dm.M_myglobalelements;
-            M_mapGlobalProcessToGlobalCluster = dm.M_mapGlobalProcessToGlobalCluster;
-            M_mapGlobalClusterToGlobalProcess = dm.M_mapGlobalClusterToGlobalProcess;
-        }
+    {
+        M_worldComm = dm.M_worldComm;
+        M_closed = dm.M_closed;
+        _M_n_dofs = dm._M_n_dofs;
+        _M_n_localWithoutGhost_df = dm._M_n_localWithoutGhost_df;
+        _M_n_localWithGhost_df = dm._M_n_localWithGhost_df;
+        _M_first_df = dm._M_first_df;
+        _M_last_df = dm._M_last_df;
+        _M_first_df_globalcluster = dm._M_first_df_globalcluster;
+        _M_last_df_globalcluster = dm._M_last_df_globalcluster;
+        M_myglobalelements = dm.M_myglobalelements;
+        M_mapGlobalProcessToGlobalCluster = dm.M_mapGlobalProcessToGlobalCluster;
+        M_mapGlobalClusterToGlobalProcess = dm.M_mapGlobalClusterToGlobalProcess;
+    }
+
     return *this;
 }
 void
@@ -223,10 +229,12 @@ DataMap::close() const
 {
     // we assume here that the data is contiguous
     M_myglobalelements.resize( nMyElements() );
-    for( size_type i = 0; i < nMyElements(); ++i )
-        {
-            M_myglobalelements[i] = minMyGID() + i;
-        }
+
+    for ( size_type i = 0; i < nMyElements(); ++i )
+    {
+        M_myglobalelements[i] = minMyGID() + i;
+    }
+
     M_closed = true;
 }
 std::vector<size_type> const&
@@ -234,62 +242,84 @@ DataMap::myGlobalElements() const
 {
     if ( !this->closed() )
         this->close();
+
     return M_myglobalelements;
 }
 
 
 
 void
-DataMap::setNDof(size_type ndof) { _M_n_dofs=ndof; }
+DataMap::setNDof( size_type ndof )
+{
+    _M_n_dofs=ndof;
+}
 
 void
-DataMap::setNLocalDofWithoutGhost(const size_type proc, const size_type n, bool inWorld)
+DataMap::setNLocalDofWithoutGhost( const size_type proc, const size_type n, bool inWorld )
 {
     _M_n_localWithoutGhost_df[this->worldComm().globalRank()]=n;
 }
 void
-DataMap::setNLocalDofWithGhost(const size_type proc, const size_type n, bool inWorld)
+DataMap::setNLocalDofWithGhost( const size_type proc, const size_type n, bool inWorld )
 {
     _M_n_localWithGhost_df[this->worldComm().globalRank()]=n;
 }
 void
-DataMap::setFirstDof(const size_type proc, const size_type df, bool inWorld)
+DataMap::setFirstDof( const size_type proc, const size_type df, bool inWorld )
 {
-    FEELPP_ASSERT(proc < _M_first_df.size())( proc )( _M_first_df.size() ).error( "invalid proc id or dof table" );
+    FEELPP_ASSERT( proc < _M_first_df.size() )( proc )( _M_first_df.size() ).error( "invalid proc id or dof table" );
     _M_first_df[this->worldComm().globalRank()]=df;
 }
 void
-DataMap::setLastDof(const size_type proc, const size_type df, bool inWorld)
+DataMap::setLastDof( const size_type proc, const size_type df, bool inWorld )
 {
-    FEELPP_ASSERT(proc < _M_first_df.size())( proc )( _M_first_df.size() ).error( "invalid proc id or dof table" );
+    FEELPP_ASSERT( proc < _M_first_df.size() )( proc )( _M_first_df.size() ).error( "invalid proc id or dof table" );
     _M_last_df[this->worldComm().globalRank()]=df;
 }
 void
-DataMap::setFirstDofGlobalCluster(const size_type proc, const size_type df, bool inWorld)
+DataMap::setFirstDofGlobalCluster( const size_type proc, const size_type df, bool inWorld )
 {
-    FEELPP_ASSERT(proc < _M_first_df_globalcluster.size())( proc )( _M_first_df_globalcluster.size() ).error( "invalid proc id or dof table" );
+    FEELPP_ASSERT( proc < _M_first_df_globalcluster.size() )( proc )( _M_first_df_globalcluster.size() ).error( "invalid proc id or dof table" );
     _M_first_df_globalcluster[this->worldComm().globalRank()]=df;
 }
 void
-DataMap::setLastDofGlobalCluster(const size_type proc, const size_type df, bool inWorld)
+DataMap::setLastDofGlobalCluster( const size_type proc, const size_type df, bool inWorld )
 {
-    FEELPP_ASSERT(proc < _M_first_df_globalcluster.size())( proc )( _M_first_df_globalcluster.size() ).error( "invalid proc id or dof table" );
+    FEELPP_ASSERT( proc < _M_first_df_globalcluster.size() )( proc )( _M_first_df_globalcluster.size() ).error( "invalid proc id or dof table" );
     _M_last_df_globalcluster[this->worldComm().globalRank()]=df;
 }
 
 
 void
-DataMap::setMapGlobalProcessToGlobalCluster( std::vector<size_type> const& map) { M_mapGlobalProcessToGlobalCluster=map; }
+DataMap::setMapGlobalProcessToGlobalCluster( std::vector<size_type> const& map )
+{
+    M_mapGlobalProcessToGlobalCluster=map;
+}
 void
-DataMap::setMapGlobalClusterToGlobalProcess( std::vector<size_type> const& map) { M_mapGlobalClusterToGlobalProcess=map; }
+DataMap::setMapGlobalClusterToGlobalProcess( std::vector<size_type> const& map )
+{
+    M_mapGlobalClusterToGlobalProcess=map;
+}
 void
-DataMap::setMapGlobalProcessToGlobalCluster( size_type i, size_type j) { M_mapGlobalProcessToGlobalCluster[i]=j; }
+DataMap::setMapGlobalProcessToGlobalCluster( size_type i, size_type j )
+{
+    M_mapGlobalProcessToGlobalCluster[i]=j;
+}
 void
-DataMap::setMapGlobalClusterToGlobalProcess( size_type i, size_type j) { M_mapGlobalClusterToGlobalProcess[i]=j; }
+DataMap::setMapGlobalClusterToGlobalProcess( size_type i, size_type j )
+{
+    M_mapGlobalClusterToGlobalProcess[i]=j;
+}
 void
-DataMap::resizeMapGlobalProcessToGlobalCluster( size_type n) { M_mapGlobalProcessToGlobalCluster.resize(n); }
+DataMap::resizeMapGlobalProcessToGlobalCluster( size_type n )
+{
+    M_mapGlobalProcessToGlobalCluster.resize( n );
+}
 void
-DataMap::resizeMapGlobalClusterToGlobalProcess( size_type n) { M_mapGlobalClusterToGlobalProcess.resize(n); }
+DataMap::resizeMapGlobalClusterToGlobalProcess( size_type n )
+{
+    M_mapGlobalClusterToGlobalProcess.resize( n );
+}
 
 void
 DataMap::updateDataInWorld()
@@ -326,67 +356,78 @@ DataMap::showMeMapGlobalProcessToGlobalCluster( std::ostream& __out  ) const
     this->comm().godComm().barrier();
 
     //for (int proc = 0;proc<this->comm().size();++proc
-    for (int proc = 0;proc<this->comm().godSize();++proc)
+    for ( int proc = 0; proc<this->comm().godSize(); ++proc )
+    {
+        //if (proc==this->comm().rank())
+        if ( proc==this->comm().godRank() )
         {
-            //if (proc==this->comm().rank())
-            if (proc==this->comm().godRank())
-                {
-                    __out << "\n";
-                    __out << "-----------------------------------------------------------------------\n"
-                          << "------------------showMeMapGlobalProcessToGlobalCluster----------------\n"
-                          << "-----------------------------------------------------------------------\n"
-                          << "god rank : " << this->comm().godRank()  << "\n"
-                          << "global rank : " << this->comm().globalRank()  << "\n"
-                          << "local rank : " << this->comm().localRank()  << "\n"
-                          << "rank : " << proc  << "\n"
-                          << "nDof : " << this->nDof() << "\n"
-                          << "nLocalDof : " << this->nLocalDof() << "\n"
-                          << "nLocalDofWithoutGhost : " << this->nLocalDofWithoutGhost() << "\n"
-                          << "nLocalDofWithGhost : " << this->nLocalDofWithGhost() << "\n"
-                          << "mapGlobalProcessToGlobalCluster().size() " << this->mapGlobalProcessToGlobalCluster().size() << "\n"
-                          << "-----------------------------------------------------------------------\n";
+            __out << "\n";
+            __out << "-----------------------------------------------------------------------\n"
+                  << "------------------showMeMapGlobalProcessToGlobalCluster----------------\n"
+                  << "-----------------------------------------------------------------------\n"
+                  << "god rank : " << this->comm().godRank()  << "\n"
+                  << "global rank : " << this->comm().globalRank()  << "\n"
+                  << "local rank : " << this->comm().localRank()  << "\n"
+                  << "rank : " << proc  << "\n"
+                  << "nDof : " << this->nDof() << "\n"
+                  << "nLocalDof : " << this->nLocalDof() << "\n"
+                  << "nLocalDofWithoutGhost : " << this->nLocalDofWithoutGhost() << "\n"
+                  << "nLocalDofWithGhost : " << this->nLocalDofWithGhost() << "\n"
+                  << "mapGlobalProcessToGlobalCluster().size() " << this->mapGlobalProcessToGlobalCluster().size() << "\n"
+                  << "-----------------------------------------------------------------------\n";
 #if 0
-                    for (size_type i=0 ; i<this->mapGlobalProcessToGlobalCluster().size() ;++i)
-                        {
-                            __out << i << " " << this->mapGlobalProcessToGlobalCluster()[i]
-                                  << " real proc " << procOnGlobalCluster(/*this->*/mapGlobalProcessToGlobalCluster()[i]) <<"\n";
-                        }
-                    __out << "-----------------------------------------------------------------------\n";
+
+            for ( size_type i=0 ; i<this->mapGlobalProcessToGlobalCluster().size() ; ++i )
+            {
+                __out << i << " " << this->mapGlobalProcessToGlobalCluster()[i]
+                      << " real proc " << procOnGlobalCluster( /*this->*/mapGlobalProcessToGlobalCluster()[i] ) <<"\n";
+            }
+
+            __out << "-----------------------------------------------------------------------\n";
 #endif
 #if 1
-                    __out << " _M_first_df : ";
-                    for (int i=0;i<this->worldComm().globalSize();++i)
-                        {
-                            __out << this-> _M_first_df[i] << " ";
-                        }
-                    __out << "\n";
-                    __out << " _M_last_df : ";
-                    for (int i=0;i<this->worldComm().globalSize();++i)
-                        {
-                            __out << this-> _M_last_df[i] << " ";
-                        }
-                    __out << "\n";
-                    __out << " _M_first_df_globalcluster : ";
-                    for (int i=0;i<this->worldComm().globalSize();++i)
-                        {
-                            __out << this-> _M_first_df_globalcluster[i] << " ";
-                        }
-                    __out << "\n";
-                    __out << " _M_last_df_globalcluster : ";
-                    for (int i=0;i<this->worldComm().globalSize();++i)
-                        {
-                            __out << this-> _M_last_df_globalcluster[i] << " ";
-                        }
-                    __out << "\n";
+            __out << " _M_first_df : ";
+
+            for ( int i=0; i<this->worldComm().globalSize(); ++i )
+            {
+                __out << this-> _M_first_df[i] << " ";
+            }
+
+            __out << "\n";
+            __out << " _M_last_df : ";
+
+            for ( int i=0; i<this->worldComm().globalSize(); ++i )
+            {
+                __out << this-> _M_last_df[i] << " ";
+            }
+
+            __out << "\n";
+            __out << " _M_first_df_globalcluster : ";
+
+            for ( int i=0; i<this->worldComm().globalSize(); ++i )
+            {
+                __out << this-> _M_first_df_globalcluster[i] << " ";
+            }
+
+            __out << "\n";
+            __out << " _M_last_df_globalcluster : ";
+
+            for ( int i=0; i<this->worldComm().globalSize(); ++i )
+            {
+                __out << this-> _M_last_df_globalcluster[i] << " ";
+            }
+
+            __out << "\n";
 
 #endif
-                    __out << "-----------------------------------------------------------------------\n";
+            __out << "-----------------------------------------------------------------------\n";
 
-                    __out << std::endl;
-                }
-            //this->comm().barrier();
-            this->comm().godComm().barrier();
+            __out << std::endl;
         }
+
+        //this->comm().barrier();
+        this->comm().godComm().barrier();
+    }
 
 
 }

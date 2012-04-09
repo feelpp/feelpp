@@ -34,27 +34,32 @@ namespace Feel
 {
 GmshEllipsoidDomain::GmshEllipsoidDomain( int Dim, int Order, DomainType dt )
     :
-    super(Dim, Order)
+    super( Dim, Order )
 {
-    switch (dt)
+    switch ( dt )
     {
     case GMSH_REAL_DOMAIN:
     {
 
         if ( this->dimension() >= 1 )
             this->M_I[0] = std::make_pair( -1, 1 );
+
         if ( this->dimension() >= 2 )
             this->M_I[1] = std::make_pair( -1, 1 );
+
         if ( this->dimension() >= 3 )
             this->M_I[2] = std::make_pair( -1, 1 );
     }
     break;
+
     case GMSH_REFERENCE_DOMAIN:
     {
         if ( this->dimension() >= 1 )
             this->M_I[0] = std::make_pair( -1, 1 );
+
         if ( this->dimension() >= 2 )
             this->M_I[1] = std::make_pair( -1, 1 );
+
         if ( this->dimension() >= 3 )
             this->M_I[2] = std::make_pair( -1, 1 );
     }
@@ -65,14 +70,17 @@ GmshEllipsoidDomain::GmshEllipsoidDomain( int Dim, int Order, DomainType dt )
 std::string
 GmshEllipsoidDomain::getDescription() const
 {
-    switch( this->dimension() )
+    switch ( this->dimension() )
     {
     case 1:
         return this->getDescription1D();
+
     case 2:
         return this->getDescription2D();
+
     case 3:
         return this->getDescription3D();
+
     default:
         return std::string();
     }
@@ -85,11 +93,13 @@ GmshEllipsoidDomain::getDescription1D() const
 
     ostr << "Point(1) = {" << this->M_I[0].first << ",0,0,h};\n"
          << "Point(2) = {" << this->M_I[0].second << ",0,0,h};\n";
+
     if ( this->addMidPoint() )
     {
-        ostr << "Point(3) = {" << (this->M_I[0].second+this->M_I[0].first)/2 << ",0,0,h};\n"
+        ostr << "Point(3) = {" << ( this->M_I[0].second+this->M_I[0].first )/2 << ",0,0,h};\n"
              << "Line(1) = {1,3};\n"
              << "Line(2) = {3,2};\n";
+
         if ( this->usePhysicalNames() == false )
         {
             ostr    << "Physical Point(1) = {1};\n"
@@ -98,6 +108,7 @@ GmshEllipsoidDomain::getDescription1D() const
                     << "Physical Line(1) = {1};\n"
                     << "Physical Line(2) = {2};\n";
         }
+
         else
         {
             ostr    << "Physical Point(\"Dirichlet\") = {1};\n"
@@ -107,6 +118,7 @@ GmshEllipsoidDomain::getDescription1D() const
                     << "Physical Line(\"Mat2\") = {2};\n";
         }
     }
+
     else
     {
         if ( this->usePhysicalNames() == false )
@@ -116,6 +128,7 @@ GmshEllipsoidDomain::getDescription1D() const
                  << "Physical Point(3) = {2};\n"
                  << "Physical Line(1) = {1};\n";
         }
+
         else
         {
             ostr << "Line(1) = {1,2};\n"
@@ -124,6 +137,7 @@ GmshEllipsoidDomain::getDescription1D() const
                  << "Physical Line(\"Mat1\") = {1};\n";
         }
     }
+
     return ostr.str();
 }
 // 2D
@@ -133,8 +147,8 @@ GmshEllipsoidDomain::getDescription2D() const
     std::ostringstream ostr;
     ostr << this->preamble() << "\n";
 
-    double xcenter = (this->xmax()+this->xmin())/2;
-    double ycenter = (this->ymax()+this->ymin())/2;
+    double xcenter = ( this->xmax()+this->xmin() )/2;
+    double ycenter = ( this->ymax()+this->ymin() )/2;
     double zcenter = 0;
     ostr << "Point(1) = {" << xcenter << "," << ycenter << "," << zcenter << ",h};\n"
          << "Point(2) = {" << this->xmax() << "," << ycenter << "," << zcenter << ",h};\n"
@@ -147,11 +161,13 @@ GmshEllipsoidDomain::getDescription2D() const
          << "Circle(4) = {5,1,2};\n"
          << "Line Loop(5) = {2, 3, 4, 1};\n"
          << "Ruled Surface(6) = {5};\n";
+
     if ( this->usePhysicalNames() == false )
     {
         ostr << "Physical Line(7) = {1, 4, 3, 2};\n"
              << "Physical Surface(8) = {6};\n";
     }
+
     else
     {
         ostr << "Physical Line(\"Neumann\") = {1, 4};\n"
@@ -170,9 +186,9 @@ GmshEllipsoidDomain::getDescription3D() const
     std::ostringstream ostr;
     ostr << this->preamble() << "\n";
 
-    double xcenter = (this->xmax()+this->xmin())/2;
-    double ycenter = (this->ymax()+this->ymin())/2;
-    double zcenter = (this->zmax()+this->zmin())/2;
+    double xcenter = ( this->xmax()+this->xmin() )/2;
+    double ycenter = ( this->ymax()+this->ymin() )/2;
+    double zcenter = ( this->zmax()+this->zmin() )/2;
     ostr << "Point(1) = {" << xcenter << "," << ycenter << "," << zcenter << ",h};\n"
          << "Point(2) = {" << this->xmax() << "," << ycenter << "," << zcenter << ",h};\n"
          << "Point(3) = {" << xcenter << "," << this->ymax() << "," << zcenter << ",h};\n"
@@ -210,17 +226,20 @@ GmshEllipsoidDomain::getDescription3D() const
          << "Ruled Surface(28) = {27};\n"
          << "Surface Loop(29) = {28,26,16,14,20,24,22,18};\n"
          << "Volume(30) = {29};\n";
+
     if ( this->usePhysicalNames() == false )
     {
         ostr << "Physical Surface(1) = {28,26,16,14,20,24,22,18};\n"
              << "Physical Volume(2) = {30};\n";
     }
+
     else
     {
         ostr << "Physical Surface(\"Neumann\") = {28,26,16,14};\n"
              << "Physical Surface(\"Dirichlet\") = {20,24,22,18};\n"
              << "Physical Volume(\"Mat_1\") = {30};\n";
     }
+
     return ostr.str();
 }
 

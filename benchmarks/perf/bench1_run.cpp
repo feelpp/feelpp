@@ -48,10 +48,11 @@ void
 Bench1::run()
 {
     if ( this->vm().count( "help" ) )
-        {
-            std::cout << this->optionsDescription() << "\n";
-            return;
-        }
+    {
+        std::cout << this->optionsDescription() << "\n";
+        return;
+    }
+
     if ( this->vm().count( "nochdir" ) )
     {
         this->changeRepository( boost::format( "/benchmarks/perf/%1%/%2$dD/%3$.3f" )
@@ -59,21 +60,25 @@ Bench1::run()
                                 % this->vm()["dim"].as<int>()
                                 % this->vm()["hsize"].as<double>() );
     }
-    switch(  vm()["dim"].as<int>() )
-        {
-        case 1:
-            run1d();
-            break;
-        case 2:
-            run2d();
-            break;
-        case 3:
-            run3d();
-            break;
-        default:
-            std::cout << this->optionsDescription() << "\n";
-            return;
-        }
+
+    switch (  vm()["dim"].as<int>() )
+    {
+    case 1:
+        run1d();
+        break;
+
+    case 2:
+        run2d();
+        break;
+
+    case 3:
+        run3d();
+        break;
+
+    default:
+        std::cout << this->optionsDescription() << "\n";
+        return;
+    }
 }
 
 }

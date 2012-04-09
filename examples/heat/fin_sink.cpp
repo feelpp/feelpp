@@ -38,7 +38,7 @@ using namespace Feel;
 
 
 /**
- * makefin creates the .geo file and returns a gmsh pointer type. 
+ * makefin creates the .geo file and returns a gmsh pointer type.
  * Be carefull, the problem considered here is dimensional
  *
  * \arg hsize : size of the mesh
@@ -47,10 +47,12 @@ using namespace Feel;
  * \arg L : dimensional length of the sink (in meters)
  */
 gmsh_ptrtype
-makefin( double hsize, double width, double deep, double L)
+makefin( double hsize, double width, double deep, double L )
 {
     std::ostringstream ostr;
-    if (!deep) { // 2D Mesh
+
+    if ( !deep ) // 2D Mesh
+    {
         ostr << "Mesh.MshFileVersion = 2.1;\n"
              << "Point (1) = {0, 0, 0, " << hsize << "};\n"
              << "Point (2) = {0.001, 0, 0, " << hsize << "};\n"
@@ -71,20 +73,21 @@ makefin( double hsize, double width, double deep, double L)
              << "Line Loop (10) = {5, 6, 7, -4};\n"
              << "Plane Surface (9) = {9};\n"
              << "Plane Surface (10) = {10};\n"
-            // physical entities
-			 << "Physical Line (\"gamma1\") = {5};\n"
-			 << "Physical Line (\"gamma2\") = {6};\n"
-			 << "Physical Line (\"gamma3\") = {4};\n"
-			 << "Physical Line (\"gamma4\") = {1};\n"
-			 << "Physical Line (\"gamma5\") = {3};\n"
-			 << "Physical Line (\"gamma6\") = {7};\n"
-			 << "Physical Line (\"gamma7\") = {2};\n"
+             // physical entities
+             << "Physical Line (\"gamma1\") = {5};\n"
+             << "Physical Line (\"gamma2\") = {6};\n"
+             << "Physical Line (\"gamma3\") = {4};\n"
+             << "Physical Line (\"gamma4\") = {1};\n"
+             << "Physical Line (\"gamma5\") = {3};\n"
+             << "Physical Line (\"gamma6\") = {7};\n"
+             << "Physical Line (\"gamma7\") = {2};\n"
              << "Physical Line (\"gamma8\") = {8};\n"
              << "Physical Surface (\"spreader_mesh\") = {9};\n"
              << "Physical Surface (\"fin_mesh\") = {10};\n";
     }
 
-    else { //3D Mesh
+    else   //3D Mesh
+    {
         ostr << "Mesh.MshFileVersion = 2.1;\n"
              << "Point (1) = {0, 0, 0, " << hsize << "};\n"
              << "Point (2) = {0.001, 0, 0, " << hsize << "};\n"

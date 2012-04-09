@@ -88,13 +88,14 @@ public:
     //@{
 
     //! copy operator
-    CRBDB& operator=( CRBDB const & o)
+    CRBDB& operator=( CRBDB const & o )
+    {
+        if ( this != &o )
         {
-            if (this != &o )
-            {
-            }
-            return *this;
         }
+
+        return *this;
+    }
     //@}
 
     /** @name Accessors
@@ -102,13 +103,22 @@ public:
     //@{
 
     //! \return prefix directory
-    std::string const& prefixDirectory() const { return M_prefixdir; }
+    std::string const& prefixDirectory() const
+    {
+        return M_prefixdir;
+    }
 
     //! \return name
-    std::string const& name() const { return M_name; }
+    std::string const& name() const
+    {
+        return M_name;
+    }
 
     //! \return the DB filename
-    std::string const& dbFilename() const { return M_dbfilename; }
+    std::string const& dbFilename() const
+    {
+        return M_dbfilename;
+    }
 
     //! \return the db local path
     fs::path dbLocalPath() const;
@@ -120,13 +130,22 @@ public:
     fs::path lookForDB() const;
 
     //! \return \c variables_map
-    po::variables_map vm() { return M_vm; }
+    po::variables_map vm()
+    {
+        return M_vm;
+    }
 
     //! \return \c variables_map
-    po::variables_map vm() const { return M_vm; }
+    po::variables_map vm() const
+    {
+        return M_vm;
+    }
 
     //! \return true if the DB has been loaded, false otherwise
-    bool isDBLoaded() const { return M_isloaded; }
+    bool isDBLoaded() const
+    {
+        return M_isloaded;
+    }
 
     //@}
 
@@ -135,7 +154,10 @@ public:
     //@{
 
     //! set the DB filename
-    void setDBFilename( std::string const& filename ) { M_dbfilename = filename; }
+    void setDBFilename( std::string const& filename )
+    {
+        M_dbfilename = filename;
+    }
 
     //@}
 
@@ -156,19 +178,22 @@ public:
     //@}
 
 protected:
-    void setIsLoaded( bool isloaded ) { M_isloaded = isloaded; }
+    void setIsLoaded( bool isloaded )
+    {
+        M_isloaded = isloaded;
+    }
 
     friend class boost::serialization::access;
     // When the class Archive corresponds to an output archive, the
     // & operator is defined similar to <<.  Likewise, when the class Archive
     // is a type of input archive the & operator is defined similar to >>.
     template<class Archive>
-    void save(Archive & ar, const unsigned int version) const
-        {}
+    void save( Archive & ar, const unsigned int version ) const
+    {}
 
     template<class Archive>
-    void load(Archive & ar, const unsigned int version)
-        {}
+    void load( Archive & ar, const unsigned int version )
+    {}
 
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 private:

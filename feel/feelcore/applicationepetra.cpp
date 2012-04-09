@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -40,20 +40,20 @@ makeMLEpetraOptions()
 {
     po::options_description mlEpetraOptions( "ML Epetra options" );
     mlEpetraOptions.add_options()
-        ("max-levels", po::value<int>()->default_value( 6 ), "max levels number")
-        ("aggregation-type", po::value<std::string>()->default_value( "MIS" ), "aggregation type")
-        ("coarse-type", po::value<std::string>()->default_value( "Amesos_KLU" ), "coarse type")
-        ("increasing-or-decreasing", po::value<std::string>()->default_value( "decreasing" ), "increasing or decreasing level indices");
+    ( "max-levels", po::value<int>()->default_value( 6 ), "max levels number" )
+    ( "aggregation-type", po::value<std::string>()->default_value( "MIS" ), "aggregation type" )
+    ( "coarse-type", po::value<std::string>()->default_value( "Amesos_KLU" ), "coarse type" )
+    ( "increasing-or-decreasing", po::value<std::string>()->default_value( "decreasing" ), "increasing or decreasing level indices" );
     return mlEpetraOptions;
 }
 FEELPP_NO_EXPORT
 po::options_description
 epetraOptions()
 {
-    po::options_description epetra("EPETRA options");
+    po::options_description epetra( "EPETRA options" );
     epetra.add_options()
-        ("disable-epetra", "disable epetra")
-        ;
+    ( "disable-epetra", "disable epetra" )
+    ;
     return epetra;
 }
 
@@ -61,60 +61,60 @@ void
 Application::init( MPI_Comm& _comm )
 {
     if ( _S_is_Initialized == false )
-        {
-            _S_comm = boost::shared_ptr<comm_type>( new Epetra_MpiComm(_comm) );
+    {
+        _S_comm = boost::shared_ptr<comm_type>( new Epetra_MpiComm( _comm ) );
 
-            _S_is_Initialized = true;
-        }
+        _S_is_Initialized = true;
+    }
 }
 
 
 #if defined(FEELPP_HAS_MPI)
 Application::Application( int argc,
-                                      char** argv,
-                                      AboutData const& ad,
-                                      MPI_Comm comm )
+                          char** argv,
+                          AboutData const& ad,
+                          MPI_Comm comm )
     :
     super( argc, argv, ad, epetraOptions().add( makeMLEpetraOptions() ), comm )
 {
-    init(comm);
+    init( comm );
 }
 
 
 #else
 Application::Application( int argc,
-                                      char** argv,
-                                      AboutData const& ad )
+                          char** argv,
+                          AboutData const& ad )
     :
     super( argc, argv, ad, epetraOptions().add( makeMLEpetraOptions() ) )
 {
-    init(comm);
+    init( comm );
 }
 #endif /* FEELPP_HAS_MPI */
 
 
 #if defined(FEELPP_HAS_MPI)
 Application::Application( int argc,
-                                      char** argv,
-                                      AboutData const& ad,
-                                      po::options_description const& od,
-                                      MPI_Comm comm )
+                          char** argv,
+                          AboutData const& ad,
+                          po::options_description const& od,
+                          MPI_Comm comm )
     :
-    super( argc, argv, ad, epetraOptions().add( makeMLEpetraOptions() ).add(od), comm )
+    super( argc, argv, ad, epetraOptions().add( makeMLEpetraOptions() ).add( od ), comm )
 {
-//cout << "hallo FEELPP_HAS_MPI2\n" << endl;
-    init(comm);
+    //cout << "hallo FEELPP_HAS_MPI2\n" << endl;
+    init( comm );
 }
 
 #else
 Application::Application( int argc,
-                                      char** argv,
-                                      AboutData const& ad,
-                                      po::options_description const& od )
+                          char** argv,
+                          AboutData const& ad,
+                          po::options_description const& od )
     :
-    super( argc, argv, ad, epetraOptions().add( makeMLEpetraOptions() ).add(od) )
+    super( argc, argv, ad, epetraOptions().add( makeMLEpetraOptions() ).add( od ) )
 {
-    init(comm);
+    init( comm );
 }
 
 
