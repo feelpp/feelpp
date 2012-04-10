@@ -147,7 +147,8 @@ public:
         M_Xi( new sampling_type( M_Dmu ) ),
         M_C( new sampling_type( M_Dmu, 1, M_Xi ) ),
         M_C_complement( new sampling_type( M_Dmu, 1, M_Xi ) ),
-        M_vm( vm )
+        M_vm( vm ),
+        M_scm_for_mass_matrix( false )
     {
         if ( this->loadDB() )
             std::cout << "Database " << this->lookForDB() << " available and loaded\n";
@@ -400,6 +401,8 @@ public:
     bool loadDB();
 
     bool rebuildDB();
+
+    bool doScmForMassMatrix();
     //@}
 
 
@@ -455,6 +458,7 @@ private:
     po::variables_map M_vm;
 
     bool M_scm_for_mass_matrix;
+    bool M_print_matrix;
 };
 
 po::options_description crbSCMOptions( std::string const& prefix = "" );
@@ -479,6 +483,9 @@ CRBSCM<TruthModelType>::offline()
     //M_Xi->logEquidistribute( M_vm["crb.scm.sampling-size"].template as<int>() );
     M_C->setSuperSampling( M_Xi );
     parameter_type mu( M_Dmu );
+
+
+    M_print_matrix = M_vm["crb.scm.print-matrix"].template as<bool>() ;
 
 #if 0
 
@@ -522,14 +529,10 @@ CRBSCM<TruthModelType>::offline()
     std::vector<sparse_matrix_ptrtype> Matrixq;
 
     if ( M_scm_for_mass_matrix )
-    {
         boost::tie( Matrixq, boost::tuples::ignore, boost::tuples::ignore ) = M_model->computeAffineDecomposition();
-    }
-
     else
-    {
         boost::tie( boost::tuples::ignore, Matrixq, boost::tuples::ignore ) = M_model->computeAffineDecomposition();
-    }
+
 
     int nb_decomposition_terms;
 
@@ -553,32 +556,41 @@ CRBSCM<TruthModelType>::offline()
 
         // for a given parameter \p mu assemble the left and right hand side
         if ( M_scm_for_mass_matrix )
-        {
             boost::tie( Matrix, boost::tuples::ignore, F ) = M_model->update( mu );
-        }
-
         else
-        {
             boost::tie( boost::tuples::ignore, Matrix, F ) = M_model->update( mu );
-        }
 
-        Matrix->printMatlab( "offline_Matrix.m" );
-        symmMatrix = M_model->newMatrix();
-        symmMatrix->close();
+
+	std::string mu_str;
+	for(int i=0;i<mu.size();i++)
+	    mu_str= mu_str + (boost::format("_%1%") %mu[i]).str() ;
+
+	std::string file_name;
+
+        symmMatrix = M_model->newMatrix();symmMatrix->close();
         Matrix->symmetricPart( symmMatrix );
-
-        if ( M_scm_for_mass_matrix )
-        {
-            symmMatrix->printMatlab( "offline_symmMatrix_M.m" );
-        }
-
-        else
-        {
-            symmMatrix->printMatlab( "offline_symmMatrix_A.m" );
-        }
-
         B = M_model->innerProduct();
-        B->printMatlab( "offline_B.m" );
+
+
+	if( M_print_matrix )
+	{
+	    if( M_scm_for_mass_matrix) 
+	    {
+	        file_name = "offline_Matrix_M" + mu_str +".m";
+		Matrix->printMatlab( file_name );
+		file_name = "offline_symmMatrix_M" + mu_str +".m";
+		symmMatrix->printMatlab( file_name );
+	    }
+	    else
+	    {
+	        file_name = "offline_Matrix_A" + mu_str +".m";
+		Matrix->printMatlab( file_name );
+		file_name = "offline_symmMatrix_A" + mu_str +".m";
+		symmMatrix->printMatlab( file_name );
+	    }
+	    file_name = "offline_B" + mu_str +".m";
+	    B->printMatlab( file_name );
+	}
 
         //
         // Build Y_UB
@@ -606,9 +618,11 @@ CRBSCM<TruthModelType>::offline()
             return ckconv;
         }
 
+
         std::cout << "[fe eig] mu=" << std::setprecision( 4 ) << mu << "\n"
                   << "[fe eig] eigmin : " << std::setprecision( 16 ) << modes.begin()->second.template get<0>() << "\n"
                   << "[fe eig] ndof:" << M_model->functionSpace()->nDof() << "\n";
+
 
         // extract the eigenvector associated with the smallest eigenvalue
         eigenvector = modes.begin()->second.template get<2>();
@@ -616,15 +630,14 @@ CRBSCM<TruthModelType>::offline()
         // store the  eigenvalue associated with \p mu
         M_C_eigenvalues[index] = modes.begin()->second.template get<0>();
         typedef std::pair<size_type,value_type> key_t;
-        BOOST_FOREACH( key_t eig, M_C_eigenvalues )
-        {
-            std::cout << "[fe eig] stored/map eig=" << eig.second <<" ( " << eig.first << " ) " << "\n";
-        }
+ 
+       //BOOST_FOREACH( key_t eig, M_C_eigenvalues )
+	    //std::cout << "[fe eig] stored/map eig=" << eig.second <<" ( " << eig.first << " ) " << "\n";
+
         M_eig.push_back( M_C_eigenvalues[index] );
-        BOOST_FOREACH( value_type eig, M_eig )
-        {
-            std::cout << "[fe eig] stored/vec eig=" << eig << "\n";
-        }
+        //BOOST_FOREACH( value_type eig, M_eig )
+	    //std::cout << "[fe eig] stored/vec eig=" << eig << "\n";
+
 
         /*
          * now apply eigenvector to the Aq to compute
@@ -645,11 +658,19 @@ CRBSCM<TruthModelType>::offline()
         // save Y
         os_y << M_Y_ub[K-1] << "\n";
 
+
+	if( M_scm_for_mass_matrix )
+	    std::cout<<"scm is done for mass matrix"<<std::endl;
+	else
+	    std::cout<<"scm is done for a( . , . ; mu )"<<std::endl;
+
         double minerr, meanerr;
         boost::tie( relative_error, mu, index, minerr, meanerr ) = maxRelativeError( K );
+#if 0
         std::cout << " -- max relative error = " << relative_error
                   << " at mu = " << mu
                   << " at index = " << index << "\n";
+#endif
         //ofs << K << " " << std::setprecision(16) << relative_error << std::endl;
         ckconv.push_back( boost::make_tuple( relative_error, minerr, meanerr ) );
 
@@ -657,18 +678,16 @@ CRBSCM<TruthModelType>::offline()
         // the coercivity constant is independant of the parameter set
         if ( relative_error > M_tolerance && K < M_iter_max )
         {
-            std::cout << " -- inserting mu in C (" << M_C->size() << ")\n";
+	    std::cout << " -- inserting mu - index : "<<index<<" -  in C (" << M_C->size() << ")\n";
             M_C->push_back( mu, index );
 
-            for ( size_type _i =0; _i < M_C->size(); ++_i )
-                std::cout << " -- mu [" << _i << "]=" << M_C->at( _i ) << std::endl;
+            //for ( size_type _i =0; _i < M_C->size(); ++_i )
+	        //std::cout << " -- mu [" << _i << "]=" << M_C->at( _i ) << std::endl;
 
             M_C_complement = M_C->complement();
 
-            for ( size_type _i =0; _i < M_C_complement->size(); ++_i )
-            {
+            //for ( size_type _i =0; _i < M_C_complement->size(); ++_i )
                 //std::cout << " -- mu complement [" << _i << "]=" << M_C_complement->at( _i ) << std::endl;
-            }
 
         }
 
@@ -748,14 +767,10 @@ boost::tuple<typename CRBSCM<TruthModelType>::value_type,
     std::vector<vector_ptrtype> F;
 
     if ( M_scm_for_mass_matrix )
-    {
         boost::tie( Matrix, boost::tuples::ignore, F ) = M_model->update( mu );
-    }
-
     else
-    {
         boost::tie( boost::tuples::ignore, Matrix, F ) = M_model->update( mu );
-    }
+
 
     symmMatrix = M_model->newMatrix();
     symmMatrix->close();
@@ -1108,11 +1123,20 @@ typename CRBSCM<TruthModelType>::relative_error_type
 CRBSCM<TruthModelType>::maxRelativeError( size_type K ) const
 {
     //std::cout << "==================================================\n";
+#if 0
     y_type err( M_Xi->size() );
 
     for ( size_type k = 0; k < M_Xi->size(); ++k )
     {
         parameter_type const& mu = M_Xi->at( k );
+#else
+    y_type err( M_C_complement->size() );
+
+    for ( size_type k = 0; k < M_C_complement->size(); ++k )
+    {
+        parameter_type const& mu = M_C_complement->at( k );
+#endif
+
         //std::cout << "[maxRelativeError] Calcul de lb pour mu[" <<  k << "]\n" ;
         double _lb = lb( mu, K, k ).template get<0>();
         //std::cout << "[maxRelativeError] Calcul de lblb pour mu[" << k << "]\n" ;
@@ -1137,6 +1161,7 @@ CRBSCM<TruthModelType>::maxRelativeError( size_type K ) const
 #endif
     }
 
+
     Eigen::MatrixXf::Index index;
     double maxerr = err.array().abs().maxCoeff( &index );
     //std::cout << "[maxRelativeError] K=" << K << " max Error = " << maxerr << " at index = " << index << "\n";
@@ -1146,7 +1171,16 @@ CRBSCM<TruthModelType>::maxRelativeError( size_type K ) const
     double meanerr = err.array().abs().sum()/err.size();
     //std::cout << "[maxRelativeError] K=" << K << " mean Error = " << meanerr << "\n";
     //std::cout << "==================================================\n";
-    return boost::make_tuple( maxerr, M_Xi->at( index ), index, minerr, meanerr );
+    //return boost::make_tuple( maxerr, M_Xi->at( index ), index, minerr, meanerr );
+
+#if 0
+    parameter_type const& mu = M_C_complement->at( index );
+    double _lb = lb( mu, K, index ).template get<0>();
+    double _ub = ub( mu, K ).template get<0>();
+    std::cout<<"_lb = "<<_lb<<" and _ub = "<<_ub<<std::endl;
+#endif
+
+    return boost::make_tuple( maxerr, M_C_complement->at( index ), M_C_complement->indexInSuperSampling( index ), minerr, meanerr );
 }
 
 template<typename TruthModelType>
@@ -1397,6 +1431,14 @@ CRBSCM<TruthModelType>::load( Archive & ar, const unsigned int version )
         M_y_bounds.push_back( boost::make_tuple( M_y_bounds_0[i] , M_y_bounds_1[i] ) );
     }
 
+}
+
+template<typename TruthModelType>
+bool
+CRBSCM<TruthModelType>::doScmForMassMatrix()
+{
+    bool b = this->vm()["crb.scm.do-scm-for-mass-matrix"].template as<bool>(); 
+    return b;
 }
 
 template<typename TruthModelType>
