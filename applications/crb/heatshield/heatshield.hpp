@@ -544,7 +544,8 @@ HeatShield::createGeo( double hsize )
     gmsh_ptrtype gmshp( new Gmsh );
     std::ostringstream ostr;
     double H = hsize;
-    double h = H;//hsize/4;
+    double h = hsize*0.5;
+    //double h = hsize*1;
     ostr <<"Point (1) = {0,  0, 0, "<<H<<"};\n"
          <<"Point (2) = {10, 0, 0, "<<H<<"};\n"
          <<"Point (3) = {10, 4, 0, "<<H<<"};\n"
