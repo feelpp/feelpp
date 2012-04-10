@@ -655,6 +655,16 @@ public:
      */
     bool rebuildDB() ;
 
+    /* 
+     * compute correction terms for output
+     * \param mu \f$ \mu\f$ the parameter at which to evaluate the output
+     * \param uN : primal solution
+     * \param uNdu : dual solution
+     * \pram uNold : old primal solution
+     * \param K : time index 
+     */
+    double correctionTerms(parameter_type const& mu, std::vector< vectorN_type > const & uN, std::vector< vectorN_type > const & uNdu , std::vector<vectorN_type> const & uNold,  int const K=0) const;
+
     //@}
 
 private:
@@ -1377,10 +1387,18 @@ CRB<TruthModelType>::offline()
 
         }//end of transient case
 
+	//in the case of transient problem, we can add severals modes for a same mu
+	//Moreover, if the case where the initial condition is not zero and we don't orthonormalize elements in the basis,
+	//we add the initial condition in the basis (so one more element)
         size_type number_of_added_elements = M_Nm + ( M_N==0 && orthonormalize_primal==false && norm_zero==false && !M_model->isSteady() );
 
-        M_N+=number_of_added_elements;
+	//in the case of steady problems, we add only one element
+	if( M_model->isSteady() )
+	    number_of_added_elements=1;
 
+	std::cout<<"number_of_added_elements = "<<number_of_added_elements<<std::endl;
+
+        M_N+=number_of_added_elements;
 
         if ( orthonormalize_primal )
         {
@@ -1967,6 +1985,92 @@ CRB<TruthModelType>::computeErrorEstimationEfficiencyIndicator ( parameterspace_
 
 
 
+template< typename TruthModelType>
+double
+CRB<TruthModelType>::correctionTerms(parameter_type const& mu, std::vector< vectorN_type > const & uN, std::vector< vectorN_type > const & uNdu,  std::vector<vectorN_type> const & uNold, int const k ) const
+{
+
+
+    int N = uN[0].size();
+
+    matrixN_type Aprdu ( (int)N, (int)N ) ;
+    matrixN_type Mprdu ( (int)N, (int)N ) ;
+    vectorN_type Fdu ( (int)N );
+    vectorN_type du ( (int)N );
+    vectorN_type pr ( (int)N );
+    vectorN_type oldpr ( (int)N );
+
+
+    double time = 1e30;
+
+    theta_vector_type theta_aq;
+    theta_vector_type theta_mq;
+    std::vector<theta_vector_type> theta_fq;
+
+
+    double correction=0;
+
+    if( M_model->isSteady() )
+    {
+      
+        Aprdu.setZero( N , N );
+	Fdu.setZero( N );
+
+        boost::tie( theta_mq, theta_aq, theta_fq ) = M_model->computeThetaq( mu ,time);
+
+	for(size_type q = 0;q < M_model->Ql(0); ++q)
+	    Fdu += theta_fq[0][q]*M_Fq_du[q].head(N);
+
+	for(size_type q = 0;q < M_model->Qa(); ++q)
+	    Aprdu += theta_aq[q]*M_Aq_pr_du[q].block(0,0,N,N);
+
+	du = uNdu[0];
+	pr = uN[0];
+	correction = -( Fdu.dot( du ) - du.dot( Aprdu*pr )  );
+
+    }
+    else
+    {
+
+        double dt = M_model->timeStep();
+        double Tf = M_model->timeFinal();
+        int K = Tf/dt;
+        int time_index;
+
+        for( int kp=1; kp<=k; kp++)
+        {
+
+	    Aprdu.setZero( N , N );
+	    Mprdu.setZero( N , N );
+	    Fdu.setZero( N );
+	
+	    time_index = K-k+kp;
+	    time = time_index*dt; 
+
+	    boost::tie( theta_mq, theta_aq, theta_fq ) = M_model->computeThetaq( mu ,time);
+
+	    time_index--;
+
+	    for(size_type q = 0;q < M_model->Ql(0); ++q)
+	        Fdu += theta_fq[0][q]*M_Fq_du[q].head(N);
+
+	    for(size_type q = 0;q < M_model->Qa(); ++q)
+	        Aprdu += theta_aq[q]*M_Aq_pr_du[q].block(0,0,N,N);
+
+	    for(size_type q = 0;q < M_model->Qm(); ++q)
+	        Mprdu += theta_mq[q]*M_Mq_pr_du[q].block(0,0,N,N);
+
+	    du = uNdu[K-1-time_index];
+	    pr = uN[time_index];
+	    oldpr = uNold[time_index]; 
+	    correction += dt*( Fdu.dot( du ) - du.dot( Aprdu*pr ) ) - du.dot(Mprdu*pr) + du.dot(Mprdu*oldpr) ;
+        }
+    }   
+ 
+    return correction;
+    
+} 
+
 template<typename TruthModelType>
 boost::tuple<double,double>
 CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vectorN_type > & uN, std::vector< vectorN_type > & uNdu,  std::vector<vectorN_type> & uNold, std::vector<vectorN_type> & uNduold,int K  ) const
@@ -2068,7 +2172,6 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
 
     for ( double time=time_step; time<=time_for_output; time+=time_step )
     {
-
 
         boost::tie( theta_mq, theta_aq, theta_fq ) = M_model->computeThetaq( mu ,time );
 
@@ -2242,57 +2345,16 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
 
         time_index=0;
 
-
-
         for ( double time=time_step; time<=time_for_output; time+=time_step )
         {
-
-            boost::tie( theta_mq, theta_aq, theta_fq ) = M_model->computeThetaq( mu ,time );
-
-
-            Fdu.setZero( N );
-
-            for ( size_type q = 0; q < M_model->Ql( 0 ); ++q )
-            {
-                Fdu += theta_fq[0][q]*M_Fq_du[q].head( N );
-            }
-
-            Aprdu.setZero( N,N );
-
-            for ( size_type q = 0; q < M_model->Qa(); ++q )
-            {
-                Aprdu += theta_aq[q]*M_Aq_pr_du[q].block( 0,0,N,N );
-            }
-
-            Mprdu.setZero( N,N );
-
-            for ( size_type q = 0; q < M_model->Qm(); ++q )
-            {
-                Mprdu += theta_mq[q]*M_Mq_pr_du[q].block( 0,0,N,N );
-            }
-
-
-            if ( M_model->isSteady() )
-            {
-                s += -( Fdu.dot( uNdu[0] ) - uNdu[0].dot( Aprdu*uN[0] )  );
-            }
-
-            else
-            {
-                s = output_time_vector[time_index];
-                s += time_step*Fdu.dot( uNdu[time_index] ) -
-                     time_step*uNdu[time_index].dot( Aprdu*uN[time_index] ) -
-                     uNdu[time_index].dot( Mprdu*uN[time_index] ) +
-                     uNdu[time_index].dot( Mprdu*uNold[time_index] );
-
-                output_time_vector[time_index]=s;
-            }
-
-            time_index++;
-
+	    int k = time_index+1;
+	    output_time_vector[time_index]+=correctionTerms(mu, uN , uNdu, uNold, k );
+	    time_index++;
         }
 
+
     }//end of if ( solve_dual_problem || M_error_type == CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM )
+
 
     if ( save_output_behavior )
     {
@@ -2318,7 +2380,9 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
     }
 
     //return s;
-    return boost::make_tuple( s, condition_number );
+    int size=output_time_vector.size();
+    return boost::make_tuple( output_time_vector[size-1], condition_number);
+    //return boost::make_tuple( s, condition_number );
 
 }
 
@@ -2417,8 +2481,8 @@ CRB<TruthModelType>::delta( size_type N,
             //dual_residual=0;
             upper_bound = math::sqrt( dt/alphaA * primal_sum ) * math::sqrt( dt/alphaA * dual_sum + dual_residual/alphaM );
             //std::cout<<"dt/alphaA= "<<dt/alphaA<<std::endl;
-            std::cout<<"primal_sum = "<<primal_sum<<std::endl;
-            std::cout<<"dual_sum = "<<dual_sum<<std::endl;
+            //std::cout<<"primal_sum = "<<primal_sum<<std::endl;
+            //std::cout<<"dual_sum = "<<dual_sum<<std::endl;
         }
 
 
@@ -2556,7 +2620,7 @@ CRB<TruthModelType>::orthonormalize( size_type N, wn_type& wn, int Nm )
 
     for ( size_type i = 0; i < N; ++i )
     {
-        for ( size_type j = std::max( i+1,N-1 ); j < N; ++j )
+        for ( size_type j = std::max( i+1,N-Nm ); j < N; ++j )
         {
             value_type __rij_pr = M_model->scalarProduct(  wn[i], wn[ j ] );
             wn[j].add( -__rij_pr, wn[i] );
