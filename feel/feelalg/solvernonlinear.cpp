@@ -35,11 +35,12 @@ namespace Feel
 {
 template <typename T>
 inline
-SolverNonLinear<T>::SolverNonLinear ()
+SolverNonLinear<T>::SolverNonLinear (WorldComm const& worldComm)
     :
     residual        ( 0 ),
     jacobian        ( 0 ),
     matvec          ( 0 ),
+    M_worldComm( worldComm ),
     M_is_initialized ( false ),
     M_prec_matrix_structure( SAME_NONZERO_PATTERN ),
     M_snl_type( SELECT_IN_ARGLIST ),
@@ -60,7 +61,8 @@ SolverNonLinear<T>::SolverNonLinear ( SolverNonLinear const& snl )
     residual        ( snl.residual ),
     jacobian        ( snl.jacobian ),
     matvec          ( snl.matvec ),
-    M_is_initialized ( snl.M_is_initialized ),
+    M_worldComm( snl.M_worldComm ),
+    M_is_initialized( snl.M_is_initialized ),
     M_prec_matrix_structure( snl.M_prec_matrix_structure ),
     M_snl_type( snl.M_snl_type ),
     M_kspSolver_type( snl.M_kspSolver_type ),
@@ -147,7 +149,7 @@ SolverNonLinear<T>::build( po::variables_map const& vm, std::string const& prefi
 
 template <typename T>
 boost::shared_ptr<SolverNonLinear<T> >
-SolverNonLinear<T>::build( SolverPackage solver_package )
+SolverNonLinear<T>::build( SolverPackage solver_package, WorldComm const& worldComm )
 {
 #if defined( FEELPP_HAS_PETSC )
 
@@ -166,7 +168,7 @@ SolverNonLinear<T>::build( SolverPackage solver_package )
     {
 
 #if defined( FEELPP_HAS_PETSC )
-        solvernonlinear_ptrtype ap( new SolverNonLinearPetsc<T> );
+        solvernonlinear_ptrtype ap(new SolverNonLinearPetsc<T>(worldComm));
         return ap;
 #else
         std::cerr << "PETSc is not available/installed" << std::endl;

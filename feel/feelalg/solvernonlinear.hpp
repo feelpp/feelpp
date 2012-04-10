@@ -107,7 +107,7 @@ public:
     /**
      *  Constructor. Initializes Solver data structures
      */
-    SolverNonLinear();
+    SolverNonLinear(WorldComm const& worldComm = WorldComm() );
 
     /**
      * copy constructor
@@ -130,7 +130,7 @@ public:
      * Builds a \p NonlinearSolver using the nonlinear solver package specified by
      * \p solver_package
      */
-    static solvernonlinear_ptrtype build( SolverPackage solver_package );
+    static solvernonlinear_ptrtype build( SolverPackage solver_package, WorldComm const& worldComm = WorldComm() );
 
     /**
      * Initialize data structures if not done so already.
@@ -154,10 +154,7 @@ public:
     /**
      * \return the communicator
      */
-    mpi::communicator const& comm() const
-    {
-        return M_comm;
-    }
+    mpi::communicator const& comm() const { return M_worldComm; }
 
     /**
      * @returns true if the data structures are
@@ -423,7 +420,7 @@ public:
 
 protected:
 
-    mpi::communicator M_comm;
+    WorldComm M_worldComm;
 
     /**
      * Flag indicating if the data structures have been initialized.
