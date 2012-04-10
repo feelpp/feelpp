@@ -170,20 +170,23 @@ public:
             if ( M_mode == CRBModelMode::SCM )
             {
                 std::cout << "No SCM DB available, do scm offline computations first...\n";
+                if( crb->scm()->doScmForMassMatrix() )
+                    crb->scm()->setScmForMassMatrix( true );
+
                 crb->scm()->offline();
             }
         }
 
         if ( !crb->isDBLoaded() || crb->rebuildDB() )
         {
-            if ( M_mode == CRBModelMode::CRB ||
-                    M_mode == CRBModelMode::SCM )
+            if ( M_mode == CRBModelMode::CRB )
+                //|| M_mode == CRBModelMode::SCM )
             {
                 std::cout << "No CRB DB available, do crb offline computations...\n";
                 crb->offline();
             }
 
-            else
+            else if ( M_mode != CRBModelMode::SCM )
                 throw std::logic_error( "CRB/SCM Database could not be loaded" );
         }
     }
