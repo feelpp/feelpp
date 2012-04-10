@@ -640,6 +640,21 @@ public:
         typedef typename container_search_type::const_iterator container_search_const_iterator_type;
         typedef typename container_search_type::iterator container_search_iterator_type;
 
+        // geomap inverse
+        typedef typename mpl::if_<mpl::bool_<GeoShape::is_simplex>,
+                                  mpl::identity<GeoMapInverse<nDim,nOrder,nRealDim,T,Simplex> >,
+                                  mpl::identity<GeoMapInverse<nDim,nOrder,nRealDim,T,Hypercube> > >::type::type gm_inverse_type;
+        typedef typename gm_inverse_type::gic_type gmc_inverse_type;
+
+        typedef typename mpl::if_<mpl::bool_<GeoShape::is_simplex>,
+                                  mpl::identity<GeoMapInverse<nDim,1,nRealDim,T,Simplex> >,
+                                  mpl::identity<GeoMapInverse<nDim,1,nRealDim,T,Hypercube> > >::type::type gm1_inverse_type;
+        typedef typename gm1_inverse_type::gic_type gmc1_inverse_type;
+
+        // reference convex
+        typedef typename self_type::gm_type::reference_convex_type ref_convex_type;
+        typedef typename self_type::gm1_type::reference_convex_type ref_convex1_type;
+
         /**--------------------------------------------------------------
          * Constructors
          */
@@ -740,10 +755,12 @@ public:
             return M_kd_tree;
         }
 
-        container_search_type const & result_analysis() const
-        {
-            return M_resultAnalysis;
-        }
+        node_type barycenter() const;
+        node_type barycenter(mpl::int_<1> /**/) const;
+        node_type barycenter(mpl::int_<2> /**/) const;
+        node_type barycenter(mpl::int_<3> /**/) const;
+
+        container_search_type const & result_analysis() const { return M_resultAnalysis;}
 
         container_search_iterator_type result_analysis_begin()
         {
@@ -763,10 +780,13 @@ public:
         /*---------------------------------------------------------------
          * Research only one element wich contains the node p
          */
-        boost::tuple<bool, size_type,node_type> searchElement( const node_type & p );
-        boost::tuple<bool, size_type,node_type> searchElement( const node_type & p,
-                const matrix_node_type & setPoints,
-                mpl::bool_<false> /**/ )
+        boost::tuple<bool, size_type,node_type> searchElement(const node_type & p);
+        /*---------------------------------------------------------------
+         * Research only one element wich contains the node p
+         */
+        boost::tuple<bool, size_type,node_type> searchElement(const node_type & p,
+                                                              const matrix_node_type & setPoints,
+                                                              mpl::bool_<false> /**/ )
         {
             return searchElement( p );
         }
@@ -787,17 +807,17 @@ public:
          * Research the element wich contains the node p, forall p in the
          * matrix_node_type m. The result is save by this object
          */
-        size_type run_analysis( const matrix_node_type & m,
-                                const size_type & eltHypothetical );
+        boost::tuple<std::vector<bool>, size_type> run_analysis(const matrix_node_type & m,
+                                                                const size_type & eltHypothetical);
 
         /*---------------------------------------------------------------
          * Research the element wich contains the node p, forall p in the
          * matrix_node_type m. The result is save by this object
          */
-        size_type run_analysis( const matrix_node_type & m,
-                                const size_type & eltHypothetical,
-                                const matrix_node_type & setPoints,
-                                mpl::bool_<false> /**/ )
+        boost::tuple<std::vector<bool>, size_type>  run_analysis(const matrix_node_type & m,
+                                                                 const size_type & eltHypothetical,
+                                                                 const matrix_node_type & setPoints,
+                                                                 mpl::bool_<false> /**/)
         {
             return run_analysis( m,eltHypothetical );
         }
@@ -806,10 +826,10 @@ public:
          * Research the element wich contains the node p, forall p in the
          * matrix_node_type m. The result is save by this object
          */
-        size_type run_analysis( const matrix_node_type & m,
-                                const size_type & eltHypothetical,
-                                const matrix_node_type & setPoints,
-                                mpl::bool_<true> /**/ );
+        boost::tuple<std::vector<bool>, size_type> run_analysis(const matrix_node_type & m,
+                                                                const size_type & eltHypothetical,
+                                                                const matrix_node_type & setPoints,
+                                                                mpl::bool_<true> /**/);
 
         /*---------------------------------------------------------------
          * Reset all data
@@ -843,6 +863,9 @@ public:
         bool IsInit;
         container_search_type M_resultAnalysis;
         bool M_doExtrapolation;
+
+        ref_convex_type M_refelem;
+        ref_convex1_type M_refelem1;
     };
 
 
