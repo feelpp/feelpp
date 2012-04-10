@@ -37,6 +37,7 @@
 #include <feel/feeldiscr/mesh.hpp>
 #include <feel/feeldiscr/partitioner.hpp>
 #include <feel/feelalg/glas.hpp>
+#include <feel/feelalg/solvernonlinearpetsc.hpp>
 
 namespace Feel
 {
@@ -1406,9 +1407,6 @@ template<typename Shape, typename T>
 boost::tuple<bool,typename Mesh<Shape, T>::node_type>
 Mesh<Shape, T>::Localization::isIn( size_type _id, const node_type & _pt ) const
 {
-    typedef typename self_type::gm_type::reference_convex_type ref_convex_type;
-    typedef typename self_type::gm1_type::reference_convex_type ref_convex1_type;
-
     bool isin=false;
     double dmin;
     node_type x_ref;
@@ -1417,30 +1415,27 @@ Mesh<Shape, T>::Localization::isIn( size_type _id, const node_type & _pt ) const
     auto const& elt = M_mesh->element( _id );
 
     if ( elt.isOnBoundary() )
-    {
-        // get inverse geometric transformation
-        typename self_type::Inverse::gic_type gic( M_mesh->gm(), elt );
-        //apply the inverse geometric transformation for the point p
-        gic.setXReal( _pt );
-        x_ref=gic.xRef();
-        // the point is in the reference element ?
-        ref_convex_type refelem;
-        boost::tie( isin, dmin ) = refelem.isIn( gic.xRef() );
-    }
-
+        {
+            // get inverse geometric transformation
+            gmc_inverse_type gic( M_mesh->gm(), elt, this->mesh()->worldComm() );
+            //apply the inverse geometric transformation for the point p
+            gic.setXReal( _pt);
+            x_ref=gic.xRef();
+            // the point is in the reference element ?
+            boost::tie( isin, dmin ) = M_refelem.isIn( gic.xRef() );
+        }
     else
-    {
-        // get inverse geometric transformation
-        typename self_type::Inverse::gic1_type gic( M_mesh->gm1(), elt, mpl::int_<1>() );
-        //apply the inverse geometric transformation for the point p
-        gic.setXReal( _pt );
-        x_ref=gic.xRef();
-        // the point is in the reference element ?
-        ref_convex1_type refelem1;
-        boost::tie( isin, dmin ) = refelem1.isIn( gic.xRef() );
-    }
+        {
+            // get inverse geometric transformation
+            gmc1_inverse_type gic( M_mesh->gm1(), elt, mpl::int_<1>(), this->mesh()->worldComm() );
+            //apply the inverse geometric transformation for the point p
+            gic.setXReal( _pt);
+            x_ref=gic.xRef();
+            // the point is in the reference element ?
+            boost::tie( isin, dmin ) = M_refelem1.isIn( gic.xRef() );
+        }
 
-    return boost::make_tuple( isin,x_ref );
+    return boost::make_tuple(isin,x_ref);
 }
 
 template<typename Shape, typename T>
@@ -1464,32 +1459,28 @@ Mesh<Shape, T>::Localization::isIn( std::vector<size_type> _ids, const node_type
         auto const& elt = M_mesh->element( _ids[i] );
 
         if ( elt.isOnBoundary() )
-        {
-            // get inverse geometric transformation
-            typename self_type::Inverse::gic_type gic( M_mesh->gm(), elt );
-            //apply the inverse geometric transformation for the point p
-            gic.setXReal( _pt );
-            __x_ref=gic.xRef();
-            // the point is in the reference element ?
-            ref_convex_type refelem;
-            boost::tie( isin2, dmin ) = refelem.isIn( gic.xRef() );
-            isin[i] = isin2;
-        }
-
+            {
+                // get inverse geometric transformation
+                gmc_inverse_type gic( M_mesh->gm(), elt );
+                //apply the inverse geometric transformation for the point p
+                gic.setXReal( _pt);
+                __x_ref=gic.xRef();
+                // the point is in the reference element ?
+                boost::tie( isin2, dmin ) = M_refelem.isIn( gic.xRef() );
+                isin[i] = isin2;
+            }
         else
-        {
-            // get inverse geometric transformation
-            typename self_type::Inverse::gic1_type gic( M_mesh->gm1(), elt, mpl::int_<1>() );
-            //apply the inverse geometric transformation for the point p
-            gic.setXReal( _pt );
-            __x_ref=gic.xRef();
-            // the point is in the reference element ?
-            ref_convex1_type refelem1;
-            boost::tie( isin2, dmin ) = refelem1.isIn( gic.xRef() );
-            isin[i] = isin2;
-        }
-
-        if ( isin[i] ) ++nbIsIn;
+            {
+                // get inverse geometric transformation
+                gmc1_inverse_type gic( M_mesh->gm1(), elt, mpl::int_<1>() );
+                //apply the inverse geometric transformation for the point p
+                gic.setXReal( _pt);
+                __x_ref=gic.xRef();
+                // the point is in the reference element ?
+                boost::tie( isin2, dmin ) = M_refelem1.isIn( gic.xRef() );
+                isin[i] = isin2;
+            }
+        if (isin[i]) ++nbIsIn;
     }
 
     return boost::make_tuple( nbIsIn,isin );
@@ -1505,17 +1496,12 @@ Mesh<Shape, T>::Localization::searchElement( const node_type & p )
     FEELPP_ASSERT( IsInit == true )
     ( IsInit ).warn( "You don't have initialized the tool of localization" );
 #endif
+    bool isin=false;
+    node_type x_ref;
+    size_type idEltFound = this->mesh()->beginElementWithId(this->mesh()->worldComm().localRank())->id();
 
     std::list< std::pair<size_type, uint> > ListTri;
-    searchInKdTree( p,ListTri );
-
-    typename self_type::element_type elt;
-    typename self_type::gm_type::reference_convex_type refelem;
-    typename self_type::gm1_type::reference_convex_type refelem1;
-
-    bool isin=false;
-    double dmin;
-    node_type __x_ref;
+    this->searchInKdTree(p,ListTri);
 
     //research the element which contains the point p
     auto itLT=ListTri.begin();
@@ -1529,62 +1515,44 @@ Mesh<Shape, T>::Localization::searchElement( const node_type & p )
     while ( itLT != itLT_end && !isin  )
     {
         //get element with the id
-        elt = M_mesh->element( itLT->first );
+        //elt = M_mesh->element( itLT->first );
 
-        if ( elt.isOnBoundary() )
-        {
-            // get inverse geometric transformation
-            typename self_type::Inverse::gic_type gic( M_mesh->gm(), elt );
-
-            //apply the inverse geometric transformation for the point p
-            gic.setXReal( p );
-            __x_ref=gic.xRef();
-
-            // the point is in the reference element ?
-            boost::tie( isin, dmin ) = refelem.isIn( gic.xRef() );
-        }
-
-        else
-        {
-            // get inverse geometric transformation
-            typename self_type::Inverse::gic1_type gic( M_mesh->gm1(), elt,mpl::int_<1>() );
-
-            //apply the inverse geometric transformation for the point p
-            gic.setXReal( p );
-            __x_ref=gic.xRef();
-
-            // the point is in the reference element ?
-            boost::tie( isin, dmin ) = refelem1.isIn( gic.xRef() );
-        }
-
-        //if not inside, continue the research with an other element
-        if ( !isin ) ++itLT;
+        // search point in this elt
+        boost::tie(isin,x_ref) = this->isIn(itLT->first,p);
+        // if not inside, continue the research with an other element
+        if (!isin) ++itLT;
+        else idEltFound=itLT->first;
     }
 
-    //bool __extrapolation=true;
-    if ( itLT != itLT_end ) return boost::make_tuple( true, itLT->first, __x_ref );
 
-    else if ( itLT == itLT_end && !M_doExtrapolation ) return boost::make_tuple( false, 0, __x_ref );
+    if (!isin)
+        {
+            if( this->doExtrapolation() )
+                {
+                    //std::cout << "WARNING EXTRAPOLATION for the point" << p << std::endl;
+                    //std::cout << "W";
+                    auto const& eltUsedForExtrapolation = this->mesh()->element(ListTri.begin()->first);
+                    gmc_inverse_type gic( this->mesh()->gm(), eltUsedForExtrapolation, this->mesh()->worldComm() );
+                    //apply the inverse geometric transformation for the point p
+                    gic.setXReal( p);
+                    boost::tie(isin,idEltFound,x_ref) = boost::make_tuple(true,eltUsedForExtrapolation.id(),gic.xRef());
+                }
+            else
+                {
+                    idEltFound = this->mesh()->beginElementWithId(this->mesh()->worldComm().localRank())->id();
+                    isin = false;
+                    //x_ref=?
+                }
+        }
 
-    else
-    {
-        //std::cout << "\n WARNING EXTRAPOLATION for the point" << p << "\n";
-        itLT=ListTri.begin();
-        elt= M_mesh->element( itLT->first );
-        typename self_type::Inverse::gic_type gic( M_mesh->gm(), elt );
-        //apply the inverse geometric transformation for the point p
-        //gic.setXReal(boost::get<0>(*ptsNN.begin()));
-        gic.setXReal( p );
-        __x_ref=gic.xRef();
-        return boost::make_tuple( true, itLT->first, __x_ref );
-    }
+    return boost::make_tuple( isin, idEltFound, x_ref);
 
 }
 
 template<typename Shape, typename T>
-size_type
+boost::tuple<std::vector<bool>, size_type>
 Mesh<Shape, T>::Localization::run_analysis( const matrix_node_type & m,
-        const size_type & eltHypothetical )
+                                            const size_type & eltHypothetical )
 {
 
 #if !defined( NDEBUG )
@@ -1593,90 +1561,89 @@ Mesh<Shape, T>::Localization::run_analysis( const matrix_node_type & m,
 #endif
 
     bool find_x;
-    size_type cv_id=0;
+    size_type cv_id=eltHypothetical;
     node_type x_ref;
+    std::vector<bool> hasFindPts(m.size2(),false);
 
     M_resultAnalysis.clear();
 
     bool doExtrapolationAtStart = this->doExtrapolation();
     auto nPtMaxNearNeighborAtStart = this->kdtree()->nPtMaxNearNeighbor();
 
+
     // first step : no extrapolation
     if ( doExtrapolationAtStart ) this->setExtrapolation( false );
 
     // first currentEltHypothetical
-    auto currentEltHypothetical = eltHypothetical;
-
+    auto currentEltHypothetical = eltHypothetical;//this->mesh()->beginElement()->id();//eltHypothetical;
     for ( size_type i=0; i< m.size2(); ++i )
-    {
-        bool testHypothetical_find = false;
-
-        if ( eltHypothetical!=invalid_size_type_value )
         {
-            boost::tie( testHypothetical_find,x_ref ) = this->isIn( currentEltHypothetical,ublas::column( m, i ) );
-        }
+            bool testHypothetical_find = false;
 
-        if ( testHypothetical_find )
-        {
-            cv_id = currentEltHypothetical;
-            M_resultAnalysis[cv_id].push_back( boost::make_tuple( i,x_ref ) );
-        }
-
-        else // search kdtree
-        {
-            // kdtree call
-            boost::tie( find_x, cv_id, x_ref ) = this->searchElement( ublas::column( m, i ) );
-
-            // traitement
-            if ( find_x ) // if find : OK
-            {
-                M_resultAnalysis[cv_id].push_back( boost::make_tuple( i,x_ref ) );
-                currentEltHypothetical = cv_id;
-            }
-
-            else // try an other method (no efficient but maybe a solution)
-            {
-                // search in all element
-                this->kdtree()->nbNearNeighbor( 15/*this->mesh()->numElements()*/ );
-
-                boost::tie( find_x, cv_id, x_ref ) = this->searchElement( ublas::column( m, i ) );
-                //revert parameter
-                this->kdtree()->nbNearNeighbor( nPtMaxNearNeighborAtStart );
-
-                // if find : OK (but strange!)
-                if ( find_x )
+            if ( eltHypothetical!=invalid_size_type_value )
                 {
-                    M_resultAnalysis[cv_id].push_back( boost::make_tuple( i,x_ref ) );
-                    currentEltHypothetical = cv_id;
+                    boost::tie( testHypothetical_find,x_ref ) = this->isIn( currentEltHypothetical,ublas::column( m, i ) );
                 }
-
-                else if ( doExtrapolationAtStart )
+            if ( testHypothetical_find )
                 {
-                    this->setExtrapolation( true );
-
-                    boost::tie( find_x, cv_id, x_ref ) = this->searchElement( ublas::column( m, i ) );
-
-                    // normaly is find
-                    if ( find_x )
-                    {
-                        M_resultAnalysis[cv_id].push_back( boost::make_tuple( i,x_ref ) );
-                        currentEltHypothetical = cv_id;
-                    }
-
-                    this->setExtrapolation( false );
+                    cv_id = currentEltHypothetical;
+                    M_resultAnalysis[cv_id].push_back( boost::make_tuple(i,x_ref) );
+                    hasFindPts[i]=true;
                 }
+            else // search kdtree
+                {
+                    // kdtree call
+                    boost::tie( find_x, cv_id, x_ref ) = this->searchElement(ublas::column( m, i ));
+                    // traitement
+                    if (find_x) // if find : OK
+                        {
+                            M_resultAnalysis[cv_id].push_back( boost::make_tuple(i,x_ref) );
+                            currentEltHypothetical = cv_id;
+                            hasFindPts[i]=true;
+                        }
+                    else// if (false) // try an other method (no efficient but maybe a solution)
+                        {
+                            // search in all element
+                            this->kdtree()->nbNearNeighbor(2*nPtMaxNearNeighborAtStart /*15*/ /*this->mesh()->numElements()*/);
 
-                else
-                    std::cout<<"\n Il y a un GROS Probleme de Localization\n";
-            }
-        } // search kdtree
+                            boost::tie( find_x, cv_id, x_ref ) = this->searchElement(ublas::column( m, i ));
+                            //revert parameter
+                            this->kdtree()->nbNearNeighbor(nPtMaxNearNeighborAtStart);
+                            // if find : OK (but strange!)
+                            if (find_x)
+                                {
+                                    M_resultAnalysis[cv_id].push_back( boost::make_tuple(i,x_ref) );
+                                    currentEltHypothetical = cv_id;
+                                    hasFindPts[i]=true;
+                                }
+                            else if (doExtrapolationAtStart)// && this->mesh()->worldComm().localSize()==1)
+                                {
+                                    this->setExtrapolation(true);
 
-    } // for (size_type i=0;i< m.size2();++i)
+                                    boost::tie( find_x, cv_id, x_ref ) = this->searchElement(ublas::column( m, i ));
+                                    // normaly is find
+                                    if (find_x)
+                                        {
+                                            M_resultAnalysis[cv_id].push_back( boost::make_tuple(i,x_ref) );
+                                            currentEltHypothetical = cv_id;
+                                            hasFindPts[i]=true;
+                                        }
+
+                                    this->setExtrapolation(false);
+                                }
+                            else
+                                {
+                                    //std::cout<<"\n Il y a un GROS Probleme de Localization\n";
+                                }
+                        }
+                } // search kdtree
+
+        } // for (size_type i=0;i< m.size2();++i)
 
     //revert parameter
-    if ( doExtrapolationAtStart ) this->setExtrapolation( true );
+    this->setExtrapolation(doExtrapolationAtStart);
 
-    return cv_id;
+    return boost::make_tuple(hasFindPts,cv_id);
 
 } //run_analysis
 
@@ -2010,7 +1977,7 @@ Mesh<Shape, T>::Localization::searchElement( const node_type & p,
 
 
 template<typename Shape, typename T>
-size_type
+boost::tuple<std::vector<bool>, size_type>
 Mesh<Shape, T>::Localization::run_analysis( const matrix_node_type & m,
         const size_type & eltHypothetical,
         const matrix_node_type & setPoints,
@@ -2024,6 +1991,7 @@ Mesh<Shape, T>::Localization::run_analysis( const matrix_node_type & m,
     bool find_x;
     size_type cv_id;
     node_type x_ref;
+    std::vector<bool> hasFindPts(setPoints.size2(),false);
 
     M_resultAnalysis.clear();
 
@@ -2040,9 +2008,63 @@ Mesh<Shape, T>::Localization::run_analysis( const matrix_node_type & m,
 
     }
 
-    return cv_id;
+    return boost::make_tuple(hasFindPts,cv_id);
 
 } // run_analysis
+
+
+template<typename Shape, typename T>
+typename Mesh<Shape, T>::node_type
+Mesh<Shape, T>::Localization::barycenter() const
+{
+    return this->barycenter(mpl::int_<nRealDim>());
+}
+
+template<typename Shape, typename T>
+typename Mesh<Shape, T>::node_type
+Mesh<Shape, T>::Localization::barycenter(mpl::int_<1> /**/) const
+{
+    node_type res(1);
+    res(0)=0;
+    for (size_type i = 0 ; i<this->kdtree()->nPoints() ; ++i)
+        {
+            auto const& pt = this->kdtree()->points()[i].get<0>();
+            res(0)+=pt(0);
+        }
+    res(0)/=this->kdtree()->nPoints();
+    return res;
+}
+template<typename Shape, typename T>
+typename Mesh<Shape, T>::node_type
+Mesh<Shape, T>::Localization::barycenter(mpl::int_<2> /**/) const
+{
+    node_type res(2);
+    res(0)=0;res(1)=0;
+    for (size_type i = 0 ; i<this->kdtree()->nPoints() ; ++i)
+        {
+            auto const& pt = this->kdtree()->points()[i].get<0>();
+            res(0)+=pt(0);res(1)+=pt(1);
+        }
+    res(0)/=this->kdtree()->nPoints();res(1)/=this->kdtree()->nPoints();
+    return res;
+}
+template<typename Shape, typename T>
+typename Mesh<Shape, T>::node_type
+Mesh<Shape, T>::Localization::barycenter(mpl::int_<3> /**/) const
+{
+    node_type res(3);
+    res(0)=0;res(1)=0;res(2)=0;
+    for (size_type i = 0 ; i<this->kdtree()->nPoints() ; ++i)
+        {
+            auto const& pt = this->kdtree()->points()[i].get<0>();
+            res(0)+=pt(0);res(1)+=pt(1);res(2)+=pt(2);
+        }
+    res(0)/=this->kdtree()->nPoints();res(1)/=this->kdtree()->nPoints();res(2)/=this->kdtree()->nPoints();
+    return res;
+}
+
+
+
 
 
 
