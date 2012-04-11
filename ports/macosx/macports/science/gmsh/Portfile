@@ -28,12 +28,14 @@ checksums           \
                           sha1    b1d005841ed72a30ccf5077bdd79f289f87dd261\
                           rmd160 9ef320a0e737060982c3fcdc40fdfeaae2a0c1c1
 
-#patchfiles          patch-cmakelists.diff
 extract.cmd   xz
-#extract.args        ${distpath}/toto
+
+# https://trac.macports.org/ticket/33925
+if {${configure.compiler} == "clang"} {
+    configure.compiler llvm-gcc-4.2
+}
 
 configure.args-append \
-    -DCMAKE_CXX_COMPILER=/usr/bin/g++ \
     -DENABLE_NATIVE_FILE_CHOOSER:BOOL=OFF\
     -DENABLE_OCC:BOOL=OFF \
     -DENABLE_FLTK:BOOL=ON\
@@ -48,7 +50,6 @@ post-build {
 }
 
 depends_lib  \
-    port:gcc46\
     port:mesa \
     port:libpng \
     port:fltk-devel\
