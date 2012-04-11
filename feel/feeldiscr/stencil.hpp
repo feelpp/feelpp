@@ -379,13 +379,13 @@ public:
 
 typedef Feel::Singleton<StencilManagerImpl> StencilManager;
 
-namespace detail
-{
 //! function that cleans up the StencilManager any time \c stencil() is called
-void runGarbageCollector();
+void stencilManagerGarbageCollect();
 
-void printStencils();
-}
+//! print entries stored in stencil manager
+void stencilManagerPrint();
+
+extern std::vector<size_type> default_block_pattern;
 
 BOOST_PARAMETER_FUNCTION(
     ( typename detail::compute_stencil_type<Args>::ptrtype ), // 1. return type
@@ -397,13 +397,13 @@ BOOST_PARAMETER_FUNCTION(
     )
     ( optional                                  //    four optional parameters, with defaults
       ( pattern,          *( boost::is_integral<mpl::_> ), Pattern::COUPLED )
-      ( pattern_block,    *, ( std::vector<size_type>( 1,size_type( Pattern::HAS_NO_BLOCK_PATTERN ) ) ) )
+      ( pattern_block,    *, default_block_pattern )
       ( diag_is_nonzero,  *( boost::is_integral<mpl::_> ), false )
     )
 )
 {
     // cleanup memory before doing anything
-    detail::runGarbageCollector();
+    stencilManagerGarbageCollect();
 
     Feel::detail::ignore_unused_variable_warning( args );
     typedef typename detail::compute_stencil_type<Args>::ptrtype stencil_ptrtype;
