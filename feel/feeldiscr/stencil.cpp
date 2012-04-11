@@ -39,7 +39,7 @@ runGarbageCollector()
     {
         // each entry is a pair of tuple and graph
 
-        if ( entry.first.get<0>().unique() && entry.first.get<1>().unique() && entry.second.unique() )
+        if ( entry.second.unique() )
         {
             std::cout << "[runGarbageCollector] deleting entry space:"
                       << entry.first.get<0>()
@@ -50,5 +50,18 @@ runGarbageCollector()
         }
     }
 }
+
+void
+printStencils()
+{
+    BOOST_FOREACH( StencilManagerImpl::value_type& entry, StencilManager::instance() )
+    {
+            std::cout << "[printStencils] ("
+                      << entry.first.get<0>() << "[" << entry.first.get<0>().use_count() << "]"
+                      << "," << entry.first.get<1>() << "[" << entry.first.get<1>().use_count() << "]"<< "): "
+                      << " " << entry.second << "[" << entry.second.use_count() << "]"<< "\n";
+    }
+}
+
 } // detail
 }

@@ -383,6 +383,8 @@ namespace detail
 {
 //! function that cleans up the StencilManager any time \c stencil() is called
 void runGarbageCollector();
+
+void printStencils();
 }
 
 BOOST_PARAMETER_FUNCTION(
