@@ -442,6 +442,13 @@ public:
     }
 
     /**
+     * \return the processor id of the entity
+     */
+    uint16_type pidInPartition() const
+    {
+        return M_pidInPartition;
+    }
+    /**
      * set the processor id of the entity
      & \param pid processor id
      */
