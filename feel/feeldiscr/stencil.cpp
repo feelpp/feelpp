@@ -26,14 +26,15 @@
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2012-04-07
  */
+#include <sstream>
 #include <feel/feeldiscr/stencil.hpp>
 
 namespace Feel
 {
-namespace detail
-{
+std::vector<size_type> default_block_pattern( 1,size_type( Pattern::HAS_NO_BLOCK_PATTERN ) );
+
 void
-runGarbageCollector()
+stencilManagerGarbageCollect()
 {
     BOOST_FOREACH( StencilManagerImpl::value_type& entry, StencilManager::instance() )
     {
@@ -41,10 +42,19 @@ runGarbageCollector()
 
         if ( entry.second.unique() )
         {
-            std::cout << "[runGarbageCollector] deleting entry space:"
+            std::ostringstream ostr;
+            std::for_each( entry.first.get<3>().begin(),
+                           entry.first.get<3>().end(),
+                           [&ostr]( size_type i ) { ostr << i << ","; } );
+            std::cout << "[stencilManagerGarbageCollect] deleting entry space: ( "
                       << entry.first.get<0>()
                       << "," << entry.first.get<1>()
-                      << " and graph " << entry.second << "\n";
+                      << "," << int(entry.first.get<2>())
+                      << ",( " << ostr.str()
+                      << "),"
+                      << "," << int(entry.first.get<4>())
+                      << " ): "
+                      << entry.second << "\n";
 
             StencilManager::instance().erase( entry.first );
         }
@@ -52,16 +62,30 @@ runGarbageCollector()
 }
 
 void
-printStencils()
+stencilManagerPrint()
 {
+    std::cout << "********************************************************************************\n";
+    if ( StencilManager::instance().empty() )
+    {
+        std::cout << "[stencilManagerPrint] no entries in StencilManager\n";
+    }
     BOOST_FOREACH( StencilManagerImpl::value_type& entry, StencilManager::instance() )
     {
-            std::cout << "[printStencils] ("
+        std::ostringstream ostr;
+        std::for_each( entry.first.get<3>().begin(),
+                       entry.first.get<3>().end(),
+                       [&ostr]( size_type i ) { ostr << i << ","; } );
+            std::cout << "[stencilManagerPrint] ("
                       << entry.first.get<0>() << "[" << entry.first.get<0>().use_count() << "]"
-                      << "," << entry.first.get<1>() << "[" << entry.first.get<1>().use_count() << "]"<< "): "
+                      << "," << entry.first.get<1>() << "[" << entry.first.get<1>().use_count() << "]"
+                      << "," << int(entry.first.get<2>())
+                      << ", (" << ostr.str()
+                      << "),"
+                      << "," << int(entry.first.get<4>())
+                      << "): "
                       << " " << entry.second << "[" << entry.second.use_count() << "]"<< "\n";
     }
+    std::cout << "********************************************************************************\n";
 }
 
-} // detail
 }
