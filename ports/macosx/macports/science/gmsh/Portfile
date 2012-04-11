@@ -1,0 +1,57 @@
+# -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+# $Id$
+
+PortSystem          1.0
+PortGroup           cmake 1.0
+
+name                gmsh
+version             2.5.1~beta2~svn11845
+categories          science
+platforms           darwin
+maintainers         ujf-grenoble.fr:Christophe.Prudhomme
+description         Finite element mesh generator in 1D, 2D and 3D
+long_description    \
+        Gmsh is an automatic 3D finite element mesh generator (primarily   \
+        Delaunay) with build-in CAD and post-processing facilities. Its     \
+        design goal is to provide a simple meshing tool for academic test   \
+        cases with parametric input and up to date visualization            \
+        capabilities.
+
+homepage            http://www.geuz.org/gmsh/
+master_sites        http://ftp.de.debian.org/debian/pool/main/g/gmsh/
+#distname            gmsh-nightly-source
+distname            gmsh_2.5.1~beta2~svn11845~dfsg.orig
+extract.suffix      .tar.xz
+worksrcdir          gmsh-2.5.1~beta2~svn11845~dfsg
+
+checksums           \
+                          sha1    b1d005841ed72a30ccf5077bdd79f289f87dd261\
+                          rmd160 9ef320a0e737060982c3fcdc40fdfeaae2a0c1c1
+
+#patchfiles          patch-cmakelists.diff
+extract.cmd   xz
+#extract.args        ${distpath}/toto
+
+configure.args-append \
+    -DCMAKE_CXX_COMPILER=/usr/bin/g++ \
+    -DENABLE_NATIVE_FILE_CHOOSER:BOOL=OFF\
+    -DENABLE_OCC:BOOL=OFF \
+    -DENABLE_FLTK:BOOL=ON\
+    -DENABLE_GRAPHICS:BOOL=ON\
+    -DENABLE_APP_BUNDLE=OFF \
+    -DENABLE_METIS=OFF \
+    -DENABLE_TAUCS=OFF
+
+post-build {
+    # lib and shared targets are not handled by default target
+    system "cd ${worksrcpath} && make lib shared"
+}
+
+depends_lib  \
+    port:gcc46\
+    port:mesa \
+    port:libpng \
+    port:fltk-devel\
+    port:jpeg \
+    port:zlib \
+    port:texinfo
