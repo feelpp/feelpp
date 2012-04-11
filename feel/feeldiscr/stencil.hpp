@@ -78,7 +78,8 @@ struct compute_graph3
             {
                 auto thestencil = stencil( _test=space2, _trial=M_space1,
                                            _pattern=M_stencil->blockPattern( M_test_index,M_trial_index )/*M_hints*/,
-                                           _pattern_block=M_stencil->blockPattern() );
+                                           _pattern_block=M_stencil->blockPattern(),
+                                           _collect_garbage=false );
 
                 M_stencil->mergeGraph( M_stencil->testSpace()->nDofStart( M_test_index ), M_stencil->trialSpace()->nDofStart( M_trial_index ) , thestencil->graph() );
             }
@@ -146,7 +147,8 @@ struct compute_graph2
 
                 auto thestencil = stencil( _test=M_space1, _trial=space2,
                                            _pattern=M_stencil->blockPattern( M_test_index,M_trial_index )/*M_hints*/,
-                                           _pattern_block=M_stencil->blockPattern() );
+                                           _pattern_block=M_stencil->blockPattern(),
+                                           _collect_garbage=false );
 
                 M_stencil->mergeGraph( M_stencil->testSpace()->nDofStart( M_test_index ),
                                        M_stencil->trialSpace()->nDofStart( M_trial_index ),
@@ -399,11 +401,15 @@ BOOST_PARAMETER_FUNCTION(
       ( pattern,          *( boost::is_integral<mpl::_> ), Pattern::COUPLED )
       ( pattern_block,    *, default_block_pattern )
       ( diag_is_nonzero,  *( boost::is_integral<mpl::_> ), false )
+      ( collect_garbage, *( boost::is_integral<mpl::_> ), true )
     )
 )
 {
-    // cleanup memory before doing anything
-    stencilManagerGarbageCollect();
+    if ( collect_garbage )
+    {
+        // cleanup memory before doing anything
+        stencilManagerGarbageCollect();
+    }
 
     Feel::detail::ignore_unused_variable_warning( args );
     typedef typename detail::compute_stencil_type<Args>::ptrtype stencil_ptrtype;
