@@ -418,16 +418,16 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
 
     Debug( 5034 ) << "[interpolate] different meshes\n";
 
-    const size_type proc_id           = this->dualImageSpace()->mesh()->comm().rank();
-    const size_type n1_dof_on_proc    = this->dualImageSpace()->nLocalDof();
+    const size_type proc_id = this->dualImageSpace()->mesh()->comm().rank();
+    const size_type n1_dof_on_proc = this->dualImageSpace()->nLocalDof();
     const size_type firstrow_dof_on_proc = this->dualImageSpace()->dof()->firstDof( proc_id );
     const size_type lastrow_dof_on_proc = this->dualImageSpace()->dof()->lastDof( proc_id );
     const size_type firstcol_dof_on_proc = this->domainSpace()->dof()->firstDof( proc_id );
     const size_type lastcol_dof_on_proc = this->domainSpace()->dof()->lastDof( proc_id );
 
     graph_ptrtype sparsity_graph( new graph_type( n1_dof_on_proc,
-                                  firstrow_dof_on_proc, lastrow_dof_on_proc,
-                                  firstcol_dof_on_proc, lastcol_dof_on_proc ) );
+                                                  firstrow_dof_on_proc, lastrow_dof_on_proc,
+                                                  firstcol_dof_on_proc, lastcol_dof_on_proc ) );
 
     auto const* imagedof = this->dualImageSpace()->dof().get();
     auto const* domaindof = this->domainSpace()->dof().get();
@@ -553,8 +553,9 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
 
     std::cout << "updateNoRelationMeshMPI()"<<std::endl;
 
-    const size_type proc_id           = this->dualImageSpace()->worldsComm()[0].localRank();
-    const size_type nrow_dof_on_proc    = this->dualImageSpace()->nLocalDof();
+    const size_type proc_id = this->dualImageSpace()->worldsComm()[0].localRank();
+    const size_type nProc = this->dualImageSpace()->mesh()->worldComm().size();
+    const size_type nrow_dof_on_proc = this->dualImageSpace()->nLocalDof();
     const size_type firstrow_dof_on_proc = this->dualImageSpace()->dof()->firstDofGlobalCluster( proc_id );
     const size_type lastrow_dof_on_proc = this->dualImageSpace()->dof()->lastDofGlobalCluster( proc_id );
     const size_type firstcol_dof_on_proc = this->domainSpace()->dof()->firstDofGlobalCluster( proc_id );
@@ -588,9 +589,11 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
 
     std::vector<bool> dof_done( this->dualImageSpace()->nLocalDof(), false);
     std::vector<bool> dof_done2( this->dualImageSpace()->nLocalDof(), false);
-    std::vector< std::list<std::pair<size_type,double> > > memory_valueInMatrix( this->dualImageSpace()->nLocalDof() );
+    std::vector< std::list<boost::tuple<int,size_type,double> > > memory_valueInMatrix( this->dualImageSpace()->nLocalDof() );
     //std::vector< std::pair<bool,typename image_mesh_type::node_type > > memory_localisationFail( this->dualImageSpace()->nDof() );
     std::list<boost::tuple<size_type,uint16_type> > memory_localisationFail;// gdof,comp
+
+    std::vector<std::map<size_type,size_type> > memory_col_globalProcessToGlobalCluster(nProc);
 
     size_type eltIdLocalised = this->domainSpace()->mesh()->beginElementWithId(this->domainSpace()->mesh()->worldComm().localRank())->id();
 
@@ -615,7 +618,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                                     const auto theproc = imagedof->procOnGlobalCluster(ig1);
                                     auto& row = sparsity_graph->row(ig1);
                                     row.get<0>() = theproc;
-                                    row.get<1>() = ig1 - imagedof->firstDofGlobalCluster(theproc);//   gdof;
+                                    row.get<1>() = ig1 - imagedof->firstDofGlobalCluster(theproc);
                                     //------------------------
                                     // the dof point
                                     ublas::column(ptsReal,0 ) = imagedof->dofPoint(gdof).get<0>();
@@ -639,23 +642,21 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                                                     ublas::column( ptsRef, 0 ) = boost::get<1>(*itL);
                                                     // evaluate basis functions for this point
                                                     MlocEval = domainbasis->evaluate( ptsRef );
-#if 1
                                                     for ( uint16_type jloc = 0; jloc < domain_basis_type::nLocalDof; ++jloc )
                                                         {
                                                             //get global dof
-                                                            size_type j =  boost::get<0>(domaindof->localToGlobal( itanal->first,jloc,comp ));
+                                                            size_type j_gdof =  boost::get<0>(domaindof->localToGlobal( itanal->first,jloc,comp ));
                                                             // up graph
-                                                            row.get<2>().insert(domaindof->mapGlobalProcessToGlobalCluster()[j]);
+                                                            row.get<2>().insert(domaindof->mapGlobalProcessToGlobalCluster()[j_gdof]);
                                                             // get value
                                                             value_type v = MlocEval( domain_basis_type::nComponents1*jloc +
                                                                                      comp*domain_basis_type::nComponents1*domain_basis_type::nLocalDof +
                                                                                      comp, 0 );
                                                             // save value
-                                                            memory_valueInMatrix[gdof].push_back(std::make_pair(j,v));
+                                                            memory_valueInMatrix[gdof].push_back(boost::make_tuple(proc_id,j_gdof,v));
+                                                            memory_col_globalProcessToGlobalCluster[proc_id][j_gdof]=domaindof->mapGlobalProcessToGlobalCluster()[j_gdof];
                                                         }
-#endif
                                                 }
-                                            //dof_done[gdof]=true;
                                         } // else // point found
                                     dof_done[gdof]=true;
                                 } // if (!dof_done[gdof])
@@ -667,236 +668,250 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     this->dualImageSpace()->mesh()->worldComm().localComm().barrier();
     //-----------------------------------------------------------------------------------------
 
+    std::vector<typename image_mesh_type::node_type> vecBarycenter(nProc);
+    mpi::all_gather( this->dualImageSpace()->mesh()->worldComm().localComm(),
+                     locTool->barycenter(),
+                     vecBarycenter );
+
     std::cout << "opinterp  finish " << this->domainSpace()->worldComm().godRank()<< std::endl;
-    std::cout << "GodRank " << this->domainSpace()->worldComm().godRank()
+    /*std::cout << "GodRank " << this->domainSpace()->worldComm().godRank()
               << " memory_localisationFail.size() " << memory_localisationFail.size()
-              << " loc->barycenter() " << locTool->barycenter()
-              << std::endl;
+              << " loc->barycenter() " << locTool->barycenter() << " " << vecBarycenter[0] << " " << vecBarycenter[1]
+              << std::endl;*/
 
     //------------------------------
     // memory map (loc index pt) -> global dofs
-    std::vector<size_type> memmapGdof( memory_localisationFail.size() );
+    std::vector< std::vector<size_type> > memmapGdof( nProc );
     // memory map (loc index pt) -> comp
-    std::vector<uint16_type> memmapComp( memory_localisationFail.size() );
+    std::vector< std::vector<uint16_type> > memmapComp( nProc );
     // points to lacalize
-    //std::vector<typename image_mesh_type::node_type> pointsSearched( memory_localisationFail.size() );
-    std::vector<double> pointsSearched_X( memory_localisationFail.size() );
-    std::vector<double> pointsSearched_Y( memory_localisationFail.size() );
-    std::vector<double> pointsSearched_Z( memory_localisationFail.size() );
+    std::vector<std::vector<typename image_mesh_type::node_type> > pointsSearched( nProc );
 
-    // build
+    for (int p=0;p<nProc;++p)
+        {
+            if (p!=proc_id)
+                {
+                    memmapGdof[p].resize(memory_localisationFail.size());
+                    memmapComp[p].resize(memory_localisationFail.size());
+                    pointsSearched[p].resize(memory_localisationFail.size());
+                }
+        }
+
     size_type cpt=0;
     for(auto it_locFail=memory_localisationFail.begin(), en_locFail=memory_localisationFail.end(); it_locFail!=en_locFail;++it_locFail,++cpt)
         {
-            //const auto gdof = it_locFail->get<0>();
-            memmapGdof[cpt]=it_locFail->get<0>();
-            memmapComp[cpt]=it_locFail->get<1>();
-            //pointsSearched[cpt]=imagedof->dofPoint(it_locFail->get<0>()).get<0>();
-            pointsSearched_X[cpt]=imagedof->dofPoint(it_locFail->get<0>()).get<0>()(0);
-            if (image_mesh_type::nRealDim>1) pointsSearched_Y[cpt]=imagedof->dofPoint(it_locFail->get<0>()).get<0>()(1);
-            if (image_mesh_type::nRealDim>2) pointsSearched_Z[cpt]=imagedof->dofPoint(it_locFail->get<0>()).get<0>()(2);
+            const auto gdof = it_locFail->get<0>();
+            for (int p=0;p<nProc;++p)
+                {
+                    if (p!=proc_id)
+                        {
+                            memmapGdof[p][cpt]=gdof;
+                            memmapComp[p][cpt]=it_locFail->get<1>();
+                            pointsSearched[p][cpt]=imagedof->dofPoint(gdof).get<0>();
+                        }
+                }
+        }
+    std::vector<std::list<int> > searchDistribution(nProc);
+    for (int p=0;p<nProc;++p)
+        {
+            searchDistribution[p].clear();
+            for (int q=0;q<nProc;++q)
+                {
+                    if (q!=p)
+                        {
+                            searchDistribution[p].push_back(q);
+                        }
+                }
         }
 
-    boost::tie( boost::tuples::ignore, it, en ) = _M_range;
 
-    //std::vector<typename image_mesh_type::node_type> dataToRecv;
-    //std::vector<typename image_mesh_type::node_type> dataToSend(2);
+    //-----------------------------------------------------------------------------------------
+    this->dualImageSpace()->mesh()->worldComm().localComm().barrier();
+    //-----------------------------------------------------------------------------------------
+
+    boost::tie( boost::tuples::ignore, it, en ) = _M_range;
+    //------------------------------
+    // usefull container
     std::vector<size_type> pointsSearchedSizeWorld(this->dualImageSpace()->mesh()->worldComm().localComm().size());
 
-    std::vector<double> dataToRecv_X(1,0);
-    std::vector<double> dataToRecv_Y(1,0);
-    std::vector<double> dataToRecv_Z(1,0);
+    std::vector<typename image_mesh_type::node_type> dataToRecv(1);
+    std::vector<uint16_type> dataToRecv_Comp(1,0);
 
-    std::vector<double> pointsRefFinded_X(1,0);
-    std::vector<double> pointsRefFinded_Y(1,0);
-    std::vector<double> pointsRefFinded_Z(1,0);
-    std::vector<int> pointsRefIsFinded(1,0);
+    std::vector<typename image_mesh_type::node_type> pointsRefFinded(1);
+    std::vector<bool> pointsRefIsFinded(1,false);
     std::vector<int> pointsIdEltFinded(1,0);
+    std::vector<std::vector<int> > pointsDofsColFinded(1,std::vector<int>(1,0));
+    std::vector<std::vector<int> > pointsDofsGlobalClusterColFinded(1,std::vector<int>(1,0));
     std::vector<uint16_type> pointsComp(1,0);
     //------------------------------
-    // proc apres proc
+    // tag for mpi msg
+    const int tag_X = 0, tag_Y = 1, tag_Z = 2, tag_IsFind = 3, tag_IdElt = 4, tag_DofsCol = 5, tag_DofsColGC = 6, tag_Comp = 7, tag_Points=8;
+    //------------------------------
+    // proc after proc
     for (int proc=0;proc<this->dualImageSpace()->mesh()->worldComm().localSize();++proc)
         {
             //-----------------------------------------------------------------------------------------
-            this->dualImageSpace()->mesh()->worldComm().localComm().barrier();
+            //this->dualImageSpace()->mesh()->worldComm().localComm().barrier();
             //-----------------------------------------------------------------------------------------
 
-            mpi::all_gather( this->dualImageSpace()->mesh()->worldComm().localComm(),
-                             pointsSearched_X.size(),
-                             pointsSearchedSizeWorld );
-            size_type nDataRecv = pointsSearchedSizeWorld[proc];
-            std::cout << "GodRank " << this->domainSpace()->worldComm().godRank()
-                      << " np pt to send " << pointsSearched_X.size()
-                      << " nDataRecv " << nDataRecv
-                      << std::endl;
-
-            const int tag_X = 0, tag_Y = 1, tag_Z = 2, tag_IsFind = 3, tag_IdElt = 4;
-
-
-            /*if (proc_id ==proc)
-                for (int ii=0;ii<pointsSearched_X.size();++ii)
-                std::cout << "(" << pointsSearched_X[ii] << "," << pointsSearched_Y[ii] << ")";*/
-
-            std::cout << std::endl;
-            this->dualImageSpace()->mesh()->worldComm().localComm().barrier();
-
-
-#if 1
-            if (proc_id ==proc)
+            for (auto it_rankLocalization=searchDistribution[proc].begin(),en_rankLocalization=searchDistribution[proc].end();
+                 it_rankLocalization!=en_rankLocalization;++it_rankLocalization)
                 {
-                    int rankToSend = 0;if (proc==0) rankToSend=1; else rankToSend=0;
-                    this->dualImageSpace()->mesh()->worldComm().localComm().send(rankToSend,tag_X,pointsSearched_X);
-                    if (image_mesh_type::nRealDim>1) this->dualImageSpace()->mesh()->worldComm().localComm().send(rankToSend,tag_Y,pointsSearched_Y);
-                    if (image_mesh_type::nRealDim>2) this->dualImageSpace()->mesh()->worldComm().localComm().send(rankToSend,tag_Z,pointsSearched_Z);
-                }
-            else
-                {
-                    int rankToRecv = proc;
-                    this->dualImageSpace()->mesh()->worldComm().localComm().recv(rankToRecv,tag_X,dataToRecv_X);
-                    if (image_mesh_type::nRealDim>1) this->dualImageSpace()->mesh()->worldComm().localComm().recv(rankToRecv,tag_Y,dataToRecv_Y);
-                    if (image_mesh_type::nRealDim>2) this->dualImageSpace()->mesh()->worldComm().localComm().recv(rankToRecv,tag_Z,dataToRecv_Z);
-                    /*for (int ii=0;ii<dataToRecv_X.size();++ii)
-                      std::cout << "(" << dataToRecv_X[ii] << "," << dataToRecv_Y[ii] << ")";*/
-                }
-#endif
+                    const int rankLocalization = *it_rankLocalization;
+                    //std::cout << "rankLocalization " << rankLocalization << std::endl;
+                    // get number of points
+                    mpi::all_gather( this->dualImageSpace()->mesh()->worldComm().localComm(),
+                                     pointsSearched[rankLocalization].size(),
+                                     pointsSearchedSizeWorld );
+                    const size_type nDataRecv = pointsSearchedSizeWorld[proc];
 
-            //-----------------------------------------------------------------------------------------
-            std::cout << std::endl;
-            this->dualImageSpace()->mesh()->worldComm().localComm().barrier();
-            //-----------------------------------------------------------------------------------------
-#if 1
-            pointsRefFinded_X.resize(nDataRecv);
-            if (image_mesh_type::nRealDim>1) pointsRefFinded_Y.resize(nDataRecv);
-            if (image_mesh_type::nRealDim>2) pointsRefFinded_Z.resize(nDataRecv);
-            pointsRefIsFinded.resize(nDataRecv,0);std::fill(pointsRefIsFinded.begin(),pointsRefIsFinded.end(),0);
-            pointsIdEltFinded.resize(nDataRecv);
-
-            if (proc_id !=proc)
-                {
-                    for (size_type k=0;k<dataToRecv_X.size();++k)
+                    if ( proc_id == proc )  // send info to rankLocalization
                         {
-                            ublas::column(ptsReal,0)(0) = dataToRecv_X[k];
-                            if (image_mesh_type::nRealDim>1) ublas::column(ptsReal,0)(1) = dataToRecv_Y[k];
-                            if (image_mesh_type::nRealDim>2) ublas::column(ptsReal,0)(2) = dataToRecv_Z[k];
-                            auto resLocalisation = locTool->run_analysis(ptsReal,eltIdLocalised,it->vertices()/*it->G()*/,mpl::bool_<interpolation_type::value>());
-                            if (resLocalisation.get<0>()[0])
-                                {
-                                    eltIdLocalised = resLocalisation.get<1>();
-                                    pointsRefIsFinded[k]=1;
-                                    pointsIdEltFinded[k]=eltIdLocalised;
-                                    if ( this->domainSpace()->mesh()->element(eltIdLocalised).isGhostCell()) std::cout << "BAD";
-                                    itanal = locTool->result_analysis_begin();
-                                    itanal_end = locTool->result_analysis_end();
-                                    for ( ;itanal!=itanal_end;++itanal)
-                                        {
-                                            //if (eltIdLocalised !=itanal->first) std::cout << "NEW BAD" << std::endl;
-
-                                            itL=itanal->second.begin();
-                                            ublas::column( ptsRef, 0 ) = boost::get<1>(*itL);
-
-                                            pointsRefFinded_X[k]=ublas::column( ptsRef, 0 )(0);
-                                            if (image_mesh_type::nRealDim>1) pointsRefFinded_Y[k]=ublas::column( ptsRef, 0 )(1);
-                                            if (image_mesh_type::nRealDim>2) pointsRefFinded_Z[k]=ublas::column( ptsRef, 0 )(2);
-                                        }
-                                    std::cout << "F";
-                                }
-                            else
-                                {
-                                    std::cout << "NOT FIND"<<std::endl;
-                                }
+                            const int rankToSend = rankLocalization;
+                            this->dualImageSpace()->mesh()->worldComm().localComm().send(rankToSend,tag_Points,pointsSearched[rankLocalization]);
+                            this->dualImageSpace()->mesh()->worldComm().localComm().send(rankToSend,tag_Comp,memmapComp[rankLocalization]);
                         }
-                }
-            std::cout << std::endl;
-#endif
-            //-----------------------------------------------------------------------------------------
-            this->dualImageSpace()->mesh()->worldComm().localComm().barrier();
-            //-----------------------------------------------------------------------------------------
-#if 1
-            if (proc_id !=proc)
-                {
-                    int rankToSend = proc;
-                    this->dualImageSpace()->mesh()->worldComm().localComm().send(rankToSend,tag_X,pointsRefFinded_X);
-                    if (image_mesh_type::nRealDim>1) this->dualImageSpace()->mesh()->worldComm().localComm().send(rankToSend,tag_Y,pointsRefFinded_Y);
-                    if (image_mesh_type::nRealDim>2) this->dualImageSpace()->mesh()->worldComm().localComm().send(rankToSend,tag_Z,pointsRefFinded_Z);
-                    this->dualImageSpace()->mesh()->worldComm().localComm().send(rankToSend,tag_IsFind,pointsRefIsFinded);
-                    this->dualImageSpace()->mesh()->worldComm().localComm().send(rankToSend,tag_IdElt,pointsIdEltFinded);
-                }
-            else
-                {
-                    int rankToRecv = 0;if (proc==0) rankToRecv=1; else rankToRecv=0;
-                    this->dualImageSpace()->mesh()->worldComm().localComm().recv(rankToRecv,tag_X,pointsRefFinded_X);
-                    if (image_mesh_type::nRealDim>1) this->dualImageSpace()->mesh()->worldComm().localComm().recv(rankToRecv,tag_Y,pointsRefFinded_Y);
-                    if (image_mesh_type::nRealDim>2) this->dualImageSpace()->mesh()->worldComm().localComm().recv(rankToRecv,tag_Z,pointsRefFinded_Z);
-                    this->dualImageSpace()->mesh()->worldComm().localComm().recv(rankToRecv,tag_IsFind,pointsRefIsFinded);
-                    this->dualImageSpace()->mesh()->worldComm().localComm().recv(rankToRecv,tag_IdElt,pointsIdEltFinded);
-
-                    std::cout  << "GodRank " << this->domainSpace()->worldComm().godRank()
-                               << " pointsRefFinded_X.size() " << pointsRefFinded_X.size()
-                               << " pointsRefFinded_Y.size() " << pointsRefFinded_Y.size()
-                               << " pointsRefFinded_Z.size() " << pointsRefFinded_Z.size()
-                               << " pointsRefIsFinded.size() " << pointsRefIsFinded.size()
-                               << " pointsIdEltFinded.size() " << pointsIdEltFinded.size()
-                               << std::endl;
-                }
-#endif
-            //-----------------------------------------------------------------------------------------
-            this->dualImageSpace()->mesh()->worldComm().localComm().barrier();
-            //-----------------------------------------------------------------------------------------
-#if 1
-            if (proc_id==proc)
-                {
-                    for ( int k=0;k<pointsRefFinded_X.size();++k)
+                    else if ( proc_id == rankLocalization ) // get request of proc
                         {
-                            if (pointsRefIsFinded[k]>0)
-                                { //std::cout << "T";
-                                    ublas::column( ptsRef, 0 )(0) = pointsRefFinded_X[k];
-                                    if (image_mesh_type::nRealDim>1) ublas::column( ptsRef, 0 )(1) = pointsRefFinded_Y[k];
-                                    if (image_mesh_type::nRealDim>2) ublas::column( ptsRef, 0 )(2) = pointsRefFinded_Z[k];
+                            const int rankToRecv = proc;
+                            this->dualImageSpace()->mesh()->worldComm().localComm().recv(rankToRecv,tag_Points,dataToRecv);
+                            this->dualImageSpace()->mesh()->worldComm().localComm().recv(rankToRecv,tag_Comp,dataToRecv_Comp);
+                        }
+                    //-----------------------------------------------------------------------------------------
+                    this->dualImageSpace()->mesh()->worldComm().localComm().barrier();
+                    //-----------------------------------------------------------------------------------------
 
-                                    //std::cout << ptsRef;
-                                    MlocEval = domainbasis->evaluate( ptsRef );
-
-                                    const auto i_gdof = memmapGdof[k];
-                                    if (!dof_done2[i_gdof])
+                    if ( proc_id == rankLocalization )
+                        {
+                            // init container
+                            pointsRefFinded.resize(nDataRecv);
+                            pointsRefIsFinded.resize(nDataRecv);std::fill(pointsRefIsFinded.begin(),pointsRefIsFinded.end(),false);
+                            pointsIdEltFinded.resize(nDataRecv);
+                            pointsDofsColFinded.resize(nDataRecv,std::vector<int>(1,0));
+                            pointsDofsGlobalClusterColFinded.resize(nDataRecv,std::vector<int>(1,0));
+                            // iterate on points
+                            for (size_type k=0;k<dataToRecv.size();++k)
+                                {
+                                    // get real point to search
+                                    ublas::column(ptsReal,0) = dataToRecv[k];
+                                    // search process
+                                    auto resLocalisation = locTool->run_analysis(ptsReal,eltIdLocalised,it->vertices()/*it->G()*/,mpl::bool_<interpolation_type::value>());
+                                    if (resLocalisation.get<0>()[0]) // is find
                                         {
-#if 1
-                                            const auto comp = memmapComp[k];
-                                            const size_type myidElt = pointsIdEltFinded[k];
-                                            const auto ig1 = imagedof->mapGlobalProcessToGlobalCluster()[i_gdof];
-                                            const auto theproc = imagedof->procOnGlobalCluster(ig1);
-                                            auto& row = sparsity_graph->row(ig1);
-                                            row.get<0>() = theproc;
-                                            //row.get<1>() = i_gdof;
-                                            row.get<1>() = ig1 - imagedof->firstDofGlobalCluster(theproc);
-
-                                            //std::cout << "("<<gdof<<"-"<<myidElt<< "-" << comp << ")";
+                                            eltIdLocalised = resLocalisation.get<1>();
+                                            const uint16_type comp=dataToRecv_Comp[k];
+                                            pointsRefIsFinded[k]=true;
+                                            pointsIdEltFinded[k]=eltIdLocalised;
+                                            // get point in reference element
+                                            itanal = locTool->result_analysis_begin();
+                                            itanal_end = locTool->result_analysis_end();
+                                            for ( ;itanal!=itanal_end;++itanal)
+                                                {
+                                                    itL=itanal->second.begin();
+                                                    ublas::column( ptsRef, 0 ) = boost::get<1>(*itL);
+                                                    pointsRefFinded[k] = boost::get<1>(*itL);
+                                                }
+                                            // get global process dof and global cluster dof : column data map
+                                            pointsDofsColFinded[k].resize(domain_basis_type::nLocalDof);
+                                            pointsDofsGlobalClusterColFinded[k].resize(domain_basis_type::nLocalDof);
                                             for ( uint16_type jloc = 0; jloc < domain_basis_type::nLocalDof; ++jloc )
                                                 {
-                                                    //std::cout << "("<<myidElt<< "-" << comp << ")";
-                                                    //get global dof
-                                                    // L'ERREUR est la! myodElt n'est pas connu !!!!!!
-                                                    size_type j_gdof =  boost::get<0>(domaindof->localToGlobal( myidElt,jloc,comp ));
-                                                    // up graph
-                                                    row.get<2>().insert(domaindof->mapGlobalProcessToGlobalCluster()[j_gdof]);
-                                                    // get value
-                                                    value_type v = MlocEval( domain_basis_type::nComponents1*jloc +
-                                                                             comp*domain_basis_type::nComponents1*domain_basis_type::nLocalDof +
-                                                                             comp, 0 );
-                                                    // save value
-                                                    memory_valueInMatrix[i_gdof].push_back(std::make_pair(j_gdof,v));
+                                                    const auto j_gdof = boost::get<0>(domaindof->localToGlobal( eltIdLocalised,jloc,comp ));
+                                                    pointsDofsColFinded[k][jloc] = j_gdof;
+                                                    pointsDofsGlobalClusterColFinded[k][jloc] = domaindof->mapGlobalProcessToGlobalCluster()[j_gdof];
                                                 }
-#endif
-                                            dof_done2[i_gdof]=true;
+                                            //std::cout << "F";
+                                        }
+                                    else // Not Find!
+                                        {
+                                            //std::cout << "NOT FIND"<<std::endl;
+                                            // HERE memorize if extrapolation at start
+                                        }
+                                }
+                        } // if ( proc_id == rankLocalization )
+
+                    //-----------------------------------------------------------------------------------------
+                    this->dualImageSpace()->mesh()->worldComm().localComm().barrier();
+                    //-----------------------------------------------------------------------------------------
+
+                    // send the response after localization
+                    if ( proc_id == rankLocalization )
+                        {
+                            const int rankToSend = proc;
+                            this->dualImageSpace()->mesh()->worldComm().localComm().send(rankToSend,tag_Points,pointsRefFinded);
+                            this->dualImageSpace()->mesh()->worldComm().localComm().send(rankToSend,tag_IsFind,pointsRefIsFinded);
+                            this->dualImageSpace()->mesh()->worldComm().localComm().send(rankToSend,tag_IdElt,pointsIdEltFinded);
+                            this->dualImageSpace()->mesh()->worldComm().localComm().send(rankToSend,tag_DofsCol,pointsDofsColFinded);
+                            this->dualImageSpace()->mesh()->worldComm().localComm().send(rankToSend,tag_DofsColGC,pointsDofsGlobalClusterColFinded);
+                        }
+                    else if ( proc_id == proc )
+                        {
+                            const int rankToRecv = rankLocalization;//if (proc==0) rankToRecv=1; else rankToRecv=0;
+                            this->dualImageSpace()->mesh()->worldComm().localComm().recv(rankToRecv,tag_Points,pointsRefFinded);
+                            this->dualImageSpace()->mesh()->worldComm().localComm().recv(rankToRecv,tag_IsFind,pointsRefIsFinded);
+                            this->dualImageSpace()->mesh()->worldComm().localComm().recv(rankToRecv,tag_IdElt,pointsIdEltFinded);
+                            this->dualImageSpace()->mesh()->worldComm().localComm().recv(rankToRecv,tag_DofsCol,pointsDofsColFinded);
+                            this->dualImageSpace()->mesh()->worldComm().localComm().recv(rankToRecv,tag_DofsColGC,pointsDofsGlobalClusterColFinded);
+                        }
+
+                    //-----------------------------------------------------------------------------------------
+                    this->dualImageSpace()->mesh()->worldComm().localComm().barrier();
+                    //-----------------------------------------------------------------------------------------
+#if 1
+                    if ( proc_id==proc )
+                        {
+                            const int rankRecv=rankLocalization;
+                            //if (proc==0) rankRecv = 1; else rankRecv = 0;
+                            for ( int k=0;k<pointsRefFinded.size();++k)
+                                {
+                                    if (pointsRefIsFinded[k])
+                                        {
+                                            //std::cout << "T";
+                                            ublas::column( ptsRef, 0 ) = pointsRefFinded[k];
+                                            //evalute point on the reference element
+                                            MlocEval = domainbasis->evaluate( ptsRef );
+
+                                            const auto i_gdof = memmapGdof[rankLocalization][k];
+                                            if (!dof_done2[i_gdof])
+                                                {
+                                                    const auto comp = memmapComp[rankLocalization][k];
+                                                    const size_type myidElt = pointsIdEltFinded[k];
+                                                    const auto ig1 = imagedof->mapGlobalProcessToGlobalCluster()[i_gdof];
+                                                    const auto theproc = imagedof->procOnGlobalCluster(ig1);
+                                                    auto& row = sparsity_graph->row(ig1);
+                                                    row.get<0>() = theproc;
+                                                    row.get<1>() = ig1 - imagedof->firstDofGlobalCluster(theproc);
+
+                                                    for ( uint16_type jloc = 0; jloc < domain_basis_type::nLocalDof; ++jloc )
+                                                        {
+                                                            //get global process dof
+                                                            const size_type j_gdof =  pointsDofsColFinded[k][jloc];
+                                                            //get global cluster dof
+                                                            const size_type j_gdof_gc = pointsDofsGlobalClusterColFinded[k][jloc];
+                                                            // up graph
+                                                            row.get<2>().insert(j_gdof_gc);
+                                                            // get value
+                                                            const auto v = MlocEval( domain_basis_type::nComponents1*jloc +
+                                                                                     comp*domain_basis_type::nComponents1*domain_basis_type::nLocalDof +
+                                                                                     comp, 0 );
+                                                            // save value
+                                                            memory_valueInMatrix[i_gdof].push_back(boost::make_tuple(rankRecv,j_gdof,v));
+                                                            // usefull to build datamap
+                                                            memory_col_globalProcessToGlobalCluster[rankRecv][j_gdof]=j_gdof_gc;
+                                                        }
+                                                    dof_done2[i_gdof]=true;
+                                                } // if (!dof_done2[i_gdof])
                                         }
                                 }
                         }
-                }
 
 #endif
 
-            //-----------------------------------------------------------------------------------------
-            this->dualImageSpace()->mesh()->worldComm().localComm().barrier();
-            //-----------------------------------------------------------------------------------------
+                    //-----------------------------------------------------------------------------------------
+                    this->dualImageSpace()->mesh()->worldComm().localComm().barrier();
+                    //-----------------------------------------------------------------------------------------
+
+                } // for (auto it_rankLocalization=searchDistribution[proc].begin(),...
 
 
         } // for (int proc=0;proc<this->dualImageSpace()->mesh()->worldComm().localSize();++proc)
@@ -906,24 +921,74 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     //-----------------------------------------------------------------------------------------
     this->dualImageSpace()->mesh()->worldComm().localComm().barrier();
     //-----------------------------------------------------------------------------------------
+
     std::cout << "\nBEFORECOMPUTE GRAPH"<< std::endl;
 
     //-----------------------------------------
     // compute graph
-    //sparsity_graph->zero();
     sparsity_graph->close(); //sparsity_graph->printPython("mygraphpython_2.py");
     //-----------------------------------------
+
+    size_type mapCol_nLocalDof = 0;
+    for (int p=0;p<nProc;++p)
+        {
+            mapCol_nLocalDof += memory_col_globalProcessToGlobalCluster[p].size();
+        }
+
+    std::vector<size_type> mapCol_globalProcessToGlobalCluster(mapCol_nLocalDof);
+    std::vector<std::map<size_type,size_type> > mapCol_LocalSpaceDofToLocalInterpDof(nProc);
+    size_type currentLocalDof=0;
+    for (int p = 0 ; p<nProc;++p)
+        {
+            auto it = memory_col_globalProcessToGlobalCluster[p].begin();
+            auto en = memory_col_globalProcessToGlobalCluster[p].end();
+            for ( ; it!=en ; ++it)
+                {
+                    mapCol_globalProcessToGlobalCluster[currentLocalDof]=it->second;//memory_col_globalProcessToGlobalCluster[proc_id][i];
+                    mapCol_LocalSpaceDofToLocalInterpDof[p][it->first]=currentLocalDof;
+                    ++currentLocalDof;
+                }
+        }
+
+
+    //-----------------------------------------
+    // build data map for the columns
+    this->domainSpace()->mapOnOff().showMeMapGlobalProcessToGlobalCluster();
+    DataMap mapColInterp;// this->domainSpace()->mapOnOff().  memory_localisationFail.size() );
+    mapColInterp.setNDof(this->domainSpace()->mapOnOff().nDof());
+#if 0
+    mapColInterp.setNLocalDofWithoutGhost( proc_id, mapCol_nLocalDof/*this->domainSpace()->mapOnOff().nLocalDofWithoutGhost()*/ );
+    mapColInterp.setNLocalDofWithGhost( proc_id, mapCol_nLocalDof/*this->domainSpace()->mapOnOff().nLocalDofWithGhost()*/ );
+    mapColInterp.setFirstDof( proc_id, 0/*this->domainSpace()->mapOnOff().firstDof()*/ );
+    mapColInterp.setLastDof( proc_id, mapCol_nLocalDof-1 /*this->domainSpace()->mapOnOff().lastDof()*/ );
+#else
+    mapColInterp.setNLocalDofWithoutGhost( proc_id, this->domainSpace()->mapOnOff().nLocalDofWithoutGhost() );
+    mapColInterp.setNLocalDofWithGhost( proc_id, mapCol_nLocalDof/*this->domainSpace()->mapOnOff().nLocalDofWithGhost()*/ );
+    mapColInterp.setFirstDof( proc_id, this->domainSpace()->mapOnOff().firstDof() );
+    mapColInterp.setLastDof( proc_id,  this->domainSpace()->mapOnOff().lastDof() );
+#endif
+    /*mapColInterp.setFirstDofGlobalCluster( proc_id, const size_type df, bool inWorld=true );
+    mapColInterp.setLastDofGlobalCluster( proc_id, const size_type df, bool inWorld=true );*/
+
+
+    mapColInterp.setMapGlobalProcessToGlobalCluster(mapCol_globalProcessToGlobalCluster);
+    //mapColInterp.setMapGlobalProcessToGlobalCluster(this->domainSpace()->mapOnOff().mapGlobalProcessToGlobalCluster());
+
+    mapColInterp.showMeMapGlobalProcessToGlobalCluster();
+
+    //-----------------------------------------
     // create matrix
-    this->matPtr() = this->backend()->newMatrix(this->domainSpace()->mapOnOff(),
+    this->matPtr() = this->backend()->newMatrix(mapColInterp,
+                                                //this->domainSpace()->mapOnOff(),
                                                 this->dualImageSpace()->mapOn(),
                                                 sparsity_graph  );
-
+    //-----------------------------------------
    // assemble matrix
     for (size_type idx_i=0 ; idx_i<nrow_dof_on_proc;++idx_i)
         {
             for (auto it_j=memory_valueInMatrix[idx_i].begin(),en_j=memory_valueInMatrix[idx_i].end() ; it_j!=en_j ; ++it_j)
                 {
-                    this->matPtr()->set(idx_i,it_j->first,it_j->second);
+                    this->matPtr()->set(idx_i,mapCol_LocalSpaceDofToLocalInterpDof[it_j->get<0>()][it_j->get<1>()],it_j->get<2>());
                 }
         }
 
