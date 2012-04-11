@@ -260,15 +260,24 @@ template<typename DomainSpaceType, typename ImageSpaceType,typename IteratorRang
 void
 OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>::update()
 {
-    if ( this->dualImageSpace()->mesh()->numElements() == 0 )
-        return;
+    if (    ( this->dualImageSpace()->mesh()->numElements() == 0 )
+         || ( !this->dualImageSpace()->worldComm().isActive() && !this->domainSpace()->worldComm().isActive() ) )
+        {
+            std::cout << "OperatorInterpolation : update nothing!" << std::endl;
+            this->matPtr() = this->backend()->newZeroMatrix(this->dualImageSpace()->nDof(),
+                                                            this->domainSpace()->nDof(),
+                                                            this->dualImageSpace()->nLocalDofWithoutGhost(),
+                                                            this->domainSpace()->nLocalDofWithoutGhost() );
+
+
+            return;
+        }
 
     // if same mesh but not same function space (e.g. different polynomial order, different basis)
     if ( this->dualImageSpace()->mesh().get() == ( image_mesh_type* )this->domainSpace()->mesh().get() )
     {
         this->updateSameMesh();
     }
-
     else // no relation between meshes
     {
         if ( this->dualImageSpace()->worldsComm()[0].localSize() > 1 )
@@ -551,10 +560,11 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
 
     typedef typename matrix_node<typename image_mesh_type::value_type>::type matrix_node_type;
 
-    std::cout << "updateNoRelationMeshMPI()"<<std::endl;
+    //std::cout << "updateNoRelationMeshMPI()"<<std::endl;
 
     const size_type proc_id = this->dualImageSpace()->worldsComm()[0].localRank();
     const size_type nProc = this->dualImageSpace()->mesh()->worldComm().size();
+    const size_type nProc_col = this->domainSpace()->mesh()->worldComm().size();
     const size_type nrow_dof_on_proc = this->dualImageSpace()->nLocalDof();
     const size_type firstrow_dof_on_proc = this->dualImageSpace()->dof()->firstDofGlobalCluster( proc_id );
     const size_type lastrow_dof_on_proc = this->dualImageSpace()->dof()->lastDofGlobalCluster( proc_id );
@@ -563,7 +573,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
 
     graph_ptrtype sparsity_graph( new graph_type( nrow_dof_on_proc,
                                                   firstrow_dof_on_proc, lastrow_dof_on_proc,
-                                                  firstcol_dof_on_proc, lastcol_dof_on_proc ) );
+                                                  firstcol_dof_on_proc, lastcol_dof_on_proc,
+                                                  this->dualImageSpace()->mesh()->worldComm() ) );
 
     auto const* imagedof = this->dualImageSpace()->dof().get();
     auto const* domaindof = this->domainSpace()->dof().get();
@@ -593,9 +604,10 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     //std::vector< std::pair<bool,typename image_mesh_type::node_type > > memory_localisationFail( this->dualImageSpace()->nDof() );
     std::list<boost::tuple<size_type,uint16_type> > memory_localisationFail;// gdof,comp
 
-    std::vector<std::map<size_type,size_type> > memory_col_globalProcessToGlobalCluster(nProc);
+    std::vector<std::map<size_type,size_type> > memory_col_globalProcessToGlobalCluster(nProc/*_col*/);
 
     size_type eltIdLocalised = this->domainSpace()->mesh()->beginElementWithId(this->domainSpace()->mesh()->worldComm().localRank())->id();
+    //std::cout << "updateNoRelationMeshMPI()----1--------"<<std::endl;
 
     // WARNING in PARALLELE!!!!!!!!!!!!!!!!
     locTool->setExtrapolation(false);
@@ -665,6 +677,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
         } // for( ; it != en; ++ it )
 
     //-----------------------------------------------------------------------------------------
+    //std::cout << "updateNoRelationMeshMPI()----2--------"<<std::endl;
     this->dualImageSpace()->mesh()->worldComm().localComm().barrier();
     //-----------------------------------------------------------------------------------------
 
@@ -673,7 +686,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                      locTool->barycenter(),
                      vecBarycenter );
 
-    std::cout << "opinterp  finish " << this->domainSpace()->worldComm().godRank()<< std::endl;
+    //std::cout << "opinterp  finish " << this->domainSpace()->worldComm().godRank()<< std::endl;
     /*std::cout << "GodRank " << this->domainSpace()->worldComm().godRank()
               << " memory_localisationFail.size() " << memory_localisationFail.size()
               << " loc->barycenter() " << locTool->barycenter() << " " << vecBarycenter[0] << " " << vecBarycenter[1]
@@ -922,18 +935,24 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     this->dualImageSpace()->mesh()->worldComm().localComm().barrier();
     //-----------------------------------------------------------------------------------------
 
-    std::cout << "\nBEFORECOMPUTE GRAPH"<< std::endl;
-
     //-----------------------------------------
     // compute graph
+    //std::cout << "\nBEFORE COMPUTE GRAPH"<< std::endl;
     sparsity_graph->close(); //sparsity_graph->printPython("mygraphpython_2.py");
+    //std::cout << "\nAFTER COMPUTE GRAPH"<< std::endl;
     //-----------------------------------------
+
+    //-----------------------------------------------------------------------------------------
+    this->dualImageSpace()->mesh()->worldComm().localComm().barrier();
+    //-----------------------------------------------------------------------------------------
 
     size_type mapCol_nLocalDof = 0;
     for (int p=0;p<nProc;++p)
         {
             mapCol_nLocalDof += memory_col_globalProcessToGlobalCluster[p].size();
         }
+
+    //std::cout << "mapCol_nLocalDof " << mapCol_nLocalDof << std::endl;
 
     std::vector<size_type> mapCol_globalProcessToGlobalCluster(mapCol_nLocalDof);
     std::vector<std::map<size_type,size_type> > mapCol_LocalSpaceDofToLocalInterpDof(nProc);
@@ -953,8 +972,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
 
     //-----------------------------------------
     // build data map for the columns
-    this->domainSpace()->mapOnOff().showMeMapGlobalProcessToGlobalCluster();
-    DataMap mapColInterp;// this->domainSpace()->mapOnOff().  memory_localisationFail.size() );
+    //this->domainSpace()->mapOnOff().showMeMapGlobalProcessToGlobalCluster();
+    DataMap mapColInterp(this->domainSpace()->mapOnOff().worldComm());// this->domainSpace()->mapOnOff().  memory_localisationFail.size() );
     mapColInterp.setNDof(this->domainSpace()->mapOnOff().nDof());
 #if 0
     mapColInterp.setNLocalDofWithoutGhost( proc_id, mapCol_nLocalDof/*this->domainSpace()->mapOnOff().nLocalDofWithoutGhost()*/ );
@@ -974,7 +993,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     mapColInterp.setMapGlobalProcessToGlobalCluster(mapCol_globalProcessToGlobalCluster);
     //mapColInterp.setMapGlobalProcessToGlobalCluster(this->domainSpace()->mapOnOff().mapGlobalProcessToGlobalCluster());
 
-    mapColInterp.showMeMapGlobalProcessToGlobalCluster();
+    //mapColInterp.showMeMapGlobalProcessToGlobalCluster();
 
     //-----------------------------------------
     // create matrix
@@ -983,7 +1002,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                                                 this->dualImageSpace()->mapOn(),
                                                 sparsity_graph  );
     //-----------------------------------------
-   // assemble matrix
+    // assemble matrix
     for (size_type idx_i=0 ; idx_i<nrow_dof_on_proc;++idx_i)
         {
             for (auto it_j=memory_valueInMatrix[idx_i].begin(),en_j=memory_valueInMatrix[idx_i].end() ; it_j!=en_j ; ++it_j)
