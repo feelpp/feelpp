@@ -187,6 +187,7 @@ BOOST_PARAMETER_NAME( element )
 BOOST_PARAMETER_NAME( components )
 BOOST_PARAMETER_NAME( periodicity )
 
+BOOST_PARAMETER_NAME( collect_garbage )
 
 BOOST_PARAMETER_NAME( partitions )
 BOOST_PARAMETER_NAME( partition_file )
