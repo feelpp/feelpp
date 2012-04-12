@@ -38,6 +38,7 @@
 #include <feel/feelalg/solverlinearpetsc.hpp>
 #include <feel/feelalg/solvernonlinearpetsc.hpp>
 #include <feel/feelalg/functionspetsc.hpp>
+#include <feel/feelalg/preconditionerpetsc.hpp>
 
 
 //--------------------------------------------------------------------
@@ -170,8 +171,6 @@ extern "C"
         if ( solver->comm().size()>1 )
         {
             Jac.reset( new Feel::MatrixPetscMPI<double>( *jac,solver->mapRow(),solver->mapCol() ) );
-            //Jac->setMapRow(solver->mapRow());
-            //Jac->setMapCol(solver->mapCol());
             X_global.reset( new Feel::VectorPetscMPI<double>( x,solver->mapRow() ) );
         }
 
@@ -331,6 +330,7 @@ void SolverNonLinearPetsc<T>::clear ()
 template <typename T>
 void SolverNonLinearPetsc<T>::setReuse ( int jac, int prec )
 {
+
     this->M_reuse_jac=jac;
     this->M_reuse_prec=prec;
 
@@ -452,22 +452,29 @@ void SolverNonLinearPetsc<T>::init ()
     ierr = SNESSetTolerances( M_snes,__absResTol,__relResTol,__absSolTol,__nbItMax,__nbEvalFuncMax );
     CHKERRABORT( PETSC_COMM_WORLD,ierr );
 
+    //KSP ksp;
+    ierr = SNESGetKSP ( M_snes, &M_ksp );
+    CHKERRABORT( PETSC_COMM_WORLD,ierr );
+    //PC pc;
+    ierr = KSPGetPC( M_ksp,&M_pc );
+    CHKERRABORT( PETSC_COMM_WORLD,ierr );
+
+    // Set user-specified  solver and preconditioner types
+    this->setPetscKspSolverType();
+    this->setPetscPreconditionerType();
+    //this->setPetscConstantNullSpace();
+    // sets the software that is used to perform the factorization
+    PetscPCFactorSetMatSolverPackage( M_pc,this->matSolverPackageType() );
+
 
     if ( this->M_preconditioner )
     {
-        KSP ksp;
-        ierr = SNESGetKSP ( M_snes, &ksp );
-        CHKERRABORT( PETSC_COMM_WORLD,ierr );
-        PC pc;
-        ierr = KSPGetPC( ksp,&pc );
-        CHKERRABORT( PETSC_COMM_WORLD,ierr );
-
-        PCSetType( pc, PCSHELL );
-        PCShellSetContext( pc,( void* )this->M_preconditioner.get() );
+        //PCSetType( M_pc, PCSHELL );
+        PCShellSetContext( M_pc,( void* )this->M_preconditioner.get() );
 
         //Re-Use the shell functions from petsc_linear_solver
-        PCShellSetSetUp( pc,__feel_petsc_preconditioner_setup );
-        PCShellSetApply( pc,__feel_petsc_preconditioner_apply );
+        PCShellSetSetUp( M_pc,__feel_petsc_preconditioner_setup );
+        PCShellSetApply( M_pc,__feel_petsc_preconditioner_apply );
     }
 
 }
@@ -498,17 +505,12 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
     if ( this->comm().size()>1 )
     {
         jac = dynamic_cast<MatrixPetscMPI<T>*>( jac_in.get() );
-        //jac->setMapRow(jac_in->mapRow());
-        //jac->setMapCol(jac_in->mapCol());
         x = dynamic_cast<VectorPetscMPI<T>*>( x_in.get() );
         r = dynamic_cast<VectorPetscMPI<T>*>( r_in.get() );
-        //x->setMap(jac_in->mapRow());
-        //r->setMap(jac_in->mapRow());
         //usefull in __feel_petsc_snes_jacobian and __feel_petsc_snes_residual
         this->setMapRow( jac_in->mapRow() );
         this->setMapCol( jac_in->mapCol() );
     }
-
     else
     {
         jac = dynamic_cast<MatrixPetsc<T>*>( jac_in.get() );
@@ -528,7 +530,6 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
     assert( r   != NULL );
     assert( r->vec()   != NULL );
 
-
     int n_iterations =0;
 
     ierr = SNESSetFunction ( M_snes, r->vec(), __feel_petsc_snes_residual, this );
@@ -537,29 +538,15 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
     ierr = SNESSetJacobian ( M_snes, jac->mat(), jac->mat(), __feel_petsc_snes_jacobian, this );
     CHKERRABORT( PETSC_COMM_WORLD,ierr );
 
-#if 0
-    ierr = SNESSetLagJacobian( M_snes,-2 );
-    CHKERRABORT( PETSC_COMM_WORLD,ierr );
-
-    ierr = SNESSetLagPreconditioner( M_snes,-1 );
-    CHKERRABORT( PETSC_COMM_WORLD,ierr );
-#endif
-
-    SNESGetKSP( M_snes,&M_ksp );
-
     KSPSetOperators( M_ksp, jac->mat(), jac->mat(),
-                     MatStructure( /*SAME_PRECONDITIONER*/SAME_NONZERO_PATTERN ) );
-    KSPGetPC( M_ksp,&M_pc );
+                     MatStructure( ( MatStructure ) this->precMatrixStructure() ) );
 
-    this->setPetscKspSolverType();
-    this->setPetscPreconditionerType();
+    if ( this->preconditionerType() == FIELDSPLIT_PRECOND )
+        {
+            jac->updatePCFieldSplit( M_pc );
+        }
 
-    PetscPCFactorSetMatSolverPackage( M_pc,this->matSolverPackageType() );
-
-    //PCSetType(pc,PCNONE);
-    //PCSetType(M_pc,PCILU);
-    //ierr = PCSetType (M_pc, (char*) PCILU);       CHKERRABORT(M_comm,ierr);
-    jac->updatePCFieldSplit( M_pc );
+    PreconditionerPetsc<T>::setPetscPreconditionerType( this->preconditionerType(),this->matSolverPackageType(),M_pc );
 
     ierr = SNESSetFromOptions( M_snes );
     CHKERRABORT( PETSC_COMM_WORLD,ierr );
@@ -567,6 +554,7 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
     //Set the preconditioning matrix
     if ( this->M_preconditioner )
         this->M_preconditioner->setMatrix( jac_in );
+
 
     /*
       Set array that saves the function norms.  This array is intended
@@ -616,9 +604,9 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
     {
         Log() << "[solvernonlinearpetsc] not converged: " << reason << "\n";
     }
-
+#if 0
     this->clear();
-
+#endif
     // return the # of its. and the final residual norm.  Note that
     // n_iterations may be zero for PETSc versions 2.2.x and greater.
     return std::make_pair( reason, 0. );
