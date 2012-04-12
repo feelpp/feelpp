@@ -22,8 +22,10 @@
 #
 #
 execute_process(COMMAND uname -n OUTPUT_VARIABLE FEELPP_MACHINE_NAME )
-
-if ( EXISTS feelpp.machines.${FEELPP_MACHINE_NAME} )
+STRING(STRIP "${FEELPP_MACHINE_NAME}" FEELPP_MACHINE_NAME )
+message(STATUS "[Feel++] machine: ${FEELPP_MACHINE_NAME}")
+message(STATUS "[Feel++] script: ${FEELPP_SOURCE_DIR}/cmake/machines/feelpp.machines.${FEELPP_MACHINE_NAME}.cmake")
+if ( EXISTS ${FEELPP_SOURCE_DIR}/cmake/machines/feelpp.machines.${FEELPP_MACHINE_NAME}.cmake )
   message( STATUS "Configuration found for : ${FEELPP_MACHINE_NAME}" )
   include( feelpp.machines.${FEELPP_MACHINE_NAME} )
 endif()
