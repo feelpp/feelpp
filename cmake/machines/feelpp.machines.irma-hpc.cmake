@@ -21,5 +21,6 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
+set(CMAKE_SYSTEM_PREFIX_PATH "/usr/local/dev;/usr")
 set(CMAKE_EXE_LINKER_FLAGS "/usr/local/dev/lib ${CMAKE_EXE_LINKER_FLAGS}")
 set(CMAKE_SHARED_LINKER_FLAGS "/usr/local/dev/lib ${CMAKE_SHARED_LINKER_FLAGS}")
