@@ -42,6 +42,8 @@
 #include <feel/feeldiscr/mesh.hpp>
 #include <feel/feeldiscr/projector.hpp>
 
+#include <boost/assert.hpp>
+
 #include <fstream>
 
 #if defined( FEELPP_HAS_GMSH_H )
@@ -57,6 +59,16 @@
 
 namespace Feel
 {
+
+    BOOST_PARAMETER_NAME(initMesh)
+    BOOST_PARAMETER_NAME(geofile)
+    BOOST_PARAMETER_NAME(adaptType)
+    BOOST_PARAMETER_NAME(var)
+    BOOST_PARAMETER_NAME(metric)
+    BOOST_PARAMETER_NAME(hMin)
+    BOOST_PARAMETER_NAME(hMax)
+    BOOST_PARAMETER_NAME(tol)
+
     template<int Dim,
              int Order,
              int OrderGeo>
@@ -126,7 +138,24 @@ namespace Feel
             :
             M_backend(backend)
         {
+            // build default value for _var parameter of interface
+            element_type initVar;
+            std::pair<element_type, std::string> initPairVar = std::make_pair( initVar, "defaultVar");
+            defaultVar.push_back(initPairVar);
+
+            // build default value for _metric parameter of interface
+            p1_element_type initMetric1;
+            std::vector<p1_element_type> initMetric;
+            initMetric.push_back(initMetric1);
+            std::pair<std::vector<p1_element_type>, std::string> initPairMetric = std::make_pair(initMetric, "defaultMetric");
+            defaultMetric.push_back(initPairMetric);
         }
+
+        //! Interface
+        mesh_ptrtype adaptMeshImpl( const mesh_ptrtype& initMesh, std::string geofile, std::string adaptType,
+                                         std::list< std::pair<element_type, std::string> > var,
+                                         std::list< std::pair< std::vector<p1_element_type>, std::string> > metric,
+                                         double hMin, double hMax, double tol);
 
         //! Generates a GMSH post processing file (for mesh adaptation)
         std::string createPosfile(std::string name_var, const p1_element_type& bbNewMap, const mesh_ptrtype& mesh);
@@ -136,7 +165,7 @@ namespace Feel
         std::string createAdaptedGeo(std::string geofile, std::string name, std::vector<std::string> posfiles, bool aniso);
 
         //! Build adapted mesh
-        std::string adaptedMesh(std::string geofile, std::string name, std::vector<std::string> posfiles , bool aniso);
+        std::string buildAdaptedMesh(std::string geofile, std::string name, std::vector<std::string> posfiles , bool aniso);
 
         //! Compute the metric for mesh adaptation using hessian matrix
         void computeMetric(const double tol, const double h_min, const double h_max, const matrixN_type & hessian_matrix,
@@ -145,28 +174,116 @@ namespace Feel
         //! Mesh adaptation from Hessian matrix
         //1 : proj u Pk -> P1 and Hessian P1
         //2 : Hessian P(k-2) and proj hessian P(k-2) -> P1 (possibility to choose L2 or H1 projection)
-        std::string adaptMeshHess1(element_type& U, const mesh_ptrtype& mesh, double meshSize,
+        std::string adaptMeshHess1(element_type& U, const mesh_ptrtype& mesh, double hMin, double hMax,
                                    std::string name, std::string geofile, double tol, bool aniso);
 
-        std::string adaptMeshHess2(element_type& U, const mesh_ptrtype& mesh, double meshSize,
+        std::string adaptMeshHess2(element_type& U, const mesh_ptrtype& mesh, double hMin, double hMax,
                                    std::string name, std::string geofile, double tol, bool aniso);
-        std::string adaptMeshHess2(element_type& U, const mesh_ptrtype& mesh, double meshSize,
+        std::string adaptMeshHess2(element_type& U, const mesh_ptrtype& mesh, double hMin, double hMax,
                                    std::string name, std::string geofile, double tol, bool aniso,
                                    mpl::bool_<true>);
-        std::string adaptMeshHess2(element_type& U, const mesh_ptrtype& mesh, double meshSize,
+        std::string adaptMeshHess2(element_type& U, const mesh_ptrtype& mesh, double hMin, double hMax,
                                    std::string name, std::string geofile, double tol, bool aniso,
                                    mpl::bool_<false>);
+
+        //! Mesh adaptation interface
+        // _initMesh = initial mesh
+        // _geofile = name of geo file (without ext)
+        // _adaptType = isotropic | anisotropic
+        // _var = list of (element_type, string) = list of (variable, name of the variable)
+        // _metric = list of (vector<p1_element_type>, string) = list of (hsize(isotropic) | matrix(anisotropic), name for metric)
+        // _hMin, _hMax = limits for hsize
+        // _tol = geometric tolerance (for adaptation from hessian)
+
+        BOOST_PARAMETER_MEMBER_FUNCTION(
+                                        (mesh_ptrtype),
+                                        adaptMesh,
+                                        tag,
+                                        (required
+                                         (initMesh,(mesh_ptrtype)) // initial mesh
+                                         (geofile, (std::string)) // geometry
+                                         (adaptType, (std::string))) //type of adaptation : isotropic | anisotropic
+                                        (optional
+                                         (var, (std::list< std::pair<element_type, std::string> >), defaultVar)
+                                         (metric, (std::list< std::pair< std::vector<p1_element_type>, std::string> >), defaultMetric)
+                                         (hMin, (double), 1.0e-3)
+                                         (hMax, (double), 100.0)
+                                         (tol, (double), 1.0))
+                                        )
+        {
+            mesh_ptrtype newMesh = this-> adaptMeshImpl( initMesh, geofile, adaptType, var, metric, hMin, hMax, tol);
+            return newMesh;
+        }
+
     private :
         backend_ptrtype M_backend;
 
-    };
+        std::list< std::pair<element_type, std::string> > defaultVar;
+        std::list< std::pair<std::vector<p1_element_type>, std::string> > defaultMetric;
 
+    };
 
     template<int Dim,
              int Order,
              int OrderGeo>
     const bool
     MeshAdaptation<Dim, Order, OrderGeo>::isP1;
+
+    template<int Dim,
+             int Order,
+             int OrderGeo>
+    typename MeshAdaptation<Dim, Order, OrderGeo>::mesh_ptrtype
+    MeshAdaptation<Dim,
+                   Order,
+                   OrderGeo>::adaptMeshImpl( const mesh_ptrtype& initMesh, std::string geofile, std::string adaptType,
+                                         std::list< std::pair<element_type, std::string> > var,
+                                         std::list< std::pair< std::vector<p1_element_type>, std::string> > metric,
+                                         double hMin, double hMax, double tol)
+    {
+        std::vector<std::string> posfiles;
+        std::string finalName = "";
+        if ( !(var.front().second == "defaultVar") ) // adptation from a variable
+            {
+                boost::for_each( var, [&initMesh, &hMin, &hMax, &geofile, &tol, &adaptType, &posfiles, &finalName, this]
+                                 (std::pair<element_type, std::string> _var)
+                                 {
+                                     std::string newPosfile = this->adaptMeshHess2( _var.first, initMesh, hMin, hMax, _var.second, geofile,
+                                                                              tol, adaptType=="anisotropic");
+                                     posfiles.push_back( newPosfile );
+                                     finalName += "-" + _var.second;
+                                 });
+            }
+
+        else if ( !(metric.front().second == "defaultMetric") ) //adaptation from a metric
+            {
+                boost::for_each(metric, [&initMesh, &adaptType, &posfiles, &finalName, this]
+                                (std::pair<std::vector<p1_element_type>, std::string> _metric)
+                                {
+                                    std::string newPosfile;
+                                    if (adaptType == "isotropic")
+                                        {
+                                            BOOST_ASSERT(_metric.first.size()==1);
+                                            newPosfile = this->createPosfile(_metric.second, _metric.first[0], initMesh);
+                                        }
+                                    else if( adaptType == "anisotropic")
+                                        {
+                                            BOOST_ASSERT(_metric.first.size()==Dim*Dim);
+                                            newPosfile = this->createPosfileAnisotropic(_metric.second, _metric.first, initMesh);
+                                        }
+                                    posfiles.push_back( newPosfile );
+                                    finalName += "-" + _metric.second;
+                                });
+            }
+
+        std::string newMeshName = this->buildAdaptedMesh( geofile, finalName, posfiles, adaptType=="anisotropic");
+
+        // Update the mesh
+        mesh_ptrtype newMesh = loadGMSHMesh( _mesh = new mesh_type,
+                                             _filename = newMeshName,
+                                             _update=MESH_UPDATE_FACES | MESH_UPDATE_EDGES);
+
+        return newMesh;
+    }
 
     template<int Dim,
              int Order,
@@ -489,14 +606,14 @@ namespace Feel
     std::string
     MeshAdaptation<Dim,
                    Order,
-                   OrderGeo>::adaptedMesh(std::string geofile, std::string name, std::vector<std::string> posfiles,
+                   OrderGeo>::buildAdaptedMesh(std::string geofile, std::string name, std::vector<std::string> posfiles,
                                           bool aniso)
     {
         std::string accessGeofile = ( boost::format( "../../../../../geofiles/%1%.geo" ) % geofile ).str();
 
         std::string prefix = (boost::format( "./%1%" ) % geofile ).str();
         std::string mshFormat = "msh";
-        std::string newMeshName =  (boost::format( "%1%-%2%.%3%" ) % prefix % name % mshFormat ).str();
+        std::string newMeshName =  (boost::format( "%1%%2%.%3%" ) % prefix % name % mshFormat ).str();
 
         int nbPosfiles = posfiles.size();
 
@@ -685,7 +802,7 @@ namespace Feel
     std::string
     MeshAdaptation<Dim,
                    Order,
-                   OrderGeo>::adaptMeshHess1(element_type& var, const mesh_ptrtype& mesh, double meshSize, std::string name,
+                   OrderGeo>::adaptMeshHess1(element_type& var, const mesh_ptrtype& mesh, double hMin, double hMax, std::string name,
                                              std::string geofile, double tol, bool aniso)
     {
         using namespace Feel::vf;
@@ -740,10 +857,10 @@ namespace Feel
         auto dofptItP1 = P1h->dof()->dofPointBegin();
         auto dofptEnP1 = P1h->dof()->dofPointEnd();
 
-        double hsizeMin = (1.0/1000)*meshSize;
-        std::cout << "hsize min = " << hsizeMin << std::endl;
-        double hsizeMax = 1000*meshSize;
-        std::cout << "hsize max = " << hsizeMax << std::endl;
+        // double hsizeMin = (1.0/1000)*meshSize;
+        // std::cout << "hsize min = " << hsizeMin << std::endl;
+        // double hsizeMax = 1000*meshSize;
+        // std::cout << "hsize max = " << hsizeMax << std::endl;
 
         for ( ; dofptItP1 != dofptEnP1; dofptItP1++)
             {
@@ -764,7 +881,7 @@ namespace Feel
 
                 double maxEigenvalue;
                 matrixN_type metrics;
-                computeMetric(tol, hsizeMin, hsizeMax, hessianMatrix, metrics, maxEigenvalue);
+                computeMetric(tol, hMin, hMax, hessianMatrix, metrics, maxEigenvalue);
 
                 if (aniso)
                     {
@@ -800,10 +917,10 @@ namespace Feel
     std::string
     MeshAdaptation<Dim,
                    Order,
-                   OrderGeo>::adaptMeshHess2(element_type& var, const mesh_ptrtype& mesh, double meshSize,
+                   OrderGeo>::adaptMeshHess2(element_type& var, const mesh_ptrtype& mesh, double hMin, double hMax,
                                              std::string name, std::string geofile, double tol, bool aniso)
     {
-        return adaptMeshHess2(var, mesh, meshSize, name, geofile, tol, aniso, Feel::mpl::bool_< isP1 >() );
+        return adaptMeshHess2(var, mesh, hMin, hMax, name, geofile, tol, aniso, Feel::mpl::bool_< isP1 >() );
     }
 
     template<int Dim,
@@ -812,11 +929,11 @@ namespace Feel
     std::string
     MeshAdaptation<Dim,
                    Order,
-                   OrderGeo>::adaptMeshHess2(element_type& var, const mesh_ptrtype& mesh, double meshSize,
+                   OrderGeo>::adaptMeshHess2(element_type& var, const mesh_ptrtype& mesh, double hMin, double hMax,
                                              std::string name, std::string geofile, double tol, bool aniso,
                                              mpl::bool_<true>)
     {
-        return adaptMeshHess1(var, mesh, meshSize, name, geofile, tol, aniso);
+        return adaptMeshHess1(var, mesh, hMin, hMax, name, geofile, tol, aniso);
     }
 
     template<int Dim,
@@ -825,7 +942,7 @@ namespace Feel
     std::string
     MeshAdaptation<Dim,
                    Order,
-                   OrderGeo>::adaptMeshHess2(element_type& var, const mesh_ptrtype& mesh, double meshSize,
+                   OrderGeo>::adaptMeshHess2(element_type& var, const mesh_ptrtype& mesh, double hMin, double hMax,
                                              std::string name, std::string geofile, double tol, bool aniso,
                                              mpl::bool_<false>)
     {
@@ -887,10 +1004,10 @@ namespace Feel
         auto dofptItP1 = P1h->dof()->dofPointBegin();
         auto dofptEnP1 = P1h->dof()->dofPointEnd();
 
-        double hsizeMin = (1.0/10000)*meshSize;
-        std::cout << "hsize min = " << hsizeMin << std::endl;
-        double hsizeMax = 10000*meshSize;
-        std::cout << "hsize max = " << hsizeMax << std::endl;
+        // double hsizeMin = (1.0/10000)*meshSize;
+        // std::cout << "hsize min = " << hsizeMin << std::endl;
+        // double hsizeMax = 10000*meshSize;
+        // std::cout << "hsize max = " << hsizeMax << std::endl;
 
         std::vector<p1_element_type> hessianComponents(4);
 
@@ -912,7 +1029,7 @@ namespace Feel
 
                 double maxEigenvalue;
                 matrixN_type metrics;
-                computeMetric(tol, hsizeMin, hsizeMax, hessianMatrix, metrics, maxEigenvalue);
+                computeMetric(tol, hMin, hMax, hessianMatrix, metrics, maxEigenvalue);
 
                 if (aniso)
                     {
