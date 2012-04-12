@@ -456,14 +456,12 @@ public:
 
     void updatePCFieldSplit( PC & pc );
 
-    std::vector<PetscInt> ia()
-    {
-        return _M_ia;
-    }
-    std::vector<PetscInt> ja()
-    {
-        return _M_ja;
-    }
+    std::vector<IS> const& petscSplitIS() const { return _M_petscIS; }
+    std::map<PC*,bool > & mapSplitPC() { return _M_mapPC; }
+
+    std::vector<PetscInt> ia() { return _M_ia; }
+    std::vector<PetscInt> ja() { return _M_ja; }
+
 
     //@}
 
