@@ -305,10 +305,10 @@ private :
     }
 
     backend_ptrtype M_backend;
-    matrix_ptrtype M_matrix;
     const double M_epsilon;
     const double M_gamma;
     ProjectorType M_proj_type;
+    matrix_ptrtype M_matrix;
 
 };//Projector
 
