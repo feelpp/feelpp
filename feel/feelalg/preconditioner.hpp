@@ -83,6 +83,7 @@ public:
         :
         M_matrix( o.M_matrix ),
         M_preconditioner_type( o.M_preconditioner_type ),
+        M_matSolverPackage_type( o.M_matSolverPackage_type ),
         M_is_initialized( o.M_is_initialized )
     {}
 
@@ -109,6 +110,7 @@ public:
         {
             M_matrix = o.M_matrix;
             M_is_initialized = o.M_is_initialized;
+            M_matSolverPackage_type = o.M_matSolverPackage_type;
             M_preconditioner_type = o.M_preconditioner_type;
         }
 
@@ -178,6 +180,11 @@ public:
      */
     void setType ( const PreconditionerType pct );
 
+    /**
+     * the software that is used to perform the factorization
+     */
+    void setMatSolverPackageType( const MatSolverPackageType mspt );
+
     //@}
 
     /** @name  Methods
@@ -202,6 +209,11 @@ protected:
     PreconditionerType M_preconditioner_type;
 
     /**
+     * Enum the software that is used to perform the factorization
+     */
+    MatSolverPackageType M_matSolverPackage_type;
+
+    /**
      * Flag indicating if the data structures have been initialized.
      */
     bool M_is_initialized;
@@ -218,8 +230,9 @@ FEELPP_STRONG_INLINE
 Preconditioner<T>::Preconditioner ()
     :
     M_matrix(),
-    M_preconditioner_type ( ILU_PRECOND ),
-    M_is_initialized      ( false )
+    M_preconditioner_type   ( ILU_PRECOND ),
+    M_matSolverPackage_type ( MATSOLVER_PETSC ),
+    M_is_initialized        ( false )
 {
 }
 
@@ -249,6 +262,14 @@ Preconditioner<T>::setType ( const PreconditionerType pct )
     M_preconditioner_type = pct;
 }
 
+template <typename T>
+void
+Preconditioner<T>::setMatSolverPackageType ( const MatSolverPackageType mspt )
+{
+    M_is_initialized = false;
+    M_matSolverPackage_type  = mspt;
+}
+
 BOOST_PARAMETER_MEMBER_FUNCTION( ( boost::shared_ptr<Preconditioner<double> > ),
                                  preconditioner,
                                  tag,
@@ -256,10 +277,12 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( boost::shared_ptr<Preconditioner<double> > ),
                                    ( pc,( PreconditionerType ) ) )
                                  ( optional
                                    ( matrix,( d_sparse_matrix_ptrtype ),d_sparse_matrix_ptrtype() )
-                                   ( backend,( BackendType ), BACKEND_PETSC ) ) )
+                                   ( backend,( BackendType ), BACKEND_PETSC )
+                                   ( pcfactormatsolverpackage,( MatSolverPackageType ), MATSOLVER_PETSC ) ) )
 {
     boost::shared_ptr<Preconditioner<double> > p = Preconditioner<double>::build( backend );
     p->setType( pc );
+    p->setMatSolverPackageType( pcfactormatsolverpackage );
 
     if ( matrix )
         p->setMatrix( matrix );

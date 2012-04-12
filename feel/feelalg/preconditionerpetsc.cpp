@@ -80,7 +80,7 @@ void PreconditionerPetsc<T>::init ()
     // the operators have been set.
     // 2.) It should be safe to call set_petsc_preconditioner_type()
     // multiple times.
-    setPetscPreconditionerType( this->M_preconditioner_type, M_pc );
+    setPetscPreconditionerType( this->M_preconditioner_type,this->M_matSolverPackage_type,M_pc );
 
     this->M_is_initialized = true;
 }
@@ -100,7 +100,9 @@ void PreconditionerPetsc<T>::clear ()
 
 
 template <typename T>
-void PreconditionerPetsc<T>::setPetscPreconditionerType ( const PreconditionerType & preconditioner_type, PC & pc )
+void PreconditionerPetsc<T>::setPetscPreconditionerType ( const PreconditionerType & preconditioner_type,
+                                                          const MatSolverPackageType & matSolverPackage_type,
+                                                          PC & pc )
 {
     mpi::communicator world;
     int ierr = 0;
@@ -154,7 +156,7 @@ void PreconditionerPetsc<T>::setPetscPreconditionerType ( const PreconditionerTy
         // In serial, just set the LU preconditioner type
         //if (Feel::n_processors() == 1)
         // do be changed in parallel
-        if ( world.size() == 1 )
+        if ( world.size() == 1 || matSolverPackage_type == MATSOLVER_MUMPS)
         {
             ierr = PCSetType ( pc, ( char* ) PCLU );
             CHKERRABORT( PETSC_COMM_WORLD,ierr );

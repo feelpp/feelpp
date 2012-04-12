@@ -126,7 +126,9 @@ public:
     /**
      * Tells PETSC to use the user-specified preconditioner
      */
-    static void setPetscPreconditionerType ( const PreconditionerType & preconditioner_type, PC & pc );
+    static void setPetscPreconditionerType ( const PreconditionerType & preconditioner_type,
+                                             const MatSolverPackageType & matSolverPackage_type,
+                                             PC & pc );
 
 
     //@}
