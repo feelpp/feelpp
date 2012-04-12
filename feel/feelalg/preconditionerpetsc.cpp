@@ -226,6 +226,14 @@ void PreconditionerPetsc<T>::setPetscPreconditionerType ( const PreconditionerTy
         CHKERRABORT( PETSC_COMM_WORLD,ierr );
         break;
 
+    case FIELDSPLIT_PRECOND: {
+        ierr = PCSetType( pc,( char* ) PCFIELDSPLIT );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        const PCType subpctypes[5] = { PCLU,PCNONE,PCLU,PCLU,PCLU };
+        const KSPType subksptypes[5] = { KSPPREONLY,KSPMINRES,KSPMINRES,KSPMINRES,KSPMINRES };
+        setPetscFieldSplitPreconditionerType( PC_COMPOSITE_SCHUR, subksptypes, subpctypes, pc );
+        break; }
+
     default:
         std::cerr << "ERROR:  Unsupported PETSC Preconditioner: "
                   << preconditioner_type       << std::endl
@@ -299,6 +307,50 @@ void PreconditionerPetsc<T>::setPetscSubpreconditionerType( const PCType type, P
 
         // Set requested type on the sub PC
         ierr = PCSetType( subpc, type );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+    }
+
+}
+
+
+template <typename T>
+void
+PreconditionerPetsc<T>::setPetscFieldSplitPreconditionerType( const PCCompositeType type,
+                                                              const KSPType * subksptypes,
+                                                              const PCType * subpctypes,
+                                                              PC& pc )
+{
+    // For catching PETSc error return codes
+    int ierr = 0;
+
+    ierr = PCFieldSplitSetType( pc, type );
+    CHKERRABORT( PETSC_COMM_WORLD,ierr );
+
+    // call necessary before PCFieldSplitGetSubKSP
+    ierr = PCSetUp( pc );
+    CHKERRABORT( PETSC_COMM_WORLD,ierr );
+
+    // the number of blocks on this processor
+    int n_local;
+    // To store array of local KSP contexts on this processor
+    KSP* subksps;
+    ierr = PCFieldSplitGetSubKSP(pc,&n_local,&subksps );
+    CHKERRABORT( PETSC_COMM_WORLD,ierr );
+
+    // Loop over sub-ksp objects, set ILU preconditioner
+    for ( int i=0; i<n_local; ++i )
+    {
+        // Set requested type on the sub KSP
+        ierr = KSPSetType ( subksps[i], subksptypes[i] );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+
+        // Get pointer to sub KSP object's PC
+        PC subpc;
+        ierr = KSPGetPC( subksps[i], &subpc );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+
+        // Set requested type on the sub PC
+        ierr = PCSetType( subpc, subpctypes[i] );
         CHKERRABORT( PETSC_COMM_WORLD,ierr );
     }
 

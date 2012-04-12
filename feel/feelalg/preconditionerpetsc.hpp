@@ -158,6 +158,12 @@ public:
     Mat M_mat;
 
     static void setPetscSubpreconditionerType( const PCType type, PC& pc );
+
+    static void setPetscFieldSplitPreconditionerType( const PCCompositeType type,
+                                                      const KSPType * subksptypes,
+                                                      const PCType * subpctypes,
+                                                      PC& pc );
+
 private:
     /**
      * Some PETSc preconditioners (ILU, LU) don't work in parallel.  This function
