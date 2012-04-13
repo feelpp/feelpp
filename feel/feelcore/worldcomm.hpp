@@ -60,6 +60,11 @@ public:
                int _color,
                bool _isActive );
 
+    WorldComm( communicator_type const& _globalComm,
+               communicator_type const& _godComm,
+               int _color,
+               std::vector<int> const& isActive );
+
     communicator_type const& globalComm() const
     {
         return *this;
@@ -122,7 +127,11 @@ public:
         return M_masterRank;
     }
 
+    WorldComm subWorldComm() const;
     WorldComm subWorldComm( int color ) const;
+
+    WorldComm subWorldCommSeq() const;
+
 
     bool isActive() const
     {

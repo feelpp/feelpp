@@ -29,11 +29,15 @@
 
 #include <feel/feelcore/worldcomm.hpp>
 
+//#include <boost/mpi/communicator.hpp>
+
 namespace Feel
 {
 
 using namespace boost;
 
+
+//-------------------------------------------------------------------------------
 
 WorldComm::WorldComm()
     :
@@ -67,6 +71,8 @@ WorldComm::WorldComm()
     M_masterRank = *std::min_element( globalRanks.begin(),globalRanks.end() );
 }
 
+//-------------------------------------------------------------------------------
+
 WorldComm::WorldComm( int color )
     :
     super(),
@@ -98,6 +104,8 @@ WorldComm::WorldComm( int color )
     M_masterRank = *std::min_element( globalRanks.begin(),globalRanks.end() );
 }
 
+//-------------------------------------------------------------------------------
+
 WorldComm::WorldComm( std::vector<int> const& colorWorld )
     :
     super(),
@@ -125,6 +133,8 @@ WorldComm::WorldComm( std::vector<int> const& colorWorld )
     M_masterRank = *std::min_element( globalRanks.begin(),globalRanks.end() );
 }
 
+//-------------------------------------------------------------------------------
+
 WorldComm::WorldComm( WorldComm const& wc )
     :
     super( wc ),
@@ -136,6 +146,8 @@ WorldComm::WorldComm( WorldComm const& wc )
     M_masterRank( wc.M_masterRank ),
     M_isActive( wc.M_isActive )
 {}
+
+//-------------------------------------------------------------------------------
 
 WorldComm::WorldComm( communicator_type const& _globalComm, int _color, bool _isActive )
     :
@@ -217,6 +229,70 @@ WorldComm::WorldComm( communicator_type const& _globalComm, int _color, bool _is
 
 }
 
+//-------------------------------------------------------------------------------
+
+WorldComm::WorldComm( communicator_type const& _globalComm,
+                      communicator_type const& _godComm,
+                      int _color, std::vector<int> const& isActive )
+    :
+    super( _globalComm ),
+    M_localComm( super::split( _color ) ),
+    M_godComm(_godComm ),
+    M_mapColorWorld( this->globalSize() ),
+    M_mapLocalRankToGlobalRank( this->localSize() ),
+    M_mapGlobalRankToGodRank( this->globalSize() ),
+    M_isActive(isActive)
+{
+
+    mpi::all_gather( this->globalComm(),
+                     _color,
+                     M_mapColorWorld );
+
+    mpi::all_gather( this->localComm(),
+                     this->globalRank(),
+                     M_mapLocalRankToGlobalRank );
+
+    mpi::all_gather( this->globalComm(),
+                     this->godRank(),
+                     M_mapGlobalRankToGodRank );
+
+    // choice : the smallest rank
+    M_masterRank = INT_MAX;
+
+    for ( int p=0; p<this->globalSize(); ++p )
+    {
+        if  ( this->isActive() )
+        {
+            if ( M_isActive[this->mapGlobalRankToGodRank()[p]] )
+            {
+                if ( M_masterRank>p ) M_masterRank=p;
+            }
+        }
+
+        else
+        {
+            if ( !M_isActive[this->mapGlobalRankToGodRank()[p]] )
+            {
+                if ( M_masterRank>p ) M_masterRank=p;
+            }
+
+        }
+    }
+
+
+}
+
+
+//-------------------------------------------------------------------------------
+
+WorldComm::self_type
+WorldComm::subWorldComm() const
+{
+    return this->subWorldComm(this->mapColorWorld()[this->globalRank()]);
+}
+
+//-------------------------------------------------------------------------------
+
 WorldComm::self_type
 WorldComm::subWorldComm( int _color ) const
 {
@@ -231,6 +307,19 @@ WorldComm::subWorldComm( int _color ) const
 
     return self_type( this->localComm(), myColor, isActive );
 }
+
+//-------------------------------------------------------------------------------
+
+WorldComm::self_type
+WorldComm::subWorldCommSeq() const
+{
+    return self_type( communicator_type(MPI_COMM_SELF,boost::mpi::comm_attach),
+                      this->godComm(),
+                      this->globalRank(),
+                      this->M_isActive );
+}
+
+//-------------------------------------------------------------------------------
 
 void
 WorldComm::showMe( std::ostream& __out ) const
@@ -279,6 +368,8 @@ WorldComm::showMe( std::ostream& __out ) const
     this->godComm().barrier();
 }
 
+//-------------------------------------------------------------------------------
+
 WorldComm::self_type
 WorldComm::operator+( WorldComm const & _worldComm ) const
 {
@@ -312,17 +403,8 @@ WorldComm::operator+( WorldComm const & _worldComm ) const
 
     return WorldComm( fusionComm,colorOnProc,active );
 }
-#if 0
-void
-WorldComm::active()
-{
-    M_isActive[this->godRank()]=true;
-    //mpi::all_gather( this->godComm(),
-    //                 (int)_isActive,
-    //                 M_isActive );
 
-}
-#endif
+//-------------------------------------------------------------------------------
 
 int
 WorldComm::localColorToGlobalRank( int _color,int _localRank ) const
@@ -346,6 +428,9 @@ WorldComm::localColorToGlobalRank( int _color,int _localRank ) const
 
     return res;
 }
+
+//-------------------------------------------------------------------------------
+
 
 } //namespace Feel
 
