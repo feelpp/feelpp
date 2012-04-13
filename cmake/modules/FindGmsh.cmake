@@ -51,6 +51,13 @@ FIND_LIBRARY(GMSH_LIBRARY NAMES Gmsh gmsh-2.5.1 gmsh1 gmsh
   PATH_SUFFIXES
   lib  )
 
+FIND_LIBRARY(GL2PS_LIBRARY NAMES gl2ps
+  PATH
+  ${CMAKE_SYSTEM_PREFIX_PATH}
+  $ENV{GMSH_DIR}/lib
+  PATH_SUFFIXES
+  lib  )
+
 find_program( GMSH_EXECUTABLE gmsh DOC "GMSH mesh generator" )
 
 # handle the QUIETLY and REQUIRED arguments and set Madlib_FOUND to TRUE if
@@ -61,10 +68,12 @@ FIND_PACKAGE_HANDLE_STANDARD_ARGS (GMSH DEFAULT_MSG
 
 if ( GMSH_FOUND )
   MESSAGE( STATUS "GMSH found: header(${GMSH_INCLUDE_DIR}) lib(${GMSH_LIBRARY}) executable(${GMSH_EXECUTABLE})" )
+  MESSAGE( STATUS "GL2PS found: lib(${GL2PS_LIBRARY})" )
 endif()
 
 mark_as_advanced( GMSH_INCLUDE_DIR )
 mark_as_advanced( GMSH_LIBRARY )
+mark_as_advanced( GL2PS_LIBRARY )
 mark_as_advanced( GMSH_EXECUTABLE )
 
 
