@@ -625,6 +625,7 @@ BOOST_PARAMETER_FUNCTION(
     ( optional
       ( refine,          *( boost::is_integral<mpl::_> ), 0 )
       ( save,          *( boost::is_integral<mpl::_> ), 0 )
+      ( worldcomm, ( WorldComm ), WorldComm() )
     ) )
 {
     typedef typename detail::mesh<Args>::type _mesh_type;
@@ -634,7 +635,11 @@ BOOST_PARAMETER_FUNCTION(
 
     using namespace vf;
     typedef FunctionSpace<_mesh_type,bases<Lagrange<_mesh_type::nOrder,Vectorial> > > space_t;
-    auto Xh = space_t::New( _mesh );
+#if defined(FEELPP_ENABLE_MPI_MODE)
+    auto Xh = space_t::New( _mesh=_mesh, _worldscomm=std::vector<WorldComm>(1,worldcomm) );
+#else
+    auto Xh = space_t::New( _mesh=_mesh );
+#endif
     auto xHo = vf::project( _space=Xh, _range=elements( mesh ), _expr=vf::P(), _geomap=GeomapStrategyType::GEOMAP_HO );
     auto xLo = vf::project( _space=Xh, _range=elements( mesh ), _expr=vf::P(), _geomap=GeomapStrategyType::GEOMAP_O1 );
     auto xHoBdy = vf::project( _space=Xh, _range=boundaryfaces( mesh ), _expr=vf::P(), _geomap=GeomapStrategyType::GEOMAP_HO );
@@ -856,7 +861,8 @@ BOOST_PARAMETER_FUNCTION(
         }
 
         if ( straighten && _mesh_type::nOrder > 1 )
-            return straightenMesh( _mesh );
+            return straightenMesh( _mesh=_mesh,
+                                   _worldcomm=worldcomm.subWorldComm() );
     }
 
     return _mesh;
