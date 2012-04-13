@@ -1417,7 +1417,7 @@ Mesh<Shape, T>::Localization::isIn( size_type _id, const node_type & _pt ) const
     if ( elt.isOnBoundary() )
         {
             // get inverse geometric transformation
-            gmc_inverse_type gic( M_mesh->gm(), elt, this->mesh()->worldComm() );
+            gmc_inverse_type gic( M_mesh->gm(), elt, this->mesh()->worldComm().subWorldCommSeq() );
             //apply the inverse geometric transformation for the point p
             gic.setXReal( _pt);
             x_ref=gic.xRef();
@@ -1427,7 +1427,7 @@ Mesh<Shape, T>::Localization::isIn( size_type _id, const node_type & _pt ) const
     else
         {
             // get inverse geometric transformation
-            gmc1_inverse_type gic( M_mesh->gm1(), elt, mpl::int_<1>(), this->mesh()->worldComm() );
+            gmc1_inverse_type gic( M_mesh->gm1(), elt, mpl::int_<1>(), this->mesh()->worldComm().subWorldCommSeq() );
             //apply the inverse geometric transformation for the point p
             gic.setXReal( _pt);
             x_ref=gic.xRef();
