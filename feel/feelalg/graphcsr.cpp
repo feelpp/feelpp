@@ -182,7 +182,6 @@ GraphCSR::addMissingZeroEntriesDiagonal()
 void
 GraphCSR::close()
 {
-
     if ( M_is_closed )
     {
         //std::cout << "already closed graph " << this << "...\n";
@@ -210,9 +209,29 @@ GraphCSR::close()
     M_n_nz.resize( this->lastRowEntryOnProc()-this->firstRowEntryOnProc()+1 );
     M_n_oz.resize( this->lastRowEntryOnProc()-this->firstRowEntryOnProc()+1 );
 
-    std::vector<int> nbMsgToSend( this->worldComm().globalSize() );
-    std::fill( nbMsgToSend.begin(),nbMsgToSend.end(),0 );
-    std::vector< std::map<int,int> > mapMsg( this->worldComm().globalSize() );
+    const int proc_id = this->worldComm().globalRank();
+    const int nProc = this->worldComm().globalSize();
+
+    //std::vector<int> nbMsgToSend( this->worldComm().globalSize() );
+    //std::fill( nbMsgToSend.begin(),nbMsgToSend.end(),0 );
+    //std::vector< std::map<int,int> > mapMsg( this->worldComm().globalSize() );
+    std::vector<size_type> vecDofCol;//(1,0);
+
+    std::vector< std::vector<size_type> > vecToSend( nProc );
+    std::vector< std::vector<size_type> > vecToRecv( nProc );
+    std::vector< std::vector<size_type> > vecToSend_nElt( nProc );
+    std::vector< std::vector<size_type> > vecToRecv_nElt( nProc );
+
+    std::vector< std::list<boost::tuple<size_type,std::vector<size_type> > > > memory_graphMPI( nProc );
+    std::vector<size_type> memory_n_send(this->worldComm().globalSize() );
+
+    for ( int proc=0 ; proc<nProc ; ++proc )
+        {
+            vecToSend[proc].clear();
+            vecToRecv[proc].clear();
+            vecToSend_nElt[proc].clear();
+            vecToRecv_nElt[proc].clear();
+        }
 #endif
 
     std::fill( M_n_nz.begin(), M_n_nz.end(), 0 );
@@ -277,24 +296,20 @@ GraphCSR::close()
         {
 #if defined(FEELPP_ENABLE_MPI_MODE) // MPI
 
-            auto dofOnGlobalCluster = it->first;
-
             // Get the row of the sparsity pattern
+            const auto dofOnGlobalCluster = it->first;
             row_type const& irow = it->second;
+            const auto procOnGlobalCluster = irow.get<0>();
+            const auto dofOnProc = irow.get<1>();
 
-            auto procOnGlobalCluster = irow.get<0>();
-            auto dofOnProc = irow.get<1>();
-
-            std::vector<size_type> ivec( irow.get<2>().size()+2 );
-            ivec[0]=dofOnGlobalCluster;
-            ivec[1]=dofOnProc;
-
+            vecDofCol.resize( irow.get<2>().size()+2 );
+            vecDofCol[0]=dofOnGlobalCluster;
+            vecDofCol[1]=dofOnProc;
             auto icol_it = irow.get<2>().begin();
             auto icol_en = irow.get<2>().end();
-
             for ( int i=0; icol_it!=icol_en ; ++i,++icol_it )
             {
-                ivec[i+2] = *icol_it;
+                vecDofCol[i+2] = *icol_it;
             }
 
 #if 0
@@ -307,75 +322,120 @@ GraphCSR::close()
                       << " size of ivec " << ivec.size()
                       << std::endl;
 #endif
-            this->worldComm().globalComm().send( procOnGlobalCluster, nbMsgToSend[procOnGlobalCluster],ivec );
 
-            mapMsg[procOnGlobalCluster].insert( std::make_pair( nbMsgToSend[procOnGlobalCluster], irow.get<1>()  ) );
+            memory_graphMPI[procOnGlobalCluster].push_back(boost::make_tuple( irow.get<1>(),vecDofCol));
+            memory_n_send[procOnGlobalCluster]+=vecDofCol.size();
 
-            ++nbMsgToSend[procOnGlobalCluster];
 #endif // MPI
         }
 
     }
 
+
 #if defined(FEELPP_ENABLE_MPI_MODE) // MPI
-    // counter of msg received for each process
-    std::vector<int> nbMsgToRecv;
-    mpi::all_to_all( this->worldComm().globalComm(),
-                     nbMsgToSend,
-                     nbMsgToRecv );
 
-    // recv id asked and re-send set of face id
-    for ( int proc=0; proc<this->worldComm().globalSize(); ++proc )
-    {
-        for ( int cpt=0; cpt<nbMsgToRecv[proc]; ++cpt )
+    if ( nProc > 1 )
         {
-            std::vector<size_type> ivec;
-
-            this->worldComm().globalComm().recv( proc, cpt,ivec );
-
-            size_type globalindex = ivec[0];
-            size_type localindex = ivec[1];
-            row_type& row = this->row( globalindex );
-            row.get<0>()=this->worldComm().globalRank();
-            row.get<1>()=localindex;
-
-            for ( size_type j=2; j< ivec.size(); j++ )
-            {
-                bool isInserted = false;
-
-                if ( row.get<2>().find( ivec[j] ) == row.get<2>().end() )
+            // init container to send
+            for ( int proc=0; proc<nProc; ++proc )
                 {
-                    row.get<2>().insert( ivec[j] );
-                    isInserted = true;
+                    vecToSend_nElt[proc].resize( memory_graphMPI[proc].size() );
+                    vecToSend[proc].resize(memory_n_send[proc]);
+                    auto vtsit = vecToSend[proc].begin();
+                    auto it_mem = memory_graphMPI[proc].begin();
+                    auto en_mem = memory_graphMPI[proc].end();
+                    for ( int cpt = 0; it_mem !=en_mem ; ++it_mem)
+                        {
+                            vtsit = std::copy( boost::get<1>( *it_mem ).begin(), boost::get<1>( *it_mem ).end(), vtsit );
+                            vecToSend_nElt[proc][cpt] = it_mem->get<1>().size();
+                            ++cpt;
+                        }
                 }
 
-                if ( ( ivec[j] < firstColEntryOnProc() ) ||
-                        ( ivec[j] > lastColEntryOnProc() ) )
+            //------------------------------------------------------
+            this->worldComm().globalComm().barrier();
+            //------------------------------------------------------
+
+            std::vector<size_type> nDataSize_vec(nProc);
+            for ( int proc=0; proc<this->worldComm().globalSize(); ++proc )
                 {
-                    if ( isInserted )
-                    {
-                        ++M_n_oz[localindex];
-                        ++sum_nz;
-                    }
+                    const auto nDataSize = vecToSend[proc].size();
+                    mpi::all_gather( this->worldComm().globalComm(),
+                                     nDataSize,
+                                     nDataSize_vec );
+
+                    for ( int proc2=0; proc2<nProc; ++proc2 )
+                        {
+                            if ( nDataSize_vec[proc2] > 0 )
+                                {
+                                    if (proc_id==proc2) // send
+                                        {
+                                            this->worldComm().globalComm().send( proc, 0, vecToSend_nElt[proc] );
+                                            this->worldComm().globalComm().send( proc, 1, vecToSend[proc] );
+                                        }
+                                    else if (proc_id==proc) // recv
+                                        {
+                                            this->worldComm().globalComm().recv( proc2, 0, vecToRecv_nElt[proc] );
+                                            this->worldComm().globalComm().recv( proc2, 1, vecToRecv[proc] );
+                                        }
+                                }
+                        }
                 }
 
-                else
+            //------------------------------------------------------
+            this->worldComm().globalComm().barrier();
+            //------------------------------------------------------
+
+            for ( int proc=0,istart=0; proc<nProc; ++proc )
                 {
-                    if ( isInserted )
-                    {
-                        ++M_n_nz[localindex];
-                        ++sum_nz;
-                    }
+                    if (vecToRecv[proc].size()>0)
+                        {
+                            for (int cpt=0;cpt<vecToRecv_nElt[proc].size();++cpt)
+                                {
+                                    const auto nRecvElt = vecToRecv_nElt[proc][cpt];
+
+                                    size_type globalindex = vecToRecv[proc][istart];
+                                    size_type localindex = vecToRecv[proc][istart+1];
+                                    row_type& row = this->row( globalindex );
+                                    row.get<0>()=proc_id;//this->worldComm().globalRank();
+                                    row.get<1>()=localindex;
+
+                                    for ( int k=2;k<nRecvElt;++k)
+                                        {
+                                            bool isInserted = false;
+                                            if ( row.get<2>().find( vecToRecv[proc][istart+k] ) == row.get<2>().end() )
+                                                {
+                                                    row.get<2>().insert( vecToRecv[proc][istart+k] );
+                                                    isInserted = true;
+                                                }
+
+                                            if ( ( vecToRecv[proc][istart+k] < firstColEntryOnProc() ) ||
+                                                 ( vecToRecv[proc][istart+k] > lastColEntryOnProc() ) )
+                                                {
+                                                    if ( isInserted )
+                                                        {
+                                                            ++M_n_oz[localindex];
+                                                            ++sum_nz;
+                                                        }
+                                                }
+
+                                            else
+                                                {
+                                                    if ( isInserted )
+                                                        {
+                                                            ++M_n_nz[localindex];
+                                                            ++sum_nz;
+                                                        }
+                                                }
+                                        }
+
+                                    istart += nRecvElt;
+                                }
+                        }
                 }
+        } //if ( nProc > 1 )
+#endif // MPI_MODE
 
-
-            }
-        }
-
-    } // for (int proc=0; proc<M_comm.size();++proc)
-
-
-#endif
 
 
 #if 1 // build ia,ja
