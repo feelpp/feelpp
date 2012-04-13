@@ -154,7 +154,8 @@ public:
     /**
      * \return the communicator
      */
-    mpi::communicator const& comm() const { return M_worldComm; }
+    WorldComm const& comm() const { return M_worldComm; }
+    WorldComm const& worldComm() const { return M_worldComm; }
 
     /**
      * @returns true if the data structures are
