@@ -357,7 +357,7 @@ GraphCSR::close()
             //------------------------------------------------------
 
             std::vector<size_type> nDataSize_vec(nProc);
-            for ( int proc=0; proc<this->worldComm().globalSize(); ++proc )
+            for ( int proc=0; proc<nProc; ++proc )
                 {
                     const auto nDataSize = vecToSend[proc].size();
                     mpi::all_gather( this->worldComm().globalComm(),
@@ -366,7 +366,7 @@ GraphCSR::close()
 
                     for ( int proc2=0; proc2<nProc; ++proc2 )
                         {
-                            if ( nDataSize_vec[proc2] > 0 )
+                            if ( nDataSize_vec[proc2] > 0 && proc!=proc2)
                                 {
                                     if (proc_id==proc2) // send
                                         {
@@ -375,8 +375,8 @@ GraphCSR::close()
                                         }
                                     else if (proc_id==proc) // recv
                                         {
-                                            this->worldComm().globalComm().recv( proc2, 0, vecToRecv_nElt[proc] );
-                                            this->worldComm().globalComm().recv( proc2, 1, vecToRecv[proc] );
+                                            this->worldComm().globalComm().recv( proc2, 0, vecToRecv_nElt[proc2] );
+                                            this->worldComm().globalComm().recv( proc2, 1, vecToRecv[proc2] );
                                         }
                                 }
                         }
@@ -385,12 +385,11 @@ GraphCSR::close()
             //------------------------------------------------------
             this->worldComm().globalComm().barrier();
             //------------------------------------------------------
-
-            for ( int proc=0,istart=0; proc<nProc; ++proc )
+            for ( int proc=0; proc<nProc; ++proc )
                 {
                     if (vecToRecv[proc].size()>0)
                         {
-                            for (int cpt=0;cpt<vecToRecv_nElt[proc].size();++cpt)
+                            for (int cpt=0,istart=0;cpt<vecToRecv_nElt[proc].size();++cpt)
                                 {
                                     const auto nRecvElt = vecToRecv_nElt[proc][cpt];
 
