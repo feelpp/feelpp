@@ -296,6 +296,7 @@ WorldComm::subWorldComm() const
 WorldComm::self_type
 WorldComm::subWorldComm( int _color ) const
 {
+#if 0
     bool isActive;
     int myColor = this->mapColorWorld()[this->globalRank()];
 
@@ -306,6 +307,30 @@ WorldComm::subWorldComm( int _color ) const
         isActive=false;
 
     return self_type( this->localComm(), myColor, isActive );
+#else
+    bool isActive;
+    int myColor = this->mapColorWorld()[this->globalRank()];
+
+    if ( myColor==_color )
+        isActive=true;
+
+    else
+        isActive=false;
+
+    std::vector<int> newIsActive(this->godSize(),false);
+    if (isActive)
+        {
+            for ( int p=0;p<this->localSize();++p)
+                {
+                    newIsActive[ mapGlobalRankToGodRank()[mapLocalRankToGlobalRank()[p]] ]=true;
+                }
+        }
+
+    return self_type( this->localComm(),
+                      this->godComm(),
+                      myColor,
+                      newIsActive );
+#endif
 }
 
 //-------------------------------------------------------------------------------
@@ -313,10 +338,13 @@ WorldComm::subWorldComm( int _color ) const
 WorldComm::self_type
 WorldComm::subWorldCommSeq() const
 {
+    std::vector<int> newIsActive(this->godSize(),false);
+    newIsActive[this->godRank()]=true;
+
     return self_type( communicator_type(MPI_COMM_SELF,boost::mpi::comm_attach),
                       this->godComm(),
                       this->globalRank(),
-                      this->M_isActive );
+                      newIsActive/*this->M_isActive*/ );
 }
 
 //-------------------------------------------------------------------------------
