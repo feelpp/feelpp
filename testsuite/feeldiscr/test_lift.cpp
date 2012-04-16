@@ -26,6 +26,10 @@
    \date 2011-08-10
 */
 
+#define BOOST_TEST_MODULE test_lift
+#include <boost/test/unit_test.hpp>
+using boost::unit_test::test_suite;
+
 #include <feel/options.hpp>
 
 #include <feel/feelalg/backend.hpp>
@@ -252,10 +256,10 @@ TestLift<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
             on( markedfaces( mesh, "Dirichlet" ), u, F, g );
 
     }
+    auto mybackend = backend_type::build(this->vm());
+    mybackend->solve( _matrix=D, _solution=u, _rhs=F );
 
-    backend_type::build()->solve( _matrix=D, _solution=u, _rhs=F );
-
-    auto op_lift = operatorLift( Xh, M_backend, 20.0, dir_type );
+    auto op_lift = operatorLift( Xh, mybackend/*M_backend*/, 20.0, dir_type );
 
     auto glift = op_lift->lift( _range=markedfaces( mesh,"Dirichlet" ),_expr=trans( g ) );
 
@@ -300,21 +304,24 @@ TestLift<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
 
         Log() << "exportResults done\n";
     }
-
 } // TestLift::run
 
 
-int
-main( int argc, char** argv )
+/**
+ * main code
+ */
+BOOST_AUTO_TEST_SUITE( lift )
+Environment env( boost::unit_test::framework::master_test_suite().argc,
+                 boost::unit_test::framework::master_test_suite().argv );
+BOOST_AUTO_TEST_CASE( MyLiftCase )
 {
-    Environment env( argc, argv );
 
-    Application app( argc, argv, makeAbout(), makeOptions() );
+    Application app( boost::unit_test::framework::master_test_suite().argc,
+                     boost::unit_test::framework::master_test_suite().argv, makeAbout(), makeOptions() );
 
     if ( app.vm().count( "help" ) )
     {
         std::cout << app.optionsDescription() << "\n";
-        return 0;
     }
 
     app.add( new TestLift<1>( app.vm(), app.about() ) );
@@ -324,4 +331,4 @@ main( int argc, char** argv )
     app.run();
 
 }
-
+BOOST_AUTO_TEST_SUITE_END()
