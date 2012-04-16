@@ -213,10 +213,10 @@ private :
     }
 
     backend_ptrtype M_backend;
-    matrix_ptrtype M_matrix;
-    matrix_ptrtype M_matrixFull;
     const double M_gamma;
     WeakDirichlet M_dir;
+    matrix_ptrtype M_matrix;
+    matrix_ptrtype M_matrixFull;
 
 };//OperatorLift
 
