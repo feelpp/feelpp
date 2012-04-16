@@ -1141,12 +1141,15 @@ Mesh<Shape, T>::createP1mesh() const
 {
 
     P1_mesh_ptrtype new_mesh( new P1_mesh_type );
+    // up world mesh
+    new_mesh->setWorldComm( this->worldComm() );
 
 
     // How the nodes on this mesh will be renumbered to nodes
     // on the new_mesh.
     std::vector<size_type> new_node_numbers ( this->numPoints() );
     std::vector<size_type> new_vertex ( this->numPoints() );
+    std::vector<size_type> new_element_numbers ( this->numElements() );
 
     std::fill ( new_node_numbers.begin(),
                 new_node_numbers.end(),
@@ -1169,8 +1172,20 @@ Mesh<Shape, T>::createP1mesh() const
         new_mesh->addMarkerName( itMark.first,itMark.second.template get<0>(),itMark.second.template get<1>() );
     }
 
-    auto it = this->beginElementWithProcessId( this->comm().rank() );
-    auto en = this->endElementWithProcessId( this->comm().rank() );
+
+
+    const int proc_id = this->worldComm().localRank();
+    const int nProc = this->worldComm().localSize();
+    std::vector< std::list<boost::tuple<size_type,size_type> > > memory_ghostid( nProc );
+    std::vector< std::vector<size_type> > memory_id( nProc );
+    std::vector< std::vector<size_type> > vecToSend( nProc );
+    std::vector< std::vector<size_type> > vecToRecv( nProc );
+
+
+    //auto it = this->beginElementWithProcessId( this->worldComm().localRank() );
+    //auto en = this->endElementWithProcessId( this->worldComm().localRank() );
+    auto it = this->beginElement();
+    auto en = this->endElement();
 
     for ( ; it != en; ++it )
     {
@@ -1178,113 +1193,219 @@ Mesh<Shape, T>::createP1mesh() const
 
         // create a new element
         typename P1_mesh_type::element_type new_elem;
-
-        // get element markers
+        // set id of element
+        new_elem.setId ( n_new_elem );
+        new_element_numbers[old_elem.id()]= n_new_elem;
+        // set element markers
         new_elem.setMarker( old_elem.marker().value() );
         new_elem.setMarker2( old_elem.marker2().value() );
         new_elem.setMarker3( old_elem.marker3().value() );
+        // partitioning update
+        new_elem.setProcessIdInPartition( old_elem.pidInPartition() );
+        new_elem.setNumberOfPartitions(old_elem.numberOfPartitions());
+        new_elem.setProcessId(old_elem.processId());
+        new_elem.setIdInPartition( old_elem.pidInPartition(), n_new_elem );
+        new_elem.setNeighborPartitionIds(old_elem.neighborPartitionIds());
 
         // Loop over the P1 nodes on this element.
-        for ( unsigned int n=0; n < element_type::numVertices; n++ )
-        {
-            //!!!!!FEELPP_ASSERT (old_elem.point( n ).id() < new_node_numbers.size()).error( "invalid point id()" );
-
-            if ( new_node_numbers[old_elem.point( n ).id()] == invalid_size_type_value )
+        for ( uint16_type n=0; n < element_type::numVertices; n++ )
             {
-                new_node_numbers[old_elem.point( n ).id()] = n_new_nodes;
-
-                Debug( 4015 ) << "[Mesh<Shape,T>::createP1mesh] insert point " << old_elem.point( n ) << "\n";
-
-                typename P1_mesh_type::point_type pt( old_elem.point( n ) );
-                pt.setId( n_new_nodes );
-
-                // Add this node to the new mesh
-                new_mesh->addPoint( pt );
-
-                Debug( 4015 ) << "[Mesh<Shape,T>::createSubmesh] number of  points " << new_mesh->numPoints() << "\n";
-
-                // Increment the new node counter
-                n_new_nodes++;
-
-                if ( n < element_type::numVertices ) //???
-                {
-                    FEELPP_ASSERT( new_vertex[old_elem.point( n ).id()] == 0 ).error( "already seen this point?" );
-                    new_vertex[old_elem.point( n ).id()]=1;
-                }
-            }
-
+                if ( new_node_numbers[old_elem.point( n ).id()] == invalid_size_type_value )
+                    {
+                        new_node_numbers[old_elem.point( n ).id()] = n_new_nodes;
+                        Debug( 4015 ) << "[Mesh<Shape,T>::createP1mesh] insert point " << old_elem.point( n ) << "\n";
+                        typename P1_mesh_type::point_type pt( old_elem.point( n ) );
+                        pt.setId( n_new_nodes );
+                        // Add this node to the new mesh
+                        new_mesh->addPoint( pt );
+                        Debug( 4015 ) << "[Mesh<Shape,T>::createSubmesh] number of  points " << new_mesh->numPoints() << "\n";
+                        // Increment the new node counter
+                        n_new_nodes++;
+                        FEELPP_ASSERT( new_vertex[old_elem.point( n ).id()] == 0 ).error( "already seen this point?" );
+                        new_vertex[old_elem.point( n ).id()]=1;
+                    }
             // Define this element's connectivity on the new mesh
             FEELPP_ASSERT ( new_node_numbers[old_elem.point( n ).id()] < new_mesh->numPoints() ).error( "invalid connectivity" );
-
             Debug( 4015 ) << "[Mesh<Shape,T>::createP1mesh] adding point old(" << old_elem.point( n ).id()
                           << ") as point new(" << new_node_numbers[old_elem.point( n ).id()]
                           << ") in element " << new_elem.id() << "\n";
-
+            // add point in element
             new_elem.setPoint( n, new_mesh->point( new_node_numbers[old_elem.point( n ).id()] ) );
-
-        } // end for n
-
-        // set id of element
-        new_elem.setId ( n_new_elem );
-
-        // increment the new element counter
-        n_new_elem++;
+        } //for ( uint16_type n=0; n < element_type::numVertices; n++ )
 
         // Add an equivalent element type to the new_mesh
         new_mesh->addElement( new_elem );
+        // increment the new element counter
+        n_new_elem++;
 
-
-        /////////////////////
         // Maybe add faces for this element
         for ( unsigned int s=0; s<old_elem.numTopologicalFaces; s++ )
         {
             if ( !old_elem.facePtr( s ) ) continue;
-
             // only add face on the boundary: they have some data
             // (boundary ids) which cannot be retrieved otherwise
-            //if ( old_elem.neighbor(s) == invalid_size_type_value )
-            size_type global_face_id = old_elem.face( s ).id();
-
+            const size_type global_face_id = old_elem.face( s ).id();
             if ( this->hasFace( global_face_id ) )
             {
-
                 // get the corresponding face
                 face_type const& old_face = old_elem.face( s );
                 typename P1_mesh_type::face_type new_face;
-
                 // disconnect from elements of old mesh,
-                // the connection will be redone in
-                // \c updateForUse()
+                // the connection will be redone in updateForUse()
                 new_face.disconnect();
-
-                if ( old_face.isOnBoundary() ) new_face.setOnBoundary( true );
-
-                else new_face.setOnBoundary( false );
-
+                // is on boundary
+                new_face.setOnBoundary( old_face.isOnBoundary() );
+                // set id of face
+                new_face.setId( n_new_faces );
+                // set face markers
                 new_face.setMarker( old_face.marker().value() );
                 new_face.setMarker2( old_face.marker2().value() );
                 new_face.setMarker2( old_face.marker3().value() );
-
+                // partitioning update
+                new_face.setProcessIdInPartition( old_face.pidInPartition() );
+                new_face.setNumberOfPartitions(old_face.numberOfPartitions());
+                new_face.setProcessId(old_face.processId());
+                new_face.setIdInPartition( old_face.pidInPartition(), n_new_faces );
+                new_face.setNeighborPartitionIds(old_face.neighborPartitionIds());
                 // update P1 points info
                 for ( uint16_type p = 0; p < face_type::numVertices; ++p )
                 {
                     new_face.setPoint( p, new_mesh->point( new_node_numbers[old_elem.point( old_elem.fToP( s,p ) ).id()] ) );
                 }
-
-                new_face.setId( n_new_faces++ );
-
                 // add it to the list of faces
                 new_mesh->addFace( new_face );
-            }
-        }
+                // increment the new face counter
+                ++n_new_faces;
+            } // if ( this->hasFace( global_face_id ) )
+        } // for ( unsigned int s=0; s<old_elem.numTopologicalFaces; s++ )
 
+
+        if ( it->isGhostCell() )
+            {
+                for (auto it_pid=it->idInPartition().begin(),en_pid=it->idInPartition().end() ; it_pid!=en_pid ; ++it_pid)
+                    {
+                        //std::cout << " " << it_pid->first << "-" << it_pid->second << "-"<<it->pidInPartition()<<"-"<<new_mesh->worldComm().localRank();
+                        const int procToSend=it_pid->first;
+                        if (procToSend!=it->pidInPartition())
+                            {
+                                memory_ghostid[procToSend].push_back(boost::make_tuple(new_elem.id()/*it->id()*/,it_pid->second));
+                            }
+                    }
+            }
     } // end for it
+
+
+    if ( nProc > 1 )
+        {
+            // init container to send
+            for ( int proc=0; proc<nProc; ++proc )
+                {
+                    vecToSend[proc].resize(memory_ghostid[proc].size());
+                    memory_id[proc].resize(memory_ghostid[proc].size());
+                    auto it_mem = memory_ghostid[proc].begin();
+                    auto en_mem = memory_ghostid[proc].end();
+                    for ( int k = 0 ; it_mem!=en_mem ; ++k,++it_mem )
+                        {
+                            vecToSend[proc][k] = it_mem->get<1>();
+                            memory_id[proc][k] = it_mem->get<0>();
+                        }
+                }
+
+            //------------------------------------------------------
+            this->worldComm().localComm().barrier();
+            //------------------------------------------------------
+
+            std::vector<size_type> nDataSize_vec(nProc);
+            for ( int proc=0; proc<nProc; ++proc )
+                {
+                    const auto nDataSize = vecToSend[proc].size();
+                    mpi::all_gather( this->worldComm().localComm(),
+                                     nDataSize,
+                                     nDataSize_vec );
+
+                    for ( int proc2=0; proc2<nProc; ++proc2 )
+                        {
+                            if ( nDataSize_vec[proc2] > 0  && proc!=proc2 )
+                                {
+                                    if (proc_id==proc2) // send
+                                        {
+                                            this->worldComm().localComm().send( proc, 0, vecToSend[proc] );
+                                        }
+                                    else if (proc_id==proc) // recv
+                                        {
+                                            this->worldComm().localComm().recv( proc2, 0, vecToRecv[proc2] );
+                                        }
+                                }
+                        }
+                }
+
+            //------------------------------------------------------
+            this->worldComm().localComm().barrier();
+            //------------------------------------------------------
+
+            for ( int proc=0 ; proc<nProc; ++proc )
+                {
+                    vecToSend[proc].resize(vecToRecv[proc].size());
+                    for (int k=0;k<vecToRecv[proc].size();++k)
+                        {
+                            const size_type idRequest = vecToRecv[proc][k];
+                            vecToSend[proc][k]= new_element_numbers[idRequest];
+                        }
+                }
+
+            //------------------------------------------------------
+            this->worldComm().localComm().barrier();
+            //------------------------------------------------------
+
+            for ( int proc=0; proc<nProc; ++proc )
+                {
+                    const auto nDataSize = vecToSend[proc].size();
+                    mpi::all_gather( this->worldComm().localComm(),
+                                     nDataSize,
+                                     nDataSize_vec );
+
+                    for ( int proc2=0; proc2<nProc; ++proc2  )
+                        {
+                            if ( nDataSize_vec[proc2] > 0 && proc!=proc2 )
+                                {
+                                    if (proc_id==proc2) // send
+                                        {
+                                            this->worldComm().localComm().send( proc, 0, vecToSend[proc] );
+                                        }
+                                    else if (proc_id==proc) // recv
+                                        {
+                                            this->worldComm().localComm().recv( proc2, 0, vecToRecv[proc2] );
+                                        }
+                                }
+                        }
+                }
+
+
+            //------------------------------------------------------
+            this->worldComm().localComm().barrier();
+            //------------------------------------------------------
+
+            for ( int proc=0 ; proc<nProc; ++proc )
+                {
+                    //std::cout << " vecToRecv[proc].size() " << vecToRecv[proc].size() << std::endl;
+                    for (int k=0;k<vecToRecv[proc].size();++k)
+                        {
+                            auto elttt = new_mesh->elementIterator( memory_id[proc][k], /*new_mesh->worldComm().localRank()*/ proc );
+                            new_mesh->elements().modify( elttt, detail::update_id_in_partition_type( proc, vecToRecv[proc][k] ) );
+                        }
+                }
+
+
+        } // if ( nProc > 1 )
+
+
 
     new_mesh->setNumVertices( std::accumulate( new_vertex.begin(), new_vertex.end(), 0 ) );
 
     Debug( 4015 ) << "[Mesh<Shape,T>::createP1mesh] update face/edge info if necessary\n";
     // Prepare the new_mesh for use
     new_mesh->components().set ( MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
+    // run intensive job
     new_mesh->updateForUse();
 
     return new_mesh;
