@@ -516,6 +516,14 @@ public:
     }
 
     /**
+     * \return idInPartition map
+     */
+    std::map<uint16_type, size_type> const& idInPartition() const
+    {
+        return M_idInPartition;
+    }
+
+    /**
      * \return \c true if active, \c false otherwise
      *
      * \note for now it is a dummy function that returns always true,
