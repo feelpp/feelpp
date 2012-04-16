@@ -57,6 +57,7 @@ using boost::unit_test::test_suite;
 #include <feel/feelfilters/gmsh.hpp>
 #include <feel/feelfilters/gmshsimplexdomain.hpp>
 #include <feel/feelvf/vf.hpp>
+#include <feel/feelfilters/geotool.hpp>
 
 const double DEFAULT_MESH_SIZE=0.05;
 
@@ -132,129 +133,19 @@ createMesh( double hsize )
     std::ostringstream nameStr;
 
     //std::cout <<"Mesh generation ... ";
-#if 0
-    ostr << "h=" << meshSize << ";\n"
-         << "Point(1) = {-1, -1,0.0,h};\n"
-         << "Point(2) = { 1, -1,0.0,h};\n"
-         << "Point(3) = {-1,  1,0.0,h};\n"
-         << "Line(1) = {2,3};\n"
-         << "Line(2) = {3,1};\n"
-         << "Line(3) = {1,2};\n"
-         << "Line Loop(4) = {1,2,3};\n"
-         << "Plane Surface(5) = {4};\n"
-         << "Physical Surface(30) = {5};\n"
-         << "Physical Line(31) = {1};\n"
-         << "Physical Line(32) = {2};\n"
-         << "Physical Line(33) = {3};\n";
 
-    nameStr << "triangle." << meshSize;
+    GeoTool::Node x1(-1, -1);
+    GeoTool::Node x2( 1,  1);
+    GeoTool::Rectangle R( meshSize,"MyRectangle",x1,x2);
+    R.setMarker(_type="line",_name="Gamma1",_marker1=true,_marker3=true);
+    R.setMarker(_type="line",_name="Gamma2",_marker2=true,_marker4=true);
+    R.setMarker(_type="surface",_name="Omega",_markerAll=true);
 
-    fname = __gmsh.generate( nameStr.str(), ostr.str() );
-#else
-    ostr << "Mesh.MshFileVersion = 2;\n"
-         << "h=" << meshSize << ";\n"
-         << "Point(1) = {-1,-1,0,h};\n"
-         << "Point(2) = {1,-1,0,h};\n"
-         << "Point(3) = {1,1,0,h};\n"
-         << "Point(4) = {-1,1,0,h};\n"
-         << "Line(1) = {1,2};\n"
-         << "Line(2) = {2,3};\n"
-         << "Line(3) = {3,4};\n"
-         << "Line(4) = {4,1};\n"
-         << "Line Loop(4) = {1,2,3,4};\n"
-         << "Plane Surface(5) = {4};\n"
-         << "Physical Line(10) = {1,3};\n"
-         << "Physical Line(20) = {2,4};\n"
-         << "Physical Surface(6) = {5};\n";
-    nameStr << "square." << meshSize;
-    fname = __gmsh.generate( nameStr.str(), ostr.str() );
-#endif
-
-
-    /* Mesh */
-
-
-    typename imesh<T,2>::ptrtype mesh( new typename imesh<T,2>::type );
-
-    ImporterGmsh<typename imesh<T,2>::type> import( fname );
-    mesh->accept( import );
-
-    mesh->components().set( MESH_RENUMBER | MESH_UPDATE_FACES | MESH_UPDATE_EDGES );
-    mesh->updateForUse();
-    return mesh;
-}
-template<typename T, int Order>
-typename imesh<T,Order>::ptrtype
-createCircle( double hsize )
-{
-    double meshSize = hsize;
-    //BOOST_TEST_MESSAGE( "hsize = " << meshSize << std::endl;
-
-    Gmsh __gmsh;
-    std::string fname;
-    std::ostringstream ostr;
-    std::ostringstream nameStr;
-
-    //std::cout <<"Mesh generation ... ";
-    ostr << "Mesh.MshFileVersion = 2;\n"
-         << "h=" << meshSize << ";\n"
-         << "Point(1) = {0,0,0,h};\n"
-         << "Point(2) = {1,0,0,h};\n"
-         << "Point(3) = {0,1,0,h};\n"
-         << "Point(4) = {-1,0,0,h};\n"
-         << "Point(5) = {0,-1,0,h};\n"
-         << "Circle(10) = {2,1,3};\n"
-#if 1
-         << "Circle(11) = {3,1,4};\n"
-         << "Circle(12) = {4,1,5};\n"
-         << "Circle(13) = {5,1,2};\n"
-         << "Line Loop(14) = {10,11,12,13};\n"
-#else
-         << "Line(1) = {1,2};\n"
-         << "Line(2) = {3,1};\n"
-         << "Line Loop(14) = {1,10,2};\n"
-#endif
-
-         << "Plane Surface(15) = {14};\n"
-         << "Physical Line(20) = {10,11,12,13};\n"
-         << "Physical Surface(30) = {15};\n";
-
-    nameStr << "circle." << meshSize;
-
-    if ( Order == 2 )
-        __gmsh.setOrder( GMSH_ORDER_TWO );
-
-    fname = __gmsh.generate( nameStr.str(), ostr.str() );
-
-    typename imesh<T,2,Order>::ptrtype mesh( new typename imesh<T,2,Order>::type );
-
-    ImporterGmsh<typename imesh<T,2, Order>::type> import( fname );
-    mesh->accept( import );
-
-    mesh->components().set( MESH_RENUMBER | MESH_UPDATE_FACES | MESH_UPDATE_EDGES );
-    mesh->updateForUse();
-    return mesh;
-}
-template<typename T, int Order>
-typename imesh<T,2,Order>::ptrtype
-createSimplex( double hsize )
-{
-    double meshSize = hsize;
-    //BOOST_TEST_MESSAGE( "hsize = " << meshSize << std::endl;
-
-    GmshSimplexDomain ts( 2,Order );
-    ts.setCharacteristicLength( meshSize );
-    ts.setX( std::make_pair( -1,1 ) );
-    ts.setY( std::make_pair( -1,1 ) );
-    std::string fname = ts.generate( "simplex" );
-    typename imesh<T,2,Order>::ptrtype mesh( new typename imesh<T,2>::type );
-
-    ImporterGmsh<typename imesh<T,2>::type> import( fname );
-    mesh->accept( import );
+    auto mesh = R.createMesh(_mesh = new typename imesh<T,2>::type,
+                             _name="sqaure" );
 
     return mesh;
 }
-
 
 template<typename value_type = double>
 struct test_integration_circle: public Application
@@ -428,8 +319,8 @@ struct test_integration_simplex: public Application
 
 
         const value_type eps = 1e-9;
-        typename imesh<value_type,2,1>::ptrtype mesh( createSimplex<value_type,1>( meshSize ) );
-        typedef typename imesh<value_type,2>::type mesh_type;
+        //typename imesh<value_type,2,1>::ptrtype mesh( createSimplex<value_type,1>( meshSize ) );
+        //typedef typename imesh<value_type,2>::type mesh_type;
 
         typedef fusion::vector<Lagrange<3, Scalar> > basis_type;
         typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
@@ -554,7 +445,6 @@ struct test_integration_domain: public Application
         using namespace Feel;
         using namespace Feel::vf;
 
-
         typename imesh<value_type,2>::ptrtype mesh( createMesh<value_type>( meshSize ) );
 
         const value_type eps = 1e-9;
@@ -596,6 +486,7 @@ struct test_integration_domain: public Application
         FEELPP_ASSERT( math::abs( v11-0.0 ) < eps )( v11 )( math::abs( v11-0.0 ) )( eps ).warn ( "v11 != 0" );
 #endif /* USE_BOOST_TEST */
 
+
         // int ([-1,1],[-1,1]) abs(x) dx
         value_type vsin = integrate( elements( mesh ), sin( Px() ), _Q<5>() ).evaluate()( 0, 0 );
         value_type vsin1 = integrate( elements( mesh ), idf( f_sinPx() ), _Q<5>() ).evaluate()( 0, 0 );
@@ -628,7 +519,6 @@ struct test_integration_domain: public Application
 #else
         FEELPP_ASSERT( math::abs( v2-8.0 ) < eps )( v2 )( math::abs( v2-8.0 ) )( eps ).warn ( "v2 != 8" );
 #endif /* USE_BOOST_TEST */
-
 
     }
     boost::shared_ptr<Feel::Backend<double> > backend;
