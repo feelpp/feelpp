@@ -558,7 +558,7 @@ BOOST_AUTO_TEST_CASE( interp_twomesh_interp )
     BOOST_MESSAGE(   "[main] ----------TEST_INTERP_FINISH----------\n" );
 }
 #endif
-#if 1
+#if 0
 BOOST_AUTO_TEST_CASE( interp_twomesh_export )
 {
 
