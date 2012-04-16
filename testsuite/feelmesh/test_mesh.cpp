@@ -48,6 +48,7 @@ using boost::unit_test::test_suite;
 #include <feel/feeldiscr/mesh.hpp>
 #include <feel/feelmesh/filters.hpp>
 #include <feel/feelfilters/gmsh.hpp>
+#include <feel/feelfilters/geotool.hpp>
 
 namespace Feel
 {
@@ -84,51 +85,18 @@ struct test_mesh_filters
 
         BOOST_TEST_CHECKPOINT( "Gmsh generator instantiated" );
 
-        ostr << "Mesh.MshFileVersion = 2;\n"
-             << "h=" << meshSize << ";\n"
-             << "Point(1) = {-1, -1,0.0,h};\n"
-             << "Point(2) = { 1, -1,0.0,h};\n"
-             << "Point(3) = {-1,  1,0.0,h};\n"
-             << "Line(1) = {2,3};\n"
-             << "Line(2) = {3,1};\n"
-             << "Line(3) = {1,2};\n"
-             << "Line Loop(4) = {1,2,3};\n"
-             << "Plane Surface(5) = {4};\n"
-             << "Physical Surface(30) = {5};\n"
-             << "Physical Line(31) = {1};\n"
-             << "Physical Line(32) = {2};\n"
-             << "Physical Line(33) = {3};\n";
+        GeoTool::Node x1(-1, -1);
+        GeoTool::Node x2( 1, -1);
+        GeoTool::Node x3(-1,  1);
+        GeoTool::Triangle T( meshSize,"MyTriangle",x1,x2,x3);
+        T.setMarker(_type="line",_name="Gamma1",_marker1=true);
+        T.setMarker(_type="line",_name="Gamma2",_marker2=true);
+        T.setMarker(_type="line",_name="Gamma3",_marker3=true);
+        T.setMarker(_type="surface",_name="Omega",_markerAll=true);
 
-        BOOST_TEST_CHECKPOINT( "Described mesh geometry" );
+        auto mesh = T.createMesh(_mesh = new detail::mesh_type,
+                                 _name="triangle" );
 
-        nameStr << "triangle." << meshSize;
-        BOOST_TEST_CHECKPOINT( "Described mesh name" );
-
-        try
-        {
-            fname = __gmsh.generate( nameStr.str(), ostr.str() );
-        }
-
-        catch ( ... )
-        {
-            std::cout << "Caught exception\n";
-        }
-
-        BOOST_TEST_CHECKPOINT( "Generating mesh with h=" << meshSize );
-        /* Mesh */
-
-
-        detail::mesh_ptrtype mesh( new detail::mesh_type );
-        BOOST_TEST_CHECKPOINT( "Instantiating mesh" );
-
-
-        ImporterGmsh<detail::mesh_type> import( fname );
-        BOOST_TEST_CHECKPOINT( "Importer instantiated" );
-        import.setVersion( "2.0" );
-        mesh->accept( import );
-        BOOST_TEST_CHECKPOINT( "mesh imported" );
-        mesh->components().set( MESH_CHECK | MESH_RENUMBER | MESH_UPDATE_EDGES | MESH_UPDATE_FACES );
-        mesh->updateForUse();
         BOOST_TEST_CHECKPOINT( "mesh ready for use" );
         BOOST_TEST_MESSAGE( "create mesh done" );
         return mesh;
@@ -194,9 +162,9 @@ struct test_mesh_filters
             {
                 BOOST_CHECK( it->isConnectedTo0() &&
                              !it->isConnectedTo1() );
-                BOOST_CHECK( it->marker().value() == 31 ||
-                             it->marker().value() == 32 ||
-                             it->marker().value() == 33 );
+                BOOST_CHECK( it->marker().value() == mesh->markerName("Gamma1") ||
+                             it->marker().value() == mesh->markerName("Gamma2") ||
+                             it->marker().value() == mesh->markerName("Gamma3") );
             }
         }
         BOOST_TEST_MESSAGE( "testing mesh elements" );
