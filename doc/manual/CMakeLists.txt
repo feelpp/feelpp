@@ -3,7 +3,7 @@
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
 #       Date: 2009-11-29
 #
-#  Copyright (C) 2009-2010 Université Joseph Fourier (Grenoble I)
+#  Copyright (C) 2009-2012 Université Joseph Fourier (Grenoble I)
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -178,5 +178,5 @@ if (NOT FEELPP_MINIMAL_CONFIGURATION)
   add_subdirectory(nonlinear)
   add_subdirectory(adapt)
   add_subdirectory(nirb)
-  add_subdirectory(mcs)
+  add_subdirectory(fd)
 endif()
