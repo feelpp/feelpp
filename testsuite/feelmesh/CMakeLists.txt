@@ -1,5 +1,5 @@
 
-foreach(TEST entity mesh regiontree mesh_codim1 kdtree)
+foreach(TEST entity mesh regiontree mesh_codim1 kdtree P1mesh)
 
   feel_add_test( ${TEST} )
 
