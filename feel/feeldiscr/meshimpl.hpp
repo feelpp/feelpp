@@ -52,9 +52,6 @@ Mesh<Shape, T>::Mesh( std::string partitioner )
     //M_part(),
     M_tool_localization( new Localization() )
 {
-    Debug( 4015 ) << "[Mesh::Mesh] setting partitioner to " << partitioner << "\n";
-    this->setPartitioner( partitioner );
-    Debug( 4015 ) << "[Mesh::Mesh] setting partitioner to " << partitioner << " done\n";
 }
 template<typename Shape, typename T>
 void

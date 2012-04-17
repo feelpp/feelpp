@@ -688,6 +688,17 @@ public:
 
 private:
 
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize( Archive & ar, const unsigned int version )
+        {
+            ar & boost::serialization::base_object<super>( *this );
+        }
+
+
+
+private:
+
     std::vector<uint8_type> M_map;
     ublas::bounded_array<point_type*, numLocalVertices> M_vertices;
     ublas::bounded_array<vertex_permutation_type, numLocalVertices> M_vertex_permutation;
@@ -965,6 +976,16 @@ public:
     {
         return std::make_pair( M_edges.begin(), M_edges.end() );
     }
+
+private:
+
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize( Archive & ar, const unsigned int version )
+        {
+            ar & boost::serialization::base_object<super>( *this );
+        }
+
 
 private:
 
@@ -1259,6 +1280,16 @@ public:
     {
         return std::make_pair( M_faces.begin(), M_faces.end() );
     }
+private:
+
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize( Archive & ar, const unsigned int version )
+        {
+            ar & boost::serialization::base_object<super>( *this );
+        }
+
+
 private:
 
     ublas::bounded_array<edge_type*, numLocalEdges> M_edges;

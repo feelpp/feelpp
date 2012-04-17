@@ -285,6 +285,17 @@ protected:
     {
         // no-op
     }
+private:
+
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize( Archive & ar, const unsigned int version )
+        {
+            ar & boost::serialization::base_object<super_elements>( *this );
+            ar & boost::serialization::base_object<super_points>( *this );
+        }
+
+
 
 };
 

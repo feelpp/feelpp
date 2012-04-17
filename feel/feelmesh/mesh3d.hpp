@@ -357,6 +357,19 @@ void check() const;
 
 private:
 
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize( Archive & ar, const unsigned int version )
+        {
+            ar & boost::serialization::base_object<super_elements>( *this );
+            ar & boost::serialization::base_object<super_faces>( *this );
+            ar & boost::serialization::base_object<super_edges>( *this );
+            ar & boost::serialization::base_object<super_points>( *this );
+        }
+
+
+private:
+
 
 /**
  * Determines the permutation a face given the global indices of the vertices (for tetrahedra)
