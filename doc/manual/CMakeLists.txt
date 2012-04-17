@@ -22,7 +22,10 @@
 #
 #
 INCLUDE_DIRECTORIES( ${CMAKE_CURRENT_SOURCE_DIR} )
-include(UseLATEX)
+
+option(FEELPP_ENABLE_MANUAL "enable compilation of Feel++ manual (requires latex)" ON)
+if ( FEELPP_ENABLE_MANUAL )
+include(UseLATEX OPTIONAL)
 
 foreach(cppfile "tutorial/*.cpp" "nonlinear/*.cpp" )
  FILE(GLOB CPPFILE RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${cppfile})
@@ -63,7 +66,7 @@ add_latex_document(feel-manual.tex
   DEFAULT_PDF
   )
 SET_TARGET_PROPERTIES(pdf PROPERTIES EXCLUDE_FROM_ALL true)
-
+endif()
 
 # this target allows to create all the required figures for the tutorial
 add_custom_target(figures WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/ )
