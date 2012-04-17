@@ -608,6 +608,16 @@ public:
         void distribute( bool extrapolation = false );
 
     private:
+
+        friend class boost::serialization::access;
+        template<class Archive>
+        void serialize( Archive & ar, const unsigned int version )
+            {
+                ar & boost::serialization::base_object<super>( *this );
+            }
+
+
+    private:
         boost::shared_ptr<self_type> M_mesh;
         std::vector<std::map<size_type,uint16_type > > M_pts_cvx;
         typedef typename std::map<size_type, uint16_type >::const_iterator map_iterator;
@@ -665,8 +675,10 @@ public:
             M_doExtrapolation( true )
 
         {
+            Debug(4015) << "[Mesh::Localization] create Localization tool\n";
             M_kd_tree->nbNearNeighbor( 15 );
             M_resultAnalysis.clear();
+            Debug(4015) << "[Mesh::Localization] create Localization tool done\n";
         }
 
         Localization( boost::shared_ptr<self_type> m, bool init_b = true ) :
@@ -965,7 +977,8 @@ template<typename RangeT>
 typename Mesh<Shape, T>::trace_mesh_ptrtype
 Mesh<Shape, T>::trace( RangeT const& range )
 {
-
+    Debug( 4015 ) << "[trace] extracting " << range.template get<0>() << " nb elements :"
+                  << std::distance(range.template get<1>(),range.template get<2>()) << "\n";
     return Feel::createSubmesh( this->shared_from_this(), range );
 
 }

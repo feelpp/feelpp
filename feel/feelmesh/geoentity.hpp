@@ -657,6 +657,20 @@ protected:
 
 private:
 
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize( Archive & ar, const unsigned int version )
+        {
+            ar & M_id;
+            ar & M_npids;
+            ar & M_pid;
+            ar & M_neighor_pids;
+            ar & M_idInPartition;
+        }
+
+private:
+
+
     size_type M_id;
 
     Context M_entity;

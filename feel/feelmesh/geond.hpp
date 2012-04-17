@@ -817,6 +817,21 @@ private:
     void updatep( typename gm_type::faces_precompute_type & pcf, mpl::bool_<false> );
 
 private:
+
+private:
+
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize( Archive & ar, const unsigned int version )
+        {
+            ar & boost::serialization::base_object<super>( *this );
+            //ar & M_points;
+            ar & M_marker1;
+            ar & M_marker2;
+            ar & M_marker3;
+        }
+
+private:
     /** geometric nodes of the element */
     ublas::bounded_array<point_type*, numPoints> M_points;
 
