@@ -158,11 +158,6 @@ WorldComm::WorldComm( communicator_type const& _globalComm, int _color, bool _is
     M_mapLocalRankToGlobalRank( this->localSize() ),
     M_mapGlobalRankToGodRank( this->globalSize() )
 {
-    //std::cout << "\n WorldComm COPY CONSTRUCTOR " << std::endl;
-
-    mpi::all_gather( this->godComm(),
-                     ( int )_isActive,
-                     M_isActive );
 
     mpi::all_gather( this->globalComm(),
                      _color,
@@ -176,34 +171,12 @@ WorldComm::WorldComm( communicator_type const& _globalComm, int _color, bool _is
                      this->godRank(),
                      M_mapGlobalRankToGodRank );
 
+    mpi::all_gather( this->godComm(),
+                     ( int )_isActive,
+                     M_isActive );
+
     // choice : the smallest rank
     M_masterRank = INT_MAX;
-#if 0
-    int indexLoc=0;
-
-    //for (auto it=M_mapRealRank.begin(),en=M_mapRealRank.end();it!=en;++it)
-    for ( auto it=this->mapLocalRankToGlobalRank().begin(),
-            en=this->mapLocalRankToGlobalRank().end(); it!=en; ++it,++indexLoc )
-    {
-        if  ( _isActive )
-        {
-            if ( M_isActive[this->mapGlobalRankToGodRank()[*it]] )
-            {
-                if ( M_masterRank>*it ) M_masterRank=*it;
-            }
-        }
-
-        else
-        {
-            if ( !M_isActive[this->mapGlobalRankToGodRank()[*it]] )
-            {
-                if ( M_masterRank>*it ) M_masterRank=*it;
-            }
-
-        }
-    }
-
-#else
 
     for ( int p=0; p<this->globalSize(); ++p )
     {
@@ -225,9 +198,46 @@ WorldComm::WorldComm( communicator_type const& _globalComm, int _color, bool _is
         }
     }
 
-#endif
 
 }
+
+//-------------------------------------------------------------------------------
+
+WorldComm::WorldComm( int _colorLocal, int _colorGlobal, communicator_type const& _godComm, bool _isActive, bool _doInitActiveMap )
+    :
+    super( _godComm.split( _colorGlobal ) ),
+    M_localComm( super::split( _colorLocal ) ),
+    M_godComm(_godComm),
+    M_mapColorWorld( this->globalSize() ),
+    M_mapLocalRankToGlobalRank( this->localSize() ),
+    M_mapGlobalRankToGodRank( this->globalSize() )
+{
+
+    mpi::all_gather( this->globalComm(),
+                     _colorLocal,
+                     M_mapColorWorld );
+
+    mpi::all_gather( this->localComm(),
+                     this->globalRank(),
+                     M_mapLocalRankToGlobalRank );
+
+    mpi::all_gather( this->globalComm(),
+                     this->godRank(),
+                     M_mapGlobalRankToGodRank );
+
+    M_masterRank = 0;
+
+    if (_doInitActiveMap)
+    {
+        mpi::all_gather( this->godComm(),
+                         ( int )_isActive,
+                         M_isActive );
+
+        this->upMasterRank();
+    }
+
+}
+
 
 //-------------------------------------------------------------------------------
 
@@ -370,30 +380,30 @@ WorldComm::showMe( std::ostream& __out ) const
                       << " masterRank " << this->masterRank() << "\n"
                       << " isActive " << this->isActive() << "\n"
                       << "------------------------------------------------\n";
-
+            std::cout << "mapLocalRankToGlobalRank :\n";
             for ( int k=0; k<( int )this->mapLocalRankToGlobalRank().size(); ++k )
                 std::cout << k << " " << this->mapLocalRankToGlobalRank()[k] << std::endl;
-
             std::cout << "------------------------------------------------"<< std::endl;
-
+            std::cout << "mapGlobalRankToGodRank :\n";
+            for ( int k=0; k<( int )this->mapGlobalRankToGodRank().size(); ++k )
+                std::cout << k << " " << this->mapGlobalRankToGodRank()[k] << std::endl;
+            std::cout << "------------------------------------------------"<< std::endl;
+            std::cout << "mapColorWorld :\n";
             for ( int k=0; k<( int )this->mapColorWorld().size(); ++k )
                 std::cout << k << " " << this->mapColorWorld()[k] << std::endl;
-
             std::cout << "------------------------------------------------"<< std::endl;
-
+            std::cout << "isActive :\n";
             for ( int k=0; k<( int )this->M_isActive.size(); ++k )
                 std::cout << k << " " << this->M_isActive[k] << std::endl;
-
             std::cout << "------------------------------------------------"<< std::endl;
-
-            std::cout << "\n----------------------------------------------------------------------\n";
+            std::cout << "----------------------------------------------------------------------\n";
             std::cout << std::endl;
         }
 
         this->globalComm().barrier();
     }
 
-    this->godComm().barrier();
+    this->globalComm().barrier();
 }
 
 //-------------------------------------------------------------------------------
@@ -403,7 +413,7 @@ WorldComm::operator+( WorldComm const & _worldComm ) const
 {
     int color;
     bool active;
-
+#if 0
     //int myColor = this->mapColorWorld()[this->globalRank()];
     //int otherColor = _worldComm.mapColorWorld()[this->globalRank()];
     if ( this->isActive() || _worldComm.isActive() )
@@ -430,6 +440,50 @@ WorldComm::operator+( WorldComm const & _worldComm ) const
     else colorOnProc=INT_MAX;// maybe todo
 
     return WorldComm( fusionComm,colorOnProc,active );
+#else
+    int godRankActif=0;
+    int colorSplit=0;
+    int colorOnProc=0;
+    if ( this->isActive()  )
+    {
+        colorSplit=1;
+        active=true;
+        godRankActif=this->godRank();
+        colorOnProc=this->mapColorWorld()[this->globalRank()];
+    }
+    else if (_worldComm.isActive() )
+    {
+        colorSplit=1;
+        active=true;
+        godRankActif=_worldComm.godRank();
+        colorOnProc=_worldComm.mapColorWorld()[_worldComm.globalRank()];
+    }
+    else
+    {
+        colorSplit=0;
+        active=false;
+    }
+
+    self_type res(colorOnProc,colorSplit,
+                  this->godComm(),
+                  active,
+                  false );
+
+    std::vector<int> godRankActivefusion(res.globalSize());
+    mpi::all_gather( res.globalComm(),
+                     godRankActif,
+                     godRankActivefusion );
+
+    std::vector<int> newIsActive(this->godSize(),false);
+    for (int k=0;k<godRankActivefusion.size();++k)
+    {
+        newIsActive[godRankActivefusion[k]]=true;
+    }
+    res.setIsActive(newIsActive);
+    res.upMasterRank();
+    return res;
+
+#endif
 }
 
 //-------------------------------------------------------------------------------
@@ -459,6 +513,34 @@ WorldComm::localColorToGlobalRank( int _color,int _localRank ) const
 
 //-------------------------------------------------------------------------------
 
+void
+WorldComm::upMasterRank()
+{
+    // choice : the smallest rank
+    M_masterRank = INT_MAX;
+    for ( int p=0; p<this->globalSize(); ++p )
+        {
+            if  (this->isActive() )
+                {
+                    if ( M_isActive[this->mapGlobalRankToGodRank()[p]] )
+                        {
+                            if ( M_masterRank>p ) M_masterRank=p;
+                        }
+                }
+
+            else
+                {
+                    if ( !M_isActive[this->mapGlobalRankToGodRank()[p]] )
+                        {
+                            if ( M_masterRank>p ) M_masterRank=p;
+                        }
+
+                }
+        }
+
+}
+
+//-------------------------------------------------------------------------------
 
 } //namespace Feel
 

@@ -60,6 +60,11 @@ public:
                int _color,
                bool _isActive );
 
+    WorldComm( int _colorLocal,int _colorGlobal,
+               communicator_type const& _godComm,
+               bool _isActive,
+               bool _doInitActiveMap=true );
+
     WorldComm( communicator_type const& _globalComm,
                communicator_type const& _godComm,
                int _color,
@@ -147,6 +152,8 @@ public:
 
     WorldComm operator+( WorldComm const & _worldComm ) const;
 
+    void setIsActive( std::vector<int> const& _isActive ) { M_isActive=_isActive; }
+    void upMasterRank();
 private :
 
     communicator_type M_localComm;
