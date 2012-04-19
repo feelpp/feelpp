@@ -393,7 +393,9 @@ public:
         M_model = model;
         M_Dmu = M_model->parameterSpace();
         M_Xi = sampling_ptrtype( new sampling_type( M_Dmu ) );
-        M_WNmu = sampling_ptrtype( new sampling_type( M_Dmu ) );
+
+	if ( ! loadDB() )
+	    M_WNmu = sampling_ptrtype( new sampling_type( M_Dmu ) );
 
         M_scmA->setTruthModel( M_model );
         M_scmM->setTruthModel( M_model );
@@ -654,6 +656,17 @@ public:
      * if true, rebuild the database (if already exist)
      */
     bool rebuildDB() ;
+
+    /**
+     * if true, show the mu selected during the offline stage
+     */
+    bool showMuSelection() ;
+
+    /**
+     * print parameters set mu selected during the offline stage
+     */
+    void printMuSelection( void );
+
 
     /* 
      * compute correction terms for output
@@ -3848,6 +3861,31 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<false> , int number_o
     Log() << "[offlineResidual] Done.\n";
 
 }
+
+
+
+template<typename TruthModelType>
+void
+CRB<TruthModelType>::printMuSelection( void )
+{
+    Log()<<" List of parameter selectionned during the offline algorithm \n"; 
+    for(int k=0;k<M_WNmu->size();k++)
+    {
+	std::cout<<" mu "<<k<<" = [ ";
+	Log()<<" mu "<<k<<" = [ ";
+	parameter_type const& _mu = M_WNmu->at( k );
+	for( int i=0; i<_mu.size()-1; i++ )
+	{
+	    Log()<<_mu(i)<<" , ";
+	    std::cout<<_mu(i)<<" , ";
+	}
+	Log()<<_mu( _mu.size()-1 )<<" ] \n";
+	std::cout<<_mu( _mu.size()-1 )<<" ] "<<std::endl;
+    }
+}    
+
+
+
 template<typename TruthModelType>
 boost::tuple<double,double,double,double>
 CRB<TruthModelType>::run( parameter_type const& mu, double eps )
@@ -4251,6 +4289,14 @@ CRB<TruthModelType>::rebuildDB()
 {
     bool rebuild = this->vm()["crb.rebuild-database"].template as<bool>();
     return rebuild;
+}
+
+template<typename TruthModelType>
+bool
+CRB<TruthModelType>::showMuSelection()
+{
+    bool show = this->vm()["crb.show-mu-selection"].template as<bool>();
+    return show;
 }
 
 template<typename TruthModelType>

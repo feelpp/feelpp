@@ -233,6 +233,8 @@ public:
         hdrs[CRBModelMode::SCM_ONLINE] = scmonlinehdrs;
         std::ostringstream ostr;
 
+	crb->printMuSelection();
+
         printParameterHdr( ostr, model->parameterSpace()->dimension(), hdrs[M_mode] );
         BOOST_FOREACH( auto mu, *Sampling )
         {
