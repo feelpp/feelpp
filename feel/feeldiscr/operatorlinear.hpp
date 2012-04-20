@@ -142,7 +142,7 @@ public:
         }
 
         vector_ptrtype _v1( M_backend->newVector( de.map() ) );
-        *_v1 = de;
+        *_v1 = de;_v1->close();
         vector_ptrtype _v2( M_backend->newVector( ie.space()->map() ) );
         M_backend->prod( M_matrix, _v1, _v2 );
         ie.container() = *_v2;
@@ -158,7 +158,7 @@ public:
         }
 
         vector_ptrtype _v1( M_backend->newVector( de.map() ) );
-        *_v1 = de;
+        *_v1 = de;_v1->close();
         vector_ptrtype _v2( M_backend->newVector( ie.space()->map() ) );
         M_backend->prod( M_matrix, _v1, _v2 );
         ie.container() = *_v2;
@@ -174,7 +174,7 @@ public:
         }
 
         vector_ptrtype _v1( M_backend->newVector( de.map() ) );
-        *_v1 = de;
+        *_v1 = de;_v1->close();
         vector_ptrtype _v2( M_backend->newVector( ie.map() ) );
         *_v2 = ie;
         vector_ptrtype _v3( M_backend->newVector( ie.map() ) );
@@ -193,7 +193,7 @@ public:
         }
 
         vector_ptrtype _v1( M_backend->newVector( de.map() ) );
-        *_v1 = de;
+        *_v1 = de;_v1->close();
         vector_ptrtype _v2( M_backend->newVector( ie.map() ) );
         M_backend->prod( M_matrix, _v1, _v2 );
         ie.container() = *_v2;
@@ -212,7 +212,7 @@ public:
         }
 
         vector_ptrtype _v1( M_backend->newVector( de.map() ) );
-        *_v1 = de;
+        *_v1 = de;_v1->close();
         vector_ptrtype _v2( M_backend->newVector( ie.map() ) );
         M_backend->prod( M_matrix, _v1, _v2 );
         ie.container() = *_v2;
@@ -228,7 +228,7 @@ public:
         }
 
         vector_ptrtype _v1( M_backend->newVector( de.map() ) );
-        *_v1 = de;
+        *_v1 = de;_v1->close();
         vector_ptrtype _v2( M_backend->newVector( ie.map() ) );
         M_backend->prod( M_matrix, _v1, _v2 );
         ie.container() = *_v2;
@@ -245,7 +245,7 @@ public:
         }
 
         vector_ptrtype _v1( M_backend->newVector( de.map() ) );
-        *_v1 = de;
+        *_v1 = de;_v1->close();
         vector_ptrtype _v2( M_backend->newVector( ie.map() ) );
         M_backend->prod( M_matrix, _v1, _v2 );
         ie.container() = *_v2;
@@ -262,7 +262,7 @@ public:
         }
 
         vector_ptrtype _v1( M_backend->newVector( de.map() ) );
-        *_v1 = de;
+        *_v1 = de;_v1->close();
         vector_ptrtype _v2( M_backend->newVector( ie.map() ) );
         M_backend->prod( M_matrix, _v1, _v2 );
         ie.container() = *_v2;
@@ -278,7 +278,7 @@ public:
         }
 
         vector_ptrtype _v1( M_backend->newVector( de.map() ) );
-        *_v1 = de;
+        *_v1 = de;_v1->close();
         vector_ptrtype _v2( M_backend->newVector( ie.map() ) );
         M_backend->prod( M_matrix, _v1, _v2 );
         ie.container() = *_v2;
@@ -295,7 +295,7 @@ public:
         }
 
         vector_ptrtype _v1( M_backend->newVector( de.map() ) );
-        *_v1 = de;
+        *_v1 = de;_v1->close();
         vector_ptrtype _v2( M_backend->newVector( ie.map() ) );
         M_backend->prod( M_matrix, _v1, _v2 );
         ie.container() = *_v2;
@@ -311,7 +311,7 @@ public:
         }
 
         vector_ptrtype _v1( M_backend->newVector( de.map() ) );
-        *_v1 = de;
+        *_v1 = de;_v1->close();
         vector_ptrtype _v2( M_backend->newVector( ie.map() ) );
         M_backend->prod( M_matrix, _v1, _v2 );
         ie.container() = *_v2;
@@ -331,7 +331,7 @@ public:
         }
 
         vector_ptrtype _v1( M_backend->newVector( de.map() ) );
-        *_v1 = de;
+        *_v1 = de;_v1->close();
         vector_ptrtype _v2( M_backend->newVector( ie.map() ) );
         M_backend->prod( M_matrix, _v1, _v2 );
         ie.container() = *_v2;
@@ -347,7 +347,7 @@ public:
         }
 
         vector_ptrtype _v1( M_backend->newVector( de.map() ) );
-        *_v1 = de;
+        *_v1 = de;_v1->close();
         vector_ptrtype _v2( M_backend->newVector( ie.map() ) );
         M_backend->prod( M_matrix, _v1, _v2 );
         ie.container() = *_v2;
@@ -368,7 +368,7 @@ public:
         }
 
         vector_ptrtype _v1( M_backend->newVector( de.map() ) );
-        *_v1 = de;
+        *_v1 = de;_v1->close();
         //vector_ptrtype _v2( M_backend->newVector( ie.space()->map() ) );
         vector_ptrtype _v2( M_backend->newVector( ie.map() ) );
         M_backend->prod( M_matrix, _v1, _v2 );
