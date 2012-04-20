@@ -1596,7 +1596,8 @@ void MatrixPetscMPI<T>::init( const size_type m,
                               const size_type n_l,
                               graph_ptrtype const& graph )
 {
-    //std::cout << "\n MatrixPetscMPI<T>::init with graph " << std::endl;
+    //this->comm().globalComm().barrier();
+    //std::cout << "MatrixPetscMPI<T>::init with graph start on proc"<< this->comm().globalRank() << "("<<this->comm().godRank() <<")" << std::endl;
 
     this->setGraph( graph );
 
@@ -1635,8 +1636,6 @@ void MatrixPetscMPI<T>::init( const size_type m,
     if ( n_dnzOffProc==0 )
         dnzOffProc = PETSC_NULL;
 
-    //  Mat _M_matttt;
-#if 1
     ierr = MatCreateMPIAIJ ( this->comm(),
                              m_local, n_local,
                              m_global, n_global,
@@ -1644,49 +1643,29 @@ void MatrixPetscMPI<T>::init( const size_type m,
                              /*PETSC_DECIDE*/0/*n_dnzOffProc*/, dnzOffProc,
                              //&_M_matttt);
                              &( this->mat() ) ); //(&this->_M_mat));
-#else
-    ierr = MatCreateMPIAIJ ( this->comm(),
-                             m_local, n_local,
-                             m_global, n_global,
-                             /*PETSC_DECIDE*//*n_dnz*/0, PETSC_NULL,
-                             /*PETSC_DECIDE*/0/*n_dnzOffProc*/,PETSC_NULL,
-                             //&_M_matttt);
-                             &( this->mat() ) ); //(&this->_M_mat));
-#endif
-
-    //ierr = MatSetFromOptions(_M_matttt);//this->mat());
-    //    CHKERRABORT(this->comm(),ierr);
-
     CHKERRABORT( this->comm(),ierr );
 
+
     this->graph()->close();
+
     std::vector<PetscInt> ia( this->graph()->ia().size() );
     std::vector<PetscInt> ja( this->graph()->ja().size() );
     std::copy( this->graph()->ia().begin(), this->graph()->ia().end(), ia.begin() );
     std::copy( this->graph()->ja().begin(), this->graph()->ja().end(), ja.begin() );
 #if 0
     ierr = MatMPIAIJSetPreallocation( this->mat(), 0, dnz, 0, dnzOffProc );
-    //ierr = MatMPIAIJSetPreallocation(this->mat(), 0/*n_dnz*/ , PETSC_NULL, /*n_dnzOffProc*/0, PETSC_NULL);
 #else
     ierr = MatMPIAIJSetPreallocationCSR( this->mat(), ia.data() , ja.data(), this->graph()->a().data() );
 #endif
     CHKERRABORT( this->comm(),ierr );
+
     //----------------------------------------------------------------------------------//
     // localToGlobalMapping
     IS isRow;
     IS isCol;
     ISLocalToGlobalMapping isLocToGlobMapRow;
     ISLocalToGlobalMapping isLocToGlobMapCol;
-#if 0
-    auto idxRow = this->mapRow().mapGlobalProcessToGlobalCluster();
-    auto idxCol = this->mapCol().mapGlobalProcessToGlobalCluster();
-    //std::cout << "idxRow.size()" << idxRow.size() << std::endl;
-    ierr = ISCreateGeneral( this->comm(), idxRow.size(), &idxRow[0], PETSC_COPY_VALUES, &isRow );
-    CHKERRABORT( this->comm(),ierr );
 
-    ierr = ISCreateGeneral( this->comm(), idxCol.size(), &idxCol[0], PETSC_COPY_VALUES,&isCol );
-    CHKERRABORT( this->comm(),ierr );
-#else
     PetscInt *idxRow;
     PetscInt *idxCol;
     PetscInt n_idxRow =  this->mapRow().mapGlobalProcessToGlobalCluster().size();
@@ -1712,9 +1691,8 @@ void MatrixPetscMPI<T>::init( const size_type m,
 
     ierr = ISCreateGeneral( this->comm(), n_idxCol, idxCol, &isCol );
     CHKERRABORT( this->comm(),ierr );
+#endif
 
-#endif
-#endif
     ierr=ISLocalToGlobalMappingCreateIS( isRow, &isLocToGlobMapRow );
     CHKERRABORT( this->comm(),ierr );
 
@@ -1759,13 +1737,11 @@ void MatrixPetscMPI<T>::init( const size_type m,
 
     //----------------------------------------------------------------------------------//
     // options
-    //    Mat _M_matttt;
 
     ierr = MatSetFromOptions( this->mat() );
     CHKERRABORT( this->comm(),ierr );
 
 #if (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR > 0)
-    //ATTENTION remetre
     //MatSetOption(this->mat(),MAT_NEW_NONZERO_LOCATION_ERR,PETSC_TRUE);
     MatSetOption( this->mat(),MAT_KEEP_NONZERO_PATTERN,PETSC_TRUE );
 #elif (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR == 0)
@@ -1790,8 +1766,9 @@ void MatrixPetscMPI<T>::init( const size_type m,
     //this->zero();
     //this->zeroEntriesDiagonal();
     //this->printMatlab("NULL");
-    //std::cout << "finish init with graph " << std::endl;
-
+    //std::cout << "MatrixPetscMPI<T>::init with graph finish on proc"
+    //          << this->comm().globalRank() << "("<<this->comm().godRank() <<")" << std::endl;
+    //this->comm().globalComm().barrier();
 }
 
 

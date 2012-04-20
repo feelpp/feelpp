@@ -351,16 +351,14 @@ DataMap::updateDataInWorld()
 void
 DataMap::showMeMapGlobalProcessToGlobalCluster( std::ostream& __out  ) const
 {
-    __out << std::endl;
-    //this->comm().barrier();
-    this->comm().godComm().barrier();
+    //__out << std::endl;
+    this->comm().globalComm().barrier();
 
-    //for (int proc = 0;proc<this->comm().size();++proc
-    for ( int proc = 0; proc<this->comm().godSize(); ++proc )
+    for ( int proc = 0; proc<this->comm().globalSize(); ++proc )
     {
-        //if (proc==this->comm().rank())
-        if ( proc==this->comm().godRank() )
+        if ( proc==this->worldComm().masterRank() )
         {
+            this->comm().globalComm().barrier();
             __out << "\n";
             __out << "-----------------------------------------------------------------------\n"
                   << "------------------showMeMapGlobalProcessToGlobalCluster----------------\n"
@@ -426,9 +424,10 @@ DataMap::showMeMapGlobalProcessToGlobalCluster( std::ostream& __out  ) const
         }
 
         //this->comm().barrier();
-        this->comm().godComm().barrier();
+        this->comm().globalComm().barrier();
     }
 
+    this->comm().globalComm().barrier();
 
 }
 

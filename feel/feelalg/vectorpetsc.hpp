@@ -829,6 +829,8 @@ public:
     size_type firstLocalIndex() const;
     size_type lastLocalIndex() const;
 
+    void duplicateFromOtherPartition( Vector<T> const& vecInput );
+
 private :
 
     Vec _M_vecLocal;
