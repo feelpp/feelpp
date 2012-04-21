@@ -308,10 +308,10 @@ public:
         }
         else
         {
+            //std::cout << "BackendPetsc::prod with convert"<< std::endl;
             auto x_convert = petscMPI_vector_type(_A.mapCol());
             x_convert.duplicateFromOtherPartition(x);
             x_convert.close();
-            //std::cout << "BackendPetsc::prod with convert"<< std::endl;
             ierr = MatMult( _A.mat(), x_convert.vec(), _b.vec() );
             CHKERRABORT( _A.comm().globalComm(),ierr );
         }

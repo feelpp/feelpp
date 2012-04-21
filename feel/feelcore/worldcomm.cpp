@@ -366,7 +366,7 @@ WorldComm::showMe( std::ostream& __out ) const
 
     for ( int proc = 0 ; proc < this->globalSize(); ++proc )
     {
-        if ( this->globalRank()==proc && this->isActive() )
+        if ( this->globalRank()==proc  && this->isActive() )
         {
             std::cout << "\n"
                       << "----------------------------------------------------------------------\n"
@@ -401,6 +401,7 @@ WorldComm::showMe( std::ostream& __out ) const
         }
 
         this->globalComm().barrier();
+this->godComm().barrier();
     }
 
     this->globalComm().barrier();
@@ -538,6 +539,61 @@ WorldComm::upMasterRank()
                 }
         }
 
+}
+
+//-------------------------------------------------------------------------------
+
+// Warning : god communication
+boost::tuple<bool,std::set<int> >
+WorldComm::hasMultiLocalActivity() const
+{
+    const int _nProc = this->godSize();
+    std::set<int> colorWhichIsActive;
+    std::vector<int> activities_god(this->godSize());
+    std::vector<int> colors_god(this->godSize());
+    for (int p=0;p<_nProc;++p)
+        {
+            mpi::all_gather( this->godComm(),
+                             this->activityOnWorld()[p],
+                             activities_god );
+            mpi::all_gather( this->godComm(),
+                             this->mapColorWorld(this->globalRank()),
+                             colors_god );
+
+            bool atLesatOneActiveProc  = *std::max_element( activities_god.begin(),activities_god.end() );
+            if (atLesatOneActiveProc)
+                {
+                    const int myactivity=activities_god[0];
+                    for (int p2=0;p2<_nProc;++p2)
+                        {
+                            if (activities_god[p2]) colorWhichIsActive.insert(colors_god[p2]);
+                        }
+                }
+        }
+
+    std::for_each(colorWhichIsActive.begin(),
+                  colorWhichIsActive.end(),
+                  []( int e ) { std::cout << e << std::endl;} );
+
+    if (colorWhichIsActive.size()>1)
+        return boost::make_tuple(true,colorWhichIsActive);
+    else
+        return boost::make_tuple(false,colorWhichIsActive);
+}
+
+//-------------------------------------------------------------------------------
+
+void
+WorldComm::applyActivityOnlyOn(int _localColor) const
+{
+    std::vector<int> _isActive(4,0);
+    const int _nProc = this->globalSize();
+    for (int p=0;p<_nProc;++p)
+        {
+            if ( this->mapColorWorld()[p]== _localColor )
+                _isActive[this->mapGlobalRankToGodRank(p)]=1;
+        }
+    this->setIsActive(_isActive);
 }
 
 //-------------------------------------------------------------------------------
