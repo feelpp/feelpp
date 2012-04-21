@@ -833,6 +833,8 @@ public:
 
 private :
 
+    void duplicateFromOtherPartition_run( Vector<T> const& vecInput );
+
     Vec _M_vecLocal;
 
 };

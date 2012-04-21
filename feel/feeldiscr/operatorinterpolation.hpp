@@ -229,6 +229,7 @@ private:
     void updateNoRelationMesh();
 #if defined(FEELPP_ENABLE_MPI_MODE)
     void updateNoRelationMeshMPI();
+    void updateNoRelationMeshMPI_run(bool buildNonZeroMatrix=true);
 
     typedef std::vector<std::list<boost::tuple<int,
                                                typename image_mesh_type::node_type,
@@ -305,20 +306,11 @@ template<typename DomainSpaceType, typename ImageSpaceType,typename IteratorRang
 void
 OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>::update()
 {
-    if (    ( this->dualImageSpace()->mesh()->numElements() == 0 )
-         || ( !this->dualImageSpace()->worldComm().isActive() && !this->domainSpace()->worldComm().isActive() ) )
+    if ( this->dualImageSpace()->mesh()->numElements() == 0 )
         {
-            std::cout << "OperatorInterpolation : update nothing!" << std::endl;
-#if 0
-            this->matPtr() = this->backend()->newZeroMatrix(this->dualImageSpace()->nDof(),
-                                                            this->domainSpace()->nDof(),
-                                                            this->dualImageSpace()->nLocalDofWithoutGhost(),
-                                                            this->domainSpace()->nLocalDofWithoutGhost() );
-#else
+            //std::cout << "OperatorInterpolation : update nothing!" << std::endl;
             this->matPtr() = this->backend()->newZeroMatrix( this->domainSpace()->mapOnOff(),
                                                              this->dualImageSpace()->mapOn() );
-#endif
-
             return;
         }
 
@@ -330,8 +322,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     else // no relation between meshes
     {
 #if defined(FEELPP_ENABLE_MPI_MODE)
-        if ( this->dualImageSpace()->worldsComm()[0].localSize() > 1 ||
-             this->domainSpace()->worldsComm()[0].localSize() > 1 )
+        if ( this->dualImageSpace()->worldComm().localSize() > 1 ||
+             this->domainSpace()->worldComm().localSize() > 1 )
             this->updateNoRelationMeshMPI();
 
         else
@@ -353,6 +345,7 @@ template<typename DomainSpaceType, typename ImageSpaceType,typename IteratorRang
 void
 OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>::updateSameMesh()
 {
+    //std::cout << "OperatorInterpolation::updateSameMesh start " << std::endl;
 #if !defined(FEELPP_ENABLE_MPI_MODE) // NOT MPI
     const size_type proc_id              = this->dualImageSpace()->mesh()->worldComm().localRank();
     const size_type nrow_dof_on_proc     = this->dualImageSpace()->nLocalDof();
@@ -480,7 +473,6 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
 {
     Debug( 5034 ) << "[interpolate] different meshes\n";
     //std::cout << "OperatorInterpolation::updateNoRelationMesh start " << std::endl;
-
 
     const size_type proc_id = this->dualImageSpace()->mesh()->worldComm().localRank();
     const size_type n1_dof_on_proc = this->dualImageSpace()->nLocalDof();
@@ -614,14 +606,59 @@ template<typename DomainSpaceType, typename ImageSpaceType,typename IteratorRang
 void
 OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>::updateNoRelationMeshMPI()
 {
-
     //std::cout << "OperatorInterpolation::updateNoRelationMeshMPI start " << std::endl;
+
+    auto testCommActivities_image=this->dualImageSpace()->worldComm().hasMultiLocalActivity();
+
+    if (testCommActivities_image.get<0>())
+        {
+            //std::cout << "OperatorInterpolation::updateNoRelationMeshMPI hasMultiLocalActivity " << std::endl;
+            // save initial activities
+            std::vector<int> saveActivities_image = this->dualImageSpace()->worldComm().activityOnWorld();
+            // iterate on each local activity
+            const auto colorWhichIsActive = testCommActivities_image.get<1>();
+            auto it_color=colorWhichIsActive.begin();
+            auto const en_color=colorWhichIsActive.end();
+            for ( ;it_color!=en_color;++it_color )
+                {
+                    this->dualImageSpace()->worldComm().applyActivityOnlyOn( *it_color );
+                    this->dualImageSpace()->mapOn().worldComm().applyActivityOnlyOn( *it_color );
+                    this->dualImageSpace()->mapOnOff().worldComm().applyActivityOnlyOn( *it_color );
+                    this->updateNoRelationMeshMPI_run(false);
+                }
+            // revert initial activities
+            this->dualImageSpace()->worldComm().setIsActive(saveActivities_image);
+            this->dualImageSpace()->mapOn().worldComm().setIsActive(saveActivities_image);
+            this->dualImageSpace()->mapOnOff().worldComm().setIsActive(saveActivities_image);
+        }
+    else
+        {
+            //std::cout << "OperatorInterpolation::updateNoRelationMeshMPI has One LocalActivity " << std::endl;
+            if ( !this->dualImageSpace()->worldComm().isActive() && !this->domainSpace()->worldComm().isActive() )
+                {
+                    this->matPtr() = this->backend()->newZeroMatrix( this->domainSpace()->mapOnOff(),
+                                                                     this->dualImageSpace()->mapOn() );
+                }
+            else
+                {
+                    this->updateNoRelationMeshMPI_run(true);
+                }
+        }
+
+}
+
+template<typename DomainSpaceType, typename ImageSpaceType,typename IteratorRange,typename InterpType>
+void
+OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>::updateNoRelationMeshMPI_run(bool buildNonZeroMatrix)
+{
+
+    //std::cout << "OperatorInterpolation::updateNoRelationMeshMPI_run start " << std::endl;
 
     //-----------------------------------------------------------------------------------------
     // PreProcess : datamap properties and graph
     //-----------------------------------------------------------------------------------------
 
-    const size_type proc_id = this->dualImageSpace()->worldsComm()[0].localRank();
+    const size_type proc_id = this->dualImageSpace()->worldComm().localRank();
     const size_type proc_id_row = this->dualImageSpace()->worldComm().localRank();
     const size_type proc_id_col = this->domainSpace()->worldComm().localRank();
     const size_type nProc = this->dualImageSpace()->mesh()->worldComm().size();
@@ -632,6 +669,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     const size_type lastrow_dof_on_proc = this->dualImageSpace()->dof()->lastDofGlobalCluster( proc_id_row );
     const size_type firstcol_dof_on_proc = this->domainSpace()->dof()->firstDofGlobalCluster( proc_id_col );
     const size_type lastcol_dof_on_proc = this->domainSpace()->dof()->lastDofGlobalCluster( proc_id_col );
+
+    //std::cout << "\n---a------"<< std::endl;
 
 
     std::vector<size_type> first_col_entry( this->domainSpace()->worldComm().globalSize() );
@@ -656,7 +695,6 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                                                   thefirstCol,thelastCol,
                                                   this->dualImageSpace()->worldComm() ) );
 #endif
-
 
     size_type new_nLocalDofWithoutGhost=this->domainSpace()->nDof()/nProc_row;
     size_type new_nLocalDofWithoutGhost_tempp=this->domainSpace()->nDof()/nProc_row;
@@ -723,6 +761,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
            auto memmapGdof = pointDistribution.get<0>();
            auto memmapComp = pointDistribution.get<1>();
            auto pointsSearched = pointDistribution.get<2>();
+
            auto memory_localisationFail = this->updateNoRelationMeshMPI_upWithMyWorld( memmapGdof, // input
                                                                                        memmapComp, // input
                                                                                        pointsSearched, // input
@@ -902,7 +941,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     //-----------------------------------------
     // build data map for the columns
     //this->domainSpace()->mapOnOff().showMeMapGlobalProcessToGlobalCluster();
-    DataMap mapColInterp(this->dualImageSpace()->mapOnOff().worldComm());// this->domainSpace()->mapOnOff().worldComm());
+    //this->dualImageSpace()->worldComm().showMe();
+    DataMap mapColInterp(this->dualImageSpace()->worldComm());// this->domainSpace()->mapOnOff().worldComm());
     mapColInterp.setNDof(this->domainSpace()->mapOnOff().nDof());
 
     mapColInterp.setNLocalDofWithoutGhost( proc_id, new_nLocalDofWithoutGhost );//  this->domainSpace()->mapOnOff().nLocalDofWithoutGhost() );
@@ -929,7 +969,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     this->worldCommFusion().barrier();
     //-----------------------------------------
     // create null matrix for inactive process
-    if ( !this->dualImageSpace()->worldComm().isActive() )
+    if ( !this->dualImageSpace()->worldComm().isActive() && buildNonZeroMatrix )
         {
             this->matPtr() = this->backend()->newZeroMatrix( mapColInterp,//this->domainSpace()->mapOnOff(),
                                                              this->dualImageSpace()->mapOn() );
@@ -1103,7 +1143,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     auto const* domaindof = this->domainSpace()->dof().get();
     auto const* domainbasis = this->domainSpace()->basis().get();
 
-    const size_type proc_id = this->dualImageSpace()->worldsComm()[0].localRank();
+    const size_type proc_id = this->dualImageSpace()->worldComm()/*worldsComm()[0]*/.localRank();
     const size_type proc_id_image = this->dualImageSpace()->mesh()->worldComm().localRank();
     const size_type proc_id_domain = this->domainSpace()->mesh()->worldComm().localRank();
     const size_type nProc = this->dualImageSpace()->mesh()->worldComm().size();
@@ -1156,13 +1196,34 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                      (int)this->dualImageSpace()->worldComm().isActive(),
                      imageProcIsActive_fusion );
 
+    int firstActiveProc_image=0;
+    bool findFirstActive_image=false;
+    while (!findFirstActive_image)
+        {
+            if (imageProcIsActive_fusion[firstActiveProc_image])
+                {
+                    findFirstActive_image=true;
+                }
+            else ++firstActiveProc_image;
+        }
+    int firstActiveProc_domain=0;
+    bool findFirstActive_domain=false;
+    while (!findFirstActive_domain)
+        {
+            if (domainProcIsActive_fusion[firstActiveProc_domain])
+                {
+                    findFirstActive_domain=true;
+                }
+            else ++firstActiveProc_domain;
+        }
+
     for (int p=0;p<localMeshRankToWorldCommFusion_image.size(); ++p)
         {
-            if (!this->dualImageSpace()->worldComm().isActive()) localMeshRankToWorldCommFusion_image[p]=p%nProc_image; // FAIRE COMMMUNICATION!!!!!
+            if (!this->dualImageSpace()->worldComm().isActive()) localMeshRankToWorldCommFusion_image[p]=p%nProc_image+firstActiveProc_image; // FAIRE COMMMUNICATION!!!!!
         }
     for (int p=0;p<localMeshRankToWorldCommFusion_domain.size(); ++p)
         {
-            if (!this->domainSpace()->worldComm().isActive()) localMeshRankToWorldCommFusion_domain[p]=p%nProc_domain; // FAIRE COMMMUNICATION!!!!!
+            if (!this->domainSpace()->worldComm().isActive()) localMeshRankToWorldCommFusion_domain[p]=p%nProc_domain+firstActiveProc_domain; // FAIRE COMMMUNICATION!!!!!
         }
 
     // searchDistribution (no comm with ourself)
@@ -1434,6 +1495,7 @@ boost::tuple</*std::set<size_type>, */std::vector< std::vector<size_type> >, std
 OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>::updateNoRelationMeshMPI_pointDistribution(const std::vector< std::list<boost::tuple<int,size_type,double> > > & memory_valueInMatrix,
                                                                                                                            std::vector<std::set<size_type> > & dof_searchWithProc)
 {
+    //std::cout << " pointDistribution--1--- " << this->domainSpace()->mesh()->worldComm().godRank() << std::endl;
     //const size_type proc_id = this->dualImageSpace()->worldsComm()[0].localRank();
     //const size_type nProc = this->dualImageSpace()->mesh()->worldComm().size();
     //const size_type nProc_image = this->dualImageSpace()->mesh()->worldComm().localSize();
@@ -1452,11 +1514,10 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                      locTool->barycenter(),
                      vecBarycenter );
 
-    double distanceMin,distance;
-    double x_dist,y_dist,z_dist;
+    double distanceMin=0,distance=0,distanceSquare=0;
     int procForPt=0;
 
-    if ( this->dualImageSpace()->worldsComm()[0].isActive() )
+    if ( this->dualImageSpace()->worldComm().isActive() )
         {
             boost::tie( boost::tuples::ignore, it, en ) = _M_range;
             for ( ; it!=en;++it )
@@ -1468,15 +1529,16 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                                     const auto gdof =  boost::get<0>(imagedof->localToGlobal( *it, iloc, comp ));
                                     if (!dof_done[gdof] && memory_valueInMatrix[gdof].size()==0)
                                         {
-                                            // the dof point
+                                           // the dof point
                                             const auto imagePoint = imagedof->dofPoint(gdof).get<0>();
                                             distanceMin=INT_MAX;
                                             for ( int proc=0 ; proc<nProc_domain; ++proc)
                                                 {
                                                     const auto bary = vecBarycenter[proc];
-                                                    x_dist=std::pow(imagePoint(0)-bary(0),2);
-                                                    y_dist=std::pow(imagePoint(1)-bary(1),2);
-                                                    distance = std::sqrt( x_dist+y_dist);
+                                                    /**/               distanceSquare  = std::pow(imagePoint(0)-bary(0),2);
+                                                    if (bary.size()>1) distanceSquare += std::pow(imagePoint(1)-bary(1),2);
+                                                    if (bary.size()>2) distanceSquare += std::pow(imagePoint(2)-bary(2),2);
+                                                    distance = std::sqrt( distanceSquare );
                                                     if (distance<distanceMin && dof_searchWithProc[gdof].find(proc)==dof_searchWithProc[gdof].end() )
                                                         {
                                                             procForPt = proc;
@@ -1513,7 +1575,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                 }
         }
 
-    return boost::make_tuple(/*setIdEltToSearch,*/memmapGdof,memmapComp,pointsSearched);
+    return boost::make_tuple(memmapGdof,memmapComp,pointsSearched);
 }
 
 #endif // WITH MPI

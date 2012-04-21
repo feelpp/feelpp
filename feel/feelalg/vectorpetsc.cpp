@@ -1069,6 +1069,41 @@ VectorPetscMPI<T>::duplicateFromOtherPartition( Vector<T> const& vecInput)
 {
 #if defined(FEELPP_ENABLE_MPI_MODE) // WITH MPI
 
+    auto testCommActivities_this=this->map().worldComm().hasMultiLocalActivity();
+
+    if (testCommActivities_this.get<0>())
+        {
+            //std::cout << "VectorPetscMPI<T>::duplicateFromOtherPartition hasMultiLocalActivity " << std::endl;
+            // save initial activities
+            std::vector<int> saveActivities_this = this->map().worldComm().activityOnWorld();
+            // iterate on each local activity
+            const auto colorWhichIsActive = testCommActivities_this.get<1>();
+            auto it_color=colorWhichIsActive.begin();
+            auto const en_color=colorWhichIsActive.end();
+            for ( ;it_color!=en_color;++it_color )
+                {
+                    this->map().worldComm().applyActivityOnlyOn( *it_color );
+                    this->duplicateFromOtherPartition_run( vecInput );
+                }
+            // revert initial activities
+            this->map().worldComm().setIsActive(saveActivities_this);
+        }
+    else
+        {
+            this->duplicateFromOtherPartition_run( vecInput );
+        }
+
+#endif // MPI
+}
+
+//----------------------------------------------------------------------------------------------------//
+
+template <typename T>
+void
+VectorPetscMPI<T>::duplicateFromOtherPartition_run( Vector<T> const& vecInput)
+{
+#if defined(FEELPP_ENABLE_MPI_MODE) // WITH MPI
+
     std::list<boost::tuple<size_type,size_type> > memory_dofCluster;
     std::vector<size_type> dofClusterMissing;
     std::vector<size_type> originaldofClusterMissing;
@@ -1126,13 +1161,35 @@ VectorPetscMPI<T>::duplicateFromOtherPartition( Vector<T> const& vecInput)
                      (int)vecInput.map().worldComm().isActive(),
                      inputProcIsActive_fusion );
 
+    int firstActiveProc_this=0;
+    bool findFirstActive_this=false;
+    while (!findFirstActive_this)
+        {
+            if (thisProcIsActive_fusion[firstActiveProc_this])
+                {
+                    findFirstActive_this=true;
+                }
+            else ++firstActiveProc_this;
+        }
+    int firstActiveProc_input=0;
+    bool findFirstActive_input=false;
+    while (!findFirstActive_input)
+        {
+            if (inputProcIsActive_fusion[firstActiveProc_input])
+                {
+                    findFirstActive_input=true;
+                }
+            else ++firstActiveProc_input;
+        }
+
+
     for (int p=0;p<globalRankToFusionRank_this.size(); ++p)
         {
-            if (!this->map().worldComm().isActive()) globalRankToFusionRank_this[p]=p%this->map().worldComm().globalSize(); // FAIRE COMMMUNICATION!!!!!
+            if (!this->map().worldComm().isActive()) globalRankToFusionRank_this[p]=p%this->map().worldComm().globalSize()+firstActiveProc_this; // FAIRE COMMMUNICATION!!!!!
         }
     for (int p=0;p<globalRankToFusionRank_input.size(); ++p)
         {
-            if (!vecInput.map().worldComm().isActive()) globalRankToFusionRank_input[p]=p%vecInput.map().worldComm().globalSize(); // FAIRE COMMMUNICATION!!!!!
+            if (!vecInput.map().worldComm().isActive()) globalRankToFusionRank_input[p]=p%vecInput.map().worldComm().globalSize()+firstActiveProc_input; // FAIRE COMMMUNICATION!!!!!
         }
 
     std::vector<std::list<int> > searchDistribution(this->map().worldComm().globalSize());

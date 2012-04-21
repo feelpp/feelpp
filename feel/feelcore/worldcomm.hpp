@@ -127,6 +127,20 @@ public:
         return M_mapGlobalRankToGodRank;
     }
 
+    int mapColorWorld(int k) const
+    {
+        return M_mapColorWorld[k];
+    }
+    int mapLocalRankToGlobalRank(int k) const
+    {
+        return M_mapLocalRankToGlobalRank[k];
+    }
+    int mapGlobalRankToGodRank(int k) const
+    {
+        return M_mapGlobalRankToGodRank[k];
+    }
+
+
     int masterRank() const
     {
         return M_masterRank;
@@ -143,6 +157,11 @@ public:
         return M_isActive[this->godRank()];
     }
 
+    std::vector<int> const& activityOnWorld() const
+    {
+        return M_isActive;
+    }
+
     int localColorToGlobalRank( int _color,int _localRank ) const;
 
     /**
@@ -152,8 +171,14 @@ public:
 
     WorldComm operator+( WorldComm const & _worldComm ) const;
 
-    void setIsActive( std::vector<int> const& _isActive ) { M_isActive=_isActive; }
+    void setIsActive( std::vector<int> const& _isActive ) const { M_isActive=_isActive; }
+
     void upMasterRank();
+
+    void applyActivityOnlyOn(int _localColor) const;
+
+    boost::tuple<bool,std::set<int> > hasMultiLocalActivity() const;
+
 private :
 
     communicator_type M_localComm;
@@ -164,7 +189,7 @@ private :
     std::vector<int> M_mapGlobalRankToGodRank;
 
     int M_masterRank;
-    std::vector<int/*bool*/> M_isActive;
+    mutable std::vector<int/*bool*/> M_isActive;
 
 };
 
