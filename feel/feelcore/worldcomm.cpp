@@ -570,11 +570,11 @@ WorldComm::hasMultiLocalActivity() const
                         }
                 }
         }
-
+#if 0
     std::for_each(colorWhichIsActive.begin(),
                   colorWhichIsActive.end(),
                   []( int e ) { std::cout << e << std::endl;} );
-
+#endif
     if (colorWhichIsActive.size()>1)
         return boost::make_tuple(true,colorWhichIsActive);
     else
@@ -586,7 +586,7 @@ WorldComm::hasMultiLocalActivity() const
 void
 WorldComm::applyActivityOnlyOn(int _localColor) const
 {
-    std::vector<int> _isActive(4,0);
+    std::vector<int> _isActive(this->godSize(),0);
     const int _nProc = this->globalSize();
     for (int p=0;p<_nProc;++p)
         {
