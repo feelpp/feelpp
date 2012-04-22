@@ -1532,7 +1532,7 @@ Mesh<Shape, T>::Localization::searchElement( const node_type & p )
                     //std::cout << "WARNING EXTRAPOLATION for the point" << p << std::endl;
                     //std::cout << "W";
                     auto const& eltUsedForExtrapolation = this->mesh()->element(ListTri.begin()->first);
-                    gmc_inverse_type gic( this->mesh()->gm(), eltUsedForExtrapolation, this->mesh()->worldComm() );
+                    gmc_inverse_type gic( this->mesh()->gm(), eltUsedForExtrapolation, this->mesh()->worldComm().subWorldCommSeq() );
                     //apply the inverse geometric transformation for the point p
                     gic.setXReal( p);
                     boost::tie(isin,idEltFound,x_ref) = boost::make_tuple(true,eltUsedForExtrapolation.id(),gic.xRef());
