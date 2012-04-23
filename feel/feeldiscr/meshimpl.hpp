@@ -42,7 +42,7 @@
 namespace Feel
 {
 template<typename Shape, typename T>
-Mesh<Shape, T>::Mesh( std::string partitioner )
+Mesh<Shape, T>::Mesh()
     :
     super(),
     _M_gm( new gm_type ),
@@ -52,6 +52,7 @@ Mesh<Shape, T>::Mesh( std::string partitioner )
     //M_part(),
     M_tool_localization( new Localization() )
 {
+    Debug( 4015 ) << "[Mesh] constructor called\n";
 }
 template<typename Shape, typename T>
 void

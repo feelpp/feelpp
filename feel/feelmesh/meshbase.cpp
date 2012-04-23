@@ -39,7 +39,9 @@ MeshBase::MeshBase()
     M_n_vertices( 0 ),
     M_n_parts( 1 ),
     M_worldComm()
-{}
+{
+    Debug( 4015 ) << "[MeshBase] constructor...\n";
+}
 
 MeshBase::MeshBase( MeshBase const& m )
     :

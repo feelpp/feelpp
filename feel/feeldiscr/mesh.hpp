@@ -199,7 +199,7 @@ public:
     /**
      * Default mesh constructor
      */
-    Mesh( std::string partitioner = "metis" );
+    Mesh();
 
     /**
      * generate a new Mesh shared pointer
@@ -677,6 +677,16 @@ public:
      */
     void updateForUse();
 
+private:
+
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize( Archive & ar, const unsigned int version )
+        {
+            Debug( 4015 ) << "(de)Serializing mesh ...\n";
+            //ar & boost::serialization::base_object<super>( *this );
+        }
+public:
     struct Inverse
             :
         public mpl::if_<mpl::bool_<GeoShape::is_simplex>,
@@ -730,14 +740,6 @@ public:
          */
         void distribute( bool extrapolation = false );
 
-    private:
-
-        friend class boost::serialization::access;
-        template<class Archive>
-        void serialize( Archive & ar, const unsigned int version )
-            {
-                ar & boost::serialization::base_object<super>( *this );
-            }
 
 
     private:
