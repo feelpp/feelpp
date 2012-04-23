@@ -147,7 +147,9 @@ public Points<Shape::nRealDim>,
                super_elements(),
                super_points(),
                super_faces()
-{}
+               {
+                   Debug(4015) << "[Mesh2D] constructor...\n";
+               }
 
 
 /**

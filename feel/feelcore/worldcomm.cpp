@@ -26,16 +26,14 @@
    \author Vincent Chabannes <vincent.chabannes@imag.fr>
    \date 2012-02-14
  */
-
+#include <feel/feelcore/feel.hpp>
+#include <feel/feelcore/debug.hpp>
 #include <feel/feelcore/worldcomm.hpp>
 
 //#include <boost/mpi/communicator.hpp>
 
 namespace Feel
 {
-
-using namespace boost;
-
 
 //-------------------------------------------------------------------------------
 
@@ -49,24 +47,24 @@ WorldComm::WorldComm()
     M_mapGlobalRankToGodRank( this->globalSize() ),
     M_isActive( this->godSize(),true )
 {
-    //std::cout << "\n WorldComm : warning constructor empty!! on godRank " << this->godRank() << std::endl;
+    Debug() << "\n WorldComm : warning constructor empty!! on godRank " << this->godRank() << "\n";
     std::vector<int> globalRanks( this->globalSize() );
     mpi::all_gather( this->globalComm(),
                      this->globalRank(),
                      globalRanks );
-
+    Debug() << "gather1\n";
     mpi::all_gather( this->globalComm(),
                      0,
                      M_mapColorWorld );
-
+    Debug() << "gather2\n";
     mpi::all_gather( this->localComm(),
                      this->globalRank(),
                      M_mapLocalRankToGlobalRank );
-
+    Debug() << "gather3\n";
     mpi::all_gather( this->globalComm(),
                      this->godRank(),
                      M_mapGlobalRankToGodRank );
-
+    Debug() << "gather4\n";
     // choice : the smallest rank
     M_masterRank = *std::min_element( globalRanks.begin(),globalRanks.end() );
 }
