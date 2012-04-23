@@ -151,15 +151,22 @@ MyIntegrals<Dim>::run( const double* X, unsigned long P, double* Y, unsigned lon
     /*
      * First we create the mesh
      */
-    //# marker11 #
-    mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
-                                        _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES,
-                                        _desc=domain( _name= ( boost::format( "%1%-%2%" ) % shape % Dim ).str() ,
-                                                _shape=shape,
-                                                _order=1,
-                                                _dim=Dim,
-                                                _h=X[0] ),
-                                        _partitions=this->comm().size() );
+    auto mesh = mesh_type::New();
+    bool is_mesh_loaded = mesh->load( _name="mymesh",_path=".",_type="text" );
+
+    if ( !is_mesh_loaded )
+    {
+        //# marker11 #
+        mesh = createGMSHMesh( _mesh=new mesh_type,
+                               _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES,
+                               _desc=domain( _name= ( boost::format( "%1%-%2%" ) % shape % Dim ).str() ,
+                                             _shape=shape,
+                                             _order=1,
+                                             _dim=Dim,
+                                             _h=X[0] ),
+                               _partitions=this->comm().size() );
+        mesh->save( _name="mymesh",_path=".",_type="text" );
+    }
 
     //# endmarker11 #
 
@@ -182,6 +189,7 @@ MyIntegrals<Dim>::run( const double* X, unsigned long P, double* Y, unsigned lon
     //# endmarker3 #
     if ( Dim > 1 )
     {
+        Log() << "nb faces on boundary " << nelements( boundaryfaces(mesh) ) << "\n";
         /*
          * Compute domain perimeter
          */
