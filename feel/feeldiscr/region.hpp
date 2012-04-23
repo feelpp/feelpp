@@ -53,11 +53,12 @@ region( boost::shared_ptr<SpaceType> const& space,
     BOOST_STATIC_ASSERT( SpaceType::fe_type::nOrder == 0 );
     typedef typename SpaceType::element_type element_type;
     element_type v( space, "field" );
-
+    Debug() << "[region] saving region with pid:\n";
     int pid = space->mesh()->comm().rank();
-    typename SpaceType::mesh_type::element_const_iterator it = space->mesh()->beginElementWithProcessId( pid );
-    typename SpaceType::mesh_type::element_const_iterator en = space->mesh()->endElementWithProcessId( pid );
-
+    Debug() << "[region] saving region with pid: " << pid << "\n";
+    auto it = space->mesh()->beginElementWithProcessId( pid );
+    auto en = space->mesh()->endElementWithProcessId( pid );
+    Debug() << "[region] nb elements in region: " << std::distance( it, en ) << "\n";
     for ( ; it != en; ++it )
     {
         size_type dof_id = boost::get<0>( space->dof()->localToGlobal( it->id(),0, 0 ) );

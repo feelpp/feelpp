@@ -352,9 +352,22 @@ private:
     template<class Archive>
     void serialize( Archive & ar, const unsigned int version )
         {
-            ar & boost::serialization::base_object<super_elements>( *this );
-            ar & boost::serialization::base_object<super_faces>( *this );
+            ar & boost::serialization::base_object<super>( *this );
+            Debug(4015) << "Serializing points\n";
+            std::string str;
+            str = "points";
+            ar & str;
             ar & boost::serialization::base_object<super_points>( *this );
+#if 1
+            str = "faces";
+            ar & str;
+            Debug(4015) << "Serializing faces\n";
+            ar & boost::serialization::base_object<super_faces>( *this );
+#endif
+            str = "elements";
+            ar & str;
+            Debug(4015) << "Serializing elements\n";
+            ar & boost::serialization::base_object<super_elements>( *this );
         }
 
 
