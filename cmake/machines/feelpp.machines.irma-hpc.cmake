@@ -21,10 +21,4 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-set(CMAKE_SYSTEM_PREFIX_PATH "/usr/local/dev;/usr")
-set(Boost_LIBRARY_DIRS /usr/local/dev/lib )
-set(Boost_NO_SYSTEM_PATHS  ON)
-set(CMAKE_EXE_LINKER_FLAGS "-L/usr/local/dev/lib ${CMAKE_EXE_LINKER_FLAGS}")
-set(CMAKE_SHARED_LINKER_FLAGS "-L/usr/local/dev/lib ${CMAKE_SHARED_LINKER_FLAGS}")
-
 set(FEELPP_ENABLE_MPI_MODE ON)
