@@ -52,13 +52,13 @@ public :
         times().push( time() );
     }
 
-    type toc( bool display ) const
+    type toc( std::string const& msg, bool display ) const
     {
         BOOST_ASSERT_MSG( !empty(), "Unbalanced timing calls" );
         type t = time()-times().top();
         times().pop();
 
-        if ( display ) timer_type::print( t );
+        if ( display ) timer_type::print( msg, t );
 
         return t;
     }
