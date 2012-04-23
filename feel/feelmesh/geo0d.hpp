@@ -473,6 +473,26 @@ public:
     }
 
 private:
+
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize( Archive & ar, const unsigned int version )
+        {
+            ar & boost::serialization::base_object<super>( *this );
+            ar & boost::serialization::base_object<super2>( *this );
+            //ar & M_is_vertex;
+            //ar & M_is_parametric;
+            ar & M_marker1;
+            ar & M_marker2;
+            ar & M_marker3;
+            /*
+            ar & M_gdim;
+            ar & M_gtag;
+            ar & M_uv;
+            */
+        }
+
+private:
     bool M_is_vertex;
     bool M_is_parametric;
 

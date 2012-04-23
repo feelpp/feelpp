@@ -34,6 +34,13 @@
 
 #include <boost/foreach.hpp>
 #include <boost/signal.hpp>
+#include <boost/serialization/vector.hpp>
+#include <boost/serialization/array.hpp>
+#include <boost/serialization/base_object.hpp>
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/archive/binary_iarchive.hpp>
 
 #include <feel/feelcore/context.hpp>
 //#include <feel/feelcore/worldcomm.hpp>
@@ -165,7 +172,9 @@ public:
     };
 
     typedef Mesh<shape_type, T> self_type;
+    typedef self_type mesh_type;
     typedef boost::shared_ptr<self_type> self_ptrtype;
+    typedef self_ptrtype mesh_ptrtype;
 
     typedef typename element_type::template reference_convex<T>::type reference_convex_type;
 
@@ -191,6 +200,15 @@ public:
      * Default mesh constructor
      */
     Mesh( std::string partitioner = "metis" );
+
+    /**
+     * generate a new Mesh shared pointer
+     * \return the Mesh shared pointer
+     */
+    static mesh_ptrtype New()
+        {
+            return mesh_ptrtype(new mesh_type);
+        }
 
     /** @name Accessors
      */
@@ -520,6 +538,111 @@ public:
      * check elements permutation and fix it if needed
      */
     void checkAndFixPermutation();
+
+    BOOST_PARAMETER_MEMBER_FUNCTION( ( void ),
+                                     save,
+                                     tag,
+                                     ( required
+                                       ( name,(std::string) )
+                                       ( path,* ) )
+                                     ( optional
+                                       ( type,( std::string ),std::string( "binary" ) )
+                                       ( suffix,( std::string ),std::string( "" ) )
+                                       ( sep,( std::string ),std::string( "" ) )
+                                         ) )
+        {
+            Feel::detail::ignore_unused_variable_warning( args );
+
+            if ( !fs::exists( fs::path( path ) ) )
+            {
+                fs::create_directories( fs::path( path ) );
+            }
+
+            std::ostringstream os1;
+            os1 << name << sep << suffix << "-" << this->worldComm().globalSize() << "." << this->worldComm().globalRank() << ".fdb";
+            fs::path p = fs::path( path ) / os1.str();
+            fs::ofstream ofs( p );
+
+            if ( type == "binary" )
+            {
+                boost::archive::binary_oarchive oa( ofs );
+                oa << *this;
+            }
+
+            else if ( type == "text" )
+            {
+                boost::archive::text_oarchive oa( ofs );
+                oa << *this;
+            }
+
+            else if ( type == "xml" )
+            {
+                //boost::archive::xml_oarchive oa(ofs);
+                //oa << *this;
+            }
+        }
+    BOOST_PARAMETER_MEMBER_FUNCTION(
+        ( bool ),
+        load,
+        tag,
+        ( required
+          ( name,(std::string) )
+          ( path,* ) )
+        ( optional
+          ( type,( std::string ),std::string( "binary" ) )
+          ( suffix,( std::string ),std::string( "" ) )
+          ( sep,( std::string ),std::string( "" ) )
+            )
+        )
+        {
+            Feel::detail::ignore_unused_variable_warning( args );
+            std::ostringstream os1;
+            os1 << name << sep << suffix << "-" << this->worldComm().globalSize() << "." << this->worldComm().globalRank() << ".fdb";
+            fs::path p = fs::path( path ) / os1.str();
+            std::cout << "try loading " << p.native()  << "\n";
+            if ( !fs::exists( p ) )
+            {
+                Log() << "[mesh::load] failed loading " << p.native() << "\n";
+                std::ostringstream os2;
+                os2 << name << sep << suffix << "-" << this->worldComm().globalSize() << "." << this->worldComm().globalRank();
+                p = fs::path( path ) / os2.str();
+                std::cout << " now try loading " << p.native()  << "\n";
+
+                if ( !fs::exists( p ) )
+                {
+                    Log() << "[mesh::load] failed loading " << p.native() << "\n";
+                    return false;
+                }
+            }
+
+            if ( !fs::is_regular_file( p ) )
+            {
+                Log() << "[mesh::load] failed loading " << p.native() << "\n";
+                return false;
+            }
+
+            fs::ifstream ifs( p );
+
+            if ( type == "binary" )
+            {
+                boost::archive::binary_iarchive ia( ifs );
+                ia >> *this;
+            }
+
+            else if ( type == "text" )
+            {
+                boost::archive::text_iarchive ia( ifs );
+                ia >> *this;
+            }
+
+            else if ( type == "xml" )
+            {
+                //boost::archive::xml_iarchive ia(ifs);
+                //ia >> *this;
+            }
+            return true;
+        }
+
 
     FEELPP_DEFINE_VISITABLE();
     //@}
