@@ -43,6 +43,8 @@ configure.args  --with-python --with-debugging=0 \
         --download-blacs \
         --download-scalapack \
         --download-mumps \
+        --download-ptscotch \
+        --download-pastix \
 		--with-fc=${prefix}/bin/openmpif90 \
 		--LIBS=-lstdc++
 
