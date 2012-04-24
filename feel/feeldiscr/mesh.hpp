@@ -662,8 +662,8 @@ public:
             M_mesh (),
             M_kd_tree( new kdtree_type() ),
             IsInit( false ),
+            IsInitBoundaryFaces( false ),
             M_doExtrapolation( true )
-
         {
             M_kd_tree->nbNearNeighbor( 15 );
             M_resultAnalysis.clear();
@@ -672,6 +672,7 @@ public:
         Localization( boost::shared_ptr<self_type> m, bool init_b = true ) :
             M_mesh ( m ),
             IsInit( init_b ),
+            IsInitBoundaryFaces( false ),
             M_doExtrapolation( true )
         {
             if ( IsInit )
@@ -683,10 +684,10 @@ public:
 
         Localization( Localization const & L ) :
             M_mesh( L.M_mesh ),
-            //M_kd_tree(L.M_kd_tree),
             M_kd_tree( new kdtree_type( *( L.M_kd_tree ) ) ),
             M_geoGlob_Elts( L.M_geoGlob_Elts ),
             IsInit( L.IsInit ),
+            IsInitBoundaryFaces( L.IsInitBoundaryFaces ),
             M_resultAnalysis( L.M_resultAnalysis ),
             M_doExtrapolation( L.M_doExtrapolation )
         {}
@@ -726,12 +727,27 @@ public:
         }
 
         /*--------------------------------------------------------------
+         * Run the init function if necessary
+         */
+        void updateForUseBoundaryFaces()
+        {
+            if ( IsInitBoundaryFaces==false )
+                initBoundaryFaces();
+        }
+
+        /*--------------------------------------------------------------
          * Access
          */
         bool isInit() const
         {
             return IsInit;
         }
+
+        bool isInitBoundaryFaces() const
+        {
+            return IsInitBoundaryFaces;
+        }
+
         bool doExtrapolation() const
         {
             return M_doExtrapolation;
@@ -750,6 +766,7 @@ public:
         {
             return M_kd_tree;
         }
+
         kdtree_ptrtype const& kdtree() const
         {
             return M_kd_tree;
@@ -786,7 +803,7 @@ public:
          */
         boost::tuple<bool, size_type,node_type> searchElement(const node_type & p,
                                                               const matrix_node_type & setPoints,
-                                                              mpl::bool_<false> /**/ )
+                                                              mpl::int_<0> /**/ )
         {
             return searchElement( p );
         }
@@ -795,8 +812,8 @@ public:
          * Research only one element wich contains the node p and which this elt have as geometric point contain setPoints
          */
         boost::tuple<bool, size_type,node_type> searchElement( const node_type & p,
-                const matrix_node_type & setPoints,
-                mpl::bool_<true> /**/ );
+                                                               const matrix_node_type & setPoints,
+                                                               mpl::int_<1> /**/ );
 
         /*---------------------------------------------------------------
          * Research all elements wich contains the node p
@@ -817,7 +834,7 @@ public:
         boost::tuple<std::vector<bool>, size_type>  run_analysis(const matrix_node_type & m,
                                                                  const size_type & eltHypothetical,
                                                                  const matrix_node_type & setPoints,
-                                                                 mpl::bool_<false> /**/)
+                                                                 mpl::int_<0> /**/)
         {
             return run_analysis( m,eltHypothetical );
         }
@@ -829,7 +846,7 @@ public:
         boost::tuple<std::vector<bool>, size_type> run_analysis(const matrix_node_type & m,
                                                                 const size_type & eltHypothetical,
                                                                 const matrix_node_type & setPoints,
-                                                                mpl::bool_<true> /**/);
+                                                                mpl::int_<1> /**/);
 
         /*---------------------------------------------------------------
          * Reset all data
@@ -840,12 +857,23 @@ public:
             init();
         }
 
+        void resetBoundaryFaces()
+        {
+            IsInitBoundaryFaces=false;
+            initBoundaryFaces();
+        }
+
     private :
 
         /*---------------------------------------------------------------
-         *initializes the kd tree and the map between node and list elements
+         *initializes the kd tree and the map between node and list elements(all elements)
          */
         void init();
+
+        /*---------------------------------------------------------------
+         *initializes the kd tree and the map between node and list elements(only on boundary)
+         */
+        void initBoundaryFaces();
 
         /*---------------------------------------------------------------
          *search near elt in kd tree and get a sorted list
@@ -860,7 +888,7 @@ public:
         kdtree_ptrtype M_kd_tree;
         //map between node and list elements
         std::map<size_type, node_elem_type > M_geoGlob_Elts;
-        bool IsInit;
+        bool IsInit,IsInitBoundaryFaces;
         container_search_type M_resultAnalysis;
         bool M_doExtrapolation;
 

@@ -1398,6 +1398,48 @@ Mesh<Shape, T>::Localization::init()
     }
 
     IsInit=true;
+    IsInitBoundaryFaces=false;
+
+}
+
+template<typename Shape, typename T>
+void
+Mesh<Shape, T>::Localization::initBoundaryFaces()
+{
+    if ( !M_mesh ) return;
+
+#if !defined( NDEBUG )
+    FEELPP_ASSERT( IsInitBoundaryFaces == false )
+    ( IsInitBoundaryFaces ).warn( "You have already initialized the tool of localization" );
+#endif
+
+
+    //clear data
+    M_geoGlob_Elts.clear();
+    M_kd_tree->clear();
+
+    typename self_type::location_face_iterator face_it;
+    typename self_type::location_face_iterator face_en;
+    boost::tie( boost::tuples::ignore, face_it, face_en ) = Feel::boundaryfaces( M_mesh );
+
+    for ( ; face_it != face_en; ++face_it )
+    {
+        for ( int i=0; i<face_it->nPoints(); ++i )
+        {
+            if ( face_it->isConnectedTo0() )
+                {
+                    if ( boost::get<1>( M_geoGlob_Elts[face_it->point( i ).id()] ).size()==0 )
+                        {
+                            boost::get<0>( M_geoGlob_Elts[face_it->point( i ).id()] ) = face_it->point( i ).node();
+                            M_kd_tree->addPoint( face_it->point( i ).node(),face_it->point( i ).id() );
+                        }
+                    boost::get<1>( M_geoGlob_Elts[face_it->point( i ).id()] ).push_back( face_it->element( 0 ).id() );
+                }
+        }
+    }
+
+    IsInitBoundaryFaces=true;
+    IsInit=false;
 
 }
 
@@ -1835,15 +1877,16 @@ template<typename Shape, typename T>
 boost::tuple<bool, size_type, typename Mesh<Shape, T>::node_type>
 Mesh<Shape, T>::Localization::searchElement( const node_type & p,
         const matrix_node_type & setPoints,
-        mpl::bool_<true> /**/ )
+        mpl::int_<1> /**/ )
 {
     typename self_type::element_type elt;
     typename self_type::gm_type::reference_convex_type refelem;
     typename self_type::gm1_type::reference_convex_type refelem1;
 
-    bool isin=false;
+    bool isin=false,isin2=false;
     double dmin;
-    node_type __x_ref;
+    node_type x_ref;
+    size_type idEltFound = this->mesh()->beginElementWithId(this->mesh()->worldComm().localRank())->id();
 
     std::list< std::pair<size_type, uint> > ListTri;
     searchInKdTree( p,ListTri );
@@ -1856,9 +1899,11 @@ Mesh<Shape, T>::Localization::searchElement( const node_type & p,
     FEELPP_ASSERT( std::distance( itLT,itLT_end )>0 ).error( " problem in list localization : is empty" );
 #endif
 
+
     //research the element which contains the point p
     while ( itLT != itLT_end && !isin  )
     {
+#if 0
         //get element with the id
         elt= M_mesh->element( itLT->first );
 
@@ -1866,11 +1911,9 @@ Mesh<Shape, T>::Localization::searchElement( const node_type & p,
         {
             // get inverse geometric transformation
             typename self_type::Inverse::gic_type gic( M_mesh->gm(), elt );
-
             //apply the inverse geometric transformation for the point p
             gic.setXReal( p );
-            __x_ref=gic.xRef();
-
+            x_ref=gic.xRef();
             // the point is in the reference element ?
             boost::tie( isin, dmin ) = refelem.isIn( gic.xRef() );
         }
@@ -1879,14 +1922,13 @@ Mesh<Shape, T>::Localization::searchElement( const node_type & p,
         {
             // get inverse geometric transformation
             typename self_type::Inverse::gic1_type gic( M_mesh->gm1(), elt,mpl::int_<1>() );
-
             //apply the inverse geometric transformation for the point p
             gic.setXReal( p );
-            __x_ref=gic.xRef();
-
+            x_ref=gic.xRef();
             // the point is in the reference element ?
             boost::tie( isin, dmin ) = refelem1.isIn( gic.xRef() );
         }
+#endif // OLD
 
         if ( isin )
         {
@@ -1925,7 +1967,6 @@ Mesh<Shape, T>::Localization::searchElement( const node_type & p,
                     }
                 }
             }
-
             // check if all points are found or not
             bool isOK=true;
 
@@ -1935,29 +1976,48 @@ Mesh<Shape, T>::Localization::searchElement( const node_type & p,
             }
 
             if ( !isOK ) isin=false;
-
 #if 0
-
-            if ( isOK )
-                std::cout << "\n isOK : OK"<<std::endl;
-
-            else
-                std::cout << "\n isOK : BAD"<<std::endl;
-
+            if ( isOK ) std::cout << "\n isOK : OK"<<std::endl;
+            else std::cout << "\n isOK : BAD"<<std::endl;
 #endif
         }
 
-
+        if ( isin ) boost::tie(isin2,x_ref) = this->isIn(itLT->first,p);
+        if ( isin!=isin2) std::cout << "Bug Mesh::Localization::searchElement<true>" << std::endl;
 
         //if not inside, continue the research with an other element
         if ( !isin ) ++itLT;
-
+        else idEltFound=itLT->first;
     }
 
-    //bool __extrapolation=true;
-    if ( itLT != itLT_end ) return boost::make_tuple( true, itLT->first, __x_ref );
 
-    else if ( itLT == itLT_end && !M_doExtrapolation ) return boost::make_tuple( false, 0, __x_ref );
+    if (!isin)
+        {
+            if( this->doExtrapolation() )
+                {
+                    //std::cout << "WARNING EXTRAPOLATION for the point" << p << std::endl;
+                    //std::cout << "W";
+                    auto const& eltUsedForExtrapolation = this->mesh()->element(ListTri.begin()->first);
+                    gmc_inverse_type gic( this->mesh()->gm(), eltUsedForExtrapolation, this->mesh()->worldComm().subWorldCommSeq() );
+                    //apply the inverse geometric transformation for the point p
+                    gic.setXReal( p);
+                    boost::tie(isin,idEltFound,x_ref) = boost::make_tuple(true,eltUsedForExtrapolation.id(),gic.xRef());
+                }
+            else
+                {
+                    idEltFound = this->mesh()->beginElementWithId(this->mesh()->worldComm().localRank())->id();
+                    isin = false;
+                    //x_ref=?
+                }
+        }
+
+    return boost::make_tuple( isin, idEltFound, x_ref);
+
+#if 0 // OLD
+    //bool __extrapolation=true;
+    if ( itLT != itLT_end ) return boost::make_tuple( true, itLT->first, x_ref );
+
+    else if ( itLT == itLT_end && !M_doExtrapolation ) return boost::make_tuple( false, 0, x_ref );
 
     else
     {
@@ -1968,9 +2028,10 @@ Mesh<Shape, T>::Localization::searchElement( const node_type & p,
         //apply the inverse geometric transformation for the point p
         //gic.setXReal(boost::get<0>(*ptsNN.begin()));
         gic.setXReal( p );
-        __x_ref=gic.xRef();
-        return boost::make_tuple( true, itLT->first, __x_ref );
+        x_ref=gic.xRef();
+        return boost::make_tuple( true, itLT->first, x_ref );
     }
+#endif
 
 
 } //searchElement
@@ -1981,7 +2042,7 @@ boost::tuple<std::vector<bool>, size_type>
 Mesh<Shape, T>::Localization::run_analysis( const matrix_node_type & m,
         const size_type & eltHypothetical,
         const matrix_node_type & setPoints,
-        mpl::bool_<true> /**/ )
+        mpl::int_<1> /**/ )
 {
 #if !defined( NDEBUG )
     FEELPP_ASSERT( IsInit == true )
@@ -1997,14 +2058,14 @@ Mesh<Shape, T>::Localization::run_analysis( const matrix_node_type & m,
 
     for ( size_type i=0; i< m.size2(); ++i )
     {
-        boost::tie( find_x, cv_id, x_ref ) = this->searchElement( ublas::column( m, i ),setPoints,mpl::bool_<true>() );
+        boost::tie( find_x, cv_id, x_ref ) = this->searchElement( ublas::column( m, i ),setPoints,mpl::int_<1>() );
 
         if ( find_x )
         {
             M_resultAnalysis[cv_id].push_back( boost::make_tuple( i,x_ref ) );
+            hasFindPts[i]=true;
         }
-
-        else std::cout<<"\nNew Probleme Localization\n" << std::endl;
+        //else std::cout<<"\nNew Probleme Localization\n" << std::endl;
 
     }
 

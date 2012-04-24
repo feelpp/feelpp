@@ -35,14 +35,56 @@
 namespace Feel
 {
 
-struct InterpolationNonConforme
+class InterpolationTypeBase
 {
-    static const bool value=false;
+public :
+    InterpolationTypeBase( bool useComm=true, bool compAreSamePt=true, bool onlyLocalizeOnBoundary=false, int nbNearNeighborInKdTree=15 )
+    :
+        M_searchWithCommunication( useComm ),
+        M_componentsAreSamePoint( compAreSamePt ),
+        M_onlyLocalizeOnBoundary( onlyLocalizeOnBoundary ),
+        M_nbNearNeighborInKdTree( nbNearNeighborInKdTree )
+    {}
+
+    InterpolationTypeBase( InterpolationTypeBase const& a)
+    :
+        M_searchWithCommunication( a.M_searchWithCommunication ),
+        M_componentsAreSamePoint( a.M_componentsAreSamePoint ),
+        M_onlyLocalizeOnBoundary( a.M_onlyLocalizeOnBoundary ),
+        M_nbNearNeighborInKdTree( a.M_nbNearNeighborInKdTree )
+    {}
+
+    bool searchWithCommunication() const { return M_searchWithCommunication; }
+    bool componentsAreSamePoint() const { return M_componentsAreSamePoint; }
+    bool onlyLocalizeOnBoundary() const { return M_onlyLocalizeOnBoundary; }
+    int nbNearNeighborInKdTree() const { return M_nbNearNeighborInKdTree; }
+
+private :
+
+    bool M_searchWithCommunication;
+    bool M_componentsAreSamePoint;
+    bool M_onlyLocalizeOnBoundary;
+    int M_nbNearNeighborInKdTree;
 };
 
-struct InterpolationConforme
+struct InterpolationNonConforme : public InterpolationTypeBase
 {
-    static const bool value=true;
+    static const uint16_type value=0;
+
+    InterpolationNonConforme( bool useComm=true, bool compAreSamePt=true, bool onlyLocalizeOnBoundary=false, int nbNearNeighborInKdTree=15 )
+    :
+        InterpolationTypeBase(useComm,compAreSamePt, onlyLocalizeOnBoundary,nbNearNeighborInKdTree)
+    {}
+};
+
+struct InterpolationConforme : public InterpolationTypeBase
+{
+    static const uint16_type value=1;
+
+    InterpolationConforme(bool useComm=true, bool compAreSamePt=true, bool onlyLocalizeOnBoundary=false, int nbNearNeighborInKdTree=15 )
+    :
+        InterpolationTypeBase(useComm,compAreSamePt,onlyLocalizeOnBoundary,nbNearNeighborInKdTree)
+    {}
 };
 
 
@@ -168,12 +210,14 @@ public:
      */
     OperatorInterpolation( domain_space_ptrtype const& domainspace,
                            dual_image_space_ptrtype const& imagespace,
-                           backend_ptrtype const& backend );
+                           backend_ptrtype const& backend,
+                           InterpType const& interptype);
 
     OperatorInterpolation( domain_space_ptrtype const& domainspace,
                            dual_image_space_ptrtype const& imagespace,
                            IteratorRange const& r,
-                           backend_ptrtype const& backend );
+                           backend_ptrtype const& backend,
+                           InterpType const& interptype);
 
 
     /**
@@ -182,7 +226,9 @@ public:
     OperatorInterpolation( OperatorInterpolation const & oi )
         :
         super( oi ),
-        _M_range( oi._M_range )
+        _M_range( oi._M_range ),
+        _M_WorldCommFusion( oi._M_WorldCommFusion ),
+        _M_interptype( oi._M_interptype )
     {}
 
     ~OperatorInterpolation() {}
@@ -199,7 +245,11 @@ public:
     /** @name Accessors
      */
     //@{
-    WorldComm const& worldCommFusion() { return _M_WorldCommFusion; }
+
+    WorldComm const& worldCommFusion() const { return _M_WorldCommFusion; }
+
+    InterpType const& interpolationType() const { return _M_interptype; }
+
 
     //@}
 
@@ -239,10 +289,10 @@ private:
                                                > > > extrapolation_memory_type;
 
     // point distrubition
-    boost::tuple</*std::set<size_type>,*/
-                 std::vector< std::vector<size_type> >,
+    boost::tuple<std::vector< std::vector<size_type> >,
                  std::vector< std::vector<uint16_type> >,
-                 std::vector<std::vector<typename image_mesh_type::node_type> > >
+                 std::vector<std::vector<typename image_mesh_type::node_type> >,
+                 std::vector<std::vector< std::vector<typename image_mesh_type::node_type > > > >
     updateNoRelationMeshMPI_pointDistribution(const std::vector< std::list<boost::tuple<int,size_type,double> > > & memory_valueInMatrix,
                                               std::vector<std::set<size_type> > & dof_searchWithProc);
 
@@ -251,6 +301,7 @@ private:
     updateNoRelationMeshMPI_upWithMyWorld(const std::vector< std::vector<size_type> > & memmapGdof,
                                           const std::vector< std::vector<uint16_type> > & memmapComp,
                                           const std::vector<std::vector<typename image_mesh_type::node_type> > & pointsSearched,
+                                          const std::vector<std::vector< std::vector<typename image_mesh_type::node_type > > > & memmap_vertices,
                                           graph_ptrtype & sparsity_graph,
                                           std::vector< std::list<boost::tuple<int,size_type,double> > > & memory_valueInMatrix,
                                           std::vector<std::map<size_type,size_type> > & memory_col_globalProcessToGlobalCluster,
@@ -263,6 +314,7 @@ private:
     updateNoRelationMeshMPI_upWithOtherWorld(const std::vector< std::vector<size_type> > & memmapGdof,
                                              const std::vector< std::vector<uint16_type> > & memmapComp,
                                              const std::vector<std::vector<typename image_mesh_type::node_type> > & pointsSearched,
+                                             const std::vector<std::vector< std::vector<typename image_mesh_type::node_type > > > & memmap_vertices,
                                              graph_ptrtype & sparsity_graph,
                                              std::vector< std::list<boost::tuple<int,size_type,double> > > & memory_valueInMatrix,
                                              std::vector<std::map<size_type,size_type> > & memory_col_globalProcessToGlobalCluster,
@@ -273,16 +325,19 @@ private:
 
     range_iterator _M_range;
     WorldComm _M_WorldCommFusion;
+    InterpType _M_interptype;
 };
 
 template<typename DomainSpaceType, typename ImageSpaceType,typename IteratorRange,typename InterpType>
 OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>::OperatorInterpolation( domain_space_ptrtype const& domainspace,
-        dual_image_space_ptrtype const& imagespace,
-        backend_ptrtype const& backend )
+                                                                                                        dual_image_space_ptrtype const& imagespace,
+                                                                                                        backend_ptrtype const& backend,
+                                                                                                        InterpType const& interptype )
     :
     super( domainspace, imagespace, backend, false ),
     _M_range( elements( imagespace->mesh() ) ),
-    _M_WorldCommFusion( this->domainSpace()->worldComm()+this->dualImageSpace()->worldComm() )
+    _M_WorldCommFusion( this->domainSpace()->worldComm()+this->dualImageSpace()->worldComm() ),
+    _M_interptype(interptype)
 {
     update();
 }
@@ -290,13 +345,15 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
 
 template<typename DomainSpaceType, typename ImageSpaceType,typename IteratorRange,typename InterpType>
 OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>::OperatorInterpolation( domain_space_ptrtype const& domainspace,
-        dual_image_space_ptrtype const& imagespace,
-        IteratorRange const& r,
-        backend_ptrtype const& backend )
+                                                                                                        dual_image_space_ptrtype const& imagespace,
+                                                                                                        IteratorRange const& r,
+                                                                                                        backend_ptrtype const& backend,
+                                                                                                        InterpType const& interptype )
     :
     super( domainspace, imagespace, backend, false ),
     _M_range( r ),
-    _M_WorldCommFusion( this->domainSpace()->worldComm()+this->dualImageSpace()->worldComm() )
+    _M_WorldCommFusion( this->domainSpace()->worldComm()+this->dualImageSpace()->worldComm() ),
+    _M_interptype(interptype)
 {
     update();
 }
@@ -541,7 +598,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                                     ublas::column(ptsReal,0 ) = boost::get<0>(imagedof->dofPoint(gdof));
                                     //------------------------
                                     // localisation process
-                                    eltIdLocalised = locTool->run_analysis(ptsReal,eltIdLocalised,it->vertices()/*it->G()*/,mpl::bool_<interpolation_type::value>()).get<1>();
+                                    eltIdLocalised = locTool->run_analysis(ptsReal,eltIdLocalised,it->vertices()/*it->G()*/,mpl::int_<interpolation_type::value>()).get<1>();
                                     //------------------------
                                     // for each localised points
                                     itanal = locTool->result_analysis_begin();
@@ -670,7 +727,6 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     const size_type firstcol_dof_on_proc = this->domainSpace()->dof()->firstDofGlobalCluster( proc_id_col );
     const size_type lastcol_dof_on_proc = this->domainSpace()->dof()->lastDofGlobalCluster( proc_id_col );
 
-    //std::cout << "\n---a------"<< std::endl;
 
 
     std::vector<size_type> first_col_entry( this->domainSpace()->worldComm().globalSize() );
@@ -746,25 +802,38 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
 
     //init the localization tool
     auto locTool = this->domainSpace()->mesh()->tool_localization();
-    locTool->updateForUse();
     bool doExtrapolationAtStart = locTool->doExtrapolation();
-
+    // kdtree parameter
+    locTool->kdtree()->nbNearNeighbor(this->interpolationType().nbNearNeighborInKdTree());
+    // points in kdtree
+    if ( this->interpolationType().onlyLocalizeOnBoundary() ) locTool->updateForUseBoundaryFaces();
+    else locTool->updateForUse();
     // no extrapolation in first
     if ( doExtrapolationAtStart ) locTool->setExtrapolation(false);
 
+
    uint16_type nMPIsearch=5;
-   uint16_type counterMPIsearch=0;
+   if (this->domainSpace()->mesh()->worldComm().localSize()<5) nMPIsearch=this->domainSpace()->mesh()->worldComm().localSize();
+   // only one int this case
+   if (!this->interpolationType().searchWithCommunication()) nMPIsearch=1;
+   uint16_type counterMPIsearch=1;
    bool FinishMPIsearch=false;
+   //if (this->interpolationType().searchWithCommunication()) FinishMPIsearch=true;// not run algo1 !!!!
+
+   size_type nbLocalisationFail=1;
    while(!FinishMPIsearch)
        {
            auto pointDistribution = this->updateNoRelationMeshMPI_pointDistribution(memory_valueInMatrix,dof_searchWithProc);
            auto memmapGdof = pointDistribution.get<0>();
            auto memmapComp = pointDistribution.get<1>();
            auto pointsSearched = pointDistribution.get<2>();
+           auto memmapVertices = pointDistribution.get<3>();
+           //std::cout <<  "proc " << this->worldCommFusion().globalRank() <<  " pointsSearched.size() " << pointsSearched.size() << std::endl;
 
            auto memory_localisationFail = this->updateNoRelationMeshMPI_upWithMyWorld( memmapGdof, // input
                                                                                        memmapComp, // input
                                                                                        pointsSearched, // input
+                                                                                       memmapVertices, // input
                                                                                        sparsity_graph, // output
                                                                                        memory_valueInMatrix, // output
                                                                                        memory_col_globalProcessToGlobalCluster, // output
@@ -772,31 +841,49 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                                                                                        false,// extrapolation_mode
                                                                                        dof_extrapolationData // empty
                                                                                        );
-#if 1
-           auto memory_localisationFail2 = this->updateNoRelationMeshMPI_upWithOtherWorld( memmapGdof, // input
-                                                                                           memmapComp, // input
-                                                                                           pointsSearched, // input
-                                                                                           sparsity_graph, // output
-                                                                                           memory_valueInMatrix, // output
-                                                                                           memory_col_globalProcessToGlobalCluster, // output
-                                                                                           dof_searchWithProc, // output
-                                                                                           false,// extrapolation_mode
-                                                                                           dof_extrapolationData // empty
-                                                                                           );
+           //std::cout <<  "proc " << this->worldCommFusion().globalRank() <<  " memory_localisationFail.size() " << memory_localisationFail.size() << std::endl;
 
-#endif
-           if (counterMPIsearch<nMPIsearch) ++counterMPIsearch;
+           if (this->interpolationType().searchWithCommunication())
+               {
+                   auto memory_localisationFail2 = this->updateNoRelationMeshMPI_upWithOtherWorld( memmapGdof, // input
+                                                                                                   memmapComp, // input
+                                                                                                   pointsSearched, // input
+                                                                                                   memmapVertices, // input
+                                                                                                   sparsity_graph, // output
+                                                                                                   memory_valueInMatrix, // output
+                                                                                                   memory_col_globalProcessToGlobalCluster, // output
+                                                                                                   dof_searchWithProc, // output
+                                                                                                   false,// extrapolation_mode
+                                                                                                   dof_extrapolationData // empty
+                                                                                                   );
+
+                   const size_type nbLocalisationFail_loc = memory_localisationFail.size()+memory_localisationFail2.size();
+                   mpi::all_reduce( this->worldCommFusion().globalComm(),
+                                    nbLocalisationFail_loc,
+                                    nbLocalisationFail,
+                                    std::plus<double>() );
+               }
+           else nbLocalisationFail = memory_localisationFail.size();
+           //nbLocalisationFail = memory_localisationFail.size()+memory_localisationFail2.size();
+           //std::cout <<  "proc " << this->worldCommFusion().globalRank()
+           //          << " et " <<nbLocalisationFail << std::endl;
+           if (counterMPIsearch<nMPIsearch && nbLocalisationFail>0) ++counterMPIsearch;
            else FinishMPIsearch=true;
        }
 
    //std::cout << "\n FINISH SEARCH!!!!!!!!! " << std::endl;
+   if ( doExtrapolationAtStart ) locTool->setExtrapolation(true);
 
-   if ( doExtrapolationAtStart )
+   if ( doExtrapolationAtStart && nbLocalisationFail>0 )
        {
+           //std::cout << " Start Extrapolation" << std::endl;
            std::vector<std::set<size_type> > dof_searchWithProcExtrap(this->dualImageSpace()->nLocalDof());
-           locTool->setExtrapolation(true);
-           const uint16_type nMPIsearchExtrap=5;
-           uint16_type counterMPIsearchExtrap=0;
+           //locTool->setExtrapolation(true);
+           uint16_type nMPIsearchExtrap=5;
+           if (this->domainSpace()->mesh()->worldComm().localSize()<5) nMPIsearchExtrap=this->domainSpace()->mesh()->worldComm().localSize();
+           // only one int this case
+           if (!this->interpolationType().searchWithCommunication()) nMPIsearchExtrap=1;
+           uint16_type counterMPIsearchExtrap=1;
            bool FinishMPIsearchExtrap=false;
            // localisation process
            while(!FinishMPIsearchExtrap)
@@ -805,10 +892,12 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                    auto memmapGdof = pointDistribution.get<0>();
                    auto memmapComp = pointDistribution.get<1>();
                    auto pointsSearched = pointDistribution.get<2>();
-
+                   auto memmapVertices = pointDistribution.get<3>();
+                   //std::cout <<  "proc " << this->worldCommFusion().globalRank() <<  " pointsSearched.size() " << pointsSearched.size() << std::endl;
                    auto memory_localisationFail = this->updateNoRelationMeshMPI_upWithMyWorld( memmapGdof, // input
                                                                                                memmapComp, // input
                                                                                                pointsSearched, // input
+                                                                                               memmapVertices, // input
                                                                                                sparsity_graph, // output
                                                                                                memory_valueInMatrix, // output
                                                                                                memory_col_globalProcessToGlobalCluster, // output
@@ -816,17 +905,22 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                                                                                                true,// extrapolation_mode
                                                                                                dof_extrapolationData // output
                                                                                                );
-
-                   auto memory_localisationFail2 = this->updateNoRelationMeshMPI_upWithOtherWorld( memmapGdof, // input
-                                                                                                   memmapComp, // input
-                                                                                                   pointsSearched, // input
-                                                                                                   sparsity_graph, // output
-                                                                                                   memory_valueInMatrix, // output
-                                                                                                   memory_col_globalProcessToGlobalCluster, // output
-                                                                                                   dof_searchWithProcExtrap, // output
-                                                                                                   true, // extrapolation_mode
-                                                                                                   dof_extrapolationData // output
-                                                                                                   );
+                   //std::cout <<  "proc " << this->worldCommFusion().globalRank() <<  " memory_localisationFail.size() " << memory_localisationFail.size() << std::endl;
+                   if (this->interpolationType().searchWithCommunication())
+                       {
+                           auto memory_localisationFail2 = this->updateNoRelationMeshMPI_upWithOtherWorld( memmapGdof, // input
+                                                                                                           memmapComp, // input
+                                                                                                           pointsSearched, // input
+                                                                                                           memmapVertices, // input
+                                                                                                           sparsity_graph, // output
+                                                                                                           memory_valueInMatrix, // output
+                                                                                                           memory_col_globalProcessToGlobalCluster, // output
+                                                                                                           dof_searchWithProcExtrap, // output
+                                                                                                           true, // extrapolation_mode
+                                                                                                           dof_extrapolationData // output
+                                                                                                           );
+                       }
+                   //std::cout <<  "proc " << this->worldCommFusion().globalRank() <<  " memory_localisationFail2.size() " << memory_localisationFail.size() << std::endl;
                    if (counterMPIsearchExtrap<nMPIsearchExtrap) ++counterMPIsearchExtrap;
                    else FinishMPIsearchExtrap=true;
                } // while(!FinishMPIsearchExtrap)
@@ -904,10 +998,12 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
 
     //-----------------------------------------------------------------------------------------
     this->worldCommFusion().barrier();
+    //std::cout << "Op---1----- " << std::endl;
     //-----------------------------------------------------------------------------------------
     // compute graph
     sparsity_graph->close();//sparsity_graph->printPython("mygraphpythonMPI.py");
     //-----------------------------------------------------------------------------------------
+    //std::cout << "Op---2----- " << std::endl;
     this->worldCommFusion().barrier();
     //-----------------------------------------------------------------------------------------
     size_type mapCol_nLocalDof = 0;
@@ -937,6 +1033,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
         }
 
     //-----------------------------------------
+    //std::cout << "Op---3----- " << this->worldCommFusion().godRank() << std::endl;
     this->worldCommFusion().barrier();
     //-----------------------------------------
     // build data map for the columns
@@ -956,6 +1053,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     //if ( this->dualImageSpace()->worldComm().isActive() ) mapColInterp.showMeMapGlobalProcessToGlobalCluster();
 
     //-----------------------------------------
+    //std::cout << "Op---4----- " << this->worldCommFusion().godRank() << " isA " << this->dualImageSpace()->worldComm().isActive() << std::endl;
     this->worldCommFusion().barrier();
     //-----------------------------------------
     // create matrix for active process
@@ -966,6 +1064,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                                                          sparsity_graph  );
         }
     //-----------------------------------------
+    //std::cout << "Op---5----- " << this->worldCommFusion().godRank() << std::endl;
     this->worldCommFusion().barrier();
     //-----------------------------------------
     // create null matrix for inactive process
@@ -975,6 +1074,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                                                              this->dualImageSpace()->mapOn() );
         }
     //-----------------------------------------
+    //std::cout << "Op---6----- "  << this->worldCommFusion().godRank() << std::endl;
     this->worldCommFusion().barrier();
     //-----------------------------------------
     // assemble matrix
@@ -992,6 +1092,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                 }
         }
     //-----------------------------------------
+    //std::cout << "Op---7----- " << std::endl;
     this->worldCommFusion().barrier();
     //-----------------------------------------
 
@@ -1008,6 +1109,7 @@ OperatorInterpolation<DomainSpaceType,
                       InterpType>::updateNoRelationMeshMPI_upWithMyWorld(const std::vector< std::vector<size_type> > & memmapGdof,
                                                                          const std::vector< std::vector<uint16_type> > & memmapComp,
                                                                          const std::vector<std::vector<typename image_mesh_type::node_type> > & pointsSearched,
+                                                                         const std::vector<std::vector< std::vector<typename image_mesh_type::node_type > > > & memmap_vertices,
                                                                          graph_ptrtype & sparsity_graph,
                                                                          std::vector< std::list<boost::tuple<int,size_type,double> > > & memory_valueInMatrix,
                                                                          std::vector<std::map<size_type,size_type> > & memory_col_globalProcessToGlobalCluster,
@@ -1017,7 +1119,6 @@ OperatorInterpolation<DomainSpaceType,
 {
     std::list<boost::tuple<size_type,uint16_type> > memory_localisationFail;// gdof,comp
 
-    //const auto proc_id = this->dualImageSpace()->worldsComm()[0].localRank();
     const auto proc_id = this->domainSpace()->mesh()->worldComm().localRank();
 
     auto const* imagedof = this->dualImageSpace()->dof().get();
@@ -1029,24 +1130,137 @@ OperatorInterpolation<DomainSpaceType,
     matrix_node_type ptsReal( image_mesh_type::nRealDim, 1 );
     matrix_node_type ptsRef( image_mesh_type::nRealDim , 1 );
     matrix_node_type MlocEval(domain_basis_type::nLocalDof*domain_basis_type::nComponents1,1);
+    matrix_node_type verticesOfEltSearched;
 
-    //    size_type eltIdLocalised = this->domainSpace()->mesh()->beginElementWithId(this->domainSpace()->mesh()->worldComm().localRank())->id();
     size_type eltIdLocalised = this->domainSpace()->mesh()->beginElementWithId(this->domainSpace()->mesh()->worldComm().localRank())->id();
-    auto const& eltAleatoire = this->domainSpace()->mesh()->element(eltIdLocalised);
-
-    std::vector<bool> dof_done( this->dualImageSpace()->nLocalDof(), false);
+    auto const& eltRandom = this->domainSpace()->mesh()->element(eltIdLocalised);
 
     for ( size_type k=0 ; k<memmapGdof[proc_id].size() ; ++k)
         {
-            const auto gdof = memmapGdof[proc_id][k];
-            const auto comp = memmapComp[proc_id][k];
-            //const auto & theelt = this->dualImageSpace()->mesh()->element(*it_IdEltToSearch);
-            if (!dof_done[gdof])
+            //----------------------------------------------------------------
+            if (this->interpolationType().componentsAreSamePoint())
+                //------------------------------------------------------------
                 {
-                    // the dof point
-                    ublas::column(ptsReal,0 ) = imagedof->dofPoint(gdof).get<0>();
+                    // the searched point
+                    ublas::column(ptsReal,0 ) = pointsSearched[proc_id][k];
+                    // vertice with conforme case
+                    if (InterpType::value==1)
+                        {
+                            const uint16_type sizeVertices = memmap_vertices[proc_id][k].size();
+                            verticesOfEltSearched.resize( image_mesh_type::nRealDim,sizeVertices);
+                            for ( uint16_type v=0;v<sizeVertices;++v)
+                                ublas::column(verticesOfEltSearched,v)=memmap_vertices[proc_id][k][v];
+                        }
+                    else // random
+                        verticesOfEltSearched = eltRandom.vertices();
+
                     // localisation process
-                    auto resLocalisation = locTool->run_analysis(ptsReal,eltIdLocalised,eltAleatoire/*theelt*/.vertices()/*it->G()*/,mpl::bool_<interpolation_type::value>());
+                    auto resLocalisation = locTool->run_analysis(ptsReal,eltIdLocalised,verticesOfEltSearched,
+                                                                 mpl::int_<interpolation_type::value>());
+                    if (!resLocalisation.get<0>()[0]) // not find
+                        {
+                            for ( uint16_type comp = 0;comp < image_basis_type::nComponents;++comp )
+                                {
+                                    const auto gdof = memmapGdof[proc_id][k+comp];
+                                    memory_localisationFail.push_back(boost::make_tuple(gdof,comp) );
+                                    dof_searchWithProc[gdof].insert(proc_id);
+                                }
+                        }
+                    else // point found
+                        {
+                            eltIdLocalised = resLocalisation.get<1>();
+
+                            if (extrapolation_mode)
+                                {
+                                    auto const& eltExtrapoled = this->domainSpace()->mesh()->element(eltIdLocalised);
+                                    auto const& verticesExtrapoled = eltExtrapoled.vertices();
+                                    typename image_mesh_type::node_type bary(verticesExtrapoled.size1());
+                                    for (int qi=0;qi<verticesExtrapoled.size1();++qi) bary(qi)=0;//important
+                                    for (int qj=0;qj<verticesExtrapoled.size2();++qj)
+                                        {
+                                            /**/                              bary(0) += ublas::column(verticesExtrapoled,qj)(0);
+                                            if (verticesExtrapoled.size1()>1) bary(1) += ublas::column(verticesExtrapoled,qj)(1);
+                                            if (verticesExtrapoled.size1()>2) bary(2) += ublas::column(verticesExtrapoled,qj)(2);
+                                        }
+                                    /**/                              bary(0) /= verticesExtrapoled.size2();
+                                    if (verticesExtrapoled.size1()>1) bary(1) /= verticesExtrapoled.size2();
+                                    if (verticesExtrapoled.size1()>2) bary(2) /= verticesExtrapoled.size2();
+                                    typename image_mesh_type::node_type theRefPtExtrap = locTool->result_analysis().begin()->second.begin()->get<1>();
+                                    std::vector<std::pair<size_type,size_type> > j_gdofs(domain_basis_type::nLocalDof);
+                                    for ( uint16_type comp = 0;comp < image_basis_type::nComponents;++comp )
+                                        {
+                                            const auto gdof = memmapGdof[proc_id][k+comp];
+                                            for ( uint16_type jloc = 0; jloc < domain_basis_type::nLocalDof; ++jloc )
+                                                {
+                                                    const size_type j_gdof =  boost::get<0>(domaindof->localToGlobal( eltIdLocalised,jloc,comp ));
+                                                    j_gdofs[jloc]=std::make_pair(j_gdof,domaindof->mapGlobalProcessToGlobalCluster()[j_gdof]);
+                                                }
+                                            dof_extrapolationData[gdof].push_back(boost::make_tuple(proc_id,bary,theRefPtExtrap,j_gdofs,comp));
+                                        }
+                                }
+                            else // no extrapolation
+                                {
+                                    for ( uint16_type comp = 0;comp < image_basis_type::nComponents;++comp )
+                                        {
+                                            const auto gdof = memmapGdof[proc_id][k+comp];
+                                            // get the graph row
+                                            auto const ig1 = imagedof->mapGlobalProcessToGlobalCluster()[gdof];
+                                            auto const theproc = imagedof->procOnGlobalCluster(ig1);
+                                            auto& row = sparsity_graph->row(ig1);
+                                            row.get<0>() = theproc;
+                                            row.get<1>() = ig1 - imagedof->firstDofGlobalCluster(theproc);
+                                            // for each localised points
+                                            auto itanal = locTool->result_analysis().begin();//  result_analysis_begin();
+                                            auto const itanal_end = locTool->result_analysis().end();//result_analysis_end();
+                                            for ( ;itanal!=itanal_end;++itanal)
+                                                {
+                                                    const auto itL=itanal->second.begin();
+                                                    ublas::column( ptsRef, 0 ) = boost::get<1>(*itL);
+                                                    // evaluate basis functions for this point
+                                                    MlocEval = domainbasis->evaluate( ptsRef );
+                                                    for ( uint16_type jloc = 0; jloc < domain_basis_type::nLocalDof; ++jloc )
+                                                        {
+                                                            //get global dof
+                                                            const size_type j_gdof =  boost::get<0>(domaindof->localToGlobal( itanal->first,jloc,comp ));
+                                                            // up graph
+                                                            row.get<2>().insert(domaindof->mapGlobalProcessToGlobalCluster()[j_gdof]);
+                                                            // get value
+                                                            const value_type v = MlocEval( domain_basis_type::nComponents1*jloc +
+                                                                                           comp*domain_basis_type::nComponents1*domain_basis_type::nLocalDof +
+                                                                                           comp, 0 );
+                                                            // save value
+                                                            memory_valueInMatrix[gdof].push_back(boost::make_tuple(proc_id,j_gdof,v));
+                                                            memory_col_globalProcessToGlobalCluster[proc_id][j_gdof]=domaindof->mapGlobalProcessToGlobalCluster()[j_gdof];
+                                                        }
+                                                }
+                                            // dof ok : not anymore localise
+                                            dof_searchWithProc[gdof].insert(proc_id);
+                                        } // comp
+                                } // no extrapolation
+                        } // else // point found
+                    // change k in for
+                    k=k+image_basis_type::nComponents-1;
+                } // optimization : this->interpolationType().componentsAreSamePoint()
+            //----------------------------------------------------
+            else // component optimization
+                //------------------------------------------------
+                {
+                    const auto gdof = memmapGdof[proc_id][k];
+                    const auto comp = memmapComp[proc_id][k];
+                    ublas::column(ptsReal,0 ) = imagedof->dofPoint(gdof).get<0>();
+                    // vertice with conforme case
+                    if (InterpType::value==1)
+                        {
+                            const uint16_type sizeVertices = memmap_vertices[proc_id][k].size();
+                            verticesOfEltSearched.resize( image_mesh_type::nRealDim,sizeVertices);
+                            for ( uint16_type v=0;v<sizeVertices;++v)
+                                ublas::column(verticesOfEltSearched,v)=memmap_vertices[proc_id][k][v];
+                        }
+                    else // random
+                        verticesOfEltSearched = eltRandom.vertices();
+
+                    // localisation process
+                    auto resLocalisation = locTool->run_analysis(ptsReal, eltIdLocalised, verticesOfEltSearched, mpl::int_<interpolation_type::value>());
                     if (!resLocalisation.get<0>()[0]) // not find
                         {
                             memory_localisationFail.push_back(boost::make_tuple(gdof,comp) );
@@ -1113,29 +1327,29 @@ OperatorInterpolation<DomainSpaceType,
                                         }
                                     // dof ok : not anymore localise
                                     dof_searchWithProc[gdof].insert(proc_id);
-
                                 }
-                        } // else // point found
-                    dof_done[gdof]=true;
-                } // if (!dof_done[gdof])
+                        } // else point found
+                }// no optimization
         } // for ( size_type k=0 ; k<memmapGdof[proc_id].size() ; ++k)
 
- return memory_localisationFail;
+    return memory_localisationFail;
 }
 
 //-----------------------------------------------------------------------------------------------------------------//
 
 template<typename DomainSpaceType, typename ImageSpaceType,typename IteratorRange,typename InterpType>
 std::list<boost::tuple<size_type,uint16_type> >
-OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>::updateNoRelationMeshMPI_upWithOtherWorld(const std::vector< std::vector<size_type> > & memmapGdof,
-                                                                                                                          const std::vector< std::vector<uint16_type> > & memmapComp,
-                                                                                                                          const std::vector<std::vector<typename image_mesh_type::node_type> > & pointsSearched,
-                                                                                                                          graph_ptrtype & sparsity_graph,
-                                                                                                                          std::vector< std::list<boost::tuple<int,size_type,double> > > & memory_valueInMatrix,
-                                                                                                                          std::vector<std::map<size_type,size_type> > & memory_col_globalProcessToGlobalCluster,
-                                                                                                                          std::vector<std::set<size_type> > & dof_searchWithProc,
-                                                                                                                          bool extrapolation_mode,
-                                                                                                                          extrapolation_memory_type & dof_extrapolationData)
+OperatorInterpolation<DomainSpaceType, ImageSpaceType,
+                      IteratorRange,InterpType>::updateNoRelationMeshMPI_upWithOtherWorld(const std::vector< std::vector<size_type> > & memmapGdof,
+                                                                                          const std::vector< std::vector<uint16_type> > & memmapComp,
+                                                                                          const std::vector<std::vector<typename image_mesh_type::node_type> > & pointsSearched,
+                                                                                          const std::vector<std::vector< std::vector<typename image_mesh_type::node_type > > > & memmap_vertices,
+                                                                                          graph_ptrtype & sparsity_graph,
+                                                                                          std::vector< std::list<boost::tuple<int,size_type,double> > > & memory_valueInMatrix,
+                                                                                          std::vector<std::map<size_type,size_type> > & memory_col_globalProcessToGlobalCluster,
+                                                                                          std::vector<std::set<size_type> > & dof_searchWithProc,
+                                                                                          bool extrapolation_mode,
+                                                                                          extrapolation_memory_type & dof_extrapolationData)
 {
     std::list<boost::tuple<size_type,uint16_type> > memory_localisationFail;// gdof,comp
 
@@ -1157,10 +1371,11 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     matrix_node_type ptsReal( image_mesh_type::nRealDim, 1 );
     matrix_node_type ptsRef( image_mesh_type::nRealDim , 1 );
     matrix_node_type MlocEval(domain_basis_type::nLocalDof*domain_basis_type::nComponents1,1);
+    matrix_node_type verticesOfEltSearched;
 
     // random (just to start)
     size_type eltIdLocalised = this->domainSpace()->mesh()->beginElementWithId(this->domainSpace()->mesh()->worldComm().localRank())->id();
-    auto const& eltAleatoire = this->domainSpace()->mesh()->element(eltIdLocalised);
+    auto const& eltRandom = this->domainSpace()->mesh()->element(eltIdLocalised);
 
     std::vector<bool> dof_done( this->dualImageSpace()->nLocalDof(), false);
 
@@ -1168,6 +1383,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     std::vector<size_type> pointsSearchedSizeWorld(this->dualImageSpace()->mesh()->worldComm().localComm().size());
     std::vector<typename image_mesh_type::node_type> dataToRecv(1);
     std::vector<uint16_type> dataToRecv_Comp(1,0);
+    std::vector< std::vector< typename image_mesh_type::node_type > > dataToRecv_Vertices(1);
     std::vector<typename image_mesh_type::node_type> pointsRefFinded(1);
     std::vector<typename image_mesh_type::node_type> pointsBaryFinded(1);// extrapolation only
     std::vector<bool> pointsRefIsFinded(1,false);
@@ -1266,6 +1482,19 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+#if 0 // OLD
+
     // tag for mpi msg
     const int tag_X = 0, tag_Y = 1, tag_Z = 2, tag_IsFind = 3, tag_IdElt = 4, tag_DofsCol = 5, tag_DofsColGC = 6, tag_Comp = 7, tag_Points=8, tag_Bary=9;
     //------------------------------
@@ -1312,8 +1541,10 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                                 {
                                     // get real point to search
                                     ublas::column(ptsReal,0) = dataToRecv[k];
+
                                     // search process
-                                    auto resLocalisation = locTool->run_analysis(ptsReal,eltIdLocalised,eltAleatoire.vertices()/*it->G()*/,mpl::bool_<interpolation_type::value>());
+
+                                    auto resLocalisation = locTool->run_analysis(ptsReal,eltIdLocalised,eltRandom.vertices()/*it->G()*/,mpl::int_<interpolation_type::value>());
                                     if (resLocalisation.get<0>()[0]) // is find
                                         {
                                             eltIdLocalised = resLocalisation.get<1>();
@@ -1485,15 +1716,284 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
 
         } // for (int proc=0;proc<this->dualImageSpace()->mesh()->worldComm().localSize();++proc)
 
+#else // NEW
+
+    // tag for mpi msg
+    const int tag_X = 0, tag_Y = 1, tag_Z = 2, tag_IsFind = 3, tag_IdElt = 4, tag_DofsCol = 5, tag_DofsColGC = 6, tag_Comp = 7, tag_Points=8, tag_Bary=9, tag_Vertices=10;
+    //------------------------------
+    // proc after proc
+    for (int proc=0;proc<nProc_row;++proc)
+        {
+            if ( proc_id_image == proc && imageProcIsActive_fusion[this->worldCommFusion().globalRank()] )  // send info to rankLocalization
+                {
+                    for (auto it_rankLocalization=searchDistribution[proc].begin(),en_rankLocalization=searchDistribution[proc].end();
+                         it_rankLocalization!=en_rankLocalization;++it_rankLocalization)
+                        {
+                            const int rankLocalization = *it_rankLocalization;
+                            const int rankToSend = localMeshRankToWorldCommFusion_domain[rankLocalization];
+                            this->worldCommFusion().globalComm().send(rankToSend,tag_Points,pointsSearched[rankLocalization]);
+                            this->worldCommFusion().globalComm().send(rankToSend,tag_Comp,memmapComp[rankLocalization]);
+                            if (InterpType::value==1)
+                                this->worldCommFusion().globalComm().send(rankToSend,tag_Vertices,memmap_vertices[rankLocalization]);
+                        }
+                }
+            else
+                {
+                    for (auto it_rankLocalization=searchDistribution[proc].begin(),en_rankLocalization=searchDistribution[proc].end();
+                         it_rankLocalization!=en_rankLocalization;++it_rankLocalization)
+                        {
+                            const int rankLocalization = *it_rankLocalization;
+                            if ( proc_id_domain == rankLocalization && domainProcIsActive_fusion[this->worldCommFusion().globalRank()] ) // get request of proc
+                                {
+                                    const int rankToRecv = localMeshRankToWorldCommFusion_image[proc];
+                                    this->worldCommFusion().globalComm().recv(rankToRecv,tag_Points,dataToRecv);
+                                    this->worldCommFusion().globalComm().recv(rankToRecv,tag_Comp,dataToRecv_Comp);
+                                    if (InterpType::value==1)
+                                        this->worldCommFusion().globalComm().recv(rankToRecv,tag_Vertices,dataToRecv_Vertices);
+
+                                    const size_type nDataRecv = dataToRecv.size();
+                                    // init container
+                                    pointsRefFinded.resize(nDataRecv);
+                                    pointsRefIsFinded.resize(nDataRecv);std::fill(pointsRefIsFinded.begin(),pointsRefIsFinded.end(),false);
+                                    pointsIdEltFinded.resize(nDataRecv);
+                                    if (extrapolation_mode) pointsBaryFinded.resize(nDataRecv);
+                                    pointsDofsColFinded.resize(nDataRecv,std::vector<int>(1,0));
+                                    pointsDofsGlobalClusterColFinded.resize(nDataRecv,std::vector<int>(1,0));
+                                    // iterate on points
+                                    for (size_type k=0;k<nDataRecv;++k)
+                                        {
+                                            // get real point to search
+                                            ublas::column(ptsReal,0) = dataToRecv[k];
+                                            // vertice with conforme case
+                                            if (InterpType::value==1)
+                                                {
+                                                    const uint16_type sizeVertices = dataToRecv_Vertices[k].size();
+                                                    verticesOfEltSearched.resize( image_mesh_type::nRealDim,sizeVertices);
+                                                    for ( uint16_type v=0;v<sizeVertices;++v)
+                                                        ublas::column(verticesOfEltSearched,v)=dataToRecv_Vertices[k][v];
+                                                }
+                                            else // random
+                                                verticesOfEltSearched = eltRandom.vertices();
+                                            // search process
+                                            auto resLocalisation = locTool->run_analysis(ptsReal,eltIdLocalised,verticesOfEltSearched,mpl::int_<interpolation_type::value>());
+                                            if (resLocalisation.get<0>()[0]) // is find
+                                                {
+                                                    eltIdLocalised = resLocalisation.get<1>();
+                                                    //-------------------------------------------------------------------------
+                                                    if (!this->interpolationType().componentsAreSamePoint() )// all component
+                                                    //-------------------------------------------------------------------------
+                                                        {
+                                                            const uint16_type comp=dataToRecv_Comp[k];
+                                                            pointsRefIsFinded[k]=true;
+                                                            pointsIdEltFinded[k]=eltIdLocalised;
+                                                            // get point in reference element
+                                                            auto itanal = locTool->result_analysis_begin();
+                                                            auto const itanal_end = locTool->result_analysis_end();
+                                                            for ( ;itanal!=itanal_end;++itanal)
+                                                                {
+                                                                    auto const itL=itanal->second.begin();
+                                                                    //ublas::column( ptsRef, 0 ) = boost::get<1>(*itL);
+                                                                    pointsRefFinded[k] = boost::get<1>(*itL);
+                                                                }
+                                                            // get global process dof and global cluster dof : column data map
+                                                            pointsDofsColFinded[k].resize(domain_basis_type::nLocalDof);
+                                                            pointsDofsGlobalClusterColFinded[k].resize(domain_basis_type::nLocalDof);
+                                                            for ( uint16_type jloc = 0; jloc < domain_basis_type::nLocalDof; ++jloc )
+                                                                {
+                                                                    const auto j_gdof = boost::get<0>(domaindof->localToGlobal( eltIdLocalised,jloc,comp ));
+                                                                    pointsDofsColFinded[k][jloc] = j_gdof;
+                                                                    pointsDofsGlobalClusterColFinded[k][jloc] = domaindof->mapGlobalProcessToGlobalCluster()[j_gdof];
+                                                                }
+                                                            if (extrapolation_mode)
+                                                                {
+                                                                    auto const& eltExtrapoled = this->domainSpace()->mesh()->element(eltIdLocalised);
+                                                                    auto const verticesExtrapoled = eltExtrapoled.vertices();
+                                                                    typename image_mesh_type::node_type bary(verticesExtrapoled.size1());
+                                                                    for (int qi=0;qi<verticesExtrapoled.size1();++qi) bary(qi)=0;//important
+                                                                    for (int qj=0;qj<verticesExtrapoled.size2();++qj)
+                                                                        {
+                                                                            /**/                              bary(0) += ublas::column(verticesExtrapoled,qj)(0);
+                                                                            if (verticesExtrapoled.size1()>1) bary(1) += ublas::column(verticesExtrapoled,qj)(1);
+                                                                            if (verticesExtrapoled.size1()>2) bary(2) += ublas::column(verticesExtrapoled,qj)(2);
+                                                                        }
+                                                                    /**/                              bary(0) /= verticesExtrapoled.size2();
+                                                                    if (verticesExtrapoled.size1()>1) bary(1) /= verticesExtrapoled.size2();
+                                                                    if (verticesExtrapoled.size1()>2) bary(2) /= verticesExtrapoled.size2();
+                                                                    pointsBaryFinded[k]=bary;
+                                                                }
+                                                        }
+                                                    //-------------------------------------------------------------------------
+                                                    else // components optimization
+                                                    //-------------------------------------------------------------------------
+                                                        {
+                                                            auto const ptRefFinded = locTool->result_analysis_begin()->second.begin()->get<1>();
+                                                            for ( uint16_type comp = 0;comp < image_basis_type::nComponents;++comp )
+                                                                {
+                                                                    pointsRefIsFinded[k+comp]=true;
+                                                                    pointsIdEltFinded[k+comp]=eltIdLocalised;
+                                                                    // get point in reference element
+                                                                    pointsRefFinded[k+comp] = ptRefFinded;
+
+                                                                    pointsDofsColFinded[k+comp].resize(domain_basis_type::nLocalDof);
+                                                                    pointsDofsGlobalClusterColFinded[k+comp].resize(domain_basis_type::nLocalDof);
+                                                                    for ( uint16_type jloc = 0; jloc < domain_basis_type::nLocalDof; ++jloc )
+                                                                        {
+                                                                            const auto j_gdof = boost::get<0>(domaindof->localToGlobal( eltIdLocalised,jloc,comp ));
+                                                                            pointsDofsColFinded[k+comp][jloc] = j_gdof;
+                                                                            pointsDofsGlobalClusterColFinded[k+comp][jloc] = domaindof->mapGlobalProcessToGlobalCluster()[j_gdof];
+                                                                        }
+                                                                }
+
+                                                                    if (extrapolation_mode)
+                                                                        {
+                                                                            auto const& eltExtrapoled = this->domainSpace()->mesh()->element(eltIdLocalised);
+                                                                            auto const verticesExtrapoled = eltExtrapoled.vertices();
+                                                                            typename image_mesh_type::node_type bary(verticesExtrapoled.size1());
+                                                                            for (int qi=0;qi<verticesExtrapoled.size1();++qi) bary(qi)=0;//important
+                                                                            for (int qj=0;qj<verticesExtrapoled.size2();++qj)
+                                                                                {
+                                                                                    /**/                              bary(0) += ublas::column(verticesExtrapoled,qj)(0);
+                                                                                    if (verticesExtrapoled.size1()>1) bary(1) += ublas::column(verticesExtrapoled,qj)(1);
+                                                                                    if (verticesExtrapoled.size1()>2) bary(2) += ublas::column(verticesExtrapoled,qj)(2);
+                                                                                }
+                                                                            /**/                              bary(0) /= verticesExtrapoled.size2();
+                                                                            if (verticesExtrapoled.size1()>1) bary(1) /= verticesExtrapoled.size2();
+                                                                            if (verticesExtrapoled.size1()>2) bary(2) /= verticesExtrapoled.size2();
+                                                                            for ( uint16_type comp = 0;comp < image_basis_type::nComponents;++comp )
+                                                                                pointsBaryFinded[k+comp]=bary;
+                                                                        }
+                                                                    // change increment in for
+                                                                    k=k+image_basis_type::nComponents-1;
+                                                        }
+
+                                                    //std::cout << "F";
+                                                }
+                                            else // Not Find!
+                                                {
+                                                    //memory_localisationFail
+                                                    //std::cout << "NOT FIND"<<std::endl;
+                                                }
+
+                                        } // for (size_type k=0;k<nDataRecv;++k)
+
+                                    const int rankToSend = localMeshRankToWorldCommFusion_image[proc];
+                                    this->worldCommFusion().globalComm().send(rankToSend,tag_Points,pointsRefFinded);
+                                    this->worldCommFusion().globalComm().send(rankToSend,tag_IsFind,pointsRefIsFinded);
+                                    this->worldCommFusion().globalComm().send(rankToSend,tag_IdElt,pointsIdEltFinded);
+                                    this->worldCommFusion().globalComm().send(rankToSend,tag_DofsCol,pointsDofsColFinded);
+                                    this->worldCommFusion().globalComm().send(rankToSend,tag_DofsColGC,pointsDofsGlobalClusterColFinded);
+                                    if (extrapolation_mode)
+                                        this->worldCommFusion().globalComm().send(rankToSend,tag_Bary,pointsBaryFinded);
+
+                                }
+                        } // for (auto it_rankLocalization=...
+                }
+
+
+
+
+            if ( proc_id_image == proc && imageProcIsActive_fusion[this->worldCommFusion().globalRank()] )
+                {
+                    for (auto it_rankLocalization=searchDistribution[proc].begin(),en_rankLocalization=searchDistribution[proc].end();
+                         it_rankLocalization!=en_rankLocalization;++it_rankLocalization)
+                        {
+                            const int rankLocalization = *it_rankLocalization;
+                            const int rankToRecv = localMeshRankToWorldCommFusion_domain[rankLocalization];
+                            this->worldCommFusion().globalComm().recv(rankToRecv,tag_Points,pointsRefFinded);
+                            this->worldCommFusion().globalComm().recv(rankToRecv,tag_IsFind,pointsRefIsFinded);
+                            this->worldCommFusion().globalComm().recv(rankToRecv,tag_IdElt,pointsIdEltFinded);
+                            this->worldCommFusion().globalComm().recv(rankToRecv,tag_DofsCol,pointsDofsColFinded);
+                            this->worldCommFusion().globalComm().recv(rankToRecv,tag_DofsColGC,pointsDofsGlobalClusterColFinded);
+                            if (extrapolation_mode)
+                                this->worldCommFusion().globalComm().recv(rankToRecv,tag_Bary,pointsBaryFinded);
+
+                            const int rankRecv=rankLocalization;
+                            for ( int k=0;k<pointsRefFinded.size();++k)
+                                {
+                                    if (!pointsRefIsFinded[k])
+                                        {
+                                            memory_localisationFail.push_back(boost::make_tuple(memmapGdof[rankLocalization][k],memmapComp[rankLocalization][k]));
+                                            const auto i_gdof = memmapGdof[rankLocalization][k];
+                                            dof_searchWithProc[i_gdof].insert(rankRecv);
+                                        }
+                                    else
+                                        {
+                                            const auto i_gdof = memmapGdof[rankLocalization][k];
+                                            if (!dof_done[i_gdof])
+                                                {
+
+                                                    if (extrapolation_mode)
+                                                        {
+                                                            auto const bary = pointsBaryFinded[k];
+                                                            auto const theRefPtExtrap = pointsRefFinded[k];
+                                                            const auto comp = memmapComp[rankLocalization][k];
+                                                            std::vector<std::pair<size_type,size_type> > j_gdofs(domain_basis_type::nLocalDof);
+                                                            for ( uint16_type jloc = 0; jloc < domain_basis_type::nLocalDof; ++jloc )
+                                                                {
+                                                                    const size_type j_gdof =  pointsDofsColFinded[k][jloc];
+                                                                    const size_type j_gdof_gc = pointsDofsGlobalClusterColFinded[k][jloc];
+                                                                    j_gdofs[jloc]=std::make_pair(j_gdof,j_gdof_gc);
+                                                                }
+                                                            dof_extrapolationData[i_gdof].push_back(boost::make_tuple(rankLocalization,bary,theRefPtExtrap,j_gdofs,comp));
+                                                        }
+                                                    else
+                                                        {
+                                                            //std::cout << "T";
+                                                            ublas::column( ptsRef, 0 ) = pointsRefFinded[k];
+                                                            //evalute point on the reference element
+                                                            MlocEval = domainbasis->evaluate( ptsRef );
+
+                                                            const auto comp = memmapComp[rankLocalization][k];
+                                                            const size_type myidElt = pointsIdEltFinded[k];
+                                                            const auto ig1 = imagedof->mapGlobalProcessToGlobalCluster()[i_gdof];
+                                                            const auto theproc = imagedof->procOnGlobalCluster(ig1);
+                                                            auto& row = sparsity_graph->row(ig1);
+                                                            row.get<0>() = theproc;
+                                                            row.get<1>() = ig1 - imagedof->firstDofGlobalCluster(theproc);
+
+                                                            for ( uint16_type jloc = 0; jloc < domain_basis_type::nLocalDof; ++jloc )
+                                                                {
+                                                                    //get global process dof
+                                                                    const size_type j_gdof =  pointsDofsColFinded[k][jloc];
+                                                                    //get global cluster dof
+                                                                    const size_type j_gdof_gc = pointsDofsGlobalClusterColFinded[k][jloc];
+                                                                    // up graph
+                                                                    row.get<2>().insert(j_gdof_gc);
+                                                                    // get value
+                                                                    const auto v = MlocEval( domain_basis_type::nComponents1*jloc +
+                                                                                             comp*domain_basis_type::nComponents1*domain_basis_type::nLocalDof +
+                                                                                             comp, 0 );
+#if 1
+                                                                    // save value
+                                                                    memory_valueInMatrix[i_gdof].push_back(boost::make_tuple(rankRecv,j_gdof,v));
+                                                                    // usefull to build datamap
+                                                                    memory_col_globalProcessToGlobalCluster[rankRecv][j_gdof]=j_gdof_gc;
+#endif
+                                                                }
+                                                            // dof ok : not anymore localise
+                                                            dof_searchWithProc[i_gdof].insert(rankRecv);
+                                                        }
+                                                    dof_done[i_gdof]=true;
+                                                } // if (!dof_done[i_gdof])
+                                        }
+                                }
+                        }
+                } // if ( proc_id_image == proc && imageProcIsActive_fusion[this->worldCommFusion().globalRank()] )
+        }
+
+#endif // NEW
 
 
     return memory_localisationFail;
 }
 
 template<typename DomainSpaceType, typename ImageSpaceType,typename IteratorRange,typename InterpType>
-boost::tuple</*std::set<size_type>, */std::vector< std::vector<size_type> >, std::vector< std::vector<uint16_type> >, std::vector<std::vector<typename OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>::image_mesh_type::node_type> > >
-OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>::updateNoRelationMeshMPI_pointDistribution(const std::vector< std::list<boost::tuple<int,size_type,double> > > & memory_valueInMatrix,
-                                                                                                                           std::vector<std::set<size_type> > & dof_searchWithProc)
+boost::tuple<std::vector< std::vector<size_type> >, std::vector< std::vector<uint16_type> >,
+             std::vector<std::vector<typename OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>::image_mesh_type::node_type> >,
+             std::vector<std::vector< std::vector<typename OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>::image_mesh_type::node_type > > > >
+OperatorInterpolation<DomainSpaceType, ImageSpaceType,
+                      IteratorRange,InterpType>::updateNoRelationMeshMPI_pointDistribution(const std::vector< std::list<boost::tuple<int,size_type,double> > > & memory_valueInMatrix,
+                                                                                           std::vector<std::set<size_type> > & dof_searchWithProc)
 {
     //std::cout << " pointDistribution--1--- " << this->domainSpace()->mesh()->worldComm().godRank() << std::endl;
     //const size_type proc_id = this->dualImageSpace()->worldsComm()[0].localRank();
@@ -1507,12 +2007,19 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     auto locTool = this->domainSpace()->mesh()->tool_localization();
 
     std::vector<bool> dof_done( this->dualImageSpace()->nLocalDof(), false);
-    std::vector< std::set<boost::tuple<size_type,uint16_type> > > memSetGdofAndComp( nProc_domain );
+    std::vector< std::list<boost::tuple<size_type,uint16_type> > > memSetGdofAndComp( nProc_domain );
+    std::vector< std::list<matrix_node_type> > memSetVertices_conformeInterp( nProc_domain );
 
+    // Warning communication!!
     std::vector<typename image_mesh_type::node_type> vecBarycenter(nProc_domain);
     mpi::all_gather( this->domainSpace()->mesh()->worldComm().localComm(),
                      locTool->barycenter(),
                      vecBarycenter );
+    /*std::cout << " proc " << this->domainSpace()->mesh()->worldComm().localRank()
+              << "  procFuion " << this->worldCommFusion().globalRank()
+              << " bary " << locTool->barycenter()
+              << std::endl;*/
+
 
     double distanceMin=0,distance=0,distanceSquare=0;
     int procForPt=0;
@@ -1531,21 +2038,37 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                                         {
                                            // the dof point
                                             const auto imagePoint = imagedof->dofPoint(gdof).get<0>();
-                                            distanceMin=INT_MAX;
-                                            for ( int proc=0 ; proc<nProc_domain; ++proc)
+
+                                            if (this->interpolationType().searchWithCommunication()) // mpi communication
                                                 {
-                                                    const auto bary = vecBarycenter[proc];
-                                                    /**/               distanceSquare  = std::pow(imagePoint(0)-bary(0),2);
-                                                    if (bary.size()>1) distanceSquare += std::pow(imagePoint(1)-bary(1),2);
-                                                    if (bary.size()>2) distanceSquare += std::pow(imagePoint(2)-bary(2),2);
-                                                    distance = std::sqrt( distanceSquare );
-                                                    if (distance<distanceMin && dof_searchWithProc[gdof].find(proc)==dof_searchWithProc[gdof].end() )
+                                                    distanceMin=INT_MAX;
+                                                    for ( int proc=0 ; proc<nProc_domain; ++proc)
                                                         {
-                                                            procForPt = proc;
-                                                            distanceMin=distance;
+                                                            const auto bary = vecBarycenter[proc];
+                                                            /**/               distanceSquare  = std::pow(imagePoint(0)-bary(0),2);
+                                                            if (bary.size()>1) distanceSquare += std::pow(imagePoint(1)-bary(1),2);
+                                                            if (bary.size()>2) distanceSquare += std::pow(imagePoint(2)-bary(2),2);
+                                                            distance = std::sqrt( distanceSquare );
+                                                            if (distance<distanceMin && dof_searchWithProc[gdof].find(proc)==dof_searchWithProc[gdof].end() )
+                                                                {
+                                                                    procForPt = proc;
+                                                                    distanceMin=distance;
+                                                                }
                                                         }
+                                                    memSetGdofAndComp[procForPt].push_back(boost::make_tuple(gdof,comp));
+                                                    if (InterpType::value==1)
+                                                        memSetVertices_conformeInterp[procForPt].push_back(it->vertices());
                                                 }
-                                            memSetGdofAndComp[procForPt].insert(boost::make_tuple(gdof,comp));
+                                            else // only with myself
+                                                {
+                                                    memSetGdofAndComp[this->domainSpace()->worldComm().globalRank()].push_back(boost::make_tuple(gdof,comp));
+                                                }
+
+                                            if (InterpType::value==1) // conforme case
+                                                {
+                                                    memSetVertices_conformeInterp[this->domainSpace()->worldComm().globalRank()].push_back(it->vertices());
+                                                }
+                                            dof_done[gdof]=true;
                                         }
                                 }
                         }
@@ -1559,23 +2082,35 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     // points to lacalize
     std::vector<std::vector<typename image_mesh_type::node_type> > pointsSearched( nProc_domain );
 
+    std::vector<std::vector< std::vector<typename image_mesh_type::node_type > > > memmap_vertices( nProc_domain );
+
     for (int proc=0; proc<nProc_domain;++proc)
         {
             const size_type nData = memSetGdofAndComp[proc].size();
             memmapGdof[proc].resize(nData);
             memmapComp[proc].resize(nData);
             pointsSearched[proc].resize(nData);
+            // conforme case
+            if(InterpType::value==1) memmap_vertices[proc].resize(nData);
+
             auto it_GdofAndComp = memSetGdofAndComp[proc].begin();
-            //const auto en_GdofAndComp = memSetGdofAndComp[proc].end();
+            auto it_vertices = memSetVertices_conformeInterp[proc].begin();
             for (int k=0 ; k<nData ; ++k, ++it_GdofAndComp)
                 {
                     memmapGdof[proc][k]=it_GdofAndComp->get<0>();//gdof;
                     memmapComp[proc][k]=it_GdofAndComp->get<1>();//comp
                     pointsSearched[proc][k]=imagedof->dofPoint(it_GdofAndComp->get<0>()).get<0>();//node
+                    if(InterpType::value==1) // conforme case
+                        {
+                            memmap_vertices[proc][k].resize(it_vertices->size2());
+                            for (uint16_type v=0;v<it_vertices->size2();++v)
+                                memmap_vertices[proc][k][v]=ublas::column(*it_vertices,v);
+                            ++it_vertices;
+                        }
                 }
         }
 
-    return boost::make_tuple(memmapGdof,memmapComp,pointsSearched);
+    return boost::make_tuple(memmapGdof,memmapComp,pointsSearched,memmap_vertices);
 }
 
 #endif // WITH MPI
@@ -1592,12 +2127,12 @@ opInterp( boost::shared_ptr<DomainSpaceType> const& domainspace,
           boost::shared_ptr<ImageSpaceType> const& imagespace,
           IteratorRange const& r,
           typename OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>::backend_ptrtype const& backend,
-          InterpType /**/
+          InterpType const& interptype
         )
 {
     typedef OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType> operatorinterpolation_type;
 
-    boost::shared_ptr<operatorinterpolation_type> opI( new operatorinterpolation_type( domainspace,imagespace,r,backend ) );
+    boost::shared_ptr<operatorinterpolation_type> opI( new operatorinterpolation_type( domainspace,imagespace,r,backend,interptype ) );
 
     return opI;
 }
