@@ -58,7 +58,7 @@ This is the list of all the librairies you must have installed on your
 computer, and the \lstinline|*-dev| packages for some of them. \\
 \underline{Required packages}:
 \begin{itemize}
-\item g++ ($4.4$ or $4.5$, from now $4.6$ is not yet	completely working  )
+\item g++ ($4.4$, $4.5$, $4.6$ and $4.7$  )
 \item MPI : openmpi (preferred) or mpich
 \item Boost ($\geq$1.39)
 \item Petsc ($\geq$2.3.3)
@@ -131,9 +131,20 @@ order to know what is going on with \feel on Ubuntu
 In order to \feel and \cmake work properly, you have to install differents compilers :
 \begin{itemize}
 \item Gcc \\
-The first step is to install the latest version of Xcode. If your computer is recent, you can install it with your DVD that came with your machine (not the OS DVD, but the applications one). You don't have to install the complete Xcode (you can uncheck iOS SDK for example, it's not necessary here and requiers a lot of memory). Xcode will provide your computer all basic tools to compile such as gcc 4.2. It's the first step, you'll see later how to easily install gcc 4.5 using MacPorts.
+  The first step is to install the latest version of Xcode. If your computer is
+  recent, you can install it with your DVD that came with your machine (not the
+  OS DVD, but the applications one). You don't have to install the complete
+  Xcode (you can uncheck iOS SDK for example, it's not necessary here and
+  requiers a lot of memory). Xcode will provide your computer all basic tools to
+  compile such as gcc 4.2. It's the first step, you'll see later how to easily
+  install gcc 4.5 or later using MacPorts.
 \item Fortran \\
-To build the Makefiles, \cmake will need a Fortran compiler. To make it works, please go to \href{http://hpc.sourceforge.net/}{SourceForge.net} and download \lstinline|gfortran-snwleo-intel-bin.tar.gz| which is the fortran compiler only (from now, don't download the complete install with gcc 4.6 because Feel needs gcc 4.5). To install it, go to the directory where you have downloaded the file and type in a command-line
+  To build the Makefiles, \cmake will need a Fortran compiler. To make it works,
+  please go to \href{http://hpc.sourceforge.net/}{SourceForge.net} and download
+  \lstinline|gfortran-snwleo-intel-bin.tar.gz| which is the fortran compiler
+  only (from now, don't download the complete install with gcc 4.6 because Feel
+  needs gcc 4.5 or later). To install it, go to the directory where you have
+  downloaded the file and type in a command-line
 \begin{unixcom}
 		sudo tar -xvf gfortran-snwleo-intel-bin.tar -C /
 \end{unixcom}
@@ -143,13 +154,32 @@ To build the Makefiles, \cmake will need a Fortran compiler. To make it works, p
 \subsubsection{MacPorts}
 
 \paragraph{Introduction}
-MacPorts is an open-source community projet which aims to design an easy-to-use system for compiling, installing and upgrading open-source softwares on Mac OS X operating system. It is distributed under \href{http://opensource.org/licenses/bsd-license.php}{BSD License} and facilitate the access to thousands of ports (softwares) without installing or compiling open-source softwares.
-MacPorts provides a single software tree which includes the latest stable releases of approximately 8050 ports targeting the current Mac OS X release (10.6 or 10.5). If you want more information, please visite their \href{http://www.macports.org/}{website}.
+MacPorts is an open-source community projet which aims to design an easy-to-use
+system for compiling, installing and upgrading open-source softwares on Mac OS X
+operating system. It is distributed under
+\href{http://opensource.org/licenses/bsd-license.php}{BSD License} and
+facilitate the access to thousands of ports (softwares) without installing or
+compiling open-source softwares.  MacPorts provides a single software tree which
+includes the latest stable releases of approximately 8050 ports targeting the
+current Mac OS X release (10.6 or 10.5). If you want more information, please
+visite their \href{http://www.macports.org/}{website}.
 
 \paragraph{Installation}
-To install the latest version of MacPorts, please go to \href{http://www.macports.org/install.php}{Installing MacPorts} page and follow the instructions. The simplest way is to download the $dmg$ disk image corresponding to your version of Mac OS X. It is recommended that you install X11 (X Window System) which is normally used to display X11 applications.%, and also the Xcode Tools (only the developer tools, iOS SDK is not required).
+To install the latest version of MacPorts, please go to
+\href{http://www.macports.org/install.php}{Installing MacPorts} page and follow
+the instructions. The simplest way is to download the $dmg$ disk image
+corresponding to your version of Mac OS X. It is recommended that you install
+X11 (X Window System) which is normally used to display X11
+applications.%, and also the Xcode Tools (only the developer tools, iOS SDK is not required).
 
-If you have installed with the package installer (\lstinline|MacPorts-1.x.x.dmg|) that means MacPorts will be installed in \lstinline|/opt/local|. From now on we will suppose that macports has been installed in \lstinline|/opt/local| which is the default MacPorts location. Note that from now on, all tools installed by MacPorts will be installed in \lstinline!/opt/local/bin! or \lstinline!/opt/local/sbin! for example (that's here you'll find gcc4.5 once being installed).%At the end of the installation, you can check if your PATH has been upgraded by the command \lstinline|echo $PATH| which should return a line containing \lstinline|/opt/local/bin:/opt/local/sbin|.
+If you have installed with the package installer
+(\lstinline|MacPorts-1.x.x.dmg|) that means MacPorts will be installed in
+\lstinline|/opt/local|. From now on we will suppose that macports has been
+installed in \lstinline|/opt/local| which is the default MacPorts location. Note
+that from now on, all tools installed by MacPorts will be installed in
+\lstinline!/opt/local/bin! or \lstinline!/opt/local/sbin! for example (that's
+here you'll find gcc4.5 or later e.g \lstinline!/opt/local/bin/g++-mp-4.5! once being
+installed).%At the end of the installation, you can check if your PATH has been upgraded by the command \lstinline|echo $PATH| which should return a line containing \lstinline|/opt/local/bin:/opt/local/sbin|.
 
 \paragraph{Key commands}
 In your command-line, the software MacPorts is called by the command \lstinline|port|.
@@ -170,9 +200,14 @@ Here is a list of key commands for using MacPorts, if you want more informations
 \end{itemize}
 
 \paragraph{Portfile}
-A Portfile is a TCL script which usually contains simple keyword values and TCL expressions. Each package/port has a corresponding Portfile but it's only a part of a port description.
-\feel provides some mandatory Portfiles for its compilation which are either not available in MacPorts or are buggy but \feel also provides some Portfiles which are already available in MacPorts such as gmsh or petsc. They usually provide either some fixes to ensure \feel works properly or new version not yet available in MacPorts.
-These Portfiles are installed in \lstinline|ports/macosx/macports|.
+A Portfile is a TCL script which usually contains simple keyword values and TCL
+expressions. Each package/port has a corresponding Portfile but it's only a part
+of a port description.  \feel provides some mandatory Portfiles for its
+compilation which are either not available in MacPorts or are buggy but \feel
+also provides some Portfiles which are already available in MacPorts such as
+gmsh or petsc. They usually provide either some fixes to ensure \feel works
+properly or new version not yet available in MacPorts.  These Portfiles are
+installed in \lstinline|ports/macosx/macports|.
 
 
 \subsubsection{MacPorts and \Feel}
@@ -218,7 +253,15 @@ To do that uncomment the following line in the file  \lstinline|/opt/local/etc/m
 buildmakejobs	0 $\#$ all the cores
 \end{lstlisting}
 \end{flushleft}
-At the end of the \lstinline|sudo port install feel++|, you have all dependencies installed which is a good point. To build all the Makefile, \cmake is automatically launched but can have furthers libraries not found. Some are important, some are not. OpenMP is one of the necessary compiler to have and is not automatically installed on 64bits systems. We can install it now thanks to gcc4.5 that has been installed because it taks part of the feel dependencies. To install it, please go to \href{http://www.hpcs.cs.tsukuba.ac.jp/omni-openmp/download/download-omni.html}{Omni download} and download the latest stable release. Then type
+At the end of the \lstinline|sudo port install feel++|, you have all
+dependencies installed which is a good point. To build all the Makefile, \cmake
+is automatically launched but can have furthers libraries not found. Some are
+important, some are not. OpenMP is one of the necessary compiler to have and is
+not automatically installed on 64bits systems. We can install it now thanks to
+gcc4.5 or later that has been installed because it taks part of the feel
+dependencies. To install it, please go to
+\href{http://www.hpcs.cs.tsukuba.ac.jp/omni-openmp/download/download-omni.html}{Omni
+download} and download the latest stable release. Then type
 \begin{unixcom}
 		tar -xvf Omni-x.yz.tar.gz
 		cd  Omni-x.yz
@@ -233,10 +276,19 @@ Enter your password, then to complete the installation
 \begin{unixcom}
 		make install
 \end{unixcom}
-After the install is complete, you can delete the sources in your download directory because make install has built it in an appropriate directory. To make it work properly, always check that \cmake is using gcc 4.5. If \cmake doesn't recognize openMP, enter the configuration mode using \ccmake and enter \lstinline|-fopenmp| in the box \lstinline|OpenMP_CXX_FLAGS|
+After the install is complete, you can delete the sources in your download
+directory because make install has built it in an appropriate directory. To make
+it work properly, always check that \cmake is using gcc 4.5. If \cmake doesn't
+recognize openMP, enter the configuration mode using \ccmake and enter
+\lstinline|-fopenmp| in the box \lstinline|OpenMP_CXX_FLAGS|
 
-\subsubsection{Snow Leopard \& slepc/petsc}
-We have heard about issues with petsc and slepc with some new MacBook Pro with Snow Leopard while they are being installed with the \lstinline|sudo port install feel++|. If it's the case, that probably means there is an issue with atlas. If atlas is already installed, you have to unsinstall it (be carefull with dependencies, they also have to be uninstalled). Once it's done, you should do
+\subsubsection{PETSc and SLEPc on Snow Leopard and Lion}
+We have heard about issues with petsc and slepc with some new MacBook Pro with
+Snow Leopard while they are being installed with the \lstinline|sudo port
+install feel++|.  If it's the case, that probably means there is an issue with
+atlas. If atlas is already installed, you have to unsinstall it (be careful
+with dependencies, they also have to be uninstalled). Once it's done, you should
+do
 \begin{unixcom}
 		cd <path to feel top directory>/ports/macosx/macports
 		portindex -f
@@ -249,16 +301,28 @@ then type in the exact same order :
 		sudo port install -d petsc
 		sudo port install slepc
 \end{unixcom}
+Then add to you shell script environment (e.g. for Bash shells \lstinline|.bashrc| or
+\lstinline|.profile| or for CSh shells \lstinline|.tcshrc|)
+\begin{unixcom}
+  # Sh based shell
+  export PETSC_DIR=/opt/local/lib/petsc
+  export SLEPC_DIR=/opt/local/lib/petsc
+
+  # CSh based shell
+  setenv PETSC_DIR /opt/local/lib/petsc
+  setenv SLEPC_DIR /opt/local/lib/petsc
+\end{unixcom}
 and type once again
 \begin{unixcom}
 		sudo port install feel++
 \end{unixcom}
 
 \noindent In that order, slepc and petsc will be installed before atlas, and feel will be properly installed.
-%%%% A voir avec Stéphane si ça a bien réussi
 
 \subsubsection{Missing ports}
-\cmake can build Makefiles even if some packages are missing (latex2html, VTK ...). It's not necessary to install them but you can complete the installation with MacPorts, \cmake will find them by itself once they have been installed.
+\cmake can build Makefiles even if some packages are missing (latex2html, VTK
+...). It's not necessary to install them but you can complete the installation
+with MacPorts, \cmake will find them by itself once they have been installed.
 
 \subsection{Compiling Feel}
 \label{compilingfeel}

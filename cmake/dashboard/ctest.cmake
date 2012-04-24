@@ -53,11 +53,11 @@ endif()
 if ( APPLE )
   SET (CTEST_INITIAL_CACHE "
 // set compilers from macports and use ccache
-CMAKE_CXX_COMPILER:STRING=/opt/local/libexec/ccache/g++-4.5
-CMAKE_C_COMPILER:STRING=/opt/local/libexec/ccache/gcc-4.5
-CMAKE_FORTRAN_COMPILER:STRING=/opt/local/libexec/ccache/gfortran-4.5
+//CMAKE_CXX_COMPILER:STRING=/opt/local/libexec/ccache/g++-4.5
+//CMAKE_C_COMPILER:STRING=/opt/local/libexec/ccache/gcc-4.5
+//CMAKE_FORTRAN_COMPILER:STRING=/opt/local/libexec/ccache/gfortran-4.5
 // disable instantiation mode
-ENABLE_INSTANTIATION_MODE:BOOL=OFF
+//ENABLE_INSTANTIATION_MODE:BOOL=OFF
 // Enable tests
 //FEELPP_ENABLE_ALL:BOOL=${FEELPP_ENABLE_ALL_DEFAULT}
 FEELPP_ENABLE_ALL:BOOL=OFF
@@ -94,9 +94,15 @@ set(CTEST_BINARY_DIRECTORY  "$ENV{HOME}/sources/feel-${CTEST_BUILD_NAME}-${MODEL
 set(CTEST_COMMAND "ctest -D ${MODEL}" )
 SET(CTEST_CMAKE_COMMAND "cmake" )
 
-SET (CTEST_SVN_COMMAND    "svn" )
-SET (CTEST_SVN_CHECKOUT   "${CTEST_SVN_COMMAND} co svn://scm.forge.imag.fr/var/lib/gforge/chroot/scmrepos/svn/life/trunk/life/trunk ${CTEST_SOURCE_DIRECTORY}")
-set (CTEST_UPDATE_COMMAND "${CTEST_SVN_COMMAND}")
+SET (CTEST_GIT_COMMAND    "git" )
+if(NOT EXISTS "${CTEST_SOURCE_DIRECTORY}")
+  set(CTEST_CHECKOUT_COMMAND "${CTEST_GIT_COMMAND} clone https://code.google.com/p/feelpp/ ${CTEST_SOURCE_DIRECTORY}")
+endif()
+
+set(CTEST_UPDATE_COMMAND "${CTEST_GIT_COMMAND}")
+
+#SET (CTEST_SVN_CHECKOUT   "${CTEST_SVN_COMMAND} co svn://scm.forge.imag.fr/var/lib/gforge/chroot/scmrepos/svn/life/trunk/life/trunk ${CTEST_SOURCE_DIRECTORY}")
+#set (CTEST_UPDATE_COMMAND "${CTEST_SVN_COMMAND}")
 
 # set(CTEST_BUILD_COMMAND     "make -j2")
 
