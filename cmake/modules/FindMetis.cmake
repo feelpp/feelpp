@@ -11,6 +11,8 @@
 # PARMETIS_FOUND       - Do not attempt to use if "no" or undefined.
 
 FIND_PATH(METIS_INCLUDE_DIR metis.h
+  $ENV{PETSC_DIR}/include
+  /opt/local/include
   /usr/local/include
   /usr/include
   /usr/include/metis
@@ -23,6 +25,8 @@ message( STATUS ${METIS_INCLUDE_DIR} )
 #  )
 
 FIND_LIBRARY(METIS_LIBRARY metis
+  $ENV{PETSC_DIR}/lib
+  /opt/local/lib
   /usr/local/lib
   /usr/lib
   $ENV{METIS_DIR}/lib
