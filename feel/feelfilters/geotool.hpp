@@ -2012,7 +2012,7 @@ createMeshFromGeoFile( std::string geofile,std::string name,double meshSize,int 
     mesh->updateForUse();
 
     if ( straighten && mesh_type::nOrder > 1 )
-        return straightenMesh( mesh );
+        return straightenMesh( _mesh=mesh, _worldcomm=worldcomm.subWorldComm() );
 
     return mesh;
 }
