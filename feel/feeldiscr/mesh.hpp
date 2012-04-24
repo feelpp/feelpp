@@ -1554,8 +1554,8 @@ Mesh<Shape, T>::createP1mesh() const
 } // Feel
 
 
-//#if !defined(FEELPP_INSTANTIATION_MODE)
+#if !defined(FEELPP_INSTANTIATION_MODE)
 # include <feel/feeldiscr/meshimpl.hpp>
-//#endif //
+#endif //
 
 #endif /* __mesh_H */

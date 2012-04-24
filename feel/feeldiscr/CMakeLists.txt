@@ -21,7 +21,7 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-IF ( ENABLE_INSTANTIATION_MODE )
+IF ( FEELPP_ENABLE_INSTANTIATION_MODE )
   SET( FEELDISCR_INST_SRCS mesh1.cpp mesh2.cpp mesh3.cpp ) #partitioner.cpp ) #ale.cpp meshhighorder.cpp )
 endif()
 
