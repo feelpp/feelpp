@@ -353,8 +353,8 @@ WorldComm::subWorldCommSeq() const
 
     return self_type( communicator_type(MPI_COMM_SELF,boost::mpi::comm_attach),
                       this->godComm(),
-                      this->globalRank(),
-                      newIsActive/*this->M_isActive*/ );
+                      this->godRank(),
+                      newIsActive );
 }
 
 //-------------------------------------------------------------------------------
