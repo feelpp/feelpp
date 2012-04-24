@@ -684,7 +684,7 @@ private:
     void serialize( Archive & ar, const unsigned int version )
         {
             Debug( 4015 ) << "(de)Serializing mesh ...\n";
-            //ar & boost::serialization::base_object<super>( *this );
+            ar & boost::serialization::base_object<super>( *this );
         }
 public:
     struct Inverse
