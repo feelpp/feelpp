@@ -395,12 +395,13 @@ public:
         typedef FunctionSpace<meshes<mesh1_type,mesh2_type,mesh3_type>, bases<Lagrange<N, Scalar>,Lagrange<N,Scalar>,Lagrange<N,Scalar> > > space_type;
         auto mesh1 = createGMSHMesh( _mesh=new mesh1_type,
                                      _desc=domain( _name=( boost::format( "%1%-%2%" ) % "hypercube" % Dim ).str() ,
-                                                   _usenames=true,
+                                                   _usenames=false,
                                                    _shape="hypercube",
                                                    _dim=Dim,
                                                    _h=0.2 ) );
         BOOST_TEST_MESSAGE( "N elements : " << mesh1->numElements() );
-        auto mesh2 = mesh1->trace( boundaryfaces(mesh1) );
+        //auto mesh2 = mesh1->trace( boundaryfaces(mesh1) );
+        auto mesh2 = mesh1->trace( markedfaces(mesh1,6) );
         BOOST_TEST_MESSAGE( "N elements trace : " << mesh2->numElements() );
         auto mesh3 = mesh2->trace( boundaryfaces(mesh2) );
         BOOST_CHECK( !mesh3->elements().empty() );
@@ -416,10 +417,10 @@ public:
         BOOST_CHECK_CLOSE( res1(0,0), 1, 1e-13 );
         auto res2 = integrate( elements(Xh->template mesh<1>()), cst(1.)).evaluate();
         BOOST_TEST_MESSAGE( "int_trace 1 = " << res2 );
-        BOOST_CHECK_CLOSE( res2(0,0), 6, 1e-13 );
+        BOOST_CHECK_CLOSE( res2(0,0), 1, 1e-13 );
         auto res3 = integrate( elements(Xh->template mesh<2>()), cst(1.)).evaluate();
         BOOST_TEST_MESSAGE( "int_trace_trace 1 = " << res3 );
-        BOOST_CHECK_CLOSE( res3(0,0), 12, 1e-14 );
+        BOOST_CHECK_CLOSE( res3(0,0), 4, 1e-14 );
 
         // Mh(domain), Lh(trace)
         //auto Xh = Mh*Lh;
