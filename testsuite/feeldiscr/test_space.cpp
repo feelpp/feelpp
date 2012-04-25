@@ -371,10 +371,27 @@ public:
         using namespace vf;
         auto res1 = integrate( elements(Xh->template mesh<0>()), cst(1.)).evaluate();
         BOOST_TEST_MESSAGE( "int 1 = " << res1 );
-        BOOST_CHECK_CLOSE( res1(0,0), 1, 1e-14 );
+        BOOST_CHECK_CLOSE( res1(0,0), 1, 1e-12 );
         auto res2 = integrate( elements(Xh->template mesh<1>()), cst(1.)).evaluate();
         BOOST_TEST_MESSAGE( "int_bdy 1 = " << res2 );
-        BOOST_CHECK_CLOSE( res2(0,0), 4, 1e-14 );
+        BOOST_CHECK_CLOSE( res2(0,0), 4, 1e-13 );
+
+        auto U=Xh->element();
+        if ( N == 1 )
+        {
+            auto u = U.template element<0>();
+            auto l = U.template element<1>();
+            BOOST_CHECK_EQUAL( u.size(), mesh1->numVertices() );
+            BOOST_CHECK_EQUAL( l.size(), mesh2->numVertices() );
+            u = vf::project( Xh->template functionSpace<0>(), elements(Xh->template mesh<0>() ), Px() );
+            l = vf::project( Xh->template functionSpace<1>(), elements(Xh->template mesh<1>() ), Py() );
+            auto int1_1 = integrate( elements(Xh->template mesh<0>()), Px()).evaluate()(0,0);
+            auto int1_2 = integrate( elements(Xh->template mesh<0>()), idv(u)).evaluate()(0,0);
+            BOOST_CHECK_CLOSE( int1_1, int1_2, 1e-13 );
+            auto int2_1 = integrate( elements(Xh->template mesh<1>()), Py()).evaluate()(0,0);
+            auto int2_2 = integrate( elements(Xh->template mesh<1>()), idv(l)).evaluate()(0,0);
+            BOOST_CHECK_CLOSE( int1_1, int1_2, 1e-13 );
+        }
 
         // Mh(domain), Lh(trace)
         //auto Xh = Mh*Lh;
