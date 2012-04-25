@@ -431,13 +431,13 @@ public:
         using namespace vf;
         auto res1 = integrate( elements(Xh->template mesh<0>()), cst(1.)).evaluate();
         BOOST_TEST_MESSAGE( "int 1 = " << res1 );
-        BOOST_CHECK_CLOSE( res1(0,0), 1, 1e-13 );
+        BOOST_CHECK_CLOSE( res1(0,0), 1, 5e-13 );
         auto res2 = integrate( elements(Xh->template mesh<1>()), cst(1.)).evaluate();
         BOOST_TEST_MESSAGE( "int_trace 1 = " << res2 );
-        BOOST_CHECK_CLOSE( res2(0,0), 1, 1e-13 );
+        BOOST_CHECK_CLOSE( res2(0,0), 1, 5e-13 );
         auto res3 = integrate( elements(Xh->template mesh<2>()), cst(1.)).evaluate();
         BOOST_TEST_MESSAGE( "int_trace_trace 1 = " << res3 );
-        BOOST_CHECK_CLOSE( res3(0,0), 4, 1e-14 );
+        BOOST_CHECK_CLOSE( res3(0,0), 4, 5e-13 );
 
         // Mh(domain), Lh(trace)
         //auto Xh = Mh*Lh;
