@@ -339,7 +339,7 @@ template<int Dim, int N, typename T>
 class TestSpaceProd
 {
 public:
-    TestSpace1()
+    TestSpaceProd()
     {}
 
     void operator()() const
@@ -415,7 +415,7 @@ BOOST_AUTO_TEST_CASE( test_space2_3 )
 }
 BOOST_AUTO_TEST_CASE( test_spaceprod )
 {
-    BOOST_TEST_MESSAGE( "test_space2" );
+    BOOST_TEST_MESSAGE( "test_spaceprod" );
     Feel::TestSpaceProd<2, double> t;
     t();
     BOOST_TEST_MESSAGE( "test_spaceprod done" );
