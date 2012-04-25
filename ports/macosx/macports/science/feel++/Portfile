@@ -2,12 +2,12 @@
 
 # $Id$
 
-#PortSystem  1.0
+PortSystem  1.0
 # Portgroup is not an option until we find a way to get rid of the -arch option
-PortGroup   cmake 1.0
+#PortGroup   cmake 1.0
 
 name                 feel++
-version              0.92.0
+version              0.91.3
 categories           science
 platforms            macosx darwin freebsd
 maintainers          ujf-grenoble.fr:Christophe.Prudhomme
@@ -43,16 +43,14 @@ long_description    \
  projection and numerical integration
 
 homepage            http://www.feelpp.org
-fetch.type          git
-git.url             https://code.google.com/p/feelpp/
-git.revision        HEAD
+master_sites        http://feelpp.googlecode.com/files/
 
-#checksums           md5     dbbeea5444b9954dd9e6df30596da353\
-#                    sha1    8e27e4eb1b271202fd2167a4681c3430a01a9847\
-#                    rmd160  d91328bf433a6084a9d5d209d795e527464e0331
+checksums           md5     972ac4117d65c370cbee07c1f4642698\
+                    sha1    90c3889711356cb4fe3f1bee401ef92998a38a90\
+                    rmd160  3ad7c8a58c97cedff43e66f43fa2f60f7c2f9907
 
-worksrcdir	trunk/build
-configure	{ system "mkdir -p ${worksrcpath} && cd ${worksrcpath} && cmake ${configure.args} ../" }
+worksrcdir	build
+configure	{ system "mkdir -p ${worksrcpath}/ && cd ${worksrcpath}/ && cmake ${configure.args} ../feel++-${version}" }
 
 configure.env-append  PETSC_DIR=/opt/local/lib/petsc
 configure.env-append  SLEPC_DIR=/opt/local/lib/petsc
@@ -71,6 +69,7 @@ configure.args      -DCMAKE_VERBOSE_MAKEFILE=ON \
                     -DCMAKE_INSTALL_NAME_DIR=${prefix}/lib \
                     -DCMAKE_SYSTEM_PREFIX_PATH=\"${prefix}\;/usr\" \
                     -DCMAKE_MODULE_PATH=${cmake_share_module_dir} \
+                    -DCMAKE_CXX_COMPILER=${prefix}/bin/g++-mp-4.6 \
                     -DFEEL_ENABLE_EXAMPLES=OFF \
                     -DFEEL_ENABLE_BENCHMARKS=OFF \
                     -DFEEL_ENABLE_TESTS=OFF \
@@ -93,8 +92,8 @@ destroot.destdir DESTDIR=${destroot}${prefix}/lib/feel++
 #post-build {
 #   system "cd ${worksrcpath}/doc/api/ && make -k doxygen"
 #}
-
 depends_lib    \
+    port:cmake\
     port:gcc46\
     port:openmpi\
     port:boost \
