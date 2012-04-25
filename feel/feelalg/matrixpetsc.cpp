@@ -72,6 +72,24 @@ MatrixPetsc<T>::MatrixPetsc( Mat m )
     this->setInitialized( true );
 }
 
+template <typename T>
+inline
+MatrixPetsc<T>::MatrixPetsc( Mat m, DataMap const& dmRow, DataMap const& dmCol, WorldComm const& worldComm )
+    :
+    super( dmRow,dmCol,worldComm ),
+    _M_destroy_mat_on_exit( false )
+{
+    this->_M_mat = m;
+#if (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR > 0)
+    MatSetOption( _M_mat,MAT_KEEP_NONZERO_PATTERN,PETSC_TRUE );
+#elif (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR == 0)
+    MatSetOption( _M_mat,MAT_KEEP_ZEROED_ROWS,PETSC_TRUE );
+#else
+    MatSetOption( _M_mat,MAT_KEEP_ZEROED_ROWS );
+#endif
+    this->setInitialized( true );
+}
+
 
 
 
@@ -1570,11 +1588,8 @@ template <typename T>
 inline
 MatrixPetscMPI<T>::MatrixPetscMPI( Mat m, DataMap const& dmRow, DataMap const& dmCol )
     :
-    super( m )
-{
-    this->setMapRow( dmRow );
-    this->setMapCol( dmCol );
-}
+    super( m, dmRow, dmCol, dmRow.worldComm() )
+{}
 
 //----------------------------------------------------------------------------------------------------//
 
