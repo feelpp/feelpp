@@ -70,6 +70,8 @@ configure.args      -DCMAKE_VERBOSE_MAKEFILE=ON \
                     -DCMAKE_SYSTEM_PREFIX_PATH=\"${prefix}\;/usr\" \
                     -DCMAKE_MODULE_PATH=${cmake_share_module_dir} \
                     -DCMAKE_CXX_COMPILER=${prefix}/bin/g++-mp-4.6 \
+                    -DCMAKE_CC_COMPILER=${prefix}/bin/gcc-mp-4.6 \
+                    -DCMAKE_Fortran_COMPILER=${prefix}/bin/gfortran-mp-4.6 \
                     -DFEEL_ENABLE_EXAMPLES=OFF \
                     -DFEEL_ENABLE_BENCHMARKS=OFF \
                     -DFEEL_ENABLE_TESTS=OFF \
@@ -83,6 +85,8 @@ configure.args      -DCMAKE_VERBOSE_MAKEFILE=ON \
 
 configure.cxx ${prefix}/bin/g++-mp-4.6
 configure.cc  ${prefix}/bin/gcc-mp-4.6
+
+
 configure.args-append \
     -DMPI_COMPILER=/opt/local/lib/openmpi/bin/mpic++\
 
