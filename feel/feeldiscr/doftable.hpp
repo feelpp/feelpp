@@ -2802,7 +2802,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildDofMap( mesh_type& M, size_typ
                      next_free_dof-1,
                      this->_M_last_df );
 
-    // acess to _M_n_localWithGhost_df for each process
+    // access to _M_n_localWithGhost_df for each process
     size_type mynDofWithGhost = this->_M_last_df[M.worldComm().localRank()] - this->_M_first_df[M.worldComm().localRank()] + 1;
     mpi::all_gather( M.worldComm().localComm(),
                      mynDofWithGhost,
