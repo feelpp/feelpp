@@ -168,7 +168,7 @@ public Points<3>,
     /**
      * default constructor
      */
-    Mesh3D();
+    Mesh3D( WorldComm const& worldComm = WorldComm() );
 
     /**
      * copy constructor
@@ -379,14 +379,14 @@ boost::multi_array<element_edge_type,2> _M_e2e;
 };
 
 template <typename GEOSHAPE>
-Mesh3D<GEOSHAPE>::Mesh3D()
+Mesh3D<GEOSHAPE>::Mesh3D( WorldComm const& worldComm )
     :
     super_visitable(),
-    super(),
-    super_elements(),
-    super_points(),
-    super_faces(),
-    super_edges(),
+    super( worldComm ),
+    super_elements( worldComm ),
+    super_points( worldComm ),
+    super_faces( worldComm ),
+    super_edges( worldComm ),
     _M_e2e()
 {}
 
