@@ -42,7 +42,7 @@ void PreconditionerPetsc<T>::apply( const Vector<T> & x, Vector<T> & y )
     Vec y_vec = y_pvec.vec();
 
     int ierr = PCApply( M_pc,x_vec,y_vec );
-    CHKERRABORT( this->M_comm,ierr );
+    CHKERRABORT( this->worldComm().globalComm(),ierr );
 }
 
 
@@ -62,8 +62,8 @@ void PreconditionerPetsc<T>::init ()
     if ( !this->M_is_initialized )
     {
         // Create the preconditioning object
-        int ierr = PCCreate( this->M_comm,&M_pc );
-        CHKERRABORT( this->M_comm,ierr );
+        int ierr = PCCreate( this->worldComm().globalComm(),&M_pc );
+        CHKERRABORT( this->worldComm().globalComm(),ierr );
 
         MatrixPetsc<T> * pmatrix = dynamic_cast<MatrixPetsc<T>*>( this->M_matrix.get() );
 
@@ -71,7 +71,7 @@ void PreconditionerPetsc<T>::init ()
     }
 
     int ierr = PCSetOperators( M_pc,M_mat,M_mat,( MatStructure )SAME_NONZERO_PATTERN );
-    CHKERRABORT( this->M_comm,ierr );
+    CHKERRABORT( this->worldComm().globalComm(),ierr );
 
     // Set the PCType.  Note: this used to be done *before* the call to
     // PCSetOperators(), and only when !M_is_initialized, but
@@ -80,7 +80,7 @@ void PreconditionerPetsc<T>::init ()
     // the operators have been set.
     // 2.) It should be safe to call set_petsc_preconditioner_type()
     // multiple times.
-    setPetscPreconditionerType( this->M_preconditioner_type,this->M_matSolverPackage_type,M_pc );
+    setPetscPreconditionerType( this->M_preconditioner_type,this->M_matSolverPackage_type,M_pc,this->worldComm() );
 
     this->M_is_initialized = true;
 }
@@ -102,26 +102,27 @@ void PreconditionerPetsc<T>::clear ()
 template <typename T>
 void PreconditionerPetsc<T>::setPetscPreconditionerType ( const PreconditionerType & preconditioner_type,
                                                           const MatSolverPackageType & matSolverPackage_type,
-                                                          PC & pc )
+                                                          PC & pc,
+                                                          WorldComm const& worldComm )
 {
-    mpi::communicator world;
+    //mpi::communicator world;
     int ierr = 0;
 
     switch ( preconditioner_type )
     {
     case IDENTITY_PRECOND:
         ierr = PCSetType ( pc, ( char* ) PCNONE );
-        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        CHKERRABORT( worldComm.globalComm(),ierr );
         break;
 
     case CHOLESKY_PRECOND:
         ierr = PCSetType ( pc, ( char* ) PCCHOLESKY );
-        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        CHKERRABORT( worldComm.globalComm(),ierr );
         break;
 
     case ICC_PRECOND:
         ierr = PCSetType ( pc, ( char* ) PCICC );
-        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        CHKERRABORT( worldComm.globalComm(),ierr );
         break;
 
     case ILU_PRECOND:
@@ -129,10 +130,10 @@ void PreconditionerPetsc<T>::setPetscPreconditionerType ( const PreconditionerTy
         // In serial, just set the ILU preconditioner type
         //if (Feel::n_processors() == 1)
         // change in parallel version
-        if ( world.size() == 1 )
+        if ( worldComm.globalSize() == 1 )
         {
             ierr = PCSetType ( pc, ( char* ) PCILU );
-            CHKERRABORT( PETSC_COMM_WORLD,ierr );
+            CHKERRABORT( worldComm.globalComm(),ierr );
         }
 
         else
@@ -141,10 +142,10 @@ void PreconditionerPetsc<T>::setPetscPreconditionerType ( const PreconditionerTy
             // an actual parallel preconditioner (e.g. block Jacobi) and then
             // assign ILU sub-preconditioners.
             ierr = PCSetType ( pc, ( char* ) PCBJACOBI );
-            CHKERRABORT( PETSC_COMM_WORLD,ierr );
+            CHKERRABORT( worldComm.globalComm(),ierr );
 
             // Set ILU as the sub preconditioner type
-            setPetscSubpreconditionerType( PCILU, pc );
+            setPetscSubpreconditionerType( PCILU, pc, worldComm );
         }
 
         break;
@@ -156,10 +157,10 @@ void PreconditionerPetsc<T>::setPetscPreconditionerType ( const PreconditionerTy
         // In serial, just set the LU preconditioner type
         //if (Feel::n_processors() == 1)
         // do be changed in parallel
-        if ( world.size() == 1 || matSolverPackage_type == MATSOLVER_MUMPS)
+        if ( worldComm.globalSize() == 1 || matSolverPackage_type == MATSOLVER_MUMPS)
         {
             ierr = PCSetType ( pc, ( char* ) PCLU );
-            CHKERRABORT( PETSC_COMM_WORLD,ierr );
+            CHKERRABORT( worldComm.globalComm(),ierr );
         }
 
         else
@@ -168,10 +169,10 @@ void PreconditionerPetsc<T>::setPetscPreconditionerType ( const PreconditionerTy
             // an actual parallel preconditioner (e.g. block Jacobi) and then
             // assign LU sub-preconditioners.
             ierr = PCSetType ( pc, ( char* ) PCBJACOBI );
-            CHKERRABORT( PETSC_COMM_WORLD,ierr );
+            CHKERRABORT( worldComm.globalComm(),ierr );
 
             // Set ILU as the sub preconditioner type
-            setPetscSubpreconditionerType( PCLU, pc );
+            setPetscSubpreconditionerType( PCLU, pc, worldComm );
         }
 
         break;
@@ -183,33 +184,33 @@ void PreconditionerPetsc<T>::setPetscPreconditionerType ( const PreconditionerTy
         // I tried setting a different sub-preconditioner here, but apparently the matrix
         // is not in the correct state (at this point) to call PCSetUp().
         ierr = PCSetType ( pc, ( char* ) PCASM );
-        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        CHKERRABORT( worldComm.globalComm(),ierr );
         break;
     }
 
     case JACOBI_PRECOND:
         ierr = PCSetType ( pc, ( char* ) PCJACOBI );
-        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        CHKERRABORT( worldComm.globalComm(),ierr );
         break;
 
     case BLOCK_JACOBI_PRECOND:
         ierr = PCSetType ( pc, ( char* ) PCBJACOBI );
-        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        CHKERRABORT( worldComm.globalComm(),ierr );
         break;
 
     case SOR_PRECOND:
         ierr = PCSetType ( pc, ( char* ) PCSOR );
-        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        CHKERRABORT( worldComm.globalComm(),ierr );
         break;
 
     case EISENSTAT_PRECOND:
         ierr = PCSetType ( pc, ( char* ) PCEISENSTAT );
-        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        CHKERRABORT( worldComm.globalComm(),ierr );
         break;
 
     case AMG_PRECOND:
         ierr = PCSetType ( pc, ( char* ) PCHYPRE );
-        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        CHKERRABORT( worldComm.globalComm(),ierr );
         break;
 
 #if !(PETSC_VERSION_LESS_THAN(2,1,2))
@@ -217,21 +218,21 @@ void PreconditionerPetsc<T>::setPetscPreconditionerType ( const PreconditionerTy
         // Only available for PETSC >= 2.1.2
     case USER_PRECOND:
         ierr = PCSetType ( pc, ( char* ) PCMAT );
-        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        CHKERRABORT( worldComm.globalComm(),ierr );
         break;
 #endif
 
     case SHELL_PRECOND:
         ierr = PCSetType ( pc, ( char* ) PCSHELL );
-        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        CHKERRABORT( worldComm.globalComm(),ierr );
         break;
 
     case FIELDSPLIT_PRECOND: {
         ierr = PCSetType( pc,( char* ) PCFIELDSPLIT );
-        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        CHKERRABORT( worldComm.globalComm(),ierr );
         const PCType subpctypes[5] = { PCLU,PCNONE,PCLU,PCLU,PCLU };
         const KSPType subksptypes[5] = { KSPPREONLY,KSPMINRES,KSPMINRES,KSPMINRES,KSPMINRES };
-        setPetscFieldSplitPreconditionerType( PC_COMPOSITE_SCHUR, subksptypes, subpctypes, pc );
+        setPetscFieldSplitPreconditionerType( PC_COMPOSITE_SCHUR, subksptypes, subpctypes, pc, worldComm );
         break; }
 
     default:
@@ -247,7 +248,7 @@ void PreconditionerPetsc<T>::setPetscPreconditionerType ( const PreconditionerTy
     if ( preconditioner_type == AMG_PRECOND )
     {
         ierr = PCHYPRESetType( pc, "boomeramg" );
-        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        CHKERRABORT( worldComm.globalComm(),ierr );
     }
 
 #endif
@@ -256,7 +257,7 @@ void PreconditionerPetsc<T>::setPetscPreconditionerType ( const PreconditionerTy
     if ( preconditioner_type != AMG_PRECOND )
     {
         ierr = PCSetFromOptions( pc );
-        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        CHKERRABORT( worldComm.globalComm(),ierr );
     }
 }
 
@@ -266,7 +267,7 @@ template <typename T>
 #if PETSC_VERSION_LESS_THAN(3,0,0)
 void PreconditionerPetsc<T>::setPetscSubpreconditionerType( PCType type, PC& pc )
 #else
-void PreconditionerPetsc<T>::setPetscSubpreconditionerType( const PCType type, PC& pc )
+    void PreconditionerPetsc<T>::setPetscSubpreconditionerType( const PCType type, PC& pc, WorldComm const& worldComm )
 #endif
 {
     // For catching PETSc error return codes
@@ -280,7 +281,7 @@ void PreconditionerPetsc<T>::setPetscSubpreconditionerType( const PCType type, P
     //
     // error messages...
     ierr = PCSetUp( pc );
-    CHKERRABORT( PETSC_COMM_WORLD,ierr );
+    CHKERRABORT( worldComm.globalComm(),ierr );
 
     // To store array of local KSP contexts on this processor
     KSP* subksps;
@@ -294,7 +295,7 @@ void PreconditionerPetsc<T>::setPetscSubpreconditionerType( const PCType type, P
 
     // Fill array of local KSP contexts
     ierr = PCBJacobiGetSubKSP( pc, &n_local, PETSC_NULL, &subksps );
-    CHKERRABORT( PETSC_COMM_WORLD,ierr );
+    CHKERRABORT( worldComm.globalComm(),ierr );
 
     // Loop over sub-ksp objects, set ILU preconditioner
     for ( int i=0; i<n_local; ++i )
@@ -303,11 +304,11 @@ void PreconditionerPetsc<T>::setPetscSubpreconditionerType( const PCType type, P
         PC subpc;
 
         ierr = KSPGetPC( subksps[i], &subpc );
-        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        CHKERRABORT( worldComm.globalComm(),ierr );
 
         // Set requested type on the sub PC
         ierr = PCSetType( subpc, type );
-        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        CHKERRABORT( worldComm.globalComm(),ierr );
     }
 
 }
@@ -318,40 +319,41 @@ void
 PreconditionerPetsc<T>::setPetscFieldSplitPreconditionerType( const PCCompositeType type,
                                                               const KSPType * subksptypes,
                                                               const PCType * subpctypes,
-                                                              PC& pc )
+                                                              PC& pc,
+                                                              WorldComm const& worldComm )
 {
     // For catching PETSc error return codes
     int ierr = 0;
 
     ierr = PCFieldSplitSetType( pc, type );
-    CHKERRABORT( PETSC_COMM_WORLD,ierr );
+    CHKERRABORT( worldComm.globalComm(),ierr );
 
     // call necessary before PCFieldSplitGetSubKSP
     ierr = PCSetUp( pc );
-    CHKERRABORT( PETSC_COMM_WORLD,ierr );
+    CHKERRABORT( worldComm.globalComm(),ierr );
 
     // the number of blocks on this processor
     int n_local;
     // To store array of local KSP contexts on this processor
     KSP* subksps;
     ierr = PCFieldSplitGetSubKSP(pc,&n_local,&subksps );
-    CHKERRABORT( PETSC_COMM_WORLD,ierr );
+    CHKERRABORT( worldComm.globalComm(),ierr );
 
     // Loop over sub-ksp objects, set ILU preconditioner
     for ( int i=0; i<n_local; ++i )
     {
         // Set requested type on the sub KSP
         ierr = KSPSetType ( subksps[i], subksptypes[i] );
-        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        CHKERRABORT( worldComm.globalComm(),ierr );
 
         // Get pointer to sub KSP object's PC
         PC subpc;
         ierr = KSPGetPC( subksps[i], &subpc );
-        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        CHKERRABORT( worldComm.globalComm(),ierr );
 
         // Set requested type on the sub PC
         ierr = PCSetType( subpc, subpctypes[i] );
-        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        CHKERRABORT( worldComm.globalComm(),ierr );
     }
 
 }

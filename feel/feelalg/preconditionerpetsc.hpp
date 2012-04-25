@@ -67,7 +67,7 @@ public:
     //@{
 
     //! default constructor
-    PreconditionerPetsc();
+    PreconditionerPetsc( WorldComm const& worldComm=WorldComm() );
     //! copy constructor
     PreconditionerPetsc( PreconditionerPetsc const & );
     //! destructor
@@ -128,7 +128,8 @@ public:
      */
     static void setPetscPreconditionerType ( const PreconditionerType & preconditioner_type,
                                              const MatSolverPackageType & matSolverPackage_type,
-                                             PC & pc );
+                                             PC & pc,
+                                             WorldComm const& worldComm=WorldComm() );
 
 
     //@}
@@ -157,12 +158,13 @@ public:
      */
     Mat M_mat;
 
-    static void setPetscSubpreconditionerType( const PCType type, PC& pc );
+    static void setPetscSubpreconditionerType( const PCType type, PC& pc, WorldComm const& worldComm=WorldComm() );
 
     static void setPetscFieldSplitPreconditionerType( const PCCompositeType type,
                                                       const KSPType * subksptypes,
                                                       const PCType * subpctypes,
-                                                      PC& pc );
+                                                      PC& pc,
+                                                      WorldComm const& worldComm=WorldComm() );
 
 private:
     /**
@@ -187,9 +189,9 @@ private:
 /*----------------------- inline functions ----------------------------------*/
 template <typename T>
 FEELPP_STRONG_INLINE
-PreconditionerPetsc<T>::PreconditionerPetsc ()
+PreconditionerPetsc<T>::PreconditionerPetsc ( WorldComm const& worldComm )
     :
-    Preconditioner<T>()
+    Preconditioner<T>( worldComm )
 {
 }
 

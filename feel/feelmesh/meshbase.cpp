@@ -31,14 +31,14 @@
 namespace Feel
 {
 
-MeshBase::MeshBase()
+MeshBase::MeshBase( WorldComm const& worldComm )
     :
     M_components( MESH_ALL_COMPONENTS ),
     M_is_updated( false ),
     M_is_parametric( false ),
     M_n_vertices( 0 ),
     M_n_parts( 1 ),
-    M_worldComm()
+    M_worldComm( worldComm )
 {}
 
 MeshBase::MeshBase( MeshBase const& m )

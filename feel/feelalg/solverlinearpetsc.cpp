@@ -435,7 +435,7 @@ SolverLinearPetsc<T>::solve ( MatrixSparse<T> const&  matrix_in,
                               this->maxIterations() );
     CHKERRABORT( this->worldComm().globalComm(),ierr );
 
-    PreconditionerPetsc<T>::setPetscPreconditionerType( this->preconditionerType(),this->matSolverPackageType(),_M_pc );
+    PreconditionerPetsc<T>::setPetscPreconditionerType( this->preconditionerType(),this->matSolverPackageType(),_M_pc, this->worldComm() );
 
 
     // makes the default convergence test use || B*(b - A*(initial guess))||

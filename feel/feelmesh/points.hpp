@@ -108,9 +108,9 @@ public:
      */
     //@{
 
-    Points()
+    Points( WorldComm const& worldComm = WorldComm() )
         :
-        _M_worldCommPoints(),
+        _M_worldCommPoints( worldComm ),
         _M_points()
     {}
 

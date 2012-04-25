@@ -191,7 +191,7 @@ public:
     /**
      * Default mesh constructor
      */
-    Mesh( std::string partitioner = "metis" );
+    Mesh( std::string partitioner = "metis", WorldComm const& worldComm = WorldComm() );
 
     /** @name Accessors
      */

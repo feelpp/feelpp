@@ -36,7 +36,7 @@ namespace Feel
 /**
  * \return the command lines options of the trilinos backend
  */
-po::options_description backendtrilinos_options( std::string const& prefix )
+    po::options_description backendtrilinos_options( std::string const& prefix )
 {
     std::string _prefix = prefix;
 
@@ -71,9 +71,9 @@ po::options_description backendtrilinos_options( std::string const& prefix )
 }
 
 
-BackendTrilinos::BackendTrilinos( po::variables_map const& vm, std::string const& prefix  )
+    BackendTrilinos::BackendTrilinos( po::variables_map const& vm, std::string const& prefix, WorldComm const& worldComm )
     :
-    super( vm, prefix ),
+    super( vm, prefix, worldComm ),
     M_options(),
     M_prec_type( "" ),
     M_Prec()

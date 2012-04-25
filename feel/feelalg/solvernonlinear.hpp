@@ -124,7 +124,8 @@ public:
      * Builds a \p NonlinearSolver using the nonlinear solver package specified by
      * the \p variables_map \p vm and  \p prefix
      */
-    static solvernonlinear_ptrtype build( po::variables_map const& vm, std::string const& prefix = "" );
+    static solvernonlinear_ptrtype build( po::variables_map const& vm, std::string const& prefix = "",
+                                          WorldComm const& worldComm = WorldComm() );
 
     /**
      * Builds a \p NonlinearSolver using the nonlinear solver package specified by

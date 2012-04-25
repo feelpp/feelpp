@@ -146,7 +146,7 @@ public:
      * and to simply provide additional functionality with the PetscMatrix.
      */
     MatrixPetsc ( Mat m );
-
+    MatrixPetsc ( Mat m, DataMap const& dmRow, DataMap const& dmCol, WorldComm const& worldComm );
     /**
      * Destructor. Free all memory, but do not
      * release the memory of the sparsity
