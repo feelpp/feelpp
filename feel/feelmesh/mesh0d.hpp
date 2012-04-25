@@ -124,12 +124,12 @@ public:
     /**
      * default constructor
      */
-    Mesh0D()
+    Mesh0D( WorldComm const& worldComm = WorldComm() )
         :
         super_visitable(),
-        super(),
-        super_elements(),
-        super_points()
+        super( worldComm ),
+        super_elements( worldComm ),
+        super_points( worldComm )
     {}
 
 

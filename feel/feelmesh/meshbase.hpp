@@ -86,7 +86,7 @@ public:
     /**
      * Default constructor
      */
-    MeshBase();
+    MeshBase( WorldComm const& worldComm = WorldComm() );
 
     /**
      * copy constructor

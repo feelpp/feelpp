@@ -140,20 +140,20 @@ public Points<Shape::nRealDim>,
            /**
             * default constructor
             */
-           Mesh2D()
+           Mesh2D( WorldComm const& worldComm = WorldComm() )
                :
                super_visitable(),
-               super(),
-               super_elements(),
-               super_points(),
-               super_faces()
+               super( worldComm ),
+               super_elements( worldComm ),
+               super_points( worldComm ),
+               super_faces( worldComm )
 {}
 
 
 /**
  * copy constructor
  */
-Mesh2D( Mesh2D const & m )
+    Mesh2D( Mesh2D const & m )
     :
     super_visitable(),
     super( m ),

@@ -98,9 +98,9 @@ public:
      */
     //@{
 
-    Edges()
+    Edges( WorldComm const& worldComm = WorldComm() )
         :
-        _M_worldCommEdges(),
+        _M_worldCommEdges( worldComm ),
         _M_edges()
     {}
 
