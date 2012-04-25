@@ -33,14 +33,14 @@ namespace Feel
 {
 template <typename T>
 typename Preconditioner<T>::preconditioner_ptrtype
-Preconditioner<T>::build( BackendType backend )
+Preconditioner<T>::build( BackendType backend, WorldComm const& worldComm )
 {
     switch ( backend )
     {
     default:
     case BACKEND_PETSC:
     {
-        return preconditioner_ptrtype( new PreconditionerPetsc<T>() );
+        return preconditioner_ptrtype( new PreconditionerPetsc<T>( worldComm ) );
     }
     }
 }

@@ -42,14 +42,15 @@ using namespace boost;
 WorldComm::WorldComm()
     :
     super(),
-    M_localComm( super::split( 0 ) ),
+    M_localComm( /*super::split( 0 )*/ ),
     M_godComm(),
     M_mapColorWorld( this->globalSize() ),
     M_mapLocalRankToGlobalRank( this->localSize() ),
     M_mapGlobalRankToGodRank( this->globalSize() ),
     M_isActive( this->godSize(),true )
 {
-    //std::cout << "\n WorldComm : warning constructor empty!! on godRank " << this->godRank() << std::endl;
+    //std::cout << "\n WorldComm : warning constructor empty!! start on godRank " << this->godRank() << std::endl;
+    this->godComm().barrier();
     std::vector<int> globalRanks( this->globalSize() );
     mpi::all_gather( this->globalComm(),
                      this->globalRank(),
@@ -59,7 +60,7 @@ WorldComm::WorldComm()
                      0,
                      M_mapColorWorld );
 
-    mpi::all_gather( this->localComm(),
+    mpi::all_gather( this->globalComm(),//this->localComm(),
                      this->globalRank(),
                      M_mapLocalRankToGlobalRank );
 
@@ -69,6 +70,8 @@ WorldComm::WorldComm()
 
     // choice : the smallest rank
     M_masterRank = *std::min_element( globalRanks.begin(),globalRanks.end() );
+
+    //   std::cout << "\n WorldComm : warning constructor empty!! finish on godRank " << this->godRank() << std::endl;
 }
 
 //-------------------------------------------------------------------------------
@@ -83,6 +86,7 @@ WorldComm::WorldComm( int color )
     M_mapGlobalRankToGodRank( this->globalSize() ),
     M_isActive( this->godSize(),true )
 {
+    this->godComm().barrier();
     std::vector<int> globalRanks( this->globalSize() );
     mpi::all_gather( this->godComm(),
                      this->globalRank(),
@@ -116,6 +120,7 @@ WorldComm::WorldComm( std::vector<int> const& colorWorld )
     M_mapGlobalRankToGodRank( this->globalSize() ),
     M_isActive( this->godSize(),true )
 {
+    this->godComm().barrier();
     std::vector<int> globalRanks( this->globalSize() );
     mpi::all_gather( this->globalComm(),
                      this->globalRank(),

@@ -76,11 +76,12 @@ public:
     //@{
 
     //! default constructor
-    Preconditioner();
+    Preconditioner( WorldComm const& worldComm=WorldComm() );
 
     //! copy constructor
     Preconditioner( Preconditioner const & o )
         :
+        M_worldComm( o.M_worldComm ),
         M_matrix( o.M_matrix ),
         M_preconditioner_type( o.M_preconditioner_type ),
         M_matSolverPackage_type( o.M_matSolverPackage_type ),
@@ -90,7 +91,7 @@ public:
     //! destructor
     ~Preconditioner();
 
-    static preconditioner_ptrtype build( BackendType = BACKEND_PETSC );
+    static preconditioner_ptrtype build( BackendType = BACKEND_PETSC, WorldComm const& worldComm=WorldComm() );
 
     /**
      * Initialize data structures if not done so already.
@@ -108,6 +109,7 @@ public:
     {
         if ( this != &o )
         {
+            M_worldComm = o.M_worldComm;
             M_matrix = o.M_matrix;
             M_is_initialized = o.M_is_initialized;
             M_matSolverPackage_type = o.M_matSolverPackage_type;
@@ -130,6 +132,8 @@ public:
     {
         return M_is_initialized;
     }
+
+    WorldComm const& worldComm() const { return M_worldComm; }
 
     /**
      * Computes the preconditioned vector "y" based on input "x".
@@ -198,6 +202,11 @@ public:
 protected:
 
     /**
+     * Communicator
+     */
+    WorldComm M_worldComm;
+
+    /**
      * The matrix P... ie the matrix to be preconditioned.
      * This is often the actual system matrix of a linear sytem.
      */
@@ -218,7 +227,6 @@ protected:
      */
     bool M_is_initialized;
 
-    mpi::communicator M_comm;
 };
 
 typedef Preconditioner<double> preconditioner_type;
@@ -227,8 +235,9 @@ typedef boost::shared_ptr<Preconditioner<double> > preconditioner_ptrtype;
 
 template <typename T>
 FEELPP_STRONG_INLINE
-Preconditioner<T>::Preconditioner ()
+Preconditioner<T>::Preconditioner ( WorldComm const& worldComm )
     :
+    M_worldComm(worldComm),
     M_matrix(),
     M_preconditioner_type   ( ILU_PRECOND ),
     M_matSolverPackage_type ( MATSOLVER_PETSC ),
@@ -278,9 +287,12 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( boost::shared_ptr<Preconditioner<double> > ),
                                  ( optional
                                    ( matrix,( d_sparse_matrix_ptrtype ),d_sparse_matrix_ptrtype() )
                                    ( backend,( BackendType ), BACKEND_PETSC )
-                                   ( pcfactormatsolverpackage,( MatSolverPackageType ), MATSOLVER_PETSC ) ) )
+                                   ( pcfactormatsolverpackage,( MatSolverPackageType ), MATSOLVER_PETSC )
+                                   ( worldcomm,      *, WorldComm() )
+                                   )
+                                 )
 {
-    boost::shared_ptr<Preconditioner<double> > p = Preconditioner<double>::build( backend );
+    boost::shared_ptr<Preconditioner<double> > p = Preconditioner<double>::build( backend, worldcomm );
     p->setType( pc );
     p->setMatSolverPackageType( pcfactormatsolverpackage );
 

@@ -155,8 +155,8 @@ public:
      */
     //@{
 
-    Backend();
-    Backend( po::variables_map const& vm, std::string const& prefix = "" );
+    Backend( WorldComm const& worldComm=WorldComm() );
+    Backend( po::variables_map const& vm, std::string const& prefix = "", WorldComm const& worldComm=WorldComm() );
     Backend( Backend const & );
     virtual ~Backend();
 
@@ -170,12 +170,13 @@ public:
 #else
         BackendType = BACKEND_GMM
 #endif
+        , WorldComm const& worldComm=WorldComm()
     );
 
     /**
      * Builds a \p Backend
      */
-    static backend_ptrtype build( po::variables_map const& vm, std::string const& prefix = "" );
+    static backend_ptrtype build( po::variables_map const& vm, std::string const& prefix = "", WorldComm const& worldComm=WorldComm() );
 
     /**
      * instantiate a new sparse vector
@@ -544,9 +545,9 @@ public:
     /**
      * \return the communicator
      */
-    mpi::communicator const& comm() const
+    WorldComm const& comm() const
     {
-        return M_comm;
+        return M_worldComm;
     }
 
     //@}
@@ -884,8 +885,9 @@ private:
     void reset();
 
 private:
+    WorldComm M_worldComm;
+
     po::variables_map M_vm;
-    mpi::communicator M_comm;
 
     BackendType M_backend;
 
