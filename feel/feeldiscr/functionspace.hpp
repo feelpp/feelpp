@@ -1133,7 +1133,8 @@ public:
     template<typename MeshListType,int N>
     struct GetMesh
     {
-        typedef typename mpl::if_<boost::is_base_of<MeshBase, MeshListType >,
+        typedef typename mpl::if_<mpl::or_<boost::is_base_of<MeshBase, MeshListType >,
+                                           is_shared_ptr<MeshListType> >,
                                   mpl::identity<mpl::identity<MeshListType> >,
                                   mpl::identity<mpl::at_c<MeshListType,N> > >::type::type::type type;
     };
