@@ -42,7 +42,7 @@
 namespace Feel
 {
 template<typename Shape, typename T, int Tag>
-Mesh<Shape, T, Tag>::Mesh( std::string partitioner )
+Mesh<Shape, T, Tag>::Mesh( std::string partitioner, WorldComm const& worldComm )
     :
     super(worldComm),
     _M_gm( new gm_type ),
