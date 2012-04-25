@@ -334,6 +334,28 @@ public:
 
     }
 };
+
+template<int Dim, int N, typename T>
+class TestSpaceProd
+{
+public:
+    TestSpace1()
+    {}
+
+    void operator()() const
+    {
+        using namespace Feel;
+
+        typedef Simplex<Dim, 1> convex1_type;
+        typedef Mesh<Simplex<Dim, 1> > mesh1_type;
+        typedef Simplex<Dim-1, 1,Dim> convex2_type;
+        typedef Mesh<convex2_type> mesh2_type;
+
+
+        typedef FunctionSpace<meshes<mesh1_type,mesh2_type>, bases<Lagrange<N, Scalar>,Lagrange<N,Scalar> > > space_type;
+    }
+};
+
 }
 
 #if USE_BOOST_TEST
@@ -390,6 +412,13 @@ BOOST_AUTO_TEST_CASE( test_space2_3 )
     Feel::TestSpace2<3, double> t;
     t();
     BOOST_TEST_MESSAGE( "test_space2_3 done" );
+}
+BOOST_AUTO_TEST_CASE( test_spaceprod )
+{
+    BOOST_TEST_MESSAGE( "test_space2" );
+    Feel::TestSpaceProd<2, double> t;
+    t();
+    BOOST_TEST_MESSAGE( "test_spaceprod done" );
 }
 
 //BOOST_AUTO_TEST_CASE( test_space_rt_1 ) { BOOST_TEST_MESSAGE( "test_space_rt_1" );   Feel::TestSpaceRT<2> t;t(); BOOST_TEST_MESSAGE( "test_space_rt_1 done" );}
