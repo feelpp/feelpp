@@ -416,7 +416,6 @@ public:
         M_factor = Factor;
     }
 
-
     //@}
 
     /** @name  Methods
@@ -791,9 +790,9 @@ private:
     std::vector<int> M_index;
     int M_mode_number;
 
-  //bool seek_mu_in_complement;
-    
     matrixN_type M_variance_matrix_phi;
+
+    bool M_compute_variance;
 };
 
 po::options_description crbOptions( std::string const& prefix = "" );
@@ -1622,8 +1621,8 @@ CRB<TruthModelType>::offline()
 
         timer2.restart();
 
-	if ( this->vm()["crb.compute-variance"].template as<bool>() )
-	    buildVarianceMatrixPhi( M_N );
+	M_compute_variance = this->vm()["crb.compute-variance"].template as<bool>();
+	buildVarianceMatrixPhi( M_N );
 
         if ( M_error_type==CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM )
         {
@@ -2143,12 +2142,7 @@ boost::tuple<double,double>
 CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vectorN_type > & uN, std::vector< vectorN_type > & uNdu,  std::vector<vectorN_type> & uNold, std::vector<vectorN_type> & uNduold,int K  ) const
 {
 
-
-
     bool save_output_behavior = this->vm()["crb.save-output-behavior"].template as<bool>();
-
-    bool compute_variance = this->vm()["crb.compute-variance"].template as<bool>() ;
-
 
     //if K>0 then the time at which we want to evaluate output is defined by
     //time_for_output = K * time_step
@@ -2204,8 +2198,6 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
         index++;
     }
 
-
-
     theta_vector_type theta_aq;
     theta_vector_type theta_mq;
     std::vector<theta_vector_type> theta_fq, theta_lq;
@@ -2222,7 +2214,6 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
     matrixN_type Aprdu( ( int )N, ( int )N );
     matrixN_type Mprdu( ( int )N, ( int )N );
 
-
     if ( !M_model->isSteady() )
     {
         for ( size_type n=0; n<N; n++ )
@@ -2238,14 +2229,12 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
     double output;
     int time_index=0;
 
-
     for ( double time=time_step; time<=time_for_output; time+=time_step )
     {
 
         boost::tie( theta_mq, theta_aq, theta_fq ) = M_model->computeThetaq( mu ,time );
 
         A.setZero( N,N );
-
         for ( size_type q = 0; q < M_model->Qa(); ++q )
         {
             A += theta_aq[q]*M_Aq_pr[q].block( 0,0,N,N );
@@ -2266,7 +2255,6 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
 
         uN[time_index] = A.lu().solve( F );
 
-
         if ( time_index<model_K-1 )
         {
             uNold[time_index+1] = uN[time_index];
@@ -2280,14 +2268,13 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
         }
 
         output = L.dot( uN[time_index] );
+
         output_time_vector.push_back( output );
 
         time_index++;
     }
 
     time_index--;
-
-
 
     //compute conditioning of matrix A
     Eigen::SelfAdjointEigenSolver< matrixN_type > eigen_solver;
@@ -2313,13 +2300,12 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
     double condition_number = eig_max / eig_min;
     //end of computation of conditionning
 
-
     double s_wo_correction = L.dot( uN [time_index] );
     double s = s_wo_correction ;
 
 
     //now the dual problem
-    if (  this->vm()["crb.solve-dual-problem"].template as<bool>() || M_error_type == CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM || !compute_variance )
+    if (  this->vm()["crb.solve-dual-problem"].template as<bool>() || M_error_type == CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM || !M_compute_variance )
     {
         double time;
 
@@ -2342,7 +2328,6 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
             }
 
             uNdu[0] = Adu.lu().solve( -Ldu );
-
         }
 
 
@@ -2423,8 +2408,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
 
     }//end of if ( solve_dual_problem || M_error_type == CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM )
 
-
-    if( compute_variance )
+    if( M_compute_variance )
     {
         time_index=0;
         for ( double time=time_step; time<=time_for_output; time+=time_step )
@@ -2443,6 +2427,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
 	    time_index++;
 	}
     }
+
 
     if ( save_output_behavior )
     {
@@ -3977,6 +3962,7 @@ boost::tuple<double,double,double,double>
 CRB<TruthModelType>::run( parameter_type const& mu, double eps )
 {
 
+    M_compute_variance = this->vm()["crb.compute-variance"].template as<bool>();
     int Nwn = M_N;
 
 #if 0
@@ -4094,8 +4080,11 @@ CRB<TruthModelType>::run( const double * X, unsigned long N, double * Y, unsigne
 
     parameter_type mu( M_Dmu );
 
-    for ( unsigned long p= 0; p < N-3; ++p )
+    for ( unsigned long p= 0; p < N-5; ++p )
+      {
         mu( p ) = X[p];
+	std::cout << "mu( " << p << " ) = " << mu( p ) << std::endl;
+      }
 
 
     std::cout<<" list of parameters : [";
@@ -4107,22 +4096,27 @@ CRB<TruthModelType>::run( const double * X, unsigned long N, double * Y, unsigne
 
     //double meshSize  = X[N-4];
     //M_model->setMeshSize(meshSize);
-    setOutputIndex( ( int )X[N-4] );
-    int Nwn =  X[N-3];
-    int maxerror = X[N-2];
-    CRBErrorType errorType =( CRBErrorType )X[N-1];
+
+    setOutputIndex( ( int )X[N-5] );
+    std::cout<<"output_index = "<<X[N-5]<<std::endl;
+    int Nwn =  X[N-4];
+    std::cout<<" Nwn = "<<Nwn<<std::endl;
+    int maxerror = X[N-3];
+    std::cout<<" maxerror = "<<maxerror<<std::endl;
+    CRBErrorType errorType =( CRBErrorType )X[N-2];
+    std::cout<<"errorType = "<<X[N-2]<<std::endl;
     setCRBErrorType( errorType );
+    M_compute_variance = X[N-1];
+    std::cout<<"M_compute_variance = "<<M_compute_variance<<std::endl;
 
 #if 0
     auto lo = M_rbconv.right.range( boost::bimaps::unbounded,boost::bimaps::_key <= maxerror );
  
 
-
     for ( auto it = lo.first; it != lo.second; ++it )
     {
         std::cout << "rbconv[" << it->first <<"]=" << it->second << "\n";
     }
-
 
     auto it = M_rbconv.project_left( lo.first );
     Nwn = it->first;
@@ -4139,7 +4133,6 @@ CRB<TruthModelType>::run( const double * X, unsigned long N, double * Y, unsigne
     auto e = delta( Nwn, mu, uN, uNdu , uNold, uNduold );
     Y[0]  = o.template get<0>();
     Y[1]  = e.template get<0>();
-
 }
 
 
