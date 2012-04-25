@@ -2,12 +2,12 @@
 
 # $Id$
 
-PortSystem  1.0
+#PortSystem  1.0
 # Portgroup is not an option until we find a way to get rid of the -arch option
-#PortGroup   cmake 1.0
+PortGroup   cmake 1.0
 
 name                 feel++
-version              0.90.0
+version              0.92.0
 categories           science
 platforms            macosx darwin freebsd
 maintainers          ujf-grenoble.fr:Christophe.Prudhomme
@@ -43,13 +43,13 @@ long_description    \
  projection and numerical integration
 
 homepage            http://www.feelpp.org
-fetch.type          svn
-svn.url             svn://scm.forge.imag.fr/var/lib/gforge/chroot/scmrepos/svn/life/trunk/life/trunk
-svn.revision        HEAD
+fetch.type          git
+git.url             https://code.google.com/p/feelpp/
+git.revision        HEAD
 
-checksums           md5     dbbeea5444b9954dd9e6df30596da353\
-                    sha1    8e27e4eb1b271202fd2167a4681c3430a01a9847\
-                    rmd160  d91328bf433a6084a9d5d209d795e527464e0331
+#checksums           md5     dbbeea5444b9954dd9e6df30596da353\
+#                    sha1    8e27e4eb1b271202fd2167a4681c3430a01a9847\
+#                    rmd160  d91328bf433a6084a9d5d209d795e527464e0331
 
 worksrcdir	trunk/build
 configure	{ system "mkdir -p ${worksrcpath} && cd ${worksrcpath} && cmake ${configure.args} ../" }
@@ -81,8 +81,9 @@ configure.args      -DCMAKE_VERBOSE_MAKEFILE=ON \
                     -DCMAKE_DISABLE_FIND_PACKAGE_OpenTURNS=TRUE \
                     -DCMAKE_DISABLE_FIND_PACKAGE_Metis=TRUE \
                     -Wno-dev
-configure.cxx ${prefix}/bin/g++-mp-4.5
-configure.cc  ${prefix}/bin/gcc-mp-4.5
+
+configure.cxx ${prefix}/bin/g++-mp-4.6
+configure.cc  ${prefix}/bin/gcc-mp-4.6
 configure.args-append \
     -DMPI_COMPILER=/opt/local/lib/openmpi/bin/mpic++\
 
@@ -93,17 +94,15 @@ destroot.destdir DESTDIR=${destroot}${prefix}/lib/feel++
 #   system "cd ${worksrcpath}/doc/api/ && make -k doxygen"
 #}
 
-depends_build port:cmake
-
 depends_lib    \
-    port:cmake\
-    port:gcc45\
+    port:gcc46\
     port:openmpi\
     port:boost \
     port:petsc\
     port:slepc\
     port:gmsh\
-    port:libANN
+    port:libANN \
+    port:glpk
 
 variant octave description {Add octave bindings} {
   depends_lib_append \
