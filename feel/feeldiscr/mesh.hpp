@@ -94,7 +94,7 @@ template<typename Mesh> class Partitioner;
 */
 //    template <typename GeoShape, typename T > class Mesh;
 
-template <typename GeoShape, typename T = double>
+template <typename GeoShape, typename T = double, int Tag = 0>
 class Mesh
     :
 public mpl::if_<mpl::equal_to<mpl::int_<GeoShape::nDim>,mpl::int_<0> >,
@@ -104,7 +104,7 @@ public mpl::if_<mpl::equal_to<mpl::int_<GeoShape::nDim>,mpl::int_<0> >,
     typename mpl::if_<mpl::equal_to<mpl::int_<GeoShape::nDim>,mpl::int_<2> >,
     mpl::identity<Mesh2D<GeoShape> >,
     mpl::identity<Mesh3D<GeoShape> > >::type>::type>::type::type,
-public boost::enable_shared_from_this< Mesh<GeoShape,T> >
+public boost::enable_shared_from_this< Mesh<GeoShape,T,Tag> >
 {
     typedef typename mpl::if_<mpl::equal_to<mpl::int_<GeoShape::nDim>,mpl::int_<0> >,
             mpl::identity<Mesh0D<GeoShape> >,
@@ -124,6 +124,7 @@ public:
     static const uint16_type nRealDim = GeoShape::nRealDim;
     static const uint16_type Shape = GeoShape::Shape;
     static const uint16_type nOrder = GeoShape::nOrder;
+    static const uint16_type tag = Tag;
 
     //@}
     /** @name Typedefs
@@ -164,7 +165,7 @@ public:
         typedef boost::shared_ptr<type> ptrtype;
     };
 
-    typedef Mesh<shape_type, T> self_type;
+    typedef Mesh<shape_type, T, Tag> self_type;
     typedef boost::shared_ptr<self_type> self_ptrtype;
 
     typedef typename element_type::template reference_convex<T>::type reference_convex_type;
@@ -176,14 +177,14 @@ public:
     typedef typename super::face_processor_type element_edge_type;
 
     typedef typename mpl::if_<mpl::bool_<GeoShape::is_simplex>,
-            mpl::identity< Mesh< Simplex< GeoShape::nDim,1,GeoShape::nRealDim>, value_type > >,
-            mpl::identity< Mesh< Hypercube<GeoShape::nDim,1,GeoShape::nRealDim>,value_type > > >::type::type P1_mesh_type;
+                              mpl::identity< Mesh< Simplex< GeoShape::nDim,1,GeoShape::nRealDim>, value_type, Tag > >,
+                              mpl::identity< Mesh< Hypercube<GeoShape::nDim,1,GeoShape::nRealDim>,value_type, Tag > > >::type::type P1_mesh_type;
 
     typedef boost::shared_ptr<P1_mesh_type> P1_mesh_ptrtype;
 
     typedef typename mpl::if_<mpl::bool_<GeoShape::is_simplex>,
-            mpl::identity< Mesh< Simplex< GeoShape::nDim-1,nOrder,GeoShape::nRealDim>, value_type > >,
-            mpl::identity< Mesh< Hypercube<GeoShape::nDim-1,nOrder,GeoShape::nRealDim>,value_type > > >::type::type trace_mesh_type;
+                              mpl::identity< Mesh< Simplex< GeoShape::nDim-1,nOrder,GeoShape::nRealDim>, value_type, Tag > >,
+                              mpl::identity< Mesh< Hypercube<GeoShape::nDim-1,nOrder,GeoShape::nRealDim>,value_type, Tag > > >::type::type trace_mesh_type;
     typedef typename boost::shared_ptr<trace_mesh_type> trace_mesh_ptrtype;
     //@}
 
@@ -988,20 +989,20 @@ private:
     boost::shared_ptr<Localization> M_tool_localization;
 };
 
-template<typename Shape, typename T>
+template<typename Shape, typename T, int Tag>
 template<typename RangeT>
-typename Mesh<Shape, T>::trace_mesh_ptrtype
-Mesh<Shape, T>::trace( RangeT const& range )
+typename Mesh<Shape, T, Tag>::trace_mesh_ptrtype
+Mesh<Shape, T, Tag>::trace( RangeT const& range )
 {
 
     return Feel::createSubmesh( this->shared_from_this(), range );
 
 }
 
-template<typename Shape, typename T>
+template<typename Shape, typename T, int Tag>
 template<typename Iterator>
 void
-Mesh<Shape, T>::createSubmesh( self_type& new_mesh,
+Mesh<Shape, T, Tag>::createSubmesh( self_type& new_mesh,
                                Iterator const& begin_elt,
                                Iterator const& end_elt,
                                size_type extraction_policies ) const
@@ -1163,9 +1164,9 @@ Mesh<Shape, T>::createSubmesh( self_type& new_mesh,
 }
 
 
-template<typename Shape, typename T>
-typename Mesh<Shape, T>::P1_mesh_ptrtype
-Mesh<Shape, T>::createP1mesh() const
+template<typename Shape, typename T, int Tag>
+typename Mesh<Shape, T, Tag>::P1_mesh_ptrtype
+Mesh<Shape, T, Tag>::createP1mesh() const
 {
 
     P1_mesh_ptrtype new_mesh( new P1_mesh_type );
