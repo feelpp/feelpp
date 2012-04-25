@@ -1325,7 +1325,7 @@ public:
         struct ChangeElement
         {
             BOOST_MPL_ASSERT_NOT( ( boost::is_same<BasisType,mpl::void_> ) );
-            typedef FunctionSpace<mesh_type,detail::bases<BasisType>,value_type,periodicity_type> fs_type;
+            typedef typename ChangeBasis<BasisType>::type fs_type;
             typedef typename fs_type::template Element<value_type, typename VectorUblas<T>::range::type > element_type;
             typedef element_type type;
         };
