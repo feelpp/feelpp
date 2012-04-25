@@ -57,7 +57,7 @@ using boost::unit_test::test_suite;
 #include <feel/feeldiscr/functionspace.hpp>
 
 #include <feel/feelfilters/gmsh.hpp>
-
+#include <feel/feelvf/vf.hpp>
 
 namespace Feel
 {
@@ -350,9 +350,35 @@ public:
         typedef Mesh<Simplex<Dim, 1> > mesh1_type;
         typedef Simplex<Dim-1, 1,Dim> convex2_type;
         typedef Mesh<convex2_type> mesh2_type;
+        typedef boost::shared_ptr<mesh1_type> mesh1_ptrtype;
+        typedef boost::shared_ptr<mesh2_type> mesh2_ptrtype;
 
 
         typedef FunctionSpace<meshes<mesh1_type,mesh2_type>, bases<Lagrange<N, Scalar>,Lagrange<N,Scalar> > > space_type;
+        auto mesh1 = createGMSHMesh( _mesh=new mesh1_type,
+                                     _desc=domain( _name=( boost::format( "%1%-%2%" ) % "hypercube" % Dim ).str() ,
+                                                   _usenames=true,
+                                                   _shape="hypercube",
+                                                   _dim=Dim,
+                                                   _h=0.2 ) );
+        auto mesh2 = mesh1->trace( boundaryfaces(mesh1) );
+
+        auto m = fusion::make_vector(mesh1, mesh2 );
+        BOOST_CHECK_EQUAL( fusion::at_c<0>(m), mesh1 );
+        BOOST_CHECK_EQUAL( fusion::at_c<1>(m), mesh2 );
+        auto Xh = space_type::New( _mesh=m );
+        using namespace vf;
+        auto res1 = integrate( elements(Xh->template mesh<0>()), cst(1.)).evaluate();
+        BOOST_TEST_MESSAGE( "int 1 = " << res1 );
+        BOOST_CHECK_CLOSE( res1(0,0), 1, 1e-14 );
+        auto res2 = integrate( elements(Xh->template mesh<1>()), cst(1.)).evaluate();
+        BOOST_TEST_MESSAGE( "int_bdy 1 = " << res2 );
+        BOOST_CHECK_CLOSE( res2(0,0), 4, 1e-14 );
+
+        // Mh(domain), Lh(trace)
+        //auto Xh = Mh*Lh;
+        // typedef decltype( Mh*Lh ) space_type
+        // auto Xh = FunctionSpace<decltype(meshes(Mh->mesh(),Lh->mesh())),
     }
 };
 
