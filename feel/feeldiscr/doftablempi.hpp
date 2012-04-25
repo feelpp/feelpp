@@ -1,14 +1,31 @@
+/*
+  This file is part of the Feel library
+
+  Copyright (C) 2012 Université de Grenoble 1
+
+  This library is free software; you can redistribute it and/or
+  modify it under the terms of the GNU Lesser General Public
+  License as published by the Free Software Foundation; either
+  version 3.0 of the License, or (at your option) any later version.
+
+  This library is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  Lesser General Public License for more details.
+
+  You should have received a copy of the GNU Lesser General Public
+  License along with this library; if not, write to the Free Software
+  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+*/
 /**
  * \file doftablempi.hpp
  * \author Vincent Chabannes
  */
+#if !defined(FEELPP_DOFTABLE_MPI_HPP)
+#define FEELPP_DOFTABLE_MPI_HPP 1
+
 namespace Feel
 {
-
-//--------------------------------------------------------------------------------------------------------//
-//--------------------------------------------------------------------------------------------------------//
-//--------------------------------------------------------------------------------------------------------//
-//--------------------------------------------------------------------------------------------------------//
 
 template<typename MeshType, typename FEType, typename PeriodicityType>
 void
@@ -287,7 +304,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGhostInterProcessDofMap( mesh_
                 }
             }
 
-            if ( !find ) std::cout<<"\n PROBLEME not find " << std::endl;
+            if ( !find ) std::cout<<"\n interprocess face dof not found " << std::endl;
 
 #endif
             auto thedof = faceLocalToGlobal( dataToRecv[0], locDof, dataToRecv[2] );
@@ -495,7 +512,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGhostInterProcessDofMap( mesh_
                 faceIdInEltOnProc = face_it->pos_first();
             }
 
-            else std::cout << "\nPROBLEME4!!!!"<<std::endl;
+            else std::cout << "\n invalid element process id with respect to current rank "<<std::endl;
 
 
 #if 0
@@ -909,8 +926,6 @@ DofTable<MeshType, FEType, PeriodicityType>::updateGhostGlobalDof( std::map<size
 
 }
 
-//--------------------------------------------------------------------------------------------------------//
-
-
-
 } // namespace Feel
+
+#endif /* FEELPP_DOFTABLE_MPI_HPP */
