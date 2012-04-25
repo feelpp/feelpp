@@ -451,10 +451,10 @@ struct H
     array_type _M_hess;
 };
 
-template<typename MeshType>
+template<typename MeshPtrType>
 struct InitializeSpace
 {
-    InitializeSpace( boost::shared_ptr<MeshType> const& mesh,
+    InitializeSpace( MeshPtrType const& mesh,
                      std::vector<boost::tuple<size_type, uint16_type, size_type> > const& dofindices,
                      std::vector<WorldComm> const & worldsComm )
         :
@@ -467,14 +467,29 @@ struct InitializeSpace
     template <typename T>
     void operator()( boost::shared_ptr<T> & x ) const
     {
+        operator()( x, is_shared_ptr<MeshPtrType>() );
+    }
+    template <typename T>
+    void operator()( boost::shared_ptr<T> & x, mpl::bool_<true> ) const
+    {
         x = boost::shared_ptr<T>( new T( _M_mesh, _M_dofindices, std::vector<WorldComm>( 1,_M_worldsComm[_M_cursor] ) ) );
+        FEELPP_ASSERT( x ).error( "invalid function space" );
+
+        ++_M_cursor;// warning _M_cursor < nb color
+    }
+    template <typename T>
+    void operator()( boost::shared_ptr<T> & x, mpl::bool_<false> ) const
+    {
+        // look for T::mesh_ptrtype in MeshPtrType
+        auto m = *fusion::find<typename T::mesh_ptrtype>(_M_mesh);
+        x = boost::shared_ptr<T>( new T( m, _M_dofindices, std::vector<WorldComm>( 1,_M_worldsComm[_M_cursor] ) ) );
         FEELPP_ASSERT( x ).error( "invalid function space" );
 
         ++_M_cursor;// warning _M_cursor < nb color
     }
     mutable uint16_type _M_cursor;
     std::vector<WorldComm> _M_worldsComm;
-    boost::shared_ptr<MeshType> _M_mesh;
+    MeshPtrType _M_mesh;
     std::vector<boost::tuple<size_type, uint16_type, size_type> > const& _M_dofindices;
 };
 template<typename DofType>
@@ -1062,17 +1077,24 @@ public:
 
 private:
 
-    template<typename MeshType,typename BasisType>
+    template<typename BasisType>
     struct ChangeMesh
     {
-        typedef boost::shared_ptr<FunctionSpace<MeshType,detail::bases<BasisType>,value_type, periodicity_type> > type;
+        typedef typename boost::remove_reference<meshes_list>::type meshes_list_noref;
+        typedef typename boost::remove_reference<bases_list>::type bases_list_noref;
+        typedef typename fusion::result_of::distance<typename fusion::result_of::begin<meshes_list_noref>::type,
+                                                     typename fusion::result_of::find<bases_list_noref,BasisType>::type>::type pos;
+        typedef typename fusion::result_of::at_c<meshes_list_noref, pos::value >::type _mesh_type;
+        typedef boost::shared_ptr<FunctionSpace<typename boost::remove_reference<_mesh_type>::type,detail::bases<BasisType>,value_type, periodicity_type> > type;
     };
     template<typename BasisType>
     struct ChangeBasis
     {
         typedef typename mpl::if_<boost::is_base_of<MeshBase, meshes_list >,
-                mpl::identity<boost::shared_ptr<FunctionSpace<meshes_list,detail::bases<BasisType>,value_type, periodicity_type> > >,
-                mpl::identity<typename mpl::transform<meshes_list, ChangeMesh<mpl::_1,BasisType>, mpl::back_inserter<fusion::vector<> > > > >::type::type type;
+                                  mpl::identity<mpl::identity<boost::shared_ptr<FunctionSpace<meshes_list,detail::bases<BasisType>,value_type, periodicity_type> > > >,
+                                  mpl::identity<ChangeMesh<BasisType> > >::type::type::type type;
+
+//mpl::identity<typename mpl::transform<meshes_list, ChangeMesh<mpl::_1,BasisType>, mpl::back_inserter<fusion::vector<> > >::type > >::type::type type;
     };
     typedef typename mpl::transform<bases_list, ChangeBasis<mpl::_1>, mpl::back_inserter<fusion::vector<> > >::type functionspace_vector_type;
 
@@ -1081,8 +1103,8 @@ private:
     {
         typedef typename BasisType::component_basis_type component_basis_type;
         typedef typename mpl::if_<boost::is_base_of<MeshBase, meshes_list >,
-                mpl::identity<boost::shared_ptr<FunctionSpace<meshes_list,detail::bases<component_basis_type>,value_type, periodicity_type> > >,
-                mpl::identity<typename mpl::transform<meshes_list, ChangeMesh<mpl::_1,component_basis_type>, mpl::back_inserter<fusion::vector<> > > > >::type::type type;
+                                  mpl::identity<mpl::identity<boost::shared_ptr<FunctionSpace<meshes_list,detail::bases<component_basis_type>,value_type, periodicity_type> > > >,
+                                  mpl::identity<ChangeMesh<component_basis_type> > >::type::type::type type;
     };
 
     typedef typename mpl::transform<bases_list,
@@ -1108,20 +1130,29 @@ public:
     //@{
     static const bool is_composite = ( mpl::size<bases_list>::type::value > 1 );
 
-    template<int N>
+    template<typename MeshListType,int N>
     struct GetMesh
     {
-        typedef typename mpl::if_<boost::is_base_of<MeshBase, meshes_list >,
-                mpl::identity<mpl::identity<meshes_list> >,
-                mpl::identity<mpl::at_c<meshes_list,N> > >::type::type::type type;
+        typedef typename mpl::if_<boost::is_base_of<MeshBase, MeshListType >,
+                                  mpl::identity<mpl::identity<MeshListType> >,
+                                  mpl::identity<mpl::at_c<MeshListType,N> > >::type::type::type type;
     };
     // mesh
     typedef meshes_list MeshesListType;
-    typedef typename GetMesh<0>::type mesh_0_type;
+    typedef typename GetMesh<meshes_list,0>::type mesh_0_type;
     typedef typename mpl::if_<boost::is_base_of<MeshBase, meshes_list >,
-            mpl::identity<meshes_list>,
-            mpl::identity<mesh_0_type> >::type::type mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+                              mpl::identity<meshes_list>,
+                              mpl::identity<mesh_0_type> >::type::type mesh_type;
+
+    template<typename MeshType>
+    struct ChangeToMeshPtr
+    {
+        typedef boost::shared_ptr<MeshType> type;
+    };
+
+    typedef typename mpl::if_<boost::is_base_of<MeshBase, meshes_list >,
+                              mpl::identity<boost::shared_ptr<mesh_type> >,
+                              mpl::identity<typename mpl::transform<meshes_list, ChangeToMeshPtr<mpl::_1>, mpl::back_inserter<meshes<> > >::type  > >::type::type mesh_ptrtype;
     typedef typename mpl::if_<boost::is_base_of<MeshBase, meshes_list >,
             mpl::identity<typename mesh_type::element_type>,
             mpl::identity<mpl::void_> >::type::type convex_type;
@@ -1135,21 +1166,21 @@ public:
                 value_type,
                 typename mesh_type::element_type>::type::nComponents> type;
     };
-
+    struct nodim { static const int nDim = -1; static const int nRealDim = -1; };
     static const uint16_type nDim = mpl::if_<boost::is_base_of<MeshBase, meshes_list >,
-                             mpl::identity<mpl::int_<meshes_list::nDim> >,
-                             mpl::identity<mpl::int_<-1> > >::type::type::value;
+                                             mpl::identity<meshes_list >,
+                                             mpl::identity<nodim> >::type::type::nDim;
     static const uint16_type nRealDim = mpl::if_<boost::is_base_of<MeshBase, meshes_list >,
-                             mpl::identity<mpl::int_<meshes_list::nRealDim> >,
-                             mpl::identity<mpl::int_<-1> > >::type::type::value;
+                                                 mpl::identity<meshes_list>,
+                                                 mpl::identity<nodim> >::type::type::nRealDim;
 
 
 
     //typedef typename mpl::at_c<bases_list,0>::type::template apply<mesh_type::nDim,value_type,typename mesh_type::element_type>::type basis_0_type;
-    typedef typename mpl::at_c<bases_list,0>::type::template apply<GetMesh<0>::type::nDim,
-            GetMesh<0>::type::nRealDim,
-            value_type,
-            typename GetMesh<0>::type::element_type>::type basis_0_type;
+    typedef typename mpl::at_c<bases_list,0>::type::template apply<GetMesh<meshes_list,0>::type::nDim,
+                                                                   GetMesh<meshes_list,0>::type::nRealDim,
+                                                                   value_type,
+                                                                   typename GetMesh<meshes_list,0>::type::element_type>::type basis_0_type;
 
     static const uint16_type rank = ( is_composite? invalid_uint16_type_value : basis_0_type::rank );
     static const bool is_scalar = ( is_composite? false : basis_0_type::is_scalar );
@@ -2267,6 +2298,7 @@ public:
             return _M_functionspace->template functionSpace<i>();
         }
 
+
         template<int i>
         typename mpl::at_c<element_vector_type,i>::type
         element( std::string const& name ="u", bool updateOffViews=true )
@@ -2845,7 +2877,7 @@ public:
         Debug( 5010 ) << "component    MESH_PARTITION: " <<  ctx.test( MESH_PARTITION ) << "\n";
 
         this->init( mesh, mesh_components, periodicity, std::vector<boost::tuple<size_type, uint16_type, size_type> >(), mpl::bool_<is_composite>() );
-        mesh->addObserver( *this );
+        //mesh->addObserver( *this );
     }
 
     void init( mesh_ptrtype const& mesh,
@@ -2860,7 +2892,7 @@ public:
         Debug( 5010 ) << "component    MESH_PARTITION: " <<  ctx.test( MESH_PARTITION ) << "\n";
 
         this->init( mesh, mesh_components, periodicity_type(), dofindices, mpl::bool_<is_composite>() );
-        mesh->addObserver( *this );
+        //mesh->addObserver( *this );
     }
 
     //! destructor: do nothing thanks to shared_ptr<>
@@ -3033,6 +3065,25 @@ public:
     mesh_ptrtype const& mesh() const
     {
         return _M_mesh;
+    }
+
+    template<int i>
+    typename GetMesh<mesh_ptrtype,i>::type
+    mesh() const
+    {
+        return mesh<i>( is_shared_ptr<mesh_ptrtype>() );
+    }
+    template<int i>
+    typename GetMesh<mesh_ptrtype,i>::type
+    mesh( mpl::bool_<true> ) const
+    {
+        return _M_mesh;
+    }
+    template<int i>
+    typename GetMesh<mesh_ptrtype,i>::type
+    mesh( mpl::bool_<false> ) const
+    {
+        return fusion::at_c<i>(_M_mesh);
     }
 
     /**
@@ -3564,26 +3615,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
     Debug( 5010 ) << "calling init(<composite>) begin\n";
     _M_mesh = __m;
 
-#if 0
-
-    if ( basis_type::nDofPerEdge )
-        _M_mesh->components().set( MESH_UPDATE_EDGES );
-
-    /*
-     * update faces info in mesh only if dofs exists on faces or the
-     * expansion is continuous between elements. This case handles
-     * strong Dirichlet imposition
-     */
-    if ( basis_type::nDofPerFace || is_continuous  )
-        _M_mesh->components().set( MESH_UPDATE_FACES );
-
-#else
-    _M_mesh->components().set( mesh_components | MESH_UPDATE_FACES | MESH_UPDATE_EDGES | MESH_PARTITION );
-#endif
-    _M_mesh->updateForUse();
-
     // todo : check worldsComm size and _M_functionspaces are the same!
-    fusion::for_each( _M_functionspaces, detail::InitializeSpace<mesh_type>( __m, dofindices, this->worldsComm() ) );
+    fusion::for_each( _M_functionspaces, detail::InitializeSpace<mesh_ptrtype>( __m, dofindices, this->worldsComm() ) );
 
 #if !defined(FEELPP_ENABLE_MPI_MODE) // NOT MPI
     _M_dof = dof_ptrtype( new dof_type( this->nDof(), this->nLocalDof() ) );
@@ -3611,7 +3644,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
         this->setWorldComm( mixSpaceWorldComm );
         //mixSpaceWorldComm.showMe();
 
-        // update DofTable for the mixSpace (we have 2 dofTables : On and OnOff)
+        // update DofTable for the mixedSpace (we have 2 dofTables : On and OnOff)
         auto dofInitTool=detail::updateDataMapProcess<dof_type>( this->worldsComm(), mixSpaceWorldComm, this->nSubFunctionSpace()-1 );
         fusion::for_each( _M_functionspaces, dofInitTool );
         _M_dof = dofInitTool.dataMap();
@@ -3625,7 +3658,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
 
     else // sequential
     {
-        // update DofTable for the mixSpace (here On is not build properly but OnOff yes and On=OnOff, see detail::updateDataMapProcess)
+        // update DofTable for the mixedSpace (here On is not build properly but OnOff yes and On=OnOff, see detail::updateDataMapProcess)
         auto dofInitTool=detail::updateDataMapProcess<dof_type>( this->worldsComm(), this->worldComm(), this->nSubFunctionSpace()-1 );
         fusion::for_each( _M_functionspaces, dofInitTool );
         _M_dof = dofInitTool.dataMapOnOff();
