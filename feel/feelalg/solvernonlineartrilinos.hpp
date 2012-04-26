@@ -165,10 +165,6 @@ private:
 template <typename T>
 inline
 SolverNonLinearTrilinos<T>::SolverNonLinearTrilinos (WorldComm const& worldComm)
-    :
-    super(worldComm),
-    M_mapRow(worldComm),
-    M_mapCol(worldComm)
 {}
 
 
