@@ -117,7 +117,7 @@ struct compute_graph2
             if ( M_stencil->isBlockPatternZero( M_test_index,M_trial_index ) )
             {
 #if !defined(FEELPP_ENABLE_MPI_MODE)
-                const size_type proc_id           = M_stencil->testSpace()->mesh()->comm().rank();
+                const size_type proc_id           = M_stencil->testSpace()->template mesh<0>()->comm().rank();
                 const size_type n1_dof_on_proc    = M_space1->nLocalDof();
                 const size_type first1_dof_on_proc = M_space1->dof()->firstDof( proc_id );
                 const size_type last1_dof_on_proc = M_space1->dof()->lastDof( proc_id );
