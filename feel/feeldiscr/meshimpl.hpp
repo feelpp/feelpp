@@ -41,8 +41,8 @@
 
 namespace Feel
 {
-template<typename Shape, typename T>
-Mesh<Shape, T>::Mesh( std::string partitioner, WorldComm const& worldComm )
+template<typename Shape, typename T, int Tag>
+Mesh<Shape, T, Tag>::Mesh( std::string partitioner, WorldComm const& worldComm )
     :
     super(worldComm),
     _M_gm( new gm_type ),
@@ -56,16 +56,16 @@ Mesh<Shape, T>::Mesh( std::string partitioner, WorldComm const& worldComm )
     this->setPartitioner( partitioner );
     Debug( 4015 ) << "[Mesh::Mesh] setting partitioner to " << partitioner << " done\n";
 }
-template<typename Shape, typename T>
+template<typename Shape, typename T, int Tag>
 void
-Mesh<Shape, T>::partition ( const uint16_type n_parts )
+Mesh<Shape, T, Tag>::partition ( const uint16_type n_parts )
 {
     //M_part->partition( *this, n_parts );
 }
 
-template<typename Shape, typename T>
+template<typename Shape, typename T, int Tag>
 void
-Mesh<Shape, T>::updateForUse()
+Mesh<Shape, T, Tag>::updateForUse()
 {
     Debug( 4015 ) << "component     MESH_RENUMBER: " <<  this->components().test( MESH_RENUMBER ) << "\n";
     Debug( 4015 ) << "component MESH_UPDATE_EDGES: " <<  this->components().test( MESH_UPDATE_EDGES ) << "\n";
@@ -279,9 +279,9 @@ Mesh<Shape, T>::updateForUse()
 
 
 
-template<typename Shape, typename T>
+template<typename Shape, typename T, int Tag>
 void
-Mesh<Shape, T>::renumber( mpl::bool_<true> )
+Mesh<Shape, T, Tag>::renumber( mpl::bool_<true> )
 {
     size_type next_free_node = 0;
 
@@ -472,9 +472,9 @@ Mesh<Shape, T>::renumber( mpl::bool_<true> )
 }
 
 
-template<typename Shape, typename T>
+template<typename Shape, typename T, int Tag>
 void
-Mesh<Shape, T>::localrenumber()
+Mesh<Shape, T, Tag>::localrenumber()
 {
     for ( element_const_iterator elt = this->beginElement();
             elt != this->endElement(); ++elt )
@@ -515,9 +515,9 @@ Mesh<Shape, T>::localrenumber()
     }
 } /** void LocalRenumber **/
 
-template<typename Shape, typename T>
+template<typename Shape, typename T, int Tag>
 void
-Mesh<Shape, T>::updateEntitiesCoDimensionOne()
+Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne()
 {
     boost::timer ti;
     face_type face;
@@ -846,9 +846,9 @@ Mesh<Shape, T>::updateEntitiesCoDimensionOne()
 }
 
 #if defined(FEELPP_ENABLE_MPI_MODE)
-template<typename Shape, typename T>
+template<typename Shape, typename T, int Tag>
 void
-Mesh<Shape, T>::updateEntitiesCoDimensionOneGhostCell()
+Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCell()
 {
     //std::cout << "[Mesh::updateEntitiesCoDimensionOneGhostCell] start on god rank "<< this->worldComm().godRank() << std::endl;
     std::vector<int> nbMsgToSend( this->worldComm().localSize() );
@@ -1040,9 +1040,9 @@ Mesh<Shape, T>::updateEntitiesCoDimensionOneGhostCell()
 #endif // defined(FEELPP_ENABLE_MPI_MODE)
 
 
-template<typename Shape, typename T>
+template<typename Shape, typename T, int Tag>
 void
-Mesh<Shape, T>::check() const
+Mesh<Shape, T, Tag>::check() const
 {
 #if !defined( NDEBUG )
     Debug( 4015 ) << "[Mesh::check] numLocalFaces = " << this->numLocalFaces() << "\n";
@@ -1111,9 +1111,9 @@ Mesh<Shape, T>::check() const
 
 #endif
 }
-template<typename Shape, typename T>
+template<typename Shape, typename T, int Tag>
 void
-Mesh<Shape, T>::findNeighboringProcessors()
+Mesh<Shape, T, Tag>::findNeighboringProcessors()
 {
     // Don't need to do anything if there is
     // only one processor.
@@ -1171,9 +1171,9 @@ Mesh<Shape, T>::findNeighboringProcessors()
 #endif
 }
 
-template<typename Shape, typename T>
+template<typename Shape, typename T, int Tag>
 void
-Mesh<Shape, T>::checkLocalPermutation( mpl::bool_<true> ) const
+Mesh<Shape, T, Tag>::checkLocalPermutation( mpl::bool_<true> ) const
 {
     bool mesh_well_oriented = true;
     std::vector<size_type> list_of_bad_elts;
@@ -1203,9 +1203,9 @@ Mesh<Shape, T>::checkLocalPermutation( mpl::bool_<true> ) const
     }
 }
 
-template<typename Shape, typename T>
+template<typename Shape, typename T, int Tag>
 void
-Mesh<Shape, T>::checkAndFixPermutation(  )
+Mesh<Shape, T, Tag>::checkAndFixPermutation(  )
 {
     element_type __element = *this->beginElement();
 
@@ -1264,9 +1264,9 @@ Mesh<Shape, T>::checkAndFixPermutation(  )
     }
 }
 
-template<typename Shape, typename T>
+template<typename Shape, typename T, int Tag>
 void
-Mesh<Shape, T>::Inverse::distribute( bool extrapolation )
+Mesh<Shape, T, Tag>::Inverse::distribute( bool extrapolation )
 {
     typename self_type::element_iterator el_it;
     typename self_type::element_iterator el_en;
@@ -1363,9 +1363,9 @@ Mesh<Shape, T>::Inverse::distribute( bool extrapolation )
     Debug( 4015 ) << "[Mesh::Inverse] distribute mesh points in kdtree done\n";
 }
 
-template<typename Shape, typename T>
+template<typename Shape, typename T, int Tag>
 void
-Mesh<Shape, T>::Localization::init()
+Mesh<Shape, T, Tag>::Localization::init()
 {
     if ( !M_mesh ) return;
 
@@ -1402,9 +1402,9 @@ Mesh<Shape, T>::Localization::init()
 
 }
 
-template<typename Shape, typename T>
+template<typename Shape, typename T, int Tag>
 void
-Mesh<Shape, T>::Localization::initBoundaryFaces()
+Mesh<Shape, T, Tag>::Localization::initBoundaryFaces()
 {
     if ( !M_mesh ) return;
 
@@ -1445,9 +1445,9 @@ Mesh<Shape, T>::Localization::initBoundaryFaces()
 
 
 
-template<typename Shape, typename T>
-boost::tuple<bool,typename Mesh<Shape, T>::node_type>
-Mesh<Shape, T>::Localization::isIn( size_type _id, const node_type & _pt ) const
+template<typename Shape, typename T, int Tag>
+boost::tuple<bool,typename Mesh<Shape, T, Tag>::node_type>
+Mesh<Shape, T, Tag>::Localization::isIn( size_type _id, const node_type & _pt ) const
 {
     bool isin=false;
     double dmin;
@@ -1480,9 +1480,9 @@ Mesh<Shape, T>::Localization::isIn( size_type _id, const node_type & _pt ) const
     return boost::make_tuple(isin,x_ref);
 }
 
-template<typename Shape, typename T>
+template<typename Shape, typename T, int Tag>
 boost::tuple<uint16_type,std::vector<bool> >
-Mesh<Shape, T>::Localization::isIn( std::vector<size_type> _ids, const node_type & _pt )
+Mesh<Shape, T, Tag>::Localization::isIn( std::vector<size_type> _ids, const node_type & _pt )
 {
     typedef typename self_type::gm_type::reference_convex_type ref_convex_type;
     typedef typename self_type::gm1_type::reference_convex_type ref_convex1_type;
@@ -1529,9 +1529,9 @@ Mesh<Shape, T>::Localization::isIn( std::vector<size_type> _ids, const node_type
 }
 
 
-template<typename Shape, typename T>
-boost::tuple<bool, size_type, typename Mesh<Shape, T>::node_type>
-Mesh<Shape, T>::Localization::searchElement( const node_type & p )
+template<typename Shape, typename T, int Tag>
+boost::tuple<bool, size_type, typename Mesh<Shape, T, Tag>::node_type>
+Mesh<Shape, T, Tag>::Localization::searchElement( const node_type & p )
 {
 
 #if !defined( NDEBUG )
@@ -1591,9 +1591,9 @@ Mesh<Shape, T>::Localization::searchElement( const node_type & p )
 
 }
 
-template<typename Shape, typename T>
+template<typename Shape, typename T, int Tag>
 boost::tuple<std::vector<bool>, size_type>
-Mesh<Shape, T>::Localization::run_analysis( const matrix_node_type & m,
+Mesh<Shape, T, Tag>::Localization::run_analysis( const matrix_node_type & m,
                                             const size_type & eltHypothetical )
 {
 
@@ -1691,9 +1691,9 @@ Mesh<Shape, T>::Localization::run_analysis( const matrix_node_type & m,
 
 
 
-template<typename Shape, typename T>
-boost::tuple<bool, std::list<boost::tuple<size_type, typename Mesh<Shape, T>::node_type> > >
-Mesh<Shape, T>::Localization::searchElements( const node_type & p )
+template<typename Shape, typename T, int Tag>
+boost::tuple<bool, std::list<boost::tuple<size_type, typename Mesh<Shape, T, Tag>::node_type> > >
+Mesh<Shape, T, Tag>::Localization::searchElements( const node_type & p )
 {
 
 #if !defined( NDEBUG )
@@ -1798,9 +1798,9 @@ Mesh<Shape, T>::Localization::searchElements( const node_type & p )
 } // searchElements
 
 
-template<typename Shape, typename T>
+template<typename Shape, typename T, int Tag>
 void
-Mesh<Shape, T>::Localization::searchInKdTree( const node_type & p,
+Mesh<Shape, T, Tag>::Localization::searchInKdTree( const node_type & p,
         std::list< std::pair<size_type, uint> > & ListTri )
 {
     //search for nearest points
@@ -1873,9 +1873,9 @@ Mesh<Shape, T>::Localization::searchInKdTree( const node_type & p,
 }
 
 
-template<typename Shape, typename T>
-boost::tuple<bool, size_type, typename Mesh<Shape, T>::node_type>
-Mesh<Shape, T>::Localization::searchElement( const node_type & p,
+template<typename Shape, typename T, int Tag>
+boost::tuple<bool, size_type, typename Mesh<Shape, T, Tag>::node_type>
+Mesh<Shape, T, Tag>::Localization::searchElement( const node_type & p,
         const matrix_node_type & setPoints,
         mpl::int_<1> /**/ )
 {
@@ -2037,9 +2037,9 @@ Mesh<Shape, T>::Localization::searchElement( const node_type & p,
 } //searchElement
 
 
-template<typename Shape, typename T>
+template<typename Shape, typename T, int Tag>
 boost::tuple<std::vector<bool>, size_type>
-Mesh<Shape, T>::Localization::run_analysis( const matrix_node_type & m,
+Mesh<Shape, T, Tag>::Localization::run_analysis( const matrix_node_type & m,
         const size_type & eltHypothetical,
         const matrix_node_type & setPoints,
         mpl::int_<1> /**/ )
@@ -2074,16 +2074,16 @@ Mesh<Shape, T>::Localization::run_analysis( const matrix_node_type & m,
 } // run_analysis
 
 
-template<typename Shape, typename T>
-typename Mesh<Shape, T>::node_type
-Mesh<Shape, T>::Localization::barycenter() const
+template<typename Shape, typename T, int Tag>
+typename Mesh<Shape, T, Tag>::node_type
+Mesh<Shape, T, Tag>::Localization::barycenter() const
 {
     return this->barycenter(mpl::int_<nRealDim>());
 }
 
-template<typename Shape, typename T>
-typename Mesh<Shape, T>::node_type
-Mesh<Shape, T>::Localization::barycenter(mpl::int_<1> /**/) const
+template<typename Shape, typename T, int Tag>
+typename Mesh<Shape, T, Tag>::node_type
+Mesh<Shape, T, Tag>::Localization::barycenter(mpl::int_<1> /**/) const
 {
     node_type res(1);
     res(0)=0;
@@ -2095,9 +2095,9 @@ Mesh<Shape, T>::Localization::barycenter(mpl::int_<1> /**/) const
     res(0)/=this->kdtree()->nPoints();
     return res;
 }
-template<typename Shape, typename T>
-typename Mesh<Shape, T>::node_type
-Mesh<Shape, T>::Localization::barycenter(mpl::int_<2> /**/) const
+template<typename Shape, typename T, int Tag>
+typename Mesh<Shape, T, Tag>::node_type
+Mesh<Shape, T, Tag>::Localization::barycenter(mpl::int_<2> /**/) const
 {
     node_type res(2);
     res(0)=0;res(1)=0;
@@ -2109,9 +2109,9 @@ Mesh<Shape, T>::Localization::barycenter(mpl::int_<2> /**/) const
     res(0)/=this->kdtree()->nPoints();res(1)/=this->kdtree()->nPoints();
     return res;
 }
-template<typename Shape, typename T>
-typename Mesh<Shape, T>::node_type
-Mesh<Shape, T>::Localization::barycenter(mpl::int_<3> /**/) const
+template<typename Shape, typename T, int Tag>
+typename Mesh<Shape, T, Tag>::node_type
+Mesh<Shape, T, Tag>::Localization::barycenter(mpl::int_<3> /**/) const
 {
     node_type res(3);
     res(0)=0;res(1)=0;res(2)=0;
