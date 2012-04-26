@@ -829,7 +829,11 @@ public:
     size_type firstLocalIndex() const;
     size_type lastLocalIndex() const;
 
+    void duplicateFromOtherPartition( Vector<T> const& vecInput );
+
 private :
+
+    void duplicateFromOtherPartition_run( Vector<T> const& vecInput );
 
     Vec _M_vecLocal;
 

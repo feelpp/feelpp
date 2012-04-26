@@ -57,7 +57,7 @@ using boost::unit_test::test_suite;
 #include <feel/feeldiscr/functionspace.hpp>
 
 #include <feel/feelfilters/gmsh.hpp>
-
+#include <feel/feelvf/vf.hpp>
 
 namespace Feel
 {
@@ -334,6 +334,163 @@ public:
 
     }
 };
+
+template<int Dim, int N, typename T>
+class TestSpaceProd
+{
+public:
+    TestSpaceProd()
+    {}
+
+    void operator()() const
+    {
+        operator()( mpl::int_<Dim>() );
+    }
+    void operator()( mpl::int_<2> ) const
+    {
+        using namespace Feel;
+
+        typedef Simplex<Dim, 1> convex1_type;
+        typedef Mesh<Simplex<Dim, 1> > mesh1_type;
+        typedef Simplex<Dim-1, 1,Dim> convex2_type;
+        typedef Mesh<convex2_type> mesh2_type;
+
+        typedef FunctionSpace<meshes<mesh1_type,mesh2_type>, bases<Lagrange<N, Scalar>,Lagrange<N,Scalar> > > space_type;
+        auto mesh1 = createGMSHMesh( _mesh=new mesh1_type,
+                                     _desc=domain( _name=( boost::format( "%1%-%2%" ) % "hypercube" % Dim ).str() ,
+                                                   _usenames=true,
+                                                   _shape="hypercube",
+                                                   _dim=Dim,
+                                                   _h=0.2 ) );
+        auto mesh2 = mesh1->trace( boundaryfaces(mesh1) );
+
+        auto m = fusion::make_vector(mesh1, mesh2 );
+        BOOST_CHECK_EQUAL( fusion::at_c<0>(m), mesh1 );
+        BOOST_CHECK_EQUAL( fusion::at_c<1>(m), mesh2 );
+        auto Xh = space_type::New( _mesh=m );
+        using namespace vf;
+        auto res1 = integrate( elements(Xh->template mesh<0>()), cst(1.)).evaluate();
+        BOOST_TEST_MESSAGE( "int 1 = " << res1 );
+        BOOST_CHECK_CLOSE( res1(0,0), 1, 1e-12 );
+        auto res2 = integrate( elements(Xh->template mesh<1>()), cst(1.)).evaluate();
+        BOOST_TEST_MESSAGE( "int_bdy 1 = " << res2 );
+        BOOST_CHECK_CLOSE( res2(0,0), 4, 1e-13 );
+
+        auto U=Xh->element();
+        if ( N == 1 )
+        {
+            auto u = U.template element<0>();
+            auto l = U.template element<1>();
+            BOOST_CHECK_EQUAL( u.size(), mesh1->numVertices() );
+            BOOST_CHECK_EQUAL( l.size(), mesh2->numVertices() );
+            u = vf::project( Xh->template functionSpace<0>(), elements(Xh->template mesh<0>() ), Px() );
+            l = vf::project( Xh->template functionSpace<1>(), elements(Xh->template mesh<1>() ), Py() );
+            auto int1_1 = integrate( elements(Xh->template mesh<0>()), Px()).evaluate()(0,0);
+            auto int1_2 = integrate( elements(Xh->template mesh<0>()), idv(u)).evaluate()(0,0);
+            BOOST_CHECK_CLOSE( int1_1, int1_2, 1e-13 );
+            auto int2_1 = integrate( elements(Xh->template mesh<1>()), Py()).evaluate()(0,0);
+            auto int2_2 = integrate( elements(Xh->template mesh<1>()), idv(l)).evaluate()(0,0);
+            BOOST_CHECK_CLOSE( int1_1, int1_2, 1e-13 );
+        }
+
+        // Mh(domain), Lh(trace)
+        //auto Xh = Mh*Lh;
+        // typedef decltype( Mh*Lh ) space_type
+        // auto Xh = FunctionSpace<decltype(meshes(Mh->mesh(),Lh->mesh())),
+    }
+    void operator()( mpl::int_<3> ) const
+    {
+        using namespace Feel;
+
+        typedef Simplex<Dim, 1> convex1_type;
+        typedef Mesh<Simplex<Dim, 1> > mesh1_type;
+        typedef Simplex<Dim-1, 1,Dim> convex2_type;
+        typedef Mesh<convex2_type> mesh2_type;
+        typedef Simplex<Dim-2, 1,Dim> convex3_type;
+        typedef Mesh<convex3_type> mesh3_type;
+
+        typedef FunctionSpace<meshes<mesh1_type,mesh2_type,mesh3_type>, bases<Lagrange<N, Scalar>,Lagrange<N,Scalar>,Lagrange<N,Scalar> > > space_type;
+        auto mesh1 = createGMSHMesh( _mesh=new mesh1_type,
+                                     _desc=domain( _name=( boost::format( "%1%-%2%" ) % "hypercube" % Dim ).str() ,
+                                                   _usenames=false,
+                                                   _shape="hypercube",
+                                                   _dim=Dim,
+                                                   _h=0.2 ) );
+        BOOST_TEST_MESSAGE( "N elements : " << mesh1->numElements() );
+        //auto mesh2 = mesh1->trace( boundaryfaces(mesh1) );
+        auto mesh2 = mesh1->trace( markedfaces(mesh1,6) );
+        BOOST_TEST_MESSAGE( "N elements trace : " << mesh2->numElements() );
+        auto mesh3 = mesh2->trace( boundaryfaces(mesh2) );
+        BOOST_CHECK( !mesh3->elements().empty() );
+        BOOST_TEST_MESSAGE( "N elements trace of trace: " << mesh3->numElements() );
+        auto m = fusion::make_vector(mesh1, mesh2, mesh3 );
+        BOOST_CHECK_EQUAL( fusion::at_c<0>(m), mesh1 );
+        BOOST_CHECK_EQUAL( fusion::at_c<1>(m), mesh2 );
+        BOOST_CHECK_EQUAL( fusion::at_c<2>(m), mesh3 );
+        auto Xh = space_type::New( _mesh=m );
+        using namespace vf;
+        auto res1 = integrate( elements(Xh->template mesh<0>()), cst(1.)).evaluate();
+        BOOST_TEST_MESSAGE( "int 1 = " << res1 );
+        BOOST_CHECK_CLOSE( res1(0,0), 1, 5e-13 );
+        auto res2 = integrate( elements(Xh->template mesh<1>()), cst(1.)).evaluate();
+        BOOST_TEST_MESSAGE( "int_trace 1 = " << res2 );
+        BOOST_CHECK_CLOSE( res2(0,0), 1, 5e-13 );
+        auto res3 = integrate( elements(Xh->template mesh<2>()), cst(1.)).evaluate();
+        BOOST_TEST_MESSAGE( "int_trace_trace 1 = " << res3 );
+        BOOST_CHECK_CLOSE( res3(0,0), 4, 5e-13 );
+
+        // Mh(domain), Lh(trace)
+        //auto Xh = Mh*Lh;
+        // typedef decltype( Mh*Lh ) space_type
+        // auto Xh = FunctionSpace<decltype(meshes(Mh->mesh(),Lh->mesh())),
+    }
+    void operator()( mpl::int_<3> ) const
+    {
+        using namespace Feel;
+
+        typedef Simplex<Dim, 1> convex1_type;
+        typedef Mesh<Simplex<Dim, 1> > mesh1_type;
+        typedef Simplex<Dim-1, 1,Dim> convex2_type;
+        typedef Mesh<convex2_type> mesh2_type;
+        typedef Simplex<Dim-2, 1,Dim> convex3_type;
+        typedef Mesh<convex3_type> mesh3_type;
+
+        typedef FunctionSpace<meshes<mesh1_type,mesh2_type,mesh3_type>, bases<Lagrange<N, Scalar>,Lagrange<N,Scalar>,Lagrange<N,Scalar> > > space_type;
+        auto mesh1 = createGMSHMesh( _mesh=new mesh1_type,
+                                     _desc=domain( _name=( boost::format( "%1%-%2%" ) % "hypercube" % Dim ).str() ,
+                                                   _usenames=true,
+                                                   _shape="hypercube",
+                                                   _dim=Dim,
+                                                   _h=0.2 ) );
+        BOOST_TEST_MESSAGE( "N elements : " << mesh1->numElements() );
+        auto mesh2 = mesh1->trace( boundaryfaces(mesh1) );
+        BOOST_TEST_MESSAGE( "N elements trace : " << mesh2->numElements() );
+        auto mesh3 = mesh2->trace( boundaryfaces(mesh2) );
+        BOOST_CHECK( !mesh3->elements().empty() );
+        BOOST_TEST_MESSAGE( "N elements trace of trace: " << mesh3->numElements() );
+        auto m = fusion::make_vector(mesh1, mesh2, mesh3 );
+        BOOST_CHECK_EQUAL( fusion::at_c<0>(m), mesh1 );
+        BOOST_CHECK_EQUAL( fusion::at_c<1>(m), mesh2 );
+        BOOST_CHECK_EQUAL( fusion::at_c<2>(m), mesh3 );
+        auto Xh = space_type::New( _mesh=m );
+        using namespace vf;
+        auto res1 = integrate( elements(Xh->template mesh<0>()), cst(1.)).evaluate();
+        BOOST_TEST_MESSAGE( "int 1 = " << res1 );
+        BOOST_CHECK_CLOSE( res1(0,0), 1, 1e-13 );
+        auto res2 = integrate( elements(Xh->template mesh<1>()), cst(1.)).evaluate();
+        BOOST_TEST_MESSAGE( "int_trace 1 = " << res2 );
+        BOOST_CHECK_CLOSE( res2(0,0), 6, 1e-13 );
+        auto res3 = integrate( elements(Xh->template mesh<2>()), cst(1.)).evaluate();
+        BOOST_TEST_MESSAGE( "int_trace_trace 1 = " << res3 );
+        BOOST_CHECK_CLOSE( res3(0,0), 12, 1e-14 );
+
+        // Mh(domain), Lh(trace)
+        //auto Xh = Mh*Lh;
+        // typedef decltype( Mh*Lh ) space_type
+        // auto Xh = FunctionSpace<decltype(meshes(Mh->mesh(),Lh->mesh())),
+    }
+};
+
 }
 
 #if USE_BOOST_TEST
@@ -390,6 +547,28 @@ BOOST_AUTO_TEST_CASE( test_space2_3 )
     Feel::TestSpace2<3, double> t;
     t();
     BOOST_TEST_MESSAGE( "test_space2_3 done" );
+}
+BOOST_AUTO_TEST_CASE( test_spaceprod2_1 )
+{
+    BOOST_TEST_MESSAGE( "test_spaceprod2_1" );
+    Feel::TestSpaceProd<2, 1, double> t;
+    t();
+    BOOST_TEST_MESSAGE( "test_spaceprod2_1 done" );
+}
+BOOST_AUTO_TEST_CASE( test_spaceprod2_3 )
+{
+    BOOST_TEST_MESSAGE( "test_spaceprod2_3" );
+    Feel::TestSpaceProd<2, 3, double> t;
+    t();
+    BOOST_TEST_MESSAGE( "test_spaceprod2_3 done" );
+}
+
+BOOST_AUTO_TEST_CASE( test_spaceprod3_1 )
+{
+    BOOST_TEST_MESSAGE( "test_spaceprod3_1" );
+    Feel::TestSpaceProd<3, 1, double> t;
+    t();
+    BOOST_TEST_MESSAGE( "test_spaceprod3_1 done" );
 }
 
 //BOOST_AUTO_TEST_CASE( test_space_rt_1 ) { BOOST_TEST_MESSAGE( "test_space_rt_1" );   Feel::TestSpaceRT<2> t;t(); BOOST_TEST_MESSAGE( "test_space_rt_1 done" );}

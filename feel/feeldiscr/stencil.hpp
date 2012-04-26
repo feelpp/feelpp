@@ -608,13 +608,14 @@ template<typename X1,  typename X2>
 typename Stencil<X1,X2>::graph_ptrtype
 Stencil<X1,X2>::computeGraph( size_type hints )
 {
-    if ( dynamic_cast<void*>( _M_X1->mesh().get() ) == dynamic_cast<void*>( _M_X2->mesh().get() ) )
+    if ( (is_shared_ptr<typename test_space_type::mesh_ptrtype>::value && is_shared_ptr<typename trial_space_type::mesh_ptrtype>::value ) &&
+         dynamic_cast<void*>( _M_X1->template mesh<0>().get() ) == dynamic_cast<void*>( _M_X2->template mesh<0>().get() ) )
         return this->computeGraph( hints, mpl::bool_<mpl::and_< mpl::bool_< ( test_space_type::nSpaces == 1 )>,
-                                   mpl::bool_< ( trial_space_type::nSpaces == 1 )> >::type::value >() );
+                                                                mpl::bool_< ( trial_space_type::nSpaces == 1 )> >::type::value >() );
 
     else
         return this->computeGraphInCaseOfInterpolate( hints, mpl::bool_<mpl::and_< mpl::bool_< ( test_space_type::nSpaces == 1 )>,
-                mpl::bool_< ( trial_space_type::nSpaces == 1 )> >::type::value >() );
+                                                                                   mpl::bool_< ( trial_space_type::nSpaces == 1 )> >::type::value >() );
 }
 
 

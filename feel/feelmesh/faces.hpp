@@ -216,9 +216,9 @@ public:
      */
     //@{
 
-    Faces()
+    Faces( WorldComm const& worldComm = WorldComm() )
         :
-        _M_worldCommFaces(),
+        _M_worldCommFaces( worldComm ),
         _M_faces()
     {}
 

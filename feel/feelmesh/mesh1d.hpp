@@ -136,18 +136,17 @@ public:
  */
 //@{
 
-/**
- * default constructor
- */
-    Mesh1D()
+    /**
+     * default constructor
+     */
+    Mesh1D( WorldComm const& worldComm = WorldComm() )
         :
         super_visitable(),
-        super(),
-        super_elements(),
-        super_points(),
-        super_faces()
+        super( worldComm ),
+        super_elements( worldComm ),
+        super_points( worldComm ),
+        super_faces( worldComm )
         {}
-
 
 /**
  * copy constructor

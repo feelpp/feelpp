@@ -254,9 +254,9 @@ public:
      */
     //@{
 
-    Elements()
+    Elements( WorldComm const& worldComm = WorldComm() )
         :
-        _M_worldCommElements(),
+        _M_worldCommElements(worldComm),
         _M_elements()
     {}
 

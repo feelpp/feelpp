@@ -101,19 +101,33 @@ struct bases
 {
 };
 
-
 template <class A0=mpl::void_, class A1=mpl::void_, class A2=mpl::void_, class A3=mpl::void_>
 struct meshes
         :
     public detail::meshes_base,
-    public mpl::if_<boost::is_same<A1,mpl::void_>,
-        boost::fusion::vector<A0>,
-        typename mpl::if_<boost::is_same<A2,mpl::void_>,
-        boost::fusion::vector<A0,A1>,
-        typename mpl::if_<boost::is_same<A3,mpl::void_>,
-        boost::fusion::vector<A0,A1,A2>,
-        boost::fusion::vector<A0,A1,A2,A3> >::type>::type>::type
+    public mpl::if_<boost::is_same<A0,mpl::void_>,
+                    boost::fusion::vector<>,
+                    typename mpl::if_<boost::is_same<A1,mpl::void_>,
+                                      boost::fusion::vector<A0>,
+                                      typename mpl::if_<boost::is_same<A2,mpl::void_>,
+                                                        boost::fusion::vector<A0,A1>,
+                                                        typename mpl::if_<boost::is_same<A3,mpl::void_>,
+                                                                          boost::fusion::vector<A0,A1,A2>,
+                                                                          boost::fusion::vector<A0,A1,A2,A3> >::type>::type>::type>::type
+
 {
+    typedef typename mpl::if_<boost::is_same<A0,mpl::void_>,
+                              boost::fusion::vector<>,
+                              typename mpl::if_<boost::is_same<A1,mpl::void_>,
+                                                boost::fusion::vector<A0>,
+                                                typename mpl::if_<boost::is_same<A2,mpl::void_>,
+                                                                  boost::fusion::vector<A0,A1>,
+                                                                  typename mpl::if_<boost::is_same<A3,mpl::void_>,
+                                                                                    boost::fusion::vector<A0,A1,A2>,
+                                                                                    boost::fusion::vector<A0,A1,A2,A3> >::type>::type>::type>::type super;
+
+    typedef meshes<A0,A1,A2,A3> this_type;
+    meshes( super const& m ) : super( m ) {}
 };
 
 
