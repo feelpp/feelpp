@@ -84,9 +84,9 @@ public:
      */
     //@{
 
-    ExporterGmsh( std::string const& __p = "default", int freq = 1 );
+    ExporterGmsh( std::string const& __p = "default", int freq = 1, WorldComm const& worldComm = WorldComm() );
 
-    ExporterGmsh( po::variables_map const& vm, std::string const& exp_prefix = "" );
+    ExporterGmsh( po::variables_map const& vm, std::string const& exp_prefix = "", WorldComm const& worldComm = WorldComm() );
 
     ExporterGmsh( ExporterGmsh const & __ex );
 
