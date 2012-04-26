@@ -454,10 +454,6 @@ public:
         typedef Mesh<convex2_type> mesh2_type;
         typedef Simplex<Dim-2, 1,Dim> convex3_type;
         typedef Mesh<convex3_type> mesh3_type;
-        typedef boost::shared_ptr<mesh1_type> mesh1_ptrtype;
-        typedef boost::shared_ptr<mesh2_type> mesh2_ptrtype;
-        typedef boost::shared_ptr<mesh3_type> mesh3_ptrtype;
-
 
         typedef FunctionSpace<meshes<mesh1_type,mesh2_type,mesh3_type>, bases<Lagrange<N, Scalar>,Lagrange<N,Scalar>,Lagrange<N,Scalar> > > space_type;
         auto mesh1 = createGMSHMesh( _mesh=new mesh1_type,
@@ -466,9 +462,12 @@ public:
                                                    _shape="hypercube",
                                                    _dim=Dim,
                                                    _h=0.2 ) );
+        BOOST_TEST_MESSAGE( "N elements : " << mesh1->numElements() );
         auto mesh2 = mesh1->trace( boundaryfaces(mesh1) );
+        BOOST_TEST_MESSAGE( "N elements trace : " << mesh2->numElements() );
         auto mesh3 = mesh2->trace( boundaryfaces(mesh2) );
-
+        BOOST_CHECK( !mesh3->elements().empty() );
+        BOOST_TEST_MESSAGE( "N elements trace of trace: " << mesh3->numElements() );
         auto m = fusion::make_vector(mesh1, mesh2, mesh3 );
         BOOST_CHECK_EQUAL( fusion::at_c<0>(m), mesh1 );
         BOOST_CHECK_EQUAL( fusion::at_c<1>(m), mesh2 );
@@ -477,10 +476,10 @@ public:
         using namespace vf;
         auto res1 = integrate( elements(Xh->template mesh<0>()), cst(1.)).evaluate();
         BOOST_TEST_MESSAGE( "int 1 = " << res1 );
-        BOOST_CHECK_CLOSE( res1(0,0), 1, 1e-14 );
+        BOOST_CHECK_CLOSE( res1(0,0), 1, 1e-13 );
         auto res2 = integrate( elements(Xh->template mesh<1>()), cst(1.)).evaluate();
         BOOST_TEST_MESSAGE( "int_trace 1 = " << res2 );
-        BOOST_CHECK_CLOSE( res2(0,0), 6, 1e-14 );
+        BOOST_CHECK_CLOSE( res2(0,0), 6, 1e-13 );
         auto res3 = integrate( elements(Xh->template mesh<2>()), cst(1.)).evaluate();
         BOOST_TEST_MESSAGE( "int_trace_trace 1 = " << res3 );
         BOOST_CHECK_CLOSE( res3(0,0), 12, 1e-14 );
