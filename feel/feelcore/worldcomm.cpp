@@ -42,7 +42,7 @@ using namespace boost;
 WorldComm::WorldComm()
     :
     super(),
-    M_localComm( /*super::split( 0 )*/ ),
+    M_localComm( super::split( 0, this->globalRank() ) ),
     M_godComm(),
     M_mapColorWorld( this->globalSize() ),
     M_mapLocalRankToGlobalRank( this->localSize() ),
@@ -71,7 +71,7 @@ WorldComm::WorldComm()
     // choice : the smallest rank
     M_masterRank = *std::min_element( globalRanks.begin(),globalRanks.end() );
 
-    //   std::cout << "\n WorldComm : warning constructor empty!! finish on godRank " << this->godRank() << std::endl;
+    //std::cout << "\n WorldComm : warning constructor empty!! finish on godRank " << this->godRank() << std::endl;
 }
 
 //-------------------------------------------------------------------------------
@@ -79,7 +79,7 @@ WorldComm::WorldComm()
 WorldComm::WorldComm( int color )
     :
     super(),
-    M_localComm( super::split( color ) ),
+    M_localComm( super::split( color, this->globalRank() ) ),
     M_godComm(),
     M_mapColorWorld( this->globalSize() ),
     M_mapLocalRankToGlobalRank( this->localSize() ),
@@ -87,6 +87,7 @@ WorldComm::WorldComm( int color )
     M_isActive( this->godSize(),true )
 {
     this->godComm().barrier();
+
     std::vector<int> globalRanks( this->globalSize() );
     mpi::all_gather( this->godComm(),
                      this->globalRank(),
@@ -109,8 +110,7 @@ WorldComm::WorldComm( int color )
 }
 
 //-------------------------------------------------------------------------------
-
-WorldComm::WorldComm( std::vector<int> const& colorWorld )
+    WorldComm::WorldComm( std::vector<int> const& colorWorld )
     :
     super(),
     M_localComm( super::split( colorWorld[this->globalRank()] ) ),
@@ -120,7 +120,48 @@ WorldComm::WorldComm( std::vector<int> const& colorWorld )
     M_mapGlobalRankToGodRank( this->globalSize() ),
     M_isActive( this->godSize(),true )
 {
-    this->godComm().barrier();
+    //std::cout << "\n WorldComm : constructor vector<color>!! start on godRank " << this->godRank() << std::endl;
+    //this->godComm().barrier();
+    std::vector<int> globalRanks( this->globalSize() );
+    mpi::all_gather( this->globalComm(),
+                     this->globalRank(),
+                     globalRanks );
+    //std::cout << "\n WorldComm : constructor vector<color>!! --1--- on godRank " << this->godRank() << std::endl;
+    //this->godComm().barrier();
+
+    mpi::all_gather( this->localComm(),
+                     this->globalRank(),
+                     M_mapLocalRankToGlobalRank );
+    //std::cout << "\n WorldComm : constructor vector<color>!! ---2--- on godRank " << this->godRank() << std::endl;
+    //this->godComm().barrier();
+
+    mpi::all_gather( this->godComm(),//this->globalComm(),
+                     this->godRank(),
+                     M_mapGlobalRankToGodRank );
+
+    // choice : the smallest rank
+    M_masterRank = *std::min_element( globalRanks.begin(),globalRanks.end() );
+    //std::cout << "\n WorldComm : constructor vector<color>!! finish on godRank " << this->godRank() << std::endl;
+}
+
+    /////////////////
+    //////////
+
+
+    WorldComm::WorldComm( std::vector<int> const& colorWorld,
+                          int _localRank,
+                          communicator_type const& _globalComm,
+                          communicator_type const& _godComm )
+    :
+    super(_globalComm),
+    M_localComm( super::split( colorWorld[this->globalRank()],_localRank ) ),
+    M_godComm(_godComm),
+    M_mapColorWorld( colorWorld ),
+    M_mapLocalRankToGlobalRank( this->localSize() ),
+    M_mapGlobalRankToGodRank( this->globalSize() ),
+    M_isActive( this->godSize(),true )
+{
+    //std::cout << "\n WorldComm : NEW constructor vector<color>!! start on godRank " << this->godRank() << std::endl;
     std::vector<int> globalRanks( this->globalSize() );
     mpi::all_gather( this->globalComm(),
                      this->globalRank(),
@@ -208,28 +249,26 @@ WorldComm::WorldComm( communicator_type const& _globalComm, int _color, bool _is
 
 //-------------------------------------------------------------------------------
 
-WorldComm::WorldComm( int _colorLocal, int _colorGlobal, communicator_type const& _godComm, bool _isActive, bool _doInitActiveMap )
+    WorldComm::WorldComm( int _colorLocal, int localRank,
+                          int _colorGlobal, int globalRank,
+                          communicator_type const& _godComm, bool _isActive, bool _doInitActiveMap )
     :
-    super( _godComm.split( _colorGlobal ) ),
-    M_localComm( super::split( _colorLocal ) ),
+    super( _godComm.split( _colorGlobal, globalRank ) ),
+    M_localComm( super::split( _colorLocal, localRank ) ),
     M_godComm(_godComm),
     M_mapColorWorld( this->globalSize() ),
     M_mapLocalRankToGlobalRank( this->localSize() ),
     M_mapGlobalRankToGodRank( this->globalSize() )
 {
-
     mpi::all_gather( this->globalComm(),
                      _colorLocal,
                      M_mapColorWorld );
-
     mpi::all_gather( this->localComm(),
                      this->globalRank(),
                      M_mapLocalRankToGlobalRank );
-
     mpi::all_gather( this->globalComm(),
                      this->godRank(),
                      M_mapGlobalRankToGodRank );
-
     M_masterRank = 0;
 
     if (_doInitActiveMap)
@@ -248,17 +287,17 @@ WorldComm::WorldComm( int _colorLocal, int _colorGlobal, communicator_type const
 
 WorldComm::WorldComm( communicator_type const& _globalComm,
                       communicator_type const& _godComm,
-                      int _color, std::vector<int> const& isActive )
+                      int _color, int localRank,
+                      std::vector<int> const& isActive )
     :
     super( _globalComm ),
-    M_localComm( super::split( _color ) ),
+    M_localComm( _globalComm.split( _color, localRank ) ),
     M_godComm(_godComm ),
     M_mapColorWorld( this->globalSize() ),
     M_mapLocalRankToGlobalRank( this->localSize() ),
     M_mapGlobalRankToGodRank( this->globalSize() ),
     M_isActive(isActive)
 {
-
     mpi::all_gather( this->globalComm(),
                      _color,
                      M_mapColorWorld );
@@ -294,6 +333,40 @@ WorldComm::WorldComm( communicator_type const& _globalComm,
         }
     }
 
+}
+
+//-------------------------------------------------------------------------------
+
+WorldComm::WorldComm( communicator_type const& _globalComm,
+                      communicator_type const& _localComm,
+                      communicator_type const& _godComm,
+                      int _color,
+                      std::vector<int> const& isActive )
+    :
+    super( _globalComm ),
+    M_localComm(_localComm ),
+    M_godComm(_godComm ),
+    M_mapColorWorld( this->globalSize() ),
+    M_mapLocalRankToGlobalRank( this->localSize() ),
+    M_mapGlobalRankToGodRank( this->globalSize() ),
+    M_isActive(isActive)
+{
+    mpi::all_gather( this->globalComm(),
+                     _color,
+                     M_mapColorWorld );
+
+    mpi::all_gather( this->localComm(),
+                     this->globalRank(),
+                     M_mapLocalRankToGlobalRank );
+
+    mpi::all_gather( this->globalComm(),
+                     this->godRank(),
+                     M_mapGlobalRankToGodRank );
+
+    // choice : the smallest rank
+    M_masterRank = INT_MAX;
+
+    this->upMasterRank();
 
 }
 
@@ -311,18 +384,8 @@ WorldComm::subWorldComm() const
 WorldComm::self_type
 WorldComm::subWorldComm( int _color ) const
 {
-#if 0
-    bool isActive;
-    int myColor = this->mapColorWorld()[this->globalRank()];
+    //std::cout << " WorldComm::subWorldComm( int _color ) " << std::endl;
 
-    if ( myColor==_color )
-        isActive=true;
-
-    else
-        isActive=false;
-
-    return self_type( this->localComm(), myColor, isActive );
-#else
     bool isActive;
     int myColor = this->mapColorWorld()[this->globalRank()];
 
@@ -342,10 +405,11 @@ WorldComm::subWorldComm( int _color ) const
         }
 
     return self_type( this->localComm(),
+                      this->localComm(),
                       this->godComm(),
                       myColor,
                       newIsActive );
-#endif
+
 }
 
 //-------------------------------------------------------------------------------
@@ -357,8 +421,9 @@ WorldComm::subWorldCommSeq() const
     newIsActive[this->godRank()]=true;
 
     return self_type( communicator_type(MPI_COMM_SELF,boost::mpi::comm_attach),
+                      communicator_type(MPI_COMM_SELF,boost::mpi::comm_attach),
                       this->godComm(),
-                      this->godRank(),
+                      this->godRank(), // local color
                       newIsActive );
 }
 
@@ -406,7 +471,6 @@ WorldComm::showMe( std::ostream& __out ) const
         }
 
         this->globalComm().barrier();
-this->godComm().barrier();
     }
 
     this->globalComm().barrier();
@@ -433,7 +497,6 @@ WorldComm::operator+( WorldComm const & _worldComm ) const
         color=0;
         active=false;
     }
-
     //auto fusionComm = super::split(color);
     auto fusionComm = this->godComm().split( color );
 
@@ -450,12 +513,15 @@ WorldComm::operator+( WorldComm const & _worldComm ) const
     int godRankActif=0;
     int colorSplit=0;
     int colorOnProc=0;
+    int newLocRank=0;
+    int newGlobRank=0;
     if ( this->isActive()  )
     {
         colorSplit=1;
         active=true;
         godRankActif=this->godRank();
         colorOnProc=this->mapColorWorld()[this->globalRank()];
+        newLocRank=this->localRank();
     }
     else if (_worldComm.isActive() )
     {
@@ -463,14 +529,20 @@ WorldComm::operator+( WorldComm const & _worldComm ) const
         active=true;
         godRankActif=_worldComm.godRank();
         colorOnProc=_worldComm.mapColorWorld()[_worldComm.globalRank()];
+        newLocRank= _worldComm.localRank();
     }
     else
     {
         colorSplit=0;
         active=false;
     }
+    /*std::cout << "OP+ ---1----"
+              << this->localRank()<< " " << this->globalRank() << " " << this->godRank()
+              <<"     "  << _worldComm.localRank()<< " " << _worldComm.globalRank() << " " << _worldComm.godRank()
+              <<std::endl;this->godComm().barrier();*/
 
-    self_type res(colorOnProc,colorSplit,
+    self_type res(colorOnProc,newLocRank,//this->localRank(),
+                  colorSplit,this->godRank(),//this->globalRank(),
                   this->godComm(),
                   active,
                   false );
@@ -479,7 +551,6 @@ WorldComm::operator+( WorldComm const & _worldComm ) const
     mpi::all_gather( res.globalComm(),
                      godRankActif,
                      godRankActivefusion );
-
     std::vector<int> newIsActive(this->godSize(),false);
     for (int k=0;k<godRankActivefusion.size();++k)
     {
@@ -487,6 +558,7 @@ WorldComm::operator+( WorldComm const & _worldComm ) const
     }
     res.setIsActive(newIsActive);
     res.upMasterRank();
+
     return res;
 
 #endif

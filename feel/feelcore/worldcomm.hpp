@@ -52,7 +52,11 @@ public:
 
     WorldComm( int _color );
 
+    // A supp
     WorldComm( std::vector<int> const& _colorWorld );
+    WorldComm( std::vector<int> const& _colorWorld, int localRank,
+               communicator_type const& _globalComm=communicator_type(),
+               communicator_type const& _godComm=communicator_type()  );
 
     WorldComm( WorldComm const& _wc );
 
@@ -60,14 +64,20 @@ public:
                int _color,
                bool _isActive );
 
-    WorldComm( int _colorLocal,int _colorGlobal,
+    WorldComm( int _colorLocal,int localRank,int _colorGlobal,int globalRank,
                communicator_type const& _godComm,
                bool _isActive,
                bool _doInitActiveMap=true );
 
+    // A supp
     WorldComm( communicator_type const& _globalComm,
                communicator_type const& _godComm,
-               int _color,
+               int _localColor, int localRank,
+               std::vector<int> const& isActive );
+    WorldComm( communicator_type const& _globalComm,
+               communicator_type const& _localComm,
+               communicator_type const& _godComm,
+               int _localColor,// int localRank,
                std::vector<int> const& isActive );
 
     communicator_type const& globalComm() const
