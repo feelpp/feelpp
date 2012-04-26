@@ -33,8 +33,9 @@
 namespace Feel
 {
 template <typename T>
-Backend<T>::Backend()
+Backend<T>::Backend( WorldComm const& worldComm )
     :
+    M_worldComm(worldComm),
 #if defined( FEELPP_HAS_PETSC_H )
     M_backend    ( BACKEND_PETSC ),
 #endif
@@ -54,13 +55,14 @@ Backend<T>::Backend()
     M_pcFactorMatSolverPackage( "petsc" ),
     M_constant_null_space( false )
 {
-    if ( M_comm.size() > 1 )
+    if ( M_worldComm.globalSize() > 1 )
         M_pc = "block_jacobi";
 }
 
 template <typename T>
 Backend<T>::Backend( Backend const& backend )
     :
+    M_worldComm( backend.M_worldComm ),
     M_backend( backend.M_backend ),
     M_prefix( backend.M_prefix ),
     M_nlsolver( backend.M_nlsolver ),
@@ -81,11 +83,12 @@ Backend<T>::Backend( Backend const& backend )
 {
 }
 template <typename T>
-Backend<T>::Backend( po::variables_map const& vm, std::string const& prefix )
+Backend<T>::Backend( po::variables_map const& vm, std::string const& prefix, WorldComm const& worldComm )
     :
+    M_worldComm( worldComm ),
     M_vm( vm ),
     M_prefix( prefix ),
-    M_nlsolver( solvernonlinear_type::build( vm ) ),
+    M_nlsolver( solvernonlinear_type::build( vm, prefix, worldComm ) ),
     M_prec_matrix_structure( SAME_NONZERO_PATTERN ),
     M_rtolerance( vm[prefixvm( prefix,"ksp-rtol" )].template as<double>() ),
     M_dtolerance( vm[prefixvm( prefix,"ksp-dtol" )].template as<double>() ),
@@ -109,7 +112,7 @@ Backend<T>::~Backend()
 }
 template <typename T>
 typename Backend<T>::backend_ptrtype
-Backend<T>::build( BackendType bt )
+Backend<T>::build( BackendType bt, WorldComm const& worldComm )
 {
     // Build the appropriate solver
     switch ( bt )
@@ -119,7 +122,7 @@ Backend<T>::build( BackendType bt )
 
     case BACKEND_PETSC:
     {
-        return backend_ptrtype( new BackendPetsc<value_type> );
+        return backend_ptrtype( new BackendPetsc<value_type>( worldComm ) );
     }
     break;
 #endif
@@ -128,7 +131,7 @@ Backend<T>::build( BackendType bt )
 
     case BACKEND_TRILINOS:
     {
-        return backend_ptrtype( new BackendTrilinos );
+        return backend_ptrtype( new BackendTrilinos( worldComm ) );
     }
     break;
 #endif
@@ -144,7 +147,7 @@ Backend<T>::build( BackendType bt )
 }
 template <typename T>
 typename Backend<T>::backend_ptrtype
-Backend<T>::build( po::variables_map const& vm, std::string const& prefix )
+Backend<T>::build( po::variables_map const& vm, std::string const& prefix, WorldComm const& worldComm )
 {
     Log() << "[Backend] backend " << vm["backend"].template as<std::string>() << "\n";
     BackendType bt;
@@ -176,7 +179,7 @@ Backend<T>::build( po::variables_map const& vm, std::string const& prefix )
     case BACKEND_PETSC:
     {
         Log() << "[Backend] Instantiate a Petsc backend\n";
-        return backend_ptrtype( new BackendPetsc<value_type>( vm, prefix ) );
+        return backend_ptrtype( new BackendPetsc<value_type>( vm, prefix, worldComm ) );
     }
     break;
 #endif
@@ -185,7 +188,7 @@ Backend<T>::build( po::variables_map const& vm, std::string const& prefix )
     case BACKEND_TRILINOS:
     {
 #if defined ( FEELPP_HAS_TRILINOS_EPETRA )
-        return backend_ptrtype( new BackendTrilinos( vm, prefix ) );
+        return backend_ptrtype( new BackendTrilinos( vm, prefix, worldComm ) );
 #else
         return backend_ptrtype();
 #endif
@@ -346,7 +349,7 @@ Backend<T>::dot( vector_type const& x, vector_type const& y ) const
     }
 
     real_type globalres=localres;
-    mpi::all_reduce( M_comm, localres, globalres, std::plus<real_type>() );
+    mpi::all_reduce( M_worldComm.globalComm(), localres, globalres, std::plus<real_type>() );
     return globalres;
 }
 

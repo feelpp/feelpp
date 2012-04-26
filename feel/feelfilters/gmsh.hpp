@@ -126,7 +126,7 @@ public:
      */
     //@{
 
-    Gmsh( int nDim = 1, int nOrder = GMSH_ORDER_ONE );
+    Gmsh( int nDim = 1, int nOrder = GMSH_ORDER_ONE, WorldComm const& worldComm=WorldComm() );
     Gmsh( Gmsh const & __g );
     virtual ~Gmsh();
 

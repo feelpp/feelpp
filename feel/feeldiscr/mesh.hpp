@@ -101,7 +101,7 @@ template<typename Mesh> class Partitioner;
 */
 //    template <typename GeoShape, typename T > class Mesh;
 
-template <typename GeoShape, typename T = double>
+template <typename GeoShape, typename T = double, int Tag = 0>
 class Mesh
     :
 public mpl::if_<mpl::equal_to<mpl::int_<GeoShape::nDim>,mpl::int_<0> >,
@@ -111,7 +111,7 @@ public mpl::if_<mpl::equal_to<mpl::int_<GeoShape::nDim>,mpl::int_<0> >,
     typename mpl::if_<mpl::equal_to<mpl::int_<GeoShape::nDim>,mpl::int_<2> >,
     mpl::identity<Mesh2D<GeoShape> >,
     mpl::identity<Mesh3D<GeoShape> > >::type>::type>::type::type,
-public boost::enable_shared_from_this< Mesh<GeoShape,T> >
+public boost::enable_shared_from_this< Mesh<GeoShape,T,Tag> >
 {
     typedef typename mpl::if_<mpl::equal_to<mpl::int_<GeoShape::nDim>,mpl::int_<0> >,
             mpl::identity<Mesh0D<GeoShape> >,
@@ -131,6 +131,7 @@ public:
     static const uint16_type nRealDim = GeoShape::nRealDim;
     static const uint16_type Shape = GeoShape::Shape;
     static const uint16_type nOrder = GeoShape::nOrder;
+    static const uint16_type tag = Tag;
 
     //@}
     /** @name Typedefs
@@ -171,7 +172,7 @@ public:
         typedef boost::shared_ptr<type> ptrtype;
     };
 
-    typedef Mesh<shape_type, T> self_type;
+    typedef Mesh<shape_type, T, Tag> self_type;
     typedef self_type mesh_type;
     typedef boost::shared_ptr<self_type> self_ptrtype;
     typedef self_ptrtype mesh_ptrtype;
@@ -185,21 +186,21 @@ public:
     typedef typename super::face_processor_type element_edge_type;
 
     typedef typename mpl::if_<mpl::bool_<GeoShape::is_simplex>,
-            mpl::identity< Mesh< Simplex< GeoShape::nDim,1,GeoShape::nRealDim>, value_type > >,
-            mpl::identity< Mesh< Hypercube<GeoShape::nDim,1,GeoShape::nRealDim>,value_type > > >::type::type P1_mesh_type;
+                              mpl::identity< Mesh< Simplex< GeoShape::nDim,1,GeoShape::nRealDim>, value_type, Tag > >,
+                              mpl::identity< Mesh< Hypercube<GeoShape::nDim,1,GeoShape::nRealDim>,value_type, Tag > > >::type::type P1_mesh_type;
 
     typedef boost::shared_ptr<P1_mesh_type> P1_mesh_ptrtype;
 
     typedef typename mpl::if_<mpl::bool_<GeoShape::is_simplex>,
-            mpl::identity< Mesh< Simplex< GeoShape::nDim-1,nOrder,GeoShape::nRealDim>, value_type > >,
-            mpl::identity< Mesh< Hypercube<GeoShape::nDim-1,nOrder,GeoShape::nRealDim>,value_type > > >::type::type trace_mesh_type;
+                              mpl::identity< Mesh< Simplex< GeoShape::nDim-1,nOrder,GeoShape::nRealDim>, value_type, Tag > >,
+                              mpl::identity< Mesh< Hypercube<GeoShape::nDim-1,nOrder,GeoShape::nRealDim>,value_type, Tag > > >::type::type trace_mesh_type;
     typedef typename boost::shared_ptr<trace_mesh_type> trace_mesh_ptrtype;
     //@}
 
     /**
      * Default mesh constructor
      */
-    Mesh();
+    Mesh( WorldComm const& worldComm = WorldComm() );
 
     /**
      * generate a new Mesh shared pointer
@@ -797,8 +798,8 @@ public:
             M_mesh (),
             M_kd_tree( new kdtree_type() ),
             IsInit( false ),
+            IsInitBoundaryFaces( false ),
             M_doExtrapolation( true )
-
         {
             Debug(4015) << "[Mesh::Localization] create Localization tool\n";
             M_kd_tree->nbNearNeighbor( 15 );
@@ -809,6 +810,7 @@ public:
         Localization( boost::shared_ptr<self_type> m, bool init_b = true ) :
             M_mesh ( m ),
             IsInit( init_b ),
+            IsInitBoundaryFaces( false ),
             M_doExtrapolation( true )
         {
             if ( IsInit )
@@ -820,10 +822,10 @@ public:
 
         Localization( Localization const & L ) :
             M_mesh( L.M_mesh ),
-            //M_kd_tree(L.M_kd_tree),
             M_kd_tree( new kdtree_type( *( L.M_kd_tree ) ) ),
             M_geoGlob_Elts( L.M_geoGlob_Elts ),
             IsInit( L.IsInit ),
+            IsInitBoundaryFaces( L.IsInitBoundaryFaces ),
             M_resultAnalysis( L.M_resultAnalysis ),
             M_doExtrapolation( L.M_doExtrapolation )
         {}
@@ -863,12 +865,27 @@ public:
         }
 
         /*--------------------------------------------------------------
+         * Run the init function if necessary
+         */
+        void updateForUseBoundaryFaces()
+        {
+            if ( IsInitBoundaryFaces==false )
+                initBoundaryFaces();
+        }
+
+        /*--------------------------------------------------------------
          * Access
          */
         bool isInit() const
         {
             return IsInit;
         }
+
+        bool isInitBoundaryFaces() const
+        {
+            return IsInitBoundaryFaces;
+        }
+
         bool doExtrapolation() const
         {
             return M_doExtrapolation;
@@ -887,6 +904,7 @@ public:
         {
             return M_kd_tree;
         }
+
         kdtree_ptrtype const& kdtree() const
         {
             return M_kd_tree;
@@ -923,7 +941,7 @@ public:
          */
         boost::tuple<bool, size_type,node_type> searchElement(const node_type & p,
                                                               const matrix_node_type & setPoints,
-                                                              mpl::bool_<false> /**/ )
+                                                              mpl::int_<0> /**/ )
         {
             return searchElement( p );
         }
@@ -932,8 +950,8 @@ public:
          * Research only one element wich contains the node p and which this elt have as geometric point contain setPoints
          */
         boost::tuple<bool, size_type,node_type> searchElement( const node_type & p,
-                const matrix_node_type & setPoints,
-                mpl::bool_<true> /**/ );
+                                                               const matrix_node_type & setPoints,
+                                                               mpl::int_<1> /**/ );
 
         /*---------------------------------------------------------------
          * Research all elements wich contains the node p
@@ -954,7 +972,7 @@ public:
         boost::tuple<std::vector<bool>, size_type>  run_analysis(const matrix_node_type & m,
                                                                  const size_type & eltHypothetical,
                                                                  const matrix_node_type & setPoints,
-                                                                 mpl::bool_<false> /**/)
+                                                                 mpl::int_<0> /**/)
         {
             return run_analysis( m,eltHypothetical );
         }
@@ -966,7 +984,7 @@ public:
         boost::tuple<std::vector<bool>, size_type> run_analysis(const matrix_node_type & m,
                                                                 const size_type & eltHypothetical,
                                                                 const matrix_node_type & setPoints,
-                                                                mpl::bool_<true> /**/);
+                                                                mpl::int_<1> /**/);
 
         /*---------------------------------------------------------------
          * Reset all data
@@ -977,12 +995,23 @@ public:
             init();
         }
 
+        void resetBoundaryFaces()
+        {
+            IsInitBoundaryFaces=false;
+            initBoundaryFaces();
+        }
+
     private :
 
         /*---------------------------------------------------------------
-         *initializes the kd tree and the map between node and list elements
+         *initializes the kd tree and the map between node and list elements(all elements)
          */
         void init();
+
+        /*---------------------------------------------------------------
+         *initializes the kd tree and the map between node and list elements(only on boundary)
+         */
+        void initBoundaryFaces();
 
         /*---------------------------------------------------------------
          *search near elt in kd tree and get a sorted list
@@ -997,7 +1026,7 @@ public:
         kdtree_ptrtype M_kd_tree;
         //map between node and list elements
         std::map<size_type, node_elem_type > M_geoGlob_Elts;
-        bool IsInit;
+        bool IsInit,IsInitBoundaryFaces;
         container_search_type M_resultAnalysis;
         bool M_doExtrapolation;
 
@@ -1097,10 +1126,10 @@ private:
     boost::shared_ptr<Localization> M_tool_localization;
 };
 
-template<typename Shape, typename T>
+template<typename Shape, typename T, int Tag>
 template<typename RangeT>
-typename Mesh<Shape, T>::trace_mesh_ptrtype
-Mesh<Shape, T>::trace( RangeT const& range )
+typename Mesh<Shape, T, Tag>::trace_mesh_ptrtype
+Mesh<Shape, T, Tag>::trace( RangeT const& range )
 {
     Debug( 4015 ) << "[trace] extracting " << range.template get<0>() << " nb elements :"
                   << std::distance(range.template get<1>(),range.template get<2>()) << "\n";
@@ -1108,10 +1137,10 @@ Mesh<Shape, T>::trace( RangeT const& range )
 
 }
 
-template<typename Shape, typename T>
+template<typename Shape, typename T, int Tag>
 template<typename Iterator>
 void
-Mesh<Shape, T>::createSubmesh( self_type& new_mesh,
+Mesh<Shape, T, Tag>::createSubmesh( self_type& new_mesh,
                                Iterator const& begin_elt,
                                Iterator const& end_elt,
                                size_type extraction_policies ) const
@@ -1273,9 +1302,9 @@ Mesh<Shape, T>::createSubmesh( self_type& new_mesh,
 }
 
 
-template<typename Shape, typename T>
-typename Mesh<Shape, T>::P1_mesh_ptrtype
-Mesh<Shape, T>::createP1mesh() const
+template<typename Shape, typename T, int Tag>
+typename Mesh<Shape, T, Tag>::P1_mesh_ptrtype
+Mesh<Shape, T, Tag>::createP1mesh() const
 {
 
     P1_mesh_ptrtype new_mesh( new P1_mesh_type );
@@ -1554,8 +1583,8 @@ Mesh<Shape, T>::createP1mesh() const
 } // Feel
 
 
-#if !defined(FEELPP_INSTANTIATION_MODE)
+//#if !defined(FEELPP_INSTANTIATION_MODE)
 # include <feel/feeldiscr/meshimpl.hpp>
-#endif //
+//#endif //
 
 #endif /* __mesh_H */

@@ -70,8 +70,9 @@ namespace fs = boost::filesystem;
 
 const char* FEELPP_GMSH_FORMAT_VERSION = "2.2";
 
-Gmsh::Gmsh( int nDim, int nOrder )
+    Gmsh::Gmsh( int nDim, int nOrder, WorldComm const& worldComm )
     :
+    M_worldComm( worldComm ),
     M_dimension( nDim ),
     M_order( nOrder ),
     M_version( FEELPP_GMSH_FORMAT_VERSION ),
@@ -88,6 +89,7 @@ Gmsh::Gmsh( int nDim, int nOrder )
 }
 Gmsh::Gmsh( Gmsh const & __g )
     :
+    M_worldComm( __g.M_worldComm ),
     M_dimension( __g.M_dimension ),
     M_order( __g.M_order ),
     M_version( __g.M_version ),

@@ -1153,14 +1153,11 @@ public:
 
             this->cleanOstr();
             this->zeroCpt();
-
-            Gmsh gmsh( _mesh_type::nDim, _mesh_type::nOrder );
-            gmsh.setWorldComm( worldcomm );
+            Gmsh gmsh( _mesh_type::nDim, _mesh_type::nOrder, worldcomm );
             gmsh.setRecombine( _mesh_type::shape_type::is_hypercube );
             gmsh.setNumberOfPartitions( partitions );
             gmsh.setPartitioner( partitioner );
             gmsh.setMshFileByPartition( partition_file );
-
             this->init( _mesh_type::nOrder,gmsh.version(),partitioner,partitions,partition_file );
 
             std::string geostring;
@@ -1208,8 +1205,7 @@ public:
             this->cleanOstr();
             this->zeroCpt();
 
-            Gmsh gmsh( mesh_type::nDim,mesh_type::nOrder );
-            gmsh.setWorldComm( worldcomm );
+            Gmsh gmsh( mesh_type::nDim,mesh_type::nOrder, worldcomm );
             gmsh.setOrder( mesh_type::nOrder );
             gmsh.setRecombine( mesh_type::shape_type::is_hypercube );
 
@@ -1965,8 +1961,7 @@ createMeshFromGeoFile( std::string geofile,std::string name,double meshSize,int 
 
     if ( !worldcomm.isActive() ) return mesh;
 
-    Gmsh gmsh( mesh_type::nDim,mesh_type::nOrder );
-    gmsh.setWorldComm( worldcomm );
+    Gmsh gmsh( mesh_type::nDim,mesh_type::nOrder,worldcomm );
     gmsh.setCharacteristicLength( meshSize );
     gmsh.setNumberOfPartitions( partitions );
     gmsh.setPartitioner( partitioner );
@@ -2012,7 +2007,7 @@ createMeshFromGeoFile( std::string geofile,std::string name,double meshSize,int 
     mesh->updateForUse();
 
     if ( straighten && mesh_type::nOrder > 1 )
-        return straightenMesh( mesh );
+        return straightenMesh( _mesh=mesh, _worldcomm=worldcomm.subWorldComm() );
 
     return mesh;
 }

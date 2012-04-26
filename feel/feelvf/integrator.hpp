@@ -646,7 +646,6 @@ private:
 
 private:
 
-    mpi::communicator M_comm;
     element_iterator M_eltbegin;
     element_iterator M_eltend;
     mutable im_type M_im;
@@ -1899,24 +1898,14 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
 
         //std::cout << "2" << std::endl;
         it = this->beginElement();
+
         // wait for all the guys
-#if 0
 #ifdef FEELPP_HAS_MPI
-
-        if ( M_comm.size() > 1 )
-        {
-            M_comm.barrier();
-        }
-
-#endif
-#else
         auto const& worldComm = const_cast<MeshBase*>( it->mesh() )->worldComm();
-
         if ( worldComm.localSize() > 1 )
         {
             worldComm.localComm().barrier();
         }
-
 #endif
 
         // possibly high order
@@ -2295,10 +2284,10 @@ Integrator<Elements, Im, Expr, Im2>::broken( boost::shared_ptr<P0hType>& P0h, mp
     it = this->beginElement();
     // wait for all the guys
 #ifdef FEELPP_HAS_MPI
-
-    if ( M_comm.size() > 1 )
+    auto const& worldComm = const_cast<MeshBase*>( it->mesh() )->worldComm();
+    if ( worldComm.size() > 1 )
     {
-        M_comm.barrier();
+        worldComm.barrier();
     }
 
 #endif

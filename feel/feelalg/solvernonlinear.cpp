@@ -87,7 +87,7 @@ SolverNonLinear<T>::~SolverNonLinear ()
 }
 template <typename T>
 boost::shared_ptr<SolverNonLinear<T> >
-SolverNonLinear<T>::build( po::variables_map const& vm, std::string const& prefix )
+SolverNonLinear<T>::build( po::variables_map const& vm, std::string const& prefix, WorldComm const& worldComm )
 {
     SolverPackage solver_package;
 
@@ -123,7 +123,7 @@ SolverNonLinear<T>::build( po::variables_map const& vm, std::string const& prefi
     {
 
 
-        solvernonlinear_ptrtype ap( new SolverNonLinearPetsc<T> );
+        solvernonlinear_ptrtype ap( new SolverNonLinearPetsc<T>( worldComm ) );
         return ap;
     }
     break;
@@ -133,7 +133,7 @@ SolverNonLinear<T>::build( po::variables_map const& vm, std::string const& prefi
 
     case SOLVERS_TRILINOS:
     {
-        solvernonlinear_ptrtype ap( new SolverNonLinearTrilinos<T> );
+        solvernonlinear_ptrtype ap( new SolverNonLinearTrilinos<T>( worldComm )  );
         return ap;
     }
     break;
@@ -170,7 +170,7 @@ SolverNonLinear<T>::build( SolverPackage solver_package, WorldComm const& worldC
     {
 
 #if defined( FEELPP_HAS_PETSC )
-        solvernonlinear_ptrtype ap(new SolverNonLinearPetsc<T>(worldComm));
+        solvernonlinear_ptrtype ap(new SolverNonLinearPetsc<T>( worldComm ) );
         return ap;
 #else
         std::cerr << "PETSc is not available/installed" << std::endl;
@@ -182,7 +182,7 @@ SolverNonLinear<T>::build( SolverPackage solver_package, WorldComm const& worldC
     case SOLVERS_TRILINOS:
     {
 #if defined( FEELPP_HAS_TRILINOS )
-        solvernonlinear_ptrtype ap( new SolverNonLinearTrilinos<T> );
+        solvernonlinear_ptrtype ap( new SolverNonLinearTrilinos<T>( worldComm ) );
         return ap;
 #else
         std::cerr << "Trilinos NOX is not available/installed" << std::endl;

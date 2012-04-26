@@ -85,15 +85,19 @@ public:
     typedef typename super::nl_solve_return_type nl_solve_return_type;
 
     // -- CONSTRUCTOR --
-    BackendPetsc()
+    BackendPetsc( WorldComm const& worldComm=WorldComm() )
         :
-        super()
+        super( worldComm ),
+        M_solver_petsc( worldComm ),
+        M_nl_solver_petsc( worldComm )
     {}
 
-    BackendPetsc( po::variables_map const& vm, std::string const& prefix = "" )
+    BackendPetsc( po::variables_map const& vm, std::string const& prefix = "",
+                  WorldComm const& worldComm=WorldComm() )
         :
-        super( vm, prefix ),
-        M_solver_petsc( vm )
+        super( vm, prefix, worldComm ),
+        M_solver_petsc( vm, worldComm ),
+        M_nl_solver_petsc( worldComm )
     {
         std::string _prefix = prefix;
 
@@ -108,13 +112,12 @@ public:
                                             size_type matrix_properties = NON_HERMITIAN )
     {
         auto s = stencil( _test=Yh,_trial=Xh );
-        mpi::communicator commT;
 
-        sparse_matrix_ptrtype mat;//( new petsc_sparse_matrix_type );
-
-        if ( commT.size()>1 ) mat = sparse_matrix_ptrtype( new petscMPI_sparse_matrix_type( Yh->map(),Xh->map() ) );
-
-        else mat = sparse_matrix_ptrtype( new petsc_sparse_matrix_type( Yh->map(),Xh->map() ) );
+        sparse_matrix_ptrtype mat;
+        if ( Yh->worldComm().globalSize()>1 )
+            mat = sparse_matrix_ptrtype( new petscMPI_sparse_matrix_type( Yh->map(),Xh->map() ) );
+        else // seq
+            mat = sparse_matrix_ptrtype( new petsc_sparse_matrix_type( Yh->map(),Xh->map() ) );
 
         mat->setMatrixProperties( matrix_properties );
         mat->init( Yh->nDof(), Xh->nDof(),
@@ -153,7 +156,7 @@ public:
     {
         sparse_matrix_ptrtype mat;
 
-        if ( this->comm().size()>1 ) mat = sparse_matrix_ptrtype( new petscMPI_sparse_matrix_type );
+        if ( this->comm().globalSize()>1 ) mat = sparse_matrix_ptrtype( new petscMPI_sparse_matrix_type );
 
         else mat = sparse_matrix_ptrtype( new petsc_sparse_matrix_type );
 
@@ -195,7 +198,7 @@ public:
     {
         sparse_matrix_ptrtype mat;
 
-        if ( this->comm().size()>1 ) mat = sparse_matrix_ptrtype( new petscMPI_sparse_matrix_type );
+        if ( this->comm().globalSize()>1 ) mat = sparse_matrix_ptrtype( new petscMPI_sparse_matrix_type );
 
         else mat = sparse_matrix_ptrtype( new petsc_sparse_matrix_type );
 
@@ -243,7 +246,7 @@ public:
 
         sparse_matrix_ptrtype mat;
 
-        if ( this->comm().size()>1 ) mat = sparse_matrix_ptrtype( new petscMPI_sparse_matrix_type );
+        if ( this->comm().globalSize()>1 ) mat = sparse_matrix_ptrtype( new petscMPI_sparse_matrix_type );
 
         else mat = sparse_matrix_ptrtype( new petsc_sparse_matrix_type );
 
@@ -256,9 +259,7 @@ public:
     template<typename SpaceT>
     static vector_ptrtype newVector( SpaceT const& space )
     {
-        mpi::communicator theComm;
-
-        if ( theComm.size()>1 ) return vector_ptrtype( new petscMPI_vector_type( space->map() ) );
+        if ( space->worldComm().globalSize()>1 ) return vector_ptrtype( new petscMPI_vector_type( space->map() ) );
 
         else return vector_ptrtype( new petsc_vector_type( space->map() ) );
 
@@ -268,7 +269,7 @@ public:
 
     vector_ptrtype newVector( DataMap const& dm )
     {
-        if ( this->comm().size()>1 ) return vector_ptrtype( new petscMPI_vector_type( dm ) );
+        if ( this->comm().globalSize()>1 ) return vector_ptrtype( new petscMPI_vector_type( dm ) );
 
         else return vector_ptrtype( new petsc_vector_type( dm ) );
 
@@ -296,10 +297,25 @@ public:
                vector_type const& x,
                vector_type& b ) const
     {
+        int ierr = 0;
         petsc_sparse_matrix_type const& _A = dynamic_cast<petsc_sparse_matrix_type const&>( A );
         petsc_vector_type const& _x = dynamic_cast<petsc_vector_type const&>( x );
         petsc_vector_type const& _b = dynamic_cast<petsc_vector_type const&>( b );
-        MatMult( _A.mat(), _x.vec(), _b.vec() );
+        if ( _A.mapCol().worldComm().globalSize() == x.map().worldComm().globalSize() )
+        {
+            //std::cout << "BackendPetsc::prod STANDART"<< std::endl;
+            ierr = MatMult( _A.mat(), _x.vec(), _b.vec() );
+            CHKERRABORT( _A.comm().globalComm(),ierr );
+        }
+        else
+        {
+            //std::cout << "BackendPetsc::prod with convert"<< std::endl;
+            auto x_convert = petscMPI_vector_type(_A.mapCol());
+            x_convert.duplicateFromOtherPartition(x);
+            x_convert.close();
+            ierr = MatMult( _A.mat(), x_convert.vec(), _b.vec() );
+            CHKERRABORT( _A.comm().globalComm(),ierr );
+        }
         b.close();
     }
 
