@@ -36,7 +36,7 @@
 namespace Feel
 {
 
-template <typename C, typename V> class Mesh;
+template <typename C, typename V, int T> class Mesh;
 
 template <typename MeshType,typename IteratorRange>
 class createSubmeshTool
@@ -47,31 +47,20 @@ public :
     typedef typename boost::tuples::template element<0, range_type>::type idim_type;
     typedef typename boost::tuples::template element<1, range_type>::type iterator_type;
 
-#if 0
-    typedef typename boost::remove_reference<typename iterator_type::reference>::type const_t;
-    typedef typename boost::remove_const<const_t>::type the_face_element_type;
-    typedef typename the_face_element_type::super2::template Element<the_face_element_type>::type geoelement_type;
-
-    typedef typename geoelement_type::super::value_type value_type;
-
-    typedef typename geoelement_type::GeoShape geoshape_type;
-
-    typedef Mesh<geoshape_type,value_type> mesh_type;
-#else
+    static const uint16_type tag = MeshType::tag;
     typedef MeshType mesh_type;
     typedef typename mesh_type::value_type value_type;
-#endif
 
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
     typedef typename mpl::if_<mpl::bool_<mesh_type::shape_type::is_simplex>,
-            mpl::identity< Mesh< Simplex< mesh_type::nDim-1,mesh_type::nOrder,mesh_type::nRealDim>, value_type > >,
-            mpl::identity< Mesh< Hypercube<mesh_type::nDim-1,mesh_type::nOrder,mesh_type::nRealDim>, value_type > > >::type::type mesh_faces_type;
+                              mpl::identity< Mesh< Simplex< mesh_type::nDim-1,mesh_type::nOrder,mesh_type::nRealDim>, value_type, tag > >,
+                              mpl::identity< Mesh< Hypercube<mesh_type::nDim-1,mesh_type::nOrder,mesh_type::nRealDim>, value_type, tag > > >::type::type mesh_faces_type;
     typedef boost::shared_ptr<mesh_faces_type> mesh_faces_ptrtype;
 
     typedef typename mpl::if_< mpl::equal_to< idim_type ,mpl::size_t<MESH_ELEMENTS> >,
-            mesh_type,
-            mesh_faces_type>::type mesh_build_type;
+                               mesh_type,
+                               mesh_faces_type>::type mesh_build_type;
 
     typedef boost::shared_ptr<mesh_build_type> mesh_build_ptrtype;
 
