@@ -1307,10 +1307,7 @@ typename Mesh<Shape, T, Tag>::P1_mesh_ptrtype
 Mesh<Shape, T, Tag>::createP1mesh() const
 {
 
-    P1_mesh_ptrtype new_mesh( new P1_mesh_type );
-    // up world mesh
-    new_mesh->setWorldComm( this->worldComm() );
-
+    P1_mesh_ptrtype new_mesh( new P1_mesh_type( "metis",this->worldComm() ) );
 
     // How the nodes on this mesh will be renumbered to nodes
     // on the new_mesh.

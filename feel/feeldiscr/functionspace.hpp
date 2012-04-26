@@ -2787,18 +2787,20 @@ public:
                    size_type mesh_components = MESH_RENUMBER | MESH_CHECK,
                    periodicity_type  periodicity = periodicity_type(),
                    std::vector<WorldComm> const& _worldsComm = std::vector<WorldComm>( nSpaces,WorldComm() ) )
+        :
+        _M_worldsComm( _worldsComm ),
+        _M_worldComm( new WorldComm( _worldsComm[0] ) )
     {
-        this->setWorldsComm( _worldsComm );
-        this->setWorldComm( _worldsComm[0] );
         this->init( mesh, mesh_components, periodicity );
     }
 
     FunctionSpace( mesh_ptrtype const& mesh,
                    std::vector<boost::tuple<size_type, uint16_type, size_type> > const& dofindices,
                    std::vector<WorldComm> const& _worldsComm = std::vector<WorldComm>( nSpaces,WorldComm() ) )
+        :
+        _M_worldsComm( _worldsComm ),
+        _M_worldComm( new WorldComm( _worldsComm[0] ) )
     {
-        this->setWorldsComm( _worldsComm );
-        this->setWorldComm( _worldsComm[0] );
         this->init( mesh, 0, dofindices );
     }
 

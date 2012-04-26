@@ -254,33 +254,10 @@ buildmakejobs	0 $\#$ all the cores
 \end{lstlisting}
 \end{flushleft}
 At the end of the \lstinline|sudo port install feel++|, you have all
-dependencies installed which is a good point. To build all the Makefile, \cmake
-is automatically launched but can have furthers libraries not found. Some are
-important, some are not. OpenMP is one of the necessary compiler to have and is
-not automatically installed on 64bits systems. We can install it now thanks to
-gcc4.5 or later that has been installed because it taks part of the feel
-dependencies. To install it, please go to
-\href{http://www.hpcs.cs.tsukuba.ac.jp/omni-openmp/download/download-omni.html}{Omni
-download} and download the latest stable release. Then type
-\begin{unixcom}
-		tar -xvf Omni-x.yz.tar.gz
-		cd  Omni-x.yz
-		./configure --with-cc=/opt/local/bin/gcc-mp-4.5
-		make
-\end{unixcom}
-Then, you have to become a super-user so type
-\begin{unixcom}
-		sudo su
-\end{unixcom}
-Enter your password, then to complete the installation
-\begin{unixcom}
-		make install
-\end{unixcom}
-After the install is complete, you can delete the sources in your download
-directory because make install has built it in an appropriate directory. To make
-it work properly, always check that \cmake is using gcc 4.5. If \cmake doesn't
-recognize openMP, enter the configuration mode using \ccmake and enter
-\lstinline|-fopenmp| in the box \lstinline|OpenMP_CXX_FLAGS|
+dependencies installed. To build all the Makefile, \cmake is automatically
+launched but can have some libraries may not be found but they are not mandatory
+for build Feel++, only the features related to the missing libraries will be
+missing.
 
 \subsubsection{PETSc and SLEPc on Snow Leopard and Lion}
 We have heard about issues with petsc and slepc with some new MacBook Pro with
