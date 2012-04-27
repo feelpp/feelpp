@@ -96,6 +96,7 @@ struct ExtractGm
 #include <feel/feelvf/geometricdata.hpp>
 #include <feel/feelvf/stdmathfunctors.hpp>
 #include <feel/feelvf/trace.hpp>
+#include <feel/feelvf/det.hpp>
 #include <feel/feelvf/symm.hpp>
 #include <feel/feelvf/products.hpp>
 #include <feel/feelvf/norm.hpp>
