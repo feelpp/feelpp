@@ -165,9 +165,12 @@ Gmsh::generateGeo( std::string const& __name, std::string const& __geo,bool cons
 
     if ( modifGeo )
     {
-        boost::regex regex( "(?:(lc|h))[[:blank:]]*=[[:blank:]]*[+-]?(?:(?:(?:[[:digit:]]*\\.)?[[:digit:]]+(?:[eE][+-]?[[:digit:]]+)?));" );
+        boost::regex regex( "(?:(lc|h))[[:blank:]]*=[[:blank:]]*[+-]?(?:(?:(?:[[:digit:]]*\\.)?[[:digit:]]*(?:[eE][+-]?[[:digit:]]+)?));" );
         std::ostringstream hstr;
         hstr << "(?1$1) = " << M_h << ";";
+        Debug( 10000 ) << "found hsize: " << regex_search(__geo, regex, boost::match_default) << "\n";
+        Debug( 10000 ) << "hstr: " << hstr.str() << "\n";
+
         _geo = boost::regex_replace( __geo, regex, hstr.str(), boost::match_default | boost::format_all );
     }
 
