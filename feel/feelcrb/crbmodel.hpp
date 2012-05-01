@@ -964,9 +964,16 @@ typename CRBModel<TruthModelType>::offline_merge_type
 CRBModel<TruthModelType>::offlineMerge( parameter_type const& mu )
 {
 
-#if 0
-    sparse_matrix_ptrtype A( M_backend->newMatrix( M_model->functionSpace(),
-                             M_model->functionSpace() ) );
+#if 1
+    sparse_matrix_ptrtype A( M_backend->newMatrix(
+                                                  _test=M_model->functionSpace(),
+                                                  _trial=M_model->functionSpace(),
+                                                  _matrix = M_Aq[0]) );
+
+    sparse_matrix_ptrtype M( M_backend->newMatrix(
+                                                  _test=M_model->functionSpace(),
+                                                  _trial=M_model->functionSpace(),
+                                                  _matrix = M_Aq[0]) );
 
 #else
 
@@ -976,23 +983,13 @@ CRBModel<TruthModelType>::offlineMerge( parameter_type const& mu )
 #endif
     std::vector<vector_ptrtype> F( Nl() );
 
-    //A->close();
-    *A = *M_Aq[0];
-    A->scale( this->thetaAq( 0 ) );
-
-    for ( size_type q = 1; q < Qa(); ++q )
+    for ( size_type q = 0; q < Qa(); ++q )
     {
         A->addMatrix( this->thetaAq( q ), M_Aq[q] );
     }
 
-    //M->close();
-    if ( Qm()>0 )
-    {
-        *M = *M_Mq[0];
-        M->scale( this->thetaMq( 0 ) );
-    }
 
-    for ( size_type q = 1; q < Qm(); ++q )
+    for ( size_type q = 0; q < Qm(); ++q )
     {
         M->addMatrix( this->thetaMq( q ), M_Mq[q] );
     }
