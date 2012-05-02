@@ -21,12 +21,11 @@ homepage            http://www.geuz.org/gmsh/
 master_sites        http://www.geuz.org/gmsh/src/
 distname            gmsh-${version}-source
 extract.suffix      .tgz
+conflicts           gmsh-devel
 
 checksums           \
                           sha1    b541fd9f1aadf1df7bf6fdd97a68ca41966ffeb6 \
                           rmd160  49ab2054d546e4549250119cec0453cd1cdfffef
-
-patchfiles          patch-cmakelists.diff
 
 # https://trac.macports.org/ticket/33925
 if {${configure.compiler} == "clang"} {
@@ -37,7 +36,8 @@ configure.args-append \
     -DENABLE_NATIVE_FILE_CHOOSER:BOOL=OFF\
     -DENABLE_OCC:BOOL=OFF \
     -DENABLE_FLTK:BOOL=ON\
-    -DENABLE_GRAPHICS:BOOL=ON
+    -DENABLE_GRAPHICS:BOOL=ON\
+    -DENABLE_APP_BUNDLE=OFF
 
 post-build {
     # lib and shared targets are not handled by default target
