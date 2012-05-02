@@ -369,7 +369,11 @@ endif (FEELPP_ENABLE_TRILINOS)
 #
 # OpenTURNS
 #
-OPTION(FEELPP_ENABLE_OPENTURNS "enable feel++ OpenTURNS support" ON)
+if ( APPLE )
+  OPTION(FEELPP_ENABLE_OPENTURNS "enable feel++ OpenTURNS support" OFF)
+else()
+  OPTION(FEELPP_ENABLE_OPENTURNS "enable feel++ OpenTURNS support" ON)
+endif()
 IF ( FEELPP_ENABLE_OPENTURNS )
   FIND_PACKAGE( OpenTURNS )
   if ( OPENTURNS_FOUND )
