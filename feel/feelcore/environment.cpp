@@ -120,13 +120,15 @@ Environment::Environment( int& argc, char**& argv )
 
 Environment::~Environment()
 {
-    Debug(900) << "sending delete to all deleters" << "\n";
+    Debug(900) << "[~Environment] sending delete to all deleters" << "\n";
 
     // send signal to all deleters
     S_deleteObservers();
+    Debug(900) << "[~Environment] delete signal sent" << "\n";
 
     if ( i_initialized )
     {
+        Debug(900) << "[~Environment] finalizing slepc,petsc and mpi\n";
 #if defined ( FEELPP_HAS_PETSC_H )
         PetscTruth is_petsc_initialized;
         PetscInitialized( &is_petsc_initialized );
