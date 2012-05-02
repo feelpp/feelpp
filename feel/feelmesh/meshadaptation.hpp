@@ -43,6 +43,7 @@
 #include <feel/feeldiscr/projector.hpp>
 
 #include <boost/assert.hpp>
+#include <boost/regex.hpp>
 
 #include <fstream>
 
