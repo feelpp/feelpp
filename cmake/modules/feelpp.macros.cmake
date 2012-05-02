@@ -64,3 +64,15 @@ macro(feelpp_add_application)
 
 endmacro(feelpp_add_application)
 
+
+macro(OVERWITE_IF_DIFFERENT thetarget filename var dummy)
+  if ( NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/${filename} )
+    # be careful if file does not exist we use dummy to generate the cpp file which will
+    # then be overwritten using the cmake -E copy_if_different command
+    configure_file(${dummy}  ${CMAKE_CURRENT_BINARY_DIR}/${filename})
+  endif()
+  file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/copy_${filename} ${var})
+  add_custom_command(TARGET ${thetarget} COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    ${CMAKE_CURRENT_BINARY_DIR}/copy_${filename} ${CMAKE_CURRENT_BINARY_DIR}/${filename}
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+endmacro()
