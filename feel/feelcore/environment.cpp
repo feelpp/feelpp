@@ -137,7 +137,9 @@ Environment::~Environment()
 #endif // FEELPP_HAS_PETSC_H
     }
 
-
+    std::cerr << "sending delete to all deleters" << std::endl;
+    // send signal to all deleters
+    //S_deleteObservers();
 }
 
 
@@ -287,4 +289,5 @@ Environment::setLogs( std::string const& prefix )
     Assert::setLog( ostr_assert.str().c_str() );
 }
 
+boost::signals2::signal<void ()> Environment::S_deleteObservers;
 }

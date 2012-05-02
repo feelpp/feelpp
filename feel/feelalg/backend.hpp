@@ -34,6 +34,7 @@
 #include <boost/fusion/include/fold.hpp>
 
 #include <feel/feelcore/feel.hpp>
+#include <feel/feelcore/environment.hpp>
 #include <feel/feelcore/singleton.hpp>
 #include <feel/feelcore/parameter.hpp>
 #include <feel/feelalg/enums.hpp>
@@ -948,6 +949,15 @@ public:
 
 };
 typedef Feel::Singleton<BackendManagerImpl> BackendManager;
+
+struct BackendManagerDeleter
+{
+    void operator()() const
+        {
+            Log() << "[BackendManagerDeleter] clear BackendManager Singleton\n";
+            detail::BackendManager::instance().clear();
+        }
+};
 } // detail
 
 
@@ -962,6 +972,10 @@ BOOST_PARAMETER_FUNCTION(
       ( rebuild,        ( bool ), false )
     ) )
 {
+    // register the BackendManager into Feel::Environment so that it gets the
+    // BackendManager is cleared up when the Environment is deleted
+    Environment::addDeleteObserver( detail::BackendManagerDeleter() );
+
     Feel::detail::ignore_unused_variable_warning( args );
 
     auto git = detail::BackendManager::instance().find( std::make_pair( kind, name ) );
@@ -979,5 +993,6 @@ BOOST_PARAMETER_FUNCTION(
     }
 
 }
+
 }
 #endif /* __Backend_H */

@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2010-04-14
 
-  Copyright (C) 2010,2011 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2010-2012 Université Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -33,6 +33,7 @@
 
 #include <boost/noncopyable.hpp>
 #include <boost/format.hpp>
+#include <boost/signals2.hpp>
 
 #include <feel/feelcore/feel.hpp>
 
@@ -190,6 +191,12 @@ public:
      */
     static void setLogs( std::string const& prefix );
 
+    template<typename Observer>
+    static void
+    addDeleteObserver( Observer obs )
+        {
+            S_deleteObservers.connect( obs );
+        }
     //@}
 
 
@@ -198,6 +205,8 @@ private:
     /// Whether this environment object called MPI_Init
     bool i_initialized;
     mpi::environment M_env;
+
+    static boost::signals2::signal<void ()> S_deleteObservers;
 };
 }
 #endif /* __Environment_H */
