@@ -193,7 +193,7 @@ public:
 
     template<typename Observer>
     static void
-    addDeleteObserver( Observer obs )
+    addDeleteObserver( Observer const& obs )
         {
             S_deleteObservers.connect( obs );
         }

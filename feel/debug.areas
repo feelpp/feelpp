@@ -1,3 +1,4 @@
+900  -- Feel::Environment
 1000 -- Feel::Application
 1100 -- notyetassigned
 1200 -- notyetassigned
@@ -53,6 +54,8 @@
 7000 -- Feel::alg
 7002 -- Feel::cg
 7004 -- Feel::gmres
+7005 -- Feel::BackendPETSc
+7006 -- Feel::Backend
 7010 -- Feel::SolverPETSC
 7013 -- Feel::MatrixPetsc
 7015 -- Feel::SolverPardiso

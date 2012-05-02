@@ -950,14 +950,16 @@ public:
 };
 typedef Feel::Singleton<BackendManagerImpl> BackendManager;
 
-struct BackendManagerDeleter
+struct BackendManagerDeleterImpl
 {
     void operator()() const
         {
-            Log() << "[BackendManagerDeleter] clear BackendManager Singleton\n";
+            Debug(7006) << "[BackendManagerDeleter] clear BackendManager Singleton: " << detail::BackendManager::instance().size() << "\n";
             detail::BackendManager::instance().clear();
+            Debug(7006) << "[BackendManagerDeleter] clear BackendManager done\n";
         }
 };
+typedef Feel::Singleton<BackendManagerDeleterImpl> BackendManagerDeleter;
 } // detail
 
 
@@ -967,14 +969,20 @@ BOOST_PARAMETER_FUNCTION(
     tag,               // 3. namespace of tag types
     ( optional
       ( vm,           ( po::variables_map ), po::variables_map() )
-      ( name,           *( std::string ), "" )
-      ( kind,           *( BackendType ), BACKEND_PETSC )
+      ( name,           ( std::string ), "" )
+      ( kind,           ( BackendType ), BACKEND_PETSC )
       ( rebuild,        ( bool ), false )
     ) )
 {
     // register the BackendManager into Feel::Environment so that it gets the
     // BackendManager is cleared up when the Environment is deleted
-    Environment::addDeleteObserver( detail::BackendManagerDeleter() );
+    static bool observed=false;
+    if ( !observed )
+    {
+        Environment::addDeleteObserver( detail::BackendManagerDeleter::instance() );
+        observed = true;
+    }
+
 
     Feel::detail::ignore_unused_variable_warning( args );
 
@@ -982,12 +990,22 @@ BOOST_PARAMETER_FUNCTION(
 
     if (  git != detail::BackendManager::instance().end() && ( rebuild == false ) )
     {
+        Debug(7006) << "[backend] found backend name=" << name << " kind=" << kind << " rebuild=" << rebuild << "\n";
         return git->second;
     }
 
     else
     {
-        auto b = Feel::backend_type::build( vm, name );
+        Debug(7006) << "[backend] building backend name=" << name << " kind=" << kind << " rebuild=" << rebuild << "\n";
+
+        backend_ptrtype b;
+        if ( vm.empty() )
+        {
+            b = Feel::backend_type::build( kind );
+        }
+        else
+            b = Feel::backend_type::build( vm, name );
+        Debug( 7006 ) << "storing backend in singleton" << "\n";
         detail::BackendManager::instance().operator[]( std::make_pair( kind, name ) ) = b;
         return b;
     }

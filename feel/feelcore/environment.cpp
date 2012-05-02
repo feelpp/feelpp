@@ -50,10 +50,11 @@ Environment::Environment()
 {
 #if defined( FEELPP_HAS_TBB )
     int n = tbb::task_scheduler_init::default_num_threads();
+    Log() << "[Feel++] TBB running with " << n << " threads\n";
 #else
     int n = 1 ;
 #endif
-    Log() << "[Feel++] TBB running with " << n << " threads\n";
+
     //tbb::task_scheduler_init init(1);
 
     mpi::communicator world;
@@ -119,6 +120,11 @@ Environment::Environment( int& argc, char**& argv )
 
 Environment::~Environment()
 {
+    Debug(900) << "sending delete to all deleters" << "\n";
+
+    // send signal to all deleters
+    S_deleteObservers();
+
     if ( i_initialized )
     {
 #if defined ( FEELPP_HAS_PETSC_H )
@@ -137,9 +143,7 @@ Environment::~Environment()
 #endif // FEELPP_HAS_PETSC_H
     }
 
-    std::cerr << "sending delete to all deleters" << std::endl;
-    // send signal to all deleters
-    //S_deleteObservers();
+
 }
 
 
