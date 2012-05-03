@@ -153,9 +153,11 @@ endif(NOT FEELPP_MODE)
 ## mandatory variables (the default should be ok in most cases):
 
 #if(NOT FEELPP_NO_UPDATE)
-SET (CTEST_SVN_COMMAND "svn")
-SET (CTEST_SVN_CHECKOUT   "${CTEST_SVN_COMMAND} co svn://scm.forge.imag.fr/var/lib/gforge/chroot/scmrepos/svn/life/trunk/life/trunk ${CTEST_SOURCE_DIRECTORY}")
-set (CTEST_UPDATE_COMMAND "${CTEST_SVN_COMMAND}")
+find_program(CTEST_GIT_COMMAND NAMES git)
+#SET (CTEST_GIT_COMMAND "git")
+#SET (CTEST_SVN_CHECKOUT   "${CTEST_GIT_COMMAND} co svn://scm.forge.imag.fr/var/lib/gforge/chroot/scmrepos/svn/life/trunk/life/trunk ${CTEST_SOURCE_DIRECTORY}")
+SET (CTEST_GIT_CHECKOUT   "${CTEST_GIT_COMMAND} clone https://code.google.com/p/feelpp/")
+set (CTEST_UPDATE_COMMAND "${CTEST_GIT_COMMAND}")
   #SET(CTEST_BACKUP_AND_RESTORE TRUE) # the backup is SVN related ...
 #endif(NOT FEELPP_NO_UPDATE)
 
