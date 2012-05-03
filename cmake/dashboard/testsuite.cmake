@@ -90,15 +90,30 @@ endwhile(${ARGLIST} MATCHES ".+.*")
 ####################################################################
 cmake_minimum_required(VERSION 2.6 FATAL_ERROR)
 
-if ( EXISTS ${FEELPP_CTEST_CONFIG} )
-  include(${FEELPP_CTEST_CONFIG})
-  message(WARNING "FEELPP_SITE: ${FEELPP_SITE}")
-  message(WARNING "FEELPP_CXX: ${FEELPP_CXX}")
-endif()
+find_program(UNAME NAMES uname)
+macro(getuname name flag)
+  exec_program("${UNAME}" ARGS "${flag}" OUTPUT_VARIABLE "${name}")
+endmacro(getuname)
+find_program(HOSTNAME_CMD NAMES hostname)
+exec_program(${HOSTNAME_CMD}  ARGS -s OUTPUT_VARIABLE SITE_HOSTNAME)
+
+getuname(osname -s)
+getuname(osrel  -r)
+getuname(cpu    -m)
+
+#set(FEELPP_SITE              "${SITE_HOSTNAME}")
 
 if(NOT FEELPP_SITE)
   site_name(FEELPP_SITE)
 endif(NOT FEELPP_SITE)
+
+if ( EXISTS ${FEELPP_CTEST_CONFIG} )
+  include(${FEELPP_CTEST_CONFIG})
+  message(WARNING "FEELPP_SITE: ${FEELPP_SITE}")
+  message(WARNING "FEELPP_CXX: ${FEELPP_CXX}")
+  set(FEELPP_BUILD_STRING "${OS_VERSION}-${ARCH}")
+endif()
+
 
 if(NOT FEELPP_CMAKE_DIR)
   SET(FEELPP_CMAKE_DIR "")
