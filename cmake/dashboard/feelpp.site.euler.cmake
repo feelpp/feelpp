@@ -32,9 +32,10 @@ set(CTEST_BUILD_NAME        "${osname}-${cpu}")
 
 find_program(HOSTNAME_CMD NAMES hostname)
 exec_program(${HOSTNAME_CMD} ARGS OUTPUT_VARIABLE HOSTNAME)
-set(CTEST_SITE              "${HOSTNAME}")
+set(FEELPP_SITE              "${HOSTNAME}")
 
 set(OS_VERSION debian-testing)
+set(ARCH x86_64)
 set(WORK_DIR /home/feelpp_sources/)
 set(MAKE_ARGS "-j5")
 set(PARALLEL "5")
