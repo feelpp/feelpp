@@ -122,14 +122,14 @@ public:
 
     Eigen::ColXpr qm( size_t __m ) const
         {
-            FEEL_ASSERT( __m >= 0 && __m < _M_M )( __m )( _M_M ).error( "out of bounds access" );
+            FEELPP_ASSERT( __m >= 0 && __m < _M_M )( __m )( _M_M ).error( "out of bounds access" );
 
             return _M_q.col( __m );
         }
     value_type qxm( size_t __i, size_t __m ) const
         {
-            FEEL_ASSERT( __m >= 0 && __m < _M_M )( __m )( _M_M ).error( "out of bounds access" );
-            FEEL_ASSERT( __i >= 0 && __i < _M_q.rows() )( __i )( _M_q.rows() ).error( "out of bounds access" );
+            FEELPP_ASSERT( __m >= 0 && __m < _M_M )( __m )( _M_M ).error( "out of bounds access" );
+            FEELPP_ASSERT( __i >= 0 && __i < _M_q.rows() )( __i )( _M_q.rows() ).error( "out of bounds access" );
 
             return _M_q( __i, __m );
         }
@@ -227,9 +227,9 @@ public:
     */
     void blackbox_q( vector_type& __g, int __m )
         {
-            FEEL_ASSERT( _M_t.size() ).error( "t size is 0" );
-            FEEL_ASSERT( _M_q.rows() && _M_q.cols() ).error( "q size is 0" );
-            FEEL_ASSERT( _M_B.rows() && _M_B.cols() ).error( "B size is 0" );
+            FEELPP_ASSERT( _M_t.size() ).error( "t size is 0" );
+            FEELPP_ASSERT( _M_q.rows() && _M_q.cols() ).error( "q size is 0" );
+            FEELPP_ASSERT( _M_B.rows() && _M_B.cols() ).error( "B size is 0" );
             if ( __g.size() != _M_q.rows() )
                 __g.resize( _M_q.rows() );
             __g = qm( __m );
@@ -241,9 +241,9 @@ public:
     */
     void blackbox( vector_type& __g )
         {
-            FEEL_ASSERT( _M_t.size() ).error( "t size is 0" );
-            FEEL_ASSERT( _M_q.rows() && _M_q.cols() ).error( "q size is 0" );
-            FEEL_ASSERT( _M_B.rows() && _M_B.cols() ).error( "B size is 0" );
+            FEELPP_ASSERT( _M_t.size() ).error( "t size is 0" );
+            FEELPP_ASSERT( _M_q.rows() && _M_q.cols() ).error( "q size is 0" );
+            FEELPP_ASSERT( _M_B.rows() && _M_B.cols() ).error( "B size is 0" );
 
             vector_type __b;
             beta( __b, _M_M_max );
@@ -273,7 +273,7 @@ protected:
 
     matrix_type _M_B;
 
-    std::vector<coord_type> _M_t;
+    std::vector<node_type> _M_t;
 
     std::vector<size_t> _M_index_max;
 
@@ -283,7 +283,7 @@ template<typename T>
 void
 EIMBase<T>::orthonormalize( matrix_type& __Z )
 {
-    FEEL_ASSERT( __Z.rows() > 0 && __Z.cols() > 0 )( __Z.rows() )( __Z.cols() ).error( "invalid number of rows or columns" );
+    FEELPP_ASSERT( __Z.rows() > 0 && __Z.cols() > 0 )( __Z.rows() )( __Z.cols() ).error( "invalid number of rows or columns" );
     // here we use the norm2 but it might be a good one
     size_t __M = __Z.cols();
     for ( size_t __i = 0;__i < __M-1; ++__i )
@@ -295,7 +295,7 @@ EIMBase<T>::orthonormalize( matrix_type& __Z )
     __Z.col(__M-1).normalize();
 }
 
-/*!
+/**
   \class EIM
   \brief Empirical interpolation of a function to obtain an affine decomposition
 
@@ -351,17 +351,15 @@ EIMBase<T>::orthonormalize( matrix_type& __Z )
   (\: \cdot \: ; \mu)\|_{L^{\infty} (\Omega)}\f$.
 
   \todo make it truly mesh independent.
-  \todo find a generic solution for coordinates type \c coord_type
+  \todo find a generic solution for coordinates type \c node_type
 
   @author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
   @see
 */
-template<typename T,
-         typename Dmu,
-         template<typename> class F>
+template<typename ModelType>
 class EIM
     :
-    public EIMBase<T>
+        public EIMBase<typename ModelType::value_type>
 {
 public:
 
@@ -372,13 +370,7 @@ public:
     typedef EIMBase<T> super;
 
     typedef typename super::value_type value_type;
-    typedef typename super::coord_type coord_type;
-
-    typedef typename Dmu::singleton_type pset_type;
-    typedef typename pset_type::parameter_set_type parameter_set_type;
     typedef typename super::matrix_type matrix_type;
-
-    typedef F<value_type> f_type;
 
     //@}
 
