@@ -90,6 +90,12 @@ endwhile(${ARGLIST} MATCHES ".+.*")
 ####################################################################
 cmake_minimum_required(VERSION 2.6 FATAL_ERROR)
 
+if ( FEELPP_CTEST_CONFIG )
+  include(${FEELPP_CTEST_CONFIG})
+  message(STATUS "FEELPP_SITE: ${FEELPP_SITE}")
+  message(STATUS "FEELPP_CXX: ${FEELPP_CXX}")
+endif()
+
 if(NOT FEELPP_SITE)
   site_name(FEELPP_SITE)
 endif(NOT FEELPP_SITE)
