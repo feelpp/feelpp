@@ -21,8 +21,19 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-set(ARCH `uname -m`)
-set(SITE `hostname`)
+find_program(UNAME NAMES uname)
+macro(getuname name flag)
+  exec_program("${UNAME}" ARGS "${flag}" OUTPUT_VARIABLE "${name}")
+endmacro(getuname)
+getuname(osname -s)
+getuname(osrel  -r)
+getuname(cpu    -m)
+set(CTEST_BUILD_NAME        "${osname}-${cpu}")
+
+find_program(HOSTNAME_CMD NAMES hostname)
+exec_program(${HOSTNAME_CMD} ARGS OUTPUT_VARIABLE HOSTNAME)
+set(CTEST_SITE              "${HOSTNAME}")
+
 set(OS_VERSION debian-sid)
 set(WORK_DIR $HOME/sources/)
 set(MAKE_ARGS "-j5")
