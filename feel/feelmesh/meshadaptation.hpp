@@ -26,6 +26,10 @@
    \author Cecile Daversin <cecile.daversin@lncmi.cnrs.fr>
    \date 2012-08-04
  */
+
+#ifndef __MESHADAPTATION_HPP
+#define __MESHADAPTATION_HPP 1
+
 /** include linear algebra backend */
 #include <feel/feelalg/backend.hpp>
 
@@ -189,7 +193,7 @@ namespace Feel
 
         //! Mesh adaptation interface
         // _initMesh = initial mesh
-        // _geofile = name of geo file (without ext)
+        // _geofile = complete path to access geofile
         // _adaptType = isotropic | anisotropic
         // _var = list of (element_type, string) = list of (variable, name of the variable)
         // _metric = list of (vector<p1_element_type>, string) = list of (hsize(isotropic) | matrix(anisotropic), name for metric)
@@ -454,12 +458,10 @@ namespace Feel
                    OrderGeo>::createAdaptedGeo(std::string geofile, std::string name, std::vector<std::string> posfiles,
                                                bool aniso)
     {
-        std::string accessGeofile = ( boost::format( "../../../../../geofiles/%1%.geo" ) % geofile ).str();
-
         ///// Transform inupt geofile into string
         std::ifstream stringToGeo;
         std::string geofileString;
-        stringToGeo.open(accessGeofile);
+        stringToGeo.open(geofile);
         stringToGeo.seekg(0, std::ios::end);
         geofileString.reserve(stringToGeo.tellg());
         stringToGeo.seekg(0, std::ios::beg);
@@ -589,14 +591,20 @@ namespace Feel
 
         ///// Geofile_s is complete => transform it into new file
         std::ofstream newGeofile;
-        if( boost::filesystem::exists((boost::format( "./new-%1%.geo" ) % geofile ).str()) )
-            remove((boost::format( "./new-%1%.geo" ) % geofile ).str().c_str() );
 
-        newGeofile.open((boost::format( "./new-%1%.geo" ) % geofile ).str());
+        // Find name of the geofile (without extension), from the complete path
+        size_t geoNameBegin = geofile.find_last_of("/");
+        size_t extensionBegin = geofile.find(".geo") - 1;
+        std::string geofileName = geofile.substr( geoNameBegin+1, extensionBegin - geoNameBegin);
+
+        if( boost::filesystem::exists((boost::format( "./new-%1%.geo" ) % geofileName ).str()) )
+            remove((boost::format( "./new-%1%.geo" ) % geofileName ).str().c_str() );
+
+        newGeofile.open( (boost::format( "./new-%1%.geo" ) % geofileName ).str().c_str() );
         newGeofile << geofileString;
         newGeofile.close();
 
-        std::string newAccessGeofile = (boost::format( "./new-%1%.geo" ) % geofile ).str();
+        std::string newAccessGeofile = (boost::format( "./new-%1%.geo" ) % geofileName ).str();
 
         return newAccessGeofile;
     }
@@ -610,9 +618,12 @@ namespace Feel
                    OrderGeo>::buildAdaptedMesh(std::string geofile, std::string name, std::vector<std::string> posfiles,
                                           bool aniso)
     {
-        std::string accessGeofile = ( boost::format( "../../../../../geofiles/%1%.geo" ) % geofile ).str();
+        // Find name of the geofile (without extension), from the complete path
+        size_t geoNameBegin = geofile.find_last_of("/");
+        size_t extensionBegin = geofile.find(".geo") - 1;
+        std::string geofileName = geofile.substr( geoNameBegin+1, extensionBegin - geoNameBegin);
 
-        std::string prefix = (boost::format( "./%1%" ) % geofile ).str();
+        std::string prefix = (boost::format( "./%1%" ) % geofileName ).str();
         std::string mshFormat = "msh";
         std::string newMeshName =  (boost::format( "%1%%2%.%3%" ) % prefix % name % mshFormat ).str();
 
@@ -622,7 +633,7 @@ namespace Feel
 #if FEELPP_HAS_GMSH
 #if defined(FEELPP_HAS_GMSH_H)
 
-        std::string geofileName = (boost::format( "%1%.geo" ) % geofile).str();
+        std::string geofileNameWE = (boost::format( "%1%.geo" ) % geofileName).str();
         std::string exeName = "";
 
         // Load geofile (.geo) and post processing (.pos) files
@@ -636,9 +647,9 @@ namespace Feel
         argvGmsh[0] = argExe;
 
         /// argv[1] => geofile
-        char *argGeo = new char[geofileName.size() + 1];
-        copy(geofileName.begin(), geofileName.end(), argGeo);
-        argGeo[geofileName.size()] = '\0';
+        char *argGeo = new char[geofileNameWE.size() + 1];
+        copy(geofileNameWE.begin(), geofileNameWE.end(), argGeo);
+        argGeo[geofileNameWE.size()] = '\0';
         argvGmsh[1] = argGeo;
 
         /// argv[2,...,n] => posfiles
@@ -728,7 +739,7 @@ namespace Feel
         ::PView::list.erase(::PView::list.begin(), ::PView::list.end() );
 
 #else
-        std::string new_access_geofile = createAdaptedGeo(geofile, name, posfiles, aniso);
+        std::string newAccessGeofile = createAdaptedGeo(geofile, name, posfiles, aniso);
 
         // Execute gmsh command to generate new mesh from new geofile built
         std::ostringstream __str;
@@ -1062,4 +1073,4 @@ namespace Feel
     }
 
 }
-
+#endif // __MESHADAPTATION_HPP
