@@ -109,7 +109,9 @@ auto ref( T& t ) -> decltype( ref( t, detail::is_shared_ptr<T>() ) )
 }
 ///! \endcond detail
 
+template<typename T> class MatrixBlockBase;
 template<int NR, int NC, typename T> class MatrixBlock;
+template<typename T> class VectorBlockBase;
 template<int NR, typename T> class VectorBlock;
 
 /**
@@ -321,12 +323,12 @@ public:
     /**
      * instantiate a new block matrix sparse
      */
-    template <int NR, int NC, typename BlockType=sparse_matrix_ptrtype >
-    sparse_matrix_ptrtype newBlockMatrixImpl( vf::Blocks<NR,NC,BlockType> const & b,
+    template < typename BlockType=sparse_matrix_ptrtype >
+    sparse_matrix_ptrtype newBlockMatrixImpl( vf::BlocksBase<BlockType> const & b,
             bool copy_values=true,
             bool diag_is_nonzero=true )
     {
-        typedef MatrixBlock<NR,NC,typename BlockType::element_type::value_type> matrix_block_type;
+        typedef MatrixBlockBase<typename BlockType::element_type::value_type> matrix_block_type;
         boost::shared_ptr<matrix_block_type> mb( new matrix_block_type( b, *this, copy_values, diag_is_nonzero ) );
         return mb->getSparseMatrix();
     }
@@ -352,11 +354,11 @@ public:
     /**
      * instantiate a new block matrix sparse
      */
-    template <int NR, typename BlockType=vector_ptrtype >
-    vector_ptrtype newBlockVectorImpl( vf::Blocks<NR,1,BlockType> const & b,
+    template < typename BlockType=vector_ptrtype >
+    vector_ptrtype newBlockVectorImpl( vf::BlocksBase<BlockType> const & b,
                                        bool copy_values=true )
     {
-        typedef VectorBlock<NR,typename BlockType::element_type::value_type> vector_block_type;
+        typedef VectorBlockBase<typename BlockType::element_type::value_type> vector_block_type;
         boost::shared_ptr<vector_block_type> mb( new vector_block_type( b, *this, copy_values ) );
         return mb->getVector();
     }

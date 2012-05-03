@@ -45,9 +45,50 @@ namespace Feel
 
 template<typename T> class Backend;
 
+template <typename T=double>
+class BlocksBaseSparseMatrix : public vf::BlocksBase<boost::shared_ptr<MatrixSparse<T> > >
+{
+public :
+    typedef vf::BlocksBase<boost::shared_ptr<MatrixSparse<T> > > super_type;
+    typedef BlocksBaseSparseMatrix<T> self_type;
+    typedef boost::shared_ptr<MatrixSparse<T> > matrix_sparse_ptrtype;
+
+    BlocksBaseSparseMatrix(uint16_type nr,uint16_type nc)
+        :
+        super_type(nr,nc)
+    {}
+
+    BlocksBaseSparseMatrix(super_type const & b)
+        :
+        super_type(b)
+    {}
+
+    template <typename VectorType>
+    self_type
+    operator<<( matrix_sparse_ptrtype const& m ) const
+    {
+        return super_type::operator<<( m );
+    }
+
+};
+
 template <int NR, int NC, typename T=double>
-class BlocksSparseMatrix : public vf::Blocks<NR,NC,boost::shared_ptr<MatrixSparse<T> > >
-{};
+class BlocksSparseMatrix : public BlocksBaseSparseMatrix<T>
+{
+    static const uint16_type NBLOCKROWS = NR;
+    static const uint16_type NBLOCKCOLS = NC;
+
+    typedef BlocksBaseSparseMatrix<T> super_type;
+
+    BlocksSparseMatrix()
+        :
+        super_type(NBLOCKROWS,NBLOCKCOLS)
+    {}
+
+};
+
+
+
 
 /**
  * \class MatrixBlock
@@ -456,8 +497,8 @@ public:
     typedef typename super_type::matrix_ptrtype matrix_ptrtype;
     typedef typename super_type::backend_type backend_type;
     typedef vf::Blocks<NBLOCKROWS,NBLOCKCOLS,matrix_ptrtype > blocks_type;
-
-    MatrixBlock(  blocks_type const & blockSet,
+    typedef vf::BlocksBase<matrix_ptrtype> blocksbase_type;
+    MatrixBlock(  blocksbase_type const & blockSet,
                   backend_type &backend,
                   bool copy_values=true,
                   bool diag_is_nonzero=true )
