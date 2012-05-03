@@ -35,7 +35,6 @@
 #include <feel/feelmesh/hypercube.hpp>
 
 #include <feel/feeldiscr/mesh.hpp>
-#include <feel/feeldiscr/partitioner.hpp>
 #include <feel/feelalg/glas.hpp>
 #include <feel/feelalg/solvernonlinearpetsc.hpp>
 
