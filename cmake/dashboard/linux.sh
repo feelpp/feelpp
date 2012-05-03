@@ -1,11 +1,8 @@
 #!/bin/bash
-ARCH=`uname -m`
-SITE=`hostname`
-OS_VERSION=debian-sid
-WORK_DIR=$HOME/sources/
-MAKE_ARGS="-j5"
-PARALLEL="5"
-COMMON="ctest -VV -S $HOME/Devel/FEEL/feelpp.git/cmake/dashboard/testsuite.cmake,FEELPP_CTEST_CONFIG=feelpp.site.$site.cmake,FEELPP_WORK_DIR=$WORK_DIR,FEELPP_ENABLE_CRB_ALL=ON,FEELPP_MAKE_ARGS=$MAKE_ARGS,CTEST_BUILD_FLAGS=-j$PARALLEL,CTEST_PARALLEL_LEVEL=$PARALLEL,FEELPP_SITE=$SITE,FEELPP_MODE=$1,FEELPP_BUILD_STRING=$OS_VERSION-$ARCH"
+set -x
+# $1 provides the path to the toplevel source Feel++ directory
+# e.g. $HOME/Devel/FEEL/feelpp.git
+COMMON="ctest -VV -S $1/cmake/dashboard/testsuite.cmake,FEELPP_CTEST_CONFIG=$1/cmake/dashboard/feelpp.site.`hostname`.cmake"
 #$COMMON-gcc-4.4.6,FEELPP_CXX=g++-4.4,FEELPP_EXPLICIT_VECTORIZATION=novec
 #$COMMON-gcc-4.4.6,FEELPP_CXX=g++-4.4,FEELPP_EXPLICIT_VECTORIZATION=SSE2
 #$COMMON-gcc-4.5.2,FEELPP_CXX=g++-4.5,FEELPP_EXPLICIT_VECTORIZATION=novec
