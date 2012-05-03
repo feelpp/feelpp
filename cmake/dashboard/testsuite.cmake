@@ -90,7 +90,7 @@ endwhile(${ARGLIST} MATCHES ".+.*")
 ####################################################################
 cmake_minimum_required(VERSION 2.6 FATAL_ERROR)
 
-if ( FEELPP_CTEST_CONFIG )
+if ( EXISTS ${FEELPP_CTEST_CONFIG} )
   include(${FEELPP_CTEST_CONFIG})
   message(STATUS "FEELPP_SITE: ${FEELPP_SITE}")
   message(STATUS "FEELPP_CXX: ${FEELPP_CXX}")
@@ -230,7 +230,7 @@ FEELPP_ENABLE_ALL:BOOL=ON
 # site
 set(CTEST_SITE "${FEELPP_SITE}")
 # build name
-set(CTEST_BUILD_NAME "${FEELPP_BUILD_STRING}")
+set(CTEST_BUILD_NAME "${FEELPP_BUILD_STRING}-${FEELPP_CXXNAME}")
 # should ctest wipe the binary tree before running
 #SET(CTEST_START_WITH_EMPTY_BINARY_DIRECTORY TRUE)
 
