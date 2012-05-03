@@ -2,7 +2,7 @@
 set -x
 # $1 provides the path to the toplevel source Feel++ directory
 # e.g. $HOME/Devel/FEEL/feelpp.git
-COMMON="ctest -VV -S $1/cmake/dashboard/testsuite.cmake,FEELPP_CTEST_CONFIG=$1/cmake/dashboard/feelpp.site.`hostname`.cmake"
+COMMON="ctest -VV -S $1/cmake/dashboard/testsuite.cmake,FEELPP_CTEST_CONFIG=$1/cmake/dashboard/feelpp.site.`hostname`.cmake,FEELPP_MODE=$2,"
 #$COMMON-gcc-4.4.6,FEELPP_CXX=g++-4.4,FEELPP_EXPLICIT_VECTORIZATION=novec
 #$COMMON-gcc-4.4.6,FEELPP_CXX=g++-4.4,FEELPP_EXPLICIT_VECTORIZATION=SSE2
 #$COMMON-gcc-4.5.2,FEELPP_CXX=g++-4.5,FEELPP_EXPLICIT_VECTORIZATION=novec
