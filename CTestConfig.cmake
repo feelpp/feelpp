@@ -21,4 +21,6 @@ set(CTEST_PROJECT_SUBPROJECTS
   examples
   benchmarks
   crb
+  research/apee
+  research/fsi
   )
