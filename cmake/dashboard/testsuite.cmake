@@ -156,7 +156,7 @@ endif(NOT FEELPP_MODE)
 find_program(CTEST_GIT_COMMAND NAMES git)
 #SET (CTEST_GIT_COMMAND "git")
 #SET (CTEST_SVN_CHECKOUT   "${CTEST_GIT_COMMAND} co svn://scm.forge.imag.fr/var/lib/gforge/chroot/scmrepos/svn/life/trunk/life/trunk ${CTEST_SOURCE_DIRECTORY}")
-SET (CTEST_GIT_CHECKOUT   "${CTEST_GIT_COMMAND} clone https://code.google.com/p/feelpp/")
+SET (CTEST_CHECKOUT_COMMAND "${CTEST_GIT_COMMAND} clone https://code.google.com/p/feelpp/")
 set (CTEST_UPDATE_COMMAND "${CTEST_GIT_COMMAND}")
   #SET(CTEST_BACKUP_AND_RESTORE TRUE) # the backup is SVN related ...
 #endif(NOT FEELPP_NO_UPDATE)
