@@ -21,14 +21,14 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-set(OS_VERSION debian-testing)
+set(OS_VERSION macosx-lion-10.7.3)
 set(ARCH x86_64)
-set(WORK_DIR /home/feelpp_sources/)
-set(MAKE_ARGS "-j5")
-set(PARALLEL "5")
+set(WORK_DIR /Users/prudhomm/sources/)
+set(PARALLEL "10")
+set(MAKE_ARGS "-j${PARALLEL}")
 set(FEELPP_WORK_DIR ${WORK_DIR})
 set(FEELPP_ENABLE_CRB_ALL ON)
 set(FEELPP_MAKE_ARGS ${MAKE_ARGS})
 set(CTEST_BUILD_FLAGS -j${PARALLEL})
 set(CTEST_PARALLEL_LEVEL ${PARALLEL})
-set(FEELPP_MODULES "research/apee" )
+
