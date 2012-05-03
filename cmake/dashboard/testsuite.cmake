@@ -92,8 +92,8 @@ cmake_minimum_required(VERSION 2.6 FATAL_ERROR)
 
 if ( EXISTS ${FEELPP_CTEST_CONFIG} )
   include(${FEELPP_CTEST_CONFIG})
-  message(STATUS "FEELPP_SITE: ${FEELPP_SITE}")
-  message(STATUS "FEELPP_CXX: ${FEELPP_CXX}")
+  message(WARNING "FEELPP_SITE: ${FEELPP_SITE}")
+  message(WARNING "FEELPP_CXX: ${FEELPP_CXX}")
 endif()
 
 if(NOT FEELPP_SITE)
