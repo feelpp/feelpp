@@ -1,5 +1,5 @@
 #!/bin/bash
-set -x
+#set -x
 # $1 provides the path to the toplevel source Feel++ directory
 # e.g. $HOME/Devel/FEEL/feelpp.git
 COMMON="ctest -VV -S $1/cmake/dashboard/testsuite.cmake,FEELPP_CTEST_CONFIG=$1/cmake/dashboard/feelpp.site.`hostname`.cmake,FEELPP_MODE=$2,"
