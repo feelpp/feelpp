@@ -22,5 +22,4 @@ set(CTEST_PROJECT_SUBPROJECTS
   benchmarks
   crb
   research/apee
-  research/fsi
   )
