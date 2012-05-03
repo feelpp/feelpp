@@ -154,13 +154,21 @@ endif(NOT FEELPP_MODE)
 
 #if(NOT FEELPP_NO_UPDATE)
 find_program(CTEST_GIT_COMMAND NAMES git)
+find_program(CTEST_SVN_COMMAND NAMES svn)
 #SET (CTEST_GIT_COMMAND "git")
 #SET (CTEST_SVN_CHECKOUT   "${CTEST_GIT_COMMAND} co svn://scm.forge.imag.fr/var/lib/gforge/chroot/scmrepos/svn/life/trunk/life/trunk ${CTEST_SOURCE_DIRECTORY}")
 #SET (CTEST_CHECKOUT_COMMAND "${CTEST_GIT_COMMAND} clone https://code.google.com/p/feelpp/")
 set (CTEST_UPDATE_COMMAND "${CTEST_GIT_COMMAND}")
+
   #SET(CTEST_BACKUP_AND_RESTORE TRUE) # the backup is SVN related ...
 #endif(NOT FEELPP_NO_UPDATE)
-
+foreach(module ${FEELPP_MODULES})
+  # update the modules using svn update
+  execute_process(
+    COMMAND "cd ${CTEST_SOURCE_DIRECTORY}/${module} && ${CTEST_SVN_COMMAND} update"
+    OUTPUT_VARIABLE MODULE_OUTPUT)
+  message(STATUS "updated ${module} : ${MODULE_OUTPUT}")
+endforeach()
 ####################################################################
 # The values in this section are optional you can either
 # have them or leave them commented out
