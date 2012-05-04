@@ -251,7 +251,7 @@ public:
   @see
 */
 template<typename ExprT>
-class Expr: public boost::enable_shared_from_this<Expr<ExprT> >
+class Expr//: public boost::enable_shared_from_this<Expr<ExprT> >
 {
 public:
 
