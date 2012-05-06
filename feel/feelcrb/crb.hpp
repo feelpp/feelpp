@@ -1741,6 +1741,10 @@ void
 CRB<TruthModelType>::buildFunctionFromRbCoefficients( std::vector< vectorN_type > const & RBcoeff, wn_type const & WN, std::vector<element_ptrtype> & FEMsolutions )
 {
 
+    if( WN.size() == 0 )
+        throw std::logic_error( "[CRB::buildFunctionFromRbCoefficients] ERROR : reduced basis space is empty" );
+
+
     int nb_solutions = RBcoeff.size();
 
     for( int i = 0; i < nb_solutions; i++ )
@@ -2539,7 +2543,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
                     Adu += theta_mq[q]*M_Mq_pr[q].block( 0,0,N,N )/time_step;
                     Fdu += theta_mq[q]*M_Mq_pr[q].block( 0,0,N,N )*uNduold[time_index]/time_step;
                 }
-
+		
                 uNdu[time_index] = Adu.lu().solve( Fdu );
 		
                 if ( time_index>0 )
@@ -4482,8 +4486,8 @@ CRB<TruthModelType>::save( Archive & ar, const unsigned int version ) const
     }
     if( version >= 2 )
         ar & BOOST_SERIALIZATION_NVP( M_variance_matrix_phi );
-    if( version >= 3 )
-        ar & BOOST_SERIALIZATION_NVP( M_WN );
+    //if( version >= 3 )
+    //    ar & BOOST_SERIALIZATION_NVP( M_WN );
 }
 
 template<typename TruthModelType>
@@ -4493,7 +4497,7 @@ CRB<TruthModelType>::load( Archive & ar, const unsigned int version )
 {
 
     std::cout<<"[CRB::load] version"<< version <<std::endl;
-    if( version <= 3 )
+    if( version <= 2 )
         M_rbconv_contains_primal_and_dual_contributions = false;
     else
         M_rbconv_contains_primal_and_dual_contributions = true;
@@ -4557,8 +4561,8 @@ CRB<TruthModelType>::load( Archive & ar, const unsigned int version )
     }
     if( version >= 2 )
         ar & BOOST_SERIALIZATION_NVP( M_variance_matrix_phi );
-    if( version >= 3 )
-        ar & BOOST_SERIALIZATION_NVP( M_WN );
+    //if( version >= 3 )
+    //    ar & BOOST_SERIALIZATION_NVP( M_WN );
 
 #if 0
     std::cout << "[loadDB] output index : " << M_output_index << "\n"
