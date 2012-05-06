@@ -338,33 +338,75 @@ void serialize( Archive & ar,
 
 
 //
-// boost::tuple<double,double>
+// boost::tuple<T1,T2>
 //
 
-template<typename T, class Archive>
+template<typename T1, typename T2, class Archive>
 void load( Archive & ar,
-           boost::tuple<T,T> & t,
+           boost::tuple<T1,T2> & t,
            const unsigned int file_version )
 {
-    T x;
+    T1 x;
     ar >> BOOST_SERIALIZATION_NVP( x );
-    int y;
+    T2 y;
     ar >> BOOST_SERIALIZATION_NVP( y );
     t = boost::make_tuple( x,y );
 }
-template<typename T, typename Archive>
+template<typename T1, typename T2, typename Archive>
 void save( Archive & ar,
-           boost::tuple<T,T> const& t,
+           boost::tuple<T1,T2> const& t,
            const unsigned int file_version )
 {
-    T x,y;
+    T1 x;
+    T2 y;
     boost::tie( x,y ) = t;
     ar << BOOST_SERIALIZATION_NVP( x );
     ar << BOOST_SERIALIZATION_NVP( y );
 }
-template<typename T, class Archive>
+template<typename T1, typename T2, class Archive>
 void serialize( Archive & ar,
-                boost::tuple<T,T> & t,
+                boost::tuple<T1,T2> & t,
+                const unsigned int file_version )
+{
+    split_free( ar, t, file_version );
+}
+
+
+
+//
+// boost::tuple<T1,T2,T3>
+//
+
+template<typename T1, typename T2, typename T3, class Archive>
+void load( Archive & ar,
+           boost::tuple<T1,T2,T3> & t,
+           const unsigned int file_version )
+{
+    T1 x;
+    ar >> BOOST_SERIALIZATION_NVP( x );
+    T2 y;
+    ar >> BOOST_SERIALIZATION_NVP( y );
+    T3 z;
+    ar >> BOOST_SERIALIZATION_NVP( z );
+    t = boost::make_tuple( x,y,z );
+}
+template<typename T1, typename T2, typename T3, typename Archive>
+void save( Archive & ar,
+           boost::tuple<T1,T2,T3> const& t,
+           const unsigned int file_version )
+{
+    T1 x;
+    T2 y;
+    T3 z;
+    boost::tie( x,y,z ) = t;
+    ar << BOOST_SERIALIZATION_NVP( x );
+    ar << BOOST_SERIALIZATION_NVP( y );
+    ar << BOOST_SERIALIZATION_NVP( z );
+
+}
+template<typename T1, typename T2, typename T3, class Archive>
+void serialize( Archive & ar,
+                boost::tuple<T1,T2,T3> & t,
                 const unsigned int file_version )
 {
     split_free( ar, t, file_version );
