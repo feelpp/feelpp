@@ -283,7 +283,7 @@ OpusModelRB<OrderU,OrderP,OrderT>::init()
 
     for ( int q = 1; q < Qa(); ++q )
     {
-        M_Aq[q] = backend->newMatrix( M_Th, M_Th, M_Aq[0] );
+        M_Aq[q] = backend->newMatrix( M_Th, M_Th );
     }
 
     // mass matrix
@@ -291,7 +291,7 @@ OpusModelRB<OrderU,OrderP,OrderT>::init()
 
     for ( int q = 0; q < Qm(); ++q )
     {
-        M_Mq[q] = backend->newMatrix( M_Th, M_Th, M_Aq[0] );
+        M_Mq[q] = backend->newMatrix( M_Th, M_Th );
     }
 
     // outputs
@@ -940,10 +940,9 @@ OpusModelRB<OrderU,OrderP,OrderT>::update( parameter_type const& mu , double tim
     Log() << "[update(mu)] pV done\n";
     boost::timer ti;
     D->zero();
-    *D = M_Aq[0];
-    D->scale( M_thetaAq( 0 ) );
-
-    for ( size_type q = 1; q < M_Aq.size(); ++q )
+    //*D = M_Aq[0];
+    //D->scale( M_thetaAq( 0 ) );
+    for ( size_type q = 0; q < M_Aq.size(); ++q )
     {
         //Log() << "[affine decomp] scale q=" << q << " with " << M_thetaAq(q) << "\n";
         D->addMatrix( M_thetaAq( q ) , M_Aq[q] );
