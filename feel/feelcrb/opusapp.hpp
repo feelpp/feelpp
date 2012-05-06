@@ -233,7 +233,8 @@ public:
         hdrs[CRBModelMode::SCM_ONLINE] = scmonlinehdrs;
         std::ostringstream ostr;
 
-	//crb->printErrorsDuringRbConstruction();
+	if( crb->printErrorDuringOfflineStep() )
+            crb->printErrorsDuringRbConstruction();
 	if ( crb->showMuSelection() )
 	    crb->printMuSelection();
 
