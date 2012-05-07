@@ -990,12 +990,14 @@ CRBModel<TruthModelType>::offlineMerge( parameter_type const& mu )
         A->addMatrix( this->thetaAq( q ), M_Aq[q] );
     }
 
-
-    *M = *M_Mq[0];
-    M->scale( this->thetaMq( 0 ) );
-    for ( size_type q = 1; q < Qm(); ++q )
+    if( Qm() > 0 )
     {
-        M->addMatrix( this->thetaMq( q ), M_Mq[q] );
+        *M = *M_Mq[0];
+        M->scale( this->thetaMq( 0 ) );
+        for ( size_type q = 1; q < Qm(); ++q )
+        {
+            M->addMatrix( this->thetaMq( q ), M_Mq[q] );
+        }
     }
 
 
