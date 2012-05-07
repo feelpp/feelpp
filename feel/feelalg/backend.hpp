@@ -681,8 +681,8 @@ public:
                                      tag,
                                      ( required
                                        ( matrix,( sparse_matrix_ptrtype ) )
-                                       ( in_out( solution ),*( mpl::or_<boost::is_convertible<mpl::_,vector_type&>,
-                                               boost::is_convertible<mpl::_,vector_ptrtype> > ) )
+                                       //( in_out( solution ),*( mpl::or_<mpl::or_<boost::is_convertible<mpl::_,vector_type&>,boost::is_convertible<mpl::_,vector_type> >,boost::is_convertible<mpl::_,vector_ptrtype> > ) )
+                                       ( in_out( solution ),* )
                                        ( rhs,( vector_ptrtype ) ) )
                                      ( optional
                                        //(prec,(sparse_matrix_ptrtype), matrix )
