@@ -1050,9 +1050,9 @@ OpusModelRB<OrderU,OrderP,OrderT>::solve( parameter_type const& mu, element_ptrt
 #if(0)
         auto ret = backend->solve( _matrix=D,  _solution=*T, _rhs=L[0], _reuse_prec=( M_temp_bdf->iteration() >=2 ) );
 
-        if ( !ret.get<0>() )
+        if ( !ret.template get<0>() )
         {
-            Log()<<"WARNING : we have not converged ( nb_it : "<<ret.get<1>()<<" and residual : "<<ret.get<2>() <<" ) \n";
+            Log()<<"WARNING : we have not converged ( nb_it : "<<ret.template get<1>()<<" and residual : "<<ret.template get<2>() <<" ) \n";
         }
 
 #endif
@@ -1099,9 +1099,9 @@ OpusModelRB<OrderU,OrderP,OrderT>::solve( parameter_type const& mu, element_ptrt
         {
             auto ret = backend->solve( _matrix=D->transpose(),  _solution=*T, _rhs=rhs , _reuse_prec=( M_temp_bdf->iteration() >=2 ) );
 
-            if ( !ret.get<0>() )
+            if ( !ret.template get<0>() )
             {
-                Log()<<"WARNING : we have not converged ( nb_it : "<<ret.get<1>()<<" and residual : "<<ret.get<2>() <<" ) \n";
+                Log()<<"WARNING : we have not converged ( nb_it : "<<ret.template get<1>()<<" and residual : "<<ret.template get<2>() <<" ) \n";
             }
 
         }
@@ -1110,9 +1110,9 @@ OpusModelRB<OrderU,OrderP,OrderT>::solve( parameter_type const& mu, element_ptrt
         {
             auto ret = backend->solve( _matrix=D,  _solution=*T, _rhs=rhs , _reuse_prec=( M_temp_bdf->iteration() >=2 ) );
 
-            if ( !ret.get<0>() )
+            if ( !ret.template get<0>() )
             {
-                Log()<<"WARNING : we have not converged ( nb_it : "<<ret.get<1>()<<" and residual : "<<ret.get<2>() <<" ) \n";
+                Log()<<"WARNING : we have not converged ( nb_it : "<<ret.template get<1>()<<" and residual : "<<ret.template get<2>() <<" ) \n";
             }
         }
 
