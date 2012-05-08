@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2007-06-11
 
-  Copyright (C) 2007-2011 Universite Joseph Fourier (Grenoble I)
+  Copyright (C) 2007-2012 Universite Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -29,18 +29,13 @@
 #include <feel/options.hpp>
 #include <feel/feelcore/application.hpp>
 
-#include <feel/feelalg/backendgmm.hpp>
-#include <feel/feelalg/backendpetsc.hpp>
+#include <feel/feelalg/backend.hpp>
 
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feeldiscr/region.hpp>
-#include <feel/feelpoly/im.hpp>
 
 #include <feel/feelfilters/gmsh.hpp>
 #include <feel/feelfilters/exporter.hpp>
-#include <feel/feelfilters/gmshhypercubedomain.hpp>
-#include <feel/feelpoly/polynomialset.hpp>
-
 
 #include <feel/feelvf/vf.hpp>
 
