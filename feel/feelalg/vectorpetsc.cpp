@@ -1071,13 +1071,13 @@ VectorPetscMPI<T>::duplicateFromOtherPartition( Vector<T> const& vecInput)
 
     auto testCommActivities_this=this->map().worldComm().hasMultiLocalActivity();
 
-    if (testCommActivities_this.get<0>())
+    if (testCommActivities_this.template get<0>())
         {
             //std::cout << "VectorPetscMPI<T>::duplicateFromOtherPartition hasMultiLocalActivity " << std::endl;
             // save initial activities
             std::vector<int> saveActivities_this = this->map().worldComm().activityOnWorld();
             // iterate on each local activity
-            const auto colorWhichIsActive = testCommActivities_this.get<1>();
+            const auto colorWhichIsActive = testCommActivities_this.template get<1>();
             auto it_color=colorWhichIsActive.begin();
             auto const en_color=colorWhichIsActive.end();
             for ( ;it_color!=en_color;++it_color )
