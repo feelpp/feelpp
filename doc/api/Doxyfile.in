@@ -577,6 +577,9 @@ INPUT                  = "@FEELPP_HOME_DIR@/feel/feelcore" \
                          "@FEELPP_HOME_DIR@/feel/feelalg" \
                          "@FEELPP_HOME_DIR@/feel/feelfilters" \
                          "@FEELPP_HOME_DIR@/feel/feelmesh" \
+                         "@FEELPP_HOME_DIR@/feel/feelpoly" \
+                         "@FEELPP_HOME_DIR@/feel/feeltiming" \
+                         "@FEELPP_HOME_DIR@/feel/feelcrb" \
                          "@FEELPP_HOME_DIR@/doc/api"\
                          "@FEELPP_HOME_DIR@/doc/tutorial"
 
