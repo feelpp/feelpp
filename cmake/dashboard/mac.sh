@@ -15,5 +15,5 @@ if [ -x /opt/local/bin/g++-mp-4.7 ]; then
 fi
 
 if [ -x /opt/local/bin/clang-mp-3.1 ]; then
-    $COMMON,FEELPP_CXXNAME=clang-3.1-mpi,FEELPP_CXX_CXX=/opt/local/bin/clang-mp-3.1,FEELPP_EXPLICIT_VECTORIZATION=SSE2,FEELPP_ENABLE_MPI_MODE=ON
+    $COMMON,FEELPP_CXXNAME=clang-3.1-mpi,FEELPP_CXX=/opt/local/bin/clang-mp-3.1,FEELPP_EXPLICIT_VECTORIZATION=SSE2,FEELPP_ENABLE_MPI_MODE=ON
 fi
