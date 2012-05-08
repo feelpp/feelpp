@@ -178,7 +178,6 @@ public:
 
     /* export */
     typedef Exporter<mesh_type> export_type;
-    typedef typename Exporter<mesh_type>::timeset_type timeset_type;
 
     //@}
 
@@ -271,9 +270,6 @@ private:
     fluid_operator_ptrtype M_fluid;
 
     boost::shared_ptr<export_type> M_exporter,M_exporter_fluid;
-    export_type::timeset_ptrtype M_timeSet;
-
-
 };
 
 /** \\@} */
