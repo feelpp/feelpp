@@ -277,11 +277,11 @@ OpusModelFluidOseen<SpaceType>::initLinearOperators()
     {
         Log() << "[OpusModelFluidOseen::add weakbc boundary terms velocity] boundary " << marker << " id : " << mesh->markerName( marker ) << "\n";
         Log() << "[OpusModelFluidOseen::add weakbc boundary terms velocity] " << mesh->markerName( marker )
-              << " : nelts: " << std::distance( markedfaces( mesh,marker ).get<1>(),
-                                                markedfaces( mesh,marker ).get<2>() ) << "\n";
+              << " : nelts: " << std::distance( markedfaces( mesh,marker ).template get<1>(),
+                                                markedfaces( mesh,marker ).template get<2>() ) << "\n";
         std::cout << "[OpusModelFluidOseen::add weakbc boundary terms velocity] " << mesh->markerName( marker )
-                  << " : nelts: " << std::distance( markedfaces( mesh,marker ).get<1>(),
-                          markedfaces( mesh,marker ).get<2>() ) << "\n";
+                  << " : nelts: " << std::distance( markedfaces( mesh,marker ).template get<1>(),
+                          markedfaces( mesh,marker ).template get<2>() ) << "\n";
         std::cerr << " -- bdy " << marker << " terms 1" << std::endl;
         *M_oplin +=
             integrate( _range=markedfaces( mesh, marker ),
