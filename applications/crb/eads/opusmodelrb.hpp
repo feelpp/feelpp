@@ -203,8 +203,6 @@ public:
     typedef Exporter<mesh_type> export_type;
     typedef boost::shared_ptr<export_type> export_ptrtype;
 
-    typedef typename Exporter<mesh_type>::timeset_type timeset_type;
-
     /* parameter space */
     typedef ParameterSpace<ParameterSpaceDimension> parameterspace_type;
     typedef boost::shared_ptr<parameterspace_type> parameterspace_ptrtype;
@@ -553,7 +551,6 @@ private:
     element_ptrtype pT,pV;
 
     boost::shared_ptr<export_type> M_exporter;
-    export_type::timeset_ptrtype M_timeSet;
 
     sparse_matrix_ptrtype D,M,Mass,Mpod;
     std::vector<vector_ptrtype> L;
