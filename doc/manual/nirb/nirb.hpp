@@ -757,7 +757,7 @@ Eigen::MatrixXd NIRBTEST<PolynomialOrder> :: ConstructStiffMatrixSnapshot( space
     }
 
     std::string filename = ( boost::format( "StiffMatrixP%1%" )%PolynomialOrder ).str();
-    std :: ofstream fileMat( filename );
+    std::ofstream fileMat( filename.c_str() );
     fileMat << NbSnapshot <<std::endl;
 
     for ( int i = 0; i<NbSnapshot; i++ )
@@ -833,7 +833,8 @@ void NIRBTEST<PolynomialOrder> ::ChooseRBFunction( space_ptrtype Xh,vector_of_el
 
     if ( !Sampling )
     {
-        std::ifstream fileMat( ( boost::format( "StiffMatrixP%1%" )%PolynomialOrder ).str() );
+        std::string str = ( boost::format( "StiffMatrixP%1%" )%PolynomialOrder ).str();
+        std::ifstream fileMat( str.c_str() );
 
         if ( !fileMat )
         {
@@ -891,7 +892,7 @@ void NIRBTEST<PolynomialOrder> ::ChooseRBFunction( space_ptrtype Xh,vector_of_el
 
     // saving the index's number to identify the NIRB basis functions
     std::string path = ( boost::format( "./IndBR%1%" ) %sizeRB ).str() ;
-    std::ofstream find( path );
+    std::ofstream find( path.c_str() );
 
     if ( !find )
     {
@@ -1323,7 +1324,7 @@ Eigen::MatrixXd NIRBTEST<PolynomialOrder> :: BuildBetaH( space_ptrtype XhFine,
     std::vector<int> IndTab( sizeRB );
     Eigen::MatrixXd BetaH( sizeRB,sizeRB );
     std::string path = ( boost::format( "./IndBR%1%" ) %sizeRB ).str() ;
-    std::ifstream find( path );
+    std::ifstream find( path.c_str() );
 
     if ( !find )
     {
@@ -1339,7 +1340,7 @@ Eigen::MatrixXd NIRBTEST<PolynomialOrder> :: BuildBetaH( space_ptrtype XhFine,
     }
 
     path =  ( boost::format( "./AlphaH_%1%" ) %sizeRB ).str();
-    std::ofstream fB( path );
+    std::ofstream fB( path.c_str() );
     fB << sizeRB << " " << sizeRB <<std::endl;
 
     for ( int i =0; i<sizeRB; i++ )
@@ -1386,7 +1387,7 @@ Eigen::MatrixXd NIRBTEST<PolynomialOrder> ::  BuildBetah( space_ptrtype XhFine,
     std::vector<int> IndTab( sizeRB );
     Eigen::MatrixXd BetaH( sizeRB,sizeRB );
     std::string path = ( boost::format( "./IndBR%1%" ) %sizeRB ).str() ;
-    std::ifstream find( path );
+    std::ifstream find( path.c_str() );
 
     if ( !find )
     {
@@ -1402,7 +1403,7 @@ Eigen::MatrixXd NIRBTEST<PolynomialOrder> ::  BuildBetah( space_ptrtype XhFine,
     }
 
     path =  ( boost::format( "./Betah_%1%" ) %sizeRB ).str();
-    std::ofstream fB( path );
+    std::ofstream fB( path.c_str() );
     fB << sizeRB << " " << sizeRB <<std::endl;
 
     for ( int i =0; i<sizeRB; i++ )
@@ -1450,7 +1451,7 @@ Eigen::MatrixXd NIRBTEST<PolynomialOrder> ::BuildPostProcessMatrix( space_ptrtyp
     if ( !Offline )
     {
         std::string path =  ( boost::format( "./AlphaH_%1%" ) %sizeRB ).str();
-        std::ifstream fA ( path );
+        std::ifstream fA ( path.c_str() );
 
         if ( !fA )
         {
@@ -1459,7 +1460,7 @@ Eigen::MatrixXd NIRBTEST<PolynomialOrder> ::BuildPostProcessMatrix( space_ptrtyp
         }
 
         path =  ( boost::format( "./betah_%1%" ) %sizeRB ).str();
-        std::ifstream fB ( path );
+        std::ifstream fB ( path.c_str() );
 
         if ( !fB )
         {
