@@ -141,7 +141,6 @@ public:
     /* export */
     typedef Exporter<typename velocity_oplagp1_type::image_mesh_type> export_type;
     typedef boost::shared_ptr<export_type> export_ptrtype;
-    typedef typename export_type::timeset_type timeset_type;
 
     /**
      * constructor: Xh space and some space functions are initialized
@@ -206,7 +205,6 @@ private:
     funlin_ptrtype M_stokes_rhs;
 
     export_ptrtype exporter;
-    typename export_type::timeset_ptrtype timeSet;
 
     double time;
     int M_time_order_var;
