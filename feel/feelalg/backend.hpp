@@ -790,8 +790,8 @@ public:
                                      nlSolve,
                                      tag,
                                      ( required
-                                       ( in_out( solution ),*( mpl::or_<boost::is_convertible<mpl::_,vector_type&>,
-                                               boost::is_convertible<mpl::_,vector_ptrtype> > ) ) )
+                                       //( in_out( solution ),*( mpl::or_<boost::is_convertible<mpl::_,vector_type&>,boost::is_convertible<mpl::_,vector_ptrtype> > ) ) )
+                                       ( in_out( solution ),*))
                                      ( optional
                                        ( jacobian,( sparse_matrix_ptrtype ), sparse_matrix_ptrtype() )
                                        ( residual,( vector_ptrtype ), vector_ptrtype() )
