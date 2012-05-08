@@ -315,6 +315,7 @@ Stokes::run()
 
     M_backend->solve( _matrix=D, _solution=U, _rhs=F );
 
+#if 0
     U.save( _path="." );
     u.save( _path="." );
     p.save( _path="." );
@@ -323,6 +324,7 @@ Stokes::run()
     q.load( _path="." );
     std::cout << "||u-v||=" << ( u-v ).l2Norm() << "\n";
     std::cout << "||p-q||=" << ( p-q ).l2Norm() << "\n";
+#endif
     this->exportResults( u_exact, p_exact, U, V );
 
     Log() << "[dof]         number of dof: " << Xh->nDof() << "\n";
