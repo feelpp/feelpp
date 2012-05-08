@@ -358,7 +358,7 @@ endif(FEELPP_ENABLE_SLEPC)
 #
 # Trilinos
 #
-OPTION(FEELPP_ENABLE_TRILINOS "enable feel++ Trilinos support" ON)
+OPTION(FEELPP_ENABLE_TRILINOS "enable feel++ Trilinos support" OFF)
 if (FEELPP_ENABLE_TRILINOS)
 FIND_PACKAGE(Trilinos)
   if ( TRILINOS_FOUND )
