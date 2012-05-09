@@ -49,7 +49,7 @@ macro(crb_add_executable)
 
   PARSE_ARGUMENTS(CRB_EXEC
     "LINK_LIBRARIES;CFG"
-    "NO_TEST"
+    "TEST"
     ${ARGN}
     )
   CAR(CRB_EXEC_NAME ${CRB_EXEC_DEFAULT_ARGS})
@@ -66,8 +66,10 @@ macro(crb_add_executable)
   target_link_libraries( ${execname} ${CRB_EXEC_LINK_LIBRARIES} )
   set_property(TARGET ${execname} PROPERTY LABELS crb)
   INSTALL(PROGRAMS "${CMAKE_CURRENT_BINARY_DIR}/${execname}"  DESTINATION bin COMPONENT Bin)
-  add_test(${execname} ${CMAKE_CURRENT_BINARY_DIR}/${execname})
-  set_property(TEST ${execname} PROPERTY LABELS crb)
+  if ( CRB_EXEC_TEST )
+    add_test(${execname} ${CMAKE_CURRENT_BINARY_DIR}/${execname})
+    set_property(TEST ${execname} PROPERTY LABELS crb)
+  endif()
   add_dependencies(crb ${execname})
   if ( CRB_EXEC_CFG )
     foreach(  cfg ${CRB_EXEC_CFG} )
@@ -88,7 +90,7 @@ macro(crb_add_python_module)
 if ( FEELPP_ENABLE_OPENTURNS AND OPENTURNS_FOUND )
   PARSE_ARGUMENTS(CRB_PYTHON
     "LINK_LIBRARIES;SCRIPTS;XML;CFG"
-    ""
+    "TEST"
     ${ARGN}
     )
   CAR(CRB_PYTHON_NAME ${CRB_PYTHON_DEFAULT_ARGS})
@@ -108,8 +110,10 @@ if ( FEELPP_ENABLE_OPENTURNS AND OPENTURNS_FOUND )
   if ( CRB_PYTHON_SCRIPTS )
     foreach(  script ${CRB_PYTHON_SCRIPTS} )
       configure_file( ${script} ${script} )
-      add_test(${script} ${PYTHON_EXECUTABLE} ${script})
-      set_property(TEST ${script} PROPERTY LABELS crb)
+      if ( CRB_PYTHON_TEST )
+        add_test(${script} ${PYTHON_EXECUTABLE} ${script})
+        set_property(TEST ${script} PROPERTY LABELS crb)
+      endif()
     endforeach()
   endif()
   if ( CRB_PYTHON_CFG )
