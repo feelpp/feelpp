@@ -76,7 +76,7 @@ makeHeat1DAbout( std::string const& str = "heat1d" )
                            "0.1",
                            "1D Heat Benchmark",
                            Feel::AboutData::License_GPL,
-                           "Copyright (c) 2010,2011 Université de Grenoble 1 (Joseph Fourier)" );
+                           "Copyright (c) 2010-2012 Universite de Grenoble 1 (Joseph Fourier)" );
 
     about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
     return about;
@@ -207,7 +207,7 @@ public:
     //! copy constructor
     //Heat1D( Heat1D const & );
     //! destructor
-    ~Heat1D() {}
+    virtual ~Heat1D() {}
 
     //! initialisation of the model
     void init();
