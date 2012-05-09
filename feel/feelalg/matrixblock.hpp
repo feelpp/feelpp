@@ -63,7 +63,6 @@ public :
         super_type(b)
     {}
 
-    template <typename VectorType>
     self_type
     operator<<( matrix_sparse_ptrtype const& m ) const
     {
@@ -75,6 +74,7 @@ public :
 template <int NR, int NC, typename T=double>
 class BlocksSparseMatrix : public BlocksBaseSparseMatrix<T>
 {
+public :
     static const uint16_type NBLOCKROWS = NR;
     static const uint16_type NBLOCKCOLS = NC;
 

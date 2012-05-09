@@ -64,9 +64,8 @@ public :
     /**
      * push_back methode
      */
-    template <typename VectorType>
     self_type
-    operator<<( VectorType const& m ) const
+    operator<<( vector_ptrtype const& m ) const
     {
         return super_type::operator<<( m );
     }
