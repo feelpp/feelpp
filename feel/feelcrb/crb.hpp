@@ -663,7 +663,7 @@ public:
     bool showMuSelection() ;
 
     /**
-     * if true, print the max error (absolute) during the offline stage 
+     * if true, print the max error (absolute) during the offline stage
      */
     bool printErrorDuringOfflineStep();
 
@@ -674,16 +674,16 @@ public:
 
     /**
      * print max errors (total error and also primal and dual contributions)
-     * during offline stage 
+     * during offline stage
      */
     void printErrorsDuringRbConstruction( void );
-    /* 
+    /*
      * compute correction terms for output
      * \param mu \f$ \mu\f$ the parameter at which to evaluate the output
      * \param uN : primal solution
      * \param uNdu : dual solution
      * \pram uNold : old primal solution
-     * \param K : time index 
+     * \param K : time index
      */
     double correctionTerms(parameter_type const& mu, std::vector< vectorN_type > const & uN, std::vector< vectorN_type > const & uNdu , std::vector<vectorN_type> const & uNold,  int const K=0) const;
 
@@ -1291,7 +1291,7 @@ CRB<TruthModelType>::offline()
                 //when initializing uN.
                 //if initial solution is zero then the system the matrix used in online will be singular
                 element_ptrtype primal_initial_field ( new element_type ( M_model->functionSpace() ) );
-		
+
                 M_model->initializationField( primal_initial_field, mu ); //fill initial_field
                 int norm_ini = M_model->scalarProduct( *primal_initial_field, *primal_initial_field );
 
@@ -1653,7 +1653,7 @@ CRB<TruthModelType>::offline()
         }
 
 	M_rbconv.insert( convergence( M_N, boost::make_tuple(maxerror,delta_pr,delta_du) ) );
-	
+
         //mu = M_Xi->at( M_N );//M_WNmu_complement->min().template get<0>();
 
         check( M_WNmu->size() );
@@ -1708,7 +1708,7 @@ void
 CRB<TruthModelType>::buildVarianceMatrixPhi( int const N )
 {
     M_variance_matrix_phi.conservativeResize( M_N , M_N );
-    mesh_ptrtype mesh = M_WN[0].functionSpace()->mesh(); 
+    mesh_ptrtype mesh = M_WN[0].functionSpace()->mesh();
     double surface = integrate( _range=elements(mesh), _expr=vf::cst(1.) ).evaluate()(0,0);
 
     //introduction of the new variable phi
@@ -1720,15 +1720,15 @@ CRB<TruthModelType>::buildVarianceMatrixPhi( int const N )
 	auto element_mean = vf::project(M_WN[i].functionSpace(), elements(mesh), vf::cst(mean) );
 	phi.push_back( M_WN[i] - element_mean );
     }
-	
+
     //fill matrix M_variance_matrix_phi such as
     //M_variance_matrix_phi(i,j) = \int_{mesh} phi^i phi^j
     for(int i = 0; i < M_N; ++i)
     {
         for(int j = i+1; j < M_N; ++j)
 	{
-	    M_variance_matrix_phi( i , j ) = integrate( _range=elements(mesh) , _expr=vf::idv( phi[i] ) * vf::idv( phi[j] ) ).evaluate()(0,0); 
-	    M_variance_matrix_phi( j , i ) =  M_variance_matrix_phi( i , j ); 
+	    M_variance_matrix_phi( i , j ) = integrate( _range=elements(mesh) , _expr=vf::idv( phi[i] ) * vf::idv( phi[j] ) ).evaluate()(0,0);
+	    M_variance_matrix_phi( j , i ) =  M_variance_matrix_phi( i , j );
 	}
 	M_variance_matrix_phi( i , i ) = integrate( _range=elements(mesh) , _expr=vf::idv( phi[i] ) * vf::idv( phi[i] ) ).evaluate()(0,0);
     }
@@ -1769,7 +1769,7 @@ CRB<TruthModelType>::compareResidualsForTransientProblems( parameter_type const&
 
     sparse_matrix_ptrtype A,AM,M,Adu;
     std::vector<vector_ptrtype> F,L;
-    
+
     vector_ptrtype Rhs( M_backend->newVector( M_model->functionSpace() ) );
 
     vector_ptrtype Aun( M_backend->newVector( M_model->functionSpace() ) );
@@ -1823,7 +1823,7 @@ CRB<TruthModelType>::compareResidualsForTransientProblems( parameter_type const&
 	double check_Caa_pr = M_model->scalarProduct( __ea_pr,__ea_pr );
 	double check_Cmf_pr = 2./time_step*( M_model->scalarProduct( __emu_pr , __ef_pr )+M_model->scalarProduct( __emuold_pr , __ef_pr ) );
 	double check_Cma_pr = 2./time_step*( M_model->scalarProduct( __emu_pr , __ea_pr )+M_model->scalarProduct( __emuold_pr , __ea_pr ) );
-	double check_Cmm_pr = 1./(time_step*time_step)*( M_model->scalarProduct( __emu_pr , __emu_pr ) + 2*M_model->scalarProduct( __emu_pr , __emuold_pr ) + M_model->scalarProduct( __emuold_pr , __emuold_pr ) );  
+	double check_Cmm_pr = 1./(time_step*time_step)*( M_model->scalarProduct( __emu_pr , __emu_pr ) + 2*M_model->scalarProduct( __emu_pr , __emuold_pr ) + M_model->scalarProduct( __emuold_pr , __emuold_pr ) );
 
 	double Cff_pr = primal_residual_coeffs[time_index][0];
 	double Caf_pr = primal_residual_coeffs[time_index][1];
@@ -1884,7 +1884,7 @@ CRB<TruthModelType>::compareResidualsForTransientProblems( parameter_type const&
 	M_model->l2solve( __emuold_du, Munold );
 	double check_Caa_du = M_model->scalarProduct( __ea_du,__ea_du );
 	double check_Cma_du = 2./time_step*( M_model->scalarProduct( __emu_du , __ea_du )+M_model->scalarProduct( __emuold_du , __ea_du ) );
-	double check_Cmm_du = 1./(time_step*time_step)*( M_model->scalarProduct( __emu_du , __emu_du ) + 2*M_model->scalarProduct( __emu_du , __emuold_du ) + M_model->scalarProduct( __emuold_du , __emuold_du ) );  
+	double check_Cmm_du = 1./(time_step*time_step)*( M_model->scalarProduct( __emu_du , __emu_du ) + 2*M_model->scalarProduct( __emu_du , __emuold_du ) + M_model->scalarProduct( __emuold_du , __emuold_du ) );
 
 	double Cff_du =  dual_residual_coeffs[time_index][0];
 	double Caf_du =  dual_residual_coeffs[time_index][1];
@@ -2156,7 +2156,7 @@ CRB<TruthModelType>::check( size_type N ) const
 	     std::vector < std::vector<double> > dual_residual_coefficients = error_estimation.template get<2>();
 	     //std::vector<double> coefficients = error_estimation.template get<1>();
             //checkResidual( mu , coefficients );
-	    
+
         }
 
 
@@ -2238,7 +2238,7 @@ CRB<TruthModelType>::correctionTerms(parameter_type const& mu, std::vector< vect
 
     if( M_model->isSteady() )
     {
-      
+
         Aprdu.setZero( N , N );
 	Fdu.setZero( N );
 
@@ -2269,9 +2269,9 @@ CRB<TruthModelType>::correctionTerms(parameter_type const& mu, std::vector< vect
 	    Aprdu.setZero( N , N );
 	    Mprdu.setZero( N , N );
 	    Fdu.setZero( N );
-	
+
 	    time_index = K-k+kp;
-	    time = time_index*dt; 
+	    time = time_index*dt;
 
 	    boost::tie( theta_mq, theta_aq, theta_fq ) = M_model->computeThetaq( mu ,time);
 
@@ -2288,14 +2288,14 @@ CRB<TruthModelType>::correctionTerms(parameter_type const& mu, std::vector< vect
 
 	    du = uNdu[K-1-time_index];
 	    pr = uN[time_index];
-	    oldpr = uNold[time_index]; 
+	    oldpr = uNold[time_index];
 	    correction += dt*( Fdu.dot( du ) - du.dot( Aprdu*pr ) ) - du.dot(Mprdu*pr) + du.dot(Mprdu*oldpr) ;
         }
-    }   
- 
+    }
+
     return correction;
-    
-} 
+
+}
 
 template<typename TruthModelType>
 boost::tuple<double,double>
@@ -2522,7 +2522,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
             }
 
 #endif
-	    
+
             for ( time=time_for_output; time>=time_step; time-=time_step )
             {
 
@@ -2543,9 +2543,9 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
                     Adu += theta_mq[q]*M_Mq_pr[q].block( 0,0,N,N )/time_step;
                     Fdu += theta_mq[q]*M_Mq_pr[q].block( 0,0,N,N )*uNduold[time_index]/time_step;
                 }
-		
+
                 uNdu[time_index] = Adu.lu().solve( Fdu );
-		
+
                 if ( time_index>0 )
                 {
                     uNduold[time_index-1] = uNdu[time_index];
@@ -2573,16 +2573,16 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
         time_index=0;
         for ( double time=time_step; time<=time_for_output; time+=time_step )
 	{
-	  
+
 	    vectorN_type uNsquare = uN[time_index].array().pow(2);
 	    double first = uNsquare.dot( M_variance_matrix_phi.diagonal() );
-	  
+
 	    double second = 0;
 	    for(int k = 1; k <= N-1; ++k)
             {
 	        for(int j = 1; j <= N-k; ++j)
 		    second += 2 * uN[time_index](k-1) * uN[time_index](k+j-1) * M_variance_matrix_phi(k-1 , j+k-1) ;
-	    } 
+	    }
 	    output_time_vector[time_index] = first + second;
 	    time_index++;
 	}
@@ -2653,17 +2653,17 @@ CRB<TruthModelType>::delta( size_type N,
         double primal_sum=0;
         double dual_sum=0;
 
-	//vectors to store residual coefficients
-	int K = Tf/dt;
-	primal_residual_coeffs.resize( K );
-	dual_residual_coeffs.resize( K );
-	for ( double time=dt; time<=Tf; time+=dt )
+        //vectors to store residual coefficients
+        int K = Tf/dt;
+        primal_residual_coeffs.resize( K );
+        dual_residual_coeffs.resize( K );
+        for ( double time=dt; time<=Tf; time+=dt )
         {
             auto pr = transientPrimalResidual( N, mu, uN[time_index], uNold[time_index], dt, time );
             primal_sum += pr.template get<0>();
             primal_residual_coeffs[time_index].resize( pr.template get<1>().size() );
             primal_residual_coeffs[time_index] = pr.template get<1>() ;
-	    time_index++;
+            time_index++;
         }//end of time loop for primal problem
 
         time_index--;
@@ -2680,7 +2680,7 @@ CRB<TruthModelType>::delta( size_type N,
             dual_sum += du.template get<0>();
             dual_residual_coeffs[time_index].resize( du.template get<1>().size() );
             dual_residual_coeffs[time_index] = du.template get<1>();
-	    time_index--;
+            time_index--;
         }//end of time loop for dual problem
 
         double alphaA=1,alphaM=1;
@@ -2705,22 +2705,22 @@ CRB<TruthModelType>::delta( size_type N,
         }
 
         double upper_bound;
-	 
+
         if ( M_model->isSteady() )
         {
-	    delta_pr = math::sqrt( primal_sum ) / sqrt( alphaA );
-	    delta_du = math::sqrt( dual_sum ) / sqrt( alphaA );
-	    upper_bound = delta_pr * delta_du;
+            delta_pr = math::sqrt( primal_sum ) / math::sqrt( alphaA );
+            delta_du = math::sqrt( dual_sum ) / math::sqrt( alphaA );
+            upper_bound = delta_pr * delta_du;
         }
 
         else
         {
             dual_residual=0;
-	    alphaA=1;
-	    delta_pr = math::sqrt( dt/alphaA * primal_sum );
-	    delta_du = math::sqrt( dt/alphaA * dual_sum + dual_residual/alphaM );
+            alphaA=1;
+            delta_pr = math::sqrt( dt/alphaA * primal_sum );
+            delta_du = math::sqrt( dt/alphaA * dual_sum + dual_residual/alphaM );
             upper_bound = delta_pr * delta_du;
-	    //std::cout<<"dt/alphaA= "<<dt/alphaA<<std::endl;
+            //std::cout<<"dt/alphaA= "<<dt/alphaA<<std::endl;
             //std::cout<<"primal_sum = "<<primal_sum<<std::endl;
             //std::cout<<"dual_sum = "<<dual_sum<<std::endl;
         }
@@ -4121,7 +4121,7 @@ template<typename TruthModelType>
 void
 CRB<TruthModelType>::printMuSelection( void )
 {
-    Log()<<" List of parameter selectionned during the offline algorithm \n"; 
+    Log()<<" List of parameter selectionned during the offline algorithm \n";
     for(int k=0;k<M_WNmu->size();k++)
     {
 	std::cout<<" mu "<<k<<" = [ ";
@@ -4135,7 +4135,7 @@ CRB<TruthModelType>::printMuSelection( void )
 	Log()<<_mu( _mu.size()-1 )<<" ] \n";
 	std::cout<<_mu( _mu.size()-1 )<<" ] "<<std::endl;
     }
-}    
+}
 
 
 
@@ -4300,7 +4300,7 @@ CRB<TruthModelType>::run( const double * X, unsigned long N, double * Y, unsigne
 
 #if 0
     auto lo = M_rbconv.right.range( boost::bimaps::unbounded,boost::bimaps::_key <= maxerror );
- 
+
 
     for ( auto it = lo.first; it != lo.second; ++it )
     {
@@ -4664,8 +4664,9 @@ struct version< Feel::CRB<T> >
     // and use the new version number of identify the new entries in the DB
     typedef mpl::int_<3> type;
     typedef mpl::integral_c_tag tag;
-    BOOST_STATIC_CONSTANT( unsigned int, value = version::type::value );
+    static const unsigned int value = version::type::value;
 };
+template<typename T> const unsigned int version<Feel::CRB<T> >::value;
 }
 }
 #endif /* __CRB_H */
