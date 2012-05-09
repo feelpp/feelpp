@@ -26,3 +26,7 @@ add_docex(residualestimator)
 if (OCTAVE_FOUND)
   add_octave_module(residualestimator)
 endif()
+
+add_executable( LShape Lshape.cpp )
+target_link_libraries(  LShape ${FEELPP_LIBRARIES}  )
+
