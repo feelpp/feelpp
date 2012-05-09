@@ -204,7 +204,7 @@ public:
     }
 
     //! destructor
-    ~CRBModel()
+    virtual ~CRBModel()
     {}
 
     //! initialize the model (mesh, function space, operators, matrices, ...)
