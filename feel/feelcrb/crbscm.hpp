@@ -574,7 +574,7 @@ CRBSCM<TruthModelType>::offline()
 
 	if( M_print_matrix )
 	{
-	    if( M_scm_for_mass_matrix) 
+	    if( M_scm_for_mass_matrix)
 	    {
 	        file_name = "offline_Matrix_M" + mu_str +".m";
 		Matrix->printMatlab( file_name );
@@ -630,7 +630,7 @@ CRBSCM<TruthModelType>::offline()
         // store the  eigenvalue associated with \p mu
         M_C_eigenvalues[index] = modes.begin()->second.template get<0>();
         typedef std::pair<size_type,value_type> key_t;
- 
+
        //BOOST_FOREACH( key_t eig, M_C_eigenvalues )
 	    //std::cout << "[fe eig] stored/map eig=" << eig.second <<" ( " << eig.first << " ) " << "\n";
 
@@ -1437,7 +1437,7 @@ template<typename TruthModelType>
 bool
 CRBSCM<TruthModelType>::doScmForMassMatrix()
 {
-    bool b = this->vm()["crb.scm.do-scm-for-mass-matrix"].template as<bool>(); 
+    bool b = this->vm()["crb.scm.do-scm-for-mass-matrix"].template as<bool>();
     return b;
 }
 
@@ -1509,8 +1509,9 @@ struct version< Feel::CRBSCM<T> >
     // and use the new version number of identify the new entries in the DB
     typedef mpl::int_<0> type;
     typedef mpl::integral_c_tag tag;
-    BOOST_STATIC_CONSTANT( unsigned int, value = version::type::value );
+    static const unsigned int value = version::type::value;
 };
+template<typename T> const unsigned int version<Feel::CRBSCM<T> >::value;
 }
 }
 #endif /* __CRBSCM_H */

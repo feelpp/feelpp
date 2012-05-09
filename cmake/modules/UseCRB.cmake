@@ -3,7 +3,7 @@
 INCLUDE(ParseArguments)
 
 macro(crb_add_octave_module)
-if ( FEELPP_ENABLE_OCTAVE )
+if ( FEELPP_ENABLE_OCTAVE AND OCTAVE_FOUND )
   PARSE_ARGUMENTS(OCTAVE_MODULE
     "LINK_LIBRARIES;SCRIPTS;CFG"
     ""
@@ -42,7 +42,7 @@ if ( FEELPP_ENABLE_OCTAVE )
       INSTALL(FILES "${cfg}"  DESTINATION share/feel/config)
     endforeach()
   endif()
-endif( FEELPP_ENABLE_OCTAVE )
+endif( FEELPP_ENABLE_OCTAVE AND OCTAVE_FOUND )
 endmacro(crb_add_octave_module)
 
 macro(crb_add_executable)
@@ -85,7 +85,7 @@ endmacro(crb_add_executable)
 # crb_add_python_module
 #
 macro(crb_add_python_module)
-
+if ( FEELPP_ENABLE_OPENTURNS AND OPENTURNS_FOUND )
   PARSE_ARGUMENTS(CRB_PYTHON
     "LINK_LIBRARIES;SCRIPTS;XML;CFG"
     ""
@@ -118,7 +118,7 @@ macro(crb_add_python_module)
       INSTALL(FILES "${cfg}"  DESTINATION share/feel/config)
     endforeach()
   endif()
-
+endif( FEELPP_ENABLE_OPENTURNS AND OPENTURNS_FOUND )
 endmacro(crb_add_python_module)
 
 #
