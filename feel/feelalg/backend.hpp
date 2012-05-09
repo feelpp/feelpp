@@ -277,6 +277,7 @@ public:
                                        ( pattern_block,    *, ( vf::Blocks<1,1,size_type>( size_type( Pattern::HAS_NO_BLOCK_PATTERN ) ) ) )
                                        ( diag_is_nonzero,  *( boost::is_integral<mpl::_> ), true )
                                        ( verbose,( int ),0 )
+                                       ( collect_garbage, *( boost::is_integral<mpl::_> ), true )
                                      ) )
     {
 
@@ -289,10 +290,10 @@ public:
                               _trial=trial,
                               _pattern=pattern,
                               _pattern_block=pattern_block.getSetOfBlocks(),
-                              _diag_is_nonzero=diag_is_nonzero );
+                              _diag_is_nonzero=diag_is_nonzero,
+                              _collect_garbage=collect_garbage);
 
             mat->init( test->nDof(), trial->nDof(),
-                       //test->nLocalDof(), trial->nLocalDof(),
                        test->nLocalDofWithoutGhost(), trial->nLocalDofWithoutGhost(),
                        s->graph() );
         }
@@ -300,9 +301,12 @@ public:
         else
         {
             // need to build inverse of pattern_block : to fix!
-            auto s = stencil( _test=trial, _trial=test, _pattern=pattern );
+            auto s = stencil( _test=trial,
+                              _trial=test,
+                              _pattern=pattern,
+                              _collect_garbage=collect_garbage );
+
             mat->init( test->nDof(), trial->nDof(),
-                       //test->nLocalDof(), trial->nLocalDof(),
                        test->nLocalDofWithoutGhost(), trial->nLocalDofWithoutGhost(),
                        s->graph()->transpose() );
         }
