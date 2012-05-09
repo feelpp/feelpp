@@ -4,9 +4,9 @@
 #  FEELPP_INCLUDE_DIR = where feel/feelcore/feel.hpp can be found
 #  FEELPP_LIBRARY    = the library to link in
 
-set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x -std=c++11" )
+set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x" )
 IF("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
-  set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --stdlib=libstdc++" )
+  set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -std=c++11 --stdlib=libstdc++" )
   # ensures that boost.signals2 compiles with clang++ >= 3.1
   add_definitions(-DBOOST_NO_VARIADIC_TEMPLATES)
 ENDIF()
@@ -451,7 +451,7 @@ if ( GMSH_FOUND )
      SET(FEELPP_LIBRARIES ${GMSH_LIBRARY} ${GL2PS_LIBRARY} ${GL_LIBRARY} ${FEELPP_LIBRARIES})
    else()
      SET(FEELPP_LIBRARIES ${GMSH_LIBRARY} ${GL2PS_LIBRARY} ${FEELPP_LIBRARIES})
-   endif()  
+   endif()
  else()
    SET(FEELPP_LIBRARIES ${GMSH_LIBRARY} ${FEELPP_LIBRARIES})
  endif()
