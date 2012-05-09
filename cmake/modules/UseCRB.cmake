@@ -135,7 +135,7 @@ macro(crb_add_model)
 
   PARSE_ARGUMENTS(CRB_MODEL
     "HDRS;SRCS;LINK_LIBRARIES;CFG;XML;SCRIPTS"
-    ""
+    "TEST"
     ${ARGN}
     )
   CAR(CRB_MODEL_SHORT_NAME ${CRB_MODEL_DEFAULT_ARGS})
@@ -172,9 +172,15 @@ int main( int argc, char** argv )
     file(WRITE ${CRB_MODEL_SHORT_NAME}app.cpp ${CODE})
   ENDIF()
 
-  crb_add_executable(${CRB_MODEL_SHORT_NAME}app ${CRB_MODEL_SHORT_NAME}app.cpp
-    LINK_LIBRARIES ${CRB_MODEL_LINK_LIBRARIES}
-    CFG ${CRB_MODEL_CFG})
+  if ( CRB_MODEL_TEST )
+    crb_add_executable(${CRB_MODEL_SHORT_NAME}app ${CRB_MODEL_SHORT_NAME}app.cpp
+      LINK_LIBRARIES ${CRB_MODEL_LINK_LIBRARIES}
+      CFG ${CRB_MODEL_CFG} TEST )
+  else()
+    crb_add_executable(${CRB_MODEL_SHORT_NAME}app ${CRB_MODEL_SHORT_NAME}app.cpp
+      LINK_LIBRARIES ${CRB_MODEL_LINK_LIBRARIES}
+      CFG ${CRB_MODEL_CFG} )
+  endif()
 
 
   foreach( wrapper pfem scm crb )
@@ -187,12 +193,21 @@ int main( int argc, char** argv )
     configure_file(${FEELPP_SOURCE_DIR}/applications/crb/templates/octave_wrapper.cpp ${octcpp})
     configure_file(${CRB_MODEL_SHORT_NAME}.xml.in ${xml})
 
-    crb_add_python_module(crb${CRB_MODEL_SHORT_NAME}${wrapper} ${pycpp}
-      LINK_LIBRARIES ${CRB_MODEL_LINK_LIBRARIES}
-      CFG ${CRB_MODEL_CFG} XML ${xml})
-    crb_add_octave_module(crb${CRB_MODEL_SHORT_NAME}${wrapper} ${octcpp}
-      LINK_LIBRARIES ${CRB_MODEL_LINK_LIBRARIES} ${Octave_LIBRARIES}
-      CFG ${CRB_MODEL_CFG} SCRIPTS ${CRB_MODEL_SCRIPTS} )
+    if ( CRB_MODEL_TEST )
+      crb_add_python_module(crb${CRB_MODEL_SHORT_NAME}${wrapper} ${pycpp}
+        LINK_LIBRARIES ${CRB_MODEL_LINK_LIBRARIES}
+        CFG ${CRB_MODEL_CFG} XML ${xml} TEST)
+      crb_add_octave_module(crb${CRB_MODEL_SHORT_NAME}${wrapper} ${octcpp}
+        LINK_LIBRARIES ${CRB_MODEL_LINK_LIBRARIES} ${Octave_LIBRARIES}
+        CFG ${CRB_MODEL_CFG} SCRIPTS ${CRB_MODEL_SCRIPTS} TEST )
+    else()
+      crb_add_python_module(crb${CRB_MODEL_SHORT_NAME}${wrapper} ${pycpp}
+        LINK_LIBRARIES ${CRB_MODEL_LINK_LIBRARIES}
+        CFG ${CRB_MODEL_CFG} XML ${xml})
+      crb_add_octave_module(crb${CRB_MODEL_SHORT_NAME}${wrapper} ${octcpp}
+        LINK_LIBRARIES ${CRB_MODEL_LINK_LIBRARIES} ${Octave_LIBRARIES}
+        CFG ${CRB_MODEL_CFG} SCRIPTS ${CRB_MODEL_SCRIPTS} )
+    endif()
   endforeach()
 
 
