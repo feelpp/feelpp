@@ -47,15 +47,11 @@ using boost::unit_test::test_suite;
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/application.hpp>
-#include <feel/feelalg/backendgmm.hpp>
-#include <feel/feelmesh/geoentity.hpp>
-#include <feel/feelmesh/refentity.hpp>
+#include <feel/feelalg/backend.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feeldiscr/mesh.hpp>
 #include <feel/feelmesh/filters.hpp>
-#include <feel/feelpoly/im.hpp>
 #include <feel/feelfilters/gmsh.hpp>
-#include <feel/feelfilters/gmshsimplexdomain.hpp>
 #include <feel/feelvf/vf.hpp>
 #include <feel/feelfilters/geotool.hpp>
 
@@ -1072,7 +1068,7 @@ struct test_integration_composite_functions: public Application
 
 
 
-        typename  BackendGmm<value_type>::vector_ptrtype F = BackendGmm<value_type>::newVector( Xh );
+        typename  Backend<value_type>::vector_ptrtype F = Backend<value_type>::newVector( Xh );
         form( Xh, *F ) = integrate( elements( *mesh ),
                                     ( trans( vec( constant( 1.0 ), constant( 1.0 ) ) ) * id( u.template element<0>() )+
                                       id( u.template element<1>() ) ) );
