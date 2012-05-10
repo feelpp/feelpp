@@ -3,9 +3,10 @@
 #  This file is part of the Feel++ library
 #
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
-#       Date: 2010-02-10
+#             Christophe Trophime <christophe.trophime@lncmi.cnrs.fr>
+#       Date: 2012-05-10
 #
-#  Copyright (C) 2010 Université Joseph Fourier
+#  Copyright (C) 2012 Université Joseph Fourier
 #
 #  This library is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU Lesser General Public
@@ -31,10 +32,9 @@ INCLUDE(CheckIncludeFileCXX)
 
 FIND_PATH(GMM_INCLUDE_DIR
   gmm.h
-  PATHS /usr/include/ /usr/include/gmm /opt/local/include/gmm /usr/local/include/gmm  $ENV{ANN_DIR}/include/gmm
+  PATHS /usr/include/ /usr/include/gmm /opt/local/include/gmm /usr/local/include/gmm  $ENV{GMM_DIR}/include/gmm
   DOC "Directory where gmm header files are stored" )
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(GMM "Could not find GMM headers" GMM_INCLUDE_DIR)
-# show the BERKELEY_DB_INCLUDE_DIR and BERKELEY_DB_LIBRARIES variables only in the advanced view
 MARK_AS_ADVANCED(GMM_INCLUDE_DIR )
