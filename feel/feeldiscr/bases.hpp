@@ -43,8 +43,6 @@ namespace detail
 {
 struct bases_base {};
 struct meshes_base {};
-
-
 /**
  * \class bases
  * \brief classes that store sequences of basis functions to define function spaces
@@ -72,6 +70,48 @@ struct bases
 };
 
 } // namespace detail
+
+#if defined(__clang__) || FEELPP_GNUC_AT_LEAST(4,7)
+
+struct ChangeBasisTag
+{
+public:
+    template<typename Sig>
+    struct result;
+
+    template<typename Lhs, typename Rhs>
+    struct result<ChangeBasisTag( Lhs,Rhs )>
+    {
+	    typedef typename boost::remove_const<typename boost::remove_reference<Lhs>::type>::type lhs_noref_type;
+	    typedef typename boost::remove_const<typename boost::remove_reference<Rhs>::type>::type rhs_noref_type;
+
+	    typedef typename fusion::result_of::size<lhs_noref_type>::type index;
+	    typedef typename fusion::result_of::push_back<lhs_noref_type, typename rhs_noref_type::template ChangeTag<index::value>::type>::type type;
+    };
+
+};
+template<typename... Args>
+struct bases
+    :
+    public detail::bases_base,
+    public fusion::result_of::as_vector<typename fusion::result_of::accumulate<fusion::vector<Args...>, fusion::vector<>, ChangeBasisTag >::type>::type
+{};
+
+
+template<typename... Args>
+struct meshes
+    :
+    public detail::meshes_base,
+    public boost::fusion::vector<Args...>
+{
+    typedef boost::fusion::vector<Args...> super;
+    typedef meshes<Args...> this_type;
+	static const int s = sizeof...(Args);
+    meshes( super const& m) : super( m ) {}
+};
+
+#else
+
 
 
 struct void_basis : public mpl::void_
