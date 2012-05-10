@@ -8,7 +8,7 @@ fetch.type          svn
 fetch.user          gmsh
 fetch.password      gmsh
 svn.url             https://geuz.org/svn/gmsh/trunk
-svn.revision        11960
+svn.revision        12036
 svn.method          export
 svn.post_args       --username ${fetch.user} --password ${fetch.password}
 
