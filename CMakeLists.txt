@@ -438,7 +438,7 @@ endforeach()
 FILE(GLOB files "feel/*.hpp")
 INSTALL(FILES ${files} DESTINATION include/feel COMPONENT Devel)
 # gmm
-FILE(GLOB files "contrib/gmm/include/*.h")
+#FILE(GLOB files "contrib/gmm/include/*.h")
 INSTALL(FILES ${files} DESTINATION include/feel COMPONENT Devel)
 # feel++ config headers
 FILE(GLOB files "${CMAKE_CURRENT_BINARY_DIR}/feel/*.h")
