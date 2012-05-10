@@ -128,6 +128,20 @@ if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/feel AND EXISTS ${CMAKE_CURRENT_SOURCE_D
   INCLUDE_DIRECTORIES( ${FEELPP_SOURCE_DIR}/contrib/eigen )
 endif()
 
+#
+# Gmm
+#
+FIND_PACKAGE(GMM)
+IF(GMM_FOUND)
+   MESSAGE(STATUS "Using built-in gmm")
+   include_directories(${GMM_INCLUDE_DIR})
+ELSE()
+   MESSAGE(STATUS "Using contrib/gmm headers")
+   FILE(GLOB files "contrib/gmm/include/*.h")
+   add_subdirectory(contrib/gmm)
+   INCLUDE_DIRECTORIES( ${FEELPP_SOURCE_DIR}/contrib/gmm )
+ENDIF()
+
 #FIND_PACKAGE(Eigen2 REQUIRED)
 #INCLUDE_DIRECTORIES( ${Eigen2_INCLUDE_DIR} )
 #add_subdirectory(contrib/eigen)
