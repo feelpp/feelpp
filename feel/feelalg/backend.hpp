@@ -836,7 +836,7 @@ public:
         if ( !jacobian )
             this->nlSolver()->jacobian( _sol, jacobian );
 
-        if ( prec )
+        if ( prec && !this->nlSolver()->initialized() )
             this->nlSolver()->attachPreconditioner( prec );
 
         if ( reuse_prec == false && reuse_jac == false )
