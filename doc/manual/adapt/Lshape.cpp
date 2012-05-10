@@ -248,8 +248,6 @@ LShape<Dim>::zz_estimator(const element_type& U, const mesh_ptrtype& mesh)
 {
     using namespace Feel::vf;
 
-    std::vector<double> res(2);
-
     p0_space_ptrtype P0h = p0_space_type::New( mesh );
     p1vec_space_ptrtype P1hvec = p1vec_space_type::New( mesh );
 
@@ -258,19 +256,10 @@ LShape<Dim>::zz_estimator(const element_type& U, const mesh_ptrtype& mesh)
 
     auto h=vf::project(P0h, elements(mesh), vf::h() );
 
-    auto step1_H1 = eta_k_U.pow(2);
-    auto step2_H1 = step1_H1.sum();
-    auto estimatorH1_U = math::sqrt(step2_H1);
+    auto estimatorH1_U = math::sqrt( (eta_k_U.pow(2)).sum() );
+    auto estimatorL2_U = math::sqrt( (element_product(eta_k_U,h).pow(2)).sum() );
 
-    auto step1_L2 = element_product(eta_k_U,h);
-    auto step2_L2 = step1_L2.pow(2);
-    auto step3_L2 = step2_L2.sum();
-    auto estimatorL2_U = math::sqrt(step3_L2);
-
-    res[0] = estimatorL2_U;
-    res[1] = estimatorH1_U;
-
-    return boost::make_tuple( res[0], res[1], eta_k_U);
+    return boost::make_tuple( estimatorL2_U, estimatorH1_U, eta_k_U);
 }
 
 
@@ -321,16 +310,16 @@ LShape<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
 
     // Loop for calculation and mesh adaptation
     int adapt_iter = 0; //current iteration
-    double mesh_eps = this->vm()["geo_tolerance"].template as<double>();
-    double tol = this->vm()["tolerance"].template as<double>();
+    double mesh_eps = this->vm()["geo_tolerance"].template as<double>(); //geometrical tolerance
+    double tol = this->vm()["tolerance"].template as<double>(); //tolerance for stop criterion
+    int max_iter = this->vm()["max_iterations"].template as<int>();
+    std::string meshadapt_type = this->vm()["meshadapt_type"].template as<std::string>();
 
     // Mesh adaptation stop criterion
     boost::tuple<double, double, p0_element_type> estimator_U;
 
     double criterion_U; // Relative error
     bool criterion = true;
-
-    int max_iter = this->vm()["max_iterations"].template as<int>();
 
     MeshAdapt mesh_adaptation( M_backend );
     do{
@@ -420,12 +409,13 @@ LShape<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
         auto norm_U = math::sqrt( norm2_U );
 
         estimator_U = zz_estimator(u, mesh);
-        Log() << "estimator ZZ = " << estimator_U.get<0>();
-
         criterion_U = math::abs( estimator_U.get<0>() - norm_U  )/norm_U;
 
         std::cout << "criterion = " << criterion_U << std::endl;
-        Log() << "criterion = " << criterion_U ;
+        std::cout << "ZZ estimator = " << estimator_U.get<0>() << std::endl;
+
+        Log() << "criterion = " << criterion_U;
+        Log() << "ZZ estimator = " << estimator_U.get<0>();
 
         criterion = criterion && (criterion_U > (1+tol) || criterion_U < (1-tol) );
 
@@ -434,24 +424,21 @@ LShape<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
         std::pair<element_type, std::string> solution_pair = std::make_pair( u, "solution");
         var_list.push_back(solution_pair);
 
-        std::string geofile = "geoLShape";
-        std::string geofile_path = (boost::format("./%1%.geo") % geofile).str();
-
-        std::string meshadapt_type = this->vm()["meshadapt_type"].template as<std::string>();
+        std::string geofile_path = "./geoLShape.geo";
 
         if (criterion)
             mesh = mesh_adaptation.adaptMesh(_initMesh=mesh, _geofile=geofile_path, _adaptType=meshadapt_type,
                                              _var=var_list, _tol=mesh_eps);
 
         /// Make a pause between two adaptations : testing purpose
-        cout << "Press any key to continue: " << endl;
-        char c;
-        cin >> c;
+        // cout << "Press any key to continue: " << endl;
+        // char c;
+        // cin >> c;
 
         adapt_iter++;
 
         /// update mesh_eps
-        mesh_eps = mesh_eps/2.0;
+        mesh_eps = mesh_eps/5.0;
 
     }while(criterion && adapt_iter < max_iter);
     // End mesh adaptation loop
