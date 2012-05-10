@@ -3,7 +3,8 @@
 #  This file is part of the Feel++ library
 #
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
-#       Date: 2010-02-10
+#             Christophe Trophime <christophe.trophime@lncmi.cnrs.fr>
+#       Date: 2012-05-10
 #
 #  Copyright (C) 2010 Université Joseph Fourier
 #
@@ -36,5 +37,4 @@ FIND_PATH(GMM_INCLUDE_DIR
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(GMM "Could not find GMM headers" GMM_INCLUDE_DIR)
-# show the BERKELEY_DB_INCLUDE_DIR and BERKELEY_DB_LIBRARIES variables only in the advanced view
 MARK_AS_ADVANCED(GMM_INCLUDE_DIR )
