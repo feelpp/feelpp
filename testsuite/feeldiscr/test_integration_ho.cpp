@@ -42,7 +42,7 @@ using boost::unit_test::test_suite;
 #include <feel/options.hpp>
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/application.hpp>
-#include <feel/feelalg/backendgmm.hpp>
+#include <feel/feelalg/backend.hpp>
 #include <feel/feelmesh/geoentity.hpp>
 #include <feel/feelmesh/refentity.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
