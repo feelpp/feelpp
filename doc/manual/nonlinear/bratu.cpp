@@ -113,9 +113,6 @@ public:
     /*basis*/
     typedef bases<Lagrange<Order, Scalar> > basis_type;
 
-    /* number of dofs per element */
-    static const uint16_type nLocalDof = boost::remove_reference<typename fusion::result_of::at<basis_type,mpl::int_<0> >::type>::type::nLocalDof;
-
     /*space*/
     typedef FunctionSpace<mesh_type, basis_type> functionspace_type;
     typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;

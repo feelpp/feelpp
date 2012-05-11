@@ -35,7 +35,6 @@
 #include <feel/feelmesh/hypercube.hpp>
 
 #include <feel/feeldiscr/mesh.hpp>
-#include <feel/feeldiscr/partitioner.hpp>
 #include <feel/feelalg/glas.hpp>
 #include <feel/feelalg/solvernonlinearpetsc.hpp>
 
@@ -2089,7 +2088,7 @@ Mesh<Shape, T, Tag>::Localization::barycenter(mpl::int_<1> /**/) const
     res(0)=0;
     for (size_type i = 0 ; i<this->kdtree()->nPoints() ; ++i)
         {
-            auto const& pt = this->kdtree()->points()[i].get<0>();
+            auto const& pt = this->kdtree()->points()[i].template get<0>();
             res(0)+=pt(0);
         }
     res(0)/=this->kdtree()->nPoints();
@@ -2103,7 +2102,7 @@ Mesh<Shape, T, Tag>::Localization::barycenter(mpl::int_<2> /**/) const
     res(0)=0;res(1)=0;
     for (size_type i = 0 ; i<this->kdtree()->nPoints() ; ++i)
         {
-            auto const& pt = this->kdtree()->points()[i].get<0>();
+            auto const& pt = this->kdtree()->points()[i].template get<0>();
             res(0)+=pt(0);res(1)+=pt(1);
         }
     res(0)/=this->kdtree()->nPoints();res(1)/=this->kdtree()->nPoints();
@@ -2117,7 +2116,7 @@ Mesh<Shape, T, Tag>::Localization::barycenter(mpl::int_<3> /**/) const
     res(0)=0;res(1)=0;res(2)=0;
     for (size_type i = 0 ; i<this->kdtree()->nPoints() ; ++i)
         {
-            auto const& pt = this->kdtree()->points()[i].get<0>();
+            auto const& pt = this->kdtree()->points()[i].template get<0>();
             res(0)+=pt(0);res(1)+=pt(1);res(2)+=pt(2);
         }
     res(0)/=this->kdtree()->nPoints();res(1)/=this->kdtree()->nPoints();res(2)/=this->kdtree()->nPoints();

@@ -156,6 +156,9 @@
 /* Define if support for mpi class instantiation is enabled) */
 #cmakedefine FEELPP_ENABLE_MPI_MODE
 
+/* Define to 1 if you have GMM . */
+#cmakedefine FEELPP_HAS_GMM
+
 #define FEELPP_CONFIG_OPTIONS "${FEELPP_CONFIG_OPTIONS}"
 
 #endif

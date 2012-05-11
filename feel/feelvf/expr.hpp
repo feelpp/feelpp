@@ -251,7 +251,7 @@ public:
   @see
 */
 template<typename ExprT>
-class Expr
+class Expr//: public boost::enable_shared_from_this<Expr<ExprT> >
 {
 public:
 
@@ -286,7 +286,7 @@ public:
     typedef ExprT expression_type;
     typedef typename expression_type::value_type value_type;
     typedef Expr<ExprT> this_type;
-
+    typedef boost::shared_ptr<this_type> this_ptrtype;
     //@}
 
     /** @name Constructors, destructor
@@ -451,6 +451,8 @@ public:
         return M_expr.isSymetric();
     }
 
+    //this_ptrtype ptr() { return boost::shared_from_this(); }
+
     expression_type const& expression() const
     {
         return M_expr;
@@ -528,6 +530,13 @@ Expr<ExprT>
 expr( ExprT const& exprt )
 {
     return Expr<ExprT>( exprt );
+}
+
+template <typename ExprT>
+boost::shared_ptr<Expr<ExprT> >
+exprPtr( ExprT const& exprt )
+{
+    return boost::shared_ptr<Expr<ExprT> >( new Expr<ExprT>( exprt ) );
 }
 
 /**

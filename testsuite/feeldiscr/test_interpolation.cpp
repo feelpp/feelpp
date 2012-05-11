@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2007-12-19
 
-  Copyright (C) 2007-2010 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2007-2012 Université Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -200,7 +200,7 @@ struct test_interpolation_op
 
         typename space_type::element_type u( Xh, "u" );
 
-        AUTO( u_exact, Px()*Px() );
+        auto u_exact = Px()*Px();
         u = vf::project( Xh, elements( *mesh ), u_exact );
 
         typename imesh<Dim,GeoOrder,RDim>::ptrtype mesh1( createMesh<Dim,GeoOrder,RDim>( meshSize/2 ) );
@@ -221,13 +221,13 @@ struct test_interpolation_op
 #endif
         BOOST_MESSAGE(  "[test_interpolation_op] backend allocated\n" );
 
-        OperatorInterpolation<space_type, imagespace_type> I( Xh, Yh, backend );
+        auto I = opInterpolation( _domainSpace=Xh, _imageSpace=Yh, _backend=backend );
 
 
         BOOST_MESSAGE(  "[test_interpolation_op] OI allocated\n" );
         FsFunctionalLinear<imagespace_type> fsv( Yh );
         BOOST_MESSAGE(  "[test_interpolation_op] FSV allocated\n" );
-        I.apply( u, fsv );
+        I->apply( u, fsv );
         BOOST_MESSAGE(  "[test_interpolation_op] applied OI \n" );
 
         auto y = Yh->element();
