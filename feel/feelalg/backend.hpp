@@ -109,7 +109,9 @@ auto ref( T& t ) -> decltype( ref( t, detail::is_shared_ptr<T>() ) )
 }
 ///! \endcond detail
 
+template<typename T> class MatrixBlockBase;
 template<int NR, int NC, typename T> class MatrixBlock;
+template<typename T> class VectorBlockBase;
 template<int NR, typename T> class VectorBlock;
 
 /**
@@ -275,6 +277,7 @@ public:
                                        ( pattern_block,    *, ( vf::Blocks<1,1,size_type>( size_type( Pattern::HAS_NO_BLOCK_PATTERN ) ) ) )
                                        ( diag_is_nonzero,  *( boost::is_integral<mpl::_> ), true )
                                        ( verbose,( int ),0 )
+                                       ( collect_garbage, *( boost::is_integral<mpl::_> ), true )
                                      ) )
     {
 
@@ -287,10 +290,10 @@ public:
                               _trial=trial,
                               _pattern=pattern,
                               _pattern_block=pattern_block.getSetOfBlocks(),
-                              _diag_is_nonzero=diag_is_nonzero );
+                              _diag_is_nonzero=diag_is_nonzero,
+                              _collect_garbage=collect_garbage);
 
             mat->init( test->nDof(), trial->nDof(),
-                       //test->nLocalDof(), trial->nLocalDof(),
                        test->nLocalDofWithoutGhost(), trial->nLocalDofWithoutGhost(),
                        s->graph() );
         }
@@ -298,9 +301,12 @@ public:
         else
         {
             // need to build inverse of pattern_block : to fix!
-            auto s = stencil( _test=trial, _trial=test, _pattern=pattern );
+            auto s = stencil( _test=trial,
+                              _trial=test,
+                              _pattern=pattern,
+                              _collect_garbage=collect_garbage );
+
             mat->init( test->nDof(), trial->nDof(),
-                       //test->nLocalDof(), trial->nLocalDof(),
                        test->nLocalDofWithoutGhost(), trial->nLocalDofWithoutGhost(),
                        s->graph()->transpose() );
         }
@@ -321,12 +327,12 @@ public:
     /**
      * instantiate a new block matrix sparse
      */
-    template <int NR, int NC, typename BlockType=sparse_matrix_ptrtype >
-    sparse_matrix_ptrtype newBlockMatrixImpl( vf::Blocks<NR,NC,BlockType> const & b,
+    template < typename BlockType=sparse_matrix_ptrtype >
+    sparse_matrix_ptrtype newBlockMatrixImpl( vf::BlocksBase<BlockType> const & b,
             bool copy_values=true,
             bool diag_is_nonzero=true )
     {
-        typedef MatrixBlock<NR,NC,typename BlockType::element_type::value_type> matrix_block_type;
+        typedef MatrixBlockBase<typename BlockType::element_type::value_type> matrix_block_type;
         boost::shared_ptr<matrix_block_type> mb( new matrix_block_type( b, *this, copy_values, diag_is_nonzero ) );
         return mb->getSparseMatrix();
     }
@@ -352,11 +358,11 @@ public:
     /**
      * instantiate a new block matrix sparse
      */
-    template <int NR, typename BlockType=vector_ptrtype >
-    vector_ptrtype newBlockVectorImpl( vf::Blocks<NR,1,BlockType> const & b,
+    template < typename BlockType=vector_ptrtype >
+    vector_ptrtype newBlockVectorImpl( vf::BlocksBase<BlockType> const & b,
                                        bool copy_values=true )
     {
-        typedef VectorBlock<NR,typename BlockType::element_type::value_type> vector_block_type;
+        typedef VectorBlockBase<typename BlockType::element_type::value_type> vector_block_type;
         boost::shared_ptr<vector_block_type> mb( new vector_block_type( b, *this, copy_values ) );
         return mb->getVector();
     }
@@ -679,8 +685,8 @@ public:
                                      tag,
                                      ( required
                                        ( matrix,( sparse_matrix_ptrtype ) )
-                                       ( in_out( solution ),*( mpl::or_<boost::is_convertible<mpl::_,vector_type&>,
-                                               boost::is_convertible<mpl::_,vector_ptrtype> > ) )
+                                       //( in_out( solution ),*( mpl::or_<mpl::or_<boost::is_convertible<mpl::_,vector_type&>,boost::is_convertible<mpl::_,vector_type> >,boost::is_convertible<mpl::_,vector_ptrtype> > ) )
+                                       ( in_out( solution ),* )
                                        ( rhs,( vector_ptrtype ) ) )
                                      ( optional
                                        //(prec,(sparse_matrix_ptrtype), matrix )
@@ -788,8 +794,8 @@ public:
                                      nlSolve,
                                      tag,
                                      ( required
-                                       ( in_out( solution ),*( mpl::or_<boost::is_convertible<mpl::_,vector_type&>,
-                                               boost::is_convertible<mpl::_,vector_ptrtype> > ) ) )
+                                       //( in_out( solution ),*( mpl::or_<boost::is_convertible<mpl::_,vector_type&>,boost::is_convertible<mpl::_,vector_ptrtype> > ) ) )
+                                       ( in_out( solution ),*))
                                      ( optional
                                        ( jacobian,( sparse_matrix_ptrtype ), sparse_matrix_ptrtype() )
                                        ( residual,( vector_ptrtype ), vector_ptrtype() )

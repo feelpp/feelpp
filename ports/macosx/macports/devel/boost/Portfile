@@ -37,6 +37,7 @@ patchfiles      patch-tools_build_v2_engine_src_build.sh.diff \
                 patch-thread_visibility.diff \
                 patch-bootstrap.sh.diff
 
+
 post-patch {
     reinplace "s|%%CONFIGURE.CC%%|${configure.cc}|g" ${worksrcpath}/tools/build/v2/engine/build.sh
     reinplace "s|%%CONFIGURE.CC%%|${configure.cc}|g" ${worksrcpath}/tools/build/v2/engine/build.jam
@@ -50,9 +51,9 @@ proc write_jam s {
 }
 
 # clang++ produces broken boost libraries (https://trac.macports.org/ticket/31525)
-if {${configure.compiler} == "clang"} {
-    configure.compiler llvm-gcc-4.2
-}
+#if {${configure.compiler} == "clang"} {
+#    configure.compiler llvm-gcc-4.2
+#}
 
 configure.cmd       ./bootstrap.sh
 configure.args      --without-libraries=python \

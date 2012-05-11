@@ -57,7 +57,7 @@ makeAbout()
                            "0.1",
                            "1D/2D OPUS/EADS Benchmark",
                            Feel::AboutData::License_GPL,
-                           "Copyright (c) 2010-2011 Université de Grenoble 1 (Joseph Fourier)" );
+                           "Copyright (c) 2010-2012 Universite de Grenoble 1 (Joseph Fourier)" );
 
     about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
     return about;

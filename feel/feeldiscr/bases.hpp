@@ -101,6 +101,18 @@ struct bases
 {
 };
 
+#if defined(__CLANG__) || FEELPP_GNUC_AT_LEAST(4,7)
+
+template<typename... Args>
+struct meshes: public boost::fusion::vector<Args...>
+{
+    typedef boost::fusion::vector<Args...> super;
+    typedef meshes<Args...> this_type;
+	static const int s = sizeof...(Args);
+    meshes( super const& m) : super( m ) {}
+};
+
+#else
 template <class A0=mpl::void_, class A1=mpl::void_, class A2=mpl::void_, class A3=mpl::void_>
 struct meshes
         :
@@ -129,7 +141,7 @@ struct meshes
     typedef meshes<A0,A1,A2,A3> this_type;
     meshes( super const& m ) : super( m ) {}
 };
-
+#endif
 
 }// Feel
 

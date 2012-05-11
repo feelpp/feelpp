@@ -688,6 +688,55 @@ EIM<T, Dmu, F>::offline(  )
     this->_M_offline_done = true;
 }
 
+template<typename SpaceType, typename ParameterSpaceType>
+class EIMFunctionBase
+{
+public:
+    typedef SpaceType space_type;
+    typedef typename space_type::element_type element_type;
+    typedef ParameterSpaceType parameterspace_type;
+    typedef typename parameterspace_type::element_type parameter_type;
 
+    virtual element_type operator()( parameter_type const& ) = 0;
+};
+
+
+template<typename ModelType>
+class EIMFunction
+    : public EIMFunctionBase<typename ModelType::functionspace_type, typename ModelType::parameterspace_type>
+{
+    typedef EIMFunctionBase<typename ModelType::functionspace_type, typename ModelType::parameterspace_type> super;
+public:
+    typedef ModelType model_type;
+    typedef boost::shared_ptr<ModelType> model_ptrtype;
+    typedef typename ModelType::functionspace_type space_type;
+    typedef typename ModelType::functionspace_ptrtype space_ptrtype;
+
+
+    typedef typename space_type::element_type element_type;
+    typedef ParameterSpaceType parameterspace_type;
+    typedef typename parameterspace_type::element_type parameter_type;
+
+    EIMFunction( model_ptrtype model, element_ptrtype u, expr_ptrtype expr )
+        :
+        super( model->functionSpace(), model->parameterSpace() ),
+        M_model( model ),
+        M_u( u ),
+        M_expr( expr )
+        {}
+    element_type operator()( parameter_type const&  mu )
+        {
+            *M_u = M_model->solve( mu );
+            return vf::project( _space=M_model->functionSpace(), _expr=*M_expr );
+        }
+private:
+    model_ptrtype M_model;
+    expr_ptrtype M_expr;
+    element_ptrtype M_u;
+};
+
+
+
+}
 #endif /* _FEELPP_EIM_HPP */
 
