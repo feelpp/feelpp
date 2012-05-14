@@ -71,7 +71,7 @@ struct bases
 
 } // namespace detail
 
-#if defined(__clang__) || FEELPP_GNUC_AT_LEAST(4,7)
+#if FEELPP_CLANG_AT_LEAST(3,1) || FEELPP_GNUC_AT_LEAST(4,7)
 
 struct ChangeBasisTag
 {
