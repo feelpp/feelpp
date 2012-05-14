@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2007-07-20
 
-  Copyright (C) 2007 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2007-2012 Universite Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -53,7 +53,7 @@ public:
 
 
     static const size_type context = vm::POINT;
-
+    static const bool is_terminal = false;
     static const uint16_type imorder = Func::imorder;
     static const bool imIsPoly = Func::imIsPoly;
 
