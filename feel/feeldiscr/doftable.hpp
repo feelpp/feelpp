@@ -1721,7 +1721,7 @@ private:
     template<typename FaceIterator>
     void addFaceBoundaryDof( FaceIterator __face_it, uint16_type& lc )
     {
-        addFaceBoundaryDof( __face_it, lc, mpl::bool_<face_type::numFaces*fe_type::nDofPerFace>() );
+        addFaceBoundaryDof( __face_it, lc, mpl::bool_<(face_type::numFaces*fe_type::nDofPerFace > 0)>() );
     }
     template<typename FaceIterator>
     void addFaceBoundaryDof( FaceIterator /*__face_it*/, uint16_type& /*lc*/, mpl::bool_<false> )
