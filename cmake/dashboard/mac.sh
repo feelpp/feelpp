@@ -3,6 +3,9 @@
 # e.g. $HOME/Devel/FEEL/feelpp.git
 # $2 provide the ctest mode: e.g. Nightly or Experimental
 
+export PETSC_DIR=/opt/local/lib/petsc
+export SLEPC_DIR=/opt/local/lib/petsc
+
 COMMON="/opt/local/bin/ctest -VV -S $1/cmake/dashboard/testsuite.cmake,FEELPP_CTEST_CONFIG=$1/cmake/dashboard/feelpp.site.`hostname -s`.cmake,FEELPP_MODE=$2"
 
 if [ -x /opt/local/bin/g++-mp-4.6 ]; then
