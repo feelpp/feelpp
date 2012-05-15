@@ -5,6 +5,7 @@
 
 export PETSC_DIR=/opt/local/lib/petsc
 export SLEPC_DIR=/opt/local/lib/petsc
+export PATH=/opt/local/bin/:/opt/local/lib/openmpi/bin:$PATH
 
 COMMON="/opt/local/bin/ctest -VV -S $1/cmake/dashboard/testsuite.cmake,FEELPP_CTEST_CONFIG=$1/cmake/dashboard/feelpp.site.`hostname -s`.cmake,FEELPP_MODE=$2"
 
