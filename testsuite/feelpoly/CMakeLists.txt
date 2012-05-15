@@ -2,7 +2,7 @@ INCLUDE_DIRECTORIES( ${CMAKE_CURRENT_SOURCE_DIR} )
 
 foreach(TEST jacobi imsimplex im poly quad_order lag moment )# hermite ) #  raviartthomas )
 
-  feel_add_test( ${TEST} )
+  feelpp_add_test( ${TEST} )
 
 endforeach()
 

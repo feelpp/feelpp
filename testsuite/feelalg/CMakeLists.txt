@@ -1,7 +1,7 @@
 
 foreach(TEST petsc umfpack matrix ublas vector graph backend)
 
-  feel_add_test( ${TEST} )
+  feelpp_add_test( ${TEST} )
 
 endforeach()
 
