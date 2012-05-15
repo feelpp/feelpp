@@ -384,27 +384,6 @@ endif()
 
 IF(FEELPP_ENABLE_TESTS )
 
-  macro(feel_add_test testname)
-    set(targetname test_${testname})
-    set(filename test_${testname}.cpp)
-    add_executable(${targetname} ${filename})
-    target_link_libraries(${targetname} ${FEELPP_LIBRARIES} ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY} )
-    set_property(TARGET ${targetname} PROPERTY LABELS testsuite)
-    add_dependencies(testsuite ${targetname})
-    if ( APPLE )
-      add_test(
-        NAME test_${testname}
-        COMMAND ${targetname}  # --log_level=message seems to trigger a segfault
-        )
-    else( APPLE )
-      add_test(
-        NAME test_${testname}
-        COMMAND ${targetname} --log_level=message
-        )
-    endif ( APPLE )
-    set_property(TEST ${targetname} PROPERTY LABELS testsuite)
-  endmacro(feel_add_test)
-
   add_subdirectory( testsuite )
 
 endif()
