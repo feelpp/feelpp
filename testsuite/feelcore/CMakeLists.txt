@@ -3,7 +3,7 @@ IF ( TBB_FOUND )
 ENDIF()
 foreach(TEST traits singleton factory debug context simget ${OTESTS})
 
-  feel_add_test( ${TEST} )
+  feelpp_add_test( ${TEST} )
 
 endforeach()
 
