@@ -82,6 +82,7 @@ public:
     //    static const bool is_normalized = NormalizationPolicy::is_normalized;
     static const uint16_type convex_is_simplex = TheConvex::is_simplex;
     static const uint16_type convex_is_hypercube = TheConvex::is_hypercube;
+    static const bool is_product = false;
 
     /** @name Typedefs
      */
@@ -1049,8 +1050,13 @@ public:
     static const uint16_type nNodes = nDof;
     static const uint16_type nDofGrad = super::nDim*nDof;
     static const uint16_type nDofHess = super::nDim*super::nDim*nDof;
-    typedef typename matrix_node<value_type>::type points_type;
-
+    //typedef typename matrix_node<value_type>::type points_type;
+    typedef StorageUBlas<value_type> storage_policy;
+    typedef typename storage_policy::matrix_type matrix_type;
+    typedef typename storage_policy::vector_matrix_type vector_matrix_type;
+    typedef typename storage_policy::matrix_node_type matrix_node_type;
+    typedef typename storage_policy::points_type points_type;
+    typedef typename storage_policy::node_type node_type;
     MomentPolynomialSet()
         :
         super( basis_type() )
