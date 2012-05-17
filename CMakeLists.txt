@@ -299,7 +299,16 @@ include( feelpp.macros )
 #
 # Python
 #
-FIND_PACKAGE(PythonInterp 2.2 REQUIRED)
+FIND_PACKAGE(PythonInterp REQUIRED)
+if(PYTHONINTERP_FOUND)
+  execute_process(COMMAND
+	${PYTHON_EXECUTABLE}
+	-c "import sys; print sys.version[0:3]"
+	OUTPUT_VARIABLE PYTHON_VERSION
+	OUTPUT_STRIP_TRAILING_WHITESPACE)
+  
+  message(STATUS "Found python version ${PYTHON_VERSION}")
+endif()
 
 #
 # data
