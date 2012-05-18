@@ -304,13 +304,32 @@ struct BlocksBase
         M_vec.resize( this->nRow()*this->nCol() );
     }
 
-    void merge( uint16_type c1,uint16_type c2,BlocksBase<T> /*const&*/ b )
+    void merge( uint16_type c1,uint16_type c2,BlocksBase<T> const& b )
     {
-        uint16_type nRb = b.nRow(), nCb = b.nCol();
-
+        const uint16_type nRb = b.nRow(), nCb = b.nCol();
         for ( uint16_type i=0; i<nRb; ++i )
             for ( uint16_type j=0; j<nCb; ++j )
                 this->operator()( c1+i,c2+j ) = b( i,j );
+    }
+
+    BlocksBase<T> subBlock(uint16_type x1r,uint16_type x1c,uint16_type x2r,uint16_type x2c) const
+    {
+        const uint16_type nrow = x2r-x1r+1;
+        const uint16_type ncol = x2c-x1c+1;
+        BlocksBase<T> res(nrow,ncol);
+        for (uint16_type kr=0;kr<nrow;++kr)
+            for (uint16_type kc=0;kc<ncol;++kc)
+                res(kr,kc)=this->operator()(x1r+kr,x1c+kc);
+        return res;
+    }
+
+    BlocksBase<T> transpose() const
+    {
+        BlocksBase<T> res(this->nCol(),this->nRow());
+        for (uint16_type i=0;i<res.nRow();++i)
+            for (uint16_type j=0;j<res.nCol();++j)
+                res(i,j) = this->operator()(j,i);
+        return res;
     }
 
 private :
