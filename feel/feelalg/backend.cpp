@@ -239,7 +239,8 @@ Backend<T>::solve( sparse_matrix_ptrtype const& A,
         Log() << "Backend "  << M_prefix << " reuse failed, rebuilding preconditioner...\n";
         boost::tie( M_converged, M_iteration, M_residual ) = this->solve( A, P, x, b );
 
-        if ( !M_converged ) throw std::logic_error( "solver failed to converge" );
+        //if ( !M_converged ) throw std::logic_error( "solver failed to converge" );
+        if ( !M_converged ) std::cerr<< "linear solver failed to converge" << std::endl;
 
         stop();
     }
@@ -303,7 +304,8 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
         if ( ret2.first < 0 )
         {
             Feel::Log() << "\n[backend] non-linear solver fail";
-            exit( 0 );
+            //exit( 0 );
+            std::cerr<< "non-linear solver failed to converge" << std::endl;
         }
 
         return boost::make_tuple( ret2.first, its, tol );

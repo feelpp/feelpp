@@ -22,12 +22,12 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 /**
-   \file det.hpp
+   \file inv.hpp
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2012-04-26
  */
-#ifndef __FEELPP_VF_Det_H
-#define __FEELPP_VF_Det_H 1
+#ifndef __FEELPP_VF_Inv_H
+#define __FEELPP_VF_Inv_H 1
 
 namespace Feel
 {
@@ -35,14 +35,14 @@ namespace vf
 {
 /// \cond detail
 /**
- * \class Det
- * \brief det of a matrix
+ * \class Inv
+ * \brief inv of a matrix
  *
  * @author Christophe Prud'homme
  * @see
  */
 template<typename ExprT>
-class Det
+class Inv
 {
 public:
 
@@ -71,7 +71,7 @@ public:
 
     typedef ExprT expression_type;
     typedef typename expression_type::value_type value_type;
-    typedef Det<ExprT> this_type;
+    typedef Inv<ExprT> this_type;
 
 
     //@}
@@ -80,15 +80,15 @@ public:
      */
     //@{
 
-    explicit Det( expression_type const & __expr )
+    explicit Inv( expression_type const & __expr )
         :
         M_expr( __expr )
     {}
-    Det( Det const & te )
+    Inv( Inv const & te )
         :
         M_expr( te.M_expr )
     {}
-    ~Det()
+    ~Inv()
     {}
 
     //@}
@@ -136,7 +136,10 @@ public:
         BOOST_MPL_ASSERT_MSG( ( boost::is_same<mpl::int_<expr_shape::M>,mpl::int_<expr_shape::N> >::value ), INVALID_TENSOR_SHOULD_BE_RANK_2_OR_0, ( mpl::int_<expr_shape::M>, mpl::int_<expr_shape::N> ) );
         typedef Shape<expr_shape::nDim,Scalar,false,false> shape;
 
-        typedef Eigen::Matrix<value_type,Eigen::Dynamic,1> vector_type;
+
+        typedef Eigen::Matrix<value_type,Shape::M,Shape::N> matrix_type;
+        typedef std::vector<matrix_type,1> inv_matrix_type;
+
 
         template <class Args> struct sig
         {
@@ -152,7 +155,7 @@ public:
                 Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
             :
             M_tensor_expr( expr.expression(), geom, fev, feu ),
-            M_det( geom->nPoints() )
+            M_inv( geom->nPoints() )
         {
         }
 
@@ -160,14 +163,14 @@ public:
                 Geo_t const& geom, Basis_i_t const& fev )
             :
             M_tensor_expr( expr.expression(), geom, fev ),
-            M_det( geom->nPoints() )
+            M_inv( geom->nPoints() )
         {
         }
 
         tensor( this_type const& expr, Geo_t const& geom )
             :
             M_tensor_expr( expr.expression(), geom ),
-            M_det( geom->nPoints() )
+            M_inv( geom->nPoints() )
         {
         }
         template<typename IM>
@@ -186,12 +189,12 @@ public:
         void update( Geo_t const& geom )
         {
             M_tensor_expr.update( geom );
-            computeDet( mpl::int_<shape::N>() );
+            computeInv( mpl::int_<shape::N>() );
         }
         void update( Geo_t const& geom, uint16_type face )
         {
             M_tensor_expr.update( geom, face );
-            computeDet( mpl::int_<shape::N>() );
+            computeInv( mpl::int_<shape::N>() );
         }
 
 
@@ -205,46 +208,46 @@ public:
         value_type
         evalijq( uint16_type /*i*/, uint16_type /*j*/, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
-            return evalq( c1, c2, q, mpl::int_<shape::N>() );
+            return evalq( c1, c2, q );
         }
 
         value_type
         evaliq( uint16_type /*i*/, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
-            return evalq( c1, c2, q, mpl::int_<shape::N>() );
+            return evalq( c1, c2, q );
         }
 
         value_type
-        evalq( uint16_type /*c1*/, uint16_type /*c2*/, uint16_type q ) const
+        evalq( uint16_type c1, uint16_type c2, uint16_type q ) const
         {
-            return M_det(q);
+            return M_inv[q](c1,c2);
         }
 
     private:
         void
-        computeDet( mpl::int_<1> )
+        computeInv( mpl::int_<1> )
             {
-                for( int q = 0; q < M_det.rows(); ++q )
+                for( int q = 0; q < M_inv.size(); ++q )
                 {
-                    M_det(q) = M_tensor_expr.evalq( 0, 0, q );
+                    M_inv(q) = 1./M_tensor_expr.evalq( 0, 0, q );
                 }
             }
         void
-        computeDet( mpl::int_<2> )
+        computeInv( mpl::int_<2> )
             {
-                for( int q = 0; q < M_det.rows(); ++q )
+                for( int q = 0; q < M_inv.size(); ++q )
                 {
                     double a = M_tensor_expr.evalq( 0, 0, q );
                     double b = M_tensor_expr.evalq( 1, 0, q );
                     double c = M_tensor_expr.evalq( 0, 1, q );
                     double d = M_tensor_expr.evalq( 1, 1, q );
-                    M_det(q) =  a*c-b*d;
+                    M_inv(q) =  a*c-b*d;
                 }
             }
         void
-        computeDet( mpl::int_<3> )
+        computeInv( mpl::int_<3> )
             {
-                for( int q = 0; q < M_det.rows(); ++q )
+                for( int q = 0; q < M_inv.size(); ++q )
                 {
                     double a = M_tensor_expr.evalq( 0, 0, q );
                     double b = M_tensor_expr.evalq( 0, 1, q );
@@ -255,12 +258,12 @@ public:
                     double g = M_tensor_expr.evalq( 2, 0, q );
                     double h = M_tensor_expr.evalq( 2, 1, q );
                     double l = M_tensor_expr.evalq( 2, 2, q );
-                    M_det(q) = a*(e*l-f*h)-b*(d*l-g*h)+c*(d*h-g*e);
+                    M_inv(q) = a*(e*l-f*h)-b*(d*l-g*h)+c*(d*h-g*e);
                 }
             }
     private:
         tensor_expr_type M_tensor_expr;
-        vector_type M_det;
+        inv_matrix_type M_inv;
     };
 
 private:
@@ -269,17 +272,17 @@ private:
 /// \endcond
 
 /**
- * \brief det of the expression tensor
+ * \brief inv of the expression tensor
  */
 template<typename ExprT>
 inline
-Expr< Det<ExprT> >
-det( ExprT v )
+Expr< Inv<ExprT> >
+inv( ExprT v )
 {
-    typedef Det<ExprT> det_t;
-    return Expr< det_t >(  det_t( v ) );
+    typedef Inv<ExprT> inv_t;
+    return Expr< inv_t >(  inv_t( v ) );
 }
 
 }
 }
-#endif /* __Det_H */
+#endif /* __Inv_H */

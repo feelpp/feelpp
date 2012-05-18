@@ -606,10 +606,10 @@ CRBSCM<TruthModelType>::offline()
                   _spectrum=SMALLEST_REAL,
                   //_spectrum=LARGEST_MAGNITUDE,
                   _transform=SINVERT,
-                  _ncv=M_vm["solvereigen-ncv"].template as<int>(),
-                  _nev=M_vm["solvereigen-nev"].template as<int>(),
-                  _tolerance=M_vm["solvereigen-tol"].template as<double>(),
-                  _maxit=M_vm["solvereigen-maxiter"].template as<int>()
+                  _ncv=M_vm["crb.scm.solvereigen-ncv"].template as<int>(),
+                  _nev=M_vm["crb.scm.solvereigen-nev"].template as<int>(),
+                  _tolerance=M_vm["crb.scm.solvereigen-tol"].template as<double>(),
+                  _maxit=M_vm["crb.scm.solvereigen-maxiter"].template as<double>()
                 );
 
         if ( modes.empty()  )
@@ -617,7 +617,6 @@ CRBSCM<TruthModelType>::offline()
             Log() << "eigs failed to converge\n";
             return ckconv;
         }
-
 
         std::cout << "[fe eig] mu=" << std::setprecision( 4 ) << mu << "\n"
                   << "[fe eig] eigmin : " << std::setprecision( 16 ) << modes.begin()->second.template get<0>() << "\n"
@@ -1361,7 +1360,8 @@ CRBSCM<TruthModelType>::run( parameter_type const& mu, int K )
               << std::setprecision( 16 ) << ( alpha_ub-alpha_ex )/( alpha_ex ) << " "
               << "\n";
     std::cout << "------------------------------------------------------------\n";
-    return boost::assign::list_of( alpha_lb )( alpha_lbti )( alpha_ub )( alpha_ubti )( alpha_ex )( alpha_exti );
+    double rel_diff = (alpha_ex - alpha_lb)/alpha_ex;
+    return boost::assign::list_of( alpha_lb )( alpha_lbti )( alpha_ub )( alpha_ubti )( alpha_ex )( alpha_exti )( rel_diff );
 }
 
 template<typename TruthModelType>

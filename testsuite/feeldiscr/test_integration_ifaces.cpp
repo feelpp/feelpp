@@ -46,15 +46,9 @@ using boost::unit_test::test_suite;
 
 #include <feel/options.hpp>
 #include <feel/feelcore/environment.hpp>
-#include <feel/feelmesh/geoentity.hpp>
-#include <feel/feelmesh/refentity.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feeldiscr/mesh.hpp>
 #include <feel/feelmesh/filters.hpp>
-#include <feel/feelpoly/im.hpp>
-#include <feel/feelalg/matrixgmm.hpp>
-#include <feel/feelfilters/gmshhypercubedomain.hpp>
-#include <feel/feelfilters/gmsh.hpp>
 #include <feel/feelfilters/gmsh.hpp>
 
 #include <feel/feelvf/vf.hpp>
