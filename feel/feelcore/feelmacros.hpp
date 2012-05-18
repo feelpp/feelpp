@@ -51,6 +51,12 @@
 #define FEELPP_GNUC_AT_LEAST(x,y) 0
 #endif
 
+#ifdef __clang__
+#define FEELPP_CLANG_AT_LEAST(x,y) ((__clang_major__>=x && __clang_minor__>=y) || __clang_major__>x)
+#else
+#define FEELPP_CLANG_AT_LEAST(x,y) 0
+#endif
+
 /**
    \def FEELPP_CONSTRUCTOR_BEGIN(Area,x)
    Inform that the constructor of the class x has started

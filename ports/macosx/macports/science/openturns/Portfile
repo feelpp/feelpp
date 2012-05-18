@@ -5,7 +5,7 @@ PortSystem          1.0
 #PortGroup           cmake 1.0
 
 name                openturns
-version             0.15
+version             1.0
 categories          science math
 platforms           darwin
 maintainers         ujf-grenoble.fr:Christophe.Prudhomme
@@ -38,10 +38,13 @@ configure.args      -DCMAKE_VERBOSE_MAKEFILE=ON \
                     -DCMAKE_INSTALL_NAME_DIR=${prefix}/lib \
                     -DCMAKE_SYSTEM_PREFIX_PATH=\"${prefix}\;/usr\" \
                     -DCMAKE_MODULE_PATH=${cmake_share_module_dir} \
+                    -DUSE_TBB=OFF \
+                    -DREGEX_INCLUDE_DIR=/opt/local/include \
+                    -DREGEX_LIBRARIES=/opt/local/lib/libgnuregex.dylib \
                     -Wno-dev
 
-configure.cxx ${prefix}/bin/g++-mp-4.5
-configure.cc  ${prefix}/bin/gcc-mp-4.5
+configure.cxx ${prefix}/bin/g++-mp-4.6
+configure.cc  ${prefix}/bin/gcc-mp-4.6
 configure.args-append -DOPENTURNS_SYSTEM_INSTALL=ON
 
 post-build {
@@ -50,8 +53,10 @@ post-build {
 depends_build port:cmake
 
 depends_lib  \
+    port:gnuregex \
     port:libxml2 \
     port:R \
+    port:py27-rpy2 \
     port:doxygen \
     port:swig
 

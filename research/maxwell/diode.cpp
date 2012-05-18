@@ -601,24 +601,24 @@ Diode::run( const double* X, unsigned long P, double* Y, unsigned long N )
     auto wR = vec( rightfacev( idv( Ex ) ),rightfacev( idv( Ey ) ),rightfacev( idv( Bz ) ) );
     auto wL = vec( leftfacev( idv( Ex ) ),leftfacev( idv( Ey ) ),leftfacev( idv( Bz ) ) );
 
-    std::cout<<rkmethod<<endl;
+    std::cout<<(int)rkmethod<<std::endl;
 
     switch ( rkmethod )
     {
     case EULER_EXPLICIT:
-        std::cout << "Euler explicit" << endl;
+        std::cout << "Euler explicit" << std::endl;
         break;
 
     case EULER_MODIFIED:
-        std::cout << "Euler modified" << endl;
+        std::cout << "Euler modified" << std::endl;
         break;
 
     case HEUN:
-        std::cout << "Heun" << endl;
+        std::cout << "Heun" << std::endl;
         break;
 
     case RK4:
-        std::cout << "RK4" << endl;
+        std::cout << "RK4" << std::endl;
         break;
     }
 
@@ -628,7 +628,7 @@ Diode::run( const double* X, unsigned long P, double* Y, unsigned long N )
     for ( time = 0; time <= Tfinal; )
     {
         std::cout << "============================================================" << std::endl;
-        std::cout << "time = " << time << "s, dt=" << dt << ", final time=" << Tfinal << ",hsize = "<< meshSize <<", method : " << rkmethod <<std::endl;
+        std::cout << "time = " << time << "s, dt=" << dt << ", final time=" << Tfinal << ",hsize = "<< meshSize <<", method : " << (int)rkmethod <<std::endl;
 
         switch ( rkmethod )
         {

@@ -29,6 +29,7 @@ if (NOT (OpenTURNS_INCLUDE_DIR
           AND OpenTURNS_SWIG_INCLUDE_DIR
           AND OpenTURNS_INCLUDE_DIRS
           AND OpenTURNS_LIBRARY
+          AND OpenTURNS_BIND_LIBRARY
           AND OpenTURNS_LIBRARIES
           AND OpenTURNS_WRAPPER_DIR
           AND OpenTURNS_MODULE_DIR))
@@ -78,10 +79,43 @@ if (NOT (OpenTURNS_INCLUDE_DIR
         "OpenTURNS library location"
     )
   endif ()
+  
+  # check for bind library
+  if (NOT OpenTURNS_BIND_LIBRARY)
+    find_library (OpenTURNS_BIND_LIBRARY
+      NAMES
+        OTbind
+      PATHS
+        /usr/lib
+        /usr/local/lib
+        /opt/local/lib
+        /sw/lib
+      PATH_SUFFIXES
+        openturns
+      DOC
+        "OpenTURNS bind library location"
+    )
+  endif ()
+  
+  find_path(wrappers_generic_LIBRARYPATH
+      NAMES 
+        generic.so
+      PATHS 
+        /usr/lib/openturns/wrappers
+        /usr/local/lib/openturns/wrappers
+        /opt/local/lib/openturns/wrappers
+        /sw/lib/openturns/wrappers
+      DOC
+        "OpenTURNS wrappers generic library location"
+  )
 
   # find dependent libraries
   if (NOT OpenTURNS_LIBRARIES)
-    set (OpenTURNS_LIBRARIES ${OpenTURNS_LIBRARY} ${LIBXML2_LIBRARIES} ${PYTHON_LIBRARIES})
+    if (NOT OpenTURNS_BIND_LIBRARY)
+      set (OpenTURNS_LIBRARIES ${OpenTURNS_LIBRARY} ${LIBXML2_LIBRARIES} ${PYTHON_LIBRARIES})
+    else ()
+      set (OpenTURNS_LIBRARIES ${OpenTURNS_LIBRARY} ${OpenTURNS_BIND_LIBRARY} ${wrappers_generic_LIBRARYPATH}/generic.so ${LIBXML2_LIBRARIES} ${PYTHON_LIBRARIES})
+    endif ()
     list (APPEND OpenTURNS_LIBRARIES ${LIBXML2_LIBRARIES})
     list (APPEND OpenTURNS_LIBRARIES ${PYTHON_LIBRARIES})
   endif ()
@@ -185,6 +219,7 @@ endif ()
 include (FindPackageHandleStandardArgs)
 find_package_handle_standard_args (OpenTURNS DEFAULT_MSG
   OpenTURNS_LIBRARY
+  OpenTURNS_BIND_LIBRARY
   OpenTURNS_INCLUDE_DIR
   OpenTURNS_SWIG_INCLUDE_DIR
   OpenTURNS_INCLUDE_DIRS
@@ -194,6 +229,7 @@ find_package_handle_standard_args (OpenTURNS DEFAULT_MSG
 )
 mark_as_advanced (
   OpenTURNS_LIBRARY
+  OpenTURNS_BIND_LIBRARY
   OpenTURNS_INCLUDE_DIR
   OpenTURNS_SWIG_INCLUDE_DIR
   OpenTURNS_INCLUDE_DIRS
