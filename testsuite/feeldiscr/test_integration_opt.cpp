@@ -150,7 +150,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_pie, T, order_types )
     {
         double meshSize= hsize/std::pow( 2.,l );
 
-        if ( shape == "pie" );
+        if ( shape == "pie" )
 
         {
             exact = M_PI/8;
