@@ -1445,7 +1445,7 @@ Mesh<Shape, T, Tag>::Localization::initBoundaryFaces()
 
 
 template<typename Shape, typename T, int Tag>
-boost::tuple<bool,typename Mesh<Shape, T, Tag>::node_type>
+boost::tuple<bool,typename Mesh<Shape, T, Tag>::node_type,double>
 Mesh<Shape, T, Tag>::Localization::isIn( size_type _id, const node_type & _pt ) const
 {
     bool isin=false;
@@ -1476,7 +1476,7 @@ Mesh<Shape, T, Tag>::Localization::isIn( size_type _id, const node_type & _pt ) 
             boost::tie( isin, dmin ) = M_refelem1.isIn( gic.xRef() );
         }
 
-    return boost::make_tuple(isin,x_ref);
+    return boost::make_tuple(isin,x_ref,dmin);
 }
 
 template<typename Shape, typename T, int Tag>
@@ -1537,7 +1537,7 @@ Mesh<Shape, T, Tag>::Localization::searchElement( const node_type & p )
     FEELPP_ASSERT( IsInit == true )
     ( IsInit ).warn( "You don't have initialized the tool of localization" );
 #endif
-    bool isin=false;
+    bool isin=false;double dmin=0;
     node_type x_ref;
     size_type idEltFound = this->mesh()->beginElementWithId(this->mesh()->worldComm().localRank())->id();
 
@@ -1559,7 +1559,7 @@ Mesh<Shape, T, Tag>::Localization::searchElement( const node_type & p )
         //elt = M_mesh->element( itLT->first );
 
         // search point in this elt
-        boost::tie(isin,x_ref) = this->isIn(itLT->first,p);
+        boost::tie(isin,x_ref,dmin) = this->isIn(itLT->first,p);
         // if not inside, continue the research with an other element
         if (!isin) ++itLT;
         else idEltFound=itLT->first;
@@ -1603,7 +1603,7 @@ Mesh<Shape, T, Tag>::Localization::run_analysis( const matrix_node_type & m,
 
     bool find_x;
     size_type cv_id=eltHypothetical;
-    node_type x_ref;
+    node_type x_ref;double dmin=0;
     std::vector<bool> hasFindPts(m.size2(),false);
 
     M_resultAnalysis.clear();
@@ -1623,7 +1623,7 @@ Mesh<Shape, T, Tag>::Localization::run_analysis( const matrix_node_type & m,
 
             if ( eltHypothetical!=invalid_size_type_value )
                 {
-                    boost::tie( testHypothetical_find,x_ref ) = this->isIn( currentEltHypothetical,ublas::column( m, i ) );
+                    boost::tie( testHypothetical_find,x_ref,dmin ) = this->isIn( currentEltHypothetical,ublas::column( m, i ) );
                 }
             if ( testHypothetical_find )
                 {
@@ -1711,7 +1711,7 @@ Mesh<Shape, T, Tag>::Localization::searchElements( const node_type & p )
 
     bool isin=false;
     double dmin;
-    node_type __x_ref;
+    node_type x_ref;
 
     //research the element which contains the point p
     auto itLT=ListTri.begin();
@@ -1725,9 +1725,10 @@ Mesh<Shape, T, Tag>::Localization::searchElements( const node_type & p )
     std::list<boost::tuple<size_type,node_type> > newlistelts;
     newlistelts.clear();
     bool find = false;
-
-    while ( itLT != itLT_end /*&& !isin*/  )
+    bool finishSearch=false;
+    while ( itLT != itLT_end && !finishSearch /*&& !isin*/  )
     {
+#if 0
         //get element with the id
         elt= M_mesh->element( itLT->first );
 
@@ -1757,11 +1758,15 @@ Mesh<Shape, T, Tag>::Localization::searchElements( const node_type & p )
             boost::tie( isin, dmin ) = refelem1.isIn( gic.xRef() );
             //std::cout << "gic.xRef()" << gic.xRef() << std::endl;
         }
-
+#else
+        boost::tie(isin,x_ref, dmin) = this->isIn(itLT->first,p);
+#endif
         if ( isin )
         {
-            newlistelts.push_back( boost::make_tuple( itLT->first,__x_ref ) );
+            newlistelts.push_back( boost::make_tuple( itLT->first,x_ref ) );
             find = true;
+            // if not on boundary -> finish for this point
+            if (dmin>1e-7) finishSearch=true;
         }
 
         //if (find) std::cout << elt.G() << std::endl;
@@ -1788,9 +1793,9 @@ Mesh<Shape, T, Tag>::Localization::searchElements( const node_type & p )
         //apply the inverse geometric transformation for the point p
         //gic.setXReal(boost::get<0>(*ptsNN.begin()));
         gic.setXReal( p );
-        __x_ref=gic.xRef();
+        x_ref=gic.xRef();
         //return boost::make_tuple( true, itLT->first, __x_ref);
-        newlistelts.push_back( boost::make_tuple( itLT->first,__x_ref ) );
+        newlistelts.push_back( boost::make_tuple( itLT->first,x_ref ) );
         find = true;
         return boost::make_tuple( true,newlistelts );
     }
@@ -1953,7 +1958,7 @@ Mesh<Shape, T, Tag>::Localization::searchElement( const node_type & p,
 
         if ( isin ) // just a check
             {
-                boost::tie(isin2,x_ref) = this->isIn(itLT->first,p);
+                boost::tie(isin2,x_ref,dmin) = this->isIn(itLT->first,p);
                 if ( isin!=isin2) std::cout << "Bug Mesh::Localization::searchElement<true>" << std::endl;
             }
 
