@@ -135,6 +135,7 @@ struct P3N
 
         switch ( face )
         {
+        default:
         case FACE_0:
             return 0;
 
