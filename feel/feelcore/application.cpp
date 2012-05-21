@@ -682,58 +682,87 @@ Application::processGenericOptions()
         this->parseAndStoreOptions( po::command_line_parser( args ) );
     }
 
-    if ( _M_vm.count( "feelinfo" ) )
-        std::cout << std::setw( 15 ) << std::right << "Feel Version : " << Info::versionString() << "\n"
-                  << std::setw( 15 ) << std::right << "Major : " << Info::versionMajor() << "\n"
-                  << std::setw( 15 ) << std::right << "Minor : " << Info::versionMinor() << "\n"
-                  << std::setw( 15 ) << std::right << "Micro : " << Info::versionMicro() << "\n"
-                  << std::setw( 15 ) << std::right << "Revision : " << Info::revision() << "\n"
-                  << std::setw( 15 ) << std::right << "BuildId : " << Info::buildId() << "\n"
-                  << std::setw( 15 ) << std::right << "Feel Prefix : " << Info::prefix() << "\n"
-                  << std::setw( 15 ) << std::right << "Feel DataDir : " << Info::datadir() << "\n";
-
-    if ( _M_vm.count( "verbose" ) ||
-            _M_vm.count( "help" ) ||
-            _M_vm.count( "version" ) ||
-            _M_vm.count( "copyright" ) ||
-            _M_vm.count( "license" ) ||
-            _M_vm.count( "authors" ) )
-        std::cout << _M_about.appName() << ": " << _M_about.shortDescription() <<  "\n";
-
-    if ( _M_vm.count( "version" ) )
-        std::cout << " version : " << _M_about.version() << "\n";
-
-    if ( _M_vm.count( "copyright" ) )
-        std::cout << " copyright : " << _M_about.copyrightStatement() << "\n";
-
-    if ( _M_vm.count( "license" ) )
-        std::cout << " license : " << _M_about.license() << "\n";
-
-    if ( _M_vm.count( "authors" ) )
+    if ( this->comm().rank() == 0 )
     {
-        std::cout << std::setw( 30 )
-                  << "Author Name"
-                  << " " << std::setw( 15 )
-                  << "Task"
-                  << " " << std::setw( 40 )
-                  << "Email Address"
-                  << "\n";
-        std::cout << std::setw( 85+3 ) << std::setfill( '-' ) << "\n" << std::setfill( ' ' );
-        std::for_each( _M_about.authors().begin(),
-                       _M_about.authors().end(),
-                       std::cout
-                       << std::setw( 30 )
-                       << lambda::bind( &AboutPerson::name,
-                                        lambda::_1 )
-                       << " " << std::setw( 15 )
-                       << lambda::bind( &AboutPerson::task,
-                                        lambda::_1 )
-                       << " " << std::setw( 40 )
-                       << lambda::bind( &AboutPerson::emailAddress,
-                                        lambda::_1 )
-                       << "\n" );
-    }
 
+        if ( _M_vm.count( "feelinfo" ) )
+            std::cout << std::setw( 15 ) << std::right << "Feel Version : " << Info::versionString() << "\n"
+                      << std::setw( 15 ) << std::right << "Major : " << Info::versionMajor() << "\n"
+                      << std::setw( 15 ) << std::right << "Minor : " << Info::versionMinor() << "\n"
+                      << std::setw( 15 ) << std::right << "Micro : " << Info::versionMicro() << "\n"
+                      << std::setw( 15 ) << std::right << "Revision : " << Info::revision() << "\n"
+                      << std::setw( 15 ) << std::right << "BuildId : " << Info::buildId() << "\n"
+                      << std::setw( 15 ) << std::right << "Feel Prefix : " << Info::prefix() << "\n"
+                      << std::setw( 15 ) << std::right << "Feel DataDir : " << Info::datadir() << "\n";
+
+        if ( _M_vm.count( "verbose" ) ||
+             _M_vm.count( "help" ) ||
+             _M_vm.count( "version" ) ||
+             _M_vm.count( "copyright" ) ||
+             _M_vm.count( "license" ) ||
+             _M_vm.count( "authors" ) )
+        {
+            std::cout << _M_about.appName() << ": " << _M_about.shortDescription() <<  "\n";
+        }
+
+        if ( _M_vm.count( "version" ) )
+        {
+            std::cout << " version : " << _M_about.version() << "\n";
+        }
+
+        if ( _M_vm.count( "copyright" ) )
+        {
+            std::cout << " copyright : " << _M_about.copyrightStatement() << "\n";
+        }
+
+        if ( _M_vm.count( "license" ) )
+        {
+            std::cout << " license : " << _M_about.license() << "\n";
+        }
+
+        if ( _M_vm.count( "authors" ) )
+        {
+            std::cout << std::setw( 30 )
+                      << "Author Name"
+                      << " " << std::setw( 15 )
+                      << "Task"
+                      << " " << std::setw( 40 )
+                      << "Email Address"
+                      << "\n";
+            std::cout << std::setw( 85+3 ) << std::setfill( '-' ) << "\n" << std::setfill( ' ' );
+            std::for_each( _M_about.authors().begin(),
+                           _M_about.authors().end(),
+                           std::cout
+                           << std::setw( 30 )
+                           << lambda::bind( &AboutPerson::name,
+                                            lambda::_1 )
+                           << " " << std::setw( 15 )
+                           << lambda::bind( &AboutPerson::task,
+                                            lambda::_1 )
+                           << " " << std::setw( 40 )
+                           << lambda::bind( &AboutPerson::emailAddress,
+                                            lambda::_1 )
+                           << "\n" );
+        }
+
+        if ( _M_vm.count( "help" ) )
+        {
+            std::cout << this->optionsDescription() << "\n";
+        }
+
+
+    }
+    if ( _M_vm.count( "verbose" ) ||
+         _M_vm.count( "help" ) ||
+         _M_vm.count( "version" ) ||
+         _M_vm.count( "copyright" ) ||
+         _M_vm.count( "license" ) ||
+         _M_vm.count( "authors" ) )
+    {
+        this->comm().barrier();
+        MPI_Finalize();
+        exit(0);
+    }
 #if 0
     std::cout << "count = " << _M_vm.count( "debug" ) << "\n"
               << "string = " << _M_vm["debug"].as<std::string>() << "\n";

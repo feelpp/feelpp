@@ -1,6 +1,6 @@
 foreach(TEST material)
   
-  feel_add_test( ${TEST} )
+  feelpp_add_test( ${TEST} )
 
 endforeach()
 

@@ -87,7 +87,7 @@ public:
     /**
      *  Constructor. Initializes Trilinos data structures
      */
-    SolverNonLinearTrilinos();
+    SolverNonLinearTrilinos(WorldComm const& worldComm=WorldComm());
     SolverNonLinearTrilinos( SolverNonLinearTrilinos const & );
 
     /**
@@ -164,9 +164,8 @@ private:
 
 template <typename T>
 inline
-SolverNonLinearTrilinos<T>::SolverNonLinearTrilinos ()
-{
-}
+SolverNonLinearTrilinos<T>::SolverNonLinearTrilinos (WorldComm const& worldComm)
+{}
 
 
 

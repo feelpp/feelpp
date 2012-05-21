@@ -1,9 +1,9 @@
-###  CMakeLists.txt ---
+###  TEMPLATE.txt.tpl; coding: utf-8 ---
 
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
-#       Date: 2009-12-01
+#       Date: 2012-05-03
 #
-#  Copyright (C) 2009 UniversitÃ© Joseph Fourier (Grenoble I)
+#  Copyright (C) 2012 Université Joseph Fourier (Grenoble I)
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -21,22 +21,16 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
+set(OS_VERSION debian-sid)
+set(ARCH x86_64)
+set(WORK_DIR /home/prudhomm/sources/)
+set(MAKE_ARGS "-j6")
+set(PARALLEL "6")
+set(FEELPP_WORK_DIR ${WORK_DIR})
+set(FEELPP_ENABLE_CRB_ALL ON)
+set(FEELPP_ENABLE_BENCHMARKS ON)
+set(FEELPP_MAKE_ARGS ${MAKE_ARGS})
+set(CTEST_BUILD_FLAGS -j${PARALLEL})
+set(CTEST_PARALLEL_LEVEL ${PARALLEL})
 
-
-foreach( BENCH ale1 ale2 ale3 ale4 ale5 )
-
-    feel_add_bench( ${BENCH} )
-
-    # test each backend
-    foreach( BACKEND ${FEELPP_BACKENDS} )
-      add_test( feel_bench_${BENCH}-${BACKEND}
-        ${PYTHON_EXECUTABLE} ${FEELPP_SOURCE_DIR}/benchmarks/python/batch_validation.py
-        --program=${targetname}
-        --mode=0
-        --path=${FEELPP_BUILD_DIR}/benchmarks/laplacian/ale/
-        --cmdargs="--exporter-format=gmsh --backend=${BACKEND} --export=0 ${${BACKEND}_LU_SOLVER_OPTIONS}" )
-      set_property(TEST feel_bench_${BENCH}-${BACKEND}  PROPERTY LABELS benchmarks)
-    endforeach()
-
-endforeach()
 

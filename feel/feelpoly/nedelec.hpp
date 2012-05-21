@@ -124,9 +124,10 @@ public detail::OrthonormalPolynomialSet<N, O+1, N, Vectorial, T, Convex>
     typedef detail::OrthonormalPolynomialSet<N, O+1, N, Vectorial, T, Convex> super;
 
 public:
+    static const uint16_type Om1 = (O==0)?0:O-1;
     typedef detail::OrthonormalPolynomialSet<N, O, N, Vectorial, T, Convex> Pk_v_type;
     typedef detail::OrthonormalPolynomialSet<N, O+1, N, Vectorial, T, Convex> Pkp1_v_type;
-    typedef detail::OrthonormalPolynomialSet<N, O-1, N, Vectorial, T, Convex> Pkm1_v_type;
+    typedef detail::OrthonormalPolynomialSet<N, Om1, N, Vectorial, T, Convex> Pkm1_v_type;
     typedef detail::OrthonormalPolynomialSet<N, O, N, Scalar, T, Convex> Pk_s_type;
     typedef detail::OrthonormalPolynomialSet<N, O+1, N, Scalar, T, Convex> Pkp1_s_type;
 

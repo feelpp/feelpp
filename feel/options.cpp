@@ -32,10 +32,12 @@
 #include <feel/feelalg/backendpetsc.hpp>
 #include <feel/feelalg/solvereigen.hpp>
 #include <feel/feelalg/backendtrilinos.hpp>
-#include <feel/feeldiscr/oseendata.hpp>
-#include <feel/feeldiscr/bdf2.hpp>
-#include <feel/feelfilters/exporter.hpp>
 #include <feel/feelmaterial/materiallib.hpp>
+
+#include <feel/feeldiscr/bdf2.hpp>
+
+
+#include <feel/feelfilters/exporter.hpp>
 
 namespace Feel
 {
@@ -57,7 +59,6 @@ feel_options( std::string const& prefix  )
         .add( nlsolver_options() )
 
         /* discr options */
-        .add( oseen_options( prefix ) )
         .add( bdf_options( prefix ) )
 
         /* exporter options */
@@ -69,3 +70,4 @@ feel_options( std::string const& prefix  )
 
 }
 }
+

@@ -4,9 +4,12 @@
 #  FEELPP_INCLUDE_DIR = where feel/feelcore/feel.hpp can be found
 #  FEELPP_LIBRARY    = the library to link in
 
-set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x " )
-set( CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -std=c++0x " )
-set( CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -std=c++0x " )
+set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x" )
+IF("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
+  set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -std=c++11 --stdlib=libstdc++" )
+  # ensures that boost.signals2 compiles with clang++ >= 3.1
+  add_definitions(-DBOOST_NO_VARIADIC_TEMPLATES)
+ENDIF()
 
 LIST(REMOVE_DUPLICATES CMAKE_CXX_FLAGS)
 LIST(REMOVE_DUPLICATES CMAKE_CXX_FLAGS_DEBUG)
@@ -125,6 +128,20 @@ if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/feel AND EXISTS ${CMAKE_CURRENT_SOURCE_D
   INCLUDE_DIRECTORIES( ${FEELPP_SOURCE_DIR}/contrib/eigen )
 endif()
 
+#
+# Gmm
+#
+FIND_PACKAGE(GMM)
+IF(GMM_FOUND)
+   MESSAGE(STATUS "Using built-in gmm")
+   include_directories(${GMM_INCLUDE_DIR})
+ELSE()
+   MESSAGE(STATUS "Using contrib/gmm headers")
+   FILE(GLOB files "contrib/gmm/include/*.h")
+   #add_subdirectory(contrib/gmm)
+   INCLUDE_DIRECTORIES( ${FEELPP_SOURCE_DIR}/contrib/gmm )
+ENDIF()
+
 #FIND_PACKAGE(Eigen2 REQUIRED)
 #INCLUDE_DIRECTORIES( ${Eigen2_INCLUDE_DIR} )
 #add_subdirectory(contrib/eigen)
@@ -168,12 +185,16 @@ if ( GLPK_FOUND )
 endif()
 
 # google perf tools
-find_package(GooglePerfTools)
-if ( GOOGLE_PERFTOOLS_FOUND )
-  message(STATUS "Google PerfTools: ${TCMALLOC_LIBRARIES} ${STACKTRACE_LIBRARIES} ${PROFILER_LIBRARIES}")
-  SET(FEELPP_LIBRARIES ${TCMALLOC_LIBRARIES} ${FEELPP_LIBRARIES})
-  SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} GooglePerfTools" )
-endif()
+option(FEELPP_ENABLE_GOOGLEPERFTOOLS "Enable Google Perf Tools (tcmalloc, stracktrace and profiler)" ON)
+if ( FEELPP_ENABLE_GOOGLEPERFTOOLS )
+  find_package(GooglePerfTools)
+  if ( GOOGLE_PERFTOOLS_FOUND )
+    message(STATUS "Google PerfTools: ${TCMALLOC_LIBRARIES} ${STACKTRACE_LIBRARIES} ${PROFILER_LIBRARIES}")
+    include_directories(${GOOGLE_PERFTOOLS_INCLUDE_DIR})
+    SET(FEELPP_LIBRARIES ${TCMALLOC_LIBRARIES} ${FEELPP_LIBRARIES})
+    SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} GooglePerfTools" )
+  endif()
+endif( FEELPP_ENABLE_GOOGLEPERFTOOLS )
 
 # xml
 find_package(LibXml2 2.6.27)
@@ -355,7 +376,7 @@ endif(FEELPP_ENABLE_SLEPC)
 #
 # Trilinos
 #
-OPTION(FEELPP_ENABLE_TRILINOS "enable feel++ Trilinos support" ON)
+OPTION(FEELPP_ENABLE_TRILINOS "enable feel++ Trilinos support" OFF)
 if (FEELPP_ENABLE_TRILINOS)
 FIND_PACKAGE(Trilinos)
   if ( TRILINOS_FOUND )
@@ -369,7 +390,11 @@ endif (FEELPP_ENABLE_TRILINOS)
 #
 # OpenTURNS
 #
-OPTION(FEELPP_ENABLE_OPENTURNS "enable feel++ OpenTURNS support" ON)
+if ( APPLE )
+  OPTION(FEELPP_ENABLE_OPENTURNS "enable feel++ OpenTURNS support" OFF)
+else()
+  OPTION(FEELPP_ENABLE_OPENTURNS "enable feel++ OpenTURNS support" ON)
+endif()
 IF ( FEELPP_ENABLE_OPENTURNS )
   FIND_PACKAGE( OpenTURNS )
   if ( OPENTURNS_FOUND )
@@ -440,12 +465,16 @@ FIND_PACKAGE(Gmsh REQUIRED)
 if ( GMSH_FOUND )
   ADD_DEFINITIONS( -DFEELPP_HAS_GMSH=1 -D_FEELPP_HAS_GMSH_ -DGMSH_EXECUTABLE=${GMSH_EXECUTABLE} )
   if ( GL2PS_LIBRARY )
-   SET(FEELPP_LIBRARIES ${GMSH_LIBRARY} ${GL2PS_LIBRARY} ${FEELPP_LIBRARIES})
-  else()
+   if ( GL_LIBRARY )
+     SET(FEELPP_LIBRARIES ${GMSH_LIBRARY} ${GL2PS_LIBRARY} ${GL_LIBRARY} ${FEELPP_LIBRARIES})
+   else()
+     SET(FEELPP_LIBRARIES ${GMSH_LIBRARY} ${GL2PS_LIBRARY} ${FEELPP_LIBRARIES})
+   endif()
+ else()
    SET(FEELPP_LIBRARIES ${GMSH_LIBRARY} ${FEELPP_LIBRARIES})
-  endif()
-  include_directories(${GMSH_INCLUDE_DIR})
-  SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Gmsh" )
+ endif()
+ include_directories(${GMSH_INCLUDE_DIR})
+ SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Gmsh" )
 endif()
 
 

@@ -744,7 +744,7 @@ public:
                                std::map<size_type,periodic_dof_map_type>& periodic_dof,
                                size_type tag )
     {
-        addVertexPeriodicDof( __elt, __face, next_free_dof, periodic_dof, tag, mpl::bool_<fe_type::nDofPerVertex>() );
+        addVertexPeriodicDof( __elt, __face, next_free_dof, periodic_dof, tag, mpl::bool_<(fe_type::nDofPerVertex>0)>() );
     }
     void addVertexPeriodicDof( element_type const& __elt,face_type const& __face,size_type& next_free_dof,std::map<size_type,periodic_dof_map_type>& periodic_dof,size_type tag, mpl::bool_<false> ) {}
     void addVertexPeriodicDof( element_type const& __elt,face_type const& __face,size_type& next_free_dof,std::map<size_type,periodic_dof_map_type>& periodic_dof,size_type tag, mpl::bool_<true> );
@@ -1093,7 +1093,7 @@ private:
     void addVertexDof( element_type const& __elt, uint16_type processor, size_type& next_free_dof,
                        ref_shift_type& shifts  )
     {
-        addVertexDof( __elt, processor, next_free_dof, shifts, mpl::bool_<fe_type::nDofPerVertex>() );
+        addVertexDof( __elt, processor, next_free_dof, shifts, mpl::bool_<(fe_type::nDofPerVertex>0)>() );
     }
     void addVertexDof( element_type const& /*M*/, uint16_type /*processor*/,  size_type& /*next_free_dof*/,
                        ref_shift_type& /*shifts*/, mpl::bool_<false> )
@@ -1280,7 +1280,7 @@ private:
     void addFaceDof( element_type const& __elt, uint16_type processor, size_type& next_free_dof,
                      ref_shift_type& shifts )
     {
-        return addFaceDof( __elt, processor, next_free_dof, shifts, mpl::int_<fe_type::nDim>(), mpl::bool_<fe_type::nDofPerFace>() );
+        return addFaceDof( __elt, processor, next_free_dof, shifts, mpl::int_<fe_type::nDim>(), mpl::bool_<(fe_type::nDofPerFace > 0)>() );
     }
     void addFaceDof( element_type const& /*M*/, uint16_type /*processor*/, size_type& /*next_free_dof*/,
                      ref_shift_type& /*shifts*/, mpl::int_<1>, mpl::bool_<false> )
@@ -1395,7 +1395,7 @@ private:
     void addVolumeDof( element_type const& __elt, uint16_type processor, size_type& next_free_dof,
                        ref_shift_type& shifts )
     {
-        return addVolumeDof( __elt, processor, next_free_dof, shifts, mpl::bool_<fe_type::nDofPerVolume>() );
+        return addVolumeDof( __elt, processor, next_free_dof, shifts, mpl::bool_<(fe_type::nDofPerVolume>0)>() );
     }
     void addVolumeDof( element_type const& /*M*/, uint16_type /*processor*/, size_type& /*next_free_dof*/,
                        ref_shift_type& /*shifts*/, mpl::bool_<false> )
@@ -1427,7 +1427,7 @@ private:
     template<typename FaceIterator>
     void addVertexBoundaryDof( FaceIterator __face_it, uint16_type& lc )
     {
-        addVertexBoundaryDof( __face_it, lc, mpl::bool_<fe_type::nDofPerVertex>(), mpl::int_<nDim>() );
+        addVertexBoundaryDof( __face_it, lc, mpl::bool_<(fe_type::nDofPerVertex>0)>(), mpl::int_<nDim>() );
     }
     template<typename FaceIterator> void addVertexBoundaryDof( FaceIterator /*__face_it*/, uint16_type& /*lc*/, mpl::bool_<false>, mpl::int_<1> ) {}
     template<typename FaceIterator> void addVertexBoundaryDof( FaceIterator /*__face_it*/, uint16_type& /*lc*/, mpl::bool_<false>, mpl::int_<2> ) {}
@@ -1721,7 +1721,7 @@ private:
     template<typename FaceIterator>
     void addFaceBoundaryDof( FaceIterator __face_it, uint16_type& lc )
     {
-        addFaceBoundaryDof( __face_it, lc, mpl::bool_<face_type::numFaces*fe_type::nDofPerFace>() );
+        addFaceBoundaryDof( __face_it, lc, mpl::bool_<(face_type::numFaces*fe_type::nDofPerFace > 0)>() );
     }
     template<typename FaceIterator>
     void addFaceBoundaryDof( FaceIterator /*__face_it*/, uint16_type& /*lc*/, mpl::bool_<false> )

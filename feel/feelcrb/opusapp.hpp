@@ -223,9 +223,9 @@ public:
         using namespace boost::assign;
         std::vector<std::string> pfemhdrs = boost::assign::list_of( "FEM Output" )( "FEM Time" );
         std::vector<std::string> crbhdrs = boost::assign::list_of( "FEM Output" )( "FEM Time" )( "RB Output" )( "Error Bounds" )( "CRB Time" )( "Relative error PFEM/CRB" )( "Conditionning" );
-        std::vector<std::string> scmhdrs = boost::assign::list_of( "Lb" )( "Lb Time" )( "Ub" )( "Ub Time" )( "FEM" )( "FEM Time" );
+        std::vector<std::string> scmhdrs = boost::assign::list_of( "Lb" )( "Lb Time" )( "Ub" )( "Ub Time" )( "FEM" )( "FEM Time" )( "Rel.(FEM-Lb)" );
         std::vector<std::string> crbonlinehdrs = boost::assign::list_of( "RB Output" )( "Error Bounds" )( "CRB Time" );
-        std::vector<std::string> scmonlinehdrs = boost::assign::list_of( "Lb" )( "Lb Time" )( "Ub" )( "Ub Time" );
+        std::vector<std::string> scmonlinehdrs = boost::assign::list_of( "Lb" )( "Lb Time" )( "Ub" )( "Ub Time" )( "Rel.(FEM-Lb)" );
         hdrs[CRBModelMode::PFEM] = pfemhdrs;
         hdrs[CRBModelMode::CRB] = crbhdrs;
         hdrs[CRBModelMode::SCM] = scmhdrs;
@@ -233,7 +233,8 @@ public:
         hdrs[CRBModelMode::SCM_ONLINE] = scmonlinehdrs;
         std::ostringstream ostr;
 
-	//crb->printErrorsDuringRbConstruction();
+	if( crb->printErrorDuringOfflineStep() )
+            crb->printErrorsDuringRbConstruction();
 	if ( crb->showMuSelection() )
 	    crb->printMuSelection();
 
@@ -270,16 +271,16 @@ public:
                 ti.restart();
                 auto o = crb->run( mu,  this->vm()["crb.online-tolerance"].template as<double>() );
 
-                double relative_error = std::abs( ofem[0]-o.get<0>() ) /ofem[0];
-                double relative_estimated_error = o.get<1>() / ofem[0];
-                double condition_number = o.get<3>();
+                double relative_error = std::abs( ofem[0]-o.template get<0>() ) /ofem[0];
+                double relative_estimated_error = o.template get<1>() / ofem[0];
+                double condition_number = o.template get<3>();
 
                 if ( crb->errorType()==2 )
                 {
 
-                    std::vector<double> v = boost::assign::list_of( ofem[0] )( ofem[1] )( o.get<0>() )( relative_estimated_error )( ti.elapsed() )( relative_error )( condition_number );
-                    std::cout << "output=" << o.get<0>() << " with " << o.get<2>() << " basis functions\n";
-                    std::ofstream file_summary_of_simulations( ( boost::format( "summary_of_simulations_%d" ) % o.get<2>() ).str().c_str() ,std::ios::out | std::ios::app );
+                    std::vector<double> v = boost::assign::list_of( ofem[0] )( ofem[1] )( o.template get<0>() )( relative_estimated_error )( ti.elapsed() )( relative_error )( condition_number );
+                    std::cout << "output=" << o.template get<0>() << " with " << o.template get<2>() << " basis functions\n";
+                    std::ofstream file_summary_of_simulations( ( boost::format( "summary_of_simulations_%d" ) % o.template get<2>() ).str().c_str() ,std::ios::out | std::ios::app );
                     printEntry( file_summary_of_simulations, mu, v );
                     printEntry( ostr, mu, v );
                     file_summary_of_simulations.close();
@@ -287,9 +288,9 @@ public:
 
                 else
                 {
-                    std::vector<double> v = boost::assign::list_of( ofem[0] )( ofem[1] )( o.get<0>() )( relative_estimated_error )( ti.elapsed() ) ( relative_error )( condition_number ) ;
-                    std::cout << "output=" << o.get<0>() << " with " << o.get<2>() << " basis functions  (relative error estimation on this output : " << relative_estimated_error<<") \n";
-                    std::ofstream file_summary_of_simulations( ( boost::format( "summary_of_simulations_%d" ) % o.get<2>() ).str().c_str() ,std::ios::out | std::ios::app );
+                    std::vector<double> v = boost::assign::list_of( ofem[0] )( ofem[1] )( o.template get<0>() )( relative_estimated_error )( ti.elapsed() ) ( relative_error )( condition_number ) ;
+                    std::cout << "output=" << o.template get<0>() << " with " << o.template get<2>() << " basis functions  (relative error estimation on this output : " << relative_estimated_error<<") \n";
+                    std::ofstream file_summary_of_simulations( ( boost::format( "summary_of_simulations_%d" ) % o.template get<2>() ).str().c_str() ,std::ios::out | std::ios::app );
                     printEntry( file_summary_of_simulations, mu, v );
                     printEntry( ostr, mu, v );
                     file_summary_of_simulations.close();
@@ -307,15 +308,15 @@ public:
 
                 if ( crb->errorType()==2 )
                 {
-                    std::vector<double> v = boost::assign::list_of( o.get<0>() )( ti.elapsed() );
-                    std::cout << "output=" << o.get<0>() << " with " << o.get<2>() << " basis functions\n";
+                    std::vector<double> v = boost::assign::list_of( o.template get<0>() )( ti.elapsed() );
+                    std::cout << "output=" << o.template get<0>() << " with " << o.template get<2>() << " basis functions\n";
                     printEntry( ostr, mu, v );
                 }
 
                 else
                 {
-                    std::vector<double> v = boost::assign::list_of( o.get<0>() )( o.get<1>() )( ti.elapsed() );
-                    std::cout << "output=" << o.get<0>() << " with " << o.get<2>() << " basis functions  (error estimation on this output : " << o.get<1>()<<") \n";
+                    std::vector<double> v = boost::assign::list_of( o.template get<0>() )( o.template get<1>() )( ti.elapsed() );
+                    std::cout << "output=" << o.template get<0>() << " with " << o.template get<2>() << " basis functions  (error estimation on this output : " << o.template get<1>()<<") \n";
                     printEntry( ostr, mu, v );
                 }
 

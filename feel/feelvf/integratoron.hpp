@@ -147,6 +147,7 @@ public:
      */
     //@{
     static const size_type context = OnExpr::context|vm::POINT;
+    static const size_type is_terminal = false;
 
     static const uint16_type imorder = OnExpr::imorder;
     static const bool imIsPoly = OnExpr::imIsPoly;

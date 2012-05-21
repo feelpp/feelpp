@@ -48,6 +48,7 @@ public:
 
     static const size_type context = ExprT::context;
     static const bool is_symetric = Part;
+    static const bool is_terminal = false;
 
     static const uint16_type imorder = ExprT::imorder;
     static const bool imIsPoly = ExprT::imIsPoly;

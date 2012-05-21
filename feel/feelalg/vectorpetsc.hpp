@@ -41,12 +41,6 @@
 
 extern "C"
 {
-#if defined(MPICH_NAME)
-#if !defined( MPICH_HAVE_MPI_WIN )
-#define MPICH_HAVE_MPI_WIN
-    struct MPI_Win {};
-#endif
-#endif
 #include <petscmat.h>
 }
 
@@ -669,7 +663,7 @@ public:
     }
 
 
-private:
+protected:
 
     /**
      * Petsc vector datatype to store values

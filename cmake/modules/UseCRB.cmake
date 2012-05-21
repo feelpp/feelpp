@@ -3,7 +3,7 @@
 INCLUDE(ParseArguments)
 
 macro(crb_add_octave_module)
-if ( FEELPP_ENABLE_OCTAVE )
+if ( FEELPP_ENABLE_OCTAVE AND OCTAVE_FOUND )
   PARSE_ARGUMENTS(OCTAVE_MODULE
     "LINK_LIBRARIES;SCRIPTS;CFG"
     ""
@@ -42,14 +42,14 @@ if ( FEELPP_ENABLE_OCTAVE )
       INSTALL(FILES "${cfg}"  DESTINATION share/feel/config)
     endforeach()
   endif()
-endif( FEELPP_ENABLE_OCTAVE )
+endif( FEELPP_ENABLE_OCTAVE AND OCTAVE_FOUND )
 endmacro(crb_add_octave_module)
 
 macro(crb_add_executable)
 
   PARSE_ARGUMENTS(CRB_EXEC
     "LINK_LIBRARIES;CFG"
-    "NO_TEST"
+    "TEST"
     ${ARGN}
     )
   CAR(CRB_EXEC_NAME ${CRB_EXEC_DEFAULT_ARGS})
@@ -66,8 +66,10 @@ macro(crb_add_executable)
   target_link_libraries( ${execname} ${CRB_EXEC_LINK_LIBRARIES} )
   set_property(TARGET ${execname} PROPERTY LABELS crb)
   INSTALL(PROGRAMS "${CMAKE_CURRENT_BINARY_DIR}/${execname}"  DESTINATION bin COMPONENT Bin)
-  add_test(${execname} ${CMAKE_CURRENT_BINARY_DIR}/${execname})
-  set_property(TEST ${execname} PROPERTY LABELS crb)
+  if ( CRB_EXEC_TEST )
+    add_test(${execname} ${CMAKE_CURRENT_BINARY_DIR}/${execname})
+    set_property(TEST ${execname} PROPERTY LABELS crb)
+  endif()
   add_dependencies(crb ${execname})
   if ( CRB_EXEC_CFG )
     foreach(  cfg ${CRB_EXEC_CFG} )
@@ -85,10 +87,10 @@ endmacro(crb_add_executable)
 # crb_add_python_module
 #
 macro(crb_add_python_module)
-
+if ( FEELPP_ENABLE_OPENTURNS AND OPENTURNS_FOUND )
   PARSE_ARGUMENTS(CRB_PYTHON
     "LINK_LIBRARIES;SCRIPTS;XML;CFG"
-    ""
+    "TEST"
     ${ARGN}
     )
   CAR(CRB_PYTHON_NAME ${CRB_PYTHON_DEFAULT_ARGS})
@@ -108,8 +110,10 @@ macro(crb_add_python_module)
   if ( CRB_PYTHON_SCRIPTS )
     foreach(  script ${CRB_PYTHON_SCRIPTS} )
       configure_file( ${script} ${script} )
-      add_test(${script} ${PYTHON_EXECUTABLE} ${script})
-      set_property(TEST ${script} PROPERTY LABELS crb)
+      if ( CRB_PYTHON_TEST )
+        add_test(${script} ${PYTHON_EXECUTABLE} ${script})
+        set_property(TEST ${script} PROPERTY LABELS crb)
+      endif()
     endforeach()
   endif()
   if ( CRB_PYTHON_CFG )
@@ -118,7 +122,7 @@ macro(crb_add_python_module)
       INSTALL(FILES "${cfg}"  DESTINATION share/feel/config)
     endforeach()
   endif()
-
+endif( FEELPP_ENABLE_OPENTURNS AND OPENTURNS_FOUND )
 endmacro(crb_add_python_module)
 
 #
@@ -131,7 +135,7 @@ macro(crb_add_model)
 
   PARSE_ARGUMENTS(CRB_MODEL
     "HDRS;SRCS;LINK_LIBRARIES;CFG;XML;SCRIPTS"
-    ""
+    "TEST"
     ${ARGN}
     )
   CAR(CRB_MODEL_SHORT_NAME ${CRB_MODEL_DEFAULT_ARGS})
@@ -168,9 +172,15 @@ int main( int argc, char** argv )
     file(WRITE ${CRB_MODEL_SHORT_NAME}app.cpp ${CODE})
   ENDIF()
 
-  crb_add_executable(${CRB_MODEL_SHORT_NAME}app ${CRB_MODEL_SHORT_NAME}app.cpp
-    LINK_LIBRARIES ${CRB_MODEL_LINK_LIBRARIES}
-    CFG ${CRB_MODEL_CFG})
+  if ( CRB_MODEL_TEST )
+    crb_add_executable(${CRB_MODEL_SHORT_NAME}app ${CRB_MODEL_SHORT_NAME}app.cpp
+      LINK_LIBRARIES ${CRB_MODEL_LINK_LIBRARIES}
+      CFG ${CRB_MODEL_CFG} TEST )
+  else()
+    crb_add_executable(${CRB_MODEL_SHORT_NAME}app ${CRB_MODEL_SHORT_NAME}app.cpp
+      LINK_LIBRARIES ${CRB_MODEL_LINK_LIBRARIES}
+      CFG ${CRB_MODEL_CFG} )
+  endif()
 
 
   foreach( wrapper pfem scm crb )
@@ -183,12 +193,21 @@ int main( int argc, char** argv )
     configure_file(${FEELPP_SOURCE_DIR}/applications/crb/templates/octave_wrapper.cpp ${octcpp})
     configure_file(${CRB_MODEL_SHORT_NAME}.xml.in ${xml})
 
-    crb_add_python_module(crb${CRB_MODEL_SHORT_NAME}${wrapper} ${pycpp}
-      LINK_LIBRARIES ${CRB_MODEL_LINK_LIBRARIES}
-      CFG ${CRB_MODEL_CFG} XML ${xml})
-    crb_add_octave_module(crb${CRB_MODEL_SHORT_NAME}${wrapper} ${octcpp}
-      LINK_LIBRARIES ${CRB_MODEL_LINK_LIBRARIES} ${Octave_LIBRARIES}
-      CFG ${CRB_MODEL_CFG} SCRIPTS ${CRB_MODEL_SCRIPTS} )
+    if ( CRB_MODEL_TEST )
+      crb_add_python_module(crb${CRB_MODEL_SHORT_NAME}${wrapper} ${pycpp}
+        LINK_LIBRARIES ${CRB_MODEL_LINK_LIBRARIES}
+        CFG ${CRB_MODEL_CFG} XML ${xml} TEST)
+      crb_add_octave_module(crb${CRB_MODEL_SHORT_NAME}${wrapper} ${octcpp}
+        LINK_LIBRARIES ${CRB_MODEL_LINK_LIBRARIES} ${Octave_LIBRARIES}
+        CFG ${CRB_MODEL_CFG} SCRIPTS ${CRB_MODEL_SCRIPTS} TEST )
+    else()
+      crb_add_python_module(crb${CRB_MODEL_SHORT_NAME}${wrapper} ${pycpp}
+        LINK_LIBRARIES ${CRB_MODEL_LINK_LIBRARIES}
+        CFG ${CRB_MODEL_CFG} XML ${xml})
+      crb_add_octave_module(crb${CRB_MODEL_SHORT_NAME}${wrapper} ${octcpp}
+        LINK_LIBRARIES ${CRB_MODEL_LINK_LIBRARIES} ${Octave_LIBRARIES}
+        CFG ${CRB_MODEL_CFG} SCRIPTS ${CRB_MODEL_SCRIPTS} )
+    endif()
   endforeach()
 
 
