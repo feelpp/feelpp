@@ -797,7 +797,7 @@ VectorPetscMPI<T>::init( const size_type n,
     FEELPP_ASSERT( n_localWithoutGhost < n )( n_localWithoutGhost )( n ).warn( "invalid local size" );
 
     ierr = VecCreateMPI ( this->comm(), petsc_n_localWithoutGhost, petsc_n,
-                          &this->vec() );//&_M_vec);
+                          &this->_M_vec );
     CHKERRABORT( this->comm(),ierr );
 
     //ierr = VecSetFromOptions (this->vec());
@@ -1071,13 +1071,13 @@ VectorPetscMPI<T>::duplicateFromOtherPartition( Vector<T> const& vecInput)
 
     auto testCommActivities_this=this->map().worldComm().hasMultiLocalActivity();
 
-    if (testCommActivities_this.get<0>())
+    if (testCommActivities_this.template get<0>())
         {
             //std::cout << "VectorPetscMPI<T>::duplicateFromOtherPartition hasMultiLocalActivity " << std::endl;
             // save initial activities
             std::vector<int> saveActivities_this = this->map().worldComm().activityOnWorld();
             // iterate on each local activity
-            const auto colorWhichIsActive = testCommActivities_this.get<1>();
+            const auto colorWhichIsActive = testCommActivities_this.template get<1>();
             auto it_color=colorWhichIsActive.begin();
             auto const en_color=colorWhichIsActive.end();
             for ( ;it_color!=en_color;++it_color )

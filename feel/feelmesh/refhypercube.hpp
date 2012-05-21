@@ -632,7 +632,8 @@ public:
 
             if ( topo_dim == 1 )
             {
-                G = Reference<Hypercube<1, Order, 1>, 1, Order, 1, T>().makeLattice<SHAPE_LINE>( interior );
+                Reference<Hypercube<1, Order, 1>, 1, Order, 1, T> refhyp1;
+                G = refhyp1.template makeLattice<SHAPE_LINE>( interior );
                 pt_to_entity<Shape,1> p_to_e( __id );
                 points_type Gret( nRealDim, G.size2() );
 
@@ -644,7 +645,8 @@ public:
 
             else if ( topo_dim == 2 )
             {
-                G = Reference<Hypercube<2, Order, 2>, 2, Order, 2, T>().makeLattice<SHAPE_QUAD>( interior );
+                Reference<Hypercube<2, Order, 2>, 2, Order, 2, T> refhyp2;
+                G = refhyp2.template makeLattice<SHAPE_QUAD>( interior );
                 pt_to_entity<Shape,2> p_to_e( __id );
                 points_type Gret( nRealDim, G.size2() );
 

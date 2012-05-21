@@ -1702,9 +1702,9 @@ public:
         /**
          * \return the element-wise square root
          */
-        Element sqrt() const
+        Element<T,Cont> sqrt() const
         {
-            Element _e( _M_functionspace );
+            Element<T,Cont> _e( _M_functionspace );
 
             for ( int i=0; i < _e.nLocalDof(); ++i ) _e( i )  = math::sqrt( this->operator()( i ) );
 
@@ -1714,9 +1714,9 @@ public:
         /**
          * \return the element-wise power to n
          */
-        Element pow( int n ) const
+        Element<T,Cont> pow( int n ) const
         {
-            Element _e( _M_functionspace );
+            Element<T,Cont> _e( _M_functionspace );
 
             for ( int i=0; i < _e.nLocalDof(); ++i ) _e( i )  = math::pow( this->operator()( i ),n );
 

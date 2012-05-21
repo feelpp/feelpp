@@ -1,10 +1,10 @@
 
 Mesh.CharacteristicLengthFactor=0.1;
-Mesh.Algorithm3D = 4; //Frontal (4) Delaunay(1)
+Mesh.Algorithm3D = 1; //Frontal (4) Delaunay(1)
 
 Merge "pelvis.stl";
 
-Compound Surface(200)={1}; 
+Compound Surface(200)={1};
 
 Surface Loop(300)={200};
 Volume(301)={300};

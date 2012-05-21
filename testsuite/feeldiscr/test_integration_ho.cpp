@@ -6,7 +6,7 @@
        Date: 2006-08-25
 
   Copyright (C) 2006 EPFL
-  Copyright (C) 2006-2009 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2006-2012 Université Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -23,7 +23,7 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 /**
-   \file test_integration.cpp
+   \file test_integration_ho.cpp
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2006-08-25
  */
@@ -42,7 +42,7 @@ using boost::unit_test::test_suite;
 #include <feel/options.hpp>
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/application.hpp>
-#include <feel/feelalg/backendgmm.hpp>
+#include <feel/feelalg/backend.hpp>
 #include <feel/feelmesh/geoentity.hpp>
 #include <feel/feelmesh/refentity.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
@@ -62,6 +62,8 @@ struct f_Px
     static const size_type context = vm::JACOBIAN|vm::POINT;
     typedef double value_type;
     static const uint16_type rank = 0;
+    static const uint16_type imorder = 1;
+    static const bool imIsPoly = true;
     double operator()( uint16_type, uint16_type, ublas::vector<double> const& x, ublas::vector<double> const& /*n*/ ) const
     {
         return x[0];
@@ -72,6 +74,8 @@ struct f_Nx
     static const size_type context = vm::JACOBIAN|vm::POINT|vm::NORMAL;
     typedef double value_type;
     static const uint16_type rank = 0;
+    static const uint16_type imorder = 1;
+    static const bool imIsPoly = true;
     double operator()( uint16_type, uint16_type, ublas::vector<double> const& /*x*/, ublas::vector<double> const& n ) const
     {
         return n[0];
@@ -82,6 +86,8 @@ struct f_Ny
     static const size_type context = vm::JACOBIAN|vm::POINT|vm::NORMAL;
     typedef double value_type;
     static const uint16_type rank = 0;
+    static const uint16_type imorder = 1;
+    static const bool imIsPoly = true;
     double operator()( uint16_type, uint16_type, ublas::vector<double> const& /*x*/, ublas::vector<double> const& n ) const
     {
         return n[1];
@@ -92,6 +98,8 @@ struct f_sinPx
     static const size_type context = vm::JACOBIAN|vm::POINT;
     typedef double value_type;
     static const uint16_type rank = 0;
+    static const uint16_type imorder = 2;
+    static const bool imIsPoly = false;
     double operator()( uint16_type, uint16_type, ublas::vector<double> const& x, ublas::vector<double> const& /*n*/ ) const
     {
         return math::sin( x[0] );

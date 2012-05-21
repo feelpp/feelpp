@@ -22,6 +22,5 @@
 #
 #
 
-#add_subdirectory( ale )
 add_subdirectory( cG )
 

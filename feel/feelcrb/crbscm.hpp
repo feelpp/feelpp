@@ -574,7 +574,7 @@ CRBSCM<TruthModelType>::offline()
 
 	if( M_print_matrix )
 	{
-	    if( M_scm_for_mass_matrix) 
+	    if( M_scm_for_mass_matrix)
 	    {
 	        file_name = "offline_Matrix_M" + mu_str +".m";
 		Matrix->printMatlab( file_name );
@@ -606,10 +606,10 @@ CRBSCM<TruthModelType>::offline()
                   _spectrum=SMALLEST_REAL,
                   //_spectrum=LARGEST_MAGNITUDE,
                   _transform=SINVERT,
-                  _ncv=M_vm["solvereigen-ncv"].template as<int>(),
-                  _nev=M_vm["solvereigen-nev"].template as<int>(),
-                  _tolerance=M_vm["solvereigen-tol"].template as<double>(),
-                  _maxit=M_vm["solvereigen-maxiter"].template as<int>()
+                  _ncv=M_vm["crb.scm.solvereigen-ncv"].template as<int>(),
+                  _nev=M_vm["crb.scm.solvereigen-nev"].template as<int>(),
+                  _tolerance=M_vm["crb.scm.solvereigen-tol"].template as<double>(),
+                  _maxit=M_vm["crb.scm.solvereigen-maxiter"].template as<double>()
                 );
 
         if ( modes.empty()  )
@@ -617,7 +617,6 @@ CRBSCM<TruthModelType>::offline()
             Log() << "eigs failed to converge\n";
             return ckconv;
         }
-
 
         std::cout << "[fe eig] mu=" << std::setprecision( 4 ) << mu << "\n"
                   << "[fe eig] eigmin : " << std::setprecision( 16 ) << modes.begin()->second.template get<0>() << "\n"
@@ -630,7 +629,7 @@ CRBSCM<TruthModelType>::offline()
         // store the  eigenvalue associated with \p mu
         M_C_eigenvalues[index] = modes.begin()->second.template get<0>();
         typedef std::pair<size_type,value_type> key_t;
- 
+
        //BOOST_FOREACH( key_t eig, M_C_eigenvalues )
 	    //std::cout << "[fe eig] stored/map eig=" << eig.second <<" ( " << eig.first << " ) " << "\n";
 
@@ -1361,7 +1360,8 @@ CRBSCM<TruthModelType>::run( parameter_type const& mu, int K )
               << std::setprecision( 16 ) << ( alpha_ub-alpha_ex )/( alpha_ex ) << " "
               << "\n";
     std::cout << "------------------------------------------------------------\n";
-    return boost::assign::list_of( alpha_lb )( alpha_lbti )( alpha_ub )( alpha_ubti )( alpha_ex )( alpha_exti );
+    double rel_diff = (alpha_ex - alpha_lb)/alpha_ex;
+    return boost::assign::list_of( alpha_lb )( alpha_lbti )( alpha_ub )( alpha_ubti )( alpha_ex )( alpha_exti )( rel_diff );
 }
 
 template<typename TruthModelType>
@@ -1437,7 +1437,7 @@ template<typename TruthModelType>
 bool
 CRBSCM<TruthModelType>::doScmForMassMatrix()
 {
-    bool b = this->vm()["crb.scm.do-scm-for-mass-matrix"].template as<bool>(); 
+    bool b = this->vm()["crb.scm.do-scm-for-mass-matrix"].template as<bool>();
     return b;
 }
 
@@ -1509,8 +1509,9 @@ struct version< Feel::CRBSCM<T> >
     // and use the new version number of identify the new entries in the DB
     typedef mpl::int_<0> type;
     typedef mpl::integral_c_tag tag;
-    BOOST_STATIC_CONSTANT( unsigned int, value = version::type::value );
+    static const unsigned int value = version::type::value;
 };
+template<typename T> const unsigned int version<Feel::CRBSCM<T> >::value;
 }
 }
 #endif /* __CRBSCM_H */

@@ -950,8 +950,7 @@ public:
                 ar & boost::serialization::make_nvp( "real", v_real );
                 ar & boost::serialization::make_nvp( "imaginary", v_imag );
 
-                v.second.real() = v_real;
-                v.second.imag() = v_imag;
+                v.second = complex_type( v_real, v_imag );
 
                 //                     Debug( 8005 ) << "(loading) dserialized complex  " << v.first
                 //                                   << " with value " << v.second << "\n";

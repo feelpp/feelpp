@@ -90,9 +90,30 @@ endwhile(${ARGLIST} MATCHES ".+.*")
 ####################################################################
 cmake_minimum_required(VERSION 2.6 FATAL_ERROR)
 
+find_program(UNAME NAMES uname)
+macro(getuname name flag)
+  exec_program("${UNAME}" ARGS "${flag}" OUTPUT_VARIABLE "${name}")
+endmacro(getuname)
+find_program(HOSTNAME_CMD NAMES hostname)
+exec_program(${HOSTNAME_CMD}  ARGS -s OUTPUT_VARIABLE SITE_HOSTNAME)
+
+getuname(osname -s)
+getuname(osrel  -r)
+getuname(cpu    -m)
+
+#set(FEELPP_SITE              "${SITE_HOSTNAME}")
+
 if(NOT FEELPP_SITE)
   site_name(FEELPP_SITE)
 endif(NOT FEELPP_SITE)
+
+if ( EXISTS ${FEELPP_CTEST_CONFIG} )
+  include(${FEELPP_CTEST_CONFIG})
+  message(WARNING "FEELPP_SITE: ${FEELPP_SITE}")
+  message(WARNING "FEELPP_CXX: ${FEELPP_CXX}")
+  set(FEELPP_BUILD_STRING "${OS_VERSION}-${ARCH}")
+endif()
+
 
 if(NOT FEELPP_CMAKE_DIR)
   SET(FEELPP_CMAKE_DIR "")
@@ -102,7 +123,7 @@ if (NOT FEELPP_CXX)
   set(FEELPP_CXX "g++")
 endif(NOT FEELPP_CXX)
 
-get_filename_component( FEELPP_CXX_NAME ${FEELPP_CXX} NAME )
+#get_filename_component( FEELPP_CXX_NAME ${FEELPP_CXX} NAME )
 
 if(NOT FEELPP_BUILD_STRING)
 
@@ -120,7 +141,7 @@ if(NOT FEELPP_BUILD_STRING)
   endif(WIN32)
 
 
-  set(FEELPP_BUILD_STRING ${FEELPP_OS_VERSION}${FEELPP_ARCH}-${FEELPP_CXX_NAME})
+  set(FEELPP_BUILD_STRING ${FEELPP_OS_VERSION}${FEELPP_ARCH}-${FEELPP_CXXNAME})
 
 endif(NOT FEELPP_BUILD_STRING)
 
@@ -133,11 +154,11 @@ if(NOT FEELPP_WORK_DIR)
 endif(NOT FEELPP_WORK_DIR)
 
 if(NOT CTEST_SOURCE_DIRECTORY)
-  SET (CTEST_SOURCE_DIRECTORY "${FEELPP_WORK_DIR}/feel")
+  SET (CTEST_SOURCE_DIRECTORY "${FEELPP_WORK_DIR}/feelpp")
 endif(NOT CTEST_SOURCE_DIRECTORY)
 
 if(NOT CTEST_BINARY_DIRECTORY)
-  SET (CTEST_BINARY_DIRECTORY "${FEELPP_WORK_DIR}/${FEELPP_MODE}_${FEELPP_CXX_NAME}")
+  SET (CTEST_BINARY_DIRECTORY "${FEELPP_WORK_DIR}/${FEELPP_MODE}_${FEELPP_CXXNAME}")
 endif(NOT CTEST_BINARY_DIRECTORY)
 
 if(NOT FEELPP_MODE)
@@ -147,12 +168,22 @@ endif(NOT FEELPP_MODE)
 ## mandatory variables (the default should be ok in most cases):
 
 #if(NOT FEELPP_NO_UPDATE)
-SET (CTEST_SVN_COMMAND "svn")
-SET (CTEST_SVN_CHECKOUT   "${CTEST_SVN_COMMAND} co svn://scm.forge.imag.fr/var/lib/gforge/chroot/scmrepos/svn/life/trunk/life/trunk ${CTEST_SOURCE_DIRECTORY}")
-set (CTEST_UPDATE_COMMAND "${CTEST_SVN_COMMAND}")
+find_program(CTEST_GIT_COMMAND NAMES git)
+find_program(CTEST_SVN_COMMAND NAMES svn)
+#SET (CTEST_GIT_COMMAND "git")
+#SET (CTEST_SVN_CHECKOUT   "${CTEST_GIT_COMMAND} co svn://scm.forge.imag.fr/var/lib/gforge/chroot/scmrepos/svn/life/trunk/life/trunk ${CTEST_SOURCE_DIRECTORY}")
+#SET (CTEST_CHECKOUT_COMMAND "${CTEST_GIT_COMMAND} clone https://code.google.com/p/feelpp/")
+set (CTEST_UPDATE_COMMAND "${CTEST_GIT_COMMAND}")
+
   #SET(CTEST_BACKUP_AND_RESTORE TRUE) # the backup is SVN related ...
 #endif(NOT FEELPP_NO_UPDATE)
-
+foreach(module ${FEELPP_MODULES})
+  # update the modules using svn update
+  execute_process(
+    COMMAND "cd ${CTEST_SOURCE_DIRECTORY}/${module} && ${CTEST_SVN_COMMAND} update"
+    OUTPUT_VARIABLE MODULE_OUTPUT)
+  message(STATUS "updated ${module} : ${MODULE_OUTPUT}")
+endforeach()
 ####################################################################
 # The values in this section are optional you can either
 # have them or leave them commented out
@@ -209,12 +240,11 @@ include("${CTEST_SOURCE_DIRECTORY}/CTestConfig.cmake")
 #CTEST_EMPTY_BINARY_DIRECTORY (${CTEST_BINARY_DIRECTORY})
 set(CTEST_INITIAL_CACHE "
 CMAKE_CXX_COMPILER:STRING=${FEELPP_CXX}
-FEELPP_ENABLE_ALL:BOOL=ON
 ")
 # site
 set(CTEST_SITE "${FEELPP_SITE}")
 # build name
-set(CTEST_BUILD_NAME "${FEELPP_BUILD_STRING}")
+set(CTEST_BUILD_NAME "${FEELPP_BUILD_STRING}-${FEELPP_CXXNAME}")
 # should ctest wipe the binary tree before running
 #SET(CTEST_START_WITH_EMPTY_BINARY_DIRECTORY TRUE)
 
@@ -223,6 +253,7 @@ if(FEELPP_CXX AND NOT WIN32)
 endif(FEELPP_CXX AND NOT WIN32)
 MESSAGE(WARNING "ctest_environment ${CTEST_ENVIRONMENT}")
 
+MESSAGE(WARNING "FEELPP_MODE: ${FEELPP_MODE}")
 ctest_start(${FEELPP_MODE})
 ctest_update(SOURCE "${CTEST_SOURCE_DIRECTORY}")
 ctest_submit(PARTS Update Notes)
@@ -234,7 +265,7 @@ foreach(subproject ${CTEST_PROJECT_SUBPROJECTS})
   set_property(GLOBAL PROPERTY SubProject ${subproject})
   set_property (GLOBAL PROPERTY Label ${subproject})
   ctest_configure(BUILD "${CTEST_BINARY_DIRECTORY}" APPEND
-    OPTIONS "-DCTEST_USE_LAUNCHERS=${CTEST_USE_LAUNCHERS};-DCMAKE_CXX_COMPILER:STRING=${FEELPP_CXX};-DFEELPP_ENABLE_ALL:BOOL=ON" )
+    OPTIONS "-DCTEST_USE_LAUNCHERS=${CTEST_USE_LAUNCHERS};-DCMAKE_CXX_COMPILER:STRING=${FEELPP_CXX}" )
   ctest_submit(PARTS Configure)
   message(WARNING "build target ${subproject}")
   #set(CTEST_BUILD_COMMAND "make ${FEELPP_MAKE_ARGS} -i ${subproject}")

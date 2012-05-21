@@ -167,8 +167,11 @@ template<int Dim>
 void
 Laplacian<Dim>::run()
 {
-    std::cout << "------------------------------------------------------------\n";
-    std::cout << "Execute Laplacian<" << Dim << ">\n";
+    if ( this->comm().rank() == 0 )
+    {
+        std::cout << "------------------------------------------------------------\n";
+        std::cout << "Execute Laplacian<" << Dim << ">\n";
+    }
     std::vector<double> X( 2 );
     X[0] = meshSize;
 
@@ -226,7 +229,7 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
      */
     /** \code */
     //# marker1 #
-    value_type pi = M_PI;
+    value_type pi = 2*M_PI;
     //! deduce from expression the type of g (thanks to keyword 'auto')
     auto g = sin( pi*Px() )*cos( pi*Py() )*cos( pi*Pz() );
     gproj = vf::project( Xh, elements( mesh ), g );
@@ -250,8 +253,8 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
     /** \code */
     //# marker2 #
     auto F = backend( _vm=this->vm() )->newVector( Xh );
-    form1( _test=Xh, _vector=F, _init=true ) =
-        integrate( _range=elements( mesh ), _expr=f*id( v ) )+
+    auto rhs = form1( _test=Xh, _vector=F, _init=true );
+    rhs = integrate( _range=elements( mesh ), _expr=f*id( v ) )+
         integrate( _range=markedfaces( mesh, "Neumann" ),
                    _expr=nu*gradv( gproj )*vf::N()*id( v ) );
 
@@ -259,9 +262,8 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
     if ( weak_dirichlet )
     {
         //# marker41 #
-        form1( _test=Xh, _vector=F ) +=
-            integrate( _range=markedfaces( mesh,"Dirichlet" ),
-                       _expr=g*( -grad( v )*vf::N()+penaldir*id( v )/hFace() ) );
+        rhs += integrate( _range=markedfaces( mesh,"Dirichlet" ),
+                             _expr=g*( -grad( v )*vf::N()+penaldir*id( v )/hFace() ) );
         //# endmarker41 #
     }
 
@@ -280,8 +282,8 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
 
     //! assemble $\int_\Omega \nu \nabla u \cdot \nabla v$
     /** \code */
-    form2( _test=Xh, _trial=Xh, _matrix=D ) =
-        integrate( _range=elements( mesh ), _expr=nu*gradt( u )*trans( grad( v ) ) );
+    auto a = form2( _test=Xh, _trial=Xh, _matrix=D );
+    a = integrate( _range=elements( mesh ), _expr=nu*gradt( u )*trans( grad( v ) ) );
     /** \endcode */
     //# endmarker3 #
 
@@ -294,11 +296,10 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
          */
         /** \code */
         //# marker10 #
-        form2( _test=Xh, _trial=Xh, _matrix=D ) +=
-            integrate( _range=markedfaces( mesh,"Dirichlet" ),
-                       _expr= ( -( gradt( u )*vf::N() )*id( v )
-                                -( grad( v )*vf::N() )*idt( u )
-                                +penaldir*id( v )*idt( u )/hFace() ) );
+        a += integrate( _range=markedfaces( mesh,"Dirichlet" ),
+                        _expr= ( -( gradt( u )*vf::N() )*id( v )
+                                 -( grad( v )*vf::N() )*idt( u )
+                                 +penaldir*id( v )*idt( u )/hFace() ) );
         //# endmarker10 #
         /** \endcode */
     }
@@ -311,9 +312,8 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
          */
         /** \code */
         //# marker5 #
-        form2( _test=Xh, _trial=Xh, _matrix=D ) +=
-            on( _range=markedfaces( mesh, "Dirichlet" ),
-                _element=u, _rhs=F, _expr=g );
+        a += on( _range=markedfaces( mesh, "Dirichlet" ),
+                 _element=u, _rhs=F, _expr=g );
         //# endmarker5 #
         /** \endcode */
 
@@ -382,11 +382,6 @@ main( int argc, char** argv )
     /** \code */
     Application app( argc, argv, makeAbout(), makeOptions() );
 
-    if ( app.vm().count( "help" ) )
-    {
-        std::cout << app.optionsDescription() << "\n";
-        return 0;
-    }
 
     /** \endcode */
 
@@ -394,11 +389,11 @@ main( int argc, char** argv )
      * register the simgets
      */
     /** \code */
-    if ( app.nProcess() == 1 )
-        app.add( new Laplacian<1>( app.vm(), app.about() ) );
+    //if ( app.nProcess() == 1 )
+    //app.add( new Laplacian<1>( app.vm(), app.about() ) );
 
     app.add( new Laplacian<2>( app.vm(), app.about() ) );
-    app.add( new Laplacian<3>( app.vm(), app.about() ) );
+    //app.add( new Laplacian<3>( app.vm(), app.about() ) );
     /** \endcode */
 
     /**
@@ -407,6 +402,7 @@ main( int argc, char** argv )
     /** \code */
     app.run();
     /** \endcode */
+
 }
 
 

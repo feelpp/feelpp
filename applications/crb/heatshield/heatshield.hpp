@@ -647,9 +647,6 @@ void HeatShield::init()
     M_Fq[1].resize( 1 );
     M_Fq[1][0] = backend->newVector( Xh );
 
-    D = backend->newMatrix( Xh, Xh );
-    F = backend->newVector( Xh );
-
     Feel::ParameterSpace<ParameterSpaceDimension>::Element mu_min( M_Dmu );
     mu_min <<  /* Bi_out */ 1e-2 , /*Bi_in*/1e-3;
     M_Dmu->setMin( mu_min );
@@ -712,6 +709,9 @@ void HeatShield::assemble()
         integrate( elements( mesh ), id( u )*idt( v ) + grad( u )*trans( gradt( v ) ) );
     Mpod->close();
 
+    D = backend->newMatrix( Xh, Xh, M_Aq[0] );
+    F = backend->newVector( Xh );
+
 
 }
 
@@ -768,10 +768,7 @@ void HeatShield::update( parameter_type const& mu,double bdf_coeff, element_type
     D->close();
     D->zero();
 
-    *D = *M_Aq[0];
-    D->scale( M_thetaAq[0] );
-
-    for ( size_type q = 1; q < M_Aq.size(); ++q )
+    for ( size_type q = 0; q < M_Aq.size(); ++q )
     {
         D->addMatrix( M_thetaAq[q] , M_Aq[q] );
     }

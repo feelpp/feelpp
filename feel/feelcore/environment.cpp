@@ -46,14 +46,15 @@ namespace Feel
 {
 Environment::Environment()
     :
-    M_env()
+    M_env(false)
 {
 #if defined( FEELPP_HAS_TBB )
     int n = tbb::task_scheduler_init::default_num_threads();
+    Log() << "[Feel++] TBB running with " << n << " threads\n";
 #else
     int n = 1 ;
 #endif
-    Log() << "[Feel++] TBB running with " << n << " threads\n";
+
     //tbb::task_scheduler_init init(1);
 
     mpi::communicator world;
@@ -77,7 +78,7 @@ Environment::Environment()
 }
 Environment::Environment( int& argc, char**& argv )
     :
-    M_env( argc, argv )
+    M_env( argc, argv, false )
 {
 #if defined( FEELPP_HAS_TBB )
     int n = tbb::task_scheduler_init::default_num_threads();
@@ -119,8 +120,15 @@ Environment::Environment( int& argc, char**& argv )
 
 Environment::~Environment()
 {
+    Debug(900) << "[~Environment] sending delete to all deleters" << "\n";
+
+    // send signal to all deleters
+    S_deleteObservers();
+    Debug(900) << "[~Environment] delete signal sent" << "\n";
+
     if ( i_initialized )
     {
+        Debug(900) << "[~Environment] finalizing slepc,petsc and mpi\n";
 #if defined ( FEELPP_HAS_PETSC_H )
         PetscTruth is_petsc_initialized;
         PetscInitialized( &is_petsc_initialized );
@@ -287,4 +295,5 @@ Environment::setLogs( std::string const& prefix )
     Assert::setLog( ostr_assert.str().c_str() );
 }
 
+boost::signals2::signal<void ()> Environment::S_deleteObservers;
 }

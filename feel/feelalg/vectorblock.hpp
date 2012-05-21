@@ -41,44 +41,38 @@ namespace Feel
 
 template<typename T> class Backend;
 
-template <int NR, typename T=double>
-class BlocksVector : public vf::Blocks<NR,1,boost::shared_ptr<Vector<T> > >
-{
-    typedef vf::Blocks<NR,1,boost::shared_ptr<Vector<T> > > super_type;
-public :
-    typedef BlocksVector<NR,T> self_type;
 
+template <typename T=double>
+class BlocksBaseVector : public vf::BlocksBase<boost::shared_ptr<Vector<T> > >
+{
+public :
+    typedef vf::BlocksBase<boost::shared_ptr<Vector<T> > > super_type;
+    typedef BlocksBaseVector<T> self_type;
     typedef Vector<T> vector_type;
     typedef boost::shared_ptr<vector_type> vector_ptrtype;
 
-    template <typename VectorType>
+    BlocksBaseVector(uint16_type nr)
+        :
+        super_type(nr,1)
+    {}
+
+    BlocksBaseVector(super_type const & b)
+        :
+        super_type(b)
+    {}
+
+    /**
+     * push_back methode
+     */
     self_type
-    operator<<( VectorType const& m ) const
+    operator<<( vector_ptrtype const& m ) const
     {
-        //typedef typename mpl::or_<is_shared_ptr<VectorType>, boost::is_pointer<VectorType> >::type is_ptr_or_shared_ptr;
-        self_type newBlock( *this );
-        typedef is_shared_ptr<VectorType> is_shared_ptr;
-        newBlock.push_back( m,is_shared_ptr() );
-        return newBlock;
+        return super_type::operator<<( m );
     }
 
-    template <typename VectorType>
-    void
-    push_back( VectorType const& m, mpl::bool_<true> )
-    {
-        super_type::push_back( m );
-    }
-
-#if 0 //Don't work
-    template <typename VectorType>
-    void push_back( VectorType const& m, mpl::bool_<false> )
-    {
-        //self_type::operator<<(m.shared_from_this());
-        auto m2=m.shared_from_this();
-        self_type::operator<<( m2 );
-    }
-#endif
-
+    /**
+     * copy subblock from global vector
+     */
     void localize( vector_ptrtype const& vb )
     {
         size_type _start_i=0;
@@ -96,9 +90,23 @@ public :
         }
     }
 
-
-
 };
+
+template <int NR, typename T=double>
+class BlocksVector : public BlocksBaseVector<T>
+{
+public :
+    static const uint16_type NBLOCKROWS = NR;
+    static const uint16_type NBLOCKCOLS = 1;
+
+    typedef BlocksBaseVector<T> super_type;
+
+    BlocksVector()
+        :
+        super_type(NBLOCKROWS)
+    {}
+};
+
 
 /**
  * \class VectorBlock
@@ -216,8 +224,9 @@ public:
     typedef typename super_type::vector_ptrtype vector_ptrtype;
     typedef typename super_type::backend_type backend_type;
     typedef vf::Blocks<NBLOCKROWS,1,vector_ptrtype > blocks_type;
+    typedef vf::BlocksBase<vector_ptrtype> blocksbase_type;
 
-    VectorBlock(  blocks_type const & blockVec,
+    VectorBlock(  blocksbase_type const & blockVec,
                   backend_type &backend,
                   bool copy_values=true )
         :

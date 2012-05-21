@@ -1197,7 +1197,7 @@ private :
         }
         }
 
-        for ( uint32_type i = 0; i<nbPtsPerFace; ++i )
+        for ( int32_type i = 0; i<nbPtsPerFace; ++i )
         {
             inner_pts( 0,i ) = pts[i][0];
             inner_pts( 1,i ) = pts[i][1];

@@ -43,8 +43,6 @@ namespace detail
 {
 struct bases_base {};
 struct meshes_base {};
-
-
 /**
  * \class bases
  * \brief classes that store sequences of basis functions to define function spaces
@@ -55,7 +53,7 @@ struct meshes_base {};
 
 
 
-template <class A0=mpl::void_, class A1=mpl::void_, class A2=mpl::void_, class A3=mpl::void_>
+template <class A0=mpl::void_, class A1=mpl::void_, class A2=mpl::void_, class A3=mpl::void_, class A4=mpl::void_>
 struct bases
         :
     public detail::bases_base,
@@ -65,11 +63,55 @@ struct bases
         boost::fusion::vector<A0,A1>,
         typename mpl::if_<boost::is_same<A3,mpl::void_>,
         boost::fusion::vector<A0,A1,A2>,
-        boost::fusion::vector<A0,A1,A2,A3> >::type>::type>::type
+        typename mpl::if_<boost::is_same<A4,mpl::void_>,
+        boost::fusion::vector<A0,A1,A2,A3>,
+        boost::fusion::vector<A0,A1,A2,A3,A4> >::type>::type>::type>::type
 {
 };
 
 } // namespace detail
+
+#if FEELPP_CLANG_AT_LEAST(3,1) || FEELPP_GNUC_AT_LEAST(4,7)
+
+struct ChangeBasisTag
+{
+public:
+    template<typename Sig>
+    struct result;
+
+    template<typename Lhs, typename Rhs>
+    struct result<ChangeBasisTag( Lhs,Rhs )>
+    {
+	    typedef typename boost::remove_const<typename boost::remove_reference<Lhs>::type>::type lhs_noref_type;
+	    typedef typename boost::remove_const<typename boost::remove_reference<Rhs>::type>::type rhs_noref_type;
+
+	    typedef typename fusion::result_of::size<lhs_noref_type>::type index;
+	    typedef typename fusion::result_of::push_back<lhs_noref_type, typename rhs_noref_type::template ChangeTag<index::value>::type>::type type;
+    };
+
+};
+template<typename... Args>
+struct bases
+    :
+    public detail::bases_base,
+    public fusion::result_of::as_vector<typename fusion::result_of::accumulate<fusion::vector<Args...>, fusion::vector<>, ChangeBasisTag >::type>::type
+{};
+
+
+template<typename... Args>
+struct meshes
+    :
+    public detail::meshes_base,
+    public boost::fusion::vector<Args...>
+{
+    typedef boost::fusion::vector<Args...> super;
+    typedef meshes<Args...> this_type;
+	static const int s = sizeof...(Args);
+    meshes( super const& m) : super( m ) {}
+};
+
+#else
+
 
 
 struct void_basis : public mpl::void_
@@ -81,7 +123,7 @@ struct void_basis : public mpl::void_
     };
 };
 
-template <class A0=void_basis, class A1=void_basis, class A2=void_basis, class A3=void_basis>
+template <class A0=void_basis, class A1=void_basis, class A2=void_basis, class A3=void_basis, class A4=void_basis>
 struct bases
         :
     public detail::bases_base,
@@ -94,14 +136,20 @@ struct bases
                      boost::fusion::vector<typename A0::template ChangeTag<0>::type,
                            typename A1::template ChangeTag<1>::type,
                                     typename A2::template ChangeTag<2>::type >,
-                                             boost::fusion::vector<typename A0::template ChangeTag<0>::type,
-                                                   typename A1::template ChangeTag<1>::type,
-                                                            typename A2::template ChangeTag<2>::type,
-                                                                     typename A3::template ChangeTag<3>::type > >::type>::type>::type
+                                       typename mpl::if_<boost::is_same<A4,void_basis>,
+                                       boost::fusion::vector<typename A0::template ChangeTag<0>::type,
+                                              typename A1::template ChangeTag<1>::type,
+                                                       typename A2::template ChangeTag<2>::type,
+                                                                typename A3::template ChangeTag<3>::type >,
+                                                                boost::fusion::vector<typename A0::template ChangeTag<0>::type,
+                                                                       typename A1::template ChangeTag<1>::type,
+                                                                                typename A2::template ChangeTag<2>::type,
+                                                                                         typename A3::template ChangeTag<3>::type,
+                                                                                                  typename A4::template ChangeTag<4>::type > >::type>::type>::type>::type
 {
 };
 
-template <class A0=mpl::void_, class A1=mpl::void_, class A2=mpl::void_, class A3=mpl::void_>
+template <class A0=mpl::void_, class A1=mpl::void_, class A2=mpl::void_, class A3=mpl::void_, class A4=mpl::void_>
 struct meshes
         :
     public detail::meshes_base,
@@ -113,7 +161,9 @@ struct meshes
                                                         boost::fusion::vector<A0,A1>,
                                                         typename mpl::if_<boost::is_same<A3,mpl::void_>,
                                                                           boost::fusion::vector<A0,A1,A2>,
-                                                                          boost::fusion::vector<A0,A1,A2,A3> >::type>::type>::type>::type
+                                                                          typename mpl::if_<boost::is_same<A4,mpl::void_>,
+                                                                                            boost::fusion::vector<A0,A1,A2,A3>,
+                                                                                            boost::fusion::vector<A0,A1,A2,A3,A4> >::type>::type>::type>::type>::type
 
 {
     typedef typename mpl::if_<boost::is_same<A0,mpl::void_>,
@@ -124,12 +174,14 @@ struct meshes
                                                                   boost::fusion::vector<A0,A1>,
                                                                   typename mpl::if_<boost::is_same<A3,mpl::void_>,
                                                                                     boost::fusion::vector<A0,A1,A2>,
-                                                                                    boost::fusion::vector<A0,A1,A2,A3> >::type>::type>::type>::type super;
+                                                                                    typename mpl::if_<boost::is_same<A4,mpl::void_>,
+                                                                                                      boost::fusion::vector<A0,A1,A2,A3>,
+                                                                                                      boost::fusion::vector<A0,A1,A2,A3,A4> >::type>::type>::type>::type>::type super;
 
-    typedef meshes<A0,A1,A2,A3> this_type;
+    typedef meshes<A0,A1,A2,A3,A4> this_type;
     meshes( super const& m ) : super( m ) {}
 };
-
+#endif
 
 }// Feel
 

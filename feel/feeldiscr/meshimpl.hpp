@@ -35,7 +35,6 @@
 #include <feel/feelmesh/hypercube.hpp>
 
 #include <feel/feeldiscr/mesh.hpp>
-#include <feel/feeldiscr/partitioner.hpp>
 #include <feel/feelalg/glas.hpp>
 #include <feel/feelalg/solvernonlinearpetsc.hpp>
 
@@ -1942,99 +1941,72 @@ Mesh<Shape, T, Tag>::Localization::searchElement( const node_type & p,
     //research the element which contains the point p
     while ( itLT != itLT_end && !isin  )
     {
-#if 0
         //get element with the id
         elt= M_mesh->element( itLT->first );
 
-        if ( elt.isOnBoundary() )
-        {
-            // get inverse geometric transformation
-            typename self_type::Inverse::gic_type gic( M_mesh->gm(), elt );
-            //apply the inverse geometric transformation for the point p
-            gic.setXReal( p );
-            x_ref=gic.xRef();
-            // the point is in the reference element ?
-            boost::tie( isin, dmin ) = refelem.isIn( gic.xRef() );
-        }
+        auto eltG = elt.G();
+        std::vector<bool> find( setPoints.size2() );
+        std::fill( find.begin(),find.end(),false );
 
-        else
-        {
-            // get inverse geometric transformation
-            typename self_type::Inverse::gic1_type gic( M_mesh->gm1(), elt,mpl::int_<1>() );
-            //apply the inverse geometric transformation for the point p
-            gic.setXReal( p );
-            x_ref=gic.xRef();
-            // the point is in the reference element ?
-            boost::tie( isin, dmin ) = refelem1.isIn( gic.xRef() );
-        }
-#endif // OLD
-
-        if ( isin )
-        {
-            auto eltG = elt.G();
-            std::vector<bool> find( setPoints.size2() );
-            std::fill( find.begin(),find.end(),false );
-
-            for ( size_type i=0; i< setPoints.size2(); ++i )
+        for ( size_type i=0; i< setPoints.size2(); ++i )
             {
                 auto thePt = ublas::column( setPoints,i );
                 find[i]=false;
 
                 for ( size_type j=0; j<eltG.size2(); ++j )
-                {
-                    auto ptjeltG = ublas::column( eltG,j );
-
-                    if ( ptjeltG.size()==1 )
                     {
-                        if ( std::abs( thePt( 0 )-ptjeltG( 0 ) )<1e-8 )
-                            find[i]=true;
-                    }
+                        auto ptjeltG = ublas::column( eltG,j );
 
-                    else if ( ptjeltG.size()==2 )
-                    {
-                        if ( std::abs( thePt( 0 )-ptjeltG( 0 ) )<1e-8 &&
-                                std::abs( thePt( 1 )-ptjeltG( 1 ) )<1e-8 )
-                            find[i]=true;
-                    }
+                        if ( ptjeltG.size()==1 )
+                            {
+                                if ( std::abs( thePt( 0 )-ptjeltG( 0 ) )<1e-5 )
+                                    find[i]=true;
+                            }
 
-                    else if ( ptjeltG.size()==3 )
-                    {
-                        if ( std::abs( thePt( 0 )-ptjeltG( 0 ) )<1e-8 &&
-                                std::abs( thePt( 1 )-ptjeltG( 1 ) )<1e-8 &&
-                                std::abs( thePt( 2 )-ptjeltG( 2 ) )<1e-8 )
-                            find[i]=true;
+                        else if ( ptjeltG.size()==2 )
+                            {
+                                if ( std::abs( thePt( 0 )-ptjeltG( 0 ) )<1e-5 &&
+                                     std::abs( thePt( 1 )-ptjeltG( 1 ) )<1e-5 )
+                                    find[i]=true;
+                            }
+
+                        else if ( ptjeltG.size()==3 )
+                            {
+                                if ( std::abs( thePt( 0 )-ptjeltG( 0 ) )<1e-5 &&
+                                     std::abs( thePt( 1 )-ptjeltG( 1 ) )<1e-5 &&
+                                     std::abs( thePt( 2 )-ptjeltG( 2 ) )<1e-5 )
+                                    find[i]=true;
+                            }
                     }
-                }
             }
-            // check if all points are found or not
-            bool isOK=true;
+        // check if all points are found or not
+        bool isOK=true;
 
-            for ( size_type i=0; i< setPoints.size2(); ++i )
+        for ( size_type i=0; i< setPoints.size2(); ++i )
             {
                 isOK &= find[i];
             }
 
-            if ( !isOK ) isin=false;
-#if 0
-            if ( isOK ) std::cout << "\n isOK : OK"<<std::endl;
-            else std::cout << "\n isOK : BAD"<<std::endl;
-#endif
-        }
+        if ( !isOK ) isin=false;
+        else isin=true;
 
-        if ( isin ) boost::tie(isin2,x_ref) = this->isIn(itLT->first,p);
-        if ( isin!=isin2) std::cout << "Bug Mesh::Localization::searchElement<true>" << std::endl;
+        if ( isin ) // just a check
+            {
+                boost::tie(isin2,x_ref) = this->isIn(itLT->first,p);
+                if ( isin!=isin2) std::cout << "Bug Mesh::Localization::searchElement<true>" << std::endl;
+            }
 
         //if not inside, continue the research with an other element
         if ( !isin ) ++itLT;
         else idEltFound=itLT->first;
-    }
 
+    } //while ( itLT != itLT_end && !isin  )
 
     if (!isin)
         {
             if( this->doExtrapolation() )
                 {
-                    //std::cout << "WARNING EXTRAPOLATION for the point" << p << std::endl;
+                    std::cout << "WARNING EXTRAPOLATION for the point" << p << std::endl;
                     //std::cout << "W";
                     auto const& eltUsedForExtrapolation = this->mesh()->element(ListTri.begin()->first);
                     gmc_inverse_type gic( this->mesh()->gm(), eltUsedForExtrapolation, this->mesh()->worldComm().subWorldCommSeq() );
@@ -2051,27 +2023,6 @@ Mesh<Shape, T, Tag>::Localization::searchElement( const node_type & p,
         }
 
     return boost::make_tuple( isin, idEltFound, x_ref);
-
-#if 0 // OLD
-    //bool __extrapolation=true;
-    if ( itLT != itLT_end ) return boost::make_tuple( true, itLT->first, x_ref );
-
-    else if ( itLT == itLT_end && !M_doExtrapolation ) return boost::make_tuple( false, 0, x_ref );
-
-    else
-    {
-        std::cout << "\n WARNING EXTRAPOLATION for the point" << p << "\n";
-        itLT=ListTri.begin();
-        elt= M_mesh->element( itLT->first );
-        typename self_type::Inverse::gic_type gic( M_mesh->gm(), elt );
-        //apply the inverse geometric transformation for the point p
-        //gic.setXReal(boost::get<0>(*ptsNN.begin()));
-        gic.setXReal( p );
-        x_ref=gic.xRef();
-        return boost::make_tuple( true, itLT->first, x_ref );
-    }
-#endif
-
 
 } //searchElement
 
@@ -2128,7 +2079,7 @@ Mesh<Shape, T, Tag>::Localization::barycenter(mpl::int_<1> /**/) const
     res(0)=0;
     for (size_type i = 0 ; i<this->kdtree()->nPoints() ; ++i)
         {
-            auto const& pt = this->kdtree()->points()[i].get<0>();
+            auto const& pt = this->kdtree()->points()[i].template get<0>();
             res(0)+=pt(0);
         }
     res(0)/=this->kdtree()->nPoints();
@@ -2142,7 +2093,7 @@ Mesh<Shape, T, Tag>::Localization::barycenter(mpl::int_<2> /**/) const
     res(0)=0;res(1)=0;
     for (size_type i = 0 ; i<this->kdtree()->nPoints() ; ++i)
         {
-            auto const& pt = this->kdtree()->points()[i].get<0>();
+            auto const& pt = this->kdtree()->points()[i].template get<0>();
             res(0)+=pt(0);res(1)+=pt(1);
         }
     res(0)/=this->kdtree()->nPoints();res(1)/=this->kdtree()->nPoints();
@@ -2156,7 +2107,7 @@ Mesh<Shape, T, Tag>::Localization::barycenter(mpl::int_<3> /**/) const
     res(0)=0;res(1)=0;res(2)=0;
     for (size_type i = 0 ; i<this->kdtree()->nPoints() ; ++i)
         {
-            auto const& pt = this->kdtree()->points()[i].get<0>();
+            auto const& pt = this->kdtree()->points()[i].template get<0>();
             res(0)+=pt(0);res(1)+=pt(1);res(2)+=pt(2);
         }
     res(0)/=this->kdtree()->nPoints();res(1)/=this->kdtree()->nPoints();res(2)/=this->kdtree()->nPoints();
