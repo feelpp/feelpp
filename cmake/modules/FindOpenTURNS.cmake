@@ -23,6 +23,11 @@
 include (CheckIncludeFileCXX)
 include (FindPackageHandleStandardArgs)
 
+find_program(OT_CONFIG openturns-config QUIET) 
+execute_process( COMMAND ${OT_CONFIG} --version
+  OUTPUT_VARIABLE ot_version
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
 
 # test if variables are not already in cache
 if (NOT (OpenTURNS_INCLUDE_DIR
@@ -101,10 +106,13 @@ if (NOT (OpenTURNS_INCLUDE_DIR
       NAMES 
         generic.so
       PATHS 
-        /usr/lib/openturns/wrappers
-        /usr/local/lib/openturns/wrappers
-        /opt/local/lib/openturns/wrappers
-        /sw/lib/openturns/wrappers
+        /usr/lib/
+        /usr/local/lib/
+        /opt/local/lib
+        /sw/lib/
+        PATH_SUFFIXES
+        openturns/wrappers
+        openturns-${ot_version}/wrappers
       DOC
         "OpenTURNS wrappers generic library location"
   )
@@ -141,6 +149,7 @@ if (NOT (OpenTURNS_INCLUDE_DIR
       PATH_SUFFIXES
         share/openturns/wrappers
         openturns/wrappers
+        openturns-${ot_version}/wrappers
       DOC
         "OpenTURNS wrappers location"
     )
@@ -217,7 +226,7 @@ endif ()
 # handle the QUIETLY and REQUIRED arguments and set OpenTURNS_FOUND to TRUE if
 # all listed variables are TRUE
 include (FindPackageHandleStandardArgs)
-find_package_handle_standard_args (OpenTURNS DEFAULT_MSG
+find_package_handle_standard_args (OPENTURNS DEFAULT_MSG
   OpenTURNS_LIBRARY
   OpenTURNS_BIND_LIBRARY
   OpenTURNS_INCLUDE_DIR
