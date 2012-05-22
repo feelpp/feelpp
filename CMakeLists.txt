@@ -306,7 +306,7 @@ if(PYTHONINTERP_FOUND)
 	-c "import sys; print sys.version[0:3]"
 	OUTPUT_VARIABLE PYTHON_VERSION
 	OUTPUT_STRIP_TRAILING_WHITESPACE)
-  
+
   message(STATUS "Found python version ${PYTHON_VERSION}")
 endif()
 
