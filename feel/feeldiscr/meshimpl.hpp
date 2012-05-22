@@ -799,8 +799,8 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne()
 
                 }
 
-                FEELPP_ASSERT( __fit->processId() == __fit->proc_first() )
-                ( __fit->processId() )( __fit->proc_first() ).error( "invalid process id" );
+                FEELPP_ASSERT( __fit->processId() == __fit->proc_first() || __fit->processId() == __fit->proc_second() )
+                    ( __fit->processId() )( __fit->proc_first() )( __fit->proc_second()) .warn( "invalid process id" );
             }
 
             FEELPP_ASSERT( iv->facePtr( j ) )( j )( iv->id() ).error( "invalid element face error" );
