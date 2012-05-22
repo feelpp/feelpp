@@ -231,7 +231,7 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
     //# marker1 #
     value_type pi = 2*M_PI;
     //! deduce from expression the type of g (thanks to keyword 'auto')
-    auto g = sin( cst(pi)*Px() )*cos( cst(pi)*Py() )*cos( cst(pi)*Pz() );
+    auto g = sin( pi*Px() )*cos( pi*Py() )*cos( pi*Pz() );
     gproj = vf::project( Xh, elements( mesh ), g );
 
     //! deduce from expression the type of f (thanks to keyword 'auto')
