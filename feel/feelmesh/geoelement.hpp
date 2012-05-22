@@ -890,6 +890,7 @@ public:
     edge_type const* facePtr( uint16_type i ) const
     {
         FEELPP_ASSERT( i < numLocalEdges )( this->id() )( i ).error( "invalid local edge index" );
+        FEELPP_ASSERT( M_edges[i] )( i ).error( "invalid edge (null pointer)" );
         return M_edges[i];
     }
 
