@@ -42,14 +42,19 @@ add_subdirectory (feelmaterial)
 add_subdirectory (feelvf )
 #add_subdirectory (feelsystem)
 
-add_library(feel++ SHARED options.cpp ${FEELPP_SRCS})
-set_target_properties( feel++ PROPERTIES VERSION ${FEELPP_SHARED_VERSION} SOVERSION ${FEELPP_SHARED_SOVERSION})
-set_property(TARGET feel++ PROPERTY LABELS feel++)
+if( NOT cmake_build_type_tolower STREQUAL "debug" )
+  add_library(feel++ SHARED options.cpp ${FEELPP_SRCS})
+  set_target_properties( feel++ PROPERTIES VERSION ${FEELPP_SHARED_VERSION} SOVERSION ${FEELPP_SHARED_SOVERSION})
+  set_property(TARGET feel++ PROPERTY LABELS feel++)
 
-#target_link_libraries (feel++ ${PETSC_LIBRARIES} ${Boost_LIBRARIES} ${MPI_LIBRARIES} ${LIBXML2_LIBRARIES} ${TBB_LIBRARIES})
-target_link_libraries (feel++ ${FEELPP_LIBRARIES})
-set_target_properties(feel++ PROPERTIES VERSION ${FEELPP_SHARED_VERSION} SOVERSION ${FEELPP_SHARED_SOVERSION})
+  #target_link_libraries (feel++ ${PETSC_LIBRARIES} ${Boost_LIBRARIES} ${MPI_LIBRARIES} ${LIBXML2_LIBRARIES} ${TBB_LIBRARIES})
+  target_link_libraries (feel++ ${FEELPP_LIBRARIES})
+  set_target_properties(feel++ PROPERTIES VERSION ${FEELPP_SHARED_VERSION} SOVERSION ${FEELPP_SHARED_SOVERSION})
 
-# Install feel++
-INSTALL(TARGETS feel++ DESTINATION lib/ COMPONENT Bin)
-
+  # Install feel++
+  INSTALL(TARGETS feel++ DESTINATION lib/ COMPONENT Bin)
+else()
+  add_library(feel++ options.cpp ${FEELPP_SRCS})
+  set_property(TARGET feel++ PROPERTY LABELS feel++)
+  target_link_libraries (feel++ ${FEELPP_LIBRARIES})
+endif()
