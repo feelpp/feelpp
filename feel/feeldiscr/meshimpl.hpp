@@ -37,6 +37,7 @@
 #include <feel/feeldiscr/mesh.hpp>
 #include <feel/feelalg/glas.hpp>
 #include <feel/feelalg/solvernonlinearpetsc.hpp>
+#include <feel/feelfilters/gmshenums.hpp>
 
 namespace Feel
 {
@@ -72,10 +73,14 @@ Mesh<Shape, T, Tag>::updateForUse()
     Debug( 4015 ) << "component    MESH_PARTITION: " <<  this->components().test( MESH_PARTITION ) << "\n";
 
     if ( this->numElements() == 0 )
+    {
+        Debug( 4015 ) << "No elements in Mesh?\n";
         return;
+    }
 
     boost::timer ti;
 
+    Debug( 4015 ) << "is already updated? : " << this->isUpdatedForUse() << "\n";
     if ( !this->isUpdatedForUse() )
     {
         if ( this->components().test( MESH_RENUMBER ) )
@@ -190,88 +195,90 @@ Mesh<Shape, T, Tag>::updateForUse()
             this->updateEntitiesCoDimensionTwo();
             Debug( 4015 ) << "[Mesh::updateForUse] update edges : " << ti.elapsed() << "\n";
         }
+        this->setUpdatedForUse( true );
+    }
 
+    {
+        element_iterator iv,  en;
+        boost::tie( iv, en ) = this->elementsRange();
+
+        for ( ; iv != en; ++iv )
         {
-            element_iterator iv,  en;
-            boost::tie( iv, en ) = this->elementsRange();
-
-            for ( ; iv != en; ++iv )
-            {
-                this->elements().modify( iv, typename super_elements::ElementConnectPointToElement() );
-            }
-
-            boost::tie( iv, en ) = this->elementsRange();
-            auto pc = _M_gm->preCompute( _M_gm, _M_gm->referenceConvex().vertices() );
-            auto pcf =  _M_gm->preComputeOnFaces( _M_gm, _M_gm->referenceConvex().barycenterFaces() );
-            M_meas = 0;
-            M_measbdy = 0;
-
-            for ( ; iv != en; ++iv )
-            {
-                this->elements().modify( iv,
-                                         lambda::bind( &element_type::setMeshAndGm,
-                                                       lambda::_1,
-                                                       this, _M_gm, _M_gm1 ) );
-
-                this->elements().modify( iv,
-                                         lambda::bind( &element_type::updateWithPc,
-                                                       lambda::_1, pc, boost::ref( pcf ) ) );
-                M_meas += iv->measure();
-                auto _faces = iv->faces();
-
-                for ( ; _faces.first != _faces.second; ++_faces.first )
-                    if ( ( *_faces.first ) && ( *_faces.first )->isOnBoundary() )
-                        M_measbdy += ( *_faces.first )->measure();
-            }
-
-            // now that all elements have been updated, build inter element
-            // data such as the measure of point element neighbors
-            boost::tie( iv, en ) = this->elementsRange();
-
-            for ( ; iv != en; ++iv )
-            {
-                value_type meas = 0;
-                BOOST_FOREACH( auto _elt, iv->pointElementNeighborIds() )
-                {
-                    if ( this->hasElement( _elt ) )
-                        meas += this->element( _elt ).measure();
-                }
-                this->elements().modify( iv,
-                                         lambda::bind( &element_type::setMeasurePointElementNeighbors,
-                                                       lambda::_1, meas ) );
-            }
-
-            typedef typename super::face_const_iterator face_const_iterator;
-            face_iterator itf = this->beginFace();
-            face_iterator ite = this->endFace();
-
-            for ( ; itf != ite; ++ itf )
-            {
-                this->faces().modify( itf,
-                                      lambda::bind( &face_type::setMesh,
-                                                    lambda::_1,
-                                                    this ) );
-            }
+            this->elements().modify( iv, typename super_elements::ElementConnectPointToElement() );
         }
+
+        boost::tie( iv, en ) = this->elementsRange();
+        auto pc = _M_gm->preCompute( _M_gm, _M_gm->referenceConvex().vertices() );
+        auto pcf =  _M_gm->preComputeOnFaces( _M_gm, _M_gm->referenceConvex().barycenterFaces() );
+        M_meas = 0;
+        M_measbdy = 0;
+
+        for ( ; iv != en; ++iv )
+        {
+            this->elements().modify( iv,
+                                     lambda::bind( &element_type::setMeshAndGm,
+                                                   lambda::_1,
+                                                   this, _M_gm, _M_gm1 ) );
+
+            this->elements().modify( iv,
+                                     lambda::bind( &element_type::updateWithPc,
+                                                   lambda::_1, pc, boost::ref( pcf ) ) );
+            M_meas += iv->measure();
+            auto _faces = iv->faces();
+
+            for ( ; _faces.first != _faces.second; ++_faces.first )
+                if ( ( *_faces.first ) && ( *_faces.first )->isOnBoundary() )
+                    M_measbdy += ( *_faces.first )->measure();
+        }
+
+        // now that all elements have been updated, build inter element
+        // data such as the measure of point element neighbors
+        boost::tie( iv, en ) = this->elementsRange();
+
+        for ( ; iv != en; ++iv )
+        {
+            value_type meas = 0;
+            BOOST_FOREACH( auto _elt, iv->pointElementNeighborIds() )
+            {
+                if ( this->hasElement( _elt ) )
+                    meas += this->element( _elt ).measure();
+            }
+            this->elements().modify( iv,
+                                     lambda::bind( &element_type::setMeasurePointElementNeighbors,
+                                                   lambda::_1, meas ) );
+        }
+
+        typedef typename super::face_const_iterator face_const_iterator;
+        face_iterator itf = this->beginFace();
+        face_iterator ite = this->endFace();
+
+        for ( ; itf != ite; ++ itf )
+        {
+            this->faces().modify( itf,
+                                  lambda::bind( &face_type::setMesh,
+                                                lambda::_1,
+                                                this ) );
+        }
+    }
 
 #if defined(FEELPP_ENABLE_MPI_MODE)
 
-        if ( this->components().test( MESH_UPDATE_FACES ) && this->worldComm().localSize()>1 )
-        {
-            this->updateEntitiesCoDimensionOneGhostCell();
-        }
+    if ( this->components().test( MESH_UPDATE_FACES ) && this->worldComm().localSize()>1 )
+    {
+        this->updateEntitiesCoDimensionOneGhostCell();
+    }
 
 #endif
-        // check mesh connectivity
-        this->check();
-        this->setUpdatedForUse( true );
+    // check mesh connectivity
+    this->check();
 
-        _M_gm->initCache( this );
-        _M_gm1->initCache( this );
 
-        M_tool_localization->setMesh( this->shared_from_this(),false );
+    _M_gm->initCache( this );
+    _M_gm1->initCache( this );
 
-    }
+    M_tool_localization->setMesh( this->shared_from_this(),false );
+
+
 
     Debug( 4015 ) << "[Mesh::updateForUse] total time : " << ti.elapsed() << "\n";
 }
@@ -1265,6 +1272,193 @@ Mesh<Shape, T, Tag>::checkAndFixPermutation(  )
 
 template<typename Shape, typename T, int Tag>
 void
+Mesh<Shape, T, Tag>::send(int p, int tag)
+{
+    encode();
+    Debug() << "sending markername\n";
+    //this->comm().send( p, tag, M_markername.size() );
+    Debug() << "sending markername size: "<< M_markername.size() << "\n";
+    BOOST_FOREACH(auto m, M_markername )
+    {
+        Debug() << "sending key: "<< m.first << "\n";
+        //this->comm().send( p, tag, m.first );
+        Debug() << "sending value\n";
+        //this->comm().send( p, tag, m.second );
+    }
+}
+
+template<typename Shape, typename T, int Tag>
+void
+Mesh<Shape, T, Tag>::recv(int p, int tag)
+{
+    Debug() << "receiving markername\n";
+    //this->comm().recv( p, tag, M_markername );
+    int s;
+    //this->comm().recv( p, tag, s );
+    Debug() << "receiving markername size: "<< s << "\n";
+    for( int i = 0; i < s; ++i )
+    {
+        std::string k;
+        Debug() << "receiving key\n";
+        //this->comm().recv( p, tag, k );
+        Debug() << "receiving key:"<< k << "\n";
+        std::vector<int> v;
+        Debug() << "receiving value\n";
+        //this->comm().recv( p, tag, v );
+        Debug() << "receiving value: "<< v[0] << ","<< v[1] <<"\n";
+        //M_markername[k]=v;
+    }
+
+
+    //decode();
+
+}
+
+template<typename Shape, typename T, int Tag>
+void
+Mesh<Shape, T, Tag>::encode()
+{
+    M_enc_pts.clear();
+    for( auto pt_it = this->beginPoint(), pt_en = this->endPoint(); pt_it != pt_en; ++pt_it )
+    {
+        std::vector<double> pts(3,0);
+        pts[0] = pt_it->node()[0];
+        if ( mesh_type::nRealDim >= 2 )
+            pts[1] = pt_it->node()[1];
+        if ( mesh_type::nRealDim >= 3 )
+            pts[2] = pt_it->node()[2];
+        M_enc_pts[pt_it->id()+1] = boost::make_tuple( pt_it->isOnBoundary(), pt_it->tags(), pts );
+
+    }
+    M_enc_elts.clear();
+
+
+    auto allmarkedfaces = boundaryfaces( *this );
+    auto face_it = allmarkedfaces.template get<1>();
+    auto face_end = allmarkedfaces.template get<2>();
+
+    int elem_number=1;
+
+    GmshOrdering<element_type> ordering;
+
+    GmshOrdering<face_type> ordering_face;
+    // save the faces
+
+    for ( ; face_it != face_end; ++face_it )
+    {
+        std::vector<int> faces;
+        faces.push_back( ordering_face.type() );
+        faces.push_back( 4 + face_it->numberOfPartitions() );
+        faces.push_back( face_it->marker().value() );
+        faces.push_back( face_it->marker2().value() );
+        faces.push_back( face_it->numberOfPartitions() );
+        faces.push_back( face_it->processId() );
+        for ( size_type i=0 ; i<face_it->numberOfNeighborPartitions(); ++i )
+            faces.push_back( -( face_it->neighborPartitionIds()[i] ) );
+        for ( uint16_type p=0; p<face_type::numPoints; ++p )
+            faces.push_back( face_it->point( ordering_face.fromGmshId( p ) ).id()+1 );
+
+        M_enc_faces[face_it->id()] = faces;
+    } // faces
+
+
+    auto eltOnProccess = elements( *this );
+    auto elt_it = eltOnProccess.template get<1>();
+    auto elt_en = eltOnProccess.template get<2>();
+
+    for ( ; elt_it != elt_en; ++elt_it )
+    {
+        std::vector<int> elts;
+        elts.push_back( ordering.type() );
+        elts.push_back( 4 + elt_it->numberOfPartitions() );
+        elts.push_back( elt_it->marker().value() );
+        elts.push_back( elt_it->marker2().value() );
+        elts.push_back( elt_it->numberOfPartitions() );
+        elts.push_back( elt_it->processId() );
+        for ( size_type i=0 ; i<elt_it->numberOfNeighborPartitions(); ++i )
+            elts.push_back( -( elt_it->neighborPartitionIds()[i] ) );
+        for ( uint16_type p=0; p<element_type::numPoints; ++p )
+            elts.push_back( elt_it->point( ordering.fromGmshId( p ) ).id()+1 );
+
+        M_enc_elts[elt_it->id()] = elts;
+    } // elements
+
+}
+
+template<typename Shape, typename T, int Tag>
+void
+Mesh<Shape, T, Tag>::decode()
+{
+    static const uint16_type npoints_per_face = ( face_type::numVertices*face_type::nbPtsPerVertex+
+            face_type::numEdges*face_type::nbPtsPerEdge+
+            face_type::numFaces*face_type::nbPtsPerFace );
+
+    static const uint16_type npoints_per_element = element_type::numPoints;
+    for( auto pt_it = M_enc_pts.begin(), pt_en = M_enc_pts.end();
+         pt_it != pt_en; ++pt_it )
+    {
+        node_type __n( nRealDim );
+
+        for ( uint16_type j = 0; j < nRealDim; ++j )
+            __n[j] = pt_it->second.template get<2>()[j];
+
+        point_type __pt( pt_it->first-1,__n,  pt_it->second.template get<0>() );
+        __pt.setOnBoundary( pt_it->second.template get<0>() );
+        __pt.setTags( pt_it->second.template get<1>() );
+
+        this->addPoint( __pt );
+    }
+    for( auto face_it = M_enc_faces.begin(), face_en = M_enc_faces.end();
+         face_it != face_en; ++face_it )
+    {
+        face_type pf;
+        GmshOrdering<face_type> ordering;
+        FEELPP_ASSERT( ordering.type() == face_it->second[0] )
+            ( ordering.type() ) ( face_it->second[0] ).error( "invalid mesh face type" );
+        std::vector<int> tags( face_it->second[1] );
+        for(int i = 0; i < tags.size(); ++i ) tags[i] = face_it->second[2+i];
+        pf.setTags(  tags  );
+        pf.setProcessIdInPartition( this->worldComm().localRank() );
+        pf.setProcessId( this->worldComm().localRank() );
+
+        const int shift = face_it->second[1]+1;
+        for ( uint16_type jj = 0; jj < npoints_per_face; ++jj )
+        {
+            pf.setPoint( ordering.fromGmshId( jj ), this->point( face_it->second[shift+jj]-1 ) );
+        }
+        this->addFace( pf );
+    }
+
+    for( auto elt_it = M_enc_elts.begin(), elt_en = M_enc_elts.end();
+         elt_it != elt_en; ++elt_it )
+    {
+        element_type pv;
+        GmshOrdering<element_type> ordering;
+        FEELPP_ASSERT( ordering.type() == elt_it->second[0] )
+            ( ordering.type() ) ( elt_it->second[0] ).error( "invalid mesh element type" );
+        std::vector<int> tags( elt_it->second[1] );
+        for(int i = 0; i < tags.size(); ++i ) tags[i] = elt_it->second[2+i];
+        pv.setTags(  tags  );
+        pv.setProcessIdInPartition( this->worldComm().localRank() );
+        pv.setProcessId( this->worldComm().localRank() );
+
+        const int shift = elt_it->second[1]+1;
+        for ( uint16_type jj = 0; jj < npoints_per_element; ++jj )
+        {
+            pv.setPoint( ordering.fromGmshId( jj ), this->point( elt_it->second[shift+jj]-1 ) );
+        }
+        this->addElement( pv );
+#if 0
+        __idGmshToFeel=pv.id();
+        auto theelt = mesh->elementIterator( pv.id(), pv.partitionId() );
+        mesh->elements().modify( theelt, detail::update_id_in_partition_type( this->worldComm().localRank(), pv.id() ) );
+#endif
+    }
+
+}
+
+template<typename Shape, typename T, int Tag>
+void
 Mesh<Shape, T, Tag>::Inverse::distribute( bool extrapolation )
 {
     typename self_type::element_iterator el_it;
@@ -1415,8 +1609,8 @@ Mesh<Shape, T, Tag>::Localization::initBoundaryFaces()
 
     //clear data
     M_geoGlob_Elts.clear();
-    M_kd_tree->clear();
-
+    M_kd_tree->clear()
+;
     typename self_type::location_face_iterator face_it;
     typename self_type::location_face_iterator face_en;
     boost::tie( boost::tuples::ignore, face_it, face_en ) = Feel::boundaryfaces( M_mesh );

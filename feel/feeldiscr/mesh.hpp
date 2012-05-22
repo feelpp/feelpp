@@ -6,7 +6,7 @@
        Date: 2005-07-05
 
   Copyright (C) 2005,2006 EPFL
-  Copyright (C) 2007,2008,2009,2010 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2006-2012 Université Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -319,20 +319,20 @@ public:
      */
     int markerName( std::string const& marker ) const
     {
-        return M_markername.find( marker )->second.template get<0>();
+        return M_markername.find( marker )->second[0];
     }
     /**
      * \return the topological dimension associated to the \p marker
      */
     int markerDim( std::string const& marker ) const
     {
-        return M_markername.find( marker )->second.template get<1>();
+        return M_markername.find( marker )->second[1];
     }
 
     /**
      * \return the marker names
      */
-    std::map<std::string, boost::tuple<int, int> > markerNames() const
+    std::map<std::string, std::vector<int> > markerNames() const
     {
         return M_markername;
     }
@@ -371,7 +371,7 @@ public:
     /**
      * add a new marker name
      */
-    void addMarkerName( std::pair<std::string, boost::tuple<int,int> > const& marker )
+    void addMarkerName( std::pair<std::string, std::vector<int> > const& marker )
     {
         M_markername.insert( marker );
     }
@@ -381,7 +381,9 @@ public:
      */
     void addMarkerName( std::string __name, int __id ,int __topoDim )
     {
-        auto data = boost::make_tuple( __id,__topoDim );
+        std::vector<int> data(2);
+        data[0]=__id;
+        data[1]=__topoDim;
         M_markername[__name]=data;
     }
 
@@ -522,6 +524,146 @@ public:
      */
     void checkAndFixPermutation();
 
+    /**
+     * send the mesh data structure to processor \p p with  \p tag
+     */
+    void send( int p, int tag );
+
+    /**
+     * receive the mesh data structure to processor \p p with  \p tag
+     */
+    void recv( int p, int tag );
+
+    /**
+     * encode the mesh data structure into a tighter data structure and to avoid
+     * pointers in order to serialize it for saving/loading and
+     * sending/receiving the mesh
+     */
+    void encode();
+
+    /**
+     * decode the mesh data structure from a tighter data structure and to avoid
+     * pointers in order to serialize it for saving/loading and
+     * sending/receiving the mesh
+     */
+    void decode();
+
+    BOOST_PARAMETER_MEMBER_FUNCTION( ( void ),
+                                     save,
+                                     tag,
+                                     ( required
+                                       ( name,(std::string) )
+                                       ( path,* ) )
+                                     ( optional
+                                       ( type,( std::string ),std::string( "binary" ) )
+                                       ( suffix,( std::string ),std::string( "" ) )
+                                       ( sep,( std::string ),std::string( "" ) )
+                                         ) )
+        {
+            Feel::detail::ignore_unused_variable_warning( args );
+
+            if ( !fs::exists( fs::path( path ) ) )
+            {
+                fs::create_directories( fs::path( path ) );
+            }
+
+            std::ostringstream os1;
+            os1 << name << sep << suffix << "-" << this->worldComm().globalSize() << "." << this->worldComm().globalRank() << ".fdb";
+            fs::path p = fs::path( path ) / os1.str();
+            fs::ofstream ofs( p );
+
+            if ( type == "binary" )
+            {
+                boost::archive::binary_oarchive oa( ofs );
+                oa << *this;
+            }
+
+            else if ( type == "text" )
+            {
+                boost::archive::text_oarchive oa( ofs );
+                oa << *this;
+            }
+
+            else if ( type == "xml" )
+            {
+                //boost::archive::xml_oarchive oa(ofs);
+                //oa << *this;
+            }
+        }
+    BOOST_PARAMETER_MEMBER_FUNCTION(
+        ( bool ),
+        load,
+        tag,
+        ( required
+          ( name,(std::string) )
+          ( path,* ) )
+        ( optional
+          ( update,(size_type), MESH_CHECK|MESH_UPDATE_EDGES|MESH_UPDATE_FACES )
+          ( type,( std::string ),std::string( "binary" ) )
+          ( suffix,( std::string ),std::string( "" ) )
+          ( sep,( std::string ),std::string( "" ) )
+            )
+        )
+        {
+            Feel::detail::ignore_unused_variable_warning( args );
+            std::ostringstream os1;
+            os1 << name << sep << suffix << "-" << this->worldComm().globalSize() << "." << this->worldComm().globalRank() << ".fdb";
+            fs::path p = fs::path( path ) / os1.str();
+            std::cout << "try loading " << p.native()  << "\n";
+            if ( !fs::exists( p ) )
+            {
+                Log() << "[mesh::load] failed loading " << p.native() << "\n";
+                std::ostringstream os2;
+                os2 << name << sep << suffix << "-" << this->worldComm().globalSize() << "." << this->worldComm().globalRank();
+                p = fs::path( path ) / os2.str();
+                std::cout << " now try loading " << p.native()  << "\n";
+
+                if ( !fs::exists( p ) )
+                {
+                    Log() << "[mesh::load] failed loading " << p.native() << "\n";
+                    return false;
+                }
+            }
+
+            if ( !fs::is_regular_file( p ) )
+            {
+                Log() << "[mesh::load] failed loading " << p.native() << "\n";
+                return false;
+            }
+
+            fs::ifstream ifs( p );
+
+            if ( type == "binary" )
+            {
+                boost::archive::binary_iarchive ia( ifs );
+                ia >> *this;
+            }
+
+            else if ( type == "text" )
+            {
+                boost::archive::text_iarchive ia( ifs );
+                ia >> *this;
+            }
+
+            else if ( type == "xml" )
+            {
+                //boost::archive::xml_iarchive ia(ifs);
+                //ia >> *this;
+            }
+            if ( update )
+            {
+                this->components().reset();
+                this->components().set( update );
+                this->updateForUse();
+            }
+
+            else
+            {
+                this->components().reset();
+            }
+            return true;
+        }
+
     FEELPP_DEFINE_VISITABLE();
     //@}
 
@@ -555,6 +697,43 @@ public:
      */
     void updateForUse();
 
+private:
+
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize( Archive & ar, const unsigned int version )
+        {
+            if ( Archive::is_saving::value )
+            {
+                Debug( 4015 ) << "Serializing mesh(saving) ...\n";
+                Debug( 4015 ) << "encoding...\n";
+                encode();
+                Debug( 4015 ) << "loading markers...\n";
+                ar & M_markername;
+                Debug( 4015 ) << "loading pts...\n";
+                ar & M_enc_pts;
+                Debug( 4015 ) << "loading faces...\n";
+                ar & M_enc_faces;
+                Debug( 4015 ) << "loading elts...\n";
+                ar & M_enc_elts;
+            }
+            if ( Archive::is_loading::value )
+            {
+                Debug( 4015 ) << "Serializing mesh(loading) ...\n";
+                Debug( 4015 ) << "loading markers...\n";
+                ar & M_markername;
+                Debug( 4015 ) << "loading pts...\n";
+                ar & M_enc_pts;
+                Debug( 4015 ) << "loading faces...\n";
+                ar & M_enc_faces;
+                Debug( 4015 ) << "loading elts...\n";
+                ar & M_enc_elts;
+                decode();
+
+            }
+
+        }
+public:
     struct Inverse
             :
         public mpl::if_<mpl::bool_<GeoShape::is_simplex>,
@@ -981,7 +1160,22 @@ private:
      * get<0>() provides the id
      * get<1>() provides the topological dimension
      */
-    std::map<std::string, boost::tuple<int, int> > M_markername;
+    std::map<std::string, std::vector<int> > M_markername;
+
+    /**
+     * to encode points coordinates
+     */
+    std::map<uint64_type, boost::tuple<bool, std::vector<int>, std::vector<double> > > M_enc_pts;
+
+    /**
+     * to encode elements
+     */
+    std::map<uint64_type, std::vector<int> > M_enc_faces;
+
+    /**
+     * to encode elements
+     */
+    std::map<uint64_type, std::vector<int> > M_enc_elts;
 
     /**
      * tool for localize point in the mesh
@@ -1017,8 +1211,8 @@ Mesh<Shape, T, Tag>::createSubmesh( self_type& new_mesh,
     BOOST_FOREACH( auto marker, new_mesh.M_markername )
     {
         std::cout << "marker name " << marker.first
-                  << " id: " << marker.second.template get<0>()
-                  << " geoe: " << marker.second.template get<1>() << "\n";
+                  << " id: " << marker.second[0]
+                  << " geoe: " << marker.second[1] << "\n";
 
     }
     // How the nodes on this mesh will be renumbered to nodes
@@ -1195,7 +1389,7 @@ Mesh<Shape, T, Tag>::createP1mesh() const
     // inherit the table of markersName
     BOOST_FOREACH( auto itMark, this->markerNames() )
     {
-        new_mesh->addMarkerName( itMark.first,itMark.second.template get<0>(),itMark.second.template get<1>() );
+        new_mesh->addMarkerName( itMark.first,itMark.second[0],itMark.second[1] );
     }
 
 

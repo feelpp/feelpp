@@ -364,7 +364,8 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
                 boost::trim( name );
                 boost::trim_if( name,boost::is_any_of( "\"" ) );
 
-                mesh->addMarkerName( std::make_pair( name, boost::make_tuple( id, topodim ) ) );
+                std::vector<int> data = {id, topodim};
+                mesh->addMarkerName( std::make_pair( name, data ) );
 
                 if ( _M_ignorePhysicalName.find( name )!=_M_ignorePhysicalName.end() ) this->setIgnorePhysicalGroup( id );
             }
