@@ -44,10 +44,32 @@ find_path (SLEPC_DIR include/slepc.h
 
 SET(SLEPC_INCLUDE_DIR "${SLEPC_DIR}/include/")
 CHECK_INCLUDE_FILE( ${SLEPC_INCLUDE_DIR}/slepc.h FEELPP_HAS_SLEPC_H )
-CHECK_INCLUDE_FILE( ${SLEPC_DIR}/${PETSC_ARCH}/include/slepcconf.h FEELPP_HAS_SLEPCCONF_H )
-if (FEELPP_HAS_SLEPCCONF_H)
+
+if (SLEPC_DIR AND NOT PETSC_ARCH)
+  set (_slepc_arches
+    $ENV{PETSC_ARCH}                   # If set, use environment variable first
+    ${DEBIAN_FLAVORS}  # Debian defaults
+    x86_64-unknown-linux-gnu i386-unknown-linux-gnu)
+  set (slepcconf "NOTFOUND" CACHE FILEPATH "Cleared" FORCE)
+  foreach (arch ${_slepc_arches})
+    if (NOT PETSC_ARCH)
+      find_path (slepcconf slepcconf.h
+	HINTS ${SLEPC_DIR}
+	PATH_SUFFIXES ${arch}/include bmake/${arch}
+	NO_DEFAULT_PATH)
+      if (slepcconf)
+	set (PETSC_ARCH "${arch}" CACHE STRING "PETSc build architecture")
+      endif (slepcconf)
+    endif (NOT PETSC_ARCH)
+  endforeach (arch)
+  set (slepcconf "NOTFOUND" CACHE INTERNAL "Scratch variable" FORCE)
+endif (SLEPC_DIR AND NOT PETSC_ARCH)
+
+
+#CHECK_INCLUDE_FILE( ${SLEPC_DIR}/$ENV{PETSC_ARCH}/include/slepcconf.h FEELPP_HAS_SLEPCCONF_H )
+#if (FEELPP_HAS_SLEPCCONF_H)
   SET(SLEPC_INCLUDE_DIR ${SLEPC_DIR}/${PETSC_ARCH}/include ${SLEPC_INCLUDE_DIR})
-endif()
+#endif()
 FIND_LIBRARY(SLEPC_LIB_SLEPC slepc
   HINTS
   ${SLEPC_DIR}/${PETSC_ARCH}/lib
