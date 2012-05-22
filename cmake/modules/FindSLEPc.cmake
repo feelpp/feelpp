@@ -64,7 +64,7 @@ if (SLEPC_DIR AND NOT PETSC_ARCH)
   endforeach (arch)
   set (slepcconf "NOTFOUND" CACHE INTERNAL "Scratch variable" FORCE)
 endif (SLEPC_DIR AND NOT PETSC_ARCH)
-
+message(STATUS "SLEPc arch: ${PETSC_ARCH}")
 
 #CHECK_INCLUDE_FILE( ${SLEPC_DIR}/$ENV{PETSC_ARCH}/include/slepcconf.h FEELPP_HAS_SLEPCCONF_H )
 #if (FEELPP_HAS_SLEPCCONF_H)
