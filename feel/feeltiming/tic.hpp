@@ -38,9 +38,12 @@ namespace details
 {
 struct SecondBasedTimer
 {
-    static void print( const double& val )
+    static void print( std::string const& msg, const double& val )
     {
-        std::cout << "Time : " << val << "s\n";
+        if ( !msg.empty() )
+            std::cout << "[" << msg << "] Time : " << val << "s\n";
+        else
+            std::cout << "Time : " << val << "s\n";
     }
     static inline double  time()
     {
@@ -61,9 +64,9 @@ inline void tic()
     details::sec_timer.tic();
 }
 
-inline double  toc( bool display = true )
+inline double  toc( std::string const& msg = "", bool display = true )
 {
-    return details::sec_timer.toc( display );
+    return details::sec_timer.toc( msg, display );
 }
 } // time
 } // Feel
