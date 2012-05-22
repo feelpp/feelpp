@@ -235,8 +235,8 @@ public:
                 for( int q = 0; q < M_det.rows(); ++q )
                 {
                     double a = M_tensor_expr.evalq( 0, 0, q );
-                    double b = M_tensor_expr.evalq( 1, 0, q );
-                    double c = M_tensor_expr.evalq( 0, 1, q );
+                    double b = M_tensor_expr.evalq( 0, 1, q );
+                    double c = M_tensor_expr.evalq( 1, 0, q );
                     double d = M_tensor_expr.evalq( 1, 1, q );
                     M_det(q) =  a*c-b*d;
                 }
