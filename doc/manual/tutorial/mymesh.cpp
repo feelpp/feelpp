@@ -212,7 +212,7 @@ MyMesh<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
     }
     //# endmarker62 #
 
-#if 1
+#if 0
 
 #if 1
     mpi::communicator world;
@@ -257,32 +257,6 @@ MyMesh<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
 
 #endif
 
-#else
-    if ( this->comm().size() > 1 )
-    {
-        Log() << "Sending meshes to proc 0\n";
-        // send all meshes to proc 0
-        if (  this->comm().rank() != 0 )
-        {
-            Log() << "gather mesh in 0\n";
-            mpi::gather( this->comm(), mesh, 0 );
-        }
-        else
-        {
-            Log() << "gather mesh in 0\n";
-            std::vector<mesh_ptrtype> mesh_vector;
-            mpi::gather( this->comm(), mesh, mesh_vector, 0 );
-            Log() << "mesh gathered in 0:" << mesh_vector.size() << "\n";
-#if 0
-            for( int i = 0; i < mesh_vector.size();++i )
-            {
-                exporter->step( i+1)->setMesh( mesh_vector[i] );
-                exporter->save();
-            }
-#endif
-        }
-
-    }
 #endif
 
 }
