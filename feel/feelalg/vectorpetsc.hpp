@@ -663,7 +663,7 @@ public:
     }
 
 
-private:
+protected:
 
     /**
      * Petsc vector datatype to store values
