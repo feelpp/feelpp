@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2008-06-19
 
-  Copyright (C) 2008 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2008-2012 University Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -33,14 +33,14 @@ int main( int argc, char** argv )
 {
     using namespace Feel;
 
-    IMSimplex<2,1,double> im21(  );
-    IMSimplex<2,2,double> im22(  );
-    IMSimplex<2,4,double> im24(  );
-    IMSimplex<2,6,double> im26(  );
+    IMSimplex<2,1,double> im21;
+    IMSimplex<2,2,double> im22;
+    IMSimplex<2,4,double> im24;
+    IMSimplex<2,6,double> im26;
 
-    IMSimplex<3,1,double> im31(  );
-    IMSimplex<3,2,double> im32(  );
-    IMSimplex<3,4,double> im34(  );
+    IMSimplex<3,1,double> im31;
+    IMSimplex<3,2,double> im32;
+    IMSimplex<3,4,double> im34;
 
     IMSimplex<2,1,double> im212;
     IMSimplex<3,1,double> im312;
