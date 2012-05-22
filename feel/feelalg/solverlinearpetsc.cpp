@@ -122,7 +122,9 @@ template <typename T>
 void
 SolverLinearPetsc<T>::clear ()
 {
-    if ( this->initialized() )
+    PetscBool pinit;
+    PetscInitialized( &pinit );
+    if ( pinit && this->initialized() )
     {
         this->setInitialized( false );
 
@@ -136,7 +138,7 @@ SolverLinearPetsc<T>::clear ()
 
         // 2.2.0 & newer style
 #else
-
+        FEELPP_ASSERT( _M_ksp != 0 ).error( "invalid ksp" );
         ierr = PETSc::KSPDestroy( _M_ksp );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
 #endif
