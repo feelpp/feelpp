@@ -167,8 +167,11 @@ template<int Dim>
 void
 Laplacian<Dim>::run()
 {
-    std::cout << "------------------------------------------------------------\n";
-    std::cout << "Execute Laplacian<" << Dim << ">\n";
+    if ( this->comm().rank() == 0 )
+    {
+        std::cout << "------------------------------------------------------------\n";
+        std::cout << "Execute Laplacian<" << Dim << ">\n";
+    }
     std::vector<double> X( 2 );
     X[0] = meshSize;
 
@@ -226,9 +229,9 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
      */
     /** \code */
     //# marker1 #
-    value_type pi = M_PI;
+    value_type pi = 2*M_PI;
     //! deduce from expression the type of g (thanks to keyword 'auto')
-    auto g = sin( pi*Px() )*cos( pi*Py() )*cos( pi*Pz() );
+    auto g = sin( cst(pi)*Px() )*cos( cst(pi)*Py() )*cos( cst(pi)*Pz() );
     gproj = vf::project( Xh, elements( mesh ), g );
 
     //! deduce from expression the type of f (thanks to keyword 'auto')
@@ -379,11 +382,6 @@ main( int argc, char** argv )
     /** \code */
     Application app( argc, argv, makeAbout(), makeOptions() );
 
-    if ( app.vm().count( "help" ) )
-    {
-        std::cout << app.optionsDescription() << "\n";
-        return 0;
-    }
 
     /** \endcode */
 
