@@ -229,7 +229,7 @@ public:
             {
                 for( int q = 0; q < M_inv.size(); ++q )
                 {
-                    M_inv(q) = 1./M_tensor_expr.evalq( 0, 0, q );
+                    M_inv[q](0,0)  = 1./M_tensor_expr.evalq( 0, 0, q );
                 }
             }
         void
@@ -238,10 +238,16 @@ public:
                 for( int q = 0; q < M_inv.size(); ++q )
                 {
                     double a = M_tensor_expr.evalq( 0, 0, q );
-                    double b = M_tensor_expr.evalq( 1, 0, q );
-                    double c = M_tensor_expr.evalq( 0, 1, q );
+                    double b = M_tensor_expr.evalq( 0, 1, q );
+                    double c = M_tensor_expr.evalq( 1, 0, q );
                     double d = M_tensor_expr.evalq( 1, 1, q );
-                    M_inv(q) =  a*c-b*d;
+
+                    double determinant = a*d-c*b;
+
+                    M_inv[q](0,0) =  d/determinant;
+                    M_inv[q](0,1) =  -b/determinant;
+                    M_inv[q](1,0) =  -c/determinant;
+                    M_inv[q](1,1) =  a/determinant;
                 }
             }
         void
@@ -258,7 +264,18 @@ public:
                     double g = M_tensor_expr.evalq( 2, 0, q );
                     double h = M_tensor_expr.evalq( 2, 1, q );
                     double l = M_tensor_expr.evalq( 2, 2, q );
-                    M_inv(q) = a*(e*l-f*h)-b*(d*l-g*h)+c*(d*h-g*e);
+
+                    double determinant = a*(e*l-f*h)-b*(d*l-g*h)+c*(d*h-g*e);
+
+                    M_inv[q](0,0) = (e*l-f*h)/determinant;
+                    M_inv[q](0,1) = (c*h-b*l)/determinant;
+                    M_inv[q](0,2) = (b*f-c*e)/determinant;
+                    M_inv[q](1,0) = (f*g-d*l)/determinant;
+                    M_inv[q](1,1) = (a*l-c*g)/determinant;
+                    M_inv[q](1,2) = (c*d-a*f)/determinant;
+                    M_inv[q](2,0) = (d*h-e*g)/determinant;
+                    M_inv[q](2,1) = (b*g-a*h)/determinant;
+                    M_inv[q](2,2) = (a*e-b*d)/determinant;
                 }
             }
     private:
