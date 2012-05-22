@@ -212,53 +212,35 @@ MyMesh<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
     }
     //# endmarker62 #
 
-#if 0
-
-#if 1
     mpi::communicator world;
     Log() << "Sending/Receiving mesh...\n";
+    mesh_ptrtype mesh2( new mesh_type);
+
     if ( world.rank() == 0 )
     {
-        boost::shared_ptr<A> str( new A("Hello") );
-        world.send( 1, 10, mesh );
-        //world.send( 1, 10, str);
+        world.send( 1, 10, *mesh );
+        world.recv( 1, 11, *mesh2 );
         Log() << "done iSending\n";
     }
     else
     {
         Log() << "Receiving mesh from : " << 0 << "by " << world.rank() << "...\n";
-        boost::shared_ptr<A> str;
-        mesh_ptrtype mesh2;
-        Log() << "Receiving mesh from : " << 0 << "by " << world.rank() << "...\n";
-        Log() << "Receiving mesh from : " << 0 << "by " << world.rank() << "...\n";
-        Log() << "Receiving mesh from : " << 0 << "by " << world.rank() << "...\n";
-        //world.recv( 0, 10, str );
-        world.recv( 0, 10, mesh2 );
+        world.recv( 0, 10, *mesh2 );
+        world.send( 0, 11, *mesh );
         Log() << "Saving received mesh...\n";
-        Log() << str->str << "...\n";
-        //mesh2->save( _name="mymesh3", _type="text", _path="." );
     }
-#else
+    mesh2->save( _name="mymesh3", _type="text", _path="." );
 
-    mpi::communicator world;
 
-    if (world.rank() == 0) {
-        world.send(1, 0, std::string("Hello"));
-        std::string msg;
-        world.recv(1, 1, msg);
-        std::cout << msg << "!" << std::endl;
-    } else {
-        std::string msg;
-        world.recv(0, 0, msg);
-        std::cout << msg << ", ";
-        std::cout.flush();
-        world.send(0, 1, std::string("world"));
+    if ( exporter->doExport() )
+    {
+        Log() << "Exporting mesh\n";
+        exporter->step( 1 )->setMesh( mesh2 );
+        Log() << "Exporting regions\n";
+        exporter->step( 1 )->addRegions();
+        Log() << "Saving...\n";
+        exporter->save();
     }
-
-#endif
-
-#endif
-
 }
 
 //
