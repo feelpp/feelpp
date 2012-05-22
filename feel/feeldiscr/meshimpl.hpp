@@ -42,7 +42,7 @@
 namespace Feel
 {
 template<typename Shape, typename T, int Tag>
-Mesh<Shape, T, Tag>::Mesh( std::string partitioner, WorldComm const& worldComm )
+Mesh<Shape, T, Tag>::Mesh( WorldComm const& worldComm )
     :
     super(worldComm),
     _M_gm( new gm_type ),
@@ -52,9 +52,7 @@ Mesh<Shape, T, Tag>::Mesh( std::string partitioner, WorldComm const& worldComm )
     //M_part(),
     M_tool_localization( new Localization() )
 {
-    Debug( 4015 ) << "[Mesh::Mesh] setting partitioner to " << partitioner << "\n";
-    this->setPartitioner( partitioner );
-    Debug( 4015 ) << "[Mesh::Mesh] setting partitioner to " << partitioner << " done\n";
+    Debug( 4015 ) << "[Mesh] constructor called\n";
 }
 template<typename Shape, typename T, int Tag>
 void
@@ -712,6 +710,46 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne()
 
                 face_type face = *__fit;
 
+                // the three conditions below typically arise after reading a serialized mesh
+                if ( __fit->isConnectedTo0() && __fit->connection0().template get<0>() == 0 && ( __element.id() == __fit->ad_first() ) )
+                {
+                    Debug( 4015 ) << "fixing connection 0 in face\n";
+                    // reconnect the elements to the face
+                    auto connect0 = __fit->connection0();
+                    connect0.template get<0>() = boost::addressof( __element );
+                    face.setConnection0( connect0 );
+
+                    // need to reconstruct the neighbors
+                    this->elements().modify( iv, detail::UpdateFace<face_type>( boost::cref( *__fit ) ) );
+
+                }
+                if ( __fit->isConnectedTo1() && __fit->connection1().template get<0>() == 0 && ( __element.id() == __fit->ad_second() ) )
+                {
+                    Debug( 4015 ) << "fixing connection 1 in face\n";
+
+                    // reconnect the elements to the face
+                    auto connect1 = __fit->connection1();
+                    connect1.template get<0>() = boost::addressof( __element );
+                    face.setConnection1( connect1 );
+
+                    // need to reconstruct the neighbors
+                    element_iterator elt1 = this->elementIterator( __fit->ad_first(), __fit->proc_first() );
+                    this->elements().modify( elt1, detail::UpdateFace<face_type>( boost::cref( *__fit ) ) );
+                    this->elements().modify( iv, detail::UpdateFace<face_type>( boost::cref( *__fit ) ) );
+
+                }
+                if ( __fit->isConnectedTo0() && __fit->isConnectedTo1() )
+                {
+                    FEELPP_ASSERT( face.isConnectedTo0() && face.isConnectedTo1() )
+                        ( face.isConnectedTo0() )( face.isConnectedTo1() ).error ("inconsistent data structure" );
+                    if ( face.processId()!=this->worldComm().localRank() )
+                    {
+                        if ( ( face.element0().processId()==this->worldComm().localRank() ) || ( face.element1().processId()==this->worldComm().localRank() ) )
+                            face.setProcessId( this->worldComm().localRank() );
+                    }
+                }
+
+
                 // the face could have been entered apriori given by
                 // the mesh generator, so just set the connection0
                 // properly .
@@ -750,7 +788,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne()
                 }
 
                 // we found an internal face
-                else
+                else if ( !__fit->isConnectedTo1() )
                 {
 
 
@@ -806,8 +844,9 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne()
 
                 }
 
-                FEELPP_ASSERT( __fit->processId() == __fit->proc_first() || __fit->processId() == __fit->proc_second() )
-                    ( __fit->processId() )( __fit->proc_first() )( __fit->proc_second()) .warn( "invalid process id" );
+                FEELPP_ASSERT( (__fit->processId() == __fit->proc_first()) ||
+                               (__fit->processId() == __fit->proc_second()) )
+                    ( __fit->processId() )( __fit->proc_first() )( __fit->proc_second() ).error( "invalid process id" );
             }
 
             FEELPP_ASSERT( iv->facePtr( j ) )( j )( iv->id() ).error( "invalid element face error" );

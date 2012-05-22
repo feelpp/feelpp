@@ -71,6 +71,12 @@ public:
     {
         return false;
     }
+private:
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize( Archive & ar, const unsigned int version )
+        {
+        }
 };
 
 template<typename ElementType>
@@ -245,6 +251,26 @@ public:
                                         invalid_size_type_value );
     }
 
+private:
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize( Archive & ar, const unsigned int version )
+        {
+#if 1
+            //ar & M_element0.template get<0>();
+            ar & M_element0.template get<1>();
+            ar & M_element0.template get<2>();
+            ar & M_element0.template get<3>();
+            M_element0.template get<0>() = 0;
+
+
+            //ar & M_element1.template get<0>();
+            ar & M_element1.template get<1>();
+            ar & M_element1.template get<2>();
+            ar & M_element1.template get<3>();
+            M_element1.template get<0>() = 0;
+#endif
+        }
 private:
 
     element_connectivity_type M_element0;
@@ -446,6 +472,16 @@ public:
         return super::marker3();
     }
 
+
+private:
+
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize( Archive & ar, const unsigned int version )
+        {
+            ar & boost::serialization::base_object<super>( *this );
+            ar & boost::serialization::base_object<super2>( *this );
+        }
 
 
 private:
@@ -685,6 +721,19 @@ public:
         FEELPP_ASSERT( i < numLocalVertices )( i )( numLocalVertices ).error( "invalid local vertex index" );
         return M_vertex_permutation[i];
     }
+
+private:
+
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize( Archive & ar, const unsigned int version )
+        {
+            Debug( 4015 ) << "Serializing Geoelement1D id: " << this->id() << "...\n";
+            ar & boost::serialization::base_object<super>( *this );
+            ar & boost::serialization::base_object<super2>( *this );
+        }
+
+
 
 private:
 
@@ -966,6 +1015,19 @@ public:
     {
         return std::make_pair( M_edges.begin(), M_edges.end() );
     }
+
+private:
+
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize( Archive & ar, const unsigned int version )
+        {
+            Debug( 4015 ) << "Serializing Geoelement2D id: " << this->id() << "...\n";
+            ar & boost::serialization::base_object<super>( *this );
+            ar & boost::serialization::base_object<super2>( *this );
+            ar & M_edges;
+        }
+
 
 private:
 
@@ -1260,6 +1322,16 @@ public:
     {
         return std::make_pair( M_faces.begin(), M_faces.end() );
     }
+private:
+
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize( Archive & ar, const unsigned int version )
+        {
+            ar & boost::serialization::base_object<super>( *this );
+        }
+
+
 private:
 
     ublas::bounded_array<edge_type*, numLocalEdges> M_edges;

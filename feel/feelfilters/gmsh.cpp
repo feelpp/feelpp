@@ -55,8 +55,10 @@
 #include <feel/feelfilters/gmshellipsoiddomain.hpp>
 
 #if defined( FEELPP_HAS_GMSH_H )
+#include <GmshConfig.h>
 #include <Gmsh.h>
 #include <GModel.h>
+#include <GmshDefines.h>
 #include <Context.h>
 //#include <meshPartition.h>
 int PartitionMesh( GModel *const model, meshPartitionOptions &options );
@@ -354,7 +356,12 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  
 
     else
     {
-        CTX::instance()->mesh.algo2d = 6;
+        CTX::instance()->mesh.algo2d = ALGO_2D_FRONTAL;
+#if defined(HAVE_TETGEN)
+        CTX::instance()->mesh.algo3d = ALGO_3D_DELAUNAY;
+#else
+        CTX::instance()->mesh.algo3d = ALGO_3D_FRONTAL;
+#endif
     }
 
     CTX::instance()->mesh.mshFilePartitioned = M_partition_file;
@@ -386,11 +393,17 @@ Gmsh::preamble() const
 
     if ( M_recombine )
         ostr << "Mesh.Algorithm = 5;\n";
-
     else
-        ostr << "Mesh.Algorithm = 6;\n";
+    {
+        ostr << "Mesh.Algorithm = " << ALGO_2D_FRONTAL << ";\n";
+#if defined(HAVE_TETGEN)
+        ostr << "Mesh.Algorithm3D = " << ALGO_3D_DELAUNAY << ";\n";
+#else
+        ostr << "Mesh.Algorithm3D = " << ALGO_3D_FRONTAL << ";\n";
+#endif
+    }
 
-    ostr << "Mesh.OptimizeNetgen=1;\n"
+    ostr << "//Mesh.OptimizeNetgen=1;\n"
          << "// partitioning data\n"
          << "Mesh.Partitioner=" << M_partitioner << ";\n"
          << "Mesh.NbPartitions=" << M_partitions << ";\n"
