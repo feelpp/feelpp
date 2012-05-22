@@ -433,6 +433,14 @@ public:
             this->setProcessId( tags[2] );
     }
 
+    std::vector<int> tags() const
+        {
+            std::vector<int> thetags(3);
+            thetags[0] = M_marker1.value();
+            thetags[1] = M_marker2.value();
+            thetags[2] = this->processId();
+            return thetags;
+        }
     /**
      * set the geometric dimension of the entity the points belongs to
      */
