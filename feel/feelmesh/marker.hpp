@@ -29,6 +29,8 @@
 
 #include <limits>
 
+#include <boost/serialization/serialization.hpp>
+
 #include <feel/feelcore/feel.hpp>
 #include <boost/detail/identifier.hpp>
 
@@ -46,6 +48,29 @@ public:
         this->assign( v );
         return *this;
     }
+private:
+
+    friend class boost::serialization::access;
+    // When the class Archive corresponds to an output archive, the
+    // & operator is defined similar to <<.  Likewise, when the class Archive
+    // is a type of input archive the & operator is defined similar to >>.
+    template<class Archive>
+    void save( Archive & ar, const unsigned int version ) const
+        {
+            size_type v = this->value();
+            ar & v;
+        }
+
+    template<class Archive>
+    void load( Archive & ar, const unsigned int version )
+        {
+            size_type v;
+            ar &  v;
+            this->assign( v );
+        }
+
+    BOOST_SERIALIZATION_SPLIT_MEMBER()
+
 };
 
 class Marker2 : public boost::detail::identifier< size_type, Marker2 >
@@ -59,6 +84,29 @@ public:
         this->assign( v );
         return *this;
     }
+private:
+
+    friend class boost::serialization::access;
+    // When the class Archive corresponds to an output archive, the
+    // & operator is defined similar to <<.  Likewise, when the class Archive
+    // is a type of input archive the & operator is defined similar to >>.
+    template<class Archive>
+    void save( Archive & ar, const unsigned int version ) const
+        {
+            size_type v = this->value();
+            ar & v;
+        }
+
+    template<class Archive>
+    void load( Archive & ar, const unsigned int version )
+        {
+            size_type v;
+            ar &  v;
+            this->assign( v );
+        }
+
+    BOOST_SERIALIZATION_SPLIT_MEMBER()
+
 };
 class Marker3 : public boost::detail::identifier< size_type, Marker3 >
 {
@@ -71,6 +119,30 @@ public:
         this->assign( v );
         return *this;
     }
+
+private:
+
+    friend class boost::serialization::access;
+    // When the class Archive corresponds to an output archive, the
+    // & operator is defined similar to <<.  Likewise, when the class Archive
+    // is a type of input archive the & operator is defined similar to >>.
+    template<class Archive>
+    void save( Archive & ar, const unsigned int version ) const
+        {
+            size_type v = this->value();
+            ar & v;
+        }
+
+    template<class Archive>
+    void load( Archive & ar, const unsigned int version )
+        {
+            size_type v;
+            ar &  v;
+            this->assign( v );
+        }
+
+    BOOST_SERIALIZATION_SPLIT_MEMBER()
+
 };
 
 
