@@ -104,7 +104,7 @@ createSubmeshTool<MeshType,IteratorRange>::build( mpl::int_<MESH_ELEMENTS> /**/ 
     // inherit the table of markersName
     BOOST_FOREACH( auto itMark, M_mesh->markerNames() )
     {
-        newMesh->addMarkerName( itMark.first,itMark.second.template get<0>(),itMark.second.template get<1>() );
+        newMesh->addMarkerName( itMark.first,itMark[0],itMark.second[1] );
     }
 
     //-----------------------------------------------------------//
@@ -271,7 +271,7 @@ createSubmeshTool<MeshType,IteratorRange>::build( mpl::int_<MESH_FACES> /**/ )
     BOOST_FOREACH( auto itMark, M_mesh->markerNames() )
     {
         Debug( 4015 ) << "[Mesh<Shape,T>::createSubmesh] adding marker " << itMark.first <<"\n";
-        newMesh->addMarkerName( itMark.first,itMark.second.template get<0>(),itMark.second.template get<1>() );
+        newMesh->addMarkerName( itMark.first,itMark.second[0],itMark.second[1] );
     }
 
     //-----------------------------------------------------------//
