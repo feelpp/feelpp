@@ -82,11 +82,11 @@ public:
 
     explicit Det( expression_type const & __expr )
         :
-        _M_expr( __expr )
+        M_expr( __expr )
     {}
     Det( Det const & te )
         :
-        _M_expr( te._M_expr )
+        M_expr( te.M_expr )
     {}
     ~Det()
     {}
@@ -120,7 +120,7 @@ public:
 
     expression_type const& expression() const
     {
-        return _M_expr;
+        return M_expr;
     }
 
     //@}
@@ -136,6 +136,7 @@ public:
         BOOST_MPL_ASSERT_MSG( ( boost::is_same<mpl::int_<expr_shape::M>,mpl::int_<expr_shape::N> >::value ), INVALID_TENSOR_SHOULD_BE_RANK_2_OR_0, ( mpl::int_<expr_shape::M>, mpl::int_<expr_shape::N> ) );
         typedef Shape<expr_shape::nDim,Scalar,false,false> shape;
 
+        typedef Eigen::Matrix<value_type,Eigen::Dynamic,1> vector_type;
 
         template <class Args> struct sig
         {
@@ -150,49 +151,54 @@ public:
         tensor( this_type const& expr,
                 Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
             :
-            _M_tensor_expr( expr.expression(), geom, fev, feu )
+            M_tensor_expr( expr.expression(), geom, fev, feu ),
+            M_det( geom->nPoints() )
         {
         }
 
         tensor( this_type const& expr,
                 Geo_t const& geom, Basis_i_t const& fev )
             :
-            _M_tensor_expr( expr.expression(), geom, fev )
+            M_tensor_expr( expr.expression(), geom, fev ),
+            M_det( geom->nPoints() )
         {
         }
 
         tensor( this_type const& expr, Geo_t const& geom )
             :
-            _M_tensor_expr( expr.expression(), geom )
+            M_tensor_expr( expr.expression(), geom ),
+            M_det( geom->nPoints() )
         {
         }
         template<typename IM>
         void init( IM const& im )
         {
-            _M_tensor_expr.init( im );
+            M_tensor_expr.init( im );
         }
-        void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
+        void update( Geo_t const& geom, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ )
         {
-            _M_tensor_expr.update( geom, fev, feu );
+            M_tensor_expr.update( geom );
         }
-        void update( Geo_t const& geom, Basis_i_t const& fev )
+        void update( Geo_t const& geom, Basis_i_t const& /*fev*/ )
         {
-            _M_tensor_expr.update( geom, fev );
+            M_tensor_expr.update( geom );
         }
         void update( Geo_t const& geom )
         {
-            _M_tensor_expr.update( geom );
+            M_tensor_expr.update( geom );
+            computeDet( mpl::int_<shape::N>() );
         }
         void update( Geo_t const& geom, uint16_type face )
         {
-            _M_tensor_expr.update( geom, face );
+            M_tensor_expr.update( geom, face );
+            computeDet( mpl::int_<shape::N>() );
         }
 
 
         value_type
         evalij( uint16_type i, uint16_type j ) const
         {
-            return _M_tensor_expr.evalij( i, j );
+            return M_tensor_expr.evalij( i, j );
         }
 
 
@@ -211,42 +217,54 @@ public:
         value_type
         evalq( uint16_type /*c1*/, uint16_type /*c2*/, uint16_type q ) const
         {
-            return _M_tensor_expr.evalq( 0, 0, q, mpl::int_<shape::N>() );
-        }
-        value_type
-        evalq( uint16_type /*c1*/, uint16_type /*c2*/, uint16_type q, mpl::int_<1> ) const
-        {
-            return _M_tensor_expr.evalq( 0, 0, q );
-        }
-        value_type
-        evalq( uint16_type /*c1*/, uint16_type /*c2*/, uint16_type q, mpl::int_<2> ) const
-        {
-            double a = _M_tensor_expr.evalq( 0, 0, q );
-            double b = _M_tensor_expr.evalq( 1, 0, q );
-            double c = _M_tensor_expr.evalq( 0, 1, q );
-            double d = _M_tensor_expr.evalq( 1, 1, q );
-            return a*c-b*d;
-        }
-        value_type
-        evalq( uint16_type /*c1*/, uint16_type /*c2*/, uint16_type q, mpl::int_<3> ) const
-        {
-            double a = _M_tensor_expr.evalq( 0, 0, q );
-            double b = _M_tensor_expr.evalq( 0, 1, q );
-            double c = _M_tensor_expr.evalq( 0, 2, q );
-            double d = _M_tensor_expr.evalq( 1, 0, q );
-            double e = _M_tensor_expr.evalq( 1, 1, q );
-            double f = _M_tensor_expr.evalq( 1, 2, q );
-            double g = _M_tensor_expr.evalq( 2, 0, q );
-            double h = _M_tensor_expr.evalq( 2, 1, q );
-            double l = _M_tensor_expr.evalq( 2, 2, q );
-            return a*(e*l-f*h)-b*(d*l-g*h)+c*(d*h-g*e);
+            return M_det(q);
         }
 
-        tensor_expr_type _M_tensor_expr;
+    private:
+        void
+        computeDet( mpl::int_<1> )
+            {
+                for( int q = 0; q < M_det.rows(); ++q )
+                {
+                    M_det(q) = M_tensor_expr.evalq( 0, 0, q );
+                }
+            }
+        void
+        computeDet( mpl::int_<2> )
+            {
+                for( int q = 0; q < M_det.rows(); ++q )
+                {
+                    double a = M_tensor_expr.evalq( 0, 0, q );
+                    double b = M_tensor_expr.evalq( 0, 1, q );
+                    double c = M_tensor_expr.evalq( 1, 0, q );
+                    double d = M_tensor_expr.evalq( 1, 1, q );
+                    M_det(q) =  a*c-b*d;
+                }
+            }
+        void
+        computeDet( mpl::int_<3> )
+            {
+                for( int q = 0; q < M_det.rows(); ++q )
+                {
+                    double a = M_tensor_expr.evalq( 0, 0, q );
+                    double b = M_tensor_expr.evalq( 0, 1, q );
+                    double c = M_tensor_expr.evalq( 0, 2, q );
+                    double d = M_tensor_expr.evalq( 1, 0, q );
+                    double e = M_tensor_expr.evalq( 1, 1, q );
+                    double f = M_tensor_expr.evalq( 1, 2, q );
+                    double g = M_tensor_expr.evalq( 2, 0, q );
+                    double h = M_tensor_expr.evalq( 2, 1, q );
+                    double l = M_tensor_expr.evalq( 2, 2, q );
+                    M_det(q) = a*(e*l-f*h)-b*(d*l-g*h)+c*(d*h-g*e);
+                }
+            }
+    private:
+        tensor_expr_type M_tensor_expr;
+        vector_type M_det;
     };
 
 private:
-    mutable expression_type  _M_expr;
+    mutable expression_type  M_expr;
 };
 /// \endcond
 

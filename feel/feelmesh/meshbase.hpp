@@ -328,6 +328,17 @@ protected:
     virtual void checkAndFixPermutation() = 0;
 
 private:
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize( Archive & ar, const unsigned int version )
+        {
+            ar & M_components;
+            ar & M_is_updated;
+            ar & M_is_parametric;
+            ar & M_n_vertices;
+            ar & M_n_parts;
+        }
+private:
 
     /**
      * encodes components that should be updated

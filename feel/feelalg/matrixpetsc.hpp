@@ -413,7 +413,7 @@ public:
     }
     Mat& mat ()
     {
-        FEELPP_ASSERT ( _M_mat != NULL ).error( "null petsc matrix" );
+        FEELPP_ASSERT ( _M_mat != NULL ).warn( "null petsc matrix" );
         return _M_mat;
     }
 

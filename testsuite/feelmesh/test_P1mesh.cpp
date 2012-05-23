@@ -190,7 +190,7 @@ test2dP1meshComposite( Application_ptrtype test_app )
     auto Xh = space_type::New( _mesh=mesh );
 #endif
     auto U = Xh->element();
-    auto u = U.element<0>();
+    auto u = U.template element<0>();
     u = vf::project( _space=Xh->template functionSpace<0>(),
                      _range=elements( mesh ),
                      _expr=vec( cos( M_PI*Px() ),sin( M_PI*Py() ) ) );

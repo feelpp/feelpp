@@ -657,6 +657,37 @@ protected:
 
 private:
 
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize( Archive & ar, const unsigned int version )
+        {
+            Debug( 4015 ) << "Serializing GeoEntity...\n";
+            Debug( 4015 ) << "  - id...\n";
+            ar & M_id;
+            Debug( 4015 ) << "  - id:" << M_id << "\n";
+            Debug( 4015 ) << "  - entity...\n";
+            ar & M_entity;
+            Debug( 4015 ) << "  - entity:" << M_entity.context() << "\n";
+            Debug( 4015 ) << "  - geometry...\n";
+            ar & M_geometry;
+            Debug( 4015 ) << "  - geometry:" << M_geometry.context() << "\n";
+            Debug( 4015 ) << "  - shape...\n";
+            ar & M_shape;
+            Debug( 4015 ) << "  - shape:" << M_shape.context() << "\n";
+            Debug( 4015 ) << "  - npids...\n";
+            ar & M_npids;
+            Debug( 4015 ) << "  - npids:" << M_npids << "\n";
+            Debug( 4015 ) << "  - pid...\n";
+            ar & M_pid;
+            Debug( 4015 ) << "  - pid:" << M_pid << "\n";
+            ar & M_pidInPartition;
+            ar & M_neighor_pids;
+            ar & M_idInPartition;
+        }
+
+private:
+
+
     size_type M_id;
 
     Context M_entity;

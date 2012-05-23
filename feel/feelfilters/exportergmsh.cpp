@@ -285,8 +285,8 @@ ExporterGmsh<MeshType,N>::gmshSavePhysicalNames( std::ostream& out, mesh_ptrtype
     // physical-dimension physical-number "physical-name" ...
     BOOST_FOREACH( auto data, mesh->markerNames() )
     {
-        out << data.second.template get<1>() << " "
-            << data.second.template get<0>() << " "
+        out << data.second[1] << " "
+            << data.second[0] << " "
             << "\"" << data.first << "\"" << "\n";
     }
     out << "$EndPhysicalNames\n";

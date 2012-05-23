@@ -203,6 +203,15 @@ public:
 
 private:
 
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize( Archive & ar, const unsigned int version )
+        {
+            ar & _M_context;
+        }
+
+private:
+
     size_type _M_context;
 
 };

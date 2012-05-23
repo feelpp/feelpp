@@ -543,8 +543,9 @@ template <typename T>
 void MatrixPetsc<T>::clear ()
 {
     int ierr=0;
-
-    if ( ( this->isInitialized() ) && ( this->_M_destroy_mat_on_exit ) )
+    PetscBool pinit;
+    PetscInitialized( &pinit );
+    if ( pinit && ( this->isInitialized() ) && ( this->_M_destroy_mat_on_exit ) )
     {
         ierr = PETSc::MatDestroy ( _M_mat );
         CHKERRABORT( this->comm(),ierr );

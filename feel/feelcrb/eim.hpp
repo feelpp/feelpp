@@ -225,7 +225,7 @@ public:
        Given the \f$\mu\f$ in parameter space,
        compute \f$ q_m( x ) \forall x \in \Omega\f$
     */
-    void blackbox_q( vector_type& __g, int __m )
+    void blackboxQ( vector_type& __g, int __m )
         {
             FEELPP_ASSERT( _M_t.size() ).error( "t size is 0" );
             FEELPP_ASSERT( _M_q.rows() && _M_q.cols() ).error( "q size is 0" );

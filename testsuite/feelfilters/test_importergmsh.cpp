@@ -72,11 +72,11 @@ checkCreateGmshMesh( std::string const& shape, std::string const& convex = "Simp
                                          _h=0.5 ) );
 
     auto neumann = markedfaces( mesh, "Neumann" );
-    BOOST_CHECK_NE( std::distance( neumann.get<1>(), neumann.get<2>() ), 0 );
+    BOOST_CHECK_NE( std::distance( neumann.template get<1>(), neumann.template get<2>() ), 0 );
     auto dirichlet = markedfaces( mesh, "Dirichlet" );
-    BOOST_CHECK_NE( std::distance( dirichlet.get<1>(), dirichlet.get<2>() ), 0 );
-    BOOST_CHECK_EQUAL( std::distance( neumann.get<1>(), neumann.get<2>() )+
-                       std::distance( dirichlet.get<1>(), dirichlet.get<2>() ),
+    BOOST_CHECK_NE( std::distance( dirichlet.template get<1>(), dirichlet.template get<2>() ), 0 );
+    BOOST_CHECK_EQUAL( std::distance( neumann.template get<1>(), neumann.template get<2>() )+
+                       std::distance( dirichlet.template get<1>(), dirichlet.template get<2>() ),
                        std::distance( mesh->beginFaceOnBoundary(), mesh->endFaceOnBoundary() ) );
 
 }
@@ -243,17 +243,17 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( gmshimportexport, T, dim_types )
 
     auto elements1 = elements( mesh );
     auto elements2 = elements( meshimp );
-    BOOST_CHECK_EQUAL( std::distance( elements1.get<1>(), elements1.get<2>() ),
-                       std::distance( elements2.get<1>(), elements2.get<2>() ) );
+    BOOST_CHECK_EQUAL( std::distance( elements1.template get<1>(), elements1.template get<2>() ),
+                       std::distance( elements2.template get<1>(), elements2.template get<2>() ) );
 
     auto neumann1 = markedfaces( mesh, "Neumann" );
     auto neumann2 = markedfaces( meshimp, "Neumann" );
-    BOOST_CHECK_EQUAL( std::distance( neumann1.get<1>(), neumann1.get<2>() ),
-                       std::distance( neumann2.get<1>(), neumann2.get<2>() ) );
+    BOOST_CHECK_EQUAL( std::distance( neumann1.template get<1>(), neumann1.template get<2>() ),
+                       std::distance( neumann2.template get<1>(), neumann2.template get<2>() ) );
     auto dirichlet1 = markedfaces( mesh, "Dirichlet" );
     auto dirichlet2 = markedfaces( meshimp, "Dirichlet" );
-    BOOST_CHECK_EQUAL( std::distance( dirichlet1.get<1>(), dirichlet1.get<2>() ),
-                       std::distance( dirichlet2.get<1>(), dirichlet2.get<2>() ) );
+    BOOST_CHECK_EQUAL( std::distance( dirichlet1.template get<1>(), dirichlet1.template get<2>() ),
+                       std::distance( dirichlet2.template get<1>(), dirichlet2.template get<2>() ) );
     BOOST_WARN_EQUAL( std::distance( mesh->beginFaceOnBoundary(), mesh->endFaceOnBoundary() ),
                       std::distance( meshimp->beginFaceOnBoundary(), meshimp->endFaceOnBoundary() ) );
     BOOST_CHECK_EQUAL( std::distance( mesh->beginElement(), mesh->endElement() ),
@@ -300,12 +300,12 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( meditimport, T, dim_types )
 
     auto neumann1 = markedfaces( mesh, "Neumann" );
     auto neumann2 = markedfaces( meshimp, mesh->markerName( "Neumann" ) );
-    BOOST_CHECK_EQUAL( std::distance( neumann1.get<1>(), neumann1.get<2>() ),
-                       std::distance( neumann2.get<1>(), neumann2.get<2>() ) );
+    BOOST_CHECK_EQUAL( std::distance( neumann1.template get<1>(), neumann1.template get<2>() ),
+                       std::distance( neumann2.template get<1>(), neumann2.template get<2>() ) );
     auto dirichlet1 = markedfaces( mesh, "Dirichlet" );
     auto dirichlet2 = markedfaces( meshimp, mesh->markerName( "Dirichlet" ) );
-    BOOST_CHECK_EQUAL( std::distance( dirichlet1.get<1>(), dirichlet1.get<2>() ),
-                       std::distance( dirichlet2.get<1>(), dirichlet2.get<2>() ) );
+    BOOST_CHECK_EQUAL( std::distance( dirichlet1.template get<1>(), dirichlet1.template get<2>() ),
+                       std::distance( dirichlet2.template get<1>(), dirichlet2.template get<2>() ) );
     BOOST_CHECK_EQUAL( std::distance( mesh->beginFaceOnBoundary(), mesh->endFaceOnBoundary() ),
                        std::distance( meshimp->beginFaceOnBoundary(), meshimp->endFaceOnBoundary() ) );
     BOOST_CHECK_EQUAL( std::distance( mesh->beginElement(), mesh->endElement() ),
