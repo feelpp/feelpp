@@ -152,7 +152,7 @@ public:
     typedef boost::shared_ptr<backend_type> backend_ptrtype;
     typedef typename model_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
     typedef typename model_type::vector_ptrtype vector_ptrtype;
-    typedef typename model_type::beta_vector_type betaa_vector_type;
+    typedef typename model_type::beta_vector_type beta_vector_type;
 
 
     typedef Eigen::VectorXd y_type;
