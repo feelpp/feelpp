@@ -433,6 +433,14 @@ public:
             this->setProcessId( tags[2] );
     }
 
+    std::vector<int> tags() const
+        {
+            std::vector<int> thetags(3);
+            thetags[0] = M_marker1.value();
+            thetags[1] = M_marker2.value();
+            thetags[2] = this->processId();
+            return thetags;
+        }
     /**
      * set the geometric dimension of the entity the points belongs to
      */
@@ -471,6 +479,26 @@ public:
         M_uv[1] = v;
         M_is_parametric = true;
     }
+
+private:
+
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize( Archive & ar, const unsigned int version )
+        {
+            ar & boost::serialization::base_object<super>( *this );
+            ar & boost::serialization::base_object<super2>( *this );
+            //ar & M_is_vertex;
+            //ar & M_is_parametric;
+            ar & M_marker1;
+            ar & M_marker2;
+            ar & M_marker3;
+            /*
+            ar & M_gdim;
+            ar & M_gtag;
+            ar & M_uv;
+            */
+        }
 
 private:
     bool M_is_vertex;

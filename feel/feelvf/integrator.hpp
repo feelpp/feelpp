@@ -2096,6 +2096,8 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_FACES> ) const
     if ( it == en )
         return typename eval::matrix_type( eval::matrix_type::Zero() );
 
+    FEELPP_ASSERT( it->isConnectedTo0() )( it->id() ).error( "invalid face" );
+    FEELPP_ASSERT( it->element(0).gm() )( it->id() ).error( "invalid geometric transformation" );
     gm_ptrtype gm = it->element( 0 ).gm();
 
     //Debug(5065) << "[integrator] evaluate(faces), gm is cached: " << gm->isCached() << "\n";

@@ -871,9 +871,9 @@ public:
         if ( this->worldComm().localSize()>1 )
         {
 #if defined(FEELPP_ENABLE_MPI_MODE)
-            //std::cout << "[build] call buildGhostDofMap () with god rank " << this->worldComm().godRank()  <<std::endl;
+            Debug( 5015 ) << "[build] call buildGhostDofMap () with god rank " << this->worldComm().godRank()  << "\n";
             this->buildGhostDofMap( M );
-            //std::cout << "[build] callFINISH buildGhostDofMap () with god rank " << this->worldComm().godRank()  <<std::endl;
+            Debug( 5015 ) << "[build] callFINISH buildGhostDofMap () with god rank " << this->worldComm().godRank()  << "\n";
 #else
             std::cerr << "ERROR : FEELPP_ENABLE_MPI_MODE is OFF" << std::endl;
             //throw std::logic_error( "ERROR : FEELPP_ENABLE_MPI_MODE is OFF" );
@@ -1721,7 +1721,7 @@ private:
     template<typename FaceIterator>
     void addFaceBoundaryDof( FaceIterator __face_it, uint16_type& lc )
     {
-        addFaceBoundaryDof( __face_it, lc, mpl::bool_<face_type::numFaces*fe_type::nDofPerFace>() );
+        addFaceBoundaryDof( __face_it, lc, mpl::bool_<(face_type::numFaces*fe_type::nDofPerFace > 0)>() );
     }
     template<typename FaceIterator>
     void addFaceBoundaryDof( FaceIterator /*__face_it*/, uint16_type& /*lc*/, mpl::bool_<false> )
@@ -2858,6 +2858,8 @@ DofTable<MeshType, FEType, PeriodicityType>::buildBoundaryDofMap( mesh_type& M )
     Debug( 5005 ) << "edge dof : " <<  face_type::numEdges * fe_type::nDofPerEdge << "\n";
     Debug( 5005 ) << "face dof : " << face_type::numFaces * fe_type::nDofPerFace  << "\n";
     Debug( 5005 ) << "number of Dof on an Element Face : " << nDofF << "\n";
+
+    if ( nDofF == 0 ) return;
 
     //
     // Face dof

@@ -1,7 +1,7 @@
 
 foreach(TEST importergmsh)
 
-  feel_add_test( ${TEST} )
+  feelpp_add_test( ${TEST} )
 
 endforeach()
 add_dependencies(test_importergmsh feel_mesh_data)

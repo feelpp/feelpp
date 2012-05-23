@@ -290,7 +290,7 @@ Vector<T> &
 VectorUblas<T,Storage>::operator= ( const Vector<value_type> &V )
 {
     checkInvariant();
-    FEELPP_ASSERT( this->localSize() == V.localSize() )( this->localSize() )( V.localSize() ).error ( "invalid vector size" );
+    FEELPP_ASSERT( this->localSize() == V.localSize() )( this->localSize() )( V.localSize() ).warn ( "invalid vector size" );
     FEELPP_ASSERT( this->firstLocalIndex() == V.firstLocalIndex() &&
                    this->lastLocalIndex() == V.lastLocalIndex() )
     ( this->firstLocalIndex() )( this->lastLocalIndex() )

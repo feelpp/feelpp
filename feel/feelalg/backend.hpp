@@ -300,10 +300,10 @@ public:
 
         else
         {
-            // need to build inverse of pattern_block : to fix!
             auto s = stencil( _test=trial,
                               _trial=test,
                               _pattern=pattern,
+                              _pattern_block=pattern_block.transpose().getSetOfBlocks(),
                               _collect_garbage=collect_garbage );
 
             mat->init( test->nDof(), trial->nDof(),
@@ -836,7 +836,7 @@ public:
         if ( !jacobian )
             this->nlSolver()->jacobian( _sol, jacobian );
 
-        if ( prec )
+        if ( prec && !this->nlSolver()->initialized() )
             this->nlSolver()->attachPreconditioner( prec );
 
         if ( reuse_prec == false && reuse_jac == false )

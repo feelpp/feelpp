@@ -66,6 +66,7 @@ struct f_Px
     typedef Feel::uint16_type uint16_type;
     static const uint16_type rank = 0;
     static const uint16_type imorder = 1;
+    static const bool imIsPoly = true;
     double operator()( uint16_type, uint16_type, ublas::vector<double> const& x, ublas::vector<double> const& /*n*/ ) const
     {
         return x[0];
@@ -78,6 +79,7 @@ struct f_Nx
     typedef Feel::uint16_type uint16_type;
     static const uint16_type rank = 0;
     static const uint16_type imorder = 1;
+    static const bool imIsPoly = true;
     double operator()( uint16_type, uint16_type, ublas::vector<double> const& /*x*/, ublas::vector<double> const& n ) const
     {
         return n[0];
@@ -90,6 +92,7 @@ struct f_Ny
     typedef Feel::uint16_type uint16_type;
     static const uint16_type rank = 0;
     static const uint16_type imorder = 1;
+    static const bool imIsPoly = true;
     double operator()( uint16_type, uint16_type, ublas::vector<double> const& /*x*/, ublas::vector<double> const& n ) const
     {
         return n[1];
@@ -102,6 +105,7 @@ struct f_sinPx
     typedef Feel::uint16_type uint16_type;
     static const uint16_type rank = 0;
     static const uint16_type imorder = 2;
+    static const bool imIsPoly = false;
     double operator()( uint16_type, uint16_type, ublas::vector<double> const& x, ublas::vector<double> const& /*n*/ ) const
     {
         return math::sin( x[0] );
@@ -1065,13 +1069,10 @@ struct test_integration_composite_functions: public Application
                           ).evaluate();
         BOOST_TEST_MESSAGE( "|grad(u)-grad_exact|_0^2 = " << m5 << "\n" );
 
-
-
-
-        typename  Backend<value_type>::vector_ptrtype F = Backend<value_type>::newVector( Xh );
-        form( Xh, *F ) = integrate( elements( *mesh ),
-                                    ( trans( vec( constant( 1.0 ), constant( 1.0 ) ) ) * id( u.template element<0>() )+
-                                      id( u.template element<1>() ) ) );
+        auto F = backend->newVector( Xh );
+        form1( _test=Xh, _vector=F ) = integrate( elements( *mesh ),
+                                                  ( trans( vec( constant( 1.0 ), constant( 1.0 ) ) ) * id( u.template element<0>() )+
+                                                    id( u.template element<1>() ) ) );
         F->printMatlab( "composite_F.m" );
         F->close();
         value_type vf = inner_product( *F, u );
