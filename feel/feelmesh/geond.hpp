@@ -817,6 +817,32 @@ private:
     void updatep( typename gm_type::faces_precompute_type & pcf, mpl::bool_<false> );
 
 private:
+
+private:
+
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize( Archive & ar, const unsigned int version )
+        {
+            Debug( 4015 ) << "Serializing GeoND...\n";
+            Debug( 4015 ) << "  - base class...\n";
+            ar & boost::serialization::base_object<super>( *this );
+            Debug( 4015 ) << "  - points...\n";
+            ar & M_points;
+            Debug( 4015 ) << "  - G...\n";
+            ar & M_G;
+            Debug( 4015 ) << "  - marker1...\n";
+            ar & M_marker1;
+            Debug( 4015 ) << "  - marker1: " << M_marker1.value() << "...\n";
+            Debug( 4015 ) << "  - marker2...\n";
+            ar & M_marker2;
+            Debug( 4015 ) << "  - marker2: " << M_marker2.value() << "...\n";
+            Debug( 4015 ) << "  - marker3...\n";
+            ar & M_marker3;
+            Debug( 4015 ) << "  - marker3: " << M_marker3.value() << "...\n";
+        }
+
+private:
     /** geometric nodes of the element */
     ublas::bounded_array<point_type*, numPoints> M_points;
 

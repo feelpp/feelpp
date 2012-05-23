@@ -46,7 +46,7 @@ namespace Feel
 {
 Environment::Environment()
     :
-    M_env()
+    M_env(false)
 {
 #if defined( FEELPP_HAS_TBB )
     int n = tbb::task_scheduler_init::default_num_threads();
@@ -78,7 +78,7 @@ Environment::Environment()
 }
 Environment::Environment( int& argc, char**& argv )
     :
-    M_env( argc, argv )
+    M_env( argc, argv, false )
 {
 #if defined( FEELPP_HAS_TBB )
     int n = tbb::task_scheduler_init::default_num_threads();

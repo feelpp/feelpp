@@ -73,6 +73,7 @@ public :
     mesh_build_ptrtype
     build()
     {
+        Debug( 4015 ) << "[createSubmeshTool] extracting mesh\n";
         return build( mpl::int_<idim_type::value>() );
     }
 
@@ -103,7 +104,7 @@ createSubmeshTool<MeshType,IteratorRange>::build( mpl::int_<MESH_ELEMENTS> /**/ 
     // inherit the table of markersName
     BOOST_FOREACH( auto itMark, M_mesh->markerNames() )
     {
-        newMesh->addMarkerName( itMark.first,itMark.second.template get<0>(),itMark.second.template get<1>() );
+        newMesh->addMarkerName( itMark.first,itMark.second[0],itMark.second[1] );
     }
 
     //-----------------------------------------------------------//
@@ -261,14 +262,16 @@ template <typename MeshType,typename IteratorRange>
 typename createSubmeshTool<MeshType,IteratorRange>::mesh_faces_ptrtype
 createSubmeshTool<MeshType,IteratorRange>::build( mpl::int_<MESH_FACES> /**/ )
 {
+    Debug( 4015 ) << "[Mesh<Shape,T>::createSubmesh] creating new mesh" << "\n";
     mesh_faces_ptrtype newMesh( new mesh_faces_type );
 
     //-----------------------------------------------------------//
-
+    Debug( 4015 ) << "[Mesh<Shape,T>::createSubmesh] extraction mesh faces" << "\n";
     // inherit the table of markersName
     BOOST_FOREACH( auto itMark, M_mesh->markerNames() )
     {
-        newMesh->addMarkerName( itMark.first,itMark.second.template get<0>(),itMark.second.template get<1>() );
+        Debug( 4015 ) << "[Mesh<Shape,T>::createSubmesh] adding marker " << itMark.first <<"\n";
+        newMesh->addMarkerName( itMark.first,itMark.second[0],itMark.second[1] );
     }
 
     //-----------------------------------------------------------//
@@ -297,11 +300,13 @@ createSubmeshTool<MeshType,IteratorRange>::build( mpl::int_<MESH_FACES> /**/ )
     iterator_type it, en;
     boost::tie( boost::tuples::ignore, it, en ) = M_range;
 
+    Debug( 4015 ) << "[Mesh<Shape,T>::createSubmesh] extracting " << std::distance(it,en)  << " faces " << "\n";
     for ( ; it != en; ++ it )
     {
         // create a new element
         //element_type const& old_elem = *it;
         auto oldElem = *it;
+        Debug( 4015 ) << "[Mesh<Shape,T>::createSubmesh]   + face : " << it->id() << "\n";
 
         // copy element so that we can modify it
         new_element_type newElem;// = oldElem;
@@ -320,7 +325,7 @@ createSubmeshTool<MeshType,IteratorRange>::build( mpl::int_<MESH_FACES> /**/ )
             {
                 new_node_numbers[oldElem.point( n ).id()] = n_new_nodes;
 
-                //Debug( 4015 ) << "[Mesh<Shape,T>::createP1mesh] insert point " << old_elem.point(n) << "\n";
+                Debug( 4015 ) << "[Mesh<Shape,T>::createSubmesh] insert point " << oldElem.point(n) << "\n";
 
                 typename mesh_faces_type::point_type pt( oldElem.point( n ) );
                 pt.setId( n_new_nodes );
@@ -328,7 +333,7 @@ createSubmeshTool<MeshType,IteratorRange>::build( mpl::int_<MESH_FACES> /**/ )
                 // Add this node to the new mesh
                 newMesh->addPoint( pt );
 
-                //Debug( 4015 ) << "[Mesh<Shape,T>::createSubmesh] number of  points " << new_mesh->numPoints() << "\n";
+                Debug( 4015 ) << "[Mesh<Shape,T>::createSubmesh] number of  points " << newMesh->numPoints() << "\n";
 
                 // Increment the new node counter
                 n_new_nodes++;
@@ -347,6 +352,7 @@ createSubmeshTool<MeshType,IteratorRange>::build( mpl::int_<MESH_FACES> /**/ )
 
         // set id of element
         newElem.setId ( n_new_elem );
+        newElem.setProcessId ( oldElem.processId() );
 
         // increment the new element counter
         n_new_elem++;
@@ -358,7 +364,7 @@ createSubmeshTool<MeshType,IteratorRange>::build( mpl::int_<MESH_FACES> /**/ )
 
     newMesh->setNumVertices( std::accumulate( new_vertex.begin(), new_vertex.end(), 0 ) );
 
-    //Debug( 4015 ) << "[Mesh<Shape,T>::createP1mesh] update face/edge info if necessary\n";
+    Debug( 4015 ) << "[Mesh<Shape,T>::createSubmesh] update face/edge info if necessary\n";
     // Prepare the new_mesh for use
     newMesh->components().set ( MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
     newMesh->updateForUse();
@@ -376,6 +382,8 @@ template <typename MeshType,typename IteratorRange>
 typename createSubmeshTool<MeshType,IteratorRange>::mesh_build_ptrtype
 createSubmesh( boost::shared_ptr<MeshType> inputMesh,IteratorRange const& range )
 {
+    Debug( 4015 ) << "[createSubmesh] extracting " << range.template get<0>() << " nb elements :"
+                  << std::distance(range.template get<1>(),range.template get<2>()) << "\n";
     createSubmeshTool<MeshType,IteratorRange> cSmT( inputMesh,range );
     return cSmT.build();
 }

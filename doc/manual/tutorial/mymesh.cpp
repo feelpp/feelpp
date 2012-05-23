@@ -31,6 +31,7 @@
 #include <feel/feeldiscr/mesh.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feeldiscr/region.hpp>
+#include <feel/feeltiming/tic.hpp>
 #include <feel/feelfilters/gmsh.hpp>
 
 #include <feel/feelfilters/exporter.hpp>
@@ -67,6 +68,18 @@ makeAbout()
                      "christophe.prudhomme@ujf-grenoble.fr", "" );
     return about;
 }
+
+class A { public:
+A():str(){}
+A(std::string s):str(s){}
+std::string str;
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize( Archive & ar, const unsigned int version )
+        {
+            ar & str;
+        }
+};
 
 template<int Dim>
 class MyMesh: public Feel::Simget
@@ -147,13 +160,34 @@ MyMesh<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
                                    % meshSize );
     //Environment::setLogs( this->about().appName() );
     //# marker4 #
-    auto mesh = createGMSHMesh( _mesh=new mesh_type,
-                                _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
-                                _desc=domain( _name=( boost::format( "%1%-%2%" ) % shape % Dim ).str() ,
-                                        _shape=shape,
-                                        _dim=Dim,
-                                        _h=X[0] ),
-                                _partitions=this->comm().size() );
+    auto mesh = mesh_type::New();
+
+    tic();
+    auto is_mesh_loaded = mesh->load( _name="mymesh",_path=".",_type="text" );
+    toc( "load" );
+
+    if ( !is_mesh_loaded )
+    {
+        tic();
+        Log() << "Generating mesh using gmsh...\n";
+        mesh = createGMSHMesh( _mesh=new mesh_type,
+                               _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
+                               _desc=domain( _name=( boost::format( "%1%-%2%" ) % shape % Dim ).str() ,
+                                             _shape=shape,
+                                             _dim=Dim,
+                                             _h=X[0] ),
+                               _partitions=this->comm().size() );
+        Log() << "Saving mesh...\n";
+        mesh->save( _name="mymesh",_path=".",_type="text" );
+        toc("generate+save");
+    }
+    else
+    {
+        tic();
+        mesh->save( _name="mymesh2",_path=".",_type="text" );
+        toc("save");
+    }
+
     //# endmarker4 #
 
     int ne = std::distance( mesh->beginElementWithProcessId( this->comm().rank() ),
@@ -167,10 +201,43 @@ MyMesh<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
     Log() << "Global number of elements: " << gne << "\n";
 
     //# marker62 #
-    exporter->step( 0 )->setMesh( mesh );
-    exporter->step( 0 )->addRegions();
-    exporter->save();
+    if ( exporter->doExport() )
+    {
+        Log() << "Exporting mesh\n";
+        exporter->step( 0 )->setMesh( mesh );
+        Log() << "Exporting regions\n";
+        exporter->step( 0 )->addRegions();
+        Log() << "Saving...\n";
+        exporter->save();
+    }
     //# endmarker62 #
+
+    // in case of two processors, exchange the meshes
+    if ( this->comm().size() == 2 )
+    {
+        mpi::communicator world;
+        mesh_ptrtype mesh2( new mesh_type);
+
+        if ( world.rank() == 0 )
+        {
+            world.send( 1, 10, *mesh );
+            world.recv( 1, 11, *mesh2 );
+        }
+        else
+        {
+            world.recv( 0, 10, *mesh2 );
+            world.send( 0, 11, *mesh );
+        }
+        mesh2->save( _name="mymesh3", _type="text", _path="." );
+
+        auto exporter2 = Exporter<mesh_type>::New( this->vm(), this->about().appName()+"-m2" );
+        if ( exporter2->doExport() )
+        {
+            exporter2->step( 0 )->setMesh( mesh2 );
+            exporter2->step( 0 )->addRegions();
+            exporter2->save();
+        }
+    }
 }
 
 //

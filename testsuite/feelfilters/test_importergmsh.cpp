@@ -116,16 +116,16 @@ BOOST_AUTO_TEST_CASE( gmshgeo )
                                       _order=1,
                                       _h=0.2 ) );
     auto letters = markedfaces( mesh, "letters" );
-    BOOST_CHECK_NE( std::distance( letters.template get<1>(), letters.template get<2>() ), 0 );
+    BOOST_CHECK_NE( std::distance( letters.get<1>(), letters.get<2>() ), 0 );
     auto wall = markedfaces( mesh, "wall" );
-    BOOST_CHECK_NE( std::distance( wall.template get<1>(), wall.template get<2>() ), 0 );
+    BOOST_CHECK_NE( std::distance( wall.get<1>(), wall.get<2>() ), 0 );
     auto inlet = markedfaces( mesh, "inlet" );
-    BOOST_CHECK_NE( std::distance( inlet.template get<1>(), inlet.template get<2>() ), 0 );
+    BOOST_CHECK_NE( std::distance( inlet.get<1>(), inlet.get<2>() ), 0 );
     auto outlet = markedfaces( mesh, "outlet" );
-    BOOST_CHECK_NE( std::distance( outlet.template get<1>(), outlet.template get<2>() ), 0 );
+    BOOST_CHECK_NE( std::distance( outlet.get<1>(), outlet.get<2>() ), 0 );
     auto markedelts = markedelements( mesh, "feel" );
     BOOST_CHECK_EQUAL( std::distance( mesh->beginElement(), mesh->endElement() ),
-                       std::distance( markedelts.template get<1>(), markedelts.template get<2>() ) );
+                       std::distance( markedelts.get<1>(), markedelts.get<2>() ) );
 }
 
 BOOST_AUTO_TEST_CASE( gmshpartgeo )
