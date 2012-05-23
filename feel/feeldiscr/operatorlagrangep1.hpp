@@ -264,7 +264,7 @@ OperatorLagrangeP1<space_type>::OperatorLagrangeP1( domain_space_ptrtype const& 
            dual_image_space_ptrtype( new dual_image_space_type( image_mesh_ptrtype( new image_mesh_type ) ) ),
            backend,
            false ),
-    _M_mesh( new image_mesh_type("metis",worldsComm[0]) ),
+    _M_mesh( new image_mesh_type(worldsComm[0]) ),
     _M_el2el(),
     _M_el2pt(),
     _M_pset( 0 ),
