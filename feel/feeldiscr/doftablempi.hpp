@@ -34,16 +34,16 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGhostDofMap( mesh_type& mesh )
     std::map<size_type,boost::tuple<size_type,size_type> > mapInterProcessDof;
     std::set<int> setInterProcessDofNotPresent;
 
-    //std::cout << "[buildGhostDofMap] call buildGhostInterProcessDofMap() with god rank "<<  this->worldComm().godRank() << std::endl;
+    Debug( 5015 ) << "[buildGhostDofMap] call buildGhostInterProcessDofMap() with god rank "<<  this->worldComm().godRank() << "\n";
     buildGhostInterProcessDofMap( mesh,mapInterProcessDof );
 
-    //std::cout << "[buildGhostDofMap] call buildDofNotPresent() with rank "<<  this->worldComm().rank() << std::endl;
+    Debug( 5015 ) << "[buildGhostDofMap] call buildDofNotPresent() with rank "<<  this->worldComm().rank() << "\n";
     buildDofNotPresent( mesh,setInterProcessDofNotPresent );
 
-    //std::cout << "[buildGhostDofMap] call buildGlobalProcessToGlobalClusterDofMap() with rank "<<  this->worldComm().rank() << std::endl;
+    Debug( 5015 ) << "[buildGhostDofMap] call buildGlobalProcessToGlobalClusterDofMap() with rank "<<  this->worldComm().rank() << "\n";
     buildGlobalProcessToGlobalClusterDofMap( mesh,mapInterProcessDof,setInterProcessDofNotPresent );
 
-    //std::cout << "[buildGhostDofMap] call localtoglobalOnCluster() with rank "<<  this->worldComm().rank() << std::endl;
+    Debug( 5015 ) << "[buildGhostDofMap] call localtoglobalOnCluster() with rank "<<  this->worldComm().rank() << "\n";
     auto it_elt = mesh.beginElementWithProcessId( this->comm().rank() );
     auto en_elt = mesh.endElementWithProcessId( this->comm().rank() );
 
@@ -65,7 +65,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGhostDofMap( mesh_type& mesh )
         }
     }
 
-    //std::cout << "[buildGhostDofMap] finish () with god rank "<< this->worldComm().godRank() << std::endl;
+    Debug( 5015 ) << "[buildGhostDofMap] finish () with god rank "<< this->worldComm().godRank() << "\n";
 
 }
 
@@ -89,6 +89,8 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGhostInterProcessDofMap( mesh_
     else
         nbFaceDof = face_type::numVertices * fe_type::nDofPerVertex;
 
+    if ( nbFaceDof == 0 ) return;
+
     int myRank = this->worldComm().rank();
 
     //------------------------------------------------------------------------------//
@@ -105,9 +107,10 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGhostInterProcessDofMap( mesh_
     // iteration on all interprocessfaces
     auto face_it = mesh.interProcessFaces().first;
     auto face_en = mesh.interProcessFaces().second;
-
+    Debug( 5015 ) << "[buildGhostInterProcessDofMap] nb interprocess faces: " << std::distance( face_it, face_en ) << "\n";
     for ( ; face_it != face_en ; ++face_it )
     {
+        Debug( 5015 ) << "[buildGhostInterProcessDofMap] face id: " << face_it->id() << "\n";
         element_type eltOnProc;
         element_type eltOffProc;
         uint16_type faceIdInEltOnProc = invalid_uint16_type_value;
@@ -590,6 +593,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildDofNotPresent( mesh_type& mesh
     else
         nbFaceDof = face_type::numVertices * fe_type::nDofPerVertex;
 
+    if ( nbFaceDof == 0 ) return;
 
     std::vector< std::map<int,int> > mapGhost;
     std::set< int > setInterProcessDof;
