@@ -34,6 +34,13 @@
 
 #include <boost/foreach.hpp>
 #include <boost/signal.hpp>
+#include <boost/serialization/vector.hpp>
+#include <boost/serialization/array.hpp>
+#include <boost/serialization/base_object.hpp>
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/archive/binary_iarchive.hpp>
 
 #include <feel/feelcore/context.hpp>
 //#include <feel/feelcore/worldcomm.hpp>
@@ -166,7 +173,9 @@ public:
     };
 
     typedef Mesh<shape_type, T, Tag> self_type;
+    typedef self_type mesh_type;
     typedef boost::shared_ptr<self_type> self_ptrtype;
+    typedef self_ptrtype mesh_ptrtype;
 
     typedef typename element_type::template reference_convex<T>::type reference_convex_type;
 
@@ -191,7 +200,16 @@ public:
     /**
      * Default mesh constructor
      */
-    Mesh( std::string partitioner = "metis", WorldComm const& worldComm = WorldComm() );
+    Mesh( WorldComm const& worldComm = WorldComm() );
+
+    /**
+     * generate a new Mesh shared pointer
+     * \return the Mesh shared pointer
+     */
+    static mesh_ptrtype New()
+        {
+            return mesh_ptrtype(new mesh_type);
+        }
 
     /** @name Accessors
      */
@@ -664,6 +682,7 @@ public:
             return true;
         }
 
+
     FEELPP_DEFINE_VISITABLE();
     //@}
 
@@ -787,6 +806,8 @@ public:
          */
         void distribute( bool extrapolation = false );
 
+
+
     private:
         boost::shared_ptr<self_type> M_mesh;
         std::vector<std::map<size_type,uint16_type > > M_pts_cvx;
@@ -845,8 +866,10 @@ public:
             IsInitBoundaryFaces( false ),
             M_doExtrapolation( true )
         {
+            Debug(4015) << "[Mesh::Localization] create Localization tool\n";
             M_kd_tree->nbNearNeighbor( 15 );
             M_resultAnalysis.clear();
+            Debug(4015) << "[Mesh::Localization] create Localization tool done\n";
         }
 
         Localization( boost::shared_ptr<self_type> m, bool init_b = true ) :
@@ -1188,7 +1211,8 @@ template<typename RangeT>
 typename Mesh<Shape, T, Tag>::trace_mesh_ptrtype
 Mesh<Shape, T, Tag>::trace( RangeT const& range )
 {
-
+    Debug( 4015 ) << "[trace] extracting " << range.template get<0>() << " nb elements :"
+                  << std::distance(range.template get<1>(),range.template get<2>()) << "\n";
     return Feel::createSubmesh( this->shared_from_this(), range );
 
 }
@@ -1363,7 +1387,7 @@ typename Mesh<Shape, T, Tag>::P1_mesh_ptrtype
 Mesh<Shape, T, Tag>::createP1mesh() const
 {
 
-    P1_mesh_ptrtype new_mesh( new P1_mesh_type( "metis",this->worldComm() ) );
+    P1_mesh_ptrtype new_mesh( new P1_mesh_type( this->worldComm() ) );
 
     // How the nodes on this mesh will be renumbered to nodes
     // on the new_mesh.
