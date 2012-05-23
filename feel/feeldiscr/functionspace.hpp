@@ -2579,7 +2579,7 @@ public:
             }
 
             std::ostringstream os1;
-            os1 << _M_name << sep << suffix << ".fdb";
+            os1 << _M_name << sep << suffix << "-" << this->worldComm().globalSize() << "." << this->worldComm().globalRank() << ".fdb";
             fs::path p = fs::path( path ) / os1.str();
             fs::ofstream ofs( p );
 
@@ -2616,13 +2616,13 @@ public:
         {
             Feel::detail::ignore_unused_variable_warning( args );
             std::ostringstream os1;
-            os1 << _M_name << sep << suffix << ".fdb";
+            os1 << _M_name << sep << suffix << this->worldComm().globalSize() << "." << this->worldComm().globalRank() << ".fdb";
             fs::path p = fs::path( path ) / os1.str();
 
             if ( !fs::exists( p ) )
             {
                 std::ostringstream os2;
-                os2 << _M_name << sep << suffix;
+                os2 << _M_name << sep << suffix<< this->worldComm().globalSize() << "." << this->worldComm().globalRank();
                 p = fs::path( path ) / os2.str();
 
                 if ( !fs::exists( p ) )

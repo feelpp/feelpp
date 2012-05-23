@@ -74,7 +74,7 @@ Exporter<MeshType, N>::Exporter( po::variables_map const& vm, std::string const&
     M_ft( ASCII ),
     M_path( "." )
 {
-    std::cout << "[exporter::exporter] do export = " << doExport() << std::endl;
+    Debug() << "[exporter::exporter] do export = " << doExport() << "\n";
 }
 
 template<typename MeshType, int N>

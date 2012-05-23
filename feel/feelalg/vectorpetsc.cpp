@@ -797,7 +797,7 @@ VectorPetscMPI<T>::init( const size_type n,
     FEELPP_ASSERT( n_localWithoutGhost < n )( n_localWithoutGhost )( n ).warn( "invalid local size" );
 
     ierr = VecCreateMPI ( this->comm(), petsc_n_localWithoutGhost, petsc_n,
-                          &this->vec() );//&_M_vec);
+                          &this->_M_vec );
     CHKERRABORT( this->comm(),ierr );
 
     //ierr = VecSetFromOptions (this->vec());
