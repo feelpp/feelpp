@@ -120,16 +120,16 @@ public:
     typedef typename model_type::sampling_ptrtype sampling_ptrtype;
 
 
-    typedef Eigen::VectorXd theta_vector_type;
+    //typedef Eigen::VectorXd theta_vector_type;
+    //typedef Eigen::VectorXd vectorN_type;
+    typedef std::vector< std::vector< double > > beta_vector_type;
 
     typedef typename boost::tuple<sparse_matrix_ptrtype, sparse_matrix_ptrtype, std::vector<vector_ptrtype> > offline_merge_type;
 
 
-    typedef typename boost::tuple<std::vector<sparse_matrix_ptrtype>, std::vector<sparse_matrix_ptrtype>, std::vector< std::vector<vector_ptrtype> > > affine_decomposition_type;
+    typedef typename boost::tuple<std::vector< std::vector<sparse_matrix_ptrtype> >, std::vector< std::vector<sparse_matrix_ptrtype> >, std::vector< std::vector< std::vector<vector_ptrtype> > > > affine_decomposition_type;
 
-    typedef typename boost::tuple<theta_vector_type,theta_vector_type,std::vector<theta_vector_type> > thetaq_type;
-
-
+    typedef typename boost::tuple<beta_vector_type,beta_vector_type,std::vector<beta_vector_type> > betaqm_type;
 
 
     //@}
@@ -140,9 +140,9 @@ public:
 
     CRBModel()
         :
-        M_Aq(),
-        M_Mq(),
-        M_Fq(),
+        M_Aqm(),
+        M_Mqm(),
+        M_Fqm(),
         M_is_initialized( false ),
         M_mode( CRBModelMode::PFEM ),
         M_model( new model_type() ),
@@ -154,9 +154,9 @@ public:
 
     CRBModel( po::variables_map const& vm, CRBModelMode mode = CRBModelMode::PFEM  )
         :
-        M_Aq(),
-        M_Mq(),
-        M_Fq(),
+        M_Aqm(),
+        M_Mqm(),
+        M_Fqm(),
         M_is_initialized( false ),
         M_vm( vm ),
         M_mode( mode ),
@@ -172,9 +172,9 @@ public:
      */
     CRBModel( model_ptrtype & model )
         :
-        M_Aq(),
-        M_Mq(),
-        M_Fq(),
+        M_Aqm(),
+        M_Mqm(),
+        M_Fqm(),
         M_is_initialized( false ),
         M_vm(),
         M_mode( CRBModelMode::PFEM ),
@@ -190,9 +190,9 @@ public:
      */
     CRBModel( CRBModel const & o )
         :
-        M_Aq( o.M_Aq ),
-        M_Mq( o.M_Mq ),
-        M_Fq( o.M_Fq ),
+        M_Aqm( o.M_Aqm ),
+        M_Mqm( o.M_Mqm ),
+        M_Fqm( o.M_Fqm ),
         M_is_initialized( o.M_is_initialized ),
         M_vm( o.M_vm ),
         M_mode( o.M_mode ),
@@ -235,9 +235,9 @@ public:
     {
         if ( this != &o )
         {
-            M_Aq = o.M_Aq;
-            M_Fq = o.M_Fq;
-            M_Mq = o.M_Mq;
+            M_Aqm = o.M_Aqm;
+            M_Fqm = o.M_Fqm;
+            M_Mqm = o.M_Mqm;
             M_model = o.M_model;
             M_backend = o.M_backend;
             M_B = o.M_B;
@@ -313,7 +313,28 @@ public:
     }
 
 
+    int mMaxA(int q )
+    {
+        return M_model->mMaxA( q );
+    }
 
+    int mMaxM( int q )
+    {
+        return mMaxM( q , mpl::bool_<model_type::is_time_dependent>() );
+    }
+    int mMaxM( int q , mpl::bool_<true> )
+    {
+        return M_model->mMaxM( q );
+    }
+    int mMaxM( int q , mpl::bool_<false> )
+    {
+        return 0;
+    }
+
+    int mMaxF(int output_index, int q )
+    {
+        return M_model->mMaxF( output_index, q );
+    }
 
     //! return the number of outputs
     size_type Nl() const
@@ -355,28 +376,27 @@ public:
     //@{
 
     /**
-     * \brief compute the thetaq given \p mu
+     * \brief compute the betaqm given \p mu
      */
-    thetaq_type computeThetaq( parameter_type const& mu , double time=0 )
+    betaq_type computeBetaQm( parameter_type const& mu , double time=0 )
     {
-        return computeThetaq( mu , mpl::bool_<model_type::is_time_dependent>(), time  );
+        return computeBetaQm( mu , mpl::bool_<model_type::is_time_dependent>(), time  );
     }
-    thetaq_type computeThetaq( parameter_type const& mu , mpl::bool_<true>, double time=0 )
+    betaq_type computeBetaQm( parameter_type const& mu , mpl::bool_<true>, double time=0 )
     {
-        return M_model->computeThetaq( mu , time );
+        return M_model->computeBetaQm( mu , time );
     }
-    thetaq_type computeThetaq( parameter_type const& mu , mpl::bool_<false>, double time=0 )
+    betaq_type computeBetaQm( parameter_type const& mu , mpl::bool_<false>, double time=0 )
     {
-        theta_vector_type theta_aq;
-        theta_vector_type theta_mq;
-        std::vector<theta_vector_type>  theta_fq;
-        boost::tuple<theta_vector_type, std::vector<theta_vector_type> > steady_theta;
-        steady_theta = M_model->computeThetaq( mu , time );
-        theta_aq = steady_theta.get<0>();
-        theta_fq = steady_theta.get<1>();
-        return boost::make_tuple( theta_mq, theta_aq, theta_fq );
+        beta_vector_type betaAqm;
+        beta_vector_type betaMqm;
+        std::vector<beta_vector_type>  betaFqm;
+        boost::tuple<beta_vector_type, std::vector<beta_vector_type> > steady_beta;
+        steady_beta = M_model->computeBetaQm( mu , time );
+        betaAqm = steady_beta.get<0>();
+        betaFqm = steady_beta.get<1>();
+        return boost::make_tuple( betaMqm, betaAqm, betaFqm );
     }
-
 
 
     /**
@@ -384,7 +404,7 @@ public:
      */
     offline_merge_type update( parameter_type const& mu,  double time=0 )
     {
-        M_model->computeThetaq( mu , time );
+        M_model->computeBetaQm( mu , time );
         return offlineMerge( mu );
     }
 
@@ -401,13 +421,13 @@ public:
     }
     affine_decomposition_type computeAffineDecomposition( mpl::bool_<true> )
     {
-        boost::tie( M_Mq, M_Aq, M_Fq ) = M_model->computeAffineDecomposition();
+        boost::tie( M_Mqm, M_Aqm, M_Fqm ) = M_model->computeAffineDecomposition();
         return M_model->computeAffineDecomposition();
     }
     affine_decomposition_type computeAffineDecomposition( mpl::bool_<false> )
     {
-        boost::tie( M_Aq, M_Fq ) = M_model->computeAffineDecomposition();
-        return boost::make_tuple( M_Mq, M_Aq, M_Fq );
+        boost::tie( M_Aqm, M_Fqm ) = M_model->computeAffineDecomposition();
+        return boost::make_tuple( M_Mqm, M_Aqm, M_Fqm );
     }
 
 
@@ -439,115 +459,115 @@ public:
     }
 
     /**
-     * \brief Returns the matrix \c Aq[q] of the affine decomposition of the bilinear form
+     * \brief Returns the matrix \c Aq[q][m] of the affine decomposition of the bilinear form
      *
-     * \param q the index of the component in the affine decomposition
+     * \param q and m are index of the component in the affine decomposition
      * \param transpose transpose \c A_q
      *
-     * \return the matrix \c Aq[q] of the affine decomposition of the bilinear form
+     * \return the matrix \c Aq[q][m] of the affine decomposition of the bilinear form
      */
-    sparse_matrix_ptrtype  Aq( uint16_type q, bool transpose = false ) const
+    sparse_matrix_ptrtype  Aqm( uint16_type q, uint16_type m, bool transpose = false ) const
     {
         if ( transpose )
-            return M_Aq[q]->transpose();
+            return M_Aq[q][m]->transpose();
 
-        return M_Aq[q];
+        return M_Aq[q][m];
     }
 
 
     /**
-     * \brief Returns the matrix \c Mq[q] of the affine decomposition of the bilinear form (time dependent)
+     * \brief Returns the matrix \c Mq[q][m] of the affine decomposition of the bilinear form (time dependent)
      *
-     * \param q the index of the component in the affine decomposition
+     * \param q and m are index of the component in the affine decomposition
      * \param transpose transpose \c M_q
      *
-     * \return the matrix \c Mq[q] of the affine decomposition of the bilinear form (ime dependent)
+     * \return the matrix \c Mq[q][m] of the affine decomposition of the bilinear form (ime dependent)
      */
-    sparse_matrix_ptrtype  Mq( uint16_type q, bool transpose = false ) const
+    sparse_matrix_ptrtype  Mqm( uint16_type q, uint16_type m, bool transpose = false ) const
     {
         if ( transpose )
-            return M_Mq[q]->transpose();
+            return M_Mq[q][m]->transpose();
 
-        return M_Mq[q];
+        return M_Mq[q][m];
     }
 
 
     /**
-     * \brief the inner product \f$a_q(\xi_i, \xi_j) = \xi_j^T A_q \xi_i\f$
+     * \brief the inner product \f$a_{qm}(\xi_i, \xi_j) = \xi_j^T A_{qm} \xi_i\f$
      *
-     * \param q the index of the component in the affine decomposition
+     * \param q and m index of the component in the affine decomposition
      * \param xi_i an element of the function space
      * \param xi_j an element of the function space
-     * \param transpose transpose \c A_q
+     * \param transpose transpose \c A_{qm}
      *
-     * \return the inner product \f$a_q(\xi_i, \xi_j) = \xi_j^T A_q \xi_i\f$
+     * \return the inner product \f$a_qm(\xi_i, \xi_j) = \xi_j^T A_{qm} \xi_i\f$
      */
-    value_type Aq( uint16_type q, element_type const& xi_i, element_type const& xi_j, bool transpose = false )
+    value_type Aqm( uint16_type q, uint16_type m, element_type const& xi_i, element_type const& xi_j, bool transpose = false )
     {
-        return M_Aq[q]->energy( xi_j, xi_i, transpose );
+        return M_Aq[q][m]->energy( xi_j, xi_i, transpose );
     }
 
     /**
-     * \brief the inner product \f$m_q(\xi_i, \xi_j) = \xi_j^T M_q \xi_i\f$
+     * \brief the inner product \f$m_{qm}(\xi_i, \xi_j) = \xi_j^T M_{qm} \xi_i\f$
      *
-     * \param q the index of the component in the affine decomposition
+     * \param q and m index of the component in the affine decomposition
      * \param xi_i an element of the function space
      * \param xi_j an element of the function space
-     * \param transpose transpose \c M_q
+     * \param transpose transpose \c M_{qm}
      *
-     * \return the inner product \f$m_q(\xi_i, \xi_j) = \xi_j^T M_q \xi_i\f$
+     * \return the inner product \f$m_{qm}(\xi_i, \xi_j) = \xi_j^T M_{qm} \xi_i\f$
      */
-    value_type Mq( uint16_type q, element_type const& xi_i, element_type const& xi_j, bool transpose = false )
+    value_type Mqm( uint16_type q, uint16_type m, element_type const& xi_i, element_type const& xi_j, bool transpose = false )
     {
-        return M_Mq[q]->energy( xi_j, xi_i, transpose );
+        return M_Mq[q][m]->energy( xi_j, xi_i, transpose );
     }
 
 
     /**
      * \brief Returns the vector coefficients
      */
-    theta_vector_type const& thetaAq() const
+    beta_vector_type const& betaAqm() const
     {
-        return M_model->thetaAq();
+        return M_model->betaAqm();
     }
 
     /**
      * \brief Returns the vector coefficients
      */
-    theta_vector_type const& thetaMq() const
+    beta_vector_type const& betaMqm() const
     {
         return mpl::bool_<model_type::is_time_dependent>();
     }
-    theta_vector_type const& thetaMq( mpl::bool_<true> ) const
+    beta_vector_type const& betaMqm( mpl::bool_<true> ) const
     {
-        return M_model->thetaMq();
+        return M_model->betaMqm();
     }
-    theta_vector_type const& thetaMq( mpl::bool_<false> ) const
+    beta_vector_type const& betaMqm( mpl::bool_<false> ) const
     {
         theta_vector_type vect;
         return  vect;
     }
 
     /**
-     * \brief Returns the value of the \f$A_q\f$ coefficient at \f$\mu\f$
+     * \brief Returns the value of the \f$A_{qm}\f$ coefficient at \f$\mu\f$
      */
-    value_type thetaAq( int q ) const
+    value_type betaAqm( int q, int m ) const
     {
-        return M_model->thetaAq( q );
+        return M_model->betaAqm[q][m];
     }
 
     /**
-     * \brief Returns the value of the \f$M_q\f$ coefficient at \f$\mu\f$
+     * \brief Returns the value of the \f$M_{qm}\f$ coefficient at \f$\mu\f$
      */
-    value_type thetaMq( int q ) const
+    value_type betaMqm( int q, int m ) const
     {
-        return thetaMq( q,mpl::bool_<model_type::is_time_dependent>() );
+        return betaMqm( q, m, mpl::bool_<model_type::is_time_dependent>() );
     }
-    value_type thetaMq( int q, mpl::bool_<true> ) const
+    value_type betaMqm( int q, int m, mpl::bool_<true> ) const
     {
-        return M_model->thetaMq( q );
+        return M_model->betaMqm[q][m];
     }
-    value_type thetaMq( int q, mpl::bool_<false> ) const
+    value_type betaMqm( int q, int m, mpl::bool_<false> ) const
     {
         return 0;
     }
@@ -555,60 +575,60 @@ public:
     /**
      * \brief Returns the vector coefficients
      */
-    std::vector<theta_vector_type> const& thetaL() const
+    std::vector<beta_vector_type> const& betaL() const
     {
-        return M_model->thetaL();
+        return M_model->betaL();
     }
 
     /**
-     * \brief Returns the value of the \f$L_q\f$ coefficient at \f$\mu\f$
+     * \brief Returns the value of the \f$L_qm\f$ coefficient at \f$\mu\f$
      */
-    value_type thetaL( int l, int q ) const
+    value_type betaL( int l, int q, int m ) const
     {
-        return M_model->thetaL( l, q );
+        return M_model->betaL( l, q , m);
     }
 
 
     /**
-     * \brief the vector \c Fq[q] of the affine decomposition of the right hand side
+     * \brief the vector \c Fq[q][m] of the affine decomposition of the right hand side
      *
-     * \return the vector associated with \f$F_q\f$
+     * \return the vector associated with \f$F_{qm}\f$
      */
-    vector_ptrtype  Fq( uint16_type l, uint16_type q ) const
+    vector_ptrtype  Fqm( uint16_type l, uint16_type q, int m ) const
     {
-        return M_Fq[l][q];
+        return M_Fqm[l][q][m];
     }
 
     /**
-     * \brief the inner product \f$f_q(\xi) = \xi^T F_q \f$
+     * \brief the inner product \f$f_{qm}(\xi) = \xi^T F_{qm} \f$
      *
-     * Denote \f$F_q\f$ the algebraic representation of the linear form associated
+     * Denote \f$F_{qm}\f$ the algebraic representation of the linear form associated
      * with the right hand side.
      *
-     * \param q the index of the component in the affine decomposition
+     * \param q and m index of the component in the affine decomposition
      * \param xi an element of the function space
      *
-     * \return the inner product \f$f_q(\xi) = \xi^T F_q \f$
+     * \return the inner product \f$f_{qm}(\xi) = \xi^T F_{qm} \f$
      */
-    value_type Fq( uint16_type l, uint16_type q, element_type const& xi )
+    value_type Fqm( uint16_type l, uint16_type q,  uint16_type m, element_type const& xi )
     {
-        return inner_product( *M_Fq[l][q], xi );
+        return inner_product( *M_Fqm[l][q][m], xi );
     }
 
     /**
-     * \brief the inner product \f$f_q(\xi) = \xi^T F_q \f$
+     * \brief the inner product \f$f_{qm}(\xi) = \xi^T F_{qm} \f$
      *
-     * Denote \f$F_q\f$ the algebraic representation of the linear form associated
+     * Denote \f$F_{qm}\f$ the algebraic representation of the linear form associated
      * with the right hand side.
      *
-     * \param q the index of the component in the affine decomposition
+     * \param q and m index of the component in the affine decomposition
      * \param xi an element of the function space
      *
-     * \return the inner product \f$f_q(\xi) = \xi^T F_q \f$
+     * \return the inner product \f$f_{qm}(\xi) = \xi^T F_{qm} \f$
      */
-    value_type Fq( uint16_type l, uint16_type q, element_ptrtype const& xi )
+    value_type Fqm( uint16_type l, uint16_type q, uint16_type m, element_ptrtype const& xi )
     {
-        return inner_product( M_Fq[l][q], xi );
+        return inner_product( M_Fqm[l][q][m], xi );
     }
 
     /**
@@ -860,13 +880,13 @@ protected:
 
 
     //! affine decomposition terms for the left hand side
-    std::vector<sparse_matrix_ptrtype> M_Aq;
+    std::vector< std::vector<sparse_matrix_ptrtype> > M_Aqm;
 
     //! affine decomposition terms ( time dependent )
-    std::vector<sparse_matrix_ptrtype> M_Mq;
+    std::vector< std::vector<sparse_matrix_ptrtype> > M_Mqm;
 
     //! affine decomposition terms for the right hand side
-    std::vector<std::vector<vector_ptrtype> > M_Fq;
+    std::vector< std::vector<std::vector<vector_ptrtype> > > M_Fqm;
 
 
 private:
@@ -983,20 +1003,22 @@ CRBModel<TruthModelType>::offlineMerge( parameter_type const& mu )
 #endif
     std::vector<vector_ptrtype> F( Nl() );
 
-    *A = *M_Aq[0];
-    A->scale( this->thetaAq( 0 ) );
-    for ( size_type q = 1; q < Qa(); ++q )
+    //*A = *M_Aq[0];
+    //A->scale( this->betaAqm[0][0] );
+    for ( size_type q = 0; q < Qa(); ++q )
     {
-        A->addMatrix( this->thetaAq( q ), M_Aq[q] );
+        for ( size_type m = 0; m < mMaxA(q); ++m )
+            A->addMatrix( this->betaAqm( q , m ), M_Aqm[q][m] );
     }
 
     if( Qm() > 0 )
     {
-        *M = *M_Mq[0];
-        M->scale( this->thetaMq( 0 ) );
+        //*M = *M_Mq[0];
+        //M->scale( this->thetaMq( 0 ) );
         for ( size_type q = 1; q < Qm(); ++q )
         {
-            M->addMatrix( this->thetaMq( q ), M_Mq[q] );
+            for ( size_type m = 0; m < mMaxM(q); ++m )
+                M->addMatrix( this->betaMqm( q ), M_Mqm[q][m] );
         }
     }
 
@@ -1009,7 +1031,8 @@ CRBModel<TruthModelType>::offlineMerge( parameter_type const& mu )
 
         for ( size_type q = 0; q < Ql( l ); ++q )
         {
-            F[l]->add( this->thetaL( l, q ), M_Fq[l][q] );
+            for ( size_type m = 0; m < mMaxF(l,q); ++m )
+                F[l]->add( this->betaL( l, q , m ), M_Fq[l][q][m] );
         }
 
     }
