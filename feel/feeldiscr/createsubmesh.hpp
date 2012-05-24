@@ -304,14 +304,6 @@ createSubmeshTool<MeshType,IteratorRange>::build( mpl::int_<MESH_FACES> /**/ )
     unsigned int n_new_elem  = 0;
     size_type n_new_faces = 0;
 
-
-    const int proc_id = M_mesh->worldComm().localRank();
-    const int nProc = M_mesh->worldComm().localSize();
-    std::vector< std::list<boost::tuple<size_type,size_type> > > memory_ghostid( nProc );
-    std::vector< std::vector<size_type> > memory_id( nProc );
-    std::vector< std::vector<size_type> > vecToSend( nProc );
-    std::vector< std::vector<size_type> > vecToRecv( nProc );
-
     //-----------------------------------------------------------//
 
     iterator_type it, en;
