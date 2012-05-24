@@ -97,7 +97,8 @@ createSubmeshTool<MeshType,IteratorRange>::build( mpl::int_<MESH_ELEMENTS> /**/ 
     typedef typename mesh_type::point_type point_type;
     typedef typename mesh_type::face_type face_type;
 
-    mesh_ptrtype newMesh( new mesh_type );
+    mesh_ptrtype newMesh( new mesh_type(M_mesh->worldComm()));
+    //mesh_ptrtype newMesh( new mesh_type );
 
     //-----------------------------------------------------------//
 
@@ -263,7 +264,8 @@ typename createSubmeshTool<MeshType,IteratorRange>::mesh_faces_ptrtype
 createSubmeshTool<MeshType,IteratorRange>::build( mpl::int_<MESH_FACES> /**/ )
 {
     Debug( 4015 ) << "[Mesh<Shape,T>::createSubmesh] creating new mesh" << "\n";
-    mesh_faces_ptrtype newMesh( new mesh_faces_type );
+    mesh_faces_ptrtype newMesh( new mesh_faces_type( M_mesh->worldComm()) );
+    //mesh_faces_ptrtype newMesh( new mesh_faces_type );
 
     //-----------------------------------------------------------//
     Debug( 4015 ) << "[Mesh<Shape,T>::createSubmesh] extraction mesh faces" << "\n";
@@ -295,6 +297,13 @@ createSubmeshTool<MeshType,IteratorRange>::build( mpl::int_<MESH_FACES> /**/ )
     size_type n_new_faces = 0;
 
 
+    const int proc_id = M_mesh->worldComm().localRank();
+    const int nProc = M_mesh->worldComm().localSize();
+    std::vector< std::list<boost::tuple<size_type,size_type> > > memory_ghostid( nProc );
+    std::vector< std::vector<size_type> > memory_id( nProc );
+    std::vector< std::vector<size_type> > vecToSend( nProc );
+    std::vector< std::vector<size_type> > vecToRecv( nProc );
+
     //-----------------------------------------------------------//
 
     iterator_type it, en;
@@ -315,6 +324,13 @@ createSubmeshTool<MeshType,IteratorRange>::build( mpl::int_<MESH_FACES> /**/ )
         newElem.setMarker( oldElem.marker().value() );
         newElem.setMarker2( oldElem.marker2().value() );
         newElem.setMarker3( oldElem.marker3().value() );
+
+        newElem.setProcessIdInPartition( oldElem.pidInPartition() );
+        newElem.setNumberOfPartitions(oldElem.numberOfPartitions());
+        newElem.setProcessId(oldElem.processId());
+        newElem.setIdInPartition( oldElem.pidInPartition(), n_new_elem );
+        newElem.setNeighborPartitionIds(oldElem.neighborPartitionIds());
+
 
         //std::cout << "\n oldElem.nPoints " << oldElem.nPoints();
         // Loop over the nodes on this element.
@@ -360,7 +376,24 @@ createSubmeshTool<MeshType,IteratorRange>::build( mpl::int_<MESH_FACES> /**/ )
         // Add an equivalent element type to the new_mesh
         newMesh->addElement( newElem );
 
+        //Debug() <<" element process id=    "<<  newElem.processId() << "\n";
+        // Debug() <<"old element process pid=    "<<  newElem.pidInPartition() << "\n";
+
+        if ( it->isGhostCell() )
+        {
+            for (auto it_pid=it->idInPartition().begin(),en_pid=it->idInPartition().end() ; it_pid!=en_pid ; ++it_pid)
+            {
+                //std::cout << " " << it_pid->first << "-" << it_pid->second << "-"<<it->pidInPartition()<<"-"<<new_mesh->worldComm().localRank();
+                const int procToSend=it_pid->first;
+                if (procToSend!=it->pidInPartition())
+                {
+                    memory_ghostid[procToSend].push_back(boost::make_tuple(newElem.id()/*it->id()*/,it_pid->second));
+                }
+            }
+        }
+
     } // end for it
+
 
     newMesh->setNumVertices( std::accumulate( new_vertex.begin(), new_vertex.end(), 0 ) );
 
