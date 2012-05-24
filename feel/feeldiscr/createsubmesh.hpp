@@ -147,6 +147,14 @@ createSubmeshTool<MeshType,IteratorRange>::build( mpl::int_<MESH_ELEMENTS> /**/ 
         new_elem.setMarker2(old_elem.marker2().value());
         new_elem.setMarker3(old_elem.marker3().value());
         */
+        // partitioning update
+        new_elem.setProcessIdInPartition( old_elem.pidInPartition() );
+        new_elem.setNumberOfPartitions(old_elem.numberOfPartitions());
+        new_elem.setProcessId(old_elem.processId());
+        new_elem.setIdInPartition( old_elem.pidInPartition(), n_new_elem );
+        new_elem.setNeighborPartitionIds(old_elem.neighborPartitionIds());// TODO
+
+
         // Loop over the nodes on this element.
         for ( unsigned int n=0; n < old_elem.nPoints(); n++ )
         {
@@ -325,11 +333,12 @@ createSubmeshTool<MeshType,IteratorRange>::build( mpl::int_<MESH_FACES> /**/ )
         newElem.setMarker2( oldElem.marker2().value() );
         newElem.setMarker3( oldElem.marker3().value() );
 
+        // partitioning update
         newElem.setProcessIdInPartition( oldElem.pidInPartition() );
         newElem.setNumberOfPartitions(oldElem.numberOfPartitions());
         newElem.setProcessId(oldElem.processId());
         newElem.setIdInPartition( oldElem.pidInPartition(), n_new_elem );
-        newElem.setNeighborPartitionIds(oldElem.neighborPartitionIds());
+        newElem.setNeighborPartitionIds(oldElem.neighborPartitionIds());// TODO
 
 
         //std::cout << "\n oldElem.nPoints " << oldElem.nPoints();
@@ -375,22 +384,6 @@ createSubmeshTool<MeshType,IteratorRange>::build( mpl::int_<MESH_FACES> /**/ )
 
         // Add an equivalent element type to the new_mesh
         newMesh->addElement( newElem );
-
-        //Debug() <<" element process id=    "<<  newElem.processId() << "\n";
-        // Debug() <<"old element process pid=    "<<  newElem.pidInPartition() << "\n";
-
-        if ( it->isGhostCell() )
-        {
-            for (auto it_pid=it->idInPartition().begin(),en_pid=it->idInPartition().end() ; it_pid!=en_pid ; ++it_pid)
-            {
-                //std::cout << " " << it_pid->first << "-" << it_pid->second << "-"<<it->pidInPartition()<<"-"<<new_mesh->worldComm().localRank();
-                const int procToSend=it_pid->first;
-                if (procToSend!=it->pidInPartition())
-                {
-                    memory_ghostid[procToSend].push_back(boost::make_tuple(newElem.id()/*it->id()*/,it_pid->second));
-                }
-            }
-        }
 
     } // end for it
 
