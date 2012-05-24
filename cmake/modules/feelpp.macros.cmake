@@ -5,7 +5,7 @@ INCLUDE(ParseArguments)
 macro(feelpp_add_application)
 
   PARSE_ARGUMENTS(FEELPP_APP
-    "SRCS;LINK_LIBRARIES;CFG;GEO;LABEL;DEFS;DEPS"
+    "SRCS;LINK_LIBRARIES;CFG;GEO;MESH;LABEL;DEFS;DEPS"
     "NO_TEST;EXCLUDE_FROM_ALL"
     ${ARGN}
     )
@@ -20,6 +20,7 @@ macro(feelpp_add_application)
   MESSAGE("      Deps file: ${FEELPP_APP_DEPS}")
   MESSAGE("      Defs file: ${FEELPP_APP_DEFS}")
   MESSAGE("       Geo file: ${FEELPP_APP_GEO}")
+  MESSAGE("       Mesh file: ${FEELPP_APP_MESH}")
   MESSAGE("       Exec file: ${execname}")
   MESSAGE("exclude from all: ${FEELPP_APP_EXCLUDE_FROM_ALL}")
 
@@ -68,6 +69,15 @@ macro(feelpp_add_application)
       INSTALL(FILES "${geo}"  DESTINATION share/feel/geo)
     endforeach()
   endif(FEELPP_APP_GEO)
+
+  if ( FEELPP_APP_MESH )
+    foreach(  mesh ${FEELPP_APP_MESH} )
+      # extract mesh filename  to be copied in binary dir
+      get_filename_component( MESH_NAME ${mesh} NAME )
+      configure_file( ${mesh} ${MESH_NAME} )
+      INSTALL(FILES "${mesh}"  DESTINATION share/feel/mesh)
+    endforeach()
+  endif(FEELPP_APP_MESH)
 
 endmacro(feelpp_add_application)
 
