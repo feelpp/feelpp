@@ -867,6 +867,7 @@ Application::run()
         {
             double meshSize= hsize/std::pow( refine,l );
             i->setMeshSize( meshSize );
+            i->setLevel( l+1 );
             i->run();
             M_stats[i->name()].push_back( i->stats() );
         }
