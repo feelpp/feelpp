@@ -150,6 +150,12 @@ public:
         return M_meshSize;
     }
 
+    //! return the refinement level
+    int level() const
+    {
+        return M_level;
+    }
+
     //! return the statistics associated to the simget after calling run
     ptree::ptree const& stats() const
     {
@@ -166,6 +172,12 @@ public:
     void setMeshSize( double h )
     {
         M_meshSize= h;
+    }
+
+    //! set the refinment level if applicable
+    void setLevel( int level )
+    {
+        M_level= level;
     }
 
     //@}
@@ -202,6 +214,7 @@ protected:
 
 protected:
     double M_meshSize;
+    int M_level;
     ptree::ptree M_stats;
 private:
     mpi::communicator M_comm;
