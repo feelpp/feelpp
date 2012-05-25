@@ -25,6 +25,7 @@
 #define __galerkingraph_H 1
 
 #include <feel/feelvf/pattern.hpp>
+#include <feel/feelvf/block.hpp>
 #include <feel/feelalg/graphcsr.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
 #if 1
@@ -77,8 +78,9 @@ struct compute_graph3
             else
             {
                 auto thestencil = stencil( _test=space2, _trial=M_space1,
-                                           _pattern=M_stencil->blockPattern( M_test_index,M_trial_index )/*M_hints*/,
+                                           _pattern=M_stencil->blockPattern( M_test_index,M_trial_index ),
                                            _pattern_block=M_stencil->blockPattern(),
+                                           _diag_is_nonzero=false,
                                            _collect_garbage=false );
 
                 M_stencil->mergeGraph( M_stencil->testSpace()->nDofStart( M_test_index ), M_stencil->trialSpace()->nDofStart( M_trial_index ) , thestencil->graph() );
@@ -146,8 +148,9 @@ struct compute_graph2
             {
 
                 auto thestencil = stencil( _test=M_space1, _trial=space2,
-                                           _pattern=M_stencil->blockPattern( M_test_index,M_trial_index )/*M_hints*/,
+                                           _pattern=M_stencil->blockPattern( M_test_index,M_trial_index ),
                                            _pattern_block=M_stencil->blockPattern(),
+                                           _diag_is_nonzero=false,
                                            _collect_garbage=false );
 
                 M_stencil->mergeGraph( M_stencil->testSpace()->nDofStart( M_test_index ),
@@ -205,7 +208,7 @@ public:
 
     Stencil( test_space_ptrtype Xh, trial_space_ptrtype Yh,
              size_type graph_hints,
-             std::vector<size_type> block_pattern=std::vector<size_type>( 1,size_type( Pattern::HAS_NO_BLOCK_PATTERN ) ),
+             BlocksStencilPattern block_pattern=BlocksStencilPattern(1,1,Pattern::HAS_NO_BLOCK_PATTERN),
              bool diag_is_nonzero=false )
         :
         _M_X1( Xh ),
@@ -228,12 +231,8 @@ public:
 
         if ( this->isBlockPatternNoPattern( 0,0 ) )
         {
-            M_block_pattern.resize( ( nbSubSpace1*nbSubSpace2 ) );
-
-            for ( auto it=M_block_pattern.begin(), en=M_block_pattern.end(); it!=en; ++it )  *it = graph_hints;
+            M_block_pattern = BlocksStencilPattern(nbSubSpace1,nbSubSpace2,graph_hints);
         }
-
-        //else FEELPP_ASSERT(M_block_pattern.size() == nbSubSpace1*nbSubSpace2 ).error ("invalid block pattern size");
 
         M_graph = this->computeGraph( graph_hints );
 
@@ -245,78 +244,46 @@ public:
         :
         _M_X1( Xh ),
         _M_X2( Yh ),
-        M_graph( g )
+        M_graph( g ),
+        M_block_pattern(Xh->nSubFunctionSpace(),Yh->nSubFunctionSpace(),size_type( graph_hints/*Pattern::HAS_NO_BLOCK_PATTERN*/ ))
     {}
 
 
-    std::vector<size_type> blockPattern() const
+    BlocksStencilPattern blockPattern() const
     {
         return  M_block_pattern;
     }
 
     size_type blockPattern( uint16_type i,uint16_type j ) const
     {
-        uint16_type nbSubSpace2 = _M_X2->nSubFunctionSpace();
-        return  M_block_pattern[i*nbSubSpace2+j];
+        return  M_block_pattern(i,j);
     }
 
     bool isBlockPatternNoPattern( uint16_type i,uint16_type j ) const
     {
-        uint16_type nbSubSpace2 = _M_X2->nSubFunctionSpace();
-        Feel::Context ctx( M_block_pattern[i*nbSubSpace2+j] );
+        Feel::Context ctx( M_block_pattern(i,j) );
         return ctx.test( HAS_NO_BLOCK_PATTERN );
 
     }
     bool isBlockPatternZero( uint16_type i,uint16_type j ) const
     {
-        uint16_type nbSubSpace2 = _M_X2->nSubFunctionSpace();
-        Feel::Context ctx( M_block_pattern[i*nbSubSpace2+j] );
+        Feel::Context ctx( M_block_pattern(i,j) );
         return ctx.test( ZERO );
     }
 
     graph_ptrtype computeGraph( size_type hints );
+
     graph_ptrtype computeGraph( size_type hints, mpl::bool_<true> );
     graph_ptrtype computeGraph( size_type hints, mpl::bool_<false> );
     graph_ptrtype computeGraph( size_type hints, mpl::bool_<true>, mpl::bool_<true> );
     graph_ptrtype computeGraph( size_type hints, mpl::bool_<false>, mpl::bool_<true> );
     graph_ptrtype computeGraph( size_type hints, mpl::bool_<true>, mpl::bool_<false> );
 
-
     graph_ptrtype computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<true> );
-
-    graph_ptrtype computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<false> )
-    {
-        boost::timer t;
-        Debug( 5050 ) << "compute graph for composite bilinear form with interpolation\n";
-
-        auto graph = computeGraphInCaseOfInterpolate( hints, mpl::bool_< ( test_space_type::nSpaces > 1 )>(), mpl::bool_< ( trial_space_type::nSpaces > 1 )>() );
-
-        Debug( 5050 ) << "closing graph for composite bilinear form with interpolation done in " << t.elapsed() << "s\n";
-        t.restart();
-
-        return graph;
-    }
-
-
-    graph_ptrtype computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<true>, mpl::bool_<true> )
-    {
-        fusion::for_each( _M_X1->functionSpaces(), detail::compute_graph1<self_type>( this, hints ) );
-
-        return M_graph;
-    }
-    graph_ptrtype computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<false>, mpl::bool_<true> )
-    {
-        fusion::for_each( _M_X2->functionSpaces(),
-                          detail::compute_graph2<self_type,test_space_type>( this, _M_X1, 0, hints ) );
-        return M_graph;
-    }
-
-    graph_ptrtype computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<true>, mpl::bool_<false> )
-    {
-        fusion::for_each( _M_X1->functionSpaces(),
-                          detail::compute_graph3<self_type,trial_space_type>( this, _M_X2, 0, hints ) );
-        return M_graph;
-    }
+    graph_ptrtype computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<false> );
+    graph_ptrtype computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<true>, mpl::bool_<true> );
+    graph_ptrtype computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<false>, mpl::bool_<true> );
+    graph_ptrtype computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<true>, mpl::bool_<false> );
 
 
     void mergeGraph( int row, int col, graph_ptrtype g );
@@ -343,7 +310,7 @@ private:
     test_space_ptrtype _M_X1;
     trial_space_ptrtype _M_X2;
     graph_ptrtype M_graph;
-    std::vector<size_type> M_block_pattern;
+    BlocksStencilPattern M_block_pattern;
 
 };
 namespace detail
@@ -383,11 +350,14 @@ typedef Feel::Singleton<StencilManagerImpl> StencilManager;
 
 //! function that cleans up the StencilManager any time \c stencil() is called
 void stencilManagerGarbageCollect();
-
+//! function that cleans up one entry the StencilManager
+void stencilManagerGarbage(StencilManagerImpl::key_type const& key);
+//! function that add an entry in the StencilManager
+void stencilManagerAdd(StencilManagerImpl::key_type const& key,StencilManagerImpl::graph_ptrtype graph);
 //! print entries stored in stencil manager
 void stencilManagerPrint();
 
-extern std::vector<size_type> default_block_pattern;
+extern BlocksStencilPattern default_block_pattern;
 
 BOOST_PARAMETER_FUNCTION(
     ( typename detail::compute_stencil_type<Args>::ptrtype ), // 1. return type
@@ -416,7 +386,7 @@ BOOST_PARAMETER_FUNCTION(
     typedef typename detail::compute_stencil_type<Args>::type stencil_type;
 
     // we look into the spaces dictionary for existing graph
-    auto git = StencilManager::instance().find( boost::make_tuple( test, trial, pattern, pattern_block, diag_is_nonzero ) );
+    auto git = StencilManager::instance().find( boost::make_tuple( test, trial, pattern, pattern_block.getSetOfBlocks(), diag_is_nonzero ) );
 
     if (  git != StencilManager::instance().end() )
     {
@@ -428,12 +398,12 @@ BOOST_PARAMETER_FUNCTION(
     else
     {
         // look for transposed stencil if it exist and transpose it to get the stencil
-        auto git_trans = StencilManager::instance().find( boost::make_tuple( trial, test, pattern, pattern_block, diag_is_nonzero ) );
+        auto git_trans = StencilManager::instance().find( boost::make_tuple( trial, test, pattern, pattern_block.transpose().getSetOfBlocks(), diag_is_nonzero ) );
 
         if ( git_trans != StencilManager::instance().end() )
         {
             auto g = git_trans->second->transpose();
-            StencilManager::instance().operator[]( boost::make_tuple( test, trial, pattern, pattern_block, diag_is_nonzero ) ) = g;
+            StencilManager::instance().operator[]( boost::make_tuple( test, trial, pattern, pattern_block.getSetOfBlocks(), diag_is_nonzero ) ) = g;
             auto s = stencil_ptrtype( new stencil_type( test, trial, pattern, g ) );
             //std::cout << "Found a  transposed stencil in manager (" << test.get() << "," << trial.get() << "," << pattern << ")\n";
             return s;
@@ -443,7 +413,7 @@ BOOST_PARAMETER_FUNCTION(
         {
             //std::cout << "Creating a new stencil in manager (" << test.get() << "," << trial.get() << "," << pattern << ")\n";
             auto s = stencil_ptrtype( new stencil_type( test, trial, pattern, pattern_block, diag_is_nonzero ) );
-            StencilManager::instance().operator[]( boost::make_tuple( test, trial, pattern, pattern_block, diag_is_nonzero ) ) = s->graph();
+            StencilManager::instance().operator[]( boost::make_tuple( test, trial, pattern, pattern_block.getSetOfBlocks(), diag_is_nonzero ) ) = s->graph();
             return s;
         }
     }
@@ -640,8 +610,8 @@ template<typename X1,  typename X2>
 typename Stencil<X1,X2>::graph_ptrtype
 Stencil<X1,X2>::computeGraph( size_type hints, mpl::bool_<true>, mpl::bool_<true> )
 {
-    fusion::for_each( _M_X1->functionSpaces(), detail::compute_graph1<self_type>( this, hints ) );
-
+    fusion::for_each( _M_X1->functionSpaces(),
+                      detail::compute_graph1<self_type>( this, hints ) );
     return M_graph;
 }
 
@@ -663,36 +633,49 @@ Stencil<X1,X2>::computeGraph( size_type hints, mpl::bool_<false>, mpl::bool_<tru
     return M_graph;
 }
 
-#if 0 //vincent
 template<typename X1,  typename X2>
 typename Stencil<X1,X2>::graph_ptrtype
-Stencil<X1,X2>::computeGraph( size_type hints, mpl::bool_<false> )
+Stencil<X1,X2>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<false> )
 {
     boost::timer t;
-    Debug( 5050 ) << "compute graph for composite bilinear form\n";
-    fusion::for_each( _M_X1->functionSpaces(), detail::compute_graph1<self_type>( this, hints ) );
-    Debug( 5050 ) << "closing graph for composite bilinear form done in " << t.elapsed() << "s\n";
-    t.restart();
+    Debug( 5050 ) << "compute graph for composite bilinear form with interpolation\n";
+    auto graph = computeGraphInCaseOfInterpolate( hints,
+                                                  mpl::bool_< ( test_space_type::nSpaces > 1 )>(),
+                                                  mpl::bool_< ( trial_space_type::nSpaces > 1 )>() );
 
-#if 0
-    typename graph_type::const_iterator it = M_graph->begin();
-    typename graph_type::const_iterator en = M_graph->end();
+    Debug( 5050 ) << "closing graph for composite bilinear form with interpolation done in " << t.elapsed() << "s\n";
+    return graph;
+}
 
-    for ( ; it != en; ++it )
-    {
-        std::cout << "row " << it->first << ", " <<  boost::get<1>( it->second ) << ": ";
-        std::copy( boost::get<2>( it->second ).begin(), boost::get<2>( it->second ).end(), std::ostream_iterator<int>( std::cout, " " ) );
-        std::cout << "\n";
-    }
-
-#endif
-    //M_graph->close();
-    Debug( 5050 ) << "compute graph for composite bilinear form done in " << t.elapsed() << "s\n";
-
-
+template<typename X1,  typename X2>
+typename Stencil<X1,X2>::graph_ptrtype
+Stencil<X1,X2>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<true>, mpl::bool_<true> )
+{
+    fusion::for_each( _M_X1->functionSpaces(),
+                      detail::compute_graph1<self_type>( this, hints ) );
     return M_graph;
 }
-#endif
+
+template<typename X1,  typename X2>
+typename Stencil<X1,X2>::graph_ptrtype
+Stencil<X1,X2>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<true>, mpl::bool_<false> )
+{
+    fusion::for_each( _M_X1->functionSpaces(),
+                      detail::compute_graph3<self_type,trial_space_type>( this, _M_X2, 0, hints ) );
+    return M_graph;
+}
+
+template<typename X1,  typename X2>
+typename Stencil<X1,X2>::graph_ptrtype
+Stencil<X1,X2>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<false>, mpl::bool_<true> )
+{
+    fusion::for_each( _M_X2->functionSpaces(),
+                      detail::compute_graph2<self_type,test_space_type>( this, _M_X1, 0, hints ) );
+    return M_graph;
+}
+
+
+
 
 #if 0
 template<typename X1,  typename X2>
