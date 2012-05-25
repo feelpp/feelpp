@@ -210,9 +210,7 @@ template <typename T= boost::shared_ptr< MatrixSparse<double> > >
 struct BlocksBase
 {
     typedef T block_type;
-    //typedef boost::shared_ptr<block_type> block_ptrtype;
-    //typedef MatrixSparse<T> matrix_type;
-    //typedef boost::shared_ptr<matrix_type> matrix_ptrtype;
+
     BlocksBase()
         :
         M_nRow( 0 ),
@@ -229,7 +227,7 @@ struct BlocksBase
         M_cptToBuild( 0 )
     {}
 
-    BlocksBase( uint16_type nr,uint16_type nc,block_type /*const&*/ a )
+    BlocksBase( uint16_type nr,uint16_type nc,block_type const& a )
         :
         M_nRow( nr ),
         M_nCol( nc ),
@@ -282,7 +280,7 @@ struct BlocksBase
         return M_vec[c1*M_nCol+c2];
     }
 
-    std::vector<block_type>
+    std::vector<block_type> const&
     getSetOfBlocks() const
     {
         return M_vec;
@@ -387,13 +385,37 @@ struct Blocks : public BlocksBase<T>
 
 };
 
-
-
-
-
-
-
-
 } // vf
+
+class BlocksStencilPattern : public vf::BlocksBase<size_type>
+{
+    typedef vf::BlocksBase<size_type> super_type;
+    typedef BlocksStencilPattern self_type;
+public :
+
+    BlocksStencilPattern(uint16_type nr,uint16_type nc)
+        :
+        super_type(nr,nc)
+    {}
+
+    BlocksStencilPattern(uint16_type nr,uint16_type nc, size_type pat)
+        :
+        super_type(nr,nc,pat)
+    {}
+
+    BlocksStencilPattern(super_type const & b)
+        :
+        super_type(b)
+    {}
+
+    self_type
+    operator<<( size_type const& m ) const
+    {
+        return super_type::operator<<( m );
+    }
+
+};
+
+
 } // feel
 #endif /* __Block_H */

@@ -31,17 +31,21 @@
 
 namespace Feel
 {
-std::vector<size_type> default_block_pattern( 1,size_type( Pattern::HAS_NO_BLOCK_PATTERN ) );
+
+BlocksStencilPattern default_block_pattern( 1,1,size_type( Pattern::HAS_NO_BLOCK_PATTERN ) );
 
 void
 stencilManagerGarbageCollect()
 {
-    BOOST_FOREACH( StencilManagerImpl::value_type& entry, StencilManager::instance() )
+
+    std::list<StencilManagerImpl::key_type> eltToDelete;
+
+    BOOST_FOREACH( StencilManagerImpl::value_type & entry, StencilManager::instance() )
     {
         // each entry is a pair of tuple and graph
-
         if ( entry.second.unique() )
         {
+#if !defined ( NDEBUG )
             std::ostringstream ostr;
             std::for_each( entry.first.get<3>().begin(),
                            entry.first.get<3>().end(),
@@ -55,10 +59,38 @@ stencilManagerGarbageCollect()
                       << "," << int(entry.first.get<4>())
                       << " ): "
                       << entry.second << "\n";
-
-            StencilManager::instance().erase( entry.first );
+#endif
+            eltToDelete.push_back(entry.first);
         }
     }
+
+    for ( auto it=eltToDelete.begin(),en=eltToDelete.end();it!=en;++it)
+    {
+        auto ki=StencilManager::instance().erase( *it );
+    }
+}
+
+void
+stencilManagerGarbage(StencilManagerImpl::key_type const& key)
+{
+    auto git = StencilManager::instance().find( key );
+    if (  git != StencilManager::instance().end() )
+    {
+        if ( git->second.unique() )
+            {
+                StencilManager::instance().erase( git->first );
+            }
+    }
+}
+
+void
+stencilManagerAdd(StencilManagerImpl::key_type const& key,StencilManagerImpl::graph_ptrtype graph)
+{
+    auto git = StencilManager::instance().find( key );
+    if (  git == StencilManager::instance().end() )
+        {
+            StencilManager::instance().operator[]( key ) = graph;
+        }
 }
 
 void
