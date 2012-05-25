@@ -51,7 +51,7 @@ namespace Feel
  * @see
  */
 template<int P>
-class ParameterSpace
+class ParameterSpace: public boost::enable_shared_from_this<ParameterSpace<P> >
 {
 public:
 
@@ -164,6 +164,8 @@ public:
 
     typedef Element element_type;
     typedef boost::shared_ptr<Element> element_ptrtype;
+    element_type element()  { return element_type( this->shared_from_this() ); }
+    element_ptrtype elementPtr()  { return element_ptrtype( new element_type( this->shared_from_this() ) ); }
 
     /**
      * \class Sampling
@@ -386,6 +388,8 @@ public:
     typedef Sampling sampling_type;
     typedef boost::shared_ptr<sampling_type> sampling_ptrtype;
 
+    sampling_ptrtype sampling() { return sampling_ptrtype( new sampling_type( this->shared_from_this() ) ); }
+
     /** @name Constructors, destructor
      */
     //@{
@@ -407,6 +411,13 @@ public:
     ~ParameterSpace()
     {}
 
+    /**
+     * generate a shared_ptr out of a parameter space
+     */
+    static parameterspace_ptrtype New()
+        {
+            return parameterspace_ptrtype(new parameterspace_type);
+        }
     //@}
 
     /** @name Operator overloads

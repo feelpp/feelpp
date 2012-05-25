@@ -36,7 +36,7 @@ using boost::unit_test::test_suite;
 #endif
 
 #include <boost/timer.hpp>
-
+#include <boost/smart_ptr/enable_shared_from_this.hpp>
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 
@@ -44,6 +44,8 @@ using boost::unit_test::test_suite;
 #include <feel/feelcore/application.hpp>
 #include <feel/options.hpp>
 #include <feel/feelalg/backend.hpp>
+#include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feelfilters/gmsh.hpp>
 #include <feel/feelcrb/eim.hpp>
 
 #define FEELAPP( argc, argv, about, options )                           \
@@ -88,23 +90,131 @@ makeAbout()
 /**
  *
  */
-class sim : public Simget
+class model:
+    public Simget,
+    public boost::enable_shared_from_this<model>
 {
 public:
-    sim( po::variables_map const& vm, AboutData const& about )
+    typedef Mesh<Simplex<2> > mesh_type;
+    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef FunctionSpace<mesh_type,bases<Lagrange<1> > > space_type;
+    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef space_type functionspace_type;
+    typedef space_ptrtype functionspace_ptrtype;
+    typedef space_type::element_type element_type;
+
+
+    typedef ParameterSpace<1> parameterspace_type;
+    typedef boost::shared_ptr<parameterspace_type> parameterspace_ptrtype;
+    typedef parameterspace_type::element_type parameter_type;
+    typedef parameterspace_type::element_ptrtype parameter_ptrtype;
+    typedef parameterspace_type::sampling_type sampling_type;
+    typedef parameterspace_type::sampling_ptrtype sampling_ptrtype;
+
+    typedef EIMFunctionBase<space_type, parameterspace_type> fun_type;
+    typedef boost::shared_ptr<fun_type> fun_ptrtype;
+    typedef std::vector<fun_ptrtype> funs_type;
+
+    model( po::variables_map const& vm, AboutData const& about )
         :
         Simget( vm, about ),
-        meshSize( this->vm()["hsize"].as<double>() )
+        meshSize( vm["hsize"].as<double>() )
         {
+
+            mesh = createGMSHMesh( _mesh=new mesh_type,
+                                   _desc=domain( _name=( boost::format( "%1%-%2%" ) % "hypercube" % 2 ).str() ,
+                                                 _usenames=true,
+                                                 _shape="hypercube",
+                                                 _dim=2,
+                                                 _h=0.1 ) );
+
+            Xh =  space_type::New( mesh );
+            BOOST_CHECK( Xh );
+            u = Xh->element();
+            Dmu = parameterspace_type::New();
+            BOOST_CHECK( Dmu );
+
+            parameter_type mu_min( Dmu );
+            mu_min << 0.2;
+            Dmu->setMin( mu_min );
+            parameter_type mu_max( Dmu );
+            mu_max << 50;
+            Dmu->setMax( mu_max );
+            mu = Dmu->element();
+            BOOST_CHECK_EQUAL( mu.parameterSpace(), Dmu );
+
+
+            BOOST_TEST_MESSAGE( "Allocation done" );
+            BOOST_TEST_MESSAGE( "pushing function to be empirically interpolated" );
+
+            using namespace vf;
+            //auto p = this->shared_from_this();
+            //BOOST_CHECK( p );
+            //BOOST_TEST_MESSAGE( "shared from this" );
+            auto e = eim( _model=this,
+                          _element=u,
+                          _parameter=mu,
+                          _expr=sin(cst_ref(mu(0)))*idv(u)*idv(u),
+                          _name="q_1");
+            BOOST_TEST_MESSAGE( "create eim" );
+            BOOST_CHECK( e );
+
+            M_funs.push_back( e );
+            BOOST_TEST_MESSAGE( "function to apply eim pushed" );
+
+        }
+    //! return the parameter space
+    parameterspace_ptrtype parameterSpace() const
+    {
+        return Dmu;
+    }
+
+    space_ptrtype functionSpace() { return Xh; }
+
+    element_type solve( parameter_type const& mu )
+        {
+            using namespace vf;
+            auto M = backend( _vm=this->vm() )->newMatrix( Xh, Xh );
+            auto a = form2( _test=Xh, _trial=Xh, _matrix=M );
+            auto F = backend( _vm=this->vm() )->newVector( Xh );
+            auto rhs = form1( _test=Xh, _vector=F, _init=true );
+            auto v = Xh->element();
+            auto w = Xh->element();
+            rhs = integrate( _range=elements( mesh ), _expr=id(v) );
+            a = integrate( _range=elements( mesh ), _expr=mu(0)*gradt( w )*trans( grad( v ) ) + idt(w)*id(v) );
+            a+=on( _range=boundaryfaces(mesh),
+                   _element=w, _rhs=F, _expr=cst(0.) );
+            backend(_vm=this->vm())->solve( _matrix=M, _solution=w, _rhs=F );
+            return w;
         }
     void run()
-
         {
-            BOOST_CHECK( mpi::environment::initialized() );
+            auto exporter = Exporter<mesh_type>::New( this->vm(), this->about().appName() );
+            exporter->step(0)->setMesh( mesh );
+            auto S = Dmu->sampling();
+            S->logEquidistribute(10);
+            BOOST_FOREACH( auto fun, M_funs )
+            {
+                BOOST_FOREACH( auto p, *S )
+                {
+                    auto v = fun->operator()( p );
+                    exporter->step(0)->add( (boost::format( "u(%1%)" ) % p(0) ).str(), v );
+
+                }
+            }
+            exporter->save();
+
         }
     void run( const double*, long unsigned int, double*, long unsigned int ) {}
 private:
     double meshSize;
+    mesh_ptrtype mesh;
+    space_ptrtype Xh;
+    element_type u;
+    parameterspace_ptrtype Dmu;
+    parameter_type mu;
+
+    funs_type M_funs;
 };
 } // Feel
 
@@ -117,6 +227,13 @@ BOOST_AUTO_TEST_CASE( test_eim1 )
     Environment env;
 
 
+    FEELAPP( 0,//boost::unit_test::framework::master_test_suite().argc,
+             boost::unit_test::framework::master_test_suite().argv,
+             makeAbout(), makeOptions() );
+    BOOST_CHECK( mpi::environment::initialized() );
+    BOOST_TEST_MESSAGE( "adding simget" );
+    app.add( new model( app.vm(), app.about() ) );
+    app.run();
 
     BOOST_TEST_MESSAGE( "test_eim1 done" );
 
