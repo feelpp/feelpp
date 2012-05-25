@@ -858,14 +858,14 @@ CRB<TruthModelType>::offline()
         for( int __q1=0; __q1< __QRhs; __q1++)
         {
             int __mMaxQ1=M_model->mMaxF(0,__q1);
-            M_C0_pr[q1].resize( __mMaxQ1 );
+            M_C0_pr[__q1].resize( __mMaxQ1 );
             for( int __m1=0; __m1< __mMaxQ1; __m1++)
             {
-                M_C0_pr[q1][m1].resize(  __QRhs );
+                M_C0_pr[__q1][__m1].resize(  __QRhs );
                 for( int __q2=0; __q2< __QRhs; __q2++)
                 {
                     int __mMaxQ2=M_model->mMaxF(0,__q2);
-                    M_C0_pr[q1][m1][q2].resize( __mMaxQ2 );
+                    M_C0_pr[__q1][__m1][__q2].resize( __mMaxQ2 );
                 }
             }
         }
@@ -874,14 +874,14 @@ CRB<TruthModelType>::offline()
         for( int __q1=0; __q1< __QOutput; __q1++)
         {
             int __mMaxQ1=M_model->mMaxF(M_output_index,__q1);
-            M_C0_du[q1].resize( __mMaxQ1 );
+            M_C0_du[__q1].resize( __mMaxQ1 );
             for( int __m1=0; __m1< __mMaxQ1; __m1++)
             {
-                M_C0_du[q1][m1].resize(  __QOutput );
+                M_C0_du[__q1][__m1].resize(  __QOutput );
                 for( int __q2=0; __q2< __QOutput; __q2++)
                 {
                     int __mMaxQ2=M_model->mMaxF(M_output_index,__q2);
-                    M_C0_du[q1][m1][q2].resize( __mMaxQ2 );
+                    M_C0_du[__q1][__m1][__q2].resize( __mMaxQ2 );
                 }
             }
         }
@@ -894,14 +894,14 @@ CRB<TruthModelType>::offline()
         for( int __q1=0; __q1< __QLhs; __q1++)
         {
             int __mMaxQ1=M_model->mMaxA(__q1);
-            M_Lambda_pr[q1].resize( __mMaxQ1 );
+            M_Lambda_pr[__q1].resize( __mMaxQ1 );
             for( int __m1=0; __m1< __mMaxQ1; __m1++)
             {
-                M_Lambda_pr[q1][m1].resize(  __QRhs );
+                M_Lambda_pr[__q1][__m1].resize(  __QRhs );
                 for( int __q2=0; __q2< __QRhs; __q2++)
                 {
                     int __mMaxQ2=M_model->mMaxF(0,__q2);
-                    M_Lambda_pr[q1][m1][q2].resize( __mMaxQ2 );
+                    M_Lambda_pr[__q1][__m1][__q2].resize( __mMaxQ2 );
                 }
             }
         }
@@ -910,14 +910,14 @@ CRB<TruthModelType>::offline()
         for( int __q1=0; __q1< __QLhs; __q1++)
         {
             int __mMaxQ1=M_model->mMaxA(__q1);
-            M_Lambda_du[q1].resize( __mMaxQ1 );
+            M_Lambda_du[__q1].resize( __mMaxQ1 );
             for( int __m1=0; __m1< __mMaxQ1; __m1++)
             {
-                M_Lambda_du[q1][m1].resize(  __QOutput );
+                M_Lambda_du[__q1][__m1].resize(  __QOutput );
                 for( int __q2=0; __q2< __QOutput; __q2++)
                 {
                     int __mMaxQ2=M_model->mMaxF(M_output_index,__q2);
-                    M_Lambda_du[q1][m1][q2].resize( __mMaxQ2 );
+                    M_Lambda_du[__q1][__m1][__q2].resize( __mMaxQ2 );
                 }
             }
         }
@@ -929,14 +929,14 @@ CRB<TruthModelType>::offline()
         for( int __q1=0; __q1< __QLhs; __q1++)
         {
             int __mMaxQ1=M_model->mMaxA(__q1);
-            M_Gamma_pr[q1].resize( __mMaxQ1 );
+            M_Gamma_pr[__q1].resize( __mMaxQ1 );
             for( int __m1=0; __m1< __mMaxQ1; __m1++)
             {
-                M_Gamma_pr[q1][m1].resize(  __QLhs );
+                M_Gamma_pr[__q1][__m1].resize(  __QLhs );
                 for( int __q2=0; __q2< __QLhs; __q2++)
                 {
                     int __mMaxQ2=M_model->mMaxA(__q2);
-                    M_Gamma_pr[q1][m1][q2].resize( __mMaxQ2 );
+                    M_Gamma_pr[__q1][__m1][__q2].resize( __mMaxQ2 );
                 }
             }
         }
@@ -945,14 +945,14 @@ CRB<TruthModelType>::offline()
         for( int __q1=0; __q1< __QLhs; __q1++)
         {
             int __mMaxQ1=M_model->mMaxA(__q1);
-            M_Gamma_du[q1].resize( __mMaxQ1 );
+            M_Gamma_du[__q1].resize( __mMaxQ1 );
             for( int __m1=0; __m1< __mMaxQ1; __m1++)
             {
-                M_Gamma_du[q1][m1].resize(  __QLhs );
+                M_Gamma_du[__q1][__m1].resize(  __QLhs );
                 for( int __q2=0; __q2< __QLhs; __q2++)
                 {
                     int __mMaxQ2=M_model->mMaxA(__q2);
-                    M_Gamma_du[q1][m1][q2].resize( __mMaxQ2 );
+                    M_Gamma_du[__q1][__m1][__q2].resize( __mMaxQ2 );
                 }
             }
         }
@@ -965,14 +965,14 @@ CRB<TruthModelType>::offline()
             for( int __q1=0; __q1< __Qm; __q1++)
             {
                 int __mMaxQ1=M_model->mMaxM(__q1);
-                M_Cmf_pr[q1].resize( __mMaxQ1 );
+                M_Cmf_pr[__q1].resize( __mMaxQ1 );
                 for( int __m1=0; __m1< __mMaxQ1; __m1++)
                 {
-                    M_Cmf_pr[q1][m1].resize(  __QRhs );
+                    M_Cmf_pr[__q1][__m1].resize(  __QRhs );
                     for( int __q2=0; __q2< __QRhs; __q2++)
                     {
                         int __mMaxQ2=M_model->mMaxF(0,__q2);
-                        M_Cmf_pr[q1][m1][q2].resize( __mMaxQ2 );
+                        M_Cmf_pr[__q1][__m1][__q2].resize( __mMaxQ2 );
                     }
                 }
             }
@@ -981,14 +981,14 @@ CRB<TruthModelType>::offline()
             for( int __q1=0; __q1< __Qm; __q1++)
             {
                 int __mMaxQ1=M_model->mMaxM(__q1);
-                M_Cmf_du[q1].resize( __mMaxQ1 );
+                M_Cmf_du[__q1].resize( __mMaxQ1 );
                 for( int __m1=0; __m1< __mMaxQ1; __m1++)
                 {
-                    M_Cmf_du[q1][m1].resize( __QOutput );
+                    M_Cmf_du[__q1][__m1].resize( __QOutput );
                     for( int __q2=0; __q2< __QOutput; __q2++)
                     {
                         int __mMaxQ2=M_model->mMaxF(M_output_index,__q2);
-                        M_Cmf_du[q1][m1][q2].resize( __mMaxQ2 );
+                        M_Cmf_du[__q1][__m1][__q2].resize( __mMaxQ2 );
                     }
                 }
             }
@@ -999,14 +999,14 @@ CRB<TruthModelType>::offline()
             for( int __q1=0; __q1< __Qm; __q1++)
             {
                 int __mMaxQ1=M_model->mMaxM(__q1);
-                M_Cma_pr[q1].resize( __mMaxQ1 );
+                M_Cma_pr[__q1].resize( __mMaxQ1 );
                 for( int __m1=0; __m1< __mMaxQ1; __m1++)
                 {
-                    M_Cma_pr[q1][m1].resize(  __QLhs );
+                    M_Cma_pr[__q1][__m1].resize(  __QLhs );
                     for( int __q2=0; __q2< __QLhs; __q2++)
                     {
                         int __mMaxQ2=M_model->mMaxA(__q2);
-                        M_Cma_pr[q1][m1][q2].resize( __mMaxQ2 );
+                        M_Cma_pr[__q1][__m1][__q2].resize( __mMaxQ2 );
                     }
                 }
             }
@@ -1015,14 +1015,14 @@ CRB<TruthModelType>::offline()
             for( int __q1=0; __q1< __Qm; __q1++)
             {
                 int __mMaxQ1=M_model->mMaxM(__q1);
-                M_Cma_du[q1].resize( __mMaxQ1 );
+                M_Cma_du[__q1].resize( __mMaxQ1 );
                 for( int __m1=0; __m1< __mMaxQ1; __m1++)
                 {
-                    M_Cma_du[q1][m1].resize( __QLhs );
+                    M_Cma_du[__q1][__m1].resize( __QLhs );
                     for( int __q2=0; __q2< __QLhs; __q2++)
                     {
                         int __mMaxQ2=M_model->mMaxA(__q2);
-                        M_Cma_du[q1][m1][q2].resize( __mMaxQ2 );
+                        M_Cma_du[__q1][__m1][__q2].resize( __mMaxQ2 );
                     }
                 }
             }
@@ -1033,14 +1033,14 @@ CRB<TruthModelType>::offline()
             for( int __q1=0; __q1< __Qm; __q1++)
             {
                 int __mMaxQ1=M_model->mMaxM(__q1);
-                M_Cmm_pr[q1].resize( __mMaxQ1 );
+                M_Cmm_pr[__q1].resize( __mMaxQ1 );
                 for( int __m1=0; __m1< __mMaxQ1; __m1++)
                 {
-                    M_Cmm_pr[q1][m1].resize(  __Qm );
+                    M_Cmm_pr[__q1][__m1].resize(  __Qm );
                     for( int __q2=0; __q2< __Qm; __q2++)
                     {
                         int __mMaxQ2=M_model->mMaxM(__q2);
-                        M_Cmm_pr[q1][m1][q2].resize( __mMaxQ2 );
+                        M_Cmm_pr[__q1][__m1][__q2].resize( __mMaxQ2 );
                     }
                 }
             }
@@ -1049,14 +1049,14 @@ CRB<TruthModelType>::offline()
             for( int __q1=0; __q1< __Qm; __q1++)
             {
                 int __mMaxQ1=M_model->mMaxM(__q1);
-                M_Cmm_du[q1].resize( __mMaxQ1 );
+                M_Cmm_du[__q1].resize( __mMaxQ1 );
                 for( int __m1=0; __m1< __mMaxQ1; __m1++)
                 {
-                    M_Cmm_du[q1][m1].resize( __Qm );
+                    M_Cmm_du[__q1][__m1].resize( __Qm );
                     for( int __q2=0; __q2< __Qm; __q2++)
                     {
                         int __mMaxQ2=M_model->mMaxM(__q2);
-                        M_Cmm_du[q1][m1][q2].resize( __mMaxQ2 );
+                        M_Cmm_du[__q1][__m1][__q2].resize( __mMaxQ2 );
                     }
                 }
             }
