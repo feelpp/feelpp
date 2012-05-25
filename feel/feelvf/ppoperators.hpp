@@ -652,8 +652,8 @@
             protected:                                                  \
             VF_OP_NAME( O )() {}                                        \
                                                                         \
-        L_type VF_TYPE_CV(L) _M_left;                                   \
-        R_type VF_TYPE_CV(R) _M_right;                                  \
+        L_type _M_left;                                                  \
+        R_type _M_right;                                                \
     };                                                                  \
     template <BOOST_PP_IF( VF_TYPE_IS_EXPR( L ),                        \
                            BOOST_PP_IDENTITY(class VF_TYPE_NAME(L)),    \
