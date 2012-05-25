@@ -51,6 +51,9 @@ post-build {
 depends_lib  \
     port:mesa \
     port:libpng \
+    port:libANN \
+    port:python27 \
+    port:swig \
     port:fltk-devel\
     port:jpeg \
     port:zlib \
