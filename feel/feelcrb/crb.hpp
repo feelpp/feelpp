@@ -727,19 +727,33 @@ private:
     //export
     export_ptrtype exporter;
 
+#if 0
     array_2_type M_C0_pr;
     array_2_type M_C0_du;
     array_3_type M_Lambda_pr;
     array_3_type M_Lambda_du;
     array_4_type M_Gamma_pr;
     array_4_type M_Gamma_du;
-
     array_3_type M_Cmf_pr;
     array_3_type M_Cmf_du;
     array_4_type M_Cma_pr;
     array_4_type M_Cma_du;
     array_4_type M_Cmm_pr;
     array_4_type M_Cmm_du;
+#endif
+    std::vector< std::vector< std::vector< std::vector< double > > > > M_C0_pr;
+    std::vector< std::vector< std::vector< std::vector< double > > > > M_C0_du;
+    std::vector< std::vector< std::vector< std::vector< vectorN_type > > > > M_Lambda_pr;
+    std::vector< std::vector< std::vector< std::vector< vectorN_type > > > > M_Lambda_du;
+    std::vector< std::vector< std::vector< std::vector< matrixN_type > > > > M_Gamma_pr;
+    std::vector< std::vector< std::vector< std::vector< matrixN_type > > > > M_Gamma_du;
+    std::vector< std::vector< std::vector< std::vector< vectorN_type > > > > M_Cmf_pr;
+    std::vector< std::vector< std::vector< std::vector< vectorN_type > > > > M_Cmf_du;
+    std::vector< std::vector< std::vector< std::vector< matrixN_type > > > > M_Cma_pr;
+    std::vector< std::vector< std::vector< std::vector< matrixN_type > > > > M_Cma_du;
+    std::vector< std::vector< std::vector< std::vector< matrixN_type > > > > M_Cmm_pr;
+    std::vector< std::vector< std::vector< std::vector< matrixN_type > > > > M_Cmm_du;
+
 
     std::vector<double> M_coeff_pr_ini_online;
     std::vector<double> M_coeff_du_ini_online;
@@ -890,7 +904,7 @@ CRB<TruthModelType>::offline()
         //typename array_3_type::extent_gen extents3;
         //M_Lambda_pr.resize( extents3[__QLhs][__QRhs] );
         //M_Lambda_du.resize( extents3[__QLhs][__QOutput] );
-        M_Lambda_pr.resize( ___QLhs );
+        M_Lambda_pr.resize( __QLhs );
         for( int __q1=0; __q1< __QLhs; __q1++)
         {
             int __mMaxQ1=M_model->mMaxA(__q1);
@@ -925,7 +939,7 @@ CRB<TruthModelType>::offline()
         //typename array_4_type::extent_gen extents4;
         //M_Gamma_pr.resize( extents4[__QLhs][__QLhs] );
         //M_Gamma_du.resize( extents4[__QLhs][__QLhs] );
-        M_Gamma_pr.resize( ___QLhs );
+        M_Gamma_pr.resize( __QLhs );
         for( int __q1=0; __q1< __QLhs; __q1++)
         {
             int __mMaxQ1=M_model->mMaxA(__q1);
@@ -961,7 +975,7 @@ CRB<TruthModelType>::offline()
         {
             // M_Cmf_pr.resize( extents3[__Qm][__QRhs] );
             // M_Cmf_du.resize( extents3[__Qm][__QRhs] );
-            M_Cmf_pr.resize( ___Qm );
+            M_Cmf_pr.resize( __Qm );
             for( int __q1=0; __q1< __Qm; __q1++)
             {
                 int __mMaxQ1=M_model->mMaxM(__q1);
@@ -995,7 +1009,7 @@ CRB<TruthModelType>::offline()
 
             // M_Cma_pr.resize( extents4[__Qm][__QLhs] );
             // M_Cma_du.resize( extents4[__Qm][__QLhs] );
-            M_Cma_pr.resize( ___Qm );
+            M_Cma_pr.resize( __Qm );
             for( int __q1=0; __q1< __Qm; __q1++)
             {
                 int __mMaxQ1=M_model->mMaxM(__q1);
@@ -1029,7 +1043,7 @@ CRB<TruthModelType>::offline()
 
             // M_Cmm_pr.resize( extents4[__Qm][__Qm] );
             // M_Cmm_du.resize( extents4[__Qm][__Qm] );
-            M_Cmm_pr.resize( ___Qm );
+            M_Cmm_pr.resize( __Qm );
             for( int __q1=0; __q1< __Qm; __q1++)
             {
                 int __mMaxQ1=M_model->mMaxM(__q1);
@@ -1707,9 +1721,9 @@ CRB<TruthModelType>::offline()
                 {
                     for ( size_type i = 0; i < M_N; ++i )
                     {
-                        M_Mq_pr[q]][m]( i, j ) = Mq[q][m]->energy( M_WN[i], M_WN[j] );
-                        M_Mq_du[q]][m]( i, j ) = Mq[q][m]->energy( M_WNdu[i], M_WNdu[j], true );
-                        M_Mq_pr_du[q]][m]( i, j ) = Mq[q][m]->energy( M_WNdu[i], M_WN[j] );
+                        M_Mq_pr[q][m]( i, j ) = Mq[q][m]->energy( M_WN[i], M_WN[j] );
+                        M_Mq_du[q][m]( i, j ) = Mq[q][m]->energy( M_WNdu[i], M_WNdu[j], true );
+                        M_Mq_pr_du[q][m]( i, j ) = Mq[q][m]->energy( M_WNdu[i], M_WN[j] );
                     }
                 }
             }//loop over m
@@ -2600,7 +2614,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
 
     beta_vector_type betaAqm;
     beta_vector_type betaMqm;
-    std::vector<beta_vector_type> betaaFqm, betaLqm;
+    std::vector<beta_vector_type> betaFqm, betaLqm;
 
     matrixN_type A ( ( int )N, ( int )N ) ;
     vectorN_type F ( ( int )N );
@@ -2728,7 +2742,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
             for ( size_type q = 0; q < M_model->Qa(); ++q )
             {
                 for(int m=0; m < M_model->mMaxA(q); m++)
-                    Adu += betaAmq[q][m]*M_Aq_du[q][m].block( 0,0,N,N );
+                    Adu += betaAqm[q][m]*M_Aq_du[q][m].block( 0,0,N,N );
             }
 
             for ( size_type q = 0; q < M_model->Ql( M_output_index ); ++q )
@@ -2793,7 +2807,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
 
                 for ( size_type q = 0; q < Qm; ++q )
                 {
-                    for(int m=0; m < mMaxM(q); m++)
+                    for(int m=0; m < M_model->mMaxM(q); m++)
                     {
                         Adu += betaMqm[q][m]*M_Mq_pr[q][m].block( 0,0,N,N )/time_step;
                         Fdu += betaMqm[q][m]*M_Mq_pr[q][m].block( 0,0,N,N )*uNduold[time_index]/time_step;
@@ -3460,13 +3474,14 @@ CRB<TruthModelType>::transientPrimalResidual( int Ncur,parameter_type const& mu,
                 {
                     for ( size_type __m2 = 0; __m2 < M_model->mMaxM(__q2); ++__m2 )
                     {
-                    value_type m_q2 = betaMqm[__q2][__m2];
-                    auto m1 = M_Cmm_pr[__q1][__m1][__q2][__m2].block( 0,0,__N,__N )*Un;
-                    auto m2 = M_Cmm_pr[__q1][__m1][__q2][__m2].block( 0,0,__N,__N )*Unold;
-                    __Cmm_pr += 1./( time_step*time_step ) * m_q1 * m_q2 * Un.dot( m1 );
-                    __Cmm_pr -= 1./( time_step*time_step ) * m_q1 * m_q2 * Un.dot( m2 );
-                    __Cmm_pr -= 1./( time_step*time_step ) * m_q1 * m_q2 * Unold.dot( m1 );
-                    __Cmm_pr += 1./( time_step*time_step ) * m_q1 * m_q2 * Unold.dot( m2 );
+                        value_type m_q2 = betaMqm[__q2][__m2];
+                        auto m1 = M_Cmm_pr[__q1][__m1][__q2][__m2].block( 0,0,__N,__N )*Un;
+                        auto m2 = M_Cmm_pr[__q1][__m1][__q2][__m2].block( 0,0,__N,__N )*Unold;
+                        __Cmm_pr += 1./( time_step*time_step ) * m_q1 * m_q2 * Un.dot( m1 );
+                        __Cmm_pr -= 1./( time_step*time_step ) * m_q1 * m_q2 * Un.dot( m2 );
+                        __Cmm_pr -= 1./( time_step*time_step ) * m_q1 * m_q2 * Unold.dot( m1 );
+                        __Cmm_pr += 1./( time_step*time_step ) * m_q1 * m_q2 * Unold.dot( m2 );
+                    }//m2
                 }//q2
             }//m1
         }//q1
@@ -3836,7 +3851,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
 
             for ( int __q2 = 0; __q2 < __QRhs; ++__q2 )
             {
-                for ( int __m1 = 0; __m1 < M_model->mMaxF(0,__q2); ++__m2 )
+                for ( int __m2 = 0; __m2 < M_model->mMaxF(0,__q2); ++__m2 )
                 {
 
                     M_Cmf_pr[__q1][__m1][__q2][__m2].conservativeResize( __N );
@@ -4190,18 +4205,18 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<false> , int number_o
         // see above Z1 = C^-1 F and Z2 = F
         for ( int __q1 = 0; __q1 < __QRhs; ++__q1 )
         {
-            for ( int __m1 = 0; __m1 < M_model->mMaxF(0,q); ++__m1 )
+            for ( int __m1 = 0; __m1 < M_model->mMaxF(0,__q1); ++__m1 )
             {
                 //Log() << "__Fq->norm1=" << Fq[0][__q1][__m1]->l2Norm() << "\n";
-                M_model->l2solve( __Z1, Fq[0][__q1][__m1] );
+                M_model->l2solve( __Z1, Fqm[0][__q1][__m1] );
 
                 //for ( int __q2 = 0;__q2 < __q1;++__q2 )
                 for ( int __q2 = 0; __q2 < __QRhs; ++__q2 )
                 {
-                    for ( int __m2 = 0; __m2 < M_model->mMaxF(0,q); ++__m2 )
+                    for ( int __m2 = 0; __m2 < M_model->mMaxF(0,__q2); ++__m2 )
                     {
                         //Log() << "__Fq->norm 2=" << Fq[0][__q2][__m2]->l2Norm() << "\n";
-                        M_model->l2solve( __Z2, Fq[0][__q2][__m2] );
+                        M_model->l2solve( __Z2, Fqm[0][__q2][__m2] );
                         //M_C0_pr[__q1][__m1][__q2][__m2] = M_model->scalarProduct( __X, Fq[0][__q2][__m2] );
                         M_C0_pr[__q1][__m1][__q2][__m2] = M_model->scalarProduct( __Z1, __Z2 );
                         //M_C0_pr[__q2][__q1] = M_C0_pr[__q1][__q2];
@@ -4212,7 +4227,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<false> , int number_o
                 //M_C0_pr[__q1][__q1] = M_model->scalarProduct( __X, __X );
             }//end of loop __m1
         }//end of loop __q1
-    }
+    }// Ncur==1
 
     std::cout << "     o initialize offlineResidual in " << ti.elapsed() << "s\n";
     ti.restart();
@@ -4265,7 +4280,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<false> , int number_o
         {
             for ( int __m1 = 0; __m1 < M_model->mMaxA(__q1) ; ++__m1 )
             {
-                Aq[__q1][__m1]->multVector(  __X, __W );
+                Aqm[__q1][__m1]->multVector(  __X, __W );
                 __W->scale( -1. );
                 //std::cout << "__W->norm=" << __W->l2Norm() << "\n";
                 M_model->l2solve( __Z1, __W );
@@ -4277,15 +4292,15 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<false> , int number_o
                         M_Lambda_pr[__q1][__m1][__q2][__m2].conservativeResize( __N );
                         //__Y = Fq[0][__q2];
                         //std::cout << "__Fq->norm=" << Fq[0][__q2]->l2Norm() << "\n";
-                        M_model->l2solve( __Z2, Fq[0][__q2][__m2] );
+                        M_model->l2solve( __Z2, Fqm[0][__q2][__m2] );
                         M_Lambda_pr[ __q1][ __m1][ __q2][ __m2]( elem ) = 2.0*M_model->scalarProduct( __Z1, __Z2 );
                         //Debug() << "M_Lambda_pr[" << __q1 << "][" << __m1 << "][" << __q2 << "][" << __m2 << "][" << __j << "]=" << M_Lambda_pr[__q1][__m1][__q2][__m2][__j] << "\n";
                         //std::cout << "M_Lambda_pr[" << __q1 << "][" << __m1 << "][" << __q2 << "][" << __m2 << "][" << __j << "]=" << M_Lambda_pr[__q1][__m1][__q2][__m2][__j] << "\n";
-                    }
+                    }//m2
                 }//end of __q2
             }//end of loop __m1
         }//end of __q1
-
+    }//elem
 
     std::cout << "     o Lambda_pr updated in " << ti.elapsed() << "s\n";
     ti.restart();
@@ -4306,7 +4321,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<false> , int number_o
                     for ( int elem=__N-number_of_added_elements; elem<__N; elem++ )
                     {
                         *__X=M_WN[elem];
-                        Aq[__q1][__m1]->multVector(  __X, __W );
+                        Aqm[__q1][__m1]->multVector(  __X, __W );
                         __W->scale( -1. );
                         //std::cout << "__W->norm=" << __W->l2Norm() << "\n";
                         M_model->l2solve( __Z1, __W );
@@ -4315,7 +4330,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<false> , int number_o
                         for ( int __l = 0; __l < ( int )__N; ++__l )
                         {
                             *__X=M_WN[__l];
-                            Aq[__q2][__m2]->multVector(  __X, __W );
+                            Aqm[__q2][__m2]->multVector(  __X, __W );
                             __W->scale( -1. );
                             //std::cout << "__W2_pr->norm=" << __W->l2Norm() << "\n";
                             M_model->l2solve( __Z2, __W );
@@ -4329,7 +4344,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<false> , int number_o
                     for ( int __j = 0; __j < ( int )__N; ++__j )
                     {
                         *__X=M_WN[__j];
-                        Aq[__q1][__m2]->multVector(  __X, __W );
+                        Aqm[__q1][__m2]->multVector(  __X, __W );
                         __W->scale( -1. );
                         //std::cout << "__W->norm=" << __W->l2Norm() << "\n";
                         M_model->l2solve( __Z1, __W );
@@ -4340,7 +4355,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<false> , int number_o
                         for ( int elem=__N-number_of_added_elements; elem<__N; elem++ )
                         {
                             *__X=M_WN[elem];
-                            Aq[__q2][__m2]->multVector(  __X, __W );
+                            Aqm[__q2][__m2]->multVector(  __X, __W );
                             __W->scale( -1. );
                             //std::cout << "__W2_pr->norm=" << __W->l2Norm() << "\n";
                             M_model->l2solve( __Z2, __W );
@@ -4371,17 +4386,17 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<false> , int number_o
 
         for ( int __q1 = 0; __q1 < __QOutput; ++__q1 )
         {
-            for ( int __m1 = 0; __m1 < M_model->mMaxF(M_output_index,q); ++__m1 )
+            for ( int __m1 = 0; __m1 < M_model->mMaxF(M_output_index,__q1); ++__m1 )
             {
-                *__Fdu = *Fq[M_output_index][__q1][__m1];
+                *__Fdu = *Fqm[M_output_index][__q1][__m1];
                 __Fdu->scale( -1.0 );
                 M_model->l2solve( __Z1, __Fdu );
 
                 for ( int __q2 = 0; __q2 < __QOutput; ++__q2 )
                 {
-                    for ( int __m2 = 0; __m2 < M_model->mMaxF(M_output_index,q); ++__m2 )
+                    for ( int __m2 = 0; __m2 < M_model->mMaxF(M_output_index,__q2); ++__m2 )
                     {
-                        *__Fdu = *Fq[M_output_index][__q2][__m2];
+                        *__Fdu = *Fqm[M_output_index][__q2][__m2];
                         __Fdu->scale( -1.0 );
                         M_model->l2solve( __Z2, __Fdu );
                         M_C0_du[__q1][__q2][__m1][__m2] = M_model->scalarProduct( __Z1, __Z2 );
@@ -4407,7 +4422,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<false> , int number_o
         {
             for ( int __m1 = 0; __m1 < M_model->mMaxA(__q1); ++__m1 )
             {
-                Aq[__q1][__m1]->transpose( Atq1 );
+                Aqm[__q1][__m1]->transpose( Atq1 );
                 Atq1->multVector(  __X, __W );
                 __W->scale( -1. );
                 //std::cout << "__W->norm=" << __W->l2Norm() << "\n";
@@ -4419,7 +4434,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<false> , int number_o
                     {
                         M_Lambda_du[__q1][__m1][__q2][__m2].conservativeResize( __N );
 
-                        *__Fdu = *Fq[M_output_index][__q2][__m2];
+                        *__Fdu = *Fqm[M_output_index][__q2][__m2];
                         __Fdu->scale( -1.0 );
                         M_model->l2solve( __Z2, __Fdu );
                         M_Lambda_du[ __q1][ __m1][ __q2][ __m2]( elem ) = 2.0*M_model->scalarProduct( __Z2, __Z1 );
@@ -4439,14 +4454,14 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<false> , int number_o
         for ( int __m1 = 0; __m1 < M_model->mMaxA(__q1); ++__m1 )
         {
 
-            Aq[__q1][__m1]->transpose( Atq1 );
+            Aqm[__q1][__m1]->transpose( Atq1 );
 
             for ( int __q2 = 0; __q2 < __QLhs; ++__q2 )
             {
-                for ( int __q2 = 0; __q2 < M_model->mMaxA(__q2); ++__m2 )
+                for ( int __m2 = 0; __m2 < M_model->mMaxA(__q2); ++__m2 )
                 {
 
-                    Aq[__q2][__m2]->transpose( Atq2 );
+                    Aqm[__q2][__m2]->transpose( Atq2 );
                     M_Gamma_du[__q1][__m1][__q2][__m2].conservativeResize( __N, __N );
 
                     for ( int elem=__N-number_of_added_elements; elem<__N; elem++ )
@@ -4508,7 +4523,6 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<false> , int number_o
     Log() << "[offlineResidual] Done.\n";
 
 }
-
 
 template<typename TruthModelType>
 void
