@@ -6,7 +6,7 @@
    Date: 2004-11-22
 
    Copyright (C) 2004 EPFL
-   Copyright (C) 2007-2010 Université Joseph Fourier (Grenoble I)
+   Copyright (C) 2006-2012 Université Joseph Fourier (Grenoble I)
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -40,6 +40,7 @@
 #include <boost/fusion/sequence.hpp>
 #include <boost/fusion/container/vector.hpp>
 #include <boost/fusion/algorithm.hpp>
+#include <boost/fusion/adapted/mpl.hpp>
 
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/array.hpp>
@@ -1004,11 +1005,14 @@ public:
     struct result<CreateElementVector( Lhs,Rhs )>
     {
 	    typedef typename boost::remove_const<typename boost::remove_reference<Lhs>::type>::type lhs_noref_type;
-	    typedef typename boost::remove_const<typename boost::remove_reference<Rhs>::type>::type rhs_noref_type;
+	    typedef typename boost::remove_const<typename boost::remove_reference<Rhs>::type>::type::element_type rhs_noref_type;
         typedef typename boost::remove_const<typename boost::remove_reference<ElementType>::type>::type ElementType_noref_type;
 	    typedef typename boost::fusion::result_of::size<lhs_noref_type>::type index;
-        typedef typename boost::fusion::result_of::make_vector<typename ElementType_noref_type::template sub_element<index::value>::type>::type v_elt_type;
-	    typedef typename boost::fusion::result_of::join<lhs_noref_type, v_elt_type>::type ptype;
+        typedef typename ElementType_noref_type::template sub_element<index::value>::type elt_type;
+        BOOST_MPL_ASSERT( ( boost::is_same<typename elt_type::functionspace_type,rhs_noref_type> ) );
+        typedef typename boost::fusion::result_of::make_vector<elt_type>::type v_elt_type;
+
+	    typedef typename boost::fusion::result_of::push_back<lhs_noref_type, elt_type>::type ptype;
         typedef typename boost::fusion::result_of::as_vector<ptype>::type type;
     };
     CreateElementVector( ElementType const& e ) : M_e( e ), M_names() {}
@@ -1029,11 +1033,12 @@ public:
         BOOST_STATIC_ASSERT( (boost::is_same<decltype(elt), typename ElementType::template sub_element<index::value>::type>::value ) );
         if ( !M_names.empty() )
         {
-            FEELPP_ASSERT( M_names.size() == ElementType::nSpaces )
-                ( M_names.size() )( ElementType::nSpaces ).error( "incompatible number of function names and functions");
+            static const int s = mpl::size<typename ElementType::functionspace_type::bases_list>::type::value;
+            FEELPP_ASSERT( M_names.size() == s  )
+                ( M_names.size() )( s ).error( "incompatible number of function names and functions");
             elt.setName( M_names[index::value] );
         }
-        return boost::fusion::as_vector( boost::fusion::join( lhs, boost::fusion::make_vector(elt) ) );
+        return boost::fusion::as_vector( boost::fusion::push_back( lhs, elt ) );
     }
 };
 
@@ -1117,7 +1122,7 @@ public:
 
     BOOST_MPL_ASSERT_NOT( ( boost::is_same<mpl::at<bases_list,mpl::int_<0> >, mpl::void_> ) );
 
-private:
+public:
 
     template<typename BasisType>
     struct ChangeMesh
@@ -1356,6 +1361,7 @@ public:
     */
     //@{
 
+
     /**
      * \class Element
      */
@@ -1364,15 +1370,21 @@ public:
         :
     public Cont,boost::addable<Element<T,Cont> >, boost::subtractable<Element<T,Cont> >
     {
+    public:
+        typedef T value_type;
+
         template<typename BasisType>
         struct ChangeElement
         {
+            typedef T value_type;
             BOOST_MPL_ASSERT_NOT( ( boost::is_same<BasisType,mpl::void_> ) );
             typedef typename ChangeBasis<BasisType>::type::value_type fs_type;
             typedef typename fs_type::template Element<value_type, typename VectorUblas<T>::range::type > element_type;
             typedef element_type type;
         };
         typedef typename mpl::transform<bases_list, ChangeElement<mpl::_1>, mpl::back_inserter<mpl::vector<> > >::type element_vector_type;
+
+        //typedef typename fusion::result_of::accumulate<bases_list, fusion::vector<>, ChangeElement<> >
         typedef typename VectorUblas<T>::range::type ct_type;
 
         /**
@@ -1387,7 +1399,7 @@ public:
         };
         typedef typename mpl::transform<bases_list, AddOffContainer<mpl::_1>, mpl::back_inserter<fusion::vector<> > >::type container_vector_type;
 
-    public:
+
 
         typedef FunctionSpace<A0,A1,A2,A3,A4> functionspace_type;
         typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
@@ -1407,7 +1419,7 @@ public:
         /** @name Typedefs
          */
         //@{
-        typedef T value_type;
+
 
         typedef typename ublas::type_traits<value_type>::real_type real_type;
         typedef T element_type;
@@ -2427,7 +2439,7 @@ public:
 
             if ( this->functionSpace()->worldsComm()[i].isActive() )
             {
-                ct_type ct( const_cast<VectorUblas<value_type>&>( *this ),
+                ct_type ct( const_cast<VectorUblas<value_type>&>( dynamic_cast<VectorUblas<value_type> const&>( *this ) ),
                             ublas::range( nbdof_start, nbdof_start+space->nLocalDof() ),
                             _M_functionspace->template functionSpace<i>()->map() );
 
@@ -2474,20 +2486,6 @@ public:
             }
 
         }
-#if 0
-        typedef typename fusion::result_of::accumulate<functionspace_vector_type, fusion::vector<>, detail::CreateElementVector<this_type> >::type elements_type;
-
-        elements_type
-        elements() const
-            {
-                return fusion::accumulate( this->functionSpaces(), fusion::vector<>(), detail::CreateElementVector<this_type>( *this ) );
-            }
-        elements_type
-        elements(std::vector<std::string> const& names) const
-            {
-                return fusion::accumulate( this->functionSpaces(), fusion::vector<>(), detail::CreateElementVector<this_type>( *this, names ) );
-            }
-#endif
         /**
          *
          * @return the finite element space associated with the n-th component
@@ -5751,6 +5749,14 @@ measurePointElements( boost::shared_ptr<FunctionSpace<MeshType,bases<Lagrange<Me
     return _fn;
 }
 
+template<typename EltType>
+typename fusion::result_of::accumulate<typename EltType::functionspace_type::functionspace_vector_type,
+                                       fusion::vector<>,
+                                       detail::CreateElementVector<EltType> >::type
+subelements( EltType const& e, std::vector<std::string> const& n = {} )
+{
+    return fusion::accumulate( e.functionSpaces(), fusion::vector<>(), detail::CreateElementVector<EltType>( e, n ) );
+}
 } // Feel
 
 

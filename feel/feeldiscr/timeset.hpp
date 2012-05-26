@@ -469,8 +469,8 @@ public:
             //add( "marker2", regionMarker2( _M_scalar_p0 ) );
             //add( "marker3", regionMarker3( _M_scalar_p0 ) );
         }
-        template<typename FunctionType>
-        void add( std::string const& __n, FunctionType const& func )
+        template<typename StringType, typename FunctionType>
+        void add( StringType  __n, FunctionType const& func )
         {
             add_( __n, func, mpl::bool_<(FunctionType::functionspace_type::nSpaces>1)>() );
         }
@@ -485,14 +485,16 @@ public:
             void
             operator()( T const& fun ) const
                 {
+                    std::cout << "export "  << fun.name() << " ...\n";
                     M_tset.add_( fun.name(), fun, mpl::bool_<false>() );
                 }
         };
-        template<typename FunctionType>
-        void add_( std::string const& __n, FunctionType const& func, mpl::bool_<true> )
+        template<typename StringType, typename FunctionType>
+        void add_( StringType __n, FunctionType const& func, mpl::bool_<true> )
         {
+            std::vector<std::string> s = __n;
             // implement elements() which returns a fusion vector of the components
-            fusion::for_each( func.elements(), AddFunctionProduct<step_type>( *this ) );
+            fusion::for_each( subelements(func,s), AddFunctionProduct<step_type>( *this ) );
         }
         template<typename FunctionType>
         void add_( std::string const& __n, FunctionType const& func, mpl::bool_<false> )
