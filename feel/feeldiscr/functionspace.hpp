@@ -35,14 +35,11 @@
 #include <boost/mpl/at.hpp>
 #include <boost/mpl/vector.hpp>
 #include <boost/mpl/transform.hpp>
-#include <boost/mpl/vector.hpp>
 #include <boost/fusion/support/pair.hpp>
 #include <boost/fusion/support/is_sequence.hpp>
 #include <boost/fusion/sequence.hpp>
 #include <boost/fusion/container/vector.hpp>
 #include <boost/fusion/algorithm.hpp>
-#include <boost/fusion/adapted/mpl.hpp>
-#include <boost/fusion/include/mpl.hpp>
 
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/array.hpp>
@@ -1008,9 +1005,11 @@ public:
     {
 	    typedef typename boost::remove_const<typename boost::remove_reference<Lhs>::type>::type lhs_noref_type;
 	    typedef typename boost::remove_const<typename boost::remove_reference<Rhs>::type>::type rhs_noref_type;
-
-	    typedef typename fusion::result_of::size<lhs_noref_type>::type index;
-	    typedef typename fusion::result_of::push_back<lhs_noref_type, typename ElementType::template sub_element<index::value>::type>::type type;
+        typedef typename boost::remove_const<typename boost::remove_reference<ElementType>::type>::type ElementType_noref_type;
+	    typedef typename boost::fusion::result_of::size<lhs_noref_type>::type index;
+        typedef typename boost::fusion::result_of::make_vector<typename ElementType_noref_type::template sub_element<index::value>::type>::type v_elt_type;
+	    typedef typename boost::fusion::result_of::join<lhs_noref_type, v_elt_type>::type ptype;
+        typedef typename boost::fusion::result_of::as_vector<ptype>::type type;
     };
     CreateElementVector( ElementType const& e ) : M_e( e ), M_names() {}
     CreateElementVector( ElementType const& e, std::vector<std::string> const& names ) : M_e( e ), M_names( names ) {}
@@ -1024,8 +1023,9 @@ public:
         typedef typename boost::remove_const<typename boost::remove_reference<Lhs>::type>::type lhs_noref_type;
         typedef typename boost::remove_const<typename boost::remove_reference<Rhs>::type>::type rhs_noref_type;
         typedef typename boost::remove_const<typename boost::remove_reference<ElementType>::type>::type ElementType_noref_type;
-	    typedef typename fusion::result_of::size<lhs_noref_type>::type index;
-        auto elt = M_e.template element<index::value>();
+	    typedef typename boost::fusion::result_of::size<lhs_noref_type>::type index;
+        typename ElementType_noref_type::template sub_element<index::value>::type elt = M_e.template element<index::value>();
+
         BOOST_STATIC_ASSERT( (boost::is_same<decltype(elt), typename ElementType::template sub_element<index::value>::type>::value ) );
         if ( !M_names.empty() )
         {
@@ -1033,7 +1033,7 @@ public:
                 ( M_names.size() )( ElementType::nSpaces ).error( "incompatible number of function names and functions");
             elt.setName( M_names[index::value] );
         }
-        return fusion::push_back( lhs, elt );
+        return boost::fusion::as_vector( boost::fusion::join( lhs, boost::fusion::make_vector(elt) ) );
     }
 };
 
@@ -2474,7 +2474,7 @@ public:
             }
 
         }
-
+#if 0
         typedef typename fusion::result_of::accumulate<functionspace_vector_type, fusion::vector<>, detail::CreateElementVector<this_type> >::type elements_type;
 
         elements_type
@@ -2487,7 +2487,7 @@ public:
             {
                 return fusion::accumulate( this->functionSpaces(), fusion::vector<>(), detail::CreateElementVector<this_type>( *this, names ) );
             }
-
+#endif
         /**
          *
          * @return the finite element space associated with the n-th component
