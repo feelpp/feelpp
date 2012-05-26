@@ -274,7 +274,7 @@ public:
                                        ( pattern,( size_type ),Pattern::COUPLED )
                                        ( properties,( size_type ),NON_HERMITIAN )
                                        ( buildGraphWithTranspose, ( bool ),false )
-                                       ( pattern_block,    *, ( vf::Blocks<1,1,size_type>( size_type( Pattern::HAS_NO_BLOCK_PATTERN ) ) ) )
+                                       ( pattern_block,    *, ( BlocksStencilPattern(1,1,size_type( Pattern::HAS_NO_BLOCK_PATTERN ) ) ) )
                                        ( diag_is_nonzero,  *( boost::is_integral<mpl::_> ), true )
                                        ( verbose,( int ),0 )
                                        ( collect_garbage, *( boost::is_integral<mpl::_> ), true )
@@ -289,7 +289,7 @@ public:
             auto s = stencil( _test=test,
                               _trial=trial,
                               _pattern=pattern,
-                              _pattern_block=pattern_block.getSetOfBlocks(),
+                              _pattern_block=pattern_block,
                               _diag_is_nonzero=diag_is_nonzero,
                               _collect_garbage=collect_garbage);
 
@@ -297,18 +297,26 @@ public:
                        test->nLocalDofWithoutGhost(), trial->nLocalDofWithoutGhost(),
                        s->graph() );
         }
-
         else
         {
             auto s = stencil( _test=trial,
                               _trial=test,
                               _pattern=pattern,
-                              _pattern_block=pattern_block.transpose().getSetOfBlocks(),
+                              _pattern_block=pattern_block.transpose(),
+                              _diag_is_nonzero=false,// because transpose(do just after)
                               _collect_garbage=collect_garbage );
+            // get the good graph
+            auto graph = s->graph()->transpose();
+            if ( diag_is_nonzero ) { graph->addMissingZeroEntriesDiagonal();graph->close(); }
+
+            //maybe do that
+            //stencilManagerGarbage(boost::make_tuple( trial, test, pattern, pattern_block.transpose().getSetOfBlocks(), false/*diag_is_nonzero*/));
+            //now save the good graph in the StencilManager(only if entry is empty)
+            stencilManagerAdd(boost::make_tuple( test, trial, pattern, pattern_block.getSetOfBlocks(), diag_is_nonzero), graph);
 
             mat->init( test->nDof(), trial->nDof(),
                        test->nLocalDofWithoutGhost(), trial->nLocalDofWithoutGhost(),
-                       s->graph()->transpose() );
+                       graph );
         }
 
         mat->zero();

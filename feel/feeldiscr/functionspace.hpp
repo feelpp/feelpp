@@ -41,6 +41,8 @@
 #include <boost/fusion/sequence.hpp>
 #include <boost/fusion/container/vector.hpp>
 #include <boost/fusion/algorithm.hpp>
+#include <boost/fusion/adapted/mpl.hpp>
+#include <boost/fusion/include/mpl.hpp>
 
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/array.hpp>
@@ -994,6 +996,46 @@ struct BasisOrder
     }
 };
 
+template<typename ElementType>
+struct CreateElementVector
+{
+public:
+    template<typename Sig>
+    struct result;
+
+    template<typename Lhs, typename Rhs>
+    struct result<CreateElementVector( Lhs,Rhs )>
+    {
+	    typedef typename boost::remove_const<typename boost::remove_reference<Lhs>::type>::type lhs_noref_type;
+	    typedef typename boost::remove_const<typename boost::remove_reference<Rhs>::type>::type rhs_noref_type;
+
+	    typedef typename fusion::result_of::size<lhs_noref_type>::type index;
+	    typedef typename fusion::result_of::push_back<lhs_noref_type, typename ElementType::template sub_element<index::value>::type>::type type;
+    };
+    CreateElementVector( ElementType const& e ) : M_e( e ), M_names() {}
+    CreateElementVector( ElementType const& e, std::vector<std::string> const& names ) : M_e( e ), M_names( names ) {}
+    ElementType const& M_e;
+    std::vector<std::string> M_names;
+
+    template<typename Lhs, typename Rhs>
+    typename result<CreateElementVector( Lhs,Rhs )>::type
+    operator()( Lhs const&  lhs, Rhs const& rhs ) const
+    {
+        typedef typename boost::remove_const<typename boost::remove_reference<Lhs>::type>::type lhs_noref_type;
+        typedef typename boost::remove_const<typename boost::remove_reference<Rhs>::type>::type rhs_noref_type;
+        typedef typename boost::remove_const<typename boost::remove_reference<ElementType>::type>::type ElementType_noref_type;
+	    typedef typename fusion::result_of::size<lhs_noref_type>::type index;
+        auto elt = M_e.template element<index::value>();
+        BOOST_STATIC_ASSERT( (boost::is_same<decltype(elt), typename ElementType::template sub_element<index::value>::type>::value ) );
+        if ( !M_names.empty() )
+        {
+            FEELPP_ASSERT( M_names.size() == ElementType::nSpaces )
+                ( M_names.size() )( ElementType::nSpaces ).error( "incompatible number of function names and functions");
+            elt.setName( M_names[index::value] );
+        }
+        return fusion::push_back( lhs, elt );
+    }
+};
 
 } // detail
 
@@ -1391,6 +1433,7 @@ public:
                 mpl::identity<boost::none_t>,
                 mpl::identity<typename basis_0_type::polynomial_type> >::type::type polynomial_view_type;
 
+        typedef Element<T,Cont> this_type;
         template<int i>
         struct sub_element
         {
@@ -2431,6 +2474,19 @@ public:
             }
 
         }
+
+        typedef typename fusion::result_of::accumulate<functionspace_vector_type, fusion::vector<>, detail::CreateElementVector<this_type> >::type elements_type;
+
+        elements_type
+        elements() const
+            {
+                return fusion::accumulate( this->functionSpaces(), fusion::vector<>(), detail::CreateElementVector<this_type>( *this ) );
+            }
+        elements_type
+        elements(std::vector<std::string> const& names) const
+            {
+                return fusion::accumulate( this->functionSpaces(), fusion::vector<>(), detail::CreateElementVector<this_type>( *this, names ) );
+            }
 
         /**
          *

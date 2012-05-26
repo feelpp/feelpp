@@ -97,7 +97,8 @@ createSubmeshTool<MeshType,IteratorRange>::build( mpl::int_<MESH_ELEMENTS> /**/ 
     typedef typename mesh_type::point_type point_type;
     typedef typename mesh_type::face_type face_type;
 
-    mesh_ptrtype newMesh( new mesh_type );
+    mesh_ptrtype newMesh( new mesh_type(M_mesh->worldComm()));
+    //mesh_ptrtype newMesh( new mesh_type );
 
     //-----------------------------------------------------------//
 
@@ -146,6 +147,14 @@ createSubmeshTool<MeshType,IteratorRange>::build( mpl::int_<MESH_ELEMENTS> /**/ 
         new_elem.setMarker2(old_elem.marker2().value());
         new_elem.setMarker3(old_elem.marker3().value());
         */
+        // partitioning update
+        new_elem.setProcessIdInPartition( old_elem.pidInPartition() );
+        new_elem.setNumberOfPartitions(old_elem.numberOfPartitions());
+        new_elem.setProcessId(old_elem.processId());
+        new_elem.setIdInPartition( old_elem.pidInPartition(), n_new_elem );
+        new_elem.setNeighborPartitionIds(old_elem.neighborPartitionIds());// TODO
+
+
         // Loop over the nodes on this element.
         for ( unsigned int n=0; n < old_elem.nPoints(); n++ )
         {
@@ -263,7 +272,8 @@ typename createSubmeshTool<MeshType,IteratorRange>::mesh_faces_ptrtype
 createSubmeshTool<MeshType,IteratorRange>::build( mpl::int_<MESH_FACES> /**/ )
 {
     Debug( 4015 ) << "[Mesh<Shape,T>::createSubmesh] creating new mesh" << "\n";
-    mesh_faces_ptrtype newMesh( new mesh_faces_type );
+    mesh_faces_ptrtype newMesh( new mesh_faces_type( M_mesh->worldComm()) );
+    //mesh_faces_ptrtype newMesh( new mesh_faces_type );
 
     //-----------------------------------------------------------//
     Debug( 4015 ) << "[Mesh<Shape,T>::createSubmesh] extraction mesh faces" << "\n";
@@ -294,7 +304,6 @@ createSubmeshTool<MeshType,IteratorRange>::build( mpl::int_<MESH_FACES> /**/ )
     unsigned int n_new_elem  = 0;
     size_type n_new_faces = 0;
 
-
     //-----------------------------------------------------------//
 
     iterator_type it, en;
@@ -315,6 +324,14 @@ createSubmeshTool<MeshType,IteratorRange>::build( mpl::int_<MESH_FACES> /**/ )
         newElem.setMarker( oldElem.marker().value() );
         newElem.setMarker2( oldElem.marker2().value() );
         newElem.setMarker3( oldElem.marker3().value() );
+
+        // partitioning update
+        newElem.setProcessIdInPartition( oldElem.pidInPartition() );
+        newElem.setNumberOfPartitions(oldElem.numberOfPartitions());
+        newElem.setProcessId(oldElem.processId());
+        newElem.setIdInPartition( oldElem.pidInPartition(), n_new_elem );
+        newElem.setNeighborPartitionIds(oldElem.neighborPartitionIds());// TODO
+
 
         //std::cout << "\n oldElem.nPoints " << oldElem.nPoints();
         // Loop over the nodes on this element.
@@ -361,6 +378,7 @@ createSubmeshTool<MeshType,IteratorRange>::build( mpl::int_<MESH_FACES> /**/ )
         newMesh->addElement( newElem );
 
     } // end for it
+
 
     newMesh->setNumVertices( std::accumulate( new_vertex.begin(), new_vertex.end(), 0 ) );
 

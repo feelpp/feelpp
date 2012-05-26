@@ -388,10 +388,8 @@ Stokes::exportResults( ExprUExact u_exact, ExprPExact p_exact,
         exporter->step( 0 )->add( "u", U.element<0>() );
         exporter->step( 0 )->add( "ux", v.comp( X ) );
         exporter->step( 0 )->add( "uy", v.comp( Y ) );
-        exporter->step( 0 )->add( "u", U.element<0>() );
         exporter->step( 0 )->add( "p", U.element<1>() );
-        exporter->step( 0 )->add( "u_exact", V.element<0>() );
-        exporter->step( 0 )->add( "p_exact", V.element<1>() );
+        exporter->step( 0 )->add( "U_exact", V );
         exporter->save();
     }
 } // Stokes::export

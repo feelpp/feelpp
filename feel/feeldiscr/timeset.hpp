@@ -131,7 +131,7 @@ public:
         /**
          */
         //@{
-
+        typedef Step step_type;
         typedef MeshType mesh_type;
         typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
@@ -471,6 +471,31 @@ public:
         }
         template<typename FunctionType>
         void add( std::string const& __n, FunctionType const& func )
+        {
+            add_( __n, func, mpl::bool_<(FunctionType::functionspace_type::nSpaces>1)>() );
+        }
+
+        template<typename TSet>
+        struct AddFunctionProduct
+        {
+            AddFunctionProduct( TSet& tset ) : M_tset( tset ) {}
+            TSet& M_tset;
+
+            template<typename T>
+            void
+            operator()( T const& fun ) const
+                {
+                    M_tset.add_( fun.name(), fun, mpl::bool_<false>() );
+                }
+        };
+        template<typename FunctionType>
+        void add_( std::string const& __n, FunctionType const& func, mpl::bool_<true> )
+        {
+            // implement elements() which returns a fusion vector of the components
+            fusion::for_each( func.elements(), AddFunctionProduct<step_type>( *this ) );
+        }
+        template<typename FunctionType>
+        void add_( std::string const& __n, FunctionType const& func, mpl::bool_<false> )
         {
             typedef typename mpl::or_<is_shared_ptr<FunctionType>, boost::is_pointer<FunctionType> >::type is_ptr_or_shared_ptr;
             add( __n,func,is_ptr_or_shared_ptr() );

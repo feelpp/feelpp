@@ -154,7 +154,7 @@ public:
                           _element=u,
                           _parameter=mu,
                           _expr=sin(cst_ref(mu(0)))*idv(u)*idv(u),
-                          _name="q_1");
+                          _name="q_1" );
             BOOST_TEST_MESSAGE( "create eim" );
             BOOST_CHECK( e );
 
