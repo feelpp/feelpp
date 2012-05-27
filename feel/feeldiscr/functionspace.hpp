@@ -1029,14 +1029,22 @@ public:
         typedef typename boost::remove_const<typename boost::remove_reference<ElementType>::type>::type ElementType_noref_type;
 	    typedef typename boost::fusion::result_of::size<lhs_noref_type>::type index;
         typename ElementType_noref_type::template sub_element<index::value>::type elt = M_e.template element<index::value>();
-
+        static const int s = mpl::size<typename ElementType::functionspace_type::bases_list>::type::value;
         BOOST_STATIC_ASSERT( (boost::is_same<decltype(elt), typename ElementType::template sub_element<index::value>::type>::value ) );
-        if ( !M_names.empty() )
+        if ( !M_names.empty() && M_names.size() > index::value )
         {
-            static const int s = mpl::size<typename ElementType::functionspace_type::bases_list>::type::value;
+
             FEELPP_ASSERT( M_names.size() == s  )
                 ( M_names.size() )( s ).error( "incompatible number of function names and functions");
             elt.setName( M_names[index::value] );
+        }
+        else if  ( ( M_names.size() == 1 )  && s > 1 )
+        {
+            elt.setName( (boost::format( "%1%-%2%" ) % M_names[0] % index::value ).str() );
+        }
+        else
+        {
+            elt.setName( (boost::format( "%1%-%2%" ) % M_e.name() % index::value ).str() );
         }
         return boost::fusion::as_vector( boost::fusion::push_back( lhs, elt ) );
     }
