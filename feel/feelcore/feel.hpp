@@ -77,6 +77,8 @@
 #include <limits>
 #include <iosfwd>
 
+#include <glog/logging.h>
+
 #include <feel/feelconfig.h>
 #include <feel/feelcore/info.hpp>
 #include <feel/feelcore/feelmacros.hpp>

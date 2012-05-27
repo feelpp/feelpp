@@ -28,11 +28,14 @@
 # try to find glog headers, if not found then install glog from contrib into
 # build directory and set GLOG_INCLUDE_DIR and GLOG_LIBRARIES
 FIND_PATH(GLOG_INCLUDE_DIR glog/logging.h
+  ${CMAKE_BINARY_DIR}/contrib/glog/include
   /opt/local/include
   /usr/local/include
   /usr/include
   )
-if ( NOT GLOG_INCLUDE_DIR )
+message(STATUS "Glog first pass: ${GLOG_INCLUDE_DIR}")
+if (NOT GLOG_INCLUDE_DIR )
+  message(STATUS "Building glog in ${CMAKE_BINARY_DIR}/contrib/glog-compile...")
   execute_process(COMMAND mkdir -p ${CMAKE_BINARY_DIR}/contrib/glog-compile)
   execute_process(
     COMMAND ${FEELPP_HOME_DIR}/contrib/glog/configure --prefix=${CMAKE_BINARY_DIR}/contrib/glog
@@ -40,6 +43,7 @@ if ( NOT GLOG_INCLUDE_DIR )
     OUTPUT_QUIET
     OUTPUT_FILE "titi"
     )
+  message(STATUS "Installing glog in ${CMAKE_BINARY_DIR}/contrib/glog...")
   execute_process(
     COMMAND make install
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/glog-compile
@@ -47,15 +51,18 @@ if ( NOT GLOG_INCLUDE_DIR )
     )
   set(GLOG_INCLUDE_DIR ${CMAKE_BINARY_DIR}/contrib/glog/include)
 
-  FIND_LIBRARY(GLOG_LIBRARY
-    NAMES glog
-    PATHS ${CMAKE_BINARY_DIR}/contrib/glog/lib/
-    NO_SYSTEM_ENVIRONMENT_PATH
-    NO_DEFAULT_PATH
-    )
-  set(GLOG_LIBRARIES ${GLOG_LIBRARY})
 endif()
 
+FIND_LIBRARY(GLOG_LIBRARY
+  NAMES glog
+  PATHS
+  ${CMAKE_BINARY_DIR}/contrib/glog/lib/
+  /opt/local/lib
+  /usr/local/lib
+  /usr/lib
+  )
+set(GLOG_LIBRARIES ${GLOG_LIBRARY})
+message(STATUS "GLog includes: ${GLOG_INCLUDE_DIR} Libraries: ${GLOG_LIBRARIES}" )
 
 # handle the QUIETLY and REQUIRED arguments and set OpenTURNS_FOUND to TRUE if
 # all listed variables are TRUE
