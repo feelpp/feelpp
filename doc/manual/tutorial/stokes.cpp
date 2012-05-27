@@ -385,11 +385,10 @@ Stokes::exportResults( ExprUExact u_exact, ExprPExact p_exact,
         exporter->step( 0 )->setMesh( U.functionSpace()->mesh() );
         auto v = U.functionSpace()->functionSpace<0> ()->element();
         v = U.element<0>();
-        exporter->step( 0 )->add( "u", U.element<0>() );
+        exporter->step( 0 )->add( assign::list_of("u")("p")("l"), U );
         exporter->step( 0 )->add( "ux", v.comp( X ) );
         exporter->step( 0 )->add( "uy", v.comp( Y ) );
-        exporter->step( 0 )->add( "p", U.element<1>() );
-        exporter->step( 0 )->add( "U_exact", V );
+        exporter->step( 0 )->add( assign::list_of("u_exact")("p_exact")("l_exact"), V );
         exporter->save();
     }
 } // Stokes::export
