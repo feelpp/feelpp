@@ -184,6 +184,14 @@ if ( GLPK_FOUND )
   SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} GLPK" )
 endif()
 
+# google glog
+find_package(GLog REQUIRED)
+if ( GLOG_FOUND )
+  include_directories( ${GLOG_INCLUDE_DIR} )
+  set(FEELPP_LIBRARIES ${GLOG_LIBRARIES} ${FEELPP_LIBRARIES} )
+  SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} GLOG" )
+endif()
+
 # google perf tools
 option(FEELPP_ENABLE_GOOGLEPERFTOOLS "Enable Google Perf Tools (tcmalloc, stracktrace and profiler)" ON)
 if ( FEELPP_ENABLE_GOOGLEPERFTOOLS )
