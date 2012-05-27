@@ -99,7 +99,7 @@ public:
     typedef typename model_type::backend_type backend_type;
     typedef typename model_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
     typedef typename model_type::vector_ptrtype vector_ptrtype;
-    typedef typename model_type::theta_vector_type theta_vector_type;
+    typedef typename model_type::beta_vector_type beta_vector_type;
 
 
     typedef Eigen::VectorXd y_type;
@@ -853,7 +853,7 @@ CRBSCM<TruthModelType>::lb( parameter_type const& mu ,size_type K ,int indexmu )
 
     //std::cout << "[CRBSCM::lb] Alphalb size " << M_C_alpha_lb.size() << "\n";
 
-    theta_vector_type theta_q;
+    beta_vector_type theta_q;
     glp_prob *lp;
 
 
@@ -1092,7 +1092,7 @@ CRBSCM<TruthModelType>::ub( parameter_type const& mu ,size_type K ) const
     if ( K > this->KMax() ) K = this->KMax();
 
     boost::timer ti;
-    theta_vector_type theta_q;
+    beta_vector_type theta_q;
 
     if ( M_scm_for_mass_matrix )
     {

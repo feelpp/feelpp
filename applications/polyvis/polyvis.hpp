@@ -122,7 +122,7 @@ public:
     static const uint16_type Dim = convex_type::nDim;
 
     //! Polynomial order \f$P_2\f$
-    static const uint16_type Order = basis_type::nOrder;
+    //static const uint16_type Order = basis_type::nOrder;
 
     // //! numerical type is double
     // typedef double value_type;
@@ -161,11 +161,12 @@ public:
      */
     Polyvis( po::variables_map vm )
         :
-        super( vm ),
+        super(),
         meshSize( this->vm()["hsize"].template as<double>() ),
         exporter( Exporter<mesh_type>::New( this->vm() ) )
-    {
-    }
+        {
+            this->init( vm );
+        }
     void init( po::variables_map const& vm )
     {
         super::init( vm );
@@ -191,13 +192,6 @@ private:
 
 }; // Polyvis
 
-template<
-typename A0,
-         typename A1,
-         typename A2,
-         typename A3,
-         typename A4>
-const uint16_type Polyvis<A0,A1,A2,A3,A4>::Order;
 
 template<
 typename A0,

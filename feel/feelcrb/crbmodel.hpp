@@ -378,15 +378,15 @@ public:
     /**
      * \brief compute the betaqm given \p mu
      */
-    betaq_type computeBetaQm( parameter_type const& mu , double time=0 )
+    betaqm_type computeBetaQm( parameter_type const& mu , double time=0 )
     {
         return computeBetaQm( mu , mpl::bool_<model_type::is_time_dependent>(), time  );
     }
-    betaq_type computeBetaQm( parameter_type const& mu , mpl::bool_<true>, double time=0 )
+    betaqm_type computeBetaQm( parameter_type const& mu , mpl::bool_<true>, double time=0 )
     {
         return M_model->computeBetaQm( mu , time );
     }
-    betaq_type computeBetaQm( parameter_type const& mu , mpl::bool_<false>, double time=0 )
+    betaqm_type computeBetaQm( parameter_type const& mu , mpl::bool_<false>, double time=0 )
     {
         beta_vector_type betaAqm;
         beta_vector_type betaMqm;
@@ -469,9 +469,9 @@ public:
     sparse_matrix_ptrtype  Aqm( uint16_type q, uint16_type m, bool transpose = false ) const
     {
         if ( transpose )
-            return M_Aq[q][m]->transpose();
+            return M_Aqm[q][m]->transpose();
 
-        return M_Aq[q][m];
+        return M_Aqm[q][m];
     }
 
 
@@ -486,9 +486,9 @@ public:
     sparse_matrix_ptrtype  Mqm( uint16_type q, uint16_type m, bool transpose = false ) const
     {
         if ( transpose )
-            return M_Mq[q][m]->transpose();
+            return M_Mqm[q][m]->transpose();
 
-        return M_Mq[q][m];
+        return M_Mqm[q][m];
     }
 
 
@@ -504,7 +504,7 @@ public:
      */
     value_type Aqm( uint16_type q, uint16_type m, element_type const& xi_i, element_type const& xi_j, bool transpose = false )
     {
-        return M_Aq[q][m]->energy( xi_j, xi_i, transpose );
+        return M_Aqm[q][m]->energy( xi_j, xi_i, transpose );
     }
 
     /**
@@ -519,7 +519,7 @@ public:
      */
     value_type Mqm( uint16_type q, uint16_type m, element_type const& xi_i, element_type const& xi_j, bool transpose = false )
     {
-        return M_Mq[q][m]->energy( xi_j, xi_i, transpose );
+        return M_Mqm[q][m]->energy( xi_j, xi_i, transpose );
     }
 
 
@@ -544,7 +544,7 @@ public:
     }
     beta_vector_type const& betaMqm( mpl::bool_<false> ) const
     {
-        theta_vector_type vect;
+        beta_vector_type vect;
         return  vect;
     }
 
@@ -1032,7 +1032,7 @@ CRBModel<TruthModelType>::offlineMerge( parameter_type const& mu )
         for ( size_type q = 0; q < Ql( l ); ++q )
         {
             for ( size_type m = 0; m < mMaxF(l,q); ++m )
-                F[l]->add( this->betaL( l, q , m ), M_Fq[l][q][m] );
+                F[l]->add( this->betaL( l, q , m ), M_Fqm[l][q][m] );
         }
 
     }
@@ -1230,18 +1230,18 @@ CRBModel<TruthModelType>::runq()
     parameter_type mu( Dmu );
 
     mu = Xi->min().template get<0>();
-    boost::tie( M_Aq, M_Fq ) = this->computeAffineDecomposition();
+    boost::tie( M_Aqm, M_Fqm ) = this->computeAffineDecomposition();
     M_model->solve( mu );
     std::cout << "done with setup\n";
     std::map<double, boost::tuple<double,double,double,int,double,double> > res;
 
-    for ( int q = 0; q < M_Aq.size(); ++q )
+    for ( int q = 0; q < M_Aqm.size(); ++q )
     {
         std::cout << "================================================================================\n";
-        std::cout << "= q = " << q << " / " << M_Aq.size() << "\n";
+        std::cout << "= q = " << q << " / " << M_Aqm.size() << "\n";
         sparse_matrix_ptrtype B,symmA;
         symmA = M_model->newMatrix();
-        M_Aq[q]->symmetricPart( symmA );
+        M_Aqm[q]->symmetricPart( symmA );
         B = this->innerProduct();
         std::ostringstream os;
         os << "symmAq_" << q << ".m";
@@ -1251,7 +1251,7 @@ CRBModel<TruthModelType>::runq()
         B->printMatlab( os.str() );
         os.str( "" );
         os << "Aq_" << q << ".m";
-        M_Aq[q]->printMatlab( os.str() );
+        M_Aqm[q]->printMatlab( os.str() );
         int nconv;
         double eigenvalue_real, eigenvalue_imag;
         vector_ptrtype eigenvector;
