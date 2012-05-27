@@ -80,6 +80,9 @@ Environment::Environment( int& argc, char**& argv )
     :
     M_env( argc, argv, false )
 {
+    // Initialize Google's logging library.
+    google::InitGoogleLogging(argv[0]);
+
 #if defined( FEELPP_HAS_TBB )
     int n = tbb::task_scheduler_init::default_num_threads();
     //int n = 2;

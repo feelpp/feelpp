@@ -192,6 +192,8 @@ Application::Application( int argc,
 #endif
 {
     //_M_desc.add( Feel::feel_options() );
+    // Initialize Google's logging library.
+    google::InitGoogleLogging(_M_about.appName().c_str());
 
     initMPI( argc, argv, comm );
 
@@ -248,6 +250,9 @@ Application::Application( int argc,
 #endif
 
 {
+    // Initialize Google's logging library.
+    google::InitGoogleLogging(_M_about.appName().c_str());
+
     //_M_desc.add( Feel::feel_options() ).add( od );
     _M_desc.add( od );
 
@@ -307,6 +312,9 @@ Application::Application( AboutData const& ad,
 #endif
 
 {
+    // Initialize Google's logging library.
+    google::InitGoogleLogging(_M_about.appName().c_str());
+
     //_M_desc.add( Feel::feel_options() ).add( od );
     _M_desc.add( od );
 
@@ -379,6 +387,8 @@ Application::Application( AboutData const& ad )
 #endif
 
 {
+    // Initialize Google's logging library.
+    google::InitGoogleLogging(_M_about.appName().c_str());
 #if 1
 
     //
