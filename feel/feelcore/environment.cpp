@@ -48,6 +48,9 @@ Environment::Environment()
     :
     M_env(false)
 {
+    // Initialize Google's logging library.
+    google::InitGoogleLogging("feel++");
+    google::InstallFailureSignalHandler();
 #if defined( FEELPP_HAS_TBB )
     int n = tbb::task_scheduler_init::default_num_threads();
     Log() << "[Feel++] TBB running with " << n << " threads\n";
@@ -81,7 +84,11 @@ Environment::Environment( int& argc, char**& argv )
     M_env( argc, argv, false )
 {
     // Initialize Google's logging library.
-    google::InitGoogleLogging(argv[0]);
+    if ( argc > 0 )
+        google::InitGoogleLogging(argv[0]);
+    else
+        google::InitGoogleLogging("feel++");
+    google::InstallFailureSignalHandler();
 
 #if defined( FEELPP_HAS_TBB )
     int n = tbb::task_scheduler_init::default_num_threads();
@@ -146,6 +153,8 @@ Environment::~Environment()
         }
 
 #endif // FEELPP_HAS_PETSC_H
+
+        google::ShutdownGoogleLogging();
     }
 
 
