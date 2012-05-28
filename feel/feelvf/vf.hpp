@@ -112,6 +112,7 @@ struct ExtractGm
 #include <feel/feelvf/integrator.hpp>
 //#include <feel/feelvf/integratordirac.hpp>
 #include <feel/feelvf/projectors.hpp>
+#include <feel/feelvf/evaluator.hpp>
 
 
 #include <feel/feelvf/form.hpp>
