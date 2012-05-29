@@ -276,6 +276,7 @@ public:
        Note that \f$ \Omega \f$ is given and $D^\mu$ is handled by the \c parameterset_type
        data structure.
     */
+    vector_type beta( parameter_type const& mu  ) const { return beta( mu, this->mMax() ); }
     vector_type beta( parameter_type const& mu, size_t M  ) const;
 
     element_type residual ( size_t M ) const;
@@ -643,6 +644,8 @@ public:
     typedef typename parameterspace_type::element_type parameter_type;
 
     typedef EIM<EIMFunctionBase<SpaceType,ParameterSpaceType> > eim_type;
+    typedef typename eim_type::vector_type vector_type;
+
     typedef boost::shared_ptr<eim_type> eim_ptrtype;
     //typedef typename eim_type::betam_type betam_type;
     //typedef typename eim_type::qm_type qm_type;
@@ -680,10 +683,11 @@ public:
             LOG(INFO) << "EIMFunctionBase::operator() v(x)=" << res << "\n";
             return res;
         }
-#if 0
-    qm_type q( parameter_type const& ) { return M_eim->blackboxQ( mu ); }
-    _type q( parameter_type const& ) { return M_eim->blackboxQ( mu ); }
-#endif
+
+    element_type const& q( int m ) { return M_eim->q( mu ); }
+
+    vector_type  beta( parameter_type const& mu ) { return M_eim->beta( mu ); }
+
 
     functionspace_ptrtype M_fspace;
     parameterspace_ptrtype M_pspace;
