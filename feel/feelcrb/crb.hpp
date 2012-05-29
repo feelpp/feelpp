@@ -1943,6 +1943,7 @@ template<typename TruthModelType>
 void
 CRB<TruthModelType>::buildVarianceMatrixPhi( int const N )
 {
+#if 0
     M_variance_matrix_phi.conservativeResize( M_N , M_N );
     mesh_ptrtype mesh = M_WN[0].functionSpace()->mesh();
     double surface = integrate( _range=elements(mesh), _expr=vf::cst(1.) ).evaluate()(0,0);
@@ -1957,7 +1958,6 @@ CRB<TruthModelType>::buildVarianceMatrixPhi( int const N )
         phi.push_back( M_WN[i] - element_mean );
     }
 
-#if 0
     //fill matrix M_variance_matrix_phi such as
     //M_variance_matrix_phi(i,j) = \int_{mesh} phi^i phi^j
     for(int i = 0; i < M_N; ++i)
