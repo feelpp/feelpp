@@ -355,7 +355,7 @@ BOOST_AUTO_TEST_CASE( test_eim1 )
     BOOST_CHECK( mpi::environment::initialized() );
     BOOST_TEST_MESSAGE( "adding simget" );
     app.add( new model( app.vm(), app.about() ) );
-    app.add( new model_circle( app.vm(), app.about() ) );
+    //app.add( new model_circle( app.vm(), app.about() ) );
     app.run();
 
     BOOST_TEST_MESSAGE( "test_eim1 done" );

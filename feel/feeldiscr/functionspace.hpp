@@ -5776,12 +5776,13 @@ subelements( EltType const& e, std::vector<std::string> const& n )
 
 template<typename ElementType, typename CoeffType>
 ElementType
-expansion( std::vector<ElementType> const& b, CoeffType const& c )
+expansion( std::vector<ElementType> const& b, CoeffType const& c, int M = -1 )
 {
     auto res = b[0].functionSpace()->element();
     res.zero();
-    LOG_ASSERT( b.size() == c.size() ) << " b.size=" << b.size() << " c.size=" << c.size() << "\n";
-    for( int i = 0; i < b.size(); ++i )
+    if ( M == -1 ) M = c.size() ;
+    //LOG_ASSERT( b.size() == c.size() ) << " b.size=" << b.size() << " c.size=" << c.size() << "\n";
+    for( int i = 0; i < M; ++i )
     {
         res.add( c[i], b[i] );
     }
