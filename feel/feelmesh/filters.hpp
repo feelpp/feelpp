@@ -120,11 +120,6 @@ boost::tuple<mpl::size_t<MESH_ELEMENTS>,
       elements( MeshType const& mesh, flag_type flag, mpl::bool_<false> )
 {
 
-    Debug() << "[filters] elements on proc " << mesh.comm().rank() << " flag = " << flag << "\n";
-    Debug() << "[filters] elements begin id : " << mesh.beginElementWithProcessId( flag )->id() << "\n";
-    Debug() << "[filters] elements n : " << std::distance( mesh.beginElementWithProcessId( flag ),
-            mesh.endElementWithProcessId( flag ) )
-    << "\n";
     return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
                               mesh.beginElementWithProcessId( flag ),
                               mesh.endElementWithProcessId( flag ) );
@@ -876,7 +871,6 @@ boost::tuple<mpl::size_t<MESH_FACES>,
                    flag_type __marker )
 {
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
-    Debug() << "[markedfaces] marker = " << __marker << "\n";
     return detail::markedfaces( mesh, __marker, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
 }
 
@@ -888,7 +882,6 @@ boost::tuple<mpl::size_t<MESH_FACES>,
                     flag_type __marker )
 {
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
-    Debug() << "[markedfaces] marker = " << __marker << "\n";
     return detail::marked2faces( mesh, __marker, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
 }
 
@@ -900,7 +893,6 @@ boost::tuple<mpl::size_t<MESH_FACES>,
                     flag_type __marker )
 {
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
-    Debug() << "[markedfaces] marker = " << __marker << "\n";
     return detail::marked3faces( mesh, __marker, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
 }
 
@@ -922,7 +914,6 @@ boost::tuple<mpl::size_t<MESH_FACES>,
                    std::string const& __marker )
 {
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
-    Debug() << "[markedfaces] marker = " << __marker << " id: "<< mesh->markerName( __marker ) << "\n";
     return detail::markedfaces( mesh, mesh->markerName( __marker ), meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
 }
 
@@ -934,7 +925,6 @@ boost::tuple<mpl::size_t<MESH_FACES>,
                     std::string const& __marker )
 {
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
-    Debug() << "[markedfaces] marker = " << __marker << " id: "<< mesh->markerName( __marker ) << "\n";
     return detail::marked2faces( mesh, mesh->markerName( __marker ), meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
 }
 
@@ -946,7 +936,6 @@ boost::tuple<mpl::size_t<MESH_FACES>,
                     std::string const& __marker )
 {
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
-    Debug() << "[markedfaces] marker = " << __marker << " id: "<< mesh->markerName( __marker ) << "\n";
     return detail::marked3faces( mesh, mesh->markerName( __marker ), meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
 }
 
@@ -1130,7 +1119,7 @@ boost::tuple<mpl::size_t<MESH_POINTS>,
  * the mesh that are marked with marker1 equal to 1:
  *
  * \code
- * Debug() << "number of elements = " << nelements( markedelements(mesh,1) ) << "\n";
+ * LOG(INFO) << "number of elements = " << nelements( markedelements(mesh,1) ) << "\n";
  * \endcode
  */
 template<typename MT, typename Iterator>
