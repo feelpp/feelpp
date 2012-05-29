@@ -1138,9 +1138,9 @@ CRB<TruthModelType>::offline()
     M_Aqm_pr_du.resize( M_model->Qa() );
     for(int q=0; q<M_model->Qa(); q++)
     {
-        M_Aqm_pr.resize( M_model->mMaxA(q) );
-        M_Aqm_du.resize( M_model->mMaxA(q) );
-        M_Aqm_pr_du.resize( M_model->mMaxA(q) );
+        M_Aqm_pr[q].resize( M_model->mMaxA(q) );
+        M_Aqm_du[q].resize( M_model->mMaxA(q) );
+        M_Aqm_pr_du[q].resize( M_model->mMaxA(q) );
     }
 
     M_Mqm_pr.resize( M_model->Qm() );
@@ -1148,9 +1148,9 @@ CRB<TruthModelType>::offline()
     M_Mqm_pr_du.resize( M_model->Qm() );
     for(int q=0; q<M_model->Qm(); q++)
     {
-        M_Mqm_pr.resize( M_model->mMaxM(q) );
-        M_Mqm_du.resize( M_model->mMaxM(q) );
-        M_Mqm_pr_du.resize( M_model->mMaxM(q) );
+        M_Mqm_pr[q].resize( M_model->mMaxM(q) );
+        M_Mqm_du[q].resize( M_model->mMaxM(q) );
+        M_Mqm_pr_du[q].resize( M_model->mMaxM(q) );
     }
 
 
@@ -1158,15 +1158,16 @@ CRB<TruthModelType>::offline()
     M_Fqm_du.resize( M_model->Ql( 0 ) );
     M_Lqm_pr.resize( M_model->Ql( M_output_index ) );
     M_Lqm_du.resize( M_model->Ql( M_output_index ) );
+
     for(int q=0; q<M_model->Ql( 0 ); q++)
     {
-        M_Fqm_pr.resize( M_model->mMaxF( 0 , q) );
-        M_Fqm_du.resize( M_model->mMaxF( 0 , q) );
+        M_Fqm_pr[q].resize( M_model->mMaxF( 0 , q) );
+        M_Fqm_du[q].resize( M_model->mMaxF( 0 , q) );
     }
     for(int q=0; q<M_model->Ql( M_output_index ); q++)
     {
-        M_Lqm_pr.resize( M_model->mMaxF( M_output_index , q) );
-        M_Lqm_du.resize( M_model->mMaxF( M_output_index , q) );
+        M_Lqm_pr[q].resize( M_model->mMaxF( M_output_index , q) );
+        M_Lqm_du[q].resize( M_model->mMaxF( M_output_index , q) );
     }
 
 
@@ -1664,7 +1665,6 @@ CRB<TruthModelType>::offline()
 
 
         Log() << "[CRB::offline] compute Aq_pr, Aq_du, Aq_pr_du" << "\n";
-
         for  (size_type q = 0; q < M_model->Qa(); ++q )
         {
             for( size_type m = 0; m < M_model->mMaxA(q); ++m )
@@ -1753,10 +1753,8 @@ CRB<TruthModelType>::offline()
 
         for ( size_type q = 0; q < M_model->Ql( M_output_index ); ++q )
         {
-
             for( size_type m = 0; m < M_model->mMaxF( M_output_index, q ); ++m )
             {
-
                 M_Lqm_pr[q][m].conservativeResize( M_N );
                 M_Lqm_du[q][m].conservativeResize( M_N );
 
@@ -2476,7 +2474,6 @@ CRB<TruthModelType>::correctionTerms(parameter_type const& mu, std::vector< vect
 
     if( M_model->isSteady() )
     {
-
         Aprdu.setZero( N , N );
         Fdu.setZero( N );
 
@@ -2484,12 +2481,12 @@ CRB<TruthModelType>::correctionTerms(parameter_type const& mu, std::vector< vect
 
         for(size_type q = 0;q < M_model->Ql(0); ++q)
         {
-            for(int m=0; m < M_model->mMaxF(0,q); q++)
+            for(int m=0; m < M_model->mMaxF(0,q); m++)
                 Fdu += betaFqm[0][q][m]*M_Fqm_du[q][m].head(N);
         }
         for(size_type q = 0;q < M_model->Qa(); ++q)
         {
-            for(int m=0; m < M_model->mMaxM(q); q++)
+            for(int m=0; m < M_model->mMaxM(q); m++)
                 Aprdu += betaAqm[q][m]*M_Aqm_pr_du[q][m].block(0,0,N,N);
         }
 
