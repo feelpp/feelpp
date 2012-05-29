@@ -324,38 +324,6 @@ public:
         }
     //@}
 
-    /**
-       Given the \f$\mu\f$ in parameter space,
-       compute \f$ q_m( x ) \forall x \in \Omega\f$
-    */
-    void blackboxQ( vector_type& __g, int __m )
-        {
-            FEELPP_ASSERT( M_t.size() ).error( "t size is 0" );
-            FEELPP_ASSERT( M_q.rows() && M_q.cols() ).error( "q size is 0" );
-            FEELPP_ASSERT( M_B.rows() && M_B.cols() ).error( "B size is 0" );
-            if ( __g.size() != M_q.rows() )
-                __g.resize( M_q.rows() );
-            __g = qm( __m );
-        }
-
-    /**
-       Given the \f$\mu\f$ in parameter space,
-       compute \f$ g_M( x, \mu ) \forall x \in \Omega\f$
-    */
-    void blackbox( vector_type& __g )
-        {
-            FEELPP_ASSERT( M_t.size() ).error( "t size is 0" );
-            FEELPP_ASSERT( M_q.rows() && M_q.cols() ).error( "q size is 0" );
-            FEELPP_ASSERT( M_B.rows() && M_B.cols() ).error( "B size is 0" );
-
-            vector_type __b;
-            beta( __b, M_M_max );
-
-            __g.conservativeResize( M_q.rows() );
-
-            __g = M_q.block(0,0,M_q.rows(),M_M_max)*__b;
-        }
-    //@}
 
 protected:
 
@@ -446,18 +414,18 @@ typename EIM<ModelType>::element_type
 EIM<ModelType>::residual( size_t __M ) const
 {
     LOG(INFO) << "compute residual for m=" << __M << "...\n";
-    vector_type rhs( __M );
-    for ( size_t __m = 0;__m < __M;++__m )
+    vector_type rhs( __M-1 );
+    for ( size_t __m = 0;__m < __M-1;++__m )
     {
         rhs[__m]= M_g[__M]( M_t[__m] )(0,0,0);
     }
-    this->M_B.block(0,0,__M,__M).template triangularView<Eigen::UnitLower>().solveInPlace(rhs);
+    this->M_B.block(0,0,__M-1,__M-1).template triangularView<Eigen::UnitLower>().solveInPlace(rhs);
     LOG(INFO) << "solve B sol = rhs with rhs = " << rhs <<"\n";
 
     // res(:,i)=M_g(:,i)-q(:,0:i)*sigma
     LOG(INFO) << "compute residual..." <<"\n";
     using namespace vf;
-    auto z = expansion( M_q, rhs );
+    auto z = expansion( M_q, rhs, __M-1 );
     LOG(INFO) << "return residual..." <<"\n";
     return vf::project( _space=M_model->functionSpace(),
                         _expr=idv(M_g[__M])-idv( z ) );
@@ -506,7 +474,7 @@ EIM<ModelType>::computeBestFit( sampling_ptrtype trainset, int __M )
         }
         this->M_B.block(0,0,__M,__M).template triangularView<Eigen::UnitLower>().solveInPlace(rhs);
         auto res = vf::project( _space=M_model->functionSpace(),
-                                _expr=idv(Z)-idv( expansion( M_q, rhs ) ) );
+                                _expr=idv(Z)-idv( expansion( M_q, rhs, __M-1 ) ) );
         auto resmax = normLinf( _range=elements(M_model->mesh()), _pset=_Q<5>(), _expr=idv(res) );
         LOG_ASSERT( index < trainset->size() ) << "Invalid index " << index << " should be less than trainset size = " << trainset->size() << "\n";
         maxerr( index++ ) = resmax.template get<0>();
@@ -528,6 +496,7 @@ EIM<ModelType>::offline(  )
     if ( this->isOfflineDone() )
         return;
 
+    M_M = 1;
     LOG(INFO) << "create training set...\n";
     auto trainset = M_model->parameterSpace()->sampling();
     trainset->randomize( 30 );
@@ -555,7 +524,7 @@ EIM<ModelType>::offline(  )
     LOG(INFO) << "compute entry (0,0) of interpolation matrix...\n";
     this->M_B.resize( 1, 1 );
     this->M_B( 0, 0 ) = 1;
-
+    ++M_M;
     /**
        \par build \f$W^g_M\f$
     */
@@ -568,7 +537,7 @@ EIM<ModelType>::offline(  )
 
         LOG(INFO) << "compute best fit error...\n";
         // compute mu = arg max inf ||G(.;mu)-z||_infty
-        auto bestfit = computeBestFit( trainset, this->M_M );
+        auto bestfit = computeBestFit( trainset, this->M_M-1 );
 
         if ( this->M_M == 1 && bestfit.template get<0>() < 1e-12 )
             break;
@@ -577,8 +546,6 @@ EIM<ModelType>::offline(  )
          * we have a new \f$\mu^g_M\f$, insert it in \f$S^g_M\f$ and the
          * corresponding \f$z \in W^g_M\f$
          */
-        ++this->M_M;
-
         LOG(INFO) << "S(" << this->M_M-1 << ") = " << bestfit.template get<1>() << "\n";
 
         // update M_g(:,M-1)
@@ -588,19 +555,25 @@ EIM<ModelType>::offline(  )
 
         // build T^m such that T^m-1 \subset T^m
         M_B.conservativeResize( M_M, M_M );
-        M_B.setZero();
-        for( int __i = 0; __i < M_M; ++__i )
+        for( int __i = M_M-1; __i < M_M; ++__i )
         {
             for( int __j = 0; __j < __i; ++__j )
             {
                 this->M_B( __i, __j ) = M_q[__j]( M_t[__i] )(0,0,0);
 
             }
+            for( int __j = __i+1; __j < M_M; ++__j )
+            {
+                LOG_ASSERT( math::abs( M_q[__j]( M_t[__i] )(0,0,0)) < 1e-10 )
+                    << "q[j](t_i) when j > i should be 0, = "
+                    << math::abs( M_q[__j]( M_t[__i] )(0,0,0)) << "\n";
+            }
             this->M_B(__i,__i)=1;
         }
         LOG(INFO) << "Interpolation matrix: M_B = " << this->M_B <<"\n";
 
-        LOG(INFO) << "compute residual M="<< M_M-1 << "..." <<"\n";
+
+        LOG(INFO) << "compute residual M="<< M_M << "..." <<"\n";
         auto res = this->residual(M_M-1);
 
         LOG(INFO) << "compute arg sup |residual|..." <<"\n";
@@ -614,7 +587,10 @@ EIM<ModelType>::offline(  )
         LOG(INFO) << "store new basis function..." <<"\n";
         M_q.push_back( res );
 
-        if ( this->M_M > 20 )
+        std::for_each( M_t.begin(), M_t.end(), []( node const& t ) { LOG(INFO) << "t=" << t << "\n"; } );
+        LOG(INFO) << "================================================================================\n";
+        ++M_M;
+        if ( this->M_M > 10 )
             break;
     }
 
@@ -642,6 +618,7 @@ public:
     typedef ParameterSpaceType parameterspace_type;
     typedef boost::shared_ptr<parameterspace_type> parameterspace_ptrtype;
     typedef typename parameterspace_type::element_type parameter_type;
+    typedef Eigen::Matrix<double, nDim, 1> node_type;
 
     typedef EIM<EIMFunctionBase<SpaceType,ParameterSpaceType> > eim_type;
     typedef typename eim_type::vector_type vector_type;
@@ -650,7 +627,6 @@ public:
     //typedef typename eim_type::betam_type betam_type;
     //typedef typename eim_type::qm_type qm_type;
 
-    typedef Eigen::Matrix<double, nDim, 1> node_type;
 
     EIMFunctionBase( functionspace_ptrtype fspace,
                      parameterspace_ptrtype pspace,
@@ -679,12 +655,12 @@ public:
         {
             LOG(INFO) << "calling EIMFunctionBase::operator()( x=" << x << ", mu=" << mu << ")\n";
             element_type v = this->operator()( mu );
-            value_type res = v(x);
+            value_type res = v(x)(0,0,0);
             LOG(INFO) << "EIMFunctionBase::operator() v(x)=" << res << "\n";
             return res;
         }
 
-    element_type const& q( int m ) { return M_eim->q( mu ); }
+    element_type const& q( int m ) { return M_eim->q( m ); }
 
     vector_type  beta( parameter_type const& mu ) { return M_eim->beta( mu ); }
 
