@@ -5769,7 +5769,7 @@ template<typename EltType>
 typename fusion::result_of::accumulate<typename EltType::functionspace_type::functionspace_vector_type,
                                        fusion::vector<>,
                                        detail::CreateElementVector<EltType> >::type
-subelements( EltType const& e, std::vector<std::string> const& n = {} )
+subelements( EltType const& e, std::vector<std::string> const& n )
 {
     return fusion::accumulate( e.functionSpaces(), fusion::vector<>(), detail::CreateElementVector<EltType>( e, n ) );
 }
