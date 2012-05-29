@@ -553,7 +553,7 @@ public:
      */
     value_type betaAqm( int q, int m ) const
     {
-        return M_model->betaAqm[q][m];
+        return M_model->betaAqm(q,m);
     }
 
     /**
@@ -565,7 +565,7 @@ public:
     }
     value_type betaMqm( int q, int m, mpl::bool_<true> ) const
     {
-        return M_model->betaMqm[q][m];
+        return M_model->betaMqm(q,m);
     }
     value_type betaMqm( int q, int m, mpl::bool_<false> ) const
     {

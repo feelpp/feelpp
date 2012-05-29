@@ -1957,6 +1957,7 @@ CRB<TruthModelType>::buildVarianceMatrixPhi( int const N )
         phi.push_back( M_WN[i] - element_mean );
     }
 
+#if 0
     //fill matrix M_variance_matrix_phi such as
     //M_variance_matrix_phi(i,j) = \int_{mesh} phi^i phi^j
     for(int i = 0; i < M_N; ++i)
@@ -1968,6 +1969,7 @@ CRB<TruthModelType>::buildVarianceMatrixPhi( int const N )
         }
         M_variance_matrix_phi( i , i ) = integrate( _range=elements(mesh) , _expr=vf::idv( phi[i] ) * vf::idv( phi[i] ) ).evaluate()(0,0);
     }
+#endif
 }
 
 
@@ -2840,22 +2842,24 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
 
     if( M_compute_variance )
     {
+#if 0
+
         time_index=0;
         for ( double time=time_step; time<=time_for_output; time+=time_step )
-	{
+        {
+            vectorN_type uNsquare = uN[time_index].array().pow(2);
+            double first = uNsquare.dot( M_variance_matrix_phi.diagonal() );
 
-	    vectorN_type uNsquare = uN[time_index].array().pow(2);
-	    double first = uNsquare.dot( M_variance_matrix_phi.diagonal() );
-
-	    double second = 0;
-	    for(int k = 1; k <= N-1; ++k)
+            double second = 0;
+            for(int k = 1; k <= N-1; ++k)
             {
-	        for(int j = 1; j <= N-k; ++j)
-		    second += 2 * uN[time_index](k-1) * uN[time_index](k+j-1) * M_variance_matrix_phi(k-1 , j+k-1) ;
-	    }
-	    output_time_vector[time_index] = first + second;
-	    time_index++;
-	}
+                for(int j = 1; j <= N-k; ++j)
+                    second += 2 * uN[time_index](k-1) * uN[time_index](k+j-1) * M_variance_matrix_phi(k-1 , j+k-1) ;
+            }
+            output_time_vector[time_index] = first + second;
+            time_index++;
+        }
+#endif
     }
 
 
