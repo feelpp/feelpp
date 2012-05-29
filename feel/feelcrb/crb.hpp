@@ -791,21 +791,21 @@ private:
     bdf_ptrtype M_bdf_dual_save;
 
     // left hand side
-    std::vector < std::vector<matrixN_type> > M_Aq_pr;
-    std::vector < std::vector<matrixN_type> > M_Aq_du;
-    std::vector < std::vector<matrixN_type> > M_Aq_pr_du;
+    std::vector < std::vector<matrixN_type> > M_Aqm_pr;
+    std::vector < std::vector<matrixN_type> > M_Aqm_du;
+    std::vector < std::vector<matrixN_type> > M_Aqm_pr_du;
 
     //mass matrix
-    std::vector < std::vector<matrixN_type> > M_Mq_pr;
-    std::vector < std::vector<matrixN_type> > M_Mq_du;
-    std::vector < std::vector<matrixN_type> > M_Mq_pr_du;
+    std::vector < std::vector<matrixN_type> > M_Mqm_pr;
+    std::vector < std::vector<matrixN_type> > M_Mqm_du;
+    std::vector < std::vector<matrixN_type> > M_Mqm_pr_du;
 
     // right hand side
-    std::vector < std::vector<vectorN_type> > M_Fq_pr;
-    std::vector < std::vector<vectorN_type> > M_Fq_du;
+    std::vector < std::vector<vectorN_type> > M_Fqm_pr;
+    std::vector < std::vector<vectorN_type> > M_Fqm_du;
     // output
-    std::vector < std::vector<vectorN_type> > M_Lq_pr;
-    std::vector < std::vector<vectorN_type> > M_Lq_du;
+    std::vector < std::vector<vectorN_type> > M_Lqm_pr;
+    std::vector < std::vector<vectorN_type> > M_Lqm_du;
 
     std::vector<int> M_index;
     int M_mode_number;
@@ -1107,12 +1107,12 @@ CRB<TruthModelType>::offline()
     M_N = 0;
 
     Log() << "[CRB::offline] compute affine decomposition\n";
-    std::vector<sparse_matrix_ptrtype> Aq;
-    std::vector<sparse_matrix_ptrtype> Mq;
-    std::vector<std::vector<vector_ptrtype> > Fq,Lq;
+    std::vector< std::vector<sparse_matrix_ptrtype> > Aqm;
+    std::vector< std::vector<sparse_matrix_ptrtype> > Mqm;
+    std::vector< std::vector<std::vector<vector_ptrtype> > > Fqm,Lqm;
     sparse_matrix_ptrtype Aq_transpose = M_model->newMatrix();
 
-    boost::tie( Mq, Aq, Fq ) = M_model->computeAffineDecomposition();
+    boost::tie( Mqm, Aqm, Fqm ) = M_model->computeAffineDecomposition();
 
     // scm offline stage: build C_K
     if ( M_error_type == CRB_RESIDUAL_SCM )
@@ -1133,40 +1133,40 @@ CRB<TruthModelType>::offline()
     //boost::tie( maxerror, mu, index ) = maxErrorBounds( N );
 
     Log() << "[CRB::offlineWithErrorEstimation] allocate reduced basis data structures\n";
-    M_Aq_pr.resize( M_model->Qa() );
-    M_Aq_du.resize( M_model->Qa() );
-    M_Aq_pr_du.resize( M_model->Qa() );
-    for(int q=0; q<M_model->M_model->Qa(); q++)
+    M_Aqm_pr.resize( M_model->Qa() );
+    M_Aqm_du.resize( M_model->Qa() );
+    M_Aqm_pr_du.resize( M_model->Qa() );
+    for(int q=0; q<M_model->Qa(); q++)
     {
-        M_Aq_pr.resize( M_model->mMaxA(q) );
-        M_Aq_du.resize( M_model->mMaxA(q) );
-        M_Aq_pr_du.resize( M_model->mMaxA(q) );
+        M_Aqm_pr.resize( M_model->mMaxA(q) );
+        M_Aqm_du.resize( M_model->mMaxA(q) );
+        M_Aqm_pr_du.resize( M_model->mMaxA(q) );
     }
 
-    M_Mq_pr.resize( M_model->Qm() );
-    M_Mq_du.resize( M_model->Qm() );
-    M_Mq_pr_du.resize( M_model->Qm() );
-    for(int q=0; q<M_model->M_model->Qm(); q++)
+    M_Mqm_pr.resize( M_model->Qm() );
+    M_Mqm_du.resize( M_model->Qm() );
+    M_Mqm_pr_du.resize( M_model->Qm() );
+    for(int q=0; q<M_model->Qm(); q++)
     {
-        M_Mq_pr.resize( M_model->mMaxM(q) );
-        M_Mq_du.resize( M_model->mMaxM(q) );
-        M_Mq_pr_du.resize( M_model->mMaxM(q) );
+        M_Mqm_pr.resize( M_model->mMaxM(q) );
+        M_Mqm_du.resize( M_model->mMaxM(q) );
+        M_Mqm_pr_du.resize( M_model->mMaxM(q) );
     }
 
 
-    M_Fq_pr.resize( M_model->Ql( 0 ) );
-    M_Fq_du.resize( M_model->Ql( 0 ) );
-    M_Lq_pr.resize( M_model->Ql( M_output_index ) );
-    M_Lq_du.resize( M_model->Ql( M_output_index ) );
-    for(int q=0; q<M_model->M_model->Ql( 0 ); q++)
+    M_Fqm_pr.resize( M_model->Ql( 0 ) );
+    M_Fqm_du.resize( M_model->Ql( 0 ) );
+    M_Lqm_pr.resize( M_model->Ql( M_output_index ) );
+    M_Lqm_du.resize( M_model->Ql( M_output_index ) );
+    for(int q=0; q<M_model->Ql( 0 ); q++)
     {
-        M_Fq_pr.resize( M_model->mMaxF( 0 , q) );
-        M_Fq_du.resize( M_model->mMaxF( 0 , q) );
+        M_Fqm_pr.resize( M_model->mMaxF( 0 , q) );
+        M_Fqm_du.resize( M_model->mMaxF( 0 , q) );
     }
-    for(int q=0; q<M_model->M_model->Ql( M_output_index ); q++)
+    for(int q=0; q<M_model->Ql( M_output_index ); q++)
     {
-        M_Lq_pr.resize( M_model->mMaxF( M_output_index , q) );
-        M_Lq_du.resize( M_model->mMaxF( M_output_index , q) );
+        M_Lqm_pr.resize( M_model->mMaxF( M_output_index , q) );
+        M_Lqm_du.resize( M_model->mMaxF( M_output_index , q) );
     }
 
 
@@ -1669,18 +1669,18 @@ CRB<TruthModelType>::offline()
         {
             for( size_type m = 0; m < M_model->mMaxA(q); ++m )
             {
-                M_Aq_pr[q][m].conservativeResize( M_N, M_N );
-                M_Aq_du[q][m].conservativeResize( M_N, M_N );
-                M_Aq_pr_du[q][m].conservativeResize( M_N, M_N );
+                M_Aqm_pr[q][m].conservativeResize( M_N, M_N );
+                M_Aqm_du[q][m].conservativeResize( M_N, M_N );
+                M_Aqm_pr_du[q][m].conservativeResize( M_N, M_N );
 
                 // only compute the last line and last column of reduced matrices
                 for ( size_type i = M_N-number_of_added_elements; i < M_N; i++ )
                 {
                     for ( size_type j = 0; j < M_N; ++j )
                     {
-                        M_Aq_pr[q][m]( i, j ) = Aq[q][m]->energy( M_WN[i], M_WN[j] );
-                        M_Aq_du[q][m]( i, j ) = Aq[q][m]->energy( M_WNdu[i], M_WNdu[j], true );
-                        M_Aq_pr_du[q][m]( i, j ) = Aq[q][m]->energy( M_WNdu[i], M_WN[j] );
+                        M_Aqm_pr[q][m]( i, j ) = Aqm[q][m]->energy( M_WN[i], M_WN[j] );
+                        M_Aqm_du[q][m]( i, j ) = Aqm[q][m]->energy( M_WNdu[i], M_WNdu[j], true );
+                        M_Aqm_pr_du[q][m]( i, j ) = Aqm[q][m]->energy( M_WNdu[i], M_WN[j] );
                     }
                 }
 
@@ -1688,9 +1688,9 @@ CRB<TruthModelType>::offline()
                 {
                     for ( size_type i = 0; i < M_N; ++i )
                     {
-                        M_Aq_pr[q][m]( i, j ) = Aq[q]->energy( M_WN[i], M_WN[j] );
-                        M_Aq_du[q][m]( i, j ) = Aq[q]->energy( M_WNdu[i], M_WNdu[j], true );
-                        M_Aq_pr_du[q][m]( i, j ) = Aq[q]->energy( M_WNdu[i], M_WN[j] );
+                        M_Aqm_pr[q][m]( i, j ) = Aqm[q][m]->energy( M_WN[i], M_WN[j] );
+                        M_Aqm_du[q][m]( i, j ) = Aqm[q][m]->energy( M_WNdu[i], M_WNdu[j], true );
+                        M_Aqm_pr_du[q][m]( i, j ) = Aqm[q][m]->energy( M_WNdu[i], M_WN[j] );
                     }
                 }
             }//loop over m
@@ -1703,27 +1703,27 @@ CRB<TruthModelType>::offline()
             for( size_type m = 0; m < M_model->mMaxM(q); ++m )
             {
 
-                M_Mq_pr[q][m].conservativeResize( M_N, M_N );
-                M_Mq_du[q][m].conservativeResize( M_N, M_N );
-                M_Mq_pr_du[q][m].conservativeResize( M_N, M_N );
+                M_Mqm_pr[q][m].conservativeResize( M_N, M_N );
+                M_Mqm_du[q][m].conservativeResize( M_N, M_N );
+                M_Mqm_pr_du[q][m].conservativeResize( M_N, M_N );
 
                 // only compute the last line and last column of reduced matrices
                 for ( size_type i=M_N-number_of_added_elements ; i < M_N; i++ )
                 {
                     for ( size_type j = 0; j < M_N; ++j )
                     {
-                        M_Mq_pr[q][m]( i, j ) = Mq[q][m]->energy( M_WN[i], M_WN[j] );
-                        M_Mq_du[q][m]( i, j ) = Mq[q][m]->energy( M_WNdu[i], M_WNdu[j], true );
-                        M_Mq_pr_du[q][m]( i, j ) = Mq[q][m]->energy( M_WNdu[i], M_WN[j] );
+                        M_Mqm_pr[q][m]( i, j ) = Mqm[q][m]->energy( M_WN[i], M_WN[j] );
+                        M_Mqm_du[q][m]( i, j ) = Mqm[q][m]->energy( M_WNdu[i], M_WNdu[j], true );
+                        M_Mqm_pr_du[q][m]( i, j ) = Mqm[q][m]->energy( M_WNdu[i], M_WN[j] );
                     }
                 }
                 for ( size_type j = M_N-number_of_added_elements; j < M_N ; j++ )
                 {
                     for ( size_type i = 0; i < M_N; ++i )
                     {
-                        M_Mq_pr[q][m]( i, j ) = Mq[q][m]->energy( M_WN[i], M_WN[j] );
-                        M_Mq_du[q][m]( i, j ) = Mq[q][m]->energy( M_WNdu[i], M_WNdu[j], true );
-                        M_Mq_pr_du[q][m]( i, j ) = Mq[q][m]->energy( M_WNdu[i], M_WN[j] );
+                        M_Mqm_pr[q][m]( i, j ) = Mqm[q][m]->energy( M_WN[i], M_WN[j] );
+                        M_Mqm_du[q][m]( i, j ) = Mqm[q][m]->energy( M_WNdu[i], M_WNdu[j], true );
+                        M_Mqm_pr_du[q][m]( i, j ) = Mqm[q][m]->energy( M_WNdu[i], M_WN[j] );
                     }
                 }
             }//loop over m
@@ -1737,14 +1737,14 @@ CRB<TruthModelType>::offline()
             for( size_type m = 0; m < M_model->mMaxF( 0, q ); ++m )
             {
 
-                M_Fq_pr[q][m].conservativeResize( M_N );
-                M_Fq_du[q][m].conservativeResize( M_N );
+                M_Fqm_pr[q][m].conservativeResize( M_N );
+                M_Fqm_du[q][m].conservativeResize( M_N );
 
                 for ( size_type l = 1; l <= number_of_added_elements; ++l )
                 {
                     int index = M_N-l;
-                    M_Fq_pr[q][m]( index ) = M_model->Fq( 0, q, M_WN[index] );
-                    M_Fq_du[q][m]( index ) = M_model->Fq( 0, q, M_WNdu[index] );
+                    M_Fqm_pr[q][m]( index ) = M_model->Fqm( 0, q, m, M_WN[index] );
+                    M_Fqm_du[q][m]( index ) = M_model->Fqm( 0, q, m, M_WNdu[index] );
                 }
             }//loop over m
         }//loop over q
@@ -1757,14 +1757,14 @@ CRB<TruthModelType>::offline()
             for( size_type m = 0; m < M_model->mMaxF( M_output_index, q ); ++m )
             {
 
-                M_Lq_pr[q][m].conservativeResize( M_N );
-                M_Lq_du[q][m].conservativeResize( M_N );
+                M_Lqm_pr[q][m].conservativeResize( M_N );
+                M_Lqm_du[q][m].conservativeResize( M_N );
 
                 for ( size_type l = 1; l <= number_of_added_elements; ++l )
                 {
                     int index = M_N-l;
-                    M_Lq_pr[q][m]( index ) = M_model->Fq( M_output_index, q, M_WN[index] );
-                    M_Lq_du[q][m]( index ) = M_model->Fq( M_output_index, q, M_WNdu[index] );
+                    M_Lqm_pr[q][m]( index ) = M_model->Fqm( M_output_index, q, m, M_WN[index] );
+                    M_Lqm_du[q][m]( index ) = M_model->Fqm( M_output_index, q, m, M_WNdu[index] );
                 }
             }//loop over m
         }//loop over q
@@ -2483,12 +2483,12 @@ CRB<TruthModelType>::correctionTerms(parameter_type const& mu, std::vector< vect
         for(size_type q = 0;q < M_model->Ql(0); ++q)
         {
             for(int m=0; m < M_model->mMaxF(0,q); q++)
-                Fdu += betaFqm[0][q][m]*M_Fq_du[q][m].head(N);
+                Fdu += betaFqm[0][q][m]*M_Fqm_du[q][m].head(N);
         }
         for(size_type q = 0;q < M_model->Qa(); ++q)
         {
             for(int m=0; m < M_model->mMaxM(q); q++)
-                Aprdu += betaAqm[q][m]*M_Aq_pr_du[q][m].block(0,0,N,N);
+                Aprdu += betaAqm[q][m]*M_Aqm_pr_du[q][m].block(0,0,N,N);
         }
 
         du = uNdu[0];
@@ -2522,21 +2522,21 @@ CRB<TruthModelType>::correctionTerms(parameter_type const& mu, std::vector< vect
             for(size_type q = 0;q < M_model->Ql(0); ++q)
             {
                 for(int m=0; m < M_model->mMaxF(0,q); m++)
-                    Fdu += betaFqm[0][q]*M_Fq_du[q][m].head(N);
+                    Fdu += betaFqm[0][q][m]*M_Fqm_du[q][m].head(N);
             }
 
 
             for(size_type q = 0;q < M_model->Qa(); ++q)
             {
                 for(int m=0;  m < M_model->mMaxA(q); m++)
-                    Aprdu += betaAqm[q][m]*M_Aq_pr_du[q][m].block(0,0,N,N);
+                    Aprdu += betaAqm[q][m]*M_Aqm_pr_du[q][m].block(0,0,N,N);
             }
 
 
             for(size_type q = 0;q < M_model->Qm(); ++q)
             {
                 for(int m=0; m<M_model->mMaxM(q); m++)
-                    Mprdu += betaMqm[q][m]*M_Mq_pr_du[q][m].block(0,0,N,N);
+                    Mprdu += betaMqm[q][m]*M_Mqm_pr_du[q][m].block(0,0,N,N);
             }
 
 
@@ -2652,7 +2652,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
         for ( size_type q = 0; q < M_model->Qa(); ++q )
         {
             for(int m=0; m<M_model->mMaxA(q); m++)
-                A += betaAqm[q][m]*M_Aq_pr[q][m].block( 0,0,N,N );
+                A += betaAqm[q][m]*M_Aqm_pr[q][m].block( 0,0,N,N );
         }
 
         F.setZero( N );
@@ -2660,15 +2660,15 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
         for ( size_type q = 0; q < M_model->Ql( 0 ); ++q )
         {
             for(int m=0; m<M_model->mMaxF(0,q); m++)
-                F += betaFqm[0][q][m]*M_Fq_pr[q][m].head( N );
+                F += betaFqm[0][q][m]*M_Fqm_pr[q][m].head( N );
         }
 
         for ( size_type q = 0; q < Qm; ++q )
         {
             for(int m=0; m<M_model->mMaxM(q); m++)
             {
-                A += betaMqm[q][m]*M_Mq_pr[q][m].block( 0,0,N,N )/time_step;
-                F += betaMqm[q][m]*M_Mq_pr[q][m].block( 0,0,N,N )*uNold[time_index]/time_step;
+                A += betaMqm[q][m]*M_Mqm_pr[q][m].block( 0,0,N,N )/time_step;
+                F += betaMqm[q][m]*M_Mqm_pr[q][m].block( 0,0,N,N )*uNold[time_index]/time_step;
             }
         }
 
@@ -2685,7 +2685,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
         {
             for(int m=0; m < M_model->mMaxF(M_output_index,q); m++)
             {
-                L += betaFqm[M_output_index][q][m]*M_Lq_pr[q][m].head( N );
+                L += betaFqm[M_output_index][q][m]*M_Lqm_pr[q][m].head( N );
             }
         }
 
@@ -2742,13 +2742,13 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
             for ( size_type q = 0; q < M_model->Qa(); ++q )
             {
                 for(int m=0; m < M_model->mMaxA(q); m++)
-                    Adu += betaAqm[q][m]*M_Aq_du[q][m].block( 0,0,N,N );
+                    Adu += betaAqm[q][m]*M_Aqm_du[q][m].block( 0,0,N,N );
             }
 
             for ( size_type q = 0; q < M_model->Ql( M_output_index ); ++q )
             {
                 for(int m=0; m < M_model->mMaxF(M_output_index,q); m++)
-                    Ldu += betaFqm[M_output_index][q][m]*M_Lq_du[q][m].head( N );
+                    Ldu += betaFqm[M_output_index][q][m]*M_Lqm_du[q][m].head( N );
             }
 
             uNdu[0] = Adu.lu().solve( -Ldu );
@@ -2799,7 +2799,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
                 for ( size_type q = 0; q < M_model->Qa(); ++q )
                 {
                     for(int m=0; m < M_model->mMaxA(q); m++)
-                        Adu += betaAqm[q][m]*M_Aq_du[q][m].block( 0,0,N,N );
+                        Adu += betaAqm[q][m]*M_Aqm_du[q][m].block( 0,0,N,N );
                 }
 
                 //No Rhs for adjoint problem except mass contribution
@@ -2809,8 +2809,8 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
                 {
                     for(int m=0; m < M_model->mMaxM(q); m++)
                     {
-                        Adu += betaMqm[q][m]*M_Mq_pr[q][m].block( 0,0,N,N )/time_step;
-                        Fdu += betaMqm[q][m]*M_Mq_pr[q][m].block( 0,0,N,N )*uNduold[time_index]/time_step;
+                        Adu += betaMqm[q][m]*M_Mqm_pr[q][m].block( 0,0,N,N )/time_step;
+                        Fdu += betaMqm[q][m]*M_Mqm_pr[q][m].block( 0,0,N,N )*uNduold[time_index]/time_step;
                     }
                 }
 
@@ -4883,13 +4883,13 @@ CRB<TruthModelType>::save( Archive & ar, const unsigned int version ) const
     ar & BOOST_SERIALIZATION_NVP( M_error_type );
     ar & BOOST_SERIALIZATION_NVP( M_Xi );
     ar & BOOST_SERIALIZATION_NVP( M_WNmu );
-    ar & BOOST_SERIALIZATION_NVP( M_Aq_pr );
-    ar & BOOST_SERIALIZATION_NVP( M_Aq_du );
-    ar & BOOST_SERIALIZATION_NVP( M_Aq_pr_du );
-    ar & BOOST_SERIALIZATION_NVP( M_Fq_pr );
-    ar & BOOST_SERIALIZATION_NVP( M_Fq_du );
-    ar & BOOST_SERIALIZATION_NVP( M_Lq_pr );
-    ar & BOOST_SERIALIZATION_NVP( M_Lq_du );
+    ar & BOOST_SERIALIZATION_NVP( M_Aqm_pr );
+    ar & BOOST_SERIALIZATION_NVP( M_Aqm_du );
+    ar & BOOST_SERIALIZATION_NVP( M_Aqm_pr_du );
+    ar & BOOST_SERIALIZATION_NVP( M_Fqm_pr );
+    ar & BOOST_SERIALIZATION_NVP( M_Fqm_du );
+    ar & BOOST_SERIALIZATION_NVP( M_Lqm_pr );
+    ar & BOOST_SERIALIZATION_NVP( M_Lqm_du );
 
     ar & BOOST_SERIALIZATION_NVP( M_C0_pr );
     ar & BOOST_SERIALIZATION_NVP( M_C0_du );
@@ -4901,9 +4901,9 @@ CRB<TruthModelType>::save( Archive & ar, const unsigned int version ) const
 
     if ( model_type::is_time_dependent )
     {
-        ar & BOOST_SERIALIZATION_NVP( M_Mq_pr );
-        ar & BOOST_SERIALIZATION_NVP( M_Mq_du );
-        ar & BOOST_SERIALIZATION_NVP( M_Mq_pr_du );
+        ar & BOOST_SERIALIZATION_NVP( M_Mqm_pr );
+        ar & BOOST_SERIALIZATION_NVP( M_Mqm_du );
+        ar & BOOST_SERIALIZATION_NVP( M_Mqm_pr_du );
 
         if ( version>=1 )
         {
@@ -4961,13 +4961,13 @@ CRB<TruthModelType>::load( Archive & ar, const unsigned int version )
     ar & BOOST_SERIALIZATION_NVP( M_error_type );
     ar & BOOST_SERIALIZATION_NVP( M_Xi );
     ar & BOOST_SERIALIZATION_NVP( M_WNmu );
-    ar & BOOST_SERIALIZATION_NVP( M_Aq_pr );
-    ar & BOOST_SERIALIZATION_NVP( M_Aq_du );
-    ar & BOOST_SERIALIZATION_NVP( M_Aq_pr_du );
-    ar & BOOST_SERIALIZATION_NVP( M_Fq_pr );
-    ar & BOOST_SERIALIZATION_NVP( M_Fq_du );
-    ar & BOOST_SERIALIZATION_NVP( M_Lq_pr );
-    ar & BOOST_SERIALIZATION_NVP( M_Lq_du );
+    ar & BOOST_SERIALIZATION_NVP( M_Aqm_pr );
+    ar & BOOST_SERIALIZATION_NVP( M_Aqm_du );
+    ar & BOOST_SERIALIZATION_NVP( M_Aqm_pr_du );
+    ar & BOOST_SERIALIZATION_NVP( M_Fqm_pr );
+    ar & BOOST_SERIALIZATION_NVP( M_Fqm_du );
+    ar & BOOST_SERIALIZATION_NVP( M_Lqm_pr );
+    ar & BOOST_SERIALIZATION_NVP( M_Lqm_du );
     ar & BOOST_SERIALIZATION_NVP( M_C0_pr );
     ar & BOOST_SERIALIZATION_NVP( M_C0_du );
     ar & BOOST_SERIALIZATION_NVP( M_Lambda_pr );
@@ -4976,9 +4976,9 @@ CRB<TruthModelType>::load( Archive & ar, const unsigned int version )
     ar & BOOST_SERIALIZATION_NVP( M_Gamma_du );
     if ( model_type::is_time_dependent )
     {
-        ar & BOOST_SERIALIZATION_NVP( M_Mq_pr );
-        ar & BOOST_SERIALIZATION_NVP( M_Mq_du );
-        ar & BOOST_SERIALIZATION_NVP( M_Mq_pr_du );
+        ar & BOOST_SERIALIZATION_NVP( M_Mqm_pr );
+        ar & BOOST_SERIALIZATION_NVP( M_Mqm_du );
+        ar & BOOST_SERIALIZATION_NVP( M_Mqm_pr_du );
 
         if ( version>=1 )
         {
