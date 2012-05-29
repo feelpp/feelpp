@@ -58,7 +58,7 @@ class VectorUblas
     : public Vector<T>
     , boost::addable<VectorUblas<T,Storage> >
     , boost::subtractable<VectorUblas<T,Storage> >
-
+    , boost::multipliable<VectorUblas<T,Storage>, T >
 {
     typedef Vector<T> super1;
 public:
@@ -262,6 +262,17 @@ public:
         return *this;
     }
 
+    /**
+     * multiplication by a scalar value
+     */
+    Vector<T>& operator*=( T const& v )
+    {
+        checkInvariant();
+        this->outdateGlobalValues();
+        this->scale( v );
+
+        return *this;
+    }
     //@}
 
     /** @name Accessors
