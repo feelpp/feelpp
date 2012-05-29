@@ -217,23 +217,21 @@ public:
     */
     size_t nDOF() const {  FEELPP_ASSERT( M_model != 0 ).error( "Invalid EIM model" ); return M_model->functionSpace()->nLocalDof(); }
 
-    matrix_type const& q() const {  return M_q; }
+    /**
+     * return the set of reduced basis functions associated with the eim
+     */
+    std::vector<element_type> const& q() const {  return M_q; }
 
-    column_type
-    qm( size_t __m ) const
+    /**
+     * return the m-th reduced basis function associated with the eim
+     */
+    element_type
+    q( size_t __m ) const
         {
             FEELPP_ASSERT( __m >= 0 && __m < M_M )( __m )( M_M ).error( "out of bounds access" );
 
-            return M_q.col( __m );
+            return M_q[ __m ];
         }
-    value_type qxm( size_t __i, size_t __m ) const
-        {
-            FEELPP_ASSERT( __m >= 0 && __m < M_M )( __m )( M_M ).error( "out of bounds access" );
-            FEELPP_ASSERT( __i >= 0 && __i < M_q.rows() )( __i )( M_q.rows() ).error( "out of bounds access" );
-
-            return M_q( __i, __m );
-        }
-
 
     size_t mMax() const { return M_M_max; }
 
@@ -469,7 +467,7 @@ void
 EIM<ModelType>::orthonormalize( std::vector<element_type> & __Z )
 {
     FEELPP_ASSERT( __Z.rows() > 0 && __Z.cols() > 0 )( __Z.rows() )( __Z.cols() ).error( "invalid number of rows or columns" );
-    // here we use the norm2 but it might be a good one
+
     size_t __M = __Z.cols();
     for ( size_t __i = 0;__i < __M-1; ++__i )
     {
@@ -509,11 +507,13 @@ EIM<ModelType>::computeBestFit( sampling_ptrtype trainset, int __M )
         auto res = vf::project( _space=M_model->functionSpace(),
                                 _expr=idv(Z)-idv( expansion( M_q, rhs ) ) );
         auto resmax = normLinf( _range=elements(M_model->mesh()), _pset=_Q<5>(), _expr=idv(res) );
-        maxerr( index ) = resmax.template get<0>();
+        LOG_ASSERT( index < trainset->size() ) << "Invalid index " << index << " should be less than trainset size = " << trainset->size() << "\n";
+        maxerr( index++ ) = resmax.template get<0>();
         int index2;
         auto err = maxerr.array().abs().maxCoeff( &index2 );
         LOG_EVERY_N(INFO, 10 ) << " (every 10 mu) maxerr=" <<  err << " at index = " << index2 << " at mu = " << trainset->at(index2) << "\n";
     }
+    LOG_ASSERT( index == trainset->size() ) << "Invalid index " << index << " should be equal to trainset size = " << trainset->size() << "\n";
     auto err = maxerr.array().abs().maxCoeff( &index );
     LOG(INFO)<< "err=" << err << " reached at index " << index << " and mu=" << trainset->at(index) << "\n";
     return boost::make_tuple( err, trainset->at(index) );
@@ -587,7 +587,7 @@ EIM<ModelType>::offline(  )
 
         // build T^m such that T^m-1 \subset T^m
         M_B.conservativeResize( M_M, M_M );
-
+        M_B.setZero();
         for( int __i = 0; __i < M_M; ++__i )
         {
             for( int __j = 0; __j < __i; ++__j )
@@ -608,9 +608,9 @@ EIM<ModelType>::offline(  )
         // store space coordinate where max absolute value occurs
         M_t.push_back( resmax.template get<1>() );
 
-        LOG(INFO) << "store new basis function..." <<"\n";
+        LOG(INFO) << "scale new basis function by " << 1./resmax.template get<0>() << "..." <<"\n";
         res.scale( 1./resmax.template get<0>() );
-        // insert new q
+        LOG(INFO) << "store new basis function..." <<"\n";
         M_q.push_back( res );
 
         if ( this->M_M > 20 )
