@@ -1964,6 +1964,14 @@ public:
         {
             return pc_ptrtype( new pc_type( functionSpace()->fe(), elt.G() ) );
         }
+
+        id_type operator()( Eigen::Matrix<value_type,nDim,1> const& __x, bool extrapolate = false ) const
+            {
+                node_type n( nDim );
+                for(int i = 0; i < nDim; ++i ) n[i]=__x[i];
+                return operator()( n, extrapolate );
+            }
+
         /**
          * interpolate the function at node (real coordinate) x
          *
@@ -5765,6 +5773,23 @@ subelements( EltType const& e, std::vector<std::string> const& n = {} )
 {
     return fusion::accumulate( e.functionSpaces(), fusion::vector<>(), detail::CreateElementVector<EltType>( e, n ) );
 }
+
+template<typename ElementType, typename CoeffType>
+ElementType
+expansion( std::vector<ElementType> const& b, CoeffType const& c )
+{
+    auto res = b[0].functionSpace()->element();
+    res.zero();
+    LOG_ASSERT( b.size() == c.size() ) << " b.size=" << b.size() << " c.size=" << c.size() << "\n";
+    for( int i = 0; i < b.size(); ++i )
+    {
+        res.add( c[i], b[i] );
+    }
+
+    return res;
+}
+
+
 } // Feel
 
 
