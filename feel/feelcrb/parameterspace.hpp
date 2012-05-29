@@ -164,7 +164,7 @@ public:
 
     typedef Element element_type;
     typedef boost::shared_ptr<Element> element_ptrtype;
-    element_type element()  { return element_type( this->shared_from_this() ); }
+    element_type element()  { return parameterspace_type::logRandom( this->shared_from_this() ); }
     element_ptrtype elementPtr()  { return element_ptrtype( new element_type( this->shared_from_this() ) ); }
 
     /**
