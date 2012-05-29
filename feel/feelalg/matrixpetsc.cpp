@@ -212,7 +212,7 @@ void MatrixPetsc<T>::init ( const size_type m,
     Debug( 7013 ) << "[MatrixPETSc::init()] n_l = " << n_l << "\n";
 
     // Make sure the sparsity pattern isn't empty
-    FEELPP_ASSERT ( this->graph()->size() == n_l )( this->graph()->size() )( n_l ).warn( "incompatible diagonal non zero pattern" );
+    //FEELPP_ASSERT ( this->graph()->size() == n_l )( this->graph()->size() )( n_l ).warn( "incompatible diagonal non zero pattern" );
     Debug( 7013 ) << "[MatrixPETSc::init()] graph size   = " << this->graph()->size() << "\n";
     Debug( 7013 ) << "[MatrixPETSc::init()] graph first row entry on proc   = " << this->graph()->firstRowEntryOnProc() << "\n";
     Debug( 7013 ) << "[MatrixPETSc::init()] graph last row entry on proc   = " << this->graph()->lastRowEntryOnProc() << "\n";
