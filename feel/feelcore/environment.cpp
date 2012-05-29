@@ -42,6 +42,13 @@
 #include <feel/feelcore/feelpetsc.hpp>
 
 
+namespace google
+{
+namespace glog_internal_namespace_
+{
+bool IsGoogleLoggingInitialized();
+}
+}
 namespace Feel
 {
 Environment::Environment()
@@ -49,7 +56,8 @@ Environment::Environment()
     M_env(false)
 {
     // Initialize Google's logging library.
-    google::InitGoogleLogging("feel++");
+    if ( !google::glog_internal_namespace_::IsGoogleLoggingInitialized() )
+        google::InitGoogleLogging("feel++");
     google::InstallFailureSignalHandler();
 #if defined( FEELPP_HAS_TBB )
     int n = tbb::task_scheduler_init::default_num_threads();
@@ -84,10 +92,13 @@ Environment::Environment( int& argc, char**& argv )
     M_env( argc, argv, false )
 {
     // Initialize Google's logging library.
-    if ( argc > 0 )
-        google::InitGoogleLogging(argv[0]);
-    else
-        google::InitGoogleLogging("feel++");
+    if ( !google::glog_internal_namespace_::IsGoogleLoggingInitialized() )
+    {
+        if ( argc > 0 )
+            google::InitGoogleLogging(argv[0]);
+        else
+            google::InitGoogleLogging("feel++");
+    }
     google::InstallFailureSignalHandler();
 
 #if defined( FEELPP_HAS_TBB )
