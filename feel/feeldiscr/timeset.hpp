@@ -489,10 +489,18 @@ public:
                     M_tset.add_( fun.name(), fun, mpl::bool_<false>() );
                 }
         };
-        template<typename StringType, typename FunctionType>
-        void add_( StringType __n, FunctionType const& func, mpl::bool_<true> )
+        template<typename FunctionType>
+        void add_( std::vector<std::string> const& __n, FunctionType const& func, mpl::bool_<true> )
         {
             std::vector<std::string> s = __n;
+            // implement elements() which returns a fusion vector of the components
+            fusion::for_each( subelements(func,s), AddFunctionProduct<step_type>( *this ) );
+        }
+        template<typename FunctionType>
+        void add_( std::string const& __n, FunctionType const& func, mpl::bool_<true> )
+        {
+            std::vector<std::string> s;
+            s.push_back(__n);
             // implement elements() which returns a fusion vector of the components
             fusion::for_each( subelements(func,s), AddFunctionProduct<step_type>( *this ) );
         }
