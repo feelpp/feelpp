@@ -47,13 +47,12 @@ WorldComm::WorldComm()
     M_mapGlobalRankToGodRank( this->globalSize() ),
     M_isActive( this->godSize(),true )
 {
-    Debug() << "\n WorldComm : warning constructor empty!! on godRank " << this->godRank() << "\n";
+    //Debug() << "\n WorldComm : warning constructor empty!! on godRank " << this->godRank() << "\n";
     this->godComm().barrier();
     std::vector<int> globalRanks( this->globalSize() );
     mpi::all_gather( this->globalComm(),
                      this->globalRank(),
                      globalRanks );
-    Debug() << "gather1\n";
     mpi::all_gather( this->globalComm(),
                      0,
                      M_mapColorWorld );
