@@ -587,7 +587,7 @@ EIM<ModelType>::offline(  )
         LOG(INFO) << "store new basis function..." <<"\n";
         M_q.push_back( res );
 
-        std::for_each( M_t.begin(), M_t.end(), []( node const& t ) { LOG(INFO) << "t=" << t << "\n"; } );
+        std::for_each( M_t.begin(), M_t.end(), []( node_type const& t ) { LOG(INFO) << "t=" << t << "\n"; } );
         LOG(INFO) << "================================================================================\n";
         ++M_M;
         if ( this->M_M > 10 )
