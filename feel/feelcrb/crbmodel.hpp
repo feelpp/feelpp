@@ -909,7 +909,6 @@ private:
     sparse_matrix_ptrtype M_H1;
 
 
-
     //! initialize the matrix associated with the \f$H_1\f$ inner product
     void initB();
 
@@ -928,6 +927,11 @@ template<typename TruthModelType>
 void
 CRBModel<TruthModelType>::initB()
 {
+
+    //the matrix associated with H1 scalar product is now given by the model
+    M_B = M_model->innerProduct();
+
+#if 0
     Log() << "[CRBModel::initB] initialize scalar product\n";
     M_B = M_backend->newMatrix( M_model->functionSpace(), M_model->functionSpace() );
     using namespace Feel::vf;
@@ -977,6 +981,8 @@ CRBModel<TruthModelType>::initB()
     double eigmin = 1;
 #endif
     M_B->addMatrix( eigmin, M );
+
+#endif
 }
 
 template<typename TruthModelType>
@@ -1018,7 +1024,7 @@ CRBModel<TruthModelType>::offlineMerge( parameter_type const& mu )
         for ( size_type q = 1; q < Qm(); ++q )
         {
             for ( size_type m = 0; m < mMaxM(q); ++m )
-                M->addMatrix( this->betaMqm( q ), M_Mqm[q][m] );
+                M->addMatrix( this->betaMqm( q , m ), M_Mqm[q][m] );
         }
     }
 
