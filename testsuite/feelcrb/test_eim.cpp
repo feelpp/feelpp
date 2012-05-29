@@ -196,8 +196,13 @@ public:
             {
                 BOOST_FOREACH( auto p, *S )
                 {
+                    LOG(INFO) << "evaluate model at p = " << p << "\n";
                     auto v = fun->operator()( p );
+                    LOG(INFO) << "evaluate eim interpolant at p = " << p << "\n";
+                    auto w = fun->interpolant( p );
+
                     exporter->step(0)->add( (boost::format( "u(%1%)" ) % p(0) ).str(), v );
+                    exporter->step(0)->add( (boost::format( "u_eim(%1%)" ) % p(0) ).str(), w );
 
                 }
             }
@@ -355,7 +360,7 @@ BOOST_AUTO_TEST_CASE( test_eim1 )
     BOOST_CHECK( mpi::environment::initialized() );
     BOOST_TEST_MESSAGE( "adding simget" );
     app.add( new model( app.vm(), app.about() ) );
-    //app.add( new model_circle( app.vm(), app.about() ) );
+    app.add( new model_circle( app.vm(), app.about() ) );
     app.run();
 
     BOOST_TEST_MESSAGE( "test_eim1 done" );

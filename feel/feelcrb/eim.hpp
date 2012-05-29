@@ -283,6 +283,7 @@ public:
 
     parameter_residual_type computeBestFit( sampling_ptrtype trainset, int __M );
 
+    element_type operator()( parameter_type const& mu ) const { return expansion( M_q, beta( mu ) ); }
     /**
        orthonormalize
     */
@@ -392,8 +393,8 @@ private:
        \f$1 \leq i,j \leq M\f$.
     */
     void offline();
-
-
+public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 template<typename ModelType>
@@ -414,18 +415,18 @@ typename EIM<ModelType>::element_type
 EIM<ModelType>::residual( size_t __M ) const
 {
     LOG(INFO) << "compute residual for m=" << __M << "...\n";
-    vector_type rhs( __M-1 );
-    for ( size_t __m = 0;__m < __M-1;++__m )
+    vector_type rhs( __M );
+    for ( size_t __m = 0;__m < __M;++__m )
     {
         rhs[__m]= M_g[__M]( M_t[__m] )(0,0,0);
     }
-    this->M_B.block(0,0,__M-1,__M-1).template triangularView<Eigen::UnitLower>().solveInPlace(rhs);
+    this->M_B.block(0,0,__M,__M).template triangularView<Eigen::UnitLower>().solveInPlace(rhs);
     LOG(INFO) << "solve B sol = rhs with rhs = " << rhs <<"\n";
 
     // res(:,i)=M_g(:,i)-q(:,0:i)*sigma
     LOG(INFO) << "compute residual..." <<"\n";
     using namespace vf;
-    auto z = expansion( M_q, rhs, __M-1 );
+    auto z = expansion( M_q, rhs, __M );
     LOG(INFO) << "return residual..." <<"\n";
     return vf::project( _space=M_model->functionSpace(),
                         _expr=idv(M_g[__M])-idv( z ) );
@@ -435,16 +436,13 @@ template<typename ModelType>
 void
 EIM<ModelType>::orthonormalize( std::vector<element_type> & __Z )
 {
-    FEELPP_ASSERT( __Z.rows() > 0 && __Z.cols() > 0 )( __Z.rows() )( __Z.cols() ).error( "invalid number of rows or columns" );
-
-    size_t __M = __Z.cols();
+    size_t __M = __Z.size();
     for ( size_t __i = 0;__i < __M-1; ++__i )
     {
-        value_type __s = __Z.col(__i)*__Z.col(__M-1);
-        __Z.col(__M-1) -= __s*__Z.col(__i);
+        value_type __s = inner_product(__Z[__i],__Z[__M-1]);
+        __Z[__M-1].add(- __s,__Z[__i]);
     }
-    value_type __normZ = __Z.col(__M-1).norm();;
-    __Z.col(__M-1).normalize();
+    __Z[__M-1].scale(inner_product(__Z[__M-1],__Z[__M-1]));
 }
 
 
@@ -463,7 +461,7 @@ EIM<ModelType>::computeBestFit( sampling_ptrtype trainset, int __M )
     LOG(INFO) << "Compute best fit M=" << __M << "\n";
     BOOST_FOREACH( mu, *trainset )
     {
-        LOG_EVERY_N(INFO, 10 ) << " (every 10 mu) compute fit at mu="<< mu <<"\n" ;
+        LOG_EVERY_N(INFO, 1 ) << " (every 10 mu) compute fit at mu="<< mu <<"\n" ;
         // evaluate model at mu
         auto Z = M_model->operator()( mu );
 
@@ -474,13 +472,13 @@ EIM<ModelType>::computeBestFit( sampling_ptrtype trainset, int __M )
         }
         this->M_B.block(0,0,__M,__M).template triangularView<Eigen::UnitLower>().solveInPlace(rhs);
         auto res = vf::project( _space=M_model->functionSpace(),
-                                _expr=idv(Z)-idv( expansion( M_q, rhs, __M-1 ) ) );
+                                _expr=idv(Z)-idv( expansion( M_q, rhs, __M ) ) );
         auto resmax = normLinf( _range=elements(M_model->mesh()), _pset=_Q<5>(), _expr=idv(res) );
         LOG_ASSERT( index < trainset->size() ) << "Invalid index " << index << " should be less than trainset size = " << trainset->size() << "\n";
         maxerr( index++ ) = resmax.template get<0>();
         int index2;
         auto err = maxerr.array().abs().maxCoeff( &index2 );
-        LOG_EVERY_N(INFO, 10 ) << " (every 10 mu) maxerr=" <<  err << " at index = " << index2 << " at mu = " << trainset->at(index2) << "\n";
+        LOG_EVERY_N(INFO, 1 ) << " (every 10 mu) maxerr=" <<  err << " at index = " << index2 << " at mu = " << trainset->at(index2) << "\n";
     }
     LOG_ASSERT( index == trainset->size() ) << "Invalid index " << index << " should be equal to trainset size = " << trainset->size() << "\n";
     auto err = maxerr.array().abs().maxCoeff( &index );
@@ -505,6 +503,9 @@ EIM<ModelType>::offline(  )
     // random element in Dmu to start with
     auto mu = M_model->parameterSpace()->element();
 
+    // store residual
+    auto res = M_model->functionSpace()->element();
+
     LOG(INFO) << "compute finite element solution at mu_1...\n";
     M_g.push_back( M_model->operator()( mu ) );
 
@@ -514,16 +515,21 @@ EIM<ModelType>::offline(  )
     // store space coordinate where max absolute value occurs
     M_t.push_back( zmax.template get<1>() );
     LOG(INFO) << "norm Linf = " << zmax.template get<0>() << " at " << zmax.template get<1>() << "\n";
+    LOG(INFO) << "g = " << M_g[0] << "\n";
 
     LOG(INFO) << "compute and insert q_0...\n";
     // insert first element
     auto q = M_g[0];
-    q.scale( zmax.template get<0>() );
+    q.scale( 1./zmax.template get<0>() );
     M_q.push_back( q );
 
     LOG(INFO) << "compute entry (0,0) of interpolation matrix...\n";
     this->M_B.resize( 1, 1 );
     this->M_B( 0, 0 ) = 1;
+    CHECK( math::abs( M_q[0]( M_t[0] )( 0, 0, 0 ) - 1 ) < 1e-10 )
+        << "q[0](t[0] != 1 "
+        << "t[0] = "<< M_t[0] << "\n";
+
     ++M_M;
     /**
        \par build \f$W^g_M\f$
@@ -531,7 +537,7 @@ EIM<ModelType>::offline(  )
     double err = 1;
 
     LOG(INFO) << "start greedy algorithm...\n";
-    while (  err >= this->M_tol )
+    for(  ; M_M < 10; ++M_M ) //err >= this->M_tol )
     {
         LOG(INFO) << "M=" << M_M << "...\n";
 
@@ -551,31 +557,12 @@ EIM<ModelType>::offline(  )
         // update M_g(:,M-1)
         M_g.push_back( M_model->operator()( bestfit.template get<1>() ) );
 
-        //orthonormalize( M_g );
+        orthonormalize( M_g );
 
         // build T^m such that T^m-1 \subset T^m
-        M_B.conservativeResize( M_M, M_M );
-        for( int __i = M_M-1; __i < M_M; ++__i )
-        {
-            for( int __j = 0; __j < __i; ++__j )
-            {
-                this->M_B( __i, __j ) = M_q[__j]( M_t[__i] )(0,0,0);
-
-            }
-            for( int __j = __i+1; __j < M_M; ++__j )
-            {
-                LOG_ASSERT( math::abs( M_q[__j]( M_t[__i] )(0,0,0)) < 1e-10 )
-                    << "q[j](t_i) when j > i should be 0, = "
-                    << math::abs( M_q[__j]( M_t[__i] )(0,0,0)) << "\n";
-            }
-            this->M_B(__i,__i)=1;
-        }
-        LOG(INFO) << "Interpolation matrix: M_B = " << this->M_B <<"\n";
-
-
         LOG(INFO) << "compute residual M="<< M_M << "..." <<"\n";
-        auto res = this->residual(M_M-1);
-
+        res = this->residual(M_M-1);
+        LOG(INFO) << "residual = " << res << "\n";
         LOG(INFO) << "compute arg sup |residual|..." <<"\n";
         auto resmax = normLinf( _range=elements(M_model->mesh()), _pset=_Q<5>(), _expr=idv(res) );
         LOG(INFO) << "store coordinates where max absolute value is attained " << resmax.template get<1>() << "..." <<"\n";
@@ -583,19 +570,45 @@ EIM<ModelType>::offline(  )
         M_t.push_back( resmax.template get<1>() );
 
         LOG(INFO) << "scale new basis function by " << 1./resmax.template get<0>() << "..." <<"\n";
-        res.scale( 1./resmax.template get<0>() );
+        res.scale( 1./res(resmax.template get<1>())(0,0,0) );
         LOG(INFO) << "store new basis function..." <<"\n";
         M_q.push_back( res );
 
         std::for_each( M_t.begin(), M_t.end(), []( node_type const& t ) { LOG(INFO) << "t=" << t << "\n"; } );
+        // update interpolation matrix
+        M_B.conservativeResize( M_M, M_M );
+        for( int __i = 0; __i < M_M; ++__i )
+        {
+            for( int __j = 0; __j < M_M; ++__j )
+            {
+                this->M_B( __i, __j ) = M_q[__j]( M_t[__i] )(0,0,0);
+
+            }
+        }
+        LOG(INFO) << "Interpolation matrix: M_B = " << this->M_B <<"\n";
+#if 0
+        for( int __i = 0; __i < M_M; ++__i )
+        {
+            for( int __j = __i+1; __j < M_M; ++__j )
+            {
+                LOG_ASSERT( math::abs( M_q[__j]( M_t[__i] )(0,0,0)) < 1e-10 )
+                    << "q[j](t_i) when j > i should be 0, = "
+                    << math::abs( M_q[__j]( M_t[__i] )(0,0,0)) << "\n";
+            }
+            //this->M_B(__i,__i)=1;
+            //this->M_B(__i,__i)=;
+            LOG_ASSERT( math::abs( M_q[__i]( M_t[__i] )( 0, 0, 0 ) - 1 ) < 1e-10 )
+                << "q[ " << __i << "](t[" << __i << "] != 1 "
+                << "t[" << __i << "] = "<< M_t[__i] << "\n";
+        }
+#endif
+
+
         LOG(INFO) << "================================================================================\n";
-        ++M_M;
-        if ( this->M_M > 10 )
-            break;
     }
 
-    LOG(INFO) << "M_max = " << M_M << "...\n";
-    this->M_M_max = this->M_M;
+    LOG(INFO) << "M_max = " << M_M-1 << "...\n";
+    this->M_M_max = this->M_M-1;
 
     this->M_offline_done = true;
 
@@ -651,6 +664,7 @@ public:
     mesh_ptrtype mesh()  { return M_fspace->mesh(); }
 
     virtual element_type operator()( parameter_type const& ) = 0;
+    virtual element_type interpolant( parameter_type const& ) = 0;
     value_type operator()( node_type const& x, parameter_type const& mu )
         {
             LOG(INFO) << "calling EIMFunctionBase::operator()( x=" << x << ", mu=" << mu << ")\n";
@@ -660,15 +674,10 @@ public:
             return res;
         }
 
-    element_type const& q( int m ) { return M_eim->q( m ); }
-
-    vector_type  beta( parameter_type const& mu ) { return M_eim->beta( mu ); }
-
 
     functionspace_ptrtype M_fspace;
     parameterspace_ptrtype M_pspace;
     std::string M_name;
-    eim_ptrtype M_eim;
 };
 
 
@@ -696,6 +705,8 @@ public:
     typedef typename super::eim_type eim_type;
     typedef typename super::eim_ptrtype eim_ptrtype;
 
+    typedef typename super::vector_type vector_type;
+
     EIMFunction( model_ptrtype model,
                  element_type& u,
                  parameter_type& mu,
@@ -717,6 +728,12 @@ public:
             M_u = M_model->solve( mu );
             return vf::project( _space=M_model->functionSpace(), _expr=M_expr );
         }
+    element_type interpolant( parameter_type const& mu ) { return M_eim->operator()( mu ); }
+
+    element_type const& q( int m ) { return M_eim->q( m ); }
+
+    vector_type  beta( parameter_type const& mu ) { return M_eim->beta( mu ); }
+
 
 private:
     model_ptrtype M_model;
