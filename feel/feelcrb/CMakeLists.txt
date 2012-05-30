@@ -23,7 +23,7 @@
 #
 # set(CMAKE_CXX_FLAGS "-g -O0" )
 
-set(SRC crb.cpp crbdb.cpp crbscm.cpp pfemapp.cpp opusapp.cpp )
+set(SRC crb.cpp crbdb.cpp crbscm.cpp eim.cpp pfemapp.cpp opusapp.cpp )
 
 
 file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp)
