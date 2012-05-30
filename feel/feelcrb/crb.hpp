@@ -1876,7 +1876,7 @@ CRB<TruthModelType>::offline()
 
         else
         {
-	    boost::tie( maxerror, mu, index , delta_pr , delta_du ) = maxErrorBounds( M_N );
+            boost::tie( maxerror, mu, index , delta_pr , delta_du ) = maxErrorBounds( M_N );
 
             M_index.push_back( index );
 
@@ -2451,8 +2451,6 @@ template< typename TruthModelType>
 double
 CRB<TruthModelType>::correctionTerms(parameter_type const& mu, std::vector< vectorN_type > const & uN, std::vector< vectorN_type > const & uNdu,  std::vector<vectorN_type> const & uNold, int const k ) const
 {
-
-
     int N = uN[0].size();
 
     matrixN_type Aprdu ( (int)N, (int)N ) ;
@@ -2486,14 +2484,13 @@ CRB<TruthModelType>::correctionTerms(parameter_type const& mu, std::vector< vect
         }
         for(size_type q = 0;q < M_model->Qa(); ++q)
         {
-            for(int m=0; m < M_model->mMaxM(q); m++)
+            for(int m=0; m < M_model->mMaxA(q); m++)
                 Aprdu += betaAqm[q][m]*M_Aqm_pr_du[q][m].block(0,0,N,N);
         }
 
         du = uNdu[0];
         pr = uN[0];
         correction = -( Fdu.dot( du ) - du.dot( Aprdu*pr )  );
-
     }
     else
     {
@@ -2554,7 +2551,6 @@ template<typename TruthModelType>
 boost::tuple<double,double>
 CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vectorN_type > & uN, std::vector< vectorN_type > & uNdu,  std::vector<vectorN_type> & uNold, std::vector<vectorN_type> & uNduold,int K  ) const
 {
-
     bool save_output_behavior = this->vm()["crb.save-output-behavior"].template as<bool>();
 
     //if K>0 then the time at which we want to evaluate output is defined by
@@ -2648,6 +2644,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
         boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( mu ,time );
 
         A.setZero( N,N );
+
         for ( size_type q = 0; q < M_model->Qa(); ++q )
         {
             for(int m=0; m<M_model->mMaxA(q); m++)
@@ -2689,7 +2686,6 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
         }
 
         output = L.dot( uN[time_index] );
-
         output_time_vector.push_back( output );
 
         time_index++;
@@ -2834,6 +2830,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
 	    output_time_vector[time_index]+=correctionTerms(mu, uN , uNdu, uNold, k );
 	    time_index++;
 	}
+
 
     }//end of if ( solve_dual_problem || M_error_type == CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM )
 
