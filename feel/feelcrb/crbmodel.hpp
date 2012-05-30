@@ -684,7 +684,7 @@ public:
     /**
      * solve the model for a given parameter \p mu
      */
-    void solve( parameter_type const& mu )
+    element_type solve( parameter_type const& mu )
     {
         return M_model->solve( mu );
     }
