@@ -731,7 +731,7 @@ public:
         {
             M_mu = mu;
             M_u = M_model->solve( mu );
-            return vf::project( _space=M_model->functionSpace(), _expr=M_expr );
+            return vf::project( _space=super::M_fspace, _expr=M_expr );
         }
     element_type interpolant( parameter_type const& mu ) { return M_eim->operator()( mu ); }
 
