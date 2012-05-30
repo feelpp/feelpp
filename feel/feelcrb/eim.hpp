@@ -673,7 +673,9 @@ public:
             LOG(INFO) << "EIMFunctionBase::operator() v(x)=" << res << "\n";
             return res;
         }
-
+    virtual element_type const& q( int m )  const = 0;
+    virtual vector_type  beta( parameter_type const& mu ) const = 0;
+    virtual int  mMax() const = 0;
 
     functionspace_ptrtype M_fspace;
     parameterspace_ptrtype M_pspace;
@@ -730,10 +732,9 @@ public:
         }
     element_type interpolant( parameter_type const& mu ) { return M_eim->operator()( mu ); }
 
-    element_type const& q( int m ) { return M_eim->q( m ); }
+    element_type const& q( int m ) const { return M_eim->q( m ); }
 
-    vector_type  beta( parameter_type const& mu ) { return M_eim->beta( mu ); }
-
+    vector_type  beta( parameter_type const& mu ) const { return M_eim->beta( mu ); }
 
 private:
     model_ptrtype M_model;
