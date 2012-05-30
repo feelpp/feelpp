@@ -416,12 +416,16 @@ EIM<ModelType>::residual( size_type __M ) const
 {
     LOG(INFO) << "compute residual for m=" << __M << "...\n";
     vector_type rhs( __M );
+    LOG(INFO) << "g["<< __M << "]=" << M_g[__M] << "\n";
     for ( size_type __m = 0;__m < __M;++__m )
     {
+        LOG(INFO) << "t["<< __m << "]=" << M_t[__m] << "\n";
+
         rhs[__m]= M_g[__M]( M_t[__m] )(0,0,0);
     }
-    this->M_B.block(0,0,__M,__M).template triangularView<Eigen::UnitLower>().solveInPlace(rhs);
     LOG(INFO) << "solve B sol = rhs with rhs = " << rhs <<"\n";
+    this->M_B.block(0,0,__M,__M).template triangularView<Eigen::UnitLower>().solveInPlace(rhs);
+    LOG(INFO) << "solve B sol = " << rhs <<"\n";
 
     // res(:,i)=M_g(:,i)-q(:,0:i)*sigma
     LOG(INFO) << "compute residual..." <<"\n";
@@ -537,7 +541,7 @@ EIM<ModelType>::offline(  )
     double err = 1;
 
     LOG(INFO) << "start greedy algorithm...\n";
-    for(  ; M_M < 10; ++M_M ) //err >= this->M_tol )
+    for(  ; M_M < 15; ++M_M ) //err >= this->M_tol )
     {
         LOG(INFO) << "M=" << M_M << "...\n";
 
@@ -545,7 +549,7 @@ EIM<ModelType>::offline(  )
         // compute mu = arg max inf ||G(.;mu)-z||_infty
         auto bestfit = computeBestFit( trainset, this->M_M-1 );
 
-        if ( this->M_M == 1 && bestfit.template get<0>() < 1e-12 )
+        if ( bestfit.template get<0>() < 1e-12 )
             break;
 
         /**
@@ -557,7 +561,7 @@ EIM<ModelType>::offline(  )
         // update M_g(:,M-1)
         M_g.push_back( M_model->operator()( bestfit.template get<1>() ) );
 
-        orthonormalize( M_g );
+        //orthonormalize( M_g );
 
         // build T^m such that T^m-1 \subset T^m
         LOG(INFO) << "compute residual M="<< M_M << "..." <<"\n";
@@ -729,9 +733,12 @@ public:
         }
     element_type operator()( parameter_type const&  mu )
         {
+            LOG(INFO) << "solve for mu= "<< mu << "\n";
             M_mu = mu;
             M_u = M_model->solve( mu );
-            return vf::project( _space=M_model->functionSpace(), _expr=M_expr );
+            auto res = vf::project( _space=M_model->functionSpace(), _expr=M_expr );
+            LOG(INFO) << "operator() res = " << res << "\n";
+            return res;
         }
     element_type interpolant( parameter_type const& mu ) { return M_eim->operator()( mu ); }
 
@@ -790,8 +797,39 @@ BOOST_PARAMETER_FUNCTION(
     return  eim_ptrtype(new eim_type( model, space, element, parameter, expr, name ) );
 } // eim
 
+template<typename ModelType>
+struct EimFunctionNoSolve
+{
+    typedef typename ModelType::functionspace_type functionspace_type;
+    typedef typename ModelType::functionspace_ptrtype functionspace_ptrtype;
+    typedef typename functionspace_type::element_type element_type;
+    typedef typename ModelType::parameterspace_type parameterspace_type;
+    typedef typename ModelType::parameterspace_ptrtype parameterspace_ptrtype;
+    typedef typename parameterspace_type::element_type parameter_type;
+    typedef typename parameterspace_type::sampling_type sampling_type;
+    typedef typename parameterspace_type::sampling_ptrtype sampling_ptrtype;
+
+    EimFunctionNoSolve( ModelType* model ): M_model( model ) {}
+
+    element_type solve( parameter_type const& mu )
+        {
+            LOG(INFO) << "no solve required\n";
+            return M_model->functionSpace()->element();
+        }
+    functionspace_ptrtype functionSpace() { return M_model->functionSpace(); }
+    parameterspace_ptrtype parameterSpace() { return M_model->parameterSpace(); }
+    ModelType* M_model;
+};
+
+template<typename ModelType>
+EimFunctionNoSolve<ModelType>*
+eim_no_solve( ModelType* model )
+{
+    return new EimFunctionNoSolve<ModelType>( model );
+}
 
 
+po::options_description eimOptions( std::string const& prefix = "" );
 }
 #endif /* _FEELPP_EIM_HPP */
 
