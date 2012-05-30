@@ -129,7 +129,7 @@ public:
     typedef typename ModelType::node_type node_type;
 
     typedef typename ModelType::functionspace_type functionspace_type;
-    typedef typename ModelType::functionspace_ptrtype functionspace_ptrtype;
+    typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
     typedef typename functionspace_type::element_type element_type;
     typedef typename functionspace_type::element_ptrtype element_ptrtype;
 
@@ -684,19 +684,21 @@ public:
 
 
 
-template<typename ModelType, typename ExprType>
+template<typename ModelType, typename SpaceType, typename ExprType>
 class EIMFunction
-    : public EIMFunctionBase<typename ModelType::functionspace_type, typename ModelType::parameterspace_type>
+    : public EIMFunctionBase<SpaceType, typename ModelType::parameterspace_type>
 {
-    typedef EIMFunctionBase<typename ModelType::functionspace_type, typename ModelType::parameterspace_type> super;
+    typedef EIMFunctionBase<SpaceType, typename ModelType::parameterspace_type> super;
 public:
     typedef ModelType model_type;
     typedef ModelType* model_ptrtype;
 
-    typedef typename super::functionspace_type functionspace_type;
+    typedef SpaceType functionspace_type;
     typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
     typedef typename super::element_type element_type;
     typedef typename super::element_ptrtype element_ptrtype;
+
+
 
     typedef typename super::parameterspace_type parameterspace_type;
     typedef typename super::parameter_type parameter_type;
@@ -710,12 +712,13 @@ public:
     typedef typename super::vector_type vector_type;
 
     EIMFunction( model_ptrtype model,
+                 functionspace_ptrtype space,
                  element_type& u,
                  parameter_type& mu,
                  expr_type& expr,
                  std::string const& name )
         :
-        super( model->functionSpace(), model->parameterSpace(), name ),
+        super( space, model->parameterSpace(), name ),
         M_model( model ),
         M_expr( expr ),
         M_u( u ),
@@ -740,6 +743,7 @@ public:
 
 private:
     model_ptrtype M_model;
+    functionspace_ptrtype M_space;
     expr_type M_expr;
     element_type& M_u;
     parameter_type& M_mu;
@@ -755,8 +759,9 @@ struct compute_eim_return
     typedef typename boost::remove_reference<typename boost::remove_pointer<typename parameter::binding<Args, tag::model>::type>::type>::type model1_type;
     typedef typename boost::remove_const<typename boost::remove_pointer<model1_type>::type>::type model_type;
     typedef typename boost::remove_reference<typename parameter::binding<Args, tag::expr>::type>::type expr_type;
-    typedef EIMFunction<model_type, expr_type> type;
-    typedef boost::shared_ptr<EIMFunction<model_type, expr_type> > ptrtype;
+    typedef typename boost::remove_reference<typename parameter::binding<Args, tag::space>::type>::type::element_type space_type;
+    typedef EIMFunction<model_type, space_type, expr_type> type;
+    typedef boost::shared_ptr<EIMFunction<model_type, space_type, expr_type> > ptrtype;
 };
 }
 
@@ -770,8 +775,11 @@ BOOST_PARAMETER_FUNCTION(
       ( in_out(parameter),        * )
       ( in_out(expr),          * )
       ( name, * )
+      ( space, *)
         ) // required
     ( optional
+      //( space, *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ), model->functionSpace() )
+      //( space, *, model->functionSpace() )
       ( verbose, (int), 0 )
         ) // optionnal
 )
@@ -779,7 +787,7 @@ BOOST_PARAMETER_FUNCTION(
     Feel::detail::ignore_unused_variable_warning( args );
     typedef typename detail::compute_eim_return<Args>::type eim_type;
     typedef typename detail::compute_eim_return<Args>::ptrtype eim_ptrtype;
-    return  eim_ptrtype(new eim_type( model, element, parameter, expr, name ) );
+    return  eim_ptrtype(new eim_type( model, space, element, parameter, expr, name ) );
 } // eim
 
 

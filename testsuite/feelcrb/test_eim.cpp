@@ -152,6 +152,7 @@ public:
             //BOOST_TEST_MESSAGE( "shared from this" );
             auto e = eim( _model=this,
                           _element=u,
+                          _space=this->functionSpace(),
                           _parameter=mu,
                           _expr=sin(cst_ref(mu(0)))*idv(u)*idv(u),
                           _name="q_1" );
@@ -287,6 +288,7 @@ public:
             //BOOST_TEST_MESSAGE( "shared from this" );
             auto e = eim( _model=this,
                           _element=u,
+                          _space=this->functionSpace(),
                           _parameter=mu,
                           _expr= cst_ref(mu(0)) *( Px() - cst_ref(mu(2)) )*( Px() - cst_ref(mu(2)) )+cst_ref(mu(1)) *( Py() - cst_ref(mu(3)) )*( Py() - cst_ref(mu(3)) ),
                           _name="q_1");
