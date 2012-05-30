@@ -698,7 +698,7 @@ public:
     typedef typename super::element_type element_type;
     typedef typename super::element_ptrtype element_ptrtype;
 
-
+    typedef typename ModelType::element_type solution_type;
 
     typedef typename super::parameterspace_type parameterspace_type;
     typedef typename super::parameter_type parameter_type;
@@ -713,7 +713,7 @@ public:
 
     EIMFunction( model_ptrtype model,
                  functionspace_ptrtype space,
-                 element_type& u,
+                 solution_type& u,
                  parameter_type& mu,
                  expr_type& expr,
                  std::string const& name )
@@ -743,9 +743,8 @@ public:
 
 private:
     model_ptrtype M_model;
-    functionspace_ptrtype M_space;
     expr_type M_expr;
-    element_type& M_u;
+    solution_type& M_u;
     parameter_type& M_mu;
     eim_ptrtype M_eim;
 };
