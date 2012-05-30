@@ -513,6 +513,8 @@ public :
                   std::vector<std::list<boost::tuple< size_type,size_type,node_type> > > & trialEltToPtsQuad,
                   std::vector<std::list<size_type> > & EltCoupled )
     {
+        //std::cout << "[QuadPtLocalization] : localization<MESH_FACES>(bilinear form start" << std::endl;
+
         auto elt_it = this->beginElement();
         auto elt_en = this->endElement();
 
@@ -546,6 +548,16 @@ public :
         auto meshTestLocalization = meshTest->tool_localization();
         meshTestLocalization->updateForUse();
 
+        matrix_node_type ptsReal( elt_it->vertices().size1(), 1 );
+        size_type trialIdElt = 0, testIdElt=0;
+        node_type trialNodeRef,testNodeRef;
+
+        bool quadMeshIsSameThatTrialMesh=false,quadMeshIsSameThatTestMesh=false;
+        if ( dynamic_cast<void*>( const_cast<MeshBase*>( elt_it->mesh() ) ) == dynamic_cast<void*>( meshTrial.get() ) )
+            quadMeshIsSameThatTrialMesh=true;
+        if ( dynamic_cast<void*>( const_cast<MeshBase*>( elt_it->mesh() ) ) == dynamic_cast<void*>( meshTest.get() ) )
+            quadMeshIsSameThatTestMesh=true;
+
 
         for ( size_type ide = 0; elt_it != elt_en; ++elt_it, ++ide )
         {
@@ -560,14 +572,44 @@ public :
                 size_type idq = gmc->nPoints()*ide+q;
 
                 // search in trial mesh
+#if 0
                 auto trialAnalysis= meshTrialLocalization->searchElement( gmc->xReal( q ) );
                 auto trialIdElt = trialAnalysis.template get<1>();
                 auto trialNodeRef = trialAnalysis.template get<2>();
+#else
+                ublas::column(ptsReal,0 ) = gmc->xReal( q );
+                if (!quadMeshIsSameThatTrialMesh)
+                    {
+                        auto resLocalisationTrial = meshTrialLocalization->run_analysis(ptsReal,trialIdElt,elt_it->vertices(),mpl::int_<0>());
+                        trialIdElt = resLocalisationTrial.template get<1>();
+                        trialNodeRef = meshTrialLocalization->result_analysis().begin()->second.begin()->template get<1>();
+                    }
+                else
+                    {
+                        trialIdElt = gmc->id();
+                        trialNodeRef = gmc->xRef(q);
+                    }
+#endif
                 trialEltToPtsQuad[trialIdElt].push_back( boost::make_tuple( idq,q,trialNodeRef ) );
+
                 // search in test mesh
+#if 0
                 auto testAnalysis = meshTestLocalization->searchElement( gmc->xReal( q ) );
                 auto testIdElt = testAnalysis.template get<1>();
                 auto testNodeRef = testAnalysis.template get<2>();
+#else
+                if (!quadMeshIsSameThatTestMesh)
+                    {
+                        auto resLocalisationTest = meshTestLocalization->run_analysis(ptsReal,testIdElt,elt_it->vertices(),mpl::int_<0>());
+                        testIdElt = resLocalisationTest.template get<1>();
+                        testNodeRef = meshTestLocalization->result_analysis().begin()->second.begin()->template get<1>();
+                    }
+                else
+                    {
+                        testIdElt = gmc->id();
+                        testNodeRef = gmc->xRef(q);
+                    }
+#endif
                 testEltToPtsQuad[testIdElt].push_back( boost::make_tuple( idq,q,testNodeRef ) );
 
                 // relation between test and trial
@@ -575,6 +617,8 @@ public :
                     EltCoupled[testIdElt].push_back( trialIdElt );
             }
         } // end for( size_type ide ... )
+
+        //std::cout << "[QuadPtLocalization] : localization<MESH_FACES>(bilinear form finish" << std::endl;
 
     } // localization
 
@@ -589,6 +633,8 @@ public :
                   std::vector<std::list<boost::tuple< size_type,size_type,node_type> > > & trialEltToPtsQuad,
                   std::vector<std::list<size_type> > & EltCoupled )
     {
+        //std::cout << "[QuadPtLocalization] : localization<MESH_ELEMENTS>(bilinear form start" << std::endl;
+
         auto elt_it = this->beginElement();
         auto elt_en = this->endElement();
 
@@ -607,6 +653,16 @@ public :
         // auto nEltTrial= meshTrial->numElements();
         //auto nEltTest= meshTest->numElements();
 
+        matrix_node_type ptsReal( elt_it->vertices().size1(), 1 );
+        size_type trialIdElt = 0, testIdElt=0;
+        node_type trialNodeRef,testNodeRef;
+
+        bool quadMeshIsSameThatTrialMesh=false,quadMeshIsSameThatTestMesh=false;
+        if ( dynamic_cast<void*>( const_cast<MeshBase*>( elt_it->mesh() ) ) == dynamic_cast<void*>( meshTrial.get() ) )
+            quadMeshIsSameThatTrialMesh=true;
+        if ( dynamic_cast<void*>( const_cast<MeshBase*>( elt_it->mesh() ) ) == dynamic_cast<void*>( meshTest.get() ) )
+            quadMeshIsSameThatTestMesh=true;
+
         for ( size_type ide = 0; elt_it != elt_en; ++elt_it, ++ide )
         {
             gmc->update( *elt_it );
@@ -617,15 +673,45 @@ public :
                 size_type idq = gmc->nPoints()*ide+q;
 
                 // search in trial mesh
+#if 0
                 auto trialAnalysis= meshTrialLocalization->searchElement( gmc->xReal( q ) );
                 auto trialIdElt = trialAnalysis.template get<1>();
                 auto trialNodeRef = trialAnalysis.template get<2>();
+#else
+                ublas::column(ptsReal,0 ) = gmc->xReal( q );
+                if (!quadMeshIsSameThatTrialMesh)
+                    {
+                        auto resLocalisationTrial = meshTrialLocalization->run_analysis(ptsReal,trialIdElt,elt_it->vertices(),mpl::int_<0>());
+                        trialIdElt = resLocalisationTrial.template get<1>();
+                        trialNodeRef = meshTrialLocalization->result_analysis().begin()->second.begin()->template get<1>();
+                    }
+                else
+                    {
+                        trialIdElt = gmc->id();
+                        trialNodeRef = gmc->xRef(q);
+                    }
+#endif
                 //std::cout << "\n trialNodeRef " << trialNodeRef << std::endl;
                 trialEltToPtsQuad[trialIdElt].push_back( boost::make_tuple( idq,q,trialNodeRef ) );
+
                 // search in test mesh
+#if 0
                 auto testAnalysis = meshTestLocalization->searchElement( gmc->xReal( q ) );
                 auto testIdElt = testAnalysis.template get<1>();
                 auto testNodeRef = testAnalysis.template get<2>();
+#else
+                if (!quadMeshIsSameThatTestMesh)
+                    {
+                        auto resLocalisationTest = meshTestLocalization->run_analysis(ptsReal,testIdElt,elt_it->vertices(),mpl::int_<0>());
+                        testIdElt = resLocalisationTest.template get<1>();
+                        testNodeRef = meshTestLocalization->result_analysis().begin()->second.begin()->template get<1>();
+                    }
+                else
+                    {
+                        testIdElt = gmc->id();
+                        testNodeRef = gmc->xRef(q);
+                    }
+#endif
                 testEltToPtsQuad[testIdElt].push_back( boost::make_tuple( idq,q,testNodeRef ) );
 
                 // relation between test and trial
@@ -634,6 +720,7 @@ public :
             }
         } // end for( size_type ide ... )
 
+        //std::cout << "[QuadPtLocalization] : localization<MESH_ELEMENTS>(bilinear form finish" << std::endl;
     }
 
     //--------------------------------------------------------------------------------------//
