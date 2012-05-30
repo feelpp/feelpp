@@ -215,7 +215,7 @@ public:
     /**
        \return the number of DOF in space discretization
     */
-    size_t nDOF() const {  FEELPP_ASSERT( M_model != 0 ).error( "Invalid EIM model" ); return M_model->functionSpace()->nLocalDof(); }
+    size_type nDOF() const {  FEELPP_ASSERT( M_model != 0 ).error( "Invalid EIM model" ); return M_model->functionSpace()->nLocalDof(); }
 
     /**
      * return the set of reduced basis functions associated with the eim
@@ -225,15 +225,15 @@ public:
     /**
      * return the m-th reduced basis function associated with the eim
      */
-    element_type
-    q( size_t __m ) const
+    element_type const&
+    q( size_type __m ) const
         {
             FEELPP_ASSERT( __m >= 0 && __m < M_M )( __m )( M_M ).error( "out of bounds access" );
 
             return M_q[ __m ];
         }
 
-    size_t mMax() const { return M_M_max; }
+    size_type mMax() const { return M_M_max; }
 
 
     /**
@@ -277,9 +277,9 @@ public:
        data structure.
     */
     vector_type beta( parameter_type const& mu  ) const { return beta( mu, this->mMax() ); }
-    vector_type beta( parameter_type const& mu, size_t M  ) const;
+    vector_type beta( parameter_type const& mu, size_type M  ) const;
 
-    element_type residual ( size_t M ) const;
+    element_type residual ( size_type M ) const;
 
     parameter_residual_type computeBestFit( sampling_ptrtype trainset, int __M );
 
@@ -333,8 +333,8 @@ protected:
 
     std::string M_name;
 
-    size_t M_M;
-    size_t M_M_max;
+    size_type M_M;
+    size_type M_M_max;
 
     mutable bool M_offline_done;
 
@@ -348,7 +348,7 @@ protected:
 
     std::vector<node_type> M_t;
 
-    std::vector<size_t> M_index_max;
+    std::vector<size_type> M_index_max;
 
     model_type* M_model;
 protected:
@@ -399,11 +399,11 @@ public:
 
 template<typename ModelType>
 typename EIM<ModelType>::vector_type
-EIM<ModelType>::beta( parameter_type const& mu, size_t __M ) const
+EIM<ModelType>::beta( parameter_type const& mu, size_type __M ) const
 {
     // beta=B_M\g(Od(indx),mut(i))'
     vector_type __beta( __M );
-    for ( size_t __m = 0;__m < __M;++__m )
+    for ( size_type __m = 0;__m < __M;++__m )
     {
         __beta[__m] = M_model->operator()( this->M_t[__m], mu );
     }
@@ -412,11 +412,11 @@ EIM<ModelType>::beta( parameter_type const& mu, size_t __M ) const
 }
 template<typename ModelType>
 typename EIM<ModelType>::element_type
-EIM<ModelType>::residual( size_t __M ) const
+EIM<ModelType>::residual( size_type __M ) const
 {
     LOG(INFO) << "compute residual for m=" << __M << "...\n";
     vector_type rhs( __M );
-    for ( size_t __m = 0;__m < __M;++__m )
+    for ( size_type __m = 0;__m < __M;++__m )
     {
         rhs[__m]= M_g[__M]( M_t[__m] )(0,0,0);
     }
@@ -436,8 +436,8 @@ template<typename ModelType>
 void
 EIM<ModelType>::orthonormalize( std::vector<element_type> & __Z )
 {
-    size_t __M = __Z.size();
-    for ( size_t __i = 0;__i < __M-1; ++__i )
+    size_type __M = __Z.size();
+    for ( size_type __i = 0;__i < __M-1; ++__i )
     {
         value_type __s = inner_product(__Z[__i],__Z[__M-1]);
         __Z[__M-1].add(- __s,__Z[__i]);
@@ -466,7 +466,7 @@ EIM<ModelType>::computeBestFit( sampling_ptrtype trainset, int __M )
         auto Z = M_model->operator()( mu );
 
         vector_type rhs( __M );
-        for ( size_t __m = 0;__m < __M;++__m )
+        for ( size_type __m = 0;__m < __M;++__m )
         {
             rhs[__m]= Z( M_t[__m] )(0,0,0);
         }
@@ -675,7 +675,7 @@ public:
         }
     virtual element_type const& q( int m )  const = 0;
     virtual vector_type  beta( parameter_type const& mu ) const = 0;
-    virtual int  mMax() const = 0;
+    virtual size_type  mMax() const = 0;
 
     functionspace_ptrtype M_fspace;
     parameterspace_ptrtype M_pspace;
@@ -735,6 +735,8 @@ public:
     element_type const& q( int m ) const { return M_eim->q( m ); }
 
     vector_type  beta( parameter_type const& mu ) const { return M_eim->beta( mu ); }
+
+    size_type mMax() const { return M_eim->mMax(); }
 
 private:
     model_ptrtype M_model;
