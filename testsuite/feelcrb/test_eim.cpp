@@ -125,7 +125,7 @@ public:
                                                  _usenames=true,
                                                  _shape="hypercube",
                                                  _dim=2,
-                                                 _h=0.1 ) );
+                                                 _h=0.025 ) );
 
             Xh =  space_type::New( mesh );
             BOOST_CHECK( Xh );
@@ -150,13 +150,13 @@ public:
             //auto p = this->shared_from_this();
             //BOOST_CHECK( p );
             //BOOST_TEST_MESSAGE( "shared from this" );
-#if 0
-            LOG(INFO) << "=== sin(cst_ref(mu(0)))*idv(u)*idv(u) === \n";
+#if 1
+            LOG(INFO) << "=== sin(cst_ref(mu(0))*idv(u)*idv(u)) === \n";
             auto e = eim( _model=this,
                           _element=u,
                           _space=this->functionSpace(),
                           _parameter=mu,
-                          _expr=sin(cst_ref(mu(0)))*idv(u)*idv(u),
+                          _expr=sin(cst_ref(mu(0))*idv(u)*idv(u)),
                           _name="q1" );
             BOOST_TEST_MESSAGE( "create e done" );
             BOOST_CHECK( e );
@@ -209,6 +209,7 @@ public:
     {
         return Dmu;
     }
+    std::string modelName() const { return std::string("test_eim_model1" );}
 
     space_ptrtype functionSpace() { return Xh; }
 
@@ -323,6 +324,7 @@ public:
             BOOST_TEST_MESSAGE( "Allocation done" );
             BOOST_TEST_MESSAGE( "pushing function to be empirically interpolated" );
 
+            LOG(INFO) << "===  cst_ref(mu(0)) *( Px() - cst_ref(mu(2)) )*( Px() - cst_ref(mu(2)) )+cst_ref(mu(1)) *( Py() - cst_ref(mu(3)) )*( Py() - cst_ref(mu(3)) ) === \n";
             using namespace vf;
             //auto p = this->shared_from_this();
             //BOOST_CHECK( p );
@@ -340,6 +342,7 @@ public:
             BOOST_TEST_MESSAGE( "function to apply eim pushed" );
 
         }
+    std::string modelName() const { return std::string("test_eim_model2" );}
     //! return the parameter space
     parameterspace_ptrtype parameterSpace() const
     {
@@ -363,11 +366,14 @@ public:
             BOOST_FOREACH( auto fun, M_funs )
             {
                 BOOST_FOREACH( auto p, *S )
-                //auto p = Dmu->element();
-                //p(0)=1; p(1)=1; p(2)=0.5; p(3)=0.5;
                 {
+                    LOG(INFO) << "evaluate model at p = " << p << "\n";
                     auto v = fun->operator()( p );
-                    exporter->step(0)->add( (boost::format( "eim_circle(%1%-%2%-%3%-%4%)" ) %p(0) %p(1) %p(2) %p(3) ).str(), v );
+                    LOG(INFO) << "evaluate eim interpolant at p = " << p << "\n";
+                    auto w = fun->interpolant( p );
+
+                    exporter->step(0)->add( (boost::format( "model2-%1%(%2%)" ) % fun->name() % p(0) ).str(), v );
+                    exporter->step(0)->add( (boost::format( "model2-%1%-eim(%2%-%3%-%4%-%5%)" ) % fun->name() % p(0) %p(1) %p(2) %p(3) ).str(), w );
 
                 }
             }
@@ -403,7 +409,7 @@ BOOST_AUTO_TEST_CASE( test_eim1 )
     BOOST_CHECK( mpi::environment::initialized() );
     BOOST_TEST_MESSAGE( "adding simget" );
     app.add( new model( app.vm(), app.about() ) );
-    //app.add( new model_circle( app.vm(), app.about() ) );
+    app.add( new model_circle( app.vm(), app.about() ) );
     app.run();
 
     BOOST_TEST_MESSAGE( "test_eim1 done" );
