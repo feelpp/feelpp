@@ -54,9 +54,9 @@ CRBDB::CRBDB( std::string prefixdir,
     M_vm( vm ),
     M_isloaded( false )
 {
-    //std::cout << prefixdir << "," << name << "\n";
+    LOG(INFO) << prefixdir << "," << name << "\n";
     this->setDBFilename( ( boost::format( "%1%.crbdb" ) % dbprefix ).str() );
-    //std::cout << "database name " << dbFilename() << "\n";
+    LOG(INFO) << "database name " << dbFilename() << "\n";
 
 
 }
