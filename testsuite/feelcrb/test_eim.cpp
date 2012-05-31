@@ -66,7 +66,7 @@ makeOptions()
     simgetoptions.add_options()
     ( "hsize", po::value<double>()->default_value( 0.5 ), "mesh size" )
     ;
-    return simgetoptions.add( Feel::feel_options() );
+    return simgetoptions.add( eimOptions() ).add( Feel::feel_options() );
 }
 
 
@@ -79,7 +79,7 @@ makeAbout()
                      "0.1",
                      "SimGet tests",
                      Feel::AboutData::License_GPL,
-                     "Copyright (c) 2010 Université Joseph Fourier" );
+                     "Copyright (c) 2012 Université Joseph Fourier" );
 
     about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
     return about;
@@ -153,6 +153,7 @@ public:
 #if 1
             LOG(INFO) << "=== sin(cst_ref(mu(0))*idv(u)*idv(u)) === \n";
             auto e = eim( _model=this,
+                          _options=this->vm(),
                           _element=u,
                           _space=this->functionSpace(),
                           _parameter=mu,
@@ -164,6 +165,7 @@ public:
 #endif
             LOG(INFO) << "=== mu(0) === \n";
             auto e1 = eim( _model=eim_no_solve(this),
+                           _options=this->vm(),
                            _element=u,
                            _space=this->functionSpace(),
                            _parameter=mu,
@@ -175,6 +177,7 @@ public:
 
             LOG(INFO) << "=== mu(0) x === \n";
             auto e2 = eim( _model=eim_no_solve(this),
+                           _options=this->vm(),
                            _element=u,
                            _space=this->functionSpace(),
                            _parameter=mu,
@@ -184,6 +187,7 @@ public:
             M_funs.push_back( e2 );
             LOG(INFO) << "=== sin(2 pi mu(0) x) === \n";
             auto e3 = eim( _model=eim_no_solve(this),
+                           _options=this->vm(),
                            _element=u,
                            _space=this->functionSpace(),
                            _parameter=mu,
@@ -193,6 +197,7 @@ public:
             M_funs.push_back( e3 );
             LOG(INFO) << "=== exp(-((Px()-0.5)*(Px()-0.5)+(Py()-0.5)*(Py()-0.5))/(2*mu(0)*mu(0))), === \n";
             auto e5 = eim( _model=eim_no_solve(this),
+                           _options=this->vm(),
                            _element=u,
                            _space=this->functionSpace(),
                            _parameter=mu,
@@ -206,9 +211,9 @@ public:
         }
     //! return the parameter space
     parameterspace_ptrtype parameterSpace() const
-    {
-        return Dmu;
-    }
+        {
+            return Dmu;
+        }
     std::string modelName() const { return std::string("test_eim_model1" );}
 
     space_ptrtype functionSpace() { return Xh; }
@@ -330,6 +335,7 @@ public:
             //BOOST_CHECK( p );
             //BOOST_TEST_MESSAGE( "shared from this" );
             auto e = eim( _model=this,
+                          _options=this->vm(),
                           _element=u,
                           _space=this->functionSpace(),
                           _parameter=mu,
