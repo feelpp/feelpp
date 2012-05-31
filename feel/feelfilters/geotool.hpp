@@ -51,22 +51,23 @@
 /*_________________________________________________*/
 
 # define GEOTOOL_SHAPE                                                  \
-    ( 16, ( ( Line          , 1, 0, 0, "line"         , 2, LINE ),      \
-            ( Triangle      , 2, 1, 0, "triangle"     , 3, TRIANGLE ),  \
-            ( Rectangle     , 2, 1, 0, "rectangle"    , 2, RECTANGLE ), \
+    ( 17, ( ( Line          , 1, 0, 0, "line"         , 2, LINE       ), \
+            ( Triangle      , 2, 1, 0, "triangle"     , 3, TRIANGLE   ), \
+            ( Rectangle     , 2, 1, 0, "rectangle"    , 2, RECTANGLE  ), \
             ( Quadrangle    , 2, 1, 0, "quadrangle"   , 4, QUADRANGLE ), \
-            ( Pentagon      , 2, 1, 0, "pentagon"      , 5, PENTAGON ), \
-            ( Hexagon       , 2, 1, 0, "hexagon"      , 6, HEXAGON ),   \
-            ( Circle        , 2, 1, 0, "circle"       , 2, CIRCLE    ), \
-            ( Pie           , 2, 1, 0, "pie"          , 3, PIE),        \
+            ( Pentagon      , 2, 1, 0, "pentagon"     , 5, PENTAGON   ), \
+            ( Hexagon       , 2, 1, 0, "hexagon"      , 6, HEXAGON    ), \
+            ( Circle        , 2, 1, 0, "circle"       , 2, CIRCLE     ), \
+            ( Ellipse       , 2, 1, 0, "ellipse"      , 3, ELLIPSE    ), \
+            ( Pie           , 2, 1, 0, "pie"          , 3, PIE        ), \
             ( Special_1a    , 2, 2, 0, "special_1a"   , 1, SPECIAL_1A ), \
             ( Special_1b    , 2, 1, 0, "special_1b"   , 1, SPECIAL_1B ), \
-            ( Peanut        , 2, 1, 0, "peanut"       , 4, PEANUT ), \
-            ( Hexaedre      , 3, 6, 1, "hexaedre"     , 8, HEXAEDRE  ), \
-            ( Cube          , 3, 6, 1, "cube"         , 2, CUBE  ), \
-            ( Cylindre      , 3, 6, 1, "cylindre"     , 4, CYLINDRE  ), \
-            ( Sphere        , 3, 8, 1, "sphere"       , 2, SPHERE  ),   \
-            ( Tube          , 3, 20, 4, "tube"         , 5, TUBE  )     \
+            ( Peanut        , 2, 1, 0, "peanut"       , 4, PEANUT     ), \
+            ( Hexaedre      , 3, 6, 1, "hexaedre"     , 8, HEXAEDRE   ), \
+            ( Cube          , 3, 6, 1, "cube"         , 2, CUBE       ), \
+            ( Cylindre      , 3, 6, 1, "cylindre"     , 4, CYLINDRE   ), \
+            ( Sphere        , 3, 8, 1, "sphere"       , 2, SPHERE     ), \
+            ( Tube          , 3,20, 4, "tube"         , 5, TUBE       ) \
             )                                                           \
       )                                                                 \
     /**/
@@ -208,6 +209,23 @@
     /**/
 
 # define GEOTOOL_MARKER_SURFACE_CIRCLE          \
+    ( 1, ( ( 1, 1, ( 1 ) ) )                    \
+      )                                         \
+    /**/
+
+/*_________________________________________________*/
+
+# define GEOTOOL_MARKER_POINT_ELLIPSE           \
+    ( 2, ( ( 1, 4, ( 2,3,4,5 ) ),               \
+           ( 2, 1, ( 1 ) ) )                    \
+      )                                         \
+/**/
+# define GEOTOOL_MARKER_LINE_ELLIPSE            \
+    ( 1, ( ( 1, 4, ( 1,2,3,4 ) ) )              \
+      )                                         \
+    /**/
+
+# define GEOTOOL_MARKER_SURFACE_ELLIPSE         \
     ( 1, ( ( 1, 1, ( 1 ) ) )                    \
       )                                         \
     /**/
@@ -1455,6 +1473,9 @@ writeLine( uint __numLoc, data_geo_ptrtype __dg ,uint __n1, uint __n2 );
 
 void
 writeCircle( uint __numLoc, data_geo_ptrtype __dg ,uint __n1, uint __n2, uint __n3 );
+
+void
+writeEllipse( uint __numLoc, data_geo_ptrtype __dg ,uint __n1, uint __n2, uint __n3, uint __n4 );
 
 void
 writeSpline( uint __numLoc, data_geo_ptrtype __dg ,Loop __loop );
