@@ -152,6 +152,7 @@ public:
     EIM()
         :
         super(),
+        M_vm(),
         M_is_read( false ),
         M_is_written( false ),
         M_name( "default" ),
@@ -165,9 +166,10 @@ public:
         M_index_max(),
         M_model( 0 )
         {}
-    EIM( model_type* model, double __tol = 1e-8 )
+    EIM( po::variables_map const& vm, model_type* model, double __tol = 1e-8 )
         :
-        super(model->modelName(), model->name(), model->name(), po::variables_map() ),
+        super(model->modelName(), model->name(), model->name(), vm ),
+        M_vm( vm ),
         M_is_read( false ),
         M_is_written( false ),
         M_name( model->name() ),
@@ -181,12 +183,14 @@ public:
         M_index_max(),
         M_model( model )
         {
-            if ( !loadDB() )
+            if ( !loadDB() || M_vm["eim.rebuild-database"].template as<bool>() )
             {
                 LOG(INFO) << "construct EIM approximation...\n";
-                if (  !this->isOfflineDone() )
-                    offline();
+                M_offline_done = false;
             }
+
+            if (  !this->isOfflineDone() )
+                offline();
         }
 
     EIM( EIM const & __bbf )
@@ -403,6 +407,7 @@ public:
 
 protected:
 
+    po::variables_map M_vm;
     mutable bool M_is_read;
     mutable bool M_is_written;
 
@@ -576,7 +581,7 @@ EIM<ModelType>::offline(  )
     M_M = 1;
     LOG(INFO) << "create training set...\n";
     auto trainset = M_model->parameterSpace()->sampling();
-    trainset->randomize( 30 );
+    trainset->randomize( M_vm["eim.sampling-size"].template as<int>() );
 
     LOG(INFO) << "create mu_1...\n";
     // random element in Dmu to start with
@@ -616,7 +621,7 @@ EIM<ModelType>::offline(  )
     double err = 1;
 
     LOG(INFO) << "start greedy algorithm...\n";
-    for(  ; M_M < 15; ++M_M ) //err >= this->M_tol )
+    for(  ; M_M < M_vm["eim.dimension-max"].template as<int>(); ++M_M ) //err >= this->M_tol )
     {
         LOG(INFO) << "M=" << M_M << "...\n";
 
@@ -624,7 +629,7 @@ EIM<ModelType>::offline(  )
         // compute mu = arg max inf ||G(.;mu)-z||_infty
         auto bestfit = computeBestFit( trainset, this->M_M-1 );
 
-        if ( bestfit.template get<0>() < 1e-12 )
+        if ( bestfit.template get<0>() < M_vm["eim.error-max"].template as<double>() )
             break;
 
         /**
@@ -684,6 +689,11 @@ EIM<ModelType>::offline(  )
 
 
         LOG(INFO) << "================================================================================\n";
+        if ( resmax.template get<0>() < M_vm["eim.error-max"].template as<double>() )
+        {
+            ++M_M;
+            break;
+        }
     }
 
     LOG(INFO) << "M_max = " << M_M-1 << "...\n";
@@ -720,11 +730,13 @@ public:
     //typedef typename eim_type::qm_type qm_type;
 
 
-    EIMFunctionBase( functionspace_ptrtype fspace,
+    EIMFunctionBase( po::variables_map const& vm,
+                     functionspace_ptrtype fspace,
                      parameterspace_ptrtype pspace,
                      std::string const& modelname,
                      std::string const& name )
         :
+        M_vm( vm ),
         M_fspace( fspace ),
         M_pspace( pspace ),
         M_modelname( modelname ),
@@ -760,6 +772,7 @@ public:
     virtual vector_type  beta( parameter_type const& mu ) const = 0;
     virtual size_type  mMax() const = 0;
 
+    po::variables_map M_vm;
     functionspace_ptrtype M_fspace;
     parameterspace_ptrtype M_pspace;
     std::string M_modelname;
@@ -795,19 +808,20 @@ public:
 
     typedef typename super::vector_type vector_type;
 
-    EIMFunction( model_ptrtype model,
+    EIMFunction( po::variables_map const& vm,
+                 model_ptrtype model,
                  functionspace_ptrtype space,
                  solution_type& u,
                  parameter_type& mu,
                  expr_type& expr,
                  std::string const& name )
         :
-        super( space, model->parameterSpace(), model->modelName(), name ),
+        super( vm, space, model->parameterSpace(), model->modelName(), name ),
         M_model( model ),
         M_expr( expr ),
         M_u( u ),
         M_mu( mu ),
-        M_eim( new eim_type( this ) )
+        M_eim( new eim_type( vm, this ) )
         {
 
         }
@@ -864,6 +878,7 @@ BOOST_PARAMETER_FUNCTION(
       ( in_out(expr),          * )
       ( name, * )
       ( space, *)
+      ( options, *)
         ) // required
     ( optional
       //( space, *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ), model->functionSpace() )
@@ -875,7 +890,7 @@ BOOST_PARAMETER_FUNCTION(
     Feel::detail::ignore_unused_variable_warning( args );
     typedef typename detail::compute_eim_return<Args>::type eim_type;
     typedef typename detail::compute_eim_return<Args>::ptrtype eim_ptrtype;
-    return  eim_ptrtype(new eim_type( model, space, element, parameter, expr, name ) );
+    return  eim_ptrtype(new eim_type( options, model, space, element, parameter, expr, name ) );
 } // eim
 
 template<typename ModelType>
