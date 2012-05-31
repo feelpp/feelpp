@@ -496,16 +496,12 @@ EIM<ModelType>::residual( size_type __M ) const
 {
     LOG(INFO) << "compute residual for m=" << __M << "...\n";
     vector_type rhs( __M );
-    //LOG(INFO) << "g["<< __M << "]=" << M_g[__M] << "\n";
     for ( size_type __m = 0;__m < __M;++__m )
     {
-        LOG(INFO) << "t["<< __m << "]=" << M_t[__m] << "\n";
-
         rhs[__m]= M_g[__M]( M_t[__m] )(0,0,0);
     }
-    LOG(INFO) << "solve B sol = rhs with rhs = " << rhs <<"\n";
     this->M_B.block(0,0,__M,__M).template triangularView<Eigen::UnitLower>().solveInPlace(rhs);
-    LOG(INFO) << "solve B sol = " << rhs <<"\n";
+    LOG(INFO) << "solve B sol = rhs with rhs = " << rhs <<"\n";
 
     // res(:,i)=M_g(:,i)-q(:,0:i)*sigma
     LOG(INFO) << "compute residual..." <<"\n";
@@ -641,7 +637,7 @@ EIM<ModelType>::offline(  )
         // update M_g(:,M-1)
         M_g.push_back( M_model->operator()( bestfit.template get<1>() ) );
 
-        //orthonormalize( M_g );
+        orthonormalize( M_g );
 
         // build T^m such that T^m-1 \subset T^m
         LOG(INFO) << "compute residual M="<< M_M << "..." <<"\n";
@@ -827,12 +823,9 @@ public:
         }
     element_type operator()( parameter_type const&  mu )
         {
-            //LOG(INFO) << "solve for mu= "<< mu << "\n";
             M_mu = mu;
             M_u = M_model->solve( mu );
-            auto res = vf::project( _space=M_model->functionSpace(), _expr=M_expr );
-            //LOG(INFO) << "operator() res = " << res << "\n";
-            return res;
+            return vf::project( _space=this->functionSpace(), _expr=M_expr );
         }
 
 
@@ -926,7 +919,6 @@ eim_no_solve( ModelType* model )
 }
 
 
-po::options_description eimOptions( std::string const& prefix = "" );
 }
 #endif /* _FEELPP_EIM_HPP */
 
