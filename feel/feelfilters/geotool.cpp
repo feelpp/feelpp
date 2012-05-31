@@ -1035,9 +1035,29 @@ writeCircle( uint __numLoc, data_geo_ptrtype __dg ,uint __n1, uint __n2, uint __
 
     boost::get<0>( *__dg )->updateOstr( __ostr.str() );
 
-    //++boost::get<0>(*__dg)->_M_cptCircle;
     ++boost::get<0>( *__dg )->_M_cptLine;
 }
+
+/*_________________________________________________*/
+
+void
+writeEllipse( uint __numLoc, data_geo_ptrtype __dg ,uint __n1, uint __n2, uint __n3, uint __n4 )
+{
+    ( *( boost::get<1>( *__dg ) ) )[1][__numLoc] = boost::get<0>( *__dg )->cptLine();
+
+    std::ostringstream __ostr;
+    __ostr << "Ellipse(" << boost::get<0>( *__dg )->cptLine() //cptCircle
+           << ") = {"
+           << ( *( boost::get<1>( *__dg ) ) )[0][__n1] << ","
+           << ( *( boost::get<1>( *__dg ) ) )[0][__n2] << ","
+           << ( *( boost::get<1>( *__dg ) ) )[0][__n3] << ","
+           << ( *( boost::get<1>( *__dg ) ) )[0][__n4] << "};\n";
+
+    boost::get<0>( *__dg )->updateOstr( __ostr.str() );
+
+    ++boost::get<0>( *__dg )->_M_cptLine;
+}
+
 /*_________________________________________________*/
 
 void
@@ -1660,7 +1680,6 @@ runHexagon( data_geo_ptrtype dg )
 void
 runCircle( data_geo_ptrtype dg )
 {
-
     node_type PtA = param<0>( dg );
     node_type PtB = param<1>( dg );
 
@@ -1672,6 +1691,31 @@ runCircle( data_geo_ptrtype dg )
     writeCircle( 2, dg, 3, 2, 1 );
 
     writeLineLoop( 1, dg, Loop()>>1>>2 );
+
+    writePlaneSurface( 1, dg, 1 );
+    writePtInSurface( dg,2,1 );
+}
+
+
+void
+runEllipse( data_geo_ptrtype dg )
+{
+    node_type PtC = param<0>( dg );
+    node_type PtMinor = param<1>( dg );
+    node_type PtMajor = param<2>( dg );
+
+    writePoint( 1, dg , PtC( 0 ), PtC( 1 ) );
+    writePoint( 2, dg , PtMinor( 0 ), PtMinor( 1 ) );
+    writePoint( 3, dg , 2*PtC( 0 )-PtMinor( 0 ), 2*PtC( 1 )-PtMinor( 1 ) );
+    writePoint( 4, dg , PtMajor( 0 ), PtMajor( 1 ) );
+    writePoint( 5, dg , 2*PtC( 0 )-PtMajor( 0 ), 2*PtC( 1 )-PtMajor( 1 ) );
+
+    writeEllipse( 1, dg, 2, 1, 4, 4 );
+    writeEllipse( 2, dg, 4, 1, 3, 3 );
+    writeEllipse( 3, dg, 3, 1, 5, 5 );
+    writeEllipse( 4, dg, 5, 1, 2, 2 );
+
+    writeLineLoop( 1, dg, Loop()>>1>>2>>3>>4 );
 
     writePlaneSurface( 1, dg, 1 );
     writePtInSurface( dg,2,1 );
