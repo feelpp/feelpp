@@ -643,7 +643,7 @@ BOOST_PARAMETER_FUNCTION(
     Eigen::Matrix<double, detail::evaluate<Args>::nDim,1> n = e.template get<1>().col(index);
     LOG(INFO) << "index at which function (size: " << e.template get<0>().array().size() << " is maximal: "<< index << " coord = " << n << "\n";
 
-    int index2;
+    int index2=0;
     double maxe2 = 0;
     for( int i = 0; i < e.template get<0>().size(); ++i )
     {

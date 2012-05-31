@@ -42,6 +42,7 @@
 #include <boost/serialization/export.hpp>
 #include <boost/serialization/base_object.hpp>
 
+#include <feel/feelcrb/crbdb.hpp>
 #include <feel/feelcrb/parameterspace.hpp>
 
 #include <feel/feelvf/vf.hpp>
@@ -112,8 +113,10 @@ namespace Feel
   @see
 */
 template<typename ModelType>
-class EIM
+class EIM : public CRBDB
 {
+    typedef  CRBDB super;
+
 public:
 
     static const uint16_type nDim = ModelType::nDim;
@@ -148,6 +151,7 @@ public:
 
     EIM()
         :
+        super(),
         M_is_read( false ),
         M_is_written( false ),
         M_name( "default" ),
@@ -163,6 +167,7 @@ public:
         {}
     EIM( model_type* model, double __tol = 1e-8 )
         :
+        super(model->modelName(), model->name(), model->name(), po::variables_map() ),
         M_is_read( false ),
         M_is_written( false ),
         M_name( model->name() ),
@@ -176,13 +181,17 @@ public:
         M_index_max(),
         M_model( model )
         {
-            LOG(INFO) << "construct EIM approximation...\n";
-            if (  !this->isOfflineDone() )
-                offline();
+            if ( !loadDB() )
+            {
+                LOG(INFO) << "construct EIM approximation...\n";
+                if (  !this->isOfflineDone() )
+                    offline();
+            }
         }
 
     EIM( EIM const & __bbf )
         :
+    super(__bbf),
         M_is_read( __bbf.M_is_read ),
         M_is_written( __bbf.M_is_written ),
         M_name( __bbf.M_name ),
@@ -261,6 +270,57 @@ public:
     //@{
 
     /**
+     * save the CRB database
+     */
+    void saveDB()
+        {
+            fs::ofstream ofs( this->dbLocalPath() / this->dbFilename() );
+
+            if ( ofs )
+            {
+                boost::archive::text_oarchive oa( ofs );
+                // write class instance to archive
+                oa << *this;
+                // archive and stream closed when destructors are called
+            }
+        }
+
+    /**
+     * load the CRB database
+     */
+    bool loadDB()
+        {
+            //if ( this->rebuildDB() )
+            //return false;
+
+            fs::path db = this->lookForDB();
+
+            if ( db.empty() )
+                return false;
+
+            if ( !fs::exists( db ) )
+                return false;
+
+            //std::cout << "Loading " << db << "...\n";
+            fs::ifstream ifs( db );
+
+            if ( ifs )
+            {
+                boost::archive::text_iarchive ia( ifs );
+                // write class instance to archive
+                ia >> *this;
+                //std::cout << "Loading " << db << " done...\n";
+                this->setIsLoaded( true );
+                // archive and stream closed when destructors are called
+                return true;
+            }
+
+            return false;
+        }
+
+
+
+    /**
        \brief Online stage of the coefficient-function interpolation.
 
        Our coefficient function approximation is the interpolant of
@@ -293,34 +353,49 @@ public:
     template<class Archive>
     void serialize(Archive & __ar, const unsigned int __version )
         {
-            Debug( 7450 ) << "serializing...\n";
+            LOG(INFO) << "serializing...\n";
 
             __ar & BOOST_SERIALIZATION_NVP( M_name );
 
-            Debug( 7450 ) << "name saved/loaded...\n";
+            LOG(INFO) << "name saved/loaded...\n";
 
             __ar & BOOST_SERIALIZATION_NVP( M_offline_done );
-            Debug( 7450 ) << "offline status...\n";
+            LOG(INFO) << "offline status...\n";
 
             __ar & BOOST_SERIALIZATION_NVP( M_M_max );
-            Debug( 7450 ) << "M saved/loaded\n";
+            LOG(INFO) << "M saved/loaded\n";
             M_M = M_M_max;
 
             // save index
             __ar & BOOST_SERIALIZATION_NVP( M_index_max );
-            Debug( 7450 ) << "index saved/loaded\n";
+            LOG(INFO) << "index saved/loaded\n";
 
             // save t
             __ar & BOOST_SERIALIZATION_NVP( M_t );
-            Debug( 7450 ) << "t saved/loaded\n";
+            LOG(INFO) << "t saved/loaded\n";
 
-            // save q
-            __ar & BOOST_SERIALIZATION_NVP( M_q );
-            Debug( 7450 ) << "q saved/loaded\n";
+
+            if ( Archive::is_loading::value )
+            {
+                for( int i = 0; i < M_M_max; ++ i )
+                {
+                    M_q.push_back( M_model->functionSpace()->element() );
+                }
+                for( int i = 0; i < M_M_max; ++ i )
+                    __ar & BOOST_SERIALIZATION_NVP( M_q[i] );
+                // save q
+                LOG(INFO) << "q saved/loaded\n";
+            }
+            else
+            {
+                for( int i = 0; i < M_M_max; ++ i )
+                    __ar & BOOST_SERIALIZATION_NVP( M_q[i] );
+            }
+
 
             // save B
             __ar & BOOST_SERIALIZATION_NVP( M_B );
-            Debug( 7450 ) << "B saved/loaded\n";
+            LOG(INFO) << "B saved/loaded\n";
 
         }
     //@}
@@ -461,7 +536,7 @@ EIM<ModelType>::computeBestFit( sampling_ptrtype trainset, int __M )
     LOG(INFO) << "Compute best fit M=" << __M << "\n";
     BOOST_FOREACH( mu, *trainset )
     {
-        LOG_EVERY_N(INFO, 1 ) << " (every 10 mu) compute fit at mu="<< mu <<"\n" ;
+        LOG_EVERY_N(INFO, 10 ) << " (every 10 mu) compute fit at mu="<< mu <<"\n" ;
         // evaluate model at mu
         auto Z = M_model->operator()( mu );
 
@@ -478,7 +553,7 @@ EIM<ModelType>::computeBestFit( sampling_ptrtype trainset, int __M )
         maxerr( index++ ) = resmax.template get<0>();
         int index2;
         auto err = maxerr.array().abs().maxCoeff( &index2 );
-        LOG_EVERY_N(INFO, 1 ) << " (every 10 mu) maxerr=" <<  err << " at index = " << index2 << " at mu = " << trainset->at(index2) << "\n";
+        LOG_EVERY_N(INFO, 10 ) << " (every 10 mu) maxerr=" <<  err << " at index = " << index2 << " at mu = " << trainset->at(index2) << "\n";
     }
     LOG_ASSERT( index == trainset->size() ) << "Invalid index " << index << " should be equal to trainset size = " << trainset->size() << "\n";
     auto err = maxerr.array().abs().maxCoeff( &index );
@@ -515,7 +590,7 @@ EIM<ModelType>::offline(  )
     // store space coordinate where max absolute value occurs
     M_t.push_back( zmax.template get<1>() );
     LOG(INFO) << "norm Linf = " << zmax.template get<0>() << " at " << zmax.template get<1>() << "\n";
-    LOG(INFO) << "g = " << M_g[0] << "\n";
+    //LOG(INFO) << "g = " << M_g[0] << "\n";
 
     LOG(INFO) << "compute and insert q_0...\n";
     // insert first element
@@ -562,7 +637,7 @@ EIM<ModelType>::offline(  )
         // build T^m such that T^m-1 \subset T^m
         LOG(INFO) << "compute residual M="<< M_M << "..." <<"\n";
         res = this->residual(M_M-1);
-        LOG(INFO) << "residual = " << res << "\n";
+        //LOG(INFO) << "residual = " << res << "\n";
         LOG(INFO) << "compute arg sup |residual|..." <<"\n";
         auto resmax = normLinf( _range=elements(M_model->mesh()), _pset=_Q<5>(), _expr=idv(res) );
         LOG(INFO) << "store coordinates where max absolute value is attained " << resmax.template get<1>() << "..." <<"\n";
@@ -611,7 +686,7 @@ EIM<ModelType>::offline(  )
     this->M_M_max = this->M_M-1;
 
     this->M_offline_done = true;
-
+    saveDB();
 }
 
 template<typename SpaceType, typename ParameterSpaceType>
@@ -643,10 +718,12 @@ public:
 
     EIMFunctionBase( functionspace_ptrtype fspace,
                      parameterspace_ptrtype pspace,
+                     std::string const& modelname,
                      std::string const& name )
         :
         M_fspace( fspace ),
         M_pspace( pspace ),
+        M_modelname( modelname ),
         M_name( name )
         {
             LOG(INFO)<< "EimFunctionBase constructor\n";
@@ -655,6 +732,8 @@ public:
         {}
     std::string const& name() const { return M_name; }
     void setName( std::string const& name ) { M_name = name; }
+    std::string modelName() const { return M_modelname; }
+    void setModelName( std::string const& name ) { M_modelname = name; }
 
     functionspace_ptrtype functionSpace() const { return M_fspace; }
     functionspace_ptrtype functionSpace()  { return M_fspace; }
@@ -679,6 +758,7 @@ public:
 
     functionspace_ptrtype M_fspace;
     parameterspace_ptrtype M_pspace;
+    std::string M_modelname;
     std::string M_name;
 };
 
@@ -718,7 +798,7 @@ public:
                  expr_type& expr,
                  std::string const& name )
         :
-        super( space, model->parameterSpace(), name ),
+        super( space, model->parameterSpace(), model->modelName(), name ),
         M_model( model ),
         M_expr( expr ),
         M_u( u ),
@@ -731,8 +811,10 @@ public:
         {
             M_mu = mu;
             M_u = M_model->solve( mu );
-            return vf::project( _space=super::M_fspace, _expr=M_expr );
+            return vf::project( _space=this->functionSpace(), _expr=M_expr );
         }
+
+
     element_type interpolant( parameter_type const& mu ) { return M_eim->operator()( mu ); }
 
     element_type const& q( int m ) const { return M_eim->q( m ); }
@@ -789,6 +871,37 @@ BOOST_PARAMETER_FUNCTION(
     return  eim_ptrtype(new eim_type( model, space, element, parameter, expr, name ) );
 } // eim
 
+template<typename ModelType>
+struct EimFunctionNoSolve
+{
+    typedef typename ModelType::functionspace_type functionspace_type;
+    typedef typename ModelType::functionspace_ptrtype functionspace_ptrtype;
+    typedef typename functionspace_type::element_type element_type;
+    typedef typename ModelType::parameterspace_type parameterspace_type;
+    typedef typename ModelType::parameterspace_ptrtype parameterspace_ptrtype;
+    typedef typename parameterspace_type::element_type parameter_type;
+    typedef typename parameterspace_type::sampling_type sampling_type;
+    typedef typename parameterspace_type::sampling_ptrtype sampling_ptrtype;
+
+    EimFunctionNoSolve( ModelType* model ): M_model( model ) {}
+
+    element_type solve( parameter_type const& mu )
+        {
+            LOG(INFO) << "no solve required\n";
+            return M_model->functionSpace()->element();
+        }
+    std::string modelName() const { return M_model->modelName(); }
+    functionspace_ptrtype functionSpace() { return M_model->functionSpace(); }
+    parameterspace_ptrtype parameterSpace() { return M_model->parameterSpace(); }
+    ModelType* M_model;
+};
+
+template<typename ModelType>
+EimFunctionNoSolve<ModelType>*
+eim_no_solve( ModelType* model )
+{
+    return new EimFunctionNoSolve<ModelType>( model );
+}
 
 
 }
