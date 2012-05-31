@@ -134,10 +134,10 @@ public:
             BOOST_CHECK( Dmu );
 
             parameter_type mu_min( Dmu );
-            mu_min << 0.2;
+            mu_min << 0.1;
             Dmu->setMin( mu_min );
             parameter_type mu_max( Dmu );
-            mu_max << 50;
+            mu_max << 1;
             Dmu->setMax( mu_max );
             mu = Dmu->element();
             BOOST_CHECK_EQUAL( mu.parameterSpace(), Dmu );
@@ -150,16 +150,57 @@ public:
             //auto p = this->shared_from_this();
             //BOOST_CHECK( p );
             //BOOST_TEST_MESSAGE( "shared from this" );
+#if 0
+            LOG(INFO) << "=== sin(cst_ref(mu(0)))*idv(u)*idv(u) === \n";
             auto e = eim( _model=this,
                           _element=u,
                           _space=this->functionSpace(),
                           _parameter=mu,
                           _expr=sin(cst_ref(mu(0)))*idv(u)*idv(u),
-                          _name="q_1" );
-            BOOST_TEST_MESSAGE( "create eim" );
+                          _name="q1" );
+            BOOST_TEST_MESSAGE( "create e done" );
             BOOST_CHECK( e );
-
             M_funs.push_back( e );
+#endif
+            LOG(INFO) << "=== mu(0) === \n";
+            auto e1 = eim( _model=eim_no_solve(this),
+                           _element=u,
+                           _space=this->functionSpace(),
+                           _parameter=mu,
+                           _expr=cst_ref(mu(0)),
+                           _name="mu0" );
+            BOOST_TEST_MESSAGE( "create e1 done" );
+            M_funs.push_back( e1 );
+            BOOST_CHECK_EQUAL( e1->mMax(), 1 );
+
+            LOG(INFO) << "=== mu(0) x === \n";
+            auto e2 = eim( _model=eim_no_solve(this),
+                           _element=u,
+                           _space=this->functionSpace(),
+                           _parameter=mu,
+                           _expr=cst_ref(mu(0))*Px(),
+                           _name="mu0x" );
+            BOOST_TEST_MESSAGE( "create e2 done" );
+            M_funs.push_back( e2 );
+            LOG(INFO) << "=== sin(2 pi mu(0) x) === \n";
+            auto e3 = eim( _model=eim_no_solve(this),
+                           _element=u,
+                           _space=this->functionSpace(),
+                           _parameter=mu,
+                           _expr=sin(2*constants::pi<double>()*cst_ref(mu(0))*Px()),
+                           _name="sin2pimu0x" );
+            BOOST_TEST_MESSAGE( "create e3 done" );
+            M_funs.push_back( e3 );
+            LOG(INFO) << "=== exp(-((Px()-0.5)*(Px()-0.5)+(Py()-0.5)*(Py()-0.5))/(2*mu(0)*mu(0))), === \n";
+            auto e5 = eim( _model=eim_no_solve(this),
+                           _element=u,
+                           _space=this->functionSpace(),
+                           _parameter=mu,
+                           _expr=exp(-((Px()-0.5)*(Px()-0.5)+(Py()-0.5)*(Py()-0.5))/(2*cst_ref(mu(0))*cst_ref(mu(0)))),
+                           _name="q2" );
+            BOOST_TEST_MESSAGE( "create e5 done" );
+            M_funs.push_back( e5 );
+
             BOOST_TEST_MESSAGE( "function to apply eim pushed" );
 
         }
@@ -202,8 +243,8 @@ public:
                     LOG(INFO) << "evaluate eim interpolant at p = " << p << "\n";
                     auto w = fun->interpolant( p );
 
-                    exporter->step(0)->add( (boost::format( "u(%1%)" ) % p(0) ).str(), v );
-                    exporter->step(0)->add( (boost::format( "u_eim(%1%)" ) % p(0) ).str(), w );
+                    exporter->step(0)->add( (boost::format( "%1%(%2%)" ) % fun->name() % p(0) ).str(), v );
+                    exporter->step(0)->add( (boost::format( "%1%-eim(%2%)" ) % fun->name() % p(0) ).str(), w );
 
                 }
             }
@@ -362,7 +403,7 @@ BOOST_AUTO_TEST_CASE( test_eim1 )
     BOOST_CHECK( mpi::environment::initialized() );
     BOOST_TEST_MESSAGE( "adding simget" );
     app.add( new model( app.vm(), app.about() ) );
-    app.add( new model_circle( app.vm(), app.about() ) );
+    //app.add( new model_circle( app.vm(), app.about() ) );
     app.run();
 
     BOOST_TEST_MESSAGE( "test_eim1 done" );
