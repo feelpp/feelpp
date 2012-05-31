@@ -637,9 +637,13 @@ BOOST_PARAMETER_FUNCTION(
 {
     LOG(INFO) << "evaluate expression..." << std::endl;
     auto e = evaluate_impl( range, pset, expr, geomap );
-
-    int index,index2;
+    int index;
     double maxe = e.template get<0>().array().abs().maxCoeff(&index);
+
+    Eigen::Matrix<double, detail::evaluate<Args>::nDim,1> n = e.template get<1>().col(index);
+    LOG(INFO) << "index at which function (size: " << e.template get<0>().array().size() << " is maximal: "<< index << " coord = " << n << "\n";
+
+    int index2;
     double maxe2 = 0;
     for( int i = 0; i < e.template get<0>().size(); ++i )
     {
@@ -649,10 +653,10 @@ BOOST_PARAMETER_FUNCTION(
             index2 = i;
         }
     }
-    LOG_ASSERT( index2 == index ) << "index2 = " << index2 <<  " and index  = " << index << "\n";
-    Eigen::Matrix<double, detail::evaluate<Args>::nDim,1> n = e.template get<1>().col(index);
-    LOG(INFO) << "index at which function is maximal: "<< index << " coord = " << n << "\n";
+
+    LOG_ASSERT( index2 == index ) << " index2 = " << index2 <<  " and index  = " << index << "\n";
     LOG(INFO) << "evaluate expression done." << std::endl;
+
     return boost::make_tuple( maxe, n );
 }
 
