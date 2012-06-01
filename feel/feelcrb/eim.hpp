@@ -919,7 +919,7 @@ eim_no_solve( ModelType* model )
 }
 
 
-po::options_description eimOptions( std::string const& prefix );
+po::options_description eimOptions( std::string const& prefix ="");
 }
 #endif /* _FEELPP_EIM_HPP */
 
