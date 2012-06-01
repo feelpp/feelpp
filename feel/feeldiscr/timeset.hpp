@@ -469,8 +469,19 @@ public:
             //add( "marker2", regionMarker2( _M_scalar_p0 ) );
             //add( "marker3", regionMarker3( _M_scalar_p0 ) );
         }
-        template<typename StringType, typename FunctionType>
-        void add( StringType  __n, FunctionType const& func )
+        template<typename FunctionType>
+        void add( std::initializer_list<std::string>  __n, FunctionType const& func )
+        {
+            std::vector<std::string> str( __n );
+            add_( str, func, mpl::bool_<(FunctionType::functionspace_type::nSpaces>1)>() );
+        }
+        template<typename FunctionType>
+        void add( std::vector<std::string> const& __n, FunctionType const& func )
+        {
+            add_( __n, func, mpl::bool_<(FunctionType::functionspace_type::nSpaces>1)>() );
+        }
+        template<typename FunctionType>
+        void add( std::string const& __n, FunctionType const& func )
         {
             add_( __n, func, mpl::bool_<(FunctionType::functionspace_type::nSpaces>1)>() );
         }
