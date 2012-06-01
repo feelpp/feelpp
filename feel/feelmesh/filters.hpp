@@ -712,25 +712,28 @@ boost::tuple<mpl::size_t<MESH_ELEMENTS>,
  */
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-      typename MeshTraits<MeshType>::marker_element_const_iterator,
-      typename MeshTraits<MeshType>::marker_element_const_iterator>
-      markedelements( MeshType const& mesh, flag_type flag )
+             typename MeshTraits<MeshType>::marker_element_const_iterator,
+             typename MeshTraits<MeshType>::marker_element_const_iterator>
+markedelements( MeshType const& mesh, boost::any const& flag )
 {
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
-    return detail::markedelements( mesh, flag, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
-}
-/**
- * \return a pair of iterators to iterate over elements of the
- * mesh with \p marker string
- */
-template<typename MeshType>
-boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-      typename MeshTraits<MeshType>::marker_element_const_iterator,
-      typename MeshTraits<MeshType>::marker_element_const_iterator>
-      markedelements( MeshType const& mesh, std::string const& flag )
-{
-    typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
-    return detail::markedelements( mesh, mesh->markerName( flag ), meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
+    try
+    {
+        flag_type theflag = boost::any_cast<flag_type>( flag ) ;
+        return detail::markedelements( mesh, theflag, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
+    }
+    catch( boost::bad_any_cast& )
+    {
+        try
+        {
+            std::string theflag = boost::any_cast<std::string>( flag ) ;
+            return detail::markedelements( mesh, mesh->markerName( theflag ), meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
+        }
+        catch( boost::bad_any_cast& )
+        {
+            LOG(FATAL) << "invalid marker type for markedelements\n";
+        }
+    }
 }
 
 /**
