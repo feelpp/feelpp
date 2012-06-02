@@ -2686,21 +2686,23 @@ public:
         {
             Feel::detail::ignore_unused_variable_warning( args );
             std::ostringstream os1;
-            os1 << _M_name << sep << suffix << this->worldComm().globalSize() << "." << this->worldComm().globalRank() << ".fdb";
+            os1 << _M_name << sep << suffix << "-" << this->worldComm().globalSize() << "." << this->worldComm().globalRank() << ".fdb";
             fs::path p = fs::path( path ) / os1.str();
 
+            LOG(INFO) << "try loading : " << p << "\n";
             if ( !fs::exists( p ) )
             {
                 std::ostringstream os2;
-                os2 << _M_name << sep << suffix<< this->worldComm().globalSize() << "." << this->worldComm().globalRank();
+                os2 << _M_name << sep << suffix << "-" << this->worldComm().globalSize() << "." << this->worldComm().globalRank();
                 p = fs::path( path ) / os2.str();
 
                 if ( !fs::exists( p ) )
                     return false;
             }
-
+            LOG(INFO) << p << " exists, is is a regular file : " << fs::is_regular_file( p ) << "\n";
             if ( !fs::is_regular_file( p ) )
                 return false;
+            LOG(INFO) << "load "  << p << "\n";
 
             fs::ifstream ifs( p );
 
