@@ -2672,7 +2672,7 @@ public:
             }
         }
         BOOST_PARAMETER_MEMBER_FUNCTION(
-            ( void ),
+            ( bool ),
             load,
             tag,
             ( required
@@ -2696,11 +2696,11 @@ public:
                 p = fs::path( path ) / os2.str();
 
                 if ( !fs::exists( p ) )
-                    return;
+                    return false;
             }
 
             if ( !fs::is_regular_file( p ) )
-                return;
+                return false;
 
             fs::ifstream ifs( p );
 
@@ -2720,7 +2720,9 @@ public:
             {
                 //boost::archive::xml_iarchive ia(ifs);
                 //ia >> *this;
+                return false;
             }
+            return true;
         }
         //@}
     private:
