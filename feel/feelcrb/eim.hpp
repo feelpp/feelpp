@@ -496,8 +496,11 @@ EIM<ModelType>::residual( size_type __M ) const
 {
     LOG(INFO) << "compute residual for m=" << __M << "...\n";
     vector_type rhs( __M );
+
+    //LOG(INFO) << "g[" << __M << "]=" << M_g[__M] << "\n";
     for ( size_type __m = 0;__m < __M;++__m )
     {
+        LOG(INFO) << "t[" << __m << "]=" << M_t[__m] << "\n";
         rhs[__m]= M_g[__M]( M_t[__m] )(0,0,0);
     }
     this->M_B.block(0,0,__M,__M).template triangularView<Eigen::UnitLower>().solveInPlace(rhs);
@@ -541,7 +544,7 @@ EIM<ModelType>::computeBestFit( sampling_ptrtype trainset, int __M )
     LOG(INFO) << "Compute best fit M=" << __M << "\n";
     BOOST_FOREACH( mu, *trainset )
     {
-        LOG_EVERY_N(INFO, 10 ) << " (every 10 mu) compute fit at mu="<< mu <<"\n" ;
+        LOG_EVERY_N(INFO, 1 ) << " (every 10 mu) compute fit at mu="<< mu <<"\n" ;
         // evaluate model at mu
         auto Z = M_model->operator()( mu );
 
@@ -558,7 +561,7 @@ EIM<ModelType>::computeBestFit( sampling_ptrtype trainset, int __M )
         maxerr( index++ ) = resmax.template get<0>();
         int index2;
         auto err = maxerr.array().abs().maxCoeff( &index2 );
-        LOG_EVERY_N(INFO, 10 ) << " (every 10 mu) maxerr=" <<  err << " at index = " << index2 << " at mu = " << trainset->at(index2) << "\n";
+        LOG_EVERY_N(INFO, 1 ) << " (every 10 mu) maxerr=" <<  err << " at index = " << index2 << " at mu = " << trainset->at(index2) << "\n";
     }
     LOG_ASSERT( index == trainset->size() ) << "Invalid index " << index << " should be equal to trainset size = " << trainset->size() << "\n";
     auto err = maxerr.array().abs().maxCoeff( &index );
@@ -625,7 +628,13 @@ EIM<ModelType>::offline(  )
         // compute mu = arg max inf ||G(.;mu)-z||_infty
         auto bestfit = computeBestFit( trainset, this->M_M-1 );
 
-        if ( bestfit.template get<0>() < M_vm["eim.error-max"].template as<double>() )
+        auto g_bestfit = M_model->operator()( bestfit.template get<1>() );
+        auto gmax = normLinf( _range=elements(M_model->mesh()), _pset=_Q<5>(), _expr=idv(g_bestfit) );
+
+        LOG(INFO) << "best fit max error = " << bestfit.template get<0>() << " relative error = " << bestfit.template get<0>()/gmax.template get<0>() << " at mu = "
+                  << bestfit.template get<1>() << "  tolerance=" << M_vm["eim.error-max"].template as<double>() << "\n";
+
+        if ( (bestfit.template get<0>()/gmax.template get<0>()) < M_vm["eim.error-max"].template as<double>() )
             break;
 
         /**
@@ -635,9 +644,9 @@ EIM<ModelType>::offline(  )
         LOG(INFO) << "S(" << this->M_M-1 << ") = " << bestfit.template get<1>() << "\n";
 
         // update M_g(:,M-1)
-        M_g.push_back( M_model->operator()( bestfit.template get<1>() ) );
+        M_g.push_back( g_bestfit );
 
-        orthonormalize( M_g );
+        //orthonormalize( M_g );
 
         // build T^m such that T^m-1 \subset T^m
         LOG(INFO) << "compute residual M="<< M_M << "..." <<"\n";
@@ -825,6 +834,7 @@ public:
         {
             M_mu = mu;
             M_u = M_model->solve( mu );
+            //LOG(INFO) << "operator() mu=" << mu << "\n" << "sol=" << M_u << "\n";
             return vf::project( _space=this->functionSpace(), _expr=M_expr );
         }
 

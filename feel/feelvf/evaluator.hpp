@@ -41,7 +41,7 @@ namespace vf
 /// \cond detail
 enum EvaluatorType
 {
-    EVAL_NODAL = 0,             /**< Nodal projection */
+    EVAL_NODAL = 0             /**< Nodal projection */
 };
 namespace details
 {
