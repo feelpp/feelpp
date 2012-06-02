@@ -166,13 +166,14 @@ public:
         M_index_max(),
         M_model( 0 )
         {}
-    EIM( po::variables_map const& vm, model_type* model, double __tol = 1e-8 )
+    EIM( po::variables_map const& vm, model_type* model, sampling_ptrtype sampling, double __tol = 1e-8 )
         :
         super(model->modelName(), model->name(), model->name(), vm ),
         M_vm( vm ),
         M_is_read( false ),
         M_is_written( false ),
         M_name( model->name() ),
+        M_trainset( sampling ),
         M_M( 1 ),
         M_M_max( 1 ),
         M_offline_done( false ),
@@ -266,6 +267,8 @@ public:
     /** @name  Mutators
      */
     //@{
+
+    void setTrainSet( sampling_ptrtype pset ) { M_trainset = pset; }
 
     //@}
 
@@ -412,7 +415,7 @@ protected:
     mutable bool M_is_written;
 
     std::string M_name;
-
+    sampling_ptrtype M_trainset;
     size_type M_M;
     size_type M_M_max;
 
@@ -578,13 +581,14 @@ EIM<ModelType>::offline(  )
         return;
 
     M_M = 1;
-    LOG(INFO) << "create training set...\n";
-    auto trainset = M_model->parameterSpace()->sampling();
-    trainset->randomize( M_vm["eim.sampling-size"].template as<int>() );
-
     LOG(INFO) << "create mu_1...\n";
     // random element in Dmu to start with
     auto mu = M_model->parameterSpace()->element();
+
+    if ( !M_trainset )
+        M_trainset = M_model->parameterSpace()->sampling();
+    if ( M_trainset->empty() )
+        M_trainset->randomize( M_vm["eim.sampling-size"].template as<int>() );
 
     // store residual
     auto res = M_model->functionSpace()->element();
@@ -626,7 +630,7 @@ EIM<ModelType>::offline(  )
 
         LOG(INFO) << "compute best fit error...\n";
         // compute mu = arg max inf ||G(.;mu)-z||_infty
-        auto bestfit = computeBestFit( trainset, this->M_M-1 );
+        auto bestfit = computeBestFit( M_trainset, this->M_M-1 );
 
         auto g_bestfit = M_model->operator()( bestfit.template get<1>() );
         auto gmax = normLinf( _range=elements(M_model->mesh()), _pset=_Q<5>(), _expr=idv(g_bestfit) );
@@ -725,6 +729,7 @@ public:
     typedef ParameterSpaceType parameterspace_type;
     typedef boost::shared_ptr<parameterspace_type> parameterspace_ptrtype;
     typedef typename parameterspace_type::element_type parameter_type;
+    typedef typename parameterspace_type::sampling_ptrtype sampling_ptrtype;
     typedef Eigen::Matrix<double, nDim, 1> node_type;
 
     typedef EIM<EIMFunctionBase<SpaceType,ParameterSpaceType> > eim_type;
@@ -738,12 +743,14 @@ public:
     EIMFunctionBase( po::variables_map const& vm,
                      functionspace_ptrtype fspace,
                      parameterspace_ptrtype pspace,
+                     sampling_ptrtype sampling,
                      std::string const& modelname,
                      std::string const& name )
         :
         M_vm( vm ),
         M_fspace( fspace ),
         M_pspace( pspace ),
+        M_trainset( sampling ),
         M_modelname( modelname ),
         M_name( name )
         {
@@ -760,6 +767,10 @@ public:
     functionspace_ptrtype functionSpace()  { return M_fspace; }
     parameterspace_ptrtype parameterSpace() const { return M_pspace; }
     parameterspace_ptrtype parameterSpace()  { return M_pspace; }
+    sampling_ptrtype trainSet() { return M_trainset; }
+    sampling_ptrtype trainSet() const { return M_trainset; }
+    virtual void setTrainSet( sampling_ptrtype tset ) { M_trainset = tset; }
+
     mesh_ptrtype mesh() const { return M_fspace->mesh(); }
     mesh_ptrtype mesh()  { return M_fspace->mesh(); }
 
@@ -780,6 +791,7 @@ public:
     po::variables_map M_vm;
     functionspace_ptrtype M_fspace;
     parameterspace_ptrtype M_pspace;
+    sampling_ptrtype M_trainset;
     std::string M_modelname;
     std::string M_name;
 };
@@ -804,6 +816,7 @@ public:
 
     typedef typename super::parameterspace_type parameterspace_type;
     typedef typename super::parameter_type parameter_type;
+    typedef typename super::sampling_ptrtype sampling_ptrtype;
 
     typedef ExprType expr_type;
     typedef boost::shared_ptr<expr_type> expr_ptrtype;
@@ -819,16 +832,16 @@ public:
                  solution_type& u,
                  parameter_type& mu,
                  expr_type& expr,
+                 sampling_ptrtype sampling,
                  std::string const& name )
         :
-        super( vm, space, model->parameterSpace(), model->modelName(), name ),
+        super( vm, space, model->parameterSpace(), sampling, model->modelName(), name ),
         M_model( model ),
         M_expr( expr ),
         M_u( u ),
         M_mu( mu ),
-        M_eim( new eim_type( vm, this ) )
+        M_eim( new eim_type( vm, this, sampling ) )
         {
-
         }
     element_type operator()( parameter_type const&  mu )
         {
@@ -838,7 +851,7 @@ public:
             return vf::project( _space=this->functionSpace(), _expr=M_expr );
         }
 
-
+    void setTrainSet( sampling_ptrtype tset ) { M_eim->setTrainSet( tset ); }
     element_type interpolant( parameter_type const& mu ) { return M_eim->operator()( mu ); }
 
     element_type const& q( int m ) const { return M_eim->q( m ); }
@@ -886,6 +899,7 @@ BOOST_PARAMETER_FUNCTION(
     ( optional
       //( space, *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ), model->functionSpace() )
       //( space, *, model->functionSpace() )
+      ( sampling, *, model->parameterSpace()->sampling() )
       ( verbose, (int), 0 )
         ) // optionnal
 )
@@ -893,7 +907,7 @@ BOOST_PARAMETER_FUNCTION(
     Feel::detail::ignore_unused_variable_warning( args );
     typedef typename detail::compute_eim_return<Args>::type eim_type;
     typedef typename detail::compute_eim_return<Args>::ptrtype eim_ptrtype;
-    return  eim_ptrtype(new eim_type( options, model, space, element, parameter, expr, name ) );
+    return  eim_ptrtype(new eim_type( options, model, space, element, parameter, expr, sampling, name ) );
 } // eim
 
 template<typename ModelType>
