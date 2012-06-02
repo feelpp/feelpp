@@ -2672,7 +2672,7 @@ public:
             }
         }
         BOOST_PARAMETER_MEMBER_FUNCTION(
-            ( void ),
+            ( bool ),
             load,
             tag,
             ( required
@@ -2696,11 +2696,11 @@ public:
                 p = fs::path( path ) / os2.str();
 
                 if ( !fs::exists( p ) )
-                    return;
+                    return false;
             }
 
             if ( !fs::is_regular_file( p ) )
-                return;
+                return false;
 
             fs::ifstream ifs( p );
 
@@ -2720,7 +2720,9 @@ public:
             {
                 //boost::archive::xml_iarchive ia(ifs);
                 //ia >> *this;
+                return false;
             }
+            return true;
         }
         //@}
     private:
@@ -4030,7 +4032,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::initFromSpace( functionspace
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>&
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator=( Element const& __e )
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator=( Element<Y,Cont> const& __e )
 {
     if (  this != &__e )
     {
