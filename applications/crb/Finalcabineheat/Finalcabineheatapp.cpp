@@ -4,7 +4,7 @@
 
 int main( int argc, char** argv )
 {
-    Feel::OpusApp<Feel::FinalCabineHeat> app( argc, argv,
+    Feel::OpusApp<Feel::FinalCabineHeat > app( argc, argv,
                                                       Feel::makeFinalCabineHeatAbout( "Finalcabineheat" ),
                                                       Feel::makeFinalCabineHeatOptions()  );
     app.run();

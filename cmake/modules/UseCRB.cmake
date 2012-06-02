@@ -89,7 +89,7 @@ endmacro(crb_add_executable)
 macro(crb_add_python_module)
 if ( FEELPP_ENABLE_OPENTURNS AND OPENTURNS_FOUND )
   PARSE_ARGUMENTS(CRB_PYTHON
-    "LINK_LIBRARIES;SCRIPTS;XML;CFG"
+    "LINK_LIBRARIES;SCRIPTS;XML;CFG;CLASS"
     "TEST"
     ${ARGN}
     )
@@ -134,7 +134,7 @@ endmacro(crb_add_python_module)
 macro(crb_add_model)
 
   PARSE_ARGUMENTS(CRB_MODEL
-    "HDRS;SRCS;LINK_LIBRARIES;CFG;XML;SCRIPTS"
+    "HDRS;SRCS;LINK_LIBRARIES;CFG;XML;SCRIPTS;CLASS"
     "TEST"
     ${ARGN}
     )
@@ -150,19 +150,23 @@ macro(crb_add_model)
   MESSAGE("Scripts file: ${CRB_MODEL_SCRIPTS}")
 
   include_directories( ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR} )
-  # generate pfem
+  if ( NOT CRB_MODEL_CLASS )
+    set(CRB_MODEL_CLASS ${CRB_MODEL_LONG_NAME})
+  endif()
+    # generate pfem
   set(CODE "/* this file is generated automatically */
-#include <${CRB_MODEL_SHORT_NAME}.hpp>
+#include <${CRB_MODEL_HDRS}>
 #include <feel/feelcrb/opusapp.hpp>
 
 int main( int argc, char** argv )
 {
-    Feel::OpusApp<Feel::${CRB_MODEL_LONG_NAME}> app( argc, argv,
+    Feel::OpusApp<Feel::${CRB_MODEL_CLASS} > app( argc, argv,
                                                       Feel::make${CRB_MODEL_LONG_NAME}About( \"${CRB_MODEL_SHORT_NAME}\" ),
                                                       Feel::make${CRB_MODEL_LONG_NAME}Options()  )\;
     app.run()\;
 }
 " )
+
   IF ( EXISTS ${CRB_MODEL_SHORT_NAME}app.cpp)
     file(READ ${CRB_MODEL_SHORT_NAME}app.cpp APPCODE)
     IF (NOT ${CODE} STREQUAL ${APPCODE} )
@@ -195,14 +199,14 @@ int main( int argc, char** argv )
 
     if ( CRB_MODEL_TEST )
       crb_add_python_module(crb${CRB_MODEL_SHORT_NAME}${wrapper} ${pycpp}
-        LINK_LIBRARIES ${CRB_MODEL_LINK_LIBRARIES}
+        LINK_LIBRARIES ${CRB_MODEL_LINK_LIBRARIES} CLASS ${CRB_MODEL_CLASS}
         CFG ${CRB_MODEL_CFG} XML ${xml} TEST)
       crb_add_octave_module(crb${CRB_MODEL_SHORT_NAME}${wrapper} ${octcpp}
         LINK_LIBRARIES ${CRB_MODEL_LINK_LIBRARIES} ${Octave_LIBRARIES}
         CFG ${CRB_MODEL_CFG} SCRIPTS ${CRB_MODEL_SCRIPTS} TEST )
     else()
       crb_add_python_module(crb${CRB_MODEL_SHORT_NAME}${wrapper} ${pycpp}
-        LINK_LIBRARIES ${CRB_MODEL_LINK_LIBRARIES}
+        LINK_LIBRARIES ${CRB_MODEL_LINK_LIBRARIES} CLASS ${CRB_MODEL_CLASS}
         CFG ${CRB_MODEL_CFG} XML ${xml})
       crb_add_octave_module(crb${CRB_MODEL_SHORT_NAME}${wrapper} ${octcpp}
         LINK_LIBRARIES ${CRB_MODEL_LINK_LIBRARIES} ${Octave_LIBRARIES}
