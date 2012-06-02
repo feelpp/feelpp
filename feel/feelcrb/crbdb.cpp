@@ -55,6 +55,7 @@ CRBDB::CRBDB( std::string prefixdir,
     M_isloaded( false )
 {
     LOG(INFO) << prefixdir << "," << name << "\n";
+
     this->setDBFilename( ( boost::format( "%1%.crbdb" ) % dbprefix ).str() );
     LOG(INFO) << "database name " << dbFilename() << "\n";
 
@@ -93,10 +94,17 @@ CRBDB::dbSystemPath() const
 fs::path
 CRBDB::dbLocalPath() const
 {
+    std::string suf;
+    if ( M_vm.count( "hsize" ) )
+    {
+
+        suf = ( boost::format( "h_%1$.2e/" ) % M_vm["hsize"].as<double>() ).str();
+    }
     // generate the local repository db path
-    std::string localpath = ( boost::format( "%1%/db/crb/%2%/" )
+    std::string localpath = ( boost::format( "%1%/db/crb/%2%/%3%" )
                               % Feel::Environment::rootRepository()
-                              % M_prefixdir ).str();
+                              % M_prefixdir
+                              % suf ).str();
     fs::path rep_path = localpath;
     fs::create_directories( rep_path );
 

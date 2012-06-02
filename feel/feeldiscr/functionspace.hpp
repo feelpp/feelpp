@@ -2651,6 +2651,7 @@ public:
             std::ostringstream os1;
             os1 << _M_name << sep << suffix << "-" << this->worldComm().globalSize() << "." << this->worldComm().globalRank() << ".fdb";
             fs::path p = fs::path( path ) / os1.str();
+            LOG(INFO) << "saving "  << p << "\n";
             fs::ofstream ofs( p );
 
             if ( type == "binary" )
@@ -2689,6 +2690,7 @@ public:
             os1 << _M_name << sep << suffix << "-" << this->worldComm().globalSize() << "." << this->worldComm().globalRank() << ".fdb";
             fs::path p = fs::path( path ) / os1.str();
 
+#if 1
             LOG(INFO) << "try loading : " << p << "\n";
             if ( !fs::exists( p ) )
             {
@@ -2702,7 +2704,8 @@ public:
             LOG(INFO) << p << " exists, is is a regular file : " << fs::is_regular_file( p ) << "\n";
             if ( !fs::is_regular_file( p ) )
                 return false;
-            LOG(INFO) << "load "  << p << "\n";
+#endif
+            LOG(INFO) << "loading "  << p << "\n";
 
             fs::ifstream ifs( p );
 
