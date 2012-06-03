@@ -136,6 +136,8 @@ public:
     typedef typename functionspace_type::element_type element_type;
     typedef typename functionspace_type::element_ptrtype element_ptrtype;
 
+    typedef typename ModelType::solution_type solution_type;
+
     typedef typename ModelType::parameterspace_type parameterspace_type;
     typedef typename ModelType::parameter_type parameter_type;
     typedef typename parameterspace_type::sampling_ptrtype sampling_ptrtype;
@@ -344,13 +346,16 @@ public:
        data structure.
     */
     vector_type beta( parameter_type const& mu  ) const { return beta( mu, this->mMax() ); }
+    vector_type beta( parameter_type const& mu, solution_type const& T  ) const { return beta( mu, T, this->mMax() ); }
     vector_type beta( parameter_type const& mu, size_type M  ) const;
+    vector_type beta( parameter_type const& mu, solution_type const& T, size_type M  ) const;
 
     element_type residual ( size_type M ) const;
 
     parameter_residual_type computeBestFit( sampling_ptrtype trainset, int __M );
 
     element_type operator()( parameter_type const& mu ) const { return expansion( M_q, beta( mu ) ); }
+    element_type operator()( parameter_type const& mu, solution_type const& T ) const { return expansion( M_q, beta( mu, T ) ); }
     /**
        orthonormalize
     */
@@ -493,6 +498,20 @@ EIM<ModelType>::beta( parameter_type const& mu, size_type __M ) const
     this->M_B.block(0,0,__M,__M).template triangularView<Eigen::UnitLower>().solveInPlace(__beta);
     return __beta;
 }
+template<typename ModelType>
+typename EIM<ModelType>::vector_type
+EIM<ModelType>::beta( parameter_type const& mu, solution_type const& T, size_type __M ) const
+{
+    // beta=B_M\g(Od(indx),mut(i))'
+    vector_type __beta( __M );
+    for ( size_type __m = 0;__m < __M;++__m )
+    {
+        __beta[__m] = T( this->M_t[__m], mu );
+    }
+    this->M_B.block(0,0,__M,__M).template triangularView<Eigen::UnitLower>().solveInPlace(__beta);
+    return __beta;
+}
+
 template<typename ModelType>
 typename EIM<ModelType>::element_type
 EIM<ModelType>::residual( size_type __M ) const
@@ -712,7 +731,7 @@ EIM<ModelType>::offline(  )
     saveDB();
 }
 
-template<typename SpaceType, typename ParameterSpaceType>
+template<typename SpaceType, typename ModelSpaceType, typename ParameterSpaceType>
 class EIMFunctionBase
 {
 public:
@@ -724,6 +743,10 @@ public:
     typedef typename functionspace_type::mesh_type mesh_type;
     typedef typename functionspace_type::mesh_ptrtype mesh_ptrtype;
     typedef typename functionspace_type::value_type value_type;
+
+    typedef ModelSpaceType model_functionspace_type;
+    typedef typename model_functionspace_type::element_type solution_type;
+
     static const uint16_type nDim = mesh_type::nDim;
 
     typedef ParameterSpaceType parameterspace_type;
@@ -732,7 +755,7 @@ public:
     typedef typename parameterspace_type::sampling_ptrtype sampling_ptrtype;
     typedef Eigen::Matrix<double, nDim, 1> node_type;
 
-    typedef EIM<EIMFunctionBase<SpaceType,ParameterSpaceType> > eim_type;
+    typedef EIM<EIMFunctionBase<SpaceType,model_functionspace_type, ParameterSpaceType> > eim_type;
     typedef typename eim_type::vector_type vector_type;
 
     typedef boost::shared_ptr<eim_type> eim_ptrtype;
@@ -786,6 +809,7 @@ public:
         }
     virtual element_type const& q( int m )  const = 0;
     virtual vector_type  beta( parameter_type const& mu ) const = 0;
+    virtual vector_type  beta( parameter_type const& mu, solution_type const& T ) const = 0;
     virtual size_type  mMax() const = 0;
 
     po::variables_map M_vm;
@@ -800,9 +824,9 @@ public:
 
 template<typename ModelType, typename SpaceType, typename ExprType>
 class EIMFunction
-    : public EIMFunctionBase<SpaceType, typename ModelType::parameterspace_type>
+    : public EIMFunctionBase<SpaceType, typename ModelType::functionspace_type, typename ModelType::parameterspace_type>
 {
-    typedef EIMFunctionBase<SpaceType, typename ModelType::parameterspace_type> super;
+    typedef EIMFunctionBase<SpaceType, typename ModelType::functionspace_type, typename ModelType::parameterspace_type> super;
 public:
     typedef ModelType model_type;
     typedef ModelType* model_ptrtype;
@@ -857,6 +881,7 @@ public:
     element_type const& q( int m ) const { return M_eim->q( m ); }
 
     vector_type  beta( parameter_type const& mu ) const { return M_eim->beta( mu ); }
+    vector_type  beta( parameter_type const& mu, solution_type const& T ) const { return M_eim->beta( mu, T ); }
 
     size_type mMax() const { return M_eim->mMax(); }
 
