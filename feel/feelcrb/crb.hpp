@@ -603,6 +603,13 @@ public:
 
 
     /**
+     * return the crb expansion at parameter \p \mu, ie \f$\sum_{i=0}^N u^N_i
+     * \phi_i\f$ where $\phi_i, i=1...N$ are the basis function of the reduced
+     * basis space
+     */
+    element_type expansion( parameter_type const& mu );
+
+    /**
      * run the certified reduced basis with P parameters and returns 1 output
      */
     //boost::tuple<double,double,double> run( parameter_type const& mu, double eps = 1e-6 );
@@ -4571,6 +4578,19 @@ CRB<TruthModelType>::printMuSelection( void )
 }
 
 
+template<typename TruthModelType>
+typename CRB<TruthModelType>::element_type
+CRB<TruthModelType>::expansion( parameter_type const& mu )
+{
+    int Nwn = M_N;
+    std::vector<vectorN_type> uN;
+    std::vector<vectorN_type> uNdu;
+    std::vector<vectorN_type> uNold;
+    std::vector<vectorN_type> uNduold;
+
+    auto o = lb( Nwn, mu, uN, uNdu , uNold, uNduold );
+    return Feel::expansion( M_WN, uN[0] );
+}
 
 template<typename TruthModelType>
 boost::tuple<double,double,double,double>
