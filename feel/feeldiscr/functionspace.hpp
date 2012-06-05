@@ -2782,8 +2782,9 @@ public:
                 // verify number of degree of freedom
                 Debug( 5010 ) << "loading ublas::vector of size " << s << "\n";
 
-                if ( s != this-> size() )
-                    throw std::logic_error( ( boost::format( "load function: invalid number of degrees of freedom, read %1% but has %2%" ) % s % this->size() ).str() );
+                //if ( s != this-> size() )
+                //throw std::logic_error( ( boost::format( "load function: invalid number of degrees of freedom, read %1% but has %2%" ) % s % this->size() ).str() );
+                this->resize( s );
 
                 std::vector<int> order;
                 std::string family;
