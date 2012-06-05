@@ -556,9 +556,9 @@ CRBSCM<TruthModelType>::offline()
     std::vector< std::vector<sparse_matrix_ptrtype> > Matrixq;
 
     if ( M_scm_for_mass_matrix )
-        boost::tie( Matrixq, boost::tuples::ignore, boost::tuples::ignore ) = M_model->computeAffineDecomposition();
+        boost::tie( Matrixq, boost::tuples::ignore, boost::tuples::ignore, boost::tuples::ignore ) = M_model->computeAffineDecomposition();
     else
-        boost::tie( boost::tuples::ignore, Matrixq, boost::tuples::ignore ) = M_model->computeAffineDecomposition();
+        boost::tie( boost::tuples::ignore, Matrixq, boost::tuples::ignore, boost::tuples::ignore ) = M_model->computeAffineDecomposition();
 
 
     while ( relative_error > M_tolerance && K <= M_iter_max )
@@ -577,9 +577,9 @@ CRBSCM<TruthModelType>::offline()
 
         // for a given parameter \p mu assemble the left and right hand side
         if ( M_scm_for_mass_matrix )
-            boost::tie( Matrix, boost::tuples::ignore, F ) = M_model->update( mu );
+            boost::tie( Matrix, boost::tuples::ignore, F, boost::tuples::ignore ) = M_model->update( mu );
         else
-            boost::tie( boost::tuples::ignore, Matrix, F ) = M_model->update( mu );
+            boost::tie( boost::tuples::ignore, Matrix, F, boost::tuples::ignore ) = M_model->update( mu );
 
 
 	std::string mu_str;
@@ -795,9 +795,9 @@ boost::tuple<typename CRBSCM<TruthModelType>::value_type,
     std::vector<vector_ptrtype> F;
 
     if ( M_scm_for_mass_matrix )
-        boost::tie( Matrix, boost::tuples::ignore, F ) = M_model->update( mu );
+        boost::tie( Matrix, boost::tuples::ignore, F, boost::tuples::ignore ) = M_model->update( mu );
     else
-        boost::tie( boost::tuples::ignore, Matrix, F ) = M_model->update( mu );
+        boost::tie( boost::tuples::ignore, Matrix, F, boost::tuples::ignore ) = M_model->update( mu );
 
 
     symmMatrix = M_model->newMatrix();
@@ -931,12 +931,12 @@ CRBSCM<TruthModelType>::lb( parameter_type const& mu ,size_type K ,int indexmu )
         // update the theta_q associated with mup
         if ( M_scm_for_mass_matrix )
         {
-            boost::tie( beta_qm , boost::tuples::ignore , boost::tuples::ignore ) = M_model->computeBetaQm( mup );
+            boost::tie( beta_qm , boost::tuples::ignore , boost::tuples::ignore, boost::tuples::ignore ) = M_model->computeBetaQm( mup );
         }
 
         else
         {
-            boost::tie( boost::tuples::ignore, beta_qm, boost::tuples::ignore ) = M_model->computeBetaQm( mup );
+            boost::tie( boost::tuples::ignore, beta_qm, boost::tuples::ignore, boost::tuples::ignore ) = M_model->computeBetaQm( mup );
 
         }
 
@@ -1015,12 +1015,12 @@ CRBSCM<TruthModelType>::lb( parameter_type const& mu ,size_type K ,int indexmu )
         // update the theta_q associated with mup
         if ( M_scm_for_mass_matrix )
         {
-            boost::tie( beta_qm, boost::tuples::ignore, boost::tuples::ignore ) = M_model->computeBetaQm( mup );
+            boost::tie( beta_qm, boost::tuples::ignore, boost::tuples::ignore, boost::tuples::ignore ) = M_model->computeBetaQm( mup );
         }
 
         else
         {
-            boost::tie( boost::tuples::ignore, beta_qm, boost::tuples::ignore ) = M_model->computeBetaQm( mup );
+            boost::tie( boost::tuples::ignore, beta_qm, boost::tuples::ignore, boost::tuples::ignore ) = M_model->computeBetaQm( mup );
         }
 
         glp_set_row_name( lp, Malpha+m+1, ( boost::format( "xi_c_%1%_%2%" ) % K % m ).str().c_str() );
@@ -1065,11 +1065,11 @@ CRBSCM<TruthModelType>::lb( parameter_type const& mu ,size_type K ,int indexmu )
     // set the structural variables, we have M_model->Qa() of them
     if ( M_scm_for_mass_matrix )
     {
-        boost::tie( beta_qm,boost::tuples::ignore, boost::tuples::ignore ) = M_model->computeBetaQm( mu );
+        boost::tie( beta_qm,boost::tuples::ignore, boost::tuples::ignore, boost::tuples::ignore ) = M_model->computeBetaQm( mu );
     }
     else
     {
-        boost::tie( boost::tuples::ignore, beta_qm, boost::tuples::ignore ) = M_model->computeBetaQm( mu );
+        boost::tie( boost::tuples::ignore, beta_qm, boost::tuples::ignore, boost::tuples::ignore ) = M_model->computeBetaQm( mu );
     }
 
     //nb_columns
@@ -1142,12 +1142,12 @@ CRBSCM<TruthModelType>::ub( parameter_type const& mu ,size_type K ) const
 
     if ( M_scm_for_mass_matrix )
     {
-        boost::tie( beta_qm ,boost::tuples::ignore, boost::tuples::ignore ) = M_model->computeBetaQm( mu );
+        boost::tie( beta_qm ,boost::tuples::ignore, boost::tuples::ignore, boost::tuples::ignore ) = M_model->computeBetaQm( mu );
     }
 
     else
     {
-        boost::tie( boost::tuples::ignore, beta_qm, boost::tuples::ignore ) = M_model->computeBetaQm( mu );
+        boost::tie( boost::tuples::ignore, beta_qm, boost::tuples::ignore, boost::tuples::ignore ) = M_model->computeBetaQm( mu );
     }
 
     //std::cout << "[CRBSCM<TruthModelType>::ub] theta_q = " << theta_q << "\n";

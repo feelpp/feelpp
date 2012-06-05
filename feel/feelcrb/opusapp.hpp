@@ -272,13 +272,19 @@ public:
                 case  CRBModelMode::CRB:
                 {
                     std::cout << "CRB mode\n";
+                    LOG(INFO) << "solve u_fem\n";
+                    google::FlushLogFiles(google::GLOG_INFO);
                     boost::timer ti;
                     auto u_fem = model->solve( mu );
                     std::ostringstream u_fem_str;
                     u_fem_str << "u_fem(" << mu_str.str() << ")";
                     u_fem.setName( u_fem_str.str()  );
+                    LOG(INFO) << "compute output\n";
+                    google::FlushLogFiles(google::GLOG_INFO);
                     std::vector<double> ofem = boost::assign::list_of( model->output( output_index,mu ) )( ti.elapsed() );
                     ti.restart();
+                    LOG(INFO) << "solve crb\n";
+                    google::FlushLogFiles(google::GLOG_INFO);
                     auto o = crb->run( mu,  this->vm()["crb.online-tolerance"].template as<double>() );
                     auto u_crb = crb->expansion( mu );
                     std::ostringstream u_crb_str;
