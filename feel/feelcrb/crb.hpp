@@ -243,8 +243,11 @@ public:
         M_scmM( new scm_type( name+"_m", vm ) ),
         exporter( Exporter<mesh_type>::New( vm, "BasisFunction" ) )
     {
-        if ( this->loadDB() )
-            std::cout << "Database " << this->lookForDB() << " available and loaded\n";
+        // this is too early to load the DB, we don't have the model yet and the
+        //associated function space for the reduced basis function if
+        // do the loadDB() in setTruthModel()
+        //this->loadDB() )
+
 
 
     }
@@ -399,6 +402,10 @@ public:
 
 	if ( ! loadDB() )
 	    M_WNmu = sampling_ptrtype( new sampling_type( M_Dmu ) );
+    else
+    {
+        std::cout << "Database " << this->lookForDB() << " available and loaded\n";
+    }
 
         M_scmA->setTruthModel( M_model );
         M_scmM->setTruthModel( M_model );
@@ -610,6 +617,13 @@ public:
     element_type expansion( parameter_type const& mu );
 
     /**
+     * return the crb expansion at parameter \p \mu, ie \f$\sum_{i=0}^N u^N_i
+     * \phi_i\f$ where $\phi_i, i=1...N$ are the basis function of the reduced
+     * basis space
+     */
+    element_type expansion( vectorN_type const& u ) const;
+
+    /**
      * run the certified reduced basis with P parameters and returns 1 output
      */
     //boost::tuple<double,double,double> run( parameter_type const& mu, double eps = 1e-6 );
@@ -806,6 +820,7 @@ private:
     std::vector < std::vector<matrixN_type> > M_Mqm_pr;
     std::vector < std::vector<matrixN_type> > M_Mqm_du;
     std::vector < std::vector<matrixN_type> > M_Mqm_pr_du;
+    std::vector < std::vector<vectorN_type> > M_MFqm_pr;
 
     // right hand side
     std::vector < std::vector<vectorN_type> > M_Fqm_pr;
@@ -1108,6 +1123,7 @@ CRB<TruthModelType>::offline()
     //std::cout << " -- WN size :  " << M_WNmu->size() << "\n";
 
     sparse_matrix_ptrtype M,A,Adu,At;
+    vector_ptrtype MF;
     std::vector<vector_ptrtype> F,L;
 
     // dimension of reduced basis space
@@ -1116,10 +1132,11 @@ CRB<TruthModelType>::offline()
     LOG(INFO) << "[CRB::offline] compute affine decomposition\n";
     std::vector< std::vector<sparse_matrix_ptrtype> > Aqm;
     std::vector< std::vector<sparse_matrix_ptrtype> > Mqm;
+    std::vector< std::vector<vector_ptrtype> > MFqm;
     std::vector< std::vector<std::vector<vector_ptrtype> > > Fqm,Lqm;
     sparse_matrix_ptrtype Aq_transpose = M_model->newMatrix();
 
-    boost::tie( Mqm, Aqm, Fqm ) = M_model->computeAffineDecomposition();
+    boost::tie( Mqm, Aqm, Fqm, MFqm ) = M_model->computeAffineDecomposition();
 
     // scm offline stage: build C_K
     if ( M_error_type == CRB_RESIDUAL_SCM )
@@ -1160,6 +1177,9 @@ CRB<TruthModelType>::offline()
         M_Mqm_pr_du[q].resize( M_model->mMaxM(q) );
     }
 
+    M_MFqm_pr.resize(2);
+    M_MFqm_pr[0].resize(1);
+    M_MFqm_pr[1].resize(1);
 
     M_Fqm_pr.resize( M_model->Ql( 0 ) );
     M_Fqm_du.resize( M_model->Ql( 0 ) );
@@ -1241,7 +1261,7 @@ CRB<TruthModelType>::offline()
         {
             u->zero();
             udu->zero();
-            boost::tie( M, A, F ) = M_model->update( mu , 1e30 );
+            boost::tie( M, A, F, MF ) = M_model->update( mu , 1e30 );
 
             std::cout << "  -- updated model for parameter in " << timer2.elapsed() << "s\n";
             timer2.restart();
@@ -1334,7 +1354,7 @@ CRB<TruthModelType>::offline()
 
                 auto bdf_poly = M_bdf_primal->polyDeriv();
 
-                boost::tie( M, A, F ) = M_model->update( mu , M_bdf_primal->time() );
+                boost::tie( M, A, F, MF ) = M_model->update( mu , M_bdf_primal->time() );
 
 
                 A->addMatrix( bdf_coeff, M );
@@ -1411,7 +1431,7 @@ CRB<TruthModelType>::offline()
                 //initialization
                 double dt = M_model->timeStep();
 
-                boost::tie( M, A, F ) = M_model->update( mu , M_bdf_dual->timeInitial() );
+                boost::tie( M, A, F, MF ) = M_model->update( mu , M_bdf_dual->timeInitial() );
 
 #if 0
                 A->addMatrix( 1./dt, M );
@@ -1445,7 +1465,7 @@ CRB<TruthModelType>::offline()
 
                     auto bdf_poly = M_bdf_dual->polyDeriv();
 
-                    boost::tie( M, A, F ) = M_model->update( mu , M_bdf_dual->time() );
+                    boost::tie( M, A, F, MF ) = M_model->update( mu , M_bdf_dual->time() );
                     A->addMatrix( bdf_coeff, M );
                     A->transpose( Adu );
                     Rhs->zero();
@@ -1736,6 +1756,19 @@ CRB<TruthModelType>::offline()
             }//loop over m
         }//loop over q
 
+        LOG(INFO) << "[CRB::offline] compute MFqm" << "\n";
+
+        for ( size_type q = 0; q < M_model->Qmf(); ++q )
+        {
+            for( size_type m = 0; m < M_model->mMaxM(q); ++m )
+            {
+                M_MFqm_pr[q][m].conservativeResize( M_N );
+                for ( size_type j = 0; j < M_N; ++j )
+                {
+                    M_MFqm_pr[q][m]( j ) = M_model->MFqm( q, m, M_WN[j] );
+                }
+            }
+        }
         LOG(INFO) << "[CRB::offline] compute Fq_pr, Fq_du" << "\n";
 
         for ( size_type q = 0; q < M_model->Ql( 0 ); ++q )
@@ -2011,6 +2044,7 @@ CRB<TruthModelType>::compareResidualsForTransientProblems( parameter_type const&
     }
 
     sparse_matrix_ptrtype A,AM,M,Adu;
+    vector_ptrtype MF;
     std::vector<vector_ptrtype> F,L;
 
     vector_ptrtype Rhs( M_backend->newVector( M_model->functionSpace() ) );
@@ -2039,7 +2073,7 @@ CRB<TruthModelType>::compareResidualsForTransientProblems( parameter_type const&
 
         auto bdf_poly = M_bdf_primal->polyDeriv();
 
-	boost::tie( M, A, F ) = M_model->update( mu , M_bdf_primal->time() );
+        boost::tie( M, A, F, MF ) = M_model->update( mu , M_bdf_primal->time() );
 
 	A->close();
 
@@ -2102,13 +2136,13 @@ CRB<TruthModelType>::compareResidualsForTransientProblems( parameter_type const&
     //initialization
     time_step = M_bdf_dual->timeStep();
 
-    boost::tie( M, A, F ) = M_model->update( mu , M_bdf_dual->timeInitial() );
+    boost::tie( M, A, F, MF ) = M_model->update( mu , M_bdf_dual->timeInitial() );
 
     for ( M_bdf_dual->start(); !M_bdf_dual->isFinished() ; M_bdf_dual->next() )
     {
         auto bdf_poly = M_bdf_dual->polyDeriv();
 
-	boost::tie( M, A, F ) = M_model->update( mu , M_bdf_dual->time() );
+        boost::tie( M, A, F, MF ) = M_model->update( mu , M_bdf_dual->time() );
 
 	*undu = *Undu[time_index];
 	*unduold = *Unduold[time_index];
@@ -2178,6 +2212,7 @@ CRB<TruthModelType>::checkResidual( parameter_type const& mu, std::vector< std::
     }
 
     sparse_matrix_ptrtype A,At,M;
+    vector_ptrtype MF;
     std::vector<vector_ptrtype> F,L;
 
     backend_ptrtype backendA = backend_type::build( BACKEND_PETSC );
@@ -2190,7 +2225,7 @@ CRB<TruthModelType>::checkResidual( parameter_type const& mu, std::vector< std::
 
     boost::timer timer, timer2;
 
-    boost::tie( boost::tuples::ignore, A, F ) = M_model->update( mu );
+    boost::tie( boost::tuples::ignore, A, F, MF ) = M_model->update( mu );
 
     LOG(INFO) << "  -- updated model for parameter in " << timer2.elapsed() << "s\n";
     timer2.restart();
@@ -2472,6 +2507,7 @@ CRB<TruthModelType>::correctionTerms(parameter_type const& mu, std::vector< vect
 
     beta_vector_type betaAqm;
     beta_vector_type betaMqm;
+    beta_vector_type betaMFqm;
     std::vector<beta_vector_type> betaFqm;
 
 
@@ -2482,7 +2518,7 @@ CRB<TruthModelType>::correctionTerms(parameter_type const& mu, std::vector< vect
         Aprdu.setZero( N , N );
         Fdu.setZero( N );
 
-        boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( mu ,time);
+        boost::tie( betaMqm, betaAqm, betaFqm, betaMFqm ) = M_model->computeBetaQm( mu ,time);
 
         for(size_type q = 0;q < M_model->Ql(0); ++q)
         {
@@ -2517,7 +2553,7 @@ CRB<TruthModelType>::correctionTerms(parameter_type const& mu, std::vector< vect
             time_index = K-k+kp;
             time = time_index*dt;
 
-            boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( mu ,time);
+            boost::tie( betaMqm, betaAqm, betaFqm, betaMFqm ) = M_model->computeBetaQm( mu ,time);
 
             time_index--;
 
@@ -2558,6 +2594,8 @@ template<typename TruthModelType>
 boost::tuple<double,double>
 CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vectorN_type > & uN, std::vector< vectorN_type > & uNdu,  std::vector<vectorN_type> & uNold, std::vector<vectorN_type> & uNduold,int K  ) const
 {
+    LOG(INFO) << "running lb()\n";
+    google::FlushLogFiles(google::GLOG_INFO);
     bool save_output_behavior = this->vm()["crb.save-output-behavior"].template as<bool>();
 
     //if K>0 then the time at which we want to evaluate output is defined by
@@ -2616,6 +2654,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
 
     beta_vector_type betaAqm;
     beta_vector_type betaMqm;
+    beta_vector_type betaMFqm;
     std::vector<beta_vector_type> betaFqm, betaLqm;
 
     matrixN_type A ( ( int )N, ( int )N ) ;
@@ -2645,56 +2684,103 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
     double output;
     int time_index=0;
 
+    // init by 0, the model could provide better init
+    uN[0].setOnes(M_N);
+    uNold[0].setOnes(M_N);
     for ( double time=time_step; time<=time_for_output; time+=time_step )
     {
-
-        boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( mu ,time );
-
+        boost::tie( betaMqm, betaAqm, betaFqm, betaMFqm ) = M_model->computeBetaQm( this->expansion( uN[0] ), mu ,time );
+        LOG(INFO) << "betaMFqm = " << betaMFqm[0][0] << "," << betaMFqm[1][0] << "\n";
+        LOG(INFO) << "betaMqm = " << betaMqm[0][0] << "\n";
+        LOG(INFO) << "Qm = " << M_model->Qm() << "\n";
+        LOG(INFO) << "mMaxM = " << M_model->mMaxM(0) << "\n";
+        google::FlushLogFiles(google::GLOG_INFO);
+        // compute initial guess for fixed point
         A.setZero( N,N );
 
-        for ( size_type q = 0; q < M_model->Qa(); ++q )
-        {
-            for(int m=0; m<M_model->mMaxA(q); m++)
-                A += betaAqm[q][m]*M_Aqm_pr[q][m].block( 0,0,N,N );
-        }
-
-        F.setZero( N );
-
-        for ( size_type q = 0; q < M_model->Ql( 0 ); ++q )
-        {
-            for(int m=0; m<M_model->mMaxF(0,q); m++)
-                F += betaFqm[0][q][m]*M_Fqm_pr[q][m].head( N );
-        }
-
-        for ( size_type q = 0; q < Qm; ++q )
+        for ( size_type q = 0; q < M_model->Qm(); ++q )
         {
             for(int m=0; m<M_model->mMaxM(q); m++)
-            {
-                A += betaMqm[q][m]*M_Mqm_pr[q][m].block( 0,0,N,N )/time_step;
-                F += betaMqm[q][m]*M_Mqm_pr[q][m].block( 0,0,N,N )*uNold[time_index]/time_step;
-            }
+                A += betaMqm[q][m]*M_Mqm_pr[q][m].block( 0,0,N,N );
         }
-
-        uN[time_index] = A.lu().solve( F );
-
-        if ( time_index<model_K-1 )
+        LOG(INFO) << "Mass=" << A << "\n";
+        google::FlushLogFiles(google::GLOG_INFO);
+        F.setZero( N );
+        for ( size_type q = 0; q < 2; ++q )
         {
-            uNold[time_index+1] = uN[time_index];
+            F += betaMFqm[q][0]*M_MFqm_pr[q][0].head( N );
         }
+        LOG(INFO) << "F=" << F << "\n";
+        google::FlushLogFiles(google::GLOG_INFO);
+        uN[0] = A.lu().solve( F );
 
-        L.setZero( N );
-
-        for ( size_type q = 0; q < M_model->Ql( M_output_index ); ++q )
+        LOG(INFO) << "lb: start fix point\n";
+        google::FlushLogFiles(google::GLOG_INFO);
+        for(int fi = 0;fi < 10; ++fi )
         {
-            for(int m=0; m < M_model->mMaxF(M_output_index,q); m++)
+            LOG(INFO) << "compute eim expansions\n";
+            google::FlushLogFiles(google::GLOG_INFO);
+            boost::tie( betaMqm, betaAqm, betaFqm, betaMFqm ) = M_model->computeBetaQm( this->expansion( uN[0] ), mu ,time );
+
+            LOG(INFO) << "compute reduce matrices\n";
+            google::FlushLogFiles(google::GLOG_INFO);
+            A.setZero( N,N );
+
+            for ( size_type q = 0; q < M_model->Qa(); ++q )
             {
-                L += betaFqm[M_output_index][q][m]*M_Lqm_pr[q][m].head( N );
+                for(int m=0; m<M_model->mMaxA(q); m++)
+                    A += betaAqm[q][m]*M_Aqm_pr[q][m].block( 0,0,N,N );
             }
+
+            F.setZero( N );
+
+            for ( size_type q = 0; q < M_model->Ql( 0 ); ++q )
+            {
+                for(int m=0; m<M_model->mMaxF(0,q); m++)
+                    F += betaFqm[0][q][m]*M_Fqm_pr[q][m].head( N );
+            }
+
+            for ( size_type q = 0; q < Qm; ++q )
+            {
+                for(int m=0; m<M_model->mMaxM(q); m++)
+                {
+                    A += betaMqm[q][m]*M_Mqm_pr[q][m].block( 0,0,N,N )/time_step;
+                    F += betaMqm[q][m]*M_Mqm_pr[q][m].block( 0,0,N,N )*uNold[time_index]/time_step;
+                }
+            }
+            LOG(INFO) << "solve reduced model\n";
+            google::FlushLogFiles(google::GLOG_INFO);
+            // backup uN
+            uNold[0] = uN[0];
+
+            // solve for new fix point iteration
+            uN[0] = A.lu().solve( F );
+
+            LOG(INFO) << "uold = " << uNold[0] << "\n";
+            LOG(INFO) << "u = " << uN[0] << "\n";
+
+            if ( time_index<model_K-1 )
+            {
+                uNold[time_index+1] = uN[time_index];
+            }
+
+            L.setZero( N );
+
+            for ( size_type q = 0; q < M_model->Ql( M_output_index ); ++q )
+            {
+                for(int m=0; m < M_model->mMaxF(M_output_index,q); m++)
+                {
+                    L += betaFqm[M_output_index][q][m]*M_Lqm_pr[q][m].head( N );
+                }
+            }
+
+            output = L.dot( uN[time_index] );
+            output_time_vector.push_back( output );
+
+            LOG(INFO) << "iteration " << fi << " increment error: " << (uN[0]-uNold[0]).norm() << "\n";
+            google::FlushLogFiles(google::GLOG_INFO);
         }
-
-        output = L.dot( uN[time_index] );
-        output_time_vector.push_back( output );
-
+        //while ( (uN[0]-uNold[0]).norm() > 1e-10 );
         time_index++;
     }
 
@@ -2737,7 +2823,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
         {
             time = 1e30;
 
-            boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( mu ,time );
+            boost::tie( betaMqm, betaAqm, betaFqm, betaMFqm ) = M_model->computeBetaQm( mu ,time );
             Adu.setZero( N,N );
             Ldu.setZero( N );
 
@@ -2764,7 +2850,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
 #if 0
             double initial_dual_time = time_for_output+time_step;
             //std::cout<<"initial_dual_time = "<<initial_dual_time<<std::endl;
-            boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( mu ,initial_dual_time );
+            boost::tie( betaMqm, betaAqm, betaFqm, betaMFqm ) = M_model->computeBetaQm( mu ,initial_dual_time );
             Mdu.setZero( N,N );
 
             for ( size_type q = 0; q < M_model->Qm(); ++q )
@@ -2794,7 +2880,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
             for ( time=time_for_output; time>=time_step; time-=time_step )
             {
 
-                boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( mu ,time );
+                boost::tie( betaMqm, betaAqm, betaFqm, betaMFqm ) = M_model->computeBetaQm( mu ,time );
 
                 Adu.setZero( N,N );
 
@@ -2831,12 +2917,12 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
 
         time_index=0;
 
-	for ( double time=time_step; time<=time_for_output; time+=time_step )
-	{
-	    int k = time_index+1;
-	    output_time_vector[time_index]+=correctionTerms(mu, uN , uNdu, uNold, k );
-	    time_index++;
-	}
+        for ( double time=time_step; time<=time_for_output; time+=time_step )
+        {
+            int k = time_index+1;
+            output_time_vector[time_index]+=correctionTerms(mu, uN , uNdu, uNold, k );
+            time_index++;
+        }
 
 
     }//end of if ( solve_dual_problem || M_error_type == CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM )
@@ -3294,9 +3380,10 @@ CRB<TruthModelType>::initialDualResidual( int Ncur, parameter_type const& mu, ve
 {
     beta_vector_type betaAqm;
     beta_vector_type betaMqm;
+    beta_vector_type betaMFqm;
     std::vector<beta_vector_type> betaFqm;
     double time = M_model->timeFinal();
-    boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( mu, time );
+    boost::tie( betaMqm, betaAqm, betaFqm, betaMFqm ) = M_model->computeBetaQm( mu, time );
 
     int __QLhs = M_model->Qa();
     int __QOutput = M_model->Ql( M_output_index );
@@ -3424,8 +3511,9 @@ CRB<TruthModelType>::transientPrimalResidual( int Ncur,parameter_type const& mu,
 
     beta_vector_type betaAqm;
     beta_vector_type betaMqm;
+    beta_vector_type betaMFqm;
     std::vector<beta_vector_type> betaFqm, betaLqm;
-    boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( mu, time );
+    boost::tie( betaMqm, betaAqm, betaFqm, betaMFqm ) = M_model->computeBetaQm( mu, time );
 
     size_type __QLhs = M_model->Qa();
     size_type __QRhs = M_model->Ql( 0 );
@@ -3528,7 +3616,7 @@ CRB<TruthModelType>::steadyPrimalResidual( int Ncur,parameter_type const& mu, ve
 
     beta_vector_type betaAqm;
     std::vector<beta_vector_type> betaFqm, betaLqm;
-    boost::tie( boost::tuples::ignore, betaAqm, betaFqm ) = M_model->computeBetaQm( mu , time );
+    boost::tie( boost::tuples::ignore, betaAqm, betaFqm, boost::tuples::ignore ) = M_model->computeBetaQm( mu , time );
 
 
     int __QLhs = M_model->Qa();
@@ -3623,8 +3711,9 @@ CRB<TruthModelType>::transientDualResidual( int Ncur,parameter_type const& mu,  
 
     beta_vector_type betaAqm;
     beta_vector_type betaMqm;
+    beta_vector_type betaMFqm;
     std::vector<beta_vector_type> betaFqm;
-    boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( mu, time );
+    boost::tie( betaMqm, betaAqm, betaFqm, betaMFqm ) = M_model->computeBetaQm( mu, time );
 
 
     residual_error_type steady_residual_contribution = steadyDualResidual( Ncur, mu, Undu, time );
@@ -3728,8 +3817,9 @@ CRB<TruthModelType>::steadyDualResidual( int Ncur,parameter_type const& mu, vect
 
     beta_vector_type betaAqm;
     beta_vector_type betaMqm;
+    beta_vector_type betaMFqm;
     std::vector<beta_vector_type> betaFqm, betaLqm;
-    boost::tie( boost::tuples::ignore, betaAqm, betaFqm ) = M_model->computeBetaQm( mu , time );
+    boost::tie( boost::tuples::ignore, betaAqm, betaFqm, betaMFqm ) = M_model->computeBetaQm( mu , time );
 
     value_type __c0_du = 0.0;
 
@@ -4185,8 +4275,9 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<false> , int number_o
     namespace ublas = boost::numeric::ublas;
 
     std::vector< std::vector<sparse_matrix_ptrtype> > Aqm,Mqm;
+    std::vector< std::vector<vector_ptrtype> > MFqm;
     std::vector< std::vector<std::vector<vector_ptrtype> > > Fqm,Lqm;
-    boost::tie( Mqm, Aqm, Fqm ) = M_model->computeAffineDecomposition();
+    boost::tie( Mqm, Aqm, Fqm, MFqm ) = M_model->computeAffineDecomposition();
     __X->zero();
     __X->add( 1.0 );
     //std::cout << "measure of domain= " << M_model->scalarProduct( __X, __X ) << "\n";
@@ -4242,7 +4333,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<false> , int number_o
     //std::cout << "[offlineResidual] mu=" << mu << "\n";
     beta_vector_type betaAqm;
     std::vector<beta_vector_type> betaFqm;
-    boost::tie( boost::tuples::ignore, betaAqm, betaFqm ) = M_model->computeBetaQm( mu );
+    boost::tie( boost::tuples::ignore, betaAqm, betaFqm, boost::tuples::ignore ) = M_model->computeBetaQm( mu );
     value_type __c0_pr = 0.0;
 
     for ( int __q1 = 0; __q1 < __QRhs; ++__q1 )
@@ -4593,6 +4684,20 @@ CRB<TruthModelType>::expansion( parameter_type const& mu )
 }
 
 template<typename TruthModelType>
+typename CRB<TruthModelType>::element_type
+CRB<TruthModelType>::expansion( vectorN_type const& u ) const
+{
+    FEELPP_ASSERT( M_WN.size() == u.size() )( M_WN.size() )( u.size() ).error( "invalid expansion size");
+    LOG(INFO) << "compute expansions\n";
+    google::FlushLogFiles(google::GLOG_INFO);
+    LOG(INFO) << "u=" << u << "\n";
+    google::FlushLogFiles(google::GLOG_INFO);
+    LOG(INFO) << "WN=" << M_WN.size() << "\n";
+    google::FlushLogFiles(google::GLOG_INFO);
+    return Feel::expansion( M_WN, u );
+}
+
+template<typename TruthModelType>
 boost::tuple<double,double,double,double>
 CRB<TruthModelType>::run( parameter_type const& mu, double eps )
 {
@@ -4937,8 +5042,8 @@ CRB<TruthModelType>::save( Archive & ar, const unsigned int version ) const
     }
     if( version >= 2 )
         ar & BOOST_SERIALIZATION_NVP( M_variance_matrix_phi );
-    //if( version >= 3 )
-    //    ar & BOOST_SERIALIZATION_NVP( M_WN );
+    if( version >= 3 )
+        ar & BOOST_SERIALIZATION_NVP( M_WN );
 }
 
 template<typename TruthModelType>
@@ -5012,8 +5117,24 @@ CRB<TruthModelType>::load( Archive & ar, const unsigned int version )
     }
     if( version >= 2 )
         ar & BOOST_SERIALIZATION_NVP( M_variance_matrix_phi );
-    //if( version >= 3 )
-    //    ar & BOOST_SERIALIZATION_NVP( M_WN );
+    if( version >= 3 )
+    {
+        LOG(INFO) << "loading basis functions: " << M_N << "\n";
+        google::FlushLogFiles(google::GLOG_INFO);
+        auto u = M_model->functionSpace()->element();
+        LOG(INFO) << "finite element space: " << u.size() << "\n";
+        google::FlushLogFiles(google::GLOG_INFO);
+        google::FlushLogFiles(google::GLOG_INFO);
+//        for( int i = 0; i < M_N; ++i ) M_WN.push_back( u );
+        LOG(INFO) << "basis vector init done: " << M_WN.size() << "\n";
+        google::FlushLogFiles(google::GLOG_INFO);
+        ar & BOOST_SERIALIZATION_NVP( M_WN );
+        LOG(INFO) << "basis vector load done: " << M_WN.size() << "\n";
+        google::FlushLogFiles(google::GLOG_INFO);
+        for( int i = 0; i < M_N; ++i ) M_WN[i].setFunctionSpace( M_model->functionSpace() );
+        LOG(INFO) << "basis vector set function space done:\n";
+        google::FlushLogFiles(google::GLOG_INFO);
+    }
 
 #if 0
     std::cout << "[loadDB] output index : " << M_output_index << "\n"

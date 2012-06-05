@@ -506,7 +506,7 @@ EIM<ModelType>::beta( parameter_type const& mu, solution_type const& T, size_typ
     vector_type __beta( __M );
     for ( size_type __m = 0;__m < __M;++__m )
     {
-        __beta[__m] = T( this->M_t[__m], mu );
+        __beta[__m] = M_model->operator()( T, this->M_t[__m], mu );
     }
     this->M_B.block(0,0,__M,__M).template triangularView<Eigen::UnitLower>().solveInPlace(__beta);
     return __beta;
@@ -798,6 +798,7 @@ public:
     mesh_ptrtype mesh()  { return M_fspace->mesh(); }
 
     virtual element_type operator()( parameter_type const& ) = 0;
+    virtual element_type operator()( solution_type const& T, parameter_type const& ) = 0;
     virtual element_type interpolant( parameter_type const& ) = 0;
     value_type operator()( node_type const& x, parameter_type const& mu )
         {
@@ -807,6 +808,15 @@ public:
             LOG(INFO) << "EIMFunctionBase::operator() v(x)=" << res << "\n";
             return res;
         }
+    value_type operator()( solution_type const& T, node_type const& x, parameter_type const& mu )
+        {
+            LOG(INFO) << "calling EIMFunctionBase::operator()( x=" << x << ", mu=" << mu << ")\n";
+            element_type v = this->operator()( T, mu );
+            value_type res = v(x)(0,0,0);
+            LOG(INFO) << "EIMFunctionBase::operator() v(x)=" << res << "\n";
+            return res;
+        }
+
     virtual element_type const& q( int m )  const = 0;
     virtual vector_type  beta( parameter_type const& mu ) const = 0;
     virtual vector_type  beta( parameter_type const& mu, solution_type const& T ) const = 0;
@@ -872,6 +882,15 @@ public:
             M_mu = mu;
             M_u = M_model->solve( mu );
             //LOG(INFO) << "operator() mu=" << mu << "\n" << "sol=" << M_u << "\n";
+            return vf::project( _space=this->functionSpace(), _expr=M_expr );
+        }
+    element_type operator()( solution_type const& T, parameter_type const&  mu )
+        {
+            M_mu = mu;
+            // no need to solve we have already an approximation (typically from
+            // an nonlinear iteration procedure)
+            M_u = T;
+            LOG(INFO) << "M_u = " << M_u << "\n";
             return vf::project( _space=this->functionSpace(), _expr=M_expr );
         }
 
