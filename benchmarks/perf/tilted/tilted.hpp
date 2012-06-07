@@ -210,9 +210,8 @@ Tilted<Dim, BasisU, Entity>::run()
     double alpha=(3./pi)*math::atan(math::sqrt(1.+2./kappa));
     double beta=math::cos(alpha*pi/3.)/math::cos(2*alpha*pi/3.);
 
-    auto center = vec(cst(0.5),cst(0.5));
-    auto r = sqrt(trans(P()-center)*(P()-center));
-    auto theta1=acos( (Px()-center)/r );
+    auto r = sqrt((Px()-0.5)*(Px()-0.5)+(Py()-0.5)*(Py()-0.5));
+    auto theta1=acos( (Px()-0.5)/r );
     auto theta =
         chi((Py()-0.5)>=0.)*theta1 +
         chi((Py()-0.5)<0)*(2*pi-theta1);
@@ -241,7 +240,7 @@ Tilted<Dim, BasisU, Entity>::run()
 
     if ( this->vm()[ "bctype" ].template as<int>() == 1  )
     {
-        form1( Xh, F ) += integrate( _range=boundaryfaces( mesh ), _expr=-trans( u_exact )*dn( u ) );
+        form1( Xh, F ) += integrate( _range=boundaryfaces( mesh ), _expr=-u_exact*dn( u ) );
         M_stats.put( "t.assembly.vector.dirichlet1",subt.elapsed() );
         subt.restart();
         form1( Xh, F ) += integrate( _range=boundaryfaces( mesh ), _expr=penalbc*inner( u_exact,id( v ) )/hFace() );
