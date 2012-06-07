@@ -61,6 +61,7 @@ endforeach()
 feelpp_add_application( perf_tilted_1 SRCS bench.cpp ${lagrange}
   MESH tilted1.msh tilted2.msh tilted3.msh tilted4.msh tilted5.msh
   CFG tilted.cfg LINK_LIBRARIES ${FEELPP_LIBRARIES} DEFS FEELPP_SOLUTION_1 DEPS gen_feel_perf_tilted)
-#feelpp_add_application( perf_tilted_2 SRCS bench.cpp ${lagrange} CFG tilted.cfg LINK_LIBRARIES ${FEELPP_LIBRARIES} DEFS FEELPP_SOLUTION_2 DEPS gen_feel_perf_tilted)
+feelpp_add_application( perf_tilted_2 SRCS bench.cpp ${lagrange} CFG tilted.cfg LINK_LIBRARIES ${FEELPP_LIBRARIES} DEFS FEELPP_SOLUTION_2 DEPS gen_feel_perf_tilted)
+feelpp_add_application( perf_tilted_3 SRCS bench.cpp ${lagrange} CFG tilted.cfg LINK_LIBRARIES ${FEELPP_LIBRARIES} DEFS FEELPP_SOLUTION_3 DEPS gen_feel_perf_tilted)
 
 
