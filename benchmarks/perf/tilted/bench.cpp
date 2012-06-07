@@ -44,19 +44,20 @@ makeOptions()
 {
     Feel::po::options_description tiltedoptions( "Tilted options" );
     tiltedoptions.add_options()
-    ( "faster", Feel::po::value<int>()->default_value( 1 ), "use coupled(0) or default(1) pattern or default/symmetric(2) pattern" )
-    ( "penal", Feel::po::value<double>()->default_value( 0.5 ), "penalisation parameter" )
-    ( "f", Feel::po::value<double>()->default_value( 0 ), "forcing term" )
-    ( "mu", Feel::po::value<double>()->default_value( 1.0/40 ), "reaction coefficient component" )
-    ( "bctype", Feel::po::value<int>()->default_value( 0 ), "0 = strong Dirichlet, 1 = weak Dirichlet" )
-    ( "bccoeff", Feel::po::value<double>()->default_value( 400.0 ), "coeff for weak Dirichlet conditions" )
-    ( "beta", Feel::po::value<double>()->default_value( 0.0 ), "convection coefficient" )
-    ( "shear", Feel::po::value<double>()->default_value( 0.0 ), "shear coeff" )
-    ( "recombine", Feel::po::value<bool>()->default_value( false ), "recombine triangle into quads" )
-    ( "export-matlab", "export matrix and vectors in matlab" )
-    ( "no-solve", "dont solve the system" )
-    ( "extra-terms", "dont solve the system" )
-    ;
+        ( "faster", Feel::po::value<int>()->default_value( 1 ), "use coupled(0) or default(1) pattern or default/symmetric(2) pattern" )
+        ( "penal", Feel::po::value<double>()->default_value( 0.5 ), "penalisation parameter" )
+        ( "f", Feel::po::value<double>()->default_value( 0 ), "forcing term" )
+        ( "mu", Feel::po::value<double>()->default_value( 1.0/40 ), "reaction coefficient component" )
+        ( "bctype", Feel::po::value<int>()->default_value( 0 ), "0 = strong Dirichlet, 1 = weak Dirichlet" )
+        ( "bccoeff", Feel::po::value<double>()->default_value( 400.0 ), "coeff for weak Dirichlet conditions" )
+        ( "beta", Feel::po::value<double>()->default_value( 0.0 ), "convection coefficient" )
+        ( "kappa", Feel::po::value<double>()->default_value( 0.1 ), "kappa" )
+        ( "shear", Feel::po::value<double>()->default_value( 0.0 ), "shear coeff" )
+        ( "recombine", Feel::po::value<bool>()->default_value( false ), "recombine triangle into quads" )
+        ( "export-matlab", "export matrix and vectors in matlab" )
+        ( "no-solve", "dont solve the system" )
+        ( "extra-terms", "dont solve the system" )
+        ;
     return tiltedoptions.add( Feel::feel_options() )
            .add( Feel::benchmark_options( "2D-CR1-Hypercube" ) ).add( Feel::benchmark_options( "2D-P1-Hypercube" ) ).add( Feel::benchmark_options( "2D-P2-Hypercube" ) );
 }
