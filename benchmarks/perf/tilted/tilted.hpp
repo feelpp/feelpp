@@ -205,9 +205,10 @@ Tilted<Dim, BasisU, Entity>::run()
     double penalbc = this->vm()["bccoeff"].template as<value_type>();
     double mu = this->vm()["mu"].template as<value_type>();
 
-#if defined(FEELPP_SOLUTION_1)
     double kappa = this->vm()["kappa"].template as<value_type>();
     double pi = boost::math::constants::pi<double>();
+
+#if defined(FEELPP_SOLUTION_1)
     double alpha=(3./pi)*math::atan(math::sqrt(1.+2./kappa));
     double beta=math::cos(alpha*pi/3.)/math::cos(2*alpha*pi/3.);
 
@@ -227,7 +228,45 @@ Tilted<Dim, BasisU, Entity>::run()
         chi(2.*pi/3.<=theta && theta<=2.*pi)* cst(1.0); // k2
 #endif
 #if defined(FEELPP_SOLUTION_2)
-    // solution 2 here!
+    double alpha=(3./pi)*math::atan(math::sqrt(1.+2.*kappa));
+    double beta=1./(2.*math::cos(alpha*pi/3.));
+
+    auto r = sqrt((Px()-0.5)*(Px()-0.5)+(Py()-0.5)*(Py()-0.5));
+    auto theta1=acos( (Px()-0.5)/r );
+    auto theta =
+        chi((Py()-0.5)>=0.)*theta1 +
+        chi((Py()-0.5)<0)*(2*pi-theta1);
+
+    auto ralpha=pow(r,alpha);
+    auto u_exact =
+        chi(0<=theta && theta<2.*pi/3.)*ralpha*sin(alpha*(theta-pi/3.)) +
+        chi(2.*pi/3.<=theta && theta<=2.*pi)*ralpha*beta*sin(alpha*(4.*pi/3.-theta));
+    auto f = cst(0.);
+    auto k =
+        chi(0<=theta && theta<2.*pi/3.)*cst(kappa) + // k1
+        chi(2.*pi/3.<=theta && theta<=2.*pi)* cst(1.0); // k2
+
+#endif
+
+#if defined(FEELPP_SOLUTION_3)
+    double alpha=(6./pi)*math::atan(1./math::sqrt(1.+2.*kappa));
+    double beta=cos(alpha*pi*/3.)*(math::sin(alpha*pi/6.));
+
+    auto r = sqrt((Px()-0.5)*(Px()-0.5)+(Py()-0.5)*(Py()-0.5));
+    auto theta1=acos( (Px()-0.5)/r );
+    auto theta =
+        chi((Py()-0.5)>=0.)*theta1 +
+        chi((Py()-0.5)<0)*(2*pi-theta1);
+
+    auto ralpha=pow(r,alpha);
+    auto u_exact =
+        chi(0<=theta && theta<2.*pi/3.)*ralpha*cos(alpha*(theta-pi/3.)) +
+        chi(2.*pi/3.<=theta && theta<=2.*pi)*ralpha*beta*sin(alpha*(5.*pi/6.-theta));
+    auto f = cst(0.);
+    auto k =
+        chi(0<=theta && theta<2.*pi/3.)*cst(kappa) + // k1
+        chi(2.*pi/3.<=theta && theta<=2.*pi)* cst(1.0); // k2
+
 #endif
 
 
