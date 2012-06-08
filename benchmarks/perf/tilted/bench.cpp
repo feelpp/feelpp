@@ -112,7 +112,7 @@ int main( int argc, char** argv )
 
     benchmark.add( new Tilted<2, Lagrange<1, Scalar>, Hypercube>( "2D-P1-Hypercube", benchmark.vm(), benchmark.about() ) );
     benchmark.add( new Tilted<2, Lagrange<2, Scalar>, Hypercube>( "2D-P2-Hypercube", benchmark.vm(), benchmark.about() ) );
-    benchmark.add( new Tilted<2, Lagrange<2, Scalar>, Hypercube>( "2D-P3-Hypercube", benchmark.vm(), benchmark.about() ) );
+    benchmark.add( new Tilted<2, Lagrange<3, Scalar>, Hypercube>( "2D-P3-Hypercube", benchmark.vm(), benchmark.about() ) );
     benchmark.add( new Tilted<2, CrouzeixRaviart<1, Scalar>, Hypercube>( "2D-CR1-Hypercube", benchmark.vm(), benchmark.about() ) );
     benchmark.run();
 
