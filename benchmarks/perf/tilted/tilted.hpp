@@ -219,10 +219,9 @@ Tilted<Dim, BasisU, Entity>::run()
     double mu = this->vm()["mu"].template as<value_type>();
 
     double kappa = this->vm()["kappa"].template as<value_type>();
-    double pi = boost::math::constants::pi<double>();
+    double pi = constants::pi<double>();
 
 #if defined(FEELPP_SOLUTION_1)
-#if 1
     double alpha=(3./pi)*math::atan(math::sqrt(1.+2./kappa));
     double beta=math::cos(alpha*pi/3.)/math::cos(2*alpha*pi/3.);
 
@@ -240,11 +239,15 @@ Tilted<Dim, BasisU, Entity>::run()
     auto k =
         chi(0<=theta && theta<2.*pi/3.)*cst(kappa) + // k1
         chi(2.*pi/3.<=theta && theta<=2.*pi)* cst(1.0); // k2
-#else
-    auto u_exact=sin(pi*Px())*cos(pi*Py());
-    auto f = 2*pi*pi*u_exact;
-    auto k = cst(1.0);
-#endif
+
+    auto ralphamo = pow(r,alpha-1);
+    auto u_r=trans(vec((Px()-0.5)/r,(Py()-0.5)/r));
+    auto u_theta=trans(vec(-(Py()-0.5)/r,(Px()-0.5)/r));
+    auto grad_u_exact =
+        chi(0<=theta && theta<2.*pi/3.)*alpha*ralphamo*(-sin(alpha*(theta-pi/3))*u_theta
+                                                        +cos(alpha*(theta-pi/3))*u_r)+
+        chi(2.*pi/3.<=theta && theta<=2.*pi)*alpha*ralphamo*beta*(sin(alpha*(4*pi/3-theta))*u_theta
+                                                                  +cos(alpha*(4*pi/3-theta))*u_r);
 #endif
 #if defined(FEELPP_SOLUTION_2)
     double alpha=(3./pi)*math::atan(math::sqrt(1.+2.*kappa));
@@ -265,6 +268,14 @@ Tilted<Dim, BasisU, Entity>::run()
         chi(0<=theta && theta<2.*pi/3.)*cst(kappa) + // k1
         chi(2.*pi/3.<=theta && theta<=2.*pi)* cst(1.0); // k2
 
+    auto ralphamo = pow(r,alpha-1);
+    auto u_r=trans(vec((Px()-0.5)/r,(Py()-0.5)/r));
+    auto u_theta=trans(vec(-(Py()-0.5)/r,(Px()-0.5)/r));
+    auto grad_u_exact =
+        chi(0<=theta && theta<2.*pi/3.)*alpha*ralphamo*(cos(alpha*(theta-pi/3))*u_theta
+                                                        +sin(alpha*(theta-pi/3))*u_r)+
+        chi(2.*pi/3.<=theta && theta<=2.*pi)*alpha*ralphamo*beta*(-cos(alpha*(4*pi/3-theta))*u_theta
+                                                                  +sin(alpha*(4*pi/3-theta))*u_r);
 #endif
 
 #if defined(FEELPP_SOLUTION_3)
@@ -447,17 +458,17 @@ Tilted<Dim, BasisU, Entity>::run()
     Log() << "||u_error||_2 = " << math::sqrt( u_errorL2 ) << "\n";;
     M_stats.put( "e.l2.u",math::sqrt( u_errorL2 ) );
 
-#if 0
     double u_errorsemiH1 = integrate( _range=elements( mesh ),
-                                      _expr=trace( ( gradv( u )-grad_exact )*trans( gradv( u )-grad_exact ) ) ).evaluate()( 0, 0 );
+                                      _expr=( gradv( u )-grad_u_exact )*trans( gradv( u )-grad_u_exact ), _quad=_Q<10>() ).evaluate()( 0, 0 );
     double u_exactsemiH1 = integrate( _range=elements( mesh ),
-                                      _expr=trace( ( grad_exact )*trans( grad_exact ) ) ).evaluate()( 0, 0 );
-    double u_error_H1 = math::sqrt( ( u_errorL2+u_errorsemiH1 )/( u_exactL2+u_exactsemiH1 ) );
+                                      _expr=( grad_u_exact )*trans( grad_u_exact ), _quad=_Q<10>() ).evaluate()( 0, 0 );
+    //double u_error_H1 = math::sqrt( ( u_errorL2+u_errorsemiH1 )/( u_exactL2+u_exactsemiH1 ) );
+    double u_error_H1 = math::sqrt( ( u_errorL2+u_errorsemiH1 ));
     M_stats.put( "t.integrate.h1norm",t.elapsed() );
     t.restart();
     std::cout << "||u_error||_1= " << u_error_H1 << "\n";
     M_stats.put( "e.h1.u",u_error_H1 );
-#endif
+
     M_stats.put( "t.export.projection",t.elapsed() );
     t.restart();
     this->exportResults( u, v, ke, vbdy );
