@@ -43,7 +43,6 @@
 #include <boost/serialization/base_object.hpp>
 
 #include <Eigen/Core>
-#include <glpk.h>
 
 namespace Feel
 {
