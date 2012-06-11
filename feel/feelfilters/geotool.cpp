@@ -564,10 +564,10 @@ GeoGMSHTool::geoStr()
 
         for ( ; surfaceLoop2_it!=surfaceLoop2_en ; ++surfaceLoop2_it )
         {
-            std::cout << "\n SurfaceLoop shape : " << surfaceLoop2_it->get<0>()
+            /*std::cout << "\n SurfaceLoop shape : " << surfaceLoop2_it->get<0>()
                       << " name " << surfaceLoop2_it->get<1>()
                       << " size " << surfaceLoop2_it->get<2>().size()
-                      << std::endl;
+                      << std::endl;*/
 
             auto surfaceLoop3_it =surfaceLoop2_it->get<2>().begin();
             auto surfaceLoop3_en =surfaceLoop2_it->get<2>().end();
