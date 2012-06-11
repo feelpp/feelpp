@@ -124,6 +124,25 @@ GeoGMSHTool::opFusion( const GeoGMSHTool & m,int __typeOp )
         }
     }
 
+
+    // Add surfaceLoop
+    if (this->dim()==3)
+        {
+            __geoTool._M_surfaceLoopList.reset( new surfaceloop_name_type( *( this->_M_surfaceLoopList ) ) );
+            surfaceloop_name_const_iterator_type itSurfLoop = m._M_surfaceLoopList->begin();
+            surfaceloop_name_const_iterator_type itSurfLoop_end = m._M_surfaceLoopList->end();
+            for ( ; itSurfLoop != itSurfLoop_end; ++itSurfLoop )
+                {
+                    surfaceloop_type_const_iterator_type itSurfLoop2 = itSurfLoop->begin();
+                    surfaceloop_type_const_iterator_type itSurfLoop2_end = itSurfLoop->end();
+
+                    for ( ; itSurfLoop2 != itSurfLoop2_end; ++itSurfLoop2 )
+                        {
+                            __geoTool._M_surfaceLoopList->begin()->push_back( *itSurfLoop2 );
+                        }
+                }
+        }
+
     //Add Volume for operator + : (((rect,u1,_)))+(((circ,u2,_))) -> (((rect,u1,_)),((circ,u2,_)))
     if ( __typeOp==1 && this->dim()==3 )
     {
@@ -149,6 +168,7 @@ GeoGMSHTool::opFusion( const GeoGMSHTool & m,int __typeOp )
     // Add Volume for operator - : (((rect,u1,_)))-(((circ,u2,_))) -> (((rect,u1,_),(circ,u2,_)))
     else if ( __typeOp==2 && this->dim()==3 )
     {
+
         __geoTool._M_volumeList.reset( new volume_name_type( *( this->_M_volumeList ) ) );
         volume_name_const_iterator_type itVol = m._M_volumeList->begin();
         volume_name_const_iterator_type itVol_end = m._M_volumeList->end();
@@ -544,10 +564,10 @@ GeoGMSHTool::geoStr()
 
         for ( ; surfaceLoop2_it!=surfaceLoop2_en ; ++surfaceLoop2_it )
         {
-            /*std::cout << "\n SurfaceLoop shape : " << surfaceLoop2_it->get<0>()
+            std::cout << "\n SurfaceLoop shape : " << surfaceLoop2_it->get<0>()
                       << " name " << surfaceLoop2_it->get<1>()
                       << " size " << surfaceLoop2_it->get<2>().size()
-                      << std::endl;*/
+                      << std::endl;
 
             auto surfaceLoop3_it =surfaceLoop2_it->get<2>().begin();
             auto surfaceLoop3_en =surfaceLoop2_it->get<2>().end();
@@ -563,11 +583,12 @@ GeoGMSHTool::geoStr()
                 for ( ; surfaceLoop4_it!=surfaceLoop4_en ; ++surfaceLoop4_it )
                 {
                     //std::cout << "\n HOLA " << *surfaceLoop4_it << std::endl;
-                    __ostrSurfaceLoop << *surfaceLoop4_it << ",";
+                    //__ostrSurfaceLoop << *surfaceLoop4_it << ",";
+                    __ostrSurfaceLoop << __dataSurfacePost[surfaceLoop2_it->get<0>()][surfaceLoop2_it->get<1>()][ mapSurfaceRenumbering[*surfaceLoop4_it] ] << ",";
                 }
 
-                __ostrSurfaceLoop << *surfaceLoop4_it <<"};\n";
-
+                //__ostrSurfaceLoop << *surfaceLoop4_it <<"};\n";
+                __ostrSurfaceLoop << __dataSurfacePost[surfaceLoop2_it->get<0>()][surfaceLoop2_it->get<1>()][ mapSurfaceRenumbering[*surfaceLoop4_it] ] <<"};\n";
                 ++__nSurfaceLoop;
 
             } // surfaceLoop
