@@ -474,9 +474,9 @@ GeoGMSHTool::geoStr()
     surface_name_const_iterator_type itSurf_end = this->_M_surfaceList->end();
     std::ostringstream __surface_str;
     //counter of surface
-    uint __surfnumber=1;//referencier une liste des surf dans les writePlaneSurface
-    std::map<std::string,std::map<std::string, std::map<uint,uint> > > __dataSurfacePost;
-    std::map<std::string,std::map<std::string, uint> > __dataSurfacePostCpt;
+    uint16_type __surfnumber=1;//referencier une liste des surf dans les writePlaneSurface
+    std::map<std::string,std::map<std::string, std::map<uint16_type,uint16_type> > > __dataSurfacePost;
+    std::map<std::string,std::map<std::string, uint16_type> > __dataSurfacePostCpt;
 
     for ( ; itSurf != itSurf_end; ++itSurf )
     {
@@ -497,19 +497,19 @@ GeoGMSHTool::geoStr()
         [__dataSurfacePostCpt[itSurf2->get<0>()][itSurf2->get<1>()]]=__surfnumber;
 
         // si la surface est issue d'un extrude => stoker dans un tab gmsh
-        if ( ! __dataMemGlobSurf1[0][itSurf2->get<0>()][itSurf2->get<1>()][__surfnumber] )
+        if ( true/* ! __dataMemGlobSurf1[0][itSurf2->get<0>()][itSurf2->get<1>()][__surfnumber]*/ )
         {
             //Attention : On fait a cause des op - : sinon les markers surfaces sont incorrectes(l'idee est de marquer la 1ere sous-surface)
             //__dataMemGlob[3][boost::get<0>(*itSurf2)][boost::get<1>(*itSurf2)][__surfnumber]=__surfnumber;
+            //std::cout << "\n taille " << __dataMemGlobIsRuled[0][itSurf2->get<0>()][itSurf2->get<1>()].size() << " surnumber "<< __surfnumber << std::endl;
 
-            surface_type_const_iterator_type itSurf2_end = --itSurf->end();
-
-            if ( ! __dataMemGlobIsRuled[0][itSurf2->get<0>()][itSurf2->get<1>()][__surfnumber] )
+            if ( ! __dataMemGlobIsRuled[0][itSurf2->get<0>()][itSurf2->get<1>()][itSurf2->get<2>().first/*__surfnumber*/] )
                 __surface_str << "Plane Surface(" << __surfnumber << ") = {" ;
 
             else
                 __surface_str << "Ruled Surface(" << __surfnumber << ") = {" ;
 
+            surface_type_const_iterator_type itSurf2_end = --itSurf->end();
             for ( ; itSurf2 != itSurf2_end; ++itSurf2 )
             {
                 //std::cout << "\n num Glob SURF " << itSurf2->get<2>().first << " __surfnumber " << __surfnumber << std::endl;
@@ -519,7 +519,7 @@ GeoGMSHTool::geoStr()
 
             // ATTTENTION : FAIT ICI CAR 1 SEUL!!!!!!!!!!!!!!!!!!
             mapSurfaceRenumbering[itSurf2->get<2>().first] = __surfnumber;
-            //std::cout << "\n num Glob SURF " << itSurf2->get<2>().first << " __surfnumber " << __surfnumber << std::endl;
+            //std::cout << "\n num Glob SURF " << itSurf2->get<2>().first << " "<< itSurf2->get<2>().second << " __surfnumber " << __surfnumber << std::endl;
 
             //__surface_str << boost::get<2>(*itSurf2);
             __surface_str << itSurf2->get<2>().second;//!!!!!!!!!!!!!!!!!!!!!!!
@@ -609,7 +609,7 @@ GeoGMSHTool::geoStr()
     volume_name_const_iterator_type itVol_end = this->_M_volumeList->end();
     std::ostringstream __volume_str;
     //counter of volume
-    uint __volnumber=1;
+    uint16_type __volnumber=1;
     std::map<std::string,std::map<std::string, std::map<uint,uint> > > __dataVolumePost;
     std::map<std::string,std::map<std::string, uint> > __dataVolumePostCpt;
 #if 0
@@ -1010,7 +1010,7 @@ param( data_geo_ptrtype __dg )
  *_________________________________________________*/
 
 
-void writePoint( uint __numLoc, data_geo_ptrtype __dg ,double __x1,double __x2, double __x3 )
+void writePoint( uint16_type __numLoc, data_geo_ptrtype __dg ,double __x1,double __x2, double __x3 )
 {
     ( *( boost::get<1>( *__dg ) ) )[0][__numLoc] = boost::get<0>( *__dg )->cptPt(); //            __mapPt[0][__numLoc] = boost::get<0>(*__dg)->cptPt();
     std::ostringstream __ostr;
@@ -1026,7 +1026,7 @@ void writePoint( uint __numLoc, data_geo_ptrtype __dg ,double __x1,double __x2, 
 /*_________________________________________________*/
 
 void
-writeLine( uint __numLoc, data_geo_ptrtype __dg ,uint __n1, uint __n2 )
+writeLine( uint16_type __numLoc, data_geo_ptrtype __dg ,uint16_type __n1, uint16_type __n2 )
 {
     ( *( boost::get<1>( *__dg ) ) )[1][__numLoc] = boost::get<0>( *__dg )->cptLine();
     std::ostringstream __ostr;
@@ -1043,7 +1043,7 @@ writeLine( uint __numLoc, data_geo_ptrtype __dg ,uint __n1, uint __n2 )
 /*_________________________________________________*/
 
 void
-writeCircle( uint __numLoc, data_geo_ptrtype __dg ,uint __n1, uint __n2, uint __n3 )
+writeCircle( uint16_type __numLoc, data_geo_ptrtype __dg ,uint16_type __n1, uint16_type __n2, uint16_type __n3 )
 {
     ( *( boost::get<1>( *__dg ) ) )[1][__numLoc] = boost::get<0>( *__dg )->cptLine();
 
@@ -1062,7 +1062,7 @@ writeCircle( uint __numLoc, data_geo_ptrtype __dg ,uint __n1, uint __n2, uint __
 /*_________________________________________________*/
 
 void
-writeEllipse( uint __numLoc, data_geo_ptrtype __dg ,uint __n1, uint __n2, uint __n3, uint __n4 )
+writeEllipse( uint16_type __numLoc, data_geo_ptrtype __dg ,uint16_type __n1, uint16_type __n2, uint16_type __n3, uint16_type __n4 )
 {
     ( *( boost::get<1>( *__dg ) ) )[1][__numLoc] = boost::get<0>( *__dg )->cptLine();
 
@@ -1082,7 +1082,7 @@ writeEllipse( uint __numLoc, data_geo_ptrtype __dg ,uint __n1, uint __n2, uint _
 /*_________________________________________________*/
 
 void
-writeSpline( uint __numLoc, data_geo_ptrtype __dg ,Loop __loop )
+writeSpline( uint16_type __numLoc, data_geo_ptrtype __dg ,Loop __loop )
 {
     ( *( boost::get<1>( *__dg ) ) )[1][__numLoc] = boost::get<0>( *__dg )->cptLine();
 
@@ -1109,7 +1109,7 @@ writeSpline( uint __numLoc, data_geo_ptrtype __dg ,Loop __loop )
 /*_________________________________________________*/
 
 void
-writeBSpline( uint __numLoc, data_geo_ptrtype __dg ,Loop __loop )
+writeBSpline( uint16_type __numLoc, data_geo_ptrtype __dg ,Loop __loop )
 {
     ( *( boost::get<1>( *__dg ) ) )[1][__numLoc] = boost::get<0>( *__dg )->cptLine();
 
@@ -1136,7 +1136,7 @@ writeBSpline( uint __numLoc, data_geo_ptrtype __dg ,Loop __loop )
 /*_________________________________________________*/
 
 void
-writeLineLoop( uint __numLoc, data_geo_ptrtype __dg , Loop /*const*/ __loop )
+writeLineLoop( uint16_type __numLoc, data_geo_ptrtype __dg , Loop /*const*/ __loop )
 {
     ( *( boost::get<1>( *__dg ) ) )[2][__numLoc] = boost::get<0>( *__dg )->cptLineLoop();
 
@@ -1171,7 +1171,7 @@ writeLineLoop( uint __numLoc, data_geo_ptrtype __dg , Loop /*const*/ __loop )
 /*_________________________________________________*/
 
 void
-writePtInSurface( data_geo_ptrtype __dg , uint __indLocPt,uint __indLocSurf )
+writePtInSurface( data_geo_ptrtype __dg , uint16_type __indLocPt,uint16_type __indLocSurf )
 {
 
     auto indPtGlob = ( *( boost::get<1>( *__dg ) ) )[0][__indLocPt];
@@ -1182,7 +1182,7 @@ writePtInSurface( data_geo_ptrtype __dg , uint __indLocPt,uint __indLocSurf )
 //ici on n'ecrit pas, on memorise cause des operations de difference
 //l'ecriture est realise dans geoStr()
 void
-writePlaneSurface( uint __numLoc, data_geo_ptrtype __dg , uint __ind )
+writePlaneSurface( uint16_type __numLoc, data_geo_ptrtype __dg , uint16_type __ind )
 {
     ( *( boost::get<1>( *__dg ) ) )[3][__numLoc] = boost::get<0>( *__dg )->cptSurface(); //num local to global
     ( *( boost::get<4>( *__dg ) ) )[0][( *( boost::get<1>( *__dg ) ) )[3][__numLoc]] = false; //is tab gmsh
@@ -1225,7 +1225,7 @@ writePlaneSurface( uint __numLoc, data_geo_ptrtype __dg , uint __ind )
 //ici on n'ecrit pas, on memorise cause des operations de difference
 //l'ecriture est realise dans geoStr()
 void
-writeRuledSurface( uint __numLoc, data_geo_ptrtype __dg , uint __ind )
+writeRuledSurface( uint16_type __numLoc, data_geo_ptrtype __dg , uint16_type __ind )
 {
     ( *( boost::get<1>( *__dg ) ) )[3][__numLoc] = boost::get<0>( *__dg )->cptSurface(); //num local to global
     ( *( boost::get<4>( *__dg ) ) )[0][( *( boost::get<1>( *__dg ) ) )[3][__numLoc]] = false; //is tab gmsh
@@ -1266,11 +1266,11 @@ writeRuledSurface( uint __numLoc, data_geo_ptrtype __dg , uint __ind )
 }
 
 void
-writeExtrudeSurface( uint __numLoc,data_geo_ptrtype __dg , uint __ind,Loop /*const*/ __loop )
+writeExtrudeSurface( uint16_type __numLoc,data_geo_ptrtype __dg , uint16_type __ind,Loop /*const*/ __loop )
 {
     Loop __loopDef = Loop()>>0;
 
-    for ( uint i=2; i< __loop.size()+2; ++i )
+    for ( uint16_type i=2; i< __loop.size()+2; ++i )
         __loopDef>>i;
 
     std::list<int>::const_iterator itDef = __loopDef.begin();
@@ -1314,7 +1314,7 @@ writeExtrudeSurface( uint __numLoc,data_geo_ptrtype __dg , uint __ind,Loop /*con
 
 
 void
-writeSurfaceLoop( uint __numLoc, data_geo_ptrtype __dg , Loop /*const*/ __loop )
+writeSurfaceLoop( uint16_type __numLoc, data_geo_ptrtype __dg , Loop /*const*/ __loop )
 {
 #if 0
     ( *( boost::get<1>( *__dg ) ) )[4][__numLoc] = boost::get<0>( *__dg )->cptSurfaceLoop();
@@ -1414,7 +1414,7 @@ writeSurfaceLoop( uint __numLoc, data_geo_ptrtype __dg , Loop /*const*/ __loop )
 //ici on n'ecrit pas, on memorise cause des operations de difference
 //l'ecriture est realise dans geoStr()
 void
-writeVolume( uint __numLoc, data_geo_ptrtype __dg , uint __ind )
+writeVolume( uint16_type __numLoc, data_geo_ptrtype __dg , uint16_type __ind )
 {
     ( *( boost::get<1>( *__dg ) ) )[5][__numLoc] = boost::get<0>( *__dg )->cptVolume(); //num local to global
 

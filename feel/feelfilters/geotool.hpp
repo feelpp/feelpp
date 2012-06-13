@@ -774,7 +774,7 @@ public:
     typedef ligne_type_type::const_iterator ligne_type_const_iterator_type;
     typedef ligne_name_type::const_iterator ligne_name_const_iterator_type;
 
-    // gestion des surfaces : shape,name,(numGlobSurface,value),meshSize
+    // gestion des surfaces : shape,name,(numGlobSurface,valueOfLineloop),meshSize
     typedef boost::tuple<std::string,std::string,std::pair<int,int>,double > surface_type;
     typedef std::list< surface_type > surface_type_type;
     typedef std::list< surface_type_type > surface_name_type;
@@ -1466,43 +1466,43 @@ param( data_geo_ptrtype __dg );
 
 
 void
-writePoint( uint __numLoc, data_geo_ptrtype __dg ,double __x1,double __x2=0, double __x3=0 );
+writePoint( uint16_type __numLoc, data_geo_ptrtype __dg ,double __x1,double __x2=0, double __x3=0 );
 
 void
-writeLine( uint __numLoc, data_geo_ptrtype __dg ,uint __n1, uint __n2 );
+writeLine( uint16_type __numLoc, data_geo_ptrtype __dg ,uint16_type __n1, uint16_type __n2 );
 
 void
-writeCircle( uint __numLoc, data_geo_ptrtype __dg ,uint __n1, uint __n2, uint __n3 );
+writeCircle( uint16_type __numLoc, data_geo_ptrtype __dg ,uint16_type __n1, uint16_type __n2, uint16_type __n3 );
 
 void
-writeEllipse( uint __numLoc, data_geo_ptrtype __dg ,uint __n1, uint __n2, uint __n3, uint __n4 );
+writeEllipse( uint16_type __numLoc, data_geo_ptrtype __dg ,uint16_type __n1, uint16_type __n2, uint16_type __n3, uint16_type __n4 );
 
 void
-writeSpline( uint __numLoc, data_geo_ptrtype __dg ,Loop __loop );
+writeSpline( uint16_type __numLoc, data_geo_ptrtype __dg ,Loop __loop );
 
 void
-writeBSpline( uint __numLoc, data_geo_ptrtype __dg ,Loop __loop );
+writeBSpline( uint16_type __numLoc, data_geo_ptrtype __dg ,Loop __loop );
 
 void
-writeLineLoop( uint __numLoc, data_geo_ptrtype __dg , Loop /*const*/ __loop );
+writeLineLoop( uint16_type __numLoc, data_geo_ptrtype __dg , Loop /*const*/ __loop );
 
 void
-writePlaneSurface( uint __numLoc, data_geo_ptrtype __dg , uint __ind );
+writePlaneSurface( uint16_type __numLoc, data_geo_ptrtype __dg , uint16_type __ind );
 
 void
-writeRuledSurface( uint __numLoc, data_geo_ptrtype __dg , uint __ind );
+writeRuledSurface( uint16_type __numLoc, data_geo_ptrtype __dg , uint16_type __ind );
 
 void
-writeExtrudeSurface( uint __numLoc,data_geo_ptrtype __dg , uint __ind,Loop /*const*/ __loop );
+writeExtrudeSurface( uint16_type __numLoc,data_geo_ptrtype __dg , uint16_type __ind,Loop /*const*/ __loop );
 
 void
-writePtInSurface( data_geo_ptrtype __dg , uint __indPt,uint __indSurf );
+writePtInSurface( data_geo_ptrtype __dg , uint16_type __indPt,uint16_type __indSurf );
 
 void
-writeSurfaceLoop( uint __numLoc, data_geo_ptrtype __dg , Loop /*const*/ __loop );
+writeSurfaceLoop( uint16_type __numLoc, data_geo_ptrtype __dg , Loop /*const*/ __loop );
 
 void
-writeVolume( uint __numLoc, data_geo_ptrtype __dg , uint __ind );
+writeVolume( uint16_type __numLoc, data_geo_ptrtype __dg , uint16_type __ind );
 
 boost::tuple<Node,Node,Node>
 computeBasisOrthogonal( node_type dir,node_type centre );
