@@ -248,6 +248,7 @@ Tilted<Dim, BasisU, Entity>::run()
                                                         +cos(alpha*(theta-pi/3))*u_r)+
         chi(2.*pi/3.<=theta && theta<=2.*pi)*alpha*ralphamo*beta*(sin(alpha*(4*pi/3-theta))*u_theta
                                                                   +cos(alpha*(4*pi/3-theta))*u_r);
+
 #endif
 #if defined(FEELPP_SOLUTION_2)
     double alpha=(3./pi)*math::atan(math::sqrt(1.+2.*kappa));
@@ -464,6 +465,7 @@ Tilted<Dim, BasisU, Entity>::run()
                                       _expr=( grad_u_exact )*trans( grad_u_exact ), _quad=_Q<10>() ).evaluate()( 0, 0 );
     //double u_error_H1 = math::sqrt( ( u_errorL2+u_errorsemiH1 )/( u_exactL2+u_exactsemiH1 ) );
     double u_error_H1 = math::sqrt( ( u_errorL2+u_errorsemiH1 ));
+
     M_stats.put( "t.integrate.h1norm",t.elapsed() );
     t.restart();
     std::cout << "||u_error||_1= " << u_error_H1 << "\n";
