@@ -89,7 +89,7 @@ makeAbout()
                            "0.1",
                            "Stokes equation on simplices or simplex products",
                            Feel::AboutData::License_GPL,
-                           "Copyright (c) 2009-2011 Université de Grenoble 1 (Joseph Fourier)" );
+                           "Copyright (c) 2009-2012 Université de Grenoble 1 (Joseph Fourier)" );
 
     about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
     return about;
@@ -133,7 +133,12 @@ public:
     typedef Lagrange<2, Vectorial> basis_u_type;
     typedef Lagrange<1, Scalar> basis_p_type;
     typedef Lagrange<0, Scalar> basis_l_type;
+    // use lagrange multipliers to ensure zero mean pressure
+#if defined( FEELPP_USE_LM )
     typedef bases<basis_u_type,basis_p_type, basis_l_type> basis_type;
+#else
+    typedef bases<basis_u_type,basis_p_type> basis_type;
+#endif
     //# endmarker1 #
 
     /*space*/
@@ -214,18 +219,21 @@ Stokes::init()
 
 
     if ( this->vm().count( "nochdir" ) == false )
-        this->changeRepository( boost::format( "doc/tutorial/%1%/%2%/P%3%P%4%/h_%5%/" )
+        this->changeRepository( boost::format( "doc/tutorial/%1%/%2%/Part%6%/P%3%P%4%/h_%5%/" )
                                 % this->about().appName()
                                 % convex_type::name()
                                 % basis_u_type::nOrder % basis_p_type::nOrder
-                                % this->vm()["hsize"].as<double>() );
+                                % this->vm()["hsize"].as<double>()
+                                % Environment::numberOfProcessors() );
 
     mesh = createGMSHMesh( _mesh=new mesh_type,
                            _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
                            _desc=domain( _name= ( boost::format( "%1%-%2%-%3%" ) % "hypercube" % convex_type().dimension() % 1 ).str() ,
                                          _shape="hypercube",
                                          _dim=convex_type().dimension(),
-                                         _h=meshSize ) );
+                                         _h=meshSize ),
+                           _worldcomm=Environment::masterWorldComm( space_type::nSpaces ),
+                           _partitions=Environment::numberOfProcessors()/space_type::nSpaces );
 
 
     Xh = space_type::New( mesh );
@@ -244,9 +252,10 @@ Stokes::run()
     auto v = V.element<0>( "u" );
     auto p = U.element<1>( "p" );
     auto q = V.element<1>( "p" );
-
+#if defined( FEELPP_USE_LM )
     auto lambda = U.element<2>();
     auto nu = V.element<2>();
+#endif
     //# endmarker4 #
 
     Log() << "Data Summary:\n";
@@ -301,9 +310,11 @@ Stokes::run()
     stokes +=integrate( elements( mesh ), - div( v )*idt( p ) + divt( u )*id( q ) );
     std::cout << "(u,p): " << chrono.elapsed() << "\n";
     chrono.restart();
+#if defined( FEELPP_USE_LM )
     stokes +=integrate( elements( mesh ), id( q )*idt( lambda ) + idt( p )*id( nu ) );
     std::cout << "(lambda,p): " << chrono.elapsed() << "\n";
     chrono.restart();
+#endif
 
     stokes +=integrate( boundaryfaces( mesh ), -inner( SigmaNt,id( v ) ) );
     stokes +=integrate( boundaryfaces( mesh ), -inner( SigmaN,idt( u ) ) );
@@ -344,13 +355,17 @@ Stokes::exportResults( ExprUExact u_exact, ExprPExact p_exact,
 {
     auto u = U.element<0>();
     auto p = U.element<1>();
-    auto lambda = U.element<2>();
+
     auto v = V.element<0>();
     auto q = V.element<1>();
+#if defined( FEELPP_USE_LM )
+    auto lambda = U.element<2>();
     auto nu = V.element<2>();
-
     Log() << "value of the Lagrange multiplier lambda= " << lambda( 0 ) << "\n";
     std::cout << "value of the Lagrange multiplier lambda= " << lambda( 0 ) << "\n";
+
+#endif
+
 
     double u_errorL2 = integrate( elements( u.mesh() ), trans( idv( u )-u_exact )*( idv( u )-u_exact ) ).evaluate()( 0, 0 );
     std::cout << "||u_error||_2 = " << math::sqrt( u_errorL2 ) << "\n";;
@@ -383,11 +398,12 @@ Stokes::exportResults( ExprUExact u_exact, ExprPExact p_exact,
     if ( exporter->doExport() )
     {
         exporter->step( 0 )->setMesh( U.functionSpace()->mesh() );
+        exporter->step( 0 )->addRegions();
         auto v = U.functionSpace()->functionSpace<0> ()->element();
         v = U.element<0>();
         exporter->step( 0 )->add( "u", U.element<0>() );
-        exporter->step( 0 )->add( "ux", v.comp( X ) );
-        exporter->step( 0 )->add( "uy", v.comp( Y ) );
+        //exporter->step( 0 )->add( "ux", v.comp( X ) );
+        //exporter->step( 0 )->add( "uy", v.comp( Y ) );
         exporter->step( 0 )->add( "u", U.element<0>() );
         exporter->step( 0 )->add( "p", U.element<1>() );
         exporter->step( 0 )->add( "u_exact", V.element<0>() );
@@ -404,6 +420,8 @@ main( int argc, char** argv )
     using namespace Feel;
     /* assertions handling */
     Feel::Assert::setLog( "stokes.assert" );
+
+    Environment env( argc, argv );
 
     // SOME BAD ELEMENTS
     // P1/P0 : locking
