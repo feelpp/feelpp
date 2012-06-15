@@ -216,7 +216,7 @@ public:
      */
     uint16_type nProcess()
     {
-        return uint16_type( M_comm->size() );
+        return uint16_type( M_comm.size() );
     }
 
     /**
@@ -224,7 +224,7 @@ public:
      */
     uint16_type processId()
     {
-        return uint16_type( M_comm->rank() );
+        return uint16_type( M_comm.rank() );
     }
 
     /**
@@ -351,17 +351,17 @@ public:
     /**
      * @return the communicator
      */
-    mpi::communicator& comm()
+    WorldComm& comm()
     {
-        return *M_comm;
+        return M_comm;
     }
 
     /**
      * @return the communicator
      */
-    mpi::communicator const& comm() const
+    WorldComm const& comm() const
     {
-        return *M_comm;
+        return M_comm;
     }
 
     /**
@@ -369,7 +369,7 @@ public:
      */
     void barrier()
     {
-        M_comm->barrier();
+        M_comm.barrier();
     }
 
     /**
@@ -454,7 +454,7 @@ private:
 
 
     boost::shared_ptr<mpi::environment> M_env;
-    boost::shared_ptr<mpi::communicator> M_comm;
+    WorldComm M_comm;
 
     simgets_type M_simgets;
     std::map<std::string,std::vector<ptree::ptree> > M_stats;
