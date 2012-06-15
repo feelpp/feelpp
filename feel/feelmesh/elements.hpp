@@ -254,7 +254,7 @@ public:
      */
     //@{
 
-    Elements( WorldComm const& worldComm = WorldComm() )
+    Elements( WorldComm const& worldComm = Environment::worldComm() )
         :
         _M_worldCommElements(worldComm),
         _M_elements()

@@ -5,7 +5,7 @@
   Author(s): Florent Vielfaure <florent.vielfaure@gmail.com>
        Date: 2009-05-25
 
-  Copyright (C) 2009 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2009-2012 Universite Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -87,7 +87,7 @@ public:
     /**
      *  Constructor. Initializes Trilinos data structures
      */
-    SolverNonLinearTrilinos(WorldComm const& worldComm=WorldComm());
+    SolverNonLinearTrilinos(WorldComm const& worldComm=Environment::worldComm());
     SolverNonLinearTrilinos( SolverNonLinearTrilinos const & );
 
     /**

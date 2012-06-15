@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2008-02-29
 
-  Copyright (C) 2008 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2008-2012 Universite Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -58,8 +58,8 @@ public:
      */
     //@{
 
-    DofComposite( WorldComm const& _worldComm = WorldComm() ): super( _worldComm ) {}
-    DofComposite( size_type n, size_type n_local, WorldComm const& _worldComm = WorldComm() ) : super( n, n_local, _worldComm ) {}
+    DofComposite( WorldComm const& _worldComm = Environment::worldComm() ): super( _worldComm ) {}
+    DofComposite( size_type n, size_type n_local, WorldComm const& _worldComm = Environment::worldComm() ) : super( n, n_local, _worldComm ) {}
     DofComposite( DofComposite const & dc ) : super( dc ) {}
     ~DofComposite() {}
 

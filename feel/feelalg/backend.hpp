@@ -158,8 +158,8 @@ public:
      */
     //@{
 
-    Backend( WorldComm const& worldComm=WorldComm() );
-    Backend( po::variables_map const& vm, std::string const& prefix = "", WorldComm const& worldComm=WorldComm() );
+    Backend( WorldComm const& worldComm=Environment::worldComm() );
+    Backend( po::variables_map const& vm, std::string const& prefix = "", WorldComm const& worldComm=Environment::worldComm() );
     Backend( Backend const & );
     virtual ~Backend();
 
@@ -173,13 +173,13 @@ public:
 #else
         BackendType = BACKEND_GMM
 #endif
-        , WorldComm const& worldComm=WorldComm()
+        , WorldComm const& worldComm=Environment::worldComm()
     );
 
     /**
      * Builds a \p Backend
      */
-    static backend_ptrtype build( po::variables_map const& vm, std::string const& prefix = "", WorldComm const& worldComm=WorldComm() );
+    static backend_ptrtype build( po::variables_map const& vm, std::string const& prefix = "", WorldComm const& worldComm=Environment::worldComm() );
 
     /**
      * instantiate a new sparse vector

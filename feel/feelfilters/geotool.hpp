@@ -1156,7 +1156,7 @@ public:
           ( partitions,   *( boost::is_integral<mpl::_> ), 1 )
           ( partition_file,   *( boost::is_integral<mpl::_> ), 0 )
           ( partitioner,   *( boost::is_integral<mpl::_> ), GMSH_PARTITIONER_CHACO )
-          ( worldcomm,      *, WorldComm() )
+          ( worldcomm,      *, Environment::worldComm() )
         ) //optional
     )
     {
@@ -1213,7 +1213,7 @@ public:
 
     template<typename mesh_type>
     boost::shared_ptr<mesh_type>
-    createMesh( std::string name, int straighten = 1, WorldComm const& worldcomm=WorldComm() )
+    createMesh( std::string name, int straighten = 1, WorldComm const& worldcomm=Environment::worldComm() )
     {
         boost::shared_ptr<mesh_type> mesh( new mesh_type );
         mesh->setWorldComm( worldcomm );
@@ -1638,7 +1638,7 @@ computeBasisOrthogonal( node_type dir,node_type centre );
                                ),                                       \
                               GEOTOOL_FOR_COMP2, GEOTOOL_FOR_INCR2, GEOTOOL_FOR_MARKER_POINT_MACRO2) \
                     }                                                   \
- 
+
 /**/
 /*_________________________________________________*/
 /*                                                 */
@@ -1657,7 +1657,7 @@ computeBasisOrthogonal( node_type dir,node_type centre );
                                ),                                       \
                               GEOTOOL_FOR_COMP2, GEOTOOL_FOR_INCR2, GEOTOOL_FOR_MARKER_LINE_MACRO2) \
                     }                                                   \
- 
+
 /**/
 /*_________________________________________________*/
 /*                                                 */
@@ -1973,7 +1973,7 @@ BOOST_PP_FOR( ( 0, BOOST_PP_SUB( BOOST_PP_ARRAY_SIZE( GEOTOOL_SHAPE ),1 ) ),
 template<typename mesh_type>
 boost::shared_ptr<mesh_type>
 createMeshFromGeoFile( std::string geofile,std::string name,double meshSize,int straighten = 1,
-                       int partitions=1, WorldComm worldcomm=WorldComm(),
+                       int partitions=1, WorldComm worldcomm=Environment::worldComm(),
                        int partition_file = 0, GMSH_PARTITIONER partitioner = GMSH_PARTITIONER_CHACO )
 {
 

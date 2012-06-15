@@ -36,6 +36,7 @@
 #include <boost/signals2.hpp>
 
 #include <feel/feelcore/feel.hpp>
+#include <feel/feelcore/worldcomm.hpp>
 
 namespace Feel
 {
@@ -76,7 +77,8 @@ public:
     /** @name Typedefs
      */
     //@{
-
+    typedef WorldComm worldcomm_type;
+    typedef boost::shared_ptr<WorldComm> worldcomm_ptrtype;
 
     //@}
 
@@ -142,11 +144,21 @@ public:
      */
     static bool finalized();
 
+    /**
+     * return the worldcomm (static)
+     */
+    static WorldComm& worldComm() { return *S_worldcomm; }
     //@}
 
     /** @name  Mutators
      */
     //@{
+
+    /**
+     * set the static worldcomm
+     */
+    static void setWorldComm( WorldComm& worldcomm ) { S_worldcomm = worldcomm.shared_from_this(); }
+
 
 
     //@}
@@ -197,6 +209,7 @@ public:
         {
             S_deleteObservers.connect( obs );
         }
+
     //@}
 
 
@@ -207,6 +220,8 @@ private:
     mpi::environment M_env;
 
     static boost::signals2::signal<void ()> S_deleteObservers;
+
+    static boost::shared_ptr<WorldComm> S_worldcomm;
 };
 }
 #endif /* __Environment_H */

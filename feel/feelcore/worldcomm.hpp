@@ -33,12 +33,13 @@
 #if defined(FEELPP_HAS_MPI_H)
 #include <mpi.h>
 #endif /* FEELPP_HAS_MPI_H */
+#include <boost/smart_ptr/enable_shared_from_this.hpp>
 
 namespace Feel
 {
 
 
-class WorldComm : public boost::mpi::communicator
+class WorldComm : public boost::mpi::communicator, public boost::enable_shared_from_this<WorldComm>
 {
 
     typedef boost::mpi::communicator super;
@@ -46,9 +47,11 @@ class WorldComm : public boost::mpi::communicator
 public:
 
     typedef WorldComm self_type;
+    typedef boost::shared_ptr<WorldComm> self_ptrtype;
     typedef boost::mpi::communicator communicator_type;
 
     WorldComm();
+    WorldComm( super const& );
 
     WorldComm( int _color );
 
@@ -80,6 +83,9 @@ public:
                int _localColor,// int localRank,
                std::vector<int> const& isActive );
 
+    static self_ptrtype New() { return self_ptrtype(new self_type); }
+    static self_ptrtype New( super const& s ) { return self_ptrtype(new self_type( s )); }
+    void init( int color = 0, bool colormap = false );
     communicator_type const& globalComm() const
     {
         return *this;

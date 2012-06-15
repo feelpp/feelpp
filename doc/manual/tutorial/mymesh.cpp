@@ -175,8 +175,7 @@ MyMesh<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
                                _desc=domain( _name=( boost::format( "%1%-%2%" ) % shape % Dim ).str() ,
                                              _shape=shape,
                                              _dim=Dim,
-                                             _h=X[0] ),
-                               _partitions=this->comm().size() );
+                                             _h=X[0] ) );
         Log() << "Saving mesh...\n";
         mesh->save( _name="mymesh",_path=".",_type="text" );
         toc("generate+save");
