@@ -212,30 +212,32 @@ MyMesh<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
     //# endmarker62 #
 
     // in case of two processors, exchange the meshes
-    if ( this->comm().size() == 2 )
+    mesh_ptrtype mesh2;//( new mesh_type);
+    mpi::request reqs[2];
+    if( mesh->worldComm().rank() == 0)
     {
-        mpi::communicator world;
-        mesh_ptrtype mesh2( new mesh_type);
+        reqs[0] = mesh->worldComm().isend( mesh->worldComm().rank()+1, 10, mesh );
+        reqs[1] = mesh->worldComm().irecv( mesh->worldComm().size()-1, 10, mesh2 );
+    }
+    else if (  mesh->worldComm().rank() == mesh->worldComm().size()-1 )
+    {
+        reqs[0] = mesh->worldComm().isend( 0, 10, mesh );
+        reqs[1] = mesh->worldComm().irecv( mesh->worldComm().size()-2, 10, mesh2 );
+    }
+    else
+    {
+        reqs[0] = mesh->worldComm().isend( mesh->worldComm().rank()+1, 10, mesh );
+        reqs[1] = mesh->worldComm().irecv( mesh->worldComm().rank()-1, 10, mesh2 );
+    }
+    mpi::wait_all(reqs, reqs + 2);
+    mesh2->save( _name="mymesh3", _type="text", _path="." );
 
-        if ( world.rank() == 0 )
-        {
-            world.send( 1, 10, *mesh );
-            world.recv( 1, 11, *mesh2 );
-        }
-        else
-        {
-            world.recv( 0, 10, *mesh2 );
-            world.send( 0, 11, *mesh );
-        }
-        mesh2->save( _name="mymesh3", _type="text", _path="." );
-
-        auto exporter2 = Exporter<mesh_type>::New( this->vm(), this->about().appName()+"-m2" );
-        if ( exporter2->doExport() )
-        {
-            exporter2->step( 0 )->setMesh( mesh2 );
-            exporter2->step( 0 )->addRegions();
-            exporter2->save();
-        }
+    auto exporter2 = Exporter<mesh_type>::New( this->vm(), this->about().appName()+"-m2" );
+    if ( exporter2->doExport() )
+    {
+        exporter2->step( 0 )->setMesh( mesh2 );
+        exporter2->step( 0 )->addRegions();
+        exporter2->save();
     }
 }
 
