@@ -207,8 +207,7 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
                                                 _h=X[0],
                                                 _xmin=-1,
                                                 _ymin=-1 ),
-                                        _update=MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK,
-                                        _partitions=this->comm().size()  );
+                                        _update=MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
 
 
     /**
