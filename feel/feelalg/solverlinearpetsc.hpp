@@ -136,12 +136,12 @@ public:
     /**
      *  Constructor. Initializes Petsc data structures
      */
-    SolverLinearPetsc ( WorldComm const& worldComm=WorldComm() );
+    SolverLinearPetsc ( WorldComm const& worldComm=Environment::worldComm() );
 
     /**
      *  Constructor. Initializes Petsc data structures
      */
-    SolverLinearPetsc ( po::variables_map const& vm, WorldComm const& worldComm=WorldComm() );
+    SolverLinearPetsc ( po::variables_map const& vm, WorldComm const& worldComm=Environment::worldComm() );
 
     /**
      * Destructor.

@@ -168,7 +168,7 @@ public Points<3>,
     /**
      * default constructor
      */
-    Mesh3D( WorldComm const& worldComm = WorldComm() );
+    Mesh3D( WorldComm const& worldComm = Environment::worldComm() );
 
     /**
      * copy constructor

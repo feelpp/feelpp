@@ -6,7 +6,7 @@
        Date: 2004-11-09
 
   Copyright (C) 2004,2005 EPFL
-  Copyright (C) 2007 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2007-2012 Universite Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -122,9 +122,9 @@ public:
      \endhtmlonly
 
     */
-    ExporterEnsight( std::string const& __p = "default", int freq = 1, WorldComm const& worldComm = WorldComm() );
+    ExporterEnsight( std::string const& __p = "default", int freq = 1, WorldComm const& worldComm = Environment::worldComm() );
 
-    ExporterEnsight( po::variables_map const& vm, std::string const& exp_prefix = "", WorldComm const& worldComm = WorldComm() );
+    ExporterEnsight( po::variables_map const& vm, std::string const& exp_prefix = "", WorldComm const& worldComm = Environment::worldComm() );
 
     ExporterEnsight( ExporterEnsight const & __ex );
 
