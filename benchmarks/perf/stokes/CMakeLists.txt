@@ -68,6 +68,7 @@ namespace Feel {
 endforeach()
 endforeach()
 
-feelpp_add_application( feel_perf_stokes_1 SRCS bench.cpp ${taylor_hood} ${cr1p0} CFG stokes.cfg LINK_LIBRARIES ${FEELPP_LIBRARIES} DEFS FEELPP_SOLUTION_1 DEPS gen_feel_perf_stokes)
-feelpp_add_application( feel_perf_stokes_kovasnay SRCS bench.cpp ${taylor_hood} ${cr1p0} CFG stokes.cfg LINK_LIBRARIES ${FEELPP_LIBRARIES} DEFS FEELPP_SOLUTION_KOVASNAY DEPS gen_feel_perf_stokes)
-feelpp_add_application( feel_perf_stokes_ethiersteinmann SRCS bench.cpp ${taylor_hood3} CFG stokes.cfg LINK_LIBRARIES ${FEELPP_LIBRARIES} DEFS FEELPP_SOLUTION_ETHIERSTEINMANN DEPS gen_feel_perf_stokes)
+feelpp_add_application( perf_stokes_1 SRCS bench.cpp ${taylor_hood} ${cr1p0} CFG stokes.cfg LINK_LIBRARIES ${FEELPP_LIBRARIES} DEFS FEELPP_SOLUTION_1 DEPS gen_feel_perf_stokes)
+feelpp_add_application( perf_stokes_kovasnay SRCS bench.cpp ${taylor_hood} ${cr1p0} CFG stokes.cfg LINK_LIBRARIES ${FEELPP_LIBRARIES} DEFS FEELPP_SOLUTION_KOVASNAY DEPS gen_feel_perf_stokes)
+feelpp_add_application( perf_stokes_ethiersteinmann SRCS bench.cpp ${taylor_hood3} CFG stokes.cfg LINK_LIBRARIES ${FEELPP_LIBRARIES} DEFS FEELPP_SOLUTION_ETHIERSTEINMANN DEPS gen_feel_perf_stokes)
+

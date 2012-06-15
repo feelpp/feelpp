@@ -148,6 +148,22 @@ public:
      * return the worldcomm (static)
      */
     static WorldComm& worldComm() { return *S_worldcomm; }
+
+    /**
+     * return n sub world communicators
+     */
+    static std::vector<WorldComm> const&  worldsComm( int n );
+
+    /**
+     * return master world comm associated with a color map of size n
+     */
+    static WorldComm const& masterWorldComm( int n );
+
+    /**
+     * return number of processors
+     */
+    static int numberOfProcessors()  { return S_worldcomm->godSize(); }
+
     //@}
 
     /** @name  Mutators
