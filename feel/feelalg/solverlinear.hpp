@@ -58,12 +58,12 @@ public:
     /**
      *  Constructor. Initializes Solver data structures
      */
-    SolverLinear ( WorldComm const& worldComm = WorldComm() );
+    SolverLinear ( WorldComm const& worldComm = Environment::worldComm() );
 
     /**
      *  Constructor. Initializes Solver data structures
      */
-    SolverLinear ( po::variables_map const& vm, WorldComm const& worldComm = WorldComm() );
+    SolverLinear ( po::variables_map const& vm, WorldComm const& worldComm = Environment::worldComm() );
 
     /**
      * Destructor.

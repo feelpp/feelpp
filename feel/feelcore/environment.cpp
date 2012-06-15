@@ -75,6 +75,8 @@ Environment::Environment()
     //and often unuseful messages
     PetscPopSignalHandler();
 #endif // FEELPP_HAS_PETSC_H
+
+    S_worldcomm = worldcomm_type::New( world );
 }
 Environment::Environment( int& argc, char**& argv )
     :
@@ -116,6 +118,8 @@ Environment::Environment( int& argc, char**& argv )
         ostr << argv[0] << ".assertions";
         Assert::setLog( ostr.str().c_str() );
     }
+
+    S_worldcomm = worldcomm_type::New( world );
 }
 
 Environment::~Environment()
@@ -296,4 +300,9 @@ Environment::setLogs( std::string const& prefix )
 }
 
 boost::signals2::signal<void ()> Environment::S_deleteObservers;
+
+boost::shared_ptr<WorldComm> Environment::S_worldcomm;
+
 }
+
+

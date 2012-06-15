@@ -98,7 +98,7 @@ public:
      */
     //@{
 
-    Edges( WorldComm const& worldComm = WorldComm() )
+    Edges( WorldComm const& worldComm = Environment::worldComm() )
         :
         _M_worldCommEdges( worldComm ),
         _M_edges()

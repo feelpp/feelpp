@@ -105,7 +105,7 @@ public:
 
 
     // -- CONSTRUCTOR --
-    BackendTrilinos( WorldComm const& worldComm=WorldComm())
+    BackendTrilinos( WorldComm const& worldComm=Environment::worldComm())
         :
         super( worldComm ),
         M_options(),
@@ -117,7 +117,7 @@ public:
     }
 
 
-    BackendTrilinos( po::variables_map const& vm, std::string const& prefix = "", WorldComm const& worldComm=WorldComm() );
+    BackendTrilinos( po::variables_map const& vm, std::string const& prefix = "", WorldComm const& worldComm=Environment::worldComm() );
 
     BackendTrilinos( const BackendTrilinos& tc );
 

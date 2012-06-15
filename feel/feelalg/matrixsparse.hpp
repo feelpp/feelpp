@@ -114,7 +114,7 @@ public:
      */
     MatrixSparse ();
 
-    MatrixSparse( DataMap const& dmRow, DataMap const& dmCol, WorldComm const& worldComm=WorldComm() );
+    MatrixSparse( DataMap const& dmRow, DataMap const& dmCol, WorldComm const& worldComm=Environment::worldComm() );
 
     /**
      * Destructor. Free all memory, but do not release the memory of

@@ -694,7 +694,7 @@ template< typename IsWithGhostType>
 struct NLocalDof
 {
 
-    NLocalDof( std::vector<WorldComm> const & worldsComm = std::vector<WorldComm>( 1,WorldComm() ),
+    NLocalDof( std::vector<WorldComm> const & worldsComm = std::vector<WorldComm>( 1,Environment::worldComm() ),
                bool useOffSubSpace = false,
                size_type start = 0, size_type size = invalid_size_type_value )
         :
@@ -2786,7 +2786,7 @@ public:
     FunctionSpace( mesh_ptrtype const& mesh,
                    size_type mesh_components = MESH_RENUMBER | MESH_CHECK,
                    periodicity_type  periodicity = periodicity_type(),
-                   std::vector<WorldComm> const& _worldsComm = std::vector<WorldComm>( nSpaces,WorldComm() ) )
+                   std::vector<WorldComm> const& _worldsComm = std::vector<WorldComm>( nSpaces,Environment::worldComm() ) )
         :
         _M_worldsComm( _worldsComm ),
         _M_worldComm( new WorldComm( _worldsComm[0] ) )
@@ -2796,7 +2796,7 @@ public:
 
     FunctionSpace( mesh_ptrtype const& mesh,
                    std::vector<boost::tuple<size_type, uint16_type, size_type> > const& dofindices,
-                   std::vector<WorldComm> const& _worldsComm = std::vector<WorldComm>( nSpaces,WorldComm() ) )
+                   std::vector<WorldComm> const& _worldsComm = std::vector<WorldComm>( nSpaces,Environment::worldComm() ) )
         :
         _M_worldsComm( _worldsComm ),
         _M_worldComm( new WorldComm( _worldsComm[0] ) )
@@ -2848,7 +2848,7 @@ public:
                                        ( mesh,* )
                                      )
                                      ( optional
-                                       ( worldscomm, *, std::vector<WorldComm>( nSpaces,WorldComm() ) )
+                                       ( worldscomm, *, std::vector<WorldComm>( nSpaces,Environment::worldComm() ) )
                                        ( components, ( size_type ), MESH_RENUMBER | MESH_CHECK )
                                        ( periodicity,*,periodicity_type() )
                                      )
@@ -2858,7 +2858,7 @@ public:
     }
 
     static pointer_type NewImpl( mesh_ptrtype const& __m,
-                                 std::vector<WorldComm> const& worldsComm = std::vector<WorldComm>( nSpaces,WorldComm() ),
+                                 std::vector<WorldComm> const& worldsComm = std::vector<WorldComm>( nSpaces,Environment::worldComm() ),
                                  size_type mesh_components = MESH_RENUMBER | MESH_CHECK,
                                  periodicity_type periodicity = periodicity_type() )
     {
