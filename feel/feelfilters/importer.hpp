@@ -73,7 +73,7 @@ public:
     /**
      * default constructor. use GMSH as default mesh format
      */
-    Importer( MeshFormat const& _format = GMSH, WorldComm const& _worldcomm = WorldComm() )
+    Importer( MeshFormat const& _format = GMSH, WorldComm const& _worldcomm = Environment::worldComm() )
         :
         _M_worldComm( _worldcomm ),
         _M_filename(),
@@ -85,7 +85,7 @@ public:
      * @param filename mesh filename to import
      * @param format format of the file
      */
-    Importer( std::string const& _filename,  MeshFormat const& _format = GMSH, WorldComm const& _worldcomm = WorldComm() )
+    Importer( std::string const& _filename,  MeshFormat const& _format = GMSH, WorldComm const& _worldcomm = Environment::worldComm() )
         :
         _M_worldComm( _worldcomm ),
         _M_filename( _filename ),

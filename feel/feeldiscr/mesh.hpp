@@ -200,7 +200,7 @@ public:
     /**
      * Default mesh constructor
      */
-    Mesh( WorldComm const& worldComm = WorldComm() );
+    Mesh( WorldComm const& worldComm = Environment::worldComm() );
 
     /**
      * generate a new Mesh shared pointer

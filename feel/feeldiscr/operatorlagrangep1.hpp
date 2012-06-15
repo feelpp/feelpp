@@ -148,7 +148,7 @@ public:
      */
     OperatorLagrangeP1( domain_space_ptrtype const& space,
                         backend_ptrtype const& backend,
-                        std::vector<WorldComm> const& worldsComm = std::vector<WorldComm>(1,WorldComm()) );
+                        std::vector<WorldComm> const& worldsComm = std::vector<WorldComm>(1,Environment::worldComm()) );
 
     /**
      * destructor. nothing really to be done here
@@ -653,7 +653,7 @@ BOOST_PARAMETER_FUNCTION(
     ) // required
     ( optional
       ( backend,        *, Backend<typename compute_opLagrangeP1_return<Args>::space_type::value_type>::build() )
-      ( worldscomm, *, std::vector<WorldComm>( 1,WorldComm() ) )
+      ( worldscomm, *, std::vector<WorldComm>( 1,Environment::worldComm() ) )
     ) // optionnal
 )
 {

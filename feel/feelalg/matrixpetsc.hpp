@@ -129,7 +129,7 @@ public:
      */
     MatrixPetsc();
 
-    MatrixPetsc( DataMap const& dmRow, DataMap const& dmCol, WorldComm const& worldComm=WorldComm() );
+    MatrixPetsc( DataMap const& dmRow, DataMap const& dmCol, WorldComm const& worldComm=Environment::worldComm() );
 
 
     /**
@@ -504,7 +504,7 @@ public :
 
     MatrixPetscMPI();
 
-    MatrixPetscMPI( DataMap const& dmRow, DataMap const& dmCol, WorldComm const& worldComm=WorldComm() );
+    MatrixPetscMPI( DataMap const& dmRow, DataMap const& dmCol, WorldComm const& worldComm=Environment::worldComm() );
 
     MatrixPetscMPI( Mat m, DataMap const& dmRow, DataMap const& dmCol );
 

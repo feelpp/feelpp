@@ -124,7 +124,7 @@ public:
     /**
      * default constructor
      */
-    Mesh0D( WorldComm const& worldComm = WorldComm() )
+    Mesh0D( WorldComm const& worldComm = Environment::worldComm() )
         :
         super_visitable(),
         super( worldComm ),

@@ -139,7 +139,7 @@ public:
     /**
      * default constructor
      */
-    Mesh1D( WorldComm const& worldComm = WorldComm() )
+    Mesh1D( WorldComm const& worldComm = Environment::worldComm() )
         :
         super_visitable(),
         super( worldComm ),
