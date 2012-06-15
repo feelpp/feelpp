@@ -1981,7 +1981,7 @@ class Inverse
 
     template<typename GeoElem>
     Inverse( geometric_mapping_ptrtype __gm, GeoElem const& __ge,
-             WorldComm const& worldComm = WorldComm() )
+             WorldComm const& worldComm = Environment::worldComm() )
         :
         _M_gm( __gm ),
         _M_xref( __gm->dim() ),
@@ -2019,7 +2019,7 @@ class Inverse
 
     template<typename GeoElem>
     Inverse( geometric_mapping_ptrtype __gm, GeoElem const& __ge, mpl::int_<1>/**/ ,
-             WorldComm const& worldComm = WorldComm())
+             WorldComm const& worldComm = Environment::worldComm())
     :
         _M_gm( __gm ),
         _M_xref( __gm->dim() ),
@@ -2687,7 +2687,7 @@ struct GT_QK
                             1,2,3                       \
                                                     )   \
                                                     )   \
- 
+
 # /* List of real dims. */
 
 # define FEELPP_NEWDIMS                                           \

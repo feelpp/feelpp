@@ -29,11 +29,9 @@
 #ifndef __MeshBase_H
 #define __MeshBase_H 1
 
-#include <boost/mpi/communicator.hpp>
-
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/context.hpp>
-#include <feel/feelcore/worldcomm.hpp>
+#include <feel/feelcore/environment.hpp>
 
 namespace Feel
 {
@@ -86,7 +84,7 @@ public:
     /**
      * Default constructor
      */
-    MeshBase( WorldComm const& worldComm = WorldComm() );
+    MeshBase( WorldComm const& worldComm = Environment::worldComm() );
 
     /**
      * copy constructor

@@ -216,7 +216,7 @@ public:
      */
     //@{
 
-    Faces( WorldComm const& worldComm = WorldComm() )
+    Faces( WorldComm const& worldComm = Environment::worldComm() )
         :
         _M_worldCommFaces( worldComm ),
         _M_faces()

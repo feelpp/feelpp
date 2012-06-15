@@ -85,7 +85,7 @@ public:
     typedef typename super::nl_solve_return_type nl_solve_return_type;
 
     // -- CONSTRUCTOR --
-    BackendPetsc( WorldComm const& worldComm=WorldComm() )
+    BackendPetsc( WorldComm const& worldComm=Environment::worldComm() )
         :
         super( worldComm ),
         M_solver_petsc( worldComm ),
@@ -93,7 +93,7 @@ public:
     {}
 
     BackendPetsc( po::variables_map const& vm, std::string const& prefix = "",
-                  WorldComm const& worldComm=WorldComm() )
+                  WorldComm const& worldComm=Environment::worldComm() )
         :
         super( vm, prefix, worldComm ),
         M_solver_petsc( vm, worldComm ),
