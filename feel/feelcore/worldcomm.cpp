@@ -48,28 +48,22 @@ WorldComm::WorldComm()
     M_isActive( this->godSize(),true )
 {
     Debug() << "\n WorldComm : warning constructor empty!! on godRank " << this->godRank() << "\n";
-    this->godComm().barrier();
-    std::vector<int> globalRanks( this->globalSize() );
-    mpi::all_gather( this->globalComm(),
-                     this->globalRank(),
-                     globalRanks );
-    Debug() << "gather1\n";
-    mpi::all_gather( this->globalComm(),
-                     0,
-                     M_mapColorWorld );
+    init( 0, false );
 
-    mpi::all_gather( this->globalComm(),//this->localComm(),
-                     this->globalRank(),
-                     M_mapLocalRankToGlobalRank );
+}
 
-    mpi::all_gather( this->globalComm(),
-                     this->godRank(),
-                     M_mapGlobalRankToGodRank );
-
-    // choice : the smallest rank
-    M_masterRank = *std::min_element( globalRanks.begin(),globalRanks.end() );
-
-    //std::cout << "\n WorldComm : warning constructor empty!! finish on godRank " << this->godRank() << std::endl;
+WorldComm::WorldComm( super const& s )
+    :
+    super(),
+    M_localComm( super::split( 0, this->globalRank() ) ),
+    M_godComm(s),
+    M_mapColorWorld( this->globalSize() ),
+    M_mapLocalRankToGlobalRank( this->localSize() ),
+    M_mapGlobalRankToGodRank( this->globalSize() ),
+    M_isActive( this->godSize(),true )
+{
+    Debug() << "\n WorldComm : warning constructor empty!! on godRank " << this->godRank() << "\n";
+    init( 0, false );
 }
 
 //-------------------------------------------------------------------------------
@@ -84,27 +78,7 @@ WorldComm::WorldComm( int color )
     M_mapGlobalRankToGodRank( this->globalSize() ),
     M_isActive( this->godSize(),true )
 {
-    this->godComm().barrier();
-
-    std::vector<int> globalRanks( this->globalSize() );
-    mpi::all_gather( this->godComm(),
-                     this->globalRank(),
-                     globalRanks );
-
-    mpi::all_gather( this->globalComm(),
-                     color,
-                     M_mapColorWorld );
-
-    mpi::all_gather( this->localComm(),
-                     this->globalRank(),
-                     M_mapLocalRankToGlobalRank );
-
-    mpi::all_gather( this->globalComm(),
-                     this->godRank(),
-                     M_mapGlobalRankToGodRank );
-
-    // choice : the smallest rank
-    M_masterRank = *std::min_element( globalRanks.begin(),globalRanks.end() );
+    init( color, false );
 }
 
 //-------------------------------------------------------------------------------
@@ -118,38 +92,15 @@ WorldComm::WorldComm( int color )
     M_mapGlobalRankToGodRank( this->globalSize() ),
     M_isActive( this->godSize(),true )
 {
-    //std::cout << "\n WorldComm : constructor vector<color>!! start on godRank " << this->godRank() << std::endl;
-    //this->godComm().barrier();
-    std::vector<int> globalRanks( this->globalSize() );
-    mpi::all_gather( this->globalComm(),
-                     this->globalRank(),
-                     globalRanks );
-    //std::cout << "\n WorldComm : constructor vector<color>!! --1--- on godRank " << this->godRank() << std::endl;
-    //this->godComm().barrier();
+    init( 0, true );
 
-    mpi::all_gather( this->localComm(),
-                     this->globalRank(),
-                     M_mapLocalRankToGlobalRank );
-    //std::cout << "\n WorldComm : constructor vector<color>!! ---2--- on godRank " << this->godRank() << std::endl;
-    //this->godComm().barrier();
-
-    mpi::all_gather( this->godComm(),//this->globalComm(),
-                     this->godRank(),
-                     M_mapGlobalRankToGodRank );
-
-    // choice : the smallest rank
-    M_masterRank = *std::min_element( globalRanks.begin(),globalRanks.end() );
-    //std::cout << "\n WorldComm : constructor vector<color>!! finish on godRank " << this->godRank() << std::endl;
 }
 
-    /////////////////
-    //////////
 
-
-    WorldComm::WorldComm( std::vector<int> const& colorWorld,
-                          int _localRank,
-                          communicator_type const& _globalComm,
-                          communicator_type const& _godComm )
+WorldComm::WorldComm( std::vector<int> const& colorWorld,
+                      int _localRank,
+                      communicator_type const& _globalComm,
+                      communicator_type const& _godComm )
     :
     super(_globalComm),
     M_localComm( super::split( colorWorld[this->globalRank()],_localRank ) ),
@@ -159,13 +110,25 @@ WorldComm::WorldComm( int color )
     M_mapGlobalRankToGodRank( this->globalSize() ),
     M_isActive( this->godSize(),true )
 {
-    //std::cout << "\n WorldComm : NEW constructor vector<color>!! start on godRank " << this->godRank() << std::endl;
+        init( 0, true );
+}
+
+//-------------------------------------------------------------------------------
+
+void
+WorldComm::init( int color, bool colormap )
+{
     std::vector<int> globalRanks( this->globalSize() );
     mpi::all_gather( this->globalComm(),
                      this->globalRank(),
                      globalRanks );
+    Debug() << "gather1\n";
+    if ( !colormap )
+        mpi::all_gather( this->globalComm(),
+                         color,
+                         M_mapColorWorld );
 
-    mpi::all_gather( this->localComm(),
+    mpi::all_gather( this->globalComm(),//this->localComm(),
                      this->globalRank(),
                      M_mapLocalRankToGlobalRank );
 
@@ -175,6 +138,9 @@ WorldComm::WorldComm( int color )
 
     // choice : the smallest rank
     M_masterRank = *std::min_element( globalRanks.begin(),globalRanks.end() );
+
+    //std::cout << "\n WorldComm : warning constructor empty!! finish on godRank " << this->godRank() << std::endl;
+
 }
 
 //-------------------------------------------------------------------------------

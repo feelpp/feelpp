@@ -126,7 +126,7 @@ public:
      */
     //@{
 
-    Gmsh( int nDim = 1, int nOrder = GMSH_ORDER_ONE, WorldComm const& worldComm=WorldComm() );
+    Gmsh( int nDim = 1, int nOrder = GMSH_ORDER_ONE, WorldComm const& worldComm=Environment::worldComm() );
     Gmsh( Gmsh const & __g );
     virtual ~Gmsh();
 
@@ -625,7 +625,7 @@ BOOST_PARAMETER_FUNCTION(
     ( optional
       ( refine,          *( boost::is_integral<mpl::_> ), 0 )
       ( save,          *( boost::is_integral<mpl::_> ), 0 )
-      ( worldcomm, ( WorldComm ), WorldComm() )
+      ( worldcomm, ( WorldComm ), Environment::worldComm() )
     ) )
 {
     typedef typename detail::mesh<Args>::type _mesh_type;
@@ -806,10 +806,10 @@ BOOST_PARAMETER_FUNCTION(
       ( update,          *( boost::is_integral<mpl::_> ), 0 )
       ( force_rebuild,   *( boost::is_integral<mpl::_> ), 0 )
       ( physical_are_elementary_regions,           *,false )
-      ( partitions,   *( boost::is_integral<mpl::_> ), 1 )
+      ( partitions,   *( boost::is_integral<mpl::_> ), Environment::worldComm().size() )
       ( partition_file,   *( boost::is_integral<mpl::_> ), 0 )
       ( partitioner,   *( boost::is_integral<mpl::_> ), GMSH_PARTITIONER_CHACO )
-      ( worldcomm,      *, WorldComm() )
+      ( worldcomm,      *, Environment::worldComm() )
     )
 )
 {

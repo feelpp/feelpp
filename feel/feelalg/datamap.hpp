@@ -31,6 +31,7 @@
 
 #include <vector>
 #include <feel/feelcore/feel.hpp>
+#include <feel/feelcore/environment.hpp>
 #include <feel/feelcore/worldcomm.hpp>
 
 namespace Feel
@@ -59,13 +60,13 @@ public:
      */
     //@{
 
-    DataMap( WorldComm const& _worldComm = WorldComm() );
+    DataMap( WorldComm const& _worldComm = Environment::worldComm() );
 
     /**
      * \param n total size of the vector
      * \param n_local local size of the vector on the curent processor
      */
-    DataMap( size_type n, size_type n_local, WorldComm const& _worldComm = WorldComm() );
+    DataMap( size_type n, size_type n_local, WorldComm const& _worldComm = Environment::worldComm() );
 
     /**
      * \param n total size of the vector
