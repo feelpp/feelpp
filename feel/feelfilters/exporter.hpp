@@ -385,10 +385,14 @@ public:
         }
     }
 
+    void setWorldComm( WorldComm const& wc )
+        {
+            M_worldComm = wc;
+        }
     WorldComm const& worldComm() const
-    {
-        return M_worldComm;
-    }
+        {
+            return M_worldComm;
+        }
 
 
     //@}
