@@ -113,6 +113,8 @@ extern template class Stokes<2, Lagrange<5, Vectorial>,Lagrange<4, Scalar>, Simp
 extern template class Stokes<2, Lagrange<5, Vectorial>,Lagrange<4, Scalar>, Hypercube>;
 //extern template class Stokes<3, Lagrange<5, Vectorial>,Lagrange<4, Scalar>, Simplex>;
 
+extern template class Stokes<3, Lagrange<2, Vectorial>,Lagrange<1, Scalar>, Simplex>;
+extern template class Stokes<3, Lagrange<2, Vectorial>,Lagrange<1, Scalar>, Hypercube>;
 }
 
 int main( int argc, char** argv )
@@ -133,10 +135,15 @@ int main( int argc, char** argv )
         return 0;
     }
 
+#if defined( FEELPP_SOLUTION_1 ) || defined( FEELPP_SOLUTION_KOVASNAY )
     benchmark.add( new Stokes<2, CrouzeixRaviart<1, Vectorial>,Lagrange<0, Scalar,Discontinuous>, Simplex>( "2D-CR1P0-Simplex",benchmark.vm(),benchmark.about() ) );
     benchmark.add( new Stokes<2, CrouzeixRaviart<1, Vectorial>,Lagrange<0, Scalar,Discontinuous>, Hypercube>( "2D-CR1P0-Hypercube",benchmark.vm(),benchmark.about() ) );
     benchmark.add( new Stokes<2, Lagrange<2, Vectorial>,Lagrange<1, Scalar>, Simplex>( "2D-P2P1-Simplex", benchmark.vm(), benchmark.about() ) );
     benchmark.add( new Stokes<2, Lagrange<2, Vectorial>,Lagrange<1, Scalar>, Hypercube>( "2D-P2P1-Hypercube", benchmark.vm(), benchmark.about() ) );
+#elif defined( FEELPP_SOLUTION_ETHIERSTEINMANN )
+    benchmark.add( new Stokes<3, Lagrange<2, Vectorial>,Lagrange<1, Scalar>, Hypercube>( "3D-P2P1-Hypercube", benchmark.vm(), benchmark.about() ) );
+    benchmark.add( new Stokes<3, Lagrange<2, Vectorial>,Lagrange<1, Scalar>, Simplex>( "3D-P2P1-Simplex", benchmark.vm(), benchmark.about() ) );
+#endif
 
 
 
