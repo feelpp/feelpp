@@ -248,7 +248,7 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     bool add_convection = ( math::abs( betacoeff  ) > 1e-10 );
     double mu = this->vm()["mu"].template as<value_type>();
 
-#if 1
+#if FEELPP_SOLUTION_1
     // u exact solution
     //auto u_exact = vec(cos(Px())*cos(Py()), sin(Px())*sin(Py()));
     auto u_exact = val( -exp( Px() )*( Py()*cos( Py() )+sin( Py() ) )*unitX()+ exp( Px() )*Py()*sin( Py() )*unitY()+ Pz()*unitZ() );
@@ -271,8 +271,8 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     //auto f = vec( (2*cos(Px())*cos(Py())-sin(Px())*sin(Py())),
     //              2*sin(Px())*sin(Py())+cos(Px())*cos(Py()) );
     auto f = val( -2*exp( Px() )*( mu-1. )*vec( sin( Py() ),cos( Py() ) ) );
-
-#else
+#endif
+#if FEELPP_SOLUTION_KOVASNAY
     //
     // the Kovasznay flow (2D)
     //
@@ -307,6 +307,42 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     double pmean = -0.125*( math::exp( -1.0*lambda )-1.0*math::exp( 3.0*lambda ) )/lambda;
 
 #endif
+#if FEELPP_SOLUTION_ETHIERSTEINMANN
+    //
+    // the EthierSteinmann flow (3D)
+    //
+    double pi = M_PI;
+    double lambda = 1./( 2.*mu ) - math::sqrt( 1./( 4.*mu*mu ) + 4.*pi*pi );
+    // total stress tensor (test)
+    auto u1 = 1. - exp( lambda * Px() ) * cos( 2.*pi*Py() );
+    auto u2 = ( lambda/( 2.*pi ) ) * exp( lambda * Px() ) * sin( 2.*pi*Py() );
+    auto u_exact = val( vec( u1,u2 ) );
+
+    auto du_dx = ( -lambda*exp( lambda * Px() )*cos( 2.*pi*Py() ) );
+    auto du_dy = ( 2*pi*exp( lambda * Px() )*sin( 2.*pi*Py() ) );
+    auto dv_dx = ( ( lambda*lambda/( 2*pi ) )*exp( lambda * Px() )*sin( 2.*pi*Py() ) );
+    auto dv_dy = ( lambda*exp( lambda * Px() )*cos( 2.*pi*Py() ) );
+    auto grad_exact = val( mat<2,2>( du_dx, du_dy, dv_dx, dv_dy ) );
+    auto div_exact = val( du_dx + dv_dy );
+
+    auto beta = vec( cst( betacoeff ),cst( betacoeff ) );
+    auto convection = val( grad_exact*beta );
+
+    auto p_exact = val( ( -exp( 2.*lambda*Px() ) )/2.0-0.125*( exp( -1.0*lambda )-1.0*exp( 3.0*lambda ) )/lambda );
+
+    //auto f1 = (exp( lambda * Px() )*((lambda*lambda - 4.*pi*pi)*mu*cos(2.*pi*Py()) - lambda*exp( lambda * Px() )));
+    auto f1 = ( -mu*( -lambda*lambda*exp( lambda*Px() )*cos( 2.0*pi*Py() )+4.0*exp( lambda*Px() )*cos( 2.0*pi*Py() )*pi*pi )-lambda*exp( 2.0*lambda*Px() ) );
+
+    //auto f2 = (exp( lambda * Px() )*mu*(lambda/(2.*pi))*sin(2.*pi*Py())*(-lambda*lambda +4*pi*pi));
+    auto f2 = ( -mu*( lambda*lambda*lambda*exp( lambda*Px() )*sin( 2.0*pi*Py() )/pi/2.0-2.0*lambda*exp( lambda*Px() )*sin( 2.0*pi*Py() )*pi ) );
+
+    auto f = val( vec( f1,f2 ) ); //+ convection;
+
+    //double pmean = integrate( elements(mesh), p_exact ).evaluate()( 0, 0 )/mesh->measure();
+    double pmean = -0.125*( math::exp( -1.0*lambda )-1.0*math::exp( 3.0*lambda ) )/lambda;
+
+#endif
+
     boost::timer subt;
     // right hand side
     auto F = M_backend->newVector( Xh );
