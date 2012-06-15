@@ -154,7 +154,7 @@ Application::initMPI( int argc, char** argv, MPI_Comm comm )
         MPI_Errhandler_set( MPI_COMM_WORLD, MPI_ERRORS_RETURN );
     }
 
-    M_comm = boost::shared_ptr<mpi::communicator>( new mpi::communicator() );
+    M_comm = Environment::worldComm();
     //MPI_Comm_dup ( comm, &COMM_WORLD);
     //MPI_Comm_dup ( comm, (MPI_Comm*)&S_world );
 #if 0
@@ -192,7 +192,6 @@ Application::Application( int argc,
 #endif
 {
     //_M_desc.add( Feel::feel_options() );
-
     initMPI( argc, argv, comm );
 
     doOptions( argc, argv );
@@ -204,7 +203,7 @@ Application::Application( int argc,
     if ( __env )
         env_str = __env;
 
-    mpi::broadcast( *M_comm, env_str, 0 );
+    mpi::broadcast( M_comm, env_str, 0 );
 
     if ( processId() != 0 )
     {
@@ -263,7 +262,7 @@ Application::Application( int argc,
     if ( __env )
         env_str = __env;
 
-    mpi::broadcast( *M_comm, env_str, 0 );
+    mpi::broadcast( M_comm, env_str, 0 );
 
     if ( processId() != 0 )
     {
@@ -336,7 +335,7 @@ Application::Application( AboutData const& ad,
     if ( __env )
         env_str = __env;
 
-    mpi::broadcast( *M_comm, env_str, 0 );
+    mpi::broadcast( M_comm, env_str, 0 );
 
     if ( processId() != 0 )
     {
@@ -406,7 +405,7 @@ Application::Application( AboutData const& ad )
     if ( __env )
         env_str = __env;
 
-    mpi::broadcast( *M_comm, env_str, 0 );
+    mpi::broadcast( M_comm, env_str, 0 );
 
     if ( processId() != 0 )
     {
