@@ -299,6 +299,21 @@ Environment::setLogs( std::string const& prefix )
     Assert::setLog( ostr_assert.str().c_str() );
 }
 
+std::vector<WorldComm> const&
+Environment::worldsComm( int n )
+{
+    for(int i = 0;i < n; ++i )
+        {
+            S_worldcomm->subWorlds(n)[i].showMe();
+        }
+    return S_worldcomm->subWorlds(n);
+}
+WorldComm const&
+Environment::masterWorldComm( int n )
+{
+    return S_worldcomm->masterWorld(n);
+}
+
 boost::signals2::signal<void ()> Environment::S_deleteObservers;
 
 boost::shared_ptr<WorldComm> Environment::S_worldcomm;

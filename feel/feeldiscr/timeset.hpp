@@ -460,7 +460,8 @@ public:
             if ( !M_ts->_M_scalar_p0 )
             {
                 Debug() << "[timeset] creating space...\n";
-                M_ts->_M_scalar_p0 = scalar_p0_space_ptrtype( new scalar_p0_space_type ( _M_mesh.get() ) );
+                auto wc = std::vector<WorldComm>( 1, Environment::worldComm().subWorld(Environment::worldComm().numberOfSubWorlds()) );
+                M_ts->_M_scalar_p0 = scalar_p0_space_type::New ( _mesh=_M_mesh.get(), _worldscomm=wc );
                 _M_scalar_p0 = M_ts->_M_scalar_p0;
             }
             Debug() << "[timeset] adding pid...\n";

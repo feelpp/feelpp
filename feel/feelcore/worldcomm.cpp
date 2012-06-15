@@ -29,6 +29,7 @@
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/debug.hpp>
 #include <feel/feelcore/worldcomm.hpp>
+#include <feel/feelcore/environment.hpp>
 
 //#include <boost/mpi/communicator.hpp>
 
@@ -128,7 +129,7 @@ WorldComm::init( int color, bool colormap )
                          color,
                          M_mapColorWorld );
 
-    mpi::all_gather( this->globalComm(),//this->localComm(),
+    mpi::all_gather( this->localComm(),
                      this->globalRank(),
                      M_mapLocalRankToGlobalRank );
 
@@ -374,6 +375,23 @@ WorldComm::subWorldComm( int _color ) const
                       myColor,
                       newIsActive );
 
+}
+
+//-------------------------------------------------------------------------------
+WorldComm::self_type
+WorldComm::subWorldComm( std::vector<int> const& colormap )
+{
+    M_mapColorWorld = colormap;
+    return this->subWorldComm();
+}
+
+//-------------------------------------------------------------------------------
+
+WorldComm::self_type
+WorldComm::subWorldComm( int _color, std::vector<int> const& colormap )
+{
+    M_mapColorWorld = colormap;
+    return this->subWorldComm( _color );
 }
 
 //-------------------------------------------------------------------------------
@@ -638,6 +656,91 @@ WorldComm::applyActivityOnlyOn(int _localColor) const
 }
 
 //-------------------------------------------------------------------------------
+
+WorldComm const&
+WorldComm::subWorld( int n )
+{
+    if ( !hasSubWorlds( n ) )
+        registerSubWorlds( n );
+    return M_subworlds.find(n)->second.second[subWorldId(n)];
+}
+int
+WorldComm::subWorldId( int n )
+{
+    if ( !hasSubWorlds( n ) )
+        registerSubWorlds( n );
+    return M_subworlds.find(n)->second.first.M_mapColorWorld[this->globalRank()];
+}
+bool
+WorldComm::hasSubWorlds( int n )
+{
+    return M_subworlds.find( n ) != M_subworlds.end();
+}
+
+std::vector<WorldComm> const&
+WorldComm::subWorlds( int n )
+{
+    if ( !hasSubWorlds( n ) )
+        registerSubWorlds( n );
+    return M_subworlds[n].second;
+}
+int
+WorldComm::numberOfSubWorlds() const
+{
+    return M_subworlds.begin()->first;
+}
+
+WorldComm const&
+WorldComm::masterWorld( int n )
+{
+    if ( !hasSubWorlds( n ) )
+        registerSubWorlds( n );
+    return M_subworlds[n].first;
+}
+
+void
+WorldComm::registerSubWorlds( int n )
+{
+    if ( n > 1 )
+    {
+        // if necessary register a world with n subworlds
+        if ( !WorldComm::hasSubWorlds( n ) )
+        {
+            std::vector<int> MapWorld(this->globalSize());
+            if (this->globalSize()>1)
+            {
+                // be careful the number of processors must be a multiple of nSpaces for now
+                int nprocs_per_space = globalSize()/n;
+                for (int proc = 0 ; proc < nprocs_per_space; ++proc)
+                {
+                    for( int s = 0; s < n; ++s )
+                        MapWorld[nprocs_per_space*s+proc] = s;
+                }
+                WorldComm wc(*this);
+                wc.setColorMap( MapWorld );
+
+                std::vector<WorldComm> subworlds( n, wc );
+                for( int s = 0; s < n; ++s )
+                {
+                    subworlds[s] = wc.subWorldComm( s, MapWorld );
+                }
+                M_subworlds.insert( std::make_pair( n, std::make_pair( wc,  subworlds ) ) );
+            }
+        }
+    }
+
+}
+
+void
+WorldComm::setColorMap( std::vector<int> const& colormap )
+{
+    M_mapColorWorld = colormap;
+    M_localComm = super::split( M_mapColorWorld[this->globalRank()] );
+    std::cout << "localSize = " << M_localComm.size() << "\n";
+    mpi::all_gather( this->localComm(),
+                     this->globalRank(),
+                     M_mapLocalRankToGlobalRank );
+}
 
 } //namespace Feel
 
