@@ -707,28 +707,34 @@ WorldComm::registerSubWorlds( int n )
         if ( !WorldComm::hasSubWorlds( n ) )
         {
             std::vector<int> MapWorld(this->globalSize());
-            if (this->globalSize()>1)
+            // be careful the number of processors must be a multiple of nSpaces for now
+            int nprocs_per_space = 0;
+            if ( globalSize() <= n )
+                nprocs_per_space = 1;
+            else
+                nprocs_per_space = globalSize()/n;
+            for (int proc = 0 ; proc < nprocs_per_space; ++proc)
             {
-                // be careful the number of processors must be a multiple of nSpaces for now
-                int nprocs_per_space = globalSize()/n;
-                for (int proc = 0 ; proc < nprocs_per_space; ++proc)
-                {
-                    for( int s = 0; s < n; ++s )
-                        MapWorld[nprocs_per_space*s+proc] = s;
-                }
-                WorldComm wc(*this);
-                wc.setColorMap( MapWorld );
-
-                std::vector<WorldComm> subworlds( n, wc );
                 for( int s = 0; s < n; ++s )
-                {
-                    subworlds[s] = wc.subWorldComm( s, MapWorld );
-                }
-                M_subworlds.insert( std::make_pair( n, std::make_pair( wc,  subworlds ) ) );
+                    MapWorld[nprocs_per_space*s+proc] = s;
             }
+            WorldComm wc(*this);
+            wc.setColorMap( MapWorld );
+
+            std::vector<WorldComm> subworlds( n, wc );
+            for( int s = 0; s < n; ++s )
+            {
+                subworlds[s] = wc.subWorldComm( s, MapWorld );
+            }
+            M_subworlds.insert( std::make_pair( n, std::make_pair( wc,  subworlds ) ) );
+
         }
     }
-
+    else if ( n == 1 )
+    {
+        std::vector<WorldComm> subworlds( n, Environment::worldComm() );
+        M_subworlds.insert( std::make_pair( n, std::make_pair( Environment::worldComm(), subworlds ) ) );
+    }
 }
 
 void
