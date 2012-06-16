@@ -6,7 +6,7 @@
        Date: 2005-11-13
 
   Copyright (C) 2005,2006 EPFL
-  Copyright (C) 2007 Universit� Joseph Fourier (Grenoble I)
+  Copyright (C) 2007-2012 Universite Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -23,12 +23,12 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 /**
-   \file matrixgmm.hpp
+   \file matrixeigen.hpp
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2005-11-13
  */
-#ifndef __MatrixGmm_H
-#define __MatrixGmm_H 1
+#ifndef __MatrixEigen_H
+#define __MatrixEigen_H 1
 
 #include <set>
 
@@ -39,197 +39,42 @@
 #include <boost/none_t.hpp>
 #endif /* BOOST_VERSION >= 103400 */
 
-#include <boost/numeric/ublas/vector.hpp>
+#include <Eigen/Core>
 
 
-#include <gmm_matrix.h>
-#include <gmm_sub_matrix.h>
+
+#include <eigen_matrix.h>
+#include <eigen_sub_matrix.h>
 #include <feel/feelalg/matrixsparse.hpp>
 #include <feel/feelalg/vectorublas.hpp>
 
 
-namespace gmm
+namespace eigen
 {
-namespace ublas = boost::numeric::ublas;
-/// \cond detail
-template <typename T>
-struct linalg_traits<ublas::vector<T, ublas::unbounded_array<T, std::allocator<T> > > >
-{
-    typedef ublas::vector<T, ublas::unbounded_array<T, std::allocator<T> > > this_type;
-    typedef this_type origin_type;
-    typedef linalg_false is_reference;
-    typedef abstract_vector linalg_type;
-    typedef T value_type;
-    typedef T& reference;
-    typedef typename this_type::iterator iterator;
-    typedef typename this_type::const_iterator const_iterator;
-    typedef abstract_dense storage_type;
-    typedef linalg_true index_sorted;
-    static size_type size( const this_type &v )
-    {
-        return v.size();
-    }
-    static iterator begin( this_type &v )
-    {
-        return v.begin();
-    }
-    static const_iterator begin( const this_type &v )
-    {
-        return v.begin();
-    }
-    static iterator end( this_type &v )
-    {
-        return v.end();
-    }
-    static const_iterator end( const this_type &v )
-    {
-        return v.end();
-    }
-    static origin_type* origin( this_type &v )
-    {
-        return &v;
-    }
-    static const origin_type* origin( const this_type &v )
-    {
-        return &v;
-    }
-    static void clear( origin_type*, const iterator &it, const iterator &ite )
-    {
-        std::fill( it, ite, value_type( 0 ) );
-    }
-    static void do_clear( this_type &v )
-    {
-        v.clear();
-    }
-    static value_type access( const origin_type *, const const_iterator &it,
-                              const const_iterator &, size_type i )
-    {
-        return *( it+i );
-    }
-    static reference access( origin_type *, const iterator &it,
-                             const iterator &, size_type i )
-    {
-        return *( it+i );
-    }
-    static void resize( this_type &v, size_type n )
-    {
-        v.resize( n, true );
-    }
-};
-
-
-
-template <typename T>
-inline
-gmm::size_type
-nnz( const ublas::vector<T>& l )
-{
-    return l.size();
-}
-
-//
-// ublas compressed matrices
-//
-template <typename T>
-struct linalg_traits<ublas::compressed_matrix<T, ublas::row_major> >
-{
-    typedef ublas::compressed_matrix<T> this_type;
-    typedef typename this_type::size_type IND_TYPE;
-    typedef linalg_const is_reference;
-    typedef abstract_matrix linalg_type;
-    typedef T value_type;
-    typedef T origin_type;
-    typedef T reference;
-    typedef abstract_sparse storage_type;
-    typedef abstract_null_type sub_col_type;
-    typedef abstract_null_type const_sub_col_type;
-    typedef abstract_null_type col_iterator;
-    typedef abstract_null_type const_col_iterator;
-    typedef abstract_null_type sub_row_type;
-    typedef typename this_type::vector_subiterator_type::value_type const_sub_row_type;
-    typedef typename this_type::const_iterator1 const_row_iterator;
-
-    typedef abstract_null_type row_iterator;
-    typedef row_major sub_orientation;
-    typedef linalg_true index_sorted;
-    static size_type nrows( const this_type &m )
-    {
-        return m.size1();
-    }
-    static size_type ncols( const this_type &m )
-    {
-        return m.size2();
-    }
-    static const_row_iterator row_begin( const this_type &m )
-    {
-        return m.begin1();
-    }
-    static const_row_iterator row_end( const this_type &m )
-    {
-        return m.end1();
-    }
-    static const_sub_row_type row( const const_row_iterator &it )
-    {
-        return *it;
-    }
-    static const origin_type* origin( const this_type &m )
-    {
-        return m.value_data().begin();
-    }
-    static void do_clear( this_type &m )
-    {
-        m.clear();
-    }
-    static value_type access( const const_row_iterator &itrow, size_type j )
-    {
-        return itrow[j];
-    }
-};
-
-template <typename T>
-std::ostream &operator <<( std::ostream &o,
-                           const ublas::compressed_matrix<T, ublas::row_major>& m )
-{
-    o << m;
-    return o;
-}
-/// \endcond detail
-} // gmm
-
-namespace std
-{
-template <typename T>
-ostream &
-operator <<( std::ostream &o, const boost::numeric::ublas::vector<T>& m )
-{
-    gmm::write( o,m );
-    return o;
-}
-}
 namespace Feel
 {
 template<typename T, typename Storage> class VectorUblas;
 
 /*!
- * \class MatrixGmm
- * \brief interface to gmm sparse matrix
+ * \class MatrixEigen
+ * \brief interface to eigen sparse matrix
  *
  * this class is a wrapper around \c csr_matrix<> and \c csc_matrix<>
- * data type from \c gmm:: .
+ * data type from \c eigen:: .
  *
  *
  * \code
  * // csr matrix
- * MatrixGmm<T,gmm::row_major> m;
+ * MatrixEigen<T,eigen::row_major> m;
  * // csc matrix
- * MatrixGmm<T,gmm::col_major> m;
+ * MatrixEigen<T,eigen::col_major> m;
  * \endcode
  *
  *  @author Christophe Prud'homme
  *  @see
  */
-template<typename T, typename LayoutType>
-class MatrixGmm : public MatrixSparse<T>
+template<typename T>
+class MatrixEigen : public MatrixSparse<T>
 {
     typedef MatrixSparse<T> super;
 public:
@@ -242,19 +87,19 @@ public:
     typedef T value_type;
     typedef typename type_traits<value_type>::real_type real_type;
 
-    typedef typename mpl::if_<boost::is_same<LayoutType, gmm::row_major>,
-            mpl::identity<gmm::csr_matrix<value_type> >,
-            typename mpl::if_<boost::is_same<LayoutType, gmm::col_major>,
-            mpl::identity<gmm::csc_matrix<value_type> >,
+    typedef typename mpl::if_<boost::is_same<LayoutType, eigen::row_major>,
+            mpl::identity<eigen::csr_matrix<value_type> >,
+            typename mpl::if_<boost::is_same<LayoutType, eigen::col_major>,
+            mpl::identity<eigen::csc_matrix<value_type> >,
             mpl::identity<boost::none_t> >::type>::type::type matrix_type;
 
 
-    static const bool is_row_major = boost::is_same<LayoutType,gmm::row_major>::value;
+    static const bool is_row_major = boost::is_same<LayoutType,eigen::row_major>::value;
 
 
     typedef std::vector<std::set<size_type> > pattern_type;
 
-    typedef gmm::row_matrix<gmm::wsvector<value_type> > write_matrix_type;
+    typedef eigen::row_matrix<eigen::wsvector<value_type> > write_matrix_type;
 
     typedef typename super::graph_type graph_type;
     typedef typename super::graph_ptrtype graph_ptrtype;
@@ -264,13 +109,13 @@ public:
      */
     //@{
 
-    MatrixGmm();
+    MatrixEigen();
 
-    MatrixGmm( size_type r, size_type c );
+    MatrixEigen( size_type r, size_type c );
 
-    MatrixGmm( MatrixGmm const & m );
+    MatrixEigen( MatrixEigen const & m );
 
-    ~MatrixGmm();
+    ~MatrixEigen();
 
 
     //@}
@@ -279,7 +124,7 @@ public:
      */
     //@{
 
-    MatrixGmm<T,LayoutType> & operator = ( MatrixSparse<value_type> const& M )
+    MatrixEigen<T,LayoutType> & operator = ( MatrixSparse<value_type> const& M )
     {
         return *this;
     }
@@ -319,7 +164,7 @@ public:
      */
     size_type nnz() const
     {
-        return gmm::nnz( _M_mat );
+        return eigen::nnz( _M_mat );
     }
 
     /**
@@ -349,14 +194,14 @@ public:
     }
 
     /**
-     * \c close the gmm matrix, that will copy the content of write
+     * \c close the eigen matrix, that will copy the content of write
      * optimized matrix into a read optimized matrix
      */
     void close () const;
 
 
     /**
-     * see if Gmm matrix has been closed
+     * see if Eigen matrix has been closed
      * and fully assembled yet
      */
     bool closed() const
@@ -366,7 +211,7 @@ public:
 
 
     /**
-     * Returns the read optimized gmm matrix.
+     * Returns the read optimized eigen matrix.
      */
     matrix_type const& mat () const
     {
@@ -374,7 +219,7 @@ public:
     }
 
     /**
-     * Returns the read optimized gmm matrix.
+     * Returns the read optimized eigen matrix.
      */
     matrix_type & mat ()
     {
@@ -382,7 +227,7 @@ public:
     }
 
     /**
-     * Returns the write optimized gmm matrix.
+     * Returns the write optimized eigen matrix.
      */
     write_matrix_type const& wmat () const
     {
@@ -390,7 +235,7 @@ public:
     }
 
     /**
-     * Returns the write optimized gmm matrix.
+     * Returns the write optimized eigen matrix.
      */
     write_matrix_type & wmat ()
     {
@@ -413,7 +258,7 @@ public:
     //@{
 
     /**
-     * Initialize a Gmm matrix that is of global
+     * Initialize a Eigen matrix that is of global
      * dimension \f$ m \times  n \f$ with local dimensions
      * \f$ m_l \times n_l \f$.  \p nnz is the number of on-processor
      * nonzeros per row (defaults to 30).
@@ -444,8 +289,8 @@ public:
      */
     void clear ()
     {
-        //gmm::resize( _M_mat, 0, 0 );
-        gmm::resize( _M_wmat, 0, 0 );
+        //eigen::resize( _M_mat, 0, 0 );
+        eigen::resize( _M_wmat, 0, 0 );
     }
 
     /**
@@ -454,14 +299,14 @@ public:
      */
     void zero ()
     {
-        gmm::clear( _M_wmat );
+        eigen::clear( _M_wmat );
     }
 
     void zero ( size_type start1, size_type stop1, size_type start2, size_type stop2 )
     {
-        gmm::clear( gmm::sub_matrix( _M_wmat,
-                                     gmm::sub_interval( start1, stop1-start1 ),
-                                     gmm::sub_interval( start2, stop2-start2 ) ) );
+        eigen::clear( eigen::sub_matrix( _M_wmat,
+                                     eigen::sub_interval( start1, stop1-start1 ),
+                                     eigen::sub_interval( start2, stop2-start2 ) ) );
     }
 
     /**
@@ -562,7 +407,7 @@ public:
                      int* cols, int ncols,
                      value_type* data )
     {
-        // NOT IMPLEMENTED YET (gmm support should get dropped in fact)
+        // NOT IMPLEMENTED YET (eigen support should get dropped in fact)
     }
 
     void scale( const T a ) {}
@@ -622,7 +467,7 @@ private:
     mutable bool _M_is_closed;
 
     /**
-     * the gmm sparse matrix data structure
+     * the eigen sparse matrix data structure
      */
     mutable matrix_type _M_mat;
 
@@ -635,7 +480,7 @@ private:
 
 template<typename T, typename LayoutType>
 void
-MatrixGmm<T, LayoutType>::zeroRows( std::vector<int> const& rows,
+MatrixEigen<T, LayoutType>::zeroRows( std::vector<int> const& rows,
                                     std::vector<value_type> const& vals,
                                     Vector<value_type>& rhs,
                                     Context const& on_context )
@@ -643,8 +488,8 @@ MatrixGmm<T, LayoutType>::zeroRows( std::vector<int> const& rows,
     Feel::detail::ignore_unused_variable_warning( rhs );
     Feel::detail::ignore_unused_variable_warning( vals );
 
-    gmm::resize( _M_wmat, gmm::mat_nrows( _M_mat ), gmm::mat_ncols( _M_mat ) );
-    gmm::copy( _M_mat, _M_wmat );
+    eigen::resize( _M_wmat, eigen::mat_nrows( _M_mat ), eigen::mat_ncols( _M_mat ) );
+    eigen::copy( _M_mat, _M_wmat );
 
     for ( size_type i = 0; i < rows.size(); ++i )
     {
@@ -653,7 +498,7 @@ MatrixGmm<T, LayoutType>::zeroRows( std::vector<int> const& rows,
         if ( on_context.test( ON_ELIMINATION_KEEP_DIAGONAL ) )
             value = _M_wmat.row( rows[i] ).r( rows[i] );
 
-        gmm::clear( gmm::mat_row( _M_wmat, rows[i] ) );
+        eigen::clear( eigen::mat_row( _M_wmat, rows[i] ) );
 
         // set diagonal
         _M_wmat.row( rows[i] ).w( rows[i], value );
@@ -662,9 +507,9 @@ MatrixGmm<T, LayoutType>::zeroRows( std::vector<int> const& rows,
         rhs.set( rows[i], value * vals[i] );
     }
 
-    gmm::copy( _M_wmat, _M_mat );
+    eigen::copy( _M_wmat, _M_mat );
 
 }
 
 } // Feel
-#endif /* __MatrixGmm_H */
+#endif /* __MatrixEigen_H */
