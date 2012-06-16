@@ -377,7 +377,7 @@ Backend<T>::stop()
         M_firstSolveTime = solveTime;
 
         if ( !M_reuseFailed )
-            M_maxit = std::min( M_maxit, ( size_type )( 1.5*solveIter + 10.5 ) );
+            M_maxit = std::max(size_type(10),std::min( M_maxit, ( size_type )( 1.5*solveIter + 10.5 ) ));
     }
 
     else
@@ -405,7 +405,7 @@ Backend<T>::stop()
 
         if ( M_reusePC )
         {
-            M_maxit = std::min( M_maxit, ( size_type )( M_totalSolveIter/M_nUsePC + 0.5 ) );
+            M_maxit = std::max( size_type(10),std::min( M_maxit, ( size_type )( M_totalSolveIter/M_nUsePC + 0.5 ) ));
         }
     }
 }
