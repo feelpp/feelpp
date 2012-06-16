@@ -302,10 +302,12 @@ Environment::setLogs( std::string const& prefix )
 std::vector<WorldComm> const&
 Environment::worldsComm( int n )
 {
-    for(int i = 0;i < n; ++i )
-        {
-            S_worldcomm->subWorlds(n)[i].showMe();
-        }
+#if 0
+    std::cout << "n=" << n << "\n";
+    S_worldcomm->showMe();
+    S_worldcomm->masterWorld(n).showMe();
+    std::cout << "size=" << S_worldcomm->subWorlds(n).size() <<  "\n";
+#endif
     return S_worldcomm->subWorlds(n);
 }
 WorldComm const&
