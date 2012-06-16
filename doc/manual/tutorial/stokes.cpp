@@ -419,6 +419,9 @@ main( int argc, char** argv )
 {
 
     using namespace Feel;
+
+    Environment env( argc, argv );
+
     /* assertions handling */
     Feel::Assert::setLog( "stokes.assert" );
 
