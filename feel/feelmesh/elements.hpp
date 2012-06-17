@@ -926,6 +926,39 @@ public:
         } );
     }
 
+
+    /**
+     * update the elements markers by setting them from the face markers associated to the elements
+     * warning the marker2 and marker3 must be > 0. if 2 several markers are find in elt, the element take
+     * the last find as marker
+     */
+    void updateMarkersFromFaces()
+    {
+
+        auto it = beginElement(), en = endElement();
+
+        for (  ; it != en; ++it )
+            _M_elements.modify( it,
+                             []( element_type& e )
+        {
+            int newtag2=0, newtag3=0;
+            for (uint16_type f=0;f<e.nFaces(); ++f)
+                {
+                    int tag2 = e.face(f).marker2().value();
+                    int tag3 = e.face(f).marker3().value();
+                    if (tag2>0) newtag2=tag2;
+                    if (tag3>0) newtag3=tag3;
+                }
+
+            if (newtag2>0) e.setMarker2( newtag2 );
+            if (newtag3>0) e.setMarker3( newtag3 );
+
+        } );
+
+    }
+
+
+
     void setWorldCommElements( WorldComm const& _worldComm )
     {
         _M_worldCommElements = _worldComm;
