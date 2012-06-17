@@ -366,7 +366,6 @@ Stokes::exportResults( ExprUExact u_exact, ExprPExact p_exact,
 
 #endif
 
-
     double u_errorL2 = integrate( elements( u.mesh() ), trans( idv( u )-u_exact )*( idv( u )-u_exact ) ).evaluate()( 0, 0 );
     std::cout << "||u_error||_2 = " << math::sqrt( u_errorL2 ) << "\n";;
 
