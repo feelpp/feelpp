@@ -660,6 +660,8 @@ WorldComm::applyActivityOnlyOn(int _localColor) const
 WorldComm const&
 WorldComm::subWorld( int n )
 {
+    if ( this->globalSize() == 1 )
+        return *this;
     if ( !hasSubWorlds( n ) )
         registerSubWorlds( n );
     return M_subworlds.find(n)->second.second[subWorldId(n)];
@@ -667,6 +669,9 @@ WorldComm::subWorld( int n )
 int
 WorldComm::subWorldId( int n )
 {
+    if ( this->globalSize() == 1 )
+        return 0;
+
     if ( !hasSubWorlds( n ) )
         registerSubWorlds( n );
     return M_subworlds.find(n)->second.first.M_mapColorWorld[this->globalRank()];
@@ -687,6 +692,8 @@ WorldComm::subWorlds( int n )
 int
 WorldComm::numberOfSubWorlds() const
 {
+    if ( this->globalSize() == 1 )
+        return 1;
     return M_subworlds.begin()->first;
 }
 
@@ -701,7 +708,7 @@ WorldComm::masterWorld( int n )
 void
 WorldComm::registerSubWorlds( int n )
 {
-    if ( n > 1 )
+    if ( ( n > 1 ) && ( this->globalSize() > 1 ) )
     {
         // if necessary register a world with n subworlds
         if ( !WorldComm::hasSubWorlds( n ) )
@@ -734,7 +741,7 @@ WorldComm::registerSubWorlds( int n )
 
         }
     }
-    else if ( n == 1 )
+    else if ( ( n == 1 ) || ( this->globalSize() == 1 ) )
     {
         std::vector<WorldComm> subworlds( n, Environment::worldComm() );
         M_subworlds.insert( std::make_pair( n, std::make_pair( Environment::worldComm(), subworlds ) ) );
