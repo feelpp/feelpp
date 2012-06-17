@@ -48,6 +48,8 @@
 
 #include <feel/feelvf/vf.hpp>
 
+#define FEELPP_USE_LM 1
+
 /**
  * This routine returns the list of options using the
  * boost::program_options library. The data returned is typically used
@@ -292,8 +294,8 @@ Stokes::run()
                   2*sin( Px() )*sin( Py() )+cos( Px() )*cos( Py() ) );
 
     // right hand side
-    auto stokes_rhs = form1( _test=Xh, _vector=F, _init=true );
-    stokes_rhs = integrate( elements( mesh ),inner( f,id( v ) ) );
+    auto stokes_rhs = form1( _test=Xh, _vector=F );
+    stokes_rhs += integrate( elements( mesh ),inner( f,id( v ) ) );
     stokes_rhs += integrate( boundaryfaces( mesh ), inner( u_exact,-SigmaN+penalbc*id( v )/hFace() ) );
 
     Log() << "[stokes] vector local assembly done\n";
@@ -302,9 +304,9 @@ Stokes::run()
      * Construction of the left hand side
      */
     //# marker7 #
-    auto stokes = form2( _test=Xh, _trial=Xh, _matrix=D, _init=true );
+    auto stokes = form2( _test=Xh, _trial=Xh, _matrix=D );
     boost::timer chrono;
-    stokes = integrate( elements( mesh ), mu*inner( deft,def ) );
+    stokes += integrate( elements( mesh ), mu*inner( deft,def ) );
     std::cout << "mu*inner(deft,def): " << chrono.elapsed() << "\n";
     chrono.restart();
     stokes +=integrate( elements( mesh ), - div( v )*idt( p ) + divt( u )*id( q ) );
@@ -411,6 +413,7 @@ Stokes::exportResults( ExprUExact u_exact, ExprPExact p_exact,
         exporter->step( 0 )->add( "p_exact", V.element<1>() );
         exporter->save();
     }
+
 } // Stokes::export
 } // Feel
 
