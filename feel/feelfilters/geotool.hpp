@@ -1153,7 +1153,7 @@ public:
         ) //required
         ( optional
           ( straighten,     *( boost::is_integral<mpl::_> ), 1 )
-          ( partitions,   *( boost::is_integral<mpl::_> ), 1 )
+          ( partitions,   *( boost::is_integral<mpl::_> ), Environment::worldComm().size() )
           ( partition_file,   *( boost::is_integral<mpl::_> ), 0 )
           ( partitioner,   *( boost::is_integral<mpl::_> ), GMSH_PARTITIONER_CHACO )
           ( worldcomm,      *, Environment::worldComm() )

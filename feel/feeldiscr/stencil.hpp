@@ -236,10 +236,11 @@ public:
 
         M_graph = this->computeGraph( graph_hints );
 
-        if ( diag_is_nonzero ) M_graph->addMissingZeroEntriesDiagonal();
+        if ( diag_is_nonzero && _M_X1->nLocalDofWithoutGhost()>0 && _M_X2->nLocalDofWithoutGhost()>0 ) M_graph->addMissingZeroEntriesDiagonal();
 
         M_graph->close();
     }
+
     Stencil( test_space_ptrtype Xh, trial_space_ptrtype Yh, size_type graph_hints, graph_ptrtype g )
         :
         _M_X1( Xh ),
@@ -966,10 +967,13 @@ Stencil<X1,X2>::computeGraph( size_type hints, mpl::bool_<true> )
     const size_type first2_dof_on_proc = _M_X2->dof()->firstDofGlobalCluster( proc_id );
     const size_type last2_dof_on_proc = _M_X2->dof()->lastDofGlobalCluster( proc_id );
 #endif
+
     graph_ptrtype sparsity_graph( new graph_type( n1_dof_on_proc,
                                   first1_dof_on_proc, last1_dof_on_proc,
                                   first2_dof_on_proc, last2_dof_on_proc,
                                   _M_X1->worldComm() ) );
+
+    if (_M_X1->nLocalDofWithoutGhost()==0 && _M_X2->nLocalDofWithoutGhost()==0 ) return sparsity_graph;
 
     auto elem_it  = _M_X1->mesh()->beginElementWithProcessId( _M_X1->mesh()->worldComm().localRank() /*proc_id*/ );
     auto elem_en  = _M_X1->mesh()->endElementWithProcessId( _M_X1->mesh()->worldComm().localRank() /*proc_id*/ );

@@ -732,7 +732,10 @@ WorldComm::registerSubWorlds( int n )
             std::vector<WorldComm> subworlds( n, wc );
             for( int s = 0; s < n; ++s )
             {
-                subworlds[s] = wc.subWorldComm( s, MapWorld );
+                if (this->globalSize()>1)
+                    subworlds[s] = wc.subWorldComm( s, MapWorld );
+                else
+                    subworlds[s] = wc;
             }
             M_subworlds.insert( std::make_pair( n, std::make_pair( wc,  subworlds ) ) );
 
