@@ -197,8 +197,10 @@ public:
             :
             super( N ),
             M_space( space ),
-            M_supersampling( supersampling ),
-            M_kdtree()
+            M_supersampling( supersampling )
+#if defined( FEELPP_HAS_ANN_H )
+            ,M_kdtree()
+#endif
         {}
 
         /**
@@ -385,8 +387,9 @@ public:
 
         sampling_ptrtype M_supersampling;
         std::vector<size_type> M_superindices;
-
+#if defined( FEELPP_HAS_ANN_H )
         kdtree_ptrtype M_kdtree;
+#endif
     };
 
     typedef Sampling sampling_type;
