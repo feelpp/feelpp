@@ -425,8 +425,6 @@ main( int argc, char** argv )
     /* assertions handling */
     Feel::Assert::setLog( "stokes.assert" );
 
-    Environment env( argc, argv );
-
     // SOME BAD ELEMENTS
     // P1/P0 : locking
     //typedef Feel::Stokes<Simplex<2>, Lagrange<1, Vectorial>,Lagrange<0, Scalar,Discontinuous> > stokes_type;
