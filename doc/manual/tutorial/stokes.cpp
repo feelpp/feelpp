@@ -48,8 +48,6 @@
 
 #include <feel/feelvf/vf.hpp>
 
-#define FEELPP_USE_LM 1
-
 /**
  * This routine returns the list of options using the
  * boost::program_options library. The data returned is typically used
