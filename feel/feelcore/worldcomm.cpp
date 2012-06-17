@@ -129,7 +129,7 @@ WorldComm::init( int color, bool colormap )
                          color,
                          M_mapColorWorld );
 
-    mpi::all_gather( this->globalComm(),//this->localComm(),
+    mpi::all_gather( this->localComm(),
                      this->globalRank(),
                      M_mapLocalRankToGlobalRank );
 
