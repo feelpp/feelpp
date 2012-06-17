@@ -942,7 +942,7 @@ public:
                              []( element_type& e )
         {
             int newtag2=0, newtag3=0;
-            for (uint16_type f=0;f<e.nFaces(); ++f)
+            for (uint16_type f=0;f<e.numTopologicalFaces; ++f)
                 {
                     int tag2 = e.face(f).marker2().value();
                     int tag3 = e.face(f).marker3().value();
