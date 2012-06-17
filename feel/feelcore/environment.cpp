@@ -307,6 +307,7 @@ Environment::worldsComm( int n )
     S_worldcomm->showMe();
     S_worldcomm->masterWorld(n).showMe();
     std::cout << "size=" << S_worldcomm->subWorlds(n).size() <<  "\n";
+    S_worldcomm->subWorlds(n).begin()->showMe();
 #endif
     return S_worldcomm->subWorlds(n);
 }
