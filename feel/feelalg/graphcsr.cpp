@@ -267,7 +267,7 @@ GraphCSR::close()
 #if defined(FEELPP_ENABLE_MPI_MODE) // MPI
 
                 if ( ( *vecit < firstColEntryOnProc() ) ||
-                        ( *vecit > lastColEntryOnProc() ) )
+                     ( *vecit > lastColEntryOnProc() ) )
                 {
                     // entry is off block-diagonal
                     ++M_n_oz[localindex];
@@ -295,7 +295,6 @@ GraphCSR::close()
         else
         {
 #if defined(FEELPP_ENABLE_MPI_MODE) // MPI
-
             // Get the row of the sparsity pattern
             const auto dofOnGlobalCluster = it->first;
             row_type const& irow = it->second;
@@ -486,33 +485,42 @@ GraphCSR::close()
 
 #else // MPI
     size_type nRowLoc = this->lastRowEntryOnProc()-this->firstRowEntryOnProc()+1;
-    M_ia.resize( nRowLoc+1,0 );
-    M_ja.resize( /*sum_n_nz*/sum_nz );
-    M_a.resize(  /*sum_n_nz*/sum_nz, 0. );
-    size_type col_cursor = 0;
-    auto jait = M_ja.begin();
-
-    for ( int i = 0 ; i< ( int ) nRowLoc; ++i )
-    {
-        if ( M_storage.find( this->firstRowEntryOnProc()+i )!=M_storage.end() )
+    if ( nRowLoc>1 || ( sum_nz>0 )/* nRowLoc==1 && this->worldComm().globalRank()==4)*/ )
         {
+            M_ia.resize( nRowLoc+1,0 );
+            M_ja.resize( /*sum_n_nz*/sum_nz );
+            M_a.resize(  /*sum_n_nz*/sum_nz, 0. );
+            size_type col_cursor = 0;
+            auto jait = M_ja.begin();
+            for ( int i = 0 ; i< ( int ) nRowLoc; ++i )
+                {
+                    if ( M_storage.find( this->firstRowEntryOnProc()+i )!=M_storage.end() )
+                        {
 
-            row_type const& irow = this->row( this->firstRowEntryOnProc()+i );
-            //size_type localindex = boost::get<1>( irow );
-            M_ia[i/*localindex*/] = col_cursor;
-            jait = std::copy( boost::get<2>( irow ).begin(), boost::get<2>( irow ).end(), jait );
+                            row_type const& irow = this->row( this->firstRowEntryOnProc()+i );
+                            //size_type localindex = boost::get<1>( irow );
+                            M_ia[i/*localindex*/] = col_cursor;
+                            jait = std::copy( boost::get<2>( irow ).begin(), boost::get<2>( irow ).end(), jait );
 
-            col_cursor+=boost::get<2>( irow ).size();
+                            col_cursor+=boost::get<2>( irow ).size();
+                        }
+
+                    else
+                        {
+                            //std::cout << "\n STRANGE " << std::endl;
+                            M_ia[i] = col_cursor;
+                        }
+                }
+
+            M_ia[nRowLoc] = /*sum_n_nz*/sum_nz;
         }
-
-        else
+    else
         {
-            //std::cout << "\n STRANGE " << std::endl;
-            M_ia[i] = col_cursor;
-        }
-    }
+            M_ia.resize( 1,0 );
+            M_ja.resize( 0 );
+            M_a.resize(  0 );
 
-    M_ia[nRowLoc] = /*sum_n_nz*/sum_nz;
+        }
 #endif // MPI
 #endif // 0
 #endif // 1 build ia,ja
@@ -609,7 +617,6 @@ GraphCSR::printPython( std::string const& nameFile ) const
     size_type thelastCol = *std::max_element( last_col_entry.begin(),last_col_entry.end() );
 
 
-
     //std::ofstream graphFile(nameFile, std::ios::out /*| std::ios::app*/);
     std::ofstream graphFile;//(nameFile, std::ios::out
 
@@ -641,42 +648,44 @@ GraphCSR::printPython( std::string const& nameFile ) const
         {
             graphFile.open( nameFile.c_str(), std::ios::out | std::ios::app );
 
-            for ( auto it = M_storage.begin(), en = --M_storage.end() ; it != en; ++it )
-            {
-                auto const& row = it->second;
-
-                if ( ( int )row.get<0>()==proc )
-                    for ( auto it2 = row.get<2>().begin(), en2= row.get<2>().end() ; it2!=en2 ; ++it2 )
-                        graphFile << "[" << it->first << " , " << *it2 << " , 1.0 ],";// << std::endl;
-            }
-
-            auto it = --M_storage.end();
-            auto const& row = it->second;
-
-            if ( ( int )row.get<0>()==proc )
-            {
-                if ( row.get<2>().size()>0 )
+            if (M_storage.size() > 0)
                 {
-                    if ( row.get<2>().size()>1 )
-                    {
-                        for ( auto it2 = row.get<2>().begin(), en2= --row.get<2>().end() ; it2!=en2 ; ++it2 )
-                            graphFile << "[" << it->first << " , " << *it2 << " , 1.0 ],";
-                    }
+                    for ( auto it = M_storage.begin(), en = --M_storage.end() ; it != en; ++it )
+                        {
+                            auto const& row = it->second;
 
-                    auto it2 = --row.get<2>().end();
+                            if ( ( int )row.get<0>()==proc )
+                                for ( auto it2 = row.get<2>().begin(), en2= row.get<2>().end() ; it2!=en2 ; ++it2 )
+                                    graphFile << "[" << it->first << " , " << *it2 << " , 1.0 ],";// << std::endl;
+                        }
+                    auto it = --M_storage.end();
+                    auto const& row = it->second;
 
-                    if ( proc==this->worldComm().globalSize()-1 )
-                        graphFile << "[" << it->first << " , " << *it2 << " , 1.0 ] ])" << std::endl;
+                    if ( ( int )row.get<0>()==proc )
+                        {
+                            if ( row.get<2>().size()>0 )
+                                {
+                                    if ( row.get<2>().size()>1 )
+                                        {
+                                            for ( auto it2 = row.get<2>().begin(), en2= --row.get<2>().end() ; it2!=en2 ; ++it2 )
+                                                graphFile << "[" << it->first << " , " << *it2 << " , 1.0 ],";
+                                        }
 
-                    else
-                        graphFile << "[" << it->first << " , " << *it2 << " , 1.0 ], " << std::endl;
+                                    auto it2 = --row.get<2>().end();
+
+                                    if ( proc==this->worldComm().globalSize()-1 || M_storage.size()==1 )
+                                        graphFile << "[" << it->first << " , " << *it2 << " , 1.0 ] ])" << std::endl;
+
+                                    else
+                                        graphFile << "[" << it->first << " , " << *it2 << " , 1.0 ], " << std::endl;
+                                }
+
+                            else
+                                {
+                                    /*???*/
+                                }
+                        }
                 }
-
-                else
-                {
-                    /*???*/
-                }
-            }
 
             graphFile.close();
         }
