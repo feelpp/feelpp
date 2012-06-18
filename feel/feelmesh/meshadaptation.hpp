@@ -714,7 +714,7 @@ namespace Feel
         assert ( f->options["FieldsList"]->list().size() != 0);
         /// Copy idlist vector into algorithm fieldlist
         //std::copy(idList.begin(), idList.end(), std::back_inserter(f->options["FieldsList"]->list()) );
-	f->list(idList);
+	f->options["FieldsList"]->list(idList);
 
         // /* Now create the adapted mesh */
 
