@@ -112,6 +112,30 @@ struct f_sinPx
     }
 };
 
+#include <matheval.h>
+struct f_matheval
+{
+    static const size_type context = vm::JACOBIAN|vm::POINT;
+    typedef double value_type;
+    typedef Feel::uint16_type uint16_type;
+    static const uint16_type rank = 0;
+    static const uint16_type imorder = 2;
+    static const bool imIsPoly = false;
+    double operator()( uint16_type, uint16_type, ublas::vector<double> const& x, ublas::vector<double> const& /*n*/ ) const
+    {
+        /* introduce matheval function */
+        void *f, *f_prim;		/* Evaluators for function and function derivative.  */
+        char **names;			/* Function variables names. */
+        int count;			/* Number of function variables. */
+
+        f = evaluator_create ("sin(x)");
+        evaluator_get_variables (f, &names, &count);
+        double val = evaluator_evaluate_x (f, x[0]);
+        evaluator_destroy (f);
+        return val;
+    }
+};
+
 template<typename T, int Dim, int Order = 1>
 struct imesh
 {
@@ -142,7 +166,7 @@ createMesh( double hsize )
     R.setMarker(_type="surface",_name="Omega",_markerAll=true);
 
     auto mesh = R.createMesh(_mesh = new typename imesh<T,2>::type,
-                             _name="sqaure" );
+                             _name="square" );
 
     return mesh;
 }
@@ -475,6 +499,8 @@ struct test_integration_domain: public Application
         // int ([-1,1],[-1,1]) x dx
         value_type v1 = integrate( elements( mesh ), Px() ).evaluate()( 0, 0 );
         value_type v11 = integrate( elements( mesh ), idf( f_Px() ) ).evaluate()( 0, 0 );
+        value_type vx2 = integrate( elements( mesh ), Px() * idf( f_Px() ) ).evaluate()( 0, 0 );
+        std::cout << "vx2=" << vx2 << "\n" << std::flush;
 
         BOOST_TEST_MESSAGE( "[domain] int(P()) = " << integrate( elements( mesh ),
                             P() ).evaluate() << "\n" );
@@ -490,6 +516,10 @@ struct test_integration_domain: public Application
         // int ([-1,1],[-1,1]) abs(x) dx
         value_type vsin = integrate( elements( mesh ), sin( Px() ), _Q<5>() ).evaluate()( 0, 0 );
         value_type vsin1 = integrate( elements( mesh ), idf( f_sinPx() ), _Q<5>() ).evaluate()( 0, 0 );
+        std::cout << vsin << " " << vsin1 << " [f_sinPx()] " << std::flush;
+
+        value_type vmatheval = integrate( elements( mesh ), idf( f_matheval() ), _Q<5>() ).evaluate()( 0, 0 );
+        std::cout << vmatheval << " [matheval]\n";
 #if defined(USE_BOOST_TEST)
         BOOST_CHECK_SMALL( vsin- 2*( -math::cos( 1.0 )+math::cos( -1.0 ) ), eps );
         BOOST_CHECK_SMALL( vsin1- 2*( -math::cos( 1.0 )+math::cos( -1.0 ) ), eps );
