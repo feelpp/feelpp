@@ -59,6 +59,7 @@
 #include <OpenFile.h>
 #include <StringUtils.h>
 #include <Field.h>
+#include <PView.h>
 #include <PViewData.h>
 #endif
 
@@ -677,7 +678,7 @@ namespace Feel
 
         // /* Create Fields from PView list */
         ::FieldManager* myFieldManager = m->getFields();
-        std::vector<int> idList;
+        std::list<int> idList;
 
         for (unsigned int i = 0; i < ::PView::list.size(); i++)
             {
@@ -709,10 +710,11 @@ namespace Feel
             myFieldManager->newField(id, "Min");
         ::Field *f = myFieldManager->get(id);
 
-        /// Erase (eventual) old list of field for MinAniso
-        f->options["FieldsList"]->list().erase( f->options["FieldsList"]->list().begin(), f->options["FieldsList"]->list().end() );
+        /// Check if list of field for MinAniso is empty
+        assert ( f->options["FieldsList"]->list().size() != 0);
         /// Copy idlist vector into algorithm fieldlist
-        std::copy(idList.begin(), idList.end(), std::back_inserter(f->options["FieldsList"]->list()) );
+        //std::copy(idList.begin(), idList.end(), std::back_inserter(f->options["FieldsList"]->list()) );
+	f->options["FieldsList"]->list(idList);
 
         // /* Now create the adapted mesh */
 
