@@ -678,7 +678,7 @@ namespace Feel
 
         // /* Create Fields from PView list */
         ::FieldManager* myFieldManager = m->getFields();
-        std::vector<int> idList;
+        std::list<int> idList;
 
         for (unsigned int i = 0; i < ::PView::list.size(); i++)
             {
