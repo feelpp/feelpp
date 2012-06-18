@@ -1021,7 +1021,7 @@ CRBModel<TruthModelType>::offlineMerge( parameter_type const& mu )
     {
         //*M = *M_Mq[0];
         //M->scale( this->thetaMq( 0 ) );
-        for ( size_type q = 1; q < Qm(); ++q )
+        for ( size_type q = 0; q < Qm(); ++q )
         {
             for ( size_type m = 0; m < mMaxM(q); ++m )
                 M->addMatrix( this->betaMqm( q , m ), M_Mqm[q][m] );
