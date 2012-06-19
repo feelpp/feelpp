@@ -1476,7 +1476,7 @@ Mesh<Shape, T, Tag>::decode()
         std::vector<int> tags( face_it->second[1] );
         for(int i = 0; i < tags.size(); ++i ) tags[i] = face_it->second[2+i];
         pf.setTags(  tags  );
-
+        pf.setId( this->numFaces() );
         pf.setProcessIdInPartition( this->worldComm().localRank() );
         pf.setProcessId( this->worldComm().localRank() );
         pf.setIdInPartition( this->worldComm().localRank(),pf.id() );
@@ -1515,6 +1515,11 @@ Mesh<Shape, T, Tag>::decode()
         mesh->elements().modify( theelt, detail::update_id_in_partition_type( this->worldComm().localRank(), pv.id() ) );
 #endif
     }
+    Log() << "distance  elts: "<< std::distance( this->beginElement(), this->endElement() ) << "\n";
+    Log() << "distance faces: "<< std::distance( this->beginFace(), this->endFace() ) << "\n";
+    Log() << "distance marker faces: "<< std::distance( this->beginFaceWithMarker(), this->endFaceWithMarker() ) << "\n";
+    Log() << "distance marker2 faces: "<< std::distance( this->beginFaceWithMarker2(), this->endFaceWithMarker2() ) << "\n";
+
     //this->components().set ( MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
     //this->updateForUse();
     //std::cout<<"decode=   " << this->worldComm().localSize() << std::endl;
