@@ -43,6 +43,7 @@ namespace detail
 {
 struct bases_base {};
 struct meshes_base {};
+struct periodic_base {};
 /**
  * \class bases
  * \brief classes that store sequences of basis functions to define function spaces
@@ -108,6 +109,18 @@ struct meshes
     typedef meshes<Args...> this_type;
 	static const int s = sizeof...(Args);
     meshes( super const& m) : super( m ) {}
+};
+
+template<typename... Args>
+struct periodic
+    :
+    public detail::periodic_base,
+    public boost::fusion::vector<Args...>
+{
+    typedef boost::fusion::vector<Args...> super;
+    typedef periodic<Args...> this_type;
+	static const int s = sizeof...(Args);
+    periodic( super const& m) : super( m ) {}
 };
 
 #else
