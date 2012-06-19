@@ -2062,12 +2062,12 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
                                             else // only with myself
                                                 {
                                                     memSetGdofAndComp[this->domainSpace()->worldComm().globalRank()].push_back(boost::make_tuple(gdof,comp));
+                                                    if (InterpType::value==1) // conforme case
+                                                        {
+                                                            memSetVertices_conformeInterp[this->domainSpace()->worldComm().globalRank()].push_back(it->vertices());
+                                                        }
                                                 }
 
-                                            if (InterpType::value==1) // conforme case
-                                                {
-                                                    memSetVertices_conformeInterp[this->domainSpace()->worldComm().globalRank()].push_back(it->vertices());
-                                                }
                                             dof_done[gdof]=true;
                                         }
                                 }
