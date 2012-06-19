@@ -1431,15 +1431,22 @@ template<typename Shape, typename T, int Tag>
 void
 Mesh<Shape, T, Tag>::decode()
 {
+#if 0
     std::vector<int> mapWorld(this->worldComm().size());
     for(int cpu=0; cpu < this->worldComm().size(); ++cpu)
         mapWorld[cpu] = cpu;
     WorldComm worldcomm(mapWorld);
 
+
+
+
     // std::cout<<"decode=   " << this->worldComm().size() << std::endl;
     //std::cout<<"decode=   " << worldcomm.subWorldComm().localRank() << std::endl;
     this->setWorldComm(worldcomm.subWorldComm());
-
+#else
+    Log() <<"decode=   " << this->worldComm().size() << "\n" ;
+    Log() <<"decode=   " << this->worldComm().subWorldComm().localRank() << "\n";
+#endif
     static const uint16_type npoints_per_face = ( face_type::numVertices*face_type::nbPtsPerVertex+
             face_type::numEdges*face_type::nbPtsPerEdge+
             face_type::numFaces*face_type::nbPtsPerFace );
@@ -1469,14 +1476,10 @@ Mesh<Shape, T, Tag>::decode()
         std::vector<int> tags( face_it->second[1] );
         for(int i = 0; i < tags.size(); ++i ) tags[i] = face_it->second[2+i];
         pf.setTags(  tags  );
-        // pf.setProcessIdInPartition( this->worldComm().localRank() );
-        // pf.setProcessId( this->worldComm().localRank() );
-        // pf.setIdInPartition( this->worldComm().localRank(),pf.id() );
 
-        pf.setProcessIdInPartition( worldcomm.subWorldComm().localRank() );
-        pf.setProcessId( worldcomm.subWorldComm().localRank() );
-        pf.setIdInPartition( worldcomm.subWorldComm().localRank() , pf.id() );
-
+        pf.setProcessIdInPartition( this->worldComm().localRank() );
+        pf.setProcessId( this->worldComm().localRank() );
+        pf.setIdInPartition( this->worldComm().localRank(),pf.id() );
 
         const int shift = face_it->second[1]+1;
         for ( uint16_type jj = 0; jj < npoints_per_face; ++jj )
@@ -1496,14 +1499,9 @@ Mesh<Shape, T, Tag>::decode()
         std::vector<int> tags( elt_it->second[1] );
         for(int i = 0; i < tags.size(); ++i ) tags[i] = elt_it->second[2+i];
         pv.setTags(  tags  );
-        // pv.setProcessIdInPartition( this->worldComm().localRank() );
-        // pv.setProcessId( this->worldComm().localRank() );
-        // pv.setIdInPartition( this->worldComm().localRank(),pv.id() );
-
-        pv.setProcessIdInPartition( worldcomm.subWorldComm().localRank() );
-        pv.setProcessId( worldcomm.subWorldComm().localRank() );
-        pv.setIdInPartition( worldcomm.subWorldComm().localRank() , pv.id() );
-
+        pv.setProcessIdInPartition( this->worldComm().localRank() );
+        pv.setProcessId( this->worldComm().localRank() );
+        pv.setIdInPartition( this->worldComm().localRank(),pv.id() );
 
         const int shift = elt_it->second[1]+1;
         for ( uint16_type jj = 0; jj < npoints_per_element; ++jj )
