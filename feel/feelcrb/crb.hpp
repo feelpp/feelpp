@@ -4435,7 +4435,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<false> , int number_o
 
                 for ( int __q2 = 0; __q2 < __QOutput; ++__q2 )
                 {
-                    for ( int __m2 = 0; __m2 < M_model->mMaxF(M_output_index,__q1) ; ++__m2 )
+                    for ( int __m2 = 0; __m2 < M_model->mMaxF(M_output_index,__q2) ; ++__m2 )
                     {
                         M_Lambda_du[__q1][__m1][__q2][__m2].conservativeResize( __N );
 
