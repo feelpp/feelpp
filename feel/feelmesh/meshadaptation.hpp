@@ -711,10 +711,10 @@ namespace Feel
         ::Field *f = myFieldManager->get(id);
 
         /// Check if list of field for MinAniso is empty
-        assert ( f->options["FieldsList"]->list().size() != 0);
+        assert( f->options["FieldsList"]->list().size() == 0);
         /// Copy idlist vector into algorithm fieldlist
         //std::copy(idList.begin(), idList.end(), std::back_inserter(f->options["FieldsList"]->list()) );
-	f->options["FieldsList"]->list(idList);
+        f->options["FieldsList"]->list(idList);
 
         // /* Now create the adapted mesh */
 
