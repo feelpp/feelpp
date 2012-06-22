@@ -470,43 +470,6 @@ public:
     virtual void scale ( const T factor ) = 0;
 
     /**
-     * Creates a copy of the global vector in the
-     * local vector \p v_local.
-     */
-    virtual void localize ( std::vector<T>& v_local ) const = 0;
-
-    /**
-     * Same, but fills a \p Vector<T> instead of
-     * a \p std::vector.
-     */
-    virtual void localize ( Vector<T>& v_local ) const = 0;
-
-    /**
-     * Creates a local vector \p v_local containing
-     * only information relevant to this processor, as
-     * defined by the \p send_list.
-     */
-    virtual void localize ( Vector<T>& v_local,
-                            const std::vector<size_type>& send_list ) const = 0;
-
-    /**
-     * Updates a local vector with selected values from neighboring
-     * processors, as defined by \p send_list.
-     */
-    virtual void localize ( const size_type first_local_idx,
-                            const size_type last_local_idx,
-                            const std::vector<size_type>& send_list ) = 0;
-
-    /**
-     * Creates a local copy of the global vector in
-     * \p v_local only on processor \p proc_id.  By
-     * default the data is sent to processor 0.  This method
-     * is useful for outputting data from one processor.
-     */
-    virtual void localizeToOneProcessor ( std::vector<T>& v_local,
-                                          const size_type proc_id=0 ) const = 0;
-
-    /**
      * @returns \p -1 when \p this is equivalent to \p other_vector,
      * up to the given \p threshold.  When differences occur,
      * the return value contains the first index where
