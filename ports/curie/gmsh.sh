@@ -1,5 +1,6 @@
-#! /bin/sh
+#! /bin/bash
 
+. ~/.bash_profile
 module load cmake/2.8.3
 module load atlas/3.9.72 
 cmake \
