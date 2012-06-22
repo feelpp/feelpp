@@ -159,6 +159,7 @@ public:
 #if defined(FEELPP_HAS_PETSC_H)
 int main( int argc, char** argv )
 {
+    Feel::Environment env( argc,argv );
     test_matrixpetsc t( argc, argv );
     t();
     return EXIT_SUCCESS;

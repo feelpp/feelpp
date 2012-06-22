@@ -78,6 +78,7 @@ private:
 };
 int main( int argc, char** argv )
 {
+    Feel::Environment env( argc,argv );
     MyApp myapp( argc, argv, makeAbout(), makeOptions() );
     myapp.run();
 
