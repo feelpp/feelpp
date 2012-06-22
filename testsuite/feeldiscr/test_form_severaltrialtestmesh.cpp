@@ -152,11 +152,11 @@ void run( Application_ptrtype & theApp )
     typedef Backend<double> backend_type;
     auto backend = backend_type::build( theApp->vm(),"laplacian" );
 
-    auto A_uu = backend->newMatrix( Xh_u, Xh_u );
-    auto A_ul = backend->newMatrix( Xh_l, Xh_u );
+    auto A_uu = backend->newMatrix( _trial=Xh_u, _test=Xh_u, _diag_is_nonzero=false );
+    auto A_ul = backend->newMatrix( _trial=Xh_l, _test=Xh_u, _buildGraphWithTranspose=true );
 
-    auto A_lu = backend->newMatrix( Xh_u, Xh_l );
-    auto A_ll = backend->newMatrix( Xh_l, Xh_l );
+    auto A_lu = backend->newMatrix( _trial=Xh_u, _test=Xh_l, _diag_is_nonzero=false );
+    auto A_ll = backend->newMatrix( _trial=Xh_l, _test=Xh_l, _diag_is_nonzero=false );
 
     auto F_u = backend->newVector( Xh_u );
     auto F_l = backend->newVector( Xh_l );
@@ -173,31 +173,31 @@ void run( Application_ptrtype & theApp )
     // volume force
     //auto f = cst(1.);
 
-    form2( Xh_u, Xh_u, A_uu, _init=true ) =
+    form2( Xh_u, Xh_u, A_uu ) =
         integrate( elements( mesh ), gradt( U_v )*trans( grad( U_v ) ) );
     form2( Xh_u, Xh_u, A_uu ) +=
         integrate( markedfaces( mesh,"Paroi" ), - gradt( U_v )*N()*id( U_v ) );
     A_uu->close();
 
 
-    form2( Xh_u, Xh_l, A_ul, _init=true ) =
-        //integrate( elements(meshParoi), id(U_u)*idt(U_lambda) );
-        integrate( markedfaces( mesh,"Paroi" ), id( U_u )*idt( U_lambda ) );
+    form2( Xh_u, Xh_l, A_ul ) =
+        integrate( elements(meshParoi), id(U_u)*idt(U_lambda) );
+        //integrate( markedfaces( mesh,"Paroi" ), id( U_u )*idt( U_lambda ) );
     A_ul->close();
 
-    form2( Xh_l, Xh_u, A_lu, _init=true ) =
+    form2( Xh_l, Xh_u, A_lu ) =
         integrate( elements( meshParoi ), idt( U_u )*id( U_nu ) );
     //integrate( markedfaces(mesh,"Paroi"), idt(U_u)*id(U_nu) );
     A_lu->close();
 
-    form1( Xh_l,  F_l, _init=true ) =
+    form1( Xh_l,  F_l ) =
         integrate( elements( meshParoi ), g*id( U_nu ) ,_Q<15>() );
     //integrate( markedfaces(mesh,"Paroi"), g*id(U_nu) );
     F_l->close();
 
 
-    form2( Xh_l, Xh_l, A_ll, _init=true );
-    A_ll->close();
+    //form2( Xh_l, Xh_l, A_ll, _init=true );
+    //A_ll->close();
 
     //--------------------------------------------//
 
@@ -261,9 +261,9 @@ void run( Application_ptrtype & theApp )
 
     exporter->step( 0 )->setMesh( mesh );
     exporter->step( 0 )->add( "u", U_u );
-    exporter->step( 0 )->add( "lambda", U_lambda );
     exporter->step( 0 )->add( "solanal", solanal );
     exporter->save();
+
 
 
 

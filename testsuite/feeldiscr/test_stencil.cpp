@@ -181,7 +181,8 @@ private:
 #if USE_BOOST_TEST
 
 BOOST_AUTO_TEST_SUITE( space )
-
+Feel::Environment env( boost::unit_test::framework::master_test_suite().argc,
+                       boost::unit_test::framework::master_test_suite().argv );
 BOOST_AUTO_TEST_CASE( test_stencil )
 {
     BOOST_TEST_MESSAGE( "test_stencil" );
