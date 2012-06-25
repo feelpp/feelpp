@@ -89,9 +89,13 @@ public:
                                             boost::shared_ptr<DualImageSpace> const& space2,
                                             size_type matrix_properties = NON_HERMITIAN )
     {
-        auto A= sparse_matrix_ptrtype( new eigen_sparse_matrix_type( space1->nDof(), space2->nDof() ) );
-        A->setMatrixProperties( matrix_properties );
-        return A;
+        Context ctx( matrix_properties );
+        //if ( ctx.test( DENSE ) )
+        {
+            auto A= sparse_matrix_ptrtype( new eigen_sparse_matrix_type( space1->nDof(), space2->nDof() ) );
+            A->setMatrixProperties( matrix_properties );
+            return A;
+        }
     }
 
     sparse_matrix_ptrtype

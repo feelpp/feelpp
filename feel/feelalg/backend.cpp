@@ -158,7 +158,10 @@ Backend<T>::build( po::variables_map const& vm, std::string const& prefix, World
     Log() << "[Backend] backend " << vm["backend"].template as<std::string>() << "\n";
     BackendType bt;
 
-    if ( vm["backend"].template as<std::string>() == "petsc" )
+    if ( vm["backend"].template as<std::string>() == "eigen" )
+        bt = BACKEND_EIGEN;
+
+    else if ( vm["backend"].template as<std::string>() == "petsc" )
         bt = BACKEND_PETSC;
 
     else if ( vm["backend"].template as<std::string>() == "trilinos" )
@@ -179,6 +182,13 @@ Backend<T>::build( po::variables_map const& vm, std::string const& prefix, World
     // Build the appropriate solver
     switch ( bt )
     {
+    case BACKEND_EIGEN:
+    {
+        Log() << "[Backend] Instantiate a Eigen backend\n";
+        return backend_ptrtype( new BackendEigen<value_type>( vm, prefix, worldComm ) );
+    }
+    break;
+
 #if defined ( FEELPP_HAS_PETSC_H )
 
     default:
@@ -553,7 +563,7 @@ po::options_description backend_options( std::string const& prefix )
     po::options_description _options( "Linear and NonLinear Solvers Backend " + prefix + " options" );
     _options.add_options()
     // solver options
-    ( prefixvm( prefix,"backend" ).c_str(), Feel::po::value<std::string>()->default_value( "petsc" ), "backend type: PETSc, trilinos" )
+    ( prefixvm( prefix,"backend" ).c_str(), Feel::po::value<std::string>()->default_value( "petsc" ), "backend type: Eigen, PETSc, trilinos" )
     ( prefixvm( prefix,"ksp-rtol" ).c_str(), Feel::po::value<double>()->default_value( 1e-13 ), "relative tolerance" )
     ( prefixvm( prefix,"ksp-atol" ).c_str(), Feel::po::value<double>()->default_value( 1e-50 ), "absolute tolerance" )
     ( prefixvm( prefix,"ksp-dtol" ).c_str(), Feel::po::value<double>()->default_value( 1e5 ), "divergence tolerance" )
