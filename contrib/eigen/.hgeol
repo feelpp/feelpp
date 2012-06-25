@@ -1,3 +1,8 @@
 [patterns]
-**.* = native
-eigen_autoexp_part.dat = CRLF
+scripts/*.in = LF
+debug/msvc/*.dat = CRLF
+unsupported/test/mpreal/*.* = CRLF
+** = native
+
+[repository]
+native = LF
