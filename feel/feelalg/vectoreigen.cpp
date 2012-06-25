@@ -34,7 +34,8 @@
  */
 #define FEELPP_INSTANTIATE_VECTOREIGEN 1
 
-#include <boost/numeric/eigen/io.hpp>
+#include <Eigen/Core>
+
 
 #include <feel/feelalg/vectoreigen.hpp>
 
@@ -45,249 +46,75 @@
 
 namespace Feel
 {
-/// \cond detail
-namespace detail
-{
-template<typename T>
-struct fake
-{
-
-};
-template<>
-struct fake<eigen::vector<double> >: public eigen::vector<double>
-{
-    fake( eigen::vector<double> v, eigen::range  r )
-        :
-        eigen::vector<double>( v )
-    {
-        boost::ignore_unused_variable_warning( r );
-    }
-    fake( eigen::vector<double> v, eigen::slice  r )
-        :
-        eigen::vector<double>( v )
-    {
-        boost::ignore_unused_variable_warning( r );
-    }
-};
-
-
-#if 0
-template<>
-struct fake<eigen::vector<long double> >: public eigen::vector<long double>
-{
-    fake( eigen::vector<long double> v, eigen::range  r )
-        :
-        eigen::vector<long double>( v )
-    {}
-};
-#endif //  0
-template<>
-struct fake<eigen::vector_range<eigen::vector<double> > >: public eigen::vector_range<eigen::vector<double> >
-{
-    fake( eigen::vector<double>& v, eigen::range const& r )
-        :
-        eigen::vector_range<eigen::vector<double> >( v, r )
-    {
-    }
-    fake( eigen::vector<double>& v, eigen::slice const& r )
-        :
-        eigen::vector_range<eigen::vector<double> >( v, eigen::range( r.start(), r.size() ) )
-    {
-    }
-};
-
-template<>
-struct fake<eigen::vector_slice<eigen::vector<double> > >: public eigen::vector_slice<eigen::vector<double> >
-{
-    fake( eigen::vector<double>& v, eigen::slice const& r )
-        :
-        eigen::vector_slice<eigen::vector<double> >( eigen::project( v, r ) )
-    {
-    }
-    fake( eigen::vector<double>& v, eigen::range const& r )
-        :
-        eigen::vector_slice<eigen::vector<double> >( v, eigen::slice( r.start(),1,r.size() ) )
-    {
-    }
-
-};
-
-#if 0
-template<>
-struct fake<eigen::vector_range<eigen::vector<long double> > >: public eigen::vector_range<eigen::vector<long double> >
-{
-    fake( eigen::vector<long double>& v, eigen::range const& r )
-        :
-        eigen::vector_range<eigen::vector<long double> >( v, r )
-    {}
-
-};
-#endif
-
-template<typename T>
-void resize( eigen::vector<T>& v, size_type s, bool preserve = true )
-{
-    boost::ignore_unused_variable_warning( preserve );
-
-    v.resize( s );
-}
-
-template<typename T>
-void resize( eigen::vector_range<eigen::vector<T> >& /*v*/, size_type /*s*/, bool preserve = true )
-{
-    boost::ignore_unused_variable_warning( preserve );
-}
-template<typename T>
-void resize( eigen::vector_slice<eigen::vector<T> >& /*v*/, size_type /*s*/, bool preserve = true )
-{
-    boost::ignore_unused_variable_warning( preserve );
-}
-template<typename T>
-size_type start( eigen::vector<T> const& /*v*/ )
-{
-    return 0;
-}
-template<typename T>
-size_type start( eigen::vector_range<eigen::vector<T> > const& v )
-{
-    return v.start();
-}
-
-template<typename T>
-size_type start( eigen::vector_slice<eigen::vector<T> > const& v )
-{
-    return v.start();
-}
-
-}
-/// \endcond detail
-
-template <typename T, typename Storage>
-VectorEigen<T,Storage>::VectorEigen()
+template <typename T>
+VectorEigen<T>::VectorEigen()
     :
     super1(),
-    _M_vec( detail::fake<Storage>( *new eigen::vector<value_type>, eigen::range() ) ),
-    M_global_values_updated( false ),
-    M_global_values()
+    _M_vec()
 {
 }
 
-template <typename T, typename Storage>
-VectorEigen<T,Storage>::VectorEigen( size_type __s )
+template <typename T>
+VectorEigen<T>::VectorEigen( size_type __s )
     :
     super1( __s ),
-    _M_vec( detail::fake<Storage>( *new eigen::vector<value_type>, eigen::range() ) ),
-    M_global_values_updated( false ),
-    M_global_values( __s )
+    _M_vec( __s )
 {
     this->init( __s, __s, false );
 }
 
-template <typename T, typename Storage>
-VectorEigen<T,Storage>::VectorEigen( DataMap const& dm )
+template <typename T>
+VectorEigen<T>::VectorEigen( DataMap const& dm )
     :
     super1( dm ),
-    _M_vec( detail::fake<Storage>( *new eigen::vector<value_type>, eigen::range() ) ),
-    M_global_values_updated( false ),
-    M_global_values( dm.nGlobalElements() )
+    _M_vec( dm.nDof() )
 {
     //this->init( dm.nGlobalElements(), dm.nMyElements(), false );
     this->init( dm.nDof(), dm.nLocalDofWithGhost(), false );
 }
 
-template <typename T, typename Storage>
-VectorEigen<T,Storage>::VectorEigen( size_type __s, size_type __n_local )
+template <typename T>
+VectorEigen<T>::VectorEigen( size_type __s, size_type __n_local )
     :
     super1( __s, __n_local ),
-    _M_vec( detail::fake<Storage>( *new eigen::vector<value_type>(), eigen::range() ) ),
-    M_global_values_updated( false ),
-    M_global_values( this->size() )
+    _M_vec( __s )
 {
     this->init( this->size(), this->localSize(), false );
 }
 
-template <typename T, typename Storage>
-VectorEigen<T,Storage>::VectorEigen( VectorEigen const & m )
+template <typename T>
+VectorEigen<T>::VectorEigen( VectorEigen const & m )
     :
     super1( m ),
-    _M_vec( m._M_vec ),
-    M_global_values_updated( m.M_global_values_updated ),
-    M_global_values( m.M_global_values )
+    _M_vec( m._M_vec )
 {
     Debug( 5600 ) << "[VectorEigen] copy constructor with range: size:" << this->size() << ", start:" << this->start() << "\n";
     Debug( 5600 ) << "[VectorEigen] copy constructor with range: size:" << this->vec().size() << "\n";
 }
 
-template <typename T, typename Storage>
-VectorEigen<T,Storage>::VectorEigen( VectorEigen<value_type>& m, range_type const& range, DataMap const& dm )
-    :
-    super1( dm ),
-    _M_vec( detail::fake<Storage>( m.vec(), range ) ),
-    M_global_values_updated( false ),
-    M_global_values( range.size() )
-{
-    Debug( 5600 ) << "[VectorEigen] constructor with range: size:" << range.size() << ", start:" << range.start() << "\n";
-    Debug( 5600 ) << "[VectorEigen] constructor with range: size:" << _M_vec.size() << "\n";
-}
-
-template <typename T, typename Storage>
-VectorEigen<T,Storage>::VectorEigen( eigen::vector<value_type>& m, range_type const& range )
-    :
-    super1( invalid_size_type_value, range.size() ),
-    _M_vec( detail::fake<Storage>( m, range ) ),
-    M_global_values_updated( false ),
-    M_global_values( range.size() )
-{
-    //this->init( m.size(), m.size(), false );
-}
-template <typename T, typename Storage>
-VectorEigen<T,Storage>::VectorEigen( VectorEigen<value_type>& m, slice_type const& range )
-    :
-    super1( invalid_size_type_value, range.size() ),
-    _M_vec( detail::fake<Storage>( m.vec(), range ) ),
-    M_global_values_updated( false ),
-    M_global_values( range.size() )
-{
-    Debug( 5600 ) << "[VectorEigen] constructor with range: size:" << range.size() << ", start:" << range.start() << "\n";
-    Debug( 5600 ) << "[VectorEigen] constructor with range: size:" << _M_vec.size() << "\n";
-    this->init( invalid_size_type_value, _M_vec.size(), true );
-
-}
-
-template <typename T, typename Storage>
-VectorEigen<T,Storage>::VectorEigen( eigen::vector<value_type>& m, slice_type const& range )
-    :
-    super1( invalid_size_type_value, range.size() ),
-    _M_vec( detail::fake<Storage>( m, range ) ),
-    M_global_values_updated( false ),
-    M_global_values( range.size() )
-{
-    //this->init( m.size(), m.size(), false );
-}
-
-template <typename T, typename Storage>
-VectorEigen<T,Storage>::~VectorEigen()
+template <typename T>
+VectorEigen<T>::~VectorEigen()
 {
     this->clear();
 }
 
-template <typename T, typename Storage>
+template <typename T>
 void
-VectorEigen<T,Storage>::resize( size_type s, bool preserve )
+VectorEigen<T>::resize( size_type s, bool preserve )
 {
-    detail::resize( _M_vec, s, preserve );
+    _M_vec.conservativeResize( s );
 }
 
-template <typename T, typename Storage>
+template <typename T>
 size_type
-VectorEigen<T,Storage>::start( ) const
+VectorEigen<T>::start( ) const
 {
-    return detail::start( _M_vec );
+    return 0;
 }
 
-template <typename T, typename Storage>
+template <typename T>
 Vector<T> &
-VectorEigen<T,Storage>::operator= ( const Vector<value_type> &V )
+VectorEigen<T>::operator= ( const Vector<value_type> &V )
 {
     checkInvariant();
     FEELPP_ASSERT( this->localSize() == V.localSize() )( this->localSize() )( V.localSize() ).warn ( "invalid vector size" );
@@ -304,14 +131,12 @@ VectorEigen<T,Storage>::operator= ( const Vector<value_type> &V )
 
     }
 
-    this->outdateGlobalValues();
-
     return *this;
 }
 
-template <typename T, typename Storage>
+template <typename T>
 void
-VectorEigen<T,Storage>::init ( const size_type n,
+VectorEigen<T>::init ( const size_type n,
                                const size_type n_local,
                                const bool      fast )
 {
@@ -326,11 +151,8 @@ VectorEigen<T,Storage>::init ( const size_type n,
 
     super1::init( n, n_local, fast );
 
-    M_global_values_updated = false;
-    M_global_values.resize( this->size() );
-
     // Initialize data structures
-    detail::resize( _M_vec, this->localSize() );
+    _M_vec.resize( this->localSize() );
 
     // Set the initialized flag
     this->M_is_initialized = true;
@@ -349,39 +171,39 @@ VectorEigen<T,Storage>::init ( const size_type n,
 
 }
 
-template<typename T, typename Storage>
+template<typename T>
 void
-VectorEigen<T,Storage>::init( DataMap const& dm )
+VectorEigen<T>::init( DataMap const& dm )
 {
     super1::init( dm );
     this->init( dm.nDof(), dm.nLocalDofWithGhost(), false );
 }
 
 
-template<typename T, typename Storage>
+template<typename T>
 void
-VectorEigen<T,Storage>::init ( const size_type n,
+VectorEigen<T>::init ( const size_type n,
                                const bool      fast )
 {
     this->init( n,n,fast );
 }
 
-template<typename T, typename Storage>
+template<typename T>
 void
-VectorEigen<T,Storage>::clear()
+VectorEigen<T>::clear()
 {
-    detail::resize( _M_vec, 0, false );
+    _M_vec.resize( 0 );
 }
 
-template<typename T, typename Storage>
+template<typename T>
 void
-VectorEigen<T,Storage>::close() const
+VectorEigen<T>::close() const
 {
 }
 
-template<typename T, typename Storage>
+template<typename T>
 void
-VectorEigen<T,Storage>::printMatlab( const std::string filename ) const
+VectorEigen<T>::printMatlab( const std::string filename ) const
 {
     std::string name = filename;
     std::string separator = " , ";
@@ -404,7 +226,7 @@ VectorEigen<T,Storage>::printMatlab( const std::string filename ) const
     }
 
 
-    eigen::vector<value_type> v_local;
+    vector_type v_local;
     this->localizeToOneProcessor ( v_local, 0 );
 
     if ( this->comm().rank() == 0 )
@@ -427,14 +249,14 @@ VectorEigen<T,Storage>::printMatlab( const std::string filename ) const
 }
 
 
-template <typename T, typename Storage>
+template <typename T>
 void
-VectorEigen<T,Storage>::localize ( Vector<T>& v_local_in ) const
+VectorEigen<T>::localize ( Vector<T>& v_local_in ) const
 
 {
     checkInvariant();
 
-    VectorEigen<T,Storage>* v_local = dynamic_cast<VectorEigen<T,Storage>*>( &v_local_in );
+    VectorEigen<T>* v_local = dynamic_cast<VectorEigen<T>*>( &v_local_in );
     FEELPP_ASSERT( v_local != 0 ).error ( "dynamic_cast failed: invalid vector object" );
 
 #if 0
@@ -466,8 +288,8 @@ VectorEigen<T,Storage>::localize ( Vector<T>& v_local_in ) const
 
 
 
-template <typename T, typename Storage >
-void VectorEigen<T,Storage>::localize ( Vector<T>& v_local_in,
+template <typename T >
+void VectorEigen<T>::localize ( Vector<T>& v_local_in,
                                         const std::vector<size_type>& ) const
 {
     checkInvariant();
@@ -478,9 +300,9 @@ void VectorEigen<T,Storage>::localize ( Vector<T>& v_local_in,
 
 
 
-template <typename T,typename Storage>
+template <typename T>
 void
-VectorEigen<T,Storage>::localize ( const size_type first_local_idx,
+VectorEigen<T>::localize ( const size_type first_local_idx,
                                    const size_type last_local_idx,
                                    const std::vector<size_type>& send_list )
 {
@@ -503,7 +325,7 @@ VectorEigen<T,Storage>::localize ( const size_type first_local_idx,
 
     // Build a parallel vector, initialize it with the local
     // parts of (*this)
-    VectorEigen<T,Storage> parallel_vec;
+    VectorEigen<T> parallel_vec;
 
     parallel_vec.init ( size, local_size );
 
@@ -516,33 +338,33 @@ VectorEigen<T,Storage>::localize ( const size_type first_local_idx,
 #endif
 }
 
-template <typename T, typename Storage>
-void
-VectorEigen<T, Storage>::localize ( eigen::vector_range<eigen::vector<value_type> >& /*v_local*/ ) const
-{
-}
+// template <typename T>
+// void
+// VectorEigen<T>::localize ( eigen::vector_range<vector_type >& /*v_local*/ ) const
+// {
+// }
 
-template <typename T, typename Storage>
-void
-VectorEigen<T, Storage>::localize ( eigen::vector_slice<eigen::vector<value_type> >& /*v_local*/ ) const
-{
-}
+// template <typename T>
+// void
+// VectorEigen<T>::localize ( eigen::vector_slice<vector_type >& /*v_local*/ ) const
+// {
+// }
 
-template <typename T, typename Storage>
+template <typename T>
 void
-VectorEigen<T, Storage>::localize ( eigen::vector<value_type>& v_local ) const
+VectorEigen<T>::localize ( vector_type& v_local ) const
 {
     checkInvariant();
 
     v_local.resize( this->size() );
-    eigen::vector<value_type> v_local_in( this->size() );
+    vector_type v_local_in( this->size() );
 
 #ifdef FEELPP_HAS_MPI
 
     if ( this->comm().size() > 1 )
     {
-        std::fill ( v_local.begin(), v_local.end(), value_type( 0. ) );
-        std::fill ( v_local_in.begin(), v_local_in.end(), value_type( 0. ) );
+        v_local.setConstant( this->size(), 0. );
+        v_local_in.setConstant( this->size(), 0. );
 
         for ( size_type i=0; i< this->localSize(); i++ )
         {
@@ -558,7 +380,7 @@ VectorEigen<T, Storage>::localize ( eigen::vector<value_type>& v_local ) const
     else
     {
         FEELPP_ASSERT ( this->localSize() == this->size() )( this->localSize() )( this->size() ).error( "invalid size in non MPI mode" );
-        std::copy( this->begin(), this->end(), v_local.begin() );
+        v_local = _M_vec;
     }
 
 #else
@@ -570,18 +392,18 @@ VectorEigen<T, Storage>::localize ( eigen::vector<value_type>& v_local ) const
 
 
 
-template <typename T, typename Storage>
+template <typename T>
 void
-VectorEigen<T,Storage>::localizeToOneProcessor ( eigen::vector<value_type>& v_local,
+VectorEigen<T>::localizeToOneProcessor ( vector_type& v_local,
         const size_type pid ) const
 {
     checkInvariant();
 
     v_local.resize( this->size() );
-    std::fill ( v_local.begin(), v_local.end(), 0. );
+    v_local.setConstant( this->size(), 0. );
 
-    eigen::vector<value_type> v_tmp( this->size() );
-    std::fill ( v_tmp.begin(), v_tmp.end(), 0. );
+    vector_type v_tmp( this->size() );
+    v_tmp.setConstant( this->size(), 0. );
 
     for ( size_type i=0; i< this->localSize(); i++ )
         v_tmp[i+this->firstLocalIndex()] = this->operator()( this->firstLocalIndex()+i );
@@ -596,7 +418,7 @@ VectorEigen<T,Storage>::localizeToOneProcessor ( eigen::vector<value_type>& v_lo
 
     else
     {
-        std::copy( v_tmp.begin(), v_tmp.end(), v_local.begin() );
+        v_local = v_tmp;
     }
 
 #else
@@ -606,20 +428,21 @@ VectorEigen<T,Storage>::localizeToOneProcessor ( eigen::vector<value_type>& v_lo
 
 #endif
 }
-template <typename T, typename Storage>
+template <typename T>
 void
-VectorEigen<T,Storage>::localizeToOneProcessor ( std::vector<value_type>& v_local,
+VectorEigen<T>::localizeToOneProcessor ( std::vector<value_type>& v_local,
         const size_type proc_id ) const
 {
-    eigen::vector<T> eigenvector;
+    vector_type eigenvector;
     localizeToOneProcessor( eigenvector, proc_id );
     v_local.resize( eigenvector.size() );
-    std::copy( eigenvector.begin(), eigenvector.end(), v_local.begin() );
+    Eigen::Map<vector_type> v( v_local.data(), v_local.size() );
+    v = eigenvector;
 }
 
-template <typename T, typename Storage>
+template <typename T>
 void
-VectorEigen<T,Storage>::checkInvariant() const
+VectorEigen<T>::checkInvariant() const
 {
     FEELPP_ASSERT ( this->isInitialized() ).error( "vector not initialized" );
     FEELPP_ASSERT ( this->localSize() <= this->size() )
@@ -655,9 +478,9 @@ struct Sqrt
 };
 #endif // FEELPP_HAS_TBB
 } //detail
-template <typename T, typename Storage>
-typename VectorEigen<T,Storage>::this_type
-VectorEigen<T,Storage>::sqrt() const
+template <typename T>
+typename VectorEigen<T>::this_type
+VectorEigen<T>::sqrt() const
 {
     this_type _tmp( this->map() );
 
@@ -674,9 +497,9 @@ VectorEigen<T,Storage>::sqrt() const
     return _tmp;
 }
 
-template <typename T, typename Storage>
-typename VectorEigen<T,Storage>::this_type
-VectorEigen<T,Storage>::pow( int n ) const
+template <typename T>
+typename VectorEigen<T>::this_type
+VectorEigen<T>::pow( int n ) const
 {
     this_type _out( this->map() );
 
@@ -689,11 +512,5 @@ VectorEigen<T,Storage>::pow( int n ) const
 //
 // instantiation
 //
-template class VectorEigen<double,eigen::vector<double> >;
-template class VectorEigen<double,eigen::vector_range<eigen::vector<double> > >;
-template class VectorEigen<double,eigen::vector_slice<eigen::vector<double> > >;
-//template class VectorEigen<long double,eigen::vector<long double> >;
-//template class VectorEigen<long double,eigen::vector_range<eigen::vector<long double> > >;
-
-
+template class VectorEigen<double>;
 } // Feel
