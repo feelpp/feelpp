@@ -108,7 +108,7 @@ MatrixEigenDense<T>::addMatrix ( int* rows, int nrows,
     for( int i=0; i < nrows; ++i )
         for( int j=0; j < ncols; ++j )
         {
-            _M_mat( rows[i], cols[j] ) = data[i*ncols+j];
+            _M_mat( rows[i], cols[j] ) += data[i*ncols+j];
         }
 
 }
