@@ -41,16 +41,10 @@
 
 #include <Eigen/Core>
 
-
-
-#include <eigen_matrix.h>
-#include <eigen_sub_matrix.h>
 #include <feel/feelalg/matrixsparse.hpp>
 #include <feel/feelalg/vectorublas.hpp>
 
 
-namespace eigen
-{
 namespace Feel
 {
 template<typename T, typename Storage> class VectorUblas;
@@ -74,7 +68,7 @@ template<typename T, typename Storage> class VectorUblas;
  *  @see
  */
 template<typename T>
-class MatrixEigen : public MatrixSparse<T>
+class MatrixEigenDense : public MatrixSparse<T>
 {
     typedef MatrixSparse<T> super;
 public:
@@ -86,21 +80,7 @@ public:
 
     typedef T value_type;
     typedef typename type_traits<value_type>::real_type real_type;
-
-    typedef typename mpl::if_<boost::is_same<LayoutType, eigen::row_major>,
-            mpl::identity<eigen::csr_matrix<value_type> >,
-            typename mpl::if_<boost::is_same<LayoutType, eigen::col_major>,
-            mpl::identity<eigen::csc_matrix<value_type> >,
-            mpl::identity<boost::none_t> >::type>::type::type matrix_type;
-
-
-    static const bool is_row_major = boost::is_same<LayoutType,eigen::row_major>::value;
-
-
-    typedef std::vector<std::set<size_type> > pattern_type;
-
-    typedef eigen::row_matrix<eigen::wsvector<value_type> > write_matrix_type;
-
+    typedef Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic> matrix_type;
     typedef typename super::graph_type graph_type;
     typedef typename super::graph_ptrtype graph_ptrtype;
     //@}
@@ -109,13 +89,13 @@ public:
      */
     //@{
 
-    MatrixEigen();
+    MatrixEigenDense();
 
-    MatrixEigen( size_type r, size_type c );
+    MatrixEigenDense( size_type r, size_type c );
 
-    MatrixEigen( MatrixEigen const & m );
+    MatrixEigenDense( MatrixEigenDense const & m );
 
-    ~MatrixEigen();
+    ~MatrixEigenDense();
 
 
     //@}
@@ -124,7 +104,7 @@ public:
      */
     //@{
 
-    MatrixEigen<T,LayoutType> & operator = ( MatrixSparse<value_type> const& M )
+    MatrixEigenDense<T> & operator = ( MatrixSparse<value_type> const& M )
     {
         return *this;
     }
@@ -147,7 +127,7 @@ public:
      */
     size_type size1 () const
     {
-        return _M_mat.nrows();
+        return _M_mat.rows();
     }
 
     /**
@@ -156,7 +136,7 @@ public:
      */
     size_type size2 () const
     {
-        return _M_mat.ncols();
+        return _M_mat.cols();
     }
 
     /**
@@ -164,7 +144,7 @@ public:
      */
     size_type nnz() const
     {
-        return eigen::nnz( _M_mat );
+        return _M_mat.rows()*_M_mat.cols();
     }
 
     /**
@@ -226,24 +206,6 @@ public:
         return _M_mat;
     }
 
-    /**
-     * Returns the write optimized eigen matrix.
-     */
-    write_matrix_type const& wmat () const
-    {
-        return _M_wmat;
-    }
-
-    /**
-     * Returns the write optimized eigen matrix.
-     */
-    write_matrix_type & wmat ()
-    {
-        return _M_wmat;
-    }
-
-
-
     //@}
 
     /** @name  Mutators
@@ -290,7 +252,7 @@ public:
     void clear ()
     {
         //eigen::resize( _M_mat, 0, 0 );
-        eigen::resize( _M_wmat, 0, 0 );
+        _M_mat.setZero( _M_mat.rows(), _M_mat.cols() );
     }
 
     /**
@@ -299,14 +261,11 @@ public:
      */
     void zero ()
     {
-        eigen::clear( _M_wmat );
+        _M_mat.setZero( _M_mat.rows(), _M_mat.cols() );
     }
 
     void zero ( size_type start1, size_type stop1, size_type start2, size_type stop2 )
     {
-        eigen::clear( eigen::sub_matrix( _M_wmat,
-                                     eigen::sub_interval( start1, stop1-start1 ),
-                                     eigen::sub_interval( start2, stop2-start2 ) ) );
     }
 
     /**
@@ -321,7 +280,7 @@ public:
                const size_type j,
                const value_type& value )
     {
-        _M_wmat( i, j ) += value;
+        _M_mat( i, j ) += value;
     }
 
     /**
@@ -336,7 +295,7 @@ public:
                const size_type j,
                const value_type& value )
     {
-        _M_wmat( i, j ) = value;
+        _M_mat( i, j ) = value;
     }
 
 
@@ -349,12 +308,13 @@ public:
     void printMatlab( const std::string name="NULL" ) const;
 
 
-    /**
-     * fill sparse matrix with non zero entries
-     */
-    void fill( pattern_type const& );
 
     void resize( size_type nr, size_type nc, bool /*preserve*/ = false );
+
+    /**
+     * Copies the diagonal part of the matrix into \p dest.
+     */
+    void diagonal ( Vector<T>& dest ) const;
 
     /**
      * \return \f$ v^T M u \f$
@@ -405,12 +365,9 @@ public:
      */
     void addMatrix ( int* rows, int nrows,
                      int* cols, int ncols,
-                     value_type* data )
-    {
-        // NOT IMPLEMENTED YET (eigen support should get dropped in fact)
-    }
+                     value_type* data );
 
-    void scale( const T a ) {}
+    void scale( const T a );
 
     /**
      * Returns the transpose of a matrix
@@ -470,46 +427,33 @@ private:
      * the eigen sparse matrix data structure
      */
     mutable matrix_type _M_mat;
-
-    /**
-     * write optimized matrix
-     */
-    mutable write_matrix_type _M_wmat;
 };
 
 
-template<typename T, typename LayoutType>
+template<typename T>
 void
-MatrixEigen<T, LayoutType>::zeroRows( std::vector<int> const& rows,
-                                    std::vector<value_type> const& vals,
-                                    Vector<value_type>& rhs,
-                                    Context const& on_context )
+MatrixEigenDense<T>::zeroRows( std::vector<int> const& rows,
+                               std::vector<value_type> const& vals,
+                               Vector<value_type>& rhs,
+                               Context const& on_context )
 {
     Feel::detail::ignore_unused_variable_warning( rhs );
     Feel::detail::ignore_unused_variable_warning( vals );
-
-    eigen::resize( _M_wmat, eigen::mat_nrows( _M_mat ), eigen::mat_ncols( _M_mat ) );
-    eigen::copy( _M_mat, _M_wmat );
 
     for ( size_type i = 0; i < rows.size(); ++i )
     {
         value_type value = 1.0;
 
         if ( on_context.test( ON_ELIMINATION_KEEP_DIAGONAL ) )
-            value = _M_wmat.row( rows[i] ).r( rows[i] );
-
-        eigen::clear( eigen::mat_row( _M_wmat, rows[i] ) );
-
+            value = _M_mat( rows[i], rows[i] );
+        _M_mat.row( rows[i] ).setZero();
         // set diagonal
-        _M_wmat.row( rows[i] ).w( rows[i], value );
+        _M_mat( rows[i], rows[i] ) = value;
 
         // multiply rhs by value of the diagonal entry value
         rhs.set( rows[i], value * vals[i] );
     }
-
-    eigen::copy( _M_wmat, _M_mat );
-
 }
 
 } // Feel
-#endif /* __MatrixEigen_H */
+#endif /* __MatrixEigenDense_H */
