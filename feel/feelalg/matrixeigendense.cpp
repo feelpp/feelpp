@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2007-07-15
 
-  Copyright (C) 2007, 2009 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2007-2012 Universite Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -26,48 +26,45 @@
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2007-07-15
  */
-#include <feel/feelalg/matrixgmm.hpp>
+#include <feel/feelalg/matrixeigendense.hpp>
 
 namespace Feel
 {
 
-template <typename T, typename LayoutType>
-MatrixGmm<T,LayoutType>::MatrixGmm()
+template <typename T>
+MatrixEigenDense<T>::MatrixEigenDense()
     :
     super(),
     _M_is_initialized( false ),
     _M_is_closed( false ),
-    _M_mat(),
-    _M_wmat()
+    _M_mat()
 {}
-template <typename T, typename LayoutType>
-MatrixGmm<T,LayoutType>::MatrixGmm( size_type r, size_type c )
+template <typename T>
+MatrixEigenDense<T>::MatrixEigenDense( size_type r, size_type c )
     :
     super(),
     _M_is_initialized( false ),
     _M_is_closed( false ),
-    _M_mat( r, c ),
-    _M_wmat( r, c )
+    _M_mat( r, c )
 {}
 
-template <typename T, typename LayoutType>
-MatrixGmm<T,LayoutType>::MatrixGmm( MatrixGmm const & m )
+template <typename T>
+MatrixEigenDense<T>::MatrixEigenDense( MatrixEigenDense const & m )
     :
     super( m ),
     _M_is_initialized( m._M_is_initialized ),
     _M_is_closed( m._M_is_closed ),
-    _M_mat( m._M_mat ),
-    _M_wmat( m._M_wmat )
+    _M_mat( m._M_mat )
 
 {}
 
-template <typename T, typename LayoutType>
-MatrixGmm<T,LayoutType>::~MatrixGmm()
+template <typename T>
+MatrixEigenDense<T>::~MatrixEigenDense()
 {}
 
-template <typename T, typename LayoutType>
+template <typename T>
 void
-MatrixGmm<T,LayoutType>::init ( const size_type m,
+MatrixEigenDense<T>::init ( const size_type m,
                                 const size_type n,
                                 const size_type /*m_l*/,
                                 const size_type /*n_l*/,
@@ -77,12 +74,12 @@ MatrixGmm<T,LayoutType>::init ( const size_type m,
     if ( ( m==0 ) || ( n==0 ) )
         return;
 
-    _M_wmat.resize( m,n );
+    _M_mat.resize( m,n );
     this->zero ();
 }
-template <typename T, typename LayoutType>
+template <typename T>
 void
-MatrixGmm<T,LayoutType>::init ( const size_type m,
+MatrixEigenDense<T>::init ( const size_type m,
                                 const size_type n,
                                 const size_type m_l,
                                 const size_type n_l,
@@ -97,59 +94,69 @@ MatrixGmm<T,LayoutType>::init ( const size_type m,
     if ( ( m==0 ) || ( n==0 ) )
         return;
 
-    _M_wmat.resize( m,n );
+    _M_mat.resize( m,n );
     this->zero ();
 }
 
-template<typename T, typename LayoutType>
+
+template<typename T>
 void
-MatrixGmm<T, LayoutType>::fill( pattern_type const& /*__pattern*/ )
+MatrixEigenDense<T>::addMatrix ( int* rows, int nrows,
+                                 int* cols, int ncols,
+                                 value_type* data )
 {
+    for( int i=0; i < nrows; ++i )
+        for( int j=0; j < ncols; ++j )
+        {
+            _M_mat( rows[i], cols[j] ) = data[i*ncols+j];
+        }
+
+}
+template<typename T>
+void
+MatrixEigenDense<T>::scale( const T a )
+{
+    _M_mat *= a;
 }
 
-template<typename T, typename LayoutType>
+template<typename T>
 void
-MatrixGmm<T, LayoutType>::resize( size_type nr, size_type nc, bool /*preserve*/ )
+MatrixEigenDense<T>::resize( size_type nr, size_type nc, bool /*preserve*/ )
 {
-    gmm::resize( _M_wmat, nr, nc );
+    _M_mat.resize( nr, nc );
 }
 
-template<typename T, typename LayoutType>
+template<typename T>
 void
-MatrixGmm<T, LayoutType>::close() const
+MatrixEigenDense<T>::close() const
 {
-    Debug( 7015 ) << "[MatrixGmm<T, LayoutType>::close()] nr = " << _M_mat.nr << "\n";
-    Debug( 7015 ) << "[MatrixGmm<T, LayoutType>::close()] nc = " << _M_mat.nc << "\n";
-#if 1
-    //if (_M_mat.pr) { delete[] pr; delete[] ir; delete[] jc; }
-    //if (_M_mat.pr) delete[] _M_mat.pr;
-    _M_mat.pr = 0;
-    //delete[] _M_mat.ir;
-    _M_mat.ir = 0;
-    //delete[] _M_mat.jc;
-    _M_mat.jc = 0;
-#endif
-    _M_mat.init_with_good_format( _M_wmat );
     _M_is_closed = true;
-    // release memory of write optimized matrix
-    gmm::resize( _M_wmat, 0, 0 );
 }
 
-template<typename T, typename LayoutType>
+template<typename T>
 void
-MatrixGmm<T, LayoutType>::transpose( MatrixSparse<value_type>& Mt ) const
+MatrixEigenDense<T>::transpose( MatrixSparse<value_type>& Mt ) const
 {
     FEELPP_ASSERT( 0 ).warn( "not implemented yet" );
 }
 
 
-
-template<typename T, typename LayoutType>
-typename MatrixGmm<T, LayoutType>::value_type
-MatrixGmm<T, LayoutType>::energy( Vector<value_type> const& __v,
-                                  Vector<value_type> const& __u,
-                                  bool tranpose ) const
+template<typename T>
+void
+MatrixEigenDense<T>::diagonal ( Vector<T>& dest ) const
 {
+#if 0
+    VectorEigen<T>& _dest( dynamic_cast<VectorEigen<T>&>( dest ) );
+    _dest = _M_mat.diagonal();
+#endif
+}
+template<typename T>
+typename MatrixEigenDense<T>::value_type
+MatrixEigenDense<T>::energy( Vector<value_type> const& __v,
+                             Vector<value_type> const& __u,
+                             bool tranpose ) const
+{
+#if 0
     VectorUblas<T> const& v( dynamic_cast<VectorUblas<T> const&>( __v ) );
     VectorUblas<T> const& u( dynamic_cast<VectorUblas<T> const&>( __u ) );
 
@@ -164,32 +171,31 @@ MatrixGmm<T, LayoutType>::energy( Vector<value_type> const& __v,
         gmm::mult( gmm::transposed( _M_mat ), __u1, __t );
 
     return gmm::vect_sp( __v1, __t );
+#endif
+    return 0;
 }
 
-template<typename T, typename LayoutType>
+template<typename T>
 void
-MatrixGmm<T, LayoutType>::addMatrix( value_type v, MatrixSparse<value_type>& _m )
+MatrixEigenDense<T>::addMatrix( value_type v, MatrixSparse<value_type>& _m )
 {
-    MatrixGmm<value_type, LayoutType>* m = dynamic_cast<MatrixGmm<value_type,LayoutType>*>( &_m );
-    FEELPP_ASSERT( m != 0 ).error( "invalid sparse matrix type, should be MatrixGmm" );
+    MatrixEigenDense<value_type>* m = dynamic_cast<MatrixEigenDense<value_type>*>( &_m );
+    FEELPP_ASSERT( m != 0 ).error( "invalid sparse matrix type, should be MatrixEigenDense" );
     FEELPP_ASSERT( m->closed() ).error( "invalid sparse matrix type, should be closed" );
 
     if ( !m )
         throw std::invalid_argument( "m" );
 
     if ( !this->closed() )
-        // matrices can have a different pattern
-        gmm::add( gmm::scaled( m->mat(),v ), this->wmat(), this->wmat() );
-
-    //else
-    // be careful : matrices should have the _same_ pattern here
-    //gmm::add( gmm::scaled(m->mat(),v), this->mat(), this->mat() );
+    {
+        _M_mat += v * m->_M_mat;
+    }
 }
 
 
-template<typename T, typename LayoutType>
+template<typename T>
 void
-MatrixGmm<T, LayoutType>::printMatlab( const std::string filename ) const
+MatrixEigenDense<T>::printMatlab( const std::string filename ) const
 {
     std::string name = filename;
     std::string separator = " , ";
@@ -218,36 +224,27 @@ MatrixGmm<T, LayoutType>::printMatlab( const std::string filename ) const
     file_out.precision( 16 );
     file_out.setf( std::ios::scientific );
 
-    for ( size_type i = 0; i < gmm::mat_nrows( _M_mat ); ++i )
+    for ( size_type i = 0; i < _M_mat.rows(); ++i )
     {
-        for ( size_type j = 0; j < gmm::mat_ncols( _M_mat ); ++j )
+        for ( size_type j = 0; j < _M_mat.cols(); ++j )
         {
             value_type v = _M_mat( i,j );
 
-            if ( v != typename gmm::linalg_traits<matrix_type>::value_type( 0 ) )
-            {
-                file_out << i + 1 << separator
-                         << j + 1 << separator
-                         << v  << std::endl;
-            }
+            file_out << i + 1 << separator
+                     << j + 1 << separator
+                     << v  << std::endl;
         }
     }
 
     file_out << "];" << std::endl;
     file_out << "I=S(:,1); J=S(:,2); S=S(:,3);" << std::endl;
-    file_out << "A=sparse(I,J,S); spy(A);" << std::endl;
+    file_out << "spy(S);" << std::endl;
 }
 
 
 //
 // Explicit instantiations
 //
-template class MatrixGmm<double,gmm::row_major>;
-//template class MatrixGmm<double,gmm::col_major>;
-}
-namespace gmm
-{
-template class linalg_traits<ublas::vector<double> >;
-//template class linalg_traits<ublas::vector<long double> >;
-//template class linalg_traits<ublas::vector<dd_real> >;
+template class MatrixEigenDense<double>;
+//template class MatrixEigenDense<double,gmm::col_major>;
 }
