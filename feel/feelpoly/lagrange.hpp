@@ -46,6 +46,7 @@
 #include <feel/feelpoly/functionalset.hpp>
 #include <feel/feelpoly/functionals.hpp>
 #include <feel/feelpoly/fe.hpp>
+#include <feel/feelpoly/mortar.hpp>
 
 
 
@@ -162,6 +163,39 @@ public:
 
         setFset( primal, _M_pts, mpl::bool_<primal_space_type::is_scalar>() );
     }
+
+    LagrangeDual( primal_space_type const& primal, pointset_type const& pts )
+        :
+        super( primal ),
+        _M_convex_ref(),
+        _M_eid( _M_convex_ref.topologicalDimension()+1 ),
+        _M_pts( pts.points() ),
+        _M_points_face( nFacesInConvex ),
+        _M_fset( primal )
+    {
+        Debug( 5045 ) << "Lagrange finite element: \n";
+        Debug( 5045 ) << " o- dim   = " << nDim << "\n";
+        Debug( 5045 ) << " o- order = " << nOrder << "\n";
+        Debug( 5045 ) << " o- numPoints      = " << numPoints << "\n";
+        Debug( 5045 ) << " o- nbPtsPerVertex = " << nbPtsPerVertex << "\n";
+        Debug( 5045 ) << " o- nbPtsPerEdge   = " << nbPtsPerEdge << "\n";
+        Debug( 5045 ) << " o- nbPtsPerFace   = " << nbPtsPerFace << "\n";
+        Debug( 5045 ) << " o- nbPtsPerVolume = " << nbPtsPerVolume << "\n";
+
+        if ( nOrder > 0 )
+        {
+            for ( uint16_type e = _M_convex_ref.entityRange( nDim-1 ).begin();
+                    e < _M_convex_ref.entityRange( nDim-1 ).end();
+                    ++e )
+            {
+                _M_points_face[e] = pts.pointsBySubEntity( nDim-1, e, 1 );
+                Debug( 5045 ) << "face " << e << " pts " <<  _M_points_face[e] << "\n";
+            }
+        }
+
+        setFset( primal, _M_pts, mpl::bool_<primal_space_type::is_scalar>() );
+    }
+
     ~LagrangeDual()
     {
 
@@ -303,6 +337,11 @@ public:
     static const uint16_type nbPtsPerFace = reference_convex_type::nbPtsPerFace;
     static const uint16_type nbPtsPerVolume = reference_convex_type::nbPtsPerVolume;
 
+    template<int subN>
+    struct SubSpace
+    {
+        typedef Lagrange<N-1, RealDim, O, PolySetType, continuity_type, T, Convex,  Pts, TheTAG> type;
+    };
 
     //@}
 
