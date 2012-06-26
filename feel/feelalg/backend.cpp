@@ -29,6 +29,7 @@
 #include <feel/feelalg/backend.hpp>
 #include <feel/feelalg/backendpetsc.hpp>
 #include <feel/feelalg/backendtrilinos.hpp>
+#include <feel/feelalg/backendeigen.hpp>
 
 namespace Feel
 {
@@ -117,6 +118,11 @@ Backend<T>::build( BackendType bt, WorldComm const& worldComm )
     // Build the appropriate solver
     switch ( bt )
     {
+    case BACKEND_EIGEN:
+    {
+        return backend_ptrtype( new BackendEigen<value_type>( worldComm ) );
+    }
+    break;
 
 #if defined ( FEELPP_HAS_PETSC_H )
 

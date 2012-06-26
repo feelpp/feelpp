@@ -76,7 +76,8 @@ enum BackendType
 {
     BACKEND_GMM = 0,
     BACKEND_PETSC,
-    BACKEND_TRILINOS
+    BACKEND_TRILINOS,
+    BACKEND_EIGEN
 };
 
 /**
@@ -212,6 +213,7 @@ enum SolverPackage
 {
     SOLVERS_FEEL=0,
     SOLVERS_GMM,
+    SOLVERS_EIGEN,
     SOLVERS_PETSC,
     SOLVERS_TRILINOS,
     SOLVERS_SLEPC,
