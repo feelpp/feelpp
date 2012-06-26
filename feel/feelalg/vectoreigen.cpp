@@ -99,6 +99,11 @@ VectorEigen<T>::~VectorEigen()
 }
 
 template <typename T>
+typename VectorEigen<T>::clone_ptrtype
+VectorEigen<T>::clone () const
+{}
+
+template <typename T>
 void
 VectorEigen<T>::resize( size_type s, bool preserve )
 {
@@ -507,6 +512,14 @@ VectorEigen<T>::pow( int n ) const
         _out[i] = math::pow( this->operator[]( i ), n );
 
     return _out;
+}
+
+template <typename T>
+void
+VectorEigen<T>::insert ( const ublas::vector<T>& V,
+                         const std::vector<size_type>& dof_indices )
+{
+    FEELPP_ASSERT( 0 ).error( "invalid call, not implemented yet" );
 }
 
 //

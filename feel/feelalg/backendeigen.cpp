@@ -28,6 +28,7 @@
  */
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelalg/backendeigen.hpp>
+#include <Eigen/Dense>
 
 namespace Feel
 {
@@ -61,7 +62,7 @@ BackendEigen<T>::solve( sparse_matrix_type const& _A,
     eigen_sparse_matrix_type const& A( dynamic_cast<eigen_sparse_matrix_type const&>( _A ) );
     eigen_vector_type      & x( dynamic_cast<eigen_vector_type      &>( _x ) );
     eigen_vector_type const& b( dynamic_cast<eigen_vector_type const&>( _b ) );
-
+    x.vec()=A.mat().template fullPivLu().solve(b.vec());
 } // BackendEigen::solve
 
 //
