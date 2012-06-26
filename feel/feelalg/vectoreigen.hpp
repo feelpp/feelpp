@@ -159,7 +159,6 @@ public:
         ( i )
         ( this->firstLocalIndex() )
         ( this->lastLocalIndex() ).error( "vector invalid index" );
-        this->outdateGlobalValues();
         return _M_vec.operator()( i-this->firstLocalIndex() );
     }
 
@@ -189,7 +188,6 @@ public:
         ( i )
         ( this->firstLocalIndex() )
         ( this->lastLocalIndex() ).error( "vector invalid index" );
-        this->outdateGlobalValues();
         return _M_vec.operator()( i-this->firstLocalIndex() );
     }
 
@@ -473,7 +471,6 @@ public:
      */
     void scale ( const T factor )
     {
-        this->outdateGlobalValues();
         _M_vec *= factor;
     }
 
@@ -707,6 +704,7 @@ public:
      * a \p std::vector.
      */
     void localize ( Vector<T>& v_local ) const;
+    void localize ( vector_type& v_local ) const;
 
     /**
      * Creates a local vector \p v_local containing
@@ -725,6 +723,8 @@ public:
      * is useful for outputting data from one processor.
      */
     void localizeToOneProcessor ( std::vector<T>& v_local,
+                                  const size_type proc_id = 0 ) const;
+    void localizeToOneProcessor ( vector_type& v_local,
                                   const size_type proc_id = 0 ) const;
 
 
