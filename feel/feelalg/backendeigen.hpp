@@ -36,6 +36,7 @@
 #include <feel/feelcore/application.hpp>
 #include <feel/feelalg/vectorublas.hpp>
 #include <feel/feelalg/matrixeigendense.hpp>
+#include <feel/feelalg/matrixeigensparse.hpp>
 #include <feel/feelalg/vectoreigen.hpp>
 
 
@@ -62,7 +63,9 @@ public:
     /* matrix */
     typedef typename super::sparse_matrix_type sparse_matrix_type;
     typedef typename super::sparse_matrix_ptrtype sparse_matrix_ptrtype;
-    typedef MatrixEigenDense<value_type> eigen_sparse_matrix_type;
+    typedef MatrixEigenDense<value_type> eigen_dense_matrix_type;
+    typedef boost::shared_ptr<eigen_dense_matrix_type> eigen_dense_matrix_ptrtype;
+    typedef MatrixEigenSparse<value_type> eigen_sparse_matrix_type;
     typedef boost::shared_ptr<eigen_sparse_matrix_type> eigen_sparse_matrix_ptrtype;
 
     typedef typename sparse_matrix_type::graph_type graph_type;

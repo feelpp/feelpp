@@ -95,7 +95,7 @@ MatrixEigenSparse<T>::init ( const size_type m,
         return;
 
     _M_mat.resize( m,n );
-    M_tripletList.reserve(graph->nNz());
+    M_tripletList.reserve(graph->ja().size());
 
 }
 
@@ -228,14 +228,14 @@ MatrixEigenSparse<T>::printMatlab( const std::string filename ) const
     file_out.precision( 16 );
     file_out.setf( std::ios::scientific );
 
-    for ( size_type i = 0; i < _M_mat.rows(); ++i )
+    for (int k=0; k<_M_mat.outerSize(); ++k)
     {
-        for ( size_type j = 0; j < _M_mat.cols(); ++j )
+        for (typename matrix_type::InnerIterator it(_M_mat,k); it; ++it)
         {
-            value_type v = _M_mat( i,j );
+            value_type v = it.value();
 
-            file_out << i + 1 << separator
-                     << j + 1 << separator
+            file_out << it.row() + 1 << separator
+                     << it.col() + 1 << separator
                      << v  << std::endl;
         }
     }

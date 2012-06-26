@@ -29,6 +29,7 @@
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelalg/backendeigen.hpp>
 #include <Eigen/Dense>
+#include <Eigen/Sparse>
 
 namespace Feel
 {
@@ -62,7 +63,15 @@ BackendEigen<T>::solve( sparse_matrix_type const& _A,
     eigen_sparse_matrix_type const& A( dynamic_cast<eigen_sparse_matrix_type const&>( _A ) );
     eigen_vector_type      & x( dynamic_cast<eigen_vector_type      &>( _x ) );
     eigen_vector_type const& b( dynamic_cast<eigen_vector_type const&>( _b ) );
-    x.vec()=A.mat().template fullPivLu().solve(b.vec());
+    //x.vec()=A.mat().template fullPivLu().solve(b.vec());
+    Eigen::SimplicialLDLT<typename eigen_sparse_matrix_type::matrix_type> solver;
+    solver.compute(A.mat());
+    x.vec() = solver.solve(b.vec());
+    // if(solver.info()!=Eigen::Succeeded) {
+    //     // solving failed
+    //     return boost::make_tuple(false,1,1e-10);;
+    // }
+    return boost::make_tuple(true,1,1e-10);;
 } // BackendEigen::solve
 
 //

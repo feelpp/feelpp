@@ -326,7 +326,7 @@ public:
                  << "       NON_HERMITIAN: " << isNonHermitian() << "\n"
                  << "            SINGULAR: " << isSingular() << "\n"
                  << "   POSITIVE_DEFINITE: " << isPositiveDefinite() << "\n"
-                 << "               DENSE: " << isDense() << "\n"
+                 << "               DENSE: " << isDense() << "\n";
             throw std::logic_error( ostr.str() );
         }
     }
