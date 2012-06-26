@@ -114,7 +114,8 @@ public:
 
     value_type  operator()( size_type i, size_type j ) const
     {
-        return _M_mat( i, j );
+        //return _M_mat.row(i).col(j);
+        return 0.;
     }
 
     //@}
@@ -254,7 +255,7 @@ public:
     void clear ()
     {
         //eigen::resize( _M_mat, 0, 0 );
-        _M_mat.setZero( _M_mat.rows(), _M_mat.cols() );
+        _M_mat.setZero();
     }
 
     /**
@@ -263,7 +264,7 @@ public:
      */
     void zero ()
     {
-        _M_mat.setZero( _M_mat.rows(), _M_mat.cols() );
+        _M_mat.setZero();
     }
 
     void zero ( size_type start1, size_type stop1, size_type start2, size_type stop2 )
@@ -282,7 +283,7 @@ public:
                const size_type j,
                const value_type& value )
     {
-        _M_mat( i, j ) += value;
+        M_tripletList.push_back(triplet(i, j, value) );
     }
 
     /**
@@ -297,7 +298,7 @@ public:
                const size_type j,
                const value_type& value )
     {
-        _M_mat( i, j ) = value;
+        FEELPP_ASSERT( 0 ).error( "nor supported" );
     }
 
 
@@ -429,7 +430,7 @@ private:
      * the eigen sparse matrix data structure
      */
     mutable matrix_type _M_mat;
-    std::vector<triplet> M_tripletList;
+    mutable std::vector<triplet> M_tripletList;
 };
 
 
@@ -443,18 +444,22 @@ MatrixEigenSparse<T>::zeroRows( std::vector<int> const& rows,
     Feel::detail::ignore_unused_variable_warning( rhs );
     Feel::detail::ignore_unused_variable_warning( vals );
 
-    for ( size_type i = 0; i < rows.size(); ++i )
+    for (int k=0; k<rows.size(); ++k)
     {
-        value_type value = 1.0;
+        for (typename matrix_type::InnerIterator it(_M_mat,rows[k]); it; ++it)
+        {
+            double value = 1.0;
+            if ( on_context.test( ON_ELIMINATION_KEEP_DIAGONAL ) )
+                value = it.value();
+            it.valueRef() = 0;
+            if ( it.row() == it.col() )
+            {
+                it.valueRef() = value;
+                // multiply rhs by value of the diagonal entry value
+                rhs.set( rows[k], value * vals[k] );
+            }
+        }
 
-        if ( on_context.test( ON_ELIMINATION_KEEP_DIAGONAL ) )
-            value = _M_mat( rows[i], rows[i] );
-        _M_mat.row( rows[i] ).setZero();
-        // set diagonal
-        _M_mat( rows[i], rows[i] ) = value;
-
-        // multiply rhs by value of the diagonal entry value
-        rhs.set( rows[i], value * vals[i] );
     }
 }
 
