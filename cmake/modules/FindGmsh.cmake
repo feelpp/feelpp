@@ -47,7 +47,7 @@ endif()
 FIND_LIBRARY(GMSH_LIBRARY NAMES Gmsh gmsh-2.5.1 gmsh1 gmsh
   PATH
   ${CMAKE_SYSTEM_PREFIX_PATH}
-  $ENV{GMSH_DIR}/lib
+  $ENV{GMSH_DIR}
   PATH_SUFFIXES
   lib  )
 
