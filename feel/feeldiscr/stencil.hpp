@@ -1127,156 +1127,6 @@ Stencil<X1,X2>::computeGraph( size_type hints, mpl::bool_<true> )
 
 
 
-#if 0
-template<typename X1,  typename X2>
-typename Stencil<X1,X2>::graph_ptrtype
-Stencil<X1,X2>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<true> )
-{
-
-    const size_type proc_id           = _M_X1->mesh()->comm().rank();
-    const size_type n1_dof_on_proc    = _M_X1->nLocalDof();
-    //const size_type n2_dof_on_proc    = _M_X2->nLocalDof();
-    const size_type first1_dof_on_proc = _M_X1->dof()->firstDof( proc_id );
-    const size_type last1_dof_on_proc = _M_X1->dof()->lastDof( proc_id );
-    const size_type first2_dof_on_proc = _M_X2->dof()->firstDof( proc_id );
-    const size_type last2_dof_on_proc = _M_X2->dof()->lastDof( proc_id );
-
-    graph_ptrtype sparsity_graph( new graph_type( n1_dof_on_proc,
-                                  first1_dof_on_proc, last1_dof_on_proc,
-                                  first2_dof_on_proc, last2_dof_on_proc ) );
-
-    auto elem_it  = _M_X1->mesh()->beginElementWithProcessId( proc_id );
-    auto elem_en  = _M_X1->mesh()->endElementWithProcessId( proc_id );
-
-    auto locTool = _M_X2->mesh()->tool_localization();
-    locTool->updateForUse();
-    locTool->setExtrapolation( false );
-    //locTool->kdtree()->nbNearNeighbor(_M_X2->mesh()->numElements() );
-
-    std::vector<size_type>
-    element_dof1,
-    element_dof2;
-
-    for ( ; elem_it != elem_en; ++elem_it )
-    {
-        const auto& elem = *elem_it;
-
-        // Get the global indices of the DOFs with support on this element
-        element_dof1 = _M_X1->dof()->getIndices( elem.id() );
-
-        const uint16_type  n1_dof_on_element = element_dof1.size();
-        //const uint16_type  n2_dof_on_element = element_dof2.size();
-
-        for ( size_type i=0; i<n1_dof_on_element; i++ )
-        {
-            const size_type ig1 = element_dof1[i];
-            const int ndofpercomponent1 = n1_dof_on_element / _M_X1->dof()->nComponents;
-            const int ncomp1 = i / ndofpercomponent1;
-            //const int ndofpercomponent2 = n2_dof_on_element / _M_X2->dof()->nComponents;
-
-            auto ptRealDof = boost::get<0>( _M_X1->dof()->dofPoint( ig1 ) );
-
-            //std::cout << "Pt dof " << ptRealDof<<std::endl;
-
-            auto res = locTool->searchElements( ptRealDof );
-            auto hasFind = res.get<0>();
-
-            if ( hasFind )
-            {
-                //std::cout << "\n  find"<<std::endl;
-
-                auto res_it = res.get<1>().begin();
-                auto res_en = res.get<1>().end();
-
-                for ( ; res_it != res_en ; ++res_it )
-                {
-                    element_dof2 = _M_X2->dof()->getIndices( res_it->get<0>() );
-
-                    graph_type::row_type& row = sparsity_graph->row( ig1 );
-                    bool is_on_proc = ( ig1 >= first1_dof_on_proc ) && ( ig1 <= last1_dof_on_proc );
-                    row.get<0>() = is_on_proc?proc_id:invalid_size_type_value;
-                    row.get<1>() = is_on_proc?ig1 - first1_dof_on_proc:invalid_size_type_value;
-
-                    //if ( do_less ) {}
-                    //else
-                    row.get<2>().insert( element_dof2.begin(), element_dof2.end() );
-
-
-                    auto elem = _M_X2->mesh()->element( res_it->get<0>() );
-
-                    if ( /*graph.test( DOF_PATTERN_NEIGHBOR )*/false )
-                    {
-                        for ( uint16_type ms=0; ms < elem.nNeighbors(); ms++ )
-                        {
-                            const auto* neighbor = boost::addressof( elem );
-                            size_type neighbor_id = elem.neighbor( ms ).first;
-                            size_type neighbor_process_id = elem.neighbor( ms ).second;
-
-                            if ( neighbor_id != invalid_size_type_value )
-                                //&& neighbor_process_id != proc_id )
-                            {
-                                neighbor = boost::addressof( _M_X2->mesh()->element( neighbor_id,
-                                                             neighbor_process_id ) );
-
-                                if ( neighbor_id == neighbor->id()  )
-                                {
-                                    auto neighbor_dof = _M_X2->dof()->getIndices( neighbor->id() );
-#if 0
-
-                                    if ( do_less )
-                                    {
-                                        if ( ncomp1 == ( _M_X2->dof()->nComponents-1 ) )
-                                            row.get<2>().insert( neighbor_dof.begin()+ncomp1*ndofpercomponent2,
-                                                                 neighbor_dof.end() );
-
-                                        else
-                                            row.get<2>().insert( neighbor_dof.begin()+ncomp1*ndofpercomponent2,
-                                                                 neighbor_dof.begin()+( ncomp1+1 )*ndofpercomponent2 );
-                                    }
-
-                                    else
-                                    {
-#endif
-                                        row.get<2>().insert( neighbor_dof.begin(), neighbor_dof.end() );
-                                        //}
-
-                                    } // neighbor_id
-                                } // neighbor_id
-
-                            } // ms
-                        } // true
-
-
-                    } // res
-
-                } // if (hasFind)
-
-                else
-                {
-                    //std::cout << "\n not find"<<std::endl;
-                    // row empty
-                    graph_type::row_type& row = sparsity_graph->row( ig1 );
-                    bool is_on_proc = ( ig1 >= first1_dof_on_proc ) && ( ig1 <= last1_dof_on_proc );
-                    row.get<0>() = is_on_proc?proc_id:invalid_size_type_value;
-                    row.get<1>() = is_on_proc?ig1 - first1_dof_on_proc:invalid_size_type_value;
-                    row.get<2>().clear();
-                }
-
-            } // for (size_type i=0; i<n1_dof_on_element; i++)
-
-
-
-        } // for ( ; elem_it ... )
-
-        locTool->setExtrapolation( true );
-        //locTool->kdtree()->nbNearNeighbor( 15 );
-
-        //sparsity_graph->close();
-
-        return sparsity_graph;
-    }
-
-#else
 
 template<typename X1,  typename X2>
 typename Stencil<X1,X2>::graph_ptrtype
@@ -1284,9 +1134,9 @@ Stencil<X1,X2>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<tru
 {
     //std::cout << "\n start graphInterp "<< std::endl;
 
-    typedef mpl::int_<50> order_1d_type;
-    typedef mpl::int_<20> order_2d_type;
-    typedef mpl::int_<10> order_3d_type;
+    typedef mpl::int_<20/*50*/> order_1d_type;
+    typedef mpl::int_<12/*20*/> order_2d_type;
+    typedef mpl::int_<8/*10*/> order_3d_type;
 
     typedef typename test_space_type::mesh_type test_mesh_type;
     typedef typename trial_space_type::mesh_type trial_mesh_type;
@@ -1304,6 +1154,8 @@ Stencil<X1,X2>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<tru
     typedef typename test_mesh_type::gm_type::precompute_ptrtype thepc_ptrtype;
     typedef typename test_mesh_type::gm_type::template Context<vm::POINT, typename test_mesh_type::element_type> thegmc_type;
     typedef boost::shared_ptr<thegmc_type> thegmc_ptrtype;
+
+    typedef typename test_mesh_type::Localization::matrix_node_type matrix_node_type;
 
     //-----------------------------------------------------------------------//
 
@@ -1323,13 +1175,23 @@ Stencil<X1,X2>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<tru
     mesh_element_const_iterator       elem_it  = _M_X1->mesh()->beginElementWithProcessId( proc_id );
     const mesh_element_const_iterator elem_en  = _M_X1->mesh()->endElementWithProcessId( proc_id );
 
+
+    //-----------------------------------------------------------------------//
+    // init localisation tools
     auto locToolForXh2 = _M_X2->mesh()->tool_localization();
     locToolForXh2->updateForUse();
-    locToolForXh2->setExtrapolation( false );
+    bool doExtrapolationAtStartXh2 = locToolForXh2->doExtrapolation();
+    if (doExtrapolationAtStartXh2) locToolForXh2->setExtrapolation( false );
     //locTool->kdtree()->nbNearNeighbor(_M_X2->mesh()->numElements() );
     auto locToolForXh1 = _M_X1->mesh()->tool_localization();
     locToolForXh1->updateForUse();
-    locToolForXh1->setExtrapolation( false );
+    bool doExtrapolationAtStartXh1 = locToolForXh1->doExtrapolation();
+    if (doExtrapolationAtStartXh1) locToolForXh1->setExtrapolation( false );
+
+
+    matrix_node_type ptsReal( elem_it->vertices().size1(), 1 );
+    size_type IdEltInXh2 = invalid_size_type_value;
+    //node_type trialNodeRef,testNodeRef;
 
 
 #define FEELPP_EXPORT_GRAPH 0
@@ -1341,11 +1203,15 @@ Stencil<X1,X2>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<tru
     std::map<size_type,std::list<size_type> > mapBetweenMeshes;
 #endif
 
-    std::vector<size_type>
-    element_dof1,
-    element_dof2;
-
+    std::vector<size_type> element_dof1, element_dof2;
     std::set<size_type> neighLocalizedInXh1;
+
+    std::set<size_type > listTup;
+
+    theim_type theim;
+    thepc_ptrtype geopc( new thepc_type( elem_it->gm(), theim.points() ) );
+    thegmc_ptrtype gmc( new thegmc_type( elem_it->gm(), *elem_it, geopc ) );
+
 
     //-----------------------------------------------------------------------//
 
@@ -1353,38 +1219,42 @@ Stencil<X1,X2>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<tru
     {
         for ( ; elem_it != elem_en; ++elem_it )
         {
-            /*mesh_element_1_type*/auto const& elem = *elem_it;
+            auto const& elem = *elem_it;
 
             // Get the global indices of the DOFs with support on this element
             element_dof1 = _M_X1->dof()->getIndices( elem.id() );
 
-            const uint16_type  n1_dof_on_element = element_dof1.size();
-            //const uint16_type  n2_dof_on_element = element_dof2.size();
+            const uint16_type n1_dof_on_element = element_dof1.size();
 
             std::vector<boost::tuple<bool,size_type> > hasFinds( n1_dof_on_element,boost::make_tuple( false,invalid_size_type_value ) );
 
             for ( size_type i=0; i<n1_dof_on_element; i++ )
             {
                 const size_type ig1 = element_dof1[i];
-                //const int ndofpercomponent1 = n1_dof_on_element / _M_X1->dof()->nComponents;
-                //const int ncomp1 = i / ndofpercomponent1;
-                //const int ndofpercomponent2 = n2_dof_on_element / _M_X2->dof()->nComponents;
+                auto const ptRealDof = boost::get<0>( _M_X1->dof()->dofPoint( ig1 ) );
 
-                auto ptRealDof = boost::get<0>( _M_X1->dof()->dofPoint( ig1 ) );
-                //std::cout << "Pt dof " << ptRealDof<<std::endl;
-
+#if 1
+                ublas::column(ptsReal,0 ) = ptRealDof;
+                auto resLocalisationInXh2 = locToolForXh2->run_analysis(ptsReal,IdEltInXh2,elem_it->vertices(),mpl::int_<0>());
+                IdEltInXh2 = resLocalisationInXh2.template get<1>();
+                bool hasFind = resLocalisationInXh2.template get<0>()[0];
+                //trialNodeRef = locToolForXh2->result_analysis().begin()->second.begin()->template get<1>();
+#else
                 auto resTemp = locToolForXh2->searchElement( ptRealDof );
                 bool hasFind = resTemp.template get<0>();
-                std::set<size_type > listTup;
+                IdEltInXh2 = resTemp.template get<1>();
+#endif
+
+                listTup.clear();
 
                 if ( hasFind )
                 {
-                    listTup.insert( resTemp.template get<1>() );
-                    hasFinds[i] = boost::make_tuple( true,resTemp.template get<1>() );
+                    listTup.insert( IdEltInXh2/*resTemp.template get<1>()*/ );
+                    hasFinds[i] = boost::make_tuple( true,IdEltInXh2/*resTemp.template get<1>()*/ );
                     // maybe is on boundary->more elts
                     //size_type idElt1 = elem.id();
-                    size_type idElt2 = resTemp.template get<1>();
-                    auto const& geoelt2 = _M_X2->mesh()->element( idElt2 );
+                    //size_type idElt2 = resTemp.template get<1>();
+                    auto const& geoelt2 = _M_X2->mesh()->element( IdEltInXh2/*idElt2*/ );
                     std::vector<size_type> neighbor_ids;//(geoelt2.nNeighbors());
 
                     for ( uint16_type ms=0; ms < geoelt2.nNeighbors(); ms++ )
@@ -1405,6 +1275,8 @@ Stencil<X1,X2>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<tru
                             listTup.insert( neighbor_ids[cpt] );
                         }
                     }
+
+                    //std::cout << "taille de listTup " << listTup.size() << std::endl;
 
                     auto res_it = listTup.begin();
                     auto res_en = listTup.end();
@@ -1459,23 +1331,33 @@ Stencil<X1,X2>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<tru
                     }
                 }
 
+
             if ( doQ )
             {
-                theim_type theim;
 
-                thepc_ptrtype geopc( new thepc_type( elem.gm(), theim.points() ) );
-                thegmc_ptrtype gmc( new thegmc_type( elem.gm(), elem, geopc ) );
-
+                //theim_type theim;
+                //thepc_ptrtype geopc( new thepc_type( elem.gm(), theim.points() ) );
+                //thegmc_ptrtype gmc( new thegmc_type( elem.gm(), elem, geopc ) );
+                gmc->update( elem );
+#if 1
+                //IdEltInXh2=invalid_size_type_value;
                 for ( int q = 0; q <  gmc->nPoints(); ++ q )
                 {
+#if 1
+                    ublas::column(ptsReal,0 ) = gmc->xReal( q );
+                    //auto const resQuad = locToolForXh2->run_analysis(ptsReal,IdEltInXh2,elem_it->vertices(),mpl::int_<0>());
+                    auto const resQuad = locToolForXh2->searchElement( gmc->xReal( q ) );
+                    IdEltInXh2 = resQuad.template get<1>();
+                    //bool hasFind = resLocalisationInXh2.template get<0>()[0];
+#else
                     auto resQuad = locToolForXh2->searchElement( gmc->xReal( q ) );
-
+#endif
                     if ( resQuad.template get<0>() )
                     {
 #if FEELPP_EXPORT_GRAPH
-                        mapBetweenMeshes[resQuad.template get<1>()].push_back( elem.id() );
+                        mapBetweenMeshes[IdEltInXh2 /*resQuad.template get<1>()*/].push_back( elem.id() );
 #endif
-                        element_dof2 = _M_X2->dof()->getIndices( resQuad.template get<1>() );
+                        element_dof2 = _M_X2->dof()->getIndices( IdEltInXh2 /*resQuad.template get<1>()*/ );
 
                         for ( size_type i=0; i<n1_dof_on_element; i++ )
                         {
@@ -1489,6 +1371,12 @@ Stencil<X1,X2>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<tru
                         }
                     }
                 }
+#else
+                auto const resQuad = locToolForXh2->run_analysis(gmc->xReal(),IdEltInXh2,elem_it->vertices(),mpl::int_<0>());
+
+#endif
+
+
             } // if (doQ)
         } // for ( ; elem_it ... )
     } //Xh1->nof >1
@@ -1626,9 +1514,10 @@ Stencil<X1,X2>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<tru
 
             if ( doQ )
             {
-                theim_type theim;
-                thepc_ptrtype geopc( new thepc_type( elem.gm(), theim.points() ) );
-                thegmc_ptrtype gmc( new thegmc_type( elem.gm(), elem, geopc ) );
+                //theim_type theim;
+                //thepc_ptrtype geopc( new thepc_type( elem.gm(), theim.points() ) );
+                //thegmc_ptrtype gmc( new thegmc_type( elem.gm(), elem, geopc ) );
+                gmc->update( elem );
 
                 for ( int q = 0; q <  gmc->nPoints(); ++ q )
                 {
@@ -1658,8 +1547,8 @@ Stencil<X1,X2>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<tru
         } //  for ( ; elem_it != elem_en; ++elem_it)
     } // M_X1->nDof==1
 
-    locToolForXh1->setExtrapolation( true );
-    locToolForXh2->setExtrapolation( true );
+    if (doExtrapolationAtStartXh1) locToolForXh1->setExtrapolation( true );
+    if (doExtrapolationAtStartXh2) locToolForXh2->setExtrapolation( true );
     //locTool->kdtree()->nbNearNeighbor( 15 );
 
     //sparsity_graph->close();
@@ -1709,11 +1598,6 @@ Stencil<X1,X2>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<tru
     return sparsity_graph;
 }
 
-
-
-
-
-#endif
 
 }
 #endif
