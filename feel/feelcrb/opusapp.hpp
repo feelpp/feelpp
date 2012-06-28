@@ -277,8 +277,7 @@ public:
                     std::ostringstream u_fem_str;
                     u_fem_str << "u_fem(" << mu_str.str() << ")";
                     u_fem.setName( u_fem_str.str()  );
-                    exporter->step(0)->add( u_fem.name(), u_fem );
-
+                    //exporter->step(0)->add( u_fem.name(), u_fem );
                     std::vector<double> ofem = boost::assign::list_of( model->output( output_index,mu ) )( ti.elapsed() );
                     ti.restart();
                     auto o = crb->run( mu,  this->vm()["crb.online-tolerance"].template as<double>() );
@@ -289,13 +288,13 @@ public:
                             std::ostringstream u_crb_str;
                             u_crb_str << "u_crb(" << mu_str.str() << ")";
                             u_crb.setName( u_crb_str.str()  );
-                            exporter->step(0)->add( u_crb.name(), u_crb );
+                            //exporter->step(0)->add( u_crb.name(), u_crb );
                         }
 
                     double relative_error = std::abs( ofem[0]-o.template get<0>() ) /ofem[0];
                     double relative_estimated_error = o.template get<1>() / ofem[0];
                     double condition_number = o.template get<3>();
-
+                    
                     if ( crb->errorType()==2 )
                     {
                         std::vector<double> v = boost::assign::list_of( ofem[0] )( ofem[1] )( o.template get<0>() )( relative_estimated_error )( ti.elapsed() )( relative_error )( condition_number );
