@@ -243,6 +243,13 @@ public:
         return ( ( globDof <= _M_last_df_globalcluster[proc] ) && ( globDof >= _M_first_df_globalcluster[proc] ) );
     }
 
+
+    bool dofGlobalProcessIsGhost( size_type dof) const
+    {
+        return ( this->mapGlobalProcessToGlobalCluster( dof ) < this->firstDofGlobalCluster() ||
+                 this->mapGlobalProcessToGlobalCluster( dof ) > this->lastDofGlobalCluster() );
+    }
+
     //! Returns local ID of global ID, return invalid_size_type_value if not found on this processor.
     size_type  lid( size_type GID ) const
     {
