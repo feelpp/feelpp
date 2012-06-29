@@ -794,6 +794,8 @@ private :
 
     Vec _M_vecLocal;
 
+    VecScatter _M_vecScatter;
+
 };
 
 } // Feel
