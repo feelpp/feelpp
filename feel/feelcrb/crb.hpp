@@ -193,6 +193,14 @@ public:
     typedef Exporter<mesh_type> export_type;
     typedef boost::shared_ptr<export_type> export_ptrtype;
 
+    //here a fusion vector containing sequence 0 ... nb_spaces
+    //useful to acces to a component of a composite space in ComputeIntegrals
+    static const int nb_spaces = functionspace_type::nSpaces;
+    typedef typename mpl::if_< boost::is_same< mpl::int_<nb_spaces> , mpl::int_<2> > , fusion::vector< mpl::int_<0>, mpl::int_<1> >  ,
+                       typename mpl::if_ < boost::is_same< mpl::int_<nb_spaces> , mpl::int_<3> > , fusion::vector < mpl::int_<0> , mpl::int_<1> , mpl::int_<2> > ,
+                                  typename mpl::if_< boost::is_same< mpl::int_<nb_spaces> , mpl::int_<4> >, fusion::vector< mpl::int_<0>, mpl::int_<1>, mpl::int_<2>, mpl::int_<3> >,
+                                                     fusion::vector< mpl::int_<0>, mpl::int_<1>, mpl::int_<2>, mpl::int_<3>, mpl::int_<4> >
+                                                     >::type >::type >::type index_vector_type;
 
 
     //@}
@@ -2043,7 +2051,6 @@ CRB<TruthModelType>::buildVarianceMatrixPhi( int const N , mpl::bool_<true> )
 
     for(int i = 0; i < size_WN; ++i)
     {
-
         auto sub = subelements( M_WN[i] , s );
         element_type global_element = M_model->functionSpace()->element();
         wn_type v( nb_spaces , global_element);
@@ -2060,18 +2067,7 @@ CRB<TruthModelType>::buildVarianceMatrixPhi( int const N , mpl::bool_<true> )
     }
 
 
-    //here a fusion vector containing sequence 0 ... nb_spaces
-    //useful to acces to a component of a composite space in ComputeIntegrals
-    typename mpl::if_< boost::is_same< mpl::int_<nb_spaces> , mpl::int_<2> > , fusion::vector< mpl::int_<0>, mpl::int_<1> >  ,
-                       typename mpl::if_ < boost::is_same< mpl::int_<nb_spaces> , mpl::int_<3> > , fusion::vector < mpl::int_<0> , mpl::int_<1> , mpl::int_<2> > ,
-                                  typename mpl::if_< boost::is_same< mpl::int_<nb_spaces> , mpl::int_<4> >, fusion::vector< mpl::int_<0>, mpl::int_<1>, mpl::int_<2>, mpl::int_<3> >,
-                                                     fusion::vector< mpl::int_<0>, mpl::int_<1>, mpl::int_<2>, mpl::int_<3>, mpl::int_<4> >
-                                                     >::type >::type >::type index_vector;
-
-
-    //for(int i=0;i<nb_spaces;i++) fusion::push_back( index_vector , i );
-
-
+    index_vector_type index_vector;
     for(int space=0; space<nb_spaces; space++)
         M_variance_matrix_phi[space].conservativeResize( N , N );
 
