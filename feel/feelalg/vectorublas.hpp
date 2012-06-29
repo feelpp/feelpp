@@ -671,18 +671,27 @@ public:
     real_type l2Norm() const
     {
         checkInvariant();
-        real_type local_norm2 = ublas::inner_prod( _M_vec, _M_vec );
-        real_type global_norm2 = local_norm2;
+        real_type local_norm2 = 0, global_norm2=0;
 
-
+        if ( this->comm().size() == 1 )
+            {
+                local_norm2 = ublas::inner_prod( _M_vec, _M_vec );
+                global_norm2 = local_norm2;
+            }
+        else
+            {
+                size_type s = this->localSize();
+                size_type start = this->firstLocalIndex();
+                for ( size_type i = 0; i < s; ++i )
+                    {
+                        if ( !this->localIndexIsGhost( start + i ) )
+                            local_norm2 += std::pow(_M_vec.operator()( start + i ),2);
+                    }
 #ifdef FEELPP_HAS_MPI
-
-        if ( this->comm().size() > 1 )
-        {
-            mpi::all_reduce( this->comm(), local_norm2, global_norm2, std::plus<real_type>() );
-        }
-
+                mpi::all_reduce( this->comm(), local_norm2, global_norm2, std::plus<real_type>() );
 #endif
+            }
+
         return math::sqrt( global_norm2 );
     }
 
