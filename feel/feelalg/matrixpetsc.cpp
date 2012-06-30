@@ -145,9 +145,13 @@ void MatrixPetsc<T>::init ( const size_type m,
 
     else
     {
-
+#if PETSC_VERSION_LESS_THAN(3,3,0)
         ierr = MatCreateMPIAIJ ( this->comm(), m_local, n_local, m_global, n_global,
                                  PETSC_DECIDE, PETSC_NULL, PETSC_DECIDE, PETSC_NULL, &_M_mat );
+#else
+        ierr = MatCreateAIJ ( this->comm(), m_local, n_local, m_global, n_global,
+                                 PETSC_DECIDE, PETSC_NULL, PETSC_DECIDE, PETSC_NULL, &_M_mat );
+#endif
         //ierr = MatCreateMPIAIJ (this->comm(), m_local, n_local, m_global, n_global,
         ///n_nz, PETSC_NULL, n_oz, PETSC_NULL, &_M_mat);
         //MatCreate(this->comm(),m_local,n_local,m_global,n_global, &_M_mat);
@@ -305,11 +309,19 @@ void MatrixPetsc<T>::init ( const size_type m,
 
     else
     {
+#if PETSC_VERSION_LESS_THAN(3,3,0)
         ierr = MatCreateMPIAIJ ( this->comm(),
                                  m_local, n_local,
                                  m_global, n_global,
                                  0, ( int* ) this->graph()->nNzOnProc().data(),
                                  0, ( int* ) this->graph()->nNzOffProc().data(), &_M_mat );
+#else
+        ierr = MatCreateAIJ ( this->comm(),
+                                 m_local, n_local,
+                                 m_global, n_global,
+                                 0, ( int* ) this->graph()->nNzOnProc().data(),
+                                 0, ( int* ) this->graph()->nNzOffProc().data(), &_M_mat );
+#endif
         CHKERRABORT( this->comm(),ierr );
 
 
@@ -1652,6 +1664,7 @@ void MatrixPetscMPI<T>::init( const size_type m,
     if ( n_dnzOffProc==0 )
         dnzOffProc = PETSC_NULL;
 
+#if PETSC_VERSION_LESS_THAN(3,3,0)
     ierr = MatCreateMPIAIJ ( this->comm(),
                              m_local, n_local,
                              m_global, n_global,
@@ -1659,6 +1672,16 @@ void MatrixPetscMPI<T>::init( const size_type m,
                              /*PETSC_DECIDE*/0/*n_dnzOffProc*/, dnzOffProc,
                              //&_M_matttt);
                              &( this->mat() ) ); //(&this->_M_mat));
+#else
+    ierr = MatCreateAIJ ( this->comm(),
+                             m_local, n_local,
+                             m_global, n_global,
+                             /*PETSC_DECIDE*//*n_dnz*/0, /*PETSC_NULL*/dnz,
+                             /*PETSC_DECIDE*/0/*n_dnzOffProc*/, dnzOffProc,
+                             //&_M_matttt);
+                             &( this->mat() ) ); //(&this->_M_mat));
+
+#endif
     CHKERRABORT( this->comm(),ierr );
 
 

@@ -803,7 +803,11 @@ SolverNonLinearPetsc<T>::setPetscKspSolverType()
         return;
 
     case CHEBYSHEV:
+#if PETSC_VERSION_LESS_THAN(3,3,0)
         ierr = KSPSetType ( M_ksp, ( char* ) KSPCHEBYCHEV );
+#else
+        ierr = KSPSetType ( M_ksp, ( char* ) KSPCHEBYSHEV );
+#endif
         CHKERRABORT( this->comm(),ierr );
         return;
 
