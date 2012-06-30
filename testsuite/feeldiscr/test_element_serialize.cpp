@@ -189,11 +189,12 @@ TestElementSerialize<Dim>::run( const double* X, unsigned long P, double* Y, uns
 
 
 
+    auto Xh = space_type::New( mesh );
+    element = Xh->element();
+
     if( ! existDB() )
     {
         std::cout<<"DB will be created "<<std::endl;
-        auto Xh = space_type::New( mesh );
-        element = Xh->element();
         element.setName("element");
         element = vf::project( Xh , elements(mesh), cst( 1 ) );
         this->saveDB();
