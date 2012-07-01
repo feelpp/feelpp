@@ -482,8 +482,8 @@ public:
         void
         operator()( const T& t ) const
         {
-            auto e1 = M_composite_e1.element< T::value >();
-            auto e2 = M_composite_e2.element< T::value >();
+            auto e1 = M_composite_e1.template element< T::value >();
+            auto e2 = M_composite_e2.template element< T::value >();
             mesh_ptrtype mesh = e1.functionSpace()->mesh();
             double integral = integrate( _range=elements(mesh) , _expr=vf::idv( e1 ) * vf::idv( e2 ) ).evaluate()(0,0);
 
