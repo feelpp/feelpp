@@ -1983,6 +1983,110 @@ MatrixPetscMPI<T>::addMatrix( int* rows, int nrows,
 //----------------------------------------------------------------------------------------------------//
 
 template <typename T>
+inline
+void
+MatrixPetscMPI<T>::addMatrix( const T a_in, MatrixSparse<T> &X_in )
+{
+    if (this->hasGraph() && X_in.hasGraph() &&
+        static_cast<void*>( const_cast<graph_type*>(this->graph().get()) ) == static_cast<void*>( const_cast<graph_type*>(X_in.graph().get())) )
+        {
+            this->addMatrixSameNonZeroPattern(a_in,X_in);
+        }
+    else
+        {
+            super::addMatrix(a_in,X_in);
+        }
+}
+
+//----------------------------------------------------------------------------------------------------//
+
+template <typename T>
+inline
+void
+MatrixPetscMPI<T>::addMatrixSameNonZeroPattern( const T a_in, MatrixSparse<T> &X_in )
+{
+    FEELPP_ASSERT ( this->isInitialized() ).error( "petsc matrix not initialized" );
+
+    // sanity check. but this cannot avoid
+    // crash due to incompatible sparsity structure...
+    FEELPP_ASSERT( this->size1() == X_in.size1() )( this->size1() )( X_in.size1() ).error( "incompatible dimension" );
+    FEELPP_ASSERT( this->size2() == X_in.size2() )( this->size2() )( X_in.size2() ).error( "incompatible dimension" );
+
+    PetscScalar a = static_cast<PetscScalar>( a_in );
+    MatrixPetscMPI<T>* X = dynamic_cast<MatrixPetscMPI<T>*> ( &X_in );
+    FEELPP_ASSERT ( X != 0 ).error( "invalid petsc matrix" );
+
+    int ierr=0;
+
+    // the matrix from which we copy the values has to be assembled/closed
+    X->close ();
+
+    const size_type nLocalDofWithGhost = this->mapRow().nLocalDofWithGhost();
+
+    if (a==1)
+        {
+            std::cout << "case a==1 " << std::endl;
+            for ( size_type k=0;k<nLocalDofWithGhost;++k )
+                {
+                    if (!this->mapRow().dofGlobalProcessIsGhost(k))
+                        {
+                            const PetscInt gDof = X->mapRow().mapGlobalProcessToGlobalCluster(k);
+                            PetscInt ncolsX;
+                            const PetscInt *idcX;
+                            const PetscScalar *valX;
+                            ierr = MatGetRow( X->mat(), gDof, &ncolsX, &idcX, &valX );
+                            CHKERRABORT( this->comm(),ierr );
+
+                            // set new values
+                            ierr = MatSetValues(this->mat(),1, &gDof,ncolsX,idcX,valX,ADD_VALUES);
+                            CHKERRABORT( this->comm(),ierr );
+
+                            // apply this when finish with MatGetRow
+                            ierr = MatRestoreRow( X->mat(), gDof, &ncolsX, &idcX, &valX );
+                            CHKERRABORT( this->comm(),ierr );
+                        }
+                }
+        }
+    else // case a!=1
+        {
+            for ( size_type k=0;k<nLocalDofWithGhost;++k )
+                {
+                    if (!this->mapRow().dofGlobalProcessIsGhost(k))
+                        {
+                            const PetscInt gDof = X->mapRow().mapGlobalProcessToGlobalCluster(k);
+                            PetscInt ncolsX;
+                            const PetscInt *idcX;
+                            const PetscScalar *valX;
+                            ierr = MatGetRow( X->mat(), gDof, &ncolsX, &idcX, &valX );
+                            CHKERRABORT( this->comm(),ierr );
+
+                            //get new values in row
+                            PetscScalar *valNewRow = new PetscScalar[ncolsX];
+                            for (int col=0;col<ncolsX;++col)
+                                valNewRow[col]=a*valX[col];
+
+                            // set new values
+                            ierr = MatSetValues(this->mat(),1, &gDof,ncolsX,idcX,valNewRow,ADD_VALUES);
+                            CHKERRABORT( this->comm(),ierr );
+
+                            // apply this when finish with MatGetRow
+                            ierr = MatRestoreRow( X->mat(), gDof, &ncolsX, &idcX, &valX );
+                            CHKERRABORT( this->comm(),ierr );
+                            // clean
+                            delete valNewRow;
+                        }
+                }
+
+        } // case : a!=1
+
+    this->close();
+
+} // addMatrixSameNonZeroPattern
+
+
+//----------------------------------------------------------------------------------------------------//
+
+template <typename T>
 void
 MatrixPetscMPI<T>::zero()
 {
