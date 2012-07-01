@@ -1056,7 +1056,6 @@ CRBSCM<TruthModelType>::lb( parameter_type const& mu ,size_type K ,int indexmu )
 
     // set the structural variables, we have M_model->Qa() of them
     if ( M_scm_for_mass_matrix )
-<<<<<<< HEAD
     {
         boost::tie( beta_qm,boost::tuples::ignore, boost::tuples::ignore, boost::tuples::ignore ) = M_model->computeBetaQm( mu );
     }
@@ -1064,11 +1063,6 @@ CRBSCM<TruthModelType>::lb( parameter_type const& mu ,size_type K ,int indexmu )
     {
         boost::tie( boost::tuples::ignore, beta_qm, boost::tuples::ignore, boost::tuples::ignore ) = M_model->computeBetaQm( mu );
     }
-=======
-        boost::tie( beta_qm,boost::tuples::ignore, boost::tuples::ignore ) = M_model->computeBetaQm( mu );
-    else
-        boost::tie( boost::tuples::ignore, beta_qm, boost::tuples::ignore ) = M_model->computeBetaQm( mu );
->>>>>>> dbc6d17b75c4dde33ba59f9fcfe7a1096ca9178a
 
     //nb_columns
 #if 0
