@@ -140,7 +140,7 @@ public Points<Shape::nRealDim>,
            /**
             * default constructor
             */
-           Mesh2D( WorldComm const& worldComm = WorldComm() )
+           Mesh2D( WorldComm const& worldComm = Environment::worldComm() )
                :
                super_visitable(),
                super( worldComm ),

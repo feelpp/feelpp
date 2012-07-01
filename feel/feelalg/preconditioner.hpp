@@ -76,7 +76,7 @@ public:
     //@{
 
     //! default constructor
-    Preconditioner( WorldComm const& worldComm=WorldComm() );
+    Preconditioner( WorldComm const& worldComm=Environment::worldComm() );
 
     //! copy constructor
     Preconditioner( Preconditioner const & o )
@@ -91,7 +91,7 @@ public:
     //! destructor
     ~Preconditioner();
 
-    static preconditioner_ptrtype build( BackendType = BACKEND_PETSC, WorldComm const& worldComm=WorldComm() );
+    static preconditioner_ptrtype build( BackendType = BACKEND_PETSC, WorldComm const& worldComm=Environment::worldComm() );
 
     /**
      * Initialize data structures if not done so already.
@@ -288,7 +288,7 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( boost::shared_ptr<Preconditioner<double> > ),
                                    ( matrix,( d_sparse_matrix_ptrtype ),d_sparse_matrix_ptrtype() )
                                    ( backend,( BackendType ), BACKEND_PETSC )
                                    ( pcfactormatsolverpackage,( MatSolverPackageType ), MATSOLVER_PETSC )
-                                   ( worldcomm,      *, WorldComm() )
+                                   ( worldcomm,      *, Environment::worldComm() )
                                    )
                                  )
 {

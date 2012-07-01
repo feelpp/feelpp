@@ -8,7 +8,7 @@ fetch.type          svn
 fetch.user          gmsh
 fetch.password      gmsh
 svn.url             https://geuz.org/svn/gmsh/trunk
-svn.revision        12138
+svn.revision        12309
 svn.method          export
 svn.post_args       --username ${fetch.user} --password ${fetch.password}
 
@@ -51,9 +51,9 @@ post-build {
 depends_lib  \
     port:mesa \
     port:libpng \
-    port:libANN \
     port:python27 \
     port:swig \
+    port:swig-python \
     port:fltk-devel\
     port:jpeg \
     port:zlib \

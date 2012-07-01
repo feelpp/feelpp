@@ -101,7 +101,7 @@ public:
     /**
      *  Constructor. Initializes Petsc data structures
      */
-    SolverNonLinearPetsc(WorldComm const& worldComm=WorldComm());
+    SolverNonLinearPetsc(WorldComm const& worldComm=Environment::worldComm());
     SolverNonLinearPetsc( SolverNonLinearPetsc const & );
 
     /**

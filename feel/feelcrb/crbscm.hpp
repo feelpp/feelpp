@@ -42,7 +42,10 @@
 #include <feel/feelcrb/parameterspace.hpp>
 #include <feel/feelcrb/crbdb.hpp>
 #include <feel/feelcore/serialization.hpp>
+#if defined(FEELPP_HAS_GLPK_H)
 #include <glpk.h>
+#endif /* FEELPP_HAS_GLPK_H */
+
 
 namespace Feel
 {
@@ -863,7 +866,7 @@ boost::tuple<typename CRBSCM<TruthModelType>::value_type, double>
 CRBSCM<TruthModelType>::lb( parameter_type const& mu ,size_type K ,int indexmu ) const
 {
 
-
+#if defined(FEELPP_HAS_GLPK_H)
     if ( K == invalid_size_type_value ) K = this->KMax();
 
     if ( K > this->KMax() ) K = this->KMax();
@@ -1120,6 +1123,11 @@ CRBSCM<TruthModelType>::lb( parameter_type const& mu ,size_type K ,int indexmu )
         M_C_alpha_lb[ indexmu ][K] = Jobj;
 
     }
+#else // FEELPP_HAS_GLPK_H
+
+    double Jobj = 0;
+    boost::timer ti;
+#endif /* FEELPP_HAS_GLPK_H */
 
     return boost::make_tuple( Jobj, ti.elapsed() );
 

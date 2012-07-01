@@ -33,12 +33,13 @@
 #if defined(FEELPP_HAS_MPI_H)
 #include <mpi.h>
 #endif /* FEELPP_HAS_MPI_H */
+#include <boost/smart_ptr/enable_shared_from_this.hpp>
 
 namespace Feel
 {
 
 
-class WorldComm : public boost::mpi::communicator
+class WorldComm : public boost::mpi::communicator, public boost::enable_shared_from_this<WorldComm>
 {
 
     typedef boost::mpi::communicator super;
@@ -46,9 +47,11 @@ class WorldComm : public boost::mpi::communicator
 public:
 
     typedef WorldComm self_type;
+    typedef boost::shared_ptr<WorldComm> self_ptrtype;
     typedef boost::mpi::communicator communicator_type;
 
     WorldComm();
+    WorldComm( super const& );
 
     WorldComm( int _color );
 
@@ -80,6 +83,9 @@ public:
                int _localColor,// int localRank,
                std::vector<int> const& isActive );
 
+    static self_ptrtype New() { return self_ptrtype(new self_type); }
+    static self_ptrtype New( super const& s ) { return self_ptrtype(new self_type( s )); }
+    void init( int color = 0, bool colormap = false );
     communicator_type const& globalComm() const
     {
         return *this;
@@ -123,6 +129,10 @@ public:
         return this->godComm().rank();
     }
 
+    bool hasSubWorlds( int n );
+    std::vector<WorldComm> const& subWorlds( int n );
+    WorldComm const& subWorld( int n ) ;
+    int subWorldId( int n ) ;
 
     std::vector<int> const& mapColorWorld() const
     {
@@ -158,6 +168,10 @@ public:
 
     WorldComm subWorldComm() const;
     WorldComm subWorldComm( int color ) const;
+    WorldComm subWorldComm( std::vector<int> const& colormap ) ;
+    WorldComm subWorldComm( int color, std::vector<int> const& colormap ) ;
+    WorldComm const& masterWorld( int n );
+    int numberOfSubWorlds() const;
 
     WorldComm subWorldCommSeq() const;
 
@@ -174,6 +188,8 @@ public:
 
     int localColorToGlobalRank( int _color,int _localRank ) const;
 
+    void setColorMap( std::vector<int> const& colormap );
+
     /**
      * showMe
      */
@@ -189,6 +205,11 @@ public:
 
     boost::tuple<bool,std::set<int> > hasMultiLocalActivity() const;
 
+    /**
+     * register sub worlds associated to \p worldmap
+     */
+    void registerSubWorlds( int n );
+
 private :
 
     communicator_type M_localComm;
@@ -197,6 +218,7 @@ private :
     std::vector<int> M_mapColorWorld;
     std::vector<int> M_mapLocalRankToGlobalRank;
     std::vector<int> M_mapGlobalRankToGodRank;
+    std::map<int, std::pair<WorldComm,std::vector<WorldComm> > > M_subworlds;
 
     int M_masterRank;
     mutable std::vector<int/*bool*/> M_isActive;

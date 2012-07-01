@@ -200,7 +200,7 @@ public:
     /**
      * Default mesh constructor
      */
-    Mesh( WorldComm const& worldComm = WorldComm() );
+    Mesh( WorldComm const& worldComm = Environment::worldComm() );
 
     /**
      * generate a new Mesh shared pointer
@@ -417,10 +417,15 @@ public:
      *
      * \todo make use of \c extraction_policies
      */
+    trace_mesh_ptrtype
+    trace() const
+    {
+        return trace(boundaryfaces(this->shared_from_this()));
+    }
 
     template<typename RangeT>
     trace_mesh_ptrtype
-    trace( RangeT const& range );
+    trace( RangeT const& range ) const;
 
 
     template<typename Iterator>
@@ -1209,7 +1214,7 @@ private:
 template<typename Shape, typename T, int Tag>
 template<typename RangeT>
 typename Mesh<Shape, T, Tag>::trace_mesh_ptrtype
-Mesh<Shape, T, Tag>::trace( RangeT const& range )
+Mesh<Shape, T, Tag>::trace( RangeT const& range ) const
 {
     Debug( 4015 ) << "[trace] extracting " << range.template get<0>() << " nb elements :"
                   << std::distance(range.template get<1>(),range.template get<2>()) << "\n";
