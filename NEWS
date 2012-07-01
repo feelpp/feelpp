@@ -13,8 +13,11 @@
 ** Programming environment
 
  - support for Boost 1.49
+ - imported for Eigen 3.1 in contrib/eigen
  - port to gcc4.7, icc 12.1 and clang 3.1
  - added cmake macro feelpp_add application, see http://code.google.com/p/feelpp/issues/detail?id=11&can=1
+ - port on the TGCC
+   Fixes issue 35
 
 ** Bugs
 
@@ -24,6 +27,10 @@
  - fixed issue 9: http://code.google.com/p/feelpp/issues/detail?id=9&can=1
 
 ** Library
+
+*** feelalg
+ - added eigen(3.1) backend with support for dense and sparse eigen matrices
+   Fixes issue 36
 
 *** feelmesh
  - added 2D and 3D mesh adaptation using Gmsh
