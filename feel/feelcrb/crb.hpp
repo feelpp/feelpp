@@ -29,6 +29,7 @@
 #ifndef __CRB_H
 #define __CRB_H 1
 
+
 #include <boost/multi_array.hpp>
 #include <boost/tuple/tuple.hpp>
 #include "boost/tuple/tuple_io.hpp"
@@ -192,6 +193,14 @@ public:
     typedef Exporter<mesh_type> export_type;
     typedef boost::shared_ptr<export_type> export_ptrtype;
 
+    //here a fusion vector containing sequence 0 ... nb_spaces
+    //useful to acces to a component of a composite space in ComputeIntegrals
+    static const int nb_spaces = functionspace_type::nSpaces;
+    typedef typename mpl::if_< boost::is_same< mpl::int_<nb_spaces> , mpl::int_<2> > , fusion::vector< mpl::int_<0>, mpl::int_<1> >  ,
+                       typename mpl::if_ < boost::is_same< mpl::int_<nb_spaces> , mpl::int_<3> > , fusion::vector < mpl::int_<0> , mpl::int_<1> , mpl::int_<2> > ,
+                                  typename mpl::if_< boost::is_same< mpl::int_<nb_spaces> , mpl::int_<4> >, fusion::vector< mpl::int_<0>, mpl::int_<1>, mpl::int_<2>, mpl::int_<3> >,
+                                                     fusion::vector< mpl::int_<0>, mpl::int_<1>, mpl::int_<2>, mpl::int_<3>, mpl::int_<4> >
+                                                     >::type >::type >::type index_vector_type;
 
 
     //@}
@@ -422,6 +431,74 @@ public:
     {
         M_factor = Factor;
     }
+
+    struct ComputePhi
+    {
+
+        ComputePhi( wn_type v)
+        :
+        M_curs( 0 ),
+        M_vect( v )
+        {}
+
+        template< typename T >
+        void
+        operator()( const T& t ) const
+        {
+            mesh_ptrtype mesh = t.functionSpace()->mesh();
+            double surface = integrate( _range=elements(mesh), _expr=vf::cst(1.) ).evaluate()(0,0);
+            double mean = integrate( _range=elements(mesh), _expr=vf::idv( t ) ).evaluate()(0,0);
+            mean /= surface;
+            auto element_mean = vf::project(t.functionSpace(), elements(mesh), vf::cst(mean) );
+            auto element_t = vf::project(t.functionSpace(), elements(mesh), vf::idv(t) );
+            int first_dof = t.start();
+            int nb_dof = t.functionSpace()->nLocalDof();
+            for(int dof=0 ; dof<nb_dof; dof++)
+                M_vect[M_curs][first_dof + dof] = element_t[dof] - element_mean[dof];
+
+            ++M_curs;
+        }
+
+        wn_type vectorPhi()
+        {
+            return M_vect;
+        }
+        mutable int M_curs;
+        mutable wn_type M_vect;
+    };
+
+
+    struct ComputeIntegrals
+    {
+
+        ComputeIntegrals( element_type const composite_e1 ,
+                          element_type const composite_e2 )
+        :
+            M_composite_e1 ( composite_e1 ),
+            M_composite_e2 ( composite_e2 )
+        {}
+
+        template< typename T >
+        void
+        operator()( const T& t ) const
+        {
+            auto e1 = M_composite_e1.element< T::value >();
+            auto e2 = M_composite_e2.element< T::value >();
+            mesh_ptrtype mesh = e1.functionSpace()->mesh();
+            double integral = integrate( _range=elements(mesh) , _expr=vf::idv( e1 ) * vf::idv( e2 ) ).evaluate()(0,0);
+
+            M_vect.push_back( integral );
+        }
+
+        std::vector< double > vectorIntegrals()
+        {
+            return M_vect;
+        }
+
+        mutable std::vector< double > M_vect;
+        element_type M_composite_e1;
+        element_type M_composite_e2;
+    };
 
     //@}
 
@@ -713,6 +790,9 @@ public:
      * \param N : number of elements in the reduced basis
      */
     void buildVarianceMatrixPhi(int const N);
+    void buildVarianceMatrixPhi(int const N , mpl::bool_<true> );
+    void buildVarianceMatrixPhi(int const N , mpl::bool_<false> );
+
     //@}
 
 private:
@@ -832,10 +912,12 @@ private:
     std::vector<int> M_index;
     int M_mode_number;
 
-    matrixN_type M_variance_matrix_phi;
+    std::vector < matrixN_type > M_variance_matrix_phi;
 
     bool M_compute_variance;
     bool M_rbconv_contains_primal_and_dual_contributions;
+
+
 };
 
 po::options_description crbOptions( std::string const& prefix = "" );
@@ -1272,9 +1354,7 @@ CRB<TruthModelType>::offline()
             udu->setName( ( boost::format( "fem-dual-%1%" ) % ( M_N-1 ) ).str() );
 
             LOG(INFO) << "[CRB::offline] solving primal" << "\n";
-
             backend_primal_problem->solve( _matrix=A,  _solution=u, _rhs=F[0] );
-
 #if 0
             std::ofstream file_solution;
             std::string mu_str;
@@ -1976,38 +2056,123 @@ CRB<TruthModelType>::offline()
 
 
 
-
 template<typename TruthModelType>
 void
 CRB<TruthModelType>::buildVarianceMatrixPhi( int const N )
 {
-#if 0
-    M_variance_matrix_phi.conservativeResize( M_N , M_N );
-    mesh_ptrtype mesh = M_WN[0].functionSpace()->mesh();
-    double surface = integrate( _range=elements(mesh), _expr=vf::cst(1.) ).evaluate()(0,0);
+    static const bool is_composite = functionspace_type::is_composite;
+    return buildVarianceMatrixPhi( N , mpl::bool_< is_composite >() );
+}
+template<typename TruthModelType>
+void
+CRB<TruthModelType>::buildVarianceMatrixPhi( int const N , mpl::bool_<true> )
+{
+
+    std::vector<std::string> s;
+    static const int nb_spaces = functionspace_type::nSpaces;
+
+    if( N == 1 )
+        M_variance_matrix_phi.resize( nb_spaces );
+
+
+    for(int i=0;i<nb_spaces;i++)
+        M_variance_matrix_phi[i].conservativeResize( M_N , M_N );
 
     //introduction of the new variable phi
+    int size_WN = M_WN.size();
     wn_type phi;
-    for(int i = 0; i < M_WN.size(); ++i)
+
+    for(int i = 0; i < size_WN; ++i)
     {
+        auto sub = subelements( M_WN[i] , s );
+        element_type global_element = M_model->functionSpace()->element();
+        wn_type v( nb_spaces , global_element);
+        ComputePhi compute_phi(v);
+        fusion::for_each( sub , compute_phi ) ;
+        auto vect = compute_phi.vectorPhi();
+
+        //now we want to have only one element_type (global_element)
+        //which sum the contribution of each space
+        global_element.zero();
+        BOOST_FOREACH( auto element , vect )
+            global_element += element;
+        phi.push_back( global_element );
+    }
+
+
+    index_vector_type index_vector;
+    for(int space=0; space<nb_spaces; space++)
+        M_variance_matrix_phi[space].conservativeResize( N , N );
+
+
+    for(int i = 0; i < M_N; ++i)
+    {
+
+        for(int j = i+1; j < M_N; ++j)
+        {
+            ComputeIntegrals compute_integrals( phi[i] , phi[j] );
+            fusion::for_each( index_vector , compute_integrals );
+            auto vect = compute_integrals.vectorIntegrals();
+            for(int space=0; space<nb_spaces; space++)
+                M_variance_matrix_phi[space](i,j)=vect[space];
+        } //j
+        ComputeIntegrals compute_integrals ( phi[i] , phi[i] );
+        fusion::for_each( index_vector , compute_integrals );
+        auto vect = compute_integrals.vectorIntegrals();
+        for(int space=0; space<nb_spaces; space++)
+            M_variance_matrix_phi[space](i,i)=vect[space];
+    }// i
+
+}
+
+
+template<typename TruthModelType>
+void
+CRB<TruthModelType>::buildVarianceMatrixPhi( int const N , mpl::bool_<false> )
+{
+
+    std::vector<std::string> s;
+    int nb_spaces = functionspace_type::nSpaces;
+
+    if( N == 1 )
+        M_variance_matrix_phi.resize( nb_spaces );
+
+    M_variance_matrix_phi[0].conservativeResize( M_N , M_N );
+
+
+    //introduction of the new variable phi
+    int size_WN = M_WN.size();
+    //wn_type phi ( size_WN );
+    wn_type phi;
+
+    mesh_ptrtype mesh = M_WN[0].functionSpace()->mesh();
+
+    for(int i = 0; i < size_WN; ++i)
+    {
+        double surface = integrate( _range=elements(mesh), _expr=vf::cst(1.) ).evaluate()(0,0);
         double mean =  integrate( _range=elements(mesh), _expr=vf::idv( M_WN[i] ) ).evaluate()(0,0);
         mean /= surface;
         auto element_mean = vf::project(M_WN[i].functionSpace(), elements(mesh), vf::cst(mean) );
         phi.push_back( M_WN[i] - element_mean );
     }
 
-    //fill matrix M_variance_matrix_phi such as
-    //M_variance_matrix_phi(i,j) = \int_{mesh} phi^i phi^j
+
+    for(int space=0; space<nb_spaces; space++)
+        M_variance_matrix_phi[space].conservativeResize( N , N );
+
     for(int i = 0; i < M_N; ++i)
     {
+
         for(int j = i+1; j < M_N; ++j)
         {
-            M_variance_matrix_phi( i , j ) = integrate( _range=elements(mesh) , _expr=vf::idv( phi[i] ) * vf::idv( phi[j] ) ).evaluate()(0,0);
-            M_variance_matrix_phi( j , i ) =  M_variance_matrix_phi( i , j );
-        }
-        M_variance_matrix_phi( i , i ) = integrate( _range=elements(mesh) , _expr=vf::idv( phi[i] ) * vf::idv( phi[i] ) ).evaluate()(0,0);
-    }
-#endif
+            M_variance_matrix_phi[0]( i , j ) = integrate( _range=elements(mesh) , _expr=vf::idv( phi[i] ) * vf::idv( phi[j] ) ).evaluate()(0,0);
+            M_variance_matrix_phi[0]( j , i ) =  M_variance_matrix_phi[0]( i , j );
+        } //j
+
+        M_variance_matrix_phi[0]( i , i ) = integrate( _range=elements(mesh) , _expr=vf::idv( phi[i] ) * vf::idv( phi[i] ) ).evaluate()(0,0);
+
+    }// i
+
 }
 
 
@@ -2596,6 +2761,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
 {
     LOG(INFO) << "running lb()\n";
     google::FlushLogFiles(google::GLOG_INFO);
+
     bool save_output_behavior = this->vm()["crb.save-output-behavior"].template as<bool>();
 
     //if K>0 then the time at which we want to evaluate output is defined by
@@ -2622,9 +2788,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
         model_K=K;
 
         if ( K > 0 )
-        {
             time_for_output = K * time_step;
-        }
 
         else
         {
@@ -2672,9 +2836,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
     if ( !M_model->isSteady() )
     {
         for ( size_type n=0; n<N; n++ )
-        {
             uNold[0]( n ) = M_coeff_pr_ini_online[n];
-        }
     }
 
     //-- end of initialization step
@@ -2818,7 +2980,6 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
     if (  this->vm()["crb.solve-dual-problem"].template as<bool>() || M_error_type == CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM || !M_compute_variance )
     {
         double time;
-
         if ( M_model->isSteady() )
         {
             time = 1e30;
@@ -2929,24 +3090,28 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
 
     if( M_compute_variance )
     {
-#if 0
+        int nb_spaces = functionspace_type::nSpaces;
+
+        int space=0;
 
         time_index=0;
         for ( double time=time_step; time<=time_for_output; time+=time_step )
         {
             vectorN_type uNsquare = uN[time_index].array().pow(2);
-            double first = uNsquare.dot( M_variance_matrix_phi.diagonal() );
+            double first = uNsquare.dot( M_variance_matrix_phi[space].block(0,0,N,N).diagonal() );
 
             double second = 0;
             for(int k = 1; k <= N-1; ++k)
             {
                 for(int j = 1; j <= N-k; ++j)
-                    second += 2 * uN[time_index](k-1) * uN[time_index](k+j-1) * M_variance_matrix_phi(k-1 , j+k-1) ;
+                {
+                    second += 2 * uN[time_index](k-1) * uN[time_index](k+j-1) * M_variance_matrix_phi[space](k-1 , j+k-1) ;
+                }
             }
             output_time_vector[time_index] = first + second;
+
             time_index++;
         }
-#endif
     }
 
 
@@ -2975,7 +3140,6 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
 
     int size=output_time_vector.size();
     return boost::make_tuple( output_time_vector[size-1], condition_number);
-
 
 }
 
@@ -4526,7 +4690,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<false> , int number_o
 
                 for ( int __q2 = 0; __q2 < __QOutput; ++__q2 )
                 {
-                    for ( int __m2 = 0; __m2 < M_model->mMaxF(M_output_index,__q1) ; ++__m2 )
+                    for ( int __m2 = 0; __m2 < M_model->mMaxF(M_output_index,__q2) ; ++__m2 )
                     {
                         M_Lambda_du[__q1][__m1][__q2][__m2].conservativeResize( __N );
 
@@ -4701,7 +4865,6 @@ template<typename TruthModelType>
 boost::tuple<double,double,double,double>
 CRB<TruthModelType>::run( parameter_type const& mu, double eps )
 {
-
     M_compute_variance = this->vm()["crb.compute-variance"].template as<bool>();
     int Nwn = M_N;
 
@@ -4723,7 +4886,6 @@ CRB<TruthModelType>::run( parameter_type const& mu, double eps )
 
 #endif
 
-
     std::vector<vectorN_type> uN;
     std::vector<vectorN_type> uNdu;
     std::vector<vectorN_type> uNold;
@@ -4733,7 +4895,6 @@ CRB<TruthModelType>::run( parameter_type const& mu, double eps )
     double output = o.template get<0>();
 
     auto error_estimation = delta( Nwn, mu, uN, uNdu , uNold, uNduold );
-
     double e = error_estimation.template get<0>();
     double condition_number = o.template get<1>();
 
@@ -4748,7 +4909,6 @@ CRB<TruthModelType>::run( parameter_type const& mu, double eps )
         buildFunctionFromRbCoefficients( uNduold, M_WNdu, Unduold );
         compareResidualsForTransientProblems( mu , Un, Unold, Undu, Unduold, primal_residual_coefficients, dual_residual_coefficients );
     }
-
     return boost::make_tuple( output , e, Nwn , condition_number );
 }
 
@@ -5042,6 +5202,7 @@ CRB<TruthModelType>::save( Archive & ar, const unsigned int version ) const
     }
     if( version >= 2 )
         ar & BOOST_SERIALIZATION_NVP( M_variance_matrix_phi );
+
     if( version >= 3 )
         ar & BOOST_SERIALIZATION_NVP( M_WN );
 }

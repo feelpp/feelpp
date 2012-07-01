@@ -506,6 +506,7 @@ public:
         void add_( std::vector<std::string> const& __n, FunctionType const& func, mpl::bool_<true> )
         {
             std::vector<std::string> s = __n;
+            FEELPP_ASSERT( s.size() == FunctionType::functionspace_type::nSpaces );
             // implement elements() which returns a fusion vector of the components
             fusion::for_each( subelements(func,s), AddFunctionProduct<step_type>( *this ) );
         }
@@ -513,7 +514,14 @@ public:
         void add_( std::string const& __n, FunctionType const& func, mpl::bool_<true> )
         {
             std::vector<std::string> s;
-            s.push_back(__n);
+            // s.push_back(__n);
+            for(int i=0; i<FunctionType::functionspace_type::nSpaces; i++)
+                {
+                    std::ostringstream i_str;
+                    i_str << "_" << i;
+                    s.push_back(__n + i_str.str());
+                }
+            FEELPP_ASSERT( s.size() == FunctionType::functionspace_type::nSpaces );
             // implement elements() which returns a fusion vector of the components
             fusion::for_each( subelements(func,s), AddFunctionProduct<step_type>( *this ) );
         }

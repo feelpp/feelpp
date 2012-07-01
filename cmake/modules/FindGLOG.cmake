@@ -34,6 +34,8 @@ FIND_PATH(GLOG_INCLUDE_DIR glog/logging.h
   /usr/include
   )
 message(STATUS "Glog first pass: ${GLOG_INCLUDE_DIR}")
+
+
 if (NOT GLOG_INCLUDE_DIR )
   message(STATUS "Building glog in ${CMAKE_BINARY_DIR}/contrib/glog-compile...")
   execute_process(COMMAND mkdir -p ${CMAKE_BINARY_DIR}/contrib/glog-compile)
@@ -51,6 +53,24 @@ if (NOT GLOG_INCLUDE_DIR )
     )
   set(GLOG_INCLUDE_DIR ${CMAKE_BINARY_DIR}/contrib/glog/include)
 
+else ()
+  FIND_PATH(GFLAGS_INCLUDE_DIR gflags/gflags.h
+    /opt/local/include
+    /usr/local/include
+    /usr/include
+    )
+  message(STATUS "Gflags first pass: ${GFLAGS_INCLUDE_DIR}")
+
+  FIND_LIBRARY(GFLAGS_LIBRARY
+    NAMES gflags
+    PATHS
+    /opt/local/lib
+    /usr/local/lib
+    /usr/lib
+    )
+  set(GFLAGS_LIBRARIES ${GFLAGS_LIBRARY})
+  message(STATUS "Gflags includes: ${GFLAGS_INCLUDE_DIR} Libraries: ${GFLAGS_LIBRARIES}" )
+  mark_as_advanced (GFLAGS_INCLUDE_DIR GFLAGS_LIBRARIES)
 endif()
 
 FIND_LIBRARY(GLOG_LIBRARY
@@ -64,7 +84,8 @@ FIND_LIBRARY(GLOG_LIBRARY
 set(GLOG_LIBRARIES ${GLOG_LIBRARY})
 message(STATUS "GLog includes: ${GLOG_INCLUDE_DIR} Libraries: ${GLOG_LIBRARIES}" )
 
-# handle the QUIETLY and REQUIRED arguments and set OpenTURNS_FOUND to TRUE if
+
+# handle the QUIETLY and REQUIRED arguments and set GLOG_FOUND to TRUE if
 # all listed variables are TRUE
 include (FindPackageHandleStandardArgs)
 find_package_handle_standard_args (GLOG DEFAULT_MSG GLOG_INCLUDE_DIR GLOG_LIBRARIES )
