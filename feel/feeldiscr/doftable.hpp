@@ -867,17 +867,43 @@ public:
         Debug( 5015 ) << "[build] call buildBoundaryDofMap()\n";
         this->buildBoundaryDofMap( M );
 
+
         // multi process
         if ( this->worldComm().localSize()>1 )
-        {
+            {
+                if (this->_M_n_dofs>1 )
+                    {
 #if defined(FEELPP_ENABLE_MPI_MODE)
-            Debug( 5015 ) << "[build] call buildGhostDofMap () with god rank " << this->worldComm().godRank()  << "\n";
-            this->buildGhostDofMap( M );
-            Debug( 5015 ) << "[build] callFINISH buildGhostDofMap () with god rank " << this->worldComm().godRank()  << "\n";
+                        Debug( 5015 ) << "[build] call buildGhostDofMap () with god rank " << this->worldComm().godRank()  << "\n";
+                        this->buildGhostDofMap( M );
+                        Debug( 5015 ) << "[build] callFINISH buildGhostDofMap () with god rank " << this->worldComm().godRank()  << "\n";
 #else
-            std::cerr << "ERROR : FEELPP_ENABLE_MPI_MODE is OFF" << std::endl;
-            //throw std::logic_error( "ERROR : FEELPP_ENABLE_MPI_MODE is OFF" );
+                        std::cerr << "ERROR : FEELPP_ENABLE_MPI_MODE is OFF" << std::endl;
+                        //throw std::logic_error( "ERROR : FEELPP_ENABLE_MPI_MODE is OFF" );
 #endif
+                    }
+                else
+                    {
+                        if (this->worldComm().globalRank()==0)
+                            {
+                                this->_M_n_localWithoutGhost_df[this->worldComm().globalRank()] = 1;
+                                this->M_mapGlobalClusterToGlobalProcess.resize( 1 );
+                                this->M_mapGlobalClusterToGlobalProcess[0]=0;
+                                this->_M_last_df_globalcluster[this->worldComm().globalRank()] = 0;
+                            }
+                        else
+                            {
+                                this->_M_n_localWithoutGhost_df[this->worldComm().globalRank()] = 0;
+                                this->M_mapGlobalClusterToGlobalProcess.resize( 0 );
+                                this->_M_last_df_globalcluster[this->worldComm().globalRank()] = 0;
+                            }
+
+                        this->_M_n_localWithGhost_df[this->worldComm().globalRank()] = 1;
+                        this->_M_first_df_globalcluster[this->worldComm().globalRank()] = 0;
+
+                        this->M_mapGlobalProcessToGlobalCluster.resize( 1 );
+                        this->M_mapGlobalProcessToGlobalCluster[0]=0;
+                    }
         }
 
         else

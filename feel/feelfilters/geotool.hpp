@@ -51,22 +51,23 @@
 /*_________________________________________________*/
 
 # define GEOTOOL_SHAPE                                                  \
-    ( 16, ( ( Line          , 1, 0, 0, "line"         , 2, LINE ),      \
-            ( Triangle      , 2, 1, 0, "triangle"     , 3, TRIANGLE ),  \
-            ( Rectangle     , 2, 1, 0, "rectangle"    , 2, RECTANGLE ), \
+    ( 17, ( ( Line          , 1, 0, 0, "line"         , 2, LINE       ), \
+            ( Triangle      , 2, 1, 0, "triangle"     , 3, TRIANGLE   ), \
+            ( Rectangle     , 2, 1, 0, "rectangle"    , 2, RECTANGLE  ), \
             ( Quadrangle    , 2, 1, 0, "quadrangle"   , 4, QUADRANGLE ), \
-            ( Pentagon      , 2, 1, 0, "pentagon"      , 5, PENTAGON ), \
-            ( Hexagon       , 2, 1, 0, "hexagon"      , 6, HEXAGON ),   \
-            ( Circle        , 2, 1, 0, "circle"       , 2, CIRCLE    ), \
-            ( Pie           , 2, 1, 0, "pie"          , 3, PIE),        \
+            ( Pentagon      , 2, 1, 0, "pentagon"     , 5, PENTAGON   ), \
+            ( Hexagon       , 2, 1, 0, "hexagon"      , 6, HEXAGON    ), \
+            ( Circle        , 2, 1, 0, "circle"       , 2, CIRCLE     ), \
+            ( Ellipse       , 2, 1, 0, "ellipse"      , 3, ELLIPSE    ), \
+            ( Pie           , 2, 1, 0, "pie"          , 3, PIE        ), \
             ( Special_1a    , 2, 2, 0, "special_1a"   , 1, SPECIAL_1A ), \
             ( Special_1b    , 2, 1, 0, "special_1b"   , 1, SPECIAL_1B ), \
-            ( Peanut        , 2, 1, 0, "peanut"       , 4, PEANUT ), \
-            ( Hexaedre      , 3, 6, 1, "hexaedre"     , 8, HEXAEDRE  ), \
-            ( Cube          , 3, 6, 1, "cube"         , 2, CUBE  ), \
-            ( Cylindre      , 3, 6, 1, "cylindre"     , 4, CYLINDRE  ), \
-            ( Sphere        , 3, 8, 1, "sphere"       , 2, SPHERE  ),   \
-            ( Tube          , 3, 20, 4, "tube"         , 5, TUBE  )     \
+            ( Peanut        , 2, 1, 0, "peanut"       , 4, PEANUT     ), \
+            ( Hexaedre      , 3, 6, 1, "hexaedre"     , 8, HEXAEDRE   ), \
+            ( Cube          , 3, 6, 1, "cube"         , 2, CUBE       ), \
+            ( Cylindre      , 3, 6, 1, "cylindre"     , 4, CYLINDRE   ), \
+            ( Sphere        , 3, 8, 1, "sphere"       , 2, SPHERE     ), \
+            ( Tube          , 3,20, 4, "tube"         , 5, TUBE       ) \
             )                                                           \
       )                                                                 \
     /**/
@@ -208,6 +209,23 @@
     /**/
 
 # define GEOTOOL_MARKER_SURFACE_CIRCLE          \
+    ( 1, ( ( 1, 1, ( 1 ) ) )                    \
+      )                                         \
+    /**/
+
+/*_________________________________________________*/
+
+# define GEOTOOL_MARKER_POINT_ELLIPSE           \
+    ( 2, ( ( 1, 4, ( 2,3,4,5 ) ),               \
+           ( 2, 1, ( 1 ) ) )                    \
+      )                                         \
+/**/
+# define GEOTOOL_MARKER_LINE_ELLIPSE            \
+    ( 1, ( ( 1, 4, ( 1,2,3,4 ) ) )              \
+      )                                         \
+    /**/
+
+# define GEOTOOL_MARKER_SURFACE_ELLIPSE         \
     ( 1, ( ( 1, 1, ( 1 ) ) )                    \
       )                                         \
     /**/
@@ -756,7 +774,7 @@ public:
     typedef ligne_type_type::const_iterator ligne_type_const_iterator_type;
     typedef ligne_name_type::const_iterator ligne_name_const_iterator_type;
 
-    // gestion des surfaces : shape,name,(numGlobSurface,value),meshSize
+    // gestion des surfaces : shape,name,(numGlobSurface,valueOfLineloop),meshSize
     typedef boost::tuple<std::string,std::string,std::pair<int,int>,double > surface_type;
     typedef std::list< surface_type > surface_type_type;
     typedef std::list< surface_type_type > surface_name_type;
@@ -1135,10 +1153,10 @@ public:
         ) //required
         ( optional
           ( straighten,     *( boost::is_integral<mpl::_> ), 1 )
-          ( partitions,   *( boost::is_integral<mpl::_> ), 1 )
+          ( partitions,   *( boost::is_integral<mpl::_> ), Environment::worldComm().size() )
           ( partition_file,   *( boost::is_integral<mpl::_> ), 0 )
           ( partitioner,   *( boost::is_integral<mpl::_> ), GMSH_PARTITIONER_CHACO )
-          ( worldcomm,      *, WorldComm() )
+          ( worldcomm,      *, Environment::worldComm() )
         ) //optional
     )
     {
@@ -1195,7 +1213,7 @@ public:
 
     template<typename mesh_type>
     boost::shared_ptr<mesh_type>
-    createMesh( std::string name, int straighten = 1, WorldComm const& worldcomm=WorldComm() )
+    createMesh( std::string name, int straighten = 1, WorldComm const& worldcomm=Environment::worldComm() )
     {
         boost::shared_ptr<mesh_type> mesh( new mesh_type );
         mesh->setWorldComm( worldcomm );
@@ -1448,40 +1466,43 @@ param( data_geo_ptrtype __dg );
 
 
 void
-writePoint( uint __numLoc, data_geo_ptrtype __dg ,double __x1,double __x2=0, double __x3=0 );
+writePoint( uint16_type __numLoc, data_geo_ptrtype __dg ,double __x1,double __x2=0, double __x3=0 );
 
 void
-writeLine( uint __numLoc, data_geo_ptrtype __dg ,uint __n1, uint __n2 );
+writeLine( uint16_type __numLoc, data_geo_ptrtype __dg ,uint16_type __n1, uint16_type __n2 );
 
 void
-writeCircle( uint __numLoc, data_geo_ptrtype __dg ,uint __n1, uint __n2, uint __n3 );
+writeCircle( uint16_type __numLoc, data_geo_ptrtype __dg ,uint16_type __n1, uint16_type __n2, uint16_type __n3 );
 
 void
-writeSpline( uint __numLoc, data_geo_ptrtype __dg ,Loop __loop );
+writeEllipse( uint16_type __numLoc, data_geo_ptrtype __dg ,uint16_type __n1, uint16_type __n2, uint16_type __n3, uint16_type __n4 );
 
 void
-writeBSpline( uint __numLoc, data_geo_ptrtype __dg ,Loop __loop );
+writeSpline( uint16_type __numLoc, data_geo_ptrtype __dg ,Loop __loop );
 
 void
-writeLineLoop( uint __numLoc, data_geo_ptrtype __dg , Loop /*const*/ __loop );
+writeBSpline( uint16_type __numLoc, data_geo_ptrtype __dg ,Loop __loop );
 
 void
-writePlaneSurface( uint __numLoc, data_geo_ptrtype __dg , uint __ind );
+writeLineLoop( uint16_type __numLoc, data_geo_ptrtype __dg , Loop /*const*/ __loop );
 
 void
-writeRuledSurface( uint __numLoc, data_geo_ptrtype __dg , uint __ind );
+writePlaneSurface( uint16_type __numLoc, data_geo_ptrtype __dg , uint16_type __ind );
 
 void
-writeExtrudeSurface( uint __numLoc,data_geo_ptrtype __dg , uint __ind,Loop /*const*/ __loop );
+writeRuledSurface( uint16_type __numLoc, data_geo_ptrtype __dg , uint16_type __ind );
 
 void
-writePtInSurface( data_geo_ptrtype __dg , uint __indPt,uint __indSurf );
+writeExtrudeSurface( uint16_type __numLoc,data_geo_ptrtype __dg , uint16_type __ind,Loop /*const*/ __loop );
 
 void
-writeSurfaceLoop( uint __numLoc, data_geo_ptrtype __dg , Loop /*const*/ __loop );
+writePtInSurface( data_geo_ptrtype __dg , uint16_type __indPt,uint16_type __indSurf );
 
 void
-writeVolume( uint __numLoc, data_geo_ptrtype __dg , uint __ind );
+writeSurfaceLoop( uint16_type __numLoc, data_geo_ptrtype __dg , Loop /*const*/ __loop );
+
+void
+writeVolume( uint16_type __numLoc, data_geo_ptrtype __dg , uint16_type __ind );
 
 boost::tuple<Node,Node,Node>
 computeBasisOrthogonal( node_type dir,node_type centre );
@@ -1617,7 +1638,7 @@ computeBasisOrthogonal( node_type dir,node_type centre );
                                ),                                       \
                               GEOTOOL_FOR_COMP2, GEOTOOL_FOR_INCR2, GEOTOOL_FOR_MARKER_POINT_MACRO2) \
                     }                                                   \
- 
+
 /**/
 /*_________________________________________________*/
 /*                                                 */
@@ -1636,7 +1657,7 @@ computeBasisOrthogonal( node_type dir,node_type centre );
                                ),                                       \
                               GEOTOOL_FOR_COMP2, GEOTOOL_FOR_INCR2, GEOTOOL_FOR_MARKER_LINE_MACRO2) \
                     }                                                   \
- 
+
 /**/
 /*_________________________________________________*/
 /*                                                 */
@@ -1952,7 +1973,7 @@ BOOST_PP_FOR( ( 0, BOOST_PP_SUB( BOOST_PP_ARRAY_SIZE( GEOTOOL_SHAPE ),1 ) ),
 template<typename mesh_type>
 boost::shared_ptr<mesh_type>
 createMeshFromGeoFile( std::string geofile,std::string name,double meshSize,int straighten = 1,
-                       int partitions=1, WorldComm worldcomm=WorldComm(),
+                       int partitions=1, WorldComm worldcomm=Environment::worldComm(),
                        int partition_file = 0, GMSH_PARTITIONER partitioner = GMSH_PARTITIONER_CHACO )
 {
 

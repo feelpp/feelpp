@@ -36,7 +36,11 @@
 
 #include <Eigen/Core>
 
+#if defined(FEELPP_HAS_ANN_H)
 #include <ANN/ANN.h>
+#endif /* FEELPP_HAS_ANN_H */
+
+
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelmesh/kdtree.hpp>
@@ -185,16 +189,20 @@ public:
         typedef typename parameterspace_type::Element element_type;
         typedef boost::shared_ptr<element_type> element_ptrtype;
 
+#if defined(FEELPP_HAS_ANN_H)
         typedef ANNkd_tree kdtree_type;
         typedef boost::shared_ptr<kdtree_type> kdtree_ptrtype;
+#endif /* FEELPP_HAS_ANN_H */
 
 
         Sampling( parameterspace_ptrtype space, int N = 1, sampling_ptrtype supersampling = sampling_ptrtype() )
             :
             super( N ),
             M_space( space ),
-            M_supersampling( supersampling ),
-            M_kdtree()
+            M_supersampling( supersampling )
+#if defined( FEELPP_HAS_ANN_H )
+            ,M_kdtree()
+#endif
         {}
 
         /**
@@ -381,8 +389,9 @@ public:
 
         sampling_ptrtype M_supersampling;
         std::vector<size_type> M_superindices;
-
+#if defined( FEELPP_HAS_ANN_H )
         kdtree_ptrtype M_kdtree;
+#endif
     };
 
     typedef Sampling sampling_type;
@@ -641,6 +650,9 @@ boost::shared_ptr<typename ParameterSpace<P>::Sampling>
 ParameterSpace<P>::Sampling::searchNearestNeighbors( element_type const& mu,
         size_type _M )
 {
+    size_type M=_M;
+    sampling_ptrtype neighbors( new sampling_type( M_space, M ) );
+#if defined(FEELPP_HAS_ANN_H)
     //std::cout << "[ParameterSpace::Sampling::searchNearestNeighbors] start\n";
     //if ( !M_kdtree )
     //{
@@ -657,7 +669,7 @@ ParameterSpace<P>::Sampling::searchNearestNeighbors( element_type const& mu,
     //std::cout << "[ParameterSpace::Sampling::searchNearestNeighbors] building tree in R^" <<  M_space->Dimension << "\n";
     M_kdtree = kdtree_ptrtype( new kdtree_type( data_pts, this->size(), M_space->Dimension ) );
     //}
-    size_type M=_M;
+
 
     // make sure that the sampling set is big enough
     if ( this->size() < M )
@@ -674,7 +686,7 @@ ParameterSpace<P>::Sampling::searchNearestNeighbors( element_type const& mu,
         dists.data(),   // distance (returned)
         eps );   // error bound
 
-    sampling_ptrtype neighbors( new sampling_type( M_space, M ) );
+
 
     if ( M_supersampling )
     {
@@ -697,6 +709,7 @@ ParameterSpace<P>::Sampling::searchNearestNeighbors( element_type const& mu,
     }
 
     annDeallocPts( data_pts );
+#endif /* FEELPP_HAS_ANN_H */
 
     return neighbors;
 }

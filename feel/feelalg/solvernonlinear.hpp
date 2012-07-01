@@ -107,7 +107,7 @@ public:
     /**
      *  Constructor. Initializes Solver data structures
      */
-    SolverNonLinear(WorldComm const& worldComm = WorldComm() );
+    SolverNonLinear(WorldComm const& worldComm = Environment::worldComm() );
 
     /**
      * copy constructor
@@ -125,13 +125,13 @@ public:
      * the \p variables_map \p vm and  \p prefix
      */
     static solvernonlinear_ptrtype build( po::variables_map const& vm, std::string const& prefix = "",
-                                          WorldComm const& worldComm = WorldComm() );
+                                          WorldComm const& worldComm = Environment::worldComm() );
 
     /**
      * Builds a \p NonlinearSolver using the nonlinear solver package specified by
      * \p solver_package
      */
-    static solvernonlinear_ptrtype build( SolverPackage solver_package, WorldComm const& worldComm = WorldComm() );
+    static solvernonlinear_ptrtype build( SolverPackage solver_package, WorldComm const& worldComm = Environment::worldComm() );
 
     /**
      * Initialize data structures if not done so already.

@@ -694,7 +694,7 @@ template< typename IsWithGhostType>
 struct NLocalDof
 {
 
-    NLocalDof( std::vector<WorldComm> const & worldsComm = std::vector<WorldComm>( 1,WorldComm() ),
+    NLocalDof( std::vector<WorldComm> const & worldsComm = std::vector<WorldComm>( 1,Environment::worldComm() ),
                bool useOffSubSpace = false,
                size_type start = 0, size_type size = invalid_size_type_value )
         :
@@ -2864,7 +2864,7 @@ public:
     FunctionSpace( mesh_ptrtype const& mesh,
                    size_type mesh_components = MESH_RENUMBER | MESH_CHECK,
                    periodicity_type  periodicity = periodicity_type(),
-                   std::vector<WorldComm> const& _worldsComm = std::vector<WorldComm>( nSpaces,WorldComm() ) )
+                   std::vector<WorldComm> const& _worldsComm = Environment::worldsComm(nSpaces) )
         :
         _M_worldsComm( _worldsComm ),
         _M_worldComm( new WorldComm( _worldsComm[0] ) )
@@ -2874,7 +2874,7 @@ public:
 
     FunctionSpace( mesh_ptrtype const& mesh,
                    std::vector<boost::tuple<size_type, uint16_type, size_type> > const& dofindices,
-                   std::vector<WorldComm> const& _worldsComm = std::vector<WorldComm>( nSpaces,WorldComm() ) )
+                   std::vector<WorldComm> const& _worldsComm = Environment::worldsComm(nSpaces) )
         :
         _M_worldsComm( _worldsComm ),
         _M_worldComm( new WorldComm( _worldsComm[0] ) )
@@ -2926,7 +2926,7 @@ public:
                                        ( mesh,* )
                                      )
                                      ( optional
-                                       ( worldscomm, *, std::vector<WorldComm>( nSpaces,WorldComm() ) )
+                                       ( worldscomm, *, Environment::worldsComm(nSpaces) )
                                        ( components, ( size_type ), MESH_RENUMBER | MESH_CHECK )
                                        ( periodicity,*,periodicity_type() )
                                      )
@@ -2936,10 +2936,11 @@ public:
     }
 
     static pointer_type NewImpl( mesh_ptrtype const& __m,
-                                 std::vector<WorldComm> const& worldsComm = std::vector<WorldComm>( nSpaces,WorldComm() ),
+                                 std::vector<WorldComm> const& worldsComm = Environment::worldsComm(nSpaces),
                                  size_type mesh_components = MESH_RENUMBER | MESH_CHECK,
                                  periodicity_type periodicity = periodicity_type() )
     {
+
         return pointer_type( new functionspace_type( __m, mesh_components, periodicity, worldsComm ) );
     }
 
@@ -3663,10 +3664,15 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
     _M_dofOnOff = _M_dof;
 
     if ( is_vectorial )
+    {
+        // Warning: this works regarding the communicator . for the component space
+        // it will use in mixed spaces only numberofSudomains/numberofspace processors
+        //
         _M_comp_space = component_functionspace_ptrtype( new component_functionspace_type( _M_mesh,
                         MESH_COMPONENTS_DEFAULTS,
                         periodicity,
                         std::vector<WorldComm>( 1,this->worldsComm()[0] ) ) );
+    }
 
     Debug( 5010 ) << "nb dim : " << qDim() << "\n";
     Debug( 5010 ) << "nb dof : " << nDof() << "\n";
@@ -4227,7 +4233,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::id_( Context_t const & conte
             ( l )( c1 )( ldof )( gdof )
             ( this->size() )( this->localSize() )
             ( this->firstLocalIndex() )( this->lastLocalIndex() )
-            .error( "FunctionSpace::Element invalid access index" );
+            .warn( "FunctionSpace::Element invalid access index" );
 
             value_type v_ = this->globalValue( gdof );
 
