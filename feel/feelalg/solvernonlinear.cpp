@@ -89,7 +89,7 @@ template <typename T>
 boost::shared_ptr<SolverNonLinear<T> >
 SolverNonLinear<T>::build( po::variables_map const& vm, std::string const& prefix, WorldComm const& worldComm )
 {
-    SolverPackage solver_package;
+    SolverPackage solver_package=SOLVER_INVALID_PACKAGE;
 
     if ( vm["backend"].template as<std::string>() == "petsc" )
     {

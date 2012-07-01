@@ -56,7 +56,7 @@ endif(EIGEN_HG_CHANGESET)
 
 include(CheckCXXCompilerFlag)
 
-set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
 #############################################################################
 # find how to link to the standard libraries                                #
@@ -64,12 +64,15 @@ set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 find_package(StandardMathLibrary)
 
+
+set(EIGEN_TEST_CUSTOM_LINKER_FLAGS  "" CACHE STRING "Additional linker flags when linking unit tests.")
+set(EIGEN_TEST_CUSTOM_CXX_FLAGS     "" CACHE STRING "Additional compiler flags when compiling unit tests.")
+
 set(EIGEN_STANDARD_LIBRARIES_TO_LINK_TO "")
 
 if(NOT STANDARD_MATH_LIBRARY_FOUND)
 
- # message(FATAL_ERROR
- message(STATUS
+  message(FATAL_ERROR
     "Can't link to the standard math library. Please report to the Eigen developers, telling them about your platform.")
 
 else()
@@ -103,6 +106,8 @@ if(EIGEN_DEFAULT_TO_ROW_MAJOR)
 endif()
 
 add_definitions("-DEIGEN_PERMANENTLY_DISABLE_STUPID_WARNINGS")
+
+set(EIGEN_TEST_MAX_SIZE "320" CACHE STRING "Maximal matrix/vector size, default is 320")
 
 if(CMAKE_COMPILER_IS_GNUCXX)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wnon-virtual-dtor -Wno-long-long -ansi -Wundef -Wcast-align -Wchar-subscripts -Wall -W -Wpointer-arith -Wwrite-strings -Wformat-security -fexceptions -fno-check-new -fno-common -fstrict-aliasing")
@@ -159,7 +164,7 @@ if(CMAKE_COMPILER_IS_GNUCXX)
 
   option(EIGEN_TEST_NEON "Enable/Disable Neon in tests/examples" OFF)
   if(EIGEN_TEST_NEON)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfloat-abi=softfp -mfpu=neon -mcpu=cortex-a8")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfpu=neon -mcpu=cortex-a8")
     message(STATUS "Enabling NEON in tests/examples")
   endif()
 
@@ -245,19 +250,19 @@ option(EIGEN_TEST_C++0x "Enables all C++0x features." OFF)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
 
 # the user modifiable install path for header files
-set(EIGEN_INCLUDE_INSTALL_DIR "include/feel" CACHE PATH "The directory where we install the header files (optional)")
+set(EIGEN_INCLUDE_INSTALL_DIR ${EIGEN_INCLUDE_INSTALL_DIR} CACHE PATH "The directory where we install the header files (optional)")
 
 # set the internal install path for header files which depends on wether the user modifiable
 # EIGEN_INCLUDE_INSTALL_DIR has been set by the user or not.
 if(EIGEN_INCLUDE_INSTALL_DIR)
   set(INCLUDE_INSTALL_DIR
-    "include/feel"
+    ${EIGEN_INCLUDE_INSTALL_DIR}
     CACHE INTERNAL
     "The directory where we install the header files (internal)"
   )
 else()
   set(INCLUDE_INSTALL_DIR
-    "${CMAKE_INSTALL_PREFIX}/include/feel"
+    "${CMAKE_INSTALL_PREFIX}/include/eigen3"
     CACHE INTERNAL
     "The directory where we install the header files (internal)"
   )
@@ -267,7 +272,7 @@ endif()
 macro(ei_add_target_property target prop value)
 
   get_target_property(previous ${target} ${prop})
-  # if the property wasn't previously set, ${previous} is now "previous-NOTFOUND" which cmake allows catching with plain if()
+  # if the property wasn't previously set, ${previous} is now "previous-NOTFOUND" which cmake allows ca tching with plain if()
   if(NOT previous)
     set(previous "")
   endif(NOT previous)
@@ -280,54 +285,31 @@ install(FILES
   )
 
 if(EIGEN_BUILD_PKGCONFIG)
+    SET(path_separator ":")
+    STRING(REPLACE ${path_separator} ";" pkg_config_libdir_search "$ENV{PKG_CONFIG_LIBDIR}")
+    message(STATUS "searching for 'pkgconfig' directory in PKG_CONFIG_LIBDIR ( $ENV{PKG_CONFIG_LIBDIR} ), ${CMAKE_INSTALL_PREFIX}/share, and ${CMAKE_INSTALL_PREFIX}/lib")
+    FIND_PATH(pkg_config_libdir pkgconfig ${pkg_config_libdir_search} ${CMAKE_INSTALL_PREFIX}/share ${CMAKE_INSTALL_PREFIX}/lib ${pkg_config_libdir_search})
+    if(pkg_config_libdir)
+        SET(pkg_config_install_dir ${pkg_config_libdir})
+        message(STATUS "found ${pkg_config_libdir}/pkgconfig" )
+    else(pkg_config_libdir)
+        SET(pkg_config_install_dir ${CMAKE_INSTALL_PREFIX}/share)
+        message(STATUS "pkgconfig not found; installing in ${pkg_config_install_dir}" )
+    endif(pkg_config_libdir)
+
     configure_file(eigen3.pc.in eigen3.pc)
     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/eigen3.pc
-        DESTINATION share/pkgconfig
+        DESTINATION ${pkg_config_install_dir}/pkgconfig
         )
 endif(EIGEN_BUILD_PKGCONFIG)
 
 add_subdirectory(Eigen)
 
-add_subdirectory(doc EXCLUDE_FROM_ALL)
+#add_subdirectory(doc EXCLUDE_FROM_ALL)
 
-# add_custom_target(buildtests)
-# add_custom_target(check COMMAND "ctest")
-# add_dependencies(check buildtests)
-
-# CMake/Ctest does not allow us to change the build command,
-# so we have to workaround by directly editing the generated DartConfiguration.tcl file
-# save CMAKE_MAKE_PROGRAM
-set(CMAKE_MAKE_PROGRAM_SAVE ${CMAKE_MAKE_PROGRAM})
-# and set a fake one
-set(CMAKE_MAKE_PROGRAM "@EIGEN_MAKECOMMAND_PLACEHOLDER@")
-
-# include(CTest)
-# enable_testing() # must be called from the root CMakeLists, see man page
-# include(EigenTesting)
-# ei_init_testing()
-
-# # overwrite default DartConfiguration.tcl
-# # The worarounds are different for each version of the MSVC IDE
-# if(MSVC_IDE)
-#   if(MSVC_VERSION EQUAL 1600) # MSVC 2010
-#     set(EIGEN_MAKECOMMAND_PLACEHOLDER "${CMAKE_MAKE_PROGRAM_SAVE} buildtests.vcxproj /p:Configuration=\${CTEST_CONFIGURATION_TYPE} \n # ")
-#   else() # MSVC 2008 (TODO check MSVC 2005)
-#     set(EIGEN_MAKECOMMAND_PLACEHOLDER "${CMAKE_MAKE_PROGRAM_SAVE} /project buildtests")
-#   endif()
-# else()
-#   # for make and nmake
-#   set(EIGEN_MAKECOMMAND_PLACEHOLDER "${CMAKE_MAKE_PROGRAM_SAVE} buildtests")
-# endif()
-
-# configure_file(${CMAKE_CURRENT_BINARY_DIR}/DartConfiguration.tcl ${CMAKE_CURRENT_BINARY_DIR}/DartConfiguration.tcl)
-# # restore default CMAKE_MAKE_PROGRAM
-# set(CMAKE_MAKE_PROGRAM ${CMAKE_MAKE_PROGRAM_SAVE})
-# # un-set temporary variables so that it is like they never existed.
-# # CMake 2.6.3 introduces the more logical unset() syntax for this.
-# set(CMAKE_MAKE_PROGRAM_SAVE)
-# set(EIGEN_MAKECOMMAND_PLACEHOLDER)
-
-# configure_file(${CMAKE_CURRENT_SOURCE_DIR}/CTestCustom.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/CTestCustom.cmake)
+#include(EigenConfigureTesting)
+# fixme, not sure this line is still needed:
+#enable_testing() # must be called from the root CMakeLists, see man page
 
 
 # if(EIGEN_LEAVE_TEST_IN_ALL_TARGET)
@@ -336,27 +318,29 @@ set(CMAKE_MAKE_PROGRAM "@EIGEN_MAKECOMMAND_PLACEHOLDER@")
 #   add_subdirectory(test EXCLUDE_FROM_ALL)
 # endif()
 
-# if(NOT MSVC)
-#   if(EIGEN_LEAVE_TEST_IN_ALL_TARGET)
-#     add_subdirectory(blas)
-#     add_subdirectory(lapack)
-#   else()
-#     add_subdirectory(blas EXCLUDE_FROM_ALL)
-#     add_subdirectory(lapack EXCLUDE_FROM_ALL)
-#   endif()
-# endif(NOT MSVC)
+if(EIGEN_LEAVE_TEST_IN_ALL_TARGET)
+  add_subdirectory(blas)
+  add_subdirectory(lapack)
+else()
+  add_subdirectory(blas EXCLUDE_FROM_ALL)
+  add_subdirectory(lapack EXCLUDE_FROM_ALL)
+endif()
 
-# add_subdirectory(unsupported)
+add_subdirectory(unsupported)
 
-# add_subdirectory(demos EXCLUDE_FROM_ALL)
+add_subdirectory(demos EXCLUDE_FROM_ALL)
 
-# # must be after test and unsupported, for configuring buildtests.in
+# must be after test and unsupported, for configuring buildtests.in
 # add_subdirectory(scripts EXCLUDE_FROM_ALL)
 
-# # TODO: consider also replacing EIGEN_BUILD_BTL by a custom target "make btl"?
+# TODO: consider also replacing EIGEN_BUILD_BTL by a custom target "make btl"?
 # if(EIGEN_BUILD_BTL)
 #   add_subdirectory(bench/btl EXCLUDE_FROM_ALL)
 # endif(EIGEN_BUILD_BTL)
+
+# if(NOT WIN32)
+#   add_subdirectory(bench/spbench EXCLUDE_FROM_ALL)
+# endif(NOT WIN32)
 
 # ei_testing_print_summary()
 
@@ -369,3 +353,26 @@ set(CMAKE_MAKE_PROGRAM "@EIGEN_MAKECOMMAND_PLACEHOLDER@")
 #   add_subdirectory(failtest)
 # endif()
 
+# string(TOLOWER "${CMAKE_GENERATOR}" cmake_generator_tolower)
+# if(cmake_generator_tolower MATCHES "makefile")
+#   message(STATUS "Some things you can do now:")
+#   message(STATUS "--------------+--------------------------------------------------------------")
+#   message(STATUS "Command       |   Description")
+#   message(STATUS "--------------+--------------------------------------------------------------")
+#   message(STATUS "make install  | Install to ${CMAKE_INSTALL_PREFIX}. To change that:")
+#   message(STATUS "              |     cmake . -DCMAKE_INSTALL_PREFIX=yourpath")
+#   message(STATUS "              |   Eigen headers will then be installed to:")
+#   message(STATUS "              |     ${INCLUDE_INSTALL_DIR}")
+#   message(STATUS "              |   To install Eigen headers to a separate location, do:")
+#   message(STATUS "              |     cmake . -DEIGEN_INCLUDE_INSTALL_DIR=yourpath")
+#   message(STATUS "make doc      | Generate the API documentation, requires Doxygen & LaTeX")
+#   message(STATUS "make check    | Build and run the unit-tests. Read this page:")
+#   message(STATUS "              |   http://eigen.tuxfamily.org/index.php?title=Tests")
+#   message(STATUS "make blas     | Build BLAS library (not the same thing as Eigen)")
+#   message(STATUS "--------------+--------------------------------------------------------------")
+# else()
+#   message(STATUS "To build/run the unit tests, read this page:")
+#   message(STATUS "  http://eigen.tuxfamily.org/index.php?title=Tests")
+# endif()
+
+# message(STATUS "")

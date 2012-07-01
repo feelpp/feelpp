@@ -595,43 +595,6 @@ public:
         return static_cast<size_type>( petsc_last );
     }
 
-    /**
-     * Creates a copy of the global vector in the
-     * local vector \p v_local.
-     */
-    void localize ( std::vector<T>& v_local ) const;
-
-    /**
-     * Same, but fills a \p Vector<T> instead of
-     * a \p std::vector.
-     */
-    void localize ( Vector<T>& v_local ) const;
-
-    /**
-     * Creates a local vector \p v_local containing
-     * only information relevant to this processor, as
-     * defined by the \p send_list.
-     */
-    void localize ( Vector<T>& v_local,
-                    const std::vector<size_type>& send_list ) const;
-
-    /**
-     * Updates a local vector with selected values from neighboring
-     * processors, as defined by \p send_list.
-     */
-    void localize ( const size_type first_local_idx,
-                    const size_type last_local_idx,
-                    const std::vector<size_type>& send_list );
-
-    /**
-     * Creates a local copy of the global vector in
-     * \p v_local only on processor \p proc_id.  By
-     * default the data is sent to processor 0.  This method
-     * is useful for outputting data from one processor.
-     */
-    void localizeToOneProcessor ( std::vector<T>& v_local,
-                                  const size_type proc_id=0 ) const;
-
 
     /**
      * Print the contents of the vector in Matlab's format. Optionally

@@ -1997,7 +1997,8 @@ createMeshFromGeoFile( std::string geofile,std::string name,double meshSize,int 
          << "Mesh.CharacteristicLengthFromPoints=1;\n"
          << "Mesh.ElementOrder=" << gmsh.order() << ";\n"
          << "Mesh.SecondOrderIncomplete = 0;\n"
-         << "Mesh.Algorithm = 6;\n"
+         << "Mesh.Algorithm = 6;\n" // 2D mesh algorithm (1=MeshAdapt, 2=Automatic, 5=Delaunay, 6=Frontal, 7=bamg, 8=delquad)
+         << "Mesh.Algorithm3D = 4;\n" // 3D mesh algorithm (1=Delaunay, 4=Frontal, 5=Frontal Delaunay, 6=Frontal Hex, 7=MMG3D)
          << "Mesh.OptimizeNetgen=1;\n"
          << "// partitioning data\n"
          << "Mesh.Partitioner=" << partitioner << ";\n"

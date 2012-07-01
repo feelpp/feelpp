@@ -363,6 +363,8 @@ public:
         return M_dof_points.end();
     }
 
+    periodic_element_list_const_iterator beginPeriodicElements() const { return periodic_elements.begin(); }
+    periodic_element_list_const_iterator endPeriodicElements() const { return periodic_elements.end(); }
 
     /**
      * insted of creating the dof indices on the fly, get them from a
@@ -1992,6 +1994,8 @@ private:
     std::vector<boost::tuple<size_type, uint16_type, size_type> > M_dof_indices;
 
     periodicity_type M_periodicity;
+    //! list of elements which have a periodic face Tag2
+    periodic_element_list_type periodic_elements;
 
     /// a view of the dof container
     dof_container_type M_dof_view;
@@ -2412,8 +2416,6 @@ DofTable<MeshType, FEType, PeriodicityType>::buildPeriodicDofMap( mesh_type& M )
 
     const size_type n_proc  = M.worldComm().localSize();
 
-    //! list of elements which have a periodic face Tag2
-    periodic_element_list_type periodic_elements;
 
     for ( size_type processor=0; processor<n_proc; processor++ )
     {

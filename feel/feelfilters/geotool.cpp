@@ -300,6 +300,7 @@ GeoGMSHTool::init( int orderGeo, std::string gmshFormatVersion, GMSH_PARTITIONER
              << "Mesh.ElementOrder="<< orderGeo <<";\n"
              << "Mesh.SecondOrderIncomplete = 0;\n"
              << "Mesh.Algorithm = 6;\n"
+             << "Mesh.Algorithm3D = 4;\n" // 3D mesh algorithm (1=Delaunay, 4=Frontal, 5=Frontal Delaunay, 6=Frontal Hex, 7=MMG3D)
              << "Mesh.OptimizeNetgen=1;\n"
              << "// partitioning data\n"
              << "Mesh.Partitioner=" << partitioner << ";\n"

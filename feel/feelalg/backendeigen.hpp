@@ -1,0 +1,231 @@
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+
+  This file is part of the Feel library
+
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+             Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+       Date: 2012-06-20
+
+  Copyright (C) 2012 Université Joseph Fourier (Grenoble I)
+
+  This library is free software; you can redistribute it and/or
+  modify it under the terms of the GNU Lesser General Public
+  License as published by the Free Software Foundation; either
+  version 3.0 of the License, or (at your option) any later version.
+
+  This library is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  Lesser General Public License for more details.
+
+  You should have received a copy of the GNU Lesser General Public
+  License along with this library; if not, write to the Free Software
+  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+*/
+/**
+   \file backendeigen.hpp
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+   \date 2012-06-20
+ */
+
+#ifndef _BACKENDEIGEN_HPP_
+#define _BACKENDEIGEN_HPP_
+
+#include <boost/program_options/variables_map.hpp>
+
+#include <feel/feelcore/application.hpp>
+#include <feel/feelalg/vectorublas.hpp>
+#include <feel/feelalg/matrixeigendense.hpp>
+#include <feel/feelalg/matrixeigensparse.hpp>
+#include <feel/feelalg/vectoreigen.hpp>
+
+
+#include <feel/feelalg/backend.hpp>
+
+namespace Feel
+{
+namespace po = boost::program_options;
+
+/**
+ * \class BackendEigen
+ *
+ * this class provides an interface to the EIGEN linear algebra library
+ */
+template<typename T>
+class BackendEigen : public Backend<T>
+{
+    typedef Backend<T> super;
+public:
+
+    // -- TYPEDEFS --
+    typedef typename super::value_type value_type;
+
+    /* matrix */
+    typedef typename super::sparse_matrix_type sparse_matrix_type;
+    typedef typename super::sparse_matrix_ptrtype sparse_matrix_ptrtype;
+    typedef MatrixEigenDense<value_type> eigen_dense_matrix_type;
+    typedef boost::shared_ptr<eigen_dense_matrix_type> eigen_dense_matrix_ptrtype;
+    typedef MatrixEigenSparse<value_type> eigen_sparse_matrix_type;
+    typedef boost::shared_ptr<eigen_sparse_matrix_type> eigen_sparse_matrix_ptrtype;
+
+    typedef typename sparse_matrix_type::graph_type graph_type;
+    typedef typename sparse_matrix_type::graph_ptrtype graph_ptrtype;
+
+    /* vector */
+    typedef typename super::vector_type vector_type;
+    typedef typename super::vector_ptrtype vector_ptrtype;
+    typedef VectorEigen<value_type> eigen_vector_type;
+    typedef boost::shared_ptr<vector_type> eigen_vector_ptrtype;
+
+    typedef typename super::solve_return_type solve_return_type;
+    typedef typename super::nl_solve_return_type nl_solve_return_type;
+
+    // -- CONSTRUCTOR --
+    BackendEigen();
+    BackendEigen( WorldComm const& worldComm=Environment::worldComm() );
+    BackendEigen( po::variables_map const& vm, std::string const& prefix = "",
+                  WorldComm const& worldComm=Environment::worldComm() );
+
+    // -- FACTORY METHODS --
+    template<typename DomainSpace, typename DualImageSpace>
+    static sparse_matrix_ptrtype newMatrix( boost::shared_ptr<DomainSpace> const& space1,
+                                            boost::shared_ptr<DualImageSpace> const& space2,
+                                            size_type matrix_properties = NON_HERMITIAN )
+    {
+        Context ctx( matrix_properties );
+        //if ( ctx.test( DENSE ) )
+        {
+            auto A= sparse_matrix_ptrtype( new eigen_sparse_matrix_type( space1->nDof(), space2->nDof() ) );
+            A->setMatrixProperties( matrix_properties );
+            return A;
+        }
+    }
+
+    sparse_matrix_ptrtype
+    newMatrix( const size_type m,
+               const size_type n,
+               const size_type m_l,
+               const size_type n_l,
+               const size_type nnz=30,
+               const size_type noz=10,
+               size_type matrix_properties = NON_HERMITIAN )
+    {
+        sparse_matrix_ptrtype mat( new eigen_sparse_matrix_type( m,n ) );
+        mat->setMatrixProperties( matrix_properties );
+        return mat;
+    }
+
+    sparse_matrix_ptrtype
+    newMatrix( const size_type m,
+               const size_type n,
+               const size_type m_l,
+               const size_type n_l,
+               graph_ptrtype const & graph,
+               size_type matrix_properties = NON_HERMITIAN )
+    {
+        sparse_matrix_ptrtype mat( new eigen_sparse_matrix_type( m,n ) );
+        mat->setMatrixProperties( matrix_properties );
+        return mat;
+    }
+
+    sparse_matrix_ptrtype
+    newMatrix( DataMap const& d1, DataMap const& d2, size_type matrix_properties = NON_HERMITIAN, bool init = true )
+    {
+        auto A = sparse_matrix_ptrtype( new eigen_sparse_matrix_type( d1.nGlobalElements(), d2.nGlobalElements() ) );
+        A->setMatrixProperties( matrix_properties );
+        return A;
+    }
+
+    sparse_matrix_ptrtype
+    newZeroMatrix( const size_type m,
+                   const size_type n,
+                   const size_type m_l,
+                   const size_type n_l )
+    {
+        auto A = sparse_matrix_ptrtype( new eigen_sparse_matrix_type( m, n ) );
+        //A->setMatrixProperties( matrix_properties );
+        return A;
+    }
+
+
+    sparse_matrix_ptrtype
+    newZeroMatrix( DataMap const& d1, DataMap const& d2 )
+    {
+        auto A = sparse_matrix_ptrtype( new eigen_sparse_matrix_type( d1.nGlobalElements(), d2.nGlobalElements() ) );
+        //A->setMatrixProperties( matrix_properties );
+        return A;
+    }
+
+    template<typename SpaceT>
+    static vector_ptrtype newVector( boost::shared_ptr<SpaceT> const& space )
+    {
+        return vector_ptrtype( new eigen_vector_type( space->nDof() ) );
+    }
+
+    template<typename SpaceT>
+    static vector_ptrtype newVector( SpaceT const& space )
+    {
+        return vector_ptrtype( new eigen_vector_type( space.nDof() ) );
+    }
+
+    vector_ptrtype
+    newVector( DataMap const& d )
+    {
+        return vector_ptrtype( new eigen_vector_type( d.nGlobalElements() ) );
+    }
+
+    vector_ptrtype newVector( const size_type n, const size_type n_local )
+    {
+        return vector_ptrtype( new eigen_vector_type( n ) );
+    }
+
+
+    // -- LINEAR ALGEBRA INTERFACE --
+    void prod( sparse_matrix_type const& A,
+               vector_type const& x,
+               vector_type& b ) const
+    {
+        eigen_sparse_matrix_type const& _A = dynamic_cast<eigen_sparse_matrix_type const&>( A );
+        eigen_vector_type const& _x = dynamic_cast<eigen_vector_type const&>( x );
+        eigen_vector_type& _b = dynamic_cast<eigen_vector_type&>( b );
+        _b.vec() = _A.mat()*_x.vec();
+    }
+
+    solve_return_type solve( sparse_matrix_type const& A,
+                             vector_type& x,
+                             const vector_type& b );
+
+    solve_return_type solve( sparse_matrix_ptrtype const& A,
+                             vector_ptrtype& x,
+                             const vector_ptrtype& b )
+    {
+        return this->solve( *A, *x, *b );
+    }
+
+    solve_return_type solve( sparse_matrix_ptrtype const& A,
+                             sparse_matrix_ptrtype const& P,
+                             vector_ptrtype& x,
+                             const vector_ptrtype& b )
+    {
+        return this->solve( *A, *x, *b );
+    }
+
+
+    value_type dot( const eigen_vector_type& f,
+                    const eigen_vector_type& x ) const
+    {
+    }
+
+
+
+private:
+
+}; // class BackendEigen
+
+
+
+po::options_description backendeigen_options( std::string const& prefix = "" );
+
+} // Feel
+
+#endif /* _BACKENDEIGEN_HPP_ */
