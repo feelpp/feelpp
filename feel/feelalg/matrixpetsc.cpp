@@ -2025,7 +2025,7 @@ MatrixPetscMPI<T>::addMatrixSameNonZeroPattern( const T a_in, MatrixSparse<T> &X
 
     if (a==1)
         {
-            std::cout << "case a==1 " << std::endl;
+            //std::cout << "case a==1 " << std::endl;
             for ( size_type k=0;k<nLocalDofWithGhost;++k )
                 {
                     if (!this->mapRow().dofGlobalProcessIsGhost(k))
