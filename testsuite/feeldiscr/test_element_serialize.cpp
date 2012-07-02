@@ -2,8 +2,8 @@
 
   This file is part of the Feel library
 
-  Author(s): Abdoulaye Samake <abdoulaye.samake@e.ujf-grenoble.fr>
-       Date: 2011-08-10
+  Author(s): Stephane Veys <stephane.veys@imag.fr>
+       Date: 2012-06-30
 
   Copyright (C) 2008-2010 Universite Joseph Fourier (Grenoble I)
 
@@ -21,9 +21,9 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 /**
-   \file test.cpp
+   \file test_element_serialize.cpp
    \author Stephane Veys <stephane.veys@imag.fr>
-   \date 2011-08-10
+   \date 2012-06-30
 */
 
 #define BOOST_TEST_MODULE test_element_serialize
@@ -46,6 +46,7 @@ using boost::unit_test::test_suite;
 #include <feel/feeldiscr/region.hpp>
 #include <feel/feelfilters/gmsh.hpp>
 #include <feel/options.hpp>
+#include <feel/feeltiming/tic.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feelpoly/polynomialset.hpp>
 #include <feel/feelvf/vf.hpp>
@@ -63,6 +64,7 @@ makeOptions()
     testelementserializeoptions.add_options()
         ( "hsize", po::value<double>()->default_value( 0.2 ), "mesh size" )
         ( "shape", Feel::po::value<std::string>()->default_value( "simplex" ), "shape of the domain (either simplex or hypercube)" )
+        ( "nb_element", po::value<int>()->default_value( 2 ), "number of elements of the vector" )
         ;
     return testelementserializeoptions.add( Feel::feel_options() );
 }
@@ -75,7 +77,7 @@ makeAbout()
     AboutData about( "test_element_serialize" ,
                      "test_element_serialize" ,
                      "0.2",
-                     "nD(n=1,2,3) TestLift on simplices or simplex products",
+                     "nD(n=1,2,3) test serialization of element_type ( single and vector )",
                      Feel::AboutData::License_GPL,
                      "Copyright (c) 2008-2009 Universite Joseph Fourier" );
 
@@ -98,6 +100,7 @@ public:
     typedef double value_type;
     typedef Simplex<Dim> convex_type;
     typedef Mesh<convex_type> mesh_type;
+    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
     typedef bases<Lagrange<Order,Scalar> > basis_type;
     typedef FunctionSpace<mesh_type, basis_type> space_type;
     typedef typename space_type::element_type element_type;
@@ -105,11 +108,13 @@ public:
     /**
      * Constructor
      */
-    TestElementSerialize( po::variables_map const& vm, AboutData const& about )
+    TestElementSerialize( po::variables_map const& vm, AboutData const& about , bool rebuild_database )
         :
         super( vm, about ),
-        meshSize( this->vm()["hsize"].template as<double>() ),
-        shape( this->vm()["shape"].template as<std::string>() )
+        M_meshSize( this->vm()["hsize"].template as<double>() ),
+        M_shape( this->vm()["shape"].template as<std::string>() ),
+        M_nb_element( this->vm()["nb_element"].template as<int>() ),
+        M_rebuild_database( rebuild_database )
     {
     }
 
@@ -129,12 +134,16 @@ public:
     template<class Archive>
     void load( Archive & ar, const unsigned int version ) ;
     bool existDB();
+    void setRebuildDatabase( bool b);
 
 private:
 
-    double meshSize;
-    std::string shape;
-    element_type element;
+    double M_meshSize;
+    std::string M_shape;
+    element_type M_element;
+    int M_nb_element;
+    bool M_rebuild_database;
+    std::vector< element_type > M_vector_element;
 }; // TestElementSerialize
 
 
@@ -145,9 +154,9 @@ TestElementSerialize<Dim>::run()
     std::cout << "------------------------------------------------------------\n";
     std::cout << "Execute TestElementSerialize<" << Dim << ">\n";
     std::vector<double> X( 2 );
-    X[0] = meshSize;
+    X[0] = M_meshSize;
 
-    if ( shape == "hypercube" )
+    if ( M_shape == "hypercube" )
         X[1] = 1;
 
     else // default is simplex
@@ -161,23 +170,23 @@ template<int Dim>
 void
 TestElementSerialize<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
 {
-    if ( X[1] == 0 ) shape = "simplex";
+    if ( X[1] == 0 ) M_shape = "simplex";
 
-    if ( X[1] == 1 ) shape = "hypercube";
+    if ( X[1] == 1 ) M_shape = "hypercube";
 
-    //if ( !this->vm().count( "nochdir" ) )
+    if ( !this->vm().count( "nochdir" ) )
 
         Environment::changeRepository( boost::format( "testsuite/feeldiscr/%1%/%2%-%3%/h_%4%/" )
                                        % this->about().appName()
-                                       % shape
+                                       % M_shape
                                        % Dim
-                                       % meshSize );
+                                       % M_meshSize );
 
     auto mesh = createGMSHMesh( _mesh=new mesh_type,
                                 _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
-                                _desc=domain( _name=( boost::format( "%1%-%2%-%3%" ) % shape % Dim % 1 ).str() ,
+                                _desc=domain( _name=( boost::format( "%1%-%2%-%3%" ) % M_shape % Dim % 1 ).str() ,
                                         _usenames=true,
-                                        _shape=shape,
+                                        _shape=M_shape,
                                         _dim=Dim,
                                         _h=X[0],
                                         _xmin=0.,
@@ -188,15 +197,24 @@ TestElementSerialize<Dim>::run( const double* X, unsigned long P, double* Y, uns
                                         _zmax=1. ) );
 
 
-
     auto Xh = space_type::New( mesh );
-    element = Xh->element();
+    M_element = Xh->element();
+    M_vector_element.resize( M_nb_element );
+    for(int i=0; i<M_nb_element ;i++ )
+        M_vector_element[i] = Xh->element();
 
-    if( ! existDB() )
+    if( ! existDB() || M_rebuild_database )
     {
         std::cout<<"DB will be created "<<std::endl;
-        element.setName("element");
-        element = vf::project( Xh , elements(mesh), cst( 1 ) );
+        M_element = vf::project( Xh , elements(mesh), cst( 1 ) );
+        M_element.setName("element");
+        for( int i = 0 ; i < M_nb_element ; i++ )
+        {
+            M_vector_element[i] = M_element ;
+            M_vector_element[i].setName("element_"+(boost::format("%1%") %i ).str());
+            std::cout<<"save element "<<M_vector_element[i].name()<<std::endl;
+        }
+
         this->saveDB();
         std::cout<<"DB successfully created "<<std::endl;
     }
@@ -207,8 +225,8 @@ TestElementSerialize<Dim>::run( const double* X, unsigned long P, double* Y, uns
         std::cout<<"DB successfully loaded"<<std::endl;
     }
 
-    double max = element.max();
-    double min = element.min();
+    double max = M_element.max();
+    double min = M_element.min();
     BOOST_CHECK_CLOSE( max, 1.0, 2e-1 );
     BOOST_CHECK_CLOSE( min, 1.0, 2e-1 );
 
@@ -227,7 +245,9 @@ template<class Archive>
 void
 TestElementSerialize<Dim>::save( Archive & ar, const unsigned int version ) const
 {
-    ar & BOOST_SERIALIZATION_NVP( element );
+    ar & BOOST_SERIALIZATION_NVP( M_nb_element );
+    ar & BOOST_SERIALIZATION_NVP( M_element );
+    ar & BOOST_SERIALIZATION_NVP( M_vector_element );
 }
 
 template< int Dim>
@@ -235,7 +255,16 @@ template<class Archive>
 void
 TestElementSerialize<Dim>::load( Archive & ar, const unsigned int version )
 {
-    ar & BOOST_SERIALIZATION_NVP( element );
+
+    //auto mesh = mesh_type::New();
+    //auto is_mesh_loaded = mesh->load( _name="mymesh",_path=".",_type="text" );
+    ar & BOOST_SERIALIZATION_NVP( M_nb_element );
+
+    ar & BOOST_SERIALIZATION_NVP( M_element );
+    std::cout<<"element is loaded"<<std::endl;
+
+    ar & BOOST_SERIALIZATION_NVP( M_vector_element );
+    std::cout<<"vector of elements is loaded"<<std::endl;
 }
 
 
@@ -246,9 +275,9 @@ TestElementSerialize<Dim>::dbPath()
     std::string localpath = ( boost::format( "%1%/testsuite/feeldiscr/%2%/%3%-%4%/h_%5%/db/" )
                               % Feel::Environment::rootRepository()
                               % this->about().appName()
-                              % shape
+                              % M_shape
                               % Dim
-                              % meshSize).str();
+                              % M_meshSize).str();
 
     fs::path rep_path = localpath;
 
@@ -292,6 +321,13 @@ TestElementSerialize<Dim>::loadDB()
 }
 
 
+template < int Dim >
+void
+TestElementSerialize<Dim>::setRebuildDatabase( bool b )
+{
+    M_rebuild_database = b;
+}
+
 /**
  * main code
  */
@@ -313,15 +349,15 @@ BOOST_AUTO_TEST_CASE( MyElementSerializeCase )
         std::cout << app.optionsDescription() << "\n";
 
     //the first one :  create database ( if doesn't exist )
-    app.add( new TestElementSerialize<1>( app.vm(), app.about() ) );
+    app.add( new TestElementSerialize<1>( app.vm(), app.about() , true ) );
     //the second one : load database
-    app.add( new TestElementSerialize<1>( app.vm(), app.about() ) );
+    app.add( new TestElementSerialize<1>( app.vm(), app.about() , false ) );
 
-    app.add( new TestElementSerialize<2>( app.vm(), app.about() ) );
-    app.add( new TestElementSerialize<2>( app.vm(), app.about() ) );
+    app.add( new TestElementSerialize<2>( app.vm(), app.about() , true ) );
+    app.add( new TestElementSerialize<2>( app.vm(), app.about() , false ) );
 
-    app.add( new TestElementSerialize<3>( app.vm(), app.about() ) );
-    app.add( new TestElementSerialize<3>( app.vm(), app.about() ) );
+    app.add( new TestElementSerialize<3>( app.vm(), app.about() , true ) );
+    app.add( new TestElementSerialize<3>( app.vm(), app.about() , false ) );
 
     app.run();
 
