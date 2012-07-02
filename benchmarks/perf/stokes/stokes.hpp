@@ -162,7 +162,7 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     M_backend = backend_type::build( this->vm() );
     exporter =  boost::shared_ptr<export_type>( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) );
 
-    boost::timer t;
+    boost::mpi::timer t;
 #if defined(KOVASZNAY)
     double xmin = -0.5, xmax=1.5;
     double ymin =  0, ymax=2;
@@ -343,7 +343,7 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
 
 #endif
 
-    boost::timer subt;
+    boost::mpi::timer subt;
     // right hand side
     auto F = M_backend->newVector( Xh );
     form1( Xh, F, _init=true );

@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -156,7 +156,7 @@ Laplacian<Dim, BasisU, Entity>::run()
     M_backend = backend_type::build( this->vm() );
     exporter =  boost::shared_ptr<export_type>( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) );
 
-    boost::timer t;
+    boost::mpi::timer t;
 #if defined(KOVASZNAY)
     double xmin = -0.5, xmax=1.5;
     double ymin =  0, ymax=2;
@@ -221,7 +221,7 @@ Laplacian<Dim, BasisU, Entity>::run()
     auto grad_exact = pi*trans( cos( pi*Px() )*cos( pi*Py() )*cos( pi*Pz() )*unitX()-sin( pi*Px() )*sin( pi*Py() )*cos( pi*Pz() )*unitY()-sin( pi*Px() )*cos( pi*Py() )*sin( pi*Pz() )*unitZ() );
     auto f = Dim*pi*pi*u_exact; // -Delta u_exact
 
-    boost::timer subt;
+    boost::mpi::timer subt;
     // right hand side
     auto F = M_backend->newVector( Xh );
     form1( Xh, F, _init=true );
