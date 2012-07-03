@@ -40,6 +40,7 @@
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/environment.hpp>
+#include <feel/feelalg/datamap.hpp>
 
 namespace Feel
 {
@@ -338,6 +339,7 @@ public:
      * transpose graph
      */
     self_ptrtype transpose();
+    self_ptrtype transpose(DataMap const& dm);
 
     /**
      * add missing zero entries diagonal

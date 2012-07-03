@@ -153,6 +153,51 @@ GraphCSR::transpose()
     return M_graphT;
 }
 
+GraphCSR::self_ptrtype
+GraphCSR::transpose(DataMap const& dm)
+{
+
+    if ( M_graphT ) return M_graphT;
+
+    this->close();
+    M_graphT = self_ptrtype( new self_type( M_n_total_nz.size(),
+                                            M_first_col_entry_on_proc,
+                                            M_last_col_entry_on_proc,
+                                            M_first_row_entry_on_proc,
+                                            M_last_row_entry_on_proc ) );
+
+    for ( auto it = M_storage.begin(), en = M_storage.end() ; it != en; ++it )
+    {
+        // Get the row of the sparsity pattern
+        row_type const& irow = it->second;
+
+        // num line
+        size_type globalindex = it->first;
+
+        for ( auto colit = boost::get<2>( irow ).begin(), colen=boost::get<2>( irow ).end() ; colit!=colen ; ++colit )
+            {
+                if ( *colit >= M_graphT->firstRowEntryOnProc() && *colit<=M_graphT->lastRowEntryOnProc() )
+                    {
+                        self_type::row_type& row = M_graphT->row( *colit );
+                        row.get<0>()=this->worldComm().globalRank();
+                        row.get<1>()=*colit-dm.firstDofGlobalCluster();
+                        row.get<2>().insert( globalindex );
+                    }
+                else
+                    {
+                        const int realproc = dm.procOnGlobalCluster(*colit);
+                        self_type::row_type& row = M_graphT->row( *colit );
+                        row.get<0>()=realproc;
+                        row.get<1>()=*colit-dm.firstDofGlobalCluster(realproc);
+                        row.get<2>().insert( globalindex );
+                    }
+            }
+    }
+    M_graphT->close();
+
+    return M_graphT;
+}
+
 void
 GraphCSR::addMissingZeroEntriesDiagonal()
 {
