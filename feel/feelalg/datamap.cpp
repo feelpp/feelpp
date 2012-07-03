@@ -383,7 +383,7 @@ DataMap::showMeMapGlobalProcessToGlobalCluster( std::ostream& __out  ) const
             }
             __out << "-----------------------------------------------------------------------\n";
 #endif
-#if 1
+#if 0
             __out << "mapGlobalClusterToGlobalProcess : \n";
             for ( size_type i=0 ; i<this->mapGlobalClusterToGlobalProcess().size() ; ++i )
             {
