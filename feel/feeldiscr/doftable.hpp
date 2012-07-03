@@ -891,17 +891,19 @@ public:
                                 this->_M_n_localWithoutGhost_df[this->worldComm().globalRank()] = 1;
                                 this->M_mapGlobalClusterToGlobalProcess.resize( 1 );
                                 this->M_mapGlobalClusterToGlobalProcess[0]=0;
+                                this->_M_first_df_globalcluster[this->worldComm().globalRank()] = 0;
                                 this->_M_last_df_globalcluster[this->worldComm().globalRank()] = 0;
                             }
                         else
                             {
                                 this->_M_n_localWithoutGhost_df[this->worldComm().globalRank()] = 0;
                                 this->M_mapGlobalClusterToGlobalProcess.resize( 0 );
-                                this->_M_last_df_globalcluster[this->worldComm().globalRank()] = 0;
+                                this->_M_first_df_globalcluster[this->worldComm().globalRank()] = 25;// 0;
+                                this->_M_last_df_globalcluster[this->worldComm().globalRank()] = 25; //0;
                             }
 
                         this->_M_n_localWithGhost_df[this->worldComm().globalRank()] = 1;
-                        this->_M_first_df_globalcluster[this->worldComm().globalRank()] = 0;
+                        //this->_M_first_df_globalcluster[this->worldComm().globalRank()] = 0;
 
                         this->M_mapGlobalProcessToGlobalCluster.resize( 1 );
                         this->M_mapGlobalProcessToGlobalCluster[0]=0;

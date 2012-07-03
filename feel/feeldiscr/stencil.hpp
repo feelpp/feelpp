@@ -83,7 +83,14 @@ struct compute_graph3
                                            _diag_is_nonzero=false,
                                            _collect_garbage=false );
 
-                M_stencil->mergeGraph( M_stencil->testSpace()->nDofStart( M_test_index ), M_stencil->trialSpace()->nDofStart( M_trial_index ) , thestencil->graph() );
+                if ( M_stencil->testSpace()->worldComm().globalSize()>1 && M_stencil->testSpace()->hasEntriesForAllSpaces() )
+                    M_stencil->mergeGraphMPI( M_test_index, M_trial_index,
+                                              space2->mapOn(), M_space1->mapOn(),
+                                              thestencil->graph() );
+                else
+                    M_stencil->mergeGraph( M_stencil->testSpace()->nDofStart( M_test_index ),
+                                           M_stencil->trialSpace()->nDofStart( M_trial_index ),
+                                           thestencil->graph() );
             }
         } // if ( M_stencil->testSpace()->worldsComm()[M_test_index].isActive() )
 
@@ -153,9 +160,14 @@ struct compute_graph2
                                            _diag_is_nonzero=false,
                                            _collect_garbage=false );
 
-                M_stencil->mergeGraph( M_stencil->testSpace()->nDofStart( M_test_index ),
-                                       M_stencil->trialSpace()->nDofStart( M_trial_index ),
-                                       thestencil->graph() );
+                if ( M_stencil->testSpace()->worldComm().globalSize()>1 && M_stencil->testSpace()->hasEntriesForAllSpaces() )
+                    M_stencil->mergeGraphMPI( M_test_index, M_trial_index,
+                                              M_space1->mapOn(), space2->mapOn(),
+                                              thestencil->graph() );
+                else
+                    M_stencil->mergeGraph( M_stencil->testSpace()->nDofStart( M_test_index ),
+                                           M_stencil->trialSpace()->nDofStart( M_trial_index ),
+                                           thestencil->graph() );
             }
         } // if ( M_stencil->testSpace()->worldsComm()[M_test_index].isActive() )
 
@@ -288,6 +300,9 @@ public:
 
 
     void mergeGraph( int row, int col, graph_ptrtype g );
+    void mergeGraphMPI( size_type test_index, size_type trial_index,
+                        DataMap const& mapOnTest, DataMap const& mapOnTrial,
+                        graph_ptrtype g);
 
     test_space_ptrtype testSpace() const
     {
@@ -403,7 +418,8 @@ BOOST_PARAMETER_FUNCTION(
 
         if ( git_trans != StencilManager::instance().end() )
         {
-            auto g = git_trans->second->transpose();
+            auto g = git_trans->second->transpose(test->mapOn());
+            //auto g = git_trans->second->transpose();
             StencilManager::instance().operator[]( boost::make_tuple( test, trial, pattern, pattern_block.getSetOfBlocks(), diag_is_nonzero ) ) = g;
             auto s = stencil_ptrtype( new stencil_type( test, trial, pattern, g ) );
             //std::cout << "Found a  transposed stencil in manager (" << test.get() << "," << trial.get() << "," << pattern << ")\n";
@@ -574,6 +590,63 @@ Stencil<X1,X2>::mergeGraph( int row, int col, graph_ptrtype g )
     Debug( 5050 ) << "merge graph for composite bilinear form done\n";
 }
 
+template<typename X1,  typename X2>
+void
+Stencil<X1,X2>::mergeGraphMPI( size_type test_index, size_type trial_index,
+                               DataMap const& mapOnTest, DataMap const& mapOnTrial,
+                               graph_ptrtype g )
+{
+
+    const int row = ( this->testSpace()->dof()->firstDofGlobalCluster()  +  this->testSpace()->nLocalDofWithoutGhostStart( test_index ) ) - mapOnTest.firstDofGlobalCluster();
+    const int col = ( this->trialSpace()->dof()->firstDofGlobalCluster() +  this->trialSpace()->nLocalDofWithoutGhostStart( trial_index ) ) - mapOnTrial.firstDofGlobalCluster();
+    typename graph_type::const_iterator it = g->begin();
+    typename graph_type::const_iterator en = g->end();
+
+    for ( ; it != en; ++it )
+        {
+            int theglobalrow = row+it->first;
+            int thelocalrow = this->testSpace()->nLocalDofWithoutGhostOnProcStart(this->testSpace()->worldComm().globalRank(), test_index ) + it->second.get<1>();
+
+            if (it->second.get<0>()!=g->worldComm().globalRank() )
+                {
+                    const int proc = it->second.get<0>();
+                    const size_type realrow = this->testSpace()->dof()->firstDofGlobalCluster(proc)
+                        + this->testSpace()->nLocalDofWithoutGhostOnProcStart(proc, test_index )
+                        - mapOnTest.firstDofGlobalCluster(proc);
+                    theglobalrow = realrow+it->first;
+                    thelocalrow = this->testSpace()->nLocalDofWithoutGhostOnProcStart(proc, test_index ) + it->second.get<1>();
+                }
+
+            std::set<size_type>& row1_entries = M_graph->row( theglobalrow ).template get<2>();
+            std::set<size_type> const& row2_entries = boost::get<2>( it->second );
+
+            Debug( 5050 ) << "[mergeGraph] adding information to global row [" << theglobalrow << "], localrow=" << thelocalrow << "\n";
+            M_graph->row( theglobalrow ).template get<1>() = thelocalrow;
+            M_graph->row( theglobalrow ).template get<0>() = this->testSpace()->worldComm().mapLocalRankToGlobalRank()[it->second.get<0>()];
+
+            if ( !row2_entries.empty() )
+                {
+                    for ( auto it = row2_entries.begin(), en = row2_entries.end() ; it!=en; ++it )
+                        {
+                            const auto dofcol = *it+col;
+                            if (mapOnTrial.dofGlobalClusterIsOnProc(*it))
+                                row1_entries.insert( dofcol );
+                            else
+                                {
+                                    const int realproc = mapOnTrial.procOnGlobalCluster(*it);
+                                    const size_type realcol = this->trialSpace()->dof()->firstDofGlobalCluster(realproc)
+                                        + this->trialSpace()->nLocalDofWithoutGhostOnProcStart( realproc, trial_index )
+                                        - mapOnTrial.firstDofGlobalCluster(realproc);
+
+                                    row1_entries.insert(*it+realcol);
+                                }
+                        }
+                }
+
+        } // for( ; it != en; ++it )
+
+
+}
 
 template<typename X1,  typename X2>
 typename Stencil<X1,X2>::graph_ptrtype
