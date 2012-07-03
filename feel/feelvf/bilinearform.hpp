@@ -1411,16 +1411,18 @@ void BFAssign1<BFType,ExprType,TestSpaceType>::operator()( boost::shared_ptr<Spa
         typedef SpaceType trial_space_type;
         typedef TestSpaceType test_space_type;
 
-        //Feel::vf::Block block ( 0, 0,
-        //                        _M_bf.testSpace()->nDofStart( _M_test_index ),
-        //                        _M_bf.trialSpace()->nDofStart( _M_trial_index ) );
         Feel::vf::list_block_type list_block;
 
-        // with mpi, dof start to 0 (thanks to the LocalToGlobal mapping).
         if ( _M_bf.testSpace()->worldsComm()[_M_test_index].globalSize()>1 )
         {
             //Debug( 5050 ) << "[BFAssign1::operator()] block: " << block << "\n";
-            list_block.push_back( Feel::vf::Block( 0, 0, 0, _M_bf.trialSpace()->nLocalDofStart( _M_trial_index ) ) );
+            if (_M_bf.testSpace()->hasEntriesForAllSpaces())
+                list_block.push_back( Feel::vf::Block( 0, 0,
+                                                       _M_bf.testSpace()->nLocalDofStart( _M_test_index ),
+                                                       _M_bf.trialSpace()->nLocalDofStart( _M_trial_index ) ) );
+            else
+                list_block.push_back( Feel::vf::Block( 0, 0, 0, _M_bf.trialSpace()->nLocalDofStart( _M_trial_index ) ) );
+
         }
 
         else
@@ -1479,7 +1481,13 @@ void BFAssign3<BFType,ExprType,TrialSpaceType>::operator()( boost::shared_ptr<Sp
         if ( _M_bf.testSpace()->worldsComm()[_M_test_index].globalSize()>1 )
         {
             //Debug( 5050 ) << "[BFAssign1::operator()] block: " << block << "\n";
-            list_block.push_back( Feel::vf::Block( 0, 0, 0, _M_bf.trialSpace()->nLocalDofStart( _M_trial_index ) ) );
+            if (_M_bf.testSpace()->hasEntriesForAllSpaces())
+                list_block.push_back( Feel::vf::Block( 0, 0,
+                                                       _M_bf.testSpace()->nLocalDofStart( _M_test_index ),
+                                                       _M_bf.trialSpace()->nLocalDofStart( _M_trial_index ) ) );
+            else
+                list_block.push_back( Feel::vf::Block( 0, 0, 0, _M_bf.trialSpace()->nLocalDofStart( _M_trial_index ) ) );
+
         }
 
         else
