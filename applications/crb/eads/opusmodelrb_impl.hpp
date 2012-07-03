@@ -283,7 +283,7 @@ OpusModelRB<OrderU,OrderP,OrderT>::init()
 
     for ( int q = 1; q < Qa(); ++q )
     {
-        M_Aq[q] = backend->newMatrix( M_Th, M_Th );
+        M_Aq[q] = backend->newMatrix( M_Th, M_Th , _pattern=pattern );
     }
 
     // mass matrix
@@ -291,7 +291,7 @@ OpusModelRB<OrderU,OrderP,OrderT>::init()
 
     for ( int q = 0; q < Qm(); ++q )
     {
-        M_Mq[q] = backend->newMatrix( M_Th, M_Th );
+        M_Mq[q] = backend->newMatrix( M_Th, M_Th , _pattern=pattern );
     }
 
     // outputs
@@ -308,7 +308,7 @@ OpusModelRB<OrderU,OrderP,OrderT>::init()
     }
 
 
-    D = backend->newMatrix( M_Th, M_Th );
+    D = backend->newMatrix( M_Th, M_Th , _pattern=pattern );
     L.resize( Nl() );
 
     for ( int l = 0; l < Nl(); ++l )
@@ -316,7 +316,7 @@ OpusModelRB<OrderU,OrderP,OrderT>::init()
         L[l] = backend->newVector( M_Th );
     }
 
-    Mass = backend->newMatrix( M_Th, M_Th );
+    //Mass = backend->newMatrix( M_Th, M_Th );
 
     M_temp_bdf = bdf( _space=M_Th, _vm=this->vm(), _name="temperature" , _prefix="temperature" );
 
