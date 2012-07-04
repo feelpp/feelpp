@@ -4128,7 +4128,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::findPoint( node_type const& pt,size_type &cv 
 
     for ( ; it != ite; ++it )
     {
-        inv_trans_type __git( _M_mesh->gm(), _M_mesh->element( ( *it )->id ) );
+        inv_trans_type __git( _M_mesh->gm(), _M_mesh->element( ( *it )->id ), this->worldComm().subWorldCommSeq() );
 
         size_type cv_stored = ( *it )->id;
 
