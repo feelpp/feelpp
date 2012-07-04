@@ -98,8 +98,9 @@ extern template class Laplacian<3, Lagrange<2, Scalar>, Hypercube>;
 
 int main( int argc, char** argv )
 {
-
+    
     using namespace Feel;
+    Environment env( argc, argv );
     Application benchmark( argc, argv, makeAbout(), makeOptions() );
 
     if ( benchmark.vm().count( "help" ) )
