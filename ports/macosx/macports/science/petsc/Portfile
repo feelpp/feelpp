@@ -24,9 +24,9 @@ distname	${name}-lite-${version}
 worksrcdir	${name}-${version}
 universal_variant   no
 
-checksums           md5     bcd3fbc5b4cd88b78ec9ca18bb166b4e \
-                    sha1    ad1977c56e7b34c444b8063501cdbe70ddf3f4d0 \
-                    rmd160  f4245cabc6db8b0efcf6255202dc9e91d862267a
+checksums           md5     712dce5c6e6669f2dfe628d48a92de62 \
+                    sha1    4c9a41c4cd930889314e698fdfdb26480b548f03 \
+                    rmd160  8ec915871f8d5463428c321d2af0a51b42ea730f
 
 depends_build-append  port:cmake
 depends_lib-append  port:openmpi
