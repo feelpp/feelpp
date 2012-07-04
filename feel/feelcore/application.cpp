@@ -462,6 +462,8 @@ benchmark_options( std::string const& prefix  )
     ( prefixvm( prefix,"benchmark.nlevels" ).c_str(), po::value<int>()->default_value( 1 ), "number of mesh levels to benchmark" )
     ( prefixvm( prefix,"benchmark.hsize" ).c_str(), po::value<double>()->default_value( 0.1 ), "default mesh size" )
     ( prefixvm( prefix,"benchmark.refine" ).c_str(), po::value<double>()->default_value( 2 ), "refine ratio for meshes" )
+    ( prefixvm( prefix,"benchmark.prepare" ).c_str(), po::value<bool>()->default_value( false ), "prepare data for the benchmark (e.g. precompute meshes/partitioning)" )
+    ( prefixvm( prefix,"benchmark.partitions" ).c_str(), po::value<int>()->default_value( 1 ), "number of partitions used for the benchmark" )
     ;
 
     // make sense only for global benchmark options
@@ -847,7 +849,7 @@ void
 Application::run()
 {
     std::string runonly = _M_vm["benchmark.only"].as<std::string>();
-
+    bool prepare = _M_vm["benchmark.prepare"].as<bool>();
     for ( auto i = M_simgets.begin(), end = M_simgets.end(); i != end; ++i )
     {
         if ( ( runonly.empty() == false  ) &&
@@ -868,7 +870,12 @@ Application::run()
             i->setMeshSize( meshSize );
             i->setLevel( l+1 );
             i->run();
-            M_stats[i->name()].push_back( i->stats() );
+            if ( !prepare )
+                {
+                    M_stats[i->name()].push_back( i->stats() );
+                    this->printStats( std::cout );
+                }
+
         }
 
     }
@@ -1039,22 +1046,35 @@ printTime( std::ostream& out, std::vector<ptree::ptree> const& stats, std::strin
 }
 
 void
+Application::setStats( std::vector<std::string> const& keys ) 
+{
+    M_keys = keys;
+}
+void
+Application::printStats( std::ostream& out ) const
+{
+    printStats( out, M_keys );
+}
+void
 Application::printStats( std::ostream& out, std::vector<std::string> const& keys ) const
 {
+    if ( keys.empty() ) return;
+    if ( M_comm.rank() != 0 ) return ;
     std::string runonly = _M_vm["benchmark.only"].as<std::string>();
-
+    bool prepare = _M_vm["benchmark.prepare"].as<bool>();
+    if ( prepare ) return;
     for ( auto i = M_simgets.begin(), end = M_simgets.end(); i != end; ++i )
     {
         if ( ( runonly.empty() == false  ) &&
                 runonly.find( i->name() ) == std::string::npos )
             continue;
 
-        std::cout << "================================================================================\n";
-        std::cout << "Simulation " << i->name() << "\n";
+        out << "================================================================================\n";
+        out << "Simulation " << i->name() << "\n";
         BOOST_FOREACH( auto key, keys )
         {
-            std::cout << "------------------------------------------------------------\n";
-            std::cout << "Key: " << key << "\n";
+            out << "------------------------------------------------------------\n";
+            out << "Key: " << key << "\n";
 
             if ( key.find( "e." ) != std::string::npos )
             {
