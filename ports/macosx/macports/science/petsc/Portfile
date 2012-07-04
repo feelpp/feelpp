@@ -46,7 +46,6 @@ configure.args  --with-python --with-debugging=0 \
         --download-parmetis \
         --download-blacs \
         --download-scalapack \
-        --download-pastix \
         --download-mumps \
         --download-ptscotch \
 		--with-fc=${prefix}/bin/openmpif90 \
