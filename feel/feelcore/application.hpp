@@ -392,6 +392,17 @@ public:
     virtual void run( const double* X, unsigned long P, double* Y, unsigned long N );
 
     /**
+     * set statistics to be printed
+     */
+    void setStats( std::vector<std::string> const& keys );
+
+    /**
+     * print statistics from applications
+     */
+    void printStats( std::ostream& out ) const;
+
+
+    /**
      * print statistics from applications
      */
     void printStats( std::ostream& out, std::vector<std::string> const& keys ) const;
@@ -458,6 +469,7 @@ private:
 
     simgets_type M_simgets;
     std::map<std::string,std::vector<ptree::ptree> > M_stats;
+    std::vector<std::string> M_keys;
 
 };
 //! add benchmark options to feel++ applications
