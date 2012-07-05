@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
   Date: 2005-03-17
 
-  Copyright (C) 2007-2010 Universite de Grenoble 1
+  Copyright (C) 2007-2012 Universite de Grenoble 1
   Copyright (C) 2005,2006 EPFL
 
 
@@ -866,7 +866,7 @@ Application::run()
 
         for ( int l = 0; l < nlevels; ++l )
         {
-            double meshSize= hsize/std::pow( refine,l );
+            double meshSize= hsize;///std::pow( refine,l );
             i->setMeshSize( meshSize );
             i->setLevel( l+1 );
             i->run();
@@ -1046,7 +1046,7 @@ printTime( std::ostream& out, std::vector<ptree::ptree> const& stats, std::strin
 }
 
 void
-Application::setStats( std::vector<std::string> const& keys ) 
+Application::setStats( std::vector<std::string> const& keys )
 {
     M_keys = keys;
 }
