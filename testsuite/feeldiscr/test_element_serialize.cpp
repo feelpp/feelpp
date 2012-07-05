@@ -104,7 +104,6 @@ public:
     typedef bases<Lagrange<Order,Scalar> > basis_type;
     typedef FunctionSpace<mesh_type, basis_type> space_type;
     typedef typename space_type::element_type element_type;
-
     /**
      * Constructor
      */
@@ -141,9 +140,11 @@ private:
     double M_meshSize;
     std::string M_shape;
     element_type M_element;
+    element_type M_element_temp;
     int M_nb_element;
     bool M_rebuild_database;
     std::vector< element_type > M_vector_element;
+    std::vector< element_type > M_rebuilt_vector_element;
 }; // TestElementSerialize
 
 
@@ -174,6 +175,7 @@ TestElementSerialize<Dim>::run( const double* X, unsigned long P, double* Y, uns
 
     if ( X[1] == 1 ) M_shape = "hypercube";
 
+#if 1
     if ( !this->vm().count( "nochdir" ) )
 
         Environment::changeRepository( boost::format( "testsuite/feeldiscr/%1%/%2%-%3%/h_%4%/" )
@@ -181,40 +183,48 @@ TestElementSerialize<Dim>::run( const double* X, unsigned long P, double* Y, uns
                                        % M_shape
                                        % Dim
                                        % M_meshSize );
-
-    auto mesh = createGMSHMesh( _mesh=new mesh_type,
-                                _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
-                                _desc=domain( _name=( boost::format( "%1%-%2%-%3%" ) % M_shape % Dim % 1 ).str() ,
-                                        _usenames=true,
-                                        _shape=M_shape,
-                                        _dim=Dim,
-                                        _h=X[0],
-                                        _xmin=0.,
-                                        _xmax=1.,
-                                        _ymin=0.,
-                                        _ymax=1.,
-                                        _zmin=0.,
-                                        _zmax=1. ) );
+#endif
 
 
-    auto Xh = space_type::New( mesh );
-    M_element = Xh->element();
-    M_vector_element.resize( M_nb_element );
-    for(int i=0; i<M_nb_element ;i++ )
-        M_vector_element[i] = Xh->element();
+    auto mesh = mesh_type::New();
+
+    auto is_mesh_loaded = mesh->load( _name="mymesh",_path=".",_type="text" );
+
+    if ( ! is_mesh_loaded )
+    {
+        mesh = createGMSHMesh( _mesh=new mesh_type,
+                               _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
+                               _desc=domain( _name=( boost::format( "%1%-%2%-%3%" ) % M_shape % Dim % 1 ).str() ,
+                                             _usenames=true,
+                                             _shape=M_shape,
+                                             _dim=Dim,
+                                             _h=X[0],
+                                             _xmin=0.,
+                                             _xmax=1.,
+                                             _ymin=0.,
+                                             _ymax=1.,
+                                             _zmin=0.,
+                                             _zmax=1. ) );
+        mesh->save( _name="mymesh",_path=".",_type="text" );
+    }
+
 
     if( ! existDB() || M_rebuild_database )
     {
+        auto Xh = space_type::New( mesh );
+        M_element = Xh->element();
+        M_vector_element.resize( M_nb_element );
         std::cout<<"DB will be created "<<std::endl;
         M_element = vf::project( Xh , elements(mesh), cst( 1 ) );
         M_element.setName("element");
         for( int i = 0 ; i < M_nb_element ; i++ )
         {
+            M_vector_element[i] = Xh->element();
             M_vector_element[i] = M_element ;
             M_vector_element[i].setName("element_"+(boost::format("%1%") %i ).str());
-            std::cout<<"save element "<<M_vector_element[i].name()<<std::endl;
+           std::cout<<"save element "<<M_vector_element[i].name()<<std::endl;
         }
-
+        M_element_temp = Xh->element();
         this->saveDB();
         std::cout<<"DB successfully created "<<std::endl;
     }
@@ -223,12 +233,24 @@ TestElementSerialize<Dim>::run( const double* X, unsigned long P, double* Y, uns
         std::cout<<"DB will be loaded"<<std::endl;
         this->loadDB();
         std::cout<<"DB successfully loaded"<<std::endl;
+
+
+        double max = M_element.max();
+        double min = M_element.min();
+        BOOST_CHECK_CLOSE( max, 1.0, 2e-1 );
+        BOOST_CHECK_CLOSE( min, 1.0, 2e-1 );
+
+        for( int e = 0 ; e < M_nb_element; e++ )
+        {
+            max = M_rebuilt_vector_element[e].max();
+            min = M_rebuilt_vector_element[e].min();
+            BOOST_CHECK_CLOSE( max, 1.0, 2e-1 );
+            BOOST_CHECK_CLOSE( min, 1.0, 2e-1 );
+        }
+
     }
 
-    double max = M_element.max();
-    double min = M_element.min();
-    BOOST_CHECK_CLOSE( max, 1.0, 2e-1 );
-    BOOST_CHECK_CLOSE( min, 1.0, 2e-1 );
+
 
 
 } // TestElementSerialize::run
@@ -247,6 +269,10 @@ TestElementSerialize<Dim>::save( Archive & ar, const unsigned int version ) cons
 {
     ar & BOOST_SERIALIZATION_NVP( M_nb_element );
     ar & BOOST_SERIALIZATION_NVP( M_element );
+
+    for( int e=0; e<M_nb_element; e++ )
+        ar & BOOST_SERIALIZATION_NVP( M_vector_element[e] );
+
     ar & BOOST_SERIALIZATION_NVP( M_vector_element );
 }
 
@@ -256,15 +282,31 @@ void
 TestElementSerialize<Dim>::load( Archive & ar, const unsigned int version )
 {
 
-    //auto mesh = mesh_type::New();
-    //auto is_mesh_loaded = mesh->load( _name="mymesh",_path=".",_type="text" );
+    auto mesh = mesh_type::New();
+    auto is_mesh_loaded = mesh->load( _name="mymesh",_path=".",_type="text" );
+
+    auto Xh = space_type::New( mesh );
+    M_element = Xh->element();
+
     ar & BOOST_SERIALIZATION_NVP( M_nb_element );
 
     ar & BOOST_SERIALIZATION_NVP( M_element );
-    std::cout<<"element is loaded"<<std::endl;
 
-    ar & BOOST_SERIALIZATION_NVP( M_vector_element );
-    std::cout<<"vector of elements is loaded"<<std::endl;
+    M_rebuilt_vector_element.resize( M_nb_element );
+    M_vector_element.resize( M_nb_element );
+
+    for(int e=0; e<M_nb_element; e++)
+    {
+        M_element_temp = Xh->element();
+        M_element_temp.setName("element_"+(boost::format("%1%") %e ).str() );
+        ar & BOOST_SERIALIZATION_NVP( M_element_temp );
+        M_rebuilt_vector_element[e] = M_element_temp;
+
+        M_vector_element[e] = Xh->element();
+    }
+
+    //problem when loading M_vector_element
+    //ar & BOOST_SERIALIZATION_NVP( M_vector_element );
 }
 
 
