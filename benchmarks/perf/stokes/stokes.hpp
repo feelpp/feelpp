@@ -388,12 +388,6 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     // the Bercovier_Engelmann flow (2D)
     //
 
-
-    auto p_exact=(Px()-0.5)*(Py()-0.5);
-
-    auto f=vec(256*(Px()*Px()*(Px()-1)*(Px()-1)*(12*Py()-6)+Py()*(Py()-1)*(2*Py()-1)*(12*Px()*Px()-12*Px()+2))+Py()-0.5, -256*(Py()*Py()*(Py()-1)*(Py()-1)*(12*Px()-6)+Px()*(Px()-1)*(2*Px()-1)*(12*Py()*Py()-12*Py()+2))+Px()-0.5);
-
-
     // total stress tensor (test)
     auto u1 = -256*Py()*(Py()-1)*(2*Py()-1)*Px()*Px()*(Px()-1)*(Px()-1);
     auto u2 = 256*Px()*(Px()-1)*(2*Px()-1)*Py()*Py()*(Py()-1)*(Py()-1);
@@ -412,10 +406,10 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     auto p_exact = val( (Px()-0.5)*(Py()-0.5 ));
 
     //auto f1 = (exp( lambda * Px() )*((lambda*lambda - 4.*pi*pi)*mu*cos(2.*pi*Py()) - lambda*exp( lambda * Px() )));
-    auto f1 = 256*(Px()*Px()*(Px()-1)*(Px()-1)*(12*Py()-6)+Py()*(Py()-1)*(2*Py()-1)*(12*Px()*Px()-12*Px()+2))+Py()-0.5 ;
+    auto f1 = ( 256*(Px()*Px()*(Px()-1)*(Px()-1)*(12*Py()-6)+Py()*(Py()-1)*(2*Py()-1)*(12*Px()*Px()-12*Px()+2))+Py()-0.5 ) ;
 
     //auto f2 = (exp( lambda * Px() )*mu*(lambda/(2.*pi))*sin(2.*pi*Py())*(-lambda*lambda +4*pi*pi));
-    auto f2 = -256*(Py()*Py()*(Py()-1)*(Py()-1)*(12*Px()-6)+Px()*(Px()-1)*(2*Px()-1)*(12*Py()*Py()-12*Py()+2))+Px()-0.5;
+    auto f2 = ( -256*(Py()*Py()*(Py()-1)*(Py()-1)*(12*Px()-6)+Px()*(Px()-1)*(2*Px()-1)*(12*Py()*Py()-12*Py()+2))+Px()-0.5 ) ;
 
     auto f = val( vec( f1,f2 ) ); //+ convection;
 
