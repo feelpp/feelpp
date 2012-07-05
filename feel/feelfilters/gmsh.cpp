@@ -83,7 +83,8 @@ const char* FEELPP_GMSH_FORMAT_VERSION = "2.2";
     M_partitioner( GMSH_PARTITIONER_CHACO ),
     M_partitions( 1 ),
     M_partition_file( 0 ),
-    M_shear( 0 )
+    M_shear( 0 ),
+    M_refine_levels( 0 )
 {
     this->setReferenceDomain();
 }
@@ -100,7 +101,8 @@ Gmsh::Gmsh( Gmsh const & __g )
     M_partitioner( __g.M_partitioner ),
     M_partitions( __g.M_partitions ),
     M_partition_file( __g.M_partition_file ),
-    M_shear( __g.M_shear )
+    M_shear( __g.M_shear ),
+    M_refine_levels( __g.M_refine_levels )
 {}
 Gmsh::~Gmsh()
 {}
@@ -340,6 +342,7 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  
     CTX::instance()->partitionOptions.num_partitions =  M_partitions;
     CTX::instance()->partitionOptions.partitioner =  M_partitioner;
 
+
     CTX::instance()->mesh.mshFileVersion = std::atof( this->version().c_str() );
     CTX::instance()->mesh.lcExtendFromBoundary = 1;
     CTX::instance()->mesh.lcFromPoints = 1;
@@ -371,6 +374,8 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  
     GModel::current()->setFileName( _name );
     GModel::current()->readGEO( _name+".geo" );
     GModel::current()->mesh( dim );
+    for( int l = 0; l < M_refine_levels-1; ++l )
+        GModel::current()->refineMesh( M_order==1 );
     PartitionMesh( GModel::current(), CTX::instance()->partitionOptions );
     //std::cout << "size : " << GModel::current()->getMeshPartitions().size() << "\n";
     GModel::current()->writeMSH( _name+".msh" );

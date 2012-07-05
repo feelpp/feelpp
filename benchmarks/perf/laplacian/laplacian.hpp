@@ -150,11 +150,12 @@ Laplacian<Dim, BasisU, Entity>::run()
 
     if ( this->vm().count( "nochdir" ) == false )
     {
-        this->changeRepository( boost::format( "perf/%1%/%2%/%3%/h_%4%/parts_%5%/" )
+        this->changeRepository( boost::format( "perf/%1%/%2%/%3%/h_%4%/l_%5%/parts_%6%/" )
                                 % this->about().appName()
                                 % convex_type::name()
                                 % M_basis_name
                                 % meshSize()
+                                % level()
                                 % nparts );
     }
 
@@ -191,6 +192,7 @@ Laplacian<Dim, BasisU, Entity>::run()
                                               _shear=shear,
                                               _xmin=xmin,_xmax=xmax,
                                               _ymin=ymin,_ymax=ymax ),
+                                _refine=level(),
                                 _partitions=nparts );
 
     M_stats.put( "t.init.mesh",t.elapsed() );
