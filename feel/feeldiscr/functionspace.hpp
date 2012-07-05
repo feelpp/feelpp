@@ -604,9 +604,9 @@ struct updateDataMapProcess
 
 
 template<typename DofType>
-struct updateDataMapProcessStandart
+struct updateDataMapProcessStandard
 {
-    updateDataMapProcessStandart( std::vector<WorldComm> const & worldsComm,
+    updateDataMapProcessStandard( std::vector<WorldComm> const & worldsComm,
                                   WorldComm const& worldCommFusion,
                                   uint16_type lastCursor,
                                   std::vector<size_type> const& startDofGlobalCluster,
@@ -697,7 +697,7 @@ struct updateDataMapProcessStandart
     mutable boost::shared_ptr<DofType> _M_dm;
     std::vector<size_type> _M_startDofGlobalCluster;
     size_type _M_nLocWithoutGhost, _M_nLocWithGhost;
-}; // updateDataMapProcessStandart
+}; // updateDataMapProcessStandard
 
 
 
@@ -3860,7 +3860,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
                 // construction with same partionment for all subspaces
                 // and each processors has entries for all subspaces
                 Debug( 5010 ) << "init(<composite>) type hasEntriesForAllSpaces\n";
-                // build usefull data for detail::updateDataMapProcessStandart
+                // build usefull data for detail::updateDataMapProcessStandard
                 std::vector<size_type> startDofGlobalCluster(this->worldComm().globalSize());
                 std::vector<size_type> nLocalDofWithoutGhostWorld(this->worldComm().globalSize());
                 mpi::all_gather( this->worldComm(),
@@ -3875,7 +3875,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
 
 
                 // build datamap
-                auto dofInitTool=detail::updateDataMapProcessStandart<dof_type>( this->worldsComm(), this->worldComm(),
+                auto dofInitTool=detail::updateDataMapProcessStandard<dof_type>( this->worldsComm(), this->worldComm(),
                                                                                  this->nSubFunctionSpace()-1,
                                                                                  startDofGlobalCluster,
                                                                                  this->nLocalDofWithoutGhost(),
