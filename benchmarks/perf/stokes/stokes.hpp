@@ -166,7 +166,7 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
 #if defined(FEELPP_SOLUTION_KOVASZNAY)
     double xmin = -0.5, xmax=1.5;
     double ymin =  0, ymax=2;
-#elseif defined(FEELPP_SOLUTION_BERCOVIERENGELMAN)
+#elif defined(FEELPP_SOLUTION_BERCOVIERENGELMAN)
     double xmin = 0, xmax = 1;
     double ymin = 0, ymax = 1;
 #else
