@@ -154,7 +154,7 @@ Laplacian<Dim, BasisU, Entity>::run()
                                 % this->about().appName()
                                 % convex_type::name()
                                 % M_basis_name
-                                % meshSize()
+                                % meshSizeInit()
                                 % level()
                                 % nparts );
     }
@@ -188,7 +188,7 @@ Laplacian<Dim, BasisU, Entity>::run()
                                               _convex=( ( !recombine )&&convex_type::is_hypercube )?"Hypercube":"Simplex",
                                               _recombine=( recombine&&convex_type::is_hypercube ), // generate quads which are not regular
                                               _dim=Dim,
-                                              _h=M_meshSize,
+                                              _h=meshSizeInit(),
                                               _shear=shear,
                                               _xmin=xmin,_xmax=xmax,
                                               _ymin=ymin,_ymax=ymax ),
@@ -209,7 +209,7 @@ Laplacian<Dim, BasisU, Entity>::run()
     auto v = Xh->element();
 
     Log() << "Data Summary:\n";
-    Log() << "   hsize = " << M_meshSize << "\n";
+    Log() << "   hsize = " << meshSize() << "\n";
     Log() << "  export = " << this->vm().count( "export" ) << "\n";
     Log() << "      mu = " << mu << "\n";
     Log() << " bccoeff = " << penalbc << "\n";
@@ -217,7 +217,7 @@ Laplacian<Dim, BasisU, Entity>::run()
     Log() << "[dof]         number of dof: " << Xh->nDof() << "\n";
     Log() << "[dof]    number of dof/proc: " << Xh->nLocalDof() << "\n";
 
-    M_stats.put( "h",M_meshSize );
+    M_stats.put( "h",meshSize() );
     size_type gnelts=0;
     mpi::all_reduce( this->comm(), Xh->mesh()->numElements() , gnelts, [] ( size_type x, size_type y ) {return x + y;} );
 
