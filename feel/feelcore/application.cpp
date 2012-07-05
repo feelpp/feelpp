@@ -863,10 +863,10 @@ Application::run()
         double hsize = _M_vm.count( s2 )?_M_vm[s2].as<double>():_M_vm["benchmark.hsize"].as<double>();
         std::string s3 = prefixvm( i->name(),"benchmark.refine" );
         double refine = _M_vm.count( s3 )?_M_vm[s3].as<double>():_M_vm["benchmark.refine"].as<double>();
-
+        i->setMeshSizeInit( hsize );
         for ( int l = 0; l < nlevels; ++l )
         {
-            double meshSize= hsize;///std::pow( refine,l );
+            double meshSize= hsize/std::pow( refine,l );
             i->setMeshSize( meshSize );
             i->setLevel( l+1 );
             i->run();
