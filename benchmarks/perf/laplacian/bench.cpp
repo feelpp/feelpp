@@ -103,12 +103,10 @@ int main( int argc, char** argv )
 {
 
     using namespace Feel;
-
     Environment env(argc,argv);
     std::ofstream out;
     if ( env.worldComm().rank() == 0 )
         out.open( (boost::format("res-%1%.dat") % env.numberOfProcessors() ).str().c_str() );
-
     Application benchmark( argc, argv, makeAbout(), makeOptions() );
 
     if ( benchmark.vm().count( "help" ) )
@@ -118,7 +116,6 @@ int main( int argc, char** argv )
     }
 
 #if 1
-
     benchmark.add( new Laplacian<2, Lagrange<1, Scalar>, Hypercube>( "2D-P1-Hypercube", benchmark.vm(), benchmark.about() ) );
     benchmark.add( new Laplacian<2, Lagrange<2, Scalar>, Hypercube>( "2D-P2-Hypercube", benchmark.vm(), benchmark.about() ) );
     benchmark.add( new Laplacian<2, CrouzeixRaviart<1, Scalar>, Simplex>( "2D-CR1-Simplex", benchmark.vm(), benchmark.about() ) );
@@ -132,6 +129,9 @@ int main( int argc, char** argv )
     benchmark.add( new Laplacian<3, Lagrange<2, Scalar>, Simplex>( "3D-P2-Simplex", benchmark.vm(), benchmark.about() ) );
     benchmark.add( new Laplacian<3, Lagrange<3, Scalar>, Simplex>( "3D-P3-Simplex", benchmark.vm(), benchmark.about() ) );
 
+    benchmark.add( new Laplacian<3, Lagrange<1, Scalar>, Simplex>( "3D-P1-Simplex", benchmark.vm(), benchmark.about() ) );
+    benchmark.add( new Laplacian<3, Lagrange<2, Scalar>, Simplex>( "3D-P2-Simplex", benchmark.vm(), benchmark.about() ) );
+    benchmark.add( new Laplacian<3, Lagrange<3, Scalar>, Simplex>( "3D-P3-Simplex", benchmark.vm(), benchmark.about() ) );
 #else
     benchmark.add( new Laplacian<2, CrouzeixRaviart<1, Scalar>, Hypercube>( "2D-CR1-Hypercube", benchmark.vm(), benchmark.about() ) );
 #endif
