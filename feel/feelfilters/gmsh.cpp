@@ -385,6 +385,44 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  
     throw std::invalid_argument( "Gmsh is not available on this system" );
 #endif
 }
+
+void
+Gmsh::rebuildPartitionMsh( std::string const& nameMshInput,std::string const& nameMshOutput ) const
+{
+#if FEELPP_HAS_GMSH
+#if defined(FEELPP_HAS_GMSH_H)
+
+    if ( !mpi::environment::initialized() || ( mpi::environment::initialized()  && this->worldComm().globalRank() == this->worldComm().masterRank() ) )
+    {
+
+        std::string _name = fs::path( nameMshInput ).stem().string();
+
+        GModel* newGmshModel=new GModel();
+        newGmshModel->readMSH( nameMshInput );
+
+        meshPartitionOptions newPartionOption;
+        newPartionOption.num_partitions = M_partitions;
+        newPartionOption.mesh_dims[0] = M_partitions;
+        newPartionOption.partitioner =  M_partitioner;
+        CTX::instance()->mesh.mshFilePartitioned = M_partition_file;
+        CTX::instance()->mesh.mshFileVersion = std::atof( this->version().c_str() );
+        PartitionMesh( newGmshModel, newPartionOption );
+
+        newGmshModel->writeMSH( nameMshOutput );
+
+        newGmshModel->destroy();
+        delete newGmshModel;
+
+    }
+#endif
+#else
+    throw std::invalid_argument( "Gmsh is not available on this system" );
+#endif
+
+}
+
+
+
 std::string
 Gmsh::preamble() const
 {

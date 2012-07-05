@@ -167,9 +167,6 @@ private:
 
     boost::tuple<size_type,size_type> numberOfGlobalEltAndIndex( mesh_ptrtype mesh ) const;
 
-
-private:
-    mpi::communicator M_comm;
 };
 
 } // Feel

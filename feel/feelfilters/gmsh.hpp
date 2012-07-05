@@ -522,6 +522,12 @@ public:
      * \return the content of the geo file \p file in a \p std::string
      */
     std::string getDescriptionFromFile( std::string const& file ) const;
+
+    /**
+     * load mesh and generate a new partion of this mesh
+     */
+    void rebuildPartitionMsh( std::string const& nameMshInput,std::string const& nameMshOutput ) const;
+
     //@}
 
 protected:
@@ -776,9 +782,9 @@ BOOST_PARAMETER_FUNCTION(
     typedef typename detail::mesh<Args>::ptrtype _mesh_ptrtype;
 
 #if BOOST_FILESYSTEM_VERSION == 3
-    ExporterGmsh<_mesh_type,1> exporter( fs::path( filename ).stem().string() );
+    ExporterGmsh<_mesh_type,1> exporter( fs::path( filename ).stem().string(), 1,  mesh->worldComm() );
 #elif BOOST_FILESYSTEM_VERSION == 2
-    ExporterGmsh<_mesh_type,1> exporter( fs::path( filename ).stem() );
+    ExporterGmsh<_mesh_type,1> exporter( fs::path( filename ).stem(), 1, mesh->worldComm() );
 #endif
     exporter.saveMesh( filename, mesh, parametricnodes );
 }
