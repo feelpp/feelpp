@@ -2851,6 +2851,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
     uNold[0].setOnes(M_N);
     for ( double time=time_step; time<=time_for_output; time+=time_step )
     {
+
         boost::tie( betaMqm, betaAqm, betaFqm, betaMFqm ) = M_model->computeBetaQm( this->expansion( uN[0] ), mu ,time );
         LOG(INFO) << "betaMFqm = " << betaMFqm[0][0] << "," << betaMFqm[1][0] << "\n";
         LOG(INFO) << "betaMqm = " << betaMqm[0][0] << "\n";
@@ -4084,10 +4085,11 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
     vector_ptrtype __W(  M_backend->newVector( M_model->functionSpace() ) );
     namespace ublas = boost::numeric::ublas;
 
-    std::vector< std::vector<sparse_matrix_ptrtype> > Aq;
-    std::vector< std::vector<sparse_matrix_ptrtype> > Mq;
-    std::vector< std::vector<std::vector<vector_ptrtype> > > Fq;
-    boost::tie( Mq, Aq, Fq ) = M_model->computeAffineDecomposition();
+    std::vector< std::vector<sparse_matrix_ptrtype> > Aqm;
+    std::vector< std::vector<sparse_matrix_ptrtype> > Mqm;
+    std::vector< std::vector<std::vector<vector_ptrtype> > > Fqm;
+    std::vector<std::vector<vector_ptrtype> > MFqm;
+    boost::tie( Mqm, Aqm, Fqm , MFqm ) = M_model->computeAffineDecomposition();
     __X->zero();
     __X->add( 1.0 );
     //std::cout << "measure of domain= " << M_model->scalarProduct( __X, __X ) << "\n";
@@ -4118,11 +4120,11 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
                     for ( int elem=__N-number_of_added_elements; elem<__N; elem++ )
                     {
                         *__X=M_WN[elem];
-                        Mq[__q1][__m1]->multVector(  __X, __W );
+                        Mqm[__q1][__m1]->multVector(  __X, __W );
                         __W->scale( -1. );
                         M_model->l2solve( __Z1, __W );
 
-                        M_model->l2solve( __Z2, Fq[0][__q2][__m2] );
+                        M_model->l2solve( __Z2, Fqm[0][__q2][__m2] );
 
                         M_Cmf_pr[ __q1][ __m1][ __q2][ __m2]( elem ) = 2.0*M_model->scalarProduct( __Z1, __Z2 );
                     }// elem
@@ -4150,14 +4152,14 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
                     for ( int elem=__N-number_of_added_elements; elem<__N; elem++ )
                     {
                         *__X=M_WN[elem];
-                        Mq[__q1][__m1]->multVector(  __X, __W );
+                        Mqm[__q1][__m1]->multVector(  __X, __W );
                         __W->scale( -1. );
                         M_model->l2solve( __Z1, __W );
 
                         for ( int __l = 0; __l < ( int )__N; ++__l )
                         {
                             *__X=M_WN[__l];
-                            Aq[__q2][__m2]->multVector(  __X, __W );
+                            Aqm[__q2][__m2]->multVector(  __X, __W );
                             __W->scale( -1. );
                             M_model->l2solve( __Z2, __W );
 
@@ -4168,14 +4170,14 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
                     for ( int __j = 0; __j < ( int )__N; ++__j )
                     {
                         *__X=M_WN[__j];
-                        Mq[__q1][ __m1]->multVector(  __X, __W );
+                        Mqm[__q1][ __m1]->multVector(  __X, __W );
                         __W->scale( -1. );
                         M_model->l2solve( __Z1, __W );
 
                         for ( int elem=__N-number_of_added_elements; elem<__N; elem++ )
                         {
                             *__X=M_WN[elem];
-                            Aq[__q2][ __m2]->multVector(  __X, __W );
+                            Aqm[__q2][ __m2]->multVector(  __X, __W );
                             __W->scale( -1. );
                             M_model->l2solve( __Z2, __W );
 
@@ -4207,14 +4209,14 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
                     for ( int elem=__N-number_of_added_elements; elem<__N; elem++ )
                     {
                         *__X=M_WN[elem];
-                        Mq[__q1][__m1]->multVector(  __X, __W );
+                        Mqm[__q1][__m1]->multVector(  __X, __W );
                         __W->scale( -1. );
                         M_model->l2solve( __Z1, __W );
 
                         for ( int __l = 0; __l < ( int )__N; ++__l )
                         {
                             *__X=M_WN[__l];
-                            Mq[__q2][__m2]->multVector(  __X, __W );
+                            Mqm[__q2][__m2]->multVector(  __X, __W );
                             __W->scale( -1. );
                             M_model->l2solve( __Z2, __W );
 
@@ -4225,14 +4227,14 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
                     for ( int __j = 0; __j < ( int )__N; ++__j )
                     {
                         *__X=M_WN[__j];
-                        Mq[__q1][ __m1]->multVector(  __X, __W );
+                        Mqm[__q1][ __m1]->multVector(  __X, __W );
                         __W->scale( -1. );
                         M_model->l2solve( __Z1, __W );
 
                         for ( int elem=__N-number_of_added_elements; elem<__N; elem++ )
                         {
                             *__X=M_WN[elem];
-                            Mq[__q2][ __m2]->multVector(  __X, __W );
+                            Mqm[__q2][ __m2]->multVector(  __X, __W );
                             __W->scale( -1. );
                             M_model->l2solve( __Z2, __W );
 
@@ -4283,7 +4285,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
                         __W->scale( -1. );
                         M_model->l2solve( __Z1, __W );
 
-                        *__Fdu = *Fq[M_output_index][__q2][__m2];
+                        *__Fdu = *Fqm[M_output_index][__q2][__m2];
                         __Fdu->scale( -1.0 );
                         M_model->l2solve( __Z2, __Fdu );
 
@@ -4299,14 +4301,14 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
     {
         for ( int __m1 = 0; __m1 < M_model->mMaxM(__q1); ++__m1 )
         {
-            Mq[__q1][__m1]->transpose( Mtq1 );
+            Mqm[__q1][__m1]->transpose( Mtq1 );
 
             for ( int __q2 = 0; __q2 < __QLhs; ++__q2 )
             {
                 for ( int __m2 = 0; __m2 < M_model->mMaxA(__q2); ++__m2 )
                 {
 
-                    Aq[__q2][__m2]->transpose( Atq2 );
+                    Aqm[__q2][__m2]->transpose( Atq2 );
                     M_Cma_du[__q1][__m1][__q2][__m2].conservativeResize( __N, __N );
 
                     for ( int elem=__N-number_of_added_elements; elem<__N; elem++ )
@@ -4360,14 +4362,14 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
     {
         for ( int __m1 = 0; __m1 < M_model->mMaxM(__q1); ++__m1 )
         {
-            Mq[__q1][__m1]->transpose( Mtq1 );
+            Mqm[__q1][__m1]->transpose( Mtq1 );
 
             for ( int __q2 = 0; __q2 < __Qm; ++__q2 )
             {
                 for ( int __m2 = 0; __m2 < M_model->mMaxM(__q2); ++__m2 )
                 {
 
-                    Mq[__q2][__m2]->transpose( Mtq2 );
+                    Mqm[__q2][__m2]->transpose( Mtq2 );
                     M_Cmm_du[__q1][__m1][__q2][__m2].conservativeResize( __N, __N );
 
                     for ( int elem=__N-number_of_added_elements; elem<__N; elem++ )
