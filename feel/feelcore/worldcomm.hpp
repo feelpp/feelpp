@@ -131,6 +131,7 @@ public:
 
     bool hasSubWorlds( int n );
     std::vector<WorldComm> const& subWorlds( int n );
+    std::vector<WorldComm> const& subWorldsGroupBySubspace( int n );
     WorldComm const& subWorld( int n ) ;
     int subWorldId( int n ) ;
 
@@ -209,6 +210,7 @@ public:
      * register sub worlds associated to \p worldmap
      */
     void registerSubWorlds( int n );
+    void registerSubWorldsGroupBySubspace( int n );
 
 private :
 

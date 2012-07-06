@@ -325,6 +325,12 @@ Environment::setLogs( std::string const& prefix )
 std::vector<WorldComm> const&
 Environment::worldsComm( int n )
 {
+    return S_worldcomm->subWorlds(n);
+}
+
+std::vector<WorldComm> const&
+Environment::worldsCommGroupBySubspace( int n )
+{
 #if 0
     std::cout << "n=" << n << "\n";
     S_worldcomm->showMe();
@@ -332,8 +338,10 @@ Environment::worldsComm( int n )
     std::cout << "size=" << S_worldcomm->subWorlds(n).size() <<  "\n";
     S_worldcomm->subWorlds(n).begin()->showMe();
 #endif
-    return S_worldcomm->subWorlds(n);
+    return S_worldcomm->subWorldsGroupBySubspace(n);
 }
+
+
 WorldComm const&
 Environment::masterWorldComm( int n )
 {

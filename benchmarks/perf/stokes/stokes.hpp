@@ -163,9 +163,12 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     exporter =  boost::shared_ptr<export_type>( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) );
 
     boost::mpi::timer t;
-#if defined(KOVASZNAY)
+#if defined(FEELPP_SOLUTION_KOVASZNAY)
     double xmin = -0.5, xmax=1.5;
     double ymin =  0, ymax=2;
+#elif defined(FEELPP_SOLUTION_BERCOVIERENGELMAN)
+    double xmin = 0, xmax = 1;
+    double ymin = 0, ymax = 1;
 #else
     double xmin = -1, xmax=1;
     double ymin = -1, ymax=1;
@@ -312,34 +315,103 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     // the EthierSteinmann flow (3D)
     //
     double pi = M_PI;
-    double lambda = 1./( 2.*mu ) - math::sqrt( 1./( 4.*mu*mu ) + 4.*pi*pi );
+    double a = pi/4;
+    double d = pi/2;
+    //double mu = 1.;
+
     // total stress tensor (test)
-    auto u1 = 1. - exp( lambda * Px() ) * cos( 2.*pi*Py() );
-    auto u2 = ( lambda/( 2.*pi ) ) * exp( lambda * Px() ) * sin( 2.*pi*Py() );
+    auto u1 = -a*(exp(a*Px())*sin(a*Py()+d*Pz())+exp(a*Pz())*cos(a*Px()+d*Py()));
+    auto u2 = -a*(exp(a*Py())*sin(a*Pz()+d*Px())+exp(a*Px())*cos(a*Py()+d*Pz()));
+    auto u3 = -a*(exp(a*Pz())*sin(a*Px()+d*Py())+exp(a*Py())*cos(a*Pz()+d*Px()));
+    auto u_exact = val( vec( u1,u2,u3 ) );
+
+    auto du_dx = -a*(a*exp(a*Px())*sin(a*Py()+d*Pz())-a*exp(a*Pz())*sin(a*Px()+d*Py()));
+    auto du_dy = -a*(a*exp(a*Px())*cos(a*Py()+d*Pz())-d*exp(a*Pz())*sin(a*Px()+d*Py()));
+    auto du_dz = -a*(d*exp(a*Px())*cos(a*Py()+d*Pz())+a*exp(a*Pz())*cos(a*Px()+d*Py()));
+
+    auto dv_dx = -a*(-d*exp(a*Py())*cos(a*Pz()+d*Px())+a*exp(a*Px())*cos(a*Py()+d*Pz()));
+    auto dv_dy = -a*(a*exp(a*Py())*sin(a*Pz()+d*Px())-a*exp(a*Px())*sin(a*Py()+d*Pz()));
+    auto dv_dz = -a*(a*exp(a*Py())*cos(a*Pz()+d*Px())-d*exp(a*Px())*sin(a*Py()+d*Pz()));
+
+    auto dw_dx = -a*(a*exp(a*Pz())*cos(a*Px()+d*Py())-d*exp(a*Py())*sin(a*Pz()+d*Px()));
+    auto dw_dy = -a*(d*exp(a*Pz())*cos(a*Px()+d*Py())+a*exp(a*Py())*cos(a*Pz()+d*Px()));
+    auto dw_dz = -a*(a*exp(a*Pz())*sin(a*Px()+d*Py())-a*exp(a*Py())*sin(a*Pz()+d*Px()));
+
+
+    auto grad_exact = val( mat<3,3>( du_dx, du_dy, du_dz, dv_dx, dv_dy, dv_dz, dw_dx, dw_dy, dw_dz ) );
+    auto div_exact = val( du_dx + dv_dy + dw_dz );
+
+    auto beta = vec( cst( betacoeff ),cst( betacoeff ),cst( betacoeff ) );
+    auto convection = val( grad_exact*beta );
+
+    auto p_exact = val( - a*a*0.5 * ( exp(2.*a*Px()) + exp(2.*a*Py()) + exp(2.*a*Pz()) + 2.*sin(a*Px()+d*Py())*cos(a*Pz()+d*Px())*exp(a*(Py()+Pz())) + 2.*sin(a*Py()+d*Pz())*cos(a*Px()+d*Py())*exp(a*(Pz()+Px())) + 2.*sin(a*Pz()+d*Px())*cos(a*Py()+d*Pz())*exp(a*(Px()+Py()))) );
+
+    auto f1 = (- mu * (- a * (   a*a*exp(a*Px())*sin(a*Py()+d*Pz()) - exp(a*Pz())*cos(a*Px()+d*Py())*a*a )
+                      - a * ( - a*a*exp(a*Px())*sin(a*Py()+d*Pz()) - exp(a*Pz())*cos(a*Px()+d*Py())*d*d )
+                       - a * ( - exp(a*Px())*sin(a*Py()+d*Pz())*d*d + exp(a*Pz())*cos(a*Px()+d*Py())*a*d ) )
+        - 0.5 * a*a * (  2.*a*exp(2*a*Px())
+                         + 2.*cos(a*Px()+d*Py())*a*cos(a*Pz()+d*Px())*exp(a*(Py()+Pz()))
+                         - 2.*sin(a*Px()+d*Py())*sin(a*Pz()+d*Px())*d*exp(a*(Py()+Pz()))
+                         - 2.*sin(a*Py()+d*Pz())*sin(a*Px()+d*Py())*a*exp(a*(Pz()+Px()))
+                         + 2.*sin(a*Py()+d*Pz())*cos(a*Px()+d*Py())*a*exp(a*(Pz()+Px()))
+                         + 2.*cos(a*Pz()+d*Px())*d*cos(a*Py()+d*Pz())*exp(a*(Px()+Py()))
+                         + 2.*sin(a*Pz()+d*Px())*cos(a*Py()+d*Pz())*a*exp(a*(Px()+Py())) )  );
+
+    auto f2 = ( - mu * (- a * ( - exp(a*Py())*sin(a*Pz()+d*Px())*d*d + a*a*exp(a*Px())*cos(a*Py()+d*Pz()) )
+                        - a * (   a*a*exp(a*Py())*sin(a*Pz()+d*Px()) - a*a*exp(a*Px())*cos(a*Py()+d*Pz()) )
+                        - a * ( - a*a*exp(a*Py())*sin(a*Pz()+d*Px()) - exp(a*Px())*cos(a*Py()+d*Pz())*d*d) )
+                - 0.5 * a*a * (   2.*a*exp(2*a*Py())
+                                  + 2.*cos(a*Px()+d*Py())*d*cos(a*Pz()+d*Px())*exp(a*(Py()+Pz()))
+                                  + 2.*sin(a*Px()+d*Py())*cos(a*Pz()+d*Px())*a*exp(a*(Py()+Pz()))
+                                  + 2.*cos(a*Py()+d*Pz())*a*cos(a*Px()+d*Py())*exp(a*(Pz()+Px()))
+                                  - 2.*sin(a*Py()+d*Pz())*sin(a*Px()+d*Py())*d*exp(a*(Pz()+Px()))
+                                  - 2.*sin(a*Pz()+d*Px())*sin(a*Py()+d*Pz())*a*exp(a*(Px()+Py()))
+                                  + 2.*sin(a*Pz()+d*Px())*cos(a*Py()+d*Pz())*a*exp(a*(Px()+Py())) ));
+
+    auto f3 = ( - mu * (- a * ( - exp(a*Pz())*sin(a*Px()+d*Py())*a*a - exp(a*Py())*cos(a*Pz()+d*Px())*d*d )
+                        - a * ( - exp(a*Pz())*sin(a*Px()+d*Py())*d*d + a*a*exp(a*Py())*cos(a*Pz()+d*Px()) )
+                        - a * (   exp(a*Pz())*sin(a*Px()+d*Py())*a*a - a*a*exp(a*Py())*cos(a*Pz()+d*Px()) ) )
+                - 0.5 * a*a * (   2.*a*exp(2*a*Pz())
+                                  - 2.*sin(a*Px()+d*Py())*sin(a*Pz()+d*Px())*a*exp(a*(Py()+Pz()))
+                                  + 2.*sin(a*Px()+d*Py())*cos(a*Pz()+d*Px())*a*exp(a*(Py()+Pz()))
+                                  + 2.*cos(a*Py()+d*Pz())*d*cos(a*Px()+d*Py())*exp(a*(Pz()+Px()))
+                                  + 2.*sin(a*Py()+d*Pz())*cos(a*Px()+d*Py())*a*exp(a*(Pz()+Px()))
+                                  + 2.*cos(a*Pz()+d*Px())*a*cos(a*Py()+d*Pz())*exp(a*(Px()+Py()))
+                                  - 2.*sin(a*Pz()+d*Px())*sin(a*Py()+d*Pz())*d*exp(a*(Px()+Py())) ));
+
+    auto f = val( vec( f1,f2,f3 ) ); //+ convection;
+
+#endif
+
+#if FEELPP_SOLUTION_BERCOVIERENGELMAN
+    //
+    // the Bercovier_Engelmann flow (2D)
+    //
+
+    // total stress tensor (test)
+    auto u1 = -256*Py()*(Py()-1)*(2*Py()-1)*Px()*Px()*(Px()-1)*(Px()-1);
+    auto u2 = 256*Px()*(Px()-1)*(2*Px()-1)*Py()*Py()*(Py()-1)*(Py()-1);
     auto u_exact = val( vec( u1,u2 ) );
 
-    auto du_dx = ( -lambda*exp( lambda * Px() )*cos( 2.*pi*Py() ) );
-    auto du_dy = ( 2*pi*exp( lambda * Px() )*sin( 2.*pi*Py() ) );
-    auto dv_dx = ( ( lambda*lambda/( 2*pi ) )*exp( lambda * Px() )*sin( 2.*pi*Py() ) );
-    auto dv_dy = ( lambda*exp( lambda * Px() )*cos( 2.*pi*Py() ) );
+    auto du_dx =-256*Py()*(Py()-1)*(2*Py()-1)*(4*Px()*Px()*Px()+2*Px()-6*Px()*Px() ) ;
+    auto du_dy = -256*Px()*Px()*(Px()-1)*(Px()-1)*(6*Py()*Py()-6*Py()+1);
+    auto dv_dx = 256*Py()*Py()*(Py()-1)*(Py()-1)*(6*Px()*Px()-6*Px()+1) ;
+    auto dv_dy = 256*Px()*(Px()-1)*(2*Px()-1)*(4*Py()*Py()*Py()+2*Py()-6*Py()*Py() ) ;
     auto grad_exact = val( mat<2,2>( du_dx, du_dy, dv_dx, dv_dy ) );
     auto div_exact = val( du_dx + dv_dy );
 
     auto beta = vec( cst( betacoeff ),cst( betacoeff ) );
     auto convection = val( grad_exact*beta );
 
-    auto p_exact = val( ( -exp( 2.*lambda*Px() ) )/2.0-0.125*( exp( -1.0*lambda )-1.0*exp( 3.0*lambda ) )/lambda );
+    auto p_exact = val( (Px()-0.5)*(Py()-0.5 ));
 
     //auto f1 = (exp( lambda * Px() )*((lambda*lambda - 4.*pi*pi)*mu*cos(2.*pi*Py()) - lambda*exp( lambda * Px() )));
-    auto f1 = ( -mu*( -lambda*lambda*exp( lambda*Px() )*cos( 2.0*pi*Py() )+4.0*exp( lambda*Px() )*cos( 2.0*pi*Py() )*pi*pi )-lambda*exp( 2.0*lambda*Px() ) );
+    auto f1 = ( 256*(Px()*Px()*(Px()-1)*(Px()-1)*(12*Py()-6)+Py()*(Py()-1)*(2*Py()-1)*(12*Px()*Px()-12*Px()+2))+Py()-0.5 ) ;
 
     //auto f2 = (exp( lambda * Px() )*mu*(lambda/(2.*pi))*sin(2.*pi*Py())*(-lambda*lambda +4*pi*pi));
-    auto f2 = ( -mu*( lambda*lambda*lambda*exp( lambda*Px() )*sin( 2.0*pi*Py() )/pi/2.0-2.0*lambda*exp( lambda*Px() )*sin( 2.0*pi*Py() )*pi ) );
+    auto f2 = ( -256*(Py()*Py()*(Py()-1)*(Py()-1)*(12*Px()-6)+Px()*(Px()-1)*(2*Px()-1)*(12*Py()*Py()-12*Py()+2))+Px()-0.5 ) ;
 
     auto f = val( vec( f1,f2 ) ); //+ convection;
-
-    //double pmean = integrate( elements(mesh), p_exact ).evaluate()( 0, 0 )/mesh->measure();
-    double pmean = -0.125*( math::exp( -1.0*lambda )-1.0*math::exp( 3.0*lambda ) )/lambda;
 
 #endif
 

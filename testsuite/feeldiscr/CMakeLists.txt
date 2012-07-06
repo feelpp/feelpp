@@ -1,8 +1,6 @@
 foreach(TEST elementminmax project bdf interpolation integration  integration_ifaces space geomap mixed
-    auto_order_integrate interp_twomesh submesh disc vect_comp operatorinterpolation normal3d aitken
-    form_interpolation integration_opt lift trace
-    form_severaltrialtestmesh hcurl wire_basket solve_leak stencil
-    evaluator)
+    auto_order_integrate interp_twomesh submesh disc vect_comp operatorinterpolation normal3d aitken form_interpolation integration_opt lift trace
+    form_severaltrialtestmesh hcurl wire_basket solve_leak stencil evaluator element_serialize)
 
   feelpp_add_test( ${TEST} )
 

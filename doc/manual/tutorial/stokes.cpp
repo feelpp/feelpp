@@ -231,9 +231,7 @@ Stokes::init()
                            _desc=domain( _name= ( boost::format( "%1%-%2%-%3%" ) % "hypercube" % convex_type().dimension() % 1 ).str() ,
                                          _shape="hypercube",
                                          _dim=convex_type().dimension(),
-                                         _h=meshSize ),
-                           _worldcomm=Environment::masterWorldComm( space_type::nSpaces ),
-                           _partitions=Environment::numberOfProcessors()/space_type::nSpaces );
+                                         _h=meshSize ) );
 
 
     Xh = space_type::New( mesh );

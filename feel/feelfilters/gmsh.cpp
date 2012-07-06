@@ -83,7 +83,8 @@ const char* FEELPP_GMSH_FORMAT_VERSION = "2.2";
     M_partitioner( GMSH_PARTITIONER_CHACO ),
     M_partitions( 1 ),
     M_partition_file( 0 ),
-    M_shear( 0 )
+    M_shear( 0 ),
+    M_refine_levels( 0 )
 {
     this->setReferenceDomain();
 }
@@ -100,7 +101,8 @@ Gmsh::Gmsh( Gmsh const & __g )
     M_partitioner( __g.M_partitioner ),
     M_partitions( __g.M_partitions ),
     M_partition_file( __g.M_partition_file ),
-    M_shear( __g.M_shear )
+    M_shear( __g.M_shear ),
+    M_refine_levels( __g.M_refine_levels )
 {}
 Gmsh::~Gmsh()
 {}
@@ -340,6 +342,7 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  
     CTX::instance()->partitionOptions.num_partitions =  M_partitions;
     CTX::instance()->partitionOptions.partitioner =  M_partitioner;
 
+
     CTX::instance()->mesh.mshFileVersion = std::atof( this->version().c_str() );
     CTX::instance()->mesh.lcExtendFromBoundary = 1;
     CTX::instance()->mesh.lcFromPoints = 1;
@@ -371,6 +374,8 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  
     GModel::current()->setFileName( _name );
     GModel::current()->readGEO( _name+".geo" );
     GModel::current()->mesh( dim );
+    for( int l = 0; l < M_refine_levels-1; ++l )
+        GModel::current()->refineMesh( M_order==1 );
     PartitionMesh( GModel::current(), CTX::instance()->partitionOptions );
     //std::cout << "size : " << GModel::current()->getMeshPartitions().size() << "\n";
     GModel::current()->writeMSH( _name+".msh" );
@@ -380,6 +385,44 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  
     throw std::invalid_argument( "Gmsh is not available on this system" );
 #endif
 }
+
+void
+Gmsh::rebuildPartitionMsh( std::string const& nameMshInput,std::string const& nameMshOutput ) const
+{
+#if FEELPP_HAS_GMSH
+#if defined(FEELPP_HAS_GMSH_H)
+
+    if ( !mpi::environment::initialized() || ( mpi::environment::initialized()  && this->worldComm().globalRank() == this->worldComm().masterRank() ) )
+    {
+
+        std::string _name = fs::path( nameMshInput ).stem().string();
+
+        GModel* newGmshModel=new GModel();
+        newGmshModel->readMSH( nameMshInput );
+
+        meshPartitionOptions newPartionOption;
+        newPartionOption.num_partitions = M_partitions;
+        newPartionOption.mesh_dims[0] = M_partitions;
+        newPartionOption.partitioner =  M_partitioner;
+        CTX::instance()->mesh.mshFilePartitioned = M_partition_file;
+        CTX::instance()->mesh.mshFileVersion = std::atof( this->version().c_str() );
+        PartitionMesh( newGmshModel, newPartionOption );
+
+        newGmshModel->writeMSH( nameMshOutput );
+
+        newGmshModel->destroy();
+        delete newGmshModel;
+
+    }
+#endif
+#else
+    throw std::invalid_argument( "Gmsh is not available on this system" );
+#endif
+
+}
+
+
+
 std::string
 Gmsh::preamble() const
 {

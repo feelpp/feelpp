@@ -688,6 +688,15 @@ WorldComm::subWorlds( int n )
         registerSubWorlds( n );
     return M_subworlds[n].second;
 }
+
+std::vector<WorldComm> const&
+WorldComm::subWorldsGroupBySubspace( int n )
+{
+    if ( !hasSubWorlds( n ) )
+        registerSubWorldsGroupBySubspace( n );
+    return M_subworlds[n].second;
+}
+
 int
 WorldComm::numberOfSubWorlds() const
 {
@@ -706,6 +715,12 @@ WorldComm::masterWorld( int n )
 
 void
 WorldComm::registerSubWorlds( int n )
+{
+    std::vector<WorldComm> subworlds( n, Environment::worldComm() );
+    M_subworlds.insert( std::make_pair( n, std::make_pair( Environment::worldComm(), subworlds ) ) );
+}
+void
+WorldComm::registerSubWorldsGroupBySubspace( int n )
 {
     if ( ( n > 1 ) && ( this->globalSize() > 1 ) )
     {

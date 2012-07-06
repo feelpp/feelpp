@@ -309,6 +309,11 @@ public:
         return M_map.maxMyGID()+1;
     }
 
+    virtual bool localIndexIsGhost(size_type localDof) const
+    {
+        return M_map.dofGlobalProcessIsGhost(localDof);
+    }
+
     /**
      * \return the communicator
      */
@@ -566,17 +571,27 @@ inner_product( Vector<T> const& v1, Vector<T> const& v2 )
     size_type s = v1.localSize();
     real_type res = 0;
     size_type start = v1.firstLocalIndex();
+    real_type global_res = 0;
 
-    for ( size_type i = 0; i < s; ++i )
-        res += v1( start + i )* v2( start + i );
+    if ( v1.comm().size() == 1 )
+        {
+            for ( size_type i = 0; i < s; ++i )
+                res += v1( start + i )* v2( start + i );
 
-    real_type global_res = res;
+            global_res = res;
+        }
+    else
+        {
+            for ( size_type i = 0; i < s; ++i )
+                {
+                    if ( !v1.localIndexIsGhost( start + i ) )
+                        res += v1( start + i )* v2( start + i );
+                }
 #if defined( FEELPP_HAS_MPI )
-
-    if ( v1.comm().size() > 1 )
-        mpi::all_reduce( v1.comm(), res, global_res, std::plus<real_type>() );
-
+            mpi::all_reduce( v1.comm(), res, global_res, std::plus<real_type>() );
 #endif
+        }
+
     return global_res;
 }
 /**

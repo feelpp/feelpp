@@ -639,7 +639,11 @@ SolverLinearPetsc<T>::setPetscSolverType()
         return;
 
     case CHEBYSHEV:
+#if PETSC_VERSION_LESS_THAN(3,3,0)
         ierr = KSPSetType ( _M_ksp, ( char* ) KSPCHEBYCHEV );
+#else
+        ierr = KSPSetType ( _M_ksp, ( char* ) KSPCHEBYSHEV );
+#endif
         CHKERRABORT( this->worldComm().globalComm(),ierr );
         return;
 
