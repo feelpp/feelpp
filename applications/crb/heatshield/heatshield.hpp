@@ -173,7 +173,7 @@ public:
 
     typedef std::vector< std::vector< double > > beta_vector_type;
 
-    typedef boost::tuple< std::vector< std::vector<sparse_matrix_ptrtype> >, std::vector< std::vector<sparse_matrix_ptrtype> >,  std::vector< std::vector<std::vector<vector_ptrtype> > > > affine_decomposition_type;
+    typedef boost::tuple< std::vector< std::vector<sparse_matrix_ptrtype> >, std::vector< std::vector<sparse_matrix_ptrtype> >,  std::vector< std::vector<std::vector<vector_ptrtype> > > , std::vector< std::vector< vector_ptrtype > > > affine_decomposition_type;
 
     //@}
 
@@ -243,6 +243,10 @@ public:
         return 1;
     }
 
+    int Qmf() const
+    {
+        return 1;
+    }
 
     int mMaxA( int q )
     {
@@ -268,6 +272,8 @@ public:
             throw std::logic_error( "[Model heatshield] ERROR : try to acces to mMaxF(output_index,q) with a bad value of q");
     }
 
+
+
     /**
      * \brief Returns the function space
      */
@@ -286,7 +292,7 @@ public:
      * \brief compute the theta coefficient for both bilinear and linear form
      * \param mu parameter to evaluate the coefficients
      */
-    boost::tuple<beta_vector_type, beta_vector_type, std::vector<beta_vector_type> >
+    boost::tuple<beta_vector_type, beta_vector_type, std::vector<beta_vector_type> , beta_vector_type >
     computeBetaQm( parameter_type const& mu , double time=1e30 )
     {
         double biot_out   = mu( 0 );
@@ -313,7 +319,11 @@ public:
         M_betaFqm[1][0].resize( 1 );
         M_betaFqm[1][0][0] = 1./surface;
 
-        return boost::make_tuple( M_betaMqm, M_betaAqm, M_betaFqm );
+        M_betaMFqm.resize( Qmf() );
+        M_betaMFqm[0].resize( 1 );
+        M_betaMFqm[0][0] = M_betaMqm[0][0]*M_betaFqm[0][0][0];
+
+        return boost::make_tuple( M_betaMqm, M_betaAqm, M_betaFqm , M_betaMFqm);
     }
 
     /**
@@ -359,6 +369,11 @@ public:
         return M_betaMqm[q][m];
     }
 
+    value_type betaMFqm( int q, int m ) const
+    {
+        return M_betaMFqm[q][m];
+    }
+
 
     /**
      * \return the \p q -th term of the \p l -th output
@@ -366,6 +381,11 @@ public:
     value_type betaL( int l, int q, int m ) const
     {
         return M_betaFqm[l][q][m];
+    }
+
+    value_type betaMFq( int q, int m ) const
+    {
+        return M_betaMFqm[q][m];
     }
 
     //@}
@@ -398,6 +418,11 @@ public:
      * \return the newly created matrix
      */
     sparse_matrix_ptrtype newMatrix() const;
+
+    /**
+     * \return the newly created vector
+     */
+    vector_ptrtype newVector() const;
 
     /**
      * \brief Returns the affine decomposition
@@ -538,9 +563,11 @@ private:
     std::vector< std::vector<sparse_matrix_ptrtype> > M_Aqm;
     std::vector< std::vector<sparse_matrix_ptrtype> > M_Mqm;
     std::vector< std::vector<std::vector<vector_ptrtype> > > M_Fqm;
+    std::vector< std::vector< vector_ptrtype> > M_MFqm;
 
     beta_vector_type M_betaAqm;
     beta_vector_type M_betaMqm;
+    beta_vector_type M_betaMFqm;
     std::vector<beta_vector_type> M_betaFqm;
 
     bdf_ptrtype M_bdf;
@@ -692,6 +719,12 @@ void HeatShield::init()
         }
     }
 
+    M_MFqm.resize( this->Qmf() );
+    for(int q=0; q<Qmf(); q++)
+    {
+        M_MFqm[q].resize( 1 );
+        M_MFqm[q][0] = backend->newVector( Xh );
+    }
 
     Feel::ParameterSpace<ParameterSpaceDimension>::Element mu_min( M_Dmu );
     mu_min <<  /* Bi_out */ 1e-2 , /*Bi_in*/1e-3;
@@ -712,6 +745,7 @@ void HeatShield::init()
 void HeatShield::assemble()
 {
 
+    std::cout<<" -- 0 -- "<<std::endl;
     M_bdf->start();
     using namespace Feel::vf;
 
@@ -742,6 +776,9 @@ void HeatShield::assemble()
     form2( _test=Xh, _trial=Xh, _matrix=M_Mqm[0][0] ) = integrate ( _range=elements( mesh ), _expr=idt( u )*id( v ) );
     M_Mqm[0][0]->close();
 
+    M_MFqm[0][0]->addVector( M_Fqm[0][0][0] , M_Mqm[0][0] );
+    M_MFqm[0][0]->close();
+
     //for scalarProduct
     M = backend->newMatrix( _test=Xh, _trial=Xh );
     form2( Xh, Xh, M ) =
@@ -766,11 +803,17 @@ HeatShield::newMatrix() const
     return backend->newMatrix( Xh, Xh );
 }
 
+typename HeatShield::vector_ptrtype
+HeatShield::newVector() const
+{
+    return backend->newVector( Xh );
+}
+
 
 typename HeatShield::affine_decomposition_type
 HeatShield::computeAffineDecomposition()
 {
-    return boost::make_tuple( M_Mqm, M_Aqm, M_Fqm );
+    return boost::make_tuple( M_Mqm, M_Aqm, M_Fqm , M_MFqm );
 }
 
 
