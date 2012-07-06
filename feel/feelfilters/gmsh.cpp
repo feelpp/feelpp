@@ -392,6 +392,8 @@ Gmsh::rebuildPartitionMsh( std::string const& nameMshInput,std::string const& na
 #if FEELPP_HAS_GMSH
 #if defined(FEELPP_HAS_GMSH_H)
 
+    std::string _name;
+
     if ( !mpi::environment::initialized() || ( mpi::environment::initialized()  && this->worldComm().globalRank() == this->worldComm().masterRank() ) )
     {
 
@@ -403,7 +405,11 @@ Gmsh::rebuildPartitionMsh( std::string const& nameMshInput,std::string const& na
         meshPartitionOptions newPartionOption;
         newPartionOption.num_partitions = M_partitions;
         newPartionOption.mesh_dims[0] = M_partitions;
-        newPartionOption.partitioner =  M_partitioner;
+        if (M_partitions==1)
+            newPartionOption.partitioner=GMSH_PARTITIONER_METIS;
+        else
+            newPartionOption.partitioner =  M_partitioner;
+
         CTX::instance()->mesh.mshFilePartitioned = M_partition_file;
         CTX::instance()->mesh.mshFileVersion = std::atof( this->version().c_str() );
         PartitionMesh( newGmshModel, newPartionOption );
@@ -414,6 +420,14 @@ Gmsh::rebuildPartitionMsh( std::string const& nameMshInput,std::string const& na
         delete newGmshModel;
 
     }
+
+    if ( mpi::environment::initialized() )
+        {
+            mpi::broadcast( this->worldComm().globalComm(), _name, this->worldComm().masterRank() );
+            Log() << "[Gmsh::rebuildPartitionMsh] broadcast mesh filename : " << _name << " to all other processes\n";
+        }
+
+
 #endif
 #else
     throw std::invalid_argument( "Gmsh is not available on this system" );
