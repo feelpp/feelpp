@@ -3,7 +3,7 @@
 PortSystem	1.0
 
 name		petsc
-version	    3.2-p7
+version     3.3-p1
 categories  math science
 maintainers	mmoll
 description	Portable, Extensible Toolkit for Scientific Computation
@@ -24,9 +24,9 @@ distname	${name}-lite-${version}
 worksrcdir	${name}-${version}
 universal_variant   no
 
-checksums           md5     9272439b31313824d3c4e8f23e3e06e3 \
-                    sha1    312c5b7219925439d38533990aa439c4d98e2b79 \
-                    rmd160  ca38c987b5f0559ccbc650d2a35831328ead3cf6
+checksums           md5     712dce5c6e6669f2dfe628d48a92de62 \
+                    sha1    4c9a41c4cd930889314e698fdfdb26480b548f03 \
+                    rmd160  8ec915871f8d5463428c321d2af0a51b42ea730f
 
 depends_build-append  port:cmake
 depends_lib-append  port:openmpi
@@ -38,12 +38,14 @@ configure.args  --with-python --with-debugging=0 \
 		--with-cc=${prefix}/bin/openmpicc \
 		--with-cxx=${prefix}/bin/openmpicxx \
 		--with-mpiexec=${prefix}/bin/openmpiexec \
+        --with-lapack-lib=/usr/lib/liblapack.dylib \
+        --with-blas-lib=/usr/lib/libblas.dylib \
         --download-umfpack=1 \
         --download-ml \
+        --download-metis \
         --download-parmetis \
         --download-blacs \
         --download-scalapack \
-        --download-f-blas-lapack \
         --download-mumps \
         --download-ptscotch \
 		--with-fc=${prefix}/bin/openmpif90 \

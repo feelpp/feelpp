@@ -1012,7 +1012,7 @@ typename CRBModel<TruthModelType>::offline_merge_type
 CRBModel<TruthModelType>::offlineMerge( parameter_type const& mu )
 {
 
-#if 1
+#if 0
     sparse_matrix_ptrtype A( M_backend->newMatrix(
                                                   _test=M_model->functionSpace(),
                                                   _trial=M_model->functionSpace()
@@ -1032,31 +1032,16 @@ CRBModel<TruthModelType>::offlineMerge( parameter_type const& mu )
 #endif
     std::vector<vector_ptrtype> F( Nl() );
 
-    //*A = *M_Aq[0];
-    //A->scale( this->betaAqm[0][0] );
+
     for ( size_type q = 0; q < Qa(); ++q )
-    {
-        for ( size_type m = 0; m < mMaxA(q); ++m )
-            A->addMatrix( this->betaAqm( q , m ), M_Aqm[q][m] );
-    }
+        A->addMatrix( this->thetaAq( q ), M_Aq[q] );
 
     if( Qm() > 0 )
     {
         //*M = *M_Mq[0];
         //M->scale( this->thetaMq( 0 ) );
         for ( size_type q = 0; q < Qm(); ++q )
-        {
-            for ( size_type m = 0; m < mMaxM(q); ++m )
-                M->addMatrix( this->betaMqm( q , m ), M_Mqm[q][m] );
-        }
-    }
-    if ( Qmf() > 0 )
-    {
-        for ( size_type q = 0; q < Qmf(); ++q )
-        {
-            for ( size_type m = 0; m < 1; ++m )
-                MF->add( this->betaMFqm( q , m ), M_MFqm[q][m] );
-        }
+            M->addMatrix( this->thetaMq( q ), M_Mq[q] );
     }
 
     for ( size_type l = 0; l < Nl(); ++l )

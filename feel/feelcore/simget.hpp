@@ -149,6 +149,11 @@ public:
     {
         return M_meshSize;
     }
+    //! return the mesh size
+    double meshSizeInit() const
+    {
+        return M_meshSizeInit;
+    }
 
     //! return the refinement level
     int level() const
@@ -172,6 +177,12 @@ public:
     void setMeshSize( double h )
     {
         M_meshSize= h;
+    }
+
+    //! set the initial mesh size
+    void setMeshSizeInit( double h )
+    {
+        M_meshSizeInit = h;
     }
 
     //! set the refinment level if applicable
@@ -214,6 +225,7 @@ protected:
 
 protected:
     double M_meshSize;
+    double M_meshSizeInit;
     int M_level;
     ptree::ptree M_stats;
 private:
