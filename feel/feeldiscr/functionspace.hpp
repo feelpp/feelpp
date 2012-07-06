@@ -3108,7 +3108,7 @@ public:
 
     bool hasEntriesForAllSpaces()
     {
-        return (this->mesh()->worldComm().localSize() == this->mesh()->worldComm().globalSize() );
+        return (this->template mesh<0>()->worldComm().localSize() == this->template mesh<0>()->worldComm().globalSize() );
     }
     //@}
 
