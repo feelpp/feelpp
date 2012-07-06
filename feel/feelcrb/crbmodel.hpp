@@ -272,6 +272,15 @@ public:
     }
 
     /**
+     * create a new vector
+     * \return the newly created vector
+     */
+    virtual vector_ptrtype newVector() const
+    {
+        return M_model->newVector();
+    }
+
+    /**
      * \brief Returns the matrix associated with the \f$H_1\f$ inner product
      */
     sparse_matrix_ptrtype const& innerProduct() const
@@ -306,6 +315,7 @@ public:
     {
         return M_model->Qm();
     }
+
     size_type Qmf() const
     {
         return M_model->Qmf();
@@ -396,7 +406,7 @@ public:
         beta_vector_type betaMqm, betaMFqm;
         std::vector<beta_vector_type>  betaFqm;
         boost::tuple<beta_vector_type, beta_vector_type, std::vector<beta_vector_type>, beta_vector_type > steady_beta;
-        steady_beta = M_model->computeBetaQm( T, mu , time );
+        steady_beta = M_model->computeBetaQm( mu , time );
         betaMqm = steady_beta.get<0>();
         betaAqm = steady_beta.get<1>();
         betaFqm = steady_beta.get<2>();
@@ -580,6 +590,7 @@ public:
     {
         return M_model->betaMqm(q,m);
     }
+
     value_type betaMFqm( int q, int m ) const
     {
         return M_model->betaMFqm(q,m);
@@ -902,9 +913,9 @@ protected:
     //! affine decomposition terms for the left hand side
     std::vector< std::vector<sparse_matrix_ptrtype> > M_Aqm;
 
-
     //! affine decomposition terms ( time dependent )
     std::vector< std::vector<sparse_matrix_ptrtype> > M_Mqm;
+
     std::vector< std::vector<vector_ptrtype> > M_MFqm;
 
     //! affine decomposition terms for the right hand side
@@ -1028,20 +1039,35 @@ CRBModel<TruthModelType>::offlineMerge( parameter_type const& mu )
 
     auto A = this->newMatrix();
     auto M = this->newMatrix();
-
+    auto MF = this->newVector();
 #endif
     std::vector<vector_ptrtype> F( Nl() );
 
 
     for ( size_type q = 0; q < Qa(); ++q )
-        A->addMatrix( this->thetaAq( q ), M_Aq[q] );
+    {
+        for(size_type m = 0; m < mMaxA(q); ++m )
+            A->addMatrix( this->betaAqm( q , m ), M_Aqm[q][m] );
+    }
 
     if( Qm() > 0 )
     {
         //*M = *M_Mq[0];
         //M->scale( this->thetaMq( 0 ) );
         for ( size_type q = 0; q < Qm(); ++q )
-            M->addMatrix( this->thetaMq( q ), M_Mq[q] );
+        {
+            for(size_type m = 0; m < mMaxM(q) ; ++m )
+                M->addMatrix( this->betaMqm( q , m ), M_Mqm[q][m] );
+        }
+    }
+
+    if ( Qmf() > 0 )
+    {
+        for ( size_type q = 0; q < Qmf(); ++q )
+        {
+            for ( size_type m = 0; m < 1; ++m )
+                MF->add( this->betaMFqm( q , m ), M_MFqm[q][m] );
+        }
     }
 
     for ( size_type l = 0; l < Nl(); ++l )
