@@ -129,9 +129,10 @@ public:
 
 
             crb = crb_ptrtype( new crb_type( this->about().appName(),
-                                             this->vm() ) );
+                                             this->vm() ,
+                                             model ) );
             Debug() << "[OpusApp] get crb done" << "\n";
-            crb->setTruthModel( model );
+            //crb->setTruthModel( model );
             Debug() << "[OpusApp] constructor done" << "\n";
         }
 
@@ -176,6 +177,10 @@ public:
                 crb->scm()->offline();
             }
         }
+        else
+        {
+            crb->scm()->computeAffineDecomposition();
+        }
 
         if ( !crb->isDBLoaded() || crb->rebuildDB() )
         {
@@ -188,6 +193,14 @@ public:
 
             else if ( M_mode != CRBModelMode::SCM )
                 throw std::logic_error( "CRB/SCM Database could not be loaded" );
+        }
+
+        if( crb->isDBLoaded() )
+        {
+            int current_dimension = crb->dimension();
+            int dimension_max = this->vm()["crb.dimension-max"].template as<int>();
+            if( current_dimension < dimension_max )
+                crb->offline();
         }
     }
     FEELPP_DONT_INLINE
