@@ -406,6 +406,8 @@ public:
     bool rebuildDB();
 
     bool doScmForMassMatrix();
+
+    void computeAffineDecomposition() { M_model->computeAffineDecomposition(); }
     //@}
 
 
