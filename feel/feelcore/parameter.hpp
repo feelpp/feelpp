@@ -209,6 +209,7 @@ BOOST_PARAMETER_NAME( grainsize )
 BOOST_PARAMETER_NAME( partitioner )
 
 BOOST_PARAMETER_NAME( save )
+BOOST_PARAMETER_NAME( ddmethod )
 
 }
 
