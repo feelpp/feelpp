@@ -36,7 +36,8 @@ using boost::unit_test::test_suite;
 
 #include <feel/feeldiscr/functionspace.hpp>
 
-#include <feel/feeldiscr/operatorlift.hpp>
+//#include <feel/feeldiscr/operatorlift.hpp>
+#include <feel/feeldiscr/projector.hpp>
 
 #include <feel/feeldiscr/region.hpp>
 
@@ -61,11 +62,12 @@ makeOptions()
 {
     po::options_description testliftoptions( "TestLift options" );
     testliftoptions.add_options()
-    ( "hsize", po::value<double>()->default_value( 0.02 ), "mesh size" )
+    ( "hsize", po::value<double>()->default_value( 0.5 ), "mesh size" )
     ( "shape", Feel::po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (either simplex or hypercube)" )
     ( "nu", po::value<double>()->default_value( 1 ), "grad.grad coefficient" )
-    ( "weakdir", po::value<int>()->default_value( 1 ), "use weak Dirichlet condition" )
-    ( "penaldir", Feel::po::value<double>()->default_value( 10 ),
+        ( "weakdir", po::value<int>()->default_value( 1 ), "use weak Dirichlet condition" )
+        ( "proj", po::value<int>()->default_value( 5 ), "use weak Dirichlet condition" )
+    ( "penaldir", Feel::po::value<double>()->default_value( 20 ),
       "penalisation parameter for the weak boundary Dirichlet formulation" )
     ;
     return testliftoptions.add( Feel::feel_options() );
@@ -83,7 +85,7 @@ makeAbout()
                      Feel::AboutData::License_GPL,
                      "Copyright (c) 2008-2009 Universite Joseph Fourier" );
 
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    about.addAuthor( "Abdoulaye Samake", "developer", "abdoulaye.samake@imag.fr", "" );
     return about;
 
 }
@@ -207,13 +209,16 @@ TestLift<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
 
     bool weakdir = this->vm()["weakdir"].template as<int>();
 
+    using namespace Feel::vf;
+
     WeakDirichlet dir_type = ( WeakDirichlet )this->vm()["weakdir"].template as<int>();
+    Feel::ProjectorType proj_type = ( Feel::ProjectorType )this->vm()["proj"].template as<int>();
+
+    std::cout<<"proj_type="<< proj_type << std::endl;
 
     value_type penaldir = this->vm()["penaldir"].template as<double>();
 
     value_type nu = this->vm()["nu"].template as<double>();
-
-    using namespace Feel::vf;
 
     auto F =  M_backend->newVector( Xh ) ;
 
@@ -256,14 +261,12 @@ TestLift<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
             on( markedfaces( mesh, "Dirichlet" ), u, F, g );
 
     }
-    auto mybackend = backend_type::build(this->vm());
-    mybackend->solve( _matrix=D, _solution=u, _rhs=F );
-
-    auto op_lift = operatorLift( Xh, mybackend/*M_backend*/, 20.0, dir_type );
-
-    auto glift = op_lift->lift( _range=markedfaces( mesh,"Dirichlet" ),_expr=trans( g ) );
-
-    auto glift2 = ( *op_lift )( _range=markedfaces( mesh,"Dirichlet" ),_expr= g );
+    auto backend = backend_type::build(this->vm());
+    backend->solve( _matrix=D, _solution=u, _rhs=F );
+    auto op_lift = projector( Xh, Xh, backend, proj_type, dir_type );
+    auto op_lift2 = opLift( _domainSpace= Xh, _backend=backend );
+    auto glift2 = op_lift2->project( _range=markedfaces( mesh,"Dirichlet" ), _expr=trans( g ) );
+    auto glift = ( *op_lift2 )( _range=markedfaces( mesh,"Dirichlet" ),_expr= g );
 
     auto gproj =  vf::project( _space=Xh, _range=elements( mesh ), _expr=g );
 
@@ -278,9 +281,9 @@ TestLift<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
 
     double H1error = math::sqrt( L2error2 + semi_H1error2 );
 
-    Log() << "||error||_L2=" << L2error << "\n";
+    std::cout << "||error||_L2=" << L2error << "\n";
 
-    Log() << "||error||_H1=" << H1error << "\n";
+    std::cout << "||error||_H1=" << H1error << "\n";
 
     auto exporter( export_type::New( this->vm(),
                                      ( boost::format( "%1%-%2%-%3%" )
@@ -326,7 +329,7 @@ BOOST_AUTO_TEST_CASE( MyLiftCase )
 
     app.add( new TestLift<1>( app.vm(), app.about() ) );
     app.add( new TestLift<2>( app.vm(), app.about() ) );
-    // app.add( new TestLift<3>( app.vm(), app.about() ) );
+    app.add( new TestLift<3>( app.vm(), app.about() ) );
 
     app.run();
 
