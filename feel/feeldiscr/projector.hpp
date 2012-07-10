@@ -36,7 +36,7 @@
 namespace Feel
 {
 template<class DomainSpace, class DualImageSpace> class Projector;
-enum ProjectorType {L2=0, H1=1, DIFF=2,HDIV=3,HCURL=4};
+    enum ProjectorType {L2=0, H1=1, DIFF=2, HDIV=3, HCURL=4, LIFT=5};
 namespace detail
 {
 template<typename Args>
@@ -49,6 +49,14 @@ struct projector_args
 
     typedef boost::shared_ptr<Projector<domain_type,image_type> > return_type;
     typedef Projector<domain_type,image_type> projector_type;
+    typedef boost::shared_ptr<Projector<domain_type,domain_type> > lift_return_type;
+};
+
+template<typename Args>
+struct lift_args
+{
+    typedef typename vf::detail::clean_type<Args,tag::domainSpace>::type::value_type domain_type;
+    typedef boost::shared_ptr<Projector<domain_type,domain_type> > lift_return_type;
 };
 
 } // detail
@@ -98,8 +106,9 @@ public :
                dual_image_space_ptrtype dualImageSpace,
                backend_ptrtype backend = Backend<double>::build( BACKEND_PETSC ),
                ProjectorType proj_type=L2,
+               WeakDirichlet dirichlet_type = WEAK,
                double epsilon = 0.01,
-               double gamma = 0.5
+               double gamma = 20
              )
         :
         ol_type( domainSpace, dualImageSpace, backend ),
@@ -107,7 +116,8 @@ public :
         M_epsilon( epsilon ),
         M_gamma( gamma ),
         M_proj_type( proj_type ),
-        M_matrix( M_backend->newMatrix( domainSpace, dualImageSpace ) )
+        M_dir( dirichlet_type ),
+        M_matrix( M_backend->newMatrix( _trial=domainSpace, _test=dualImageSpace ) )
     {
         initMatrix();
     }
@@ -134,7 +144,7 @@ public :
                                      ( required
                                        ( expr,   * ) )
                                      ( optional
-                                       ( range,   *, elements( this->domainSpace()->mesh() ) )
+                                       ( range,   *,( M_proj_type != LIFT ) ? elements( this->domainSpace()->mesh() ) : boundaryfaces(this->domainSpace()->mesh()) )
                                        ( quad,   *, ( typename integrate_type<Args,decltype( elements( this->domainSpace()->mesh() ) )>::_quad_type() ) )
                                        ( quad1,   *, ( typename integrate_type<Args,decltype( elements( this->domainSpace()->mesh() ) )>::_quad1_type() ) )
                                        ( geomap, *, GeomapStrategyType::GEOMAP_OPT )
@@ -144,9 +154,22 @@ public :
         domain_element_type de = this->domainSpace()->element();
 
         auto ie = M_backend->newVector( this->dualImageSpace() );
-        form1( _test=this->dualImageSpace(), _vector=ie, _init=true ) =
-            integrate( _range=range, _expr=expr * id( this->dualImageSpace()->element() ),
-                       _quad=quad, _quad1=quad1, _geomap=geomap );
+        form1( _test=this->dualImageSpace(), _vector=ie, _init=true );
+
+        if ( M_proj_type != LIFT )
+        {
+            form1( _test=this->dualImageSpace(), _vector=ie ) +=
+                integrate( _range=range, _expr=expr * id( this->dualImageSpace()->element() ),
+                           _quad=quad, _quad1=quad1, _geomap=geomap );
+        }
+        else if ( ( M_proj_type == LIFT ) && ( M_dir == WEAK ) )
+        {
+            form1( _test=this->dualImageSpace(), _vector=ie ) +=
+                integrate( _range=range,
+                           _expr=expr*( -grad( this->dualImageSpace()->element() )*vf::N() +
+                                        M_gamma / vf::hFace() *id( this->dualImageSpace()->element() ) ),
+                           _quad=quad, _quad1=quad1, _geomap=geomap );
+        }
 
         //weak boundary conditions
         if ( M_proj_type == DIFF )
@@ -158,7 +181,33 @@ public :
                            _quad=quad );
         }
 
-        M_backend->solve( M_matrix, de, ie );
+        ie->close();
+
+        M_matrixFull = M_backend->newMatrix( _trial=this->domainSpace(), _test=this->dualImageSpace() );
+        auto bilinearForm = form2( _trial=this->domainSpace(), _test=this->dualImageSpace(), _matrix=M_matrixFull );
+
+        if ( ( M_proj_type == LIFT ) && ( M_dir == WEAK ) )
+        {
+            bilinearForm +=
+                integrate( _range=range, _expr=
+                           ( -trans( id( this->dualImageSpace()->element() ) )*gradt( this->domainSpace()->element() )*vf::N()
+                             -trans( idt( this->domainSpace()->element() ) )* grad( this->dualImageSpace()->element() )*vf::N()
+                             + M_gamma * trans( idt( this->domainSpace()->element() ) ) /*trial*/
+                             *id( this->dualImageSpace()->element() ) / vf::hFace()   /*test*/
+                             ) );
+        }
+
+        M_matrixFull->close();
+        M_matrixFull->addMatrix( 1., M_matrix );
+
+        if ( ( M_proj_type == LIFT ) && ( M_dir == STRONG ) )
+        {
+            form2 ( _trial=this->domainSpace(),
+                    _test=this->dualImageSpace(),
+                    _matrix=M_matrixFull ) +=  on( range , de, ie, expr );
+        }
+
+        M_backend->solve( M_matrixFull, de, ie );
 
         return de;
     }
@@ -198,6 +247,13 @@ public :
         M_backend->solve( M_matrix, de, ie );
     }
 
+
+    template<typename Range, typename Expr>
+    domain_element_type
+    operator()( Range const& range ,Expr const& expr )
+    {
+        return this->project( expr, range );
+    }
 
 
     void
@@ -299,6 +355,16 @@ private :
                          );
         }
         break;
+
+        case LIFT:
+            {
+                a = integrate( elements( this->domainSpace()->mesh() ),
+                               trace( gradt( this->domainSpace()->element() )
+                                      * trans( grad( this->domainSpace()->element() ) ) )
+                               );
+
+        }
+        break;
         }
 
         M_matrix->close();
@@ -308,7 +374,9 @@ private :
     const double M_epsilon;
     const double M_gamma;
     ProjectorType M_proj_type;
+    WeakDirichlet M_dir;
     matrix_ptrtype M_matrix;
+    matrix_ptrtype M_matrixFull;
 
 };//Projector
 
@@ -326,10 +394,10 @@ boost::shared_ptr< Projector<TDomainSpace, TDualImageSpace> >
 projector( boost::shared_ptr<TDomainSpace> const& domainspace,
            boost::shared_ptr<TDualImageSpace> const& imagespace,
            typename Projector<TDomainSpace, TDualImageSpace>::backend_ptrtype const& backend = Backend<double>::build( BACKEND_PETSC ),
-           ProjectorType proj_type=L2, double epsilon=0.01, double gamma = 0.5 )
+           ProjectorType proj_type=L2, WeakDirichlet dirichlet_type = WEAK, double epsilon=0.01, double gamma = 20 )
 {
     typedef Projector<TDomainSpace, TDualImageSpace> Proj_type;
-    boost::shared_ptr<Proj_type> proj( new Proj_type( domainspace, imagespace, backend, proj_type, epsilon, gamma ) );
+    boost::shared_ptr<Proj_type> proj( new Proj_type( domainspace, imagespace, backend, proj_type, dirichlet_type, epsilon, gamma ) );
     return proj;
 }
 
@@ -347,6 +415,21 @@ BOOST_PARAMETER_FUNCTION( ( typename detail::projector_args<Args>::return_type )
 {
     return projector( domainSpace,imageSpace, backend, type );
 }
+
+BOOST_PARAMETER_FUNCTION( ( typename detail::lift_args<Args>::lift_return_type ),
+                          opLift,
+                          tag,
+                          ( required
+                            ( domainSpace,   *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
+                          )
+                          ( optional
+                            ( type, *, WeakDirichlet::WEAK )
+                            ( backend, *, Backend<double>::build( BACKEND_PETSC ) )
+                            ) )
+{
+    return projector( domainSpace, domainSpace, backend, ProjectorType::LIFT, type );
+}
+
 
 #endif
 
