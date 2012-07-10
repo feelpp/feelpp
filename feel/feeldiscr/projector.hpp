@@ -106,9 +106,9 @@ public :
                dual_image_space_ptrtype dualImageSpace,
                backend_ptrtype backend = Backend<double>::build( BACKEND_PETSC ),
                ProjectorType proj_type=L2,
-               WeakDirichlet dirichlet_type = WEAK,
                double epsilon = 0.01,
-               double gamma = 20
+               double gamma = 20,
+               WeakDirichlet dirichlet_type = WEAK
              )
         :
         ol_type( domainSpace, dualImageSpace, backend ),
@@ -394,10 +394,10 @@ boost::shared_ptr< Projector<TDomainSpace, TDualImageSpace> >
 projector( boost::shared_ptr<TDomainSpace> const& domainspace,
            boost::shared_ptr<TDualImageSpace> const& imagespace,
            typename Projector<TDomainSpace, TDualImageSpace>::backend_ptrtype const& backend = Backend<double>::build( BACKEND_PETSC ),
-           ProjectorType proj_type=L2, WeakDirichlet dirichlet_type = WEAK, double epsilon=0.01, double gamma = 20 )
+           ProjectorType proj_type=L2, double epsilon=0.01, double gamma = 20, WeakDirichlet dirichlet_type = WEAK )
 {
     typedef Projector<TDomainSpace, TDualImageSpace> Proj_type;
-    boost::shared_ptr<Proj_type> proj( new Proj_type( domainspace, imagespace, backend, proj_type, dirichlet_type, epsilon, gamma ) );
+    boost::shared_ptr<Proj_type> proj( new Proj_type( domainspace, imagespace, backend, proj_type, epsilon, gamma, dirichlet_type ) );
     return proj;
 }
 
@@ -427,7 +427,7 @@ BOOST_PARAMETER_FUNCTION( ( typename detail::lift_args<Args>::lift_return_type )
                             ( backend, *, Backend<double>::build( BACKEND_PETSC ) )
                             ) )
 {
-    return projector( domainSpace, domainSpace, backend, ProjectorType::LIFT, type );
+    return projector( domainSpace, domainSpace, backend, ProjectorType::LIFT, 0.01 , 20, type );
 }
 
 
