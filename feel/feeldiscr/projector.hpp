@@ -36,7 +36,7 @@
 namespace Feel
 {
 template<class DomainSpace, class DualImageSpace> class Projector;
-    enum ProjectorType {L2=0, H1=1, DIFF=2, HDIV=3, HCURL=4, LIFT=5};
+
 namespace detail
 {
 template<typename Args>
@@ -44,19 +44,14 @@ struct projector_args
 {
     typedef typename vf::detail::clean_type<Args,tag::domainSpace>::type::value_type domain_type;
     typedef typename vf::detail::clean_type<Args,tag::imageSpace>::type::value_type image_type;
-    //typedef typename vf::detail::clean_type<Args,tag::type>::type type;
-    //typedef typename vf::detail::clean_type<Args,tag::backend>::backend_type backend_type;
-
     typedef boost::shared_ptr<Projector<domain_type,image_type> > return_type;
-    typedef Projector<domain_type,image_type> projector_type;
-    typedef boost::shared_ptr<Projector<domain_type,domain_type> > lift_return_type;
 };
 
 template<typename Args>
 struct lift_args
 {
-    typedef typename vf::detail::clean_type<Args,tag::domainSpace>::type::value_type domain1_type;
-    typedef boost::shared_ptr<Projector<domain1_type,domain1_type> > lift_return_type;
+    typedef typename vf::detail::clean_type<Args,tag::domainSpace>::type::value_type domain_type;
+    typedef boost::shared_ptr<Projector<domain_type,domain_type> > lift_return_type;
 };
 
 } // detail
@@ -141,13 +136,15 @@ public :
                                      project,
                                      tag,
                                      ( required
-                                       ( expr,   * ) )
+                                       ( expr,   * )
+                                     )
                                      ( optional
-                                       ( range,   *, ( M_proj_type != LIFT ) ? elements( this->domainSpace()->mesh() ) : boundaryfaces(this->domainSpace()->mesh()) )
+                                       ( range,   *, elements( this->domainSpace()->mesh() )  )
                                        ( quad,   *, ( typename integrate_type<Args,decltype( elements( this->domainSpace()->mesh() ) )>::_quad_type() ) )
-                                       ( quad1,   *, ( typename integrate_type<Args,decltype( elements( this->domainSpace()->mesh() ) )>::_quad1_type() ) )
+                                       ( quad1,   *, ( typename integrate_type<Args,decltype( elements( this->dualImageSpace()->mesh() ) )>::_quad1_type() ) )
                                        ( geomap, *, GeomapStrategyType::GEOMAP_OPT )
-                                     ) )
+                                     )
+                                   )
     {
         using namespace vf;
         domain_element_type de = this->domainSpace()->element();
@@ -158,60 +155,60 @@ public :
         if ( M_proj_type != LIFT )
         {
             form1( _test=this->dualImageSpace(), _vector=ie ) +=
-                integrate( _range=range, _expr=expr * id( this->dualImageSpace()->element() ) );
-
+                integrate( _range=range, _expr=expr * id( this->dualImageSpace()->element() ),
+                           _quad=quad, _quad1=quad1, _geomap=geomap );
         }
         else if ( ( M_proj_type == LIFT ) && ( M_dir == WEAK ) )
         {
             form1( _test=this->dualImageSpace(), _vector=ie ) +=
                 integrate( _range=range,
                            _expr=expr*( -grad( this->dualImageSpace()->element() )*vf::N() +
-                                        M_gamma / vf::hFace() *id( this->dualImageSpace()->element() ) ) );
+                                        M_gamma / vf::hFace() *id( this->dualImageSpace()->element() ) ),
+                           _quad=quad, _quad1=quad1, _geomap=geomap );
         }
 
-        // //weak boundary conditions
+        //weak boundary conditions
         if ( M_proj_type == DIFF )
         {
             form1( _test=this->dualImageSpace(), _vector=ie ) +=
                 integrate( _range=boundaryfaces( this->domainSpace()->mesh() ),
                            _expr=expr*M_epsilon*( -grad( this->domainSpace()->element() )*vf::N() +
-                                                  M_gamma / vf::hFace() *id( this->dualImageSpace()->element() )  ) );
+                                                  M_gamma / vf::hFace() *id( this->dualImageSpace()->element() ) ),
+                           _quad=quad, _quad1=quad1, _geomap=geomap );
         }
 
         ie->close();
 
         M_matrixFull = M_backend->newMatrix( _trial=this->domainSpace(), _test=this->dualImageSpace() );
-
-        form2( _trial=this->domainSpace(), _test=this->dualImageSpace(), _matrix=M_matrixFull, _init=true );
+        auto bilinearForm = form2( _trial=this->domainSpace(), _test=this->dualImageSpace(), _matrix=M_matrixFull );
 
         if ( ( M_proj_type == LIFT ) && ( M_dir == WEAK ) )
         {
-
-            form2 ( _trial=this->domainSpace(),
-                    _test=this->dualImageSpace(),
-                    _matrix=M_matrixFull ) +=
+            bilinearForm +=
                 integrate( _range=range, _expr=
                            ( -trans( id( this->dualImageSpace()->element() ) )*gradt( this->domainSpace()->element() )*vf::N()
                              -trans( idt( this->domainSpace()->element() ) )* grad( this->dualImageSpace()->element() )*vf::N()
                              + M_gamma * trans( idt( this->domainSpace()->element() ) ) /*trial*/
-                             *id( this->dualImageSpace()->element() ) / vf::hFace()   /*test*/ ) );
+                             *id( this->dualImageSpace()->element() ) / vf::hFace()   /*test*/
+                             ), _quad=quad, _quad1=quad1, _geomap=geomap );
         }
 
         M_matrixFull->close();
         M_matrixFull->addMatrix( 1., M_matrix );
 
-        // if ( ( M_proj_type == LIFT ) && ( M_dir == STRONG ) )
-        // {
-        //     form2 ( _trial=this->domainSpace(),
-        //             _test=this->dualImageSpace(),
-        //             _matrix=M_matrixFull ) +=  on( _range=range , _element=de, _rhs=ie, _expr=expr );
-        // }
+#if defined(USE_LIFT)
+        if ( ( M_proj_type == LIFT ) && ( M_dir == STRONG ) && ( range.get<0>() !=0 ) )
+        {
+            form2 ( _trial=this->domainSpace(),
+                    _test=this->dualImageSpace(),
+                    _matrix=M_matrixFull ) +=  on( range , de, ie, expr );
+        }
+#endif
 
         M_backend->solve( M_matrixFull, de, ie );
 
         return de;
     }
-
 
     template<typename RhsExpr>
     domain_element_type
@@ -292,7 +289,7 @@ private :
         {
             a = integrate( elements( this->domainSpace()->mesh() ),
                            trans( idt( this->domainSpace()->element() ) ) /*trial*/
-                           *id( this->domainSpace()->element() ) /*test*/
+                           *id( this->dualImageSpace()->element() ) /*test*/
                          );
         }
         break;
@@ -301,11 +298,11 @@ private :
         {
             a = integrate( elements( this->domainSpace()->mesh() ),
                            trans( idt( this->domainSpace()->element() ) ) /*trial*/
-                           *id( this->domainSpace()->element() ) /*test*/
+                           *id( this->dualImageSpace()->element() ) /*test*/
                            +
                            trace( gradt( this->domainSpace()->element() )
-                                  * trans( grad( this->domainSpace()->element() ) ) )
-                         );
+                                  * trans( grad( this->dualImageSpace()->element() ) ) )
+                           );
         }
         break;
 
@@ -313,21 +310,21 @@ private :
         {
             a = integrate( elements( this->domainSpace()->mesh() ),
                            trans( idt( this->domainSpace()->element() ) ) /*trial*/
-                           *id( this->domainSpace()->element() ) /*test*/
+                           *id( this->dualImageSpace()->element() ) /*test*/
                            +
                            M_epsilon *
                            trace( gradt( this->domainSpace()->element() )
-                                  * trans( grad( this->domainSpace()->element() ) ) )
-                         );
+                                  * trans( grad( this->dualImageSpace()->element() ) ) )
+                           );
             //weak boundary conditions
             a += integrate( boundaryfaces( this->domainSpace()->mesh() ),
-                            M_epsilon*( -trans( id( this->domainSpace()->element() ) )*gradt( this->domainSpace()->element() )*vf::N() ) );
+                            M_epsilon*( -trans( id( this->dualImageSpace()->element() ) )*gradt( this->domainSpace()->element() )*vf::N() ) );
             a += integrate( boundaryfaces( this->domainSpace()->mesh() ),
-                            M_epsilon*( -trans( idt( this->domainSpace()->element() ) )* grad( this->domainSpace()->element() )*vf::N() ) );
+                            M_epsilon*( -trans( idt( this->domainSpace()->element() ) )* grad( this->dualImageSpace()->element() )*vf::N() ) );
             a += integrate( boundaryfaces( this->domainSpace()->mesh() ),
                             M_epsilon*( M_gamma * trans( idt( this->domainSpace()->element() ) ) /*trial*/
-                                        *id( this->domainSpace()->element() ) / vf::hFace()   /*test*/
-                                      ) );
+                                        *id( this->dualImageSpace()->element() ) / vf::hFace()   /*test*/
+                                        ) );
         }
         break;
 
@@ -335,11 +332,11 @@ private :
         {
             a = integrate( elements( this->domainSpace()->mesh() ),
                            trans( idt( this->domainSpace()->element() ) ) /*trial*/
-                           *id( this->domainSpace()->element() ) /*test*/
+                           *id( this->dualImageSpace()->element() ) /*test*/
                            +
                            ( divt( this->domainSpace()->element() ) *
-                             div( this->domainSpace()->element() ) )
-                         );
+                             div( this->dualImageSpace()->element() ) )
+                           );
         }
         break;
 
@@ -347,21 +344,21 @@ private :
         {
             a = integrate( elements( this->domainSpace()->mesh() ),
                            trans( idt( this->domainSpace()->element() ) ) /*trial*/
-                           *id( this->domainSpace()->element() ) /*test*/
+                           *id( this->dualImageSpace()->element() ) /*test*/
                            +
                            // only for 2D, need to specialize this for 3D
                            curlzt( this->domainSpace()->element() )
-                           * curlz( this->domainSpace()->element() )
+                           * curlz( this->dualImageSpace()->element() )
                          );
         }
         break;
 
         case LIFT:
-            {
-                a = integrate( elements( this->domainSpace()->mesh() ),
-                               trace( gradt( this->domainSpace()->element() )
-                                      * trans( grad( this->domainSpace()->element() ) ) )
-                               );
+        {
+            a = integrate( elements( this->domainSpace()->mesh() ),
+                           trace( gradt( this->domainSpace()->element() )
+                                  * trans( grad( this->dualImageSpace()->element() ) ) )
+                           );
 
         }
         break;
@@ -371,9 +368,9 @@ private :
     }
 
     backend_ptrtype M_backend;
-    ProjectorType M_proj_type;
     const double M_epsilon;
     const double M_gamma;
+    ProjectorType M_proj_type;
     WeakDirichlet M_dir;
     matrix_ptrtype M_matrix;
     matrix_ptrtype M_matrixFull;
