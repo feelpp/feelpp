@@ -20,6 +20,7 @@
    Fixes issue 35
  - support Gmsh from both executable and library(preferred and more powerful)
    (Fixes issue 43)
+ - support for PETSc 3.3
 
 ** Bugs
 
@@ -41,6 +42,11 @@
 
 *** feelmesh
  - added 2D and 3D mesh adaptation using Gmsh
+
+*** feeldiscr
+ - seamless parallelisation of the FunctionSpace data structure in the case of
+   product of function spaces
+ - lift operator merged with projection operator
 
 *** feelfilters
  - support for mesh generation directly from Gmsh library
