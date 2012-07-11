@@ -166,6 +166,11 @@ public:
     {
         return M_stats;
     }
+    //! return the statistics associated to the simget after calling run
+    ptree::ptree& stats()
+    {
+        return M_stats;
+    }
 
     //@}
 
