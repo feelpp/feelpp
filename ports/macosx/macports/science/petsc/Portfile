@@ -29,7 +29,7 @@ checksums           md5     712dce5c6e6669f2dfe628d48a92de62 \
                     rmd160  8ec915871f8d5463428c321d2af0a51b42ea730f
 
 depends_build-append  port:cmake
-depends_lib-append  port:openmpi
+depends_lib-append  port:openmpi port:scotch port:suitesparse
 
 configure.args  --with-python --with-debugging=0 \
 		--with-c-support=1 --with-c++-support=1 --with-pic=fPIC \
@@ -40,7 +40,10 @@ configure.args  --with-python --with-debugging=0 \
 		--with-mpiexec=${prefix}/bin/openmpiexec \
         --with-lapack-lib=/usr/lib/liblapack.dylib \
         --with-blas-lib=/usr/lib/libblas.dylib \
-        --download-umfpack=1 \
+        --with-cholmod=1 --with-cholmod-include=${prefix}/include/ \
+        --with-cholmod-lib=\[${prefix}/lib/libcholmod.a,${prefix}/lib/libcolamd.a\] \
+        --with-umfpack=1 --with-umfpack-include=${prefix}/include/ \
+        --with-umfpack-lib=\[${prefix}/lib/libumfpack.a,${prefix}/lib/libcholmod.a,${prefix}/lib/libcolamd.a,${prefix}/lib/libamd.a,${prefix}/lib/libsuitesparseconfig.a\] \
         --download-ml \
         --download-metis \
         --download-parmetis \
