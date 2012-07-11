@@ -918,7 +918,9 @@ Application::run()
                 runonly.find( i->name() ) == std::string::npos )
             continue;
 
-        std::string fnameall = (boost::format( "%1%-%2%.dat" )% i->name()% Environment::numberOfProcessors() ).str();
+        std::string fname = (boost::format( "%1%-%2%.dat" )% i->name()% Environment::numberOfProcessors() ).str();
+        std::ofstream ofs( fname.c_str() );
+        std::string fnameall = (boost::format( "%1%-%2%-all.dat" )% i->name()% Environment::numberOfProcessors() ).str();
         std::ofstream ofsall( fnameall.c_str() );
         std::string fnameerrors = (boost::format( "%1%-%2%-errors.dat" )% i->name()% Environment::numberOfProcessors() ).str();
         std::ofstream ofserrors( fnameerrors.c_str() );
@@ -952,6 +954,7 @@ Application::run()
         }
         if ( !prepare )
         {
+            this->printStats( ofs, Application::ALL );
             this->printStats( ofsall, Application::ALL|Application::FLAT );
             this->printStats( ofserrors, Application::ERRORS|Application::FLAT );
             this->printStats( ofstime, Application::TIME|Application::FLAT );
