@@ -18,6 +18,8 @@
  - added cmake macro feelpp_add application, see http://code.google.com/p/feelpp/issues/detail?id=11&can=1
  - port on the TGCC
    Fixes issue 35
+ - support Gmsh from both executable and library(preferred and more powerful)
+   (Fixes issue 43)
 
 ** Bugs
 
@@ -37,6 +39,7 @@
 
 *** feelfilters
  - support for mesh generation directly from Gmsh library
+ - support for element splitting (Fixes issue 40)
 
 ** Documentation
 
