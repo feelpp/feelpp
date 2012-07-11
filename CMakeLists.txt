@@ -59,6 +59,7 @@ macro(set_config_option VARNAME STRING)
   message(STATUS "Found " ${STRING})
 endmacro(set_config_option)
 
+OPTION(FEELPP_ENABLE_VERBOSE_CMAKE "enable Feel++ verbose cmake" OFF)
 
 OPTION(FEELPP_ENABLE_SVN "enable Feel++ looking up for svn information" OFF)
 SET(FEELPP_SCM "svn")
