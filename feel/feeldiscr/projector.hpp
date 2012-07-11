@@ -103,7 +103,7 @@ public :
                ProjectorType proj_type=L2,
                double epsilon = 0.01,
                double gamma = 20,
-               WeakDirichlet dirichlet_type = WEAK
+               DirichletType dirichlet_type = WEAK
              )
         :
         ol_type( domainSpace, dualImageSpace, backend ),
@@ -112,7 +112,8 @@ public :
         M_gamma( gamma ),
         M_proj_type( proj_type ),
         M_dir( dirichlet_type ),
-        M_matrix( M_backend->newMatrix( _trial=domainSpace, _test=dualImageSpace ) )
+        M_matrix( M_backend->newMatrix( _trial=domainSpace, _test=dualImageSpace ) ),
+        M_matrixFull( M_backend->newMatrix( _trial=domainSpace, _test=dualImageSpace ) )
     {
         initMatrix();
     }
@@ -132,6 +133,13 @@ public :
         typedef typename vf::detail::clean2_type<Args,tag::quad1, _Q< vf::ExpressionOrder<_range_type,_expr_type>::value_1 > >::type _quad1_type;
     };
 
+    template<typename Range, typename Expr>
+    void applyOn( Range range, Expr expr)
+    {
+        typedef typename boost::tuples::template element<0, Range>::type idim_type;
+        applyOn( range, expr, mpl::int_<idim_type::value>() );
+    }
+
     BOOST_PARAMETER_MEMBER_FUNCTION( ( domain_element_type ),
                                      project,
                                      tag,
@@ -147,9 +155,11 @@ public :
                                    )
     {
         using namespace vf;
-        domain_element_type de = this->domainSpace()->element();
 
-        auto ie = M_backend->newVector( this->dualImageSpace() );
+        de = this->domainSpace()->element();
+
+        ie = M_backend->newVector( this->dualImageSpace() );
+
         form1( _test=this->dualImageSpace(), _vector=ie, _init=true );
 
         if ( M_proj_type != LIFT )
@@ -196,14 +206,8 @@ public :
         M_matrixFull->close();
         M_matrixFull->addMatrix( 1., M_matrix );
 
-#if defined(USE_LIFT)
-        if ( ( M_proj_type == LIFT ) && ( M_dir == STRONG ) && ( range.get<0>() !=0 ) )
-        {
-            form2 ( _trial=this->domainSpace(),
-                    _test=this->dualImageSpace(),
-                    _matrix=M_matrixFull ) +=  on( range , de, ie, expr );
-        }
-#endif
+        if ( ( M_proj_type == LIFT ) && ( M_dir == STRONG )  )
+            this->applyOn(range, expr);
 
         M_backend->solve( M_matrixFull, de, ie );
 
@@ -217,16 +221,12 @@ public :
         return this->project( rhs_expr );
     }
 
-
-
     template<typename RhsExpr>
     void
     operator()( domain_element_type& de, RhsExpr const& rhs_expr )
     {
         de = this->project( rhs_expr );
     }
-
-
 
     domain_element_type
     operator()( image_element_type const& ie )
@@ -236,14 +236,11 @@ public :
         return de ;
     }
 
-
-
     void
     operator()( domain_element_type &de, image_element_type const& ie )
     {
         M_backend->solve( M_matrix, de, ie );
     }
-
 
     template<typename Range, typename Expr>
     domain_element_type
@@ -252,15 +249,12 @@ public :
         return this->project( expr, range );
     }
 
-
     void
     apply( domain_element_type& de,
            image_element_type const& ie )
     {
         M_backend->solve( M_matrix, de, ie );
     }
-
-
 
     template<typename RhsExpr>
     void
@@ -367,13 +361,27 @@ private :
         M_matrix->close();
     }
 
+    template<typename Range, typename Expr>
+    void applyOn( Range range, Expr expr, mpl::int_<MESH_ELEMENTS> ){}
+
+    template<typename Range, typename Expr>
+    void applyOn( Range range, Expr expr, mpl::int_<MESH_FACES> )
+    {
+        form2 ( _trial=this->domainSpace(),
+                _test=this->dualImageSpace(),
+                _matrix=M_matrixFull ) +=  on( _range=range , _element=de, _rhs=ie, _expr=expr );
+    }
+
+
     backend_ptrtype M_backend;
     const double M_epsilon;
     const double M_gamma;
     ProjectorType M_proj_type;
-    WeakDirichlet M_dir;
+    DirichletType M_dir;
     matrix_ptrtype M_matrix;
     matrix_ptrtype M_matrixFull;
+    domain_element_type de;
+    vector_ptrtype ie;
 
 };//Projector
 
@@ -391,7 +399,7 @@ boost::shared_ptr< Projector<TDomainSpace, TDualImageSpace> >
 projector( boost::shared_ptr<TDomainSpace> const& domainspace,
            boost::shared_ptr<TDualImageSpace> const& imagespace,
            typename Projector<TDomainSpace, TDualImageSpace>::backend_ptrtype const& backend = Backend<double>::build( BACKEND_PETSC ),
-           ProjectorType proj_type=L2, double epsilon=0.01, double gamma = 20, WeakDirichlet dirichlet_type = WEAK )
+           ProjectorType proj_type=L2, double epsilon=0.01, double gamma = 20, DirichletType dirichlet_type = WEAK )
 {
     typedef Projector<TDomainSpace, TDualImageSpace> Proj_type;
     boost::shared_ptr<Proj_type> proj( new Proj_type( domainspace, imagespace, backend, proj_type, epsilon, gamma, dirichlet_type ) );
@@ -406,11 +414,12 @@ BOOST_PARAMETER_FUNCTION( ( typename detail::projector_args<Args>::return_type )
                             ( imageSpace,   *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
                           )
                           ( optional
-                            ( type, *, L2 )
+                            ( type, (ProjectorType), L2 )
+                            ( penaldir, *( boost::is_arithmetic<mpl::_> ), 20. )
                             ( backend, *, Backend<double>::build( BACKEND_PETSC ) )
                           ) )
 {
-    return projector( domainSpace,imageSpace, backend, type );
+    return projector( domainSpace,imageSpace, backend, type, 0.01, penaldir );
 }
 
 BOOST_PARAMETER_FUNCTION( ( typename detail::lift_args<Args>::lift_return_type ),
@@ -420,11 +429,12 @@ BOOST_PARAMETER_FUNCTION( ( typename detail::lift_args<Args>::lift_return_type )
                             ( domainSpace,   *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
                           )
                           ( optional
-                            ( type, *, WeakDirichlet::WEAK )
+                            ( type, (DirichletType), WEAK )
+                            ( penaldir, *( boost::is_arithmetic<mpl::_> ), 20. )
                             ( backend, *, Backend<double>::build( BACKEND_PETSC ) )
                             ) )
 {
-    return projector( domainSpace, domainSpace, backend, ProjectorType::LIFT, 0.01 , 20, type );
+    return projector( domainSpace, domainSpace, backend, ProjectorType::LIFT, 0.01 , penaldir, type );
 }
 
 

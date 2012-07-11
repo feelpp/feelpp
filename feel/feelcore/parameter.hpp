@@ -210,6 +210,7 @@ BOOST_PARAMETER_NAME( partitioner )
 
 BOOST_PARAMETER_NAME( save )
 BOOST_PARAMETER_NAME( ddmethod )
+BOOST_PARAMETER_NAME( penaldir )
 
 }
 

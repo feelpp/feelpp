@@ -77,19 +77,15 @@ public :
     /** @name  Methods
      */
     //@{
-    template<typename Args,typename IntEltsDefault>
-    struct integrate_type
-    {
-        typedef typename vf::detail::clean_type<Args,tag::expr>::type _expr_type;
-        typedef typename vf::detail::clean2_type<Args,tag::range,IntEltsDefault>::type _range_type;
-    };
 
     BOOST_PARAMETER_MEMBER_FUNCTION( ( trace_element_type ),
                                      trace,
                                      tag,
                                      ( required
-                                       ( range,  * )
                                        ( expr,   * )
+                                     )
+                                     ( optional
+                                       ( range,  *, boundaryfaces( M_domainSpace->mesh() ) )
                                      ) )
 
     {

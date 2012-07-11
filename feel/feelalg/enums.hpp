@@ -244,7 +244,7 @@ enum AitkenType
 /**
  *
  */
-enum WeakDirichlet
+enum DirichletType
 {
     STRONG=0,
     WEAK=1
