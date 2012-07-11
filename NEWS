@@ -30,6 +30,11 @@
 
 ** Library
 
+*** feelcore
+ - improved benchmarking framework and in particular the handling of the
+   statistics provided by the benchmark with views per key and flat views. In
+   the last case various files are automatically generated for each benchmark
+
 *** feelalg
  - added eigen(3.1) backend with support for dense and sparse eigen matrices
    Fixes issue 36
