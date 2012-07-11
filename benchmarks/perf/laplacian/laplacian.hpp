@@ -217,7 +217,6 @@ Laplacian<Dim, BasisU, Entity>::run()
     Log() << "[dof]         number of dof: " << Xh->nDof() << "\n";
     Log() << "[dof]    number of dof/proc: " << Xh->nLocalDof() << "\n";
 
-    M_stats.put( "h",meshSize() );
     size_type gnelts=0;
     mpi::all_reduce( this->comm(), Xh->mesh()->numElements() , gnelts, [] ( size_type x, size_type y ) {return x + y;} );
 
