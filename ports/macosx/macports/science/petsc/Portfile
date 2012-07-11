@@ -47,7 +47,8 @@ configure.args  --with-python --with-debugging=0 \
         --download-blacs \
         --download-scalapack \
         --download-mumps \
-        --download-ptscotch \
+        --with-ptscotch=1 --with-ptscotch-include=${prefix}/include/ \
+        --with-ptscotch-lib=\[${prefix}/lib/libptesmumps.a,${prefix}/lib/libptscotch.a,${prefix}/lib/libptscotcherr.a\] \
 		--with-fc=${prefix}/bin/openmpif90 \
 		--LIBS=-lstdc++
 
