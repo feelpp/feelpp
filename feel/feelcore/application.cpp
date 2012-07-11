@@ -1263,8 +1263,8 @@ Application::printStats( std::ostream& out,
             en = M_stats.find( i->name() )->second.end();
             for ( ; it != en; ++it )
             {
-                double h  = it->template get<double>( "h" );
-                int l  = it->template get<int>( "level" );
+                double h  = it->get<double>( "h" );
+                int l  = it->get<int>( "level" );
                 out << std::right << std::setw( 10 ) << l
                     << std::right << std::setw( 10 ) << std::fixed  << std::setprecision( 4 ) << h;
                 BOOST_FOREACH( auto key, keys )
