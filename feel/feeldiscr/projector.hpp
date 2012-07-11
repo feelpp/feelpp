@@ -55,8 +55,8 @@ struct projector_args
 template<typename Args>
 struct lift_args
 {
-    typedef typename vf::detail::clean_type<Args,tag::domainSpace>::type::value_type domain_type;
-    typedef boost::shared_ptr<Projector<domain_type,domain_type> > lift_return_type;
+    typedef typename vf::detail::clean_type<Args,tag::domainSpace>::type::value_type domain1_type;
+    typedef boost::shared_ptr<Projector<domain1_type,domain1_type> > lift_return_type;
 };
 
 } // detail
@@ -78,7 +78,7 @@ public :
      */
     //@{
 
-    // typedef Operator<DomainSpace, DualImageSpace> super_type;
+
     typedef OperatorLinear<DomainSpace, DualImageSpace> ol_type;
 
     typedef typename super::domain_space_type domain_space_type;
@@ -133,7 +133,6 @@ public :
     {
         typedef typename vf::detail::clean_type<Args,tag::expr>::type _expr_type;
         typedef typename vf::detail::clean2_type<Args,tag::range,IntEltsDefault>::type _range_type;
-        //typedef _Q< ExpressionOrder<_range_type,_expr_type>::value > the_quad_type;
         typedef typename vf::detail::clean2_type<Args,tag::quad, _Q< vf::ExpressionOrder<_range_type,_expr_type>::value > >::type _quad_type;
         typedef typename vf::detail::clean2_type<Args,tag::quad1, _Q< vf::ExpressionOrder<_range_type,_expr_type>::value_1 > >::type _quad1_type;
     };
@@ -144,7 +143,7 @@ public :
                                      ( required
                                        ( expr,   * ) )
                                      ( optional
-                                       ( range,   *,( M_proj_type != LIFT ) ? elements( this->domainSpace()->mesh() ) : boundaryfaces(this->domainSpace()->mesh()) )
+                                       ( range,   *, ( M_proj_type != LIFT ) ? elements( this->domainSpace()->mesh() ) : boundaryfaces(this->domainSpace()->mesh()) )
                                        ( quad,   *, ( typename integrate_type<Args,decltype( elements( this->domainSpace()->mesh() ) )>::_quad_type() ) )
                                        ( quad1,   *, ( typename integrate_type<Args,decltype( elements( this->domainSpace()->mesh() ) )>::_quad1_type() ) )
                                        ( geomap, *, GeomapStrategyType::GEOMAP_OPT )
@@ -159,53 +158,54 @@ public :
         if ( M_proj_type != LIFT )
         {
             form1( _test=this->dualImageSpace(), _vector=ie ) +=
-                integrate( _range=range, _expr=expr * id( this->dualImageSpace()->element() ),
-                           _quad=quad, _quad1=quad1, _geomap=geomap );
+                integrate( _range=range, _expr=expr * id( this->dualImageSpace()->element() ) );
+
         }
         else if ( ( M_proj_type == LIFT ) && ( M_dir == WEAK ) )
         {
             form1( _test=this->dualImageSpace(), _vector=ie ) +=
                 integrate( _range=range,
                            _expr=expr*( -grad( this->dualImageSpace()->element() )*vf::N() +
-                                        M_gamma / vf::hFace() *id( this->dualImageSpace()->element() ) ),
-                           _quad=quad, _quad1=quad1, _geomap=geomap );
+                                        M_gamma / vf::hFace() *id( this->dualImageSpace()->element() ) ) );
         }
 
-        //weak boundary conditions
+        // //weak boundary conditions
         if ( M_proj_type == DIFF )
         {
             form1( _test=this->dualImageSpace(), _vector=ie ) +=
                 integrate( _range=boundaryfaces( this->domainSpace()->mesh() ),
                            _expr=expr*M_epsilon*( -grad( this->domainSpace()->element() )*vf::N() +
-                                                  M_gamma / vf::hFace() *id( this->dualImageSpace()->element() ) ),
-                           _quad=quad );
+                                                  M_gamma / vf::hFace() *id( this->dualImageSpace()->element() )  ) );
         }
 
         ie->close();
 
         M_matrixFull = M_backend->newMatrix( _trial=this->domainSpace(), _test=this->dualImageSpace() );
-        auto bilinearForm = form2( _trial=this->domainSpace(), _test=this->dualImageSpace(), _matrix=M_matrixFull );
+
+        form2( _trial=this->domainSpace(), _test=this->dualImageSpace(), _matrix=M_matrixFull, _init=true );
 
         if ( ( M_proj_type == LIFT ) && ( M_dir == WEAK ) )
         {
-            bilinearForm +=
+
+            form2 ( _trial=this->domainSpace(),
+                    _test=this->dualImageSpace(),
+                    _matrix=M_matrixFull ) +=
                 integrate( _range=range, _expr=
                            ( -trans( id( this->dualImageSpace()->element() ) )*gradt( this->domainSpace()->element() )*vf::N()
                              -trans( idt( this->domainSpace()->element() ) )* grad( this->dualImageSpace()->element() )*vf::N()
                              + M_gamma * trans( idt( this->domainSpace()->element() ) ) /*trial*/
-                             *id( this->dualImageSpace()->element() ) / vf::hFace()   /*test*/
-                             ) );
+                             *id( this->dualImageSpace()->element() ) / vf::hFace()   /*test*/ ) );
         }
 
         M_matrixFull->close();
         M_matrixFull->addMatrix( 1., M_matrix );
 
-        if ( ( M_proj_type == LIFT ) && ( M_dir == STRONG ) )
-        {
-            form2 ( _trial=this->domainSpace(),
-                    _test=this->dualImageSpace(),
-                    _matrix=M_matrixFull ) +=  on( range , de, ie, expr );
-        }
+        // if ( ( M_proj_type == LIFT ) && ( M_dir == STRONG ) )
+        // {
+        //     form2 ( _trial=this->domainSpace(),
+        //             _test=this->dualImageSpace(),
+        //             _matrix=M_matrixFull ) +=  on( _range=range , _element=de, _rhs=ie, _expr=expr );
+        // }
 
         M_backend->solve( M_matrixFull, de, ie );
 
@@ -371,9 +371,9 @@ private :
     }
 
     backend_ptrtype M_backend;
+    ProjectorType M_proj_type;
     const double M_epsilon;
     const double M_gamma;
-    ProjectorType M_proj_type;
     WeakDirichlet M_dir;
     matrix_ptrtype M_matrix;
     matrix_ptrtype M_matrixFull;
