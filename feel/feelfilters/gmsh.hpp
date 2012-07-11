@@ -863,6 +863,7 @@ BOOST_PARAMETER_FUNCTION(
 
         std::string fname = desc->generate( desc->prefix(), desc->description(), force_rebuild, parametricnodes );
 
+#if !defined(FEELPP_HAS_GMSH_LIBRARY)
         // refinement if option is enabled to a value greater or equal to 1
         if ( refine )
         {
@@ -870,6 +871,7 @@ BOOST_PARAMETER_FUNCTION(
             Gmsh gmsh;
             fname = gmsh.refine( fname, refine, parametricnodes );
         }
+#endif
 
         ImporterGmsh<_mesh_type> import( fname, FEELPP_GMSH_FORMAT_VERSION, worldcomm );
 
