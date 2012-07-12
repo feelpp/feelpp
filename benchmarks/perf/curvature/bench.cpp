@@ -121,7 +121,7 @@ int main( int argc, char** argv )
 
     //    benchmark.add( new Curvature<3, Lagrange<2, Scalar>, Lagrange<2, Vectorial>, Simplex>( "2D-P3-Simplex", benchmark.vm(), benchmark.about() ) );
 
-    benchmark.setStats( boost::assign::list_of( "e.nod" )( "e.l2" )( "e.sm" ) );
+    benchmark.setStats( boost::assign::list_of( "e.nod" )( "e.l2" )( "e.sm" )( "e.hs" ) );
 
     benchmark.run();
     benchmark.printStats( std::cout );
