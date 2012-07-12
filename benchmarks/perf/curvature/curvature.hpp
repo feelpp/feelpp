@@ -38,27 +38,29 @@
 #include <feel/feelalg/backend.hpp>
 
 #include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feeldiscr/projector.hpp>
 
 #include <feel/feelfilters/gmsh.hpp>
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelpoly/lagrange.hpp>
-#include <feel/feelpoly/crouzeixraviart.hpp>
-
-
+//#include <feel/feelpoly/crouzeixraviart.hpp>
 
 #include <feel/feelmesh/elements.hpp>
 
 #include <feel/feelvf/vf.hpp>
 
+#define quad 10
+
 namespace Feel
 {
 /**
  * \class Curvature class
- * \brief solves the curvature equations
+ * \brief compute the curvature of a shape for by different methods
  *
  */
 template<int Dim,
          typename BasisU,
+         typename BasisU_Vec,
          template<uint16_type,uint16_type,uint16_type> class Entity>
 class Curvature
     :
@@ -66,6 +68,8 @@ public Simget
 {
     typedef Simget super;
 public:
+
+    enum shape_type {circle=1 /*,ellipse, star*/ };
 
     typedef double value_type;
 
@@ -81,12 +85,21 @@ public:
     //# marker1 #
     typedef BasisU basis_u_type;
     typedef bases<basis_u_type> basis_type;
+
+
+    typedef BasisU_Vec basis_u_Vec_type;
+    typedef bases<basis_u_Vec_type> basis_Vec_type;
     //# endmarker1 #
 
     /*space*/
     typedef FunctionSpace<mesh_type, basis_type> space_type;
     typedef boost::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
+
+    typedef FunctionSpace<mesh_type, basis_Vec_type> space_Vec_type;
+    typedef boost::shared_ptr<space_Vec_type> space_Vec_ptrtype;
+    typedef typename space_Vec_type::element_type element_Vec_type;
+
 
     /* export */
     typedef Exporter<mesh_type> export_type;
@@ -99,8 +112,8 @@ public:
         M_basis_name( basis_name ),
         exporter()
     {
-        mu = this->vm()["mu"].template as<value_type>();
-        penalbc = this->vm()["bccoeff"].template as<value_type>();
+        // mu = this->vm()["mu"].template as<value_type>();
+        // penalbc = this->vm()["bccoeff"].template as<value_type>();
     }
 
 
@@ -113,39 +126,43 @@ public:
      * run the convergence test
      */
     void run();
-    void run( const double* X, unsigned long P, double* Y, unsigned long N )
-    {
-        run();
-    }
 
 private:
 
     /**
      * export results to ensight format (enabled by  --export cmd line options)
      */
-    void exportResults( element_type& u, element_type& v );
+    void exportResults( element_type& Delta, element_type& k_l2, element_type& k_smooth, element_type& k_nod);
 
 private:
 
     backend_ptrtype M_backend;
     std::string M_basis_name;
-    double mu;
-    double penalbc;
 
     boost::shared_ptr<export_type> exporter;
+
+    // bench parameters
+    double x0, y0, Radius;
+    element_type init_shape;
+
 }; // Curvature
 
 
-template<int Dim, typename BasisU, template<uint16_type,uint16_type,uint16_type> class Entity>
+    template<int Dim, typename BasisU, typename BasisU_Vec, template<uint16_type,uint16_type,uint16_type> class Entity>
 void
-Curvature<Dim, BasisU, Entity>::run()
+Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
 {
     using namespace Feel::vf;
+
+    static double pi = M_PI;
 
     int nparts = Environment::worldComm().size();
     bool prepare = this->vm()["benchmark.prepare"].template as<bool>();
     if ( prepare )
         nparts = this->vm()["benchmark.partitions"].template as<int>();
+
+    // give as parameter when other shapes are avaliable
+    shape_type shape = circle;
 
     if ( this->vm().count( "nochdir" ) == false )
     {
@@ -160,6 +177,7 @@ Curvature<Dim, BasisU, Entity>::run()
 
     //! init backend
     M_backend = backend_type::build( this->vm() );
+
     exporter =  boost::shared_ptr<export_type>( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) );
 
     boost::mpi::timer t;
@@ -175,8 +193,8 @@ Curvature<Dim, BasisU, Entity>::run()
      */
     auto mesh = createGMSHMesh( _mesh=new mesh_type,
                                 _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
-                                _desc=domain( _name= ( boost::format( "%1%-%2%-%3%" ) % "circle" % Dim % 1 ).str() ,
-                                              _shape="ellipsoid",
+                                _desc=domain( _name= ( boost::format( "%1%-%2%-%3%" ) % "hypercube" % Dim % 1 ).str() ,
+                                              _shape="hypercube",
                                               _usenames=true,
                                               _dim=Dim,
                                               _h=meshSizeInit(),
@@ -186,22 +204,113 @@ Curvature<Dim, BasisU, Entity>::run()
                                 _refine=level(),
                                 _partitions=nparts );
 
-    M_stats.put( "t.init.mesh",t.elapsed() );
+    // space
+    space_ptrtype Xh = space_type::New( mesh );
+    space_Vec_ptrtype Xh_Vec = space_Vec_type::New( mesh );
+
+    // backends
+    auto backend_l2 = backend_type::build( this->vm() );
+    auto backend_l2Vec = backend_type::build( this->vm() );
+    auto backend_l2Smooth = backend_type::build( this->vm() );
+    auto backend_l2SmoothVec = backend_type::build( this->vm() );
+
+    // projectors
+    double diffnum = meshSizeInit() * 0.01;
+    auto l2p = projector(Xh , Xh, backend_l2, L2);
+    auto l2pVec = projector(Xh_Vec, Xh_Vec, backend_l2Vec, L2);
+    auto smooth = projector(Xh , Xh, backend_l2Smooth, DIFF, diffnum, 20);
+    auto smoothVec = projector(Xh_Vec, Xh_Vec, backend_l2SmoothVec, DIFF, diffnum, 20);
+
     t.restart();
     if ( prepare ) return;
+
+    switch (shape)
+        {
+        case circle :
+            {
+                auto X = Px() - x0;
+                auto Y = Py() - y0;
+                Radius = 0.5;
+                // exact signed distance function to a circle
+                // might be better with a l2 projection ???
+                init_shape = vf::project(Xh, elements(mesh),
+                                   sqrt(pow(X, 2.) + pow(Y, 2.)) - Radius );
+                break;
+            }//circle
+        } //switch
+
+    // "delta like" function
+    auto eps = 1.5 * vf::h();
+    auto Delta = l2p->project(vf::chi( idv(init_shape)<-eps )*vf::constant(0.0)
+                              +
+                              vf::chi( idv(init_shape)>=-eps )*vf::chi( idv(init_shape)<=eps )*
+                              1/(2*eps) *( 1 + cos(pi*idv(init_shape)/eps) )
+                              +
+                              vf::chi(idv(init_shape)>eps)*vf::constant(0.0) );
+
+
+    /* +++++++++++++++ compute quantities with different projections +++++++++++ */
+
+    /* ------------------ nodal projection ---------------- */
+    auto n_nod = vf::project(Xh_Vec, elements(mesh),
+                             trans(gradv(init_shape)) /
+                             sqrt( gradv(init_shape) * trans(gradv(init_shape))));
+    auto k_nod = vf::project(Xh, elements(mesh),
+                             divv(n_nod) );
+
+
+    /* ------------------ L2 projection ---------------- */
+    auto n_l2 = l2pVec->project( gradv(init_shape) /
+                                 sqrt( gradv(init_shape) * trans(gradv(init_shape))), _quad=_Q<quad>() );
+    auto k_l2 = l2p->project( divv(n_l2), _quad=_Q<quad>() );
+
+
+    /* ------------------ smooth projection ---------------- */
+    auto n_smooth = smoothVec->project( gradv(init_shape) /
+                                        sqrt( gradv(init_shape) * trans(gradv(init_shape))), _quad=_Q<quad>() );
+    auto k_smooth = smooth->project( divv(n_smooth),_quad=_Q<quad>() );
+
+
+    // +++++++++++++++++++ error computation ++++++++++++++++++++++
+    double perimeter = integrate(elements(mesh), idv(Delta), _Q<quad>()).evaluate()(0,0);
+    double error_perimeter = std::sqrt( (perimeter - 2 * pi * Radius)*(perimeter - 2 * pi * Radius) );
+    M_stats.put( "e.perim", error_perimeter);
+
+    double error_nod = integrate(elements(mesh),
+                                 pow(idv(k_nod) -  1 / Radius, 2.) * idv(Delta),
+              _Q<quad>() ).evaluate()(0,0) / perimeter ;
+    error_nod = std::sqrt(error_nod);
+    M_stats.put( "e.k.nod", error_nod);
+
+    double error_l2 = integrate(elements(mesh),
+                                pow(idv(k_l2) -  1 / Radius, 2.) * idv(Delta),
+              _Q<quad>() ).evaluate()(0,0) / perimeter ;
+    error_l2 = std::sqrt(error_l2);
+    M_stats.put( "e.k.l2", error_l2);
+
+    double error_smooth = integrate(elements(mesh),
+                             pow(idv(k_smooth) - 1 / Radius, 2.) * idv(Delta),
+              _Q<quad>() ).evaluate()(0,0) / perimeter ;
+    error_smooth = std::sqrt(error_smooth);
+    M_stats.put( "e.k.sm", error_smooth);
+
+    exportResults(Delta, k_l2, k_smooth, k_nod);
 
 } // Curvature::run
 
 
-template<int Dim, typename BasisU, template<uint16_type,uint16_type,uint16_type> class Entity>
+
+template<int Dim, typename BasisU, typename BasisU_Vec, template<uint16_type,uint16_type,uint16_type> class Entity>
 void
-Curvature<Dim, BasisU, Entity>::exportResults( element_type& u, element_type& v )
+Curvature<Dim, BasisU, BasisU_Vec, Entity>::exportResults( element_type& Delta, element_type& k_l2, element_type& k_smooth, element_type& k_nod)
 {
     if ( exporter->doExport() )
     {
-        exporter->step( 0 )->setMesh( u.functionSpace()->mesh() );
-        exporter->step( 0 )->add( "u", u );
-        exporter->step( 0 )->add( "u_exact", v );
+        exporter->step( 0 )->setMesh( Delta.functionSpace()->mesh() );
+        exporter->step( 0 )->add( "Delta", Delta );
+        exporter->step( 0 )->add("k_l2", k_l2);
+        exporter->step( 0 )->add("k_smooth", k_smooth);
+        exporter->step( 0 )->add("k_nod", k_nod);
         exporter->save();
     }
 } // Curvature::export
