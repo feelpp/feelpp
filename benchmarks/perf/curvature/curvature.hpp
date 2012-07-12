@@ -26,7 +26,7 @@
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2009-01-04
  */
-#if !defined( __FEELPP_BENCH_CURVATURE_HPP)
+#ifndef __FEELPP_BENCH_CURVATURE_HPP
 #define __FEELPP_BENCH_CURVATURE_HPP 1
 
 #include <boost/any.hpp>
@@ -137,7 +137,7 @@ private:
     /**
      * export results to ensight format (enabled by  --export cmd line options)
      */
-    void exportResults( element_type& Delta, element_type& k_l2, element_type& k_smooth, element_type& k_nod);
+    void exportResults( element_type& Delta, element_type& k_l2, element_type& k_smooth, element_type& k_nod, element_type& k_hess);
 
 private:
 
@@ -244,7 +244,7 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
                 // exact signed distance function to a circle
                 // might be better with a l2 projection ???
                 init_shape = vf::project(Xh, elements(mesh),
-                                   sqrt(pow(X, 2.) + pow(Y, 2.)) - Radius );
+                                   sqrt( X*X + Y*Y ) - Radius );
                 break;
             }//circle
         } //switch
@@ -281,10 +281,20 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
     auto k_smooth = smooth->project( divv(n_smooth),_quad=_Q<quad>() );
 
 
+    /* ------------------ from hessian (ok if |grad(init_shape)| = 1 ) ---------------- */
+    auto k_hess = vf::project(Xh, elements(mesh), trace( hessv(init_shape) ) );
+
+
     // +++++++++++++++++++ error computation ++++++++++++++++++++++
     double perimeter = integrate(elements(mesh), idv(Delta), _Q<quad>()).evaluate()(0,0);
     double error_perimeter = std::sqrt( (perimeter - 2 * pi * Radius)*(perimeter - 2 * pi * Radius) );
     M_stats.put( "e.l2.perim", error_perimeter);
+
+    double int_modgradphi = integrate(elements(mesh), sqrt( gradv(init_shape) * trans(gradv(init_shape))), _quad = _Q<quad>() ).evaluate()(0,0);
+    int_modgradphi /= integrate(elements(mesh), cst(1.)).evaluate()(0,0);
+    double error_modgraphi = std::sqrt( (int_modgradphi - 1.)*(int_modgradphi - 1.) );
+    M_stats.put( "e.l2.modgradphi", error_modgraphi);
+
 
     double error_nod = integrate(elements(mesh),
                                (idv(k_nod) -  1 / Radius) * (idv(k_nod) -  1 / Radius) * idv(Delta),
@@ -304,7 +314,14 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
     error_smooth = std::sqrt(error_smooth);
     M_stats.put( "e.sm.k", error_smooth);
 
-    exportResults(Delta, k_l2, k_smooth, k_nod);
+
+    double error_hess = integrate(elements(mesh),
+                             (idv(k_hess) - 1 / Radius) * (idv(k_hess) - 1 / Radius) * idv(Delta),
+              _Q<quad>() ).evaluate()(0,0) / perimeter ;
+    error_hess = std::sqrt(error_hess);
+    M_stats.put( "e.hs.k", error_hess);
+
+    exportResults(Delta, k_l2, k_smooth, k_nod, k_hess);
 
 } // Curvature::run
 
@@ -312,7 +329,7 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
 
 template<int Dim, typename BasisU, typename BasisU_Vec, template<uint16_type,uint16_type,uint16_type> class Entity>
 void
-Curvature<Dim, BasisU, BasisU_Vec, Entity>::exportResults( element_type& Delta, element_type& k_l2, element_type& k_smooth, element_type& k_nod)
+Curvature<Dim, BasisU, BasisU_Vec, Entity>::exportResults( element_type& Delta, element_type& k_l2, element_type& k_smooth, element_type& k_nod, element_type& k_hess)
 {
     if ( exporter->doExport() )
     {
