@@ -117,7 +117,9 @@ int main( int argc, char** argv )
 
     benchmark.add( new Curvature<2, Lagrange<1, Scalar>, Lagrange<1, Vectorial>, Simplex>( "2D-P1-Simplex", benchmark.vm(), benchmark.about() ) );
     benchmark.add( new Curvature<2, Lagrange<2, Scalar>, Lagrange<2, Vectorial>, Simplex>( "2D-P2-Simplex", benchmark.vm(), benchmark.about() ) );
-    benchmark.add( new Curvature<3, Lagrange<2, Scalar>, Lagrange<2, Vectorial>, Simplex>( "2D-P3-Simplex", benchmark.vm(), benchmark.about() ) );
+    benchmark.add( new Curvature<2, Lagrange<3, Scalar>, Lagrange<3, Vectorial>, Simplex>( "2D-P3-Simplex", benchmark.vm(), benchmark.about() ) );
+
+    //    benchmark.add( new Curvature<3, Lagrange<2, Scalar>, Lagrange<2, Vectorial>, Simplex>( "2D-P3-Simplex", benchmark.vm(), benchmark.about() ) );
 
     benchmark.setStats( boost::assign::list_of( "e.k.nod" )( "e.k.l2" )( "e.k.sm" ) );
 
