@@ -126,6 +126,11 @@ public:
      * run the convergence test
      */
     void run();
+    void run( const double* X, unsigned long P, double* Y, unsigned long N )
+    {
+        run();
+    }
+
 
 private:
 
