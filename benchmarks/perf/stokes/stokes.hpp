@@ -149,13 +149,21 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
 {
     using namespace Feel::vf;
 
+    int nparts = Environment::worldComm().size();
+    bool prepare = this->vm()["benchmark.prepare"].template as<bool>();
+    if ( prepare )
+        nparts = this->vm()["benchmark.partitions"].template as<int>();
+
+
     if ( this->vm().count( "nochdir" ) == false )
     {
-        this->changeRepository( boost::format( "perf/%1%/%2%/%3%/h_%4%/" )
+        this->changeRepository( boost::format( "perf/%1%/%2%/%3%/h_%4%/l_%5%/parts_%6%/" )
                                 % this->about().appName()
                                 % convex_type::name()
                                 % M_basis_name
-                                % meshSize() );
+                                % meshSizeInit()
+                                % level()
+                                % nparts );
     }
 
     //! init backend
@@ -184,16 +192,17 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     auto mesh = createGMSHMesh( _mesh=new mesh_type,
                                 _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
                                 _desc=domain( _name= ( boost::format( "%1%-%2%-%3%" ) % "hypercube" % Dim % 1 ).str() ,
-                                        _shape="hypercube",
-                                        _usenames=true,
-                                        _convex=( ( !recombine )&&convex_type::is_hypercube )?"Hypercube":"Simplex",
-                                        _recombine=( recombine&&convex_type::is_hypercube ), // generate quads which are not regular
-                                        _dim=Dim,
-                                        _h=M_meshSize,
-                                        _shear=shear,
-                                        _xmin=xmin,_xmax=xmax,
-                                        _ymin=ymin,_ymax=ymax ) );
-
+                                              _shape="hypercube",
+                                              _usenames=true,
+                                              _convex=( ( !recombine )&&convex_type::is_hypercube )?"Hypercube":"Simplex",
+                                              _recombine=( recombine&&convex_type::is_hypercube ), // generate quads which are not regular
+                                              _dim=Dim,
+                                              _h=meshSizeInit(),
+                                              _shear=shear,
+                                              _xmin=xmin,_xmax=xmax,
+                                              _ymin=ymin,_ymax=ymax ),
+                                _refine=level() );
+    
     M_stats.put( "t.init.mesh",t.elapsed() );
     t.restart();
     /*
