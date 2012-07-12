@@ -284,25 +284,25 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
     // +++++++++++++++++++ error computation ++++++++++++++++++++++
     double perimeter = integrate(elements(mesh), idv(Delta), _Q<quad>()).evaluate()(0,0);
     double error_perimeter = std::sqrt( (perimeter - 2 * pi * Radius)*(perimeter - 2 * pi * Radius) );
-    M_stats.put( "e.perim", error_perimeter);
+    M_stats.put( "e.l2.perim", error_perimeter);
 
     double error_nod = integrate(elements(mesh),
                                (idv(k_nod) -  1 / Radius) * (idv(k_nod) -  1 / Radius) * idv(Delta),
               _Q<quad>() ).evaluate()(0,0) / perimeter ;
     error_nod = std::sqrt(error_nod);
-    M_stats.put( "e.k.nod", error_nod);
+    M_stats.put( "e.nod.k", error_nod);
 
     double error_l2 = integrate(elements(mesh),
                                 (idv(k_l2) -  1 / Radius) * (idv(k_l2) -  1 / Radius) * idv(Delta),
               _Q<quad>() ).evaluate()(0,0) / perimeter ;
     error_l2 = std::sqrt(error_l2);
-    M_stats.put( "e.k.l2", error_l2);
+    M_stats.put( "e.l2.k", error_l2);
 
     double error_smooth = integrate(elements(mesh),
                              (idv(k_smooth) - 1 / Radius) * (idv(k_smooth) - 1 / Radius) * idv(Delta),
               _Q<quad>() ).evaluate()(0,0) / perimeter ;
     error_smooth = std::sqrt(error_smooth);
-    M_stats.put( "e.k.sm", error_smooth);
+    M_stats.put( "e.sm.k", error_smooth);
 
     exportResults(Delta, k_l2, k_smooth, k_nod);
 
