@@ -80,25 +80,27 @@ makeAbout()
                            Feel::AboutData::License_GPL,
                            "Copyright (c) 2012 Universite de Grenoble 1 (Joseph Fourier)" );
 
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
+    about.addAuthor( "Vincent Doyeux", "developer", "vincent.doyeux@ujf-grenoble.fr", "" );
     return about;
 
 }
 namespace Feel
 {
 // 2D
-extern template class Curvature<2, Lagrange<1, Scalar>, Hypercube>;
-extern template class Curvature<2, Lagrange<2, Scalar>, Hypercube>;
-extern template class Curvature<2, Lagrange<3, Scalar>, Hypercube>;
+extern template class Curvature<2, Lagrange<1, Scalar>, Lagrange<1, Vectorial>, Simplex>;
+extern template class Curvature<2, Lagrange<2, Scalar>, Lagrange<2, Vectorial>, Simplex>;
+extern template class Curvature<2, Lagrange<3, Scalar>, Lagrange<3, Vectorial>, Simplex>;
 
 // 3D
-extern template class Curvature<3, Lagrange<1, Scalar>, Hypercube>;
-extern template class Curvature<3, Lagrange<2, Scalar>, Hypercube>;
-extern template class Curvature<3, Lagrange<1, Scalar>, Simplex>;
-extern template class Curvature<3, Lagrange<2, Scalar>, Simplex>;
-extern template class Curvature<3, Lagrange<3, Scalar>, Simplex>;
+// extern template class Curvature<3, Lagrange<1, Scalar>, Lagrange<1, Vectorial>, Hypercube>;
+// extern template class Curvature<3, Lagrange<2, Scalar>, Lagrange<2, Vectorial>, Hypercube>;
+// extern template class Curvature<3, Lagrange<1, Scalar>, Lagrange<3, Vectorial>, Simplex>;
+extern template class Curvature<3, Lagrange<2, Scalar>, Lagrange<2, Vectorial>, Simplex>;
+// extern template class Curvature<3, Lagrange<3, Scalar>, Lagrange<3, Vectorial>, Simplex>;
 
 }
+
+
 
 int main( int argc, char** argv )
 {
@@ -113,11 +115,11 @@ int main( int argc, char** argv )
         return 0;
     }
 
-    benchmark.add( new Curvature<2, Lagrange<1, Scalar>, Simplex>( "2D-P1-Simplex", benchmark.vm(), benchmark.about() ) );
-    benchmark.add( new Curvature<2, Lagrange<2, Scalar>, Simplex>( "2D-P2-Simplex", benchmark.vm(), benchmark.about() ) );
-    benchmark.add( new Curvature<3, Lagrange<2, Scalar>, Simplex>( "2D-P3-Simplex", benchmark.vm(), benchmark.about() ) );
+    benchmark.add( new Curvature<2, Lagrange<1, Scalar>, Lagrange<1, Vectorial>, Simplex>( "2D-P1-Simplex", benchmark.vm(), benchmark.about() ) );
+    benchmark.add( new Curvature<2, Lagrange<2, Scalar>, Lagrange<2, Vectorial>, Simplex>( "2D-P2-Simplex", benchmark.vm(), benchmark.about() ) );
+    benchmark.add( new Curvature<3, Lagrange<2, Scalar>, Lagrange<2, Vectorial>, Simplex>( "2D-P3-Simplex", benchmark.vm(), benchmark.about() ) );
 
-    benchmark.setStats( boost::assign::list_of( "e.l2" )( "e.h1" )( "n.space" )( "n.matrix" )( "t.init" )( "t.assembly.vector" )( "t.assembly.matrix" )( "t.solver" )( "d.solver" )( "t.integrate" )( "t.export" ) );
+    benchmark.setStats( boost::assign::list_of( "e.k.nod" )( "e.k.l2" )( "e.k.sm" ) );
 
     benchmark.run();
     benchmark.printStats( std::cout );
