@@ -23,6 +23,7 @@
 #
 cmake_minimum_required (VERSION 2.6)
 
+# 
 # Bug in cmake that delete destroy library path if LIBRARY_PATH is not empty
 # Ugly hack that disable the environement variable
 # Waiting for cmake to fix it
