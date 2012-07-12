@@ -233,9 +233,14 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
         {
         case circle :
             {
+
+                Radius = 0.5;
+                x0 = 0;
+                y0 = 0;
+
                 auto X = Px() - x0;
                 auto Y = Py() - y0;
-                Radius = 0.5;
+
                 // exact signed distance function to a circle
                 // might be better with a l2 projection ???
                 init_shape = vf::project(Xh, elements(mesh),
@@ -282,19 +287,19 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
     M_stats.put( "e.perim", error_perimeter);
 
     double error_nod = integrate(elements(mesh),
-                                 pow(idv(k_nod) -  1 / Radius, 2.) * idv(Delta),
+                               (idv(k_nod) -  1 / Radius) * (idv(k_nod) -  1 / Radius) * idv(Delta),
               _Q<quad>() ).evaluate()(0,0) / perimeter ;
     error_nod = std::sqrt(error_nod);
     M_stats.put( "e.k.nod", error_nod);
 
     double error_l2 = integrate(elements(mesh),
-                                pow(idv(k_l2) -  1 / Radius, 2.) * idv(Delta),
+                                (idv(k_l2) -  1 / Radius) * (idv(k_l2) -  1 / Radius) * idv(Delta),
               _Q<quad>() ).evaluate()(0,0) / perimeter ;
     error_l2 = std::sqrt(error_l2);
     M_stats.put( "e.k.l2", error_l2);
 
     double error_smooth = integrate(elements(mesh),
-                             pow(idv(k_smooth) - 1 / Radius, 2.) * idv(Delta),
+                             (idv(k_smooth) - 1 / Radius) * (idv(k_smooth) - 1 / Radius) * idv(Delta),
               _Q<quad>() ).evaluate()(0,0) / perimeter ;
     error_smooth = std::sqrt(error_smooth);
     M_stats.put( "e.k.sm", error_smooth);
