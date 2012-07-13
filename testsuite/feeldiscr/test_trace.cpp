@@ -202,7 +202,8 @@ Test<Dim,Order>::run( const double* X, unsigned long P, double* Y, unsigned long
     auto t = vf::project( Th, elements( Th->mesh() ), g );
 
     auto op_trace = operatorTrace( Xh );
-    auto g_trace = op_trace->trace( _range=boundaryfaces( mesh ), _expr=g );
+    //auto g_trace = op_trace->trace( _range=boundaryfaces( mesh ), _expr=g );
+    auto g_trace = op_trace->trace( _expr=g );
 
     double measure = integrate( elements( Th->mesh() ), cst( 1.0 ), _quad=_Q<5>() ).evaluate()( 0,0 );
     std::cout << " -- measure  =" << measure << "\n";

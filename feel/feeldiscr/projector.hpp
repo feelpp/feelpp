@@ -112,8 +112,7 @@ public :
         M_gamma( gamma ),
         M_proj_type( proj_type ),
         M_dir( dirichlet_type ),
-        M_matrix( M_backend->newMatrix( _trial=domainSpace, _test=dualImageSpace ) ),
-        M_matrixFull( M_backend->newMatrix( _trial=domainSpace, _test=dualImageSpace ) )
+        M_matrix( M_backend->newMatrix( _trial=domainSpace, _test=dualImageSpace ) )
     {
         initMatrix();
     }
