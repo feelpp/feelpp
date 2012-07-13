@@ -87,9 +87,11 @@ makeAbout()
 namespace Feel
 {
 // 2D
-extern template class Curvature<2, Lagrange<1, Scalar>, Lagrange<1, Vectorial>, Simplex>;
-extern template class Curvature<2, Lagrange<2, Scalar>, Lagrange<2, Vectorial>, Simplex>;
-extern template class Curvature<2, Lagrange<3, Scalar>, Lagrange<3, Vectorial>, Simplex>;
+extern template class Curvature<2, Lagrange<1, Scalar>, Lagrange<1, Vectorial,Discontinuous>, Simplex>;
+extern template class Curvature<2, Lagrange<2, Scalar>, Lagrange<2, Vectorial,Discontinuous>, Simplex>;
+extern template class Curvature<2, Lagrange<3, Scalar>, Lagrange<3, Vectorial,Discontinuous>, Simplex>;
+extern template class Curvature<2, Lagrange<4, Scalar>, Lagrange<4, Vectorial,Discontinuous>, Simplex>;
+extern template class Curvature<2, Lagrange<5, Scalar>, Lagrange<5, Vectorial,Discontinuous>, Simplex>;
 
 // 3D
 // extern template class Curvature<3, Lagrange<1, Scalar>, Lagrange<1, Vectorial>, Hypercube>;
@@ -115,13 +117,15 @@ int main( int argc, char** argv )
         return 0;
     }
 
-    benchmark.add( new Curvature<2, Lagrange<1, Scalar>, Lagrange<1, Vectorial>, Simplex>( "2D-P1-Simplex", benchmark.vm(), benchmark.about() ) );
-    benchmark.add( new Curvature<2, Lagrange<2, Scalar>, Lagrange<2, Vectorial>, Simplex>( "2D-P2-Simplex", benchmark.vm(), benchmark.about() ) );
-    benchmark.add( new Curvature<2, Lagrange<3, Scalar>, Lagrange<3, Vectorial>, Simplex>( "2D-P3-Simplex", benchmark.vm(), benchmark.about() ) );
+    benchmark.add( new Curvature<2, Lagrange<1, Scalar>, Lagrange<1, Vectorial,Discontinuous>, Simplex>( "2D-P1-Simplex", benchmark.vm(), benchmark.about() ) );
+    benchmark.add( new Curvature<2, Lagrange<2, Scalar>, Lagrange<2, Vectorial,Discontinuous>, Simplex>( "2D-P2-Simplex", benchmark.vm(), benchmark.about() ) );
+    benchmark.add( new Curvature<2, Lagrange<3, Scalar>, Lagrange<3, Vectorial,Discontinuous>, Simplex>( "2D-P3-Simplex", benchmark.vm(), benchmark.about() ) );
+    benchmark.add( new Curvature<2, Lagrange<4, Scalar>, Lagrange<4, Vectorial,Discontinuous>, Simplex>( "2D-P4-Simplex", benchmark.vm(), benchmark.about() ) );
+    benchmark.add( new Curvature<2, Lagrange<5, Scalar>, Lagrange<5, Vectorial,Discontinuous>, Simplex>( "2D-P5-Simplex", benchmark.vm(), benchmark.about() ) );
 
     //    benchmark.add( new Curvature<3, Lagrange<2, Scalar>, Lagrange<2, Vectorial>, Simplex>( "2D-P3-Simplex", benchmark.vm(), benchmark.about() ) );
 
-    benchmark.setStats( boost::assign::list_of( "e.nod" )( "e.l2" )( "e.sm" )( "e.hs" ) );
+    benchmark.setStats( boost::assign::list_of( "e.nod" )( "e.l2" )( "e.sm" )( "e.hs" )("n.space")("n.spacev") );
 
     benchmark.run();
     benchmark.printStats( std::cout );
