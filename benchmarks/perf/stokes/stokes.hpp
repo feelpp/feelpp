@@ -177,6 +177,10 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
 #elif defined(FEELPP_SOLUTION_BERCOVIERENGELMAN)
     double xmin = 0, xmax = 1;
     double ymin = 0, ymax = 1;
+#elif defined(FEELPP_SOLUTION_ETHIERSTEIMANN)
+    double xmin = -1, xmax = 1;
+    double ymin = -1, ymax = 1;
+    //double zmin = -1, zmax = 1;
 #else
     double xmin = -1, xmax=1;
     double ymin = -1, ymax=1;
@@ -200,7 +204,8 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
                                               _h=meshSizeInit(),
                                               _shear=shear,
                                               _xmin=xmin,_xmax=xmax,
-                                              _ymin=ymin,_ymax=ymax ),
+                                              _ymin=ymin,_ymax=ymax, 
+                                              _zmin=-1,_zmax=1 ),
                                 _refine=level() );
     
     M_stats.put( "t.init.mesh",t.elapsed() );
