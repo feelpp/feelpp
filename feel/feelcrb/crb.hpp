@@ -2843,20 +2843,25 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
 
     //vector containing outputs from time=time_step until time=time_for_output
     std::vector<double>output_time_vector;
+    output_time_vector.resize( model_K );
     double output;
     int time_index=0;
 
     // init by 0, the model could provide better init
     uN[0].setOnes(M_N);
-    uNold[0].setOnes(M_N);
+
+    //in transient case, the model has a function initializationField
+    //uNold[0].setOnes(M_N);
+
     for ( double time=time_step; time<=time_for_output; time+=time_step )
     {
 
-        boost::tie( betaMqm, betaAqm, betaFqm, betaMFqm ) = M_model->computeBetaQm( this->expansion( uN[0] ), mu ,time );
-        LOG(INFO) << "betaMFqm = " << betaMFqm[0][0] << "," << betaMFqm[1][0] << "\n";
+        boost::tie( betaMqm, betaAqm, betaFqm, betaMFqm ) = M_model->computeBetaQm( this->expansion( uNold[0] ), mu ,time );
+        LOG(INFO) << "betaMFqm = " << betaMFqm[0][0] <<"\n";//<< "," << betaMFqm[1][0] << "\n";
         LOG(INFO) << "betaMqm = " << betaMqm[0][0] << "\n";
         LOG(INFO) << "Qm = " << M_model->Qm() << "\n";
         LOG(INFO) << "mMaxM = " << M_model->mMaxM(0) << "\n";
+
         google::FlushLogFiles(google::GLOG_INFO);
         // compute initial guess for fixed point
         A.setZero( N,N );
@@ -2867,23 +2872,30 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
                 A += betaMqm[q][m]*M_Mqm_pr[q][m].block( 0,0,N,N );
         }
         LOG(INFO) << "Mass=" << A << "\n";
+
         google::FlushLogFiles(google::GLOG_INFO);
         F.setZero( N );
-        for ( size_type q = 0; q < 2; ++q )
+        for ( size_type q = 0; q < M_model->Qmf(); ++q )
         {
             F += betaMFqm[q][0]*M_MFqm_pr[q][0].head( N );
         }
         LOG(INFO) << "F=" << F << "\n";
+
         google::FlushLogFiles(google::GLOG_INFO);
-        uN[0] = A.lu().solve( F );
+        uN[time_index] = A.lu().solve( F );
 
         LOG(INFO) << "lb: start fix point\n";
+
+        vectorN_type previous_uN( M_N );
+
         google::FlushLogFiles(google::GLOG_INFO);
-        for(int fi = 0;fi < 10; ++fi )
+        int fi=0;
+        //for(int fi = 0;fi < 10; ++fi )
+        do
         {
             LOG(INFO) << "compute eim expansions\n";
             google::FlushLogFiles(google::GLOG_INFO);
-            boost::tie( betaMqm, betaAqm, betaFqm, betaMFqm ) = M_model->computeBetaQm( this->expansion( uN[0] ), mu ,time );
+            boost::tie( betaMqm, betaAqm, betaFqm, betaMFqm ) = M_model->computeBetaQm( this->expansion( uN[time_index] ), mu ,time );
 
             LOG(INFO) << "compute reduce matrices\n";
             google::FlushLogFiles(google::GLOG_INFO);
@@ -2913,14 +2925,16 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
             }
             LOG(INFO) << "solve reduced model\n";
             google::FlushLogFiles(google::GLOG_INFO);
+
             // backup uN
-            uNold[0] = uN[0];
+            //uNold[0] = uN[0];
+            previous_uN = uN[time_index];
 
             // solve for new fix point iteration
-            uN[0] = A.lu().solve( F );
+            uN[time_index] = A.lu().solve( F );
 
-            LOG(INFO) << "uold = " << uNold[0] << "\n";
-            LOG(INFO) << "u = " << uN[0] << "\n";
+            LOG(INFO) << "uold = " << uNold[time_index] << "\n";
+            LOG(INFO) << "u = " << uN[time_index] << "\n";
 
             if ( time_index<model_K-1 )
             {
@@ -2938,12 +2952,14 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
             }
 
             output = L.dot( uN[time_index] );
-            output_time_vector.push_back( output );
+            //output_time_vector.push_back( output );
+            output_time_vector[time_index] = output;
 
-            LOG(INFO) << "iteration " << fi << " increment error: " << (uN[0]-uNold[0]).norm() << "\n";
-            google::FlushLogFiles(google::GLOG_INFO);
+            LOG(INFO) << "iteration " << fi << " increment error: " << (uN[time_index]-previous_uN).norm() << "\n";               google::FlushLogFiles(google::GLOG_INFO);
+            fi++;
+
         }
-        //while ( (uN[0]-uNold[0]).norm() > 1e-10 );
+        while ( (uN[time_index]-previous_uN).norm() > 1e-10 && fi<10);
         time_index++;
     }
 
