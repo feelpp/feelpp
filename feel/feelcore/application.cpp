@@ -889,10 +889,6 @@ updateStats( std::vector<ptree::ptree>& stats )
             }
         }
     }
-    catch( ptree::ptree_error const& e )
-    {
-        std::cout << "ptree::ptree_error : "  << e.what() << "\n";
-    }
     catch( ptree::ptree_bad_data const& e )
     {
         std::cout << "ptree::bad_data : "  << e.what() << "\n";
