@@ -635,7 +635,7 @@ CRBSCM<TruthModelType>::offline()
                   _ncv=M_vm["crb.scm.solvereigen-ncv"].template as<int>(),
                   _nev=M_vm["crb.scm.solvereigen-nev"].template as<int>(),
                   _tolerance=M_vm["crb.scm.solvereigen-tol"].template as<double>(),
-                  _maxit=M_vm["crb.scm.solvereigen-maxiter"].template as<double>()
+                  _maxit=M_vm["crb.scm.solvereigen-maxiter"].template as<int>()
                 );
 
         if ( modes.empty()  )
@@ -813,10 +813,10 @@ boost::tuple<typename CRBSCM<TruthModelType>::value_type,
               //_spectrum=LARGEST_MAGNITUDE,
               _spectrum=SMALLEST_REAL,
               _transform=SINVERT,
-              _ncv=M_vm["solvereigen-ncv"].template as<int>(),
-              _nev=M_vm["solvereigen-nev"].template as<int>(),
-              _tolerance=M_vm["solvereigen-tol"].template as<double>(),
-              _maxit=M_vm["solvereigen-maxiter"].template as<int>()
+              _ncv=M_vm["crb.scm.solvereigen-ncv"].template as<int>(),
+              _nev=M_vm["crb.scm.solvereigen-nev"].template as<int>(),
+              _tolerance=M_vm["crb.scm.solvereigen-tol"].template as<double>(),
+              _maxit=M_vm["crb.scm.solvereigen-maxiter"].template as<int>()
             );
 
     if ( modesmin.empty() )
@@ -836,10 +836,10 @@ boost::tuple<typename CRBSCM<TruthModelType>::value_type,
               _matrixB=M,
               _solver=( EigenSolverType )M_vm["solvereigen-solver-type"].as<int>(),
               _spectrum=LARGEST_MAGNITUDE,
-              _ncv=M_vm["solvereigen-ncv"].as<int>(),
-              _nev=M_vm["solvereigen-nev"].as<int>(),
-              _tolerance=M_vm["solvereigen-tol"].as<double>(),
-              _maxit=M_vm["solvereigen-maxiter"].as<int>()
+              _ncv=M_vm["crb.scm.solvereigen-ncv"].as<int>(),
+              _nev=M_vm["crb.scm.solvereigen-nev"].as<int>(),
+              _tolerance=M_vm["crb.scm.solvereigen-tol"].as<double>(),
+              _maxit=M_vm["crb.scm.solvereigen-maxiter"].as<int>()
             );
 
     if ( modesmax.empty() )
@@ -1320,11 +1320,12 @@ CRBSCM<TruthModelType>::computeYBounds()
                           _spectrum=SMALLEST_REAL,
                           //_spectrum=SMALLEST_MAGNITUDE,
                           //_transform=SINVERT,
-                          _ncv=M_vm["solvereigen-ncv"].template as<int>(),
-                          _nev=M_vm["solvereigen-nev"].template as<int>(),
-                          _tolerance=M_vm["solvereigen-tol"].template as<double>(),
-                          _maxit=M_vm["solvereigen-maxiter"].template as<int>()
+                          _ncv=M_vm["crb.scm.solvereigen-ncv"].template as<int>(),
+                          _nev=M_vm["crb.scm.solvereigen-nev"].template as<int>(),
+                          _tolerance=M_vm["crb.scm.solvereigen-tol"].template as<double>(),
+                          _maxit=M_vm["crb.scm.solvereigen-maxiter"].template as<int>()
                           );
+
 #endif
 
                 if ( modes.empty() )
@@ -1342,13 +1343,14 @@ CRBSCM<TruthModelType>::computeYBounds()
                           _solver=( EigenSolverType )M_vm["solvereigen-solver-type"].template as<int>(),
                           _spectrum=LARGEST_REAL,
                           //_spectrum=LARGEST_MAGNITUDE,
-                          _ncv=M_vm["solvereigen-ncv"].template as<int>(),
+                          _ncv=M_vm["crb.scm.solvereigen-ncv"].template as<int>(),
                           //_ncv=20,
-                          _nev=M_vm["solvereigen-nev"].template as<int>(),
+                          _nev=M_vm["crb.scm.solvereigen-nev"].template as<int>(),
                           //_tolerance=M_vm["solvereigen-tol"].template as<double>(),
                           _tolerance=1e-7,
-                          _maxit=M_vm["solvereigen-maxiter"].template as<int>()
+                          _maxit=M_vm["crb.scm.solvereigen-maxiter"].template as<int>()
                           );
+
 #endif
 
                 if ( modes.empty() )
