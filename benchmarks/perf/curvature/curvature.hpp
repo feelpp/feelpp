@@ -296,6 +296,7 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
 
     Log() << "project Delta...\n";
     auto Delta_proj = vf::project(Xh, elements(mesh),Delta );//l2p->project(_expr=Delta);
+
     Log() << "project Delta done...\n";
 
     /* +++++++++++++++ compute quantities with different projections +++++++++++ */
@@ -383,13 +384,14 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
     #endif
 
     // +++++++++++++++++++ error computation ++++++++++++++++++++++
-    double perimeter = integrate( _range=elements(mesh), _expr=Deltah ).evaluate()(0,0);
+    double perimeter = integrate( _range=elements(mesh), _expr=Delta, _quad=_Q<15>() ).evaluate()(0,0);
     Log() << "perimeter = " << perimeter << "\n";
 
     double error_perimeter = math::abs(perimeter - 2 * pi * Radius);
     M_stats.put( "e.l2.perim", error_perimeter);
     M_stats.put( "d.value.double.perimeter", perimeter);
     Log() << "e.l2.perim = " << error_perimeter << "\n";
+
     double int_modgradphi = integrate(elements(mesh), sqrt( gradv(init_shape) * trans(gradv(init_shape))) ).evaluate()(0,0);
     int_modgradphi /= integrate(elements(mesh), cst(1.)).evaluate()(0,0);
 
