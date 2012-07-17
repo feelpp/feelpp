@@ -272,28 +272,31 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
             }//circle
         } //switch
 
-    // "delta like" function
-    auto eps = 1.5 * vf::pow(vf::h(),std::max(1,BasisU::nOrder-1));
-    auto Delta_proj = l2p->project(vf::chi( idv(init_shape)<-eps )*vf::constant(0.0)
-                              +
-                              vf::chi( idv(init_shape)>=-eps )*vf::chi( idv(init_shape)<=eps )*
-                              1/(2*eps) *( 1 + cos(pi*idv(init_shape)/eps) )
-                              +
-                              vf::chi(idv(init_shape)>eps)*vf::constant(0.0) );
     auto X = Px() - x0;
     auto Y = Py() - y0;
 
     auto shape_expr = (vf::sqrt( X*X + Y*Y ) - Radius);
-#if 1
+
+    // "delta like" function
+    double order = std::max(1,BasisU::nOrder-1);
+    auto eps = 1.5 * vf::pow(vf::h(),order);
     auto Delta =  ( vf::chi( shape_expr<-eps )*vf::constant(0.0)
                     +
                     vf::chi( shape_expr>=-eps )*vf::chi( shape_expr<=eps )*
                     1/(2*eps) *( 1 + cos(pi*shape_expr/eps) )
                     +
                     vf::chi(shape_expr>eps)*vf::constant(0.0) );
-#else
-    auto Delta = idv(Delta_proj);
-#endif
+    auto epsh = 1.5 * h();
+    auto Deltah =  ( vf::chi( shape_expr<-eps )*vf::constant(0.0)
+                    +
+                    vf::chi( shape_expr>=-eps )*vf::chi( shape_expr<=eps )*
+                    1/(2*eps) *( 1 + cos(pi*shape_expr/eps) )
+                    +
+                    vf::chi(shape_expr>eps)*vf::constant(0.0) );
+
+    Log() << "project Delta...\n";
+    auto Delta_proj = vf::project(Xh, elements(mesh),Delta );//l2p->project(_expr=Delta);
+    Log() << "project Delta done...\n";
 
     /* +++++++++++++++ compute quantities with different projections +++++++++++ */
 
@@ -380,15 +383,20 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
     #endif
 
     // +++++++++++++++++++ error computation ++++++++++++++++++++++
-    double perimeter = integrate( _range=elements(mesh), _expr=Delta ).evaluate()(0,0);
+    double perimeter = integrate( _range=elements(mesh), _expr=Deltah ).evaluate()(0,0);
+    Log() << "perimeter = " << perimeter << "\n";
+
     double error_perimeter = math::abs(perimeter - 2 * pi * Radius);
     M_stats.put( "e.l2.perim", error_perimeter);
-
+    M_stats.put( "d.value.double.perimeter", perimeter);
+    Log() << "e.l2.perim = " << error_perimeter << "\n";
     double int_modgradphi = integrate(elements(mesh), sqrt( gradv(init_shape) * trans(gradv(init_shape))) ).evaluate()(0,0);
     int_modgradphi /= integrate(elements(mesh), cst(1.)).evaluate()(0,0);
 
     double error_modgraphi = math::abs(int_modgradphi - 1.);
     M_stats.put( "e.l2.modgradphi", error_modgraphi);
+    Log() << "e.l2.modgradphi = " << error_modgraphi << "\n";
+    M_stats.put( "d.value.double.modgraphi", int_modgradphi);
 
     /*  nodal  */
     double error_nod = integrate(elements(mesh),
@@ -396,6 +404,7 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
               _Q<quad>() ).evaluate()(0,0) / perimeter ;
     error_nod = std::sqrt(error_nod);
     M_stats.put( "e.nod.k", error_nod);
+    Log() << "e.nod.k = " << error_nod << "\n";
 
     double error_nod_phi = integrate(elements(mesh),
                                      (idv(phi_nod) - shape_expr)*(idv(phi_nod) - shape_expr) ).evaluate()(0,0);
@@ -409,6 +418,7 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
               _Q<quad>() ).evaluate()(0,0) / perimeter ;
     error_l2 = std::sqrt(error_l2);
     M_stats.put( "e.l2.k", error_l2);
+    Log() << "e.l2.k = " << error_l2 << "\n";
 
 
     double error_l2_bis = integrate(elements(mesh),
@@ -433,16 +443,17 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
 
     /* smooth */
     double error_smooth = integrate(elements(mesh),
-                             (idv(k_smooth) - 1 / Radius) * (idv(k_smooth) - 1 / Radius) * Delta,
+                                    (idv(k_smooth) - 1 / Radius) * (idv(k_smooth) - 1 / Radius) * Delta,
               _Q<quad>() ).evaluate()(0,0) / perimeter ;
     error_smooth = std::sqrt(error_smooth);
     M_stats.put( "e.sm.k", error_smooth);
+    Log() << "e.sm.k = " << error_smooth << "\n";
+
 
     double error_smooth_phi = integrate(elements(mesh),
                                      (idv(phi_smooth) - shape_expr)*(idv(phi_smooth) - shape_expr) ).evaluate()(0,0);
     error_smooth_phi = std::sqrt(error_smooth_phi);
     M_stats.put( "e.smooth.phi", error_smooth_phi);
-
 
     /* hess */
     double error_hess = integrate(elements(mesh),
@@ -450,6 +461,7 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
               _Q<quad>() ).evaluate()(0,0) / perimeter ;
     error_hess = std::sqrt(error_hess);
     M_stats.put( "e.hs.kproj", error_hess);
+    Log() << "e.hs.kproj = " << error_hess << "\n";
 
     auto k_hess_proj = trace( hessv(init_shape) );
     double error_hessp = integrate(elements(mesh),
@@ -457,7 +469,7 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
                                    _Q<quad>() ).evaluate()(0,0) / perimeter ;
     error_hessp = std::sqrt(error_hessp);
     M_stats.put( "e.hs.k", error_hessp);
-
+    Log() << "e.hs.k = " << error_hessp << "\n";
 
     exportResults(Delta_proj, k_l2, k_smooth, k_nod, k_hess, k_int);
 

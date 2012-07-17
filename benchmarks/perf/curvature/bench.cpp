@@ -116,10 +116,12 @@ int main( int argc, char** argv )
         std::cout << benchmark.optionsDescription() << "\n";
         return 0;
     }
-
+#if 0
     benchmark.add( new Curvature<2, Lagrange<1, Scalar>, Lagrange<1, Vectorial,Discontinuous>, Simplex>( "2D-P1-Simplex", benchmark.vm(), benchmark.about() ) );
     benchmark.add( new Curvature<2, Lagrange<2, Scalar>, Lagrange<2, Vectorial,Discontinuous>, Simplex>( "2D-P2-Simplex", benchmark.vm(), benchmark.about() ) );
     benchmark.add( new Curvature<2, Lagrange<3, Scalar>, Lagrange<3, Vectorial,Discontinuous>, Simplex>( "2D-P3-Simplex", benchmark.vm(), benchmark.about() ) );
+#endif
+
     benchmark.add( new Curvature<2, Lagrange<4, Scalar>, Lagrange<4, Vectorial,Discontinuous>, Simplex>( "2D-P4-Simplex", benchmark.vm(), benchmark.about() ) );
     benchmark.add( new Curvature<2, Lagrange<5, Scalar>, Lagrange<5, Vectorial,Discontinuous>, Simplex>( "2D-P5-Simplex", benchmark.vm(), benchmark.about() ) );
 
