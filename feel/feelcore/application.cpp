@@ -872,9 +872,18 @@ updateStats( std::vector<ptree::ptree>& stats )
                     std::ostringstream keystr;
                     keystr << "e." << itchild->first << "." << itv->first;
                     std::string key = keystr.str();
-                    //std::cout << "update key " <<key << " ...\n";
+                    std::cout << "update key " <<key << " ...\n";
 
-                    double u  = it->get<double>( key );
+                    double u  = 1;
+                    try {
+                        u = it->get<double>( key );
+                    }
+                    catch( ptree::ptree_bad_data const& e )
+                    {
+                        std::cout << "ptree::bad_data : "  << e.what() << "\n";
+                        u = 1;
+                    }
+
                     double up = u;
                     double roc = 1;
 
@@ -882,6 +891,7 @@ updateStats( std::vector<ptree::ptree>& stats )
                     {
                         up  = boost::prior( it )->get<double>( key );
                         roc = std::log10( up/u )/std::log10( hp/h );
+                        std::cout << "u = "  << u << " up = " << up << " roc=" << roc <<" \n";
                     }
                     // create roc entry in the last statistics
                     stats.back().put( key+".roc", roc );
@@ -1235,7 +1245,7 @@ Application::printStats( std::ostream& out,
                 }
             }
         }
-        if ( flat )
+        if ( flat && M_stats.find( i->name() ) != M_stats.end() )
         {
             // first print header
             auto it = M_stats.find( i->name() )->second.begin();
