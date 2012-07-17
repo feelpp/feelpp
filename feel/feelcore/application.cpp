@@ -924,16 +924,8 @@ Application::run()
                 runonly.find( i->name() ) == std::string::npos )
             continue;
 
-        std::string fname = (boost::format( "%1%-%2%.dat" )% i->name()% Environment::numberOfProcessors() ).str();
-        std::ofstream ofs( fname.c_str() );
-        std::string fnameall = (boost::format( "%1%-%2%-all.dat" )% i->name()% Environment::numberOfProcessors() ).str();
-        std::ofstream ofsall( fnameall.c_str() );
-        std::string fnameerrors = (boost::format( "%1%-%2%-errors.dat" )% i->name()% Environment::numberOfProcessors() ).str();
-        std::ofstream ofserrors( fnameerrors.c_str() );
-        std::string fnametime = (boost::format( "%1%-%2%-timings.dat" )% i->name()% Environment::numberOfProcessors() ).str();
-        std::ofstream ofstime( fnametime.c_str() );
-        std::string fnamedata = (boost::format( "%1%-%2%-data.dat" )% i->name()% Environment::numberOfProcessors() ).str();
-        std::ofstream ofsdata( fnamedata.c_str() );
+        fs::path cp = fs::current_path();
+
 
         std::string s1 = prefixvm( i->name(),"benchmark.nlevels" );
         int nlevels = _M_vm.count( s1 )?_M_vm[s1].as<int>():_M_vm["benchmark.nlevels"].as<int>();
@@ -942,24 +934,39 @@ Application::run()
         std::string s3 = prefixvm( i->name(),"benchmark.refine" );
         double refine = _M_vm.count( s3 )?_M_vm[s3].as<double>():_M_vm["benchmark.refine"].as<double>();
         i->setMeshSizeInit( hsize );
+        bool has_stats = false;
         for ( int l = 0; l < nlevels; ++l )
         {
             double meshSize= hsize/std::pow( refine,l );
             i->setMeshSize( meshSize );
             i->setLevel( l+1 );
-            i->stats().put( "h",i->meshSize() );
-            i->stats().put( "level", i->level() );
             i->run();
-            if ( !prepare )
+            if ( !prepare && !i->stats().empty() )
                 {
+                    has_stats = true;
+
+                    i->stats().put( "h",i->meshSize() );
+                    i->stats().put( "level", i->level() );
+
                     M_stats[i->name()].push_back( i->stats() );
                     updateStats( M_stats[i->name()] );
                     this->printStats( std::cout, Application::ALL );
                 }
 
         }
-        if ( !prepare )
+        if ( !prepare && has_stats == true )
         {
+            std::string fname = (boost::format( "%1%-%2%.dat" )% i->name()% Environment::numberOfProcessors() ).str();
+            fs::ofstream ofs( cp / fname );
+            std::string fnameall = (boost::format( "%1%-%2%-all.dat" )% i->name()% Environment::numberOfProcessors() ).str();
+            fs::ofstream ofsall( cp / fnameall );
+            std::string fnameerrors = (boost::format( "%1%-%2%-errors.dat" )% i->name()% Environment::numberOfProcessors() ).str();
+            fs::ofstream ofserrors( cp / fnameerrors );
+            std::string fnametime = (boost::format( "%1%-%2%-timings.dat" )% i->name()% Environment::numberOfProcessors() ).str();
+            fs::ofstream ofstime( cp / fnametime );
+            std::string fnamedata = (boost::format( "%1%-%2%-data.dat" )% i->name()% Environment::numberOfProcessors() ).str();
+            fs::ofstream ofsdata( cp / fnamedata );
+
             this->printStats( ofs, Application::ALL );
             this->printStats( ofsall, Application::ALL|Application::FLAT );
             this->printStats( ofserrors, Application::ERRORS|Application::FLAT );
