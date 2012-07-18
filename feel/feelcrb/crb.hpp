@@ -4677,7 +4677,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<false> , int number_o
                         *__Fdu = *Fqm[M_output_index][__q2][__m2];
                         __Fdu->scale( -1.0 );
                         M_model->l2solve( __Z2, __Fdu );
-                        M_C0_du[__q1][__q2][__m1][__m2] = M_model->scalarProduct( __Z1, __Z2 );
+                        M_C0_du[__q1][__m1][__q2][__m2] = M_model->scalarProduct( __Z1, __Z2 );
                         //M_C0_du[__q2][__q1] = M_C0_du[__q1][__q2];
                         //M_C0_du[__q1][__q1] = M_model->scalarProduct( __Xdu, __Xdu );
                     }//end of loop __m2
