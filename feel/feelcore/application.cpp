@@ -872,7 +872,7 @@ updateStats( std::vector<ptree::ptree>& stats )
                     std::ostringstream keystr;
                     keystr << "e." << itchild->first << "." << itv->first;
                     std::string key = keystr.str();
-                    std::cout << "update key " <<key << " ...\n";
+                    //std::cout << "update key " <<key << " ...\n";
 
                     double u  = 1;
                     try {
@@ -880,7 +880,7 @@ updateStats( std::vector<ptree::ptree>& stats )
                     }
                     catch( ptree::ptree_bad_data const& e )
                     {
-                        std::cout << "ptree::bad_data : "  << e.what() << "\n";
+                        std::cout << "Application::updateStats: (ptree::bad_data) : "  << e.what() << "\n";
                         u = 1;
                     }
 
@@ -891,7 +891,7 @@ updateStats( std::vector<ptree::ptree>& stats )
                     {
                         up  = boost::prior( it )->get<double>( key );
                         roc = std::log10( up/u )/std::log10( hp/h );
-                        std::cout << "u = "  << u << " up = " << up << " roc=" << roc <<" \n";
+                        //std::cout << "u = "  << u << " up = " << up << " roc=" << roc <<" \n";
                     }
                     // create roc entry in the last statistics
                     stats.back().put( key+".roc", roc );
@@ -918,14 +918,17 @@ Application::run()
 {
     std::string runonly = _M_vm["benchmark.only"].as<std::string>();
     bool prepare = _M_vm["benchmark.prepare"].as<bool>();
+
+    // get current work directory before a simget eventually change the working
+    // directory to store its results. the statistics files will be stored in the
+    // same directory as the executable for now
+    fs::path cp = fs::current_path();
+
     for ( auto i = M_simgets.begin(), end = M_simgets.end(); i != end; ++i )
     {
         if ( ( runonly.empty() == false  ) &&
                 runonly.find( i->name() ) == std::string::npos )
             continue;
-
-        fs::path cp = fs::current_path();
-
 
         std::string s1 = prefixvm( i->name(),"benchmark.nlevels" );
         int nlevels = _M_vm.count( s1 )?_M_vm[s1].as<int>():_M_vm["benchmark.nlevels"].as<int>();
