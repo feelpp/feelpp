@@ -176,6 +176,10 @@ MyMesh<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
                                              _shape=shape,
                                              _dim=Dim,
                                              _h=X[0] ) );
+        std::cout << "n elements: "  << mesh->numElements() << "\n";
+        mesh->eraseElement( mesh->beginElementWithProcessId( this->comm().rank() ) );
+        std::cout << "n elements after: "  << mesh->numElements() << "\n";
+
         Log() << "Saving mesh...\n";
         mesh->save( _name="mymesh",_path=".",_type="text" );
         toc("generate+save");
@@ -205,7 +209,7 @@ MyMesh<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
         Log() << "Exporting mesh\n";
         exporter->step( 0 )->setMesh( mesh );
         Log() << "Exporting regions\n";
-        exporter->step( 0 )->addRegions();
+        //exporter->step( 0 )->addRegions();
         Log() << "Saving...\n";
         exporter->save();
     }

@@ -239,16 +239,37 @@ public:
                  ( boost::get<3>( M_element1 ) == p ) );
     }
 
-    void disconnect()
+    void disconnect0()
     {
         M_element0 = boost::make_tuple( ( ElementType const* )0,
                                         invalid_size_type_value,
                                         invalid_uint16_type_value,
                                         invalid_size_type_value );
+    }
+
+    void disconnect1()
+    {
         M_element1 = boost::make_tuple( ( ElementType const* )0,
                                         invalid_size_type_value,
                                         invalid_uint16_type_value,
                                         invalid_size_type_value );
+    }
+
+    void disconnect()
+    {
+        disconnect0();
+        disconnect1();
+    }
+
+    void disconnect( ElementType const& elem )
+    {
+        if(boost::get<0>( M_element0 ) == boost::addressof(elem))
+        {
+            M_element0 = M_element1;
+            disconnect1();
+        }
+        else
+            disconnect1();
     }
 
 private:
@@ -1014,6 +1035,12 @@ public:
     faces() const
     {
         return std::make_pair( M_edges.begin(), M_edges.end() );
+    }
+
+    void disconnectSubEntities()
+    {
+        for(unsigned int i = 0; i<numLocalEdges;++i)
+            M_edges[i]->disconnect(*this);
     }
 
 private:
