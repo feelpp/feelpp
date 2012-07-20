@@ -668,10 +668,10 @@ Aitken<fs_type>::calculateParameter( mpl::int_<AITKEN_STANDARD> /**/ )
     scalar = inner_product( aux2, aux );
 
     if ( scalar > 1 )
-        scalar = previousParameter;
+        scalar = /*previousParameter*/failsafeParameter;
 
     if ( scalar < 0 )
-        scalar = previousParameter;
+        scalar = /*previousParameter*/failsafeParameter;
 
     previousParameter = 1-scalar;
 }
@@ -700,14 +700,12 @@ Aitken<fs_type>::calculateParameter( mpl::int_<AITKEN_METHOD_1> /**/ )
     scalar = inner_product( previousResidual , aux );
     scalar = -previousParameter*scalar;
 
-#if 16
-
+#if 1
     if ( scalar > 1 )
-        scalar = previousParameter;//1;//-failsafeParameter;
+        scalar = /*previousParameter;*/failsafeParameter;
 
     if ( scalar < 0 )
-        scalar = previousParameter;//failsafeParameter;
-
+        scalar = /*previousParameter;*/failsafeParameter;
 #endif
     previousParameter = scalar;
 

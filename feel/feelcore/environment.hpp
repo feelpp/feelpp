@@ -154,6 +154,8 @@ public:
      */
     static std::vector<WorldComm> const&  worldsComm( int n );
 
+    static std::vector<WorldComm> const&  worldsCommGroupBySubspace( int n );
+
     /**
      * return master world comm associated with a color map of size n
      */

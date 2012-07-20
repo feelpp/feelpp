@@ -851,10 +851,13 @@ struct LFAssign
 
             list_block_type __list_block;
 
-            // with mpi, dof start to 0 (thanks to the LocalToGlobal mapping).
             if ( _M_lf.testSpace()->worldsComm()[_M_index].globalSize()>1 )
-                __list_block.push_back( Block( 0, 0, 0, 0 ) );
-
+                {
+                    if (_M_lf.testSpace()->hasEntriesForAllSpaces())
+                        __list_block.push_back( Block( 0, 0, _M_Xh->nLocalDofStart( _M_index ), 0 ) );
+                    else
+                        __list_block.push_back( Block( 0, 0, 0, 0 ) );
+                }
             else
                 __list_block.push_back( Block( 0, 0, _M_Xh->nDofStart( _M_index ), 0 ) );
 

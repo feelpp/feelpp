@@ -3,7 +3,7 @@
 PortSystem	1.0
 
 name		petsc
-version	    3.2-p7
+version     3.3-p1
 categories  math science
 maintainers	mmoll
 description	Portable, Extensible Toolkit for Scientific Computation
@@ -24,12 +24,12 @@ distname	${name}-lite-${version}
 worksrcdir	${name}-${version}
 universal_variant   no
 
-checksums           md5     9272439b31313824d3c4e8f23e3e06e3 \
-                    sha1    312c5b7219925439d38533990aa439c4d98e2b79 \
-                    rmd160  ca38c987b5f0559ccbc650d2a35831328ead3cf6
+checksums           md5     712dce5c6e6669f2dfe628d48a92de62 \
+                    sha1    4c9a41c4cd930889314e698fdfdb26480b548f03 \
+                    rmd160  8ec915871f8d5463428c321d2af0a51b42ea730f
 
 depends_build-append  port:cmake
-depends_lib-append  port:openmpi
+depends_lib-append  port:openmpi port:scotch port:suitesparse
 
 configure.args  --with-python --with-debugging=0 \
 		--with-c-support=1 --with-c++-support=1 --with-pic=fPIC \
@@ -38,14 +38,20 @@ configure.args  --with-python --with-debugging=0 \
 		--with-cc=${prefix}/bin/openmpicc \
 		--with-cxx=${prefix}/bin/openmpicxx \
 		--with-mpiexec=${prefix}/bin/openmpiexec \
-        --download-umfpack=1 \
+        --with-lapack-lib=/usr/lib/liblapack.dylib \
+        --with-blas-lib=/usr/lib/libblas.dylib \
+        --with-cholmod=1 --with-cholmod-include=${prefix}/include/ \
+        --with-cholmod-lib=\[${prefix}/lib/libcholmod.a,${prefix}/lib/libcolamd.a\] \
+        --with-umfpack=1 --with-umfpack-include=${prefix}/include/ \
+        --with-umfpack-lib=\[${prefix}/lib/libumfpack.a,${prefix}/lib/libcholmod.a,${prefix}/lib/libcolamd.a,${prefix}/lib/libamd.a,${prefix}/lib/libsuitesparseconfig.a\] \
         --download-ml \
+        --download-metis \
         --download-parmetis \
         --download-blacs \
         --download-scalapack \
-        --download-f-blas-lapack \
         --download-mumps \
-        --download-ptscotch \
+        --with-ptscotch=1 --with-ptscotch-include=${prefix}/include/ \
+        --with-ptscotch-lib=\[${prefix}/lib/libptesmumps.a,${prefix}/lib/libptscotch.a,${prefix}/lib/libptscotcherr.a\] \
 		--with-fc=${prefix}/bin/openmpif90 \
 		--LIBS=-lstdc++
 

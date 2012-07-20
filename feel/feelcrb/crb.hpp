@@ -249,6 +249,38 @@ public:
 
     }
 
+    //! constructor from command line options
+    CRB( std::string  name,
+         po::variables_map const& vm,
+         truth_model_ptrtype const & model )
+        :
+        super( ( boost::format( "%1%" ) % vm["crb.error-type"].template as<int>() ).str(),
+               name,
+               ( boost::format( "%1%-%2%-%3%" ) % name % vm["crb.output-index"].template as<int>() % vm["crb.error-type"].template as<int>() ).str(),
+               vm ),
+
+        M_model(),
+        M_backend( backend_type::build( vm ) ),
+        M_output_index( vm["crb.output-index"].template as<int>() ),
+        M_tolerance( vm["crb.error-max"].template as<double>() ),
+        M_iter_max( vm["crb.dimension-max"].template as<int>() ),
+        M_factor( vm["crb.factor"].template as<int>() ),
+        M_error_type( CRBErrorType( vm["crb.error-type"].template as<int>() ) ),
+        M_Dmu( new parameterspace_type ),
+        M_Xi( new sampling_type( M_Dmu ) ),
+        M_WNmu( new sampling_type( M_Dmu, 1, M_Xi ) ),
+        M_WNmu_complement(),
+        M_scmA( new scm_type( name+"_a", vm ) ),
+        M_scmM( new scm_type( name+"_m", vm ) ),
+        exporter( Exporter<mesh_type>::New( vm, "BasisFunction" ) )
+    {
+        this->setTruthModel( model );
+        if ( this->loadDB() )
+            std::cout << "Database " << this->lookForDB() << " available and loaded\n";
+
+
+    }
+
     //! copy constructor
     CRB( CRB const & o )
         :
@@ -800,6 +832,7 @@ private:
 
     bool M_compute_variance;
     bool M_rbconv_contains_primal_and_dual_contributions;
+    parameter_type M_current_mu;
 };
 
 po::options_description crbOptions( std::string const& prefix = "" );
@@ -809,141 +842,148 @@ template<typename TruthModelType>
 typename CRB<TruthModelType>::convergence_type
 CRB<TruthModelType>::offline()
 {
-
     M_rbconv_contains_primal_and_dual_contributions = true;
 
-    boost::timer ti;
-    std::cout << "Offline CRB starts, this may take a while until Database is computed...\n";
-    Log() << "[CRB::offline] Starting offline for output " << M_output_index << "\n";
-    Log() << "[CRB::offline] initialize underlying finite element model\n";
-    M_model->init();
-    std::cout << " -- model init done in " << ti.elapsed() << "s\n";
-    ti.restart();
-
+    bool rebuild_database = this->vm()["crb.rebuild-database"].template as<bool>() ;
     orthonormalize_primal = this->vm()["crb.orthonormalize-primal"].template as<bool>() ;
     orthonormalize_dual = this->vm()["crb.orthonormalize-dual"].template as<bool>() ;
     solve_dual_problem = this->vm()["crb.solve-dual-problem"].template as<bool>() ;
+    if ( ! solve_dual_problem ) orthonormalize_dual=false;
+
     M_Nm = this->vm()["crb.Nm"].template as<int>() ;
     bool seek_mu_in_complement = this->vm()["crb.seek-mu-in-complement"].template as<bool>() ;
 
-    if ( ! solve_dual_problem ) orthonormalize_dual=false;
-
-    //scm_ptrtype M_scm = scm_ptrtype( new scm_type( M_vm ) );
-    //M_scm->setTruthModel( M_model );
-    //    std::vector<boost::tuple<double,double,double> > M_rbconv2 = M_scm->offline();
-
-    Log() << "[CRB::offline] compute random sampling\n";
-    // random sampling
-    M_Xi->randomize( this->vm()["crb.sampling-size"].template as<int>() );
-    //M_Xi->equidistribute( this->vm()["crb.sampling-size"].template as<int>() );
-    M_WNmu->setSuperSampling( M_Xi );
-
-    std::cout<<"[CRB offline] M_error_type = "<<M_error_type<<std::endl;
-
-
-    std::cout << " -- sampling init done in " << ti.elapsed() << "s\n";
-    ti.restart();
-
-    if ( M_error_type == CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM )
-    {
-        int __QLhs = M_model->Qa();
-        int __QRhs = M_model->Ql( 0 );
-        int __QOutput = M_model->Ql( M_output_index );
-        int __Qm = M_model->Qm();
-
-        typename array_2_type::extent_gen extents2;
-        M_C0_pr.resize( extents2[__QRhs][__QRhs] );
-        M_C0_du.resize( extents2[__QOutput][__QOutput] );
-
-        typename array_3_type::extent_gen extents3;
-        M_Lambda_pr.resize( extents3[__QLhs][__QRhs] );
-        M_Lambda_du.resize( extents3[__QLhs][__QOutput] );
-
-        typename array_4_type::extent_gen extents4;
-        M_Gamma_pr.resize( extents4[__QLhs][__QLhs] );
-        M_Gamma_du.resize( extents4[__QLhs][__QLhs] );
-
-        if ( model_type::is_time_dependent )
-        {
-            M_Cmf_pr.resize( extents3[__Qm][__QRhs] );
-            M_Cmf_du.resize( extents3[__Qm][__QRhs] );
-
-            M_Cma_pr.resize( extents4[__Qm][__QLhs] );
-            M_Cma_du.resize( extents4[__Qm][__QLhs] );
-
-            M_Cmm_pr.resize( extents4[__Qm][__Qm] );
-            M_Cmm_du.resize( extents4[__Qm][__Qm] );
-        }
-
-        std::cout << " -- residual data init done in " << ti.elapsed() << "\n";
-        ti.restart();
-    }
-
-    // offlineWithErrorEstimation();
+    boost::timer ti;
+    std::cout << "Offline CRB starts, this may take a while until Database is computed...\n";
+    Log() << "[CRB::offline] initialize underlying finite element model\n";
+    M_model->init();
+    std::cout << " -- model init done in " << ti.elapsed() << "s\n";
 
     parameter_type mu( M_Dmu );
 
-    // empty sets
-    M_WNmu->clear();
-
-    // start with M_C = { arg min mu, mu \in Xi }
+    double maxerror;
+    double delta_pr;
+    double delta_du;
     size_type index;
-    boost::tie( mu, index ) = M_Xi->min();
 
-    std::cout << "  -- start with mu = [ ";
-    int size = mu.size();
+    //if M_N == 0 then there is not an already existing database
+    if ( rebuild_database || M_N == 0)
+    {
+        ti.restart();
+        //scm_ptrtype M_scm = scm_ptrtype( new scm_type( M_vm ) );
+        //M_scm->setTruthModel( M_model );
+        //    std::vector<boost::tuple<double,double,double> > M_rbconv2 = M_scm->offline();
 
-    for ( int i=0; i<size-1; i++ ) std::cout<<mu( i )<<" ";
+        Log() << "[CRB::offline] compute random sampling\n";
+        // random sampling
+        M_Xi->randomize( this->vm()["crb.sampling-size"].template as<int>() );
+        //M_Xi->equidistribute( this->vm()["crb.sampling-size"].template as<int>() );
+        M_WNmu->setSuperSampling( M_Xi );
 
-    std::cout<<mu( size-1 )<<" ]"<<std::endl;
-    //std::cout << " -- WN size :  " << M_WNmu->size() << "\n";
+        std::cout<<"[CRB offline] M_error_type = "<<M_error_type<<std::endl;
+        std::cout << " -- sampling init done in " << ti.elapsed() << "s\n";
+
+        Log() << "[CRB::offline] Starting offline for output " << M_output_index << "\n";
+        ti.restart();
+
+        if ( M_error_type == CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM )
+        {
+            int __QLhs = M_model->Qa();
+            int __QRhs = M_model->Ql( 0 );
+            int __QOutput = M_model->Ql( M_output_index );
+            int __Qm = M_model->Qm();
+
+            typename array_2_type::extent_gen extents2;
+            M_C0_pr.resize( extents2[__QRhs][__QRhs] );
+            M_C0_du.resize( extents2[__QOutput][__QOutput] );
+
+            typename array_3_type::extent_gen extents3;
+            M_Lambda_pr.resize( extents3[__QLhs][__QRhs] );
+            M_Lambda_du.resize( extents3[__QLhs][__QOutput] );
+
+            typename array_4_type::extent_gen extents4;
+            M_Gamma_pr.resize( extents4[__QLhs][__QLhs] );
+            M_Gamma_du.resize( extents4[__QLhs][__QLhs] );
+
+            if ( model_type::is_time_dependent )
+            {
+                M_Cmf_pr.resize( extents3[__Qm][__QRhs] );
+                M_Cmf_du.resize( extents3[__Qm][__QRhs] );
+
+                M_Cma_pr.resize( extents4[__Qm][__QLhs] );
+                M_Cma_du.resize( extents4[__Qm][__QLhs] );
+
+                M_Cmm_pr.resize( extents4[__Qm][__Qm] );
+                M_Cmm_du.resize( extents4[__Qm][__Qm] );
+            }
+        }
+        std::cout << " -- residual data init done in " << ti.elapsed() << "\n";
+        ti.restart();
+
+        // empty sets
+        M_WNmu->clear();
+
+        // start with M_C = { arg min mu, mu \in Xi }
+        boost::tie( mu, index ) = M_Xi->min();
+
+        std::cout << "  -- start with mu = [ ";
+        int size = mu.size();
+        for ( int i=0; i<size-1; i++ ) std::cout<<mu( i )<<" ";
+        std::cout<<mu( size-1 )<<" ]"<<std::endl;
+        //std::cout << " -- WN size :  " << M_WNmu->size() << "\n";
+
+        // dimension of reduced basis space
+        M_N = 0;
+
+        // scm offline stage: build C_K
+        if ( M_error_type == CRB_RESIDUAL_SCM )
+        {
+            M_scmA->setScmForMassMatrix( false );
+            std::vector<boost::tuple<double,double,double> > M_rbconv2 = M_scmA->offline();
+
+            if ( ! M_model->isSteady() )
+            {
+                M_scmM->setScmForMassMatrix( true );
+                std::vector<boost::tuple<double,double,double> > M_rbconv3 = M_scmM->offline();
+            }
+        }
+
+        maxerror = 1e10;
+        delta_pr = 0;
+        delta_du = 0;
+        //boost::tie( maxerror, mu, index ) = maxErrorBounds( N );
+
+        Log() << "[CRB::offline] allocate reduced basis data structures\n";
+        M_Aq_pr.resize( M_model->Qa() );
+
+        M_Aq_du.resize( M_model->Qa() );
+        M_Aq_pr_du.resize( M_model->Qa() );
+        M_Mq_pr.resize( M_model->Qm() );
+        M_Mq_du.resize( M_model->Qm() );
+        M_Mq_pr_du.resize( M_model->Qm() );
+
+        M_Fq_pr.resize( M_model->Ql( 0 ) );
+        M_Fq_du.resize( M_model->Ql( 0 ) );
+        M_Lq_pr.resize( M_model->Ql( M_output_index ) );
+        M_Lq_du.resize( M_model->Ql( M_output_index ) );
+
+    }//end of if( rebuild_database )
+    else
+    {
+        mu = M_current_mu;
+        std::cout<<"we are going to enrich the reduced basis"<<std::endl;
+        std::cout<<"there are "<<M_N<<" elements in the database"<<std::endl;
+    }//end of else associated to if ( rebuild_databse )
 
     sparse_matrix_ptrtype M,A,Adu,At;
     std::vector<vector_ptrtype> F,L;
-
-    // dimension of reduced basis space
-    M_N = 0;
 
     Log() << "[CRB::offline] compute affine decomposition\n";
     std::vector<sparse_matrix_ptrtype> Aq;
     std::vector<sparse_matrix_ptrtype> Mq;
     std::vector<std::vector<vector_ptrtype> > Fq,Lq;
     sparse_matrix_ptrtype Aq_transpose = M_model->newMatrix();
-
     boost::tie( Mq, Aq, Fq ) = M_model->computeAffineDecomposition();
-
-    // scm offline stage: build C_K
-    if ( M_error_type == CRB_RESIDUAL_SCM )
-    {
-        M_scmA->setScmForMassMatrix( false );
-        std::vector<boost::tuple<double,double,double> > M_rbconv2 = M_scmA->offline();
-
-        if ( ! M_model->isSteady() )
-        {
-            M_scmM->setScmForMassMatrix( true );
-            std::vector<boost::tuple<double,double,double> > M_rbconv3 = M_scmM->offline();
-        }
-    }
-
-    double maxerror = 1e10;
-    double delta_pr = 0;
-    double delta_du = 0;
-    //boost::tie( maxerror, mu, index ) = maxErrorBounds( N );
-
-    Log() << "[CRB::offlineWithErrorEstimation] allocate reduced basis data structures\n";
-    M_Aq_pr.resize( M_model->Qa() );
-
-    M_Aq_du.resize( M_model->Qa() );
-    M_Aq_pr_du.resize( M_model->Qa() );
-    M_Mq_pr.resize( M_model->Qm() );
-    M_Mq_du.resize( M_model->Qm() );
-    M_Mq_pr_du.resize( M_model->Qm() );
-
-    M_Fq_pr.resize( M_model->Ql( 0 ) );
-    M_Fq_du.resize( M_model->Ql( 0 ) );
-    M_Lq_pr.resize( M_model->Ql( M_output_index ) );
-    M_Lq_du.resize( M_model->Ql( M_output_index ) );
-
 
     element_ptrtype u( new element_type( M_model->functionSpace() ) );
     element_ptrtype uproj( new element_type( M_model->functionSpace() ) );
@@ -963,6 +1003,10 @@ CRB<TruthModelType>::offline()
 
     if ( M_error_type == CRB_NO_RESIDUAL )
     {
+
+        if( ! rebuild_database )
+            throw std::logic_error( "[CRB::offline] ERROR , with crb.error-type=2 it's not possible to enrich an already existing reduced basis, please set crb.rebuild-database=true" );
+
         Sampling = sampling_ptrtype( new sampling_type( M_Dmu ) );
         sampling_size = M_iter_max / M_Nm ;
 
@@ -1001,8 +1045,8 @@ CRB<TruthModelType>::offline()
         backend_ptrtype backend_dual_problem = backend_type::build( BACKEND_PETSC );
 
         // for a given parameter \p mu assemble the left and right hand side
-
-        u->setName( ( boost::format( "fem-primal-%1%" ) % ( M_N-1 ) ).str() );
+        u->setName( ( boost::format( "fem-primal-%1%" ) % ( M_N ) ).str() );
+        udu->setName( ( boost::format( "fem-dual-%1%" ) % ( M_N ) ).str() );
 
         if ( M_model->isSteady() || !model_type::is_time_dependent )
         {
@@ -1015,8 +1059,8 @@ CRB<TruthModelType>::offline()
             Log() << "[CRB::offline] transpose primal matrix" << "\n";
             At = M_model->newMatrix();
             A->transpose( At );
-            u->setName( ( boost::format( "fem-primal-%1%" ) % ( M_N-1 ) ).str() );
-            udu->setName( ( boost::format( "fem-dual-%1%" ) % ( M_N-1 ) ).str() );
+            //u->setName( ( boost::format( "fem-primal-%1%" ) % ( M_N ) ).str() );
+            //udu->setName( ( boost::format( "fem-dual-%1%" ) % ( M_N ) ).str() );
 
             Log() << "[CRB::offline] solving primal" << "\n";
 
@@ -1620,8 +1664,8 @@ CRB<TruthModelType>::offline()
 
         timer2.restart();
 
-	M_compute_variance = this->vm()["crb.compute-variance"].template as<bool>();
-	buildVarianceMatrixPhi( M_N );
+        M_compute_variance = this->vm()["crb.compute-variance"].template as<bool>();
+        buildVarianceMatrixPhi( M_N );
 
         if ( M_error_type==CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM )
         {
@@ -1641,9 +1685,9 @@ CRB<TruthModelType>::offline()
 
         else
         {
-	    boost::tie( maxerror, mu, index , delta_pr , delta_du ) = maxErrorBounds( M_N );
-
+            boost::tie( maxerror, mu, index , delta_pr , delta_du ) = maxErrorBounds( M_N );
             M_index.push_back( index );
+            M_current_mu = mu;
 
             int count = std::count( M_index.begin(),M_index.end(),index );
             M_mode_number = count;
@@ -1666,6 +1710,9 @@ CRB<TruthModelType>::offline()
         Log() << "time: " << timer.elapsed() << "\n";
         std::cout << "============================================================\n";
         Log() <<"========================================"<<"\n";
+
+        //save DB after adding an element
+        this->saveDB();
 
     }
 
@@ -1693,7 +1740,7 @@ CRB<TruthModelType>::offline()
     }
 
 
-    this->saveDB();
+    //this->saveDB();
     std::cout << "Offline CRB is done\n";
 
     return M_rbconv;
@@ -1955,8 +2002,8 @@ CRB<TruthModelType>::checkResidual( parameter_type const& mu, std::vector< std::
     Log() << "[CRB::checkResidual] transpose primal matrix" << "\n";
     At = M_model->newMatrix();
     A->transpose( At );
-    u->setName( ( boost::format( "fem-primal-%1%" ) % ( M_N-1 ) ).str() );
-    udu->setName( ( boost::format( "fem-dual-%1%" ) % ( M_N-1 ) ).str() );
+    u->setName( ( boost::format( "fem-primal-%1%" ) % ( M_N ) ).str() );
+    udu->setName( ( boost::format( "fem-dual-%1%" ) % ( M_N ) ).str() );
 
     Log() << "[CRB::checkResidual] solving primal" << "\n";
     backendA->solve( _matrix=A,  _solution=u, _rhs=F[0] );
@@ -2630,7 +2677,6 @@ CRB<TruthModelType>::delta( size_type N,
                             std::vector<vectorN_type> const& uNduold,
                             int k ) const
 {
-
     std::vector< std::vector<double> > primal_residual_coeffs;
     std::vector< std::vector<double> > dual_residual_coeffs;
 
@@ -4145,8 +4191,8 @@ CRB<TruthModelType>::run( parameter_type const& mu, double eps )
 {
 
     M_compute_variance = this->vm()["crb.compute-variance"].template as<bool>();
-    int Nwn = M_N;
-
+    //int Nwn = M_N;
+    int Nwn = vm()["crb.dimension-max"].template as<int>();
 #if 0
 
     if (  M_error_type!=CRB_EMPIRICAL )
@@ -4443,6 +4489,17 @@ CRB<TruthModelType>::save( Archive & ar, const unsigned int version ) const
 
     std::cout<<"[CRB::save] version : "<<version<<std::endl;
 
+    auto mesh = mesh_type::New();
+    auto is_mesh_loaded = mesh->load( _name="mymesh",_path=".",_type="binary" );
+    if ( ! is_mesh_loaded )
+    {
+        auto first_element = M_WN[0];
+        mesh = first_element.functionSpace()->mesh() ;
+        mesh->save( _name="mymesh",_path=".",_type="binary" );
+    }
+
+    auto Xh = space_type::New( mesh );
+
     ar & boost::serialization::base_object<super>( *this );
     ar & BOOST_SERIALIZATION_NVP( M_output_index );
     ar & BOOST_SERIALIZATION_NVP( M_N );
@@ -4486,8 +4543,17 @@ CRB<TruthModelType>::save( Archive & ar, const unsigned int version ) const
     }
     if( version >= 2 )
         ar & BOOST_SERIALIZATION_NVP( M_variance_matrix_phi );
-    //if( version >= 3 )
-    //    ar & BOOST_SERIALIZATION_NVP( M_WN );
+
+
+    if( version >= 4 )
+    {
+        ar & BOOST_SERIALIZATION_NVP( M_current_mu );
+
+        for(int i=0; i<M_N; i++)
+            ar & BOOST_SERIALIZATION_NVP( M_WN[i] );
+        for(int i=0; i<M_N; i++)
+            ar & BOOST_SERIALIZATION_NVP( M_WNdu[i] );
+    }
 }
 
 template<typename TruthModelType>
@@ -4497,6 +4563,12 @@ CRB<TruthModelType>::load( Archive & ar, const unsigned int version )
 {
 
     std::cout<<"[CRB::load] version"<< version <<std::endl;
+
+    auto mesh = mesh_type::New();
+    auto is_mesh_loaded = mesh->load( _name="mymesh",_path=".",_type="binary" );
+
+    auto Xh = space_type::New( mesh );
+
     if( version <= 2 )
         M_rbconv_contains_primal_and_dual_contributions = false;
     else
@@ -4510,17 +4582,17 @@ CRB<TruthModelType>::load( Archive & ar, const unsigned int version )
 
    if( version <= 2 )
     {
-	old_convergence_type old_M_rbconv;
-	ar & BOOST_SERIALIZATION_NVP( old_M_rbconv );
-	double delta_pr = 0;
-	double delta_du = 0;
-	typedef old_convergence_type::left_map::const_iterator iterator;
-	for(iterator it = old_M_rbconv.left.begin(); it != old_M_rbconv.left.end(); ++it)
-	{
-	    int N = it->first;
-	    double maxerror = it->second;
-	    M_rbconv.insert( convergence( N, boost::make_tuple(maxerror,delta_pr,delta_du) ) );
-	}
+        old_convergence_type old_M_rbconv;
+        ar & BOOST_SERIALIZATION_NVP( old_M_rbconv );
+        double delta_pr = 0;
+        double delta_du = 0;
+        typedef old_convergence_type::left_map::const_iterator iterator;
+        for(iterator it = old_M_rbconv.left.begin(); it != old_M_rbconv.left.end(); ++it)
+        {
+            int N = it->first;
+            double maxerror = it->second;
+            M_rbconv.insert( convergence( N, boost::make_tuple(maxerror,delta_pr,delta_du) ) );
+        }
     }
    else
 	ar & BOOST_SERIALIZATION_NVP( M_rbconv );
@@ -4561,8 +4633,28 @@ CRB<TruthModelType>::load( Archive & ar, const unsigned int version )
     }
     if( version >= 2 )
         ar & BOOST_SERIALIZATION_NVP( M_variance_matrix_phi );
-    //if( version >= 3 )
-    //    ar & BOOST_SERIALIZATION_NVP( M_WN );
+
+    if( version >= 4 )
+    {
+        ar & BOOST_SERIALIZATION_NVP( M_current_mu );
+
+        element_type temp = Xh->element();
+        M_WN.resize( M_N );
+        M_WNdu.resize( M_N );
+        temp = Xh->element();
+        for( int i = 0 ; i < M_N ; i++ )
+        {
+            temp.setName( (boost::format( "fem-primal-%1%" ) % ( i ) ).str() );
+            ar & BOOST_SERIALIZATION_NVP( temp );
+            M_WN[i] = temp;
+        }
+        for( int i = 0 ; i < M_N ; i++ )
+        {
+            temp.setName( (boost::format( "fem-dual-%1%" ) % ( i ) ).str() );
+            ar & BOOST_SERIALIZATION_NVP( temp );
+            M_WNdu[i] = temp;
+        }
+    }
 
 #if 0
     std::cout << "[loadDB] output index : " << M_output_index << "\n"
@@ -4659,10 +4751,10 @@ namespace serialization
 template< typename T>
 struct version< Feel::CRB<T> >
 {
-    // at the moment the version of the CRB DB is 3. if any changes is done
+    // at the moment the version of the CRB DB is 4. if any changes is done
     // to the format it is mandatory to increase the version number below
     // and use the new version number of identify the new entries in the DB
-    typedef mpl::int_<3> type;
+    typedef mpl::int_<4> type;
     typedef mpl::integral_c_tag tag;
     static const unsigned int value = version::type::value;
 };

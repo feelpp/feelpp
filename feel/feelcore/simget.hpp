@@ -149,6 +149,11 @@ public:
     {
         return M_meshSize;
     }
+    //! return the mesh size
+    double meshSizeInit() const
+    {
+        return M_meshSizeInit;
+    }
 
     //! return the refinement level
     int level() const
@@ -158,6 +163,11 @@ public:
 
     //! return the statistics associated to the simget after calling run
     ptree::ptree const& stats() const
+    {
+        return M_stats;
+    }
+    //! return the statistics associated to the simget after calling run
+    ptree::ptree& stats()
     {
         return M_stats;
     }
@@ -172,6 +182,12 @@ public:
     void setMeshSize( double h )
     {
         M_meshSize= h;
+    }
+
+    //! set the initial mesh size
+    void setMeshSizeInit( double h )
+    {
+        M_meshSizeInit = h;
     }
 
     //! set the refinment level if applicable
@@ -214,6 +230,7 @@ protected:
 
 protected:
     double M_meshSize;
+    double M_meshSizeInit;
     int M_level;
     ptree::ptree M_stats;
 private:

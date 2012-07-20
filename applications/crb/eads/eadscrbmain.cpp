@@ -34,6 +34,8 @@
 int
 main( int argc, char** argv )
 {
+
+    Feel::Environment env( argc, argv );
     Feel::OpusApp<Feel::OpusModelRB<2,1,2> > app( argc, argv,
             Feel::makeEadsAbout( "eadscrb" ),
             Feel::makeEadsOptions() );

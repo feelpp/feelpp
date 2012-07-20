@@ -191,6 +191,7 @@ BOOST_PARAMETER_NAME( collect_garbage )
 
 BOOST_PARAMETER_NAME( partitions )
 BOOST_PARAMETER_NAME( partition_file )
+BOOST_PARAMETER_NAME( rebuild_partitions )
 BOOST_PARAMETER_NAME( worldcomm )
 BOOST_PARAMETER_NAME( worldscomm )
 BOOST_PARAMETER_NAME( parallel )
@@ -208,6 +209,8 @@ BOOST_PARAMETER_NAME( grainsize )
 BOOST_PARAMETER_NAME( partitioner )
 
 BOOST_PARAMETER_NAME( save )
+BOOST_PARAMETER_NAME( ddmethod )
+BOOST_PARAMETER_NAME( penaldir )
 
 }
 

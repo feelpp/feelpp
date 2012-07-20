@@ -106,12 +106,12 @@ ExporterGmsh<MeshType,N>::gmshSaveAscii() const
         std::ostringstream __fname;
 
         __fname << __ts->name()  //<< this->prefix() //this->path()
-                << "-" << M_comm.size() << "_" << M_comm.rank()
+                << "-" << this->worldComm().size() << "_" << this->worldComm().rank()
                 << ".msh";
 
         /*std::string filename =  this->prefix()
           + __ts->name()
-          + "-" + M_comm.size() + "_" + M_comm.rank()
+          + "-" + this->worldComm().size() + "_" + this->worldComm().rank()
           + ".msh";*/
         std::ofstream out;
 
@@ -184,7 +184,7 @@ void
 ExporterGmsh<MeshType,N>::saveMesh( std::string const& filename, mesh_ptrtype mesh, bool parametric ) const
 {
 
-    if (  M_comm.rank() == 0 )
+    if (  this->worldComm().rank() == 0 )
     {
         std::ofstream out( filename.c_str(), std::ios::out );
 
@@ -199,7 +199,7 @@ ExporterGmsh<MeshType,N>::saveMesh( std::string const& filename, mesh_ptrtype me
         out.close();
     }
 
-    M_comm.barrier();
+    this->worldComm().barrier();
 
     //-----------------------------------------------------------------//
 
@@ -207,26 +207,26 @@ ExporterGmsh<MeshType,N>::saveMesh( std::string const& filename, mesh_ptrtype me
     auto nGlobPoint = nPointAndIndex.template get<0>();
     auto indexPointStart = nPointAndIndex.template get<1>();
 
-    if (  M_comm.rank() == 0 )
+    if (  this->worldComm().rank() == 0 )
     {
         std::ofstream out( filename.c_str(), std::ios::app );
         gmshSaveNodesStart( out, mesh, nGlobPoint, parametric );
         out.close();
     }
 
-    for ( int therank=0; therank<M_comm.size(); ++therank )
+    for ( int therank=0; therank<this->worldComm().size(); ++therank )
     {
-        if ( therank == M_comm.rank() )
+        if ( therank == this->worldComm().rank() )
         {
             std::ofstream out( filename.c_str(), std::ios::app );
             gmshSaveNodes( out, mesh, indexPointStart, parametric );
             out.close();
         }
 
-        M_comm.barrier();
+        this->worldComm().barrier();
     }
 
-    if (  M_comm.rank() == 0 )
+    if (  this->worldComm().rank() == 0 )
     {
         std::ofstream out( filename.c_str(), std::ios::app );
         gmshSaveNodesEnd( out, mesh, parametric );
@@ -239,26 +239,26 @@ ExporterGmsh<MeshType,N>::saveMesh( std::string const& filename, mesh_ptrtype me
     auto nGlobElement = nEltAndIndex.template get<0>();
     auto indexElementStart = nEltAndIndex.template get<1>();
 
-    if (  M_comm.rank() == 0 )
+    if (  this->worldComm().rank() == 0 )
     {
         std::ofstream out( filename.c_str(), std::ios::app );
         gmshSaveElementsStart( out, nGlobElement );
         out.close();
     }
 
-    for ( int therank=0; therank<M_comm.size(); ++therank )
+    for ( int therank=0; therank<this->worldComm().size(); ++therank )
     {
-        if ( therank == M_comm.rank() )
+        if ( therank == this->worldComm().rank() )
         {
             std::ofstream out( filename.c_str(), std::ios::app );
             gmshSaveElements( out, mesh, indexElementStart, indexPointStart );
             out.close();
         }
 
-        M_comm.barrier();
+        this->worldComm().barrier();
     }
 
-    if (  M_comm.rank() == 0 )
+    if (  this->worldComm().rank() == 0 )
     {
         std::ofstream out( filename.c_str(), std::ios::app );
         gmshSaveElementsEnd( out );
@@ -300,20 +300,20 @@ ExporterGmsh<MeshType,N>::numberOfGlobalPtAndIndex( mesh_ptrtype mesh ) const
     auto local_numberPoints = mesh->numPoints();
     auto global_numberPoints=local_numberPoints;
 
-    mpi::all_reduce( M_comm,
+    mpi::all_reduce( this->worldComm(),
                      local_numberPoints,
                      global_numberPoints,
                      std::plus<size_type>() );
 
     std::vector<size_type> all_localnumberPoint;
 
-    mpi::all_gather( M_comm,
+    mpi::all_gather( this->worldComm(),
                      local_numberPoints,
                      all_localnumberPoint );
 
     size_type indexPtStart = 0;
 
-    for ( int i=0; i<M_comm.rank(); ++i )
+    for ( int i=0; i<this->worldComm().rank(); ++i )
         indexPtStart+=all_localnumberPoint[i];
 
     return boost::make_tuple( global_numberPoints,indexPtStart );
@@ -399,20 +399,20 @@ ExporterGmsh<MeshType,N>::numberOfGlobalEltAndIndex( mesh_ptrtype mesh ) const
     auto local_numberElements = number_markedfaces+number_elements;
     auto global_numberElements=local_numberElements;
 
-    mpi::all_reduce( M_comm,
+    mpi::all_reduce( this->worldComm(),
                      local_numberElements,
                      global_numberElements,
                      std::plus<size_type>() );
 
     std::vector<size_type> all_localnumberElements;
 
-    mpi::all_gather( M_comm,
+    mpi::all_gather( this->worldComm(),
                      local_numberElements,
                      all_localnumberElements );
 
     size_type indexEltStart = 0;
 
-    for ( int i=0; i<M_comm.rank(); ++i )
+    for ( int i=0; i<this->worldComm().rank(); ++i )
         indexEltStart+=all_localnumberElements[i];
 
     return boost::make_tuple( global_numberElements,indexEltStart );
