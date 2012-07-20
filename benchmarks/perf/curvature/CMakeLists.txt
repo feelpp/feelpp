@@ -44,11 +44,5 @@ namespace Feel {
   endforeach()
 endforeach()
 
-add_executable(feel_perf_curvature  ${lagrange} ${cr} bench.cpp)
-#add_executable(feel_perf_curvature ${CMAKE_CURRENT_BINARY_DIR}/feel_perf_curvature_Hypercube_2D_CrouzeixRaviart_1.cpp  bench.cpp)
-add_dependencies(feel_perf_curvature gen_feel_perf_curvature)
-target_link_libraries(feel_perf_curvature ${FEELPP_LIBRARIES})
-
-
-configure_file(curvature.cfg curvature.cfg)
+feelpp_add_application( perf_curvature SRCS bench.cpp ${lagrange}  CFG curvature.cfg LINK_LIBRARIES ${FEELPP_LIBRARIES}  DEPS gen_feel_perf_curvature SCRIPTS curvature.tex)
 
