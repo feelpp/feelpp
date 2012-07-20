@@ -8,12 +8,12 @@ fetch.type          svn
 fetch.user          gmsh
 fetch.password      gmsh
 svn.url             https://geuz.org/svn/gmsh/trunk
-svn.revision        12309
+svn.revision        12633
 svn.method          export
 svn.post_args       --username ${fetch.user} --password ${fetch.password}
 
 name                gmsh-devel
-version             2.5.1-svn-${svn.revision}
+version             2.6.1-svn-${svn.revision}
 categories          science
 platforms           darwin
 maintainers         ujf-grenoble.fr:Christophe.Prudhomme
@@ -43,15 +43,13 @@ configure.args-append \
     -DENABLE_METIS=OFF \
     -DENABLE_TAUCS=OFF
 
-post-build {
-    # lib and shared targets are not handled by default target
-    system "cd ${worksrcpath} && make lib shared"
-}
+build.target all lib shared
 
 depends_lib  \
     port:mesa \
     port:libpng \
     port:python27 \
+    port:petsc \
     port:swig \
     port:swig-python \
     port:fltk-devel\

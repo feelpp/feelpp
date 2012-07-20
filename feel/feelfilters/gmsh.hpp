@@ -144,19 +144,20 @@ public:
      * \return the newly generated Gmsh object
      */
     Gmsh& operator=( Gmsh const& __g )
-    {
-        if (  this != &__g )
         {
-            M_dimension = __g.M_dimension;
-            M_order = __g.M_order;
-            M_version = __g.M_version;
-            M_addmidpoint = __g.M_addmidpoint;
-            M_usePhysicalNames = __g.M_usePhysicalNames;
-            M_shear = __g.M_shear;
-        }
+            if (  this != &__g )
+            {
+                M_dimension = __g.M_dimension;
+                M_order = __g.M_order;
+                M_version = __g.M_version;
+                M_addmidpoint = __g.M_addmidpoint;
+                M_usePhysicalNames = __g.M_usePhysicalNames;
+                M_shear = __g.M_shear;
+                M_refine_levels = __g.M_refine_levels;
+            }
 
-        return *this;
-    }
+            return *this;
+        }
 
     static boost::shared_ptr<Gmsh> New( po::variables_map const& vm );
     static boost::shared_ptr<Gmsh> New( std::string const& shape, uint16_type d = 2, uint16_type o = 1, std::string const& ct = "simplex" );
@@ -171,139 +172,142 @@ public:
      * \return mesh dimension
      */
     int dimension() const
-    {
-        return M_dimension;
-    }
+        {
+            return M_dimension;
+        }
 
     /**
      * get the order of the elements of the mesh
      * \return the order of the elements of the mesh
      */
     GMSH_ORDER order() const
-    {
-        return ( GMSH_ORDER ) M_order;
-    }
+        {
+            return ( GMSH_ORDER ) M_order;
+        }
 
     /**
      * @return the file format version
      */
     std::string version() const
-    {
-        return M_version;
-    }
+        {
+            return M_version;
+        }
 
     /**
      * \return the name of the file
      */
     std::string prefix() const
-    {
-        return M_name;
-    }
+        {
+            return M_name;
+        }
 
     /**
      * \return bounding box
      */
     std::vector<std::pair<double,double> > const& boundingBox() const
-    {
-        return M_I;
-    }
+        {
+            return M_I;
+        }
     double xmin() const
-    {
-        return M_I[0].first;
-    }
+        {
+            return M_I[0].first;
+        }
     double xmax() const
-    {
-        return M_I[0].second;
-    }
+        {
+            return M_I[0].second;
+        }
     double ymin() const
-    {
-        return M_I[1].first;
-    }
+        {
+            return M_I[1].first;
+        }
     double ymax() const
-    {
-        return M_I[1].second;
-    }
+        {
+            return M_I[1].second;
+        }
     double zmin() const
-    {
-        return M_I[2].first;
-    }
+        {
+            return M_I[2].first;
+        }
     double zmax() const
-    {
-        return M_I[2].second;
-    }
+        {
+            return M_I[2].second;
+        }
 
     /**
      * \return characteristic length
      */
     double const& h() const
-    {
-        return M_h;
-    }
+        {
+            return M_h;
+        }
 
     /**
      * \return the geometry description
      */
     std::string description() const
-    {
-        std::string d = this->getDescription();
+        {
+            std::string d = this->getDescription();
 
-        if ( !d.empty() ) M_desc = d;
+            if ( !d.empty() ) M_desc = d;
 
-        return M_desc;
-    }
+            return M_desc;
+        }
 
     /**
      * add the mid point of the domain
      */
     bool addMidPoint() const
-    {
-        return M_addmidpoint;
-    }
+        {
+            return M_addmidpoint;
+        }
 
     /**
      * \return true if use the physical name, 'false' otherwise
      */
     bool usePhysicalNames() const
-    {
-        return M_usePhysicalNames;
-    }
+        {
+            return M_usePhysicalNames;
+        }
 
     //! \return the world comm
     WorldComm const& worldComm() const
-    {
-        return M_worldComm;
-    }
+        {
+            return M_worldComm;
+        }
 
     //! \return the nnumber of partitions
     int numberOfPartitions() const
-    {
-        return M_partitions;
-    }
+        {
+            return M_partitions;
+        }
 
     //! \return true if save msh file by partitions, false otherwise
     bool mshFileByPartition() const
-    {
-        return M_partition_file;
-    }
+        {
+            return M_partition_file;
+        }
 
     //! \return the partitioner
     GMSH_PARTITIONER partitioner() const
-    {
-        return M_partitioner;
-    }
+        {
+            return M_partitioner;
+        }
 
     //! get the shear
     double shear() const
-    {
-        return M_shear;
-    }
+        {
+            return M_shear;
+        }
 
     //! return true if recombine, false otherwise
     bool recombine() const
-    {
-        return M_recombine;
-    }
-
+        {
+            return M_recombine;
+        }
+    int refinementLevels() const
+        {
+            return M_refine_levels;
+        }
     //@}
 
     /** \name  Mutators
@@ -314,10 +318,10 @@ public:
      * set the dimension
      */
     Gmsh& setDimension( int dim )
-    {
-        M_dimension = dim;
-        return *this;
-    }
+        {
+            M_dimension = dim;
+            return *this;
+        }
 
     /**
      * the gmsh generator to generate a reference domain
@@ -329,10 +333,10 @@ public:
      * \endcode
      */
     Gmsh& ref()
-    {
-        this->setReferenceDomain();
-        return *this;
-    }
+        {
+            this->setReferenceDomain();
+            return *this;
+        }
 
     /**
      * set the characteristic length
@@ -340,10 +344,10 @@ public:
      * \return the mesh generator
      */
     Gmsh& h( double _h )
-    {
-        this->setCharacteristicLength( _h );
-        return *this;
-    }
+        {
+            this->setCharacteristicLength( _h );
+            return *this;
+        }
 
     /**
      * set the order of the elements of the mesh it can be either
@@ -353,81 +357,81 @@ public:
      * \param o order of the elements
      */
     void setOrder( int o )
-    {
-        M_order = ( GMSH_ORDER ) o;
-    }
+        {
+            M_order = ( GMSH_ORDER ) o;
+        }
 
     /**
      * set the file format version
      */
     void setVersion( std::string version )
-    {
-        if ( version != "1" && version != "2" && version != FEELPP_GMSH_FORMAT_VERSION )
-            throw std::invalid_argument( "invalid gmsh file format version" );
+        {
+            if ( version != "1" && version != "2" && version != FEELPP_GMSH_FORMAT_VERSION )
+                throw std::invalid_argument( "invalid gmsh file format version" );
 
-        M_version = version;
-    }
+            M_version = version;
+        }
 
     /**
      * set the description of the geometry
      */
     void setDescription( std::string const& desc )
-    {
-        M_desc = desc;
-    }
+        {
+            M_desc = desc;
+        }
     /**
      * set the prefix of the Gmsh files
      */
     void setPrefix( std::string const& name )
-    {
-        M_name = name;
-    }
+        {
+            M_name = name;
+        }
     virtual void setX( std::pair<double,double> const& x )
-    {
-        FEELPP_ASSERT( dimension() >= 1 )( dimension() ).error( "invalid dimension" );
-        M_I[0] = x;
-    }
+        {
+            FEELPP_ASSERT( dimension() >= 1 )( dimension() ).error( "invalid dimension" );
+            M_I[0] = x;
+        }
     virtual void setY( std::pair<double,double> const& y )
-    {
-        FEELPP_ASSERT( dimension() >= 2 )( dimension() ).warn( "invalid dimension" );
+        {
+            FEELPP_ASSERT( dimension() >= 2 )( dimension() ).warn( "invalid dimension" );
 
-        if ( dimension() >= 2 )
-            M_I[1] = y;
-    }
+            if ( dimension() >= 2 )
+                M_I[1] = y;
+        }
     virtual void setZ( std::pair<double,double> const& z )
-    {
-        FEELPP_ASSERT( dimension() >= 3 )( dimension() ).warn( "invalid dimension" );
+        {
+            FEELPP_ASSERT( dimension() >= 3 )( dimension() ).warn( "invalid dimension" );
 
-        if ( dimension() >= 3 )
-            M_I[2] = z;
-    }
+            if ( dimension() >= 3 )
+                M_I[2] = z;
+        }
 
     //! the gmsh generator to generate a reference domain
     virtual void setReferenceDomain()
-    {
-        if ( dimension() >= 1 )
-            M_I[0] = std::make_pair( -1, 1 );
+        {
+            if ( dimension() >= 1 )
+                M_I[0] = std::make_pair( -1, 1 );
 
-        if ( dimension() >= 2 )
-            M_I[1] = std::make_pair( -1, 1 );
+            if ( dimension() >= 2 )
+                M_I[1] = std::make_pair( -1, 1 );
 
-        if ( dimension() >= 3 )
-            M_I[2] = std::make_pair( -1, 1 );
-    }
+            if ( dimension() >= 3 )
+                M_I[2] = std::make_pair( -1, 1 );
+        }
 
     //! set the characteristic length to \p h
     virtual void setCharacteristicLength( double _h )
-    {
-        M_h = _h;
-    }
+        {
+            M_h = _h;
+        }
 
     /**
      * if add is true, set M_addmidpoint to true, false otherwise
      */
     void setAddMidPoint( bool add )
-    {
-        M_addmidpoint = add;
-    }
+        {
+            M_addmidpoint = add;
+        }
 
     /**
      * Set the use of physical names to describe the boundaries of the domain: if \p option
@@ -435,45 +439,49 @@ public:
      * numerical id by strings for the Physical boundaries
      */
     void usePhysicalNames( bool option )
-    {
-        M_usePhysicalNames = option;
-    }
+        {
+            M_usePhysicalNames = option;
+        }
 
     //! set the communicator
     void setWorldComm( WorldComm const& _worldcomm )
-    {
-        M_worldComm = _worldcomm;
-    }
+        {
+            M_worldComm = _worldcomm;
+        }
 
     //! set the number of partitions
     void setNumberOfPartitions( int n )
-    {
-        M_partitions = n;
-    }
+        {
+            M_partitions = n;
+        }
 
     //! set save msh file by partitions
     void setMshFileByPartition( bool p )
-    {
-        M_partition_file = p;
-    }
+        {
+            M_partition_file = p;
+        }
 
+    void setRefinementLevels( int levels )
+        {
+            M_refine_levels = levels;
+        }
     //! set the partitioner
     void setPartitioner( GMSH_PARTITIONER const& p )
-    {
-        M_partitioner = p;
-    }
+        {
+            M_partitioner = p;
+        }
 
     //! shear the domain
     void setShear( double _shear )
-    {
-        M_shear = _shear;
-    }
+        {
+            M_shear = _shear;
+        }
 
     //! recombine simplices into quads
     void setRecombine( bool _recombine )
-    {
-        M_recombine = _recombine;
-    }
+        {
+            M_recombine = _recombine;
+        }
 
     //@}
 
@@ -514,6 +522,12 @@ public:
      * \return the content of the geo file \p file in a \p std::string
      */
     std::string getDescriptionFromFile( std::string const& file ) const;
+
+    /**
+     * load mesh and generate a new partion of this mesh
+     */
+    void rebuildPartitionMsh( std::string const& nameMshInput,std::string const& nameMshOutput ) const;
+
     //@}
 
 protected:
@@ -522,9 +536,9 @@ protected:
      * sublass must provide the geo description
      */
     virtual std::string getDescription() const
-    {
-        return std::string();
-    }
+        {
+            return std::string();
+        }
 
     /**
      * \param name  filename prefix to create the \c geo
@@ -579,6 +593,8 @@ protected:
     double M_shear;
     //! recombine simplices into hypercubes
     bool M_recombine;
+    //! number of refinement levels
+    int M_refine_levels;
 };
 
 ///! \typedef gmsh_type Gmsh
@@ -593,16 +609,16 @@ template<typename Args, typename Tag=tag::mesh>
 struct mesh
 {
     typedef typename boost::remove_pointer<
-    typename boost::remove_const<
-    typename boost::remove_reference<
-    typename parameter::binding<Args, Tag>::type
-    >::type
-    >::type
+        typename boost::remove_const<
+            typename boost::remove_reference<
+                typename parameter::binding<Args, Tag>::type
+                >::type
+            >::type
     >::type _type;
-    typedef typename mpl::if_<is_shared_ptr<_type>,
-            mpl::identity<typename _type::value_type>,
-            mpl::identity<_type> >::type::type type;
-    typedef boost::shared_ptr<type> ptrtype;
+typedef typename mpl::if_<is_shared_ptr<_type>,
+                          mpl::identity<typename _type::value_type>,
+                          mpl::identity<_type> >::type::type type;
+typedef boost::shared_ptr<type> ptrtype;
 };
 }
 /// \endcond
@@ -621,12 +637,12 @@ BOOST_PARAMETER_FUNCTION(
 
     ( required
       ( mesh, * )
-    )
+        )
     ( optional
       ( refine,          *( boost::is_integral<mpl::_> ), 0 )
       ( save,          *( boost::is_integral<mpl::_> ), 0 )
       ( worldcomm, ( WorldComm ), Environment::worldComm() )
-    ) )
+        ) )
 {
     typedef typename detail::mesh<Args>::type _mesh_type;
     typedef typename detail::mesh<Args>::ptrtype _mesh_ptrtype;
@@ -694,29 +710,44 @@ BOOST_PARAMETER_FUNCTION(
     ( required
       ( mesh, * )
       ( filename, * )
-    ) // 4. one required parameter, and
+        ) // 4. one required parameter, and
 
     ( optional
       ( straighten,          *( boost::is_integral<mpl::_> ), 1 )
       ( refine,          *( boost::is_integral<mpl::_> ), 0 )
       ( update,          *( boost::is_integral<mpl::_> ), 0 )
       ( physical_are_elementary_regions,		   *,false )
+      ( worldcomm,       *, Environment::worldComm() )
+      ( rebuild_partitions,	(bool), false )
+      ( partitions,      *( boost::is_integral<mpl::_> ), Environment::worldComm().size() )
+      ( partitioner,     *( boost::is_integral<mpl::_> ), GMSH_PARTITIONER_CHACO )
+      ( partition_file,   *( boost::is_integral<mpl::_> ), 0 )
+        )
     )
-)
 {
     typedef typename detail::mesh<Args>::type _mesh_type;
     typedef typename detail::mesh<Args>::ptrtype _mesh_ptrtype;
 
     _mesh_ptrtype _mesh( mesh );
+    _mesh->setWorldComm( worldcomm );
+
+    if ( rebuild_partitions )
+    {
+        Gmsh gmsh( _mesh_type::nDim,_mesh_type::nOrder, worldcomm );
+        gmsh.setNumberOfPartitions( partitions );
+        gmsh.setPartitioner( partitioner );
+        gmsh.setMshFileByPartition( partition_file );
+        gmsh.rebuildPartitionMsh(filename,filename);
+    }
 
     // refinement if option is enabled to a value greater or equal to 1
     if ( refine )
     {
-        Gmsh gmsh;
+        Gmsh gmsh( _mesh_type::nDim,_mesh_type::nOrder, worldcomm );
         gmsh.refine( filename, refine );
     }
 
-    ImporterGmsh<_mesh_type> import( filename );
+    ImporterGmsh<_mesh_type> import( filename, FEELPP_GMSH_FORMAT_VERSION, worldcomm );
 
     // need to replace physical_region by elementary_region while reading
     if ( physical_are_elementary_regions )
@@ -739,7 +770,8 @@ BOOST_PARAMETER_FUNCTION(
     }
 
     if ( straighten && _mesh_type::nOrder > 1 )
-        return straightenMesh( _mesh );
+        return straightenMesh( _mesh=_mesh,
+                               _worldcomm=worldcomm.subWorldComm() );
 
     return _mesh;
 }
@@ -760,15 +792,15 @@ BOOST_PARAMETER_FUNCTION(
       ( filename, * ) ) // 4. one required parameter, and
     ( optional
       ( parametricnodes,          *( boost::is_integral<mpl::_> ), 0 ) )
-)
+    )
 {
     typedef typename detail::mesh<Args>::type _mesh_type;
     typedef typename detail::mesh<Args>::ptrtype _mesh_ptrtype;
 
 #if BOOST_FILESYSTEM_VERSION == 3
-    ExporterGmsh<_mesh_type,1> exporter( fs::path( filename ).stem().string() );
+    ExporterGmsh<_mesh_type,1> exporter( fs::path( filename ).stem().string(), 1,  mesh->worldComm() );
 #elif BOOST_FILESYSTEM_VERSION == 2
-    ExporterGmsh<_mesh_type,1> exporter( fs::path( filename ).stem() );
+    ExporterGmsh<_mesh_type,1> exporter( fs::path( filename ).stem(), 1, mesh->worldComm() );
 #endif
     exporter.saveMesh( filename, mesh, parametricnodes );
 }
@@ -796,7 +828,7 @@ BOOST_PARAMETER_FUNCTION(
     ( required
       ( mesh, * )
       ( desc, * )
-    ) // 4. one required parameter, and
+        ) // 4. one required parameter, and
 
     ( optional
       ( h,              *( boost::is_arithmetic<mpl::_> ), 0.1 )
@@ -810,8 +842,8 @@ BOOST_PARAMETER_FUNCTION(
       ( partition_file,   *( boost::is_integral<mpl::_> ), 0 )
       ( partitioner,   *( boost::is_integral<mpl::_> ), GMSH_PARTITIONER_CHACO )
       ( worldcomm,      *, Environment::worldComm() )
+        )
     )
-)
 {
     typedef typename detail::mesh<Args>::type _mesh_type;
     typedef typename detail::mesh<Args>::ptrtype _mesh_ptrtype;
@@ -827,9 +859,11 @@ BOOST_PARAMETER_FUNCTION(
         desc->setNumberOfPartitions( partitions );
         desc->setPartitioner( partitioner );
         desc->setMshFileByPartition( partition_file );
+        desc->setRefinementLevels( refine );
 
         std::string fname = desc->generate( desc->prefix(), desc->description(), force_rebuild, parametricnodes );
 
+#if !defined(FEELPP_HAS_GMSH_LIBRARY)
         // refinement if option is enabled to a value greater or equal to 1
         if ( refine )
         {
@@ -837,6 +871,7 @@ BOOST_PARAMETER_FUNCTION(
             Gmsh gmsh;
             fname = gmsh.refine( fname, refine, parametricnodes );
         }
+#endif
 
         ImporterGmsh<_mesh_type> import( fname, FEELPP_GMSH_FORMAT_VERSION, worldcomm );
 
@@ -949,7 +984,7 @@ BOOST_PARAMETER_FUNCTION(
       ( order,              *( boost::is_integral<mpl::_> ), 1 )
       ( files_path, *( boost::is_convertible<mpl::_,std::string> ), Environment::localGeoRepository() )
       ( depends, *( boost::is_convertible<mpl::_,std::string> ), std::string( "" ) ) )
-)
+    )
 
 {
     gmsh_ptrtype gmsh_ptr( new Gmsh( 3, 1 ) );
@@ -1002,27 +1037,27 @@ BOOST_PARAMETER_FUNCTION(
     // copy include/merged files needed by geometry file
     boost::for_each( depends_on_files,
                      [&cp, &files_path]( std::string const& _filename )
-    {
-        fs::path file_path( files_path );
-        file_path /= _filename;
+                     {
+                         fs::path file_path( files_path );
+                         file_path /= _filename;
 
-        try
-        {
-            boost::system::error_code ec;
+                         try
+                         {
+                             boost::system::error_code ec;
 
-            if ( !( fs::exists( file_path ) && fs::is_regular_file( file_path ) ) )
-                std::cout << "File : " << file_path << " doesn't exist or is not a regular file" << std::endl;
+                             if ( !( fs::exists( file_path ) && fs::is_regular_file( file_path ) ) )
+                                 std::cout << "File : " << file_path << " doesn't exist or is not a regular file" << std::endl;
 
-            else if ( !fs::exists( cp / _filename )  )
-                fs::copy_file( file_path, fs::path( _filename ), fs::copy_option::none );
+                             else if ( !fs::exists( cp / _filename )  )
+                                 fs::copy_file( file_path, fs::path( _filename ), fs::copy_option::none );
 
-        }
+                         }
 
-        catch ( const fs::filesystem_error& e )
-        {
-            std::cerr << "Error: " << e.what() << std::endl;
-        }
-    } );
+                         catch ( const fs::filesystem_error& e )
+                         {
+                             std::cerr << "Error: " << e.what() << std::endl;
+                         }
+                     } );
 
     return gmsh_ptr;
 
@@ -1046,7 +1081,7 @@ BOOST_PARAMETER_FUNCTION(
     ( optional
       ( dim,              *( boost::is_integral<mpl::_> ), 3 )
       ( order,              *( boost::is_integral<mpl::_> ), 1 ) )
-)
+    )
 {
     gmsh_ptrtype gmsh_ptr( new Gmsh( 3, 1 ) );
 #if BOOST_FILESYSTEM_VERSION == 3
@@ -1089,7 +1124,7 @@ BOOST_PARAMETER_FUNCTION(
       ( filename,       *( boost::is_convertible<mpl::_,std::string> ) ) )
     ( optional
       ( prefix,       *( boost::is_convertible<mpl::_,std::string> ), fs::path( filename ).stem() ) )
-)
+    )
 {
     gmsh_ptrtype gmsh_ptr( new Gmsh( 2, 1 ) );
     gmsh_ptr->setPrefix( prefix );

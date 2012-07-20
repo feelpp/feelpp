@@ -31,7 +31,9 @@
 
 
 #include <feel/feelfilters/geotool.hpp>
-
+#if defined( FEELPP_HAS_GMSH_H )
+#include <GmshConfig.h>
+#endif
 
 namespace Feel
 {
@@ -299,8 +301,13 @@ GeoGMSHTool::init( int orderGeo, std::string gmshFormatVersion, GMSH_PARTITIONER
              << "Mesh.CharacteristicLengthFromPoints=1;\n"
              << "Mesh.ElementOrder="<< orderGeo <<";\n"
              << "Mesh.SecondOrderIncomplete = 0;\n"
-             << "Mesh.Algorithm = 6;\n"
-             << "Mesh.Algorithm3D = 4;\n" // 3D mesh algorithm (1=Delaunay, 4=Frontal, 5=Frontal Delaunay, 6=Frontal Hex, 7=MMG3D)
+             << "Mesh.Algorithm = 6;\n";
+#if defined(HAVE_TETGEN)
+    *_M_ostr << "Mesh.Algorithm3D = 1;\n"; // 3D mesh algorithm (1=Delaunay, 4=Frontal, 5=Frontal Delaunay, 6=Frontal Hex, 7=MMG3D)
+#else
+    *_M_ostr << "Mesh.Algorithm3D = 4;\n";
+#endif
+    *_M_ostr << "Mesh.RecombinationAlgorithm=0;\n" // Mesh recombination algorithm (0=standard, 1=blossom)
              << "Mesh.OptimizeNetgen=1;\n"
              << "// partitioning data\n"
              << "Mesh.Partitioner=" << partitioner << ";\n"

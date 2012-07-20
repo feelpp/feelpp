@@ -891,17 +891,19 @@ public:
                                 this->_M_n_localWithoutGhost_df[this->worldComm().globalRank()] = 1;
                                 this->M_mapGlobalClusterToGlobalProcess.resize( 1 );
                                 this->M_mapGlobalClusterToGlobalProcess[0]=0;
+                                this->_M_first_df_globalcluster[this->worldComm().globalRank()] = 0;
                                 this->_M_last_df_globalcluster[this->worldComm().globalRank()] = 0;
                             }
                         else
                             {
                                 this->_M_n_localWithoutGhost_df[this->worldComm().globalRank()] = 0;
                                 this->M_mapGlobalClusterToGlobalProcess.resize( 0 );
-                                this->_M_last_df_globalcluster[this->worldComm().globalRank()] = 0;
+                                this->_M_first_df_globalcluster[this->worldComm().globalRank()] = 25;// 0;
+                                this->_M_last_df_globalcluster[this->worldComm().globalRank()] = 25; //0;
                             }
 
                         this->_M_n_localWithGhost_df[this->worldComm().globalRank()] = 1;
-                        this->_M_first_df_globalcluster[this->worldComm().globalRank()] = 0;
+                        //this->_M_first_df_globalcluster[this->worldComm().globalRank()] = 0;
 
                         this->M_mapGlobalProcessToGlobalCluster.resize( 1 );
                         this->M_mapGlobalProcessToGlobalCluster[0]=0;
@@ -2970,11 +2972,11 @@ DofTable<MeshType, FEType, PeriodicityType>::buildBoundaryDofMap( mesh_type& M )
     }
 
 #if !defined(NDEBUG)
-
-    for ( int face_id = 0; face_id < nF; ++face_id )
-        for ( int face_dof_id = 0; face_dof_id < ntldof; ++face_dof_id )
-            FEELPP_ASSERT( boost::get<0>( _M_face_l2g[face_id][face_dof_id] ) != invalid_size_type_value )( face_id )( face_dof_id ).warn( "invalid dof table: initialized dof entries" );
-
+    __face_it = M.facesWithProcessId( M.worldComm().localRank() ).first;
+    __face_en = M.facesWithProcessId( M.worldComm().localRank() ).second;
+    for ( ; __face_it != __face_en; ++__face_it )
+        for ( index face_dof_id = 0; face_dof_id < index( ntldof ); ++face_dof_id )
+            FEELPP_ASSERT( boost::get<0>( _M_face_l2g[__face_it->id()][face_dof_id] ) != invalid_size_type_value )( __face_it->id() )( face_dof_id ).warn( "invalid dof table: initialized dof entries" );
 #endif
 }    // updateBoundaryDof
 

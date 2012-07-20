@@ -600,6 +600,109 @@ struct updateDataMapProcess
     mutable boost::shared_ptr<DofType> _M_dm;
     mutable boost::shared_ptr<DofType> _M_dmOnOff;
 }; // updateDataMapProcess
+
+
+
+template<typename DofType>
+struct updateDataMapProcessStandard
+{
+    updateDataMapProcessStandard( std::vector<WorldComm> const & worldsComm,
+                                  WorldComm const& worldCommFusion,
+                                  uint16_type lastCursor,
+                                  std::vector<size_type> const& startDofGlobalCluster,
+                                  size_type nLocWithoutGhost, size_type nLocWithGhost)
+        :
+        _M_cursor( 0 ),
+        _M_start_index( 0 ),
+        _M_startIndexWithGhost( 0 ),
+        _M_lastCursor( lastCursor ),
+        _M_worldsComm( worldsComm ),
+        _M_dm( new DofType( worldCommFusion ) ),
+        _M_startDofGlobalCluster(startDofGlobalCluster),
+        _M_nLocWithoutGhost(nLocWithoutGhost),
+        _M_nLocWithGhost(nLocWithGhost)
+    {
+        _M_dm->setNLocalDofWithoutGhost( _M_dm->worldComm().globalRank(), nLocWithoutGhost );
+        _M_dm->setNLocalDofWithGhost( _M_dm->worldComm().globalRank(), nLocWithGhost );
+        _M_dm->resizeMapGlobalProcessToGlobalCluster( nLocWithGhost );
+        _M_dm->resizeMapGlobalClusterToGlobalProcess( nLocWithoutGhost );
+    }
+
+    template <typename T>
+    void operator()( boost::shared_ptr<T> & x ) const
+    {
+        const size_type nLocWithGhost=x->nLocalDofWithGhost();
+        const size_type nLocWithoutGhost=x->nLocalDofWithoutGhost();
+        const size_type currentRank = _M_dm->worldComm().globalRank();
+
+        if ( _M_cursor==0 )
+            {
+                _M_dm->setFirstDof( currentRank,  x->dof()->firstDof() );
+                _M_dm->setFirstDofGlobalCluster( currentRank, _M_startDofGlobalCluster[currentRank] );
+                _M_dm->setLastDof( currentRank, x->dof()->lastDof() );
+                _M_dm->setLastDofGlobalCluster( currentRank, _M_startDofGlobalCluster[currentRank] + nLocWithoutGhost - 1 );
+            }
+        else
+            {
+                _M_dm->setLastDof( _M_dm->worldComm().globalRank(), _M_dm->lastDof() + nLocWithGhost  );
+                _M_dm->setLastDofGlobalCluster( _M_dm->worldComm().globalRank(), _M_dm->lastDofGlobalCluster() + nLocWithoutGhost  );
+            }
+
+        std::vector<size_type> startIndexWorld(_M_dm->worldComm().globalSize());
+        mpi::all_gather( _M_dm->worldComm().globalComm(),
+                         _M_start_index,
+                         startIndexWorld );
+
+        for ( size_type i=0; i<x->dof()->nLocalDofWithGhost(); ++i )
+        {
+            if (!x->dof()->dofGlobalProcessIsGhost(i) )
+                {
+                    _M_dm->setMapGlobalProcessToGlobalCluster( _M_startIndexWithGhost + i,
+                                                               _M_startDofGlobalCluster[_M_dm->worldComm().globalRank()] + _M_start_index +
+                                                               x->dof()->mapGlobalProcessToGlobalCluster( i ) -  x->dof()->firstDofGlobalCluster()   );
+                }
+            else
+                {
+                    const int realProc = x->dof()->procOnGlobalCluster(x->dof()->mapGlobalProcessToGlobalCluster( i ) );
+                    _M_dm->setMapGlobalProcessToGlobalCluster( _M_startIndexWithGhost + i,
+                                                               _M_startDofGlobalCluster[realProc] + startIndexWorld[realProc] +
+                                                               x->dof()->mapGlobalProcessToGlobalCluster( i ) -  x->dof()->firstDofGlobalCluster(realProc)   );
+                }
+        }
+        //for ( size_type i=0; i<x->dof()->nLocalDofWithoutGhost(); ++i )
+        //{
+        //_M_dmOnOff->setMapGlobalClusterToGlobalProcess( startGlobClusterDof + i, x->dof()->mapGlobalClusterToGlobalProcess( i ) );
+        //}
+
+
+        _M_start_index+=nLocWithoutGhost;
+        _M_startIndexWithGhost+=nLocWithGhost;
+
+        ++_M_cursor;// warning _M_cursor < nb color
+    }
+
+    boost::shared_ptr<DofType> dataMap() const
+    {
+        return _M_dm;
+    }
+    boost::shared_ptr<DofType> dataMapOnOff() const
+    {
+        return _M_dm;
+    }
+
+    mutable uint16_type _M_cursor;
+    mutable size_type _M_start_index, _M_startIndexWithGhost;
+    uint16_type _M_lastCursor;
+    std::vector<WorldComm> _M_worldsComm;
+    mutable boost::shared_ptr<DofType> _M_dm;
+    std::vector<size_type> _M_startDofGlobalCluster;
+    size_type _M_nLocWithoutGhost, _M_nLocWithGhost;
+}; // updateDataMapProcessStandard
+
+
+
+
+
 struct NbDof
 {
     typedef size_type result_type;
@@ -767,6 +870,88 @@ private:
     bool _M_useOffSubSpace;
 };
 #endif // end MPI
+
+
+template< typename IsWithGhostType>
+struct NLocalDofOnProc
+{
+
+    NLocalDofOnProc( const int proc,
+                     std::vector<WorldComm> const & worldsComm = std::vector<WorldComm>( 1,Environment::worldComm() ),
+                     bool useOffSubSpace = false,
+                     size_type start = 0, size_type size = invalid_size_type_value )
+        :
+        _M_proc(proc),
+        _M_cursor( start ),
+        _M_finish( size ),
+        _M_worldsComm( worldsComm ),
+        _M_useOffSubSpace( useOffSubSpace )
+    {}
+
+    template<typename Sig>
+    struct result;
+
+    template<typename T, typename S>
+#if BOOST_VERSION < 104200
+    struct result<NLocalDofOnProc( T,S )>
+#else
+    struct result<NLocalDofOnProc( S,T )>
+#endif
+:
+    boost::remove_reference<S>
+    {};
+
+    template <typename T>
+    size_type
+    nLocalDof( T const& x, mpl::bool_<true> /**/ ) const
+    {
+        return x->nLocalDofWithGhostOnProc(_M_proc);
+    }
+
+    template <typename T>
+    size_type
+    nLocalDof( T const& x, mpl::bool_<false> /**/ ) const
+    {
+        return x->nLocalDofWithoutGhostOnProc(_M_proc);
+    }
+
+    template <typename T>
+    size_type
+    operator()( T const& x, size_type s ) const
+    {
+        size_type ret = s;
+
+        if ( _M_cursor < _M_finish )
+        {
+            if ( _M_useOffSubSpace )
+            {
+                ret += nLocalDof( x, mpl::bool_<IsWithGhostType::value>() );
+            }
+
+            else
+            {
+                if ( _M_worldsComm[_M_cursor].isActive() )
+                    ret += nLocalDof( x, mpl::bool_<IsWithGhostType::value>() );
+            }
+        }
+
+        ++_M_cursor;
+        return ret;
+    }
+
+    template <typename T>
+    size_type
+    operator()( size_type s, T const& x ) const
+    {
+        return this->operator()( x, s );
+    }
+private:
+    int _M_proc;
+    mutable size_type _M_cursor;
+    size_type _M_finish;
+    std::vector<WorldComm> const& _M_worldsComm;
+    bool _M_useOffSubSpace;
+}; // NLocalDofOnProc
 
 
 template<int i,typename SpaceCompositeType>
@@ -2324,7 +2509,7 @@ public:
 #if defined(FEELPP_ENABLE_MPI_MODE)
 
                 // update _M_containersOffProcess<i> : send
-                if ( this->worldComm().globalSize()>1 && updateOffViews )
+                if ( this->worldComm().globalSize()>1 && updateOffViews && !this->functionSpace()->hasEntriesForAllSpaces() )
                 {
                     std::vector<double> dataToSend( space->nLocalDof() );
                     std::copy( ct.begin(), ct.end(), dataToSend.begin() );
@@ -2350,7 +2535,7 @@ public:
 #if defined(FEELPP_ENABLE_MPI_MODE)
 
                 // update _M_containersOffProcess<i> : recv
-                if ( this->worldComm().globalSize()>1 && updateOffViews )
+                if ( this->worldComm().globalSize()>1 && updateOffViews && !this->functionSpace()->hasEntriesForAllSpaces() )
                 {
                     fusion::for_each( *_M_containersOffProcess, detail::RecvContainersOff<i,functionspace_type>( this->functionSpace() ) );
                 }
@@ -2370,7 +2555,7 @@ public:
 
         template<int i>
         typename mpl::at_c<element_vector_type,i>::type
-        element( std::string const& name ="u" ) const
+        element( std::string const& name ="u", bool updateOffViews=true ) const
         {
             size_type nbdof_start =  fusion::accumulate( _M_functionspace->functionSpaces(),
                                      size_type( 0 ),
@@ -2391,7 +2576,7 @@ public:
 #if defined(FEELPP_ENABLE_MPI_MODE)
 
                 // update _M_containersOffProcess<i> : send
-                if ( this->worldComm().globalSize()>1 )
+                if ( this->worldComm().globalSize()>1 && updateOffViews && !this->functionSpace()->hasEntriesForAllSpaces() )
                 {
                     std::vector<double> dataToSend( space->nLocalDof() );
                     std::copy( ct.begin(), ct.end(), dataToSend.begin() );
@@ -2413,7 +2598,7 @@ public:
 #if defined(FEELPP_ENABLE_MPI_MODE)
 
                 // update _M_containersOffProcess<i> : recv
-                if ( this->worldComm().globalSize()>1 )
+                if ( this->worldComm().globalSize()>1 && updateOffViews && !this->functionSpace()->hasEntriesForAllSpaces() )
                 {
                     fusion::for_each( *_M_containersOffProcess, detail::RecvContainersOff<i,functionspace_type>( this->functionSpace() ) );
                 }
@@ -2921,6 +3106,10 @@ public:
         return *_M_worldComm;
     };
 
+    bool hasEntriesForAllSpaces()
+    {
+        return (this->template mesh<0>()->worldComm().localSize() == this->template mesh<0>()->worldComm().globalSize() );
+    }
     //@}
 
     /** @name Operator overloads
@@ -3004,6 +3193,16 @@ public:
         return this->nLocalDofWithoutGhost( mpl::bool_<is_composite>() );
     }
 
+    size_type nLocalDofWithGhostOnProc( const int proc ) const
+    {
+        return this->nLocalDofWithGhostOnProc( proc, mpl::bool_<is_composite>() );
+    }
+
+    size_type nLocalDofWithoutGhostOnProc(const int proc) const
+    {
+        return this->nLocalDofWithoutGhostOnProc( proc, mpl::bool_<is_composite>() );
+    }
+
     /**
      * \return the distribution of the dofs among the processors
      */
@@ -3039,11 +3238,21 @@ public:
         return start;
     }
 
+    size_type nLocalDofWithGhostOnProcStart( const int proc, size_type i = 0 ) const
+    {
+        size_type start =  fusion::accumulate( this->functionSpaces(), size_type( 0 ), detail::NLocalDofOnProc<mpl::bool_<true> >( proc, this->worldsComm(),true,0,i ) );
+        return start;
+    }
+
+    size_type nLocalDofWithoutGhostOnProcStart( const int proc, size_type i = 0 ) const
+    {
+        size_type start =  fusion::accumulate( this->functionSpaces(), size_type( 0 ), detail::NLocalDofOnProc<mpl::bool_<false> >( proc, this->worldsComm(),true,0,i ) );
+        return start;
+    }
+
     uint16_type nSubFunctionSpace() const
     {
-        uint16_type nbSpaces = mpl::int_< fusion::result_of::template size<functionspace_vector_type>::type::value>();
-        //uint16_type nbSpaces = fusion::::result_of::/*template*/ size<functionspace_vector_type>::type::value;
-        return nbSpaces;
+        return nSpaces;
     }
 
     /**
@@ -3441,6 +3650,11 @@ private:
     size_type nLocalDofWithoutGhost( mpl::bool_<false> ) const;
     size_type nLocalDofWithoutGhost( mpl::bool_<true> ) const;
 
+    size_type nLocalDofWithGhostOnProc( const int proc, mpl::bool_<false> ) const;
+    size_type nLocalDofWithGhostOnProc( const int proc, mpl::bool_<true> ) const;
+    size_type nLocalDofWithoutGhostOnProc( const int proc, mpl::bool_<false> ) const;
+    size_type nLocalDofWithoutGhostOnProc( const int proc, mpl::bool_<true> ) const;
+
     friend class ComponentSpace;
     class ComponentSpace
     {
@@ -3641,28 +3855,67 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
 
     if ( this->worldComm().globalSize()>1 )
     {
-        // build the WorldComm associated to mix space
-        WorldComm mixSpaceWorldComm = this->worldsComm()[0];
-
-        if ( this->worldsComm().size()>1 )
-            for ( int i=1; i<( int )this->worldsComm().size(); ++i )
+        if ( this->hasEntriesForAllSpaces() )
             {
-                mixSpaceWorldComm = mixSpaceWorldComm + this->worldsComm()[i];
+                // construction with same partionment for all subspaces
+                // and each processors has entries for all subspaces
+                Debug( 5010 ) << "init(<composite>) type hasEntriesForAllSpaces\n";
+                // build usefull data for detail::updateDataMapProcessStandard
+                std::vector<size_type> startDofGlobalCluster(this->worldComm().globalSize());
+                std::vector<size_type> nLocalDofWithoutGhostWorld(this->worldComm().globalSize());
+                mpi::all_gather( this->worldComm(),
+                                 this->nLocalDofWithoutGhost(),
+                                 nLocalDofWithoutGhostWorld );
+
+                startDofGlobalCluster[0]=0;
+                for (int p=1;p<this->worldComm().globalSize();++p)
+                    {
+                        startDofGlobalCluster[p] = startDofGlobalCluster[p-1] + nLocalDofWithoutGhostWorld[p-1];
+                    }
+
+
+                // build datamap
+                auto dofInitTool=detail::updateDataMapProcessStandard<dof_type>( this->worldsComm(), this->worldComm(),
+                                                                                 this->nSubFunctionSpace()-1,
+                                                                                 startDofGlobalCluster,
+                                                                                 this->nLocalDofWithoutGhost(),
+                                                                                 this->nLocalDofWithGhost() );
+                fusion::for_each( _M_functionspaces, dofInitTool );
+                // finish update datamap
+                _M_dof = dofInitTool.dataMap();
+                _M_dof->setNDof( this->nDof() );
+                _M_dof->updateDataInWorld();
+                _M_dofOnOff = _M_dof;
             }
+        else
+            {
+                // construction with same partionment for all subspaces
+                // and one processor has entries for only one subspace
+                Debug( 5010 ) << "init(<composite>) type Not hasEntriesForAllSpaces\n";
 
-        this->setWorldComm( mixSpaceWorldComm );
-        //mixSpaceWorldComm.showMe();
+                // build the WorldComm associated to mix space
+                WorldComm mixSpaceWorldComm = this->worldsComm()[0];
 
-        // update DofTable for the mixedSpace (we have 2 dofTables : On and OnOff)
-        auto dofInitTool=detail::updateDataMapProcess<dof_type>( this->worldsComm(), mixSpaceWorldComm, this->nSubFunctionSpace()-1 );
-        fusion::for_each( _M_functionspaces, dofInitTool );
-        _M_dof = dofInitTool.dataMap();
-        _M_dof->setNDof( this->nDof() );
-        _M_dof->updateDataInWorld();
+                if ( this->worldsComm().size()>1 )
+                    for ( int i=1; i<( int )this->worldsComm().size(); ++i )
+                        {
+                            mixSpaceWorldComm = mixSpaceWorldComm + this->worldsComm()[i];
+                        }
 
-        _M_dofOnOff = dofInitTool.dataMapOnOff();
-        _M_dofOnOff->setNDof( this->nDof() );
-        _M_dofOnOff->updateDataInWorld();
+                this->setWorldComm( mixSpaceWorldComm );
+                //mixSpaceWorldComm.showMe();
+
+                // update DofTable for the mixedSpace (we have 2 dofTables : On and OnOff)
+                auto dofInitTool=detail::updateDataMapProcess<dof_type>( this->worldsComm(), mixSpaceWorldComm, this->nSubFunctionSpace()-1 );
+                fusion::for_each( _M_functionspaces, dofInitTool );
+                // finish update datamap
+                _M_dof = dofInitTool.dataMap();
+                _M_dof->setNDof( this->nDof() );
+                _M_dof->updateDataInWorld();
+                _M_dofOnOff = dofInitTool.dataMapOnOff();
+                _M_dofOnOff->setNDof( this->nDof() );
+                _M_dofOnOff->updateDataInWorld();
+            }
     }
 
     else // sequential
@@ -3733,6 +3986,23 @@ FunctionSpace<A0, A1, A2, A3, A4>::nLocalDofWithGhost( mpl::bool_<false> ) const
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 size_type
+FunctionSpace<A0, A1, A2, A3, A4>::nLocalDofWithGhostOnProc( const int proc, mpl::bool_<true> ) const
+{
+    Debug( 5010 ) << "calling nLocalDof(<composite>) begin\n";
+    size_type ndof =  fusion::accumulate( _M_functionspaces, size_type( 0 ), detail::NLocalDofOnProc<mpl::bool_<true> >( proc, this->worldsComm() ) );
+    Debug( 5010 ) << "calling nLocalDof(<composite>) end\n";
+    return ndof;
+}
+
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
+size_type
+FunctionSpace<A0, A1, A2, A3, A4>::nLocalDofWithGhostOnProc( const int proc, mpl::bool_<false> ) const
+{
+    return _M_dof->nLocalDofWithGhost(proc);
+}
+
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
+size_type
 FunctionSpace<A0, A1, A2, A3, A4>::nLocalDofWithoutGhost( mpl::bool_<true> ) const
 {
     Debug( 5010 ) << "calling nLocalDof(<composite>) begin\n";
@@ -3748,6 +4018,22 @@ FunctionSpace<A0, A1, A2, A3, A4>::nLocalDofWithoutGhost( mpl::bool_<false> ) co
     return _M_dof->nLocalDofWithoutGhost();
 }
 
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
+size_type
+FunctionSpace<A0, A1, A2, A3, A4>::nLocalDofWithoutGhostOnProc( const int proc, mpl::bool_<true> ) const
+{
+    Debug( 5010 ) << "calling nLocalDof(<composite>) begin\n";
+    size_type ndof =  fusion::accumulate( _M_functionspaces, size_type( 0 ), detail::NLocalDofOnProc<mpl::bool_<false> >( proc, this->worldsComm() ) );
+    Debug( 5010 ) << "calling nLocalDof(<composite>) end\n";
+    return ndof;
+}
+
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
+size_type
+FunctionSpace<A0, A1, A2, A3, A4>::nLocalDofWithoutGhostOnProc( const int proc, mpl::bool_<false> ) const
+{
+    return _M_dof->nLocalDofWithoutGhost(proc);
+}
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 void
@@ -3842,7 +4128,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::findPoint( node_type const& pt,size_type &cv 
 
     for ( ; it != ite; ++it )
     {
-        inv_trans_type __git( _M_mesh->gm(), _M_mesh->element( ( *it )->id ) );
+        inv_trans_type __git( _M_mesh->gm(), _M_mesh->element( ( *it )->id ), this->worldComm().subWorldCommSeq() );
 
         size_type cv_stored = ( *it )->id;
 

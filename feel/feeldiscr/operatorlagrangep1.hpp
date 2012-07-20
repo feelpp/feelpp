@@ -48,6 +48,7 @@ struct SpaceToLagrangeP1Space
 {
     typedef SpaceType domain_space_type;
     typedef typename domain_space_type::fe_type::convex_type convex_type;
+    typedef typename domain_space_type::mesh_type domain_mesh_type;
 
     template< template<uint16_type Dim> class PsetType>
     struct SelectConvex
@@ -57,7 +58,7 @@ struct SpaceToLagrangeP1Space
 
         typedef Lagrange<1,PsetType> type;
     };
-    typedef typename convex_type::template shape<convex_type::nDim, 1, convex_type::nDim>::type image_convex_type;
+    typedef typename convex_type::template shape<domain_mesh_type::nDim, 1, domain_mesh_type::nRealDim>::type image_convex_type;
     typedef Mesh<image_convex_type> image_mesh_type;
 
     typedef typename mpl::if_<mpl::bool_<domain_space_type::is_scalar>,
@@ -323,9 +324,8 @@ OperatorLagrangeP1<space_type>::OperatorLagrangeP1( domain_space_ptrtype const& 
         gmc->update( *it );
 
         // accumulate the local mesh in element *it in the new mesh
-        typename image_mesh_type::element_const_iterator itl = _M_p2m.mesh()->beginElement();
-        typename image_mesh_type::element_const_iterator enl = _M_p2m.mesh()->endElement();
-
+        auto itl = _M_p2m.mesh()->beginElement();
+        auto enl = _M_p2m.mesh()->endElement();
         for ( ; itl != enl; ++itl, ++elid )
         {
             Debug( 5035 ) << "************************************\n";
