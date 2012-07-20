@@ -867,6 +867,7 @@ public:
      */
     element_iterator eraseElement( element_iterator position )
     {
+        _M_elements.modify( position, []( element_type& e ) { e.disconnectSubEntities(); } );
         return _M_elements.erase( position );
     }
 
