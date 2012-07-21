@@ -143,7 +143,7 @@ private:
     /**
      * export results to ensight format (enabled by  --export cmd line options)
      */
-    void exportResults(element_type& Delta, element_type& k_l2, element_type& k_smooth, element_type& k_nod, element_type& k_hess, element_type& k_l2_int, elementP0_type& marker_delta);
+    void exportResults(element_type& Delta, element_type& k_l2, element_type& k_smooth, element_type& k_nod, element_type& k_hess, element_type& k_l2_int, elementP0_type& marker_delta, element_Vec_type n_l2);
 
 private:
 
@@ -250,13 +250,15 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
     t.restart() ;
 
     // backends
-    auto backend_l2 = backend_type::build( this->vm() );
-    auto backend_l2Vec = backend_type::build( this->vm() );
-    auto backend_l2Smooth = backend_type::build( this->vm() );
-    auto backend_l2SmoothVec = backend_type::build( this->vm() );
+    auto backend_l2 = backend_type::build( this->vm(), "projections" );
+    auto backend_l2Vec = backend_type::build( this->vm(),  "projections" );
+    auto backend_l2Smooth = backend_type::build( this->vm(),  "projections" );
+    auto backend_l2SmoothVec = backend_type::build( this->vm(),  "projections" );
 
     // projectors
-    double diffnum = meshSizeInit() * 0.01;
+
+    double diffnum = std::pow(meshSizeInit(), std::max(1,BasisU::nOrder-1)) * 0.001 ;
+
     auto l2p = projector(Xh , Xh, backend_l2, L2);
     auto l2pVec = projector(Xh_Vec, Xh_Vec, backend_l2Vec, L2);
     auto smooth = projector(Xh , Xh, backend_l2Smooth, DIFF, diffnum, 20);
@@ -330,9 +332,11 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
     auto phi_nod = init_shape;
 
 
+    double max_modgradphi=0.01;
+
     /* ------------------ L2 projection ---------------- */
     auto n_l2 = l2pVec->project( gradv(init_shape) /
-                                 sqrt( gradv(init_shape) * trans(gradv(init_shape))) );
+                                 vf::max(sqrt( gradv(init_shape) * trans(gradv(init_shape))), max_modgradphi) );
     auto k_l2 = l2p->project( divv(n_l2) );
     auto phi_l2 = l2p->project( shape_expr );
 
@@ -347,7 +351,7 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
     form2(Xh_Vec, Xh_Vec, D) = integrate(elements(mesh), trans(idt(n_l2_bis)) * id(n_l2_bis) );
 
     form1(Xh_Vec, F) = integrate(elements(mesh), gradv(init_shape) * trans(grad(init_shape))
-                                 / sqrt( gradv(init_shape) * trans(gradv(init_shape)))  );
+                                 / vf::max(sqrt( gradv(init_shape) * trans(gradv(init_shape))), max_modgradphi)  );
 
     D->close();
     F->close();
@@ -371,7 +375,7 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
 
     /* ------------------ smooth projection ---------------- */
     auto n_smooth = smoothVec->project( gradv(init_shape) /
-                                        sqrt( gradv(init_shape) * trans(gradv(init_shape))) );
+                                        vf::max(sqrt( gradv(init_shape) * trans(gradv(init_shape))), max_modgradphi) );
     auto k_smooth = smooth->project( divv(n_smooth) );
     auto phi_smooth = smooth->project( shape_expr );
 
@@ -390,7 +394,7 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
     D = backend_int->newMatrix(Xh, Xh);
     F = backend_int->newVector(Xh);
 
-    form2(Xh, Xh, D) = integrate(elements(mesh), idt(k_int) * id(k_int) * sqrt( gradv(init_shape) * trans(gradv(init_shape))) );
+    form2(Xh, Xh, D) = integrate(elements(mesh), idt(k_int) * id(k_int) * vf::max(sqrt( gradv(init_shape) * trans(gradv(init_shape))), max_modgradphi) );
     form1(Xh, F) = integrate(elements(mesh),
                                - gradv(init_shape) * trans(grad(init_shape)) );
 
@@ -486,7 +490,7 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
     Log() << "e.hs.k = " << error_hessp << "\n";
 
     std::cout<<"exporting ...\n";
-    exportResults(Delta_proj, k_l2, k_smooth, k_nod, k_hess, k_int, marker_delta);
+    exportResults(Delta_proj, k_l2, k_smooth, k_nod, k_hess, k_int, marker_delta, n_l2);
 
 } // Curvature::run
 
@@ -494,7 +498,7 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
 
 template<int Dim, typename BasisU, typename BasisU_Vec, template<uint16_type,uint16_type,uint16_type> class Entity>
 void
-Curvature<Dim, BasisU, BasisU_Vec, Entity>::exportResults( element_type& Delta, element_type& k_l2, element_type& k_smooth, element_type& k_nod, element_type& k_hess, element_type& k_l2_int,elementP0_type& marker_delta)
+Curvature<Dim, BasisU, BasisU_Vec, Entity>::exportResults( element_type& Delta, element_type& k_l2, element_type& k_smooth, element_type& k_nod, element_type& k_hess, element_type& k_l2_int,elementP0_type& marker_delta, element_Vec_type n_l2)
 {
     if ( exporter->doExport() )
     {
@@ -506,6 +510,7 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::exportResults( element_type& Delta, 
         exporter->step( 0 )->add("k_hess", k_hess);
         exporter->step( 0 )->add("k_l2_int", k_l2_int);
         exporter->step( 0 )->add("marker_delta", marker_delta);
+        exporter->step( 0 )->add("n_l2", n_l2);
 
         exporter->save();
     }
