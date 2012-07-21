@@ -111,6 +111,7 @@ public mpl::if_<mpl::equal_to<mpl::int_<GeoShape::nDim>,mpl::int_<0> >,
     typename mpl::if_<mpl::equal_to<mpl::int_<GeoShape::nDim>,mpl::int_<2> >,
     mpl::identity<Mesh2D<GeoShape> >,
     mpl::identity<Mesh3D<GeoShape> > >::type>::type>::type::type,
+public boost::addable<Mesh<GeoShape,T,Tag> >,
 public boost::enable_shared_from_this< Mesh<GeoShape,T,Tag> >
 {
     typedef typename mpl::if_<mpl::equal_to<mpl::int_<GeoShape::nDim>,mpl::int_<0> >,
@@ -210,6 +211,8 @@ public:
         {
             return mesh_ptrtype(new mesh_type);
         }
+
+    self_type& operator+=( self_type const& m );
 
     /** @name Accessors
      */

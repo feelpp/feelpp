@@ -281,8 +281,46 @@ Mesh<Shape, T, Tag>::updateForUse()
 
     Debug( 4015 ) << "[Mesh::updateForUse] total time : " << ti.elapsed() << "\n";
 }
+template<typename Shape, typename T, int Tag>
+typename Mesh<Shape, T, Tag>::self_type&
+Mesh<Shape, T, Tag>::operator+=( self_type const& m )
+{
+    for( auto it = m.beginPoint(), en = m.endPoint();
+         it != en;
+         ++it )
+    {
+        // need work
+        for( auto pit = this->beginPoint(), pen = this->endPoint();
+             pit != pen;
+             ++pit )
+        {
+            if ( pit->isOnBoundary() )
+            {
+                if ( ublas::norm_2( it->node() - pit->node() ) < 1e-10 )
+                    this->addPoint( *it );
+            }
+        }
 
+    }
+    for( auto it = m.beginFace(), en = m.endFace();it != en;++it )
+    {
+        // eventually need work
+        if ( !it->isOnBoundary() )
+        {
+            face_type f = *it;
+            this->addFace( f );
+        }
+    }
 
+    for( auto it = m.beginElement(), en = m.endElement();it != en;++it )
+    {
+        element_type e = *it;
+        this->addElement( e );
+    }
+    this->setUpdatedForUse( false );
+    this->updateForUse();
+    return *this;
+}
 
 template<typename Shape, typename T, int Tag>
 void
