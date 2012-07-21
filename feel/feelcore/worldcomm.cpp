@@ -48,7 +48,6 @@ WorldComm::WorldComm()
     M_mapGlobalRankToGodRank( this->globalSize() ),
     M_isActive( this->godSize(),true )
 {
-    //Log() << "\n WorldComm : warning constructor empty!! on godRank " << this->godRank() << "\n";
     init( 0, false );
 }
 

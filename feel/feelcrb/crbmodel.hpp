@@ -124,12 +124,15 @@ public:
     //typedef Eigen::VectorXd vectorN_type;
     typedef std::vector< std::vector< double > > beta_vector_type;
 
-    typedef typename boost::tuple<sparse_matrix_ptrtype, sparse_matrix_ptrtype, std::vector<vector_ptrtype> > offline_merge_type;
+    typedef typename boost::tuple<sparse_matrix_ptrtype, sparse_matrix_ptrtype, std::vector<vector_ptrtype>, vector_ptrtype > offline_merge_type;
 
 
-    typedef typename boost::tuple<std::vector< std::vector<sparse_matrix_ptrtype> >, std::vector< std::vector<sparse_matrix_ptrtype> >, std::vector< std::vector< std::vector<vector_ptrtype> > > > affine_decomposition_type;
+    typedef typename boost::tuple<std::vector< std::vector<sparse_matrix_ptrtype> >,
+                                  std::vector< std::vector<sparse_matrix_ptrtype> >,
+                                  std::vector< std::vector< std::vector<vector_ptrtype> > >,
+                                  std::vector< std::vector<vector_ptrtype> > > affine_decomposition_type;
 
-    typedef typename boost::tuple<beta_vector_type,beta_vector_type,std::vector<beta_vector_type> > betaqm_type;
+    typedef typename boost::tuple<beta_vector_type,beta_vector_type,std::vector<beta_vector_type>,beta_vector_type > betaqm_type;
 
 
     //@}
@@ -218,8 +221,9 @@ public:
         if ( M_mode != CRBModelMode::CRB_ONLINE &&
                 M_mode != CRBModelMode::SCM_ONLINE )
         {
-            std::cout << "  -- init FEM  model\n";
-            M_model->init();
+            //the model is already initialized
+            //std::cout << "  -- init FEM  model\n";
+            //M_model->init();
             this->initB();
         }
     }
@@ -269,6 +273,15 @@ public:
     }
 
     /**
+     * create a new vector
+     * \return the newly created vector
+     */
+    virtual vector_ptrtype newVector() const
+    {
+        return M_model->newVector();
+    }
+
+    /**
      * \brief Returns the matrix associated with the \f$H_1\f$ inner product
      */
     sparse_matrix_ptrtype const& innerProduct() const
@@ -301,17 +314,13 @@ public:
 
     size_type Qm() const
     {
-        return Qm( mpl::bool_<model_type::is_time_dependent>() );
-    }
-    size_type Qm( mpl::bool_<true> ) const
-    {
         return M_model->Qm();
     }
-    size_type Qm( mpl::bool_<false> ) const
-    {
-        return 0;
-    }
 
+    size_type Qmf() const
+    {
+        return M_model->Qmf();
+    }
 
     int mMaxA(int q )
     {
@@ -320,15 +329,7 @@ public:
 
     int mMaxM( int q )
     {
-        return mMaxM( q , mpl::bool_<model_type::is_time_dependent>() );
-    }
-    int mMaxM( int q , mpl::bool_<true> )
-    {
         return M_model->mMaxM( q );
-    }
-    int mMaxM( int q , mpl::bool_<false> )
-    {
-        return 0;
     }
 
     int mMaxF(int output_index, int q )
@@ -389,13 +390,29 @@ public:
     betaqm_type computeBetaQm( parameter_type const& mu , mpl::bool_<false>, double time=0 )
     {
         beta_vector_type betaAqm;
-        beta_vector_type betaMqm;
+        beta_vector_type betaMqm, betaMFqm;
         std::vector<beta_vector_type>  betaFqm;
-        boost::tuple<beta_vector_type, std::vector<beta_vector_type> > steady_beta;
+        boost::tuple<beta_vector_type, beta_vector_type, std::vector<beta_vector_type>, beta_vector_type > steady_beta;
         steady_beta = M_model->computeBetaQm( mu , time );
-        betaAqm = steady_beta.get<0>();
-        betaFqm = steady_beta.get<1>();
-        return boost::make_tuple( betaMqm, betaAqm, betaFqm );
+        betaMqm = steady_beta.get<0>();
+        betaAqm = steady_beta.get<1>();
+        betaFqm = steady_beta.get<2>();
+        betaMFqm = steady_beta.get<3>();
+        return boost::make_tuple( betaMqm, betaAqm, betaFqm, betaMFqm );
+    }
+
+    betaqm_type computeBetaQm( element_type const& T, parameter_type const& mu , double time=0 )
+    {
+        beta_vector_type betaAqm;
+        beta_vector_type betaMqm, betaMFqm;
+        std::vector<beta_vector_type>  betaFqm;
+        boost::tuple<beta_vector_type, beta_vector_type, std::vector<beta_vector_type>, beta_vector_type > steady_beta;
+        steady_beta = M_model->computeBetaQm( mu , time );
+        betaMqm = steady_beta.get<0>();
+        betaAqm = steady_beta.get<1>();
+        betaFqm = steady_beta.get<2>();
+        betaMFqm = steady_beta.get<3>();
+        return boost::make_tuple( betaMqm, betaAqm, betaFqm, betaMFqm );
     }
 
 
@@ -421,13 +438,13 @@ public:
     }
     affine_decomposition_type computeAffineDecomposition( mpl::bool_<true> )
     {
-        boost::tie( M_Mqm, M_Aqm, M_Fqm ) = M_model->computeAffineDecomposition();
+        boost::tie( M_Mqm, M_Aqm, M_Fqm, M_MFqm ) = M_model->computeAffineDecomposition();
         return M_model->computeAffineDecomposition();
     }
     affine_decomposition_type computeAffineDecomposition( mpl::bool_<false> )
     {
-        boost::tie( M_Aqm, M_Fqm ) = M_model->computeAffineDecomposition();
-        return boost::make_tuple( M_Mqm, M_Aqm, M_Fqm );
+        boost::tie( M_Mqm, M_Aqm, M_Fqm, M_MFqm ) = M_model->computeAffineDecomposition();
+        return boost::make_tuple( M_Mqm, M_Aqm, M_Fqm, M_MFqm );
     }
 
 
@@ -547,7 +564,10 @@ public:
         beta_vector_type vect;
         return  vect;
     }
-
+    beta_vector_type const& betaMFqm( mpl::bool_<true> ) const
+    {
+        return M_model->betaMFqm();
+    }
     /**
      * \brief Returns the value of the \f$A_{qm}\f$ coefficient at \f$\mu\f$
      */
@@ -569,7 +589,12 @@ public:
     }
     value_type betaMqm( int q, int m, mpl::bool_<false> ) const
     {
-        return 0;
+        return M_model->betaMqm(q,m);
+    }
+
+    value_type betaMFqm( int q, int m ) const
+    {
+        return M_model->betaMFqm(q,m);
     }
 
     /**
@@ -598,7 +623,14 @@ public:
     {
         return M_Fqm[l][q][m];
     }
-
+    vector_ptrtype  MFqm( uint16_type q, int m ) const
+    {
+        return M_MFqm[q][m];
+    }
+    value_type MFqm( uint16_type q,  uint16_type m, element_type const& xi )
+    {
+        return inner_product( *M_MFqm[q][m], xi );
+    }
     /**
      * \brief the inner product \f$f_{qm}(\xi) = \xi^T F_{qm} \f$
      *
@@ -885,6 +917,8 @@ protected:
     //! affine decomposition terms ( time dependent )
     std::vector< std::vector<sparse_matrix_ptrtype> > M_Mqm;
 
+    std::vector< std::vector<vector_ptrtype> > M_MFqm;
+
     //! affine decomposition terms for the right hand side
     std::vector< std::vector<std::vector<vector_ptrtype> > > M_Fqm;
 
@@ -1000,20 +1034,20 @@ CRBModel<TruthModelType>::offlineMerge( parameter_type const& mu )
                                                   _test=M_model->functionSpace(),
                                                   _trial=M_model->functionSpace()
                                                   ) );
+    vector_ptrtype MF( M_backend->newVector(M_model->functionSpace()) );
 
 #else
 
     auto A = this->newMatrix();
     auto M = this->newMatrix();
-
+    auto MF = this->newVector();
 #endif
     std::vector<vector_ptrtype> F( Nl() );
 
-    //*A = *M_Aq[0];
-    //A->scale( this->betaAqm[0][0] );
+
     for ( size_type q = 0; q < Qa(); ++q )
     {
-        for ( size_type m = 0; m < mMaxA(q); ++m )
+        for(size_type m = 0; m < mMaxA(q); ++m )
             A->addMatrix( this->betaAqm( q , m ), M_Aqm[q][m] );
     }
 
@@ -1021,10 +1055,19 @@ CRBModel<TruthModelType>::offlineMerge( parameter_type const& mu )
     {
         //*M = *M_Mq[0];
         //M->scale( this->thetaMq( 0 ) );
-        for ( size_type q = 1; q < Qm(); ++q )
+        for ( size_type q = 0; q < Qm(); ++q )
         {
-            for ( size_type m = 0; m < mMaxM(q); ++m )
+            for(size_type m = 0; m < mMaxM(q) ; ++m )
                 M->addMatrix( this->betaMqm( q , m ), M_Mqm[q][m] );
+        }
+    }
+
+    if ( Qmf() > 0 )
+    {
+        for ( size_type q = 0; q < Qmf(); ++q )
+        {
+            for ( size_type m = 0; m < 1; ++m )
+                MF->add( this->betaMFqm( q , m ), M_MFqm[q][m] );
         }
     }
 
@@ -1042,7 +1085,7 @@ CRBModel<TruthModelType>::offlineMerge( parameter_type const& mu )
 
     }
 
-    return boost::make_tuple( M, A, F );
+    return boost::make_tuple( M, A, F, MF );
 }
 
 
