@@ -108,7 +108,7 @@ public:
      */
     //@{
 
-    Points( WorldComm const& worldComm = WorldComm() )
+    Points( WorldComm const& worldComm = Environment::worldComm() )
         :
         _M_worldCommPoints( worldComm ),
         _M_points()

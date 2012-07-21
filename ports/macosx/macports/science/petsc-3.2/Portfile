@@ -1,0 +1,103 @@
+# -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+# $Id$
+
+PortSystem	1.0
+
+set petsc_version 3.2
+set petscdir /lib/petscdir/${petsc_version}
+
+version     3.2-p7
+name		petsc-${petsc_version}
+categories  math science
+maintainers	mmoll
+description	Portable, Extensible Toolkit for Scientific Computation
+long_description	PETSc, pronounced PET-see (the S is silent), is a suite \
+        of data structures and routines for the scalable (parallel) solution \
+        of scientific applications modeled by partial differential equations. \
+        It employs the MPI standard for all message-passing communication.
+
+
+
+notes       "Add the following line to your .bash_profile if you plan to use\
+            the PETSC makefile rules in $prefix/lib/petsc/conf: \n\
+            \texport PETSC_DIR=${prefix}/lib/petscdir/${petsc_version}"
+
+platforms	darwin
+homepage	http://www.mcs.anl.gov/petsc/petsc-as/
+master_sites	ftp://ftp.mcs.anl.gov/pub/petsc/release-snapshots/ \
+		http://ftp.mcs.anl.gov/pub/petsc/release-snapshots/
+distname	petsc-lite-${version}
+worksrcdir	petsc-${version}
+universal_variant   no
+
+checksums        md5     9272439b31313824d3c4e8f23e3e06e3 \
+                    sha1    312c5b7219925439d38533990aa439c4d98e2b79 \
+                    rmd160  ca38c987b5f0559ccbc650d2a35831328ead3cf6
+
+
+depends_build-append  port:cmake
+depends_lib-append  port:openmpi port:scotch port:suitesparse
+
+
+configure.args  --with-python --with-debugging=0 \
+		--with-c-support=1 --with-c++-support=1 --with-pic=fPIC \
+		--with-shared-libraries=0 --with-mpi=1 --PETSC_ARCH=darwin \
+		--prefix=${destroot}${prefix}${petscdir} \
+		--with-cc=${prefix}/bin/openmpicc \
+		--with-cxx=${prefix}/bin/openmpicxx \
+		--with-mpiexec=${prefix}/bin/openmpiexec \
+        --with-lapack-lib=/usr/lib/liblapack.dylib \
+        --with-blas-lib=/usr/lib/libblas.dylib \
+        --with-cholmod=1 --with-cholmod-include=${prefix}/include/ \
+        --with-cholmod-lib=\[${prefix}/lib/libcholmod.a,${prefix}/lib/libcolamd.a\] \
+        --with-umfpack=1 --with-umfpack-include=${prefix}/include/ \
+        --with-umfpack-lib=\[${prefix}/lib/libumfpack.a,${prefix}/lib/libcholmod.a,${prefix}/lib/libcolamd.a,${prefix}/lib/libamd.a,${prefix}/lib/libsuitesparseconfig.a\] \
+        --download-ml \
+        --download-metis \
+        --download-parmetis \
+        --download-blacs \
+        --download-scalapack \
+        --download-mumps \
+        --with-ptscotch=1 --with-ptscotch-include=${prefix}/include/ \
+        --with-ptscotch-lib=\[${prefix}/lib/libptesmumps.a,${prefix}/lib/libptscotch.a,${prefix}/lib/libptscotcherr.a\] \
+		--with-fc=${prefix}/bin/openmpif90 \
+		--LIBS=-lstdc++
+
+#        --with-metis=1 --with-metis-include=${prefix}/include/metis \
+#        --with-metis-lib=\[${prefix}/lib/libmetis.dylib\] \
+
+destroot.destdir DESTDIR=${destroot}${prefix}${petscdir}
+post-destroot {
+   reinplace "s|${destroot}${prefix}|${prefix}|g" ${destroot}${prefix}${petscdir}/conf/RDict.db \
+                                                  ${destroot}${prefix}${petscdir}/conf/petscrules \
+                                                  ${destroot}${prefix}${petscdir}/conf/petscvariables \
+                                                  ${destroot}${prefix}${petscdir}/conf/reconfigure-darwin.py \
+                                                  ${destroot}${prefix}${petscdir}/conf/rules \
+                                                  ${destroot}${prefix}${petscdir}/conf/test \
+                                                  ${destroot}${prefix}${petscdir}/conf/variables \
+                                                  ${destroot}${prefix}${petscdir}/include/petscconf.h
+   reinplace "s|${worksrcpath}|${prefix}/petsc|g" ${destroot}${prefix}${petscdir}/include/petscconf.h \
+                                                  ${destroot}${prefix}${petscdir}/include/petscmachineinfo.h \
+                                                  ${destroot}${prefix}${petscdir}/conf/petscvariables \
+                                                  ${destroot}${prefix}${petscdir}/conf/RDict.db
+}
+
+# disabled for now; no mpi support in fftw port yet
+# variant fftw description {build with fftw support} {
+#   configure.args-append   --with-fftw=1 --with-fftw-dir=${prefix}
+#   depends_lib-append  port:fftw-3
+# }
+
+variant hdf5 description {build with support for HDF5 file format} {
+    configure.args-append   --with-hdf5=1 --with-hdf5-dir=${prefix}
+    depends_lib-append	port:hdf5-18
+}
+
+variant debug description {build with debug support} {
+    configure.args-delete   --with-debugging=0
+    configure.args-append   --with-debugging=1
+}
+
+livecheck.type  regex
+livecheck.url   http://www.mcs.anl.gov/petsc/petsc-2/download/index.html
+livecheck.regex petsc-lite-(\[0-9.\]+(-p\[0-9\]+))\\.tar\\.gz

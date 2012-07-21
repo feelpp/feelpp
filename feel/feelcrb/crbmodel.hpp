@@ -990,7 +990,7 @@ typename CRBModel<TruthModelType>::offline_merge_type
 CRBModel<TruthModelType>::offlineMerge( parameter_type const& mu )
 {
 
-#if 1
+#if 0
     sparse_matrix_ptrtype A( M_backend->newMatrix(
                                                   _test=M_model->functionSpace(),
                                                   _trial=M_model->functionSpace()
@@ -1027,7 +1027,6 @@ CRBModel<TruthModelType>::offlineMerge( parameter_type const& mu )
                 M->addMatrix( this->betaMqm( q , m ), M_Mqm[q][m] );
         }
     }
-
 
     for ( size_type l = 0; l < Nl(); ++l )
     {

@@ -60,7 +60,8 @@ makeAbout()
 }
 
 BOOST_AUTO_TEST_SUITE( interp_vect_comp )
-
+Feel::Environment env( boost::unit_test::framework::master_test_suite().argc,
+                       boost::unit_test::framework::master_test_suite().argv );
 
 BOOST_AUTO_TEST_CASE( interp_vect_comp )
 {

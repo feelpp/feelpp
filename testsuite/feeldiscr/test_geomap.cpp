@@ -140,8 +140,9 @@ private:
 int
 main( int argc, char** argv )
 {
+    Feel::Environment env( argc,argv );
     Feel::Assert::setLog( "assertions.log" );
-    boost::mpi::environment env( argc, argv );
+    //boost::mpi::environment env( argc, argv );
     TestInterp<2,Simplex> test_interp;
 
     if ( argc == 2 )

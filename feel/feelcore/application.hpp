@@ -216,7 +216,7 @@ public:
      */
     uint16_type nProcess()
     {
-        return uint16_type( M_comm->size() );
+        return uint16_type( M_comm.size() );
     }
 
     /**
@@ -224,7 +224,7 @@ public:
      */
     uint16_type processId()
     {
-        return uint16_type( M_comm->rank() );
+        return uint16_type( M_comm.rank() );
     }
 
     /**
@@ -351,17 +351,17 @@ public:
     /**
      * @return the communicator
      */
-    mpi::communicator& comm()
+    WorldComm& comm()
     {
-        return *M_comm;
+        return M_comm;
     }
 
     /**
      * @return the communicator
      */
-    mpi::communicator const& comm() const
+    WorldComm const& comm() const
     {
-        return *M_comm;
+        return M_comm;
     }
 
     /**
@@ -369,7 +369,7 @@ public:
      */
     void barrier()
     {
-        M_comm->barrier();
+        M_comm.barrier();
     }
 
     /**
@@ -391,10 +391,32 @@ public:
      */
     virtual void run( const double* X, unsigned long P, double* Y, unsigned long N );
 
+    enum Stats
+    {
+        FLAT    = 1<<1,
+        HEADER  = 1<<2,
+        ERRORS  = 1<<3,
+        TIME    = 1<<4,
+        DATA    = 1<<5,
+        NUMBERS = 1<<6,
+        ALL     = ERRORS | TIME | DATA | NUMBERS
+    };
+
+    /**
+     * set statistics to be printed
+     */
+    void setStats( std::vector<std::string> const& keys );
+
     /**
      * print statistics from applications
      */
-    void printStats( std::ostream& out, std::vector<std::string> const& keys ) const;
+    void printStats( std::ostream& out, size_type stats = ALL ) const;
+
+
+    /**
+     * print statistics from applications
+     */
+    void printStats( std::ostream& out, std::vector<std::string> const& keys, size_type stats = ALL ) const;
 
 
     //@}
@@ -454,10 +476,11 @@ private:
 
 
     boost::shared_ptr<mpi::environment> M_env;
-    boost::shared_ptr<mpi::communicator> M_comm;
+    WorldComm M_comm;
 
     simgets_type M_simgets;
     std::map<std::string,std::vector<ptree::ptree> > M_stats;
+    std::vector<std::string> M_keys;
 
 };
 //! add benchmark options to feel++ applications

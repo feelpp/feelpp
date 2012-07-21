@@ -143,20 +143,27 @@ Laplacian<Dim, BasisU, Entity>::run()
 {
     using namespace Feel::vf;
 
+    int nparts = Environment::worldComm().size();
+    bool prepare = this->vm()["benchmark.prepare"].template as<bool>();
+    if ( prepare )
+        nparts = this->vm()["benchmark.partitions"].template as<int>();
+
     if ( this->vm().count( "nochdir" ) == false )
     {
-        this->changeRepository( boost::format( "perf/%1%/%2%/%3%/h_%4%/" )
+        this->changeRepository( boost::format( "perf/%1%/%2%/%3%/h_%4%/l_%5%/parts_%6%/" )
                                 % this->about().appName()
                                 % convex_type::name()
                                 % M_basis_name
-                                % meshSize() );
+                                % meshSizeInit()
+                                % level()
+                                % nparts );
     }
 
     //! init backend
     M_backend = backend_type::build( this->vm() );
     exporter =  boost::shared_ptr<export_type>( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) );
 
-    boost::timer t;
+    boost::mpi::timer t;
 #if defined(KOVASZNAY)
     double xmin = -0.5, xmax=1.5;
     double ymin =  0, ymax=2;
@@ -166,6 +173,7 @@ Laplacian<Dim, BasisU, Entity>::run()
 #endif
     double shear = this->vm()["shear"].template as<value_type>();
     bool recombine = this->vm()["recombine"].template as<bool>();
+
     /*
      * First we create the mesh, in the case of quads we wish to have
      * non-regular meshes to ensure that we don't have some super-convergence
@@ -175,18 +183,21 @@ Laplacian<Dim, BasisU, Entity>::run()
     auto mesh = createGMSHMesh( _mesh=new mesh_type,
                                 _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
                                 _desc=domain( _name= ( boost::format( "%1%-%2%-%3%" ) % "hypercube" % Dim % 1 ).str() ,
-                                        _shape="hypercube",
-                                        _usenames=true,
-                                        _convex=( ( !recombine )&&convex_type::is_hypercube )?"Hypercube":"Simplex",
-                                        _recombine=( recombine&&convex_type::is_hypercube ), // generate quads which are not regular
-                                        _dim=Dim,
-                                        _h=M_meshSize,
-                                        _shear=shear,
-                                        _xmin=xmin,_xmax=xmax,
-                                        _ymin=ymin,_ymax=ymax ) );
+                                              _shape="hypercube",
+                                              _usenames=true,
+                                              _convex=( ( !recombine )&&convex_type::is_hypercube )?"Hypercube":"Simplex",
+                                              _recombine=( recombine&&convex_type::is_hypercube ), // generate quads which are not regular
+                                              _dim=Dim,
+                                              _h=meshSizeInit(),
+                                              _shear=shear,
+                                              _xmin=xmin,_xmax=xmax,
+                                              _ymin=ymin,_ymax=ymax ),
+                                _refine=level(),
+                                _partitions=nparts );
 
     M_stats.put( "t.init.mesh",t.elapsed() );
     t.restart();
+    if ( prepare ) return;
     /*
      * The function space and some associate elements are then defined
      */
@@ -198,7 +209,7 @@ Laplacian<Dim, BasisU, Entity>::run()
     auto v = Xh->element();
 
     Log() << "Data Summary:\n";
-    Log() << "   hsize = " << M_meshSize << "\n";
+    Log() << "   hsize = " << meshSize() << "\n";
     Log() << "  export = " << this->vm().count( "export" ) << "\n";
     Log() << "      mu = " << mu << "\n";
     Log() << " bccoeff = " << penalbc << "\n";
@@ -206,9 +217,13 @@ Laplacian<Dim, BasisU, Entity>::run()
     Log() << "[dof]         number of dof: " << Xh->nDof() << "\n";
     Log() << "[dof]    number of dof/proc: " << Xh->nLocalDof() << "\n";
 
-    M_stats.put( "h",M_meshSize );
-    M_stats.put( "n.space.nelts",Xh->mesh()->numElements() );
-    M_stats.put( "n.space.ndof",Xh->nLocalDof() );
+    size_type gnelts=0;
+    mpi::all_reduce( this->comm(), Xh->mesh()->numElements() , gnelts, [] ( size_type x, size_type y ) {return x + y;} );
+
+    M_stats.put( "n.space.nelts", gnelts );
+    M_stats.put( "n.space.nlocalelts",Xh->mesh()->numElements() );
+    M_stats.put( "n.space.ndof",Xh->nDof() );
+    M_stats.put( "n.space.nlocaldof",Xh->nLocalDof() );
     M_stats.put( "t.init.space",t.elapsed() );
     Log() << "  -- time space and functions construction "<<t.elapsed()<<" seconds \n";
     t.restart() ;
@@ -221,7 +236,7 @@ Laplacian<Dim, BasisU, Entity>::run()
     auto grad_exact = pi*trans( cos( pi*Px() )*cos( pi*Py() )*cos( pi*Pz() )*unitX()-sin( pi*Px() )*sin( pi*Py() )*cos( pi*Pz() )*unitY()-sin( pi*Px() )*cos( pi*Py() )*sin( pi*Pz() )*unitZ() );
     auto f = Dim*pi*pi*u_exact; // -Delta u_exact
 
-    boost::timer subt;
+    boost::mpi::timer subt;
     // right hand side
     auto F = M_backend->newVector( Xh );
     form1( Xh, F, _init=true );
@@ -355,8 +370,12 @@ Laplacian<Dim, BasisU, Entity>::run()
     for ( auto iter = nNz.begin(); iter!=nNz.end(); ++iter )
         nnz += ( *iter ) ;
 
-    Log() << "[laplacian] matrix NNZ "<< nnz << "\n";
-    M_stats.put( "n.matrix.nnz",nnz );
+
+    size_type gnnz=0;
+    mpi::all_reduce( this->comm(), nnz, gnnz, [] ( size_type x, size_type y ) {return x + y;} );
+    Log() << "[laplacian] matrix NNZ local:"<< nnz << " global: "  << gnnz << "\n";
+    M_stats.put( "n.matrix.nnz",gnnz );
+    M_stats.put( "n.matrix.nlocalnz",nnz );
 
     t.restart();
     double u_errorL2 = integrate( _range=elements( mesh ), _expr=trans( idv( u )-u_exact )*( idv( u )-u_exact ) ).evaluate()( 0, 0 );

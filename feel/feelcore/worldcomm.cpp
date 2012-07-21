@@ -29,6 +29,7 @@
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/debug.hpp>
 #include <feel/feelcore/worldcomm.hpp>
+#include <feel/feelcore/environment.hpp>
 
 //#include <boost/mpi/communicator.hpp>
 
@@ -47,28 +48,22 @@ WorldComm::WorldComm()
     M_mapGlobalRankToGodRank( this->globalSize() ),
     M_isActive( this->godSize(),true )
 {
-    //Debug() << "\n WorldComm : warning constructor empty!! on godRank " << this->godRank() << "\n";
-    this->godComm().barrier();
-    std::vector<int> globalRanks( this->globalSize() );
-    mpi::all_gather( this->globalComm(),
-                     this->globalRank(),
-                     globalRanks );
-    mpi::all_gather( this->globalComm(),
-                     0,
-                     M_mapColorWorld );
+    //Log() << "\n WorldComm : warning constructor empty!! on godRank " << this->godRank() << "\n";
+    init( 0, false );
+}
 
-    mpi::all_gather( this->globalComm(),//this->localComm(),
-                     this->globalRank(),
-                     M_mapLocalRankToGlobalRank );
-
-    mpi::all_gather( this->globalComm(),
-                     this->godRank(),
-                     M_mapGlobalRankToGodRank );
-
-    // choice : the smallest rank
-    M_masterRank = *std::min_element( globalRanks.begin(),globalRanks.end() );
-
-    //std::cout << "\n WorldComm : warning constructor empty!! finish on godRank " << this->godRank() << std::endl;
+WorldComm::WorldComm( super const& s )
+    :
+    super(),
+    M_localComm( super::split( 0, this->globalRank() ) ),
+    M_godComm(s),
+    M_mapColorWorld( this->globalSize() ),
+    M_mapLocalRankToGlobalRank( this->localSize() ),
+    M_mapGlobalRankToGodRank( this->globalSize() ),
+    M_isActive( this->godSize(),true )
+{
+    //Log() << "\n WorldComm : warning constructor empty!! on godRank " << this->godRank() << "\n";
+    init( 0, false );
 }
 
 //-------------------------------------------------------------------------------
@@ -83,27 +78,7 @@ WorldComm::WorldComm( int color )
     M_mapGlobalRankToGodRank( this->globalSize() ),
     M_isActive( this->godSize(),true )
 {
-    this->godComm().barrier();
-
-    std::vector<int> globalRanks( this->globalSize() );
-    mpi::all_gather( this->godComm(),
-                     this->globalRank(),
-                     globalRanks );
-
-    mpi::all_gather( this->globalComm(),
-                     color,
-                     M_mapColorWorld );
-
-    mpi::all_gather( this->localComm(),
-                     this->globalRank(),
-                     M_mapLocalRankToGlobalRank );
-
-    mpi::all_gather( this->globalComm(),
-                     this->godRank(),
-                     M_mapGlobalRankToGodRank );
-
-    // choice : the smallest rank
-    M_masterRank = *std::min_element( globalRanks.begin(),globalRanks.end() );
+    init( color, false );
 }
 
 //-------------------------------------------------------------------------------
@@ -117,38 +92,15 @@ WorldComm::WorldComm( int color )
     M_mapGlobalRankToGodRank( this->globalSize() ),
     M_isActive( this->godSize(),true )
 {
-    //std::cout << "\n WorldComm : constructor vector<color>!! start on godRank " << this->godRank() << std::endl;
-    //this->godComm().barrier();
-    std::vector<int> globalRanks( this->globalSize() );
-    mpi::all_gather( this->globalComm(),
-                     this->globalRank(),
-                     globalRanks );
-    //std::cout << "\n WorldComm : constructor vector<color>!! --1--- on godRank " << this->godRank() << std::endl;
-    //this->godComm().barrier();
+    init( 0, true );
 
-    mpi::all_gather( this->localComm(),
-                     this->globalRank(),
-                     M_mapLocalRankToGlobalRank );
-    //std::cout << "\n WorldComm : constructor vector<color>!! ---2--- on godRank " << this->godRank() << std::endl;
-    //this->godComm().barrier();
-
-    mpi::all_gather( this->godComm(),//this->globalComm(),
-                     this->godRank(),
-                     M_mapGlobalRankToGodRank );
-
-    // choice : the smallest rank
-    M_masterRank = *std::min_element( globalRanks.begin(),globalRanks.end() );
-    //std::cout << "\n WorldComm : constructor vector<color>!! finish on godRank " << this->godRank() << std::endl;
 }
 
-    /////////////////
-    //////////
 
-
-    WorldComm::WorldComm( std::vector<int> const& colorWorld,
-                          int _localRank,
-                          communicator_type const& _globalComm,
-                          communicator_type const& _godComm )
+WorldComm::WorldComm( std::vector<int> const& colorWorld,
+                      int _localRank,
+                      communicator_type const& _globalComm,
+                      communicator_type const& _godComm )
     :
     super(_globalComm),
     M_localComm( super::split( colorWorld[this->globalRank()],_localRank ) ),
@@ -158,11 +110,23 @@ WorldComm::WorldComm( int color )
     M_mapGlobalRankToGodRank( this->globalSize() ),
     M_isActive( this->godSize(),true )
 {
-    //std::cout << "\n WorldComm : NEW constructor vector<color>!! start on godRank " << this->godRank() << std::endl;
+        init( 0, true );
+}
+
+//-------------------------------------------------------------------------------
+
+void
+WorldComm::init( int color, bool colormap )
+{
     std::vector<int> globalRanks( this->globalSize() );
     mpi::all_gather( this->globalComm(),
                      this->globalRank(),
                      globalRanks );
+    //Log() << "gather1\n";
+    if ( !colormap )
+        mpi::all_gather( this->globalComm(),
+                         color,
+                         M_mapColorWorld );
 
     mpi::all_gather( this->localComm(),
                      this->globalRank(),
@@ -174,6 +138,9 @@ WorldComm::WorldComm( int color )
 
     // choice : the smallest rank
     M_masterRank = *std::min_element( globalRanks.begin(),globalRanks.end() );
+
+    //std::cout << "\n WorldComm : warning constructor empty!! finish on godRank " << this->godRank() << std::endl;
+
 }
 
 //-------------------------------------------------------------------------------
@@ -407,6 +374,23 @@ WorldComm::subWorldComm( int _color ) const
                       myColor,
                       newIsActive );
 
+}
+
+//-------------------------------------------------------------------------------
+WorldComm::self_type
+WorldComm::subWorldComm( std::vector<int> const& colormap )
+{
+    M_mapColorWorld = colormap;
+    return this->subWorldComm();
+}
+
+//-------------------------------------------------------------------------------
+
+WorldComm::self_type
+WorldComm::subWorldComm( int _color, std::vector<int> const& colormap )
+{
+    M_mapColorWorld = colormap;
+    return this->subWorldComm( _color );
 }
 
 //-------------------------------------------------------------------------------
@@ -671,6 +655,123 @@ WorldComm::applyActivityOnlyOn(int _localColor) const
 }
 
 //-------------------------------------------------------------------------------
+
+WorldComm const&
+WorldComm::subWorld( int n )
+{
+    if ( this->globalSize() == 1 )
+        return *this;
+    if ( !hasSubWorlds( n ) )
+        registerSubWorlds( n );
+    return M_subworlds.find(n)->second.second[subWorldId(n)];
+}
+int
+WorldComm::subWorldId( int n )
+{
+    if ( this->globalSize() == 1 )
+        return 0;
+
+    if ( !hasSubWorlds( n ) )
+        registerSubWorlds( n );
+    return M_subworlds.find(n)->second.first.M_mapColorWorld[this->globalRank()];
+}
+bool
+WorldComm::hasSubWorlds( int n )
+{
+    return M_subworlds.find( n ) != M_subworlds.end();
+}
+
+std::vector<WorldComm> const&
+WorldComm::subWorlds( int n )
+{
+    if ( !hasSubWorlds( n ) )
+        registerSubWorlds( n );
+    return M_subworlds[n].second;
+}
+
+std::vector<WorldComm> const&
+WorldComm::subWorldsGroupBySubspace( int n )
+{
+    if ( !hasSubWorlds( n ) )
+        registerSubWorldsGroupBySubspace( n );
+    return M_subworlds[n].second;
+}
+
+int
+WorldComm::numberOfSubWorlds() const
+{
+    if ( this->globalSize() == 1 )
+        return 1;
+    return M_subworlds.begin()->first;
+}
+
+WorldComm const&
+WorldComm::masterWorld( int n )
+{
+    if ( !hasSubWorlds( n ) )
+        registerSubWorlds( n );
+    return M_subworlds[n].first;
+}
+
+void
+WorldComm::registerSubWorlds( int n )
+{
+    std::vector<WorldComm> subworlds( n, Environment::worldComm() );
+    M_subworlds.insert( std::make_pair( n, std::make_pair( Environment::worldComm(), subworlds ) ) );
+}
+void
+WorldComm::registerSubWorldsGroupBySubspace( int n )
+{
+    if ( ( n > 1 ) && ( this->globalSize() > 1 ) )
+    {
+        // if necessary register a world with n subworlds
+        if ( !WorldComm::hasSubWorlds( n ) )
+        {
+            std::vector<int> MapWorld(this->globalSize());
+
+            // be careful the number of processors must be a multiple of nSpaces for now
+            int nprocs_per_space = 0;
+            if ( globalSize() <= n )
+                nprocs_per_space = 1;
+            else
+                nprocs_per_space = globalSize()/n;
+            for (int proc = 0 ; proc < nprocs_per_space; ++proc)
+            {
+                for( int s = 0; s < n; ++s )
+                    MapWorld[nprocs_per_space*s+proc] = s;
+            }
+            WorldComm wc(*this);
+            wc.setColorMap( MapWorld );
+
+            std::vector<WorldComm> subworlds( n, wc );
+            for( int s = 0; s < n; ++s )
+            {
+                if (this->globalSize()>1)
+                    subworlds[s] = wc.subWorldComm( s, MapWorld );
+                else
+                    subworlds[s] = wc;
+            }
+            M_subworlds.insert( std::make_pair( n, std::make_pair( wc,  subworlds ) ) );
+
+        }
+    }
+    else if ( ( n == 1 ) || ( this->globalSize() == 1 ) )
+    {
+        std::vector<WorldComm> subworlds( n, Environment::worldComm() );
+        M_subworlds.insert( std::make_pair( n, std::make_pair( Environment::worldComm(), subworlds ) ) );
+    }
+}
+
+void
+WorldComm::setColorMap( std::vector<int> const& colormap )
+{
+    M_mapColorWorld = colormap;
+    M_localComm = super::split( M_mapColorWorld[this->globalRank()] );
+    Log() << "WorldComm::setColorMap: localSize = " << M_localComm.size() << "\n";
+    mpi::all_gather( this->localComm(),
+                     this->globalRank(),
+                     M_mapLocalRankToGlobalRank );
+}
 
 } //namespace Feel
 

@@ -129,7 +129,7 @@ public:
      */
     MatrixPetsc();
 
-    MatrixPetsc( DataMap const& dmRow, DataMap const& dmCol, WorldComm const& worldComm=WorldComm() );
+    MatrixPetsc( DataMap const& dmRow, DataMap const& dmCol, WorldComm const& worldComm=Environment::worldComm() );
 
 
     /**
@@ -504,7 +504,7 @@ public :
 
     MatrixPetscMPI();
 
-    MatrixPetscMPI( DataMap const& dmRow, DataMap const& dmCol, WorldComm const& worldComm=WorldComm() );
+    MatrixPetscMPI( DataMap const& dmRow, DataMap const& dmCol, WorldComm const& worldComm=Environment::worldComm() );
 
     MatrixPetscMPI( Mat m, DataMap const& dmRow, DataMap const& dmCol );
 
@@ -553,6 +553,9 @@ public :
                     int* cols, int ncols,
                     value_type* data );
 
+    void addMatrix( const T a, MatrixSparse<T> &X );
+
+
     void zero();
     void zero( size_type start1, size_type stop1, size_type start2, size_type stop2 );
     //void zeroEntriesDiagonal();
@@ -560,6 +563,11 @@ public :
                    std::vector<value_type> const& values,
                    Vector<value_type>& rhs,
                    Context const& on_context );
+
+private :
+
+    void addMatrixSameNonZeroPattern( const T a, MatrixSparse<T> &X );
+
 
 };
 

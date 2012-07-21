@@ -18,6 +18,9 @@
 /* Define if F77 and FC dummy `main' functions are identical. */
 #cmakedefine FC_DUMMY_MAIN_EQ_F77
 
+/* Define to 1 if you have the ANN headers are available. */
+#cmakedefine FEELPP_HAS_ANN_H
+
 /* define if Bamg is enabled */
 #cmakedefine FEELPP_HAS_BAMG
 
@@ -27,8 +30,14 @@
 /* Define to 1 if you have the <Eigen/Eigen> header file. */
 #cmakedefine FEELPP_HAS_EIGEN_EIGEN
 
-/* Define to 1 if you have the Gmsh headers are available. */
+/* Define to 1 if you have the GLPK headers available. */
+#cmakedefine FEELPP_HAS_GLPK_H
+
+/* Define to 1 if you have the Gmsh headers available. */
 #cmakedefine FEELPP_HAS_GMSH_H
+
+/* Define to 1 if you have the Gmsh library available. */
+#cmakedefine FEELPP_HAS_GMSH_LIBRARY
 
 /* Define to 1 if you have the <inttypes.h> header file. */
 #cmakedefine FEELPP_HAS_INTTYPES_H

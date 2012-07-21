@@ -31,6 +31,7 @@
 
 #include <vector>
 #include <feel/feelcore/feel.hpp>
+#include <feel/feelcore/environment.hpp>
 #include <feel/feelcore/worldcomm.hpp>
 
 namespace Feel
@@ -59,13 +60,13 @@ public:
      */
     //@{
 
-    DataMap( WorldComm const& _worldComm = WorldComm() );
+    DataMap( WorldComm const& _worldComm = Environment::worldComm() );
 
     /**
      * \param n total size of the vector
      * \param n_local local size of the vector on the curent processor
      */
-    DataMap( size_type n, size_type n_local, WorldComm const& _worldComm = WorldComm() );
+    DataMap( size_type n, size_type n_local, WorldComm const& _worldComm = Environment::worldComm() );
 
     /**
      * \param n total size of the vector
@@ -111,17 +112,33 @@ public:
     /**
      * @return the number of degrees of freedom on this processor without ghosts.
      */
-    size_type nLocalDofWithoutGhost () const
+    size_type nLocalDofWithoutGhost() const
     {
-        return _M_n_localWithoutGhost_df[this->worldComm().rank()];
+        return nLocalDofWithoutGhost(this->worldComm().rank());
+    }
+
+    /**
+     * @return the number of degrees of freedom on this processor without ghosts.
+     */
+    size_type nLocalDofWithoutGhost( const int proc ) const
+    {
+        return _M_n_localWithoutGhost_df[proc];
     }
 
     /**
      * @return the number of degrees of freedom on this processor with ghosts.
      */
-    size_type nLocalDofWithGhost () const
+    size_type nLocalDofWithGhost() const
     {
-        return _M_n_localWithGhost_df[this->worldComm().rank()];
+        return this->nLocalDofWithGhost(this->worldComm().rank());
+    }
+
+    /**
+     * @return the number of degrees of freedom on this processor with ghosts.
+     */
+    size_type nLocalDofWithGhost( const int proc ) const
+    {
+        return _M_n_localWithGhost_df[proc];
     }
 
     /**
@@ -240,6 +257,13 @@ public:
     bool dofGlobalClusterIsOnProc( size_type globDof, int proc ) const
     {
         return ( ( globDof <= _M_last_df_globalcluster[proc] ) && ( globDof >= _M_first_df_globalcluster[proc] ) );
+    }
+
+
+    bool dofGlobalProcessIsGhost( size_type dof) const
+    {
+        return ( this->mapGlobalProcessToGlobalCluster( dof ) < this->firstDofGlobalCluster() ||
+                 this->mapGlobalProcessToGlobalCluster( dof ) > this->lastDofGlobalCluster() );
     }
 
     //! Returns local ID of global ID, return invalid_size_type_value if not found on this processor.

@@ -112,7 +112,7 @@ public:
     Exporter( std::string const& type,
               std::string const& prefix = "",
               int freq = 1,
-              WorldComm const& worldComm = WorldComm() );
+              WorldComm const& worldComm = Environment::worldComm() );
 
     /**
      * Constructor
@@ -122,7 +122,7 @@ public:
      */
     Exporter( po::variables_map const& vm,
               std::string const& exporter_prefix = "",
-              WorldComm const& worldComm = WorldComm() );
+              WorldComm const& worldComm = Environment::worldComm() );
 
     /**
      * copy constructor
@@ -141,7 +141,7 @@ public:
      */
     static Exporter<MeshType,N>* New( std::string const& exportername,
                                       std::string prefix = "export",
-                                      WorldComm const& worldComm = WorldComm() );
+                                      WorldComm const& worldComm = Environment::worldComm() );
 
     /**
      * Static function instantiating from the Exporter Factory an exporter out
@@ -150,7 +150,7 @@ public:
      */
     static Exporter<MeshType,N>* New( po::variables_map const& vm,
                                       std::string prefix = "export",
-                                      WorldComm const& worldComm = WorldComm() );
+                                      WorldComm const& worldComm = Environment::worldComm() );
 
     //@}
 
@@ -385,10 +385,14 @@ public:
         }
     }
 
+    void setWorldComm( WorldComm const& wc )
+        {
+            M_worldComm = wc;
+        }
     WorldComm const& worldComm() const
-    {
-        return M_worldComm;
-    }
+        {
+            return M_worldComm;
+        }
 
 
     //@}

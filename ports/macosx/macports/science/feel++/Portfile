@@ -83,9 +83,23 @@ configure.args      -DCMAKE_VERBOSE_MAKEFILE=ON \
                     -DCMAKE_DISABLE_FIND_PACKAGE_Metis=TRUE \
                     -Wno-dev
 
-configure.cxx ${prefix}/bin/g++-mp-4.6
-configure.cc  ${prefix}/bin/gcc-mp-4.6
+variant gcc45 conflicts gcc44 gcc46 gcc47 description {Build with gcc 4.5} {}
+variant gcc46 conflicts gcc44 gcc45 gcc47 description {Build with gcc 4.6} {}
+variant gcc47 conflicts gcc44 gcc45 gcc46 description {Build with gcc 4.7} {}
 
+
+if {[variant_isset gcc45]} {
+    depends_lib-append  port:gcc45
+    configure.compiler  macports-gcc-4.5
+} else if {[variant_isset gcc46]} {
+    default_variants    +gcc46
+    depends_lib-append  port:gcc46
+    configure.compiler  macports-gcc-4.6
+} else if {[variant_isset gcc46]} {
+    default_variants    +gcc47
+    depends_lib-append  port:gcc47
+    configure.compiler  macports-gcc-4.7
+}
 
 configure.args-append \
     -DMPI_COMPILER=/opt/local/lib/openmpi/bin/mpic++\
@@ -98,7 +112,6 @@ destroot.destdir DESTDIR=${destroot}${prefix}/lib/feel++
 #}
 depends_lib    \
     port:cmake\
-    port:gcc46\
     port:openmpi\
     port:boost \
     port:petsc\

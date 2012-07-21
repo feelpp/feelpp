@@ -281,403 +281,6 @@ VectorPetsc<T>:: sum () const
     return static_cast<Real>( value );
 }
 
-
-
-template <typename T>
-void
-VectorPetsc<T>::localize ( Vector<T>& v_local_in ) const
-{
-#if 0
-    VectorPetsc<T>* v_local = dynamic_cast<VectorPetsc<T>*>( &v_local_in );
-
-    assert ( v_local != NULL );
-    assert ( v_local->localSize() == this->size() );
-
-    int ierr = 0;
-    const int n = this->size();
-
-    IS is;
-    VecScatter scatter;
-
-    // Create idx, idx[i] = i;
-    std::vector<int> idx( n );
-    Feel::iota ( idx.begin(), idx.end(), 0 );
-
-    // Create the index set & scatter object
-#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
-    ierr = ISCreateGeneral( this->comm(), n, &idx[0], PETSC_COPY_VALUES, &is );
-#else
-    ierr = ISCreateGeneral( this->comm(), n, &idx[0], &is );
-#endif
-    CHKERRABORT( this->comm(),ierr );
-
-    ierr = VecScatterCreate( const_cast<Vec>( this->_M_vec ), is,
-                             v_local->_M_vec, is,
-                             &scatter );
-    CHKERRABORT( this->comm(),ierr );
-
-    // Perform the scatter
-#if ( (PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR == 3) && (PETSC_VERSION_SUBMINOR >= 3) ) || ( PETSC_VERSION_MAJOR >= 3 )
-
-    ierr = VecScatterBegin( scatter, _M_vec, v_local->_M_vec, INSERT_VALUES,
-                            SCATTER_FORWARD );
-#else
-    ierr = VecScatterBegin( _M_vec, v_local->_M_vec, INSERT_VALUES,
-                            SCATTER_FORWARD, scatter );
-#endif
-    CHKERRABORT( this->comm(),ierr );
-
-#if (PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR == 3) && (PETSC_VERSION_SUBMINOR >= 3)|| ( PETSC_VERSION_MAJOR >= 3 )
-    ierr = VecScatterEnd  ( scatter, const_cast<Vec>( _M_vec ), v_local->_M_vec, INSERT_VALUES,
-                            SCATTER_FORWARD );
-#else
-    ierr = VecScatterEnd  ( _M_vec, v_local->_M_vec, INSERT_VALUES,
-                            SCATTER_FORWARD, scatter );
-#endif
-    CHKERRABORT( this->comm(),ierr );
-
-    // Clean up
-    ierr = PETSc::ISDestroy ( is );
-    CHKERRABORT( this->comm(),ierr );
-
-    ierr = PETSc::VecScatterDestroy( scatter );
-    CHKERRABORT( this->comm(),ierr );
-#endif
-}
-
-
-
-template <typename T>
-void VectorPetsc<T>::localize ( Vector<T>& v_local_in,
-                                const std::vector<size_type>& send_list ) const
-{
-#if 0
-    VectorPetsc<T>* v_local = dynamic_cast<VectorPetsc<T>*>( &v_local_in );
-
-    assert ( v_local != NULL );
-    assert ( v_local->localSize() == this->size() );
-    assert ( send_list.size()     <= v_local->size() );
-
-    int ierr=0;
-    const int n_sl = send_list.size();
-
-    IS is;
-    VecScatter scatter;
-
-    std::vector<int> idx( n_sl );
-
-    for ( int i=0; i<n_sl; i++ )
-        idx[i] = static_cast<int>( send_list[i] );
-
-#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
-    ierr = ISCreateGeneral( this->comm(), n_sl, &idx[0], PETSC_COPY_VALUES, &is );
-#else
-    // Create the index set & scatter object
-    ierr = ISCreateGeneral( this->comm(), n_sl, &idx[0], &is );
-#endif
-    CHKERRABORT( this->comm(),ierr );
-
-    ierr = VecScatterCreate( const_cast<Vec>( _M_vec ),          is,
-                             v_local->_M_vec, is,
-                             &scatter );
-
-    CHKERRABORT( this->comm(),ierr );
-
-
-    // Perform the scatter
-#if (PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR == 3) && (PETSC_VERSION_SUBMINOR >= 3) || ( PETSC_VERSION_MAJOR >= 3 )
-    ierr = VecScatterBegin( scatter, const_cast<Vec>( _M_vec ), v_local->_M_vec, INSERT_VALUES, SCATTER_FORWARD );
-#else
-    ierr = VecScatterBegin( _M_vec, v_local->_M_vec, INSERT_VALUES, SCATTER_FORWARD, scatter );
-#endif
-    CHKERRABORT( this->comm(),ierr );
-
-#if (PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR == 3) && (PETSC_VERSION_SUBMINOR >= 3) || ( PETSC_VERSION_MAJOR >= 3 )
-    ierr = VecScatterEnd  ( scatter, const_cast<Vec>( _M_vec ), v_local->_M_vec, INSERT_VALUES, SCATTER_FORWARD );
-#else
-    ierr = VecScatterEnd  ( _M_vec, v_local->_M_vec, INSERT_VALUES, SCATTER_FORWARD, scatter );
-#endif
-    CHKERRABORT( this->comm(),ierr );
-
-    // Clean up
-    ierr = PETSc::ISDestroy ( is );
-    CHKERRABORT( this->comm(),ierr );
-
-    ierr = PETSc::VecScatterDestroy( scatter );
-    CHKERRABORT( this->comm(),ierr );
-#endif
-}
-
-
-template <typename T>
-void VectorPetsc<T>::localize ( const size_type first_local_idx,
-                                const size_type last_local_idx,
-                                const std::vector<size_type>& send_list )
-{
-#if 0
-    // Only good for serial vectors.
-    assert ( this->size() == this->localSize() );
-    assert ( last_local_idx > first_local_idx );
-    assert ( send_list.size() <= this->size() );
-    assert ( last_local_idx < this->size() );
-
-    const size_type size       = this->size();
-    const size_type local_size = ( last_local_idx - first_local_idx + 1 );
-    int ierr=0;
-
-    // Don't bother for serial cases
-    if ( ( first_local_idx == 0 ) &&
-            ( local_size == size ) )
-        return;
-
-
-    // Build a parallel vector, initialize it with the local
-    // parts of (*this)
-    VectorPetsc<T> parallel_vec;
-
-    parallel_vec.init ( size, local_size, false );
-
-
-    // Copy part of *this into the parallel_vec
-    {
-        IS is;
-        VecScatter scatter;
-
-        // Create idx, idx[i] = i+first_local_idx;
-        std::vector<int> idx( local_size );
-        Feel::iota ( idx.begin(), idx.end(), first_local_idx );
-
-        // Create the index set & scatter object
-#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
-        ierr = ISCreateGeneral( this->comm(), local_size, &idx[0], PETSC_COPY_VALUES, &is );
-#else
-        ierr = ISCreateGeneral( this->comm(), local_size, &idx[0], &is );
-#endif
-        CHKERRABORT( this->comm(),ierr );
-
-        ierr = VecScatterCreate( _M_vec,              is,
-                                 parallel_vec._M_vec, is,
-                                 &scatter );
-        CHKERRABORT( this->comm(),ierr );
-
-        // Perform the scatter
-#if (PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR == 3) && (PETSC_VERSION_SUBMINOR >= 3) || ( PETSC_VERSION_MAJOR >= 3 )
-        ierr = VecScatterBegin( scatter, _M_vec, parallel_vec._M_vec, INSERT_VALUES, SCATTER_FORWARD );
-#else
-        ierr = VecScatterBegin( _M_vec, parallel_vec._M_vec, INSERT_VALUES, SCATTER_FORWARD, scatter );
-#endif
-        CHKERRABORT( this->comm(),ierr );
-
-#if (PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR == 3) && (PETSC_VERSION_SUBMINOR >= 3) || ( PETSC_VERSION_MAJOR >= 3 )
-        ierr = VecScatterEnd  ( scatter, _M_vec, parallel_vec._M_vec, INSERT_VALUES, SCATTER_FORWARD );
-#else
-        ierr = VecScatterEnd  ( _M_vec, parallel_vec._M_vec, INSERT_VALUES, SCATTER_FORWARD, scatter );
-#endif
-        CHKERRABORT( this->comm(),ierr );
-
-        // Clean up
-        ierr = PETSc::ISDestroy ( is );
-        CHKERRABORT( this->comm(),ierr );
-
-        ierr = PETSc::VecScatterDestroy( scatter );
-        CHKERRABORT( this->comm(),ierr );
-    }
-
-    // localize like normal
-    parallel_vec.close();
-    parallel_vec.localize ( *this, send_list );
-    this->close();
-#endif
-}
-
-// Full specialization for double datatypes
-template <>
-void VectorPetsc<double>::localize ( std::vector<double>& v_local ) const
-{
-#if 0
-    int ierr=0;
-    const int n  = this->size();
-    const int nl = this->localSize();
-    PetscScalar *values;
-
-
-    v_local.resize( n );
-
-
-    for ( int i=0; i<n; i++ )
-        v_local[i] = 0.;
-
-    // only one processor
-    if ( n == nl )
-    {
-        ierr = VecGetArray ( const_cast<Vec>( _M_vec ), &values );
-        CHKERRABORT( this->comm(),ierr );
-
-        for ( int i=0; i<n; i++ )
-            v_local[i] = static_cast<double>( values[i] );
-
-        ierr = VecRestoreArray ( const_cast<Vec>( _M_vec ), &values );
-        CHKERRABORT( this->comm(),ierr );
-    }
-
-    // otherwise multiple processors
-    else
-    {
-        size_type ioff = firstLocalIndex();
-        std::vector<double> local_values( n, 0. );
-
-        {
-            ierr = VecGetArray ( const_cast<Vec>( _M_vec ), &values );
-            CHKERRABORT( this->comm(),ierr );
-
-            for ( int i=0; i<nl; i++ )
-                local_values[i+ioff] = static_cast<double>( values[i] );
-
-            ierr = VecRestoreArray ( const_cast<Vec>( _M_vec ), &values );
-            CHKERRABORT( this->comm(),ierr );
-        }
-
-        MPI_Allreduce ( &local_values[0], &v_local[0], n, MPI_REAL, MPI_SUM,
-                        this->comm() );
-    }
-
-#endif
-}
-
-
-
-#if 0
-// Full specialization for Complex datatypes
-template <>
-void VectorPetsc<Complex>::localize ( std::vector<Complex>& v_local ) const
-{
-    int ierr=0;
-    const int n  = size();
-    const int nl = localSize();
-    PetscScalar *values;
-
-    v_local.resize( n );
-
-
-    for ( int i=0; i<n; i++ )
-        v_local[i] = 0.;
-
-    // only one processor
-    if ( n == nl )
-    {
-        ierr = VecGetArray ( _M_vec, &values );
-        CHKERRABORT( this->comm(),ierr );
-
-        for ( int i=0; i<n; i++ )
-            v_local[i] = static_cast<Complex>( values[i] );
-
-        ierr = VecRestoreArray ( _M_vec, &values );
-        CHKERRABORT( this->comm(),ierr );
-    }
-
-    // otherwise multiple processors
-    else
-    {
-        size_type ioff = firstLocalIndex();
-
-        /* in here the local values are stored, acting as send buffer for MPI
-         * initialize to zero, since we collect using MPI_SUM
-         */
-        std::vector<Real> real_local_values( n, 0. );
-        std::vector<Real> imag_local_values( n, 0. );
-
-        {
-            ierr = VecGetArray ( _M_vec, &values );
-            CHKERRABORT( this->comm(),ierr );
-
-            // provide my local share to the real and imag buffers
-            for ( int i=0; i<nl; i++ )
-            {
-                real_local_values[i+ioff] = static_cast<Complex>( values[i] ).real();
-                imag_local_values[i+ioff] = static_cast<Complex>( values[i] ).imag();
-            }
-
-            ierr = VecRestoreArray ( _M_vec, &values );
-            CHKERRABORT( this->comm(),ierr );
-        }
-
-        /* have buffers of the real and imaginary part of v_local.
-         * Once MPI_Reduce() collected all the real and imaginary
-         * parts in these std::vector<double>, the values can be
-         * copied to v_local
-         */
-        std::vector<Real> real_v_local( n );
-        std::vector<Real> imag_v_local( n );
-
-        // collect entries from other proc's in real_v_local, imag_v_local
-        MPI_Allreduce ( &real_local_values[0], &real_v_local[0], n,
-                        MPI_DOUBLE, MPI_SUM, this->comm() );
-
-        MPI_Allreduce ( &imag_local_values[0], &imag_v_local[0], n,
-                        MPI_DOUBLE, MPI_SUM, this->comm() );
-
-        // copy real_v_local and imag_v_local to v_local
-        for ( int i=0; i<n; i++ )
-            v_local[i] = Complex( real_v_local[i], imag_v_local[i] );
-
-    }
-}
-#endif
-// Full specialization for Real datatypes
-template <>
-void VectorPetsc<Real>::localizeToOneProcessor ( std::vector<Real>& v_local,
-        const size_type pid ) const
-{
-#if 0
-    int ierr=0;
-    const int n  = size();
-    const int nl = localSize();
-    PetscScalar *values;
-
-
-    v_local.resize( n );
-
-
-    // only one processor
-    if ( n == nl )
-    {
-        ierr = VecGetArray ( const_cast<Vec>( _M_vec ), &values );
-        CHKERRABORT( this->comm(),ierr );
-
-        for ( int i=0; i<n; i++ )
-            v_local[i] = static_cast<Real>( values[i] );
-
-        ierr = VecRestoreArray ( const_cast<Vec>( _M_vec ), &values );
-        CHKERRABORT( this->comm(),ierr );
-    }
-
-    // otherwise multiple processors
-    else
-    {
-        size_type ioff = this->firstLocalIndex();
-        std::vector<Real> local_values ( n, 0. );
-
-        {
-            ierr = VecGetArray ( const_cast<Vec>( _M_vec ), &values );
-            CHKERRABORT( this->comm(),ierr );
-
-            for ( int i=0; i<nl; i++ )
-                local_values[i+ioff] = static_cast<Real>( values[i] );
-
-            ierr = VecRestoreArray ( const_cast<Vec>( _M_vec ), &values );
-            CHKERRABORT( this->comm(),ierr );
-        }
-
-
-        MPI_Reduce ( &local_values[0], &v_local[0], n, MPI_REAL, MPI_SUM,
-                     pid, this->comm() );
-    }
-
-#endif
-}
-
-
-
 template <typename T>
 void VectorPetsc<T>::printMatlab ( const std::string name ) const
 {
@@ -765,12 +368,55 @@ VectorPetscMPI<T>::VectorPetscMPI( Vec v, DataMap const& dm )
     :
     super( v,dm )
 {
-    ///HERE!!!
     int ierr=0;
-    int petsc_n_localWithGhost=static_cast<int>( this->map().nLocalDofWithGhost()/*n_local*/ );
+    int petsc_n_localWithGhost=static_cast<int>( this->map().nLocalDofWithGhost() );
 
     ierr = VecCreateSeq ( PETSC_COMM_SELF, petsc_n_localWithGhost, &  _M_vecLocal );
     CHKERRABORT( this->comm(),ierr );
+
+    IS isGlob;
+    IS isLoc;
+
+    // create IS for vecScatter
+    PetscInt *idx;
+    PetscInt n_idx =  this->map().mapGlobalProcessToGlobalCluster().size();
+    idx = new PetscInt[n_idx];
+    std::copy( this->map().mapGlobalProcessToGlobalCluster().begin(),
+               this->map().mapGlobalProcessToGlobalCluster().end(),
+               idx );
+
+#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
+    ierr = ISCreateGeneral( this->comm(), n_idx, idx, PETSC_COPY_VALUES, &isGlob );
+#else
+    ierr = ISCreateGeneral( this->comm(), n_idx, idx, &isGlob );
+#endif
+    CHKERRABORT( this->comm(),ierr );
+
+    ierr = ISCreateStride( PETSC_COMM_SELF,n_idx,0,1,&isLoc );
+    CHKERRABORT( this->comm(),ierr );
+
+    // create vecScatter
+    ierr = VecScatterCreate( this->vec(), isGlob,
+                             _M_vecLocal, isLoc,
+                             &_M_vecScatter );
+    CHKERRABORT( this->comm(),ierr );
+
+    // Clean up
+#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
+    ierr = ISDestroy ( &isGlob );
+    CHKERRABORT( this->comm(),ierr );
+    ierr = ISDestroy ( &isLoc );
+    CHKERRABORT( this->comm(),ierr );
+#else
+    ierr = ISDestroy ( isGlob );
+    CHKERRABORT( this->comm(),ierr );
+    ierr = ISDestroy ( isLoc );
+    CHKERRABORT( this->comm(),ierr );
+#endif
+    delete idx;
+
+    this->M_is_initialized = true;
+
     this->close();
 }
 
@@ -786,7 +432,7 @@ VectorPetscMPI<T>::init( const size_type n,
     int ierr=0;
     int petsc_n=static_cast<int>( n );
     int petsc_n_localWithoutGhost=static_cast<int>( n_localWithoutGhost );
-    int petsc_n_localWithGhost=static_cast<int>( this->map().nLocalDofWithGhost()/*n_local*/ );
+    int petsc_n_localWithGhost=static_cast<int>( this->map().nLocalDofWithGhost() );
     //std::cout << "petsc_n_localWithoutGhost "<< petsc_n_localWithoutGhost << std::endl;
     //std::cout << "petsc_n_localWithGhost "<< petsc_n_localWithGhost << std::endl;
 
@@ -800,14 +446,10 @@ VectorPetscMPI<T>::init( const size_type n,
                           &this->_M_vec );
     CHKERRABORT( this->comm(),ierr );
 
-    //ierr = VecSetFromOptions (this->vec());
-    //CHKERRABORT(this->comm(),ierr);
-
     // localToGlobalMapping
     IS is;
     ISLocalToGlobalMapping isLocToGlobMap;
 
-    //auto idx = this->map().mapGlobalProcessToGlobalCluster();
     PetscInt *idx;
     PetscInt n_idx =  this->map().mapGlobalProcessToGlobalCluster().size();
     idx = new PetscInt[n_idx];
@@ -821,28 +463,41 @@ VectorPetscMPI<T>::init( const size_type n,
 #endif
     CHKERRABORT( this->comm(),ierr );
 
+    // create LocalToGlobalMapping
     ierr=ISLocalToGlobalMappingCreateIS( is, &isLocToGlobMap );
     CHKERRABORT( this->comm(),ierr );
-
     ierr=VecSetLocalToGlobalMapping( this->vec(),isLocToGlobMap );
     CHKERRABORT( this->comm(),ierr );
 
-    // local vector
+    // create local vector
     ierr = VecCreateSeq ( PETSC_COMM_SELF, petsc_n_localWithGhost, &  _M_vecLocal );
     CHKERRABORT( this->comm(),ierr );
+
+    // create vecScatter
+    IS isLoc;
+    ierr = ISCreateStride( PETSC_COMM_SELF,n_idx,0,1,&isLoc );
+    CHKERRABORT( this->comm(),ierr );
+    ierr = VecScatterCreate( this->vec(), is,
+                             _M_vecLocal, isLoc,
+                             &_M_vecScatter );
+    CHKERRABORT( this->comm(),ierr );
+
+
 
     // Clean up
 #if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
     ierr = ISDestroy( &is );
     CHKERRABORT( this->comm(),ierr );
-
     ierr = ISLocalToGlobalMappingDestroy( &isLocToGlobMap );
+    CHKERRABORT( this->comm(),ierr );
+    ierr = ISDestroy ( &isLoc );
     CHKERRABORT( this->comm(),ierr );
 #else
     ierr = ISDestroy( is );
     CHKERRABORT( this->comm(),ierr );
-
     ierr = ISLocalToGlobalMappingDestroy( isLocToGlobMap );
+    CHKERRABORT( this->comm(),ierr );
+    ierr = ISDestroy ( isLoc );
     CHKERRABORT( this->comm(),ierr );
 #endif
 
@@ -853,6 +508,7 @@ VectorPetscMPI<T>::init( const size_type n,
 
     ierr = VecSetFromOptions( _M_vecLocal );
     CHKERRABORT( this->comm(),ierr );
+
 
     this->M_is_initialized = true;
 
@@ -937,11 +593,15 @@ VectorPetscMPI<T>::clear()
         int ierr=0;
 #if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
         ierr = VecDestroy( &_M_vecLocal );
+        CHKERRABORT( this->comm(),ierr );
+        ierr = VecScatterDestroy( &_M_vecScatter );
+        CHKERRABORT( this->comm(),ierr );
 #else
         ierr = VecDestroy( _M_vecLocal );
-#endif
         CHKERRABORT( this->comm(),ierr );
-
+        ierr = VecScatterDestroy( _M_vecScatter );
+        CHKERRABORT( this->comm(),ierr );
+#endif
     }
 }
 
@@ -950,75 +610,14 @@ VectorPetscMPI<T>::clear()
 template <typename T>
 void VectorPetscMPI<T>::localize()
 {
-    //std::cout << "\n MPI LOCALIZE "<<std::endl;;
-
     int ierr = 0;
 
-    IS isGlob;
-    IS isLoc;
-
-    VecScatter scatter;
-#if 0
-    auto idx = this->map().mapGlobalProcessToGlobalCluster();
-    ierr = ISCreateGeneral( this->comm(), idx.size(), &idx[0], PETSC_COPY_VALUES, &isGlob );
-    CHKERRABORT( this->comm(),ierr );
-
-    ierr = ISCreateStride( PETSC_COMM_SELF,idx.size(),0,1,&isLoc );
-    CHKERRABORT( this->comm(),ierr );
-#else
-    PetscInt *idx;
-    PetscInt n_idx =  this->map().mapGlobalProcessToGlobalCluster().size();
-    idx = new PetscInt[n_idx];
-    std::copy( this->map().mapGlobalProcessToGlobalCluster().begin(),
-               this->map().mapGlobalProcessToGlobalCluster().end(),
-               idx );
-
-#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
-    ierr = ISCreateGeneral( this->comm(), n_idx, idx, PETSC_COPY_VALUES, &isGlob );
-#else
-    ierr = ISCreateGeneral( this->comm(), n_idx, idx, &isGlob );
-#endif
-    CHKERRABORT( this->comm(),ierr );
-
-    ierr = ISCreateStride( PETSC_COMM_SELF,n_idx,0,1,&isLoc );
-    CHKERRABORT( this->comm(),ierr );
-#endif
-
-    // create scatter
-    ierr = VecScatterCreate( this->vec(), isGlob,
-                             _M_vecLocal, isLoc,
-                             &scatter );
-    CHKERRABORT( this->comm(),ierr );
-
     // Perform the scatter
-    ierr = VecScatterBegin( scatter, this->vec(), _M_vecLocal, INSERT_VALUES, SCATTER_FORWARD );
+    ierr = VecScatterBegin( _M_vecScatter, this->vec(), _M_vecLocal, INSERT_VALUES, SCATTER_FORWARD );
     CHKERRABORT( this->comm(),ierr );
 
-    ierr = VecScatterEnd  ( scatter, this->vec(), _M_vecLocal, INSERT_VALUES, SCATTER_FORWARD );
+    ierr = VecScatterEnd  ( _M_vecScatter, this->vec(), _M_vecLocal, INSERT_VALUES, SCATTER_FORWARD );
     CHKERRABORT( this->comm(),ierr );
-
-    // Clean up
-#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
-    ierr = ISDestroy ( &isGlob );
-    CHKERRABORT( this->comm(),ierr );
-
-    ierr = ISDestroy ( &isLoc );
-    CHKERRABORT( this->comm(),ierr );
-
-    ierr = VecScatterDestroy( &scatter );
-    CHKERRABORT( this->comm(),ierr );
-#else
-    ierr = ISDestroy ( isGlob );
-    CHKERRABORT( this->comm(),ierr );
-
-    ierr = ISDestroy ( isLoc );
-    CHKERRABORT( this->comm(),ierr );
-
-    ierr = VecScatterDestroy( scatter );
-    CHKERRABORT( this->comm(),ierr );
-#endif
-
-    delete idx;
 }
 
 //----------------------------------------------------------------------------------------------------//

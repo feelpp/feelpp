@@ -39,7 +39,8 @@
 #include <boost/shared_ptr.hpp>
 
 #include <feel/feelcore/feel.hpp>
-#include <feel/feelcore/worldcomm.hpp>
+#include <feel/feelcore/environment.hpp>
+#include <feel/feelalg/datamap.hpp>
 
 namespace Feel
 {
@@ -89,7 +90,7 @@ public:
               size_type last_row_entry_on_proc = 0,
               size_type first_col_entry_on_proc = 0,
               size_type last_col_entry_on_proc = 0,
-              WorldComm const& worldcomm = WorldComm() );
+              WorldComm const& worldcomm = Environment::worldComm() );
 
     /**
      * copy constructor
@@ -338,6 +339,7 @@ public:
      * transpose graph
      */
     self_ptrtype transpose();
+    self_ptrtype transpose(DataMap const& dm);
 
     /**
      * add missing zero entries diagonal

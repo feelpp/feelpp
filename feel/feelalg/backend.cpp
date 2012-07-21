@@ -29,6 +29,7 @@
 #include <feel/feelalg/backend.hpp>
 #include <feel/feelalg/backendpetsc.hpp>
 #include <feel/feelalg/backendtrilinos.hpp>
+#include <feel/feelalg/backendeigen.hpp>
 
 namespace Feel
 {
@@ -117,6 +118,11 @@ Backend<T>::build( BackendType bt, WorldComm const& worldComm )
     // Build the appropriate solver
     switch ( bt )
     {
+    case BACKEND_EIGEN:
+    {
+        return backend_ptrtype( new BackendEigen<value_type>( worldComm ) );
+    }
+    break;
 
 #if defined ( FEELPP_HAS_PETSC_H )
 
@@ -152,7 +158,10 @@ Backend<T>::build( po::variables_map const& vm, std::string const& prefix, World
     Log() << "[Backend] backend " << vm["backend"].template as<std::string>() << "\n";
     BackendType bt;
 
-    if ( vm["backend"].template as<std::string>() == "petsc" )
+    if ( vm["backend"].template as<std::string>() == "eigen" )
+        bt = BACKEND_EIGEN;
+
+    else if ( vm["backend"].template as<std::string>() == "petsc" )
         bt = BACKEND_PETSC;
 
     else if ( vm["backend"].template as<std::string>() == "trilinos" )
@@ -173,6 +182,13 @@ Backend<T>::build( po::variables_map const& vm, std::string const& prefix, World
     // Build the appropriate solver
     switch ( bt )
     {
+    case BACKEND_EIGEN:
+    {
+        Log() << "[Backend] Instantiate a Eigen backend\n";
+        return backend_ptrtype( new BackendEigen<value_type>( vm, prefix, worldComm ) );
+    }
+    break;
+
 #if defined ( FEELPP_HAS_PETSC_H )
 
     default:
@@ -212,16 +228,16 @@ Backend<T>::solve( sparse_matrix_ptrtype const& A,
 
     if ( !M_reusePC )
     {
-        reset();
+        //reset();
     }
 
-    start();
+    //start();
 
     this->setPrecMatrixStructure( SAME_PRECONDITIONER );
 
     //std::cout << "backend: " << this->precMatrixStructure() << "\n";
     boost::tie( M_converged, M_iteration, M_residual ) = this->solve( A, P, x, b );
-    stop();
+    //stop();
     M_reuseFailed = M_reusedPC && ( !M_converged );
     /*
     if (M_reuseFailed)
@@ -232,8 +248,9 @@ Backend<T>::solve( sparse_matrix_ptrtype const& A,
 
     if ( M_reuseFailed )
     {
-        reset();
-        start();
+        this->comm().globalComm().barrier();
+        //reset();
+        //start();
         this->setPrecMatrixStructure( SAME_NONZERO_PATTERN );
         std::cout << "Backend "  << M_prefix << " reuse failed, rebuilding preconditioner...\n";
         Log() << "Backend "  << M_prefix << " reuse failed, rebuilding preconditioner...\n";
@@ -242,7 +259,7 @@ Backend<T>::solve( sparse_matrix_ptrtype const& A,
         //if ( !M_converged ) throw std::logic_error( "solver failed to converge" );
         if ( !M_converged ) std::cerr<< "linear solver failed to converge" << std::endl;
 
-        stop();
+        //stop();
     }
 
     return boost::make_tuple( M_converged, M_iteration, M_residual );
@@ -377,7 +394,7 @@ Backend<T>::stop()
         M_firstSolveTime = solveTime;
 
         if ( !M_reuseFailed )
-            M_maxit = std::min( M_maxit, ( size_type )( 1.5*solveIter + 10.5 ) );
+            M_maxit = std::max(size_type(10),std::min( M_maxit, ( size_type )( 1.5*solveIter + 10.5 ) ));
     }
 
     else
@@ -405,7 +422,7 @@ Backend<T>::stop()
 
         if ( M_reusePC )
         {
-            M_maxit = std::min( M_maxit, ( size_type )( M_totalSolveIter/M_nUsePC + 0.5 ) );
+            M_maxit = std::max( size_type(10),std::min( M_maxit, ( size_type )( M_totalSolveIter/M_nUsePC + 0.5 ) ));
         }
     }
 }
@@ -547,7 +564,7 @@ po::options_description backend_options( std::string const& prefix )
     po::options_description _options( "Linear and NonLinear Solvers Backend " + prefix + " options" );
     _options.add_options()
     // solver options
-    ( prefixvm( prefix,"backend" ).c_str(), Feel::po::value<std::string>()->default_value( "petsc" ), "backend type: PETSc, trilinos" )
+    ( prefixvm( prefix,"backend" ).c_str(), Feel::po::value<std::string>()->default_value( "petsc" ), "backend type: Eigen, PETSc, trilinos" )
     ( prefixvm( prefix,"ksp-rtol" ).c_str(), Feel::po::value<double>()->default_value( 1e-13 ), "relative tolerance" )
     ( prefixvm( prefix,"ksp-atol" ).c_str(), Feel::po::value<double>()->default_value( 1e-50 ), "absolute tolerance" )
     ( prefixvm( prefix,"ksp-dtol" ).c_str(), Feel::po::value<double>()->default_value( 1e5 ), "divergence tolerance" )

@@ -242,7 +242,8 @@ PeriodicLaplacian<Dim, Order>::run()
                        -M_PI*sin( M_PI*Px() )*sin( M_PI*Py() ) );
     auto f = 2*M_PI*M_PI*g;
 #endif
-
+    std::cout << std::distance( Xh->dof()->beginPeriodicElements(),
+                                Xh->dof()->endPeriodicElements() ) << "\n";
     sparse_matrix_ptrtype M( M_backend->newMatrix( Xh, Xh ) );
 
     form2( Xh, Xh, M, _init=true ) = integrate( _range=elements( mesh ), _expr=gradt( u )*trans( grad( v ) ), _quad=_Q<2*( Order-1 )>() );
@@ -327,6 +328,7 @@ int
 main( int argc, char** argv )
 {
     using namespace Feel;
+    Environment env( argc, argv );
 
     /* change parameters below */
     const int nDim = 2;

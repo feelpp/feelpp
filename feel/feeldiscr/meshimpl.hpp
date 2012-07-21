@@ -211,6 +211,7 @@ Mesh<Shape, T, Tag>::updateForUse()
         M_meas = 0;
         M_measbdy = 0;
 
+
         for ( ; iv != en; ++iv )
         {
             this->elements().modify( iv,
@@ -258,18 +259,18 @@ Mesh<Shape, T, Tag>::updateForUse()
                                                 this ) );
         }
     }
-
+    //std::cout<<"this->worldComm().localSize()=     "<< this->worldComm().localSize() << std::endl;
 #if defined(FEELPP_ENABLE_MPI_MODE)
 
     if ( this->components().test( MESH_UPDATE_FACES ) && this->worldComm().localSize()>1 )
     {
         this->updateEntitiesCoDimensionOneGhostCell();
     }
-
 #endif
+
     // check mesh connectivity
     this->check();
-
+    //std::cout<<"pass hier\n";
 
     _M_gm->initCache( this );
     _M_gm1->initCache( this );
@@ -385,7 +386,14 @@ Mesh<Shape, T, Tag>::renumber( mpl::bool_<true> )
     std::unique( check_id.begin(), check_id.end() );
 
     FEELPP_ASSERT( check_id.size() == node_map.size() )( node_map.size() )( check_id.size() ).error( "all ids must be unique" );
-    FEELPP_ASSERT ( std::find( node_map.begin(), node_map.end(), invalid_size_type_value ) == node_map.end() ).warn( "invalid size_type value found as id " );
+
+    // in parallel this will generate a lot of warning since all the points are
+    //loaded into the mesh data structure including the ones not belonging to
+    //the current processor. Do the test only in sequential
+    if ( Environment::numberOfProcessors() == 1 )
+    {
+        FEELPP_ASSERT( std::find( node_map.begin(),node_map.end(), invalid_size_type_value ) == node_map.end() ).warn("invalid size_type value found as id " );
+    }
 
 #endif /* NDEBUG */
 
@@ -1357,6 +1365,8 @@ template<typename Shape, typename T, int Tag>
 void
 Mesh<Shape, T, Tag>::encode()
 {
+    //std::cout<<"encode=   " << this->worldComm().localSize() << std::endl;
+
     M_enc_pts.clear();
     for( auto pt_it = this->beginPoint(), pt_en = this->endPoint(); pt_it != pt_en; ++pt_it )
     {
@@ -1421,13 +1431,29 @@ Mesh<Shape, T, Tag>::encode()
 
         M_enc_elts[elt_it->id()] = elts;
     } // elements
-
+    //std::cout<<"encode=   " << this->worldComm().localSize() << std::endl;
 }
 
 template<typename Shape, typename T, int Tag>
 void
 Mesh<Shape, T, Tag>::decode()
 {
+#if 0
+    std::vector<int> mapWorld(this->worldComm().size());
+    for(int cpu=0; cpu < this->worldComm().size(); ++cpu)
+        mapWorld[cpu] = cpu;
+    WorldComm worldcomm(mapWorld);
+
+
+
+
+    // std::cout<<"decode=   " << this->worldComm().size() << std::endl;
+    //std::cout<<"decode=   " << worldcomm.subWorldComm().localRank() << std::endl;
+    this->setWorldComm(worldcomm.subWorldComm());
+#else
+    Log() <<"decode=   " << this->worldComm().size() << "\n" ;
+    Log() <<"decode=   " << this->worldComm().subWorldComm().localRank() << "\n";
+#endif
     static const uint16_type npoints_per_face = ( face_type::numVertices*face_type::nbPtsPerVertex+
             face_type::numEdges*face_type::nbPtsPerEdge+
             face_type::numFaces*face_type::nbPtsPerFace );
@@ -1457,8 +1483,10 @@ Mesh<Shape, T, Tag>::decode()
         std::vector<int> tags( face_it->second[1] );
         for(int i = 0; i < tags.size(); ++i ) tags[i] = face_it->second[2+i];
         pf.setTags(  tags  );
+        pf.setId( this->numFaces() );
         pf.setProcessIdInPartition( this->worldComm().localRank() );
         pf.setProcessId( this->worldComm().localRank() );
+        pf.setIdInPartition( this->worldComm().localRank(),pf.id() );
 
         const int shift = face_it->second[1]+1;
         for ( uint16_type jj = 0; jj < npoints_per_face; ++jj )
@@ -1480,6 +1508,7 @@ Mesh<Shape, T, Tag>::decode()
         pv.setTags(  tags  );
         pv.setProcessIdInPartition( this->worldComm().localRank() );
         pv.setProcessId( this->worldComm().localRank() );
+        pv.setIdInPartition( this->worldComm().localRank(),pv.id() );
 
         const int shift = elt_it->second[1]+1;
         for ( uint16_type jj = 0; jj < npoints_per_element; ++jj )
@@ -1493,7 +1522,14 @@ Mesh<Shape, T, Tag>::decode()
         mesh->elements().modify( theelt, detail::update_id_in_partition_type( this->worldComm().localRank(), pv.id() ) );
 #endif
     }
+    Log() << "distance  elts: "<< std::distance( this->beginElement(), this->endElement() ) << "\n";
+    Log() << "distance faces: "<< std::distance( this->beginFace(), this->endFace() ) << "\n";
+    Log() << "distance marker faces: "<< std::distance( this->beginFaceWithMarker(), this->endFaceWithMarker() ) << "\n";
+    Log() << "distance marker2 faces: "<< std::distance( this->beginFaceWithMarker2(), this->endFaceWithMarker2() ) << "\n";
 
+    //this->components().set ( MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
+    //this->updateForUse();
+    //std::cout<<"decode=   " << this->worldComm().localSize() << std::endl;
 }
 
 template<typename Shape, typename T, int Tag>
