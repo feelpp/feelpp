@@ -808,6 +808,10 @@ public:
             LOG(INFO) << "EIMFunctionBase::operator() v(x)=" << res << "\n";
             return res;
         }
+
+    // evaluate eim expansion at interpolation points in space and mu in parameter where T provides the coefficient
+    //value_type operator()( vector_type const& T, parameter_type const& mu ) = 0;
+
     value_type operator()( solution_type const& T, node_type const& x, parameter_type const& mu )
         {
             LOG(INFO) << "calling EIMFunctionBase::operator()( x=" << x << ", mu=" << mu << ")\n";
