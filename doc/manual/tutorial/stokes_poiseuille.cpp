@@ -344,11 +344,11 @@ Stokes_Poiseuille::run()
 
 
     //************ Solution Poiseuille ***************************
-    auto u_exact=vec(Py()*(1-Py()),0 );
+    auto u_exact=vec(Py()*(1-Py()),cst(0.) );
 
     auto p_exact=(-2*Px());
 
-    auto f=vec(0 , 0 );
+    auto f=vec(cst(0.) , cst(0.) );
 
     //*****************************************************************
 
