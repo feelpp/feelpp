@@ -58,7 +58,15 @@ makeOptions()
     ( "extra-terms", "dont solve the system" )
     ;
     return curvatureoptions.add( Feel::feel_options() )
-           .add( Feel::benchmark_options( "2D-CR1-Hypercube" ) ).add( Feel::benchmark_options( "2D-P1-Hypercube" ) ).add( Feel::benchmark_options( "2D-P2-Hypercube" ) );
+        // .add( Feel::benchmark_options( "2D-CR1-Hypercube" ) )
+        // .add( Feel::benchmark_options( "2D-P1-Hypercube" ) )
+        // .add( Feel::benchmark_options( "2D-P2-Hypercube" ))
+        // .add( Feel::benchmark_options( "2D-P1-Simplex" ) )
+        // .add( Feel::benchmark_options( "2D-P2-Simplex" ))
+        // .add( Feel::benchmark_options( "2D-P3-Simplex" ))
+        // .add( Feel::benchmark_options( "2D-P4-Simplex" ))
+        // .add( Feel::benchmark_options( "2D-P5-Simplex" ))
+    ;
 }
 
 
@@ -116,15 +124,16 @@ int main( int argc, char** argv )
         std::cout << benchmark.optionsDescription() << "\n";
         return 0;
     }
-#if 0
+#if 1
     benchmark.add( new Curvature<2, Lagrange<1, Scalar>, Lagrange<1, Vectorial,Discontinuous>, Simplex>( "2D-P1-Simplex", benchmark.vm(), benchmark.about() ) );
     benchmark.add( new Curvature<2, Lagrange<2, Scalar>, Lagrange<2, Vectorial,Discontinuous>, Simplex>( "2D-P2-Simplex", benchmark.vm(), benchmark.about() ) );
     benchmark.add( new Curvature<2, Lagrange<3, Scalar>, Lagrange<3, Vectorial,Discontinuous>, Simplex>( "2D-P3-Simplex", benchmark.vm(), benchmark.about() ) );
 #endif
 
+#if 0
     benchmark.add( new Curvature<2, Lagrange<4, Scalar>, Lagrange<4, Vectorial,Discontinuous>, Simplex>( "2D-P4-Simplex", benchmark.vm(), benchmark.about() ) );
     benchmark.add( new Curvature<2, Lagrange<5, Scalar>, Lagrange<5, Vectorial,Discontinuous>, Simplex>( "2D-P5-Simplex", benchmark.vm(), benchmark.about() ) );
-
+#endif
     //    benchmark.add( new Curvature<3, Lagrange<2, Scalar>, Lagrange<2, Vectorial>, Simplex>( "2D-P3-Simplex", benchmark.vm(), benchmark.about() ) );
 
     benchmark.setStats( boost::assign::list_of( "e.nod" )( "e.l2" )( "e.sm" )( "e.hs" )("n.space")("n.spacev") );
