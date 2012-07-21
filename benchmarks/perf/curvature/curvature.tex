@@ -1,0 +1,61 @@
+\documentclass{article}
+\usepackage{tikz}
+\usetikzlibrary{arrows,backgrounds,mindmap,positioning,shadows,shapes}
+\usepackage{pgfplots,pgfplotstable}
+
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{colortbl}
+
+\usepackage{subfig}
+\usepackage{stmaryrd}
+
+\pgfplotstableset{fixed zerofill,precision=3,
+column type=l,
+every head row/.style={
+before row={%
+\toprule},
+after row=\midrule,
+},
+every last row/.style={
+after row=\bottomrule},}
+\pgfqkeys{/pgfplots}{
+%  cycle list name = black white,
+  legend style = { at={(0.95,0.3)} },
+  log basis x = 10,
+  grid=major
+}
+
+\begin{document}
+
+%\pgfplotstableread{2D-P4-Simplex-1-errors.dat}%\loadedtable
+\pgfplotstabletypeset[columns={levels,h,e.nod.k,e.nod.k.roc},
+columns/levels/.style={int detect,column type=r,column name=Levels},
+columns/h/.style={sci,sci zerofill,sci sep align,precision=2,column name=$h$},
+columns/e.nod.k/.style={sci,sci zerofill,sci sep align,precision=2,sci 10e,column name=$k$},
+columns/e.nod.k.roc/.style={fixed,precision=2,column name=$k^{n}/k^{n-1}$}
+]{2D-P4-Simplex-1-errors.dat}
+
+\begin{figure}
+  \centering
+
+  \subfloat[$L^2$-error vs. $h$] {
+    \begin{tikzpicture}[scale=0.85]
+      \begin{loglogaxis}[
+          legend style = {
+            legend pos = south east
+          }
+        ]
+        \addplot table[x=h,y=e.nod.k] {2D-P4-Simplex-1-errors.dat};
+        \addplot [white,forget plot] table[x=h,y={create col/linear        regression={y=e.nod.k}}]{2D-P4-Simplex-1-errors.dat};
+        \pgfmathsetmacro{\slopea}{\pgfplotstableregressiona} ;
+        \addplot table[x=h,y=e.nod.k] {2D-P5-Simplex-1-errors.dat};
+        \addplot [white,forget plot] table[x=h,y={create col/linear regression={y=e.nod.k}}]{2D-P5-Simplex-1-errors.dat};
+        \pgfmathsetmacro{\slopeb}{\pgfplotstableregressiona} ;
+        \legend{$P^4$(\pgfmathprintnumber{\slopea}), $P^5$(\pgfmathprintnumber{\slopeb})}
+      \end{loglogaxis}
+    \end{tikzpicture}
+    }
+
+  \end{figure}
+\end{document}
