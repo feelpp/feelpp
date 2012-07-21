@@ -161,6 +161,7 @@ MyMesh<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
     //Environment::setLogs( this->about().appName() );
     //# marker4 #
     auto mesh = mesh_type::New();
+    auto meshplus = mesh_type::New();
 
     tic();
     auto is_mesh_loaded = mesh->load( _name="mymesh",_path=".",_type="text" );
@@ -176,8 +177,16 @@ MyMesh<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
                                              _shape=shape,
                                              _dim=Dim,
                                              _h=X[0] ) );
+        meshplus = createGMSHMesh( _mesh=new mesh_type,
+                               _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
+                               _desc=domain( _name=( boost::format( "%1%-%2%" ) % shape % Dim ).str() ,
+                                             _shape=shape,
+                                             _dim=Dim,
+                                             _xmin=1,_xmax=2,
+                                             _h=X[0] ) );
+        *mesh +=  *meshplus;
         std::cout << "n elements: "  << mesh->numElements() << "\n";
-#if 0
+#if 1
         //auto eit = mesh->beginElementWithProcessId( this->comm().rank() );
         //for( int ne = 0; ne < 10; ++ne )
         mesh->eraseElement( mesh->beginElementWithProcessId( this->comm().rank() ) );
@@ -218,14 +227,14 @@ MyMesh<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
         //exporter->step( 0 )->addRegions();
         Log() << "Saving...\n";
         exporter->save();
-
+#if 0
         auto fex= Exporter<typename mesh_type::trace_mesh_type>::New( this->vm(), "trace" );
         fex->step( 0 )->setMesh( mesh->trace() );
         Log() << "Exporting regions\n";
         //fex->step( 0 )->addRegions();
         Log() << "Saving...\n";
         fex->save();
-
+#endif
     }
     //# endmarker62 #
 
