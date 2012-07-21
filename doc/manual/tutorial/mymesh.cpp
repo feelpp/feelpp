@@ -177,9 +177,15 @@ MyMesh<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
                                              _dim=Dim,
                                              _h=X[0] ) );
         std::cout << "n elements: "  << mesh->numElements() << "\n";
+#if 0
+        //auto eit = mesh->beginElementWithProcessId( this->comm().rank() );
+        //for( int ne = 0; ne < 10; ++ne )
         mesh->eraseElement( mesh->beginElementWithProcessId( this->comm().rank() ) );
+        mesh->eraseElement( mesh->beginElementWithProcessId( this->comm().rank() ) );
+        mesh->eraseElement( mesh->beginElementWithProcessId( this->comm().rank() ) );
+        mesh->eraseElement( boost::prior(mesh->endElementWithProcessId( this->comm().rank() ) ) );
         std::cout << "n elements after: "  << mesh->numElements() << "\n";
-
+#endif
         Log() << "Saving mesh...\n";
         mesh->save( _name="mymesh",_path=".",_type="text" );
         toc("generate+save");
@@ -212,6 +218,14 @@ MyMesh<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
         //exporter->step( 0 )->addRegions();
         Log() << "Saving...\n";
         exporter->save();
+
+        auto fex= Exporter<typename mesh_type::trace_mesh_type>::New( this->vm(), "trace" );
+        fex->step( 0 )->setMesh( mesh->trace() );
+        Log() << "Exporting regions\n";
+        //fex->step( 0 )->addRegions();
+        Log() << "Saving...\n";
+        fex->save();
+
     }
     //# endmarker62 #
 

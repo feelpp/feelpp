@@ -1040,7 +1040,9 @@ public:
     void disconnectSubEntities()
     {
         for(unsigned int i = 0; i<numLocalEdges;++i)
+        {
             M_edges[i]->disconnect(*this);
+        }
     }
 
 private:

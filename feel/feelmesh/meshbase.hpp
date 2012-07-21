@@ -280,6 +280,8 @@ public:
         return M_worldComm.localComm();
     }
 
+    virtual void meshModified() = 0;
+
     //@}
 
 
@@ -324,6 +326,7 @@ protected:
      * check elements orientation and fix it if needed
      */
     virtual void checkAndFixPermutation() = 0;
+
 
 private:
     friend class boost::serialization::access;
