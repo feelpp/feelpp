@@ -634,13 +634,18 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne()
         //MakeBareEntity<element_type,nDim> baremaker( __element );
         for ( size_type j = 0; j < this->numLocalFaces(); j++ )
         {
+#if !defined( NDEBUG )
+            Debug( 4015 ) << "------------------------------------------------------------\n";
+            Debug( 4015 ) << "Element id: " << iv->id() << " local face id: " << j << "\n";
+#endif
+
             std::set<int> s;
 
             for ( int f = 0; f < face_type::numVertices; ++f )
             {
                 uint16_type pt_localid = ( nDim==1 )?j:iv->fToP( j, f );
                 s.insert( iv->point( pt_localid ).id() );
-                Debug( 4015 ) << "add point local id " << f << " to face " << j  << " " << iv->fToP( j, f )
+                Debug( 4015 ) << "[updateEntitiesCoDimensionOne] add point local id " << f << " to face " << j  << " " << iv->fToP( j, f )
                               << " global id " << iv->point( pt_localid ).id() << "\n";
             }
 
@@ -650,10 +655,6 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne()
             if ( faceinserted )
                 ++next_face;
 
-#if !defined( NDEBUG )
-            Debug( 4015 ) << "------------------------------------------------------------\n";
-            Debug( 4015 ) << "Element id: " << iv->id() << " local face id: " << j << "\n";
-#endif
 
             if ( faceinserted )
             {
@@ -717,7 +718,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne()
 
 
                 face_type face = *__fit;
-
+                Debug( 4015 ) << "the face id :"  << __fit->id() << "\n";
                 // the three conditions below typically arise after reading a serialized mesh
                 if ( __fit->isConnectedTo0() && __fit->connection0().template get<0>() == 0 && ( __element.id() == __fit->ad_first() ) )
                 {
@@ -748,11 +749,16 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne()
                 }
                 if ( __fit->isConnectedTo0() && __fit->isConnectedTo1() )
                 {
+                    Debug( 4015 ) << "internal face, fixing process id if necessary\n";
+                    if ( !iv->facePtr( j ) )
+                        this->elements().modify( iv, detail::UpdateFace<face_type>( boost::cref( *__fit ) ) );
+                    FEELPP_ASSERT( iv->facePtr( j ) )( j )( iv->id() ).warn( "invalid element face error" );
                     FEELPP_ASSERT( face.isConnectedTo0() && face.isConnectedTo1() )
                         ( face.isConnectedTo0() )( face.isConnectedTo1() ).error ("inconsistent data structure" );
                     if ( face.processId()!=this->worldComm().localRank() )
                     {
-                        if ( ( face.element0().processId()==this->worldComm().localRank() ) || ( face.element1().processId()==this->worldComm().localRank() ) )
+                        if ( ( face.element0().processId()==this->worldComm().localRank() ) ||
+                             ( face.element1().processId()==this->worldComm().localRank() ) )
                             face.setProcessId( this->worldComm().localRank() );
                     }
                 }
@@ -857,7 +863,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne()
                     ( __fit->processId() )( __fit->proc_first() )( __fit->proc_second() ).error( "invalid process id" );
             }
 
-            FEELPP_ASSERT( iv->facePtr( j ) )( j )( iv->id() ).error( "invalid element face error" );
+            FEELPP_ASSERT( iv->facePtr( j ) )( j )( iv->id() ).warn( "invalid element face error" );
         } // face loop
     } // element loop
 

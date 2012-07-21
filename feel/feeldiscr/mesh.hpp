@@ -721,6 +721,22 @@ public:
      */
     void updateForUse();
 
+    void meshModified()
+        {
+            for( auto fit = this->beginFace(), fen = this->endFace(); fit != fen; ++fit )
+            {
+                if ( fit->isOnBoundary() && !fit->isConnectedTo0() )
+                {
+                    std::cout << "erase boundary face...\n";
+                    this->eraseFace( fit );
+                }
+                if ( !fit->isOnBoundary() && fit->isConnectedTo0() && !fit->isConnectedTo1() )
+                {
+                    std::cout << "found boundary face...\n";
+                    this->faces().modify( fit, []( face_type& f ){ f.setOnBoundary( true ); } );
+                }
+            }
+        }
 private:
 
     friend class boost::serialization::access;

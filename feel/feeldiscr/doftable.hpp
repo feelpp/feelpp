@@ -2975,7 +2975,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildBoundaryDofMap( mesh_type& M )
     __face_it = M.facesWithProcessId( M.worldComm().localRank() ).first;
     __face_en = M.facesWithProcessId( M.worldComm().localRank() ).second;
     for ( ; __face_it != __face_en; ++__face_it )
-        for ( index face_dof_id = 0; face_dof_id < index( ntldof ); ++face_dof_id )
+        for ( int face_dof_id = 0; face_dof_id < ntldof; ++face_dof_id )
             FEELPP_ASSERT( boost::get<0>( _M_face_l2g[__face_it->id()][face_dof_id] ) != invalid_size_type_value )( __face_it->id() )( face_dof_id ).warn( "invalid dof table: initialized dof entries" );
 #endif
 }    // updateBoundaryDof
