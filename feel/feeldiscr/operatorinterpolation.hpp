@@ -211,13 +211,15 @@ public:
     OperatorInterpolation( domain_space_ptrtype const& domainspace,
                            dual_image_space_ptrtype const& imagespace,
                            backend_ptrtype const& backend,
-                           InterpType const& interptype);
+                           InterpType const& interptype,
+                           bool ddmethod=false);
 
     OperatorInterpolation( domain_space_ptrtype const& domainspace,
                            dual_image_space_ptrtype const& imagespace,
                            IteratorRange const& r,
                            backend_ptrtype const& backend,
-                           InterpType const& interptype);
+                           InterpType const& interptype,
+                           bool ddmethod=false);
 
 
     /**
@@ -332,11 +334,12 @@ template<typename DomainSpaceType, typename ImageSpaceType,typename IteratorRang
 OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>::OperatorInterpolation( domain_space_ptrtype const& domainspace,
                                                                                                         dual_image_space_ptrtype const& imagespace,
                                                                                                         backend_ptrtype const& backend,
-                                                                                                        InterpType const& interptype )
+                                                                                                        InterpType const& interptype,
+                                                                                                        bool ddmethod )
     :
     super( domainspace, imagespace, backend, false ),
     _M_range( elements( imagespace->mesh() ) ),
-    _M_WorldCommFusion( this->domainSpace()->worldComm()+this->dualImageSpace()->worldComm() ),
+    _M_WorldCommFusion( (ddmethod) ? this->domainSpace()->worldComm() : this->domainSpace()->worldComm()+this->dualImageSpace()->worldComm() ),
     _M_interptype(interptype)
 {
     update();
@@ -348,11 +351,12 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                                                                                                         dual_image_space_ptrtype const& imagespace,
                                                                                                         IteratorRange const& r,
                                                                                                         backend_ptrtype const& backend,
-                                                                                                        InterpType const& interptype )
+                                                                                                        InterpType const& interptype,
+                                                                                                        bool ddmethod )
     :
     super( domainspace, imagespace, backend, false ),
     _M_range( r ),
-    _M_WorldCommFusion( this->domainSpace()->worldComm()+this->dualImageSpace()->worldComm() ),
+    _M_WorldCommFusion( (ddmethod) ? this->domainSpace()->worldComm() : this->domainSpace()->worldComm()+this->dualImageSpace()->worldComm() ),
     _M_interptype(interptype)
 {
     update();
@@ -2062,12 +2066,12 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
                                             else // only with myself
                                                 {
                                                     memSetGdofAndComp[this->domainSpace()->worldComm().globalRank()].push_back(boost::make_tuple(gdof,comp));
+                                                    if (InterpType::value==1) // conforme case
+                                                        {
+                                                            memSetVertices_conformeInterp[this->domainSpace()->worldComm().globalRank()].push_back(it->vertices());
+                                                        }
                                                 }
 
-                                            if (InterpType::value==1) // conforme case
-                                                {
-                                                    memSetVertices_conformeInterp[this->domainSpace()->worldComm().globalRank()].push_back(it->vertices());
-                                                }
                                             dof_done[gdof]=true;
                                         }
                                 }
@@ -2127,12 +2131,13 @@ opInterp( boost::shared_ptr<DomainSpaceType> const& domainspace,
           boost::shared_ptr<ImageSpaceType> const& imagespace,
           IteratorRange const& r,
           typename OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>::backend_ptrtype const& backend,
-          InterpType const& interptype
+          InterpType const& interptype,
+          bool ddmethod
         )
 {
     typedef OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType> operatorinterpolation_type;
 
-    boost::shared_ptr<operatorinterpolation_type> opI( new operatorinterpolation_type( domainspace,imagespace,r,backend,interptype ) );
+    boost::shared_ptr<operatorinterpolation_type> opI( new operatorinterpolation_type( domainspace,imagespace,r,backend,interptype,ddmethod ) );
 
     return opI;
 }
@@ -2175,12 +2180,13 @@ BOOST_PARAMETER_FUNCTION(
       ( range,          *, elements( imageSpace->mesh() )  )
       ( backend,        *, Backend<typename compute_opInterpolation_return<Args>::domain_space_type::value_type>::build() )
       ( type,           *, InterpolationNonConforme()  )
+      ( ddmethod,  (bool),  false )
     ) // optionnal
 )
 {
     Feel::detail::ignore_unused_variable_warning( args );
 
-    return opInterp( domainSpace,imageSpace,range,backend,type );
+    return opInterp( domainSpace,imageSpace,range,backend,type,ddmethod );
 
 } // opInterpolation
 

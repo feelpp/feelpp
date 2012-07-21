@@ -363,6 +363,8 @@ public:
         return M_dof_points.end();
     }
 
+    periodic_element_list_const_iterator beginPeriodicElements() const { return periodic_elements.begin(); }
+    periodic_element_list_const_iterator endPeriodicElements() const { return periodic_elements.end(); }
 
     /**
      * insted of creating the dof indices on the fly, get them from a
@@ -867,17 +869,45 @@ public:
         Debug( 5015 ) << "[build] call buildBoundaryDofMap()\n";
         this->buildBoundaryDofMap( M );
 
+
         // multi process
         if ( this->worldComm().localSize()>1 )
-        {
+            {
+                if (this->_M_n_dofs>1 )
+                    {
 #if defined(FEELPP_ENABLE_MPI_MODE)
-            Debug( 5015 ) << "[build] call buildGhostDofMap () with god rank " << this->worldComm().godRank()  << "\n";
-            this->buildGhostDofMap( M );
-            Debug( 5015 ) << "[build] callFINISH buildGhostDofMap () with god rank " << this->worldComm().godRank()  << "\n";
+                        Debug( 5015 ) << "[build] call buildGhostDofMap () with god rank " << this->worldComm().godRank()  << "\n";
+                        this->buildGhostDofMap( M );
+                        Debug( 5015 ) << "[build] callFINISH buildGhostDofMap () with god rank " << this->worldComm().godRank()  << "\n";
 #else
-            std::cerr << "ERROR : FEELPP_ENABLE_MPI_MODE is OFF" << std::endl;
-            //throw std::logic_error( "ERROR : FEELPP_ENABLE_MPI_MODE is OFF" );
+                        std::cerr << "ERROR : FEELPP_ENABLE_MPI_MODE is OFF" << std::endl;
+                        //throw std::logic_error( "ERROR : FEELPP_ENABLE_MPI_MODE is OFF" );
 #endif
+                    }
+                else
+                    {
+                        if (this->worldComm().globalRank()==0)
+                            {
+                                this->_M_n_localWithoutGhost_df[this->worldComm().globalRank()] = 1;
+                                this->M_mapGlobalClusterToGlobalProcess.resize( 1 );
+                                this->M_mapGlobalClusterToGlobalProcess[0]=0;
+                                this->_M_first_df_globalcluster[this->worldComm().globalRank()] = 0;
+                                this->_M_last_df_globalcluster[this->worldComm().globalRank()] = 0;
+                            }
+                        else
+                            {
+                                this->_M_n_localWithoutGhost_df[this->worldComm().globalRank()] = 0;
+                                this->M_mapGlobalClusterToGlobalProcess.resize( 0 );
+                                this->_M_first_df_globalcluster[this->worldComm().globalRank()] = 25;// 0;
+                                this->_M_last_df_globalcluster[this->worldComm().globalRank()] = 25; //0;
+                            }
+
+                        this->_M_n_localWithGhost_df[this->worldComm().globalRank()] = 1;
+                        //this->_M_first_df_globalcluster[this->worldComm().globalRank()] = 0;
+
+                        this->M_mapGlobalProcessToGlobalCluster.resize( 1 );
+                        this->M_mapGlobalProcessToGlobalCluster[0]=0;
+                    }
         }
 
         else
@@ -1966,6 +1996,8 @@ private:
     std::vector<boost::tuple<size_type, uint16_type, size_type> > M_dof_indices;
 
     periodicity_type M_periodicity;
+    //! list of elements which have a periodic face Tag2
+    periodic_element_list_type periodic_elements;
 
     /// a view of the dof container
     dof_container_type M_dof_view;
@@ -2386,8 +2418,6 @@ DofTable<MeshType, FEType, PeriodicityType>::buildPeriodicDofMap( mesh_type& M )
 
     const size_type n_proc  = M.worldComm().localSize();
 
-    //! list of elements which have a periodic face Tag2
-    periodic_element_list_type periodic_elements;
 
     for ( size_type processor=0; processor<n_proc; processor++ )
     {
@@ -2918,10 +2948,11 @@ DofTable<MeshType, FEType, PeriodicityType>::buildBoundaryDofMap( mesh_type& M )
     }
 
 #if !defined(NDEBUG)
-
-    for ( index face_id = 0; face_id < index( nF ); ++face_id )
+    __face_it = M.facesWithProcessId( M.worldComm().localRank() ).first;
+    __face_en = M.facesWithProcessId( M.worldComm().localRank() ).second;
+    for ( ; __face_it != __face_en; ++__face_it )
         for ( index face_dof_id = 0; face_dof_id < index( ntldof ); ++face_dof_id )
-            FEELPP_ASSERT( boost::get<0>( _M_face_l2g[face_id][face_dof_id] ) != invalid_size_type_value )( face_id )( face_dof_id ).warn( "invalid dof table: initialized dof entries" );
+            FEELPP_ASSERT( boost::get<0>( _M_face_l2g[__face_it->id()][face_dof_id] ) != invalid_size_type_value )( __face_it->id() )( face_dof_id ).warn( "invalid dof table: initialized dof entries" );
 
 #endif
 }    // updateBoundaryDof

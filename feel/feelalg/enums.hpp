@@ -65,7 +65,8 @@ enum   MatrixProperties
     HERMITIAN          = 0x1,   /**< hermitian : \f$A^* = A\f$ */
     NON_HERMITIAN      = 0x2,   /**< non hermitian : \f$A^* != A\f$ */
     POSITIVE_DEFINITE  = 0x4,   /**< positive definite matrix : \f$v^* A v > 0 \$f for all non-zero v */
-    SINGULAR           = 0x8    /**< singular matrix : \f$det(A)=0\f$ and 0 is an eigenvalue */
+    SINGULAR           = 0x8,    /**< singular matrix : \f$det(A)=0\f$ and 0 is an eigenvalue */
+    DENSE              = 0x10    /**< dense matrix */
 };
 /**
  * Backend types
@@ -76,7 +77,8 @@ enum BackendType
 {
     BACKEND_GMM = 0,
     BACKEND_PETSC,
-    BACKEND_TRILINOS
+    BACKEND_TRILINOS,
+    BACKEND_EIGEN
 };
 
 /**
@@ -212,6 +214,7 @@ enum SolverPackage
 {
     SOLVERS_FEEL=0,
     SOLVERS_GMM,
+    SOLVERS_EIGEN,
     SOLVERS_PETSC,
     SOLVERS_TRILINOS,
     SOLVERS_SLEPC,
@@ -241,12 +244,21 @@ enum AitkenType
 /**
  *
  */
-enum WeakDirichlet
+enum DirichletType
 {
     STRONG=0,
     WEAK=1
 };
 
+enum ProjectorType
+{
+    L2=0,
+    H1=1,
+    DIFF=2,
+    HDIV=3,
+    HCURL=4,
+    LIFT=5
+};
 
 enum MatSolverPackageType
 {

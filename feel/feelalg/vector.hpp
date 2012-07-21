@@ -67,7 +67,7 @@ public:
     /**
      * Constructor. Set dimension to \p n and initialize all elements with zero.
      */
-    Vector ( const size_type n, WorldComm const& _worldComm = WorldComm() );
+    Vector ( const size_type n, WorldComm const& _worldComm = Environment::worldComm() );
 
     /**
      * Constructor. Set local dimension to \p n_local, the global dimension
@@ -75,7 +75,7 @@ public:
      */
     Vector ( const size_type n,
              const size_type n_local,
-             WorldComm const& _worldComm = WorldComm() );
+             WorldComm const& _worldComm = Environment::worldComm() );
 
     /**
      * Destructor, deallocates memory. Made virtual to allow
@@ -309,6 +309,11 @@ public:
         return M_map.maxMyGID()+1;
     }
 
+    virtual bool localIndexIsGhost(size_type localDof) const
+    {
+        return M_map.dofGlobalProcessIsGhost(localDof);
+    }
+
     /**
      * \return the communicator
      */
@@ -470,43 +475,6 @@ public:
     virtual void scale ( const T factor ) = 0;
 
     /**
-     * Creates a copy of the global vector in the
-     * local vector \p v_local.
-     */
-    virtual void localize ( std::vector<T>& v_local ) const = 0;
-
-    /**
-     * Same, but fills a \p Vector<T> instead of
-     * a \p std::vector.
-     */
-    virtual void localize ( Vector<T>& v_local ) const = 0;
-
-    /**
-     * Creates a local vector \p v_local containing
-     * only information relevant to this processor, as
-     * defined by the \p send_list.
-     */
-    virtual void localize ( Vector<T>& v_local,
-                            const std::vector<size_type>& send_list ) const = 0;
-
-    /**
-     * Updates a local vector with selected values from neighboring
-     * processors, as defined by \p send_list.
-     */
-    virtual void localize ( const size_type first_local_idx,
-                            const size_type last_local_idx,
-                            const std::vector<size_type>& send_list ) = 0;
-
-    /**
-     * Creates a local copy of the global vector in
-     * \p v_local only on processor \p proc_id.  By
-     * default the data is sent to processor 0.  This method
-     * is useful for outputting data from one processor.
-     */
-    virtual void localizeToOneProcessor ( std::vector<T>& v_local,
-                                          const size_type proc_id=0 ) const = 0;
-
-    /**
      * @returns \p -1 when \p this is equivalent to \p other_vector,
      * up to the given \p threshold.  When differences occur,
      * the return value contains the first index where
@@ -603,17 +571,27 @@ inner_product( Vector<T> const& v1, Vector<T> const& v2 )
     size_type s = v1.localSize();
     real_type res = 0;
     size_type start = v1.firstLocalIndex();
+    real_type global_res = 0;
 
-    for ( size_type i = 0; i < s; ++i )
-        res += v1( start + i )* v2( start + i );
+    if ( v1.comm().size() == 1 )
+        {
+            for ( size_type i = 0; i < s; ++i )
+                res += v1( start + i )* v2( start + i );
 
-    real_type global_res = res;
+            global_res = res;
+        }
+    else
+        {
+            for ( size_type i = 0; i < s; ++i )
+                {
+                    if ( !v1.localIndexIsGhost( start + i ) )
+                        res += v1( start + i )* v2( start + i );
+                }
 #if defined( FEELPP_HAS_MPI )
-
-    if ( v1.comm().size() > 1 )
-        mpi::all_reduce( v1.comm(), res, global_res, std::plus<real_type>() );
-
+            mpi::all_reduce( v1.comm(), res, global_res, std::plus<real_type>() );
 #endif
+        }
+
     return global_res;
 }
 /**

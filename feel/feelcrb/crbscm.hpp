@@ -42,7 +42,10 @@
 #include <feel/feelcrb/parameterspace.hpp>
 #include <feel/feelcrb/crbdb.hpp>
 #include <feel/feelcore/serialization.hpp>
+#if defined(FEELPP_HAS_GLPK_H)
 #include <glpk.h>
+#endif /* FEELPP_HAS_GLPK_H */
+
 
 namespace Feel
 {
@@ -430,6 +433,8 @@ public:
     bool rebuildDB();
 
     bool doScmForMassMatrix();
+
+    void computeAffineDecomposition() { M_model->computeAffineDecomposition(); }
     //@}
 
 
@@ -630,7 +635,7 @@ CRBSCM<TruthModelType>::offline()
                   _ncv=M_vm["crb.scm.solvereigen-ncv"].template as<int>(),
                   _nev=M_vm["crb.scm.solvereigen-nev"].template as<int>(),
                   _tolerance=M_vm["crb.scm.solvereigen-tol"].template as<double>(),
-                  _maxit=M_vm["crb.scm.solvereigen-maxiter"].template as<double>()
+                  _maxit=M_vm["crb.scm.solvereigen-maxiter"].template as<int>()
                 );
 
         if ( modes.empty()  )
@@ -811,10 +816,10 @@ boost::tuple<typename CRBSCM<TruthModelType>::value_type,
               //_spectrum=LARGEST_MAGNITUDE,
               _spectrum=SMALLEST_REAL,
               _transform=SINVERT,
-              _ncv=M_vm["solvereigen-ncv"].template as<int>(),
-              _nev=M_vm["solvereigen-nev"].template as<int>(),
-              _tolerance=M_vm["solvereigen-tol"].template as<double>(),
-              _maxit=M_vm["solvereigen-maxiter"].template as<int>()
+              _ncv=M_vm["crb.scm.solvereigen-ncv"].template as<int>(),
+              _nev=M_vm["crb.scm.solvereigen-nev"].template as<int>(),
+              _tolerance=M_vm["crb.scm.solvereigen-tol"].template as<double>(),
+              _maxit=M_vm["crb.scm.solvereigen-maxiter"].template as<int>()
             );
 
     if ( modesmin.empty() )
@@ -834,10 +839,10 @@ boost::tuple<typename CRBSCM<TruthModelType>::value_type,
               _matrixB=M,
               _solver=( EigenSolverType )M_vm["solvereigen-solver-type"].as<int>(),
               _spectrum=LARGEST_MAGNITUDE,
-              _ncv=M_vm["solvereigen-ncv"].as<int>(),
-              _nev=M_vm["solvereigen-nev"].as<int>(),
-              _tolerance=M_vm["solvereigen-tol"].as<double>(),
-              _maxit=M_vm["solvereigen-maxiter"].as<int>()
+              _ncv=M_vm["crb.scm.solvereigen-ncv"].as<int>(),
+              _nev=M_vm["crb.scm.solvereigen-nev"].as<int>(),
+              _tolerance=M_vm["crb.scm.solvereigen-tol"].as<double>(),
+              _maxit=M_vm["crb.scm.solvereigen-maxiter"].as<int>()
             );
 
     if ( modesmax.empty() )
@@ -864,7 +869,7 @@ boost::tuple<typename CRBSCM<TruthModelType>::value_type, double>
 CRBSCM<TruthModelType>::lb( parameter_type const& mu ,size_type K ,int indexmu ) const
 {
 
-
+#if defined(FEELPP_HAS_GLPK_H)
     if ( K == invalid_size_type_value ) K = this->KMax();
 
     if ( K > this->KMax() ) K = this->KMax();
@@ -1123,6 +1128,11 @@ CRBSCM<TruthModelType>::lb( parameter_type const& mu ,size_type K ,int indexmu )
         M_C_alpha_lb[ indexmu ][K] = Jobj;
 
     }
+#else // FEELPP_HAS_GLPK_H
+
+    double Jobj = 0;
+    boost::timer ti;
+#endif /* FEELPP_HAS_GLPK_H */
 
     return boost::make_tuple( Jobj, ti.elapsed() );
 
@@ -1303,25 +1313,24 @@ CRBSCM<TruthModelType>::computeYBounds()
                 double eigmax=eigenvalue_ub;
 #else
 
-
-                SolverEigen<double>::eigenmodes_type modes;
+            SolverEigen<double>::eigenmodes_type modes;
 #if 1
-                // solve  for eigenvalue problem at \p mu
+            // solve  for eigenvalue problem at \p mu
 
-                modes =
-                    eigs( _matrixA=symmMatrix,
-                          _matrixB=B,
-                          //_problem=(EigenProblemType)PGNHEP,
-                          _problem=( EigenProblemType )GHEP,
-                          _solver=( EigenSolverType )M_vm["solvereigen-solver-type"].template as<int>(),
-                          _spectrum=SMALLEST_REAL,
-                          //_spectrum=SMALLEST_MAGNITUDE,
-                          //_transform=SINVERT,
-                          _ncv=M_vm["solvereigen-ncv"].template as<int>(),
-                          _nev=M_vm["solvereigen-nev"].template as<int>(),
-                          _tolerance=M_vm["solvereigen-tol"].template as<double>(),
-                          _maxit=M_vm["solvereigen-maxiter"].template as<int>()
-                          );
+            modes =
+                eigs( _matrixA=symmMatrix,
+                      _matrixB=B,
+                      //_problem=(EigenProblemType)PGNHEP,
+                      _problem=( EigenProblemType )GHEP,
+                      _solver=( EigenSolverType )M_vm["solvereigen-solver-type"].template as<int>(),
+                      _spectrum=SMALLEST_REAL,
+                      //_spectrum=SMALLEST_MAGNITUDE,
+                      //_transform=SINVERT,
+                      _ncv=M_vm["crb.scm.solvereigen-ncv"].template as<int>(),
+                      _nev=M_vm["crb.scm.solvereigen-nev"].template as<int>(),
+                      _tolerance=M_vm["crb.scm.solvereigen-tol"].template as<double>(),
+                      _maxit=M_vm["crb.scm.solvereigen-maxiter"].template as<int>()
+                    );
 #endif
 
                 if ( modes.empty() )
@@ -1331,21 +1340,21 @@ CRBSCM<TruthModelType>::computeYBounds()
 
                 double eigmin = modes.empty()?0:modes.begin()->second.template get<0>();
 #if 1
-                modes=
-                    eigs( _matrixA=symmMatrix,
-                          _matrixB=B,
-                          //_problem=(EigenProblemType)PGNHEP,
-                          _problem=( EigenProblemType )GHEP,
-                          _solver=( EigenSolverType )M_vm["solvereigen-solver-type"].template as<int>(),
-                          _spectrum=LARGEST_REAL,
-                          //_spectrum=LARGEST_MAGNITUDE,
-                          _ncv=M_vm["solvereigen-ncv"].template as<int>(),
-                          //_ncv=20,
-                          _nev=M_vm["solvereigen-nev"].template as<int>(),
-                          //_tolerance=M_vm["solvereigen-tol"].template as<double>(),
-                          _tolerance=1e-7,
-                          _maxit=M_vm["solvereigen-maxiter"].template as<int>()
-                          );
+            modes=
+                eigs( _matrixA=symmMatrix,
+                      _matrixB=B,
+                      //_problem=(EigenProblemType)PGNHEP,
+                      _problem=( EigenProblemType )GHEP,
+                      _solver=( EigenSolverType )M_vm["solvereigen-solver-type"].template as<int>(),
+                      _spectrum=LARGEST_REAL,
+                      //_spectrum=LARGEST_MAGNITUDE,
+                      _ncv=M_vm["crb.scm.solvereigen-ncv"].template as<int>(),
+                      //_ncv=20,
+                      _nev=M_vm["crb.scm.solvereigen-nev"].template as<int>(),
+                      //_tolerance=M_vm["solvereigen-tol"].template as<double>(),
+                      _tolerance=1e-7,
+                      _maxit=M_vm["crb.scm.solvereigen-maxiter"].template as<int>()
+                    );
 #endif
 
                 if ( modes.empty() )

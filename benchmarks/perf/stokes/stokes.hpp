@@ -149,23 +149,38 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
 {
     using namespace Feel::vf;
 
+    int nparts = Environment::worldComm().size();
+    bool prepare = this->vm()["benchmark.prepare"].template as<bool>();
+    if ( prepare )
+        nparts = this->vm()["benchmark.partitions"].template as<int>();
+
+
     if ( this->vm().count( "nochdir" ) == false )
     {
-        this->changeRepository( boost::format( "perf/%1%/%2%/%3%/h_%4%/" )
+        this->changeRepository( boost::format( "perf/%1%/%2%/%3%/h_%4%/l_%5%/parts_%6%/" )
                                 % this->about().appName()
                                 % convex_type::name()
                                 % M_basis_name
-                                % meshSize() );
+                                % meshSizeInit()
+                                % level()
+                                % nparts );
     }
 
     //! init backend
     M_backend = backend_type::build( this->vm() );
     exporter =  boost::shared_ptr<export_type>( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) );
 
-    boost::timer t;
-#if defined(KOVASZNAY)
+    boost::mpi::timer t;
+#if defined(FEELPP_SOLUTION_KOVASZNAY)
     double xmin = -0.5, xmax=1.5;
     double ymin =  0, ymax=2;
+#elif defined(FEELPP_SOLUTION_BERCOVIERENGELMAN)
+    double xmin = 0, xmax = 1;
+    double ymin = 0, ymax = 1;
+#elif defined(FEELPP_SOLUTION_ETHIERSTEIMANN)
+    double xmin = -1, xmax = 1;
+    double ymin = -1, ymax = 1;
+    //double zmin = -1, zmax = 1;
 #else
     double xmin = -1, xmax=1;
     double ymin = -1, ymax=1;
@@ -181,16 +196,18 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     auto mesh = createGMSHMesh( _mesh=new mesh_type,
                                 _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
                                 _desc=domain( _name= ( boost::format( "%1%-%2%-%3%" ) % "hypercube" % Dim % 1 ).str() ,
-                                        _shape="hypercube",
-                                        _usenames=true,
-                                        _convex=( ( !recombine )&&convex_type::is_hypercube )?"Hypercube":"Simplex",
-                                        _recombine=( recombine&&convex_type::is_hypercube ), // generate quads which are not regular
-                                        _dim=Dim,
-                                        _h=M_meshSize,
-                                        _shear=shear,
-                                        _xmin=xmin,_xmax=xmax,
-                                        _ymin=ymin,_ymax=ymax ) );
-
+                                              _shape="hypercube",
+                                              _usenames=true,
+                                              _convex=( ( !recombine )&&convex_type::is_hypercube )?"Hypercube":"Simplex",
+                                              _recombine=( recombine&&convex_type::is_hypercube ), // generate quads which are not regular
+                                              _dim=Dim,
+                                              _h=meshSizeInit(),
+                                              _shear=shear,
+                                              _xmin=xmin,_xmax=xmax,
+                                              _ymin=ymin,_ymax=ymax, 
+                                              _zmin=-1,_zmax=1 ),
+                                _refine=level() );
+    
     M_stats.put( "t.init.mesh",t.elapsed() );
     t.restart();
     /*
@@ -248,7 +265,7 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     bool add_convection = ( math::abs( betacoeff  ) > 1e-10 );
     double mu = this->vm()["mu"].template as<value_type>();
 
-#if 1
+#if FEELPP_SOLUTION_1
     // u exact solution
     //auto u_exact = vec(cos(Px())*cos(Py()), sin(Px())*sin(Py()));
     auto u_exact = val( -exp( Px() )*( Py()*cos( Py() )+sin( Py() ) )*unitX()+ exp( Px() )*Py()*sin( Py() )*unitY()+ Pz()*unitZ() );
@@ -271,8 +288,8 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     //auto f = vec( (2*cos(Px())*cos(Py())-sin(Px())*sin(Py())),
     //              2*sin(Px())*sin(Py())+cos(Px())*cos(Py()) );
     auto f = val( -2*exp( Px() )*( mu-1. )*vec( sin( Py() ),cos( Py() ) ) );
-
-#else
+#endif
+#if FEELPP_SOLUTION_KOVASNAY
     //
     // the Kovasznay flow (2D)
     //
@@ -307,7 +324,112 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     double pmean = -0.125*( math::exp( -1.0*lambda )-1.0*math::exp( 3.0*lambda ) )/lambda;
 
 #endif
-    boost::timer subt;
+#if FEELPP_SOLUTION_ETHIERSTEINMANN
+    //
+    // the EthierSteinmann flow (3D)
+    //
+    double pi = M_PI;
+    double a = pi/4;
+    double d = pi/2;
+    //double mu = 1.;
+
+    // total stress tensor (test)
+    auto u1 = -a*(exp(a*Px())*sin(a*Py()+d*Pz())+exp(a*Pz())*cos(a*Px()+d*Py()));
+    auto u2 = -a*(exp(a*Py())*sin(a*Pz()+d*Px())+exp(a*Px())*cos(a*Py()+d*Pz()));
+    auto u3 = -a*(exp(a*Pz())*sin(a*Px()+d*Py())+exp(a*Py())*cos(a*Pz()+d*Px()));
+    auto u_exact = val( vec( u1,u2,u3 ) );
+
+    auto du_dx = -a*(a*exp(a*Px())*sin(a*Py()+d*Pz())-a*exp(a*Pz())*sin(a*Px()+d*Py()));
+    auto du_dy = -a*(a*exp(a*Px())*cos(a*Py()+d*Pz())-d*exp(a*Pz())*sin(a*Px()+d*Py()));
+    auto du_dz = -a*(d*exp(a*Px())*cos(a*Py()+d*Pz())+a*exp(a*Pz())*cos(a*Px()+d*Py()));
+
+    auto dv_dx = -a*(-d*exp(a*Py())*cos(a*Pz()+d*Px())+a*exp(a*Px())*cos(a*Py()+d*Pz()));
+    auto dv_dy = -a*(a*exp(a*Py())*sin(a*Pz()+d*Px())-a*exp(a*Px())*sin(a*Py()+d*Pz()));
+    auto dv_dz = -a*(a*exp(a*Py())*cos(a*Pz()+d*Px())-d*exp(a*Px())*sin(a*Py()+d*Pz()));
+
+    auto dw_dx = -a*(a*exp(a*Pz())*cos(a*Px()+d*Py())-d*exp(a*Py())*sin(a*Pz()+d*Px()));
+    auto dw_dy = -a*(d*exp(a*Pz())*cos(a*Px()+d*Py())+a*exp(a*Py())*cos(a*Pz()+d*Px()));
+    auto dw_dz = -a*(a*exp(a*Pz())*sin(a*Px()+d*Py())-a*exp(a*Py())*sin(a*Pz()+d*Px()));
+
+
+    auto grad_exact = val( mat<3,3>( du_dx, du_dy, du_dz, dv_dx, dv_dy, dv_dz, dw_dx, dw_dy, dw_dz ) );
+    auto div_exact = val( du_dx + dv_dy + dw_dz );
+
+    auto beta = vec( cst( betacoeff ),cst( betacoeff ),cst( betacoeff ) );
+    auto convection = val( grad_exact*beta );
+
+    auto p_exact = val( - a*a*0.5 * ( exp(2.*a*Px()) + exp(2.*a*Py()) + exp(2.*a*Pz()) + 2.*sin(a*Px()+d*Py())*cos(a*Pz()+d*Px())*exp(a*(Py()+Pz())) + 2.*sin(a*Py()+d*Pz())*cos(a*Px()+d*Py())*exp(a*(Pz()+Px())) + 2.*sin(a*Pz()+d*Px())*cos(a*Py()+d*Pz())*exp(a*(Px()+Py()))) );
+
+    auto f1 = (- mu * (- a * (   a*a*exp(a*Px())*sin(a*Py()+d*Pz()) - exp(a*Pz())*cos(a*Px()+d*Py())*a*a )
+                      - a * ( - a*a*exp(a*Px())*sin(a*Py()+d*Pz()) - exp(a*Pz())*cos(a*Px()+d*Py())*d*d )
+                       - a * ( - exp(a*Px())*sin(a*Py()+d*Pz())*d*d + exp(a*Pz())*cos(a*Px()+d*Py())*a*d ) )
+        - 0.5 * a*a * (  2.*a*exp(2*a*Px())
+                         + 2.*cos(a*Px()+d*Py())*a*cos(a*Pz()+d*Px())*exp(a*(Py()+Pz()))
+                         - 2.*sin(a*Px()+d*Py())*sin(a*Pz()+d*Px())*d*exp(a*(Py()+Pz()))
+                         - 2.*sin(a*Py()+d*Pz())*sin(a*Px()+d*Py())*a*exp(a*(Pz()+Px()))
+                         + 2.*sin(a*Py()+d*Pz())*cos(a*Px()+d*Py())*a*exp(a*(Pz()+Px()))
+                         + 2.*cos(a*Pz()+d*Px())*d*cos(a*Py()+d*Pz())*exp(a*(Px()+Py()))
+                         + 2.*sin(a*Pz()+d*Px())*cos(a*Py()+d*Pz())*a*exp(a*(Px()+Py())) )  );
+
+    auto f2 = ( - mu * (- a * ( - exp(a*Py())*sin(a*Pz()+d*Px())*d*d + a*a*exp(a*Px())*cos(a*Py()+d*Pz()) )
+                        - a * (   a*a*exp(a*Py())*sin(a*Pz()+d*Px()) - a*a*exp(a*Px())*cos(a*Py()+d*Pz()) )
+                        - a * ( - a*a*exp(a*Py())*sin(a*Pz()+d*Px()) - exp(a*Px())*cos(a*Py()+d*Pz())*d*d) )
+                - 0.5 * a*a * (   2.*a*exp(2*a*Py())
+                                  + 2.*cos(a*Px()+d*Py())*d*cos(a*Pz()+d*Px())*exp(a*(Py()+Pz()))
+                                  + 2.*sin(a*Px()+d*Py())*cos(a*Pz()+d*Px())*a*exp(a*(Py()+Pz()))
+                                  + 2.*cos(a*Py()+d*Pz())*a*cos(a*Px()+d*Py())*exp(a*(Pz()+Px()))
+                                  - 2.*sin(a*Py()+d*Pz())*sin(a*Px()+d*Py())*d*exp(a*(Pz()+Px()))
+                                  - 2.*sin(a*Pz()+d*Px())*sin(a*Py()+d*Pz())*a*exp(a*(Px()+Py()))
+                                  + 2.*sin(a*Pz()+d*Px())*cos(a*Py()+d*Pz())*a*exp(a*(Px()+Py())) ));
+
+    auto f3 = ( - mu * (- a * ( - exp(a*Pz())*sin(a*Px()+d*Py())*a*a - exp(a*Py())*cos(a*Pz()+d*Px())*d*d )
+                        - a * ( - exp(a*Pz())*sin(a*Px()+d*Py())*d*d + a*a*exp(a*Py())*cos(a*Pz()+d*Px()) )
+                        - a * (   exp(a*Pz())*sin(a*Px()+d*Py())*a*a - a*a*exp(a*Py())*cos(a*Pz()+d*Px()) ) )
+                - 0.5 * a*a * (   2.*a*exp(2*a*Pz())
+                                  - 2.*sin(a*Px()+d*Py())*sin(a*Pz()+d*Px())*a*exp(a*(Py()+Pz()))
+                                  + 2.*sin(a*Px()+d*Py())*cos(a*Pz()+d*Px())*a*exp(a*(Py()+Pz()))
+                                  + 2.*cos(a*Py()+d*Pz())*d*cos(a*Px()+d*Py())*exp(a*(Pz()+Px()))
+                                  + 2.*sin(a*Py()+d*Pz())*cos(a*Px()+d*Py())*a*exp(a*(Pz()+Px()))
+                                  + 2.*cos(a*Pz()+d*Px())*a*cos(a*Py()+d*Pz())*exp(a*(Px()+Py()))
+                                  - 2.*sin(a*Pz()+d*Px())*sin(a*Py()+d*Pz())*d*exp(a*(Px()+Py())) ));
+
+    auto f = val( vec( f1,f2,f3 ) ); //+ convection;
+
+#endif
+
+#if FEELPP_SOLUTION_BERCOVIERENGELMAN
+    //
+    // the Bercovier_Engelmann flow (2D)
+    //
+
+    // total stress tensor (test)
+    auto u1 = -256*Py()*(Py()-1)*(2*Py()-1)*Px()*Px()*(Px()-1)*(Px()-1);
+    auto u2 = 256*Px()*(Px()-1)*(2*Px()-1)*Py()*Py()*(Py()-1)*(Py()-1);
+    auto u_exact = val( vec( u1,u2 ) );
+
+    auto du_dx =-256*Py()*(Py()-1)*(2*Py()-1)*(4*Px()*Px()*Px()+2*Px()-6*Px()*Px() ) ;
+    auto du_dy = -256*Px()*Px()*(Px()-1)*(Px()-1)*(6*Py()*Py()-6*Py()+1);
+    auto dv_dx = 256*Py()*Py()*(Py()-1)*(Py()-1)*(6*Px()*Px()-6*Px()+1) ;
+    auto dv_dy = 256*Px()*(Px()-1)*(2*Px()-1)*(4*Py()*Py()*Py()+2*Py()-6*Py()*Py() ) ;
+    auto grad_exact = val( mat<2,2>( du_dx, du_dy, dv_dx, dv_dy ) );
+    auto div_exact = val( du_dx + dv_dy );
+
+    auto beta = vec( cst( betacoeff ),cst( betacoeff ) );
+    auto convection = val( grad_exact*beta );
+
+    auto p_exact = val( (Px()-0.5)*(Py()-0.5 ));
+
+    //auto f1 = (exp( lambda * Px() )*((lambda*lambda - 4.*pi*pi)*mu*cos(2.*pi*Py()) - lambda*exp( lambda * Px() )));
+    auto f1 = ( 256*(Px()*Px()*(Px()-1)*(Px()-1)*(12*Py()-6)+Py()*(Py()-1)*(2*Py()-1)*(12*Px()*Px()-12*Px()+2))+Py()-0.5 ) ;
+
+    //auto f2 = (exp( lambda * Px() )*mu*(lambda/(2.*pi))*sin(2.*pi*Py())*(-lambda*lambda +4*pi*pi));
+    auto f2 = ( -256*(Py()*Py()*(Py()-1)*(Py()-1)*(12*Px()-6)+Px()*(Px()-1)*(2*Px()-1)*(12*Py()*Py()-12*Py()+2))+Px()-0.5 ) ;
+
+    auto f = val( vec( f1,f2 ) ); //+ convection;
+
+#endif
+
+    boost::mpi::timer subt;
     // right hand side
     auto F = M_backend->newVector( Xh );
     form1( Xh, F, _init=true );

@@ -236,7 +236,8 @@ Test_AOI::run()
 
 
 BOOST_AUTO_TEST_SUITE( auto_order_integration_testsuite )
-
+Feel::Environment env( boost::unit_test::framework::master_test_suite().argc,
+                       boost::unit_test::framework::master_test_suite().argv );
 BOOST_AUTO_TEST_CASE( auto_order_integration )
 {
 

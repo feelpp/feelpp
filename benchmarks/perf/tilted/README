@@ -1,0 +1,40 @@
+###  README ---
+
+#  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+#       Date: 2012-06-11
+#
+#  Copyright (C) 2012 Université Joseph Fourier (Grenoble I)
+#
+# Distributed under the GPL(GNU Public License):
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+#
+#
+The results of this benchmark are published here
+
+%% hal-00654406, version 1
+%% http://hal.archives-ouvertes.fr/hal-00654406
+@unpublished{dipietro:hal-00654406,
+    hal_id = {hal-00654406},
+    url = {http://hal.archives-ouvertes.fr/hal-00654406},
+    title = {{A domain-specific embedded language in C++ for lowest-order discretizations of diffusive problems on general meshes}},
+    author = {Di Pietro, Daniele Antonio and Gratien, Jean-Marc and Prud'Homme, Christophe},
+    abstract = {{In this work we propose an original implementation of a large family of lowest-order methods for diffusive problems including standard and hybrid finite volume methods, mimetic finite difference-type schemes, and cell centered Galerkin methods. The key idea is to regard the method at hand as a (Petrov-)Galerkin scheme based on possibly incomplete, broken affine spaces defined from a gradient reconstruction and a point value. The resulting unified framework serves as a basis for the development of a FreeFEM-like domain specific embedded language targeted at defining discrete linear and bilinear forms. Both the back-end and the front-end of the language are extensively discussed, and several examples of applications are provided. The overhead of the language is evaluated by comparing with a more traditional implementation. A benchmark including the comparison with more classical finite element methods on standard meshes is also proposed.}},
+    keywords = {domain specific embedded language ; finite volume methods ; cell centered Galerkin methods ; Petrov-Galerkin methods},
+    language = {Anglais},
+    affiliation = {IFP Energies Nouvelles - IFPEN , Laboratoire Jean Kuntzmann - LJK},
+    year = {2011},
+    month = Dec,
+    pdf = {http://hal.archives-ouvertes.fr/hal-00654406/PDF/fvdsel.pdf},
+}

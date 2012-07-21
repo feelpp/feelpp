@@ -1,0 +1,31 @@
+\documentclass{article}
+\usepackage{tikz}
+\usetikzlibrary{arrows,backgrounds,mindmap,positioning,shadows,shapes}
+\usepackage{pgfplots,pgfplotstable}
+\pgfqkeys{/pgfplots}{
+%  cycle list name = black white,
+  legend style = { at={(0.95,0.3)} },
+  log basis x = 10,
+  grid=major
+}
+
+\begin{document}
+
+\begin{figure}
+  \centering
+
+  \subfloat[$L^2$-error vs. $h$] {
+    \begin{tikzpicture}[scale=0.85]
+      \begin{loglogaxis}[
+          legend style = {
+            legend pos = south east
+          }
+        ]
+        \addplot table[x=h,y=errh1] {feel-heterogeneous1-ratu.txt};\xdef\slopea{1.};
+        \legend{$\RaTu^1$(\pgfmathprintnumber{\slopea}),$\Q^1$(\pgfmathprintnumber{\slopeb}),$\Q^2$(\pgfmathprintnumber{\slopec}),$\Q^3$(\pgfmathprintnumber{\sloped}),SUSHI(\pgfmathprintnumber{\slopee}),ccG(\pgfmathprintnumber{\slopef})};
+      \end{loglogaxis}
+    \end{tikzpicture}
+    }
+
+  \end{figure}
+\end{document}

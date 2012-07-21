@@ -702,6 +702,8 @@ main( int argc, char** argv )
 {
     using namespace Feel;
 
+    Feel::Environment env( argc,argv );
+
     /* change parameters below */
     const int nDim = 2;
     const int nOrder = 2;

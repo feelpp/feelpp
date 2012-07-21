@@ -8,13 +8,30 @@
 #+OPTIONS: toc:t
 #+LATEX_class: cparticle
 
+
 * New in 0.92.0
 
 ** Programming environment
 
- - support for Boost 1.49
+ - support for Boost 1.49 and 1.50
+ - imported for Eigen 3.1 in contrib/eigen
  - port to gcc4.7, icc 12.1 and clang 3.1
  - added cmake macro feelpp_add application, see http://code.google.com/p/feelpp/issues/detail?id=11&can=1
+ - support Gmsh from both executable and library(preferred and more powerful)
+   (Fixes issue 43)
+ - support for PETSc 3.3
+
+*** Marseille Mesocenter
+ - port to Marseille mesocenter supercomputer (thx to CEMRACS'12)
+
+*** TGCC/Curie
+ - port on the TGCC
+   Fixes issue 35
+
+*** Macport
+ - added scotch Portfile from macport and use esmumps variant for mumps support
+ - added PETSc 3.3-p1 support and use suitesparse as well as scotch directly
+   from macport instead of downloading/compiling them
 
 ** Bugs
 
@@ -25,11 +42,26 @@
 
 ** Library
 
+*** feelcore
+ - improved benchmarking framework and in particular the handling of the
+   statistics provided by the benchmark with views per key and flat views. In
+   the last case various files are automatically generated for each benchmark
+
+*** feelalg
+ - added eigen(3.1) backend with support for dense and sparse eigen matrices
+   Fixes issue 36
+
 *** feelmesh
  - added 2D and 3D mesh adaptation using Gmsh
 
+*** feeldiscr
+ - seamless parallelisation of the FunctionSpace data structure in the case of
+   product of function spaces
+ - lift operator merged with projection operator
+
 *** feelfilters
  - support for mesh generation directly from Gmsh library
+ - support for element splitting (Fixes issue 40)
 
 ** Documentation
 

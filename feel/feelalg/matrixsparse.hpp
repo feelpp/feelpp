@@ -114,7 +114,7 @@ public:
      */
     MatrixSparse ();
 
-    MatrixSparse( DataMap const& dmRow, DataMap const& dmCol, WorldComm const& worldComm=WorldComm() );
+    MatrixSparse( DataMap const& dmRow, DataMap const& dmCol, WorldComm const& worldComm=Environment::worldComm() );
 
     /**
      * Destructor. Free all memory, but do not release the memory of
@@ -312,6 +312,10 @@ public:
         bool p2 = M_mprop.test( HERMITIAN ) && M_mprop.test( NON_HERMITIAN );
         return ( p1 == false ) && ( p2 == false );
     }
+    bool isDense() const
+    {
+        return M_mprop.test( DENSE );
+    }
     void checkProperties() const
     {
         if ( !haveConsistentProperties() )
@@ -321,7 +325,8 @@ public:
                  << "           HERMITIAN: " << isHermitian() << "\n"
                  << "       NON_HERMITIAN: " << isNonHermitian() << "\n"
                  << "            SINGULAR: " << isSingular() << "\n"
-                 << "   POSITIVE_DEFINITE: " << isPositiveDefinite() << "\n";
+                 << "   POSITIVE_DEFINITE: " << isPositiveDefinite() << "\n"
+                 << "               DENSE: " << isDense() << "\n";
             throw std::logic_error( ostr.str() );
         }
     }

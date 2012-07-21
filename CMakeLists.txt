@@ -23,6 +23,7 @@
 #
 cmake_minimum_required (VERSION 2.6)
 
+# 
 # Bug in cmake that delete destroy library path if LIBRARY_PATH is not empty
 # Ugly hack that disable the environement variable
 # Waiting for cmake to fix it
@@ -59,6 +60,7 @@ macro(set_config_option VARNAME STRING)
   message(STATUS "Found " ${STRING})
 endmacro(set_config_option)
 
+OPTION(FEELPP_ENABLE_VERBOSE_CMAKE "enable Feel++ verbose cmake" OFF)
 
 OPTION(FEELPP_ENABLE_SVN "enable Feel++ looking up for svn information" OFF)
 SET(FEELPP_SCM "svn")
@@ -173,16 +175,16 @@ ENDIF()
 
 
 
-include(ProcessorCount)
-ProcessorCount(N)
-if(N GREATER 1)
-  math (EXPR N2 '${N}/2')
-  set(CTEST_BUILD_FLAGS -j${N2})
-  set(ctest_test_args ${ctest_test_args} PARALLEL_LEVEL ${N2})
-  OPTION(FEELPP_ENABLE_MPI_MODE "Instantiation mode" ON )
-else()
-  OPTION(FEELPP_ENABLE_MPI_MODE "Instantiation mode" OFF )
-endif()
+#include(ProcessorCount)
+#ProcessorCount(N)
+##if(N GREATER 1)
+#  math (EXPR N2 '${N}/2')
+#  set(CTEST_BUILD_FLAGS -j${N2})
+#  set(ctest_test_args ${ctest_test_args} PARALLEL_LEVEL ${N2})
+ OPTION(FEELPP_ENABLE_MPI_MODE "Instantiation mode" ON )
+#else()
+#  OPTION(FEELPP_ENABLE_MPI_MODE "Instantiation mode" OFF )
+#endif()
 
 IF ( FEELPP_ENABLE_MPI_MODE )
   SET( FEELPP_ENABLE_MPI_MODE 1 )
@@ -352,6 +354,8 @@ option(FEELPP_ENABLE_APPLICATIONS_CRB "Enable CRB applications in Feel++" OFF)
 if (ANN_FOUND AND GLPK_FOUND)
   set( FEELPP_ENABLE_APPLICATIONS_CRB ON )
   set( FEELPP_ENABLE_OPENTURNS ON)
+else()
+  set( FEELPP_ENABLE_APPLICATIONS_CRB OFF )
 endif()
 
 #

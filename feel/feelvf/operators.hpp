@@ -324,7 +324,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     M_fec( VF_OP_SWITCH( VF_OP_TYPE_IS_VALUE( T ), , t.M_fec/*new basis_context_type( *t.M_fec )*/ ) ), \
                     M_np( M_geot->nPoints() ),                          \
                     M_pc( new pc_type( M_expr.e().functionSpace()->fe(), M_geot->xRefs() )), \
-                    M_pcf(),                                            \
+                    /*M_pcf(),*/                                        \
                     M_ctx( VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), (new ctx_type( M_expr.e().functionSpace()->fe(), M_geot, (pc_ptrtype const&)M_pc ) ) ) ), \
                     M_loc(VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), M_expr.e().BOOST_PP_CAT(VF_OPERATOR_TERM( O ),Extents)(*M_geot) ) ), \
                     M_zero( ret_type::Zero() ),                         \
@@ -346,7 +346,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                                                                   fusion::at_key<basis_context_key_type>( feu ).get() ) ) ), \
                     M_np( fusion::at_key<key_type>( geom )->nPoints() ), \
                     M_pc( this->createPcIfSameGeom(expr,geom, mpl::bool_<isSameGeo>() ) ) /*new pc_type( expr.e().functionSpace()->fe(), fusion::at_key<key_type>( geom )->xRefs() ))*/, \
-                    M_pcf(),                                            \
+                    /*M_pcf(),*/                                        \
                     M_ctx( VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), \
                                                 ( this->createCtxIfSameGeom(expr,geom, mpl::bool_<isSameGeo>() )) ) ), \
                     M_loc(VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), expr.e().BOOST_PP_CAT(VF_OPERATOR_TERM( O ),Extents)(*fusion::at_key<key_type>( geom )) ) ), \
@@ -369,7 +369,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                                                      fusion::at_key<basis_context_key_type>( fev ).get() ) ), \
                     M_np( fusion::at_key<key_type>( geom )->nPoints() ), \
                     M_pc( this->createPcIfSameGeom(expr,geom, mpl::bool_<isSameGeo>() ) ) /*new pc_type( expr.e().functionSpace()->fe(), fusion::at_key<key_type>( geom )->xRefs() ) )*/, \
-                    M_pcf(),                                           \
+                    /*M_pcf(),*/                                        \
                     M_ctx( VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), \
                                                 ( this->createCtxIfSameGeom(expr,geom, mpl::bool_<isSameGeo>() )) ) ), \
                     M_loc(VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), expr.e().BOOST_PP_CAT(VF_OPERATOR_TERM( O ),Extents)(*fusion::at_key<key_type>( geom )) ) ), \
@@ -389,7 +389,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     M_geot( fusion::at_key<key_type>( geom ) ),         \
                     M_np( fusion::at_key<key_type>( geom )->nPoints() ), \
                     M_pc( this->createPcIfSameGeom(expr,geom, mpl::bool_<isSameGeo>() ) ) /* new pc_type( expr.e().functionSpace()->fe(), fusion::at_key<key_type>( geom )->xRefs() ) )*/, \
-                    M_pcf(),                                           \
+                    /*M_pcf(),*/                                        \
                     M_ctx( VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), \
                                                     ( this->createCtxIfSameGeom(expr,geom, mpl::bool_<isSameGeo>() )) ) ), \
                     M_loc(VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), expr.e().BOOST_PP_CAT(VF_OPERATOR_TERM( O ),Extents)(*fusion::at_key<key_type>( geom )) ) ), \
@@ -407,6 +407,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     void init( IM const& im )                           \
                 {                                                       \
                     M_did_init = true;                                  \
+                    /*                                                  \
                     QuadMapped<IM> qm;                                  \
                     typedef typename QuadMapped<IM>::permutation_type permutation_type; \
                     typename QuadMapped<IM>::permutation_points_type ppts( qm( im ) ); \
@@ -421,6 +422,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                                                                                          ppts[__f].find(__p)->second ) ); \
                                 }                                       \
                         }                                               \
+                    */                                                  \
                     /* expr.e().functionSpace()->fe(), fusion::at_key<key_type>( geom )->xRefs() ), */ \
                 }                                                       \
                                                                         \
@@ -682,7 +684,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 basis_context_ptrtype M_fec;                           \
                 const uint16_type M_np;                                \
                 pc_ptrtype M_pc;                                       \
-                std::vector<std::map<uint16_type, pc_ptrtype> > M_pcf; \
+                /*std::vector<std::map<uint16_type, pc_ptrtype> > M_pcf;*/ \
                 ctx_ptrtype M_ctx;                                      \
                 array_type M_loc;                                      \
                 ret_type M_zero;                                        \

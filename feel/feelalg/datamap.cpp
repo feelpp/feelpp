@@ -356,6 +356,7 @@ DataMap::showMeMapGlobalProcessToGlobalCluster( std::ostream& __out  ) const
 
     for ( int proc = 0; proc<this->comm().globalSize(); ++proc )
     {
+        this->comm().globalComm().barrier();
         if ( proc==this->worldComm().masterRank() )
         {
             this->comm().globalComm().barrier();
@@ -373,14 +374,22 @@ DataMap::showMeMapGlobalProcessToGlobalCluster( std::ostream& __out  ) const
                   << "nLocalDofWithGhost : " << this->nLocalDofWithGhost() << "\n"
                   << "mapGlobalProcessToGlobalCluster().size() " << this->mapGlobalProcessToGlobalCluster().size() << "\n"
                   << "-----------------------------------------------------------------------\n";
-#if 0
-
+#if 1
+            __out << "mapGlobalProcessToGlobalCluster : \n";
             for ( size_type i=0 ; i<this->mapGlobalProcessToGlobalCluster().size() ; ++i )
             {
                 __out << i << " " << this->mapGlobalProcessToGlobalCluster()[i]
                       << " real proc " << procOnGlobalCluster( /*this->*/mapGlobalProcessToGlobalCluster()[i] ) <<"\n";
             }
-
+            __out << "-----------------------------------------------------------------------\n";
+#endif
+#if 0
+            __out << "mapGlobalClusterToGlobalProcess : \n";
+            for ( size_type i=0 ; i<this->mapGlobalClusterToGlobalProcess().size() ; ++i )
+            {
+                __out << i << " " << this->mapGlobalClusterToGlobalProcess()[i]
+                      <<"\n";
+            }
             __out << "-----------------------------------------------------------------------\n";
 #endif
 #if 1
@@ -420,7 +429,8 @@ DataMap::showMeMapGlobalProcessToGlobalCluster( std::ostream& __out  ) const
 #endif
             __out << "-----------------------------------------------------------------------\n";
 
-            __out << std::endl;
+            __out << "\n" << std::endl;
+
         }
 
         //this->comm().barrier();

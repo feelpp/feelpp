@@ -1,5 +1,16 @@
+/feel_perf_stokes_Hypercube_2D_p2p1.cpp
+/feel_perf_stokes_Hypercube_2D_p3p2.cpp
+/feel_perf_stokes_Hypercube_2D_p4p3.cpp
+/feel_perf_stokes_Hypercube_2D_p5p4.cpp
+/feel_perf_stokes_Hypercube_cr1p0.cpp
+/feel_perf_stokes_Simplex_2D_p2p1.cpp
+/feel_perf_stokes_Simplex_2D_p3p2.cpp
+/feel_perf_stokes_Simplex_2D_p4p3.cpp
+/feel_perf_stokes_Simplex_2D_p5p4.cpp
+/feel_perf_stokes_Simplex_cr1p0.cpp
 /feel_perf_stokes_cr1p0.cpp
 /feel_perf_stokes_p2p1.cpp
 /feel_perf_stokes_p3p2.cpp
 /feel_perf_stokes_p4p3.cpp
 /feel_perf_stokes_p5p4.cpp
+/stokes-cr1p0.cpp

@@ -217,7 +217,7 @@ ExporterEnsight<MeshType,N>::_F_writeCaseFile() const
         {
             __out << "scalar per node: "
                   << __ts->index() << " " // << *__ts_it->beginStep() << " "
-                  << __it->second.name() << " " << __it->first << "-" << this->worldComm().globalSize() << "_" << this->worldComm().localRank() << ".***" << "\n";// important localRank !!
+                  << __it->second.name() << " " << __it->first << "-" << this->worldComm().globalSize() << "_" << __it->second.worldComm().localRank() << ".***" << "\n";// important localRank !!
             ++__it;
         }
 
@@ -228,7 +228,7 @@ ExporterEnsight<MeshType,N>::_F_writeCaseFile() const
         {
             __out << "vector per node: "
                   << __ts->index() << " " // << *__ts_it->beginStep() << " "
-                  << __itv->second.name() << " " << __itv->first << "-" << this->worldComm().globalSize() << "_" << this->worldComm().localRank() << ".***" << "\n";// important localRank !!
+                  << __itv->second.name() << " " << __itv->first << "-" << this->worldComm().globalSize() << "_" << __itv->second.worldComm().localRank() << ".***" << "\n";// important localRank !!
             ++__itv;
         }
 
@@ -239,7 +239,7 @@ ExporterEnsight<MeshType,N>::_F_writeCaseFile() const
         {
             __out << "tensor per node: "
                   << __ts->index() << " " // << *__ts_it->beginStep() << " "
-                  << __itt->second.name() << " " << __itt->first << "-" << this->worldComm().globalSize() << "_" << this->worldComm().localRank() << ".***" << "\n"; // important localRank !!
+                  << __itt->second.name() << " " << __itt->first << "-" << this->worldComm().globalSize() << "_" << __itt->second.worldComm().localRank() << ".***" << "\n"; // important localRank !!
             ++__itt;
         }
 
@@ -250,7 +250,7 @@ ExporterEnsight<MeshType,N>::_F_writeCaseFile() const
         {
             __out << "scalar per element: "
                   << __ts->index() << " " // << *__ts_it->beginStep() << " "
-                  << __it_el->second.name() << " " << __it_el->first << "-" << this->worldComm().globalSize() << "_" << this->worldComm().localRank() << ".***" << "\n";// important localRank !!
+                  << __it_el->second.name() << " " << __it_el->first << "-" << this->worldComm().globalSize() << "_" << __it_el->second.worldComm().localRank() << ".***" << "\n";// important localRank !!
             ++__it_el;
         }
 
@@ -261,7 +261,7 @@ ExporterEnsight<MeshType,N>::_F_writeCaseFile() const
         {
             __out << "vector per element: "
                   << __ts->index() << " " // << *__ts_it->beginStep() << " "
-                  << __itv_el->second.name() << " " << __itv_el->first << "-" << this->worldComm().globalSize() << "_" << this->worldComm().localRank() << ".***" << "\n"; // important localRank !!
+                  << __itv_el->second.name() << " " << __itv_el->first << "-" << this->worldComm().globalSize() << "_" << __itv_el->second.worldComm().localRank() << ".***" << "\n"; // important localRank !!
             ++__itv_el;
         }
 
@@ -272,7 +272,7 @@ ExporterEnsight<MeshType,N>::_F_writeCaseFile() const
         {
             __out << "tensor per element: "
                   << __ts->index() << " " // << *__ts_it->beginStep() << " "
-                  << __itt_el->second.name() << " " << __itt_el->first << "-" << this->worldComm().globalSize() << "_" << this->worldComm().localRank() << ".***" << "\n"; // important localRank !!
+                  << __itt_el->second.name() << " " << __itt_el->first << "-" << this->worldComm().globalSize() << "_" << __itt_el->second.worldComm().localRank() << ".***" << "\n"; // important localRank !!
             ++__itt_el;
         }
 
@@ -420,7 +420,7 @@ ExporterEnsight<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype __st
         std::ostringstream __varfname;
 
         __varfname << this->path() << "/" << __var->first
-                   << "-" << this->worldComm().globalSize() << "_" << this->worldComm().localRank() // important localRank
+                   << "-" << this->worldComm().globalSize() << "_" << __var->second.worldComm().localRank() // important localRank
                    << "." << std::setfill( '0' ) << std::setw( 3 ) << __step->index();
         Debug( 8006 ) << "[ExporterEnsight::saveNodal] saving " << __varfname.str() << "...\n";
         std::fstream __out( __varfname.str().c_str(), std::ios::out | std::ios::binary );
@@ -495,7 +495,7 @@ ExporterEnsight<MeshType,N>::saveElement( typename timeset_type::step_ptrtype __
         std::ostringstream __evarfname;
 
         __evarfname << this->path() << "/" << __evar->first
-                    << "-" << this->worldComm().globalSize() << "_" << this->worldComm().localRank() // important localRank
+                    << "-" << this->worldComm().globalSize() << "_" << __evar->second.worldComm().localRank() // important localRank
                     << "." << std::setfill( '0' ) << std::setw( 3 ) << __step->index();
         Debug( 8006 ) << "[ExporterEnsight::saveElement] saving " << __evarfname.str() << "...\n";
         std::fstream __out( __evarfname.str().c_str(), std::ios::out | std::ios::binary );
@@ -527,7 +527,7 @@ ExporterEnsight<MeshType,N>::saveElement( typename timeset_type::step_ptrtype __
             typename mesh_type::marker_element_const_iterator elt_it;
             typename mesh_type::marker_element_const_iterator elt_en;
             boost::tie( elt_it, elt_en ) = __step->mesh()->elementsWithMarker( p_it->first,
-                                           this->worldComm().localRank() ); // important localRank!!!!
+                                                                               __evar->second.worldComm().localRank() ); // important localRank!!!!
 
             if ( !__evar->second.areGlobalValuesUpdated() )
                 __evar->second.updateGlobalValues();
@@ -672,7 +672,7 @@ ExporterEnsight<MeshType,N>::visit( mesh_type* __mesh )
         typename mesh_type::marker_element_const_iterator elt_it;// = __mesh->beginElementWithMarker(p_it->first);
         typename mesh_type::marker_element_const_iterator elt_en;// = __mesh->endElementWithMarker(p_it->first);
         boost::tie( elt_it, elt_en ) = __mesh->elementsWithMarker( p_it->first,
-                                       this->worldComm().localRank() ); // important localRank!!!!
+                                                                   __mesh->worldComm().localRank() ); // important localRank!!!!
 
         //	int __ne = __mesh->numElements();
         //int __ne = p_it->second;
@@ -694,7 +694,7 @@ ExporterEnsight<MeshType,N>::visit( mesh_type* __mesh )
 
         //	elt_it = __mesh->beginElement();
         boost::tie( elt_it, elt_en ) = __mesh->elementsWithMarker( p_it->first,
-                                       this->worldComm().localRank() ); // important localRank!!!!
+                                                                   __mesh->worldComm().localRank() ); // important localRank!!!!
         //elt_it = __mesh->beginElementWithMarker(p_it->first);
 
         for ( ; elt_it != elt_en; ++elt_it )
