@@ -648,6 +648,10 @@ public:
     {
         return M_elist;
     }
+    std::set<size_type>& elements()
+    {
+        return M_elist;
+    }
 
     //@}
 

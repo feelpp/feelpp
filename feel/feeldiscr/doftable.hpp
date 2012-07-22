@@ -35,6 +35,7 @@
 #include <boost/tuple/tuple_comparison.hpp>
 #include <boost/tuple/tuple_io.hpp>
 #include <boost/fusion/algorithm/iteration/accumulate.hpp>
+#include <boost/unordered_map.hpp>
 
 #include <Eigen/Core>
 #include<Eigen/StdVector>
@@ -142,8 +143,8 @@ public:
     /**
      * Type for the localToGlobal table.
      */
-    typedef std::vector<std::vector<global_dof_type> > Container;
-    typedef std::vector<std::vector<global_dof_fromface_type> > Container_fromface;
+    typedef boost::unordered_map<int,std::vector<global_dof_type> > Container;
+    typedef boost::unordered_map<int,std::vector<global_dof_fromface_type> > Container_fromface;
 
     typedef std::vector<global_dof_type> indices_per_element_type;
 
@@ -259,7 +260,7 @@ public:
         std::vector<size_type> ind( ntdof );
 
         for ( size_type i = 0; i < ntdof; ++i )
-            ind[i] = boost::get<0>( _M_el_l2g[ id_el][ i ] );
+            ind[i] = boost::get<0>( _M_el_l2g.at( id_el )[ i ] );
 
         return ind;
     }
@@ -278,7 +279,7 @@ public:
 
         for ( size_type i = 0; i < s; ++i )
         {
-            ind[i] = this->mapGlobalProcessToGlobalCluster()[ boost::get<0>( _M_el_l2g[ id_el][ i ] ) ];
+            ind[i] = this->mapGlobalProcessToGlobalCluster()[ boost::get<0>( _M_el_l2g.at( id_el )[ i ] ) ];
         }
     }
 
@@ -396,9 +397,9 @@ public:
         }
 #endif
         const size_type ntdof = is_product?nComponents*nldof:nldof;
-        _M_el_l2g.resize( eltid.size() );
+        //_M_el_l2g.resize( eltid.size() );
         for( auto it = _M_el_l2g.begin(), en = _M_el_l2g.end(); it != en; ++it )
-            it->resize( ntdof );
+            it->second.resize( ntdof );
 
         BOOST_FOREACH( thedof_type thedof,  dof )
         {
@@ -470,21 +471,21 @@ public:
     size_type localToGlobalId( const size_type ElId,
                                const uint16_type id ) const
     {
-        return boost::get<0>( _M_el_l2g[ ElId][ id ] );
+        return boost::get<0>( _M_el_l2g.at( ElId )[ id ] );
     }
 
     global_dof_type localToGlobal( const size_type ElId,
                                    const uint16_type localNode,
                                    const uint16_type c = 0 ) const
     {
-        return _M_el_l2g[ ElId][ fe_type::nLocalDof * c  + localNode ];
+        return _M_el_l2g.at( ElId )[ fe_type::nLocalDof * c  + localNode ];
     }
 
     global_dof_type localToGlobalOnCluster( const size_type ElId,
                                             const uint16_type localNode,
                                             const uint16_type c = 0 ) const
     {
-        auto resloc = _M_el_l2g[ ElId][ fe_type::nLocalDof * c  + localNode ];
+        auto resloc = _M_el_l2g.at( ElId )[ fe_type::nLocalDof * c  + localNode ];
         return boost::make_tuple( this->mapGlobalProcessToGlobalCluster()[resloc.template get<0>()],
                                   resloc.template get<1>(),
                                   resloc.template get<2>() );
@@ -497,7 +498,7 @@ public:
         const size_type nDofF = ( face_type::numVertices * fe_type::nDofPerVertex +
                                   face_type::numEdges * fe_type::nDofPerEdge +
                                   face_type::numFaces * fe_type::nDofPerFace );
-        return _M_face_l2g[ ElId][ nDofF*c+localNode ];
+        return _M_face_l2g.at( ElId )[ nDofF*c+localNode ];
     }
 
     struct element_access
@@ -508,7 +509,7 @@ public:
         {}
         global_dof_type operator()( size_type __id, uint16_type __loc, uint16_type c = 0 ) const
         {
-            return _M_d._M_el_l2g[ __id][ fe_type::nLocalDof * c+ __loc ];
+            return _M_d._M_el_l2g.at( __id )[ fe_type::nLocalDof * c+ __loc ];
         }
         uint16_type localDofInElement( size_type __id, uint16_type __loc, uint16_type c = 0 ) const
         {
@@ -633,12 +634,14 @@ public:
             fe_type::nDofPerFace * element_type::numGeometricFaces +
             fe_type::nDofPerEdge * element_type::numEdges +
             fe_type::nDofPerVertex * element_type::numVertices;
+        auto tableit = _M_el_l2g.find( elt );
+        if ( tableit == _M_el_l2g.end() )
+            return false;
         const int ncdof = is_product?nComponents:1;
-
         for ( int c = 0; c < ncdof; ++c )
         {
             for ( uint16_type l = 0; l < nldof; ++l )
-                if ( boost::get<0>( _M_el_l2g[elt][c*nldof+l] )==invalid_size_type_value )
+                if ( boost::get<0>( _M_el_l2g.at(elt)[c*nldof+l] )==invalid_size_type_value )
                     return false;
         }
 
@@ -655,6 +658,12 @@ public:
             fe_type::nDofPerFace * element_type::numGeometricFaces +
             fe_type::nDofPerEdge * element_type::numEdges +
             fe_type::nDofPerVertex * element_type::numVertices;
+
+
+        std::vector<global_dof_type> local_dof( nldof );
+        for ( int i2 = 0; i2 < nldof; ++i2 )
+            local_dof[i2] = boost::make_tuple( invalid_size_type_value,0,false ); // 0 is the invalid value for the sign !
+        _M_el_l2g.insert( std::make_pair(__elt.id(), local_dof ) );
 
         if ( !this->isElementDone( __elt.id() ) )
         {
@@ -702,7 +711,7 @@ public:
                 {
                     for ( int c = 0; c < ncdof; ++c, ++next_free_dof )
                     {
-                        _M_el_l2g[ ie][ fe_type::nLocalDof*c + l ] = boost::make_tuple( ( dofIndex( next_free_dof ) ) , 1, false );
+                        _M_el_l2g.at( ie )[ fe_type::nLocalDof*c + l ] = boost::make_tuple( ( dofIndex( next_free_dof ) ) , 1, false );
                     }
                 }
             }
@@ -2381,9 +2390,9 @@ DofTable<MeshType, FEType, PeriodicityType>::initDofMap( mesh_type& M )
     const size_type nV = M.numElements();
     int ntldof = is_product?nComponents*nldof:nldof;//this->getIndicesSize();
 
-    _M_el_l2g.resize( nV );
+    //_M_el_l2g.reserve( nV );
     for( auto it = _M_el_l2g.begin(), en = _M_el_l2g.end(); it != en; ++it )
-            it->resize( ntldof );
+            it->second.resize( ntldof );
 
     M_locglob_indices.resize( nV );
     M_locglob_signs.resize( nV );
@@ -2392,9 +2401,6 @@ DofTable<MeshType, FEType, PeriodicityType>::initDofMap( mesh_type& M )
     M_locglobOnCluster_signs.resize( nV );
 #endif
 
-    for ( int i1 = 0; i1 < nV; ++i1 )
-        for ( int i2 = 0; i2 < ntldof; ++i2 )
-            _M_el_l2g[i1][i2] = boost::make_tuple( invalid_size_type_value,0,false ); // 0 is the invalid value for the sign !
 
     _M_face_sign = ublas::scalar_vector<bool>( M.numFaces(), false );
 
@@ -2926,16 +2932,14 @@ DofTable<MeshType, FEType, PeriodicityType>::buildBoundaryDofMap( mesh_type& M )
 
     const size_type nF = M.faces().size();
     int ntldof = is_product?nComponents*nDofF:nDofF;
-    _M_face_l2g.resize( nF );
+    //_M_face_l2g.resize( nF );
     for( auto it = _M_face_l2g.begin(), en = _M_face_l2g.end(); it != en; ++it )
-        it->resize( ntldof );
+        it->second.resize( ntldof );
 
     global_dof_fromface_type default_dof = boost::make_tuple( invalid_size_type_value,0,false,0 );
-
-    for ( int i1 = 0; i1 < nF; ++i1 )
-        for ( int i2 = 0; i2 < ntldof; ++i2 )
-            // 0 is the invalid value for the sign !
-            _M_face_l2g[i1][i2] = default_dof;
+    std::vector<global_dof_fromface_type> facedof( ntldof );
+    for( auto& v: facedof )
+        v = default_dof;
 
     Debug( 5005 ) << "[buildBoundaryDofMap] nb faces : " << nF << "\n";
     Debug( 5005 ) << "[buildBoundaryDofMap] nb dof faces : " << nDofF*nComponents << "\n";
@@ -2949,6 +2953,10 @@ DofTable<MeshType, FEType, PeriodicityType>::buildBoundaryDofMap( mesh_type& M )
         ( __face_it->isConnectedTo1() ).warn( "[Dof::buildFaceDofMap] face not connected" );
 
         if ( !__face_it->isConnectedTo0() ) continue;
+
+        for ( int i2 = 0; i2 < ntldof; ++i2 )
+            // 0 is the invalid value for the sign !
+            _M_face_l2g.insert( std::make_pair( __face_it->id(), facedof ) );
 
 #if !defined(NDEBUG)
 

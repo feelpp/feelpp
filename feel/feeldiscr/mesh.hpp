@@ -30,7 +30,7 @@
 #ifndef __mesh_H
 #define __mesh_H 1
 
-#include <map>
+#include <boost/unordered_map.hpp>
 
 #include <boost/foreach.hpp>
 #include <boost/signal.hpp>
@@ -273,7 +273,7 @@ public:
     face_processor_type const& localFaceId( element_type const& e,
                                             size_type const n ) const
     {
-        return _M_e2f[e.id()][n];
+        return _M_e2f[std::make_pair(e.id(),n)];
     }
 
     /**
@@ -282,7 +282,7 @@ public:
     face_processor_type const& localFaceId( size_type const e,
                                             size_type const n ) const
     {
-        return _M_e2f[e][n];
+        return _M_e2f[std::make_pair(e,n)];
     }
 #if 0
     /**
@@ -323,7 +323,7 @@ public:
     face_processor_type& localFaceId( element_type const& e,
                                       size_type const n )
     {
-        return _M_e2f[e.id()][n];
+        return _M_e2f[std::make_pair(e.id(),n)];
     }
 
     /**
@@ -332,7 +332,7 @@ public:
     face_processor_type& localFaceId( size_type const e,
                                       size_type const n )
     {
-        return _M_e2f[e][n];
+        return _M_e2f[std::make_pair(e,n)];
     }
 
     /**
@@ -407,6 +407,20 @@ public:
         data[1]=__topoDim;
         M_markername[__name]=data;
     }
+
+    /**
+     * erase element at position \p position
+     *
+     * @param position \p position is a valid dereferenceable iterator of the index.
+     * @param modify if true, update mesh data structure and in particular faces
+     *
+     * @return An iterator pointing to the element immediately
+     * following the one that was deleted, or \c end() if no such element
+     * exists.
+     */
+    element_iterator eraseElement( element_iterator position, bool modify=true );
+
+
 
     /**
      * creates a mesh by iterating over the elements between
@@ -739,6 +753,8 @@ public:
                     this->faces().modify( fit, []( face_type& f ){ f.setOnBoundary( true ); } );
                 }
             }
+            this->setUpdatedForUse( false );
+            this->updateForUse();
         }
 private:
 
@@ -1195,7 +1211,7 @@ private:
     /**
      * Arrays containing the global ids of Faces of each element
      */
-    boost::multi_array<face_processor_type,2> _M_e2f;
+    boost::unordered_map<std::pair<int,int>,face_processor_type> _M_e2f;
 
     /**
      * Arrays containing the global ids of edges of each element

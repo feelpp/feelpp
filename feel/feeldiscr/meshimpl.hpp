@@ -96,7 +96,6 @@ Mesh<Shape, T, Tag>::updateForUse()
         element_iterator iv,  en;
         std::map<size_type,boost::tuple<size_type, uint16_type, size_type> > f2e;
 
-        _M_e2f.resize( boost::extents[this->numElements()][this->numLocalFaces()] );
         std::map<std::set<int>, size_type > _faces;
         typename std::map<std::set<int>, size_type >::iterator _faceit;
         int next_face = 0;
@@ -139,7 +138,7 @@ Mesh<Shape, T, Tag>::updateForUse()
 
                     f2e[_faceit->second].template get<0>() = iv->id();
                     f2e[_faceit->second].template get<1>() = j;
-                    _M_e2f[iv->id()][j]=boost::make_tuple( _faceit->second, invalid_size_type_value );
+                    _M_e2f[std::make_pair(iv->id(),j)]=boost::make_tuple( _faceit->second, invalid_size_type_value );
                 }
 
                 else // already stored
@@ -149,8 +148,8 @@ Mesh<Shape, T, Tag>::updateForUse()
 #endif
 
                     f2e[_faceit->second].template get<2>() = iv->id();
-                    _M_e2f[iv->id()][j]=boost::make_tuple( _faceit->second, f2e[_faceit->second].template get<0>() );
-                    _M_e2f[f2e[_faceit->second].template get<0>()] [f2e[_faceit->second].template get<1>()] =
+                    _M_e2f[std::make_pair(iv->id(),j)]=boost::make_tuple( _faceit->second, f2e[_faceit->second].template get<0>() );
+                    _M_e2f[std::make_pair(f2e[_faceit->second].template get<0>(), f2e[_faceit->second].template get<1>())] =
                         boost::make_tuple( _faceit->second, iv->id() );
                 }
 
@@ -199,29 +198,21 @@ Mesh<Shape, T, Tag>::updateForUse()
     {
         element_iterator iv,  en;
         boost::tie( iv, en ) = this->elementsRange();
-
-        for ( ; iv != en; ++iv )
-        {
-            this->elements().modify( iv, typename super_elements::ElementConnectPointToElement() );
-        }
-
-        boost::tie( iv, en ) = this->elementsRange();
         auto pc = _M_gm->preCompute( _M_gm, _M_gm->referenceConvex().vertices() );
         auto pcf =  _M_gm->preComputeOnFaces( _M_gm, _M_gm->referenceConvex().barycenterFaces() );
         M_meas = 0;
         M_measbdy = 0;
 
-
         for ( ; iv != en; ++iv )
         {
             this->elements().modify( iv,
-                                     lambda::bind( &element_type::setMeshAndGm,
-                                                   lambda::_1,
-                                                   this, _M_gm, _M_gm1 ) );
-
-            this->elements().modify( iv,
-                                     lambda::bind( &element_type::updateWithPc,
-                                                   lambda::_1, pc, boost::ref( pcf ) ) );
+                                     [=,&pc,&pcf]( element_type& e )
+                                     {
+                                         for ( int i = 0; i < e.numPoints; ++i )
+                                             e.point( i ).addElement( e.id() );
+                                         e.setMeshAndGm( this, _M_gm, _M_gm1 );
+                                         e.updateWithPc(pc, boost::ref( pcf) );
+                                     } );
             M_meas += iv->measure();
             auto _faces = iv->faces();
 
@@ -237,26 +228,17 @@ Mesh<Shape, T, Tag>::updateForUse()
         for ( ; iv != en; ++iv )
         {
             value_type meas = 0;
-            BOOST_FOREACH( auto _elt, iv->pointElementNeighborIds() )
+            for( auto _elt: iv->pointElementNeighborIds() )
             {
                 if ( this->hasElement( _elt ) )
                     meas += this->element( _elt ).measure();
             }
-            this->elements().modify( iv,
-                                     lambda::bind( &element_type::setMeasurePointElementNeighbors,
-                                                   lambda::_1, meas ) );
+            this->elements().modify( iv, [meas]( element_type& e ){ e.setMeasurePointElementNeighbors( meas ); } );
         }
 
-        typedef typename super::face_const_iterator face_const_iterator;
-        face_iterator itf = this->beginFace();
-        face_iterator ite = this->endFace();
-
-        for ( ; itf != ite; ++ itf )
+        for ( auto itf = this->beginFace(), ite = this->endFace(); itf != ite; ++ itf )
         {
-            this->faces().modify( itf,
-                                  lambda::bind( &face_type::setMesh,
-                                                lambda::_1,
-                                                this ) );
+            this->faces().modify( itf,[this]( face_type& f ) { f.setMesh( this ); } );
         }
     }
     //std::cout<<"this->worldComm().localSize()=     "<< this->worldComm().localSize() << std::endl;
@@ -467,8 +449,9 @@ Mesh<Shape, T, Tag>::renumber( mpl::bool_<true> )
         {
 
             size_type __true_id =__element.point( i ).id();
-            this->elements().modify( elt,
-                                     typename super_elements::ElementUpdatePoint( i, this->point( node_map[__true_id] ) ) );
+            auto& new_pt = this->point( node_map[__true_id] );
+            this->elements().modify( elt,[i,&new_pt]( element_type& e ) { e.setPoint( i, new_pt ); } );
+
 #if !defined( NDEBUG )
             Debug( 4015 ) << "point id = " << __true_id << " node map " <<  node_map[__true_id] << " "
                           << "new point id = " << elt->point( i ).id() << "\n";
@@ -559,7 +542,8 @@ Mesh<Shape, T, Tag>::localrenumber()
         {
             for ( uint16_type i=0; i < __element.nPoints(); ++i )
             {
-                this->elements().modify( elt, typename super_elements::ElementUpdatePoint( i , this->point( __element.point( i ).id() ) ) );
+                auto& new_pt = this->point( __element.point( i ).id() );
+                this->elements().modify( elt, [i,&new_pt]( element_type& e ) { e.setPoint( i, new_pt ); } );
             }
         }
     }
@@ -1405,6 +1389,36 @@ Mesh<Shape, T, Tag>::recv(int p, int tag)
 
 }
 
+template<typename Shape, typename T, int Tag>
+typename Mesh<Shape, T, Tag>::element_iterator
+Mesh<Shape, T, Tag>::eraseElement( element_iterator position, bool modify )
+{
+    for(int i = 0; i < element_type::numTopologicalFaces; ++i )
+    {
+        auto fit = this->faces().iterator_to( position->face(i) );
+        auto modified = this->faces().modify( fit, [position]( face_type& f ) { f.disconnect(*position); } );
+        if ( fit->isOnBoundary() && !fit->isConnectedTo0() )
+        {
+            std::cout << "erase boundary face...\n";
+            this->eraseFace( fit );
+        }
+        if ( !fit->isOnBoundary() && fit->isConnectedTo0() && !fit->isConnectedTo1() )
+        {
+            std::cout << "found boundary face...\n";
+            this->faces().modify( fit, []( face_type& f ){ f.setOnBoundary( true ); } );
+        }
+    }
+    this->elements().modify( position,
+                             [] ( element_type& e )
+                             {
+                                 for ( int i = 0; i < e.numPoints; ++i )
+                                     e.point( i ).elements().erase( e.id() );
+                             } );
+    auto eit = this->elements().erase( position );
+    //this->setUpdatedForUse( false );
+    //this->updateForUse();
+    return eit;
+}
 template<typename Shape, typename T, int Tag>
 void
 Mesh<Shape, T, Tag>::encode()
