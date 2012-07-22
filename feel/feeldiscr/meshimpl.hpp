@@ -285,21 +285,34 @@ template<typename Shape, typename T, int Tag>
 typename Mesh<Shape, T, Tag>::self_type&
 Mesh<Shape, T, Tag>::operator+=( self_type const& m )
 {
+    std::map<std::vector<double>, size_type> mapDel;
     for( auto it = m.beginPoint(), en = m.endPoint();
          it != en;
          ++it )
     {
-        // need work
-        for( auto pit = this->beginPoint(), pen = this->endPoint();
-             pit != pen;
-             ++pit )
+        bool found = false;
+        if( it->isOnBoundary() )
         {
-            if ( pit->isOnBoundary() )
+            for( auto pit = this->beginPoint(), pen = this->endPoint();
+                 pit != pen;
+                 ++pit )
             {
-                if ( ublas::norm_2( it->node() - pit->node() ) < 1e-10 )
-                    this->addPoint( *it );
+                if ( pit->isOnBoundary() )
+                {
+                    if ( ublas::norm_2( it->node() - pit->node() ) < 1e-10 )
+                    {
+                        found = true;
+                        std::vector<double> ublasCopy(nDim);
+                        std::copy(it->node().begin(), it->node().end(), ublasCopy.begin());
+                        // std::cout << "Attention ! Le point " << it->id() << " doit etre remplace par le point " << pit->id() << " (" << it->node() << " ~= " << pit->node() << ")" << std::endl;
+                        mapDel.insert(std::pair<std::vector<double>, size_type>(ublasCopy, pit->id()));
+                        break;
+                    }
+                }
             }
         }
+        if(!found)
+            this->addPoint( *it );
 
     }
     for( auto it = m.beginFace(), en = m.endFace();it != en;++it )
@@ -308,13 +321,25 @@ Mesh<Shape, T, Tag>::operator+=( self_type const& m )
         if ( !it->isOnBoundary() )
         {
             face_type f = *it;
+            f.disconnect();
             this->addFace( f );
         }
     }
-
     for( auto it = m.beginElement(), en = m.endElement();it != en;++it )
     {
         element_type e = *it;
+        for( uint16_type p = 0; p < e.numPoints; ++p ) {
+            if ( e.point(p).isOnBoundary() ) {
+                std::vector<double> ublasCopy(nDim);
+                std::copy(e.point(p).node().begin(), e.point(p).node().end(), ublasCopy.begin());
+                auto itMap = mapDel.find(ublasCopy);
+                if (itMap != mapDel.end() )
+                {
+                //    std::cout << "Attention ! Le point " << it->point(p).id() << " va etre remplace par le point " << this->point(itMap->second).id() << std::endl;
+                    e.setPoint(p, this->point(itMap->second));
+                }
+            }
+        }
         this->addElement( e );
     }
     this->setUpdatedForUse( false );
