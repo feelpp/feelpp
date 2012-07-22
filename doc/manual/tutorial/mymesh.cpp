@@ -184,14 +184,19 @@ MyMesh<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
                                              _dim=Dim,
                                              _xmin=1,_xmax=2,
                                              _h=X[0] ) );
-        *mesh +=  *meshplus;
+
+        //*mesh +=  *meshplus;
         std::cout << "n elements: "  << mesh->numElements() << "\n";
 #if 1
         //auto eit = mesh->beginElementWithProcessId( this->comm().rank() );
         //for( int ne = 0; ne < 10; ++ne )
+        Log() << "deleting element 1\n" ;
         mesh->eraseElement( mesh->beginElementWithProcessId( this->comm().rank() ) );
+        Log() << "deleting element 2\n" ;
         mesh->eraseElement( mesh->beginElementWithProcessId( this->comm().rank() ) );
+        Log() << "deleting element 3\n" ;
         mesh->eraseElement( mesh->beginElementWithProcessId( this->comm().rank() ) );
+        Log() << "deleting element 4\n" ;
         mesh->eraseElement( boost::prior(mesh->endElementWithProcessId( this->comm().rank() ) ) );
         std::cout << "n elements after: "  << mesh->numElements() << "\n";
 #endif
@@ -292,5 +297,3 @@ int main( int argc, char** argv )
 
     app.run();
 }
-
-

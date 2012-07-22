@@ -209,6 +209,15 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
                                                 _ymin=-1 ),
                                         _update=MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
 
+#if 0
+        //auto eit = mesh->beginElementWithProcessId( this->comm().rank() );
+        //for( int ne = 0; ne < 10; ++ne )
+        mesh->eraseElement( mesh->beginElementWithProcessId( this->comm().rank() ) );
+        mesh->eraseElement( mesh->beginElementWithProcessId( this->comm().rank() ) );
+        mesh->eraseElement( mesh->beginElementWithProcessId( this->comm().rank() ) );
+        mesh->eraseElement( boost::prior(mesh->endElementWithProcessId( this->comm().rank() ) ) );
+        std::cout << "n elements after: "  << mesh->numElements() << "\n";
+#endif
 
     /**
      * The function space and some associated elements(functions) are then defined
@@ -357,7 +366,7 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
 
         exporter->step( 0 )->setMesh( mesh );
 
-        exporter->step( 0 )->addRegions();
+        //exporter->step( 0 )->addRegions();
         exporter->step( 0 )->add( "u", u );
         exporter->step( 0 )->add( "g", e );
 
@@ -403,8 +412,3 @@ main( int argc, char** argv )
     /** \endcode */
 
 }
-
-
-
-
-
