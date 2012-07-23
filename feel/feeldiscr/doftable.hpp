@@ -236,7 +236,7 @@ public:
 
     indices_per_element_type const& indices( size_type id_el ) const
     {
-        return _M_el_l2g[ id_el ];
+        return _M_el_l2g.at( id_el ); // bogus ?
     }
 
     size_type getIndicesSize() const
@@ -270,7 +270,7 @@ public:
         const size_type s = getIndicesSize();
 
         for ( size_type i = 0; i < s; ++i )
-            ind[i] = boost::get<0>( _M_el_l2g[ id_el][ i ] );
+            ind[i] = boost::get<0>( _M_el_l2g.at( id_el )[ i ] ); // bogus ?
     }
 
     void getIndicesSetOnGlobalCluster( size_type id_el, std::vector<size_type>& ind ) const
@@ -290,7 +290,7 @@ public:
 
         for ( size_type i = 0; i < s; ++i )
         {
-            ind[i] = this->mapGlobalProcessToGlobalCluster()[ boost::get<0>( _M_el_l2g[ id_el][ i ] ) ];
+            ind[i] = this->mapGlobalProcessToGlobalCluster()[ boost::get<0>( _M_el_l2g.at( id_el)[ i ] ) ]; // bogus ?
         }
 
         return ind;
@@ -2127,8 +2127,8 @@ DofTable<MeshType, FEType, PeriodicityType>::showMe() const
         {
             std::ostringstream ostr;
             ostr  << "face id " << f << " : ";
-            auto it2 = it->begin();
-            auto en2 = it->end();
+            auto it2 = it->second.begin();
+            auto en2 = it->second.end();
 
             for ( size_type l = 0; it2!=en2; ++it2,++l )
             {
