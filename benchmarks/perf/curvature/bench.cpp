@@ -3,9 +3,9 @@
   This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
-       Date: 2011-10-31
+       Date: 2012-10-31
 
-  Copyright (C) 2011 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2012 Université Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -29,8 +29,7 @@
 #include <boost/assign/list_of.hpp>
 #include <feel/feelcore/application.hpp>
 
-#include <laplacian.hpp>
-#include <laplacianv.hpp>
+#include <curvature.hpp>
 
 /**
  * This routine returns the list of options using the
@@ -43,8 +42,8 @@ inline
 Feel::po::options_description
 makeOptions()
 {
-    Feel::po::options_description laplacianoptions( "Laplacian options" );
-    laplacianoptions.add_options()
+    Feel::po::options_description curvatureoptions( "Curvature options" );
+    curvatureoptions.add_options()
     ( "faster", Feel::po::value<int>()->default_value( 1 ), "use coupled(0) or default(1) pattern or default/symmetric(2) pattern" )
     ( "penal", Feel::po::value<double>()->default_value( 0.5 ), "penalisation parameter" )
     ( "f", Feel::po::value<double>()->default_value( 0 ), "forcing term" )
@@ -58,7 +57,7 @@ makeOptions()
     ( "no-solve", "dont solve the system" )
     ( "extra-terms", "dont solve the system" )
     ;
-    return laplacianoptions.add( Feel::feel_options() )
+    return curvatureoptions.add( Feel::feel_options() )
            .add( Feel::benchmark_options( "2D-CR1-Hypercube" ) ).add( Feel::benchmark_options( "2D-P1-Hypercube" ) ).add( Feel::benchmark_options( "2D-P2-Hypercube" ) );
 }
 
@@ -74,30 +73,36 @@ inline
 Feel::AboutData
 makeAbout()
 {
-    Feel::AboutData about( "laplacian" ,
-                           "laplacian" ,
+    Feel::AboutData about( "curvature" ,
+                           "curvature" ,
                            "0.1",
-                           "Laplacian equation on simplices or simplex products",
+                           "Curvature benchmark using levelset functions",
                            Feel::AboutData::License_GPL,
-                           "Copyright (c) 2009-2011 Universite de Grenoble 1 (Joseph Fourier)" );
+                           "Copyright (c) 2012 Universite de Grenoble 1 (Joseph Fourier)" );
 
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    about.addAuthor( "Vincent Doyeux", "developer", "vincent.doyeux@ujf-grenoble.fr", "" );
     return about;
 
 }
 namespace Feel
 {
-extern template class Laplacian<2, Lagrange<1, Scalar>, Hypercube>;
-extern template class Laplacian<2, Lagrange<2, Scalar>, Hypercube>;
-extern template class Laplacian<2, CrouzeixRaviart<1, Scalar>, Hypercube>;
-extern template class LaplacianV<2, CrouzeixRaviart<1, Vectorial>, Hypercube>;
-extern template class Laplacian<3, Lagrange<1, Scalar>, Hypercube>;
-extern template class Laplacian<3, Lagrange<2, Scalar>, Hypercube>;
-extern template class Laplacian<3, Lagrange<1, Scalar>, Simplex>;
-extern template class Laplacian<3, Lagrange<2, Scalar>, Simplex>;
-extern template class Laplacian<3, Lagrange<3, Scalar>, Simplex>;
+// 2D
+extern template class Curvature<2, Lagrange<1, Scalar>, Lagrange<1, Vectorial,Discontinuous>, Simplex>;
+extern template class Curvature<2, Lagrange<2, Scalar>, Lagrange<2, Vectorial,Discontinuous>, Simplex>;
+extern template class Curvature<2, Lagrange<3, Scalar>, Lagrange<3, Vectorial,Discontinuous>, Simplex>;
+extern template class Curvature<2, Lagrange<4, Scalar>, Lagrange<4, Vectorial,Discontinuous>, Simplex>;
+extern template class Curvature<2, Lagrange<5, Scalar>, Lagrange<5, Vectorial,Discontinuous>, Simplex>;
+
+// 3D
+// extern template class Curvature<3, Lagrange<1, Scalar>, Lagrange<1, Vectorial>, Hypercube>;
+// extern template class Curvature<3, Lagrange<2, Scalar>, Lagrange<2, Vectorial>, Hypercube>;
+// extern template class Curvature<3, Lagrange<1, Scalar>, Lagrange<3, Vectorial>, Simplex>;
+extern template class Curvature<3, Lagrange<2, Scalar>, Lagrange<2, Vectorial>, Simplex>;
+// extern template class Curvature<3, Lagrange<3, Scalar>, Lagrange<3, Vectorial>, Simplex>;
 
 }
+
+
 
 int main( int argc, char** argv )
 {
@@ -111,28 +116,19 @@ int main( int argc, char** argv )
         std::cout << benchmark.optionsDescription() << "\n";
         return 0;
     }
-
-#if 1
-    benchmark.add( new Laplacian<2, Lagrange<1, Scalar>, Hypercube>( "2D-P1-Hypercube", benchmark.vm(), benchmark.about() ) );
-    benchmark.add( new Laplacian<2, Lagrange<2, Scalar>, Hypercube>( "2D-P2-Hypercube", benchmark.vm(), benchmark.about() ) );
-    benchmark.add( new Laplacian<2, CrouzeixRaviart<1, Scalar>, Simplex>( "2D-CR1-Simplex", benchmark.vm(), benchmark.about() ) );
-    benchmark.add( new Laplacian<2, CrouzeixRaviart<1, Scalar>, Hypercube>( "2D-CR1-Hypercube", benchmark.vm(), benchmark.about() ) );
-    benchmark.add( new Laplacian<3, Lagrange<1, Scalar>, Hypercube>( "3D-P1-Hypercube", benchmark.vm(), benchmark.about() ) );
-    benchmark.add( new Laplacian<3, Lagrange<2, Scalar>, Hypercube>( "3D-P2-Hypercube", benchmark.vm(), benchmark.about() ) );
-    //benchmark.add( new LaplacianV<2, CrouzeixRaviart<1, Vectorial>, Hypercube>( "2D-CR1V-Hypercube", benchmark.vm(), benchmark.about() ) );
-    //benchmark.add( new Laplacian<3, Lagrange<1, Scalar>, Hypercube>( "3D-P1-Hypercube", benchmark.vm(), benchmark.about() ) );
-
-    benchmark.add( new Laplacian<3, Lagrange<1, Scalar>, Simplex>( "3D-P1-Simplex", benchmark.vm(), benchmark.about() ) );
-    benchmark.add( new Laplacian<3, Lagrange<2, Scalar>, Simplex>( "3D-P2-Simplex", benchmark.vm(), benchmark.about() ) );
-    benchmark.add( new Laplacian<3, Lagrange<3, Scalar>, Simplex>( "3D-P3-Simplex", benchmark.vm(), benchmark.about() ) );
-
-    benchmark.add( new Laplacian<3, Lagrange<1, Scalar>, Simplex>( "3D-P1-Simplex", benchmark.vm(), benchmark.about() ) );
-    benchmark.add( new Laplacian<3, Lagrange<2, Scalar>, Simplex>( "3D-P2-Simplex", benchmark.vm(), benchmark.about() ) );
-    benchmark.add( new Laplacian<3, Lagrange<3, Scalar>, Simplex>( "3D-P3-Simplex", benchmark.vm(), benchmark.about() ) );
-#else
-    benchmark.add( new Laplacian<2, CrouzeixRaviart<1, Scalar>, Hypercube>( "2D-CR1-Hypercube", benchmark.vm(), benchmark.about() ) );
+#if 0
+    benchmark.add( new Curvature<2, Lagrange<1, Scalar>, Lagrange<1, Vectorial,Discontinuous>, Simplex>( "2D-P1-Simplex", benchmark.vm(), benchmark.about() ) );
+    benchmark.add( new Curvature<2, Lagrange<2, Scalar>, Lagrange<2, Vectorial,Discontinuous>, Simplex>( "2D-P2-Simplex", benchmark.vm(), benchmark.about() ) );
+    benchmark.add( new Curvature<2, Lagrange<3, Scalar>, Lagrange<3, Vectorial,Discontinuous>, Simplex>( "2D-P3-Simplex", benchmark.vm(), benchmark.about() ) );
 #endif
-    benchmark.setStats( boost::assign::list_of( "e.l2" )( "e.h1" )( "n.space" )( "n.matrix" )( "t.init" )( "t.assembly.vector" )( "t.assembly.matrix" )( "t.solver" )( "d.solver" )( "t.integrate" )( "t.export" ) );
+
+    benchmark.add( new Curvature<2, Lagrange<4, Scalar>, Lagrange<4, Vectorial,Discontinuous>, Simplex>( "2D-P4-Simplex", benchmark.vm(), benchmark.about() ) );
+    benchmark.add( new Curvature<2, Lagrange<5, Scalar>, Lagrange<5, Vectorial,Discontinuous>, Simplex>( "2D-P5-Simplex", benchmark.vm(), benchmark.about() ) );
+
+    //    benchmark.add( new Curvature<3, Lagrange<2, Scalar>, Lagrange<2, Vectorial>, Simplex>( "2D-P3-Simplex", benchmark.vm(), benchmark.about() ) );
+
+    benchmark.setStats( boost::assign::list_of( "e.nod" )( "e.l2" )( "e.sm" )( "e.hs" )("n.space")("n.spacev") );
+
     benchmark.run();
     benchmark.printStats( std::cout );
 }

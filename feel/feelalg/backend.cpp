@@ -228,16 +228,16 @@ Backend<T>::solve( sparse_matrix_ptrtype const& A,
 
     if ( !M_reusePC )
     {
-        reset();
+        //reset();
     }
 
-    start();
+    //start();
 
     this->setPrecMatrixStructure( SAME_PRECONDITIONER );
 
     //std::cout << "backend: " << this->precMatrixStructure() << "\n";
     boost::tie( M_converged, M_iteration, M_residual ) = this->solve( A, P, x, b );
-    stop();
+    //stop();
     M_reuseFailed = M_reusedPC && ( !M_converged );
     /*
     if (M_reuseFailed)
@@ -248,8 +248,9 @@ Backend<T>::solve( sparse_matrix_ptrtype const& A,
 
     if ( M_reuseFailed )
     {
-        reset();
-        start();
+        this->comm().globalComm().barrier();
+        //reset();
+        //start();
         this->setPrecMatrixStructure( SAME_NONZERO_PATTERN );
         std::cout << "Backend "  << M_prefix << " reuse failed, rebuilding preconditioner...\n";
         Log() << "Backend "  << M_prefix << " reuse failed, rebuilding preconditioner...\n";
@@ -258,7 +259,7 @@ Backend<T>::solve( sparse_matrix_ptrtype const& A,
         //if ( !M_converged ) throw std::logic_error( "solver failed to converge" );
         if ( !M_converged ) std::cerr<< "linear solver failed to converge" << std::endl;
 
-        stop();
+        //stop();
     }
 
     return boost::make_tuple( M_converged, M_iteration, M_residual );

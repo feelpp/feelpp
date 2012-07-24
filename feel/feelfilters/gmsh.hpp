@@ -717,6 +717,11 @@ BOOST_PARAMETER_FUNCTION(
       ( refine,          *( boost::is_integral<mpl::_> ), 0 )
       ( update,          *( boost::is_integral<mpl::_> ), 0 )
       ( physical_are_elementary_regions,		   *,false )
+      ( worldcomm,       *, Environment::worldComm() )
+      ( rebuild_partitions,	(bool), false )
+      ( partitions,      *( boost::is_integral<mpl::_> ), Environment::worldComm().size() )
+      ( partitioner,     *( boost::is_integral<mpl::_> ), GMSH_PARTITIONER_CHACO )
+      ( partition_file,   *( boost::is_integral<mpl::_> ), 0 )
         )
     )
 {
@@ -724,15 +729,25 @@ BOOST_PARAMETER_FUNCTION(
     typedef typename detail::mesh<Args>::ptrtype _mesh_ptrtype;
 
     _mesh_ptrtype _mesh( mesh );
+    _mesh->setWorldComm( worldcomm );
+
+    if ( rebuild_partitions )
+    {
+        Gmsh gmsh( _mesh_type::nDim,_mesh_type::nOrder, worldcomm );
+        gmsh.setNumberOfPartitions( partitions );
+        gmsh.setPartitioner( partitioner );
+        gmsh.setMshFileByPartition( partition_file );
+        gmsh.rebuildPartitionMsh(filename,filename);
+    }
 
     // refinement if option is enabled to a value greater or equal to 1
     if ( refine )
     {
-        Gmsh gmsh;
+        Gmsh gmsh( _mesh_type::nDim,_mesh_type::nOrder, worldcomm );
         gmsh.refine( filename, refine );
     }
 
-    ImporterGmsh<_mesh_type> import( filename );
+    ImporterGmsh<_mesh_type> import( filename, FEELPP_GMSH_FORMAT_VERSION, worldcomm );
 
     // need to replace physical_region by elementary_region while reading
     if ( physical_are_elementary_regions )
@@ -755,7 +770,8 @@ BOOST_PARAMETER_FUNCTION(
     }
 
     if ( straighten && _mesh_type::nOrder > 1 )
-        return straightenMesh( _mesh );
+        return straightenMesh( _mesh=_mesh,
+                               _worldcomm=worldcomm.subWorldComm() );
 
     return _mesh;
 }
@@ -847,6 +863,7 @@ BOOST_PARAMETER_FUNCTION(
 
         std::string fname = desc->generate( desc->prefix(), desc->description(), force_rebuild, parametricnodes );
 
+#if !defined(FEELPP_HAS_GMSH_LIBRARY)
         // refinement if option is enabled to a value greater or equal to 1
         if ( refine )
         {
@@ -854,6 +871,7 @@ BOOST_PARAMETER_FUNCTION(
             Gmsh gmsh;
             fname = gmsh.refine( fname, refine, parametricnodes );
         }
+#endif
 
         ImporterGmsh<_mesh_type> import( fname, FEELPP_GMSH_FORMAT_VERSION, worldcomm );
 

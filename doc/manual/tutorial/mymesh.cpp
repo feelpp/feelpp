@@ -131,8 +131,8 @@ template<int Dim>
 void
 MyMesh<Dim>::run()
 {
-    std::cout << "------------------------------------------------------------\n";
-    std::cout << "Execute MyMesh<" << Dim << ">\n";
+    Log() << "------------------------------------------------------------\n";
+    Log() << "Execute MyMesh<" << Dim << ">\n";
     std::vector<double> X( 2 );
     X[0] = meshSize;
 
@@ -194,9 +194,9 @@ MyMesh<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
     Log() << "Local number of elements: " << ne << "\n";
     int gne;
     mpi::all_reduce( this->comm(), ne, gne, [] ( int x, int y )
-    {
-        return x + y;
-    } );
+                     {
+                         return x + y;
+                     } );
     Log() << "Global number of elements: " << gne << "\n";
 
     //# marker62 #
@@ -211,33 +211,36 @@ MyMesh<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
     }
     //# endmarker62 #
 
-    // in case of two processors, exchange the meshes
-    mesh_ptrtype mesh2;//( new mesh_type);
-    mpi::request reqs[2];
-    if( mesh->worldComm().rank() == 0)
+    if ( Environment::numberOfProcessors() > 1 )
     {
-        reqs[0] = mesh->worldComm().isend( mesh->worldComm().rank()+1, 10, mesh );
-        reqs[1] = mesh->worldComm().irecv( mesh->worldComm().size()-1, 10, mesh2 );
-    }
-    else if (  mesh->worldComm().rank() == mesh->worldComm().size()-1 )
-    {
-        reqs[0] = mesh->worldComm().isend( 0, 10, mesh );
-        reqs[1] = mesh->worldComm().irecv( mesh->worldComm().size()-2, 10, mesh2 );
-    }
-    else
-    {
-        reqs[0] = mesh->worldComm().isend( mesh->worldComm().rank()+1, 10, mesh );
-        reqs[1] = mesh->worldComm().irecv( mesh->worldComm().rank()-1, 10, mesh2 );
-    }
-    mpi::wait_all(reqs, reqs + 2);
-    mesh2->save( _name="mymesh3", _type="text", _path="." );
+        // in case of two processors, exchange the meshes
+        mesh_ptrtype mesh2;//( new mesh_type);
+        mpi::request reqs[2];
+        if( mesh->worldComm().rank() == 0)
+        {
+            reqs[0] = mesh->worldComm().isend( mesh->worldComm().rank()+1, 10, mesh );
+            reqs[1] = mesh->worldComm().irecv( mesh->worldComm().size()-1, 10, mesh2 );
+        }
+        else if (  mesh->worldComm().rank() == mesh->worldComm().size()-1 )
+        {
+            reqs[0] = mesh->worldComm().isend( 0, 10, mesh );
+            reqs[1] = mesh->worldComm().irecv( mesh->worldComm().size()-2, 10, mesh2 );
+        }
+        else
+        {
+            reqs[0] = mesh->worldComm().isend( mesh->worldComm().rank()+1, 10, mesh );
+            reqs[1] = mesh->worldComm().irecv( mesh->worldComm().rank()-1, 10, mesh2 );
+        }
+        mpi::wait_all(reqs, reqs + 2);
+        mesh2->save( _name="mymesh3", _type="text", _path="." );
 
-    auto exporter2 = Exporter<mesh_type>::New( this->vm(), this->about().appName()+"-m2" );
-    if ( exporter2->doExport() )
-    {
-        exporter2->step( 0 )->setMesh( mesh2 );
-        exporter2->step( 0 )->addRegions();
-        exporter2->save();
+        auto exporter2 = Exporter<mesh_type>::New( this->vm(), this->about().appName()+"-m2" );
+        if ( exporter2->doExport() )
+        {
+            exporter2->step( 0 )->setMesh( mesh2 );
+            exporter2->step( 0 )->addRegions();
+            exporter2->save();
+        }
     }
 }
 

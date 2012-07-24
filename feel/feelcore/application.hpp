@@ -391,6 +391,17 @@ public:
      */
     virtual void run( const double* X, unsigned long P, double* Y, unsigned long N );
 
+    enum Stats
+    {
+        FLAT    = 1<<1,
+        HEADER  = 1<<2,
+        ERRORS  = 1<<3,
+        TIME    = 1<<4,
+        DATA    = 1<<5,
+        NUMBERS = 1<<6,
+        ALL     = ERRORS | TIME | DATA | NUMBERS
+    };
+
     /**
      * set statistics to be printed
      */
@@ -399,13 +410,13 @@ public:
     /**
      * print statistics from applications
      */
-    void printStats( std::ostream& out ) const;
+    void printStats( std::ostream& out, size_type stats = ALL ) const;
 
 
     /**
      * print statistics from applications
      */
-    void printStats( std::ostream& out, std::vector<std::string> const& keys ) const;
+    void printStats( std::ostream& out, std::vector<std::string> const& keys, size_type stats = ALL ) const;
 
 
     //@}

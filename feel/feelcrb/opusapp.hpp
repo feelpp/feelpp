@@ -190,6 +190,7 @@ public:
                     throw std::logic_error( "CRB/SCM Database could not be loaded" );
             }
         }
+
     FEELPP_DONT_INLINE
     void run()
         {

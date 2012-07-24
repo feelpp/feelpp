@@ -104,11 +104,12 @@ Exporter<MeshType, N>::New( std::string const& exportername, std::string prefix,
 {
     Exporter<MeshType, N>* exporter =  0;//Factory::type::instance().createObject( exportername  );
 
-    if ( N == 1 && exportername == "ensight" )
+    if ( N == 1 && ( exportername == "ensight" || Environment::numberOfProcessors() > 1 ) )
         exporter = new ExporterEnsight<MeshType, N>;
-
-    if ( N > 1 || exportername == "gmsh" )
+    else if ( N > 1 || ( exportername == "gmsh" ) )
         exporter = new ExporterGmsh<MeshType,N>;
+    else // fallback
+        exporter = new ExporterEnsight<MeshType, N>;
 
     exporter->addTimeSet( timeset_ptrtype( new timeset_type( prefix ) ) );
     exporter->setPrefix( prefix );
@@ -122,11 +123,12 @@ Exporter<MeshType, N>::New( po::variables_map const& vm, std::string prefix, Wor
     std::string estr = vm["exporter.format"].template as<std::string>();
     Exporter<MeshType, N>* exporter =  0;//Factory::type::instance().createObject( estr  );
 
-    if ( N == 1 && estr == "ensight" )
+    if ( N == 1 && ( estr == "ensight"  || Environment::numberOfProcessors() > 1 ) )
         exporter = new ExporterEnsight<MeshType, N>( vm,prefix,worldComm );
-
-    if ( N > 1 || estr == "gmsh" )
+    else if ( N > 1 || estr == "gmsh" )
         exporter = new ExporterGmsh<MeshType,N>;
+    else // fallback
+        exporter = new ExporterEnsight<MeshType, N>( vm,prefix,worldComm );
 
     exporter->setOptions( vm );
     //std::cout << "[exporter::New] do export = " << exporter->doExport() << std::endl;
