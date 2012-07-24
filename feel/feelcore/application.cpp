@@ -86,6 +86,10 @@ namespace Feel
 namespace fs = boost::filesystem;
 namespace ptree = boost::property_tree;
 
+namespace detail
+{
+const int spaces = 30;
+}
 
 FEELPP_NO_EXPORT
 std::pair<std::string, std::string>
@@ -874,18 +878,87 @@ Application::add( Simget* simget )
 {
     M_simgets.push_back( simget );
 }
+std::vector<ptree::ptree>&
+updateStats( std::vector<ptree::ptree>& stats )
+{
+    try
+    {
+        for ( auto it = stats.begin(), en =stats.end(); it!=en; ++it )
+        {
+            double h  = it->get<double>( "h" );
+            int l  = it->get<int>( "level" );
+            double hp = h;
+            if ( l > 1 )
+                hp = boost::prior( it )->get<double>( "h" );
 
+            auto ept = it->get_child( "e" );
+            // loop on norms
+            for( auto itchild = ept.begin(), enchild = ept.end(); itchild != enchild; ++itchild )
+            {
+
+                // for each norm compute the rate of convergence (roc)
+                for( auto itv = itchild->second.begin(), env = itchild->second.end(); itv != env; ++itv )
+                {
+                    std::ostringstream keystr;
+                    keystr << "e." << itchild->first << "." << itv->first;
+                    std::string key = keystr.str();
+                    //std::cout << "update key " <<key << " ...\n";
+
+                    double u  = 1;
+                    try {
+                        u = it->get<double>( key );
+                    }
+                    catch( ptree::ptree_bad_data const& e )
+                    {
+                        std::cout << "Application::updateStats: (ptree::bad_data) : "  << e.what() << "\n";
+                        u = 1;
+                    }
+
+                    double up = u;
+                    double roc = 1;
+
+                    if ( l > 1 )
+                    {
+                        up  = boost::prior( it )->get<double>( key );
+                        roc = std::log10( up/u )/std::log10( hp/h );
+                        //std::cout << "u = "  << u << " up = " << up << " roc=" << roc <<" \n";
+                    }
+                    // create roc entry in the last statistics
+                    stats.back().put( key+".roc", roc );
+                }
+            }
+        }
+    }
+    catch( ptree::ptree_bad_data const& e )
+    {
+        std::cout << "ptree::bad_data : "  << e.what() << "\n";
+    }
+    catch( ptree::ptree_bad_path const& e )
+    {
+        std::cout << "ptree::bad_path : "  << e.what() << "\n";
+    }
+    catch( ... )
+    {
+
+    }
+    return stats;
+}
 void
 Application::run()
 {
     std::string runonly = _M_vm["benchmark.only"].as<std::string>();
     bool prepare = _M_vm["benchmark.prepare"].as<bool>();
+
+    // get current work directory before a simget eventually change the working
+    // directory to store its results. the statistics files will be stored in the
+    // same directory as the executable for now
+    fs::path cp = fs::current_path();
+
     for ( auto i = M_simgets.begin(), end = M_simgets.end(); i != end; ++i )
     {
         if ( ( runonly.empty() == false  ) &&
                 runonly.find( i->name() ) == std::string::npos )
             continue;
-
 
         std::string s1 = prefixvm( i->name(),"benchmark.nlevels" );
         int nlevels = _M_vm.count( s1 )?_M_vm[s1].as<int>():_M_vm["benchmark.nlevels"].as<int>();
@@ -894,20 +967,45 @@ Application::run()
         std::string s3 = prefixvm( i->name(),"benchmark.refine" );
         double refine = _M_vm.count( s3 )?_M_vm[s3].as<double>():_M_vm["benchmark.refine"].as<double>();
         i->setMeshSizeInit( hsize );
+        bool has_stats = false;
         for ( int l = 0; l < nlevels; ++l )
         {
             double meshSize= hsize/std::pow( refine,l );
             i->setMeshSize( meshSize );
             i->setLevel( l+1 );
             i->run();
-            if ( !prepare )
+            if ( !prepare && !i->stats().empty() )
                 {
+                    has_stats = true;
+
+                    i->stats().put( "h",i->meshSize() );
+                    i->stats().put( "level", i->level() );
+
                     M_stats[i->name()].push_back( i->stats() );
-                    this->printStats( std::cout );
+                    updateStats( M_stats[i->name()] );
+                    this->printStats( std::cout, Application::ALL );
                 }
 
         }
+        if ( !prepare && has_stats == true )
+        {
+            std::string fname = (boost::format( "%1%-%2%.dat" )% i->name()% Environment::numberOfProcessors() ).str();
+            fs::ofstream ofs( cp / fname );
+            std::string fnameall = (boost::format( "%1%-%2%-all.dat" )% i->name()% Environment::numberOfProcessors() ).str();
+            fs::ofstream ofsall( cp / fnameall );
+            std::string fnameerrors = (boost::format( "%1%-%2%-errors.dat" )% i->name()% Environment::numberOfProcessors() ).str();
+            fs::ofstream ofserrors( cp / fnameerrors );
+            std::string fnametime = (boost::format( "%1%-%2%-timings.dat" )% i->name()% Environment::numberOfProcessors() ).str();
+            fs::ofstream ofstime( cp / fnametime );
+            std::string fnamedata = (boost::format( "%1%-%2%-data.dat" )% i->name()% Environment::numberOfProcessors() ).str();
+            fs::ofstream ofsdata( cp / fnamedata );
 
+            this->printStats( ofs, Application::ALL );
+            this->printStats( ofsall, Application::ALL|Application::FLAT );
+            this->printStats( ofserrors, Application::ERRORS|Application::FLAT );
+            this->printStats( ofstime, Application::TIME|Application::FLAT );
+            this->printStats( ofsdata, Application::DATA|Application::NUMBERS|Application::FLAT );
+        }
     }
 }
 
@@ -923,156 +1021,211 @@ Application::run( const double* X, unsigned long P, double* Y, unsigned long N )
     }
 }
 
+template<typename StatsIterator>
 void
-printErrors( std::ostream& out, std::vector<ptree::ptree> const& stats, std::string const& key )
+printErrors( std::ostream& out,
+             StatsIterator statsit,
+             StatsIterator statsen,
+             std::string const& key,
+             size_type stats = Application::ALL|Application::HEADER )
 {
-    out << std::setw( 10 ) << std::right << "levels"
-        << std::setw( 10 ) << std::right << "h";
-    BOOST_FOREACH( auto v, stats.front().get_child( key ) )
+    if ( !( stats & Application::ERRORS ) ) return;
+    bool header = stats & Application::HEADER;
+    bool flat = stats & Application::FLAT;
+    if ( header )
     {
-        out << std::setw( 15 ) << std::right << v.first
-            << std::setw( 15 ) << std::right << "ROC";
-    }
-    out << "\n";
-    int l=1;
-
-    for ( auto it = stats.begin(), en =stats.end(); it!=en; ++it,++l )
-    {
-        //std::for_each( it->begin(),it->end(), []( std::pair<std::string,boost::any> const& o ) { std::cout << o.first << "\n"; } );
-        //std::map<std::string,boost::any> data = *it;
-        //std::map<std::string,boost::any> datap;
-        double h  = it->get<double>( "h" );
-        double hp = h;
-        out << std::right << std::setw( 10 ) << l
-            << std::right << std::setw( 10 ) << std::fixed  << std::setprecision( 4 ) << h;
-
-        if ( l > 1 )
-            hp = boost::prior( it )->get<double>( "h" );
-
-        BOOST_FOREACH( auto v, it->get_child( key ) )
+        if ( !flat )
+            out << std::setw( 10 ) << std::right << "levels"
+                << std::setw( 10 ) << std::right << "h";
+        BOOST_FOREACH( auto v, statsit->get_child( key ) )
         {
-            double u  = it->get<double>( key+"."+v.first );
-            double up = u;
-            double roc = 1;
+            if ( !flat )
+                out << std::setw( detail::spaces ) << std::right << v.first
+                    << std::setw( detail::spaces ) << std::right << v.first+".roc";
+            else
+                out << std::setw( detail::spaces ) << std::right << key+"."+v.first
+                    << std::setw( detail::spaces ) << std::right << key+"."+v.first+".roc";
+        }
+        if ( !flat )
+            out << "\n";
+    }
 
-            if ( l > 1 )
+    if ( ! ( (header == true) && ( flat == true ) ) )
+        for ( auto it = statsit, en =statsen; it!=en; ++it )
+        {
+            //std::for_each( it->begin(),it->end(), []( std::pair<std::string,boost::any> const& o ) { std::cout << o.first << "\n"; } );
+            //std::map<std::string,boost::any> data = *it;
+            //std::map<std::string,boost::any> datap;
+            double h  = it->template get<double>( "h" );
+            int l  = it->template get<double>( "level" );
+            double hp = h;
+            if ( !flat )
+                out << std::right << std::setw( 10 ) << l
+                    << std::right << std::setw( 10 ) << std::fixed  << std::setprecision( 4 ) << h;
+            BOOST_FOREACH( auto v, it->get_child( key ) )
             {
-                up  = boost::prior( it )->get<double>( key+"."+v.first );
-                roc = std::log10( up/u )/std::log10( hp/h );
+                double u  = it->template get<double>( key+"."+v.first );
+                double roc  = it->template get<double>( key+"."+v.first+".roc" );
+
+                out << std::right << std::setw( detail::spaces ) << std::scientific << std::setprecision( 2 ) << u
+                    << std::right << std::setw( detail::spaces ) << std::fixed << std::setprecision( 2 ) << roc;
             }
-
-            out << std::right << std::setw( 15 ) << std::scientific << std::setprecision( 2 ) << u
-                << std::right << std::setw( 15 ) << std::fixed << std::setprecision( 2 ) << roc;
+            if ( !flat )
+                out << "\n";
         }
-        out << "\n";
-    }
 }
+template<typename StatsIterator>
 void
-printNumbers( std::ostream& out, std::vector<ptree::ptree> const& stats, std::string const& key )
+printNumbers( std::ostream& out,
+              StatsIterator statsit,
+              StatsIterator statsen,
+              std::string const& key,
+              size_type stats = Application::ALL|Application::HEADER )
 {
-    out << std::setw( 10 ) << std::right << "levels"
-        << std::setw( 10 ) << std::right << "h";
-    BOOST_FOREACH( auto v, stats.front().get_child( key ) )
+    if ( !( stats & Application::DATA ) ) return;
+    bool header = stats & Application::HEADER;
+    bool flat = stats & Application::FLAT;
+    if ( header )
     {
-        out << std::setw( 10 ) << std::right << v.first;
+        if ( !flat )
+            out << std::setw( 10 ) << std::right << "levels"
+                << std::setw( 10 ) << std::right << "h";
+        BOOST_FOREACH( auto v, statsit->get_child( key ) )
+        {
+            if ( !flat )
+                out << std::setw( detail::spaces ) << std::right << v.first;
+            else
+                out << std::setw( detail::spaces ) << std::right << key+"."+v.first;
+        }
+        if ( !flat )
+            out << "\n";
     }
-    out << "\n";
+    if ( ! ( (header == true) && ( flat == true ) ) )
+        for ( auto it = statsit, en =statsen; it!=en; ++it )
+        {
+            double h  = it->template get<double>( "h" );
+            int l  = it->template get<double>( "level" );
+            if ( !flat )
+                out << std::right << std::setw( 10 ) << l
+                    << std::right << std::setw( 10 ) << std::fixed  << std::setprecision( 4 ) << h;
+            BOOST_FOREACH( auto v, it->get_child( key ) )
+            {
+                size_type u  = it->template get<size_type>( key+"."+v.first );
+                out << std::right << std::setw( detail::spaces )  << u;
+            }
+            if ( !flat )
+                out << "\n";
+        }
+}
+template<typename StatsIterator>
+void
+printData( std::ostream& out,
+           StatsIterator statsit,
+           StatsIterator statsen,
+           std::string const& key,
+           size_type stats = Application::ALL|Application::HEADER )
+{
+    if ( !( stats & Application::DATA ) ) return;
+    bool header = stats & Application::HEADER;
+    bool flat = stats & Application::FLAT;
+    if ( header )
+    {
+        if ( !flat )
+            out << std::setw( 10 ) << std::right << "levels"
+                << std::setw( 10 ) << std::right << "h";
+        BOOST_FOREACH( auto v, statsit->get_child( key+".bool" ) )
+        {
+            out << std::setw( detail::spaces ) << std::right << (flat?key+"."+v.first:v.first);
+        }
+        BOOST_FOREACH( auto v, statsit->get_child( key+".int" ) )
+        {
+            out << std::setw( detail::spaces ) << std::right << (flat?key+"."+v.first:v.first);
+        }
+        BOOST_FOREACH( auto v, statsit->get_child( key+".double" ) )
+        {
+            out << std::setw( detail::spaces ) << std::right << (flat?key+"."+v.first:v.first);
+        }
+        if ( !flat )
+            out << "\n";
+    }
     int l=1;
-
-    for ( auto it = stats.begin(), en =stats.end(); it!=en; ++it,++l )
-    {
-        double h  = it->get<double>( "h" );
-        out << std::right << std::setw( 10 ) << l
-            << std::right << std::setw( 10 ) << std::fixed  << std::setprecision( 4 ) << h;
-        BOOST_FOREACH( auto v, it->get_child( key ) )
+    if ( ! ( (header == true) && ( flat == true ) ) )
+        for ( auto it = statsit, en =statsen; it!=en; ++it,++l )
         {
-            size_type u  = it->get<size_type>( key+"."+v.first );
-            out << std::right << std::setw( 10 )  << u;
+            double h  = it->template get<double>( "h" );
+            if ( !flat )
+                out << std::right << std::setw( 10 ) << l
+                    << std::right << std::setw( 10 ) << std::fixed  << std::setprecision( 4 ) << h;
+            BOOST_FOREACH( auto v, it->get_child( key+".bool" ) )
+            {
+                bool u  = it->template get<bool>( key+".bool."+v.first );
+                out << std::right << std::setw( detail::spaces )  << u;
+            }
+            BOOST_FOREACH( auto v, it->get_child( key+".int" ) )
+            {
+                size_type u  = it->template get<size_type>( key+".int."+v.first );
+                out << std::right << std::setw( detail::spaces )  << u;
+            }
+            BOOST_FOREACH( auto v, it->get_child( key+".double" ) )
+            {
+                double u  = it->template get<double>( key+".double."+v.first );
+                out << std::right << std::setw( detail::spaces ) << std::scientific << std::setprecision( 2 ) << u;
+            }
+            if ( !flat )
+                out << "\n";
         }
-        out << "\n";
-    }
 }
-
+template<typename StatsIterator>
 void
-printData( std::ostream& out, std::vector<ptree::ptree> const& stats, std::string const& key )
+printTime( std::ostream& out,
+           StatsIterator statsit,
+           StatsIterator statsen,
+           std::string const& key,
+           size_type stats = Application::ALL|Application::HEADER )
 {
-    out << std::setw( 10 ) << std::right << "levels"
-        << std::setw( 10 ) << std::right << "h";
-    BOOST_FOREACH( auto v, stats.front().get_child( key+".bool" ) )
+    if ( !( stats & Application::TIME ) ) return;
+    bool header = stats & Application::HEADER;
+    bool flat = stats & Application::FLAT;
+    if ( header )
     {
-        out << std::setw( 10 ) << std::right << v.first;
-    }
-    BOOST_FOREACH( auto v, stats.front().get_child( key+".int" ) )
-    {
-        out << std::setw( 10 ) << std::right << v.first;
-    }
-    BOOST_FOREACH( auto v, stats.front().get_child( key+".double" ) )
-    {
-        out << std::setw( 10 ) << std::right << v.first;
-    }
-    out << "\n";
-    int l=1;
-
-    for ( auto it = stats.begin(), en =stats.end(); it!=en; ++it,++l )
-    {
-        double h  = it->get<double>( "h" );
-        out << std::right << std::setw( 10 ) << l
-            << std::right << std::setw( 10 ) << std::fixed  << std::setprecision( 4 ) << h;
-        BOOST_FOREACH( auto v, it->get_child( key+".bool" ) )
+        if ( !flat )
+            out << std::setw( 10 ) << std::right << "levels"
+                << std::setw( 10 ) << std::right << "h";
+        BOOST_FOREACH( auto v, statsit->get_child( key ) )
         {
-            bool u  = it->get<bool>( key+".bool."+v.first );
-            out << std::right << std::setw( 10 )  << u;
+            int len1 = std::max( detail::spaces,( int )v.first.size() );
+            int len2 = std::max( detail::spaces,( int )( std::string( " normalized" ).size() ) );
+            out << std::setw( len1 ) << std::right << (flat?key+"."+v.first:v.first) << " "
+                << std::setw( len2 ) << std::right << (flat?key+"."+v.first+".n":v.first+".n");
         }
-        BOOST_FOREACH( auto v, it->get_child( key+".int" ) )
-        {
-            size_type u  = it->get<size_type>( key+".int."+v.first );
-            out << std::right << std::setw( 10 )  << u;
-        }
-        BOOST_FOREACH( auto v, it->get_child( key+".double" ) )
-        {
-            double u  = it->get<double>( key+".double."+v.first );
-            out << std::right << std::setw( 10 ) << std::scientific << std::setprecision( 2 ) << u;
-        }
-        out << "\n";
+        if (!flat)
+            out << "\n";
     }
-}
-
-void
-printTime( std::ostream& out, std::vector<ptree::ptree> const& stats, std::string const& key )
-{
-    out << std::setw( 10 ) << std::right << "levels"
-        << std::setw( 10 ) << std::right << "h";
-    BOOST_FOREACH( auto v, stats.front().get_child( key ) )
-    {
-        int len1 = std::max( 15,( int )v.first.size() );
-        int len2 = std::max( 7,( int )( std::string( "(normalized)" ).size() ) );
-        out << std::setw( len1 ) << std::right << v.first
-            << std::setw( len2 ) << std::left << std::string( "(normalized)" );
-    }
-    out << "\n";
     int l=1;
     std::map<std::string,double> t0;
-
-    for ( auto it = stats.begin(),  en =stats.end(); it!=en; ++it,++l )
-    {
-        double h  = it->get<double>( "h" );
-        out << std::right << std::setw( 10 ) << l
-            << std::right << std::setw( 10 ) << std::fixed  << std::setprecision( 4 ) << h;
-        BOOST_FOREACH( auto v, it->get_child( key ) )
+    if ( ! ( (header == true) && ( flat == true ) ) )
+        for ( auto it = statsit,  en =statsen; it!=en; ++it,++l )
         {
-            std::string thekey = key+"."+v.first;
-            int len1 = std::max( 15,( int )v.first.size() );
-            int len2 = std::string( "(normalized)" ).size()-2;
-            double u  = it->get<double>( thekey );
+            double h  = it->template get<double>( "h" );
+            if ( !flat )
+                out << std::right << std::setw( 10 ) << l
+                    << std::right << std::setw( 10 ) << std::fixed  << std::setprecision( 4 ) << h;
+            BOOST_FOREACH( auto v, it->get_child( key ) )
+            {
+                std::string thekey = key+"."+v.first;
+                int len1 = std::max( detail::spaces,( int )(flat?key+"."+v.first:v.first).size() );
+                int len2 = std::max( detail::spaces,(int)std::string( " normalized" ).size()-2);
+                double u  = it->template get<double>( thekey );
 
-            if ( l == 1 )
-                t0[thekey] = u;
+                if ( l == 1 )
+                    t0[thekey] = u;
 
-            out << std::right << std::setw( len1 ) << std::scientific << std::setprecision( 2 ) << u
-                << "(" << std::right << std::setw( len2 ) << std::scientific << std::setprecision( 2 ) << u/t0[thekey] << ")";
+                out << std::right << std::setw( len1 ) << std::scientific << std::setprecision( 2 ) << u << " "
+                    << std::right << std::setw( len2 ) << std::scientific << std::setprecision( 2 ) << u/t0[thekey];
+            }
+            if ( !flat )
+                out << "\n";
         }
-        out << "\n";
-    }
 }
 
 void
@@ -1081,13 +1234,17 @@ Application::setStats( std::vector<std::string> const& keys )
     M_keys = keys;
 }
 void
-Application::printStats( std::ostream& out ) const
+Application::printStats( std::ostream& out, size_type stats ) const
 {
-    printStats( out, M_keys );
+    printStats( out, M_keys, stats );
 }
 void
-Application::printStats( std::ostream& out, std::vector<std::string> const& keys ) const
+Application::printStats( std::ostream& out,
+                         std::vector<std::string> const& keys,
+                         size_type stats ) const
 {
+    bool header = stats & Application::HEADER;
+    bool flat = stats & Application::FLAT;
     if ( keys.empty() ) return;
     if ( M_comm.rank() != 0 ) return ;
     std::string runonly = _M_vm["benchmark.only"].as<std::string>();
@@ -1099,35 +1256,75 @@ Application::printStats( std::ostream& out, std::vector<std::string> const& keys
                 runonly.find( i->name() ) == std::string::npos )
             continue;
 
-        out << "================================================================================\n";
-        out << "Simulation " << i->name() << "\n";
+        if ( !flat )
+        {
+            out << "================================================================================\n";
+            out << "Simulation " << i->name() << "\n";
+        }
         BOOST_FOREACH( auto key, keys )
         {
-            out << "------------------------------------------------------------\n";
-            out << "Key: " << key << "\n";
-
-            if ( key.find( "e." ) != std::string::npos )
+            if ( flat == false )
             {
-                if ( M_stats.find( i->name() ) != M_stats.end() )
-                    printErrors( out, M_stats.find( i->name() )->second, key );
+                out << "------------------------------------------------------------\n";
+                out << "Key: " << key << "\n";
             }
-
-            if ( key.find( "n." ) != std::string::npos )
+            if ( M_stats.find( i->name() ) != M_stats.end() )
             {
-                if ( M_stats.find( i->name() ) != M_stats.end() )
-                    printNumbers( out, M_stats.find( i->name() )->second, key );
+                if ( !flat )
+                {
+                    auto it = M_stats.find( i->name() )->second.begin();
+                    auto en = M_stats.find( i->name() )->second.end();
+                    if ( key.find( "e." ) != std::string::npos )
+                        printErrors( out, it, en, key, stats|Application::HEADER );
+                    if ( key.find( "n." ) != std::string::npos )
+                        printNumbers( out, it, en, key, stats|Application::HEADER );
+                    if ( key.find( "t." ) != std::string::npos )
+                        printTime( out, it, en, key, stats|Application::HEADER );
+                    if ( key.find( "d." ) != std::string::npos )
+                        printData( out, it, en, key, stats|Application::HEADER );
+                }
             }
-
-            if ( key.find( "t." ) != std::string::npos )
+        }
+        if ( flat && M_stats.find( i->name() ) != M_stats.end() )
+        {
+            // first print header
+            auto it = M_stats.find( i->name() )->second.begin();
+            auto en = M_stats.find( i->name() )->second.end();
+            out << std::setw( 10 ) << std::right << "levels"
+                << std::setw( 10 ) << std::right << "h";
+            BOOST_FOREACH( auto key, keys )
             {
-                if ( M_stats.find( i->name() ) != M_stats.end() )
-                    printTime( out, M_stats.find( i->name() )->second, key );
+                if ( key.find( "e." ) != std::string::npos )
+                    printErrors( out, it, en, key, stats|Application::HEADER );
+                if ( key.find( "n." ) != std::string::npos )
+                    printNumbers( out, it, en, key, stats|Application::HEADER );
+                if ( key.find( "t." ) != std::string::npos )
+                    printTime( out, it, en, key, stats|Application::HEADER );
+                if ( key.find( "d." ) != std::string::npos )
+                    printData( out, it, en, key, stats|Application::HEADER );
             }
-
-            if ( key.find( "d." ) != std::string::npos )
+            out << "\n";
+            // then print data
+            it = M_stats.find( i->name() )->second.begin();
+            en = M_stats.find( i->name() )->second.end();
+            for ( ; it != en; ++it )
             {
-                if ( M_stats.find( i->name() ) != M_stats.end() )
-                    printData( out, M_stats.find( i->name() )->second, key );
+                double h  = it->get<double>( "h" );
+                int l  = it->get<int>( "level" );
+                out << std::right << std::setw( 10 ) << l
+                    << std::right << std::setw( 10 ) << std::fixed  << std::setprecision( 4 ) << h;
+                BOOST_FOREACH( auto key, keys )
+                {
+                    if ( key.find( "e." ) != std::string::npos )
+                        printErrors( out, it, boost::next(it), key, stats&(~Application::HEADER) );
+                    if ( key.find( "n." ) != std::string::npos )
+                        printNumbers( out, it, boost::next(it), key, stats&(~Application::HEADER) );
+                    if ( key.find( "t." ) != std::string::npos )
+                        printTime( out, it, boost::next(it), key, stats&(~Application::HEADER) );
+                    if ( key.find( "d." ) != std::string::npos )
+                        printData( out, it, boost::next(it), key, stats&(~Application::HEADER) );
+                }
+                out << "\n";
             }
         }
     }

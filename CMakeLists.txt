@@ -23,6 +23,7 @@
 #
 cmake_minimum_required (VERSION 2.6)
 
+# 
 # Bug in cmake that delete destroy library path if LIBRARY_PATH is not empty
 # Ugly hack that disable the environement variable
 # Waiting for cmake to fix it
@@ -59,6 +60,7 @@ macro(set_config_option VARNAME STRING)
   message(STATUS "Found " ${STRING})
 endmacro(set_config_option)
 
+OPTION(FEELPP_ENABLE_VERBOSE_CMAKE "enable Feel++ verbose cmake" OFF)
 
 OPTION(FEELPP_ENABLE_SVN "enable Feel++ looking up for svn information" OFF)
 SET(FEELPP_SCM "svn")

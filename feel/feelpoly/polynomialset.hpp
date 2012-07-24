@@ -1494,7 +1494,7 @@ public:
                             for ( uint16_type l = 0; l < NDim; ++l )
                             {
                                 value_type n = thegmc->unitNormal( l, 0 );
-                                value_type gn = _M_grad[i][0]( l,0 ) * n;
+                                value_type gn = _M_grad[i][0]( 0,l ) * n;
                                 _M_dn[i][q]( 0,0 ) += gn;
                             }
                         }

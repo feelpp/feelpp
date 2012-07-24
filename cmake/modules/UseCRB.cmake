@@ -141,13 +141,15 @@ macro(crb_add_model)
   CAR(CRB_MODEL_SHORT_NAME ${CRB_MODEL_DEFAULT_ARGS})
   CDR(CRB_MODEL_LONG_NAME ${CRB_MODEL_DEFAULT_ARGS})
 
-  MESSAGE("*** Arguments for Crb models ${CRB_MODEL_SHORT_NAME}(${CRB_MODEL_LONG_NAME})")
-  MESSAGE("    Headers: ${CRB_MODEL_HDRS}")
-  MESSAGE("    Sources: ${CRB_MODEL_SRCS}")
-  #MESSAGE("    Link libraries: ${CRB_MODEL_LINK_LIBRARIES}")
-  MESSAGE("    Cfg file: ${CRB_MODEL_CFG}")
-  MESSAGE("    Xml file: ${CRB_MODEL_XML}")
-  MESSAGE("Scripts file: ${CRB_MODEL_SCRIPTS}")
+  if ( FEELPP_ENABLE_VERBOSE_CMAKE )
+    MESSAGE("*** Arguments for Crb models ${CRB_MODEL_SHORT_NAME}(${CRB_MODEL_LONG_NAME})")
+    MESSAGE("    Headers: ${CRB_MODEL_HDRS}")
+    MESSAGE("    Sources: ${CRB_MODEL_SRCS}")
+    #MESSAGE("    Link libraries: ${CRB_MODEL_LINK_LIBRARIES}")
+    MESSAGE("    Cfg file: ${CRB_MODEL_CFG}")
+    MESSAGE("    Xml file: ${CRB_MODEL_XML}")
+    MESSAGE("Scripts file: ${CRB_MODEL_SCRIPTS}")
+  endif()
 
   include_directories( ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR} )
   if ( NOT CRB_MODEL_CLASS )
@@ -161,7 +163,7 @@ macro(crb_add_model)
 int main( int argc, char** argv )
 {
     Feel::Environment env( argc, argv )\;
-    Feel::OpusApp<Feel::${CRB_MODEL_LONG_NAME}> app( argc, argv,
+    Feel::OpusApp<Feel::${CRB_MODEL_CLASS} > app( argc, argv,
                                                       Feel::make${CRB_MODEL_LONG_NAME}About( \"${CRB_MODEL_SHORT_NAME}\" ),
                                                       Feel::make${CRB_MODEL_LONG_NAME}Options()  )\;
     app.run()\;

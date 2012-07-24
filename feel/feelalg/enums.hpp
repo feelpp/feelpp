@@ -244,12 +244,21 @@ enum AitkenType
 /**
  *
  */
-enum WeakDirichlet
+enum DirichletType
 {
     STRONG=0,
     WEAK=1
 };
 
+enum ProjectorType
+{
+    L2=0,
+    H1=1,
+    DIFF=2,
+    HDIV=3,
+    HCURL=4,
+    LIFT=5
+};
 
 enum MatSolverPackageType
 {

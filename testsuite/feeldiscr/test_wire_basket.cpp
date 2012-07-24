@@ -6,14 +6,13 @@ using boost::unit_test::test_suite;
 
 
 #include <feel/options.hpp>
-
 #include <feel/feelalg/backend.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feelfilters/gmsh.hpp>
 #include <feel/feelvf/vf.hpp>
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feeldiscr/createsubmesh.hpp>
-#include <feel/feeldiscr/operatorlift.hpp>
+#include <feel/feeldiscr/projector.hpp>
 
 
 namespace test_wire_basket
@@ -162,12 +161,12 @@ void run( Application_ptrtype & theApp )
     auto zero_extension = vf::project( TXh, boundaryfaces( trace_mesh ), idv( trace_trace_projection_g ) );
     auto const_extension = vf::project( TXh, boundaryfaces( trace_mesh ), idv( trace_trace_projection_g )-ttmean_g );
     const_extension += vf::project( TXh, elements( trace_mesh ), cst( ttmean_g ) );
-    auto op_lift = operatorLift( Xh,backend );
-    auto glift = op_lift->lift( _range=markedfaces( mesh,6 ),_expr=idv( const_extension ) );
+    auto op_lift = opLift( _domainSpace=Xh,_backend=backend );
+    auto glift = op_lift->project( _expr=idv( const_extension ), _range=markedfaces( mesh,6 ) );
 
 
     auto boundary_error = integrate( markedfaces( mesh,6 ), idv( glift )-idv( const_extension ) ).evaluate()( 0,0 );
-    auto laplacian_error = integrate( elements( mesh ), -trace( hessv( glift ) ) ).evaluate()( 0,0 );
+    //auto laplacian_error = integrate( elements( mesh ), trace( hessv( glift ) ) ).evaluate()( 0,0 );
 
     auto const_extention_error1 = integrate( boundaryfaces( trace_mesh ),
                                   idv( trace_trace_projection_g )-idv( const_extension ) ).evaluate()( 0,0 );
@@ -176,13 +175,10 @@ void run( Application_ptrtype & theApp )
 
 
     std::cout << "boundary_error= " << boundary_error << std::endl;
-    std::cout << "laplacian_error= " << laplacian_error << std::endl;
-
     std::cout << "const_extention_error1= " << const_extention_error1 << std::endl;
     std::cout << "const_extention_error2= " << const_extention_error2 << std::endl;
 
     BOOST_CHECK_SMALL( boundary_error,5e-5 );
-    BOOST_CHECK_SMALL( laplacian_error,6e-3 );
     BOOST_CHECK_CLOSE( domain_measure, 1, 1e-10 );
     BOOST_CHECK_CLOSE( trace_measure, 1, 1e-12 );
     BOOST_CHECK_CLOSE( trace_trace_measure, 4, 1e-12 );
@@ -230,16 +226,16 @@ Feel::Environment env( boost::unit_test::framework::master_test_suite().argc,
 BOOST_AUTO_TEST_CASE( wire_basket1 )
 {
     auto theApp = Application_ptrtype( new Application_type( boost::unit_test::framework::master_test_suite().argc,
-                                       boost::unit_test::framework::master_test_suite().argv,
-                                       test_wire_basket::makeAbout(),
-                                       test_wire_basket::makeOptions()
-                                                           ) );
+                                                             boost::unit_test::framework::master_test_suite().argv,
+                                                             test_wire_basket::makeAbout(),
+                                                             test_wire_basket::makeOptions()
+                                                             ) );
 
     if ( theApp->vm().count( "help" ) )
-    {
-        std::cout << theApp->optionsDescription() << "\n";
-        exit( 0 );
-    }
+        {
+            std::cout << theApp->optionsDescription() << "\n";
+            exit( 0 );
+        }
 
     test_wire_basket::run<2>( theApp );
 
@@ -266,3 +262,4 @@ main( int argc, char** argv )
 
 }
 #endif
+

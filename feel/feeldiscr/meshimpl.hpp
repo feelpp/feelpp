@@ -386,7 +386,14 @@ Mesh<Shape, T, Tag>::renumber( mpl::bool_<true> )
     std::unique( check_id.begin(), check_id.end() );
 
     FEELPP_ASSERT( check_id.size() == node_map.size() )( node_map.size() )( check_id.size() ).error( "all ids must be unique" );
-    FEELPP_ASSERT ( std::find( node_map.begin(), node_map.end(), invalid_size_type_value ) == node_map.end() ).warn( "invalid size_type value found as id " );
+
+    // in parallel this will generate a lot of warning since all the points are
+    //loaded into the mesh data structure including the ones not belonging to
+    //the current processor. Do the test only in sequential
+    if ( Environment::numberOfProcessors() == 1 )
+    {
+        FEELPP_ASSERT( std::find( node_map.begin(),node_map.end(), invalid_size_type_value ) == node_map.end() ).warn("invalid size_type value found as id " );
+    }
 
 #endif /* NDEBUG */
 

@@ -70,7 +70,7 @@ namespace fs = boost::filesystem;
 
 const char* FEELPP_GMSH_FORMAT_VERSION = "2.2";
 
-    Gmsh::Gmsh( int nDim, int nOrder, WorldComm const& worldComm )
+Gmsh::Gmsh( int nDim, int nOrder, WorldComm const& worldComm )
     :
     M_worldComm( worldComm ),
     M_dimension( nDim ),
@@ -312,7 +312,7 @@ void
 Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  ) const
 {
 #if FEELPP_HAS_GMSH
-#if !defined(FEELPP_HAS_GMSH_H)
+#if !defined(FEELPP_HAS_GMSH_LIBRARY)
     // generate mesh
     std::ostringstream __str;
 
@@ -389,8 +389,9 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  
 void
 Gmsh::rebuildPartitionMsh( std::string const& nameMshInput,std::string const& nameMshOutput ) const
 {
-#if FEELPP_HAS_GMSH
-#if defined(FEELPP_HAS_GMSH_H)
+#if defined(FEELPP_HAS_GMSH_LIBRARY)
+
+    std::string _name;
 
     if ( !mpi::environment::initialized() || ( mpi::environment::initialized()  && this->worldComm().globalRank() == this->worldComm().masterRank() ) )
     {
@@ -403,7 +404,11 @@ Gmsh::rebuildPartitionMsh( std::string const& nameMshInput,std::string const& na
         meshPartitionOptions newPartionOption;
         newPartionOption.num_partitions = M_partitions;
         newPartionOption.mesh_dims[0] = M_partitions;
-        newPartionOption.partitioner =  M_partitioner;
+        if (M_partitions==1)
+            newPartionOption.partitioner=GMSH_PARTITIONER_METIS;
+        else
+            newPartionOption.partitioner =  M_partitioner;
+
         CTX::instance()->mesh.mshFilePartitioned = M_partition_file;
         CTX::instance()->mesh.mshFileVersion = std::atof( this->version().c_str() );
         PartitionMesh( newGmshModel, newPartionOption );
@@ -414,9 +419,16 @@ Gmsh::rebuildPartitionMsh( std::string const& nameMshInput,std::string const& na
         delete newGmshModel;
 
     }
-#endif
+
+    if ( mpi::environment::initialized() )
+    {
+        mpi::broadcast( this->worldComm().globalComm(), _name, this->worldComm().masterRank() );
+        Log() << "[Gmsh::rebuildPartitionMsh] broadcast mesh filename : " << _name << " to all other processes\n";
+    }
+
+
 #else
-    throw std::invalid_argument( "Gmsh is not available on this system" );
+    throw std::invalid_argument( "Gmsh library is not available on this system" );
 #endif
 
 }
@@ -451,8 +463,8 @@ Gmsh::preamble() const
          << "Mesh.Partitioner=" << M_partitioner << ";\n"
          << "Mesh.NbPartitions=" << M_partitions << ";\n"
          << "Mesh.MshFilePartitioned=" << M_partition_file << ";\n"
-         //<< "Mesh.Optimize=1;\n"
-         //<< "Mesh.CharacteristicLengthFromCurvature=1;\n"
+        //<< "Mesh.Optimize=1;\n"
+        //<< "Mesh.CharacteristicLengthFromCurvature=1;\n"
          << "h=" << M_h << ";\n";
 
     if ( M_recombine )
@@ -473,16 +485,16 @@ struct HypercubeDomain
     HypercubeDomain( int _Dim, int _Order )
         :
         Dim( _Dim ), Order( _Order ), RDim( _Dim ), Hyp( false )
-    {}
+        {}
     HypercubeDomain( int _Dim, int _Order, int _RDim, std::string const& hyp )
         :
         Dim( _Dim ), Order( _Order ), RDim( _RDim ), Hyp( hyp == "hypercube" )
-    {
-    }
+        {
+        }
     Gmsh* operator()()
-    {
-        return new GmshHypercubeDomain( Dim, Order, RDim, Hyp );
-    }
+        {
+            return new GmshHypercubeDomain( Dim, Order, RDim, Hyp );
+        }
     int Dim, Order,RDim;
     bool Hyp;
 };
@@ -492,11 +504,11 @@ struct SimplexDomain
     SimplexDomain( int _Dim, int _Order )
         :
         Dim( _Dim ), Order( _Order )
-    {}
+        {}
     Gmsh* operator()()
-    {
-        return new GmshSimplexDomain( Dim, Order );
-    }
+        {
+            return new GmshSimplexDomain( Dim, Order );
+        }
     int Dim, Order;
 };
 
@@ -505,11 +517,11 @@ struct EllipsoidDomain
     EllipsoidDomain( int _Dim, int _Order )
         :
         Dim( _Dim ), Order( _Order )
-    {}
+        {}
     Gmsh* operator()()
-    {
-        return new GmshEllipsoidDomain( Dim, Order );
-    }
+        {
+            return new GmshEllipsoidDomain( Dim, Order );
+        }
     int Dim, Order;
 };
 
@@ -526,24 +538,24 @@ struct EllipsoidDomain
                                             (3,(hypercube, Hypercube, Hypercube)) ) )
 
 
-#define FACTORY1NAME( LDIM, LORDER, LSHAPE )                             \
+#define FACTORY1NAME( LDIM, LORDER, LSHAPE )                            \
     BOOST_PP_STRINGIZE(BOOST_PP_ARRAY_ELEM(0,LSHAPE) BOOST_PP_LPAREN() LDIM BOOST_PP_COMMA() LORDER BOOST_PP_RPAREN())
 
-# define FACTORY1(LDIM,LORDER,LSHAPE )                                   \
-const bool BOOST_PP_CAT( BOOST_PP_CAT( BOOST_PP_CAT( mesh, LDIM ), LORDER), BOOST_PP_ARRAY_ELEM(1,LSHAPE))  = \
-                           Gmsh::Factory::type::instance().registerProduct( boost::to_lower_copy(boost::algorithm::erase_all_copy( std::string( FACTORY1NAME(LDIM, LORDER, LSHAPE ) ), " " ) ), \
-                                                                            *new detail::BOOST_PP_CAT(BOOST_PP_ARRAY_ELEM(1,LSHAPE),Domain)(LDIM,LORDER) );
+# define FACTORY1(LDIM,LORDER,LSHAPE )                                  \
+    const bool BOOST_PP_CAT( BOOST_PP_CAT( BOOST_PP_CAT( mesh, LDIM ), LORDER), BOOST_PP_ARRAY_ELEM(1,LSHAPE))  = \
+                Gmsh::Factory::type::instance().registerProduct( boost::to_lower_copy(boost::algorithm::erase_all_copy( std::string( FACTORY1NAME(LDIM, LORDER, LSHAPE ) ), " " ) ), \
+                                                                 *new detail::BOOST_PP_CAT(BOOST_PP_ARRAY_ELEM(1,LSHAPE),Domain)(LDIM,LORDER) );
 
 # define FACTORY1_OP(_, GDO) FACTORY1 GDO
 
 
-#define FACTORY2NAME( LDIM, LORDER, LSHAPE )                             \
+#define FACTORY2NAME( LDIM, LORDER, LSHAPE )                            \
     BOOST_PP_STRINGIZE(BOOST_PP_ARRAY_ELEM(0,LSHAPE) BOOST_PP_LPAREN() LDIM BOOST_PP_COMMA() LORDER BOOST_PP_COMMA() BOOST_PP_ARRAY_ELEM(2,LSHAPE) BOOST_PP_RPAREN())
 
-# define FACTORY2(LDIM,LORDER,LSHAPE )                                   \
-const bool BOOST_PP_CAT( BOOST_PP_CAT( BOOST_PP_CAT( BOOST_PP_CAT( mesh, LDIM ), LORDER), BOOST_PP_ARRAY_ELEM(1,LSHAPE)), BOOST_PP_ARRAY_ELEM(2,LSHAPE))   = \
-                           Gmsh::Factory::type::instance().registerProduct( boost::to_lower_copy( boost::algorithm::erase_all_copy( std::string( FACTORY2NAME(LDIM, LORDER, LSHAPE ) ), " " ) ), \
-                                                                            *new detail::BOOST_PP_CAT(BOOST_PP_ARRAY_ELEM(1,LSHAPE),Domain)(LDIM,LORDER,LDIM,boost::to_lower_copy(std::string(BOOST_PP_STRINGIZE(BOOST_PP_ARRAY_ELEM(2,LSHAPE)))) ));
+# define FACTORY2(LDIM,LORDER,LSHAPE )                                  \
+    const bool BOOST_PP_CAT( BOOST_PP_CAT( BOOST_PP_CAT( BOOST_PP_CAT( mesh, LDIM ), LORDER), BOOST_PP_ARRAY_ELEM(1,LSHAPE)), BOOST_PP_ARRAY_ELEM(2,LSHAPE))   = \
+                Gmsh::Factory::type::instance().registerProduct( boost::to_lower_copy( boost::algorithm::erase_all_copy( std::string( FACTORY2NAME(LDIM, LORDER, LSHAPE ) ), " " ) ), \
+                                                                 *new detail::BOOST_PP_CAT(BOOST_PP_ARRAY_ELEM(1,LSHAPE),Domain)(LDIM,LORDER,LDIM,boost::to_lower_copy(std::string(BOOST_PP_STRINGIZE(BOOST_PP_ARRAY_ELEM(2,LSHAPE)))) ));
 
 # define FACTORY2_OP(_, GDO) FACTORY2 GDO
 
