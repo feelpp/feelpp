@@ -31,7 +31,16 @@ FIND_PATH(GMSH_INCLUDE_DIR
   DOC "Directory where GMSH header files are stored" )
 include_directories(${GMSH_INCLUDE_DIR})
 if ( GMSH_INCLUDE_DIR )
-  set( FEELPP_HAS_GMSH_H 1 )
+  FIND_PATH(GMSH_ADAPTMESH_INCLUDE_DIR
+    Openfile.h Field.h
+    PATHS ${GMSH_INCLUDE_DIR}
+    DOC "Directory where GMSH header files are stored" )
+    if ( GMSH_ADAPTMESH_INCLUDE_DIR )
+      set( FEELPP_HAS_GMSH_H 1 )
+    else ( GMSH_ADAPTMESH_INCLUDE_DIR )
+      message(STATUS "Gmsh headers: some headers needed for meshadaptation are missing")
+      message(STATUS "Check wiki pages for mesh adaptation to install properly gmsh")
+    endif( GMSH_ADAPTMESH_INCLUDE_DIR )
 endif()
 #include(CheckIncludeFiles)
 #set(CMAKE_REQUIRED_INCLUDES "${GMSH_INCLUDE_DIR};${CMAKE_REQUIRED_INCLUDES}")
