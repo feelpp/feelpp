@@ -1,8 +1,8 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*-*/
 
-#define BOOST_TEST_MODULE test_wirebasket
-#include <boost/test/unit_test.hpp>
-using boost::unit_test::test_suite;
+//#define BOOST_TEST_MODULE test_wirebasket
+//#include <boost/test/unit_test.hpp>
+//using boost::unit_test::test_suite;
 
 
 #include <feel/options.hpp>
@@ -114,7 +114,18 @@ void run( Application_ptrtype & theApp )
 #endif
 
     auto wirebasket_measure1F3 = integrate( elements( mesh1DFrom3D ),cst( 1. ) ).evaluate()( 0,0 );
-    auto wirebasket_measure2F3 = integrate( elements( mesh2DFrom3D ),cst( 1. ) ).evaluate()( 0,0 );
+    std::cout << "measure wirebasket : " << wirebasket_measure1F3 << "\n";
+    //auto wirebasket_measure2F3 = integrate( elements( mesh2DFrom3D ),cst( 1. ) ).evaluate()( 0,0 );
+    trace_trace_space_ptrtype Wh = trace_trace_space_type::New( _mesh=mesh1DFrom3D );
+    auto u = Wh->element();
+    auto v = Wh->element();
+    backend_ptrtype b = backend_type::build( theApp->vm() );
+    auto M  = b->newMatrix( _test=Wh, _trial=Wh );
+    form2( _trial=Wh, _test=Wh, _matrix=M ) = integrate( _range=elements(mesh1DFrom3D), _expr=idt(u)*id(v) );
+    u.setOnes();
+    v.setOnes();
+
+    std::cout << "measure from mass = " << M->energy( u, u ) << "\n";
 
 #if 0
     BOOST_CHECK_SMALL( boundary_error,5e-5 );
@@ -132,18 +143,18 @@ void run( Application_ptrtype & theApp )
 } //namespace test_wirebasket
 
 
-BOOST_AUTO_TEST_SUITE( wire_basket )
+//BOOST_AUTO_TEST_SUITE( wire_basket )
 
 typedef Feel::Application Application_type;
 typedef boost::shared_ptr<Application_type> Application_ptrtype;
 
-Feel::Environment env( boost::unit_test::framework::master_test_suite().argc,
-                       boost::unit_test::framework::master_test_suite().argv );
 
-BOOST_AUTO_TEST_CASE( wire_basket1 )
+//BOOST_AUTO_TEST_CASE( wire_basket1 )
+int main(int argc, char** argv )
 {
-    auto theApp = Application_ptrtype( new Application_type( boost::unit_test::framework::master_test_suite().argc,
-                                                             boost::unit_test::framework::master_test_suite().argv,
+    Feel::Environment env( argc, argv );
+
+    auto theApp = Application_ptrtype( new Application_type( argc, argv,
                                                              test_wirebasket::makeAbout(),
                                                              test_wirebasket::makeOptions()
                                                              ) );
@@ -157,4 +168,4 @@ BOOST_AUTO_TEST_CASE( wire_basket1 )
     test_wirebasket::run<2>( theApp );
 
 }
-BOOST_AUTO_TEST_SUITE_END()
+//BOOST_AUTO_TEST_SUITE_END()
