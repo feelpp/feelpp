@@ -383,7 +383,7 @@ public:
         {
             M_substructuring = substruct;
         }
-    bool substructuring() const
+    bool subStructuring() const
         {
             return M_substructuring;
         }
@@ -852,7 +852,6 @@ BOOST_PARAMETER_FUNCTION(
       ( partition_file,   *( boost::is_integral<mpl::_> ), 0 )
       ( partitioner,   *( boost::is_integral<mpl::_> ), GMSH_PARTITIONER_CHACO )
       ( worldcomm,      *, Environment::worldComm() )
-      ( substructuring,      *(bool), 0 )
         )
     )
 {
@@ -868,7 +867,6 @@ BOOST_PARAMETER_FUNCTION(
         desc->setOrder( mesh->nOrder );
         desc->setWorldComm( worldcomm );
         desc->setNumberOfPartitions( partitions );
-        desc->setSubStructuring( substructuring );
         desc->setPartitioner( partitioner );
         desc->setMshFileByPartition( partition_file );
         desc->setRefinementLevels( refine );
@@ -960,7 +958,8 @@ BOOST_PARAMETER_FUNCTION(
       ( ymin,           *( boost::is_arithmetic<mpl::_> ), 0. )
       ( ymax,           *( boost::is_arithmetic<mpl::_> ), 1 )
       ( zmin,           *( boost::is_arithmetic<mpl::_> ), 0. )
-      ( zmax,           *( boost::is_arithmetic<mpl::_> ), 1 ) ) )
+      ( zmax,           *( boost::is_arithmetic<mpl::_> ), 1 )
+      ( substructuring, *( boost::is_integral<mpl::_> ), 0 ) ) )
 {
     gmsh_ptrtype gmsh_ptr = Gmsh::New( shape, 3, 1, convex );
 
@@ -973,6 +972,7 @@ BOOST_PARAMETER_FUNCTION(
     gmsh_ptr->setX( std::make_pair( xmin, xmax ) );
     gmsh_ptr->setY( std::make_pair( ymin, ymax ) );
     gmsh_ptr->setZ( std::make_pair( zmin, zmax ) );
+    gmsh_ptr->setSubStructuring( substructuring );
     return gmsh_ptr;
 }
 
