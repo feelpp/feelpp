@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2008-10-03
 
-  Copyright (C) 2008-2010 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2008-2012 Université Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -117,9 +117,15 @@ public:
 
     typedef fusion::vector<Lagrange<Order, Scalar> > basis_type;
 
+    typedef fusion::vector<Lagrange<Order, Scalar>, Lagrange<Order, Scalar> > basis_composite_type;
+
     /*space*/
-    typedef FunctionSpace<mesh_type, basis_type, value_type, Periodic<2,4,value_type> > functionspace_type;
+    typedef FunctionSpace<mesh_type, basis_type, Periodic<2,4,value_type> > functionspace_type;
     typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
+
+    typedef FunctionSpace<mesh_type, basis_composite_type, Periodic<2,4,value_type> > functionspace_composite_type;
+    typedef boost::shared_ptr<functionspace_composite_type> functionspace_composite_ptrtype;
+
 
     typedef typename functionspace_type::element_type element_type;
 
@@ -152,6 +158,7 @@ private:
     mesh_ptrtype mesh;
 
     functionspace_ptrtype Xh;
+    functionspace_composite_ptrtype Xhc;
 
     export_ptrtype exporter;
 
@@ -209,6 +216,8 @@ PeriodicLaplacian<Dim,Order>::PeriodicLaplacian( int argc, char** argv, AboutDat
     trans[0]=0;
     trans[1]=2;
     Xh = functionspace_type::New( _mesh=mesh, _periodicity=Periodic<2,4,value_type>( trans ) );
+
+    Xhc = functionspace_composite_type::New( _mesh=mesh, _periodicity=Periodic<2,4,value_type>( trans ) );
 
     Log() << "print space info\n";
     Xh->printInfo();
