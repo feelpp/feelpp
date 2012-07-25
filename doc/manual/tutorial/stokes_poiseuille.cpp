@@ -342,8 +342,8 @@ Stokes_Poiseuille::run()
 #endif
     this->exportResults( u_exact, p_exact, U, V );
 
-    double mean_p_exact = integrate( elements( u.mesh() ), idv( p_exact ) ).evaluate()( 0, 0 )/meas;
-    std::cout << "[stokes] mean(p_exact)=" << mean_p_exact << "\n";
+    /* double mean_p_exact = integrate( elements( u.mesh() ), idv( p_exact ) ).evaluate()( 0, 0 )/meas;
+       std::cout << "[stokes] mean(p_exact)=" << mean_p_exact << "\n";*/
 
     Log() << "[dof]         number of dof: " << Xh->nDof() << "\n";
     Log() << "[dof]    number of dof/proc: " << Xh->nLocalDof() << "\n";
