@@ -117,9 +117,15 @@ public:
 
     typedef fusion::vector<Lagrange<Order, Scalar> > basis_type;
 
+    typedef fusion::vector<Lagrange<Order, Scalar>, Lagrange<Order, Scalar> > basis_composite_type;
+
     /*space*/
     typedef FunctionSpace<mesh_type, basis_type, value_type, Periodic<2,4,value_type> > functionspace_type;
     typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
+
+    typedef FunctionSpace<mesh_type, basis_composite_type, value_type, Periodic<2,4,value_type> > functionspace_composite_type;
+    typedef boost::shared_ptr<functionspace_composite_type> functionspace_composite_ptrtype;
+
 
     typedef typename functionspace_type::element_type element_type;
 
