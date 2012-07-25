@@ -124,6 +124,7 @@ void run( Application_ptrtype & theApp )
 
 #endif
 
+}
 
 } //namespace test_wirebasket
 
