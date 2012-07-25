@@ -133,6 +133,7 @@ public:
     typedef Lagrange<2, Vectorial> basis_u_type;
     typedef Lagrange<1, Scalar> basis_p_type;
     typedef Lagrange<0, Scalar> basis_l_type;
+
     // use lagrange multipliers to ensure zero mean pressure
 #if defined( FEELPP_USE_LM )
     typedef bases<basis_u_type,basis_p_type, basis_l_type> basis_type;
@@ -320,10 +321,8 @@ Stokes_Poiseuille::run()
 #endif
 
     stokes +=integrate( boundaryfaces( mesh ), -inner( SigmaNt,id( v ) ) );
-    stokes +=integrate( markedfaces( mesh,"Inlet" ), -inner( SigmaN,idt( u ) ) );
-    stokes +=integrate( markedfaces( mesh,"Outlet" ), -inner( SigmaN,idt( u ) ) );
-    stokes +=integrate( markedfaces( mesh,"Inlet" ), +penalbc*inner( idt( u ),id( v ) )/hFace() );
-    stokes +=integrate( markedfaces( mesh,"Outlet" ), +penalbc*inner( idt( u ),id( v ) )/hFace() );
+    stokes +=integrate( boundaryfaces( mesh ), -inner( SigmaN,idt( u ) ) );
+    stokes +=integrate( boundaryfaces( mesh ), +penalbc*inner( idt( u ),id( v ) )/hFace() );
 
     std::cout << "bc: " << chrono.elapsed() << "\n";
     chrono.restart();
