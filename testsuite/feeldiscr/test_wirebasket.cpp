@@ -101,7 +101,7 @@ void run( Application_ptrtype & theApp )
     auto mesh2DFrom3D = createGMSHMesh( _mesh=new trace_mesh_type,
                                         _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
                                         _desc=geo( _files_path="/home/samake/feel/geo/",_filename="domain.geo",_h=meshSize ) );
-
+#if 0
 #if 0
     auto mesh1DFrom2D = createGMSHMesh( _mesh=new trace_trace_mesh_type,
                                         _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
@@ -120,6 +120,7 @@ void run( Application_ptrtype & theApp )
     BOOST_CHECK_CLOSE( trace_trace_measure, 4, 1e-12 );
     BOOST_CHECK_SMALL( const_extention_error1,1e-10 );
     BOOST_CHECK_SMALL( const_extention_error2,5e-4 );
+#endif
 #endif
 } // run
 
