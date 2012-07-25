@@ -278,6 +278,87 @@ private:
 
 };
 
+template<typename ElementType>
+class SubFaceOfMany
+{
+public:
+    static const uint16_type nDim = ElementType::nDim;
+    static const uint16_type nRealDim = ElementType::nRealDim;
+    template<typename ET>
+    struct Element
+    {
+        typedef ElementType type;
+    };
+    typedef ElementType entity_type;
+    typedef boost::tuple<ElementType const*, size_type, uint16_type, size_type> element_connectivity_type;
+
+    SubFaceOfMany()
+        :
+        M_elements()
+        {}
+
+    SubFaceOfMany( SubFaceOf const& sf )
+        :
+        M_elements( sf.M_elements )
+        {
+        }
+    SubFaceOfMany( SubFaceOfNone const& /*sf*/ )
+        :
+        M_elements()
+        {
+        }
+    virtual ~SubFaceOfMany() {}
+
+    SubFaceOfMany& operator=( SubFaceOf const& sf )
+        {
+            if ( this != &sf )
+            {
+                M_elements = sf.M_elements;
+            }
+
+            return *this;
+        }
+    SubFaceOfMany& operator=( SubFaceOfNone const& /*sf*/ )
+    {
+        return *this;
+    }
+
+    void setConnection( element_connectivity_type const& connect )
+    {
+        this->insert( connect );
+    }
+
+
+    bool
+    isInterProcessDomain( size_type p ) const
+    {
+        return ( ( boost::get<3>( M_element1 ) != invalid_size_type_value ) &&
+                 ( ( boost::get<3>( M_element0 ) == p ) || ( boost::get<3>( M_element1 ) == p ) ) &&
+                 ( boost::get<3>( M_element0 ) != boost::get<3>( M_element1 ) ) );
+    }
+    bool
+    isIntraProcessDomain( size_type p ) const
+    {
+        return ( ( boost::get<3>( M_element0 ) == p ) &&
+                 ( boost::get<3>( M_element1 ) == p ) );
+    }
+
+    void disconnect()
+    {
+        M_elements.clear();
+    }
+
+private:
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize( Archive & ar, const unsigned int version )
+        {
+        }
+private:
+
+    std::set<element_connectivity_type> M_elements;
+};
+
 //     *********** Geometrical Elements *****************
 //! \defgroup GeoEle Geometry Element classes
 /*@{*/
@@ -1357,4 +1438,3 @@ const uint16_type GeoElement3D<Dim, GEOSHAPE, T>::numLocalEdges;
 
 } // Feel
 #endif
-
