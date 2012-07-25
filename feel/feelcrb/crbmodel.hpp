@@ -1075,9 +1075,9 @@ struct AssembleMassMatrixInCompositeCase
 
     }
 
-    element_type M_composite_u;
-    element_type M_composite_v;
-    CRBModel<ModelType> M_crb_model;
+    element_type  M_composite_u;
+    element_type  M_composite_v;
+    CRBModel<ModelType> & M_crb_model;
 };
 
 
@@ -1104,8 +1104,8 @@ struct AssembleMFInCompositeCase
 
     typedef typename std::vector< std::vector < element_ptrtype > > initial_guess_type;
 
-    AssembleMFInCompositeCase( element_type const v ,
-                               initial_guess_type & initial_guess ,
+    AssembleMFInCompositeCase( element_type  const v ,
+                               initial_guess_type  const initial_guess ,
                                CRBModel<ModelType> & crb_model)
         :
         M_composite_v ( v ),
@@ -1134,9 +1134,9 @@ struct AssembleMFInCompositeCase
         }
     }
 
-    element_type M_composite_v;
-    initial_guess_type M_composite_initial_guess;
-    CRBModel<ModelType> M_crb_model;
+    element_type  M_composite_v;
+    initial_guess_type  M_composite_initial_guess;
+    CRBModel<ModelType> & M_crb_model;
 };
 
 
@@ -1275,10 +1275,7 @@ CRBModel<TruthModelType>::assembleMF( initial_guess_type & initial_guess, mpl::b
         int m_max= this->mMaxMF(q);
         M_MFqm[q].resize( m_max );
         for(int m = 0; m < m_max; m++ )
-        {
             M_MFqm[q][m] = M_backend->newVector( Xh );
-            form1( _test=Xh, _vector=M_MFqm[q][m] , _init=true );
-        }
     }
 
 
