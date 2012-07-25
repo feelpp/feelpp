@@ -6,7 +6,7 @@
    Date: 2004-11-22
 
    Copyright (C) 2004 EPFL
-   Copyright (C) 2007-2010 Université Joseph Fourier (Grenoble I)
+   Copyright (C) 2007-2012 Université Joseph Fourier (Grenoble I)
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -2632,7 +2632,7 @@ public:
         std::vector<WorldComm> const& worldsComm() const
         {
             return _M_functionspace->worldsComm();
-        };
+        }
 
         /**
          * world communicator
@@ -2640,7 +2640,7 @@ public:
         WorldComm const& worldComm() const
         {
             return _M_functionspace->worldComm();
-        };
+        }
 
         /**
          * \return the number of dof
