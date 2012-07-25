@@ -73,7 +73,7 @@ public:
                                                               typename mpl::if_<mpl::equal_to<mpl::int_<EntityType::nDim>, mpl::int_<1> >,
                                                                                 mpl::identity<GeoElement1D<EntityType::nRealDim, EntityType,  SubFaceOfMany<ElementType> > >,
                                                                                 mpl::identity<GeoElement2D<EntityType::nRealDim, EntityType,  SubFaceOfMany<ElementType> > >
-                                                                                >::type>::type> >::type::type face_type;
+                                                                                >::type>::type> >::type::type::type face_type;
 
     typedef multi_index::multi_index_container<
     face_type,
