@@ -199,15 +199,15 @@ public:
 private:
 
     backend_ptrtype M_backend;
+    double split;
     double mesh1Size;
     double mesh2Size;
     double mesh3Size;
-    double split;
     std::string shape;
+    std::map<std::string, std::pair<boost::timer, double> > timers;
     export_ptrtype M_firstExporter;
     export_ptrtype M_secondExporter;
     trace_export_ptrtype M_trace1_exporter,M_trace2_exporter;
-    std::map<std::string, std::pair<boost::timer, double> > timers;
     std::vector<int> outside1;
     std::vector<int> outside2;
     int gamma1;
