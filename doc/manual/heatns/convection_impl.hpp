@@ -26,6 +26,9 @@
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2012-03-22
  */
+#if !defined(CONVECTION_IMPL_HPP)
+#define CONVECTION_IMPL_HPP 1
+
 #include "convection.hpp"
 #include <boost/lexical_cast.hpp>
 
@@ -37,7 +40,7 @@
 
 
 // ****** CONSTRUCTEURS ****** //
-template <int Order_s, int Order_p, int Order_t>
+ <int Order_s, int Order_p, int Order_t>
 Convection<Order_s,Order_p,Order_t>::Convection( int argc,
         char** argv,
         AboutData const& ad,
@@ -71,38 +74,38 @@ Convection<Order_s,Order_p,Order_t>::Convection( int argc,
     Log() << "output added\n";
 }
 
-template <int Order_s, int Order_p, int Order_t>
+ <int Order_s, int Order_p, int Order_t>
 Convection<Order_s,Order_p,Order_t>::~Convection()
 {}
 
-template <int Order_s, int Order_p, int Order_t>
+ <int Order_s, int Order_p, int Order_t>
 void Convection<Order_s,Order_p,Order_t> ::exportResults( boost::format fmt, element_type& U, double t )
 {
     exporter->addPath( fmt );
     exporter->step( t )->setMesh( U.functionSpace()->mesh() );
-    exporter->step( t )->add( "u", U.template element<0>() );
-    exporter->step( t )->add( "p", U.template element<1>() );
-    exporter->step( t )->add( "T", U.template element<2>() );
+    exporter->step( t )->add( "u", U. element<0>() );
+    exporter->step( t )->add( "p", U. element<1>() );
+    exporter->step( t )->add( "T", U. element<2>() );
     exporter->save();
 }
 
 
 
 
-template <int Order_s, int Order_p, int Order_t>
+ <int Order_s, int Order_p, int Order_t>
 void
 Convection<Order_s, Order_p, Order_t>::run()
 {
     std::cout << "start run()\n";
-    std::cout << "gr=" << this->vm()["gr"].template as<double>() << std::endl;
-    std::cout << "pr=" << this->vm()["pr"].template as<double>() << std::endl;
-    std::cout << "h=" << this->vm()["hsize"].template as<double>() << std::endl;
+    std::cout << "gr=" << this->vm()["gr"]. as<double>() << std::endl;
+    std::cout << "pr=" << this->vm()["pr"]. as<double>() << std::endl;
+    std::cout << "h=" << this->vm()["hsize"]. as<double>() << std::endl;
     this->addParameterValue( Order_s )
     .addParameterValue( Order_p )
     .addParameterValue( Order_t )
-    .addParameterValue( this->vm()["gr"].template as<double>() )
-    .addParameterValue( this->vm()["pr"].template as<double>() )
-    .addParameterValue( this->vm()["hsize"].template as<double>() );
+    .addParameterValue( this->vm()["gr"]. as<double>() )
+    .addParameterValue( this->vm()["pr"]. as<double>() )
+    .addParameterValue( this->vm()["hsize"]. as<double>() );
     std::cout << "parameter defined\n";
     RunStatus ierr = this->preProcessing();
 
@@ -122,7 +125,7 @@ Convection<Order_s, Order_p, Order_t>::run()
     timers["mesh"].first.restart();
     mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
                                         _desc=geo( _filename="heatns.geo",
-                                                _h=this->vm()["hsize"].template as<double>() ),
+                                                _h=this->vm()["hsize"]. as<double>() ),
                                         _update=MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK,
                                         _partitions=this->comm().size()  );
     timers["mesh"].second=timers["mesh"].first.elapsed();
@@ -142,14 +145,14 @@ Convection<Order_s, Order_p, Order_t>::run()
     element_type U( Xh, "u" );
     element_type V( Xh, "v" );
     element_type W( Xh, "v" );
-    element_0_type u = U.template element<0>(); // fonction vitesse
-    element_0_type v = V.template element<0>(); // fonction test vitesse
-    element_1_type p = U.template element<1>(); // fonction pression
-    element_1_type q = V.template element<1>(); // fonction test pression
-    element_2_type t = U.template element<2>(); // fonction temperature
-    element_2_type s = V.template element<2>(); // fonction test temperature
-    element_3_type xi = U.template element<3>(); // fonction multipliers
-    element_3_type eta = V.template element<3>(); // fonction test multipliers
+    element_0_type u = U. element<0>(); // fonction vitesse
+    element_0_type v = V. element<0>(); // fonction test vitesse
+    element_1_type p = U. element<1>(); // fonction pression
+    element_1_type q = V. element<1>(); // fonction test pression
+    element_2_type t = U. element<2>(); // fonction temperature
+    element_2_type s = V. element<2>(); // fonction test temperature
+    element_3_type xi = U. element<3>(); // fonction multipliers
+    element_3_type eta = V. element<3>(); // fonction test multipliers
 
     Log() << "[convection::run()] u.size() = " << u.size() << " u.start() = " << u.start() << "\n";
     Log() << "[convection::run()] p.size() = " << p.size() << " p.start() = " << p.start() << "\n";
@@ -157,10 +160,10 @@ Convection<Order_s, Order_p, Order_t>::run()
     Log() << "[convection::run()] xi.size() = " << xi.size() << " p.start() = " << xi.start() << "\n";
     Log() << "[convection::run()] U.size() = " << U.size() << " Xh ndof = " << Xh->nDof() << "\n";
 
-    u = vf::project( Xh->template functionSpace<0>(), elements( mesh ), vec( Px()*Py(),Py()*Px() ) );
-    p = vf::project( Xh->template  functionSpace<1>(), elements( mesh ), exp( Px() ) );
-    t = vf::project( Xh->template  functionSpace<2>(), elements( mesh ), sin( Py() ) );
-    xi = vf::project( Xh->template  functionSpace<3>(), elements( mesh ), constant( 1.0 ) );
+    u = vf::project( Xh-> functionSpace<0>(), elements( mesh ), vec( Px()*Py(),Py()*Px() ) );
+    p = vf::project( Xh->  functionSpace<1>(), elements( mesh ), exp( Px() ) );
+    t = vf::project( Xh->  functionSpace<2>(), elements( mesh ), sin( Py() ) );
+    xi = vf::project( Xh->  functionSpace<3>(), elements( mesh ), constant( 1.0 ) );
 
     std::cout << integrate( elements( mesh ), idv( u ) ).evaluate() << "\n";
     std::cout << integrate( elements( mesh ), idv( p ) ).evaluate() << "\n";
@@ -190,10 +193,10 @@ Convection<Order_s, Order_p, Order_t>::run()
 
     // init to 0 and then later reuse previous grashof results to
     // initialize the solver
-    u = vf::project( Xh->template functionSpace<0>(), elements( mesh ), vec( constant( 0.0 ),constant( 0.0 ) ) );
-    p = vf::project( Xh->template  functionSpace<1>(), elements( mesh ), constant( 0.0 ) );
-    t = vf::project( Xh->template  functionSpace<2>(), elements( mesh ), constant( 0.0 ) );
-    xi = vf::project( Xh->template  functionSpace<3>(), elements( mesh ), constant( 0.0 ) );
+    u = vf::project( Xh-> functionSpace<0>(), elements( mesh ), vec( constant( 0.0 ),constant( 0.0 ) ) );
+    p = vf::project( Xh->  functionSpace<1>(), elements( mesh ), constant( 0.0 ) );
+    t = vf::project( Xh->  functionSpace<2>(), elements( mesh ), constant( 0.0 ) );
+    xi = vf::project( Xh->  functionSpace<3>(), elements( mesh ), constant( 0.0 ) );
 
 
     //M_oplin->close();
@@ -204,9 +207,9 @@ Convection<Order_s, Order_p, Order_t>::run()
 
     Log() << "============================================================\n";
     std::cout << "============================================================\n";
-    double gr( this->vm()["gr"].template as<double>() );
+    double gr( this->vm()["gr"]. as<double>() );
     M_current_Grashofs = gr;
-    double pr = this->vm()["pr"].template as<double>();
+    double pr = this->vm()["pr"]. as<double>();
     M_current_Prandtl = pr;
     Log() << "Grashof = " << M_current_Grashofs << "\n";
     Log() << "Prandtl = " << M_current_Prandtl << "\n";
@@ -268,10 +271,4 @@ Convection<Order_s, Order_p, Order_t>::run()
     this->addOutputValue( AverageT ).addOutputValue( Flux ).addOutputValue( math::sqrt( div_u_error_L2 ) );
     this->postProcessing();
 }
-
-
-
-
-
-
-
+#endif

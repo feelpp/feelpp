@@ -28,7 +28,6 @@
  */
 #include "convection.hpp"
 
-
 // command line options
 inline po::options_description makeOptions()
 {
@@ -36,21 +35,31 @@ inline po::options_description makeOptions()
     convectionoptions.add_options()
     // Options
     // Format : (nom, type and default value, brief description )
-    ( "hsize" , po::value<double>()->default_value( 0.1 ) , "mesh size" )
+    ( "adim" , po::value<int>()->default_value( 1 ) , "adimensioned" )
+    ( "hsize" , po::value<double>()->default_value( 0.025 ) , "mesh size" )
     ( "fixpointtol", po::value<double>()->default_value( 1e-8 ), "tolerance for the fix point" )
-    ( "gr", po::value<double>()->default_value( 1 ), "nombre de grashof" )
+    ( "gr", po::value<double>()->default_value( 1e2 ), "nombre de grashof" )
+    ( "rho", po::value<double>()->default_value( 1.177 ),"fluid density" )
+    ( "nu", po::value<double>()->default_value( 18.27 ),"kinematic viscosity" )
+    ( "k", po::value<double>()->default_value( 2.22e-5 ),"thermal diffusivity" )
+    ( "pC", po::value<double>()->default_value( 1100 ),"heat capacity" )
     ( "pr", po::value<double>()->default_value( 1e-2 ), "nombre de prandtl" )
     ( "lefttemp", po::value<double>()->default_value( 0.0 ), "temperature on the left side" )
     ( "newton", "use newton's method" )
     ( "penalbc",po::value<double>()->default_value( 10.0 ), "penalisation coefficient for the weak boundary conditions" )
+    ( "weakdir",po::value<int>()->default_value( 1 ),"weak dirichlet" )
     ( "maxiter_nlin", po::value<int>()->default_value( 100 ), "maximum nonlinearity iteration" )
     ( "maxiter_solve", po::value<int>()->default_value( 100 ), "maximum solver iteration" )
     ( "length", po::value<double>()->default_value( 1.0 ), "length of the room" )
-    ;
+    ( "steady",po::value<int>()->default_value( 1 ),"state steady or not" )
+    ( "dt",po::value<double>()->default_value( 1e-2 ),"time step" )
+    ( "tf",po::value<double>()->default_value( 1 ),"simulation duration" )
+    ( "T0",po::value<double>()->default_value( 300 ),"dirichlet condition value" )
+    ( "neum",po::value<double>()->default_value( 10 ),"neumann value" );
 
     // return the options as well as the feel options
     return convectionoptions.add( feel_options() );
-}
+};
 
 
 // Definition de la fonction qui donne les infos quand l'option --help est passee
@@ -71,14 +80,15 @@ makeAbout()
 
     // Retourne les infos
     return about;
-}
-
-extern template class Convection<2,1,2>;
+};
 
 int
 main( int argc, char** argv )
 {
     using namespace Feel;
+    Feel::Environment env( argc, argv );
+    if ( Environment::worldComm().rank() == 0 )
+        std::cout << " number of processors : "  << Environment::numberOfProcessors() << "\n";
 
     const int Order_s( 2 );
     const int Order_p( 1 );
@@ -88,7 +98,8 @@ main( int argc, char** argv )
     Feel::Assert::setLog( "convection.assert" );
 
     /* define and run application */
-    Convection<Order_s, Order_p, Order_t> myconvection( argc, argv, makeAbout(), makeOptions() );
+    Convection myconvection( argc, argv, makeAbout(), makeOptions() );
     myconvection.run();
 }
-
+//./cabine_convection --adim==1 --steady=1 --hsize=0.05 --weakdir=0    -snes_max_it 100 -ksp_converged_reason
+//-pc_factor_mat_solver_package umfpack -snes_monitor
