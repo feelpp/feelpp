@@ -219,6 +219,8 @@ PeriodicLaplacian<Dim,Order>::PeriodicLaplacian( int argc, char** argv, AboutDat
 
     Xhc = functionspace_composite_type::New( _mesh=mesh, _periodicity=Periodic<>( 2, 4, trans ) );
 
+    Xhc = functionspace_composite_type::New( _mesh=mesh, _periodicity=Periodic<2,4,value_type>( trans ) );
+
     Log() << "print space info\n";
     Xh->printInfo();
 
