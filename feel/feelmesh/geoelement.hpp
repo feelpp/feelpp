@@ -323,6 +323,14 @@ public:
         return *this;
     }
 
+    entity_type const& element0() const
+    {
+        return *boost::get<0>( *M_elements.begin() );
+    }
+    entity_type const& element1() const
+    {
+        return *boost::get<0>( *boost::next(M_elements.begin()) );
+    }
 
     void setConnection( element_connectivity_type const& connect )
     {
@@ -331,15 +339,15 @@ public:
 
     size_type ad_first() const
     {
-        return boost::get<1>( M_elements.front() );
+        return boost::get<1>( *M_elements.begin() );
     }
     uint16_type pos_first() const
     {
-        return boost::get<2>( M_elements.front() );
+        return boost::get<2>( *M_elements.begin() );
     }
     size_type proc_first() const
     {
-        return boost::get<3>( M_elements.front() );
+        return boost::get<3>( *M_elements.begin() );
     }
 
     size_type ad_second() const
@@ -367,13 +375,25 @@ public:
 
     element_connectivity_type const& connection0() const
     {
-        return M_elements.front();
+        return *M_elements.begin();
     }
     element_connectivity_type const& connection1() const
     {
         return *boost::next(M_elements.begin());
     }
 
+    bool isConnectedTo0() const
+    {
+        return ( boost::get<1>( *M_elements.begin() ) != invalid_size_type_value &&
+                 boost::get<2>( *M_elements.begin() ) != invalid_uint16_type_value &&
+                 boost::get<3>( *M_elements.begin() ) != invalid_size_type_value );
+    }
+    bool isConnectedTo1() const
+    {
+        return ( boost::get<1>( *boost::next(M_elements.begin()) ) != invalid_size_type_value &&
+                 boost::get<2>( *boost::next(M_elements.begin()) ) != invalid_uint16_type_value &&
+                 boost::get<3>( *boost::next(M_elements.begin()) ) != invalid_size_type_value );
+    }
     bool
     isInterProcessDomain( size_type p ) const
     {
@@ -385,6 +405,10 @@ public:
         return true;
     }
 
+    entity_type const& element( uint16_type e ) const
+    {
+        return *boost::get<0>( *M_elements.begin() );
+    }
     void disconnect()
     {
         M_elements.clear();
