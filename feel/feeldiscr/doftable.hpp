@@ -2445,8 +2445,8 @@ DofTable<MeshType, FEType, PeriodicityType>::buildPeriodicDofMap( mesh_type& M )
             //bool found_periodic_face_in_element = false;
             for ( ; it != en; ++it )
             {
-                if ( ( *it )->marker().value() == periodicity_type::tag2 ||
-                        ( *it )->marker().value() == periodicity_type::tag1 )
+                if ( ( *it )->marker().value() == M_periodicity.tag2() ||
+                     ( *it )->marker().value() == M_periodicity.tag1() )
                 {
                     // store the element reference for the end, the associated
                     // dof on the periodic face is in fact already taken care of.
@@ -2474,7 +2474,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildPeriodicDofMap( mesh_type& M )
         element_type const& __elt = *it_periodic->template get<0>();
         face_type const& __face = *it_periodic->template get<1>();
 
-        if ( __face.marker().value() == periodicity_type::tag1 )
+        if ( __face.marker().value() == M_periodicity.tag1() )
         {
             addVertexPeriodicDof( __elt, __face, next_free_dof, periodic_dof, __face.marker().value() );
             addEdgePeriodicDof( __elt, __face, next_free_dof, periodic_dof, __face.marker().value() );
@@ -2491,7 +2491,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildPeriodicDofMap( mesh_type& M )
         element_type const& __elt = *it_periodic->template get<0>();
         face_type const& __face = *it_periodic->template get<1>();
 
-        if ( __face.marker().value() == periodicity_type::tag2 )
+        if ( __face.marker().value() == M_periodicity.tag2() )
         {
             addVertexPeriodicDof( __elt, __face, next_free_dof, periodic_dof, __face.marker().value() );
             addEdgePeriodicDof( __elt, __face, next_free_dof, periodic_dof, __face.marker().value() );
@@ -2502,7 +2502,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildPeriodicDofMap( mesh_type& M )
     }
 
     Debug( 5015 ) << "[periodic dof table] next_free_dof : " << next_free_dof << "\n";
-    Debug( 5015 ) << "[periodic dof table] number of periodic dof : " << periodic_dof[periodicity_type::tag1].size() << "\n";
+    Debug( 5015 ) << "[periodic dof table] number of periodic dof : " << periodic_dof[M_periodicity.tag1()].size() << "\n";
 
     dof_points_type periodic_dof_points( next_free_dof );
     generatePeriodicDofPoints( M, periodic_elements, periodic_dof_points );
@@ -2512,7 +2512,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildPeriodicDofMap( mesh_type& M )
 
     size_type max_gid = 0;
     std::pair<size_type,periodic_dof_type> dof;
-    BOOST_FOREACH( dof, periodic_dof[periodicity_type::tag1] )
+    BOOST_FOREACH( dof, periodic_dof[M_periodicity.tag1()] )
     {
         size_type gid = dof.first;
         max_gid = ( max_gid > gid )?max_gid:gid;
@@ -2520,7 +2520,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildPeriodicDofMap( mesh_type& M )
 
     size_type max_gid2 = 0;
     std::pair<size_type,periodic_dof_type> dof2;
-    BOOST_FOREACH( dof2, periodic_dof[periodicity_type::tag2] )
+    BOOST_FOREACH( dof2, periodic_dof[M_periodicity.tag2()] )
     {
         size_type gid2 = dof2.first;
         FEELPP_ASSERT( gid2 > max_gid )( gid2 )( max_gid ).error( "invalid dof index" );
@@ -2531,7 +2531,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildPeriodicDofMap( mesh_type& M )
     std::vector<bool> periodic_dof_done( max_gid+1 );
     std::fill( periodic_dof_done.begin(), periodic_dof_done.end(), false );
 
-    BOOST_FOREACH( dof, periodic_dof[periodicity_type::tag1] )
+    BOOST_FOREACH( dof, periodic_dof[M_periodicity.tag1()] )
     {
         size_type gid = dof.first;
 
@@ -2540,8 +2540,8 @@ DofTable<MeshType, FEType, PeriodicityType>::buildPeriodicDofMap( mesh_type& M )
 
         node_type x1 = periodic_dof_points[gid].template get<0>();
         bool match = false;
-        typename periodic_dof_map_type::iterator it_dof2 = periodic_dof[periodicity_type::tag2].begin();
-        typename periodic_dof_map_type::iterator en_dof2 = periodic_dof[periodicity_type::tag2].end();
+        typename periodic_dof_map_type::iterator it_dof2 = periodic_dof[M_periodicity.tag2()].begin();
+        typename periodic_dof_map_type::iterator en_dof2 = periodic_dof[M_periodicity.tag2()].end();
 
         for ( ; it_dof2 != en_dof2; ++ it_dof2 )
         {
@@ -2552,7 +2552,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildPeriodicDofMap( mesh_type& M )
             //( x1 )( x2 )( M_periodicity.translation() ).error( "[periodic] invalid periodic setup");
         }
 
-        it_dof2 = periodic_dof[periodicity_type::tag2].begin();
+        it_dof2 = periodic_dof[M_periodicity.tag2()].begin();
         size_type corresponding_gid = invalid_size_type_value;
 
         for ( ; it_dof2 != en_dof2; ++ it_dof2 )
@@ -2581,8 +2581,8 @@ DofTable<MeshType, FEType, PeriodicityType>::buildPeriodicDofMap( mesh_type& M )
         if ( match )
         {
 
-            it_dof2 = periodic_dof[periodicity_type::tag2].lower_bound( corresponding_gid );
-            en_dof2 = periodic_dof[periodicity_type::tag2].upper_bound( corresponding_gid );
+            it_dof2 = periodic_dof[M_periodicity.tag2()].lower_bound( corresponding_gid );
+            en_dof2 = periodic_dof[M_periodicity.tag2()].upper_bound( corresponding_gid );
             Debug( 5015 ) << "distance = " << std::distance( it_dof2, en_dof2 ) << "\n";
 
             while ( it_dof2 != en_dof2 )
@@ -2621,8 +2621,8 @@ DofTable<MeshType, FEType, PeriodicityType>::buildPeriodicDofMap( mesh_type& M )
                 ++it_dof2;
             }
 
-            it_dof2 = periodic_dof[periodicity_type::tag2].lower_bound( corresponding_gid );
-            periodic_dof[periodicity_type::tag2].erase( it_dof2, en_dof2 );
+            it_dof2 = periodic_dof[M_periodicity.tag2()].lower_bound( corresponding_gid );
+            periodic_dof[M_periodicity.tag2()].erase( it_dof2, en_dof2 );
             periodic_dof_done[gid] =  true;
         }
 
@@ -2635,14 +2635,14 @@ DofTable<MeshType, FEType, PeriodicityType>::buildPeriodicDofMap( mesh_type& M )
 
     }
     Debug( 5015 ) << "[periodic dof table] done matching the dof points\n";
-    Debug( 5015 ) << "[periodic dof table] is empty : " << periodic_dof[periodicity_type::tag2].empty() << "\n";
+    Debug( 5015 ) << "[periodic dof table] is empty : " << periodic_dof[M_periodicity.tag2()].empty() << "\n";
 
-    // ensure that periodic_dof[periodicity_type::tag2] is empty
-    if ( !periodic_dof[periodicity_type::tag2].empty() )
+    // ensure that periodic_dof[M_periodicity.tag2()] is empty
+    if ( !periodic_dof[M_periodicity.tag2()].empty() )
     {
         Debug( 5015 ) << "[periodic] periodic conditions not set properly, some periodic dof were not assigned\n";
-        typename periodic_dof_map_type::iterator it_dof2 = periodic_dof[periodicity_type::tag2].begin();
-        typename periodic_dof_map_type::iterator en_dof2 = periodic_dof[periodicity_type::tag2].end();
+        typename periodic_dof_map_type::iterator it_dof2 = periodic_dof[M_periodicity.tag2()].begin();
+        typename periodic_dof_map_type::iterator en_dof2 = periodic_dof[M_periodicity.tag2()].end();
 
         while ( it_dof2 != en_dof2 )
         {
@@ -3117,10 +3117,10 @@ DofTable<MeshType, FEType, PeriodicityType>::generatePeriodicDofPoints(  mesh_ty
                     // these tests are problem specific x=0 and x=translation
 #if 0
 
-                    if ( __face.marker().value() == periodicity_type::tag1 )
+                    if ( __face.marker().value() == M_periodicity.tag1() )
                         FEELPP_ASSERT( math::abs( __c->xReal( lid )[0] ) < 1e-10 )( __c->xReal( lid ) ).warn( "[periodic] invalid p[eriodic point tag1" );
 
-                    if ( __face.marker().value() == periodicity_type::tag2 )
+                    if ( __face.marker().value() == M_periodicity.tag2() )
                         FEELPP_ASSERT( math::abs( __c->xReal( lid )[0] - M_periodicity.translation()[0] ) < 1e-10 )
                         ( __c->xReal( lid ) )( M_periodicity.translation() ).warn( "[periodic] invalid p[eriodic point tag1" );
 
@@ -3148,10 +3148,10 @@ DofTable<MeshType, FEType, PeriodicityType>::generatePeriodicDofPoints(  mesh_ty
                 // these tests are problem specific x=0 and x=translation
 #if 0
 
-                if ( __face.marker().value() == periodicity_type::tag1 )
+                if ( __face.marker().value() == M_periodicity.tag1() )
                     FEELPP_ASSERT( math::abs( __c->xReal( lid )[1] +1 ) < 1e-10 )( __c->xReal( lid ) ).warn( "[periodic] invalid p[eriodic point tag1" );
 
-                if ( __face.marker().value() == periodicity_type::tag2 )
+                if ( __face.marker().value() == M_periodicity.tag2() )
                     FEELPP_ASSERT( math::abs( __c->xReal( lid )[1] - ( M_periodicity.translation()[1]-1 ) ) < 1e-10 )
                     ( __c->xReal( lid ) )( M_periodicity.translation() ).warn( "[periodic] invalid p[eriodic point tag1" );
 
