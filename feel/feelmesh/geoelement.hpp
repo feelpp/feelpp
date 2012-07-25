@@ -674,9 +674,9 @@ public:
     typedef GeoElement1D<Dim, GEOSHAPE, SubFace, T > self_type;
     //typedef typename SubFace::template Element<self_type>::type element_type;
     typedef self_type element_type;
-    typedef typename mpl::if_<mpl::equal_to<mpl::int_<nDim>,mpl::int_<1> >,
-            mpl::identity<GeoElement0D<Dim, SubFaceOf<self_type>, T> >,
-            mpl::identity<GeoElement0D<Dim, SubFaceOfNone, T> > >::type::type point_type;
+    typedef typename mpl::if_<mpl::equal_to<mpl::int_<nRealDim>,mpl::int_<1> >,
+                              mpl::identity<GeoElement0D<Dim, SubFaceOf<self_type>, T> >,
+                              mpl::identity<GeoElement0D<Dim, SubFaceOfMany<self_type>, T> > >::type::type point_type;
     typedef point_type GeoBElement;
 
     static const uint16_type numLocalVertices = super::numLocalVertices;
@@ -933,7 +933,10 @@ public:
     typedef GeoElement2D<Dim, GEOSHAPE,SubFace, T> self_type;
     //typedef typename SubFace::template Element<self_type>::type element_type;
     typedef self_type element_type;
-    typedef GeoElement1D<Dim, entity_face_type, SubFaceOf<self_type>, T > edge_type;
+    typedef typename mpl::if_<mpl::equal_to<mpl::int_<nRealDim>,mpl::int_<2> >,
+                              mpl::identity<GeoElement1D<Dim, entity_face_type, SubFaceOf<self_type>, T> >,
+                              mpl::identity<GeoElement1D<Dim, entity_face_type, SubFaceOfMany<self_type>, T> > >::type::type edge_type;
+    //typedef GeoElement1D<Dim, entity_face_type, SubFaceOf<self_type>, T > edge_type;
     typedef GeoElement0D<Dim, SubFaceOfNone, T> point_type;
 #if 0
     BOOST_MPL_ASSERT_MSG( ( boost::is_same<point_type,typename edge_type::point_type>::value ),
