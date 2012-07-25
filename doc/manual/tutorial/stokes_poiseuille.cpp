@@ -285,12 +285,13 @@ Stokes_Poiseuille::run()
     auto SigmaN = -id( p )*N()+mu*def*N();
     //# endmarker6 #
 
-    // solution exacte (profile de poiseuille)
+    //*********************  solution exacte (profile de poiseuille) **********************
     auto u_exact=vec(Py()*(1-Py()),cst(0.) );
 
-    auto p_exact=(-2*Px());
+    auto p_exact=(-2*Px()+1);
 
     auto f=vec(cst(0.) , cst(0.) );
+    //*************************************************************************************
 
     // right hand side
     auto stokes_rhs = form1( _test=Xh, _vector=F );
@@ -342,8 +343,7 @@ Stokes_Poiseuille::run()
 #endif
     this->exportResults( u_exact, p_exact, U, V );
 
-    /* double mean_p_exact = integrate( elements( u.mesh() ), idv( p_exact ) ).evaluate()( 0, 0 )/meas;
-       std::cout << "[stokes] mean(p_exact)=" << mean_p_exact << "\n";*/
+   
 
     Log() << "[dof]         number of dof: " << Xh->nDof() << "\n";
     Log() << "[dof]    number of dof/proc: " << Xh->nLocalDof() << "\n";
@@ -383,9 +383,14 @@ Stokes_Poiseuille::exportResults( ExprUExact u_exact, ExprPExact p_exact,
     std::cout << "[stokes] measure(Omega)=" << meas << " (should be equal to 1)\n";
 
     double mean_p = integrate( elements( u.mesh() ), idv( p ) ).evaluate()( 0, 0 )/meas;
-
     Log() << "[stokes] mean(p)=" << mean_p << "\n";
     std::cout << "[stokes] mean(p)=" << mean_p << "\n";
+
+    ////////////////////////////////////////////////////////////////////////////////////////
+    double mean_p_exact = integrate( elements( u.mesh() ),  p_exact ).evaluate()( 0, 0 )/meas;
+    std::cout << "[stokes] mean(p_exact)=" << mean_p_exact << "\n";
+    //////////////////////////////////////////////////////////////////////////////////////////
+
 
     double p_errorL2 = integrate( elements( u.mesh() ), ( idv( p )-mean_p - p_exact )*( idv( p )-mean_p-p_exact ) ).evaluate()( 0, 0 );
     std::cout << "||p_error||_2 = " << math::sqrt( p_errorL2 ) << "\n";;
