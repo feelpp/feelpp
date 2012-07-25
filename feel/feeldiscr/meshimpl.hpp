@@ -531,6 +531,16 @@ template<typename Shape, typename T, int Tag>
 void
 Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne()
 {
+    updateEntitiesCoDimensionOne( mpl::bool_<nDim==nRealDim>() );
+}
+template<typename Shape, typename T, int Tag>
+void
+Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<false> )
+{}
+template<typename Shape, typename T, int Tag>
+void
+Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
+{
     boost::timer ti;
     face_type face;
     //face.setWorldComm(this->worldComm());

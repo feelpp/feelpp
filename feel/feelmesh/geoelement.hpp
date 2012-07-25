@@ -323,11 +323,56 @@ public:
         return *this;
     }
 
+
     void setConnection( element_connectivity_type const& connect )
     {
         this->insert( connect );
     }
 
+    size_type ad_first() const
+    {
+        return boost::get<1>( M_elements.front() );
+    }
+    uint16_type pos_first() const
+    {
+        return boost::get<2>( M_elements.front() );
+    }
+    size_type proc_first() const
+    {
+        return boost::get<3>( M_elements.front() );
+    }
+
+    size_type ad_second() const
+    {
+        return boost::get<1>( *boost::next(M_elements.begin()) );
+    }
+    uint16_type pos_second() const
+    {
+        return boost::get<2>( *boost::next(M_elements.begin()) );
+    }
+    size_type proc_second() const
+    {
+        return boost::get<3>( *boost::next(M_elements.begin()) );
+    }
+
+
+    void setConnection0( element_connectivity_type const& connect )
+    {
+        M_elements.insert( connect );
+    }
+    void setConnection1( element_connectivity_type const& connect )
+    {
+        M_elements.insert( connect );
+    }
+
+    element_connectivity_type const& connection0() const
+    {
+        return M_elements.front();
+    }
+    element_connectivity_type const& connection1() const
+    {
+        return *boost::next(M_elements.begin());
+    }
 
     bool
     isInterProcessDomain( size_type p ) const

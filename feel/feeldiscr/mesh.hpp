@@ -1128,6 +1128,8 @@ protected:
      * Update connectivity of entities of codimension 1
      */
     void updateEntitiesCoDimensionOne();
+    void updateEntitiesCoDimensionOne(mpl::bool_<true>);
+    void updateEntitiesCoDimensionOne(mpl::bool_<false>);
 
     /**
      * Update in ghost cells of entities of codimension 1
