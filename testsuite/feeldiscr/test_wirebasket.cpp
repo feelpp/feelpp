@@ -121,8 +121,9 @@ void run( Application_ptrtype & theApp )
     BOOST_CHECK_SMALL( const_extention_error1,1e-10 );
     BOOST_CHECK_SMALL( const_extention_error2,5e-4 );
 #endif
+
 #endif
-} // run
+
 
 } //namespace test_wirebasket
 
