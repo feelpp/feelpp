@@ -243,7 +243,7 @@ GmshHypercubeDomain::getDescription3D() const
          << "Physical Line(3) = {3};\n"
          << "Physical Line(4) = {4};\n";
 
-    if ( this->usePhysicalNames() == false )
+    if ( this->usePhysicalNames() == false && this->subStructuring() == false )
     {
         ostr << "Physical Surface(6) = {6};\n"
              << "Physical Surface(15) = {15};\n"
@@ -253,7 +253,18 @@ GmshHypercubeDomain::getDescription3D() const
              << "Physical Surface(28) = {28};\n"
              << "Physical Volume(30) = {1};\n";
     }
-
+    else if ( this->subStructuring() == true )
+    {
+        ostr << "Physical Point(\"CrossPoints\") = {1,2,3,4,5,6,10,14};\n";
+        ostr << "Physical Line(\"WireBasket\") = {1,2,3,4,8,9,10,11,13,14,18,22};\n"
+        ostr << "Physical Surface(\"TOP\") = {6};\n"
+             << "Physical Surface(\"NORTH\") = {15};\n"
+             << "Physical Surface(\"WEST\") = {19};\n"
+             << "Physical Surface(\"SOUTH\") = {23};\n"
+             << "Physical Surface(\"EAST\") = {27};\n"
+             << "Physical Surface(\"BOTTOM\") = {28};\n"
+             << "Physical Volume(30) = {1};\n";
+    }
     else
     {
         ostr << "Physical Surface(\"Neumann\") = {6,19,27,28};\n"

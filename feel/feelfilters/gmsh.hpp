@@ -379,6 +379,14 @@ public:
         {
             M_desc = desc;
         }
+    void setSubStructuring( bool substruct )
+        {
+            M_substructuring = substruct;
+        }
+    bool substructuring() const
+        {
+            return M_substructuring;
+        }
     /**
      * set the prefix of the Gmsh files
      */
@@ -595,6 +603,8 @@ protected:
     bool M_recombine;
     //! number of refinement levels
     int M_refine_levels;
+
+    bool M_substructuring;
 };
 
 ///! \typedef gmsh_type Gmsh
@@ -842,6 +852,7 @@ BOOST_PARAMETER_FUNCTION(
       ( partition_file,   *( boost::is_integral<mpl::_> ), 0 )
       ( partitioner,   *( boost::is_integral<mpl::_> ), GMSH_PARTITIONER_CHACO )
       ( worldcomm,      *, Environment::worldComm() )
+      ( substructuring,      *(bool), 0 )
         )
     )
 {
@@ -857,6 +868,7 @@ BOOST_PARAMETER_FUNCTION(
         desc->setOrder( mesh->nOrder );
         desc->setWorldComm( worldcomm );
         desc->setNumberOfPartitions( partitions );
+        desc->setSubStructuring( substructuring );
         desc->setPartitioner( partitioner );
         desc->setMshFileByPartition( partition_file );
         desc->setRefinementLevels( refine );
