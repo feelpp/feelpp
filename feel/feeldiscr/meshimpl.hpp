@@ -1107,6 +1107,8 @@ template<typename Shape, typename T, int Tag>
 void
 Mesh<Shape, T, Tag>::check() const
 {
+    if ( nDim != nRealDim )
+        return;
 #if !defined( NDEBUG )
     Debug( 4015 ) << "[Mesh::check] numLocalFaces = " << this->numLocalFaces() << "\n";
     element_iterator iv = this->beginElementWithProcessId( this->worldComm().localRank() );
