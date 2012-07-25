@@ -816,8 +816,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     if ( doExtrapolationAtStart ) locTool->setExtrapolation(false);
 
 
-   uint16_type nMPIsearch=5;
-   if (this->domainSpace()->mesh()->worldComm().localSize()<5) nMPIsearch=this->domainSpace()->mesh()->worldComm().localSize();
+    uint16_type nMPIsearch=15;//5;
+   if (this->domainSpace()->mesh()->worldComm().localSize()<nMPIsearch) nMPIsearch=this->domainSpace()->mesh()->worldComm().localSize();
    // only one int this case
    if (!this->interpolationType().searchWithCommunication()) nMPIsearch=1;
    uint16_type counterMPIsearch=1;
