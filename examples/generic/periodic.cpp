@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2008-10-03
 
-  Copyright (C) 2008-2010 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2008-2012 Université Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
