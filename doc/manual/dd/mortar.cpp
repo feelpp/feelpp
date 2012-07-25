@@ -184,14 +184,14 @@ private:
     double mesh2Size;
     //! shape of the domains
     std::string shape;
+    //! boost timer
+    std::map<std::string, std::pair<boost::timer, double> > timers;
     //! first subdomain exporter
     export_ptrtype M_firstExporter;
     //! second subdomain exporter
     export_ptrtype M_secondExporter;
     //! trace exporter
     trace_export_ptrtype M_trace_exporter;
-    //! boost timer
-    std::map<std::string, std::pair<boost::timer, double> > timers;
     // first subdomain flags for outsides
     std::vector<int> outside1;
     // second subdomain flags for outsides
