@@ -297,7 +297,7 @@ public:
         M_elements()
         {}
 
-    SubFaceOfMany( SubFaceOf const& sf )
+    SubFaceOfMany( SubFaceOfMany const& sf )
         :
         M_elements( sf.M_elements )
         {
@@ -309,7 +309,7 @@ public:
         }
     virtual ~SubFaceOfMany() {}
 
-    SubFaceOfMany& operator=( SubFaceOf const& sf )
+    SubFaceOfMany& operator=( SubFaceOfMany const& sf )
         {
             if ( this != &sf )
             {
@@ -332,15 +332,12 @@ public:
     bool
     isInterProcessDomain( size_type p ) const
     {
-        return ( ( boost::get<3>( M_element1 ) != invalid_size_type_value ) &&
-                 ( ( boost::get<3>( M_element0 ) == p ) || ( boost::get<3>( M_element1 ) == p ) ) &&
-                 ( boost::get<3>( M_element0 ) != boost::get<3>( M_element1 ) ) );
+        return false;
     }
     bool
     isIntraProcessDomain( size_type p ) const
     {
-        return ( ( boost::get<3>( M_element0 ) == p ) &&
-                 ( boost::get<3>( M_element1 ) == p ) );
+        return true;
     }
 
     void disconnect()
