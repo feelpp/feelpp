@@ -155,6 +155,8 @@ public:
     typedef typename model_type::vector_ptrtype vector_ptrtype;
     typedef typename model_type::beta_vector_type beta_vector_type;
 
+    typedef typename std::vector< std::vector < element_ptrtype > > initial_guess_type;
+
 
     typedef Eigen::VectorXd y_type;
     typedef std::vector<y_type> y_set_type;
@@ -900,6 +902,7 @@ private:
     std::vector < std::vector<matrixN_type> > M_Mqm_pr;
     std::vector < std::vector<matrixN_type> > M_Mqm_du;
     std::vector < std::vector<matrixN_type> > M_Mqm_pr_du;
+
     std::vector < std::vector<vectorN_type> > M_MFqm_pr;
 
     // right hand side
@@ -1205,6 +1208,7 @@ CRB<TruthModelType>::offline()
     //std::cout << " -- WN size :  " << M_WNmu->size() << "\n";
 
     sparse_matrix_ptrtype M,A,Adu,At;
+    element_ptrtype InitialGuess;
     vector_ptrtype MF;
     std::vector<vector_ptrtype> F,L;
 
@@ -1219,6 +1223,7 @@ CRB<TruthModelType>::offline()
     sparse_matrix_ptrtype Aq_transpose = M_model->newMatrix();
 
     boost::tie( Mqm, Aqm, Fqm, MFqm ) = M_model->computeAffineDecomposition();
+
 
     // scm offline stage: build C_K
     if ( M_error_type == CRB_RESIDUAL_SCM )
@@ -1343,7 +1348,7 @@ CRB<TruthModelType>::offline()
         {
             u->zero();
             udu->zero();
-            boost::tie( M, A, F, MF ) = M_model->update( mu , 1e30 );
+            boost::tie( boost::tuples::ignore, A, F, MF ) = M_model->update( mu , 1e30 );
 
             std::cout << "  -- updated model for parameter in " << timer2.elapsed() << "s\n";
             timer2.restart();
@@ -1752,7 +1757,7 @@ CRB<TruthModelType>::offline()
 	if( M_model->isSteady() )
 	    number_of_added_elements=1;
 
-	std::cout<<"number_of_added_elements = "<<number_of_added_elements<<std::endl;
+        std::cout<<"number_of_added_elements = "<<number_of_added_elements<<std::endl;
 
         M_N+=number_of_added_elements;
 
@@ -1769,7 +1774,6 @@ CRB<TruthModelType>::offline()
             orthonormalize( M_N, M_WNdu, number_of_added_elements );
             orthonormalize( M_N, M_WNdu, number_of_added_elements );
         }
-
 
         LOG(INFO) << "[CRB::offline] compute Aq_pr, Aq_du, Aq_pr_du" << "\n";
         for  (size_type q = 0; q < M_model->Qa(); ++q )
@@ -1809,7 +1813,6 @@ CRB<TruthModelType>::offline()
         {
             for( size_type m = 0; m < M_model->mMaxM(q); ++m )
             {
-
                 M_Mqm_pr[q][m].conservativeResize( M_N, M_N );
                 M_Mqm_du[q][m].conservativeResize( M_N, M_N );
                 M_Mqm_pr_du[q][m].conservativeResize( M_N, M_N );
@@ -1840,15 +1843,16 @@ CRB<TruthModelType>::offline()
 
         for ( size_type q = 0; q < M_model->Qmf(); ++q )
         {
-            for( size_type m = 0; m < M_model->mMaxM(q); ++m )
+            for( size_type m = 0; m < M_model->mMaxMF(q); ++m )
             {
                 M_MFqm_pr[q][m].conservativeResize( M_N );
                 for ( size_type j = 0; j < M_N; ++j )
                 {
-                    M_MFqm_pr[q][m]( j ) = M_model->MFqm( q, m, M_WN[j] );
+                    M_MFqm_pr[q][m]( j ) = inner_product( *MFqm[q][m] , M_WN[j] );
                 }
             }
         }
+
         LOG(INFO) << "[CRB::offline] compute Fq_pr, Fq_du" << "\n";
 
         for ( size_type q = 0; q < M_model->Ql( 0 ); ++q )
@@ -1889,10 +1893,10 @@ CRB<TruthModelType>::offline()
 
         LOG(INFO) << "compute coefficients needed for the initialization of unknown in the online step\n";
 
+
         element_ptrtype primal_initial_field ( new element_type ( M_model->functionSpace() ) );
         element_ptrtype projection    ( new element_type ( M_model->functionSpace() ) );
         M_model->initializationField( primal_initial_field, mu ); //fill initial_field
-
 
         if ( model_type::is_time_dependent || !M_model->isSteady() )
         {
@@ -2053,7 +2057,6 @@ CRB<TruthModelType>::offline()
     return M_rbconv;
 
 }
-
 
 
 template<typename TruthModelType>
@@ -2853,14 +2856,16 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
     //in transient case, the model has a function initializationField
     //uNold[0].setOnes(M_N);
 
+
     for ( double time=time_step; time<=time_for_output; time+=time_step )
     {
 
         boost::tie( betaMqm, betaAqm, betaFqm, betaMFqm ) = M_model->computeBetaQm( this->expansion( uNold[0] ), mu ,time );
+        //boost::tie( betaMqm, betaAqm, betaFqm, betaMFqm ) = M_model->computeBetaQm( mu ,time );
         //LOG(INFO) << "betaMFqm = " << betaMFqm[0][0] <<"\n";//<< "," << betaMFqm[1][0] << "\n";
         //LOG(INFO) << "betaMqm = " << betaMqm[0][0] << "\n";
-        LOG(INFO) << "Qm = " << M_model->Qm() << "\n";
-        LOG(INFO) << "mMaxM = " << M_model->mMaxM(0) << "\n";
+        //LOG(INFO) << "Qm = " << M_model->Qm() << "\n";
+        //LOG(INFO) << "mMaxM = " << M_model->mMaxM(0) << "\n";
 
         google::FlushLogFiles(google::GLOG_INFO);
         // compute initial guess for fixed point
@@ -2877,7 +2882,8 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
         F.setZero( N );
         for ( size_type q = 0; q < M_model->Qmf(); ++q )
         {
-            F += betaMFqm[q][0]*M_MFqm_pr[q][0].head( N );
+            for(int m=0; m<M_model->mMaxMF(q); m++)
+                F += betaMFqm[q][0]*M_MFqm_pr[q][0].head( N );
         }
         LOG(INFO) << "F=" << F << "\n";
 
@@ -2954,6 +2960,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
             output = L.dot( uN[time_index] );
             //output_time_vector.push_back( output );
             output_time_vector[time_index] = output;
+
 
             LOG(INFO) << "iteration " << fi << " increment error: " << (uN[time_index]-previous_uN).norm() << "\n";               google::FlushLogFiles(google::GLOG_INFO);
             fi++;
@@ -4104,7 +4111,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
     std::vector< std::vector<sparse_matrix_ptrtype> > Aqm;
     std::vector< std::vector<sparse_matrix_ptrtype> > Mqm;
     std::vector< std::vector<std::vector<vector_ptrtype> > > Fqm;
-    std::vector<std::vector<vector_ptrtype> > MFqm;
+    std::vector<std::vector<element_ptrtype> > MFqm;
     boost::tie( Mqm, Aqm, Fqm , MFqm ) = M_model->computeAffineDecomposition();
     __X->zero();
     __X->add( 1.0 );
