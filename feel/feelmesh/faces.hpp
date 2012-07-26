@@ -306,12 +306,12 @@ public:
     face_type const& face( size_type i ) const
     {
         return *_M_faces.find( face_type( i ) );
-    };
+    }
 
     face_iterator faceIterator( size_type i ) const
     {
         return  _M_faces.find( face_type( i ) );
-    };
+    }
 
     face_iterator beginFace()
     {
