@@ -6,7 +6,7 @@
    Date: 2004-11-22
 
    Copyright (C) 2004 EPFL
-   Copyright (C) 2007-2010 Université Joseph Fourier (Grenoble I)
+   Copyright (C) 2007-2012 Université Joseph Fourier (Grenoble I)
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -451,17 +451,19 @@ struct H
     array_type _M_hess;
 };
 
-template<typename MeshPtrType>
+template<typename MeshPtrType, typename PeriodicityType = NoPeriodicity>
 struct InitializeSpace
 {
     InitializeSpace( MeshPtrType const& mesh,
+                     PeriodicityType const& periodicity,
                      std::vector<boost::tuple<size_type, uint16_type, size_type> > const& dofindices,
                      std::vector<WorldComm> const & worldsComm )
         :
         _M_cursor( 0 ),
         _M_worldsComm( worldsComm ),
         _M_mesh( mesh ),
-        _M_dofindices( dofindices )
+        _M_dofindices( dofindices ),
+        _M_periodicity( periodicity )
 
     {}
     template <typename T>
@@ -472,7 +474,8 @@ struct InitializeSpace
     template <typename T>
     void operator()( boost::shared_ptr<T> & x, mpl::bool_<true> ) const
     {
-        x = boost::shared_ptr<T>( new T( _M_mesh, _M_dofindices, std::vector<WorldComm>( 1,_M_worldsComm[_M_cursor] ) ) );
+        x = boost::shared_ptr<T>( new T( _M_mesh, _M_dofindices, _M_periodicity,
+                                         std::vector<WorldComm>( 1,_M_worldsComm[_M_cursor] ) ) );
         FEELPP_ASSERT( x ).error( "invalid function space" );
 
         ++_M_cursor;// warning _M_cursor < nb color
@@ -482,7 +485,8 @@ struct InitializeSpace
     {
         // look for T::mesh_ptrtype in MeshPtrType
         auto m = *fusion::find<typename T::mesh_ptrtype>(_M_mesh);
-        x = boost::shared_ptr<T>( new T( m, _M_dofindices, std::vector<WorldComm>( 1,_M_worldsComm[_M_cursor] ) ) );
+        x = boost::shared_ptr<T>( new T( m, _M_dofindices, _M_periodicity,
+                                         std::vector<WorldComm>( 1,_M_worldsComm[_M_cursor] ) ) );
         FEELPP_ASSERT( x ).error( "invalid function space" );
 
         ++_M_cursor;// warning _M_cursor < nb color
@@ -491,6 +495,7 @@ struct InitializeSpace
     std::vector<WorldComm> _M_worldsComm;
     MeshPtrType _M_mesh;
     std::vector<boost::tuple<size_type, uint16_type, size_type> > const& _M_dofindices;
+    PeriodicityType _M_periodicity;
 };
 template<typename DofType>
 struct updateDataMapProcess
@@ -2632,7 +2637,7 @@ public:
         std::vector<WorldComm> const& worldsComm() const
         {
             return _M_functionspace->worldsComm();
-        };
+        }
 
         /**
          * world communicator
@@ -2640,7 +2645,7 @@ public:
         WorldComm const& worldComm() const
         {
             return _M_functionspace->worldComm();
-        };
+        }
 
         /**
          * \return the number of dof
@@ -2981,12 +2986,13 @@ public:
 
     FunctionSpace( mesh_ptrtype const& mesh,
                    std::vector<boost::tuple<size_type, uint16_type, size_type> > const& dofindices,
+                   periodicity_type periodicity = periodicity_type(),
                    std::vector<WorldComm> const& _worldsComm = Environment::worldsComm(nSpaces) )
         :
         _M_worldsComm( _worldsComm ),
         _M_worldComm( new WorldComm( _worldsComm[0] ) )
     {
-        this->init( mesh, 0, dofindices );
+        this->init( mesh, 0, dofindices, periodicity );
     }
 
     /**
@@ -3071,7 +3077,8 @@ public:
 
     void init( mesh_ptrtype const& mesh,
                size_type mesh_components,
-               std::vector<boost::tuple<size_type, uint16_type, size_type> > const& dofindices )
+               std::vector<boost::tuple<size_type, uint16_type, size_type> > const& dofindices,
+               periodicity_type periodicity = periodicity_type() )
     {
 
         Context ctx( mesh_components );
@@ -3080,7 +3087,7 @@ public:
         Debug( 5010 ) << "component MESH_UPDATE_FACES: " <<  ctx.test( MESH_UPDATE_FACES ) << "\n";
         Debug( 5010 ) << "component    MESH_PARTITION: " <<  ctx.test( MESH_PARTITION ) << "\n";
 
-        this->init( mesh, mesh_components, periodicity_type(), dofindices, mpl::bool_<is_composite>() );
+        this->init( mesh, mesh_components, periodicity, dofindices, mpl::bool_<is_composite>() );
         //mesh->addObserver( *this );
     }
 
@@ -3830,16 +3837,17 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 void
 FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
-        size_type mesh_components,
-        periodicity_type const& periodicity,
-        std::vector<boost::tuple<size_type, uint16_type, size_type> > const& dofindices,
-        mpl::bool_<true> )
+                                         size_type mesh_components,
+                                         periodicity_type const& periodicity,
+                                         std::vector<boost::tuple<size_type, uint16_type, size_type> > const& dofindices,
+                                         mpl::bool_<true> )
 {
     Debug( 5010 ) << "calling init(<composite>) begin\n";
     _M_mesh = __m;
 
     // todo : check worldsComm size and _M_functionspaces are the same!
-    fusion::for_each( _M_functionspaces, detail::InitializeSpace<mesh_ptrtype>( __m, dofindices, this->worldsComm() ) );
+    fusion::for_each( _M_functionspaces, detail::InitializeSpace<mesh_ptrtype,periodicity_type>( __m, periodicity,
+                                                                                                 dofindices, this->worldsComm() ) );
 
 #if !defined(FEELPP_ENABLE_MPI_MODE) // NOT MPI
     _M_dof = dof_ptrtype( new dof_type( this->nDof(), this->nLocalDof() ) );
