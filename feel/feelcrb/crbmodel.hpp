@@ -454,16 +454,30 @@ public:
 
     betaqm_type computeBetaQm( element_type const& T, parameter_type const& mu , double time=0 )
     {
-        beta_vector_type betaAqm;
-        beta_vector_type betaMqm, betaInitialGuessQm;
+        return computeBetaQm( T , mu , mpl::bool_<model_type::is_time_dependent>(), time );
+    }
+    betaqm_type computeBetaQm( element_type const& T, parameter_type const& mu , mpl::bool_<true>, double time=0 )
+    {
+        return M_model->computeBetaQm( T, mu, time );
+    }
+    betaqm_type computeBetaQm( element_type const& T, parameter_type const& mu , mpl::bool_<false>, double time=0 )
+    {
+        beta_vector_type betaAqm, betaMqm, betaInitialGuessQm;
         std::vector<beta_vector_type>  betaFqm;
-        boost::tuple< beta_vector_type, beta_vector_type, std::vector<beta_vector_type>, beta_vector_type > steady_beta;
-        //steady_beta = M_model->computeBetaQm( mu , time );
-        steady_beta = computeBetaQm( mu , time );
-        betaMqm = steady_beta.get<0>();
-        betaAqm = steady_beta.get<1>();
-        betaFqm = steady_beta.get<2>();
-        betaInitialGuessQm = steady_beta.get<3>();
+        boost::tuple<  beta_vector_type,
+                       std::vector<beta_vector_type>,
+                       beta_vector_type >
+            steady_beta;
+
+        steady_beta = M_model->computeBetaQm(T, mu , time );
+        betaAqm = steady_beta.get<0>();
+        betaFqm = steady_beta.get<1>();
+        betaInitialGuessQm = steady_beta.get<2>();
+
+        betaMqm.resize( 1 );
+        betaMqm[0].resize( 1 );
+        betaMqm[0][0] = 1 ;
+
         return boost::make_tuple( betaMqm, betaAqm, betaFqm, betaInitialGuessQm );
     }
 
@@ -474,6 +488,11 @@ public:
     offline_merge_type update( parameter_type const& mu,  double time=0 )
     {
         M_model->computeBetaQm( mu , time );
+        return offlineMerge( mu );
+    }
+    offline_merge_type update( parameter_type const& mu, element_type const& T, double time=0 )
+    {
+        M_model->computeBetaQm(T, mu , time );
         return offlineMerge( mu );
     }
 
