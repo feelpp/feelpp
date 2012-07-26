@@ -217,6 +217,11 @@ public:
         return _M_points.template get<detail::by_marker>().upper_bound( m );
     }
 
+    point_iterator pointIterator( size_type i ) const
+    {
+        return  _M_points.find( point_type( i ) );
+    }
+
     /**
      * get the points container by id
      *
