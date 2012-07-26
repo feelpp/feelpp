@@ -468,6 +468,38 @@ Mesh<Shape, T, Tag>::renumber( mpl::bool_<true> )
 
         }
     }
+    renumber( node_map, mpl::int_<nDim>() );
+
+    if ( Shape == SHAPE_TETRA && nOrder==1 )
+    {
+        localrenumber();
+
+#if !defined(NDEBUG)
+        checkLocalPermutation( mpl::bool_< ( Shape == SHAPE_TETRA ) >() );
+#endif
+    }
+
+    // should we renumber also the faces and elements ?
+
+
+}
+
+template<typename Shape, typename T, int Tag>
+void
+Mesh<Shape, T, Tag>::renumber( std::vector<size_type> const& node_map, mpl::int_<1> )
+{
+}
+template<typename Shape, typename T, int Tag>
+void
+Mesh<Shape, T, Tag>::renumber( std::vector<size_type> const& node_map, mpl::int_<2> )
+{
+}
+
+template<typename Shape, typename T, int Tag>
+void
+Mesh<Shape, T, Tag>::renumber( std::vector<size_type> const& node_map, mpl::int_<3> )
+{
+
     for ( auto elt = this->beginEdge();
             elt != this->endEdge(); ++elt )
     {
@@ -497,21 +529,7 @@ Mesh<Shape, T, Tag>::renumber( mpl::bool_<true> )
         }
     }
 
-    if ( Shape == SHAPE_TETRA && nOrder==1 )
-    {
-        localrenumber();
-
-#if !defined(NDEBUG)
-        checkLocalPermutation( mpl::bool_< ( Shape == SHAPE_TETRA ) >() );
-#endif
-    }
-
-    // should we renumber also the faces and elements ?
-
-
 }
-
-
 template<typename Shape, typename T, int Tag>
 void
 Mesh<Shape, T, Tag>::localrenumber()
