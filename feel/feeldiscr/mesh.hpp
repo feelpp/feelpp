@@ -1155,6 +1155,9 @@ private:
      */
     void renumber( mpl::bool_<true> );
 
+    void updateOnBoundary( mpl::int_<1> );
+    void updateOnBoundary( mpl::int_<2> );
+    void updateOnBoundary( mpl::int_<3> );
 private:
 
     //! communicator
