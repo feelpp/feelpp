@@ -154,6 +154,8 @@ public:
     typedef typename super::face_iterator face_iterator;
     typedef typename super::face_const_iterator face_const_iterator;
 
+    typedef typename super::edge_type edge_type;
+
     typedef typename super::points_type points_type;
     typedef typename super::point_type point_type;
     typedef typename super::point_iterator point_iterator;
