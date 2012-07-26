@@ -42,8 +42,11 @@ if( NOT FEELPP_MINIMAL_CONFIGURATION )
   #add_docex(stokes)
   feelpp_add_application( doc_stokes SRCS stokes.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} )
   feelpp_add_application( doc_stokes_lm SRCS stokes.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} DEFS FEELPP_USE_LM )
- feelpp_add_application( doc_stokes_poiseuille SRCS stokes_poiseuille.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} )
+  feelpp_add_application( doc_stokes_poiseuille SRCS stokes_poiseuille.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} )
   feelpp_add_application( doc_stokes_poiseuille_lm SRCS stokes_poiseuille.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} DEFS FEELPP_USE_LM )
+
+  feelpp_add_application( doc_stokes3d SRCS stokes3d.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} )
+  feelpp_add_application( doc_stokes3d_lm SRCS stokes3d.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} DEFS FEELPP_USE_LM )
 endif()
 
 # stokes_good stokes_locking stokes_spurious
