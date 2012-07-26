@@ -533,7 +533,9 @@ public:
     {
         renumber( mpl::bool_<( nDim > 1 )>() );
     }
-
+    void renumber( std::vector<size_type> const& node_map, mpl::int_<1> );
+    void renumber( std::vector<size_type> const& node_map, mpl::int_<2> );
+    void renumber( std::vector<size_type> const& node_map, mpl::int_<3> );
 
     /**
      * This function only take sense in the 3D modal case with a simplex mesh.
