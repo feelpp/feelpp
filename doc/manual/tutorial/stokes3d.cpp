@@ -59,8 +59,8 @@ inline
 Feel::po::options_description
 makeOptions()
 {
-    Feel::po::options_description stokespoiseuilleoptions( "Stokes_Poiseuille options" );
-    stokespoiseuilleoptions.add_options()
+    Feel::po::options_description stokes3doptions( "Stokes3d options" );
+    stokes3doptions.add_options()
     ( "penal", Feel::po::value<double>()->default_value( 0.5 ), "penalisation parameter" )
     ( "f", Feel::po::value<double>()->default_value( 0 ), "forcing term" )
     ( "mu", Feel::po::value<double>()->default_value( 1.0 ), "reaction coefficient component" )
@@ -69,7 +69,7 @@ makeOptions()
     ( "bccoeff", Feel::po::value<double>()->default_value( 100.0 ), "coeff for weak Dirichlet conditions" )
     ( "export-matlab", "export matrix and vectors in matlab" )
     ;
-    return stokespoiseuilleoptions.add( Feel::feel_options() ) ;
+    return stokes3doptions.add( Feel::feel_options() ) ;
 }
 
 
@@ -84,8 +84,8 @@ inline
 Feel::AboutData
 makeAbout()
 {
-    Feel::AboutData about( "stokes_poiseuille" ,
-                           "stokes_poiseuille" ,
+    Feel::AboutData about( "stokes3d" ,
+                           "stokes3d" ,
                            "0.1",
                            "Stokes equation on simplices or simplex products",
                            Feel::AboutData::License_GPL,
@@ -106,7 +106,7 @@ using namespace Feel::vf;
  * \brief solves the stokes equations
  *
  */
-class Stokes_Poiseuille
+class Stokes3d
     :
 public Application
 {
@@ -161,7 +161,7 @@ public:
     typedef Exporter<mesh_type> export_type;
 
     FEELPP_DONT_INLINE
-    Stokes_Poiseuille( int argc, char** argv, AboutData const& ad, po::options_description const& od );
+    Stokes3d( int argc, char** argv, AboutData const& ad, po::options_description const& od );
 
     // init mesh and space
     FEELPP_DONT_INLINE
@@ -202,7 +202,7 @@ private:
 }; // Stokes
 
 
-Stokes_Poiseuille::Stokes_Poiseuille( int argc, char** argv, AboutData const& ad, po::options_description const& od )
+Stokes3d::Stokes3d( int argc, char** argv, AboutData const& ad, po::options_description const& od )
     :
     super( argc, argv, ad, od ),
     M_backend( backend_type::build( this->vm() ) ),
@@ -215,7 +215,7 @@ Stokes_Poiseuille::Stokes_Poiseuille( int argc, char** argv, AboutData const& ad
 }
 
 void
-Stokes_Poiseuille::init()
+Stokes3d::init()
 {
     if ( this->vm().count( "help" ) )
     {
@@ -273,7 +273,7 @@ Stokes_Poiseuille::init()
     D =  M_backend->newMatrix( Xh, Xh );
 }
 void
-Stokes_Poiseuille::run()
+Stokes3d::run()
 {
     this->init();
 
@@ -320,9 +320,9 @@ Stokes_Poiseuille::run()
     //*************************************************************************************
 
    //*********************  solution exacte (profile de poiseuille)3D **********************
-    auto u_exact=vec(  (1-0.5*Py()*Py()-0.5*Pz()*Pz() ) , cst(0.) , cst(0.) );
+    auto u_exact=vec(  (1-Py()*Py()-Pz()*Pz() ) , cst(0.) , cst(0.) );
 
-    auto p_exact=(-2*Px()+10);
+    auto p_exact=(-4*Px()+20);
 
     auto f=vec(cst(0.) , cst(0.), cst(0.) );
     //*************************************************************************************
@@ -392,7 +392,7 @@ Stokes_Poiseuille::run()
 
 template<typename ExprUExact, typename ExprPExact>
 void
-Stokes_Poiseuille::exportResults( ExprUExact u_exact, ExprPExact p_exact,
+Stokes3d::exportResults( ExprUExact u_exact, ExprPExact p_exact,
                        element_type& U, element_type& V )
 {
     auto u = U.element<0>();
@@ -492,8 +492,8 @@ main( int argc, char** argv )
 
 
     /* define and run application */
-    Feel::Stokes_Poiseuille stokes_poiseuille( argc, argv, makeAbout(), makeOptions() );
-    stokes_poiseuille.run();
+    Feel::Stokes3d stokes3d( argc, argv, makeAbout(), makeOptions() );
+    stokes3d.run();
 }
 
 
