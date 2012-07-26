@@ -580,7 +580,8 @@ template<typename Shape, typename T, int Tag>
 void
 Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne()
 {
-    updateEntitiesCoDimensionOne( mpl::bool_<nDim==nRealDim>() );
+    //updateEntitiesCoDimensionOne( mpl::bool_<nDim==nRealDim>() );
+    updateEntitiesCoDimensionOne( mpl::bool_<true>() );
 }
 template<typename Shape, typename T, int Tag>
 void
