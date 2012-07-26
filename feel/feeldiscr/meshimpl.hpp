@@ -468,6 +468,34 @@ Mesh<Shape, T, Tag>::renumber( mpl::bool_<true> )
 
         }
     }
+    for ( auto elt = this->beginEdge();
+            elt != this->endEdge(); ++elt )
+    {
+        edge_type __edge = *elt;
+#if !defined( NDEBUG )
+        Debug( 4015 ) << "edge id: " << __edge.id()
+                      << " marker: " << __edge.marker() << "\n";
+#endif
+
+        // renumber the nodes of the face
+        for ( int i = 0; i < __edge.nPoints(); ++i )
+        {
+            size_type __true_id =__edge.point( i ).id();
+            this->edges().modify( elt,
+                                  lambda::bind( &edge_type::setPoint,
+                                                lambda::_1,
+                                                lambda::constant( i ),
+                                                boost::cref( this->point( node_map[__true_id] ) ) ) );
+            edge_type __edge2 = *elt;
+#if !defined( NDEBUG )
+            Debug( 4015 ) << "renumber edge: id1= " << __edge2.point( 0 ).id() << " id2= " << __edge2.point( 1 ).id()<< "\n";
+            Debug( 4015 ) << "renumber edge: point lid = " << i << " id = " << __true_id
+                          << " nid = " << this->point( node_map[__true_id] ).id()
+                          << " new point id = " << elt->point( i ).id() << "\n";
+#endif
+
+        }
+    }
 
     if ( Shape == SHAPE_TETRA && nOrder==1 )
     {
