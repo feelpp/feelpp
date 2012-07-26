@@ -632,7 +632,7 @@ EIM<ModelType>::offline(  )
     LOG(INFO) << "compute entry (0,0) of interpolation matrix...\n";
     this->M_B.resize( 1, 1 );
     this->M_B( 0, 0 ) = 1;
-    CHECK( math::abs( M_q[0]( M_t[0] )( 0, 0, 0 ) - 1 ) < 1e-10 )
+    CHECK( math::abs( math::abs( M_q[0]( M_t[0] )( 0, 0, 0 ) ) - 1 ) < 1e-10 )
         << "q[0](t[0] != 1 " << "q[0] = " << M_q[0]( M_t[0] )( 0, 0, 0 )
         << "  t[0] = "<< M_t[0] << "\n";
 
