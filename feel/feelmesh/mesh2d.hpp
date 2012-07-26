@@ -319,7 +319,17 @@ void renumber()
 /**
  * update permutation of entities of co-dimension 1
  */
+
 void updateEntitiesCoDimensionOnePermutation()
+{
+    updateEntitiesCoDimensionOnePermutation( mpl::bool_<Shape::nDim==Shape::nRealDim>() );
+}
+
+void
+updateEntitiesCoDimensionOnePermutation( mpl::bool_<false> )
+{}
+
+void updateEntitiesCoDimensionOnePermutation( mpl::bool_<true> )
 {
     for ( typename super_elements::element_iterator elt = this->beginElement();
             elt != this->endElement(); ++elt )
