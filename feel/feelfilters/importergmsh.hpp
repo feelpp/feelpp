@@ -216,8 +216,8 @@ private:
 
     void addPoint( mesh_type* mesh, std::vector<int> const& __e, std::vector<int> const& tag, GMSH_ENTITY type, int & __idGmshToFeel );
     void addPoint( mesh_type* mesh, std::vector<int> const& __e, std::vector<int> const& tag, GMSH_ENTITY type, int & __idGmshToFeel, mpl::int_<1> );
-    void addPoint( mesh_type* /*mesh*/, std::vector<int> const& /*__e*/, std::vector<int> /*tag*/, GMSH_ENTITY /*type*/, int & /*__idGmshToFeel*/, mpl::int_<2> );
-    void addPoint( mesh_type* /*mesh*/, std::vector<int> const& /*__e*/, std::vector<int> /*tag*/, GMSH_ENTITY /*type*/, int & /*__idGmshToFeel*/, mpl::int_<3> );
+    void addPoint( mesh_type* /*mesh*/, std::vector<int> const& /*__e*/, std::vector<int> const&/*tag*/, GMSH_ENTITY /*type*/, int & /*__idGmshToFeel*/, mpl::int_<2> );
+    void addPoint( mesh_type* /*mesh*/, std::vector<int> const& /*__e*/, std::vector<int> const&/*tag*/, GMSH_ENTITY /*type*/, int & /*__idGmshToFeel*/, mpl::int_<3> );
 
     void addEdge( mesh_type* mesh, std::vector<int> const& __e, std::vector<int> const& tag, GMSH_ENTITY type, int & __idGmshToFeel );
     void addEdge( mesh_type* mesh, std::vector<int> const& __e, std::vector<int> const& tag, GMSH_ENTITY type, int & __idGmshToFeel, mpl::int_<1> );
@@ -247,7 +247,7 @@ private:
     std::set<std::string> _M_ignorePhysicalName;
     bool M_use_elementary_region_as_physical_region;
 
-
+    std::map<size_type, point_type> _pts;
 };
 
 
@@ -667,6 +667,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
 
     std::map<int,boost::tuple<int,int> > mapGhostElt;
 
+
     // add the points to the mesh
     for ( uint __i = 0; __i < __n; ++__i )
     {
@@ -691,7 +692,8 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
             }
         }
 
-        mesh->addPoint( __pt );
+        //mesh->addPoint( __pt );
+        _pts.insert( std::make_pair( __i, __pt ) );
     }
 
     _M_n_vertices.resize( __n );
@@ -786,6 +788,9 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
 
     } // loop over geometric entities in gmsh file (can be elements or faces)
 
+    // clear point map
+    _pts.clear();
+
     if ( this->worldComm().localSize()>1 )
         updateGhostCellInfo( mesh, __idGmshToFeel,  mapGhostElt );
 
@@ -830,13 +835,25 @@ ImporterGmsh<MeshType>::addPoint( mesh_type*mesh, std::vector<int> const& __e, s
 }
 template<typename MeshType>
 void
-ImporterGmsh<MeshType>::addPoint( mesh_type*/*mesh*/, std::vector<int> const& /*__e*/, std::vector<int> /*tag*/, GMSH_ENTITY /*type*/, int & /*__idGmshToFeel*/, mpl::int_<2> )
+ImporterGmsh<MeshType>::addPoint( mesh_type* mesh, std::vector<int> const& __e, std::vector<int> const& tag, GMSH_ENTITY type, int & __idGmshToFeel, mpl::int_<2> )
 {
+    point_type pt = _pts[__e[0]];
+    pt.setProcessIdInPartition( this->worldComm().localRank() );
+    pt.setTags( tag );
+    auto pit = mesh->addPoint(pt);
+    Debug( 8011 ) << "added point with id :" << pit.id() << " and marker " << pit.marker()
+                  << " n1: " << mesh->point( __e[0] ).node() << "\n";
 }
 template<typename MeshType>
 void
-ImporterGmsh<MeshType>::addPoint( mesh_type*/*mesh*/, std::vector<int> const& /*__e*/, std::vector<int> /*tag*/, GMSH_ENTITY /*type*/, int & /*__idGmshToFeel*/, mpl::int_<3> )
+ImporterGmsh<MeshType>::addPoint( mesh_type* mesh, std::vector<int> const& __e, std::vector<int> const& tag, GMSH_ENTITY type, int & __idGmshToFeel, mpl::int_<3> )
 {
+   point_type pt = _pts[__e[0]];
+   pt.setProcessIdInPartition( this->worldComm().localRank() );
+   pt.setTags( tag );
+   auto pit = mesh->addPoint(pt);
+   Debug( 8011 ) << "added point with id :" << pit.id() << " and marker " << pit.marker()
+                 << " n1: " << mesh->point( __e[0] ).node() << "\n";
 }
 
 template<typename MeshType>
@@ -861,7 +878,10 @@ ImporterGmsh<MeshType>::addEdge( mesh_type*mesh, std::vector<int> const& __e, st
             type == GMSH_LINE_5 )
     {
         for ( uint16_type jj = 0; jj < npoints_per_element; ++jj )
+        {
+            mesh->addPoint( _pts[__e[jj]] );
             e.setPoint( jj, mesh->point( __e[jj] ) );
+        }
     }
 
     mesh->addElement( e );
@@ -893,7 +913,10 @@ ImporterGmsh<MeshType>::addEdge( mesh_type* mesh, std::vector<int> const& __e, s
             type == GMSH_LINE_5 )
     {
         for ( uint16_type jj = 0; jj < npoints_per_edge; ++jj )
+        {
+            mesh->addPoint( _pts[__e[jj]] );
             pf.setPoint( jj, mesh->point( __e[jj] ) );
+        }
     }
 
     _M_n_vertices[ __e[0] ] = 1;
@@ -918,8 +941,46 @@ ImporterGmsh<MeshType>::addEdge( mesh_type* mesh, std::vector<int> const& __e, s
 }
 template<typename MeshType>
 void
-ImporterGmsh<MeshType>::addEdge( mesh_type*, std::vector<int> const&, std::vector<int> const&, GMSH_ENTITY, int & /*__idGmshToFeel*/, mpl::int_<3> )
-{}
+ImporterGmsh<MeshType>::addEdge( mesh_type*mesh, std::vector<int> const& __e, std::vector<int> const& tag, GMSH_ENTITY type, int & __idGmshToFeel, mpl::int_<3> )
+{
+    edge_type pe;
+    pe.setProcessIdInPartition( this->worldComm().localRank() );
+    pe.setId( mesh->numEdges() );
+    pe.setTags(  tag  );
+
+    if ( type == GMSH_LINE ||
+            type == GMSH_LINE_2 ||
+            type == GMSH_LINE_3 ||
+            type == GMSH_LINE_4 ||
+            type == GMSH_LINE_5 )
+    {
+        for ( uint16_type jj = 0; jj < npoints_per_edge; ++jj )
+        {
+            mesh->addPoint( _pts[__e[jj]] );
+            pe.setPoint( jj, mesh->point( __e[jj] ) );
+        }
+    }
+
+   _M_n_vertices[ __e[0] ] = 1;
+   _M_n_vertices[ __e[1] ] = 1;
+
+   _M_n_b_vertices[ __e[0] ] = 1;
+   _M_n_b_vertices[ __e[1] ] = 1;
+
+    pe.setOnBoundary( true );
+    auto eit = mesh->addEdge( pe );
+    __idGmshToFeel=eit.id();
+
+    auto theedge = mesh->edgeIterator( pe.id() );
+    mesh->edges().modify( theedge, detail::update_id_in_partition_type( this->worldComm().localRank(), pe.id() ) );
+
+    if ( npoints_per_edge == 2 )
+        Debug( 8011 ) << "added edge on boundary ("
+                      << eit.isOnBoundary() << ") with id :" << eit.id()
+                      << " n1: " << eit.point( 0 ).node()
+                      << " n2: " << eit.point( 1 ).node() << "\n";
+
+}
 
 template<typename MeshType>
 void
@@ -953,6 +1014,7 @@ ImporterGmsh<MeshType>::addFace( mesh_type* mesh, std::vector<int> const& __e, s
     {
         for ( uint16_type jj = 0; jj < npoints_per_element; ++jj )
         {
+            mesh->addPoint( _pts[__e[jj]] );
             //std::cout << "gmsh index " << jj << " -> " << ordering.fromGmshId(jj) << " -> " << mesh->point( __e[jj] ).id()+1 << " : " << mesh->point( __e[jj] ).node() << "\n";
             pf.setPoint( ordering.fromGmshId( jj ), mesh->point( __e[jj] ) );
         }
@@ -992,7 +1054,10 @@ ImporterGmsh<MeshType>::addFace( mesh_type* mesh, std::vector<int> const& __e, s
             type == GMSH_TRIANGLE_5 )
     {
         for ( uint16_type jj = 0; jj < npoints_per_face; ++jj )
+        {
+            mesh->addPoint( _pts[__e[jj]] );
             pf.setPoint( ordering.fromGmshId( jj ), mesh->point( __e[jj] ) );
+        }
 
         //pf.setPoint( jj, mesh->point( __e[jj] ) );
     }
@@ -1052,6 +1117,7 @@ ImporterGmsh<MeshType>::addVolume( mesh_type* mesh, std::vector<int> const& __e,
     {
         for ( uint16_type jj = 0; jj < npoints_per_element; ++jj )
         {
+            mesh->addPoint( _pts[__e[jj]] );
             //std::cout << "gmsh index " << jj << " -> " << ordering.fromGmshId(jj) << " -> " << mesh->point( __e[jj] ).id()+1 << " : " << mesh->point( __e[jj] ).node() << "\n";
             pv.setPoint( ordering.fromGmshId( jj ), mesh->point( __e[jj] ) );
         }
