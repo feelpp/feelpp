@@ -237,14 +237,16 @@ GmshHypercubeDomain::getDescription3D() const
     if ( M_use_hypercube )
         ostr << "  Recombine;\n";
 
-    ostr << "};\n"
-         << "Physical Line(1) = {1};\n"
-         << "Physical Line(2) = {2};\n"
-         << "Physical Line(3) = {3};\n"
-         << "Physical Line(4) = {4};\n";
-    std::cout << "substructuring: " << this->subStructuring() << "\n";
+    ostr << "};\n";
+
+
     if ( this->usePhysicalNames() == false && this->subStructuring() == false )
     {
+        ostr << "Physical Line(1) = {1};\n"
+             << "Physical Line(2) = {2};\n"
+             << "Physical Line(3) = {3};\n"
+             << "Physical Line(4) = {4};\n";
+
         ostr << "Physical Surface(6) = {6};\n"
              << "Physical Surface(15) = {15};\n"
              << "Physical Surface(19) = {19};\n"
