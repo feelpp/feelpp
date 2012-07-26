@@ -170,7 +170,12 @@ public:
     edge_type const& edge( size_type i ) const
     {
         return *_M_edges.find( edge_type( i ) );
-    };
+    }
+
+    edge_iterator edgeIterator( size_type i ) const
+    {
+        return  _M_edges.find( edge_type( i ) );
+    }
 
     edge_iterator beginEdge()
     {
@@ -188,7 +193,6 @@ public:
     {
         return _M_edges.end();
     }
-
 
     marker_edge_iterator beginEdgeWithMarker( size_type m )
     {
