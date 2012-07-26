@@ -628,7 +628,9 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
             if ( edgeinserted )
                 ++next_edge;
 
-            FEELPP_ASSERT( edgeinserted == false )( i1 )( i2 ).error( "Two identical Edges stored in EdgeList" );
+            FEELPP_ASSERT( edgeinserted )( i1 )( i2 )(j)( this->edge( j ).id() )( _edgeit->second )( this->edge( j ).marker() )
+                ( this->edge( _edgeit->second ).point( 0 ).node() )( this->edge( _edgeit->second ).point( 1 ).node() )
+                ( this->edge( j ).point( 0 ).node() )( this->edge( j ).point( 1 ).node() ).error( "Two identical Edges stored in EdgeList" );
             FEELPP_ASSERT( _edgeit->second == this->edge( j ).id() )( _edgeit->second )( this->edge( j ).id() ).error( "Edges in EdgeList have inconsistent id" );
 
         }
