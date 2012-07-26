@@ -2859,8 +2859,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
 
     for ( double time=time_step; time<=time_for_output; time+=time_step )
     {
-
-        boost::tie( betaMqm, betaAqm, betaFqm, betaMFqm ) = M_model->computeBetaQm( this->expansion( uNold[0] ), mu ,time );
+        boost::tie( betaMqm, betaAqm, betaFqm, betaMFqm ) = M_model->computeBetaQm( this->expansion( uNold[time_index] ), mu ,time );
         //boost::tie( betaMqm, betaAqm, betaFqm, betaMFqm ) = M_model->computeBetaQm( mu ,time );
         //LOG(INFO) << "betaMFqm = " << betaMFqm[0][0] <<"\n";//<< "," << betaMFqm[1][0] << "\n";
         //LOG(INFO) << "betaMqm = " << betaMqm[0][0] << "\n";
