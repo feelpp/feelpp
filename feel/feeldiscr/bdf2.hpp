@@ -96,7 +96,9 @@ public:
         M_restart( false ),
         M_restartPath( "" ),
         M_alpha( BDF_MAX_ORDER ),
-        M_beta( BDF_MAX_ORDER )
+        M_beta( BDF_MAX_ORDER ),
+        M_saveInFile( true ),
+        M_worldComm( Environment::worldComm() )
     {}
 
 #if 0
@@ -116,12 +118,14 @@ public:
         M_restart( args[_restart | false] ),
         M_restartPath( args[_restart_path | ""] ),
         M_alpha( BDF_MAX_ORDER ),
-        M_beta( BDF_MAX_ORDER )
+        M_beta( BDF_MAX_ORDER ),
+        M_saveInFile( true ),
+        M_worldComm( Environment::worldComm() )
     {
 
     }
 #endif
-    BdfBase( po::variables_map const& vm, std::string name, std::string const& prefix )
+    BdfBase( po::variables_map const& vm, std::string name, std::string const& prefix, WorldComm const& worldComm )
         :
         M_order( vm[prefixvm( prefix, "bdf.order" )].as<int>() ),
         M_order_cur( M_order ),
@@ -137,10 +141,12 @@ public:
         M_restart( vm[prefixvm( prefix, "bdf.restart" )].as<bool>() ),
         M_restartPath( vm[prefixvm( prefix, "bdf.restart.path" )].as<std::string>() ),
         M_alpha( BDF_MAX_ORDER ),
-        M_beta( BDF_MAX_ORDER )
+        M_beta( BDF_MAX_ORDER ),
+        M_saveInFile( vm[prefixvm( prefix, "bdf.save" )].as<bool>() ),
+        M_worldComm( worldComm )
     {
     }
-    BdfBase( std::string name )
+    BdfBase( std::string name, WorldComm const& worldComm )
         :
         M_order( 1 ),
         M_order_cur( 1 ),
@@ -156,7 +162,9 @@ public:
         M_restart( false ),
         M_restartPath( "" ),
         M_alpha( BDF_MAX_ORDER ),
-        M_beta( BDF_MAX_ORDER )
+        M_beta( BDF_MAX_ORDER ),
+        M_saveInFile( true ),
+        M_worldComm( worldComm )
     {
     }
 
@@ -177,7 +185,9 @@ public:
         M_restartPath( b.M_restartPath ),
         M_time_values_map( b.M_time_values_map ),
         M_alpha( b.M_alpha ),
-        M_beta( b.M_beta )
+        M_beta( b.M_beta ),
+        M_saveInFile( true ),
+        M_worldComm( b.M_worldComm )
     {}
 
     virtual ~BdfBase() {}
@@ -214,7 +224,10 @@ public:
 
             M_alpha = b.M_alpha;
             M_beta = b.M_beta;
+            M_saveInFile = b.M_saveInFile;
+
             M_time_values_map = b.M_time_values_map;
+            M_worldComm = b.M_worldComm;
         }
 
         return *this;
@@ -481,6 +494,16 @@ public:
         return M_restartPath;
     }
 
+    bool saveInFile() const
+    {
+        return M_saveInFile;
+    }
+
+    WorldComm const& worldComm() const
+    {
+        return M_worldComm;
+    }
+
     void setOrder( int order )
     {
         M_order = order;
@@ -516,6 +539,11 @@ public:
     void setRestartPath( std::string s )
     {
         M_restartPath=s;
+    }
+
+    void setSaveInFile( bool b )
+    {
+        M_saveInFile = b;
     }
 
     void print() const
@@ -581,6 +609,12 @@ protected:
     //! Coefficients \f$ \beta_i \f$ of the extrapolation
     std::vector<ublas::vector<double> > M_beta;
 
+    //! Save solutions in file after each step
+    bool M_saveInFile;
+
+    //!  mpi communicator tool
+    WorldComm M_worldComm;
+
 protected:
     void init()
     {
@@ -640,7 +674,7 @@ protected:
         M_path_save = ostr.str();
 
         // if directory does not exist, create it
-        if ( !fs::exists( M_path_save ) )
+        if ( !fs::exists( M_path_save ) && this->saveInFile() )
             fs::create_directories( M_path_save );
 
         if ( M_restart )
@@ -738,6 +772,8 @@ public:
 
     void save()
     {
+        if ( !M_bdf.saveInFile() || M_bdf.worldComm().globalRank()!=M_bdf.worldComm().masterRank() ) return;
+
         fs::ofstream ofs( M_bdf.path() / "metadata" );
 
 
@@ -937,7 +973,7 @@ Bdf<SpaceType>::Bdf( po::variables_map const& vm,
                      std::string const& name,
                      std::string const& prefix )
     :
-    super( vm, name, prefix ),
+    super( vm, name, prefix, __space->worldComm() ),
     M_space( __space )
 {
     M_unknowns.resize( BDF_MAX_ORDER );
@@ -954,7 +990,7 @@ template <typename SpaceType>
 Bdf<SpaceType>::Bdf( space_ptrtype const& __space,
                      std::string const& name  )
     :
-    super( name ),
+    super( name, __space->worldComm() ),
     M_space( __space )
 {
     M_unknowns.resize( BDF_MAX_ORDER );
@@ -1092,6 +1128,8 @@ template <typename SpaceType>
 void
 Bdf<SpaceType>::saveCurrent()
 {
+    if (!this->saveInFile()) return;
+
     BdfBaseMetadata bdfsaver( *this );
     bdfsaver.save();
 
@@ -1203,6 +1241,7 @@ BOOST_PARAMETER_FUNCTION(
       ( steady,*( bool ),vm[prefixvm( prefix,"bdf.steady" )].template as<bool>() )
       ( restart,*( boost::is_integral<mpl::_> ),vm[prefixvm( prefix,"bdf.restart" )].template as<bool>() )
       ( restart_path,*,vm[prefixvm( prefix,"bdf.restart.path" )].template as<std::string>() )
+      ( save,*,vm[prefixvm( prefix,"bdf.save" )].template as<bool>() )
     ) )
 {
     typedef typename meta::remove_all<space_type>::type::value_type _space_type;
@@ -1215,6 +1254,7 @@ BOOST_PARAMETER_FUNCTION(
     thebdf->setStrategy( strategy );
     thebdf->setRestart( restart );
     thebdf->setRestartPath( restart_path );
+    thebdf->setSaveInFile( save );
     return thebdf;
 }
 
