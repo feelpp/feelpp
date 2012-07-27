@@ -47,8 +47,10 @@ void Convection ::updateJacobian1( const vector_ptrtype& X,
     auto q = V. element<1>(); // fonction test pression
     auto t = U. element<2>(); // fonction temperature
     auto s = V. element<2>(); // fonction test temperature
+#if defined( FEELPP_USE_LM )
     auto xi = U. element<3>(); // fonction multipliers
     auto eta = V. element<3>(); // fonction test multipliers
+#endif
 
     Log() << "[updateJacobian1] ||U|| = " << U.l2Norm() << "\n";
     Log() << "[updateJacobian1] ||u|| = " << u.l2Norm() << "\n";

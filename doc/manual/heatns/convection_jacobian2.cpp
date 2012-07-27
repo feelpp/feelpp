@@ -47,8 +47,10 @@ void Convection::updateJacobian2( const vector_ptrtype& X,
     element_1_type q = V. element<1>(); // fonction test pression
     element_2_type t = U. element<2>(); // fonction temperature
     element_2_type s = V. element<2>(); // fonction test temperature
+#if defined( FEELPP_USE_LM )
     element_3_type xi = U. element<3>(); // fonction multipliers
     element_3_type eta = V. element<3>(); // fonction test multipliers
+#endif
 
     double gr= M_current_Grashofs;
     double sqgr( 1/math::sqrt( gr ) );
@@ -65,19 +67,19 @@ void Convection::updateJacobian2( const vector_ptrtype& X,
     // temperature derivatives
     //
     // heat convection by the fluid: attention 2 terms
-    form2( Xh,Xh, D ) +=
+    form2( _test=Xh, _trial=Xh, _matrix=D ) +=
         integrate ( elements( mesh ),
                     pC*grad( s )*( idv( t )*idt( u ) ) );
 
-    form2( Xh,Xh, D ) +=
+    form2( _test=Xh, _trial=Xh, _matrix=D ) +=
         integrate ( elements( mesh ),
                     pC*grad( s )*( idt( t )*idv( u ) ) );
 
-    form2( Xh,Xh, D ) +=
+    form2( _test=Xh, _trial=Xh, _matrix=D ) +=
         integrate ( boundaryfaces( mesh ),
                     pC*( trans( idv( u ) )*N() )*id( s )*idt( t ) );
 
-    form2( Xh,Xh, D ) +=
+    form2( _test=Xh, _trial=Xh, _matrix=D ) +=
         integrate ( boundaryfaces( mesh ),
                     pC*( trans( idt( u ) )*N() )*id( s )*idv( t ) );
 
