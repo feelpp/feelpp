@@ -22,4 +22,4 @@
 #
 #
 
-feelpp_add_application( heatns_cabin SRCS convection_main.cpp LINK_LIBRARIES lib_convection ${FEELPP_LIBRARIES}   )
+feelpp_add_application( heatns_cabin SRCS convection_main.cpp ${lib_convection} LINK_LIBRARIES  ${FEELPP_LIBRARIES}   )
