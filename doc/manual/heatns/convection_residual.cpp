@@ -76,11 +76,11 @@ Convection::updateResidual( const vector_ptrtype& X, vector_ptrtype& R )
 
     if ( adim == 0 ) pC = this->vm()["pC"]. as<double>();
 
-    Log() << "gr = " << gr << "\n";
-    Log() << "pr = " << pr << "\n";
-    Log() << "sqgr = " << sqgr << "\n";
-    Log() << "sqgrpr = " << sqgrpr << "\n";
-    Log() << "gamma = " << gamma << "\n";
+    Log() << "residual: residual: gr = " << gr << "\n";
+    Log() << "residual: pr = " << pr << "\n";
+    Log() << "residual: sqgr = " << sqgr << "\n";
+    Log() << "residual: sqgrpr = " << sqgrpr << "\n";
+    Log() << "residual: gamma = " << gamma << "\n";
     int weakdir=this->vm()["weakdir"]. as<int>();
 
 
@@ -169,24 +169,30 @@ Convection::updateResidual( const vector_ptrtype& X, vector_ptrtype& R )
 
     if ( adim==1 )
         neum=1;
-
-    form1( Xh, _vector=R ) +=
+    auto RR = M_backend->newVector( Xh );
+    form1( Xh, _vector=RR ) =
         integrate ( markedfaces( mesh, "Tflux"),
                     // heat flux on the right side
-                    - id( s )*cst( c )*cst( neum )  );
-
-
+                    - id( s )*sqgrpr );
+                    //- id( s )*cst( c )*cst( neum )  );
+    RR->close();
+    RR->printMatlab( "R2.m" );
     R->close();
+    R->add( 1, RR );
 
+
+
+    R->printMatlab( "R1.m" );
     if ( adim==1 )
         modifVec( markedfaces( mesh,"Tfixed" ),t,R,cst( 0.0 ) );
 
     else
         modifVec( markedfaces( mesh,"Tfixed" ),t,R,cst( T0 ) );
-
+    R->printMatlab( "R3.m" );
     modifVec( boundaryfaces( mesh ),u,R,one()*0 );
 
-    //R->printMatlab( "R.m" );
+    R->printMatlab( "R.m" );
+    R->add( 1, RR );
     Log() << "[updateResidual] done in " << ti.elapsed() << "s\n";
 
 }
