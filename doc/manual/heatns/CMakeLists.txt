@@ -24,18 +24,15 @@
 # Natural convection problem
 include_directories( ${CMAKE_CURRENT_SOURCE_DIR} )
 
-add_library(
-    lib_convection
-    SHARED
-    convection_other.cpp
-    convection_run.cpp
-    convection_residual.cpp
-    convection_jacobian.cpp
-    convection_jacobian1.cpp
-    convection_jacobian2.cpp
-    convection_lo.cpp
-    convection_lo2.cpp )
-target_link_libraries( lib_convection ${FEELPP_LIBRARIES}  )
+set(lib_convection
+  ${CMAKE_CURRENT_SOURCE_DIR}/convection_other.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/convection_run.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/convection_residual.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/convection_jacobian.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/convection_jacobian1.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/convection_jacobian2.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/convection_lo.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/convection_lo2.cpp )
 
 add_subdirectory( cavity )
 add_subdirectory( cabin )
