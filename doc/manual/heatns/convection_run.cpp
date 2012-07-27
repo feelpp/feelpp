@@ -54,8 +54,12 @@ Convection::run()
     mesh_ptrtype mesh( new mesh_type );
     mesh = createGMSHMesh( _mesh=new mesh_type,
                            _desc=createMesh(),
-                           _update=MESH_UPDATE_FACES | MESH_UPDATE_EDGES );
+                           _update=MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
 
+    Log() << "Tfixed: " << mesh->markerName( "Tfixed" ) << ": " << "\n";
+    Log() << "Tflux: " << mesh->markerName( "Tflux" ) << "\n";
+    Log() << "Fflux: " << mesh->markerName( "Fflux" ) << "\n";
+    Log() << "Tinsulated: " << mesh->markerName( "Tinsulated" ) << "\n";
     timers["mesh"].second=timers["mesh"].first.elapsed();
     timings << "[Mesh] Time : " << timers["mesh"].second << std::endl;
     //
