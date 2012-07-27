@@ -59,12 +59,8 @@ Convection::Convection( int argc,
     int state = this->vm()["steady"]. as<int>() ;
     int weakdir( this->vm()["weakdir"]. as<int>() );
 
-    this->changeRepository( boost::format( "cavity/%1%/steady=%2%/weakdir=%3%/time=%4%/dt=%5%/meshsize=%6%/procs_%7%/" )
+    this->changeRepository( boost::format( "cavity/%1%/meshsize=%2%/procs_%3%/" )
                             % this->about().appName()
-                            % state
-                            % weakdir
-                            % simu
-                            % timeStep
                             % meshSize
                             % Environment::numberOfProcessors() );
 
