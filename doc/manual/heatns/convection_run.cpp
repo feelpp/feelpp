@@ -86,9 +86,10 @@ Convection::run()
     element_2_type t = U. element<2>(); // fonction temperature
     element_2_type tn = Un. element<2>(); // fonction temperature
     element_2_type s = V. element<2>(); // fonction test temperature
+#if defined( FEELPP_USE_LM )
     element_3_type xi = U. element<3>(); // fonction multipliers
     element_3_type eta = V. element<3>(); // fonction test multipliers
-
+#endif
 
     Log() << "[convection::run()] u.size() = " << u.size() << " u.start() = " << u.start() << "\n";
     Log() << "[convection::run()] p.size() = " << p.size() << " p.start() = " << p.start() << "\n";
@@ -102,17 +103,19 @@ Convection::run()
     pn = vf::project( Xh->  functionSpace<1>(), elements( mesh ), exp( Px() ) );
     t = vf::project( Xh->  functionSpace<2>(), elements( mesh ), sin( Py() ) );
     tn = vf::project( Xh->  functionSpace<2>(), elements( mesh ), sin( Py() ) );
-    xi = vf::project( Xh->  functionSpace<3>(), elements( mesh ), constant( 1.0 ) );
 
     std::cout << integrate( elements( mesh ), idv( u ) , _Q<2>() ).evaluate() << "\n";
     std::cout << integrate( elements( mesh ), idv( p ) , _Q<3>() ).evaluate() << "\n";
     std::cout << integrate( elements( mesh ), idv( t ) , _Q<6>() ).evaluate() << "\n";
-    std::cout << integrate( elements( mesh ), idv( xi ), _Q<1>() ).evaluate() << "\n";
 
     std::cout << integrate( boundaryfaces( mesh ), gradv( u )*N() , _Q<1>() ).evaluate() << "\n";
     std::cout << integrate( boundaryfaces( mesh ), gradv( p )*N() , _Q<3>() ).evaluate() << "\n";
     std::cout << integrate( boundaryfaces( mesh ), gradv( t )*N() , _Q<6>() ).evaluate() << "\n";
-    //std::cout << integrate( boundaryfaces(mesh), gradv(xi)*N(), _Q<1>() ).evaluate() << "\n";
+
+#if defined( FEELPP_USE_LM )
+    xi = vf::project( Xh->  functionSpace<3>(), elements( mesh ), constant( 1.0 ) );
+    std::cout << integrate( elements( mesh ), idv( xi ), _Q<1>() ).evaluate() << "\n";
+#endif
 
     std::cout<< "----1----"<<std::endl;
     int adim=this->vm()["adim"]. as<int>();
@@ -157,18 +160,8 @@ Convection::run()
     std::ofstream benchOut( "benchmark.dat" );
 
 
-    D = sparse_matrix_ptrtype( M_backend->newMatrix( Xh,Xh ) );
+
     std::cout<< "----4----"<<std::endl;
-    form2( Xh,Xh, D,_init=true );
-    std::cout<< "----5----"<<std::endl;
-    F = vector_ptrtype( M_backend->newVector( Xh ) );
-    form1( Xh, F,_init=true );
-    std::cout<< "----6----"<<std::endl;
-
-
-    std::cout<< "----7----"<<std::endl;
-    //M_oplin->close();
-    //M_oplin->mat().printMatlab( "L.m" );
 
     vector_ptrtype R( M_backend->newVector( Xh ) );
     sparse_matrix_ptrtype J( M_backend->newMatrix( Xh,Xh ) );

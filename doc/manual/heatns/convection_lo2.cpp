@@ -93,11 +93,13 @@ void Convection ::initLinearOperator2( sparse_matrix_ptrtype& L )
 
     // Temperature
     // buyoancy forces c(theta,v)
-    form2( Xh, Xh, L ) +=integrate( _range=elements( mesh ), _expr=-expansion*idt( t )*( trans( vec( constant( 0. ),constant( 1.0 ) ) )*id( v ) ) );
+    form2( _test=Xh, _trial=Xh, _matrix=L ) +=integrate( _range=elements( mesh ),
+                                                         _expr=-expansion*idt( t )*( trans( vec( constant( 0. ),constant( 1.0 ) ) )*id( v ) ) );
 
     Log() << "[initLinearOperator] temperature Force terms done\n";
     // heat conduction/diffusion: e(beta1,theta,chi)+f(theta,chi)
-    form2( Xh, Xh, L )  += integrate( _range=elements( mesh ), _expr=cst( c )*gradt( t )*trans( grad( s ) ) );
+    form2( _test=Xh, _trial=Xh, _matrix=L )  += integrate( _range=elements( mesh ),
+                                                           _expr=cst( c )*gradt( t )*trans( grad( s ) ) );
     Log() << "[initLinearOperator] Temperature Diffusion terms done\n";
 
     Log() << "[initLinearOperator2] done in " << ti.elapsed() << "s\n";
