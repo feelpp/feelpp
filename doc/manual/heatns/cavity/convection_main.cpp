@@ -90,10 +90,6 @@ main( int argc, char** argv )
     if ( Environment::worldComm().rank() == 0 )
         std::cout << " number of processors : "  << Environment::numberOfProcessors() << "\n";
 
-    const int Order_s( 2 );
-    const int Order_p( 1 );
-    const int Order_t( 2 );
-
     /* assertions handling */
     Feel::Assert::setLog( "convection.assert" );
 
