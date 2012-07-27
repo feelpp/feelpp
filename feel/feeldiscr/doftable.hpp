@@ -40,6 +40,7 @@
 #include<Eigen/StdVector>
 
 #include <feel/feelcore/feel.hpp>
+#include <feel/feelmesh/filters.hpp>
 #include <feel/feelalg/glas.hpp>
 #include <feel/feelpoly/mapped.hpp>
 #include <feel/feelalg/datamap.hpp>
@@ -2822,6 +2823,62 @@ DofTable<MeshType, FEType, PeriodicityType>::buildDofMap( mesh_type& M, size_typ
     //    this->_M_first_df[processor] =  0;
 
     size_type next_free_dof = start_next_free_dof;
+
+    BOOST_FOREACH( auto name, M.markerNames() )
+    {
+        std::cout << "marker name: " << name.first << "\n";
+    }
+    if ( ( M.markerNames().find("CrossPoints") != M.markerNames().end() ) &&
+         ( M.markerNames().find("WireBasket") != M.markerNames().end() ) )
+    {
+        std::cout << "found CrossPoints and WireBasket\n";
+        // go through all the crosspoints and add them to the dof table
+
+        for( auto pit = M.beginPointWithMarker( M.markerName("CrossPoints") ),
+                 pen = M.endPointWithMarker( M.markerName("CrossPoints") );
+             pit!=pen; ++pit )
+        {
+            // get one element
+            auto __elt = M.element( *pit->elements().begin() );
+            size_type ie = __elt.id();
+            int lc = 0;
+            for ( uint16_type i = 0; i < element_type::numVertices; ++i )
+            {
+                for ( uint16_type l = 0; l < fe_type::nDofPerVertex; ++l, ++lc )
+                {
+                    if (__elt.point( i ).id()==pit->id() )
+                    {
+                        const size_type gDof = ( __elt.point( i ).id() ) * fe_type::nDofPerVertex + l;
+                        this->insertDof( ie, lc, i, boost::make_tuple( 0, 0, gDof ),
+                                         M.worldComm().localRank(), next_free_dof, 1, false, 0 );
+                        std::cout << "Adding crosspoint " << pit->id() << "\n";
+                    }
+                }
+            }
+        }
+#if 0
+        // go through all Wirebasket edges
+        for( auto pit = M.beginEdgeWithMarker( M.markerName("WireBasket") ),
+                 pen = M.endEdgeWithMarker( M.markerName("WireBasket") );
+             pit!=pen; ++pit )
+        {
+            // get one element
+            //auto __elt = M.element( *pit->elements().begin() );
+
+        }
+#endif
+        std::vector<std::string> faces = assign::list_of("TOP")("BOTTOM")("NORTH")("EAST")("WEST")("SOUTH");
+        BOOST_FOREACH( auto face, faces )
+        {
+            auto faces = markedfaces( &M, face );
+            for( auto pit = faces.template get<1>(), pen = faces.template get<2>(); pit!=pen; ++pit )
+            {
+                // get one element
+                //auto __elt = M.element( *pit->elements().begin() );
+
+            }
+        }
+    }
 
     for ( ; it_elt!=en_elt; ++it_elt )
     {
