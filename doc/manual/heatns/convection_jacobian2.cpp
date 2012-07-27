@@ -38,7 +38,7 @@ void Convection::updateJacobian2( const vector_ptrtype& X,
     mesh_ptrtype mesh = Xh->mesh();
     element_type U( Xh, "u" );
     U = *X;
-    Log() << "[updateJacobian] ||X|| = " << X->l2Norm() << "\n";
+    Log() << "[updateJacobian] ||X|| = " << U.l2Norm() << "\n";
     element_type V( Xh, "v" );
     element_type W( Xh, "v" );
     element_0_type u = U. element<0>(); // fonction vitesse

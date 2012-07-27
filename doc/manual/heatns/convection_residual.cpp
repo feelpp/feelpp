@@ -27,7 +27,7 @@
    \date 2009-03-04
  */
 #include "convection.hpp"
-//#include"functionSup.cpp"
+#include"functionSup.cpp"
 // variational formulation language
 #include <feel/feelvf/vf.hpp>
 
@@ -109,24 +109,24 @@ Convection::updateResidual( const vector_ptrtype& X, vector_ptrtype& R )
 
     // gravity
 
-    form1( Xh, F, _init=true ) =
+    form1( Xh, _vector=R, _init=true ) =
         integrate ( elements( mesh ),
                     // convection
                     cst( a )*trans( gradv( u )*idv( u ) )*id( v ) ,
                     _Q<3*Order_s-1>() );
 
 
-    form1( Xh, F ) +=
+    form1( Xh, _vector=R ) +=
         integrate ( elements( mesh ),
                     // heat diffusion
                     cst( b ) * trace( gradv( u ) * trans( grad( v ) ) ),
                     _Q<2*Order_s-2>() );
-    form1( Xh, F ) +=
+    form1( Xh, _vector=R ) +=
         integrate ( elements( mesh ),
                     // pressure-velocity terms
                     +divv( u ) * id( q ) - idv( p ) * div( v ) ,
                     _Q<Order_s-1+Order_p>() );
-    form1( Xh, F ) +=
+    form1( Xh, _vector=R ) +=
         integrate ( elements( mesh ),
                     // multipliers for zero-mean pressure
                     +id( q )*idv( xi )+idv( p )*id( eta )  ,
@@ -137,7 +137,7 @@ Convection::updateResidual( const vector_ptrtype& X, vector_ptrtype& R )
 
     if ( weakdir==1 )
     {
-        form1( Xh, F ) +=
+        form1( Xh, _vector=R ) +=
             integrate ( boundaryfaces( mesh ),
                         // weak Dirichlet condition at the walls (u=0)
                         -trans( SigmaNv )*id( v )
@@ -147,24 +147,24 @@ Convection::updateResidual( const vector_ptrtype& X, vector_ptrtype& R )
     }
 
     // right hand side
-    form1( Xh, F ) +=
+    form1( Xh, _vector=R ) +=
         integrate ( elements( mesh ),
                     // buyoancy force
                     -expansion*trans( vec( constant( 0. ),idv( t ) ) )*id( v ) );
     //-trans(idv(t)*oneY())*id(v) );
 
     // -- Partie Chaleur --
-    form1( Xh, F ) +=
+    form1( Xh, _vector=R ) +=
         integrate ( elements( mesh ),
                     // heat convection by the fluid
                     pC*grad( s )*( idv( t ) * idv( u ) ) );
-    form1( Xh, F ) +=
+    form1( Xh, _vector=R ) +=
         integrate ( boundaryfaces( mesh ),
                     pC*( trans( idv( u ) )*N() )*id( s )*idv( t ) );
 
 
 
-    form1( Xh, F ) +=
+    form1( Xh, _vector=R ) +=
         integrate ( elements( mesh ),
                     // heat diffusion
                     cst( c ) * gradv( t ) * trans( grad( s ) ) );
@@ -174,10 +174,10 @@ Convection::updateResidual( const vector_ptrtype& X, vector_ptrtype& R )
     if ( steady==0 )
     {
         //time terms
-        form1( Xh,F )    +=
+        form1( Xh, _vector=R )    +=
             integrate( elements( mesh ), ( idv( t )-idv( tn ) )* id( s )/dt );
 
-        form1( Xh,F )    +=
+        form1( Xh, _vector=R )    +=
             integrate( elements( mesh ), cst( a )*trans( idv( u )-idv( un ) )*id( v )/dt );
     }
 
@@ -185,38 +185,38 @@ Convection::updateResidual( const vector_ptrtype& X, vector_ptrtype& R )
     if ( adim==1 )
         neum=1;
 
-    form1( Xh, F ) +=
+    form1( Xh, _vector=R ) +=
         integrate ( markedfaces( mesh,mesh->markerName( "Tflux" ) ),
                     // heat flux on the right side
                     - id( s )*cst( c )*cst( neum )  );
 
     if ( weakdir==1 )
     {
-        form1( Xh, F ) +=
+        form1( Xh, _vector=R ) +=
             integrate ( markedfaces( mesh,mesh->markerName( "Tfixed" ) ),
                         // weak dirichlet condition T=T_0 | left side
                         -gradv( t )*N()*id( s )*cst( c )
                         -grad( s )*N()*idv( t )*cst( c ) );
-        form1( Xh, F ) +=
+        form1( Xh, _vector=R ) +=
             integrate ( boundaryfaces( mesh ),
                         pC*( trans( idv( u ) )*N() )*idv( t )*id( s ) );
 
         // -- weak Dirichlet conditions : 0 for temperature and velocity
-        form1( Xh,F ) 	+=
+        form1( Xh, _vector=R ) 	+=
             integrate ( markedfaces( mesh,mesh->markerName( "Tfixed" ) ),
                         cst_ref( gamma )*idv( t )*id( s )/hFace() );
-        form1( Xh,F ) 	+=
+        form1( Xh, _vector=R ) 	+=
             integrate ( markedfaces( mesh,mesh->markerName( "Tfixed" ) ),
                         cst_ref( gamma )*cst( 0. )*id( s )/hFace() );
 
         //take account of the dirichlet boundary condition
         if ( adim==0 )
         {
-            form1( Xh, F ) +=
+            form1( Xh, _vector=R ) +=
                 integrate ( markedfaces( mesh,mesh->markerName( "Tfixed" ) ),
                             cst_ref( gamma )*cst( T0 )*id( s )/hFace(),
                             _Q<2*Order_t>() );
-            form1( Xh, F ) +=
+            form1( Xh, _vector=R ) +=
                 integrate ( markedfaces( mesh,mesh->markerName( "Tfixed" ) ),
                             // weak dirichlet condition T=T_0 | left side
                             -grad( s )*N()*cst( T0 )*cst( c ) ,
@@ -231,21 +231,21 @@ Convection::updateResidual( const vector_ptrtype& X, vector_ptrtype& R )
 
 
 
-    F->close();
+    R->close();
 
-#if 0
+
     if ( weakdir==0 )
     {
         if ( adim==1 )
-            modifVec( markedfaces( mesh,"Tfixed" ),t,F,cst( 0.0 ) );
+            modifVec( markedfaces( mesh,"Tfixed" ),t,R,cst( 0.0 ) );
 
         else
-            modifVec( markedfaces( mesh,"Tfixed" ),t,F,cst( T0 ) );
+            modifVec( markedfaces( mesh,"Tfixed" ),t,R,cst( T0 ) );
 
-        modifVec( boundaryfaces( mesh ),u,F,one()*0 );
+        modifVec( boundaryfaces( mesh ),u,R,one()*0 );
     }
-#endif
-    *R = *F;
+
+
     //R->printMatlab( "R.m" );
     Log() << "[updateResidual] done in " << ti.elapsed() << "s\n";
 
