@@ -214,8 +214,10 @@ Convection::run()
     std::cout << "mean pressure = "
               << integrate( elements( mesh ) ,idv( p ) ).evaluate()( 0,0 )/meas << "\n";
 
+#if defined( FEELPP_USE_LM )
     Log() << "value of the Lagrange multiplier xi= " << xi( 0 ) << "\n";
     std::cout << "value of the Lagrange multiplier xi= " << xi( 0 ) << "\n";
+#endif
 
     double mean_div_u = integrate( elements( mesh ),
                                    divv( u ) ).evaluate()( 0, 0 );
