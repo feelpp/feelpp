@@ -57,6 +57,18 @@
 using namespace Feel;
 using namespace Feel::vf;
 
+#if !defined( FEELPP_DIM )
+#define FEELPP_DIM 2
+#endif
+#if !defined( FEELPP_ORDER_U )
+#define FEELPP_ORDER_U 2
+#endif
+#if !defined( FEELPP_ORDER_P )
+#define FEELPP_ORDER_P 2
+#endif
+#if !defined( FEELPP_ORDER_T )
+#define FEELPP_ORDER_T 2
+#endif
 
 /**
  * \class Convection
@@ -73,13 +85,13 @@ class Convection : public Application
 public:
 
     //typedef Convection<Order_s, Order_p, Order_t> self_type;
-    static const int Order_s = 2;
-    static const int Order_p = 1;
-    static const int Order_t = 2;
+    static const int Order_s = FEELPP_ORDER_U;
+    static const int Order_p = FEELPP_ORDER_P;
+    static const int Order_t = FEELPP_ORDER_T;
     typedef Convection self_type;
 
     // Definitions pour mesh
-    typedef Simplex<2> entity_type;
+    typedef Simplex<FEELPP_DIM> entity_type;
     typedef Mesh<entity_type> mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
