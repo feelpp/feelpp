@@ -137,12 +137,19 @@ Convection::updateResidual( const vector_ptrtype& X, vector_ptrtype& R )
     auto SigmaNv = ( -idv( p )*N()+cst( b )*gradv( u )*N() );
     auto SigmaN = ( -id( q )*N()+cst( b )*grad( v )*N() );
 
+#if CONVECTION_DIM == 2
     // right hand side
     form1( Xh, _vector=R ) +=
         integrate ( elements( mesh ),
                     // buyoancy force
                     -expansion*trans( vec( constant( 0. ),idv( t ) ) )*id( v ) );
-    //-trans(idv(t)*oneY())*id(v) );
+#else
+    // right hand side
+    form1( Xh, _vector=R ) +=
+        integrate ( elements( mesh ),
+                    // buyoancy force
+                    -expansion*trans( vec( cst(0.), constant( 0. ),idv( t ) ) )*id( v ) );
+#endif
 
     // -- Partie Chaleur --
     form1( Xh, _vector=R ) +=
