@@ -30,7 +30,7 @@ modifVec222( eltType/*element_fluid_velocity_type*/ & u,vectorType/*vector_ptrty
     typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
     typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
 
-    typedef typename ExprType:: tensor<map_gmc_type> t_expr_type;
+    typedef typename ExprType::template tensor<map_gmc_type> t_expr_type;
 
 
     size_type nbFaceDof = invalid_size_type_value;
@@ -134,11 +134,11 @@ modifVec( ElementRange const& __r, eltType & u,vectorType & UnVec,ExprType expr 
     // geometric mapping context
     typedef typename mesh_type::gm_type gm_type;
     typedef boost::shared_ptr<gm_type> gm_ptrtype;
-    typedef typename gm_type:: Context<context, geoelement_type> gmc_type;
+    typedef typename gm_type::template Context<context, geoelement_type> gmc_type;
     typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
     typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
 
-    typedef typename ExprType:: tensor<map_gmc_type> t_expr_type;
+    typedef typename ExprType::template tensor<map_gmc_type> t_expr_type;
 
     size_type nbFaceDof = invalid_size_type_value;
 
@@ -166,8 +166,8 @@ modifVec( ElementRange const& __r, eltType & u,vectorType & UnVec,ExprType expr 
         markedfaces( u.functionSpace()->mesh(), u.functionSpace()->mesh()->markerName( marker/*"ParoiH"*/ ) );
 #endif
 
-    auto __face_it =  __r. get<1>();
-    auto __face_en =  __r. get<2>();
+    auto __face_it =  __r.template get<1>();
+    auto __face_en =  __r.template get<2>();
 
 
     //

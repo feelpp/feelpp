@@ -200,6 +200,21 @@ Convection::run()
             std::cout << " intermediary Grashof = " << M_current_Grashofs<<std::endl;
             std::cout<< " and Prandtl = " << M_current_Prandtl << "\n"<<std::endl;
             this->solve( J, U, R );
+
+            if ( exporter->doExport() )
+            {
+                Log() << "exportResults starts\n";
+
+                exporter->step( i )->setMesh( mesh );
+
+                exporter->step( i )->add( "u", u );
+                exporter->step( i )->add( "t", t );
+                exporter->step( i )->add( "p", p );
+
+                exporter->save();
+                Log() << "exportResults done\n";
+            }
+
         }
 
         // value mean-pressure
@@ -215,11 +230,10 @@ Convection::run()
         {
             Log() << "exportResults starts\n";
 
-            exporter->step( 0 )->setMesh( mesh );
-
-            exporter->step( 0 )->add( "u", u );
-            exporter->step( 0 )->add( "t", t );
-            exporter->step( 0 )->add( "p", p );
+            exporter->step( N )->setMesh( mesh );
+            exporter->step( N )->add( "u", u );
+            exporter->step( N )->add( "t", t );
+            exporter->step( N )->add( "p", p );
 
             exporter->save();
             Log() << "exportResults done\n";

@@ -88,7 +88,7 @@ void Convection ::initLinearOperator( sparse_matrix_ptrtype& L )
     // Fluid
     // diffusion
 
-    form2( Xh, Xh, L, _init=true ) =integrate( elements( mesh ), cst( b )*trace( gradt( u )*trans( grad( v ) ) )  );
+    form2( Xh, Xh, L ) =integrate( elements( mesh ), cst( b )*trace( gradt( u )*trans( grad( v ) ) )  );
     Log() << "[initLinearOperator] Fluid Diffusion terms done\n";
     // pressure-velocity terms
     form2( Xh, Xh, L )  += integrate ( elements( mesh ), - idt( p ) * div( v ) );
