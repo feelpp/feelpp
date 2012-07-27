@@ -50,8 +50,10 @@ void Convection ::initLinearOperator( sparse_matrix_ptrtype& L )
     element_2_type t = U. element<2>(); // fonction temperature
     element_2_type tn = Un. element<2>(); // fonction temperature
     element_2_type s = V. element<2>(); // fonction test temperature
+#if defined( FEELPP_USE_LM )
     element_3_type xi = U. element<3>(); // fonction multipliers
     element_3_type eta = V. element<3>(); // fonction test multipliers
+#endif
 
     //M_oplin = oplin_ptrtype( new oplin_type( Xh, Xh, M_backend ) );
     //M_oplin->mat().zero();
@@ -88,31 +90,22 @@ void Convection ::initLinearOperator( sparse_matrix_ptrtype& L )
     // Fluid
     // diffusion
 
-    form2( Xh, Xh, L ) =integrate( elements( mesh ), cst( b )*trace( gradt( u )*trans( grad( v ) ) )  );
+    form2( _test=Xh, _trial=Xh, _matrix=L ) =integrate( _range=elements( mesh ),
+                                                        _expr=cst( b )*trace( gradt( u )*trans( grad( v ) ) )  );
     Log() << "[initLinearOperator] Fluid Diffusion terms done\n";
+
     // pressure-velocity terms
-    form2( Xh, Xh, L )  += integrate ( elements( mesh ), - idt( p ) * div( v ) );
-    form2( Xh, Xh, L )  += integrate ( elements( mesh ),   divt( u ) * id( q ) );
+    form2( _test=Xh, _trial=Xh, _matrix=L )  += integrate ( _range=elements( mesh ), _expr=- idt( p ) * div( v ) );
+    form2( _test=Xh, _trial=Xh, _matrix=L )  += integrate ( _range=elements( mesh ), _expr=divt( u ) * id( q ) );
 
     Log() << "[initLinearOperator] Fluid Pressure-Velocity terms done\n";
+
+#if defined( FEELPP_USE_LM )
     // multipliers for zero-mean pressure
-    form2( Xh, Xh, L )  += integrate ( elements( mesh ), id( q )*idt( xi ) );
-    form2( Xh, Xh, L )  += integrate ( elements( mesh ), idt( p )*id( eta ) );
-    //form2( Xh, Xh, L )  += integrate ( elements( mesh ), 0*idt( xi )*id( eta ),  _Q<0>() );
+    form2( _test=Xh, _trial=Xh, _matrix=L )  += integrate ( _range=elements( mesh ), _expr=id( q )*idt( xi ) );
+    form2( _test=Xh, _trial=Xh, _matrix=L )  += integrate ( _range=elements( mesh ), _expr=idt( p )*id( eta ) );
     Log() << "[initLinearOperator] Fluid Pressure-Multipliers terms done\n";
-    int weakdir( this->vm()["weakdir"]. as<int>() );
-
-    if ( weakdir==1 )
-    {
-        // weak Dirichlet condition at the walls (u=0)
-        AUTO( SigmaNt, ( -idt( p )*N()-cst( b )*gradt( u )*N() ) );
-        AUTO( SigmaN, ( -id( q )*N()-cst( b )*grad( v )*N() ) );
-        form2( Xh, Xh, L )  += integrate ( boundaryfaces( mesh ), -trans( SigmaNt )*id( v ) );
-        form2( Xh, Xh, L )  += integrate ( boundaryfaces( mesh ), -trans( SigmaN )*idt( u ) );
-        form2( Xh, Xh, L )  += integrate ( boundaryfaces( mesh ), +gamma*trans( idt( u ) )*id( v )/hFace()   );
-    }
-
-    Log() << "[initLinearOperator] Fluid Dirichlet weak BC terms done\n";
+#endif
 
     Log() << "[initLinearOperator] done in " << ti.elapsed() << "s\n";
 
