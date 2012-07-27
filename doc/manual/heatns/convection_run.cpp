@@ -94,7 +94,9 @@ Convection::run()
     Log() << "[convection::run()] u.size() = " << u.size() << " u.start() = " << u.start() << "\n";
     Log() << "[convection::run()] p.size() = " << p.size() << " p.start() = " << p.start() << "\n";
     Log() << "[convection::run()] t.size() = " << t.size() << " p.start() = " << t.start() << "\n";
+#if defined( FEELPP_USE_LM )
     Log() << "[convection::run()] xi.size() = " << xi.size() << " p.start() = " << xi.start() << "\n";
+#endif
     Log() << "[convection::run()] U.size() = " << U.size() << " Xh ndof = " << Xh->nDof() << "\n";
 
     u = vf::project( Xh-> functionSpace<0>(), elements( mesh ), vec( Px()*Py(),Py()*Px() ) );
@@ -140,8 +142,9 @@ Convection::run()
         t = vf::project( Xh->  functionSpace<2>(), elements( mesh ), constant( 300 ) );
         tn = vf::project( Xh->  functionSpace<2>(), elements( mesh ), constant( 300 ) );
     }
-
+#if defined( FEELPP_USE_LM )
     xi = vf::project( Xh->  functionSpace<3>(), elements( mesh ), constant( 0.0 ) );
+#endif
     //initialisation timer :
     double titi = 0;
     boost::shared_ptr<export_type> exporter( export_type::New( this->vm(),
