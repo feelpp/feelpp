@@ -54,7 +54,9 @@ void Convection ::updateJacobian1( const vector_ptrtype& X,
     Log() << "[updateJacobian1] ||u|| = " << u.l2Norm() << "\n";
     Log() << "[updateJacobian1] ||p|| = " << p.l2Norm() << "\n";
     Log() << "[updateJacobian1] ||t|| = " << t.l2Norm() << "\n";
+#if defined( FEELPP_USE_LM )
     Log() << "[updateJacobian1] ||xi|| = " << xi.l2Norm() << "\n";
+#endif
 
     double gr= M_current_Grashofs;
     double sqgr( 1/math::sqrt( gr ) );

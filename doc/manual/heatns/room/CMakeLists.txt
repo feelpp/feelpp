@@ -1,9 +1,9 @@
 ###  TEMPLATE.txt.tpl; coding: utf-8 ---
 
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
-#       Date: 2011-12-01
+#       Date: 2012-07-27
 #
-#  Copyright (C) 2011 Université Joseph Fourier (Grenoble I)
+#  Copyright (C) 2012 Université Joseph Fourier (Grenoble I)
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -21,23 +21,5 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-# Natural convection problem
-include_directories( ${CMAKE_CURRENT_SOURCE_DIR} )
 
-add_library(
-    lib_convection
-    SHARED
-    convection_other.cpp
-    convection_run.cpp
-    convection_residual.cpp
-    convection_jacobian.cpp
-    convection_jacobian1.cpp
-    convection_jacobian2.cpp
-    convection_lo.cpp
-    convection_lo2.cpp )
-target_link_libraries( lib_convection ${FEELPP_LIBRARIES}  )
-
-add_subdirectory( cavity )
-add_subdirectory( cabin )
-add_subdirectory( room )
-
+feelpp_add_application( heatns_room SRCS convection_main.cpp LINK_LIBRARIES lib_convection ${FEELPP_LIBRARIES}   )
