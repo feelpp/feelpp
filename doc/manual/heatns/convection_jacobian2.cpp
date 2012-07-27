@@ -61,33 +61,25 @@ void Convection::updateJacobian2( const vector_ptrtype& X,
 
     if ( adim == 0 ) pC = this->vm()["pC"]. as<double>();
 
-    int steady=this->vm()["steady"]. as<int>();
     //
     // temperature derivatives
     //
     // heat convection by the fluid: attention 2 terms
     form2( Xh,Xh, D ) +=
         integrate ( elements( mesh ),
-                    pC*grad( s )*( idv( t )*idt( u ) ),
-                    _Q<2*Order_t-1+Order_s>() );
+                    pC*grad( s )*( idv( t )*idt( u ) ) );
+
     form2( Xh,Xh, D ) +=
         integrate ( elements( mesh ),
-                    pC*grad( s )*( idt( t )*idv( u ) ),
-                    _Q<2*Order_t-1+Order_s>() );
-    form2( Xh,Xh, D ) +=
-        integrate ( boundaryfaces( mesh ),
-                    pC*( trans( idv( u ) )*N() )*id( s )*idt( t ),
-                    _Q<2*Order_t+Order_s>() );
-    form2( Xh,Xh, D ) +=
-        integrate ( boundaryfaces( mesh ),
-                    pC*( trans( idt( u ) )*N() )*id( s )*idv( t ),
-                    _Q<2*Order_t+Order_s>() );
+                    pC*grad( s )*( idt( t )*idv( u ) ) );
 
-    if ( steady==0 )
-    {
-        //time terms
-        form2( Xh,Xh, D ) +=integrate( elements( mesh ),pC*( idt( t )*id( s ) )/dt );
-    }
+    form2( Xh,Xh, D ) +=
+        integrate ( boundaryfaces( mesh ),
+                    pC*( trans( idv( u ) )*N() )*id( s )*idt( t ) );
+
+    form2( Xh,Xh, D ) +=
+        integrate ( boundaryfaces( mesh ),
+                    pC*( trans( idt( u ) )*N() )*id( s )*idv( t ) );
 
     Log() << "[updateJacobian2] Temperature convection terms done\n";
 
