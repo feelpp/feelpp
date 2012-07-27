@@ -201,7 +201,7 @@ modifVec( ElementRange const& __r, eltType & u,vectorType & UnVec,ExprType expr 
 
         uint16_type __face_id = __face_it->pos_first();
         __c->update( __face_it->element( 0 ), __face_id );
-        std::cout << "marker: " << __face_it->marker() << "\n";
+        //std::cout << "marker: " << __face_it->marker() << "\n";
         map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
 
         LExpr.update( mapgmc );
