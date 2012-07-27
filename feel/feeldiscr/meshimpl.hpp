@@ -193,6 +193,9 @@ Mesh<Shape, T, Tag>::updateForUse()
             this->updateEntitiesCoDimensionTwo();
             Debug( 4015 ) << "[Mesh::updateForUse] update edges : " << ti.elapsed() << "\n";
         }
+        updateOnBoundary( mpl::int_<nDim>() );
+
+
         this->setUpdatedForUse( true );
     }
 
@@ -878,8 +881,17 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne()
     }
 
 #endif
-    boost::tie( iv, en ) = this->elementsRange();
 
+
+    Debug( 4015 ) << "[Mesh::updateFaces] element/face connectivity : " << ti.elapsed() << "\n";
+    ti.restart();
+}
+template<typename Shape, typename T, int Tag>
+void
+Mesh<Shape, T, Tag>::updateOnBoundary( mpl::int_<1> )
+{
+    element_iterator iv,en;
+    boost::tie( iv, en ) = this->elementsRange();
     for ( ; iv != en; ++iv )
     {
         bool isOnBoundary = false;
@@ -893,11 +905,53 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne()
         // with the boundary
         this->elements().modify( iv, detail::OnBoundary( isOnBoundary ) );
     }
-
-    Debug( 4015 ) << "[Mesh::updateFaces] element/face connectivity : " << ti.elapsed() << "\n";
-    ti.restart();
 }
 
+template<typename Shape, typename T, int Tag>
+void
+Mesh<Shape, T, Tag>::updateOnBoundary( mpl::int_<2> )
+{
+    element_iterator iv,en;
+    boost::tie( iv, en ) = this->elementsRange();
+    for ( ; iv != en; ++iv )
+    {
+        bool isOnBoundary = false;
+
+        for ( size_type j = 0; j < this->numLocalFaces(); j++ )
+        {
+            isOnBoundary |= iv->face( j ).isOnBoundary();
+        }
+
+        // an element on the boundary means that is shares a face
+        // with the boundary
+        this->elements().modify( iv, detail::OnBoundary( isOnBoundary ) );
+    }
+}
+
+template<typename Shape, typename T, int Tag>
+void
+Mesh<Shape, T, Tag>::updateOnBoundary( mpl::int_<3> )
+{
+    element_iterator iv,en;
+    boost::tie( iv, en ) = this->elementsRange();
+    for ( ; iv != en; ++iv )
+    {
+        bool isOnBoundary = false;
+
+        for ( size_type j = 0; j < this->numLocalFaces(); j++ )
+        {
+            isOnBoundary |= iv->face( j ).isOnBoundary();
+        }
+        for ( size_type j = 0; j < this->numLocalEdges(); j++ )
+        {
+            isOnBoundary |= iv->edge( j ).isOnBoundary();
+        }
+
+        // an element on the boundary means that is shares a face
+        // with the boundary
+        this->elements().modify( iv, detail::OnBoundary( isOnBoundary ) );
+    }
+}
 #if defined(FEELPP_ENABLE_MPI_MODE)
 template<typename Shape, typename T, int Tag>
 void

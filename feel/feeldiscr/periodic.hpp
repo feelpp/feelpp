@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
        Date: 2008-09-30
 
-  Copyright (C) 2008 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2008-2012 Universite Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -81,7 +81,7 @@ struct periodicity_base {};
  * @author Christophe Prud'homme
  * @see
  */
-template<uint16_type Tag1, uint16_type Tag2, typename T = double >
+template<typename T = double >
 class Periodic : public detail::periodicity_base
 {
 public:
@@ -99,8 +99,6 @@ public:
     //@{
 
     static const bool is_periodic = true;
-    static const uint16_type tag1 = Tag1;
-    static const uint16_type tag2 = Tag2;
 
     //@}
 
@@ -108,8 +106,8 @@ public:
      */
     //@{
 
-    Periodic( node_type const& trans ) : M_trans( trans ) {}
-    Periodic( Periodic const & p ) : M_trans( p.M_trans ) {}
+    Periodic( uint16_type tag1, uint16_type tag2, node_type const& trans ) : M_tag1( tag1 ), M_tag2( tag2 ), M_trans( trans ) {}
+    Periodic( Periodic const & p ) : M_tag1( p.M_tag1 ), M_tag2( p.M_tag2 ), M_trans( p.M_trans ) {}
     ~Periodic() {}
 
     //@}
@@ -127,15 +125,15 @@ public:
 
     //! return whether the condition is periodic or not
     static bool isPeriodic()
-    {
-        return is_periodic;
-    }
+        {
+            return is_periodic;
+        }
 
     //! return the translation condition that should be applied on Tag2
     node_type const& translation()
-    {
-        return M_trans;
-    }
+        {
+            return M_trans;
+        }
 
     //@}
 
@@ -150,6 +148,8 @@ public:
      */
     //@{
 
+    uint16_type tag1() const { return M_tag1; }
+    uint16_type tag2() const { return M_tag2; }
 
     //@}
 
@@ -158,7 +158,8 @@ public:
 protected:
 
 private:
-
+    uint16_type M_tag1;
+    uint16_type M_tag2;
     node_type M_trans;
 };
 /**
@@ -180,8 +181,8 @@ public:
     //@{
 
     static const bool is_periodic = false;
-    static const uint16_type tag1 = invalid_uint16_type_value;
-    static const uint16_type tag2 = invalid_uint16_type_value;
+    //static const uint16_type tag1 = invalid_uint16_type_value;
+    //static const uint16_type tag2 = invalid_uint16_type_value;
 
     typedef node<double>::type node_type;
 
@@ -193,15 +194,18 @@ public:
 
     //! return whether the condition is periodic or not
     static bool isPeriodic()
-    {
-        return is_periodic;
-    }
+        {
+            return is_periodic;
+        }
 
     //! return the translation condition that should be applied on Tag2
     node_type translation()
-    {
-        return node_type();
-    }
+        {
+            return node_type();
+        }
+
+    uint16_type tag1() const { return invalid_uint16_type_value; }
+    uint16_type tag2() const { return invalid_uint16_type_value; }
 
     //@}
 };
