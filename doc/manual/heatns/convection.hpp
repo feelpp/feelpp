@@ -93,10 +93,13 @@ public:
     typedef Lagrange<Order_s, Vectorial,Continuous,PointSetFekete> basis_u_type; // velocity space
     typedef Lagrange<Order_p, Scalar,Continuous,PointSetFekete> basis_p_type; // pressure space
     typedef Lagrange<Order_t, Scalar,Continuous,PointSetFekete> basis_t_type; // temperature space
+
+#if defined( FEELPP_USE_LM )
     typedef Lagrange<0, Scalar> basis_l_type; // multipliers for pressure space
-
     typedef fusion::vector< basis_u_type , basis_p_type , basis_t_type,basis_l_type> basis_type;
-
+#else
+    typedef fusion::vector< basis_u_type , basis_p_type , basis_t_type> basis_type;
+#endif
 
     //! numerical type is double
     typedef double value_type;
@@ -107,7 +110,9 @@ public:
     typedef typename element_type:: sub_element<0>::type element_0_type;
     typedef typename element_type:: sub_element<1>::type element_1_type;
     typedef typename element_type:: sub_element<2>::type element_2_type;
+#if defined( FEELPP_USE_LM )
     typedef typename element_type:: sub_element<3>::type element_3_type;
+#endif
 
     typedef OperatorLinear<space_type,space_type> oplin_type;
     typedef boost::shared_ptr<oplin_type> oplin_ptrtype;

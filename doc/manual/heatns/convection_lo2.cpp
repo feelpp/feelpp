@@ -50,8 +50,10 @@ void Convection ::initLinearOperator2( sparse_matrix_ptrtype& L )
     element_2_type t = U. element<2>(); // fonction temperature
     element_2_type tn = Un. element<2>(); // fonction temperature
     element_2_type s = V. element<2>(); // fonction test temperature
+#if defined( FEELPP_USE_LM )
     element_3_type xi = U. element<3>(); // fonction multipliers
     element_3_type eta = V. element<3>(); // fonction test multipliers
+#endif
 
     double gr= M_current_Grashofs;
     double sqgr( 1/math::sqrt( gr ) );
@@ -91,52 +93,14 @@ void Convection ::initLinearOperator2( sparse_matrix_ptrtype& L )
 
     // Temperature
     // buyoancy forces c(theta,v)
-    //form2( Xh, Xh, L ) +=integrate(elements(mesh),_Q<Order_s+Order_t>(),-trans(vec(constant(0.0),idt(t)))*id(v));
-    //form2( Xh, Xh, L ) +=integrate(elements(mesh),_Q<Order_s+Order_t>(),-trans(idt(t)*vec(constant(0.),constant(0.0)))*id(v));
-    form2( Xh, Xh, L ) +=integrate( elements( mesh ),-expansion*idt( t )*( trans( vec( constant( 0. ),constant( 1.0 ) ) )*id( v ) ),_Q<Order_s+Order_t>() );
-    // just here to ensure that the pattern
-    //form2( Xh, Xh, L ) +=integrate(elements(mesh),_Q<Order_s+Order_t>(),0*(gradv(t)*idt(u))*id(s));
+    form2( Xh, Xh, L ) +=integrate( _range=elements( mesh ), _expr=-expansion*idt( t )*( trans( vec( constant( 0. ),constant( 1.0 ) ) )*id( v ) ) );
 
     Log() << "[initLinearOperator] temperature Force terms done\n";
     // heat conduction/diffusion: e(beta1,theta,chi)+f(theta,chi)
-    form2( Xh, Xh, L )  += integrate( elements( mesh ), cst( c )*gradt( t )*trans( grad( s ) ), _Q<2*Order_t-2>() );
+    form2( Xh, Xh, L )  += integrate( _range=elements( mesh ), _expr=cst( c )*gradt( t )*trans( grad( s ) ) );
     Log() << "[initLinearOperator] Temperature Diffusion terms done\n";
 
-    // weak Dirichlet on temperature (T=0|left wall)
-    int weakdir( this->vm()["weakdir"]. as<int>() );
-
-    if ( weakdir==1 )
-    {
-        form2( Xh, Xh, L )  += integrate ( markedfaces( mesh,mesh->markerName( "Tfixed" ) ),
-                                           - gradt( t )*N()*id( s )*cst( c ) );
-        //weak Dirichlet Term
-        form2( Xh, Xh, L )  += integrate ( markedfaces( mesh,mesh->markerName( "Tfixed" ) ),
-                                           - grad( s )*N()*idt( t )*cst( c ) );
-        //terme c
-
-        form2( Xh, Xh, L )  += integrate ( markedfaces( mesh,mesh->markerName( "Tfixed" ) ),
-                                           gamma*idt( t )*id( s )/hFace() );
-
-
-
-        /*/take account of the dirichlet boundary condition
-            if(adim==0){
-                form1( Xh, F )  +=
-                    integrate (markedfaces(mesh,mesh->markerName( "Tfixed" )),
-                          cst_ref(gamma)*cst(T0)*id(s)/hFace(),
-                            _Q<2*Order_t>() );
-               form1( Xh, F )  +=
-                    integrate ( markedfaces(mesh,mesh->markerName( "Tfixed" )),
-                            // weak dirichlet condition T=T_0 | left side
-                            -grad(s)*N()*cst(T0)*cst(c) ,
-                            _Q<2*Order_t-1>());
-            }*/
-    }
-
     Log() << "[initLinearOperator2] done in " << ti.elapsed() << "s\n";
-
-
-
 }
 
 // instantiation

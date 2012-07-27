@@ -145,95 +145,66 @@ Convection::run()
             ( boost::format( "%1%" )
               % this->about().appName() ).str() ) );
 
-    int steady( this->vm()["steady"]. as<int>() );
+    // set up the non linear solver
 
-    //steady case
-    if ( steady==1 )
+    M_backend->nlSolver()->residual = boost::bind( &self_type::updateResidual,
+                                                   boost::ref( *this ), _1, _2 );
+    M_backend->nlSolver()->jacobian = boost::bind( &self_type::updateJacobian,
+                                                   boost::ref( *this ), _1, _2 );
+
+    std::cout<< "----3----"<<std::endl;
+    // Output for the benchmark data for each grashof number
+    std::ofstream benchOut( "benchmark.dat" );
+
+
+    D = sparse_matrix_ptrtype( M_backend->newMatrix( Xh,Xh ) );
+    std::cout<< "----4----"<<std::endl;
+    form2( Xh,Xh, D,_init=true );
+    std::cout<< "----5----"<<std::endl;
+    F = vector_ptrtype( M_backend->newVector( Xh ) );
+    form1( Xh, F,_init=true );
+    std::cout<< "----6----"<<std::endl;
+
+
+    std::cout<< "----7----"<<std::endl;
+    //M_oplin->close();
+    //M_oplin->mat().printMatlab( "L.m" );
+
+    vector_ptrtype R( M_backend->newVector( Xh ) );
+    sparse_matrix_ptrtype J( M_backend->newMatrix( Xh,Xh ) );
+
+    Log() << "============================================================\n";
+    std::cout << "============================================================\n";
+    double gr( this->vm()["gr"]. as<double>() );
+    M_current_Grashofs = gr;
+    double pr = this->vm()["pr"]. as<double>();
+    M_current_Prandtl = pr;
+    Log() << "Grashof = " << M_current_Grashofs << "\n";
+    Log() << "Prandtl = " << M_current_Prandtl << "\n";
+    std::cout << "Grashof = " << M_current_Grashofs << "\n";
+    std::cout << "Prandtl = " << M_current_Prandtl << "\n";
+
+    int N=std::max( 1.0,std::max( std::ceil( std::log( gr ) ),std::ceil( std::log( pr )-std::log( 1e-2 ) ) ) );
+
+    for ( int i = 0; i < N; ++i )
     {
-        // set up the non linear solver
-
-        M_backend->nlSolver()->residual = boost::bind( &self_type::updateResidual,
-                                          boost::ref( *this ), _1, _2 );
-        M_backend->nlSolver()->jacobian = boost::bind( &self_type::updateJacobian,
-                                          boost::ref( *this ), _1, _2 );
-
-        std::cout<< "----3----"<<std::endl;
-        // Output for the benchmark data for each grashof number
-        std::ofstream benchOut( "benchmark.dat" );
-
-
-        D = sparse_matrix_ptrtype( M_backend->newMatrix( Xh,Xh ) );
-        std::cout<< "----4----"<<std::endl;
-        form2( Xh,Xh, D,_init=true );
-        std::cout<< "----5----"<<std::endl;
-        F = vector_ptrtype( M_backend->newVector( Xh ) );
-        form1( Xh, F,_init=true );
-        std::cout<< "----6----"<<std::endl;
-
-
-        std::cout<< "----7----"<<std::endl;
-        //M_oplin->close();
-        //M_oplin->mat().printMatlab( "L.m" );
-
-        vector_ptrtype R( M_backend->newVector( Xh ) );
-        sparse_matrix_ptrtype J( M_backend->newMatrix( Xh,Xh ) );
-
-        Log() << "============================================================\n";
-        std::cout << "============================================================\n";
-        double gr( this->vm()["gr"]. as<double>() );
-        M_current_Grashofs = gr;
-        double pr = this->vm()["pr"]. as<double>();
-        M_current_Prandtl = pr;
-        Log() << "Grashof = " << M_current_Grashofs << "\n";
-        Log() << "Prandtl = " << M_current_Prandtl << "\n";
-        std::cout << "Grashof = " << M_current_Grashofs << "\n";
-        std::cout << "Prandtl = " << M_current_Prandtl << "\n";
-
-        int N=std::max( 1.0,std::max( std::ceil( std::log( gr ) ),std::ceil( std::log( pr )-std::log( 1e-2 ) ) ) );
-
-        for ( int i = 0; i < N; ++i )
-        {
-            int denom = ( N==1 )?1:N-1;
-            M_current_Grashofs = math::exp( math::log( 1. )+i*( math::log( gr )-math::log( 1. ) )/denom );
-            M_current_Prandtl = math::exp( math::log( 1e-2 )+i*( math::log( pr )-math::log( 1e-2 ) )/denom );
-            std::cout << "i/N = " << i << "/" << N <<std::endl;
-            std::cout << " intermediary Grashof = " << M_current_Grashofs<<std::endl;
-            std::cout<< " and Prandtl = " << M_current_Prandtl << "\n"<<std::endl;
-            this->solve( J, U, R );
-
-            if ( exporter->doExport() )
-            {
-                Log() << "exportResults starts\n";
-
-                exporter->step( i )->setMesh( mesh );
-
-                exporter->step( i )->add( "u", u );
-                exporter->step( i )->add( "t", t );
-                exporter->step( i )->add( "p", p );
-
-                exporter->save();
-                Log() << "exportResults done\n";
-            }
-
-        }
-
-        // value mean-pressure
-        double meas = integrate( elements( mesh ),
-                                 constant( 1.0 ) ,
-                                 _Q<0>() ).evaluate()( 0, 0 );
-        std::cout << "measure(Omega)=" << meas << " (should be equal to 1)\n";
-        std::cout << "mean pressure = " << integrate( elements( mesh ) ,
-                  idv( p ),
-                  _Q<Order_p>()  ).evaluate()( 0,0 )/meas << "\n";
+        int denom = ( N==1 )?1:N-1;
+        M_current_Grashofs = math::exp( math::log( 1. )+i*( math::log( gr )-math::log( 1. ) )/denom );
+        M_current_Prandtl = math::exp( math::log( 1e-2 )+i*( math::log( pr )-math::log( 1e-2 ) )/denom );
+        std::cout << "i/N = " << i << "/" << N <<std::endl;
+        std::cout << " intermediary Grashof = " << M_current_Grashofs<<std::endl;
+        std::cout<< " and Prandtl = " << M_current_Prandtl << "\n"<<std::endl;
+        M_backend->nlSolve( _solution = U );
 
         if ( exporter->doExport() )
         {
             Log() << "exportResults starts\n";
 
-            exporter->step( N )->setMesh( mesh );
-            exporter->step( N )->add( "u", u );
-            exporter->step( N )->add( "t", t );
-            exporter->step( N )->add( "p", p );
+            exporter->step( i )->setMesh( mesh );
+
+            exporter->step( i )->add( "u", u );
+            exporter->step( i )->add( "t", t );
+            exporter->step( i )->add( "p", p );
 
             exporter->save();
             Log() << "exportResults done\n";
@@ -241,119 +212,31 @@ Convection::run()
 
     }
 
-    else
-    {
-        double tf=this->vm()["tf"]. as<double>();
-        double dt=this->vm()["dt"]. as<double>();
-
-        //begin time loop
-        for ( titi= dt; titi<=tf; titi+= dt )
-        {
-
-            // set up the non linear solver
-            M_backend->nlSolver()->residual = boost::bind( &self_type::updateResidual,
-                                              boost::ref( *this ), _1, _2 );
-            M_backend->nlSolver()->jacobian = boost::bind( &self_type::updateJacobian,
-                                              boost::ref( *this ), _1, _2 );
-            std::cout<< "----3----"<<std::endl;
-            // Output for the benchmark data for each grashof number
-            std::ofstream benchOut( "benchmark.dat" );
-
-
-            D = sparse_matrix_ptrtype( M_backend->newMatrix( Xh,Xh ) );
-            std::cout<< "----4----"<<std::endl;
-            form2( Xh,Xh, D,_init=true );
-            std::cout<< "----5----"<<std::endl;
-            F = vector_ptrtype( M_backend->newVector( Xh ) );
-            form1( Xh, F,_init=true );
-            std::cout<< "----6----"<<std::endl;
-
-
-            std::cout<< "----7----"<<std::endl;
-            //M_oplin->close();
-            //M_oplin->mat().printMatlab( "L.m" );
-
-            vector_ptrtype R( M_backend->newVector( Xh ) );
-            sparse_matrix_ptrtype J( M_backend->newMatrix( Xh,Xh ) );
-
-            Log() << "============================================================\n";
-            std::cout << "============================================================\n";
-            double gr( this->vm()["gr"]. as<double>() );
-            M_current_Grashofs = gr;
-            double pr = this->vm()["pr"]. as<double>();
-            M_current_Prandtl = pr;
-            Log() << "Grashof = " << M_current_Grashofs << "\n";
-            Log() << "Prandtl = " << M_current_Prandtl << "\n";
-            std::cout << "Grashof = " << M_current_Grashofs << "\n";
-            std::cout << "Prandtl = " << M_current_Prandtl << "\n";
-
-            int N=std::max( 1.0,std::max( std::ceil( std::log( gr ) ),std::ceil( std::log( pr )-std::log( 1e-2 ) ) ) );
-
-            for ( int i = 0; i < N; ++i )
-
-            {
-                std::cout << "6\n";
-                int denom = ( N==1 )?1:N-1;
-                M_current_Grashofs = math::exp( math::log( 1. )+i*( math::log( gr )-math::log( 1. ) )/denom );
-                M_current_Prandtl = math::exp( math::log( 1e-2 )+i*( math::log( pr )-math::log( 1e-2 ) )/denom );
-                std::cout << "i/N = " << i << "/" << N
-                          << " intermediary Grashof = " << M_current_Grashofs
-                          << " and Prandtl = " << M_current_Prandtl << "\n";
-                this->solve( J, U, R );
-            }
-
-            // value mean-pressure
-            double meas = integrate( elements( mesh ),
-                                     constant( 1.0 ) ,
-                                     _Q<0>() ).evaluate()( 0, 0 );
-            std::cout << "measure(Omega)=" << meas << " (should be equal to 1)\n";
-            std::cout << "mean pressure = " << integrate( elements( mesh ) ,
-                      idv( p ),
-                      _Q<Order_p>()  ).evaluate()( 0,0 )/meas << "\n";
-
-            if ( exporter->doExport() )
-            {
-                Log() << "exportResults starts\n";
-
-                exporter->step( titi )->setMesh( mesh );
-
-                exporter->step( titi )->add( "u", u );
-                exporter->step( titi )->add( "t", t );
-                exporter->step( titi )->add( "p", p );
-
-                exporter->save();
-                Log() << "exportResults done\n";
-            }
-
-            un=u;
-            pn=p;
-            tn=t;
-        }
-    }    //end time loop
+    // value mean-pressure
+    double meas = integrate( elements( mesh ),constant( 1.0 )  ).evaluate()( 0, 0 );
+    std::cout << "measure(Omega)=" << meas << " (should be equal to 1)\n";
+    std::cout << "mean pressure = "
+              << integrate( elements( mesh ) ,idv( p ) ).evaluate()( 0,0 )/meas << "\n";
 
     Log() << "value of the Lagrange multiplier xi= " << xi( 0 ) << "\n";
     std::cout << "value of the Lagrange multiplier xi= " << xi( 0 ) << "\n";
 
     double mean_div_u = integrate( elements( mesh ),
-                                   divv( u ) ,
-                                   _Q<Order_s-1>() ).evaluate()( 0, 0 );
+                                   divv( u ) ).evaluate()( 0, 0 );
     std::cout << "mean_div(u)=" << mean_div_u << "\n";
 
     double div_u_error_L2 = integrate( elements( mesh ),
-                                       divv( u )*divv( u ),
-                                       _Q<2*( Order_s-1 )>() ).evaluate()( 0, 0 );
+                                       divv( u )*divv( u ) ).evaluate()( 0, 0 );
     std::cout << "||div(u)||_2=" << math::sqrt( div_u_error_L2 ) << "\n";
 
     // calcul le nombre de Nusselt
-    double AverageT = integrate( markedfaces( mesh,mesh->markerName( "Tflux" ) ) ,
-                                 idv( t ),
-                                 _Q<Order_t>()  ).evaluate()( 0,0 ) ;
+    double AverageT = integrate( markedfaces( mesh,"Tflux" ) ,
+                                 idv( t ) ).evaluate()( 0,0 ) ;
     std::cout << "AverageT = " << AverageT << std::endl;
 
 
-    double Flux = integrate( markedfaces( mesh,mesh->markerName( "Fflux" ) ) ,
-                             trans( idv( u ) )*vec( constant( -1.0 ),constant( 0.0 ) ),
-                             _Q<Order_s>() ).evaluate()( 0,0 ) ;
+    double Flux = integrate( markedfaces( mesh, "Fflux" ) ,
+                             trans( idv( u ) )*vec( constant( -1.0 ),constant( 0.0 ) ) ).evaluate()( 0,0 ) ;
     std::cout << "Flux = " << Flux << std::endl;
 
     // benchOut << M_current_Grashofs << " " << AverageT << " " << Flux << std::endl;
