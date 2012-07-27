@@ -99,18 +99,23 @@ Convection::run()
 #endif
     Log() << "[convection::run()] U.size() = " << U.size() << " Xh ndof = " << Xh->nDof() << "\n";
 
+#if CONVECTION_DIM == 2
     u = vf::project( Xh-> functionSpace<0>(), elements( mesh ), vec( Px()*Py(),Py()*Px() ) );
     un = vf::project( Xh-> functionSpace<0>(), elements( mesh ), vec( Px()*Py(),Py()*Px() ) );
+    std::cout << integrate( elements( mesh ), idv( u ) , _Q<2>() ).evaluate() << "\n";
+    std::cout << integrate( boundaryfaces( mesh ), gradv( u )*N() , _Q<1>() ).evaluate() << "\n";
+#endif
+
     p = vf::project( Xh->  functionSpace<1>(), elements( mesh ), exp( Px() ) );
     pn = vf::project( Xh->  functionSpace<1>(), elements( mesh ), exp( Px() ) );
     t = vf::project( Xh->  functionSpace<2>(), elements( mesh ), sin( Py() ) );
     tn = vf::project( Xh->  functionSpace<2>(), elements( mesh ), sin( Py() ) );
 
-    std::cout << integrate( elements( mesh ), idv( u ) , _Q<2>() ).evaluate() << "\n";
+
     std::cout << integrate( elements( mesh ), idv( p ) , _Q<3>() ).evaluate() << "\n";
     std::cout << integrate( elements( mesh ), idv( t ) , _Q<6>() ).evaluate() << "\n";
 
-    std::cout << integrate( boundaryfaces( mesh ), gradv( u )*N() , _Q<1>() ).evaluate() << "\n";
+
     std::cout << integrate( boundaryfaces( mesh ), gradv( p )*N() , _Q<3>() ).evaluate() << "\n";
     std::cout << integrate( boundaryfaces( mesh ), gradv( t )*N() , _Q<6>() ).evaluate() << "\n";
 
@@ -126,8 +131,14 @@ Convection::run()
     std::cout<< "----2----"<<std::endl;
     // init to 0 and then later reuse previous grashof results to
     // initialize the solver
+
+#if CONVECTION_DIM==2
     u = vf::project( Xh-> functionSpace<0>(), elements( mesh ), vec( constant( 0.0 ),constant( 0.0 ) ) );
     un = vf::project( Xh-> functionSpace<0>(), elements( mesh ), vec( constant( 0.0 ),constant( 0.0 ) ) );
+#else
+    u = vf::project( Xh-> functionSpace<0>(), elements( mesh ), vec( constant( 0.0 ),constant( 0.0 ), cst(0.) ) );
+    un = vf::project( Xh-> functionSpace<0>(), elements( mesh ), vec( constant( 0.0 ),constant( 0.0 ), cst(0.) ) );
+#endif
     p = vf::project( Xh->  functionSpace<1>(), elements( mesh ), constant( 0.0 ) );
     pn = vf::project( Xh->  functionSpace<1>(), elements( mesh ), constant( 0.0 ) );
 
@@ -214,8 +225,10 @@ Convection::run()
     std::cout << "mean pressure = "
               << integrate( elements( mesh ) ,idv( p ) ).evaluate()( 0,0 )/meas << "\n";
 
+#if defined( FEELPP_USE_LM )
     Log() << "value of the Lagrange multiplier xi= " << xi( 0 ) << "\n";
     std::cout << "value of the Lagrange multiplier xi= " << xi( 0 ) << "\n";
+#endif
 
     double mean_div_u = integrate( elements( mesh ),
                                    divv( u ) ).evaluate()( 0, 0 );
@@ -230,9 +243,13 @@ Convection::run()
                                  idv( t ) ).evaluate()( 0,0 ) ;
     std::cout << "AverageT = " << AverageT << std::endl;
 
-
+#if CONVECTION_DIM==2
     double Flux = integrate( markedfaces( mesh, "Fflux" ) ,
                              trans( idv( u ) )*vec( constant( -1.0 ),constant( 0.0 ) ) ).evaluate()( 0,0 ) ;
+#else
+    double Flux = integrate( markedfaces( mesh, "Fflux" ) ,
+                            trans( idv( u ) )*vec( constant( -1.0 ),constant( 0.0 ), cst(0.0) ) ).evaluate()( 0,0 ) ;
+#endif
     std::cout << "Flux = " << Flux << std::endl;
 
     // benchOut << M_current_Grashofs << " " << AverageT << " " << Flux << std::endl;
