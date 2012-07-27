@@ -202,19 +202,19 @@ public:
 
     marker_point_iterator beginPointWithMarker( size_type m )
     {
-        return _M_points.template get<detail::by_marker>().lower_bound( m );
+        return _M_points.template get<detail::by_marker>().lower_bound( Marker1(m) );
     }
     marker_point_const_iterator beginPointWithMarker( size_type m ) const
     {
-        return _M_points.template get<detail::by_marker>().lower_bound( m );
+        return _M_points.template get<detail::by_marker>().lower_bound( Marker1(m) );
     }
     marker_point_iterator endPointWithMarker( size_type m )
     {
-        return _M_points.template get<detail::by_marker>().upper_bound( m );
+        return _M_points.template get<detail::by_marker>().upper_bound( Marker1(m) );
     }
     marker_point_const_iterator endPointWithMarker( size_type m ) const
     {
-        return _M_points.template get<detail::by_marker>().upper_bound( m );
+        return _M_points.template get<detail::by_marker>().upper_bound( Marker1(m) );
     }
 
     point_iterator pointIterator( size_type i ) const
