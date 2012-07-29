@@ -99,8 +99,8 @@ Convection::createMesh()
          << "Plane Surface(8) = {7};\n"
          << "Physical Line(\"Tinsulated\") = {1,3,4};\n"
          << "Physical Line(\"Tfixed\") = {5};\n"
-         << "Physical Line(\"Tflux\") = {2};\n"
-         << "Physical Line(\"Fflux\") = {6};\n"
+        << "Physical Line(\"Tflux\") = {2};\n"
+        // << "Physical Line(\"Fflux\") = {6};\n"
          << "Physical Surface(\"domain\") = {8};\n";
 
     std::ostringstream fname;
