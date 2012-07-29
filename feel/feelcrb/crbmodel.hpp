@@ -341,7 +341,7 @@ public:
     }
     size_type Qm( mpl::bool_<false> ) const
     {
-        return 0;
+        return 1;
     }
 
     size_type Qmf() const
@@ -357,7 +357,7 @@ public:
 
     int mMaxM( int q )
     {
-        return mMaxM( mpl::bool_< model_type::is_time_dependent >() );
+        return mMaxM(q, mpl::bool_<model_type::is_time_dependent>() );
     }
     int mMaxM( int q, mpl::bool_<true> )
     {
@@ -365,7 +365,7 @@ public:
     }
     int mMaxM( int q , mpl::bool_<false> )
     {
-        return 0;
+        return 1;
     }
 
     int mMaxMF( int q ) const
@@ -473,7 +473,6 @@ public:
         betaAqm = steady_beta.get<0>();
         betaFqm = steady_beta.get<1>();
         betaInitialGuessQm = steady_beta.get<2>();
-
         betaMqm.resize( 1 );
         betaMqm[0].resize( 1 );
         betaMqm[0][0] = 1 ;
@@ -481,6 +480,10 @@ public:
         return boost::make_tuple( betaMqm, betaAqm, betaFqm, betaInitialGuessQm );
     }
 
+
+    element_ptrtype initialGuess( parameter_type const& mu );
+    element_ptrtype initialGuess( parameter_type const& mu , mpl::bool_<true>);
+    element_ptrtype initialGuess( parameter_type const& mu , mpl::bool_<false>);
 
     /**
      * \brief update the model wrt \p mu
@@ -1004,7 +1007,6 @@ protected:
     //! affine decomposition terms for the right hand side
     std::vector< std::vector<std::vector<vector_ptrtype> > > M_Fqm;
 
-
 private:
 
     bool M_is_initialized;
@@ -1084,13 +1086,16 @@ struct AssembleMassMatrixInCompositeCase
     void
     operator()( const T& t ) const
     {
+
+        using namespace Feel::vf;
+
         auto u = M_composite_u.template element< T::value >();
         auto v = M_composite_v.template element< T::value >();
-        auto Xh = u.functionSpace();
+        auto Xh = M_composite_u.functionSpace();
         mesh_ptrtype mesh = Xh->mesh();
 
         form2( _test=Xh, _trial=Xh, _matrix=M_crb_model.Mqm(0,0) ) +=
-            integrate( _range=elements( mesh ), _expr=Feel::vf::idt( u )*Feel::vf::id( v )  );
+               integrate( _range=elements( mesh ), _expr=idt( u )*id( v ) );
 
     }
 
@@ -1254,15 +1259,16 @@ void
 CRBModel<TruthModelType>::assembleMassMatrix( mpl::bool_<true> )
 {
     auto Xh = M_model->functionSpace();
-    M_Mqm.resize( 1 );
-    M_Mqm[0].resize( 1 );
-    M_Mqm[0][0] = M_backend->newMatrix( _test=Xh , _trial=Xh );
-    form2( _test=Xh, _trial=Xh, _matrix=M_Mqm[0][0] , _init=true);
 
     element_type u ( Xh , "u" );
     element_type v ( Xh , "v" );
 
     index_vector_type index_vector;
+    int size = functionspace_type::nSpaces;
+    M_Mqm.resize( 1 );
+    M_Mqm[0].resize(1);
+    M_Mqm[0][0]=M_backend->newMatrix( _test=Xh , _trial=Xh );
+
     AssembleMassMatrixInCompositeCase<TruthModelType> assemble_mass_matrix_in_composite_case ( u , v , *this);
     fusion::for_each( index_vector, assemble_mass_matrix_in_composite_case );
 
@@ -1340,6 +1346,51 @@ CRBModel<TruthModelType>::assembleMF( initial_guess_type & initial_guess, mpl::b
 }
 
 
+
+template<typename TruthModelType>
+typename CRBModel<TruthModelType>::element_ptrtype
+CRBModel<TruthModelType>::initialGuess( parameter_type const& mu )
+{
+    return initialGuess( mu , mpl::bool_<model_type::is_time_dependent>() );
+}
+template<typename TruthModelType>
+typename CRBModel<TruthModelType>::element_ptrtype
+CRBModel<TruthModelType>::initialGuess( parameter_type const& mu , mpl::bool_<false> )
+{
+    auto Xh = M_model->functionSpace();
+    element_ptrtype initial_guess = Xh->elementPtr();
+    initial_guess_type initial_guess_vector;
+    boost::tie( boost::tuples::ignore, boost::tuples::ignore, initial_guess_vector ) = M_model->computeAffineDecomposition();
+
+    for ( size_type q = 0; q < Qmf(); ++q )
+    {
+        for ( size_type m = 0; m < mMaxMF(q); ++m )
+        {
+            initial_guess_vector[q][m]->scale( this->betaInitialGuessQm( q , m ) );
+            *initial_guess += *initial_guess_vector[q][m];
+        }
+    }
+    return initial_guess;
+}
+template<typename TruthModelType>
+typename CRBModel<TruthModelType>::element_ptrtype
+CRBModel<TruthModelType>::initialGuess( parameter_type const& mu , mpl::bool_<true> )
+{
+    auto Xh = M_model->functionSpace();
+    element_ptrtype initial_guess = Xh->elementPtr();
+    initial_guess_type initial_guess_vector;
+    boost::tie( boost::tuples::ignore, boost::tuples::ignore, boost::tuples::ignore, initial_guess_vector ) = M_model->computeAffineDecomposition();
+
+    for ( size_type q = 0; q < Qmf(); ++q )
+    {
+        for ( size_type m = 0; m < mMaxMF(q); ++m )
+        {
+            initial_guess_vector[q][m]->scale( this->betaInitialGuessQm( q , m ) );
+            *initial_guess += *initial_guess_vector[q][m];
+        }
+    }
+    return initial_guess;
+}
 
 template<typename TruthModelType>
 typename CRBModel<TruthModelType>::offline_merge_type
