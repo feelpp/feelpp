@@ -169,30 +169,20 @@ Convection::updateResidual( const vector_ptrtype& X, vector_ptrtype& R )
 
     if ( adim==1 )
         neum=1;
-    auto RR = M_backend->newVector( Xh );
-    form1( Xh, _vector=RR ) =
+    form1( Xh, _vector=R ) +=
         integrate ( markedfaces( mesh, "Tflux"),
                     // heat flux on the right side
-                    - id( s )*sqgrpr );
-                    //- id( s )*cst( c )*cst( neum )  );
-    RR->close();
-    RR->printMatlab( "R2.m" );
+                    - id( s )*cst( c )*cst( neum )  );
     R->close();
-    R->add( 1, RR );
 
-
-
-    R->printMatlab( "R1.m" );
     if ( adim==1 )
         modifVec( markedfaces( mesh,"Tfixed" ),t,R,cst( 0.0 ) );
-
     else
         modifVec( markedfaces( mesh,"Tfixed" ),t,R,cst( T0 ) );
-    R->printMatlab( "R3.m" );
+
     modifVec( boundaryfaces( mesh ),u,R,one()*0 );
 
-    R->printMatlab( "R.m" );
-    R->add( 1, RR );
+
     Log() << "[updateResidual] done in " << ti.elapsed() << "s\n";
 
 }
