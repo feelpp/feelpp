@@ -56,10 +56,10 @@ Convection::run()
                            _desc=createMesh(),
                            _update=MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
 
-    Log() << "Tfixed: " << mesh->markerName( "Tfixed" ) << ": " << "\n";
-    Log() << "Tflux: " << mesh->markerName( "Tflux" ) << "\n";
-    Log() << "Fflux: " << mesh->markerName( "Fflux" ) << "\n";
-    Log() << "Tinsulated: " << mesh->markerName( "Tinsulated" ) << "\n";
+    Log() << "Tfixed: " << mesh->markerName( "Tfixed" ) << ": " << integrate(markedfaces(mesh,"Tfixed"), cst(1.) ).evaluate()(0,0) << "\n";
+    Log() << "Tflux: " << mesh->markerName( "Tflux" ) << ": " << integrate(markedfaces(mesh,"Tflux"), cst(1.) ).evaluate()(0,0)  << "\n";
+    //Log() << "Fflux: " << mesh->markerName( "Fflux" ) << ": " << integrate(markedfaces(mesh,"Fflux"), cst(1.) ).evaluate()(0,0)  << "\n";
+    Log() << "Tinsulated: " << mesh->markerName( "Tinsulated" ) << ": " << integrate(markedfaces(mesh,"Tinsulated"), cst(1.) ).evaluate()(0,0)  << "\n";
     timers["mesh"].second=timers["mesh"].first.elapsed();
     timings << "[Mesh] Time : " << timers["mesh"].second << std::endl;
     //
@@ -247,6 +247,7 @@ Convection::run()
                                  idv( t ) ).evaluate()( 0,0 ) ;
     std::cout << "AverageT = " << AverageT << std::endl;
 
+#if 0
 #if CONVECTION_DIM==2
     double Flux = integrate( markedfaces( mesh, "Fflux" ) ,
                              trans( idv( u ) )*vec( constant( -1.0 ),constant( 0.0 ) ) ).evaluate()( 0,0 ) ;
@@ -255,7 +256,7 @@ Convection::run()
                             trans( idv( u ) )*vec( constant( -1.0 ),constant( 0.0 ), cst(0.0) ) ).evaluate()( 0,0 ) ;
 #endif
     std::cout << "Flux = " << Flux << std::endl;
-
+#endif
     // benchOut << M_current_Grashofs << " " << AverageT << " " << Flux << std::endl;
 
     //this->exportResults( boost::format("") , U, 0 );
