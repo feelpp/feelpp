@@ -52,9 +52,22 @@ Convection::run()
     //
     timers["mesh"].first.restart();
     mesh_ptrtype mesh( new mesh_type );
-    mesh = createGMSHMesh( _mesh=new mesh_type,
-                           _desc=createMesh(),
-                           _update=MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
+
+    if (this->vm()["readMesh"]. as<int>()){
+        std::string repository = this->vm()["input_dir"]. as<std::string>() ;
+        std::string file_mesh = this->vm()["mesh_name"]. as<std::string>() ;;
+        std::string complete_name = repository + file_mesh;
+        std::cout << "Meshes read in file : " << complete_name <<std::endl;
+        
+        mesh  =  loadGMSHMesh( _mesh=new mesh_type,
+                              _filename=complete_name,
+                              _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER );        
+    }
+    else{
+        mesh = createGMSHMesh( _mesh=new mesh_type,
+                               _desc=createMesh(),
+                               _update=MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
+    }
 
     Log() << "Tfixed: " << mesh->markerName( "Tfixed" ) << ": " << integrate(markedfaces(mesh,"Tfixed"), cst(1.) ).evaluate()(0,0) << "\n";
     Log() << "Tflux: " << mesh->markerName( "Tflux" ) << ": " << integrate(markedfaces(mesh,"Tflux"), cst(1.) ).evaluate()(0,0)  << "\n";
@@ -64,7 +77,6 @@ Convection::run()
     timings << "[Mesh] Time : " << timers["mesh"].second << std::endl;
     //
     // --- END MESH SECTION ---
-    //
 
 
     //
