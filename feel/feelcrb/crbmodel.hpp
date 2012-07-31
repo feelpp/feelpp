@@ -1143,7 +1143,7 @@ struct AssembleMFInCompositeCase
     {
 
         auto v = M_composite_v.template element< T::value >();
-        auto Xh = v.functionSpace();
+        auto Xh = M_composite_v.functionSpace();
         mesh_ptrtype mesh = Xh->mesh();
 
         for(int q = 0; q < M_crb_model.Qmf(); q++)

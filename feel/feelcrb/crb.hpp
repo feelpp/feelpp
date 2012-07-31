@@ -514,23 +514,30 @@ public:
         void
         operator()( const T& t ) const
         {
+            int i = T::value;
+            if( i == 0 )
+                M_error.resize( 1 );
+            else
+                M_error.conservativeResize( i+1 );
+
             auto e1 = M_composite_e1.template element< T::value >();
             auto e2 = M_composite_e2.template element< T::value >();
-            mesh_ptrtype mesh = e1.functionSpace()->mesh();
+
+            auto Xh = M_composite_e1.functionSpace();
+            mesh_ptrtype mesh = Xh->mesh();
             double integral = integrate( _range=elements(mesh) ,
                                          _expr=vf::idv( e1 ) * vf::idv( e2 )
                                          *     vf::idv( e1 ) * vf::idv( e2 )
                                          ).evaluate()(0,0);
-
-            M_vect.push_back( math::sqrt( integral ) );
+            M_error(i) = math::sqrt( integral ) ;
         }
 
-        std::vector< double > vectorIntegrals()
+        vectorN_type vectorErrors()
         {
-            return M_vect;
+            return M_error;
         }
 
-        mutable std::vector< double > M_vect;
+        mutable vectorN_type M_error;
         element_type M_composite_e1;
         element_type M_composite_e2;
     };
@@ -736,9 +743,9 @@ public:
     element_type expansion( vectorN_type const& u , int const N) const;
 
 
-    void checkInitialGuess( const element_type expansion_uN , parameter_type const& mu, std::vector<double> & error ) const ;
-    void checkInitialGuess( const element_type expansion_uN , parameter_type const& mu, std::vector<double> & error , mpl::bool_<true> ) const ;
-    void checkInitialGuess( const element_type expansion_uN , parameter_type const& mu, std::vector<double> & error , mpl::bool_<false> ) const ;
+    void checkInitialGuess( const element_type expansion_uN , parameter_type const& mu, vectorN_type & error ) const ;
+    void checkInitialGuess( const element_type expansion_uN , parameter_type const& mu, vectorN_type & error , mpl::bool_<true> ) const ;
+    void checkInitialGuess( const element_type expansion_uN , parameter_type const& mu, vectorN_type & error , mpl::bool_<false> ) const ;
 
 
     /**
@@ -1303,9 +1310,11 @@ CRB<TruthModelType>::offline()
         M_Mqm_pr_du[q].resize( M_model->mMaxM(q) );
     }
 
-    M_MFqm_pr.resize(2);
-    M_MFqm_pr[0].resize(1);
-    M_MFqm_pr[1].resize(1);
+    M_MFqm_pr.resize( M_model->Qmf() );
+    for(int q=0; q<M_model->Qmf(); q++)
+    {
+        M_MFqm_pr[q].resize( M_model->mMaxMF(q) );
+    }
 
     M_Fqm_pr.resize( M_model->Ql( 0 ) );
     M_Fqm_du.resize( M_model->Ql( 0 ) );
@@ -2100,7 +2109,7 @@ CRB<TruthModelType>::offline()
 
 template<typename TruthModelType>
 void
-CRB<TruthModelType>::checkInitialGuess( const element_type expansion_uN , parameter_type const& mu, std::vector<double> & error) const
+CRB<TruthModelType>::checkInitialGuess( const element_type expansion_uN , parameter_type const& mu, vectorN_type & error) const
 {
     static const bool is_composite = functionspace_type::is_composite;
     checkInitialGuess( expansion_uN, mu, error , mpl::bool_< is_composite >() );
@@ -2108,13 +2117,13 @@ CRB<TruthModelType>::checkInitialGuess( const element_type expansion_uN , parame
 
 template<typename TruthModelType>
 void
-CRB<TruthModelType>::checkInitialGuess( const element_type expansion_uN , parameter_type const& mu, std::vector<double> & error, mpl::bool_<false>) const
+CRB<TruthModelType>::checkInitialGuess( const element_type expansion_uN , parameter_type const& mu, vectorN_type & error, mpl::bool_<false>) const
 {
     error.resize(1);
     const element_ptrtype initial_guess = M_model->initialGuess( mu );
     auto Xh = expansion_uN.functionSpace();
     auto mesh = Xh->mesh();
-    error[0] = math::sqrt(
+    error(0) = math::sqrt(
                           integrate( _range=elements(mesh) ,
                           _expr=vf::idv( initial_guess ) * vf::idv( expansion_uN )
                               * vf::idv( initial_guess ) * vf::idv( expansion_uN )
@@ -2126,14 +2135,16 @@ CRB<TruthModelType>::checkInitialGuess( const element_type expansion_uN , parame
 
 template<typename TruthModelType>
 void
-CRB<TruthModelType>::checkInitialGuess( const element_type expansion_uN , parameter_type const& mu, std::vector<double> & error, mpl::bool_<true>) const
+CRB<TruthModelType>::checkInitialGuess( const element_type expansion_uN , parameter_type const& mu, vectorN_type & error, mpl::bool_<true>) const
 {
     using namespace Feel::vf;
     index_vector_type index_vector;
     const element_ptrtype initial_guess = M_model->initialGuess( mu );
     ComputeIntegralsSquare compute_integrals_square( *initial_guess , expansion_uN );
     fusion::for_each( index_vector , compute_integrals_square );
-    error = compute_integrals_square.vectorIntegrals();
+    error.resize( functionspace_type::nSpaces );
+    error = compute_integrals_square.vectorErrors();
+
 }
 
 
@@ -2959,7 +2970,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
         for ( size_type q = 0; q < M_model->Qmf(); ++q )
         {
             for(int m=0; m<M_model->mMaxMF(q); m++)
-                F += betaMFqm[q][0]*M_MFqm_pr[q][0].head( N );
+                F += betaMFqm[q][m]*M_MFqm_pr[q][m].head( N );
         }
         LOG(INFO) << "F=" << F << "\n";
 
@@ -2967,9 +2978,12 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
         uN[time_index] = A.lu().solve( F );
 
 
-        std::vector<double> error;
-        const element_type expansion_uN = this->expansion( uN[time_index] , N );
+        //vectorN_type error;
+        //const element_type expansion_uN = this->expansion( uN[time_index] , N );
         //checkInitialGuess( expansion_uN , mu , error);
+        //for(int i=0 ; i<error.size(); i++) std::cout<<"error("<<i<<") : "<<error(i)<<std::endl;
+        //std::cout<<"error.sum : "<<error.sum()<<std::endl;
+
         //for(int i=0;i<error.size();i++) std::cout<<"error["<<i<<"] : "<<error[i]<<std::endl;
 
         LOG(INFO) << "lb: start fix point\n";
@@ -3917,6 +3931,7 @@ CRB<TruthModelType>::steadyPrimalResidual( int Ncur,parameter_type const& mu, ve
     value_type __lambda_pr = 0.0;
     value_type __gamma_pr = 0.0;
 
+
     for ( int __q1 = 0; __q1 < __QLhs; ++__q1 )
     {
         for ( int __m1 = 0; __m1 < M_model->mMaxA(__q1); ++__m1 )
@@ -4656,7 +4671,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<false> , int number_o
 
                 for ( int __q2 = 0; __q2 < __QRhs; ++__q2 )
                 {
-                    for ( int __m2 = 0; __m2 < M_model->mMaxA(__q2); ++__m2 )
+                    for ( int __m2 = 0; __m2 < M_model->mMaxF(0, __q2); ++__m2 )
                     {
                         M_Lambda_pr[__q1][__m1][__q2][__m2].conservativeResize( __N );
                         //__Y = Fq[0][__q2];
@@ -4713,7 +4728,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<false> , int number_o
                     for ( int __j = 0; __j < ( int )__N; ++__j )
                     {
                         *__X=M_WN[__j];
-                        Aqm[__q1][__m2]->multVector(  __X, __W );
+                        Aqm[__q1][__m1]->multVector(  __X, __W );
                         __W->scale( -1. );
                         //std::cout << "__W->norm=" << __W->l2Norm() << "\n";
                         M_model->l2solve( __Z1, __W );
@@ -4969,6 +4984,7 @@ CRB<TruthModelType>::expansion( vectorN_type const& u , int const N) const
     google::FlushLogFiles(google::GLOG_INFO);
     LOG(INFO) << "WN=" << M_WN.size() << "\n";
     google::FlushLogFiles(google::GLOG_INFO);
+
     return Feel::expansion( M_WN, u, N );
 }
 
