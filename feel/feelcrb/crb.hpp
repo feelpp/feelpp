@@ -526,8 +526,8 @@ public:
             auto Xh = M_composite_e1.functionSpace();
             mesh_ptrtype mesh = Xh->mesh();
             double integral = integrate( _range=elements(mesh) ,
-                                         _expr=vf::idv( e1 ) * vf::idv( e2 )
-                                         *     vf::idv( e1 ) * vf::idv( e2 )
+                                         _expr=( vf::idv( e1 ) - vf::idv( e2 ) )
+                                         *     ( vf::idv( e1 ) - vf::idv( e2 ) )
                                          ).evaluate()(0,0);
             M_error(i) = math::sqrt( integral ) ;
         }
@@ -2947,8 +2947,12 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
 
     for ( double time=time_step; time<=time_for_output; time+=time_step )
     {
-        boost::tie( betaMqm, betaAqm, betaFqm, betaMFqm ) = M_model->computeBetaQm( this->expansion( uNold[time_index] , N ), mu ,time );
-        //boost::tie( betaMqm, betaAqm, betaFqm, betaMFqm ) = M_model->computeBetaQm( mu ,time );
+
+        if( M_model->isSteady() )
+            boost::tie( betaMqm, betaAqm, betaFqm, betaMFqm ) = M_model->computeBetaQm( mu ,time );
+        else
+            boost::tie( betaMqm, betaAqm, betaFqm, betaMFqm ) = M_model->computeBetaQm( this->expansion( uNold[time_index] , N ), mu ,time );
+
         //LOG(INFO) << "betaMFqm = " << betaMFqm[0][0] <<"\n";//<< "," << betaMFqm[1][0] << "\n";
         //LOG(INFO) << "betaMqm = " << betaMqm[0][0] << "\n";
         //LOG(INFO) << "Qm = " << M_model->Qm() << "\n";
@@ -2981,10 +2985,8 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
         //vectorN_type error;
         //const element_type expansion_uN = this->expansion( uN[time_index] , N );
         //checkInitialGuess( expansion_uN , mu , error);
-        //for(int i=0 ; i<error.size(); i++) std::cout<<"error("<<i<<") : "<<error(i)<<std::endl;
         //std::cout<<"error.sum : "<<error.sum()<<std::endl;
 
-        //for(int i=0;i<error.size();i++) std::cout<<"error["<<i<<"] : "<<error[i]<<std::endl;
 
         LOG(INFO) << "lb: start fix point\n";
 
