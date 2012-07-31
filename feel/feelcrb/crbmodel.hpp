@@ -1366,8 +1366,10 @@ CRBModel<TruthModelType>::initialGuess( parameter_type const& mu , mpl::bool_<fa
     {
         for ( size_type m = 0; m < mMaxMF(q); ++m )
         {
-            initial_guess_vector[q][m]->scale( this->betaInitialGuessQm( q , m ) );
-            *initial_guess += *initial_guess_vector[q][m];
+            element_type temp = Xh->element();
+            temp = *initial_guess_vector[q][m];
+            temp.scale( this->betaInitialGuessQm( q , m ) );
+            *initial_guess += temp;
         }
     }
     return initial_guess;
@@ -1385,8 +1387,10 @@ CRBModel<TruthModelType>::initialGuess( parameter_type const& mu , mpl::bool_<tr
     {
         for ( size_type m = 0; m < mMaxMF(q); ++m )
         {
-            initial_guess_vector[q][m]->scale( this->betaInitialGuessQm( q , m ) );
-            *initial_guess += *initial_guess_vector[q][m];
+            element_type temp = Xh->element();
+            temp = *initial_guess_vector[q][m];
+            temp.scale( this->betaInitialGuessQm( q , m ) );
+            *initial_guess += temp;
         }
     }
     return initial_guess;
