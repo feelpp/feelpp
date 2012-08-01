@@ -81,7 +81,7 @@ Gmsh::Gmsh( int nDim, int nOrder, WorldComm const& worldComm )
     M_addmidpoint( true ),
     M_usePhysicalNames( false ),
     M_partitioner( GMSH_PARTITIONER_CHACO ),
-    M_partitions( 1 ),
+    M_partitions( worldComm.size() ),
     M_partition_file( 0 ),
     M_shear( 0 ),
     M_refine_levels( 0 )
