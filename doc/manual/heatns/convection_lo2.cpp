@@ -66,6 +66,7 @@ void Convection ::initLinearOperator2( sparse_matrix_ptrtype& L )
     double rho=this->vm()["rho"]. as<double>();
     //double dt=this->vm()["dt"]. as<double>();
     int adim=this->vm()["adim"]. as<int>();
+    int weakdir=this->vm()["weakdir"]. as<int>();
     //choix de la valeur des paramètres dimensionnés ou adimensionnés
     double a=0.0,b=0.0,c=0.0;
     double pC=1;
@@ -90,22 +91,33 @@ void Convection ::initLinearOperator2( sparse_matrix_ptrtype& L )
 
     if ( adim == 0 ) expansion=3.7e-3;
 
-
+    auto bf = form2( _test=Xh, _trial=Xh, _matrix=L );
     // Temperature
 #if CONVECTION_DIM==2
     // buyoancy forces c(theta,v)
-    form2( _test=Xh, _trial=Xh, _matrix=L ) +=integrate( _range=elements( mesh ),
-                                                         _expr=-expansion*idt( t )*( trans( vec( constant( 0. ),constant( 1.0 ) ) )*id( v ) ) );
+    bf +=integrate( _range=elements( mesh ),
+                    _expr=-expansion*idt( t )*( trans( vec( constant( 0. ),constant( 1.0 ) ) )*id( v ) ) );
 #else
-    form2( _test=Xh, _trial=Xh, _matrix=L ) +=integrate( _range=elements( mesh ),
-                                                         _expr=-expansion*idt( t )*( trans( vec( cst(0.), constant( 0. ),constant( 1.0 ) ) )*id( v ) ) );
+    bf +=integrate( _range=elements( mesh ),
+                    _expr=-expansion*idt( t )*( trans( vec( cst(0.), constant( 0. ),constant( 1.0 ) ) )*id( v ) ) );
 #endif
 
     Log() << "[initLinearOperator] temperature Force terms done\n";
     // heat conduction/diffusion: e(beta1,theta,chi)+f(theta,chi)
-    form2( _test=Xh, _trial=Xh, _matrix=L )  += integrate( _range=elements( mesh ),
-                                                           _expr=cst( c )*gradt( t )*trans( grad( s ) ) );
+    bf  += integrate( _range=elements( mesh ),
+                      _expr=cst( c )*gradt( t )*trans( grad( s ) ) );
     Log() << "[initLinearOperator] Temperature Diffusion terms done\n";
+
+    if ( weakdir == 1 )
+    {
+        // weak Dirichlet on temperature (T=0|left wall)
+        bf  += integrate ( markedfaces( mesh,mesh->markerName( "Tfixed" ) ),
+                           - gradt( t )*N()*id( s )*cst_ref( sqgrpr ) );
+        bf  += integrate ( markedfaces( mesh,mesh->markerName( "Tfixed" ) ),
+                           - grad( s )*N()*idt( t )*cst_ref( sqgrpr ) );
+        bf  += integrate ( markedfaces( mesh,mesh->markerName( "Tfixed" ) ),
+                           gamma*idt( t )*id( s )/hFace() );
+    }
 
     Log() << "[initLinearOperator2] done in " << ti.elapsed() << "s\n";
 }

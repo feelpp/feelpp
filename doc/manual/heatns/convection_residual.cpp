@@ -173,13 +173,43 @@ Convection::updateResidual( const vector_ptrtype& X, vector_ptrtype& R )
         integrate ( markedfaces( mesh, "Tflux"),
                     // heat flux on the right side
                     - id( s )*cst( c )*cst( neum )  );
+
+    if ( weakdir == 1 )
+    {
+        auto SigmaNv = ( -idv( p )*N()+cst_ref( sqgr )*gradv( u )*N() );
+        auto SigmaN = ( -id( q )*N()+cst_ref( sqgr )*grad( v )*N() );
+        form1( Xh, R ) +=
+            integrate ( marked2faces( mesh, "F.wall" ),
+                        // weak Dirichlet condition at the walls (u=0)
+                        -trans( SigmaNv )*id( v )
+                        -trans( SigmaN )*idv( u )
+                        +gamma*trans( idv( u ) )*id( v )/hFace() );
+
+        form1( Xh, R ) +=
+            integrate ( markedfaces( mesh,mesh->markerName( "Tfixed" ) ),
+                        // weak dirichlet condition T=T_0 | left side
+                        -gradv( t )*N()*id( s )*cst_ref( sqgrpr )
+                        -grad( s )*N()*idv( t )*cst_ref( sqgrpr ) );
+        form1( Xh,R ) 	+=
+            integrate ( markedfaces( mesh,mesh->markerName( "Tfixed" ) ),
+                        cst_ref( gamma )*idv( t )*id( s )/hFace() );
+
+    }
     R->close();
 
-    if ( adim==1 )
-        modifVec( markedfaces( mesh,"Tfixed" ),t,R,cst( 0.0 ) );
-    else
-        modifVec( markedfaces( mesh,"Tfixed" ),t,R,cst( T0 ) );
-
+    if ( weakdir == 0 )
+    {
+        if ( adim==1 )
+        {
+            Log() << "dirichlet marker Tfixed : " <<  t.start() << "  "  << mesh->markerName("Tfixed") << "\n";
+            modifVec( markedfaces( mesh,"Tfixed" ),t,R,cst( -1.0 ) );
+        }
+        else
+        {
+            modifVec( markedfaces( mesh,"Tfixed" ),t,R,cst( T0 ) );
+        }
+    }
+    Log() << "dirichlet boundary faces(velocity) : " <<  u.start()  << "\n";
     modifVec( boundaryfaces( mesh ),u,R,one()*0 );
 
 
