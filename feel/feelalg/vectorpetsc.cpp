@@ -93,6 +93,13 @@ VectorPetsc<T>::clear ()
 
 template <typename T>
 void
+VectorPetsc<T>::localize(const Vector<T>& /*V*/)
+{
+    FEELPP_ASSERT( 0 ).error( "invalid call, not implemented yet" );
+}
+
+template <typename T>
+void
 VectorPetsc<T>::insert ( const Vector<T>& /*V*/,
                          const std::vector<size_type>& /*dof_indices*/ )
 {
