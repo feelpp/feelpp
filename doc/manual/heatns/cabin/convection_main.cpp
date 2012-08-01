@@ -1,3 +1,4 @@
+
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
@@ -35,6 +36,7 @@ inline po::options_description makeOptions()
     convectionoptions.add_options()
     // Options
     // Format : (nom, type and default value, brief description )
+    ( "output_dir" , po::value<std::string>()->default_value( "cabin" ) , "output directory" )
     ( "adim" , po::value<int>()->default_value( 1 ) , "adimensioned" )
     ( "hsize" , po::value<double>()->default_value( 0.025 ) , "mesh size" )
     ( "fixpointtol", po::value<double>()->default_value( 1e-8 ), "tolerance for the fix point" )
