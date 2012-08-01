@@ -375,6 +375,8 @@ public:
      */
     FEELPP_DONT_INLINE void clear ();
 
+    void localize( const Vector<T>& V);
+
     /**
      * \f$ v(i) = \mathrm{value} \forall i\f$
      */
