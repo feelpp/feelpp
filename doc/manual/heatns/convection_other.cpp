@@ -59,7 +59,8 @@ Convection::Convection( int argc,
     int state = this->vm()["steady"]. as<int>() ;
     int weakdir( this->vm()["weakdir"]. as<int>() );
 
-    this->changeRepository( boost::format( "cavity/%1%/meshsize=%2%/procs_%3%/" )
+    std::string repository = this->vm()["output_dir"]. as<std::string>() + "/%1%/meshsize=%2%/procs_%3%/" ;
+    this->changeRepository( boost::format( repository )
                             % this->about().appName()
                             % meshSize
                             % Environment::numberOfProcessors() );
@@ -69,12 +70,14 @@ Convection::Convection( int argc,
 Feel::gmsh_ptrtype
 Convection::createMesh()
 {
-    double h = this->vm()["hsize"]. as<double>();
-    double l = this->vm()["length"]. as<double>();
 
     timers["mesh"].first.restart();
     gmsh_ptrtype gmshp( new gmsh_type );
     gmshp->setWorldComm( Environment::worldComm() );
+
+    double h = this->vm()["hsize"]. as<double>();
+    double l = this->vm()["length"]. as<double>();
+
     std::ostringstream ostr;
     ostr << gmshp->preamble()
          << "a=" << 0 << ";\n"
@@ -110,6 +113,7 @@ Convection::createMesh()
     gmshp->setPrefix( fname.str() );
     gmshp->setDescription( ostr.str() );
     Log() << "[timer] createMesh(): " << timers["mesh"].second << "\n";
+
     return gmshp;
 
 
