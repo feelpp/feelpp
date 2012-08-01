@@ -59,16 +59,18 @@ void Convection ::updateJacobian( const vector_ptrtype& X,
     int adim = this->vm()["adim"]. as<int>();
     double T0 = this->vm()["T0"]. as<double>();
 
-    //vitesse
-    form2( Xh, Xh, J )  += on( boundaryfaces( mesh ),u, Rtemp,one()*0. );
+    if ( weakdir == 0 )
+    {
+        //vitesse
+        form2( Xh, Xh, J )  += on( boundaryfaces( mesh ),u, Rtemp,one()*0. );
 
-    if ( adim==1 )
-        //temperature
-        form2( Xh, Xh, J )  += on ( markedfaces( mesh, "Tfixed" ),t,Rtemp,cst( 0.0 ) );
+        if ( adim==1 )
+            //temperature
+            form2( Xh, Xh, J )  += on ( markedfaces( mesh, "Tfixed" ),t,Rtemp,cst( 0.0 ) );
 
-    else
-        form2( Xh, Xh, J )  += on ( markedfaces( mesh, "Tfixed" ),t,Rtemp,cst( T0 ) );
-
+        else
+            form2( Xh, Xh, J )  += on ( markedfaces( mesh, "Tfixed" ),t,Rtemp,cst( T0 ) );
+    }
     //L->printMatlab( "L.m" );
     //J->printMatlab( "J1.m" );
     //D->printMatlab( "D1.m" );
