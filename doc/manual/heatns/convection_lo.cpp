@@ -66,6 +66,7 @@ void Convection ::initLinearOperator( sparse_matrix_ptrtype& L )
     double k=this->vm()["k"]. as<double>();
     double nu=this->vm()["nu"]. as<double>();
     double rho=this->vm()["rho"]. as<double>();
+    int weakdir=this->vm()["weakdir"]. as<int>();
 
     int adim=this->vm()["adim"]. as<int>();
 
@@ -89,21 +90,31 @@ void Convection ::initLinearOperator( sparse_matrix_ptrtype& L )
 
     // Fluid
     // diffusion
-
-    form2( _test=Xh, _trial=Xh, _matrix=L ) =integrate( _range=elements( mesh ),
-                                                        _expr=cst( b )*trace( gradt( u )*trans( grad( v ) ) )  );
+    auto bf = form2( _test=Xh, _trial=Xh, _matrix=L );
+    bf =integrate( _range=elements( mesh ),
+                   _expr=cst( b )*trace( gradt( u )*trans( grad( v ) ) )  );
     Log() << "[initLinearOperator] Fluid Diffusion terms done\n";
 
     // pressure-velocity terms
-    form2( _test=Xh, _trial=Xh, _matrix=L )  += integrate ( _range=elements( mesh ), _expr=- idt( p ) * div( v ) );
-    form2( _test=Xh, _trial=Xh, _matrix=L )  += integrate ( _range=elements( mesh ), _expr=divt( u ) * id( q ) );
+    bf += integrate ( _range=elements( mesh ), _expr=- idt( p ) * div( v ) );
+    bf += integrate ( _range=elements( mesh ), _expr=divt( u ) * id( q ) );
+
+    if ( weakdir == 1 )
+    {
+        // weak Dirichlet condition at the walls (u=0)
+        auto SigmaNt = ( -idt( p )*N()+cst_ref( sqgr )*gradt( u )*N() );
+        auto SigmaN = ( -id( q )*N()+cst_ref( sqgr )*grad( v )*N() );
+        bf  += integrate ( marked2faces( mesh, "F.wall" ), -trans( SigmaNt )*id( v ) );
+        bf  += integrate ( marked2faces( mesh, "F.wall" ), -trans( SigmaN )*idt( u ) );
+        bf  += integrate ( marked2faces( mesh, "F.wall" ), +gamma*trans( idt( u ) )*id( v )/hFace() );
+    }
 
     Log() << "[initLinearOperator] Fluid Pressure-Velocity terms done\n";
 
 #if defined( FEELPP_USE_LM )
     // multipliers for zero-mean pressure
-    form2( _test=Xh, _trial=Xh, _matrix=L )  += integrate ( _range=elements( mesh ), _expr=id( q )*idt( xi ) );
-    form2( _test=Xh, _trial=Xh, _matrix=L )  += integrate ( _range=elements( mesh ), _expr=idt( p )*id( eta ) );
+    bf+= integrate ( _range=elements( mesh ), _expr=id( q )*idt( xi ) );
+    bf+= integrate ( _range=elements( mesh ), _expr=idt( p )*id( eta ) );
     Log() << "[initLinearOperator] Fluid Pressure-Multipliers terms done\n";
 #endif
 
