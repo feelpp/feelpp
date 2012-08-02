@@ -79,7 +79,9 @@ Convection::createMesh()
     double l = this->vm()["length"]. as<double>();
 
     std::ostringstream ostr;
-    ostr << gmshp->preamble()
+
+    if ( this->vm()["dimension"]. as<int>() == 2 ){
+        ostr << gmshp->preamble()
          << "a=" << 0 << ";\n"
          << "b=" << l << ";\n"
          << "c=" << 0 << ";\n"
@@ -106,7 +108,82 @@ Convection::createMesh()
         // << "Physical Line(\"Fflux\") = {6};\n"
          << "Physical Line(\"F.wall\") = {3, 4, 5, 1, 2};\n"
          << "Physical Surface(\"domain\") = {8};\n";
+    }
+    else if ( this->vm()["dimension"]. as<int>() == 3 ){
+        ostr << gmshp->preamble()
+        << "a=" << 0 << ";\n"
+        << "b=" << l << ";\n"
+        << "c=" << 0 << ";\n"
+        << "d=" << 1 << ";\n"
+        << "e=" << 0 << ";\n"
+        << "f=" << 1 << ";\n"
+        << "hBis=" << h << ";\n"
+        << "Point(1) = {a,c,e,hBis};\n"
+        << "Point(2) = {b,c,e,hBis};\n"
+        << "Point(3) = {b,d,e,hBis};\n"
+        << "Point(4) = {a,d,e,hBis};\n"
+        << "Point(5) = {b/2,d,e,hBis};\n"
+        << "Point(6) = {b/2,d/2,e,hBis};\n"
+        << "Point(7) = {a,c,f,hBis};\n"
+        << "Point(8) = {b,c,f,hBis};\n"
+        << "Point(9) = {b,d,f,hBis};\n"
+        << "Point(10) = {a,d,f,hBis};\n"
+        << "Point(11) = {b/2,d,f,hBis};\n"
+        << "Point(12) = {b/2,d/2,f,hBis};\n"
+        
+        << "Line(1) = {1,2};\n"
+        << "Line(2) = {2,3};\n"
+        << "Line(3) = {3,5};\n"
+        << "Line(4) = {5,4};\n"
+        << "Line(5) = {4,1};\n"
+        << "Line(6) = {5,6};\n"
 
+        << "Line(7) = {1,7};\n"
+        << "Line(8) = {2,8};\n"
+        << "Line(9) = {3,9};\n"
+        << "Line(10) = {5,11};\n"
+        << "Line(11) = {4,10};\n"
+        << "Line(12) = {6,12};\n"
+
+        << "Line(13) = {7,8};\n"
+        << "Line(14) = {8,9};\n"
+        << "Line(15) = {9,11};\n"
+        << "Line(16) = {11,10};\n"
+        << "Line(17) = {10,7};\n"
+        << "Line(18) = {11,12};\n"
+
+        << "Line Loop(19) = {1,2,3,4,5,6};\n"
+        << "Line Loop(20) = {1,8,-13,-7};\n"
+        << "Line Loop(21) = {8,14,-9,-2};\n"
+        << "Line Loop(22) = {9,15,-10,-3};\n"
+        << "Line Loop(23) = {10,16,-11,-4};\n"
+        << "Line Loop(24) = {11,17,-7,-5};\n"
+        << "Line Loop(25) = {13,14,15,16,17,18};\n"
+        << "Line Loop(26) = {12,-18,-10,6};\n"
+
+        << "Plane Surface(27) = {19};\n"
+        << "Plane Surface(28) = {20};\n"
+        << "Plane Surface(29) = {21};\n"
+        << "Plane Surface(30) = {22};\n"
+        << "Plane Surface(31) = {23};\n"
+        << "Plane Surface(32) = {24};\n"
+        << "Plane Surface(33) = {25};\n"
+        << "Plane Surface(34) = {26};\n"
+        
+        << "Physical Surface(\"Tinsulated\") = {28,29,30,31,32};\n"
+        << "Physical Surface(\"Tfixed\") = {27};\n"
+        << "Physical Surface(\"Tflux\") = {33};\n"
+        << "Physical Surface(\"F.wall\") = {27,28,29,30,31,32,33};\n"
+        
+        << "Surface Loop(35) = {27,28,29,30,31,32,33};\n"
+        << "Volume(36) = {35};\n"
+        << "Physical Volume(\"domain\") = {36};\n";
+    }
+    else{
+        std::cout << "Dimension " << this->vm()["dimension"]. as<int>() << " not implemented.\n\n";
+        
+    }
+    
     std::ostringstream fname;
     fname << "domain";
 
@@ -115,8 +192,6 @@ Convection::createMesh()
     Log() << "[timer] createMesh(): " << timers["mesh"].second << "\n";
 
     return gmshp;
-
-
 
 }
 
