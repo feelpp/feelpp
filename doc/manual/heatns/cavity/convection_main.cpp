@@ -35,6 +35,7 @@ inline po::options_description makeOptions()
     convectionoptions.add_options()
     // Options
     // Format : (nom, type and default value, brief description )
+    ( "dimension" , po::value<int>()->default_value( 2 ) , "mesh dimension : 2 or 3 D" )
     ( "output_dir" , po::value<std::string>()->default_value( "cavity2D" ) , "output directory" )
     ( "input_dir" , po::value<std::string>()->default_value( "FEEL/feelopt/doc/manual/heatns/Mesh/" ) , "input directory" )
     ( "readMesh" , po::value<int>()->default_value( 0 ) , "using mesh in file" )
