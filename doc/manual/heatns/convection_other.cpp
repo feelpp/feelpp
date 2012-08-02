@@ -79,6 +79,7 @@ Convection::createMesh()
     double l = this->vm()["length"]. as<double>();
 
     std::ostringstream ostr;
+
     ostr << gmshp->preamble()
          << "a=" << 0 << ";\n"
          << "b=" << l << ";\n"
@@ -118,7 +119,6 @@ Convection::createMesh()
          << "Physical Surface(\"F.wall\") = {31, 27, 23, 19, 35, 40, 8};\n"
          << "Physical Volume(\"domain\") = {1};\n";
 #endif
-
     std::ostringstream fname;
     fname << "domain";
 
@@ -127,8 +127,6 @@ Convection::createMesh()
     Log() << "[timer] createMesh(): " << timers["mesh"].second << "\n";
 
     return gmshp;
-
-
 
 }
 
