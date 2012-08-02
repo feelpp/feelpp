@@ -33,33 +33,37 @@ inline po::options_description makeOptions()
 {
     po::options_description convectionoptions( "Convection Options" );
     convectionoptions.add_options()
-    // Options
-    // Format : (nom, type and default value, brief description )
-    ( "output_dir" , po::value<std::string>()->default_value( "cavity2D" ) , "output directory" )
-    ( "input_dir" , po::value<std::string>()->default_value( "FEEL/feelopt/doc/manual/heatns/Mesh/" ) , "input directory" )
-    ( "readMesh" , po::value<int>()->default_value( 0 ) , "using mesh in file" )
-    ( "mesh_name" , po::value<std::string>()->default_value( "domain.msh" ) , "mesh file name" )
-    ( "adim" , po::value<int>()->default_value( 1 ) , "adimensioned" )
-    ( "hsize" , po::value<double>()->default_value( 0.025 ) , "mesh size" )
-    ( "fixpointtol", po::value<double>()->default_value( 1e-8 ), "tolerance for the fix point" )
-    ( "gr", po::value<double>()->default_value( 1e2 ), "nombre de grashof" )
-    ( "rho", po::value<double>()->default_value( 1.177 ),"fluid density" )
-    ( "nu", po::value<double>()->default_value( 18.27 ),"kinematic viscosity" )
-    ( "k", po::value<double>()->default_value( 2.22e-5 ),"thermal diffusivity" )
-    ( "pC", po::value<double>()->default_value( 1100 ),"heat capacity" )
-    ( "pr", po::value<double>()->default_value( 1e-2 ), "nombre de prandtl" )
-    ( "lefttemp", po::value<double>()->default_value( 0.0 ), "temperature on the left side" )
-    ( "newton", "use newton's method" )
-    ( "penalbc",po::value<double>()->default_value( 10.0 ), "penalisation coefficient for the weak boundary conditions" )
-    ( "weakdir",po::value<int>()->default_value( 1 ),"weak dirichlet" )
-    ( "maxiter_nlin", po::value<int>()->default_value( 100 ), "maximum nonlinearity iteration" )
-    ( "maxiter_solve", po::value<int>()->default_value( 100 ), "maximum solver iteration" )
-    ( "length", po::value<double>()->default_value( 1.0 ), "length of the room" )
-    ( "steady",po::value<int>()->default_value( 1 ),"state steady or not" )
-    ( "dt",po::value<double>()->default_value( 1e-2 ),"time step" )
-    ( "tf",po::value<double>()->default_value( 1 ),"simulation duration" )
-    ( "T0",po::value<double>()->default_value( 300 ),"dirichlet condition value" )
-    ( "neum",po::value<double>()->default_value( 10 ),"neumann value" );
+        // Options
+        // Format : (nom, type and default value, brief description )
+#if CONVECTION_DIM == 2
+        ( "output_dir" , po::value<std::string>()->default_value( "cavity2D" ) , "output directory" )
+#else
+        ( "output_dir" , po::value<std::string>()->default_value( "cavity3D" ) , "output directory" )
+#endif
+        ( "input_dir" , po::value<std::string>()->default_value( "FEEL/feelopt/doc/manual/heatns/Mesh/" ) , "input directory" )
+        ( "readMesh" , po::value<int>()->default_value( 0 ) , "using mesh in file" )
+        ( "mesh_name" , po::value<std::string>()->default_value( "domain.msh" ) , "mesh file name" )
+        ( "adim" , po::value<int>()->default_value( 1 ) , "adimensioned" )
+        ( "hsize" , po::value<double>()->default_value( 0.025 ) , "mesh size" )
+        ( "fixpointtol", po::value<double>()->default_value( 1e-8 ), "tolerance for the fix point" )
+        ( "gr", po::value<double>()->default_value( 1e2 ), "nombre de grashof" )
+        ( "rho", po::value<double>()->default_value( 1.177 ),"fluid density" )
+        ( "nu", po::value<double>()->default_value( 18.27 ),"kinematic viscosity" )
+        ( "k", po::value<double>()->default_value( 2.22e-5 ),"thermal diffusivity" )
+        ( "pC", po::value<double>()->default_value( 1100 ),"heat capacity" )
+        ( "pr", po::value<double>()->default_value( 1e-2 ), "nombre de prandtl" )
+        ( "lefttemp", po::value<double>()->default_value( 0.0 ), "temperature on the left side" )
+        ( "newton", "use newton's method" )
+        ( "penalbc",po::value<double>()->default_value( 10.0 ), "penalisation coefficient for the weak boundary conditions" )
+        ( "weakdir",po::value<int>()->default_value( 1 ),"weak dirichlet" )
+        ( "maxiter_nlin", po::value<int>()->default_value( 100 ), "maximum nonlinearity iteration" )
+        ( "maxiter_solve", po::value<int>()->default_value( 100 ), "maximum solver iteration" )
+        ( "length", po::value<double>()->default_value( 1.0 ), "length of the room" )
+        ( "steady",po::value<int>()->default_value( 1 ),"state steady or not" )
+        ( "dt",po::value<double>()->default_value( 1e-2 ),"time step" )
+        ( "tf",po::value<double>()->default_value( 1 ),"simulation duration" )
+        ( "T0",po::value<double>()->default_value( 300 ),"dirichlet condition value" )
+        ( "neum",po::value<double>()->default_value( 10 ),"neumann value" );
 
     // return the options as well as the feel options
     return convectionoptions.add( feel_options() );
@@ -76,7 +80,7 @@ makeAbout()
                      "0.1", 				// Version
                      "Natural convection simulation",// Short comment
                      AboutData::License_GPL ,	// Licence
-                     "Copyright (c) SQ 2008\nCopyright (c) 2009 Christophe Prud'homme" );// Copyright
+                     "Copyright (c) SQ 2008\nCopyright (c) 2009-2012 Christophe Prud'homme" );// Copyright
 
     // Informations sur l'auteur
     about.addAuthor( "Quinodoz Samuel","Student","samuel.quinodoz@epfl.ch" ,"main developer" );
