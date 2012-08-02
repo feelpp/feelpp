@@ -99,13 +99,25 @@ Convection::createMesh()
          << "Line(6) = {5,6};\n"
          << "Line Loop(7) = {1,2,3,4,5,6};\n"
          //<< "Line Loop(7) = {1,2,3,4,5};\n"
-         << "Plane Surface(8) = {7};\n"
-         << "Physical Line(\"Tinsulated\") = {1,3,4};\n"
+         << "Plane Surface(8) = {7};\n";
+#if CONVECTION_DIM == 2
+    ostr << "Physical Line(\"Tinsulated\") = {1,3,4};\n"
          << "Physical Line(\"Tfixed\") = {5};\n"
-        << "Physical Line(\"Tflux\") = {2};\n"
+         << "Physical Line(\"Tflux\") = {2};\n"
         // << "Physical Line(\"Fflux\") = {6};\n"
          << "Physical Line(\"F.wall\") = {3, 4, 5, 1, 2};\n"
          << "Physical Surface(\"domain\") = {8};\n";
+#else
+    ostr << "Extrude {0, 0, 1} {\n"
+         << "   Surface{8};\n"
+         << "}\n"
+         << "Physical Surface(\"Tfixed\") = {35};\n"
+         << "Physical Surface(\"Tflux\") = {23};\n"
+         << "Physical Surface(\"Tinsulated\") = {19, 40, 8, 31, 27};\n"
+        //<< "Physical Surface(\"Fflux\") = {39};\n"
+         << "Physical Surface(\"F.wall\") = {31, 27, 23, 19, 35, 40, 8};\n"
+         << "Physical Volume(\"domain\") = {1};\n";
+#endif
 
     std::ostringstream fname;
     fname << "domain";
