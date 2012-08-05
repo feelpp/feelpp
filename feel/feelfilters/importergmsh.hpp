@@ -677,7 +677,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
 
         point_type __pt( __i,__n, __isonboundary[ __i ] );
         __pt.setOnBoundary( __isonboundary[ __i ] );
-        __pt.setTags( __whichboundary[__i] );
+        //__pt.setTags( __whichboundary[__i] );
 
         if ( has_parametric_nodes )
         {
@@ -690,7 +690,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
                 mesh->setParametric( true );
             }
         }
-
+        std::cout << "adding point with marker " << __pt.marker() << "\n";
         mesh->addPoint( __pt );
     }
 
@@ -790,7 +790,14 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
         updateGhostCellInfo( mesh, __idGmshToFeel,  mapGhostElt );
 
     mesh->setNumVertices( std::accumulate( _M_n_vertices.begin(), _M_n_vertices.end(), 0 ) );
-
+    if ( ( mesh->markerNames().find("CrossPoints") != mesh->markerNames().end() ) &&
+         ( mesh->markerNames().find("WireBasket") != mesh->markerNames().end() ) )
+    {
+        std::cout << "marker cp" << mesh->markerName("CrossPoints")  << "\n";
+        std::cout << "marker wb" << mesh->markerName("WireBasket")  << "\n";
+        std::cout << "n cp: " << std::distance( mesh->beginPointWithMarker( mesh->markerName("CrossPoints") ), mesh->endPointWithMarker( mesh->markerName("CrossPoints") ) ) << "\n";
+        std::cout << "n wb: " << std::distance( mesh->beginEdgeWithMarker( mesh->markerName("WireBasket") ), mesh->endEdgeWithMarker( mesh->markerName("WireBasket") ) ) << "\n";
+    }
     Debug( 8011 ) << "done with reading and creating mesh from gmsh file\n";
 }
 
@@ -842,8 +849,9 @@ template<typename MeshType>
 void
 ImporterGmsh<MeshType>::addPoint( mesh_type* mesh, std::vector<int> const& __e, std::vector<int> const& tag, GMSH_ENTITY type, int & __idGmshToFeel, mpl::int_<3> )
 {
-    auto pit = mesh->points().modify( mesh->pointIterator(__e[0]), [&tag]( point_type& pt ) { pt.setTags( tag ); } );
-    Debug( 8011 ) << "added point with id :" << pit.id() << " and marker " << pit.marker()
+    auto pit = mesh->pointIterator(__e[0]);
+    bool mod = mesh->points().modify( pit, [&tag]( point_type& pt ) { pt.setTags( tag ); } );
+    Debug( 8011 ) << "added point (modified: " << mod << ")with id :" << pit->id() << " and marker " << pit->marker()
                   << " n1: " << mesh->point( __e[0] ).node() << "\n";
 }
 
