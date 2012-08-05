@@ -77,6 +77,7 @@ Environment::Environment()
 #endif // FEELPP_HAS_PETSC_H
 
     S_worldcomm = worldcomm_type::New( world );
+    FEELPP_ASSERT( S_worldcomm ).error( "creating worldcomm failed" );
 }
 Environment::Environment( int& argc, char**& argv )
     :
@@ -120,6 +121,7 @@ Environment::Environment( int& argc, char**& argv )
     }
 
     S_worldcomm = worldcomm_type::New( world );
+    FEELPP_ASSERT( S_worldcomm ).error( "creating worldcomm failed" );
 }
 
 Environment::~Environment()
@@ -302,6 +304,13 @@ Environment::setLogs( std::string const& prefix )
 std::vector<WorldComm> const&
 Environment::worldsComm( int n )
 {
+    if ( !S_worldcomm )
+    {
+        mpi::communicator world;
+        S_worldcomm = worldcomm_type::New( world );
+        FEELPP_ASSERT( S_worldcomm ).error( "worldcomm not allocated" );
+    }
+
     return S_worldcomm->subWorlds(n);
 }
 
@@ -330,5 +339,3 @@ boost::signals2::signal<void ()> Environment::S_deleteObservers;
 boost::shared_ptr<WorldComm> Environment::S_worldcomm;
 
 }
-
-

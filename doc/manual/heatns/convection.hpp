@@ -33,7 +33,8 @@
    \date 2009-02-25
  */
 #include <feel/options.hpp>
-#include <feel/feelcore/applicationxml.hpp>
+//#include <feel/feelcore/applicationxml.hpp>
+#include <feel/feelcore/application.hpp>
 
 // (non)linear algebra backend
 #include <feel/feelalg/backend.hpp>
@@ -50,19 +51,24 @@
 // exporter
 #include <feel/feelfilters/exporter.hpp>
 
+
+
 // use the Feel namespace
 using namespace Feel;
 using namespace Feel::vf;
 
-
-
-template<typename A, uint16_type i>
-class mytag : public A
-{
-public:
-    static const uint16_type TAG = i;
-
-};
+#if !defined( CONVECTION_DIM )
+#define CONVECTION_DIM 2
+#endif
+#if !defined( CONVECTION_ORDER_U )
+#define CONVECTION_ORDER_U 2
+#endif
+#if !defined( CONVECTION_ORDER_P )
+#define CONVECTION_ORDER_P 1
+#endif
+#if !defined( CONVECTION_ORDER_T )
+#define CONVECTION_ORDER_T 2
+#endif
 
 /**
  * \class Convection
@@ -72,16 +78,20 @@ public:
  * \tparam Order_t temperature polynomial order
  * \tparam Order_p pressure polynomial order
  */
-template< int Order_s, int Order_p, int Order_t >
-class Convection : public ApplicationXML
+//template< int Order_s, int Order_p, int Order_t >
+class Convection : public Application
 {
-    typedef ApplicationXML super;
+    typedef Application super;
 public:
 
-    typedef Convection<Order_s, Order_p, Order_t> self_type;
+    //typedef Convection<Order_s, Order_p, Order_t> self_type;
+    static const int Order_s = CONVECTION_ORDER_U;
+    static const int Order_p = CONVECTION_ORDER_P;
+    static const int Order_t = CONVECTION_ORDER_T;
+    typedef Convection self_type;
 
     // Definitions pour mesh
-    typedef Simplex<2> entity_type;
+    typedef Simplex<CONVECTION_DIM> entity_type;
     typedef Mesh<entity_type> mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
@@ -92,21 +102,29 @@ public:
     typedef backend_type::vector_ptrtype vector_ptrtype;
 
     // space and associated elements definitions
-    typedef Lagrange<Order_s, Vectorial> basis_u_type; // velocity space
-    typedef Lagrange<Order_p, Scalar> basis_p_type; // pressure space
-    typedef Lagrange<Order_t, Scalar> basis_t_type; // temperature space
+    typedef Lagrange<Order_s, Vectorial,Continuous,PointSetFekete> basis_u_type; // velocity space
+    typedef Lagrange<Order_p, Scalar,Continuous,PointSetFekete> basis_p_type; // pressure space
+    typedef Lagrange<Order_t, Scalar,Continuous,PointSetFekete> basis_t_type; // temperature space
+
+#if defined( FEELPP_USE_LM )
     typedef Lagrange<0, Scalar> basis_l_type; // multipliers for pressure space
-
     typedef fusion::vector< basis_u_type , basis_p_type , basis_t_type,basis_l_type> basis_type;
+#else
+    typedef fusion::vector< basis_u_type , basis_p_type , basis_t_type> basis_type;
+#endif
 
+    //! numerical type is double
+    typedef double value_type;
 
     typedef FunctionSpace<mesh_type, basis_type> space_type;
     typedef boost::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
-    typedef typename element_type::template sub_element<0>::type element_0_type;
-    typedef typename element_type::template sub_element<1>::type element_1_type;
-    typedef typename element_type::template sub_element<2>::type element_2_type;
-    typedef typename element_type::template sub_element<3>::type element_3_type;
+    typedef typename element_type:: sub_element<0>::type element_0_type;
+    typedef typename element_type:: sub_element<1>::type element_1_type;
+    typedef typename element_type:: sub_element<2>::type element_2_type;
+#if defined( FEELPP_USE_LM )
+    typedef typename element_type:: sub_element<3>::type element_3_type;
+#endif
 
     typedef OperatorLinear<space_type,space_type> oplin_type;
     typedef boost::shared_ptr<oplin_type> oplin_ptrtype;
@@ -119,8 +137,9 @@ public:
     // Constructeur
     Convection( int argc , char** argv , AboutData const& , po::options_description const& );
 
-    // destructor
-    ~Convection();
+    // generate the mesh
+    Feel::gmsh_ptrtype createMesh();
+
 
     // Definition de la procedure pour faire tourner le code
     void run();
@@ -128,12 +147,18 @@ public:
     void updateResidual( const vector_ptrtype& X, vector_ptrtype& R );
     void updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J );
 
+
+    // Definition de la procedure pour resoudre le systeme lineaire
+    void solve( sparse_matrix_ptrtype& D, element_type& u, vector_ptrtype& F );
+
     // Definition de la procedure pour exporter les solutions
     void exportResults( boost::format, element_type& U, double t );
 
 private:
     void initLinearOperator( sparse_matrix_ptrtype& L );
+    void initLinearOperator2( sparse_matrix_ptrtype& L );
     void updateJacobian1( const vector_ptrtype& X, sparse_matrix_ptrtype& J );
+    void updateJacobian2( const vector_ptrtype& X, sparse_matrix_ptrtype& J );
 private:
 
     backend_ptrtype M_backend;
@@ -147,6 +172,8 @@ private:
     sparse_matrix_ptrtype D;
     vector_ptrtype F;
 
+    //pas de temps
+    //value_type dt;
 
     // Exporters
     boost::shared_ptr<export_type> exporter;

@@ -648,11 +648,20 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
             {
                 // here we get the next face or \c end()
                 size_type theid = __it->id();
-                __it = this->eraseFace( __it );
+
+                // find the other face
                 face_iterator __other = this->faces().find( face_type( _faceit->second ) );
                 FEELPP_ASSERT( __other->id() != theid )
                 ( __other->id() )
                 ( theid ).error( "faces should have different ids " );
+
+                if ( __it->marker() != __other->marker() )
+                {
+                    this->faces().modify( __other, [__it]( face_type& f ) { f.setMarker2( __it->marker().value() ); } );
+                }
+
+                __it = this->eraseFace( __it );
+
 
 
             }
