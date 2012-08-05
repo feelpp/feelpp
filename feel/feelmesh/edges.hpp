@@ -196,19 +196,19 @@ public:
 
     marker_edge_iterator beginEdgeWithMarker( size_type m )
     {
-        return _M_edges.template get<detail::by_marker>().lower_bound( m );
+        return _M_edges.template get<detail::by_marker>().lower_bound( Marker1( m ) );
     }
     marker_edge_const_iterator beginEdgeWithMarker( size_type m ) const
     {
-        return _M_edges.template get<detail::by_marker>().lower_bound( m );
+        return _M_edges.template get<detail::by_marker>().lower_bound( Marker1( m ) );
     }
     marker_edge_iterator endEdgeWithMarker( size_type m )
     {
-        return _M_edges.template get<detail::by_marker>().upper_bound( m );
+        return _M_edges.template get<detail::by_marker>().upper_bound( Marker1( m ) );
     }
     marker_edge_const_iterator endEdgeWithMarker( size_type m ) const
     {
-        return _M_edges.template get<detail::by_marker>().upper_bound( m );
+        return _M_edges.template get<detail::by_marker>().upper_bound( Marker1( m ) );
     }
 
     /**
