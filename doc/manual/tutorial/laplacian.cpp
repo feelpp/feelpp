@@ -202,11 +202,12 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
 
     mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
                                         _desc=domain( _name=( boost::format( "%1%-%2%" ) % shape % Dim ).str() ,
-                                                _usenames=true,
-                                                _shape=shape,
-                                                _h=X[0],
-                                                _xmin=-1,
-                                                _ymin=-1 ),
+                                                      _usenames=true,
+                                                      _shape=shape,
+                                                      _h=X[0],
+                                                      _substructuring=true,
+                                                      _xmin=-1,
+                                                      _ymin=-1 ),
                                         _update=MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
 
 
@@ -262,7 +263,7 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
     {
         //# marker41 #
         rhs += integrate( _range=markedfaces( mesh,"Dirichlet" ),
-                             _expr=g*( -grad( v )*vf::N()+penaldir*id( v )/hFace() ) );
+                          _expr=g*( -grad( v )*vf::N()+penaldir*id( v )/hFace() ) );
         //# endmarker41 #
     }
 
@@ -346,10 +347,10 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
     e = vf::project( Xh, elements( mesh ), g );
 
     export_ptrtype exporter( export_type::New( this->vm(),
-                             ( boost::format( "%1%-%2%-%3%" )
-                               % this->about().appName()
-                               % shape
-                               % Dim ).str() ) );
+                                               ( boost::format( "%1%-%2%-%3%" )
+                                                 % this->about().appName()
+                                                 % shape
+                                                 % Dim ).str() ) );
 
     if ( exporter->doExport() )
     {
@@ -391,8 +392,8 @@ main( int argc, char** argv )
     //if ( app.nProcess() == 1 )
     //app.add( new Laplacian<1>( app.vm(), app.about() ) );
 
-    app.add( new Laplacian<2>( app.vm(), app.about() ) );
-    //app.add( new Laplacian<3>( app.vm(), app.about() ) );
+    //app.add( new Laplacian<2>( app.vm(), app.about() ) );
+    app.add( new Laplacian<3>( app.vm(), app.about() ) );
     /** \endcode */
 
     /**
