@@ -2832,6 +2832,8 @@ DofTable<MeshType, FEType, PeriodicityType>::buildDofMap( mesh_type& M, size_typ
          ( M.markerNames().find("WireBasket") != M.markerNames().end() ) )
     {
         std::cout << "found CrossPoints and WireBasket\n";
+        std::cout << "n cp: " << std::distance( M.beginPointWithMarker( M.markerName("CrossPoints") ), M.endPointWithMarker( M.markerName("CrossPoints") ) ) << "\n";
+        std::cout << "n wb: " << std::distance( M.beginEdgeWithMarker( M.markerName("WireBasket") ), M.endEdgeWithMarker( M.markerName("WireBasket") ) ) << "\n";
         // go through all the crosspoints and add them to the dof table
 
         for( auto pit = M.beginPointWithMarker( M.markerName("CrossPoints") ),
@@ -2856,7 +2858,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildDofMap( mesh_type& M, size_typ
                 }
             }
         }
-#if 0
+
         // go through all Wirebasket edges
         for( auto pit = M.beginEdgeWithMarker( M.markerName("WireBasket") ),
                  pen = M.endEdgeWithMarker( M.markerName("WireBasket") );
@@ -2866,7 +2868,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildDofMap( mesh_type& M, size_typ
             //auto __elt = M.element( *pit->elements().begin() );
 
         }
-#endif
+
         std::vector<std::string> faces = assign::list_of("TOP")("BOTTOM")("NORTH")("EAST")("WEST")("SOUTH");
         BOOST_FOREACH( auto face, faces )
         {
