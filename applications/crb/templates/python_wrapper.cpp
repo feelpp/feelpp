@@ -142,6 +142,7 @@ extern "C" {
         CHECK_WRAPPER_OUT(  WRAPPER_ARGUMENTS  );
 
         {
+            Feel::Environment env();
             auto app = new TheModelType( Feel::make@CRB_MODEL_LONG_NAME@About( "@CRB_MODEL_SHORT_NAME@" ),
                                                                    Feel::make@CRB_MODEL_LONG_NAME@Options() );
             app->setMode( @CRB_MODEL_WRAPPER_TYPE@ );
