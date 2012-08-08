@@ -69,6 +69,9 @@ using namespace Feel::vf;
 #if !defined( CONVECTION_ORDER_T )
 #define CONVECTION_ORDER_T 2
 #endif
+#if !defined( CRB_SOLVER )
+#define CRB_SOLVER 0
+#endif
 
 /**
  * \class Convection
@@ -153,7 +156,7 @@ public:
 
     // Definition de la procedure pour exporter les solutions
     void exportResults( boost::format, element_type& U, double t );
-
+    
 private:
     void initLinearOperator( sparse_matrix_ptrtype& L );
     void initLinearOperator2( sparse_matrix_ptrtype& L );
@@ -168,8 +171,8 @@ private:
     oplin_ptrtype M_oplin;
     funlin_ptrtype M_lf;
 
-    //sparse_matrix_ptrtype L;
-    sparse_matrix_ptrtype D;
+    sparse_matrix_ptrtype M_L;
+    sparse_matrix_ptrtype M_D;
     vector_ptrtype F;
 
     //pas de temps
