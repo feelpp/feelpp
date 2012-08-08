@@ -38,17 +38,27 @@ void Convection ::updateJacobian( const vector_ptrtype& X,
     if ( !J )
     {
         J =  M_backend->newMatrix( _test=Xh, _trial=Xh );
+        M_D =  M_backend->newMatrix( _test=Xh, _trial=Xh );
+        M_L =  M_backend->newMatrix( _test=Xh, _trial=Xh );
+        std::cout << "newMatrices J = D + L.\n";
+
+        this->initLinearOperator( M_L );
+        this->initLinearOperator2( M_L );
+
     }
-    //D->zero();
-    //L->zero();
-    this->initLinearOperator( J );
-    this->initLinearOperator2( J );
+    else
+    {
+        M_D->zero();
+        J->zero();
+    }
 
+    this->updateJacobian1( X, M_D );
+    this->updateJacobian2( X, M_D );
 
-    this->updateJacobian1( X, J );
-    this->updateJacobian2( X, J );
-
+    M_D->close();
+    M_L->close();
     J->close();
+    
     //conditions fortes de dir
     auto mesh = Xh->mesh();
     auto U =  Xh->element( "u" );
@@ -62,14 +72,14 @@ void Convection ::updateJacobian( const vector_ptrtype& X,
     if ( weakdir == 0 )
     {
         //vitesse
-        form2( Xh, Xh, J )  += on( boundaryfaces( mesh ),u, Rtemp,one()*0. );
+        form2( Xh, Xh, M_D )  += on( boundaryfaces( mesh ),u, Rtemp,one()*0. );
 
         if ( adim==1 )
             //temperature
-            form2( Xh, Xh, J )  += on ( markedfaces( mesh, "Tfixed" ),t,Rtemp,cst( 0.0 ) );
+            form2( Xh, Xh, M_D )  += on ( markedfaces( mesh, "Tfixed" ),t,Rtemp,cst( 0.0 ) );
 
         else
-            form2( Xh, Xh, J )  += on ( markedfaces( mesh, "Tfixed" ),t,Rtemp,cst( T0 ) );
+            form2( Xh, Xh, M_D )  += on ( markedfaces( mesh, "Tfixed" ),t,Rtemp,cst( T0 ) );
     }
     //L->printMatlab( "L.m" );
     //J->printMatlab( "J1.m" );
@@ -78,6 +88,9 @@ void Convection ::updateJacobian( const vector_ptrtype& X,
     //J->printMatlab( "J.m" );
     Log() << "[updateJacobian] done in " << ti.elapsed() << "s\n";
 
+    J->addMatrix( 1.0, M_L);
+    J->addMatrix( 1.0, M_D);
+    
 }
 
 // instantiation
