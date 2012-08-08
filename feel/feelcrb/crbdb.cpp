@@ -94,14 +94,14 @@ CRBDB::dbSystemPath() const
 fs::path
 CRBDB::dbLocalPath() const
 {
-    std::string suf = "";
-    if( M_vm.count( "geofile" ) )
+    std::string suf;
+    if( M_vm.count( "database_name" ) )
         {
-            suf += M_vm["geofile"].as<std::string>();
+            suf = M_vm["database_name"].as<std::string>();
         }
-    if ( M_vm.count( "hsize" ) )
+    else if ( M_vm.count( "hsize" ) )
         {
-            suf += ( boost::format( "_h_%1$.2e/" ) % M_vm["hsize"].as<double>() ).str();
+            suf = ( boost::format( "h_%1$.2e/" ) % M_vm["hsize"].as<double>() ).str();
         }
     // generate the local repository db path
     std::string localpath = ( boost::format( "%1%/db/crb/%2%/%3%" )
