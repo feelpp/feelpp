@@ -1376,7 +1376,7 @@ MatrixPetsc<T>::energy( Vector<value_type> const& __v,
             size_type start = u.firstLocalIndex();
 
             for ( size_type i = 0; i < s; ++i )
-                u.set( start + i, __u( start + i ) );
+                u.set( i, __u(  i ) );
         }
         VectorPetsc<value_type> v( __v.size(), __v.localSize() );
         {
@@ -1384,7 +1384,7 @@ MatrixPetsc<T>::energy( Vector<value_type> const& __v,
             size_type start = v.firstLocalIndex();
 
             for ( size_type i = 0; i < s; ++i )
-                v.set( start + i, __v( start + i ) );
+                v.set(  i, __v(  i ) );
         }
         VectorPetsc<value_type> z( __v.size(), __v.localSize() );
 
