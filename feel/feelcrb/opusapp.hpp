@@ -116,10 +116,22 @@ public:
 
                 std::srand( static_cast<unsigned>( std::time( 0 ) ) );
                 Debug() << "[OpusApp] constructor " << this->about().appName()  << "\n";
-                this->changeRepository( boost::format( "%1%/h_%2%/" )
-                                        % this->about().appName()
-                                        % this->vm()["hsize"].template as<double>()
-                    );
+
+                if( vm().count("hsize") && !vm().count("geofile") )
+                    {
+                        this->changeRepository( boost::format( "%1%/h_%2%/" )
+                                                % this->about().appName()
+                                                % this->vm()["hsize"].template as<double>()
+                                                );
+                    }
+                if( vm().count("geofile") )
+                    {
+                        this->changeRepository( boost::format( "%1%/%2%/" )
+                                                % this->about().appName()
+                                                % this->vm()["geofile"].template as<std::string>()
+                                                );
+                    }
+
                 Debug() << "[OpusApp] ch repo" << "\n";
                 this->setLogs();
                 Debug() << "[OpusApp] set Logs" << "\n";
