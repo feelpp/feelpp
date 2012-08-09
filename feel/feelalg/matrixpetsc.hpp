@@ -564,6 +564,10 @@ public :
                    Vector<value_type>& rhs,
                    Context const& on_context );
 
+    value_type energy( Vector<value_type> const& __v,
+                       Vector<value_type> const& __u,
+                       bool transpose = false ) const;
+
 private :
 
     void addMatrixSameNonZeroPattern( const T a, MatrixSparse<T> &X );
