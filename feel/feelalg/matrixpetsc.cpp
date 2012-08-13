@@ -2417,7 +2417,8 @@ MatrixPetscMPI<T>::energy( Vector<value_type> const& __v,
     {
         VectorPetscMPI<value_type> u( this->mapRow() );
         {
-            size_type s = u.localSize();
+            //size_type s = u.localSize();
+            size_type s = u.map().nLocalDofWithGhost();
             size_type start = u.firstLocalIndex();
 
             for ( size_type i = 0; i < s; ++i )
@@ -2425,13 +2426,17 @@ MatrixPetscMPI<T>::energy( Vector<value_type> const& __v,
         }
         VectorPetscMPI<value_type> v( this->mapRow() );
         {
-            size_type s = v.localSize();
+            //size_type s = v.localSize();
+            size_type s = v.map().nLocalDofWithGhost();
             size_type start = v.firstLocalIndex();
 
             for ( size_type i = 0; i < s; ++i )
                 v.set( start + i, __v( start + i ) );
         }
         VectorPetscMPI<value_type> z( this->mapRow() );
+
+        u.close();
+        v.close();
 
         if ( !transpose )
             MatMult( this->mat(), u.vec() , z.vec() );
