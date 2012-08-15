@@ -241,8 +241,8 @@ public:
                 M_mode != CRBModelMode::SCM_ONLINE )
         {
             //the model is already initialized
-            //std::cout << "  -- init FEM  model\n";
-            //M_model->init();
+            std::cout << "  -- init FEM  model\n";
+            M_model->init();
             this->initB();
         }
     }
