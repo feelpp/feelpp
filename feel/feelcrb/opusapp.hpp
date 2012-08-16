@@ -268,11 +268,8 @@ public:
 
             printParameterHdr( ostr, model->parameterSpace()->dimension(), hdrs[M_mode] );
 
-            //BOOST_FOREACH( auto mu, *Sampling )
+            BOOST_FOREACH( auto mu, *Sampling )
             {
-
-                typename ModelType::parameter_type mu;
-                mu[0]=4.0000e+07; mu[1]=3.7000e+02; mu[2]=3.0000e-03; mu[3]=2.0000e-08; mu[4]=2.0000e-01; mu[5]=8.0000e+04; mu[6]=2.8000e+02;
 
                 int size = mu.size();
                 if( proc_number == 0 )
