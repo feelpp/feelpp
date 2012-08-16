@@ -141,10 +141,11 @@ public:
 
 
                 crb = crb_ptrtype( new crb_type( this->about().appName(),
-                                                 this->vm() ) );
-                Debug() << "[OpusApp] get crb done" << "\n";
-                crb->setTruthModel( model );
-                Debug() << "[OpusApp] constructor done" << "\n";
+                                                 this->vm() ,
+                                                 model ) );
+                //Debug() << "[OpusApp] get crb done" << "\n";
+                //crb->setTruthModel( model );
+                //Debug() << "[OpusApp] constructor done" << "\n";
             }
 
             catch ( boost::bad_any_cast const& e )
@@ -201,11 +202,22 @@ public:
                 else if ( M_mode != CRBModelMode::SCM )
                     throw std::logic_error( "CRB/SCM Database could not be loaded" );
             }
+
+            if( crb->isDBLoaded() )
+            {
+                int current_dimension = crb->dimension();
+                int dimension_max = this->vm()["crb.dimension-max"].template as<int>();
+                if( current_dimension < dimension_max )
+                    crb->offline();
+            }
         }
 
     FEELPP_DONT_INLINE
     void run()
         {
+
+            int proc_number =  Environment::worldComm().globalRank();
+
             if ( this->vm().count( "help" ) )
             {
                 std::cout << this->optionsDescription() << "\n";
@@ -255,15 +267,20 @@ public:
             exporter->step( 0 )->setMesh( model->functionSpace()->mesh() );
 
             printParameterHdr( ostr, model->parameterSpace()->dimension(), hdrs[M_mode] );
-            BOOST_FOREACH( auto mu, *Sampling )
+
+            //BOOST_FOREACH( auto mu, *Sampling )
             {
 
+                typename ModelType::parameter_type mu;
+                mu[0]=4.0000e+07; mu[1]=3.7000e+02; mu[2]=3.0000e-03; mu[3]=2.0000e-08; mu[4]=2.0000e-01; mu[5]=8.0000e+04; mu[6]=2.8000e+02;
+
                 int size = mu.size();
-                std::cout << "mu = [ ";
-
-                for ( int i=0; i<size-1; i++ ) std::cout<< mu[i] <<" , ";
-
-                std::cout<< mu[size-1]<<" ] ";
+                if( proc_number == 0 )
+                {
+                    std::cout << "mu = [ ";
+                    for ( int i=0; i<size-1; i++ ) std::cout<< mu[i] <<" , ";
+                    std::cout<< mu[size-1]<<" ] ";
+                }
 
                 std::ostringstream mu_str;
                 for ( int i=0; i<size-1; i++ ) mu_str << std::scientific << std::setprecision( 5 ) << mu[i] <<",";
@@ -276,7 +293,7 @@ public:
                     boost::timer ti;
                     model->solve( mu );
                     std::vector<double> o = boost::assign::list_of( model->output( output_index,mu ) )( ti.elapsed() );
-                    std::cout << "output=" << o[0] << "\n";
+                    if(proc_number == 0 ) std::cout << "output=" << o[0] << "\n";
                     printEntry( ostr, mu, o );
 
                 }
@@ -288,6 +305,7 @@ public:
                     LOG(INFO) << "solve u_fem\n";
                     google::FlushLogFiles(google::GLOG_INFO);
                     boost::timer ti;
+
                     auto u_fem = model->solve( mu );
                     std::ostringstream u_fem_str;
                     u_fem_str << "u_fem(" << mu_str.str() << ")";
@@ -302,6 +320,7 @@ public:
                     ti.restart();
                     LOG(INFO) << "solve crb\n";
                     google::FlushLogFiles(google::GLOG_INFO);
+
                     auto o = crb->run( mu,  this->vm()["crb.online-tolerance"].template as<double>() );
 
                     if( this->vm()["crb.rebuild-database"].template as<bool>() )
@@ -320,21 +339,27 @@ public:
                     if ( crb->errorType()==2 )
                     {
                         std::vector<double> v = boost::assign::list_of( ofem[0] )( ofem[1] )( o.template get<0>() )( relative_estimated_error )( ti.elapsed() )( relative_error )( condition_number );
-                        std::cout << "output=" << o.template get<0>() << " with " << o.template get<2>() << " basis functions\n";
-                        std::ofstream file_summary_of_simulations( ( boost::format( "summary_of_simulations_%d" ) % o.template get<2>() ).str().c_str() ,std::ios::out | std::ios::app );
-                        printEntry( file_summary_of_simulations, mu, v );
-                        printEntry( ostr, mu, v );
-                        file_summary_of_simulations.close();
+                        if( proc_number == 0 )
+                        {
+                            std::cout << "output=" << o.template get<0>() << " with " << o.template get<2>() << " basis functions\n";
+                            std::ofstream file_summary_of_simulations( ( boost::format( "summary_of_simulations_%d" ) % o.template get<2>() ).str().c_str() ,std::ios::out | std::ios::app );
+                            printEntry( file_summary_of_simulations, mu, v );
+                            printEntry( ostr, mu, v );
+                            file_summary_of_simulations.close();
+                        }
                     }
 
                     else
                     {
                         std::vector<double> v = boost::assign::list_of( ofem[0] )( ofem[1] )( o.template get<0>() )( relative_estimated_error )( ti.elapsed() ) ( relative_error )( condition_number ) ;
-                        std::cout << "output=" << o.template get<0>() << " with " << o.template get<2>() << " basis functions  (relative error estimation on this output : " << relative_estimated_error<<") \n";
-                        std::ofstream file_summary_of_simulations( ( boost::format( "summary_of_simulations_%d" ) % o.template get<2>() ).str().c_str() ,std::ios::out | std::ios::app );
-                        printEntry( file_summary_of_simulations, mu, v );
-                        printEntry( ostr, mu, v );
-                        file_summary_of_simulations.close();
+                        if( proc_number == 0 )
+                        {
+                            std::cout << "output=" << o.template get<0>() << " with " << o.template get<2>() << " basis functions  (relative error estimation on this output : " << relative_estimated_error<<") \n";
+                            std::ofstream file_summary_of_simulations( ( boost::format( "summary_of_simulations_%d" ) % o.template get<2>() ).str().c_str() ,std::ios::out | std::ios::app );
+                            printEntry( file_summary_of_simulations, mu, v );
+                            printEntry( ostr, mu, v );
+                            file_summary_of_simulations.close();
+                        }
                     }
 
                 }
@@ -385,7 +410,7 @@ public:
                 std::cout << "------------------------------------------------------------\n";
             }
             exporter->save();
-            std::cout << ostr.str() << "\n";
+            if( proc_number == 0 ) std::cout << ostr.str() << "\n";
 
         }
     void run( const double * X, unsigned long N,
