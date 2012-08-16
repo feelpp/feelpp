@@ -241,8 +241,8 @@ public:
                 M_mode != CRBModelMode::SCM_ONLINE )
         {
             //the model is already initialized
-            std::cout << "  -- init FEM  model\n";
-            M_model->init();
+            //std::cout << "  -- init FEM  model\n";
+            //M_model->init();
             this->initB();
         }
     }
@@ -729,7 +729,11 @@ public:
      */
     value_type Fqm( uint16_type l, uint16_type q,  uint16_type m, element_type const& xi )
     {
-        return inner_product( *M_Fqm[l][q][m], xi );
+        element_ptrtype eltF( new element_type( M_model->functionSpace() ) );
+        for(int i=0; i<eltF->localSize();i++)
+            eltF->operator()(i)=M_Fqm[l][q][m]->operator()(i);
+        return inner_product( *eltF , xi );
+        //return inner_product( *M_Fqm[l][q][m], xi );
     }
 
     /**

@@ -257,9 +257,38 @@ public:
         // do the loadDB() in setTruthModel()
         //this->loadDB() )
 
-
-
     }
+
+    //! constructor from command line options
+    CRB( std::string  name,
+         po::variables_map const& vm,
+         truth_model_ptrtype const & model )
+        :
+        super( ( boost::format( "%1%" ) % vm["crb.error-type"].template as<int>() ).str(),
+               name,
+               ( boost::format( "%1%-%2%-%3%" ) % name % vm["crb.output-index"].template as<int>() % vm["crb.error-type"].template as<int>() ).str(),
+               vm ),
+
+        M_model(),
+        M_backend( backend_type::build( vm ) ),
+        M_output_index( vm["crb.output-index"].template as<int>() ),
+        M_tolerance( vm["crb.error-max"].template as<double>() ),
+        M_iter_max( vm["crb.dimension-max"].template as<int>() ),
+        M_factor( vm["crb.factor"].template as<int>() ),
+        M_error_type( CRBErrorType( vm["crb.error-type"].template as<int>() ) ),
+        M_Dmu( new parameterspace_type ),
+        M_Xi( new sampling_type( M_Dmu ) ),
+        M_WNmu( new sampling_type( M_Dmu, 1, M_Xi ) ),
+        M_WNmu_complement(),
+        M_scmA( new scm_type( name+"_a", vm ) ),
+        M_scmM( new scm_type( name+"_m", vm ) ),
+        exporter( Exporter<mesh_type>::New( vm, "BasisFunction" ) )
+    {
+        this->setTruthModel( model );
+        if ( this->loadDB() )
+            std::cout << "Database " << this->lookForDB() << " available and loaded\n";
+    }
+
 
     //! copy constructor
     CRB( CRB const & o )
@@ -841,7 +870,10 @@ public:
     void buildVarianceMatrixPhi(int const N , mpl::bool_<true> );
     void buildVarianceMatrixPhi(int const N , mpl::bool_<false> );
 
+    WorldComm const& worldComm() const { return Environment::worldComm() ; }
+
     //@}
+
 
 private:
 
@@ -965,7 +997,8 @@ private:
 
     bool M_compute_variance;
     bool M_rbconv_contains_primal_and_dual_contributions;
-
+    parameter_type M_current_mu;
+    int M_no_residual_index;
 
 };
 
@@ -977,289 +1010,367 @@ typename CRB<TruthModelType>::convergence_type
 CRB<TruthModelType>::offline()
 {
 
+    int proc_number = this->worldComm().globalRank();
     M_rbconv_contains_primal_and_dual_contributions = true;
 
-    boost::timer ti;
-    std::cout << "Offline CRB starts, this may take a while until Database is computed...\n";
-    LOG(INFO) << "[CRB::offline] Starting offline for output " << M_output_index << "\n";
-    LOG(INFO) << "[CRB::offline] initialize underlying finite element model\n";
-    M_model->init();
-    std::cout << " -- model init done in " << ti.elapsed() << "s\n";
-    ti.restart();
-
+    bool rebuild_database = this->vm()["crb.rebuild-database"].template as<bool>() ;
     orthonormalize_primal = this->vm()["crb.orthonormalize-primal"].template as<bool>() ;
     orthonormalize_dual = this->vm()["crb.orthonormalize-dual"].template as<bool>() ;
     solve_dual_problem = this->vm()["crb.solve-dual-problem"].template as<bool>() ;
+    if ( ! solve_dual_problem ) orthonormalize_dual=false;
+
     M_Nm = this->vm()["crb.Nm"].template as<int>() ;
     bool seek_mu_in_complement = this->vm()["crb.seek-mu-in-complement"].template as<bool>() ;
 
-    if ( ! solve_dual_problem ) orthonormalize_dual=false;
-
-    //scm_ptrtype M_scm = scm_ptrtype( new scm_type( M_vm ) );
-    //M_scm->setTruthModel( M_model );
-    //    std::vector<boost::tuple<double,double,double> > M_rbconv2 = M_scm->offline();
-
-    LOG(INFO) << "[CRB::offline] compute random sampling\n";
-    // random sampling
-    M_Xi->randomize( this->vm()["crb.sampling-size"].template as<int>() );
-    //M_Xi->equidistribute( this->vm()["crb.sampling-size"].template as<int>() );
-    M_WNmu->setSuperSampling( M_Xi );
-
-    std::cout<<"[CRB offline] M_error_type = "<<M_error_type<<std::endl;
-
-
-    std::cout << " -- sampling init done in " << ti.elapsed() << "s\n";
-    ti.restart();
-
-    if ( M_error_type == CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM )
-    {
-        int __QLhs = M_model->Qa();
-        int __QRhs = M_model->Ql( 0 );
-        int __QOutput = M_model->Ql( M_output_index );
-        int __Qm = M_model->Qm();
-
-        //typename array_2_type::extent_gen extents2;
-        //M_C0_pr.resize( extents2[__QRhs][__QRhs] );
-        //M_C0_du.resize( extents2[__QOutput][__QOutput] );
-        M_C0_pr.resize( __QRhs );
-        for( int __q1=0; __q1< __QRhs; __q1++)
-        {
-            int __mMaxQ1=M_model->mMaxF(0,__q1);
-            M_C0_pr[__q1].resize( __mMaxQ1 );
-            for( int __m1=0; __m1< __mMaxQ1; __m1++)
-            {
-                M_C0_pr[__q1][__m1].resize(  __QRhs );
-                for( int __q2=0; __q2< __QRhs; __q2++)
-                {
-                    int __mMaxQ2=M_model->mMaxF(0,__q2);
-                    M_C0_pr[__q1][__m1][__q2].resize( __mMaxQ2 );
-                }
-            }
-        }
-
-        M_C0_du.resize( __QOutput );
-        for( int __q1=0; __q1< __QOutput; __q1++)
-        {
-            int __mMaxQ1=M_model->mMaxF(M_output_index,__q1);
-            M_C0_du[__q1].resize( __mMaxQ1 );
-            for( int __m1=0; __m1< __mMaxQ1; __m1++)
-            {
-                M_C0_du[__q1][__m1].resize(  __QOutput );
-                for( int __q2=0; __q2< __QOutput; __q2++)
-                {
-                    int __mMaxQ2=M_model->mMaxF(M_output_index,__q2);
-                    M_C0_du[__q1][__m1][__q2].resize( __mMaxQ2 );
-                }
-            }
-        }
-
-
-        //typename array_3_type::extent_gen extents3;
-        //M_Lambda_pr.resize( extents3[__QLhs][__QRhs] );
-        //M_Lambda_du.resize( extents3[__QLhs][__QOutput] );
-        M_Lambda_pr.resize( __QLhs );
-        for( int __q1=0; __q1< __QLhs; __q1++)
-        {
-            int __mMaxQ1=M_model->mMaxA(__q1);
-            M_Lambda_pr[__q1].resize( __mMaxQ1 );
-            for( int __m1=0; __m1< __mMaxQ1; __m1++)
-            {
-                M_Lambda_pr[__q1][__m1].resize(  __QRhs );
-                for( int __q2=0; __q2< __QRhs; __q2++)
-                {
-                    int __mMaxQ2=M_model->mMaxF(0,__q2);
-                    M_Lambda_pr[__q1][__m1][__q2].resize( __mMaxQ2 );
-                }
-            }
-        }
-
-        M_Lambda_du.resize( __QLhs );
-        for( int __q1=0; __q1< __QLhs; __q1++)
-        {
-            int __mMaxQ1=M_model->mMaxA(__q1);
-            M_Lambda_du[__q1].resize( __mMaxQ1 );
-            for( int __m1=0; __m1< __mMaxQ1; __m1++)
-            {
-                M_Lambda_du[__q1][__m1].resize(  __QOutput );
-                for( int __q2=0; __q2< __QOutput; __q2++)
-                {
-                    int __mMaxQ2=M_model->mMaxF(M_output_index,__q2);
-                    M_Lambda_du[__q1][__m1][__q2].resize( __mMaxQ2 );
-                }
-            }
-        }
-
-        //typename array_4_type::extent_gen extents4;
-        //M_Gamma_pr.resize( extents4[__QLhs][__QLhs] );
-        //M_Gamma_du.resize( extents4[__QLhs][__QLhs] );
-        M_Gamma_pr.resize( __QLhs );
-        for( int __q1=0; __q1< __QLhs; __q1++)
-        {
-            int __mMaxQ1=M_model->mMaxA(__q1);
-            M_Gamma_pr[__q1].resize( __mMaxQ1 );
-            for( int __m1=0; __m1< __mMaxQ1; __m1++)
-            {
-                M_Gamma_pr[__q1][__m1].resize(  __QLhs );
-                for( int __q2=0; __q2< __QLhs; __q2++)
-                {
-                    int __mMaxQ2=M_model->mMaxA(__q2);
-                    M_Gamma_pr[__q1][__m1][__q2].resize( __mMaxQ2 );
-                }
-            }
-        }
-
-        M_Gamma_du.resize( __QLhs );
-        for( int __q1=0; __q1< __QLhs; __q1++)
-        {
-            int __mMaxQ1=M_model->mMaxA(__q1);
-            M_Gamma_du[__q1].resize( __mMaxQ1 );
-            for( int __m1=0; __m1< __mMaxQ1; __m1++)
-            {
-                M_Gamma_du[__q1][__m1].resize(  __QLhs );
-                for( int __q2=0; __q2< __QLhs; __q2++)
-                {
-                    int __mMaxQ2=M_model->mMaxA(__q2);
-                    M_Gamma_du[__q1][__m1][__q2].resize( __mMaxQ2 );
-                }
-            }
-        }
-
-        if ( model_type::is_time_dependent )
-        {
-            // M_Cmf_pr.resize( extents3[__Qm][__QRhs] );
-            // M_Cmf_du.resize( extents3[__Qm][__QRhs] );
-            M_Cmf_pr.resize( __Qm );
-            for( int __q1=0; __q1< __Qm; __q1++)
-            {
-                int __mMaxQ1=M_model->mMaxM(__q1);
-                M_Cmf_pr[__q1].resize( __mMaxQ1 );
-                for( int __m1=0; __m1< __mMaxQ1; __m1++)
-                {
-                    M_Cmf_pr[__q1][__m1].resize(  __QRhs );
-                    for( int __q2=0; __q2< __QRhs; __q2++)
-                    {
-                        int __mMaxQ2=M_model->mMaxF(0,__q2);
-                        M_Cmf_pr[__q1][__m1][__q2].resize( __mMaxQ2 );
-                    }
-                }
-            }
-
-            M_Cmf_du.resize( __Qm );
-            for( int __q1=0; __q1< __Qm; __q1++)
-            {
-                int __mMaxQ1=M_model->mMaxM(__q1);
-                M_Cmf_du[__q1].resize( __mMaxQ1 );
-                for( int __m1=0; __m1< __mMaxQ1; __m1++)
-                {
-                    M_Cmf_du[__q1][__m1].resize( __QOutput );
-                    for( int __q2=0; __q2< __QOutput; __q2++)
-                    {
-                        int __mMaxQ2=M_model->mMaxF(M_output_index,__q2);
-                        M_Cmf_du[__q1][__m1][__q2].resize( __mMaxQ2 );
-                    }
-                }
-            }
-
-            // M_Cma_pr.resize( extents4[__Qm][__QLhs] );
-            // M_Cma_du.resize( extents4[__Qm][__QLhs] );
-            M_Cma_pr.resize( __Qm );
-            for( int __q1=0; __q1< __Qm; __q1++)
-            {
-                int __mMaxQ1=M_model->mMaxM(__q1);
-                M_Cma_pr[__q1].resize( __mMaxQ1 );
-                for( int __m1=0; __m1< __mMaxQ1; __m1++)
-                {
-                    M_Cma_pr[__q1][__m1].resize(  __QLhs );
-                    for( int __q2=0; __q2< __QLhs; __q2++)
-                    {
-                        int __mMaxQ2=M_model->mMaxA(__q2);
-                        M_Cma_pr[__q1][__m1][__q2].resize( __mMaxQ2 );
-                    }
-                }
-            }
-
-            M_Cma_du.resize( __Qm );
-            for( int __q1=0; __q1< __Qm; __q1++)
-            {
-                int __mMaxQ1=M_model->mMaxM(__q1);
-                M_Cma_du[__q1].resize( __mMaxQ1 );
-                for( int __m1=0; __m1< __mMaxQ1; __m1++)
-                {
-                    M_Cma_du[__q1][__m1].resize( __QLhs );
-                    for( int __q2=0; __q2< __QLhs; __q2++)
-                    {
-                        int __mMaxQ2=M_model->mMaxA(__q2);
-                        M_Cma_du[__q1][__m1][__q2].resize( __mMaxQ2 );
-                    }
-                }
-            }
-
-            // M_Cmm_pr.resize( extents4[__Qm][__Qm] );
-            // M_Cmm_du.resize( extents4[__Qm][__Qm] );
-            M_Cmm_pr.resize( __Qm );
-            for( int __q1=0; __q1< __Qm; __q1++)
-            {
-                int __mMaxQ1=M_model->mMaxM(__q1);
-                M_Cmm_pr[__q1].resize( __mMaxQ1 );
-                for( int __m1=0; __m1< __mMaxQ1; __m1++)
-                {
-                    M_Cmm_pr[__q1][__m1].resize(  __Qm );
-                    for( int __q2=0; __q2< __Qm; __q2++)
-                    {
-                        int __mMaxQ2=M_model->mMaxM(__q2);
-                        M_Cmm_pr[__q1][__m1][__q2].resize( __mMaxQ2 );
-                    }
-                }
-            }
-
-            M_Cmm_du.resize( __Qm );
-            for( int __q1=0; __q1< __Qm; __q1++)
-            {
-                int __mMaxQ1=M_model->mMaxM(__q1);
-                M_Cmm_du[__q1].resize( __mMaxQ1 );
-                for( int __m1=0; __m1< __mMaxQ1; __m1++)
-                {
-                    M_Cmm_du[__q1][__m1].resize( __Qm );
-                    for( int __q2=0; __q2< __Qm; __q2++)
-                    {
-                        int __mMaxQ2=M_model->mMaxM(__q2);
-                        M_Cmm_du[__q1][__m1][__q2].resize( __mMaxQ2 );
-                    }
-                }
-            }
-
-        }
-
-        std::cout << " -- residual data init done in " << ti.elapsed() << "\n";
-        ti.restart();
-    }
-
-    // offlineWithErrorEstimation();
+    boost::timer ti;
+    if( proc_number == 0 ) std::cout << "Offline CRB starts, this may take a while until Database is computed...\n";
+    LOG(INFO) << "[CRB::offline] Starting offline for output " << M_output_index << "\n";
+    LOG(INFO) << "[CRB::offline] initialize underlying finite element model\n";
+    M_model->init();
+    if( proc_number == 0 ) std::cout << " -- model init done in " << ti.elapsed() << "s\n";
 
     parameter_type mu( M_Dmu );
 
-    // empty sets
-    M_WNmu->clear();
-
-    // start with M_C = { arg min mu, mu \in Xi }
+    double maxerror;
+    double delta_pr;
+    double delta_du;
     size_type index;
-    boost::tie( mu, index ) = M_Xi->min();
+    int no_residual_index;
+    //if M_N == 0 then there is not an already existing database
+    if ( rebuild_database || M_N == 0)
+    {
 
-    std::cout << "  -- start with mu = [ ";
-    int size = mu.size();
+        ti.restart();
+        //scm_ptrtype M_scm = scm_ptrtype( new scm_type( M_vm ) );
+        //M_scm->setTruthModel( M_model );
+        //    std::vector<boost::tuple<double,double,double> > M_rbconv2 = M_scm->offline();
 
-    for ( int i=0; i<size-1; i++ ) std::cout<<mu( i )<<" ";
+        LOG(INFO) << "[CRB::offline] compute random sampling\n";
+        // random sampling
+        M_Xi->randomize( this->vm()["crb.sampling-size"].template as<int>() );
+        //M_Xi->equidistribute( this->vm()["crb.sampling-size"].template as<int>() );
+        M_WNmu->setSuperSampling( M_Xi );
 
-    std::cout<<mu( size-1 )<<" ]"<<std::endl;
-    //std::cout << " -- WN size :  " << M_WNmu->size() << "\n";
+        if( proc_number == 0 ) std::cout<<"[CRB offline] M_error_type = "<<M_error_type<<std::endl;
+
+        std::cout << " -- sampling init done in " << ti.elapsed() << "s\n";
+        ti.restart();
+
+        if ( M_error_type == CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM )
+        {
+            int __QLhs = M_model->Qa();
+            int __QRhs = M_model->Ql( 0 );
+            int __QOutput = M_model->Ql( M_output_index );
+            int __Qm = M_model->Qm();
+
+            //typename array_2_type::extent_gen extents2;
+            //M_C0_pr.resize( extents2[__QRhs][__QRhs] );
+            //M_C0_du.resize( extents2[__QOutput][__QOutput] );
+            M_C0_pr.resize( __QRhs );
+            for( int __q1=0; __q1< __QRhs; __q1++)
+            {
+                int __mMaxQ1=M_model->mMaxF(0,__q1);
+                M_C0_pr[__q1].resize( __mMaxQ1 );
+                for( int __m1=0; __m1< __mMaxQ1; __m1++)
+                {
+                    M_C0_pr[__q1][__m1].resize(  __QRhs );
+                    for( int __q2=0; __q2< __QRhs; __q2++)
+                    {
+                        int __mMaxQ2=M_model->mMaxF(0,__q2);
+                        M_C0_pr[__q1][__m1][__q2].resize( __mMaxQ2 );
+                    }
+                }
+            }
+
+            M_C0_du.resize( __QOutput );
+            for( int __q1=0; __q1< __QOutput; __q1++)
+            {
+                int __mMaxQ1=M_model->mMaxF(M_output_index,__q1);
+                M_C0_du[__q1].resize( __mMaxQ1 );
+                for( int __m1=0; __m1< __mMaxQ1; __m1++)
+                {
+                    M_C0_du[__q1][__m1].resize(  __QOutput );
+                    for( int __q2=0; __q2< __QOutput; __q2++)
+                    {
+                        int __mMaxQ2=M_model->mMaxF(M_output_index,__q2);
+                        M_C0_du[__q1][__m1][__q2].resize( __mMaxQ2 );
+                    }
+                }
+            }
+
+            //typename array_3_type::extent_gen extents3;
+            //M_Lambda_pr.resize( extents3[__QLhs][__QRhs] );
+            //M_Lambda_du.resize( extents3[__QLhs][__QOutput] );
+            M_Lambda_pr.resize( __QLhs );
+            for( int __q1=0; __q1< __QLhs; __q1++)
+            {
+                int __mMaxQ1=M_model->mMaxA(__q1);
+                M_Lambda_pr[__q1].resize( __mMaxQ1 );
+                for( int __m1=0; __m1< __mMaxQ1; __m1++)
+                {
+                    M_Lambda_pr[__q1][__m1].resize(  __QRhs );
+                    for( int __q2=0; __q2< __QRhs; __q2++)
+                    {
+                        int __mMaxQ2=M_model->mMaxF(0,__q2);
+                        M_Lambda_pr[__q1][__m1][__q2].resize( __mMaxQ2 );
+                    }
+                }
+            }
+
+            M_Lambda_du.resize( __QLhs );
+            for( int __q1=0; __q1< __QLhs; __q1++)
+            {
+                int __mMaxQ1=M_model->mMaxA(__q1);
+                M_Lambda_du[__q1].resize( __mMaxQ1 );
+                for( int __m1=0; __m1< __mMaxQ1; __m1++)
+                {
+                    M_Lambda_du[__q1][__m1].resize(  __QOutput );
+                    for( int __q2=0; __q2< __QOutput; __q2++)
+                    {
+                        int __mMaxQ2=M_model->mMaxF(M_output_index,__q2);
+                        M_Lambda_du[__q1][__m1][__q2].resize( __mMaxQ2 );
+                    }
+                }
+            }
+
+            //typename array_4_type::extent_gen extents4;
+            //M_Gamma_pr.resize( extents4[__QLhs][__QLhs] );
+            //M_Gamma_du.resize( extents4[__QLhs][__QLhs] );
+            M_Gamma_pr.resize( __QLhs );
+            for( int __q1=0; __q1< __QLhs; __q1++)
+            {
+                int __mMaxQ1=M_model->mMaxA(__q1);
+                M_Gamma_pr[__q1].resize( __mMaxQ1 );
+                for( int __m1=0; __m1< __mMaxQ1; __m1++)
+                {
+                    M_Gamma_pr[__q1][__m1].resize(  __QLhs );
+                    for( int __q2=0; __q2< __QLhs; __q2++)
+                    {
+                        int __mMaxQ2=M_model->mMaxA(__q2);
+                        M_Gamma_pr[__q1][__m1][__q2].resize( __mMaxQ2 );
+                    }
+                }
+            }
+
+            M_Gamma_du.resize( __QLhs );
+            for( int __q1=0; __q1< __QLhs; __q1++)
+            {
+                int __mMaxQ1=M_model->mMaxA(__q1);
+                M_Gamma_du[__q1].resize( __mMaxQ1 );
+                for( int __m1=0; __m1< __mMaxQ1; __m1++)
+                {
+                    M_Gamma_du[__q1][__m1].resize(  __QLhs );
+                    for( int __q2=0; __q2< __QLhs; __q2++)
+                    {
+                        int __mMaxQ2=M_model->mMaxA(__q2);
+                        M_Gamma_du[__q1][__m1][__q2].resize( __mMaxQ2 );
+                    }
+                }
+            }
+
+            if ( model_type::is_time_dependent )
+            {
+                // M_Cmf_pr.resize( extents3[__Qm][__QRhs] );
+                // M_Cmf_du.resize( extents3[__Qm][__QRhs] );
+                M_Cmf_pr.resize( __Qm );
+                for( int __q1=0; __q1< __Qm; __q1++)
+                {
+                    int __mMaxQ1=M_model->mMaxM(__q1);
+                    M_Cmf_pr[__q1].resize( __mMaxQ1 );
+                    for( int __m1=0; __m1< __mMaxQ1; __m1++)
+                    {
+                        M_Cmf_pr[__q1][__m1].resize(  __QRhs );
+                        for( int __q2=0; __q2< __QRhs; __q2++)
+                        {
+                            int __mMaxQ2=M_model->mMaxF(0,__q2);
+                            M_Cmf_pr[__q1][__m1][__q2].resize( __mMaxQ2 );
+                        }
+                    }
+                }
+
+                M_Cmf_du.resize( __Qm );
+                for( int __q1=0; __q1< __Qm; __q1++)
+                {
+                    int __mMaxQ1=M_model->mMaxM(__q1);
+                    M_Cmf_du[__q1].resize( __mMaxQ1 );
+                    for( int __m1=0; __m1< __mMaxQ1; __m1++)
+                    {
+                        M_Cmf_du[__q1][__m1].resize( __QOutput );
+                        for( int __q2=0; __q2< __QOutput; __q2++)
+                        {
+                            int __mMaxQ2=M_model->mMaxF(M_output_index,__q2);
+                            M_Cmf_du[__q1][__m1][__q2].resize( __mMaxQ2 );
+                        }
+                    }
+                }
+
+                // M_Cma_pr.resize( extents4[__Qm][__QLhs] );
+                // M_Cma_du.resize( extents4[__Qm][__QLhs] );
+                M_Cma_pr.resize( __Qm );
+                for( int __q1=0; __q1< __Qm; __q1++)
+                {
+                    int __mMaxQ1=M_model->mMaxM(__q1);
+                    M_Cma_pr[__q1].resize( __mMaxQ1 );
+                    for( int __m1=0; __m1< __mMaxQ1; __m1++)
+                    {
+                        M_Cma_pr[__q1][__m1].resize(  __QLhs );
+                        for( int __q2=0; __q2< __QLhs; __q2++)
+                        {
+                            int __mMaxQ2=M_model->mMaxA(__q2);
+                            M_Cma_pr[__q1][__m1][__q2].resize( __mMaxQ2 );
+                        }
+                    }
+                }
+
+                M_Cma_du.resize( __Qm );
+                for( int __q1=0; __q1< __Qm; __q1++)
+                {
+                    int __mMaxQ1=M_model->mMaxM(__q1);
+                    M_Cma_du[__q1].resize( __mMaxQ1 );
+                    for( int __m1=0; __m1< __mMaxQ1; __m1++)
+                    {
+                        M_Cma_du[__q1][__m1].resize( __QLhs );
+                        for( int __q2=0; __q2< __QLhs; __q2++)
+                        {
+                            int __mMaxQ2=M_model->mMaxA(__q2);
+                            M_Cma_du[__q1][__m1][__q2].resize( __mMaxQ2 );
+                        }
+                    }
+                }
+
+                // M_Cmm_pr.resize( extents4[__Qm][__Qm] );
+                // M_Cmm_du.resize( extents4[__Qm][__Qm] );
+                M_Cmm_pr.resize( __Qm );
+                for( int __q1=0; __q1< __Qm; __q1++)
+                {
+                    int __mMaxQ1=M_model->mMaxM(__q1);
+                    M_Cmm_pr[__q1].resize( __mMaxQ1 );
+                    for( int __m1=0; __m1< __mMaxQ1; __m1++)
+                    {
+                        M_Cmm_pr[__q1][__m1].resize(  __Qm );
+                        for( int __q2=0; __q2< __Qm; __q2++)
+                        {
+                            int __mMaxQ2=M_model->mMaxM(__q2);
+                            M_Cmm_pr[__q1][__m1][__q2].resize( __mMaxQ2 );
+                        }
+                    }
+                }
+
+                M_Cmm_du.resize( __Qm );
+                for( int __q1=0; __q1< __Qm; __q1++)
+                {
+                    int __mMaxQ1=M_model->mMaxM(__q1);
+                    M_Cmm_du[__q1].resize( __mMaxQ1 );
+                    for( int __m1=0; __m1< __mMaxQ1; __m1++)
+                    {
+                        M_Cmm_du[__q1][__m1].resize( __Qm );
+                        for( int __q2=0; __q2< __Qm; __q2++)
+                        {
+                            int __mMaxQ2=M_model->mMaxM(__q2);
+                            M_Cmm_du[__q1][__m1][__q2].resize( __mMaxQ2 );
+                        }
+                    }
+                }
+
+            }//end of if ( model_type::is_time_dependent )
+        }//end of if ( M_error_type == CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM )
+        std::cout << " -- residual data init done in " << ti.elapsed() << "\n";
+        ti.restart();
+
+        // empty sets
+        M_WNmu->clear();
+
+        // start with M_C = { arg min mu, mu \in Xi }
+        boost::tie( mu, index ) = M_Xi->min();
+
+        int size = mu.size();
+        if( proc_number == 0 )
+        {
+            std::cout << "  -- start with mu = [ ";
+            for ( int i=0; i<size-1; i++ ) std::cout<<mu( i )<<" ";
+            std::cout<<mu( size-1 )<<" ]"<<std::endl;
+        }
+        //std::cout << " -- WN size :  " << M_WNmu->size() << "\n";
+
+        // dimension of reduced basis space
+        M_N = 0;
+
+        // scm offline stage: build C_K
+        if ( M_error_type == CRB_RESIDUAL_SCM )
+        {
+            M_scmA->setScmForMassMatrix( false );
+            std::vector<boost::tuple<double,double,double> > M_rbconv2 = M_scmA->offline();
+            if ( ! M_model->isSteady() )
+            {
+                M_scmM->setScmForMassMatrix( true );
+                std::vector<boost::tuple<double,double,double> > M_rbconv3 = M_scmM->offline();
+            }
+        }
+
+        maxerror = 1e10;
+        delta_pr = 0;
+        delta_du = 0;
+        no_residual_index = 0;
+        //boost::tie( maxerror, mu, index ) = maxErrorBounds( N );
+
+        LOG(INFO) << "[CRB::offline] allocate reduced basis data structures\n";
+        M_Aqm_pr.resize( M_model->Qa() );
+        M_Aqm_du.resize( M_model->Qa() );
+        M_Aqm_pr_du.resize( M_model->Qa() );
+        for(int q=0; q<M_model->Qa(); q++)
+        {
+            M_Aqm_pr[q].resize( M_model->mMaxA(q) );
+            M_Aqm_du[q].resize( M_model->mMaxA(q) );
+            M_Aqm_pr_du[q].resize( M_model->mMaxA(q) );
+        }
+
+        M_Mqm_pr.resize( M_model->Qm() );
+        M_Mqm_du.resize( M_model->Qm() );
+        M_Mqm_pr_du.resize( M_model->Qm() );
+        for(int q=0; q<M_model->Qm(); q++)
+        {
+            M_Mqm_pr[q].resize( M_model->mMaxM(q) );
+            M_Mqm_du[q].resize( M_model->mMaxM(q) );
+            M_Mqm_pr_du[q].resize( M_model->mMaxM(q) );
+        }
+
+        M_MFqm_pr.resize( M_model->Qmf() );
+        for(int q=0; q<M_model->Qmf(); q++)
+        {
+            M_MFqm_pr[q].resize( M_model->mMaxMF(q) );
+        }
+
+        M_Fqm_pr.resize( M_model->Ql( 0 ) );
+        M_Fqm_du.resize( M_model->Ql( 0 ) );
+        M_Lqm_pr.resize( M_model->Ql( M_output_index ) );
+        M_Lqm_du.resize( M_model->Ql( M_output_index ) );
+
+        for(int q=0; q<M_model->Ql( 0 ); q++)
+        {
+            M_Fqm_pr[q].resize( M_model->mMaxF( 0 , q) );
+            M_Fqm_du[q].resize( M_model->mMaxF( 0 , q) );
+        }
+        for(int q=0; q<M_model->Ql( M_output_index ); q++)
+        {
+            M_Lqm_pr[q].resize( M_model->mMaxF( M_output_index , q) );
+            M_Lqm_du[q].resize( M_model->mMaxF( M_output_index , q) );
+        }
+    }//end of if( rebuild_database )
+    else
+    {
+        mu = M_current_mu;
+        no_residual_index=M_no_residual_index;
+        if( proc_number == 0 )
+        {
+            std::cout<<"we are going to enrich the reduced basis"<<std::endl;
+            std::cout<<"there are "<<M_N<<" elements in the database"<<std::endl;
+        }
+    }//end of else associated to if ( rebuild_databse )
 
     sparse_matrix_ptrtype M,A,Adu,At;
     element_ptrtype InitialGuess;
     vector_ptrtype MF;
     std::vector<vector_ptrtype> F,L;
-
-    // dimension of reduced basis space
-    M_N = 0;
 
     LOG(INFO) << "[CRB::offline] compute affine decomposition\n";
     std::vector< std::vector<sparse_matrix_ptrtype> > Aqm;
@@ -1269,69 +1380,6 @@ CRB<TruthModelType>::offline()
     sparse_matrix_ptrtype Aq_transpose = M_model->newMatrix();
 
     boost::tie( Mqm, Aqm, Fqm, MFqm ) = M_model->computeAffineDecomposition();
-
-
-    // scm offline stage: build C_K
-    if ( M_error_type == CRB_RESIDUAL_SCM )
-    {
-        M_scmA->setScmForMassMatrix( false );
-        std::vector<boost::tuple<double,double,double> > M_rbconv2 = M_scmA->offline();
-
-        if ( ! M_model->isSteady() )
-        {
-            M_scmM->setScmForMassMatrix( true );
-            std::vector<boost::tuple<double,double,double> > M_rbconv3 = M_scmM->offline();
-        }
-    }
-
-    double maxerror = 1e10;
-    double delta_pr = 0;
-    double delta_du = 0;
-    //boost::tie( maxerror, mu, index ) = maxErrorBounds( N );
-
-    LOG(INFO) << "[CRB::offlineWithErrorEstimation] allocate reduced basis data structures\n";
-    M_Aqm_pr.resize( M_model->Qa() );
-    M_Aqm_du.resize( M_model->Qa() );
-    M_Aqm_pr_du.resize( M_model->Qa() );
-    for(int q=0; q<M_model->Qa(); q++)
-    {
-        M_Aqm_pr[q].resize( M_model->mMaxA(q) );
-        M_Aqm_du[q].resize( M_model->mMaxA(q) );
-        M_Aqm_pr_du[q].resize( M_model->mMaxA(q) );
-    }
-
-    M_Mqm_pr.resize( M_model->Qm() );
-    M_Mqm_du.resize( M_model->Qm() );
-    M_Mqm_pr_du.resize( M_model->Qm() );
-    for(int q=0; q<M_model->Qm(); q++)
-    {
-        M_Mqm_pr[q].resize( M_model->mMaxM(q) );
-        M_Mqm_du[q].resize( M_model->mMaxM(q) );
-        M_Mqm_pr_du[q].resize( M_model->mMaxM(q) );
-    }
-
-    M_MFqm_pr.resize( M_model->Qmf() );
-    for(int q=0; q<M_model->Qmf(); q++)
-    {
-        M_MFqm_pr[q].resize( M_model->mMaxMF(q) );
-    }
-
-    M_Fqm_pr.resize( M_model->Ql( 0 ) );
-    M_Fqm_du.resize( M_model->Ql( 0 ) );
-    M_Lqm_pr.resize( M_model->Ql( M_output_index ) );
-    M_Lqm_du.resize( M_model->Ql( M_output_index ) );
-
-    for(int q=0; q<M_model->Ql( 0 ); q++)
-    {
-        M_Fqm_pr[q].resize( M_model->mMaxF( 0 , q) );
-        M_Fqm_du[q].resize( M_model->mMaxF( 0 , q) );
-    }
-    for(int q=0; q<M_model->Ql( M_output_index ); q++)
-    {
-        M_Lqm_pr[q].resize( M_model->mMaxF( M_output_index , q) );
-        M_Lqm_du[q].resize( M_model->mMaxF( M_output_index , q) );
-    }
-
 
     element_ptrtype u( new element_type( M_model->functionSpace() ) );
     element_ptrtype uproj( new element_type( M_model->functionSpace() ) );
@@ -1345,7 +1393,6 @@ CRB<TruthModelType>::offline()
 
     bool reuse_prec = this->vm()["crb.reuse-prec"].template as<bool>() ;
 
-    int no_residual_index = 0;
     sampling_ptrtype Sampling;
     int sampling_size=no_residual_index+1;
 
@@ -1360,8 +1407,22 @@ CRB<TruthModelType>::offline()
         LOG(INFO) << "[CRB::offline] sampling parameter space with "<< sampling_size <<"elements done\n";
     }
 
+#if 0
+    if( ! rebuild_database && M_N > 0 &&  M_error_type == CRB_NO_RESIDUAL   )
+    {
+        mu = M_Xi->at( no_residual_index );
+        int size = mu.size();
+        if( proc_number == 0 )
+        {
+            std::cout << "  -- restart with mu = [ ";
+            for ( int i=0; i<size-1; i++ ) std::cout<<mu( i )<<" ";
+            std::cout<<mu( size-1 )<<" ]"<<std::endl;
+        }
+    }
+#endif
+
     LOG(INFO) << "[CRB::offline] strategy "<< M_error_type <<"\n";
-    std::cout << "[CRB::offline] strategy "<< M_error_type <<"\n";
+    if( proc_number == 0 ) std::cout << "[CRB::offline] strategy "<< M_error_type <<"\n";
 
     while ( maxerror > M_tolerance && M_N < M_iter_max && no_residual_index<sampling_size )
     {
@@ -1370,17 +1431,24 @@ CRB<TruthModelType>::offline()
 
         boost::timer timer, timer2;
         LOG(INFO) <<"========================================"<<"\n";
-        std::cout << "============================================================\n";
 
         if ( M_error_type == CRB_NO_RESIDUAL )
         {
-            std::cout << "N=" << M_N << "/"  << M_iter_max <<"\n";
+            if( proc_number == 0 )
+            {
+                std::cout << "============================================================"<<std::endl;
+                std::cout << "N=" << M_N << "/"  << M_iter_max <<" ( nb proc : "<<worldComm().globalSize()<<")"<<std::endl;
+            }
             LOG(INFO) << "N=" << M_N << "/"  << M_iter_max << "\n";
         }
 
         else
         {
-            std::cout << "N=" << M_N << "/"  << M_iter_max << " maxerror=" << maxerror << " / "  << M_tolerance << "\n";
+            if( proc_number == 0 )
+            {
+                std::cout << "============================================================"<<std::endl;
+                std::cout << "N=" << M_N << "/"  << M_iter_max << " maxerror=" << maxerror << " / "  << M_tolerance <<" ( nb proc : "<<worldComm().globalSize()<<")"<< std::endl;
+            }
             LOG(INFO) << "N=" << M_N << "/"  << M_iter_max << " maxerror=" << maxerror << " / "  << M_tolerance << "\n";
         }
 
@@ -1390,24 +1458,39 @@ CRB<TruthModelType>::offline()
 
         // for a given parameter \p mu assemble the left and right hand side
 
-        u->setName( ( boost::format( "fem-primal-%1%" ) % ( M_N-1 ) ).str() );
+        u->setName( ( boost::format( "fem-primal-N%1%-proc%2%" ) % (M_N)  % proc_number ).str() );
+        udu->setName( ( boost::format( "fem-dual-N%1%-proc%2%" ) % (M_N)  % proc_number ).str() );
 
         if ( M_model->isSteady() || !model_type::is_time_dependent )
         {
+
             u->zero();
             udu->zero();
             boost::tie( boost::tuples::ignore, A, F, MF ) = M_model->update( mu , 1e30 );
 
-            std::cout << "  -- updated model for parameter in " << timer2.elapsed() << "s\n";
+            LOG(INFO) << "  -- updated model for parameter in " << timer2.elapsed() << "s\n";
             timer2.restart();
-            LOG(INFO) << "[CRB::offline] transpose primal matrix" << "\n";
-            At = M_model->newMatrix();
-            A->transpose( At );
-            u->setName( ( boost::format( "fem-primal-%1%" ) % ( M_N-1 ) ).str() );
-            udu->setName( ( boost::format( "fem-dual-%1%" ) % ( M_N-1 ) ).str() );
+
 
             LOG(INFO) << "[CRB::offline] solving primal" << "\n";
             backend_primal_problem->solve( _matrix=A,  _solution=u, _rhs=F[0] );
+
+            //std::cout << "solving primal done" << std::endl;
+            if(proc_number==0) std::cout << "  -- primal problem solved in " << timer2.elapsed() << "s\n";
+            timer2.restart();
+
+            if( solve_dual_problem )
+            {
+                At = M_model->newMatrix();
+                LOG(INFO) << "[CRB::offline] transpose primal matrix" << "\n";
+                A->transpose( At );
+
+                *Rhs = *F[M_output_index];
+                Rhs->scale( -1 );
+                backend_dual_problem->solve( _matrix=At,  _solution=udu, _rhs=Rhs );
+                if( proc_number == 0 ) std::cout<<"dual solved "<<std::endl;
+            }
+
 #if 0
             std::ofstream file_solution;
             std::string mu_str;
@@ -1439,14 +1522,6 @@ CRB<TruthModelType>::offline()
             file_matrix.close();
 #endif
 
-
-            //std::cout << "solving primal done" << std::endl;
-            std::cout << "  -- primal problem solved in " << timer2.elapsed() << "s\n";
-            timer2.restart();
-            *Rhs = *F[M_output_index];
-            Rhs->scale( -1 );
-            backend_dual_problem->solve( _matrix=At,  _solution=udu, _rhs=Rhs );
-            std::cout<<"dual solved "<<std::endl;
         }
 
         else
@@ -1524,11 +1599,18 @@ CRB<TruthModelType>::offline()
                     M_bdf_primal_save->shiftRight( *uproj );
                 }
 
-                LOG(INFO) << "u^T Rhs "<< inner_product( *u, *Rhs ) <<  " at time : "<<M_bdf_primal->time()<<"\n";
+
+                element_ptrtype eltRhs( new element_type( M_model->functionSpace() ) );
+                *eltRhs = *Rhs;
+                LOG(INFO) << "u^T Rhs "<< inner_product( *u, *eltRhs ) <<  " at time : "<<M_bdf_primal->time()<<"\n";
+
 
                 for ( size_type l = 0; l < M_model->Nl(); ++l )
-                    LOG(INFO) << "u^T F[" << l << "]= " << inner_product( *u, *F[l] ) << " at time : "<<M_bdf_primal->time()<<"\n";
-
+                {
+                    element_ptrtype eltF( new element_type( M_model->functionSpace() ) );
+                    *eltF = *F[l];
+                    LOG(INFO) << "u^T F[" << l << "]= " << inner_product( *u, *eltF ) << " at time : "<<M_bdf_primal->time()<<"\n";
+                }
                 LOG(INFO) << "[CRB::offlineWithErrorEstimation] energy = " << A->energy( *u, *u ) << "\n";
             }
 
@@ -1648,7 +1730,11 @@ CRB<TruthModelType>::offline()
 
 
         for ( size_type l = 0; l < M_model->Nl(); ++l )
-            LOG(INFO) << "u^T F[" << l << "]= " << inner_product( *u, *F[l] ) << "\n";
+        {
+            element_ptrtype eltF( new element_type( M_model->functionSpace() ) );
+            *eltF = *F[l];
+            LOG(INFO) << "u^T F[" << l << "]= " << inner_product( *u, *eltF ) << "\n";
+        }
 
         LOG(INFO) << "[CRB::offline] energy = " << A->energy( *u, *u ) << "\n";
 
@@ -1805,8 +1891,6 @@ CRB<TruthModelType>::offline()
 	if( M_model->isSteady() )
 	    number_of_added_elements=1;
 
-        std::cout<<"number_of_added_elements = "<<number_of_added_elements<<std::endl;
-
         M_N+=number_of_added_elements;
 
         if ( orthonormalize_primal )
@@ -1824,6 +1908,7 @@ CRB<TruthModelType>::offline()
         }
 
         LOG(INFO) << "[CRB::offline] compute Aq_pr, Aq_du, Aq_pr_du" << "\n";
+
         for  (size_type q = 0; q < M_model->Qa(); ++q )
         {
             for( size_type m = 0; m < M_model->mMaxA(q); ++m )
@@ -1901,6 +1986,7 @@ CRB<TruthModelType>::offline()
             }
         }
 
+
         LOG(INFO) << "[CRB::offline] compute Fq_pr, Fq_du" << "\n";
 
         for ( size_type q = 0; q < M_model->Ql( 0 ); ++q )
@@ -1921,6 +2007,7 @@ CRB<TruthModelType>::offline()
             }//loop over m
         }//loop over q
 
+
         LOG(INFO) << "[CRB::offline] compute Lq_pr, Lq_du" << "\n";
 
         for ( size_type q = 0; q < M_model->Ql( M_output_index ); ++q )
@@ -1939,13 +2026,12 @@ CRB<TruthModelType>::offline()
             }//loop over m
         }//loop over q
 
-        LOG(INFO) << "compute coefficients needed for the initialization of unknown in the online step\n";
 
+        LOG(INFO) << "compute coefficients needed for the initialization of unknown in the online step\n";
 
         element_ptrtype primal_initial_field ( new element_type ( M_model->functionSpace() ) );
         element_ptrtype projection    ( new element_type ( M_model->functionSpace() ) );
         M_model->initializationField( primal_initial_field, mu ); //fill initial_field
-
         if ( model_type::is_time_dependent || !M_model->isSteady() )
         {
             if ( orthonormalize_primal )
@@ -2044,13 +2130,14 @@ CRB<TruthModelType>::offline()
         {
             maxerror=M_iter_max-M_N;
             no_residual_index++;
+            M_no_residual_index = no_residual_index;
         }
-
         else
         {
             boost::tie( maxerror, mu, index , delta_pr , delta_du ) = maxErrorBounds( M_N );
 
             M_index.push_back( index );
+            M_current_mu = mu;
 
             int count = std::count( M_index.begin(),M_index.end(),index );
             M_mode_number = count;
@@ -2068,14 +2155,16 @@ CRB<TruthModelType>::offline()
         if ( this->vm()["crb.check.rb"].template as<int>() == 1 )std::cout << "  -- check reduced basis done in " << timer2.elapsed() << "s\n";
 
         timer2.restart();
-        std::cout << "time: " << timer.elapsed() << "\n";
         LOG(INFO) << "time: " << timer.elapsed() << "\n";
-        std::cout << "============================================================\n";
+        if( proc_number == 0 ) std::cout << "============================================================\n";
         LOG(INFO) <<"========================================"<<"\n";
 
+        //save DB after adding an element
+        this->saveDB();
     }
 
-    std::cout<<"number of elements in the reduced basis : "<<M_N<<std::endl;
+    if( proc_number == 0 )
+        std::cout<<"number of elements in the reduced basis : "<<M_N<<" ( nb proc : "<<worldComm().globalSize()<<")"<<std::endl;
     LOG(INFO) << " index choosen : ";
     BOOST_FOREACH( auto id, M_index )
     LOG(INFO)<<id<<" ";
@@ -2099,8 +2188,8 @@ CRB<TruthModelType>::offline()
     }
 
 
-    this->saveDB();
-    std::cout << "Offline CRB is done\n";
+    //    this->saveDB();
+    if( proc_number == 0 ) std::cout << "Offline CRB is done\n";
 
     return M_rbconv;
 
@@ -2222,7 +2311,6 @@ template<typename TruthModelType>
 void
 CRB<TruthModelType>::buildVarianceMatrixPhi( int const N , mpl::bool_<false> )
 {
-
     std::vector<std::string> s;
     int nb_spaces = functionspace_type::nSpaces;
 
@@ -2230,7 +2318,6 @@ CRB<TruthModelType>::buildVarianceMatrixPhi( int const N , mpl::bool_<false> )
         M_variance_matrix_phi.resize( nb_spaces );
 
     M_variance_matrix_phi[0].conservativeResize( M_N , M_N );
-
 
     //introduction of the new variable phi
     int size_WN = M_WN.size();
@@ -2248,13 +2335,11 @@ CRB<TruthModelType>::buildVarianceMatrixPhi( int const N , mpl::bool_<false> )
         phi.push_back( M_WN[i] - element_mean );
     }
 
-
     for(int space=0; space<nb_spaces; space++)
         M_variance_matrix_phi[space].conservativeResize( N , N );
 
     for(int i = 0; i < M_N; ++i)
     {
-
         for(int j = i+1; j < M_N; ++j)
         {
             M_variance_matrix_phi[0]( i , j ) = integrate( _range=elements(mesh) , _expr=vf::idv( phi[i] ) * vf::idv( phi[j] ) ).evaluate()(0,0);
@@ -2262,7 +2347,6 @@ CRB<TruthModelType>::buildVarianceMatrixPhi( int const N , mpl::bool_<false> )
         } //j
 
         M_variance_matrix_phi[0]( i , i ) = integrate( _range=elements(mesh) , _expr=vf::idv( phi[i] ) * vf::idv( phi[i] ) ).evaluate()(0,0);
-
     }// i
 
 }
@@ -2490,8 +2574,8 @@ CRB<TruthModelType>::checkResidual( parameter_type const& mu, std::vector< std::
     LOG(INFO) << "[CRB::checkResidual] transpose primal matrix" << "\n";
     At = M_model->newMatrix();
     A->transpose( At );
-    u->setName( ( boost::format( "fem-primal-%1%" ) % ( M_N-1 ) ).str() );
-    udu->setName( ( boost::format( "fem-dual-%1%" ) % ( M_N-1 ) ).str() );
+    u->setName( ( boost::format( "fem-primal-%1%" ) % ( M_N ) ).str() );
+    udu->setName( ( boost::format( "fem-dual-%1%" ) % ( M_N ) ).str() );
 
     LOG(INFO) << "[CRB::checkResidual] solving primal" << "\n";
     backendA->solve( _matrix=A,  _solution=u, _rhs=F[0] );
@@ -2851,7 +2935,7 @@ template<typename TruthModelType>
 boost::tuple<double,double>
 CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vectorN_type > & uN, std::vector< vectorN_type > & uNdu,  std::vector<vectorN_type> & uNold, std::vector<vectorN_type> & uNduold,int K  ) const
 {
-    LOG(INFO) << "running lb()\n";
+
     google::FlushLogFiles(google::GLOG_INFO);
 
     bool save_output_behavior = this->vm()["crb.save-output-behavior"].template as<bool>();
@@ -2965,7 +3049,9 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
         for ( size_type q = 0; q < M_model->Qm(); ++q )
         {
             for(int m=0; m<M_model->mMaxM(q); m++)
+            {
                 A += betaMqm[q][m]*M_Mqm_pr[q][m].block( 0,0,N,N );
+            }
         }
         LOG(INFO) << "Mass=" << A << "\n";
 
@@ -2980,7 +3066,6 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
 
         google::FlushLogFiles(google::GLOG_INFO);
         uN[time_index] = A.lu().solve( F );
-
 
         //vectorN_type error;
         //const element_type expansion_uN = this->expansion( uN[time_index] , N );
@@ -3029,6 +3114,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
                     F += betaMqm[q][m]*M_Mqm_pr[q][m].block( 0,0,N,N )*uNold[time_index]/time_step;
                 }
             }
+
             LOG(INFO) << "solve reduced model\n";
             google::FlushLogFiles(google::GLOG_INFO);
 
@@ -3099,9 +3185,10 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
     double s_wo_correction = L.dot( uN [time_index] );
     double s = s_wo_correction ;
 
-
     //now the dual problem
-    if (  this->vm()["crb.solve-dual-problem"].template as<bool>() || M_error_type == CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM || !M_compute_variance )
+
+    //if (  this->vm()["crb.solve-dual-problem"].template as<bool>() || M_error_type == CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM || !M_compute_variance )
+    if (  this->vm()["crb.solve-dual-problem"].template as<bool>() || M_error_type == CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM )
     {
         double time;
         if ( M_model->isSteady() )
@@ -3509,12 +3596,12 @@ template<typename TruthModelType>
 void
 CRB<TruthModelType>::orthonormalize( size_type N, wn_type& wn, int Nm )
 {
-    std::cout << "  -- orthonormalization (Gram-Schmidt)\n";
+    int proc_number = this->worldComm().globalRank();
+    if( proc_number == 0 ) std::cout << "  -- orthonormalization (Gram-Schmidt)\n";
     Debug ( 12000 ) << "[CRB::orthonormalize] orthonormalize basis for N=" << N << "\n";
     Debug ( 12000 ) << "[CRB::orthonormalize] orthonormalize basis for WN="
                     << wn.size() << "\n";
     Debug ( 12000 ) << "[CRB::orthonormalize] starting ...\n";
-
 
     for ( size_type i = 0; i < N; ++i )
     {
@@ -4994,11 +5081,13 @@ template<typename TruthModelType>
 boost::tuple<double,double,double,double>
 CRB<TruthModelType>::run( parameter_type const& mu, double eps )
 {
+
     M_compute_variance = this->vm()["crb.compute-variance"].template as<bool>();
-    int Nwn = M_N;
+
+    //int Nwn = M_N;
+    int Nwn = vm()["crb.dimension-max"].template as<int>();
 
 #if 0
-
     if (  M_error_type!=CRB_EMPIRICAL )
     {
         auto lo = M_rbconv.right.range( boost::bimaps::unbounded, boost::bimaps::_key <= eps );
@@ -5012,7 +5101,6 @@ CRB<TruthModelType>::run( parameter_type const& mu, double eps )
         Nwn = it->first;
         std::cout << "Nwn = "<< Nwn << " error = "<< it->second.template get<0>() << " eps=" << eps << "\n";
     }
-
 #endif
 
     std::vector<vectorN_type> uN;
@@ -5285,8 +5373,20 @@ template<class Archive>
 void
 CRB<TruthModelType>::save( Archive & ar, const unsigned int version ) const
 {
+    int proc_number = this->worldComm().globalRank();
 
     std::cout<<"[CRB::save] version : "<<version<<std::endl;
+
+    auto mesh = mesh_type::New();
+    auto is_mesh_loaded = mesh->load( _name="mymesh",_path=".",_type="binary" );
+    if ( ! is_mesh_loaded )
+    {
+        auto first_element = M_WN[0];
+        mesh = first_element.functionSpace()->mesh() ;
+        mesh->save( _name="mymesh",_path=".",_type="binary" );
+    }
+
+    auto Xh = space_type::New( mesh );
 
     ar & boost::serialization::base_object<super>( *this );
     ar & BOOST_SERIALIZATION_NVP( M_output_index );
@@ -5311,11 +5411,12 @@ CRB<TruthModelType>::save( Archive & ar, const unsigned int version ) const
     ar & BOOST_SERIALIZATION_NVP( M_Gamma_du );
 
 
+    ar & BOOST_SERIALIZATION_NVP( M_Mqm_pr );
+    ar & BOOST_SERIALIZATION_NVP( M_Mqm_du );
+    ar & BOOST_SERIALIZATION_NVP( M_Mqm_pr_du );
+
     if ( model_type::is_time_dependent )
     {
-        ar & BOOST_SERIALIZATION_NVP( M_Mqm_pr );
-        ar & BOOST_SERIALIZATION_NVP( M_Mqm_du );
-        ar & BOOST_SERIALIZATION_NVP( M_Mqm_pr_du );
 
         if ( version>=1 )
         {
@@ -5332,8 +5433,21 @@ CRB<TruthModelType>::save( Archive & ar, const unsigned int version ) const
     if( version >= 2 )
         ar & BOOST_SERIALIZATION_NVP( M_variance_matrix_phi );
 
-    if( version >= 3 )
-        ar & BOOST_SERIALIZATION_NVP( M_WN );
+    //if( version >= 3 )
+    //    ar & BOOST_SERIALIZATION_NVP( M_WN );
+
+    if( version >= 4 )
+    {
+        ar & BOOST_SERIALIZATION_NVP( M_Fqm_pr );
+        ar & BOOST_SERIALIZATION_NVP( M_current_mu );
+        ar & BOOST_SERIALIZATION_NVP( M_no_residual_index );
+
+        for(int i=0; i<M_N; i++)
+            ar & BOOST_SERIALIZATION_NVP( M_WN[i] );
+        for(int i=0; i<M_N; i++)
+            ar & BOOST_SERIALIZATION_NVP( M_WNdu[i] );
+
+    }
 }
 
 template<typename TruthModelType>
@@ -5341,8 +5455,15 @@ template<class Archive>
 void
 CRB<TruthModelType>::load( Archive & ar, const unsigned int version )
 {
+    int proc_number = this->worldComm().globalRank();
 
     std::cout<<"[CRB::load] version"<< version <<std::endl;
+
+    auto mesh = mesh_type::New();
+    auto is_mesh_loaded = mesh->load( _name="mymesh",_path=".",_type="binary" );
+
+    auto Xh = space_type::New( mesh );
+
     if( version <= 2 )
         M_rbconv_contains_primal_and_dual_contributions = false;
     else
@@ -5387,11 +5508,13 @@ CRB<TruthModelType>::load( Archive & ar, const unsigned int version )
     ar & BOOST_SERIALIZATION_NVP( M_Lambda_du );
     ar & BOOST_SERIALIZATION_NVP( M_Gamma_pr );
     ar & BOOST_SERIALIZATION_NVP( M_Gamma_du );
+
+    ar & BOOST_SERIALIZATION_NVP( M_Mqm_pr );
+    ar & BOOST_SERIALIZATION_NVP( M_Mqm_du );
+    ar & BOOST_SERIALIZATION_NVP( M_Mqm_pr_du );
+
     if ( model_type::is_time_dependent )
     {
-        ar & BOOST_SERIALIZATION_NVP( M_Mqm_pr );
-        ar & BOOST_SERIALIZATION_NVP( M_Mqm_du );
-        ar & BOOST_SERIALIZATION_NVP( M_Mqm_pr_du );
 
         if ( version>=1 )
         {
@@ -5405,8 +5528,10 @@ CRB<TruthModelType>::load( Archive & ar, const unsigned int version )
             ar & BOOST_SERIALIZATION_NVP( M_Cmm_du );
         }
     }
+
     if( version >= 2 )
         ar & BOOST_SERIALIZATION_NVP( M_variance_matrix_phi );
+#if 0
     if( version >= 3 )
     {
         LOG(INFO) << "loading basis functions: " << M_N << "\n";
@@ -5417,13 +5542,43 @@ CRB<TruthModelType>::load( Archive & ar, const unsigned int version )
         google::FlushLogFiles(google::GLOG_INFO);
 //        for( int i = 0; i < M_N; ++i ) M_WN.push_back( u );
         LOG(INFO) << "basis vector init done: " << M_WN.size() << "\n";
+        std::cout << "basis vector init done: " << M_WN.size() << std::endl;
         google::FlushLogFiles(google::GLOG_INFO);
         ar & BOOST_SERIALIZATION_NVP( M_WN );
         LOG(INFO) << "basis vector load done: " << M_WN.size() << "\n";
+        std::cout << "basis vector load done: " << M_WN.size() << std::endl;
         google::FlushLogFiles(google::GLOG_INFO);
         for( int i = 0; i < M_N; ++i ) M_WN[i].setFunctionSpace( M_model->functionSpace() );
         LOG(INFO) << "basis vector set function space done:\n";
         google::FlushLogFiles(google::GLOG_INFO);
+    }
+#endif
+    if( version >= 4 )
+    {
+
+        ar & BOOST_SERIALIZATION_NVP( M_Fqm_pr );
+
+        ar & BOOST_SERIALIZATION_NVP( M_current_mu );
+        ar & BOOST_SERIALIZATION_NVP( M_no_residual_index );
+
+        element_type temp = Xh->element();
+
+        M_WN.resize( M_N );
+        M_WNdu.resize( M_N );
+
+        for( int i = 0 ; i < M_N ; i++ )
+        {
+            temp.setName( (boost::format( "fem-primal-%1%" ) % ( i ) ).str() );
+            ar & BOOST_SERIALIZATION_NVP( temp );
+            M_WN[i] = temp;
+        }
+        for( int i = 0 ; i < M_N ; i++ )
+        {
+            temp.setName( (boost::format( "fem-dual-%1%" ) % ( i ) ).str() );
+            ar & BOOST_SERIALIZATION_NVP( temp );
+            M_WNdu[i] = temp;
+        }
+
     }
 
 #if 0
@@ -5521,10 +5676,10 @@ namespace serialization
 template< typename T>
 struct version< Feel::CRB<T> >
 {
-    // at the moment the version of the CRB DB is 3. if any changes is done
+    // at the moment the version of the CRB DB is 4. if any changes is done
     // to the format it is mandatory to increase the version number below
     // and use the new version number of identify the new entries in the DB
-    typedef mpl::int_<3> type;
+    typedef mpl::int_<4> type;
     typedef mpl::integral_c_tag tag;
     static const unsigned int value = version::type::value;
 };
