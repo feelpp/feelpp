@@ -225,6 +225,7 @@ Mesh<Shape, T, Tag>::updateForUse()
             this->elements().modify( iv,
                                      lambda::bind( &element_type::updateWithPc,
                                                    lambda::_1, pc, boost::ref( pcf ) ) );
+
             M_meas += iv->measure();
             auto _faces = iv->faces();
 
@@ -732,6 +733,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
                 // set face id
                 face.setId( _faceit->second );
                 face.disconnect();
+                face.addElement( __element_id );
 
                 // set the process id from element
                 face.setProcessId( __element.processId() );
@@ -786,6 +788,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
 
 
                 face_type face = *__fit;
+                face.addElement( __element_id );
 
                 // the three conditions below typically arise after reading a serialized mesh
                 if ( __fit->isConnectedTo0() && __fit->connection0().template get<0>() == 0 && ( __element.id() == __fit->ad_first() ) )
