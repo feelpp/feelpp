@@ -255,14 +255,14 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
     auto F = backend( _vm=this->vm() )->newVector( Xh );
     auto rhs = form1( _test=Xh, _vector=F, _init=true );
     rhs = integrate( _range=elements( mesh ), _expr=f*id( v ) )+
-        integrate( _range=markedfaces( mesh, "Neumann" ),
+        integrate( _range=markedfaces( mesh, "TOP" ),
                    _expr=nu*gradv( gproj )*vf::N()*id( v ) );
 
     //# endmarker2 #
     if ( weak_dirichlet )
     {
         //# marker41 #
-        rhs += integrate( _range=markedfaces( mesh,"Dirichlet" ),
+        rhs += integrate( _range=markedfaces( mesh,"BOTTOM" ),
                           _expr=g*( -grad( v )*vf::N()+penaldir*id( v )/hFace() ) );
         //# endmarker41 #
     }
@@ -296,7 +296,7 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
          */
         /** \code */
         //# marker10 #
-        a += integrate( _range=markedfaces( mesh,"Dirichlet" ),
+        a += integrate( _range=markedfaces( mesh,"BOTTOM" ),
                         _expr= ( -( gradt( u )*vf::N() )*id( v )
                                  -( grad( v )*vf::N() )*idt( u )
                                  +penaldir*id( v )*idt( u )/hFace() ) );
@@ -312,7 +312,7 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
          */
         /** \code */
         //# marker5 #
-        a += on( _range=markedfaces( mesh, "Dirichlet" ),
+        a += on( _range=markedfaces( mesh, "BOTTOM" ),
                  _element=u, _rhs=F, _expr=g );
         //# endmarker5 #
         /** \endcode */

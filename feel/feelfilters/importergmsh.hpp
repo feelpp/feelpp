@@ -795,7 +795,9 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
         std::cout << "marker cp" << mesh->markerName("CrossPoints")  << "\n";
         std::cout << "marker wb" << mesh->markerName("WireBasket")  << "\n";
         std::cout << "n cp: " << std::distance( mesh->beginPointWithMarker( mesh->markerName("CrossPoints") ), mesh->endPointWithMarker( mesh->markerName("CrossPoints") ) ) << "\n";
+#if 0
         std::cout << "n wb: " << std::distance( mesh->beginEdgeWithMarker( mesh->markerName("WireBasket") ), mesh->endEdgeWithMarker( mesh->markerName("WireBasket") ) ) << "\n";
+#endif
     }
     Debug( 8011 ) << "done with reading and creating mesh from gmsh file\n";
 }

@@ -369,7 +369,6 @@ private:
      */
     uint16_type M_n_parts;
 
-    //mpi::communicator M_comm;
     WorldComm M_worldComm;
 };
 }
