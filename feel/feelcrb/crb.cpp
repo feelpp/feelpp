@@ -61,6 +61,7 @@ crbOptions( std::string const& prefix )
     ( "crb.print-error-during-rb-construction" , Feel::po::value<bool>()->default_value( 0 ), " print the max error (absolute) obtained during the offline step" )
     ( "crb.compute-variance" , Feel::po::value<bool>()->default_value( 0 ), " if true the output is the variance and not l(v)" )
     ( "crb.check.residual-transient-problems" , Feel::po::value<bool>()->default_value( 0 ), "check residuals for transient problems" )
+    ( "crb.save-information-for-variance",Feel::po::value<bool>()->default_value( 0 ), "if true will build variance matrix but it takes some times" )
     ;
 
 
