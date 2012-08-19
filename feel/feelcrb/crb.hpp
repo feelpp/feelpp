@@ -1000,6 +1000,8 @@ private:
     parameter_type M_current_mu;
     int M_no_residual_index;
 
+    bool M_database_contains_variance_info;
+
 };
 
 po::options_description crbOptions( std::string const& prefix = "" );
@@ -1009,6 +1011,7 @@ template<typename TruthModelType>
 typename CRB<TruthModelType>::convergence_type
 CRB<TruthModelType>::offline()
 {
+    M_database_contains_variance_info = this->vm()["crb.save-information-for-variance"].template as<bool>();
 
     int proc_number = this->worldComm().globalRank();
     M_rbconv_contains_primal_and_dual_contributions = true;
@@ -1747,7 +1750,6 @@ CRB<TruthModelType>::offline()
         {
             M_WN.push_back( *u );
             M_WNdu.push_back( *udu );
-
         }//end of steady case
 
         else
@@ -2114,7 +2116,8 @@ CRB<TruthModelType>::offline()
         timer2.restart();
 
         M_compute_variance = this->vm()["crb.compute-variance"].template as<bool>();
-        buildVarianceMatrixPhi( M_N );
+        if ( M_database_contains_variance_info )
+            buildVarianceMatrixPhi( M_N );
 
         if ( M_error_type==CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM )
         {
@@ -2131,6 +2134,7 @@ CRB<TruthModelType>::offline()
             maxerror=M_iter_max-M_N;
             no_residual_index++;
             M_no_residual_index = no_residual_index;
+
         }
         else
         {
@@ -3032,6 +3036,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
     for ( double time=time_step; time<=time_for_output; time+=time_step )
     {
 
+
         if( M_model->isSteady() )
             boost::tie( betaMqm, betaAqm, betaFqm, betaMFqm ) = M_model->computeBetaQm( mu ,time );
         else
@@ -3054,7 +3059,6 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
             }
         }
         LOG(INFO) << "Mass=" << A << "\n";
-
         google::FlushLogFiles(google::GLOG_INFO);
         F.setZero( N );
         for ( size_type q = 0; q < M_model->Qmf(); ++q )
@@ -3087,6 +3091,8 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
 
             boost::tie( betaMqm, betaAqm, betaFqm, betaMFqm ) = M_model->computeBetaQm( this->expansion( uN[time_index] , N ), mu ,time );
             //boost::tie( betaMqm, betaAqm, betaFqm, betaMFqm ) = M_model->computeBetaQm( mu ,time );
+
+
 
             LOG(INFO) << "compute reduce matrices\n";
             google::FlushLogFiles(google::GLOG_INFO);
@@ -3301,6 +3307,10 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
 
     if( M_compute_variance )
     {
+
+        if( ! M_database_contains_variance_info )
+            throw std::logic_error( "[CRB::offline] ERROR there are no information available in the DataBase for variance computing, please set option crb.save-information-for-variance=true and rebuild the database" );
+
         int nb_spaces = functionspace_type::nSpaces;
 
         int space=0;
@@ -5430,7 +5440,9 @@ CRB<TruthModelType>::save( Archive & ar, const unsigned int version ) const
             ar & BOOST_SERIALIZATION_NVP( M_Cmm_du );
         }
     }
-    if( version >= 2 )
+    // if( version >= 2 )
+    ar & BOOST_SERIALIZATION_NVP ( M_database_contains_variance_info );
+    if( M_database_contains_variance_info )
         ar & BOOST_SERIALIZATION_NVP( M_variance_matrix_phi );
 
     //if( version >= 3 )
@@ -5446,7 +5458,6 @@ CRB<TruthModelType>::save( Archive & ar, const unsigned int version ) const
             ar & BOOST_SERIALIZATION_NVP( M_WN[i] );
         for(int i=0; i<M_N; i++)
             ar & BOOST_SERIALIZATION_NVP( M_WNdu[i] );
-
     }
 }
 
@@ -5460,6 +5471,7 @@ CRB<TruthModelType>::load( Archive & ar, const unsigned int version )
     std::cout<<"[CRB::load] version"<< version <<std::endl;
 
     auto mesh = mesh_type::New();
+
     auto is_mesh_loaded = mesh->load( _name="mymesh",_path=".",_type="binary" );
 
     auto Xh = space_type::New( mesh );
@@ -5469,7 +5481,6 @@ CRB<TruthModelType>::load( Archive & ar, const unsigned int version )
     else
         M_rbconv_contains_primal_and_dual_contributions = true;
 
-
     typedef boost::bimap< int, double > old_convergence_type;
     ar & boost::serialization::base_object<super>( *this );
     ar & BOOST_SERIALIZATION_NVP( M_output_index );
@@ -5477,17 +5488,17 @@ CRB<TruthModelType>::load( Archive & ar, const unsigned int version )
 
    if( version <= 2 )
     {
-	old_convergence_type old_M_rbconv;
-	ar & BOOST_SERIALIZATION_NVP( old_M_rbconv );
-	double delta_pr = 0;
-	double delta_du = 0;
-	typedef old_convergence_type::left_map::const_iterator iterator;
-	for(iterator it = old_M_rbconv.left.begin(); it != old_M_rbconv.left.end(); ++it)
-	{
-	    int N = it->first;
-	    double maxerror = it->second;
-	    M_rbconv.insert( convergence( N, boost::make_tuple(maxerror,delta_pr,delta_du) ) );
-	}
+        old_convergence_type old_M_rbconv;
+        ar & BOOST_SERIALIZATION_NVP( old_M_rbconv );
+        double delta_pr = 0;
+        double delta_du = 0;
+        typedef old_convergence_type::left_map::const_iterator iterator;
+        for(iterator it = old_M_rbconv.left.begin(); it != old_M_rbconv.left.end(); ++it)
+        {
+            int N = it->first;
+            double maxerror = it->second;
+            M_rbconv.insert( convergence( N, boost::make_tuple(maxerror,delta_pr,delta_du) ) );
+        }
     }
    else
 	ar & BOOST_SERIALIZATION_NVP( M_rbconv );
@@ -5529,8 +5540,11 @@ CRB<TruthModelType>::load( Archive & ar, const unsigned int version )
         }
     }
 
-    if( version >= 2 )
+    //if( version >= 2 )
+    ar & BOOST_SERIALIZATION_NVP ( M_database_contains_variance_info );
+    if( M_database_contains_variance_info )
         ar & BOOST_SERIALIZATION_NVP( M_variance_matrix_phi );
+
 #if 0
     if( version >= 3 )
     {
@@ -5578,7 +5592,6 @@ CRB<TruthModelType>::load( Archive & ar, const unsigned int version )
             ar & BOOST_SERIALIZATION_NVP( temp );
             M_WNdu[i] = temp;
         }
-
     }
 
 #if 0
