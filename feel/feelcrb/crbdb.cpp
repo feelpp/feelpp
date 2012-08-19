@@ -94,14 +94,18 @@ CRBDB::dbSystemPath() const
 fs::path
 CRBDB::dbLocalPath() const
 {
+
+    int proc_number =  Environment::worldComm().globalRank();
+    int nb_proc = Environment::worldComm().globalSize();
     std::string suf;
     if( M_vm.count( "database_name" ) )
         {
-            suf = M_vm["database_name"].as<std::string>();
+            std::string database_name = M_vm["database_name"].as<std::string>();
+            suf = database_name+ ( boost::format("_proc%1%on%2%") %proc_number %nb_proc ).str() ;
         }
     else if ( M_vm.count( "hsize" ) )
         {
-            suf = ( boost::format( "h_%1$.2e/" ) % M_vm["hsize"].as<double>() ).str();
+            suf = ( boost::format( "h_%1$.2e_proc%2%on%3%/" ) % M_vm["hsize"].as<double>() %proc_number %nb_proc ).str();
         }
     // generate the local repository db path
     std::string localpath = ( boost::format( "%1%/db/crb/%2%/%3%" )
