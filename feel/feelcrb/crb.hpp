@@ -3066,7 +3066,9 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
         for ( size_type q = 0; q < M_model->Qmf(); ++q )
         {
             for(int m=0; m<M_model->mMaxMF(q); m++)
-                F += betaMFqm[q][m]*M_MFqm_pr[q][m].head( N );
+                {
+                    F += betaMFqm[q][m]*M_MFqm_pr[q][m].head( N );
+                }
         }
         LOG(INFO) << "F=" << F << "\n";
 
@@ -5453,6 +5455,8 @@ CRB<TruthModelType>::save( Archive & ar, const unsigned int version ) const
     if( version >= 4 )
     {
         ar & BOOST_SERIALIZATION_NVP( M_Fqm_pr );
+        ar & BOOST_SERIALIZATION_NVP( M_MFqm_pr );
+
         ar & BOOST_SERIALIZATION_NVP( M_current_mu );
         ar & BOOST_SERIALIZATION_NVP( M_no_residual_index );
 
@@ -5573,6 +5577,7 @@ CRB<TruthModelType>::load( Archive & ar, const unsigned int version )
     {
 
         ar & BOOST_SERIALIZATION_NVP( M_Fqm_pr );
+        ar & BOOST_SERIALIZATION_NVP( M_MFqm_pr );
 
         ar & BOOST_SERIALIZATION_NVP( M_current_mu );
         ar & BOOST_SERIALIZATION_NVP( M_no_residual_index );
