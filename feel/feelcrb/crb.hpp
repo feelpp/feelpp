@@ -1983,7 +1983,9 @@ CRB<TruthModelType>::offline()
                 M_MFqm_pr[q][m].conservativeResize( M_N );
                 for ( size_type j = 0; j < M_N; ++j )
                 {
-                    M_MFqm_pr[q][m]( j ) = inner_product( *MFqm[q][m] , M_WN[j] );
+                    element_ptrtype eltMF( new element_type( M_model->functionSpace() ) );
+                    *eltMF = *MFqm[q][m];
+                    M_MFqm_pr[q][m]( j ) = inner_product( *eltMF , M_WN[j] );
                 }
             }
         }
