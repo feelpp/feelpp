@@ -645,10 +645,7 @@ BOOST_PARAMETER_FUNCTION(
     double maxe = e.template get<0>().array().abs().maxCoeff(&index);
 
     Eigen::Matrix<double, detail::evaluate<Args>::nDim,1> n = e.template get<1>().col(index);
-
-    LOG(INFO) << "proc "<<proc_number<<" index at which function (size: " << e.template get<0>().array().size() << ") is maximal: "<< index << " coord = ";
-    for(int i=0;i<detail::evaluate<Args>::nDim;i++) LOG(INFO) << n(i) <<" - ";
-    LOG(INFO)<< "\n";
+    LOG(INFO) << "proc "<<proc_number<<" index at which function (size: " << e.template get<0>().array().size() << ") is maximal: "<< index << " coord = \n"<<n<<"\n";
 
     int world_size = Environment::worldComm().size();
     std::vector<double> maxe_world( world_size );
@@ -663,9 +660,9 @@ BOOST_PARAMETER_FUNCTION(
 
     auto it_max = std::max_element( maxe_world.begin() , maxe_world.end() );
     int position = it_max - maxe_world.begin();
-    LOG(INFO)<<"proc "<<proc_number<<" : global max = "<<*it_max<<" at position "<<position<<" with coord : ";
-    for(int i=0;i<detail::evaluate<Args>::nDim;i++) LOG(INFO) << n_world[i](i) <<" - ";
-    LOG(INFO)<<"\n";
+    LOG(INFO)<<"proc "<<proc_number<<" : global max = "<<*it_max<<" at position "<<position<<" with coord : \n "<<n<<"\n";
+    //for(int i=0;i<detail::evaluate<Args>::nDim;i++) LOG(INFO) << n_world[i](i) <<" - ";
+    //LOG(INFO)<<"\n";
 
     int index2=0;
     double maxe2 = 0;
