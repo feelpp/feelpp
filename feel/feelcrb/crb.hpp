@@ -3029,8 +3029,9 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
     double output;
     int time_index=0;
 
-    // init by 0, the model could provide better init
-    uN[0].setOnes(M_N);
+    // init by 1, the model could provide better init
+    //uN[0].setOnes(M_N);
+    uN[0].setOnes(N);
 
     //in transient case, the model has a function initializationField
     //uNold[0].setOnes(M_N);
@@ -3093,9 +3094,13 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
             LOG(INFO) << "compute eim expansions\n";
             google::FlushLogFiles(google::GLOG_INFO);
 
-            boost::tie( betaMqm, betaAqm, betaFqm, betaMFqm ) = M_model->computeBetaQm( this->expansion( uN[time_index] , N ), mu ,time );
+            //boost::tie( betaMqm, betaAqm, betaFqm, betaMFqm ) = M_model->computeBetaQm( this->expansion( uN[time_index] , N ), mu ,time );
             //boost::tie( betaMqm, betaAqm, betaFqm, betaMFqm ) = M_model->computeBetaQm( mu ,time );
 
+            if( M_model->isSteady() )
+                boost::tie( betaMqm, betaAqm, betaFqm, betaMFqm ) = M_model->computeBetaQm( mu ,time );
+            else
+                boost::tie( betaMqm, betaAqm, betaFqm, betaMFqm ) = M_model->computeBetaQm( this->expansion( uN[time_index] , N ), mu ,time );
 
 
             LOG(INFO) << "compute reduce matrices\n";
