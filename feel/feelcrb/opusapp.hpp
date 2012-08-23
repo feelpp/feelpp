@@ -276,7 +276,7 @@ public:
                 {
                     std::cout << "mu = [ ";
                     for ( int i=0; i<size-1; i++ ) std::cout<< mu[i] <<" , ";
-                    std::cout<< mu[size-1]<<" ] ";
+                    std::cout<< mu[size-1]<<" ]\n ";
                 }
 
                 std::ostringstream mu_str;
@@ -288,7 +288,17 @@ public:
                 case  CRBModelMode::PFEM:
                 {
                     boost::timer ti;
-                    model->solve( mu );
+
+                    auto u_fem = model->solve( mu );
+                    std::ostringstream u_fem_str;
+                    u_fem_str << "u_fem(" << mu_str.str() << ")";
+                    u_fem.setName( u_fem_str.str()  );
+
+                    LOG(INFO) << "compute output\n";
+                    google::FlushLogFiles(google::GLOG_INFO);
+
+                    exporter->step(0)->add( u_fem.name(), u_fem );
+                    //model->solve( mu );
                     std::vector<double> o = boost::assign::list_of( model->output( output_index,mu ) )( ti.elapsed() );
                     if(proc_number == 0 ) std::cout << "output=" << o[0] << "\n";
                     printEntry( ostr, mu, o );
