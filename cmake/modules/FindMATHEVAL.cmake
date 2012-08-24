@@ -42,7 +42,13 @@ if (NOT MATHEVAL_INCLUDE_DIR )
   message(STATUS "Building libmatheval in ${CMAKE_BINARY_DIR}/contrib/libmatheval-compile...")
   execute_process(COMMAND mkdir -p ${CMAKE_BINARY_DIR}/contrib/libmatheval-compile)
   execute_process(
-    COMMAND ${FEELPP_HOME_DIR}/contrib/libmatheval/configure --prefix=${CMAKE_BINARY_DIR}/contrib/libmatheval
+    COMMAND autoreconf -f -i
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/libmatheval-compile
+    OUTPUT_QUIET
+    OUTPUT_FILE "libmatheval-autoreconf.log"
+  )
+  execute_process(
+    COMMAND ${FEELPP_HOME_DIR}/contrib/libmatheval/configure --prefix=${CMAKE_BINARY_DIR}/contrib/libmatheval --enable-tests=no
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/libmatheval-compile
     OUTPUT_QUIET
     OUTPUT_FILE "libmatheval.log"
