@@ -41,6 +41,7 @@ patchfiles      patch-tools_build_v2_engine_src_build.sh.diff \
 post-patch {
     reinplace "s|%%CONFIGURE.CC%%|${configure.cc}|g" ${worksrcpath}/tools/build/v2/engine/build.sh
     reinplace "s|%%CONFIGURE.CC%%|${configure.cc}|g" ${worksrcpath}/tools/build/v2/engine/build.jam
+    reinplace "s|-no-cpp-precomp||g" ${worksrcpath}/tools/build/v2/tools/darwin.jam
 }
 
 proc write_jam s {
@@ -52,7 +53,7 @@ proc write_jam s {
 
 # clang++ produces broken boost libraries (https://trac.macports.org/ticket/31525)
 #if {${configure.compiler} == "clang"} {
-#    configure.compiler llvm-gcc-4.2
+#    configure.compiler macports-gcc-4.6
 #}
 
 configure.cmd       ./bootstrap.sh
@@ -191,6 +192,18 @@ variant no_static description {Disable building static libraries} {
 variant no_single description {Disable building single-threaded libraries} {
     build.args-delete   threading=single,multi
     build.args-append   threading=multi
+}
+
+variant gcc46 description {Build with gcc46} {
+
+    depends_lib-append      port:gcc46
+    build.args-append   pch=off
+    build.args-delete   architecture=x86
+    configure.compiler macports-gcc-4.6
+#    configure.compiler /opt/local/bin/g++-mp-4.6
+    post-configure {
+        #write_jam "using darwin : : /opt/local/bin/g++-mp-4.5 ;"
+    }
 }
 
 variant openmpi conflicts debug description {Build Boost.MPI} {
