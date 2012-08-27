@@ -2399,8 +2399,8 @@ Mesh<Shape, T, Tag>::Localization::run_analysis( const matrix_node_type & m,
     ( IsInit ).warn( "You don't have initialized the tool of localization" );
 #endif
 
-    bool find_x;
-    size_type cv_id;
+    bool find_x=false;
+    size_type cv_id=eltHypothetical;
     node_type x_ref;
     std::vector<bool> hasFindPts(setPoints.size2(),false);
 

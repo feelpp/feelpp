@@ -554,7 +554,11 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     //-----------------------------------------
     //init the localization tool
     auto locTool = this->domainSpace()->mesh()->tool_localization();
-    locTool->updateForUse();
+    if ( this->interpolationType().onlyLocalizeOnBoundary() ) locTool->updateForUseBoundaryFaces();
+    else locTool->updateForUse();
+    // kdtree parameter
+    locTool->kdtree()->nbNearNeighbor(this->interpolationType().nbNearNeighborInKdTree());
+
     //locTool->kdtree()->nbNearNeighbor(3);
     //locTool->kdtree()->nbNearNeighbor(this->domainSpace()->mesh()->numElements());
     //locTool->setExtrapolation(false);
