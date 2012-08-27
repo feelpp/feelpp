@@ -172,6 +172,7 @@ public:
      * Type that hold the map between a global dof and the elements
      */
     typedef std::map<size_type, std::list<local_dof_type> >  dof_element_type;
+    typedef std::map<size_type,int> dof_marker_type;
     typedef typename dof_element_type::iterator dof_iterator;
     typedef typename dof_element_type::const_iterator dof_const_iterator;
 
@@ -1008,6 +1009,14 @@ public:
         map_gdof = mapdof;
     }
 
+    void printDofMarker(std::string const& filename )
+        {
+            std::ofstream ofs( filename.c_str() );
+            BOOST_FOREACH( auto dof, _M_dof_marker )
+            {
+                ofs << dof.first << " " << dof.second << "\n";
+            }
+        }
     /**
      * The dof are ordered such that they are contiguous per element
      * and components. This way an extraction of the dof indices in
@@ -1031,7 +1040,8 @@ public:
                     size_type& pDof,
                     int32_type sign = 1,
                     bool is_dof_periodic = false,
-                    size_type shift = 0 )
+                    size_type shift = 0,
+                    Marker1 const& marker = Marker1( 0 ) )
     {
         bool res = true;
         const int ncdof = is_product?nComponents:1;
@@ -1090,6 +1100,8 @@ public:
                 _M_dof_procset[ itdof->second+shift ].insert( processor );
 
                 _M_el_l2g[ ie][ lc_dof ] = boost::make_tuple( itdof->second+shift, sign, is_dof_periodic );
+                _M_dof_marker[itdof->second+shift] = marker.value();
+
 
 #if !defined(NDEBUG)
                 _M_dof2elt[itdof->second+shift].push_back( boost::make_tuple( ie, lc_dof, lc, itdof->first.template get<0>() ) );
@@ -1111,6 +1123,11 @@ public:
                     Debug() << "dof table( " << ie << ", " << lc  << ")=" << boost::get<0>( _M_el_l2g[ ie][ i2 ] ) << "\n";
 
 #endif
+            }
+            else
+            {
+                size_type _dof = boost::get<0>( _M_el_l2g[ ie][ lc_dof ]);
+                FEELPP_ASSERT(  _M_dof_marker[_dof] == marker.value() )(ie)(lc_dof)( _dof )( _M_dof_marker[_dof] )( marker.value() ).error( "invalid dof marker" );
             }
 
             res = res && ( __inserted || ( ( boost::get<0>( _M_el_l2g[ ie][ lc_dof ] ) == invalid_size_type_value ) && shift ) );
@@ -1148,7 +1165,7 @@ private:
                 //const size_type gDof = global_shift + ( __elt.point( i ).id() ) * fe_type::nDofPerVertex + l;
                 const size_type gDof = ( __elt.point( i ).id() ) * fe_type::nDofPerVertex + l;
                 this->insertDof( ie, lc, i, boost::make_tuple( 0, 0, gDof ),
-                                 processor, next_free_dof, 1, false, global_shift );
+                                 processor, next_free_dof, 1, false, global_shift, __elt.point( i ).marker() );
             }
         }
 
@@ -1187,7 +1204,7 @@ private:
         for ( uint16_type l = 0; l < fe_type::nDofPerEdge; ++l, ++lc )
         {
             const size_type gDof = is_p0_continuous? l:ie * fe_type::nDofPerEdge + l;
-            this->insertDof( ie, lc, l, boost::make_tuple( 1, 0, gDof ), processor, next_free_dof, 1, false, global_shift );
+            this->insertDof( ie, lc, l, boost::make_tuple( 1, 0, gDof ), processor, next_free_dof, 1, false, global_shift, __elt.marker() );
         }
 
         // update shifts
@@ -1241,7 +1258,7 @@ private:
                 else
                     FEELPP_ASSERT( 0 ).error ( "invalid edge permutation" );
 
-                this->insertDof( ie, lc, i, boost::make_tuple( 1, 0, gDof ), processor, next_free_dof, sign, false, global_shift );
+                this->insertDof( ie, lc, i, boost::make_tuple( 1, 0, gDof ), processor, next_free_dof, sign, false, global_shift, __elt.edge( i ).marker() );
             }
         }
 
@@ -1296,7 +1313,7 @@ private:
                 else
                     FEELPP_ASSERT( 0 ).error ( "invalid edge permutation" );
 
-                this->insertDof( ie, lc, i, boost::make_tuple( 1, 0, gDof ), processor, next_free_dof, sign, false, global_shift );
+                this->insertDof( ie, lc, i, boost::make_tuple( 1, 0, gDof ), processor, next_free_dof, sign, false, global_shift, __elt.edge( i ).marker() );
             }
         }
 
@@ -1332,7 +1349,7 @@ private:
         for ( uint16_type l = 0; l < fe_type::nDofPerFace; ++l, ++lc )
         {
             const size_type gDof = is_p0_continuous? l:ie * fe_type::nDofPerFace + l;
-            this->insertDof( ie, lc, l, boost::make_tuple( 2, 0, gDof ), processor, next_free_dof, 1, false, global_shift );
+            this->insertDof( ie, lc, l, boost::make_tuple( 2, 0, gDof ), processor, next_free_dof, 1, false, global_shift, __elt.marker() );
         }
 
         // update shifts
@@ -1412,7 +1429,7 @@ private:
                     }
                 }
 
-                this->insertDof( ie, lc, i, boost::make_tuple( 2, 0, gDof ), processor, next_free_dof, sign, false, global_shift );
+                this->insertDof( ie, lc, i, boost::make_tuple( 2, 0, gDof ), processor, next_free_dof, sign, false, global_shift,__elt.face( i ).marker() );
 
             }
         }
@@ -1445,7 +1462,7 @@ private:
         for ( uint16_type l = 0; l < fe_type::nDofPerVolume; ++l, ++lc )
         {
             const size_type gDof = is_p0_continuous? l:ie * fe_type::nDofPerVolume + l;
-            this->insertDof( ie, lc, l, boost::make_tuple( 3, 0, gDof ), processor, next_free_dof, 1, false, global_shift );
+            this->insertDof( ie, lc, l, boost::make_tuple( 3, 0, gDof ), processor, next_free_dof, 1, false, global_shift, __elt.marker() );
         }
 
         // update shifts
@@ -1980,6 +1997,7 @@ private:
     Container_fromface _M_face_l2g;
 
     dof_element_type _M_dof2elt;
+    dof_marker_type _M_dof_marker;
 
     dof_map_type map_gdof;
 
@@ -2838,12 +2856,12 @@ DofTable<MeshType, FEType, PeriodicityType>::buildDofMap( mesh_type& M, size_typ
     {
         std::cout << "marker name: " << name.first << "\n";
     }
-    if ( ( M.markerNames().find("CrossPoints") != M.markerNames().end() ) &&
-         ( M.markerNames().find("WireBasket") != M.markerNames().end() ) )
-    {
-        addSubstructuringDofMap( M, next_free_dof );
+    // if ( ( M.markerNames().find("CrossPoints") != M.markerNames().end() ) &&
+    //      ( M.markerNames().find("WireBasket") != M.markerNames().end() ) )
+    // {
+    //     addSubstructuringDofMap( M, next_free_dof );
 
-    } // loop over substructuring
+    // } // loop over substructuring
 
     for ( ; it_elt!=en_elt; ++it_elt )
     {
