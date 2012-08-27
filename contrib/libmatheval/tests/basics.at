@@ -1,0 +1,118 @@
+# Checking the basics.                    -*- Autotest -*-
+
+# Copyright (C) 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2011 Free
+# Software Foundation, Inc.
+#
+# This file is part of GNU libmatheval
+#
+# GNU libmatheval is free software: you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# GNU libmatheval is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with GNU libmatheval.  If not, see
+# <http://www.gnu.org/licenses/>.
+
+AT_BANNER([[Checking basic functionality.]])
+
+AT_SETUP([Check basics.])
+
+AT_DATA([basics.scm],
+[[
+(define f (evaluator-create "x+2"))
+(display (evaluator-get-string f))
+]])
+
+AT_CHECK([matheval.sh basics.scm], [ignore], [(x+2)], [ignore])
+
+AT_DATA([basics.scm],
+[[
+(define f (evaluator-create "x^3-4*y+4"))
+(display (evaluator-evaluate f 1 '("x") '(1)))
+]])
+
+AT_CHECK([matheval.sh basics.scm], [ignore], [5.0], [ignore])
+
+AT_DATA([basics.scm],
+[[
+(define f (evaluator-create "x+2"))
+(define f_prim (evaluator-derivative f "x"))
+(display (evaluator-get-string f_prim))
+]])
+
+AT_CHECK([matheval.sh basics.scm], [ignore], [1], [ignore])
+
+AT_DATA([basics.scm],
+[[
+(define f (evaluator-create "sin(pi_2)"))
+(display (evaluator-evaluate-x f 0))
+]])
+
+AT_CHECK([matheval.sh basics.scm], [ignore], [1.0], [ignore])
+
+AT_DATA([basics.scm],
+[[
+(define f (evaluator-create "exp(ln10)"))
+(display (evaluator-evaluate-x f 0))
+]])
+
+AT_CHECK([matheval.sh basics.scm], [ignore], [10.0], [ignore])
+
+AT_DATA([basics.scm],
+[[
+(define f (evaluator-create "sin(x)*x^3"))
+(display (evaluator-evaluate-x f 0.7))
+]])
+
+AT_CHECK([matheval.sh basics.scm], [ignore], [0.220966666722528], [ignore])
+
+AT_DATA([basics.scm],
+[[
+(define f (evaluator-create "y/3+log(x)"))
+(display (evaluator-evaluate-x-y f 0.4 -0.7))
+]])
+
+AT_CHECK([matheval.sh basics.scm], [ignore], [-1.14962406520749], [ignore])
+
+AT_DATA([basics.scm],
+[[
+(define f (evaluator-create "x*sin(y)+0.6*tan(z)"))
+(display (evaluator-evaluate-x-y-z f 11.2 0.41 -0.66))
+]])
+
+AT_CHECK([matheval.sh basics.scm], [ignore], [3.99876152571934], [ignore])
+
+AT_DATA([basics.scm],
+[[
+(define f (evaluator-create "tan(x)/cos(x)"))
+(define f_prim (evaluator-derivative-x f))
+(display (evaluator-get-string f_prim))
+]])
+
+AT_CHECK([matheval.sh basics.scm], [ignore], [((((1/(cos(x)^2))*cos(x))-(tan(x)*(-sin(x))))/(cos(x)^2))], [ignore])
+
+AT_DATA([basics.scm],
+[[
+(define f (evaluator-create "x+0.7*log(y)"))
+(define f_prim (evaluator-derivative-y f))
+(display (evaluator-get-string f_prim))
+]])
+
+AT_CHECK([matheval.sh basics.scm], [ignore], [((0*log(y))+(0.7*(1/y)))], [ignore])
+
+AT_DATA([basics.scm],
+[[
+(define f (evaluator-create "x*z+y^3/z^2"))
+(define f_prim (evaluator-derivative-z f))
+(display (evaluator-get-string f_prim))
+]])
+
+AT_CHECK([matheval.sh basics.scm], [ignore], [(((0*z)+x)+((((0*(y^2))*(z^2))-((y^3)*(2*z)))/((z^2)^2)))], [ignore])
+
+AT_CLEANUP
