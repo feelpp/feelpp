@@ -743,6 +743,10 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
 
             this->elements().modify( elt_it,
                                      detail::UpdateEdge<edge_type>( j, boost::cref( this->edge( _edgeit->second ) ) ) );
+#if !defined(NDEBUG)
+            this->elements().modify( elt_it,
+                                     [j]( element_type const& e ) { FEELPP_ASSERT( e.edgePtr( j ) )( e.id() )( j ).error( "invalid edge in element" ); } );
+#endif
         }
     }
 
