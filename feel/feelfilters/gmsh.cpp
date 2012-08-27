@@ -81,7 +81,7 @@ Gmsh::Gmsh( int nDim, int nOrder, WorldComm const& worldComm )
     M_addmidpoint( true ),
     M_usePhysicalNames( false ),
     M_partitioner( GMSH_PARTITIONER_CHACO ),
-    M_partitions( 1 ),
+    M_partitions( worldComm.size() ),
     M_partition_file( 0 ),
     M_shear( 0 ),
     M_refine_levels( 0 )
@@ -433,7 +433,30 @@ Gmsh::rebuildPartitionMsh( std::string const& nameMshInput,std::string const& na
 
 }
 
+/* if Gmsh API is not detected, some variables need to be define
+   see gmsh/Common/GmshDefines.h
+*/
 
+#ifndef FEELPP_HAS_GMSH_H
+
+// 2D meshing algorithms (numbers should not be changed)
+#define ALGO_2D_MESHADAPT      1
+#define ALGO_2D_AUTO           2
+#define ALGO_2D_MESHADAPT_OLD  4
+#define ALGO_2D_DELAUNAY       5
+#define ALGO_2D_FRONTAL        6
+#define ALGO_2D_BAMG           7
+#define ALGO_2D_FRONTAL_QUAD   8
+
+// 3D meshing algorithms (numbers should not be changed)
+#define ALGO_3D_DELAUNAY       1
+#define ALGO_3D_FRONTAL        4
+#define ALGO_3D_FRONTAL_DEL    5
+#define ALGO_3D_FRONTAL_HEX    6
+#define ALGO_3D_MMG3D          7
+#define ALGO_3D_RTREE          9
+
+#endif
 
 std::string
 Gmsh::preamble() const

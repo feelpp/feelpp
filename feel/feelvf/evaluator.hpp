@@ -635,13 +635,34 @@ BOOST_PARAMETER_FUNCTION(
     )
 )
 {
+
+    int proc_number = Environment::worldComm().globalRank();
+
     LOG(INFO) << "evaluate expression..." << std::endl;
+
     auto e = evaluate_impl( range, pset, expr, geomap );
     int index;
     double maxe = e.template get<0>().array().abs().maxCoeff(&index);
 
     Eigen::Matrix<double, detail::evaluate<Args>::nDim,1> n = e.template get<1>().col(index);
-    LOG(INFO) << "index at which function (size: " << e.template get<0>().array().size() << " is maximal: "<< index << " coord = " << n << "\n";
+    LOG(INFO) << "proc "<<proc_number<<" index at which function (size: " << e.template get<0>().array().size() << ") is maximal: "<< index << " coord = \n"<<n<<"\n";
+
+    int world_size = Environment::worldComm().size();
+    std::vector<double> maxe_world( world_size );
+    mpi::all_gather( Environment::worldComm().globalComm(),
+                     maxe,
+                     maxe_world );
+
+    std::vector< Eigen::Matrix<double, detail::evaluate<Args>::nDim,1> > n_world( world_size );
+    mpi::all_gather( Environment::worldComm().globalComm(),
+                     n,
+                     n_world );
+
+    auto it_max = std::max_element( maxe_world.begin() , maxe_world.end() );
+    int position = it_max - maxe_world.begin();
+    LOG(INFO)<<"proc "<<proc_number<<" : global max = "<<*it_max<<" at position "<<position<<" with coord : \n "<<n<<"\n";
+    //for(int i=0;i<detail::evaluate<Args>::nDim;i++) LOG(INFO) << n_world[i](i) <<" - ";
+    //LOG(INFO)<<"\n";
 
     int index2=0;
     double maxe2 = 0;
@@ -657,7 +678,7 @@ BOOST_PARAMETER_FUNCTION(
     LOG_ASSERT( index2 == index ) << " index2 = " << index2 <<  " and index  = " << index << "\n";
     LOG(INFO) << "evaluate expression done." << std::endl;
 
-    return boost::make_tuple( maxe, n );
+    return boost::make_tuple( *it_max, n_world[position] );
 }
 
 } // vf

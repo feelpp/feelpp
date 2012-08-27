@@ -626,7 +626,8 @@ EIM<ModelType>::offline(  )
     LOG(INFO) << "compute and insert q_0...\n";
     // insert first element
     auto q = M_g[0];
-    q.scale( 1./zmax.template get<0>() );
+    //q.scale( 1./zmax.template get<0>() );
+    q.scale( 1./ M_g[0]( M_t[0] )( 0, 0, 0 ) );
     M_q.push_back( q );
 
     LOG(INFO) << "compute entry (0,0) of interpolation matrix...\n";
