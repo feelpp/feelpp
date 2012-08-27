@@ -329,14 +329,19 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
     Debug( 5066 )  << "assembling Dirichlet conditions\n";
     boost::timer __timer;
 
+    std::vector<int> dofs;
+    std::vector<value_type> values;
+
+    element_iterator __face_it = this->beginElement();
+    element_iterator __face_en = this->endElement();
+    if ( __face_it != __face_en )
+    {
+
     dof_type const* __dof = _M_u.functionSpace()->dof().get();
 
     fe_type const* __fe = _M_u.functionSpace()->fe().get();
 
-    element_iterator __face_it = this->beginElement();
-
     gm_ptrtype __gm( new gm_type );
-
 
 
     //
@@ -383,9 +388,6 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
 
     Debug( 5066 )  << "nbFaceDof = " << nbFaceDof << "\n";
     //const size_type nbFaceDof = __fe->boundaryFE()->points().size2();
-
-    std::vector<int> dofs;
-    std::vector<value_type> values;
 
     for ( ;
             __face_it != this->endElement();
@@ -476,6 +478,8 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
 
             } // loop on face dof
     }
+
+    } // __face_it != __face_en
 
     __form.zeroRows( dofs, values, *_M_rhs, _M_on_strategy );
 }

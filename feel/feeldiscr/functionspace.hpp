@@ -2872,7 +2872,7 @@ public:
             if ( Archive::is_saving::value )
             {
                 //std::cout << "saving in version " << version << "\n";
-                size_type s = this->size();
+                size_type s = this->functionSpace()->nLocalDofWithGhost();
                 ar & boost::serialization::make_nvp( "size", s );
 
                 std::vector<int> no = _M_functionspace->basisOrder();
@@ -2910,8 +2910,8 @@ public:
                 // verify number of degree of freedom
                 Debug( 5010 ) << "loading ublas::vector of size " << s << "\n";
 
-                if ( s != this-> size() )
-                    throw std::logic_error( ( boost::format( "load function: invalid number of degrees of freedom, read %1% but has %2%" ) % s % this->size() ).str() );
+                if ( s != this->functionSpace()->nLocalDofWithGhost() )
+                    throw std::logic_error( ( boost::format( "load function: invalid number of degrees of freedom, read %1% but has %2%" ) % s % this->functionSpace()->nLocalDofWithGhost() ).str() );
 
                 std::vector<int> order;
                 std::string family;

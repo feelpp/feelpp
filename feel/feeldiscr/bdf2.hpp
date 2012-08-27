@@ -87,6 +87,7 @@ public:
         M_order_cur( 1 ),
         M_name( "bdf" ),
         M_time( 0.0 ),
+        M_iteration( 0 ),
         M_Ti( 0.0 ),
         M_Tf( 1.0 ),
         M_dt( 1.0 ),
@@ -108,6 +109,7 @@ public:
         M_order( args[_order | 1] ),
         M_name( args[_name | "bdf"] ),
         M_time( args[_initial_time | 0] ),
+        M_iteration( 0 ),
         M_Ti( args[_initial_time | 0] ),
         M_Tf( args[_final_time | 1] ),
         M_dt( args[_time_step | 0.1] ),
@@ -131,6 +133,7 @@ public:
         M_order_cur( M_order ),
         M_name( name ),
         M_time( vm[prefixvm( prefix, "bdf.time-initial" )].as<double>() ),
+        M_iteration( 0 ),
         M_iterations_between_order_change( vm[prefixvm( prefix, "bdf.iterations-between-order-change" )].as<int>() ),
         M_Ti( vm[prefixvm( prefix, "bdf.time-initial" )].as<double>() ),
         M_Tf( vm[prefixvm( prefix, "bdf.time-final" )].as<double>() ),
@@ -152,6 +155,7 @@ public:
         M_order_cur( 1 ),
         M_name( name ),
         M_time( 0. ),
+        M_iteration( 0 ),
         M_iterations_between_order_change( 1 ),
         M_Ti( 0. ),
         M_Tf( 1.0 ),
@@ -174,6 +178,7 @@ public:
         M_order_cur( b.M_order_cur ),
         M_name( b.M_name ),
         M_time( b.M_time ),
+        M_iteration( b.M_iteration ),
         M_iterations_between_order_change( b.M_iterations_between_order_change ),
         M_Ti( b.M_Ti ),
         M_Tf( b.M_Tf ),
@@ -212,6 +217,7 @@ public:
             M_order_cur = b.M_order_cur;
             M_name = b.M_name;
             M_time = b.M_time;
+            M_iteration = b.M_iteration;
             M_Ti = b.M_Ti;
             M_Tf = b.M_Tf;
             M_dt = b.M_dt;
@@ -364,6 +370,7 @@ public:
         M_time = M_Ti+this->timeStep();
         M_last_iteration_since_order_change = 1;
         M_order_cur = 1;
+        ++M_iteration;
 
         for ( int i = 2; i<=M_iteration; ++i )
         {
@@ -1083,8 +1090,8 @@ double
 Bdf<SpaceType>::start( element_type const& u0 )
 {
     this->init();
-    auto res = super::start();
     this->initialize( u0 );
+    auto res = super::start();
     return res;
 }
 
@@ -1093,8 +1100,8 @@ double
 Bdf<SpaceType>::start( unknowns_type const& uv0 )
 {
     this->init();
-    auto res = super::start();
     this->initialize( uv0 );
+    auto res = super::start();
     return res;
 }
 
