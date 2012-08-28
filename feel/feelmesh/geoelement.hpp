@@ -1236,7 +1236,7 @@ public:
     typedef GeoElement3D<Dim, GEOSHAPE,T> self_type;
     typedef self_type element_type;
     typedef GeoElement2D<Dim, entity_face_type, SubFaceOf<self_type>, T > face_type;
-    typedef GeoElement1D<Dim, typename entity_face_type::topological_face_type, SubFaceOfNone, T> edge_type;
+    typedef GeoElement1D<Dim, typename entity_face_type::topological_face_type, SubFaceOfMany<face_type>, T> edge_type;
     typedef GeoElement0D<Dim, SubFaceOfNone, T> point_type;
 
     typedef typename super::node_type node_type;
