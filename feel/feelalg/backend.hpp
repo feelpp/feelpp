@@ -856,6 +856,7 @@ public:
         //new
         _sol->close();
         detail::ref( solution ) = *_sol;
+        detail::ref( solution ).close();
         return ret;
     }
 
