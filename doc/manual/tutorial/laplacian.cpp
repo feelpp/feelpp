@@ -216,7 +216,7 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
      */
     /** \code */
     space_ptrtype Xh = space_type::New( mesh );
-    Xh->printDofMarker( "dofmarker.dat" );
+    Xh->dof()->printDofMarker( "dofmarker.dat" );
     // print some information (number of local/global dof in logfile)
     Xh->printInfo();
     element_type u( Xh, "u" );
