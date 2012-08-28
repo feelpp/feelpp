@@ -87,9 +87,11 @@ public VisitableBase<>,
 public MeshBase,
 public Elements<Shape>,
 public Points<3>,
-    public Faces<typename Shape::template shape<2>::type,
-       typename Elements<Shape>::element_type>,
-       public Edges<typename Shape::template shape<1>::type>
+public Faces<typename Shape::template shape<2>::type,
+             typename Elements<Shape>::element_type>,
+public Edges<typename Shape::template shape<1>::type,
+             typename Faces<typename Shape::template shape<2>::type,
+                            typename Elements<Shape>::element_type>::face_type >
 {
     // check at compilation time that the shape has indeed dimension 2
     BOOST_STATIC_ASSERT( Shape::nDim == 3 );
@@ -135,7 +137,7 @@ public Points<3>,
     typedef typename super_faces::location_face_const_iterator location_face_const_iterator;
 
 
-    typedef Edges<typename Shape::template shape<1>::type> super_edges;
+    typedef Edges<typename Shape::template shape<1>::type,face_type> super_edges;
     typedef typename super_edges::edges_type edges_type;
     typedef typename super_edges::edge_type edge_type;
     typedef typename super_edges::edge_iterator edge_iterator;
@@ -747,6 +749,16 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
             this->elements().modify( elt_it,
                                      [j]( element_type const& e ) { FEELPP_ASSERT( e.edgePtr( j ) )( e.id() )( j ).error( "invalid edge in element" ); } );
 #endif
+        }
+        for ( uint16_type j = 0; j < element_type::numFaces; ++j )
+        {
+            auto fit = this->faces().iterator_to( elt_it->face(j));
+            for ( uint16_type e = 0; e < face_type::numEdges; ++e )
+            {
+                auto const& elt_edge = elt_it->edge( elt_it->f2e( j, e ) );
+                this->faces().modify( fit,
+                                      [e,&elt_edge]( face_type& f ) { f.setEdge(e,elt_edge); } );
+            }
         }
     }
 
