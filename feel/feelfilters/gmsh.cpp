@@ -81,7 +81,7 @@ Gmsh::Gmsh( int nDim, int nOrder, WorldComm const& worldComm )
     M_addmidpoint( true ),
     M_usePhysicalNames( false ),
     M_partitioner( GMSH_PARTITIONER_CHACO ),
-    M_partitions( 1 ),
+    M_partitions( worldComm.size() ),
     M_partition_file( 0 ),
     M_shear( 0 ),
     M_refine_levels( 0 )
@@ -326,6 +326,8 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  
               << " -" << dim << " -part " << M_partitions  << " " << __geoname;
 
     Log() << "[Gmsh::generate] execute '" <<  __str.str() << "\n";
+    Log() << "[Gmsh::generate] partitions: " <<  M_partitions << "\n";
+    Log() << "[Gmsh::generate] partitioner: " <<  M_partitioner << "\n";
 
     auto err = ::system( __str.str().c_str() );
 #else
@@ -338,7 +340,10 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  
         gmshIsInit=true;
         GmshInitialize();
     }
-
+    Log() << "[Gmsh::generate] env.part: " <<  Environment::numberOfProcessors() << "\n";
+    Log() << "[Gmsh::generate] env.part: " <<  Environment::worldComm().size() << "\n";
+    Log() << "[Gmsh::generate] partitions: " <<  M_partitions << "\n";
+    Log() << "[Gmsh::generate] partitioner: " <<  M_partitioner << "\n";
     CTX::instance()->partitionOptions.num_partitions =  M_partitions;
     CTX::instance()->partitionOptions.partitioner =  M_partitioner;
 
