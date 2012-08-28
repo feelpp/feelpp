@@ -607,7 +607,21 @@ EIM<ModelType>::offline(  )
     if ( !M_trainset )
         M_trainset = M_model->parameterSpace()->sampling();
     if ( M_trainset->empty() )
-        M_trainset->randomize( M_vm["eim.sampling-size"].template as<int>() );
+    {
+        int sampling_size = M_vm["eim.sampling-size"].template as<int>();
+        std::string file_name = ( boost::format("eim_trainset_%1%") % sampling_size ).str();
+        std::ifstream file ( file_name );
+        if( ! file )
+        {
+            M_trainset->randomize( sampling_size  );
+            M_trainset->writeOnFile(file_name);
+        }
+        else
+        {
+            M_trainset->clear();
+            M_trainset->readFromFile(file_name);
+        }
+    }
 
     // store residual
     auto res = M_model->functionSpace()->element();
