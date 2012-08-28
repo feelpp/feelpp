@@ -277,7 +277,7 @@ private:
     element_connectivity_type M_element1;
 
 };
-
+#if 0
 template<typename ElementType>
 class SubFaceOfMany
 {
@@ -424,6 +424,11 @@ private:
 
     std::set<element_connectivity_type> M_elements;
 };
+#else
+//template<typename ElementType> class SubFaceOfMany: public SubFaceOf<ElementType> {};
+#define SubFaceOfMany SubFaceOf
+
+#endif
 
 //     *********** Geometrical Elements *****************
 //! \defgroup GeoEle Geometry Element classes
