@@ -48,6 +48,9 @@ public:
         this->assign( v );
         return *this;
     }
+    bool isOn() const { return value() != 0; }
+    bool isOff() const { return value() == 0; }
+
 private:
 
     friend class boost::serialization::access;
@@ -84,6 +87,9 @@ public:
         this->assign( v );
         return *this;
     }
+    bool isOn() const { return value() != 0; }
+    bool isOff() const { return value() == 0; }
+
 private:
 
     friend class boost::serialization::access;
@@ -119,6 +125,8 @@ public:
         this->assign( v );
         return *this;
     }
+    bool isOn() const { return value() != 0; }
+    bool isOff() const { return value() == 0; }
 
 private:
 
