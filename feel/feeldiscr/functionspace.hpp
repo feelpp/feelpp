@@ -59,6 +59,10 @@
 
 #include <boost/smart_ptr/enable_shared_from_this.hpp>
 
+
+//#include<boost/filesystem.hpp>
+
+
 #include <stdexcept>
 #include <sstream>
 #include <limits>
@@ -2806,22 +2810,33 @@ public:
         {
             Feel::detail::ignore_unused_variable_warning( args );
             std::ostringstream os1;
-            os1 << _M_name << sep << suffix << this->worldComm().globalSize() << "." << this->worldComm().globalRank() << ".fdb";
+            os1 << _M_name << sep << suffix << "-" <<  this->worldComm().globalSize() << "." << this->worldComm().globalRank() << ".fdb";
             fs::path p = fs::path( path ) / os1.str();
-
+            fs::path partial_path = fs::path(path);
+            
+            fs::path full_path_dir_sol(fs::current_path());
+            full_path_dir_sol = full_path_dir_sol/partial_path; 
+            //std::cout << " In load the first full path is " << p << std::endl;
             if ( !fs::exists( p ) )
             {
                 std::ostringstream os2;
-                os2 << _M_name << sep << suffix<< this->worldComm().globalSize() << "." << this->worldComm().globalRank();
+                os2 << _M_name << sep << suffix<< "-" <<  this->worldComm().globalSize() << "." << this->worldComm().globalRank();
                 p = fs::path( path ) / os2.str();
 
                 if ( !fs::exists( p ) )
+                { 
+                    std::cerr  << "ERROR IN [load] :" <<  full_path_dir_sol << "  FILE : " << os1.str() << " OR " << os2.str() << " DO NOT EXIST" << std::endl ;                      
+                    //std::cerr << "ATTENTION :  p does not exist
                     return;
+                }
             }
 
             if ( !fs::is_regular_file( p ) )
+            {
+                
+                std::cerr << "ERROR IN [load] : " << full_path_dir_sol << p << " is not a  regular_file !" << std::endl;
                 return;
-
+            }
             fs::ifstream ifs( p );
 
             if ( type == "binary" )
@@ -2857,7 +2872,7 @@ public:
             if ( Archive::is_saving::value )
             {
                 //std::cout << "saving in version " << version << "\n";
-                size_type s = this->size();
+                size_type s = this->functionSpace()->nLocalDofWithGhost();
                 ar & boost::serialization::make_nvp( "size", s );
 
                 std::vector<int> no = _M_functionspace->basisOrder();
@@ -2895,8 +2910,8 @@ public:
                 // verify number of degree of freedom
                 Debug( 5010 ) << "loading ublas::vector of size " << s << "\n";
 
-                if ( s != this-> size() )
-                    throw std::logic_error( ( boost::format( "load function: invalid number of degrees of freedom, read %1% but has %2%" ) % s % this->size() ).str() );
+                if ( s != this->functionSpace()->nLocalDofWithGhost() )
+                    throw std::logic_error( ( boost::format( "load function: invalid number of degrees of freedom, read %1% but has %2%" ) % s % this->functionSpace()->nLocalDofWithGhost() ).str() );
 
                 std::vector<int> order;
                 std::string family;
