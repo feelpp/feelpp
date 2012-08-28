@@ -272,6 +272,8 @@ Mesh<Shape, T, Tag>::updateForUse()
     }
 #endif
 
+    propagateMarkers(mpl::int_<nDim>() );
+
     // check mesh connectivity
     this->check();
     //std::cout<<"pass hier\n";
@@ -286,7 +288,67 @@ Mesh<Shape, T, Tag>::updateForUse()
     Debug( 4015 ) << "[Mesh::updateForUse] total time : " << ti.elapsed() << "\n";
 }
 
+template<typename Shape, typename T, int Tag>
+void
+Mesh<Shape, T, Tag>::propagateMarkers( mpl::int_<3> )
+{
+    // first propagate top-down  marker from edges if points have not been marked
+    std::for_each( this->beginEdge(), this->endEdge(),
+                   [this]( edge_type const& e )
+                   {
+                       if ( e.marker().isOff() )
+                           return;
 
+                       for( int i = 0; i < edge_type::numPoints; ++i )
+                       {
+                           if ( e.point( i ).marker().isOff() )
+                           {
+                               // inherit marker from edge
+                               this->points().modify( this->points().iterator_to( e.point(i) ),
+                                                      [&e] ( point_type& p )
+                                                      {
+                                                          p.setMarker( e.marker().value() );
+                                                      } );
+
+                           }
+                       } } );
+    // then propagate top-down marker from face if edge has not been marked
+    std::for_each( this->beginFace(), this->endFace(),
+                   [this]( face_type const& f )
+                   {
+                       if ( f.marker().isOff() )
+                           return;
+
+                       // update points
+                       for( int i = 0; i < face_type::numPoints; ++i )
+                       {
+                           if ( f.point( i ).marker().isOff() )
+                           {
+                               // inherit marker from edge
+                               this->points().modify( this->points().iterator_to( f.point(i) ),
+                                                      [&f] ( point_type& p )
+                                                      {
+                                                          p.setMarker( f.marker().value() );
+                                                      } );
+
+                           }
+                       }
+                       // update edges
+                       for( int i = 0; i < face_type::numEdges; ++i )
+                       {
+                           if ( f.edge( i ).marker().isOff() )
+                           {
+                               // inherit marker from edge
+                               this->edges().modify( this->edges().iterator_to( f.edge(i) ),
+                                                      [&f] ( edge_type& e )
+                                                      {
+                                                          e.setMarker( f.marker().value() );
+                                                      } );
+
+                           }
+                       }
+                   } );
+}
 
 template<typename Shape, typename T, int Tag>
 void
