@@ -1049,10 +1049,27 @@ CRB<TruthModelType>::offline()
         //    std::vector<boost::tuple<double,double,double> > M_rbconv2 = M_scm->offline();
 
         LOG(INFO) << "[CRB::offline] compute random sampling\n";
-        // random sampling
-        M_Xi->randomize( this->vm()["crb.sampling-size"].template as<int>() );
-        //M_Xi->equidistribute( this->vm()["crb.sampling-size"].template as<int>() );
+
+
+
+        int sampling_size = this->vm()["crb.sampling-size"].template as<int>();
+        std::string file_name = ( boost::format("M_Xi_%1%") % sampling_size ).str();
+        std::ifstream file ( file_name );
+        if( ! file )
+        {
+            // random sampling
+            M_Xi->randomize( sampling_size );
+            //M_Xi->equidistribute( this->vm()["crb.sampling-size"].template as<int>() );
+            M_Xi->writeOnFile(file_name);
+        }
+        else
+        {
+            M_Xi->clear();
+            M_Xi->readFromFile(file_name);
+        }
+
         M_WNmu->setSuperSampling( M_Xi );
+
 
         if( proc_number == 0 ) std::cout<<"[CRB offline] M_error_type = "<<M_error_type<<std::endl;
 
@@ -1407,6 +1424,18 @@ CRB<TruthModelType>::offline()
         if ( M_iter_max < M_Nm ) sampling_size = 1;
 
         Sampling->logEquidistribute( sampling_size );
+
+#if 0
+        if ( this->worldComm().globalSize() > 1 )
+        {
+            std::string name = ( boost::format( "mu_par_proc%1%" ) % proc_number  ).str();
+            Sampling->writeOnFile(name);
+        }
+        else
+        {
+            Sampling->writeOnFile("mu_seq");
+        }
+#endif
         LOG(INFO) << "[CRB::offline] sampling parameter space with "<< sampling_size <<"elements done\n";
     }
 
@@ -3039,9 +3068,8 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
     for ( double time=time_step; time<=time_for_output; time+=time_step )
     {
 
-
         if( M_model->isSteady() )
-            boost::tie( betaMqm, betaAqm, betaFqm, betaMFqm ) = M_model->computeBetaQm( mu ,time );
+            boost::tie( betaMqm, betaAqm, betaFqm, betaMFqm ) = M_model->computeBetaQm( this->expansion( uN[0] , N ), mu ,time );
         else
             boost::tie( betaMqm, betaAqm, betaFqm, betaMFqm ) = M_model->computeBetaQm( this->expansion( uNold[time_index] , N ), mu ,time );
 
@@ -3057,9 +3085,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
         for ( size_type q = 0; q < M_model->Qm(); ++q )
         {
             for(int m=0; m<M_model->mMaxM(q); m++)
-            {
                 A += betaMqm[q][m]*M_Mqm_pr[q][m].block( 0,0,N,N );
-            }
         }
         LOG(INFO) << "Mass=" << A << "\n";
         google::FlushLogFiles(google::GLOG_INFO);
@@ -3067,20 +3093,18 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
         for ( size_type q = 0; q < M_model->Qmf(); ++q )
         {
             for(int m=0; m<M_model->mMaxMF(q); m++)
-                {
-                    F += betaMFqm[q][m]*M_MFqm_pr[q][m].head( N );
-                }
+                F += betaMFqm[q][m]*M_MFqm_pr[q][m].head( N );
         }
         LOG(INFO) << "F=" << F << "\n";
 
         google::FlushLogFiles(google::GLOG_INFO);
+
         uN[time_index] = A.lu().solve( F );
 
         //vectorN_type error;
         //const element_type expansion_uN = this->expansion( uN[time_index] , N );
         //checkInitialGuess( expansion_uN , mu , error);
         //std::cout<<"error.sum : "<<error.sum()<<std::endl;
-
 
         LOG(INFO) << "lb: start fix point\n";
 
@@ -3089,12 +3113,33 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
         google::FlushLogFiles(google::GLOG_INFO);
         int fi=0;
         //for(int fi = 0;fi < 10; ++fi )
+
+        double old_output;
+#if 0
+        //in the case were we want to control output error for fixed point
+        L.setZero( N );
+        for ( size_type q = 0; q < M_model->Ql( M_output_index ); ++q )
+        {
+            for(int m=0; m < M_model->mMaxF(M_output_index,q); m++)
+            {
+                L += betaFqm[M_output_index][q][m]*M_Lqm_pr[q][m].head( N );
+            }
+        }
+        old_output = L.dot( uN[time_index] );
+#endif
+        int max_fixedpoint_iterations  = this->vm()["crb.max-fixedpoint-iterations"].template as<int>();
+        double solution_fixedpoint_tol  = this->vm()["crb.solution-fixedpoint-tol"].template as<double>();
+        double output_fixedpoint_tol  = this->vm()["crb.output-fixedpoint-tol"].template as<double>();
+
         do
         {
             LOG(INFO) << "compute eim expansions\n";
             google::FlushLogFiles(google::GLOG_INFO);
 
-            boost::tie( betaMqm, betaAqm, betaFqm, betaMFqm ) = M_model->computeBetaQm( this->expansion( uN[time_index] , N ), mu ,time );
+            if( 0 )
+                boost::tie( betaMqm, betaAqm, betaFqm, betaMFqm ) = M_model->computeBetaQm( mu ,time );
+            else
+                boost::tie( betaMqm, betaAqm, betaFqm, betaMFqm ) = M_model->computeBetaQm( this->expansion( uN[time_index] , N ), mu ,time );
             //boost::tie( betaMqm, betaAqm, betaFqm, betaMFqm ) = M_model->computeBetaQm( mu ,time );
 
             LOG(INFO) << "compute reduce matrices\n";
@@ -3142,6 +3187,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
                 uNold[time_index+1] = uN[time_index];
             }
 
+
             L.setZero( N );
 
             for ( size_type q = 0; q < M_model->Ql( M_output_index ); ++q )
@@ -3152,7 +3198,9 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
                 }
             }
 
+            old_output = output;
             output = L.dot( uN[time_index] );
+
             //output_time_vector.push_back( output );
             output_time_vector[time_index] = output;
 
@@ -3161,10 +3209,10 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
             fi++;
 
         }
-        while ( (uN[time_index]-previous_uN).norm() > 1e-10 && fi<10 );
+        while ( (uN[time_index]-previous_uN).norm() > solution_fixedpoint_tol && fi<max_fixedpoint_iterations );
+        //while ( math::abs(output - old_output) >  output_fixedpoint_tol && fi < max_fixedpoint_iterations );
         time_index++;
     }
-
     time_index--;
 
     //compute conditioning of matrix A
@@ -3173,6 +3221,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
     int number_of_eigenvalues =  eigen_solver.eigenvalues().size();
     //we copy eigenvalues in a std::vector beacause it's easier to manipulate it
     std::vector<double> eigen_values( number_of_eigenvalues );
+
 
     for ( int i=0; i<number_of_eigenvalues; i++ )
     {
