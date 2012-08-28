@@ -216,10 +216,18 @@ public:
             //std::srand(static_cast<unsigned>(std::time(0)));
 
             // fill with log Random elements from the parameter space
-            for ( int i = 0; i < N; ++i )
+            //only with one proc and then broadcast
+            if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
             {
-                super::push_back( parameterspace_type::logRandom( M_space ) );
+                for ( int i = 0; i < N; ++i )
+                {
+                    super::push_back( parameterspace_type::logRandom( M_space ) );
+                }
+
             }
+
+            boost::mpi::broadcast( Environment::worldComm() , *this , Environment::worldComm().masterRank() );
+
         }
 
         /**
@@ -239,6 +247,65 @@ public:
                                   M_space ) );
             }
         }
+
+        /**
+         * \brief write the sampling in a file
+         * \param file_name : name of the file to read
+         * in the file we write :
+         * mu_0= [ value0 , value1 , ... ]
+         * mu_1= [ value0 , value1 , ... ]
+         */
+        void writeOnFile( std::string file_name = "list_of_parameters_taken" )
+        {
+            std::ofstream file;
+            file.open( file_name,std::ios::out );
+            element_type mu( M_space );
+            int size = mu.size();
+            int number = 0;
+            BOOST_FOREACH( mu, *this )
+            {
+                file<<" mu_"<<number<<"= [ ";
+                for(int i=0; i<size-1; i++)
+                    file << mu[i]<<" , ";
+                file<< mu[size-1] << " ] \n" ;
+                number++;
+            }
+            file.close();
+        }
+
+        /**
+         * \brief read the sampling from a file
+         * \param file_name : name of the file to read
+         * in the file we expect :
+         * mu_0= [ value0 , value1 , ... ]
+         * mu_1= [ value0 , value1 , ... ]
+         */
+        void readFromFile( std::string file_name= "list_of_parameters_taken" )
+        {
+            std::ifstream file ( file_name );
+            double mui;
+            std::string str;
+            int number=0;
+            file>>str;
+            while( ! file.eof() )
+            {
+                element_type mu( M_space );
+                file>>str;
+                int i=0;
+                while ( str!="]" )
+                {
+                    file >> mui;
+                    mu[i] = mui;
+                    file >> str;
+                    i++;
+                }
+                super::push_back( mu );
+                number++;
+                file>>str;
+            }
+            file.close();
+        }
+
         /**
          * \brief create a sampling with equidistributed elements
          * \param N the number of samples
