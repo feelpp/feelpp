@@ -86,8 +86,10 @@ public:
     typedef typename edges_type::iterator edge_iterator;
     typedef typename edges_type::const_iterator edge_const_iterator;
     typedef typename edges_type::template index<detail::by_marker>::type marker_edges;
+
     typedef typename marker_edges::iterator marker_edge_iterator;
     typedef typename marker_edges::const_iterator marker_edge_const_iterator;
+
     typedef typename edges_type::template index<detail::by_location>::type location_edges;
     typedef typename location_edges::iterator location_edge_iterator;
     typedef typename location_edges::const_iterator location_edge_const_iterator;
@@ -193,6 +195,18 @@ public:
     {
         return _M_edges.end();
     }
+
+    /**
+     * \return the range of iterator \c (begin,end) over the faces
+     * with marker \p m on processor \p p
+     */
+    std::pair<marker_edge_iterator, marker_edge_iterator>
+    edgesWithMarker( size_type m, size_type p ) const
+    {
+        //return _M_edges.template get<detail::by_marker>().equal_range( boost::make_tuple( Marker1( m ), p ) );
+        return _M_edges.template get<detail::by_marker>().equal_range( Marker1( m ) );
+    }
+
 
     marker_edge_iterator beginEdgeWithMarker( size_type m )
     {
