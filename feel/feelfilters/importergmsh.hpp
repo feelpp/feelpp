@@ -689,7 +689,6 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
                 mesh->setParametric( true );
             }
         }
-        std::cout << "adding point with marker " << __pt.marker() << "\n";
         mesh->addPoint( __pt );
     }
 
