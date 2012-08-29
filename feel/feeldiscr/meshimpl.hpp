@@ -183,6 +183,7 @@ Mesh<Shape, T, Tag>::updateForUse()
             //    this->updateEntitiesCoDimensionOneGhostCell();
 
             Debug( 4015 ) << "[Mesh::updateForUse] update entities of codimension 1 : " << ti.elapsed() << "\n";
+
         }
 
         if ( this->components().test( MESH_UPDATE_EDGES ) )
@@ -193,9 +194,13 @@ Mesh<Shape, T, Tag>::updateForUse()
             this->updateEntitiesCoDimensionTwo();
             Debug( 4015 ) << "[Mesh::updateForUse] update edges : " << ti.elapsed() << "\n";
         }
-        updateOnBoundary( mpl::int_<nDim>() );
 
-
+        if ( this->components().test( MESH_UPDATE_FACES ) ||
+             this->components().test( MESH_UPDATE_EDGES )
+            )
+        {
+            updateOnBoundary( mpl::int_<nDim>() );
+        }
         this->setUpdatedForUse( true );
     }
 
@@ -229,9 +234,12 @@ Mesh<Shape, T, Tag>::updateForUse()
             M_meas += iv->measure();
             auto _faces = iv->faces();
 
-            for ( ; _faces.first != _faces.second; ++_faces.first )
-                if ( ( *_faces.first ) && ( *_faces.first )->isOnBoundary() )
-                    M_measbdy += ( *_faces.first )->measure();
+            if ( nDim == 1 )
+                M_measbdy = 0;
+            else
+                for ( ; _faces.first != _faces.second; ++_faces.first )
+                    if ( ( *_faces.first ) && ( *_faces.first )->isOnBoundary() )
+                        M_measbdy += ( *_faces.first )->measure();
         }
 
         // now that all elements have been updated, build inter element
