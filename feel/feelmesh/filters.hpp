@@ -1043,7 +1043,7 @@ boost::tuple<mpl::size_t<MESH_EDGES>,
                    std::string const& __marker )
 {
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
-    return detail::markededges( mesh, mesh.markerName(__marker), meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
+    return detail::markededges( mesh, mesh->markerName(__marker), meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
 }
 
 /**

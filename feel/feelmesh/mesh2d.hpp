@@ -124,6 +124,10 @@ public:
     typedef typename super_faces::face_type face_type;
     typedef face_type edge_type;
 
+    typedef super_faces super_edges;
+    typedef typename super_edges::marker_face_iterator marker_edge_iterator;
+    typedef typename super_edges::marker_face_const_iterator marker_edge_const_iterator;
+
     typedef Mesh2D<Shape> self_type;
     typedef boost::shared_ptr<self_type> self_ptrtype;
 

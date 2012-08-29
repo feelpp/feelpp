@@ -624,6 +624,8 @@ public:
         return super::marker3();
     }
 
+//private:
+    geo0d_type M_facept;
 
 private:
 
@@ -636,8 +638,6 @@ private:
         }
 
 
-private:
-    geo0d_type M_facept;
 };
 
 
