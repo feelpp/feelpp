@@ -2851,18 +2851,6 @@ DofTable<MeshType, FEType, PeriodicityType>::buildDofMap( mesh_type& M, size_typ
 
     size_type next_free_dof = start_next_free_dof;
 
-
-    BOOST_FOREACH( auto name, M.markerNames() )
-    {
-        std::cout << "marker name: " << name.first << "\n";
-    }
-    // if ( ( M.markerNames().find("CrossPoints") != M.markerNames().end() ) &&
-    //      ( M.markerNames().find("WireBasket") != M.markerNames().end() ) )
-    // {
-    //     addSubstructuringDofMap( M, next_free_dof );
-
-    // } // loop over substructuring
-
     for ( ; it_elt!=en_elt; ++it_elt )
     {
         this->addDofFromElement( *it_elt, next_free_dof, M.worldComm().localRank() );
