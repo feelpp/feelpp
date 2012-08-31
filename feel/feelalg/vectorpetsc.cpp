@@ -354,6 +354,27 @@ void VectorPetsc<T>::printMatlab ( const std::string name ) const
 }
 
 
+template <typename T>
+typename VectorPetsc<T>::value_type
+VectorPetsc<T>::dot( Vector<T> const& __v )
+{
+    this->close();
+    PetscScalar e;
+
+    VectorPetsc<value_type> v( __v.size(), __v.localSize() );
+    {
+        size_type s = v.localSize();
+        size_type start = v.firstLocalIndex();
+
+        for ( size_type i = 0; i < s; ++i )
+            v.set( start + i, __v( start + i ) );
+    }
+
+    VecDot( this->vec(), v.vec(), &e );
+
+    return e;
+}
+
 //----------------------------------------------------------------------------------------------------//
 //----------------------------------------------------------------------------------------------------//
 //----------------------------------------------------------------------------------------------------//
@@ -895,6 +916,32 @@ VectorPetscMPI<T>::duplicateFromOtherPartition_run( Vector<T> const& vecInput)
 }
 
 //----------------------------------------------------------------------------------------------------//
+
+
+template <typename T>
+typename VectorPetsc<T>::value_type
+VectorPetscMPI<T>::dot( Vector<T> const& __v )
+{
+    this->close();
+    PetscScalar e;
+
+    VectorPetscMPI<value_type> v( this->map() );
+    {
+        size_type s = v.map().nLocalDofWithGhost();
+        size_type start = v.firstLocalIndex();
+
+        for ( size_type i = 0; i < s; ++i )
+            v.set( start + i, __v( start + i ) );
+    }
+
+    v.close();
+
+    VecDot( this->vec(), v.vec(), &e );
+
+    return e;
+}
+
+
 
 template class VectorPetsc<double>;
 template class VectorPetscMPI<double>;
