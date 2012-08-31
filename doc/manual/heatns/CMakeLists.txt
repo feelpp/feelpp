@@ -32,7 +32,9 @@ set(lib_convection
   ${CMAKE_CURRENT_SOURCE_DIR}/convection_jacobian1.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/convection_jacobian2.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/convection_lo.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/convection_lo2.cpp )
+  ${CMAKE_CURRENT_SOURCE_DIR}/convection_lo2.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/convection_crb_other.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/convection_crb_residual.cpp )
 
 add_subdirectory( cavity )
 add_subdirectory( cabin )
