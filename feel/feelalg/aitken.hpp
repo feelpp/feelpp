@@ -490,32 +490,25 @@ Aitken<fs_type>::applyimpl( element_range_type new_elem,element_type const& resi
 }
 
 //-----------------------------------------------------------------------------------------//
-#if 0
-template< typename fs_type >
-void
-Aitken<fs_type>::relaxationStep( element_type& new_elem )
-{
-    new_elem = currentResidual;
-    //new_elem.scale( -previousParameter );
-    new_elem.scale( -( 1-previousParameter ) );
-
-    new_elem += currentElement;
-}
-#else
 template< typename fs_type >
 template< typename eltType >
 void
 Aitken<fs_type>::relaxationStep( eltType& new_elem )
 {
+#if 0
     new_elem = currentResidual;
     //new_elem.scale( -previousParameter );
     new_elem.scale( -( 1-previousParameter ) );
 
     //new_elem += currentElement;
     new_elem.add( 1.,currentElement );
-}
+#else
+    new_elem = previousElement;
+    new_elem.add(previousParameter,currentResidual);
 
+    currentElement = new_elem;
 #endif
+}
 
 //-----------------------------------------------------------------------------------------//
 
