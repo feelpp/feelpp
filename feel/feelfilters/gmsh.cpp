@@ -84,6 +84,7 @@ Gmsh::Gmsh( int nDim, int nOrder, WorldComm const& worldComm )
     M_partitions( worldComm.size() ),
     M_partition_file( 0 ),
     M_shear( 0 ),
+    M_recombine( 0 ),
     M_refine_levels( 0 )
 {
     this->setReferenceDomain();
@@ -102,6 +103,7 @@ Gmsh::Gmsh( Gmsh const & __g )
     M_partitions( __g.M_partitions ),
     M_partition_file( __g.M_partition_file ),
     M_shear( __g.M_shear ),
+    M_recombine( __g.M_recombine ),
     M_refine_levels( __g.M_refine_levels )
 {}
 Gmsh::~Gmsh()
