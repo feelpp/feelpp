@@ -87,7 +87,7 @@ public:
     typedef double value_type;
 
     //! mesh
-    typedef Simplex<Dim, 1> convex_type;
+    typedef Simplex<Dim> convex_type;
     typedef Mesh<convex_type> mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
@@ -194,8 +194,7 @@ MyFunctionSpace<Dim, Order>::run( const double* X, unsigned long P, double* Y, u
                                       _shape=shape,
                                       _dim=Dim,
                                       _order=Order,
-                                      _h=X[0] ),
-                        _partitions=this->comm().size() );
+                                      _h=X[0] ) );
 
     //# endmarker31 #
     /**
@@ -225,9 +224,9 @@ MyFunctionSpace<Dim, Order>::run( const double* X, unsigned long P, double* Y, u
     //# endmarker4 #
 
     //# marker5 #
-    u = vf::project( Xh, elements( mesh ), g );
-    v = vf::project( Xh, elements( mesh ), f );
-    w = vf::project( Xh, elements( mesh ), idv( u )-g );
+    u = vf::project( _space=Xh, _range=elements( mesh ), _expr=g );
+    v = vf::project( _space=Xh, _range=elements( mesh ), _expr=f );
+    w = vf::project( _space=Xh, _range=elements( mesh ), _expr=idv( u )-g );
     //# endmarker5 #
 
     //# marker6 #
@@ -292,6 +291,7 @@ main( int argc, char** argv )
     app.add( new MyFunctionSpace<2,3>( app.vm(), app.about() ) );
     //app.add( new MyFunctionSpace<2,4>( app.vm(), app.about() ) );
     //app.add( new MyFunctionSpace<2,5>( app.vm(), app.about() ) );
+
 #else
     app.add( new MyFunctionSpace<2,3>( app.vm(), app.about() ) );
     //app.add( new MyFunctionSpace<3,3>( app.vm(), app.about() ) );
@@ -305,9 +305,3 @@ main( int argc, char** argv )
 #endif
     app.run();
 }
-
-
-
-
-
-

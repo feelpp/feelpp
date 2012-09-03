@@ -193,6 +193,9 @@ Mesh<Shape, T, Tag>::updateForUse()
             this->updateEntitiesCoDimensionTwo();
             Debug( 4015 ) << "[Mesh::updateForUse] update edges : " << ti.elapsed() << "\n";
         }
+        updateOnBoundary( mpl::int_<nDim>() );
+
+
         this->setUpdatedForUse( true );
     }
 
@@ -588,11 +591,20 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne()
             {
                 // here we get the next face or \c end()
                 size_type theid = __it->id();
-                __it = this->eraseFace( __it );
+
+                // find the other face
                 face_iterator __other = this->faces().find( face_type( _faceit->second ) );
                 FEELPP_ASSERT( __other->id() != theid )
                 ( __other->id() )
                 ( theid ).error( "faces should have different ids " );
+
+                if ( __it->marker() != __other->marker() )
+                {
+                    this->faces().modify( __other, [__it]( face_type& f ) { f.setMarker2( __it->marker().value() ); } );
+                }
+
+                __it = this->eraseFace( __it );
+
 
 
             }
@@ -878,8 +890,17 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne()
     }
 
 #endif
-    boost::tie( iv, en ) = this->elementsRange();
 
+
+    Debug( 4015 ) << "[Mesh::updateFaces] element/face connectivity : " << ti.elapsed() << "\n";
+    ti.restart();
+}
+template<typename Shape, typename T, int Tag>
+void
+Mesh<Shape, T, Tag>::updateOnBoundary( mpl::int_<1> )
+{
+    element_iterator iv,en;
+    boost::tie( iv, en ) = this->elementsRange();
     for ( ; iv != en; ++iv )
     {
         bool isOnBoundary = false;
@@ -893,11 +914,53 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne()
         // with the boundary
         this->elements().modify( iv, detail::OnBoundary( isOnBoundary ) );
     }
-
-    Debug( 4015 ) << "[Mesh::updateFaces] element/face connectivity : " << ti.elapsed() << "\n";
-    ti.restart();
 }
 
+template<typename Shape, typename T, int Tag>
+void
+Mesh<Shape, T, Tag>::updateOnBoundary( mpl::int_<2> )
+{
+    element_iterator iv,en;
+    boost::tie( iv, en ) = this->elementsRange();
+    for ( ; iv != en; ++iv )
+    {
+        bool isOnBoundary = false;
+
+        for ( size_type j = 0; j < this->numLocalFaces(); j++ )
+        {
+            isOnBoundary |= iv->face( j ).isOnBoundary();
+        }
+
+        // an element on the boundary means that is shares a face
+        // with the boundary
+        this->elements().modify( iv, detail::OnBoundary( isOnBoundary ) );
+    }
+}
+
+template<typename Shape, typename T, int Tag>
+void
+Mesh<Shape, T, Tag>::updateOnBoundary( mpl::int_<3> )
+{
+    element_iterator iv,en;
+    boost::tie( iv, en ) = this->elementsRange();
+    for ( ; iv != en; ++iv )
+    {
+        bool isOnBoundary = false;
+
+        for ( size_type j = 0; j < this->numLocalFaces(); j++ )
+        {
+            isOnBoundary |= iv->face( j ).isOnBoundary();
+        }
+        for ( size_type j = 0; j < this->numLocalEdges(); j++ )
+        {
+            isOnBoundary |= iv->edge( j ).isOnBoundary();
+        }
+
+        // an element on the boundary means that is shares a face
+        // with the boundary
+        this->elements().modify( iv, detail::OnBoundary( isOnBoundary ) );
+    }
+}
 #if defined(FEELPP_ENABLE_MPI_MODE)
 template<typename Shape, typename T, int Tag>
 void
@@ -2274,8 +2337,8 @@ Mesh<Shape, T, Tag>::Localization::run_analysis( const matrix_node_type & m,
     ( IsInit ).warn( "You don't have initialized the tool of localization" );
 #endif
 
-    bool find_x;
-    size_type cv_id;
+    bool find_x=false;
+    size_type cv_id=eltHypothetical;
     node_type x_ref;
     std::vector<bool> hasFindPts(setPoints.size2(),false);
 

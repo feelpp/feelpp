@@ -120,7 +120,7 @@ public:
      */
     virtual void clear ();
 
-    void localize(const Vector<T>& V );
+    void localize(const Vector<T>& V);
 
     /**
      * Set all entries to zero. Equivalent to \p v = 0, but more obvious and

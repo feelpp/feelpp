@@ -163,7 +163,7 @@ MyMesh<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
     auto mesh = mesh_type::New();
 
     tic();
-    auto is_mesh_loaded = mesh->load( _name="mymesh",_path=".",_type="text" );
+    auto is_mesh_loaded = mesh->load( _name="mymesh",_path=".",_type="binary" );
     toc( "load" );
 
     if ( !is_mesh_loaded )
@@ -177,7 +177,7 @@ MyMesh<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
                                              _dim=Dim,
                                              _h=X[0] ) );
         Log() << "Saving mesh...\n";
-        mesh->save( _name="mymesh",_path=".",_type="text" );
+        mesh->save( _name="mymesh",_path=".",_type="binary" );
         toc("generate+save");
     }
     else
@@ -261,9 +261,7 @@ int main( int argc, char** argv )
 
     //app.add( new MyMesh<1>( app.vm(), app.about() ) );
     app.add( new MyMesh<2>( app.vm(), app.about() ) );
-    //app.add( new MyMesh<3>( app.vm(), app.about() ) );
+    app.add( new MyMesh<3>( app.vm(), app.about() ) );
 
     app.run();
 }
-
-
