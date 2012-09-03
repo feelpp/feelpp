@@ -96,6 +96,7 @@ public:
         M_n_restart( 0 ),
         M_restart( false ),
         M_restartPath( "" ),
+        M_restartAtLastSave( false ),
         M_alpha( BDF_MAX_ORDER ),
         M_beta( BDF_MAX_ORDER ),
         M_saveInFile( true ),
@@ -119,6 +120,7 @@ public:
         M_n_restart( 0 ),
         M_restart( args[_restart | false] ),
         M_restartPath( args[_restart_path | ""] ),
+        M_restartAtLastSave( args[_restart_at_last_save | false] )
         M_alpha( BDF_MAX_ORDER ),
         M_beta( BDF_MAX_ORDER ),
         M_saveInFile( true ),
@@ -143,6 +145,7 @@ public:
         M_n_restart( 0 ),
         M_restart( vm[prefixvm( prefix, "bdf.restart" )].as<bool>() ),
         M_restartPath( vm[prefixvm( prefix, "bdf.restart.path" )].as<std::string>() ),
+        M_restartAtLastSave( vm[prefixvm( prefix, "bdf.restart.at-last-save" )].as<bool>() ),
         M_alpha( BDF_MAX_ORDER ),
         M_beta( BDF_MAX_ORDER ),
         M_saveInFile( vm[prefixvm( prefix, "bdf.save" )].as<bool>() ),
@@ -165,6 +168,7 @@ public:
         M_n_restart( 0 ),
         M_restart( false ),
         M_restartPath( "" ),
+        M_restartAtLastSave( false ),
         M_alpha( BDF_MAX_ORDER ),
         M_beta( BDF_MAX_ORDER ),
         M_saveInFile( true ),
@@ -188,6 +192,7 @@ public:
         M_n_restart( b.M_n_restart ),
         M_restart( b.M_restart ),
         M_restartPath( b.M_restartPath ),
+        M_restartAtLastSave( b.M_restartAtLastSave ),
         M_time_values_map( b.M_time_values_map ),
         M_alpha( b.M_alpha ),
         M_beta( b.M_beta ),
@@ -225,6 +230,7 @@ public:
             M_n_restart = b.M_n_restart;
             M_restart = b.M_restart;
             M_restartPath = b.M_restartPath;
+            M_restartAtLastSave = b.M_restartAtLastSave;
             M_strategy = b.M_strategy;
             M_state = b.M_state;
 
@@ -321,6 +327,12 @@ public:
     bool isRestart() const
     {
         return M_restart;
+    }
+
+    //! return value of do restart at last save
+    bool doRestartAtLastSave() const
+    {
+        return M_restartAtLastSave;
     }
 
     //! return the current time
@@ -547,7 +559,10 @@ public:
     {
         M_restartPath=s;
     }
-
+    void setRestartAtLastSave( bool b )
+    {
+        M_restartAtLastSave=b;
+    }
     void setSaveInFile( bool b )
     {
         M_saveInFile = b;
@@ -592,8 +607,15 @@ protected:
     mutable BDFState M_state;
 
     int M_n_restart;
+
+    //! do a restart
     bool M_restart;
-    fs::path M_restartPath;//M_pathRestart;
+
+    //! restart path
+    fs::path M_restartPath;
+
+    //! do restart with ti the last save
+    bool M_restartAtLastSave;
 
     //! timer for real time per iteration
     mutable boost::timer M_timer;
@@ -707,6 +729,9 @@ protected:
                 Debug( 5017 ) << "[Bdf::init()] metadata loaded\n";
                 //BdfBaseMetadata bdfloader( *this );
                 //bdfloader.load();
+
+                // modify Ti with last saved time
+                if (this->doRestartAtLastSave()) M_Ti = M_time_values_map.back();
 
                 M_iteration = 0;
                 // look for M_ti in the time values
@@ -1248,7 +1273,8 @@ BOOST_PARAMETER_FUNCTION(
       ( steady,*( bool ),vm[prefixvm( prefix,"bdf.steady" )].template as<bool>() )
       ( restart,*( boost::is_integral<mpl::_> ),vm[prefixvm( prefix,"bdf.restart" )].template as<bool>() )
       ( restart_path,*,vm[prefixvm( prefix,"bdf.restart.path" )].template as<std::string>() )
-      ( save,*,vm[prefixvm( prefix,"bdf.save" )].template as<bool>() )
+      ( restart_at_last_save,*( boost::is_integral<mpl::_> ),vm[prefixvm( prefix,"bdf.restart.at-last-save" )].template as<bool>() )
+      ( save,*( boost::is_integral<mpl::_> ),vm[prefixvm( prefix,"bdf.save" )].template as<bool>() )
     ) )
 {
     typedef typename meta::remove_all<space_type>::type::value_type _space_type;
@@ -1261,6 +1287,7 @@ BOOST_PARAMETER_FUNCTION(
     thebdf->setStrategy( strategy );
     thebdf->setRestart( restart );
     thebdf->setRestartPath( restart_path );
+    thebdf->setRestartAtLastSave( restart_at_last_save );
     thebdf->setSaveInFile( save );
     return thebdf;
 }
