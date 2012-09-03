@@ -59,7 +59,7 @@ inline
 Feel::po::options_description
 makeOptions()
 {
-    Feel::po::options_description stokespoiseuilleoptions( "Stokes_Poiseuile options" );
+    Feel::po::options_description stokespoiseuilleoptions( "Stokes_Poiseuille options" );
     stokespoiseuilleoptions.add_options()
     ( "penal", Feel::po::value<double>()->default_value( 0.5 ), "penalisation parameter" )
     ( "f", Feel::po::value<double>()->default_value( 0 ), "forcing term" )
@@ -129,12 +129,10 @@ public:
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
     /*basis*/
-    //***********************************************
     //# marker1 #,
     typedef Lagrange<2, Vectorial> basis_u_type;
     typedef Lagrange<1, Scalar> basis_p_type;
     typedef Lagrange<0, Scalar> basis_l_type;
-    //***********************************************
 
     // use lagrange multipliers to ensure zero mean pressure
 #if defined( FEELPP_USE_LM )
@@ -144,13 +142,9 @@ public:
 #endif
     //# endmarker1 #
 
-
-    //************************************************
     typedef bases<basis_u_type> basis_type_U;
     typedef FunctionSpace<mesh_type, basis_type_U> space_type_U;
     typedef boost::shared_ptr<space_type_U> space_ptrtype_U;
-    //************************************************
-
 
     /*space*/
     //# marker2 #
@@ -200,9 +194,7 @@ private:
 
     mesh_ptrtype mesh;
     space_ptrtype Xh;
-    //**************************
     space_ptrtype_U P7;
-    //*************************
     sparse_matrix_ptrtype M,D;
     vector_ptrtype F;
 
@@ -246,14 +238,12 @@ Stokes_Poiseuille::init()
                                          _shape="hypercube",
                                          _dim=convex_type().dimension(),
                                          _h=meshSize ) );
+
     mesh->addMarkerName( "Inlet", 1, 1 );
     mesh->addMarkerName( "Outlet", 3, 1 );
 
-
     Xh = space_type::New( mesh );
-    //***********************************
     P7=space_type_U::New(mesh);
-    //***********************************
     F = M_backend->newVector( Xh );
     D =  M_backend->newMatrix( Xh, Xh );
 }
@@ -296,73 +286,20 @@ Stokes_Poiseuille::run()
     auto SigmaN = -id( p )*N()+mu*def*N();
     //# endmarker6 #
 
-
-    //*************** Solution analytique feel++ *******************
-    // // u exact solution
-    // auto u_exact = vec( cos( Px() )*cos( Py() ), sin( Px() )*sin( Py() ) );
-
-    // // this is the exact solution which has zero mean : the mean of
-    // // cos(x)*sin(y) is sin(1)*(1-cos(1))) on [0,1]^2
-    // auto p_exact = cos( Px() )*sin( Py() )-( sin( 1.0 )*( 1.-cos( 1.0 ) ) );
-
-    // // f is such that f = \Delta u_exact + \nabla p_exact
-    // auto f = vec( ( 2*cos( Px() )*cos( Py() )-sin( Px() )*sin( Py() ) ),
-    //               2*sin( Px() )*sin( Py() )+cos( Px() )*cos( Py() ) );
-    //***************************************************************
-
-    //************ Solution analytique BE ***************************
-    // auto u_exact=vec(-256*Py()*(Py()-1)*(2*Py()-1)*Px()*Px()*(Px()-1)*(Px()-1), 256*Px()*(Px()-1)*(2*Px()-1)*Py()*Py()*(Py()-1)*(Py()-1));
-
-    // auto p_exact=(Px()-0.5)*(Py()-0.5);
-
-    // auto f=vec(256*(Px()*Px()*(Px()-1)*(Px()-1)*(12*Py()-6)+Py()*(Py()-1)*(2*Py()-1)*(12*Px()*Px()-12*Px()+2))+Py()-0.5, -256*(Py()*Py()*(Py()-1)*(Py()-1)*(12*Px()-6)+Px()*(Px()-1)*(2*Px()-1)*(12*Py()*Py()-12*Py()+2))+Px()-0.5);
-
-    // *****************************************************************
-
-
-    // //******* Solustion kovasznay *************
-    // auto u1 = val( -exp( Px() )*( Py()*cos( Py() )+sin( Py() ) ) );
-    // auto u2 = val( exp( Px() )*Py()*sin( Py() ) );
-    // auto u_exact = vec( u1,u2 );
-
-    // auto du_dx = val( -exp( Px() )*( Py()*cos( Py() )+sin( Py() ) ) );
-    // auto du_dy = val( exp( Px() )*( -Py()*sin( Py() )+2.*cos( Py() ) ) );
-    // auto dv_dx = val( exp( Px() )*Py()*sin( Py() ) );
-    // auto dv_dy = val( exp( Px() )*( sin( Py() )+Py()*cos( Py() ) ) );
-    // auto grad_exact = ( mat<2,2>( du_dx, du_dy, dv_dx, dv_dy ) );
-
-    // // this is the exact solution which has zero mean : the mean of
-    // // cos(x)*sin(y) is sin(1)*(1-cos(1))) on [0,1]^2
-    // //auto p_exact = cos(Px())*sin(Py())-(sin(1.0)*(1.-cos(1.0)));
-    // auto p_exact = 2.0*exp( Px() )*sin( Py() );
-
-    // // f is such that f = \Delta u_exact + \nabla p_exact
-    // //auto f = vec( (2*cos(Px())*cos(Py())-sin(Px())*sin(Py())),
-    // //              2*sin(Px())*sin(Py())+cos(Px())*cos(Py()) );
-    // auto f = vec( 0.*Px(),0.*Py() ) ;
-    // //*********************************************
-
-
-    //************ Solution Poiseuille ***************************
+    //*********************  solution exacte (profile de poiseuille) **********************
     auto u_exact=vec(Py()*(1-Py()),cst(0.) );
 
-    auto p_exact=(-2*Px());
+    auto p_exact=(-2*Px()+1);
+
 
     auto f=vec(cst(0.) , cst(0.) );
-
-    //*****************************************************************
-
-
+    //*************************************************************************************
 
     // right hand side
     auto stokes_rhs = form1( _test=Xh, _vector=F );
     stokes_rhs += integrate( elements( mesh ),inner( f,id( v ) ) );
-    //************* Weak Dirichlet Conditions *********************
-    if(this->vm()["bctype"].as<int>()==1)
-        {
-            stokes_rhs += integrate( markedfaces( mesh,"Inlet" ), inner( u_exact,-SigmaN+penalbc*id( v )/hFace() ) );
-            stokes_rhs += integrate( markedfaces( mesh,"Outlet" ), inner( u_exact,-SigmaN+penalbc*id( v )/hFace() ) );
-        }
+    stokes_rhs += integrate( markedfaces( mesh,"Inlet" ), inner( u_exact,-SigmaN+penalbc*id( v )/hFace() ) );
+    stokes_rhs += integrate( markedfaces( mesh,"Outlet" ), inner( u_exact,-SigmaN+penalbc*id( v )/hFace() ) );
 
     Log() << "[stokes] vector local assembly done\n";
 
@@ -383,17 +320,10 @@ Stokes_Poiseuille::run()
     std::cout << "(lambda,p): " << chrono.elapsed() << "\n";
     chrono.restart();
 #endif
-    //********************* Weak Dirichlet conditions ************************
-    if(this->vm()["bctype"].as<int>()==1)
-        {
-            stokes +=integrate( boundaryfaces( mesh ), -inner( SigmaNt,id( v ) ) );
-            stokes +=integrate( markedfaces( mesh,"Inlet" ), -inner( SigmaN,idt( u ) ) );
-            stokes +=integrate( markedfaces( mesh,"Outlet" ), -inner( SigmaN,idt( u ) ) );
-            stokes +=integrate( markedfaces( mesh,"Inlet" ), +penalbc*inner( idt( u ),id( v ) )/hFace() );
-            stokes +=integrate( markedfaces( mesh,"Outlet" ), +penalbc*inner( idt( u ),id( v ) )/hFace() );
-        }
-    else
-        stokes+=on(_range=boundaryfaces(mesh),_element=u,_rhs=F,_expr=u_exact);
+
+    stokes +=integrate( boundaryfaces( mesh ), -inner( SigmaNt,id( v ) ) );
+    stokes +=integrate( boundaryfaces( mesh ), -inner( SigmaN,idt( u ) ) );
+    stokes +=integrate( boundaryfaces( mesh ), +penalbc*inner( idt( u ),id( v ) )/hFace() );
 
     std::cout << "bc: " << chrono.elapsed() << "\n";
     chrono.restart();
@@ -412,6 +342,8 @@ Stokes_Poiseuille::run()
     std::cout << "||p-q||=" << ( p-q ).l2Norm() << "\n";
 #endif
     this->exportResults( u_exact, p_exact, U, V );
+
+
 
     Log() << "[dof]         number of dof: " << Xh->nDof() << "\n";
     Log() << "[dof]    number of dof/proc: " << Xh->nLocalDof() << "\n";
@@ -433,9 +365,6 @@ Stokes_Poiseuille::exportResults( ExprUExact u_exact, ExprPExact p_exact,
 
     auto v = V.element<0>();
     auto q = V.element<1>();
-    //********************************
-    auto u_exact_proj=vf::project(P7,elements(mesh),u_exact);
-    //********************************
 #if defined( FEELPP_USE_LM )
     auto lambda = U.element<2>();
     auto nu = V.element<2>();
@@ -444,17 +373,10 @@ Stokes_Poiseuille::exportResults( ExprUExact u_exact, ExprPExact p_exact,
 
 #endif
 
+    auto u_exact_proj=vf::project(P7,elements(mesh),u_exact);
+
     double u_errorL2 = integrate( elements( u.mesh() ), trans( idv( u )-u_exact )*( idv( u )-u_exact ) ).evaluate()( 0, 0 );
     std::cout << "||u_error||_2 = " << math::sqrt( u_errorL2 ) << "\n";;
-
-    //***********************************************************************
-    double u_errorH1 = integrate( elements( u.mesh() ),  trans( idv( u )-u_exact )*( idv( u )-u_exact )).evaluate()( 0, 0 ) +  integrate( elements( u.mesh() ),  trans( gradv( u ) -  gradv ( u_exact_proj ) )*( gradv( u ) -  gradv ( u_exact_proj )) ).evaluate()( 0, 0 );
-    double H1_u=math::sqrt( u_errorH1 );
-    std::cout << "||u_errorH1||_2 = " <<H1_u<< "\n";;
-    //************************************************************************
-
-
-
 
     double meas = integrate( elements( u.mesh() ), cst( 1.0 ) ).evaluate()( 0, 0 );
     Log() << "[stokes] measure(Omega)=" << meas << " (should be equal to 1)\n";
@@ -464,11 +386,21 @@ Stokes_Poiseuille::exportResults( ExprUExact u_exact, ExprPExact p_exact,
     Log() << "[stokes] mean(p)=" << mean_p << "\n";
     std::cout << "[stokes] mean(p)=" << mean_p << "\n";
 
+    ////////////////////////////////////////////////////////////////////////////////////////
+    double mean_p_exact = integrate( elements( u.mesh() ),  p_exact ).evaluate()( 0, 0 )/meas;
+    std::cout << "[stokes] mean(p_exact)=" << mean_p_exact << "\n";
+    //////////////////////////////////////////////////////////////////////////////////////////
+
+
     double p_errorL2 = integrate( elements( u.mesh() ), ( idv( p )-mean_p - p_exact )*( idv( p )-mean_p-p_exact ) ).evaluate()( 0, 0 );
     std::cout << "||p_error||_2 = " << math::sqrt( p_errorL2 ) << "\n";;
 
     Log() << "[stokes] solve for D done\n";
 
+
+    double u_errorH1 = integrate( elements( u.mesh() ),  trans( idv( u )-u_exact )*( idv( u )-u_exact )).evaluate()( 0, 0 ) +  integrate( elements( u.mesh() ),  trans( gradv( u ) -  gradv ( u_exact_proj ) )*( gradv( u ) -  gradv ( u_exact_proj )) ).evaluate()( 0, 0 );
+    double H1_u=math::sqrt( u_errorH1 );
+    std::cout << "||u_errorH1||_2 = " <<H1_u<< "\n";;
 
 
     double mean_div_u = integrate( elements( u.mesh() ), divv( u ) ).evaluate()( 0, 0 );
@@ -528,6 +460,12 @@ main( int argc, char** argv )
     Feel::Stokes_Poiseuille stokes_poiseuille( argc, argv, makeAbout(), makeOptions() );
     stokes_poiseuille.run();
 }
+
+
+
+
+
+
 
 
 

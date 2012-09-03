@@ -60,7 +60,7 @@ public:
     MyApp( int argc, char** argv, Feel::AboutData const& about, po::options_description const& od )
         :
         super( argc, argv, about, od ),
-        bdf( this->vm(), "bdf","test_bdf" )
+        bdf( this->vm(), "bdf","test_bdf", Environment::worldComm() )
     {}
     void run()
     {

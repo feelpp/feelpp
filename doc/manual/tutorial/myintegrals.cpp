@@ -85,7 +85,7 @@ public:
     typedef double value_type;
 
     /*mesh*/
-    typedef Simplex<Dim> convex_type;
+    typedef Simplex<2> convex_type;
     typedef Mesh<convex_type> mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
@@ -231,13 +231,13 @@ MyIntegrals<Dim>::run( const double* X, unsigned long P, double* Y, unsigned lon
 
 
     //# marker7 #
-    double local_intsin2 = integrate( elements( mesh ),
-                                      sin( Px()*Px() + Py()*Py() + Pz()*Pz() ),
-                                      _Q<2>()
+    double local_intsin2 = integrate( _range=elements( mesh ),
+                                      _expr=sin( Px()*Px() + Py()*Py() + Pz()*Pz() ),
+                                      _quad=_Q<2>()
                                     ).evaluate( false )( 0,0 );
-    double global_intsin2 = integrate( elements( mesh ),
-                                       sin( Px()*Px() + Py()*Py() + Pz()*Pz() ),
-                                       _Q<2>() ).evaluate()( 0,0 );
+    double global_intsin2 = integrate( _range=elements( mesh ),
+                                       _expr=sin( Px()*Px() + Py()*Py() + Pz()*Pz() ),
+                                       _quad=_Q<2>() ).evaluate()( 0,0 );
     //# endmarker7 #
     Log() << "int_Omega (sin(x^2+y^2+z^2)) [with order 2 max exact integration] = " << global_intsin2
           << "[ " << local_intsin2 << " ]\n";
@@ -264,8 +264,3 @@ main( int argc, char** argv )
 
     app.run();
 }
-
-
-
-
-
