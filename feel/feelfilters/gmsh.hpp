@@ -899,7 +899,6 @@ BOOST_PARAMETER_FUNCTION(
             return straightenMesh( _mesh=_mesh,
                                    _worldcomm=worldcomm.subWorldComm() );
     }
-
     return _mesh;
 }
 
@@ -1007,7 +1006,6 @@ BOOST_PARAMETER_FUNCTION(
     {
 
     }
-
     // first try in the current path
     if ( fs::exists( cp / filename ) )
     {
@@ -1032,32 +1030,37 @@ BOOST_PARAMETER_FUNCTION(
         throw std::invalid_argument( ostr.str() );
     }
 
-    std::vector<std::string> depends_on_files;
-    algorithm::split( depends_on_files, depends, algorithm::is_any_of( ":,; " ), algorithm::token_compress_on );
-    // copy include/merged files needed by geometry file
-    boost::for_each( depends_on_files,
-                     [&cp, &files_path]( std::string const& _filename )
-                     {
-                         fs::path file_path( files_path );
-                         file_path /= _filename;
-
-                         try
+    if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+    {
+        std::vector<std::string> depends_on_files;
+        algorithm::split( depends_on_files, depends, algorithm::is_any_of( ":,; " ), algorithm::token_compress_on );
+        // copy include/merged files needed by geometry file
+        boost::for_each( depends_on_files,
+                         [&cp, &files_path]( std::string const& _filename )
                          {
-                             boost::system::error_code ec;
+                             fs::path file_path( files_path );
+                             file_path /= _filename;
 
-                             if ( !( fs::exists( file_path ) && fs::is_regular_file( file_path ) ) )
-                                 std::cout << "File : " << file_path << " doesn't exist or is not a regular file" << std::endl;
+                             try
+                             {
+                                 boost::system::error_code ec;
 
-                             else if ( !fs::exists( cp / _filename )  )
-                                 fs::copy_file( file_path, fs::path( _filename ), fs::copy_option::none );
+                                 if ( !( fs::exists( file_path ) && fs::is_regular_file( file_path ) ) )
+                                     std::cout << "File : " << file_path << " doesn't exist or is not a regular file" << std::endl;
 
-                         }
+                                 else if ( !fs::exists( cp / _filename )  )
+                                     fs::copy_file( file_path, fs::path( _filename ), fs::copy_option::none );
 
-                         catch ( const fs::filesystem_error& e )
-                         {
-                             std::cerr << "Error: " << e.what() << std::endl;
-                         }
-                     } );
+                             }
+
+                             catch ( const fs::filesystem_error& e )
+                                 {
+                                     std::cerr << "Error: " << e.what() << std::endl;
+                                 }
+                         } );
+    }
+   Environment::worldComm().barrier();
+
 
     return gmsh_ptr;
 
