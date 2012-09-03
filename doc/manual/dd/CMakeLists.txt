@@ -31,3 +31,7 @@ feelpp_add_application( doc_nonoverlapping SRCS nonoverlappinggeo.cpp nonoverlap
 
 # eigenmodes of Dirichlet to Neumann operator
 feelpp_add_application( doc_multi_levels SRCS multi_levels.cpp )
+
+# Non-conforming domain decomposition methods
+feelpp_add_application( doc_mortar SRCS mortar.cpp )
+feelpp_add_application( doc_threefields SRCS threefields.cpp )

@@ -614,11 +614,11 @@ template <typename T>
 void
 VectorPetscMPI<T>::clear()
 {
-    super::clear();
-
-    if ( /*(this->isInitialized()) &&*/ ( this->destroy_vec_on_exit() ) )
+    if ( this->isInitialized() )
     {
-        int ierr=0;
+        super::clear();
+
+       int ierr=0;
 #if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
         ierr = VecDestroy( &_M_vecLocal );
         CHKERRABORT( this->comm(),ierr );

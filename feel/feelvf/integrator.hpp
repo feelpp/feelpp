@@ -2214,6 +2214,9 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_FACES> ) const
 
         else
         {
+            FEELPP_ASSERT( it->isConnectedTo0() ).warn( "integration invalid boundary face" );
+            if ( !it->isConnectedTo0() || it->pos_first() == invalid_uint16_type_value )
+                continue;
             uint16_type __face_id_in_elt_0 = it->pos_first();
             __c0->update( it->element( 0 ), __face_id_in_elt_0 );
             map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c0 ) );

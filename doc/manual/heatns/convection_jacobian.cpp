@@ -1,16 +1,16 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
-       Date: 2012-03-22
+       Date: 2009-03-04
 
-  Copyright (C) 2012 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2009 Universite Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
   License as published by the Free Software Foundation; either
-  version 2.1 of the License, or (at your option) any later version.
+  version 3.0 of the License, or (at your option) any later version.
 
   This library is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -22,31 +22,65 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 /**
-   \file convection_jacobian.hpp
+   \file convection_jacobian.cpp
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
-   \date 2012-03-22
+   \date 2009-03-04
  */
-#include "convection.hpp"
+#include <convection.hpp>
 
-template <int Order_s, int Order_p, int Order_t>
-void Convection<Order_s,Order_p,Order_t> ::updateJacobian( const vector_ptrtype& X,
+// <int Order_s, int Order_p, int Order_t>
+void Convection ::updateJacobian( const vector_ptrtype& X,
         sparse_matrix_ptrtype& J )
 {
     boost::timer ti;
     Log() << "[updateJacobian] start\n";
 
-    //D->zero();
-    //L->zero();
-    this->initLinearOperator( J );
+    if ( !J )
+    {
+        J =  M_backend->newMatrix( _test=Xh, _trial=Xh );
+        M_D =  M_backend->newMatrix( _test=Xh, _trial=Xh );
+        M_L =  M_backend->newMatrix( _test=Xh, _trial=Xh );
+        std::cout << "newMatrices J = D + L.\n";
 
-    this->updateJacobian1( X, J );
+        this->initLinearOperator( M_L );
+        this->initLinearOperator2( M_L );
 
-    //L->close();
+    }
+    else
+    {
+        M_D->zero();
+        J->zero();
+    }
 
-    //J->mat() = MatDuplicate( L->mat() );
-    //*J = L;
-    //J = L;
+    this->updateJacobian1( X, M_D );
+    this->updateJacobian2( X, M_D );
+
+    M_D->close();
+    M_L->close();
     J->close();
+    
+    //conditions fortes de dir
+    auto mesh = Xh->mesh();
+    auto U =  Xh->element( "u" );
+    auto u = U. element<0>(); // fonction vitesse
+    auto t= U. element<2>(); // fonction temperature
+    auto Rtemp =  M_backend->newVector( Xh );
+    int weakdir( this->vm()["weakdir"]. as<int>() );
+    int adim = this->vm()["adim"]. as<int>();
+    double T0 = this->vm()["T0"]. as<double>();
+
+    if ( weakdir == 0 )
+    {
+        //vitesse
+        form2( Xh, Xh, M_D )  += on( boundaryfaces( mesh ),u, Rtemp,one()*0. );
+
+        if ( adim==1 )
+            //temperature
+            form2( Xh, Xh, M_D )  += on ( markedfaces( mesh, "Tfixed" ),t,Rtemp,cst( 0.0 ) );
+
+        else
+            form2( Xh, Xh, M_D )  += on ( markedfaces( mesh, "Tfixed" ),t,Rtemp,cst( T0 ) );
+    }
     //L->printMatlab( "L.m" );
     //J->printMatlab( "J1.m" );
     //D->printMatlab( "D1.m" );
@@ -54,70 +88,10 @@ void Convection<Order_s,Order_p,Order_t> ::updateJacobian( const vector_ptrtype&
     //J->printMatlab( "J.m" );
     Log() << "[updateJacobian] done in " << ti.elapsed() << "s\n";
 
+    J->addMatrix( 1.0, M_L);
+    J->addMatrix( 1.0, M_D);
+    
 }
 
-template <int Order_s, int Order_p, int Order_t>
-void Convection<Order_s,Order_p,Order_t> ::updateJacobian1( const vector_ptrtype& X,
-        sparse_matrix_ptrtype& D )
-{
-#if 1
-    mesh_ptrtype mesh = Xh->mesh();
-    element_type U( Xh, "u" );
-    U = *X;
-
-    element_type V( Xh, "v" );
-    element_type W( Xh, "v" );
-    element_0_type u = U.template element<0>(); // fonction vitesse
-    element_0_type v = V.template element<0>(); // fonction test vitesse
-    element_1_type p = U.template element<1>(); // fonction pression
-    element_1_type q = V.template element<1>(); // fonction test pression
-    element_2_type t = U.template element<2>(); // fonction temperature
-    element_2_type s = V.template element<2>(); // fonction test temperature
-    element_3_type xi = U.template element<3>(); // fonction multipliers
-    element_3_type eta = V.template element<3>(); // fonction test multipliers
-
-    Log() << "[updateJacobian1] ||U|| = " << U.l2Norm() << "\n";
-    Log() << "[updateJacobian1] ||u|| = " << u.l2Norm() << "\n";
-    Log() << "[updateJacobian1] ||p|| = " << p.l2Norm() << "\n";
-    Log() << "[updateJacobian1] ||t|| = " << t.l2Norm() << "\n";
-    Log() << "[updateJacobian1] ||xi|| = " << xi.l2Norm() << "\n";
-
-    double gr= M_current_Grashofs;
-    double sqgr( 1/math::sqrt( gr ) );
-    double pr=M_current_Prandtl;
-    double sqgrpr( 1/( pr*math::sqrt( gr ) ) );
-    double gamma( this->vm()["penalbc"].template as<double>() );
-
-    // Fluid-NS
-    // fluid convection derivatives: attention 2 terms
-    form2( Xh,Xh, D )  +=
-        integrate ( elements( mesh ),
-                    trans( id( v ) )*( gradv( u ) )*idt( u ) );
-    form2( Xh,Xh, D )  +=
-        integrate ( elements( mesh ),
-                    trans( id( v ) )*( gradt( u )*idv( u ) ) );
-    Log() << "[updateJacobian1] Convection terms done\n";
-
-
-    //
-    // temperature derivatives
-    //
-    // heat convection by the fluid: attention 2 terms
-    form2( Xh,Xh, D ) +=
-        integrate ( elements( mesh ),
-                    grad( s )*( idv( t )*idt( u ) ) );
-    form2( Xh,Xh, D ) +=
-        integrate ( elements( mesh ),
-                    grad( s )*( idt( t )*idv( u ) ) );
-    form2( Xh,Xh, D ) +=
-        integrate ( boundaryfaces( mesh ),
-                    ( trans( idv( u ) )*N() )*id( s )*idt( t ) );
-    form2( Xh,Xh, D ) +=
-        integrate ( boundaryfaces( mesh ),
-                    ( trans( idt( u ) )*N() )*id( s )*idv( t ) );
-    Log() << "[updateJacobian] Temperature convection terms done\n";
-#endif
-}
-
-
-template class Convection<2,1,2>;
+// instantiation
+//emplate class Convection<2,1,2>;

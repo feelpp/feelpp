@@ -1376,7 +1376,7 @@ MatrixPetsc<T>::energy( Vector<value_type> const& __v,
             size_type start = u.firstLocalIndex();
 
             for ( size_type i = 0; i < s; ++i )
-                u.set( start + i, __u( start + i ) );
+                u.set( start + i, __u(  start + i ) );
         }
         VectorPetsc<value_type> v( __v.size(), __v.localSize() );
         {
@@ -2386,6 +2386,69 @@ MatrixPetscMPI<T>::zeroRows( std::vector<int> const& rows,
     // ???
 #endif
 } // zeroRows
+
+//----------------------------------------------------------------------------------------------------//
+template<typename T>
+typename MatrixPetscMPI<T>::value_type
+MatrixPetscMPI<T>::energy( Vector<value_type> const& __v,
+                           Vector<value_type> const& __u,
+                           bool transpose ) const
+{
+    this->close();
+
+    PetscScalar e;
+
+    if ( dynamic_cast<VectorPetscMPI<T> const*>( &__v ) != ( VectorPetscMPI<T> const* )0 )
+    {
+        VectorPetscMPI<T> const& v   = dynamic_cast<VectorPetscMPI<T> const&>( __v );
+        VectorPetscMPI<T> const& u   = dynamic_cast<VectorPetscMPI<T> const&>( __u );
+        VectorPetscMPI<value_type> z( this->mapRow() );
+
+        if ( !transpose )
+            MatMult( this->mat(), u.vec(), z.vec() );
+        else
+            MatMultTranspose( this->mat(), u.vec(), z.vec() );
+
+        VecDot( v.vec(), z.vec(), &e );
+    }
+
+    else
+    {
+        VectorPetscMPI<value_type> u( this->mapRow() );
+        {
+            //size_type s = u.localSize();
+            size_type s = u.map().nLocalDofWithGhost();
+            size_type start = u.firstLocalIndex();
+
+            for ( size_type i = 0; i < s; ++i )
+                u.set( start + i, __u( start + i ) );
+        }
+
+        VectorPetscMPI<value_type> v( this->mapRow() );
+        {
+            //size_type s = v.localSize();
+            size_type s = v.map().nLocalDofWithGhost();
+            size_type start = v.firstLocalIndex();
+
+            for ( size_type i = 0; i < s; ++i )
+                v.set( start + i, __v( start + i ) );
+        }
+        VectorPetscMPI<value_type> z( this->mapRow() );
+
+        u.close();
+        v.close();
+
+        if ( !transpose )
+            MatMult( this->mat(), u.vec() , z.vec() );
+
+        else
+            MatMultTranspose( this->mat(), u.vec(), z.vec() );
+
+        VecDot( v.vec(), z.vec(), &e );
+    }
+
+    return e;
+}
 
 //----------------------------------------------------------------------------------------------------//
 

@@ -328,6 +328,8 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  
               << " -" << dim << " -part " << M_partitions  << " " << __geoname;
 
     Log() << "[Gmsh::generate] execute '" <<  __str.str() << "\n";
+    Log() << "[Gmsh::generate] partitions: " <<  M_partitions << "\n";
+    Log() << "[Gmsh::generate] partitioner: " <<  M_partitioner << "\n";
 
     auto err = ::system( __str.str().c_str() );
 #else
@@ -340,7 +342,10 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  
         gmshIsInit=true;
         GmshInitialize();
     }
-
+    Log() << "[Gmsh::generate] env.part: " <<  Environment::numberOfProcessors() << "\n";
+    Log() << "[Gmsh::generate] env.part: " <<  Environment::worldComm().size() << "\n";
+    Log() << "[Gmsh::generate] partitions: " <<  M_partitions << "\n";
+    Log() << "[Gmsh::generate] partitioner: " <<  M_partitioner << "\n";
     CTX::instance()->partitionOptions.num_partitions =  M_partitions;
     CTX::instance()->partitionOptions.partitioner =  M_partitioner;
 
