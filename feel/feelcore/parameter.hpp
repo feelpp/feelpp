@@ -161,6 +161,7 @@ BOOST_PARAMETER_NAME( strategy )
 BOOST_PARAMETER_NAME( steady )
 BOOST_PARAMETER_NAME( restart )
 BOOST_PARAMETER_NAME( restart_path )
+BOOST_PARAMETER_NAME( restart_at_last_save )
 
 BOOST_PARAMETER_NAME( markerName )
 BOOST_PARAMETER_NAME( markerAll )
