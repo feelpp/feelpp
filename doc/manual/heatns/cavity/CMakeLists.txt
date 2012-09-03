@@ -22,5 +22,6 @@
 #
 #
 
-feelpp_add_application( heatns_natural_convection_cavity_2d SRCS convection_main.cpp ${lib_convection} LINK_LIBRARIES  ${FEELPP_LIBRARIES}  DEFS FEELPP_USE_LM CONVECTION_DIM=2 )
-feelpp_add_application( heatns_natural_convection_cavity_3d SRCS convection_main.cpp ${lib_convection} LINK_LIBRARIES  ${FEELPP_LIBRARIES}  DEFS FEELPP_USE_LM CONVECTION_DIM=3 )
+feelpp_add_application( heatns_natural_convection_cavity_2d SRCS convection_main.cpp convection_crb_specifics.cpp ${lib_convection} LINK_LIBRARIES  ${FEELPP_LIBRARIES}  DEFS FEELPP_USE_LM CONVECTION_DIM=2 )
+feelpp_add_application( heatns_natural_convection_cavity_2d_crb SRCS convection_main.cpp convection_crb_specifics.cpp ${lib_convection} LINK_LIBRARIES  ${FEELPP_LIBRARIES}  DEFS FEELPP_USE_LM CONVECTION_DIM=2 CRB_SOLVER=1)
+feelpp_add_application( heatns_natural_convection_cavity_3d SRCS convection_main.cpp convection_crb_specifics.cpp ${lib_convection} LINK_LIBRARIES  ${FEELPP_LIBRARIES}  DEFS FEELPP_USE_LM CONVECTION_DIM=3 CRB_SOLVER=0 )
