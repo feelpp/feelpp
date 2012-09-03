@@ -2898,7 +2898,7 @@ public:
                 {
                     std::cerr  << "ERROR IN [load] :" <<  full_path_dir_sol << "  FILE : " << os1.str() << " OR " << os2.str() << " DO NOT EXIST" << std::endl ;
                     //std::cerr << "ATTENTION :  p does not exist
-                    return;
+                    return 0;
                 }
             }
             LOG(INFO) << p << " exists, is is a regular file : " << fs::is_regular_file( p ) << "\n";
@@ -2906,7 +2906,7 @@ public:
             {
 
                 std::cerr << "ERROR IN [load] : " << full_path_dir_sol << p << " is not a  regular_file !" << std::endl;
-                return;
+                return 0;
             }
 
             fs::ifstream ifs( p );
