@@ -5466,12 +5466,13 @@ CRB<TruthModelType>::save( Archive & ar, const unsigned int version ) const
     std::cout<<"[CRB::save] version : "<<version<<std::endl;
 
     auto mesh = mesh_type::New();
-    auto is_mesh_loaded = mesh->load( _name="mymesh",_path=".",_type="binary" );
+    auto is_mesh_loaded = mesh->load( _name="mymesh",_path=this->dbLocalPath(),_type="binary" );
+
     if ( ! is_mesh_loaded )
     {
         auto first_element = M_WN[0];
         mesh = first_element.functionSpace()->mesh() ;
-        mesh->save( _name="mymesh",_path=".",_type="binary" );
+        mesh->save( _name="mymesh",_path=this->dbLocalPath(),_type="binary" );
     }
 
     auto Xh = space_type::New( mesh );
@@ -5552,7 +5553,7 @@ CRB<TruthModelType>::load( Archive & ar, const unsigned int version )
 
     auto mesh = mesh_type::New();
 
-    auto is_mesh_loaded = mesh->load( _name="mymesh",_path=".",_type="binary" );
+    auto is_mesh_loaded = mesh->load( _name="mymesh",_path=this->dbLocalPath(),_type="binary" );
 
     auto Xh = space_type::New( mesh );
 
@@ -5649,7 +5650,6 @@ CRB<TruthModelType>::load( Archive & ar, const unsigned int version )
 #endif
     if( version >= 4 )
     {
-
         ar & BOOST_SERIALIZATION_NVP( M_Fqm_pr );
         ar & BOOST_SERIALIZATION_NVP( M_MFqm_pr );
 
@@ -5667,6 +5667,7 @@ CRB<TruthModelType>::load( Archive & ar, const unsigned int version )
             ar & BOOST_SERIALIZATION_NVP( temp );
             M_WN[i] = temp;
         }
+
         for( int i = 0 ; i < M_N ; i++ )
         {
             temp.setName( (boost::format( "fem-dual-%1%" ) % ( i ) ).str() );
@@ -5687,7 +5688,7 @@ CRB<TruthModelType>::load( Archive & ar, const unsigned int version )
     }
 
 #endif
-
+    std::cout << "end of load function" << std::endl;
 }
 
 
