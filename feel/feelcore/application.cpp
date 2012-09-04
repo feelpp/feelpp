@@ -495,6 +495,7 @@ Application::doOptions( int argc, char** argv )
         ( "verbose,V", "verbose mode" )
         ( "nochdir", "Don't change repository directory even though it is called" )
         ( "config-file", po::value<std::string>(), "specify .cfg file" )
+        ( "result-file", po::value<std::string>()->default_value(this->about().appName()), "specify .res file" )
         ( "response-file", po::value<std::string>(), "can be specified with '@name', too" )
         ;
         po::options_description debug( "Debugging options" );
@@ -639,6 +640,11 @@ void
 Application::setDimension( int dim )
 {
     _M_dim = dim;
+}
+std::string
+Application::resultFileName() const
+{
+    return this->vm()["result-file"].as<std::string>();
 }
 void
 Application::setLogs()
