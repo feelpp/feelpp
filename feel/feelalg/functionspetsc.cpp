@@ -180,7 +180,69 @@ PetscPCFactorSetMatSolverPackage( PC & pc, MatSolverPackageType mspackt )
                   << "Continuing with PETSC defaults" << std::endl;
     }
 
-} // setPetscMatSolverPackageType
+} // PetscPCFactorSetMatSolverPackage
+
+std::string
+PetscConvertKSPReasonToString( KSPConvergedReason reason )
+{
+    switch ( reason )
+    {
+        /* converged */
+    case KSP_CONVERGED_RTOL_NORMAL     : return "CONVERGED_RTOL_NORMAL";
+    case KSP_CONVERGED_RTOL            : return "CONVERGED_RTOL";
+    case KSP_CONVERGED_ATOL            : return "CONVERGED_ATOL";
+    case KSP_CONVERGED_ITS             : return "CONVERGED_ITS";
+    case KSP_CONVERGED_CG_NEG_CURVE    : return "CONVERGED_CG_NEG_CURVE";
+    case KSP_CONVERGED_CG_CONSTRAINED  : return "CONVERGED_CG_CONSTRAINED";
+    case KSP_CONVERGED_STEP_LENGTH     : return "CONVERGED_STEP_LENGTH";
+    case KSP_CONVERGED_HAPPY_BREAKDOWN : return "CONVERGED_HAPPY_BREAKDOWN";
+    case KSP_CONVERGED_ATOL_NORMAL     : return "CONVERGED_ATOL_NORMAL";
+
+        /* diverged */
+    case KSP_DIVERGED_NULL           : return "DIVERGED_NULL";
+    case KSP_DIVERGED_ITS            : return "DIVERGED_ITS";
+    case KSP_DIVERGED_DTOL           : return "DIVERGED_DTOL";
+    case KSP_DIVERGED_BREAKDOWN      : return "DIVERGED_BREAKDOWN";
+    case KSP_DIVERGED_BREAKDOWN_BICG : return "DIVERGED_BREAKDOWN_BICG";
+    case KSP_DIVERGED_NONSYMMETRIC   : return "DIVERGED_NONSYMMETRIC";
+    case KSP_DIVERGED_INDEFINITE_PC  : return "DIVERGED_INDEFINITE_PC";
+    case KSP_DIVERGED_NAN            : return "DIVERGED_NAN";
+    case KSP_DIVERGED_INDEFINITE_MAT : return "DIVERGED_INDEFINITE_MAT";
+
+    case KSP_CONVERGED_ITERATING : return "CONVERGED_ITERATING";
+
+    default: return "INDEFINE_KSP_REASON";
+
+    }
+} // PetscPCFactorSetMatSolverPackage
+
+std::string
+PetscConvertSNESReasonToString( SNESConvergedReason reason )
+{
+   switch ( reason )
+    {
+        /* converged */
+    case SNES_CONVERGED_FNORM_ABS      : return "CONVERGED_FNORM_ABS";     // =  2, /* ||F|| < atol */
+    case SNES_CONVERGED_FNORM_RELATIVE : return "CONVERGED_FNORM_RELATIVE";// =  3, /* ||F|| < rtol*||F_initial|| */
+    case SNES_CONVERGED_SNORM_RELATIVE : return "CONVERGED_SNORM_RELATIVE";// =  4, /* Newton computed step size small; || delta x || < stol */
+    case SNES_CONVERGED_ITS            : return "CONVERGED_ITS";           // =  5, /* maximum iterations reached */
+    case SNES_CONVERGED_TR_DELTA       : return "CONVERGED_TR_DELTA";      // =  7,
+        /* diverged */
+    case SNES_DIVERGED_FUNCTION_DOMAIN : return "DIVERGED_FUNCTION_DOMAIN";// = -1, /* the new x location passed the function is not in the domain of F */
+    case SNES_DIVERGED_FUNCTION_COUNT  : return "DIVERGED_FUNCTION_COUNT"; // = -2,
+    case SNES_DIVERGED_LINEAR_SOLVE    : return "DIVERGED_LINEAR_SOLVE";   // = -3, /* the linear solve failed */
+    case SNES_DIVERGED_FNORM_NAN       : return "DIVERGED_FNORM_NAN";      // = -4,
+    case SNES_DIVERGED_MAX_IT          : return "DIVERGED_MAX_IT";         // = -5,
+    case SNES_DIVERGED_LINE_SEARCH     : return "DIVERGED_LINE_SEARCH";    // = -6, /* the line search failed */
+    case SNES_DIVERGED_INNER           : return "DIVERGED_INNER";          // = -7, /* inner solve failed */
+    case SNES_DIVERGED_LOCAL_MIN       : return "DIVERGED_LOCAL_MIN";      // = -8, /* || J^T b || is small, implies converged to local minimum of F() */
+
+    case SNES_CONVERGED_ITERATING      : return "CONVERGED_ITERATING";     // =  0
+
+    default: return "INDEFINE_SNES_REASON";
+
+    }
+} //PetscConvertSNESReasonToString
 
 
 } // namespace Feel
