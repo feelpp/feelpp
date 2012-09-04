@@ -336,6 +336,10 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
 
 
     Log() << "||error||_L2=" << L2error << "\n";
+
+    std::ofstream res(this->vm()["result-file"].template as<std::string>() );
+    res << "L2="<< L2error << "\n";
+
     //# endmarker7 #
     /** \endcode */
 
@@ -356,10 +360,6 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
         Log() << "exportResults starts\n";
 
         exporter->step( 0 )->setMesh( mesh );
-
-        exporter->step( 0 )->addRegions();
-        exporter->step( 0 )->add( "u", u );
-        exporter->step( 0 )->add( "g", e );
 
         exporter->save();
         Log() << "exportResults done\n";
