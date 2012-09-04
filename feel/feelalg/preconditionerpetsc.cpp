@@ -188,6 +188,13 @@ void PreconditionerPetsc<T>::setPetscPreconditionerType ( const PreconditionerTy
         break;
     }
 
+    case GASM_PRECOND:
+    {
+        ierr = PCSetType ( pc, ( char* ) PCGASM );
+        CHKERRABORT( worldComm.globalComm(),ierr );
+        break;
+    }
+
     case JACOBI_PRECOND:
         ierr = PCSetType ( pc, ( char* ) PCJACOBI );
         CHKERRABORT( worldComm.globalComm(),ierr );
