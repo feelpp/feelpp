@@ -53,6 +53,9 @@ namespace Feel
 
 void PetscPCFactorSetMatSolverPackage( PC & pc, MatSolverPackageType mspackt );
 
+std::string PetscConvertKSPReasonToString( KSPConvergedReason reason );
+std::string PetscConvertSNESReasonToString( SNESConvergedReason reason );
+
 
 } // namespace Feel
 
