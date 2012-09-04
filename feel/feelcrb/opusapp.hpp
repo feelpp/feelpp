@@ -215,7 +215,6 @@ public:
     FEELPP_DONT_INLINE
     void run()
         {
-
             int proc_number =  Environment::worldComm().globalRank();
 
             if ( this->vm().count( "help" ) )
@@ -287,6 +286,7 @@ public:
                 {
                 case  CRBModelMode::PFEM:
                 {
+                    std::cout << "PFEM mode" << std::endl;
                     boost::timer ti;
 
                     auto u_fem = model->solve( mu );
@@ -353,6 +353,9 @@ public:
                             printEntry( file_summary_of_simulations, mu, v );
                             printEntry( ostr, mu, v );
                             file_summary_of_simulations.close();
+
+                            std::ofstream res(this->vm()["result-file"].template as<std::string>() );
+                            res << "output="<< o.template get<0>() << "\n";
                         }
                     }
 
@@ -366,6 +369,9 @@ public:
                             printEntry( file_summary_of_simulations, mu, v );
                             printEntry( ostr, mu, v );
                             file_summary_of_simulations.close();
+
+                            std::ofstream res(this->vm()["result-file"].template as<std::string>() );
+                            res << "output="<< o.template get<0>() << "\n";
                         }
                     }
 
