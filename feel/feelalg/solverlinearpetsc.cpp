@@ -272,6 +272,12 @@ void SolverLinearPetsc<T>::init ()
             PCShellSetApply( _M_pc,__feel_petsc_preconditioner_apply );
         }
 
+        if ( this->showKSPMonitor() )
+        {
+            KSPMonitorSet( _M_ksp,KSPMonitorDefault,PETSC_NULL,PETSC_NULL );
+        }
+
+
     }
 }
 
@@ -481,9 +487,20 @@ SolverLinearPetsc<T>::solve ( MatrixSparse<T> const&  matrix_in,
 
     bool hasConverged;
 
-    if ( reason> 0 ) hasConverged=true;
-
-    else hasConverged=false;
+    if ( reason> 0 )
+        {
+            hasConverged=true;
+            if (this->showKSPConvergedReason() && this->worldComm().globalRank() == this->worldComm().masterRank() )
+                std::cout<< "Linear solve converged due to " << PetscConvertKSPReasonToString(reason)
+                         << " iterations " << its << std::endl;
+        }
+    else
+        {
+            hasConverged=false;
+            if (this->showKSPConvergedReason() && this->worldComm().globalRank() == this->worldComm().masterRank() )
+                std::cout<< "Linear solve did not converge due to " << PetscConvertKSPReasonToString(reason)
+                         << " iterations " << its << std::endl;
+        }
 
 #endif
     // return the # of its. and the final residual norm.
@@ -653,12 +670,6 @@ SolverLinearPetsc<T>::setPetscSolverType()
                   << "Continuing with PETSC defaults" << std::endl;
     }
 
-    if ( this->vm().count( "ksp-monitor" ) )
-    {
-        KSPMonitorSet( _M_ksp,KSPMonitorDefault,PETSC_NULL,0 );
-    }
-
-
 }
 
 
@@ -749,6 +760,11 @@ SolverLinearPetsc<T>::setPetscPreconditionerType()
 
     case ASM_PRECOND:
         ierr = PCSetType ( _M_pc, ( char* ) PCASM );
+        CHKERRABORT( this->worldComm().globalComm(),ierr );
+        return;
+
+    case GASM_PRECOND:
+        ierr = PCSetType ( _M_pc, ( char* ) PCGASM );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
         return;
 
