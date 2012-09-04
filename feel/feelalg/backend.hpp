@@ -643,8 +643,8 @@ public:
 
     void setShowKSPMonitor( bool b ) { M_showKSPMonitor=b; }
     void setShowSNESMonitor( bool b ) { M_showSNESMonitor=b; }
-    void setShowKSPConvergedReason( bool b ) { M_showKSPConvergedReason; }
-    void setShowSNESConvergedReason( bool b ) { M_showSNESConvergedReason; }
+    void setShowKSPConvergedReason( bool b ) { M_showKSPConvergedReason=b; }
+    void setShowSNESConvergedReason( bool b ) { M_showSNESConvergedReason=b; }
 
     //@}
 
