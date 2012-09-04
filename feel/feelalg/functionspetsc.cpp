@@ -26,7 +26,7 @@
    \author Vincent Chabannes <vincent.chabannes@imag.fr>
    \date 2011-08-24
  */
-
+#include <feel/feelcore/feelpetsc.hpp>
 #include <feel/feelalg/functionspetsc.hpp>
 
 namespace Feel
@@ -224,7 +224,9 @@ PetscConvertSNESReasonToString( SNESConvergedReason reason )
         /* converged */
     case SNES_CONVERGED_FNORM_ABS      : return "CONVERGED_FNORM_ABS";     // =  2, /* ||F|| < atol */
     case SNES_CONVERGED_FNORM_RELATIVE : return "CONVERGED_FNORM_RELATIVE";// =  3, /* ||F|| < rtol*||F_initial|| */
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3, 3, 0 )
     case SNES_CONVERGED_SNORM_RELATIVE : return "CONVERGED_SNORM_RELATIVE";// =  4, /* Newton computed step size small; || delta x || < stol */
+#endif
     case SNES_CONVERGED_ITS            : return "CONVERGED_ITS";           // =  5, /* maximum iterations reached */
     case SNES_CONVERGED_TR_DELTA       : return "CONVERGED_TR_DELTA";      // =  7,
         /* diverged */
@@ -234,7 +236,9 @@ PetscConvertSNESReasonToString( SNESConvergedReason reason )
     case SNES_DIVERGED_FNORM_NAN       : return "DIVERGED_FNORM_NAN";      // = -4,
     case SNES_DIVERGED_MAX_IT          : return "DIVERGED_MAX_IT";         // = -5,
     case SNES_DIVERGED_LINE_SEARCH     : return "DIVERGED_LINE_SEARCH";    // = -6, /* the line search failed */
-    case SNES_DIVERGED_INNER           : return "DIVERGED_INNER";          // = -7, /* inner solve failed */
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3, 3, 0 )
+        case SNES_DIVERGED_INNER           : return "DIVERGED_INNER";          // = -7, /* inner solve failed */
+#endif
     case SNES_DIVERGED_LOCAL_MIN       : return "DIVERGED_LOCAL_MIN";      // = -8, /* || J^T b || is small, implies converged to local minimum of F() */
 
     case SNES_CONVERGED_ITERATING      : return "CONVERGED_ITERATING";     // =  0
