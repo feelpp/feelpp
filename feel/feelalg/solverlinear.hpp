@@ -258,6 +258,18 @@ public:
     }
 
     /**
+     * show KSP monitor
+     */
+    bool showKSPMonitor() const { return M_showKSPMonitor; }
+    void setShowKSPMonitor( bool b ) { M_showKSPMonitor=b; }
+
+    /**
+     * show KSP converged reason
+     */
+    bool showKSPConvergedReason() const { return M_showKSPConvergedReason; }
+    void setShowKSPConvergedReason( bool b ) { M_showKSPConvergedReason=b; }
+
+    /**
      * This function calls the solver "_M_solver_type" preconditioned
      * with the "_M_preconditioner_type" preconditioner.  Note that
      * this method will compute the preconditioner from the system
@@ -372,7 +384,8 @@ protected:
 
     MatrixStructure M_prec_matrix_structure;
 
-
+    bool M_showKSPMonitor;
+    bool M_showKSPConvergedReason;
 };
 
 
@@ -387,7 +400,9 @@ SolverLinear<T>::SolverLinear ( WorldComm const& worldComm ) :
     _M_preconditioner_type ( LU_PRECOND ),
     M_preconditioner(),
     _M_is_initialized      ( false ),
-    M_prec_matrix_structure( SAME_NONZERO_PATTERN )
+    M_prec_matrix_structure( SAME_NONZERO_PATTERN ),
+    M_showKSPMonitor( false ),
+    M_showKSPConvergedReason( false )
 {
 }
 
@@ -399,7 +414,9 @@ SolverLinear<T>::SolverLinear ( po::variables_map const& vm, WorldComm const& wo
     _M_solver_type         ( GMRES ),
     _M_preconditioner_type ( LU_PRECOND ),
     _M_is_initialized      ( false ),
-    M_prec_matrix_structure( SAME_NONZERO_PATTERN )
+    M_prec_matrix_structure( SAME_NONZERO_PATTERN ),
+    M_showKSPMonitor( false ),
+    M_showKSPConvergedReason( false )
 {
 }
 
