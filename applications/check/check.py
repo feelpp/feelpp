@@ -1,11 +1,11 @@
 # -*- mode: python -*-
 #
-#  This file is part of the Feel library
+#  This file is part of the Feel++ library
 #
-#  Author(s): (>>>USER_NAME<<<) <(>>>AUTHOR<<<)>
-#        Date: (>>>ISO_DATE<<<)
+#  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+#        Date: 2012-08-31
 #
-#   Copyright (C) (>>>YEAR<<<) (>>>ORG<<<)
+#   Copyright (C) 2012 Universite de Strasbourg
 #
 #   This library is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU Lesser General Public
@@ -22,20 +22,36 @@
 #   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #
 #
-# \file (>>>FILE<<<)
-# \author (>>>USER_NAME<<<) <(>>>AUTHOR<<<)>
-# \date (>>>ISO_DATE<<<)
+# \file laplacian.py
+# \author Christophe Prud'homme <christophe.prudhomme@unistra.fr>
+# \date 2012-08-31
 #
+
+import os
+from openturns import *
+from math import *
+
+# load monolithic fem implementation
+laplacian = NumericalMathFunction("feelpp_doc_laplacian_ot")
+
+
+print "-------------------------------------------\n"
+inP = NumericalPoint(laplacian.getInputDimension())
+inP[0] = 0.2   # hsize: characteristic mesh size
+
+
+print "-------------------------------------------\n"
+print "mu=",inP
+outP = laplacian(inP)
+print "outP = ", outP # s1, s2
+print "-------------------------------------------\n"
+
+
 
 
 
 # Local Variables:
 # indent-tabs-mode: t
 # End:
-
-(>>>POINT<<<)
->>>TEMPLATE-DEFINITION-SECTION<<<
-("ORG" "Your Organization: " "" "" "Université de Strasbourg")
-
 
 

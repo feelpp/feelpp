@@ -1,9 +1,9 @@
-###  TEMPLATE.txt.tpl; coding: utf-8 --- (>>>POINT<<<)
+###  TEMPLATE.txt.tpl; coding: utf-8 ---
 
-#  Author(s): (>>>USER_NAME<<<) <(>>>AUTHOR<<<)>
-#       Date: (>>>ISO_DATE<<<)
+#  Author(s): Christophe Prud'homme <christophe.prudhomme@math.unistra.fr>
+#       Date: 2012-09-05
 #
-#  Copyright (C) (>>>YEAR<<<) (>>>ORG<<<)
+#  Copyright (C) 2012 Université de Strasbourg
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -21,5 +21,5 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
->>>TEMPLATE-DEFINITION-SECTION<<<
-("ORG" "Your Organization: " "" "" "Université de Strasbourg
+
+feelpp_add_application( check SRCS check.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG check.cfg SCRIPTS check.py ADD_OT )
