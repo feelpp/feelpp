@@ -52,11 +52,17 @@ int main( int argc, char** argv )
     typedef Mesh<Simplex<3> > mesh_type;
     std::string mesh_name=vm["filename"].as<std::string>();
 
+#if 0
     auto mesh = createGMSHMesh( _mesh=new mesh_type,
                                 _desc=geo( _filename=mesh_name,_depends=vm["depends"].as<std::string>() ),
                                 _physical_are_elementary_regions=true,
                                 _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES );
-
+#else
+    auto mesh = loadGMSHMesh( _mesh=new mesh_type,
+                              _filename=mesh_name,
+                              _rebuild_partitions=true,
+                              _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES );
+#endif
     std::cout << "mesh " << mesh_name << " loaded\n" << std::endl;
 
     std::cout << "volume =" << std::endl
