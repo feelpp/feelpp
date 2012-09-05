@@ -169,7 +169,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGhostInterProcessDofMap( mesh_
 
                 //------------------------------------------------------------------------------//
                 // get info to send
-                ublas::vector<float> dataToSend( 4+nDim );
+                ublas::vector<double> dataToSend( 4+nDim );
                 dataToSend[0]=idFaceInPartition;
                 dataToSend[1]=l;
                 dataToSend[2]=c;
@@ -219,7 +219,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGhostInterProcessDofMap( mesh_
     {
         for ( int cpt=0; cpt<nbMsgToRecv[proc]; ++cpt )
         {
-            ublas::vector<float> dataToRecv( 4+nDim );
+            ublas::vector<double> dataToRecv( 4+nDim );
             //recv
             this->worldComm().recv( proc, cpt, dataToRecv );
 
@@ -280,7 +280,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGhostInterProcessDofMap( mesh_
 
                 if ( nDim==1 )
                 {
-                    if ( std::abs( dofPoint( thedofInFace ).template get<0>()[0]-dataToRecv[4] )<1e-5 )
+                    if ( std::abs( dofPoint( thedofInFace ).template get<0>()[0]-dataToRecv[4] )<1e-9 )
                     {
                         locDof = l;
                         find=true;
@@ -289,8 +289,8 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGhostInterProcessDofMap( mesh_
 
                 else if ( nDim==2 )
                 {
-                    if ( ( std::abs( dofPoint( thedofInFace ).template get<0>()[0]-dataToRecv[4] )<1e-5 ) &&
-                            ( std::abs( dofPoint( thedofInFace ).template get<0>()[1]-dataToRecv[5] )<1e-5 ) )
+                    if ( ( std::abs( dofPoint( thedofInFace ).template get<0>()[0]-dataToRecv[4] )<1e-9 ) &&
+                            ( std::abs( dofPoint( thedofInFace ).template get<0>()[1]-dataToRecv[5] )<1e-9 ) )
                     {
                         locDof = l;
                         find=true;
@@ -299,9 +299,9 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGhostInterProcessDofMap( mesh_
 
                 else if ( nDim==3 )
                 {
-                    if ( ( std::abs( dofPoint( thedofInFace ).template get<0>()[0]-dataToRecv[4] )<1e-5 ) &&
-                            ( std::abs( dofPoint( thedofInFace ).template get<0>()[1]-dataToRecv[5] )<1e-5 ) &&
-                            ( std::abs( dofPoint( thedofInFace ).template get<0>()[2]-dataToRecv[6] )<1e-5 ) )
+                    if ( ( std::abs( dofPoint( thedofInFace ).template get<0>()[0]-dataToRecv[4] )<1e-9 ) &&
+                            ( std::abs( dofPoint( thedofInFace ).template get<0>()[1]-dataToRecv[5] )<1e-9 ) &&
+                            ( std::abs( dofPoint( thedofInFace ).template get<0>()[2]-dataToRecv[6] )<1e-9 ) )
                     {
                         locDof = l;
                         find=true;
@@ -439,7 +439,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGhostInterProcessDofMap( mesh_
                 int IdProcessOfGhost = mapInterProcessDof[thedof.template get<0>()].template get<0>();
 
                 //boost::tuple<int,int,int> dataToSend = boost::make_tuple(idFaceInPartition,l,c);
-                ublas::vector<float> dataToSendCheck( 3+nDim/*5*/ );
+                ublas::vector<double> dataToSendCheck( 3+nDim/*5*/ );
                 dataToSendCheck[0]=mapInterProcessDof[thedof.template get<0>()].template get<1>();
                 dataToSendCheck[1]=dofPoint( thedof.template get<0>() ).template get<0>()[0];
 
@@ -496,7 +496,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGhostInterProcessDofMap( mesh_
         for ( int cpt=0; cpt<nbMsgToRecvCheck[proc]; ++cpt )
         {
             //boost::tuple<int,int,int> dataToRecv;
-            ublas::vector<float> dataToRecv( 3+nDim );
+            ublas::vector<double> dataToRecv( 3+nDim );
             //recv
             this->worldComm().recv( proc, cpt, dataToRecv );
 
