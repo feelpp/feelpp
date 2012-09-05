@@ -26,7 +26,16 @@
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2009-03-04
  */
-#include "convection.hpp"
+
+#if CRB_SOLVER == 0
+    #include "convection.hpp"
+#else
+    #include "convection_crb.hpp"
+    #include <feel/feelcrb/opusapp_heatns.hpp>
+#endif
+
+typedef Eigen::VectorXd theta_vector_type;
+
 
 // command line options
 inline po::options_description makeOptions()
@@ -35,10 +44,18 @@ inline po::options_description makeOptions()
     convectionoptions.add_options()
         // Options
         // Format : (nom, type and default value, brief description )
-#if CONVECTION_DIM == 2
+#if (CONVECTION_DIM == 2)
+    #if !CRB_SOLVER
         ( "output_dir" , po::value<std::string>()->default_value( "cavity2D" ) , "output directory" )
+    #else
+        ( "output_dir" , po::value<std::string>()->default_value( "cavity2Dcrb" ) , "output directory" )
+    #endif
 #else
+    #if !CRB_SOLVER
         ( "output_dir" , po::value<std::string>()->default_value( "cavity3D" ) , "output directory" )
+    #else
+        ( "output_dir" , po::value<std::string>()->default_value( "cavity3Dcrb" ) , "output directory" )
+    #endif
 #endif
         ( "input_dir" , po::value<std::string>()->default_value( "FEEL/feelopt/doc/manual/heatns/Mesh/" ) , "input directory" )
         ( "readMesh" , po::value<int>()->default_value( 0 ) , "using mesh in file" )
@@ -63,11 +80,16 @@ inline po::options_description makeOptions()
         ( "dt",po::value<double>()->default_value( 1e-2 ),"time step" )
         ( "tf",po::value<double>()->default_value( 1 ),"simulation duration" )
         ( "T0",po::value<double>()->default_value( 300 ),"dirichlet condition value" )
-        ( "neum",po::value<double>()->default_value( 10 ),"neumann value" );
+        ( "neum",po::value<double>()->default_value( 10 ),"neumann value" )
+        ( "Grmin", po::value<double>()->default_value( 10 ), "Grmin" )
+        ( "Prmin", po::value<double>()->default_value( 1 ), "Prmin" )
+        ( "Grmax", po::value<double>()->default_value( 10 ), "Grmax" )
+        ( "Prmax", po::value<double>()->default_value( 1 ), "Prmax" );
+//        ( "no-export", "don't export results" );
 
     // return the options as well as the feel options
     return convectionoptions.add( feel_options() );
-};
+}
 
 
 // Definition de la fonction qui donne les infos quand l'option --help est passee
@@ -88,7 +110,28 @@ makeAbout()
 
     // Retourne les infos
     return about;
-};
+}
+
+
+// Definition de la fonction qui donne les infos quand l'option --help est passee
+inline AboutData
+about()
+{
+    // Definition de la structure de donnee pour les infos
+    AboutData about( "Convection",
+                    "Convection",
+                    "0.1", 				// Version
+                    "Natural convection simulation",// Short comment
+                    AboutData::License_GPL ,	// Licence
+                    "Copyright (c) SQ 2008\nCopyright (c) 2009-2012 Christophe Prud'homme" );// Copyright
+    
+    // Informations sur l'auteur
+    about.addAuthor( "Quinodoz Samuel","Student","samuel.quinodoz@epfl.ch" ,"main developer" );
+    about.addAuthor( "Christophe Prud'homme","Maintainer","christophe.prudhomme@ujf-grenoble.fr" ,"" );
+    
+    // Retourne les infos
+    return about;
+}
 
 int
 main( int argc, char** argv )
@@ -100,10 +143,20 @@ main( int argc, char** argv )
 
     /* assertions handling */
     Feel::Assert::setLog( "convection.assert" );
-
+    
     /* define and run application */
-    Convection myconvection( argc, argv, makeAbout(), makeOptions() );
-    myconvection.run();
+#if CRB_SOLVER == 0
+        std::cout << "CRB_SOLVER = " << CRB_SOLVER << std::endl;
+        Convection myconvection( argc, argv, makeAbout(), makeOptions() );
+        myconvection.run();
+#else        
+        std::cout << "CRB_SOLVER = " << CRB_SOLVER << std::endl;
+        Feel::OpusApp_heatns<Convection_crb> myconvectioncrb( argc, argv, makeAbout(), makeOptions()  );
+        myconvectioncrb.run();
+#endif
+    
 }
-//./cabine_convection --adim==1 --steady=1 --hsize=0.05 --weakdir=0    -snes_max_it 100 -ksp_converged_reason
-//-pc_factor_mat_solver_package umfpack -snes_monitor
+
+//./feel_heatns_natural_convection_cavity_2d --config-file=convection.cfg -snes_max_it 100 -ksp_converged_reason -pc_factor_mat_solver_package umfpack -snes_monitor
+
+//./feel_heatns_natural_convection_cavity_2d_crb --config-file=convection.cfg -snes_max_it 100 -ksp_converged_reason -pc_factor_mat_solver_package umfpack -snes_monitor

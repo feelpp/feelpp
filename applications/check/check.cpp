@@ -43,6 +43,8 @@
 /** include  the header for the variational formulation language (vf) aka FEEL++ */
 #include <feel/feelvf/vf.hpp>
 
+#include <boost/tokenizer.hpp>
+
 /** use Feel namespace */
 using namespace Feel;
 using namespace Feel::vf;
@@ -66,6 +68,9 @@ makeOptions()
     ( "weakdir", po::value<int>()->default_value( 1 ), "use weak Dirichlet condition" )
     ( "penaldir", Feel::po::value<double>()->default_value( 10 ),
       "penalisation parameter for the weak boundary Dirichlet formulation" )
+        ( "filename", po::value<std::string>()->default_value( ""  ), "mesh filename to load (generate mesh if empty)" )
+        ( "Neumann", po::value<std::string>()->default_value( ""  ), "Neumann boundaries list" )
+        ( "Dirichlet", po::value<std::string>()->default_value( ""  ), "Dirichlet boundaries list" )
     ;
     return laplacianoptions.add( Feel::feel_options() );
 }
@@ -83,10 +88,10 @@ makeAbout()
 {
     AboutData about( "laplacian" ,
                      "laplacian" ,
-                     "0.2",
+                     "0.3",
                      "nD(n=1,2,3) Laplacian on simplices or simplex products",
                      Feel::AboutData::License_GPL,
-                     "Copyright (c) 2008-2009 Universite Joseph Fourier" );
+                     "Copyright (c) 2008-2012 Universite Joseph Fourier" );
 
     about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
     return about;
@@ -200,14 +205,24 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
                                        % Order
                                        % meshSize );
 
-    mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
-                                        _desc=domain( _name=( boost::format( "%1%-%2%" ) % shape % Dim ).str() ,
-                                                _usenames=true,
-                                                _shape=shape,
-                                                _h=X[0],
-                                                _xmin=-1,
-                                                _ymin=-1 ),
-                                        _update=MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
+    mesh_ptrtype mesh;
+    if ( this->vm().count( "filename" ) )
+    {
+        std::cout << "Loading " << this->vm()["filename"].template as<std::string>() << "..." << std::endl;
+        mesh = loadGMSHMesh( _mesh=new mesh_type,
+                             _filename=this->vm()["filename"].template as<std::string>(),
+                             _rebuild_partitions=(Environment::worldComm().size() > 1),
+                             _update=MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
+    }
+    else
+        mesh = createGMSHMesh( _mesh=new mesh_type,
+                               _desc=domain( _name=( boost::format( "%1%-%2%" ) % shape % Dim ).str() ,
+                                             _usenames=true,
+                                             _shape=shape,
+                                             _h=X[0],
+                                             _xmin=-1,
+                                             _ymin=-1 ),
+                               _update=MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
 
 
     /**
@@ -244,6 +259,13 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
 
     using namespace Feel::vf;
 
+    typedef boost::tokenizer<boost::char_separator<char> > tokenizer;
+    boost::char_separator<char> sep(",-;|");
+    tokenizer neumann_tokens(this->vm()["Neumann"].template as<std::string>(), sep);
+    std::for_each( neumann_tokens.begin(), neumann_tokens.end(),[]( std::string const& s ) { std::cout << "token: " << s << std::endl; } );
+    tokenizer dirichlet_tokens(this->vm()["Dirichlet"].template as<std::string>(), sep);
+    std::for_each( dirichlet_tokens.begin(), dirichlet_tokens.end(),[]( std::string const& s ) { std::cout << "token: " << s << std::endl; } );
+
     /**
      * Construction of the right hand side. F is the vector that holds
      * the algebraic representation of the right habd side of the
@@ -253,16 +275,33 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
     //# marker2 #
     auto F = backend( _vm=this->vm() )->newVector( Xh );
     auto rhs = form1( _test=Xh, _vector=F, _init=true );
-    rhs = integrate( _range=elements( mesh ), _expr=f*id( v ) )+
+    rhs = integrate( _range=elements( mesh ), _expr=f*id( v ) );
+#if 0
         integrate( _range=markedfaces( mesh, "Neumann" ),
                    _expr=nu*gradv( gproj )*vf::N()*id( v ) );
-
+#endif
+    std::for_each( neumann_tokens.begin(), neumann_tokens.end(),
+                  [&]( std::string const& mark )
+                  {
+                      std::cout << "Integrating on Neumann boundary '" << mark << "'\n" ;
+                      rhs += integrate( _range=markedfaces( mesh, mark ),
+                                        _expr=nu*gradv( gproj )*vf::N()*id( v ) );
+                  } );
     //# endmarker2 #
     if ( weak_dirichlet )
     {
         //# marker41 #
+#if 0
         rhs += integrate( _range=markedfaces( mesh,"Dirichlet" ),
-                             _expr=g*( -grad( v )*vf::N()+penaldir*id( v )/hFace() ) );
+                          _expr=g*( -grad( v )*vf::N()+penaldir*id( v )/hFace() ) );
+#endif
+        std::for_each( dirichlet_tokens.begin(), dirichlet_tokens.end(),
+                      [&]( std::string const& mark )
+                      {
+                          std::cout << "Integrating on Dirichlet boundary '" << mark << "'\n" ;
+                          rhs += integrate( _range=markedfaces( mesh,mark ),
+                                            _expr=g*( -grad( v )*vf::N()+penaldir*id( v )/hFace() ) );
+                      } );
         //# endmarker41 #
     }
 
@@ -295,10 +334,21 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
          */
         /** \code */
         //# marker10 #
+#if 0
         a += integrate( _range=markedfaces( mesh,"Dirichlet" ),
                         _expr= ( -( gradt( u )*vf::N() )*id( v )
                                  -( grad( v )*vf::N() )*idt( u )
                                  +penaldir*id( v )*idt( u )/hFace() ) );
+#endif
+        std::for_each( dirichlet_tokens.begin(), dirichlet_tokens.end(),
+                      [&]( std::string const& mark )
+                      {
+                          std::cout << "Integrating on Dirichlet boundary '" << mark << "'\n" ;
+                          a += integrate( _range=markedfaces( mesh,mark ),
+                                          _expr= ( -( gradt( u )*vf::N() )*id( v )
+                                                   -( grad( v )*vf::N() )*idt( u )
+                                                   +penaldir*id( v )*idt( u )/hFace() ) );
+                      } );
         //# endmarker10 #
         /** \endcode */
     }
@@ -360,6 +410,9 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
         Log() << "exportResults starts\n";
 
         exporter->step( 0 )->setMesh( mesh );
+        exporter->step( 0 )->addRegions();
+        exporter->step( 0 )->add( "exact_solution", e );
+        exporter->step( 0 )->add( "solution", u );
 
         exporter->save();
         Log() << "exportResults done\n";
@@ -391,8 +444,8 @@ main( int argc, char** argv )
     //if ( app.nProcess() == 1 )
     //app.add( new Laplacian<1>( app.vm(), app.about() ) );
 
-    app.add( new Laplacian<2>( app.vm(), app.about() ) );
-    //app.add( new Laplacian<3>( app.vm(), app.about() ) );
+    //app.add( new Laplacian<2>( app.vm(), app.about() ) );
+    app.add( new Laplacian<3>( app.vm(), app.about() ) );
     /** \endcode */
 
     /**
