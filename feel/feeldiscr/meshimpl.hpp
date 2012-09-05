@@ -1019,7 +1019,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCell()
                      << std::endl;
 #endif
             // get faces id
-            std::vector<float/*int*/> idFaces( ( 1+nDim )*this->numLocalFaces() );
+            std::vector<double/*int*/> idFaces( ( 1+nDim )*this->numLocalFaces() );
 
             for ( size_type j = 0; j < this->numLocalFaces(); j++ )
             {
@@ -1060,7 +1060,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCell()
     {
         for ( int cpt=0; cpt<nbMsgToSend[proc]; ++cpt )
         {
-            std::vector<float/*int*/> idFacesRecv( ( 1+nDim )*this->numLocalFaces() );
+            std::vector<double/*int*/> idFacesRecv( ( 1+nDim )*this->numLocalFaces() );
             //recv
             this->worldComm().localComm().recv( proc, cpt, idFacesRecv );
 #if 0
@@ -1116,8 +1116,8 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCell()
                                   << theelt.face( j2 ).barycenter()[1] << " " << idFacesRecv[( 1+nDim )*j+2] << std::endl;
 #endif
 
-                        if ( ( std::abs( /*theelt.faceBarycenter(j2)*/baryFace[0] - idFacesRecv[( 1+nDim )*j+1] ) < 1e-5 ) &&
-                                ( std::abs( /*theelt.faceBarycenter(j2)*/baryFace[1] - idFacesRecv[( 1+nDim )*j+2] ) < 1e-5 ) )
+                        if ( ( std::abs( /*theelt.faceBarycenter(j2)*/baryFace[0] - idFacesRecv[( 1+nDim )*j+1] ) < 1e-9 ) &&
+                                ( std::abs( /*theelt.faceBarycenter(j2)*/baryFace[1] - idFacesRecv[( 1+nDim )*j+2] ) < 1e-9 ) )
                         {
                             hasFind=true;
                             jBis=j2;
@@ -1126,9 +1126,9 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCell()
 
                     else if ( nRealDim==3 )
                     {
-                        if ( ( std::abs( /*theelt.faceBarycenter(j2)*/baryFace[0] - idFacesRecv[( 1+nDim )*j+1] ) < 1e-5 ) &&
-                                ( std::abs( /*theelt.faceBarycenter(j2)*/baryFace[1] - idFacesRecv[( 1+nDim )*j+2] ) < 1e-5 ) &&
-                                ( std::abs( /*theelt.faceBarycenter(j2)*/baryFace[2] - idFacesRecv[( 1+nDim )*j+3] ) < 1e-5 ) )
+                        if ( ( std::abs( /*theelt.faceBarycenter(j2)*/baryFace[0] - idFacesRecv[( 1+nDim )*j+1] ) < 1e-9 ) &&
+                                ( std::abs( /*theelt.faceBarycenter(j2)*/baryFace[1] - idFacesRecv[( 1+nDim )*j+2] ) < 1e-9 ) &&
+                                ( std::abs( /*theelt.faceBarycenter(j2)*/baryFace[2] - idFacesRecv[( 1+nDim )*j+3] ) < 1e-9 ) )
                         {
                             hasFind=true;
                             jBis=j2;
@@ -1249,7 +1249,7 @@ Mesh<Shape, T, Tag>::findNeighboringProcessors()
 
     // Collect the bounding spheres from all processors, test for intersection
     {
-        std::vector<float>
+        std::vector<double>
         send ( 4,                         0 ),
              recv ( 4*this->worldComm().localSize(), 0 );
 
@@ -1258,8 +1258,8 @@ Mesh<Shape, T, Tag>::findNeighboringProcessors()
         send[2] = bounding_sphere.center()( 2 );
         send[3] = bounding_sphere.radius();
 
-        MPI_Allgather ( &send[0], send.size(), MPI_FLOAT,
-                        &recv[0], send.size(), MPI_FLOAT,
+        MPI_Allgather ( &send[0], send.size(), MPI_DOUBLE,
+                        &recv[0], send.size(), MPI_DOUBLE,
                         this->worldComm().localComm() );
 
 
