@@ -61,10 +61,13 @@ extern "C"
     //-------------------------------------------------------------------
     // this function is called by PETSc at the end of each nonlinear step
     PetscErrorCode
-    __feel_petsc_snes_monitor ( SNES snes, PetscInt its, PetscReal fnorm, void * )
+    __feel_petsc_snes_monitor ( SNES snes, PetscInt its, PetscReal fnorm, void *ctx )
     {
-        //int ierr=0;
+        Feel::SolverNonLinearPetsc<double>* solver =
+            static_cast<Feel::SolverNonLinearPetsc<double>*> ( ctx );
 
+
+        //int ierr=0;
         //if (its > 0)
         std::ostringstream ostr;
 
@@ -87,6 +90,21 @@ extern "C"
         ///Feel::Log() << "[SolverNonLinearPetsc] KSP num of it = " << lits << " residual = " << final_resid << "\n";
         //std::cout << "[SolverNonLinearPetsc] KSP num of it = " << lits << " residual = " << final_resid << "\n";
 #endif
+        KSPConvergedReason reason;
+        KSPGetConvergedReason( ksp,&reason );
+        if ( reason> 0 )
+        {
+            if ( solver->showKSPConvergedReason() && solver->worldComm().globalRank() == solver->worldComm().masterRank() && its>0 )
+                std::cout<< "  Linear solve converged due to " << Feel::PetscConvertKSPReasonToString(reason)
+                         << " iterations " << lits << std::endl;
+        }
+        else
+        {
+            if ( solver->showKSPConvergedReason() && solver->worldComm().globalRank() == solver->worldComm().masterRank() && its>0 )
+                std::cout<< "  Linear solve did not converge due to " << Feel::PetscConvertKSPReasonToString(reason)
+                         << " iterations " << lits << std::endl;
+        }
+
 
         //return ierr;
         return 0;
@@ -477,6 +495,19 @@ void SolverNonLinearPetsc<T>::init ()
         PCShellSetApply( M_pc,__feel_petsc_preconditioner_apply );
     }
 
+    if ( this->showSNESMonitor() )
+    {
+        ierr = SNESMonitorSet( M_snes,SNESMonitorDefault,PETSC_NULL,PETSC_NULL );
+        CHKERRABORT( this->worldComm().globalComm(),ierr );
+    }
+
+    if ( this->showKSPMonitor() )
+    {
+        ierr = KSPMonitorSet( M_ksp,KSPMonitorDefault,PETSC_NULL,PETSC_NULL );
+        CHKERRABORT( this->worldComm().globalComm(),ierr );
+    }
+
+
 }
 
 
@@ -603,7 +634,18 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
     if ( reason<0 )
     {
         Log() << "[solvernonlinearpetsc] not converged: " << reason << "\n";
+        if (this->showSNESConvergedReason() && this->worldComm().globalRank() == this->worldComm().masterRank() )
+            std::cout << "Nonlinear solve did not converge due to " << PetscConvertSNESReasonToString(reason)
+                      << " iterations " << n_iterations << std::endl;
     }
+    else
+    {
+        if (this->showSNESConvergedReason() && this->worldComm().globalRank() == this->worldComm().masterRank() )
+            std::cout << "Nonlinear solve converged due to " << PetscConvertSNESReasonToString(reason)
+                      << " iterations " << n_iterations << std::endl;
+    }
+
+
 #if 0
     this->clear();
 #endif
@@ -855,6 +897,11 @@ SolverNonLinearPetsc<T>::setPetscPreconditionerType()
 
     case ASM_PRECOND:
         ierr = PCSetType ( M_pc, ( char* ) PCASM );
+        CHKERRABORT( this->comm(),ierr );
+        return;
+
+    case GASM_PRECOND:
+        ierr = PCSetType ( M_pc, ( char* ) PCGASM );
         CHKERRABORT( this->comm(),ierr );
         return;
 

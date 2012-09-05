@@ -354,6 +354,32 @@ public:
     }
     //@}
 
+
+    /**
+     * show SNES monitor
+     */
+    bool showSNESMonitor() const { return M_showSNESMonitor; }
+    void setShowSNESMonitor(bool b) { M_showSNESMonitor=b; }
+
+    /**
+     * show KSP monitor
+     */
+    bool showKSPMonitor() const { return M_showKSPMonitor; }
+    void setShowKSPMonitor(bool b) { M_showKSPMonitor=b; }
+
+    /**
+     * show SNES converged reason
+     */
+    bool showSNESConvergedReason() const { return M_showSNESConvergedReason; }
+    void setShowSNESConvergedReason( bool b ) { M_showSNESConvergedReason=b; }
+
+    /**
+     * show KSP converged reason
+     */
+    bool showKSPConvergedReason() const { return M_showKSPConvergedReason; }
+    void setShowKSPConvergedReason( bool b ) { M_showKSPConvergedReason=b; }
+
+
     /** @name  Methods
      */
     //@{
@@ -481,6 +507,10 @@ protected:
      * reuse preconditioner level
      */
     int M_reuse_prec;
+
+    bool M_showKSPMonitor, M_showSNESMonitor;
+    bool M_showKSPConvergedReason, M_showSNESConvergedReason;
+
 };
 
 
