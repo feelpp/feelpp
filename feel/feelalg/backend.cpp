@@ -59,7 +59,7 @@ Backend<T>::Backend( WorldComm const& worldComm )
     M_showKSPConvergedReason( false ), M_showSNESConvergedReason( false )
 {
     if ( M_worldComm.globalSize() > 1 )
-        M_pc = "block_jacobi";
+        M_pc = "gasm";
 }
 
 template <typename T>
