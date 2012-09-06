@@ -1020,6 +1020,10 @@ CRB<TruthModelType>::offline()
     orthonormalize_primal = this->vm()["crb.orthonormalize-primal"].template as<bool>() ;
     orthonormalize_dual = this->vm()["crb.orthonormalize-dual"].template as<bool>() ;
     solve_dual_problem = this->vm()["crb.solve-dual-problem"].template as<bool>() ;
+
+    if ( this->worldComm().globalSize() > 1 )
+        solve_dual_problem = false;
+
     if ( ! solve_dual_problem ) orthonormalize_dual=false;
 
     M_Nm = this->vm()["crb.Nm"].template as<int>() ;
@@ -1439,7 +1443,21 @@ CRB<TruthModelType>::offline()
 
         if ( M_iter_max < M_Nm ) sampling_size = 1;
 
-        Sampling->logEquidistribute( sampling_size );
+        std::string file_name = ( boost::format("M_Sampling_No_residual_%1%") % sampling_size ).str();
+        std::ifstream file ( file_name );
+        if( ! file )
+        {
+            // random sampling
+            Sampling->randomize( sampling_size );
+            Sampling->writeOnFile(file_name);
+        }
+        else
+        {
+            Sampling->clear();
+            Sampling->readFromFile(file_name);
+        }
+
+        //Sampling->logEquidistribute( sampling_size );
 
 #if 0
         if ( this->worldComm().globalSize() > 1 )
@@ -3154,7 +3172,8 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
         int max_fixedpoint_iterations  = this->vm()["crb.max-fixedpoint-iterations"].template as<int>();
         double solution_fixedpoint_tol  = this->vm()["crb.solution-fixedpoint-tol"].template as<double>();
         double output_fixedpoint_tol  = this->vm()["crb.output-fixedpoint-tol"].template as<double>();
-
+        bool fixedpoint_verbose  = this->vm()["crb.fixedpoint-verbose"].template as<bool>();
+        double fixedpoint_critical_value  = this->vm()["crb.fixedpoint-critical-value"].template as<double>();
         do
         {
             LOG(INFO) << "compute eim expansions\n";
@@ -3232,10 +3251,21 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
             LOG(INFO) << "iteration " << fi << " increment error: " << (uN[time_index]-previous_uN).norm() << "\n";               google::FlushLogFiles(google::GLOG_INFO);
             fi++;
 
+            if( fixedpoint_verbose  && this->worldComm().globalRank()==this->worldComm().masterRank() )
+                std::cout<<"[CRB::lb] fixedpoint iteration " << fi << " increment error: " << (uN[time_index]-previous_uN).norm()<<std::endl;
+
         }
         while ( (uN[time_index]-previous_uN).norm() > solution_fixedpoint_tol && fi<max_fixedpoint_iterations );
         //while ( math::abs(output - old_output) >  output_fixedpoint_tol && fi < max_fixedpoint_iterations );
-        time_index++;
+
+        if( (uN[time_index]-previous_uN).norm() > solution_fixedpoint_tol )
+            std::cout<<"[CRB::lb] fixed point, proc "<<this->worldComm().globalRank()<<" fixed point has no converged : norm(uN-uNold) = "<<(uN[time_index]-previous_uN).norm()<<" and tolerance : "<<solution_fixedpoint_tol<<" so "<<max_fixedpoint_iterations<<" iterations were done"<<std::endl;
+
+        if( (uN[time_index]-previous_uN).norm() > fixedpoint_critical_value )
+            throw std::logic_error( "[CRB::lb] fixed point ERROR : norm(uN-uNold) > critical value " );
+
+            time_index++;
+
     }
     time_index--;
 
