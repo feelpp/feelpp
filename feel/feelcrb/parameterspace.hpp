@@ -152,7 +152,7 @@ public:
                 // verify that the element is the same on all processors
                 mpi::all_reduce( Environment::worldComm().localComm(), *this, sum,
                                  []( Element const& m1, Element const& m2 ) { return m1+m2; } );
-                CHECK( (*this.array()-sum.array()/Environment::numberOfProcessors()).abs().max() < 1e-10 )
+                CHECK( (this->array()-sum.array()/Environment::numberOfProcessors()).abs().maxCoeff() < 1e-10 )
                     << "Parameter not identical on all processors: "
                     << "current parameter " << *this << "\n"
                     << "sum parameter " << sum << "\n";
