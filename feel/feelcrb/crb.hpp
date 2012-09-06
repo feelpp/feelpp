@@ -1529,7 +1529,7 @@ CRB<TruthModelType>::offline()
 
         if ( M_model->isSteady() || !model_type::is_time_dependent )
         {
-
+            mu.check();
             u->zero();
             udu->zero();
             boost::tie( boost::tuples::ignore, A, F, MF ) = M_model->update( mu , 1e30 );
