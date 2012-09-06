@@ -185,6 +185,10 @@ void PreconditionerPetsc<T>::setPetscPreconditionerType ( const PreconditionerTy
         // is not in the correct state (at this point) to call PCSetUp().
         ierr = PCSetType ( pc, ( char* ) PCASM );
         CHKERRABORT( worldComm.globalComm(),ierr );
+
+        // Set LU as the sub preconditioner type
+        setPetscSubpreconditionerType( PCLU, pc, worldComm );
+
         break;
     }
 
@@ -192,6 +196,9 @@ void PreconditionerPetsc<T>::setPetscPreconditionerType ( const PreconditionerTy
     {
         ierr = PCSetType ( pc, ( char* ) PCGASM );
         CHKERRABORT( worldComm.globalComm(),ierr );
+
+        // Set LU as the sub preconditioner type
+        setPetscSubpreconditionerType( PCLU, pc, worldComm );
         break;
     }
 
@@ -289,7 +296,9 @@ void PreconditionerPetsc<T>::setPetscSubpreconditionerType( PCType type, PC& pc 
     // error messages...
     ierr = PCSetUp( pc );
     CHKERRABORT( worldComm.globalComm(),ierr );
-
+    const PCType thepctype;
+    ierr = PCGetType( pc, &thepctype );
+    CHKERRABORT( worldComm.globalComm(),ierr );
     // To store array of local KSP contexts on this processor
     KSP* subksps;
 
@@ -299,9 +308,15 @@ void PreconditionerPetsc<T>::setPetscSubpreconditionerType( PCType type, PC& pc 
     // The global number of the first block on this processor.
     // This is not used, so we just pass PETSC_NULL instead.
     // int first_local;
-
     // Fill array of local KSP contexts
-    ierr = PCBJacobiGetSubKSP( pc, &n_local, PETSC_NULL, &subksps );
+
+    if ( std::string( thepctype ) == "block_jacobi" )
+        ierr = PCBJacobiGetSubKSP( pc, &n_local, PETSC_NULL, &subksps );
+    else if ( std::string( thepctype ) == "asm" )
+        ierr = PCASMGetSubKSP( pc, &n_local, PETSC_NULL, &subksps );
+    else if ( std::string( thepctype ) == "gasm" )
+        ierr = PCGASMGetSubKSP( pc, &n_local, PETSC_NULL, &subksps );
+
     CHKERRABORT( worldComm.globalComm(),ierr );
 
     // Loop over sub-ksp objects, set ILU preconditioner
