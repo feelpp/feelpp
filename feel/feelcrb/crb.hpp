@@ -1384,6 +1384,8 @@ CRB<TruthModelType>::offline()
             std::cout<<"we are going to enrich the reduced basis"<<std::endl;
             std::cout<<"there are "<<M_N<<" elements in the database"<<std::endl;
         }
+        LOG(INFO) <<"we are going to enrich the reduced basis"<<std::endl;
+        LOG(INFO) <<"there are "<<M_N<<" elements in the database"<<std::endl;
     }//end of else associated to if ( rebuild_databse )
 
     sparse_matrix_ptrtype M,A,Adu,At;
@@ -1438,7 +1440,7 @@ CRB<TruthModelType>::offline()
         if ( M_iter_max < M_Nm ) sampling_size = 1;
 
         Sampling->logEquidistribute( sampling_size );
-        
+
 #if 0
         if ( this->worldComm().globalSize() > 1 )
         {
