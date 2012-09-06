@@ -601,8 +601,8 @@ EIM<ModelType>::offline(  )
 
     M_M = 1;
     LOG(INFO) << "create mu_1...\n";
-    // random element in Dmu to start with
-    auto mu = M_model->parameterSpace()->element();
+    // min element in Dmu to start with (in // each proc have the same element)
+    auto mu = M_model->parameterSpace()->min();
 
     if ( !M_trainset )
         M_trainset = M_model->parameterSpace()->sampling();
