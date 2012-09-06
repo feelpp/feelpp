@@ -899,6 +899,7 @@ public:
     element_type operator()( parameter_type const&  mu )
         {
             M_mu = mu;
+            M_mu.check();
             M_u = M_model->solve( mu );
             //LOG(INFO) << "operator() mu=" << mu << "\n" << "sol=" << M_u << "\n";
             return vf::project( _space=this->functionSpace(), _expr=M_expr );
@@ -906,6 +907,7 @@ public:
     element_type operator()( solution_type const& T, parameter_type const&  mu )
         {
             M_mu = mu;
+            M_mu.check();
             // no need to solve we have already an approximation (typically from
             // an nonlinear iteration procedure)
             M_u = T;
