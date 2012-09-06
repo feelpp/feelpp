@@ -3300,7 +3300,10 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
     //now the dual problem
 
     //if (  this->vm()["crb.solve-dual-problem"].template as<bool>() || M_error_type == CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM || !M_compute_variance )
-    if (  this->vm()["crb.solve-dual-problem"].template as<bool>() )// || M_error_type == CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM )
+    bool solve_dual_problem = this->vm()["crb.solve-dual-problem"].template as<bool>();
+    if( this->worldComm().globalSize() > 1 )
+        solve_dual_problem=false;
+    if ( solve_dual_problem )// || M_error_type == CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM )
     {
         double time;
         if ( M_model->isSteady() )
