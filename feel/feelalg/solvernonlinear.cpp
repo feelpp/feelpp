@@ -51,7 +51,11 @@ SolverNonLinear<T>::SolverNonLinear (WorldComm const& worldComm)
     M_relativeResidualTol( 0 ),
     M_absoluteResidualTol( 0 ),
     M_absoluteSolutionTol( 0 ),
-    M_nbItMax( 0 )
+    M_nbItMax( 0 ),
+    M_reuse_jac( 0 ),
+    M_reuse_prec( 0 ),
+    M_showKSPMonitor(false), M_showSNESMonitor(false),
+    M_showKSPConvergedReason( false ), M_showSNESConvergedReason( false )
 {
 }
 
@@ -73,7 +77,12 @@ SolverNonLinear<T>::SolverNonLinear ( SolverNonLinear const& snl )
     M_relativeResidualTol( snl.M_relativeResidualTol ),
     M_absoluteResidualTol( snl.M_absoluteResidualTol ),
     M_absoluteSolutionTol( snl.M_absoluteSolutionTol ),
-    M_nbItMax( snl.M_nbItMax )
+    M_nbItMax( snl.M_nbItMax ),
+    M_reuse_jac( snl.M_reuse_jac ),
+    M_reuse_prec( snl.M_reuse_prec ),
+    M_showKSPMonitor( snl.M_showKSPMonitor ),
+    M_showSNESMonitor( snl.M_showSNESMonitor ),
+    M_showKSPConvergedReason( snl.M_showKSPConvergedReason ), M_showSNESConvergedReason( snl.M_showSNESConvergedReason )
 {
 }
 

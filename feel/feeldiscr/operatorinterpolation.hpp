@@ -554,7 +554,11 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     //-----------------------------------------
     //init the localization tool
     auto locTool = this->domainSpace()->mesh()->tool_localization();
-    locTool->updateForUse();
+    if ( this->interpolationType().onlyLocalizeOnBoundary() ) locTool->updateForUseBoundaryFaces();
+    else locTool->updateForUse();
+    // kdtree parameter
+    locTool->kdtree()->nbNearNeighbor(this->interpolationType().nbNearNeighborInKdTree());
+
     //locTool->kdtree()->nbNearNeighbor(3);
     //locTool->kdtree()->nbNearNeighbor(this->domainSpace()->mesh()->numElements());
     //locTool->setExtrapolation(false);
@@ -816,8 +820,9 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     if ( doExtrapolationAtStart ) locTool->setExtrapolation(false);
 
 
-   uint16_type nMPIsearch=5;
-   if (this->domainSpace()->mesh()->worldComm().localSize()<5) nMPIsearch=this->domainSpace()->mesh()->worldComm().localSize();
+    uint16_type nMPIsearch=15;//5;
+    if( InterpType::value==1) nMPIsearch=this->domainSpace()->mesh()->worldComm().localSize();
+    else if (this->domainSpace()->mesh()->worldComm().localSize()<nMPIsearch) nMPIsearch=this->domainSpace()->mesh()->worldComm().localSize();
    // only one int this case
    if (!this->interpolationType().searchWithCommunication()) nMPIsearch=1;
    uint16_type counterMPIsearch=1;

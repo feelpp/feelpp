@@ -31,14 +31,19 @@ template<typename MeshType, typename FEType, typename PeriodicityType>
 void
 DofTable<MeshType, FEType, PeriodicityType>::buildGhostDofMap( mesh_type& mesh )
 {
+    // dofs map on interprocess faces : ( dofOnMyRank, tuple< otherProcRank, dofOnOtherRank> )
     std::map<size_type,boost::tuple<size_type,size_type> > mapInterProcessDof;
+    // dofs no present on interprocess faces
     std::set<int> setInterProcessDofNotPresent;
 
-    Debug( 5015 ) << "[buildGhostDofMap] call buildGhostInterProcessDofMap() with god rank "<<  this->worldComm().godRank() << "\n";
-    buildGhostInterProcessDofMap( mesh,mapInterProcessDof );
+    if (is_continuous)
+    {
+        Debug( 5015 ) << "[buildGhostDofMap] call buildGhostInterProcessDofMap() with god rank "<<  this->worldComm().godRank() << "\n";
+        buildGhostInterProcessDofMap( mesh,mapInterProcessDof );
 
-    Debug( 5015 ) << "[buildGhostDofMap] call buildDofNotPresent() with rank "<<  this->worldComm().rank() << "\n";
-    buildDofNotPresent( mesh,setInterProcessDofNotPresent );
+        Debug( 5015 ) << "[buildGhostDofMap] call buildDofNotPresent() with rank "<<  this->worldComm().rank() << "\n";
+        buildDofNotPresent( mesh,setInterProcessDofNotPresent );
+    }
 
     Debug( 5015 ) << "[buildGhostDofMap] call buildGlobalProcessToGlobalClusterDofMap() with rank "<<  this->worldComm().rank() << "\n";
     buildGlobalProcessToGlobalClusterDofMap( mesh,mapInterProcessDof,setInterProcessDofNotPresent );
@@ -91,20 +96,17 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGhostInterProcessDofMap( mesh_
 
     if ( nbFaceDof == 0 ) return;
 
-    int myRank = this->worldComm().rank();
+    const int myRank = this->worldComm().rank();
 
     //------------------------------------------------------------------------------//
-
-    // faire d abord la construction de la carte : dof interprocesfaces myrank -> (other rank,dof interprocesfaces of this rank)
-    //std::map<size_type,boost::tuple<size_type,size_type> > mapInterProcessDof;
-
 
     std::vector<int> nbMsgToSend( this->worldComm().size() );
     std::fill( nbMsgToSend.begin(),nbMsgToSend.end(),0 );
 
     std::vector< std::map<int,int> > mapMsg( this->worldComm().size() );
 
-    // iteration on all interprocessfaces
+    //------------------------------------------------------------------------------//
+    // iteration on all interprocessfaces in order to send requests to the near proc
     auto face_it = mesh.interProcessFaces().first;
     auto face_en = mesh.interProcessFaces().second;
     Debug( 5015 ) << "[buildGhostInterProcessDofMap] nb interprocess faces: " << std::distance( face_it, face_en ) << "\n";
@@ -134,8 +136,8 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGhostInterProcessDofMap( mesh_
 
         else std::cout << "\n[buildGhostInterProcessDofMap] PROBLEME1!!!!" << std::endl;
 
-        int IdProcessOfGhost = eltOffProc.processId();
-        int idFaceInPartition = face_it->idInPartition( IdProcessOfGhost );
+        const int IdProcessOfGhost = eltOffProc.processId();
+        const int idFaceInPartition = face_it->idInPartition( IdProcessOfGhost );
 
         // for each dof in face
         const int ncdof = is_product?nComponents:1;
@@ -158,14 +160,16 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGhostInterProcessDofMap( mesh_
                 int locDof=l;
 #endif
 
+                //------------------------------------------------------------------------------//
                 // get dof local on Proc
-                auto thedof = faceLocalToGlobal( face_it->id(),locDof,c );
+                const auto thedof = faceLocalToGlobal( face_it->id(),locDof,c );
+                //------------------------------------------------------------------------------//
                 // save the tag of mpi send
                 mapMsg[IdProcessOfGhost].insert( std::make_pair( nbMsgToSend[IdProcessOfGhost],thedof.template get<0>() ) );
 
+                //------------------------------------------------------------------------------//
                 // get info to send
-                //boost::tuple<int,int,int> dataToSend = boost::make_tuple(idFaceInPartition,l,c);
-                ublas::vector<float/*int*/> dataToSend( 4+nDim/*6*/ );
+                ublas::vector<double> dataToSend( 4+nDim );
                 dataToSend[0]=idFaceInPartition;
                 dataToSend[1]=l;
                 dataToSend[2]=c;
@@ -178,6 +182,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGhostInterProcessDofMap( mesh_
                 if ( nDim>2 )
                     dataToSend[6]=dofPoint( thedof.template get<0>() ).template get<0>()[2];
 
+                //------------------------------------------------------------------------------//
                 // send
                 this->worldComm().send( IdProcessOfGhost , nbMsgToSend[IdProcessOfGhost], dataToSend );
 
@@ -191,7 +196,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGhostInterProcessDofMap( mesh_
                           << " with locDof " << locDof
                           << std::endl;
 #endif
-
+                //------------------------------------------------------------------------------//
                 // update nb send
                 ++nbMsgToSend[IdProcessOfGhost];
 
@@ -214,8 +219,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGhostInterProcessDofMap( mesh_
     {
         for ( int cpt=0; cpt<nbMsgToRecv[proc]; ++cpt )
         {
-            //boost::tuple<int,int,int> dataToRecv;
-            ublas::vector<float/*int*/> dataToRecv( 4+nDim );
+            ublas::vector<double> dataToRecv( 4+nDim );
             //recv
             this->worldComm().recv( proc, cpt, dataToRecv );
 
@@ -241,9 +245,11 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGhostInterProcessDofMap( mesh_
             }
 
             else std::cout << "\nPROBLEME2!!!!"
-                               << " elt0.processId() " << elt0.processId()
-                               << " elt1.processId() " << elt1.processId()
-                               <<std::endl;
+                           << " elt0.processId() " << elt0.processId()
+                           << " elt1.processId() " << elt1.processId()
+                           << std::endl;
+
+            //------------------------------------------------------------------------------//
 
 #if 0 // WithPermutation (get locDof with identy configuration)
             // only work in 2D with fe_type::nodal!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -264,20 +270,17 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGhostInterProcessDofMap( mesh_
             }
 
 #else
-            int locDof = nbFaceDof;
 
-            //const int ncdof = is_product?nComponents:1;
-            //for( int c = 0; c < ncdof; ++c )
+            int locDof = nbFaceDof;
             bool find=false;
 
             for ( uint16_type l = 0; ( l < nbFaceDof && !find ) ; ++l )
-                //while (!find && l<nbFaceDof )
             {
-                auto thedofInFace = faceLocalToGlobal( dataToRecv[0], l, dataToRecv[2] ).template get<0>();
+                const auto thedofInFace = faceLocalToGlobal( dataToRecv[0], l, dataToRecv[2] ).template get<0>();
 
                 if ( nDim==1 )
                 {
-                    if ( std::abs( dofPoint( thedofInFace ).template get<0>()[0]-dataToRecv[4] )<1e-5 )
+                    if ( std::abs( dofPoint( thedofInFace ).template get<0>()[0]-dataToRecv[4] )<1e-9 )
                     {
                         locDof = l;
                         find=true;
@@ -286,8 +289,8 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGhostInterProcessDofMap( mesh_
 
                 else if ( nDim==2 )
                 {
-                    if ( ( std::abs( dofPoint( thedofInFace ).template get<0>()[0]-dataToRecv[4] )<1e-5 ) &&
-                            ( std::abs( dofPoint( thedofInFace ).template get<0>()[1]-dataToRecv[5] )<1e-5 ) )
+                    if ( ( std::abs( dofPoint( thedofInFace ).template get<0>()[0]-dataToRecv[4] )<1e-9 ) &&
+                            ( std::abs( dofPoint( thedofInFace ).template get<0>()[1]-dataToRecv[5] )<1e-9 ) )
                     {
                         locDof = l;
                         find=true;
@@ -296,9 +299,9 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGhostInterProcessDofMap( mesh_
 
                 else if ( nDim==3 )
                 {
-                    if ( ( std::abs( dofPoint( thedofInFace ).template get<0>()[0]-dataToRecv[4] )<1e-5 ) &&
-                            ( std::abs( dofPoint( thedofInFace ).template get<0>()[1]-dataToRecv[5] )<1e-5 ) &&
-                            ( std::abs( dofPoint( thedofInFace ).template get<0>()[2]-dataToRecv[6] )<1e-5 ) )
+                    if ( ( std::abs( dofPoint( thedofInFace ).template get<0>()[0]-dataToRecv[4] )<1e-9 ) &&
+                            ( std::abs( dofPoint( thedofInFace ).template get<0>()[1]-dataToRecv[5] )<1e-9 ) &&
+                            ( std::abs( dofPoint( thedofInFace ).template get<0>()[2]-dataToRecv[6] )<1e-9 ) )
                     {
                         locDof = l;
                         find=true;
@@ -307,12 +310,13 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGhostInterProcessDofMap( mesh_
                 }
             }
 
-            if ( !find ) std::cout<<"\n interprocess face dof not found " << std::endl;
+            if ( !find ) std::cout<<"\n [buildGhostInterProcessDofMap] : Dof point not find on interprocess face dof not found " << std::endl;
 
 #endif
-            auto thedof = faceLocalToGlobal( dataToRecv[0], locDof, dataToRecv[2] );
-
-            int dofGlobAsked = thedof.template get<0>();
+            //------------------------------------------------------------------------------//
+            // get global dof
+            const auto thedof = faceLocalToGlobal( dataToRecv[0], locDof, dataToRecv[2] );
+            const int dofGlobAsked = thedof.template get<0>();
 #if 0
             std::cout << "\nI am proc "<<  myRank
                       << " I recv to proc "<< proc
@@ -326,7 +330,8 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGhostInterProcessDofMap( mesh_
                       << "ma permutation " <<eltOnProc.facePermutation( faceIdInEltOnProc ).value()
                       << std::endl;
 #endif
-            // response
+            //------------------------------------------------------------------------------//
+            // send response
             this->worldComm().send( proc, cpt, dofGlobAsked );
 
         }
@@ -350,8 +355,9 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGhostInterProcessDofMap( mesh_
 
             //update data
             if ( mapInterProcessDof.find( mapMsg[proc][cpt] ) == mapInterProcessDof.end() )
+            {
                 mapInterProcessDof.insert( std::make_pair( mapMsg[proc][cpt], boost::make_tuple( proc,dofGlobRecv ) ) );
-
+            }
             else
             {
                 if ( ( int )mapInterProcessDof.find( mapMsg[proc][cpt] )->second.template get<0>() > proc )
@@ -433,7 +439,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGhostInterProcessDofMap( mesh_
                 int IdProcessOfGhost = mapInterProcessDof[thedof.template get<0>()].template get<0>();
 
                 //boost::tuple<int,int,int> dataToSend = boost::make_tuple(idFaceInPartition,l,c);
-                ublas::vector<float> dataToSendCheck( 3+nDim/*5*/ );
+                ublas::vector<double> dataToSendCheck( 3+nDim/*5*/ );
                 dataToSendCheck[0]=mapInterProcessDof[thedof.template get<0>()].template get<1>();
                 dataToSendCheck[1]=dofPoint( thedof.template get<0>() ).template get<0>()[0];
 
@@ -490,7 +496,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGhostInterProcessDofMap( mesh_
         for ( int cpt=0; cpt<nbMsgToRecvCheck[proc]; ++cpt )
         {
             //boost::tuple<int,int,int> dataToRecv;
-            ublas::vector<float> dataToRecv( 3+nDim );
+            ublas::vector<double> dataToRecv( 3+nDim );
             //recv
             this->worldComm().recv( proc, cpt, dataToRecv );
 
@@ -582,7 +588,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildDofNotPresent( mesh_type& mesh
 {
     //calcul nbre dof locaux sans ghost
 
-    int myRank = this->worldComm().rank();
+    const int myRank = this->worldComm().rank();
     size_type nbFaceDof = invalid_size_type_value;
 
     if ( !fe_type::is_modal )
@@ -598,11 +604,12 @@ DofTable<MeshType, FEType, PeriodicityType>::buildDofNotPresent( mesh_type& mesh
     std::vector< std::map<int,int> > mapGhost;
     std::set< int > setInterProcessDof;
     //std::set< int > setOfInterProcessDofNotPresent;
-    std::set< int > setInterProcessDofPresent;
+    //std::set< int > setInterProcessDofPresent;
+
+    //------------------------------------------------------------------------------//
 
     auto face_it = mesh.interProcessFaces().first;
     auto face_en = mesh.interProcessFaces().second;
-
     for ( ; face_it != face_en ; ++face_it )
     {
         auto const& elt0 = face_it->element0();
@@ -631,64 +638,64 @@ DofTable<MeshType, FEType, PeriodicityType>::buildDofNotPresent( mesh_type& mesh
         {
             for ( uint16_type l = 0; l < nbFaceDof; ++l )
             {
-                auto blabla = faceLocalToGlobal( face_it->id(),l , c );
+                const auto globdof = faceLocalToGlobal( face_it->id(),l , c );
 #if 0
                 std::cout <<  "\n je suis proc "<<  myRank <<" face_it->id() " << face_it->id()
                           << " face_it->G() " << face_it->G()
                           << " blabla " << blabla << std::endl;
 #endif
-                setInterProcessDof.insert( blabla.template get<0>() );
+                setInterProcessDof.insert( globdof.template get<0>() );
 
                 if ( theelt.processId()<myRank )
-                    setInterProcessDofNotPresent.insert( blabla.template get<0>() );
+                    setInterProcessDofNotPresent.insert( globdof.template get<0>() );
 
-                //mapGhost[theelet.processId()].insert(blabla.template get<0>(), );
             }
         }
     } // for ( ; face_it != face_en ; ++face_it)
 
-
+    //------------------------------------------------------------------------------//
 
     //int nGlobalDofInProcess = setInterProcessDof.size() - setInterProcessDofNotPresent.size();
-
+#if 0 // NEW VINCENT
     auto dof_it = setInterProcessDof.begin();
     auto dof_en = setInterProcessDof.end();
-
     for ( ; dof_it!=dof_en ; ++dof_it )
     {
         if ( setInterProcessDofNotPresent.find( *dof_it )==setInterProcessDofNotPresent.end() )
             setInterProcessDofPresent.insert( *dof_it );
     }
-
+#endif
 #if 0
     std::cout <<  "\n je suis proc "<<  myRank
               <<" nbDof interprocess " << setInterProcessDof.size()
               <<" nbDof interprocess not present " << setInterProcessDofNotPresent.size()
-              <<" nbDof interprocess present " << setInterProcessDofPresent.size()
               << std::endl;
 #endif
 
-    size_type mynDofWithoutGhost = this->_M_last_df[myRank] - this->_M_first_df[myRank] + 1 - setInterProcessDofNotPresent.size();
+#if 0
+    //------------------------------------------------------------------------------//
+    // update datampa info
 
+    size_type mynDofWithoutGhost = this->_M_last_df[myRank] - this->_M_first_df[myRank] + 1 - setInterProcessDofNotPresent.size();
     mpi::all_gather( this->worldComm(),
                      mynDofWithoutGhost,
                      this->_M_n_localWithoutGhost_df );
 
     this->_M_n_dofs=0;
-
-    for ( int proc=0; proc<this->worldComm().size(); ++proc ) this->_M_n_dofs+=this->_M_n_localWithoutGhost_df[proc];
+    for ( int proc=0; proc<this->worldComm().size(); ++proc )
+    {
+        this->_M_n_dofs+=this->_M_n_localWithoutGhost_df[proc];
+    }
 
     this->_M_first_df_globalcluster=this->_M_first_df;
     this->_M_last_df_globalcluster=this->_M_last_df;
-
     for ( int i=1; i<this->worldComm().size(); ++i )
     {
         this->_M_first_df_globalcluster[i]=this->_M_last_df_globalcluster[i-1]+1;
-        //this->_M_last_df_globalcluster[i]+=this->_M_n_localWithoutGhost_df[i];
         this->_M_last_df_globalcluster[i]=this->_M_first_df_globalcluster[i]+this->_M_n_localWithoutGhost_df[i]-1;
     }
 
-
+#endif
 }
 
 //--------------------------------------------------------------------------------------------------------//
@@ -702,151 +709,63 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGlobalProcessToGlobalClusterDo
         std::map<size_type,boost::tuple<size_type,size_type> > const& mapInterProcessDof,
         std::set<int> const& setInterProcessDofNotPresent )
 {
-    //NEWBARRIER this->worldComm().barrier();
-    int myRank = this->worldComm().rank();
+    const int myRank = this->worldComm().rank();
 
     //------------------------------------------------------------------------------//
-    //construction des map local proc to global : part dof present
-    //std::map<size_type,size_type> mapGlobalProcessToGlobalCluster;
-    //std::vector<size_type> mapGlobalProcessToGlobalCluster(this->_M_n_localWithGhost_df[myRank]);
+    // update datamap info
+
+    size_type mynDofWithoutGhost = this->_M_last_df[myRank] - this->_M_first_df[myRank] + 1 - setInterProcessDofNotPresent.size();
+    mpi::all_gather( this->worldComm(),
+                     mynDofWithoutGhost,
+                     this->_M_n_localWithoutGhost_df );
+
+    this->_M_n_dofs=0;
+    for ( int proc=0; proc<this->worldComm().size(); ++proc )
+    {
+        this->_M_n_dofs+=this->_M_n_localWithoutGhost_df[proc];
+    }
+
+    this->_M_first_df_globalcluster=this->_M_first_df;
+    this->_M_last_df_globalcluster=this->_M_last_df;
+    for ( int i=1; i<this->worldComm().size(); ++i )
+    {
+        this->_M_first_df_globalcluster[i]=this->_M_last_df_globalcluster[i-1]+1;
+        this->_M_last_df_globalcluster[i]=this->_M_first_df_globalcluster[i]+this->_M_n_localWithoutGhost_df[i]-1;
+    }
+
+
+    //------------------------------------------------------------------------------//
+    // init map
     this->M_mapGlobalProcessToGlobalCluster.resize( this->_M_n_localWithGhost_df[myRank] );
     this->M_mapGlobalClusterToGlobalProcess.resize( this->_M_n_localWithoutGhost_df[myRank] );
-
     std::fill( this->M_mapGlobalProcessToGlobalCluster.begin(),this->M_mapGlobalProcessToGlobalCluster.end(),invalid_size_type_value );
     std::fill( this->M_mapGlobalClusterToGlobalProcess.begin(),this->M_mapGlobalClusterToGlobalProcess.end(),invalid_size_type_value );
 
+    //------------------------------------------------------------------------------//
+    // add in map the dofs presents
     size_type firstGlobIndex = this->_M_first_df_globalcluster[myRank];
     size_type nextGlobIndex = firstGlobIndex;
-
-#if 0
-    // je pense que ce serais mieux de parcourir dans l'ordre de pDof (mapGDof_it->second)
-    // idee : et si je faisait plus for ( int=0;i<nDof;++i) : normalement les dof sont contigue!!
-    auto mapGDof_it = mapGDof().begin();
-    auto mapGDof_en = mapGDof().end();
-
-    for ( ; mapGDof_it!=mapGDof_en; ++mapGDof_it )
-    {
-        //std::cout << "\n rank " << myRank << " mapGDof_it " << mapGDof_it->first << " second " << mapGDof_it->second << std::endl;
-
-        if ( setInterProcessDofNotPresent.find( mapGDof_it->second )==setInterProcessDofNotPresent.end() )
-        {
-            this->M_mapGlobalProcessToGlobalCluster[mapGDof_it->second]=nextGlobIndex;
-            this->M_mapGlobalClusterToGlobalProcess[nextGlobIndex]=mapGDof_it->second;
-            ++nextGlobIndex;
-        }
-
-        else
-        {
-            //mapGlobalProcessToGlobalCluster[mapGDof_it->second]=mapInterProcessDof[ ]
-        }
-    } // for ( ; mapGDof_it!=mapGDof_en; ++mapGDof_it)
-
-#else
-
     for ( int i=0; i< ( int )this->_M_n_localWithGhost_df[myRank]; ++i )
     {
-        //std::cout << "\n rank " << myRank << " mapGDof_it " << mapGDof_it->first << " second " << mapGDof_it->second << std::endl;
-
         if ( setInterProcessDofNotPresent.find( i )==setInterProcessDofNotPresent.end() )
         {
             this->M_mapGlobalProcessToGlobalCluster[i]=nextGlobIndex;
             this->M_mapGlobalClusterToGlobalProcess[nextGlobIndex-firstGlobIndex]=i;
             ++nextGlobIndex;
         }
-
-        else
-        {
-            //mapGlobalProcessToGlobalCluster[mapGDof_it->second]=mapInterProcessDof[ ]
-        }
-    } // for ( ; mapGDof_it!=mapGDof_en; ++mapGDof_it)
-
-#endif
+    }
 
     //------------------------------------------------------------------------------//
-    //update des interprocessdof non present
-
-#if 1
-
-    // this for is important to build properly the interprocess dofs
+    // add in map the dofs non presents (ghosts)
+    // this is important to build properly the interprocess dofs
     for ( int p = 1 ; p<this->comm().size() ; ++p )
+    {
         this->updateGhostGlobalDof( mapInterProcessDof,
                                     setInterProcessDofNotPresent,
                                     p );
-
-#else
-
-    std::vector<int> nbMsgToSend2( this->worldComm().size() );
-    std::fill( nbMsgToSend2.begin(),nbMsgToSend2.end(),0 );
-
-    std::vector< std::map<int,int> > mapMsg2( this->worldComm().size() );
-
-    auto dofNP_it = setInterProcessDofNotPresent.begin();
-    auto dofNP_en = setInterProcessDofNotPresent.end();
-
-    for ( ; dofNP_it!=dofNP_en ; ++dofNP_it )
-    {
-        int IdProcessOfGhost = mapInterProcessDof[*dofNP_it].template get<0>();
-        int dofFaceInPartition = mapInterProcessDof[*dofNP_it].template get<1>();
-
-        this->worldComm().send( IdProcessOfGhost , nbMsgToSend2[IdProcessOfGhost], dofFaceInPartition );
-
-        mapMsg2[IdProcessOfGhost].insert( std::make_pair( nbMsgToSend2[IdProcessOfGhost],*dofNP_it ) );
-
-        ++nbMsgToSend2[IdProcessOfGhost];
     }
 
-    // counter of msg received for each process
-    std::vector<int> nbMsgToRecv2;
-    mpi::all_to_all( this->worldComm(),
-                     nbMsgToSend2,
-                     nbMsgToRecv2 );
-
-    //NEWBARRIER this->worldComm().barrier();
-
-    // recv id asked and re-send set of face id
-    for ( int proc=0; proc<this->worldComm().size(); ++proc )
-    {
-        for ( int cpt=0; cpt<nbMsgToRecv2[proc]; ++cpt )
-        {
-            int dofRecv;
-            //recv
-            this->worldComm().recv( proc, cpt, dofRecv );
-
-            // response // attention pas tout le temps exact : A mediter vincent (vrai pour 2 proc sur!)
-            // je pense qu'il faut faire une boucle tant que pas tout est OK
-            int dofToSend= this->M_mapGlobalProcessToGlobalCluster[dofRecv];
-
-            if ( dofToSend==invalid_size_type_value ) std::cout << "\n AIEIAIIE rank "<< this->worldComm().rank() << "recv du proc " << proc <<  std::endl;
-
-            this->worldComm().send( proc, cpt,dofToSend );
-        }
-    }
-
-    // get response to initial request and update Feel::Mesh::Faces data
-    for ( int proc=0; proc<this->worldComm().size(); ++proc )
-    {
-        for ( int cpt=0; cpt<nbMsgToSend2[proc]; ++cpt )
-        {
-            int dofGlobClusterRecv;
-            //recv
-            this->worldComm().recv( proc, cpt, dofGlobClusterRecv );
-            //update data
-
-            this->M_mapGlobalProcessToGlobalCluster[mapMsg2[proc][cpt]]=dofGlobClusterRecv;
-        }
-    }
-
-#endif
-    //------------------------------//
-    // check
-
-    for ( int i=0; i<( int )this->_M_n_localWithGhost_df[myRank]; ++i )
-    {
-
-    }
-
-
-}
+} // buildGlobalProcessToGlobalClusterDofMap
 
 //--------------------------------------------------------------------------------------------------------//
 //--------------------------------------------------------------------------------------------------------//

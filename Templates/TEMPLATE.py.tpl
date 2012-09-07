@@ -35,7 +35,7 @@
 
 (>>>POINT<<<)
 >>>TEMPLATE-DEFINITION-SECTION<<<
-("ORG" "Your Organization: " "" "" "Université Joseph Fourier (Grenoble I)")
+("ORG" "Your Organization: " "" "" "Université de Strasbourg")
 
 
 

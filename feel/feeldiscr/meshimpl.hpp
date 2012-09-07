@@ -193,6 +193,9 @@ Mesh<Shape, T, Tag>::updateForUse()
             this->updateEntitiesCoDimensionTwo();
             Debug( 4015 ) << "[Mesh::updateForUse] update edges : " << ti.elapsed() << "\n";
         }
+        updateOnBoundary( mpl::int_<nDim>() );
+
+
         this->setUpdatedForUse( true );
     }
 
@@ -588,11 +591,20 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne()
             {
                 // here we get the next face or \c end()
                 size_type theid = __it->id();
-                __it = this->eraseFace( __it );
+
+                // find the other face
                 face_iterator __other = this->faces().find( face_type( _faceit->second ) );
                 FEELPP_ASSERT( __other->id() != theid )
                 ( __other->id() )
                 ( theid ).error( "faces should have different ids " );
+
+                if ( __it->marker() != __other->marker() )
+                {
+                    this->faces().modify( __other, [__it]( face_type& f ) { f.setMarker2( __it->marker().value() ); } );
+                }
+
+                __it = this->eraseFace( __it );
+
 
 
             }
@@ -878,8 +890,17 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne()
     }
 
 #endif
-    boost::tie( iv, en ) = this->elementsRange();
 
+
+    Debug( 4015 ) << "[Mesh::updateFaces] element/face connectivity : " << ti.elapsed() << "\n";
+    ti.restart();
+}
+template<typename Shape, typename T, int Tag>
+void
+Mesh<Shape, T, Tag>::updateOnBoundary( mpl::int_<1> )
+{
+    element_iterator iv,en;
+    boost::tie( iv, en ) = this->elementsRange();
     for ( ; iv != en; ++iv )
     {
         bool isOnBoundary = false;
@@ -893,11 +914,53 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne()
         // with the boundary
         this->elements().modify( iv, detail::OnBoundary( isOnBoundary ) );
     }
-
-    Debug( 4015 ) << "[Mesh::updateFaces] element/face connectivity : " << ti.elapsed() << "\n";
-    ti.restart();
 }
 
+template<typename Shape, typename T, int Tag>
+void
+Mesh<Shape, T, Tag>::updateOnBoundary( mpl::int_<2> )
+{
+    element_iterator iv,en;
+    boost::tie( iv, en ) = this->elementsRange();
+    for ( ; iv != en; ++iv )
+    {
+        bool isOnBoundary = false;
+
+        for ( size_type j = 0; j < this->numLocalFaces(); j++ )
+        {
+            isOnBoundary |= iv->face( j ).isOnBoundary();
+        }
+
+        // an element on the boundary means that is shares a face
+        // with the boundary
+        this->elements().modify( iv, detail::OnBoundary( isOnBoundary ) );
+    }
+}
+
+template<typename Shape, typename T, int Tag>
+void
+Mesh<Shape, T, Tag>::updateOnBoundary( mpl::int_<3> )
+{
+    element_iterator iv,en;
+    boost::tie( iv, en ) = this->elementsRange();
+    for ( ; iv != en; ++iv )
+    {
+        bool isOnBoundary = false;
+
+        for ( size_type j = 0; j < this->numLocalFaces(); j++ )
+        {
+            isOnBoundary |= iv->face( j ).isOnBoundary();
+        }
+        for ( size_type j = 0; j < this->numLocalEdges(); j++ )
+        {
+            isOnBoundary |= iv->edge( j ).isOnBoundary();
+        }
+
+        // an element on the boundary means that is shares a face
+        // with the boundary
+        this->elements().modify( iv, detail::OnBoundary( isOnBoundary ) );
+    }
+}
 #if defined(FEELPP_ENABLE_MPI_MODE)
 template<typename Shape, typename T, int Tag>
 void
@@ -956,7 +1019,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCell()
                      << std::endl;
 #endif
             // get faces id
-            std::vector<float/*int*/> idFaces( ( 1+nDim )*this->numLocalFaces() );
+            std::vector<double/*int*/> idFaces( ( 1+nDim )*this->numLocalFaces() );
 
             for ( size_type j = 0; j < this->numLocalFaces(); j++ )
             {
@@ -997,7 +1060,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCell()
     {
         for ( int cpt=0; cpt<nbMsgToSend[proc]; ++cpt )
         {
-            std::vector<float/*int*/> idFacesRecv( ( 1+nDim )*this->numLocalFaces() );
+            std::vector<double/*int*/> idFacesRecv( ( 1+nDim )*this->numLocalFaces() );
             //recv
             this->worldComm().localComm().recv( proc, cpt, idFacesRecv );
 #if 0
@@ -1053,8 +1116,8 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCell()
                                   << theelt.face( j2 ).barycenter()[1] << " " << idFacesRecv[( 1+nDim )*j+2] << std::endl;
 #endif
 
-                        if ( ( std::abs( /*theelt.faceBarycenter(j2)*/baryFace[0] - idFacesRecv[( 1+nDim )*j+1] ) < 1e-5 ) &&
-                                ( std::abs( /*theelt.faceBarycenter(j2)*/baryFace[1] - idFacesRecv[( 1+nDim )*j+2] ) < 1e-5 ) )
+                        if ( ( std::abs( /*theelt.faceBarycenter(j2)*/baryFace[0] - idFacesRecv[( 1+nDim )*j+1] ) < 1e-9 ) &&
+                                ( std::abs( /*theelt.faceBarycenter(j2)*/baryFace[1] - idFacesRecv[( 1+nDim )*j+2] ) < 1e-9 ) )
                         {
                             hasFind=true;
                             jBis=j2;
@@ -1063,9 +1126,9 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCell()
 
                     else if ( nRealDim==3 )
                     {
-                        if ( ( std::abs( /*theelt.faceBarycenter(j2)*/baryFace[0] - idFacesRecv[( 1+nDim )*j+1] ) < 1e-5 ) &&
-                                ( std::abs( /*theelt.faceBarycenter(j2)*/baryFace[1] - idFacesRecv[( 1+nDim )*j+2] ) < 1e-5 ) &&
-                                ( std::abs( /*theelt.faceBarycenter(j2)*/baryFace[2] - idFacesRecv[( 1+nDim )*j+3] ) < 1e-5 ) )
+                        if ( ( std::abs( /*theelt.faceBarycenter(j2)*/baryFace[0] - idFacesRecv[( 1+nDim )*j+1] ) < 1e-9 ) &&
+                                ( std::abs( /*theelt.faceBarycenter(j2)*/baryFace[1] - idFacesRecv[( 1+nDim )*j+2] ) < 1e-9 ) &&
+                                ( std::abs( /*theelt.faceBarycenter(j2)*/baryFace[2] - idFacesRecv[( 1+nDim )*j+3] ) < 1e-9 ) )
                         {
                             hasFind=true;
                             jBis=j2;
@@ -1186,7 +1249,7 @@ Mesh<Shape, T, Tag>::findNeighboringProcessors()
 
     // Collect the bounding spheres from all processors, test for intersection
     {
-        std::vector<float>
+        std::vector<double>
         send ( 4,                         0 ),
              recv ( 4*this->worldComm().localSize(), 0 );
 
@@ -1195,8 +1258,8 @@ Mesh<Shape, T, Tag>::findNeighboringProcessors()
         send[2] = bounding_sphere.center()( 2 );
         send[3] = bounding_sphere.radius();
 
-        MPI_Allgather ( &send[0], send.size(), MPI_FLOAT,
-                        &recv[0], send.size(), MPI_FLOAT,
+        MPI_Allgather ( &send[0], send.size(), MPI_DOUBLE,
+                        &recv[0], send.size(), MPI_DOUBLE,
                         this->worldComm().localComm() );
 
 
@@ -2274,8 +2337,8 @@ Mesh<Shape, T, Tag>::Localization::run_analysis( const matrix_node_type & m,
     ( IsInit ).warn( "You don't have initialized the tool of localization" );
 #endif
 
-    bool find_x;
-    size_type cv_id;
+    bool find_x=false;
+    size_type cv_id=eltHypothetical;
     node_type x_ref;
     std::vector<bool> hasFindPts(setPoints.size2(),false);
 
