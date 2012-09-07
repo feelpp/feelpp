@@ -269,7 +269,6 @@ public:
 
             BOOST_FOREACH( auto mu, *Sampling )
             {
-
                 int size = mu.size();
                 if( proc_number == 0 )
                 {
@@ -281,6 +280,9 @@ public:
                 std::ostringstream mu_str;
                 for ( int i=0; i<size-1; i++ ) mu_str << std::scientific << std::setprecision( 5 ) << mu[i] <<",";
                 mu_str << std::scientific << std::setprecision( 5 ) << mu[size-1];
+
+                LOG(INFO) << "mu=" << mu << "\n";
+                mu.check();
 
                 switch ( M_mode )
                 {
