@@ -911,7 +911,6 @@ public:
             // no need to solve we have already an approximation (typically from
             // an nonlinear iteration procedure)
             M_u = T;
-            LOG(INFO) << "M_u = " << M_u << "\n";
             return vf::project( _space=this->functionSpace(), _expr=M_expr );
         }
 
