@@ -182,7 +182,8 @@ public:
             {
                 if ( M_mode == CRBModelMode::SCM )
                 {
-                    std::cout << "No SCM DB available, do scm offline computations first...\n";
+                    if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+                        std::cout << "No SCM DB available, do scm offline computations first...\n";
                     if( crb->scm()->doScmForMassMatrix() )
                         crb->scm()->setScmForMassMatrix( true );
 
@@ -195,7 +196,8 @@ public:
                 if ( M_mode == CRBModelMode::CRB )
                     //|| M_mode == CRBModelMode::SCM )
                 {
-                    std::cout << "No CRB DB available, do crb offline computations...\n";
+                    if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+                        std::cout << "No CRB DB available, do crb offline computations...\n";
                     crb->offline();
                 }
 
@@ -289,7 +291,8 @@ public:
                 {
                 case  CRBModelMode::PFEM:
                 {
-                    std::cout << "PFEM mode" << std::endl;
+                    if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+                        std::cout << "PFEM mode" << std::endl;
                     boost::timer ti;
 
                     auto u_fem = model->solve( mu );
@@ -311,7 +314,8 @@ public:
 
                 case  CRBModelMode::CRB:
                 {
-                    std::cout << "CRB mode\n";
+                    if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+                        std::cout << "CRB mode\n";
                     LOG(INFO) << "solve u_fem\n";
                     google::FlushLogFiles(google::GLOG_INFO);
                     boost::timer ti;
