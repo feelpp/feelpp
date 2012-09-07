@@ -165,6 +165,7 @@ public:
                     std::cout<<std::setprecision(15)<<this->operator()(this->size()-1)<<" ]";
                     std::cout <<std::setprecision(15)<< " and test" << (this->array()-sum.array()/Environment::numberOfProcessors()).abs().maxCoeff() << "\n";
                 }
+                Environment::worldComm().barrier();
                 CHECK( (this->array()-sum.array()/Environment::numberOfProcessors()).abs().maxCoeff() < 1e-7 )
                     << "Parameter not identical on all processors(" << Environment::worldComm().masterRank() << "/" << Environment::numberOfProcessors() << ")\n"
                     << "max error: " << (this->array()-sum.array()/Environment::numberOfProcessors()).abs().maxCoeff() << "\n"
