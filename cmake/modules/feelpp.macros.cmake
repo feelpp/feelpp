@@ -5,13 +5,13 @@ INCLUDE(ParseArguments)
 macro(feelpp_add_application)
 
   PARSE_ARGUMENTS(FEELPP_APP
-    "SRCS;LINK_LIBRARIES;CFG;GEO;MESH;LABEL;DEFS;DEPS"
-    "NO_TEST;EXCLUDE_FROM_ALL"
+    "SRCS;LINK_LIBRARIES;CFG;GEO;MESH;LABEL;DEFS;DEPS;SCRIPTS"
+    "NO_TEST;EXCLUDE_FROM_ALL;ADD_OT"
     ${ARGN}
     )
   CAR(FEELPP_APP_NAME ${FEELPP_APP_DEFAULT_ARGS})
 
-  set(execname feel_${FEELPP_APP_NAME})
+  set(execname feelpp_${FEELPP_APP_NAME})
 
   if ( FEELPP_ENABLE_VERBOSE_CMAKE )
     MESSAGE("*** Arguments for Feel++ application ${FEELPP_APP_NAME}")
@@ -81,6 +81,30 @@ macro(feelpp_add_application)
     endforeach()
   endif(FEELPP_APP_MESH)
 
+  if ( FEELPP_APP_SCRIPTS )
+    foreach(  script ${FEELPP_APP_SCRIPTS} )
+      # extract mesh filename  to be copied in binary dir
+      get_filename_component( SCRIPT_NAME ${script} NAME )
+      configure_file( ${script} ${SCRIPT_NAME} )
+    endforeach()
+  endif(FEELPP_APP_SCRIPTS)
+
+  if ( FEELPP_APP_ADD_OT )
+    set(pycpp "${execname}_pywrapper.cpp")
+    set(xml "${execname}_ot.xml")
+    set(FEELPP_APP_OT_WRAPPER_NAME "${execname}_ot")
+    get_filename_component( FEELPP_APP_OUTPUT_WE ${FEELPP_APP_CFG} NAME_WE )
+    set(FEELPP_APP_OUTPUT ${FEELPP_APP_OUTPUT_WE}.res )
+
+    configure_file(${FEELPP_SOURCE_DIR}/cmake/templates/ot_python_command_wrapper.cpp ${pycpp})
+    if ( NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${FEELPP_APP_OT_WRAPPER_NAME}.xml)
+      configure_file(${FEELPP_SOURCE_DIR}/cmake/templates/ot_python.xml.in ${CMAKE_CURRENT_SOURCE_DIR}/${FEELPP_APP_OT_WRAPPER_NAME}.xml)
+    endif()
+    configure_file(${FEELPP_APP_OT_WRAPPER_NAME}.xml ${xml})
+    feelpp_ot_add_python_module(${FEELPP_APP_OT_WRAPPER_NAME} ${pycpp}
+      LINK_LIBRARIES ${OpenTURNS_LIBRARIES}
+      CFG ${FEELPP_APP_CFG} XML ${xml} TEST)
+  endif( FEELPP_APP_ADD_OT )
 endmacro(feelpp_add_application)
 
 
@@ -132,3 +156,44 @@ macro(feelpp_add_test)
 
 endmacro(feelpp_add_test)
 
+#
+# feelpp_add_python_module
+#
+macro(feelpp_ot_add_python_module)
+if ( FEELPP_ENABLE_OPENTURNS AND OPENTURNS_FOUND )
+  PARSE_ARGUMENTS(FEELPP_OT_PYTHON
+    "LINK_LIBRARIES;SCRIPTS;XML;CFG"
+    "TEST"
+    ${ARGN}
+    )
+  CAR(FEELPP_OT_PYTHON_NAME ${FEELPP_OT_PYTHON_DEFAULT_ARGS})
+  CDR(FEELPP_OT_PYTHON_SOURCES ${FEELPP_OT_PYTHON_DEFAULT_ARGS})
+
+  add_library( ${FEELPP_OT_PYTHON_NAME} MODULE  ${FEELPP_OT_PYTHON_SOURCES}  )
+  target_link_libraries( ${FEELPP_OT_PYTHON_NAME} ${FEELPP_OT_PYTHON_LINK_LIBRARIES}  )
+  set_target_properties( ${FEELPP_OT_PYTHON_NAME} PROPERTIES PREFIX "" )
+  set_property(TARGET ${FEELPP_OT_PYTHON_NAME} PROPERTY LABELS feelpp)
+  #configure_file(${FEELPP_OT_PYTHON_NAME}.xml.in ${FEELPP_OT_PYTHON_NAME}.xml)
+
+#  add_dependencies(feelpp ${FEELPP_OT_PYTHON_NAME})
+
+  install(TARGETS ${FEELPP_OT_PYTHON_NAME} DESTINATION lib/openturns/wrappers/ COMPONENT Bin)
+  install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${FEELPP_OT_PYTHON_NAME}.xml" DESTINATION lib/openturns/wrappers/ COMPONENT Bin)
+
+  if ( FEELPP_OT_PYTHON_SCRIPTS )
+    foreach(  script ${FEELPP_OT_PYTHON_SCRIPTS} )
+      configure_file( ${script} ${script} )
+      if ( FEELPP_OT_PYTHON_TEST )
+        add_test(${script} ${PYTHON_EXECUTABLE} ${script})
+        set_property(TEST ${script} PROPERTY LABELS feelpp)
+      endif()
+    endforeach()
+  endif()
+  if ( FEELPP_OT_PYTHON_CFG )
+    foreach(  cfg ${FEELPP_OT_PYTHON_CFG} )
+      configure_file( ${cfg} ${cfg} )
+      INSTALL(FILES "${cfg}"  DESTINATION share/feel/config)
+    endforeach()
+  endif()
+endif( FEELPP_ENABLE_OPENTURNS AND OPENTURNS_FOUND )
+endmacro(feelpp_ot_add_python_module)

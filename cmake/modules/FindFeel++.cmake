@@ -94,7 +94,7 @@ FIND_PACKAGE(Boost COMPONENTS date_time filesystem system program_options unit_t
 OPTION(BOOST_ENABLE_TEST_DYN_LINK "enable boost test with dynamic lib" ON)
 MARK_AS_ADVANCED(BOOST_ENABLE_TEST_DYN_LINK)
 
-set(Boost_ADDITIONAL_VERSIONS "1.39" "1.40" "1.41" "1.42" "1.43" "1.44" "1.45" "1.46" "1.47" "1.48" "1.49" )
+set(Boost_ADDITIONAL_VERSIONS "1.39" "1.40" "1.41" "1.42" "1.43" "1.44" "1.45" "1.46" "1.47" "1.48" "1.49" "1.50")
 set( BOOST_PARAMETER_MAX_ARITY 20 )
 #set( BOOST_FILESYSTEM_VERSION 2)
 set( BOOST_FILESYSTEM_VERSION 3)
@@ -256,6 +256,7 @@ FIND_LIBRARY(METIS_LIBRARY
     metis
     PATHS
     $ENV{PETSC_DIR}/lib
+    $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
 #    "/opt/local/lib"
 )
 message(STATUS "Metis: ${METIS_LIBRARY}" )
@@ -268,6 +269,7 @@ FIND_LIBRARY(PARMETIS_LIBRARY
     parmetis
     PATHS
     $ENV{PETSC_DIR}/lib
+    $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
 )
 
 
@@ -281,7 +283,9 @@ FIND_LIBRARY(PTSCOTCHERREXIT_LIBRARY
     ptscotcherrexit
     PATHS
     $ENV{PETSC_DIR}/lib
+    $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
     /opt/local/lib/petsc/lib
+    $ENV{PTSCOTCH_DIR}/lib
 )
 message(STATUS "PTScotcherrexit: ${PTSCOTCHERREXIT_LIBRARY}" )
 IF( PTSCOTCHERREXIT_LIBRARY )
@@ -294,7 +298,9 @@ FIND_LIBRARY(PTSCOTCHERR_LIBRARY
     ptscotcherr
     PATHS
     $ENV{PETSC_DIR}/lib
+    $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
     /opt/local/lib/petsc/lib
+    $ENV{PTSCOTCH_DIR}/lib
 )
 message(STATUS "PTScotcherr: ${PTSCOTCHERR_LIBRARY}" )
 IF( PTSCOTCHERR_LIBRARY )
@@ -307,7 +313,9 @@ FIND_LIBRARY(PTSCOTCH_LIBRARY
     ptscotch
     PATHS
     $ENV{PETSC_DIR}/lib
+    $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
     /opt/local/lib/petsc/lib
+    $ENV{PTSCOTCH_DIR}/lib
 )
 message(STATUS "PTScotch: ${PTSCOTCH_LIBRARY}" )
 
@@ -320,6 +328,7 @@ FIND_LIBRARY(PTESMUMPS_LIBRARY
     ptesmumps
     PATHS
     $ENV{PETSC_DIR}/lib
+    $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
     /opt/local/lib/petsc/lib
 )
 message(STATUS "PTESMUMPS: ${PTESMUMPS_LIBRARY}" )
@@ -353,6 +362,8 @@ FIND_LIBRARY(MUMPS_COMMON_LIBRARY
     mumps_common
     PATHS
     $ENV{PETSC_DIR}/lib
+    $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
+    $ENV{MUMPS_DIR}/lib
 )
 
 
@@ -361,6 +372,8 @@ FIND_LIBRARY(DMUMPS_LIBRARY
     dmumps
     PATHS
     $ENV{PETSC_DIR}/lib
+    $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
+    $ENV{MUMPS_DIR}/lib
 )
 
 message(STATUS "Mumps: ${DMUMPS_LIBRARY} ${MUMPS_COMMON_LIBRARY}" )
@@ -373,6 +386,8 @@ FIND_LIBRARY(SUITESPARSECONFIG_LIBRARY
     suitesparseconfig
     PATHS
     $ENV{PETSC_DIR}/lib
+    $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
+    $ENV{SUITESPARSE_DIR}/lib
 )
 IF ( SUITESPARSECONFIG_LIBRARY )
   SET(FEELPP_LIBRARIES  ${SUITESPARSECONFIG_LIBRARY} ${FEELPP_LIBRARIES})
@@ -382,6 +397,8 @@ FIND_LIBRARY(AMD_LIBRARY
     amd
     PATHS
     $ENV{PETSC_DIR}/lib
+    $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
+    $ENV{SUITESPARSE_DIR}/lib
 )
 IF ( AMD_LIBRARY )
   SET(FEELPP_LIBRARIES  ${AMD_LIBRARY} ${FEELPP_LIBRARIES})
@@ -392,6 +409,8 @@ FIND_LIBRARY(COLAMD_LIBRARY
     colamd
     PATHS
     $ENV{PETSC_DIR}/lib
+    $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
+    $ENV{SUITESPARSE_DIR}/lib
 )
 IF ( COLAMD_LIBRARY )
   SET(FEELPP_LIBRARIES  ${COLAMD_LIBRARY} ${FEELPP_LIBRARIES})
@@ -402,6 +421,8 @@ FIND_LIBRARY(CHOLMOD_LIBRARY
     cholmod
     PATHS
     $ENV{PETSC_DIR}/lib
+    $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
+    $ENV{SUITESPARSE_DIR}/lib
 )
 
 FIND_LIBRARY(UMFPACK_LIBRARY
@@ -409,6 +430,8 @@ FIND_LIBRARY(UMFPACK_LIBRARY
     umfpack
     PATHS
     $ENV{PETSC_DIR}/lib
+    $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
+    $ENV{SUITESPARSE_DIR}/lib
 )
 message(STATUS "SuiteSparseConfig: ${SUITESPARSECONFIG_LIBRARY}" )
 message(STATUS "Amd: ${AMD_LIBRARY}" )
@@ -500,7 +523,7 @@ endif()
 FIND_PACKAGE(VTK)
 if ( VTK_FOUND )
   set(FEELPP_HAS_VTK 1)
-  SET(VTK_LIBRARIES "-lvtkRendering -lvtkGraphics -lvtkImaging  -lvtkFiltering -lvtkCommon" )
+  SET(VTK_LIBRARIES "-lvtkRendering -lvtkGraphics -lvtkImaging  -lvtkFiltering -lvtkCommon -lvtksys" )
   INCLUDE_DIRECTORIES(${VTK_INCLUDE_DIRS})
   MARK_AS_ADVANCED( VTK_DIR )
   SET(FEELPP_LIBRARIES ${VTK_LIBRARIES} ${FEELPP_LIBRARIES})

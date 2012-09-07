@@ -54,10 +54,12 @@ Backend<T>::Backend( WorldComm const& worldComm )
     M_pc( "lu" ),
     M_fieldSplit( "additive" ),
     M_pcFactorMatSolverPackage( "petsc" ),
-    M_constant_null_space( false )
+    M_constant_null_space( false ),
+    M_showKSPMonitor( false ), M_showSNESMonitor( false ),
+    M_showKSPConvergedReason( false ), M_showSNESConvergedReason( false )
 {
     if ( M_worldComm.globalSize() > 1 )
-        M_pc = "block_jacobi";
+        M_pc = "gasm";
 }
 
 template <typename T>
@@ -80,7 +82,11 @@ Backend<T>::Backend( Backend const& backend )
     M_pc( backend.M_pc ),
     M_fieldSplit( backend.M_fieldSplit ),
     M_pcFactorMatSolverPackage( backend.M_pcFactorMatSolverPackage ),
-    M_constant_null_space( backend.M_constant_null_space )
+    M_constant_null_space( backend.M_constant_null_space ),
+    M_showKSPMonitor( backend.M_showKSPMonitor ),
+    M_showSNESMonitor( backend.M_showSNESMonitor ),
+    M_showKSPConvergedReason( backend.M_showKSPConvergedReason ),
+    M_showSNESConvergedReason( backend.M_showSNESConvergedReason )
 {
 }
 template <typename T>
@@ -103,7 +109,11 @@ Backend<T>::Backend( po::variables_map const& vm, std::string const& prefix, Wor
     M_pc( vm[prefixvm( prefix,"pc-type" )].template as<std::string>() ),
     M_fieldSplit( vm[prefixvm( prefix,"fieldsplit-type" )].template as<std::string>() ),
     M_pcFactorMatSolverPackage( vm[prefixvm( prefix,"pc-factor-mat-solver-package-type" )].template as<std::string>() ),
-    M_constant_null_space( vm[prefixvm( prefix,"constant-null-space" )].template as<bool>() )
+    M_constant_null_space( vm[prefixvm( prefix,"constant-null-space" )].template as<bool>() ),
+    M_showKSPMonitor( vm.count(prefixvm( prefix,"ksp-monitor" )) ),
+    M_showSNESMonitor( vm.count(prefixvm( prefix,"snes-monitor" )) ),
+    M_showKSPConvergedReason( vm.count(prefixvm( prefix,"ksp-converged-reason" )) ),
+    M_showSNESConvergedReason( vm.count(prefixvm( prefix,"snes-converged-reason" )) )
 {
 }
 template <typename T>
@@ -226,9 +236,18 @@ Backend<T>::solve( sparse_matrix_ptrtype const& A,
 {
     M_reusePC = reusePC;
 
+    vector_ptrtype x_save;
+
     if ( !M_reusePC )
     {
         //reset();
+    }
+    else
+    {
+        // save current solution in case of failure
+        x->close();
+        x_save = this->newVector(x->map());
+        *x_save=*x;
     }
 
     //start();
@@ -251,8 +270,14 @@ Backend<T>::solve( sparse_matrix_ptrtype const& A,
         this->comm().globalComm().barrier();
         //reset();
         //start();
+
+        // reset to initial solution
+        x_save->close();
+        *x=*x_save;
+
         this->setPrecMatrixStructure( SAME_NONZERO_PATTERN );
-        std::cout << "Backend "  << M_prefix << " reuse failed, rebuilding preconditioner...\n";
+        if (this->comm().globalRank() == this->comm().masterRank() )
+            std::cout << "Backend "  << M_prefix << " reuse failed, rebuilding preconditioner...\n";
         Log() << "Backend "  << M_prefix << " reuse failed, rebuilding preconditioner...\n";
         boost::tie( M_converged, M_iteration, M_residual ) = this->solve( A, P, x, b );
 
@@ -276,21 +301,27 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
     M_nlsolver->setKspSolverType( this->kspEnumType() );
     M_nlsolver->setMatSolverPackageType( this->matSolverPackageEnumType() );
     M_nlsolver->setPrecMatrixStructure( this->precMatrixStructure() );
+    M_nlsolver->setShowSNESMonitor( this->showSNESMonitor() );
+    M_nlsolver->setShowKSPMonitor( this->showKSPMonitor() );
+    M_nlsolver->setShowKSPConvergedReason( this->showKSPConvergedReason() );
+    M_nlsolver->setShowSNESConvergedReason( this->showSNESConvergedReason() );
 
     //vector_ptrtype x_save = x->clone();
-    //vector_ptrtype x_save = this->newVector(x->map());
-    //*x_save=*x;
+    vector_ptrtype x_save;
+
     //std::cout << "[nlSolve] reusepc:" << reusePC << std::endl;
     if ( reusePC || reuseJac )
     {
-        M_nlsolver->init();
+        // save current solution in case of failure
+        x->close();
+        x_save = this->newVector(x->map());
+        *x_save=*x;
 
+        M_nlsolver->init();
         M_nlsolver->setPrecMatrixStructure( SAME_PRECONDITIONER );
 
         int typeReusePrec = 1,typeReuseJac = 1 ;
-
         if ( reusePC ) typeReusePrec = -1;
-
         if ( reuseJac ) typeReuseJac = -1;
 
         //M_nlsolver->setReuse( -2, -2 );
@@ -304,10 +335,15 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
     auto ret = M_nlsolver->solve( A, x, b, tol, its );
 
     //std::cout << "[nlSolve] ret.first " << ret.first <<std::endl;
-    if ( ret.first < 0 )
+    if ( ret.first < 0 && ( reusePC || reuseJac ) )
     {
-        std::cout << "Backend "  << M_prefix << " reuse failed, rebuilding preconditioner...\n";
+        if (this->comm().globalRank() == this->comm().masterRank() )
+            std::cout << "Backend "  << M_prefix << " reuse failed, rebuilding preconditioner...\n";
         Log() << "Backend "  << M_prefix << " reuse failed, rebuilding preconditioner...\n";
+
+        // reset to initial solution
+        x_save->close();
+        *x=*x_save;
 
         M_nlsolver->init();
         M_nlsolver->setPreconditionerType( this->pcEnumType() );
@@ -345,6 +381,10 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
     M_nlsolver->setKspSolverType( this->kspEnumType() );
     M_nlsolver->setPrecMatrixStructure( this->precMatrixStructure() );
     M_nlsolver->setReuse( 1, 1 );
+    M_nlsolver->setShowSNESMonitor( this->showSNESMonitor() );
+    M_nlsolver->setShowKSPMonitor( this->showKSPMonitor() );
+    M_nlsolver->setShowKSPConvergedReason( this->showKSPConvergedReason() );
+    M_nlsolver->setShowSNESConvergedReason( this->showSNESConvergedReason() );
 
     auto ret = M_nlsolver->solve( A, x, b, tol, its );
 
@@ -487,6 +527,8 @@ Backend<T>::pcEnumType() const
 
     else if ( this->pcType()=="asm" )          return ASM_PRECOND;
 
+    else if ( this->pcType()=="gasm" )          return GASM_PRECOND;
+
     else if ( this->pcType()=="jacobi" )       return JACOBI_PRECOND;
 
     else if ( this->pcType()=="block_jacobi" ) return BLOCK_JACOBI_PRECOND;
@@ -576,8 +618,11 @@ po::options_description backend_options( std::string const& prefix )
 
     ( prefixvm( prefix,"ksp-type" ).c_str(), Feel::po::value<std::string>()->default_value( "gmres" ), "cg, bicgstab, gmres" )
     ( prefixvm( prefix,"ksp-monitor" ).c_str() , "monitor ksp" )
+    ( prefixvm( prefix,"ksp-converged-reason" ).c_str() , "converged reason ksp" )
 
     ( prefixvm( prefix,"snes-maxit" ).c_str(), Feel::po::value<size_type>()->default_value( 50 ), "maximum number of iterations" )
+    ( prefixvm( prefix,"snes-monitor" ).c_str() , "monitor snes" )
+    ( prefixvm( prefix,"snes-converged-reason" ).c_str() , "converged reason snes" )
 
 
     // preconditioner options

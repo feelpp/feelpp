@@ -335,22 +335,28 @@ public:
     /**
      * \return the id associated to the \p marker
      */
-    int markerName( std::string const& marker ) const
+    size_type markerName( std::string const& marker ) const
     {
-        return M_markername.find( marker )->second[0];
+        auto mit = M_markername.find( marker );
+        if (  mit != M_markername.end() )
+            return mit->second[0];
+        return invalid_size_type_value;
     }
     /**
      * \return the topological dimension associated to the \p marker
      */
-    int markerDim( std::string const& marker ) const
+    size_type markerDim( std::string const& marker ) const
     {
-        return M_markername.find( marker )->second[1];
+        auto mit = M_markername.find( marker );
+        if (  mit != M_markername.end() )
+            return mit->second[1];
+        return invalid_size_type_value;
     }
 
     /**
      * \return the marker names
      */
-    std::map<std::string, std::vector<int> > markerNames() const
+    std::map<std::string, std::vector<size_type> > markerNames() const
     {
         return M_markername;
     }
@@ -389,7 +395,7 @@ public:
     /**
      * add a new marker name
      */
-    void addMarkerName( std::pair<std::string, std::vector<int> > const& marker )
+    void addMarkerName( std::pair<std::string, std::vector<size_type> > const& marker )
     {
         M_markername.insert( marker );
     }
@@ -399,7 +405,7 @@ public:
      */
     void addMarkerName( std::string __name, int __id ,int __topoDim )
     {
-        std::vector<int> data(2);
+        std::vector<size_type> data(2);
         data[0]=__id;
         data[1]=__topoDim;
         M_markername[__name]=data;
@@ -1151,6 +1157,9 @@ private:
      */
     void renumber( mpl::bool_<true> );
 
+    void updateOnBoundary( mpl::int_<1> );
+    void updateOnBoundary( mpl::int_<2> );
+    void updateOnBoundary( mpl::int_<3> );
 private:
 
     //! communicator
@@ -1188,7 +1197,7 @@ private:
      * get<0>() provides the id
      * get<1>() provides the topological dimension
      */
-    std::map<std::string, std::vector<int> > M_markername;
+    std::map<std::string, std::vector<size_type> > M_markername;
 
     /**
      * to encode points coordinates

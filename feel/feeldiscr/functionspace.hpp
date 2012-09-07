@@ -59,6 +59,10 @@
 
 #include <boost/smart_ptr/enable_shared_from_this.hpp>
 
+
+//#include<boost/filesystem.hpp>
+
+
 #include <stdexcept>
 #include <sstream>
 #include <limits>
@@ -451,17 +455,19 @@ struct H
     array_type _M_hess;
 };
 
-template<typename MeshPtrType>
+template<typename MeshPtrType, typename PeriodicityType = NoPeriodicity>
 struct InitializeSpace
 {
     InitializeSpace( MeshPtrType const& mesh,
+                     PeriodicityType const& periodicity,
                      std::vector<boost::tuple<size_type, uint16_type, size_type> > const& dofindices,
                      std::vector<WorldComm> const & worldsComm )
         :
         _M_cursor( 0 ),
         _M_worldsComm( worldsComm ),
         _M_mesh( mesh ),
-        _M_dofindices( dofindices )
+        _M_dofindices( dofindices ),
+        _M_periodicity( periodicity )
 
     {}
     template <typename T>
@@ -472,7 +478,8 @@ struct InitializeSpace
     template <typename T>
     void operator()( boost::shared_ptr<T> & x, mpl::bool_<true> ) const
     {
-        x = boost::shared_ptr<T>( new T( _M_mesh, _M_dofindices, std::vector<WorldComm>( 1,_M_worldsComm[_M_cursor] ) ) );
+        x = boost::shared_ptr<T>( new T( _M_mesh, _M_dofindices, _M_periodicity,
+                                         std::vector<WorldComm>( 1,_M_worldsComm[_M_cursor] ) ) );
         FEELPP_ASSERT( x ).error( "invalid function space" );
 
         ++_M_cursor;// warning _M_cursor < nb color
@@ -482,7 +489,8 @@ struct InitializeSpace
     {
         // look for T::mesh_ptrtype in MeshPtrType
         auto m = *fusion::find<typename T::mesh_ptrtype>(_M_mesh);
-        x = boost::shared_ptr<T>( new T( m, _M_dofindices, std::vector<WorldComm>( 1,_M_worldsComm[_M_cursor] ) ) );
+        x = boost::shared_ptr<T>( new T( m, _M_dofindices, _M_periodicity,
+                                         std::vector<WorldComm>( 1,_M_worldsComm[_M_cursor] ) ) );
         FEELPP_ASSERT( x ).error( "invalid function space" );
 
         ++_M_cursor;// warning _M_cursor < nb color
@@ -491,6 +499,7 @@ struct InitializeSpace
     std::vector<WorldComm> _M_worldsComm;
     MeshPtrType _M_mesh;
     std::vector<boost::tuple<size_type, uint16_type, size_type> > const& _M_dofindices;
+    PeriodicityType _M_periodicity;
 };
 template<typename DofType>
 struct updateDataMapProcess
@@ -2702,7 +2711,7 @@ public:
         std::vector<WorldComm> const& worldsComm() const
         {
             return _M_functionspace->worldsComm();
-        };
+        }
 
         /**
          * world communicator
@@ -2710,7 +2719,7 @@ public:
         WorldComm const& worldComm() const
         {
             return _M_functionspace->worldComm();
-        };
+        }
 
         /**
          * \return the number of dof
@@ -2872,25 +2881,33 @@ public:
         {
             Feel::detail::ignore_unused_variable_warning( args );
             std::ostringstream os1;
-            os1 << _M_name << sep << suffix << "-" << this->worldComm().globalSize() << "." << this->worldComm().globalRank() << ".fdb";
+            os1 << _M_name << sep << suffix << "-" <<  this->worldComm().globalSize() << "." << this->worldComm().globalRank() << ".fdb";
             fs::path p = fs::path( path ) / os1.str();
+            fs::path partial_path = fs::path(path);
 
-#if 1
-            LOG(INFO) << "try loading : " << p << "\n";
+            fs::path full_path_dir_sol(fs::current_path());
+            full_path_dir_sol = full_path_dir_sol/partial_path;
+            //std::cout << " In load the first full path is " << p << std::endl;
             if ( !fs::exists( p ) )
             {
                 std::ostringstream os2;
-                os2 << _M_name << sep << suffix << "-" << this->worldComm().globalSize() << "." << this->worldComm().globalRank();
+                os2 << _M_name << sep << suffix<< "-" <<  this->worldComm().globalSize() << "." << this->worldComm().globalRank();
                 p = fs::path( path ) / os2.str();
 
                 if ( !fs::exists( p ) )
-                    return false;
+                {
+                    std::cerr  << "ERROR IN [load] :" <<  full_path_dir_sol << "  FILE : " << os1.str() << " OR " << os2.str() << " DO NOT EXIST" << std::endl ;
+                    //std::cerr << "ATTENTION :  p does not exist
+                    return 0;
+                }
             }
             LOG(INFO) << p << " exists, is is a regular file : " << fs::is_regular_file( p ) << "\n";
             if ( !fs::is_regular_file( p ) )
-                return false;
-#endif
-            LOG(INFO) << "loading "  << p << "\n";
+            {
+
+                std::cerr << "ERROR IN [load] : " << full_path_dir_sol << p << " is not a  regular_file !" << std::endl;
+                return 0;
+            }
 
             fs::ifstream ifs( p );
 
@@ -2929,7 +2946,7 @@ public:
             if ( Archive::is_saving::value )
             {
                 //std::cout << "saving in version " << version << "\n";
-                size_type s = this->size();
+                size_type s = this->functionSpace()->nLocalDofWithGhost();
                 ar & boost::serialization::make_nvp( "size", s );
 
                 std::vector<int> no = _M_functionspace->basisOrder();
@@ -2967,9 +2984,9 @@ public:
                 // verify number of degree of freedom
                 Debug( 5010 ) << "loading ublas::vector of size " << s << "\n";
 
-                //if ( s != this-> size() )
-                //throw std::logic_error( ( boost::format( "load function: invalid number of degrees of freedom, read %1% but has %2%" ) % s % this->size() ).str() );
-                this->resize( s );
+                if ( s != this->functionSpace()->nLocalDofWithGhost() )
+                    throw std::logic_error( ( boost::format( "load function: invalid number of degrees of freedom, read %1% but has %2%" ) % s % this->functionSpace()->nLocalDofWithGhost() ).str() );
+
 
                 std::vector<int> order;
                 std::string family;
@@ -3059,12 +3076,13 @@ public:
 
     FunctionSpace( mesh_ptrtype const& mesh,
                    std::vector<boost::tuple<size_type, uint16_type, size_type> > const& dofindices,
+                   periodicity_type periodicity = periodicity_type(),
                    std::vector<WorldComm> const& _worldsComm = Environment::worldsComm(nSpaces) )
         :
         _M_worldsComm( _worldsComm ),
         _M_worldComm( new WorldComm( _worldsComm[0] ) )
     {
-        this->init( mesh, 0, dofindices );
+        this->init( mesh, 0, dofindices, periodicity );
     }
 
     /**
@@ -3149,7 +3167,8 @@ public:
 
     void init( mesh_ptrtype const& mesh,
                size_type mesh_components,
-               std::vector<boost::tuple<size_type, uint16_type, size_type> > const& dofindices )
+               std::vector<boost::tuple<size_type, uint16_type, size_type> > const& dofindices,
+               periodicity_type periodicity = periodicity_type() )
     {
 
         Context ctx( mesh_components );
@@ -3158,7 +3177,7 @@ public:
         Debug( 5010 ) << "component MESH_UPDATE_FACES: " <<  ctx.test( MESH_UPDATE_FACES ) << "\n";
         Debug( 5010 ) << "component    MESH_PARTITION: " <<  ctx.test( MESH_PARTITION ) << "\n";
 
-        this->init( mesh, mesh_components, periodicity_type(), dofindices, mpl::bool_<is_composite>() );
+        this->init( mesh, mesh_components, periodicity, dofindices, mpl::bool_<is_composite>() );
         //mesh->addObserver( *this );
     }
 
@@ -3908,16 +3927,17 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 void
 FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
-        size_type mesh_components,
-        periodicity_type const& periodicity,
-        std::vector<boost::tuple<size_type, uint16_type, size_type> > const& dofindices,
-        mpl::bool_<true> )
+                                         size_type mesh_components,
+                                         periodicity_type const& periodicity,
+                                         std::vector<boost::tuple<size_type, uint16_type, size_type> > const& dofindices,
+                                         mpl::bool_<true> )
 {
     Debug( 5010 ) << "calling init(<composite>) begin\n";
     _M_mesh = __m;
 
     // todo : check worldsComm size and _M_functionspaces are the same!
-    fusion::for_each( _M_functionspaces, detail::InitializeSpace<mesh_ptrtype>( __m, dofindices, this->worldsComm() ) );
+    fusion::for_each( _M_functionspaces, detail::InitializeSpace<mesh_ptrtype,periodicity_type>( __m, periodicity,
+                                                                                                 dofindices, this->worldsComm() ) );
 
 #if !defined(FEELPP_ENABLE_MPI_MODE) // NOT MPI
     _M_dof = dof_ptrtype( new dof_type( this->nDof(), this->nLocalDof() ) );
