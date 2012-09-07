@@ -158,18 +158,19 @@ public:
                 mpi::all_reduce( Environment::worldComm().localComm(), *this, sum,
                                  []( Element const& m1, Element const& m2 ) { return m1+m2; } );
                 int proc_number = Environment::worldComm().globalRank();
-                if( (this->array()-sum.array()/Environment::numberOfProcessors()).abs().maxCoeff() > 1e-10 )
+                if( (this->array()-sum.array()/Environment::numberOfProcessors()).abs().maxCoeff() > 1e-7 )
                 {
                     std::cout << "Parameter not identical on all processors: "<< "current parameter on proc "<<proc_number<<" : [";
                     for(int i=0; i<this->size(); i++) std::cout <<std::setprecision(15)<< this->operator()(i) <<", ";
                     std::cout<<std::setprecision(15)<<this->operator()(this->size()-1)<<" ]";
                     std::cout <<std::setprecision(15)<< " and test" << (this->array()-sum.array()/Environment::numberOfProcessors()).abs().maxCoeff() << "\n";
                 }
-                CHECK( (this->array()-sum.array()/Environment::numberOfProcessors()).abs().maxCoeff() < 1e-10 )
+                CHECK( (this->array()-sum.array()/Environment::numberOfProcessors()).abs().maxCoeff() < 1e-7 )
                     << "Parameter not identical on all processors(" << Environment::worldComm().masterRank() << "/" << Environment::numberOfProcessors() << ")\n"
                     << "max error: " << (this->array()-sum.array()/Environment::numberOfProcessors()).abs().maxCoeff() << "\n"
-                    << "current parameter " << *this << "\n"
-                    << "sum parameter " << sum << "\n"
+                    << "error: " << std::setprecision(15) << (this->array()-sum.array()/Environment::numberOfProcessors()).abs() << "\n"
+                    << "current parameter " << std::setprecision(15) << *this << "\n"
+                    << "sum parameter " << std::setprecision(15) << sum << "\n"
                     << "space min : " << M_space->min() << "\n"
                     << "space max : " << M_space->max() << "\n";
             }
@@ -196,8 +197,8 @@ public:
 
     typedef Element element_type;
     typedef boost::shared_ptr<Element> element_ptrtype;
-    element_type element()  { return parameterspace_type::logRandom( this->shared_from_this() ); }
-    element_ptrtype elementPtr()  { element_ptrtype e( new element_type( this->shared_from_this() ) ); return e; }
+    element_type element()  { return parameterspace_type::logRandom( this->shared_from_this(), true ); }
+    element_ptrtype elementPtr()  { element_ptrtype e( new element_type( this->shared_from_this() ) ); *e=element(); return e; }
     bool check() const
         {
             return (min()-max()).array().abs().maxCoeff() > 1e-10;
@@ -630,33 +631,43 @@ public:
     /**
      * \brief Returns a log random element of the parameter space
      */
-    static element_type logRandom( parameterspace_ptrtype space, bool broadcast = true )
+    static element_type logRandom( parameterspace_ptrtype space, bool broadcast )
     {
-        //std::srand(static_cast<unsigned>(std::time(0)));
-        //std::srand( std::time(0) );
-        element_type mur( space );
+        //LOG(INFO) << "call logRandom...\n";
+        //LOG(INFO) << "call logRandom broadcast: " << broadcast << "...\n";
+        google::FlushLogFiles(google::GLOG_INFO);
         if ( broadcast )
         {
-
+            element_type mu( space );
+            if ( !space->check() ) return mu;
             if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
             {
-                mur.array() = element_type::Random().array().abs();
+                //LOG(INFO) << "generate random mu...\n";
+                //google::FlushLogFiles(google::GLOG_INFO);
+                mu = logRandom1( space );
             }
-            boost::mpi::broadcast( Environment::worldComm() , mur , Environment::worldComm().masterRank() );
-            LOG(INFO) << "generate random sampling..." << mur << "\n";
+            //LOG(INFO) << "broadcast...\n";
+            //google::FlushLogFiles(google::GLOG_INFO);
+            boost::mpi::broadcast( Environment::worldComm() , mu , Environment::worldComm().masterRank() );
+            Environment::worldComm().barrier();
+            //LOG(INFO) << "check...\n";
+            mu.check();
+            return mu;
         }
         else
-            mur.array() = element_type::Random().array().abs();
-        //std::cout << "[logRanDom] mur= " << mur << "\n";
-        //mur.setRandom()/RAND_MAX;
-        //std::cout << "mur= " << mur << "\n";
+        {
+            return logRandom1( space );
+        }
+    }
+    static element_type logRandom1( parameterspace_ptrtype space )
+    {
+        element_type mur( space );
+        mur.array() = element_type::Random().array().abs();
+        //LOG(INFO) << "random1 generate random mur= " << mur << " \n";
+        google::FlushLogFiles(google::GLOG_INFO);
         element_type mu( space );
         mu.array() = ( space->min().array().log()+mur.array()*( space->max().array().log()-space->min().array().log() ) ).array().exp();
-        if ( broadcast )
-        {
-            LOG(INFO) << "check parameter consistency over processors\n";
-            mu.check();
-        }
+        //LOG(INFO) << "random1 generate random mu= " << mu << " \n";
         return mu;
     }
 
