@@ -267,12 +267,13 @@ public:
 
             printParameterHdr( ostr, model->parameterSpace()->dimension(), hdrs[M_mode] );
 
+            int curpar = 0;
             BOOST_FOREACH( auto mu, *Sampling )
             {
                 int size = mu.size();
                 if( proc_number == 0 )
                 {
-                    std::cout << "mu = [ ";
+                    std::cout << "(" << curpar++ << "/" << Sampling->size() << ") mu = [ ";
                     for ( int i=0; i<size-1; i++ ) std::cout<< mu[i] <<" , ";
                     std::cout<< mu[size-1]<<" ]\n ";
                 }
@@ -299,7 +300,7 @@ public:
                     LOG(INFO) << "compute output\n";
                     google::FlushLogFiles(google::GLOG_INFO);
 
-                    exporter->step(0)->add( u_fem.name(), u_fem );
+`                    exporter->step(0)->add( u_fem.name(), u_fem );
                     //model->solve( mu );
                     std::vector<double> o = boost::assign::list_of( model->output( output_index,mu ) )( ti.elapsed() );
                     if(proc_number == 0 ) std::cout << "output=" << o[0] << "\n";
