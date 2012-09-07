@@ -157,6 +157,14 @@ public:
                 // verify that the element is the same on all processors
                 mpi::all_reduce( Environment::worldComm().localComm(), *this, sum,
                                  []( Element const& m1, Element const& m2 ) { return m1+m2; } );
+                int proc_number = Environment::worldComm().globalRank();
+                if( (this->array()-sum.array()/Environment::numberOfProcessors()).abs().maxCoeff() > 1e-10 )
+                {
+                    std::cout << "Parameter not identical on all processors: "<< "current parameter on proc "<<proc_number<<" : [";
+                    for(int i=0; i<this->size(); i++) std::cout <<std::setprecision(15)<< this->operator()(i) <<", ";
+                    std::cout<<std::setprecision(15)<<this->operator()(this->size()-1)<<" ]";
+                    std::cout <<std::setprecision(15)<< " and test" << (this->array()-sum.array()/Environment::numberOfProcessors()).abs().maxCoeff() << "\n";
+                }
                 CHECK( (this->array()-sum.array()/Environment::numberOfProcessors()).abs().maxCoeff() < 1e-10 )
                     << "Parameter not identical on all processors(" << Environment::worldComm().masterRank() << "/" << Environment::numberOfProcessors() << ")\n"
                     << "max error: " << (this->array()-sum.array()/Environment::numberOfProcessors()).abs().maxCoeff() << "\n"
