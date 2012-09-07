@@ -605,6 +605,7 @@ public:
      */
     void printMatlab( const std::string name="NULL" ) const;
 
+    value_type dot( Vector<T> const& __v );
     //@}
 
 
@@ -790,6 +791,7 @@ public:
 
     void duplicateFromOtherPartition( Vector<T> const& vecInput );
 
+    value_type dot( Vector<T> const& __v );
 private :
 
     void duplicateFromOtherPartition_run( Vector<T> const& vecInput );

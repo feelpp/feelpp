@@ -877,6 +877,7 @@ public:
                                   const size_type proc_id = 0 ) const;
 
 
+    value_type dot( Vector<T> const& __v );
     //@}
 
 

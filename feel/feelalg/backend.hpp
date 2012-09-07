@@ -565,6 +565,12 @@ public:
         return M_worldComm;
     }
 
+    bool showKSPMonitor() const { return M_showKSPMonitor; }
+    bool showSNESMonitor() const { return M_showSNESMonitor; }
+    bool showKSPConvergedReason() const { return M_showKSPConvergedReason; }
+    bool showSNESConvergedReason() const { return M_showSNESConvergedReason; }
+
+
     //@}
 
     /** @name  Mutators
@@ -634,6 +640,11 @@ public:
     {
         M_transpose = transpose;
     }
+
+    void setShowKSPMonitor( bool b ) { M_showKSPMonitor=b; }
+    void setShowSNESMonitor( bool b ) { M_showSNESMonitor=b; }
+    void setShowKSPConvergedReason( bool b ) { M_showKSPConvergedReason=b; }
+    void setShowSNESConvergedReason( bool b ) { M_showSNESConvergedReason=b; }
 
     //@}
 
@@ -856,6 +867,7 @@ public:
         //new
         _sol->close();
         detail::ref( solution ) = *_sol;
+        detail::ref( solution ).close();
         return ret;
     }
 
@@ -937,7 +949,8 @@ private:
     std::string M_fieldSplit;
     std::string M_pcFactorMatSolverPackage;
     bool M_constant_null_space;
-
+    bool M_showKSPMonitor, M_showSNESMonitor;
+    bool M_showKSPConvergedReason, M_showSNESConvergedReason;
     //std::map<std::string,boost::tuple<std::string,std::string> > M_sub;
 
 };

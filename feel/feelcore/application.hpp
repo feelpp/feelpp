@@ -418,6 +418,10 @@ public:
      */
     void printStats( std::ostream& out, std::vector<std::string> const& keys, size_type stats = ALL ) const;
 
+    /**
+     * result file name
+     */
+    std::string resultFileName() const;
 
     //@}
 

@@ -1376,7 +1376,7 @@ MatrixPetsc<T>::energy( Vector<value_type> const& __v,
             size_type start = u.firstLocalIndex();
 
             for ( size_type i = 0; i < s; ++i )
-                u.set( start + i, __u( start + i ) );
+                u.set( start + i, __u(  start + i ) );
         }
         VectorPetsc<value_type> v( __v.size(), __v.localSize() );
         {
@@ -2388,7 +2388,6 @@ MatrixPetscMPI<T>::zeroRows( std::vector<int> const& rows,
 } // zeroRows
 
 //----------------------------------------------------------------------------------------------------//
-
 template<typename T>
 typename MatrixPetscMPI<T>::value_type
 MatrixPetscMPI<T>::energy( Vector<value_type> const& __v,
@@ -2424,6 +2423,7 @@ MatrixPetscMPI<T>::energy( Vector<value_type> const& __v,
             for ( size_type i = 0; i < s; ++i )
                 u.set( start + i, __u( start + i ) );
         }
+
         VectorPetscMPI<value_type> v( this->mapRow() );
         {
             //size_type s = v.localSize();
@@ -2449,6 +2449,7 @@ MatrixPetscMPI<T>::energy( Vector<value_type> const& __v,
 
     return e;
 }
+
 
 //----------------------------------------------------------------------------------------------------//
 

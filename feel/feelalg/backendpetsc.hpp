@@ -367,6 +367,8 @@ BackendPetsc<T>::solve( sparse_matrix_ptrtype const& A,
                                   _maxit = this->maxIterations() );
     M_solver_petsc.setPrecMatrixStructure( this->precMatrixStructure() );
     M_solver_petsc.setMatSolverPackageType( this->matSolverPackageEnumType() );
+    M_solver_petsc.setShowKSPMonitor( this->showKSPMonitor() );
+    M_solver_petsc.setShowKSPConvergedReason( this->showKSPConvergedReason() );
 
     //std::pair<size_type,value_type> res = M_solver_petsc.solve( *A, *x, *b, this->rTolerance(), this->maxIterations(), this->transpose() );
     auto res = M_solver_petsc.solve( *A, *B, *x, *b, this->rTolerance(), this->maxIterations(), this->transpose() );
@@ -396,6 +398,8 @@ BackendPetsc<T>::solve( sparse_matrix_type const& A,
                                   _maxit = this->maxIterations() );
     M_solver_petsc.setPrecMatrixStructure( this->precMatrixStructure() );
     M_solver_petsc.setMatSolverPackageType( this->matSolverPackageEnumType() );
+    M_solver_petsc.setShowKSPMonitor( this->showKSPMonitor() );
+    M_solver_petsc.setShowKSPConvergedReason( this->showKSPConvergedReason() );
 
     std::pair<size_type,value_type> res = M_solver_petsc.solve( A, x, b, this->rTolerance(), this->maxIterations() );
     Debug( 7005 ) << "[BackendPetsc::solve] number of iterations : " << res.first << "\n";

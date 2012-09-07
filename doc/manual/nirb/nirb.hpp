@@ -33,11 +33,13 @@
 #include <algorithm>
 
 #include<boost/range/algorithm/max_element.hpp>
+#include<boost/filesystem.hpp>
 
 /** use Feel namespace */
 using namespace Feel;
 using namespace Feel::vf;
 
+using namespace std;
 
 template<int PolynomialOrder> class NIRBTEST
     :
@@ -278,11 +280,13 @@ void NIRBTEST<PolynomialOrder>::run( const double* X, unsigned long P, double* Y
 
     if ( ReadingMeshes )
     {
-        std::cout << "Meshes read in file " <<std::endl;
         meshCoarse  =  loadGMSHMesh( _mesh=new mesh_type,
-                                     _filename="/home/chakir/Mesh/Mesh_H1.msh" );
+                                     _filename="/home/chakir/Mesh/Mesh_H1.msh",
+                                    _update=MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
         meshFine  =  loadGMSHMesh( _mesh=new mesh_type,
-                                   _filename="/home/chakir/Mesh/Mesh_H2.msh" );
+                                  _filename="/home/chakir/Mesh/Mesh_H2.msh",
+                                  _update=MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK  );
+        std::cout << "Meshes read in file : done " <<std::endl;
     }
 
     else
@@ -401,6 +405,7 @@ void NIRBTEST<PolynomialOrder>::run( const double* X, unsigned long P, double* Y
             double Time_snapshot_Coarse = ti.elapsed();
             std::cout << "Computation of the " << NbSnapshot << " snapshots : done  -- ";
             std::cout << "Time per snapshot: " << Time_snapshot_Coarse/NbSnapshot << " sec " <<std::endl;
+            SamplingCoarse = 0;
         }
     }
 
@@ -437,6 +442,16 @@ void NIRBTEST<PolynomialOrder>::run( const double* X, unsigned long P, double* Y
 
     auto uNirbCoarsePostProcess = XhFine->element();   // Fine/Coarse Grid NIRB solution
     ti.restart();
+    if (SamplingCoarse)
+    {
+        std::cout << "Computation of Coarse snapshot " <<std::endl;
+        boost::timer ti;
+        ComputeSnapshot( XhCoarse,"_Coarse_" );
+        
+        double Time_snapshot_Coarse = ti.elapsed();
+        std::cout << "Computation of the " << NbSnapshot << " snapshots : done  -- ";
+        std::cout << "Time per snapshot: " << Time_snapshot_Coarse/NbSnapshot << " sec " <<std::endl;
+    }
     uNirbCoarsePostProcess = BuildNirbSolutionWithPostProcess( XhFine, XhCoarse, MassMat_x_VuNirb,
                              VNirbBasis,BetaiH,uCoarseInterpolate );
 
@@ -461,14 +476,15 @@ void NIRBTEST<PolynomialOrder>::run( const double* X, unsigned long P, double* Y
         std::cout << "Construction of uNirbFine - Fine/Fine Grid  (saved in nirb1Grid): done "<<std::endl;
         std::cout << "Time to build  " << TimeFine << " sec" <<std::endl;
 
-
+ 
 
         mesh_ptrtype meshRef;
 
         if ( ReadingMeshes )
         {
             meshRef  =  loadGMSHMesh( _mesh=new mesh_type,
-                                      _filename="/home/chakir/Mesh/Mesh_H3.msh" );
+                                      _filename="/home/chakir/Mesh/Mesh_H3.msh",
+                                     _update=MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK  );
         }
 
         else
@@ -513,7 +529,7 @@ void NIRBTEST<PolynomialOrder>::run( const double* X, unsigned long P, double* Y
 
         //std::cout << "L2NormURef = " << L2NormUref <<  " -- H1NormUref = " << H1NormUref <<std::endl;
         //std::cout <<std::endl;
-
+ 
 
 
         // //Computation of relative error measured in  H1 norm
@@ -701,8 +717,16 @@ void NIRBTEST<PolynomialOrder>::ComputeSnapshot( space_ptrtype Xh,std::string fi
     {
         double theta = ( i+1 )*( muMax-muMin )/( 113. );
         ui = blackbox( Xh,theta );
+        if (ui.l2Norm()==0.)
+        {
+            std::cerr << "In ComputeSnapshot : ERROR IN USING BLACKBOX -> ui = 0" << endl;
+            exit(0);
+        }
         std::string path = "./Sol" + filename + ( boost::format( "%1%" ) %i ).str() ;
-        ui.save( _path=path );
+        ui.save( _path=path ); 
+        //boost::filesystem::path full_path_Sol( boost::filesystem::current_path() ); 
+        //cout << "Path where the sol are save " << full_path_Sol << endl;
+
     }
 
 }
@@ -713,7 +737,7 @@ template< int PolynomialOrder>
 Eigen::MatrixXd NIRBTEST<PolynomialOrder> :: ConstructStiffMatrixSnapshot( space_ptrtype Xh,sparse_matrix_ptrtype const & StiffMatrix )
 {
 
-
+     
     auto ui = Xh->element();
     auto uj = Xh->element();
     /*
@@ -721,17 +745,26 @@ Eigen::MatrixXd NIRBTEST<PolynomialOrder> :: ConstructStiffMatrixSnapshot( space
      form2( _test=Xh, _trial=Xh, _matrix=D ) =
      integrate( _range=elements(Xh->mesh()), _expr=gradt(ui)*trans(grad(uj)));
     */
-    Eigen::MatrixXd S ( NbSnapshot,NbSnapshot ); //Dense RB stiffness matrix S
-
+    Eigen::MatrixXd S ( NbSnapshot,NbSnapshot ); //Dense RB stiffness matrix S 
+    cout << " Dans ConstructStiffMatrixSnapshot " << endl;
+    //boost::filesystem::path full_path_Sol( boost::filesystem::current_path() ); 
+    //cout << "Path where the sol are load " << full_path_Sol << endl;
+    
     for ( int i = 0; i< NbSnapshot; i++ )
     {
         ui.zero();
         std::string path = ( boost::format( "./Sol_%1%" ) %i ).str() ;
-        ui.load( _path=path );
+        //std::string suffixe = "-";
+        //ui.load( _path=path,_suffix=suffixe );
+         
+        ui.load( _path=path);
 
         if ( ui.l2Norm()==0. )
         {
             std::cerr << "In 'ConstructStiffMatrixSnapshot': ERROR IN LOADING FILE " << path <<std::endl;
+            auto t = Xh->element();
+            t.load(_path=path);
+            cout << "Reloading of ui done -> L2norm(ui)= " << t.l2Norm() << endl;
             exit( 0 );
         }
 
@@ -1330,6 +1363,8 @@ Eigen::MatrixXd NIRBTEST<PolynomialOrder> :: BuildBetaH( space_ptrtype XhFine,
     {
         std::cerr << "ERROR : Problem in opening 'IndBR'" << sizeRB << " file " <<std::endl;
         exit( 0 );
+
+        
     }
 
     for ( int i =0 ; i < sizeRB; i++ )
@@ -1353,7 +1388,10 @@ Eigen::MatrixXd NIRBTEST<PolynomialOrder> :: BuildBetaH( space_ptrtype XhFine,
         if ( uCoarse.l2Norm()==0. )
         {
             std::cerr <<"'BuildBetaH routine': ERROR IN LOADING FILE  " << path <<std::endl;
-            exit( 0 );
+            std::cerr <<"Coarse sampling has to be done " << std::endl;
+            ComputeSnapshot( XhCoarse,"_Coarse_" );
+            i--;
+             
         }
 
         //opI->apply(uCoarse,uCoarseInterpolation);

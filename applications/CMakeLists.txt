@@ -5,6 +5,7 @@
 #       Date: 2009-11-12
 #
 #  Copyright (C) 2009-2010 Université Joseph Fourier (Grenoble I)
+#  Copyright (C) 2012 Université de Strasbourg
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -24,6 +25,7 @@
 #
 project( feel-applications )
 add_subdirectory( polyvis )
+add_subdirectory( check )
 if ( EXISTS ${FEELPP_SOURCE_DIR}/applications/crb AND FEELPP_ENABLE_APPLICATIONS_CRB )
      add_subdirectory( crb )
      set(OPUS_VERSION_MAJOR "${OPUS_VERSION_MAJOR}" PARENT_SCOPE)

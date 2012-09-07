@@ -87,6 +87,7 @@ public:
         M_order_cur( 1 ),
         M_name( "bdf" ),
         M_time( 0.0 ),
+        M_iteration( 0 ),
         M_Ti( 0.0 ),
         M_Tf( 1.0 ),
         M_dt( 1.0 ),
@@ -95,8 +96,11 @@ public:
         M_n_restart( 0 ),
         M_restart( false ),
         M_restartPath( "" ),
+        M_restartAtLastSave( false ),
         M_alpha( BDF_MAX_ORDER ),
-        M_beta( BDF_MAX_ORDER )
+        M_beta( BDF_MAX_ORDER ),
+        M_saveInFile( true ),
+        M_worldComm( Environment::worldComm() )
     {}
 
 #if 0
@@ -106,6 +110,7 @@ public:
         M_order( args[_order | 1] ),
         M_name( args[_name | "bdf"] ),
         M_time( args[_initial_time | 0] ),
+        M_iteration( 0 ),
         M_Ti( args[_initial_time | 0] ),
         M_Tf( args[_final_time | 1] ),
         M_dt( args[_time_step | 0.1] ),
@@ -115,18 +120,22 @@ public:
         M_n_restart( 0 ),
         M_restart( args[_restart | false] ),
         M_restartPath( args[_restart_path | ""] ),
+        M_restartAtLastSave( args[_restart_at_last_save | false] )
         M_alpha( BDF_MAX_ORDER ),
-        M_beta( BDF_MAX_ORDER )
+        M_beta( BDF_MAX_ORDER ),
+        M_saveInFile( true ),
+        M_worldComm( Environment::worldComm() )
     {
 
     }
 #endif
-    BdfBase( po::variables_map const& vm, std::string name, std::string const& prefix )
+    BdfBase( po::variables_map const& vm, std::string name, std::string const& prefix, WorldComm const& worldComm )
         :
         M_order( vm[prefixvm( prefix, "bdf.order" )].as<int>() ),
         M_order_cur( M_order ),
         M_name( name ),
         M_time( vm[prefixvm( prefix, "bdf.time-initial" )].as<double>() ),
+        M_iteration( 0 ),
         M_iterations_between_order_change( vm[prefixvm( prefix, "bdf.iterations-between-order-change" )].as<int>() ),
         M_Ti( vm[prefixvm( prefix, "bdf.time-initial" )].as<double>() ),
         M_Tf( vm[prefixvm( prefix, "bdf.time-final" )].as<double>() ),
@@ -136,16 +145,20 @@ public:
         M_n_restart( 0 ),
         M_restart( vm[prefixvm( prefix, "bdf.restart" )].as<bool>() ),
         M_restartPath( vm[prefixvm( prefix, "bdf.restart.path" )].as<std::string>() ),
+        M_restartAtLastSave( vm[prefixvm( prefix, "bdf.restart.at-last-save" )].as<bool>() ),
         M_alpha( BDF_MAX_ORDER ),
-        M_beta( BDF_MAX_ORDER )
+        M_beta( BDF_MAX_ORDER ),
+        M_saveInFile( vm[prefixvm( prefix, "bdf.save" )].as<bool>() ),
+        M_worldComm( worldComm )
     {
     }
-    BdfBase( std::string name )
+    BdfBase( std::string name, WorldComm const& worldComm )
         :
         M_order( 1 ),
         M_order_cur( 1 ),
         M_name( name ),
         M_time( 0. ),
+        M_iteration( 0 ),
         M_iterations_between_order_change( 1 ),
         M_Ti( 0. ),
         M_Tf( 1.0 ),
@@ -155,8 +168,11 @@ public:
         M_n_restart( 0 ),
         M_restart( false ),
         M_restartPath( "" ),
+        M_restartAtLastSave( false ),
         M_alpha( BDF_MAX_ORDER ),
-        M_beta( BDF_MAX_ORDER )
+        M_beta( BDF_MAX_ORDER ),
+        M_saveInFile( true ),
+        M_worldComm( worldComm )
     {
     }
 
@@ -166,6 +182,7 @@ public:
         M_order_cur( b.M_order_cur ),
         M_name( b.M_name ),
         M_time( b.M_time ),
+        M_iteration( b.M_iteration ),
         M_iterations_between_order_change( b.M_iterations_between_order_change ),
         M_Ti( b.M_Ti ),
         M_Tf( b.M_Tf ),
@@ -175,9 +192,12 @@ public:
         M_n_restart( b.M_n_restart ),
         M_restart( b.M_restart ),
         M_restartPath( b.M_restartPath ),
+        M_restartAtLastSave( b.M_restartAtLastSave ),
         M_time_values_map( b.M_time_values_map ),
         M_alpha( b.M_alpha ),
-        M_beta( b.M_beta )
+        M_beta( b.M_beta ),
+        M_saveInFile( true ),
+        M_worldComm( b.M_worldComm )
     {}
 
     virtual ~BdfBase() {}
@@ -202,6 +222,7 @@ public:
             M_order_cur = b.M_order_cur;
             M_name = b.M_name;
             M_time = b.M_time;
+            M_iteration = b.M_iteration;
             M_Ti = b.M_Ti;
             M_Tf = b.M_Tf;
             M_dt = b.M_dt;
@@ -209,12 +230,16 @@ public:
             M_n_restart = b.M_n_restart;
             M_restart = b.M_restart;
             M_restartPath = b.M_restartPath;
+            M_restartAtLastSave = b.M_restartAtLastSave;
             M_strategy = b.M_strategy;
             M_state = b.M_state;
 
             M_alpha = b.M_alpha;
             M_beta = b.M_beta;
+            M_saveInFile = b.M_saveInFile;
+
             M_time_values_map = b.M_time_values_map;
+            M_worldComm = b.M_worldComm;
         }
 
         return *this;
@@ -304,6 +329,12 @@ public:
         return M_restart;
     }
 
+    //! return value of do restart at last save
+    bool doRestartAtLastSave() const
+    {
+        return M_restartAtLastSave;
+    }
+
     //! return the current time
     double time() const
     {
@@ -351,6 +382,7 @@ public:
         M_time = M_Ti+this->timeStep();
         M_last_iteration_since_order_change = 1;
         M_order_cur = 1;
+        ++M_iteration;
 
         for ( int i = 2; i<=M_iteration; ++i )
         {
@@ -481,6 +513,16 @@ public:
         return M_restartPath;
     }
 
+    bool saveInFile() const
+    {
+        return M_saveInFile;
+    }
+
+    WorldComm const& worldComm() const
+    {
+        return M_worldComm;
+    }
+
     void setOrder( int order )
     {
         M_order = order;
@@ -516,6 +558,14 @@ public:
     void setRestartPath( std::string s )
     {
         M_restartPath=s;
+    }
+    void setRestartAtLastSave( bool b )
+    {
+        M_restartAtLastSave=b;
+    }
+    void setSaveInFile( bool b )
+    {
+        M_saveInFile = b;
     }
 
     void print() const
@@ -557,8 +607,15 @@ protected:
     mutable BDFState M_state;
 
     int M_n_restart;
+
+    //! do a restart
     bool M_restart;
-    fs::path M_restartPath;//M_pathRestart;
+
+    //! restart path
+    fs::path M_restartPath;
+
+    //! do restart with ti the last save
+    bool M_restartAtLastSave;
 
     //! timer for real time per iteration
     mutable boost::timer M_timer;
@@ -580,6 +637,12 @@ protected:
 
     //! Coefficients \f$ \beta_i \f$ of the extrapolation
     std::vector<ublas::vector<double> > M_beta;
+
+    //! Save solutions in file after each step
+    bool M_saveInFile;
+
+    //!  mpi communicator tool
+    WorldComm M_worldComm;
 
 protected:
     void init()
@@ -640,7 +703,7 @@ protected:
         M_path_save = ostr.str();
 
         // if directory does not exist, create it
-        if ( !fs::exists( M_path_save ) )
+        if ( !fs::exists( M_path_save ) && this->saveInFile() )
             fs::create_directories( M_path_save );
 
         if ( M_restart )
@@ -666,6 +729,9 @@ protected:
                 Debug( 5017 ) << "[Bdf::init()] metadata loaded\n";
                 //BdfBaseMetadata bdfloader( *this );
                 //bdfloader.load();
+
+                // modify Ti with last saved time
+                if (this->doRestartAtLastSave()) M_Ti = M_time_values_map.back();
 
                 M_iteration = 0;
                 // look for M_ti in the time values
@@ -738,6 +804,8 @@ public:
 
     void save()
     {
+        if ( !M_bdf.saveInFile() || M_bdf.worldComm().globalRank()!=M_bdf.worldComm().masterRank() ) return;
+
         fs::ofstream ofs( M_bdf.path() / "metadata" );
 
 
@@ -937,7 +1005,7 @@ Bdf<SpaceType>::Bdf( po::variables_map const& vm,
                      std::string const& name,
                      std::string const& prefix )
     :
-    super( vm, name, prefix ),
+    super( vm, name, prefix, __space->worldComm() ),
     M_space( __space )
 {
     M_unknowns.resize( BDF_MAX_ORDER );
@@ -954,7 +1022,7 @@ template <typename SpaceType>
 Bdf<SpaceType>::Bdf( space_ptrtype const& __space,
                      std::string const& name  )
     :
-    super( name ),
+    super( name, __space->worldComm() ),
     M_space( __space )
 {
     M_unknowns.resize( BDF_MAX_ORDER );
@@ -1047,8 +1115,8 @@ double
 Bdf<SpaceType>::start( element_type const& u0 )
 {
     this->init();
-    auto res = super::start();
     this->initialize( u0 );
+    auto res = super::start();
     return res;
 }
 
@@ -1057,8 +1125,8 @@ double
 Bdf<SpaceType>::start( unknowns_type const& uv0 )
 {
     this->init();
-    auto res = super::start();
     this->initialize( uv0 );
+    auto res = super::start();
     return res;
 }
 
@@ -1092,6 +1160,8 @@ template <typename SpaceType>
 void
 Bdf<SpaceType>::saveCurrent()
 {
+    if (!this->saveInFile()) return;
+
     BdfBaseMetadata bdfsaver( *this );
     bdfsaver.save();
 
@@ -1203,6 +1273,8 @@ BOOST_PARAMETER_FUNCTION(
       ( steady,*( bool ),vm[prefixvm( prefix,"bdf.steady" )].template as<bool>() )
       ( restart,*( boost::is_integral<mpl::_> ),vm[prefixvm( prefix,"bdf.restart" )].template as<bool>() )
       ( restart_path,*,vm[prefixvm( prefix,"bdf.restart.path" )].template as<std::string>() )
+      ( restart_at_last_save,*( boost::is_integral<mpl::_> ),vm[prefixvm( prefix,"bdf.restart.at-last-save" )].template as<bool>() )
+      ( save,*( boost::is_integral<mpl::_> ),vm[prefixvm( prefix,"bdf.save" )].template as<bool>() )
     ) )
 {
     typedef typename meta::remove_all<space_type>::type::value_type _space_type;
@@ -1215,6 +1287,8 @@ BOOST_PARAMETER_FUNCTION(
     thebdf->setStrategy( strategy );
     thebdf->setRestart( restart );
     thebdf->setRestartPath( restart_path );
+    thebdf->setRestartAtLastSave( restart_at_last_save );
+    thebdf->setSaveInFile( save );
     return thebdf;
 }
 

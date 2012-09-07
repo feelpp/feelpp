@@ -135,7 +135,7 @@ macro(crb_add_model)
 
   PARSE_ARGUMENTS(CRB_MODEL
     "HDRS;SRCS;LINK_LIBRARIES;CFG;XML;SCRIPTS;CLASS"
-    "TEST"
+    "TEST;ADD_OT"
     ${ARGN}
     )
   CAR(CRB_MODEL_SHORT_NAME ${CRB_MODEL_DEFAULT_ARGS})
@@ -196,7 +196,8 @@ int main( int argc, char** argv )
     set(xml "${CRB_MODEL_SHORT_NAME}${wrapper}.xml")
     set(CRB_MODEL_WRAPPER_NAME "crb${CRB_MODEL_SHORT_NAME}${wrapper}")
     set(CRB_MODEL_WRAPPER_TYPE "\"${wrapper}\"")
-    configure_file(${FEELPP_SOURCE_DIR}/applications/crb/templates/python_wrapper.cpp ${pycpp})
+    #configure_file(${FEELPP_SOURCE_DIR}/applications/crb/templates/python_wrapper.cpp ${pycpp})
+    configure_file(${FEELPP_SOURCE_DIR}/applications/crb/templates/ot_python_command_wrapper.cpp ${pycpp})
     configure_file(${FEELPP_SOURCE_DIR}/applications/crb/templates/octave_wrapper.cpp ${octcpp})
     configure_file(${CRB_MODEL_SHORT_NAME}.xml.in ${xml})
 

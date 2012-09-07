@@ -601,13 +601,27 @@ EIM<ModelType>::offline(  )
 
     M_M = 1;
     LOG(INFO) << "create mu_1...\n";
-    // random element in Dmu to start with
-    auto mu = M_model->parameterSpace()->element();
+    // min element in Dmu to start with (in // each proc have the same element)
+    auto mu = M_model->parameterSpace()->min();
 
     if ( !M_trainset )
         M_trainset = M_model->parameterSpace()->sampling();
     if ( M_trainset->empty() )
-        M_trainset->randomize( M_vm["eim.sampling-size"].template as<int>() );
+    {
+        int sampling_size = M_vm["eim.sampling-size"].template as<int>();
+        std::string file_name = ( boost::format("eim_trainset_%1%") % sampling_size ).str();
+        std::ifstream file ( file_name );
+        if( ! file )
+        {
+            M_trainset->randomize( sampling_size  );
+            M_trainset->writeOnFile(file_name);
+        }
+        else
+        {
+            M_trainset->clear();
+            M_trainset->readFromFile(file_name);
+        }
+    }
 
     // store residual
     auto res = M_model->functionSpace()->element();
@@ -885,6 +899,7 @@ public:
     element_type operator()( parameter_type const&  mu )
         {
             M_mu = mu;
+            M_mu.check();
             M_u = M_model->solve( mu );
             //LOG(INFO) << "operator() mu=" << mu << "\n" << "sol=" << M_u << "\n";
             return vf::project( _space=this->functionSpace(), _expr=M_expr );
@@ -892,6 +907,7 @@ public:
     element_type operator()( solution_type const& T, parameter_type const&  mu )
         {
             M_mu = mu;
+            M_mu.check();
             // no need to solve we have already an approximation (typically from
             // an nonlinear iteration procedure)
             M_u = T;
