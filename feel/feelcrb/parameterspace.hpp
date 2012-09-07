@@ -181,7 +181,7 @@ public:
     typedef Element element_type;
     typedef boost::shared_ptr<Element> element_ptrtype;
     element_type element()  { return parameterspace_type::logRandom( this->shared_from_this() ); }
-    element_ptrtype elementPtr()  { return element_ptrtype( new element_type( this->shared_from_this() ) ); }
+    element_ptrtype elementPtr()  { element_ptrtype e( new element_type( this->shared_from_this() ) ); *e = element(); return e; }
 
     /**
      * \class Sampling
@@ -233,7 +233,7 @@ public:
             {
                 for ( int i = 0; i < N; ++i )
                 {
-                    super::push_back( parameterspace_type::logRandom( M_space ) );
+                    super::push_back( parameterspace_type::logRandom( M_space, false ) );
                 }
 
             }
@@ -251,13 +251,17 @@ public:
             // first empty the set
             this->clear();
 
-            // fill with log Random elements from the parameter space
-            for ( int i = 0; i < N; ++i )
+            if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
             {
-                double factor = double( i )/( N-1 );
-                super::push_back( parameterspace_type::logEquidistributed( factor,
-                                  M_space ) );
+                // fill with log Random elements from the parameter space
+                for ( int i = 0; i < N; ++i )
+                {
+                    double factor = double( i )/( N-1 );
+                    super::push_back( parameterspace_type::logEquidistributed( factor,
+                                                                               M_space ) );
+                }
             }
+            boost::mpi::broadcast( Environment::worldComm() , *this , Environment::worldComm().masterRank() );
         }
 
         /**
@@ -269,20 +273,23 @@ public:
          */
         void writeOnFile( std::string file_name = "list_of_parameters_taken" )
         {
-            std::ofstream file;
-            file.open( file_name,std::ios::out );
-            element_type mu( M_space );
-            int size = mu.size();
-            int number = 0;
-            BOOST_FOREACH( mu, *this )
+            if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
             {
-                file<<" mu_"<<number<<"= [ ";
-                for(int i=0; i<size-1; i++)
-                    file << mu[i]<<" , ";
-                file<< mu[size-1] << " ] \n" ;
-                number++;
+                std::ofstream file;
+                file.open( file_name,std::ios::out );
+                element_type mu( M_space );
+                int size = mu.size();
+                int number = 0;
+                BOOST_FOREACH( mu, *this )
+                {
+                    file<<" mu_"<<number<<"= [ ";
+                    for(int i=0; i<size-1; i++)
+                        file << mu[i]<<" , ";
+                    file<< mu[size-1] << " ] \n" ;
+                    number++;
+                }
+                file.close();
             }
-            file.close();
         }
 
         /**
@@ -327,13 +334,17 @@ public:
             // first empty the set
             this->clear();
 
-            // fill with log Random elements from the parameter space
-            for ( int i = 0; i < N; ++i )
+            if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
             {
-                double factor = double( i )/( N-1 );
-                super::push_back( parameterspace_type::equidistributed( factor,
-                                  M_space ) );
+                // fill with log Random elements from the parameter space
+                for ( int i = 0; i < N; ++i )
+                {
+                    double factor = double( i )/( N-1 );
+                    super::push_back( parameterspace_type::equidistributed( factor,
+                                                                            M_space ) );
+                }
             }
+            boost::mpi::broadcast( Environment::worldComm() , *this , Environment::worldComm().masterRank() );
         }
 
         /**
@@ -358,6 +369,7 @@ public:
 
                 ++i;
             }
+            mumin.check();
             return boost::make_tuple( mumin, index );
         }
 
@@ -383,6 +395,7 @@ public:
 
                 ++i;
             }
+            mumax.check();
             return boost::make_tuple( mumax, index );
         }
         /**
@@ -598,12 +611,21 @@ public:
     /**
      * \brief Returns a log random element of the parameter space
      */
-    static element_type logRandom( parameterspace_ptrtype space )
+    static element_type logRandom( parameterspace_ptrtype space, bool broadcast = true )
     {
         //std::srand(static_cast<unsigned>(std::time(0)));
         //std::srand( std::time(0) );
         element_type mur( space );
-        mur.array() = element_type::Random().array().abs();
+        if ( broadcast )
+        {
+            if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+            {
+                mur.array() = element_type::Random().array().abs();
+            }
+            boost::mpi::broadcast( Environment::worldComm() , mur , Environment::worldComm().masterRank() );
+        }
+        else
+            mur.array() = element_type::Random().array().abs();
         //std::cout << "[logRanDom] mur= " << mur << "\n";
         //mur.setRandom()/RAND_MAX;
         //std::cout << "mur= " << mur << "\n";
@@ -615,11 +637,21 @@ public:
     /**
     * \brief Returns a log random element of the parameter space
     */
-    static element_type random( parameterspace_ptrtype space )
+    static element_type random( parameterspace_ptrtype space, bool broadcast = true )
     {
         std::srand( static_cast<unsigned>( std::time( 0 ) ) );
         element_type mur( space );
-        mur.array() = element_type::Random().array().abs();
+        if ( broadcast )
+        {
+            if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+            {
+                mur.array() = element_type::Random().array().abs();
+            }
+            boost::mpi::broadcast( Environment::worldComm() , mur , Environment::worldComm().masterRank() );
+
+        }
+        else
+            mur.array() = element_type::Random().array().abs();
         //std::cout << "mur= " << mur << "\n";
         //mur.setRandom()/RAND_MAX;
         //std::cout << "mur= " << mur << "\n";
