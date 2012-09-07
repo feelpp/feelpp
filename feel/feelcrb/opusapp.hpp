@@ -300,7 +300,7 @@ public:
                     LOG(INFO) << "compute output\n";
                     google::FlushLogFiles(google::GLOG_INFO);
 
-`                    exporter->step(0)->add( u_fem.name(), u_fem );
+                    exporter->step(0)->add( u_fem.name(), u_fem );
                     //model->solve( mu );
                     std::vector<double> o = boost::assign::list_of( model->output( output_index,mu ) )( ti.elapsed() );
                     if(proc_number == 0 ) std::cout << "output=" << o[0] << "\n";
