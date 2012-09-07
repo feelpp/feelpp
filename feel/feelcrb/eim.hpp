@@ -566,6 +566,8 @@ EIM<ModelType>::computeBestFit( sampling_ptrtype trainset, int __M )
     LOG(INFO) << "Compute best fit M=" << __M << "\n";
     BOOST_FOREACH( mu, *trainset )
     {
+        LOG(INFO) << "compute best fit check mu...\n";
+        mu.check();
         LOG_EVERY_N(INFO, 1 ) << " (every 10 mu) compute fit at mu="<< mu <<"\n" ;
         // evaluate model at mu
         auto Z = M_model->operator()( mu );
