@@ -145,17 +145,25 @@ public:
             return M_space;
         }
 
-        void check()
+        void check() const
             {
+                if ( !M_space->check() )
+                {
+                    LOG(INFO) << "No need to check element since parameter space is no valid (yet)\n";
+                    return;
+                }
                 Element sum;
                 sum.setZero();
                 // verify that the element is the same on all processors
                 mpi::all_reduce( Environment::worldComm().localComm(), *this, sum,
                                  []( Element const& m1, Element const& m2 ) { return m1+m2; } );
                 CHECK( (this->array()-sum.array()/Environment::numberOfProcessors()).abs().maxCoeff() < 1e-10 )
-                    << "Parameter not identical on all processors: "
+                    << "Parameter not identical on all processors(" << Environment::worldComm().masterRank() << "/" << Environment::numberOfProcessors() << ")\n"
+                    << "max error: " << (this->array()-sum.array()/Environment::numberOfProcessors()).abs().maxCoeff() << "\n"
                     << "current parameter " << *this << "\n"
-                    << "sum parameter " << sum << "\n";
+                    << "sum parameter " << sum << "\n"
+                    << "space min : " << M_space->min() << "\n"
+                    << "space max : " << M_space->max() << "\n";
             }
     private:
         friend class boost::serialization::access;
@@ -181,8 +189,11 @@ public:
     typedef Element element_type;
     typedef boost::shared_ptr<Element> element_ptrtype;
     element_type element()  { return parameterspace_type::logRandom( this->shared_from_this() ); }
-    element_ptrtype elementPtr()  { element_ptrtype e( new element_type( this->shared_from_this() ) ); *e = element(); return e; }
-
+    element_ptrtype elementPtr()  { element_ptrtype e( new element_type( this->shared_from_this() ) ); return e; }
+    bool check() const
+        {
+            return (min()-max()).array().abs().maxCoeff() > 1e-10;
+        }
     /**
      * \class Sampling
      * \brief Parameter space sampling class
@@ -618,11 +629,13 @@ public:
         element_type mur( space );
         if ( broadcast )
         {
+
             if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
             {
                 mur.array() = element_type::Random().array().abs();
             }
             boost::mpi::broadcast( Environment::worldComm() , mur , Environment::worldComm().masterRank() );
+            LOG(INFO) << "generate random sampling..." << mur << "\n";
         }
         else
             mur.array() = element_type::Random().array().abs();
@@ -631,6 +644,11 @@ public:
         //std::cout << "mur= " << mur << "\n";
         element_type mu( space );
         mu.array() = ( space->min().array().log()+mur.array()*( space->max().array().log()-space->min().array().log() ) ).array().exp();
+        if ( broadcast )
+        {
+            LOG(INFO) << "check parameter consistency over processors\n";
+            mu.check();
+        }
         return mu;
     }
 
@@ -657,6 +675,8 @@ public:
         //std::cout << "mur= " << mur << "\n";
         element_type mu( space );
         mu.array() = space->min()+mur.array()*( space->max()-space->min() );
+        if ( broadcast )
+            mu.check();
         return mu;
     }
 
