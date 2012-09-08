@@ -1303,8 +1303,13 @@ CRB<TruthModelType>::offline()
         // empty sets
         M_WNmu->clear();
 
-        // start with M_C = { arg min mu, mu \in Xi }
-        boost::tie( mu, index ) = M_Xi->min();
+        if( M_error_type == CRB_NO_RESIDUAL )
+            mu = M_Dmu->element();
+        else
+        {
+            // start with M_C = { arg min mu, mu \in Xi }
+            boost::tie( mu, index ) = M_Xi->min();
+        }
 
         int size = mu.size();
         if( proc_number == 0 )
@@ -1436,6 +1441,7 @@ CRB<TruthModelType>::offline()
     sampling_ptrtype Sampling;
     int sampling_size=no_residual_index+1;
 
+#if 0
     if ( M_error_type == CRB_NO_RESIDUAL )
     {
         Sampling = sampling_ptrtype( new sampling_type( M_Dmu ) );
@@ -1459,20 +1465,9 @@ CRB<TruthModelType>::offline()
 
         //Sampling->logEquidistribute( sampling_size );
 
-#if 0
-        if ( this->worldComm().globalSize() > 1 )
-        {
-            std::string name = ( boost::format( "mu_par_proc%1%" ) % proc_number  ).str();
-            Sampling->writeOnFile(name);
-        }
-        else
-        {
-            Sampling->writeOnFile("mu_seq");
-        }
-#endif
         LOG(INFO) << "[CRB::offline] sampling parameter space with "<< sampling_size <<"elements done\n";
     }
-
+#endif
 #if 0
     if( ! rebuild_database && M_N > 0 &&  M_error_type == CRB_NO_RESIDUAL   )
     {
@@ -1493,7 +1488,7 @@ CRB<TruthModelType>::offline()
     while ( maxerror > M_tolerance && M_N < M_iter_max && no_residual_index<sampling_size )
     {
 
-        if ( M_error_type == CRB_NO_RESIDUAL )  mu = M_Xi->at( no_residual_index );
+        //if ( M_error_type == CRB_NO_RESIDUAL )  mu = M_Xi->at( no_residual_index );
 
         boost::timer timer, timer2;
         LOG(INFO) <<"========================================"<<"\n";
@@ -2205,9 +2200,10 @@ CRB<TruthModelType>::offline()
         if ( M_error_type == CRB_NO_RESIDUAL )
         {
             maxerror=M_iter_max-M_N;
-            no_residual_index++;
-            M_no_residual_index = no_residual_index;
-
+            //no_residual_index++;
+            //M_no_residual_index = no_residual_index;
+            mu = M_Dmu->element();
+            M_current_mu = mu;
         }
         else
         {
@@ -3146,7 +3142,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
         //vectorN_type error;
         //const element_type expansion_uN = this->expansion( uN[time_index] , N );
         //checkInitialGuess( expansion_uN , mu , error);
-        //std::cout<<"error.sum : "<<error.sum()<<std::endl;
+        //std::cout<<"***************************************************************error.sum : "<<error.sum()<<std::endl;
 
         LOG(INFO) << "lb: start fix point\n";
 
