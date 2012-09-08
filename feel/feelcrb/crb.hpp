@@ -2202,7 +2202,23 @@ CRB<TruthModelType>::offline()
             maxerror=M_iter_max-M_N;
             //no_residual_index++;
             //M_no_residual_index = no_residual_index;
-            mu = M_Dmu->element();
+
+            bool already_exist;
+            do
+            {
+                //initialization
+                already_exist=false;
+                //pick randomly an element
+                mu = M_Dmu->element();
+                //make sure that the new mu is not already is M_WNmu
+                BOOST_FOREACH( auto _mu, *M_WNmu )
+                {
+                    if( mu == _mu )
+                        already_exist=true;
+                }
+            }
+            while( already_exist );
+
             M_current_mu = mu;
         }
         else
