@@ -290,7 +290,7 @@ public:
                 case  CRBModelMode::PFEM:
                 {
                     std::cout << "PFEM mode" << std::endl;
-                    boost::timer ti;
+                    boost::mpi::timer ti;
 
                     auto u_fem = model->solve( mu );
                     std::ostringstream u_fem_str;
@@ -314,7 +314,7 @@ public:
                     std::cout << "CRB mode\n";
                     LOG(INFO) << "solve u_fem\n";
                     google::FlushLogFiles(google::GLOG_INFO);
-                    boost::timer ti;
+                    boost::mpi::timer ti;
 
                     auto u_fem = model->solve( mu );
                     std::ostringstream u_fem_str;
@@ -384,7 +384,7 @@ public:
                 case  CRBModelMode::CRB_ONLINE:
                 {
                     std::cout << "CRB Online mode\n";
-                    boost::timer ti;
+                    boost::mpi::timer ti;
                     ti.restart();
                     auto o = crb->run( mu,  this->vm()["crb.online-tolerance"].template as<double>() );
 
