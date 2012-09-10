@@ -761,8 +761,9 @@ public:
      * return the crb expansion at parameter \p \mu, ie \f$\sum_{i=0}^N u^N_i
      * \phi_i\f$ where $\phi_i, i=1...N$ are the basis function of the reduced
      * basis space
+     * if N>0 take the N^th first elements, else take all elements
      */
-    element_type expansion( parameter_type const& mu );
+    element_type expansion( parameter_type const& mu , int N=-1);
 
     /**
      * return the crb expansion at parameter \p \mu, ie \f$\sum_{i=0}^N u^N_i
@@ -5185,16 +5186,22 @@ CRB<TruthModelType>::printMuSelection( void )
 
 template<typename TruthModelType>
 typename CRB<TruthModelType>::element_type
-CRB<TruthModelType>::expansion( parameter_type const& mu )
+CRB<TruthModelType>::expansion( parameter_type const& mu , int N)
 {
-    int Nwn = M_N;
+    int Nwn;
+
+    if( N > 0 )
+        Nwn = N;
+    else
+        Nwn = M_N;
+
     std::vector<vectorN_type> uN;
     std::vector<vectorN_type> uNdu;
     std::vector<vectorN_type> uNold;
     std::vector<vectorN_type> uNduold;
 
     auto o = lb( Nwn, mu, uN, uNdu , uNold, uNduold );
-    return Feel::expansion( M_WN, uN[0] );
+    return Feel::expansion( M_WN, uN[0] , Nwn);
 }
 
 
