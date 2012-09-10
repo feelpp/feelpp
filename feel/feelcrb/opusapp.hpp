@@ -335,7 +335,10 @@ public:
                     LOG(INFO) << "solve crb\n";
                     google::FlushLogFiles(google::GLOG_INFO);
 
-                    auto o = crb->run( mu,  this->vm()["crb.online-tolerance"].template as<double>() );
+                    //dimension of the RB (not necessarily the max)
+                    int N =  this->vm()["crb.dimension"].template as<int>();
+
+                    auto o = crb->run( mu,  this->vm()["crb.online-tolerance"].template as<double>() , N);
 
                     if( this->vm()["crb.rebuild-database"].template as<bool>() )
                         {
