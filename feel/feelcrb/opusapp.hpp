@@ -304,10 +304,11 @@ public:
                 {
                 case  CRBModelMode::PFEM:
                 {
+                    LOG(INFO) << "PFEM mode" << std::endl;
                     if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
                         std::cout << "PFEM mode" << std::endl;
                     boost::mpi::timer ti;
-
+                    
                     auto u_fem = model->solve( mu );
                     std::ostringstream u_fem_str;
                     u_fem_str << "u_fem(" << mu_str.str() << ")";
@@ -327,6 +328,7 @@ public:
 
                 case  CRBModelMode::CRB:
                 {
+                    LOG(INFO) << "CRB mode\n";
                     if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
                         std::cout << "CRB mode\n";
                     LOG(INFO) << "solve u_fem\n";
