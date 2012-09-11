@@ -27,7 +27,7 @@
    \date 2012-01-16
  */
 #include <feel/feelalg/preconditionerpetsc.hpp>
-#include <feel/feelalg/functionpetsc.hpp>
+#include <feel/feelalg/functionspetsc.hpp>
 #include <feel/feelalg/matrixpetsc.hpp>
 #include <feel/feelalg/vectorpetsc.hpp>
 
@@ -338,7 +338,7 @@ void PreconditionerPetsc<T>::setPetscSubpreconditionerType( PCType type, PC& pc 
 #if defined(FEELPP_HAS_MUMPS)
 #if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,2,0 )
 #warning we use mumps
-            PetscPCFactorSetMatSolverPackage( subpc, MATSOLVERMUMPS );
+            PetscPCFactorSetMatSolverPackage( subpc, MATSOLVER_MUMPS );
 #endif
 #endif
         }
