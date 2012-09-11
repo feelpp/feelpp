@@ -375,7 +375,7 @@ SolverLinearPetsc<T>::solve ( MatrixSparse<T> const&  matrix_in,
 
     // Set operators. The input matrix works as the preconditioning matrix
     ierr = KSPSetOperators( _M_ksp, matrix->mat(), precond->mat(),
-                            SAME_NONZERO_PATTERN );
+                            MatStructure::SAME_NONZERO_PATTERN );
     CHKERRABORT( this->worldComm().globalComm(),ierr );
 
 
@@ -430,7 +430,7 @@ SolverLinearPetsc<T>::solve ( MatrixSparse<T> const&  matrix_in,
     //std::cout << "sles: " << this->precMatrixStructure() << "\n";
     // Set operators. The input matrix works as the preconditioning matrix
     ierr = KSPSetOperators( _M_ksp, matrix->mat(), precond->mat(),
-                            ( MatStructure ) this->precMatrixStructure() );
+                            PetscGetMatStructureEnum(this->precMatrixStructure()) );
     CHKERRABORT( this->worldComm().globalComm(),ierr );
 
     // Set the tolerances for the iterative solver.  Use the user-supplied
