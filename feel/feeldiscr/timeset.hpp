@@ -507,7 +507,7 @@ public:
             void
             operator()( T const& fun ) const
                 {
-                    std::cout << "export "  << fun.name() << " ...\n";
+                    LOG(INFO) << "export "  << fun.name() << " ...\n";
                     M_tset.add_( fun.name(), fun, mpl::bool_<false>() );
                 }
         };
