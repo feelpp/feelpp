@@ -203,7 +203,7 @@ find_package(GLOG)
 IF(GLOG_FOUND)
    MESSAGE(STATUS "Using built-in glog")
 
-   # gflags needed for preinstalled 
+   # gflags needed for preinstalled
    find_package(GFLAGS)
 ELSE()
    MESSAGE(STATUS "Using contrib/glog")
@@ -213,7 +213,7 @@ INCLUDE_DIRECTORIES( ${GLOG_INCLUDE_DIR} )
 SET(FEELPP_LIBRARIES ${GLOG_LIBRARIES} ${FEELPP_LIBRARIES})
 SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} GLOG" )
 
-# if gflags needed 
+# if gflags needed
 IF(GFLAGS_FOUND)
   INCLUDE_DIRECTORIES( ${GFLAGS_INCLUDE_DIR} )
   SET(FEELPP_LIBRARIES ${GFLAGS_LIBRARIES} ${FEELPP_LIBRARIES})
