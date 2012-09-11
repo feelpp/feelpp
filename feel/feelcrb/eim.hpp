@@ -566,6 +566,8 @@ EIM<ModelType>::computeBestFit( sampling_ptrtype trainset, int __M )
     LOG(INFO) << "Compute best fit M=" << __M << "\n";
     BOOST_FOREACH( mu, *trainset )
     {
+        LOG(INFO) << "compute best fit check mu...\n";
+        mu.check();
         LOG_EVERY_N(INFO, 1 ) << " (every 10 mu) compute fit at mu="<< mu <<"\n" ;
         // evaluate model at mu
         auto Z = M_model->operator()( mu );
@@ -911,7 +913,6 @@ public:
             // no need to solve we have already an approximation (typically from
             // an nonlinear iteration procedure)
             M_u = T;
-            LOG(INFO) << "M_u = " << M_u << "\n";
             return vf::project( _space=this->functionSpace(), _expr=M_expr );
         }
 
