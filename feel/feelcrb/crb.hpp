@@ -761,8 +761,9 @@ public:
      * return the crb expansion at parameter \p \mu, ie \f$\sum_{i=0}^N u^N_i
      * \phi_i\f$ where $\phi_i, i=1...N$ are the basis function of the reduced
      * basis space
+     * if N>0 take the N^th first elements, else take all elements
      */
-    element_type expansion( parameter_type const& mu );
+    element_type expansion( parameter_type const& mu , int N=-1);
 
     /**
      * return the crb expansion at parameter \p \mu, ie \f$\sum_{i=0}^N u^N_i
@@ -781,7 +782,9 @@ public:
      * run the certified reduced basis with P parameters and returns 1 output
      */
     //boost::tuple<double,double,double> run( parameter_type const& mu, double eps = 1e-6 );
-    boost::tuple<double,double,double,double> run( parameter_type const& mu, double eps = 1e-6 );
+    //boost::tuple<double,double,double,double> run( parameter_type const& mu, double eps = 1e-6 );
+    //by default N=-1 so we take dimension-max but if N>0 then we take N basis functions toperform online step
+    boost::tuple<double,double,double,double> run( parameter_type const& mu, double eps = 1e-6, int N = -1 );
 
     /**
      * run the certified reduced basis with P parameters and returns 1 output
@@ -5183,16 +5186,22 @@ CRB<TruthModelType>::printMuSelection( void )
 
 template<typename TruthModelType>
 typename CRB<TruthModelType>::element_type
-CRB<TruthModelType>::expansion( parameter_type const& mu )
+CRB<TruthModelType>::expansion( parameter_type const& mu , int N)
 {
-    int Nwn = M_N;
+    int Nwn;
+
+    if( N > 0 )
+        Nwn = N;
+    else
+        Nwn = M_N;
+
     std::vector<vectorN_type> uN;
     std::vector<vectorN_type> uNdu;
     std::vector<vectorN_type> uNold;
     std::vector<vectorN_type> uNduold;
 
     auto o = lb( Nwn, mu, uN, uNdu , uNold, uNduold );
-    return Feel::expansion( M_WN, uN[0] );
+    return Feel::expansion( M_WN, uN[0] , Nwn);
 }
 
 
@@ -5214,13 +5223,13 @@ CRB<TruthModelType>::expansion( vectorN_type const& u , int const N) const
 
 template<typename TruthModelType>
 boost::tuple<double,double,double,double>
-CRB<TruthModelType>::run( parameter_type const& mu, double eps )
+CRB<TruthModelType>::run( parameter_type const& mu, double eps , int N )
 {
 
     M_compute_variance = this->vm()["crb.compute-variance"].template as<bool>();
 
     //int Nwn = M_N;
-    int Nwn = vm()["crb.dimension-max"].template as<int>();
+    int Nwn_max = vm()["crb.dimension-max"].template as<int>();
 
 #if 0
     if (  M_error_type!=CRB_EMPIRICAL )
@@ -5242,6 +5251,12 @@ CRB<TruthModelType>::run( parameter_type const& mu, double eps )
     std::vector<vectorN_type> uNdu;
     std::vector<vectorN_type> uNold;
     std::vector<vectorN_type> uNduold;
+
+    int Nwn;
+    if( N > 0 )
+        Nwn = N;
+    else
+        Nwn = Nwn_max;
 
     auto o = lb( Nwn, mu, uN, uNdu , uNold, uNduold );
     double output = o.template get<0>();
