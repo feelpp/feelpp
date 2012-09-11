@@ -184,6 +184,7 @@ public:
 
     //! space type
     typedef typename model_type::space_type space_type;
+    typedef boost::shared_ptr<space_type> space_ptrtype;
 
     //! time discretization
     typedef Bdf<space_type>  bdf_type;
@@ -286,7 +287,7 @@ public:
     {
         this->setTruthModel( model );
         if ( this->loadDB() )
-            std::cout << "Database " << this->lookForDB() << " available and loaded\n";
+            LOG(INFO) << "Database " << this->lookForDB() << " available and loaded\n";
     }
 
 
@@ -442,7 +443,7 @@ public:
 	    M_WNmu = sampling_ptrtype( new sampling_type( M_Dmu ) );
     else
     {
-        std::cout << "Database " << this->lookForDB() << " available and loaded\n";
+        LOG(INFO) << "Database " << this->lookForDB() << " available and loaded\n";
     }
 
         M_scmA->setTruthModel( M_model );
@@ -5525,7 +5526,7 @@ CRB<TruthModelType>::save( Archive & ar, const unsigned int version ) const
 {
     int proc_number = this->worldComm().globalRank();
 
-    std::cout<<"[CRB::save] version : "<<version<<std::endl;
+    LOG(INFO) <<"[CRB::save] version : "<<version<<std::endl;
 
     auto mesh = mesh_type::New();
     auto is_mesh_loaded = mesh->load( _name="mymesh",_path=this->dbLocalPath(),_type="binary" );
@@ -5611,13 +5612,28 @@ CRB<TruthModelType>::load( Archive & ar, const unsigned int version )
 {
     int proc_number = this->worldComm().globalRank();
 
-    std::cout<<"[CRB::load] version"<< version <<std::endl;
+    LOG(INFO) <<"[CRB::load] version"<< version <<std::endl;
 
-    auto mesh = mesh_type::New();
+    mesh_ptrtype mesh;
+    space_ptrtype Xh;
+    
+    if ( !M_model )
+        {
+            LOG(INFO) << "[load] model not initialized, loading fdb files...\n";
+            mesh = mesh_type::New();
+            
+            bool is_mesh_loaded = mesh->load( _name="mymesh",_path=this->dbLocalPath(),_type="binary" );
 
-    auto is_mesh_loaded = mesh->load( _name="mymesh",_path=this->dbLocalPath(),_type="binary" );
-
-    auto Xh = space_type::New( mesh );
+            Xh = space_type::New( mesh );
+            LOG(INFO) << "[load] loading fdb files done.\n";
+        }
+    else
+        {
+            LOG(INFO) << "[load] get mesh/Xh from model...\n";
+            mesh = M_model->functionSpace()->mesh();
+            Xh = M_model->functionSpace();
+            LOG(INFO) << "[load] get mesh/Xh from model done.\n";
+        }
 
     if( version <= 2 )
         M_rbconv_contains_primal_and_dual_contributions = false;
@@ -5750,7 +5766,7 @@ CRB<TruthModelType>::load( Archive & ar, const unsigned int version )
     }
 
 #endif
-    std::cout << "end of load function" << std::endl;
+    LOG(INFO) << "[CRB::load] end of load function" << std::endl;
 }
 
 
