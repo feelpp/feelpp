@@ -51,6 +51,9 @@
 /* Define to 1 if you have the <memory.h> header file. */
 #cmakedefine FEELPP_HAS_MEMORY_H
 
+/* Define to 1 if you have mumps support. */
+#cmakedefine FEELPP_HAS_MUMPS
+
 /* Define if you have the <oct.h> header file. */
 #cmakedefine FEELPP_HAS_OCT_H
 

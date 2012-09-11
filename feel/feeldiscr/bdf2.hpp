@@ -389,7 +389,7 @@ public:
             if ( ( ( i - M_last_iteration_since_order_change ) == M_iterations_between_order_change )&&
                     M_order_cur < M_order )
             {
-                M_last_iteration_since_order_change = M_iteration;
+                M_last_iteration_since_order_change = i;
                 ++M_order_cur;
             }
         }
@@ -1043,7 +1043,7 @@ Bdf<SpaceType>::init()
 
     if ( this->isRestart() )
     {
-        for ( int p = 0; p < std::min( M_order, M_iteration ); ++p )
+        for ( int p = 0; p < std::min( M_order, M_iteration+1 ); ++p )
         {
             // create and open a character archive for output
             std::ostringstream ostr;
