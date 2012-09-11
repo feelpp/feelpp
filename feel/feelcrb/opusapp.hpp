@@ -73,6 +73,19 @@ class OpusApp   : public Application
     typedef Application super;
 public:
 
+    typedef double value_type;
+
+    //! model type
+    typedef ModelType model_type;
+    typedef boost::shared_ptr<ModelType> model_ptrtype;
+
+    //! function space type
+    typedef typename model_type::functionspace_type functionspace_type;
+    typedef typename model_type::functionspace_ptrtype functionspace_ptrtype;
+
+    typedef typename model_type::element_type element_type;
+
+
     typedef CRBModel<ModelType> crbmodel_type;
     typedef boost::shared_ptr<crbmodel_type> crbmodel_ptrtype;
     typedef CRB<crbmodel_type> crb_type;
@@ -182,7 +195,8 @@ public:
             {
                 if ( M_mode == CRBModelMode::SCM )
                 {
-                    std::cout << "No SCM DB available, do scm offline computations first...\n";
+                    if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+                        std::cout << "No SCM DB available, do scm offline computations first...\n";
                     if( crb->scm()->doScmForMassMatrix() )
                         crb->scm()->setScmForMassMatrix( true );
 
@@ -195,7 +209,8 @@ public:
                 if ( M_mode == CRBModelMode::CRB )
                     //|| M_mode == CRBModelMode::SCM )
                 {
-                    std::cout << "No CRB DB available, do crb offline computations...\n";
+                    if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+                        std::cout << "No CRB DB available, do crb offline computations...\n";
                     crb->offline();
                 }
 
@@ -246,7 +261,7 @@ public:
             std::map<CRBModelMode,std::vector<std::string> > hdrs;
             using namespace boost::assign;
             std::vector<std::string> pfemhdrs = boost::assign::list_of( "FEM Output" )( "FEM Time" );
-            std::vector<std::string> crbhdrs = boost::assign::list_of( "FEM Output" )( "FEM Time" )( "RB Output" )( "Error Bounds" )( "CRB Time" )( "Relative error PFEM/CRB" )( "Conditionning" );
+            std::vector<std::string> crbhdrs = boost::assign::list_of( "FEM Output" )( "FEM Time" )( "RB Output" )( "Error Bounds" )( "CRB Time" )( "Relative error PFEM/CRB" )( "Conditionning" )( "l2_error" );
             std::vector<std::string> scmhdrs = boost::assign::list_of( "Lb" )( "Lb Time" )( "Ub" )( "Ub Time" )( "FEM" )( "FEM Time" )( "Rel.(FEM-Lb)" );
             std::vector<std::string> crbonlinehdrs = boost::assign::list_of( "RB Output" )( "Error Bounds" )( "CRB Time" );
             std::vector<std::string> scmonlinehdrs = boost::assign::list_of( "Lb" )( "Lb Time" )( "Ub" )( "Ub Time" )( "Rel.(FEM-Lb)" );
@@ -267,13 +282,13 @@ public:
 
             printParameterHdr( ostr, model->parameterSpace()->dimension(), hdrs[M_mode] );
 
+            int curpar = 0;
             BOOST_FOREACH( auto mu, *Sampling )
             {
-
                 int size = mu.size();
                 if( proc_number == 0 )
                 {
-                    std::cout << "mu = [ ";
+                    std::cout << "(" << curpar++ << "/" << Sampling->size() << ") mu = [ ";
                     for ( int i=0; i<size-1; i++ ) std::cout<< mu[i] <<" , ";
                     std::cout<< mu[size-1]<<" ]\n ";
                 }
@@ -282,11 +297,15 @@ public:
                 for ( int i=0; i<size-1; i++ ) mu_str << std::scientific << std::setprecision( 5 ) << mu[i] <<",";
                 mu_str << std::scientific << std::setprecision( 5 ) << mu[size-1];
 
+                LOG(INFO) << "mu=" << mu << "\n";
+                mu.check();
+
                 switch ( M_mode )
                 {
                 case  CRBModelMode::PFEM:
                 {
-                    std::cout << "PFEM mode" << std::endl;
+                    if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+                        std::cout << "PFEM mode" << std::endl;
                     boost::timer ti;
 
                     auto u_fem = model->solve( mu );
@@ -308,7 +327,8 @@ public:
 
                 case  CRBModelMode::CRB:
                 {
-                    std::cout << "CRB mode\n";
+                    if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+                        std::cout << "CRB mode\n";
                     LOG(INFO) << "solve u_fem\n";
                     google::FlushLogFiles(google::GLOG_INFO);
                     boost::timer ti;
@@ -328,24 +348,31 @@ public:
                     LOG(INFO) << "solve crb\n";
                     google::FlushLogFiles(google::GLOG_INFO);
 
-                    auto o = crb->run( mu,  this->vm()["crb.online-tolerance"].template as<double>() );
+                    //dimension of the RB (not necessarily the max)
+                    int N =  this->vm()["crb.dimension"].template as<int>();
 
-                    if( this->vm()["crb.rebuild-database"].template as<bool>() )
-                        {
-                            auto u_crb = crb->expansion( mu );
+                    auto o = crb->run( mu,  this->vm()["crb.online-tolerance"].template as<double>() , N);
+
+                    //if( this->vm()["crb.rebuild-database"].template as<bool>() )
+                    //{
+                            auto u_crb = crb->expansion( mu , N );
                             std::ostringstream u_crb_str;
                             u_crb_str << "u_crb(" << mu_str.str() << ")";
                             u_crb.setName( u_crb_str.str()  );
                             exporter->step(0)->add( u_crb.name(), u_crb );
-                        }
+                    //}
 
                     double relative_error = std::abs( ofem[0]-o.template get<0>() ) /ofem[0];
                     double relative_estimated_error = o.template get<1>() / ofem[0];
                     double condition_number = o.template get<3>();
 
+
+                    //compute || u_fem - u_crb||_L2
+                    double l2_error = l2Error( u_fem , u_crb );
+
                     if ( crb->errorType()==2 )
                     {
-                        std::vector<double> v = boost::assign::list_of( ofem[0] )( ofem[1] )( o.template get<0>() )( relative_estimated_error )( ti.elapsed() )( relative_error )( condition_number );
+                        std::vector<double> v = boost::assign::list_of( ofem[0] )( ofem[1] )( o.template get<0>() )( relative_estimated_error )( ti.elapsed() )( relative_error )( condition_number )( l2_error );
                         if( proc_number == 0 )
                         {
                             std::cout << "output=" << o.template get<0>() << " with " << o.template get<2>() << " basis functions\n";
@@ -361,7 +388,7 @@ public:
 
                     else
                     {
-                        std::vector<double> v = boost::assign::list_of( ofem[0] )( ofem[1] )( o.template get<0>() )( relative_estimated_error )( ti.elapsed() ) ( relative_error )( condition_number ) ;
+                        std::vector<double> v = boost::assign::list_of( ofem[0] )( ofem[1] )( o.template get<0>() )( relative_estimated_error )( ti.elapsed() ) ( relative_error )( condition_number )( l2_error ) ;
                         if( proc_number == 0 )
                         {
                             std::cout << "output=" << o.template get<0>() << " with " << o.template get<2>() << " basis functions  (relative error estimation on this output : " << relative_estimated_error<<") \n";
@@ -488,6 +515,26 @@ private:
             os << "\n";
         }
 
+    //double l2Error( typename ModelType::parameter_type const& mu, int N )
+    double l2Error( element_type const u_fem, element_type const u_crb)
+    {
+        static const bool is_composite = functionspace_type::is_composite;
+        return l2Error( u_fem, u_crb, mpl::bool_< is_composite >() );
+    }
+    double l2Error( element_type const u_fem, element_type const u_crb, mpl::bool_<false> )
+    {
+        auto mesh = model->functionSpace()->mesh();
+        return math::sqrt( integrate( elements(mesh), (vf::idv(u_fem)-vf::idv(u_crb))*(vf::idv(u_fem)-vf::idv(u_crb)) ).evaluate()(0,0) );
+    }
+    double l2Error( element_type const u_fem, element_type const u_crb, mpl::bool_<true>)
+    {
+        auto mesh = model->functionSpace()->mesh();
+        auto u_femT = u_fem.template element<1>();
+        auto u_crbT = u_crb.template element<1>();
+        return math::sqrt( integrate( elements(mesh), (vf::idv(u_femT)-vf::idv(u_crbT))*(vf::idv(u_femT)-vf::idv(u_crbT)) ).evaluate()(0,0) );
+    }
+
+
 private:
     CRBModelMode M_mode;
     crbmodel_ptrtype model;
@@ -495,6 +542,7 @@ private:
 
     fs::path M_current_path;
 }; // OpusApp
+
 } // Feel
 
 #endif /* __OpusApp_H */
