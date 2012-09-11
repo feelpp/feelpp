@@ -261,7 +261,7 @@ public:
             std::map<CRBModelMode,std::vector<std::string> > hdrs;
             using namespace boost::assign;
             std::vector<std::string> pfemhdrs = boost::assign::list_of( "FEM Output" )( "FEM Time" );
-            std::vector<std::string> crbhdrs = boost::assign::list_of( "FEM Output" )( "FEM Time" )( "RB Output" )( "Error Bounds" )( "CRB Time" )( "Relative error PFEM/CRB" )( "Conditionning" )( "l2_error" );
+            std::vector<std::string> crbhdrs = boost::assign::list_of( "FEM Output" )( "FEM Time" )( "RB Output" )( "Error Bounds" )( "CRB Time" )( "Relative error PFEM/CRB" )( "Conditionning" )( "l2_error" )( "h1_error" );
             std::vector<std::string> scmhdrs = boost::assign::list_of( "Lb" )( "Lb Time" )( "Ub" )( "Ub Time" )( "FEM" )( "FEM Time" )( "Rel.(FEM-Lb)" );
             std::vector<std::string> crbonlinehdrs = boost::assign::list_of( "RB Output" )( "Error Bounds" )( "CRB Time" );
             std::vector<std::string> scmonlinehdrs = boost::assign::list_of( "Lb" )( "Lb Time" )( "Ub" )( "Ub Time" )( "Rel.(FEM-Lb)" );
@@ -368,11 +368,16 @@ public:
 
 
                     //compute || u_fem - u_crb||_L2
-                    double l2_error = l2Error( u_fem , u_crb );
+                    auto u_error = model->functionSpace()->element();
+                    u_error = u_fem - u_crb;
+                    LOG(INFO) << "L2(fem)=" << l2Norm( u_fem )    << "\n";
+                    LOG(INFO) << "H1(fem)=" << h1Norm( u_fem )    << "\n";
+                    double l2_error = l2Norm( u_error )/l2Norm( u_fem );
+                    double h1_error = h1Norm( u_error )/h1Norm( u_fem );
 
                     if ( crb->errorType()==2 )
                     {
-                        std::vector<double> v = boost::assign::list_of( ofem[0] )( ofem[1] )( o.template get<0>() )( relative_estimated_error )( ti.elapsed() )( relative_error )( condition_number )( l2_error );
+                        std::vector<double> v = boost::assign::list_of( ofem[0] )( ofem[1] )( o.template get<0>() )( relative_estimated_error )( ti.elapsed() )( relative_error )( condition_number )( l2_error )( h1_error );
                         if( proc_number == 0 )
                         {
                             std::cout << "output=" << o.template get<0>() << " with " << o.template get<2>() << " basis functions\n";
@@ -388,7 +393,7 @@ public:
 
                     else
                     {
-                        std::vector<double> v = boost::assign::list_of( ofem[0] )( ofem[1] )( o.template get<0>() )( relative_estimated_error )( ti.elapsed() ) ( relative_error )( condition_number )( l2_error ) ;
+                        std::vector<double> v = boost::assign::list_of( ofem[0] )( ofem[1] )( o.template get<0>() )( relative_estimated_error )( ti.elapsed() ) ( relative_error )( condition_number )( l2_error )( h1_error ) ;
                         if( proc_number == 0 )
                         {
                             std::cout << "output=" << o.template get<0>() << " with " << o.template get<2>() << " basis functions  (relative error estimation on this output : " << relative_estimated_error<<") \n";
@@ -515,23 +520,44 @@ private:
             os << "\n";
         }
 
-    //double l2Error( typename ModelType::parameter_type const& mu, int N )
-    double l2Error( element_type const u_fem, element_type const u_crb)
+
+    //double l2Norm( typename ModelType::parameter_type const& mu, int N )
+    double l2Norm( element_type const& u )
     {
         static const bool is_composite = functionspace_type::is_composite;
-        return l2Error( u_fem, u_crb, mpl::bool_< is_composite >() );
+        return l2Norm( u, mpl::bool_< is_composite >() );
     }
-    double l2Error( element_type const u_fem, element_type const u_crb, mpl::bool_<false> )
+    double l2Norm( element_type const& u, mpl::bool_<false> )
     {
         auto mesh = model->functionSpace()->mesh();
-        return math::sqrt( integrate( elements(mesh), (vf::idv(u_fem)-vf::idv(u_crb))*(vf::idv(u_fem)-vf::idv(u_crb)) ).evaluate()(0,0) );
+        return math::sqrt( integrate( elements(mesh), (vf::idv(u))*(vf::idv(u)) ).evaluate()(0,0) );
     }
-    double l2Error( element_type const u_fem, element_type const u_crb, mpl::bool_<true>)
+    double l2Norm( element_type const& u, mpl::bool_<true>)
     {
         auto mesh = model->functionSpace()->mesh();
-        auto u_femT = u_fem.template element<1>();
-        auto u_crbT = u_crb.template element<1>();
-        return math::sqrt( integrate( elements(mesh), (vf::idv(u_femT)-vf::idv(u_crbT))*(vf::idv(u_femT)-vf::idv(u_crbT)) ).evaluate()(0,0) );
+        auto uT = u.template element<1>();
+        return math::sqrt( integrate( elements(mesh), (vf::idv(uT))*(vf::idv(uT)) ).evaluate()(0,0) );
+    }
+    //double h1Norm( typename ModelType::parameter_type const& mu, int N )
+    double h1Norm( element_type const& u )
+    {
+        static const bool is_composite = functionspace_type::is_composite;
+        return h1Norm( u, mpl::bool_< is_composite >() );
+    }
+    double h1Norm( element_type const& u, mpl::bool_<false> )
+    {
+        auto mesh = model->functionSpace()->mesh();
+        double l22 = integrate( elements(mesh), (vf::idv(u))*(vf::idv(u)) ).evaluate()(0,0);
+        double semih12 = integrate( elements(mesh), (vf::gradv(u))*trans(vf::gradv(u)) ).evaluate()(0,0);
+        return math::sqrt( l22+semih12 );
+    }
+    double h1Norm( element_type const& u, mpl::bool_<true>)
+    {
+        auto mesh = model->functionSpace()->mesh();
+        auto u_femT = u.template element<1>();
+        double l22 = integrate( elements(mesh), (vf::idv(u_femT))*(vf::idv(u_femT)) ).evaluate()(0,0);
+        double semih12 = integrate( elements(mesh), (vf::gradv(u_femT))*trans(vf::gradv(u_femT))).evaluate()(0,0);
+        return math::sqrt( l22+semih12 );
     }
 
 
