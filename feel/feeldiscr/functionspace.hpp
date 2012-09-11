@@ -2896,7 +2896,7 @@ public:
 
                 if ( !fs::exists( p ) )
                 {
-                    std::cerr  << "ERROR IN [load] :" <<  full_path_dir_sol << "  FILE : " << os1.str() << " OR " << os2.str() << " DO NOT EXIST" << std::endl ;
+                    LOG(WARNING)  << "[load] :" <<  full_path_dir_sol << "  FILE : " << os1.str() << " OR " << os2.str() << " DO NOT EXIST" << std::endl ;
                     //std::cerr << "ATTENTION :  p does not exist
                     return 0;
                 }
@@ -2905,7 +2905,7 @@ public:
             if ( !fs::is_regular_file( p ) )
             {
 
-                std::cerr << "ERROR IN [load] : " << full_path_dir_sol << p << " is not a  regular_file !" << std::endl;
+                LOG(WARNING) << "[load] : " << full_path_dir_sol << p << " is not a  regular_file !" << std::endl;
                 return 0;
             }
 
