@@ -400,7 +400,7 @@ public:
                         }
                         LOG(INFO) << "start convergence study...\n";
                         std::map<int, boost::tuple<double,double,double> > conver;
-                        for( int N = 2; N < crb->dimension(); N++ )
+                        for( int N = 1; N < crb->dimension(); N++ )
                         {
                             LOG(INFO) << "N=" << N << "...\n";
                             auto o = crb->run( mu,  this->vm()["crb.online-tolerance"].template as<double>() , N);
