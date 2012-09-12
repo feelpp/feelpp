@@ -709,7 +709,7 @@ public:
                                        ( rhs,( vector_ptrtype ) ) )
                                      ( optional
                                        //(prec,(sparse_matrix_ptrtype), matrix )
-                                       ( prec,( preconditioner_ptrtype ), preconditioner( _matrix=matrix,_pc=LU_PRECOND,_backend=BACKEND_PETSC ) )
+                                       ( prec,( preconditioner_ptrtype ), preconditioner( _matrix=matrix,_pc=this->pcEnumType()/*LU_PRECOND*/,_backend=BACKEND_PETSC ) )
                                        ( maxit,( size_type ), M_maxit/*1000*/ )
                                        ( rtolerance,( double ), M_rtolerance/*1e-13*/ )
                                        ( atolerance,( double ), M_atolerance/*1e-50*/ )
@@ -819,7 +819,7 @@ public:
                                        ( jacobian,( sparse_matrix_ptrtype ), sparse_matrix_ptrtype() )
                                        ( residual,( vector_ptrtype ), vector_ptrtype() )
                                        //(prec,(sparse_matrix_ptrtype), jacobian )
-                                       ( prec,( preconditioner_ptrtype ), preconditioner( _pc=LU_PRECOND,_backend=BACKEND_PETSC ) )
+                                       ( prec,( preconditioner_ptrtype ), preconditioner( _pc=this->pcEnumType()/*LU_PRECOND*/,_backend=BACKEND_PETSC ) )
                                        ( maxit,( size_type ), M_maxit/*1000*/ )
                                        ( rtolerance,( double ), M_rtolerance/*1e-13*/ )
                                        ( atolerance,( double ), M_atolerance/*1e-50*/ )
