@@ -415,10 +415,10 @@ public:
         M_model = model;
         M_Dmu = M_model->parameterSpace();
         M_Xi = sampling_ptrtype( new sampling_type( M_Dmu ) );
-        
+
         if ( ! loadDB() )
             M_WNmu = sampling_ptrtype( new sampling_type( M_Dmu ) );
-        
+
         M_scmA->setTruthModel( M_model );
         M_scmM->setTruthModel( M_model );
     }
@@ -806,7 +806,7 @@ typename CRB_heatns<TruthModelType>::convergence_type
 CRB_heatns<TruthModelType>::offline()
 {
     std::cout << "-------->CRB_heatns<TruthModelType>::offline()\n";
-    
+
     M_rbconv_contains_primal_and_dual_contributions = true;
 
     bool rebuild_database = this->vm()["crb.rebuild-database"].template as<bool>() ;
@@ -820,8 +820,8 @@ CRB_heatns<TruthModelType>::offline()
     int nn = this->vm()["crb.dimension-max"].template as<int>() ;
     std::cout << "-------->nn = " << nn << std::endl;
 
-    
-    
+
+
     M_Nm = this->vm()["crb.Nm"].template as<int>() ;
     bool seek_mu_in_complement = this->vm()["crb.seek-mu-in-complement"].template as<bool>() ;
 
@@ -1001,7 +1001,7 @@ CRB_heatns<TruthModelType>::offline()
             Log() << "N=" << M_N << "/"  << M_iter_max << " maxerror=" << maxerror << " / "  << M_tolerance << "\n";
         }
 
-        
+
         backend_ptrtype backend_primal_problem = backend_type::build( BACKEND_PETSC );
         backend_ptrtype backend_dual_problem = backend_type::build( BACKEND_PETSC );
 
@@ -1019,10 +1019,10 @@ CRB_heatns<TruthModelType>::offline()
             std::cout << "  -- updated model for parameter in " << timer2.elapsed() << "s\n";
             timer2.restart();
             Log() << "[CRB::offline] transpose primal matrix" << "\n";
-            
+
             At = M_model->newMatrix();
             A->transpose( At );
-            
+
             //u->setName( ( boost::format( "fem-primal-%1%" ) % ( M_N ) ).str() );
             //udu->setName( ( boost::format( "fem-dual-%1%" ) % ( M_N ) ).str() );
 
@@ -1083,35 +1083,35 @@ CRB_heatns<TruthModelType>::offline()
         M_WNmu_complement = M_WNmu->complement();
 
         bool norm_zero = false;
-        
+
         if ( M_model->isSteady() )
         {
             M_WN.push_back( *u );
             M_WNdu.push_back( *udu );
-            
+
         }//end of steady case
-        
+
         else
         {
             std::cout << "ERROR : I'm not transient !!!" << std::endl;
         }//end of transient case
-        
+
         size_type number_of_added_elements;
-        
+
         if( M_model->isSteady() )
             number_of_added_elements=1;
-        
+
         std::cout<<"-------->number_of_added_elements = "<<number_of_added_elements<<std::endl;
-        
+
         M_N+=number_of_added_elements;
-        
+
         if ( orthonormalize_primal )
         {
             orthonormalize( M_N, M_WN, number_of_added_elements );
             orthonormalize( M_N, M_WN, number_of_added_elements );
             orthonormalize( M_N, M_WN, number_of_added_elements );
         }
-        
+
         if ( orthonormalize_dual )
         {
             orthonormalize( M_N, M_WNdu, number_of_added_elements );
@@ -1251,18 +1251,18 @@ CRB_heatns<TruthModelType>::offline()
             boost::tie( maxerror, mu, index , delta_pr , delta_du ) = maxErrorBounds( M_N );
             M_index.push_back( index );
             M_current_mu = mu;
-            
+
             int count = std::count( M_index.begin(),M_index.end(),index );
             M_mode_number = count;
-            
+
             std::cout << "  -- max error bounds computed in " << timer2.elapsed() << "s\n";
             timer2.restart();
         }
-        
+
         M_rbconv.insert( convergence( M_N, boost::make_tuple(maxerror,delta_pr,delta_du) ) );
-        
+
         //mu = M_Xi->at( M_N );//M_WNmu_complement->min().template get<0>();
-        
+
         check( M_WNmu->size() );
 
 
@@ -1867,51 +1867,51 @@ CRB_heatns<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vect
         if ( M_model->isSteady() )
         {
             time = 1e30;
-            
+
             boost::tie( theta_mq, theta_aq, theta_fq ) = M_model->computeThetaq( mu ,time );
             Adu.setZero( N,N );
             Ldu.setZero( N );
-            
+
             for ( size_type q = 0; q < M_model->Qa(); ++q )
             {
                 Adu += theta_aq[q]*M_Aq_du[q].block( 0,0,N,N );
             }
-            
+
             for ( size_type q = 0; q < M_model->Ql( M_output_index ); ++q )
             {
                 Ldu += theta_fq[M_output_index][q]*M_Lq_du[q].head( N );
             }
-            
+
             uNdu[0] = Adu.lu().solve( -Ldu );
         }
-        
-        
+
+
         else
         {
             std::cout << "ERROR : I'm not transient !!!" << std::endl;
         }//end of non steady case
-        
-        
+
+
         time_index=0;
-        
+
         for ( double time=time_step; time<=time_for_output; time+=time_step )
         {
             int k = time_index+1;
             output_time_vector[time_index]+=correctionTerms(mu, uN , uNdu, uNold, k );
             time_index++;
         }
-        
+
     }//end of if ( solve_dual_problem || M_error_type == CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM )
-    
+
     if( M_compute_variance )
     {
         time_index=0;
         for ( double time=time_step; time<=time_for_output; time+=time_step )
         {
-            
+
             vectorN_type uNsquare = uN[time_index].array().pow(2);
             double first = uNsquare.dot( M_variance_matrix_phi.diagonal() );
-            
+
             double second = 0;
             for(int k = 1; k <= N-1; ++k)
             {
@@ -1922,35 +1922,35 @@ CRB_heatns<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vect
             time_index++;
         }
     }
-    
-    
+
+
     if ( save_output_behavior )
     {
         time_index=0;
         std::ofstream file_output;
         std::string mu_str;
-        
+
         for ( int i=0; i<mu.size(); i++ )
         {
             mu_str= mu_str + ( boost::format( "_%1%" ) %mu[i] ).str() ;
         }
-        
+
         std::string name = "output_evolution" + mu_str;
         file_output.open( name.c_str(),std::ios::out );
-        
+
         for ( double time=time_step; time<=time_for_output; time+=time_step )
         {
             file_output<<time<<"\t"<<output_time_vector[time_index]<<"\n";
             time_index++;
         }
-        
+
         file_output.close();
     }
-    
+
     int size=output_time_vector.size();
     return boost::make_tuple( output_time_vector[size-1], condition_number);
-    
-    
+
+
 }
 
 
@@ -1969,27 +1969,27 @@ CRB_heatns<TruthModelType>::delta( size_type N,
 
     std::vector< std::vector<double> > primal_residual_coeffs;
     std::vector< std::vector<double> > dual_residual_coeffs;
-    
+
     double delta_pr=0;
     double delta_du=0;
     if ( M_error_type == CRB_NO_RESIDUAL )
         return boost::make_tuple( -1,primal_residual_coeffs,dual_residual_coeffs,delta_pr,delta_du );
-    
+
     else if ( M_error_type == CRB_EMPIRICAL )
         return boost::make_tuple( empiricalErrorEstimation ( N, mu , k ) , primal_residual_coeffs, dual_residual_coeffs , delta_pr, delta_du);
-    
+
     else
     {
         //we assume that we want estimate the error committed on the final output
-        
+
         double primal_sum=0;
         double dual_sum=0;
-        
-        
+
+
         //vectors to store residual coefficients
         primal_residual_coeffs.resize( 1 );
         dual_residual_coeffs.resize( 1 );
-        
+
         if ( M_model->isSteady() )
         {
             residual_error_type pr = steadyPrimalResidual( N, mu, uN[0], 0. );
@@ -2013,7 +2013,7 @@ CRB_heatns<TruthModelType>::delta( size_type N,
             std::cout << "ERROR : I'm not transient !!!" << std::endl;
         }
 
-            
+
         double alphaA=1,alphaM=1;
 
         if ( M_error_type == CRB_RESIDUAL_SCM )
@@ -2054,7 +2054,7 @@ CRB_heatns<TruthModelType>::delta( size_type N,
     }//end of else
 
 #else
-    
+
     double upper_bound;
     std::vector< std::vector<double> > primal_residual_coeffs;
     std::vector< std::vector<double> > dual_residual_coeffs;
@@ -2806,9 +2806,9 @@ template<typename TruthModelType>
 void
 CRB_heatns<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<false> , int number_of_added_elements )
 {
-    
+
     std::cout <<"------->CRB_heatns<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<false> , int number_of_added_elements )\n";
-    
+
     boost::timer ti;
     int __QLhs = M_model->Qa();
     int __QRhs = M_model->Ql( 0 );
@@ -2826,7 +2826,7 @@ CRB_heatns<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<false> , int n
     std::vector<sparse_matrix_ptrtype> Aq,Mq;
     std::vector<std::vector<vector_ptrtype> > Fq,Lq;
     boost::tie( Mq, Aq, Fq ) = M_model->computeAffineDecomposition();
-    
+
     std::cout << "-------->boost::tie( Mq, Aq, Fq ) = M_model->computeAffineDecomposition(); DONE\n";
 
     __X->zero();
