@@ -370,13 +370,13 @@ BackendPetsc<T>::solve( sparse_matrix_ptrtype const& A,
     M_solver_petsc.setShowKSPMonitor( this->showKSPMonitor() );
     M_solver_petsc.setShowKSPConvergedReason( this->showKSPConvergedReason() );
 
-    //std::pair<size_type,value_type> res = M_solver_petsc.solve( *A, *x, *b, this->rTolerance(), this->maxIterations(), this->transpose() );
     auto res = M_solver_petsc.solve( *A, *B, *x, *b, this->rTolerance(), this->maxIterations(), this->transpose() );
-    Debug( 7005 ) << "[BackendPetsc::solve] number of iterations : " << res.template get<1>()/*first*/ << "\n";
-    Debug( 7005 ) << "[BackendPetsc::solve]             residual : " << res.template get<2>()/*second*/ << "\n";
+    Debug( 7005 ) << "[BackendPetsc::solve] number of iterations : " << res.template get<1>() << "\n";
+    Debug( 7005 ) << "[BackendPetsc::solve]             residual : " << res.template get<2>() << "\n";
 
-    //bool converged = (res.first < this->maxIterations()) && (res.second < this->rTolerance());
-    return res;//boost::make_tuple( converged, res.first, res.second );
+    if ( !res.get<0>() ) std::cerr<< "Backend " << this->prefix() << " : linear solver failed to converge" << std::endl;
+
+    return res;
 } // BackendPetsc::solve
 
 
@@ -401,12 +401,13 @@ BackendPetsc<T>::solve( sparse_matrix_type const& A,
     M_solver_petsc.setShowKSPMonitor( this->showKSPMonitor() );
     M_solver_petsc.setShowKSPConvergedReason( this->showKSPConvergedReason() );
 
-    std::pair<size_type,value_type> res = M_solver_petsc.solve( A, x, b, this->rTolerance(), this->maxIterations() );
-    Debug( 7005 ) << "[BackendPetsc::solve] number of iterations : " << res.first << "\n";
-    Debug( 7005 ) << "[BackendPetsc::solve]             residual : " << res.second << "\n";
+    auto res = M_solver_petsc.solve( A, x, b, this->rTolerance(), this->maxIterations() );
+    Debug( 7005 ) << "[BackendPetsc::solve] number of iterations : " << res.template get<1>() << "\n";
+    Debug( 7005 ) << "[BackendPetsc::solve]             residual : " << res.template get<2>() << "\n";
 
-    bool converged = ( res.first < this->maxIterations() ) && ( res.second < this->rTolerance() );
-    return boost::make_tuple( converged, res.first, res.second );
+    if ( !res.get<0>() ) std::cerr<< "Backend " << this->prefix() << " : linear solver failed to converge" << std::endl;
+
+    return res;
 } // BackendPetsc::solve
 
 po::options_description backendpetsc_options( std::string const& prefix = "" );

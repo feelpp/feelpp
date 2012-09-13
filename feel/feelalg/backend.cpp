@@ -47,6 +47,8 @@ Backend<T>::Backend( WorldComm const& worldComm )
     M_atolerance( 1e-50 ),
     M_reuse_prec( false ),
     M_reuse_jac( false ),
+    M_reuseJacIsBuild(false),
+    M_reuseJacRebuildAtFirstNewtonStep(true),
     M_transpose( false ),
     M_maxit( 1000 ),
     M_export( "" ),
@@ -75,6 +77,8 @@ Backend<T>::Backend( Backend const& backend )
     M_atolerance( backend.M_atolerance ),
     M_reuse_prec( backend.M_reuse_prec ),
     M_reuse_jac( backend.M_reuse_jac ),
+    M_reuseJacIsBuild( backend.M_reuseJacIsBuild) ,
+    M_reuseJacRebuildAtFirstNewtonStep( backend.M_reuseJacRebuildAtFirstNewtonStep ),
     M_transpose( backend.M_transpose ),
     M_maxit( backend.M_maxit ),
     M_export( backend.M_export ),
@@ -102,6 +106,8 @@ Backend<T>::Backend( po::variables_map const& vm, std::string const& prefix, Wor
     M_atolerance( vm[prefixvm( prefix,"ksp-atol" )].template as<double>() ),
     M_reuse_prec( vm[prefixvm( prefix,"reuse-prec" )].template as<bool>() ),
     M_reuse_jac(  vm[prefixvm( prefix,"reuse-jac" )].template as<bool>() ),
+    M_reuseJacIsBuild( false ) ,
+    M_reuseJacRebuildAtFirstNewtonStep( vm[prefixvm( prefix,"reuse-jac.rebuild-at-first-newton-step" )].template as<bool>() ),
     M_transpose( false ),
     M_maxit( vm[prefixvm( prefix,"ksp-maxit" )].template as<size_type>() ),
     M_export( vm[prefixvm( prefix,"export-matlab" )].template as<std::string>() ),
@@ -282,7 +288,7 @@ Backend<T>::solve( sparse_matrix_ptrtype const& A,
         boost::tie( M_converged, M_iteration, M_residual ) = this->solve( A, P, x, b );
 
         //if ( !M_converged ) throw std::logic_error( "solver failed to converge" );
-        if ( !M_converged ) std::cerr<< "linear solver failed to converge" << std::endl;
+        if ( !M_converged ) std::cerr<< "Backend " << M_prefix << " : linear solver failed to converge" << std::endl;
 
         //stop();
     }
@@ -329,7 +335,7 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
         M_nlsolver->setReuse( typeReuseJac, typeReusePrec );
 
         // compute cst jacobian in case of quasi-newton!
-        if ( reuseJac ) this->nlSolver()->jacobian( x, A );
+        if ( reuseJac && (!M_reuseJacIsBuild || M_reuseJacRebuildAtFirstNewtonStep) ) { this->nlSolver()->jacobian( x, A );M_reuseJacIsBuild=true;}
     }
 
     auto ret = M_nlsolver->solve( A, x, b, tol, its );
@@ -358,7 +364,7 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
         {
             Feel::Log() << "\n[backend] non-linear solver fail";
             //exit( 0 );
-            std::cerr<< "non-linear solver failed to converge" << std::endl;
+            std::cerr<< "Backend " << M_prefix << " : non-linear solver failed to converge" << std::endl;
         }
 
         return boost::make_tuple( ret2.first, its, tol );
@@ -391,6 +397,7 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
     if ( ret.first < 0 )
     {
         Feel::Log() << "\n[backend] non-linear solver fail";
+        std::cerr<< "Backend " << M_prefix << " : non-linear solver failed to converge" << std::endl;
         //exit(0);
     }
 
@@ -612,6 +619,7 @@ po::options_description backend_options( std::string const& prefix )
     ( prefixvm( prefix,"ksp-dtol" ).c_str(), Feel::po::value<double>()->default_value( 1e5 ), "divergence tolerance" )
     ( prefixvm( prefix,"ksp-maxit" ).c_str(), Feel::po::value<size_type>()->default_value( 1000 ), "maximum number of iterations" )
     ( prefixvm( prefix,"reuse-jac" ).c_str(), Feel::po::value<bool>()->default_value( false ), "reuse jacobian" )
+    ( prefixvm( prefix,"reuse-jac.rebuild-at-first-newton-step" ).c_str(), Feel::po::value<bool>()->default_value( true ), "rebuild jacobian at each Newton when reuse jacobian" )
     ( prefixvm( prefix,"reuse-prec" ).c_str(), Feel::po::value<bool>()->default_value( false ), "reuse preconditioner" )
 
     ( prefixvm( prefix,"export-matlab" ).c_str(), Feel::po::value<std::string>()->default_value( "" ), "export matrix/vector to matlab, default empty string means no export, other string is used as prefix" )
