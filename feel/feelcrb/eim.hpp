@@ -600,9 +600,9 @@ EIM<ModelType>::offline(  )
 
     if ( this->isOfflineDone() )
         return;
-
+    LOG(INFO) << "[offline] starting offline stage ...\n";
     M_M = 1;
-    LOG(INFO) << "create mu_1...\n";
+    LOG(INFO) << "[offline] create mu_1...\n";
     // min element in Dmu to start with (in // each proc have the same element)
     auto mu = M_model->parameterSpace()->min();
 
@@ -681,7 +681,7 @@ EIM<ModelType>::offline(  )
          * we have a new \f$\mu^g_M\f$, insert it in \f$S^g_M\f$ and the
          * corresponding \f$z \in W^g_M\f$
          */
-        LOG(INFO) << "S(" << this->M_M-1 << ") = " << bestfit.template get<1>() << "\n";
+        LOG(INFO) << "[offline] S(" << this->M_M-1 << ") = " << bestfit.template get<1>() << "\n";
 
         // update M_g(:,M-1)
         M_g.push_back( g_bestfit );
@@ -689,16 +689,16 @@ EIM<ModelType>::offline(  )
         //orthonormalize( M_g );
 
         // build T^m such that T^m-1 \subset T^m
-        LOG(INFO) << "compute residual M="<< M_M << "..." <<"\n";
+        LOG(INFO) << "[offline] compute residual M="<< M_M << "..." <<"\n";
         res = this->residual(M_M-1);
         //LOG(INFO) << "residual = " << res << "\n";
-        LOG(INFO) << "compute arg sup |residual|..." <<"\n";
+        LOG(INFO) << "[offline] compute arg sup |residual|..." <<"\n";
         auto resmax = normLinf( _range=elements(M_model->mesh()), _pset=_Q<5>(), _expr=idv(res) );
-        LOG(INFO) << "store coordinates where max absolute value is attained " << resmax.template get<1>() << "..." <<"\n";
+        LOG(INFO) << "[offline] store coordinates where max absolute value is attained " << resmax.template get<1>() << "..." <<"\n";
         // store space coordinate where max absolute value occurs
         M_t.push_back( resmax.template get<1>() );
 
-        LOG(INFO) << "scale new basis function by " << 1./resmax.template get<0>() << "..." <<"\n";
+        LOG(INFO) << "[offline] scale new basis function by " << 1./resmax.template get<0>() << "..." <<"\n";
         res.scale( 1./res(resmax.template get<1>())(0,0,0) );
         LOG(INFO) << "store new basis function..." <<"\n";
         M_q.push_back( res );
@@ -714,7 +714,7 @@ EIM<ModelType>::offline(  )
 
             }
         }
-        LOG(INFO) << "Interpolation matrix: M_B = " << this->M_B <<"\n";
+        LOG(INFO) << "[offline] Interpolation matrix: M_B = " << this->M_B <<"\n";
 #if 0
         for( int __i = 0; __i < M_M; ++__i )
         {
@@ -741,11 +741,13 @@ EIM<ModelType>::offline(  )
         }
     }
 
-    LOG(INFO) << "M_max = " << M_M-1 << "...\n";
+    LOG(INFO) << "[offline] M_max = " << M_M-1 << "...\n";
     this->M_M_max = this->M_M-1;
 
     this->M_offline_done = true;
+    LOG(INFO) << "[offline] saving DB...\n";
     saveDB();
+    LOG(INFO) << "[offline] done with offline stage ...\n";
 }
 
 template<typename SpaceType, typename ModelSpaceType, typename ParameterSpaceType>
