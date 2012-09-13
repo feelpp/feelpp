@@ -3,10 +3,10 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
-       Date: 2009-03-04
+  Author(s): Christophe Prud'homme <prudhomme@unistra.fr>
+       Date: 2012-09-13
 
-  Copyright (C) 2009-2012 Universite Joseph Fourier (Grenoble I)
+  Copyright (C) 2012 Universite de Strasbourg
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -24,8 +24,8 @@
 */
 /**
    \file convection_main.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
-   \date 2009-03-04
+   \author Christophe Prud'homme <prudhomme@unistra.fr>
+   \date 2012-09-13
  */
 #include "convection.hpp"
 
@@ -69,16 +69,15 @@ inline AboutData
 makeAbout()
 {
     // Definition de la structure de donnee pour les infos
-    AboutData about( "Convection",
-                     "Convection",
+    AboutData about( "Cabin",
+                     "Cabin",
                      "0.1", 				// Version
-                     "Natural convection simulation",// Short comment
+                     "Convection simulation in an airplane cabin",// Short comment
                      AboutData::License_GPL ,	// Licence
-                     "Copyright (c) SQ 2008\nCopyright (c) 2009 Christophe Prud'homme" );// Copyright
+                     "Copyright (c) 2012 Christophe Prud'homme" );// Copyright
 
     // Informations sur l'auteur
-    about.addAuthor( "Quinodoz Samuel","Student","samuel.quinodoz@epfl.ch" ,"main developer" );
-    about.addAuthor( "Christophe Prud'homme","Maintainer","christophe.prudhomme@ujf-grenoble.fr" ,"" );
+    about.addAuthor( "Christophe Prud'homme","Maintainer","prudhomme@unistra.fr" ,"" );
 
     // Retourne les infos
     return about;
@@ -97,7 +96,7 @@ main( int argc, char** argv )
     const int Order_t( 2 );
 
     /* assertions handling */
-    Feel::Assert::setLog( "convection.assert" );
+    Feel::Assert::setLog( "cabin.assert" );
 
     /* define and run application */
     Convection myconvection( argc, argv, makeAbout(), makeOptions() );
