@@ -304,9 +304,10 @@ public:
                 {
                 case  CRBModelMode::PFEM:
                 {
+                    LOG(INFO) << "PFEM mode" << std::endl;
                     if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
                         std::cout << "PFEM mode" << std::endl;
-                    boost::timer ti;
+                    boost::mpi::timer ti;
 
                     auto u_fem = model->solve( mu );
                     std::ostringstream u_fem_str;
@@ -327,13 +328,14 @@ public:
 
                 case  CRBModelMode::CRB:
                 {
+                    LOG(INFO) << "CRB mode\n";
                     if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
                         std::cout << "CRB mode\n";
                     LOG(INFO) << "solve u_fem\n";
                     google::FlushLogFiles(google::GLOG_INFO);
-                    boost::timer ti;
+                    boost::mpi::timer ti;
 
-                    auto u_fem = model->solve( mu );
+                    auto u_fem = model->solveRB( mu );
                     std::ostringstream u_fem_str;
                     u_fem_str << "u_fem(" << mu_str.str() << ")";
                     u_fem.setName( u_fem_str.str()  );
@@ -369,7 +371,11 @@ public:
 
                     //compute || u_fem - u_crb||_L2
                     auto u_error = model->functionSpace()->element();
+                    std::ostringstream u_error_str;
                     u_error = u_fem - u_crb;
+                    u_error_str << "u_error(" << mu_str.str() << ")";
+                    u_error.setName( u_error_str.str()  );
+                    exporter->step(0)->add( u_error.name(), u_error );
                     LOG(INFO) << "L2(fem)=" << l2Norm( u_fem )    << "\n";
                     LOG(INFO) << "H1(fem)=" << h1Norm( u_fem )    << "\n";
                     double l2_error = l2Norm( u_error )/l2Norm( u_fem );
@@ -388,7 +394,38 @@ public:
 
                             std::ofstream res(this->vm()["result-file"].template as<std::string>() );
                             res << "output="<< o.template get<0>() << "\n";
+
+
+
                         }
+                        LOG(INFO) << "start convergence study...\n";
+                        std::map<int, boost::tuple<double,double,double> > conver;
+                        for( int N = 1; N < crb->dimension(); N++ )
+                        {
+                            LOG(INFO) << "N=" << N << "...\n";
+                            auto o = crb->run( mu,  this->vm()["crb.online-tolerance"].template as<double>() , N);
+                            auto u_crb = crb->expansion( mu , N );
+                            auto u_error = model->functionSpace()->element();
+                            u_error = u_fem - u_crb;
+                            double rel_err = std::abs( ofem[0]-o.template get<0>() ) /ofem[0];
+                            double l2_error = l2Norm( u_error )/l2Norm( u_fem );
+                            double h1_error = h1Norm( u_error )/h1Norm( u_fem );
+                            conver[N]=boost::make_tuple( rel_err, l2_error, h1_error );
+                            LOG(INFO) << "N=" << N << " " << rel_err << " " << l2_error << " " << h1_error << "\n";
+                            if ( proc_number == 0 )
+                                std::cout << "N=" << N << " " << rel_err << " " << l2_error << " " << h1_error << "\n";
+                            LOG(INFO) << "N=" << N << " done.\n";
+                        }
+                        if( proc_number == 0 )
+                        {
+                            LOG(INFO) << "save in logfile\n";
+                            std::ofstream conv( "convergence.dat" );
+                            BOOST_FOREACH( auto en, conver )
+                            {
+                                conv << en.first << " " << en.second.get<0>()  << " " << en.second.get<1>() << " " << en.second.get<2>() << "\n";
+                            }
+                        }
+
                     }
 
                     else
@@ -413,7 +450,7 @@ public:
                 case  CRBModelMode::CRB_ONLINE:
                 {
                     std::cout << "CRB Online mode\n";
-                    boost::timer ti;
+                    boost::mpi::timer ti;
                     ti.restart();
                     auto o = crb->run( mu,  this->vm()["crb.online-tolerance"].template as<double>() );
 
