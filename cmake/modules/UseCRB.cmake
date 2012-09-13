@@ -134,7 +134,7 @@ endmacro(crb_add_python_module)
 macro(crb_add_model)
 
   PARSE_ARGUMENTS(CRB_MODEL
-    "HDRS;SRCS;LINK_LIBRARIES;CFG;XML;SCRIPTS;CLASS"
+    "HDRS;SRCS;LINK_LIBRARIES;CFG;XML;SCRIPTS;CLASS;DEFS;"
     "TEST;ADD_OT"
     ${ARGN}
     )
@@ -145,6 +145,7 @@ macro(crb_add_model)
     MESSAGE("*** Arguments for Crb models ${CRB_MODEL_SHORT_NAME}(${CRB_MODEL_LONG_NAME})")
     MESSAGE("    Headers: ${CRB_MODEL_HDRS}")
     MESSAGE("    Sources: ${CRB_MODEL_SRCS}")
+    MESSAGE("    Defs file: ${CRB_MODEL_DEFS}")
     #MESSAGE("    Link libraries: ${CRB_MODEL_LINK_LIBRARIES}")
     MESSAGE("    Cfg file: ${CRB_MODEL_CFG}")
     MESSAGE("    Xml file: ${CRB_MODEL_XML}")
@@ -200,6 +201,10 @@ int main( int argc, char** argv )
     configure_file(${FEELPP_SOURCE_DIR}/applications/crb/templates/ot_python_command_wrapper.cpp ${pycpp})
     configure_file(${FEELPP_SOURCE_DIR}/applications/crb/templates/octave_wrapper.cpp ${octcpp})
     configure_file(${CRB_MODEL_SHORT_NAME}.xml.in ${xml})
+
+    if ( CRB_MODEL_DEFS )
+      set_property(TARGET ${execname} PROPERTY COMPILE_DEFINITIONS ${CRB_MODEL_DEFS})
+    endif()
 
     if ( CRB_MODEL_TEST )
       crb_add_python_module(crb${CRB_MODEL_SHORT_NAME}${wrapper} ${pycpp}
