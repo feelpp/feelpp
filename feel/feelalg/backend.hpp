@@ -443,6 +443,14 @@ public:
     //@{
 
     /**
+     * \return prefix of backend
+     */
+    std::string prefix() const
+    {
+        return M_prefix;
+    }
+
+    /**
      * \return the type of linear solver
      */
     std::string kspType() const
@@ -934,6 +942,7 @@ private:
 
     bool M_reuse_prec;
     bool M_reuse_jac;
+    bool M_reuseJacIsBuild,M_reuseJacRebuildAtFirstNewtonStep;
     size_t M_nUsePC;
     bool   M_converged;
     bool   M_reusePC;
