@@ -174,9 +174,9 @@ public:
         nu( this->vm()["nu"].template as<double>() ),
         exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) )
     {
-        Debug() << "[StokesStabilized] hsize = " << meshSize << "\n";
-        Debug() << "[StokesStabilized] nu = " << nu << "\n";
-        Debug() << "[StokesStabilized] export = " << this->vm().count( "export" ) << "\n";
+        VLOG(1) << "[StokesStabilized] hsize = " << meshSize << "\n";
+        VLOG(1) << "[StokesStabilized] nu = " << nu << "\n";
+        VLOG(1) << "[StokesStabilized] export = " << this->vm().count( "export" ) << "\n";
 
     }
 

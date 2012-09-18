@@ -791,12 +791,9 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
     if ( ( mesh->markerNames().find("CrossPoints") != mesh->markerNames().end() ) &&
          ( mesh->markerNames().find("WireBasket") != mesh->markerNames().end() ) )
     {
-        std::cout << "marker cp" << mesh->markerName("CrossPoints")  << "\n";
-        std::cout << "marker wb" << mesh->markerName("WireBasket")  << "\n";
-        std::cout << "n cp: " << std::distance( mesh->beginPointWithMarker( mesh->markerName("CrossPoints") ), mesh->endPointWithMarker( mesh->markerName("CrossPoints") ) ) << "\n";
-#if 0
-        std::cout << "n wb: " << std::distance( mesh->beginEdgeWithMarker( mesh->markerName("WireBasket") ), mesh->endEdgeWithMarker( mesh->markerName("WireBasket") ) ) << "\n";
-#endif
+        LOG(INFO) << "[substructuring] marker cp" << mesh->markerName("CrossPoints")  << "\n";
+        LOG(INFO) << "[substructuring] marker wb" << mesh->markerName("WireBasket")  << "\n";
+        LOG(INFO) << "[substructuring] n cp: " << std::distance( mesh->beginPointWithMarker( mesh->markerName("CrossPoints") ), mesh->endPointWithMarker( mesh->markerName("CrossPoints") ) ) << "\n";
     }
     Debug( 8011 ) << "done with reading and creating mesh from gmsh file\n";
 }

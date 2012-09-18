@@ -296,7 +296,7 @@ void VectorPetsc<T>::printMatlab ( const std::string name ) const
 
     if ( !this->closed() )
     {
-        Debug() << "closing vector\n";
+        VLOG(1) << "closing vector\n";
         const_cast<VectorPetsc<T>*>( this )->close();
     }
 

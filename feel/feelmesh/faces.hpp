@@ -208,9 +208,9 @@ public:
          */
         void operator()( face_type& e )
         {
-            //Debug() << "FaceUpdatePoint] update point index " << _M_index << " with "<< _M_pt.id() << "\n";
+            //VLOG(1) << "FaceUpdatePoint] update point index " << _M_index << " with "<< _M_pt.id() << "\n";
             e.setPoint( _M_index, _M_pt );
-            //Debug() << "FaceUpdatePoint] update point "<< e.point(_M_index).id() << "\n";
+            //VLOG(1) << "FaceUpdatePoint] update point "<< e.point(_M_index).id() << "\n";
         }
     private:
         uint16_type _M_index;

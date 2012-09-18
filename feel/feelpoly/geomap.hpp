@@ -1729,13 +1729,13 @@ void updateJKBN( mpl::bool_<true>  )
 void updateJKBN( mpl::bool_<false>  )
 {
     //std::cout << "nPoints() =" << nPoints() << "\n";
-    //Debug() << "[geomap] G = "<< _M_G << "\n";
+    //VLOG(1) << "[geomap] G = "<< _M_G << "\n";
     //double res = 0;
     for ( int q = 0; q < nPoints(); ++q )
     {
         //std::cout << "q =" << q << "\n";
         _M_gm->gradient( q, _M_g, _M_pc.get() );
-        //Debug() << "[geomap] g[" << q << "] = "<< _M_g << "\n";
+        //VLOG(1) << "[geomap] g[" << q << "] = "<< _M_g << "\n";
 
 #if 0
         blas::gemm( _M_G, _M_g, _M_K );
@@ -1783,7 +1783,7 @@ void updateJKBN( mpl::bool_<false>  )
 
         }
 
-        //Debug() << "[geomap] J[" << q << "]= "<< _M_J << "\n";
+        //VLOG(1) << "[geomap] J[" << q << "]= "<< _M_J << "\n";
         //res += _M_J;
         // store q-th jacobian entry
 
@@ -1791,7 +1791,7 @@ void updateJKBN( mpl::bool_<false>  )
 
         if ( vm::has_kb<context>::value )
         {
-            //Debug() << "[geomap] B[" << q << "]= "<< _M_B << "\n";
+            //VLOG(1) << "[geomap] B[" << q << "]= "<< _M_B << "\n";
             _M_Bt[q].resize( _M_B.size1(), _M_B.size2() );
             _M_Bt[q] = _M_B;
         }
@@ -1799,7 +1799,7 @@ void updateJKBN( mpl::bool_<false>  )
 
     }
 
-    //Debug() << "[geomap] res(sum J) = " << res << "\n";
+    //VLOG(1) << "[geomap] res(sum J) = " << res << "\n";
     if ( ( ( NDim != PDim ) || ( vm::has_normal<context>::value ) ) && ( _M_face_id != invalid_uint16_type_value ) )
     {
         //std::cout << "has normal\n";

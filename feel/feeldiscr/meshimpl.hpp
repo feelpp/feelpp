@@ -1517,14 +1517,14 @@ void
 Mesh<Shape, T, Tag>::send(int p, int tag)
 {
     encode();
-    Debug() << "sending markername\n";
+    VLOG(1) << "sending markername\n";
     //this->comm().send( p, tag, M_markername.size() );
-    Debug() << "sending markername size: "<< M_markername.size() << "\n";
+    VLOG(1) << "sending markername size: "<< M_markername.size() << "\n";
     BOOST_FOREACH(auto m, M_markername )
     {
-        Debug() << "sending key: "<< m.first << "\n";
+        VLOG(1) << "sending key: "<< m.first << "\n";
         //this->comm().send( p, tag, m.first );
-        Debug() << "sending value\n";
+        VLOG(1) << "sending value\n";
         //this->comm().send( p, tag, m.second );
     }
 }
@@ -1533,21 +1533,21 @@ template<typename Shape, typename T, int Tag>
 void
 Mesh<Shape, T, Tag>::recv(int p, int tag)
 {
-    Debug() << "receiving markername\n";
+    VLOG(1) << "receiving markername\n";
     //this->comm().recv( p, tag, M_markername );
     int s;
     //this->comm().recv( p, tag, s );
-    Debug() << "receiving markername size: "<< s << "\n";
+    VLOG(1) << "receiving markername size: "<< s << "\n";
     for( int i = 0; i < s; ++i )
     {
         std::string k;
-        Debug() << "receiving key\n";
+        VLOG(1) << "receiving key\n";
         //this->comm().recv( p, tag, k );
-        Debug() << "receiving key:"<< k << "\n";
+        VLOG(1) << "receiving key:"<< k << "\n";
         std::vector<int> v;
-        Debug() << "receiving value\n";
+        VLOG(1) << "receiving value\n";
         //this->comm().recv( p, tag, v );
-        Debug() << "receiving value: "<< v[0] << ","<< v[1] <<"\n";
+        VLOG(1) << "receiving value: "<< v[0] << ","<< v[1] <<"\n";
         //M_markername[k]=v;
     }
 

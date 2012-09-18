@@ -33,7 +33,7 @@ int
 main()
 {
 
-    Feel::Debug() << "Hello\n";
+    Feel::VLOG(1) << "Hello\n";
 
 
     //

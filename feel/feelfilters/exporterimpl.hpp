@@ -74,7 +74,7 @@ Exporter<MeshType, N>::Exporter( po::variables_map const& vm, std::string const&
     M_ft( ASCII ),
     M_path( "." )
 {
-    Debug() << "[exporter::exporter] do export = " << doExport() << "\n";
+    VLOG(1) << "[exporter::exporter] do export = " << doExport() << "\n";
 }
 
 template<typename MeshType, int N>
@@ -156,10 +156,10 @@ Exporter<MeshType, N>::setOptions( po::variables_map const& vm, std::string cons
     M_freq = vm[_prefix+"exporter.freq"].template as<int>();
     M_ft = file_type( vm[_prefix+"exporter.file-type"].template as<int>() );
 
-    Debug() << "[Exporter] type:  " << M_type << "\n";
-    Debug() << "[Exporter] prefix:  " << M_prefix << "\n";
-    Debug() << "[Exporter] freq:  " << M_freq << "\n";
-    Debug() << "[Exporter] ft:  " << M_ft << "\n";
+    VLOG(1) << "[Exporter] type:  " << M_type << "\n";
+    VLOG(1) << "[Exporter] prefix:  " << M_prefix << "\n";
+    VLOG(1) << "[Exporter] freq:  " << M_freq << "\n";
+    VLOG(1) << "[Exporter] ft:  " << M_ft << "\n";
     return this;
 }
 

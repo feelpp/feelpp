@@ -595,7 +595,7 @@ int main( int argc,  char** argv )
     Poisson<20> app20( argc, argv, makeAbout(), test );
     Poisson<25> app25( argc, argv, makeAbout(), test );
 
-    Debug() << "N process: " << Application::nProcess() << "\n"
+    VLOG(1) << "N process: " << Application::nProcess() << "\n"
             << "Id : " << Application::processId() << "\n";
 
     if ( app5.vm()["N"].as<int>()  == 5 )
