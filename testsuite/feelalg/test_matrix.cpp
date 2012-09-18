@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2005-10-18
 
   Copyright (C) 2005,2006 EPFL
@@ -23,7 +23,7 @@
 */
 /**
    \file test_matrix.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-10-18
  */
 #include <feel/feelcore/feel.hpp>
@@ -46,7 +46,7 @@ makeAbout()
                            Feel::AboutData::License_LGPL,
                            "Copyright (c) 2005,2006 EPFL" );
 
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     return about;
 
 }

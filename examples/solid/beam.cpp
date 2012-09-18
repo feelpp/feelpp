@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2007-02-18
 
   Copyright (C) 2007-2010 Université Joseph Fourier (Grenoble)
@@ -23,7 +23,7 @@
 */
 /**
    \file beam.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2007-02-18
  */
 #include <feel/options.hpp>
@@ -73,7 +73,7 @@ makeAbout()
                            Feel::AboutData::License_GPL,
                            "Copyright (c) 2007-2012 Universite Joseph Fourier" );
 
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     return about;
 
 }
@@ -345,6 +345,7 @@ Beam<nDim,nOrder>::exportResults( double time, element_type const& u, element_ty
 int
 main( int argc, char** argv )
 {
+    Environment env( argc, argv );
     const int nDim = 2;
     const int nOrder = 3;
 

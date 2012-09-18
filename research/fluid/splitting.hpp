@@ -3,7 +3,7 @@
   This file is part of the Feel library
 
   Author(s): Christoph Winkelmann <christoph.winkelmann@epfl.ch>
-             Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+             Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2006-09-11
 
   Copyright (C) 2006 EPFL
@@ -26,7 +26,7 @@
 /**
    \file splitting.hpp
    \author Christoph Winkelmann <christoph.winkelmann@epfl.ch>
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2006-09-11
  */
 
@@ -90,7 +90,7 @@ makeAbout()
                            "Copyright (c) 2006 EPFL" );
 
     about.addAuthor( "Christoph Winkelmann", "developer", "christoph.winkelmann@epfl.ch", "" );
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     return about;
 
 }

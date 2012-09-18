@@ -3,7 +3,7 @@
   This file is part of the Feel library
 
   Author(s): Samuel Quinodoz
-             Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+             Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2009-02-25
 
   Copyright (C) 2007 Samuel Quinodoz
@@ -28,7 +28,7 @@
 
 /**
    \file convection.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \author Samuel Quinodoz
    \date 2009-02-25
  */

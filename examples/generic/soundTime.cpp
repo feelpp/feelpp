@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2007-07-05
 
   Copyright (C) 2007-2011 Universite Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file sound.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2007-07-05
  */
 #include <feel/options.hpp>
@@ -77,7 +77,7 @@ makeAbout()
                      Feel::AboutData::License_GPL,
                      "Copyright (c) 2007-2011 Universite Joseph Fourier" );
 
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     return about;
 
 }
@@ -388,7 +388,7 @@ int
 main( int argc, char** argv )
 {
     using namespace Feel;
-
+    Environment env( argc, argv );
     /* assertions handling */
     Feel::Assert::setLog( "sound.assert" );
 
@@ -417,9 +417,9 @@ main( int argc, char** argv )
     {
         sound.add( new Sound<3, 1>( "3D-P1", sound.vm(), sound.about() ) );
     }
-
+    sound.setStats( boost::assign::list_of( "n.space" )( "t.init" )( "t.assembly.vector" )( "t.assembly.matrix" )( "t.solver" )( "t.eigensolver" ) );
     sound.run();
-    sound.printStats( std::cout, boost::assign::list_of( "n.space" )( "t.init" )( "t.assembly.vector" )( "t.assembly.matrix" )( "t.solver" )( "t.eigensolver" ) );
+    sound.printStats( std::cout  );
 
 }
 

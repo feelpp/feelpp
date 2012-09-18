@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
              Abdoulaye Samake <abdoulaye.samake@imag.fr>
        Date: 2011-08-24
 
@@ -24,7 +24,7 @@
 */
 /**
    \file mortar.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \author Abdoulaye Samake <abdoulaye.samake@imag.fr>
    \date 2011-08-24
  */
@@ -79,7 +79,7 @@ makeAbout()
                      Feel::AboutData::License_GPL,
                      "Copyright (c) 2011 Universite Joseph Fourier" );
 
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     about.addAuthor( "Abdoulaye Samake", "developer", "abdoulaye.samake@imag.fr", "" );
     return about;
 }

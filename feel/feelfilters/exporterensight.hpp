@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2004-11-09
 
   Copyright (C) 2004,2005 EPFL
@@ -24,7 +24,7 @@
 */
 /**
    \file ExporterEnsight.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2006-11-26
  */
 #ifndef __ExporterEnsight_H

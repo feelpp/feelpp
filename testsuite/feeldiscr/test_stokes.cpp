@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2006-06-06
 
   Copyright (C) 2006 EPFL
@@ -23,7 +23,7 @@
 */
 /**
    \file test_stokes.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2006-06-06
  */
 //#define USE_BOOST_TEST 1
@@ -128,7 +128,7 @@ makeAbout()
                            "Copyright (c) 2005-2006 EPFL" );
 
     about.addAuthor( "Christoph Winkelmann", "developer", "christoph.winkelmann@epfl.ch", "" );
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     return about;
 
 }

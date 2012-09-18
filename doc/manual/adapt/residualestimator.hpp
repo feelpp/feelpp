@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
              Stéphane Veys <stephane.veys@gmail.com>
        Date: 2010-08-05
 
@@ -24,7 +24,7 @@
 */
 /**
    \file residualestimator.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \author Stéphane Veys <stephane.veys@gmail.com>
    \date 2010-08-05
  */
@@ -84,7 +84,7 @@ makeAbout()
                      Feel::AboutData::License_GPL,
                      "Copyright (c) 2010 Universite Joseph Fourier" );
 
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     about.addAuthor( "Stéphane Veys", "developer", "stephane.veys@gmail.com", "" );
     return about;
 

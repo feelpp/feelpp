@@ -3,7 +3,7 @@
   This file is part of the Feel library
 
   Author(s):
-  Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Christophe Prud'homme <christophe.prudhomme@feelpp.org>
   Klaus Sapelza <klaus.sapelza@epfl.ch>
        Date: 2006-09-14
 
@@ -25,7 +25,7 @@
 */
 /**
    \file test_epetra.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \author Klaus.Sapelza <klaus.sapelza@epfl.ch>
    \date 2006-09-14
  */
@@ -67,7 +67,7 @@ makeAbout()
                      Feel::AboutData::License_GPL,
                      "Copyright (c) 2006 EPFL" );
 
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     about.addAuthor( "Klaus Sapelza", "developer", "klaus.sapelza@epfl.ch", "" );
     return about;
 
