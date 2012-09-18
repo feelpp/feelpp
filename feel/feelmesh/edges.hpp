@@ -49,7 +49,7 @@ namespace multi_index = boost::multi_index;
   @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
   @see
 */
-template<typename EdgeType>
+template<typename EdgeType,typename FaceType>
 class Edges
 {
 public:
@@ -60,8 +60,8 @@ public:
     //@{
 
     typedef typename mpl::if_<mpl::equal_to<mpl::int_<EdgeType::nRealDim>, mpl::int_<3> >,
-            mpl::identity<GeoElement1D<3, EdgeType> >,
-            mpl::identity<boost::none_t> >::type::type edge_type;
+                              mpl::identity<GeoElement1D<3, EdgeType,SubFaceOfMany<FaceType> > >,
+                              mpl::identity<boost::none_t> >::type::type edge_type;
 
 
     typedef multi_index::multi_index_container<
@@ -86,8 +86,10 @@ public:
     typedef typename edges_type::iterator edge_iterator;
     typedef typename edges_type::const_iterator edge_const_iterator;
     typedef typename edges_type::template index<detail::by_marker>::type marker_edges;
+
     typedef typename marker_edges::iterator marker_edge_iterator;
     typedef typename marker_edges::const_iterator marker_edge_const_iterator;
+
     typedef typename edges_type::template index<detail::by_location>::type location_edges;
     typedef typename location_edges::iterator location_edge_iterator;
     typedef typename location_edges::const_iterator location_edge_const_iterator;
@@ -170,7 +172,12 @@ public:
     edge_type const& edge( size_type i ) const
     {
         return *_M_edges.find( edge_type( i ) );
-    };
+    }
+
+    edge_iterator edgeIterator( size_type i ) const
+    {
+        return  _M_edges.find( edge_type( i ) );
+    }
 
     edge_iterator beginEdge()
     {
@@ -189,22 +196,33 @@ public:
         return _M_edges.end();
     }
 
+    /**
+     * \return the range of iterator \c (begin,end) over the faces
+     * with marker \p m on processor \p p
+     */
+    std::pair<marker_edge_iterator, marker_edge_iterator>
+    edgesWithMarker( size_type m, size_type p ) const
+    {
+        //return _M_edges.template get<detail::by_marker>().equal_range( boost::make_tuple( Marker1( m ), p ) );
+        return _M_edges.template get<detail::by_marker>().equal_range( Marker1( m ) );
+    }
+
 
     marker_edge_iterator beginEdgeWithMarker( size_type m )
     {
-        return _M_edges.template get<detail::by_marker>().lower_bound( m );
+        return _M_edges.template get<detail::by_marker>().lower_bound( Marker1( m ) );
     }
     marker_edge_const_iterator beginEdgeWithMarker( size_type m ) const
     {
-        return _M_edges.template get<detail::by_marker>().lower_bound( m );
+        return _M_edges.template get<detail::by_marker>().lower_bound( Marker1( m ) );
     }
     marker_edge_iterator endEdgeWithMarker( size_type m )
     {
-        return _M_edges.template get<detail::by_marker>().upper_bound( m );
+        return _M_edges.template get<detail::by_marker>().upper_bound( Marker1( m ) );
     }
     marker_edge_const_iterator endEdgeWithMarker( size_type m ) const
     {
-        return _M_edges.template get<detail::by_marker>().upper_bound( m );
+        return _M_edges.template get<detail::by_marker>().upper_bound( Marker1( m ) );
     }
 
     /**

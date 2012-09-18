@@ -175,6 +175,7 @@ MyMesh<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
                                _desc=domain( _name=( boost::format( "%1%-%2%" ) % shape % Dim ).str() ,
                                              _shape=shape,
                                              _dim=Dim,
+                                             _substructuring=true,
                                              _h=X[0] ) );
         Log() << "Saving mesh...\n";
         mesh->save( _name="mymesh",_path=".",_type="binary" );
@@ -260,7 +261,7 @@ int main( int argc, char** argv )
     }
 
     //app.add( new MyMesh<1>( app.vm(), app.about() ) );
-    app.add( new MyMesh<2>( app.vm(), app.about() ) );
+    //app.add( new MyMesh<2>( app.vm(), app.about() ) );
     app.add( new MyMesh<3>( app.vm(), app.about() ) );
 
     app.run();
