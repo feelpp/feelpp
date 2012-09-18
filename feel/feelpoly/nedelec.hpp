@@ -293,8 +293,8 @@ public:
 
             if ( Gt.size2() )
             {
-                //Debug() << "Gt = " << Gt << "\n";
-                //Debug() << "p = " << p << "\n";
+                //VLOG(1) << "Gt = " << Gt << "\n";
+                //VLOG(1) << "p = " << p << "\n";
                 ublas::subrange( _M_pts, 0, nDim, p, p+Gt.size2() ) = Gt;
                 //for ( size_type j = 0; j < Gt.size2(); ++j )
                 //_M_eid[d].push_back( p+j );

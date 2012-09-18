@@ -298,8 +298,8 @@ public :
         weights_type px( Degree );
         details::gaussjacobi<Degree,T, ublas::vector<T>, ublas::vector<T> >( wx, px, 0.0, 0.0 );
 #if 0
-        Debug() << "[gauss<SP<2,1>] jacobi p = " << px << "\n";
-        Debug() << "[gauss<SP<2,1>] jacobi w = " << wx << "\n";
+        VLOG(1) << "[gauss<SP<2,1>] jacobi p = " << px << "\n";
+        VLOG(1) << "[gauss<SP<2,1>] jacobi w = " << wx << "\n";
 #endif
 
         for ( int i = 0; i < Degree; ++i )
@@ -311,8 +311,8 @@ public :
 
 
 #if 0
-        Debug() << "[gauss<SP<2,1>] p = " << this->_M_points << "\n";
-        Debug() << "[gauss<SP<2,1>] w = " << this->_M_w << "\n";
+        VLOG(1) << "[gauss<SP<2,1>] p = " << this->_M_points << "\n";
+        VLOG(1) << "[gauss<SP<2,1>] w = " << this->_M_w << "\n";
 #endif
 
 
@@ -357,8 +357,8 @@ public :
         weights_type px( Degree );
         details::gaussjacobi<Degree,T, ublas::vector<T>, ublas::vector<T> >( wx, px, 0.0, 0.0 );
 #if 0
-        Debug() << "[gauss<SP<2,1>] jacobi p = " << px << "\n";
-        Debug() << "[gauss<SP<2,1>] jacobi w = " << wx << "\n";
+        VLOG(1) << "[gauss<SP<2,1>] jacobi p = " << px << "\n";
+        VLOG(1) << "[gauss<SP<2,1>] jacobi w = " << wx << "\n";
 #endif
 
         for ( int i = 0,  k = 0; i < Degree; ++i )
@@ -373,8 +373,8 @@ public :
         }
 
 #if 0
-        Debug() << "[gauss<SP<2,1>] p = " << this->_M_points << "\n";
-        Debug() << "[gauss<SP<2,1>] w = " << this->_M_w << "\n";
+        VLOG(1) << "[gauss<SP<2,1>] p = " << this->_M_points << "\n";
+        VLOG(1) << "[gauss<SP<2,1>] w = " << this->_M_w << "\n";
 #endif
         boost::shared_ptr<GT_Lagrange<2, 1, 2, Hypercube, T> > gm( new GT_Lagrange<2, 1, 2, Hypercube, T> );
         boost::shared_ptr<face_quad_type> face_qr( new face_quad_type );

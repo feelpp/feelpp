@@ -458,10 +458,10 @@ public:
         void
         addRegions()
         {
-            Debug() << "[timeset] Adding regions...\n";
+            VLOG(1) << "[timeset] Adding regions...\n";
             if ( !M_ts->_M_scalar_p0 )
             {
-                Debug() << "[timeset] creating space...\n";
+                VLOG(1) << "[timeset] creating space...\n";
                 if ( Environment::worldComm().numberOfSubWorlds() > 1 )
                 {
                     auto wc = std::vector<WorldComm>( 1, Environment::worldComm().subWorld(Environment::worldComm().numberOfSubWorlds()) );
@@ -474,7 +474,7 @@ public:
                 }
                 _M_scalar_p0 = M_ts->_M_scalar_p0;
             }
-            Debug() << "[timeset] adding pid...\n";
+            VLOG(1) << "[timeset] adding pid...\n";
             add( "pid", regionProcess( _M_scalar_p0 ) );
             //add( "marker", regionMarker( _M_scalar_p0 ) );
             //add( "marker2", regionMarker2( _M_scalar_p0 ) );

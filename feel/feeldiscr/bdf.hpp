@@ -298,7 +298,7 @@ template <typename SpaceType>
 typename Bdf<SpaceType>::element_type&
 Bdf<SpaceType>::unknown( int i )
 {
-    //Debug() << "[Bdf::unknown] id: " << i << " l2norm = " << _M_unknowns[i]->l2Norm() << "\n";
+    //VLOG(1) << "[Bdf::unknown] id: " << i << " l2norm = " << _M_unknowns[i]->l2Norm() << "\n";
     return *_M_unknowns[i];
 }
 
@@ -348,7 +348,7 @@ Bdf<SpaceType>::shiftRight( typename space_type::template Element<value_type, co
     /*    int i = 0;
     BOOST_FOREACH( boost::shared_ptr<element_type>& t, _M_unknowns  )
         {
-            //Debug() << "[Bdf::shiftright] id: " << i << " l2norm = " << t->l2Norm() << "\n";
+            //VLOG(1) << "[Bdf::shiftright] id: " << i << " l2norm = " << t->l2Norm() << "\n";
             ++i;
         }
     */

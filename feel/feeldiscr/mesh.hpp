@@ -218,6 +218,25 @@ public:
     //@{
 
     /**
+     * \retirm the number of elements associated to the current processor
+     */
+    size_type numElements() const
+        {
+            return std::distance( this->beginElementWithProcessId( this->worldComm().rank() ),
+                                  this->endElementWithProcessId( this->worldComm().rank() ) );
+        }
+
+    size_type numGlobalElements() const
+        {
+            int ne = numElements();
+            int gne;
+            mpi::all_reduce( this->worldComm(), ne, gne, [] ( int x, int y )
+                             {
+                                 return x + y;
+                             } );
+            return gne;
+        }
+    /**
      * \return the topological dimension
      */
     uint16_type dimension() const

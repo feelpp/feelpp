@@ -420,7 +420,7 @@ private:
     derivate( ublas::matrix_expression<AE> const& __pts, mpl::int_<1> )
     {
         FEELPP_ASSERT( __pts().size1() == 1 )( __pts().size1() )( __pts().size2() ).error( "invalid points" );
-        // Debug() << "Expansion::derivate<1>] number of points " << __pts().size2() << "\n";
+        // VLOG(1) << "Expansion::derivate<1>] number of points " << __pts().size2() << "\n";
 
         vector_matrix_type D( 1 );
         D[0].resize( nOrder+1, __pts().size2() );

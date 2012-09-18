@@ -665,7 +665,7 @@ public:
         }
 
         ublas::subrange( M, 0, nDim, 0, nDim+1 ) = P0;
-        //Debug() << "M=" << M << "\n";
+        //VLOG(1) << "M=" << M << "\n";
 
 
 
@@ -682,7 +682,7 @@ public:
             ublas::noalias( P ) = P0;
             ublas::column( P, n ) = pt;
             ublas::subrange( M, 0, nDim, 0, nDim+1 ) = P;
-            //Debug() << "M=" << M << "\n";
+            //VLOG(1) << "M=" << M << "\n";
 
             // multiply by -1 such that the volume of the
             // reference is > 0
@@ -691,14 +691,14 @@ public:
             //std::cout.setf( std::ios::scientific );
             //std::cout.precision( 10 );
             //std::cout   << "D " << n << "=" << D(n) << "\n";
-            //Debug() << "sign " << n << "=" << sign << "\n";
+            //VLOG(1) << "sign " << n << "=" << sign << "\n";
             //meas_times = ( meas_times < res )?meas_times:res;
         }
 
         double dmin = *std::min_element( D.begin(), D.end() );
         ublas::vector<double>::const_iterator Dit = std::find_if( D.begin(), D.end(), lambda::_1 < -5e-7 );
 
-        //Debug() << "meas=" << meas_times << "\n";
+        //VLOG(1) << "meas=" << meas_times << "\n";
         //return meas_times;
         // sign must be > 0 if the point is inside the simplex
         return boost::make_tuple( Dit == D.end(), dmin );

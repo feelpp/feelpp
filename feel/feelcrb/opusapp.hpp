@@ -128,7 +128,7 @@ public:
                 M_current_path = fs::current_path();
 
                 std::srand( static_cast<unsigned>( std::time( 0 ) ) );
-                Debug() << "[OpusApp] constructor " << this->about().appName()  << "\n";
+                VLOG(1) << "[OpusApp] constructor " << this->about().appName()  << "\n";
 
                 if( vm().count("hsize") && !vm().count("geofile") )
                     {
@@ -145,20 +145,20 @@ public:
                                                 );
                     }
 
-                Debug() << "[OpusApp] ch repo" << "\n";
+                VLOG(1) << "[OpusApp] ch repo" << "\n";
                 this->setLogs();
-                Debug() << "[OpusApp] set Logs" << "\n";
-                Debug() << "[OpusApp] mode:" << ( int )M_mode << "\n";
+                VLOG(1) << "[OpusApp] set Logs" << "\n";
+                VLOG(1) << "[OpusApp] mode:" << ( int )M_mode << "\n";
                 model = crbmodel_ptrtype( new crbmodel_type( this->vm(),M_mode ) );
-                Debug() << "[OpusApp] get model done" << "\n";
+                VLOG(1) << "[OpusApp] get model done" << "\n";
 
 
                 crb = crb_ptrtype( new crb_type( this->about().appName(),
                                                  this->vm() ,
                                                  model ) );
-                //Debug() << "[OpusApp] get crb done" << "\n";
+                //VLOG(1) << "[OpusApp] get crb done" << "\n";
                 //crb->setTruthModel( model );
-                //Debug() << "[OpusApp] constructor done" << "\n";
+                //VLOG(1) << "[OpusApp] constructor done" << "\n";
             }
 
             catch ( boost::bad_any_cast const& e )

@@ -1128,7 +1128,7 @@ MatrixPetsc<T>::zeroRows( std::vector<int> const& rows, std::vector<value_type> 
     //if ( on_context.test( ON_ELIMINATION_SYMMETRIC ) )
     if ( 0 )
     {
-        Debug() << "symmetrize zero-out  operation\n";
+        VLOG(1) << "symmetrize zero-out  operation\n";
 
         for ( size_type i = 0; i < rows.size(); ++i )
         {

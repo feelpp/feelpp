@@ -85,8 +85,8 @@ public:
         int Istart;
         int Iend;
         MatGetOwnershipRange( mat.mat(),&Istart,&Iend );
-        Debug() << "Istart = "<< Istart << "\n";
-        Debug() << "Iend = "<< Iend << "\n";
+        VLOG(1) << "Istart = "<< Istart << "\n";
+        VLOG(1) << "Iend = "<< Iend << "\n";
 
         /*
            Set matrix elements for the 2-D, five-point stencil in parallel.
@@ -108,33 +108,33 @@ public:
             double v = -1.0;
             int i = I/n;
             int j = I - i*n;
-            Debug() << "I= " << I << "\n";
+            VLOG(1) << "I= " << I << "\n";
 
             if ( i>0 )
             {
                 J = I - n+1;
-                Debug() << "1 J= " << J << "\n";
+                VLOG(1) << "1 J= " << J << "\n";
                 mat.set( I,J,v );
             }
 
             if ( i<m-1 )
             {
                 J = I + n-1;
-                Debug() << "2 J= " << J << "\n";
+                VLOG(1) << "2 J= " << J << "\n";
                 mat.set( I,J,v );
             }
 
             if ( j>0 )
             {
                 J = I - 1;
-                Debug() << "3 J= " << J << "\n";
+                VLOG(1) << "3 J= " << J << "\n";
                 mat.set( I,J,v );
             }
 
             if ( j<n-1 )
             {
                 J = I + 1;
-                Debug() << "4 J= " << J << "\n";
+                VLOG(1) << "4 J= " << J << "\n";
                 mat.set( I,J,v );
             }
 
@@ -142,15 +142,15 @@ public:
             mat.set( I,I,v );
         }
 
-        Debug() << "closing petsc matrix\n";
+        VLOG(1) << "closing petsc matrix\n";
         mat.close();
-        Debug() << "closing petsc matrix done\n";
+        VLOG(1) << "closing petsc matrix done\n";
 
-        Debug() << "saving petsc matrix in matlab\n";
+        VLOG(1) << "saving petsc matrix in matlab\n";
         //mat.printMatlab("m");
         //mat.printMatlab(std::string("/tmp/mat.m") );
         mat.printMatlab( "mat.m" );
-        Debug() << "saving petsc matrix in matlab done\n";
+        VLOG(1) << "saving petsc matrix in matlab done\n";
 
     }
 };

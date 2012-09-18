@@ -111,7 +111,7 @@ Application::Application( int argc,
     if ( _S_process_id != 0 )
     {
         setenv( "DEBUG", env_str.c_str(), 1 );
-        //Debug() << "DEBUG is set to " << env_str << "\n";
+        //VLOG(1) << "DEBUG is set to " << env_str << "\n";
         //std::cout << "DEBUG is set to " << env_str << "\n";
     }
 
@@ -186,7 +186,7 @@ Application::Application( int argc,
     if ( _S_process_id != 0 )
     {
         setenv( "DEBUG", env_str.c_str(), 1 );
-        //Debug() << "DEBUG is set to " << env_str << "\n";
+        //VLOG(1) << "DEBUG is set to " << env_str << "\n";
         //std::cout << "DEBUG is set to " << env_str << "\n";
     }
 

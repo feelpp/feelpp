@@ -122,7 +122,7 @@ public:
 
         for ( it=this->begin(); it!=this->end(); ++it )
         {
-            Debug() << prefix << " "  << it->first << ": " << it->second.second << "\n";
+            VLOG(1) << prefix << " "  << it->first << ": " << it->second.second << "\n";
         }
     }
 

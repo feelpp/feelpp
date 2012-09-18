@@ -877,7 +877,7 @@ BOOST_PARAMETER_FUNCTION(
         // refinement if option is enabled to a value greater or equal to 1
         if ( refine )
         {
-            Debug() << "Refine mesh ( level: " << refine << ")\n";
+            VLOG(1) << "Refine mesh ( level: " << refine << ")\n";
             Gmsh gmsh;
             fname = gmsh.refine( fname, refine, parametricnodes );
         }
