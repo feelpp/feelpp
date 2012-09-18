@@ -379,6 +379,14 @@ public:
         {
             M_desc = desc;
         }
+    void setSubStructuring( bool substruct )
+        {
+            M_substructuring = substruct;
+        }
+    bool subStructuring() const
+        {
+            return M_substructuring;
+        }
     /**
      * set the prefix of the Gmsh files
      */
@@ -595,6 +603,8 @@ protected:
     bool M_recombine;
     //! number of refinement levels
     int M_refine_levels;
+
+    bool M_substructuring;
 };
 
 ///! \typedef gmsh_type Gmsh
@@ -947,7 +957,8 @@ BOOST_PARAMETER_FUNCTION(
       ( ymin,           *( boost::is_arithmetic<mpl::_> ), 0. )
       ( ymax,           *( boost::is_arithmetic<mpl::_> ), 1 )
       ( zmin,           *( boost::is_arithmetic<mpl::_> ), 0. )
-      ( zmax,           *( boost::is_arithmetic<mpl::_> ), 1 ) ) )
+      ( zmax,           *( boost::is_arithmetic<mpl::_> ), 1 )
+      ( substructuring, *( boost::is_integral<mpl::_> ), 0 ) ) )
 {
     gmsh_ptrtype gmsh_ptr = Gmsh::New( shape, 3, 1, convex );
 
@@ -960,6 +971,7 @@ BOOST_PARAMETER_FUNCTION(
     gmsh_ptr->setX( std::make_pair( xmin, xmax ) );
     gmsh_ptr->setY( std::make_pair( ymin, ymax ) );
     gmsh_ptr->setZ( std::make_pair( zmin, zmax ) );
+    gmsh_ptr->setSubStructuring( substructuring );
     return gmsh_ptr;
 }
 

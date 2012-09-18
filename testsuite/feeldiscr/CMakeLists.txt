@@ -9,5 +9,5 @@ foreach(TEST elementminmax project bdf interpolation integration  integration_if
 endforeach()
 
 feelpp_add_test( integration_ho GEO test_integration_ho_geometry.geo )
-
-
+add_executable( test_wirebasket test_wirebasket.cpp )
+target_link_libraries( test_wirebasket ${FEELPP_LIBRARIES})

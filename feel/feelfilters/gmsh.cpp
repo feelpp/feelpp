@@ -85,7 +85,8 @@ Gmsh::Gmsh( int nDim, int nOrder, WorldComm const& worldComm )
     M_partition_file( 0 ),
     M_shear( 0 ),
     M_recombine( 0 ),
-    M_refine_levels( 0 )
+    M_refine_levels( 0 ),
+    M_substructuring( false )
 {
     this->setReferenceDomain();
 }
@@ -104,7 +105,8 @@ Gmsh::Gmsh( Gmsh const & __g )
     M_partition_file( __g.M_partition_file ),
     M_shear( __g.M_shear ),
     M_recombine( __g.M_recombine ),
-    M_refine_levels( __g.M_refine_levels )
+    M_refine_levels( __g.M_refine_levels ),
+    M_substructuring( __g.M_substructuring )
 {}
 Gmsh::~Gmsh()
 {}
@@ -501,6 +503,10 @@ Gmsh::preamble() const
     {
         ostr << "Mesh.RecombinationAlgorithm=1;//blossom\n"
              << "Mesh.RecombineAll=1; //all\n";
+    }
+    else
+    {
+        ostr << "Mesh.RecombinationAlgorithm=0;\n";
     }
 
     return ostr.str();

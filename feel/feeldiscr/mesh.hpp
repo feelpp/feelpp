@@ -154,6 +154,8 @@ public:
     typedef typename super::face_iterator face_iterator;
     typedef typename super::face_const_iterator face_const_iterator;
 
+    typedef typename super::edge_type edge_type;
+
     typedef typename super::points_type points_type;
     typedef typename super::point_type point_type;
     typedef typename super::point_iterator point_iterator;
@@ -537,7 +539,9 @@ public:
     {
         renumber( mpl::bool_<( nDim > 1 )>() );
     }
-
+    void renumber( std::vector<size_type> const& node_map, mpl::int_<1> );
+    void renumber( std::vector<size_type> const& node_map, mpl::int_<2> );
+    void renumber( std::vector<size_type> const& node_map, mpl::int_<3> );
 
     /**
      * This function only take sense in the 3D modal case with a simplex mesh.
@@ -728,6 +732,10 @@ public:
     void updateForUse();
 
 private:
+
+    void propagateMarkers( mpl::int_<1> ) {}
+    void propagateMarkers( mpl::int_<2> ) {}
+    void propagateMarkers( mpl::int_<3> );
 
     friend class boost::serialization::access;
     template<class Archive>
@@ -1134,6 +1142,8 @@ protected:
      * Update connectivity of entities of codimension 1
      */
     void updateEntitiesCoDimensionOne();
+    void updateEntitiesCoDimensionOne(mpl::bool_<true>);
+    void updateEntitiesCoDimensionOne(mpl::bool_<false>);
 
     /**
      * Update in ghost cells of entities of codimension 1

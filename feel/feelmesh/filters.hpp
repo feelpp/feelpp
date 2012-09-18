@@ -1069,6 +1069,17 @@ boost::tuple<mpl::size_t<MESH_EDGES>,
     return detail::markededges( mesh, __marker, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
 }
 
+template<typename MeshType>
+boost::tuple<mpl::size_t<MESH_EDGES>,
+      typename MeshTraits<MeshType>::marker_edge_const_iterator,
+      typename MeshTraits<MeshType>::marker_edge_const_iterator>
+      markededges( MeshType const& mesh,
+                   std::string const& __marker )
+{
+    typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
+    return detail::markededges( mesh, mesh->markerName(__marker), meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
+}
+
 /**
  * \return a pair of iterators to iterate over all boundary edges of the
  * mesh
@@ -1124,6 +1135,16 @@ boost::tuple<mpl::size_t<MESH_POINTS>,
 {
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
     return detail::markedpoints( mesh, flag, is_ptr_or_shared_ptr() );
+}
+
+template<typename MeshType>
+boost::tuple<mpl::size_t<MESH_POINTS>,
+             typename MeshTraits<MeshType>::marked_point_const_iterator,
+             typename MeshTraits<MeshType>::marked_point_const_iterator>
+markedpoints( MeshType const& mesh, std::string const& flag )
+{
+    typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
+    return detail::markedpoints( mesh, mesh.markerName(flag), is_ptr_or_shared_ptr() );
 }
 
 /**

@@ -53,7 +53,10 @@ proc write_jam s {
 
 # clang++ produces broken boost libraries (https://trac.macports.org/ticket/31525)
 #if {${configure.compiler} == "clang"} {
-#    configure.compiler macports-gcc-4.6
+
+#    configure.compiler llvm-gcc-4.2
+configure.compiler macports-gcc-4.6
+
 #}
 
 configure.cmd       ./bootstrap.sh

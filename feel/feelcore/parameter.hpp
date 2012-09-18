@@ -202,6 +202,7 @@ BOOST_PARAMETER_NAME( rebuild_partitions )
 BOOST_PARAMETER_NAME( worldcomm )
 BOOST_PARAMETER_NAME( worldscomm )
 BOOST_PARAMETER_NAME( parallel )
+BOOST_PARAMETER_NAME( substructuring )
 
 BOOST_PARAMETER_NAME( jacobian )
 BOOST_PARAMETER_NAME( residual )

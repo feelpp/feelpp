@@ -183,6 +183,7 @@ Mesh<Shape, T, Tag>::updateForUse()
             //    this->updateEntitiesCoDimensionOneGhostCell();
 
             Debug( 4015 ) << "[Mesh::updateForUse] update entities of codimension 1 : " << ti.elapsed() << "\n";
+
         }
 
         if ( this->components().test( MESH_UPDATE_EDGES ) )
@@ -193,9 +194,13 @@ Mesh<Shape, T, Tag>::updateForUse()
             this->updateEntitiesCoDimensionTwo();
             Debug( 4015 ) << "[Mesh::updateForUse] update edges : " << ti.elapsed() << "\n";
         }
-        updateOnBoundary( mpl::int_<nDim>() );
 
-
+        if ( this->components().test( MESH_UPDATE_FACES ) ||
+             this->components().test( MESH_UPDATE_EDGES )
+            )
+        {
+            updateOnBoundary( mpl::int_<nDim>() );
+        }
         this->setUpdatedForUse( true );
     }
 
@@ -225,12 +230,16 @@ Mesh<Shape, T, Tag>::updateForUse()
             this->elements().modify( iv,
                                      lambda::bind( &element_type::updateWithPc,
                                                    lambda::_1, pc, boost::ref( pcf ) ) );
+
             M_meas += iv->measure();
             auto _faces = iv->faces();
 
-            for ( ; _faces.first != _faces.second; ++_faces.first )
-                if ( ( *_faces.first ) && ( *_faces.first )->isOnBoundary() )
-                    M_measbdy += ( *_faces.first )->measure();
+            if ( nDim == 1 )
+                M_measbdy = 0;
+            else
+                for ( ; _faces.first != _faces.second; ++_faces.first )
+                    if ( ( *_faces.first ) && ( *_faces.first )->isOnBoundary() )
+                        M_measbdy += ( *_faces.first )->measure();
         }
 
         // now that all elements have been updated, build inter element
@@ -271,6 +280,8 @@ Mesh<Shape, T, Tag>::updateForUse()
     }
 #endif
 
+    propagateMarkers(mpl::int_<nDim>() );
+
     // check mesh connectivity
     this->check();
     //std::cout<<"pass hier\n";
@@ -285,7 +296,67 @@ Mesh<Shape, T, Tag>::updateForUse()
     Debug( 4015 ) << "[Mesh::updateForUse] total time : " << ti.elapsed() << "\n";
 }
 
+template<typename Shape, typename T, int Tag>
+void
+Mesh<Shape, T, Tag>::propagateMarkers( mpl::int_<3> )
+{
+    // first propagate top-down  marker from edges if points have not been marked
+    std::for_each( this->beginEdge(), this->endEdge(),
+                   [this]( edge_type const& e )
+                   {
+                       if ( e.marker().isOff() )
+                           return;
 
+                       for( int i = 0; i < edge_type::numPoints; ++i )
+                       {
+                           if ( e.point( i ).marker().isOff() )
+                           {
+                               // inherit marker from edge
+                               this->points().modify( this->points().iterator_to( e.point(i) ),
+                                                      [&e] ( point_type& p )
+                                                      {
+                                                          p.setMarker( e.marker().value() );
+                                                      } );
+
+                           }
+                       } } );
+    // then propagate top-down marker from face if edge has not been marked
+    std::for_each( this->beginFace(), this->endFace(),
+                   [this]( face_type const& f )
+                   {
+                       if ( f.marker().isOff() )
+                           return;
+
+                       // update points
+                       for( int i = 0; i < face_type::numPoints; ++i )
+                       {
+                           if ( f.point( i ).marker().isOff() )
+                           {
+                               // inherit marker from edge
+                               this->points().modify( this->points().iterator_to( f.point(i) ),
+                                                      [&f] ( point_type& p )
+                                                      {
+                                                          p.setMarker( f.marker().value() );
+                                                      } );
+
+                           }
+                       }
+                       // update edges
+                       for( int i = 0; i < face_type::numEdges; ++i )
+                       {
+                           if ( f.edge( i ).marker().isOff() )
+                           {
+                               // inherit marker from edge
+                               this->edges().modify( this->edges().iterator_to( f.edge(i) ),
+                                                      [&f] ( edge_type& e )
+                                                      {
+                                                          e.setMarker( f.marker().value() );
+                                                      } );
+
+                           }
+                       }
+                   } );
+}
 
 template<typename Shape, typename T, int Tag>
 void
@@ -471,6 +542,7 @@ Mesh<Shape, T, Tag>::renumber( mpl::bool_<true> )
 
         }
     }
+    renumber( node_map, mpl::int_<nDim>() );
 
     if ( Shape == SHAPE_TETRA && nOrder==1 )
     {
@@ -486,7 +558,52 @@ Mesh<Shape, T, Tag>::renumber( mpl::bool_<true> )
 
 }
 
+template<typename Shape, typename T, int Tag>
+void
+Mesh<Shape, T, Tag>::renumber( std::vector<size_type> const& node_map, mpl::int_<1> )
+{
+}
+template<typename Shape, typename T, int Tag>
+void
+Mesh<Shape, T, Tag>::renumber( std::vector<size_type> const& node_map, mpl::int_<2> )
+{
+}
 
+template<typename Shape, typename T, int Tag>
+void
+Mesh<Shape, T, Tag>::renumber( std::vector<size_type> const& node_map, mpl::int_<3> )
+{
+
+    for ( auto elt = this->beginEdge();
+            elt != this->endEdge(); ++elt )
+    {
+        edge_type __edge = *elt;
+#if !defined( NDEBUG )
+        Debug( 4015 ) << "edge id: " << __edge.id()
+                      << " marker: " << __edge.marker() << "\n";
+#endif
+
+        // renumber the nodes of the face
+        for ( int i = 0; i < __edge.nPoints(); ++i )
+        {
+            size_type __true_id =__edge.point( i ).id();
+            this->edges().modify( elt,
+                                  lambda::bind( &edge_type::setPoint,
+                                                lambda::_1,
+                                                lambda::constant( i ),
+                                                boost::cref( this->point( node_map[__true_id] ) ) ) );
+            edge_type __edge2 = *elt;
+#if !defined( NDEBUG )
+            Debug( 4015 ) << "renumber edge: id1= " << __edge2.point( 0 ).id() << " id2= " << __edge2.point( 1 ).id()<< "\n";
+            Debug( 4015 ) << "renumber edge: point lid = " << i << " id = " << __true_id
+                          << " nid = " << this->point( node_map[__true_id] ).id()
+                          << " new point id = " << elt->point( i ).id() << "\n";
+#endif
+
+        }
+    }
+
+}
 template<typename Shape, typename T, int Tag>
 void
 Mesh<Shape, T, Tag>::localrenumber()
@@ -533,6 +650,17 @@ Mesh<Shape, T, Tag>::localrenumber()
 template<typename Shape, typename T, int Tag>
 void
 Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne()
+{
+    //updateEntitiesCoDimensionOne( mpl::bool_<nDim==nRealDim>() );
+    updateEntitiesCoDimensionOne( mpl::bool_<true>() );
+}
+template<typename Shape, typename T, int Tag>
+void
+Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<false> )
+{}
+template<typename Shape, typename T, int Tag>
+void
+Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
 {
     boost::timer ti;
     face_type face;
@@ -675,6 +803,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne()
                 // set face id
                 face.setId( _faceit->second );
                 face.disconnect();
+                face.addElement( __element_id );
 
                 // set the process id from element
                 face.setProcessId( __element.processId() );
@@ -729,6 +858,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne()
 
 
                 face_type face = *__fit;
+                face.addElement( __element_id );
 
                 // the three conditions below typically arise after reading a serialized mesh
                 if ( __fit->isConnectedTo0() && __fit->connection0().template get<0>() == 0 && ( __element.id() == __fit->ad_first() ) )
@@ -1160,6 +1290,8 @@ template<typename Shape, typename T, int Tag>
 void
 Mesh<Shape, T, Tag>::check() const
 {
+    if ( nDim != nRealDim )
+        return;
 #if !defined( NDEBUG )
     Debug( 4015 ) << "[Mesh::check] numLocalFaces = " << this->numLocalFaces() << "\n";
     element_iterator iv = this->beginElementWithProcessId( this->worldComm().localRank() );
