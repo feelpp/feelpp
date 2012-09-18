@@ -40,6 +40,7 @@
 #include<Eigen/StdVector>
 
 #include <feel/feelcore/feel.hpp>
+#include <feel/feelmesh/filters.hpp>
 #include <feel/feelalg/glas.hpp>
 #include <feel/feelpoly/mapped.hpp>
 #include <feel/feelalg/datamap.hpp>
@@ -171,6 +172,7 @@ public:
      * Type that hold the map between a global dof and the elements
      */
     typedef std::map<size_type, std::list<local_dof_type> >  dof_element_type;
+    typedef std::map<size_type,int> dof_marker_type;
     typedef typename dof_element_type::iterator dof_iterator;
     typedef typename dof_element_type::const_iterator dof_const_iterator;
 
@@ -1007,6 +1009,14 @@ public:
         map_gdof = mapdof;
     }
 
+    void printDofMarker(std::string const& filename )
+        {
+            std::ofstream ofs( filename.c_str() );
+            BOOST_FOREACH( auto dof, _M_dof_marker )
+            {
+                ofs << dof.first << " " << dof.second << "\n";
+            }
+        }
     /**
      * The dof are ordered such that they are contiguous per element
      * and components. This way an extraction of the dof indices in
@@ -1030,7 +1040,8 @@ public:
                     size_type& pDof,
                     int32_type sign = 1,
                     bool is_dof_periodic = false,
-                    size_type shift = 0 )
+                    size_type shift = 0,
+                    Marker1 const& marker = Marker1( 0 ) )
     {
         bool res = true;
         const int ncdof = is_product?nComponents:1;
@@ -1089,6 +1100,8 @@ public:
                 _M_dof_procset[ itdof->second+shift ].insert( processor );
 
                 _M_el_l2g[ ie][ lc_dof ] = boost::make_tuple( itdof->second+shift, sign, is_dof_periodic );
+                _M_dof_marker[itdof->second+shift] = marker.value();
+
 
 #if !defined(NDEBUG)
                 _M_dof2elt[itdof->second+shift].push_back( boost::make_tuple( ie, lc_dof, lc, itdof->first.template get<0>() ) );
@@ -1110,6 +1123,11 @@ public:
                     Debug() << "dof table( " << ie << ", " << lc  << ")=" << boost::get<0>( _M_el_l2g[ ie][ i2 ] ) << "\n";
 
 #endif
+            }
+            else
+            {
+                size_type _dof = boost::get<0>( _M_el_l2g[ ie][ lc_dof ]);
+                FEELPP_ASSERT(  _M_dof_marker[_dof] == marker.value() )(ie)(lc_dof)( _dof )( _M_dof_marker[_dof] )( marker.value() ).error( "invalid dof marker" );
             }
 
             res = res && ( __inserted || ( ( boost::get<0>( _M_el_l2g[ ie][ lc_dof ] ) == invalid_size_type_value ) && shift ) );
@@ -1147,7 +1165,7 @@ private:
                 //const size_type gDof = global_shift + ( __elt.point( i ).id() ) * fe_type::nDofPerVertex + l;
                 const size_type gDof = ( __elt.point( i ).id() ) * fe_type::nDofPerVertex + l;
                 this->insertDof( ie, lc, i, boost::make_tuple( 0, 0, gDof ),
-                                 processor, next_free_dof, 1, false, global_shift );
+                                 processor, next_free_dof, 1, false, global_shift, __elt.point( i ).marker() );
             }
         }
 
@@ -1186,7 +1204,7 @@ private:
         for ( uint16_type l = 0; l < fe_type::nDofPerEdge; ++l, ++lc )
         {
             const size_type gDof = is_p0_continuous? l:ie * fe_type::nDofPerEdge + l;
-            this->insertDof( ie, lc, l, boost::make_tuple( 1, 0, gDof ), processor, next_free_dof, 1, false, global_shift );
+            this->insertDof( ie, lc, l, boost::make_tuple( 1, 0, gDof ), processor, next_free_dof, 1, false, global_shift, __elt.marker() );
         }
 
         // update shifts
@@ -1240,7 +1258,7 @@ private:
                 else
                     FEELPP_ASSERT( 0 ).error ( "invalid edge permutation" );
 
-                this->insertDof( ie, lc, i, boost::make_tuple( 1, 0, gDof ), processor, next_free_dof, sign, false, global_shift );
+                this->insertDof( ie, lc, i, boost::make_tuple( 1, 0, gDof ), processor, next_free_dof, sign, false, global_shift, __elt.edge( i ).marker() );
             }
         }
 
@@ -1295,7 +1313,7 @@ private:
                 else
                     FEELPP_ASSERT( 0 ).error ( "invalid edge permutation" );
 
-                this->insertDof( ie, lc, i, boost::make_tuple( 1, 0, gDof ), processor, next_free_dof, sign, false, global_shift );
+                this->insertDof( ie, lc, i, boost::make_tuple( 1, 0, gDof ), processor, next_free_dof, sign, false, global_shift, __elt.edge( i ).marker() );
             }
         }
 
@@ -1331,7 +1349,7 @@ private:
         for ( uint16_type l = 0; l < fe_type::nDofPerFace; ++l, ++lc )
         {
             const size_type gDof = is_p0_continuous? l:ie * fe_type::nDofPerFace + l;
-            this->insertDof( ie, lc, l, boost::make_tuple( 2, 0, gDof ), processor, next_free_dof, 1, false, global_shift );
+            this->insertDof( ie, lc, l, boost::make_tuple( 2, 0, gDof ), processor, next_free_dof, 1, false, global_shift, __elt.marker() );
         }
 
         // update shifts
@@ -1411,7 +1429,7 @@ private:
                     }
                 }
 
-                this->insertDof( ie, lc, i, boost::make_tuple( 2, 0, gDof ), processor, next_free_dof, sign, false, global_shift );
+                this->insertDof( ie, lc, i, boost::make_tuple( 2, 0, gDof ), processor, next_free_dof, sign, false, global_shift,__elt.face( i ).marker() );
 
             }
         }
@@ -1444,7 +1462,7 @@ private:
         for ( uint16_type l = 0; l < fe_type::nDofPerVolume; ++l, ++lc )
         {
             const size_type gDof = is_p0_continuous? l:ie * fe_type::nDofPerVolume + l;
-            this->insertDof( ie, lc, l, boost::make_tuple( 3, 0, gDof ), processor, next_free_dof, 1, false, global_shift );
+            this->insertDof( ie, lc, l, boost::make_tuple( 3, 0, gDof ), processor, next_free_dof, 1, false, global_shift, __elt.marker() );
         }
 
         // update shifts
@@ -1826,6 +1844,15 @@ private:
         }
     }
 
+    void addSubstructuringDofMap( mesh_type const& M, size_type next_free_dof );
+    void addSubstructuringDofVertex( mesh_type const& M, size_type next_free_dof );
+    void addSubstructuringDofEdge( mesh_type const& M, size_type next_free_dof, mpl::int_<1> );
+    void addSubstructuringDofEdge( mesh_type const& M, size_type next_free_dof, mpl::int_<2> );
+    void addSubstructuringDofEdge( mesh_type const& M, size_type next_free_dof, mpl::int_<3> );
+    void addSubstructuringDofFace( mesh_type const& M, size_type next_free_dof, mpl::int_<1> );
+    void addSubstructuringDofFace( mesh_type const& M, size_type next_free_dof, mpl::int_<2> );
+    void addSubstructuringDofFace( mesh_type const& M, size_type next_free_dof, mpl::int_<3> );
+
     /**
      * @brief Checks if the dofs associated with entity_id N are continuous
      *
@@ -1970,6 +1997,7 @@ private:
     Container_fromface _M_face_l2g;
 
     dof_element_type _M_dof2elt;
+    dof_marker_type _M_dof_marker;
 
     dof_map_type map_gdof;
 
@@ -3174,7 +3202,218 @@ DofTable<MeshType, FEType, PeriodicityType>::generatePeriodicDofPoints(  mesh_ty
 }
 
 
+template<typename MeshType, typename FEType, typename PeriodicityType>
+void
+DofTable<MeshType, FEType, PeriodicityType>::addSubstructuringDofMap( mesh_type const& M, size_type next_free_dof )
+{
+    addSubstructuringDofVertex( M, next_free_dof );
+    addSubstructuringDofEdge( M, next_free_dof, mpl::int_<nDim>() );
+    addSubstructuringDofFace( M, next_free_dof, mpl::int_<nDim>() );
+}
 
+template<typename MeshType, typename FEType, typename PeriodicityType>
+void
+DofTable<MeshType, FEType, PeriodicityType>::addSubstructuringDofVertex(mesh_type const& M,
+                                                                        size_type next_free_dof )
+{
+        std::cout << "found CrossPoints and WireBasket\n";
+        std::cout << "n cp: " << std::distance( M.beginPointWithMarker( M.markerName("CrossPoints") ), M.endPointWithMarker( M.markerName("CrossPoints") ) ) << "\n";
+#if 0
+        std::cout << "n wb: " << std::distance( M.beginEdgeWithMarker( M.markerName("WireBasket") ), M.endEdgeWithMarker( M.markerName("WireBasket") ) ) << "\n";
+#endif
+        // go through all the crosspoints and add them to the dof table
+
+        for( auto pit = M.beginPointWithMarker( M.markerName("CrossPoints") ),
+                 pen = M.endPointWithMarker( M.markerName("CrossPoints") );
+             pit!=pen; ++pit )
+        {
+            // get one element
+            auto __elt = M.element( *pit->elements().begin() );
+            size_type ie = __elt.id();
+            int lc = 0;
+            for ( uint16_type i = 0; i < element_type::numVertices; ++i )
+            {
+                for ( uint16_type l = 0; l < fe_type::nDofPerVertex; ++l, ++lc )
+                {
+                    if (__elt.point( i ).id()==pit->id() )
+                    {
+                        const size_type gDof = ( __elt.point( i ).id() ) * fe_type::nDofPerVertex + l;
+                        this->insertDof( ie, lc, i, boost::make_tuple( 0, 0, gDof ),
+                                         M.worldComm().localRank(), next_free_dof, 1, false, 0 );
+                        std::cout << "Adding crosspoint " << pit->id() << " with dof " << next_free_dof << "\n";
+                    }
+                }
+            }
+        }
+}
+
+template<typename MeshType, typename FEType, typename PeriodicityType>
+void
+DofTable<MeshType, FEType, PeriodicityType>::addSubstructuringDofEdge( mesh_type const& M,
+                                                                       size_type next_free_dof,
+                                                                       mpl::int_<1> )
+{}
+
+template<typename MeshType, typename FEType, typename PeriodicityType>
+void
+DofTable<MeshType, FEType, PeriodicityType>::addSubstructuringDofEdge( mesh_type const& M,
+                                                                       size_type next_free_dof,
+                                                                       mpl::int_<2> )
+{}
+
+template<typename MeshType, typename FEType, typename PeriodicityType>
+void
+DofTable<MeshType, FEType, PeriodicityType>::addSubstructuringDofEdge( mesh_type const& M,
+                                                                       size_type next_free_dof,
+                                                                       mpl::int_<3> )
+{
+    // go through all Wirebasket edges
+    for( auto pit = M.beginEdgeWithMarker( M.markerName("WireBasket") ),
+             pen = M.endEdgeWithMarker( M.markerName("WireBasket") );
+         pit!=pen; ++pit )
+    {
+        auto __elt = M.element( *pit->elements().begin() );
+        std::cout << "Adding wirebasket edge " << pit->id() << " using element "  << __elt.id() << "\n";
+        size_type ie = __elt.id();
+        uint16_type lc = 0;
+
+        for ( uint16_type i = 0; i < element_type::numEdges; ++i )
+        {
+            for ( uint16_type l = 0; l < fe_type::nDofPerEdge; ++l, ++lc )
+            {
+                if (__elt.edge( i ).id()==pit->id() )
+                {
+                    size_type gDof = __elt.edge( i ).id() * fe_type::nDofPerEdge;
+                    int32_type sign = 1;
+
+                    if ( __elt.edgePermutation( i ).value()  == edge_permutation_type::IDENTITY )
+                    {
+                        gDof += l ; // both nodal and modal case
+                    }
+                    else if ( __elt.edgePermutation( i ).value()  == edge_permutation_type::REVERSE_PERMUTATION )
+                    {
+
+                        if ( fe_type::is_modal )
+                        {
+                            //only half of the modes (odd polynomial order) are negative.
+                            sign = ( l%2 )?( -1 ):( 1 );
+                            gDof += l;
+                        }
+
+                        else
+                            gDof += fe_type::nDofPerEdge - 1 - l ;
+                    }
+                    else
+                        FEELPP_ASSERT( 0 ).error ( "invalid edge permutation" );
+
+                    this->insertDof( ie, lc, i, boost::make_tuple( 1, 0, gDof ), M.worldComm().localRank(), next_free_dof, sign, false, 0 );
+                    std::cout << "Adding wirebasket edge " << pit->id() << " with dof " << next_free_dof << "\n";
+                }
+            }
+        }
+
+    }
+}
+template<typename MeshType, typename FEType, typename PeriodicityType>
+void
+DofTable<MeshType, FEType, PeriodicityType>::addSubstructuringDofFace( mesh_type const& M,
+                                                                       size_type next_free_dof,
+                                                                       mpl::int_<1> )
+{}
+
+template<typename MeshType, typename FEType, typename PeriodicityType>
+void
+DofTable<MeshType, FEType, PeriodicityType>::addSubstructuringDofFace( mesh_type const& M,
+                                                                       size_type next_free_dof,
+                                                                       mpl::int_<2> )
+{}
+
+template<typename MeshType, typename FEType, typename PeriodicityType>
+void
+DofTable<MeshType, FEType, PeriodicityType>::addSubstructuringDofFace( mesh_type const& M,
+                                                                       size_type next_free_dof,
+                                                                       mpl::int_<3> )
+{
+    std::vector<std::string> faces = assign::list_of("TOP")("BOTTOM")("NORTH")("EAST")("WEST")("SOUTH");
+    BOOST_FOREACH( auto face, faces )
+    {
+        auto faces = markedfaces( &M, face );
+
+        for( auto pit = faces.template get<1>(), pen = faces.template get<2>(); pit!=pen; ++pit )
+        {
+            auto __elt = M.element( *pit->elements().begin() );
+            std::cout << "Adding face " << pit->id() << " with marker " << face << " using element "  << __elt.id() << "\n";
+            size_type ie = __elt.id();
+            uint16_type lc = 0;
+
+            for ( uint16_type i = 0; i < element_type::numFaces; ++i )
+            {
+                face_permutation_type permutation = __elt.facePermutation( i );
+                FEELPP_ASSERT( permutation != face_permutation_type( 0 ) ).error ( "invalid face permutation" );
+
+                // Polynomial order in each direction
+                uint16_type p=1;
+                uint16_type q=0;
+
+                // MaxOrder = Order - 2
+                int MaxOrder = int( ( 3 + std::sqrt( 1+8*fe_type::nDofPerFace ) )/2 ) - 2;
+
+                for ( uint16_type l = 0; l < fe_type::nDofPerFace; ++l, ++lc )
+                {
+                    if (__elt.face( i ).id()==pit->id() )
+                    {
+                        // TODO: orient the dof indices such
+                        // that they match properly the faces
+                        // dof of the connected faces. There
+                        // are a priori many permutations of
+                        // the dof face indices
+                        size_type gDof = __elt.face( i ).id() * fe_type::nDofPerFace;
+                        int32_type sign = 1;
+
+                        q=q+1;
+
+                        if ( q > MaxOrder )
+                        {
+                            q = 1;
+                            p = p+1;
+                            MaxOrder = MaxOrder-1;
+                        }
+
+                        if ( !fe_type::is_modal )
+                        {
+                            // no need of permutation is identity or only one dof on face
+                            if ( permutation  == face_permutation_type( 1 ) || fe_type::nDofPerFace == 1 )
+                                gDof += l;
+
+                            else
+                                gDof += vector_permutation[permutation][l];
+                        }
+
+                        else
+                        {
+                            gDof += l;
+
+                            if ( permutation == face_permutation_type( 2 ) )
+                            {
+                                // Reverse sign if polynomial order in
+                                // eta_1 direction is odd
+
+                                if ( p%2 == 0 )
+                                    sign = -1;
+
+                            }
+                        }
+
+                        this->insertDof( ie, lc, i, boost::make_tuple( 2, 0, gDof ), M.worldComm().localRank(), next_free_dof, sign, false, 0 );
+                        std::cout << "Adding face " << pit->id() << " with dof " << next_free_dof << "\n";
+                    }
+                }
+            }
+
+        }
+    }
+
+}
 
 
 } // namespace Feel

@@ -202,11 +202,12 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
 
     mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
                                         _desc=domain( _name=( boost::format( "%1%-%2%" ) % shape % Dim ).str() ,
-                                                _usenames=true,
-                                                _shape=shape,
-                                                _h=X[0],
-                                                _xmin=-1,
-                                                _ymin=-1 ),
+                                                      _usenames=true,
+                                                      _shape=shape,
+                                                      _h=X[0],
+                                                      _substructuring=true,
+                                                      _xmin=-1,
+                                                      _ymin=-1 ),
                                         _update=MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
 
 
@@ -215,6 +216,7 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
      */
     /** \code */
     space_ptrtype Xh = space_type::New( mesh );
+    Xh->dof()->printDofMarker( "dofmarker.dat" );
     // print some information (number of local/global dof in logfile)
     Xh->printInfo();
     element_type u( Xh, "u" );
@@ -254,15 +256,15 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
     auto F = backend( _vm=this->vm() )->newVector( Xh );
     auto rhs = form1( _test=Xh, _vector=F, _init=true );
     rhs = integrate( _range=elements( mesh ), _expr=f*id( v ) )+
-        integrate( _range=markedfaces( mesh, "Neumann" ),
+        integrate( _range=markedfaces( mesh, "TOP" ),
                    _expr=nu*gradv( gproj )*vf::N()*id( v ) );
 
     //# endmarker2 #
     if ( weak_dirichlet )
     {
         //# marker41 #
-        rhs += integrate( _range=markedfaces( mesh,"Dirichlet" ),
-                             _expr=g*( -grad( v )*vf::N()+penaldir*id( v )/hFace() ) );
+        rhs += integrate( _range=markedfaces( mesh,"BOTTOM" ),
+                          _expr=g*( -grad( v )*vf::N()+penaldir*id( v )/hFace() ) );
         //# endmarker41 #
     }
 
@@ -295,7 +297,7 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
          */
         /** \code */
         //# marker10 #
-        a += integrate( _range=markedfaces( mesh,"Dirichlet" ),
+        a += integrate( _range=markedfaces( mesh,"BOTTOM" ),
                         _expr= ( -( gradt( u )*vf::N() )*id( v )
                                  -( grad( v )*vf::N() )*idt( u )
                                  +penaldir*id( v )*idt( u )/hFace() ) );
@@ -311,7 +313,7 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
          */
         /** \code */
         //# marker5 #
-        a += on( _range=markedfaces( mesh, "Dirichlet" ),
+        a += on( _range=markedfaces( mesh, "BOTTOM" ),
                  _element=u, _rhs=F, _expr=g );
         //# endmarker5 #
         /** \endcode */
@@ -350,10 +352,10 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
     e = vf::project( Xh, elements( mesh ), g );
 
     export_ptrtype exporter( export_type::New( this->vm(),
-                             ( boost::format( "%1%-%2%-%3%" )
-                               % this->about().appName()
-                               % shape
-                               % Dim ).str() ) );
+                                               ( boost::format( "%1%-%2%-%3%" )
+                                                 % this->about().appName()
+                                                 % shape
+                                                 % Dim ).str() ) );
 
     if ( exporter->doExport() )
     {
@@ -391,8 +393,8 @@ main( int argc, char** argv )
     //if ( app.nProcess() == 1 )
     //app.add( new Laplacian<1>( app.vm(), app.about() ) );
 
-    app.add( new Laplacian<2>( app.vm(), app.about() ) );
-    //app.add( new Laplacian<3>( app.vm(), app.about() ) );
+    //app.add( new Laplacian<2>( app.vm(), app.about() ) );
+    app.add( new Laplacian<3>( app.vm(), app.about() ) );
     /** \endcode */
 
     /**
