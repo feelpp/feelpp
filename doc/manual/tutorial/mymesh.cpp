@@ -26,15 +26,7 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2008-02-06
  */
-#include <feel/options.hpp>
-#include <feel/feelcore/application.hpp>
-#include <feel/feeldiscr/mesh.hpp>
-#include <feel/feeldiscr/functionspace.hpp>
-#include <feel/feeldiscr/region.hpp>
-#include <feel/feeltiming/tic.hpp>
-#include <feel/feelfilters/gmsh.hpp>
-
-#include <feel/feelfilters/exporter.hpp>
+#include <feel/feel.hpp>
 
 using namespace Feel;
 
@@ -68,18 +60,6 @@ makeAbout()
                      "christophe.prudhomme@feelpp.org", "" );
     return about;
 }
-
-class A { public:
-A():str(){}
-A(std::string s):str(s){}
-std::string str;
-    friend class boost::serialization::access;
-    template<class Archive>
-    void serialize( Archive & ar, const unsigned int version )
-        {
-            ar & str;
-        }
-};
 
 template<int Dim>
 class MyMesh: public Feel::Simget
@@ -153,52 +133,25 @@ MyMesh<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
 
     if ( X[1] == 1 ) shape = "hypercube";
 
-    Environment::changeRepository( boost::format( "doc/tutorial/%1%/%2%-%3%/h_%4%/" )
+    Environment::changeRepository( boost::format( "doc/manual/tutorial/%1%/%2%-%3%/h_%4%/proc-%5%" )
                                    % this->about().appName()
                                    % shape
                                    % Dim
-                                   % meshSize );
+                                   % meshSize
+                                   % Environment::numberOfProcessors() );
     //Environment::setLogs( this->about().appName() );
     //# marker4 #
-    auto mesh = mesh_type::New();
-
-    tic();
-    auto is_mesh_loaded = mesh->load( _name="mymesh",_path=".",_type="binary" );
-    toc( "load" );
-
-    if ( !is_mesh_loaded )
-    {
-        tic();
-        LOG(INFO) << "Generating mesh using gmsh...\n";
-        mesh = createGMSHMesh( _mesh=new mesh_type,
-                               _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
-                               _desc=domain( _name=( boost::format( "%1%-%2%" ) % shape % Dim ).str() ,
-                                             _shape=shape,
-                                             _dim=Dim,
-                                             _substructuring=true,
-                                             _h=X[0] ) );
-        LOG(INFO) << "Saving mesh...\n";
-        mesh->save( _name="mymesh",_path=".",_type="binary" );
-        toc("generate+save");
-    }
-    else
-    {
-        tic();
-        mesh->save( _name="mymesh2",_path=".",_type="text" );
-        toc("save");
-    }
-
+    LOG(INFO) << "Generating mesh using gmsh...\n";
+    auto mesh = createGMSHMesh( _mesh=new mesh_type,
+                                _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
+                                _desc=domain( _name=( boost::format( "%1%-%2%" ) % shape % Dim ).str() ,
+                                              _shape=shape,
+                                              _dim=Dim,
+                                              _h=X[0] ) );
     //# endmarker4 #
 
-    int ne = std::distance( mesh->beginElementWithProcessId( this->comm().rank() ),
-                            mesh->endElementWithProcessId( this->comm().rank() ) );
-    LOG(INFO) << "Local number of elements: " << ne << "\n";
-    int gne;
-    mpi::all_reduce( this->comm(), ne, gne, [] ( int x, int y )
-                     {
-                         return x + y;
-                     } );
-    LOG(INFO) << "Global number of elements: " << gne << "\n";
+    LOG(INFO) << "Local number of elements: " << mesh->numElements() << "\n";
+    LOG(INFO) << "Number of global elements: " << mesh->numGlobalElements() << "\n";
 
     //# marker62 #
     if ( exporter->doExport() )
@@ -211,38 +164,6 @@ MyMesh<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
         exporter->save();
     }
     //# endmarker62 #
-
-    if ( Environment::numberOfProcessors() > 1 )
-    {
-        // in case of two processors, exchange the meshes
-        mesh_ptrtype mesh2;//( new mesh_type);
-        mpi::request reqs[2];
-        if( mesh->worldComm().rank() == 0)
-        {
-            reqs[0] = mesh->worldComm().isend( mesh->worldComm().rank()+1, 10, mesh );
-            reqs[1] = mesh->worldComm().irecv( mesh->worldComm().size()-1, 10, mesh2 );
-        }
-        else if (  mesh->worldComm().rank() == mesh->worldComm().size()-1 )
-        {
-            reqs[0] = mesh->worldComm().isend( 0, 10, mesh );
-            reqs[1] = mesh->worldComm().irecv( mesh->worldComm().size()-2, 10, mesh2 );
-        }
-        else
-        {
-            reqs[0] = mesh->worldComm().isend( mesh->worldComm().rank()+1, 10, mesh );
-            reqs[1] = mesh->worldComm().irecv( mesh->worldComm().rank()-1, 10, mesh2 );
-        }
-        mpi::wait_all(reqs, reqs + 2);
-        mesh2->save( _name="mymesh3", _type="text", _path="." );
-
-        auto exporter2 = Exporter<mesh_type>::New( this->vm(), this->about().appName()+"-m2" );
-        if ( exporter2->doExport() )
-        {
-            exporter2->step( 0 )->setMesh( mesh2 );
-            exporter2->step( 0 )->addRegions();
-            exporter2->save();
-        }
-    }
 }
 
 //
@@ -254,14 +175,10 @@ int main( int argc, char** argv )
 
     Application app( argc, argv, makeAbout(), makeOptions() );
 
-    if ( app.vm().count( "help" ) )
-    {
-        std::cout << app.optionsDescription() << "\n";
-        return 0;
-    }
 
-    //app.add( new MyMesh<1>( app.vm(), app.about() ) );
-    //app.add( new MyMesh<2>( app.vm(), app.about() ) );
+    if ( Environment::numberOfProcessors() == 1 )
+        app.add( new MyMesh<1>( app.vm(), app.about() ) );
+    app.add( new MyMesh<2>( app.vm(), app.about() ) );
     app.add( new MyMesh<3>( app.vm(), app.about() ) );
 
     app.run();
