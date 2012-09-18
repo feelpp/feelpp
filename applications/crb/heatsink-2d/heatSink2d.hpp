@@ -698,7 +698,7 @@ void HeatSink2D::init()
     //mu_max <<  /* Bi */ 0.1 , /*L*/2, /*k*/1;
     M_Dmu->setMax( mu_max );
 
-    Log() << "Number of dof " << Xh->nLocalDof() << "\n";
+    LOG(INFO) << "Number of dof " << Xh->nLocalDof() << "\n";
 
     assemble();
 
@@ -793,7 +793,7 @@ void HeatSink2D::solve( sparse_matrix_ptrtype& D,
 void HeatSink2D::exportResults( double time, element_type& T, parameter_type const& mu )
 {
     std::cout<<"STRT"<<std::endl;
-    Log() << "exportResults starts\n";
+    LOG(INFO) << "exportResults starts\n";
     std::string exp_name = "Model_T" + ( boost::format( "_%1%" ) %time ).str();
     //export_ptrtype exp = export_ptrtype( Exporter<mesh_type>::New( exp_name ) );
     export_ptrtype exporter;

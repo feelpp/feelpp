@@ -252,13 +252,13 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     element_2_type nu = V.template element<2>();
     //# endmarker4 #
 
-    Log() << "Data Summary:\n";
-    Log() << "   hsize = " << meshSize << "\n";
-    Log() << "  export = " << this->vm().count( "export" ) << "\n";
-    Log() << "      mu = " << mu << "\n";
-    Log() << " bccoeff = " << penalbc << "\n";
+    LOG(INFO) << "Data Summary:\n";
+    LOG(INFO) << "   hsize = " << meshSize << "\n";
+    LOG(INFO) << "  export = " << this->vm().count( "export" ) << "\n";
+    LOG(INFO) << "      mu = " << mu << "\n";
+    LOG(INFO) << " bccoeff = " << penalbc << "\n";
 
-    Log() << "[stokes] space and functions construction "<<t.elapsed()<<" seconds \n";
+    LOG(INFO) << "[stokes] space and functions construction "<<t.elapsed()<<" seconds \n";
     t.restart() ;
 
     vector_ptrtype F( M_backend->newVector( Xh ) );
@@ -305,15 +305,15 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     boost::timer t_vector;
     // right hand side
     form1( Xh, F, _init=true );
-    Log() << "[stokes] init vector done in "<<t_vector.elapsed()<<" seconds \n";
+    LOG(INFO) << "[stokes] init vector done in "<<t_vector.elapsed()<<" seconds \n";
     t_vector.restart() ;
     form1( Xh, F ) = integrate( elements( mesh ), trans( f )*id( v ) );
-    Log() << "[stokes] v terms done in "<<t_vector.elapsed()<<" seconds \n";
+    LOG(INFO) << "[stokes] v terms done in "<<t_vector.elapsed()<<" seconds \n";
     t_vector.restart() ;
     form1( Xh, F ) += integrate( boundaryfaces( mesh ), trans( u_exact )*( -SigmaN+penalbc*id( v )/hFace() ) );
-    Log() << "[stokes] bc terms done in "<<t_vector.elapsed()<<" seconds \n";
+    LOG(INFO) << "[stokes] bc terms done in "<<t_vector.elapsed()<<" seconds \n";
     t_vector.restart() ;
-    Log() << "[stokes] vector local assembly done in "<<t.elapsed()<<" seconds \n";
+    LOG(INFO) << "[stokes] vector local assembly done in "<<t.elapsed()<<" seconds \n";
     t.restart() ;
     boost::timer t_matrix;
     /*
@@ -324,31 +324,31 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
 
     //form2( Xh, Xh, D, _init=true )=integrate( elements(mesh), mu*trace(deft*trans(def)) );
     form2( Xh, Xh, D, _init=true );
-    Log() << "[stokes] init matrix done in "<<t_matrix.elapsed()<<" seconds \n";
+    LOG(INFO) << "[stokes] init matrix done in "<<t_matrix.elapsed()<<" seconds \n";
     t_matrix.restart() ;
 
     form2( Xh, Xh, D )=integrate( elements( mesh ), mu*( trans( dxt( u ) )*dx( v )+trans( dyt( u ) )*dy( v ) ) ) ;
-    Log() << "[stokes] v-v terms done in "<<t_matrix.elapsed()<<" seconds \n";
+    LOG(INFO) << "[stokes] v-v terms done in "<<t_matrix.elapsed()<<" seconds \n";
     t_matrix.restart() ;
     form2( Xh, Xh, D )+=integrate( elements( mesh ), - div( v )*idt( p ) + divt( u )*id( q ) );
-    Log() << "[stokes] div v-p terms done in "<<t_matrix.elapsed()<<" seconds \n";
+    LOG(INFO) << "[stokes] div v-p terms done in "<<t_matrix.elapsed()<<" seconds \n";
     t_matrix.restart() ;
     form2( Xh, Xh, D )+=integrate( elements( mesh ), id( q )*idt( lambda ) + idt( p )*id( nu ) );
-    Log() << "[stokes] p-l terms done in "<<t_matrix.elapsed()<<" seconds \n";
+    LOG(INFO) << "[stokes] p-l terms done in "<<t_matrix.elapsed()<<" seconds \n";
     t_matrix.restart() ;
     form2( Xh, Xh, D )+=integrate( boundaryfaces( mesh ),
                                    -trans( SigmaNt )*id( v )
                                    -trans( SigmaN )*idt( u )
                                    +penalbc*trans( idt( u ) )*id( v )/hFace() );
-    Log() << "[stokes] weak bc terms done in "<<t_matrix.elapsed()<<" seconds \n";
+    LOG(INFO) << "[stokes] weak bc terms done in "<<t_matrix.elapsed()<<" seconds \n";
     t_matrix.restart() ;
 
     //# endmarker7 #
-    Log() << "[stokes] matrix local assembly done in "<<t.elapsed()<<" seconds \n";
+    LOG(INFO) << "[stokes] matrix local assembly done in "<<t.elapsed()<<" seconds \n";
     t.restart() ;
     D->close();
     F->close();
-    Log() << "[stokes] vector/matrix global assembly done in "<<t.elapsed()<<" seconds \n";
+    LOG(INFO) << "[stokes] vector/matrix global assembly done in "<<t.elapsed()<<" seconds \n";
     t.restart() ;
 
 
@@ -360,7 +360,7 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
 
     this->solve( D, U, F, false );
 
-    Log() << " time for solver : "<<t.elapsed()<<" seconds \n";
+    LOG(INFO) << " time for solver : "<<t.elapsed()<<" seconds \n";
 
     size_type nnz = 0 ;
     std::vector<size_type> const& nNz = D->graph()->nNz() ;
@@ -368,39 +368,39 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     for ( auto iter = nNz.begin(); iter!=nNz.end(); ++iter )
         nnz += ( *iter ) ;
 
-    Log() << "[stokes] matrix NNZ "<< nnz << "\n";
+    LOG(INFO) << "[stokes] matrix NNZ "<< nnz << "\n";
 
-    Log() << "value of the Lagrange multiplier lambda= " << lambda( 0 ) << "\n";
+    LOG(INFO) << "value of the Lagrange multiplier lambda= " << lambda( 0 ) << "\n";
     std::cout << "value of the Lagrange multiplier lambda= " << lambda( 0 ) << "\n";
 
     double u_errorL2 = integrate( elements( mesh ), trans( idv( u )-u_exact )*( idv( u )-u_exact ) ).evaluate()( 0, 0 );
     std::cout << "||u_error||_2 = " << math::sqrt( u_errorL2 ) << "\n";;
-    Log() << "||u_error||_2 = " << math::sqrt( u_errorL2 ) << "\n";;
+    LOG(INFO) << "||u_error||_2 = " << math::sqrt( u_errorL2 ) << "\n";;
 
     double u_errorSH1 = integrate( elements( mesh ), trans( gradv( u )-grad_exact )*( gradv( u )-grad_exact ) ).evaluate()( 0, 0 );
     std::cout << "||u_error||_H1 = " << math::sqrt( u_errorL2 + u_errorSH1 ) << "\n";;
-    Log() << "||u_error||_H1 = " << math::sqrt( u_errorL2 + u_errorSH1 ) << "\n";;
+    LOG(INFO) << "||u_error||_H1 = " << math::sqrt( u_errorL2 + u_errorSH1 ) << "\n";;
 
     double p_errorL2 = integrate( elements( mesh ), ( idv( p )-p_exact )*( idv( p )-p_exact ) ).evaluate()( 0, 0 );
     std::cout << "||p_error||_2 = " << math::sqrt( p_errorL2 ) << "\n";;
-    Log() << "||p_error||_2 = " << math::sqrt( p_errorL2 ) << "\n";;
+    LOG(INFO) << "||p_error||_2 = " << math::sqrt( p_errorL2 ) << "\n";;
 
-    Log() << "[stokes] solve for D done\n";
+    LOG(INFO) << "[stokes] solve for D done\n";
 
     double meas = integrate( elements( mesh ), constant( 1.0 ) ).evaluate()( 0, 0 );
-    Log() << "[stokes] measure(Omega)=" << meas << " (should be equal to 1)\n";
+    LOG(INFO) << "[stokes] measure(Omega)=" << meas << " (should be equal to 1)\n";
     std::cout << "[stokes] measure(Omega)=" << meas << " (should be equal to 1)\n";
 
     double mean_p = integrate( elements( mesh ), idv( p ) ).evaluate()( 0, 0 )/meas;
-    Log() << "[stokes] mean(p)=" << mean_p << "\n";
+    LOG(INFO) << "[stokes] mean(p)=" << mean_p << "\n";
     std::cout << "[stokes] mean(p)=" << mean_p << "\n";
 
     double mean_div_u = integrate( elements( mesh ), divv( u ) ).evaluate()( 0, 0 );
-    Log() << "[stokes] mean_div(u)=" << mean_div_u << "\n";
+    LOG(INFO) << "[stokes] mean_div(u)=" << mean_div_u << "\n";
     std::cout << "[stokes] mean_div(u)=" << mean_div_u << "\n";
 
     double div_u_error_L2 = integrate( elements( mesh ), divv( u )*divv( u ) ).evaluate()( 0, 0 );
-    Log() << "[stokes] ||div(u)||_2=" << math::sqrt( div_u_error_L2 ) << "\n";
+    LOG(INFO) << "[stokes] ||div(u)||_2=" << math::sqrt( div_u_error_L2 ) << "\n";
     std::cout << "[stokes] ||div(u)||=" << math::sqrt( div_u_error_L2 ) << "\n";
 
     v = vf::project( Xh->template functionSpace<0>(), elements( Xh->mesh() ), u_exact );
@@ -408,12 +408,12 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
 
     this->exportResults( U, V );
 
-    Log() << "[dof]         number of dof: " << Xh->nDof() << "\n";
-    Log() << "[dof]    number of dof/proc: " << Xh->nLocalDof() << "\n";
-    Log() << "[dof]      number of dof(U): " << Xh->template functionSpace<0>()->nDof()  << "\n";
-    Log() << "[dof] number of dof/proc(U): " << Xh->template functionSpace<0>()->nLocalDof()  << "\n";
-    Log() << "[dof]      number of dof(P): " << Xh->template functionSpace<1>()->nDof()  << "\n";
-    Log() << "[dof] number of dof/proc(P): " << Xh->template functionSpace<1>()->nLocalDof()  << "\n";
+    LOG(INFO) << "[dof]         number of dof: " << Xh->nDof() << "\n";
+    LOG(INFO) << "[dof]    number of dof/proc: " << Xh->nLocalDof() << "\n";
+    LOG(INFO) << "[dof]      number of dof(U): " << Xh->template functionSpace<0>()->nDof()  << "\n";
+    LOG(INFO) << "[dof] number of dof/proc(U): " << Xh->template functionSpace<0>()->nLocalDof()  << "\n";
+    LOG(INFO) << "[dof]      number of dof(P): " << Xh->template functionSpace<1>()->nDof()  << "\n";
+    LOG(INFO) << "[dof] number of dof/proc(P): " << Xh->template functionSpace<1>()->nLocalDof()  << "\n";
 } // Stokes::run
 
 template<int Dim, typename BasisU, typename BasisP, template<uint16_type,uint16_type,uint16_type> class Entity>

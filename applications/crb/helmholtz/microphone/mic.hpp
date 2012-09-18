@@ -435,7 +435,7 @@ Microphone::init()
         return;
 
     M_is_initialized = true;
-    Log() << "[MIC::init] starting...\n";
+    LOG(INFO) << "[MIC::init] starting...\n";
     // geometry is a ]0,1[x]0,1[
     GeoTool::Node x1( 0,0 );
     GeoTool::Node x2( 1.5,0.25 );
@@ -482,7 +482,7 @@ Microphone::init()
     element_type u( Xh, "u" );
     element_type v( Xh, "v" );
 
-    Log() << "Number of dof " << Xh->nLocalDof() << "\n";
+    LOG(INFO) << "Number of dof " << Xh->nLocalDof() << "\n";
 
     // right hand side
     form1( Xh, M_Fq[0][0], _init=true ) = integrate( elements( mesh ), id( v ) );
@@ -507,7 +507,7 @@ Microphone::init()
     M->close();
 
 #endif
-    Log() << "[MIC::init] done\n";
+    LOG(INFO) << "[MIC::init] done\n";
 
 } // Microphone::run
 
@@ -538,7 +538,7 @@ Microphone::exportResults( element_type& U )
 {
     if ( M_do_export )
     {
-        Log() << "exportResults starts\n";
+        LOG(INFO) << "exportResults starts\n";
 
         exporter->step( 0 )->setMesh( U.functionSpace()->mesh() );
 

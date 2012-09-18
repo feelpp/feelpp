@@ -413,7 +413,7 @@ Bratu<Dim, Order, Cont, Entity,FType>::exportResults( double time,
         f3_type& E )
 {
 
-    Log() << "exportResults starts\n";
+    LOG(INFO) << "exportResults starts\n";
 
     exporter->step( time )->setMesh( U.functionSpace()->mesh() );
 

@@ -108,9 +108,9 @@ public:
         bcCoeff( this->vm()["bccoeff"].template as<double>() ),
         exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) )
     {
-        Log() << "[LinElAxi] hsize = " << meshSize << "\n";
-        Log() << "[LinElAxi] bccoeff = " << bcCoeff << "\n";
-        Log() << "[LinElAxi] export = " << this->vm().count( "export" ) << "\n";
+        LOG(INFO) << "[LinElAxi] hsize = " << meshSize << "\n";
+        LOG(INFO) << "[LinElAxi] bccoeff = " << bcCoeff << "\n";
+        LOG(INFO) << "[LinElAxi] export = " << this->vm().count( "export" ) << "\n";
 
     }
 
@@ -201,7 +201,7 @@ LinElAxi<Order>::run()
     const double density = 50;
     //    const double gravity = -density*9.81;
     const double gravity = -1.0;
-    Log() << "lambda = " << lambda << "\n"
+    LOG(INFO) << "lambda = " << lambda << "\n"
           << "mu     = " << mu << "\n"
           << "gravity= " << gravity << "\n";
     std::cout << "lambda = " << lambda << "\n"
@@ -271,7 +271,7 @@ LinElAxi<Order>::exportResults( double time, element_type& U )
     exporter->step( time )->add( "displacement", disp );
 
     exporter->save();
-    Log() << "[timer] exportResults(): " << toc( false ) << "\n";
+    LOG(INFO) << "[timer] exportResults(): " << toc( false ) << "\n";
 } // LinElAxi::export
 
 

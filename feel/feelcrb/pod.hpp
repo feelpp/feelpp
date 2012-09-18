@@ -293,7 +293,7 @@ template<typename TruthModelType>
 void POD<TruthModelType>::exportMode( double time, element_ptrtype& mode )
 {
 
-    Log() << "exportResults starts\n";
+    LOG(INFO) << "exportResults starts\n";
 
     functionspace_ptrtype function_space = M_model->functionSpace();
     mesh_ptrtype mesh = function_space->mesh();
@@ -388,7 +388,7 @@ int POD<TruthModelType>::pod( mode_set_type& ModeSet, bool is_primal )
     if ( M_store_pod_matrix )
     {
         std::ofstream matrix_file;
-        Log()<<"saving Pod matrix in a file \n";
+        LOG(INFO)<<"saving Pod matrix in a file \n";
         matrix_file.open( "PodMatrix",std::ios::out );
         matrix_file<<M_pod_matrix.rows();
         matrix_file<<"\n";
@@ -405,13 +405,13 @@ int POD<TruthModelType>::pod( mode_set_type& ModeSet, bool is_primal )
             matrix_file<<"\n";
         }
 
-        Log()<<" matrix wrote in file named PodMatrix \n";
+        LOG(INFO)<<" matrix wrote in file named PodMatrix \n";
     }
 
     else if ( M_store_pod_matrix_format_octave )
     {
         std::ofstream matrix_file;
-        Log()<<"saving Pod matrix in a file \n";
+        LOG(INFO)<<"saving Pod matrix in a file \n";
         matrix_file.open( "PodMatrixOctave.mat",std::ios::out );
         matrix_file<<"# name: A\n";
         matrix_file<<"# type: matrix\n";
@@ -428,7 +428,7 @@ int POD<TruthModelType>::pod( mode_set_type& ModeSet, bool is_primal )
             matrix_file<<"\n";
         }
 
-        Log()<<" matrix wrote in file named PodMatrix \n";
+        LOG(INFO)<<" matrix wrote in file named PodMatrix \n";
         matrix_file.close();
     }
 
@@ -436,7 +436,7 @@ int POD<TruthModelType>::pod( mode_set_type& ModeSet, bool is_primal )
     eigen_solver.compute( M_pod_matrix ); // solve M_pod_matrix psi = lambda psi
 
     int number_of_eigenvalues =  eigen_solver.eigenvalues().size();
-    Log()<<"Number of eigenvalues  : "<<number_of_eigenvalues<<"\n";
+    LOG(INFO)<<"Number of eigenvalues  : "<<number_of_eigenvalues<<"\n";
     //we copy eigenvalues in a std::vector beacause it's easier to manipulate it
     std::vector<double> eigen_values( number_of_eigenvalues );
 

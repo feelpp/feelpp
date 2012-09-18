@@ -61,7 +61,7 @@ Environment::Environment()
     google::InstallFailureSignalHandler();
 #if defined( FEELPP_HAS_TBB )
     int n = tbb::task_scheduler_init::default_num_threads();
-    Log() << "[Feel++] TBB running with " << n << " threads\n";
+    LOG(INFO) << "[Feel++] TBB running with " << n << " threads\n";
 #else
     int n = 1 ;
 #endif
@@ -107,7 +107,7 @@ Environment::Environment( int& argc, char**& argv )
 #if defined( FEELPP_HAS_TBB )
     int n = tbb::task_scheduler_init::default_num_threads();
     //int n = 2;
-    //Log() << "[Feel++] TBB running with " << n << " threads\n";
+    //LOG(INFO) << "[Feel++] TBB running with " << n << " threads\n";
     //tbb::task_scheduler_init init(2);
 #endif
 
@@ -313,15 +313,19 @@ Environment::vm( po::options_description const& desc )
 void
 Environment::setLogs( std::string const& prefix )
 {
+
     mpi::communicator world;
-    Log().detachAll();
+#if 0
+    LOG(INFO).detachAll();
     std::ostringstream ostr;
     ostr << prefix << "-" << world.size()  << "." << world.rank();
-    Log().attach( ostr.str() );
+    LOG(INFO).attach( ostr.str() );
+#endif
 
     std::ostringstream ostr_assert;
     ostr_assert << prefix  << "-" << world.size()  << "." << world.rank() << ".assertions";
     Assert::setLog( ostr_assert.str().c_str() );
+
 }
 
 std::vector<WorldComm> const&

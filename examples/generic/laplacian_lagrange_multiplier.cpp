@@ -203,7 +203,7 @@ LaplacianLM<Dim,Order>::LaplacianLM( int argc, char** argv, AboutData const& ad,
                             % h
                           );
 
-    Log() << "create mesh\n";
+    LOG(INFO) << "create mesh\n";
     mesh = createGMSHMesh( _mesh=new mesh_type,
                            _desc=domain( _name=( boost::format( "hypercube-%1%" )  % Dim ).str() ,
                                          _usenames=true,
@@ -212,17 +212,17 @@ LaplacianLM<Dim,Order>::LaplacianLM( int argc, char** argv, AboutData const& ad,
                            _update=MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK,
                            _partitions=this->comm().size()  );
 
-    Log() << "create space\n";
+    LOG(INFO) << "create space\n";
     Xh = functionspace_type::New( mesh );
 
-    Log() << "print space info\n";
+    LOG(INFO) << "print space info\n";
     Xh->printInfo();
-    Log() << "print space 0 info\n";
+    LOG(INFO) << "print space 0 info\n";
     Xh->template functionSpace<0>()->printInfo();
-    Log() << "print space 1 info\n";
+    LOG(INFO) << "print space 1 info\n";
     Xh->template functionSpace<1>()->printInfo();
 
-    Log() << "Constructor done\n";
+    LOG(INFO) << "Constructor done\n";
 }
 template<int Dim, int Order>
 void
@@ -257,7 +257,7 @@ LaplacianLM<Dim, Order>::run()
 
     double area = integrate( _range=elements( mesh ), _expr=constant( 1.0 ) ).evaluate()( 0,0 );
     double mean = integrate( _range=elements( mesh ), _expr=g ).evaluate()( 0, 0 )/area;
-    Log() << "int g  = " << mean << "\n";
+    LOG(INFO) << "int g  = " << mean << "\n";
     vector_ptrtype F( M_backend->newVector( Xh ) );
     form1( Xh, F ) = ( integrate( _range=elements( mesh ), _expr=f*id( v ) )+
                        integrate( _range=boundaryfaces( mesh ), _expr=( trans( grad_g )*N() )*id( v ) ) +
@@ -272,11 +272,11 @@ LaplacianLM<Dim, Order>::run()
 
     M_backend->solve( _matrix=M, _solution=U, _rhs=F );
 
-    Log() << "lambda = " << lambda( 0 ) << "\n";
-    Log() << "area   = " << area << "\n";
-    Log() << "int g  = " << integrate( _range=elements( mesh ), _expr=g ).evaluate()( 0, 0 )/area << "\n";
-    Log() << "int u  = " << integrate( _range=elements( mesh ), _expr=idv( u ) ).evaluate()( 0, 0 )/area << "\n";
-    Log() << "error  = " << math::sqrt( integrate( _range=elements( mesh ), _expr=( idv( u )-g )*( idv( u )-g ) ).evaluate()( 0, 0 ) ) << "\n";
+    LOG(INFO) << "lambda = " << lambda( 0 ) << "\n";
+    LOG(INFO) << "area   = " << area << "\n";
+    LOG(INFO) << "int g  = " << integrate( _range=elements( mesh ), _expr=g ).evaluate()( 0, 0 )/area << "\n";
+    LOG(INFO) << "int u  = " << integrate( _range=elements( mesh ), _expr=idv( u ) ).evaluate()( 0, 0 )/area << "\n";
+    LOG(INFO) << "error  = " << math::sqrt( integrate( _range=elements( mesh ), _expr=( idv( u )-g )*( idv( u )-g ) ).evaluate()( 0, 0 ) ) << "\n";
 
     v = vf::project( _space=Xh->template functionSpace<0>(), _range=elements( mesh ), _expr=g );
 
@@ -296,7 +296,7 @@ LaplacianLM<Dim, Order>::exportResults( element_type& U, element_type& V, elemen
 {
     timers["export"].first.restart();
 
-    Log() << "exportResults starts\n";
+    LOG(INFO) << "exportResults starts\n";
     exporter->step( 0 )->setMesh( U.functionSpace()->mesh() );
     exporter->step( 0 )->add( "u", U.template element<0>() );
     exporter->step( 0 )->add( "exact", V.template element<0>() );
@@ -305,7 +305,7 @@ LaplacianLM<Dim, Order>::exportResults( element_type& U, element_type& V, elemen
 
     exporter->save();
     timers["export"].second = timers["export"].first.elapsed();
-    Log() << "[timer] exportResults(): " << timers["export"].second << "\n";
+    LOG(INFO) << "[timer] exportResults(): " << timers["export"].second << "\n";
 } // LaplacianLM::export
 } // Feel
 

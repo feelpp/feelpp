@@ -256,11 +256,11 @@ Stokes::run()
 #endif
     //# endmarker4 #
 
-    Log() << "Data Summary:\n";
-    Log() << "   hsize = " << meshSize << "\n";
-    Log() << "  export = " << this->vm().count( "export" ) << "\n";
-    Log() << "      mu = " << mu << "\n";
-    Log() << " bccoeff = " << penalbc << "\n";
+    LOG(INFO) << "Data Summary:\n";
+    LOG(INFO) << "   hsize = " << meshSize << "\n";
+    LOG(INFO) << "  export = " << this->vm().count( "export" ) << "\n";
+    LOG(INFO) << "      mu = " << mu << "\n";
+    LOG(INFO) << " bccoeff = " << penalbc << "\n";
 
 
 
@@ -294,7 +294,7 @@ Stokes::run()
     stokes_rhs += integrate( elements( mesh ),inner( f,id( v ) ) );
     stokes_rhs += integrate( boundaryfaces( mesh ), inner( u_exact,-SigmaN+penalbc*id( v )/hFace() ) );
 
-    Log() << "[stokes] vector local assembly done\n";
+    LOG(INFO) << "[stokes] vector local assembly done\n";
 
     /*
      * Construction of the left hand side
@@ -336,12 +336,12 @@ Stokes::run()
 #endif
     this->exportResults( u_exact, p_exact, U, V );
 
-    Log() << "[dof]         number of dof: " << Xh->nDof() << "\n";
-    Log() << "[dof]    number of dof/proc: " << Xh->nLocalDof() << "\n";
-    Log() << "[dof]      number of dof(U): " << Xh->functionSpace<0>()->nDof()  << "\n";
-    Log() << "[dof] number of dof/proc(U): " << Xh->functionSpace<0>()->nLocalDof()  << "\n";
-    Log() << "[dof]      number of dof(P): " << Xh->functionSpace<1>()->nDof()  << "\n";
-    Log() << "[dof] number of dof/proc(P): " << Xh->functionSpace<1>()->nLocalDof()  << "\n";
+    LOG(INFO) << "[dof]         number of dof: " << Xh->nDof() << "\n";
+    LOG(INFO) << "[dof]    number of dof/proc: " << Xh->nLocalDof() << "\n";
+    LOG(INFO) << "[dof]      number of dof(U): " << Xh->functionSpace<0>()->nDof()  << "\n";
+    LOG(INFO) << "[dof] number of dof/proc(U): " << Xh->functionSpace<0>()->nLocalDof()  << "\n";
+    LOG(INFO) << "[dof]      number of dof(P): " << Xh->functionSpace<1>()->nDof()  << "\n";
+    LOG(INFO) << "[dof] number of dof/proc(P): " << Xh->functionSpace<1>()->nLocalDof()  << "\n";
 } // Stokes::run
 
 
@@ -359,7 +359,7 @@ Stokes::exportResults( ExprUExact u_exact, ExprPExact p_exact,
 #if defined( FEELPP_USE_LM )
     auto lambda = U.element<2>();
     auto nu = V.element<2>();
-    Log() << "value of the Lagrange multiplier lambda= " << lambda( 0 ) << "\n";
+    LOG(INFO) << "value of the Lagrange multiplier lambda= " << lambda( 0 ) << "\n";
     std::cout << "value of the Lagrange multiplier lambda= " << lambda( 0 ) << "\n";
 
 #endif
@@ -368,26 +368,26 @@ Stokes::exportResults( ExprUExact u_exact, ExprPExact p_exact,
     std::cout << "||u_error||_2 = " << math::sqrt( u_errorL2 ) << "\n";;
 
     double meas = integrate( elements( u.mesh() ), cst( 1.0 ) ).evaluate()( 0, 0 );
-    Log() << "[stokes] measure(Omega)=" << meas << " (should be equal to 1)\n";
+    LOG(INFO) << "[stokes] measure(Omega)=" << meas << " (should be equal to 1)\n";
     std::cout << "[stokes] measure(Omega)=" << meas << " (should be equal to 1)\n";
 
     double mean_p = integrate( elements( u.mesh() ), idv( p ) ).evaluate()( 0, 0 )/meas;
-    Log() << "[stokes] mean(p)=" << mean_p << "\n";
+    LOG(INFO) << "[stokes] mean(p)=" << mean_p << "\n";
     std::cout << "[stokes] mean(p)=" << mean_p << "\n";
 
     double p_errorL2 = integrate( elements( u.mesh() ), ( idv( p )-mean_p - p_exact )*( idv( p )-mean_p-p_exact ) ).evaluate()( 0, 0 );
     std::cout << "||p_error||_2 = " << math::sqrt( p_errorL2 ) << "\n";;
 
-    Log() << "[stokes] solve for D done\n";
+    LOG(INFO) << "[stokes] solve for D done\n";
 
 
 
     double mean_div_u = integrate( elements( u.mesh() ), divv( u ) ).evaluate()( 0, 0 );
-    Log() << "[stokes] mean_div(u)=" << mean_div_u << "\n";
+    LOG(INFO) << "[stokes] mean_div(u)=" << mean_div_u << "\n";
     std::cout << "[stokes] mean_div(u)=" << mean_div_u << "\n";
 
     double div_u_error_L2 = integrate( elements( u.mesh() ), divv( u )*divv( u ) ).evaluate()( 0, 0 );
-    Log() << "[stokes] ||div(u)||_2=" << math::sqrt( div_u_error_L2 ) << "\n";
+    LOG(INFO) << "[stokes] ||div(u)||_2=" << math::sqrt( div_u_error_L2 ) << "\n";
     std::cout << "[stokes] ||div(u)||=" << math::sqrt( div_u_error_L2 ) << "\n";
 
     v = vf::project( u.functionSpace(), elements( u.mesh() ), u_exact );

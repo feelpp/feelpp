@@ -132,11 +132,11 @@ public:
         exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) ),
         timers()
     {
-        Log() << "[Beam] hsize = " << meshSize << "\n";
-        Log() << "[Beam] beta = " << beta << "\n";
-        Log() << "[Beam] bccoeff = " << bcCoeff << "\n";
-        Log() << "[Beam] bctype = " <<  M_bctype << "\n";
-        Log() << "[Beam] export = " << this->vm().count( "export" ) << "\n";
+        LOG(INFO) << "[Beam] hsize = " << meshSize << "\n";
+        LOG(INFO) << "[Beam] beta = " << beta << "\n";
+        LOG(INFO) << "[Beam] bccoeff = " << bcCoeff << "\n";
+        LOG(INFO) << "[Beam] bctype = " <<  M_bctype << "\n";
+        LOG(INFO) << "[Beam] export = " << this->vm().count( "export" ) << "\n";
 
     }
 
@@ -147,7 +147,7 @@ public:
 
         for ( ; it != en; ++it )
         {
-            Log() << it->first << " : " << it->second.second << " s elapsed\n";
+            LOG(INFO) << it->first << " : " << it->second.second << " s elapsed\n";
         }
     }
 
@@ -232,7 +232,7 @@ Beam<nDim,nOrder>::run()
     const double lambda = E*sigma/( ( 1+sigma )*( 1-2*sigma ) );
     const double density = 1e3;
     const double gravity = -2;//-density*0.05;
-    Log() << "lambda = " << lambda << "\n"
+    LOG(INFO) << "lambda = " << lambda << "\n"
           << "mu     = " << mu << "\n"
           << "gravity= " << gravity << "\n";
 

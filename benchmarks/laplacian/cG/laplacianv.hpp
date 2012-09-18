@@ -271,7 +271,7 @@ LaplacianV<Dim, Order, RDim>::run()
     element_type u( Xh, "u" );
     element_type v( Xh, "v" );
 
-    Log() << "Number of dof " << Xh->nLocalDof() << "\n";
+    LOG(INFO) << "Number of dof " << Xh->nLocalDof() << "\n";
     value_type nu = this->vm()["nu"].template as<double>();
     value_type beta = this->vm()["beta"].template as<double>();
 
@@ -318,7 +318,7 @@ LaplacianV<Dim, Order, RDim>::run()
     }
 
     F->close();
-    Log() << "F assembled in " << t1.elapsed() << "s\n";
+    LOG(INFO) << "F assembled in " << t1.elapsed() << "s\n";
     t1.restart();
 
     //Construction of the left hand side
@@ -326,14 +326,14 @@ LaplacianV<Dim, Order, RDim>::run()
     sparse_matrix_ptrtype D( backend->newMatrix( Xh, Xh ) );
 
     form2( Xh, Xh, D, _init=true );
-    Log() << "D initialized in " << t1.elapsed() << "s\n";
+    LOG(INFO) << "D initialized in " << t1.elapsed() << "s\n";
     t1.restart();
 
     form2( Xh, Xh, D ) +=
         integrate( elements( mesh ),
                    nu*( trace( gradt( u )*trans( grad( v ) ) ) )
                    + beta*( trans( idt( u ) )*id( v ) ) );
-    Log() << "D stiffness+mass assembled in " << t1.elapsed() << "s\n";
+    LOG(INFO) << "D stiffness+mass assembled in " << t1.elapsed() << "s\n";
     t1.restart();
 
     if ( this->vm().count( "weak" ) )
@@ -346,7 +346,7 @@ LaplacianV<Dim, Order, RDim>::run()
                                          ( - nu*trans( id( v ) )*( gradt( u )*N() )
                                            - nu*trans( idt( u ) )*( grad( v )*N() )
                                            + M_gammabc*trans( idt( u ) )*id( v )/hFace() ) );
-        Log() << "D weak bc assembled in " << t1.elapsed() << "s\n";
+        LOG(INFO) << "D weak bc assembled in " << t1.elapsed() << "s\n";
         t1.restart();
     }
 
@@ -359,7 +359,7 @@ LaplacianV<Dim, Order, RDim>::run()
         form2( Xh, Xh, D ) +=
             on( markedfaces( mesh, tag1 ), u, F, zf )+
             on( markedfaces( mesh, tag2 ), u, F, zf );
-        Log() << "D strong bc assembled in " << t1.elapsed() << "s\n";
+        LOG(INFO) << "D strong bc assembled in " << t1.elapsed() << "s\n";
         t1.restart();
     }
 
@@ -372,15 +372,15 @@ LaplacianV<Dim, Order, RDim>::run()
 
     this->solve( D, u, F );
 
-    Log() << "solve in " << t1.elapsed() << "s\n";
+    LOG(INFO) << "solve in " << t1.elapsed() << "s\n";
     t1.restart();
 
     double L2error2 =integrate( elements( mesh ),
                                 trans( idv( u )-g )*( idv( u )-g ) ).evaluate()( 0, 0 );
     double L2error =   math::sqrt( L2error2 );
 
-    Log() << "||error||_L2=" << L2error << "\n";
-    Log() << "L2 norm computed in " << t1.elapsed() << "s\n";
+    LOG(INFO) << "||error||_L2=" << L2error << "\n";
+    LOG(INFO) << "L2 norm computed in " << t1.elapsed() << "s\n";
     t1.restart();
 
 
@@ -388,14 +388,14 @@ LaplacianV<Dim, Order, RDim>::run()
     double semiH1error2 =integrate( elements( mesh ),
                                     trace( ( gradv( u )-gradv( v ) )*trans( gradv( u )-gradv( v ) ) ) ).evaluate()( 0, 0 ) ;
 
-    Log() << "semi H1 norm computed in " << t1.elapsed() << "s\n";
+    LOG(INFO) << "semi H1 norm computed in " << t1.elapsed() << "s\n";
     t1.restart();
 
     double H1error =   math::sqrt( semiH1error2+L2error2 );
-    Log() << "||error||_H1=" << H1error << "\n";
+    LOG(INFO) << "||error||_H1=" << H1error << "\n";
 
 
-    Log() << "H1 norm computed in " << t1.elapsed() << "s\n";
+    LOG(INFO) << "H1 norm computed in " << t1.elapsed() << "s\n";
     t1.restart();
 
     this->exportResults( u, v );
@@ -424,7 +424,7 @@ template<int Dim, int Order, int RDim>
 void
 LaplacianV<Dim, Order, RDim>::exportResults( element_type& U, element_type& E )
 {
-    Log() << "exportResults starts\n";
+    LOG(INFO) << "exportResults starts\n";
 
     if ( exporter->doExport() )
     {

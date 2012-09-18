@@ -231,7 +231,7 @@ Gmsh::generate( std::string const& __name, std::string const& __geo, bool const 
 
     if ( !mpi::environment::initialized() || ( mpi::environment::initialized()  && this->worldComm().globalRank() == this->worldComm().masterRank() ) )
     {
-        Log() << "[Gmsh::generate] generate on processor " <<  this->worldComm().globalRank() << "/" << this->worldComm().globalSize() << "\n";
+        LOG(INFO) << "[Gmsh::generate] generate on processor " <<  this->worldComm().globalRank() << "/" << this->worldComm().globalSize() << "\n";
         bool geochanged ( generateGeo( __name,__geo,modifGeo ) );
         std::ostringstream __geoname;
         __geoname << __name << ".geo";
@@ -264,14 +264,14 @@ Gmsh::generate( std::string const& __name, std::string const& __geo, bool const 
 #endif
         }
 
-        Log() << "[Gmsh::generate] meshname = " << __meshname.str() << "\n";
+        LOG(INFO) << "[Gmsh::generate] meshname = " << __meshname.str() << "\n";
         fname=__meshname.str();
     }
 
     if ( mpi::environment::initialized() )
     {
         mpi::broadcast( this->worldComm().globalComm(), fname, 0 );
-        Log() << "[Gmsh::generate] broadcast mesh filename : " << fname << " to all other processes\n";
+        LOG(INFO) << "[Gmsh::generate] broadcast mesh filename : " << fname << " to all other processes\n";
 
     }
 
@@ -329,9 +329,9 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  
         __str << BOOST_PP_STRINGIZE( GMSH_EXECUTABLE )
               << " -" << dim << " -part " << M_partitions  << " " << __geoname;
 
-    Log() << "[Gmsh::generate] execute '" <<  __str.str() << "\n";
-    Log() << "[Gmsh::generate] partitions: " <<  M_partitions << "\n";
-    Log() << "[Gmsh::generate] partitioner: " <<  M_partitioner << "\n";
+    LOG(INFO) << "[Gmsh::generate] execute '" <<  __str.str() << "\n";
+    LOG(INFO) << "[Gmsh::generate] partitions: " <<  M_partitions << "\n";
+    LOG(INFO) << "[Gmsh::generate] partitioner: " <<  M_partitioner << "\n";
 
     auto err = ::system( __str.str().c_str() );
 #else
@@ -344,10 +344,10 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  
         gmshIsInit=true;
         GmshInitialize();
     }
-    Log() << "[Gmsh::generate] env.part: " <<  Environment::numberOfProcessors() << "\n";
-    Log() << "[Gmsh::generate] env.part: " <<  Environment::worldComm().size() << "\n";
-    Log() << "[Gmsh::generate] partitions: " <<  M_partitions << "\n";
-    Log() << "[Gmsh::generate] partitioner: " <<  M_partitioner << "\n";
+    LOG(INFO) << "[Gmsh::generate] env.part: " <<  Environment::numberOfProcessors() << "\n";
+    LOG(INFO) << "[Gmsh::generate] env.part: " <<  Environment::worldComm().size() << "\n";
+    LOG(INFO) << "[Gmsh::generate] partitions: " <<  M_partitions << "\n";
+    LOG(INFO) << "[Gmsh::generate] partitioner: " <<  M_partitioner << "\n";
     CTX::instance()->partitionOptions.num_partitions =  M_partitions;
     CTX::instance()->partitionOptions.partitioner =  M_partitioner;
 
@@ -432,7 +432,7 @@ Gmsh::rebuildPartitionMsh( std::string const& nameMshInput,std::string const& na
     if ( mpi::environment::initialized() )
     {
         mpi::broadcast( this->worldComm().globalComm(), _name, this->worldComm().masterRank() );
-        Log() << "[Gmsh::rebuildPartitionMsh] broadcast mesh filename : " << _name << " to all other processes\n";
+        LOG(INFO) << "[Gmsh::rebuildPartitionMsh] broadcast mesh filename : " << _name << " to all other processes\n";
     }
 
 

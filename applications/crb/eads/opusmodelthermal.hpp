@@ -189,26 +189,26 @@ OpusModelThermal<SpaceType>::OpusModelThermal( po::variables_map const& _vm,
 
     M_Xh( Xh )
 {
-    Log() << "[OpusModelThermal] constructor start\n";
+    LOG(INFO) << "[OpusModelThermal] constructor start\n";
     FEELPP_ASSERT( M_backend != 0 ).error( "[OpusModelThermal] invalid backend" );
     FEELPP_ASSERT( M_Xh != 0 ).error( "[OpusModelThermal] invalid functionspace_ptrtype" );
 
 
     M_D = M_backend->newMatrix( M_Xh, M_Xh );
     FEELPP_ASSERT( M_D != 0 ).error( "invalid CDR matrix" );
-    Log() << "[OpusModelThermal] D allocated\n";
+    LOG(INFO) << "[OpusModelThermal] D allocated\n";
 
     M_Dt = M_backend->newMatrix( M_Xh, M_Xh );
     FEELPP_ASSERT( M_D != 0 ).error( "invalid CDR matrix" );
-    Log() << "[OpusModelThermal] Dt allocated\n";
+    LOG(INFO) << "[OpusModelThermal] Dt allocated\n";
 
     M_M = M_backend->newMatrix( M_Xh, M_Xh );
     FEELPP_ASSERT( M_M != 0 ).error( "invalid mass matrix" );
-    Log() << "[OpusModelThermal] M allocated\n";
+    LOG(INFO) << "[OpusModelThermal] M allocated\n";
 
     M_F = M_backend->newVector( M_Xh );
     FEELPP_ASSERT( M_F != 0 ).error( "invalid vector" );
-    Log() << "[OpusModelThermal] F allocated\n";
+    LOG(INFO) << "[OpusModelThermal] F allocated\n";
     sparse_matrix_ptrtype M( M_backend->newMatrix( M_Xh, M_Xh ) );
 
 }
@@ -257,11 +257,11 @@ OpusModelThermal<SpaceType>::update( double time,
 
 #if defined( OPUS_WITH_THERMAL_DISCONTINUITY )
         auto N_IC_PCB = vec( constant( -1. ),constant( 0. ) );
-        Log() << "[add discontinuous interface at boundary " << M_Xh->mesh()->markerName( "Gamma_IC1_PCB" ) << "\n";
+        LOG(INFO) << "[add discontinuous interface at boundary " << M_Xh->mesh()->markerName( "Gamma_IC1_PCB" ) << "\n";
 
         form2( M_Xh, M_Xh, M_D ) += integrate( _range=markedfaces( M_Xh->mesh(), "Gamma_IC1_PCB" ),
                                                _expr=M_c*( trans( jump( id( w ) ) )*N_IC_PCB )*( trans( jumpt( idt( u ) ) )*N_IC_PCB ) );
-        Log() << "[add discontinuous interface at boundary " << M_Xh->mesh()->markerName( "Gamma_IC2_PCB" ) << "\n";
+        LOG(INFO) << "[add discontinuous interface at boundary " << M_Xh->mesh()->markerName( "Gamma_IC2_PCB" ) << "\n";
         form2( M_Xh, M_Xh, M_D ) += integrate( _range=markedfaces( M_Xh->mesh(), "Gamma_IC2_PCB" ),
                                                _expr=M_c*( trans( jump( id( w ) ) )*N_IC_PCB )*( trans( jumpt( idt( u ) ) )*N_IC_PCB ) );
 #endif
@@ -282,7 +282,7 @@ OpusModelThermal<SpaceType>::update( double time,
 #endif
         BOOST_FOREACH( std::string marker, markers )
         {
-            Log() << "[add weakbc boundary terms velocity] boundary " << marker << " id : "
+            LOG(INFO) << "[add weakbc boundary terms velocity] boundary " << marker << " id : "
                   << M_Xh->mesh()->markerName( marker ) << "\n";
             form2( _test=M_Xh, _trial=M_Xh, _matrix=M_D ) +=
                 integrate( markedfaces( M_Xh->mesh(),marker ),
@@ -313,7 +313,7 @@ OpusModelThermal<SpaceType>::update( double time,
                 form2( M_Xh, M_Xh, M_Dt, _pattern=pattern )+=
                     integrate( markedelements( M_Xh->mesh(),region ),
                                ( gradt( u )*( conv_coeff ) )*id( w ) );
-                Log() << "[conv terms] region:" << region << " assembly time= " << ti.elapsed() << "\n";
+                LOG(INFO) << "[conv terms] region:" << region << " assembly time= " << ti.elapsed() << "\n";
                 ti.restart();
 
             }
@@ -321,13 +321,13 @@ OpusModelThermal<SpaceType>::update( double time,
 
 #if defined( OPUS_WITH_THERMAL_DISCONTINUITY )
         auto N_IC_PCB = vec( constant( -1. ),constant( 0. ) );
-        Log() << "[add discontinuous interface at boundary "
+        LOG(INFO) << "[add discontinuous interface at boundary "
               << M_Xh->mesh()->markerName( "Gamma_IC1_PCB" ) << "\n";
 
         form2( M_Xh, M_Xh, M_Dt ) +=
             integrate( markedfaces( M_Xh->mesh(), M_Xh->mesh()->markerName( "Gamma_IC1_PCB" ) ),
                        0.*( trans( jump( id( w ) ) )*N_IC_PCB )*( trans( jumpt( idt( u ) ) )*N_IC_PCB ),_Q<2*( Order )>() );
-        Log() << "[add discontinuous interface at boundary "
+        LOG(INFO) << "[add discontinuous interface at boundary "
               << M_Xh->mesh()->markerName( "Gamma_IC2_PCB" ) << "\n";
         form2( M_Xh, M_Xh, M_Dt ) +=
             integrate( markedfaces( M_Xh->mesh(), M_Xh->mesh()->markerName( "Gamma_IC2_PCB" ) ),
@@ -345,8 +345,8 @@ OpusModelThermal<SpaceType>::update( double time,
             size_type nt = std::distance( boost::get<1>( internalfaces( M_Xh->mesh() ) ),
                                           boost::get<2>( internalfaces( M_Xh->mesh() ) ) );
 
-            Log() << "n AIR faces = " << n << "\n";
-            Log() << "n total faces = " << nt << "\n";
+            LOG(INFO) << "n AIR faces = " << n << "\n";
+            LOG(INFO) << "n total faces = " << nt << "\n";
             boost::timer ti;
 #if defined(FEELPP_HAS_GOOGLE_PROFILER_H )
             //ProfilerStart( "faces_integration_profile" );
@@ -363,7 +363,7 @@ OpusModelThermal<SpaceType>::update( double time,
             //ProfilerStop();
 #endif
 
-            Log() << "[stab terms] time= " << ti.elapsed() << "\n";
+            LOG(INFO) << "[stab terms] time= " << ti.elapsed() << "\n";
         }
 
         M_Dt->close();
@@ -376,13 +376,13 @@ OpusModelThermal<SpaceType>::update( double time,
     form1( M_Xh, M_F, _init=do_init ) = integrate( _range=elements( M_Xh->mesh() ), _expr=( rhs_coeff )*id( w ) );
     BOOST_FOREACH( std::string marker, markers )
     {
-        Log() << "[add weakbc boundary terms velocity] boundary "
+        LOG(INFO) << "[add weakbc boundary terms velocity] boundary "
               << marker << " id : " << M_Xh->mesh()->markerName( marker ) << "\n";
         form1( _test=M_Xh, _vector=M_F ) +=
             integrate( _range=markedfaces( M_Xh->mesh(), marker ),
                        _expr=constant( M_T0 )*( diff_coeff )*( -grad( w )*N()+
                                this->data()->gammaBc()*id( w )/hFace() ) );
-        Log() << "[add weakbc boundary terms velocity] boundary "
+        LOG(INFO) << "[add weakbc boundary terms velocity] boundary "
               << marker << " id : " << M_Xh->mesh()->markerName( marker ) << "done \n";
     }
     M_F->close();

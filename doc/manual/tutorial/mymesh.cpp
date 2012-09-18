@@ -131,8 +131,8 @@ template<int Dim>
 void
 MyMesh<Dim>::run()
 {
-    Log() << "------------------------------------------------------------\n";
-    Log() << "Execute MyMesh<" << Dim << ">\n";
+    LOG(INFO) << "------------------------------------------------------------\n";
+    LOG(INFO) << "Execute MyMesh<" << Dim << ">\n";
     std::vector<double> X( 2 );
     X[0] = meshSize;
 
@@ -169,7 +169,7 @@ MyMesh<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
     if ( !is_mesh_loaded )
     {
         tic();
-        Log() << "Generating mesh using gmsh...\n";
+        LOG(INFO) << "Generating mesh using gmsh...\n";
         mesh = createGMSHMesh( _mesh=new mesh_type,
                                _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
                                _desc=domain( _name=( boost::format( "%1%-%2%" ) % shape % Dim ).str() ,
@@ -177,7 +177,7 @@ MyMesh<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
                                              _dim=Dim,
                                              _substructuring=true,
                                              _h=X[0] ) );
-        Log() << "Saving mesh...\n";
+        LOG(INFO) << "Saving mesh...\n";
         mesh->save( _name="mymesh",_path=".",_type="binary" );
         toc("generate+save");
     }
@@ -192,22 +192,22 @@ MyMesh<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
 
     int ne = std::distance( mesh->beginElementWithProcessId( this->comm().rank() ),
                             mesh->endElementWithProcessId( this->comm().rank() ) );
-    Log() << "Local number of elements: " << ne << "\n";
+    LOG(INFO) << "Local number of elements: " << ne << "\n";
     int gne;
     mpi::all_reduce( this->comm(), ne, gne, [] ( int x, int y )
                      {
                          return x + y;
                      } );
-    Log() << "Global number of elements: " << gne << "\n";
+    LOG(INFO) << "Global number of elements: " << gne << "\n";
 
     //# marker62 #
     if ( exporter->doExport() )
     {
-        Log() << "Exporting mesh\n";
+        LOG(INFO) << "Exporting mesh\n";
         exporter->step( 0 )->setMesh( mesh );
-        Log() << "Exporting regions\n";
+        LOG(INFO) << "Exporting regions\n";
         exporter->step( 0 )->addRegions();
-        Log() << "Saving...\n";
+        LOG(INFO) << "Saving...\n";
         exporter->save();
     }
     //# endmarker62 #

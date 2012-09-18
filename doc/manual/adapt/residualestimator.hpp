@@ -668,7 +668,7 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
 
     if ( exporter->doExport() )
     {
-        Log() << "exportResults starts\n";
+        LOG(INFO) << "exportResults starts\n";
 
         exporter->step( 0 )->setMesh( mesh );
         exporter->step( 0 )->add( "unknown", u );
@@ -681,15 +681,15 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
         exporter->step( 0 )->add( "new hsize" , h_new );
 
         exporter->save();
-        Log() << "exportResults done\n";
+        LOG(INFO) << "exportResults done\n";
     }
 
     /** \endcode */
 
-    Log()<< " real L2 error : "<<Y[0]<<"\n";
-    Log()<< " estimated L2 error "<<Y[2]<<"\n";
-    Log()<< " real H1 error : "<<Y[1]<<"\n";
-    Log()<< " estimated H1 error "<<Y[3]<<"\n";
+    LOG(INFO)<< " real L2 error : "<<Y[0]<<"\n";
+    LOG(INFO)<< " estimated L2 error "<<Y[2]<<"\n";
+    LOG(INFO)<< " real H1 error : "<<Y[1]<<"\n";
+    LOG(INFO)<< " estimated H1 error "<<Y[3]<<"\n";
 
 
     std::ostringstream geostr;

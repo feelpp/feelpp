@@ -303,7 +303,7 @@ HeatSink<Dim, Order>::run()
 
     using namespace Feel::vf;
 
-    Log() << "meshSize = " << meshSize << "\n"
+    LOG(INFO) << "meshSize = " << meshSize << "\n"
           << "L = "<< L <<"\n"
           << "width = " << width << "\n"
           << "depth = " << depth << "\n"

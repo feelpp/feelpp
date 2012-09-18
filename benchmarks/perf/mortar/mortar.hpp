@@ -305,11 +305,11 @@ Mortar<Dim, Order1, Order2>::run()
 
     auto B1 = backend->newMatrix( Xh1, Lh1 );
 
-    Log() << "init_B1 starts\n";
+    LOG(INFO) << "init_B1 starts\n";
     t.restart();
 
     form2( _trial=Xh1, _test=Lh1, _matrix=B1, _init=true );
-    Log() << "init_B1 done in " << t.elapsed() << "s\n";
+    LOG(INFO) << "init_B1 done in " << t.elapsed() << "s\n";
     M_stats.put( "t.init.B1",t.elapsed() );
     t.restart();
 
@@ -426,12 +426,12 @@ Mortar<Dim, Order1, Order2>::run()
     M_stats.put( "t.assembly.F",t.elapsed() );
     t.restart();
 
-    Log() << "number of dof(u1): " << Xh1->nDof() << "\n";
-    Log() << "number of dof(u2): " << Xh2->nDof() << "\n";
-    Log() << "number of dof(lambda): " << Lh1->nDof() << "\n";
-    Log() << "size of linear system: " << FbB->size() << "\n";
+    LOG(INFO) << "number of dof(u1): " << Xh1->nDof() << "\n";
+    LOG(INFO) << "number of dof(u2): " << Xh2->nDof() << "\n";
+    LOG(INFO) << "number of dof(lambda): " << Lh1->nDof() << "\n";
+    LOG(INFO) << "size of linear system: " << FbB->size() << "\n";
 
-    Log() << "solve starts\n";
+    LOG(INFO) << "solve starts\n";
 
 
 

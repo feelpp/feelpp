@@ -137,9 +137,9 @@ void MyMCSApp::run()
      * HOME/feel/doc/tutorial/myapp/myapp-1.0
      */
     /** \code */
-    Log() << "the value of dt is " << this->vm()["dt"].as<double>() << "\n";
-    Log() << "the value of myapp-solver-type is " << this->vm()["myapp.ksp-type"].as<std::string>() << "\n";
-    Log() << "the value of myapp-pc-type is " << this->vm()["myapp.pc-type"].as<std::string>() << "\n";
+    LOG(INFO) << "the value of dt is " << this->vm()["dt"].as<double>() << "\n";
+    LOG(INFO) << "the value of myapp-solver-type is " << this->vm()["myapp.ksp-type"].as<std::string>() << "\n";
+    LOG(INFO) << "the value of myapp-pc-type is " << this->vm()["myapp.pc-type"].as<std::string>() << "\n";
     /** \endcode */
 }
 

@@ -196,8 +196,8 @@ public:
         geomap( ( GeomapStrategyType )this->vm()["geomap"].template as<int>() ),
         exporter( export_type::New( this->vm(), "advection" ) )
     {
-        Log() << "[Advection] hsize = " << meshSize << "\n";
-        Log() << "[Advection] bccoeff = " << bcCoeff << "\n";
+        LOG(INFO) << "[Advection] hsize = " << meshSize << "\n";
+        LOG(INFO) << "[Advection] bccoeff = " << bcCoeff << "\n";
     }
 
     /**
@@ -362,7 +362,7 @@ Advection<Dim, Order, Cont, Entity>::run()
     double c = integrate( internalfaces( mesh ), trans( jumpv( idv( u ) ) )*jumpv( idv( u ) )  ).evaluate()( 0, 0 );
     double error = integrate( elements( mesh ), trans( idv( u )-g )*( idv( u )-g ) ).evaluate()( 0, 0 );
 
-    Log() << "||error||_0 =" << error << "\n";
+    LOG(INFO) << "||error||_0 =" << error << "\n";
     std::cout << "c =" << c << "\n";
     std::cout << "||error||_0 =" << error << "\n";
 

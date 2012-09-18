@@ -47,18 +47,18 @@ public:
     void run( const double * X, unsigned long N,
               double * Y, unsigned long P )
     {
-        Log() << "run from OT\n";
+        LOG(INFO) << "run from OT\n";
 
         for ( int i = 0; i < N; ++i )
-            Log()<< "[opuseadsrb::run] X[" << i << "]="<< X[i] << "\n";
+            LOG(INFO)<< "[opuseadsrb::run] X[" << i << "]="<< X[i] << "\n";
 
         if ( M_opus )
             M_opus->run( X, N, Y, P );
 
         for ( int i = 0; i < P; ++i )
-            Log()<< "[opuseadsrb::run] Y[" << i << "]="<< Y[i] << "\n";
+            LOG(INFO)<< "[opuseadsrb::run] Y[" << i << "]="<< Y[i] << "\n";
 
-        Log() << "done run from OT\n";
+        LOG(INFO) << "done run from OT\n";
     }
 private:
 

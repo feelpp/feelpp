@@ -524,7 +524,7 @@ RbHeat::init()
     element_type u( Xh, "u" );
     element_type v( Xh, "v" );
 
-    Log() << "Number of dof " << Xh->nLocalDof() << "\n";
+    LOG(INFO) << "Number of dof " << Xh->nLocalDof() << "\n";
     //std::cout<<"Number of dof " << Xh->nLocalDof() << "\n";
 
 
@@ -606,7 +606,7 @@ RbHeat::exportResults( element_type& U )
 {
     if ( M_do_export )
     {
-        Log() << "exportResults starts\n";
+        LOG(INFO) << "exportResults starts\n";
 
         exporter->step( 0 )->setMesh( U.functionSpace()->mesh() );
 

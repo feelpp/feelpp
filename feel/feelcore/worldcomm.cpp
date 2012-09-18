@@ -61,7 +61,7 @@ WorldComm::WorldComm( super const& s )
     M_mapGlobalRankToGodRank( this->globalSize() ),
     M_isActive( this->godSize(),true )
 {
-    //Log() << "\n WorldComm : warning constructor empty!! on godRank " << this->godRank() << "\n";
+    //LOG(INFO) << "\n WorldComm : warning constructor empty!! on godRank " << this->godRank() << "\n";
     init( 0, false );
 }
 
@@ -121,7 +121,7 @@ WorldComm::init( int color, bool colormap )
     mpi::all_gather( this->globalComm(),
                      this->globalRank(),
                      globalRanks );
-    //Log() << "gather1\n";
+    //LOG(INFO) << "gather1\n";
     if ( !colormap )
         mpi::all_gather( this->globalComm(),
                          color,
@@ -766,7 +766,7 @@ WorldComm::setColorMap( std::vector<int> const& colormap )
 {
     M_mapColorWorld = colormap;
     M_localComm = super::split( M_mapColorWorld[this->globalRank()] );
-    Log() << "WorldComm::setColorMap: localSize = " << M_localComm.size() << "\n";
+    LOG(INFO) << "WorldComm::setColorMap: localSize = " << M_localComm.size() << "\n";
     mpi::all_gather( this->localComm(),
                      this->globalRank(),
                      M_mapLocalRankToGlobalRank );

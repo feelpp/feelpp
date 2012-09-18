@@ -203,10 +203,10 @@ ddmethod<Dim>::localProblem( element_type& u,
     backend_type::build()->solve( _matrix=A, _solution=u, _rhs=B );//, _reuse_prec=true );
     timers["solver"].second = timers["solver"].first.elapsed();
 
-    Log() << "[timer] run():  assembly: " << timers["assembly"].second << "\n";
-    Log() << "[timer] run():    o A : " << timers["assembly_A"].second << "\n";
-    Log() << "[timer] run():    o B : " << timers["assembly_B"].second << "\n";
-    Log() << "[timer] run():  solver: " << timers["solver"].second << "\n";
+    LOG(INFO) << "[timer] run():  assembly: " << timers["assembly"].second << "\n";
+    LOG(INFO) << "[timer] run():    o A : " << timers["assembly_A"].second << "\n";
+    LOG(INFO) << "[timer] run():    o B : " << timers["assembly_B"].second << "\n";
+    LOG(INFO) << "[timer] run():  solver: " << timers["solver"].second << "\n";
 }
 
 template<int Dim>

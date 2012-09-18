@@ -476,13 +476,13 @@ SolverLinearPetsc<T>::solve ( MatrixSparse<T> const&  matrix_in,
 
     if ( reason==KSP_DIVERGED_INDEFINITE_PC )
     {
-        Log() << "[solverlinearpetsc] Divergence because of indefinite preconditioner;\n";
-        Log() << "[solverlinearpetsc] Run the executable again but with '-pc_factor_shift_type POSITIVE_DEFINITE' option.\n";
+        LOG(INFO) << "[solverlinearpetsc] Divergence because of indefinite preconditioner;\n";
+        LOG(INFO) << "[solverlinearpetsc] Run the executable again but with '-pc_factor_shift_type POSITIVE_DEFINITE' option.\n";
     }
 
     else if ( reason<0 )
     {
-        Log() <<"[solverlinearpetsc] Other kind of divergence: this should not happen.\n";
+        LOG(INFO) <<"[solverlinearpetsc] Other kind of divergence: this should not happen.\n";
     }
 
     bool hasConverged;

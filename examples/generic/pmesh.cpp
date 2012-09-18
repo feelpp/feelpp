@@ -178,8 +178,8 @@ public:
         timers(),
         stats()
     {
-        Log() << "[Laplacian] hsize = " << meshSize << "\n";
-        Log() << "[Laplacian] export = " << this->vm().count( "export" ) << "\n";
+        LOG(INFO) << "[Laplacian] hsize = " << meshSize << "\n";
+        LOG(INFO) << "[Laplacian] export = " << this->vm().count( "export" ) << "\n";
 
     }
 
@@ -245,7 +245,7 @@ Laplacian<Dim,Order,Cont,Entity,FType>::createMesh( double meshSize, double ymin
     mesh->accept( import );
     mesh->partition();
     timers["mesh"].second = timers["mesh"].first.elapsed();
-    Log() << "[timer] createMesh(): " << timers["mesh"].second << "\n";
+    LOG(INFO) << "[timer] createMesh(): " << timers["mesh"].second << "\n";
     return mesh;
 } // Laplacian::createMesh
 
@@ -283,14 +283,14 @@ Laplacian<Dim, Order, Cont, Entity, FType>::run()
     pid = regionProcess( P0h );
     typename mesh_type::element_iterator it = mesh->beginElementWithProcessId( Application::processId() );
     typename mesh_type::element_iterator en = mesh->endElementWithProcessId( Application::processId() );
-    Log() << "first local index = " << pid.firstLocalIndex() << "\n";
-    Log() << "last local index = " << pid.lastLocalIndex() << "\n";
+    LOG(INFO) << "first local index = " << pid.firstLocalIndex() << "\n";
+    LOG(INFO) << "last local index = " << pid.lastLocalIndex() << "\n";
 
     for ( ; it != en; ++it )
     {
         size_type dof0 = boost::get<0>( P0h->dof()->localToGlobal( it->id(), 0 ) );
 
-        Log() << "element " << it->id() << " pid = " << it->processId() << " dof = " << dof0 << " value= " << pid( dof0 ) << "\n";
+        LOG(INFO) << "element " << it->id() << " pid = " << it->processId() << " dof = " << dof0 << " value= " << pid( dof0 ) << "\n";
         //FEELPP_ASSERT( pid( dof0
     }
 
@@ -309,13 +309,13 @@ Laplacian<Dim, Order, Cont, Entity, FType>::run()
      * The function space and some associate elements are then defined
      */
     timers["init"].first.restart();
-    Log() << "defining Xh\n";
+    LOG(INFO) << "defining Xh\n";
     typename space<Cont>::ptrtype Xh = space<Cont>::type::New( mesh );
-    Log() << "defining Xh done\n";
+    LOG(INFO) << "defining Xh done\n";
     //Xh->dof()->showMe();
-    Log() << "defining u\n";
+    LOG(INFO) << "defining u\n";
     typename space<Cont>::element_type u( Xh, "u" );
-    Log() << "defining u done\n";
+    LOG(INFO) << "defining u done\n";
     typename space<Cont>::element_type v( Xh, "v" );
     timers["init"].second = timers["init"].first.elapsed();
     stats["ndof"] = Xh->nDof();
@@ -440,7 +440,7 @@ Laplacian<Dim, Order, Cont, Entity, FType>::solve( Mat& D,
     u = *U;
 
     timers["solver"].second = timers["solver"].first.elapsed();
-    Log() << "[timer] solve: " << timers["solver"].second << "\n";
+    LOG(INFO) << "[timer] solve: " << timers["solver"].second << "\n";
 } // Laplacian::solve
 
 
@@ -455,7 +455,7 @@ Laplacian<Dim, Order, Cont, Entity,FType>::exportResults( f1_type& U,
 
     if ( this->vm().count( "export" ) )
     {
-        Log() << "exportResults starts\n";
+        LOG(INFO) << "exportResults starts\n";
         exporter->step( 1. )->setMesh( U.functionSpace()->mesh() );
 
         //exporter->step(1.)->setMesh( this->createMesh( meshSize/2, 0.5, 1 ) );
@@ -547,7 +547,7 @@ Laplacian<Dim, Order, Cont, Entity,FType>::exportResults( f1_type& U,
     }
 
     timers["export"].second = timers["export"].first.elapsed();
-    Log() << "[timer] exportResults(): " << timers["export"].second << "\n";
+    LOG(INFO) << "[timer] exportResults(): " << timers["export"].second << "\n";
 } // Laplacian::export
 } // Feel
 

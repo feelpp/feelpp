@@ -91,7 +91,7 @@ Pbeq::solve( Mat const& D,
     u = *U;
 
     timers["solver"].second = timers["solver"].first.elapsed();
-    Log() << "[timer] solve: " << timers["solver"].second << "\n";
+    LOG(INFO) << "[timer] solve: " << timers["solver"].second << "\n";
 } // Pbeq::solve
 
 template<typename Etype, typename Ktype>
@@ -172,12 +172,12 @@ Pbeq::initMolecule( std::string const& moleculeName,
 
     if ( mol_read == 0 )
     {
-        Log() << "Molecule " << moleculeName << " has " << _molecule.size() << " atoms \n";
+        LOG(INFO) << "Molecule " << moleculeName << " has " << _molecule.size() << " atoms \n";
         _molecule.showMe();
         return _molecule.size();
     }
 
-    Log() << "problem in reading "
+    LOG(INFO) << "problem in reading "
           << file.str()
           << "\n";
 
@@ -202,10 +202,10 @@ Pbeq::setDomain( molecule_type const& _molecule )
     stretch     = ( _max - _min )/2;
     translation = ( _max + _min )/2;
 
-    Log() << "i  \tmin,   \tmax, \tstretch,\ttranslation " << "\n";
+    LOG(INFO) << "i  \tmin,   \tmax, \tstretch,\ttranslation " << "\n";
 
     for ( int i( 0 ); i < dim; i++ )
-        Log() << i <<"\t"<<  _min[i] <<"\t"<<  _max[i] <<"\t"<< stretch[i] <<"\t\t"<< translation[i]
+        LOG(INFO) << i <<"\t"<<  _min[i] <<"\t"<<  _max[i] <<"\t"<< stretch[i] <<"\t\t"<< translation[i]
               << "\n";
 
     M_detJac = stretch[0];
@@ -283,7 +283,7 @@ Pbeq::setReclusterFile( std::string const& reclusterName )
 
     if ( M_dock4file.fail() )
     {
-        Log() << "setReclusterFile::failed to open *" << reclusterName << "*"
+        LOG(INFO) << "setReclusterFile::failed to open *" << reclusterName << "*"
               << "\n at " << file.str()
               << "\n";
         return -1;
@@ -320,7 +320,7 @@ Pbeq::deltaAndHeavisyde( molecule_type const       &myMolecule,
     F->close();
 
     // Checking consistency of the right hand side
-    Log() << myMolecule.name() << " total charge = " << myMolecule.totalCharge() << " == " << F->sum() << " = sum(F)\n";
+    LOG(INFO) << myMolecule.name() << " total charge = " << myMolecule.totalCharge() << " == " << F->sum() << " = sum(F)\n";
 
     FEELPP_ASSERT(  std::abs( myMolecule.totalCharge() -  F->sum() )
                     < ( myMolecule.totalAbsCharge() +  F->l1Norm() )  * 1.e-9  ).error( "total charge and sum(F) are different" );
@@ -329,7 +329,7 @@ Pbeq::deltaAndHeavisyde( molecule_type const       &myMolecule,
     F->scale( rhsCoeff* M_detJac );
 
     timers["assembly"].second = timers["assembly"].first.elapsed();
-    Log() << "[timer] rhs assembly: " << timers["assembly"].second << "\n";
+    LOG(INFO) << "[timer] rhs assembly: " << timers["assembly"].second << "\n";
 
     // right hand side done
 
@@ -350,14 +350,14 @@ Pbeq::deltaAndHeavisyde( molecule_type const       &myMolecule,
 
     //
 
-    Log() << "domain_size = " << M_detJac*domain_size
+    LOG(INFO) << "domain_size = " << M_detJac*domain_size
           << " intH = " << M_detJac*intH
           << "\n";
 
 
 
     timers["heavyside"].second += timers["heavyside"].first.elapsed();
-    Log() << "[timer] heavyside: " << timers["heavyside"].second << "\n";
+    LOG(INFO) << "[timer] heavyside: " << timers["heavyside"].second << "\n";
 
 }
 
@@ -385,7 +385,7 @@ Pbeq::buildSystemAndSolve( element_type        & u,
     getPBMatrix( PB, u, v, Epsilon, kappa2 );
 
     timers["assembly"].second = timers["assembly"].first.elapsed();
-    Log() << "[timer] assembly: " << timers["assembly"].second << "\n";
+    LOG(INFO) << "[timer] assembly: " << timers["assembly"].second << "\n";
 
 
     /*
@@ -530,8 +530,8 @@ Pbeq::postProcess( element_type const& u, vector_ptrtype const& F, value_type co
     value_type l2norm = integrate( elements(*M_pbeqspace.mesh()), im, val( idv(u)^2  ) ).evaluate()(0,0);
     // value_type global_l2norm = 0;
     // mpi::all_reduce( Application::comm(), l2norm, global_l2norm, std::plus<value_type>() );
-    // Log() << "L2norm = " << math::sqrt( global_l2norm ) << "\n";
-    Log() << "L2norm = " << math::sqrt( l2norm ) << "\n";
+    // LOG(INFO) << "L2norm = " << math::sqrt( global_l2norm ) << "\n";
+    LOG(INFO) << "L2norm = " << math::sqrt( l2norm ) << "\n";
     */
 
 #ifdef PBEQ_USE_SERIAL
@@ -546,11 +546,11 @@ Pbeq::postProcess( element_type const& u, vector_ptrtype const& F, value_type co
       if ( Application::processId() == 0 )
         std::cout << "inner_prod ( F, u ) = " << output << "\n" << std::flush;
     */
-    Log() << "Energy = " << 1./( 8.* 3.1415926 *rhsCoeff*rhsCoeff ) << "*" << output << "\n";
+    LOG(INFO) << "Energy = " << 1./( 8.* 3.1415926 *rhsCoeff*rhsCoeff ) << "*" << output << "\n";
 
     output = 1./( 8.* 3.1415926 *rhsCoeff*rhsCoeff ) * output;
 
-    Log() << "Energy = " << output << "\n";
+    LOG(INFO) << "Energy = " << output << "\n";
     /*
     if ( Application::processId() == 0 )
         std::cout <<  " Energy = " << output << "\n"
@@ -558,7 +558,7 @@ Pbeq::postProcess( element_type const& u, vector_ptrtype const& F, value_type co
     */
 
     timers["output"].second += timers["output"].first.elapsed();
-    Log() << "[timer] Energy: " << timers["output"].second << "\n";
+    LOG(INFO) << "[timer] Energy: " << timers["output"].second << "\n";
 
     return output;
 
@@ -586,7 +586,7 @@ Pbeq::exportResults( heavyside_element_type& H0, heavyside_element_type& H1,
     exporter->save();
 
     timers["export"].second = timers["export"].first.elapsed();
-    Log() << "[timer] export: " << timers["export"].second << "\n";
+    LOG(INFO) << "[timer] export: " << timers["export"].second << "\n";
 
 } // Pbeq::exportResults
 

@@ -282,7 +282,7 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
         {
             if ( dof_done[i] != true )
             {
-                Log() << "[interpolate] dof not treated\n";
+                LOG(INFO) << "[interpolate] dof not treated\n";
                 //FEELPP_ASSERT( dof_done[i] == true )( i ).warn ( "invalid dof, was not treated" );
 
                 typename SpaceType::dof_type::dof_points_const_iterator it_dofpt = space->dof()->dofPointBegin();
@@ -296,11 +296,11 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
                     // be careful with indices in parallel
                     if ( boost::get<1>( *it_dofpt ) == i )
                     {
-                        Log() << "   id :  " << boost::get<1>( *it_dofpt ) << "\n";
-                        Log() << "coord :  " << boost::get<0>( *it_dofpt ) << "\n";
-                        Log() << " comp :  " << boost::get<2>( *it_dofpt ) << "\n";
+                        LOG(INFO) << "   id :  " << boost::get<1>( *it_dofpt ) << "\n";
+                        LOG(INFO) << "coord :  " << boost::get<0>( *it_dofpt ) << "\n";
+                        LOG(INFO) << " comp :  " << boost::get<2>( *it_dofpt ) << "\n";
 
-                        Log() << "f( " << boost::get<0>( *it_dofpt ) << ")=" << f( boost::get<0>( *it_dofpt ) ) << "\n";
+                        LOG(INFO) << "f( " << boost::get<0>( *it_dofpt ) << ")=" << f( boost::get<0>( *it_dofpt ) ) << "\n";
                     }
                 }
             }

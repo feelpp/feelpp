@@ -187,8 +187,8 @@ public:
         density = 1;
         gravity = -density*0.05;
 
-        Log() << "[data] dt=" << dt << "\n";
-        Log() << "[data] ft=" << ft << "\n";
+        LOG(INFO) << "[data] dt=" << dt << "\n";
+        LOG(INFO) << "[data] ft=" << ft << "\n";
 
         mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
                                             _desc=domain( _name=( boost::format( "beam-%1%" ) % Dim ).str() ,
@@ -262,7 +262,7 @@ void
 StVenantKirchhoff<Dim, Order>::updateResidual( const vector_ptrtype& X, vector_ptrtype& R )
 {
     boost::timer ti;
-    Log() << "[updateResidual] start\n";
+    LOG(INFO) << "[updateResidual] start\n";
     value_type penalisation_bc = this->vm()["penalbc"].template as<value_type>();
 
     mesh_ptrtype mesh = M_Xh->mesh();
@@ -296,15 +296,15 @@ StVenantKirchhoff<Dim, Order>::updateResidual( const vector_ptrtype& X, vector_p
     M_oplin->apply( u, v );
 
     R->add( 1., v );
-    Log() << "residual norm 2 = " << R->l2Norm() << "\n";
-    Log() << "[updateResidual] done in " << ti.elapsed() << "s\n";
+    LOG(INFO) << "residual norm 2 = " << R->l2Norm() << "\n";
+    LOG(INFO) << "[updateResidual] done in " << ti.elapsed() << "s\n";
 }
 template<int Dim, int Order>
 void
 StVenantKirchhoff<Dim, Order>::updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J )
 {
     boost::timer ti;
-    Log() << "[updateJacobian] start\n";
+    LOG(INFO) << "[updateJacobian] start\n";
     static bool is_init = false;
     value_type penalisation_bc = this->vm()["penalbc"].template as<value_type>();
     mesh_ptrtype mesh = M_Xh->mesh();
@@ -319,7 +319,7 @@ StVenantKirchhoff<Dim, Order>::updateJacobian( const vector_ptrtype& X, sparse_m
                    .5*mu*( trace( ( gradv( u )*trans( gradt( u ) ) )*grad( v ) ) )+
                    .25*lambda*trace( gradv( u )*trans( gradt( u ) ) )*div( v ) );
     J->addMatrix( 1.0, M_oplin->mat() );
-    Log() << "[updateJacobian] done in " << ti.elapsed() << "s\n";
+    LOG(INFO) << "[updateJacobian] done in " << ti.elapsed() << "s\n";
 }
 template<int Dim, int Order>
 void
@@ -348,7 +348,7 @@ StVenantKirchhoff<Dim, Order>::run()
     value_type order = this->vm()["order"].template as<int>();
 
 
-    Log() << "lambda = " << lambda << "\n"
+    LOG(INFO) << "lambda = " << lambda << "\n"
           << "mu     = " << mu << "\n"
           << "gravity= " << gravity << "\n";
 
@@ -393,8 +393,8 @@ StVenantKirchhoff<Dim, Order>::run()
     for ( time = dt, iterations = 0; time < ft; time +=dt, ++iterations )
     {
         boost::timer ti;
-        Log() << "============================================================\n";
-        Log() << "time: " << time << "s, iteration: " << iterations << "\n";
+        LOG(INFO) << "============================================================\n";
+        LOG(INFO) << "time: " << time << "s, iteration: " << iterations << "\n";
 
         M_backend->nlSolve( _solution=U );
 
@@ -405,11 +405,11 @@ StVenantKirchhoff<Dim, Order>::run()
 
         M_bdf->shiftRight( U );
 
-        Log() << "time spent in iteration :  " << ti.elapsed() << "s\n";
+        LOG(INFO) << "time spent in iteration :  " << ti.elapsed() << "s\n";
     }
 
-    Log() << "total time spent :  " << ttotal.elapsed() << "s\n";
-    Log() << "total number of iterations :  " << iterations << "\n";
+    LOG(INFO) << "total time spent :  " << ttotal.elapsed() << "s\n";
+    LOG(INFO) << "total number of iterations :  " << iterations << "\n";
 
 
 } // StVenantKirchhoff::run
@@ -421,7 +421,7 @@ void
 StVenantKirchhoff<Dim, Order>::exportResults( double time, element_type& U )
 {
 
-    Log() << "exportResults starts\n";
+    LOG(INFO) << "exportResults starts\n";
 
     exporter->step( time )->setMesh( U.functionSpace()->mesh() );
     exporter->step( time )->add( "pid",

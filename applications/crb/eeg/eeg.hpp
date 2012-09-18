@@ -477,10 +477,10 @@ EEG::init()
     p0_element_type k1( P0h, "k1" );
     p0_element_type k2( P0h, "k2" );
     p0_element_type k3( P0h, "k3" );
-    Log() << "print space P0 info\n";
+    LOG(INFO) << "print space P0 info\n";
     P0h->printInfo();
 
-    Log() << "Taille K " << k1.size() << "\n" ;
+    LOG(INFO) << "Taille K " << k1.size() << "\n" ;
     std::cout << "Lecture fichier anisotropie\n" ;
     std::ifstream inFile( "diraniso" );
 
@@ -508,9 +508,9 @@ EEG::init()
     auto q = vec( constant( qx ),constant( qy ),constant( qz ) );
     auto posrel = P()-r0 ;
     auto posrelsc = trans( posrel )*posrel ;
-    Log() << "posrelsc" << integrate ( elements( mesh ) , posrelsc ).evaluate()( 0, 0 ) << "\n" ;
+    LOG(INFO) << "posrelsc" << integrate ( elements( mesh ) , posrelsc ).evaluate()( 0, 0 ) << "\n" ;
     auto momentposrelsc = trans( q )*posrel ;
-    Log() << "momentposrelsc" << integrate ( elements( mesh ) , momentposrelsc ).evaluate()( 0, 0 ) << "\n" ;
+    LOG(INFO) << "momentposrelsc" << integrate ( elements( mesh ) , momentposrelsc ).evaluate()( 0, 0 ) << "\n" ;
     auto g = 1.0/( 4*M_PI )*( momentposrelsc )/vf::pow( posrelsc,1.5 ) ;
     //auto g = constant(0.0) ;
     auto grad_g = 1.0/( 4*M_PI*vf::pow( posrelsc,1.5 ) )*q-( 3.0*momentposrelsc )/( 4*M_PI*vf::pow( posrelsc,2.5 ) )*posrel ;
@@ -547,7 +547,7 @@ EEG::init()
     element_0_type v = V.element<0>() ;
     element_1_type nu = V.element<1>() ;
 
-    Log() << "Number of dof " << Xh->nLocalDof() << "\n";
+    LOG(INFO) << "Number of dof " << Xh->nLocalDof() << "\n";
 
     //form2( Xh, Xh, D,_init=true )=integrate(elements(mesh), 0*idt(v)*id(v),_Q<0>());
     //D->close();
@@ -559,7 +559,7 @@ EEG::init()
 
     for ( int i=0; i<nbtissue; i++ )
     {
-        Log() << "assembling Aq[" << i << "]\n" ;
+        LOG(INFO) << "assembling Aq[" << i << "]\n" ;
         Aq[i]=M_backend->newMatrix( Xh, Xh );
 
         if ( i==skullrad || i==whiterad ) form2( Xh, Xh, Aq[i], _init=true ) = integrate( markedelements( mesh, domain[i] ), gradt( u )*K*trans( grad( v ) ) ) ;
@@ -580,8 +580,8 @@ EEG::init()
     double mean = integrate( elements( mesh ),-g, _Q<5>() ).evaluate()( 0, 0 )/area;
     //const double meangana = integrate( elements(mesh), gana, _Q<5>() ).evaluate()( 0, 0)/area;
     //auto ganabase = gana - constant(meangana) ;
-    //Log() << " int gana " << meangana << "\n" ;
-    //Log() << "int g  = " << mean << "\n";
+    //LOG(INFO) << " int gana " << meangana << "\n" ;
+    //LOG(INFO) << "int g  = " << mean << "\n";
 
 
     Lq.resize( 1 );
@@ -590,7 +590,7 @@ EEG::init()
 
     for ( int i=0; i<nbtissue; i++ )
     {
-        Log() << "assembling Lq[" << i << "]\n" ;
+        LOG(INFO) << "assembling Lq[" << i << "]\n" ;
         Lq[0][i]=M_backend->newVector( Xh );
 
         if ( i==skullrad || i==whiterad ) form1( Xh, Lq[0][i], _init=true ) = integrate( markedelements( mesh, domain[i] ),  grad( v )*K*grad_g, _Q<5>() ) ;
@@ -615,7 +615,7 @@ EEG::init()
     M->close();
 
 
-    Log() << "Assembly done\n" ;
+    LOG(INFO) << "Assembly done\n" ;
 
 }
 
@@ -649,7 +649,7 @@ EEG::exportResults( element_type& U )
 {
     if ( M_do_export )
     {
-        Log() << "exportResults starts\n";
+        LOG(INFO) << "exportResults starts\n";
         exporter->step( 0 )->setMesh( U.functionSpace()->mesh() );
 
         exporter->step( 0 )->add( "u", U.element<0>() );
@@ -706,9 +706,9 @@ EEG::solve( parameter_type const& mu, element_ptrtype& T )
 {
     this->computeThetaq( mu );
     this->update( mu );
-    Log() << "Solving system starts\n" ;
+    LOG(INFO) << "Solving system starts\n" ;
     M_backend->solve( _matrix=D,  _solution=T, _rhs=F );
-    Log() << "Solving system done\n" ;
+    LOG(INFO) << "Solving system done\n" ;
 }
 
 void

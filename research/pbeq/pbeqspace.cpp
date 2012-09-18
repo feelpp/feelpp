@@ -142,7 +142,7 @@ PbeqSpace::PbeqSpace( PbeqSpace const& tc )
     timers( tc.timers ),
     stats( tc.stats )
 {
-    Log() << "[PbeqSpace] hsize = " << M_meshSize << "\n";
+    LOG(INFO) << "[PbeqSpace] hsize = " << M_meshSize << "\n";
 } // PbeqSpace::PbeqSpace
 
 
@@ -163,7 +163,7 @@ PbeqSpace::createSpaces()
 
     if ( M_spacesSetted )
     {
-        Log() << "[PbeqSpace] createSpaces(): trying to rebuilding spaces: returning right away" << "\n";
+        LOG(INFO) << "[PbeqSpace] createSpaces(): trying to rebuilding spaces: returning right away" << "\n";
         return;
     }
 
@@ -195,7 +195,7 @@ PbeqSpace::createSpaces()
      * a quadrature rule for numerical integration
      */
 
-    Log() << "[timer] createSpaces() (" << M_mesh->numElements() << " Elems,  "
+    LOG(INFO) << "[timer] createSpaces() (" << M_mesh->numElements() << " Elems,  "
           << M_HeavysideSpace->dof()->nDof() << " P" << OrderHeavyside << " DOFs, "
           << M_Space->dof()->nDof() << " P" << Order << "DOFs): "
           << timers["init"].second << "\n";
@@ -231,7 +231,7 @@ PbeqSpace::createMesh( bool const geoOnly )
     }
 
     timers["mesh"].second = timers["mesh"].first.elapsed();
-    Log() << "[timer] createMesh(): " << timers["mesh"].second << "\n";
+    LOG(INFO) << "[timer] createMesh(): " << timers["mesh"].second << "\n";
 
     loadMesh( td.generate( entity_type::name().c_str() ) ) ;
 }
@@ -240,14 +240,14 @@ bool
 PbeqSpace::loadMesh( std::string const& meshname )
 {
 
-    Log() << "[PbeqSpace] hsize = " << M_meshSize << "\n";
+    LOG(INFO) << "[PbeqSpace] hsize = " << M_meshSize << "\n";
 
     timers["mesh"].first.restart();
     M_mesh.reset( new mesh_type );
 
     namespace fs = boost::filesystem;
-    Log() << "mesh file name: " << meshname << "\n";
-    Log() << "does mesh file name exists ?: " << fs::exists( meshname ) << "\n";
+    LOG(INFO) << "mesh file name: " << meshname << "\n";
+    LOG(INFO) << "does mesh file name exists ?: " << fs::exists( meshname ) << "\n";
     fs::path meshpath( meshname );
 
     if ( !fs::exists( meshpath ) ) return false;
@@ -256,7 +256,7 @@ PbeqSpace::loadMesh( std::string const& meshname )
     M_mesh->accept( import );
 
     timers["mesh"].second = timers["mesh"].first.elapsed();
-    Log() << "[timer] loadMesh(): " << timers["mesh"].second << "\n";
+    LOG(INFO) << "[timer] loadMesh(): " << timers["mesh"].second << "\n";
 
     M_meshSetted = true;
 
@@ -306,7 +306,7 @@ PbeqSpace::heavyside_element_type
 PbeqSpace::heavyside( molecule_type const& molecule ) const
 {
     using namespace Feel::vf;
-    Log() << "heavyside call\n";
+    LOG(INFO) << "heavyside call\n";
     heavyside_element_type H( M_HeavysideSpace, "H" );
 
     std::fill( H.begin(), H.end(), 1.0 );
@@ -328,7 +328,7 @@ PbeqSpace::heavyside( molecule_type const& molecule ) const
 
     }
 
-    Log() << "heavyside call done\n";
+    LOG(INFO) << "heavyside call done\n";
     return H;
 
 
@@ -433,7 +433,7 @@ PbeqSpace::intvrho( molecule_type const& molecule,
     */
 
     timer["init intvrho"].second = timer["init intvrho"].first.elapsed();
-    Log() << "[timer] init intvrho(): " << timer["init intvrho"].second << "\n";
+    LOG(INFO) << "[timer] init intvrho(): " << timer["init intvrho"].second << "\n";
 
     timer["intvrho"].first.restart();
 
@@ -489,7 +489,7 @@ PbeqSpace::intvrho( molecule_type const& molecule,
     } // element
 
     timer["intvrho"].second = timer["intvrho"].first.elapsed();
-    Log() << "[timer] intvrho(): " << timer["intvrho"].second << "\n";
+    LOG(INFO) << "[timer] intvrho(): " << timer["intvrho"].second << "\n";
 
 
     return;

@@ -119,11 +119,11 @@ public:
         .addParameter( Parameter( _name="D",_type=CONT_ATTR,_latex="D",_values="1e-4:10:1e-3" ) )
         .addParameter( h );
 
-        Log() << "parameter added\n";
+        LOG(INFO) << "parameter added\n";
         this->
         addOutput( Output( _name="eigmin",_latex="\\alpha^{\\mathcal{N}}(\\mu)" ) )
         .addOutput( Output( _name="eigmax",_latex="\\gamma^{\\mathcal{N}}(\\mu)" ) );
-        Log() << "output added\n";
+        LOG(INFO) << "output added\n";
 
     }
 

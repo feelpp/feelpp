@@ -348,14 +348,14 @@ BlocHeat<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
 
         if ( exporter->doExport() )
         {
-            Log() << "exportResults starts\n";
+            LOG(INFO) << "exportResults starts\n";
 
             exporter->step( t )->setMesh( mesh );
 
             exporter->step( t )->add( "T", T );
 
             exporter->save();
-            Log() << "exportResults done\n";
+            LOG(INFO) << "exportResults done\n";
         }
 
         /** \endcode */

@@ -396,11 +396,11 @@ LShape<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
 
         if ( exporter->doExport() )
             {
-                Log() << "exportResults starts\n";
+                LOG(INFO) << "exportResults starts\n";
                 exporter->step( 0 )->setMesh( mesh );
                 exporter->step( 0 )->add( "u", u );
                 exporter->save();
-                Log() << "exportResults done\n";
+                LOG(INFO) << "exportResults done\n";
             }
 
         // ****** Mesh adaptation for Potential and Temperature ****** ///
@@ -414,8 +414,8 @@ LShape<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
         std::cout << "criterion = " << criterion_U << std::endl;
         std::cout << "ZZ estimator = " << estimator_U.get<0>() << std::endl;
 
-        Log() << "criterion = " << criterion_U;
-        Log() << "ZZ estimator = " << estimator_U.get<0>();
+        LOG(INFO) << "criterion = " << criterion_U;
+        LOG(INFO) << "ZZ estimator = " << estimator_U.get<0>();
 
         criterion = criterion && (criterion_U > (1+tol) || criterion_U < (1-tol) );
 

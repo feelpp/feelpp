@@ -33,7 +33,7 @@ void Convection ::updateJacobian( const vector_ptrtype& X,
         sparse_matrix_ptrtype& J )
 {
     boost::timer ti;
-    Log() << "[updateJacobian] start\n";
+    LOG(INFO) << "[updateJacobian] start\n";
 
     if ( !J )
     {
@@ -86,7 +86,7 @@ void Convection ::updateJacobian( const vector_ptrtype& X,
     //D->printMatlab( "D1.m" );
     //J->addMatrix( 1.0, D );
     //J->printMatlab( "J.m" );
-    Log() << "[updateJacobian] done in " << ti.elapsed() << "s\n";
+    LOG(INFO) << "[updateJacobian] done in " << ti.elapsed() << "s\n";
 
     J->addMatrix( 1.0, M_L);
     J->addMatrix( 1.0, M_D);

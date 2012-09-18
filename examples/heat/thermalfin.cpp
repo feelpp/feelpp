@@ -275,7 +275,7 @@ ThermalFin::run()
         else
             Bi = math::exp( math::log( Bimin )+value_type( i )*( math::log( Bimax )-math::log( Bimin ) )/value_type( N-1 ) );
 
-        Log() << "Bi = " << Bi << "\n";
+        LOG(INFO) << "Bi = " << Bi << "\n";
 
         form2( Xh, Xh, D ) += integrate( markedfaces( mesh,2 ), Bi*idt( u )*id( v ) );
 

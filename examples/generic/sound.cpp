@@ -157,7 +157,7 @@ void
 Sound<Dim, Order>::run()
 {
     using namespace Feel::vf;
-    Log() << "[Sound] hsize = " << this->meshSize() << "\n";
+    LOG(INFO) << "[Sound] hsize = " << this->meshSize() << "\n";
     this->changeRepository( boost::format( "%1%/%2%/P%3%/%4%/" )
                             % this->about().appName()
                             % entity_type::name()
@@ -270,7 +270,7 @@ Sound<Dim, Order>::run()
 
     if ( !modes.empty() )
     {
-        Log() << "eigenvalue " << 0 << " = (" << modes.begin()->second.get<0>() << "," <<  modes.begin()->second.get<1>() << ")\n";
+        LOG(INFO) << "eigenvalue " << 0 << " = (" << modes.begin()->second.get<0>() << "," <<  modes.begin()->second.get<1>() << ")\n";
         std::cout << "eigenvalue " << 0 << " = (" << modes.begin()->second.get<0>()
                   << "," <<  modes.begin()->second.get<1>() << ")\n";
 
@@ -278,8 +278,8 @@ Sound<Dim, Order>::run()
     }
 
     //    this->exportResults( u, mode );
-    //    Log() << "[timer] run(): init (" << mesh->numElements() << " Elems): " << timers["init"].second << "\n";
-    //    Log() << "[timer] run(): assembly (" << Xh->dof()->nDof() << " DOFs): " << timers["assembly"].second << "\n";
+    //    LOG(INFO) << "[timer] run(): init (" << mesh->numElements() << " Elems): " << timers["init"].second << "\n";
+    //    LOG(INFO) << "[timer] run(): assembly (" << Xh->dof()->nDof() << " DOFs): " << timers["assembly"].second << "\n";
     M_stats.put( "t.eigensolver.total",t.elapsed() );
     t.restart();
 

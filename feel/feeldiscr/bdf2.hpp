@@ -267,7 +267,7 @@ public:
 
         for ( auto it = M_time_values_map.begin(), en = M_time_values_map.end(); it!=en; ++it )
         {
-            //Log() << "[Bdf] order " << i << "=" << M_time_orders[i] << "\n";
+            //LOG(INFO) << "[Bdf] order " << i << "=" << M_time_orders[i] << "\n";
             Debug( 5017 ) << "[Bdf::serialize] value " << *it << "\n";
 
         }
@@ -570,12 +570,12 @@ public:
 
     void print() const
     {
-        Log() << "============================================================\n";
-        Log() << "BDF Information\n";
-        Log() << "   time step : " << this->timeStep() << "\n";
-        Log() << "time initial : " << this->timeInitial() << "\n";
-        Log() << "  time final : " << this->timeFinal() << "\n";
-        Log() << "  time order : " << this->timeOrder() << "\n";
+        LOG(INFO) << "============================================================\n";
+        LOG(INFO) << "BDF Information\n";
+        LOG(INFO) << "   time step : " << this->timeStep() << "\n";
+        LOG(INFO) << "time initial : " << this->timeInitial() << "\n";
+        LOG(INFO) << "  time final : " << this->timeFinal() << "\n";
+        LOG(INFO) << "  time order : " << this->timeOrder() << "\n";
     }
 protected:
     //! time order

@@ -199,20 +199,20 @@ Tilted<Dim, BasisU, Entity>::run()
     auto u = Xh->element();
     auto v = Xh->element();
 
-    Log() << "Data Summary:\n";
-    Log() << "   hsize = " << M_meshSize << "\n";
-    Log() << "  export = " << this->vm().count( "export" ) << "\n";
-    Log() << "      mu = " << mu << "\n";
-    Log() << " bccoeff = " << penalbc << "\n";
-    Log() << "[mesh]   number of elements: " << Xh->mesh()->numElements() << "\n";
-    Log() << "[dof]         number of dof: " << Xh->nDof() << "\n";
-    Log() << "[dof]    number of dof/proc: " << Xh->nLocalDof() << "\n";
+    LOG(INFO) << "Data Summary:\n";
+    LOG(INFO) << "   hsize = " << M_meshSize << "\n";
+    LOG(INFO) << "  export = " << this->vm().count( "export" ) << "\n";
+    LOG(INFO) << "      mu = " << mu << "\n";
+    LOG(INFO) << " bccoeff = " << penalbc << "\n";
+    LOG(INFO) << "[mesh]   number of elements: " << Xh->mesh()->numElements() << "\n";
+    LOG(INFO) << "[dof]         number of dof: " << Xh->nDof() << "\n";
+    LOG(INFO) << "[dof]    number of dof/proc: " << Xh->nLocalDof() << "\n";
 
     M_stats.put( "h",M_meshSize );
     M_stats.put( "n.space.nelts",Xh->mesh()->numElements() );
     M_stats.put( "n.space.ndof",Xh->nLocalDof() );
     M_stats.put( "t.init.space",t.elapsed() );
-    Log() << "  -- time space and functions construction "<<t.elapsed()<<" seconds \n";
+    LOG(INFO) << "  -- time space and functions construction "<<t.elapsed()<<" seconds \n";
     t.restart() ;
 
     double penalbc = this->vm()["bccoeff"].template as<value_type>();
@@ -319,7 +319,7 @@ Tilted<Dim, BasisU, Entity>::run()
     auto F = M_backend->newVector( Xh );
     form1( Xh, F, _init=true );
     M_stats.put( "t.init.vector",t.elapsed() );
-    Log() << "  -- time for vector init done in "<<t.elapsed()<<" seconds \n";
+    LOG(INFO) << "  -- time for vector init done in "<<t.elapsed()<<" seconds \n";
     t.restart() ;
     form1( Xh, F ) = integrate( elements( mesh ), f*id( v ) );
     M_stats.put( "t.assembly.vector.source",subt.elapsed() );
@@ -333,11 +333,11 @@ Tilted<Dim, BasisU, Entity>::run()
         form1( Xh, F ) += integrate( _range=boundaryfaces( mesh ), _expr=k*penalbc*idv(v)*id( v )/hFace() );
         //form1( Xh, F ) += integrate( _range=boundaryfaces(mesh), _expr=penalbc*max(betacoeff,mu/hFace())*(trans(id(v))*N())*N());
         M_stats.put( "t.assembly.vector.dirichlet2",subt.elapsed() );
-        Log() << "   o time for rhs weak dirichlet terms: " << subt.elapsed() << "\n";
+        LOG(INFO) << "   o time for rhs weak dirichlet terms: " << subt.elapsed() << "\n";
         subt.restart();
     }
     M_stats.put( "t.assembly.vector.total",t.elapsed() );
-    Log() << "  -- time vector global assembly done in "<<t.elapsed()<<" seconds \n";
+    LOG(INFO) << "  -- time vector global assembly done in "<<t.elapsed()<<" seconds \n";
     t.restart() ;
 
     /*
@@ -368,7 +368,7 @@ Tilted<Dim, BasisU, Entity>::run()
     t.restart();
     auto D = M_backend->newMatrix( Xh, Xh );
     M_stats.put( "t.init.matrix",t.elapsed() );
-    Log() << "  -- time for matrix init done in "<<t.elapsed()<<" seconds \n";
+    LOG(INFO) << "  -- time for matrix init done in "<<t.elapsed()<<" seconds \n";
     t.restart() ;
 
     subt.restart();
@@ -377,7 +377,7 @@ Tilted<Dim, BasisU, Entity>::run()
     //form2( _trial=Xh, _test=Xh, _matrix=D ) =integrate( _range=elements( mesh ),_expr=k*( gradt( u )*trans(grad( v ) ) ) );
     form2( _trial=Xh, _test=Xh, _matrix=D ) =integrate( _range=elements( mesh ),_expr=k*( gradt( u )*trans(grad( v ) ) ), _quad=_Q<4>() );
     M_stats.put( "t.assembly.matrix.diffusion",subt.elapsed() );
-    Log() << "   o time for diffusion terms: " << subt.elapsed() << "\n";
+    LOG(INFO) << "   o time for diffusion terms: " << subt.elapsed() << "\n";
     subt.restart();
 
     if ( this->vm()[ "bctype" ].template as<int>() == 1  )
@@ -388,7 +388,7 @@ Tilted<Dim, BasisU, Entity>::run()
         form2( Xh, Xh, D )+=integrate( _range=boundaryfaces( mesh ),_expr=+k*penalbc*idt( u )*id( v )/hFace() );
         M_stats.put( "t.assembly.matrix.dirichlet2",subt.elapsed() );
         subt.restart();
-        Log() << "   o time for weak dirichlet terms: " << subt.elapsed() << "\n";
+        LOG(INFO) << "   o time for weak dirichlet terms: " << subt.elapsed() << "\n";
         subt.restart();
     }
 
@@ -400,12 +400,12 @@ Tilted<Dim, BasisU, Entity>::run()
     {
         form2( Xh, Xh, D ) += on( _range=boundaryfaces( mesh ), _element=u, _rhs=F, _expr=u_exact);
         M_stats.put( "t.assembly.matrix.dirichlet",subt.elapsed() );
-        Log() << "   o time for strong dirichlet terms: " << subt.elapsed() << "\n";
+        LOG(INFO) << "   o time for strong dirichlet terms: " << subt.elapsed() << "\n";
         subt.restart();
     }
 
     M_stats.put( "t.assembly.matrix.total",t.elapsed() );
-    Log() << " -- time matrix global assembly done in "<<t.elapsed()<<" seconds \n";
+    LOG(INFO) << " -- time matrix global assembly done in "<<t.elapsed()<<" seconds \n";
     t.restart() ;
 
     t.restart();
@@ -419,22 +419,22 @@ Tilted<Dim, BasisU, Entity>::run()
     }
 
     M_stats.put( "t.solver.total",t.elapsed() );
-    Log() << " -- time for solver : "<<t.elapsed()<<" seconds \n";
+    LOG(INFO) << " -- time for solver : "<<t.elapsed()<<" seconds \n";
     t.restart();
 
 
     double meas = integrate( _range=elements( mesh ), _expr=constant( 1.0 ) ).evaluate()( 0, 0 );
-    Log() << "[tilted] measure(Omega)=" << meas << " (should be equal to 4)\n";
+    LOG(INFO) << "[tilted] measure(Omega)=" << meas << " (should be equal to 4)\n";
     std::cout << "[tilted] measure(Omega)=" << meas << " (should be equal to 4)\n";
 
     double mean_u = integrate( elements( mesh ), idv( u ) ).evaluate()( 0, 0 )/meas;
-    Log() << "[tilted] mean(u)=" << mean_u << "\n";
+    LOG(INFO) << "[tilted] mean(u)=" << mean_u << "\n";
     std::cout << "[tilted] mean(u)=" << mean_u << "\n";
 
     // get the zero mean pressure
     //u.add( - mean_u );
     mean_u = integrate( elements( mesh ), idv( u ) ).evaluate()( 0, 0 )/meas;
-    Log() << "[tilted] mean(u-mean(u))=" << mean_u << "\n";
+    LOG(INFO) << "[tilted] mean(u-mean(u))=" << mean_u << "\n";
     std::cout << "[tilted] mean(u-mean(u))=" << mean_u << "\n";
     double mean_uexact = integrate( elements( mesh ), idv(v) ).evaluate()( 0, 0 )/meas;
     std::cout << "[tilted] mean(uexact)=" << mean_uexact << "\n";
@@ -445,7 +445,7 @@ Tilted<Dim, BasisU, Entity>::run()
     for ( auto iter = nNz.begin(); iter!=nNz.end(); ++iter )
         nnz += ( *iter ) ;
 
-    Log() << "[tilted] matrix NNZ "<< nnz << "\n";
+    LOG(INFO) << "[tilted] matrix NNZ "<< nnz << "\n";
     M_stats.put( "n.matrix.nnz",nnz );
 
     t.restart();
@@ -456,7 +456,7 @@ Tilted<Dim, BasisU, Entity>::run()
     std::cout << "||u_error||_2 = " << math::sqrt( u_errorL2 ) << "\n";;
     //std::cout << "||u_exact||_2 = " << math::sqrt( u_exactL2 ) << "\n";;
     //std::cout << "||u_error||_2 = " << math::sqrt( u_errorL2/u_exactL2 ) << "\n";;
-    Log() << "||u_error||_2 = " << math::sqrt( u_errorL2 ) << "\n";;
+    LOG(INFO) << "||u_error||_2 = " << math::sqrt( u_errorL2 ) << "\n";;
     M_stats.put( "e.l2.u",math::sqrt( u_errorL2 ) );
 
     double u_errorsemiH1 = integrate( _range=elements( mesh ),

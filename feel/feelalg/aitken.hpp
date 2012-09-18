@@ -588,7 +588,7 @@ Aitken<fs_type>::printInfo()
               <<" residualNorm : " << M_residualConvergence
               << "\n";
 
-    Feel::Log() << "[Aitken] iteration : "<< M_cptIteration
+    LOG(INFO) << "[Aitken] iteration : "<< M_cptIteration
                 <<" theta=" << previousParameter
                 <<" residualNorm : " << M_residualConvergence
                 << "\n";

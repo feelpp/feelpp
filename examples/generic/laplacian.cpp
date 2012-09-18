@@ -284,11 +284,11 @@ Laplacian<Dim, Order, Cont, Entity, FType>::run()
     double local_domain_size = integrate( elements( mesh ),  constant( 1.0 ) ).evaluate()( 0,0 );
     double global_domain_size;
     mpi::all_reduce( Application::comm(), local_domain_size, global_domain_size, std::plus<double>() );
-    Log() << "int_Omega = " << global_domain_size << "[ " << local_domain_size << " ]\n";
+    LOG(INFO) << "int_Omega = " << global_domain_size << "[ " << local_domain_size << " ]\n";
     double local_boundary_size = integrate( boundaryfaces( mesh ),  constant( 1.0 ) ).evaluate()( 0,0 );
     double global_boundary_size;
     mpi::all_reduce( Application::comm(), local_boundary_size, global_boundary_size, std::plus<double>() );
-    Log() << "int_Omega = " << global_boundary_size << "[ " << local_boundary_size << " ]\n";
+    LOG(INFO) << "int_Omega = " << global_boundary_size << "[ " << local_boundary_size << " ]\n";
 
     /*
      * Construction of the left hand side
@@ -432,11 +432,11 @@ Laplacian<Dim, Order, Cont, Entity, FType>::run()
     double global_jump = 0;
     mpi::all_reduce( Application::comm(), local_jump, global_jump, std::plus<double>() );
 
-    Log() << "||[u]||= " << math::sqrt( global_jump )  << "\n";
-    //Log() << "local ||error||_0 = " << math::sqrt( error ) << "\n";
-    Log() << "global ||error||_0 = " << math::sqrt( global_error ) << "\n";
-    //Log() << "local ||error(l2proj)||_0 = " << math::sqrt( errorex ) << "\n";
-    Log() << "global ||errorex(l2proj)||_0 = " << math::sqrt( global_errorex ) << "\n";
+    LOG(INFO) << "||[u]||= " << math::sqrt( global_jump )  << "\n";
+    //LOG(INFO) << "local ||error||_0 = " << math::sqrt( error ) << "\n";
+    LOG(INFO) << "global ||error||_0 = " << math::sqrt( global_error ) << "\n";
+    //LOG(INFO) << "local ||error(l2proj)||_0 = " << math::sqrt( errorex ) << "\n";
+    LOG(INFO) << "global ||errorex(l2proj)||_0 = " << math::sqrt( global_errorex ) << "\n";
 
     // exporting the results using the exporter set by the
     // command line: the default being the 'ensight' exporter
@@ -459,8 +459,8 @@ Laplacian<Dim, Order, Cont, Entity, FType>::run()
     //
     for ( t = dt; t < ft; t += dt )
     {
-        Log() << "============================================================\n";
-        Log() << "time : " << t << "s dt: " << dt << " ft: "<< ft << "s\n";
+        LOG(INFO) << "============================================================\n";
+        LOG(INFO) << "time : " << t << "s dt: " << dt << " ft: "<< ft << "s\n";
 
         //
         //  construct right hand side
@@ -510,10 +510,10 @@ Laplacian<Dim, Order, Cont, Entity, FType>::run()
         double global_errorex = 0;
         mpi::all_reduce( Application::comm(), errorex, global_errorex, std::plus<double>() );
 
-        Log() << "local ||error||_0 = " << math::sqrt( error ) << "\n";
-        Log() << "global ||error||_0 = " << math::sqrt( global_error ) << "\n";
-        Log() << "local ||error(l2proj)||_0 = " << math::sqrt( errorex ) << "\n";
-        Log() << "global ||errorex(l2proj)||_0 = " << math::sqrt( global_errorex ) << "\n";
+        LOG(INFO) << "local ||error||_0 = " << math::sqrt( error ) << "\n";
+        LOG(INFO) << "global ||error||_0 = " << math::sqrt( global_error ) << "\n";
+        LOG(INFO) << "local ||error(l2proj)||_0 = " << math::sqrt( errorex ) << "\n";
+        LOG(INFO) << "global ||errorex(l2proj)||_0 = " << math::sqrt( global_errorex ) << "\n";
 
         // compute the value of the field u at the middle of the
         // domain
@@ -527,8 +527,8 @@ Laplacian<Dim, Order, Cont, Entity, FType>::run()
         if ( Dim >= 3 )
             __n[2]=0.5;
 
-        Log() << "u value at (0.5,0.5,0.5)= " << u( __n ) << "\n";
-        Log() << "e value at (0.5,0.5,0.5)= " << uEx( __n ) << "\n";
+        LOG(INFO) << "u value at (0.5,0.5,0.5)= " << u( __n ) << "\n";
+        LOG(INFO) << "e value at (0.5,0.5,0.5)= " << uEx( __n ) << "\n";
 
 
         // exporting the results using the exporter set by the
@@ -545,8 +545,8 @@ Laplacian<Dim, Order, Cont, Entity, FType>::run()
             this->exportResults( t, u, uc, uEx );
         }
 
-        Log() << "[timer] run(): init (" << mesh->numElements() << " Elems): " << timers["init"].second << "\n";
-        Log() << "[timer] run(): assembly (" << Xh->dof()->nDof() << " DOFs): " << timers["assembly"].second << "\n";
+        LOG(INFO) << "[timer] run(): init (" << mesh->numElements() << " Elems): " << timers["init"].second << "\n";
+        LOG(INFO) << "[timer] run(): assembly (" << Xh->dof()->nDof() << " DOFs): " << timers["assembly"].second << "\n";
     } // time loop
 
 } // Laplacian::run
@@ -562,7 +562,7 @@ Laplacian<Dim, Order, Cont, Entity,FType>::exportResults( double time,
 {
     timers["export"].first.restart();
 
-    Log() << "exportResults starts\n";
+    LOG(INFO) << "exportResults starts\n";
     exporter->step( time )->setMesh( U.functionSpace()->mesh() );
 
     //exporter->step(time)->setMesh( this->createMesh( meshSize/2, 0.5, 1 ) );
@@ -661,7 +661,7 @@ Laplacian<Dim, Order, Cont, Entity,FType>::exportResults( double time,
     }
 
     timers["export"].second = timers["export"].first.elapsed();
-    Log() << "[timer] exportResults(): " << timers["export"].second << "\n";
+    LOG(INFO) << "[timer] exportResults(): " << timers["export"].second << "\n";
 } // Laplacian::export
 } // Feel
 
