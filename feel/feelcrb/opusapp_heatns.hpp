@@ -117,26 +117,26 @@ public:
             M_current_path = fs::current_path();
 
             std::srand( static_cast<unsigned>( std::time( 0 ) ) );
-            Debug() << "[OpusApp_heatns] constructor " << this->about().appName()  << "\n";
+            VLOG(1) << "[OpusApp_heatns] constructor " << this->about().appName()  << "\n";
             this->changeRepository( boost::format( "%1%/h_%2%/" )
                                     % this->about().appName()
                                     % this->vm()["hsize"].template as<double>()
                                   );
-            Debug() << "[OpusApp_heatns] ch repo" << "\n";
+            VLOG(1) << "[OpusApp_heatns] ch repo" << "\n";
             this->setLogs();
-            Debug() << "[OpusApp_heatns] set Logs" << "\n";
-            Debug() << "[OpusApp_heatns] mode:" << ( int )M_mode << "\n";
+            VLOG(1) << "[OpusApp_heatns] set Logs" << "\n";
+            VLOG(1) << "[OpusApp_heatns] mode:" << ( int )M_mode << "\n";
             
             
             model = crbmodel_ptrtype( new crbmodel_type( this->vm(),M_mode ) );
-            Debug() << "[OpusApp_heatns] get model done" << "\n";
+            VLOG(1) << "[OpusApp_heatns] get model done" << "\n";
             
             crb = crb_ptrtype( new crb_type( this->about().appName(),
                                              this->vm() ,
                                              model ) );
-            Debug() << "[OpusApp_heatns] get crb done" << "\n";
+            VLOG(1) << "[OpusApp_heatns] get crb done" << "\n";
             //crb->setTruthModel( model );
-            Debug() << "[OpusApp_heatns] constructor done" << "\n";
+            VLOG(1) << "[OpusApp_heatns] constructor done" << "\n";
         }
 
         catch ( boost::bad_any_cast const& e )

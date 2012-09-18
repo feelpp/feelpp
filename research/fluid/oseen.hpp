@@ -398,8 +398,8 @@ void Oseen<Space_u, Space_p, imOrder>::solve()
     std::copy( M_up.begin()+2*ux.size(),
                M_up.begin()+2*ux.size()+p.size(), p.begin() );
 
-    Debug() << "[timer] run():     init: " << M_timers["init"].second << "\n";
-    Debug() << "[timer] run(): assembly: " << M_timers["assembly"].second
+    VLOG(1) << "[timer] run():     init: " << M_timers["init"].second << "\n";
+    VLOG(1) << "[timer] run(): assembly: " << M_timers["assembly"].second
             << "\n";
 
 } // Oseen::solve
@@ -431,7 +431,7 @@ Oseen<Space_u, Space_p, imOrder>::solveNonSym( Mat const& D,
     }
 
     M_timers["solver"].second = M_timers["solver"].first.elapsed();
-    Debug() << "[timer] solveNonSym(): " << M_timers["solver"].second << "\n";
+    VLOG(1) << "[timer] solveNonSym(): " << M_timers["solver"].second << "\n";
 } // Oseen::solveNonSym
 
 } // Feel

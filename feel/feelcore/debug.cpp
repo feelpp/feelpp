@@ -55,7 +55,7 @@ namespace posix_time = boost::posix_time;
   *\ingroup Core
   *\brief Area debugging tool
 
-  \c Debug() provides a debug stream to which you can pass a number, say 100, associated
+  \c VLOG(1) provides a debug stream to which you can pass a number, say 100, associated
   to an area of the code, say a class \c A.  In the implementation of the class \c A, you use
   debug statement like
 

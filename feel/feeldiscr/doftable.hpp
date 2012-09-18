@@ -1120,7 +1120,7 @@ public:
                 const int ntdof = is_product?nComponents:1;
 
                 for ( index i2 = 0; i2 < ntdof*fe_type::nLocalDof; ++i2 )
-                    Debug() << "dof table( " << ie << ", " << lc  << ")=" << boost::get<0>( _M_el_l2g[ ie][ i2 ] ) << "\n";
+                    VLOG(1) << "dof table( " << ie << ", " << lc  << ")=" << boost::get<0>( _M_el_l2g[ ie][ i2 ] ) << "\n";
 
 #endif
             }

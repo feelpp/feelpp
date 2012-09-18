@@ -91,7 +91,7 @@ public:
     F( const F& f )
         : D(), str( f.str )
     {
-        Feel::Debug() << "calling F::copy constructor\n";
+        Feel::VLOG(1) << "calling F::copy constructor\n";
     }
     const char* hello() const
     {

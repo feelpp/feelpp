@@ -154,7 +154,7 @@ struct ID
     {
         if ( this != &id )
         {
-            //Debug() "[ID] extent = " <<
+            //VLOG(1) "[ID] extent = " <<
 
             M_id = id.M_id;
         }

@@ -157,13 +157,13 @@ public:
         M_timers(),
         M_stats()
     {
-        Debug() << "[TwoFluid] hsize = " << M_meshSize << "\n";
-        Debug() << "[TwoFluid] bccoeff = " << M_bcCoeff << "\n";
-        Debug() << "[TwoFluid] rho- = " << M_rhoM-M_rhoD << "\n";
-        Debug() << "[TwoFluid] rho+ = " << M_rhoM+M_rhoD << "\n";
-        Debug() << "[TwoFluid] mu- = " << M_muM-M_muD << "\n";
-        Debug() << "[TwoFluid] mu+ = " << M_muM+M_muD << "\n";
-        Debug() << "[TwoFluid] export = "
+        VLOG(1) << "[TwoFluid] hsize = " << M_meshSize << "\n";
+        VLOG(1) << "[TwoFluid] bccoeff = " << M_bcCoeff << "\n";
+        VLOG(1) << "[TwoFluid] rho- = " << M_rhoM-M_rhoD << "\n";
+        VLOG(1) << "[TwoFluid] rho+ = " << M_rhoM+M_rhoD << "\n";
+        VLOG(1) << "[TwoFluid] mu- = " << M_muM-M_muD << "\n";
+        VLOG(1) << "[TwoFluid] mu+ = " << M_muM+M_muD << "\n";
+        VLOG(1) << "[TwoFluid] export = "
                 << this->vm().count( "export" ) << "\n";
 
         M_timeSet->setTimeIncrement( this->vm()["dt"].template as<double>() );
@@ -192,13 +192,13 @@ public:
         M_timers(),
         M_stats()
     {
-        Debug() << "[TwoFluid] hsize = " << M_meshSize << "\n";
-        Debug() << "[TwoFluid] bccoeff = " << M_bcCoeff << "\n";
-        Debug() << "[TwoFluid] rho- = " << M_rhoM-M_rhoD << "\n";
-        Debug() << "[TwoFluid] rho+ = " << M_rhoM+M_rhoD << "\n";
-        Debug() << "[TwoFluid] mu- = " << M_muM-M_muD << "\n";
-        Debug() << "[TwoFluid] mu+ = " << M_muM+M_muD << "\n";
-        Debug() << "[TwoFluid] export = "
+        VLOG(1) << "[TwoFluid] hsize = " << M_meshSize << "\n";
+        VLOG(1) << "[TwoFluid] bccoeff = " << M_bcCoeff << "\n";
+        VLOG(1) << "[TwoFluid] rho- = " << M_rhoM-M_rhoD << "\n";
+        VLOG(1) << "[TwoFluid] rho+ = " << M_rhoM+M_rhoD << "\n";
+        VLOG(1) << "[TwoFluid] mu- = " << M_muM-M_muD << "\n";
+        VLOG(1) << "[TwoFluid] mu+ = " << M_muM+M_muD << "\n";
+        VLOG(1) << "[TwoFluid] export = "
                 << this->vm().count( "export" ) << "\n";
 
         M_timeSet->setTimeIncrement( this->vm()["dt"].template as<double>() );
@@ -220,13 +220,13 @@ public:
         M_timers( tc.M_timers ),
         M_stats( tc.M_stats )
     {
-        Debug() << "[TwoFluid] hsize = " << M_meshSize << "\n";
-        Debug() << "[TwoFluid] bccoeff = " << M_bcCoeff << "\n";
-        Debug() << "[TwoFluid] rho- = " << M_rhoM-M_rhoD << "\n";
-        Debug() << "[TwoFluid] rho+ = " << M_rhoM+M_rhoD << "\n";
-        Debug() << "[TwoFluid] mu- = " << M_muM-M_muD << "\n";
-        Debug() << "[TwoFluid] mu+ = " << M_muM+M_muD << "\n";
-        Debug() << "[TwoFluid] export = "
+        VLOG(1) << "[TwoFluid] hsize = " << M_meshSize << "\n";
+        VLOG(1) << "[TwoFluid] bccoeff = " << M_bcCoeff << "\n";
+        VLOG(1) << "[TwoFluid] rho- = " << M_rhoM-M_rhoD << "\n";
+        VLOG(1) << "[TwoFluid] rho+ = " << M_rhoM+M_rhoD << "\n";
+        VLOG(1) << "[TwoFluid] mu- = " << M_muM-M_muD << "\n";
+        VLOG(1) << "[TwoFluid] mu+ = " << M_muM+M_muD << "\n";
+        VLOG(1) << "[TwoFluid] export = "
                 << this->vm().count( "export" ) << "\n";
 
         M_timeSet->setTimeIncrement( this->vm()["dt"].template as<double>() );
@@ -309,7 +309,7 @@ TwoFluid<Dim>::createMesh( double meshSize )
     ImporterGmsh<mesh_type> import( fname );
     mesh->accept( import );
     M_timers["mesh"].second = M_timers["mesh"].first.elapsed();
-    Debug() << "[timer] createMesh(): " << M_timers["mesh"].second << "\n";
+    VLOG(1) << "[timer] createMesh(): " << M_timers["mesh"].second << "\n";
     return mesh;
 } // TwoFluid::createMesh
 
@@ -458,9 +458,9 @@ TwoFluid<Dim>::run()
                                       +( ( idv( phin )-idv( phinn ) )^2 )
                                     ).evaluate()( 0,0 ) );
 
-            Debug() << "[TwoFluid] fixpoint iteration " << subiter
+            VLOG(1) << "[TwoFluid] fixpoint iteration " << subiter
                     << "\n";
-            Debug() << "[TwoFluid] fixpoint error = " << fixpointErr
+            VLOG(1) << "[TwoFluid] fixpoint error = " << fixpointErr
                     << "\n";
 
             uxn = uxnn;
@@ -477,19 +477,19 @@ TwoFluid<Dim>::run()
         p = oseen.pressure();
         phi = phin;
 
-        Debug() << "[TwoFluid] t = " << time << "\n";
-        Debug() << "[TwoFluid] #subiter = " << subiter << "\n";
+        VLOG(1) << "[TwoFluid] t = " << time << "\n";
+        VLOG(1) << "[TwoFluid] #subiter = " << subiter << "\n";
 
         double divError = std::sqrt( integrate( elements( *mesh ),
                                                 im_type(),
                                                 ( dxv( ux )+dyv( uy ) )^2
                                               ).evaluate()( 0,0 ) );
-        Debug() << "[TwoFluid] ||div u||_2 = " << divError << "\n";
+        VLOG(1) << "[TwoFluid] ||div u||_2 = " << divError << "\n";
 
         double mass = integrate( elements( *mesh ), im_type(),
                                  chi( idv( phi )>0 )
                                ).evaluate()( 0,0 );
-        Debug() << "[TwoFluid] mass = " << mass << "\n";
+        VLOG(1) << "[TwoFluid] mass = " << mass << "\n";
 
         U.comp( X ) = ux;
         U.comp( Y ) = uy;
@@ -498,8 +498,8 @@ TwoFluid<Dim>::run()
 
     } // time loop
 
-    Debug() << "[timer] run():     init: " << M_timers["init"].second << "\n";
-    Debug() << "[timer] run(): assembly: " << M_timers["assembly"].second
+    VLOG(1) << "[timer] run():     init: " << M_timers["init"].second << "\n";
+    VLOG(1) << "[timer] run(): assembly: " << M_timers["assembly"].second
             << "\n";
 
 } // TwoFluid::run
@@ -524,6 +524,6 @@ TwoFluid<Dim>::exportResults( double time,
     } // export
 
     M_timers["export"].second = M_timers["export"].first.elapsed();
-    Debug() << "[timer] exportResults(): " << M_timers["export"].second << "\n";
+    VLOG(1) << "[timer] exportResults(): " << M_timers["export"].second << "\n";
 } // TwoFluid::export
 } // Feel

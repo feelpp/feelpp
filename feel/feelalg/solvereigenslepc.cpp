@@ -508,7 +508,7 @@ void SolverEigenSlepc<T>::setSlepcSolverType()
     const EPSType etype;
     ierr = EPSGetType( M_eps,&etype );
     CHKERRABORT( PETSC_COMM_WORLD,ierr );
-    Debug() << "solution method:  " << etype << "\n";
+    VLOG(1) << "solution method:  " << etype << "\n";
     //ierr = PetscPrintf(PETSC_COMM_WORLD," Solution method: %s\n\n",etype);
     CHKERRABORT( PETSC_COMM_WORLD,ierr );
     return;
@@ -560,7 +560,7 @@ SolverEigenSlepc<T>::setSlepcProblemType()
     }
 
 #endif
-    Debug() << "Problem  type:  " <<  this->M_eigen_problem_type  << "\n";
+    VLOG(1) << "Problem  type:  " <<  this->M_eigen_problem_type  << "\n";
     return;
 }
 

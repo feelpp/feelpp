@@ -72,7 +72,7 @@ public:
     void test( double hsize, std::string version  = FEELPP_GMSH_FORMAT_VERSION )
     {
         M_mesh = mesh_ptr_type( new mesh_type );
-        Debug() << "testing Interp with file format version " << version << "\n";
+        VLOG(1) << "testing Interp with file format version " << version << "\n";
         std::string fname;
         //GmshHypercubeDomain<entity_type::nDim,entity_type::nOrder,Entity> td;
         GmshSimplexDomain td( entity_type::nDim,entity_type::nOrder );
@@ -132,7 +132,7 @@ public:
             ( el_it->id() ).error( "invalid geometric transformation inversion" );
         }
 
-        Debug() << "testing Interp with file format version " << version << " done\n";
+        VLOG(1) << "testing Interp with file format version " << version << " done\n";
     }
 private:
     mesh_ptr_type M_mesh;

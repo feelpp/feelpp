@@ -200,7 +200,7 @@ VectorEpetra<T>::add ( const size_type i, const value_type& value )
 
     if ( ierr != 0 )
     {
-        Debug() << "ERRORCODE SumIntoGlobalValues VECTOR: " << ierr <<  " in V(" << i_val << ") for value "<< epetra_value << "." << "\n";
+        VLOG(1) << "ERRORCODE SumIntoGlobalValues VECTOR: " << ierr <<  " in V(" << i_val << ") for value "<< epetra_value << "." << "\n";
     }
 }
 template<typename T>
@@ -215,7 +215,7 @@ VectorEpetra<T>::addVector ( int* i, int n, value_type* v )
 
     if ( ierr != 0 )
     {
-        Debug() << "ERRORCODE SumIntoGlobalValues VECTOR: " << ierr <<  " in V \n";
+        VLOG(1) << "ERRORCODE SumIntoGlobalValues VECTOR: " << ierr <<  " in V \n";
     }
 }
 template<typename T>
@@ -265,7 +265,7 @@ VectorEpetra<T>::printMatlab ( const std::string name ) const
 
 #endif
 
-    Debug() << "[printMatlab] print vector in matlab file " << name << "\n";
+    VLOG(1) << "[printMatlab] print vector in matlab file " << name << "\n";
     EpetraExt::MultiVectorToMatlabFile( name.c_str(), _M_vec );
 }
 template<typename T>
