@@ -26,10 +26,7 @@
    \date 2008-02-04
  */
 //# marker1 #
-#include <feel/options.hpp>
-#include <feel/feelcore/feel.hpp>
-#include <feel/feelcore/application.hpp>
-#include <feel/feelalg/backend.hpp>
+#include <feel/feel.hpp>
 //# endmarker1 #
 
 using namespace Feel;
