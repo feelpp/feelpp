@@ -261,13 +261,13 @@ TestLift<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
 
     if ( exporter->doExport() )
         {
-            Log() << "exportResults starts\n";
+            LOG(INFO) << "exportResults starts\n";
             exporter->step( 0 )->setMesh( mesh );
             exporter->step( 0 )->add( "u", u );
             exporter->step( 0 )->add( "glift", glift2 );
             exporter->step( 0 )->add( "g", gproj );
             exporter->save();
-            Log() << "exportResults done\n";
+            LOG(INFO) << "exportResults done\n";
         }
 } // TestLift::run
 

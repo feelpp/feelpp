@@ -223,7 +223,7 @@ Grid<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
 
     if ( !modes.empty() )
     {
-        Log() << "eigenvalue " << 0 << " = (" << modes.begin()->second.get<0>() << "," <<  modes.begin()->second.get<1>() << ")\n";
+        LOG(INFO) << "eigenvalue " << 0 << " = (" << modes.begin()->second.get<0>() << "," <<  modes.begin()->second.get<1>() << ")\n";
 
         int i = 0;
         BOOST_FOREACH( auto mode, modes )
@@ -241,7 +241,7 @@ Grid<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
 
     if ( exporter->doExport() )
     {
-        Log() << "exportResults starts\n";
+        LOG(INFO) << "exportResults starts\n";
 
         exporter->step( 0 )->setMesh( mesh );
 
@@ -252,7 +252,7 @@ Grid<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
         }
 
         exporter->save();
-        Log() << "exportResults done\n";
+        LOG(INFO) << "exportResults done\n";
     }
 }
 

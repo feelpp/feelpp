@@ -640,7 +640,7 @@ CRBSCM<TruthModelType>::offline()
 
         if ( modes.empty()  )
         {
-            Log() << "eigs failed to converge\n";
+            LOG(INFO) << "eigs failed to converge\n";
             return ckconv;
         }
 
@@ -752,7 +752,7 @@ CRBSCM<TruthModelType>::checkC( size_type K ) const
 
         if ( _lblb - _lb > 1e-10 )
         {
-            Log() << "[lberror] the lower bound is decreasing\n"
+            LOG(INFO) << "[lberror] the lower bound is decreasing\n"
                   << "[lberror] _lblb = " << _lblb << "\n"
                   << "[lberror] _lb = " << _lb << "\n";
         }
@@ -1198,7 +1198,7 @@ CRBSCM<TruthModelType>::maxRelativeError( size_type K ) const
 
         if ( _lblb - _lb > 1e-10 )
         {
-            //Log() << "[lberror] the lower bound is decreasing\n"
+            //LOG(INFO) << "[lberror] the lower bound is decreasing\n"
             //	<< "[lberror] _lblb = " << _lblb << "\n"
             //	<< "[lberror] _lb = " << _lb << "\n";
         }
@@ -1242,7 +1242,7 @@ void
 CRBSCM<TruthModelType>::computeYBounds()
 {
     //std::cout << "************************************************************\n";
-    Log() << "[CRBSCM<TruthModelType>::computeYBounds()] start...\n";
+    LOG(INFO) << "[CRBSCM<TruthModelType>::computeYBounds()] start...\n";
     int Qmax = nb_decomposition_terms_q();
     M_y_bounds.resize(Qmax);
     sparse_matrix_ptrtype Matrix, symmMatrix=M_model->newMatrix(), B=M_model->innerProduct();
@@ -1257,7 +1257,7 @@ CRBSCM<TruthModelType>::computeYBounds()
 
             //std::cout << "================================================================================\n";
             //std::cout << "[ComputeYBounds] = q = " << q << " / " << M_model->Qa() << "\n";
-            Log() << "[CRBSCM<TruthModelType>::computeYBounds()] q = " << q << "/" << M_model->Qa() << "\n";
+            LOG(INFO) << "[CRBSCM<TruthModelType>::computeYBounds()] q = " << q << "/" << M_model->Qa() << "\n";
             // for a given parameter \p mu assemble the left and right hand side
             std::ostringstream os;
 
@@ -1330,7 +1330,7 @@ CRBSCM<TruthModelType>::computeYBounds()
 
                 if ( modes.empty() )
                 {
-                    Log() << "[Computeybounds] eigmin did not converge for q=" << q << " (set to 0)\n";
+                    LOG(INFO) << "[Computeybounds] eigmin did not converge for q=" << q << " (set to 0)\n";
                 }
 
                 double eigmin = modes.empty()?0:modes.begin()->second.template get<0>();
@@ -1355,7 +1355,7 @@ CRBSCM<TruthModelType>::computeYBounds()
 
                 if ( modes.empty() )
                 {
-                    Log() << "[Computeybounds] eigmax did not converge for q=" << q << " (set to 0)\n";
+                    LOG(INFO) << "[Computeybounds] eigmax did not converge for q=" << q << " (set to 0)\n";
                 }
 
                 double eigmax = modes.empty()?0:modes.rbegin()->second.template get<0>();
@@ -1370,7 +1370,7 @@ CRBSCM<TruthModelType>::computeYBounds()
         }//q
     }
 
-    Log() << "[CRBSCM<TruthModelType>::computeYBounds()] stop.\n";
+    LOG(INFO) << "[CRBSCM<TruthModelType>::computeYBounds()] stop.\n";
     //std::cout << "************************************************************\n";
 }
 

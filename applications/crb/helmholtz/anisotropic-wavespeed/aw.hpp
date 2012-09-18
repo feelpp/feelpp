@@ -433,7 +433,7 @@ AnisotropicWavespeed::init()
         return;
 
     M_is_initialized = true;
-    Log() << "[AW::init] starting...\n";
+    LOG(INFO) << "[AW::init] starting...\n";
     // geometry is a ]0,1[x]0,1[
     GeoTool::Node x1( 0,0 );
     GeoTool::Node x2( 1,1 );
@@ -477,7 +477,7 @@ AnisotropicWavespeed::init()
     element_type u( Xh, "u" );
     element_type v( Xh, "v" );
 
-    Log() << "Number of dof " << Xh->nLocalDof() << "\n";
+    LOG(INFO) << "Number of dof " << Xh->nLocalDof() << "\n";
 
     // right hand side
     form1( Xh, M_Fq[0][0], _init=true ) = integrate( elements( mesh ), id( v ) );
@@ -502,7 +502,7 @@ AnisotropicWavespeed::init()
     M->close();
 
 
-    Log() << "[AW::init] done\n";
+    LOG(INFO) << "[AW::init] done\n";
 
 } // AnisotropicWavespeed::run
 
@@ -533,7 +533,7 @@ AnisotropicWavespeed::exportResults( element_type& U )
 {
     if ( M_do_export )
     {
-        Log() << "exportResults starts\n";
+        LOG(INFO) << "exportResults starts\n";
 
         exporter->step( 0 )->setMesh( U.functionSpace()->mesh() );
 

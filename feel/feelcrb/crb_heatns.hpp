@@ -827,7 +827,7 @@ CRB_heatns<TruthModelType>::offline()
 
     boost::timer ti;
     std::cout << "Offline CRB starts, this may take a while until Database is computed...\n";
-    Log() << "[CRB::offline] initialize underlying finite element model\n";
+    LOG(INFO) << "[CRB::offline] initialize underlying finite element model\n";
     M_model->init();
     std::cout << " -- model init done in " << ti.elapsed() << "s\n";
 
@@ -846,7 +846,7 @@ CRB_heatns<TruthModelType>::offline()
         //M_scm->setTruthModel( M_model );
         //    std::vector<boost::tuple<double,double,double> > M_rbconv2 = M_scm->offline();
 
-        Log() << "[CRB::offline] compute random sampling\n";
+        LOG(INFO) << "[CRB::offline] compute random sampling\n";
         // random sampling
         M_Xi->randomize( this->vm()["crb.sampling-size"].template as<int>() );
         //M_Xi->equidistribute( this->vm()["crb.sampling-size"].template as<int>() );
@@ -855,7 +855,7 @@ CRB_heatns<TruthModelType>::offline()
         std::cout<<"[CRB offline] M_error_type = "<<M_error_type<<std::endl;
         std::cout << " -- sampling init done in " << ti.elapsed() << "s\n";
 
-        Log() << "[CRB::offline] Starting offline for output " << M_output_index << "\n";
+        LOG(INFO) << "[CRB::offline] Starting offline for output " << M_output_index << "\n";
         ti.restart();
 
         if ( M_error_type == CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM )
@@ -914,7 +914,7 @@ CRB_heatns<TruthModelType>::offline()
         delta_du = 0;
         //boost::tie( maxerror, mu, index ) = maxErrorBounds( N );
 
-        Log() << "[CRB::offline] allocate reduced basis data structures\n";
+        LOG(INFO) << "[CRB::offline] allocate reduced basis data structures\n";
         M_Aq_pr.resize( M_model->Qa() );
 
         M_Aq_du.resize( M_model->Qa() );
@@ -939,7 +939,7 @@ CRB_heatns<TruthModelType>::offline()
     sparse_matrix_ptrtype M,A,Adu,At;
     std::vector<vector_ptrtype> F,L;
 
-    Log() << "[CRB::offline] compute affine decomposition\n";
+    LOG(INFO) << "[CRB::offline] compute affine decomposition\n";
     std::vector<sparse_matrix_ptrtype> Aq;
     std::vector<sparse_matrix_ptrtype> Mq;
     std::vector<std::vector<vector_ptrtype> > Fq,Lq;
@@ -954,7 +954,7 @@ CRB_heatns<TruthModelType>::offline()
 
     M_mode_number=1;
 
-    Log() << "[CRB::offline] starting offline adaptive loop\n";
+    LOG(INFO) << "[CRB::offline] starting offline adaptive loop\n";
 
     bool reuse_prec = this->vm()["crb.reuse-prec"].template as<bool>() ;
 
@@ -974,10 +974,10 @@ CRB_heatns<TruthModelType>::offline()
         if ( M_iter_max < M_Nm ) sampling_size = 1;
 
         Sampling->logEquidistribute( sampling_size );
-        Log() << "[CRB::offline] sampling parameter space with "<< sampling_size <<"elements done\n";
+        LOG(INFO) << "[CRB::offline] sampling parameter space with "<< sampling_size <<"elements done\n";
     }
 
-    Log() << "[CRB::offline] strategy "<< M_error_type <<"\n";
+    LOG(INFO) << "[CRB::offline] strategy "<< M_error_type <<"\n";
     std::cout << "[CRB::offline] strategy "<< M_error_type <<"\n";
 
     while ( maxerror > M_tolerance && M_N < M_iter_max && no_residual_index<sampling_size )
@@ -986,19 +986,19 @@ CRB_heatns<TruthModelType>::offline()
         if ( M_error_type == CRB_NO_RESIDUAL )  mu = M_Xi->at( no_residual_index );
 
         boost::timer timer, timer2;
-        Log() <<"========================================"<<"\n";
+        LOG(INFO) <<"========================================"<<"\n";
         std::cout << "============================================================\n";
 
         if ( M_error_type == CRB_NO_RESIDUAL )
         {
             std::cout << "N=" << M_N << "/"  << M_iter_max <<"\n";
-            Log() << "N=" << M_N << "/"  << M_iter_max << "\n";
+            LOG(INFO) << "N=" << M_N << "/"  << M_iter_max << "\n";
         }
 
         else
         {
             std::cout << "N=" << M_N << "/"  << M_iter_max << " maxerror=" << maxerror << " / "  << M_tolerance << "\n";
-            Log() << "N=" << M_N << "/"  << M_iter_max << " maxerror=" << maxerror << " / "  << M_tolerance << "\n";
+            LOG(INFO) << "N=" << M_N << "/"  << M_iter_max << " maxerror=" << maxerror << " / "  << M_tolerance << "\n";
         }
 
 
@@ -1018,7 +1018,7 @@ CRB_heatns<TruthModelType>::offline()
 
             std::cout << "  -- updated model for parameter in " << timer2.elapsed() << "s\n";
             timer2.restart();
-            Log() << "[CRB::offline] transpose primal matrix" << "\n";
+            LOG(INFO) << "[CRB::offline] transpose primal matrix" << "\n";
 
             At = M_model->newMatrix();
             A->transpose( At );
@@ -1026,7 +1026,7 @@ CRB_heatns<TruthModelType>::offline()
             //u->setName( ( boost::format( "fem-primal-%1%" ) % ( M_N ) ).str() );
             //udu->setName( ( boost::format( "fem-dual-%1%" ) % ( M_N ) ).str() );
 
-            Log() << "[CRB::offline] solving primal" << "\n";
+            LOG(INFO) << "[CRB::offline] solving primal" << "\n";
             backend_primal_problem->solve( _matrix=A,  _solution=u, _rhs=F[0] );
 
 #if 0
@@ -1075,9 +1075,9 @@ CRB_heatns<TruthModelType>::offline()
         }
 
         for ( size_type l = 0; l < M_model->Nl(); ++l )
-            Log() << "u^T F[" << l << "]= " << inner_product( *u, *F[l] ) << "\n";
+            LOG(INFO) << "u^T F[" << l << "]= " << inner_product( *u, *F[l] ) << "\n";
 
-        Log() << "[CRB::offline] energy = " << A->energy( *u, *u ) << "\n";
+        LOG(INFO) << "[CRB::offline] energy = " << A->energy( *u, *u ) << "\n";
 
         M_WNmu->push_back( mu, index );
         M_WNmu_complement = M_WNmu->complement();
@@ -1120,7 +1120,7 @@ CRB_heatns<TruthModelType>::offline()
         }
 
 
-        Log() << "[CRB::offline] compute Aq_pr, Aq_du, Aq_pr_du" << "\n";
+        LOG(INFO) << "[CRB::offline] compute Aq_pr, Aq_du, Aq_pr_du" << "\n";
 
         for ( size_type q = 0; q < M_model->Qa(); ++q )
         {
@@ -1151,7 +1151,7 @@ CRB_heatns<TruthModelType>::offline()
         }
 
 
-        Log() << "[CRB::offline] compute Mq_pr, Mq_du, Mq_pr_du" << "\n";
+        LOG(INFO) << "[CRB::offline] compute Mq_pr, Mq_du, Mq_pr_du" << "\n";
 
         for ( size_type q = 0; q < M_model->Qm(); ++q )
         {
@@ -1181,7 +1181,7 @@ CRB_heatns<TruthModelType>::offline()
             }
         }
 
-        Log() << "[CRB::offline] compute Fq_pr, Fq_du" << "\n";
+        LOG(INFO) << "[CRB::offline] compute Fq_pr, Fq_du" << "\n";
 
         for ( size_type q = 0; q < M_model->Ql( 0 ); ++q )
         {
@@ -1196,7 +1196,7 @@ CRB_heatns<TruthModelType>::offline()
             }
         }
 
-        Log() << "[CRB::offline] compute Lq_pr, Lq_du" << "\n";
+        LOG(INFO) << "[CRB::offline] compute Lq_pr, Lq_du" << "\n";
 
         for ( size_type q = 0; q < M_model->Ql( M_output_index ); ++q )
         {
@@ -1212,7 +1212,7 @@ CRB_heatns<TruthModelType>::offline()
 
         }
 
-        Log() << "compute coefficients needed for the initialization of unknown in the online step\n";
+        LOG(INFO) << "compute coefficients needed for the initialization of unknown in the online step\n";
 
         element_ptrtype primal_initial_field ( new element_type ( M_model->functionSpace() ) );
         element_ptrtype projection    ( new element_type ( M_model->functionSpace() ) );
@@ -1234,7 +1234,7 @@ CRB_heatns<TruthModelType>::offline()
         {
             std::cout << "  -- offlineResidual update starts\n";
             offlineResidual( M_N, number_of_added_elements );
-            Log()<<"[CRB::offline] end of call offlineResidual and M_N = "<< M_N <<"\n";
+            LOG(INFO)<<"[CRB::offline] end of call offlineResidual and M_N = "<< M_N <<"\n";
             std::cout << "  -- offlineResidual updated in " << timer2.elapsed() << "s\n";
             timer2.restart();
         }
@@ -1270,9 +1270,9 @@ CRB_heatns<TruthModelType>::offline()
 
         timer2.restart();
         std::cout << "time: " << timer.elapsed() << "\n";
-        Log() << "time: " << timer.elapsed() << "\n";
+        LOG(INFO) << "time: " << timer.elapsed() << "\n";
         std::cout << "============================================================\n";
-        Log() <<"========================================"<<"\n";
+        LOG(INFO) <<"========================================"<<"\n";
 
         //save DB after adding an element
         this->saveDB();
@@ -1281,10 +1281,10 @@ CRB_heatns<TruthModelType>::offline()
 
     std::cout << "-------->\n";
     std::cout<<"number of elements in the reduced basis : "<<M_N<<std::endl;
-    Log() << " index choosen : ";
+    LOG(INFO) << " index choosen : ";
     BOOST_FOREACH( auto id, M_index )
-    Log()<<id<<" ";
-    Log()<<"\n";
+    LOG(INFO)<<id<<" ";
+    LOG(INFO)<<"\n";
     bool visualize_basis = this->vm()["crb.visualize-basis"].template as<bool>() ;
 
     if ( visualize_basis )
@@ -1391,23 +1391,23 @@ CRB_heatns<TruthModelType>::checkResidual( parameter_type const& mu, std::vector
 
     boost::tie( boost::tuples::ignore, A, F ) = M_model->update( mu );
 
-    Log() << "  -- updated model for parameter in " << timer2.elapsed() << "s\n";
+    LOG(INFO) << "  -- updated model for parameter in " << timer2.elapsed() << "s\n";
     timer2.restart();
 
-    Log() << "[CRB::checkResidual] transpose primal matrix" << "\n";
+    LOG(INFO) << "[CRB::checkResidual] transpose primal matrix" << "\n";
     At = M_model->newMatrix();
     A->transpose( At );
     u->setName( ( boost::format( "fem-primal-%1%" ) % ( M_N ) ).str() );
     udu->setName( ( boost::format( "fem-dual-%1%" ) % ( M_N ) ).str() );
 
-    Log() << "[CRB::checkResidual] solving primal" << "\n";
+    LOG(INFO) << "[CRB::checkResidual] solving primal" << "\n";
     backendA->solve( _matrix=A,  _solution=u, _rhs=F[0] );
-    Log() << "  -- primal problem solved in " << timer2.elapsed() << "s\n";
+    LOG(INFO) << "  -- primal problem solved in " << timer2.elapsed() << "s\n";
     timer2.restart();
     *Rhs = *F[M_output_index];
     Rhs->scale( -1 );
     backendAt->solve( _matrix=At,  _solution=udu, _rhs=Rhs );
-    Log() << "  -- dual problem solved in " << timer2.elapsed() << "s\n";
+    LOG(INFO) << "  -- dual problem solved in " << timer2.elapsed() << "s\n";
     timer2.restart();
 
 
@@ -1425,13 +1425,13 @@ CRB_heatns<TruthModelType>::checkResidual( parameter_type const& mu, std::vector
     Atun->scale( -1 );
     *Frhs = *F[0];
     *Lrhs = *F[M_output_index];
-    Log() << "[CRB::checkResidual] residual (f,f) " << M_N-1 << ":=" << M_model->scalarProduct( Frhs, Frhs ) << "\n";
-    Log() << "[CRB::checkResidual] residual (f,A) " << M_N-1 << ":=" << 2*M_model->scalarProduct( Frhs, Aun ) << "\n";
-    Log() << "[CRB::checkResidual] residual (A,A) " << M_N-1 << ":=" << M_model->scalarProduct( Aun, Aun ) << "\n";
+    LOG(INFO) << "[CRB::checkResidual] residual (f,f) " << M_N-1 << ":=" << M_model->scalarProduct( Frhs, Frhs ) << "\n";
+    LOG(INFO) << "[CRB::checkResidual] residual (f,A) " << M_N-1 << ":=" << 2*M_model->scalarProduct( Frhs, Aun ) << "\n";
+    LOG(INFO) << "[CRB::checkResidual] residual (A,A) " << M_N-1 << ":=" << M_model->scalarProduct( Aun, Aun ) << "\n";
 
-    Log() << "[CRB::checkResidual] residual (l,l) " << M_N-1 << ":=" << M_model->scalarProduct( Lrhs, Lrhs ) << "\n";
-    Log() << "[CRB::checkResidual] residual (l,At) " << M_N-1 << ":=" << 2*M_model->scalarProduct( Lrhs, Atun ) << "\n";
-    Log() << "[CRB::checkResidual] residual (At,At) " << M_N-1 << ":=" << M_model->scalarProduct( Atun, Atun ) << "\n";
+    LOG(INFO) << "[CRB::checkResidual] residual (l,l) " << M_N-1 << ":=" << M_model->scalarProduct( Lrhs, Lrhs ) << "\n";
+    LOG(INFO) << "[CRB::checkResidual] residual (l,At) " << M_N-1 << ":=" << 2*M_model->scalarProduct( Lrhs, Atun ) << "\n";
+    LOG(INFO) << "[CRB::checkResidual] residual (At,At) " << M_N-1 << ":=" << M_model->scalarProduct( Atun, Atun ) << "\n";
 
 
     Lrhs->scale( -1 );
@@ -1456,8 +1456,8 @@ CRB_heatns<TruthModelType>::checkResidual( parameter_type const& mu, std::vector
     double primal_sum =  check_C0_pr + check_Lambda_pr + check_Gamma_pr ;
     double dual_sum   =  check_C0_du + check_Lambda_du + check_Gamma_du ;
 
-    Log()<<"[CRB::checkResidual] primal_sum = "<<check_C0_pr<<" + "<<check_Lambda_pr<<" + "<<check_Gamma_pr<<" = "<<primal_sum<<"\n";
-    Log()<<"[CRB::checkResidual] dual_sum = "<<check_C0_du<<" + "<<check_Lambda_du<<" + "<<check_Gamma_du<<" = "<<dual_sum<<"\n";
+    LOG(INFO)<<"[CRB::checkResidual] primal_sum = "<<check_C0_pr<<" + "<<check_Lambda_pr<<" + "<<check_Gamma_pr<<" = "<<primal_sum<<"\n";
+    LOG(INFO)<<"[CRB::checkResidual] dual_sum = "<<check_C0_du<<" + "<<check_Lambda_du<<" + "<<check_Gamma_du<<" = "<<dual_sum<<"\n";
 
 
     int time_index=0;
@@ -1533,8 +1533,8 @@ CRB_heatns<TruthModelType>::checkResidual( parameter_type const& mu, std::vector
 
     double err_primal = math::sqrt ( M_model->scalarProduct( Aun, Aun ) );
     double err_dual = math::sqrt ( M_model->scalarProduct( Atun, Atun ) );
-    Log() << "[CRB::checkResidual] true primal residual for reduced basis function " << M_N-1 << ":=" << err_primal << "\n";
-    Log() << "[CRB::checkResidual] true dual residual for reduced basis function " << M_N-1 << ":=" << err_dual << "\n";
+    LOG(INFO) << "[CRB::checkResidual] true primal residual for reduced basis function " << M_N-1 << ":=" << err_primal << "\n";
+    LOG(INFO) << "[CRB::checkResidual] true dual residual for reduced basis function " << M_N-1 << ":=" << err_dual << "\n";
 
 }
 
@@ -1550,13 +1550,13 @@ CRB_heatns<TruthModelType>::check( size_type N ) const
     std::cout << "  -- check reduced basis\n";
 
 
-    Log() << "----------------------------------------------------------------------\n";
+    LOG(INFO) << "----------------------------------------------------------------------\n";
 
     // check that for each mu associated to a basis function of \f$W_N\f$
     //for( int k = std::max(0,(int)N-2); k < N; ++k )
     for ( size_type k = 0; k < N; ++k )
     {
-        Log() << "**********************************************************************\n";
+        LOG(INFO) << "**********************************************************************\n";
         parameter_type const& mu = M_WNmu->at( k );
         std::vector< vectorN_type > uN; //uN.resize( N );
         std::vector< vectorN_type > uNdu; //( N );
@@ -1587,7 +1587,7 @@ CRB_heatns<TruthModelType>::check( size_type N ) const
 
         std::cout<< mu[size-1]<<" ]"<<std::endl;
 
-        Log() << "[check] s= " << s << " +- " << err  << " | sfem= " << sfem << " | abs(sfem-srb) =" << math::abs( sfem - s ) << "\n";
+        LOG(INFO) << "[check] s= " << s << " +- " << err  << " | sfem= " << sfem << " | abs(sfem-srb) =" << math::abs( sfem - s ) << "\n";
         std::cout <<"[check] s = " << s << " +- " << err  << " | sfem= " << sfem << " | abs(sfem-srb) =" << math::abs( sfem - s )<< "\n";
 
 
@@ -1604,7 +1604,7 @@ CRB_heatns<TruthModelType>::check( size_type N ) const
 
     }
 
-    Log() << "----------------------------------------------------------------------\n";
+    LOG(INFO) << "----------------------------------------------------------------------\n";
 
 }
 
@@ -2176,14 +2176,14 @@ CRB_heatns<TruthModelType>::maxErrorBounds( size_type N ) const
 
     if ( seek_mu_in_complement )
     {
-        Log() << "[maxErrorBounds] WNmu_complement N=" << N << " max Error = " << maxerr << " at index = " << index << "\n";
+        LOG(INFO) << "[maxErrorBounds] WNmu_complement N=" << N << " max Error = " << maxerr << " at index = " << index << "\n";
         mu = M_WNmu_complement->at( index );
         _index = M_WNmu_complement->indexInSuperSampling( index );
     }
 
     else
     {
-        Log() << "[maxErrorBounds] N=" << N << " max Error = " << maxerr << " at index = " << index << "\n";
+        LOG(INFO) << "[maxErrorBounds] N=" << N << " max Error = " << maxerr << " at index = " << index << "\n";
         mu = M_Xi->at( index );
         _index = index;
     }
@@ -2636,7 +2636,7 @@ CRB_heatns<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int num
     //
 
 
-    Log() << "[offlineResidual] Cmf_du Cma_du Cmm_du\n";
+    LOG(INFO) << "[offlineResidual] Cmf_du Cma_du Cmm_du\n";
 
 #if 0
     for ( int __q1 = 0; __q1 < __Qm; ++__q1 )
@@ -2771,7 +2771,7 @@ CRB_heatns<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int num
     std::cout << "     o Cmm_du updated in " << ti.elapsed() << "s\n";
     ti.restart();
 
-    Log() << "[offlineResidual] Done.\n";
+    LOG(INFO) << "[offlineResidual] Done.\n";
 
 }
 
@@ -2784,18 +2784,18 @@ CRB_heatns<TruthModelType>::printErrorsDuringRbConstruction( void )
     if( M_rbconv_contains_primal_and_dual_contributions )
     {
         typedef convergence_type::left_map::const_iterator iterator;
-        Log()<<"\nMax error during offline stage\n";
+        LOG(INFO)<<"\nMax error during offline stage\n";
 	for(iterator it = M_rbconv.left.begin(); it != M_rbconv.left.end(); ++it)
-            Log()<<"N : "<<it->first<<"  -  maxerror : "<<it->second.template get<0>()<<"\n";
+            LOG(INFO)<<"N : "<<it->first<<"  -  maxerror : "<<it->second.template get<0>()<<"\n";
 
-	Log()<<"\nPrimal contribution\n";
+	LOG(INFO)<<"\nPrimal contribution\n";
 	for(iterator it = M_rbconv.left.begin(); it != M_rbconv.left.end(); ++it)
-            Log()<<"N : "<<it->first<<"  -  delta_pr : "<<it->second.template get<1>()<<"\n";
+            LOG(INFO)<<"N : "<<it->first<<"  -  delta_pr : "<<it->second.template get<1>()<<"\n";
 
-	Log()<<"\nDual contribution\n";
+	LOG(INFO)<<"\nDual contribution\n";
 	for(iterator it = M_rbconv.left.begin(); it != M_rbconv.left.end(); ++it)
-            Log()<<"N : "<<it->first<<"  -  delta_du : "<<it->second.template get<2>()<<"\n";
-	Log()<<"\n";
+            LOG(INFO)<<"N : "<<it->first<<"  -  delta_du : "<<it->second.template get<2>()<<"\n";
+	LOG(INFO)<<"\n";
     }
     else
         throw std::logic_error( "[CRB::printErrorsDuringRbConstruction] ERROR, the database is too old to print the error during offline step, use the option rebuild-database = true" );
@@ -2846,8 +2846,8 @@ CRB_heatns<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<false> , int n
     // no need to recompute this term each time
     if ( Ncur == 1 )
     {
-        Log() << "[offlineResidual] Compute Primal residual data\n";
-        Log() << "[offlineResidual] C0_pr\n";
+        LOG(INFO) << "[offlineResidual] Compute Primal residual data\n";
+        LOG(INFO) << "[offlineResidual] C0_pr\n";
         std::cout << "-------->[offlineResidual] Compute Primal residual data\n";
         std::cout << "-------->[offlineResidual] C0_pr\n";
 
@@ -2855,20 +2855,20 @@ CRB_heatns<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<false> , int n
         for ( int __q1 = 0; __q1 < __QRhs; ++__q1 )
         {
             std::cout << "-------->__q1 = " << __q1 << std::endl;
-            //Log() << "__Fq->norm1=" << Fq[0][__q1]->l2Norm() << "\n";
+            //LOG(INFO) << "__Fq->norm1=" << Fq[0][__q1]->l2Norm() << "\n";
             M_model->l2solve( __Z1, Fq[0][__q1] );
 
             //for ( int __q2 = 0;__q2 < __q1;++__q2 )
             for ( int __q2 = 0; __q2 < __QRhs; ++__q2 )
             {
                 std::cout << "-------->__q2 = " << __q2 << std::endl;
-                //Log() << "__Fq->norm 2=" << Fq[0][__q2]->l2Norm() << "\n";
+                //LOG(INFO) << "__Fq->norm 2=" << Fq[0][__q2]->l2Norm() << "\n";
                 M_model->l2solve( __Z2, Fq[0][__q2] );
                 //M_C0_pr[__q1][__q2] = M_model->scalarProduct( __X, Fq[0][__q2] );
                 M_C0_pr[__q1][__q2] = M_model->scalarProduct( __Z1, __Z2 );
                 //M_C0_pr[__q2][__q1] = M_C0_pr[__q1][__q2];
                 //Debug() << "M_C0_pr[" << __q1 << "][" << __q2 << "]=" << M_C0_pr[__q1][__q2] << "\n";
-                //Log() << "M_C0_pr[" << __q1 << "][" << __q2 << "]=" << M_C0_pr[__q1][__q2] << "\n";
+                //LOG(INFO) << "M_C0_pr[" << __q1 << "][" << __q2 << "]=" << M_C0_pr[__q1][__q2] << "\n";
             }
 
             //M_C0_pr[__q1][__q1] = M_model->scalarProduct( __X, __X );
@@ -2909,7 +2909,7 @@ CRB_heatns<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<false> , int n
     //
     //  Primal
     //
-    Log() << "[offlineResidual] Lambda_pr, Gamma_pr\n";
+    LOG(INFO) << "[offlineResidual] Lambda_pr, Gamma_pr\n";
 
     for ( int elem=__N-number_of_added_elements; elem<__N; elem++ )
     {
@@ -3008,8 +3008,8 @@ CRB_heatns<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<false> , int n
     // compute this only once
     if ( Ncur == 1 )
     {
-        Log() << "[offlineResidual] Compute Dual residual data\n";
-        Log() << "[offlineResidual] C0_du\n";
+        LOG(INFO) << "[offlineResidual] Compute Dual residual data\n";
+        LOG(INFO) << "[offlineResidual] C0_du\n";
 
         for ( int __q1 = 0; __q1 < __QOutput; ++__q1 )
         {
@@ -3033,7 +3033,7 @@ CRB_heatns<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<false> , int n
         ti.restart();
     }
 
-    Log() << "[offlineResidual] Lambda_du, Gamma_du\n";
+    LOG(INFO) << "[offlineResidual] Lambda_du, Gamma_du\n";
 
     for ( int elem=__N-number_of_added_elements; elem<__N; elem++ )
     {
@@ -3128,7 +3128,7 @@ CRB_heatns<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<false> , int n
 
     std::cout << "     o Gamma_du updated in " << ti.elapsed() << "s\n";
     ti.restart();
-    Log() << "[offlineResidual] Done.\n";
+    LOG(INFO) << "[offlineResidual] Done.\n";
 
 }
 
@@ -3138,18 +3138,18 @@ template<typename TruthModelType>
 void
 CRB_heatns<TruthModelType>::printMuSelection( void )
 {
-    Log()<<" List of parameter selectionned during the offline algorithm \n";
+    LOG(INFO)<<" List of parameter selectionned during the offline algorithm \n";
     for(int k=0;k<M_WNmu->size();k++)
     {
 	std::cout<<" mu "<<k<<" = [ ";
-	Log()<<" mu "<<k<<" = [ ";
+	LOG(INFO)<<" mu "<<k<<" = [ ";
 	parameter_type const& _mu = M_WNmu->at( k );
 	for( int i=0; i<_mu.size()-1; i++ )
 	{
-	    Log()<<_mu(i)<<" , ";
+	    LOG(INFO)<<_mu(i)<<" , ";
 	    std::cout<<_mu(i)<<" , ";
 	}
-	Log()<<_mu( _mu.size()-1 )<<" ] \n";
+	LOG(INFO)<<_mu( _mu.size()-1 )<<" ] \n";
 	std::cout<<_mu( _mu.size()-1 )<<" ] "<<std::endl;
     }
 }

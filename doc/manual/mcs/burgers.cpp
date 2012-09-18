@@ -277,7 +277,7 @@ void Burgers<Dim, Order, Entity>::exportResults( element_type& U, double t )
 {
     if ( exporter->doExport() )
     {
-        Log() << "exportResults starts\n";
+        LOG(INFO) << "exportResults starts\n";
         exporter->step( t )->setMesh( U.functionSpace()->mesh() );
         exporter->step( t )->add( "u", U );
         exporter->save();

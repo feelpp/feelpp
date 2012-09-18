@@ -491,10 +491,10 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( typename SolverEigen<double>::eigenmodes_type
     eigen->setSpectralTransform( transform );
     eigen->setTolerance( tolerance );
 
-    Log() << "number of eigen values = " << nev << "\n";
-    Log() << "number of eigen values converged = " << ncv << "\n";
-    Log() << "number of eigen value solver iterations = " << maxit << "\n";
-    Log() << "eigenvalue tolerance = " << tolerance << "\n";
+    LOG(INFO) << "number of eigen values = " << nev << "\n";
+    LOG(INFO) << "number of eigen values converged = " << ncv << "\n";
+    LOG(INFO) << "number of eigen value solver iterations = " << maxit << "\n";
+    LOG(INFO) << "eigenvalue tolerance = " << tolerance << "\n";
 
     unsigned int nconv, nits;
     std::vector<double> err( ncv );

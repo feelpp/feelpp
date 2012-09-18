@@ -288,7 +288,7 @@ IntegratorDirac<ElementRange, Pts,  DiracExpr>::assemble( boost::shared_ptr<Elem
     */
 
     timer["init intvrho"].second = timer["init intvrho"].first.elapsed();
-    Log() << "[timer] init intvrho(): " << timer["init intvrho"].second << "\n";
+    LOG(INFO) << "[timer] init intvrho(): " << timer["init intvrho"].second << "\n";
 
     timer["intvrho"].first.restart();
 
@@ -343,7 +343,7 @@ IntegratorDirac<ElementRange, Pts,  DiracExpr>::assemble( boost::shared_ptr<Elem
     } // element
 
     timer["intvrho"].second = timer["intvrho"].first.elapsed();
-    Log() << "[timer] intvrho(): " << timer["intvrho"].second << "\n";
+    LOG(INFO) << "[timer] intvrho(): " << timer["intvrho"].second << "\n";
 #endif
 }
 template<typename Elements, typename Pts, typename DiracExpr>

@@ -645,7 +645,7 @@ public:
             std::cout << "try loading " << p.native()  << "\n";
             if ( !fs::exists( p ) )
             {
-                Log() << "[mesh::load] failed loading " << p.native() << "\n";
+                LOG(INFO) << "[mesh::load] failed loading " << p.native() << "\n";
                 std::ostringstream os2;
                 os2 << name << sep << suffix << "-" << this->worldComm().globalSize() << "." << this->worldComm().globalRank();
                 p = fs::path( path ) / os2.str();
@@ -653,14 +653,14 @@ public:
 
                 if ( !fs::exists( p ) )
                 {
-                    Log() << "[mesh::load] failed loading " << p.native() << "\n";
+                    LOG(INFO) << "[mesh::load] failed loading " << p.native() << "\n";
                     return false;
                 }
             }
 
             if ( !fs::is_regular_file( p ) )
             {
-                Log() << "[mesh::load] failed loading " << p.native() << "\n";
+                LOG(INFO) << "[mesh::load] failed loading " << p.native() << "\n";
                 return false;
             }
 

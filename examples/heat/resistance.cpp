@@ -231,21 +231,21 @@ ResistanceLaplacian<Dim,Order>::ResistanceLaplacian( int argc, char** argv, Abou
                             % h
                           );
 
-    Log() << "create mesh\n";
+    LOG(INFO) << "create mesh\n";
     mesh = createMesh();
     line_mesh = createLine();
 
-    Log() << "create space\n";
+    LOG(INFO) << "create space\n";
     node_type trans( 2 );
     trans[0]=0;
     trans[1]=2;
     Xh = functionspace_type::New( _mesh=mesh );
     Yh = vectorial_functionspace_type::New( _mesh=mesh );
 
-    Log() << "print space info\n";
+    LOG(INFO) << "print space info\n";
     Xh->printInfo();
 
-    Log() << "Constructor done\n";
+    LOG(INFO) << "Constructor done\n";
 }
 template<int Dim, int Order>
 typename ResistanceLaplacian<Dim,Order>::mesh_ptrtype
@@ -310,7 +310,7 @@ ResistanceLaplacian<Dim,Order>::createMesh()
     ImporterGmsh<mesh_type> import( fname );
     mesh->accept( import );
     timers["mesh"].second = timers["mesh"].first.elapsed();
-    Log() << "[timer] createMesh(): " << timers["mesh"].second << "\n";
+    LOG(INFO) << "[timer] createMesh(): " << timers["mesh"].second << "\n";
     return mesh;
 } // ResistanceLaplacian::createMesh
 
@@ -341,7 +341,7 @@ ResistanceLaplacian<Dim,Order>::createLine()
     ImporterGmsh<line_mesh_type> import( fname );
     mesh->accept( import );
     timers["mesh"].second = timers["mesh"].first.elapsed();
-    Log() << "[timer] createMesh(): " << timers["mesh"].second << "\n";
+    LOG(INFO) << "[timer] createMesh(): " << timers["mesh"].second << "\n";
     return mesh;
 } // ResistanceLaplacian::createMesh
 
@@ -398,9 +398,9 @@ ResistanceLaplacian<Dim, Order>::run()
     double mean_jump = integrate( markedfaces( mesh, mesh->markerName( "Tdiscontinuity" ) ),
                                   trans( jumpv( idv( u ) ) )*N21 ).evaluate()( 0,0 );
     std::cout <<  "int ([[T]]) = " << mean_jump << "\n";
-    Log() <<  "int ([[T]]) = " << mean_jump << "\n";
+    LOG(INFO) <<  "int ([[T]]) = " << mean_jump << "\n";
     std::cout <<  "mean([[T]]) = " << mean_jump/meas << "\n";
-    Log() <<  "mean([[T]]) = " << mean_jump/meas << "\n";
+    LOG(INFO) <<  "mean([[T]]) = " << mean_jump/meas << "\n";
 
     p0_space_ptrtype P0h = p0_space_type::New( mesh );
     p0_element_type k( P0h, "k" );
@@ -432,7 +432,7 @@ ResistanceLaplacian<Dim, Order>::solve( sparse_matrix_ptrtype& D,
     u = *U;
 
     timers["solver"].second = timers["solver"].first.elapsed();
-    Log() << "[timer] solve: " << timers["solver"].second << "\n";
+    LOG(INFO) << "[timer] solve: " << timers["solver"].second << "\n";
 } // ResistanceLaplacian::solve
 
 
@@ -443,7 +443,7 @@ ResistanceLaplacian<Dim, Order>::exportResults( p0_element_type& k, element_type
 {
     timers["export"].first.restart();
 
-    Log() << "exportResults starts\n";
+    LOG(INFO) << "exportResults starts\n";
 
     exporter->step( 1. )->setMesh( U.functionSpace()->mesh() );
     exporter->step( 1. )->add( "k", k );
@@ -457,7 +457,7 @@ ResistanceLaplacian<Dim, Order>::exportResults( p0_element_type& k, element_type
 
     exporter->save();
     timers["export"].second = timers["export"].first.elapsed();
-    Log() << "[timer] exportResults(): " << timers["export"].second << "\n";
+    LOG(INFO) << "[timer] exportResults(): " << timers["export"].second << "\n";
 
     std::ofstream os( "profile.dat" );
     os.precision( 4 );

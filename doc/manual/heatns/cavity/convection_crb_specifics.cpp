@@ -254,7 +254,7 @@ Convection_crb::update( parameter_type const& mu )
 
 void Convection_crb ::updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J)
 {
-    Log() << "[updateJacobian] start\n";
+    LOG(INFO) << "[updateJacobian] start\n";
     
     auto mesh = Xh->mesh();
     

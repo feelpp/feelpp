@@ -2110,14 +2110,14 @@ template<typename MeshType, typename FEType, typename PeriodicityType>
 void
 DofTable<MeshType, FEType, PeriodicityType>::showMe() const
 {
-    Log()  << " Degree of Freedom (DofTable) Object" << "\n";
+    LOG(INFO)  << " Degree of Freedom (DofTable) Object" << "\n";
     //if ( verbose )
     {
-        Log() <<  "* nDof = " << this->nLocalDof() << "\n";
-        Log()  << "************************************************************" << "\n";
-        Log()  << "           Local to Global DOF table" << "\n";
-        Log()  << "************************************************************" << "\n";
-        Log()  << "Element Id    Loc. N.    Global N.   Sign#    Element Id   Loc. N.  Global N.  Sign" << "\n";
+        LOG(INFO) <<  "* nDof = " << this->nLocalDof() << "\n";
+        LOG(INFO)  << "************************************************************" << "\n";
+        LOG(INFO)  << "           Local to Global DOF table" << "\n";
+        LOG(INFO)  << "************************************************************" << "\n";
+        LOG(INFO)  << "Element Id    Loc. N.    Global N.   Sign#    Element Id   Loc. N.  Global N.  Sign" << "\n";
 
         for ( size_type i = 0; i < _M_n_el; ++i )
         {
@@ -2125,7 +2125,7 @@ DofTable<MeshType, FEType, PeriodicityType>::showMe() const
             for ( size_type j = 0; j < nDofPerElement; ++j )
             {
 
-                Log()<< "elt id " << i << " : "
+                LOG(INFO)<< "elt id " << i << " : "
                      << "(local/global/sign dof : " << j << " : "
                      << boost::get<0>( localToGlobal( i  , j ) ) << " : "
                      << boost::get<1>( localToGlobal( i  , j ) ) << "\n";
@@ -2133,11 +2133,11 @@ DofTable<MeshType, FEType, PeriodicityType>::showMe() const
 
         }
 
-        Log()  << "\n";
+        LOG(INFO)  << "\n";
 
-        Log()  << "************************************************************" << "\n";
-        Log()  << " Boundary  Local to Global DOF table" << "\n";
-        Log()  << "************************************************************" << "\n";
+        LOG(INFO)  << "************************************************************" << "\n";
+        LOG(INFO)  << " Boundary  Local to Global DOF table" << "\n";
+        LOG(INFO)  << "************************************************************" << "\n";
         typedef typename Container_fromface::const_iterator const_iterator;
         const_iterator it = _M_face_l2g.begin();
         const_iterator en = _M_face_l2g.end();
@@ -2157,7 +2157,7 @@ DofTable<MeshType, FEType, PeriodicityType>::showMe() const
                      << boost::get<1>( *it2 ) << "\n";
             }
 
-            Log() << ostr.str() << "\n";
+            LOG(INFO) << ostr.str() << "\n";
         }
     }
 

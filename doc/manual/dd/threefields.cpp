@@ -316,7 +316,7 @@ ThreeFields<Dim, Order1, Order2, Order3>::exportResults( element1_type& u, eleme
     auto e2 = Xh2->element();
     e2 = vf::project( Xh2, elements( mesh2 ), g );
 
-    Log() << "exportResults starts\n";
+    LOG(INFO) << "exportResults starts\n";
     timers["export"].first.restart();
 
     M_firstExporter->step( 0 )->setMesh( mesh1 );
@@ -356,7 +356,7 @@ ThreeFields<Dim, Order1, Order2, Order3>::exportResults( element1_type& u, eleme
         }
     }
 
-    Log() << "exportResults done\n";
+    LOG(INFO) << "exportResults done\n";
     timers["export"].second = timers["export"].first.elapsed();
     std::cout << "[timer] exportResults(): " << timers["export"].second << "\n";
 } // ThreeFields::export
@@ -792,13 +792,13 @@ ThreeFields<Dim, Order1, Order2, Order3>::run( const double* X, unsigned long P,
     std::cout << "||u2_error||_H1=" << H1error2 << "\n";
     std::cout << "||u_error||_H1=" << global_error << "\n";
 
-    Log() << "----------L2 errors---------- \n" ;
-    Log() << "||u1_error||_L2=" << L2error1 << "\n";
-    Log() << "||u2_error||_L2=" << L2error2 << "\n";
-    Log() << "----------H1 errors---------- \n" ;
-    Log() << "||u1_error||_H1=" << H1error1 << "\n";
-    Log() << "||u2_error||_H1=" << H1error2 << "\n";
-    Log() << "||u_error||_H1=" << global_error << "\n";
+    LOG(INFO) << "----------L2 errors---------- \n" ;
+    LOG(INFO) << "||u1_error||_L2=" << L2error1 << "\n";
+    LOG(INFO) << "||u2_error||_L2=" << L2error2 << "\n";
+    LOG(INFO) << "----------H1 errors---------- \n" ;
+    LOG(INFO) << "||u1_error||_H1=" << H1error1 << "\n";
+    LOG(INFO) << "||u2_error||_H1=" << H1error2 << "\n";
+    LOG(INFO) << "||u_error||_H1=" << global_error << "\n";
 
     this->exportResults( u1,u2,mu1,mu2 );
 

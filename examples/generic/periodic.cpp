@@ -200,7 +200,7 @@ PeriodicLaplacian<Dim,Order>::PeriodicLaplacian( int argc, char** argv, AboutDat
                             % h
                           );
 
-    Log() << "create mesh\n";
+    LOG(INFO) << "create mesh\n";
     const std::string shape = "hypercube";
     mesh = createGMSHMesh( _mesh=new mesh_type,
                            _desc=domain( _name=( boost::format( "%1%-%2%" ) % shape % Dim ).str() ,
@@ -211,7 +211,7 @@ PeriodicLaplacian<Dim,Order>::PeriodicLaplacian( int argc, char** argv, AboutDat
                                          _xmin=-1, _ymin=-1 ) );
 
 
-    Log() << "create space\n";
+    LOG(INFO) << "create space\n";
     node_type trans( 2 );
     trans[0]=0;
     trans[1]=2;
@@ -219,10 +219,10 @@ PeriodicLaplacian<Dim,Order>::PeriodicLaplacian( int argc, char** argv, AboutDat
 
     Xhc = functionspace_composite_type::New( _mesh=mesh, _periodicity=Periodic<>( 2, 4, trans ) );
 
-    Log() << "print space info\n";
+    LOG(INFO) << "print space info\n";
     Xh->printInfo();
 
-    Log() << "Constructor done\n";
+    LOG(INFO) << "Constructor done\n";
 }
 
 template<int Dim, int Order>
@@ -271,7 +271,7 @@ PeriodicLaplacian<Dim, Order>::run()
 
     double area = integrate( _range=elements( mesh ), _expr=constant( 1.0 ) ).evaluate()( 0, 0 );
     double mean = integrate( _range=elements( mesh ), _expr=g ).evaluate()( 0, 0 )/area;
-    Log() << "int g  = " << mean << "\n";
+    LOG(INFO) << "int g  = " << mean << "\n";
     vector_ptrtype F( M_backend->newVector( Xh ) );
     form1( Xh, F, _init=true ) = ( integrate( _range=elements( mesh ), _expr=f*id( v ) )
                                    //+integrate( boundaryfaces( mesh ), _Q<Order+5>(), (trans(grad_g)*N())*id(v) )
@@ -287,13 +287,13 @@ PeriodicLaplacian<Dim, Order>::run()
 
     backend_type::build( this->vm() )->solve( _matrix=M, _solution=u, _rhs=F );
 
-    Log() << "area   = " << area << "\n";
-    Log() << "int g  = " << integrate( elements( mesh ), g ).evaluate()( 0, 0 )/area << "\n";
-    Log() << "int u  = " << integrate( elements( mesh ), idv( u ) ).evaluate()( 0, 0 )/area << "\n";
-    Log() << "error  = " << math::sqrt( integrate( elements( mesh ), ( idv( u )-g )*( idv( u )-g ) ).evaluate()( 0, 0 ) ) << "\n";
+    LOG(INFO) << "area   = " << area << "\n";
+    LOG(INFO) << "int g  = " << integrate( elements( mesh ), g ).evaluate()( 0, 0 )/area << "\n";
+    LOG(INFO) << "int u  = " << integrate( elements( mesh ), idv( u ) ).evaluate()( 0, 0 )/area << "\n";
+    LOG(INFO) << "error  = " << math::sqrt( integrate( elements( mesh ), ( idv( u )-g )*( idv( u )-g ) ).evaluate()( 0, 0 ) ) << "\n";
     double bdy1 = integrate( markedfaces( mesh,2 ), idv( u ) ).evaluate()( 0, 0 );
     double bdy2 = integrate( markedfaces( mesh,4 ), idv( u ) ).evaluate()( 0, 0 );
-    Log() << "error mean periodic  boundary 1 - 2  = " << math::abs( bdy1-bdy2 ) << "\n";
+    LOG(INFO) << "error mean periodic  boundary 1 - 2  = " << math::abs( bdy1-bdy2 ) << "\n";
 
     v = vf::project( Xh, elements( mesh ), g );
 
@@ -316,7 +316,7 @@ PeriodicLaplacian<Dim, Order>::exportResults( element_type& U, element_type& V, 
 {
     timers["export"].first.restart();
 
-    Log() << "exportResults starts\n";
+    LOG(INFO) << "exportResults starts\n";
 
     exporter->step( 1. )->setMesh( U.functionSpace()->mesh() );
     exporter->step( 1. )->add( "u", U );
@@ -326,7 +326,7 @@ PeriodicLaplacian<Dim, Order>::exportResults( element_type& U, element_type& V, 
 
     exporter->save();
     timers["export"].second = timers["export"].first.elapsed();
-    Log() << "[timer] exportResults(): " << timers["export"].second << "\n";
+    LOG(INFO) << "[timer] exportResults(): " << timers["export"].second << "\n";
 } // PeriodicLaplacian::export
 } // Feel
 

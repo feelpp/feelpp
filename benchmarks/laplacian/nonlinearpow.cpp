@@ -226,7 +226,7 @@ void
 NonLinearPow<Dim, Order, Entity>::updateResidual( const vector_ptrtype& X, vector_ptrtype& R )
 {
     boost::timer ti;
-    Log() << "[updateResidual] start\n";
+    LOG(INFO) << "[updateResidual] start\n";
 
     mesh_ptrtype mesh = M_Xh->mesh();
     element_type u( M_Xh, "u" );
@@ -293,14 +293,14 @@ NonLinearPow<Dim, Order, Entity>::updateResidual( const vector_ptrtype& X, vecto
     std::cout<< "Residual r2 = " << M_backend->dot( V, R2 ) << "\n";
     //M_residual->close();
     R->close();
-    Log() << "[updateResidual] done in " << ti.elapsed() << "s\n";
+    LOG(INFO) << "[updateResidual] done in " << ti.elapsed() << "s\n";
 }
 template<int Dim, int Order, template<uint16_type,uint16_type,uint16_type> class Entity>
 void
 NonLinearPow<Dim, Order, Entity>::updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J )
 {
     boost::timer ti;
-    Log() << "[updateJacobian] start\n";
+    LOG(INFO) << "[updateJacobian] start\n";
     static bool is_init = false;
     mesh_ptrtype mesh = M_Xh->mesh();
     element_type u( M_Xh, "u" );
@@ -337,7 +337,7 @@ NonLinearPow<Dim, Order, Entity>::updateJacobian( const vector_ptrtype& X, spars
     M_jac->matPtr()->addMatrix( 1.0, M_oplin->mat() );
 #endif
     J = M_jac->matPtr();
-    Log() << "[updateJacobian] done in " << ti.elapsed() << "s\n";
+    LOG(INFO) << "[updateJacobian] done in " << ti.elapsed() << "s\n";
 }
 
 template<int Dim, int Order, template<uint16_type,uint16_type,uint16_type> class Entity>
@@ -401,8 +401,8 @@ NonLinearPow<Dim, Order, Entity>::run()
     this->updateResidual( U, R );
     std::cout << "R( u ) = " << M_backend->dot( U, R ) << "\n";
 
-    Log() << "solution computed in " << t1.elapsed() << "s\n";
-    Log() << "R( u ) = " << M_backend->dot( U, R ) << "\n";
+    LOG(INFO) << "solution computed in " << t1.elapsed() << "s\n";
+    LOG(INFO) << "R( u ) = " << M_backend->dot( U, R ) << "\n";
 
     t1.restart();
 
@@ -411,8 +411,8 @@ NonLinearPow<Dim, Order, Entity>::run()
     double L2error = math::sqrt( L2error2 );
 
     std::cout << "||error||_L2=" << L2error << "\n";
-    Log() << "||error||_L2=" << L2error << "\n";
-    Log() << "L2 norm computed in " << t1.elapsed() << "s\n";
+    LOG(INFO) << "||error||_L2=" << L2error << "\n";
+    LOG(INFO) << "L2 norm computed in " << t1.elapsed() << "s\n";
 
     exportResults( u , ue );
 
@@ -438,7 +438,7 @@ template<int Dim, int Order, template<uint16_type,uint16_type,uint16_type> class
 void
 NonLinearPow<Dim, Order, Entity>::exportResults( element_type& U , element_type& UE )
 {
-    Log() << "exportResults starts\n";
+    LOG(INFO) << "exportResults starts\n";
     exporter->step( 0 )->setMesh( U.functionSpace()->mesh() );
 
     if ( !this->vm().count( "export-mesh-only" ) )

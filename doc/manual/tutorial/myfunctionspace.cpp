@@ -232,10 +232,10 @@ MyFunctionSpace<Dim, Order>::run( const double* X, unsigned long P, double* Y, u
     //# marker6 #
     double L2g2 = integrate( elements( mesh ), g*g ).evaluate()( 0,0 );
     double L2uerror2 = integrate( elements( mesh ), ( idv( u )-g )*( idv( u )-g ) ).evaluate()( 0,0 );
-    Log() << "||u-g||_0=" << math::sqrt( L2uerror2/L2g2 ) << "\n";
+    LOG(INFO) << "||u-g||_0=" << math::sqrt( L2uerror2/L2g2 ) << "\n";
     double L2f2 = integrate( elements( mesh ), f*f ).evaluate()( 0,0 );
     double L2verror2 = integrate( elements( mesh ), ( idv( v )-f )*( idv( v )-f ) ).evaluate()( 0,0 );
-    Log() << "||v-f||_0=" << math::sqrt( L2verror2/L2f2 ) << "\n";
+    LOG(INFO) << "||v-f||_0=" << math::sqrt( L2verror2/L2f2 ) << "\n";
     //# endmarker6 #
 
     //# marker7 #

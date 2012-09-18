@@ -29,6 +29,9 @@
 #include <string>
 #include <sstream>
 
+#include <feel/feelcore/feelmacros.hpp>
+
+
 namespace Feel
 {
 class DebugStream;
@@ -297,8 +300,9 @@ inline NdebugStream& flush( NdebugStream& s )
     return s;
 }
 
-DebugStream Log( int area = 0, DebugStream::stprintf = 0 );
-DebugStream Log( bool cond, int area = 0, DebugStream::stprintf = 0 );
+DebugStream Log( int area = 0, DebugStream::stprintf = 0 ) FEELPP_DEPRECATED;
+DebugStream Log( bool cond, int area = 0, DebugStream::stprintf = 0 ) FEELPP_DEPRECATED;
+
 
 #ifndef NDEBUG
 DebugStream Debug( int area = 0, DebugStream::stprintf = 0 );
@@ -314,6 +318,7 @@ inline NdebugStream Ndebug( bool /*cond*/, int = 0, NdebugStream::stprintf = &pr
     return NdebugStream();
 }
 #endif
+
 
 DebugStream Warning( int area = 0 );
 DebugStream Warning( bool cond, int area = 0 );

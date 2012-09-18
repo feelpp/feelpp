@@ -1646,8 +1646,8 @@ Mesh<Shape, T, Tag>::decode()
     //std::cout<<"decode=   " << worldcomm.subWorldComm().localRank() << std::endl;
     this->setWorldComm(worldcomm.subWorldComm());
 #else
-    Log() <<"decode=   " << this->worldComm().size() << "\n" ;
-    Log() <<"decode=   " << this->worldComm().subWorldComm().localRank() << "\n";
+    LOG(INFO) <<"decode=   " << this->worldComm().size() << "\n" ;
+    LOG(INFO) <<"decode=   " << this->worldComm().subWorldComm().localRank() << "\n";
 #endif
     static const uint16_type npoints_per_face = ( face_type::numVertices*face_type::nbPtsPerVertex+
             face_type::numEdges*face_type::nbPtsPerEdge+
@@ -1717,10 +1717,10 @@ Mesh<Shape, T, Tag>::decode()
         mesh->elements().modify( theelt, detail::update_id_in_partition_type( this->worldComm().localRank(), pv.id() ) );
 #endif
     }
-    Log() << "distance  elts: "<< std::distance( this->beginElement(), this->endElement() ) << "\n";
-    Log() << "distance faces: "<< std::distance( this->beginFace(), this->endFace() ) << "\n";
-    Log() << "distance marker faces: "<< std::distance( this->beginFaceWithMarker(), this->endFaceWithMarker() ) << "\n";
-    Log() << "distance marker2 faces: "<< std::distance( this->beginFaceWithMarker2(), this->endFaceWithMarker2() ) << "\n";
+    LOG(INFO) << "distance  elts: "<< std::distance( this->beginElement(), this->endElement() ) << "\n";
+    LOG(INFO) << "distance faces: "<< std::distance( this->beginFace(), this->endFace() ) << "\n";
+    LOG(INFO) << "distance marker faces: "<< std::distance( this->beginFaceWithMarker(), this->endFaceWithMarker() ) << "\n";
+    LOG(INFO) << "distance marker2 faces: "<< std::distance( this->beginFaceWithMarker2(), this->endFaceWithMarker2() ) << "\n";
 
     //this->components().set ( MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
     //this->updateForUse();

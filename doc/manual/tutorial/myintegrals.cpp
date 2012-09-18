@@ -183,13 +183,13 @@ MyIntegrals<Dim>::run( const double* X, unsigned long P, double* Y, unsigned lon
                                           _expr=constant( 1.0 ) ).evaluate()( 0,0 );
     //# endmarker2 #
     //# marker3 #
-    Log() << "int_Omega 1 = " << global_domain_area
+    LOG(INFO) << "int_Omega 1 = " << global_domain_area
           << "[ " << local_domain_area << " ]\n";
 
     //# endmarker3 #
     if ( Dim > 1 )
     {
-        Log() << "nb faces on boundary " << nelements( boundaryfaces(mesh) ) << "\n";
+        LOG(INFO) << "nb faces on boundary " << nelements( boundaryfaces(mesh) ) << "\n";
         /*
          * Compute domain perimeter
          */
@@ -198,7 +198,7 @@ MyIntegrals<Dim>::run( const double* X, unsigned long P, double* Y, unsigned lon
                                         constant( 1.0 ) ).evaluate( false )( 0,0 );
         double global_boundary_length = integrate( boundaryfaces( mesh ),
                                         constant( 1.0 ) ).evaluate()( 0,0 );
-        Log() << "int_BoundaryOmega (1)= " << global_boundary_length
+        LOG(INFO) << "int_BoundaryOmega (1)= " << global_boundary_length
               << "[ " << local_boundary_length << " ]\n";
         //# endmarker4 #
     }
@@ -216,7 +216,7 @@ MyIntegrals<Dim>::run( const double* X, unsigned long P, double* Y, unsigned lon
                                     Px()*Px() + Py()*Py() + Pz()*Pz() // trans(P())*P()
                                   ).evaluate()( 0,0 );
     //# endmarker5 #
-    Log() << "int_Omega (x^2+y^2+z^2) = " << global_intf
+    LOG(INFO) << "int_Omega (x^2+y^2+z^2) = " << global_intf
           << "[ " << local_intf << " ]\n";
 
     //# marker6 #
@@ -226,8 +226,8 @@ MyIntegrals<Dim>::run( const double* X, unsigned long P, double* Y, unsigned lon
     double local_intsin = integrate( elements( mesh ),
                                      sin( Px()*Px() + Py()*Py() + Pz()*Pz() ) ).evaluate( false )( 0,0 );
     //# endmarker6 #
-    Log() << "int_Omega (sin(x^2+y^2+z^2)) [with order 4 max exact integration]= " << global_intsin << "\n";
-    Log() << "int_Omega[" << this->comm().rank() << "] (sin(x^2+y^2+z^2)) [with order 4 max exact integration]= " << local_intsin << "\n";
+    LOG(INFO) << "int_Omega (sin(x^2+y^2+z^2)) [with order 4 max exact integration]= " << global_intsin << "\n";
+    LOG(INFO) << "int_Omega[" << this->comm().rank() << "] (sin(x^2+y^2+z^2)) [with order 4 max exact integration]= " << local_intsin << "\n";
 
 
     //# marker7 #
@@ -239,7 +239,7 @@ MyIntegrals<Dim>::run( const double* X, unsigned long P, double* Y, unsigned lon
                                        _expr=sin( Px()*Px() + Py()*Py() + Pz()*Pz() ),
                                        _quad=_Q<2>() ).evaluate()( 0,0 );
     //# endmarker7 #
-    Log() << "int_Omega (sin(x^2+y^2+z^2)) [with order 2 max exact integration] = " << global_intsin2
+    LOG(INFO) << "int_Omega (sin(x^2+y^2+z^2)) [with order 2 max exact integration] = " << global_intsin2
           << "[ " << local_intsin2 << " ]\n";
 
 

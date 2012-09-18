@@ -3699,9 +3699,9 @@ public:
 
     void printInfo() const
     {
-        Log() << " number of components : " << qDim() << "\n";
-        Log() << "         n Global Dof : " << nDof() << "\n";
-        Log() << "         n Local  Dof : " << nLocalDof() << "\n";
+        LOG(INFO) << " number of components : " << qDim() << "\n";
+        LOG(INFO) << "         n Global Dof : " << nDof() << "\n";
+        LOG(INFO) << "         n Local  Dof : " << nLocalDof() << "\n";
     }
 
     //@}

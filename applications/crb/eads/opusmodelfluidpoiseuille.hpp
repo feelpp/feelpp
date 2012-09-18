@@ -120,9 +120,9 @@ OpusModelFluidPoiseuille<SpaceType>::OpusModelFluidPoiseuille(  po::variables_ma
     M_time( 0. ),
     M_Xh( Xh )
 {
-    Log() << "[OpusModelFluidPoiseuille] constructor starts\n";
+    LOG(INFO) << "[OpusModelFluidPoiseuille] constructor starts\n";
     FEELPP_ASSERT( M_Xh != 0 ).error( "[OpusModelFluidPoiseuille] invalid functionspace_ptrtype" );
-    Log() << "[OpusModelFluidPoiseuille] constructor done\n";
+    LOG(INFO) << "[OpusModelFluidPoiseuille] constructor done\n";
 }
 
 
@@ -145,10 +145,10 @@ OpusModelFluidPoiseuille<SpaceType>::solve( element_type& U )
     double e_IC = this->data()->component( "IC1" ).e();
     //double L_IC = this->data()->component("IC1").h();
 
-    Log() << "flow_rate = " << M_flow_rate << "\n";
-    Log() << "e_AIR = " << e_AIR << "\n";
-    Log() << "e_PCB = " << e_PCB << "\n";
-    Log() << "e_IC = " << e_IC << "\n";
+    LOG(INFO) << "flow_rate = " << M_flow_rate << "\n";
+    LOG(INFO) << "e_AIR = " << e_AIR << "\n";
+    LOG(INFO) << "e_PCB = " << e_PCB << "\n";
+    LOG(INFO) << "e_IC = " << e_IC << "\n";
 
     AUTO( chi_AIR, chi( Px() >= e_PCB+e_IC ) );
     AUTO( ft, ( constant( 1.0-math::exp( -M_time/3.0 ) ) ) );
@@ -166,7 +166,7 @@ OpusModelFluidPoiseuille<SpaceType>::solve( element_type& U )
                                           M_Xh->mesh()->markerName( "Gamma_4_AIR4" ) ),
                              -trans( idv( u ) )*N() ).evaluate()( 0,0 );
     double flowr = intu;
-    Log() << "[poiseuille] D=" << flowr << " umax = " << u.linftyNorm() << "\n";
+    LOG(INFO) << "[poiseuille] D=" << flowr << " umax = " << u.linftyNorm() << "\n";
 }
 /** \\@} */
 } // Feel

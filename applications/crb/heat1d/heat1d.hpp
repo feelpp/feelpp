@@ -589,7 +589,7 @@ Heat1D::init()
     element_type u( Xh, "u" );
     element_type v( Xh, "v" );
 
-    Log() << "Number of dof " << Xh->nLocalDof() << "\n";
+    LOG(INFO) << "Number of dof " << Xh->nLocalDof() << "\n";
 
     // right hand side
     form1( Xh, M_Fqm[0][0][0], _init=true ) = integrate( markedfaces( mesh,mesh->markerName( "left" ) ), id( v ) );
@@ -658,7 +658,7 @@ Heat1D::exportResults( element_type& U )
 {
     if ( M_do_export )
     {
-        Log() << "exportResults starts\n";
+        LOG(INFO) << "exportResults starts\n";
 
         exporter->step( 0 )->setMesh( U.functionSpace()->mesh() );
 
