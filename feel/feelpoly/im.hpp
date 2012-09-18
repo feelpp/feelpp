@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2006-12-30
 
   Copyright (C) 2006-2011 Université Joseph Fourier
@@ -23,7 +23,7 @@
 */
 /**
    \file im.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2006-12-30
  */
 #ifndef __im_H

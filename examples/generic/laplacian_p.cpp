@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2006-11-23
 
   Copyright (C) 2006,2007 Universit� Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file laplacian.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2006-11-23
  */
 #include <feel/options.hpp>
@@ -77,7 +77,7 @@ makeAbout()
                            Feel::AboutData::License_GPL,
                            "Copyright (c) 2006, 2007 Universit� Joseph Fourier" );
 
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     return about;
 
 }

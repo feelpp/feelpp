@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2009-04-03
 
   Copyright (C) 2009 Université de Grenoble 1
@@ -23,7 +23,7 @@
 */
 /**
    \file parameter.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2009-04-03
  */
 #ifndef __feelcore_parameter_H

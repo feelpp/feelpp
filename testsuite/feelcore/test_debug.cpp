@@ -1,7 +1,7 @@
 /*
   This file is part of the Feel library.
 
-  Author: Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 
   Copyright (C) 2004 EPFL
 

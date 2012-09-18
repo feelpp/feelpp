@@ -3,7 +3,7 @@
   This file is part of the Feel library
 
   Author(s): Gilles Steiner <gilles.steiner@epfl.ch>
-             Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+             Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2004-11-18
 
   Copyright (C) 2004 EPFL
@@ -25,7 +25,7 @@
 /**
    \file filterfromvtk.hpp
    \author Gilles Steiner <gilles.steiner@epfl.ch>
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2004-11-18
  */
 #ifndef __filter_H
@@ -58,7 +58,7 @@ namespace Feel
  * Converts Mesh data structure from Vtk library to Feel Mesh type.
  *
  * \author Gilles Steiner <gilles.steiner@epfl.ch>
- * \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+ * \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
  */
 template<typename MeshType>
 class FilterFromVtk
@@ -152,7 +152,7 @@ private:
  * Converts Mesh data structure from Vtk library to Feel Mesh type.
  *
  * \author Gilles Steiner <gilles.steiner@epfl.ch>
- * \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+ * \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
  */
 template<typename MeshType>
 class FilterFromVtk3D

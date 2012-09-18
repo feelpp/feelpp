@@ -88,7 +88,7 @@ makeThermalBlockAbout( std::string const& str = "thermalBlock" )
                      "Copyright (c) 2011 Universite Joseph Fourier" );
 
     about.addAuthor( "Abdoulaye Samake", "main developer", "abdoulaye.samake@ujf-grenoble.fr", "" );
-    about.addAuthor( "Christophe Prud'homme", "contributor", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    about.addAuthor( "Christophe Prud'homme", "contributor", "christophe.prudhomme@feelpp.org", "" );
     about.addAuthor( "Stephane Veys", "contributor", "stephane.veys@imag.fr", "" );
     return about;
 

@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2005-09-03
 
   Copyright (C) 2005,2006 EPFL
@@ -23,7 +23,7 @@
 */
 /**
    \file edges.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-09-03
  */
 #ifndef __edges_H
@@ -46,7 +46,7 @@ namespace multi_index = boost::multi_index;
   \class Edges
   \brief Edges container class
 
-  @author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
   @see
 */
 template<typename EdgeType>

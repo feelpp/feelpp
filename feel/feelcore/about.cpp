@@ -2,7 +2,7 @@
     kate: space-indent on; indent-width 4; mixedindent off; indent-mode cstyle; encoding utf-8;
    This file is part of the Feel library
 
-   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    Date: 2005-03-17
 
    Copyright (C) 2009 Université de Grenoble 1
@@ -24,7 +24,7 @@
 */
 /**
    \file about.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-03-17
  */
 #include <cstring>

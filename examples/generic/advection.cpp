@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2006-11-23
 
   Copyright (C) 2006-2011 University Joseph Fourier
@@ -72,7 +72,7 @@ makeAbout()
                            Feel::AboutData::License_GPL,
                            "Copyright (c) 2006-2011 University Joseph Fourier" );
 
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     about.addAuthor( "Benjamin Stamm", "developer", "benjamin.stamm@epfl.ch", "" );
     return about;
 
@@ -405,6 +405,7 @@ int
 main( int argc, char** argv )
 {
     using namespace Feel;
+    Environment env( argc, argv );
 
     /* change parameters below */
     const int nDim = 2;

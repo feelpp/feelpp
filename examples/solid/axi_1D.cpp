@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2008-01-04
 
   Copyright (C) 2008 Christophe Prud'homme
@@ -24,7 +24,7 @@
 */
 /**
    \file elaxi.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2008-01-04
  */
 #include <feel/options.hpp>
@@ -65,7 +65,7 @@ makeAbout()
                            Feel::AboutData::License_GPL,
                            "Copyright (c) 2007 University Joseph Fourier Grenoble 1" );
 
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     about.addAuthor( "Vuk Milisic", "developer", "vuk.milisic@imag.fr", "" );
     return about;
 
@@ -410,7 +410,7 @@ int
 main( int argc, char** argv )
 {
     using namespace Feel;
-
+    Environment env( argc, argv );
     /* change parameters below */
     const int nOrder = 2;
 

@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2006-07-02
 
   Copyright (C) 2006 EPFL
@@ -23,7 +23,7 @@
 */
 /**
    \file imexact.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2006-07-02
  */
 #ifndef __IMExact_H
@@ -36,7 +36,7 @@ namespace Feel
  * \brief exact integration method
  *
  *  \ingroup Polynomial
- *  @author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+ *  @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
  */
 template<typename T = double>
 class IMExact

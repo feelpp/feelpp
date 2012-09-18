@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2009-11-24
 
   Copyright (C) 2009 Université Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file heat1dcrbapp.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2011-06-8
  */
 #include <thermalblock.hpp>

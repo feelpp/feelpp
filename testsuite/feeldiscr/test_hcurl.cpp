@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
   Author(s): Cecile Daversin  <cecile.daversin@lncmi.cnrs.fr>
        Date: 2011-12-07
 
@@ -25,7 +25,7 @@
 */
 /**
    \file test_hcurl.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \author Cecile Daversin <cecile.daversin@lncmi.cnrs.fr>
    \date 2011-12-07
  */
@@ -315,7 +315,7 @@ makeAbout()
                      AboutData::License_GPL,
                      "Copyright (c) 2009 Universite Joseph Fourier" );
     about.addAuthor( "Cecile Daversin", "developer", "cecile.daversin@lncmi.cnrs.fr", "" );
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     return about;
 
 }

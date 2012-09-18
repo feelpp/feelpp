@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2009-03-04
 
   Copyright (C) 2009 Universite Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file convection_residual.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2009-03-04
  */
 #include "convection.hpp"

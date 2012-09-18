@@ -119,7 +119,7 @@ makeAbout()
                            Feel::AboutData::License_LGPL,
                            "Copyright (c) 2005,2006 EPFL" );
 
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     return about;
 
 }
