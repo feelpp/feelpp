@@ -788,7 +788,8 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
         updateGhostCellInfo( mesh, __idGmshToFeel,  mapGhostElt );
 
     mesh->setNumVertices( std::accumulate( _M_n_vertices.begin(), _M_n_vertices.end(), 0 ) );
-    if ( ( mesh->markerNames().find("CrossPoints") != mesh->markerNames().end() ) &&
+    if ( !mesh->markerNames().empty() &&
+         ( mesh->markerNames().find("CrossPoints") != mesh->markerNames().end() ) &&
          ( mesh->markerNames().find("WireBasket") != mesh->markerNames().end() ) )
     {
         LOG(INFO) << "[substructuring] marker cp" << mesh->markerName("CrossPoints")  << "\n";
