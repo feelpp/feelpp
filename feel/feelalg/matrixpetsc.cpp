@@ -1253,7 +1253,7 @@ MatrixPetsc<T>::symmetricPart( MatrixSparse<value_type>& Mt ) const
 
     if ( isSymmetric )
     {
-        Log() << "[MatrixPetsc<T>::symmetricPart] Matrix is already symmetric, don't do anything\n";
+        LOG(INFO) << "[MatrixPetsc<T>::symmetricPart] Matrix is already symmetric, don't do anything\n";
 #if (PETSC_VERSION_MAJOR >= 3)
         MatSetOption( _M_mat,MAT_SYMMETRIC,PETSC_TRUE );
 #else
@@ -1323,7 +1323,7 @@ MatrixPetsc<T>::symmetricPart( MatrixSparse<value_type>& Mt ) const
 
     if ( isSymmetric )
     {
-        Log() << "[MatrixPetsc<T>::symmetricPart] symmetric part is really symmetric\n";
+        LOG(INFO) << "[MatrixPetsc<T>::symmetricPart] symmetric part is really symmetric\n";
 #if (PETSC_VERSION_MAJOR >= 3)
         ierr = MatSetOption( B->_M_mat,MAT_SYMMETRIC,PETSC_TRUE );
 #else

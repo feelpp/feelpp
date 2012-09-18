@@ -38,7 +38,7 @@ void Convection::updateJacobian2( const vector_ptrtype& X,
     mesh_ptrtype mesh = Xh->mesh();
     element_type U( Xh, "u" );
     U = *X;
-    Log() << "[updateJacobian] ||X|| = " << U.l2Norm() << "\n";
+    LOG(INFO) << "[updateJacobian] ||X|| = " << U.l2Norm() << "\n";
     element_type V( Xh, "v" );
     element_type W( Xh, "v" );
     element_0_type u = U. element<0>(); // fonction vitesse
@@ -83,10 +83,10 @@ void Convection::updateJacobian2( const vector_ptrtype& X,
         integrate ( boundaryfaces( mesh ),
                     pC*( trans( idt( u ) )*N() )*id( s )*idv( t ) );
 
-    Log() << "[updateJacobian2] Temperature convection terms done\n";
+    LOG(INFO) << "[updateJacobian2] Temperature convection terms done\n";
 
 
-    Log() << "[updateJacobian2] Temperature weak Dirichlet BC terms done\n";
+    LOG(INFO) << "[updateJacobian2] Temperature weak Dirichlet BC terms done\n";
 
 
 }

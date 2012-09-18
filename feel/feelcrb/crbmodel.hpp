@@ -1187,7 +1187,7 @@ CRBModel<TruthModelType>::initB()
     M_B = M_model->innerProduct();
 
 #if 0
-    Log() << "[CRBModel::initB] initialize scalar product\n";
+    LOG(INFO) << "[CRBModel::initB] initialize scalar product\n";
     M_B = M_backend->newMatrix( M_model->functionSpace(), M_model->functionSpace() );
     using namespace Feel::vf;
     typename functionspace_type::element_type u( M_model->functionSpace() );
@@ -1204,7 +1204,7 @@ CRBModel<TruthModelType>::initB()
     M_B->printMatlab( "ipB.m" );
     M->printMatlab( "ipM.m" );
     M->close();
-    Log() << "[CRBModel::initB] starting eigen solve\n";
+    LOG(INFO) << "[CRBModel::initB] starting eigen solve\n";
 #if 0
     SolverEigen<double>::eigenmodes_type modesmin=
         eigs( _matrixA=M_B,
@@ -1223,7 +1223,7 @@ CRBModel<TruthModelType>::initB()
 
     if ( modesmin.empty() || modesmin.begin()->second.get<0>()<1e-6 )
     {
-        Log() << "coercivity constant not computed, taking 1\n";
+        LOG(INFO) << "coercivity constant not computed, taking 1\n";
     }
 
     else
@@ -1231,7 +1231,7 @@ CRBModel<TruthModelType>::initB()
         eigmin = modesmin.begin()->second.get<0>();
     }
 
-    Log() << "[CRBModel::initB] coercivity constant (tau) = " << eigmin << "\n";
+    LOG(INFO) << "[CRBModel::initB] coercivity constant (tau) = " << eigmin << "\n";
 #else
     double eigmin = 1;
 #endif

@@ -36,7 +36,7 @@ void
 Convection_crb::updateResidual( const vector_ptrtype& X, vector_ptrtype& R, parameter_type const& mu )
 {
 
-    Log() << "[updateResidual] start\n";
+    LOG(INFO) << "[updateResidual] start\n";
 
     mesh_ptrtype mesh = Xh->mesh();
 

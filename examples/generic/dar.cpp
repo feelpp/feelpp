@@ -150,9 +150,9 @@ public:
         timers(),
         stats()
     {
-        Log() << "[Dar] hsize = " << meshSize << "\n";
-        Log() << "[Dar] bccoeff = " << bcCoeff << "\n";
-        Log() << "[Dar] export = " << this->vm().count( "export" ) << "\n";
+        LOG(INFO) << "[Dar] hsize = " << meshSize << "\n";
+        LOG(INFO) << "[Dar] bccoeff = " << bcCoeff << "\n";
+        LOG(INFO) << "[Dar] export = " << this->vm().count( "export" ) << "\n";
 
 
     }
@@ -217,7 +217,7 @@ Dar<Dim,Order,Cont,Entity>::createMesh( double meshSize )
     ImporterGmsh<mesh_type> import( fname );
     mesh->accept( import );
     timers["mesh"].second = timers["mesh"].first.elapsed();
-    Log() << "[timer] createMesh(): " << timers["mesh"].second << "\n";
+    LOG(INFO) << "[timer] createMesh(): " << timers["mesh"].second << "\n";
     return mesh;
 } // Dar::createMesh
 
@@ -291,11 +291,11 @@ Dar<Dim, Order, Cont, Entity>::run()
     bool stab = this->vm()["stab"].template as<bool>();
     value_type pi = 4.0*math::atan( 1.0 );
 
-    Log() << "Data Summary:\n";
-    Log() << "    beta = (" << beta_x << ", " << beta_y << ", " << beta_z << ");\n";
-    Log() << "      mu = " << mu << "\n";
-    Log() << " epsilon = " << epsilon << "\n";
-    Log() << "    stab = " << stab << "\n";
+    LOG(INFO) << "Data Summary:\n";
+    LOG(INFO) << "    beta = (" << beta_x << ", " << beta_y << ", " << beta_z << ");\n";
+    LOG(INFO) << "      mu = " << mu << "\n";
+    LOG(INFO) << " epsilon = " << epsilon << "\n";
+    LOG(INFO) << "    stab = " << stab << "\n";
 
 
     //AUTO( beta , vec(constant(beta_x),constant(beta_y),constant(beta_z)) );
@@ -321,7 +321,7 @@ Dar<Dim, Order, Cont, Entity>::run()
     vector_ptrtype F( backend->newVector( Xh->map() ) );
     timers["assembly"].first.restart();
     form1( Xh, F, _init=true )  = integrate( _range=elements( mesh ), _expr=f*id( v ) + stab*delta*f*Aepsi, _quad=_Q<imOrder>() );
-    Log() << "[dar] vector local assembly done\n";
+    LOG(INFO) << "[dar] vector local assembly done\n";
     timers["assembly"].second = timers["assembly"].first.elapsed();
     timers["assembly_F"].second = timers["assembly"].first.elapsed();
 
@@ -340,10 +340,10 @@ Dar<Dim, Order, Cont, Entity>::run()
                          + stab*delta*Aepsi*Aepsit,
                    _quad=_Q<imOrder>()
                  );
-    Log() << "[dar] matrix local assembly done\n";
+    LOG(INFO) << "[dar] matrix local assembly done\n";
     D->close();
     F->close();
-    Log() << "[dar] vector/matrix global assembly done\n";
+    LOG(INFO) << "[dar] vector/matrix global assembly done\n";
 
     if ( this->vm().count( "export-matlab" ) )
     {
@@ -361,10 +361,10 @@ Dar<Dim, Order, Cont, Entity>::run()
     if ( on_diag )
         on_op |= ON_ELIMINATION_KEEP_DIAGONAL;
 
-    Log() << "On() operation : " << on_op << "\n";
+    LOG(INFO) << "On() operation : " << on_op << "\n";
     form2( Xh, Xh, D ) += on( boundaryfaces( mesh ), u, F, g, on_op );
 
-    Log() << "[dar] dirichlet condition applied\n";
+    LOG(INFO) << "[dar] dirichlet condition applied\n";
     timers["assembly"].second += timers["assembly"].first.elapsed();
     timers["assembly_D"].second += timers["assembly"].first.elapsed();
 
@@ -374,7 +374,7 @@ Dar<Dim, Order, Cont, Entity>::run()
         D->printMatlab( "D_dir.m" );
     }
 
-    Log() << "[dar] starting solve for D\n";
+    LOG(INFO) << "[dar] starting solve for D\n";
     this->solve( D, u, F, ( bctype == 1 || !Cont::is_continuous ) );
 
     if ( this->vm().count( "export-matlab" ) )
@@ -383,7 +383,7 @@ Dar<Dim, Order, Cont, Entity>::run()
         u.printMatlab( "u.m" );
     }
 
-    Log() << "[dar] solve for D done\n";
+    LOG(INFO) << "[dar] solve for D done\n";
 
     typename space<Continuous>::ptrtype Xch = space<Continuous>::type::New( mesh );
     typename space<Continuous>::element_type uEx( Xch, "uEx" );
@@ -421,8 +421,8 @@ Dar<Dim, Order, Cont, Entity>::run()
     timers["assembly"].second += timers["assembly"].first.elapsed();
     timers["assembly_evaluate"].second += timers["assembly"].first.elapsed();
 
-    Log() << "local  ||error||_0 =" << math::sqrt( error ) << "\n";
-    Log() << "global ||error||_0 = " << math::sqrt( global_error ) << "\n";
+    LOG(INFO) << "local  ||error||_0 =" << math::sqrt( error ) << "\n";
+    LOG(INFO) << "global ||error||_0 = " << math::sqrt( global_error ) << "\n";
 
     if ( Cont::is_continuous )
         this->exportResults( u, u, uEx );
@@ -436,15 +436,15 @@ Dar<Dim, Order, Cont, Entity>::run()
         this->exportResults( u, uc, uEx );
     }
 
-    Log() << "[timer] run():     init: " << timers["init"].second << "\n";
-    Log() << "[timer] run(): assembly: " << timers["assembly"].second << "\n";
-    Log() << "[timer] run():     o D : " << timers["assembly_D"].second << "\n";
-    Log() << "[timer] run():     o F : " << timers["assembly_F"].second << "\n";
-    Log() << "[timer] run():     o M : " << timers["assembly_M"].second << "\n";
-    Log() << "[timer] run():     o L : " << timers["assembly_L"].second << "\n";
-    Log() << "[timer] run():     o i : " << timers["assembly_evaluate"].second << "\n";
-    Log() << "[timer] run():   solver: " << timers["solver"].second << "\n";
-    Log() << "[timer] run():   solver: " << timers["export"].second << "\n";
+    LOG(INFO) << "[timer] run():     init: " << timers["init"].second << "\n";
+    LOG(INFO) << "[timer] run(): assembly: " << timers["assembly"].second << "\n";
+    LOG(INFO) << "[timer] run():     o D : " << timers["assembly_D"].second << "\n";
+    LOG(INFO) << "[timer] run():     o F : " << timers["assembly_F"].second << "\n";
+    LOG(INFO) << "[timer] run():     o M : " << timers["assembly_M"].second << "\n";
+    LOG(INFO) << "[timer] run():     o L : " << timers["assembly_L"].second << "\n";
+    LOG(INFO) << "[timer] run():     o i : " << timers["assembly_evaluate"].second << "\n";
+    LOG(INFO) << "[timer] run():   solver: " << timers["solver"].second << "\n";
+    LOG(INFO) << "[timer] run():   solver: " << timers["export"].second << "\n";
 
 } // Dar::run
 
@@ -466,7 +466,7 @@ Dar<Dim, Order, Cont, Entity>::solve( Mat const& D,
     u = *U;
 
     timers["solver"].second = timers["solver"].first.elapsed();
-    Log() << "[timer] solve(): " << timers["solver"].second << "\n";
+    LOG(INFO) << "[timer] solve(): " << timers["solver"].second << "\n";
 } // Dar::solve
 
 template<int Dim, int Order, typename Cont, template<uint16_type,uint16_type,uint16_type> class Entity>
@@ -486,7 +486,7 @@ Dar<Dim, Order, Cont, Entity>::exportResults( f1_type& U,
     exporter->save();
 
     timers["export"].second = timers["export"].first.elapsed();
-    Log() << "[timer] exportResults(): " << timers["export"].second << "\n";
+    LOG(INFO) << "[timer] exportResults(): " << timers["export"].second << "\n";
 } // Dar::export
 } // Feel
 

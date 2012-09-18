@@ -35,7 +35,7 @@
 void Convection ::initLinearOperator2( sparse_matrix_ptrtype& L )
 {
     boost::timer ti;
-    Log() << "[initLinearOperator2] start\n";
+    LOG(INFO) << "[initLinearOperator2] start\n";
 
     mesh_ptrtype mesh = Xh->mesh();
     element_type U( Xh, "u" );
@@ -102,11 +102,11 @@ void Convection ::initLinearOperator2( sparse_matrix_ptrtype& L )
                     _expr=-expansion*idt( t )*( trans( vec( cst(0.), constant( 0. ),constant( 1.0 ) ) )*id( v ) ) );
 #endif
 
-    Log() << "[initLinearOperator] temperature Force terms done\n";
+    LOG(INFO) << "[initLinearOperator] temperature Force terms done\n";
     // heat conduction/diffusion: e(beta1,theta,chi)+f(theta,chi)
     bf  += integrate( _range=elements( mesh ),
                       _expr=cst( c )*gradt( t )*trans( grad( s ) ) );
-    Log() << "[initLinearOperator] Temperature Diffusion terms done\n";
+    LOG(INFO) << "[initLinearOperator] Temperature Diffusion terms done\n";
 
     if ( weakdir == 1 )
     {
@@ -119,7 +119,7 @@ void Convection ::initLinearOperator2( sparse_matrix_ptrtype& L )
                            gamma*idt( t )*id( s )/hFace() );
     }
 
-    Log() << "[initLinearOperator2] done in " << ti.elapsed() << "s\n";
+    LOG(INFO) << "[initLinearOperator2] done in " << ti.elapsed() << "s\n";
 }
 
 // instantiation

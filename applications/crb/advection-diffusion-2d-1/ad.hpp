@@ -570,7 +570,7 @@ AdvectionDiffusion::exportResults( element_type& U , parameter_type const& mu )
 
     if ( M_do_export )
     {
-        Log() << "exportResults starts\n";
+        LOG(INFO) << "exportResults starts\n";
 
         std::string exp_name;
         export_ptrtype exporter;

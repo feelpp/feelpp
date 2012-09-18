@@ -337,7 +337,7 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
     double L2error =   math::sqrt( L2error2 );
 
 
-    Log() << "||error||_L2=" << L2error << "\n";
+    LOG(INFO) << "||error||_L2=" << L2error << "\n";
 
     std::ofstream res(this->vm()["result-file"].template as<std::string>() );
     res << "L2="<< L2error << "\n";
@@ -359,12 +359,12 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
 
     if ( exporter->doExport() )
     {
-        Log() << "exportResults starts\n";
+        LOG(INFO) << "exportResults starts\n";
 
         exporter->step( 0 )->setMesh( mesh );
 
         exporter->save();
-        Log() << "exportResults done\n";
+        LOG(INFO) << "exportResults done\n";
     }
 
     /** \endcode */

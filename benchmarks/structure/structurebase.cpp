@@ -43,7 +43,7 @@ namespace Feel
 StructureBase::structure_ptrtype
 StructureBase::New( Feel::po::variables_map const& vm )
 {
-    Log() << "Creating new structure model and solver\n";
+    LOG(INFO) << "Creating new structure model and solver\n";
     using namespace Feel;
 
     if ( vm["d"].as<int>() == 2 )
@@ -170,14 +170,14 @@ StructureBase::~StructureBase()
 void
 StructureBase::print() const
 {
-    Feel::Log() << "dt = " << this->dt() << "\n";
-    Feel::Log() << " T = " << this->T() << "\n";
-    Feel::Log() << "T0 = " << this->T0() << "\n";
+    LOG(INFO) << "dt = " << this->dt() << "\n";
+    LOG(INFO) << " T = " << this->T() << "\n";
+    LOG(INFO) << "T0 = " << this->T0() << "\n";
 
-    Feel::Log() << "order in space = " << this->spaceOrder() << "\n";
-    Feel::Log() << "order in time = " << this->timeOrder() << "\n";
+    LOG(INFO) << "order in space = " << this->spaceOrder() << "\n";
+    LOG(INFO) << "order in time = " << this->timeOrder() << "\n";
 
-    Feel::Log() << "gammabc = " << this->gammaBc() << "\n";
+    LOG(INFO) << "gammabc = " << this->gammaBc() << "\n";
 
 
 

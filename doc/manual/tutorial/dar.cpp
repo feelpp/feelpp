@@ -388,7 +388,7 @@ DAR<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
     double L2error =   math::sqrt( L2error2 );
 
 
-    Log() << "||error||_L2=" << L2error << "\n";
+    LOG(INFO) << "||error||_L2=" << L2error << "\n";
     std::cout << "||error||_L2=" << L2error << "\n";
     //# endmarker7 #
     /** \endcode */
@@ -407,7 +407,7 @@ DAR<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
 
     if ( exporter->doExport() )
     {
-        Log() << "exportResults starts\n";
+        LOG(INFO) << "exportResults starts\n";
 
         exporter->step( 0 )->setMesh( mesh );
 
@@ -415,7 +415,7 @@ DAR<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
         exporter->step( 0 )->add( "g", e );
 
         exporter->save();
-        Log() << "exportResults done\n";
+        LOG(INFO) << "exportResults done\n";
     }
 
     /** \endcode */

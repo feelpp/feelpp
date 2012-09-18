@@ -252,7 +252,7 @@ Wave<Dim,Order,Cont,Entity,FType>::createMesh( double meshSize, double ymin, dou
     ImporterGmsh<mesh_type> import( fname );
     mesh->accept( import );
     timers["mesh"].second = timers["mesh"].first.elapsed();
-    Log() << "[timer] createMesh(): " << timers["mesh"].second << "\n";
+    LOG(INFO) << "[timer] createMesh(): " << timers["mesh"].second << "\n";
     return mesh;
 } // Wave::createMesh
 
@@ -392,7 +392,7 @@ Wave<Dim, Order, Cont, Entity, FType>::solve( sparse_matrix_ptrtype& D,
     u = *U;
 
     timers["solver"].second = timers["solver"].first.elapsed();
-    Log() << "[timer] solve: " << timers["solver"].second << "\n";
+    LOG(INFO) << "[timer] solve: " << timers["solver"].second << "\n";
 } // Wave::solve
 
 
@@ -406,7 +406,7 @@ Wave<Dim, Order, Cont, Entity,FType>::exportResults( double time,
 {
     timers["export"].first.restart();
 
-    Log() << "exportResults starts\n";
+    LOG(INFO) << "exportResults starts\n";
 
     exporter->step( time )->setMesh( U.functionSpace()->mesh() );
 
@@ -506,7 +506,7 @@ Wave<Dim, Order, Cont, Entity,FType>::exportResults( double time,
     }
 
     timers["export"].second = timers["export"].first.elapsed();
-    Log() << "[timer] exportResults(): " << timers["export"].second << "\n";
+    LOG(INFO) << "[timer] exportResults(): " << timers["export"].second << "\n";
 } // Wave::export
 } // Feel
 

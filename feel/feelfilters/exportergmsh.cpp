@@ -190,7 +190,7 @@ ExporterGmsh<MeshType,N>::saveMesh( std::string const& filename, mesh_ptrtype me
 
         if ( out.fail() )
         {
-            Log() << "[ExporterGmsh::SaveMesh] cannot open " << filename << "\n";
+            LOG(INFO) << "[ExporterGmsh::SaveMesh] cannot open " << filename << "\n";
             exit( 0 );
         }
 

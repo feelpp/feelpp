@@ -110,7 +110,7 @@ public:
 
             for ( auto it = ckconv.left.begin(); it != ckconv.left.end(); ++it )
             {
-                Log() << "ckconv[" << it->first <<"]=" << it->second << "\n";
+                LOG(INFO) << "ckconv[" << it->first <<"]=" << it->second << "\n";
             }
         }
     }

@@ -733,7 +733,7 @@ void HeatShield::init()
     mu_max << /* Bi_out*/0.5   ,  /*Bi_in*/0.1;
     M_Dmu->setMax( mu_max );
 
-    Log() << "Number of dof " << Xh->nLocalDof() << "\n";
+    LOG(INFO) << "Number of dof " << Xh->nLocalDof() << "\n";
 
     assemble();
 
@@ -830,7 +830,7 @@ void HeatShield::solve( sparse_matrix_ptrtype& D,
 
 void HeatShield::exportResults( double time, element_type& T, parameter_type const& mu )
 {
-    Log() << "exportResults starts\n";
+    LOG(INFO) << "exportResults starts\n";
     std::string exp_name = "Model_T" + ( boost::format( "_%1%" ) %time ).str();
     export_ptrtype exporter;
     exporter = export_ptrtype( Exporter<mesh_type>::New( "ensight", exp_name  ) );

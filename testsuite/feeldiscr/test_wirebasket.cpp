@@ -102,8 +102,8 @@ void run( Application_ptrtype & theApp )
                                         _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
                                         _desc=geo( _filename="domain.geo",_h=meshSize ) );
 
-    Log() << "number of elements 1D/3D: " << mesh1DFrom3D->numElements() << "\n";
-    Log() << "number of elements 2D/3D: " << mesh2DFrom3D->numElements() << "\n";
+    LOG(INFO) << "number of elements 1D/3D: " << mesh1DFrom3D->numElements() << "\n";
+    LOG(INFO) << "number of elements 2D/3D: " << mesh2DFrom3D->numElements() << "\n";
 #if 1
 #if 0
     auto mesh1DFrom2D = createGMSHMesh( _mesh=new trace_trace_mesh_type,

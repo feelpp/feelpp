@@ -176,10 +176,10 @@ public:
 
     void printInfo() const
     {
-        Log() << "[Cavity] hsize = " << meshSize << "\n";
-        Log() << "[Cavity] M_nu = " << M_nu << "\n";
-        Log() << "[Cavity] M_rho = " << M_rho << "\n";
-        Log() << "[Cavity] export = " << this->vm().count( "export" ) << "\n";
+        LOG(INFO) << "[Cavity] hsize = " << meshSize << "\n";
+        LOG(INFO) << "[Cavity] M_nu = " << M_nu << "\n";
+        LOG(INFO) << "[Cavity] M_rho = " << M_rho << "\n";
+        LOG(INFO) << "[Cavity] export = " << this->vm().count( "export" ) << "\n";
     }
     /**
      * create the mesh using mesh size \c meshSize
@@ -224,7 +224,7 @@ Cavity<Dim>::createMesh( double meshSize )
     ImporterGmsh<mesh_type> import( gmsh.generate( entity_type::name().c_str(), createCavity( meshSize ) ) );
     mesh->accept( import );
     timers["mesh"].second = timers["mesh"].first.elapsed();
-    Log() << "[timer] createMesh(): " << timers["mesh"].second << "\n";
+    LOG(INFO) << "[timer] createMesh(): " << timers["mesh"].second << "\n";
     return mesh;
 } // Cavity::createMesh
 
@@ -298,9 +298,9 @@ Cavity<Dim>::run()
     {
         timers["timer per iteration"].restart();
 
-        Log() << "--------------------------------------------------------------------------------\n";
-        Log() << "T = " << t << "s\n";
-        Log() << "ft = " << ft << "s, dt = " << dt << ", M_nu = " << M_nu << "\n";
+        LOG(INFO) << "--------------------------------------------------------------------------------\n";
+        LOG(INFO) << "T = " << t << "s\n";
+        LOG(INFO) << "ft = " << ft << "s, dt = " << dt << ", M_nu = " << M_nu << "\n";
 
         timers["timer oseen update per iteration"].reset();
         timers["timer oseen update"].restart();
@@ -328,8 +328,8 @@ Cavity<Dim>::run()
         timers["timer solve per iteration"].accumulate();
         timers["timer solve"].accumulate();
 
-        Log() << "[Cavity] t = " << t << "\n";
-        //Log() << "[Cavity] #subiter = " << subiter << "\n";
+        LOG(INFO) << "[Cavity] t = " << t << "\n";
+        //LOG(INFO) << "[Cavity] #subiter = " << subiter << "\n";
 
         this->exportResults( t, oseen.solution() );
 

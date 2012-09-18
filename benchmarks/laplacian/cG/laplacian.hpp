@@ -156,10 +156,10 @@ public:
         exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) )
     {
         if ( M_use_weak_dirichlet )
-            Log() << "use weak Dirichlet BC\n";
+            LOG(INFO) << "use weak Dirichlet BC\n";
 
         if ( exporter->doExport() )
-            Log() << "export results to ensight format\n";
+            LOG(INFO) << "export results to ensight format\n";
 
         Parameter h;
 
@@ -282,7 +282,7 @@ Laplacian<Dim, Order, RDim, ContinuityType, Entity>::run()
                                                 _xmin=-1.,_ymin=-1.,_zmin=-1.,
                                                 _h=meshSize ),
                                         _update=MESH_CHECK| MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_RENUMBER );
-    Log() << "mesh created in " << t1.elapsed() << "s\n";
+    LOG(INFO) << "mesh created in " << t1.elapsed() << "s\n";
     t1.restart();
 
     /*
@@ -291,15 +291,15 @@ Laplacian<Dim, Order, RDim, ContinuityType, Entity>::run()
     auto Xh = space_type::New( mesh );
     auto u = Xh->element();
     auto v = Xh->element();
-    Log() << "[functionspace] Number of dof " << Xh->nLocalDof() << "\n";
-    Log() << "function space and elements created in " << t1.elapsed() << "s\n";
+    LOG(INFO) << "[functionspace] Number of dof " << Xh->nLocalDof() << "\n";
+    LOG(INFO) << "function space and elements created in " << t1.elapsed() << "s\n";
     t1.restart();
 
     exact_space_ptrtype Eh = exact_space_type::New( mesh );
     exact_element_type fproj( Eh, "f" );
     exact_element_type gproj( Eh, "g" );
-    Log() << "[functionspace] Number of dof " << Eh->nLocalDof() << "\n";
-    Log() << "function space and elements created in " << t1.elapsed() << "s\n";
+    LOG(INFO) << "[functionspace] Number of dof " << Eh->nLocalDof() << "\n";
+    LOG(INFO) << "function space and elements created in " << t1.elapsed() << "s\n";
     t1.restart();
 
 
@@ -335,7 +335,7 @@ Laplacian<Dim, Order, RDim, ContinuityType, Entity>::run()
     }
 
     F->close();
-    Log() << "F assembled in " << t1.elapsed() << "s\n";
+    LOG(INFO) << "F assembled in " << t1.elapsed() << "s\n";
     t1.restart();
 
     //Construction of the left hand side
@@ -345,14 +345,14 @@ Laplacian<Dim, Order, RDim, ContinuityType, Entity>::run()
 
     size_type pattern = ( ContinuityType::is_continuous?Pattern::COUPLED:Pattern::COUPLED|Pattern::EXTENDED );
     form2( _trial=Xh, _test=Xh, _matrix=D, _init=true, _pattern=pattern );
-    Log() << "D initialized in " << t1.elapsed() << "s\n";
+    LOG(INFO) << "D initialized in " << t1.elapsed() << "s\n";
     t1.restart();
 
     form2( Xh, Xh, D ) +=
         integrate( elements( mesh ),
                    nu*( gradt( u )*trans( grad( v ) ) )
                    + beta*( idt( u )*id( v ) ) );
-    Log() << "D stiffness+mass assembled in " << t1.elapsed() << "s\n";
+    LOG(INFO) << "D stiffness+mass assembled in " << t1.elapsed() << "s\n";
     t1.restart();
 
     if ( ContinuityType::is_continuous == false )
@@ -366,7 +366,7 @@ Laplacian<Dim, Order, RDim, ContinuityType, Entity>::run()
                                         // penal*[u] . [v]/h_face
                                         + penalisation* ( trans( jumpt( idt( u ) ) )*jump( id( v ) ) )/hFace()
                                       );
-        Log() << "D consistency and stabilization terms assembled in " << t1.elapsed() << "s\n";
+        LOG(INFO) << "D consistency and stabilization terms assembled in " << t1.elapsed() << "s\n";
         t1.restart();
     }
 
@@ -377,14 +377,14 @@ Laplacian<Dim, Order, RDim, ContinuityType, Entity>::run()
                                          ( - nu*trans( id( v ) )*( gradt( u )*N() )
                                            - nu*trans( idt( u ) )*( grad( v )*N() )
                                            + M_gammabc*trans( idt( u ) )*id( v )/hFace() ) );
-        Log() << "D weak bc assembled in " << t1.elapsed() << "s\n";
+        LOG(INFO) << "D weak bc assembled in " << t1.elapsed() << "s\n";
         t1.restart();
 
     }
 
     D->close();
 
-    Log() << "D assembled in " << t1.elapsed() << "s\n";
+    LOG(INFO) << "D assembled in " << t1.elapsed() << "s\n";
 
 
     if ( ( M_use_weak_dirichlet == false )  && ContinuityType::is_continuous )
@@ -393,36 +393,36 @@ Laplacian<Dim, Order, RDim, ContinuityType, Entity>::run()
         form2( Xh, Xh, D ) +=
             on( markedfaces( mesh, "Dirichlet" ), u, F, g );
 
-        Log() << "Strong Dirichlet assembled in " << t1.elapsed() << "s on faces " << mesh->markerName( "Dirichlet" ) << " \n";
+        LOG(INFO) << "Strong Dirichlet assembled in " << t1.elapsed() << "s on faces " << mesh->markerName( "Dirichlet" ) << " \n";
     }
 
     t1.restart();
 
     backend_type::build( this->vm() )->solve( _matrix=D, _solution=u, _rhs=F );
 
-    Log() << "solve in " << t1.elapsed() << "s\n";
+    LOG(INFO) << "solve in " << t1.elapsed() << "s\n";
     t1.restart();
 
     double L2error2 =integrate( elements( mesh ),
                                 ( idv( u )-g )*( idv( u )-g ) ).evaluate()( 0, 0 );
     double L2error =   math::sqrt( L2error2 );
 
-    Log() << "||error||_L2=" << L2error << "\n";
-    Log() << "L2 norm computed in " << t1.elapsed() << "s\n";
+    LOG(INFO) << "||error||_L2=" << L2error << "\n";
+    LOG(INFO) << "L2 norm computed in " << t1.elapsed() << "s\n";
     t1.restart();
 
 
     double semiH1error2 =integrate( elements( mesh ),
                                     ( gradv( u )-gradg )*trans( gradv( u )-gradg ) ).evaluate()( 0, 0 ) ;
 
-    Log() << "semi H1 norm computed in " << t1.elapsed() << "s\n";
+    LOG(INFO) << "semi H1 norm computed in " << t1.elapsed() << "s\n";
     t1.restart();
 
     double H1error =   math::sqrt( semiH1error2+L2error2 );
 
 
-    Log() << "||error||_H1=" << H1error << "\n";
-    Log() << "H1 norm computed in " << t1.elapsed() << "s\n";
+    LOG(INFO) << "||error||_H1=" << H1error << "\n";
+    LOG(INFO) << "H1 norm computed in " << t1.elapsed() << "s\n";
     t1.restart();
 
     this->exportResults( u, v );
@@ -439,7 +439,7 @@ Laplacian<Dim, Order, RDim, ContinuityType, Entity>::exportResults( element_type
 {
     if ( exporter->doExport() )
     {
-        Log() << "exportResults starts\n";
+        LOG(INFO) << "exportResults starts\n";
 
         exporter->step( 0 )->setMesh( U.functionSpace()->mesh() );
 

@@ -107,11 +107,11 @@ void MyMpiApp::run()
     this->changeRepository( boost::format( "%1%/" )
                             % this->about().appName() );
 
-    Log() << "the value of dt is " << this->vm()["dt"].as<double>()
+    LOG(INFO) << "the value of dt is " << this->vm()["dt"].as<double>()
           << "\n";
 
-    Log() << "we are on processor " << this->processorName() << "\n";
-    Log() << "this is process number " << this->processId()
+    LOG(INFO) << "we are on processor " << this->processorName() << "\n";
+    LOG(INFO) << "this is process number " << this->processId()
           << " out of " << this->nProcess() << "\n";
 }
 

@@ -117,7 +117,7 @@ Convection_crb::createMesh()
 
     gmshp->setPrefix( fname.str() );
     gmshp->setDescription( ostr.str() );
-    Log() << "[timer] createMesh(): " << timers["mesh"].second << "\n";
+    LOG(INFO) << "[timer] createMesh(): " << timers["mesh"].second << "\n";
 
     return gmshp;
 

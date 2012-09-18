@@ -107,67 +107,67 @@ OpusModel<OrderU,OrderP,OrderT>::init()
                              _desc =  this->data()->createMesh( M_meshsize ),
                              _update = MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
                              _force_rebuild = M_force_rebuild );
-    Log() << "Imported mesh thermal\n";
+    LOG(INFO) << "Imported mesh thermal\n";
     M_mesh_air = createGMSHMesh( _mesh=new mesh_type,
                                  _desc =  this->data()->createMeshAir( M_meshsize ),
                                  _update = MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
                                  _force_rebuild = M_force_rebuild );
-    Log() << "Imported mesh air\n";
+    LOG(INFO) << "Imported mesh air\n";
     M_mesh_line = createGMSHMesh( _mesh=new mesh12_type,
                                   _desc =  this->data()->createMeshLine( 1 ),
                                   _update = MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
                                   _force_rebuild = M_force_rebuild );
-    Log() << "Imported mesh line\n";
+    LOG(INFO) << "Imported mesh line\n";
     M_mesh_cross_section_2 = createGMSHMesh( _mesh=new mesh12_type,
                              _desc =  this->data()->createMeshCrossSection2( 0.2 ),
                              _update = MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
                              _force_rebuild = M_force_rebuild );
-    Log() << "[init] Imported mesh cross section 2\n";
+    LOG(INFO) << "[init] Imported mesh cross section 2\n";
 
     M_P1h = p1_functionspace_type::New( M_mesh_line );
-    Log() << "[init] P1 mesh\n";
+    LOG(INFO) << "[init] P1 mesh\n";
     M_P0h = p0_space_type::New( M_mesh );
-    Log() << "[init] P0 mesh\n";
+    LOG(INFO) << "[init] P0 mesh\n";
     typedef typename node<double>::type node_type;
 
     node_type period( 2 );
     period[0]=this->data()->component( "PCB" ).e()+this->data()->component( "AIR" ).e();
     period[1]=0;
-    Log() << "[init] period=" << period[0] << "," << period[1] << "\n";
+    LOG(INFO) << "[init] period=" << period[0] << "," << period[1] << "\n";
     M_Th = temp_functionspace_type::New( _mesh=M_mesh,
                                          _periodicity=Periodic<1,2,value_type>( period ) );
-    Log() << "[init] M_Th init done\n";
+    LOG(INFO) << "[init] M_Th init done\n";
     M_grad_Th = grad_temp_functionspace_type::New( _mesh=M_mesh );
-    Log() << "[init] M_grad_Th init done\n";
+    LOG(INFO) << "[init] M_grad_Th init done\n";
     M_Xh = fluid_functionspace_type::New( M_mesh );
-    Log() << "[init] M_Xh init done\n";
+    LOG(INFO) << "[init] M_Xh init done\n";
     //M_Xh = fluid_functionspace_type::New( M_mesh_air );
     //M_Xh = oseen_functionspace_type::New( M_mesh->extract(  ) );
 
-    Log() << "Generated function space\n";
-    Log() << " o        number of elements :  " << M_mesh->numElements() << "\n";
-    Log() << " o          number of points :  " << M_mesh->numPoints() << "\n";
-    Log() << " o number of local dof in Th :  " << M_Th->nLocalDof() << "\n";
-    Log() << " o       number of dof in Th :  " << M_Th->nDof() << "\n";
-    Log() << " o       number of dof in Th :  " << M_Th->dof()->nDof() << "\n";
+    LOG(INFO) << "Generated function space\n";
+    LOG(INFO) << " o        number of elements :  " << M_mesh->numElements() << "\n";
+    LOG(INFO) << " o          number of points :  " << M_mesh->numPoints() << "\n";
+    LOG(INFO) << " o number of local dof in Th :  " << M_Th->nLocalDof() << "\n";
+    LOG(INFO) << " o       number of dof in Th :  " << M_Th->nDof() << "\n";
+    LOG(INFO) << " o       number of dof in Th :  " << M_Th->dof()->nDof() << "\n";
 
 
 
     M_thermal = thermal_operator_ptrtype( new thermal_operator_type( this->vm(), M_Th ) );
-    Log() << "Generated thermal operator\n";
+    LOG(INFO) << "Generated thermal operator\n";
     M_fluid = fluid_operator_ptrtype( new fluid_operator_type( this->vm(), M_Xh ) );
 
-    Log() << "Generated fluid operator\n";
+    LOG(INFO) << "Generated fluid operator\n";
 
     using namespace vf;
 
-    Log() << "[OpusModel::OpusModel] start bdf\n";
+    LOG(INFO) << "[OpusModel::OpusModel] start bdf\n";
     M_temp_bdf = bdf( _space=M_Th, _vm=this->vm(), _name="temperature" );
     M_temp_bdf->print();
-    Log() << "[OpusModel::OpusModel] temp bdf done\n";
+    LOG(INFO) << "[OpusModel::OpusModel] temp bdf done\n";
     M_fluid_bdf = bdf( _space=M_Xh, _vm=this->vm(), _name="fluid" );
     M_fluid_bdf->print();
-    Log() << "[OpusModel::OpusModel] bdf stops\n";
+    LOG(INFO) << "[OpusModel::OpusModel] bdf stops\n";
 }
 
 template<int OrderU, int OrderP, int OrderT>
@@ -179,10 +179,10 @@ void
 OpusModel<OrderU,OrderP,OrderT>::run ( const double * X, unsigned long N,
                                        double * Y, unsigned long P )
 {
-    Log() << "[OpusModel::run] input/output relationship\n";
+    LOG(INFO) << "[OpusModel::run] input/output relationship\n";
 
     for ( int i = 0; i < N; ++i )
-        Log() << "[OpusModel::run] X[" << i << "]=" << X[i] << "\n";
+        LOG(INFO) << "[OpusModel::run] X[" << i << "]=" << X[i] << "\n";
 
     this->data()->component( "IC1" ).setK( X[0] );
     this->data()->component( "IC2" ).setK( X[0] );
@@ -190,7 +190,7 @@ OpusModel<OrderU,OrderP,OrderT>::run ( const double * X, unsigned long N,
     this->data()->component( "IC1" ).setQ( X[2] );
     this->data()->component( "IC2" ).setQ( X[2] );
 
-    Log() << "[OpusModel::run] parameters set\n";
+    LOG(INFO) << "[OpusModel::run] parameters set\n";
 
     // check if the mesh size or e_a have been changed since last run, if yes
     // then the geometry and mesh need to be rebuilt
@@ -207,27 +207,27 @@ OpusModel<OrderU,OrderP,OrderT>::run ( const double * X, unsigned long N,
 
     this->data()->print();
 
-    Log() << "[OpusModel::run] parameters print\n";
+    LOG(INFO) << "[OpusModel::run] parameters print\n";
 
-    Log() << "[OpusModel::run] start init\n";
+    LOG(INFO) << "[OpusModel::run] start init\n";
     this->init();
 
-    Log() << "[OpusModel::run] init doned\n";
+    LOG(INFO) << "[OpusModel::run] init doned\n";
     M_thermal->setData( this->data() );
     M_fluid->setData( this->data() );
     M_thermal->setThermalConductance( X[3] );
     M_fluid->setFluidFlowRate( X[1] );
 
-    Log() << "[OpusModel::run] parameters set\n";
+    LOG(INFO) << "[OpusModel::run] parameters set\n";
     this->data()->print();
-    Log() << "[OpusModel::run] run\n";
+    LOG(INFO) << "[OpusModel::run] run\n";
     this->run();
     Y[0]=s1;
     Y[1]=s2;
-    Log() << "[OpusModel::run] run done, set outputs\n";
+    LOG(INFO) << "[OpusModel::run] run done, set outputs\n";
 
     for ( int i = 0; i < P; ++i )
-        Log() << "[OpusModel::run] Y[" << i << "]=" << Y[i] << "\n";
+        LOG(INFO) << "[OpusModel::run] Y[" << i << "]=" << Y[i] << "\n";
 
 }
 
@@ -235,7 +235,7 @@ template<int OrderU, int OrderP, int OrderT>
 void
 OpusModel<OrderU,OrderP,OrderT>::run()
 {
-    Log() << "[OpusModel::run] starts\n";
+    LOG(INFO) << "[OpusModel::run] starts\n";
     using namespace vf;
     domains = p0_element_ptrtype( new p0_element_type( M_P0h, "domains" ) );
     *domains = vf::project( M_P0h, elements( M_P0h->mesh() ),
@@ -264,7 +264,7 @@ OpusModel<OrderU,OrderP,OrderT>::run()
     *Q = vf::project( M_P0h, elements( M_P0h->mesh() ),
                       chi( emarker() == M_Th->mesh()->markerName( "IC1" ) )*this->data()->component( "IC1" ).Q() +
                       chi( emarker() == M_Th->mesh()->markerName( "IC2" ) )*this->data()->component( "IC2" ).Q() );
-    Log() << "[OpusModel::OpusModel] P0 functions allocated\n";
+    LOG(INFO) << "[OpusModel::OpusModel] P0 functions allocated\n";
 
 
 
@@ -278,7 +278,7 @@ OpusModel<OrderU,OrderP,OrderT>::run()
                     integrate( markedfaces( M_mesh,M_mesh->markerName( "Gamma_3_AIR4" ) ),constant( 1.0 ),_Q<0>() ).evaluate()( 0,0 ) );
     std::ofstream outputs( "outputs.dat" );
     std::ostringstream os ;
-    Log() << "output file set\n";
+    LOG(INFO) << "output file set\n";
     temp_element_type T( M_Th, "temperature" );
 
     temp_element_type Temperature( M_Th, "temperature" );
@@ -296,10 +296,10 @@ OpusModel<OrderU,OrderP,OrderT>::run()
     double e_IC = this->data()->component( "IC1" ).e();
     //double L_IC = this->data()->component("IC1").h();
 
-    Log() << "[opusmodel] flow_rate = " << flow_rate << "\n";
-    Log() << "[opusmodel] e_AIR = " << e_AIR << "\n";
-    Log() << "[opusmodel] e_PCB = " << e_PCB << "\n";
-    Log() << "[opusmodel] e_IC = " << e_IC << "\n";
+    LOG(INFO) << "[opusmodel] flow_rate = " << flow_rate << "\n";
+    LOG(INFO) << "[opusmodel] e_AIR = " << e_AIR << "\n";
+    LOG(INFO) << "[opusmodel] e_PCB = " << e_PCB << "\n";
+    LOG(INFO) << "[opusmodel] e_IC = " << e_IC << "\n";
     double time = M_temp_bdf->timeInitial();
     auto chi_AIR = chi( Px() >= e_PCB+e_IC );
     auto ft = constant( 1.0-( !this->data()->isSteady() )*math::exp( -time/3.0 ) );
@@ -309,7 +309,7 @@ OpusModel<OrderU,OrderP,OrderT>::run()
     p = vf::project( M_Xh->template functionSpace<1>(), markedelements( M_Xh->mesh(), "AIR4" ), constant( 0. ) );
 
 
-    Log() << "fluid and temperature fields set\n";
+    LOG(INFO) << "fluid and temperature fields set\n";
 
     if ( !this->data()->isSteady() )
     {
@@ -340,15 +340,15 @@ OpusModel<OrderU,OrderP,OrderT>::run()
         M_fluid_bdf->setSteady();
     }
 
-    Log() << "[initialization] done in " << ti.elapsed() << "\n";
+    LOG(INFO) << "[initialization] done in " << ti.elapsed() << "\n";
 
     for ( M_temp_bdf->start(), M_fluid_bdf->start() ;
             ( M_temp_bdf->isFinished() == false ) && ( M_fluid_bdf->isFinished() == false );
             M_temp_bdf->next(), M_fluid_bdf->next() )
     {
-        Log() << "============================================================\n";
-        Log() << "time(T): " << M_temp_bdf->time() << "s, iteration: " << M_temp_bdf->iteration() << " order:"  << M_temp_bdf->timeOrder() << "\n";
-        Log() << "time(U): " << M_fluid_bdf->time() << "s, iteration: " << M_fluid_bdf->iteration() << " order:"  << M_fluid_bdf->timeOrder() << "\n";
+        LOG(INFO) << "============================================================\n";
+        LOG(INFO) << "time(T): " << M_temp_bdf->time() << "s, iteration: " << M_temp_bdf->iteration() << " order:"  << M_temp_bdf->timeOrder() << "\n";
+        LOG(INFO) << "time(U): " << M_fluid_bdf->time() << "s, iteration: " << M_fluid_bdf->iteration() << " order:"  << M_fluid_bdf->timeOrder() << "\n";
         std::cout << "============================================================\n";
         std::cout << "time(T): " << M_temp_bdf->time() << "s, iteration: " << M_temp_bdf->iteration() << " order:"  << M_temp_bdf->timeOrder() << "\n";
         std::cout << "time(U): " << M_fluid_bdf->time() << "s, iteration: " << M_fluid_bdf->iteration() << " order:"  << M_fluid_bdf->timeOrder() << "\n";
@@ -356,7 +356,7 @@ OpusModel<OrderU,OrderP,OrderT>::run()
         // Fluide
         ti.restart();
         M_fluid->update( M_fluid_bdf->time() );
-        Log() << "[fluid] update done in " << ti.elapsed() << "\n";
+        LOG(INFO) << "[fluid] update done in " << ti.elapsed() << "\n";
         ti.restart();
         M_fluid->solve( U );
         //M_exporter->step(time)->setMesh( U.functionSpace()->mesh() );
@@ -365,7 +365,7 @@ OpusModel<OrderU,OrderP,OrderT>::run()
         M_exporter_fluid->step( M_fluid_bdf->time() )->add( "Pressure",  U.template element<1>() );
         M_exporter_fluid->save();
 
-        Log() << "[fluid] solve done in " << ti.elapsed() << "\n";
+        LOG(INFO) << "[fluid] solve done in " << ti.elapsed() << "\n";
 
         // Thermal
         ti.restart();
@@ -381,17 +381,17 @@ OpusModel<OrderU,OrderP,OrderT>::run()
                              ( !this->data()->isSteady() )*print( idv( *rhoC )*print( idv( M_temp_bdf->polyDeriv() ),"Tn=" ),"rhoc*Tn" ) ) // bdf contrib
                          );
 
-        Log() << "[thermal] update done in " << ti.elapsed() << "\n";
+        LOG(INFO) << "[thermal] update done in " << ti.elapsed() << "\n";
         ti.restart();
         M_thermal->solve( T );
 
-        Log() << "[thermal] solve done in " << ti.elapsed() << "\n";
+        LOG(INFO) << "[thermal] solve done in " << ti.elapsed() << "\n";
 
         // export results
         ti.restart();
         this->exportResults( thetime, T, U );
 
-        Log() << "[export] export done in " << ti.elapsed() << "\n";
+        LOG(INFO) << "[export] export done in " << ti.elapsed() << "\n";
 
         ti.restart();
         //double surf1 = integrate( markedelements(M_mesh,M_mesh->markerName( "IC2" )), _Q<0>(),constant(1.0)).evaluate()(0,0);
@@ -399,9 +399,9 @@ OpusModel<OrderU,OrderP,OrderT>::run()
 
         if ( math::abs( surf1_exact - surf1 ) > 1e-10 )
         {
-            Log() << "[s1] Invalid IC surface computation\n";
-            Log() << "[s1] surface = " << surf1 << "\n";
-            Log() << "[s1] surface(exact) = " << surf1_exact << "\n";
+            LOG(INFO) << "[s1] Invalid IC surface computation\n";
+            LOG(INFO) << "[s1] surface = " << surf1 << "\n";
+            LOG(INFO) << "[s1] surface(exact) = " << surf1_exact << "\n";
         }
 
         s1 = integrate( markedelements( M_mesh,M_mesh->markerName( "IC2" ) ), idv( T ),_Q<OrderT>() ).evaluate()( 0,0 )/surf1;
@@ -410,9 +410,9 @@ OpusModel<OrderU,OrderP,OrderT>::run()
 
         if ( math::abs( len2_exact - len2 ) > 1e-10 )
         {
-            Log() << "[s2] Invalid Gamma_3_AIR4 length computation\n";
-            Log() << "[s2] length = " << len2 << "\n";
-            Log() << "[s2] length(exact) = " << len2_exact << "\n";
+            LOG(INFO) << "[s2] Invalid Gamma_3_AIR4 length computation\n";
+            LOG(INFO) << "[s2] length = " << len2 << "\n";
+            LOG(INFO) << "[s2] length(exact) = " << len2_exact << "\n";
         }
 
         s2 = ( integrate( markedfaces( M_mesh,M_mesh->markerName( "Gamma_3_AIR3" ) ), idv( T ),_Q<OrderT>() ).evaluate()( 0,0 )+
@@ -421,9 +421,9 @@ OpusModel<OrderU,OrderP,OrderT>::run()
         outputs.setf( std::ios_base::scientific, std::ios_base::floatfield );
         outputs.width( 15 );
         outputs << s1 << " " << s2 << std::endl;
-        Log() << "[s1,s2] postprocess done in " << ti.elapsed() << "\n";
-        Log() << "s1=" << s1 << "\n";
-        Log() << "s2=" << s2 << "\n";
+        LOG(INFO) << "[s1,s2] postprocess done in " << ti.elapsed() << "\n";
+        LOG(INFO) << "s1=" << s1 << "\n";
+        LOG(INFO) << "s2=" << s2 << "\n";
         std::cout << "s1=" << s1 << " s2=" << s2 << "\n";
         os6 << M_temp_bdf->time() << " "  << s1 << "  "  << s2 << std::endl;
 
@@ -434,23 +434,23 @@ OpusModel<OrderU,OrderP,OrderT>::run()
         double mean_jump_2 = integrate( markedfaces( M_mesh, M_mesh->markerName( "Gamma_IC2_PCB" ) ),
                                         trans( jumpv( idv( T ) ) )*N_IC_PCB,_Q<OrderT>() ).evaluate()( 0,0 )/meas_PCB;
 
-        Log() <<  "meas(Gamma_IC1_PCB) = " << meas_PCB << "\n";
-        Log() <<  "mean([[T]],IC1) = " << mean_jump_1 << "\n";
-        Log() <<  "mean([[T]],IC2) = " << mean_jump_2 << "\n";
+        LOG(INFO) <<  "meas(Gamma_IC1_PCB) = " << meas_PCB << "\n";
+        LOG(INFO) <<  "mean([[T]],IC1) = " << mean_jump_1 << "\n";
+        LOG(INFO) <<  "mean([[T]],IC2) = " << mean_jump_2 << "\n";
 
-        Log() << "flux between IC1 and PCB = " << integrate( markedfaces( M_mesh, M_mesh->markerName( "Gamma_IC1_PCB" ) ),
+        LOG(INFO) << "flux between IC1 and PCB = " << integrate( markedfaces( M_mesh, M_mesh->markerName( "Gamma_IC1_PCB" ) ),
                 jumpv( idv( *k )*gradv( T ) ),_Q<OrderT-1>() ).evaluate()( 0,0 ) << "\n";
-        Log() << "flux between IC2 and PCB = " << integrate( markedfaces( M_mesh, M_mesh->markerName( "Gamma_IC2_PCB" ) ),
+        LOG(INFO) << "flux between IC2 and PCB = " << integrate( markedfaces( M_mesh, M_mesh->markerName( "Gamma_IC2_PCB" ) ),
                 jumpv( idv( *k )*gradv( T ) ),_Q<OrderT-1>() ).evaluate()( 0,0 ) << "\n";
-        Log() << "[k]_{IC2 and PCB} = " << integrate( markedfaces( M_mesh, M_mesh->markerName( "Gamma_IC2_PCB" ) ),
+        LOG(INFO) << "[k]_{IC2 and PCB} = " << integrate( markedfaces( M_mesh, M_mesh->markerName( "Gamma_IC2_PCB" ) ),
                 jumpv( idv( *k ) )*N_IC_PCB,_Q<0>() ).evaluate()( 0,0 ) << "\n";
 
 
         ti.restart();
         M_temp_bdf->shiftRight( T );
         M_fluid_bdf->shiftRight( U );
-        Log() << "[bdf] shifRight done in " << ti.elapsed() << "\n";
-        Log() << "time spent in iteration = " << M_temp_bdf->realTimePerIteration() << "s\n";
+        LOG(INFO) << "[bdf] shifRight done in " << ti.elapsed() << "\n";
+        LOG(INFO) << "time spent in iteration = " << M_temp_bdf->realTimePerIteration() << "s\n";
     }
 
 }

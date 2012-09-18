@@ -42,8 +42,8 @@ BOOST_AUTO_TEST_CASE( test_material )
     MaterialLib mtrllib;
 
     material_ptrtype castiron = mtrllib.material( "Cast Iron" );
-    Log() << "k = " << castiron->k() << "\n";
-    Log() << "C = " << castiron->C() << "\n";
+    LOG(INFO) << "k = " << castiron->k() << "\n";
+    LOG(INFO) << "C = " << castiron->C() << "\n";
 }
 
 

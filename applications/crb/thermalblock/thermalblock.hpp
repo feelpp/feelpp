@@ -600,7 +600,7 @@ ThermalBlock::init()
         M_Fq[0][i] = M_backend->newVector( Xh );
     }
 
-    Log() <<"[ThermalBlock::init] done allocating matrices/vectors \n";
+    LOG(INFO) <<"[ThermalBlock::init] done allocating matrices/vectors \n";
     D = M_backend->newMatrix( Xh, Xh );
     F = M_backend->newVector( Xh );
 
@@ -617,14 +617,14 @@ ThermalBlock::init()
     M_Dmu->setMin( mu_min );
     M_Dmu->setMax( mu_max );
 
-    Log() <<"[ThermalBlock::init] done with parameter space\n";
+    LOG(INFO) <<"[ThermalBlock::init] done with parameter space\n";
     element_type u( Xh, "u" );
     element_type v( Xh, "v" );
 
     form2( Xh, Xh, D,_init=true )=integrate( elements( mmesh ),0*idt( v )*id( v ), _Q<0>() );
     D->close();
 
-    Log() << "Number of dof " << Xh->nLocalDof() << "\n";
+    LOG(INFO) << "Number of dof " << Xh->nLocalDof() << "\n";
 
     int index=0;//index for M_Fq or M_Aq
     int subdomain_index; //index for subdomains along a boundary
@@ -638,20 +638,20 @@ ThermalBlock::init()
         south_subdomain_index.push_back( subdomain_index );
     }
     M_Fq[0][0]->close();
-    Log() <<"[ThermalBlock::init] done with rhs\n";
+    LOG(INFO) <<"[ThermalBlock::init] done with rhs\n";
     // on boundary north we have u=0 so term from weak dirichlet condition
     // vanish in the right hand side
     BOOST_FOREACH( auto domain, domainMarkers )
     {
-        Log() <<"[ThermalBlock::init] domain " << domain << "\n";
+        LOG(INFO) <<"[ThermalBlock::init] domain " << domain << "\n";
         form2( Xh, Xh, M_Aq[index],_init=true ) =
             integrate( markedelements( mmesh, domain ), gradt( u )*trans( grad( v ) ) );
         M_Aq[index]->close();
-        Log() <<"[ThermalBlock::init] done with Aq[" << index << "]\n";
+        LOG(INFO) <<"[ThermalBlock::init] done with Aq[" << index << "]\n";
         index++;
 
     }
-    Log() <<"[ThermalBlock::init] done with domainMarkers\n";
+    LOG(INFO) <<"[ThermalBlock::init] done with domainMarkers\n";
     int last_index_Aq = Qa()-1;
     form2( Xh, Xh, M_Aq[last_index_Aq],_init=true );
     BOOST_FOREACH( auto marker, northMarkers )
@@ -670,7 +670,7 @@ ThermalBlock::init()
         north_subdomain_index.push_back( subdomain_index );
     }
     M_Aq[last_index_Aq]->close();
-    Log() <<"[ThermalBlock::init] done with boundaryMarkers\n";
+    LOG(INFO) <<"[ThermalBlock::init] done with boundaryMarkers\n";
 
     M = M_backend->newMatrix( Xh, Xh );
     form2( Xh, Xh, M, _init=true ) =
@@ -844,13 +844,13 @@ ThermalBlock::h1Error( element_type& u )
 void
 ThermalBlock::exportResults( element_type& u )
 {
-    Log() << "exportResults starts\n";
+    LOG(INFO) << "exportResults starts\n";
     auto exporter = export_type::New( M_vm, "thermalblock" );
     exporter->step( 0 )->setMesh( u.mesh() );
     exporter->step( 0 )->add( "u", u );
     exporter->save();
 
-    Log() << "exportResults done\n";
+    LOG(INFO) << "exportResults done\n";
 } // ThermalBlock::export
 
 
@@ -1027,14 +1027,14 @@ ThermalBlock::checkout( const double* X, unsigned long P, double* Y, unsigned lo
 
     if ( exporter->doExport() )
     {
-        Log() << "exportResults starts\n";
+        LOG(INFO) << "exportResults starts\n";
 
         exporter->step( 0 )->setMesh( mmesh );
 
         exporter->step( 0 )->add( "u", u );
         // exporter->step(0)->add( "g", e );
         exporter->save();
-        Log() << "exportResults done\n";
+        LOG(INFO) << "exportResults done\n";
     }
 
 

@@ -226,10 +226,10 @@ ddmethod<Dim>::localProblem( element_type& u,
 
     timers["solver"].second = timers["solver"].first.elapsed();
 
-    Log() << "[timer] run():  assembly: " << timers["assembly"].second << "\n";
-    Log() << "[timer] run():    o D : " << timers["assembly_D"].second << "\n";
-    Log() << "[timer] run():    o F : " << timers["assembly_F"].second << "\n";
-    Log() << "[timer] run():  solver: " << timers["solver"].second << "\n";
+    LOG(INFO) << "[timer] run():  assembly: " << timers["assembly"].second << "\n";
+    LOG(INFO) << "[timer] run():    o D : " << timers["assembly_D"].second << "\n";
+    LOG(INFO) << "[timer] run():    o F : " << timers["assembly_F"].second << "\n";
+    LOG(INFO) << "[timer] run():  solver: " << timers["solver"].second << "\n";
 }
 
 template<int Dim>
@@ -258,7 +258,7 @@ ddmethod<Dim>::exportResults( element_type& u, element_type& v, double time )
     proj1 = vf::project( Xh1, elements( createMesh( u ) ), g );
     proj2 = vf::project( Xh2, elements( createMesh( v ) ), g );
 
-    Log() << "exportResults starts\n";
+    LOG(INFO) << "exportResults starts\n";
     timers["export"].first.restart();
 
     M_firstExporter->step( time )->setMesh( createMesh( u ) );
@@ -290,7 +290,7 @@ ddmethod<Dim>::exportResults( element_type& u, element_type& v, double time )
         }
     }
 
-    Log() << "exportResults done\n";
+    LOG(INFO) << "exportResults done\n";
     timers["export"].second = timers["export"].first.elapsed();
     std::cout << "[timer] exportResults(): " << timers["export"].second << "\n";
 } // ddmethod::export
