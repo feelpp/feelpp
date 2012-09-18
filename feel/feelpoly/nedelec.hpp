@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2006-01-14
 
   Copyright (C) 2011 Université de Grenoble 1 (Joseph Fourier)
@@ -23,7 +23,7 @@
 */
 /**
    \file nedelec.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2011-11-25
  */
 #ifndef __Nedelec_H

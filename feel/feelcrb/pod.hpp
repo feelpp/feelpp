@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
              Stephane Veys <stephane.veys@imag.fr>
        Date: 2009-09-30
 
@@ -24,7 +24,7 @@
 */
 /**
    \file pod.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
            Stephane Veys <stephane.veys@imag.fr>
    \date 2009-09-30
  */

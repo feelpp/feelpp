@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2008-01-04
 
   Copyright (C) 2008 Christophe Prud'homme
@@ -24,7 +24,7 @@
 */
 /**
    \file stokes.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2008-01-04
  */
 #include <feel/options.hpp>
@@ -77,7 +77,7 @@ makeAbout()
                            Feel::AboutData::License_GPL,
                            "Copyright (c) 2007,2010 University Joseph Fourier Grenoble 1" );
 
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     return about;
 
 }
@@ -382,6 +382,7 @@ Stokes::exportResults( space_type::element_type& U )
 int
 main( int argc, char** argv )
 {
+    Feel::Environment env( argc, argv );
     /* assertions handling */
     Feel::Assert::setLog( "stokes.assert" );
 

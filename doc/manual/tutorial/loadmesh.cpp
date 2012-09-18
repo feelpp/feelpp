@@ -2,7 +2,7 @@
 
    This file is part of the Feel library
 
-   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    Date: 2011-06-21
 
    Copyright (C) 2011 Université Joseph Fourier (Grenoble I)
@@ -22,7 +22,7 @@
 */
 /**
  \file testload.cpp
- \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+ \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
  \date 16-06-2011
  */
 #include <feel/feelcore/feel.hpp>

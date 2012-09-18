@@ -1,7 +1,7 @@
 /*
   This file is part of the Feel library.
 
-  Author: Christophe Prud'homme (christophe.prudhomme@ujf-grenoble.fr)
+  Author: Christophe Prud'homme (christophe.prudhomme@feelpp.org)
 
   Copyright (C) 2009 Université de Grenoble 1
   Copyright (C) 2004 EPFL
@@ -78,7 +78,7 @@ namespace posix_time = boost::posix_time;
    With this tool you can select the area you want to debug explicitly while keeping the
    others hidden.
 
-  @author Christophe Prud'homme (christophe.prudhomme@ujf-grenoble.fr)
+  @author Christophe Prud'homme (christophe.prudhomme@feelpp.org)
 */
 enum DebugLevels
 {

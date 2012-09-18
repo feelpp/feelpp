@@ -2,7 +2,7 @@
 
    This file is part of the Feel library
 
-   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    Date: 2005-03-17
 
    Copyright (C) 2009 Université de Grenoble 1
@@ -24,7 +24,7 @@
 */
 /**
    \file about.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-03-17
  */
 #ifndef __about_H
@@ -164,7 +164,7 @@ private:
  *
  * @brief Holds information needed by the "About" box and other
  * classes.
- * @author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+ * @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
  */
 class AboutData
 {

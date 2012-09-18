@@ -2,7 +2,7 @@
 
    This file is part of the Feel library
 
-   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    Date: 2004-11-22
 
    Copyright (C) 2004 EPFL
@@ -24,7 +24,7 @@
 */
 /**
    \file FunctionSpace.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2004-11-22
 */
 #ifndef __FunctionSpace_H
@@ -1300,7 +1300,7 @@ mpl::is_sequence<_> > > >
  * \c FunctionSpace is a representation of a functional space parametrized by
  * the type of the mesh (\c MeshType)
  *
- * @author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+ * @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
  */
 //template<typename MeshType, typename Basis_t, typename T_type = double, typename PeriodicityType = NoPeriodicity>
 template<

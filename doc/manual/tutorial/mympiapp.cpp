@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2008-02-11
 
   Copyright (C) 2008-2012 Universite Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file mympiapp.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2008-02-11
  */
 #include <feel/options.hpp>
@@ -58,7 +58,7 @@ makeAbout()
 
     about.addAuthor( "Christophe Prud'homme",
                      "developer",
-                     "christophe.prudhomme@ujf-grenoble.fr", "" );
+                     "christophe.prudhomme@feelpp.org", "" );
     return about;
 }
 

@@ -3,7 +3,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2005-02-10
 
   Copyright (C) 2005,2006 EPFL
@@ -25,7 +25,7 @@
 */
 /**
    \file gmsh.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-02-10
  */
 #ifndef __gmsh_H

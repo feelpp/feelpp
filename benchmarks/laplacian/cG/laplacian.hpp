@@ -4,7 +4,7 @@
   This file is part of the Feel library
 
   Author(s):
-  Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Christophe Prud'homme <christophe.prudhomme@feelpp.org>
   Perrimond Benoit <Benoit.Perrimond@bvra.e.ujf-grenoble.fr>
   Vincent Chabannes <vincent.chabannes@gmail.com>
 
@@ -26,7 +26,7 @@
 */
 /**
    \file laplacian.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \author Perrimond Benoit <Benoit.Perrimond@bvra.e.ujf-grenoble.fr>
    \author Vincent Chabannes <vincent.chabannes@gmail.com>
    \date 2008-02-07
@@ -85,7 +85,7 @@ makeAbout()
                      Feel::AboutData::License_GPL,
                      "Copyright (c) 2008-2010 Université Joseph Fourier" );
 
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     about.addAuthor( "Benoit Perrimond", "developer", "Benoit.Perrimond@bvra.e.ujf-grenoble.fr", "" );
     about.addAuthor( "Vincent Chabannes", "developer", "vincent.chabannes@gmail.com", "" );
     return about;

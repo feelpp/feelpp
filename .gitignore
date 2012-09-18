@@ -41,3 +41,5 @@
 /tools
 /usb_modeswitch.conf
 *.orig
+*.hppbck
+*.cppbck
