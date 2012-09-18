@@ -69,6 +69,8 @@ crbOptions( std::string const& prefix )
     ( "crb.output-fixedpoint-tol",Feel::po::value<double>()->default_value( 1e-10 ), "tolerance on output for fixed point (online part)" )
     ( "crb.fixedpoint-verbose",Feel::po::value<bool>()->default_value( false ), "fixed point verbose if true" )
     ( "crb.fixedpoint-critical-value",Feel::po::value<double>()->default_value(1000 ), "will crash if increment error at the end of fixed point is greater than this critical value" )
+
+    ( "crb.cvg-study",Feel::po::value<bool>()->default_value( false ), "convergence study if true")
     ;
 
 
