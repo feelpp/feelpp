@@ -902,7 +902,7 @@ MatrixPetsc<T>::addMatrix ( const T a_in, MatrixSparse<T> &X_in )
     // 2.2.x & earlier style
 #if (PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR <= 2)
 
-    ierr = MatAXPY( &a,  X->_M_mat, _M_mat, ( MatStructure )SAME_NONZERO_PATTERN );
+    ierr = MatAXPY( &a,  X->_M_mat, _M_mat, MatStructure::SAME_NONZERO_PATTERN );
     CHKERRABORT( this->comm(),ierr );
 
     // 2.3.x & newer
@@ -910,16 +910,16 @@ MatrixPetsc<T>::addMatrix ( const T a_in, MatrixSparse<T> &X_in )
 
     if ( this->comm().size()>1 )
     {
-        ierr = MatAXPY( _M_mat, a, X->_M_mat, ( MatStructure )DIFFERENT_NONZERO_PATTERN );
-        //ierr = MatAXPY(_M_mat, a, X->_M_mat, (MatStructure)SAME_NONZERO_PATTERN);
+        //ierr = MatAXPY( _M_mat, a, X->_M_mat, MatStructure::DIFFERENT_NONZERO_PATTERN );
+        ierr = MatAXPY(_M_mat, a, X->_M_mat, MatStructure::SAME_NONZERO_PATTERN);
     }
 
     else
     {
         //this->close();
-        //ierr = MatAXPY(_M_mat, a, X->_M_mat, (MatStructure)SAME_NONZERO_PATTERN);
-        //ierr = MatAXPY(_M_mat, a, X->_M_mat, (MatStructure)SUBSET_NONZERO_PATTERN );
-        ierr = MatAXPY( _M_mat, a, X->_M_mat, ( MatStructure )DIFFERENT_NONZERO_PATTERN );
+        ierr = MatAXPY(_M_mat, a, X->_M_mat, MatStructure::SAME_NONZERO_PATTERN);
+        //ierr = MatAXPY(_M_mat, a, X->_M_mat, MatStructure::SUBSET_NONZERO_PATTERN );
+        //ierr = MatAXPY( _M_mat, a, X->_M_mat, MatStructure::DIFFERENT_NONZERO_PATTERN );
         //ierr = MatDuplicate(X->mat(),MAT_COPY_VALUES,&_M_mat);
     }
 
@@ -1986,6 +1986,7 @@ inline
 void
 MatrixPetscMPI<T>::addMatrix( const T a_in, MatrixSparse<T> &X_in )
 {
+#if 0
     if (this->hasGraph() && X_in.hasGraph() &&
         static_cast<void*>( const_cast<graph_type*>(this->graph().get()) ) == static_cast<void*>( const_cast<graph_type*>(X_in.graph().get())) )
         {
@@ -1995,6 +1996,9 @@ MatrixPetscMPI<T>::addMatrix( const T a_in, MatrixSparse<T> &X_in )
         {
             super::addMatrix(a_in,X_in);
         }
+#else
+    super::addMatrix(a_in,X_in);
+#endif
 }
 
 //----------------------------------------------------------------------------------------------------//

@@ -1136,6 +1136,15 @@ public:
         return res;
     }
 
+    /**
+     * rebuild dof points
+     */
+    void rebuildDofPoints( mesh_type& M )
+    {
+        M_dof_points.clear();
+        this->generateDofPoints(M);
+    }
+
 private:
 
     void addVertexDof( element_type const& __elt, uint16_type processor, size_type& next_free_dof,
@@ -1981,6 +1990,7 @@ private:
     }
     void generateDofPoints( mesh_type& M );
     void generatePeriodicDofPoints( mesh_type& M, periodic_element_list_type const& periodic_elements, dof_points_type& periodic_dof_points );
+
 private:
 
     fe_ptrtype _M_fe;
