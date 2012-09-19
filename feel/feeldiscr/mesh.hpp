@@ -220,15 +220,21 @@ public:
     /**
      * \retirm the number of elements associated to the current processor
      */
+#if 0
     size_type numElements() const
         {
+
             return std::distance( this->beginElementWithProcessId( this->worldComm().rank() ),
                                   this->endElementWithProcessId( this->worldComm().rank() ) );
         }
+#endif
+
 
     size_type numGlobalElements() const
         {
-            int ne = numElements();
+            //int ne = numElements();
+            int ne = std::distance( this->beginElementWithProcessId( this->worldComm().rank() ),
+                                    this->endElementWithProcessId( this->worldComm().rank() ) );
             int gne;
             mpi::all_reduce( this->worldComm(), ne, gne, [] ( int x, int y )
                              {
