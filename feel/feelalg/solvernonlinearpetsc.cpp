@@ -316,7 +316,7 @@ extern "C"
 
         VecRestoreArray( x, &xa );
 
-        *msflag = SAME_NONZERO_PATTERN;
+        *msflag = MatStructure::SAME_NONZERO_PATTERN;
 
         return ierr;
     }
@@ -570,7 +570,7 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
     CHKERRABORT( this->worldComm().globalComm(),ierr );
 
     KSPSetOperators( M_ksp, jac->mat(), jac->mat(),
-                     MatStructure( ( MatStructure ) this->precMatrixStructure() ) );
+                     PetscGetMatStructureEnum(this->precMatrixStructure()) );
 
     if ( this->preconditionerType() == FIELDSPLIT_PRECOND )
         {
