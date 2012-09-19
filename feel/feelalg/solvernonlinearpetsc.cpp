@@ -906,10 +906,12 @@ SolverNonLinearPetsc<T>::setPetscPreconditionerType()
         CHKERRABORT( this->comm(),ierr );
         return;
 
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,2,0 )
     case GASM_PRECOND:
         ierr = PCSetType ( M_pc, ( char* ) PCGASM );
         CHKERRABORT( this->comm(),ierr );
         return;
+#endif
 
     case JACOBI_PRECOND:
         ierr = PCSetType ( M_pc, ( char* ) PCJACOBI );

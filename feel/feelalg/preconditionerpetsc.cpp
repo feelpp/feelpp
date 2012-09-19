@@ -169,7 +169,11 @@ void PreconditionerPetsc<T>::setPetscPreconditionerType ( const PreconditionerTy
             // But PETSc has no truly parallel LU, instead you have to set
             // an actual parallel preconditioner (e.g. gasm) and then
             // assign LU sub-preconditioners.
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,2,0 )
             ierr = PCSetType ( pc, ( char* ) PCGASM );
+#else
+            ierr = PCSetType ( pc, ( char* ) PCASM );
+#endif
             CHKERRABORT( worldComm.globalComm(),ierr );
 
             // Set ILU as the sub preconditioner type
@@ -192,7 +196,7 @@ void PreconditionerPetsc<T>::setPetscPreconditionerType ( const PreconditionerTy
 
         break;
     }
-
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,2,0 )
     case GASM_PRECOND:
     {
         ierr = PCSetType ( pc, ( char* ) PCGASM );
@@ -202,7 +206,7 @@ void PreconditionerPetsc<T>::setPetscPreconditionerType ( const PreconditionerTy
         setPetscSubpreconditionerType( PCLU, pc, worldComm );
         break;
     }
-
+#endif
     case JACOBI_PRECOND:
         ierr = PCSetType ( pc, ( char* ) PCJACOBI );
         CHKERRABORT( worldComm.globalComm(),ierr );
@@ -315,8 +319,10 @@ void PreconditionerPetsc<T>::setPetscSubpreconditionerType( PCType type, PC& pc 
         ierr = PCBJacobiGetSubKSP( pc, &n_local, PETSC_NULL, &subksps );
     else if ( std::string( thepctype ) == "asm" )
         ierr = PCASMGetSubKSP( pc, &n_local, PETSC_NULL, &subksps );
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,2,0 )
     else if ( std::string( thepctype ) == "gasm" )
         ierr = PCGASMGetSubKSP( pc, &n_local, PETSC_NULL, &subksps );
+#endif
 
     CHKERRABORT( worldComm.globalComm(),ierr );
 

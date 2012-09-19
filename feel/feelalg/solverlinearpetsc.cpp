@@ -763,10 +763,12 @@ SolverLinearPetsc<T>::setPetscPreconditionerType()
         CHKERRABORT( this->worldComm().globalComm(),ierr );
         return;
 
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,2,0 )
     case GASM_PRECOND:
         ierr = PCSetType ( _M_pc, ( char* ) PCGASM );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
         return;
+#endif
 
     case JACOBI_PRECOND:
         ierr = PCSetType ( _M_pc, ( char* ) PCJACOBI );
