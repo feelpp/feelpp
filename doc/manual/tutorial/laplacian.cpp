@@ -193,7 +193,7 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
     if ( X[1] == 1 ) shape = "hypercube";
 
     if ( !this->vm().count( "nochdir" ) )
-        Environment::changeRepository( boost::format( "doc/tutorial/%1%/%2%-%3%/P%4%/h_%5%/" )
+        Environment::changeRepository( boost::format( "doc/manual/tutorial/%1%/%2%-%3%/P%4%/h_%5%/" )
                                        % this->about().appName()
                                        % shape
                                        % Dim
@@ -207,8 +207,7 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
                                                       _h=X[0],
                                                       _substructuring=true,
                                                       _xmin=-1,
-                                                      _ymin=-1 ),
-                                        _update=MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
+                                                      _ymin=-1 ) );
 
 
     /**
@@ -216,9 +215,10 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
      */
     /** \code */
     space_ptrtype Xh = space_type::New( mesh );
-    Xh->dof()->printDofMarker( "dofmarker.dat" );
+
     // print some information (number of local/global dof in logfile)
     Xh->printInfo();
+
     element_type u( Xh, "u" );
     element_type v( Xh, "v" );
     element_type gproj( Xh, "v" );
@@ -233,6 +233,8 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
     value_type pi = 2*M_PI;
     //! deduce from expression the type of g (thanks to keyword 'auto')
     auto g = sin( pi*Px() )*cos( pi*Py() )*cos( pi*Pz() );
+
+    // build Xh-interpolant of g
     gproj = vf::project( Xh, elements( mesh ), g );
 
     //! deduce from expression the type of f (thanks to keyword 'auto')
@@ -254,7 +256,7 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
     /** \code */
     //# marker2 #
     auto F = backend( _vm=this->vm() )->newVector( Xh );
-    auto rhs = form1( _test=Xh, _vector=F, _init=true );
+    auto rhs = form1( _test=Xh, _vector=F );
     rhs = integrate( _range=elements( mesh ), _expr=f*id( v ) )+
         integrate( _range=markedfaces( mesh, "TOP" ),
                    _expr=nu*gradv( gproj )*vf::N()*id( v ) );
@@ -267,8 +269,6 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
                           _expr=g*( -grad( v )*vf::N()+penaldir*id( v )/hFace() ) );
         //# endmarker41 #
     }
-
-    F->close();
 
     /** \endcode */
 

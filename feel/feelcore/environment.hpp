@@ -32,10 +32,12 @@
 #include <cstdlib>
 
 #include <boost/noncopyable.hpp>
-#include <boost/format.hpp>
 #include <boost/signals2.hpp>
+#include <boost/format.hpp>
+
 
 #include <feel/feelcore/feel.hpp>
+#include <feel/feelcore/parameter.hpp>
 #include <feel/feelcore/worldcomm.hpp>
 
 namespace Feel
@@ -209,8 +211,17 @@ public:
      */
     static boost::tuple<std::string,bool> systemConfigRepository();
 
-    //! change the directory where the results are stored
-    static void changeRepository( boost::format fmt, std::string const& = "logfile" );
+    BOOST_PARAMETER_MEMBER_FUNCTION(
+        (void), static changeRepository, tag,
+        (required
+         (directory,(boost::format)))
+        (optional
+         (filename,*( boost::is_convertible<mpl::_,std::string> ),"logfile")
+         (subdir,*( boost::is_convertible<mpl::_,bool> ),true)
+            ))
+        {
+            changeRepositoryImpl( directory, filename, subdir );
+        }
 
     //! get  \c variables_map from \c options_description \p desc
     static po::variables_map vm( po::options_description const& desc );
@@ -231,6 +242,10 @@ public:
     //@}
 
 
+private:
+
+    //! change the directory where the results are stored
+    static void changeRepositoryImpl( boost::format fmt, std::string const& logfile, bool add_subdir_np );
 
 private:
     /// Whether this environment object called MPI_Init
