@@ -845,7 +845,7 @@ BOOST_PARAMETER_FUNCTION(
       ( parametricnodes,*( boost::is_integral<mpl::_> ), 0 )
       ( straighten,     *( boost::is_integral<mpl::_> ), 1 )
       ( refine,          *( boost::is_integral<mpl::_> ), 0 )
-      ( update,          *( boost::is_integral<mpl::_> ), 0 )
+      ( update,          *( boost::is_integral<mpl::_> ), MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK )
       ( force_rebuild,   *( boost::is_integral<mpl::_> ), 0 )
       ( physical_are_elementary_regions,           *,false )
       ( partitions,   *( boost::is_integral<mpl::_> ), Environment::worldComm().size() )
