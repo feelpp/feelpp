@@ -271,7 +271,7 @@ Environment::systemConfigRepository()
 }
 
 void
-Environment::changeRepository( boost::format fmt, std::string const& logfilename )
+Environment::changeRepositoryImpl( boost::format fmt, std::string const& logfilename, bool add_subdir_np )
 {
     fs::path rep_path;
 
@@ -294,7 +294,13 @@ Environment::changeRepository( boost::format fmt, std::string const& logfilename
         if ( !fs::exists( rep_path ) )
             fs::create_directory( rep_path );
     }
-
+    if ( add_subdir_np )
+    {
+        rep_path = rep_path / (boost::format( "np_%1%" ) % Environment::numberOfProcessors() ).str();
+        if ( !fs::exists( rep_path ) )
+            fs::create_directory( rep_path );
+        LOG(INFO) << "rep_path=" << rep_path << "\n";
+    }
     ::chdir( rep_path.string().c_str() );
 
     setLogs( logfilename );
