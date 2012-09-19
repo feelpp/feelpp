@@ -1156,6 +1156,16 @@ struct computeNDofForEachSpace
     }
 };
 
+struct rebuildDofPointsTool
+{
+
+    template <typename T>
+    void operator()( boost::shared_ptr<T> & x ) const
+    {
+        x->dof()->rebuildDofPoints( *x->mesh() );
+    }
+};
+
 struct BasisName
 {
     typedef std::string result_type;
@@ -3684,6 +3694,11 @@ public:
     */
     bool findPoint( node_type const& pt, size_type &cv, node_type& ptr ) const;
 
+    /**
+     * rebuild dof points after a mesh mover for example
+     */
+    void rebuildDofPoints() { rebuildDofPoints(mpl::bool_<is_composite>()); }
+
     //@}
 
     /** @name  Mutators
@@ -3751,6 +3766,9 @@ private:
     size_type nLocalDofWithGhostOnProc( const int proc, mpl::bool_<true> ) const;
     size_type nLocalDofWithoutGhostOnProc( const int proc, mpl::bool_<false> ) const;
     size_type nLocalDofWithoutGhostOnProc( const int proc, mpl::bool_<true> ) const;
+
+    void rebuildDofPoints( mpl::bool_<false> );
+    void rebuildDofPoints( mpl::bool_<true> );
 
     friend class ComponentSpace;
     class ComponentSpace
@@ -4131,6 +4149,20 @@ size_type
 FunctionSpace<A0, A1, A2, A3, A4>::nLocalDofWithoutGhostOnProc( const int proc, mpl::bool_<false> ) const
 {
     return _M_dof->nLocalDofWithoutGhost(proc);
+}
+
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
+void
+FunctionSpace<A0, A1, A2, A3, A4>::rebuildDofPoints( mpl::bool_<false> )
+{
+    _M_dof->rebuildDofPoints( *_M_mesh );
+}
+
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
+void
+FunctionSpace<A0, A1, A2, A3, A4>::rebuildDofPoints( mpl::bool_<true> )
+{
+    fusion::for_each( _M_functionspaces, detail::rebuildDofPointsTool() );
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>

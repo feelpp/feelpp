@@ -249,4 +249,18 @@ PetscConvertSNESReasonToString( SNESConvergedReason reason )
 } //PetscConvertSNESReasonToString
 
 
+MatStructure
+PetscGetMatStructureEnum( Feel::MatrixStructure matStruc )
+{
+    switch (matStruc)
+    {
+    case Feel::SAME_NONZERO_PATTERN : return MatStructure::SAME_NONZERO_PATTERN;
+    case Feel::DIFFERENT_NONZERO_PATTERN : return MatStructure::DIFFERENT_NONZERO_PATTERN;
+    case Feel::SAME_PRECONDITIONER : return MatStructure::SAME_PRECONDITIONER;
+    case Feel::SUBSET_NONZERO_PATTERN : return MatStructure::SUBSET_NONZERO_PATTERN;
+        //case Feel::INVALID_STRUCTURE :
+    default : return MatStructure::DIFFERENT_NONZERO_PATTERN;
+    }
+}
+
 } // namespace Feel
