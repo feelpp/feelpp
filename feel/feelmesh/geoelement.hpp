@@ -1282,6 +1282,9 @@ public:
         M_edge_permutation( numLocalEdges ),
         M_face_permutation( numLocalFaces )
     {
+        std::fill( M_edges.begin(), M_edges.end(), ( edge_type* )0 );
+        std::fill( M_faces.begin(), M_faces.end(), ( face_type* )0 );
+
         std::fill( M_edge_permutation.begin(), M_edge_permutation.end(), edge_permutation_type( edge_permutation_type::IDENTITY ) );
         std::fill( M_face_permutation.begin(), M_face_permutation.end(), face_permutation_type( face_permutation_type::IDENTITY ) );
     }
