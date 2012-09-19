@@ -25,16 +25,7 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2008-02-07
  */
-#include <feel/options.hpp>
-#include <feel/feelcore/feel.hpp>
-#include <feel/feelpoly/im.hpp>
-
-#include <feel/feelfilters/gmsh.hpp>
-#include <feel/feelfilters/gmshhypercubedomain.hpp>
-#include <feel/feelpoly/polynomialset.hpp>
-
-
-#include <feel/feelvf/vf.hpp>
+#include <feel/feel.hpp>
 
 
 using namespace Feel;
@@ -85,7 +76,7 @@ public:
     typedef double value_type;
 
     /*mesh*/
-    typedef Simplex<2> convex_type;
+    typedef Simplex<Dim> convex_type;
     typedef Mesh<convex_type> mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
@@ -113,8 +104,8 @@ template<int Dim>
 void
 MyIntegrals<Dim>::run()
 {
-    std::cout << "------------------------------------------------------------\n";
-    std::cout << "Execute MyIntegrals<" << Dim << ">\n";
+    LOG(INFO) << "------------------------------------------------------------\n";
+    LOG(INFO) << "Execute MyIntegrals<" << Dim << ">\n";
     std::vector<double> X( 2 );
     X[0] = meshSize;
 
@@ -143,31 +134,24 @@ MyIntegrals<Dim>::run( const double* X, unsigned long P, double* Y, unsigned lon
     if ( X[1] == 2 ) shape = "ellipsoid";
 
     if ( !this->vm().count( "nochdir" ) )
-        Environment::changeRepository( boost::format( "doc/tutorial/%1%/%2%/h_%3%/" )
+        Environment::changeRepository( boost::format( "doc/manual/tutorial/%1%/%2%-%3%/h_%4%//proc-%5%" )
                                        % this->about().appName()
                                        % shape
-                                       % meshSize );
+                                       % Dim
+                                       % meshSize
+                                       % Environment::numberOfProcessors() );
 
     /*
      * First we create the mesh
      */
-    auto mesh = mesh_type::New();
-    bool is_mesh_loaded = mesh->load( _name="mymesh",_path=".",_type="text" );
-
-    if ( !is_mesh_loaded )
-    {
-        //# marker11 #
-        mesh = createGMSHMesh( _mesh=new mesh_type,
-                               _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES,
-                               _desc=domain( _name= ( boost::format( "%1%-%2%" ) % shape % Dim ).str() ,
-                                             _shape=shape,
-                                             _order=1,
-                                             _dim=Dim,
-                                             _h=X[0] ),
-                               _partitions=this->comm().size() );
-        mesh->save( _name="mymesh",_path=".",_type="text" );
-    }
-
+    //# marker11 #
+    auto mesh = createGMSHMesh( _mesh=new mesh_type,
+                                _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES,
+                                _desc=domain( _name=shape,
+                                              _shape=shape,
+                                              _order=1,
+                                              _dim=Dim,
+                                              _h=X[0] ) );
     //# endmarker11 #
 
     /*
@@ -252,15 +236,11 @@ main( int argc, char** argv )
 
     Application app( argc, argv, makeAbout(), makeOptions() );
 
-    if ( app.vm().count( "help" ) )
-    {
-        std::cout << app.optionsDescription() << "\n";
-        return 0;
-    }
 
-    //app.add( new MyIntegrals<1>( app.vm(), app.about() ) );
+    if ( Environment::numberOfProcessors() == 1 )
+        app.add( new MyIntegrals<1>( app.vm(), app.about() ) );
     app.add( new MyIntegrals<2>( app.vm(), app.about() ) );
-    //app.add( new MyIntegrals<3>( app.vm(), app.about() ) );
+    app.add( new MyIntegrals<3>( app.vm(), app.about() ) );
 
     app.run();
 }
