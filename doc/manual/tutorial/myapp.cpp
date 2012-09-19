@@ -146,7 +146,7 @@ void MyApp::run()
      */
     /** \code */
     //# marker8 #
-    this->changeRepository( boost::format( "doc/tutorial/%1%/" )
+    this->changeRepository( boost::format( "doc/manual/tutorial/%1%/" )
                             % this->about().appName() );
     //# endmarker8 #
     /** \endcode */
