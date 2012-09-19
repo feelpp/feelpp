@@ -374,7 +374,8 @@ BackendPetsc<T>::solve( sparse_matrix_ptrtype const& A,
     Debug( 7005 ) << "[BackendPetsc::solve] number of iterations : " << res.template get<1>() << "\n";
     Debug( 7005 ) << "[BackendPetsc::solve]             residual : " << res.template get<2>() << "\n";
 
-    if ( !res.get<0>() ) std::cerr<< "Backend " << this->prefix() << " : linear solver failed to converge" << std::endl;
+    if ( !res.template get<0>() )
+        LOG(ERROR) << "Backend " << this->prefix() << " : linear solver failed to converge" << std::endl;
 
     return res;
 } // BackendPetsc::solve
@@ -405,7 +406,8 @@ BackendPetsc<T>::solve( sparse_matrix_type const& A,
     Debug( 7005 ) << "[BackendPetsc::solve] number of iterations : " << res.template get<1>() << "\n";
     Debug( 7005 ) << "[BackendPetsc::solve]             residual : " << res.template get<2>() << "\n";
 
-    if ( !res.get<0>() ) std::cerr<< "Backend " << this->prefix() << " : linear solver failed to converge" << std::endl;
+    if ( !res.template get<0>() )
+        LOG(ERROR) << "Backend " << this->prefix() << " : linear solver failed to converge" << std::endl;
 
     return res;
 } // BackendPetsc::solve
