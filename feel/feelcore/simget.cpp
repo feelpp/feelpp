@@ -33,10 +33,10 @@
 
 namespace Feel
 {
-Simget::Simget(  po::variables_map const& vm )
+Simget::Simget()
     :
-    M_vm( vm ),
-    M_about( "", "", "" )
+    M_vm( Environment::vm() ),
+    M_about( Environment::about() )
 {}
 
 Simget&
