@@ -89,6 +89,8 @@ public:
      */
     //@{
 
+    Application();
+
     /**
      * Construct an MPI Application
      *
