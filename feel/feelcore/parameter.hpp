@@ -49,6 +49,7 @@ namespace parameter = boost::parameter;
 
 BOOST_PARAMETER_NAME( vm )  // Note: no semicolon
 BOOST_PARAMETER_NAME( options )
+BOOST_PARAMETER_NAME( about )
 BOOST_PARAMETER_NAME( prefix )
 BOOST_PARAMETER_NAME( path )
 BOOST_PARAMETER_NAME( suffix )
@@ -57,6 +58,8 @@ BOOST_PARAMETER_NAME( sep )
 BOOST_PARAMETER_NAME( directory )
 BOOST_PARAMETER_NAME( subdir )
 BOOST_PARAMETER_NAME( format )
+BOOST_PARAMETER_NAME( argc )
+BOOST_PARAMETER_NAME( argv )
 
 BOOST_PARAMETER_NAME( verbose )
 
