@@ -28,26 +28,49 @@
 # try to find gflags headers
 # and set GFLAGS_INCLUDE_DIR and GFLAGS_LIBRARIES
 FIND_PATH(GFLAGS_INCLUDE_DIR gflags/gflags.h
+  ${CMAKE_BINARY_DIR}/contrib/gflags/include
   /opt/local/include
   /usr/local/include
   /usr/include
   )
 message(STATUS "Gflags first pass: ${GFLAGS_INCLUDE_DIR}")
 
+if (NOT GFLAGS_INCLUDE_DIR )
+  message(STATUS "Building gflags in ${CMAKE_BINARY_DIR}/contrib/gflags-compile...")
+  execute_process(COMMAND mkdir -p ${CMAKE_BINARY_DIR}/contrib/gflags-compile)
+  execute_process(
+    COMMAND ${FEELPP_HOME_DIR}/contrib/gflags/configure --prefix=${CMAKE_BINARY_DIR}/contrib/gflags
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/gflags-compile
+    OUTPUT_QUIET
+    OUTPUT_FILE "titi"
+    )
+  message(STATUS "Installing gflags in ${CMAKE_BINARY_DIR}/contrib/gflags...")
+  execute_process(
+    COMMAND make install
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/gflags-compile
+    OUTPUT_QUIET
+    )
+  set(GFLAGS_INCLUDE_DIR ${CMAKE_BINARY_DIR}/contrib/gflags/include)
+
+endif()
+string(REPLACE "include" "" GFLAGS_DIR ${GFLAGS_INCLUDE_DIR} )
+
+
 FIND_LIBRARY(GFLAGS_LIBRARY
   NAMES gflags
   PATHS
+  ${CMAKE_BINARY_DIR}/contrib/gflags/lib/
   /opt/local/lib
   /usr/local/lib
   /usr/lib
   )
 set(GFLAGS_LIBRARIES ${GFLAGS_LIBRARY})
-message(STATUS "Gflags includes: ${GFLAGS_INCLUDE_DIR} Libraries: ${GFLAGS_LIBRARIES}" )
+message(STATUS "Gflags includes: ${GFLAGS_INCLUDE_DIR} Libraries: ${GFLAGS_LIBRARIES} Dir: ${GFLAGS_DIR}" )
 
 
 # handle the QUIETLY and REQUIRED arguments and set GFLAGS_FOUND to TRUE if
 # all listed variables are TRUE
 include (FindPackageHandleStandardArgs)
-find_package_handle_standard_args (GFLAGS DEFAULT_MSG GFLAGS_INCLUDE_DIR GFLAGS_LIBRARIES )
+find_package_handle_standard_args (GFLAGS DEFAULT_MSG GFLAGS_INCLUDE_DIR GFLAGS_LIBRARIES GFLAGS_DIR )
 
-mark_as_advanced (GFLAGS_INCLUDE_DIR GFLAGS_LIBRARIES)
+mark_as_advanced (GFLAGS_INCLUDE_DIR GFLAGS_LIBRARIES GFLAGS_DIR GFLAGS_LIBRARY)
