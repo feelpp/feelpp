@@ -83,18 +83,7 @@ public:
     /**
      * constructor with a \c variables_map
      */
-    Simget( po::variables_map const& _vm );
-
-    /**
-     * constructor with an \c AboutData that describes the simget
-     */
-    Simget( AboutData const& _about ) : M_vm(), M_about( _about ) {}
-
-    /**
-     * constructor with a \c variables_map and an \c AboutData that describes
-     * the top application
-     */
-    Simget( po::variables_map const& _vm, AboutData const& _about ) : M_vm( _vm ), M_about( _about ) {}
+    Simget();
 
     //! destructor
     virtual ~Simget() {}
@@ -210,7 +199,7 @@ public:
     /**
      * models the input/output relation \f$ Y=F(X) \f$
      */
-    virtual void run( const double* X, unsigned long P, double* Y, unsigned long N ) = 0;
+    virtual void run( const double* X, unsigned long P, double* Y, unsigned long N ) { run(); };
 
     /**
      * print statistics from simget
