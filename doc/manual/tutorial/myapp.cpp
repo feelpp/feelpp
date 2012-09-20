@@ -50,36 +50,10 @@ makeOptions()
 
     // return the options myappoptions and the feel_options defined
     // internally by Feel
-    return myappoptions.add( feel_options() ).add( backend_options( "myapp" ) );
+    return myappoptions.add( backend_options( "myapp" ) );
 }
 //# endmarker2 #
 
-
-/**
- * This routine defines some information about the application like
- * authors, version, or name of the application. The data returned is
- * typically used as an argument of a Feel::Application subclass.
- *
- * \return some data about the application.
- */
-//# marker3 #
-inline
-AboutData
-makeAbout()
-{
-    AboutData about( "myapp" ,
-                     "myapp" ,
-                     "0.1",
-                     "my first Feel application",
-                     AboutData::License_GPL,
-                     "Copyright (c) 2008 Universite Joseph Fourier" );
-
-    about.addAuthor( "Christophe Prud'homme",
-                     "developer",
-                     "christophe.prudhomme@feelpp.org", "" );
-    return about;
-}
-//# endmarker3 #
 
 /**
  * \class MyApp
@@ -92,19 +66,6 @@ makeAbout()
 class MyApp: public Application
 {
 public:
-
-    /**
-     * constructor only about data and no options description
-     */
-    MyApp( int argc, char** argv, AboutData const& );
-
-    /**
-     * constructor about data and options description
-     */
-    MyApp( int argc, char** argv,
-           AboutData const&,
-           po::options_description const&  );
-
     /**
      * This function is responsible for the actual work done by MyApp.
      */
@@ -112,42 +73,16 @@ public:
 };
 //# endmarker4 #
 
-//# marker5 #
-MyApp::MyApp( int argc, char** argv,
-              AboutData const& ad )
-    :
-    Application( argc, argv, ad )
-{}
-MyApp::MyApp( int argc, char** argv,
-              AboutData const& ad,
-              po::options_description const& od )
-    :
-    Application( argc, argv, ad, od )
-{}
-//# endmarker5 #
-
 //# marker6 #
 void MyApp::run()
 {
-    /**
-     * print the help if --help is passed as an argument
-     */
-    /** \code */
-    if ( this->vm().count( "help" ) )
-    {
-        std::cout << this->optionsDescription() << "\n";
-        return;
-    }
-
-    /** \endcode */
-    //# endmarker6 #
     /**
      * store all subsequent data files in a HOME/feel/doc/tutorial/myapp/
      */
     /** \code */
     //# marker8 #
-    this->changeRepository( boost::format( "doc/manual/tutorial/%1%/" )
-                            % this->about().appName() );
+    Environment::changeRepository( boost::format( "doc/manual/tutorial/%1%/" )
+                                   % this->about().appName() );
     //# endmarker8 #
     /** \endcode */
 
@@ -156,9 +91,9 @@ void MyApp::run()
      * HOME/feel/doc/tutorial/myapp/myapp-1.0
      */
     /** \code */
-    LOG(INFO) << "the value of dt is " << this->vm()["dt"].as<double>() << "\n";
-    LOG(INFO) << "the value of myapp-solver-type is " << this->vm()["myapp.ksp-type"].as<std::string>() << "\n";
-    LOG(INFO) << "the value of myapp-pc-type is " << this->vm()["myapp.pc-type"].as<std::string>() << "\n";
+    LOG(INFO) << "the value of dt is " << Environment::vm()["dt"].as<double>() << "\n";
+    LOG(INFO) << "the value of myapp-solver-type is " << Environment::vm()["myapp.ksp-type"].as<std::string>() << "\n";
+    LOG(INFO) << "the value of myapp-pc-type is " << Environment::vm()["myapp.pc-type"].as<std::string>() << "\n";
     /** \endcode */
 }
 
@@ -169,13 +104,20 @@ void MyApp::run()
 //# marker7 #
 int main( int argc, char** argv )
 {
-    Feel::Environment env( argc, argv );
+    /**
+     * Initialize Feel++ Environment
+     */
+    Environment env( _argc=argc, _argv=argv,
+                     _desc=makeOptions(),
+                     _about=about(_name="myapp",
+                                  _author="Christophe Prud'homme",
+                                  _email="christophe.prudhomme@feelpp.org") );
 
     /**
      * intantiate a MyApp class
      */
     /** \code */
-    MyApp app( argc, argv, makeAbout(), makeOptions() );
+    MyApp app;
     /** \endcode */
 
     /**

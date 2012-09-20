@@ -43,24 +43,6 @@ makeOptions()
 }
 //# endmarker8 #
 
-//# marker9 #
-inline
-AboutData
-makeAbout()
-{
-    AboutData about( "myintegrals" ,
-                     "myintegrals" ,
-                     "0.3",
-                     "nD(n=1,2,3) MyIntegrals on simplices or simplex products",
-                     Feel::AboutData::License_GPL,
-                     "Copyright (c) 2008-2010 Universite Joseph Fourier" );
-
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
-    return about;
-}
-//# endmarker9 #
-
-
 /**
  * MyIntegrals: compute integrals over a domain
  * \see the \ref ComputingIntegrals section in the tutorial
@@ -80,17 +62,15 @@ public:
     typedef Mesh<convex_type> mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
-    MyIntegrals( po::variables_map const& vm, AboutData const& about )
+    MyIntegrals()
         :
-        super( vm, about ),
+        super(),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( this->vm()["shape"].template as<std::string>()  )
     {}
 
     //# marker10 #
     void run();
-
-    void run( const double* X, unsigned long P, double* Y, unsigned long N );
     //# endmarker10 #
 
 private:
@@ -106,52 +86,24 @@ MyIntegrals<Dim>::run()
 {
     LOG(INFO) << "------------------------------------------------------------\n";
     LOG(INFO) << "Execute MyIntegrals<" << Dim << ">\n";
-    std::vector<double> X( 2 );
-    X[0] = meshSize;
 
-    if ( shape == "ellipsoid" )
-        X[1] = 2;
+    Environment::changeRepository( boost::format( "doc/manual/tutorial/%1%/%2%-%3%/h_%4%" )
+                                   % this->about().appName()
+                                   % shape
+                                   % Dim
+                                   % meshSize );
 
-    else if ( shape == "hypercube" )
-        X[1] = 1;
-
-    else // default is simplex
-        X[1] = 0;
-
-    std::vector<double> Y( 3 );
-    run( X.data(), X.size(), Y.data(), Y.size() );
-}
-template<int Dim>
-void
-MyIntegrals<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
-{
-    using namespace Feel::vf;
-
-    if ( X[1] == 0 ) shape = "simplex";
-
-    if ( X[1] == 1 ) shape = "hypercube";
-
-    if ( X[1] == 2 ) shape = "ellipsoid";
-
-    if ( !this->vm().count( "nochdir" ) )
-        Environment::changeRepository( boost::format( "doc/manual/tutorial/%1%/%2%-%3%/h_%4%//proc-%5%" )
-                                       % this->about().appName()
-                                       % shape
-                                       % Dim
-                                       % meshSize
-                                       % Environment::numberOfProcessors() );
 
     /*
      * First we create the mesh
      */
     //# marker11 #
     auto mesh = createGMSHMesh( _mesh=new mesh_type,
-                                _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES,
                                 _desc=domain( _name=shape,
                                               _shape=shape,
                                               _order=1,
                                               _dim=Dim,
-                                              _h=X[0] ) );
+                                              _h=meshSize ) );
     //# endmarker11 #
 
     /*
@@ -232,15 +184,22 @@ MyIntegrals<Dim>::run( const double* X, unsigned long P, double* Y, unsigned lon
 int
 main( int argc, char** argv )
 {
-    Feel::Environment env( argc, argv );
+    /**
+     * Initialize Feel++ Environment
+     */
+    Environment env( _argc=argc, _argv=argv,
+                     _desc=makeOptions(),
+                     _about=about(_name="myintegrals",
+                                  _author="Christophe Prud'homme",
+                                  _email="christophe.prudhomme@feelpp.org") );
 
-    Application app( argc, argv, makeAbout(), makeOptions() );
+    Application app;
 
 
     if ( Environment::numberOfProcessors() == 1 )
-        app.add( new MyIntegrals<1>( app.vm(), app.about() ) );
-    app.add( new MyIntegrals<2>( app.vm(), app.about() ) );
-    app.add( new MyIntegrals<3>( app.vm(), app.about() ) );
+        app.add( new MyIntegrals<1>() );
+    app.add( new MyIntegrals<2>() );
+    app.add( new MyIntegrals<3>() );
 
     app.run();
 }

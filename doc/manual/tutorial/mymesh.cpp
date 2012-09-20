@@ -85,11 +85,9 @@ public:
     /**
      * constructor about data and options description
      */
-    MyMesh( po::variables_map const& vm, AboutData const& about  );
+    MyMesh();
 
     void run();
-
-    void run( const double* X, unsigned long P, double* Y, unsigned long N );
 
 private:
     double meshSize;
@@ -98,9 +96,9 @@ private:
 };
 
 template<int Dim>
-MyMesh<Dim>::MyMesh( po::variables_map const& vm, AboutData const& about )
+MyMesh<Dim>::MyMesh()
     :
-    Simget( vm, about ),
+    Simget(),
     meshSize( this->vm()["hsize"].template as<double>() ),
     shape( this->vm()["shape"].template as<std::string>() ),
     exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) )
@@ -111,43 +109,19 @@ template<int Dim>
 void
 MyMesh<Dim>::run()
 {
-    LOG(INFO) << "------------------------------------------------------------\n";
-    LOG(INFO) << "Execute MyMesh<" << Dim << ">\n";
-    std::vector<double> X( 2 );
-    X[0] = meshSize;
-
-    if ( shape == "hypercube" )
-        X[1] = 1;
-
-    else // default is simplex
-        X[1] = 0;
-
-    std::vector<double> Y( 3 );
-    run( X.data(), X.size(), Y.data(), Y.size() );
-}
-template<int Dim>
-void
-MyMesh<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
-{
-    if ( X[1] == 0 ) shape = "simplex";
-
-    if ( X[1] == 1 ) shape = "hypercube";
-
-    Environment::changeRepository( boost::format( "doc/manual/tutorial/%1%/%2%-%3%/h_%4%/proc-%5%" )
+    Environment::changeRepository( boost::format( "doc/manual/tutorial/%1%/%2%-%3%/h_%4%" )
                                    % this->about().appName()
                                    % shape
                                    % Dim
-                                   % meshSize
-                                   % Environment::numberOfProcessors() );
-    //Environment::setLogs( this->about().appName() );
+                                   % meshSize );
+
     //# marker4 #
     LOG(INFO) << "Generating mesh using gmsh...\n";
     auto mesh = createGMSHMesh( _mesh=new mesh_type,
-                                _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
                                 _desc=domain( _name=( boost::format( "%1%-%2%" ) % shape % Dim ).str() ,
                                               _shape=shape,
                                               _dim=Dim,
-                                              _h=X[0] ) );
+                                              _h=meshSize ) );
     //# endmarker4 #
 
     LOG(INFO) << "Local number of elements: " << mesh->numElements() << "\n";
@@ -171,15 +145,22 @@ MyMesh<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
 //
 int main( int argc, char** argv )
 {
-    Feel::Environment env( argc, argv );
+    /**
+     * Initialize Feel++ Environment
+     */
+    Environment env( _argc=argc, _argv=argv,
+                     _desc=makeOptions(),
+                     _about=about(_name="mymesh",
+                                  _author="Christophe Prud'homme",
+                                  _email="christophe.prudhomme@feelpp.org") );
 
-    Application app( argc, argv, makeAbout(), makeOptions() );
+    Application app;
 
 
     if ( Environment::numberOfProcessors() == 1 )
-        app.add( new MyMesh<1>( app.vm(), app.about() ) );
-    app.add( new MyMesh<2>( app.vm(), app.about() ) );
-    app.add( new MyMesh<3>( app.vm(), app.about() ) );
+        app.add( new MyMesh<1>() );
+    app.add( new MyMesh<2>() );
+    app.add( new MyMesh<3>() );
 
     app.run();
 }
