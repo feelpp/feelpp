@@ -27,6 +27,7 @@
 
 # try to find glog headers, if not found then install glog from contrib into
 # build directory and set GLOG_INCLUDE_DIR and GLOG_LIBRARIES
+FIND_PACKAGE(GFLAGS)
 FIND_PATH(GLOG_INCLUDE_DIR glog/logging.h
   ${CMAKE_BINARY_DIR}/contrib/glog/include
   /opt/local/include
@@ -40,7 +41,7 @@ if (NOT GLOG_INCLUDE_DIR )
   message(STATUS "Building glog in ${CMAKE_BINARY_DIR}/contrib/glog-compile...")
   execute_process(COMMAND mkdir -p ${CMAKE_BINARY_DIR}/contrib/glog-compile)
   execute_process(
-    COMMAND ${FEELPP_HOME_DIR}/contrib/glog/configure --prefix=${CMAKE_BINARY_DIR}/contrib/glog
+    COMMAND ${FEELPP_HOME_DIR}/contrib/glog/configure --prefix=${CMAKE_BINARY_DIR}/contrib/glog --with-gflags=${GFLAGS_DIR}
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/glog-compile
     OUTPUT_QUIET
     OUTPUT_FILE "titi"
@@ -53,24 +54,6 @@ if (NOT GLOG_INCLUDE_DIR )
     )
   set(GLOG_INCLUDE_DIR ${CMAKE_BINARY_DIR}/contrib/glog/include)
 
-else ()
-  FIND_PATH(GFLAGS_INCLUDE_DIR gflags/gflags.h
-    /opt/local/include
-    /usr/local/include
-    /usr/include
-    )
-  message(STATUS "Gflags first pass: ${GFLAGS_INCLUDE_DIR}")
-
-  FIND_LIBRARY(GFLAGS_LIBRARY
-    NAMES gflags
-    PATHS
-    /opt/local/lib
-    /usr/local/lib
-    /usr/lib
-    )
-  set(GFLAGS_LIBRARIES ${GFLAGS_LIBRARY})
-  message(STATUS "Gflags includes: ${GFLAGS_INCLUDE_DIR} Libraries: ${GFLAGS_LIBRARIES}" )
-  mark_as_advanced (GFLAGS_INCLUDE_DIR GFLAGS_LIBRARIES)
 endif()
 
 FIND_LIBRARY(GLOG_LIBRARY
@@ -90,4 +73,4 @@ message(STATUS "GLog includes: ${GLOG_INCLUDE_DIR} Libraries: ${GLOG_LIBRARIES}"
 include (FindPackageHandleStandardArgs)
 find_package_handle_standard_args (GLOG DEFAULT_MSG GLOG_INCLUDE_DIR GLOG_LIBRARIES )
 
-mark_as_advanced (GLOG_INCLUDE_DIR GLOG_LIBRARIES)
+mark_as_advanced (GLOG_INCLUDE_DIR GLOG_LIBRARIES GLOG_LIBRARY)
