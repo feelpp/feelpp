@@ -150,7 +150,7 @@ LinElAxi<Order>::run()
         return;
     }
 
-    this->changeRepository( boost::format( "%1%/%2%/P%3%/h_%4%/" )
+    this->changeRepository( boost::format( "examples/solid/%1%/%2%/P%3%/h_%4%/" )
                             % this->about().appName()
                             % entity_type::name()
                             % Order

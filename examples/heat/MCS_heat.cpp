@@ -174,9 +174,9 @@ public:
     /**
      * Constructor
      */
-    BlocHeat( po::variables_map const& vm, AboutData const& about )
+    BlocHeat()
         :
-        super( vm, about ),
+        super(),
         M_backend( backend_type::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( this->vm()["shape"].template as<std::string>() )
@@ -357,11 +357,6 @@ main( int argc, char** argv )
     /** \code */
     Application app( argc, argv, makeAbout(), makeOptions() );
 
-    if ( app.vm().count( "help" ) )
-    {
-        std::cout << app.optionsDescription() << "\n";
-        return 0;
-    }
 
     /** \endcode */
 
@@ -369,7 +364,7 @@ main( int argc, char** argv )
      * register the simgets
      */
     /** \code */
-    app.add( new BlocHeat<2>( app.vm(), app.about() ) );
+    app.add( new BlocHeat<2>() );
     /** \endcode */
 
     /**
