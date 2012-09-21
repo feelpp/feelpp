@@ -46,8 +46,9 @@ po::options_description
 feel_options( std::string const& prefix  )
 {
     return
+        benchmark_options( prefix )
         /* alg options */
-        backend_options()
+        .add( backend_options() )
 #if defined(FEELPP_HAS_PETSC_H)
         .add( backendpetsc_options( prefix ) )
 #endif
