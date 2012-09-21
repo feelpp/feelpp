@@ -935,6 +935,7 @@ boost::tuple<mpl::size_t<MESH_FACES>,
         catch ( boost::bad_any_cast const& e )
         {
             LOG(ERROR) << "invalid markedfaces marker cast " << e.what() << "\n";
+            throw e;
         }
     }
 
