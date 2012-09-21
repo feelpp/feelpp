@@ -26,7 +26,6 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2010-04-14
  */
-#include <feel/feelconfig.h>
 
 #include <boost/program_options.hpp>
 #include <boost/preprocessor/stringize.hpp>
@@ -36,6 +35,12 @@
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/fstream.hpp>
+
+#include <gflags/gflags.h>
+
+#include <feel/feelconfig.h>
+#include <feel/feelcore/feel.hpp>
+
 
 #include <feel/feelcore/environment.hpp>
 
