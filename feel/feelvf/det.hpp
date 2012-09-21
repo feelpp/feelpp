@@ -125,7 +125,7 @@ public:
 
     //@}
 
-    //template<typename Geo_t, typename Basis_i_t = fusion::map<fusion::pair<detail::gmc<0>,boost::shared_ptr<detail::gmc<0> > > >, typename Basis_j_t = Basis_i_t>
+    //template<typename Geo_t, typename Basis_i_t = fusion::map<fusion::pair<vf::detail::gmc<0>,boost::shared_ptr<vf::detail::gmc<0> > > >, typename Basis_j_t = Basis_i_t>
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t>
     struct tensor
     {

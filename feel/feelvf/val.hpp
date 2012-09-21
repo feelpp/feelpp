@@ -159,9 +159,9 @@ public:
         //typedef typename expression_1_type::template tensor<Geo_t, Basis_i_t,Basis_j_t> tensor2_expr_type;
         typedef typename expression_1_type::template tensor<Geo_t> tensor2_expr_type;
         typedef typename tensor2_expr_type::value_type value_type;
-        typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, detail::gmc<0> >,
-                mpl::identity<detail::gmc<0> >,
-                mpl::identity<detail::gmc<1> > >::type::type key_type;
+        typedef typename mpl::if_<fusion::result_of::has_key<Geo_t,vf::detail::gmc<0> >,
+                mpl::identity<vf::detail::gmc<0> >,
+                mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::pointer gmc_ptrtype;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
         typedef typename tensor2_expr_type::shape shape;

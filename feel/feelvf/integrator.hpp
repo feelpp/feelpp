@@ -167,11 +167,11 @@ public:
         // Precompute some data in the reference element for
         // geometric mapping and reference finite element
         //
-        typedef fusion::map<fusion::pair<detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
+        typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
         typedef typename expression_type::template tensor<map_gmc_type> eval_expr_type;
         typedef typename eval_expr_type::shape shape;
 
-        typedef fusion::map<fusion::pair<detail::gmc<0>, gmc1_ptrtype> > map_gmc1_type;
+        typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc1_ptrtype> > map_gmc1_type;
         typedef typename expression_type::template tensor<map_gmc1_type> eval_expr1_type;
         typedef typename eval_expr1_type::shape shape1; // should be the same as shape
         //typedef typename shape_type::storage<value_type> storage_type;
@@ -437,9 +437,9 @@ public:
         typedef typename eval::gmpc_type gmpc_type;
         typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
         typedef boost::shared_ptr<gmpc_type> gmpc_ptrtype;
-        typedef fusion::map<fusion::pair<detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
+        typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
         typedef typename FormType::template Context<map_gmc_type, expression_type, im_type> form_context_type;
-        //typedef detail::FormContextBase<map_gmc_type,im_type> fcb_type;
+        //typedef vf::detail::FormContextBase<map_gmc_type,im_type> fcb_type;
         typedef form_context_type fcb_type;
         typedef boost::shared_ptr<fcb_type> fcb_ptrtype;
 
@@ -452,8 +452,8 @@ public:
             M_geopc( new gmpc_type( _form.gm(), _im.points() ) ),
             M_c( new gmc_type( _form.gm(), _elt, M_geopc ) ),
             M_formc( new form_context_type( _form,
-                                            fusion::make_pair<detail::gmc<0> >( M_c ),
-                                            fusion::make_pair<detail::gmc<0> >( M_c ),
+                                            fusion::make_pair<vf::detail::gmc<0> >( M_c ),
+                                            fusion::make_pair<vf::detail::gmc<0> >( M_c ),
                                             _expr,
                                             _im ) )
 
@@ -474,7 +474,7 @@ public:
             tbb::mutex m;
             tbb::mutex::scoped_lock lock( m  );
             lock.release();
-            auto  mapgmc = fusion::make_pair<detail::gmc<0> >( M_c );
+            auto  mapgmc = fusion::make_pair<vf::detail::gmc<0> >( M_c );
 
             for ( auto _elt = r.begin(); _elt != r.end(); ++_elt )
             {
@@ -491,8 +491,8 @@ public:
             for ( auto _elt = r.begin(); _elt != r.end(); ++_elt )
             {
                 M_c->update( *_elt );
-                M_formc->update( fusion::make_pair<detail::gmc<0> >( M_c ),
-                                 fusion::make_pair<detail::gmc<0> >( M_c ) );
+                M_formc->update( fusion::make_pair<vf::detail::gmc<0> >( M_c ),
+                                 fusion::make_pair<vf::detail::gmc<0> >( M_c ) );
                 M_formc->integrate();
             }
 
@@ -519,7 +519,7 @@ public:
         typedef typename eval::gmpc_type gmpc_type;
         typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
         typedef boost::shared_ptr<gmpc_type> gmpc_ptrtype;
-        typedef fusion::map<fusion::pair<detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
+        typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
         typedef typename expression_type::template tensor<map_gmc_type> eval_expr_type;
         typedef typename eval_expr_type::shape shape;
         typedef IMType im_type;
@@ -531,7 +531,7 @@ public:
             M_gm( new gm_type( *_elt.gm() ) ),
             M_geopc( new gmpc_type( M_gm, _im.points() ) ),
             M_c( new gmc_type( M_gm, _elt, M_geopc ) ),
-            M_expr( _expr, map_gmc_type( fusion::make_pair<detail::gmc<0> >( M_c ) ) ),
+            M_expr( _expr, map_gmc_type( fusion::make_pair<vf::detail::gmc<0> >( M_c ) ) ),
             M_im( _im ),
             M_ret( eval::matrix_type::Zero() )
         {
@@ -567,7 +567,7 @@ public:
             for ( auto _elt = r.begin(); _elt != r.end(); ++_elt )
             {
                 M_c->update( *_elt );
-                map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( M_c ) );
+                map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( M_c ) );
 
                 M_expr.update( mapgmc );
                 M_im.update( *M_c );
@@ -627,13 +627,13 @@ private:
     void assemble( FormType& __form, mpl::int_<MESH_FACES> /**/, mpl::bool_<false> /**/ ) const;
 
     template<typename FE1,typename FE2,typename ElemContType>
-    void assembleInCaseOfInterpolate( detail::BilinearForm<FE1,FE2,ElemContType>& __form, mpl::int_<MESH_ELEMENTS> /**/ ) const;
+    void assembleInCaseOfInterpolate(vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form, mpl::int_<MESH_ELEMENTS> /**/ ) const;
     template<typename FE1,typename FE2,typename ElemContType>
-    void assembleInCaseOfInterpolate( detail::BilinearForm<FE1,FE2,ElemContType>& __form, mpl::int_<MESH_FACES> /**/ ) const;
+    void assembleInCaseOfInterpolate(vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form, mpl::int_<MESH_FACES> /**/ ) const;
     template<typename FE,typename VectorType,typename ElemContType>
-    void assembleInCaseOfInterpolate( detail::LinearForm<FE,VectorType,ElemContType>& __form, mpl::int_<MESH_ELEMENTS> /**/ ) const;
+    void assembleInCaseOfInterpolate(vf::detail::LinearForm<FE,VectorType,ElemContType>& __form, mpl::int_<MESH_ELEMENTS> /**/ ) const;
     template<typename FE,typename VectorType,typename ElemContType>
-    void assembleInCaseOfInterpolate( detail::LinearForm<FE,VectorType,ElemContType>& __form, mpl::int_<MESH_FACES> /**/ ) const;
+    void assembleInCaseOfInterpolate(vf::detail::LinearForm<FE,VectorType,ElemContType>& __form, mpl::int_<MESH_FACES> /**/ ) const;
 
 
     template<typename P0hType>
@@ -749,11 +749,11 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
         typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
         typedef boost::shared_ptr<gmc1_type> gmc1_ptrtype;
 
-        typedef fusion::map<fusion::pair<detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
-        typedef fusion::map<fusion::pair<detail::gmc<0>, gmc1_ptrtype> > map_gmc1_type;
+        typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
+        typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc1_ptrtype> > map_gmc1_type;
         typedef typename FormType::template Context<map_gmc_type, expression_type, im_type> form_context_type;
         typedef typename FormType::template Context<map_gmc1_type, expression_type, im2_type> form1_context_type;
-        //typedef detail::FormContextBase<map_gmc_type,im_type> fcb_type;
+        //typedef vf::detail::FormContextBase<map_gmc_type,im_type> fcb_type;
         typedef form_context_type fcb_type;
         typedef form1_context_type fcb1_type;
         typedef fcb_type* focb_ptrtype;
@@ -779,8 +779,8 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
         gmc1_ptrtype __c1( new gmc1_type( __form.gm1(), *it, __geopc1 ) );
 
 
-        map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c ) );
-        map_gmc1_type mapgmc1( fusion::make_pair<detail::gmc<0> >( __c1 ) );
+        map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
+        map_gmc1_type mapgmc1( fusion::make_pair<vf::detail::gmc<0> >( __c1 ) );
 
         focb_ptrtype formc( new form_context_type( __form,
                             mapgmc,
@@ -824,7 +824,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                           << "     real : " << __c->xReal() << "\n";
 #endif
                 //ti1.restart();
-                map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c ) );
+                map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
                 formc->update( mapgmc,mapgmc,mapgmc );
                 //Debug( 5065 )  << "update gmc : " << ti1.elapsed() << "\n";
                 //t1+=ti1.elapsed();
@@ -854,7 +854,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                               << "     real : " << __c->xReal() << "\n";
 #endif
                 //ti1.restart();
-                map_gmc1_type mapgmc1( fusion::make_pair<detail::gmc<0> >( __c1 ) );
+                map_gmc1_type mapgmc1( fusion::make_pair<vf::detail::gmc<0> >( __c1 ) );
                 formc1->update( mapgmc1,mapgmc1,mapgmc1 );
                 //Debug( 5065 )  << "update gmc : " << ti1.elapsed() << "\n";
                 //t1+=ti1.elapsed();
@@ -886,7 +886,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                                   << "     real : " << __c->xReal() << "\n";
 #endif
                     //ti1.restart();
-                    map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c ) );
+                    map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
                     formc->update( mapgmc,mapgmc,mapgmc );
                     //Debug( 5065 )  << "update gmc : " << ti1.elapsed() << "\n";
                     //t1+=ti1.elapsed();
@@ -915,7 +915,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                                   << "     real : " << __c->xReal() << "\n";
 #endif
                     //ti1.restart();
-                    map_gmc1_type mapgmc1( fusion::make_pair<detail::gmc<0> >( __c1 ) );
+                    map_gmc1_type mapgmc1( fusion::make_pair<vf::detail::gmc<0> >( __c1 ) );
                     formc1->update( mapgmc1,mapgmc1,mapgmc1 );
                     //Debug( 5065 )  << "update gmc : " << ti1.elapsed() << "\n";
                     //t1+=ti1.elapsed();
@@ -986,7 +986,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
 template<typename Elements, typename Im, typename Expr, typename Im2>
 template<typename FE1,typename FE2,typename ElemContType>
 void
-Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate( detail::BilinearForm<FE1,FE2,ElemContType>& __form,
+Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form,
         mpl::int_<MESH_ELEMENTS> /**/ ) const
 {
     // typedef on integral mesh (expr) :
@@ -995,10 +995,10 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate( detail::Biline
     typedef boost::shared_ptr<gmc_expr_type> gmc_expr_ptrtype;
     typedef typename gm_expr_type::precompute_type pc_expr_type;
     typedef typename gm_expr_type::precompute_ptrtype pc_expr_ptrtype;
-    typedef fusion::map<fusion::pair<detail::gmc<0>, gmc_expr_ptrtype> > map_gmc_expr_type;
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_expr_ptrtype> > map_gmc_expr_type;
 
     // typedef on form (trial and test):
-    typedef detail::BilinearForm<FE1,FE2,ElemContType> FormType;
+    typedef vf::detail::BilinearForm<FE1,FE2,ElemContType> FormType;
     // test
     typedef typename FormType::gm_1_type gm_formTest_type;
     typedef typename FormType::mesh_element_1_type geoelement_formTest_type;
@@ -1006,7 +1006,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate( detail::Biline
     typedef boost::shared_ptr<gmc_formTest_type> gmc_formTest_ptrtype;
     typedef typename gm_formTest_type::precompute_type pc_formTest_type;
     typedef typename gm_formTest_type::precompute_ptrtype pc_formTest_ptrtype;
-    typedef fusion::map<fusion::pair<detail::gmc<0>, gmc_formTest_ptrtype> > map_gmc_formTest_type;
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_formTest_ptrtype> > map_gmc_formTest_type;
     // trial
     typedef typename FormType::gm_2_type gm_formTrial_type;
     typedef typename FormType::mesh_element_2_type geoelement_formTrial_type;
@@ -1014,7 +1014,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate( detail::Biline
     typedef boost::shared_ptr<gmc_formTrial_type> gmc_formTrial_ptrtype;
     typedef typename gm_formTrial_type::precompute_type pc_formTrial_type;
     typedef typename gm_formTrial_type::precompute_ptrtype pc_formTrial_ptrtype;
-    typedef fusion::map<fusion::pair<detail::gmc<0>, gmc_formTrial_ptrtype> > map_gmc_formTrial_type;
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_formTrial_ptrtype> > map_gmc_formTrial_type;
 
     // typedef on formcontext
     typedef typename FormType::template Context<map_gmc_formTest_type, expression_type, im_type,map_gmc_expr_type, map_gmc_formTrial_type> form_context_type;
@@ -1033,15 +1033,15 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate( detail::Biline
     //-----------------------------------------------//
     pc_expr_ptrtype geopcExpr( new pc_expr_type( elt_it->gm(), this->im().points() ) );
     gmc_expr_ptrtype gmcExpr( new gmc_expr_type( elt_it->gm(),*elt_it, geopcExpr ) );
-    map_gmc_expr_type mapgmcExpr( fusion::make_pair<detail::gmc<0> >( gmcExpr ) );
+    map_gmc_expr_type mapgmcExpr( fusion::make_pair<vf::detail::gmc<0> >( gmcExpr ) );
     //-----------------------------------------------//
     pc_formTest_ptrtype geopcFormTest( new pc_formTest_type( __form.gm(), __form.testSpace()->fe()->points()/* this->im().points()*/ ) );
     gmc_formTest_ptrtype gmcFormTest( new gmc_formTest_type( __form.gm(), __form.testSpace()->mesh()->element( 0 ), geopcFormTest ) );
-    map_gmc_formTest_type mapgmcFormTest( fusion::make_pair<detail::gmc<0> >( gmcFormTest ) );
+    map_gmc_formTest_type mapgmcFormTest( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTest ) );
     //-----------------------------------------------//
     pc_formTrial_ptrtype geopcFormTrial( new pc_formTrial_type( __form.gmTrial(), __form.trialSpace()->fe()->points() /*this->im().points()*/ ) );
     gmc_formTrial_ptrtype gmcFormTrial( new gmc_formTrial_type( __form.gmTrial(), __form.trialSpace()->mesh()->element( 0 ), geopcFormTrial ) );
-    map_gmc_formTrial_type mapgmcFormTrial( fusion::make_pair<detail::gmc<0> >( gmcFormTrial ) );
+    map_gmc_formTrial_type mapgmcFormTrial( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTrial ) );
     //-----------------------------------------------//
 
     focb_ptrtype formc( new form_context_type( __form,
@@ -1097,9 +1097,9 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate( detail::Biline
                 gmcFormTest->update( eltTest,geopcFormTest );
                 gmcFormTrial->update( eltTrial,geopcFormTrial );
 
-                map_gmc_formTest_type mapgmcFormTest( fusion::make_pair<detail::gmc<0> >( gmcFormTest ) );
-                map_gmc_formTrial_type mapgmcFormTrial( fusion::make_pair<detail::gmc<0> >( gmcFormTrial ) );
-                map_gmc_expr_type mapgmcExpr( fusion::make_pair<detail::gmc<0> >( gmcExpr_it->template get<1>() ) );
+                map_gmc_formTest_type mapgmcFormTest( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTest ) );
+                map_gmc_formTrial_type mapgmcFormTrial( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTrial ) );
+                map_gmc_expr_type mapgmcExpr( fusion::make_pair<vf::detail::gmc<0> >( gmcExpr_it->template get<1>() ) );
 
                 formc->updateInCaseOfInterpolate( mapgmcFormTest, mapgmcFormTrial, mapgmcExpr, gmcExpr_it->template get<0>() );
 
@@ -1118,7 +1118,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate( detail::Biline
 template<typename Elements, typename Im, typename Expr, typename Im2>
 template<typename FE,typename VectorType,typename ElemContType>
 void
-Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate( detail::LinearForm<FE,VectorType,ElemContType>& __form, mpl::int_<MESH_ELEMENTS> /**/ ) const
+Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::LinearForm<FE,VectorType,ElemContType>& __form, mpl::int_<MESH_ELEMENTS> /**/ ) const
 {
 
     // typedef on integral mesh (expr) :
@@ -1127,17 +1127,17 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate( detail::Linear
     typedef boost::shared_ptr<gmc_expr_type> gmc_expr_ptrtype;
     typedef typename gm_expr_type::precompute_type pc_expr_type;
     typedef typename gm_expr_type::precompute_ptrtype pc_expr_ptrtype;
-    typedef fusion::map<fusion::pair<detail::gmc<0>, gmc_expr_ptrtype> > map_gmc_expr_type;
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_expr_ptrtype> > map_gmc_expr_type;
 
     //typedef on form (trial and test):
-    typedef detail::LinearForm<FE,VectorType,ElemContType> FormType;
+    typedef vf::detail::LinearForm<FE,VectorType,ElemContType> FormType;
     typedef typename FormType::gm_type gm_form_type;
     typedef typename FormType::mesh_test_element_type geoelement_form_type;
     typedef typename gm_form_type::template Context<expression_type::context|vm::POINT,geoelement_form_type> gmc_form_type;
     typedef boost::shared_ptr<gmc_form_type> gmc_form_ptrtype;
     typedef typename gm_form_type::precompute_type pc_form_type;
     typedef typename gm_form_type::precompute_ptrtype pc_form_ptrtype;
-    typedef fusion::map<fusion::pair<detail::gmc<0>, gmc_form_ptrtype> > map_gmc_form_type;
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_form_ptrtype> > map_gmc_form_type;
 
     // typedef on formcontext
     typedef typename FormType::template Context<map_gmc_form_type, expression_type, im_type,map_gmc_expr_type> form_context_type;
@@ -1157,13 +1157,13 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate( detail::Linear
 
     pc_expr_ptrtype geopcExpr( new pc_expr_type( elt_it->gm(), this->im().points() ) );
     gmc_expr_ptrtype gmcExpr( new gmc_expr_type( elt_it->gm(),*elt_it, geopcExpr ) );
-    map_gmc_expr_type mapgmcExpr( fusion::make_pair<detail::gmc<0> >( gmcExpr ) );
+    map_gmc_expr_type mapgmcExpr( fusion::make_pair<vf::detail::gmc<0> >( gmcExpr ) );
 
     //-----------------------------------------------//
 
     pc_form_ptrtype geopcForm( new pc_form_type( __form.gm(), this->im().points() ) );
     gmc_form_ptrtype gmcForm( new gmc_form_type( __form.gm(), __form.testSpace()->mesh()->element( 0 ), geopcForm ) );
-    map_gmc_form_type mapgmcForm( fusion::make_pair<detail::gmc<0> >( gmcForm ) );
+    map_gmc_form_type mapgmcForm( fusion::make_pair<vf::detail::gmc<0> >( gmcForm ) );
 
     //-----------------------------------------------//
 
@@ -1205,8 +1205,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate( detail::Linear
         {
             geopcForm->update( gmcExpr_it->template get<2>() );
             gmcForm->update( eltTest,geopcForm );
-            map_gmc_form_type mapgmcForm( fusion::make_pair<detail::gmc<0> >( gmcForm ) );
-            map_gmc_expr_type mapgmcExpr( fusion::make_pair<detail::gmc<0> >( gmcExpr_it->template get<1>() ) );
+            map_gmc_form_type mapgmcForm( fusion::make_pair<vf::detail::gmc<0> >( gmcForm ) );
+            map_gmc_expr_type mapgmcExpr( fusion::make_pair<vf::detail::gmc<0> >( gmcExpr_it->template get<1>() ) );
             formc->updateInCaseOfInterpolate( mapgmcForm, mapgmcForm, mapgmcExpr,gmcExpr_it->template get<0>() );
 
             formc->integrateInCaseOfInterpolate( gmcExpr_it->template get<0>(),isFirstExperience );
@@ -1301,14 +1301,14 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
     //
     // the case where the face is connected only to one element
     //
-    typedef fusion::map<fusion::pair<detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
-    typedef fusion::map<fusion::pair<detail::gmc<0>, gmc1_ptrtype> > map_gmc1_type;
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc1_ptrtype> > map_gmc1_type;
     typedef typename FormType::template Context<map_gmc_type, expression_type, face_im_type> form_context_type;
     typedef typename FormType::template Context<map_gmc1_type, expression_type, face_im2_type> form1_context_type;
     typedef boost::shared_ptr<form_context_type> form_context_ptrtype;
     typedef boost::shared_ptr<form1_context_type> form1_context_ptrtype;
-    map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c0 ) );
-    map_gmc1_type mapgmc1( fusion::make_pair<detail::gmc<0> >( __c01 ) );
+    map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c0 ) );
+    map_gmc1_type mapgmc1( fusion::make_pair<vf::detail::gmc<0> >( __c01 ) );
     form_context_ptrtype form;
     form1_context_ptrtype form1;
 
@@ -1319,8 +1319,8 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
     gmc_ptrtype __c1;
     gmc1_ptrtype __c11;
 
-    typedef fusion::map<fusion::pair<detail::gmc<0>, gmc_ptrtype>, fusion::pair<detail::gmc<1>, gmc_ptrtype> > map2_gmc_type;
-    typedef fusion::map<fusion::pair<detail::gmc<0>, gmc1_ptrtype>, fusion::pair<detail::gmc<1>, gmc1_ptrtype> > map21_gmc_type;
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype>, fusion::pair<vf::detail::gmc<1>, gmc_ptrtype> > map2_gmc_type;
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc1_ptrtype>, fusion::pair<vf::detail::gmc<1>, gmc1_ptrtype> > map21_gmc_type;
     typedef typename FormType::template Context<map2_gmc_type, expression_type, face_im_type> form2_context_type;
     typedef typename FormType::template Context<map21_gmc_type, expression_type, face_im2_type> form21_context_type;
     typedef boost::shared_ptr<form2_context_type> form2_context_ptrtype;
@@ -1338,10 +1338,10 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
 
         __c1 = gmc_ptrtype( new gmc_type( __gm, it->element( 1 ), __geopc, __face_id_in_elt_1 ) );
         __c11 = gmc1_ptrtype( new gmc1_type( __gm1, it->element( 1 ), __geopc1, __face_id_in_elt_1 ) );
-        map2_gmc_type mapgmc2( fusion::make_pair<detail::gmc<0> >( __c0 ),
-                               fusion::make_pair<detail::gmc<1> >( __c1 ) );
-        map21_gmc_type mapgmc21( fusion::make_pair<detail::gmc<0> >( __c01 ),
-                                 fusion::make_pair<detail::gmc<1> >( __c11 ) );
+        map2_gmc_type mapgmc2( fusion::make_pair<vf::detail::gmc<0> >( __c0 ),
+                               fusion::make_pair<vf::detail::gmc<1> >( __c1 ) );
+        map21_gmc_type mapgmc21( fusion::make_pair<vf::detail::gmc<0> >( __c01 ),
+                                 fusion::make_pair<vf::detail::gmc<1> >( __c11 ) );
 
         form2 = form2_context_ptrtype( new form2_context_type( __form, mapgmc2, mapgmc2, mapgmc2, expression(), face_ims[__face_id_in_elt_0], this->im(), mpl::int_<2>() ) );
         form21 = form21_context_ptrtype( new form21_context_type( __form, mapgmc21, mapgmc21, mapgmc21, expression(), face_ims2[__face_id_in_elt_0], this->im2(), mpl::int_<2>() ) );
@@ -1376,10 +1376,10 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
 
                 __c1 = gmc_ptrtype( new gmc_type( __gm, it->element( 1 ), __geopc, __face_id_in_elt_1 ) );
                 __c11 = gmc1_ptrtype( new gmc1_type( __gm1, it->element( 1 ), __geopc1, __face_id_in_elt_1 ) );
-                map2_gmc_type mapgmc2( fusion::make_pair<detail::gmc<0> >( __c0 ),
-                                       fusion::make_pair<detail::gmc<1> >( __c1 ) );
-                map21_gmc_type mapgmc21( fusion::make_pair<detail::gmc<0> >( __c01 ),
-                                         fusion::make_pair<detail::gmc<1> >( __c11 ) );
+                map2_gmc_type mapgmc2( fusion::make_pair<vf::detail::gmc<0> >( __c0 ),
+                                       fusion::make_pair<vf::detail::gmc<1> >( __c1 ) );
+                map21_gmc_type mapgmc21( fusion::make_pair<vf::detail::gmc<0> >( __c01 ),
+                                         fusion::make_pair<vf::detail::gmc<1> >( __c11 ) );
 
                 form2 = form2_context_ptrtype( new form2_context_type( __form, mapgmc2, mapgmc2, mapgmc2, expression(), face_ims[__face_id_in_elt_0], this->im(), mpl::int_<2>() ) );
                 form21 = form21_context_ptrtype( new form21_context_type( __form, mapgmc21, mapgmc21, mapgmc21, expression(), face_ims2[__face_id_in_elt_0], this->im2(), mpl::int_<2>() ) );
@@ -1403,8 +1403,8 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                 //t0 += ti0.elapsed();
 
                 //ti1.restart();
-                map2_gmc_type mapgmc2 = map2_gmc_type( fusion::make_pair<detail::gmc<0> >( __c0 ),
-                                                       fusion::make_pair<detail::gmc<1> >( __c1 ) );
+                map2_gmc_type mapgmc2 = map2_gmc_type( fusion::make_pair<vf::detail::gmc<0> >( __c0 ),
+                                                       fusion::make_pair<vf::detail::gmc<1> >( __c1 ) );
                 form2->update( mapgmc2, mapgmc2, mapgmc2, face_ims[__face_id_in_elt_0], mpl::int_<2>() );
                 //t1 += ti1.elapsed();
 
@@ -1433,8 +1433,8 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                 //t0 += ti0.elapsed();
 
                 //ti1.restart();
-                map21_gmc_type mapgmc21 = map21_gmc_type( fusion::make_pair<detail::gmc<0> >( __c01 ),
-                                          fusion::make_pair<detail::gmc<1> >( __c11 ) );
+                map21_gmc_type mapgmc21 = map21_gmc_type( fusion::make_pair<vf::detail::gmc<0> >( __c01 ),
+                                          fusion::make_pair<vf::detail::gmc<1> >( __c11 ) );
                 form21->update( mapgmc21, mapgmc21, mapgmc21, face_ims2[__face_id_in_elt_0], mpl::int_<2>() );
                 //t1 += ti1.elapsed();
 
@@ -1471,7 +1471,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
             ( __c0->faceId() ).warn ( "invalid face id" );
 
             //ti1.restart();
-            map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c0 ) );
+            map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c0 ) );
             form->update( mapgmc, mapgmc, mapgmc, face_ims[__face_id_in_elt_0] );
             //t1 += ti1.elapsed();
 
@@ -1483,7 +1483,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
             form->assemble( it->element( 0 ).id() );
             //t3 += ti3.elapsed();
 #else
-            map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c0 ) );
+            map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c0 ) );
             form->update( mapgmc, mapgmc, mapgmc, face_ims[__face_id_in_elt_0] );
             form->integrate( );
 #endif
@@ -1513,7 +1513,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
 template<typename Elements, typename Im, typename Expr, typename Im2>
 template<typename FE1,typename FE2,typename ElemContType>
 void
-Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate( detail::BilinearForm<FE1,FE2,ElemContType>& __form,
+Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form,
         mpl::int_<MESH_FACES> /**/ ) const
 {
 
@@ -1523,17 +1523,17 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate( detail::Biline
     typedef boost::shared_ptr<gmc_expr_type> gmc_expr_ptrtype;
     typedef typename gm_expr_type::precompute_type pc_expr_type;
     typedef typename gm_expr_type::precompute_ptrtype pc_expr_ptrtype;
-    typedef fusion::map<fusion::pair<detail::gmc<0>, gmc_expr_ptrtype> > map_gmc_expr_type;
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_expr_ptrtype> > map_gmc_expr_type;
 
     //typedef on form (trial and test):
-    typedef detail::BilinearForm<FE1,FE2,ElemContType> FormType;
+    typedef vf::detail::BilinearForm<FE1,FE2,ElemContType> FormType;
     /*typedef typename FormType::gm_type gm_form_type;
     typedef typename FormType::mesh_element_type geoelement_form_type;
     typedef typename gm_form_type::template Context<expression_type::context|vm::POINT,geoelement_form_type> gmc_form_type;
     typedef boost::shared_ptr<gmc_form_type> gmc_form_ptrtype;
     typedef typename gm_form_type::precompute_type pc_form_type;
     typedef typename gm_form_type::precompute_ptrtype pc_form_ptrtype;
-    typedef fusion::map<fusion::pair<detail::gmc<0>, gmc_form_ptrtype> > map_gmc_form_type;*/
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_form_ptrtype> > map_gmc_form_type;*/
 
     typedef typename FormType::gm_1_type gm_formTest_type;
     typedef typename FormType::mesh_element_1_type geoelement_formTest_type;
@@ -1541,7 +1541,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate( detail::Biline
     typedef boost::shared_ptr<gmc_formTest_type> gmc_formTest_ptrtype;
     typedef typename gm_formTest_type::precompute_type pc_formTest_type;
     typedef typename gm_formTest_type::precompute_ptrtype pc_formTest_ptrtype;
-    typedef fusion::map<fusion::pair<detail::gmc<0>, gmc_formTest_ptrtype> > map_gmc_formTest_type;
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_formTest_ptrtype> > map_gmc_formTest_type;
     // trial
     typedef typename FormType::gm_2_type gm_formTrial_type;
     typedef typename FormType::mesh_element_2_type geoelement_formTrial_type;
@@ -1549,7 +1549,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate( detail::Biline
     typedef boost::shared_ptr<gmc_formTrial_type> gmc_formTrial_ptrtype;
     typedef typename gm_formTrial_type::precompute_type pc_formTrial_type;
     typedef typename gm_formTrial_type::precompute_ptrtype pc_formTrial_ptrtype;
-    typedef fusion::map<fusion::pair<detail::gmc<0>, gmc_formTrial_ptrtype> > map_gmc_formTrial_type;
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_formTrial_ptrtype> > map_gmc_formTrial_type;
 
 
 
@@ -1599,17 +1599,17 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate( detail::Biline
                               __face_id_in_elt_0 ) );
 
 
-    map_gmc_expr_type mapgmcExpr( fusion::make_pair<detail::gmc<0> >( gmcExpr ) );
+    map_gmc_expr_type mapgmcExpr( fusion::make_pair<vf::detail::gmc<0> >( gmcExpr ) );
 
     //-----------------------------------------------//
 
     pc_formTest_ptrtype geopcFormTest( new pc_formTest_type( __form.gm(),  __form.testSpace()->fe()->points() ) );
     gmc_formTest_ptrtype gmcFormTest( new gmc_formTest_type( __form.gm(), __form.testSpace()->mesh()->element( 0 ), geopcFormTest ) );
-    map_gmc_formTest_type mapgmcFormTest( fusion::make_pair<detail::gmc<0> >( gmcFormTest ) );
+    map_gmc_formTest_type mapgmcFormTest( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTest ) );
 
     pc_formTrial_ptrtype geopcFormTrial( new pc_formTrial_type( __form.gmTrial(), __form.trialSpace()->fe()->points() ) );
     gmc_formTrial_ptrtype gmcFormTrial( new gmc_formTrial_type( __form.gmTrial(), __form.trialSpace()->mesh()->element( 0 ), geopcFormTrial ) );
-    map_gmc_formTrial_type mapgmcFormTrial( fusion::make_pair<detail::gmc<0> >( gmcFormTrial ) );
+    map_gmc_formTrial_type mapgmcFormTrial( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTrial ) );
 
     //-----------------------------------------------//
 
@@ -1665,9 +1665,9 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate( detail::Biline
                 gmcFormTest->update( eltTest,geopcFormTest );
                 gmcFormTrial->update( eltTrial,geopcFormTrial );
 
-                map_gmc_formTest_type mapgmcFormTest( fusion::make_pair<detail::gmc<0> >( gmcFormTest ) );
-                map_gmc_formTrial_type mapgmcFormTrial( fusion::make_pair<detail::gmc<0> >( gmcFormTrial ) );
-                map_gmc_expr_type mapgmcExpr( fusion::make_pair<detail::gmc<0> >( gmcExpr_it->template get<1>() ) );
+                map_gmc_formTest_type mapgmcFormTest( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTest ) );
+                map_gmc_formTrial_type mapgmcFormTrial( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTrial ) );
+                map_gmc_expr_type mapgmcExpr( fusion::make_pair<vf::detail::gmc<0> >( gmcExpr_it->template get<1>() ) );
                 __face_id_in_elt_0 = gmcExpr_it->template get<1>()->faceId();
                 formc->updateInCaseOfInterpolate( mapgmcFormTest, mapgmcFormTrial, mapgmcExpr,face_ims[__face_id_in_elt_0],gmcExpr_it->template get<0>() );
 
@@ -1687,7 +1687,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate( detail::Biline
 template<typename Elements, typename Im, typename Expr, typename Im2>
 template<typename FE,typename VectorType,typename ElemContType>
 void
-Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate( detail::LinearForm<FE,VectorType,ElemContType>& __form, mpl::int_<MESH_FACES> /**/ ) const
+Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::LinearForm<FE,VectorType,ElemContType>& __form, mpl::int_<MESH_FACES> /**/ ) const
 {
     // typedef on integral mesh (expr) :
     typedef typename eval::gm_type gm_expr_type;
@@ -1695,17 +1695,17 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate( detail::Linear
     typedef boost::shared_ptr<gmc_expr_type> gmc_expr_ptrtype;
     typedef typename gm_expr_type::precompute_type pc_expr_type;
     typedef typename gm_expr_type::precompute_ptrtype pc_expr_ptrtype;
-    typedef fusion::map<fusion::pair<detail::gmc<0>, gmc_expr_ptrtype> > map_gmc_expr_type;
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_expr_ptrtype> > map_gmc_expr_type;
 
     //typedef on form (test):
-    typedef detail::LinearForm<FE,VectorType,ElemContType> FormType;
+    typedef vf::detail::LinearForm<FE,VectorType,ElemContType> FormType;
     typedef typename FormType::gm_type gm_form_type;
     typedef typename FormType::mesh_test_element_type geoelement_form_type;
     typedef typename gm_form_type::template Context<expression_type::context|vm::POINT,geoelement_form_type> gmc_form_type;
     typedef boost::shared_ptr<gmc_form_type> gmc_form_ptrtype;
     typedef typename gm_form_type::precompute_type pc_form_type;
     typedef typename gm_form_type::precompute_ptrtype pc_form_ptrtype;
-    typedef fusion::map<fusion::pair<detail::gmc<0>, gmc_form_ptrtype> > map_gmc_form_type;
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_form_ptrtype> > map_gmc_form_type;
 
     // typedef on formcontext
     typedef typename im_type::face_quadrature_type face_im_type;
@@ -1753,13 +1753,13 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate( detail::Linear
                               __face_id_in_elt_0 ) );
 
 
-    map_gmc_expr_type mapgmcExpr( fusion::make_pair<detail::gmc<0> >( gmcExpr ) );
+    map_gmc_expr_type mapgmcExpr( fusion::make_pair<vf::detail::gmc<0> >( gmcExpr ) );
 
     //-----------------------------------------------//
 
     pc_form_ptrtype geopcForm( new pc_form_type( __form.gm(), this->im().points() ) );
     gmc_form_ptrtype gmcForm( new gmc_form_type( __form.gm(), __form.testSpace()->mesh()->element( 0 ), geopcForm ) );
-    map_gmc_form_type mapgmcForm( fusion::make_pair<detail::gmc<0> >( gmcForm ) );
+    map_gmc_form_type mapgmcForm( fusion::make_pair<vf::detail::gmc<0> >( gmcForm ) );
 
     //-----------------------------------------------//
 
@@ -1812,8 +1812,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate( detail::Linear
             //std::cout << "\ngmcExpr " << gmcExpr_it->template get<1>()->xReal()
             //          << "\ngmcForm " << gmcForm->xReal();
 
-            map_gmc_form_type mapgmcForm( fusion::make_pair<detail::gmc<0> >( gmcForm ) );
-            map_gmc_expr_type mapgmcExpr( fusion::make_pair<detail::gmc<0> >( gmcExpr_it->template get<1>() ) );
+            map_gmc_form_type mapgmcForm( fusion::make_pair<vf::detail::gmc<0> >( gmcForm ) );
+            map_gmc_expr_type mapgmcExpr( fusion::make_pair<vf::detail::gmc<0> >( gmcExpr_it->template get<1>() ) );
 
             __face_id_in_elt_0 = gmcExpr_it->template get<1>()->faceId();
             formc->updateInCaseOfInterpolate( mapgmcForm, mapgmcForm, mapgmcExpr,face_ims[__face_id_in_elt_0],gmcExpr_it->template get<0>() );
@@ -1910,8 +1910,8 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
 
         // possibly high order
         gmc_ptrtype __c( new gmc_type( gm, *it, __geopc ) );
-        typedef fusion::map<fusion::pair<detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
-        map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c ) );
+        typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
+        map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
         //std::cout << "3" << std::endl;
         typedef typename expression_type::template tensor<map_gmc_type> eval_expr_type;
         eval_expr_type expr( expression(), mapgmc );
@@ -1920,8 +1920,8 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
 
         // order 1
         gmc1_ptrtype __c1( new gmc1_type( gm1, *it, __geopc1 ) );
-        typedef fusion::map<fusion::pair<detail::gmc<0>, gmc1_ptrtype> > map_gmc1_type;
-        map_gmc1_type mapgmc1( fusion::make_pair<detail::gmc<0> >( __c1 ) );
+        typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc1_ptrtype> > map_gmc1_type;
+        map_gmc1_type mapgmc1( fusion::make_pair<vf::detail::gmc<0> >( __c1 ) );
         //std::cout << "5" << std::endl;
         typedef typename expression_type::template tensor<map_gmc1_type> eval_expr1_type;
         eval_expr1_type expr1( expression(), mapgmc1 );
@@ -1938,7 +1938,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
             case  GeomapStrategyType::GEOMAP_HO :
             {
                 __c->update( *it );
-                map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c ) );
+                map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
                 expr.update( mapgmc );
                 const gmc_type& gmc = *__c;
 
@@ -1957,7 +1957,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
             {
                 //Debug(5065) << "geomap o1" << "\n";
                 __c1->update( *it );
-                map_gmc1_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c1 ) );
+                map_gmc1_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c1 ) );
                 expr1.update( mapgmc );
                 const gmc1_type& gmc = *__c1;
 
@@ -1979,7 +1979,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
                 {
                     //Debug(5065) << "boundary element using ho" << "\n";
                     __c->update( *it );
-                    map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c ) );
+                    map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
                     expr.update( mapgmc );
                     const gmc_type& gmc = *__c;
 
@@ -1997,7 +1997,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
                 {
                     //Debug(5065) << "interior element using order 1" << "\n";
                     __c1->update( *it );
-                    map_gmc1_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c1 ) );
+                    map_gmc1_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c1 ) );
                     expr1.update( mapgmc );
                     const gmc1_type& gmc = *__c1;
 
@@ -2118,15 +2118,15 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_FACES> ) const
     // get the geometric mapping associated with element 0
     gmc_ptrtype __c0( new gmc_type( gm, it->element( 0 ), __geopc, __face_id_in_elt_0 ) );
 
-    typedef fusion::map<fusion::pair<detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
 
     typedef typename expression_type::template tensor<map_gmc_type> eval_expr_type;
     typedef boost::shared_ptr<eval_expr_type> eval_expr_ptrtype;
-    map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c0 ) );
+    map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c0 ) );
     eval_expr_ptrtype expr( new eval_expr_type( expression(), mapgmc ) );
     expr->init( im() );
 
-    typedef fusion::map<fusion::pair<detail::gmc<0>, gmc_ptrtype>, fusion::pair<detail::gmc<1>, gmc_ptrtype> > map2_gmc_type;
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype>, fusion::pair<vf::detail::gmc<1>, gmc_ptrtype> > map2_gmc_type;
     typedef typename expression_type::template tensor<map2_gmc_type> eval2_expr_type;
     typedef boost::shared_ptr<eval2_expr_type> eval2_expr_ptrtype;
     eval2_expr_ptrtype expr2;
@@ -2145,8 +2145,8 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_FACES> ) const
 
         __c1 = gmc_ptrtype( new gmc_type( gm, it->element( 1 ), __geopc, __face_id_in_elt_1 ) );
 
-        map2_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c0 ),
-                              fusion::make_pair<detail::gmc<1> >( __c1 ) );
+        map2_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c0 ),
+                              fusion::make_pair<vf::detail::gmc<1> >( __c1 ) );
 
         expr2 = eval2_expr_ptrtype( new eval2_expr_type( expression(), mapgmc ) );
         expr2->init( im() );
@@ -2197,8 +2197,8 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_FACES> ) const
 
             __typeof__( im( __face_id_in_elt_0 ) ) im_face ( im( __face_id_in_elt_0 ) );
             //std::cout << "pts = " << im_face.points() << "\n";
-            map2_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c0 ),
-                                  fusion::make_pair<detail::gmc<1> >( __c1 ) );
+            map2_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c0 ),
+                                  fusion::make_pair<vf::detail::gmc<1> >( __c1 ) );
 
             expr2->update( mapgmc, __face_id_in_elt_0 );
             const gmc_type& gmc = *__c0;
@@ -2219,7 +2219,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_FACES> ) const
                 continue;
             uint16_type __face_id_in_elt_0 = it->pos_first();
             __c0->update( it->element( 0 ), __face_id_in_elt_0 );
-            map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c0 ) );
+            map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c0 ) );
             expr->update( mapgmc, __face_id_in_elt_0 );
             //expr->update( mapgmc );
             const gmc_type& gmc = *__c0;
@@ -2300,8 +2300,8 @@ Integrator<Elements, Im, Expr, Im2>::broken( boost::shared_ptr<P0hType>& P0h, mp
 
 
     gmc_ptrtype __c( new gmc_type( gm, *it, __geopc ) );
-    typedef fusion::map<fusion::pair<detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
-    map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c ) );
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
+    map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
 
     typedef typename expression_type::template tensor<map_gmc_type> eval_expr_type;
     eval_expr_type expr( expression(), mapgmc );
@@ -2312,7 +2312,7 @@ Integrator<Elements, Im, Expr, Im2>::broken( boost::shared_ptr<P0hType>& P0h, mp
     {
         boost::timer ti;
         __c->update( *it );
-        map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c ) );
+        map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
         expr.update( mapgmc );
         const gmc_type& gmc = *__c;
 
@@ -2406,15 +2406,15 @@ Integrator<Elements, Im, Expr, Im2>::broken( boost::shared_ptr<P0hType>& P0h, mp
     // get the geometric mapping associated with element 0
     gmc_ptrtype __c0( new gmc_type( gm, it->element( 0 ), __geopc, __face_id_in_elt_0 ) );
 
-    typedef fusion::map<fusion::pair<detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
 
     typedef typename expression_type::template tensor<map_gmc_type> eval_expr_type;
     typedef boost::shared_ptr<eval_expr_type> eval_expr_ptrtype;
-    map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c0 ) );
+    map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c0 ) );
     eval_expr_ptrtype expr( new eval_expr_type( expression(), mapgmc ) );
     expr->init( im() );
 
-    typedef fusion::map<fusion::pair<detail::gmc<0>, gmc_ptrtype>, fusion::pair<detail::gmc<1>, gmc_ptrtype> > map2_gmc_type;
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype>, fusion::pair<vf::detail::gmc<1>, gmc_ptrtype> > map2_gmc_type;
     typedef typename expression_type::template tensor<map2_gmc_type> eval2_expr_type;
     typedef boost::shared_ptr<eval2_expr_type> eval2_expr_ptrtype;
     eval2_expr_ptrtype expr2;
@@ -2433,8 +2433,8 @@ Integrator<Elements, Im, Expr, Im2>::broken( boost::shared_ptr<P0hType>& P0h, mp
 
         __c1 = gmc_ptrtype( new gmc_type( gm, it->element( 1 ), __geopc, __face_id_in_elt_1 ) );
 
-        map2_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c0 ),
-                              fusion::make_pair<detail::gmc<1> >( __c1 ) );
+        map2_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c0 ),
+                              fusion::make_pair<vf::detail::gmc<1> >( __c1 ) );
 
         expr2 = eval2_expr_ptrtype( new eval2_expr_type( expression(), mapgmc ) );
         expr2->init( im() );
@@ -2481,8 +2481,8 @@ Integrator<Elements, Im, Expr, Im2>::broken( boost::shared_ptr<P0hType>& P0h, mp
 
             __typeof__( im( __face_id_in_elt_0 ) ) im_face ( im( __face_id_in_elt_0 ) );
             //std::cout << "pts = " << im_face.points() << "\n";
-            map2_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c0 ),
-                                  fusion::make_pair<detail::gmc<1> >( __c1 ) );
+            map2_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c0 ),
+                                  fusion::make_pair<vf::detail::gmc<1> >( __c1 ) );
 
             expr2->update( mapgmc, __face_id_in_elt_0 );
             const gmc_type& gmc = *__c0;
@@ -2505,7 +2505,7 @@ Integrator<Elements, Im, Expr, Im2>::broken( boost::shared_ptr<P0hType>& P0h, mp
         {
             uint16_type __face_id_in_elt_0 = it->pos_first();
             __c0->update( it->element( 0 ), __face_id_in_elt_0 );
-            map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c0 ) );
+            map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c0 ) );
             expr->update( mapgmc, __face_id_in_elt_0 );
             //expr->update( mapgmc );
             const gmc_type& gmc = *__c0;
@@ -2645,7 +2645,7 @@ struct integrate_type
  * \arg sum sum the multiple nodal  contributions  if applicable (false by default)
  */
 BOOST_PARAMETER_FUNCTION(
-    ( typename detail::integrate_type<Args>::expr_type ), // return type
+    ( typename vf::detail::integrate_type<Args>::expr_type ), // return type
     integrate,    // 2. function name
 
     tag,           // 3. namespace of tag types
@@ -2656,9 +2656,9 @@ BOOST_PARAMETER_FUNCTION(
     ) // 4. one required parameter, and
 
     ( optional
-      ( quad,   *, typename detail::integrate_type<Args>::_quad_type() )
+      ( quad,   *, typename vf::detail::integrate_type<Args>::_quad_type() )
       ( geomap, *, GeomapStrategyType::GEOMAP_OPT )
-      ( quad1,   *, typename detail::integrate_type<Args>::_quad1_type() )
+      ( quad1,   *, typename vf::detail::integrate_type<Args>::_quad1_type() )
       ( use_tbb,   ( bool ), false )
       ( grainsize,   ( int ), 100 )
       ( partitioner,   *, "auto" )
@@ -2681,8 +2681,64 @@ BOOST_PARAMETER_FUNCTION(
     return ret;
 }
 
+BOOST_PARAMETER_FUNCTION(
+    ( double ), // return type
+    normL2,    // 2. function name
+
+    tag,           // 3. namespace of tag types
+
+    ( required
+      ( range, *  )
+      ( expr,   * )
+    ) // 4. one required parameter, and
+
+    ( optional
+      ( quad,   *, typename vf::detail::integrate_type<Args>::_quad_type() )
+      ( geomap, *, GeomapStrategyType::GEOMAP_OPT )
+      ( quad1,   *, typename vf::detail::integrate_type<Args>::_quad1_type() )
+      ( use_tbb,   ( bool ), false )
+      ( grainsize,   ( int ), 100 )
+      ( partitioner,   *, "auto" )
+      ( verbose,   ( bool ), false )
+    )
+)
+{
+    double a = integrate( _range=range, _expr=inner(expr,expr), _quad=quad, _geomap=geomap,
+                          _quad1=quad1, _use_tbb=use_tbb, _grainsize=grainsize,
+                          _partitioner=partitioner, _verbose=verbose ).evaluate()( 0, 0 );
+    return math::sqrt( a );
+}
+
+BOOST_PARAMETER_FUNCTION(
+    ( double ), // return type
+    normL2Squared,    // 2. function name
+
+    tag,           // 3. namespace of tag types
+
+    ( required
+      ( range, *  )
+      ( expr,   * )
+    ) // 4. one required parameter, and
+
+    ( optional
+      ( quad,   *, typename vf::detail::integrate_type<Args>::_quad_type() )
+      ( geomap, *, GeomapStrategyType::GEOMAP_OPT )
+      ( quad1,   *, typename vf::detail::integrate_type<Args>::_quad1_type() )
+      ( use_tbb,   ( bool ), false )
+      ( grainsize,   ( int ), 100 )
+      ( partitioner,   *, "auto" )
+      ( verbose,   ( bool ), false )
+    )
+)
+{
+    return integrate( _range=range, _expr=inner(expr,expr), _quad=quad, _geomap=geomap,
+                      _quad1=quad1, _use_tbb=use_tbb, _grainsize=grainsize,
+                      _partitioner=partitioner, _verbose=verbose ).evaluate()( 0, 0 );
+}
 
 } // vf
+
+
 } // feel
 #include <feel/feelvf/integratoron.hpp>
 

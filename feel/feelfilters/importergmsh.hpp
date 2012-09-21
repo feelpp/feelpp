@@ -828,7 +828,7 @@ ImporterGmsh<MeshType>::addPoint( mesh_type*mesh, std::vector<int> const& __e, s
     __idGmshToFeel=pf.id();
 
     auto theface = mesh->faceIterator( pf.id() );
-    mesh->faces().modify( theface, detail::update_id_in_partition_type( this->worldComm().localRank(), pf.id() ) );
+    mesh->faces().modify( theface, Feel::detail::update_id_in_partition_type( this->worldComm().localRank(), pf.id() ) );
 
     Debug( 8011 ) << "added point on boundary ("
                   << fit->isOnBoundary() << ") with id :" << fit->id() << " and marker " << pf.marker()
@@ -884,7 +884,7 @@ ImporterGmsh<MeshType>::addEdge( mesh_type*mesh, std::vector<int> const& __e, st
     __idGmshToFeel=e.id();
 
     auto theelt = mesh->elementIterator( e.id(), e.partitionId() );
-    mesh->elements().modify( theelt, detail::update_id_in_partition_type( this->worldComm().localRank(), e.id() ) );
+    mesh->elements().modify( theelt, Feel::detail::update_id_in_partition_type( this->worldComm().localRank(), e.id() ) );
 
     _M_n_vertices[ __e[0] ] = 1;
     _M_n_vertices[ __e[1] ] = 1;
@@ -927,7 +927,7 @@ ImporterGmsh<MeshType>::addEdge( mesh_type* mesh, std::vector<int> const& __e, s
     __idGmshToFeel=pf.id();
 
     auto theface = mesh->faceIterator( pf.id() );
-    mesh->faces().modify( theface, detail::update_id_in_partition_type( this->worldComm().localRank(), pf.id() ) );
+    mesh->faces().modify( theface, Feel::detail::update_id_in_partition_type( this->worldComm().localRank(), pf.id() ) );
 
     Debug( 8011 ) << "added edge on boundary ("
                   << fit->isOnBoundary() << ") with id :" << fit->id()
@@ -966,7 +966,7 @@ ImporterGmsh<MeshType>::addEdge( mesh_type*mesh, std::vector<int> const& __e, st
     __idGmshToFeel=eit.id();
 
     auto theedge = mesh->edgeIterator( pe.id() );
-    mesh->edges().modify( theedge, detail::update_id_in_partition_type( this->worldComm().localRank(), pe.id() ) );
+    mesh->edges().modify( theedge, Feel::detail::update_id_in_partition_type( this->worldComm().localRank(), pe.id() ) );
 
     if ( npoints_per_edge == 2 )
         Debug( 8011 ) << "added edge on boundary ("
@@ -1017,7 +1017,7 @@ ImporterGmsh<MeshType>::addFace( mesh_type* mesh, std::vector<int> const& __e, s
     __idGmshToFeel=pf.id();
 
     auto theelt = mesh->elementIterator( pf.id(), pf.partitionId() );
-    mesh->elements().modify( theelt, detail::update_id_in_partition_type( this->worldComm().localRank(), pf.id() ) );
+    mesh->elements().modify( theelt, Feel::detail::update_id_in_partition_type( this->worldComm().localRank(), pf.id() ) );
 
     _M_n_vertices[ __e[0] ] = 1;
     _M_n_vertices[ __e[1] ] = 1;
@@ -1062,7 +1062,7 @@ ImporterGmsh<MeshType>::addFace( mesh_type* mesh, std::vector<int> const& __e, s
     __idGmshToFeel=pf.id();
 
     auto theface = mesh->faceIterator( pf.id() );
-    mesh->faces().modify( theface, detail::update_id_in_partition_type( this->worldComm().localRank(), pf.id() ) );
+    mesh->faces().modify( theface, Feel::detail::update_id_in_partition_type( this->worldComm().localRank(), pf.id() ) );
 
     _M_n_vertices[ __e[0] ] = 1;
     _M_n_vertices[ __e[1] ] = 1;
@@ -1118,7 +1118,7 @@ ImporterGmsh<MeshType>::addVolume( mesh_type* mesh, std::vector<int> const& __e,
     __idGmshToFeel=pv.id();
 
     auto theelt = mesh->elementIterator( pv.id(), pv.partitionId() );
-    mesh->elements().modify( theelt, detail::update_id_in_partition_type( this->worldComm().localRank(), pv.id() ) );
+    mesh->elements().modify( theelt, Feel::detail::update_id_in_partition_type( this->worldComm().localRank(), pv.id() ) );
 
     _M_n_vertices[ __e[0] ] = 1;
     _M_n_vertices[ __e[1] ] = 1;
@@ -1209,7 +1209,7 @@ ImporterGmsh<MeshType>::updateGhostCellInfo( mesh_type* mesh, std::vector<int> c
             this->worldComm().localComm().recv( proc, cpt, idFeel );
             // update data
             auto elttt = mesh->elementIterator( mapMsg[proc][cpt],proc );
-            mesh->elements().modify( elttt, detail::update_id_in_partition_type( proc, idFeel ) );
+            mesh->elements().modify( elttt, Feel::detail::update_id_in_partition_type( proc, idFeel ) );
 #if 0
             std::cout << "[updateGhostCellInfo]----3---\n"
                       << "END! I am the proc" << this->worldComm().localRank()<<" I receive of the proc " << proc
