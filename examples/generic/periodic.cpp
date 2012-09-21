@@ -116,12 +116,16 @@ public:
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
     typedef fusion::vector<Lagrange<Order, Scalar> > basis_type;
+    typedef fusion::vector<Lagrange<Order, Vectorial> > basis_vec_type;
 
     typedef fusion::vector<Lagrange<Order, Scalar>, Lagrange<Order, Scalar> > basis_composite_type;
 
     /*space*/
     typedef FunctionSpace<mesh_type, basis_type, Periodic<> > functionspace_type;
     typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
+
+    typedef FunctionSpace<mesh_type, basis_vec_type, Periodic<> > functionspace_vec_type;
+    typedef boost::shared_ptr<functionspace_vec_type> functionspace_vec_ptrtype;
 
     typedef FunctionSpace<mesh_type, basis_composite_type, Periodic<> > functionspace_composite_type;
     typedef boost::shared_ptr<functionspace_composite_type> functionspace_composite_ptrtype;
@@ -159,6 +163,7 @@ private:
 
     functionspace_ptrtype Xh;
     functionspace_composite_ptrtype Xhc;
+    functionspace_vec_ptrtype Xh_vec;
 
     export_ptrtype exporter;
 
@@ -216,6 +221,8 @@ PeriodicLaplacian<Dim,Order>::PeriodicLaplacian( int argc, char** argv, AboutDat
     trans[0]=0;
     trans[1]=2;
     Xh = functionspace_type::New( _mesh=mesh, _periodicity=Periodic<>( 2, 4, trans ) );
+
+    Xh_vec = functionspace_vec_type::New( _mesh=mesh, _periodicity=Periodic<>( 2, 4, trans ) );
 
     Xhc = functionspace_composite_type::New( _mesh=mesh, _periodicity=Periodic<>( 2, 4, trans ) );
 
