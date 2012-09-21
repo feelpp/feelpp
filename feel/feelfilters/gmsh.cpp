@@ -580,7 +580,7 @@ struct EllipsoidDomain
 # define FACTORY1(LDIM,LORDER,LSHAPE )                                  \
     const bool BOOST_PP_CAT( BOOST_PP_CAT( BOOST_PP_CAT( mesh, LDIM ), LORDER), BOOST_PP_ARRAY_ELEM(1,LSHAPE))  = \
                 Gmsh::Factory::type::instance().registerProduct( boost::to_lower_copy(boost::algorithm::erase_all_copy( std::string( FACTORY1NAME(LDIM, LORDER, LSHAPE ) ), " " ) ), \
-                                                                 *new detail::BOOST_PP_CAT(BOOST_PP_ARRAY_ELEM(1,LSHAPE),Domain)(LDIM,LORDER) );
+                                                                 *new Feel::detail::BOOST_PP_CAT(BOOST_PP_ARRAY_ELEM(1,LSHAPE),Domain)(LDIM,LORDER) );
 
 # define FACTORY1_OP(_, GDO) FACTORY1 GDO
 
@@ -591,7 +591,7 @@ struct EllipsoidDomain
 # define FACTORY2(LDIM,LORDER,LSHAPE )                                  \
     const bool BOOST_PP_CAT( BOOST_PP_CAT( BOOST_PP_CAT( BOOST_PP_CAT( mesh, LDIM ), LORDER), BOOST_PP_ARRAY_ELEM(1,LSHAPE)), BOOST_PP_ARRAY_ELEM(2,LSHAPE))   = \
                 Gmsh::Factory::type::instance().registerProduct( boost::to_lower_copy( boost::algorithm::erase_all_copy( std::string( FACTORY2NAME(LDIM, LORDER, LSHAPE ) ), " " ) ), \
-                                                                 *new detail::BOOST_PP_CAT(BOOST_PP_ARRAY_ELEM(1,LSHAPE),Domain)(LDIM,LORDER,LDIM,boost::to_lower_copy(std::string(BOOST_PP_STRINGIZE(BOOST_PP_ARRAY_ELEM(2,LSHAPE)))) ));
+                                                                 *new Feel::detail::BOOST_PP_CAT(BOOST_PP_ARRAY_ELEM(1,LSHAPE),Domain)(LDIM,LORDER,LDIM,boost::to_lower_copy(std::string(BOOST_PP_STRINGIZE(BOOST_PP_ARRAY_ELEM(2,LSHAPE)))) ));
 
 # define FACTORY2_OP(_, GDO) FACTORY2 GDO
 
@@ -599,10 +599,10 @@ struct EllipsoidDomain
 BOOST_PP_LIST_FOR_EACH_PRODUCT( FACTORY1_OP, 3, ( DIMS, ORDERS, SHAPES1 ) )
 BOOST_PP_LIST_FOR_EACH_PRODUCT( FACTORY2_OP, 3, ( DIMS, ORDERS, SHAPES2 ) )
 
-const bool meshs213s = Gmsh::Factory::type::instance().registerProduct( "hypercube(2,1,3,simplex)", *new detail::HypercubeDomain( 2, 1, 3, "simplex" ) );
-const bool meshs213ts = Gmsh::Factory::type::instance().registerProduct( "hypercube(2,1,3,hypercube)", *new detail::HypercubeDomain( 2, 1, 3, "hypercube" ) );
-const bool meshs112s = Gmsh::Factory::type::instance().registerProduct( "hypercube(1,1,2,simplex)", *new detail::HypercubeDomain( 1, 1, 2, "simplex" ) );
-const bool meshs112ts = Gmsh::Factory::type::instance().registerProduct( "hypercube(1,1,2,yypercube)", *new detail::HypercubeDomain( 1, 1, 2, "yypercube" ) );
+const bool meshs213s = Gmsh::Factory::type::instance().registerProduct( "hypercube(2,1,3,simplex)", *new Feel::detail::HypercubeDomain( 2, 1, 3, "simplex" ) );
+const bool meshs213ts = Gmsh::Factory::type::instance().registerProduct( "hypercube(2,1,3,hypercube)", *new Feel::detail::HypercubeDomain( 2, 1, 3, "hypercube" ) );
+const bool meshs112s = Gmsh::Factory::type::instance().registerProduct( "hypercube(1,1,2,simplex)", *new Feel::detail::HypercubeDomain( 1, 1, 2, "simplex" ) );
+const bool meshs112ts = Gmsh::Factory::type::instance().registerProduct( "hypercube(1,1,2,yypercube)", *new Feel::detail::HypercubeDomain( 1, 1, 2, "hypercube" ) );
 
 /// \endcond detail
 } // Feel

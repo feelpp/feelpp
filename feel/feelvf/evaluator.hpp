@@ -182,9 +182,9 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_ELEMENTS> )
 
     typedef boost::shared_ptr<gm_context_type> gm_context_ptrtype;
     typedef boost::shared_ptr<gm1_context_type> gm1_context_ptrtype;
-    typedef fusion::map<fusion::pair<detail::gmc<0>, gm_context_ptrtype> > map_gmc_type;
-    typedef fusion::map<fusion::pair<detail::gmc<0>, gm1_context_ptrtype> > map_gmc1_type;
-    //typedef typename expression_type::template tensor<map_gmc_type,fusion::map<fusion::pair<detail::gmc<0>,boost::shared_ptr<fecontext_type> > > > t_expr_type;
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gm_context_ptrtype> > map_gmc_type;
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gm1_context_ptrtype> > map_gmc1_type;
+    //typedef typename expression_type::template tensor<map_gmc_type,fusion::map<fusion::pair<vf::detail::gmc<0>,boost::shared_ptr<fecontext_type> > > > t_expr_type;
     //typedef decltype( basis_type::isomorphism( M_expr ) ) the_expression_type;
     typedef expression_type the_expression_type;
     typedef typename boost::remove_reference<typename boost::remove_const<the_expression_type>::type >::type iso_expression_type;
@@ -228,10 +228,10 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_ELEMENTS> )
     gm_context_ptrtype __c( new gm_context_type( it->gm(),*it,__geopc ) );
     gm1_context_ptrtype __c1( new gm1_context_type( it->gm1(),*it,__geopc1 ) );
 
-    map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c ) );
+    map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
     t_expr_type tensor_expr( M_expr, mapgmc );
 
-    map_gmc1_type mapgmc1( fusion::make_pair<detail::gmc<0> >( __c1 ) );
+    map_gmc1_type mapgmc1( fusion::make_pair<vf::detail::gmc<0> >( __c1 ) );
 
     t_expr1_type tensor_expr1( M_expr, mapgmc1 );
 
@@ -242,7 +242,7 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_ELEMENTS> )
         case GeomapStrategyType::GEOMAP_HO:
         {
             __c->update( *it );
-            map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c ) );
+            map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
             tensor_expr.update( mapgmc );
 
             for ( uint16_type p = 0; p < npoints; ++p )
@@ -263,7 +263,7 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_ELEMENTS> )
         case GeomapStrategyType::GEOMAP_O1:
         {
             __c1->update( *it );
-            map_gmc1_type mapgmc1( fusion::make_pair<detail::gmc<0> >( __c1 ) );
+            map_gmc1_type mapgmc1( fusion::make_pair<vf::detail::gmc<0> >( __c1 ) );
             tensor_expr1.update( mapgmc1 );
 
             for ( uint16_type p = 0; p < npoints; ++p )
@@ -286,7 +286,7 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_ELEMENTS> )
             {
                 // HO if on boundary
                 __c->update( *it );
-                map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c ) );
+                map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
                 tensor_expr.update( mapgmc );
 
                 for ( uint16_type p = 0; p < npoints; ++p )
@@ -305,7 +305,7 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_ELEMENTS> )
             else
             {
                 __c1->update( *it );
-                map_gmc1_type mapgmc1( fusion::make_pair<detail::gmc<0> >( __c1 ) );
+                map_gmc1_type mapgmc1( fusion::make_pair<vf::detail::gmc<0> >( __c1 ) );
                 tensor_expr1.update( mapgmc1 );
 
 
@@ -355,10 +355,10 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_FACES> ) co
 
     typedef typename gm_type::template Context<context, geoelement_type> gmc_type;
     typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
-    typedef fusion::map<fusion::pair<detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
     typedef typename gm1_type::template Context<context, geoelement_type> gmc1_type;
     typedef boost::shared_ptr<gmc1_type> gmc1_ptrtype;
-    typedef fusion::map<fusion::pair<detail::gmc<0>, gmc1_ptrtype> > map_gmc1_type;
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc1_ptrtype> > map_gmc1_type;
 
 
     // dof
@@ -370,7 +370,7 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_FACES> ) co
     typedef boost::shared_ptr<fecontext_type> fecontext_ptrtype;
     typedef typename fe_type::template Context< context, fe_type, gm1_type, geoelement_type> fecontext1_type;
     typedef boost::shared_ptr<fecontext1_type> fecontext1_ptrtype;
-    //typedef fusion::map<fusion::pair<detail::gmc<0>, fecontext_ptrtype> > map_gmc_type;
+    //typedef fusion::map<fusion::pair<vf::detail::gmc<0>, fecontext_ptrtype> > map_gmc_type;
 
     // expression
     //typedef typename expression_type::template tensor<map_gmc_type,fecontext_type> t_expr_type;
@@ -432,9 +432,9 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_FACES> ) co
     gmc_ptrtype __c( new gmc_type( __gm, __face_it->element( 0 ), __geopc, __face_id ) );
     gmc1_ptrtype __c1( new gmc1_type( __gm1, __face_it->element( 0 ), __geopc1, __face_id ) );
 
-    map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c ) );
+    map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
     t_expr_type expr( basis_type::isomorphism( M_expr ), mapgmc );
-    map_gmc1_type mapgmc1( fusion::make_pair<detail::gmc<0> >( __c1 ) );
+    map_gmc1_type mapgmc1( fusion::make_pair<vf::detail::gmc<0> >( __c1 ) );
     t_expr1_type expr1( basis_type::isomorphism( M_expr ), mapgmc1 );
 
 
@@ -488,7 +488,7 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_FACES> ) co
             Debug( 5066 ) << "[projector] FACE_ID = " << __face_it->id() << "  ref pts=" << __c->xRefs() << "\n";
             Debug( 5066 ) << "[projector] FACE_ID = " << __face_it->id() << " real pts=" << __c->xReal() << "\n";
 
-            map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c ) );
+            map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
 
             expr.update( mapgmc );
 
@@ -514,7 +514,7 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_FACES> ) co
             Debug( 5066 ) << "[projector] FACE_ID = " << __face_it->id() << "  ref pts=" << __c1->xRefs() << "\n";
             Debug( 5066 ) << "[projector] FACE_ID = " << __face_it->id() << " real pts=" << __c1->xReal() << "\n";
 
-            map_gmc1_type mapgmc1( fusion::make_pair<detail::gmc<0> >( __c1 ) );
+            map_gmc1_type mapgmc1( fusion::make_pair<vf::detail::gmc<0> >( __c1 ) );
 
             expr1.update( mapgmc1 );
 
@@ -588,7 +588,7 @@ evaluate_impl( IteratorRange const& range_it,
  * \arg geomap the type of geomap to use (make sense only using high order meshes)
  */
 BOOST_PARAMETER_FUNCTION(
-    ( typename detail::evaluate<Args>::element_type ), // return type
+    ( typename vf::detail::evaluate<Args>::element_type ), // return type
     evaluate,    // 2. function name
 
     tag,           // 3. namespace of tag types
@@ -619,7 +619,7 @@ BOOST_PARAMETER_FUNCTION(
  * \arg geomap the type of geomap to use (make sense only using high order meshes)
  */
 BOOST_PARAMETER_FUNCTION(
-    ( boost::tuple<double, Eigen::Matrix<double, detail::evaluate<Args>::nDim,1> > ), // return type
+    ( boost::tuple<double, Eigen::Matrix<double, vf::detail::evaluate<Args>::nDim,1> > ), // return type
     normLinf,    // 2. function name
 
     tag,           // 3. namespace of tag types
@@ -644,7 +644,7 @@ BOOST_PARAMETER_FUNCTION(
     int index;
     double maxe = e.template get<0>().array().abs().maxCoeff(&index);
 
-    Eigen::Matrix<double, detail::evaluate<Args>::nDim,1> n = e.template get<1>().col(index);
+    Eigen::Matrix<double, vf::detail::evaluate<Args>::nDim,1> n = e.template get<1>().col(index);
     LOG(INFO) << "proc "<<proc_number<<" index at which function (size: " << e.template get<0>().array().size() << ") is maximal: "<< index << " coord = \n"<<n<<"\n";
 
     int world_size = Environment::worldComm().size();
@@ -653,7 +653,7 @@ BOOST_PARAMETER_FUNCTION(
                      maxe,
                      maxe_world );
 
-    std::vector< Eigen::Matrix<double, detail::evaluate<Args>::nDim,1> > n_world( world_size );
+    std::vector< Eigen::Matrix<double, vf::detail::evaluate<Args>::nDim,1> > n_world( world_size );
     mpi::all_gather( Environment::worldComm().globalComm(),
                      n,
                      n_world );
@@ -661,7 +661,7 @@ BOOST_PARAMETER_FUNCTION(
     auto it_max = std::max_element( maxe_world.begin() , maxe_world.end() );
     int position = it_max - maxe_world.begin();
     LOG(INFO)<<"proc "<<proc_number<<" : global max = "<<*it_max<<" at position "<<position<<" with coord : \n "<<n<<"\n";
-    //for(int i=0;i<detail::evaluate<Args>::nDim;i++) LOG(INFO) << n_world[i](i) <<" - ";
+    //for(int i=0;i<vf::detail::evaluate<Args>::nDim;i++) LOG(INFO) << n_world[i](i) <<" - ";
     //LOG(INFO)<<"\n";
 
     int index2=0;

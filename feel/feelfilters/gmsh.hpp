@@ -640,7 +640,7 @@ typedef boost::shared_ptr<type> ptrtype;
  * \arg mesh mesh data structure
  */
 BOOST_PARAMETER_FUNCTION(
-    ( typename detail::mesh<Args>::ptrtype ), // return type
+    ( typename Feel::detail::mesh<Args>::ptrtype ), // return type
     straightenMesh,    // 2. function name
 
     tag,           // 3. namespace of tag types
@@ -654,8 +654,8 @@ BOOST_PARAMETER_FUNCTION(
       ( worldcomm, ( WorldComm ), Environment::worldComm() )
         ) )
 {
-    typedef typename detail::mesh<Args>::type _mesh_type;
-    typedef typename detail::mesh<Args>::ptrtype _mesh_ptrtype;
+    typedef typename Feel::detail::mesh<Args>::type _mesh_type;
+    typedef typename Feel::detail::mesh<Args>::ptrtype _mesh_ptrtype;
 
     _mesh_ptrtype _mesh( mesh );
 
@@ -712,7 +712,7 @@ BOOST_PARAMETER_FUNCTION(
  * \arg physical_are_elementary_regions boolean to load specific meshes formats (default : false)
  */
 BOOST_PARAMETER_FUNCTION(
-    ( typename detail::mesh<Args>::ptrtype ), // return type
+    ( typename Feel::detail::mesh<Args>::ptrtype ), // return type
     loadGMSHMesh,    // 2. function name
 
     tag,           // 3. namespace of tag types
@@ -736,8 +736,8 @@ BOOST_PARAMETER_FUNCTION(
         )
     )
 {
-    typedef typename detail::mesh<Args>::type _mesh_type;
-    typedef typename detail::mesh<Args>::ptrtype _mesh_ptrtype;
+    typedef typename Feel::detail::mesh<Args>::type _mesh_type;
+    typedef typename Feel::detail::mesh<Args>::ptrtype _mesh_ptrtype;
 
     _mesh_ptrtype _mesh( mesh );
     _mesh->setWorldComm( worldcomm );
@@ -808,8 +808,8 @@ BOOST_PARAMETER_FUNCTION(
       ( parametricnodes,          *( boost::is_integral<mpl::_> ), 0 ) )
     )
 {
-    typedef typename detail::mesh<Args>::type _mesh_type;
-    typedef typename detail::mesh<Args>::ptrtype _mesh_ptrtype;
+    typedef typename Feel::detail::mesh<Args>::type _mesh_type;
+    typedef typename Feel::detail::mesh<Args>::ptrtype _mesh_ptrtype;
 
 #if BOOST_FILESYSTEM_VERSION == 3
     ExporterGmsh<_mesh_type,1> exporter( fs::path( filename ).stem().string(), 1,  mesh->worldComm() );
@@ -834,7 +834,7 @@ BOOST_PARAMETER_FUNCTION(
  * \arg physical_are_elementary_regions change file format (optional, default = false)
  */
 BOOST_PARAMETER_FUNCTION(
-    ( typename detail::mesh<Args>::ptrtype ), // return type
+    ( typename Feel::detail::mesh<Args>::ptrtype ), // return type
     createGMSHMesh,    // 2. function name
 
     tag,           // 3. namespace of tag types
@@ -859,8 +859,8 @@ BOOST_PARAMETER_FUNCTION(
         )
     )
 {
-    typedef typename detail::mesh<Args>::type _mesh_type;
-    typedef typename detail::mesh<Args>::ptrtype _mesh_ptrtype;
+    typedef typename Feel::detail::mesh<Args>::type _mesh_type;
+    typedef typename Feel::detail::mesh<Args>::ptrtype _mesh_ptrtype;
 
     _mesh_ptrtype _mesh( mesh );
     _mesh->setWorldComm( worldcomm );

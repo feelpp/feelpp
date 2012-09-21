@@ -59,7 +59,7 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,
     _M_gmc( _gmcTest ),
     _M_gmc_left( fusion::at_key<gmc<0> >( _gmcTest ) ),
     _M_left_map( fusion::make_map<gmc<0> >( _M_gmc_left ) ),
-    _M_test_fec( fusion::transform( _M_gmc, detail::FEContextInit<0,form_context_type>( __form.functionSpace()->fe(), *this ) ) ),
+    _M_test_fec( fusion::transform( _M_gmc,vf::detail::FEContextInit<0,form_context_type>( __form.functionSpace()->fe(), *this ) ) ),
     _M_test_fec0( fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( _M_test_fec ) ) ),
     _M_rep(),
     _M_rep_2(),
@@ -92,7 +92,7 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,
     _M_gmc( _gmcTest ),
     _M_gmc_left( fusion::at_key<gmc<0> >( _gmcTest ) ),
     _M_left_map( fusion::make_map<gmc<0> >( _M_gmc_left ) ),
-    _M_test_fec( fusion::transform( _M_gmc, detail::FEContextInit<0,form_context_type>( __form.functionSpace()->fe(), *this ) ) ),
+    _M_test_fec( fusion::transform( _M_gmc,vf::detail::FEContextInit<0,form_context_type>( __form.functionSpace()->fe(), *this ) ) ),
     _M_test_fec0( fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( _M_test_fec ) ) ),
     _M_rep(),
     _M_rep_2(),
@@ -127,7 +127,7 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,
     _M_gmc_right( fusion::at_key<gmc1 >( _gmcTest ) ),
     _M_left_map( fusion::make_map<gmc<0> >( _M_gmc_left ) ),
     _M_right_map( fusion::make_map<gmc<0> >( _M_gmc_right ) ),
-    _M_test_fec( fusion::transform( _M_gmc, detail::FEContextInit<0,form_context_type>( __form.functionSpace()->fe(), *this ) ) ),
+    _M_test_fec( fusion::transform( _M_gmc,vf::detail::FEContextInit<0,form_context_type>( __form.functionSpace()->fe(), *this ) ) ),
     _M_test_fec0( fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( _M_test_fec ) ) ),
     _M_test_fec1( fusion::make_pair<gmc1 >( fusion::at_key<gmc1 >( _M_test_fec ) ) ),
     _M_rep(),
@@ -150,7 +150,7 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,
     _M_gmc = _gmcTest;
     _M_gmc_left = fusion::at_key<gmc<0> >( _gmcTest );
     _M_left_map = fusion::make_map<gmc<0> >( _M_gmc_left );
-    fusion::for_each( _M_test_fec, detail::FEContextUpdate<0,form_context_type>( _gmcTest, *this ) );
+    fusion::for_each( _M_test_fec,vf::detail::FEContextUpdate<0,form_context_type>( _gmcTest, *this ) );
     _M_test_fec0 = fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( _M_test_fec ) );
     _M_eval0_expr->update( _gmcExpr, _M_test_fec0 );
 
@@ -168,7 +168,7 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,
     _M_gmc_left = fusion::at_key<gmc<0> >( _gmcTest );
     _M_left_map = fusion::make_map<gmc<0> >( _M_gmc_left );
     precomputeBasisAtPoints( fusion::at_key<gmc<0> >( _gmcTest )->xRefs() );
-    fusion::for_each( _M_test_fec, detail::FEContextUpdateInCaseOfInterpolate<0,form_context_type>( _gmcTest, *this ) );
+    fusion::for_each( _M_test_fec,vf::detail::FEContextUpdateInCaseOfInterpolate<0,form_context_type>( _gmcTest, *this ) );
     _M_test_fec0 = fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( _M_test_fec ) );
     _M_eval0_expr->update( _gmcExpr, _M_test_fec0 );
 
@@ -194,7 +194,7 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,
     _M_left_map = fusion::make_map<gmc<0> >( _M_gmc_left );
     _M_right_map = fusion::make_map<gmc<0> >( _M_gmc_right );
 #endif
-    fusion::for_each( _M_test_fec, detail::FEContextUpdate<0,form_context_type>( _gmcTest, *this ) );
+    fusion::for_each( _M_test_fec,vf::detail::FEContextUpdate<0,form_context_type>( _gmcTest, *this ) );
     _M_test_fec0 = fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( _M_test_fec ) );
     _M_test_fec1 = fusion::make_map<gmc1 >( fusion::at_key<gmc1 >( _M_test_fec ) );
     _M_eval0_expr->update( _gmcExpr, _M_test_fec0 );

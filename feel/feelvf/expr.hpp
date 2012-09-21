@@ -140,9 +140,9 @@ public:
 
         typedef typename expression_type::template tensor<Geo_t, Basis_i_t, Basis_j_t> tensor_expr_type;
         typedef typename tensor_expr_type::value_type value_type;
-        typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, detail::gmc<0> >,
-                mpl::identity<detail::gmc<0> >,
-                mpl::identity<detail::gmc<1> > >::type::type key_type;
+        typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, vf::detail::gmc<0> >,
+                mpl::identity<vf::detail::gmc<0> >,
+                mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
         typedef Shape<gmc_type::NDim, Scalar, false> shape;
 
@@ -317,7 +317,7 @@ public:
         return Expr<ComponentsExpr<Expr<ExprT> > >( ex );
     }
 
-    template<typename Geo_t, typename Basis_i_t = fusion::map<fusion::pair<detail::gmc<0>,boost::shared_ptr<detail::gmc<0> > >,fusion::pair<detail::gmc<1>,boost::shared_ptr<detail::gmc<1> > > >, typename Basis_j_t = Basis_i_t>
+    template<typename Geo_t, typename Basis_i_t = fusion::map<fusion::pair<vf::detail::gmc<0>,boost::shared_ptr<vf::detail::gmc<0> > >,fusion::pair<vf::detail::gmc<1>,boost::shared_ptr<vf::detail::gmc<1> > > >, typename Basis_j_t = Basis_i_t>
     struct tensor
     {
 
@@ -1097,7 +1097,7 @@ public:
         typedef typename Cst<T>::expression_type expression_type;
         typedef typename Cst<T>::value_type value_type;
 
-        typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, detail::gmc<0> >, mpl::identity<detail::gmc<0> >, mpl::identity<detail::gmc<1> > >::type::type key_type;
+        typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, vf::detail::gmc<0> >, mpl::identity<vf::detail::gmc<0> >, mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::pointer gmc_ptrtype;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
         typedef Shape<gmc_type::nDim, Scalar, false, false> shape;
@@ -1259,9 +1259,9 @@ public:
     struct tensor
     {
         typedef this_type expression_type;
-        typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, detail::gmc<0> >,
-                mpl::identity<detail::gmc<0> >,
-                mpl::identity<detail::gmc<1> > >::type::type key_type;
+        typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, vf::detail::gmc<0> >,
+                mpl::identity<vf::detail::gmc<0> >,
+                mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::pointer gmc_ptrtype;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
         typedef Shape<gmc_type::nDim, Vectorial, false, false> shape;
@@ -1749,9 +1749,9 @@ public:
         typedef typename strongest_numeric_type<typename l_type::value_type,
                 typename r_type::value_type>::type value_type;
 
-        typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, detail::gmc<0> >,
-                mpl::identity<detail::gmc<0> >,
-                mpl::identity<detail::gmc<1> > >::type::type key_type;
+        typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, vf::detail::gmc<0> >,
+                mpl::identity<vf::detail::gmc<0> >,
+                mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::pointer gmc_ptrtype;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
 
@@ -1944,9 +1944,9 @@ public:
         typedef typename strongest_numeric_type<typename l_type::value_type,
                 typename r_type::value_type>::type value_type;
 
-        typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, detail::gmc<0> >,
-                mpl::identity<detail::gmc<0> >,
-                mpl::identity<detail::gmc<1> > >::type::type key_type;
+        typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, vf::detail::gmc<0> >,
+                mpl::identity<vf::detail::gmc<0> >,
+                mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::pointer gmc_ptrtype;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
 
@@ -2152,9 +2152,9 @@ public:
                 typename r_type::value_type>::type value_type;
 
 
-        typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, detail::gmc<0> >,
-                mpl::identity<detail::gmc<0> >,
-                mpl::identity<detail::gmc<1> > >::type::type key_type;
+        typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, vf::detail::gmc<0> >,
+                mpl::identity<vf::detail::gmc<0> >,
+                mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::pointer gmc_ptrtype;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
         typedef typename l_type::shape shape;
@@ -2574,9 +2574,9 @@ public:
     struct tensor
     {
         typedef this_type expression_type;
-        typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, detail::gmc<0> >,
-                mpl::identity<detail::gmc<0> >,
-                mpl::identity<detail::gmc<1> > >::type::type key_type;
+        typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, vf::detail::gmc<0> >,
+                mpl::identity<vf::detail::gmc<0> >,
+                mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::pointer gmc_ptrtype;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
 

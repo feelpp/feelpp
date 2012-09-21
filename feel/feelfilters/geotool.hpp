@@ -1144,7 +1144,7 @@ public:
 
 
     BOOST_PARAMETER_MEMBER_FUNCTION(
-        ( typename detail::mesh<Args>::ptrtype ), // return type
+        ( typename Feel::detail::mesh<Args>::ptrtype ), // return type
         createMesh, // function name
         tag,
         ( required
@@ -1160,8 +1160,8 @@ public:
         ) //optional
     )
     {
-        typedef typename detail::mesh<Args>::type _mesh_type;
-        typedef typename detail::mesh<Args>::ptrtype _mesh_ptrtype;
+        typedef typename Feel::detail::mesh<Args>::type _mesh_type;
+        typedef typename Feel::detail::mesh<Args>::ptrtype _mesh_ptrtype;
 
         _mesh_ptrtype _mesh( mesh );
         _mesh->setWorldComm( worldcomm );
