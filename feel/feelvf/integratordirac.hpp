@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2008-02-10
 
-  Copyright (C) 2008 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2008 Universite Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -105,7 +105,7 @@ public:
         // Precompute some data in the reference element for
         // geometric mapping and reference finite element
         //
-        typedef fusion::map<fusion::pair<detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
+        typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
         typedef typename expression_type::template tensor<map_gmc_type> eval_expr_type;
         typedef typename eval_expr_type::shape shape;
         //typedef typename shape_type::storage<value_type> storage_type;
@@ -392,8 +392,8 @@ IntegratorDirac<Elements, Pts, DiracExpr>::evaluate( mpl::int_<MESH_ELEMENTS> ) 
         return typename eval::ret_type( eval::shape::M, eval::shape::N );;
 
     gmc_ptrtype __c( new gmc_type( gm, *it, __geopc ) );
-    typedef fusion::map<fusion::pair<detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
-    map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c ) );
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
+    map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
 
     typedef typename expression_type::template tensor<map_gmc_type> eval_expr_type;
     eval_expr_type expr( expression(), mapgmc );

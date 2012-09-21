@@ -218,8 +218,8 @@ class VF_FUNC_NAME( O ) : public UnaryFunctor<typename ExprT1::value_type>      
             typedef this_type expression_type;                          \
             typedef typename expression_1_type::template tensor<Geo_t, Basis_i_t,Basis_j_t> tensor2_expr_type; \
             typedef typename tensor2_expr_type::value_type value_type;  \
-            typedef typename detail::ExtractGm<Geo_t>::gmc_ptrtype gmc_ptrtype; \
-            typedef typename detail::ExtractGm<Geo_t>::gmc_type gmc_type; \
+            typedef typename vf::detail::ExtractGm<Geo_t>::gmc_ptrtype gmc_ptrtype; \
+            typedef typename vf::detail::ExtractGm<Geo_t>::gmc_type gmc_type; \
             typedef typename tensor2_expr_type::shape shape;            \
                                                                         \
             struct is_zero { static const bool value = tensor2_expr_type::is_zero::value; }; \
@@ -227,21 +227,21 @@ class VF_FUNC_NAME( O ) : public UnaryFunctor<typename ExprT1::value_type>      
             tensor( this_type const& expr, Geo_t const& geom, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ ) \
                 :                                                       \
                 _M_expr( expr.expression(), geom ),                     \
-                _M_gmc( detail::ExtractGm<Geo_t>::get( geom ) )         \
+                _M_gmc(vf::detail::ExtractGm<Geo_t>::get( geom ) )         \
                     {                                                   \
                         update( geom );                                 \
                     }                                                   \
             tensor( this_type const& expr,Geo_t const& geom, Basis_i_t const& /*fev*/ ) \
                 :                                                       \
                 _M_expr( expr.expression(), geom ),                     \
-                _M_gmc( detail::ExtractGm<Geo_t>::get( geom ) )         \
+                _M_gmc(vf::detail::ExtractGm<Geo_t>::get( geom ) )         \
                     {                                                   \
                         update( geom );                                 \
                     }                                                   \
             tensor( this_type const& expr, Geo_t const& geom )             \
                 :                                                       \
                 _M_expr( expr.expression(), geom ),                     \
-                _M_gmc( detail::ExtractGm<Geo_t>::get( geom ) )         \
+                _M_gmc(vf::detail::ExtractGm<Geo_t>::get( geom ) )         \
                     {                                                   \
                         update( geom );                                 \
                     }                                                   \

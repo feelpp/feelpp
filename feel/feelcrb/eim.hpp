@@ -952,7 +952,7 @@ struct compute_eim_return
 }
 
 BOOST_PARAMETER_FUNCTION(
-    ( typename detail::compute_eim_return<Args>::ptrtype ), // 1. return type
+    ( typename Feel::detail::compute_eim_return<Args>::ptrtype ), // 1. return type
     eim,                        // 2. name of the function template
     tag,                                        // 3. namespace of tag types
     ( required
@@ -973,8 +973,8 @@ BOOST_PARAMETER_FUNCTION(
 )
 {
     Feel::detail::ignore_unused_variable_warning( args );
-    typedef typename detail::compute_eim_return<Args>::type eim_type;
-    typedef typename detail::compute_eim_return<Args>::ptrtype eim_ptrtype;
+    typedef typename Feel::detail::compute_eim_return<Args>::type eim_type;
+    typedef typename Feel::detail::compute_eim_return<Args>::ptrtype eim_ptrtype;
     return  eim_ptrtype(new eim_type( options, model, space, element, parameter, expr, sampling, name ) );
 } // eim
 
