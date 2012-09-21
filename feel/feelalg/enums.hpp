@@ -253,6 +253,7 @@ enum DirichletType
 
 enum ProjectorType
 {
+    NODAL=-1,
     L2=0,
     H1=1,
     DIFF=2,
