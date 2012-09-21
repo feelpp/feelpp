@@ -25,27 +25,12 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2010-07-15
  */
-/** include predefined feel command line options */
-#include <feel/options.hpp>
 
-/** include linear algebra backend */
-#include <feel/feelalg/backend.hpp>
+#include <feel/feel.hpp>
 
-/** include function space class */
-#include <feel/feeldiscr/functionspace.hpp>
-
-/** include gmsh mesh importer */
-#include <feel/feelfilters/gmsh.hpp>
-
-/** include exporter factory class */
-#include <feel/feelfilters/exporter.hpp>
-
-/** include  the header for the variational formulation language (vf) aka FEEL++ */
-#include <feel/feelvf/vf.hpp>
 
 /** use Feel namespace */
 using namespace Feel;
-using namespace Feel::vf;
 
 /**
  * This routine returns the list of options using the
@@ -68,29 +53,6 @@ makeOptions()
       "penalisation parameter for the weak boundary Dirichlet formulation" )
     ;
     return laplacianoptions.add( Feel::feel_options() );
-}
-
-/**
- * This routine defines some information about the application like
- * authors, version, or name of the application. The data returned is
- * typically used as an argument of a Feel::Application subclass.
- *
- * \return some data about the application.
- */
-inline
-AboutData
-makeAbout()
-{
-    AboutData about( "laplacian" ,
-                     "laplacian" ,
-                     "0.2",
-                     "nD(n=1,2,3) Laplacian on simplices or simplex products",
-                     Feel::AboutData::License_GPL,
-                     "Copyright (c) 2008-2009 Universite Joseph Fourier" );
-
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
-    return about;
-
 }
 
 
@@ -140,17 +102,15 @@ public:
     /**
      * Constructor
      */
-    Laplacian( po::variables_map const& vm, AboutData const& about )
+    Laplacian()
         :
-        super( vm, about ),
+        super(),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( this->vm()["shape"].template as<std::string>() )
     {
     }
 
     void run();
-
-    void run( const double* X, unsigned long P, double* Y, unsigned long N );
 
 private:
 
@@ -167,44 +127,21 @@ template<int Dim>
 void
 Laplacian<Dim>::run()
 {
-    if ( this->comm().rank() == 0 )
-    {
-        std::cout << "------------------------------------------------------------\n";
-        std::cout << "Execute Laplacian<" << Dim << ">\n";
-    }
-    std::vector<double> X( 2 );
-    X[0] = meshSize;
+    LOG(INFO) << "------------------------------------------------------------\n";
+    LOG(INFO) << "Execute Laplacian<" << Dim << ">\n";
 
-    if ( shape == "hypercube" )
-        X[1] = 1;
-
-    else // default is simplex
-        X[1] = 0;
-
-    std::vector<double> Y( 3 );
-    run( X.data(), X.size(), Y.data(), Y.size() );
-}
-template<int Dim>
-void
-Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
-{
-    if ( X[1] == 0 ) shape = "simplex";
-
-    if ( X[1] == 1 ) shape = "hypercube";
-
-    if ( !this->vm().count( "nochdir" ) )
-        Environment::changeRepository( boost::format( "doc/manual/tutorial/%1%/%2%-%3%/P%4%/h_%5%/" )
-                                       % this->about().appName()
-                                       % shape
-                                       % Dim
-                                       % Order
-                                       % meshSize );
+    Environment::changeRepository( boost::format( "doc/manual/tutorial/%1%/%2%-%3%/P%4%/h_%5%/" )
+                                   % this->about().appName()
+                                   % shape
+                                   % Dim
+                                   % Order
+                                   % meshSize );
 
     mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
                                         _desc=domain( _name=( boost::format( "%1%-%2%" ) % shape % Dim ).str() ,
                                                       _usenames=true,
                                                       _shape=shape,
-                                                      _h=X[0],
+                                                      _h=meshSize,
                                                       _substructuring=true,
                                                       _xmin=-1,
                                                       _ymin=-1 ) );
@@ -376,33 +313,24 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
 int
 main( int argc, char** argv )
 {
-    Environment env( argc, argv );
     /**
-     * create an application
+     * Initialize Feel++ Environment
      */
-    /** \code */
-    Application app( argc, argv, makeAbout(), makeOptions() );
+    Environment env( _argc=argc, _argv=argv,
+                     _desc=makeOptions(),
+                     _about=about(_name="laplacian",
+                                  _author="Christophe Prud'homme",
+                                  _email="christophe.prudhomme@feelpp.org") );
+
+    Application app;
 
 
-    /** \endcode */
+    if ( app.nProcess() == 1 )
+        app.add( new Laplacian<1>() );
+    app.add( new Laplacian<2>() );
+    app.add( new Laplacian<3>() );
 
-    /**
-     * register the simgets
-     */
-    /** \code */
-    //if ( app.nProcess() == 1 )
-    //app.add( new Laplacian<1>( app.vm(), app.about() ) );
-
-    //app.add( new Laplacian<2>( app.vm(), app.about() ) );
-    app.add( new Laplacian<3>( app.vm(), app.about() ) );
-    /** \endcode */
-
-    /**
-     * run the application
-     */
-    /** \code */
     app.run();
-    /** \endcode */
 
 }
 
