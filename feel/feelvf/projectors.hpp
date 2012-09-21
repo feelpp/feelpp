@@ -39,13 +39,6 @@ namespace Feel
 {
 namespace vf
 {
-/// \cond detail
-enum ProjectorType
-{
-    PROJ_NODAL = 0,             /**< Nodal projection */
-    PROJ_L2 = 1,                /**< L2 projection */
-    PROJ_H1 = 2                 /**< H1 projection */
-};
 namespace details
 {
 /**
@@ -583,7 +576,7 @@ project( boost::shared_ptr<FunctionSpaceType> const& __functionspace,
          Expr<ExprT> const& __expr,
          GeomapStrategyType geomap = GeomapStrategyType::GEOMAP_HO )
 {
-    typedef details::Projector<PROJ_NODAL, FunctionSpaceType, IteratorRange, Expr<ExprT> > proj_t;
+    typedef details::Projector<NODAL, FunctionSpaceType, IteratorRange, Expr<ExprT> > proj_t;
     proj_t p( __functionspace, range_it, __expr, geomap );
     return p();
 }
@@ -595,7 +588,7 @@ project_impl( boost::shared_ptr<FunctionSpaceType> const& __functionspace,
               Expr<ExprT> const& __expr,
               GeomapStrategyType geomap = GeomapStrategyType::GEOMAP_HO )
 {
-    typedef details::Projector<PROJ_NODAL, FunctionSpaceType, IteratorRange, Expr<ExprT> > proj_t;
+    typedef details::Projector<NODAL, FunctionSpaceType, IteratorRange, Expr<ExprT> > proj_t;
     proj_t p( __functionspace, range_it, __expr, geomap );
     return p();
 }
@@ -624,7 +617,7 @@ sum( boost::shared_ptr<FunctionSpaceType> const& __functionspace,
      Expr<ExprT> const& __expr,
      GeomapStrategyType geomap = GeomapStrategyType::GEOMAP_HO )
 {
-    typedef details::Projector<PROJ_NODAL, FunctionSpaceType, IteratorRange, Expr<ExprT> > proj_t;
+    typedef details::Projector<NODAL, FunctionSpaceType, IteratorRange, Expr<ExprT> > proj_t;
     proj_t p( __functionspace, range_it, __expr, geomap );
     return p( true );
 }
@@ -651,7 +644,7 @@ project( FunctionSpaceType const& __functionspace, Expr<ExprT> const& __expr,
          GeomapStrategyType geomap = GeomapStrategyType::GEOMAP_HO )
 {
     typedef __typeof__( __functionspace->mesh()->elementsRange() ) IteratorRange;
-    typedef details::Projector<PROJ_NODAL, FunctionSpaceType, IteratorRange, Expr<ExprT> > proj_t;
+    typedef details::Projector<NODAL, FunctionSpaceType, IteratorRange, Expr<ExprT> > proj_t;
     proj_t p( __functionspace, __functionspace->mesh()->elementsRange(), __expr, geomap );
     return p();
 }
@@ -668,7 +661,7 @@ project( FunctionSpaceType const& __functionspace,
          Expr<ExprT> const& __expr,
          GeomapStrategyType geomap = GeomapStrategyType::GEOMAP_HO )
 {
-    typedef details::Projector<PROJ_NODAL, FunctionSpaceType, IteratorRange, Expr<ExprT> > proj_t;
+    typedef details::Projector<NODAL, FunctionSpaceType, IteratorRange, Expr<ExprT> > proj_t;
     proj_t p( __functionspace, range_it, __expr, geomap );
     return p();
 }
@@ -724,7 +717,7 @@ BOOST_PARAMETER_FUNCTION(
     typedef typename vf::detail::project<Args>::_range_type _range_type;
     typedef typename vf::detail::project<Args>::_expr_type _expr_type;
 
-    typedef details::Projector<PROJ_NODAL, _space_type, _range_type, Expr<_expr_type> > proj_t;
+    typedef details::Projector<NODAL, _space_type, _range_type, Expr<_expr_type> > proj_t;
     proj_t p( space, range, expr,geomap );
     return p( sum );
 #else
