@@ -27,23 +27,7 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2008-04-14
  */
-#include <feel/options.hpp>
-#include <feel/feelcore/application.hpp>
-
-#include <feel/feelalg/backend.hpp>
-
-#include <feel/feeldiscr/functionspace.hpp>
-#include <feel/feeldiscr/region.hpp>
-#include <feel/feeldiscr/operatorlinear.hpp>
-#include <feel/feeldiscr/bdf2.hpp>
-
-#include <feel/feelfilters/gmsh.hpp>
-#include <feel/feelfilters/exporter.hpp>
-
-#include <feel/feelvf/vf.hpp>
-
-
-
+#include <feel/feel.hpp>
 
 inline
 Feel::po::options_description
@@ -68,27 +52,10 @@ makeOptions()
     ;
     return stvenant_kirchhoffoptions.add( Feel::feel_options() );
 }
-inline
-Feel::AboutData
-makeAbout()
-{
-    Feel::AboutData about( "stvenant_kirchhoff" ,
-                           "stvenant_kirchhoff" ,
-                           "0.2",
-                           "nD(n=1,2,3) Stvenant_Kirchhoff model",
-                           Feel::AboutData::License_GPL,
-                           "Copyright (c) 2008-2012 Université Joseph Fourier" );
-
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
-    return about;
-
-}
 
 
 namespace Feel
 {
-using namespace Feel::vf;
-
 /**
  * StVenant_Kirchhoff Model
  *
@@ -96,7 +63,7 @@ using namespace Feel::vf;
 template<int Dim, int Order>
 class StVenantKirchhoff
     :
-public Application
+        public Application
 {
     typedef Application super;
 public:
@@ -148,9 +115,9 @@ public:
     typedef Exporter<mesh_type> export_type;
     typedef boost::shared_ptr<export_type> export_ptrtype;
 
-    StVenantKirchhoff( int argc, char** argv, AboutData const& ad, po::options_description const& od )
+    StVenantKirchhoff()
         :
-        super( argc, argv, ad, od ),
+        super(),
         M_backend( backend_type::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         M_lambda( this->vm()["lambda"].template as<double>() ),
@@ -159,53 +126,42 @@ public:
         dt( this->vm()["dt"].template as<double>() ),
         ft( this->vm()["ft"].template as<double>() ),
         omega( this->vm()["omega"].template as<double>() )
-    {
-        if ( this->vm().count( "help" ) )
         {
-            std::cout << this->optionsDescription() << "\n";
-            return;
+            this->changeRepository( boost::format( "examples/solid/%1%/%2%/P%3%/h_%4%/" )
+                                    % this->about().appName()
+                                    % entity_type::name()
+                                    % Order
+                                    % this->vm()["hsize"].template as<double>()
+                );
+
+            /**
+             * Physical data
+             */
+            M_time_order = this->vm()["order"].template as<int>();
+            E = 21*1e5;
+            sigma = 0.28;
+            mu = E/( 2*( 1+sigma ) );
+            lambda = E*sigma/( ( 1+sigma )*( 1-2*sigma ) );
+            density = 1;
+            gravity = -density*0.05;
+
+            LOG(INFO) << "[data] dt=" << dt << "\n";
+            LOG(INFO) << "[data] ft=" << ft << "\n";
+
+            mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
+                                                _desc=domain( _name=( boost::format( "beam-%1%" ) % Dim ).str() ,
+                                                              _shape="hypercube",
+                                                              _usenames=true,
+                                                              _xmin=0., _xmax=20,
+                                                              _ymin=-1., _ymax=1.,
+                                                              _h=meshSize ) );
+
+            M_Xh = functionspace_ptrtype( functionspace_type::New( mesh ) );
+            un2 = element_ptrtype( new element_type( M_Xh, "un2" ) );
+            un1 = element_ptrtype( new element_type( M_Xh, "un1" ) );
+            un = element_ptrtype( new element_type( M_Xh, "un" ) );
+
         }
-
-
-
-
-        this->changeRepository( boost::format( "%1%/%2%/P%3%/h_%4%/" )
-                                % this->about().appName()
-                                % entity_type::name()
-                                % Order
-                                % this->vm()["hsize"].template as<double>()
-                              );
-
-        /**
-         * Physical data
-         */
-        M_time_order = this->vm()["order"].template as<int>();
-        E = 21*1e5;
-        sigma = 0.28;
-        mu = E/( 2*( 1+sigma ) );
-        lambda = E*sigma/( ( 1+sigma )*( 1-2*sigma ) );
-        density = 1;
-        gravity = -density*0.05;
-
-        LOG(INFO) << "[data] dt=" << dt << "\n";
-        LOG(INFO) << "[data] ft=" << ft << "\n";
-
-        mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
-                                            _desc=domain( _name=( boost::format( "beam-%1%" ) % Dim ).str() ,
-                                                    _shape="hypercube",
-                                                    _usenames=true,
-                                                    _xmin=0., _xmax=20,
-                                                    _ymin=-1., _ymax=1.,
-                                                    _h=meshSize ),
-                                            _update=MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK,
-                                            _partitions=this->comm().size()  );
-
-        M_Xh = functionspace_ptrtype( functionspace_type::New( mesh ) );
-        un2 = element_ptrtype( new element_type( M_Xh, "un2" ) );
-        un1 = element_ptrtype( new element_type( M_Xh, "un1" ) );
-        un = element_ptrtype( new element_type( M_Xh, "un" ) );
-
-    }
 
     /**
      * run the convergence test
@@ -291,7 +247,7 @@ StVenantKirchhoff<Dim, Order>::updateResidual( const vector_ptrtype& X, vector_p
     form1( _test=M_Xh, _vector=R ) +=
         integrate( elements( mesh ),
                    -density*trans( 2*idv( *un )-idv( *un1 ) ) *id( v ) /( dt*dt )
-                 );
+            );
 
     M_oplin->apply( u, v );
 
@@ -331,7 +287,6 @@ template<int Dim, int Order>
 void
 StVenantKirchhoff<Dim, Order>::run()
 {
-    using namespace Feel::vf;
     mesh_ptrtype mesh = M_Xh->mesh();
 
     element_type U( M_Xh, "U" );
@@ -349,8 +304,8 @@ StVenantKirchhoff<Dim, Order>::run()
 
 
     LOG(INFO) << "lambda = " << lambda << "\n"
-          << "mu     = " << mu << "\n"
-          << "gravity= " << gravity << "\n";
+              << "mu     = " << mu << "\n"
+              << "gravity= " << gravity << "\n";
 
     M_oplin = opLinear( _domainSpace=M_Xh, _imageSpace=M_Xh, _backend=M_backend );
     auto deft = sym( gradt( u ) );
@@ -362,7 +317,7 @@ StVenantKirchhoff<Dim, Order>::run()
                    density*trans( idt( u ) )*id( v )/( dt*dt )+
                    lambda*divt( u )*div( v )  +
                    2*mu*trace( trans( deft )*def )
-                 );
+            );
 
     *M_oplin +=
         integrate( markedfaces( mesh,1 ),
@@ -435,7 +390,6 @@ StVenantKirchhoff<Dim, Order>::exportResults( double time, element_type& U )
 #endif
 
     exporter->save();
-    exporter->step( time )->setState( STEP_ON_DISK );
 } // StVenantKirchhoff::export
 } // Feel
 
@@ -446,14 +400,17 @@ int
 main( int argc, char** argv )
 {
     using namespace Feel;
-    Environment env( argc, argv );
-    /* change parameters below */
-    const int nDim = 2;
-    const int nOrder = 3;
-    typedef Feel::StVenantKirchhoff<nDim, nOrder> solid_type;
+    Environment env( _argc=argc, _argv=argv,
+                     _desc=makeOptions(),
+                     _about=about(_name="stvenantkirchhoff",
+                                  _author="Christophe Prud'homme",
+                                  _email="christophe.prudhomme@feelpp.org") );
+
+
+    typedef Feel::StVenantKirchhoff<2, 3> solid_type;
 
     /* define and run application */
-    solid_type solid( argc, argv, makeAbout(), makeOptions() );
+    solid_type solid;
 
     solid.run();
 }

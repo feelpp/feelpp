@@ -80,7 +80,6 @@ makeAbout()
 
 }
 
-using namespace vf;
 /**
  * Sound Solver using discontinous approximation spaces
  *
@@ -128,9 +127,9 @@ public:
     /* export */
     typedef Exporter<mesh_type> export_type;
 
-    Sound( std::string const& name, po::variables_map const& vm, AboutData const& ad )
+    Sound( std::string const& name )
         :
-        super( vm, ad ),
+        super(),
         M_name( name )
     {
     }
@@ -145,8 +144,6 @@ public:
      */
     void run();
 
-    //! must be redefined, not used
-    void run( const double*, long unsigned int, double*, long unsigned int ) {};
 private:
     std::string M_name;
 }; // Sound
@@ -156,7 +153,6 @@ template<int Dim, int Order>
 void
 Sound<Dim, Order>::run()
 {
-    using namespace Feel::vf;
     LOG(INFO) << "[Sound] hsize = " << this->meshSize() << "\n";
     this->changeRepository( boost::format( "%1%/%2%/P%3%/%4%/" )
                             % this->about().appName()
@@ -308,15 +304,9 @@ main( int argc, char** argv )
 
     Application sound( argc, argv, makeAbout(), makeOptions() );
 
-    if ( sound.vm().count( "help" ) )
-    {
-        std::cout << sound.optionsDescription() << "\n";
-        return 0;
-    }
-
     sound.setStats( boost::assign::list_of( "n.space" )( "t.init" )( "t.assembly.vector" )( "t.assembly.matrix" )( "t.solver" )( "t.eigensolver" ) );
-    sound.add( new Sound<2, 1>( "2D-P1", sound.vm(), sound.about() ) );
-    sound.add( new Sound<3, 1>( "3D-P1", sound.vm(), sound.about() ) );
+    sound.add( new Sound<2, 1>( "2D-P1" ) );
+    sound.add( new Sound<3, 1>( "3D-P1" ) );
     sound.run();
     sound.printStats( std::cout );
 }

@@ -130,9 +130,9 @@ public:
     /* export */
     typedef Exporter<mesh_type> export_type;
 
-    Sound( std::string const& name, po::variables_map const& vm, AboutData const& ad )
+    Sound( std::string const& name )
         :
-        super( vm, ad ),
+        super(),
         M_name( name )
     {
         this->M_meshSize=this->vm()["hsize"].template as<double>();
@@ -148,8 +148,6 @@ public:
      */
     void run();
 
-    //! must be redefined, not used
-    void run( const double*, long unsigned int, double*, long unsigned int ) {};
 private:
     std::string M_name;
 }; // Sound
@@ -159,7 +157,6 @@ template<int Dim, int Order>
 void
 Sound<Dim, Order>::run()
 {
-    using namespace Feel::vf;
     double meshSize2 = this->vm()["hsize"].template as<double>();
 
     LOG(INFO) << "[Sound] hsize = " << meshSize2/*this->meshSize()*/ << "\n";
@@ -394,28 +391,22 @@ main( int argc, char** argv )
 
     Application sound( argc, argv, makeAbout(), makeOptions() );
 
-    if ( sound.vm().count( "help" ) )
-    {
-        std::cout << sound.optionsDescription() << "\n";
-        return 0;
-    }
-
     // Selon la dimension passee en parametre, on resout lequation donde correspondant a cette dimension.
     // Cela permet de faire un maillage adequat selon la dimension
     // Par defaut la dimension est fixee a 2 :
     if ( ( sound.vm()["dim"].as<int>() ) == 1 )
     {
-        sound.add( new Sound<1, 1>( "1D-P1", sound.vm(), sound.about() ) );
+        sound.add( new Sound<1, 1>( "1D-P1" ) );
     }
 
     if ( sound.vm()["dim"].as<int>() == 2 )
     {
-        sound.add( new Sound<2, 1>( "2D-P1", sound.vm(), sound.about() ) );
+        sound.add( new Sound<2, 1>( "2D-P1" ) );
     }
 
     if ( sound.vm()["dim"].as<int>() == 3 )
     {
-        sound.add( new Sound<3, 1>( "3D-P1", sound.vm(), sound.about() ) );
+        sound.add( new Sound<3, 1>( "3D-P1" ) );
     }
     sound.setStats( boost::assign::list_of( "n.space" )( "t.init" )( "t.assembly.vector" )( "t.assembly.matrix" )( "t.solver" )( "t.eigensolver" ) );
     sound.run();
