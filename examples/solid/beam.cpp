@@ -313,7 +313,7 @@ main( int argc, char** argv )
 
     Application beam;
     beam.add( new Feel::Beam<2,3>() );
-    //beam.add( new Feel::Beam<3,3>() );
+    beam.add( new Feel::Beam<3,3>() );
     beam.run();
 }
 
