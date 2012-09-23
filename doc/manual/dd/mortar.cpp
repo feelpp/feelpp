@@ -141,9 +141,9 @@ public:
     /**
      * Constructor
      */
-    Mortar( po::variables_map const& vm, AboutData const& about )
+    Mortar()
         :
-        super( vm, about ),
+        super(),
         M_backend( backend_type::build( this->vm() ) ),
         mesh1Size( this->vm()["hsize1"].template as<double>() ),
         mesh2Size( this->vm()["hsize2"].template as<double>() ),
@@ -171,8 +171,6 @@ public:
     void exportResults( element1_type& u,element2_type& v, trace_element_type& t );
 
     void run();
-
-    void run( const double* X, unsigned long P, double* Y, unsigned long N );
 
 private:
 
@@ -209,7 +207,6 @@ Mortar<Dim, Order1, Order2>::createMesh(  double xmin, double xmax, double meshs
 {
 
     mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
-                                        _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
                                         _desc=domain( _name=( boost::format( "%1%-%2%-%3%" ) % shape % Dim % id ).str() ,
                                                 _addmidpoint=false,
                                                 _usenames=false,
@@ -292,38 +289,17 @@ template<int Dim, int Order1, int Order2>
 void
 Mortar<Dim, Order1, Order2>::run()
 {
-    std::cout << "-------------------------------------\n";
-    std::cout << "Execute Mortar<" << Dim << "," << Order1 << "," << Order2 << ">\n";
-    std::vector<double> X( 3 );
-    X[0] = mesh1Size;
-    X[1] = mesh2Size;
+    LOG(INFO) << "-------------------------------------\n";
+    LOG(INFO) << "Execute Mortar<" << Dim << "," << Order1 << "," << Order2 << ">\n";
 
-    if ( shape == "hypercube" )
-        X[2] = 1;
-
-    else // default is simplex
-        X[2] = 0;
-
-    std::vector<double> Y( 3 );
-    run( X.data(), X.size(), Y.data(), Y.size() );
-}
-template<int Dim, int Order1, int Order2>
-void
-Mortar<Dim, Order1, Order2>::run( const double* X, unsigned long P, double* Y, unsigned long N )
-{
-    if ( X[2] == 0 ) shape = "simplex";
-
-    if ( X[2] == 1 ) shape = "hypercube";
-
-    if ( !this->vm().count( "nochdir" ) )
-        Environment::changeRepository( boost::format( "doc/manual/%1%/%2%-%3%/P%4%-P%5%/h_%6%-%7%/" )
-                                       % this->about().appName()
-                                       % shape
-                                       % Dim
-                                       % Order1
-                                       % Order2
-                                       % mesh1Size
-                                       % mesh2Size );
+    Environment::changeRepository( boost::format( "doc/manual/%1%/%2%-%3%/P%4%-P%5%/h_%6%-%7%/" )
+                                   % this->about().appName()
+                                   % shape
+                                   % Dim
+                                   % Order1
+                                   % Order2
+                                   % mesh1Size
+                                   % mesh2Size );
 
     mesh_ptrtype mesh1 = createMesh( 0.,0.5,mesh1Size,1 );
 
@@ -517,25 +493,23 @@ Mortar<Dim, Order1, Order2>::run( const double* X, unsigned long P, double* Y, u
     for ( size_type i = 0 ; i < mu.size(); ++ i )
         mu.set( i, ( *UbB )( u1.size()+u2.size()+i ) );
 
-    double L2error12 =integrate( elements( mesh1 ),( idv( u1 )-g )*( idv( u1 )-g ) ).evaluate()( 0,0 );
-    double L2error1 =   math::sqrt( L2error12 );
+    double L2error12 =normL2Squared( _range=elements( mesh1 ), _expr=( idv( u1 )-g ) );
+    double L2error1 =math::sqrt(L2error12);
 
-    double L2error22 =integrate( elements( mesh2 ),( idv( u2 )-g )*( idv( u2 )-g ) ).evaluate()( 0,0 );
-    double L2error2 =   math::sqrt( L2error22 );
+    double L2error22 = normL2Squared( _range=elements( mesh2 ),_expr=( idv( u2 )-g ) );
+    double L2error2 =  math::sqrt( L2error22 );
 
-    double semi_H1error1 =integrate( elements( mesh1 ),
-                                     ( gradv( u1 )-gradg )*trans( ( gradv( u1 )-gradg ) ) ).evaluate()( 0,0 );
+    double semi_H1error12 =normL2Squared( _range=elements( mesh1 ),_expr=(gradv( u1 )-gradg ) );
 
-    double semi_H1error2 =integrate( elements( mesh2 ),
-                                     ( gradv( u2 )-gradg )*trans( ( gradv( u2 )-gradg ) ) ).evaluate()( 0,0 );
+    double semi_H1error22 =normL2Squared( _range=elements( mesh2 ),_expr=(gradv( u2 )-gradg ) );
 
-    double H1error1 = math::sqrt( L2error12 + semi_H1error1 );
+    double H1error1 = math::sqrt( L2error12 + semi_H1error12 );
 
-    double H1error2 = math::sqrt( L2error22 + semi_H1error2 );
+    double H1error2 = math::sqrt( L2error22 + semi_H1error22 );
 
-    double error =integrate( elements( trace_mesh ), ( idv( u1 )-idv( u2 ) )*( idv( u1 )-idv( u2 ) ) ).evaluate()( 0,0 );
+    double error =normL2( _range=elements( trace_mesh ), _expr=( idv( u1 )-idv( u2 ) ) );
 
-    double global_error = math::sqrt( L2error12 + L2error22 + semi_H1error1 + semi_H1error2 );
+    double global_error = math::sqrt( L2error12 + L2error22 + semi_H1error12 + semi_H1error22 );
 
     std::cout << "----------L2 errors---------- \n" ;
     std::cout << "||u1_error||_L2=" << L2error1 << "\n";
@@ -557,18 +531,18 @@ Mortar<Dim, Order1, Order2>::run( const double* X, unsigned long P, double* Y, u
 int
 main( int argc, char** argv )
 {
-    Environment env( argc, argv );
+    using namespace Feel;
 
-    Application app( argc, argv, makeAbout(), makeOptions() );
+    Environment env( _argc=argc, _argv=argv,
+                     _desc=makeOptions(),
+                     _about=about(_name="mortar",
+                                  _author="Abdoulaye Samake",
+                                  _email="samakeablo@gmail.com") );
 
-    if ( app.vm().count( "help" ) )
-    {
-        std::cout << app.optionsDescription() << "\n";
-        return 0;
-    }
+    Application app;
 
-    app.add( new Mortar<2,2,2>( app.vm(), app.about() ) );
-    app.add( new Mortar<2,2,3>( app.vm(), app.about() ) );
+    app.add( new Mortar<2,2,2>() );
+    app.add( new Mortar<2,2,3>() );
 
     app.run();
 }
