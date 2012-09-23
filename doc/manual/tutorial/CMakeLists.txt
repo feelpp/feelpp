@@ -29,19 +29,16 @@ add_custom_target(
                                    ${FEELPP_BUILD_DIR}/doc/manual/
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 )
-add_docex(myapp)
-add_docex(mymesh)
-#add_docex(loadmesh)
-feelpp_add_application( doc_loadmesh SRCS loadmesh.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES}  )
-add_docex(myintegrals)
-add_docex(geotool)
-add_docex(myfunctionspace)
+
+foreach(app myapp mymesh mintegrals myfunctionspace geotool loadmesh )
+  feelpp_add_application( doc_${app} SRCS ${app}.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES}  )
+endforeach()
+
 
 if( NOT FEELPP_MINIMAL_CONFIGURATION )
-#  add_docex(laplacian)
+
   feelpp_add_application( doc_laplacian SRCS laplacian.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG laplacian.cfg SCRIPTS laplacian.py ADD_OT )
-  add_docex(dar)
-  #add_docex(stokes)
+
   feelpp_add_application( doc_stokes SRCS stokes.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} )
   feelpp_add_application( doc_stokes_lm SRCS stokes.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} DEFS FEELPP_USE_LM )
   feelpp_add_application( doc_stokes_poiseuille SRCS stokes_poiseuille.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} )
@@ -51,5 +48,3 @@ if( NOT FEELPP_MINIMAL_CONFIGURATION )
   feelpp_add_application( doc_stokes3d_lm SRCS stokes3d.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} DEFS FEELPP_USE_LM )
 endif()
 
-# stokes_good stokes_locking stokes_spurious
-# bratu nonlinearpow mortar multi_levels threefields nirb)
