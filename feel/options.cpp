@@ -41,12 +41,29 @@
 
 namespace Feel
 {
+po::options_description
+generic_options()
+{
+    po::options_description generic( "Generic options" );
+    generic.add_options()
+        ( "authors", "prints the authors list" )
+        ( "copyright", "prints the copyright statement" )
+        ( "help", "prints this help message" )
+        ( "license", "prints the license text" )
+        //( "version", "prints the version" )
+        ( "feelinfo", "prints feel libraries information" )
+        ( "nochdir", "Don't change repository directory even though it is called" )
+        ( "config-file", po::value<std::string>(), "specify .cfg file" )
+        ( "result-file", po::value<std::string>(), "specify .res file" )
+        ( "response-file", po::value<std::string>(), "can be specified with '@name', too" )
+        ;
+    return generic;
+}
 
 po::options_description
 feel_options( std::string const& prefix  )
 {
-    return
-        benchmark_options( prefix )
+    auto opt = benchmark_options( prefix )
         /* alg options */
         .add( backend_options() )
 #if defined(FEELPP_HAS_PETSC_H)
@@ -66,8 +83,13 @@ feel_options( std::string const& prefix  )
         .add( exporter_options( prefix ) )
 
         /* material options */
-        .add( material_options( prefix ) );
+        .add( material_options( prefix ) )
 
+        ;
+
+    if ( prefix.empty() )
+        opt.add( generic_options() );
+    return opt;
 
 }
 }

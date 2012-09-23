@@ -30,7 +30,7 @@ add_custom_target(
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 )
 
-foreach(app myapp mymesh mintegrals myfunctionspace geotool loadmesh )
+foreach(app myapp mymesh myintegrals myfunctionspace geotool loadmesh )
   feelpp_add_application( doc_${app} SRCS ${app}.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES}  )
 endforeach()
 
