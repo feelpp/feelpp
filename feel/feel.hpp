@@ -40,4 +40,6 @@
 #include <feel/feeldiscr/operatorlinear.hpp>
 #include <feel/feeldiscr/bdf2.hpp>
 
+#include <feel/feelfilters/geotool.hpp>
+
 #include <feel/feelvf/vf.hpp>
