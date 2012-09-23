@@ -1004,7 +1004,7 @@ BOOST_PARAMETER_FUNCTION(
     backend,           // 2. function name
     tag,               // 3. namespace of tag types
     ( optional
-      ( vm,           ( po::variables_map ), po::variables_map() )
+      ( vm,           ( po::variables_map ), Environment::vm() )
       ( name,           ( std::string ), "" )
       ( kind,           ( BackendType ), BACKEND_PETSC )
       ( rebuild,        ( bool ), false )
