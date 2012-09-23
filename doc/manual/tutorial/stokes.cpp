@@ -27,26 +27,7 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2009-01-04
  */
-#include <feel/options.hpp>
-#include <feel/feelcore/application.hpp>
-
-#include <feel/feelalg/backend.hpp>
-
-#include <feel/feeldiscr/functionspace.hpp>
-
-#include <feel/feelpoly/im.hpp>
-
-#include <feel/feelfilters/gmsh.hpp>
-#include <feel/feelfilters/gmshhypercubedomain.hpp>
-#include <feel/feelfilters/exporter.hpp>
-#include <feel/feelpoly/lagrange.hpp>
-#include <feel/feelpoly/crouzeixraviart.hpp>
-
-
-
-#include <feel/feelmesh/elements.hpp>
-
-#include <feel/feelvf/vf.hpp>
+#include <feel/feel.hpp>
 
 /**
  * This routine returns the list of options using the
@@ -73,34 +54,10 @@ makeOptions()
 }
 
 
-/**
- * This routine defines some information about the application like
- * authors, version, or name of the application. The data returned is
- * typically used as an argument of a Feel::Application subclass.
- *
- * \return some data about the application.
- */
-inline
-Feel::AboutData
-makeAbout()
-{
-    Feel::AboutData about( "stokes" ,
-                           "stokes" ,
-                           "0.1",
-                           "Stokes equation on simplices or simplex products",
-                           Feel::AboutData::License_GPL,
-                           "Copyright (c) 2009-2012 Université de Grenoble 1 (Joseph Fourier)" );
-
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
-    return about;
-
-}
 
 
 namespace Feel
 {
-using namespace Feel::vf;
-
 /**
  * \class Stokes class
  * \brief solves the stokes equations
@@ -108,9 +65,9 @@ using namespace Feel::vf;
  */
 class Stokes
     :
-public Application
+public Simget
 {
-    typedef Application super;
+    typedef Simget super;
 public:
 
 
@@ -156,7 +113,7 @@ public:
     typedef Exporter<mesh_type> export_type;
 
     FEELPP_DONT_INLINE
-    Stokes( int argc, char** argv, AboutData const& ad, po::options_description const& od );
+    Stokes();
 
     // init mesh and space
     FEELPP_DONT_INLINE
@@ -196,9 +153,9 @@ private:
 }; // Stokes
 
 
-Stokes::Stokes( int argc, char** argv, AboutData const& ad, po::options_description const& od )
+Stokes::Stokes()
     :
-    super( argc, argv, ad, od ),
+    super(),
     M_backend( backend_type::build( this->vm() ) ),
     meshSize( this->vm()["hsize"].as<double>() ),
     mu( this->vm()["mu"].as<value_type>() ),
@@ -211,23 +168,14 @@ Stokes::Stokes( int argc, char** argv, AboutData const& ad, po::options_descript
 void
 Stokes::init()
 {
-    if ( this->vm().count( "help" ) )
-    {
-        std::cout << this->optionsDescription() << "\n";
-        return;
-    }
+    Environment::changeRepository( boost::format( "doc/manual/tutorial/%1%/%2%/P%3%P%4%/h_%5%/" )
+                                   % this->about().appName()
+                                   % convex_type::name()
+                                   % basis_u_type::nOrder % basis_p_type::nOrder
+                                   % this->vm()["hsize"].as<double>() );
 
-
-    if ( this->vm().count( "nochdir" ) == false )
-        this->changeRepository( boost::format( "doc/tutorial/%1%/%2%/Part%6%/P%3%P%4%/h_%5%/" )
-                                % this->about().appName()
-                                % convex_type::name()
-                                % basis_u_type::nOrder % basis_p_type::nOrder
-                                % this->vm()["hsize"].as<double>()
-                                % Environment::numberOfProcessors() );
 
     mesh = createGMSHMesh( _mesh=new mesh_type,
-                           _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
                            _desc=domain( _name= ( boost::format( "%1%-%2%-%3%" ) % "hypercube" % convex_type().dimension() % 1 ).str() ,
                                          _shape="hypercube",
                                          _dim=convex_type().dimension(),
@@ -301,16 +249,16 @@ Stokes::run()
      */
     //# marker7 #
     auto stokes = form2( _test=Xh, _trial=Xh, _matrix=D );
-    boost::timer chrono;
+    mpi::timer chrono;
     stokes += integrate( elements( mesh ), mu*inner( deft,def ) );
-    std::cout << "mu*inner(deft,def): " << chrono.elapsed() << "\n";
+    LOG(INFO) << "mu*inner(deft,def): " << chrono.elapsed() << "\n";
     chrono.restart();
     stokes +=integrate( elements( mesh ), - div( v )*idt( p ) + divt( u )*id( q ) );
-    std::cout << "(u,p): " << chrono.elapsed() << "\n";
+    LOG(INFO) << "(u,p): " << chrono.elapsed() << "\n";
     chrono.restart();
 #if defined( FEELPP_USE_LM )
     stokes +=integrate( elements( mesh ), id( q )*idt( lambda ) + idt( p )*id( nu ) );
-    std::cout << "(lambda,p): " << chrono.elapsed() << "\n";
+    LOG(INFO) << "(lambda,p): " << chrono.elapsed() << "\n";
     chrono.restart();
 #endif
 
@@ -318,22 +266,12 @@ Stokes::run()
     stokes +=integrate( boundaryfaces( mesh ), -inner( SigmaN,idt( u ) ) );
     stokes +=integrate( boundaryfaces( mesh ), +penalbc*inner( idt( u ),id( v ) )/hFace() );
 
-    std::cout << "bc: " << chrono.elapsed() << "\n";
+    LOG(INFO) << "bc: " << chrono.elapsed() << "\n";
     chrono.restart();
     //# endmarker7 #
 
     M_backend->solve( _matrix=D, _solution=U, _rhs=F );
 
-#if 0
-    U.save( _path="." );
-    u.save( _path="." );
-    p.save( _path="." );
-    V.load( _path="." );
-    v.load( _path="." );
-    q.load( _path="." );
-    std::cout << "||u-v||=" << ( u-v ).l2Norm() << "\n";
-    std::cout << "||p-q||=" << ( p-q ).l2Norm() << "\n";
-#endif
     this->exportResults( u_exact, p_exact, U, V );
 
     LOG(INFO) << "[dof]         number of dof: " << Xh->nDof() << "\n";
@@ -360,35 +298,26 @@ Stokes::exportResults( ExprUExact u_exact, ExprPExact p_exact,
     auto lambda = U.element<2>();
     auto nu = V.element<2>();
     LOG(INFO) << "value of the Lagrange multiplier lambda= " << lambda( 0 ) << "\n";
-    std::cout << "value of the Lagrange multiplier lambda= " << lambda( 0 ) << "\n";
 
 #endif
 
-    double u_errorL2 = integrate( elements( u.mesh() ), trans( idv( u )-u_exact )*( idv( u )-u_exact ) ).evaluate()( 0, 0 );
-    std::cout << "||u_error||_2 = " << math::sqrt( u_errorL2 ) << "\n";;
+    double u_errorL2 = normL2( _range=elements( u.mesh() ), _expr=( idv( u )-u_exact ) );
+    LOG(INFO) << "||u_error||_2 = " << u_errorL2 << "\n";;
 
     double meas = integrate( elements( u.mesh() ), cst( 1.0 ) ).evaluate()( 0, 0 );
     LOG(INFO) << "[stokes] measure(Omega)=" << meas << " (should be equal to 1)\n";
-    std::cout << "[stokes] measure(Omega)=" << meas << " (should be equal to 1)\n";
 
     double mean_p = integrate( elements( u.mesh() ), idv( p ) ).evaluate()( 0, 0 )/meas;
     LOG(INFO) << "[stokes] mean(p)=" << mean_p << "\n";
-    std::cout << "[stokes] mean(p)=" << mean_p << "\n";
 
-    double p_errorL2 = integrate( elements( u.mesh() ), ( idv( p )-mean_p - p_exact )*( idv( p )-mean_p-p_exact ) ).evaluate()( 0, 0 );
-    std::cout << "||p_error||_2 = " << math::sqrt( p_errorL2 ) << "\n";;
-
-    LOG(INFO) << "[stokes] solve for D done\n";
-
-
+    double p_errorL2 = normL2( _range=elements( u.mesh() ), _expr=( idv( p )-mean_p - p_exact ) );
+    LOG(INFO) << "||p_error||_2 = " << p_errorL2 << "\n";;
 
     double mean_div_u = integrate( elements( u.mesh() ), divv( u ) ).evaluate()( 0, 0 );
     LOG(INFO) << "[stokes] mean_div(u)=" << mean_div_u << "\n";
-    std::cout << "[stokes] mean_div(u)=" << mean_div_u << "\n";
 
-    double div_u_error_L2 = integrate( elements( u.mesh() ), divv( u )*divv( u ) ).evaluate()( 0, 0 );
-    LOG(INFO) << "[stokes] ||div(u)||_2=" << math::sqrt( div_u_error_L2 ) << "\n";
-    std::cout << "[stokes] ||div(u)||=" << math::sqrt( div_u_error_L2 ) << "\n";
+    double div_u_error_L2 = normL2( _range=elements( u.mesh() ), _expr=divv( u ) );
+    LOG(INFO) << "[stokes] ||div(u)||_2=" << div_u_error_L2 << "\n";
 
     v = vf::project( u.functionSpace(), elements( u.mesh() ), u_exact );
     q = vf::project( p.functionSpace(), elements( p.mesh() ), p_exact );
@@ -402,8 +331,8 @@ Stokes::exportResults( ExprUExact u_exact, ExprPExact p_exact,
 
         //exporter->step( 0 )->add( assign::list_of("u")("p")("l"), U );
         exporter->step( 0 )->add( {"u","p","l"}, U );
-        exporter->step( 0 )->add( "ux", v.comp( X ) );
-        exporter->step( 0 )->add( "uy", v.comp( Y ) );
+        //exporter->step( 0 )->add( "ux", v.comp( X ) );
+        //exporter->step( 0 )->add( "uy", v.comp( Y ) );
         exporter->step( 0 )->add( {"u_exact","p_exact","l_exact"}, V );
 
         exporter->save();
@@ -418,10 +347,11 @@ main( int argc, char** argv )
 
     using namespace Feel;
 
-    Environment env( argc, argv );
-
-    /* assertions handling */
-    Feel::Assert::setLog( "stokes.assert" );
+    Environment env( _argc=argc, _argv=argv,
+                     _desc=makeOptions(),
+                     _about=about(_name="stokes",
+                                  _author="Christophe Prud'homme",
+                                  _email="christophe.prudhomme@feelpp.org") );
 
     // SOME BAD ELEMENTS
     // P1/P0 : locking
@@ -436,7 +366,7 @@ main( int argc, char** argv )
 
 
     /* define and run application */
-    Feel::Stokes stokes( argc, argv, makeAbout(), makeOptions() );
+    Stokes stokes;
     stokes.run();
 }
 
