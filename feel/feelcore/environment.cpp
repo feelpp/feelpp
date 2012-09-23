@@ -200,13 +200,13 @@ Environment::processGenericOptions()
     if ( S_vm.count( "debug" ) && !S_vm["debug"].as<std::string>().empty() )
         DebugStream::showDebugAreas( S_vm["debug"].as<std::string>() );
 
-    Debug( 1000 ) << "[Application::processGenericOptions] done\n";
+    VLOG(2) << "[processGenericOptions] done\n";
 }
 
 void
 Environment::parseAndStoreOptions( po::command_line_parser parser, bool extra_parser )
 {
-    VLOG(2) << "[Application::Application] parsing options...\n";
+    VLOG(2) << " parsing options...\n";
 
     boost::shared_ptr<po::parsed_options> parsed;
 
@@ -227,14 +227,14 @@ Environment::parseAndStoreOptions( po::command_line_parser parser, bool extra_pa
                                                                                 .run() ) );
     }
 
-    Debug( 1000 ) << "[Application::Application] parsing options done\n";
+    VLOG(2) << "[parseAndStoreOptions] parsing options done\n";
 
     S_to_pass_further = po::collect_unrecognized( parsed->options, po::include_positional );
-    VLOG(2)<< "[Application::Application] number of unrecognized options: " << ( S_to_pass_further.size() ) << "\n";
+    VLOG(2)<< " number of unrecognized options: " << ( S_to_pass_further.size() ) << "\n";
 
     BOOST_FOREACH( std::string const& s, S_to_pass_further )
     {
-        VLOG(2)<< "[Application::Application] option: " << s << "\n";
+        VLOG(2)<< " option: " << s << "\n";
     }
     std::vector<po::basic_option<char> >::iterator it = parsed->options.begin();
     std::vector<po::basic_option<char> >::iterator en  = parsed->options.end();
@@ -242,7 +242,7 @@ Environment::parseAndStoreOptions( po::command_line_parser parser, bool extra_pa
     for ( ; it != en ; ++it )
         if ( it->unregistered )
         {
-            VLOG(2)<< "[Application::Application] remove from vector " << it->string_key << "\n";
+            VLOG(2)<< " remove from vector " << it->string_key << "\n";
             parsed->options.erase( it );
         }
 
@@ -264,7 +264,7 @@ Environment::doOptions( int argc, char** argv, po::options_description const& de
          */
         if ( S_vm.count( "config-file" ) )
         {
-            VLOG(2)<< "[Application] parsing " << S_vm["config-file"].as<std::string>() << "\n";
+            VLOG(2)<< " parsing " << S_vm["config-file"].as<std::string>() << "\n";
 
             if ( fs::exists(  S_vm["config-file"].as<std::string>() ) )
             {
@@ -285,12 +285,12 @@ Environment::doOptions( int argc, char** argv, po::options_description const& de
         BOOST_FOREACH( auto prefix, prefixes )
         {
             std::string config_name = ( boost::format( "%1%/%2%.cfg" ) % prefix.string() % appName ).str();
-            VLOG(2)<< "[Application] Looking for " << config_name << "\n";
-            VLOG(2)<< "[Application] Looking for " << config_name << "\n";
+            VLOG(2)<< " Looking for " << config_name << "\n";
+            VLOG(2)<< " Looking for " << config_name << "\n";
 
             if ( fs::exists( config_name ) )
             {
-                VLOG(2)<< "[Application] parsing " << config_name << "\n";
+                VLOG(2)<< " parsing " << config_name << "\n";
                 std::ifstream ifs( config_name.c_str() );
                 store( parse_config_file( ifs, desc, true ), S_vm );
                 break;
@@ -300,11 +300,11 @@ Environment::doOptions( int argc, char** argv, po::options_description const& de
             {
                 // try with a prefix feel_
                 std::string config_name = ( boost::format( "%1%/feel_%2%.cfg" ) % prefix.string() % appName ).str();
-                VLOG(2)<< "[Application] Looking for " << config_name << "\n";
+                VLOG(2)<< " Looking for " << config_name << "\n";
 
                 if ( fs::exists( config_name ) )
                 {
-                    VLOG(2)<< "[Application] loading configuration file " << config_name << "...\n";
+                    VLOG(2)<< " loading configuration file " << config_name << "...\n";
                     std::ifstream ifs( config_name.c_str() );
                     store( parse_config_file( ifs, desc, true ), S_vm );
                     break;
@@ -654,7 +654,7 @@ Environment::changeRepositoryImpl( boost::format fmt, std::string const& logfile
 
     BOOST_FOREACH( std::string const& dir, dirs )
     {
-        //VLOG(2)<< "[Application::Application] option: " << s << "\n";
+        //VLOG(2)<< " option: " << s << "\n";
         rep_path = rep_path / dir;
 
         if ( !fs::exists( rep_path ) )
