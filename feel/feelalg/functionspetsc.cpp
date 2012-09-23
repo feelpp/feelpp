@@ -188,7 +188,9 @@ PetscConvertKSPReasonToString( KSPConvergedReason reason )
     switch ( reason )
     {
         /* converged */
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3, 2, 0 )
     case KSP_CONVERGED_RTOL_NORMAL     : return "CONVERGED_RTOL_NORMAL";
+#endif
     case KSP_CONVERGED_RTOL            : return "CONVERGED_RTOL";
     case KSP_CONVERGED_ATOL            : return "CONVERGED_ATOL";
     case KSP_CONVERGED_ITS             : return "CONVERGED_ITS";
@@ -196,7 +198,9 @@ PetscConvertKSPReasonToString( KSPConvergedReason reason )
     case KSP_CONVERGED_CG_CONSTRAINED  : return "CONVERGED_CG_CONSTRAINED";
     case KSP_CONVERGED_STEP_LENGTH     : return "CONVERGED_STEP_LENGTH";
     case KSP_CONVERGED_HAPPY_BREAKDOWN : return "CONVERGED_HAPPY_BREAKDOWN";
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3, 2, 0 )
     case KSP_CONVERGED_ATOL_NORMAL     : return "CONVERGED_ATOL_NORMAL";
+#endif
 
         /* diverged */
     case KSP_DIVERGED_NULL           : return "DIVERGED_NULL";
@@ -235,7 +239,9 @@ PetscConvertSNESReasonToString( SNESConvergedReason reason )
     case SNES_DIVERGED_LINEAR_SOLVE    : return "DIVERGED_LINEAR_SOLVE";   // = -3, /* the linear solve failed */
     case SNES_DIVERGED_FNORM_NAN       : return "DIVERGED_FNORM_NAN";      // = -4,
     case SNES_DIVERGED_MAX_IT          : return "DIVERGED_MAX_IT";         // = -5,
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3, 2, 0 )
     case SNES_DIVERGED_LINE_SEARCH     : return "DIVERGED_LINE_SEARCH";    // = -6, /* the line search failed */
+#endif
 #if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3, 3, 0 )
         case SNES_DIVERGED_INNER           : return "DIVERGED_INNER";          // = -7, /* inner solve failed */
 #endif
