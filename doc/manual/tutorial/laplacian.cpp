@@ -142,7 +142,6 @@ Laplacian<Dim>::run()
                                                       _usenames=true,
                                                       _shape=shape,
                                                       _h=meshSize,
-                                                      _substructuring=true,
                                                       _xmin=-1,
                                                       _ymin=-1 ) );
 
@@ -183,8 +182,6 @@ Laplacian<Dim>::run()
     value_type penaldir = this->vm()["penaldir"].template as<double>();
     value_type nu = this->vm()["nu"].template as<double>();
 
-    using namespace Feel::vf;
-
     /**
      * Construction of the right hand side. F is the vector that holds
      * the algebraic representation of the right habd side of the
@@ -192,18 +189,18 @@ Laplacian<Dim>::run()
      */
     /** \code */
     //# marker2 #
-    auto F = backend( _vm=this->vm() )->newVector( Xh );
+    auto F = backend()->newVector( Xh );
     auto rhs = form1( _test=Xh, _vector=F );
     rhs = integrate( _range=elements( mesh ), _expr=f*id( v ) )+
-        integrate( _range=markedfaces( mesh, "TOP" ),
+        integrate( _range=markedfaces( mesh, "Neumann" ),
                    _expr=nu*gradv( gproj )*vf::N()*id( v ) );
 
     //# endmarker2 #
     if ( weak_dirichlet )
     {
         //# marker41 #
-        rhs += integrate( _range=markedfaces( mesh,"BOTTOM" ),
-                          _expr=g*( -grad( v )*vf::N()+penaldir*id( v )/hFace() ) );
+        rhs += integrate( _range=markedfaces( mesh,"Dirichlet" ),
+                          _expr=nu*g*( -grad( v )*vf::N()+penaldir*id( v )/hFace() ) );
         //# endmarker41 #
     }
 
@@ -234,10 +231,10 @@ Laplacian<Dim>::run()
          */
         /** \code */
         //# marker10 #
-        a += integrate( _range=markedfaces( mesh,"BOTTOM" ),
-                        _expr= ( -( gradt( u )*vf::N() )*id( v )
-                                 -( grad( v )*vf::N() )*idt( u )
-                                 +penaldir*id( v )*idt( u )/hFace() ) );
+        a += integrate( _range=markedfaces( mesh,"Dirichlet" ),
+                        _expr= nu * ( -( gradt( u )*vf::N() )*id( v )
+                                      -( grad( v )*vf::N() )*idt( u )
+                                      +penaldir*id( v )*idt( u )/hFace() ) );
         //# endmarker10 #
         /** \endcode */
     }
@@ -250,7 +247,7 @@ Laplacian<Dim>::run()
          */
         /** \code */
         //# marker5 #
-        a += on( _range=markedfaces( mesh, "BOTTOM" ),
+        a += on( _range=markedfaces( mesh, "Dirichlet" ),
                  _element=u, _rhs=F, _expr=g );
         //# endmarker5 #
         /** \endcode */
@@ -262,22 +259,16 @@ Laplacian<Dim>::run()
     //! solve the system
     /** \code */
     //# marker6 #
-    backend( _rebuild=true,_vm=this->vm() )->solve( _matrix=D, _solution=u, _rhs=F );
+    backend( _rebuild=true  )->solve( _matrix=D, _solution=u, _rhs=F );
     //# endmarker6 #
     /** \endcode */
 
     //! compute the \f$L_2$ norm of the error
     /** \code */
     //# marker7 #
-    double L2error2 =integrate( _range=elements( mesh ),
-                                _expr=( idv( u )-g )*( idv( u )-g ) ).evaluate()( 0,0 );
-    double L2error =   math::sqrt( L2error2 );
-
+    double L2error =normL2( _range=elements( mesh ),_expr=( idv( u )-g ) );
 
     LOG(INFO) << "||error||_L2=" << L2error << "\n";
-
-    std::ofstream res(this->vm()["result-file"].template as<std::string>() );
-    res << "L2="<< L2error << "\n";
 
     //# endmarker7 #
     /** \endcode */
@@ -299,6 +290,8 @@ Laplacian<Dim>::run()
         LOG(INFO) << "exportResults starts\n";
 
         exporter->step( 0 )->setMesh( mesh );
+        exporter->step( 0 )->add( "solution", u );
+        exporter->step( 0 )->add( "exact", e );
 
         exporter->save();
         LOG(INFO) << "exportResults done\n";
