@@ -63,6 +63,7 @@
 #define PATH_SEPARATOR  '/'
 #endif
 
+#if 0
 // The 'reporting' flags.  They all call gflags_exitfunc().
 DEFINE_bool(help, false,
             "show help on all flags [tip: all flags can have two dashes]");
@@ -80,6 +81,8 @@ DEFINE_bool(helpxml, false,
             "produce an xml version of help");
 DEFINE_bool(version, false,
             "show version and build info and exit");
+
+#endif // 0
 
 _START_GOOGLE_NAMESPACE_
 
@@ -376,6 +379,8 @@ static void AppendPrognameStrings(vector<string>* substrings,
 // --------------------------------------------------------------------
 
 void HandleCommandLineHelpFlags() {
+
+#if 0
   const char* progname = ProgramInvocationShortName();
 
   HandleCommandLineCompletions();
@@ -442,6 +447,7 @@ void HandleCommandLineHelpFlags() {
     gflags_exitfunc(0);
 
   }
+#endif // 0
 }
 
 _END_GOOGLE_NAMESPACE_

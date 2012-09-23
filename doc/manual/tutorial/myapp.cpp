@@ -50,7 +50,7 @@ makeOptions()
 
     // return the options myappoptions and the feel_options defined
     // internally by Feel
-    return myappoptions.add( backend_options( "myapp" ) );
+    return myappoptions.add( backend_options( "myapp" ) ).add( feel_options() );
 }
 //# endmarker2 #
 
