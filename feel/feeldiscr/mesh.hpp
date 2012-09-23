@@ -743,7 +743,7 @@ public:
      * is anticlockwise oriented. For the time being, this function
      * only applies to tetrahedra meshes
      */
-    void checkLocalPermutation( mpl::bool_<false> ) const {};
+    void checkLocalPermutation( mpl::bool_<false> ) const {}
     void checkLocalPermutation( mpl::bool_<true> ) const;
 
 
@@ -1254,6 +1254,11 @@ private:
      */
     boost::shared_ptr<Localization> M_tool_localization;
 };
+
+template<typename Shape, typename T, int Tag>
+const uint16_type Mesh<Shape, T, Tag>::nDim;
+template<typename Shape, typename T, int Tag>
+const uint16_type Mesh<Shape, T, Tag>::nOrder;
 
 template<typename Shape, typename T, int Tag>
 template<typename RangeT>
