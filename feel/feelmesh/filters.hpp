@@ -922,7 +922,7 @@ boost::tuple<mpl::size_t<MESH_FACES>,
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
     try
     {
-        int theflag = boost::any_cast<int>( __marker);
+        flag_type theflag = boost::any_cast<flag_type>( __marker);
         return detail::markedfaces( mesh, theflag, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
     }
     catch ( boost::bad_any_cast const& )
