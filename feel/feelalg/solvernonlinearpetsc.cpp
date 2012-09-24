@@ -621,25 +621,20 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
     ierr = SNESGetIterationNumber( M_snes,&n_iterations );
     CHKERRABORT( this->worldComm().globalComm(),ierr );
     LOG(INFO) << "[SolverNonLinearPetsc] number of nonlinear iterations = " << n_iterations << "\n";
-    LOG(INFO) << "[SolverNonLinearPetsc] number of nonlinear iterations = " << n_iterations << "\n";
 
     for ( int i=0; i<n_iterations+1; i++ )
     {
-        LOG(INFO) << "iteration " << i << ": Linear iterations : " << hist_its[i] << " Function norm = " << history[i] << "\n";
         LOG(INFO) << "iteration " << i << ": Linear iterations : " << hist_its[i] << " Function norm = " << history[i] << "\n";
     }
 
     SNESConvergedReason reason;
     SNESGetConvergedReason( M_snes,&reason );
     LOG(INFO) << "[solvernonlinearpetsc] convergence reason : " << reason << "\n";
-    LOG(INFO) << "[solvernonlinearpetsc] convergence reason : " << reason << "\n";
 
-    CHECK( reason >= 0 ) << "Nonlinear solve did not converge due to " << PetscConvertSNESReasonToString(reason)
-                         << " iterations " << n_iterations << std::endl;
     if ( reason<0 )
     {
-        LOG(INFO) << "[solvernonlinearpetsc] not converged: " << reason << "\n";
-        LOG(INFO) << "[solvernonlinearpetsc] not converged: " << reason << "\n";
+        LOG(ERROR) << "Nonlinear solve did not converge due to " << PetscConvertSNESReasonToString(reason)
+                   << " iterations " << n_iterations << std::endl;
         if (this->showSNESConvergedReason() && this->worldComm().globalRank() == this->worldComm().masterRank() )
             std::cout << "Nonlinear solve did not converge due to " << PetscConvertSNESReasonToString(reason)
                       << " iterations " << n_iterations << std::endl;
