@@ -2208,6 +2208,70 @@ Mesh<Shape, T, Tag>::Localization::searchInKdTree( const node_type & p,
 
 }
 
+template<typename Shape, typename T, int Tag>
+boost::tuple<bool,typename Mesh<Shape, T, Tag>::node_type,double>
+Mesh<Shape, T, Tag>::Localization::isIn( size_type _id,
+                                         const node_type & _pt,
+                                         const matrix_node_type & setPoints,
+                                         mpl::int_<1> /**/ ) const
+{
+    bool isin=false,isin2=false;
+    double dmin=0.;
+    node_type x_ref;
+
+    //get element with the id
+    auto const elt= M_mesh->element( _id );
+    auto const eltG = elt.G();
+
+    std::vector<bool> find( setPoints.size2() );
+    std::fill( find.begin(),find.end(),false );
+
+    for ( size_type i=0; i< setPoints.size2(); ++i )
+    {
+        auto thePt = ublas::column( setPoints,i );
+        find[i]=false;
+
+        for ( size_type j=0; j<eltG.size2(); ++j )
+        {
+            auto ptjeltG = ublas::column( eltG,j );
+
+            if ( ptjeltG.size()==1 )
+            {
+                if ( std::abs( thePt( 0 )-ptjeltG( 0 ) )<1e-5 )
+                    find[i]=true;
+            }
+            else if ( ptjeltG.size()==2 )
+            {
+                if ( std::abs( thePt( 0 )-ptjeltG( 0 ) )<1e-5 &&
+                     std::abs( thePt( 1 )-ptjeltG( 1 ) )<1e-5 )
+                    find[i]=true;
+            }
+            else if ( ptjeltG.size()==3 )
+            {
+                if ( std::abs( thePt( 0 )-ptjeltG( 0 ) )<1e-5 &&
+                     std::abs( thePt( 1 )-ptjeltG( 1 ) )<1e-5 &&
+                     std::abs( thePt( 2 )-ptjeltG( 2 ) )<1e-5 )
+                    find[i]=true;
+            }
+        }
+    }
+    // check if all points are found or not
+    bool isOK=true;
+    for ( size_type i=0; i< setPoints.size2(); ++i ) { isOK &= find[i]; }
+    if ( !isOK ) isin=false;
+    else isin=true;
+
+    // get ref pt and check
+    if ( isin )
+    {
+        boost::tie(isin2,x_ref,dmin) = this->isIn(_id,_pt);
+        if ( isin!=isin2) std::cout << "Bug Mesh::Localization::searchElement<true>" << std::endl;
+    }
+
+    return boost::make_tuple(isin,x_ref,dmin);
+}
+
+
 
 template<typename Shape, typename T, int Tag>
 boost::tuple<bool, size_type, typename Mesh<Shape, T, Tag>::node_type>
@@ -2220,7 +2284,7 @@ Mesh<Shape, T, Tag>::Localization::searchElement( const node_type & p,
     typename self_type::gm1_type::reference_convex_type refelem1;
 
     bool isin=false,isin2=false;
-    double dmin;
+    double dmin=0.;
     node_type x_ref;
     size_type idEltFound = this->mesh()->beginElementWithId(this->mesh()->worldComm().localRank())->id();
 
@@ -2239,6 +2303,8 @@ Mesh<Shape, T, Tag>::Localization::searchElement( const node_type & p,
     //research the element which contains the point p
     while ( itLT != itLT_end && !isin  )
     {
+
+#if 0
         //get element with the id
         elt= M_mesh->element( itLT->first );
 
@@ -2293,11 +2359,13 @@ Mesh<Shape, T, Tag>::Localization::searchElement( const node_type & p,
                 boost::tie(isin2,x_ref,dmin) = this->isIn(itLT->first,p);
                 if ( isin!=isin2) std::cout << "Bug Mesh::Localization::searchElement<true>" << std::endl;
             }
+#endif
+
+        boost::tie(isin,x_ref,dmin) = this->isIn(itLT->first,p,setPoints,mpl::int_<1>());
 
         //if not inside, continue the research with an other element
         if ( !isin ) ++itLT;
         else idEltFound=itLT->first;
-
     } //while ( itLT != itLT_end && !isin  )
 
     if (!isin)
@@ -2340,21 +2408,37 @@ Mesh<Shape, T, Tag>::Localization::run_analysis( const matrix_node_type & m,
     bool find_x=false;
     size_type cv_id=eltHypothetical;
     node_type x_ref;
+    double dmin;
     std::vector<bool> hasFindPts(setPoints.size2(),false);
 
     M_resultAnalysis.clear();
-
+    auto currentEltHypothetical = eltHypothetical;
     for ( size_type i=0; i< m.size2(); ++i )
     {
-        boost::tie( find_x, cv_id, x_ref ) = this->searchElement( ublas::column( m, i ),setPoints,mpl::int_<1>() );
 
-        if ( find_x )
+        bool testHypothetical_find = false;
+        if ( eltHypothetical!=invalid_size_type_value )
         {
-            M_resultAnalysis[cv_id].push_back( boost::make_tuple( i,x_ref ) );
+            boost::tie( testHypothetical_find,x_ref,dmin ) = this->isIn( currentEltHypothetical,ublas::column( m, i ),setPoints,mpl::int_<1>() );
+        }
+        if ( testHypothetical_find )
+        {
+            cv_id = currentEltHypothetical;
+            M_resultAnalysis[cv_id].push_back( boost::make_tuple(i,x_ref) );
             hasFindPts[i]=true;
         }
-        //else std::cout<<"\nNew Probleme Localization\n" << std::endl;
+        else
+        {
+            boost::tie( find_x, cv_id, x_ref ) = this->searchElement( ublas::column( m, i ),setPoints,mpl::int_<1>() );
 
+            if ( find_x )
+            {
+                M_resultAnalysis[cv_id].push_back( boost::make_tuple( i,x_ref ) );
+                hasFindPts[i]=true;
+                currentEltHypothetical = cv_id;
+            }
+        }
+        //else std::cout<<"\nNew Probleme Localization\n" << std::endl;
     }
 
     return boost::make_tuple(hasFindPts,cv_id);
