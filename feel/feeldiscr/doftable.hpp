@@ -1127,7 +1127,11 @@ public:
             else
             {
                 size_type _dof = boost::get<0>( _M_el_l2g[ ie][ lc_dof ]);
-                FEELPP_ASSERT(  _M_dof_marker[_dof] == marker.value() )(ie)(lc_dof)( _dof )( _M_dof_marker[_dof] )( marker.value() ).error( "invalid dof marker" );
+                CHECK(  _M_dof_marker[_dof] == marker.value() ) << "Invalid dof marker, element id: " <<  ie
+                                                                << ", local dof id: " << lc_dof
+                                                                << ", global dof id: "<< _dof
+                                                                << ", dof marker: " <<  _M_dof_marker[_dof]
+                                                                << ", marker: " << marker.value() << "\n";
             }
 
             res = res && ( __inserted || ( ( boost::get<0>( _M_el_l2g[ ie][ lc_dof ] ) == invalid_size_type_value ) && shift ) );
