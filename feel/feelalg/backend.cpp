@@ -242,6 +242,8 @@ Backend<T>::solve( sparse_matrix_ptrtype const& A,
 {
     M_reusePC = reusePC;
 
+    MatrixStructure matStructInitial = this->precMatrixStructure();
+
     vector_ptrtype x_save;
 
     if ( !M_reusePC )
@@ -254,22 +256,16 @@ Backend<T>::solve( sparse_matrix_ptrtype const& A,
         x->close();
         x_save = this->newVector(x->map());
         *x_save=*x;
+        this->setPrecMatrixStructure( SAME_PRECONDITIONER );
     }
 
     //start();
 
-    this->setPrecMatrixStructure( SAME_PRECONDITIONER );
 
     //std::cout << "backend: " << this->precMatrixStructure() << "\n";
     boost::tie( M_converged, M_iteration, M_residual ) = this->solve( A, P, x, b );
     //stop();
-    M_reuseFailed = M_reusedPC && ( !M_converged );
-    /*
-    if (M_reuseFailed)
-        std::cout << "\n OK :nb iteration : "<<M_iteration<<"  le residu : "<< M_residual;
-    else
-    std::cout << "\n BAD :nb iteration : "<<M_iteration<<"  le residu : "<< M_residual;
-    */
+    M_reuseFailed = reusePC && (!M_converged );
 
     if ( M_reuseFailed )
     {
@@ -281,7 +277,7 @@ Backend<T>::solve( sparse_matrix_ptrtype const& A,
         x_save->close();
         *x=*x_save;
 
-        this->setPrecMatrixStructure( SAME_NONZERO_PATTERN );
+        this->setPrecMatrixStructure( matStructInitial );//DIFFERENT_NONZERO_PATTERN,SAME_NONZERO_PATTERN
         if (this->comm().globalRank() == this->comm().masterRank() )
             std::cout << "Backend "  << M_prefix << " reuse failed, rebuilding preconditioner...\n";
         Log() << "Backend "  << M_prefix << " reuse failed, rebuilding preconditioner...\n";
@@ -293,6 +289,8 @@ Backend<T>::solve( sparse_matrix_ptrtype const& A,
         //stop();
     }
 
+    this->setPrecMatrixStructure( matStructInitial );
+
     return boost::make_tuple( M_converged, M_iteration, M_residual );
 }
 template <typename T>
@@ -303,6 +301,8 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
                      const double tol, const int its,
                      bool reusePC, bool reuseJac )
 {
+    MatrixStructure matStructInitial = this->precMatrixStructure();
+
     M_nlsolver->setPreconditionerType( this->pcEnumType() );
     M_nlsolver->setKspSolverType( this->kspEnumType() );
     M_nlsolver->setMatSolverPackageType( this->matSolverPackageEnumType() );
@@ -354,7 +354,7 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
         M_nlsolver->init();
         M_nlsolver->setPreconditionerType( this->pcEnumType() );
         M_nlsolver->setKspSolverType( this->kspEnumType() );
-        M_nlsolver->setPrecMatrixStructure( SAME_NONZERO_PATTERN );
+        M_nlsolver->setPrecMatrixStructure( matStructInitial/*SAME_NONZERO_PATTERN*/ );
 
         //M_nlsolver->setReuse( 1, -2 );
         M_nlsolver->setReuse( 1, 1 );
@@ -369,6 +369,8 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
 
         return boost::make_tuple( ret2.first, its, tol );
     }
+
+    this->setPrecMatrixStructure( matStructInitial );
 
     return boost::make_tuple( ret.first, its, tol );
 }
