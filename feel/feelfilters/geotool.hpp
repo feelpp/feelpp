@@ -537,18 +537,18 @@ typedef node<double>::type node_type;
 class GeoGMSHTool;
 typedef boost::shared_ptr< GeoGMSHTool> GeoGMSHTool_ptrtype;
 
-typedef std::map<uint,uint> map_data_type;
+typedef std::map<uint16_type,uint16_type> map_data_type;
 typedef std::vector<map_data_type> vec_map_data_type;
 typedef boost::shared_ptr<vec_map_data_type> vec_map_data_ptrtype;
 
 //if bool=true => surface stoker dans un tableau gmsh
-typedef std::vector<std::map<uint,bool> > vec_map_data_surf1_type;
+typedef std::vector<std::map<uint16_type,bool> > vec_map_data_surf1_type;
 typedef boost::shared_ptr<vec_map_data_surf1_type> vec_map_data_surf1_ptrtype;
 //=> la string est le nom de ce tableau
-typedef std::vector<std::map<uint,std::string> > vec_map_data_surf2_type;
+typedef std::vector<std::map<uint16_type,std::string> > vec_map_data_surf2_type;
 typedef boost::shared_ptr<vec_map_data_surf2_type> vec_map_data_surf2_ptrtype;
 // list of pt define in more in the surface
-typedef std::vector<std::map<uint,std::list<uint> > > vec_map_data_ptsinsurf_type;
+typedef std::vector<std::map<uint16_type,std::list<uint16_type> > > vec_map_data_ptsinsurf_type;
 typedef boost::shared_ptr<vec_map_data_ptsinsurf_type> vec_map_data_ptsinsurf_ptrtype;
 
 typedef std::map<int,std::list<int> > map_surfaceLoop_type;
@@ -661,12 +661,12 @@ public :
         return *this;
     }
 
-    double operator()( uint n ) const
+    double operator()( uint16_type n ) const
     {
         return this->getNode()( n );
     }
 
-    double & operator()( uint n )
+    double & operator()( uint16_type n )
     {
         return ( *_M_node )( n );
     }
@@ -709,7 +709,7 @@ public :
         return *this;
     }
 
-    uint size()
+    uint16_type size()
     {
         return _M_loop.size();
     }
@@ -749,7 +749,7 @@ public:
     typedef names_type::const_iterator names_const_iterator_type;
     typedef map_shape_names_type::const_iterator map_shape_names_const_iterator_type;
     */
-    typedef boost::tuple<std::string,std::string,uint> marker_base_type;
+    typedef boost::tuple<std::string,std::string,uint16_type> marker_base_type;
     typedef std::map<std::string,std::list<marker_base_type > > marker_markerName_type;
     typedef std::map< std::string, marker_markerName_type > marker_type_type;
     typedef std::map< std::string, marker_type_type > marker_name_type;
@@ -768,7 +768,7 @@ public:
 
 
     // gestion des lignes : shape,name,value,meshSize
-    typedef boost::tuple<std::string,std::string,uint,double > ligne_type;
+    typedef boost::tuple<std::string,std::string,uint16_type,double > ligne_type;
     typedef std::list< ligne_type > ligne_type_type;
     typedef std::list< ligne_type_type > ligne_name_type;
     typedef ligne_type_type::const_iterator ligne_type_const_iterator_type;
@@ -796,7 +796,7 @@ public:
     typedef surfaceloop_name_type::const_iterator surfaceloop_name_const_iterator_type;
 
 
-    GeoGMSHTool( uint __dim, std::string __shape="NO_SHAPE", std::string __name="NO_NAME", double __meshSize=0.1 )
+    GeoGMSHTool( uint16_type __dim, std::string __shape="NO_SHAPE", std::string __name="NO_NAME", double __meshSize=0.1 )
         :
         _M_dim( __dim ),
         _M_cptPt( 1 ),
@@ -820,7 +820,7 @@ public:
     {
     }
 
-    GeoGMSHTool( uint __dim,  std::string const & geoUserStr, double __meshSize=0.1, std::string __shape="NO_SHAPE", std::string __name="NO_NAME" )
+    GeoGMSHTool( uint16_type __dim,  std::string const & geoUserStr, double __meshSize=0.1, std::string __shape="NO_SHAPE", std::string __name="NO_NAME" )
         :
         _M_dim( __dim ),
         _M_cptPt( 1 ),
@@ -994,16 +994,16 @@ public:
                    std::string __name,
                    double __meshSize,
                    std::vector<GeoTool::Node> & __param,
-                   uint dim,
-                   uint __nbligne,
-                   uint __nbsurface,
-                   uint __nbvolume )
+                   uint16_type dim,
+                   uint16_type __nbligne,
+                   uint16_type __nbsurface,
+                   uint16_type __nbvolume )
     {
         boost::tuple<std::string,double> __id = boost::make_tuple( __name, __meshSize );
 
         ( *( _M_paramShape ) )[__shape][__name].resize( __param.size() );
 
-        for ( uint n=0; n<__param.size(); ++n )
+        for ( uint16_type n=0; n<__param.size(); ++n )
         {
             ( *( _M_paramShape ) )[__shape][__name][n] = __param[n].getNode();
         }
@@ -1013,77 +1013,44 @@ public:
         if ( dim>=1 )
         {
             //Attention 0 par defaut pour dire que ce n'est pas initialiser
-            for ( uint n=0; n<__nbligne; ++n )
+            for ( uint16_type n=0; n<__nbligne; ++n )
             {
-                //std::list< boost::tuple<std::string,std::string, uint  >	>__listTemp;
+                //std::list< boost::tuple<std::string,std::string, uint16_type  >	>__listTemp;
                 ligne_type_type __listTemp;
                 __listTemp.push_back( boost::make_tuple( __shape,__name,0,__meshSize ) );
                 _M_ligneList->push_back( __listTemp );
             }
         }
 
-
         if ( dim>=2 )
         {
-#if 0
-
-            //Attention 0 par defaut pour dire que ce n'est pas initialiser
-            for ( uint n=0; n<__nbsurface; ++n )
+            for ( uint16_type n=0; n<__nbsurface; ++n )
             {
-                //std::list< boost::tuple<std::string,std::string, uint  >	>__listTemp;
-                surface_type_type __listTemp;
-                __listTemp.push_back( boost::make_tuple( __shape,__name,0,__meshSize ) );
-                _M_surfaceList->push_back( __listTemp );
-            }
-
-#else
-
-            for ( uint n=0; n<__nbsurface; ++n )
-            {
-                //std::pair<int,int> listEmpty;listEmpty.clear();
+                //Attention 0 par defaut pour dire que ce n'est pas initialiser
                 std::pair<int,int> listEmpty = std::make_pair( 0,0 );
                 surface_type_type __listTemp;
                 __listTemp.push_back( boost::make_tuple( __shape,__name,listEmpty,__meshSize ) );
                 _M_surfaceList->push_back( __listTemp );
             }
-
-#endif
-
-
         }
 
         if ( dim==3 )
         {
             //Attention 0 par defaut pour dire que ce n'est pas initialiser
-            for ( uint n=0; n<__nbvolume; ++n )
+            for ( uint16_type n=0; n<__nbvolume; ++n )
             {
-#if 0
-                //std::ostringstream ostr;ostr<< n;
-                volume_type_type __listTemp;
-                __listTemp.clear();
-                __listTemp.push_back( boost::make_tuple( __shape,__name/*+ostr.str()*/,0,__meshSize ) );
-#else
                 std::pair<int,int> listEmpty = std::make_pair( 0,0 );
                 surface_type_type __listTemp;
                 __listTemp.push_back( boost::make_tuple( __shape,__name,listEmpty,__meshSize ) );
-#endif
                 _M_volumeList->push_back( __listTemp );
             }
 
             std::map<int,std::list<int> > listEmpty;
             listEmpty.clear();
-            //for(uint n=0;n<__nbvolume;++n)
-            //    {
-            //        listEmpty.clear();
-            //    }
             surfaceloop_type_type __listTemp;
             __listTemp.clear();
             __listTemp.push_back( boost::make_tuple( __shape,__name,listEmpty ) );
             _M_surfaceLoopList->push_back( __listTemp );
-
-
-
-
         }
 
     }
@@ -1129,7 +1096,7 @@ public:
     /*
      * Generate the gmsh code
      */
-    /*std::string*/void geoStr();
+    void geoStr();
 
     /*
      * Clean
@@ -1263,35 +1230,36 @@ public:
      *_________________________________________________*
      *_________________________________________________*/
 
-    uint dim() const
+    uint16_type dim() const
     {
         return  _M_dim;
     }
-    uint cptPt() const
+    uint16_type cptPt() const
     {
+
         return _M_cptPt;
     }
-    uint cptLine() const
+    uint16_type cptLine() const
     {
         return _M_cptLine;
     }
-    uint cptLineLoop() const
+    uint16_type cptLineLoop() const
     {
         return _M_cptLineLoop;
     }
-    uint cptSurface() const
+    uint16_type cptSurface() const
     {
         return _M_cptSurface;
     }
-    uint cptTableau() const
+    uint16_type cptTableau() const
     {
         return _M_cptTableau;   //voir les extrudes par exemple
     }
-    uint cptSurfaceLoop() const
+    uint16_type cptSurfaceLoop() const
     {
         return _M_cptSurfaceLoop;
     }
-    uint cptVolume() const
+    uint16_type cptVolume() const
     {
         return _M_cptVolume;
     }
@@ -1414,19 +1382,19 @@ public:
      *_________________________________________________*
      *_________________________________________________*/
 
-    uint _M_dim;
+    uint16_type _M_dim;
     // memory
-    uint _M_cptPt;
-    uint _M_cptLine;
-    uint _M_cptLineLoop;
-    uint _M_cptSurface;
-    uint _M_cptTableau;
-    uint _M_cptSurfaceLoop;
-    uint _M_cptVolume;
+    uint16_type _M_cptPt;
+    uint16_type _M_cptLine;
+    uint16_type _M_cptLineLoop;
+    uint16_type _M_cptSurface;
+    uint16_type _M_cptTableau;
+    uint16_type _M_cptSurfaceLoop;
+    uint16_type _M_cptVolume;
 
     // gestion des surface : shape,name,value
     // value is the marker associated to the planeSurface (init to 0 and to use when call geoStr())
-    //std::list< std::list< boost::tuple<std::string,std::string, uint > > > _M_surfaceList;
+    //std::list< std::list< boost::tuple<std::string,std::string, uint16_type > > > _M_surfaceList;
     boost::shared_ptr<ligne_name_type> _M_ligneList;
     boost::shared_ptr<surface_name_type> _M_surfaceList;
     boost::shared_ptr<volume_name_type> _M_volumeList;
@@ -1460,7 +1428,7 @@ public:
 
 void run( data_geo_ptrtype __dg );
 
-template <uint Numero>
+template <uint16_type Numero>
 node_type
 param( data_geo_ptrtype __dg );
 
@@ -1816,9 +1784,7 @@ computeBasisOrthogonal( node_type dir,node_type centre );
             GEOTOOL_SHAPE_NAME_CLASS(BOOST_PP_TUPLE_ELEM(2,0,state))(double __meshSize, \
                                                                      std::string __name, \
                                                                      GEOTOOL_SHAPE_PARAM_SIGNATURE(state) \
-                                                                     uint type = 0 ) /*Ne sert a rien, juste a cause de la virgule au dessus)*/ \
-            /*Node __param0,                                            \
-              Node __param1 )*/                                         \
+                                                                     uint16_type type = 0 ) /*Ne sert a rien, juste a cause de la virgule au dessus)*/ \
                 :                                                       \
                 GeoGMSHTool( GEOTOOL_SHAPE_DIM(BOOST_PP_TUPLE_ELEM(2,0,state)),shape(), __name, __meshSize), \
                 _M_name(__name)                                         \
@@ -1866,9 +1832,9 @@ computeBasisOrthogonal( node_type dir,node_type centre );
                                              (marker7, (bool), false)   \
                                              (marker8, (bool), false)   \
                                              (marker9, (bool), false)   \
-                                             (marker10, (bool), false)   \
-                                             (marker11, (bool), false)   \
-                                             (marker12, (bool), false)   \
+                                             (marker10, (bool), false)  \
+                                             (marker11, (bool), false)  \
+                                             (marker12, (bool), false)  \
                                              ))                         \
                 {                                                       \
                                                                         \
@@ -1882,12 +1848,12 @@ computeBasisOrthogonal( node_type dir,node_type centre );
                         marker7=true;                                   \
                         marker8=true;                                   \
                         marker9=true;                                   \
-                        marker10=true;                                   \
-                        marker11=true;                                   \
-                        marker12=true;                                   \
+                        marker10=true;                                  \
+                        marker11=true;                                  \
+                        marker12=true;                                  \
                     }                                                   \
                                                                         \
-                    std::list<marker_base_type > __listMarker = (*(_M_markShape))/*[this->shape()]*/[type][name]; \
+                    std::list<marker_base_type > __listMarker = (*(_M_markShape))[type][name]; \
                                                                         \
                                                                         \
                     if (type=="point")                                  \
@@ -1916,13 +1882,8 @@ computeBasisOrthogonal( node_type dir,node_type centre );
                                                                        1), BOOST_PP_TUPLE_ELEM(2,0,state)), \
                                                       GEOTOOL_FOR_COMP1, \
                                                       GEOTOOL_FOR_INCR1, \
-                                                      GEOTOOL_FOR_MARKER_SURFACE_MACRO),\
+                                                      GEOTOOL_FOR_MARKER_SURFACE_MACRO), \
                                         )                               \
-                            /*BOOST_PP_FOR( (0, BOOST_PP_SUB( GEOTOOL_SHAPE_NBSURFACE(BOOST_PP_TUPLE_ELEM(2,0,state)),1), \
-                                           BOOST_PP_TUPLE_ELEM(2,0,state)), \
-                                          GEOTOOL_FOR_COMP1,            \
-                                          GEOTOOL_FOR_INCR1,            \
-                                          GEOTOOL_FOR_MARKER_SURFACE_MACRO)*/ \
                                 }                                       \
                     else if (type=="volume")                            \
                         {                                               \
@@ -1934,14 +1895,9 @@ computeBasisOrthogonal( node_type dir,node_type centre );
                                                       GEOTOOL_FOR_INCR1, \
                                                       GEOTOOL_FOR_MARKER_VOLUME_MACRO), \
                                         )                               \
-                                /*BOOST_PP_FOR( (0, BOOST_PP_SUB(  GEOTOOL_SHAPE_NBVOLUME(BOOST_PP_TUPLE_ELEM(2,0,state)),1), \
-                                           BOOST_PP_TUPLE_ELEM(2,0,state)), \
-                                          GEOTOOL_FOR_COMP1,            \
-                                          GEOTOOL_FOR_INCR1,            \
-                                          GEOTOOL_FOR_MARKER_VOLUME_MACRO)*/ \
                                 }                                       \
                                                                         \
-                    (*(_M_markShape))[type][name] = __listMarker; \
+                    (*(_M_markShape))[type][name] = __listMarker;       \
                 }                                                       \
                                                                         \
                                                                         \
