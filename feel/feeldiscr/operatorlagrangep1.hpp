@@ -37,7 +37,7 @@
 
 namespace Feel
 {
-namespace detail
+namespace detailOpLagP1
 {
 /**
  * \internal
@@ -68,7 +68,7 @@ struct SpaceToLagrangeP1Space
             mpl::identity<typename SelectConvex<Tensor2>::type> >::type>::type::type basis_type;
 
 
-    typedef FunctionSpace<image_mesh_type, fusion::vector<basis_type> > image_space_type;
+    typedef FunctionSpace<image_mesh_type, bases<basis_type> > image_space_type;
 };
 
 }
@@ -83,10 +83,10 @@ template<typename SpaceType>
 class OperatorLagrangeP1
     :
     //public OperatorInterpolation<SpaceType, typename detail::SpaceToLagrangeP1Space<SpaceType>::image_space_type>
-public OperatorLinear<SpaceType, typename detail::SpaceToLagrangeP1Space<SpaceType>::image_space_type>
+public OperatorLinear<SpaceType, typename detailOpLagP1::SpaceToLagrangeP1Space<SpaceType>::image_space_type>
 {
     //typedef OperatorInterpolation<SpaceType, typename detail::SpaceToLagrangeP1Space<SpaceType>::image_space_type> super;
-    typedef OperatorLinear<SpaceType, typename detail::SpaceToLagrangeP1Space<SpaceType>::image_space_type> super;
+    typedef OperatorLinear<SpaceType, typename detailOpLagP1::SpaceToLagrangeP1Space<SpaceType>::image_space_type> super;
 
 public:
 
@@ -122,8 +122,8 @@ public:
      */
     typedef std::vector<std::list<size_type> > el2el_type;
 
-    typedef typename detail::SpaceToLagrangeP1Space<SpaceType>::convex_type domain_convex_type;
-    typedef typename detail::SpaceToLagrangeP1Space<SpaceType>::image_convex_type image_convex_type;
+    typedef typename detailOpLagP1::SpaceToLagrangeP1Space<SpaceType>::convex_type domain_convex_type;
+    typedef typename detailOpLagP1::SpaceToLagrangeP1Space<SpaceType>::image_convex_type image_convex_type;
     //typedef PointSetWarpBlend<domain_convex_type, domain_space_type::basis_type::nOrder, value_type> pset_type;
     typedef PointSetFekete<domain_convex_type, domain_space_type::basis_type::nOrder, value_type> pset_type;
     typedef PointSetToMesh<domain_convex_type, value_type> p2m_type;
