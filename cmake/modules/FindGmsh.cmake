@@ -36,6 +36,7 @@ if ( FEELPP_ENABLE_GMSH_LIBRARY )
     DOC "Directory where GMSH header files are stored" )
   include_directories(${GMSH_INCLUDE_DIR})
   if ( GMSH_INCLUDE_DIR )
+	set( FEELPP_HAS_GMSH_H 1 )
     FIND_PATH(GMSH_ADAPTMESH_INCLUDE_DIR
       Openfile.h Field.h
       PATHS ${GMSH_INCLUDE_DIR}
