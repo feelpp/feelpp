@@ -759,7 +759,6 @@ public:
 
         if ( reuse_prec == false )
         {
-            this->setPrecMatrixStructure( SAME_NONZERO_PATTERN );
             ret = solve( matrix, matrix, _sol, rhs );
         }
 
