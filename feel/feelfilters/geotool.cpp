@@ -251,8 +251,8 @@ GeoGMSHTool::opFusion( const GeoGMSHTool & m,int __typeOp )
     }
 
     //update marker
-    marker_type_const_iterator_type itMarkType = m.markerTypeBegin( /*itShape2->first*/ );
-    marker_type_const_iterator_type itMarkType_end = m.markerTypeEnd( /*itShape2->first*/ );
+    marker_type_const_iterator_type itMarkType = m.markerTypeBegin();
+    marker_type_const_iterator_type itMarkType_end = m.markerTypeEnd();
 
     while ( itMarkType!=itMarkType_end )
     {
@@ -324,11 +324,11 @@ GeoGMSHTool::geoStr()
 {
 
     //data memory ( type->shape->name )
-    std::vector<std::map<std::string,std::map<std::string, std::map<uint,uint> > > > __dataMemGlob( 6 );
-    std::vector<std::map<std::string,std::map<std::string, std::map<uint,bool> > > > __dataMemGlobSurf1( 2 );
-    std::vector<std::map<std::string,std::map<std::string, std::map<uint,std::string> > > > __dataMemGlobSurf2( 2 );
-    std::vector<std::map<std::string,std::map<std::string, std::map<uint,bool> > > > __dataMemGlobIsRuled( 1 );
-    std::vector<std::map<std::string,std::map<std::string, std::map<uint,std::list<uint> > > > > __dataMemGlobPtsInSurf( 1 );
+    std::vector<std::map<std::string,std::map<std::string, std::map<uint16_type,uint16_type> > > > __dataMemGlob( 6 );
+    std::vector<std::map<std::string,std::map<std::string, std::map<uint16_type,bool> > > > __dataMemGlobSurf1( 2 );
+    std::vector<std::map<std::string,std::map<std::string, std::map<uint16_type,std::string> > > > __dataMemGlobSurf2( 2 );
+    std::vector<std::map<std::string,std::map<std::string, std::map<uint16_type,bool> > > > __dataMemGlobIsRuled( 1 );
+    std::vector<std::map<std::string,std::map<std::string, std::map<uint16_type,std::list<uint16_type> > > > > __dataMemGlobPtsInSurf( 1 );
     // type -> name -> num surfLoop -> list de surfLoop
     std::map<std::string,std::map<std::string, std::map<int,std::list<int> > > > __dataMemGlobSurfaceLoop;
     __dataMemGlobSurfaceLoop.clear();
@@ -462,7 +462,7 @@ GeoGMSHTool::geoStr()
         __dataMemGlobSurf1[1][Qshape][Qname] = ( *( boost::get<4>( *__data_geoTool ) ) )[1]; // bool : volume is tab gmsh
         __dataMemGlobSurf2[1][Qshape][Qname] = ( *( boost::get<5>( *__data_geoTool ) ) )[1]; // string : volume name tab :
         __dataMemGlobIsRuled[0][Qshape][Qname] = ( *( boost::get<6>( *__data_geoTool ) ) )[0]; // bool : surface is ruled
-        __dataMemGlobPtsInSurf[0][Qshape][Qname] = ( *( boost::get<7>( *__data_geoTool ) ) )[0]; // list of uint : pts in surface
+        __dataMemGlobPtsInSurf[0][Qshape][Qname] = ( *( boost::get<7>( *__data_geoTool ) ) )[0]; // list of uint16_type : pts in surface
 
         __dataMemGlobSurfaceLoop[Qshape][Qname] = __data_geoTool->get<8>();
 
@@ -517,27 +517,27 @@ GeoGMSHTool::geoStr()
             else
                 __surface_str << "Ruled Surface(" << __surfnumber << ") = {" ;
 
+            mapSurfaceRenumbering[itSurf2->get<2>().first] = __surfnumber;
+
             surface_type_const_iterator_type itSurf2_end = --itSurf->end();
             for ( ; itSurf2 != itSurf2_end; ++itSurf2 )
             {
                 //std::cout << "\n num Glob SURF " << itSurf2->get<2>().first << " __surfnumber " << __surfnumber << std::endl;
-                //__surface_str << boost::get<2>(*itSurf2) << ",";
-                __surface_str << itSurf2->get<2>().second << ","; //!!!!!!!!!!!!!!!!!!!!!!!
+                __surface_str << itSurf2->get<2>().second << ",";
             }
 
             // ATTTENTION : FAIT ICI CAR 1 SEUL!!!!!!!!!!!!!!!!!!
-            mapSurfaceRenumbering[itSurf2->get<2>().first] = __surfnumber;
+            //mapSurfaceRenumbering[itSurf2->get<2>().first] = __surfnumber;
             //std::cout << "\n num Glob SURF " << itSurf2->get<2>().first << " "<< itSurf2->get<2>().second << " __surfnumber " << __surfnumber << std::endl;
 
-            //__surface_str << boost::get<2>(*itSurf2);
-            __surface_str << itSurf2->get<2>().second;//!!!!!!!!!!!!!!!!!!!!!!!
+            __surface_str << itSurf2->get<2>().second;
 
             __surface_str << "};\n";
 
             //maybe add more pts in surface
-            auto ptInSurf_it = __dataMemGlobPtsInSurf[0][boost::get<0>( *itSurf2 )][boost::get<1>( *itSurf2 )][__surfnumber].begin();
-            auto ptInSurf_en = __dataMemGlobPtsInSurf[0][boost::get<0>( *itSurf2 )][boost::get<1>( *itSurf2 )][__surfnumber].end();
-
+            itSurf2 = itSurf->begin();
+            auto ptInSurf_it = __dataMemGlobPtsInSurf[0][boost::get<0>( *itSurf2 )][boost::get<1>( *itSurf2 )][itSurf2->get<2>().first].begin();
+            auto ptInSurf_en = __dataMemGlobPtsInSurf[0][boost::get<0>( *itSurf2 )][boost::get<1>( *itSurf2 )][itSurf2->get<2>().first].end();
             for ( ; ptInSurf_it != ptInSurf_en ; ++ptInSurf_it )
             {
                 __surface_str << "Point{" << *ptInSurf_it << "} In Surface{" << __surfnumber << "};\n";
@@ -618,35 +618,8 @@ GeoGMSHTool::geoStr()
     std::ostringstream __volume_str;
     //counter of volume
     uint16_type __volnumber=1;
-    std::map<std::string,std::map<std::string, std::map<uint,uint> > > __dataVolumePost;
-    std::map<std::string,std::map<std::string, uint> > __dataVolumePostCpt;
-#if 0
-
-    for ( ; itVol != itVol_end; ++itVol )
-    {
-        volume_type_const_iterator_type itVol2 = itVol->begin();
-        volume_type_const_iterator_type itVol2_end = --itVol->end();
-
-        // si le volume est issue d'un extrude => stocker dans un tab gmsh => pas d'affichage
-        if ( ! __dataMemGlobSurf1[1][boost::get<0>( *itVol2 )][boost::get<1>( *itVol2 )][__volnumber] )
-        {
-            __volume_str << "Volume(" << __volnumber << ") = {" ;
-
-            for ( ; itVol2 != itVol2_end; ++itVol2 )
-            {
-                __volume_str << boost::get<2>( *itVol2 ) << ",";
-            }
-
-            __volume_str << boost::get<2>( *itVol2 );
-
-            __volume_str << "};\n";
-        }
-
-        ++__volnumber;
-
-    }
-
-#else
+    std::map<std::string,std::map<std::string, std::map<uint16_type,uint16_type> > > __dataVolumePost;
+    std::map<std::string,std::map<std::string, uint16_type> > __dataVolumePostCpt;
 
     for ( ; itVol != itVol_end; ++itVol )
     {
@@ -670,17 +643,15 @@ GeoGMSHTool::geoStr()
 
 
         // si le volume est issue d'un extrude => stocker dans un tab gmsh => pas d'affichage
-        if ( ! __dataMemGlobSurf1[1][boost::get<0>( *itVol2 )][boost::get<1>( *itVol2 )][__volnumber] )
+        if ( true /*! __dataMemGlobSurf1[1][boost::get<0>( *itVol2 )][boost::get<1>( *itVol2 )][__volnumber]*/ )
         {
             __volume_str << "Volume(" << __volnumber << ") = {" ;
 
             for ( ; itVol2 != itVol2_end; ++itVol2 )
             {
-                //__volume_str << boost::get<2>(*itVol2) << ",";
-                __volume_str << itVol2->get<2>().second << ","; //!!!!!!!!!!!!!!!!!!!!!!!
+                __volume_str << itVol2->get<2>().second << ",";
             }
 
-            //__volume_str << boost::get<2>(*itVol2);
             __volume_str << itVol2->get<2>().second;
             __volume_str << "};\n";
         }
@@ -689,25 +660,18 @@ GeoGMSHTool::geoStr()
 
     }
 
-#endif
 
     this->updateOstr( __volume_str.str() );
 
 
-    //write marker
-    //iterate on the shape
-    //itShape =  _M_map_Shape->begin();
-    //itShape_end = _M_map_Shape->end();
-    //while (itShape!=itShape_end)
-    //{
     // generate the code for the marker
-    marker_type_const_iterator_type itMarkType= ( *( _M_markShape ) )/*[itShape->first]*/.begin();
-    marker_type_const_iterator_type itMarkType_end=( *( _M_markShape ) )/*[itShape->first]*/.end();
+    marker_type_const_iterator_type itMarkType= ( *( _M_markShape ) ).begin();
+    marker_type_const_iterator_type itMarkType_end=( *( _M_markShape ) ).end();
 
     while ( itMarkType!=itMarkType_end )
     {
-        marker_markerName_const_iterator_type itMarkName = ( *( _M_markShape ) )/*[itShape->first]*/[itMarkType->first].begin();
-        marker_markerName_const_iterator_type itMarkName_end=( *( _M_markShape ) )/*[itShape->first]*/[itMarkType->first].end();
+        marker_markerName_const_iterator_type itMarkName = ( *( _M_markShape ) )[itMarkType->first].begin();
+        marker_markerName_const_iterator_type itMarkName_end=( *( _M_markShape ) )[itMarkType->first].end();
 
         while ( itMarkName!=itMarkName_end )
         {
@@ -991,7 +955,7 @@ void run( data_geo_ptrtype __dg )
  *_________________________________________________*
  *_________________________________________________*/
 
-template <uint Numero>
+template <uint16_type Numero>
 node_type
 param( data_geo_ptrtype __dg )
 {
@@ -1199,33 +1163,53 @@ writePlaneSurface( uint16_type __numLoc, data_geo_ptrtype __dg , uint16_type __i
 
     bool __find=false;
     //Memorize in surfaceList
-    GeoGMSHTool::surface_name_type::iterator itSurf = boost::get<0>( *__dg )->_M_surfaceList->begin();
-    GeoGMSHTool::surface_name_type::iterator itSurf_end = boost::get<0>( *__dg )->_M_surfaceList->end();
+    GeoGMSHTool::surface_name_type::iterator itSurf = __dg->get<0>()->_M_surfaceList->begin();
+    GeoGMSHTool::surface_name_type::iterator itSurf_end = __dg->get<0>()->_M_surfaceList->end();
 
+    //uint cptSurf=0, refLineLoop=0;
+    uint16_type cptSurf = __dg->get<0>()->cptSurface();
+    uint16_type refLineLoop= ( *( boost::get<1>( *__dg ) ) )[2][__ind];
+
+#if 1
     for ( ; itSurf !=itSurf_end; ++itSurf )
     {
-        GeoGMSHTool::surface_type_type::iterator itSurf2 = itSurf->begin();
-        GeoGMSHTool::surface_type_type::iterator itSurf2_end = itSurf->end();
-
-        while ( itSurf2 !=itSurf2_end )
+        auto itSurf2 = itSurf->begin();
+        if (  boost::get<0>( *itSurf2 ) == boost::get<2>( *__dg ) &&  // same shape
+              boost::get<1>( *itSurf2 ) == boost::get<3>( *__dg ) ) // same name
         {
-            if ( boost::get<0>( *itSurf2 ) == boost::get<2>( *__dg ) ) // same shape
+            if ( itSurf2->get<2>().second == 0 && !__find )
             {
-                if ( boost::get<1>( *itSurf2 ) == boost::get<3>( *__dg ) ) // same name
-                {
-                    //on cherche la 1ere surface non init
-                    if ( itSurf2->get<2>().second == 0 && !__find )
-                    {
-                        itSurf2->get<2>().first = __dg->get<0>()->cptSurface();
-                        itSurf2->get<2>().second = ( *( boost::get<1>( *__dg ) ) )[2][__ind]; // get the lineloop
-                        __find=true;
-                    }
-                }
+                itSurf2->get<2>().first = cptSurf;
+                itSurf2->get<2>().second = refLineLoop;
+                __find=true;
             }
-
-            ++itSurf2;
         }
     }
+
+    itSurf = __dg->get<0>()->_M_surfaceList->begin();
+    bool __find2=false;
+#endif
+    for ( ; itSurf !=itSurf_end; ++itSurf )
+    {
+        if (itSurf->size()<2) continue;
+        GeoGMSHTool::surface_type_type::iterator itSurf2 = itSurf->begin();++itSurf2;
+        GeoGMSHTool::surface_type_type::iterator itSurf2_end = itSurf->end();
+        while ( itSurf2 !=itSurf2_end )
+        {
+            if (  boost::get<0>( *itSurf2 ) == boost::get<2>( *__dg ) &&  // same shape
+                  boost::get<1>( *itSurf2 ) == boost::get<3>( *__dg ) ) // same name
+                {
+                    //on cherche la 1ere surface non init
+                    if ( itSurf2->get<2>().second == 0 && !__find2 )
+                    {
+                        itSurf2->get<2>().first = cptSurf;//__dg->get<0>()->cptSurface();
+                        itSurf2->get<2>().second = refLineLoop;// ( *( boost::get<1>( *__dg ) ) )[2][__ind]; // get the lineloop
+                        __find2=true;
+                    }
+                }
+            ++itSurf2;
+        } //
+    } // for ( ; itSurf !=itSurf_end; ++itSurf )
 
     ++boost::get<0>( *__dg )->_M_cptSurface; //update counter
 }
@@ -1245,6 +1229,7 @@ writeRuledSurface( uint16_type __numLoc, data_geo_ptrtype __dg , uint16_type __i
     GeoGMSHTool::surface_name_type::iterator itSurf = boost::get<0>( *__dg )->_M_surfaceList->begin();
     GeoGMSHTool::surface_name_type::iterator itSurf_end = boost::get<0>( *__dg )->_M_surfaceList->end();
 
+#if 0
     for ( ; itSurf !=itSurf_end; ++itSurf )
     {
         GeoGMSHTool::surface_type_type::iterator itSurf2 = itSurf->begin();
@@ -1269,6 +1254,83 @@ writeRuledSurface( uint16_type __numLoc, data_geo_ptrtype __dg , uint16_type __i
             ++itSurf2;
         }
     }
+#elif 0
+    uint16_type cptSurf=0, refLineLoop=0;
+    for ( ; itSurf !=itSurf_end; ++itSurf )
+    {
+        GeoGMSHTool::surface_type_type::iterator itSurf2 = itSurf->begin();
+        GeoGMSHTool::surface_type_type::iterator itSurf2_end = itSurf->end();
+        while ( itSurf2 !=itSurf2_end )
+        {
+            if (  boost::get<0>( *itSurf2 ) == boost::get<2>( *__dg ) &&  // same shape
+                  boost::get<1>( *itSurf2 ) == boost::get<3>( *__dg ) ) // same name
+                {
+                    if ( itSurf2->get<2>().second == 0 )
+                    {
+                        //on cherche la 1ere surface non init
+                        if (!__find)
+                        {
+                            cptSurf = __dg->get<0>()->cptSurface();
+                            refLineLoop= ( *( boost::get<1>( *__dg ) ) )[2][__ind];
+                            itSurf2->get<2>().first = cptSurf;//__dg->get<0>()->cptSurface();
+                            itSurf2->get<2>().second = refLineLoop;// ( *( boost::get<1>( *__dg ) ) )[2][__ind]; // get the lineloop
+                            __find=true;
+                        }
+                        else if (__dg->get<0>()->dim()==2)
+                        {
+                            itSurf2->get<2>().first = cptSurf;
+                            itSurf2->get<2>().second = refLineLoop;
+                        }
+                    }
+                }
+
+            ++itSurf2;
+        } //
+    } // for ( ; itSurf !=itSurf_end; ++itSurf )
+#else
+    uint16_type cptSurf = __dg->get<0>()->cptSurface();
+    uint16_type refLineLoop= ( *( boost::get<1>( *__dg ) ) )[2][__ind];
+
+    for ( ; itSurf !=itSurf_end; ++itSurf )
+    {
+        auto itSurf2 = itSurf->begin();
+        if (  boost::get<0>( *itSurf2 ) == boost::get<2>( *__dg ) &&  // same shape
+              boost::get<1>( *itSurf2 ) == boost::get<3>( *__dg ) ) // same name
+        {
+            if ( itSurf2->get<2>().second == 0 && !__find )
+            {
+                itSurf2->get<2>().first = cptSurf;
+                itSurf2->get<2>().second = refLineLoop;
+                __find=true;
+            }
+        }
+    }
+
+    itSurf = __dg->get<0>()->_M_surfaceList->begin();
+    bool __find2=false;
+
+    for ( ; itSurf !=itSurf_end; ++itSurf )
+    {
+        if (itSurf->size()<2) continue;
+        GeoGMSHTool::surface_type_type::iterator itSurf2 = itSurf->begin();++itSurf2;
+        GeoGMSHTool::surface_type_type::iterator itSurf2_end = itSurf->end();
+        while ( itSurf2 !=itSurf2_end )
+        {
+            if (  boost::get<0>( *itSurf2 ) == boost::get<2>( *__dg ) &&  // same shape
+                  boost::get<1>( *itSurf2 ) == boost::get<3>( *__dg ) ) // same name
+                {
+                    //on cherche la 1ere surface non init
+                    if ( itSurf2->get<2>().second == 0 && !__find2 )
+                    {
+                        itSurf2->get<2>().first = cptSurf;//__dg->get<0>()->cptSurface();
+                        itSurf2->get<2>().second = refLineLoop;// ( *( boost::get<1>( *__dg ) ) )[2][__ind]; // get the lineloop
+                        __find2=true;
+                    }
+                }
+            ++itSurf2;
+        } //
+    } // for ( ; itSurf !=itSurf_end; ++itSurf )
+#endif
 
     ++boost::get<0>( *__dg )->_M_cptSurface;
 }
@@ -1428,9 +1490,10 @@ writeVolume( uint16_type __numLoc, data_geo_ptrtype __dg , uint16_type __ind )
 
     bool __find=false;
     //Memorize in volumeList
-    GeoGMSHTool::volume_name_type::iterator itSurf = boost::get<0>( *__dg )->_M_volumeList->begin();
-    GeoGMSHTool::volume_name_type::iterator itSurf_end = boost::get<0>( *__dg )->_M_volumeList->end();
+    GeoGMSHTool::volume_name_type::iterator itVol = boost::get<0>( *__dg )->_M_volumeList->begin();
+    GeoGMSHTool::volume_name_type::iterator itVol_end = boost::get<0>( *__dg )->_M_volumeList->end();
 
+#if 0
     for ( ; itSurf !=itSurf_end; ++itSurf )
     {
         GeoGMSHTool::volume_type_type::iterator itSurf2 = itSurf->begin();
@@ -1457,6 +1520,52 @@ writeVolume( uint16_type __numLoc, data_geo_ptrtype __dg , uint16_type __ind )
             ++itSurf2;
         }
     }
+#else
+    uint16_type cptVol = __dg->get<0>()->cptVolume();
+    uint16_type refSurfaceLoop= ( *( boost::get<1>( *__dg ) ) )[4][__ind];
+
+    for ( ; itVol !=itVol_end; ++itVol )
+    {
+        auto itVol2 = itVol->begin();
+        if (  boost::get<0>( *itVol2 ) == boost::get<2>( *__dg ) &&  // same shape
+              boost::get<1>( *itVol2 ) == boost::get<3>( *__dg ) ) // same name
+        {
+            if ( itVol2->get<2>().second == 0 && !__find )
+            {
+                itVol2->get<2>().first = cptVol;
+                itVol2->get<2>().second = refSurfaceLoop;
+                __find=true;
+            }
+        }
+    }
+
+    itVol = __dg->get<0>()->_M_volumeList->begin();
+    bool __find2=false;
+
+    for ( ; itVol !=itVol_end; ++itVol )
+    {
+        if (itVol->size()<2) continue;
+        auto itVol2 = itVol->begin();++itVol2;
+        auto itVol2_end = itVol->end();
+        while ( itVol2 !=itVol2_end )
+        {
+            if (  boost::get<0>( *itVol2 ) == boost::get<2>( *__dg ) &&  // same shape
+                  boost::get<1>( *itVol2 ) == boost::get<3>( *__dg ) ) // same name
+                {
+                    //on cherche la 1ere surface non init
+                    if ( itVol2->get<2>().second == 0 && !__find2 )
+                    {
+                        itVol2->get<2>().first = cptVol;
+                        itVol2->get<2>().second = refSurfaceLoop;
+                        __find2=true;
+                    }
+                }
+            ++itVol2;
+        }
+    } // for ( ; itVol !=itVol_end; ++itVol )
+
+
+#endif
 
     ++boost::get<0>( *__dg )->_M_cptVolume; //update counter
 }
