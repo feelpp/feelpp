@@ -26,26 +26,7 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2008-10-03
  */
-#include <feel/options.hpp>
-#include <feel/feelcore/application.hpp>
-
-#include <feel/feelalg/backend.hpp>
-
-#include <feel/feeldiscr/functionspace.hpp>
-#include <feel/feeldiscr/region.hpp>
-#include <feel/feeldiscr/operatorlinear.hpp>
-#include <feel/feelpoly/im.hpp>
-
-#include <feel/feelfilters/gmsh.hpp>
-#include <feel/feelfilters/exporter.hpp>
-#include <feel/feelfilters/gmshhypercubedomain.hpp>
-#include <feel/feelpoly/polynomialset.hpp>
-
-
-#include <feel/feelvf/vf.hpp>
-
-
-
+#include <feel/feel.hpp>
 
 inline
 Feel::po::options_description
@@ -70,7 +51,7 @@ makeAbout()
                            "0.1",
                            "nD(n=1,2,3) Periodic Laplacian on simplices or simplex products",
                            Feel::AboutData::License_GPL,
-                           "Copyright (c) 2008-2010 Université Joseph Fourier" );
+                           "Copyright (c) 2008-2012 Université Joseph Fourier" );
 
     about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     return about;
@@ -89,9 +70,9 @@ using namespace vf;
 template<int Dim, int Order>
 class PeriodicLaplacian
     :
-public Application
+public Simget
 {
-    typedef Application super;
+    typedef Simget super;
 public:
 
 #define Entity Simplex
@@ -138,7 +119,7 @@ public:
     typedef boost::shared_ptr<export_type> export_ptrtype;
 
     /** constructor */
-    PeriodicLaplacian( int argc, char** argv, AboutData const& ad, po::options_description const& od );
+    PeriodicLaplacian();
 
     /**
      * run the convergence test
@@ -172,9 +153,9 @@ private:
 }; // Periodic
 
 template<int Dim, int Order>
-PeriodicLaplacian<Dim,Order>::PeriodicLaplacian( int argc, char** argv, AboutData const& ad, po::options_description const& od )
+PeriodicLaplacian<Dim,Order>::PeriodicLaplacian()
     :
-    super( argc, argv, ad, od ),
+    super(),
     M_backend( backend_type::build( this->vm() ) ),
 
     // Data
@@ -190,14 +171,6 @@ PeriodicLaplacian<Dim,Order>::PeriodicLaplacian( int argc, char** argv, AboutDat
     //
     timers()
 {
-    if ( this->vm().count( "help" ) )
-    {
-        std::cout << this->optionsDescription() << "\n";
-        return;
-    }
-
-
-
     this->changeRepository( boost::format( "%1%/%2%/P%3%/h_%4%/" )
                             % this->about().appName()
                             % entity_type::name()
@@ -344,18 +317,13 @@ int
 main( int argc, char** argv )
 {
     using namespace Feel;
-    Environment env( argc, argv );
+    Environment env( _argc=argc, _argv=argv,
+                     _desc=makeOptions(),
+                     _about=makeAbout() );
 
-    /* change parameters below */
-    const int nDim = 2;
-    const int nOrder = 4;
-
-    typedef Feel::PeriodicLaplacian<nDim, nOrder> laplacian_periodic_type;
-
-    /* define and run application */
-    laplacian_periodic_type laplacian_periodic( argc, argv, makeAbout(), makeOptions() );
-
-    laplacian_periodic.run();
+    Application app;
+    app.add( new PeriodicLaplacian<2,4>() );
+    app.run();
 }
 
 
