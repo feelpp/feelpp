@@ -1,5 +1,5 @@
 
-foreach(TEST importergmsh)
+foreach(TEST importergmsh geotool)
 
   feelpp_add_test( ${TEST} )
 
