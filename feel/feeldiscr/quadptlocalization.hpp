@@ -33,6 +33,12 @@
 
 #include <feel/feeldiscr/mesh.hpp>
 
+#define FEELPP_EXPORT_QUADLOCALIZATION 0
+#if FEELPP_EXPORT_QUADLOCALIZATION
+#include <feel/feelfilters/exporter.hpp>
+#endif
+
+
 namespace Feel
 {
 
@@ -186,6 +192,7 @@ public :
         return _M_resBilinear;
     }
 
+    //--------------------------------------------------------------------------------------//
 
 
     size_type eltForThisQuadPt( size_type theIdq, mpl::int_<MESH_ELEMENTS> )
@@ -474,6 +481,7 @@ public :
         auto meshTestLocalization = meshTest->tool_localization();
         meshTestLocalization->updateForUse();
 
+
         //auto nQuadPtsInElt = this->im().nPoints();
         //auto nElts = std::distance(elt_it,elt_en);
         //auto nQuadPts = nElts*nQuadPtsInElt;
@@ -558,6 +566,10 @@ public :
         if ( dynamic_cast<void*>( const_cast<MeshBase*>( elt_it->mesh() ) ) == dynamic_cast<void*>( meshTest.get() ) )
             quadMeshIsSameThatTestMesh=true;
 
+#if FEELPP_EXPORT_QUADLOCALIZATION
+        std::map<size_type,std::list<size_type> > mapBetweenMeshes_test;
+        std::map<size_type,std::list<size_type> > mapBetweenMeshes_trial;
+#endif
 
         for ( size_type ide = 0; elt_it != elt_en; ++elt_it, ++ide )
         {
@@ -572,11 +584,6 @@ public :
                 size_type idq = gmc->nPoints()*ide+q;
 
                 // search in trial mesh
-#if 0
-                auto trialAnalysis= meshTrialLocalization->searchElement( gmc->xReal( q ) );
-                auto trialIdElt = trialAnalysis.template get<1>();
-                auto trialNodeRef = trialAnalysis.template get<2>();
-#else
                 ublas::column(ptsReal,0 ) = gmc->xReal( q );
                 if (!quadMeshIsSameThatTrialMesh)
                     {
@@ -589,15 +596,9 @@ public :
                         trialIdElt = gmc->id();
                         trialNodeRef = gmc->xRef(q);
                     }
-#endif
                 trialEltToPtsQuad[trialIdElt].push_back( boost::make_tuple( idq,q,trialNodeRef ) );
 
                 // search in test mesh
-#if 0
-                auto testAnalysis = meshTestLocalization->searchElement( gmc->xReal( q ) );
-                auto testIdElt = testAnalysis.template get<1>();
-                auto testNodeRef = testAnalysis.template get<2>();
-#else
                 if (!quadMeshIsSameThatTestMesh)
                     {
                         auto resLocalisationTest = meshTestLocalization->run_analysis(ptsReal,testIdElt,elt_it->vertices(),mpl::int_<0>());
@@ -609,15 +610,24 @@ public :
                         testIdElt = gmc->id();
                         testNodeRef = gmc->xRef(q);
                     }
-#endif
                 testEltToPtsQuad[testIdElt].push_back( boost::make_tuple( idq,q,testNodeRef ) );
 
                 // relation between test and trial
                 if ( std::find( EltCoupled[testIdElt].begin(),EltCoupled[testIdElt].end(),trialIdElt )==EltCoupled[testIdElt].end() )
+                {
                     EltCoupled[testIdElt].push_back( trialIdElt );
-            }
+                    //std::cout << " testIdElt " << testIdElt << " trialIdElt " << trialIdElt << std::endl;
+#if FEELPP_EXPORT_QUADLOCALIZATION
+                    mapBetweenMeshes_test[testIdElt].push_back( trialIdElt );
+                    mapBetweenMeshes_trial[trialIdElt].push_back( testIdElt );
+#endif
+                }
+            } // for ( int q = 0; q <  gmc->nPoints(); ++ q )
         } // end for( size_type ide ... )
 
+#if FEELPP_EXPORT_QUADLOCALIZATION
+        this->exportQuadLocalization(meshTest,meshTrial,mapBetweenMeshes_test,mapBetweenMeshes_trial);
+#endif
         //std::cout << "[QuadPtLocalization] : localization<MESH_FACES>(bilinear form finish" << std::endl;
 
     } // localization
@@ -647,6 +657,12 @@ public :
         auto meshTestLocalization = meshTest->tool_localization();
         meshTestLocalization->updateForUse();
 
+#if FEELPP_EXPORT_QUADLOCALIZATION
+        std::map<size_type,std::list<size_type> > mapBetweenMeshes_test;
+        std::map<size_type,std::list<size_type> > mapBetweenMeshes_trial;
+#endif
+
+
         //auto nQuadPtsInElt = this->im().nPoints();
         //auto nElts = std::distance(elt_it,elt_en);
         //auto nQuadPts = nElts*nQuadPtsInElt;
@@ -673,11 +689,6 @@ public :
                 size_type idq = gmc->nPoints()*ide+q;
 
                 // search in trial mesh
-#if 0
-                auto trialAnalysis= meshTrialLocalization->searchElement( gmc->xReal( q ) );
-                auto trialIdElt = trialAnalysis.template get<1>();
-                auto trialNodeRef = trialAnalysis.template get<2>();
-#else
                 ublas::column(ptsReal,0 ) = gmc->xReal( q );
                 if (!quadMeshIsSameThatTrialMesh)
                     {
@@ -690,16 +701,10 @@ public :
                         trialIdElt = gmc->id();
                         trialNodeRef = gmc->xRef(q);
                     }
-#endif
                 //std::cout << "\n trialNodeRef " << trialNodeRef << std::endl;
                 trialEltToPtsQuad[trialIdElt].push_back( boost::make_tuple( idq,q,trialNodeRef ) );
 
                 // search in test mesh
-#if 0
-                auto testAnalysis = meshTestLocalization->searchElement( gmc->xReal( q ) );
-                auto testIdElt = testAnalysis.template get<1>();
-                auto testNodeRef = testAnalysis.template get<2>();
-#else
                 if (!quadMeshIsSameThatTestMesh)
                     {
                         auto resLocalisationTest = meshTestLocalization->run_analysis(ptsReal,testIdElt,elt_it->vertices(),mpl::int_<0>());
@@ -711,14 +716,74 @@ public :
                         testIdElt = gmc->id();
                         testNodeRef = gmc->xRef(q);
                     }
-#endif
                 testEltToPtsQuad[testIdElt].push_back( boost::make_tuple( idq,q,testNodeRef ) );
+
+                //std::cout << " AAtestIdElt " << testIdElt << " AAtrialIdElt " << trialIdElt << std::endl;
 
                 // relation between test and trial
                 if ( std::find( EltCoupled[testIdElt].begin(),EltCoupled[testIdElt].end(),trialIdElt )==EltCoupled[testIdElt].end() )
-                    EltCoupled[testIdElt].push_back( trialIdElt );
-            }
+                    {
+                        EltCoupled[testIdElt].push_back( trialIdElt );
+                        //std::cout << " AAtestIdElt " << testIdElt << " AAtrialIdElt " << trialIdElt << std::endl;
+#if FEELPP_EXPORT_QUADLOCALIZATION
+                        mapBetweenMeshes_test[testIdElt].push_back( trialIdElt );
+                        mapBetweenMeshes_trial[trialIdElt].push_back( testIdElt );
+#endif
+                    }
+
+
+#if 0 // try with neighbors
+                auto const& geoeltTrial = meshTrial->element( trialIdElt );
+                for ( uint16_type ms=0; ms < geoeltTrial.nNeighbors(); ms++ )
+                {
+                    const size_type neighborTrial_id = geoeltTrial.neighbor( ms ).first;
+                    if ( neighborTrial_id==invalid_size_type_value ) continue;
+
+                    auto resNeighboor = meshTrialLocalization->isIn( neighborTrial_id,gmc->xReal( q ),elt_it->vertices(),mpl::int_<1>() );
+                    if (resNeighboor.get<0>())
+                    {
+                        trialEltToPtsQuad[neighborTrial_id].push_back( boost::make_tuple( idq,q,resNeighboor.get<1>() ) );
+
+                        if ( std::find( EltCoupled[testIdElt].begin(),EltCoupled[testIdElt].end(),neighborTrial_id )==EltCoupled[testIdElt].end() )
+                            {
+                                EltCoupled[testIdElt].push_back( neighborTrial_id );
+                            }
+#if FEELPP_EXPORT_QUADLOCALIZATION
+                        mapBetweenMeshes_trial[neighborTrial_id].push_back( testIdElt );
+#endif
+                    }
+                } // for ( uint16_type ms=0;...
+
+                auto const& geoeltTest = meshTest->element( testIdElt );
+                for ( uint16_type ms=0; ms < geoeltTest.nNeighbors(); ms++ )
+                {
+                    const size_type neighborTest_id = geoeltTest.neighbor( ms ).first;
+                    if ( neighborTest_id==invalid_size_type_value ) continue;
+
+                    auto resNeighboor = meshTestLocalization->isIn( neighborTest_id,gmc->xReal( q ),elt_it->vertices(),mpl::int_<1>() );
+                    if (resNeighboor.get<0>())
+                    {
+                        testEltToPtsQuad[neighborTest_id].push_back( boost::make_tuple( idq,q,resNeighboor.get<1>() ) );
+
+                        if ( std::find( EltCoupled[neighborTest_id].begin(),EltCoupled[neighborTest_id].end(),trialIdElt )==EltCoupled[neighborTest_id].end() )
+                            {
+                                EltCoupled[neighborTest_id].push_back( trialIdElt );
+                            }
+#if FEELPP_EXPORT_QUADLOCALIZATION
+                        mapBetweenMeshes_test[neighborTest_id].push_back( trialIdElt );
+#endif
+                    }
+                } // for ( uint16_type ms=0;...
+#endif
+
+
+
+            } // for ( int q = 0; q <  gmc->nPoints(); ++ q )
         } // end for( size_type ide ... )
+
+#if FEELPP_EXPORT_QUADLOCALIZATION
+        this->exportQuadLocalization(meshTest,meshTrial,mapBetweenMeshes_test,mapBetweenMeshes_trial);
+#endif
 
         //std::cout << "[QuadPtLocalization] : localization<MESH_ELEMENTS>(bilinear form finish" << std::endl;
     }
@@ -801,16 +866,14 @@ public :
 
         for ( ; eltCoupled_it != eltCoupled_en ; ++eltCoupled_it, ++theIdEltTest )
         {
+            if (eltCoupled_it->size()==0) continue;
+
             //init map
             result_temp1_type mapTrial2idq;
-            //auto eltTrial_it = eltCoupled_it->begin();
-            //auto eltTrial_en = eltCoupled_it->end();
-            //for ( ; eltTrial_it != eltTrial_en ; ++eltTrial_it ) mapTrial2idq[*eltTrial_it].clear();
 
             // search
             auto quadPtTest_it = testEltToPtsQuad[theIdEltTest].begin();
-            auto quadPtTest_en = testEltToPtsQuad[theIdEltTest].end();
-
+            auto const quadPtTest_en = testEltToPtsQuad[theIdEltTest].end();
             for ( ; quadPtTest_it != quadPtTest_en ; ++quadPtTest_it )
             {
                 // get test data
@@ -821,21 +884,24 @@ public :
                 // search in trial data
                 auto theRes = this->findQuadPt( *eltCoupled_it,trialEltToPtsQuad,theIdq );
                 // get trial data
-                auto theIdEltTrial = theRes.template get<0>();
-                auto theNodeRefTrial = theRes.template get<1>();
+                auto const theIdEltTrial = theRes.template get<0>();
+                auto const theNodeRefTrial = theRes.template get<1>();
                 // add into the temporary map
+
+                //std::cout << " theIdEltTrial " << theIdEltTrial <<"("<<meshTrial->numElements()<<")" << " theIdEltTest " << theIdEltTest <<"("<<meshTest->numElements()<<")"<<std::endl;
                 mapTrial2idq[theIdEltTrial].push_back( boost::make_tuple( theq,theIdq,theNodeRefTest,theNodeRefTrial ) );
             }
 
             result_temp2_type mapiIdTrial2qAndPtRef;
+
             // build matrix_node of ptsRef (test and trial)
             auto map_it = mapTrial2idq.begin();
             auto map_en = mapTrial2idq.end();
-
             for ( ; map_it != map_en ; ++map_it )
             {
                 // init matrix node
                 auto nPtsRef = map_it->second.size();
+                //std::cout << "nPtsRef " << nPtsRef << std::endl;
                 matrix_node_type ptsRefTest( mesh_test_type::nDim,nPtsRef );
                 matrix_node_type ptsRefTrial( mesh_trial_type::nDim,nPtsRef );
                 // init map between index node and index quad point
@@ -853,7 +919,6 @@ public :
                 }
 
                 mapiIdTrial2qAndPtRef[map_it->first] = boost::make_tuple( indexLocalToQuad,ptsRefTest,ptsRefTrial );
-
             }
 
             // add to result container
@@ -897,8 +962,68 @@ private :
             else resId=*eltTrial_it;
         }
 
+        if ( !find ) std::cout << "BUG in findQuadPt " << std::endl;
+
         return boost::make_tuple( resId,resNodeRef );
     }
+
+
+#if FEELPP_EXPORT_QUADLOCALIZATION
+    template <typename Mesh1Type,typename Mesh2Type>
+    void
+    exportQuadLocalization( boost::shared_ptr<Mesh1Type> meshTest,
+                            boost::shared_ptr<Mesh2Type> meshTrial,
+                            std::map<size_type,std::list<size_type> > const& mapBetweenMeshes_test,
+                            std::map<size_type,std::list<size_type> > const& mapBetweenMeshes_trial ) const
+    {
+        typedef FunctionSpace<Mesh1Type, bases<Lagrange<0, Scalar,Discontinuous> > > space_test_disc_type;
+        auto spaceGraphProjTest = space_test_disc_type::New( meshTest );
+        auto elemTest_itt  = meshTest->beginElementWithProcessId( 0 );
+        auto elemTest_ent  = meshTest->endElementWithProcessId( 0 );
+        auto graphProjTest = spaceGraphProjTest->element();graphProjTest.zero();
+        for ( ; elemTest_itt != elemTest_ent; ++elemTest_itt )
+            {
+                if ( mapBetweenMeshes_test.find( elemTest_itt->id() ) != mapBetweenMeshes_test.end() )
+                    {
+                        if ( mapBetweenMeshes_test.find( elemTest_itt->id() )->second.size()>0 )
+                            {
+                                auto element_dof1 = spaceGraphProjTest->dof()->getIndices( elemTest_itt->id() );
+                                graphProjTest( element_dof1[0] ) = 1;
+                            }
+                    }
+            }
+        //auto exporterTest = boost::shared_ptr<Feel::Exporter<Mesh1Type> >( Feel::Exporter<Mesh1Type>::New( "ensight", "ExportQuadLocalizationTest" ) );
+        auto exporterTest = Feel::Exporter<Mesh1Type>::New( "ensight", "ExportQuadLocalizationTest" );
+        exporterTest->step( 0 )->setMesh( graphProjTest.mesh() );
+        exporterTest->step( 0 )->add( "quadLocalizationProjTest", graphProjTest );
+        exporterTest->save();
+
+        typedef FunctionSpace<Mesh2Type, bases<Lagrange<0, Scalar,Discontinuous> > > space_trial_disc_type;
+        auto spaceGraphProjTrial = space_trial_disc_type::New( meshTrial );
+        auto elemTrial_itt  = meshTrial->beginElementWithProcessId( 0 );
+        auto elemTrial_ent  = meshTrial->endElementWithProcessId( 0 );
+        auto graphProjTrial = spaceGraphProjTrial->element();graphProjTrial.zero();
+        for ( ; elemTrial_itt != elemTrial_ent; ++elemTrial_itt )
+            {
+                if ( mapBetweenMeshes_trial.find( elemTrial_itt->id() ) != mapBetweenMeshes_trial.end() )
+                    {
+                        if ( mapBetweenMeshes_trial.find( elemTrial_itt->id() )->second.size()>0 )
+                            {
+                                auto element_dof2 = spaceGraphProjTrial->dof()->getIndices( elemTrial_itt->id() );
+                                graphProjTrial( element_dof2[0] ) = 1;
+                            }
+                    }
+            }
+        //auto exporterTrial = boost::shared_ptr<Feel::Exporter<Mesh2Type> >( Feel::Exporter<Mesh2Type>::New( "ensight", "ExportQuadLocalizationTrial" ) );
+        auto exporterTrial = Feel::Exporter<Mesh2Type>::New( "ensight", "ExportQuadLocalizationTrial" );
+        exporterTrial->step( 0 )->setMesh( graphProjTrial.mesh() );
+        exporterTrial->step( 0 )->add( "quadLocalizationProjTrial", graphProjTrial );
+        exporterTrial->save();
+
+    }
+#endif
+
+
 
 
 
