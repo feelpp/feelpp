@@ -231,46 +231,42 @@ PeriodicLaplacian<Dim, Order>::run()
                        -M_PI*sin( M_PI*Px() )*sin( M_PI*Py() ) );
     auto f = 2*M_PI*M_PI*g;
 #endif
-    std::cout << std::distance( Xh->dof()->beginPeriodicElements(),
-                                Xh->dof()->endPeriodicElements() ) << "\n";
+    LOG(INFO) << "Number of Periodic elements: " << std::distance( Xh->dof()->beginPeriodicElements(),
+                                                                   Xh->dof()->endPeriodicElements() ) << "\n";
     sparse_matrix_ptrtype M( M_backend->newMatrix( Xh, Xh ) );
 
-    form2( Xh, Xh, M, _init=true ) = integrate( _range=elements( mesh ), _expr=gradt( u )*trans( grad( v ) ), _quad=_Q<2*( Order-1 )>() );
+    form2( Xh, Xh, M ) = integrate( _range=elements( mesh ), _expr=gradt( u )*trans( grad( v ) ) );
     form2( Xh, Xh, M ) += integrate( _range=markedfaces( mesh, 1 ),
                                      _expr=-gradt( u )*N()*id( v )
-                                           -grad( v )*N()*idt( u )
-                                           + penalisation_bc*id( u )*idt( v )/hFace(),
-                                     _quad=_Q<2*( Order-1 )>() );
+                                     -grad( v )*N()*idt( u )
+                                     + penalisation_bc*id( u )*idt( v )/hFace() );
+
     form2( Xh, Xh, M ) += integrate( _range=markedfaces( mesh, 3 ),
                                      _expr=-gradt( u )*N()*id( v )
-                                           -grad( v )*N()*idt( u )
-                                           + penalisation_bc*id( u )*idt( v )/hFace(),
-                                     _quad=_Q<2*( Order-1 )>() );
-
-    M->close();
+                                     -grad( v )*N()*idt( u )
+                                     + penalisation_bc*id( u )*idt( v )/hFace() );
 
     double area = integrate( _range=elements( mesh ), _expr=constant( 1.0 ) ).evaluate()( 0, 0 );
     double mean = integrate( _range=elements( mesh ), _expr=g ).evaluate()( 0, 0 )/area;
     LOG(INFO) << "int g  = " << mean << "\n";
     vector_ptrtype F( M_backend->newVector( Xh ) );
-    form1( Xh, F, _init=true ) = ( integrate( _range=elements( mesh ), _expr=f*id( v ) )
-                                   //+integrate( boundaryfaces( mesh ), _Q<Order+5>(), (trans(grad_g)*N())*id(v) )
-
-                                 );
-    F->close();
+    form1( Xh, F ) = ( integrate( _range=elements( mesh ), _expr=f*id( v ) )
+                       //+integrate( boundaryfaces( mesh ), _Q<Order+5>(), (trans(grad_g)*N())*id(v) )
+        );
 
     if ( this->vm().count( "export-matlab" ) )
     {
+        LOG(INFO) << "Exporting lhs and rhs to matlab...\n";
         M->printMatlab( "M.m" );
         F->printMatlab( "F.m" );
     }
 
-    backend_type::build( this->vm() )->solve( _matrix=M, _solution=u, _rhs=F );
+    backend()->solve( _matrix=M, _solution=u, _rhs=F );
 
     LOG(INFO) << "area   = " << area << "\n";
     LOG(INFO) << "int g  = " << integrate( elements( mesh ), g ).evaluate()( 0, 0 )/area << "\n";
     LOG(INFO) << "int u  = " << integrate( elements( mesh ), idv( u ) ).evaluate()( 0, 0 )/area << "\n";
-    LOG(INFO) << "error  = " << math::sqrt( integrate( elements( mesh ), ( idv( u )-g )*( idv( u )-g ) ).evaluate()( 0, 0 ) ) << "\n";
+    LOG(INFO) << "error  = " << normL2( _range=elements( mesh ), _expr=( idv( u )-g ) ) << "\n";
     double bdy1 = integrate( markedfaces( mesh,2 ), idv( u ) ).evaluate()( 0, 0 );
     double bdy2 = integrate( markedfaces( mesh,4 ), idv( u ) ).evaluate()( 0, 0 );
     LOG(INFO) << "error mean periodic  boundary 1 - 2  = " << math::abs( bdy1-bdy2 ) << "\n";
