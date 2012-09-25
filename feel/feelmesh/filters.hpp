@@ -920,24 +920,26 @@ boost::tuple<mpl::size_t<MESH_FACES>,
                    boost::any const&__marker )
 {
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
-    try
+    flag_type theflag = -1;
+    if ( boost::any_cast<flag_type>( &__marker ) )
     {
         flag_type theflag = boost::any_cast<flag_type>( __marker);
-        return detail::markedfaces( mesh, theflag, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
     }
-    catch ( boost::bad_any_cast const& )
+    else if ( boost::any_cast<int>( &__marker ) )
     {
-        try
-        {
-            std::string theflag = boost::any_cast<std::string>( __marker);
-            return detail::markedfaces( mesh, mesh->markerName( theflag ), meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
-        }
-        catch ( boost::bad_any_cast const& e )
-        {
-            LOG(ERROR) << "invalid markedfaces marker cast " << e.what() << "\n";
-            throw e;
-        }
+        flag_type theflag = boost::any_cast<int>( __marker);
     }
+    else if ( boost::any_cast<size_type>( &__marker ) )
+    {
+        flag_type theflag = boost::any_cast<size_type>( __marker);
+    }
+    else if ( boost::any_cast<std::string>( &__marker ) )
+    {
+        flag_type theflag = mesh->markerName( boost::any_cast<std::string>( __marker) );
+    }
+    else
+        CHECK( theflag != -1 ) << "invalid flag type\n";
+    return detail::markedfaces( mesh, theflag, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
 
 }
 
