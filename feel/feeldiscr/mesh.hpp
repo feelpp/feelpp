@@ -438,6 +438,8 @@ public:
         M_markername[__name]=data;
     }
 
+    flag_type markerId( boost::any const& marker );
+
     /**
      * creates a mesh by iterating over the elements between
      * \p begin_elt and and \p end_elt and adding them the the mesh

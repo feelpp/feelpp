@@ -741,23 +741,10 @@ boost::tuple<mpl::size_t<MESH_ELEMENTS>,
 markedelements( MeshType const& mesh, boost::any const& flag )
 {
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
-    try
-    {
-        flag_type theflag = boost::any_cast<flag_type>( flag ) ;
-        return detail::markedelements( mesh, theflag, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
-    }
-    catch( boost::bad_any_cast& )
-    {
-        try
-        {
-            std::string theflag = boost::any_cast<std::string>( flag ) ;
-            return detail::markedelements( mesh, mesh->markerName( theflag ), meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
-        }
-        catch( boost::bad_any_cast const& e )
-        {
-            LOG(FATAL) << "invalid markedelements marker cast " << e.what() << "\n";
-        }
-    }
+
+    flag_type theflag = mesh->markerId( __marker );
+    VLOG(2) << "[markedelements] flag: " << theflag << "\n";
+    return detail::markedelements( mesh, theflag, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
 }
 
 /**
@@ -920,25 +907,7 @@ boost::tuple<mpl::size_t<MESH_FACES>,
                    boost::any const&__marker )
 {
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
-    flag_type theflag = -1;
-    if ( boost::any_cast<flag_type>( &__marker ) )
-    {
-        theflag = boost::any_cast<flag_type>( __marker);
-    }
-    else if ( boost::any_cast<int>( &__marker ) )
-    {
-        theflag = boost::any_cast<int>( __marker);
-    }
-    else if ( boost::any_cast<size_type>( &__marker ) )
-    {
-        theflag = boost::any_cast<size_type>( __marker);
-    }
-    else if ( boost::any_cast<std::string>( &__marker ) )
-    {
-        theflag = mesh->markerName( boost::any_cast<std::string>( __marker) );
-    }
-    else
-        CHECK( theflag != -1 ) << "invalid flag type\n";
+    flag_type theflag = mesh->markerId( __marker );
     VLOG(2) << "[markedfaces] flag: " << theflag << "\n";
     return detail::markedfaces( mesh, theflag, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
 

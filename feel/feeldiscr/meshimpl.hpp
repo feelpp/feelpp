@@ -62,6 +62,32 @@ Mesh<Shape, T, Tag>::partition ( const uint16_type n_parts )
 }
 
 template<typename Shape, typename T, int Tag>
+flag_type
+Mesh<Shape, T, Tag>::markerId ( boost::any const& __marker )
+{
+    flag_type theflag = -1;
+    if ( boost::any_cast<flag_type>( &__marker ) )
+    {
+        theflag = boost::any_cast<flag_type>( __marker);
+    }
+    else if ( boost::any_cast<int>( &__marker ) )
+    {
+        theflag = boost::any_cast<int>( __marker);
+    }
+    else if ( boost::any_cast<size_type>( &__marker ) )
+    {
+        theflag = boost::any_cast<size_type>( __marker);
+    }
+    else if ( boost::any_cast<std::string>( &__marker ) )
+    {
+        theflag = mesh->markerName( boost::any_cast<std::string>( __marker) );
+    }
+    else
+        CHECK( theflag != -1 ) << "invalid flag type\n";
+    return theflag;
+}
+
+template<typename Shape, typename T, int Tag>
 void
 Mesh<Shape, T, Tag>::updateForUse()
 {
