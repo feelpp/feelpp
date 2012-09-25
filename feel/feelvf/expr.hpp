@@ -2322,15 +2322,21 @@ Expr< Pow<typename mpl::if_<boost::is_arithmetic<ExprT1>,
     return Expr< expr_t >(  expr_t( t1( __e1 ), t2( __e2 ) ) );
 }
 
+
 template<typename ExprT1,  typename ExprT2>
 inline
 Expr< Pow<typename mpl::if_<boost::is_arithmetic<ExprT1>,
-      mpl::identity<Cst<ExprT1> >,
-      mpl::identity<ExprT1> >::type::type,
-      typename mpl::if_<boost::is_arithmetic<ExprT2>,
-      mpl::identity<Cst<ExprT2> >,
-      mpl::identity<ExprT2> >::type::type> >
-      operator^( ExprT1 const& __e1, ExprT2 const& __e2 )
+                            mpl::identity<Cst<ExprT1> >,
+                            mpl::identity<Expr<ExprT1> > >::type::type,
+          typename mpl::if_<boost::is_arithmetic<ExprT2>,
+                            mpl::identity<Cst<ExprT2> >,
+                            mpl::identity<Expr<ExprT2> > >::type::type> >
+operator^( typename mpl::if_<boost::is_arithmetic<ExprT1>,
+                             mpl::identity<ExprT1>,
+                             mpl::identity<Expr<ExprT1> > >::type::type const& __e1,
+           typename mpl::if_<boost::is_arithmetic<ExprT2>,
+                             mpl::identity<ExprT2>,
+                             mpl::identity<Expr<ExprT2> > >::type::type const& __e2 )
 {
     typedef typename mpl::if_<boost::is_arithmetic<ExprT1>,
             mpl::identity<Cst<ExprT1> >,
