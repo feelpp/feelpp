@@ -85,21 +85,15 @@ public:
     typedef Backend<value_type> backend_type;
     typedef boost::shared_ptr<backend_type> backend_ptrtype;
 
-    /*matrix*/
-    typedef typename backend_type::sparse_matrix_type sparse_matrix_type;
-    typedef typename backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
-    typedef typename backend_type::vector_type vector_type;
-    typedef typename backend_type::vector_ptrtype vector_ptrtype;
-
     /*mesh*/
     typedef Entity<Dim,1,Dim> entity_type;
     typedef Mesh<entity_type> mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
-    typedef fusion::vector<Lagrange<Order, Scalar> > basis_type;
-    typedef fusion::vector<Lagrange<Order, Vectorial> > basis_vec_type;
+    typedef bases<Lagrange<Order, Scalar> > basis_type;
+    typedef bases<Lagrange<Order, Vectorial> > basis_vec_type;
 
-    typedef fusion::vector<Lagrange<Order, Scalar>, Lagrange<Order, Scalar> > basis_composite_type;
+    typedef bases<Lagrange<Order, Scalar>, Lagrange<Order, Scalar> > basis_composite_type;
 
     /*space*/
     typedef FunctionSpace<mesh_type, basis_type, Periodic<> > functionspace_type;
@@ -108,6 +102,7 @@ public:
     typedef FunctionSpace<mesh_type, basis_vec_type, Periodic<> > functionspace_vec_type;
     typedef boost::shared_ptr<functionspace_vec_type> functionspace_vec_ptrtype;
 
+    //typedef FunctionSpace<mesh_type, basis_composite_type, periodic<Periodic<>, Periodic<> > > functionspace_composite_type;
     typedef FunctionSpace<mesh_type, basis_composite_type, Periodic<> > functionspace_composite_type;
     typedef boost::shared_ptr<functionspace_composite_type> functionspace_composite_ptrtype;
 
@@ -197,10 +192,13 @@ PeriodicLaplacian<Dim,Order>::PeriodicLaplacian()
 
     Xh_vec = functionspace_vec_type::New( _mesh=mesh, _periodicity=Periodic<>( 2, 4, trans ) );
 
-    Xhc = functionspace_composite_type::New( _mesh=mesh, _periodicity=Periodic<>( 2, 4, trans ) );
+    //Xhc = functionspace_composite_type::New( _mesh=mesh, _periodicity=fusion::make_vector( Periodic<>(2, 4, trans), Periodic<>(2, 4, trans) ) );
+    Xhc = functionspace_composite_type::New( _mesh=mesh, _periodicity=Periodic<>(2, 4, trans) );
 
-    LOG(INFO) << "print space info\n";
+    LOG(INFO) << "Xh print space info\n";
     Xh->printInfo();
+    LOG(INFO) << "Xh_vec print space info\n";
+    Xh_vec->printInfo();
 
     LOG(INFO) << "Constructor done\n";
 }
@@ -209,9 +207,6 @@ template<int Dim, int Order>
 void
 PeriodicLaplacian<Dim, Order>::run()
 {
-    //    int maxIter = 10.0/meshSize;
-    using namespace Feel::vf;
-
     timers["init"].first.restart();
 
     element_type u( Xh, "u" );
@@ -233,7 +228,7 @@ PeriodicLaplacian<Dim, Order>::run()
 #endif
     LOG(INFO) << "Number of Periodic elements: " << std::distance( Xh->dof()->beginPeriodicElements(),
                                                                    Xh->dof()->endPeriodicElements() ) << "\n";
-    sparse_matrix_ptrtype M( M_backend->newMatrix( Xh, Xh ) );
+    auto M = M_backend->newMatrix( Xh, Xh );
 
     form2( Xh, Xh, M ) = integrate( _range=elements( mesh ), _expr=gradt( u )*trans( grad( v ) ) );
     form2( Xh, Xh, M ) += integrate( _range=markedfaces( mesh, 1 ),
@@ -246,10 +241,7 @@ PeriodicLaplacian<Dim, Order>::run()
                                      -grad( v )*N()*idt( u )
                                      + penalisation_bc*id( u )*idt( v )/hFace() );
 
-    double area = integrate( _range=elements( mesh ), _expr=constant( 1.0 ) ).evaluate()( 0, 0 );
-    double mean = integrate( _range=elements( mesh ), _expr=g ).evaluate()( 0, 0 )/area;
-    LOG(INFO) << "int g  = " << mean << "\n";
-    vector_ptrtype F( M_backend->newVector( Xh ) );
+    auto F = M_backend->newVector( Xh );
     form1( Xh, F ) = ( integrate( _range=elements( mesh ), _expr=f*id( v ) )
                        //+integrate( boundaryfaces( mesh ), _Q<Order+5>(), (trans(grad_g)*N())*id(v) )
         );
@@ -263,13 +255,12 @@ PeriodicLaplacian<Dim, Order>::run()
 
     backend()->solve( _matrix=M, _solution=u, _rhs=F );
 
-    LOG(INFO) << "area   = " << area << "\n";
-    LOG(INFO) << "int g  = " << integrate( elements( mesh ), g ).evaluate()( 0, 0 )/area << "\n";
-    LOG(INFO) << "int u  = " << integrate( elements( mesh ), idv( u ) ).evaluate()( 0, 0 )/area << "\n";
+    LOG(INFO) << "mean(g)  = " << mean( _range=elements( mesh ), _expr=g ) << "\n";
+    LOG(INFO) << "mean(u)  = " << mean( _range=elements( mesh ), _expr=idv( u ) ) << "\n";
     LOG(INFO) << "error  = " << normL2( _range=elements( mesh ), _expr=( idv( u )-g ) ) << "\n";
-    double bdy1 = integrate( markedfaces( mesh,2 ), idv( u ) ).evaluate()( 0, 0 );
-    double bdy2 = integrate( markedfaces( mesh,4 ), idv( u ) ).evaluate()( 0, 0 );
-    LOG(INFO) << "error mean periodic  boundary 1 - 2  = " << math::abs( bdy1-bdy2 ) << "\n";
+    auto bdy1 = mean( markedfaces( mesh,2 ), idv( u ) );
+    auto bdy2 = mean( markedfaces( mesh,4 ), idv( u ) );
+    LOG(INFO) << "error mean periodic  boundary 1 - 2  = " << bdy1-bdy2 << "\n";
 
     v = vf::project( Xh, elements( mesh ), g );
 
