@@ -407,7 +407,8 @@ public:
         else // parallel
         {
             typename eval::matrix_type glo( loc );
-            auto const& worldComm = const_cast<MeshBase*>( this->beginElement()->mesh() )->worldComm();
+            //auto const& worldComm = const_cast<MeshBase*>( this->beginElement()->mesh() )->worldComm();
+            auto worldComm = Environment::worldComm();
 
             if ( worldComm.localSize() > 1 )
             {
