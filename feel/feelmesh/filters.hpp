@@ -923,22 +923,23 @@ boost::tuple<mpl::size_t<MESH_FACES>,
     flag_type theflag = -1;
     if ( boost::any_cast<flag_type>( &__marker ) )
     {
-        flag_type theflag = boost::any_cast<flag_type>( __marker);
+        theflag = boost::any_cast<flag_type>( __marker);
     }
     else if ( boost::any_cast<int>( &__marker ) )
     {
-        flag_type theflag = boost::any_cast<int>( __marker);
+        theflag = boost::any_cast<int>( __marker);
     }
     else if ( boost::any_cast<size_type>( &__marker ) )
     {
-        flag_type theflag = boost::any_cast<size_type>( __marker);
+        theflag = boost::any_cast<size_type>( __marker);
     }
     else if ( boost::any_cast<std::string>( &__marker ) )
     {
-        flag_type theflag = mesh->markerName( boost::any_cast<std::string>( __marker) );
+        theflag = mesh->markerName( boost::any_cast<std::string>( __marker) );
     }
     else
         CHECK( theflag != -1 ) << "invalid flag type\n";
+    VLOG(2) << "[markedfaces] flag: " << theflag << "\n";
     return detail::markedfaces( mesh, theflag, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
 
 }
