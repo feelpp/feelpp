@@ -71,6 +71,75 @@ at_option_parser_2( std::string const&s )
         return std::pair<std::string, std::string>();
 }
 
+/**
+   \fn freeargv -- free an argument vector
+
+   void freeargv (char** vector)
+
+   Free an argument vector that was built using dupargv.  Simply scans
+   through the vector, freeing the memory for each argument until the
+   terminating NULL is found, and then frees the vector itself.
+
+*/
+
+void freeargv (char** vector)
+{
+    char **scan;
+
+    if (vector != NULL)
+    {
+        for (scan = vector; *scan != NULL; scan++)
+        {
+            free (*scan);
+        }
+        free (vector);
+    }
+}
+
+
+/**
+   \fn dupargv -- duplicate an argument vector
+
+   char **dupargv (char** vector)
+
+   Duplicate an argument vector.  Simply scans through the
+   vector, duplicating each argument until the
+   terminating NULL is found.
+
+   \return a pointer to the argument vector if
+   successful. Returns NULL if there is insufficient memory to
+   complete building the argument vector.
+*/
+char **
+dupargv (char** argv)
+{
+  int argc;
+  char **copy;
+
+  if (argv == NULL)
+    return NULL;
+
+  /* the vector */
+  for (argc = 0; argv[argc] != NULL; argc++);
+  copy = (char **) malloc ((argc + 1) * sizeof (char *));
+  if (copy == NULL)
+      return NULL;
+
+  /* the strings */
+  for (argc = 0; argv[argc] != NULL; argc++)
+  {
+      int len = strlen (argv[argc]);
+      copy[argc] = (char*)malloc (sizeof (char *) * (len + 1));
+      if (copy[argc] == NULL)
+      {
+          freeargv (copy);
+          return NULL;
+      }
+      strcpy (copy[argc], argv[argc]);
+  }
+  copy[argc] = NULL;
+  return copy;
+}
 void
 Environment::processGenericOptions()
 {
@@ -451,9 +520,20 @@ Environment::Environment( int& argc, char**& argv )
 void
 Environment::init( int argc, char** argv, po::options_description const& desc, AboutData const& about )
 {
+    // duplicate argv before passing to gflags because gflags is going to
+    // rearrange them and it screws badly the flags for PETSc/SLEPc
+    char** envargv = dupargv( argv );
+
     google::AllowCommandLineReparsing();
     google::ParseCommandLineFlags(&argc, &argv, false);
 
+#if 0
+    std::cout << "argc=" << argc << "\n";
+    for(int i = 0; i < argc; ++i )
+    {
+        std::cout << "argv[" << i << "]=" << argv[i] << "\n";
+    }
+#endif
     // Initialize Google's logging library.
     if ( !google::glog_internal_namespace_::IsGoogleLoggingInitialized() )
     {
@@ -480,9 +560,9 @@ Environment::init( int argc, char** argv, po::options_description const& desc, A
     {
         i_initialized = true;
 #if defined( FEELPP_HAS_SLEPC )
-        int ierr = SlepcInitialize( &argc,&argv, PETSC_NULL, PETSC_NULL );
+        int ierr = SlepcInitialize( &argc,&envargv, PETSC_NULL, PETSC_NULL );
 #else
-        int ierr = PetscInitialize( &argc, &argv, PETSC_NULL, PETSC_NULL );
+        int ierr = PetscInitialize( &argc, &envargv, PETSC_NULL, PETSC_NULL );
 #endif
         boost::ignore_unused_variable_warning( ierr );
         CHKERRABORT( world,ierr );
@@ -505,7 +585,9 @@ Environment::init( int argc, char** argv, po::options_description const& desc, A
     CHECK( S_worldcomm ) << "Feel++ Environment: creang worldcomm failed!";
 
     S_about = about;
-    doOptions( argc, argv, *S_desc, about.appName() );
+    doOptions( argc, envargv, *S_desc, about.appName() );
+
+    freeargv( envargv );
 
 }
 Environment::~Environment()
