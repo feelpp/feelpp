@@ -39,6 +39,9 @@ if( NOT FEELPP_MINIMAL_CONFIGURATION )
 
   feelpp_add_application( doc_laplacian SRCS laplacian.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG laplacian.cfg SCRIPTS laplacian.py ADD_OT )
 
+  feelpp_add_application( doc_laplacian_periodic SRCS periodic.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES}  )
+
+
   feelpp_add_application( doc_stokes SRCS stokes.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} )
   feelpp_add_application( doc_stokes_lm SRCS stokes.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} DEFS FEELPP_USE_LM )
   feelpp_add_application( doc_stokes_poiseuille SRCS stokes_poiseuille.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} )
