@@ -2737,6 +2737,40 @@ BOOST_PARAMETER_FUNCTION(
                       _partitioner=partitioner, _verbose=verbose ).evaluate()( 0, 0 );
 }
 
+BOOST_PARAMETER_FUNCTION(
+    ( typename vf::detail::integrate_type<Args>::expr_type::expression_type::matrix_type ), // return type
+    mean,    // 2. function name
+
+    tag,           // 3. namespace of tag types
+
+    ( required
+      ( range, *  )
+      ( expr,   * )
+    ) // 4. one required parameter, and
+
+    ( optional
+      ( quad,   *, typename vf::detail::integrate_type<Args>::_quad_type() )
+      ( geomap, *, GeomapStrategyType::GEOMAP_OPT )
+      ( quad1,   *, typename vf::detail::integrate_type<Args>::_quad1_type() )
+      ( use_tbb,   ( bool ), false )
+      ( grainsize,   ( int ), 100 )
+      ( partitioner,   *, "auto" )
+      ( verbose,   ( bool ), false )
+    )
+)
+{
+    double meas = integrate( _range=range, _expr=cst(1.0), _quad=quad, _quad1=quad1, _geomap=geomap,
+                             _use_tbb=use_tbb, _grainsize=grainsize,
+                             _partitioner=partitioner, _verbose=verbose ).evaluate()( 0, 0 );
+    VLOG(2) << "[mean] measure = " << meas << "\n";
+    CHECK( math::abs(meas) > 1e-13 ) << "Invalid domain measure : " << meas << ", domain range: " << nelements( range ) << "\n";
+    auto eint = integrate( _range=range, _expr=expr, _quad=quad, _geomap=geomap,
+                           _quad1=quad1, _use_tbb=use_tbb, _grainsize=grainsize,
+                           _partitioner=partitioner, _verbose=verbose ).evaluate();
+    VLOG(2) << "[ein] eint = " << eint << "\n";
+    return eint/meas;
+}
+
 } // vf
 
 
