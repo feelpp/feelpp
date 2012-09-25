@@ -242,9 +242,9 @@ PeriodicLaplacian<Dim, Order>::run()
                                      + penalisation_bc*id( u )*idt( v )/hFace() );
 
     auto F = M_backend->newVector( Xh );
-    form1( Xh, F ) = ( integrate( _range=elements( mesh ), _expr=f*id( v ) )
-                       //+integrate( boundaryfaces( mesh ), _Q<Order+5>(), (trans(grad_g)*N())*id(v) )
-        );
+    form1( Xh, F ) = integrate( _range=elements( mesh ), _expr=f*id( v ) );
+        //+integrate( boundaryfaces( mesh ), _Q<Order+5>(), (trans(grad_g)*N())*id(v) )
+
 
     if ( this->vm().count( "export-matlab" ) )
     {
@@ -258,8 +258,8 @@ PeriodicLaplacian<Dim, Order>::run()
     LOG(INFO) << "mean(g)  = " << mean( _range=elements( mesh ), _expr=g ) << "\n";
     LOG(INFO) << "mean(u)  = " << mean( _range=elements( mesh ), _expr=idv( u ) ) << "\n";
     LOG(INFO) << "error  = " << normL2( _range=elements( mesh ), _expr=( idv( u )-g ) ) << "\n";
-    auto bdy1 = mean( markedfaces( mesh,2 ), idv( u ) );
-    auto bdy2 = mean( markedfaces( mesh,4 ), idv( u ) );
+    auto bdy1 = mean( _range=markedfaces( mesh,2 ), _expr=idv( u ) );
+    auto bdy2 = mean( _range=markedfaces( mesh,4 ), _expr=idv( u ) );
     LOG(INFO) << "error mean periodic  boundary 1 - 2  = " << bdy1-bdy2 << "\n";
 
     v = vf::project( Xh, elements( mesh ), g );
