@@ -36,6 +36,9 @@ namespace Feel
 namespace po = boost::program_options;
 
 po::options_description
+file_options( std::string const& prefix );
+
+po::options_description
 feel_options( std::string const& prefix = "" );
 
 }
