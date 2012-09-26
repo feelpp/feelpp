@@ -138,6 +138,7 @@ public:
             int argc = args[_argc];
             S_desc = boost::shared_ptr<po::options_description>( new po::options_description( args[_desc | Feel::feel_options()] ) );
             AboutData about = args[_about| makeAbout(argv[0])];
+            S_desc->add( file_options( about.appName() ) );
 
             init( argc, argv, *S_desc, about );
         }

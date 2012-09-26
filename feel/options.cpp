@@ -42,6 +42,18 @@
 namespace Feel
 {
 po::options_description
+file_options( std::string const& appname )
+{
+    po::options_description file( "File options" );
+    file.add_options()
+        ( "config-file", po::value<std::string>()->default_value(appname), "specify .cfg file" )
+        ( "result-file", po::value<std::string>()->default_value(appname+".res"), "specify .res file" )
+        ( "response-file", po::value<std::string>()->default_value(appname), "can be specified with '@name', too" )
+        ;
+    return file;
+}
+
+po::options_description
 generic_options()
 {
     po::options_description generic( "Generic options" );
@@ -54,9 +66,6 @@ generic_options()
         ( "v", po::value<int>(), "verbosity level" )
         ( "feelinfo", "prints feel libraries information" )
         ( "nochdir", "Don't change repository directory even though it is called" )
-        ( "config-file", po::value<std::string>(), "specify .cfg file" )
-        ( "result-file", po::value<std::string>(), "specify .res file" )
-        ( "response-file", po::value<std::string>(), "can be specified with '@name', too" )
         ;
     return generic;
 }
