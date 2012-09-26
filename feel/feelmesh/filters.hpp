@@ -742,7 +742,7 @@ markedelements( MeshType const& mesh, boost::any const& flag )
 {
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
 
-    flag_type theflag = mesh->markerId( __marker );
+    flag_type theflag = mesh->markerId( flag );
     VLOG(2) << "[markedelements] flag: " << theflag << "\n";
     return detail::markedelements( mesh, theflag, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
 }
