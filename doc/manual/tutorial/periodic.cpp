@@ -193,7 +193,7 @@ PeriodicLaplacian<Dim,Order>::PeriodicLaplacian()
     Xh_vec = functionspace_vec_type::New( _mesh=mesh, _periodicity=Periodic<>( 2, 4, trans ) );
 
     //Xhc = functionspace_composite_type::New( _mesh=mesh, _periodicity=fusion::make_vector( Periodic<>(2, 4, trans), Periodic<>(2, 4, trans) ) );
-    Xhc = functionspace_composite_type::New( _mesh=mesh, _periodicity=Periodic<>(2, 4, trans) );
+    //Xhc = functionspace_composite_type::New( _mesh=mesh, _periodicity=Periodic<>(2, 4, trans) );
 
     LOG(INFO) << "Xh print space info\n";
     Xh->printInfo();
@@ -279,7 +279,6 @@ PeriodicLaplacian<Dim, Order>::run()
 template<int Dim, int Order>
 void
 PeriodicLaplacian<Dim, Order>::exportResults( element_type& U, element_type& V, element_type& E, element_type& F )
-
 {
     timers["export"].first.restart();
 
