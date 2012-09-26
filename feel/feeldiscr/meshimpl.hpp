@@ -80,7 +80,7 @@ Mesh<Shape, T, Tag>::markerId ( boost::any const& __marker )
     }
     else if ( boost::any_cast<std::string>( &__marker ) )
     {
-        theflag = mesh->markerName( boost::any_cast<std::string>( __marker) );
+        theflag = this->markerName( boost::any_cast<std::string>( __marker) );
     }
     else
         CHECK( theflag != -1 ) << "invalid flag type\n";
