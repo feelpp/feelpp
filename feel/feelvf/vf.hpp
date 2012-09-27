@@ -99,7 +99,7 @@ struct ExtractGm
 #include <feel/feelvf/det.hpp>
 #include <feel/feelvf/symm.hpp>
 #include <feel/feelvf/products.hpp>
-//#include <feel/feelvf/norm.hpp>
+#include <feel/feelvf/norm.hpp>
 #include <feel/feelvf/ones.hpp>
 #include <feel/feelvf/twovalued.hpp>
 //#include <feel/feelvf/eye.hpp>
