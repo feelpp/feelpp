@@ -125,6 +125,8 @@ private:
 
     functionspace_composite_ptrtype Xh;
 
+    node_type translat;
+
     export_ptrtype exporter;
 
     std::map<std::string,std::pair<boost::timer,double> > timers;
@@ -142,6 +144,9 @@ PeriodicStokes<Dim,Order>::PeriodicStokes()
 
     // spaces
     Xh(),
+
+    // translation for pertiodicity
+    translat(2),
 
     // export
     exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) ),
@@ -168,10 +173,10 @@ PeriodicStokes<Dim,Order>::PeriodicStokes()
 
 
     LOG(INFO) << "create space\n";
-    node_type trans( 2 );
-    trans[0]=0;
-    trans[1]=2;
-    Xh = functionspace_composite_type::New( _mesh=mesh, _periodicity=periodicity( Periodic<>(2, 4, trans), NoPeriodicity() ) );
+    // node_type trans(2);
+    translat[0]=0;
+    translat[1]=2;
+    Xh = functionspace_composite_type::New( _mesh=mesh, _periodicity=periodicity( Periodic<>(2, 4, translat), NoPeriodicity() ) );
 
     LOG(INFO) << "Xh print space info\n";
     Xh->printInfo();
@@ -202,7 +207,14 @@ PeriodicStokes<Dim, Order>::run()
     {
         double px = vm()["px"].template as<double>();
         double py = vm()["py"].template as<double>();
-        auto dist2center= norm2(P()-cst(px)*oneX()-cst(py)*oneY());
+
+        //auto dist2center = norm2(P()-cst(px)*oneX()-cst(py)*oneY());
+        auto dist= norm2(P()-cst(px)*oneX()-cst(py)*oneY());
+        auto distMinusTrans = norm2(P()-(cst(px)-translat[0])*oneX()-(cst(py)-translat[1])*oneY());
+        auto distPlusTrans  = norm2(P()-(cst(px)+translat[0])*oneX()-(cst(py)+translat[1])*oneY());
+
+        auto dist2center = min( dist, min(distMinusTrans, distPlusTrans) );
+
         a += integrate( _range=elements( mesh ), _expr=chi(dist2center < 0.25)*1e5*trace(gradt( u )*trans( grad( v ) ) ));
     }
     a+= integrate( _range=elements( mesh ), _expr=-idt(p)*div(v)+id(q)*divt(u) );
@@ -237,9 +249,18 @@ PeriodicStokes<Dim, Order>::exportResults( element_type& U )
 
     exporter->step( 1. )->setMesh( U.functionSpace()->mesh() );
     exporter->step( 1. )->add( {"u","p"}, U );
+
+    // position of the particle
     auto u = U.template element<1>();
-    u = project( _space=u.functionSpace(), _range=elements(u.functionSpace()->mesh()), _expr=chi(norm2(P())<0.25));
+    double px = vm()["px"].template as<double>();
+    double py = vm()["py"].template as<double>();
+    auto dist= norm2(P()-cst(px)*oneX()-cst(py)*oneY());
+    auto distMinusTrans = norm2(P()-(cst(px)-translat[0])*oneX()-(cst(py)-translat[1])*oneY());
+    auto distPlusTrans  = norm2(P()-(cst(px)+translat[0])*oneX()-(cst(py)+translat[1])*oneY());
+    auto dist2center = min( dist, min(distMinusTrans, distPlusTrans) );
+    u = project( _space=u.functionSpace(), _range=elements(u.functionSpace()->mesh()), _expr= chi(dist2center < 0.25));
     exporter->step( 1. )->add( "particule", u );
+
     exporter->save();
     timers["export"].second = timers["export"].first.elapsed();
     LOG(INFO) << "[timer] exportResults(): " << timers["export"].second << "\n";
