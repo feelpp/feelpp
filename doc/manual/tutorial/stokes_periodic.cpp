@@ -34,14 +34,16 @@ inline
 Feel::po::options_description
 makeOptions()
 {
-    Feel::po::options_description periodicoptions( "Periodic Laplacian options" );
+    Feel::po::options_description periodicoptions( "Periodic Stokes options" );
     periodicoptions.add_options()
-    ( "hsize", Feel::po::value<double>()->default_value( 0.1 ), "mesh size in domain" )
+        ( "hsize", Feel::po::value<double>()->default_value( 0.1 ), "mesh size in domain" )
+        ( "wp", Feel::po::value<int>()->default_value( 1 ), "with particules or not" )
+        ( "px", Feel::po::value<double>()->default_value( 0. ), "x coordinates of particules" )
+        ( "py", Feel::po::value<double>()->default_value( 0. ), "y coordinates of particules" )
+        ( "penalbc", Feel::po::value<double>()->default_value( 10 ), "penalisation parameter for the weak boundary conditions" )
 
-    ( "penalbc", Feel::po::value<double>()->default_value( 10 ), "penalisation parameter for the weak boundary conditions" )
-
-    ( "export-matlab", "export matrix and vectors in matlab" )
-    ;
+        ( "export-matlab", "export matrix and vectors in matlab" )
+        ;
     return periodicoptions.add( Feel::feel_options() );
 }
 inline
@@ -51,7 +53,7 @@ makeAbout()
     Feel::AboutData about( "stokes_periodic" ,
                            "stokes_periodic" ,
                            "0.1",
-                           "nD(n=1,2,3) Periodic Laplacian on simplices or simplex products",
+                           "2D Periodic Stokes",
                            Feel::AboutData::License_GPL,
                            "Copyright (c) 2012 Feel++ Consortium" );
 
@@ -196,7 +198,13 @@ PeriodicStokes<Dim, Order>::run()
 
     auto a = form2( Xh, Xh, M );
     a = integrate( _range=elements( mesh ), _expr=trace(gradt( u )*trans( grad( v ) ) ));
-    a += integrate( _range=elements( mesh ), _expr=chi(norm2(P()) < 0.25)*1e5*trace(gradt( u )*trans( grad( v ) ) ));
+    if ( vm()["wp"].template as<int>() )
+    {
+        double px = vm()["px"].template as<double>();
+        double py = vm()["py"].template as<double>();
+        auto dist2center= norm2(P()-cst(px)*oneX()-cst(py)*oneY());
+        a += integrate( _range=elements( mesh ), _expr=chi(dist2center < 0.25)*1e5*trace(gradt( u )*trans( grad( v ) ) ));
+    }
     a+= integrate( _range=elements( mesh ), _expr=-idt(p)*div(v)+id(q)*divt(u) );
     a+= integrate( _range=elements( mesh ), _expr=1e-6*idt(p)*id(q) );
 
