@@ -33,6 +33,7 @@
 
 #include <boost/assign/std/vector.hpp>
 #include <feel/feelcrb/crb.hpp>
+#include <feel/feelcrb/eim.hpp>
 #include <feel/feelcrb/crbmodel.hpp>
 #include <boost/serialization/version.hpp>
 
