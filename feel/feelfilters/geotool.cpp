@@ -517,7 +517,7 @@ GeoGMSHTool::geoStr()
             else
                 __surface_str << "Ruled Surface(" << __surfnumber << ") = {" ;
 
-            mapSurfaceRenumbering[itSurf2->get<2>().first] = __surfnumber;
+            mapSurfaceRenumbering[itSurf2->get<2>().first] = __dataSurfacePostCpt[itSurf2->get<0>()][itSurf2->get<1>()];//__surfnumber;
 
             surface_type_const_iterator_type itSurf2_end = --itSurf->end();
             for ( ; itSurf2 != itSurf2_end; ++itSurf2 )
@@ -551,15 +551,13 @@ GeoGMSHTool::geoStr()
 
     this->updateOstr( __surface_str.str() );
 
-
+    //---------------------------------------------------------------------------------//
     //Write the extrude surfaces
     this->updateOstr( _M_ostrExtrude->str() );
 
-
-#if 0
+    //---------------------------------------------------------------------------------//
     //Write the surfaces loops
-    this->updateOstr( _M_ostrSurfaceLoop->str() );
-#else
+
     int __nSurfaceLoop=1;
     std::ostringstream __ostrSurfaceLoop;
     auto surfaceLoop_it = this->_M_surfaceLoopList->begin();
@@ -590,12 +588,10 @@ GeoGMSHTool::geoStr()
 
                 for ( ; surfaceLoop4_it!=surfaceLoop4_en ; ++surfaceLoop4_it )
                 {
-                    //std::cout << "\n HOLA " << *surfaceLoop4_it << std::endl;
-                    //__ostrSurfaceLoop << *surfaceLoop4_it << ",";
+                    //std::cout << "\n HOLA " << *surfaceLoop4_it << " map " << mapSurfaceRenumbering[*surfaceLoop4_it] <<std::endl;
                     __ostrSurfaceLoop << __dataSurfacePost[surfaceLoop2_it->get<0>()][surfaceLoop2_it->get<1>()][ mapSurfaceRenumbering[*surfaceLoop4_it] ] << ",";
                 }
 
-                //__ostrSurfaceLoop << *surfaceLoop4_it <<"};\n";
                 __ostrSurfaceLoop << __dataSurfacePost[surfaceLoop2_it->get<0>()][surfaceLoop2_it->get<1>()][ mapSurfaceRenumbering[*surfaceLoop4_it] ] <<"};\n";
                 ++__nSurfaceLoop;
 
@@ -605,12 +601,7 @@ GeoGMSHTool::geoStr()
 
     this->updateOstr( __ostrSurfaceLoop.str() );
 
-
-
-#endif
-
-
-
+    //---------------------------------------------------------------------------------//
     //Write the volumes
     //Fait ici a cause des opertateurs (+,-)
     volume_name_const_iterator_type itVol = this->_M_volumeList->begin();
@@ -1386,69 +1377,6 @@ writeExtrudeSurface( uint16_type __numLoc,data_geo_ptrtype __dg , uint16_type __
 void
 writeSurfaceLoop( uint16_type __numLoc, data_geo_ptrtype __dg , Loop /*const*/ __loop )
 {
-#if 0
-    ( *( boost::get<1>( *__dg ) ) )[4][__numLoc] = boost::get<0>( *__dg )->cptSurfaceLoop();
-    std::ostringstream __ostr;
-    __ostr << "Surface Loop(" << boost::get<0>( *__dg )->cptSurfaceLoop()
-           << ") = {" ;
-    std::list<int>::const_iterator it= __loop.begin();
-    std::list<int>::const_iterator it_end= --__loop.end();
-
-    while ( it!=it_end )
-    {
-        if ( *it>0 )
-        {
-            if ( !( *( boost::get<4>( *__dg ) ) )[0][*it] )
-                __ostr << ( *( boost::get<1>( *__dg ) ) )[3][*it] <<"," ;
-
-            else
-                __ostr << ( *( boost::get<5>( *__dg ) ) )[0][*it]
-                       << "[" << ( *( boost::get<1>( *__dg ) ) )[3][*it] << "]"
-                       <<"," ;
-        }
-
-        else
-        {
-            if ( !( *( boost::get<4>( *__dg ) ) )[0][*it] )
-                __ostr << "-" << ( *( boost::get<1>( *__dg ) ) )[3][-*it] <<"," ;
-
-            else
-                __ostr << ( *( boost::get<5>( *__dg ) ) )[0][*it]
-                       << "[" << ( *( boost::get<1>( *__dg ) ) )[3][*it] << "]"
-                       <<"," ;
-        }
-
-        ++it;
-    }
-
-    if ( *it>0 )
-    {
-        if ( !( *( boost::get<4>( *__dg ) ) )[0][*it] )
-            __ostr << ( *( boost::get<1>( *__dg ) ) )[3][*it] << "};\n";
-
-        else
-            __ostr << ( *( boost::get<5>( *__dg ) ) )[0][*it]
-                   << "[" << ( *( boost::get<1>( *__dg ) ) )[3][*it] << "]"
-                   <<"};\n";
-    }
-
-    else
-    {
-        if ( !( *( boost::get<4>( *__dg ) ) )[0][*it] )
-            __ostr << "-" << ( *( boost::get<1>( *__dg ) ) )[3][-*it] << "};\n";
-
-        else
-            __ostr << ( *( boost::get<5>( *__dg ) ) )[0][*it]
-                   << "[" << ( *( boost::get<1>( *__dg ) ) )[3][*it] << "]"
-                   <<"};\n";
-    }
-
-    //boost::get<0>(*__dg)->updateOstr(__ostr.str());
-    *( boost::get<0>( *__dg )->_M_ostrSurfaceLoop ) << __ostr.str();
-
-    ++boost::get<0>( *__dg )->_M_cptSurfaceLoop;
-
-#else
     ( *( boost::get<1>( *__dg ) ) )[4][__numLoc] = __dg->get<0>()->cptSurfaceLoop(); // num local to global
 
     auto surfaceLoop_it = __dg->get<0>()->_M_surfaceLoopList->begin();
@@ -1478,7 +1406,6 @@ writeSurfaceLoop( uint16_type __numLoc, data_geo_ptrtype __dg , Loop /*const*/ _
 
     ++boost::get<0>( *__dg )->_M_cptSurfaceLoop;
 
-#endif
 }
 
 //ici on n'ecrit pas, on memorise cause des operations de difference
