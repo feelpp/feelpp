@@ -163,10 +163,16 @@ macro(crb_add_model)
 
 int main( int argc, char** argv )
 {
-    Feel::Environment env( argc, argv )\;
-    Feel::OpusApp<Feel::${CRB_MODEL_CLASS} > app( argc, argv,
-                                                      Feel::make${CRB_MODEL_LONG_NAME}About( \"${CRB_MODEL_SHORT_NAME}\" ),
-                                                      Feel::make${CRB_MODEL_LONG_NAME}Options()  )\;
+    using namespace Feel\;
+    Feel::Environment env( _argc=argc, _argv=argv,
+                           _desc=opusapp_options(\"${CRB_MODEL_SHORT_NAME}\")
+                           .add(crbOptions())
+                           .add(make${CRB_MODEL_LONG_NAME}Options())
+                           .add(eimOptions())
+                           .add(bdf_options(\"${CRB_MODEL_LONG_NAME}\")),
+                           _about=make${CRB_MODEL_LONG_NAME}About( \"${CRB_MODEL_SHORT_NAME}\" ) )\;
+
+    Feel::OpusApp<Feel::${CRB_MODEL_CLASS} > app\;
     app.run()\;
 }
 " )

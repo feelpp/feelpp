@@ -29,6 +29,8 @@
 #ifndef __OpusApp_H
 #define __OpusApp_H 1
 
+#include <feel/feel.hpp>
+
 #include <boost/assign/std/vector.hpp>
 #include <feel/feelcrb/crb.hpp>
 #include <feel/feelcrb/crbmodel.hpp>
@@ -91,6 +93,14 @@ public:
     typedef CRB<crbmodel_type> crb_type;
     typedef boost::shared_ptr<crb_type> crb_ptrtype;
 
+    OpusApp()
+        :
+        super(),
+        M_mode( ( CRBModelMode )this->vm()[_o( this->about().appName(),"run.mode" )].template as<int>() )
+        {
+            this->init();
+        }
+
     OpusApp( AboutData const& ad, po::options_description const& od )
         :
         super( ad, opusapp_options( ad.appName() ).add( od ).add( crbOptions() ).add( feel_options() ) ),
@@ -128,16 +138,17 @@ public:
                 M_current_path = fs::current_path();
 
                 std::srand( static_cast<unsigned>( std::time( 0 ) ) );
-                VLOG(1) << "[OpusApp] constructor " << this->about().appName()  << "\n";
+                std::cout << this->about().appName() << std::endl;
+                LOG(INFO) << "[OpusApp] constructor " << this->about().appName()  << "\n";
 
-                if( vm().count("hsize") && !vm().count("geofile") )
+                if( this->vm().count("hsize") && !this->vm().count("geofile") )
                     {
                         this->changeRepository( boost::format( "%1%/h_%2%/" )
                                                 % this->about().appName()
                                                 % this->vm()["hsize"].template as<double>()
                                                 );
                     }
-                if( vm().count("geofile") )
+                if( this->vm().count("geofile") )
                     {
                         this->changeRepository( boost::format( "%1%/%2%/" )
                                                 % this->about().appName()
@@ -145,17 +156,17 @@ public:
                                                 );
                     }
 
-                VLOG(1) << "[OpusApp] ch repo" << "\n";
+                LOG(INFO) << "[OpusApp] ch repo" << "\n";
                 this->setLogs();
-                VLOG(1) << "[OpusApp] set Logs" << "\n";
-                VLOG(1) << "[OpusApp] mode:" << ( int )M_mode << "\n";
+                LOG(INFO) << "[OpusApp] set Logs" << "\n";
+                LOG(INFO) << "[OpusApp] mode:" << ( int )M_mode << "\n";
                 model = crbmodel_ptrtype( new crbmodel_type( this->vm(),M_mode ) );
-                VLOG(1) << "[OpusApp] get model done" << "\n";
-
+                LOG(INFO) << "[OpusApp] get model done" << "\n";
 
                 crb = crb_ptrtype( new crb_type( this->about().appName(),
                                                  this->vm() ,
                                                  model ) );
+
                 //VLOG(1) << "[OpusApp] get crb done" << "\n";
                 //crb->setTruthModel( model );
                 //VLOG(1) << "[OpusApp] constructor done" << "\n";
@@ -397,8 +408,6 @@ public:
 
                             std::ofstream res(this->vm()["result-file"].template as<std::string>() );
                             res << "output="<< o.template get<0>() << "\n";
-
-
 
                         }
 

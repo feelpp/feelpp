@@ -2319,7 +2319,7 @@ template<typename TruthModelType>
 void
 CRB<TruthModelType>::checkInitialGuess( const element_type expansion_uN , parameter_type const& mu, vectorN_type & error, mpl::bool_<true>) const
 {
-    using namespace Feel::vf;
+    //using namespace Feel::vf;
     index_vector_type index_vector;
     const element_ptrtype initial_guess = M_model->initialGuess( mu );
     ComputeIntegralsSquare compute_integrals_square( *initial_guess , expansion_uN );
@@ -3486,8 +3486,6 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
     return boost::make_tuple( output_time_vector[size-1], condition_number);
 
 }
-
-
 
 template<typename TruthModelType>
 typename CRB<TruthModelType>::error_estimation_type
