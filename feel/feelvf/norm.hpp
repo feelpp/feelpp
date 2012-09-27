@@ -62,7 +62,7 @@ inner_prod( ExprL l, ExprR r ) -> decltype( trace( trans( l ) * r ) )
 {
     return trace( trans( l ) * r );
 }
-
+#if 0
 /**
  * dot product of the left and right expressions
  *
@@ -77,7 +77,7 @@ dot( ExprL l, ExprR r ) -> decltype( trans( l ) * r )
 {
     return trans( l ) * r;
 }
-
+#endif
 /**
  * double dot product of the left and right expressions
  *
