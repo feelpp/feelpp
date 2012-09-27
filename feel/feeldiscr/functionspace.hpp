@@ -455,7 +455,7 @@ struct H
     array_type _M_hess;
 };
 
-template<typename MeshPtrType, typename PeriodicityType = NoPeriodicity>
+template<typename MeshPtrType, typename PeriodicityType = Periodicity<NoPeriodicity> >
 struct InitializeSpace
 {
     InitializeSpace( MeshPtrType const& mesh,
@@ -478,7 +478,8 @@ struct InitializeSpace
     template <typename T>
     void operator()( boost::shared_ptr<T> & x, mpl::bool_<true> ) const
     {
-        x = boost::shared_ptr<T>( new T( _M_mesh, _M_dofindices, _M_periodicity,
+        auto p = *fusion::find<typename T::periodicity_0_type>(_M_periodicity);
+        x = boost::shared_ptr<T>( new T( _M_mesh, _M_dofindices, p,
                                          std::vector<WorldComm>( 1,_M_worldsComm[_M_cursor] ) ) );
         FEELPP_ASSERT( x ).error( "invalid function space" );
 
@@ -487,9 +488,11 @@ struct InitializeSpace
     template <typename T>
     void operator()( boost::shared_ptr<T> & x, mpl::bool_<false> ) const
     {
+        auto p = *fusion::find<typename T::periodicity_0_type>(_M_periodicity);
+
         // look for T::mesh_ptrtype in MeshPtrType
         auto m = *fusion::find<typename T::mesh_ptrtype>(_M_mesh);
-        x = boost::shared_ptr<T>( new T( m, _M_dofindices, _M_periodicity,
+        x = boost::shared_ptr<T>( new T( m, _M_dofindices, p,
                                          std::vector<WorldComm>( 1,_M_worldsComm[_M_cursor] ) ) );
         FEELPP_ASSERT( x ).error( "invalid function space" );
 
@@ -1290,12 +1293,13 @@ struct Order
 typedef parameter::parameters<
 //    parameter::required<tag::mesh_type, mpl::or_<boost::is_base_and_derived<MeshBase,_> >, mpl::or_<fusion::traits::is_sequence<_>, mpl::is_sequence<_> > >
 parameter::required<tag::mesh_type, boost::is_base_and_derived<MeshBase,_> >
-#if 1
+#if 0
 , parameter::optional<parameter::deduced<tag::bases_list>, mpl::or_<boost::is_base_and_derived<detail::bases_base,_>,
 mpl::or_<fusion::traits::is_sequence<_>,
 mpl::is_sequence<_> > > >
 #else
-, parameter::optional<parameter::deduced<tag::bases_list>, fusion::traits::is_sequence<_> >
+, parameter::optional<parameter::deduced<tag::bases_list>, boost::is_base_and_derived<detail::bases_base,_> >
+//, parameter::optional<parameter::deduced<tag::bases_list>, fusion::traits::is_sequence<_> >
 #endif
 , parameter::optional<parameter::deduced<tag::value_type>, boost::is_floating_point<_> >
 , parameter::optional<parameter::deduced<tag::periodicity_type>, boost::is_base_and_derived<detail::periodicity_base,_> >
@@ -1329,7 +1333,7 @@ public:
 
     typedef typename parameter::binding<args, tag::mesh_type>::type meshes_list;
     typedef typename parameter::binding<args, tag::value_type, double>::type value_type;
-    typedef typename parameter::binding<args, tag::periodicity_type, NoPeriodicity>::type periodicity_type;
+    typedef typename parameter::binding<args, tag::periodicity_type, Periodicity<NoPeriodicity> >::type periodicity_type;
     typedef typename parameter::binding<args, tag::bases_list, detail::bases<Lagrange<1,Scalar> > >::type bases_list;
 
     BOOST_MPL_ASSERT_NOT( ( boost::is_same<mpl::at<bases_list,mpl::int_<0> >, mpl::void_> ) );
@@ -1339,9 +1343,17 @@ public:
     template<typename ThePeriodicityType, int pos>
     struct GetPeriodicity
     {
+#if 0
         typedef typename boost::remove_reference<periodicity_type>::type periodicity_list_noref;
         typedef typename fusion::result_of::at_c<periodicity_list_noref, pos>::type _type;
         typedef typename boost::remove_reference<_type>::type type;
+#else
+        typedef typename mpl::if_<mpl::equal_to<fusion::result_of::size<ThePeriodicityType>,mpl::int_<1> >,
+                                  mpl::identity<fusion::result_of::at_c<ThePeriodicityType,0> >,
+                                  mpl::identity<fusion::result_of::at_c<ThePeriodicityType,pos> > >::type::type::type _type;
+        typedef typename boost::remove_reference<_type>::type type;
+
+#endif
     };
     template<typename BasisType>
     struct ChangeMesh
@@ -1352,9 +1364,9 @@ public:
                                                      typename fusion::result_of::find<bases_list_noref,BasisType>::type>::type pos;
         typedef typename fusion::result_of::at_c<meshes_list_noref, pos::value >::type _mesh_type;
 
-        typedef typename mpl::if_<boost::is_base_of<Feel::detail::periodic_base, periodicity_type >,
-                                  mpl::identity<FunctionSpace<typename boost::remove_reference<_mesh_type>::type,detail::bases<BasisType>,value_type, periodicity_type> >,
-                                  mpl::identity<FunctionSpace<typename boost::remove_reference<_mesh_type>::type,detail::bases<BasisType>,value_type, typename GetPeriodicity<periodicity_type,pos::value>::type > > >::type::type _type;
+        typedef FunctionSpace<typename boost::remove_reference<_mesh_type>::type,
+                              detail::bases<BasisType>,value_type,
+                              Periodicity<typename GetPeriodicity<periodicity_type,pos::value>::type > > _type;
         typedef boost::shared_ptr<_type> type;
 
 
@@ -1363,8 +1375,12 @@ public:
     struct ChangeBasis
     {
         //typedef typename mpl::if_<mpl::and_<boost::is_base_of<MeshBase, meshes_list >, boost::is_base_of<Feel::detail::periodic_base, periodicity_type > >,
+        typedef typename boost::remove_reference<bases_list>::type bases_list_noref;
+        typedef typename fusion::result_of::distance<typename fusion::result_of::begin<bases_list_noref>::type,
+                                                     typename fusion::result_of::find<bases_list_noref,BasisType>::type>::type pos;
+
         typedef typename mpl::if_<boost::is_base_of<MeshBase, meshes_list >,
-                                  mpl::identity<mpl::identity<boost::shared_ptr<FunctionSpace<meshes_list,detail::bases<BasisType>,value_type, periodicity_type> > > >,
+                                  mpl::identity<mpl::identity<boost::shared_ptr<FunctionSpace<meshes_list,detail::bases<BasisType>,value_type, Periodicity<typename GetPeriodicity<periodicity_type,pos::value>::type> > > > >,
                                   mpl::identity<ChangeMesh<BasisType> > >::type::type::type type;
 
 //mpl::identity<typename mpl::transform<meshes_list, ChangeMesh<mpl::_1,BasisType>, mpl::back_inserter<fusion::vector<> > >::type > >::type::type type;
@@ -1474,7 +1490,8 @@ public:
     static const uint16_type N_COMPONENTS = nComponents;
     static const uint16_type nSpaces = mpl::size<bases_list>::type::value;
 
-    static const bool is_periodic = periodicity_type::is_periodic;
+    typedef typename GetPeriodicity<periodicity_type,0>::type periodicity_0_type;
+    static const bool is_periodic = periodicity_0_type::is_periodic;
 
     //@}
 
@@ -1563,7 +1580,7 @@ public:
     // dof
     typedef typename mpl::if_<mpl::bool_<is_composite>,
             mpl::identity<DofComposite>,
-            mpl::identity<DofTable<mesh_type, basis_type, periodicity_type> > >::type::type dof_type;
+            mpl::identity<DofTable<mesh_type, basis_type, periodicity_0_type> > >::type::type dof_type;
 
     typedef boost::shared_ptr<dof_type> dof_ptrtype;
 
@@ -3919,7 +3936,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
 
     _M_ref_fe = basis_ptrtype( new basis_type );
 
-    _M_dof = dof_ptrtype( new dof_type( _M_ref_fe, periodicity, this->worldsComm()[0] ) );
+    _M_dof = dof_ptrtype( new dof_type( _M_ref_fe, fusion::at_c<0>(periodicity), this->worldsComm()[0] ) );
 
     Debug( 5010 ) << "[functionspace] Dof indices is empty ? " << dofindices.empty() << "\n";
     _M_dof->setDofIndices( dofindices );
@@ -3935,9 +3952,9 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
         // it will use in mixed spaces only numberofSudomains/numberofspace processors
         //
         _M_comp_space = component_functionspace_ptrtype( new component_functionspace_type( _M_mesh,
-                        MESH_COMPONENTS_DEFAULTS,
-                        periodicity,
-                        std::vector<WorldComm>( 1,this->worldsComm()[0] ) ) );
+                                                                                           MESH_COMPONENTS_DEFAULTS,
+                                                                                           periodicity,
+                                                                                           std::vector<WorldComm>( 1,this->worldsComm()[0] ) ) );
     }
 
     Debug( 5010 ) << "nb dim : " << qDim() << "\n";
