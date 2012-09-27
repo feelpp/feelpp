@@ -328,6 +328,29 @@ void runCubeWithConformalInternalShape( Application_ptrtype testApp )
 
 //-----------------------------------------------------//
 
+#if 0
+void runSphereHollow( Application_ptrtype testApp )
+{
+    typedef Mesh<Simplex<3,1,3> > mesh_type;
+
+    double meshSize = testApp->vm()["hsize3d"].as<double>()/3.;
+
+   GeoTool::Sphere S1(meshSize,"S1",
+                       GeoTool::Node(0.5,0,0),
+                       GeoTool::Node(0.1,0,0) );
+    S1.setMarker(_type="surface",_name="WallFBM",_markerAll=true);
+    S1.setMarker(_type="volume",_name="Sphere",_markerAll=true);
+    GeoTool::Sphere S2(meshSize,"S2",
+                       GeoTool::Node(0.5,0,0),
+                       GeoTool::Node(0.2,0,0) );
+    S2.setMarker(_type="surface",_name="FictitiousBoundary",_markerAll=true);
+    S2.setMarker(_type="volume",_name="Sphere",_markerAll=true);
+
+    auto mesh = (S2-S1).createMesh(_mesh=new mesh_type,
+                              _name="domainSphere" );
+}
+#endif
+
 } // namespace test_geotool
 
 BOOST_AUTO_TEST_SUITE( interp_geotool )
@@ -359,6 +382,7 @@ BOOST_AUTO_TEST_CASE( interp_geotool )
     test_geotool::runCylinder(testApp);
     test_geotool::runCubeWithPerfo(testApp);
     test_geotool::runCubeWithConformalInternalShape(testApp);
+    //test_geotool::runSphere(testApp);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
