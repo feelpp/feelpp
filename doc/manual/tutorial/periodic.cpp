@@ -26,6 +26,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2008-10-03
  */
+#include <boost/foreach.hpp>
+
 #include <feel/feel.hpp>
 
 inline
@@ -96,18 +98,25 @@ public:
     typedef bases<Lagrange<Order, Scalar>, Lagrange<Order, Scalar> > basis_composite_type;
 
     /*space*/
-    typedef FunctionSpace<mesh_type, basis_type, Periodic<> > functionspace_type;
+    typedef FunctionSpace<mesh_type, basis_type, Periodicity<Periodic<> > > functionspace_type;
     typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
+    BOOST_MPL_ASSERT( ( boost::is_base_and_derived<Feel::detail::periodicity_base,Periodicity<Periodic<> > > ) );
+    BOOST_MPL_ASSERT( ( boost::is_base_and_derived<Feel::detail::periodic_base,Periodicity<Periodic<> > > ) );
 
-    typedef FunctionSpace<mesh_type, basis_vec_type, Periodic<> > functionspace_vec_type;
+    BOOST_MPL_ASSERT( ( boost::is_same<typename functionspace_type::periodicity_type,Periodicity<Periodic<> > > ) );
+    BOOST_MPL_ASSERT( ( boost::is_same<mpl::bool_<functionspace_type::is_periodic>,mpl::bool_<true> > ) );
+    typedef FunctionSpace<mesh_type, basis_vec_type, Periodicity<Periodic<> > > functionspace_vec_type;
     typedef boost::shared_ptr<functionspace_vec_type> functionspace_vec_ptrtype;
+    BOOST_MPL_ASSERT( ( boost::is_same<mpl::bool_<functionspace_vec_type::is_periodic>,mpl::bool_<true> > ) );
 
-    //typedef FunctionSpace<mesh_type, basis_composite_type, periodic<Periodic<>, Periodic<> > > functionspace_composite_type;
-    typedef FunctionSpace<mesh_type, basis_composite_type, Periodic<> > functionspace_composite_type;
+    typedef FunctionSpace<mesh_type, basis_composite_type, Periodicity<Periodic<>, NoPeriodicity > > functionspace_composite_type;
     typedef boost::shared_ptr<functionspace_composite_type> functionspace_composite_ptrtype;
+    BOOST_MPL_ASSERT( ( boost::is_same<mpl::bool_<functionspace_composite_type::template sub_functionspace<0>::type::value_type::is_periodic>,mpl::bool_<true> > ) );
+    BOOST_MPL_ASSERT( ( boost::is_same<mpl::bool_<functionspace_composite_type::template sub_functionspace<1>::type::value_type::is_periodic>,mpl::bool_<false> > ) );
 
 
     typedef typename functionspace_type::element_type element_type;
+    typedef typename functionspace_vec_type::element_type vec_element_type;
 
     /* export */
     typedef Exporter<mesh_type> export_type;
@@ -126,7 +135,7 @@ private:
     /**
      * export results to ensight format (enabled by  --export cmd line options)
      */
-    void exportResults( element_type& u, element_type&, element_type&, element_type& );
+    void exportResults( element_type& u, element_type&, element_type&, vec_element_type& );
 
 private:
 
@@ -181,19 +190,18 @@ PeriodicLaplacian<Dim,Order>::PeriodicLaplacian()
                                          _shape=shape,
                                          _dim=Dim,
                                          _h=h,
-                                         _xmin=-1, _ymin=-1 ) );
+                                         _xmin=-1.5, _ymin=-1.5, _xmax=1.5, _ymax=1.5 ) );
 
 
     LOG(INFO) << "create space\n";
     node_type trans( 2 );
     trans[0]=0;
-    trans[1]=2;
-    Xh = functionspace_type::New( _mesh=mesh, _periodicity=Periodic<>( 2, 4, trans ) );
+    trans[1]=3;
+    Xh = functionspace_type::New( _mesh=mesh, _periodicity=periodicity(Periodic<>( 2, 4, trans )) );
 
-    Xh_vec = functionspace_vec_type::New( _mesh=mesh, _periodicity=Periodic<>( 2, 4, trans ) );
+    Xh_vec = functionspace_vec_type::New( _mesh=mesh, _periodicity=periodicity(Periodic<>( 2, 4, trans ) ));
 
-    //Xhc = functionspace_composite_type::New( _mesh=mesh, _periodicity=fusion::make_vector( Periodic<>(2, 4, trans), Periodic<>(2, 4, trans) ) );
-    //Xhc = functionspace_composite_type::New( _mesh=mesh, _periodicity=Periodic<>(2, 4, trans) );
+    Xhc = functionspace_composite_type::New( _mesh=mesh, _periodicity=periodicity( Periodic<>(2, 4, trans), NoPeriodicity() ) );
 
     LOG(INFO) << "Xh print space info\n";
     Xh->printInfo();
@@ -211,6 +219,8 @@ PeriodicLaplacian<Dim, Order>::run()
 
     element_type u( Xh, "u" );
     element_type v( Xh, "v" );
+    auto uu = Xh_vec->element( "uu" );
+    auto vv = Xh_vec->element( "vv" );
 
 #if 0
     AUTO( g, Px()*Py()+2*Px()+1 );
@@ -222,27 +232,42 @@ PeriodicLaplacian<Dim, Order>::run()
     AUTO( f, 0 );
 #else
     auto g = sin( M_PI*Px() )*cos( M_PI*Py() );
+    auto gg = vec(g,g);
     auto grad_g = vec( +M_PI*cos( M_PI*Px() )*cos( M_PI*Py() ),
                        -M_PI*sin( M_PI*Px() )*sin( M_PI*Py() ) );
     auto f = 2*M_PI*M_PI*g;
+    auto ff = 2*M_PI*M_PI*gg;
 #endif
     LOG(INFO) << "Number of Periodic elements: " << std::distance( Xh->dof()->beginPeriodicElements(),
                                                                    Xh->dof()->endPeriodicElements() ) << "\n";
     auto M = M_backend->newMatrix( Xh, Xh );
+    auto F = M_backend->newVector( Xh );
 
     form2( Xh, Xh, M ) = integrate( _range=elements( mesh ), _expr=gradt( u )*trans( grad( v ) ) );
-    form2( Xh, Xh, M ) += integrate( _range=markedfaces( mesh, 1 ),
-                                     _expr=-gradt( u )*N()*id( v )
-                                     -grad( v )*N()*idt( u )
-                                     + penalisation_bc*id( u )*idt( v )/hFace() );
-
-    form2( Xh, Xh, M ) += integrate( _range=markedfaces( mesh, 3 ),
-                                     _expr=-gradt( u )*N()*id( v )
-                                     -grad( v )*N()*idt( u )
-                                     + penalisation_bc*id( u )*idt( v )/hFace() );
-
-    auto F = M_backend->newVector( Xh );
     form1( Xh, F ) = integrate( _range=elements( mesh ), _expr=f*id( v ) );
+
+#if 0
+    std::list<int> period = {2};
+    BOOST_FOREACH( auto bdy, period )
+    {
+        //form2( Xh, Xh, M ) += integrate( _range=markedfaces( mesh, bdy ),
+        form1( Xh, F ) += integrate( _range=markedfaces( mesh, bdy ),
+                                     //_expr=-gradt( u )*N()*id( v ) );
+                                     _expr=trans(grad_g)*N()*id( v ) );
+    }
+#endif
+    std::list<int> bdys = {1,3};
+    BOOST_FOREACH( auto bdy, bdys )
+    {
+        form2( Xh, Xh, M ) += integrate( _range=markedfaces( mesh, bdy ),
+                                         _expr=-gradt( u )*N()*id( v )
+                                         -grad( v )*N()*idt( u )
+                                         + penalisation_bc*id( u )*idt( v )/hFace() );
+
+        form1( Xh, F ) += integrate( _range=markedfaces( mesh, bdy ),
+                                     _expr=g*(-grad( v )*N()+ penalisation_bc*id( u )/hFace() ) );
+    }
+
         //+integrate( boundaryfaces( mesh ), _Q<Order+5>(), (trans(grad_g)*N())*id(v) )
 
 
@@ -265,20 +290,48 @@ PeriodicLaplacian<Dim, Order>::run()
     v = vf::project( Xh, elements( mesh ), g );
 
     element_type e( Xh, "e" );
-    e = vf::project( Xh, elements( mesh ), idv( u )-g );
-
-    element_type j( Xh, "Py" );
-    j = vf::project( Xh, elements( mesh ), Py() );
+    //e = vf::project( Xh, markedfaces( mesh, 2 ), cst(1) );
+    e = vf::project( Xh, markedfaces( mesh, 2 ), idv(u)-g );
 
 
-    exportResults( u, v, e, j );
 
+
+
+
+    {
+        auto MM = M_backend->newMatrix( Xh_vec, Xh_vec );
+        auto FF = M_backend->newVector( Xh_vec );
+        form2( Xh_vec, Xh_vec, MM ) = integrate( _range=elements( mesh ), _expr=trace(gradt( uu )*trans( grad( vv ) ) ) );
+
+#if 0
+        BOOST_FOREACH( auto bdy, period )
+        {
+            form2( Xh_vec, Xh_vec, MM ) += integrate( _range=markedfaces( mesh, bdy ),
+                                                      _expr=-trans(gradt( uu )*N())*id( vv ) );
+        }
+#endif
+
+        form1( Xh_vec, FF ) = integrate( _range=elements( mesh ), _expr=trans(ff)*id( vv ) );
+
+        BOOST_FOREACH( auto bdy, bdys )
+        {
+            form2( Xh_vec, Xh_vec, MM ) += integrate( _range=markedfaces( mesh, bdy ),
+                                                      _expr=-trans(gradt( uu )*N())*id( vv )
+                                                      -trans(grad( vv )*N())*idt( uu )
+                                                      + penalisation_bc*trans(id( uu ))*idt( vv )/hFace() );
+            form1( Xh_vec, FF ) += integrate( _range=markedfaces( mesh, bdy ),
+                                              _expr=trans(gg)*(-grad( vv )*N()+penalisation_bc*id( uu )/hFace() ) );
+        }
+        backend(_rebuild=true)->solve( _matrix=MM, _solution=uu, _rhs=FF );
+    }
+
+    exportResults( u, v, e, uu );
 
 } // PeriodicLaplacian::run
 
 template<int Dim, int Order>
 void
-PeriodicLaplacian<Dim, Order>::exportResults( element_type& U, element_type& V, element_type& E, element_type& F )
+PeriodicLaplacian<Dim, Order>::exportResults( element_type& U, element_type& V, element_type& E, vec_element_type& F )
 {
     timers["export"].first.restart();
 
@@ -288,7 +341,7 @@ PeriodicLaplacian<Dim, Order>::exportResults( element_type& U, element_type& V, 
     exporter->step( 1. )->add( "u", U );
     exporter->step( 1. )->add( "exact", V );
     exporter->step( 1. )->add( "error", E );
-    exporter->step( 1. )->add( "f", F );
+    exporter->step( 1. )->add( "uu", F );
 
     exporter->save();
     timers["export"].second = timers["export"].first.elapsed();
