@@ -30,9 +30,9 @@
 FIND_PACKAGE(GFLAGS)
 FIND_PATH(GLOG_INCLUDE_DIR glog/logging.h
   ${CMAKE_BINARY_DIR}/contrib/glog/include
-  /opt/local/include
-  /usr/local/include
-  /usr/include
+#  /opt/local/include
+#  /usr/local/include
+#  /usr/include
   )
 message(STATUS "Glog first pass: ${GLOG_INCLUDE_DIR}")
 
@@ -46,23 +46,23 @@ if (NOT GLOG_INCLUDE_DIR )
     OUTPUT_QUIET
     OUTPUT_FILE "titi"
     )
-  message(STATUS "Installing glog in ${CMAKE_BINARY_DIR}/contrib/glog...")
-  execute_process(
-    COMMAND make install
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/glog-compile
-    OUTPUT_QUIET
-    )
   set(GLOG_INCLUDE_DIR ${CMAKE_BINARY_DIR}/contrib/glog/include)
-
 endif()
+
+message(STATUS "Installing glog in ${CMAKE_BINARY_DIR}/contrib/glog...")
+execute_process(
+  COMMAND make install
+  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/glog-compile
+  OUTPUT_QUIET
+  )
 
 FIND_LIBRARY(GLOG_LIBRARY
   NAMES glog
   PATHS
   ${CMAKE_BINARY_DIR}/contrib/glog/lib/
-  /opt/local/lib
-  /usr/local/lib
-  /usr/lib
+#  /opt/local/lib
+#  /usr/local/lib
+#  /usr/lib
   )
 set(GLOG_LIBRARIES ${GLOG_LIBRARY})
 message(STATUS "GLog includes: ${GLOG_INCLUDE_DIR} Libraries: ${GLOG_LIBRARIES}" )
