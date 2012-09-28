@@ -473,7 +473,7 @@ GeoGMSHTool::geoStr()
     }
 
 
-    std::map<int,int> mapSurfaceRenumbering;
+    //std::map<int,int> mapSurfaceRenumbering;
 
 
     //Write the planes surfaces
@@ -483,7 +483,9 @@ GeoGMSHTool::geoStr()
     std::ostringstream __surface_str;
     //counter of surface
     uint16_type __surfnumber=1;//referencier une liste des surf dans les writePlaneSurface
+    // build map between local id surf with name -> global id surf
     std::map<std::string,std::map<std::string, std::map<uint16_type,uint16_type> > > __dataSurfacePost;
+    // counter of local surf
     std::map<std::string,std::map<std::string, uint16_type> > __dataSurfacePostCpt;
 
     for ( ; itSurf != itSurf_end; ++itSurf )
@@ -517,7 +519,8 @@ GeoGMSHTool::geoStr()
             else
                 __surface_str << "Ruled Surface(" << __surfnumber << ") = {" ;
 
-            mapSurfaceRenumbering[itSurf2->get<2>().first] = __dataSurfacePostCpt[itSurf2->get<0>()][itSurf2->get<1>()];//__surfnumber;
+            //std::cout << "name " << itSurf2->get<1>() << " map realsurf " << itSurf2->get<2>().first << " with locsurf  " <<  __dataSurfacePostCpt[itSurf2->get<0>()][itSurf2->get<1>()] << std::endl;
+            //mapSurfaceRenumbering[itSurf2->get<2>().first] = __dataSurfacePostCpt[itSurf2->get<0>()][itSurf2->get<1>()];//__surfnumber;
 
             surface_type_const_iterator_type itSurf2_end = --itSurf->end();
             for ( ; itSurf2 != itSurf2_end; ++itSurf2 )
@@ -589,10 +592,10 @@ GeoGMSHTool::geoStr()
                 for ( ; surfaceLoop4_it!=surfaceLoop4_en ; ++surfaceLoop4_it )
                 {
                     //std::cout << "\n HOLA " << *surfaceLoop4_it << " map " << mapSurfaceRenumbering[*surfaceLoop4_it] <<std::endl;
-                    __ostrSurfaceLoop << __dataSurfacePost[surfaceLoop2_it->get<0>()][surfaceLoop2_it->get<1>()][ mapSurfaceRenumbering[*surfaceLoop4_it] ] << ",";
+                    __ostrSurfaceLoop << __dataSurfacePost[surfaceLoop2_it->get<0>()][surfaceLoop2_it->get<1>()][ /*mapSurfaceRenumbering[*/ *surfaceLoop4_it/*]*/ ] << ",";
                 }
 
-                __ostrSurfaceLoop << __dataSurfacePost[surfaceLoop2_it->get<0>()][surfaceLoop2_it->get<1>()][ mapSurfaceRenumbering[*surfaceLoop4_it] ] <<"};\n";
+                __ostrSurfaceLoop << __dataSurfacePost[surfaceLoop2_it->get<0>()][surfaceLoop2_it->get<1>()][ /*mapSurfaceRenumbering[*/ *surfaceLoop4_it/*]*/ ] <<"};\n";
                 ++__nSurfaceLoop;
 
             } // surfaceLoop
@@ -2208,7 +2211,7 @@ runSphere( data_geo_ptrtype dg )
     writeCircle( 18, dg, 11, 1, 5 );
     writeCircle( 21, dg, 14, 1, 5 );
 
-
+#if 0
     writeLineLoop( 1, dg, Loop()>>1>>4>>-3 );
     writeRuledSurface( 1, dg,1 );
     writeLineLoop( 2, dg, Loop()>>3>>7>>-6 );
@@ -2225,8 +2228,27 @@ runSphere( data_geo_ptrtype dg )
     writeRuledSurface( 7,dg,7 );
     writeLineLoop( 8, dg, Loop()>>-2>>-13>>21 );
     writeRuledSurface( 8, dg,8 );
-
     writeSurfaceLoop( 1, dg, Loop()>>1>>4>>3>>2>>6>>7>>8>>5 );
+
+#else
+    writeLineLoop( 1, dg, Loop()>>1>>4>>-3 );
+    writeRuledSurface( 1, dg,1 );
+    writeLineLoop( 2, dg, Loop()>>7>>-6>>3 );
+    writeRuledSurface( 2, dg,2 );
+    writeLineLoop( 3, dg, Loop()>>6>>10>>-9 );
+    writeRuledSurface( 3,dg,3 );
+    writeLineLoop( 4, dg, Loop()>>13>>-1>>9 );
+    writeRuledSurface( 4, dg, 4 );
+    writeLineLoop( 5, dg, Loop()>>-4>>2>>-15 );
+    writeRuledSurface( 5, dg, 5 );
+    writeLineLoop( 6, dg, Loop()>>-18>>-7>>15 );
+    writeRuledSurface( 6, dg, 6 );
+    writeLineLoop( 7, dg, Loop()>>-10>>18>>-21 );
+    writeRuledSurface( 7,dg,7 );
+    writeLineLoop( 8, dg, Loop()>>-2>>-13>>21 );
+    writeRuledSurface( 8, dg,8 );
+    writeSurfaceLoop( 1, dg, Loop()>>3>>2>>6>>7>>8>>5>>1>>4 );
+#endif
 
     writeVolume( 1, dg, 1 );
 }
