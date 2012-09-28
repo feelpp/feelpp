@@ -30,6 +30,7 @@
 FIND_PACKAGE(GFLAGS)
 FIND_PATH(GLOG_INCLUDE_DIR glog/logging.h
   ${CMAKE_BINARY_DIR}/contrib/glog/include
+  NO_DEFAULT_PATH
 #  /opt/local/include
 #  /usr/local/include
 #  /usr/include
@@ -60,6 +61,7 @@ FIND_LIBRARY(GLOG_LIBRARY
   NAMES glog
   PATHS
   ${CMAKE_BINARY_DIR}/contrib/glog/lib/
+  NO_DEFAULT_PATH
 #  /opt/local/lib
 #  /usr/local/lib
 #  /usr/lib
