@@ -29,9 +29,9 @@
 # and set GFLAGS_INCLUDE_DIR and GFLAGS_LIBRARIES
 FIND_PATH(GFLAGS_INCLUDE_DIR gflags/gflags.h
   ${CMAKE_BINARY_DIR}/contrib/gflags/include
-  /opt/local/include
-  /usr/local/include
-  /usr/include
+#  /opt/local/include
+#  /usr/local/include
+# /usr/include
   )
 message(STATUS "Gflags first pass: ${GFLAGS_INCLUDE_DIR}")
 
@@ -44,15 +44,15 @@ if (NOT GFLAGS_INCLUDE_DIR )
     OUTPUT_QUIET
     OUTPUT_FILE "titi"
     )
-  message(STATUS "Installing gflags in ${CMAKE_BINARY_DIR}/contrib/gflags...")
-  execute_process(
-    COMMAND make install
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/gflags-compile
-    OUTPUT_QUIET
-    )
   set(GFLAGS_INCLUDE_DIR ${CMAKE_BINARY_DIR}/contrib/gflags/include)
-
 endif()
+message(STATUS "Installing gflags in ${CMAKE_BINARY_DIR}/contrib/gflags...")
+execute_process(
+  COMMAND make install
+  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/gflags-compile
+  OUTPUT_QUIET
+  )
+
 string(REPLACE "include" "" GFLAGS_DIR ${GFLAGS_INCLUDE_DIR} )
 
 
@@ -60,9 +60,9 @@ FIND_LIBRARY(GFLAGS_LIBRARY
   NAMES gflags
   PATHS
   ${CMAKE_BINARY_DIR}/contrib/gflags/lib/
-  /opt/local/lib
-  /usr/local/lib
-  /usr/lib
+#  /opt/local/lib
+#  /usr/local/lib
+#  /usr/lib
   )
 set(GFLAGS_LIBRARIES ${GFLAGS_LIBRARY})
 message(STATUS "Gflags includes: ${GFLAGS_INCLUDE_DIR} Libraries: ${GFLAGS_LIBRARIES} Dir: ${GFLAGS_DIR}" )
