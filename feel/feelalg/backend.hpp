@@ -941,6 +941,7 @@ private:
 
     bool M_reuse_prec;
     bool M_reuse_jac;
+    bool M_reusePrecIsBuild,M_reusePrecRebuildAtFirstNewtonStep;
     bool M_reuseJacIsBuild,M_reuseJacRebuildAtFirstNewtonStep;
     size_t M_nUsePC;
     bool   M_converged;
