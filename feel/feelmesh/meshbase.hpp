@@ -47,7 +47,7 @@ enum MeshComponents
     MESH_PARTITION        = ( 1 << 3 ),
     MESH_RENUMBER         = ( 1 << 4 ),
     MESH_ADD_ELEMENTS_INFO= ( 1 << 5 ),
-    MESH_PROPAGATE_MARKERS= ( 1 << 6 ),
+    MESH_PROPAGATE_MARKERS= ( 1 << 6 )
 
 };
 const uint16_type MESH_ALL_COMPONENTS = MESH_UPDATE_EDGES | MESH_UPDATE_FACES | MESH_CHECK | MESH_PARTITION | MESH_RENUMBER;
