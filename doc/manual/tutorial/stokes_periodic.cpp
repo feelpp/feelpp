@@ -81,7 +81,7 @@ public:
     typedef double value_type;
 
     /*mesh*/
-    typedef Entity<Dim,1,Dim> entity_type;
+    typedef Entity<Dim> entity_type;
     typedef Mesh<entity_type> mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
