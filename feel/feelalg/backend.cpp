@@ -47,6 +47,8 @@ Backend<T>::Backend( WorldComm const& worldComm )
     M_atolerance( 1e-50 ),
     M_reuse_prec( false ),
     M_reuse_jac( false ),
+    M_reusePrecIsBuild(false),
+    M_reusePrecRebuildAtFirstNewtonStep(false),
     M_reuseJacIsBuild(false),
     M_reuseJacRebuildAtFirstNewtonStep(true),
     M_transpose( false ),
@@ -77,6 +79,8 @@ Backend<T>::Backend( Backend const& backend )
     M_atolerance( backend.M_atolerance ),
     M_reuse_prec( backend.M_reuse_prec ),
     M_reuse_jac( backend.M_reuse_jac ),
+    M_reusePrecIsBuild( backend.M_reusePrecIsBuild) ,
+    M_reusePrecRebuildAtFirstNewtonStep( backend.M_reusePrecRebuildAtFirstNewtonStep ),
     M_reuseJacIsBuild( backend.M_reuseJacIsBuild) ,
     M_reuseJacRebuildAtFirstNewtonStep( backend.M_reuseJacRebuildAtFirstNewtonStep ),
     M_transpose( backend.M_transpose ),
@@ -106,6 +110,8 @@ Backend<T>::Backend( po::variables_map const& vm, std::string const& prefix, Wor
     M_atolerance( vm[prefixvm( prefix,"ksp-atol" )].template as<double>() ),
     M_reuse_prec( vm[prefixvm( prefix,"reuse-prec" )].template as<bool>() ),
     M_reuse_jac(  vm[prefixvm( prefix,"reuse-jac" )].template as<bool>() ),
+    M_reusePrecIsBuild( false ) ,
+    M_reusePrecRebuildAtFirstNewtonStep( vm[prefixvm( prefix,"reuse-prec.rebuild-at-first-newton-step" )].template as<bool>() ),
     M_reuseJacIsBuild( false ) ,
     M_reuseJacRebuildAtFirstNewtonStep( vm[prefixvm( prefix,"reuse-jac.rebuild-at-first-newton-step" )].template as<bool>() ),
     M_transpose( false ),
@@ -242,6 +248,8 @@ Backend<T>::solve( sparse_matrix_ptrtype const& A,
 {
     M_reusePC = reusePC;
 
+    MatrixStructure matStructInitial = this->precMatrixStructure();
+
     vector_ptrtype x_save;
 
     if ( !M_reusePC )
@@ -254,22 +262,16 @@ Backend<T>::solve( sparse_matrix_ptrtype const& A,
         x->close();
         x_save = this->newVector(x->map());
         *x_save=*x;
+        this->setPrecMatrixStructure( SAME_PRECONDITIONER );
     }
 
     //start();
 
-    this->setPrecMatrixStructure( SAME_PRECONDITIONER );
 
     //std::cout << "backend: " << this->precMatrixStructure() << "\n";
     boost::tie( M_converged, M_iteration, M_residual ) = this->solve( A, P, x, b );
     //stop();
-    M_reuseFailed = M_reusedPC && ( !M_converged );
-    /*
-    if (M_reuseFailed)
-        std::cout << "\n OK :nb iteration : "<<M_iteration<<"  le residu : "<< M_residual;
-    else
-    std::cout << "\n BAD :nb iteration : "<<M_iteration<<"  le residu : "<< M_residual;
-    */
+    M_reuseFailed = reusePC && (!M_converged );
 
     if ( M_reuseFailed )
     {
@@ -281,7 +283,7 @@ Backend<T>::solve( sparse_matrix_ptrtype const& A,
         x_save->close();
         *x=*x_save;
 
-        this->setPrecMatrixStructure( SAME_NONZERO_PATTERN );
+        this->setPrecMatrixStructure( matStructInitial );//DIFFERENT_NONZERO_PATTERN,SAME_NONZERO_PATTERN
         if (this->comm().globalRank() == this->comm().masterRank() )
             std::cout << "Backend "  << M_prefix << " reuse failed, rebuilding preconditioner...\n";
         LOG(INFO) << "Backend "  << M_prefix << " reuse failed, rebuilding preconditioner...\n";
@@ -293,6 +295,8 @@ Backend<T>::solve( sparse_matrix_ptrtype const& A,
         //stop();
     }
 
+    this->setPrecMatrixStructure( matStructInitial );
+
     return boost::make_tuple( M_converged, M_iteration, M_residual );
 }
 template <typename T>
@@ -303,6 +307,9 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
                      const double tol, const int its,
                      bool reusePC, bool reuseJac )
 {
+    MatrixStructure matStructInitial = this->precMatrixStructure();
+
+    M_nlsolver->init();
     M_nlsolver->setPreconditionerType( this->pcEnumType() );
     M_nlsolver->setKspSolverType( this->kspEnumType() );
     M_nlsolver->setMatSolverPackageType( this->matSolverPackageEnumType() );
@@ -323,9 +330,15 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
         x_save = this->newVector(x->map());
         *x_save=*x;
 
-        M_nlsolver->init();
-        M_nlsolver->setPrecMatrixStructure( SAME_PRECONDITIONER );
+        // if first time or rebuild prec at first newton step, need to get matStructInitial
+        if ( reusePC && (!M_reusePrecIsBuild || M_reusePrecRebuildAtFirstNewtonStep) )
+            {
+                M_nlsolver->setPrecMatrixStructure( matStructInitial );
+                M_reusePrecIsBuild=true;
+            }
+        else if ( reusePC ) M_nlsolver->setPrecMatrixStructure( SAME_PRECONDITIONER );
 
+        // configure reusePC,reuseJac in non linear solver
         int typeReusePrec = 1,typeReuseJac = 1 ;
         if ( reusePC ) typeReusePrec = -1;
         if ( reuseJac ) typeReuseJac = -1;
@@ -335,7 +348,7 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
         M_nlsolver->setReuse( typeReuseJac, typeReusePrec );
 
         // compute cst jacobian in case of quasi-newton!
-        if ( reuseJac && (!M_reuseJacIsBuild || M_reuseJacRebuildAtFirstNewtonStep) ) { this->nlSolver()->jacobian( x, A );M_reuseJacIsBuild=true;}
+        if ( reuseJac &&  (!M_reuseJacIsBuild || M_reuseJacRebuildAtFirstNewtonStep) ) { this->nlSolver()->jacobian( x, A );M_reuseJacIsBuild=true;}
     }
 
     auto ret = M_nlsolver->solve( A, x, b, tol, its );
@@ -354,7 +367,7 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
         M_nlsolver->init();
         M_nlsolver->setPreconditionerType( this->pcEnumType() );
         M_nlsolver->setKspSolverType( this->kspEnumType() );
-        M_nlsolver->setPrecMatrixStructure( SAME_NONZERO_PATTERN );
+        M_nlsolver->setPrecMatrixStructure( matStructInitial/*SAME_NONZERO_PATTERN*/ );
 
         //M_nlsolver->setReuse( 1, -2 );
         M_nlsolver->setReuse( 1, 1 );
@@ -369,6 +382,8 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
 
         return boost::make_tuple( ret2.first, its, tol );
     }
+
+    this->setPrecMatrixStructure( matStructInitial );
 
     return boost::make_tuple( ret.first, its, tol );
 }
@@ -620,6 +635,7 @@ po::options_description backend_options( std::string const& prefix )
     ( prefixvm( prefix,"reuse-jac" ).c_str(), Feel::po::value<bool>()->default_value( false ), "reuse jacobian" )
     ( prefixvm( prefix,"reuse-jac.rebuild-at-first-newton-step" ).c_str(), Feel::po::value<bool>()->default_value( true ), "rebuild jacobian at each Newton when reuse jacobian" )
     ( prefixvm( prefix,"reuse-prec" ).c_str(), Feel::po::value<bool>()->default_value( false ), "reuse preconditioner" )
+    ( prefixvm( prefix,"reuse-prec.rebuild-at-first-newton-step" ).c_str(), Feel::po::value<bool>()->default_value( false ), "rebuild preconditioner at each Newton when reuseprec" )
 
     ( prefixvm( prefix,"export-matlab" ).c_str(), Feel::po::value<std::string>()->default_value( "" ), "export matrix/vector to matlab, default empty string means no export, other string is used as prefix" )
 
