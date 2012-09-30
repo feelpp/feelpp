@@ -725,7 +725,8 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
                 // we have already inserted edges on the boundary so
                 // this one _is_ not on the boundary
                 edg.setOnBoundary( false );
-                edg.addElement( vid );
+                if ( this->components().test( MESH_ADD_ELEMENTS_INFO ) )
+                    edg.addElement( vid );
 
                 // number of points on the edge is 2 (number of
                 // vertices) plus the number of points in the
@@ -740,7 +741,8 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
 
             else
             {
-                this->edges().modify( this->edgeIterator( _edgeit->second ), [vid] ( edge_type& e ) { e.addElement( vid ); } );
+                if ( this->components().test( MESH_ADD_ELEMENTS_INFO ) )
+                    this->edges().modify( this->edgeIterator( _edgeit->second ), [vid] ( edge_type& e ) { e.addElement( vid ); } );
             }
 
             this->elements().modify( elt_it,
