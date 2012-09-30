@@ -1260,9 +1260,9 @@ BOOST_PARAMETER_FUNCTION(
     ( boost::shared_ptr<Bdf<typename meta::remove_all<typename parameter::binding<Args, tag::space>::type>::type::value_type> > ),
     bdf, tag,
     ( required
-      ( space,*( boost::is_convertible<mpl::_,boost::shared_ptr<Feel::FunctionSpaceBase> > ) )
-      ( vm,* ) )
+      ( space,*( boost::is_convertible<mpl::_,boost::shared_ptr<Feel::FunctionSpaceBase> > ) ) )
     ( optional
+      ( vm,*, Environment::vm() )
       ( prefix,*,"" )
       ( name,*,"bdf" )
       ( order,*( boost::is_integral<mpl::_> ),vm[prefixvm( prefix,"bdf.order" )].template as<int>() )
