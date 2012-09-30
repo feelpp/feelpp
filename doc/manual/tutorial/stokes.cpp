@@ -76,10 +76,6 @@ public:
     typedef Backend<value_type> backend_type;
     typedef boost::shared_ptr<backend_type> backend_ptrtype;
 
-    /*matrix*/
-    typedef backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
-    typedef backend_type::vector_ptrtype vector_ptrtype;
-
     /*mesh*/
     typedef Simplex<2> convex_type;
     typedef Mesh<convex_type> mesh_type;
@@ -146,8 +142,6 @@ private:
 
     mesh_ptrtype mesh;
     space_ptrtype Xh;
-    sparse_matrix_ptrtype M,D;
-    vector_ptrtype F;
 
     boost::shared_ptr<export_type> exporter;
 }; // Stokes
@@ -184,8 +178,6 @@ Stokes::init()
 
     Xh = space_type::New( mesh );
 
-    F = M_backend->newVector( Xh );
-    D =  M_backend->newMatrix( Xh, Xh );
 }
 void
 Stokes::run()
@@ -203,6 +195,13 @@ Stokes::run()
     auto nu = V.element<2>();
 #endif
     //# endmarker4 #
+
+    LOG(INFO) << "[dof]         number of dof: " << Xh->nDof() << "\n";
+    LOG(INFO) << "[dof]    number of dof/proc: " << Xh->nLocalDof() << "\n";
+    LOG(INFO) << "[dof]      number of dof(U): " << Xh->functionSpace<0>()->nDof()  << "\n";
+    LOG(INFO) << "[dof] number of dof/proc(U): " << Xh->functionSpace<0>()->nLocalDof()  << "\n";
+    LOG(INFO) << "[dof]      number of dof(P): " << Xh->functionSpace<1>()->nDof()  << "\n";
+    LOG(INFO) << "[dof] number of dof/proc(P): " << Xh->functionSpace<1>()->nLocalDof()  << "\n";
 
     LOG(INFO) << "Data Summary:\n";
     LOG(INFO) << "   hsize = " << meshSize << "\n";
@@ -236,6 +235,9 @@ Stokes::run()
     // f is such that f = \Delta u_exact + \nabla p_exact
     auto f = vec( ( 2*cos( Px() )*cos( Py() )-sin( Px() )*sin( Py() ) ),
                   2*sin( Px() )*sin( Py() )+cos( Px() )*cos( Py() ) );
+
+    auto F = M_backend->newVector( Xh );
+    auto D =  M_backend->newMatrix( Xh, Xh );
 
     // right hand side
     auto stokes_rhs = form1( _test=Xh, _vector=F );
@@ -274,12 +276,6 @@ Stokes::run()
 
     this->exportResults( u_exact, p_exact, U, V );
 
-    LOG(INFO) << "[dof]         number of dof: " << Xh->nDof() << "\n";
-    LOG(INFO) << "[dof]    number of dof/proc: " << Xh->nLocalDof() << "\n";
-    LOG(INFO) << "[dof]      number of dof(U): " << Xh->functionSpace<0>()->nDof()  << "\n";
-    LOG(INFO) << "[dof] number of dof/proc(U): " << Xh->functionSpace<0>()->nLocalDof()  << "\n";
-    LOG(INFO) << "[dof]      number of dof(P): " << Xh->functionSpace<1>()->nDof()  << "\n";
-    LOG(INFO) << "[dof] number of dof/proc(P): " << Xh->functionSpace<1>()->nLocalDof()  << "\n";
 } // Stokes::run
 
 
@@ -329,10 +325,7 @@ Stokes::exportResults( ExprUExact u_exact, ExprPExact p_exact,
         auto v = U.functionSpace()->functionSpace<0> ()->element();
         v = U.element<0>();
 
-        //exporter->step( 0 )->add( assign::list_of("u")("p")("l"), U );
         exporter->step( 0 )->add( {"u","p","l"}, U );
-        //exporter->step( 0 )->add( "ux", v.comp( X ) );
-        //exporter->step( 0 )->add( "uy", v.comp( Y ) );
         exporter->step( 0 )->add( {"u_exact","p_exact","l_exact"}, V );
 
         exporter->save();
