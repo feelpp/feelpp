@@ -182,7 +182,9 @@ Stokes::init()
 void
 Stokes::run()
 {
+    mpi::timer chrono;
     this->init();
+    LOG(INFO) << "chrono init: " << chrono.elapsed() << "\n";
 
     auto U = Xh->element( "(u,p)" );
     auto V = Xh->element( "(u,q)" );
@@ -239,11 +241,13 @@ Stokes::run()
     auto F = M_backend->newVector( Xh );
     auto D =  M_backend->newMatrix( Xh, Xh );
 
+    chrono.restart();
     // right hand side
     auto stokes_rhs = form1( _test=Xh, _vector=F );
     stokes_rhs += integrate( elements( mesh ),inner( f,id( v ) ) );
     stokes_rhs += integrate( boundaryfaces( mesh ), inner( u_exact,-SigmaN+penalbc*id( v )/hFace() ) );
 
+    LOG(INFO) << "chrono lhs: " << chrono.elapsed() << "\n";
     LOG(INFO) << "[stokes] vector local assembly done\n";
 
     /*
@@ -251,30 +255,33 @@ Stokes::run()
      */
     //# marker7 #
     auto stokes = form2( _test=Xh, _trial=Xh, _matrix=D );
-    mpi::timer chrono;
+
     stokes += integrate( elements( mesh ), mu*inner( deft,def ) );
-    LOG(INFO) << "mu*inner(deft,def): " << chrono.elapsed() << "\n";
+    LOG(INFO) << "chrono mu*inner(deft,def): " << chrono.elapsed() << "\n";
     chrono.restart();
     stokes +=integrate( elements( mesh ), - div( v )*idt( p ) + divt( u )*id( q ) );
-    LOG(INFO) << "(u,p): " << chrono.elapsed() << "\n";
+    LOG(INFO) << "chrono (u,p): " << chrono.elapsed() << "\n";
     chrono.restart();
 #if defined( FEELPP_USE_LM )
     stokes +=integrate( elements( mesh ), id( q )*idt( lambda ) + idt( p )*id( nu ) );
-    LOG(INFO) << "(lambda,p): " << chrono.elapsed() << "\n";
+    LOG(INFO) << "chrono (lambda,p): " << chrono.elapsed() << "\n";
     chrono.restart();
 #endif
 
     stokes +=integrate( boundaryfaces( mesh ), -inner( SigmaNt,id( v ) ) );
     stokes +=integrate( boundaryfaces( mesh ), -inner( SigmaN,idt( u ) ) );
     stokes +=integrate( boundaryfaces( mesh ), +penalbc*inner( idt( u ),id( v ) )/hFace() );
-
-    LOG(INFO) << "bc: " << chrono.elapsed() << "\n";
+    LOG(INFO) << "chrono bc: " << chrono.elapsed() << "\n";
     chrono.restart();
     //# endmarker7 #
 
+
+    chrono.restart();
     M_backend->solve( _matrix=D, _solution=U, _rhs=F );
+    LOG(INFO) << "chrono solver: " << chrono.elapsed() << "\n";
 
     this->exportResults( u_exact, p_exact, U, V );
+    LOG(INFO) << "chrono export: " << chrono.elapsed() << "\n";
 
 } // Stokes::run
 
