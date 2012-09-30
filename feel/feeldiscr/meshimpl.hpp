@@ -232,13 +232,15 @@ Mesh<Shape, T, Tag>::updateForUse()
 
     {
         element_iterator iv,  en;
-        boost::tie( iv, en ) = this->elementsRange();
 
-        for ( ; iv != en; ++iv )
+        if ( this->components().test( MESH_ADD_ELEMENTS_INFO ) )
         {
-            this->elements().modify( iv, typename super_elements::ElementConnectPointToElement() );
+            boost::tie( iv, en ) = this->elementsRange();
+            for ( ; iv != en; ++iv )
+            {
+                this->elements().modify( iv, typename super_elements::ElementConnectPointToElement() );
+            }
         }
-
         boost::tie( iv, en ) = this->elementsRange();
         auto pc = _M_gm->preCompute( _M_gm, _M_gm->referenceConvex().vertices() );
         auto pcf =  _M_gm->preComputeOnFaces( _M_gm, _M_gm->referenceConvex().barycenterFaces() );
@@ -306,7 +308,8 @@ Mesh<Shape, T, Tag>::updateForUse()
     }
 #endif
 
-    propagateMarkers(mpl::int_<nDim>() );
+    if ( this->components().test( MESH_PROPAGATE_MARKERS ) )
+        propagateMarkers(mpl::int_<nDim>() );
 
     // check mesh connectivity
     this->check();
@@ -829,7 +832,8 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
                 // set face id
                 face.setId( _faceit->second );
                 face.disconnect();
-                face.addElement( __element_id );
+                if ( this->components().test( MESH_ADD_ELEMENTS_INFO ) )
+                    face.addElement( __element_id );
 
                 // set the process id from element
                 face.setProcessId( __element.processId() );
@@ -884,7 +888,8 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
 
 
                 face_type face = *__fit;
-                face.addElement( __element_id );
+                if ( this->components().test( MESH_ADD_ELEMENTS_INFO ) )
+                    face.addElement( __element_id );
 
                 // the three conditions below typically arise after reading a serialized mesh
                 if ( __fit->isConnectedTo0() && __fit->connection0().template get<0>() == 0 && ( __element.id() == __fit->ad_first() ) )
