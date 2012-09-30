@@ -1041,6 +1041,7 @@ public:
          * True if the node p is in mesh->element(id)
          */
         boost::tuple<bool,node_type,double> isIn( size_type _id, const node_type & _pt ) const;
+        boost::tuple<bool,node_type,double> isIn( size_type _id, const node_type & _pt, const matrix_node_type & setPoints, mpl::int_<1> /**/ ) const;
         boost::tuple<uint16_type,std::vector<bool> > isIn( std::vector<size_type> _ids, const node_type & _pt );
 
         /*---------------------------------------------------------------
