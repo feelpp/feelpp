@@ -29,6 +29,7 @@
 # and set GFLAGS_INCLUDE_DIR and GFLAGS_LIBRARIES
 FIND_PATH(GFLAGS_INCLUDE_DIR gflags/gflags.h
   ${CMAKE_BINARY_DIR}/contrib/gflags/include
+  NO_DEFAULT_PATH
 #  /opt/local/include
 #  /usr/local/include
 # /usr/include
@@ -60,6 +61,7 @@ FIND_LIBRARY(GFLAGS_LIBRARY
   NAMES gflags
   PATHS
   ${CMAKE_BINARY_DIR}/contrib/gflags/lib/
+  NO_DEFAULT_PATH
 #  /opt/local/lib
 #  /usr/local/lib
 #  /usr/lib
