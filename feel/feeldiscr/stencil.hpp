@@ -24,10 +24,17 @@
 #ifndef __galerkingraph_H
 #define __galerkingraph_H 1
 
+#define FEELPP_EXPORT_GRAPH 0
+#if FEELPP_EXPORT_GRAPH
+#include <feel/feelfilters/exporter.hpp>
+#endif
+
 #include <feel/feelvf/pattern.hpp>
 #include <feel/feelvf/block.hpp>
 #include <feel/feelalg/graphcsr.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
+
+
 #if 1
 namespace Feel
 {
@@ -1199,8 +1206,6 @@ Stencil<X1,X2>::computeGraph( size_type hints, mpl::bool_<true> )
 #endif
 
 
-
-
 template<typename X1,  typename X2>
 typename Stencil<X1,X2>::graph_ptrtype
 Stencil<X1,X2>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<true> )
@@ -1231,6 +1236,8 @@ Stencil<X1,X2>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<tru
     typedef typename test_mesh_type::Localization::matrix_node_type matrix_node_type;
 
     //-----------------------------------------------------------------------//
+
+    //std::cout << "\n OrderUse " << order_used_type::value << std::endl;
 
     const size_type proc_id           = _M_X1->mesh()->comm().rank();
     const size_type n1_dof_on_proc    = _M_X1->nLocalDof();
@@ -1266,12 +1273,6 @@ Stencil<X1,X2>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<tru
     size_type IdEltInXh2 = invalid_size_type_value;
     //node_type trialNodeRef,testNodeRef;
 
-
-#define FEELPP_EXPORT_GRAPH 0
-#if FEELPP_EXPORT_GRAPH
-#include <feel/feelfilters/exporter.hpp>
-#endif
-
 #if FEELPP_EXPORT_GRAPH
     std::map<size_type,std::list<size_type> > mapBetweenMeshes;
 #endif
@@ -1306,29 +1307,22 @@ Stencil<X1,X2>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<tru
                 const size_type ig1 = element_dof1[i];
                 auto const ptRealDof = boost::get<0>( _M_X1->dof()->dofPoint( ig1 ) );
 
-#if 1
                 ublas::column(ptsReal,0 ) = ptRealDof;
                 auto resLocalisationInXh2 = locToolForXh2->run_analysis(ptsReal,IdEltInXh2,elem_it->vertices(),mpl::int_<0>());
                 IdEltInXh2 = resLocalisationInXh2.template get<1>();
                 bool hasFind = resLocalisationInXh2.template get<0>()[0];
-                //trialNodeRef = locToolForXh2->result_analysis().begin()->second.begin()->template get<1>();
-#else
-                auto resTemp = locToolForXh2->searchElement( ptRealDof );
-                bool hasFind = resTemp.template get<0>();
-                IdEltInXh2 = resTemp.template get<1>();
-#endif
 
                 listTup.clear();
 
                 if ( hasFind )
                 {
-                    listTup.insert( IdEltInXh2/*resTemp.template get<1>()*/ );
-                    hasFinds[i] = boost::make_tuple( true,IdEltInXh2/*resTemp.template get<1>()*/ );
+                    listTup.insert( IdEltInXh2 );
+                    hasFinds[i] = boost::make_tuple( true,IdEltInXh2 );
                     // maybe is on boundary->more elts
                     //size_type idElt1 = elem.id();
                     //size_type idElt2 = resTemp.template get<1>();
-                    auto const& geoelt2 = _M_X2->mesh()->element( IdEltInXh2/*idElt2*/ );
-                    std::vector<size_type> neighbor_ids;//(geoelt2.nNeighbors());
+                    auto const& geoelt2 = _M_X2->mesh()->element( IdEltInXh2 );
+                    std::vector<size_type> neighbor_ids;
 
                     for ( uint16_type ms=0; ms < geoelt2.nNeighbors(); ms++ )
                     {
@@ -1349,30 +1343,34 @@ Stencil<X1,X2>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<tru
                         }
                     }
 
-                    //std::cout << "taille de listTup " << listTup.size() << std::endl;
-
                     auto res_it = listTup.begin();
                     auto res_en = listTup.end();
-
                     for ( ; res_it != res_en ; ++res_it )
                     {
 #if FEELPP_EXPORT_GRAPH
-                        //mapBetweenMeshes[elem.id()].push_back(*res_it);
                         mapBetweenMeshes[*res_it].push_back( elem.id() );
+                        //std::cout << " test id " << *res_it << " trial id " << elem.id() << std::endl;
 #endif
-                        element_dof2 = _M_X2->dof()->getIndices( *res_it );
+                        // not efficient but sometimes necessary
+                        for ( size_type ii=0; ii<n1_dof_on_element; ii++ )
+                            {
+                                const size_type ig1ongraph = element_dof1[ii];
 
-                        graph_type::row_type& row = sparsity_graph->row( ig1 );
-                        bool is_on_proc = ( ig1 >= first1_dof_on_proc ) && ( ig1 <= last1_dof_on_proc );
-                        row.template get<0>() = is_on_proc?proc_id:invalid_size_type_value;
-                        row.template get<1>() = is_on_proc?ig1 - first1_dof_on_proc:invalid_size_type_value;
-                        //if ( do_less ) {}
-                        row.template get<2>().insert( element_dof2.begin(), element_dof2.end() );
+                                element_dof2 = _M_X2->dof()->getIndices( *res_it );
+
+                                graph_type::row_type& row = sparsity_graph->row( ig1ongraph );
+                                bool is_on_proc = ( ig1ongraph >= first1_dof_on_proc ) && ( ig1ongraph <= last1_dof_on_proc );
+                                row.template get<0>() = is_on_proc?proc_id:invalid_size_type_value;
+                                row.template get<1>() = is_on_proc?ig1ongraph - first1_dof_on_proc:invalid_size_type_value;
+                                //if ( do_less ) {}
+                                row.template get<2>().insert( element_dof2.begin(), element_dof2.end() );
+                            }
                     }//res
                 } // if (hasFind)
 
                 else
                 {
+#if 0
                     //std::cout << "\n not find"<<std::endl;
                     // row empty
                     graph_type::row_type& row = sparsity_graph->row( ig1 );
@@ -1380,6 +1378,7 @@ Stencil<X1,X2>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<tru
                     row.template get<0>() = is_on_proc?proc_id:invalid_size_type_value;
                     row.template get<1>() = is_on_proc?ig1 - first1_dof_on_proc:invalid_size_type_value;
                     row.template get<2>().clear();
+#endif
                 }
             } // for (size_type i=0; i<n1_dof_on_element; i++)
 
@@ -1412,25 +1411,20 @@ Stencil<X1,X2>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<tru
                 //thepc_ptrtype geopc( new thepc_type( elem.gm(), theim.points() ) );
                 //thegmc_ptrtype gmc( new thegmc_type( elem.gm(), elem, geopc ) );
                 gmc->update( elem );
-#if 1
-                //IdEltInXh2=invalid_size_type_value;
+
                 for ( int q = 0; q <  gmc->nPoints(); ++ q )
                 {
-#if 1
                     ublas::column(ptsReal,0 ) = gmc->xReal( q );
                     //auto const resQuad = locToolForXh2->run_analysis(ptsReal,IdEltInXh2,elem_it->vertices(),mpl::int_<0>());
                     auto const resQuad = locToolForXh2->searchElement( gmc->xReal( q ) );
-                    IdEltInXh2 = resQuad.template get<1>();
-                    //bool hasFind = resLocalisationInXh2.template get<0>()[0];
-#else
-                    auto resQuad = locToolForXh2->searchElement( gmc->xReal( q ) );
-#endif
+
                     if ( resQuad.template get<0>() )
                     {
+                        IdEltInXh2 = resQuad.template get<1>();
 #if FEELPP_EXPORT_GRAPH
-                        mapBetweenMeshes[IdEltInXh2 /*resQuad.template get<1>()*/].push_back( elem.id() );
+                        mapBetweenMeshes[IdEltInXh2].push_back( elem.id() );
 #endif
-                        element_dof2 = _M_X2->dof()->getIndices( IdEltInXh2 /*resQuad.template get<1>()*/ );
+                        element_dof2 = _M_X2->dof()->getIndices( IdEltInXh2 );
 
                         for ( size_type i=0; i<n1_dof_on_element; i++ )
                         {
@@ -1443,13 +1437,7 @@ Stencil<X1,X2>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<tru
                             row.template get<2>().insert( element_dof2.begin(), element_dof2.end() );
                         }
                     }
-                }
-#else
-                auto const resQuad = locToolForXh2->run_analysis(gmc->xReal(),IdEltInXh2,elem_it->vertices(),mpl::int_<0>());
-
-#endif
-
-
+                } // for ( int q = 0; q <  gmc->nPoints(); ++ q )
             } // if (doQ)
         } // for ( ; elem_it ... )
     } //Xh1->nof >1
@@ -1543,7 +1531,6 @@ Stencil<X1,X2>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<tru
 
                     auto res_it = listTup.begin();
                     auto res_en = listTup.end();
-
                     for ( ; res_it != res_en ; ++res_it )
                     {
 #if FEELPP_EXPORT_GRAPH
@@ -1634,8 +1621,8 @@ Stencil<X1,X2>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<tru
     auto elem_itt  = _M_X1->mesh()->beginElementWithProcessId( proc_id );
     auto elem_ent  = _M_X1->mesh()->endElementWithProcessId( proc_id );
 #else
-    typedef mesh_2_type mesh_export_type;
-    typedef FunctionSpace<mesh_2_type, bases<Lagrange<0, Scalar,Discontinuous> > > space_disc_type;
+    typedef trial_mesh_type mesh_export_type;
+    typedef FunctionSpace<mesh_export_type, bases<Lagrange<0, Scalar,Discontinuous> > > space_disc_type;
     auto spaceGraphProj = space_disc_type::New( _M_X2->mesh() );
     auto elem_itt  = _M_X2->mesh()->beginElementWithProcessId( proc_id );
     auto elem_ent  = _M_X2->mesh()->endElementWithProcessId( proc_id );
@@ -1651,7 +1638,7 @@ Stencil<X1,X2>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<tru
             {
                 element_dof1 = spaceGraphProj->dof()->getIndices( elem_itt->id() );
                 const uint16_type n1_dof_on_element = element_dof1.size();
-
+                //std::cout << "\nn1_dof_on_element " << n1_dof_on_element << std::endl;
                 for ( uint16_type i=0; i<n1_dof_on_element; i++ )
                 {
                     const size_type ig1 = element_dof1[i];
