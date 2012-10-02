@@ -27,6 +27,9 @@
  */
 #include <residualestimator.hpp>
 
+#include <feel/feel.hpp>
+using namespace Feel;
+
 /**
  * This routine returns the list of options using the
  * boost::program_options library. The data returned is typically used
@@ -68,36 +71,19 @@ makeOptions()
 int
 main( int argc, char** argv )
 {
-    /**
-     * create an application
-     */
-    /** \code */
-    Application app( argc, argv, makeAbout(), makeOptions() );
+    using namespace Feel;
+    Environment env( _argc=argc, _argv=argv,
+                     _desc=makeOptions(),
+                     _about=makeAbout() );
+ 
+    Application app;
 
-    if ( app.vm().count( "help" ) )
-    {
-        std::cout << app.optionsDescription() << "\n";
-        return 0;
-    }
 
-    /** \endcode */
+    //app.add( new ResidualEstimator<1,1>() );
+    app.add( new ResidualEstimator<2,1>() );
+    //app.add( new ResidualEstimator<3,1>() );
 
-    /**
-     * register the simgets
-     */
-    /** \code */
-    //app.add( new ResidualEstimator<1,1>( app.vm(), app.about() ) );
-    app.add( new ResidualEstimator<2,1>( app.vm(), app.about() ) );
-    //app.add( new ResidualEstimator<3,1>( app.vm(), app.about() ) );
-
-    /** \endcode */
-
-    /**
-     * run the application
-     */
-    /** \code */
     app.run();
-    /** \endcode */
 }
 
 
