@@ -293,7 +293,9 @@ GeoGMSHTool::opFusion( const GeoGMSHTool & m,int __typeOp )
 
 
 void//std::string
-GeoGMSHTool::init( int orderGeo, std::string gmshFormatVersion, GMSH_PARTITIONER partitioner, int partitions, bool partition_file )
+GeoGMSHTool::init( int orderGeo, std::string gmshFormatVersion,
+                   double hmin,double hmax,
+                   GMSH_PARTITIONER partitioner, int partitions, bool partition_file )
 {
     //fait dans gmsh.cpp
     *_M_ostr << "Mesh.MshFileVersion = "<< gmshFormatVersion <<";\n"
@@ -309,6 +311,8 @@ GeoGMSHTool::init( int orderGeo, std::string gmshFormatVersion, GMSH_PARTITIONER
 #endif
     *_M_ostr << "Mesh.RecombinationAlgorithm=0;\n" // Mesh recombination algorithm (0=standard, 1=blossom)
              << "Mesh.OptimizeNetgen=1;\n"
+             << "Mesh.CharacteristicLengthMin=" << hmin << ";\n"
+             << "Mesh.CharacteristicLengthMax=" << hmax << ";\n"
              << "// partitioning data\n"
              << "Mesh.Partitioner=" << partitioner << ";\n"
              << "Mesh.NbPartitions=" << partitions << ";\n"
