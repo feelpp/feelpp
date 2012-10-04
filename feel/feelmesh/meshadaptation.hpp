@@ -140,9 +140,7 @@ namespace Feel
         typedef typename mesh_type::point_type point_type;
 
         //! Constructor
-        MeshAdaptation(backend_ptrtype& backend)
-            :
-            M_backend(backend)
+        MeshAdaptation()
         {
             // build default value for _var parameter of interface
             element_type initVar;
@@ -222,8 +220,6 @@ namespace Feel
         }
 
     private :
-        backend_ptrtype M_backend;
-
         std::list< std::pair<element_type, std::string> > defaultVar;
         std::list< std::pair<std::vector<p1_element_type>, std::string> > defaultMetric;
 
@@ -284,9 +280,12 @@ namespace Feel
         std::string newMeshName = this->buildAdaptedMesh( geofile, finalName, posfiles, adaptType=="anisotropic");
 
         // Update the mesh
-        mesh_ptrtype newMesh = loadGMSHMesh( _mesh = new mesh_type,
-                                             _filename = newMeshName,
-                                             _update=MESH_UPDATE_FACES | MESH_UPDATE_EDGES);
+        LOG(INFO) << "load the new mesh...\n";
+        mesh_ptrtype newMesh = mesh_type::New();
+        newMesh = loadGMSHMesh( _mesh = new mesh_type,
+                                _filename = newMeshName,
+                                _update=MESH_UPDATE_FACES | MESH_UPDATE_EDGES);
+        LOG(INFO) << "new mesh loaded \n";
 
         return newMesh;
     }
@@ -1004,13 +1003,14 @@ namespace Feel
         /// Proj -> P1 for each hessian matrix components :
         /// Find \int proj_P1(U)V = \int UV \forall V
         std::vector<p1_element_type> dvard2P1(Dim*Dim, P1h->element());
-        auto l2proj = opProjection( _domainSpace=P1h, _imageSpace=P1h );
+        //auto l2proj = opProjection( _domainSpace=P1h, _imageSpace=P1h );
 
         for(int i=0; i<Dim; i++)
             {
                 for (int j=0; j<Dim; j++)
                     {
-                        dvard2P1[i+j*Dim] = l2proj->project( _expr=idv( dvard2Pkm2[i+j*Dim]) );
+                        //dvard2P1[i+j*Dim] = l2proj->project( _expr=idv( dvard2Pkm2[i+j*Dim]) );
+                        dvard2P1[i+j*Dim] = vf::project( P1h, elements(mesh), idv( dvard2Pkm2[i+j*Dim]) );
                     }
             }
         // ******************************************************************************************* //
