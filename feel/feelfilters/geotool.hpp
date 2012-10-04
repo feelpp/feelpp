@@ -983,6 +983,7 @@ public:
 
     void init( int orderGeo,
                std::string gmshFormatVersion,
+               double hmin=0,double hmax=1e22,
                GMSH_PARTITIONER partitioner=GMSH_PARTITIONER_CHACO,
                int partitions=1,
                bool partition_file=false );
@@ -1124,6 +1125,8 @@ public:
           ( partition_file,   *( boost::is_integral<mpl::_> ), 0 )
           ( partitioner,   *( boost::is_integral<mpl::_> ), GMSH_PARTITIONER_CHACO )
           ( worldcomm,      *, Environment::worldComm() )
+          ( hmin,     ( double ), 0 )
+          ( hmax,     ( double ), 1e22 )
         ) //optional
     )
     {
@@ -1143,7 +1146,9 @@ public:
             gmsh.setNumberOfPartitions( partitions );
             gmsh.setPartitioner( partitioner );
             gmsh.setMshFileByPartition( partition_file );
-            this->init( _mesh_type::nOrder,gmsh.version(),partitioner,partitions,partition_file );
+            this->init( _mesh_type::nOrder,gmsh.version(),
+                        hmin,hmax,
+                        partitioner,partitions,partition_file );
 
             std::string geostring;
 
