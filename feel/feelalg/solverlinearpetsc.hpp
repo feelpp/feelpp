@@ -54,6 +54,7 @@
 #include <feel/feelcore/feelpetsc.hpp>
 #include <feel/feelalg/solverlinear.hpp>
 
+#include <feel/feelalg/matrixshell.hpp>
 #include <feel/feelalg/matrixpetsc.hpp>
 #include <feel/feelalg/vectorpetsc.hpp>
 
@@ -189,6 +190,14 @@ public:
     {
         return this->solve( mat, mat, x, b, tolerance, maxit, transpose );
     }
+
+    boost::tuple<bool,unsigned int, real_type>
+    solve ( MatrixShell<T>  const &mat,
+            Vector<T> & x,
+            Vector<T> const& b,
+            const double tolerance,
+            const unsigned int maxit,
+            bool transpose );
 
     /**
      * This method allows you to call a linear solver while specifying
