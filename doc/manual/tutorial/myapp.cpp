@@ -87,16 +87,19 @@ void MyApp::run()
     /** \endcode */
 
     /**
-     * print some information that will be written in the log file in
-     * HOME/feel/doc/tutorial/myapp/myapp-1.0
+     * print some information that will be written in the log file
      */
-    /** \code */
-    LOG(INFO) << "the value of dt is " << Environment::vm()["dt"].as<double>() << "\n";
-    LOG(INFO) << "the value of myapp-solver-type is " << Environment::vm()["myapp.ksp-type"].as<std::string>() << "\n";
-    LOG(INFO) << "the value of myapp-pc-type is " << Environment::vm()["myapp.pc-type"].as<std::string>() << "\n";
-    /** \endcode */
-}
+    LOG(INFO) << "this is process number " << Environment::worldComm().globalRank()
+              << " out of " << Environment::numberOfProcessors() << "\n";
 
+    LOG(INFO) << "the value of dt is "
+              << Environment::vm()["dt"].as<double>() << "\n";
+    LOG(INFO) << "the value of myapp-solver-type is "
+              << Environment::vm()["myapp.ksp-type"].as<std::string>() << "\n";
+    LOG(INFO) << "the value of myapp-pc-type is "
+              << Environment::vm()["myapp.pc-type"].as<std::string>() << "\n";
+}
+//# endmarker6 #
 
 /**
  * main function: entry point of the program
@@ -104,27 +107,16 @@ void MyApp::run()
 //# marker7 #
 int main( int argc, char** argv )
 {
-    /**
-     * Initialize Feel++ Environment
-     */
+    /* Initialize Feel++ Environment */
     Environment env( _argc=argc, _argv=argv,
                      _desc=makeOptions(),
                      _about=about(_name="myapp",
                                   _author="Christophe Prud'homme",
                                   _email="christophe.prudhomme@feelpp.org") );
-
-    /**
-     * intantiate a MyApp class
-     */
-    /** \code */
+    /* intantiate a MyApp class */
     MyApp app;
-    /** \endcode */
 
-    /**
-     * run the application
-     */
-    /** \code */
+    /* run the application */
     app.run();
-    /** \endcode */
 }
 //# endmarker7 #
