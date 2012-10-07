@@ -25,6 +25,8 @@
    \author Cecile Daversin <cecile.daversin@lncmi.cnrs.fr>
    \date 2012-05-07
  */
+#include <feel/feel.hpp>
+
 /** include predefined feel command line options */
 #include <feel/options.hpp>
 
@@ -48,7 +50,7 @@
 
 /** use Feel namespace */
 using namespace Feel;
-using namespace Feel::vf;
+
 /**
  * This routine returns the list of options using the
  * boost::program_options library. The data returned is typically used
@@ -162,9 +164,9 @@ public:
     /**
      * Constructor
      */
-    LShape( po::variables_map const& vm, AboutData const& about )
+    LShape()
         :
-        super( vm, about ),
+        super(),
         M_backend( backend_type::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( this->vm()["shape"].template as<std::string>() )
@@ -451,23 +453,21 @@ LShape<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
 int
 main( int argc, char** argv )
 {
-    Environment env( argc, argv );
+    using namespace Feel;
+    Environment env( _argc=argc, _argv=argv,
+                     _desc=makeOptions(),
+                     _about=makeAbout() );
+
     /**
      * create an application
      */
-    Application app( argc, argv, makeAbout(), makeOptions() );
-
-    if ( app.vm().count( "help" ) )
-    {
-        std::cout << app.optionsDescription() << "\n";
-        return 0;
-    }
+    Application app;
 
     /**
      * register the simgets
      */
-    app.add( new LShape<2>( app.vm(), app.about() ) );
-    //app.add( new LShape<3>( app.vm(), app.about() ) );
+    app.add( new LShape<2>() );
+    //app.add( new LShape<3>() );
 
     /**
      * run the application
