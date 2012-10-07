@@ -23,7 +23,7 @@
 #
 project( feel-research )
 
-foreach(project apee fsi idf ifp  hamm maxwell cabine pmp m2cssi )
+foreach(project apee fsi idf ifp  hamm maxwell cabine pmp m2cssi rb )
 
 # a posteriori error estimation project
 if ( EXISTS ${FEELPP_SOURCE_DIR}/research/${project} )
