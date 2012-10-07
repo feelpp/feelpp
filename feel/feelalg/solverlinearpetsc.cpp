@@ -54,6 +54,7 @@
 #include <feel/feelalg/functionspetsc.hpp>
 #include <feel/feelalg/preconditionerpetsc.hpp>
 
+
 namespace Feel
 {
 
@@ -510,7 +511,17 @@ SolverLinearPetsc<T>::solve ( MatrixSparse<T> const&  matrix_in,
 
 }
 
+template <typename T>
+boost::tuple<bool,unsigned int, typename SolverLinearPetsc<T>::real_type>
+SolverLinearPetsc<T>::solve ( MatrixShell<T>  const &mat,
+                              Vector<T> & x,
+                              Vector<T> const& b,
+                              const double tolerance,
+                              const unsigned int maxit,
+                              bool transpose )
+{
 
+}
 
 template <typename T>
 void
