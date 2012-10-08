@@ -155,6 +155,29 @@ public:
     }
 
     /**
+     * Constructor,  extracts a subvector from 'v' using mapping 'is'
+     * without copy.
+     */
+    VectorPetsc( VectorPetsc<value_type> &v, IS &is )
+        :
+        super(),
+        _M_destroy_vec_on_exit( false )
+    {
+#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
+        /* map */
+        PetscInt n;
+        ISGetSize(is,&n);
+        DataMap dm(n, n, v.comm());
+        this->setMap(dm);
+        /* init */
+        VecGetSubVector(v.vec(), is, &this->_M_vec);
+        this->M_is_initialized = true;
+        /* close */
+        this->close(); /* no // assembly required */
+#endif
+    }
+
+    /**
      * Destructor, deallocates memory. Made virtual to allow
      * for derived classes to behave properly.
      */
