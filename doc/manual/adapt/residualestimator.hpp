@@ -182,9 +182,9 @@ public:
 
     {
     }
-    ResidualEstimator( po::variables_map const& vm, AboutData const& about )
+    ResidualEstimator()
         :
-        super( vm, about ),
+        super(),
         M_backend( backend_type::build( this->vm() ) ),
         M_backendP1( backend_type::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
