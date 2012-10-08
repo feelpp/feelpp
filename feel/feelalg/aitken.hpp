@@ -110,16 +110,18 @@ public:
     Aitken( functionspace_ptrtype _Xh,
             AitkenType _aitkenType = AITKEN_STANDARD,
             double _failsafeParameter = 1.0,
-            double _tol=1.0e-6 )
+            double _tol=1.0e-6,
+            double _minParam = 1e-4 )
         :
-        Xh( _Xh ),
-        failsafeParameter( _failsafeParameter ),
-        previousParameter( _failsafeParameter ),
-        maxParameter( _failsafeParameter ),
-        previousResidual( Xh, "previous residual" ),
-        previousElement( Xh, "previous element" ),
-        currentResidual( Xh, "current residual" ),
-        currentElement( Xh, "current element" ),
+        M_Xh( _Xh ),
+        M_failsafeParameter( _failsafeParameter ),
+        M_previousParameter( _failsafeParameter ),
+        M_maxParameter( _failsafeParameter ),
+        M_minParameter( _minParam ),
+        M_previousResidual( M_Xh, "previous residual" ),
+        M_previousElement( M_Xh, "previous element" ),
+        M_currentResidual( M_Xh, "current residual" ),
+        M_currentElement( M_Xh, "current element" ),
         M_cptIteration( 1 ),
         M_aitkenType( _aitkenType ),
         M_tolerance( _tol ),
@@ -133,14 +135,15 @@ public:
      */
     Aitken( Aitken const& tc )
         :
-        Xh( tc.Xh ),
-        failsafeParameter( tc.failsafeParameter ),
-        previousParameter( tc.previousParameter ),
-        maxParameter( tc.maxParameter ),
-        previousResidual( tc.previousResidual ),
-        previousElement( tc.previousElement ),
-        currentResidual( tc.currentResidual ),
-        currentElement( tc.currentElement ),
+        M_Xh( tc.M_Xh ),
+        M_failsafeParameter( tc.M_failsafeParameter ),
+        M_previousParameter( tc.M_previousParameter ),
+        M_maxParameter( tc.M_maxParameter ),
+        M_minParameter( tc.M_minParameter ),
+        M_previousResidual( tc.previousResidual ),
+        M_previousElement( tc.M_previousElement ),
+        M_currentResidual( tc.M_currentResidual ),
+        M_currentElement( tc.M_currentElement ),
         M_cptIteration( tc.M_cptIteration ),
         M_aitkenType( tc.M_aitkenType ),
         M_tolerance( tc.M_tolerance ),
@@ -184,7 +187,7 @@ public:
         )//optional
     )
     {
-        element_type newElt( Xh );
+        element_type newElt( M_Xh );
         applyimpl( newElt,residual,currentElt,forceRelaxation );
         return newElt;
     }
@@ -195,7 +198,7 @@ public:
     template< typename eltType >
     element_type operator()( element_type const& residual, eltType const& elem,bool _forceRelax=false )
     {
-        element_type newElt( Xh );
+        element_type newElt( M_Xh );
         applyimpl( newElt,residual,elem,_forceRelax );
         return newElt;
     }
@@ -252,7 +255,15 @@ public:
      */
     double theta()
     {
-        return previousParameter;
+        return M_previousParameter;
+    }
+
+    /**
+     * set theta
+     */
+    void setTheta(double v)
+    {
+        M_previousParameter=v;
     }
 
     /**
@@ -287,16 +298,6 @@ public:
         M_hasConverged=b;
     }
 
-private:
-    /**
-     * initiliaze the aitken algorithm
-     */
-    void initializeimpl( element_type const& residual, element_type const& elem );
-
-    /**
-     * initiliaze the aitken algorithm
-     */
-    void initializeimpl( element_type const& residual, element_range_type const& elem );
 
     /**
      * compute a residual norm for convergence
@@ -314,29 +315,9 @@ private:
     void setElement( element_type const& residual, element_range_type const& elem );
 
     /**
-     * Compute theta and do a relaxation step : u^{n+1} = theta*u^{n+1} + (1-theta)*u^{n}
-     */
-    void applyimpl( element_type & new_elem,element_type const& residual, element_type const& elem,bool _forceRelax=false );
-
-    /**
-     * Compute theta and do a relaxation step : u^{n+1} = theta*u^{n+1} + (1-theta)*u^{n}
-     */
-    void applyimpl( element_range_type new_elem,element_type const& residual, element_range_type const& elem,bool _forceRelax=false );
-
-    /**
      * Compute Aitken parameter
      */
     void calculateParameter();
-
-    /**
-     * Compute Aitken parameter
-     */
-    void calculateParameter( mpl::int_<AITKEN_STANDARD> /**/ );
-
-    /**
-     * Compute Aitken parameter
-     */
-    void calculateParameter( mpl::int_<AITKEN_METHOD_1> /**/ );
 
     /**
      * Do a relaxation step : u^{n+1} = theta*u^{n+1} + (1-theta)*u^{n}
@@ -351,17 +332,49 @@ private:
         return M_convergence;
     }
 
+private:
+    /**
+     * initiliaze the aitken algorithm
+     */
+    void initializeimpl( element_type const& residual, element_type const& elem );
+
+    /**
+     * initiliaze the aitken algorithm
+     */
+    void initializeimpl( element_type const& residual, element_range_type const& elem );
+
+    /**
+     * Compute theta and do a relaxation step : u^{n+1} = theta*u^{n+1} + (1-theta)*u^{n}
+     */
+    void applyimpl( element_type & new_elem,element_type const& residual, element_type const& elem,bool _forceRelax=false );
+
+    /**
+     * Compute theta and do a relaxation step : u^{n+1} = theta*u^{n+1} + (1-theta)*u^{n}
+     */
+    void applyimpl( element_range_type new_elem,element_type const& residual, element_range_type const& elem,bool _forceRelax=false );
+
+    /**
+     * Compute Aitken parameter
+     */
+    void calculateParameter( mpl::int_<AITKEN_STANDARD> /**/ );
+
+    /**
+     * Compute Aitken parameter
+     */
+    void calculateParameter( mpl::int_<AITKEN_METHOD_1> /**/ );
+
 
 private:
 
     /**
      * function space
      */
-    functionspace_ptrtype Xh;
+    functionspace_ptrtype M_Xh;
 
-    double failsafeParameter, previousParameter, maxParameter;
+    double M_failsafeParameter, M_previousParameter, M_maxParameter;
+    double M_minParameter;
 
-    element_type previousResidual, previousElement, currentResidual, currentElement;
+    element_type M_previousResidual, M_previousElement, M_currentResidual, M_currentElement;
 
     uint M_cptIteration;
     AitkenType M_aitkenType;
@@ -381,8 +394,8 @@ template< typename fs_type >
 void
 Aitken<fs_type>::initializeimpl( element_type const& residual, element_type const& elem )
 {
-    previousResidual = residual;
-    previousElement = elem;
+    M_previousResidual = residual;
+    M_previousElement = elem;
 }
 
 //-----------------------------------------------------------------------------------------//
@@ -391,11 +404,11 @@ template< typename fs_type >
 void
 Aitken<fs_type>::initializeimpl( element_type const& residual, element_range_type const& elem )
 {
-    previousResidual = residual;
-    previousElement.zero();
-    previousElement.add( 1.,elem );
-    /*previousElement = vf::project(previousElement.functionSpace(),
-      elements(previousElement.mesh()),
+    M_previousResidual = residual;
+    M_previousElement.zero();
+    M_previousElement.add( 1.,elem );
+    /*M_previousElement = vf::project(M_previousElement.functionSpace(),
+      elements(M_previousElement.mesh()),
       vf::idv(elem) );*/
 }
 
@@ -405,13 +418,13 @@ template< typename fs_type >
 void
 Aitken<fs_type>::computeResidualNorm()
 {
-    auto oldEltL2Norm = previousElement.l2Norm();
+    auto oldEltL2Norm = M_previousElement.l2Norm();
 
     if ( oldEltL2Norm > 1e-8 )
-        M_residualConvergence = currentResidual.l2Norm()/oldEltL2Norm;
+        M_residualConvergence = M_currentResidual.l2Norm()/oldEltL2Norm;
 
     else
-        M_residualConvergence = currentResidual.l2Norm();
+        M_residualConvergence = M_currentResidual.l2Norm();
 
     if ( M_residualConvergence <  M_tolerance ) M_hasConverged=true;
 
@@ -423,8 +436,8 @@ template< typename fs_type >
 void
 Aitken<fs_type>::setElement( element_type const& residual, element_type const& elem )
 {
-    currentResidual = residual;
-    currentElement = elem;
+    M_currentResidual = residual;
+    M_currentElement = elem;
 }
 
 //-----------------------------------------------------------------------------------------//
@@ -433,11 +446,11 @@ template< typename fs_type >
 void
 Aitken<fs_type>::setElement( element_type const& residual, element_range_type const& elem )
 {
-    currentResidual = residual;
-    currentElement.zero();
-    currentElement.add( 1.,elem );
-    /*currentElement = vf::project(currentElement.functionSpace(),
-      elements(currentElement.mesh()),
+    M_currentResidual = residual;
+    M_currentElement.zero();
+    M_currentElement.add( 1.,elem );
+    /*M_currentElement = vf::project(M_currentElement.functionSpace(),
+      elements(M_currentElement.mesh()),
       vf::idv(elem) );*/
 }
 
@@ -496,17 +509,17 @@ void
 Aitken<fs_type>::relaxationStep( eltType& new_elem )
 {
 #if 0
-    new_elem = currentResidual;
-    //new_elem.scale( -previousParameter );
-    new_elem.scale( -( 1-previousParameter ) );
+    new_elem = M_currentResidual;
+    //new_elem.scale( -M_previousParameter );
+    new_elem.scale( -( 1-M_previousParameter ) );
 
-    //new_elem += currentElement;
-    new_elem.add( 1.,currentElement );
+    //new_elem += M_currentElement;
+    new_elem.add( 1.,M_currentElement );
 #else
-    new_elem = previousElement;
-    new_elem.add(previousParameter,currentResidual);
+    new_elem = M_previousElement;
+    new_elem.add(M_previousParameter,M_currentResidual);
 
-    currentElement = new_elem;
+    M_currentElement = new_elem;
 #endif
 }
 
@@ -520,19 +533,19 @@ Aitken<fs_type>::shiftRight()
     double rel_residual = 1;
 
     if ( M_cptIteration > 1 )
-        rel_residual = currentResidual.l2Norm()/M_convergence.find( 1 )->second.find( "absolute_residual" )->second;
+        rel_residual = M_currentResidual.l2Norm()/M_convergence.find( 1 )->second.find( "absolute_residual" )->second;
 
     convergence_iteration_type cit =
         boost::assign::map_list_of
-        ( "absolute_residual", currentResidual.l2Norm() )
+        ( "absolute_residual", M_currentResidual.l2Norm() )
         ( "relative_residual", rel_residual )
         ( "time", M_timer.elapsed() )
-        ( "relaxation_parameter",  previousParameter );
+        ( "relaxation_parameter",  M_previousParameter );
     M_convergence.insert( std::make_pair( M_cptIteration, cit ) );
     M_timer.restart();
 
-    previousResidual = currentResidual;
-    previousElement = currentElement;
+    M_previousResidual = M_currentResidual;
+    M_previousElement = M_currentElement;
 
 
     ++M_cptIteration;
@@ -566,9 +579,9 @@ Aitken<fs_type>::restart()
         } );
 
         if ( it != M_convergence.end() )
-            maxParameter = std::max( maxParameter,it->second.find( entry )->second );
+            M_maxParameter = std::max( M_maxParameter,it->second.find( entry )->second );
 
-        previousParameter = maxParameter;
+        M_previousParameter = M_maxParameter;
     }
 
     M_cptIteration=1;
@@ -584,12 +597,12 @@ void
 Aitken<fs_type>::printInfo()
 {
     std::cout << "[Aitken] iteration : "<< M_cptIteration
-              <<" theta=" << previousParameter
+              <<" theta=" << M_previousParameter
               <<" residualNorm : " << M_residualConvergence
               << "\n";
 
     Feel::Log() << "[Aitken] iteration : "<< M_cptIteration
-                <<" theta=" << previousParameter
+                <<" theta=" << M_previousParameter
                 <<" residualNorm : " << M_residualConvergence
                 << "\n";
 }
@@ -634,7 +647,7 @@ Aitken<fs_type>::calculateParameter()
         calculateParameter( mpl::int_<AITKEN_METHOD_1>() );
 
     if ( M_aitkenType==FIXED_RELAXATION_METHOD )
-        previousParameter = failsafeParameter;
+        M_previousParameter = M_failsafeParameter;
 }
 
 //-----------------------------------------------------------------------------------------//
@@ -644,29 +657,29 @@ void
 Aitken<fs_type>::calculateParameter( mpl::int_<AITKEN_STANDARD> /**/ )
 {
 
-    element_type aux( Xh, "aux" );
+    element_type aux( M_Xh, "aux" );
 
-    aux = currentResidual;
-    aux -= previousResidual;
+    aux = M_currentResidual;
+    aux -= M_previousResidual;
 
     double scalar = inner_product( aux, aux );
 
     aux.scale( 1.0/scalar );
 
-    element_type aux2( Xh, "aux2" );
+    element_type aux2( M_Xh, "aux2" );
 
-    aux2 = currentElement;
-    aux2 -= previousElement;
+    aux2 = M_currentElement;
+    aux2 -= M_previousElement;
 
     scalar = inner_product( aux2, aux );
 
     if ( scalar > 1 )
-        scalar = /*previousParameter*/failsafeParameter;
+        scalar = /*M_previousParameter*/M_failsafeParameter;
 
     if ( scalar < 0 )
-        scalar = /*previousParameter*/failsafeParameter;
+        scalar = /*M_previousParameter*/M_failsafeParameter;
 
-    previousParameter = 1-scalar;
+    M_previousParameter = 1-scalar;
 }
 
 //-----------------------------------------------------------------------------------------//
@@ -676,31 +689,31 @@ void
 Aitken<fs_type>::calculateParameter( mpl::int_<AITKEN_METHOD_1> /**/ )
 {
 
-    element_type aux( Xh, "aux" );
+    element_type aux( M_Xh, "aux" );
 
-    aux = currentResidual;
-    aux -= previousResidual;
+    aux = M_currentResidual;
+    aux -= M_previousResidual;
 
     double scalar = inner_product( aux, aux );
 
     aux.scale( 1.0/scalar );
 
-    /*element_type aux2( Xh, "aux2");
+    /*element_type aux2( M_Xh, "aux2");
 
-      aux2 = currentElement;
-      aux2 -= previousElement;*/
+      aux2 = M_currentElement;
+      aux2 -= M_previousElement;*/
 
-    scalar = inner_product( previousResidual , aux );
-    scalar = -previousParameter*scalar;
+    scalar = inner_product( M_previousResidual , aux );
+    scalar = -M_previousParameter*scalar;
 
 #if 1
     if ( scalar > 1 )
-        scalar = /*previousParameter;*/failsafeParameter;
+        scalar = /*M_previousParameter;*/M_failsafeParameter;
 
-    if ( scalar < 0 )
-        scalar = /*previousParameter;*/failsafeParameter;
+    if ( scalar < /*0*/M_minParameter )
+        scalar = /*M_previousParameter;*/M_failsafeParameter;
 #endif
-    previousParameter = scalar;
+    M_previousParameter = scalar;
 
 }
 
