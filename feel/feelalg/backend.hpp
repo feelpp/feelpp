@@ -48,6 +48,8 @@
 #include <feel/feelalg/preconditioner.hpp>
 #include <feel/feeldiscr/functionspacebase.hpp>
 
+#include <feel/feelalg/matrixshell.hpp>
+#include <feel/feelalg/matrixshellsparse.hpp>
 //#include <feel/feelvf/vf.hpp>
 //#include <boost/fusion/support/pair.hpp>
 //#include <boost/fusion/container.hpp>
@@ -137,6 +139,9 @@ public:
     typedef boost::shared_ptr<vector_type> vector_ptrtype;
     typedef MatrixSparse<value_type> sparse_matrix_type;
     typedef boost::shared_ptr<sparse_matrix_type> sparse_matrix_ptrtype;
+
+    typedef MatrixShell<value_type> shell_matrix_type;
+    typedef boost::shared_ptr<shell_matrix_type> shell_matrix_ptrtype;
 
     typedef typename sparse_matrix_type::graph_type graph_type;
     typedef typename sparse_matrix_type::graph_ptrtype graph_ptrtype;
@@ -711,7 +716,8 @@ public:
                                      solve,
                                      tag,
                                      ( required
-                                       ( matrix,( sparse_matrix_ptrtype ) )
+                                       //( matrix,*(mpl::or_<sparse_matrix_ptrtype,shell_matrix_ptrtype>) )
+                                       ( matrix,(sparse_matrix_ptrtype) )
                                        //( in_out( solution ),*( mpl::or_<mpl::or_<boost::is_convertible<mpl::_,vector_type&>,boost::is_convertible<mpl::_,vector_type> >,boost::is_convertible<mpl::_,vector_ptrtype> > ) )
                                        ( in_out( solution ),* )
                                        ( rhs,( vector_ptrtype ) ) )
@@ -812,6 +818,7 @@ public:
                              vector_ptrtype const& b,
                              bool reuse_prec
                            );
+
 
     /**
      * solve for \f$P F(x)=0 b\f$
