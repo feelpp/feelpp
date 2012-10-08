@@ -69,6 +69,7 @@ class VectorPetsc : public Vector<T>
 
 public:
 
+    friend class boost::serialization::access;
 
     /** @name Typedefs
      */
@@ -629,6 +630,25 @@ public:
     void printMatlab( const std::string name="NULL" ) const;
 
     value_type dot( Vector<T> const& __v );
+
+    /**
+     * Serialization for PETSc VECSEQ
+     */
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version) const
+    {
+        value_type *array = *((value_type**)this->vec()->data);
+        int n             = this->vec()->map->n;
+        int N             = this->vec()->map->N;
+
+        int rank;
+        MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+        FEELPP_ASSERT( n==N ).error( "wrong vector type for serialization (!=VECSEQ)" );
+
+        for (int i=0; i<n; i++)
+            ar & array[i];
+    }
     //@}
 
 
