@@ -294,7 +294,7 @@ GeoGMSHTool::opFusion( const GeoGMSHTool & m,int __typeOp )
 
 void//std::string
 GeoGMSHTool::init( int orderGeo, std::string gmshFormatVersion,
-                   double hmin,double hmax,
+                   double hmin,double hmax,int refine,
                    GMSH_PARTITIONER partitioner, int partitions, bool partition_file )
 {
     //fait dans gmsh.cpp
@@ -313,6 +313,7 @@ GeoGMSHTool::init( int orderGeo, std::string gmshFormatVersion,
              << "Mesh.OptimizeNetgen=1;\n"
              << "Mesh.CharacteristicLengthMin=" << hmin << ";\n"
              << "Mesh.CharacteristicLengthMax=" << hmax << ";\n"
+             << "// refine level " << refine << "\n" // just to rewrite file if refine change
              << "// partitioning data\n"
              << "Mesh.Partitioner=" << partitioner << ";\n"
              << "Mesh.NbPartitions=" << partitions << ";\n"
