@@ -997,9 +997,9 @@ struct BackendManagerDeleterImpl
 {
     void operator()() const
         {
-            Debug(7006) << "[BackendManagerDeleter] clear BackendManager Singleton: " << detail::BackendManager::instance().size() << "\n";
+            VLOG(2) << "[BackendManagerDeleter] clear BackendManager Singleton: " << detail::BackendManager::instance().size() << "\n";
             detail::BackendManager::instance().clear();
-            Debug(7006) << "[BackendManagerDeleter] clear BackendManager done\n";
+            VLOG(2) << "[BackendManagerDeleter] clear BackendManager done\n";
         }
 };
 typedef Feel::Singleton<BackendManagerDeleterImpl> BackendManagerDeleter;
@@ -1033,13 +1033,13 @@ BOOST_PARAMETER_FUNCTION(
 
     if (  git != detail::BackendManager::instance().end() && ( rebuild == false ) )
     {
-        Debug(7006) << "[backend] found backend name=" << name << " kind=" << kind << " rebuild=" << rebuild << "\n";
+        VLOG(2) << "[backend] found backend name=" << name << " kind=" << kind << " rebuild=" << rebuild << "\n";
         return git->second;
     }
 
     else
     {
-        Debug(7006) << "[backend] building backend name=" << name << " kind=" << kind << " rebuild=" << rebuild << "\n";
+        VLOG(2) << "[backend] building backend name=" << name << " kind=" << kind << " rebuild=" << rebuild << "\n";
 
         backend_ptrtype b;
         if ( vm.empty() )
@@ -1048,7 +1048,7 @@ BOOST_PARAMETER_FUNCTION(
         }
         else
             b = Feel::backend_type::build( vm, name );
-        Debug( 7006 ) << "storing backend in singleton" << "\n";
+        VLOG(2) << "storing backend in singleton" << "\n";
         detail::BackendManager::instance().operator[]( std::make_pair( kind, name ) ) = b;
         return b;
     }
