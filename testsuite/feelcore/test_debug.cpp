@@ -33,7 +33,7 @@ int
 main()
 {
 
-    Feel::VLOG(1) << "Hello\n";
+    VLOG(1) << "Hello\n";
 
 
     //

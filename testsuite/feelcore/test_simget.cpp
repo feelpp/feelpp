@@ -46,8 +46,8 @@ using boost::unit_test::test_suite;
 #include <feel/feelcore/application.hpp>
 #include <feel/options.hpp>
 
-#define FEELAPP( argc, argv, about, options )                           \
-    Feel::Application app( argc, argv, about, options );                \
+#define FEELAPP()                                                       \
+    Feel::Application app;                                              \
     if ( app.vm().count( "help" ) )                                     \
     {                                                                   \
         std::cout << app.optionsDescription() << "\n";                  \
@@ -91,9 +91,9 @@ makeAbout()
 class sim : public Simget
 {
 public:
-    sim( po::variables_map const& vm, AboutData const& about )
+    sim()
         :
-        Simget( vm, about ),
+        Simget(),
         meshSize( this->vm()["hsize"].as<double>() )
     {
     }
@@ -105,8 +105,10 @@ private:
 } // Feel
 
 BOOST_AUTO_TEST_SUITE( simget )
-Feel::Environment env( boost::unit_test::framework::master_test_suite().argc,
-                       boost::unit_test::framework::master_test_suite().argv );
+using namespace Feel;
+Feel::Environment env( _argc=boost::unit_test::framework::master_test_suite().argc,
+                       _argv=boost::unit_test::framework::master_test_suite().argv,
+                       _desc=makeOptions(), _about=makeAbout() );
 
 BOOST_AUTO_TEST_CASE( test_sim1 )
 {
@@ -114,10 +116,8 @@ BOOST_AUTO_TEST_CASE( test_sim1 )
     BOOST_TEST_MESSAGE( "test_sim1" );
     BOOST_CHECK( Feel::Environment::initialized() );
     BOOST_CHECK( Feel::mpi::environment::initialized() );
-    FEELAPP( boost::unit_test::framework::master_test_suite().argc,
-             boost::unit_test::framework::master_test_suite().argv,
-             Feel::makeAbout(), Feel::makeOptions() );
-    app.add( new Feel::sim( app.vm(), app.about() ) );
+    FEELAPP();
+    app.add( new Feel::sim );
     app.run();
     BOOST_TEST_MESSAGE( "test_sim1 done" );
 
