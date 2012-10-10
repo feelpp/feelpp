@@ -738,10 +738,11 @@ boost::shared_ptr<Aitken<SpaceType> >
 aitkenNew( boost::shared_ptr<SpaceType> const& _space,
            AitkenType _type,
            double _init_theta,
-           double _tol )
+           double _tol,
+           double _minParam )
 {
 
-    boost::shared_ptr<Aitken<SpaceType> > Aitk( new Aitken<SpaceType>( _space,_type,_init_theta,_tol ) );
+    boost::shared_ptr<Aitken<SpaceType> > Aitk( new Aitken<SpaceType>( _space,_type,_init_theta,_tol,_minParam ) );
 
     return Aitk;
 }
@@ -768,11 +769,12 @@ BOOST_PARAMETER_FUNCTION(
     ( optional
       ( type, ( AitkenType ), AITKEN_STANDARD  )
       ( initial_theta, *( boost::is_arithmetic<mpl::_> ), 1.0  )
+      ( min_theta, *( boost::is_arithmetic<mpl::_> ), 1e-4  )
       ( tolerance, *( boost::is_arithmetic<mpl::_> ), 1.0e-6  )
     )//optional
 )
 {
-    return *aitkenNew( space,type,initial_theta,tolerance );
+    return *aitkenNew( space,type,initial_theta,tolerance,min_theta );
 }
 
 BOOST_PARAMETER_FUNCTION(
@@ -785,11 +787,12 @@ BOOST_PARAMETER_FUNCTION(
     ( optional
       ( type, ( AitkenType ), AITKEN_STANDARD  )
       ( initial_theta, *( boost::is_arithmetic<mpl::_> ), 1.0  )
+      ( min_theta, *( boost::is_arithmetic<mpl::_> ), 1e-4  )
       ( tolerance, *( boost::is_arithmetic<mpl::_> ), 1.0e-6  )
     )//optional
 )
 {
-    return aitkenNew( space,type,initial_theta,tolerance );
+    return aitkenNew( space,type,initial_theta,tolerance,min_theta );
 }
 
 
