@@ -100,8 +100,12 @@ public:
 
         {
             BOOST_CHECK( mpi::environment::initialized() );
+            BOOST_TEST_MESSAGE( "mpi ok" );
             BOOST_CHECK_EQUAL( detail::BackendManager::instance().size(), 0 );
+            BOOST_TEST_MESSAGE( "backend manager empty" );
             auto b = backend(_name="test1");
+#if 0
+            BOOST_TEST_MESSAGE( "creating backend" );
             BOOST_CHECK_EQUAL( detail::BackendManager::instance().size(), 1 );
             BOOST_CHECK_EQUAL( detail::BackendManager::instance().begin()->first.first, BACKEND_PETSC );
             BOOST_CHECK_EQUAL( detail::BackendManager::instance().begin()->first.second, "test1" );
@@ -110,8 +114,8 @@ public:
                 BOOST_TEST_MESSAGE( "[test_backend] backend name =" << b.first.second << " kind =" << b.first.first );;
             }
             auto v = b->newVector( 10, 10 );
+#endif
         }
-    void run( const double*, long unsigned int, double*, long unsigned int ) {}
 private:
     double meshSize;
 };
@@ -122,12 +126,17 @@ using namespace Feel;
 //BOOST_GLOBAL_FIXTURE( Environment )
 
 BOOST_AUTO_TEST_SUITE( backendsuite )
-using namespace Feel;
-Feel::Environment env( _argc=boost::unit_test::framework::master_test_suite().argc,
-                       _argv=boost::unit_test::framework::master_test_suite().argv,
-                       _desc=makeOptions(), _about=makeAbout() );
 BOOST_AUTO_TEST_CASE( test_backend1 )
 {
+    char** av = new char*[1];
+    av[0]=new char[13];
+    strcpy( av[0], "test_backend" );
+
+    using namespace Feel;
+    Feel::Environment env( _argc=1,//boost::unit_test::framework::master_test_suite().argc,
+                           _argv=av,//boost::unit_test::framework::master_test_suite().argv,
+                           _desc=makeOptions(), _about=makeAbout() );
+
     BOOST_TEST_MESSAGE( "test_backend1" );
     BOOST_CHECK( Environment::initialized() );
     //BOOST_CHECK( mpi::environment::initialized() );

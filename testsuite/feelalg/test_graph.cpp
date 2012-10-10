@@ -195,14 +195,14 @@ int
 main( int argc, char** argv )
 {
 
+    Feel::Environment env( _argc=boost::unit_test::framework::master_test_suite().argc,
+                           _argv=boost::unit_test::framework::master_test_suite().argv );
+
     typedef Feel::Application Application_type;
     typedef boost::shared_ptr<Application_type> Application_ptrtype;
 
-    Feel::Environment env( argc, argv );
 
-    auto theApp = Application_ptrtype( new Application_type( argc,argv,
-                                       test_graphcsr::makeAbout(),
-                                       test_graphcsr::makeOptions() ) );
+    auto theApp = Application_ptrtype( new Application_type );
 
 
     if ( theApp->vm().count( "help" ) )
