@@ -5608,18 +5608,23 @@ template<class Archive>
 void
 CRB<TruthModelType>::load( Archive & ar, const unsigned int version )
 {
+
+    //up to version 4 : EIM was not there
+    //from version 5 : EIM
+    if( version <= 4 )
+        throw std::logic_error( "[CRB::load] ERROR while loading the existing database, since version 5 there was many changes. Please use the option --crb.rebuild-database=true " );
     int proc_number = this->worldComm().globalRank();
 
     LOG(INFO) <<"[CRB::load] version"<< version <<std::endl;
 
     mesh_ptrtype mesh;
     space_ptrtype Xh;
-    
+
     if ( !M_model )
         {
             LOG(INFO) << "[load] model not initialized, loading fdb files...\n";
             mesh = mesh_type::New();
-            
+
             bool is_mesh_loaded = mesh->load( _name="mymesh",_path=this->dbLocalPath(),_type="binary" );
 
             Xh = space_type::New( mesh );
@@ -5847,10 +5852,10 @@ namespace serialization
 template< typename T>
 struct version< Feel::CRB<T> >
 {
-    // at the moment the version of the CRB DB is 4. if any changes is done
+    // at the moment the version of the CRB DB is 5. if any changes is done
     // to the format it is mandatory to increase the version number below
     // and use the new version number of identify the new entries in the DB
-    typedef mpl::int_<4> type;
+    typedef mpl::int_<5> type;
     typedef mpl::integral_c_tag tag;
     static const unsigned int value = version::type::value;
 };
