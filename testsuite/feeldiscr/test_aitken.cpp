@@ -187,9 +187,9 @@ public:
     /**
      * Constructor
      */
-    TestAitken( po::variables_map const& vm, AboutData const& about )
+    TestAitken( )
         :
-        super( vm, about ),
+        super(  ),
         M_backend( backend_type::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( this->vm()["shape"].template as<std::string>() ),
@@ -559,12 +559,12 @@ TestAitken<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long
 int
 main( int argc, char** argv )
 {
-    Environment env( argc, argv );
+    Environment env( _argc=argc, _argv=argv, _desc=makeOptions(), _about=makeAbout() );
     /**
      * create an application
      */
     /** \code */
-    Application app( argc, argv, makeAbout(), makeOptions() );
+    Application app;
 
     if ( app.vm().count( "help" ) )
     {
@@ -579,8 +579,8 @@ main( int argc, char** argv )
      * register the simgets
      */
     /** \code */
-    app.add( new TestAitken<1>( app.vm(), app.about() ) );
-    app.add( new TestAitken<2>( app.vm(), app.about() ) );
+    app.add( new TestAitken<1>() );
+    app.add( new TestAitken<2>() );
     // app.add( new TestAitken<3>( app.vm(), app.about() ) );
     /** \endcode */
 

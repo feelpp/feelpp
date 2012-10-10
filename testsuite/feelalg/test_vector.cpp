@@ -47,6 +47,7 @@ BOOST_AUTO_TEST_SUITE( vector )
 
 BOOST_AUTO_TEST_CASE( test1 )
 {
+    using namespace Feel;
     Feel::Environment env( _argc=boost::unit_test::framework::master_test_suite().argc,
                            _argv=boost::unit_test::framework::master_test_suite().argv );
 

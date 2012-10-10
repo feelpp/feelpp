@@ -166,16 +166,14 @@ BOOST_AUTO_TEST_SUITE( graphcsr )
 typedef Feel::Application Application_type;
 typedef boost::shared_ptr<Application_type> Application_ptrtype;
 
-Feel::Environment env( boost::unit_test::framework::master_test_suite().argc,
-                       boost::unit_test::framework::master_test_suite().argv );
-
 BOOST_AUTO_TEST_CASE( graphcsr_case1 )
 {
-    auto theApp = Application_ptrtype( new Application_type( boost::unit_test::framework::master_test_suite().argc,
-                                       boost::unit_test::framework::master_test_suite().argv,
-                                       test_graphcsr::makeAbout(),
-                                       test_graphcsr::makeOptions()
-                                                           ) );
+    using namespace Feel;
+    Feel::Environment env( _argc=boost::unit_test::framework::master_test_suite().argc,
+                           _argv=boost::unit_test::framework::master_test_suite().argv,
+                           _desc=test_graphcsr::makeOptions(),_about=test_graphcsr::makeAbout());
+
+    auto theApp = Application_ptrtype( new Application_type );
 
     if ( theApp->vm().count( "help" ) )
     {
@@ -194,9 +192,10 @@ BOOST_AUTO_TEST_SUITE_END()
 int
 main( int argc, char** argv )
 {
-
+    using namespace Feel;
     Feel::Environment env( _argc=boost::unit_test::framework::master_test_suite().argc,
-                           _argv=boost::unit_test::framework::master_test_suite().argv );
+                           _argv=boost::unit_test::framework::master_test_suite().argv,
+                           _desc=makeOptions(),_about=makeAbout());
 
     typedef Feel::Application Application_type;
     typedef boost::shared_ptr<Application_type> Application_ptrtype;
