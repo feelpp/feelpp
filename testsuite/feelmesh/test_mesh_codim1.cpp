@@ -55,7 +55,7 @@ namespace detail
 typedef Mesh<Simplex<1, 1, 2> > mesh_type;
 typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 }
-detail::mesh_ptrtype
+Feel::detail::mesh_ptrtype
 createMesh( double hsize )
 {
     BOOST_TEST_MESSAGE( "create mesh" );
@@ -85,9 +85,9 @@ createMesh( double hsize )
     /* Mesh */
 
 
-    detail::mesh_ptrtype mesh( new detail::mesh_type );
+    Feel::detail::mesh_ptrtype mesh( new Feel::detail::mesh_type );
 
-    ImporterGmsh<detail::mesh_type> import( fname );
+    ImporterGmsh<Feel::detail::mesh_type> import( fname );
     import.setVersion( "2.0" );
     mesh->accept( import );
     mesh->components().set( MESH_CHECK | MESH_RENUMBER | MESH_UPDATE_EDGES | MESH_UPDATE_FACES );
@@ -112,21 +112,21 @@ struct test_mesh_filters
         // elements
         {
 
-            detail::mesh_type::gm_ptrtype __gm = mesh->gm();
-            typedef detail::mesh_type::gm_type gm_type;
+            Feel::detail::mesh_type::gm_ptrtype __gm = mesh->gm();
+            typedef Feel::detail::mesh_type::gm_type gm_type;
             typedef gm_type::precompute_ptrtype geopc_ptrtype;
             typedef gm_type::precompute_type geopc_type;
-            typedef gm_type::Context<vm::POINT, detail::mesh_type::element_type> gmc_type;
+            typedef gm_type::Context<vm::POINT, Feel::detail::mesh_type::element_type> gmc_type;
             typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
             BOOST_TEST_MESSAGE( "test_mesh_filters check elements" );
             //
             // Precompute some data in the reference element for
             // geometric mapping and reference finite element
             //1
-            detail::mesh_type::reference_convex_type ref_conv;
+            Feel::detail::mesh_type::reference_convex_type ref_conv;
             geopc_ptrtype __geopc( new geopc_type( __gm, ref_conv.points() ) );
-            Feel::MeshTraits<detail::mesh_type>::element_const_iterator it = mesh->beginElement();
-            Feel::MeshTraits<detail::mesh_type>::element_const_iterator en = mesh->endElement();
+            Feel::MeshTraits<Feel::detail::mesh_type>::element_const_iterator it = mesh->beginElement();
+            Feel::MeshTraits<Feel::detail::mesh_type>::element_const_iterator en = mesh->endElement();
 
             BOOST_TEST_MESSAGE( "Checking " << std::distance( it, en ) << " elements...\n" );
 
@@ -148,8 +148,8 @@ struct test_mesh_filters
         // location faces
         {
 
-            Feel::MeshTraits<detail::mesh_type>::location_face_const_iterator it = mesh->beginFaceOnBoundary();
-            Feel::MeshTraits<detail::mesh_type>::location_face_const_iterator en = mesh->endFaceOnBoundary();
+            Feel::MeshTraits<Feel::detail::mesh_type>::location_face_const_iterator it = mesh->beginFaceOnBoundary();
+            Feel::MeshTraits<Feel::detail::mesh_type>::location_face_const_iterator en = mesh->endFaceOnBoundary();
 
             BOOST_TEST_MESSAGE( "Checking " << std::distance( it, en ) << " boundary faces...\n" );
 
@@ -248,29 +248,29 @@ BOOST_AUTO_TEST_CASE( test_simple_mesh1d )
 
 
 #if 0
-    std::vector<detail::mesh_type::point_type*> vector_p;
-    boost::sub_range<std::vector<detail::mesh_type::point_type*> > range_p;
-    std::vector<std::vector<detail::mesh_type::point_type*> > vector_face_p( 4 );
+    std::vector<Feel::detail::mesh_type::point_type*> vector_p;
+    boost::sub_range<std::vector<Feel::detail::mesh_type::point_type*> > range_p;
+    std::vector<std::vector<Feel::detail::mesh_type::point_type*> > vector_face_p( 4 );
 
     node_type n1( 2 );
     n1( 0 ) = 0;
     n1( 1 ) = 0;
-    vector_p.push_back( mesh.add( detail::mesh_type::point_type( 0, n1, true, 0 ) ) );
+    vector_p.push_back( mesh.add( Feel::detail::mesh_type::point_type( 0, n1, true, 0 ) ) );
 
     node_type n2( 2 );
     n2( 0 ) = 1;
     n2( 1 ) = 0;
-    vector_p.push_back( mesh.add( detail::mesh_type::point_type( 1, n2, true, 1 ) ) );
+    vector_p.push_back( mesh.add( Feel::detail::mesh_type::point_type( 1, n2, true, 1 ) ) );
 
     node_type n3( 2 );
     n3( 0 ) = 0;
     n3( 1 ) = 1;
-    vector_p.push_back( mesh.add( detail::mesh_type::point_type( 2, n3, true, 2 ) ) );
+    vector_p.push_back( mesh.add( Feel::detail::mesh_type::point_type( 2, n3, true, 2 ) ) );
 
     node_type n4( 2 );
     n4( 0 ) = 1;
     n4( 1 ) = 1;
-    vector_p.push_back( mesh.add( detail::mesh_type::point_type( 3, n4, true, 2 ) ) );
+    vector_p.push_back( mesh.add( Feel::detail::mesh_type::point_type( 3, n4, true, 2 ) ) );
 
     // face points
     vector_face_p[0].push_back( vector_p[0] );
@@ -280,17 +280,17 @@ BOOST_AUTO_TEST_CASE( test_simple_mesh1d )
     vector_face_p[2].push_back( vector_p[2] );
     vector_face_p[2].push_back( vector_p[0] );
 
-    detail::mesh_type::element_type* elt;
-    elt = mesh.add( detail::mesh_type::element_type( 0, range_p( vector_p.begin(), vector_p.end() ), 0 ) );
+    Feel::detail::mesh_type::element_type* elt;
+    elt = mesh.add( Feel::detail::mesh_type::element_type( 0, range_p( vector_p.begin(), vector_p.end() ), 0 ) );
 
-    detail::mesh_type::face_type* f1;
-    f1 = mesh.add( detail::mesh_type::face_type( 0, range_p( vector_face_p[0].begin(), vector_face_p[0].end() ), 0 ) );
+    Feel::detail::mesh_type::face_type* f1;
+    f1 = mesh.add( Feel::detail::mesh_type::face_type( 0, range_p( vector_face_p[0].begin(), vector_face_p[0].end() ), 0 ) );
 
-    detail::mesh_type::face_type* f2;
-    f2 = mesh.add( detail::mesh_type::face_type( 1, range_p( vector_face_p[1].begin(), vector_face_p[1].end() ), 1 ) );
+    Feel::detail::mesh_type::face_type* f2;
+    f2 = mesh.add( Feel::detail::mesh_type::face_type( 1, range_p( vector_face_p[1].begin(), vector_face_p[1].end() ), 1 ) );
 
-    detail::mesh_type::face_type* f3;
-    f3 = mesh.add( detail::mesh_type::face_type( 1, range_p( vector_face_p[2].begin(), vector_face_p[2].end() ), 2 ) );
+    Feel::detail::mesh_type::face_type* f3;
+    f3 = mesh.add( Feel::detail::mesh_type::face_type( 1, range_p( vector_face_p[2].begin(), vector_face_p[2].end() ), 2 ) );
 
 #endif
     //mesh.updateElementFaces();
