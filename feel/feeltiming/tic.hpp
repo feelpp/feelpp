@@ -47,7 +47,7 @@ struct SecondBasedTimer
     }
     static inline double  time()
     {
-        return details::now();
+        return Feel::details::now();
     }
 };
 
@@ -61,12 +61,12 @@ namespace time
 {
 inline void tic()
 {
-    details::sec_timer.tic();
+    Feel::details::sec_timer.tic();
 }
 
 inline double  toc( std::string const& msg = "", bool display = true )
 {
-    return details::sec_timer.toc( msg, display );
+    return Feel::details::sec_timer.toc( msg, display );
 }
 } // time
 } // Feel
