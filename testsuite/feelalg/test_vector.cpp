@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2010-08-07
 
-  Copyright (C) 2010 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2010 Universite Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -44,11 +44,12 @@ using boost::unit_test::test_suite;
 #include <feel/feelalg/vectorublas.hpp>
 
 BOOST_AUTO_TEST_SUITE( vector )
-Feel::Environment env( boost::unit_test::framework::master_test_suite().argc,
-                       boost::unit_test::framework::master_test_suite().argv );
 
 BOOST_AUTO_TEST_CASE( test1 )
 {
+    Feel::Environment env( _argc=boost::unit_test::framework::master_test_suite().argc,
+                           _argv=boost::unit_test::framework::master_test_suite().argv );
+
     using namespace Feel;
     VectorUblas<double> v1( 100 ), v2( 100 ), v3( 100 );
     v1.setConstant( 1 );
