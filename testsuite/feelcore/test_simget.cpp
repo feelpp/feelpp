@@ -105,13 +105,13 @@ private:
 } // Feel
 
 BOOST_AUTO_TEST_SUITE( simget )
-using namespace Feel;
-Feel::Environment env( _argc=boost::unit_test::framework::master_test_suite().argc,
-                       _argv=boost::unit_test::framework::master_test_suite().argv,
-                       _desc=makeOptions(), _about=makeAbout() );
 
 BOOST_AUTO_TEST_CASE( test_sim1 )
 {
+    using namespace Feel;
+    Feel::Environment env( _argc=boost::unit_test::framework::master_test_suite().argc,
+                           _argv=boost::unit_test::framework::master_test_suite().argv,
+                           _desc=makeOptions(), _about=makeAbout() );
 
     BOOST_TEST_MESSAGE( "test_sim1" );
     BOOST_CHECK( Feel::Environment::initialized() );
