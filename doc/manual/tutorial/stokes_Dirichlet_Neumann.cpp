@@ -374,7 +374,7 @@ Stokes_Dirichlet_Neumann::run()
 #if (STOKESPRESSMESHTYPE == 2)
     //****************** 3D **********************************************
     auto stokes = form2( _test=Xh, _trial=Xh, _matrix=D );
-    boost::timer chrono;
+    mpi::timer chrono;
     stokes += integrate( elements( mesh ), mu*inner( deft,def ) );
     std::cout << "mu*inner(deft,def): " << chrono.elapsed() << "\n";
     chrono.restart();
@@ -396,7 +396,7 @@ Stokes_Dirichlet_Neumann::run()
 #elif (STOKESPRESSMESHTYPE == 1)
     //******************* 2D **********************************
     auto stokes = form2( _test=Xh, _trial=Xh, _matrix=D );
-    boost::timer chrono;
+    mpi::timer chrono;
     stokes += integrate( elements( mesh ), mu*inner( deft,def ) );
     std::cout << "mu*inner(deft,def): " << chrono.elapsed() << "\n";
     chrono.restart();
@@ -557,6 +557,3 @@ main( int argc, char** argv )
     Feel::Stokes_Dirichlet_Neumann Stokes_Dirichlet_Neumann( argc, argv, makeAbout(), makeOptions() );
    Stokes_Dirichlet_Neumann.run();
 }
-
-
-
