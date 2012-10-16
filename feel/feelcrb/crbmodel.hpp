@@ -128,7 +128,7 @@ public:
     typedef typename boost::tuple<sparse_matrix_ptrtype,
                                   sparse_matrix_ptrtype,
                                   std::vector<vector_ptrtype>,
-                                  vector_ptrtype
+                                  element_ptrtype
                                   > offline_merge_type;
 
 
@@ -163,6 +163,7 @@ public:
     CRBModel()
         :
         M_Aqm(),
+        M_InitialGuess(),
         M_Mqm(),
         M_Fqm(),
         M_is_initialized( false ),
@@ -177,6 +178,7 @@ public:
     CRBModel( po::variables_map const& vm, CRBModelMode mode = CRBModelMode::PFEM  )
         :
         M_Aqm(),
+        M_InitialGuess(),
         M_Mqm(),
         M_Fqm(),
         M_is_initialized( false ),
@@ -195,6 +197,7 @@ public:
     CRBModel( model_ptrtype & model )
         :
         M_Aqm(),
+        M_InitialGuess(),
         M_Mqm(),
         M_Fqm(),
         M_is_initialized( false ),
@@ -213,6 +216,7 @@ public:
     CRBModel( CRBModel const & o )
         :
         M_Aqm( o.M_Aqm ),
+        M_InitialGuess( o.M_InitialGuess ),
         M_Mqm( o.M_Mqm ),
         M_Fqm( o.M_Fqm ),
         M_is_initialized( o.M_is_initialized ),
@@ -513,16 +517,16 @@ public:
     affine_decomposition_type computeAffineDecomposition( mpl::bool_<true> )
     {
         initial_guess_type initial_guess;
-        boost::tie( M_Mqm, M_Aqm, M_Fqm, initial_guess ) = M_model->computeAffineDecomposition();
-        assembleMF( initial_guess );
+        boost::tie( M_Mqm, M_Aqm, M_Fqm, M_InitialGuess ) = M_model->computeAffineDecomposition();
+        assembleMF( M_InitialGuess );
         return boost::make_tuple( M_Mqm, M_Aqm, M_Fqm, M_MFqm );
     }
     affine_decomposition_type computeAffineDecomposition( mpl::bool_<false> )
     {
         initial_guess_type initial_guess;
-        boost::tie( M_Aqm, M_Fqm, initial_guess ) = M_model->computeAffineDecomposition();
+        boost::tie( M_Aqm, M_Fqm, M_InitialGuess ) = M_model->computeAffineDecomposition();
         assembleMassMatrix();
-        assembleMF( initial_guess );
+        assembleMF( M_InitialGuess );
         return boost::make_tuple( M_Mqm, M_Aqm, M_Fqm, M_MFqm );
     }
 
@@ -883,10 +887,6 @@ public:
      * run the model
      */
     void run( const double * X, unsigned long N, double * Y, unsigned long P );
-    std::map<double, boost::tuple<double,double,double,int, double,double> > run();
-    std::map<double, boost::tuple<double,double,double,int, double,double> > run( mpl::bool_<true> );
-    std::map<double, boost::tuple<double,double,double,int, double,double> > run( mpl::bool_<false> );
-    std::map<double, boost::tuple<double,double,double,int,double,double> > runq();
 
     /**
      * Given the output index \p output_index and the parameter \p mu, return
@@ -1010,6 +1010,8 @@ protected:
 
     //! affine decomposition terms for the left hand side
     std::vector< std::vector<sparse_matrix_ptrtype> > M_Aqm;
+
+    initial_guess_type M_InitialGuess;
 
     //! affine decomposition terms ( time dependent )
     mutable std::vector< std::vector<sparse_matrix_ptrtype> > M_Mqm;
@@ -1449,17 +1451,17 @@ CRBModel<TruthModelType>::offlineMerge( parameter_type const& mu )
         }
     }
 
-    //element_ptrtype InitialGuess = M_model->functionSpace()->elementPtr() ;
-    vector_ptrtype MF = M_backend->newVector( M_model->functionSpace() ) ;
-
-    if ( Qmf() > 0 )
+    auto Xh = M_model->functionSpace();
+    element_ptrtype InitialGuess = Xh->elementPtr() ;
+    //vector_ptrtype MF = M_backend->newVector( M_model->functionSpace() ) ;
+    for ( size_type q = 0; q < Qmf(); ++q )
     {
-        for ( size_type q = 0; q < Qmf(); ++q )
+        for ( size_type m = 0; m < mMaxMF(q); ++m )
         {
-            for ( size_type m = 0; m < mMaxMF(q); ++m )
-            {
-                MF->add( this->betaInitialGuessQm( q , m ), *M_MFqm[q][m] );
-            }
+            element_type temp = Xh->element();
+            temp = *M_InitialGuess[q][m];
+            temp.scale( this->betaInitialGuessQm( q , m ) );
+            *InitialGuess += temp;
         }
     }
 
@@ -1476,7 +1478,7 @@ CRBModel<TruthModelType>::offlineMerge( parameter_type const& mu )
         }
     }
 
-    return boost::make_tuple( M, A, F, MF );
+    return boost::make_tuple( M, A, F, InitialGuess );
 }
 
 
@@ -1490,252 +1492,5 @@ CRBModel<TruthModelType>::run( const double * X, unsigned long N, double * Y, un
 
 
 
-template<typename TruthModelType>
-std::map<double, boost::tuple<double,double,double,int,double,double> >
-CRBModel<TruthModelType>::run()
-{
-    return run( mpl::bool_<model_type::is_time_dependent>() );
-}
-
-template<typename TruthModelType>
-std::map<double, boost::tuple<double,double,double,int,double,double> >
-CRBModel<TruthModelType>::run( mpl::bool_<true> )
-{
-    // parameter space
-    parameterspace_ptrtype Dmu = M_model->parameterSpace();
-
-    // sampling of parameter space
-    sampling_ptrtype Xi( new sampling_type( Dmu ) );
-    Xi->equidistribute( 10 );
-    parameter_type mu( Dmu );
-
-    this->computeAffineDecomposition();
-
-    std::map<double, boost::tuple<double,double,double,int,double,double> > res;
-    BOOST_FOREACH( mu, *Xi )
-    {
-        // first for a particular parameter
-        M_model->solve( mu );
-
-        // solve for an eigenproblem
-
-        sparse_matrix_ptrtype M,A,B,symmA;
-        vector_ptrtype F;
-
-        boost::tie( M, A, F ) = this->update( mu );
-
-
-        A->printMatlab( "run_A.m" );
-        symmA = M_model->newMatrix();
-        A->symmetricPart( symmA );
-        symmA->printMatlab( "run_symmA.m" );
-        B = this->innerProduct();
-        B->printMatlab( "run_B.m" );
-        int nconv;
-        boost::timer t_emin;
-        double eigenvalue_real, eigenvalue_imag;
-        vector_ptrtype eigenvector;
-        // solve  for eigenvalue problem at \p mu
-        SolverEigen<double>::eigenmodes_type modes=
-            eigs( _matrixA=symmA,
-                  _matrixB=B,
-                  //_problem=(EigenProblemType)GHEP,
-                  _solver=( EigenSolverType )M_vm["solvereigen-solver-type"].template as<int>(),
-                  _spectrum=LARGEST_MAGNITUDE,
-                  _transform=SINVERT,
-                  _ncv=M_vm["solvereigen-ncv"].template as<int>(),
-                  _nev=M_vm["solvereigen-nev"].template as<int>(),
-                  _tolerance=M_vm["solvereigen-tol"].template as<double>(),
-                  _maxit=M_vm["solvereigen-maxiter"].template as<int>()
-                );
-
-        double time_eigmin = t_emin.elapsed();
-        double eigmin = modes.begin()->second.template get<0>();
-
-        boost::timer t_emax;
-        modes=
-            eigs( _matrixA=symmA,
-                  _matrixB=B,
-                  //_problem=(EigenProblemType)GHEP,
-                  _solver=( EigenSolverType )M_vm["solvereigen-solver-type"].template as<int>(),
-                  _spectrum=LARGEST_MAGNITUDE,
-                  _ncv=M_vm["solvereigen-ncv"].template as<int>(),
-                  _nev=M_vm["solvereigen-nev"].template as<int>(),
-                  _tolerance=M_vm["solvereigen-tol"].template as<double>(),
-                  _maxit=M_vm["solvereigen-maxiter"].template as<int>()
-                );
-        double time_eigmax = t_emax.elapsed();
-        double eigmax = modes.rbegin()->second.template get<0>();
-
-        std::cout << std::setprecision( 4 ) << mu << " "
-                  << std::setprecision( 16 ) << eigmin << " " << eigmax
-                  << " " << functionSpace()->nDof() << "\n";
-
-        res[mu( 0 )] = boost::make_tuple( mu( 0 ), eigmin, eigmax, functionSpace()->nDof(), time_eigmin, time_eigmax );
-    }
-
-    return res;
-}
-
-template<typename TruthModelType>
-std::map<double, boost::tuple<double,double,double,int,double,double> >
-CRBModel<TruthModelType>::run( mpl::bool_<false> )
-{
-    // parameter space
-    parameterspace_ptrtype Dmu = M_model->parameterSpace();
-
-    // sampling of parameter space
-    sampling_ptrtype Xi( new sampling_type( Dmu ) );
-    Xi->equidistribute( 10 );
-    parameter_type mu( Dmu );
-
-    this->computeAffineDecomposition();
-
-    std::map<double, boost::tuple<double,double,double,int,double,double> > res;
-    BOOST_FOREACH( mu, *Xi )
-    {
-        // first for a particular parameter
-        M_model->solve( mu );
-
-        // solve for an eigenproblem
-
-        sparse_matrix_ptrtype A,B,symmA;
-        vector_ptrtype F;
-
-        boost::tie( A, F ) = this->update( mu );
-
-        A->printMatlab( "run_A.m" );
-        symmA = M_model->newMatrix();
-        A->symmetricPart( symmA );
-        symmA->printMatlab( "run_symmA.m" );
-        B = this->innerProduct();
-        B->printMatlab( "run_B.m" );
-        int nconv;
-        boost::timer t_emin;
-        double eigenvalue_real, eigenvalue_imag;
-        vector_ptrtype eigenvector;
-        // solve  for eigenvalue problem at \p mu
-        SolverEigen<double>::eigenmodes_type modes=
-            eigs( _matrixA=symmA,
-                  _matrixB=B,
-                  //_problem=(EigenProblemType)GHEP,
-                  _solver=( EigenSolverType )M_vm["solvereigen-solver-type"].template as<int>(),
-                  _spectrum=LARGEST_MAGNITUDE,
-                  _transform=SINVERT,
-                  _ncv=M_vm["solvereigen-ncv"].template as<int>(),
-                  _nev=M_vm["solvereigen-nev"].template as<int>(),
-                  _tolerance=M_vm["solvereigen-tol"].template as<double>(),
-                  _maxit=M_vm["solvereigen-maxiter"].template as<int>()
-                );
-
-        double time_eigmin = t_emin.elapsed();
-        double eigmin = modes.begin()->second.template get<0>();
-
-        boost::timer t_emax;
-        modes=
-            eigs( _matrixA=symmA,
-                  _matrixB=B,
-                  //_problem=(EigenProblemType)GHEP,
-                  _solver=( EigenSolverType )M_vm["solvereigen-solver-type"].template as<int>(),
-                  _spectrum=LARGEST_MAGNITUDE,
-                  _ncv=M_vm["solvereigen-ncv"].template as<int>(),
-                  _nev=M_vm["solvereigen-nev"].template as<int>(),
-                  _tolerance=M_vm["solvereigen-tol"].template as<double>(),
-                  _maxit=M_vm["solvereigen-maxiter"].template as<int>()
-                );
-        double time_eigmax = t_emax.elapsed();
-        double eigmax = modes.rbegin()->second.template get<0>();
-
-        std::cout << std::setprecision( 4 ) << mu << " "
-                  << std::setprecision( 16 ) << eigmin << " " << eigmax
-                  << " " << functionSpace()->nDof() << "\n";
-
-        res[mu( 0 )] = boost::make_tuple( mu( 0 ), eigmin, eigmax, functionSpace()->nDof(), time_eigmin, time_eigmax );
-    }
-
-    return res;
-}
-
-template<typename TruthModelType>
-std::map<double, boost::tuple<double,double,double,int,double,double> >
-CRBModel<TruthModelType>::runq()
-{
-    // parameter space
-    parameterspace_ptrtype Dmu = M_model->parameterSpace();
-
-    // sampling of parameter space
-    sampling_ptrtype Xi( new sampling_type( Dmu ) );
-    Xi->equidistribute( 10 );
-    parameter_type mu( Dmu );
-
-    mu = Xi->min().template get<0>();
-    boost::tie( M_Aqm, M_Fqm ) = this->computeAffineDecomposition();
-    M_model->solve( mu );
-    std::cout << "done with setup\n";
-    std::map<double, boost::tuple<double,double,double,int,double,double> > res;
-
-    for ( int q = 0; q < M_Aqm.size(); ++q )
-    {
-        std::cout << "================================================================================\n";
-        std::cout << "= q = " << q << " / " << M_Aqm.size() << "\n";
-        sparse_matrix_ptrtype B,symmA;
-        symmA = M_model->newMatrix();
-        M_Aqm[q]->symmetricPart( symmA );
-        B = this->innerProduct();
-        std::ostringstream os;
-        os << "symmAq_" << q << ".m";
-        symmA->printMatlab( os.str() );
-        os.str( "" );
-        os << "B_" << q << ".m";
-        B->printMatlab( os.str() );
-        os.str( "" );
-        os << "Aq_" << q << ".m";
-        M_Aqm[q]->printMatlab( os.str() );
-        int nconv;
-        double eigenvalue_real, eigenvalue_imag;
-        vector_ptrtype eigenvector;
-        SolverEigen<double>::eigenmodes_type modes;
-        boost::timer t_emin;
-#if 1
-        // solve  for eigenvalue problem at \p mu
-        modes =
-            eigs( _matrixA=symmA,
-                  _matrixB=B,
-                  //_problem=(EigenProblemType)GHEP,
-                  _solver=( EigenSolverType )M_vm["solvereigen-solver-type"].template as<int>(),
-                  _spectrum=SMALLEST_MAGNITUDE,
-                  //_transform=SINVERT,
-                  _ncv=M_vm["solvereigen-ncv"].template as<int>(),
-                  _nev=M_vm["solvereigen-nev"].template as<int>(),
-                  _tolerance=M_vm["solvereigen-tol"].template as<double>(),
-                  _maxit=M_vm["solvereigen-maxiter"].template as<int>()
-                );
-#endif
-        double time_eigmin = t_emin.elapsed();
-        double eigmin = modes.empty()?0:modes.begin()->second.template get<0>();
-        boost::timer t_emax;
-        modes=
-            eigs( _matrixA=symmA,
-                  _matrixB=B,
-                  //_problem=(EigenProblemType)GHEP,
-                  _solver=( EigenSolverType )M_vm["solvereigen-solver-type"].template as<int>(),
-                  _spectrum=LARGEST_MAGNITUDE,
-                  _ncv=M_vm["solvereigen-ncv"].template as<int>(),
-                  _nev=M_vm["solvereigen-nev"].template as<int>(),
-                  _tolerance=M_vm["solvereigen-tol"].template as<double>(),
-                  _maxit=M_vm["solvereigen-maxiter"].template as<int>()
-                );
-        double time_eigmax = t_emax.elapsed();
-        double eigmax = modes.empty()?0:modes.rbegin()->second.template get<0>();
-
-        std::cout << std::setprecision( 4 ) << mu << " "
-                  << std::setprecision( 16 ) << eigmin << " " << eigmax
-                  << " " << functionSpace()->nDof() << "\n";
-
-        res[double( q )] = boost::make_tuple( double( q ), eigmin, eigmax, functionSpace()->nDof(), time_eigmin, time_eigmax );
-    }
-
-    return res;
-}
 }
 #endif /* __CRBModel_H */
