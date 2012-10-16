@@ -1403,7 +1403,7 @@ CRB<TruthModelType>::offline()
 
     sparse_matrix_ptrtype M,A,Adu,At;
     element_ptrtype InitialGuess;
-    vector_ptrtype MF;
+    //vector_ptrtype MF;
     std::vector<vector_ptrtype> F,L;
 
     LOG(INFO) << "[CRB::offline] compute affine decomposition\n";
@@ -1531,7 +1531,7 @@ CRB<TruthModelType>::offline()
             mu.check();
             u->zero();
             udu->zero();
-            boost::tie( boost::tuples::ignore, A, F, MF ) = M_model->update( mu , 1e30 );
+            boost::tie( boost::tuples::ignore, A, F, boost::tuples::ignore ) = M_model->update( mu , 1e30 );
 
             LOG(INFO) << "  -- updated model for parameter in " << timer2.elapsed() << "s\n";
             timer2.restart();
@@ -1631,7 +1631,7 @@ CRB<TruthModelType>::offline()
 
                 auto bdf_poly = M_bdf_primal->polyDeriv();
 
-                boost::tie( M, A, F, MF ) = M_model->update( mu , M_bdf_primal->time() );
+                boost::tie( M, A, F, boost::tuples::ignore) = M_model->update( mu , M_bdf_primal->time() );
 
 
                 A->addMatrix( bdf_coeff, M );
@@ -1716,7 +1716,7 @@ CRB<TruthModelType>::offline()
                 //initialization
                 double dt = M_model->timeStep();
 
-                boost::tie( M, A, F, MF ) = M_model->update( mu , M_bdf_dual->timeInitial() );
+                boost::tie( M, A, F, boost::tuples::ignore ) = M_model->update( mu , M_bdf_dual->timeInitial() );
 
 #if 0
                 A->addMatrix( 1./dt, M );
@@ -1750,7 +1750,7 @@ CRB<TruthModelType>::offline()
 
                     auto bdf_poly = M_bdf_dual->polyDeriv();
 
-                    boost::tie( M, A, F, MF ) = M_model->update( mu , M_bdf_dual->time() );
+                    boost::tie( M, A, F, boost::tuples::ignore ) = M_model->update( mu , M_bdf_dual->time() );
                     A->addMatrix( bdf_coeff, M );
                     A->transpose( Adu );
                     Rhs->zero();
@@ -2478,7 +2478,7 @@ CRB<TruthModelType>::compareResidualsForTransientProblems( parameter_type const&
     }
 
     sparse_matrix_ptrtype A,AM,M,Adu;
-    vector_ptrtype MF;
+    //vector_ptrtype MF;
     std::vector<vector_ptrtype> F,L;
 
     vector_ptrtype Rhs( M_backend->newVector( M_model->functionSpace() ) );
@@ -2507,7 +2507,7 @@ CRB<TruthModelType>::compareResidualsForTransientProblems( parameter_type const&
 
         auto bdf_poly = M_bdf_primal->polyDeriv();
 
-        boost::tie( M, A, F, MF ) = M_model->update( mu , M_bdf_primal->time() );
+        boost::tie( M, A, F, boost::tuples::ignore ) = M_model->update( mu , M_bdf_primal->time() );
 
 	A->close();
 
@@ -2570,13 +2570,13 @@ CRB<TruthModelType>::compareResidualsForTransientProblems( parameter_type const&
     //initialization
     time_step = M_bdf_dual->timeStep();
 
-    boost::tie( M, A, F, MF ) = M_model->update( mu , M_bdf_dual->timeInitial() );
+    boost::tie( M, A, F, boost::tuples::ignore ) = M_model->update( mu , M_bdf_dual->timeInitial() );
 
     for ( M_bdf_dual->start(); !M_bdf_dual->isFinished() ; M_bdf_dual->next() )
     {
         auto bdf_poly = M_bdf_dual->polyDeriv();
 
-        boost::tie( M, A, F, MF ) = M_model->update( mu , M_bdf_dual->time() );
+        boost::tie( M, A, F, boost::tuples::ignore ) = M_model->update( mu , M_bdf_dual->time() );
 
 	*undu = *Undu[time_index];
 	*unduold = *Unduold[time_index];
@@ -2646,7 +2646,7 @@ CRB<TruthModelType>::checkResidual( parameter_type const& mu, std::vector< std::
     }
 
     sparse_matrix_ptrtype A,At,M;
-    vector_ptrtype MF;
+    //vector_ptrtype MF;
     std::vector<vector_ptrtype> F,L;
 
     backend_ptrtype backendA = backend_type::build( BACKEND_PETSC );
@@ -2659,7 +2659,7 @@ CRB<TruthModelType>::checkResidual( parameter_type const& mu, std::vector< std::
 
     boost::timer timer, timer2;
 
-    boost::tie( boost::tuples::ignore, A, F, MF ) = M_model->update( mu );
+    boost::tie( boost::tuples::ignore, A, F, boost::tuples::ignore ) = M_model->update( mu );
 
     LOG(INFO) << "  -- updated model for parameter in " << timer2.elapsed() << "s\n";
     timer2.restart();
@@ -4437,7 +4437,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
     std::vector< std::vector<sparse_matrix_ptrtype> > Aqm;
     std::vector< std::vector<sparse_matrix_ptrtype> > Mqm;
     std::vector< std::vector<std::vector<vector_ptrtype> > > Fqm;
-    std::vector<std::vector<element_ptrtype> > MFqm;
+    std::vector<std::vector<vector_ptrtype> > MFqm;
     boost::tie( Mqm, Aqm, Fqm , MFqm ) = M_model->computeAffineDecomposition();
     __X->zero();
     __X->add( 1.0 );
