@@ -347,7 +347,10 @@ public:
                     google::FlushLogFiles(google::GLOG_INFO);
                     boost::mpi::timer ti;
 
-                    auto u_fem = model->solveRB( mu );
+                    //auto u_fem = model->solveRB( mu );
+                    //auto u_fem = model->solveFemUsingOfflineEim( mu );
+                    auto u_fem = model->solveFemUsingOnlineEimPicard( mu );
+
                     std::ostringstream u_fem_str;
                     u_fem_str << "u_fem(" << mu_str.str() << ")";
                     u_fem.setName( u_fem_str.str()  );
