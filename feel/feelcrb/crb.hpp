@@ -1539,7 +1539,8 @@ CRB<TruthModelType>::offline()
 
             LOG(INFO) << "[CRB::offline] solving primal" << "\n";
             backend_primal_problem->solve( _matrix=A,  _solution=u, _rhs=F[0] );
-
+            //std::cout<<"CRB::offline - solveFemUsingOnlineEimPicard"<<std::endl;
+            //M_model->solveFemUsingOnlineEimPicard( mu );
 
             //std::cout<<"u->l2Norm() : "<<u->l2Norm()<<std::endl;
             //this->worldComm().barrier();
