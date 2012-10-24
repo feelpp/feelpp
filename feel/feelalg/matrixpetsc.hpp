@@ -141,6 +141,7 @@ public:
      */
     MatrixPetsc ( Mat m );
     MatrixPetsc ( Mat m, DataMap const& dmRow, DataMap const& dmCol, WorldComm const& worldComm );
+    MatrixPetsc ( MatrixSparse<value_type> const& M, IS& isrow, IS& iscol );
     /**
      * Destructor. Free all memory, but do not
      * release the memory of the sparsity
