@@ -118,10 +118,18 @@ public:
 
             std::srand( static_cast<unsigned>( std::time( 0 ) ) );
             Debug() << "[OpusApp_heatns] constructor " << this->about().appName()  << "\n";
-            this->changeRepository( boost::format( "%1%/h_%2%/" )
+            
+/*            this->changeRepository( boost::format( "%1%/h_%2%/" )
                                     % this->about().appName()
                                     % this->vm()["hsize"].template as<double>()
                                   );
+*/
+            std::string repository = this->vm()["output_dir"].template as<std::string>() + "/%1%/meshsize=%2%/procs_%3%/" ;            
+            this->changeRepository( boost::format( repository )
+                                   % this->about().appName()
+                                   % this->vm()["hsize"].template as<double>() 
+                                   % Environment::numberOfProcessors() );
+            
             Debug() << "[OpusApp_heatns] ch repo" << "\n";
             this->setLogs();
             Debug() << "[OpusApp_heatns] set Logs" << "\n";
