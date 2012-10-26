@@ -347,6 +347,9 @@ public:
                     google::FlushLogFiles(google::GLOG_INFO);
                     boost::mpi::timer ti;
 
+                    //in the case we don't do the offline step, we need the affine decomposition
+                    model->computeAffineDecomposition();
+
                     //auto u_fem = model->solveRB( mu );
                     //auto u_fem = model->solveFemUsingOfflineEim( mu );
                     auto u_fem = model->solveFemUsingOnlineEimPicard( mu );
