@@ -1611,24 +1611,21 @@ CRB<TruthModelType>::offline()
             M_bdf_primal_save->setTimeFinal( M_model->timeFinal() );
             M_bdf_primal_save->setOrder( M_model->timeOrder() );
 
-            M_bdf_primal->start();
-            M_bdf_primal_save->start();
-
             //initialization of unknown
             M_model->initializationField( u, mu );
-            M_bdf_primal->initialize( *u );
-            M_bdf_primal_save->initialize( *u );
+            //M_bdf_primal->initialize( *u );
 
             //direct problem
-            double bdf_coeff = M_bdf_primal->polyDerivCoefficient( 0 );
+            double bdf_coeff;
 
             auto vec_bdf_poly = backend_primal_problem->newVector( M_model->functionSpace() );
 
-            for ( M_bdf_primal->start(),M_bdf_primal_save->start();
+            for ( M_bdf_primal->start(*u),M_bdf_primal_save->start(*u);
                     !M_bdf_primal->isFinished() , !M_bdf_primal_save->isFinished();
                     M_bdf_primal->next() , M_bdf_primal_save->next() )
             {
 
+                bdf_coeff = M_bdf_primal->polyDerivCoefficient( 0 );
 
                 auto bdf_poly = M_bdf_primal->polyDeriv();
 
@@ -1711,8 +1708,6 @@ CRB<TruthModelType>::offline()
                 M_bdf_dual_save->setOrder( M_model->timeOrder() );
 
                 Adu = M_model->newMatrix();
-                M_bdf_dual->start();
-                M_bdf_dual_save->start();
 
                 //initialization
                 double dt = M_model->timeStep();
@@ -1737,17 +1732,13 @@ CRB<TruthModelType>::offline()
 #endif
                 *udu=*dual_initial_field;
 
-                M_bdf_dual->initialize( *udu );
-                M_bdf_dual_save->initialize( *udu );
 
-
-                bdf_coeff = M_bdf_dual->polyDerivCoefficient( 0 );
-
-                for ( M_bdf_dual->start(),M_bdf_dual_save->start();
+                for ( M_bdf_dual->start(*udu),M_bdf_dual_save->start(*udu);
                         !M_bdf_dual->isFinished() , !M_bdf_dual_save->isFinished();
                         M_bdf_dual->next() , M_bdf_dual_save->next() )
                 {
 
+                    bdf_coeff = M_bdf_dual->polyDerivCoefficient( 0 );
 
                     auto bdf_poly = M_bdf_dual->polyDeriv();
 
@@ -1895,6 +1886,7 @@ CRB<TruthModelType>::offline()
 
             POD->setBdf( M_bdf_primal_save );
             POD->setModel( M_model );
+            POD->setTimeInitial( M_model->timeInitial() );
             mode_set_type ModeSet;
 
             size_type number_max_of_mode = POD->pod( ModeSet,true );
@@ -1925,6 +1917,7 @@ CRB<TruthModelType>::offline()
             if ( solve_dual_problem || M_error_type==CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM )
             {
                 POD->setBdf( M_bdf_dual );
+                POD->setTimeInitial( M_model->timeFinal()+M_model->timeStep() );
                 mode_set_type ModeSetdu;
                 POD->pod( ModeSetdu,false );
 
