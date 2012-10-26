@@ -227,6 +227,12 @@ public :
         return M_model;
     }
 
+    const double timeInitial()
+    {
+        return M_time_initial;
+    }
+
+
     void setBdf( bdf_ptrtype& bdf )
     {
         M_bdf = bdf;
@@ -250,6 +256,11 @@ public :
     void setModel ( truth_model_ptrtype Model )
     {
         M_model=Model;
+    }
+
+    void setTimeInitial( double Ti )
+    {
+        M_time_initial=Ti;
     }
 
     //! fill the matrix which will be used to perform the POD
@@ -286,6 +297,8 @@ private :
     export_ptrtype exporter;
 
     bdf_ptrtype M_bdf;
+
+    double M_time_initial;
 };//class POD
 
 
@@ -352,13 +365,16 @@ void POD<TruthModelType>::fillPodMatrix()
 
     bdfi->setRestart( true );
     bdfj->setRestart( true );
-
-    for ( bdfi->start(); !bdfi->isFinished(); bdfi->next() )
+    bdfi->setTimeInitial( M_time_initial );
+    bdfj->setTimeInitial( M_time_initial );
+    bdfi->setRestartAtLastSave(false);
+    bdfj->setRestartAtLastSave(false);
+    for ( bdfi->restart(); !bdfi->isFinished(); bdfi->next() )
     {
         int i = bdfi->iteration()-1;
         bdfi->loadCurrent();
 
-        for ( bdfj->start(); !bdfj->isFinished() && ( bdfj->iteration() < bdfi->iteration() ); bdfj->next() )
+        for ( bdfj->restart(); !bdfj->isFinished() && ( bdfj->iteration() < bdfi->iteration() ); bdfj->next() )
         {
             int j = bdfj->iteration()-1;
             bdfj->loadCurrent();
@@ -469,7 +485,7 @@ int POD<TruthModelType>::pod( mode_set_type& ModeSet, bool is_primal )
         M_bdf->setRestart( true );
         int index=0;
 
-        for ( M_bdf->start(); !M_bdf->isFinished(); M_bdf->next() )
+        for ( M_bdf->restart(); !M_bdf->isFinished(); M_bdf->next() )
         {
             M_bdf->loadCurrent();
             double psi_k = real( eigen_solver.eigenvectors().col( position_of_largest_eigenvalue )[index] );
