@@ -1405,11 +1405,8 @@ CRBModel<TruthModelType>::assembleMF( initial_guess_type & initial_guess, mpl::b
         for(int m = 0; m < m_max; m++ )
         {
             M_MFqm[q][m] = M_backend->newVector( Xh );
-            std::cout<<"M_MFqm["<<q<<"]["<<m<<"]->size() : "<<M_MFqm[q][m]->size()<<std::endl;
-            std::cout<<"initial_guess["<<q<<"]["<<m<<"] : "<<initial_guess[q][m]->size()<<std::endl;
             form1( _test=Xh, _vector=M_MFqm[q][m]) =
                 integrate( _range=elements( mesh ), _expr=idv( initial_guess[q][m] )*id( v )  );
-            std::cout<<"bahhhh"<<std::endl;
             M_MFqm[q][m]->close();
         }
     }
@@ -1488,7 +1485,6 @@ CRBModel<TruthModelType>::offlineMerge( parameter_type const& mu )
     auto A = this->newMatrix();
     auto M = this->newMatrix();
 #endif
-
     std::vector<vector_ptrtype> F( Nl() );
 
 
@@ -1549,9 +1545,8 @@ CRBModel<TruthModelType>::solveFemUsingOfflineEim( parameter_type const& mu )
     sparse_matrix_ptrtype A;
     sparse_matrix_ptrtype M;
     std::vector<vector_ptrtype> F;
-    element_ptrtype InitialGuess;
+    element_ptrtype InitialGuess = Xh->elementPtr();
     vector_ptrtype Rhs( M_backend->newVector( Xh ) );
-
     auto u = Xh->element();
 
     double time_initial;
@@ -1576,20 +1571,19 @@ CRBModel<TruthModelType>::solveFemUsingOfflineEim( parameter_type const& mu )
     mybdf->setTimeStep( time_step );
     mybdf->setTimeFinal( time_final );
 
-    mybdf->start();
-
-    double bdf_coeff = mybdf->polyDerivCoefficient( 0 );
+    double bdf_coeff ;
     auto vec_bdf_poly = M_backend->newVector( Xh );
 
-    for( mybdf->start(); !mybdf->isFinished(); mybdf->next() )
+    for( mybdf->start(*InitialGuess); !mybdf->isFinished(); mybdf->next() )
     {
+        bdf_coeff = mybdf->polyDerivCoefficient( 0 );
         auto bdf_poly = mybdf->polyDeriv();
         boost::tie(M, A, F, boost::tuples::ignore) = this->update( mu , mybdf->time() );
         *Rhs = *F[0];
         if( !isSteady() )
         {
             A->addMatrix( bdf_coeff, M );
-            Rhs->addVector( bdf_poly, *M );
+            Rhs->addVector( *vec_bdf_poly, *M );
         }
         M_backend->solve( _matrix=A , _solution=u, _rhs=Rhs );
         mybdf->shiftRight(u);
@@ -1610,7 +1604,7 @@ CRBModel<TruthModelType>::solveFemUsingOnlineEimPicard( parameter_type const& mu
     sparse_matrix_ptrtype A;
     sparse_matrix_ptrtype M;
     std::vector<vector_ptrtype> F;
-    element_ptrtype InitialGuess;
+    element_ptrtype InitialGuess = Xh->elementPtr();
     auto u = Xh->element();
     auto uold = Xh->element();
     vector_ptrtype Rhs( M_backend->newVector( Xh ) );
@@ -1640,38 +1634,36 @@ CRBModel<TruthModelType>::solveFemUsingOnlineEimPicard( parameter_type const& mu
     mybdf->setTimeStep( time_step );
     mybdf->setTimeFinal( time_final );
 
-    mybdf->start();
     u=*InitialGuess;
     double norm=0;
     int iter=0;
 
-    double bdf_coeff = mybdf->polyDerivCoefficient( 0 );
+    double bdf_coeff ;
     auto vec_bdf_poly = M_backend->newVector( Xh );
 
     int max_fixedpoint_iterations  = this->vm()["crb.max-fixedpoint-iterations"].template as<int>();
     double solution_fixedpoint_tol  = this->vm()["crb.solution-fixedpoint-tol"].template as<double>();
-    for( mybdf->start(); !mybdf->isFinished(); mybdf->next() )
+    for( mybdf->start(*InitialGuess); !mybdf->isFinished(); mybdf->next() )
     {
+        bdf_coeff = mybdf->polyDerivCoefficient( 0 );
         auto bdf_poly = mybdf->polyDeriv();
+        *vec_bdf_poly = bdf_poly;
         do {
             boost::tie(M, A, F, boost::tuples::ignore) = this->update( mu , u , mybdf->time() );
             *Rhs = *F[0];
             if( !isSteady() )
             {
                 A->addMatrix( bdf_coeff, M );
-                Rhs->addVector( bdf_poly, *M );
+                Rhs->addVector( *vec_bdf_poly, *M );
             }
             uold = u;
             M_backend->solve( _matrix=A , _solution=u, _rhs=Rhs );
             norm = this->computeNormL2( uold , u );
-
             iter++;
 
         } while( norm > solution_fixedpoint_tol && iter<max_fixedpoint_iterations );
-
         mybdf->shiftRight(u);
     }
-
     return u;
 }
 
