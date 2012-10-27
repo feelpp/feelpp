@@ -1645,6 +1645,7 @@ CRBModel<TruthModelType>::solveFemUsingOnlineEimPicard( parameter_type const& mu
     double solution_fixedpoint_tol  = this->vm()["crb.solution-fixedpoint-tol"].template as<double>();
     for( mybdf->start(*InitialGuess); !mybdf->isFinished(); mybdf->next() )
     {
+        iter=0;
         bdf_coeff = mybdf->polyDerivCoefficient( 0 );
         auto bdf_poly = mybdf->polyDeriv();
         *vec_bdf_poly = bdf_poly;
