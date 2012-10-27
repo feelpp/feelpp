@@ -78,6 +78,16 @@ public:
     typedef CRB<crbmodel_type> crb_type;
     typedef boost::shared_ptr<crb_type> crb_ptrtype;
 
+    //! model type
+    typedef ModelType model_type;
+    typedef boost::shared_ptr<ModelType> model_ptrtype;
+
+    //! function space type
+    typedef typename model_type::functionspace_type functionspace_type;
+    typedef typename model_type::functionspace_ptrtype functionspace_ptrtype;
+
+    typedef typename model_type::element_type element_type;
+
     OpusApp( AboutData const& ad, po::options_description const& od )
         :
         super( ad, opusapp_options( ad.appName() ).add( od ).add( crbOptions() ).add( feel_options() ) ),
@@ -235,7 +245,7 @@ public:
         std::map<CRBModelMode,std::vector<std::string> > hdrs;
         using namespace boost::assign;
         std::vector<std::string> pfemhdrs = boost::assign::list_of( "FEM Output" )( "FEM Time" );
-        std::vector<std::string> crbhdrs = boost::assign::list_of( "FEM Output" )( "FEM Time" )( "RB Output" )( "Error Bounds" )( "CRB Time" )( "Relative error PFEM/CRB" )( "Conditionning" );
+        std::vector<std::string> crbhdrs = boost::assign::list_of( "FEM Output" )( "FEM Time" )( "RB Output" )( "Error Bounds" )( "CRB Time" )( "Relative error PFEM/CRB" )( "Conditionning" )( "l2_error" )( "h1_error" );
         std::vector<std::string> scmhdrs = boost::assign::list_of( "Lb" )( "Lb Time" )( "Ub" )( "Ub Time" )( "FEM" )( "FEM Time" )( "Rel.(FEM-Lb)" );
         std::vector<std::string> crbonlinehdrs = boost::assign::list_of( "RB Output" )( "Error Bounds" )( "CRB Time" );
         std::vector<std::string> scmonlinehdrs = boost::assign::list_of( "Lb" )( "Lb Time" )( "Ub" )( "Ub Time" )( "Rel.(FEM-Lb)" );
@@ -279,26 +289,65 @@ public:
             {
                 std::cout << "CRB mode\n";
                 boost::timer ti;
-                model->solve( mu );
+
+                int N =  this->vm()["crb.dimension"].template as<int>();
+
+                //in the case we don't do the offline step, we need the affine decomposition
+                model->computeAffineDecomposition();
+
+                //model->solve( mu );
+                auto u_fem = model->solveFemUsingOnlineEimPicard( mu );
+
+
                 std::vector<double> ofem = boost::assign::list_of( model->output( output_index,mu ) )( ti.elapsed() );
                 ti.restart();
-                auto o = crb->run( mu,  this->vm()["crb.online-tolerance"].template as<double>() );
+                auto o = crb->run( mu,  this->vm()["crb.online-tolerance"].template as<double>() , N );
+
+                auto u_crb = crb->expansion( mu , N );
 
                 double relative_error = std::abs( ofem[0]-o.template get<0>() ) /ofem[0];
                 double relative_estimated_error = o.template get<1>() / ofem[0];
                 double condition_number = o.template get<3>();
 
+                //compute || u_fem - u_crb||_L2
+                auto u_error = model->functionSpace()->element();
+                u_error = u_fem - u_crb;
+                double l2_error = l2Norm( u_error )/l2Norm( u_fem );
+                double h1_error = h1Norm( u_error )/h1Norm( u_fem );
+
                 if ( crb->errorType()==2 )
                 {
 
-                    std::vector<double> v = boost::assign::list_of( ofem[0] )( ofem[1] )( o.template get<0>() )( relative_estimated_error )( ti.elapsed() )( relative_error )( condition_number );
+                    std::vector<double> v = boost::assign::list_of( ofem[0] )( ofem[1] )( o.template get<0>() )( relative_estimated_error )( ti.elapsed() )( relative_error )( condition_number )( l2_error )( h1_error );
                     std::cout << "output=" << o.template get<0>() << " with " << o.template get<2>() << " basis functions\n";
                     std::ofstream file_summary_of_simulations( ( boost::format( "summary_of_simulations_%d" ) % o.template get<2>() ).str().c_str() ,std::ios::out | std::ios::app );
                     printEntry( file_summary_of_simulations, mu, v );
                     printEntry( ostr, mu, v );
                     file_summary_of_simulations.close();
-                }
 
+                    if (this->vm()["crb.cvg-study"].template as<bool>())
+                    {
+                        std::map<int, boost::tuple<double,double,double> > conver;
+                        for( int N = 1; N < crb->dimension(); N++ )
+                        {
+                            auto o = crb->run( mu,  this->vm()["crb.online-tolerance"].template as<double>() , N);
+                            auto u_crb = crb->expansion( mu , N );
+                            auto u_error = model->functionSpace()->element();
+                            u_error = u_fem - u_crb;
+                            double rel_err = std::abs( ofem[0]-o.template get<0>() ) /ofem[0];
+                            double l2_error = l2Norm( u_error )/l2Norm( u_fem );
+                            double h1_error = h1Norm( u_error )/h1Norm( u_fem );
+                            conver[N]=boost::make_tuple( rel_err, l2_error, h1_error );
+                            std::cout << "N=" << N << " " << rel_err << " " << l2_error << " " << h1_error << "\n";
+                        }
+                        std::ofstream conv( "convergence.dat" );
+                        BOOST_FOREACH( auto en, conver )
+                        {
+                            conv << en.first << " " << en.second.get<0>()  << " " << en.second.get<1>() << " " << en.second.get<2>() << "\n";
+                        }
+                    }
+
+                }
                 else
                 {
                     std::vector<double> v = boost::assign::list_of( ofem[0] )( ofem[1] )( o.template get<0>() )( relative_estimated_error )( ti.elapsed() ) ( relative_error )( condition_number ) ;
@@ -308,6 +357,7 @@ public:
                     printEntry( ostr, mu, v );
                     file_summary_of_simulations.close();
                 }
+                std::cout<<"steph 5"<<std::endl;
 
             }
             break;
@@ -419,6 +469,19 @@ private:
             os << tabmanip( 15 ) << o;
         }
         os << "\n";
+    }
+
+    double l2Norm( element_type const& u )
+    {
+        auto mesh = model->functionSpace()->mesh();
+        return math::sqrt( integrate( elements(mesh), (Feel::vf::idv(u))*(Feel::vf::idv(u)) ).evaluate()(0,0) );
+    }
+    double h1Norm( element_type const& u )
+    {
+        auto mesh = model->functionSpace()->mesh();
+        double l22 = integrate( elements(mesh), (Feel::vf::idv(u))*(Feel::vf::idv(u)) ).evaluate()(0,0);
+        double semih12 = integrate( elements(mesh), (Feel::vf::gradv(u))*trans(Feel::vf::gradv(u)) ).evaluate()(0,0);
+        return math::sqrt( l22+semih12 );
     }
 
 private:
