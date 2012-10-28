@@ -4209,7 +4209,8 @@ CRB<TruthModelType>::expansion( parameter_type const& mu , int N)
     std::vector<vectorN_type> uNduold;
 
     auto o = lb( Nwn, mu, uN, uNdu , uNold, uNduold );
-    return Feel::expansion( M_WN, uN[0] , Nwn);
+    int size = uN.size();
+    return Feel::expansion( M_WN, uN[size-1] , Nwn);
 }
 
 
