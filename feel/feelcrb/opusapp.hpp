@@ -325,39 +325,38 @@ public:
                     printEntry( ostr, mu, v );
                     file_summary_of_simulations.close();
 
-                    if (this->vm()["crb.cvg-study"].template as<bool>())
-                    {
-                        std::map<int, boost::tuple<double,double,double> > conver;
-                        for( int N = 1; N < crb->dimension(); N++ )
-                        {
-                            auto o = crb->run( mu,  this->vm()["crb.online-tolerance"].template as<double>() , N);
-                            auto u_crb = crb->expansion( mu , N );
-                            auto u_error = model->functionSpace()->element();
-                            u_error = u_fem - u_crb;
-                            double rel_err = std::abs( ofem[0]-o.template get<0>() ) /ofem[0];
-                            double l2_error = l2Norm( u_error )/l2Norm( u_fem );
-                            double h1_error = h1Norm( u_error )/h1Norm( u_fem );
-                            conver[N]=boost::make_tuple( rel_err, l2_error, h1_error );
-                            std::cout << "N=" << N << " " << rel_err << " " << l2_error << " " << h1_error << "\n";
-                        }
-                        std::ofstream conv( "convergence.dat" );
-                        BOOST_FOREACH( auto en, conver )
-                        {
-                            conv << en.first << " " << en.second.get<0>()  << " " << en.second.get<1>() << " " << en.second.get<2>() << "\n";
-                        }
-                    }
-
                 }
                 else
                 {
-                    std::vector<double> v = boost::assign::list_of( ofem[0] )( ofem[1] )( o.template get<0>() )( relative_estimated_error )( ti.elapsed() ) ( relative_error )( condition_number ) ;
+                    std::vector<double> v = boost::assign::list_of( ofem[0] )( ofem[1] )( o.template get<0>() )( relative_estimated_error )( ti.elapsed() ) ( relative_error )( condition_number )( l2_error )( h1_error ) ;
                     std::cout << "output=" << o.template get<0>() << " with " << o.template get<2>() << " basis functions  (relative error estimation on this output : " << relative_estimated_error<<") \n";
                     std::ofstream file_summary_of_simulations( ( boost::format( "summary_of_simulations_%d" ) % o.template get<2>() ).str().c_str() ,std::ios::out | std::ios::app );
                     printEntry( file_summary_of_simulations, mu, v );
                     printEntry( ostr, mu, v );
                     file_summary_of_simulations.close();
                 }
-                std::cout<<"steph 5"<<std::endl;
+
+                if (this->vm()["crb.cvg-study"].template as<bool>())
+                {
+                    std::map<int, boost::tuple<double,double,double> > conver;
+                    for( int N = 1; N < crb->dimension(); N++ )
+                    {
+                        auto o = crb->run( mu,  this->vm()["crb.online-tolerance"].template as<double>() , N);
+                        auto u_crb = crb->expansion( mu , N );
+                        auto u_error = model->functionSpace()->element();
+                        u_error = u_fem - u_crb;
+                        double rel_err = std::abs( ofem[0]-o.template get<0>() ) /ofem[0];
+                        double l2_error = l2Norm( u_error )/l2Norm( u_fem );
+                        double h1_error = h1Norm( u_error )/h1Norm( u_fem );
+                        conver[N]=boost::make_tuple( rel_err, l2_error, h1_error );
+                        std::cout << "N=" << N << " " << rel_err << " " << l2_error << " " << h1_error << "\n";
+                    }
+                    std::ofstream conv( "convergence.dat" );
+                    BOOST_FOREACH( auto en, conver )
+                    {
+                        conv << en.first << " " << en.second.get<0>()  << " " << en.second.get<1>() << " " << en.second.get<2>() << "\n";
+                    }
+                }
 
             }
             break;
