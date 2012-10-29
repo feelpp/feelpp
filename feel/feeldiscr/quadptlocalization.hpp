@@ -104,6 +104,9 @@ public :
 
     typedef typename im_type::face_quadrature_type im_face_type;
 
+    typedef typename QuadMapped<im_type>::permutation_type permutation_type;
+    typedef typename QuadMapped<im_type>::permutation_points_type permutation_points_type;
+
     //--------------------------------------------------------------------------------------//
 
     // temporary container
@@ -123,7 +126,9 @@ public :
         :
         _M_eltbegin( elts.template get<1>() ),
         _M_eltend( elts.template get<2>() ),
-        _M_im( )
+        _M_im( ),
+        _M_qm( ),
+        _M_ppts( _M_qm( this->im() ) )
     {}
 
     QuadPtLocalization( element_iterator_type  elts_it,
@@ -132,7 +137,9 @@ public :
         :
         _M_eltbegin( elts_it ),
         _M_eltend( elts_en ),
-        _M_im( )
+        _M_im( ),
+        _M_qm( ),
+        _M_ppts( _M_qm( this->im() ) )
     {}
 
     QuadPtLocalization( element_iterator_type  elts_it,
@@ -141,7 +148,9 @@ public :
         :
         _M_eltbegin( elts_it ),
         _M_eltend( elts_en ),
-        _M_im( )
+        _M_im( ),
+        _M_qm( ),
+        _M_ppts( _M_qm( this->im() ) )
     {}
 
     /**
@@ -249,18 +258,14 @@ public :
     {
         //search element
         auto elt_it = this->beginElement();
-
         for ( size_type i=0; i<theIdElt; ++i ) ++elt_it;
 
         // get only usefull quad point and reoder
-        uint16_type nContextPt = indexLocalToQuad.size();
-        uint16_type __face_id_in_elt_0 = elt_it->pos_first();
+        const uint16_type nContextPt = indexLocalToQuad.size();
+        const uint16_type __face_id_in_elt_0 = elt_it->pos_first();
 
-        QuadMapped<im_type> qm;
-        typedef typename QuadMapped<im_type>::permutation_type permutation_type;
-        typename QuadMapped<im_type>::permutation_points_type ppts( qm( this->im() ) );
-        auto __perm = elt_it->element( 0 ).permutation( __face_id_in_elt_0 );
-        matrix_node_type quadPtsRef =  ppts[ __face_id_in_elt_0].find( __perm )->second;
+        auto const __perm = elt_it->element( 0 ).permutation( __face_id_in_elt_0 );
+        matrix_node_type const quadPtsRef =  _M_ppts[ __face_id_in_elt_0].find( __perm )->second;
         //matrix_node_type quadPtsRef = this->im().points();
         matrix_node_type newquadPtsRef( quadPtsRef.size1() , nContextPt );
 
@@ -281,7 +286,6 @@ public :
                                                  newquadPtsRef ) );
             }
         }
-
 
         gmc_ptrtype gmc( new gmc_type( elt_it->element( 0 ).gm(),
                                        elt_it->element( 0 ),
@@ -332,7 +336,6 @@ public :
                 newindexLocalToQuad[index] = indexLocalToQuad[*sublist_it];
                 ublas::column( newptsRefTest, index ) = ublas::column( ptsRefTest,*sublist_it );
             }
-
             // get the corresponding gmc
             auto thegmc = gmcForThisElt( map_it->first,newindexLocalToQuad,mpl::int_<iDim>() );
             // add to result
@@ -409,12 +412,6 @@ public :
         auto elt_it = this->beginElement();
         auto elt_en = this->endElement();
 
-
-        QuadMapped<im_type> qm;
-        typedef typename QuadMapped<im_type>::permutation_type permutation_type;
-        typename QuadMapped<im_type>::permutation_points_type ppts( qm( this->im() ) );
-
-
         std::vector<std::map<permutation_type, pc_ptrtype> > __geopc( this->im().nFaces() );
         //typedef typename im_type::face_quadrature_type face_im_type;
 
@@ -428,7 +425,7 @@ public :
                     __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
             {
                 //FEELPP_ASSERT( ppts[__f].find(__p)->second.size2() != 0 ).warn( "invalid quadrature type" );
-                __geopc[__f][__p] = pc_ptrtype(  new pc_type( elt_it->element( 0 ).gm(), ppts[__f].find( __p )->second ) );
+                __geopc[__f][__p] = pc_ptrtype(  new pc_type( elt_it->element( 0 ).gm(), _M_ppts[__f].find( __p )->second ) );
             }
         }
 
@@ -526,10 +523,6 @@ public :
         auto elt_it = this->beginElement();
         auto elt_en = this->endElement();
 
-        QuadMapped<im_type> qm;
-        typedef typename QuadMapped<im_type>::permutation_type permutation_type;
-        typename QuadMapped<im_type>::permutation_points_type ppts( qm( this->im() ) );
-
         std::vector<std::map<permutation_type, pc_ptrtype> > __geopc( this->im().nFaces() );
 
         for ( uint16_type __f = 0; __f < this->im().nFaces(); ++__f )
@@ -538,7 +531,7 @@ public :
                     __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
             {
                 //FEELPP_ASSERT( ppts[__f].find(__p)->second.size2() != 0 ).warn( "invalid quadrature type" );
-                __geopc[__f][__p] = pc_ptrtype(  new pc_type( elt_it->element( 0 ).gm(), ppts[__f].find( __p )->second ) );
+                __geopc[__f][__p] = pc_ptrtype(  new pc_type( elt_it->element( 0 ).gm(), _M_ppts[__f].find( __p )->second ) );
             }
         }
 
@@ -1031,6 +1024,8 @@ private :
     element_iterator_type _M_eltbegin;
     element_iterator_type _M_eltend;
     mutable im_type _M_im;
+    QuadMapped<im_type> _M_qm;
+    permutation_points_type _M_ppts;
 
     result_container_type _M_resBilinear;
 

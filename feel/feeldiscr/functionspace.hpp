@@ -6174,7 +6174,6 @@ expansion( std::vector<ElementType> const& b, CoeffType const& c, int M = -1 )
     return res;
 }
 
-
 } // Feel
 
 

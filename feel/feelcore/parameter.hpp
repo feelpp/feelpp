@@ -235,7 +235,7 @@ BOOST_PARAMETER_NAME( options )
     BOOST_PARAMETER_NAME( home )
     BOOST_PARAMETER_NAME( bugs )
     BOOST_PARAMETER_NAME( version )
-    }
+} // Feel
 
 
 namespace Feel
