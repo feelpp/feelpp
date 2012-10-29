@@ -356,7 +356,11 @@ public:
      */
     void saveTimeSet() const
     {
-        if ( this->worldComm().rank() != this->worldComm().masterRank() ) return;
+        if ( this->worldComm().rank() != this->worldComm().masterRank() )
+            {
+                ++M_cptOfSave;
+                return;
+            }
 
         auto __ts_it = this->beginTimeSet();
         auto __ts_en = this->endTimeSet();
