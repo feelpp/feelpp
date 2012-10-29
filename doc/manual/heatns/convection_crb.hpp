@@ -275,6 +275,7 @@ public:
      * export results to ensight format (enabled by  --export cmd line options)
      */
     void exportResults( element_type& u );
+    void exportResults( element_ptrtype& U, int t );
     void exportResults( element_type& U, double t );
         
     /**
@@ -345,7 +346,8 @@ public:
 
     
     void updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J );
-    void updateResidual( const vector_ptrtype& X, vector_ptrtype& R, parameter_type const& mu );
+//    void updateResidual( const vector_ptrtype& X, vector_ptrtype& R, parameter_type const& mu );
+    void updateResidual( const vector_ptrtype& X, vector_ptrtype& R );
 
 private:
 

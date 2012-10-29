@@ -232,7 +232,6 @@ public :
         return M_time_initial;
     }
 
-
     void setBdf( bdf_ptrtype& bdf )
     {
         M_bdf = bdf;
@@ -260,7 +259,7 @@ public :
 
     void setTimeInitial( double Ti )
     {
-        M_time_initial=Ti;
+        M_time_initial = Ti;
     }
 
     //! fill the matrix which will be used to perform the POD
@@ -399,7 +398,6 @@ int POD<TruthModelType>::pod( mode_set_type& ModeSet, bool is_primal )
     Eigen::SelfAdjointEigenSolver< matrixN_type > eigen_solver;
 
     fillPodMatrix();
-
     //store the matrix
     if ( M_store_pod_matrix )
     {
@@ -471,7 +469,6 @@ int POD<TruthModelType>::pod( mode_set_type& ModeSet, bool is_primal )
     }
 
     int position_of_largest_eigenvalue=number_of_eigenvalues-1;
-
     int number_of_good_eigenvectors = number_of_eigenvalues - too_small_index;
 
     if ( M_Nm > number_of_good_eigenvectors && number_of_good_eigenvectors>0 && is_primal )

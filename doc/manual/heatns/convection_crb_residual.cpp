@@ -32,8 +32,10 @@
 #include <feel/feelvf/vf.hpp>
 
 //<int Order_s, int Order_p, int Order_t>
+//void
+//Convection_crb::updateResidual( const vector_ptrtype& X, vector_ptrtype& R, parameter_type const& mu )
 void
-Convection_crb::updateResidual( const vector_ptrtype& X, vector_ptrtype& R, parameter_type const& mu )
+Convection_crb::updateResidual( const vector_ptrtype& X, vector_ptrtype& R )
 {
 
     LOG(INFO) << "[updateResidual] start\n";
@@ -58,6 +60,12 @@ Convection_crb::updateResidual( const vector_ptrtype& X, vector_ptrtype& R, para
     element_3_type eta = V. element<3>(); // fonction test multipliers
 #endif
 
+
+    double gr( M_current_Grashofs );
+    double sqgr( 1/math::sqrt( gr ) );
+    double pr = M_current_Prandtl;
+    double sqgrpr( 1/( pr*math::sqrt( gr ) ) );
+
     double gamma( this->vm()["penalbc"]. as<double>() );
     double k=this->vm()["k"]. as<double>();
     double nu=this->vm()["nu"]. as<double>();
@@ -74,10 +82,12 @@ Convection_crb::updateResidual( const vector_ptrtype& X, vector_ptrtype& R, para
 
     //choix de la valeur des paramètres dimensionnés ou adimensionnés
     double a=0.0,b=0.0,c=0.0;
-    
+
     a=1;
-    b=1/math::sqrt( mu( 0 ) );
-    c=1/( mu( 1 )*math::sqrt( mu ( 0 ) ) );
+//    b=1/math::sqrt( mu( 0 ) );
+    b=1/math::sqrt( gr );
+//    c=1/( mu( 1 )*math::sqrt( mu ( 0 ) ) );
+    c=1/( pr*math::sqrt( gr ) );
     double expansion = 1;
 
     // -- Partie Navier-Stokes --
@@ -88,8 +98,6 @@ Convection_crb::updateResidual( const vector_ptrtype& X, vector_ptrtype& R, para
         integrate ( elements( mesh ),
                     // convection
                     cst( a )*trans( gradv( u )*idv( u ) )*id( v ) );
-
-    R->close();
 
     form1( Xh, _vector=R ) +=
         integrate ( elements( mesh ),
@@ -164,7 +172,7 @@ Convection_crb::updateResidual( const vector_ptrtype& X, vector_ptrtype& R, para
                         // weak dirichlet condition T=T_0 | left side
                         -gradv( t )*N()*id( s )*cst_ref( c )
                         -grad( s )*N()*idv( t )*cst_ref( c ) );
-        
+
         form1( Xh,R ) 	+=
             integrate ( markedfaces( mesh,mesh->markerName( "Tfixed" ) ),
                         cst_ref( gamma )*idv( t )*id( s )/hFace() );
@@ -184,6 +192,8 @@ Convection_crb::updateResidual( const vector_ptrtype& X, vector_ptrtype& R, para
         }
     }
     modifVec( boundaryfaces( mesh ),u,R,one()*0 );
+
+//    R->print(std::cout);
 
 }
 

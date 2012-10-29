@@ -270,6 +270,7 @@ public:
                 break;
             }
 
+<<<<<<< HEAD
             std::map<CRBModelMode,std::vector<std::string> > hdrs;
             using namespace boost::assign;
             std::vector<std::string> pfemhdrs = boost::assign::list_of( "FEM Output" )( "FEM Time" );
@@ -304,6 +305,30 @@ public:
                     for ( int i=0; i<size-1; i++ ) std::cout<< mu[i] <<" , ";
                     std::cout<< mu[size-1]<<" ]\n ";
                 }
+=======
+        std::map<CRBModelMode,std::vector<std::string> > hdrs;
+        using namespace boost::assign;
+        std::vector<std::string> pfemhdrs = boost::assign::list_of( "FEM Output" )( "FEM Time" );
+        std::vector<std::string> crbhdrs = boost::assign::list_of( "FEM Output" )( "FEM Time" )( "RB Output" )( "Error Bounds" )( "CRB Time" )( "Relative error PFEM/CRB" )( "Conditionning" )( "l2_error" )( "h1_error" );
+        std::vector<std::string> scmhdrs = boost::assign::list_of( "Lb" )( "Lb Time" )( "Ub" )( "Ub Time" )( "FEM" )( "FEM Time" )( "Rel.(FEM-Lb)" );
+        std::vector<std::string> crbonlinehdrs = boost::assign::list_of( "RB Output" )( "Error Bounds" )( "CRB Time" );
+        std::vector<std::string> scmonlinehdrs = boost::assign::list_of( "Lb" )( "Lb Time" )( "Ub" )( "Ub Time" )( "Rel.(FEM-Lb)" );
+        hdrs[CRBModelMode::PFEM] = pfemhdrs;
+        hdrs[CRBModelMode::CRB] = crbhdrs;
+        hdrs[CRBModelMode::SCM] = scmhdrs;
+        hdrs[CRBModelMode::CRB_ONLINE] = crbonlinehdrs;
+        hdrs[CRBModelMode::SCM_ONLINE] = scmonlinehdrs;
+        std::ostringstream ostr;
+
+	if( crb->printErrorDuringOfflineStep() )
+            crb->printErrorsDuringRbConstruction();
+	if ( crb->showMuSelection() )
+	    crb->printMuSelection();
+
+        printParameterHdr( ostr, model->parameterSpace()->dimension(), hdrs[M_mode] );
+        BOOST_FOREACH( auto mu, *Sampling )
+        {
+>>>>>>> master
 
                 std::ostringstream mu_str;
                 for ( int i=0; i<size-1; i++ ) mu_str << std::scientific << std::setprecision( 5 ) << mu[i] <<",";
@@ -329,6 +354,7 @@ public:
                     LOG(INFO) << "compute output\n";
                     google::FlushLogFiles(google::GLOG_INFO);
 
+<<<<<<< HEAD
                     exporter->step(0)->add( u_fem.name(), u_fem );
                     //model->solve( mu );
                     std::vector<double> o = boost::assign::list_of( model->output( output_index,mu ) )( ti.elapsed() );
@@ -467,9 +493,61 @@ public:
                         }
                     }
 
+=======
+            case  CRBModelMode::CRB:
+            {
+                std::cout << "CRB mode\n";
+                boost::timer ti;
+
+                int N =  this->vm()["crb.dimension"].template as<int>();
+
+                //in the case we don't do the offline step, we need the affine decomposition
+                model->computeAffineDecomposition();
+
+                //model->solve( mu );
+                auto u_fem = model->solveFemUsingOnlineEimPicard( mu );
+
+
+                std::vector<double> ofem = boost::assign::list_of( model->output( output_index,mu ) )( ti.elapsed() );
+                ti.restart();
+                auto o = crb->run( mu,  this->vm()["crb.online-tolerance"].template as<double>() , N );
+
+                auto u_crb = crb->expansion( mu , N );
+
+                double relative_error = std::abs( ofem[0]-o.template get<0>() ) /ofem[0];
+                double relative_estimated_error = o.template get<1>() / ofem[0];
+                double condition_number = o.template get<3>();
+
+                //compute || u_fem - u_crb||_L2
+                auto u_error = model->functionSpace()->element();
+                u_error = u_fem - u_crb;
+                double l2_error = l2Norm( u_error )/l2Norm( u_fem );
+                double h1_error = h1Norm( u_error )/h1Norm( u_fem );
+
+                if ( crb->errorType()==2 )
+                {
+
+                    std::vector<double> v = boost::assign::list_of( ofem[0] )( ofem[1] )( o.template get<0>() )( relative_estimated_error )( ti.elapsed() )( relative_error )( condition_number )( l2_error )( h1_error );
+                    std::cout << "output=" << o.template get<0>() << " with " << o.template get<2>() << " basis functions\n";
+                    std::ofstream file_summary_of_simulations( ( boost::format( "summary_of_simulations_%d" ) % o.template get<2>() ).str().c_str() ,std::ios::out | std::ios::app );
+                    printEntry( file_summary_of_simulations, mu, v );
+                    printEntry( ostr, mu, v );
+                    file_summary_of_simulations.close();
+
+                }
+                else
+                {
+                    std::vector<double> v = boost::assign::list_of( ofem[0] )( ofem[1] )( o.template get<0>() )( relative_estimated_error )( ti.elapsed() ) ( relative_error )( condition_number )( l2_error )( h1_error ) ;
+                    std::cout << "output=" << o.template get<0>() << " with " << o.template get<2>() << " basis functions  (relative error estimation on this output : " << relative_estimated_error<<") \n";
+                    std::ofstream file_summary_of_simulations( ( boost::format( "summary_of_simulations_%d" ) % o.template get<2>() ).str().c_str() ,std::ios::out | std::ios::app );
+                    printEntry( file_summary_of_simulations, mu, v );
+                    printEntry( ostr, mu, v );
+                    file_summary_of_simulations.close();
+>>>>>>> master
                 }
                 break;
 
+<<<<<<< HEAD
                 case  CRBModelMode::CRB_ONLINE:
                 {
                     std::cout << "CRB Online mode\n";
@@ -490,6 +568,32 @@ public:
                         std::cout << "output=" << o.template get<0>() << " with " << o.template get<2>() << " basis functions  (error estimation on this output : " << o.template get<1>()<<") \n";
                         printEntry( ostr, mu, v );
                     }
+=======
+                if (this->vm()["crb.cvg-study"].template as<bool>())
+                {
+                    std::map<int, boost::tuple<double,double,double> > conver;
+                    for( int N = 1; N < crb->dimension(); N++ )
+                    {
+                        auto o = crb->run( mu,  this->vm()["crb.online-tolerance"].template as<double>() , N);
+                        auto u_crb = crb->expansion( mu , N );
+                        auto u_error = model->functionSpace()->element();
+                        u_error = u_fem - u_crb;
+                        double rel_err = std::abs( ofem[0]-o.template get<0>() ) /ofem[0];
+                        double l2_error = l2Norm( u_error )/l2Norm( u_fem );
+                        double h1_error = h1Norm( u_error )/h1Norm( u_fem );
+                        conver[N]=boost::make_tuple( rel_err, l2_error, h1_error );
+                        std::cout << "N=" << N << " " << rel_err << " " << l2_error << " " << h1_error << "\n";
+                    }
+                    std::ofstream conv( "convergence.dat" );
+                    BOOST_FOREACH( auto en, conver )
+                    {
+                        conv << en.first << " " << en.second.get<0>()  << " " << en.second.get<1>() << " " << en.second.get<2>() << "\n";
+                    }
+                }
+
+            }
+            break;
+>>>>>>> master
 
                 }
                 break;
@@ -620,6 +724,21 @@ private:
         return math::sqrt( l22+semih12 );
     }
 
+<<<<<<< HEAD
+=======
+    double l2Norm( element_type const& u )
+    {
+        auto mesh = model->functionSpace()->mesh();
+        return math::sqrt( integrate( elements(mesh), (Feel::vf::idv(u))*(Feel::vf::idv(u)) ).evaluate()(0,0) );
+    }
+    double h1Norm( element_type const& u )
+    {
+        auto mesh = model->functionSpace()->mesh();
+        double l22 = integrate( elements(mesh), (Feel::vf::idv(u))*(Feel::vf::idv(u)) ).evaluate()(0,0);
+        double semih12 = integrate( elements(mesh), (Feel::vf::gradv(u))*trans(Feel::vf::gradv(u)) ).evaluate()(0,0);
+        return math::sqrt( l22+semih12 );
+    }
+>>>>>>> master
 
 private:
     CRBModelMode M_mode;
