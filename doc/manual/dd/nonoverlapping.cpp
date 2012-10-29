@@ -46,8 +46,8 @@
 
 namespace Feel
 {
-gmsh_ptrtype nonOverlapGeometryLeft( double hsize );
-gmsh_ptrtype nonOverlapGeometryRight( double hsize );
+    gmsh_ptrtype nonOverlapGeometryLeft( int Dim, double hsize );
+    gmsh_ptrtype nonOverlapGeometryRight( int Dim, double hsize );
 
 using namespace Feel::vf;
 
@@ -332,25 +332,13 @@ ddmethod<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
                                    % Order
                                    %this->meshSize );
 
-    if ( Dim == 2 )
-    {
-        mesh1 = createGMSHMesh( _mesh=new mesh_type,
-                                _desc = nonOverlapGeometryLeft( this->meshSize ) );
 
-        mesh2 = createGMSHMesh( _mesh=new mesh_type,
-                                _desc = nonOverlapGeometryRight( this->meshSize ) );
-    }
+    mesh1 = createGMSHMesh( _mesh=new mesh_type,
+                            _desc = nonOverlapGeometryLeft( Dim, this->meshSize ) );
 
-    else if ( Dim == 3 )
-    {
-        mesh1 = createGMSHMesh( _mesh=new mesh_type,
-                                _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
-                                _desc=geo( _filename="Parallelepiped.geo",_h=this->meshSize ) );
+    mesh2 = createGMSHMesh( _mesh=new mesh_type,
+                            _desc = nonOverlapGeometryRight( Dim, this->meshSize ) );
 
-        mesh2 = createGMSHMesh( _mesh=new mesh_type,
-                                _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
-                                _desc=geo( _filename="Cylinder.geo",_h=this->meshSize ) );
-    }
 
 
     if ( Dim == 2 )
@@ -512,7 +500,7 @@ main( int argc, char** argv )
         return 0;
     }
 
-    ddmethod<3>  Relax( app.vm(), app.about() );
+    ddmethod<2>  Relax( app.vm(), app.about() );
 
     Relax.run();
 }
