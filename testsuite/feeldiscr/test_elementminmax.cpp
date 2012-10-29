@@ -53,14 +53,15 @@ using namespace Feel;
 
 BOOST_AUTO_TEST_SUITE( elementminmaxsuite )
 
-Feel::Environment env( boost::unit_test::framework::master_test_suite().argc,
-                       boost::unit_test::framework::master_test_suite().argv );
 
 typedef boost::mpl::list<boost::mpl::int_<1>,boost::mpl::int_<2>,boost::mpl::int_<3> > dim_types;
 
 BOOST_AUTO_TEST_CASE_TEMPLATE( elementminmax1, T, dim_types )
 {
     using namespace Feel::vf;
+
+    Feel::Environment env( boost::unit_test::framework::master_test_suite().argc,
+                           boost::unit_test::framework::master_test_suite().argv );
 
     BOOST_TEST_MESSAGE( "check function min and max for dim = " << T::value << "\n" );
     typedef Mesh<Simplex<T::value,1> > mesh_type;
@@ -94,6 +95,9 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( elementminmax1, T, dim_types )
 
 BOOST_AUTO_TEST_CASE_TEMPLATE( elementminmax2, T, dim_types )
 {
+    Feel::Environment env( boost::unit_test::framework::master_test_suite().argc,
+                       boost::unit_test::framework::master_test_suite().argv );
+
     using namespace Feel::vf;
 
     BOOST_TEST_MESSAGE( "check broken function min and max for dim = " << T::value << "\n" );

@@ -40,12 +40,16 @@ macro(feelpp_add_application)
   endif()
   target_link_libraries( ${execname} ${FEELPP_APP_LINK_LIBRARIES} ${FEELPP_LIBRARIES})
   INSTALL(PROGRAMS "${CMAKE_CURRENT_BINARY_DIR}/${execname}"  DESTINATION bin COMPONENT Bin)
-  add_test(${execname} ${CMAKE_CURRENT_BINARY_DIR}/${execname})
+  if ( NOT NO_TEST )
+    add_test(${execname} ${CMAKE_CURRENT_BINARY_DIR}/${execname})
+  endif()
   #add_dependencies(crb ${execname})
   # Add label if provided
   if ( FEELPP_APP_LABEL )
     set_property(TARGET ${execname} PROPERTY LABELS ${FEELPP_APP_LABEL})
-    set_property(TEST ${execname} PROPERTY LABELS ${FEELPP_APP_LABEL})
+    if ( NOT NO_TEST )
+      set_property(TEST ${execname} PROPERTY LABELS ${FEELPP_APP_LABEL})
+    endif()
   endif()
 
 

@@ -275,15 +275,16 @@ void run( Application_ptrtype & theApp )
 #if USE_BOOST_TEST
 
 BOOST_AUTO_TEST_SUITE( form_interpolation )
-Feel::Environment env( boost::unit_test::framework::master_test_suite().argc,
-                       boost::unit_test::framework::master_test_suite().argv );
 
 BOOST_AUTO_TEST_CASE( form_interpolation )
 {
-    auto theApp = Application_ptrtype( new Application_type( boost::unit_test::framework::master_test_suite().argc,
-                                       boost::unit_test::framework::master_test_suite().argv,
-                                       test_form_interpolation::makeAbout(),
-                                       test_form_interpolation::makeOptions() ) );
+    Feel::Environment env( boost::unit_test::framework::master_test_suite().argc,
+                           boost::unit_test::framework::master_test_suite().argv,
+                           test_form_interpolation::makeOptions(),
+                           test_form_interpolation::makeAbout());
+
+    auto theApp = Application_ptrtype( new Application_type );
+
 
     test_form_interpolation::run<2>( theApp );
 }
@@ -297,9 +298,7 @@ main( int argc, char** argv )
 
     Feel::Environment env( argc, argv );
 
-    auto theApp = Application_ptrtype( new Application_type( argc,argv,
-                                       test_form_interpolation::makeAbout(),
-                                       test_form_interpolation::makeOptions() ) );
+    auto theApp = Application_ptrtype( new Application_type );
 
     if ( theApp->vm().count( "help" ) )
     {

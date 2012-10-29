@@ -23,7 +23,7 @@
 #
 
 INCLUDE_DIRECTORIES ( ${CMAKE_CURRENT_SOURCE_DIR} )
-add_executable( feel_polyvis geom.cpp
+feelpp_add_application( polyvis EXCLUDE_FROM_ALL SRCS geom.cpp
   polyvisapp.cpp polyvisbase.cpp
   nedelec2d.cpp
   crouzeixraviart2d.cpp
@@ -32,8 +32,9 @@ add_executable( feel_polyvis geom.cpp
   raviartthomas2d.cpp  raviartthomas3d.cpp
   lagrange1d.cpp lagrange2d.cpp lagrange3d.cpp
   #orthonormalpset1d.cpp orthonormalpset2d.cpp orthonormalpset3d.cpp
-)
-target_link_libraries(feel_polyvis ${FEELPP_LIBRARIES} )
+
+
+  LINK_LIBRARIES ${FEELPP_LIBRARIES} )
 
 foreach( poly lagrange orthonormalpset )
   foreach( dim 1 2 3)

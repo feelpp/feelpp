@@ -778,7 +778,6 @@ public:
     void checkInitialGuess( const element_type expansion_uN , parameter_type const& mu, vectorN_type & error , mpl::bool_<true> ) const ;
     void checkInitialGuess( const element_type expansion_uN , parameter_type const& mu, vectorN_type & error , mpl::bool_<false> ) const ;
 
-
     /**
      * run the certified reduced basis with P parameters and returns 1 output
      */
@@ -1611,24 +1610,21 @@ CRB<TruthModelType>::offline()
             M_bdf_primal_save->setTimeFinal( M_model->timeFinal() );
             M_bdf_primal_save->setOrder( M_model->timeOrder() );
 
-            M_bdf_primal->start();
-            M_bdf_primal_save->start();
-
             //initialization of unknown
             M_model->initializationField( u, mu );
-            M_bdf_primal->initialize( *u );
-            M_bdf_primal_save->initialize( *u );
+            //M_bdf_primal->initialize( *u );
 
             //direct problem
-            double bdf_coeff = M_bdf_primal->polyDerivCoefficient( 0 );
+            double bdf_coeff;
 
             auto vec_bdf_poly = backend_primal_problem->newVector( M_model->functionSpace() );
 
-            for ( M_bdf_primal->start(),M_bdf_primal_save->start();
+            for ( M_bdf_primal->start(*u),M_bdf_primal_save->start(*u);
                     !M_bdf_primal->isFinished() , !M_bdf_primal_save->isFinished();
                     M_bdf_primal->next() , M_bdf_primal_save->next() )
             {
 
+                bdf_coeff = M_bdf_primal->polyDerivCoefficient( 0 );
 
                 auto bdf_poly = M_bdf_primal->polyDeriv();
 
@@ -1711,8 +1707,6 @@ CRB<TruthModelType>::offline()
                 M_bdf_dual_save->setOrder( M_model->timeOrder() );
 
                 Adu = M_model->newMatrix();
-                M_bdf_dual->start();
-                M_bdf_dual_save->start();
 
                 //initialization
                 double dt = M_model->timeStep();
@@ -1737,17 +1731,12 @@ CRB<TruthModelType>::offline()
 #endif
                 *udu=*dual_initial_field;
 
-                M_bdf_dual->initialize( *udu );
-                M_bdf_dual_save->initialize( *udu );
 
-
-                bdf_coeff = M_bdf_dual->polyDerivCoefficient( 0 );
-
-                for ( M_bdf_dual->start(),M_bdf_dual_save->start();
+                for ( M_bdf_dual->start(*udu),M_bdf_dual_save->start(*udu);
                         !M_bdf_dual->isFinished() , !M_bdf_dual_save->isFinished();
                         M_bdf_dual->next() , M_bdf_dual_save->next() )
                 {
-
+                    bdf_coeff = M_bdf_dual->polyDerivCoefficient( 0 );
 
                     auto bdf_poly = M_bdf_dual->polyDeriv();
 
@@ -1895,6 +1884,7 @@ CRB<TruthModelType>::offline()
 
             POD->setBdf( M_bdf_primal_save );
             POD->setModel( M_model );
+            POD->setTimeInitial( M_model->timeInitial() );
             mode_set_type ModeSet;
 
             size_type number_max_of_mode = POD->pod( ModeSet,true );
@@ -1925,6 +1915,7 @@ CRB<TruthModelType>::offline()
             if ( solve_dual_problem || M_error_type==CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM )
             {
                 POD->setBdf( M_bdf_dual );
+                POD->setTimeInitial( M_model->timeFinal()+M_model->timeStep() );
                 mode_set_type ModeSetdu;
                 POD->pod( ModeSetdu,false );
 
@@ -5201,7 +5192,8 @@ CRB<TruthModelType>::expansion( parameter_type const& mu , int N)
     std::vector<vectorN_type> uNduold;
 
     auto o = lb( Nwn, mu, uN, uNdu , uNold, uNduold );
-    return Feel::expansion( M_WN, uN[0] , Nwn);
+    int size = uN.size();
+    return Feel::expansion( M_WN, uN[size-1] , Nwn);
 }
 
 
@@ -5211,26 +5203,19 @@ CRB<TruthModelType>::expansion( vectorN_type const& u , int const N) const
 {
     //FEELPP_ASSERT( M_WN.size() == u.size() )( M_WN.size() )( u.size() ).error( "invalid expansion size");
     FEELPP_ASSERT( N == u.size() )( N )( u.size() ).error( "invalid expansion size");
-    LOG(INFO) << "compute expansions\n";
-    google::FlushLogFiles(google::GLOG_INFO);
-    LOG(INFO) << "u=" << u << "\n";
-    google::FlushLogFiles(google::GLOG_INFO);
-    LOG(INFO) << "WN=" << M_WN.size() << "\n";
-    google::FlushLogFiles(google::GLOG_INFO);
-
     return Feel::expansion( M_WN, u, N );
 }
 
+
 template<typename TruthModelType>
 boost::tuple<double,double,double,double>
-CRB<TruthModelType>::run( parameter_type const& mu, double eps , int N )
+CRB<TruthModelType>::run( parameter_type const& mu, double eps , int N)
 {
 
     M_compute_variance = this->vm()["crb.compute-variance"].template as<bool>();
 
     //int Nwn = M_N;
     int Nwn_max = vm()["crb.dimension-max"].template as<int>();
-
 #if 0
     if (  M_error_type!=CRB_EMPIRICAL )
     {

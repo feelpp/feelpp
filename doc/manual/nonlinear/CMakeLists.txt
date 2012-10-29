@@ -22,5 +22,5 @@
 #
 #
 
-add_docex(bratu)
-add_docex(nonlinearpow)
+feelpp_add_application(doc_bratu SRCS bratu.cpp)
+feelpp_add_application(doc_nonlinearpow SRCS nonlinearpow.cpp)
