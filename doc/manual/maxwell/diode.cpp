@@ -184,9 +184,9 @@ public:
     /**
      * Constructor
      */
-    Diode( po::variables_map const& vm, AboutData const& about )
+    Diode()
         :
-        super( vm, about ),
+        super(),
         M_backend( backend_type::build( this->vm(), "mass" ) ),
         verbose( this->vm()["verbose"].as<bool>() ),
         meshSize( this->vm()["hsize"].as<double>() ),
@@ -696,34 +696,15 @@ Diode::run( const double* X, unsigned long P, double* Y, unsigned long N )
 int
 main( int argc, char** argv )
 {
-    Environment env( argc, argv );
-    /**
-     * create an application
-     */
-    /** \code */
-    Application app( argc, argv, makeAbout(), makeOptions() );
+    using namespace Feel;
 
-    if ( app.vm().count( "help" ) )
-    {
-        std::cout << app.optionsDescription() << "\n";
-        return 0;
-    }
+    Environment env( _argc=argc, _argv=argv,
+                     _desc=makeOptions(),
+                     _about=makeAbout() );
 
-    /** \endcode */
-
-    /**
-     * register the simgets
-     */
-    /** \code */
-    app.add( new Diode( app.vm(), app.about() ) );
-    /** \endcode */
-
-    /**
-     * run the application
-     */
-    /** \code */
+    Application app;
+    app.add( new Diode );
     app.run();
-    /** \endcode */
 }
 
 
