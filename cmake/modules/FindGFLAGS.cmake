@@ -37,22 +37,32 @@ FIND_PATH(GFLAGS_INCLUDE_DIR gflags/gflags.h
 message(STATUS "Gflags first pass: ${GFLAGS_INCLUDE_DIR}")
 
 if (NOT GFLAGS_INCLUDE_DIR )
-  message(STATUS "Building gflags in ${CMAKE_BINARY_DIR}/contrib/gflags-compile...")
+
   execute_process(COMMAND mkdir -p ${CMAKE_BINARY_DIR}/contrib/gflags-compile)
-  execute_process(
-    COMMAND ${FEELPP_HOME_DIR}/contrib/gflags/configure --prefix=${CMAKE_BINARY_DIR}/contrib/gflags
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/gflags-compile
-    OUTPUT_QUIET
-    OUTPUT_FILE "titi"
-    )
+  if(${CMAKE_SOURCE_DIR}/contrib/gflags/configure.ac IS_NEWER_THAN ${CMAKE_BINARY_DIR}/contrib/gflags-compile/configure)
+    message(STATUS "Building gflags in ${CMAKE_BINARY_DIR}/contrib/gflags-compile...")
+    execute_process(
+      COMMAND ${FEELPP_HOME_DIR}/contrib/gflags/configure --prefix=${CMAKE_BINARY_DIR}/contrib/gflags
+      WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/gflags-compile
+#      OUTPUT_QUIET
+      OUTPUT_FILE "gflags-configure"
+      )
+  endif()
+  
   set(GFLAGS_INCLUDE_DIR ${CMAKE_BINARY_DIR}/contrib/gflags/include)
+  
 endif()
-message(STATUS "Installing gflags in ${CMAKE_BINARY_DIR}/contrib/gflags...")
-execute_process(
-  COMMAND make install
-  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/gflags-compile
-  OUTPUT_QUIET
-  )
+
+
+if(${CMAKE_SOURCE_DIR}/contrib/gflags/src/gflags/gflags.h IS_NEWER_THAN ${CMAKE_BINARY_DIR}/contrib/gflags/include/gflags/gflags.h)
+  message(STATUS "Installing gflags in ${CMAKE_BINARY_DIR}/contrib/gflags...")
+  execute_process(
+    COMMAND make install
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/gflags-compile
+    #  OUTPUT_QUIET
+    OUTPUT_FILE "gflags-install"
+    )
+endif()
 
 string(REPLACE "include" "" GFLAGS_DIR ${GFLAGS_INCLUDE_DIR} )
 

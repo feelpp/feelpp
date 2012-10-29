@@ -30,6 +30,9 @@
 /* Define to 1 if you have the <Eigen/Eigen> header file. */
 #cmakedefine FEELPP_HAS_EIGEN_EIGEN
 
+/* Define to 1 if you have GINAC available. */
+#cmakedefine FEELPP_HAS_GINAC
+
 /* Define to 1 if you have the GLPK headers available. */
 #cmakedefine FEELPP_HAS_GLPK_H
 

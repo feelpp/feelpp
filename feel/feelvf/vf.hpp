@@ -116,6 +116,7 @@ struct ExtractGm
 
 
 #include <feel/feelvf/form.hpp>
+#include <feel/feelvf/ginac.hpp>
 
 #include <boost/preprocessor/comparison/equal.hpp>
 

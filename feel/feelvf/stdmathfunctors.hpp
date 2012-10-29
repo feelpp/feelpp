@@ -305,12 +305,12 @@ class VF_FUNC_NAME( O ) : public UnaryFunctor<typename ExprT1::value_type>      
     inline                                                              \
     Expr< VF_FUNC_NAME( O )<typename mpl::if_<boost::is_arithmetic<ExprT1>, \
                                               mpl::identity<Cst<ExprT1> >, \
-                                              mpl::identity<ExprT1> >::type::type > > \
-    VF_FUNC_SYMBOL( O )( ExprT1 const& __e1 )                           \
+                                              mpl::identity<Expr<ExprT1> > >::type::type > > \
+    VF_FUNC_SYMBOL( O )( Expr<ExprT1> const& __e1 )                     \
     {                                                                   \
         typedef typename mpl::if_<boost::is_arithmetic<ExprT1>,         \
             mpl::identity<Cst<ExprT1> >,                                \
-            mpl::identity<ExprT1> >::type::type t1;                     \
+            mpl::identity<Expr<ExprT1> > >::type::type t1;               \
         typedef VF_FUNC_NAME(O)<t1> expr_t;                             \
         return Expr< expr_t >(  expr_t( t1( __e1 ) ) );                 \
     }                                                                   \
