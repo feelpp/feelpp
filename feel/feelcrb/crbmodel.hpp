@@ -1522,7 +1522,6 @@ CRBModel<TruthModelType>::offlineMerge( parameter_type const& mu )
     for ( size_type l = 0; l < Nl(); ++l )
     {
         F[l] = M_backend->newVector( M_model->functionSpace() );
-        F[l]->close();
         F[l]->zero();
 
         for ( size_type q = 0; q < Ql( l ); ++q )
@@ -1530,6 +1529,7 @@ CRBModel<TruthModelType>::offlineMerge( parameter_type const& mu )
             for ( size_type m = 0; m < mMaxF(l,q); ++m )
                 F[l]->add( this->betaL( l, q , m ), M_Fqm[l][q][m] );
         }
+        F[l]->close();
     }
 
     return boost::make_tuple( M, A, F, InitialGuess );
