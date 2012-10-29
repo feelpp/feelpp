@@ -132,7 +132,7 @@ public:
     /**
      * Constructor
      */
-    Bratu( int argc, char** argv, AboutData const& ad, po::options_description const& od );
+    Bratu();
 
     /**
      * run the convergence test
@@ -164,9 +164,9 @@ private:
 }; // Bratu
 
 template<int Dim, int Order, template<uint16_type,uint16_type,uint16_type> class Entity>
-Bratu<Dim,Order,Entity>::Bratu( int argc, char** argv, AboutData const& ad, po::options_description const& od )
+Bratu<Dim,Order,Entity>::Bratu()
     :
-    super( argc, argv, ad, od ),
+    super(),
     M_backend( backend_type::build( this->vm() ) ),
     meshSize( this->vm()["hsize"].template as<double>() ),
     M_lambda( this->vm()["lambda"].template as<double>() ),
@@ -302,13 +302,18 @@ main( int argc, char** argv )
 {
     using namespace Feel;
 
+    Environment env( _argc=argc, _argv=argv,
+                     _desc=makeOptions(),
+                     _about=makeAbout() );
+
+
     /* change parameters below */
     const int nDim = 2;
     const int nOrder = 2;
     typedef Feel::Bratu<nDim, nOrder> bratu_app_type;
 
     /* instantiate application */
-    bratu_app_type bratu( argc, argv, makeAbout(), makeOptions() );
+    bratu_app_type bratu;
 
     /* run application */
     bratu.run();
