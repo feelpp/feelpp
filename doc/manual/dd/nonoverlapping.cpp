@@ -78,6 +78,7 @@ makeAbout()
                      "Copyright (c) 2011 Universite Joseph Fourier" );
 
     about.addAuthor( "Abdoulaye Samake", "developer", "Abdoulaye.Samake@imag.fr", "" );
+    about.addAuthor( "Christophe Prud'homme", "patcher", "christophe.prudhomme@feelpp.org", "" );
     return about;
 
 }
@@ -110,9 +111,9 @@ public:
     /**
      * Constructor
      */
-    ddmethod( po::variables_map const& vm, AboutData const& about )
+    ddmethod()
         :
-        super( vm, about ),
+        super(),
         M_backend( backend_type::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( this->vm()["shape"].template as<std::string>() ),
@@ -502,17 +503,16 @@ int
 main( int argc, char** argv )
 {
     using namespace Feel;
+    /**
+     * Initialize Feel++ Environment
+     */
+    Environment env( _argc=argc, _argv=argv,
+                     _desc=makeOptions(),
+                     _about=makeAbout() );
 
-    Environment env( argc, argv );
-    Application app( argc, argv, makeAbout(), makeOptions() );
+    Application app;
 
-    if ( app.vm().count( "help" ) )
-    {
-        std::cout << app.optionsDescription() << "\n";
-        return 0;
-    }
-
-    ddmethod<3>  Relax( app.vm(), app.about() );
+    ddmethod<3>  Relax;
 
     Relax.run();
 }

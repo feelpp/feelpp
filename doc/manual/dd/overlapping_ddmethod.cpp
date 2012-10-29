@@ -104,9 +104,9 @@ public:
     /**
      * Constructor
      */
-    ddmethod( po::variables_map const& vm, AboutData const& about )
+    ddmethod()
         :
-        super( vm, about ),
+        super(),
         M_backend( backend_type::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( this->vm()["shape"].template as<std::string>() ),
@@ -433,16 +433,14 @@ int
 main( int argc, char** argv )
 {
     using namespace Feel;
-    Environment env( argc, argv );
-    Application app( argc, argv, makeAbout(), makeOptions() );
 
-    if ( app.vm().count( "help" ) )
-    {
-        std::cout << app.optionsDescription() << "\n";
-        return 0;
-    }
+    Environment env( _argc=argc, _argv=argv,
+                     _desc=makeOptions(),
+                     _about=makeAbout() );
 
-    ddmethod<2>  Relax( app.vm(), app.about() );
+    Application app;
+
+    ddmethod<2>  Relax;
     Relax.run();
 
 }
