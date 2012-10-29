@@ -217,6 +217,7 @@ BOOST_PARAMETER_NAME( options )
     BOOST_PARAMETER_NAME( newElt )
     BOOST_PARAMETER_NAME( space )
     BOOST_PARAMETER_NAME( initial_theta )
+    BOOST_PARAMETER_NAME( min_theta )
     BOOST_PARAMETER_NAME( forceRelaxation )
 
     BOOST_PARAMETER_NAME( use_tbb )
