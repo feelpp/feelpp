@@ -178,6 +178,36 @@ public:
 #endif
     }
 
+    VectorPetsc( Vector<value_type> const& v, std::vector<int> const& index )
+        :
+        super(),
+        //super(v,index),
+        _M_destroy_vec_on_exit( false )
+    {
+#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
+
+        VectorPetsc<T> const* V = dynamic_cast<VectorPetsc<T> const*> ( &v );
+        /* map */
+        IS is;
+        PetscInt *map;
+        int n = index.size();
+        PetscMalloc(n*sizeof(PetscInt),&map);
+        for (int i=0; i<n; i++) map[i] = index[i];
+        ISCreateGeneral(Environment::worldComm(),n,map,PETSC_COPY_VALUES,&is);
+        PetscFree(map);
+
+        //PetscInt n;
+        //ISGetSize(is,&n);
+        DataMap dm(n, n, V->comm());
+        this->setMap(dm);
+        /* init */
+        VecGetSubVector(V->vec(), is, &this->_M_vec);
+        this->M_is_initialized = true;
+        /* close */
+        this->close(); /* no // assembly required */
+#endif
+    }
+
     /**
      * Destructor, deallocates memory. Made virtual to allow
      * for derived classes to behave properly.
