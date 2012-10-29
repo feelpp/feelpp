@@ -64,8 +64,9 @@ add_latex_document(feel-manual.tex
   IMAGE_DIRS pngs pdfs pngs/mymesh pngs/heatsink pngs/laplacian
   USE_INDEX
   DEFAULT_PDF
+  MANGLE_TARGET_NAMES
   )
-SET_TARGET_PROPERTIES(pdf PROPERTIES EXCLUDE_FROM_ALL true)
+SET_TARGET_PROPERTIES(feel-manual_pdf PROPERTIES EXCLUDE_FROM_ALL true)
 endif()
 
 # this target allows to create all the required figures for the tutorial
