@@ -43,7 +43,10 @@ matrix laplacian( matrix const& f, std::vector<symbol> const& l );
 
 namespace Feel
 {
-using namespace GiNaC;
+using  GiNaC::matrix;
+using  GiNaC::symbol;
+using  GiNaC::lst;
+using  GiNaC::ex;
 namespace vf
 {
 
