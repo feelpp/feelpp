@@ -211,8 +211,28 @@ Stokes::run()
     LOG(INFO) << "      mu = " << mu << "\n";
     LOG(INFO) << " bccoeff = " << penalbc << "\n";
 
+    symbol x("x"),y("y");
+#if 0
+    matrix u_exact_g = matrix(2,1);
+    u_exact_g = cos(x)*cos(y), sin(x)*sin(y);
+    //  exact solution for velocity
 
+    // this is the exact solution which has zero mean : the mean of
+    // cos(x)*sin(y) is sin(1)*(1-cos(1))) on [0,1]^2
+    ex p_exact_g = cos( x )*sin( y )-( std::sin( 1. )*( 1-std::cos( 1. ) ) );
 
+    //matrix f_g = matrix(2,1);
+#else
+    auto u1 = -256*y*(y-1)*(2*y-1)*x*x*(x-1)*(x-1);
+    auto u2 = 256*x*(x-1)*(2*x-1)*y*y*(y-1)*(y-1);
+    matrix u_exact_g = matrix(2,1);
+    u_exact_g = u1,u2;
+    auto p_exact_g = (x-0.5)*(y-0.5 );
+#endif
+    auto u_exact = expr<2,1,2>( u_exact_g, {x,y} );
+    auto p_exact = expr( p_exact_g, {x,y} );
+	auto f_g = -mu*laplacian( u_exact_g, {x,y} ) + grad( p_exact_g, {x,y} ).transpose();
+    LOG(INFO) << "f = " << f_g << "\n";
 
     //# marker5 #
     auto deft = gradt( u );
@@ -227,16 +247,13 @@ Stokes::run()
     auto SigmaN = -id( p )*N()+mu*def*N();
     //# endmarker6 #
 
-    // u exact solution
-    auto u_exact = vec( cos( Px() )*cos( Py() ), sin( Px() )*sin( Py() ) );
-
-    // this is the exact solution which has zero mean : the mean of
-    // cos(x)*sin(y) is sin(1)*(1-cos(1))) on [0,1]^2
-    auto p_exact = cos( Px() )*sin( Py() )-( sin( 1.0 )*( 1.-cos( 1.0 ) ) );
-
     // f is such that f = \Delta u_exact + \nabla p_exact
+#if 0
     auto f = vec( ( 2*cos( Px() )*cos( Py() )-sin( Px() )*sin( Py() ) ),
                   2*sin( Px() )*sin( Py() )+cos( Px() )*cos( Py() ) );
+#else
+    auto f = expr<2,1,2>( f_g, {x,y} );
+#endif
 
     auto F = M_backend->newVector( Xh );
     auto D =  M_backend->newMatrix( Xh, Xh );
@@ -332,8 +349,13 @@ Stokes::exportResults( ExprUExact u_exact, ExprPExact p_exact,
         auto v = U.functionSpace()->functionSpace<0> ()->element();
         v = U.element<0>();
 
+#if defined( FEELPP_USE_LM )
         exporter->step( 0 )->add( {"u","p","l"}, U );
         exporter->step( 0 )->add( {"u_exact","p_exact","l_exact"}, V );
+#else
+        exporter->step( 0 )->add( {"u","p"}, U );
+        exporter->step( 0 )->add( {"u_exact","p_exact"}, V );
+#endif
 
         exporter->save();
     }

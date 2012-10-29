@@ -167,20 +167,26 @@ Laplacian<Dim>::run()
     /** \code */
     //# marker1 #
     value_type pi = 2*M_PI;
-    //! deduce from expression the type of g (thanks to keyword 'auto')
-    auto g = sin( pi*Px() )*cos( pi*Py() )*cos( pi*Pz() );
+    bool weak_dirichlet = this->vm()["weakdir"].template as<int>();
+    value_type penaldir = this->vm()["penaldir"].template as<double>();
+    value_type nu = this->vm()["nu"].template as<double>();
+
+    symbol x("x"),y("y"),z("z");
+    ex gg = sin(pi*x)*cos(pi*y)*cos(pi*z);
+    ex ff=-nu*laplacian(gg);
+    std::cout << "laplacian(g)="<< ff << "\n";
+    auto g = expr(gg,{x,y,z});
+    auto f = expr(ff,{x,y,z});
+    auto gradg = expr<1,Dim,2>(grad(gg,{x,y,z}), {x,y,z} );
 
     // build Xh-interpolant of g
     gproj = vf::project( Xh, elements( mesh ), g );
 
-    //! deduce from expression the type of f (thanks to keyword 'auto')
-    auto f = pi*pi*Dim*g;
+
     //# endmarker1 #
     /** \endcode */
 
-    bool weak_dirichlet = this->vm()["weakdir"].template as<int>();
-    value_type penaldir = this->vm()["penaldir"].template as<double>();
-    value_type nu = this->vm()["nu"].template as<double>();
+
 
     /**
      * Construction of the right hand side. F is the vector that holds
@@ -193,7 +199,8 @@ Laplacian<Dim>::run()
     auto rhs = form1( _test=Xh, _vector=F );
     rhs = integrate( _range=elements( mesh ), _expr=f*id( v ) )+
         integrate( _range=markedfaces( mesh, "Neumann" ),
-                   _expr=nu*gradv( gproj )*vf::N()*id( v ) );
+                   _expr=nu*gradg*vf::N()*id( v )
+            );
 
     //# endmarker2 #
     if ( weak_dirichlet )
