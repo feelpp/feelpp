@@ -123,14 +123,13 @@ inline AboutData makeAbout()
  */
 int main( int argc, char** argv )
 {
-    Environment env( argc, argv );
-    Application app( argc, argv, makeAbout(), makeOptions() );
+    using namespace Feel;
 
-    if ( app.vm().count( "help" ) )
-    {
-        std::cout << app.optionsDescription() << "\n";
-        return 0;
-    }
+    Environment env( _argc=argc, _argv=argv,
+                     _desc=makeOptions(),
+                     _about=makeAbout() );
+
+    Application app;
 
     /**
      * register the simgets
@@ -141,17 +140,17 @@ int main( int argc, char** argv )
 
     if ( polynomialOrder == 1 )
     {
-        app.add( new NIRBTEST<1>( app.vm(), app.about() ) );
+        app.add( new NIRBTEST<1>() );
     }
 
     else if ( polynomialOrder == 2 )
     {
-        app.add( new NIRBTEST<2>( app.vm(), app.about() ) );
+        app.add( new NIRBTEST<2>() );
     }
 
     else if ( polynomialOrder == 3 )
     {
-        app.add( new NIRBTEST<3>( app.vm(), app.about() ) );
+        app.add( new NIRBTEST<3>() );
     }
 
     else
