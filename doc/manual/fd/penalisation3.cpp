@@ -30,7 +30,13 @@
 
 int main( int argc, char **argv )
 {
-    Penalisation<3> penalisation( argc, argv, makeAbout(), makeOptions() );
+    using namespace Feel;
+
+    Environment env( _argc=argc, _argv=argv,
+                     _desc=makeOptions(),
+                     _about=makeAbout() );
+
+    Penalisation<3> penalisation;
     penalisation.run();
     return 0;
 }

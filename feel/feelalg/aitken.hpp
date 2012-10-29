@@ -602,7 +602,7 @@ Aitken<fs_type>::printInfo()
               << "\n";
 
     LOG(INFO) << "[Aitken] iteration : "<< M_cptIteration
-                <<" theta=" << previousParameter
+                <<" theta=" << M_previousParameter
                 <<" residualNorm : " << M_residualConvergence
                 << "\n";
 }
