@@ -187,21 +187,21 @@ public:
 #if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
 
         VectorPetsc<T> const* V = dynamic_cast<VectorPetsc<T> const*> ( &v );
-        /* map */
+        int ierr=0;
         IS is;
         PetscInt *map;
         int n = index.size();
         PetscMalloc(n*sizeof(PetscInt),&map);
         for (int i=0; i<n; i++) map[i] = index[i];
-        ISCreateGeneral(Environment::worldComm(),n,map,PETSC_COPY_VALUES,&is);
+        ierr = ISCreateGeneral(Environment::worldComm(),n,map,PETSC_COPY_VALUES,&is);
+        CHKERRABORT( this->comm(),ierr );
         PetscFree(map);
 
-        //PetscInt n;
-        //ISGetSize(is,&n);
         DataMap dm(n, n, V->comm());
         this->setMap(dm);
         /* init */
-        VecGetSubVector(V->vec(), is, &this->_M_vec);
+        ierr = VecGetSubVector(V->vec(), is, &this->_M_vec);
+        CHKERRABORT( this->comm(),ierr );
         this->M_is_initialized = true;
         /* close */
         this->close(); /* no // assembly required */

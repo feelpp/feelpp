@@ -63,6 +63,7 @@ MatrixPetsc<T>::MatrixPetsc( MatrixSparse<value_type> const& M, IS& isrow, IS& i
     _M_destroy_mat_on_exit( true )
 {
     MatrixPetsc<T> const* A = dynamic_cast<MatrixPetsc<T> const*> ( &M );
+    int ierr=0;
     PetscInt nrow;
     PetscInt ncol;
     ISGetSize(isrow,&nrow);
@@ -71,7 +72,8 @@ MatrixPetsc<T>::MatrixPetsc( MatrixSparse<value_type> const& M, IS& isrow, IS& i
     DataMap dmcol(ncol, ncol);
     this->setMapRow(dmrow);
     this->setMapCol(dmcol);
-    MatGetSubMatrix(A->mat(), isrow, iscol, MAT_INITIAL_MATRIX, &this->_M_mat);
+    ierr = MatGetSubMatrix(A->mat(), isrow, iscol, MAT_INITIAL_MATRIX, &this->_M_mat);
+    CHKERRABORT( this->comm(),ierr );
     this->setInitialized( true );
     this->close();
 }
@@ -84,6 +86,7 @@ MatrixPetsc<T>::MatrixPetsc( MatrixSparse<value_type> const& M, std::vector<int>
     _M_destroy_mat_on_exit( true )
 {
     MatrixPetsc<T> const* A = dynamic_cast<MatrixPetsc<T> const*> ( &M );
+    int ierr=0;
     IS isrow;
     IS iscol;
     PetscInt *rowMap;
@@ -97,8 +100,10 @@ MatrixPetsc<T>::MatrixPetsc( MatrixSparse<value_type> const& M, std::vector<int>
     for (int i=0; i<nrow; i++) rowMap[i] = rowIndex[i];
     for (int i=0; i<ncol; i++) colMap[i] = colIndex[i];
 
-    ISCreateGeneral(Environment::worldComm(),nrow,rowMap,PETSC_COPY_VALUES,&isrow);
-    ISCreateGeneral(Environment::worldComm(),ncol,colMap,PETSC_COPY_VALUES,&iscol);
+    ierr = ISCreateGeneral(Environment::worldComm(),nrow,rowMap,PETSC_COPY_VALUES,&isrow);
+    CHKERRABORT( this->comm(),ierr );
+    ierr = ISCreateGeneral(Environment::worldComm(),ncol,colMap,PETSC_COPY_VALUES,&iscol);
+    CHKERRABORT( this->comm(),ierr );
     PetscFree(rowMap);
     PetscFree(colMap);
 
@@ -106,7 +111,8 @@ MatrixPetsc<T>::MatrixPetsc( MatrixSparse<value_type> const& M, std::vector<int>
     DataMap dmcol(ncol, ncol);
     this->setMapRow(dmrow);
     this->setMapCol(dmcol);
-    MatGetSubMatrix(A->mat(), isrow, iscol, MAT_INITIAL_MATRIX, &this->_M_mat);
+    ierr = MatGetSubMatrix(A->mat(), isrow, iscol, MAT_INITIAL_MATRIX, &this->_M_mat);
+    CHKERRABORT( this->comm(),ierr );
     this->setInitialized( true );
     this->close();
 }
