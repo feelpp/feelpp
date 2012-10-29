@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2008-01-09
 
   Copyright (C) 2008-2009 Université Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file nonlinearpow.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2008-04-14
  */
 #include <feel/options.hpp>
@@ -69,7 +69,7 @@ makeAbout()
                            Feel::AboutData::License_GPL,
                            "Copyright (c) 2008-2009 Université Joseph Fourier" );
 
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     return about;
 
 }
@@ -136,7 +136,7 @@ public:
     /**
      * Constructor
      */
-    NonLinearPow( int argc, char** argv, AboutData const& ad, po::options_description const& od );
+    NonLinearPow();
 
     /**
      * create the mesh using mesh size \c meshSize
@@ -178,9 +178,9 @@ private:
 }; // NonLinearPow
 
 template<int Dim, int Order, template<uint16_type,uint16_type,uint16_type> class Entity>
-NonLinearPow<Dim,Order,Entity>::NonLinearPow( int argc, char** argv, AboutData const& ad, po::options_description const& od )
+NonLinearPow<Dim,Order,Entity>::NonLinearPow()
     :
-    super( argc, argv, ad, od ),
+    super(),
     M_backend( backend_type::build( this->vm() ) ),
     meshSize( this->vm()["hsize"].template as<double>() ),
     M_lambda( this->vm()["lambda"].template as<int>() ),
@@ -218,7 +218,7 @@ void
 NonLinearPow<Dim, Order, Entity>::updateResidual( const vector_ptrtype& X, vector_ptrtype& R )
 {
     boost::timer ti;
-    Log() << "[updateResidual] start\n";
+    LOG(INFO) << "[updateResidual] start\n";
     value_type penalisation_bc = this->vm()["penalbc"].template as<value_type>();
     mesh_ptrtype mesh = M_Xh->mesh();
     element_type u( M_Xh, "u" );
@@ -236,14 +236,14 @@ NonLinearPow<Dim, Order, Entity>::updateResidual( const vector_ptrtype& X, vecto
                    g*( - grad( v )*N() + penalisation_bc*id( v )/hFace() )
                  );
     R->close();
-    Log() << "[updateResidual] done in " << ti.elapsed() << "s\n";
+    LOG(INFO) << "[updateResidual] done in " << ti.elapsed() << "s\n";
 }
 template<int Dim, int Order, template<uint16_type,uint16_type,uint16_type> class Entity>
 void
 NonLinearPow<Dim, Order, Entity>::updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J )
 {
     boost::timer ti;
-    Log() << "[updateJacobian] start\n";
+    LOG(INFO) << "[updateJacobian] start\n";
     mesh_ptrtype mesh = M_Xh->mesh();
     element_type u( M_Xh, "u" );
     element_type v( M_Xh, "v" );
@@ -254,7 +254,7 @@ NonLinearPow<Dim, Order, Entity>::updateJacobian( const vector_ptrtype& X, spars
     form2( _test=M_Xh, _trial=M_Xh, _matrix=J )  =
         integrate( elements( mesh ),  M_lambda*pow( idv( u ),M_lambda-1 )*idt( u )*id( v ), _Q<2*Order>() );
     J->addMatrix( 1.0, M_oplin->mat() );
-    Log() << "[updateJacobian] done in " << ti.elapsed() << "s\n";
+    LOG(INFO) << "[updateJacobian] done in " << ti.elapsed() << "s\n";
 }
 
 template<int Dim, int Order, template<uint16_type,uint16_type,uint16_type> class Entity>
@@ -294,7 +294,7 @@ template<int Dim, int Order, template<uint16_type,uint16_type,uint16_type> class
 void
 NonLinearPow<Dim, Order, Entity>::exportResults( element_type& U )
 {
-    Log() << "exportResults starts\n";
+    LOG(INFO) << "exportResults starts\n";
     exporter->step( 0 )->setMesh( U.functionSpace()->mesh() );
 
     if ( !this->vm().count( "export-mesh-only" ) )
@@ -315,13 +315,17 @@ main( int argc, char** argv )
 {
     using namespace Feel;
 
+    Environment env( _argc=argc, _argv=argv,
+                     _desc=makeOptions(),
+                     _about=makeAbout() );
+
     /* change parameters below */
     const int nDim = 2;
     const int nOrder = 2;
     typedef Feel::NonLinearPow<nDim, nOrder> nonlinearpow_app_type;
 
     /* instantiate application */
-    nonlinearpow_app_type nonlinearpow( argc, argv, makeAbout(), makeOptions() );
+    nonlinearpow_app_type nonlinearpow;
 
     /* run application */
     nonlinearpow.run();

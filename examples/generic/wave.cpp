@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2008-04-14
 
   Copyright (C) 2008 Université Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file wave.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2008-04-14
  */
 #include <feel/options.hpp>
@@ -79,7 +79,7 @@ makeAbout()
                            Feel::AboutData::License_GPL,
                            "Copyright (c) 2006, 2007 Université Joseph Fourier" );
 
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     return about;
 
 }
@@ -252,7 +252,7 @@ Wave<Dim,Order,Cont,Entity,FType>::createMesh( double meshSize, double ymin, dou
     ImporterGmsh<mesh_type> import( fname );
     mesh->accept( import );
     timers["mesh"].second = timers["mesh"].first.elapsed();
-    Log() << "[timer] createMesh(): " << timers["mesh"].second << "\n";
+    LOG(INFO) << "[timer] createMesh(): " << timers["mesh"].second << "\n";
     return mesh;
 } // Wave::createMesh
 
@@ -392,7 +392,7 @@ Wave<Dim, Order, Cont, Entity, FType>::solve( sparse_matrix_ptrtype& D,
     u = *U;
 
     timers["solver"].second = timers["solver"].first.elapsed();
-    Log() << "[timer] solve: " << timers["solver"].second << "\n";
+    LOG(INFO) << "[timer] solve: " << timers["solver"].second << "\n";
 } // Wave::solve
 
 
@@ -406,7 +406,7 @@ Wave<Dim, Order, Cont, Entity,FType>::exportResults( double time,
 {
     timers["export"].first.restart();
 
-    Log() << "exportResults starts\n";
+    LOG(INFO) << "exportResults starts\n";
 
     exporter->step( time )->setMesh( U.functionSpace()->mesh() );
 
@@ -506,7 +506,7 @@ Wave<Dim, Order, Cont, Entity,FType>::exportResults( double time,
     }
 
     timers["export"].second = timers["export"].first.elapsed();
-    Log() << "[timer] exportResults(): " << timers["export"].second << "\n";
+    LOG(INFO) << "[timer] exportResults(): " << timers["export"].second << "\n";
 } // Wave::export
 } // Feel
 
@@ -517,7 +517,7 @@ int
 main( int argc, char** argv )
 {
     using namespace Feel;
-
+    Environment env( argc, argv );
     /* change parameters below */
     const int nDim = 1;
     const int nOrder = 2;

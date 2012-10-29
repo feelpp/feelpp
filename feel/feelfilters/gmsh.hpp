@@ -3,7 +3,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2005-02-10
 
   Copyright (C) 2005,2006 EPFL
@@ -25,7 +25,7 @@
 */
 /**
    \file gmsh.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-02-10
  */
 #ifndef __gmsh_H
@@ -379,6 +379,14 @@ public:
         {
             M_desc = desc;
         }
+    void setSubStructuring( bool substruct )
+        {
+            M_substructuring = substruct;
+        }
+    bool subStructuring() const
+        {
+            return M_substructuring;
+        }
     /**
      * set the prefix of the Gmsh files
      */
@@ -595,6 +603,8 @@ protected:
     bool M_recombine;
     //! number of refinement levels
     int M_refine_levels;
+
+    bool M_substructuring;
 };
 
 ///! \typedef gmsh_type Gmsh
@@ -630,7 +640,7 @@ typedef boost::shared_ptr<type> ptrtype;
  * \arg mesh mesh data structure
  */
 BOOST_PARAMETER_FUNCTION(
-    ( typename detail::mesh<Args>::ptrtype ), // return type
+    ( typename Feel::detail::mesh<Args>::ptrtype ), // return type
     straightenMesh,    // 2. function name
 
     tag,           // 3. namespace of tag types
@@ -644,8 +654,8 @@ BOOST_PARAMETER_FUNCTION(
       ( worldcomm, ( WorldComm ), Environment::worldComm() )
         ) )
 {
-    typedef typename detail::mesh<Args>::type _mesh_type;
-    typedef typename detail::mesh<Args>::ptrtype _mesh_ptrtype;
+    typedef typename Feel::detail::mesh<Args>::type _mesh_type;
+    typedef typename Feel::detail::mesh<Args>::ptrtype _mesh_ptrtype;
 
     _mesh_ptrtype _mesh( mesh );
 
@@ -702,7 +712,7 @@ BOOST_PARAMETER_FUNCTION(
  * \arg physical_are_elementary_regions boolean to load specific meshes formats (default : false)
  */
 BOOST_PARAMETER_FUNCTION(
-    ( typename detail::mesh<Args>::ptrtype ), // return type
+    ( typename Feel::detail::mesh<Args>::ptrtype ), // return type
     loadGMSHMesh,    // 2. function name
 
     tag,           // 3. namespace of tag types
@@ -726,8 +736,8 @@ BOOST_PARAMETER_FUNCTION(
         )
     )
 {
-    typedef typename detail::mesh<Args>::type _mesh_type;
-    typedef typename detail::mesh<Args>::ptrtype _mesh_ptrtype;
+    typedef typename Feel::detail::mesh<Args>::type _mesh_type;
+    typedef typename Feel::detail::mesh<Args>::ptrtype _mesh_ptrtype;
 
     _mesh_ptrtype _mesh( mesh );
     _mesh->setWorldComm( worldcomm );
@@ -798,8 +808,8 @@ BOOST_PARAMETER_FUNCTION(
       ( parametricnodes,          *( boost::is_integral<mpl::_> ), 0 ) )
     )
 {
-    typedef typename detail::mesh<Args>::type _mesh_type;
-    typedef typename detail::mesh<Args>::ptrtype _mesh_ptrtype;
+    typedef typename Feel::detail::mesh<Args>::type _mesh_type;
+    typedef typename Feel::detail::mesh<Args>::ptrtype _mesh_ptrtype;
 
 #if BOOST_FILESYSTEM_VERSION == 3
     ExporterGmsh<_mesh_type,1> exporter( fs::path( filename ).stem().string(), 1,  mesh->worldComm() );
@@ -824,7 +834,7 @@ BOOST_PARAMETER_FUNCTION(
  * \arg physical_are_elementary_regions change file format (optional, default = false)
  */
 BOOST_PARAMETER_FUNCTION(
-    ( typename detail::mesh<Args>::ptrtype ), // return type
+    ( typename Feel::detail::mesh<Args>::ptrtype ), // return type
     createGMSHMesh,    // 2. function name
 
     tag,           // 3. namespace of tag types
@@ -839,7 +849,7 @@ BOOST_PARAMETER_FUNCTION(
       ( parametricnodes,*( boost::is_integral<mpl::_> ), 0 )
       ( straighten,     *( boost::is_integral<mpl::_> ), 1 )
       ( refine,          *( boost::is_integral<mpl::_> ), 0 )
-      ( update,          *( boost::is_integral<mpl::_> ), 0 )
+      ( update,          *( boost::is_integral<mpl::_> ), MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK )
       ( force_rebuild,   *( boost::is_integral<mpl::_> ), 0 )
       ( physical_are_elementary_regions,           *,false )
       ( partitions,   *( boost::is_integral<mpl::_> ), Environment::worldComm().size() )
@@ -849,8 +859,8 @@ BOOST_PARAMETER_FUNCTION(
         )
     )
 {
-    typedef typename detail::mesh<Args>::type _mesh_type;
-    typedef typename detail::mesh<Args>::ptrtype _mesh_ptrtype;
+    typedef typename Feel::detail::mesh<Args>::type _mesh_type;
+    typedef typename Feel::detail::mesh<Args>::ptrtype _mesh_ptrtype;
 
     _mesh_ptrtype _mesh( mesh );
     _mesh->setWorldComm( worldcomm );
@@ -871,7 +881,7 @@ BOOST_PARAMETER_FUNCTION(
         // refinement if option is enabled to a value greater or equal to 1
         if ( refine )
         {
-            Debug() << "Refine mesh ( level: " << refine << ")\n";
+            VLOG(1) << "Refine mesh ( level: " << refine << ")\n";
             Gmsh gmsh;
             fname = gmsh.refine( fname, refine, parametricnodes );
         }
@@ -903,7 +913,6 @@ BOOST_PARAMETER_FUNCTION(
             return straightenMesh( _mesh=_mesh,
                                    _worldcomm=worldcomm.subWorldComm() );
     }
-
     return _mesh;
 }
 
@@ -952,7 +961,8 @@ BOOST_PARAMETER_FUNCTION(
       ( ymin,           *( boost::is_arithmetic<mpl::_> ), 0. )
       ( ymax,           *( boost::is_arithmetic<mpl::_> ), 1 )
       ( zmin,           *( boost::is_arithmetic<mpl::_> ), 0. )
-      ( zmax,           *( boost::is_arithmetic<mpl::_> ), 1 ) ) )
+      ( zmax,           *( boost::is_arithmetic<mpl::_> ), 1 )
+      ( substructuring, *( boost::is_integral<mpl::_> ), 0 ) ) )
 {
     gmsh_ptrtype gmsh_ptr = Gmsh::New( shape, 3, 1, convex );
 
@@ -965,6 +975,7 @@ BOOST_PARAMETER_FUNCTION(
     gmsh_ptr->setX( std::make_pair( xmin, xmax ) );
     gmsh_ptr->setY( std::make_pair( ymin, ymax ) );
     gmsh_ptr->setZ( std::make_pair( zmin, zmax ) );
+    gmsh_ptr->setSubStructuring( substructuring );
     return gmsh_ptr;
 }
 
@@ -1011,7 +1022,6 @@ BOOST_PARAMETER_FUNCTION(
     {
 
     }
-
     // first try in the current path
     if ( fs::exists( cp / filename ) )
     {
@@ -1036,32 +1046,37 @@ BOOST_PARAMETER_FUNCTION(
         throw std::invalid_argument( ostr.str() );
     }
 
-    std::vector<std::string> depends_on_files;
-    algorithm::split( depends_on_files, depends, algorithm::is_any_of( ":,; " ), algorithm::token_compress_on );
-    // copy include/merged files needed by geometry file
-    boost::for_each( depends_on_files,
-                     [&cp, &files_path]( std::string const& _filename )
-                     {
-                         fs::path file_path( files_path );
-                         file_path /= _filename;
-
-                         try
+    if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+    {
+        std::vector<std::string> depends_on_files;
+        algorithm::split( depends_on_files, depends, algorithm::is_any_of( ":,; " ), algorithm::token_compress_on );
+        // copy include/merged files needed by geometry file
+        boost::for_each( depends_on_files,
+                         [&cp, &files_path]( std::string const& _filename )
                          {
-                             boost::system::error_code ec;
+                             fs::path file_path( files_path );
+                             file_path /= _filename;
 
-                             if ( !( fs::exists( file_path ) && fs::is_regular_file( file_path ) ) )
-                                 std::cout << "File : " << file_path << " doesn't exist or is not a regular file" << std::endl;
+                             try
+                             {
+                                 boost::system::error_code ec;
 
-                             else if ( !fs::exists( cp / _filename )  )
-                                 fs::copy_file( file_path, fs::path( _filename ), fs::copy_option::none );
+                                 if ( !( fs::exists( file_path ) && fs::is_regular_file( file_path ) ) )
+                                     std::cout << "File : " << file_path << " doesn't exist or is not a regular file" << std::endl;
 
-                         }
+                                 else if ( !fs::exists( cp / _filename )  )
+                                     fs::copy_file( file_path, fs::path( _filename ), fs::copy_option::none );
 
-                         catch ( const fs::filesystem_error& e )
-                         {
-                             std::cerr << "Error: " << e.what() << std::endl;
-                         }
-                     } );
+                             }
+
+                             catch ( const fs::filesystem_error& e )
+                                 {
+                                     std::cerr << "Error: " << e.what() << std::endl;
+                                 }
+                         } );
+    }
+   Environment::worldComm().barrier();
+
 
     return gmsh_ptr;
 

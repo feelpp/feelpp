@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2008-02-07
 
   Copyright (C) 2008-2012 Universite Joseph Fourier (Grenoble I)
@@ -25,6 +25,8 @@
    \author Cecile Daversin <cecile.daversin@lncmi.cnrs.fr>
    \date 2012-05-07
  */
+#include <feel/feel.hpp>
+
 /** include predefined feel command line options */
 #include <feel/options.hpp>
 
@@ -48,7 +50,7 @@
 
 /** use Feel namespace */
 using namespace Feel;
-using namespace Feel::vf;
+
 /**
  * This routine returns the list of options using the
  * boost::program_options library. The data returned is typically used
@@ -96,7 +98,7 @@ makeAbout()
                      Feel::AboutData::License_GPL,
                      "Copyright (c) 2008-2009 Universite Joseph Fourier" );
 
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     return about;
 
 }
@@ -162,9 +164,9 @@ public:
     /**
      * Constructor
      */
-    LShape( po::variables_map const& vm, AboutData const& about )
+    LShape()
         :
-        super( vm, about ),
+        super(),
         M_backend( backend_type::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( this->vm()["shape"].template as<std::string>() )
@@ -321,7 +323,7 @@ LShape<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
     double criterion_U; // Relative error
     bool criterion = true;
 
-    MeshAdapt mesh_adaptation( M_backend );
+    MeshAdapt mesh_adaptation;
     do{
         space_ptrtype Xh = space_type::New( mesh );
         u = Xh->element();
@@ -396,11 +398,11 @@ LShape<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
 
         if ( exporter->doExport() )
             {
-                Log() << "exportResults starts\n";
+                LOG(INFO) << "exportResults starts\n";
                 exporter->step( 0 )->setMesh( mesh );
                 exporter->step( 0 )->add( "u", u );
                 exporter->save();
-                Log() << "exportResults done\n";
+                LOG(INFO) << "exportResults done\n";
             }
 
         // ****** Mesh adaptation for Potential and Temperature ****** ///
@@ -414,8 +416,8 @@ LShape<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
         std::cout << "criterion = " << criterion_U << std::endl;
         std::cout << "ZZ estimator = " << estimator_U.get<0>() << std::endl;
 
-        Log() << "criterion = " << criterion_U;
-        Log() << "ZZ estimator = " << estimator_U.get<0>();
+        LOG(INFO) << "criterion = " << criterion_U;
+        LOG(INFO) << "ZZ estimator = " << estimator_U.get<0>();
 
         criterion = criterion && (criterion_U > (1+tol) || criterion_U < (1-tol) );
 
@@ -451,23 +453,21 @@ LShape<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
 int
 main( int argc, char** argv )
 {
-    Environment env( argc, argv );
+    using namespace Feel;
+    Environment env( _argc=argc, _argv=argv,
+                     _desc=makeOptions(),
+                     _about=makeAbout() );
+
     /**
      * create an application
      */
-    Application app( argc, argv, makeAbout(), makeOptions() );
-
-    if ( app.vm().count( "help" ) )
-    {
-        std::cout << app.optionsDescription() << "\n";
-        return 0;
-    }
+    Application app;
 
     /**
      * register the simgets
      */
-    app.add( new LShape<2>( app.vm(), app.about() ) );
-    //app.add( new LShape<3>( app.vm(), app.about() ) );
+    app.add( new LShape<2>() );
+    //app.add( new LShape<3>() );
 
     /**
      * run the application

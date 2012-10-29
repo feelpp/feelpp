@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2006-02-24
 
   Copyright (C) 2006 EPFL
@@ -24,7 +24,7 @@
 */
 /**
    \file region.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2006-02-24
  */
 #ifndef __Region_H
@@ -53,12 +53,12 @@ region( boost::shared_ptr<SpaceType> const& space,
     BOOST_STATIC_ASSERT( SpaceType::fe_type::nOrder == 0 );
     typedef typename SpaceType::element_type element_type;
     element_type v( space, "field" );
-    Debug() << "[region] saving region with pid:\n";
+    VLOG(1) << "[region] saving region with pid:\n";
     int pid = space->mesh()->comm().rank();
-    Debug() << "[region] saving region with pid: " << pid << "\n";
+    VLOG(1) << "[region] saving region with pid: " << pid << "\n";
     auto it = space->mesh()->beginElementWithProcessId( pid );
     auto en = space->mesh()->endElementWithProcessId( pid );
-    Debug() << "[region] nb elements in region: " << std::distance( it, en ) << "\n";
+    VLOG(1) << "[region] nb elements in region: " << std::distance( it, en ) << "\n";
     for ( ; it != en; ++it )
     {
         size_type dof_id = boost::get<0>( space->dof()->localToGlobal( it->id(),0, 0 ) );

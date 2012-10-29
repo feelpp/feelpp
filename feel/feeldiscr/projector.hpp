@@ -355,6 +355,8 @@ private :
 
         }
         break;
+        case NODAL:
+            break;
         }
 
         M_matrix->close();
@@ -405,7 +407,7 @@ projector( boost::shared_ptr<TDomainSpace> const& domainspace,
     return proj;
 }
 
-BOOST_PARAMETER_FUNCTION( ( typename detail::projector_args<Args>::return_type ),
+BOOST_PARAMETER_FUNCTION( ( typename Feel::detail::projector_args<Args>::return_type ),
                           opProjection,
                           tag,
                           ( required
@@ -421,7 +423,7 @@ BOOST_PARAMETER_FUNCTION( ( typename detail::projector_args<Args>::return_type )
     return projector( domainSpace,imageSpace, backend, type, 0.01, penaldir );
 }
 
-BOOST_PARAMETER_FUNCTION( ( typename detail::lift_args<Args>::lift_return_type ),
+BOOST_PARAMETER_FUNCTION( ( typename Feel::detail::lift_args<Args>::lift_return_type ),
                           opLift,
                           tag,
                           ( required

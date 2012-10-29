@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2007-06-11
 
   Copyright (C) 2007-2012 Universite Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file thermalfin.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2007-06-11
  */
 #include <feel/options.hpp>
@@ -79,7 +79,7 @@ makeAbout()
                            Feel::AboutData::License_GPL,
                            "Copyright (c) 2006-2011 Universite Joseph Fourier" );
 
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     return about;
 
 }
@@ -275,7 +275,7 @@ ThermalFin::run()
         else
             Bi = math::exp( math::log( Bimin )+value_type( i )*( math::log( Bimax )-math::log( Bimin ) )/value_type( N-1 ) );
 
-        Log() << "Bi = " << Bi << "\n";
+        LOG(INFO) << "Bi = " << Bi << "\n";
 
         form2( Xh, Xh, D ) += integrate( markedfaces( mesh,2 ), Bi*idt( u )*id( v ) );
 
@@ -326,7 +326,7 @@ int
 main( int argc, char** argv )
 {
     using namespace Feel;
-
+    Environment env( argc, argv );
     /* define and run application */
     ThermalFin thermalfin( argc, argv, makeAbout(), makeOptions() );
 

@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2009-11-13
 
   Copyright (C) 2009 Université Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file unsteadyHeat1d.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2009-11-13
  */
 #ifndef __UnsteadyHeat1D_H
@@ -86,7 +86,7 @@ makeUnsteadyHeat1DAbout( std::string const& str = "unsteadyHeat1d" )
                            Feel::AboutData::License_GPL,
                            "Copyright (c) 2010,2011 Université de Grenoble 1 (Joseph Fourier)" );
 
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     about.addAuthor( "Stephane Veys", "developer", "stephane.veys@imag.fr", "" );
     return about;
 }
@@ -672,7 +672,7 @@ UnsteadyHeat1D::init()
     M->close();
 
 
-    Log() << "Number of dof " << Xh->nLocalDof() << "\n";
+    LOG(INFO) << "Number of dof " << Xh->nLocalDof() << "\n";
     std::cout << "Number of dof " << Xh->nLocalDof() << "\n";
 
     assemble();
@@ -766,7 +766,7 @@ UnsteadyHeat1D::exportResults( double time, element_type& T )
 
     if ( M_do_export )
     {
-        Log() << "exportResults starts\n";
+        LOG(INFO) << "exportResults starts\n";
 
         exporter->step( time )->setMesh( T.functionSpace()->mesh() );
 
@@ -905,7 +905,7 @@ UnsteadyHeat1D::solve( parameter_type const& mu, element_ptrtype& T , int output
 
         if ( !ret.get<0>() )
         {
-            Log()<<"WARNING : at time "<<M_bdf->time()<<" we have not converged ( nb_it : "<<ret.get<1>()<<" and residual : "<<ret.get<2>() <<" ) \n";
+            LOG(INFO)<<"WARNING : at time "<<M_bdf->time()<<" we have not converged ( nb_it : "<<ret.get<1>()<<" and residual : "<<ret.get<2>() <<" ) \n";
         }
 
         //backend->solve( _matrix=D,  _solution=T, _rhs=F );

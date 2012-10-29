@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2008-01-03
 
   Copyright (C) 2008-2011 Christophe Prud'homme
@@ -24,7 +24,7 @@
 */
 /**
    \file matrixpetsc.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2008-01-03
  */
 #include <boost/timer.hpp>
@@ -54,6 +54,28 @@ MatrixPetsc<T>::MatrixPetsc( DataMap const& dmRow, DataMap const& dmCol, WorldCo
     super( dmRow,dmCol,worldComm ),
     _M_destroy_mat_on_exit( true )
 {}
+
+template <typename T>
+inline
+MatrixPetsc<T>::MatrixPetsc( MatrixSparse<value_type> const& M, IS& isrow, IS& iscol )
+    :
+    super(),
+    _M_destroy_mat_on_exit( true )
+{
+    MatrixPetsc<T> const* A = dynamic_cast<MatrixPetsc<T> const*> ( &M );
+    PetscInt nrow;
+    PetscInt ncol;
+    ISGetSize(isrow,&nrow);
+    ISGetSize(iscol,&ncol);
+    DataMap dmrow(nrow, nrow);
+    DataMap dmcol(ncol, ncol);
+    this->setMapRow(dmrow);
+    this->setMapCol(dmcol);
+    MatGetSubMatrix(A->mat(), isrow, iscol, MAT_INITIAL_MATRIX, &this->_M_mat);
+    this->setInitialized( true );
+    this->close();
+}
+
 
 template <typename T>
 inline
@@ -1128,7 +1150,7 @@ MatrixPetsc<T>::zeroRows( std::vector<int> const& rows, std::vector<value_type> 
     //if ( on_context.test( ON_ELIMINATION_SYMMETRIC ) )
     if ( 0 )
     {
-        Debug() << "symmetrize zero-out  operation\n";
+        VLOG(1) << "symmetrize zero-out  operation\n";
 
         for ( size_type i = 0; i < rows.size(); ++i )
         {
@@ -1253,7 +1275,7 @@ MatrixPetsc<T>::symmetricPart( MatrixSparse<value_type>& Mt ) const
 
     if ( isSymmetric )
     {
-        Log() << "[MatrixPetsc<T>::symmetricPart] Matrix is already symmetric, don't do anything\n";
+        LOG(INFO) << "[MatrixPetsc<T>::symmetricPart] Matrix is already symmetric, don't do anything\n";
 #if (PETSC_VERSION_MAJOR >= 3)
         MatSetOption( _M_mat,MAT_SYMMETRIC,PETSC_TRUE );
 #else
@@ -1323,7 +1345,7 @@ MatrixPetsc<T>::symmetricPart( MatrixSparse<value_type>& Mt ) const
 
     if ( isSymmetric )
     {
-        Log() << "[MatrixPetsc<T>::symmetricPart] symmetric part is really symmetric\n";
+        LOG(INFO) << "[MatrixPetsc<T>::symmetricPart] symmetric part is really symmetric\n";
 #if (PETSC_VERSION_MAJOR >= 3)
         ierr = MatSetOption( B->_M_mat,MAT_SYMMETRIC,PETSC_TRUE );
 #else
@@ -1390,7 +1412,6 @@ MatrixPetsc<T>::energy( Vector<value_type> const& __v,
 
         if ( !transpose )
             MatMult( _M_mat, u.vec(), z.vec() );
-
         else
             MatMultTranspose( _M_mat, u.vec(), z.vec() );
 
@@ -2454,6 +2475,7 @@ MatrixPetscMPI<T>::energy( Vector<value_type> const& __v,
 
     return e;
 }
+
 
 //----------------------------------------------------------------------------------------------------//
 

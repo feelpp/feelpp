@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2006-11-23
 
   Copyright (C) 2006-2011 University Joseph Fourier
@@ -72,7 +72,7 @@ makeAbout()
                            Feel::AboutData::License_GPL,
                            "Copyright (c) 2006-2011 University Joseph Fourier" );
 
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     about.addAuthor( "Benjamin Stamm", "developer", "benjamin.stamm@epfl.ch", "" );
     return about;
 
@@ -196,8 +196,8 @@ public:
         geomap( ( GeomapStrategyType )this->vm()["geomap"].template as<int>() ),
         exporter( export_type::New( this->vm(), "advection" ) )
     {
-        Log() << "[Advection] hsize = " << meshSize << "\n";
-        Log() << "[Advection] bccoeff = " << bcCoeff << "\n";
+        LOG(INFO) << "[Advection] hsize = " << meshSize << "\n";
+        LOG(INFO) << "[Advection] bccoeff = " << bcCoeff << "\n";
     }
 
     /**
@@ -362,7 +362,7 @@ Advection<Dim, Order, Cont, Entity>::run()
     double c = integrate( internalfaces( mesh ), trans( jumpv( idv( u ) ) )*jumpv( idv( u ) )  ).evaluate()( 0, 0 );
     double error = integrate( elements( mesh ), trans( idv( u )-g )*( idv( u )-g ) ).evaluate()( 0, 0 );
 
-    Log() << "||error||_0 =" << error << "\n";
+    LOG(INFO) << "||error||_0 =" << error << "\n";
     std::cout << "c =" << c << "\n";
     std::cout << "||error||_0 =" << error << "\n";
 
@@ -405,6 +405,7 @@ int
 main( int argc, char** argv )
 {
     using namespace Feel;
+    Environment env( argc, argv );
 
     /* change parameters below */
     const int nDim = 2;

@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2008-01-04
 
   Copyright (C) 2008 Christophe Prud'homme
@@ -24,7 +24,7 @@
 */
 /**
    \file stokes.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2008-01-04
  */
 #include <feel/options.hpp>
@@ -77,7 +77,7 @@ makeAbout()
                            Feel::AboutData::License_GPL,
                            "Copyright (c) 2007,2010 University Joseph Fourier Grenoble 1" );
 
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     return about;
 
 }
@@ -131,9 +131,9 @@ public:
         timers(),
         stats()
     {
-        Log() << "[Stokes] hsize = " << meshSize << "\n";
-        Log() << "[Stokes] bccoeff = " << bcCoeff << "\n";
-        Log() << "[Stokes] export = " << this->vm().count( "export" ) << "\n";
+        LOG(INFO) << "[Stokes] hsize = " << meshSize << "\n";
+        LOG(INFO) << "[Stokes] bccoeff = " << bcCoeff << "\n";
+        LOG(INFO) << "[Stokes] export = " << this->vm().count( "export" ) << "\n";
 
         mu = this->vm()["mu"].as<value_type>();
         penalbc = this->vm()["bccoeff"].as<value_type>();
@@ -194,7 +194,7 @@ Stokes::createMesh( double meshSize )
     ImporterGmsh<mesh_type> import( fname );
     mesh->accept( import );
     timers["mesh"].second = timers["mesh"].first.elapsed();
-    Log() << "[timer] createMesh(): " << timers["mesh"].second << "\n";
+    LOG(INFO) << "[timer] createMesh(): " << timers["mesh"].second << "\n";
     return mesh;
 } // Stokes::createMesh
 
@@ -242,11 +242,11 @@ Stokes::run()
     timers["init"].second = timers["init"].first.elapsed();
     stats["ndof"] = Xh->nDof();
 
-    Log() << "Data Summary:\n";
-    Log() << "      mu = " << mu << "\n";
-    Log() << " bccoeff = " << penalbc << "\n";
-    Log() << " epsilon = " << epsilon << "\n";
-    Log() << "    stab = " << stab << "\n";
+    LOG(INFO) << "Data Summary:\n";
+    LOG(INFO) << "      mu = " << mu << "\n";
+    LOG(INFO) << " bccoeff = " << penalbc << "\n";
+    LOG(INFO) << " epsilon = " << epsilon << "\n";
+    LOG(INFO) << "    stab = " << stab << "\n";
 
 
     auto F= M_backend->newVector( Xh );
@@ -262,7 +262,7 @@ Stokes::run()
         integrate( markedfaces( mesh,4 ),
                    trans( g )*( -SigmaN+penalbc*id( v )/hFace() ) );
 
-    Log() << "[stokes] vector local assembly done\n";
+    LOG(INFO) << "[stokes] vector local assembly done\n";
     timers["assembly"].second = timers["assembly"].first.elapsed();
     timers["assembly_F"].second = timers["assembly"].first.elapsed();
 
@@ -288,8 +288,8 @@ Stokes::run()
     form2( Xh, Xh, D ) += integrate( boundaryfaces( mesh ), -trans( SigmaN )*idt( u ) );
     form2( Xh, Xh, D ) += integrate( boundaryfaces( mesh ), +penalbc*trans( idt( u ) )*id( v )/hFace() );
 
-    Log() << "[stokes] matrix local assembly done\n";
-    Log() << "[stokes] vector/matrix global assembly done\n";
+    LOG(INFO) << "[stokes] matrix local assembly done\n";
+    LOG(INFO) << "[stokes] vector/matrix global assembly done\n";
 
     if ( this->vm().count( "export-matlab" ) )
     {
@@ -313,7 +313,7 @@ Stokes::run()
 
 #endif
 
-    Log() << "[stokes] dirichlet condition applied\n";
+    LOG(INFO) << "[stokes] dirichlet condition applied\n";
     timers["assembly"].second += timers["assembly"].first.elapsed();
     timers["assembly_D"].second += timers["assembly"].first.elapsed();
 
@@ -323,7 +323,7 @@ Stokes::run()
         D->printMatlab( "D_dir.m" );
     }
 
-    Log() << "[stokes] starting solve for D\n";
+    LOG(INFO) << "[stokes] starting solve for D\n";
 
     timers["solver"].first.restart();
     backend_type::build( this->vm() )->solve( _matrix=D, _solution=U, _rhs=F );
@@ -335,28 +335,28 @@ Stokes::run()
         U.printMatlab( "U.m" );
     }
 
-    Log() << "[stokes] solve for D done\n";
+    LOG(INFO) << "[stokes] solve for D done\n";
     double meas = integrate( elements( mesh ), constant( 1.0 ) ).evaluate()( 0, 0 );
     double mean_p = integrate( elements( mesh ), idv( p ) ).evaluate()( 0, 0 )/meas;
-    Log() << "[stokes] mean(p)=" << mean_p << "\n";
+    LOG(INFO) << "[stokes] mean(p)=" << mean_p << "\n";
 
     this->exportResults( U );
 
-    Log() << "[dof]         number of dof: " << Xh->nDof() << "\n";
-    Log() << "[dof]    number of dof/proc: " << Xh->nLocalDof() << "\n";
-    Log() << "[dof]      number of dof(U): " << Xh->functionSpace<0>()->nDof()  << "\n";
-    Log() << "[dof] number of dof/proc(U): " << Xh->functionSpace<0>()->nLocalDof()  << "\n";
-    Log() << "[dof]      number of dof(P): " << Xh->functionSpace<1>()->nDof()  << "\n";
-    Log() << "[dof] number of dof/proc(P): " << Xh->functionSpace<1>()->nLocalDof()  << "\n";
-    Log() << "[timer] run():         init: " << timers["init"].second << "\n";
-    Log() << "[timer] run():     assembly: " << timers["assembly"].second << "\n";
-    Log() << "[timer] run():         o D : " << timers["assembly_D"].second << "\n";
-    Log() << "[timer] run():         o F : " << timers["assembly_F"].second << "\n";
-    Log() << "[timer] run():         o M : " << timers["assembly_M"].second << "\n";
-    Log() << "[timer] run():         o L : " << timers["assembly_L"].second << "\n";
-    Log() << "[timer] run():         o i : " << timers["assembly_evaluate"].second << "\n";
-    Log() << "[timer] run():       solver: " << timers["solver"].second << "\n";
-    Log() << "[timer] run():       solver: " << timers["export"].second << "\n";
+    LOG(INFO) << "[dof]         number of dof: " << Xh->nDof() << "\n";
+    LOG(INFO) << "[dof]    number of dof/proc: " << Xh->nLocalDof() << "\n";
+    LOG(INFO) << "[dof]      number of dof(U): " << Xh->functionSpace<0>()->nDof()  << "\n";
+    LOG(INFO) << "[dof] number of dof/proc(U): " << Xh->functionSpace<0>()->nLocalDof()  << "\n";
+    LOG(INFO) << "[dof]      number of dof(P): " << Xh->functionSpace<1>()->nDof()  << "\n";
+    LOG(INFO) << "[dof] number of dof/proc(P): " << Xh->functionSpace<1>()->nLocalDof()  << "\n";
+    LOG(INFO) << "[timer] run():         init: " << timers["init"].second << "\n";
+    LOG(INFO) << "[timer] run():     assembly: " << timers["assembly"].second << "\n";
+    LOG(INFO) << "[timer] run():         o D : " << timers["assembly_D"].second << "\n";
+    LOG(INFO) << "[timer] run():         o F : " << timers["assembly_F"].second << "\n";
+    LOG(INFO) << "[timer] run():         o M : " << timers["assembly_M"].second << "\n";
+    LOG(INFO) << "[timer] run():         o L : " << timers["assembly_L"].second << "\n";
+    LOG(INFO) << "[timer] run():         o i : " << timers["assembly_evaluate"].second << "\n";
+    LOG(INFO) << "[timer] run():       solver: " << timers["solver"].second << "\n";
+    LOG(INFO) << "[timer] run():       solver: " << timers["export"].second << "\n";
 
 } // Stokes::run
 
@@ -372,7 +372,7 @@ Stokes::exportResults( space_type::element_type& U )
     exporter->save();
 
     timers["export"].second = timers["export"].first.elapsed();
-    Log() << "[timer] exportResults(): " << timers["export"].second << "\n";
+    LOG(INFO) << "[timer] exportResults(): " << timers["export"].second << "\n";
 } // Stokes::export
 } // Feel
 
@@ -382,6 +382,7 @@ Stokes::exportResults( space_type::element_type& U )
 int
 main( int argc, char** argv )
 {
+    Feel::Environment env( argc, argv );
     /* assertions handling */
     Feel::Assert::setLog( "stokes.assert" );
 

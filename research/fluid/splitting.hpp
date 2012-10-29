@@ -3,7 +3,7 @@
   This file is part of the Feel library
 
   Author(s): Christoph Winkelmann <christoph.winkelmann@epfl.ch>
-             Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+             Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2006-09-11
 
   Copyright (C) 2006 EPFL
@@ -26,7 +26,7 @@
 /**
    \file splitting.hpp
    \author Christoph Winkelmann <christoph.winkelmann@epfl.ch>
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2006-09-11
  */
 
@@ -90,7 +90,7 @@ makeAbout()
                            "Copyright (c) 2006 EPFL" );
 
     about.addAuthor( "Christoph Winkelmann", "developer", "christoph.winkelmann@epfl.ch", "" );
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     return about;
 
 }
@@ -232,7 +232,7 @@ Splitting<Dim>::createMesh( double meshSize )
     ImporterGmsh<mesh_type> import( fname );
     mesh->accept( import );
     timers["mesh"].second = timers["mesh"].first.elapsed();
-    Log() << "[timer] createMesh(): " << timers["mesh"].second << "\n";
+    LOG(INFO) << "[timer] createMesh(): " << timers["mesh"].second << "\n";
     return mesh;
 } // Splitting::createMesh
 
@@ -434,11 +434,11 @@ Splitting<Dim>::run()
 
         this->exportResults( time, U, p );
 
-        Log() << "[Splitting] t = " << time << ", " << subiter << " subiterations" << "\n";
+        LOG(INFO) << "[Splitting] t = " << time << ", " << subiter << " subiterations" << "\n";
     } // time loop
 
-    Log() << "[timer] run():     init: " << timers["init"].second << "\n";
-    Log() << "[timer] run(): assembly: " << timers["assembly"].second << "\n";
+    LOG(INFO) << "[timer] run():     init: " << timers["init"].second << "\n";
+    LOG(INFO) << "[timer] run(): assembly: " << timers["assembly"].second << "\n";
 
 } // Splitting::run
 
@@ -458,7 +458,7 @@ Splitting<Dim>::solve( sparse_matrix_ptrtype const& D,
     u = *U;
 
     timers["solver"].second = timers["solver"].first.elapsed();
-    Log() << "[timer] solveNonSym(): " << timers["solver"].second << "\n";
+    LOG(INFO) << "[timer] solveNonSym(): " << timers["solver"].second << "\n";
 } // Splitting::solveNonSym
 
 template<int Dim>
@@ -477,7 +477,7 @@ Splitting<Dim>::solve( sparse_matrix_ptrtype const& D,
     u = *U;
 
     timers["solver"].second = timers["solver"].first.elapsed();
-    Log() << "[timer] solveNonSym(): " << timers["solver"].second << "\n";
+    LOG(INFO) << "[timer] solveNonSym(): " << timers["solver"].second << "\n";
 } // Splitting::solveNonSym
 
 
@@ -498,6 +498,6 @@ Splitting<Dim>::exportResults( double time, element_U_type& U, element_p_type& p
     } // export
 
     timers["export"].second = timers["export"].first.elapsed();
-    Log() << "[timer] exportResults(): " << timers["export"].second << "\n";
+    LOG(INFO) << "[timer] exportResults(): " << timers["export"].second << "\n";
 } // Splitting::export
 } // Feel

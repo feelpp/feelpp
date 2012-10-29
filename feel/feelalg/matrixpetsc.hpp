@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2005-10-18
 
   Copyright (C) 2005,2006 EPFL
@@ -24,7 +24,7 @@
 */
 /**
    \file matrixpetsc.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-10-18
  */
 #ifndef __MatrixPetsc_H
@@ -141,6 +141,7 @@ public:
      */
     MatrixPetsc ( Mat m );
     MatrixPetsc ( Mat m, DataMap const& dmRow, DataMap const& dmCol, WorldComm const& worldComm );
+    MatrixPetsc ( MatrixSparse<value_type> const& M, IS& isrow, IS& iscol );
     /**
      * Destructor. Free all memory, but do not
      * release the memory of the sparsity

@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2009-03-04
 
   Copyright (C) 2009 Universite Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file convection_residual.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2009-03-04
  */
 #include "convection.hpp"
@@ -37,7 +37,7 @@ Convection::updateResidual( const vector_ptrtype& X, vector_ptrtype& R )
 {
 
     boost::timer ti;
-    Log() << "[updateResidual] start\n";
+    LOG(INFO) << "[updateResidual] start\n";
 
     mesh_ptrtype mesh = Xh->mesh();
 
@@ -76,11 +76,11 @@ Convection::updateResidual( const vector_ptrtype& X, vector_ptrtype& R )
 
     if ( adim == 0 ) pC = this->vm()["pC"]. as<double>();
 
-    Log() << "residual: residual: gr = " << gr << "\n";
-    Log() << "residual: pr = " << pr << "\n";
-    Log() << "residual: sqgr = " << sqgr << "\n";
-    Log() << "residual: sqgrpr = " << sqgrpr << "\n";
-    Log() << "residual: gamma = " << gamma << "\n";
+    LOG(INFO) << "residual: residual: gr = " << gr << "\n";
+    LOG(INFO) << "residual: pr = " << pr << "\n";
+    LOG(INFO) << "residual: sqgr = " << sqgr << "\n";
+    LOG(INFO) << "residual: sqgrpr = " << sqgrpr << "\n";
+    LOG(INFO) << "residual: gamma = " << gamma << "\n";
     int weakdir=this->vm()["weakdir"]. as<int>();
 
 
@@ -201,7 +201,7 @@ Convection::updateResidual( const vector_ptrtype& X, vector_ptrtype& R )
     {
         if ( adim==1 )
         {
-            Log() << "dirichlet marker Tfixed : " <<  t.start() << "  "  << mesh->markerName("Tfixed") << "\n";
+            LOG(INFO) << "dirichlet marker Tfixed : " <<  t.start() << "  "  << mesh->markerName("Tfixed") << "\n";
             modifVec( markedfaces( mesh,"Tfixed" ),t,R,cst( -1.0 ) );
         }
         else
@@ -209,11 +209,11 @@ Convection::updateResidual( const vector_ptrtype& X, vector_ptrtype& R )
             modifVec( markedfaces( mesh,"Tfixed" ),t,R,cst( T0 ) );
         }
     }
-    Log() << "dirichlet boundary faces(velocity) : " <<  u.start()  << "\n";
+    LOG(INFO) << "dirichlet boundary faces(velocity) : " <<  u.start()  << "\n";
     modifVec( boundaryfaces( mesh ),u,R,one()*0 );
 
 
-    Log() << "[updateResidual] done in " << ti.elapsed() << "s\n";
+    LOG(INFO) << "[updateResidual] done in " << ti.elapsed() << "s\n";
 
 }
 

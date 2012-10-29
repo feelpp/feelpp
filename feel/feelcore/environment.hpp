@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2010-04-14
 
   Copyright (C) 2010-2012 Université Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file environment.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2010-04-14
  */
 #ifndef __Environment_H
@@ -32,14 +32,38 @@
 #include <cstdlib>
 
 #include <boost/noncopyable.hpp>
-#include <boost/format.hpp>
 #include <boost/signals2.hpp>
+#include <boost/format.hpp>
+
+
 
 #include <feel/feelcore/feel.hpp>
+#include <feel/feelcore/parameter.hpp>
 #include <feel/feelcore/worldcomm.hpp>
+#include <feel/feelcore/about.hpp>
+#include <feel/options.hpp>
 
 namespace Feel
 {
+namespace detail
+{
+inline
+AboutData
+makeAbout( char* name )
+{
+    AboutData about( name,
+                     name,
+                     "0.1",
+                     name,
+                     AboutData::License_GPL,
+                     "Copyright (c) 2012 Feel++ Consortium" );
+
+    about.addAuthor( "Feel++ Consortium",
+                     "",
+                     "feelpp-devel@feelpp.org", "" );
+    return about;
+}
+
 /** @brief Initialize, finalize, and query the Feel++ environment.
  *
  *  The @c Environment class is used to initialize, finalize, and
@@ -107,6 +131,20 @@ public:
      */
     Environment( int& argc, char** &argv );
 
+    template <class ArgumentPack>
+    Environment(ArgumentPack const& args)
+        {
+            char** argv = args[_argv];
+            int argc = args[_argc];
+            S_desc = boost::shared_ptr<po::options_description>( new po::options_description( args[_desc | Feel::feel_options()] ) );
+            AboutData about = args[_about| makeAbout(argv[0])];
+            S_desc->add( file_options( about.appName() ) );
+
+            init( argc, argv, *S_desc, about );
+        }
+
+    void init( int argc, char** argv, po::options_description const& desc, AboutData const& about );
+
     /** Shuts down the Feel environment.
      *
      *  If this @c Environment object was used to initialize the Feel
@@ -166,6 +204,18 @@ public:
      */
     static int numberOfProcessors()  { return S_worldcomm->godSize(); }
 
+    /**
+     * return variables_map
+     */
+    static po::variables_map const& vm() { return S_vm; }
+
+    static AboutData const& about() { return S_about; }
+
+    /**
+     * return options description data structure
+     */
+    static po::options_description const& optionsDescription() { return *S_desc; }
+
     //@}
 
     /** @name  Mutators
@@ -209,11 +259,20 @@ public:
      */
     static boost::tuple<std::string,bool> systemConfigRepository();
 
-    //! change the directory where the results are stored
-    static void changeRepository( boost::format fmt, std::string const& = "logfile" );
+    BOOST_PARAMETER_MEMBER_FUNCTION(
+        (void), static changeRepository, tag,
+        (required
+         (directory,(boost::format)))
+        (optional
+         (filename,*( boost::is_convertible<mpl::_,std::string> ),"logfile")
+         (subdir,*( boost::is_convertible<mpl::_,bool> ),true)
+            ))
+        {
+            changeRepositoryImpl( directory, filename, subdir );
+        }
 
     //! get  \c variables_map from \c options_description \p desc
-    static po::variables_map vm( po::options_description const& desc );
+    //static po::variables_map vm( po::options_description const& desc );
 
     /**
      * set log files
@@ -231,15 +290,47 @@ public:
     //@}
 
 
+private:
+
+    //! change the directory where the results are stored
+    static void changeRepositoryImpl( boost::format fmt, std::string const& logfile, bool add_subdir_np );
+
+    //! process command-line/config-file options
+    static void doOptions( int argc, char** argv, po::options_description const& desc, std::string const& appName );
+    static void processGenericOptions();
+    static void parseAndStoreOptions( po::command_line_parser parser, bool extra_parser = false );
 
 private:
     /// Whether this environment object called MPI_Init
     bool i_initialized;
     mpi::environment M_env;
 
+    static AboutData S_about;
+    static po::variables_map S_vm;
+    static boost::shared_ptr<po::options_description> S_desc;
+    static std::vector<std::string> S_to_pass_further;
+
     static boost::signals2::signal<void ()> S_deleteObservers;
 
     static boost::shared_ptr<WorldComm> S_worldcomm;
 };
+} // detail
+
+
+
+class Environment : public detail::Environment
+{
+public:
+    BOOST_PARAMETER_CONSTRUCTOR(
+        Environment, (detail::Environment), tag,
+        (required
+         (argc,*)
+         (argv,*))
+        (optional
+         (desc,*)
+         (about,*) )) // no semicolon
+};
+
+
 }
 #endif /* __Environment_H */

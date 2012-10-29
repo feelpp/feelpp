@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2005-09-03
 
   Copyright (C) 2005,2006 EPFL
@@ -23,7 +23,7 @@
 */
 /**
    \file points.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-09-03
  */
 #ifndef __points_H
@@ -45,7 +45,7 @@ namespace multi_index = boost::multi_index;
   \class Points
   \brief Points container class
 
-  @author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
   @see
 */
 template<uint16_type nDim>
@@ -202,19 +202,24 @@ public:
 
     marker_point_iterator beginPointWithMarker( size_type m )
     {
-        return _M_points.template get<detail::by_marker>().lower_bound( m );
+        return _M_points.template get<detail::by_marker>().lower_bound( Marker1(m) );
     }
     marker_point_const_iterator beginPointWithMarker( size_type m ) const
     {
-        return _M_points.template get<detail::by_marker>().lower_bound( m );
+        return _M_points.template get<detail::by_marker>().lower_bound( Marker1(m) );
     }
     marker_point_iterator endPointWithMarker( size_type m )
     {
-        return _M_points.template get<detail::by_marker>().upper_bound( m );
+        return _M_points.template get<detail::by_marker>().upper_bound( Marker1(m) );
     }
     marker_point_const_iterator endPointWithMarker( size_type m ) const
     {
-        return _M_points.template get<detail::by_marker>().upper_bound( m );
+        return _M_points.template get<detail::by_marker>().upper_bound( Marker1(m) );
+    }
+
+    point_iterator pointIterator( size_type i ) const
+    {
+        return  _M_points.find( point_type( i ) );
     }
 
     /**

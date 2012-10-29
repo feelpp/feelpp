@@ -4,7 +4,7 @@
   This file is part of the Feel library
 
   Author(s):
-  Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Christophe Prud'homme <christophe.prudhomme@feelpp.org>
   Perrimond Benoit <Benoit.Perrimond@bvra.e.ujf-grenoble.fr>
   Vincent Chabannes <vincent.chabannes@gmail.com>
 
@@ -28,7 +28,7 @@
 */
 /**
    \file laplacian.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \author Perrimond Benoit <Benoit.Perrimond@bvra.e.ujf-grenoble.fr>
    \author Vincent Chabannes <vincent.chabannes@gmail.com>
    \date 2008-02-07
@@ -84,7 +84,7 @@ makeAbout()
                      Feel::AboutData::License_GPL,
                      "Copyright (c) 2008 Universit� Joseph Fourier" );
 
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     about.addAuthor( "Benoit Perrimond", "developer", "Benoit.Perrimond@bvra.e.ujf-grenoble.fr", "" );
     about.addAuthor( "Vincent Chabannes", "developer", "vincent.chabannes@gmail.com", "" );
     return about;
@@ -156,10 +156,10 @@ public:
         this->setLogs();
 
         if ( M_use_weak_dirichlet )
-            Log()  << "use weak Dirichlet BC\n";
+            LOG(INFO)  << "use weak Dirichlet BC\n";
 
         if ( exporter && exporter->doExport() )
-            Log()  << "export results to ensight format\n";
+            LOG(INFO)  << "export results to ensight format\n";
     }
 
     Laplacian( int argc, char** argv, AboutData const& ad, po::options_description const& od )
@@ -174,10 +174,10 @@ public:
         exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) )
     {
         if ( M_use_weak_dirichlet )
-            Log()  << "use weak Dirichlet BC\n";
+            LOG(INFO)  << "use weak Dirichlet BC\n";
 
         if ( exporter->doExport() )
-            Log()  << "export results to ensight format\n";
+            LOG(INFO)  << "export results to ensight format\n";
     }
 
     /**
@@ -277,7 +277,7 @@ Laplacian<Dim, Order, RDim, Entity>::run( const double* X, unsigned long P,
      * First we create the mesh
      */
     mesh_ptrtype mesh = createMesh( meshSize );
-    Log()  << "mesh created in " << t1.elapsed() << "s\n";
+    LOG(INFO)  << "mesh created in " << t1.elapsed() << "s\n";
     t1.restart();
 
     /*
@@ -286,15 +286,15 @@ Laplacian<Dim, Order, RDim, Entity>::run( const double* X, unsigned long P,
     space_ptrtype Xh = space_type::New( mesh );
     element_type u( Xh, "u" );
     element_type v( Xh, "v" );
-    Log()  << "[functionspace] Number of dof " << Xh->nLocalDof() << "\n";
-    Log()  << "function space and elements created in " << t1.elapsed() << "s\n";
+    LOG(INFO)  << "[functionspace] Number of dof " << Xh->nLocalDof() << "\n";
+    LOG(INFO)  << "function space and elements created in " << t1.elapsed() << "s\n";
     t1.restart();
 
     exact_space_ptrtype Eh = exact_space_type::New( mesh );
     exact_element_type fproj( Eh, "f" );
     exact_element_type gproj( Eh, "g" );
-    Log()  << "[functionspace] Number of dof " << Eh->nLocalDof() << "\n";
-    Log()  << "function space and elements created in " << t1.elapsed() << "s\n";
+    LOG(INFO)  << "[functionspace] Number of dof " << Eh->nLocalDof() << "\n";
+    LOG(INFO)  << "function space and elements created in " << t1.elapsed() << "s\n";
     t1.restart();
 
 
@@ -343,7 +343,7 @@ Laplacian<Dim, Order, RDim, Entity>::run( const double* X, unsigned long P,
     }
 
     F->close();
-    Log()  << "F assembled in " << t1.elapsed() << "s\n";
+    LOG(INFO)  << "F assembled in " << t1.elapsed() << "s\n";
     t1.restart();
 
     //Construction of the left hand side
@@ -352,14 +352,14 @@ Laplacian<Dim, Order, RDim, Entity>::run( const double* X, unsigned long P,
 
 
     form2( Xh, Xh, D, _init=true );
-    Log()  << "D initialized in " << t1.elapsed() << "s\n";
+    LOG(INFO)  << "D initialized in " << t1.elapsed() << "s\n";
     t1.restart();
 
     form2( Xh, Xh, D ) +=
         integrate( elements( mesh ),
                    nu*( gradt( u )*trans( grad( v ) ) )
                    + beta*( idt( u )*id( v ) ) );
-    Log()  << "D stiffness+mass assembled in " << t1.elapsed() << "s\n";
+    LOG(INFO)  << "D stiffness+mass assembled in " << t1.elapsed() << "s\n";
     t1.restart();
 
     if ( M_use_weak_dirichlet )
@@ -373,14 +373,14 @@ Laplacian<Dim, Order, RDim, Entity>::run( const double* X, unsigned long P,
                                          ( - nu*trans( id( v ) )*( gradt( u )*N() )
                                            - nu*trans( idt( u ) )*( grad( v )*N() )
                                            + M_gammabc*trans( idt( u ) )*id( v )/hFace() ) );
-        Log()  << "D weak bc assembled in " << t1.elapsed() << "s\n";
+        LOG(INFO)  << "D weak bc assembled in " << t1.elapsed() << "s\n";
         t1.restart();
 
     }
 
     D->close();
 
-    Log()  << "D assembled in " << t1.elapsed() << "s\n";
+    LOG(INFO)  << "D assembled in " << t1.elapsed() << "s\n";
 
 
     if ( ! M_use_weak_dirichlet )
@@ -389,36 +389,36 @@ Laplacian<Dim, Order, RDim, Entity>::run( const double* X, unsigned long P,
         form2( Xh, Xh, D ) +=
             on( markedfaces( mesh, tag1 ), u, F, g )+
             on( markedfaces( mesh, tag2 ), u, F, g );
-        Log()  << "Strong Dirichlet assembled in " << t1.elapsed() << "s on faces " << tag1 << " and " << tag2 << " \n";
+        LOG(INFO)  << "Strong Dirichlet assembled in " << t1.elapsed() << "s on faces " << tag1 << " and " << tag2 << " \n";
     }
 
     t1.restart();
 
     this->solve( D, u, F );
 
-    Log()  << "solve in " << t1.elapsed() << "s\n";
+    LOG(INFO)  << "solve in " << t1.elapsed() << "s\n";
     t1.restart();
 
     double L2error2 =integrate( elements( mesh ),
                                 ( idv( u )-idv( gproj ) )*( idv( u )-idv( gproj ) ) ).evaluate()( 0, 0 );
     double L2error =   math::sqrt( L2error2 );
 
-    Log()  << "||error||_L2=" << L2error << "\n";
-    Log()  << "L2 norm computed in " << t1.elapsed() << "s\n";
+    LOG(INFO)  << "||error||_L2=" << L2error << "\n";
+    LOG(INFO)  << "L2 norm computed in " << t1.elapsed() << "s\n";
     t1.restart();
 
 
     double semiH1error2 =integrate( elements( mesh ),
                                     ( gradv( u )-gradv( gproj ) )*trans( gradv( u )-gradv( gproj ) ) ).evaluate()( 0, 0 ) ;
 
-    Log()  << "semi H1 norm computed in " << t1.elapsed() << "s\n";
+    LOG(INFO)  << "semi H1 norm computed in " << t1.elapsed() << "s\n";
     t1.restart();
 
     double H1error =   math::sqrt( semiH1error2+L2error2 );
 
 
-    Log()  << "||error||_H1=" << H1error << "\n";
-    Log()  << "H1 norm computed in " << t1.elapsed() << "s\n";
+    LOG(INFO)  << "||error||_H1=" << H1error << "\n";
+    LOG(INFO)  << "H1 norm computed in " << t1.elapsed() << "s\n";
     t1.restart();
 
     this->exportResults( u, v );
@@ -445,7 +445,7 @@ Laplacian<Dim, Order, RDim, Entity>::exportResults( element_type& U, element_typ
 {
     if ( exporter && exporter->doExport() )
     {
-        Log()  << "exportResults starts\n";
+        LOG(INFO)  << "exportResults starts\n";
 
         exporter->step( 0 )->setMesh( U.functionSpace()->mesh() );
 

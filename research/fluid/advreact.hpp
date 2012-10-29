@@ -245,7 +245,7 @@ void AdvReact<Space, imOrder>::solve()
     // get result...
     std::copy( M_sol.begin(), M_sol.end(), M_phi.container().begin() );
 
-    Debug() << "[timer] run(): assembly: " << M_timers["assembly"].second
+    VLOG(1) << "[timer] run(): assembly: " << M_timers["assembly"].second
             << "\n";
 
 } // AdvReact::solve
@@ -277,7 +277,7 @@ AdvReact<Space, imOrder>::solveNonSym( Mat const& D,
     }
 
     M_timers["solver"].second += M_timers["solver"].first.elapsed();
-    Debug() << "[timer] solveNonSym(): " << M_timers["solver"].second << "\n";
+    VLOG(1) << "[timer] solveNonSym(): " << M_timers["solver"].second << "\n";
 } // AdvReact::solveNonSym
 
 } // Feel

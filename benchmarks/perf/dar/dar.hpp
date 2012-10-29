@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2012-02-05
 
   Copyright (C) 2012 University Joseph Fourier
@@ -177,7 +177,7 @@ DAR<Dim, Order, Cont, Entity>::run()
     M_stats.put( "n.space.nelts",Xh->mesh()->numElements() );
     M_stats.put( "n.space.ndof",Xh->nLocalDof() );
     M_stats.put( "t.init.space",t.elapsed() );
-    Log() << "  -- time space and functions construction "<<t.elapsed()<<" seconds \n";
+    LOG(INFO) << "  -- time space and functions construction "<<t.elapsed()<<" seconds \n";
     t.restart() ;
 
     auto r = sqrt( Px()*Px()+Py()*Py() );
@@ -193,7 +193,7 @@ DAR<Dim, Order, Cont, Entity>::run()
 
     auto F = backend( _vm=this->vm() )->newVector( Xh );
     M_stats.put( "t.init.vector",t.elapsed() );
-    Log() << "  -- time for vector init done in "<<t.elapsed()<<" seconds \n";
+    LOG(INFO) << "  -- time for vector init done in "<<t.elapsed()<<" seconds \n";
     t.restart() ;
     form1( _test=Xh, _vector=F, _init=true )  =
         integrate( elements( mesh ), trans( f )*id( v ) );
@@ -205,13 +205,13 @@ DAR<Dim, Order, Cont, Entity>::run()
     }
 
     M_stats.put( "t.assembly.vector.total",t.elapsed() );
-    Log() << "  -- time vector global assembly done in "<<t.elapsed()<<" seconds \n";
+    LOG(INFO) << "  -- time vector global assembly done in "<<t.elapsed()<<" seconds \n";
     t.restart() ;
 
 
     auto D = backend( _vm=this->vm() )->newMatrix( _test=Xh, _trial=Xh, _pattern=Pattern::COUPLED|Pattern::EXTENDED );
     M_stats.put( "t.init.matrix",t.elapsed() );
-    Log() << "  -- time for matrix init done in "<<t.elapsed()<<" seconds \n";
+    LOG(INFO) << "  -- time for matrix init done in "<<t.elapsed()<<" seconds \n";
     t.restart() ;
 
     form2( _test=Xh, _trial=Xh, _matrix=D ) =
@@ -255,7 +255,7 @@ DAR<Dim, Order, Cont, Entity>::run()
     }
 
     M_stats.put( "t.assembly.matrix.total",t.elapsed() );
-    Log() << " -- time matrix global assembly done in "<<t.elapsed()<<" seconds \n";
+    LOG(INFO) << " -- time matrix global assembly done in "<<t.elapsed()<<" seconds \n";
     t.restart() ;
 
     if ( this->vm().count( "export-matlab" ) )
@@ -266,7 +266,7 @@ DAR<Dim, Order, Cont, Entity>::run()
 
     backend( _vm=this->vm(),_rebuild=true )->solve( _matrix=D, _solution=u, _rhs=F );
     M_stats.put( "t.solver.total",t.elapsed() );
-    Log() << " -- time for solver : "<<t.elapsed()<<" seconds \n";
+    LOG(INFO) << " -- time for solver : "<<t.elapsed()<<" seconds \n";
     t.restart();
 
     double c = integrate( internalfaces( mesh ), trans( jumpv( idv( u ) ) )*jumpv( idv( u ) )  ).evaluate()( 0, 0 );
@@ -276,7 +276,7 @@ DAR<Dim, Order, Cont, Entity>::run()
     M_stats.put( "t.integrate.l2norm",t.elapsed() );
     t.restart();
 
-    Log() << "||error||_0 =" << error << "\n";
+    LOG(INFO) << "||error||_0 =" << error << "\n";
     std::cout << "c =" << c << "\n";
     std::cout << "||error||_0 =" << error << "\n";
     M_stats.put( "e.l2.error",math::sqrt( error ) );

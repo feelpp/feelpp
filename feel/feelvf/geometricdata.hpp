@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2006-03-14
 
   Copyright (C) 2006 EPFL
@@ -24,7 +24,7 @@
 */
 /**
    \file geometricdata.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2006-03-14
  */
 #ifndef __GeometricData_H
@@ -185,9 +185,9 @@ const size_type jkp = vm::KB|vm::JACOBIAN|vm::POINT;
             struct tensor                                               \
         {                                                               \
             typedef this_type expression_type;                          \
-            typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, detail::gmc<0> >, \
-                mpl::identity<detail::gmc<0> >,                         \
-                mpl::identity<detail::gmc<1> > >::type::type key_type;  \
+            typedef typename mpl::if_<fusion::result_of::has_key<Geo_t,vf::detail::gmc<0> >, \
+                mpl::identity<vf::detail::gmc<0> >,                         \
+                mpl::identity<vf::detail::gmc<1> > >::type::type key_type;  \
             typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::pointer gmc_ptrtype; \
             typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type; \
             typedef typename gmc_type::value_type value_type;           \

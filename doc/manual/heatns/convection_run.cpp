@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2009-03-04
 
   Copyright (C) 2009 Universite Joseph Fourier (Grenoble I)
@@ -69,10 +69,10 @@ Convection::run()
                                _update=MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
     }
 
-    Log() << "Tfixed: " << mesh->markerName( "Tfixed" ) << ": " << integrate(markedfaces(mesh,"Tfixed"), cst(1.) ).evaluate()(0,0) << "\n";
-    Log() << "Tflux: " << mesh->markerName( "Tflux" ) << ": " << integrate(markedfaces(mesh,"Tflux"), cst(1.) ).evaluate()(0,0)  << "\n";
-    //Log() << "Fflux: " << mesh->markerName( "Fflux" ) << ": " << integrate(markedfaces(mesh,"Fflux"), cst(1.) ).evaluate()(0,0)  << "\n";
-    Log() << "Tinsulated: " << mesh->markerName( "Tinsulated" ) << ": " << integrate(markedfaces(mesh,"Tinsulated"), cst(1.) ).evaluate()(0,0)  << "\n";
+    LOG(INFO) << "Tfixed: " << mesh->markerName( "Tfixed" ) << ": " << integrate(markedfaces(mesh,"Tfixed"), cst(1.) ).evaluate()(0,0) << "\n";
+    LOG(INFO) << "Tflux: " << mesh->markerName( "Tflux" ) << ": " << integrate(markedfaces(mesh,"Tflux"), cst(1.) ).evaluate()(0,0)  << "\n";
+    //LOG(INFO) << "Fflux: " << mesh->markerName( "Fflux" ) << ": " << integrate(markedfaces(mesh,"Fflux"), cst(1.) ).evaluate()(0,0)  << "\n";
+    LOG(INFO) << "Tinsulated: " << mesh->markerName( "Tinsulated" ) << ": " << integrate(markedfaces(mesh,"Tinsulated"), cst(1.) ).evaluate()(0,0)  << "\n";
     timers["mesh"].second=timers["mesh"].first.elapsed();
     timings << "[Mesh] Time : " << timers["mesh"].second << std::endl;
     //
@@ -107,13 +107,13 @@ Convection::run()
     element_3_type eta = V. element<3>(); // fonction test multipliers
 #endif
 
-    Log() << "[convection::run()] u.size() = " << u.size() << " u.start() = " << u.start() << "\n";
-    Log() << "[convection::run()] p.size() = " << p.size() << " p.start() = " << p.start() << "\n";
-    Log() << "[convection::run()] t.size() = " << t.size() << " p.start() = " << t.start() << "\n";
+    LOG(INFO) << "[convection::run()] u.size() = " << u.size() << " u.start() = " << u.start() << "\n";
+    LOG(INFO) << "[convection::run()] p.size() = " << p.size() << " p.start() = " << p.start() << "\n";
+    LOG(INFO) << "[convection::run()] t.size() = " << t.size() << " p.start() = " << t.start() << "\n";
 #if defined( FEELPP_USE_LM )
-    Log() << "[convection::run()] xi.size() = " << xi.size() << " p.start() = " << xi.start() << "\n";
+    LOG(INFO) << "[convection::run()] xi.size() = " << xi.size() << " p.start() = " << xi.start() << "\n";
 #endif
-    Log() << "[convection::run()] U.size() = " << U.size() << " Xh ndof = " << Xh->nDof() << "\n";
+    LOG(INFO) << "[convection::run()] U.size() = " << U.size() << " Xh ndof = " << Xh->nDof() << "\n";
 
 #if CONVECTION_DIM == 2
     u = vf::project( Xh-> functionSpace<0>(), elements( mesh ), vec( Px()*Py(),Py()*Px() ) );
@@ -196,14 +196,14 @@ Convection::run()
     vector_ptrtype R( M_backend->newVector( Xh ) );
     sparse_matrix_ptrtype J( M_backend->newMatrix( Xh,Xh ) );
 
-    Log() << "============================================================\n";
+    LOG(INFO) << "============================================================\n";
     std::cout << "============================================================\n";
     double gr( this->vm()["gr"]. as<double>() );
     M_current_Grashofs = gr;
     double pr = this->vm()["pr"]. as<double>();
     M_current_Prandtl = pr;
-    Log() << "Grashof = " << M_current_Grashofs << "\n";
-    Log() << "Prandtl = " << M_current_Prandtl << "\n";
+    LOG(INFO) << "Grashof = " << M_current_Grashofs << "\n";
+    LOG(INFO) << "Prandtl = " << M_current_Prandtl << "\n";
     std::cout << "Grashof = " << M_current_Grashofs << "\n";
     std::cout << "Prandtl = " << M_current_Prandtl << "\n";
 
@@ -221,7 +221,7 @@ Convection::run()
 
         if ( exporter->doExport() )
         {
-            Log() << "exportResults starts\n";
+            LOG(INFO) << "exportResults starts\n";
 
             exporter->step( i )->setMesh( mesh );
 
@@ -230,7 +230,7 @@ Convection::run()
             exporter->step( i )->add( "p", p );
 
             exporter->save();
-            Log() << "exportResults done\n";
+            LOG(INFO) << "exportResults done\n";
         }
 
     }
@@ -242,7 +242,7 @@ Convection::run()
               << integrate( elements( mesh ) ,idv( p ) ).evaluate()( 0,0 )/meas << "\n";
 
 #if defined( FEELPP_USE_LM )
-    Log() << "value of the Lagrange multiplier xi= " << xi( 0 ) << "\n";
+    LOG(INFO) << "value of the Lagrange multiplier xi= " << xi( 0 ) << "\n";
     std::cout << "value of the Lagrange multiplier xi= " << xi( 0 ) << "\n";
 #endif
 

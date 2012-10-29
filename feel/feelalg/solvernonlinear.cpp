@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2008-04-17
 
   Copyright (C) 2008-2012 Universite Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file solvernonlinear.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2008-04-17
  */
 #include <feel/feelcore/feel.hpp>
@@ -116,8 +116,8 @@ SolverNonLinear<T>::build( po::variables_map const& vm, std::string const& prefi
 
     else
     {
-        Log() << "[SolverNonLinear] solver " << vm["backend"].template as<std::string>() << " not available\n";
-        Log() << "[Backend] use fallback  gmm\n";
+        LOG(INFO) << "[SolverNonLinear] solver " << vm["backend"].template as<std::string>() << " not available\n";
+        LOG(INFO) << "[Backend] use fallback  gmm\n";
 #if defined( FEELPP_HAS_PETSC )
         solver_package = SOLVERS_PETSC;
 #endif
@@ -166,8 +166,8 @@ SolverNonLinear<T>::build( SolverPackage solver_package, WorldComm const& worldC
 
     if ( solver_package != SOLVERS_PETSC )
     {
-        Log() << "[SolverNonLinear] solver " << solver_package << " not available\n";
-        Log() << "[Backend] use fallback  petsc: " << SOLVERS_PETSC << "\n";
+        LOG(INFO) << "[SolverNonLinear] solver " << solver_package << " not available\n";
+        LOG(INFO) << "[Backend] use fallback  petsc: " << SOLVERS_PETSC << "\n";
         solver_package = SOLVERS_PETSC;
     }
 

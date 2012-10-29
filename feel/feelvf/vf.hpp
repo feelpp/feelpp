@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2005-01-17
 
   Copyright (C) 2005,2006 EPFL
@@ -24,7 +24,7 @@
 */
 /**
    \file vf.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-01-17
  */
 #ifndef __VF_H
@@ -66,7 +66,7 @@ template<int Index> struct gmc
 template<typename Geo_t>
 struct ExtractGm
 {
-    typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, detail::gmc<0> >,mpl::identity<detail::gmc<0> >,mpl::identity<detail::gmc<1> > >::type::type key_type;
+    typedef typename mpl::if_<fusion::result_of::has_key<Geo_t,vf::detail::gmc<0> >,mpl::identity<vf::detail::gmc<0> >,mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
     typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::pointer gmc_ptrtype;
     typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
 
@@ -99,7 +99,7 @@ struct ExtractGm
 #include <feel/feelvf/det.hpp>
 #include <feel/feelvf/symm.hpp>
 #include <feel/feelvf/products.hpp>
-//#include <feel/feelvf/norm.hpp>
+#include <feel/feelvf/norm.hpp>
 #include <feel/feelvf/ones.hpp>
 #include <feel/feelvf/twovalued.hpp>
 //#include <feel/feelvf/eye.hpp>
@@ -112,12 +112,17 @@ struct ExtractGm
 #include <feel/feelvf/integrator.hpp>
 //#include <feel/feelvf/integratordirac.hpp>
 #include <feel/feelvf/projectors.hpp>
+#include <feel/feelvf/evaluator.hpp>
 
 
 #include <feel/feelvf/form.hpp>
 
 #include <boost/preprocessor/comparison/equal.hpp>
 
+namespace Feel
+{
+using namespace vf;
+}
 /// \endcond
 
 #endif /* __VF_H */

@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2005-11-09
 
   Copyright (C) 2005,2006 EPFL
@@ -23,7 +23,7 @@
 */
 /**
    \file meshbase.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-11-09
  */
 #ifndef __MeshBase_H
@@ -45,7 +45,10 @@ enum MeshComponents
     MESH_UPDATE_FACES     = ( 1 << 1 ),
     MESH_CHECK            = ( 1 << 2 ),
     MESH_PARTITION        = ( 1 << 3 ),
-    MESH_RENUMBER         = ( 1 << 4 )
+    MESH_RENUMBER         = ( 1 << 4 ),
+    MESH_ADD_ELEMENTS_INFO= ( 1 << 5 ),
+    MESH_PROPAGATE_MARKERS= ( 1 << 6 )
+
 };
 const uint16_type MESH_ALL_COMPONENTS = MESH_UPDATE_EDGES | MESH_UPDATE_FACES | MESH_CHECK | MESH_PARTITION | MESH_RENUMBER;
 const uint16_type MESH_COMPONENTS_DEFAULTS = MESH_RENUMBER | MESH_CHECK;
@@ -369,7 +372,6 @@ private:
      */
     uint16_type M_n_parts;
 
-    //mpi::communicator M_comm;
     WorldComm M_worldComm;
 };
 }

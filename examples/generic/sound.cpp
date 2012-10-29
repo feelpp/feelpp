@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2007-07-05
 
   Copyright (C) 2007-2011 Universite Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file sound.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2007-07-05
  */
 #include <feel/options.hpp>
@@ -75,12 +75,11 @@ makeAbout()
                      Feel::AboutData::License_GPL,
                      "Copyright (c) 2007-2011 Universite Joseph Fourier" );
 
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     return about;
 
 }
 
-using namespace vf;
 /**
  * Sound Solver using discontinous approximation spaces
  *
@@ -128,9 +127,9 @@ public:
     /* export */
     typedef Exporter<mesh_type> export_type;
 
-    Sound( std::string const& name, po::variables_map const& vm, AboutData const& ad )
+    Sound( std::string const& name )
         :
-        super( vm, ad ),
+        super(),
         M_name( name )
     {
     }
@@ -145,8 +144,6 @@ public:
      */
     void run();
 
-    //! must be redefined, not used
-    void run( const double*, long unsigned int, double*, long unsigned int ) {};
 private:
     std::string M_name;
 }; // Sound
@@ -156,8 +153,7 @@ template<int Dim, int Order>
 void
 Sound<Dim, Order>::run()
 {
-    using namespace Feel::vf;
-    Log() << "[Sound] hsize = " << this->meshSize() << "\n";
+    LOG(INFO) << "[Sound] hsize = " << this->meshSize() << "\n";
     this->changeRepository( boost::format( "%1%/%2%/P%3%/%4%/" )
                             % this->about().appName()
                             % entity_type::name()
@@ -270,7 +266,7 @@ Sound<Dim, Order>::run()
 
     if ( !modes.empty() )
     {
-        Log() << "eigenvalue " << 0 << " = (" << modes.begin()->second.get<0>() << "," <<  modes.begin()->second.get<1>() << ")\n";
+        LOG(INFO) << "eigenvalue " << 0 << " = (" << modes.begin()->second.get<0>() << "," <<  modes.begin()->second.get<1>() << ")\n";
         std::cout << "eigenvalue " << 0 << " = (" << modes.begin()->second.get<0>()
                   << "," <<  modes.begin()->second.get<1>() << ")\n";
 
@@ -278,8 +274,8 @@ Sound<Dim, Order>::run()
     }
 
     //    this->exportResults( u, mode );
-    //    Log() << "[timer] run(): init (" << mesh->numElements() << " Elems): " << timers["init"].second << "\n";
-    //    Log() << "[timer] run(): assembly (" << Xh->dof()->nDof() << " DOFs): " << timers["assembly"].second << "\n";
+    //    LOG(INFO) << "[timer] run(): init (" << mesh->numElements() << " Elems): " << timers["init"].second << "\n";
+    //    LOG(INFO) << "[timer] run(): assembly (" << Xh->dof()->nDof() << " DOFs): " << timers["assembly"].second << "\n";
     M_stats.put( "t.eigensolver.total",t.elapsed() );
     t.restart();
 
@@ -302,22 +298,17 @@ int
 main( int argc, char** argv )
 {
     using namespace Feel;
-
+    Environment env( argc, argv );
     /* assertions handling */
     Feel::Assert::setLog( "sound.assert" );
 
     Application sound( argc, argv, makeAbout(), makeOptions() );
 
-    if ( sound.vm().count( "help" ) )
-    {
-        std::cout << sound.optionsDescription() << "\n";
-        return 0;
-    }
-
-    sound.add( new Sound<2, 1>( "2D-P1", sound.vm(), sound.about() ) );
-    sound.add( new Sound<3, 1>( "3D-P1", sound.vm(), sound.about() ) );
+    sound.setStats( boost::assign::list_of( "n.space" )( "t.init" )( "t.assembly.vector" )( "t.assembly.matrix" )( "t.solver" )( "t.eigensolver" ) );
+    sound.add( new Sound<2, 1>( "2D-P1" ) );
+    sound.add( new Sound<3, 1>( "3D-P1" ) );
     sound.run();
-    sound.printStats( std::cout, boost::assign::list_of( "n.space" )( "t.init" )( "t.assembly.vector" )( "t.assembly.matrix" )( "t.solver" )( "t.eigensolver" ) );
+    sound.printStats( std::cout );
 }
 
 

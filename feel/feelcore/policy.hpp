@@ -2,7 +2,7 @@
 
    This file is part of the Feel library
 
-   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    Date: 2004-09-10
 
    Copyright (C) 2006,2009 Université Joseph Fourier (Grenoble I)
@@ -24,7 +24,7 @@
 */
 /**
    \file policy.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2004-09-10
  */
 #ifndef __Policy_H
@@ -36,7 +36,7 @@ namespace Feel
  * \class PolicyCreationUsingNew
  *  default creation policy
  *
- *  \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+ *  \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
  */
 template <class T>
 struct PolicyCreationUsingNew
@@ -56,7 +56,7 @@ struct PolicyCreationUsingNew
  * \class PolicyFeelTimeDefault
  *  default feel time policy
  *
- *  \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+ *  \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
  */
 template <class T>
 struct PolicyFeelTimeDefault

@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2011-11-18
 
   Copyright (C) 2011 Université Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file mcs_example.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2011-11-18
  */
 
@@ -78,7 +78,7 @@ makeAbout()
 
     about.addAuthor( "Christophe Prud'homme",
                      "developer",
-                     "christophe.prudhomme@ujf-grenoble.fr", "" );
+                     "christophe.prudhomme@feelpp.org", "" );
     return about;
 }
 //# endmarker3 #
@@ -158,9 +158,9 @@ void MyMCSApp::run()
      * HOME/feel/doc/tutorial/myapp/myapp-1.0
      */
     /** \code */
-    Log() << "the value of dt is " << this->vm()["dt"].as<double>() << "\n";
-    Log() << "the value of myapp-solver-type is " << this->vm()["myapp.ksp-type"].as<std::string>() << "\n";
-    Log() << "the value of myapp-pc-type is " << this->vm()["myapp.pc-type"].as<std::string>() << "\n";
+    LOG(INFO) << "the value of dt is " << this->vm()["dt"].as<double>() << "\n";
+    LOG(INFO) << "the value of myapp-solver-type is " << this->vm()["myapp.ksp-type"].as<std::string>() << "\n";
+    LOG(INFO) << "the value of myapp-pc-type is " << this->vm()["myapp.pc-type"].as<std::string>() << "\n";
     /** \endcode */
 }
 

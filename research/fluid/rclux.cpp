@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2008-03-17
 
   Copyright (C) 2008 Université Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file rclux.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2008-03-17
  */
 #include <feel/options.hpp>
@@ -90,7 +90,7 @@ makeAbout()
                            Feel::AboutData::License_GPL,
                            "Copyright (c) 2008 Université Joseph Fourier" );
 
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     return about;
 
 }
@@ -337,7 +337,7 @@ Rclux::run()
     if ( this->vm().count( "export-matlab" ) )
         Ap->printMatlab( "Ap.m" );
 
-    Log() << "pressure matrix assembled\n";
+    LOG(INFO) << "pressure matrix assembled\n";
     // --- Construction of velocity mass matrix Mu
 #if VELOCITY_UPDATE
     sparse_matrix_ptrtype Mu( M_backendu->newMatrix( Vh, Vh ) );
@@ -373,15 +373,15 @@ Rclux::run()
     if ( this->vm().count( "export-matlab" ) )
         Lu->printMatlab( "Lu.m" );
 
-    Log() << "velocity diffusion reaction matrix assembled\n";
+    LOG(INFO) << "velocity diffusion reaction matrix assembled\n";
 
     // --- Time loop
     for ( int iter = 0;
             time < this->vm()["ft"].as<double>();
             ++iter, time += dt )
     {
-        Log() << "============================================================\n";
-        Log() << "Time: " << time << "s" << " dt=" << dt << " ft=" << this->vm()["ft"].as<double>() << "\n";
+        LOG(INFO) << "============================================================\n";
+        LOG(INFO) << "Time: " << time << "s" << " dt=" << dt << " ft=" << this->vm()["ft"].as<double>() << "\n";
         double divTol = this->vm()["divtol"].as<double>();
         double divError = 2*divTol + 1;
         int subiter = 0;
@@ -424,7 +424,7 @@ Rclux::run()
             // --- solve for u
             this->solve( M_backendu, A, un, F );
 
-            Log() << "solve for cdr matrix done\n";
+            LOG(INFO) << "solve for cdr matrix done\n";
 
             // rhs for pressure increment
             form1( Ph, fp, _init=true ) = integrate( elements( mesh ), im_p_type(), -divv( un )*id( p )/dt );
@@ -436,11 +436,11 @@ Rclux::run()
 
             // --- solve for pressure increment phi
             this->solve( M_backendp, Ap, p, fp );
-            Log() << "solve for pressure matrix done\n";
+            LOG(INFO) << "solve for pressure matrix done\n";
 
             divError = math::sqrt( integrate( elements( mesh ), im_p_type(),
                                               divv( un )^2 ).evaluate()( 0,0 ) );
-            Log() << "[Splitting] ||div u||_2 = " << divError << "\n";
+            LOG(INFO) << "[Splitting] ||div u||_2 = " << divError << "\n";
 
             // --- update pressure
             pn += p;
@@ -455,12 +455,12 @@ Rclux::run()
 
             divError = std::sqrt( integrate( elements( mesh ), im_p_type(),
                                              divv( un )^2 ).evaluate() );
-            Log() << "[Splitting] ||div u||_2 = " << divError << "\n";
+            LOG(INFO) << "[Splitting] ||div u||_2 = " << divError << "\n";
 #endif
 
         } // inner loop
 
-        Log() << "inner divergence loop done\n";
+        LOG(INFO) << "inner divergence loop done\n";
         u = un;
 
         if ( this->vm().count( "transport" ) )
@@ -488,11 +488,11 @@ void
 Rclux::solve( backend_ptrtype& backend, sparse_matrix_ptrtype& D, vector_type& u, vector_ptrtype& F  )
 {
     boost::timer ti;
-    Log() << "Solving for matrix size " << D->size1() << " u.size: " << u.size() << " F.size: " << F->size() << "\n";
+    LOG(INFO) << "Solving for matrix size " << D->size1() << " u.size: " << u.size() << " F.size: " << F->size() << "\n";
     vector_ptrtype U( backend->newVector( u.map() ) );
     backend->solve( D, D, U, F );
     u = *U;
-    Log() << "Solving for matrix size " << D->size1() << " u.size: " << u.size() << " F.size: " << F->size() << " done in " << ti.elapsed() << "s.\n";
+    LOG(INFO) << "Solving for matrix size " << D->size1() << " u.size: " << u.size() << " F.size: " << F->size() << " done in " << ti.elapsed() << "s.\n";
 } // Rclux::solve
 
 
@@ -503,7 +503,7 @@ Rclux::exportResults( double time,
                       pressure_type& p                      )
 {
     boost::timer ti;
-    Log() << "exporting results\n";
+    LOG(INFO) << "exporting results\n";
     timeset_type::step_ptrtype timeStep = timeSet->step( time );
     timeStep->setMesh( c.functionSpace()->mesh() );
     timeStep->add( "pid",
@@ -512,7 +512,7 @@ Rclux::exportResults( double time,
     timeStep->add( "velocity", v );
     timeStep->add( "pressure", p );
     exporter->save();
-    Log() << "exporting results done in " << ti.elapsed() << "s.\n";
+    LOG(INFO) << "exporting results done in " << ti.elapsed() << "s.\n";
 } // Rclux::export
 } // Feel
 

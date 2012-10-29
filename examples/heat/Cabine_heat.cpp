@@ -105,7 +105,7 @@ makeAbout()
                      Feel::AboutData::License_GPL,
                      "Copyright (c) 2008-2009 Universite Joseph Fourier" );
 
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     return about;
 
 }
@@ -179,9 +179,9 @@ public:
     /**
      * Constructor
      */
-    BlocHeat( po::variables_map const& vm, AboutData const& about )
+    BlocHeat()
         :
-        super( vm, about ),
+        super(),
         M_backend( backend_type::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( this->vm()["shape"].template as<std::string>() )
@@ -361,14 +361,14 @@ BlocHeat<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
 
         if ( exporter->doExport() )
         {
-            Log() << "exportResults starts\n";
+            LOG(INFO) << "exportResults starts\n";
 
             exporter->step( t )->setMesh( mesh );
 
             exporter->step( t )->add( "T", T );
 
             exporter->save();
-            Log() << "exportResults done\n";
+            LOG(INFO) << "exportResults done\n";
         }
 
         /** \endcode */
@@ -393,11 +393,6 @@ main( int argc, char** argv )
     /** \code */
     Application app( argc, argv, makeAbout(), makeOptions() );
 
-    if ( app.vm().count( "help" ) )
-    {
-        std::cout << app.optionsDescription() << "\n";
-        return 0;
-    }
 
     /** \endcode */
 
@@ -405,7 +400,7 @@ main( int argc, char** argv )
      * register the simgets
      */
     /** \code */
-    app.add( new BlocHeat<2>( app.vm(), app.about() ) );
+    app.add( new BlocHeat<2>() );
     /** \endcode */
 
     /**

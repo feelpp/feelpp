@@ -3,7 +3,7 @@
   This file is part of the Feel library
 
   Author(s): Gilles Steiner <gilles.steiner@epfl.ch>
-             Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+             Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2005-07-28
 
   Copyright (C) 2005,2006 EPFL
@@ -26,7 +26,7 @@
 /**
    \file pointsetquadrature.hpp
    \author Gilles Steiner <gilles.steiner@epfl.ch>
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
  */
 #ifndef __Quadpoint_H
 #define __Quadpoint_H 1
@@ -59,7 +59,7 @@ enum IntegrationFaceEnum
  *
  *
  * \author Gilles Steiner <gilles.steiner@epfl.ch>
- * \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+ * \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
  */
 template<class Convex, uint16_type Integration_Degree, typename T>
 class PointSetQuadrature : public PointSet<Convex,T>

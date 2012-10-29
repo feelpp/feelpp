@@ -79,7 +79,7 @@ void
 run_test_geomap( Application_ptrtype & test_app )
 {
 
-    Log() << "[testGeoMap] start test geomap inverse\n";
+    LOG(INFO) << "[testGeoMap] start test geomap inverse\n";
 
     //-----------------------------------------------------------------------------------//
 
@@ -169,7 +169,7 @@ run_test_geomap( Application_ptrtype & test_app )
 
     //-----------------------------------------------------------------------------------//
 
-    Log() << "[testGeoMap] finish test geomap inverse\n";
+    LOG(INFO) << "[testGeoMap] finish test geomap inverse\n";
 
 } //end run
 
@@ -235,17 +235,17 @@ test_interp_boundary( boost::tuple<
 
     double  __errId = std::sqrt( integrate( markedfaces( mesh1, mesh1->markerName( "Interface" ) ),
                                             ( idv( u1 )-idv( u2 ) )*( idv( u1 )-idv( u2 ) ) ).evaluate()( 0,0 ) );
-    Log() << "[testBoundary] idv(u1) error : " << __errId << "\n";
+    LOG(INFO) << "[testBoundary] idv(u1) error : " << __errId << "\n";
     BOOST_CHECK_SMALL( __errId,1e-7 );
     //-----------------------------------------------------------------------------------//
     double  __errGrad = std::sqrt( integrate( markedfaces( mesh1, mesh1->markerName( "Interface" ) ),
                                    ( gradv( u1 )-gradv( u2 ) )*trans( gradv( u1 )-gradv( u2 ) ) ).evaluate()( 0,0 ) );
-    Log() << "[testBoundary] gradv(u1) error : " << __errGrad <<"\n";
+    LOG(INFO) << "[testBoundary] gradv(u1) error : " << __errGrad <<"\n";
     BOOST_CHECK_SMALL( __errGrad,1e-5 );
     //-----------------------------------------------------------------------------------//
     double  __errDiv = std::sqrt( integrate( markedfaces( mesh1, mesh1->markerName( "Interface" ) ),
                                   ( divv( v1 )-divv( v2 ) )*( divv( v1 )-divv( v2 ) ) ).evaluate()( 0,0 ) );
-    Log() << "[testBoundary] divv(u1) error : " << __errDiv << "\n";
+    LOG(INFO) << "[testBoundary] divv(u1) error : " << __errDiv << "\n";
     BOOST_CHECK_SMALL( __errDiv,1e-5 );
     //-----------------------------------------------------------------------------------//
     /*
@@ -261,46 +261,46 @@ test_interp_boundary( boost::tuple<
     //-----------------------------------------------------------------------------------//
     double  __errDivx = std::sqrt( integrate( markedfaces( mesh1, mesh1->markerName( "Interface" ) ),
                                    ( dxv( v1 )+dyv( v1 )-dxv( v2 )-dyv( v2 ) )*( dxv( v1 )+dyv( v1 )-dxv( v2 )-dyv( v2 ) ) ).evaluate()( 0,0 ) );
-    Log() << "[testBoundary] dxv+dyv(v1) error : " << __errDivx << "\n";
+    LOG(INFO) << "[testBoundary] dxv+dyv(v1) error : " << __errDivx << "\n";
     BOOST_CHECK_SMALL( __errDivx,1e-5 );
     //-----------------------------------------------------------------------------------//
     double  __errDx = std::sqrt( integrate( markedfaces( mesh1, mesh1->markerName( "Interface" ) ),
                                             ( dxv( u1 )-dxv( u2 ) )*( dxv( u1 )-dxv( u2 ) ) ).evaluate()( 0,0 ) );
-    Log() << "[testBoundary] dxv(u1) error : " << __errDx << "\n";
+    LOG(INFO) << "[testBoundary] dxv(u1) error : " << __errDx << "\n";
     BOOST_CHECK_SMALL( __errDx,1e-5 );
     //-----------------------------------------------------------------------------------//
     double  __errDy = std::sqrt( integrate( markedfaces( mesh1, mesh1->markerName( "Interface" ) ),
                                             ( dyv( u1 )-dyv( u2 ) )*( dyv( u1 )-dyv( u2 ) ) ).evaluate()( 0,0 ) );
-    Log() << "[testBoundary] dyv(u1) error : " << __errDy << "\n";
+    LOG(INFO) << "[testBoundary] dyv(u1) error : " << __errDy << "\n";
     BOOST_CHECK_SMALL( __errDy,1e-5 );
     //-----------------------------------------------------------------------------------//
 #if 0
     double  __errDz = std::sqrt( integrate( markedfaces( mesh1, mesh1->markerName( "Interface" ) ),
                                             ( dzv( u1 )-dzv( u2 ) )*( dzv( u1 )-dzv( u2 ) ) ).evaluate()( 0,0 ) );
-    Log() << "[testBoundary] dzv(u1) error : " << __errDz << "\n";
+    LOG(INFO) << "[testBoundary] dzv(u1) error : " << __errDz << "\n";
     BOOST_CHECK_SMALL( __errDz,1e-7 );
 #endif
     //-----------------------------------------------------------------------------------//
     double  __errCurl = std::sqrt( integrate( markedfaces( mesh1, mesh1->markerName( "Interface" ) ),
                                    trans( curlv( v1 )-curlv( v2 ) )*( curlv( v1 )-curlv( v2 ) ) ).evaluate()( 0,0 ) );
-    Log() << "[testBoundary] curlv(u1) error : " << __errCurl << "\n";
+    LOG(INFO) << "[testBoundary] curlv(u1) error : " << __errCurl << "\n";
     BOOST_CHECK_SMALL( __errCurl,1e-7 );
     //-----------------------------------------------------------------------------------//
     double  __errCurlx = std::sqrt( integrate( markedfaces( mesh1, mesh1->markerName( "Interface" ) ),
                                     ( curlxv( v1 )-curlxv( v2 ) )*( curlxv( v1 )-curlxv( v2 ) ) ).evaluate()( 0,0 ) );
-    Log() << "[testBoundary] curlxv(u1) error : " << __errCurlx << "\n";
+    LOG(INFO) << "[testBoundary] curlxv(u1) error : " << __errCurlx << "\n";
     BOOST_CHECK_SMALL( __errCurlx,1e-5 );
     //-----------------------------------------------------------------------------------//
     double  __errCurly = std::sqrt( integrate( markedfaces( mesh1, mesh1->markerName( "Interface" ) ),
                                     ( curlyv( v1 )-curlyv( v2 ) )*( curlyv( v1 )-curlyv( v2 ) ) ).evaluate()( 0,0 ) );
-    Log() << "[testBoundary] curlyv(u1) error : " << __errCurly << "\n";
+    LOG(INFO) << "[testBoundary] curlyv(u1) error : " << __errCurly << "\n";
     BOOST_CHECK_SMALL( __errCurly,1e-5 );
     //-----------------------------------------------------------------------------------//
 
 #if 0
     double  __errCurlz = std::sqrt( integrate( markedfaces( mesh1, mesh1->markerName( "Interface" ) ),
                                     ( curlzv( v1 )-curlzv( v2 ) )*( curlzv( v1 )-curlzv( v2 ) ) ).evaluate()( 0,0 ) );
-    Log() << "[testBoundary] curlzv(u1) error : " << __errCurlz << "\n";
+    LOG(INFO) << "[testBoundary] curlzv(u1) error : " << __errCurlz << "\n";
     //-----------------------------------------------------------------------------------//
 
 #endif
@@ -311,23 +311,23 @@ test_interp_boundary( boost::tuple<
         __errHess = std::sqrt( integrate( markedfaces( mesh1, mesh1->markerName( "Interface" ) ),
                                           trace( ( hessv( u1 )-hessv( u2 ) )*trans( hessv( u1 )-hessv( u2 ) ) ) ).evaluate()( 0,0 ) );
 
-    Log() << "[testBoundary] hessv(u1) error : " << __errHess << "\n";
+    LOG(INFO) << "[testBoundary] hessv(u1) error : " << __errHess << "\n";
     BOOST_CHECK_SMALL( __errHess,1e-7 );
 #endif
     //-----------------------------------------------------------------------------------//
     double  __errId2 = std::sqrt( integrate( markedfaces( mesh2, mesh2->markerName( "Interface" ) ),
                                   ( idv( u1 )-idv( u2 ) )*( idv( u1 )-idv( u2 ) ) ).evaluate()( 0,0 ) );
-    Log() << "[testBoundary] idv(u2) error : " << __errId2 << "\n";
+    LOG(INFO) << "[testBoundary] idv(u2) error : " << __errId2 << "\n";
     BOOST_CHECK_SMALL( __errId2,1e-7 );
     //-----------------------------------------------------------------------------------//
     double  __errGrad2 = std::sqrt( integrate( markedfaces( mesh2, mesh2->markerName( "Interface" ) ),
                                     ( gradv( u1 )-gradv( u2 ) )*trans( gradv( u1 )-gradv( u2 ) ) ).evaluate()( 0,0 ) );
-    Log() << "[testBoundary] gradv(u2) error : " << __errGrad2 << "\n";
+    LOG(INFO) << "[testBoundary] gradv(u2) error : " << __errGrad2 << "\n";
     BOOST_CHECK_SMALL( __errGrad2,1e-5 );
     //-----------------------------------------------------------------------------------//
     double  __errDiv2 = std::sqrt( integrate( markedfaces( mesh2, mesh2->markerName( "Interface" ) ),
                                    ( divv( v1 )-divv( v2 ) )*( divv( v1 )-divv( v2 ) ) ).evaluate()( 0,0 ) );
-    Log() << "[testBoundary] divv(u2) error : " << __errDiv2 << "\n";
+    LOG(INFO) << "[testBoundary] divv(u2) error : " << __errDiv2 << "\n";
     BOOST_CHECK_SMALL( __errDiv2,1e-5 );
     //-----------------------------------------------------------------------------------//
 
@@ -407,9 +407,9 @@ run_test_interp( Application_ptrtype & test_app )
 
     for ( ; itMesh!=itMesh_end ; ++itMesh, ++i )
     {
-        Log() << "[run] start test interpolation mesh pair" << i << "\n";
+        LOG(INFO) << "[run] start test interpolation mesh pair" << i << "\n";
         test_interp_boundary<Dim,OrderChamp,OrderGeo>( *itMesh, boost::mpl::int_<ScalarTest>() );
-        Log() << "[run] finish test interpolation mesh pair" << i << "\n";
+        LOG(INFO) << "[run] finish test interpolation mesh pair" << i << "\n";
     }
 
 }
@@ -423,7 +423,7 @@ void
 run_test_export( Application_ptrtype & test_app )
 {
 
-    Log() << "[testExport] starts\n";
+    LOG(INFO) << "[testExport] starts\n";
 
     //-----------------------------------------------------------------------------------//
 
@@ -481,7 +481,7 @@ run_test_export( Application_ptrtype & test_app )
     __exporter->step( 0 )->setMesh( mesh );
     __exporter->step( 0 )->add( "u_scal", u );
     __exporter->save();
-    Log() << "[testExport] finish\n";
+    LOG(INFO) << "[testExport] finish\n";
 
 } // run_test_export
 
