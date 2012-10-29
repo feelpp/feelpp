@@ -35,3 +35,10 @@ feelpp_add_application( doc_multi_levels SRCS multi_levels.cpp )
 # Non-conforming domain decomposition methods
 feelpp_add_application( doc_mortar SRCS mortar.cpp )
 feelpp_add_application( doc_threefields SRCS threefields.cpp )
+
+add_dependencies( doc
+  feelpp_doc_overlapping
+  feelpp_doc_nonoverlapping
+  feelpp_doc_multi_levels
+  feelpp_doc_mortar
+  feelpp_doc_threefields )
