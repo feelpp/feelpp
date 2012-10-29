@@ -820,6 +820,7 @@ main( int argc, char** argv )
     Environment env( _argc=argc, _argv=argv,
                      _desc=makeOptions(),
                      _about=makeAbout() );
+    Application app;
     app.add( new ThreeFields<2,2,2,3>() );
 
     app.run();
