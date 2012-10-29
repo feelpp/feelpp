@@ -76,6 +76,41 @@ MatrixPetsc<T>::MatrixPetsc( MatrixSparse<value_type> const& M, IS& isrow, IS& i
     this->close();
 }
 
+template <typename T>
+inline
+MatrixPetsc<T>::MatrixPetsc( MatrixSparse<value_type> const& M, std::vector<int> const& rowIndex, std::vector<int> const& colIndex )
+    :
+    super(),
+    _M_destroy_mat_on_exit( true )
+{
+    MatrixPetsc<T> const* A = dynamic_cast<MatrixPetsc<T> const*> ( &M );
+    IS isrow;
+    IS iscol;
+    PetscInt *rowMap;
+    PetscInt *colMap;
+    int nrow = rowIndex.size();
+    int ncol = colIndex.size();
+
+    PetscMalloc(nrow*sizeof(PetscInt),&rowMap);
+    PetscMalloc(ncol*sizeof(PetscInt),&colMap);
+
+    for (int i=0; i<nrow; i++) rowMap[i] = rowIndex[i];
+    for (int i=0; i<ncol; i++) colMap[i] = colIndex[i];
+
+    ISCreateGeneral(Environment::worldComm(),nrow,rowMap,PETSC_COPY_VALUES,&isrow);
+    ISCreateGeneral(Environment::worldComm(),ncol,colMap,PETSC_COPY_VALUES,&iscol);
+    PetscFree(rowMap);
+    PetscFree(colMap);
+
+    DataMap dmrow(nrow, nrow);
+    DataMap dmcol(ncol, ncol);
+    this->setMapRow(dmrow);
+    this->setMapCol(dmcol);
+    MatGetSubMatrix(A->mat(), isrow, iscol, MAT_INITIAL_MATRIX, &this->_M_mat);
+    this->setInitialized( true );
+    this->close();
+}
+
 
 template <typename T>
 inline
