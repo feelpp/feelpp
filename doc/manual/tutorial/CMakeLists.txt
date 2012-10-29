@@ -1,5 +1,4 @@
 ###  TEMPLATE.txt.tpl; coding: utf-8 ---
-
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
 #       Date: 2012-02-03
 #
@@ -45,10 +44,22 @@ if( NOT FEELPP_MINIMAL_CONFIGURATION )
 
   feelpp_add_application( doc_stokes SRCS stokes.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} )
   feelpp_add_application( doc_stokes_lm SRCS stokes.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} DEFS FEELPP_USE_LM )
-  feelpp_add_application( doc_stokes_poiseuille SRCS stokes_poiseuille.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} )
-  feelpp_add_application( doc_stokes_poiseuille_lm SRCS stokes_poiseuille.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} DEFS FEELPP_USE_LM )
 
-  feelpp_add_application( doc_stokes3d SRCS stokes3d.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} )
-  feelpp_add_application( doc_stokes3d_lm SRCS stokes3d.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} DEFS FEELPP_USE_LM )
+  feelpp_add_application( doc_stokes_Dirichlet_Dirichlet SRCS stokes_Dirichlet_Dirichlet.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} )
+  feelpp_add_application( doc_stokes_Dirichlet_Dirichlet_lm SRCS stokes_Dirichlet_Dirichlet.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} DEFS FEELPP_USE_LM )
+  feelpp_add_application( doc_stokes_Dirichlet_Dirichlet_cylinder SRCS stokes_Dirichlet_Dirichlet.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} DEFS STOKESPRESSMESHTYPE=2)
+  feelpp_add_application( doc_stokes_Dirichlet_Dirichlet_hypercube SRCS stokes_Dirichlet_Dirichlet.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} DEFS STOKESPRESSMESHTYPE=1)
+
+  feelpp_add_application( doc_stokes_Dirichlet_Neumann SRCS stokes_Dirichlet_Neumann.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} )
+  feelpp_add_application( doc_stokes_Dirichlet_Neumann_lm SRCS stokes_Dirichlet_Neumann.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} DEFS FEELPP_USE_LM )
+  feelpp_add_application( doc_stokes_Dirichlet_Neumann_cylinder SRCS stokes_Dirichlet_Neumann.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} DEFS STOKESPRESSMESHTYPE=2)
+  feelpp_add_application( doc_stokes_Dirichlet_Neumann_hypercube SRCS stokes_Dirichlet_Neumann.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} DEFS STOKESPRESSMESHTYPE=1)
+
+  feelpp_add_application( doc_stokes_Neumann_Neumann SRCS stokes_Neumann_Neumann.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} )
+  feelpp_add_application( doc_stokes_Neumann_Neumann_aorta SRCS stokes_Neumann_Neumann.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} DEFS STOKESPRESSMESHTYPE=3)
+  feelpp_add_application( doc_stokes_Neumann_Neumann_cylinder SRCS stokes_Neumann_Neumann.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} DEFS STOKESPRESSMESHTYPE=2)
+  feelpp_add_application( doc_stokes_Neumann_Neumann_hypercube SRCS stokes_Neumann_Neumann.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} DEFS STOKESPRESSMESHTYPE=1)
+
+  feelpp_add_application( doc_stokes_laplacian_inlet SRCS stokes_laplacian_inlet.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES})
 endif()
 
