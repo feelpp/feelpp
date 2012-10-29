@@ -22,4 +22,4 @@
 #
 #
 
-feelpp_add_application( check SRCS check.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG check.cfg SCRIPTS check.py ADD_OT )
+feelpp_add_application( check EXCLUDE_FROM_ALL SRCS check.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG check.cfg SCRIPTS check.py ADD_OT )

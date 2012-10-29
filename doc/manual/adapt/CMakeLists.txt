@@ -22,10 +22,10 @@
 #
 #
 include_directories( ${CMAKE_CURRENT_SOURCE_DIR} )
-add_docex(residualestimator)
+feelpp_add_application(doc_residualestimator SRCS residualestimator.cpp )
 if (OCTAVE_FOUND)
   add_octave_module(residualestimator)
 endif()
 
-feelpp_add_application(LShape SRCS Lshape.cpp  LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG Lshape.cfg )
+feelpp_add_application(doc_LShape SRCS Lshape.cpp  CFG Lshape.cfg )
 

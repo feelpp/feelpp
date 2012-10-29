@@ -58,7 +58,9 @@ typedef boost::mpl::list<boost::mpl::int_<2> > dim_types;
 
 BOOST_AUTO_TEST_CASE_TEMPLATE( evaluate1, T, dim_types )
 {
-    Feel::Environment env;//( 1, boost::unit_test::framework::master_test_suite().argv[0] );
+
+    Feel::Environment env(boost::unit_test::framework::master_test_suite().argc,
+                           boost::unit_test::framework::master_test_suite().argv );
 
 
     BOOST_TEST_MESSAGE( "check 1 vf::sum and vf::evaluate for dim = " << T::value << "\n" );
