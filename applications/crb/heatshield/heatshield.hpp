@@ -173,7 +173,11 @@ public:
 
     typedef std::vector< std::vector< double > > beta_vector_type;
 
-    typedef boost::tuple< std::vector< std::vector<sparse_matrix_ptrtype> >, std::vector< std::vector<sparse_matrix_ptrtype> >,  std::vector< std::vector<std::vector<vector_ptrtype> > > , std::vector< std::vector< vector_ptrtype > > > affine_decomposition_type;
+    typedef boost::tuple<
+        std::vector< std::vector<sparse_matrix_ptrtype> >,
+        std::vector< std::vector<sparse_matrix_ptrtype> >,
+        std::vector< std::vector<std::vector<vector_ptrtype> > > ,
+        std::vector< std::vector< element_ptrtype > > > affine_decomposition_type;
 
     //@}
 
@@ -243,11 +247,6 @@ public:
         return 1;
     }
 
-    int Qmf() const
-    {
-        return 1;
-    }
-
     int mMaxA( int q )
     {
         if ( q < 3 )
@@ -272,6 +271,15 @@ public:
             throw std::logic_error( "[Model heatshield] ERROR : try to acces to mMaxF(output_index,q) with a bad value of q");
     }
 
+    int QInitialGuess() const
+    {
+        return 1;
+    }
+
+    int mMaxInitialGuess( int q )
+    {
+        return 1;
+    }
 
 
     /**
@@ -292,6 +300,12 @@ public:
      * \brief compute the theta coefficient for both bilinear and linear form
      * \param mu parameter to evaluate the coefficients
      */
+    boost::tuple<beta_vector_type, beta_vector_type, std::vector<beta_vector_type>, beta_vector_type>
+    computeBetaQm( element_type const& T,parameter_type const& mu , double time=1e30 )
+    {
+        return computeBetaQm( mu , time );
+    }
+
     boost::tuple<beta_vector_type, beta_vector_type, std::vector<beta_vector_type> , beta_vector_type >
     computeBetaQm( parameter_type const& mu , double time=1e30 )
     {
@@ -319,11 +333,11 @@ public:
         M_betaFqm[1][0].resize( 1 );
         M_betaFqm[1][0][0] = 1./surface;
 
-        M_betaMFqm.resize( Qmf() );
-        M_betaMFqm[0].resize( 1 );
-        M_betaMFqm[0][0] = M_betaMqm[0][0]*M_betaFqm[0][0][0];
+        M_betaInitialGuessQm.resize( QInitialGuess() );
+        M_betaInitialGuessQm[0].resize( 1 );
+        M_betaInitialGuessQm[0][0] = 0;
 
-        return boost::make_tuple( M_betaMqm, M_betaAqm, M_betaFqm , M_betaMFqm);
+        return boost::make_tuple( M_betaMqm, M_betaAqm, M_betaFqm , M_betaInitialGuessQm);
     }
 
     /**
@@ -369,9 +383,9 @@ public:
         return M_betaMqm[q][m];
     }
 
-    value_type betaMFqm( int q, int m ) const
+    value_type betaInitialGuessQm( int q, int m ) const
     {
-        return M_betaMFqm[q][m];
+        return M_betaInitialGuessQm[q][m];
     }
 
 
@@ -381,11 +395,6 @@ public:
     value_type betaL( int l, int q, int m ) const
     {
         return M_betaFqm[l][q][m];
-    }
-
-    value_type betaMFq( int q, int m ) const
-    {
-        return M_betaMFqm[q][m];
     }
 
     //@}
@@ -465,6 +474,7 @@ public:
      * solve for a given parameter \p mu
      */
     element_type solve( parameter_type const& mu );
+    element_type solveRB( parameter_type const& mu );
 
     /**
      * solve \f$ M u = f \f$
@@ -563,11 +573,11 @@ private:
     std::vector< std::vector<sparse_matrix_ptrtype> > M_Aqm;
     std::vector< std::vector<sparse_matrix_ptrtype> > M_Mqm;
     std::vector< std::vector<std::vector<vector_ptrtype> > > M_Fqm;
-    std::vector< std::vector< vector_ptrtype> > M_MFqm;
+    std::vector< std::vector< element_ptrtype> > M_InitialGuessQm;
 
     beta_vector_type M_betaAqm;
     beta_vector_type M_betaMqm;
-    beta_vector_type M_betaMFqm;
+    beta_vector_type M_betaInitialGuessQm;
     std::vector<beta_vector_type> M_betaFqm;
 
     bdf_ptrtype M_bdf;
@@ -719,13 +729,14 @@ void HeatShield::init()
         }
     }
 
-    M_MFqm.resize( this->Qmf() );
-    for(int q=0; q<Qmf(); q++)
+    /*
+    M_InitialGuessQm.resize( this->QInitialGuess() );
+    for(int q=0; q<QInitialGuess(); q++)
     {
-        M_MFqm[q].resize( 1 );
-        M_MFqm[q][0] = backend->newVector( Xh );
+        M_InitialGuessQm[q].resize( 1 );
+        M_InitialGuessQm[q][0] = backend->newVector( Xh );
     }
-
+    */
     Feel::ParameterSpace<ParameterSpaceDimension>::Element mu_min( M_Dmu );
     mu_min <<  /* Bi_out */ 1e-2 , /*Bi_in*/1e-3;
     M_Dmu->setMin( mu_min );
@@ -745,8 +756,6 @@ void HeatShield::init()
 void HeatShield::assemble()
 {
 
-    std::cout<<" -- 0 -- "<<std::endl;
-    M_bdf->start();
     using namespace Feel::vf;
 
     element_type u( Xh, "u" );
@@ -776,8 +785,12 @@ void HeatShield::assemble()
     form2( _test=Xh, _trial=Xh, _matrix=M_Mqm[0][0] ) = integrate ( _range=elements( mesh ), _expr=idt( u )*id( v ) );
     M_Mqm[0][0]->close();
 
-    M_MFqm[0][0]->addVector( M_Fqm[0][0][0] , M_Mqm[0][0] );
-    M_MFqm[0][0]->close();
+    auto ini_cond = Xh->elementPtr();
+    ini_cond->setZero();
+    M_InitialGuessQm.resize( 1 );
+    M_InitialGuessQm[0].resize( 1 );
+    M_InitialGuessQm[0][0] = ini_cond;
+
 
     //for scalarProduct
     M = backend->newMatrix( _test=Xh, _trial=Xh );
@@ -813,7 +826,7 @@ HeatShield::newVector() const
 typename HeatShield::affine_decomposition_type
 HeatShield::computeAffineDecomposition()
 {
-    return boost::make_tuple( M_Mqm, M_Aqm, M_Fqm , M_MFqm );
+    return boost::make_tuple( M_Mqm, M_Aqm, M_Fqm , M_InitialGuessQm );
 }
 
 
@@ -893,6 +906,11 @@ void HeatShield::update( parameter_type const& mu,double bdf_coeff, element_type
 }
 
 
+typename HeatShield::element_type
+HeatShield::solveRB( parameter_type const& mu )
+{
+    return solve( mu );
+}
 
 
 typename HeatShield::element_type
@@ -918,17 +936,15 @@ void HeatShield::solve( parameter_type const& mu, element_ptrtype& T, int output
 
     element_type v( Xh, "v" );//test functions
 
-    M_bdf->initialize( *T );
-
     if ( M_is_steady )
     {
         M_bdf->setSteady();
     }
 
-    double bdf_coeff = M_bdf->polyDerivCoefficient( 0 );
 
-    for ( M_bdf->start(); !M_bdf->isFinished() ; M_bdf->next() )
+    for ( M_bdf->start(*T); !M_bdf->isFinished() ; M_bdf->next() )
     {
+        double bdf_coeff = M_bdf->polyDerivCoefficient( 0 );
 
         this->computeBetaQm( mu, M_bdf->time() );
         auto bdf_poly = M_bdf->polyDeriv();

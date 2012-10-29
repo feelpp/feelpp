@@ -1403,7 +1403,7 @@ CRB<TruthModelType>::offline()
 
     sparse_matrix_ptrtype M,A,Adu,At;
     element_ptrtype InitialGuess;
-    vector_ptrtype MF;
+    //vector_ptrtype MF;
     std::vector<vector_ptrtype> F,L;
 
     LOG(INFO) << "[CRB::offline] compute affine decomposition\n";
@@ -1531,7 +1531,7 @@ CRB<TruthModelType>::offline()
             mu.check();
             u->zero();
             udu->zero();
-            boost::tie( boost::tuples::ignore, A, F, MF ) = M_model->update( mu , 1e30 );
+            boost::tie( boost::tuples::ignore, A, F, boost::tuples::ignore ) = M_model->update( mu , 1e30 );
 
             LOG(INFO) << "  -- updated model for parameter in " << timer2.elapsed() << "s\n";
             timer2.restart();
@@ -1539,7 +1539,8 @@ CRB<TruthModelType>::offline()
 
             LOG(INFO) << "[CRB::offline] solving primal" << "\n";
             backend_primal_problem->solve( _matrix=A,  _solution=u, _rhs=F[0] );
-
+            //std::cout<<"CRB::offline - solveFemUsingOnlineEimPicard"<<std::endl;
+            //M_model->solveFemUsingOnlineEimPicard( mu );
 
             //std::cout<<"u->l2Norm() : "<<u->l2Norm()<<std::endl;
             //this->worldComm().barrier();
@@ -1610,28 +1611,25 @@ CRB<TruthModelType>::offline()
             M_bdf_primal_save->setTimeFinal( M_model->timeFinal() );
             M_bdf_primal_save->setOrder( M_model->timeOrder() );
 
-            M_bdf_primal->start();
-            M_bdf_primal_save->start();
-
             //initialization of unknown
             M_model->initializationField( u, mu );
-            M_bdf_primal->initialize( *u );
-            M_bdf_primal_save->initialize( *u );
+            //M_bdf_primal->initialize( *u );
 
             //direct problem
-            double bdf_coeff = M_bdf_primal->polyDerivCoefficient( 0 );
+            double bdf_coeff;
 
             auto vec_bdf_poly = backend_primal_problem->newVector( M_model->functionSpace() );
 
-            for ( M_bdf_primal->start(),M_bdf_primal_save->start();
+            for ( M_bdf_primal->start(*u),M_bdf_primal_save->start(*u);
                     !M_bdf_primal->isFinished() , !M_bdf_primal_save->isFinished();
                     M_bdf_primal->next() , M_bdf_primal_save->next() )
             {
 
+                bdf_coeff = M_bdf_primal->polyDerivCoefficient( 0 );
 
                 auto bdf_poly = M_bdf_primal->polyDeriv();
 
-                boost::tie( M, A, F, MF ) = M_model->update( mu , M_bdf_primal->time() );
+                boost::tie( M, A, F, boost::tuples::ignore) = M_model->update( mu , M_bdf_primal->time() );
 
 
                 A->addMatrix( bdf_coeff, M );
@@ -1710,13 +1708,11 @@ CRB<TruthModelType>::offline()
                 M_bdf_dual_save->setOrder( M_model->timeOrder() );
 
                 Adu = M_model->newMatrix();
-                M_bdf_dual->start();
-                M_bdf_dual_save->start();
 
                 //initialization
                 double dt = M_model->timeStep();
 
-                boost::tie( M, A, F, MF ) = M_model->update( mu , M_bdf_dual->timeInitial() );
+                boost::tie( M, A, F, boost::tuples::ignore ) = M_model->update( mu , M_bdf_dual->timeInitial() );
 
 #if 0
                 A->addMatrix( 1./dt, M );
@@ -1736,21 +1732,17 @@ CRB<TruthModelType>::offline()
 #endif
                 *udu=*dual_initial_field;
 
-                M_bdf_dual->initialize( *udu );
-                M_bdf_dual_save->initialize( *udu );
 
-
-                bdf_coeff = M_bdf_dual->polyDerivCoefficient( 0 );
-
-                for ( M_bdf_dual->start(),M_bdf_dual_save->start();
+                for ( M_bdf_dual->start(*udu),M_bdf_dual_save->start(*udu);
                         !M_bdf_dual->isFinished() , !M_bdf_dual_save->isFinished();
                         M_bdf_dual->next() , M_bdf_dual_save->next() )
                 {
 
+                    bdf_coeff = M_bdf_dual->polyDerivCoefficient( 0 );
 
                     auto bdf_poly = M_bdf_dual->polyDeriv();
 
-                    boost::tie( M, A, F, MF ) = M_model->update( mu , M_bdf_dual->time() );
+                    boost::tie( M, A, F, boost::tuples::ignore ) = M_model->update( mu , M_bdf_dual->time() );
                     A->addMatrix( bdf_coeff, M );
                     A->transpose( Adu );
                     Rhs->zero();
@@ -1894,6 +1886,7 @@ CRB<TruthModelType>::offline()
 
             POD->setBdf( M_bdf_primal_save );
             POD->setModel( M_model );
+            POD->setTimeInitial( M_model->timeInitial() );
             mode_set_type ModeSet;
 
             size_type number_max_of_mode = POD->pod( ModeSet,true );
@@ -1924,6 +1917,7 @@ CRB<TruthModelType>::offline()
             if ( solve_dual_problem || M_error_type==CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM )
             {
                 POD->setBdf( M_bdf_dual );
+                POD->setTimeInitial( M_model->timeFinal()+M_model->timeStep() );
                 mode_set_type ModeSetdu;
                 POD->pod( ModeSetdu,false );
 
@@ -2478,7 +2472,7 @@ CRB<TruthModelType>::compareResidualsForTransientProblems( parameter_type const&
     }
 
     sparse_matrix_ptrtype A,AM,M,Adu;
-    vector_ptrtype MF;
+    //vector_ptrtype MF;
     std::vector<vector_ptrtype> F,L;
 
     vector_ptrtype Rhs( M_backend->newVector( M_model->functionSpace() ) );
@@ -2507,7 +2501,7 @@ CRB<TruthModelType>::compareResidualsForTransientProblems( parameter_type const&
 
         auto bdf_poly = M_bdf_primal->polyDeriv();
 
-        boost::tie( M, A, F, MF ) = M_model->update( mu , M_bdf_primal->time() );
+        boost::tie( M, A, F, boost::tuples::ignore ) = M_model->update( mu , M_bdf_primal->time() );
 
 	A->close();
 
@@ -2570,13 +2564,13 @@ CRB<TruthModelType>::compareResidualsForTransientProblems( parameter_type const&
     //initialization
     time_step = M_bdf_dual->timeStep();
 
-    boost::tie( M, A, F, MF ) = M_model->update( mu , M_bdf_dual->timeInitial() );
+    boost::tie( M, A, F, boost::tuples::ignore ) = M_model->update( mu , M_bdf_dual->timeInitial() );
 
     for ( M_bdf_dual->start(); !M_bdf_dual->isFinished() ; M_bdf_dual->next() )
     {
         auto bdf_poly = M_bdf_dual->polyDeriv();
 
-        boost::tie( M, A, F, MF ) = M_model->update( mu , M_bdf_dual->time() );
+        boost::tie( M, A, F, boost::tuples::ignore ) = M_model->update( mu , M_bdf_dual->time() );
 
 	*undu = *Undu[time_index];
 	*unduold = *Unduold[time_index];
@@ -2646,7 +2640,7 @@ CRB<TruthModelType>::checkResidual( parameter_type const& mu, std::vector< std::
     }
 
     sparse_matrix_ptrtype A,At,M;
-    vector_ptrtype MF;
+    //vector_ptrtype MF;
     std::vector<vector_ptrtype> F,L;
 
     backend_ptrtype backendA = backend_type::build( BACKEND_PETSC );
@@ -2659,7 +2653,7 @@ CRB<TruthModelType>::checkResidual( parameter_type const& mu, std::vector< std::
 
     boost::timer timer, timer2;
 
-    boost::tie( boost::tuples::ignore, A, F, MF ) = M_model->update( mu );
+    boost::tie( boost::tuples::ignore, A, F, boost::tuples::ignore ) = M_model->update( mu );
 
     LOG(INFO) << "  -- updated model for parameter in " << timer2.elapsed() << "s\n";
     timer2.restart();
@@ -4437,7 +4431,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
     std::vector< std::vector<sparse_matrix_ptrtype> > Aqm;
     std::vector< std::vector<sparse_matrix_ptrtype> > Mqm;
     std::vector< std::vector<std::vector<vector_ptrtype> > > Fqm;
-    std::vector<std::vector<element_ptrtype> > MFqm;
+    std::vector<std::vector<vector_ptrtype> > MFqm;
     boost::tie( Mqm, Aqm, Fqm , MFqm ) = M_model->computeAffineDecomposition();
     __X->zero();
     __X->add( 1.0 );
@@ -5200,7 +5194,8 @@ CRB<TruthModelType>::expansion( parameter_type const& mu , int N)
     std::vector<vectorN_type> uNduold;
 
     auto o = lb( Nwn, mu, uN, uNdu , uNold, uNduold );
-    return Feel::expansion( M_WN, uN[0] , Nwn);
+    int size=uN.size();
+    return Feel::expansion( M_WN, uN[size-1] , Nwn);
 }
 
 
