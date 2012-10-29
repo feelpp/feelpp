@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2006-11-26
 
   Copyright (C) 2006 Université Joseph Fourier
@@ -23,7 +23,7 @@
 */
 /**
    \file gmshhypercubedomain.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2006-11-26
  */
 #ifndef __GmshHypercubeDomain_H

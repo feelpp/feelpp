@@ -34,7 +34,7 @@ namespace Feel
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2008-02-14
 
   Copyright (C) 2008 Université Joseph Fourier (Grenoble I)
@@ -55,7 +55,7 @@ namespace Feel
 */
 /**
    \file adfunctions.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2008-02-14
  */
 template <class Expr> class ADFuncCos
@@ -163,7 +163,7 @@ cos ( const ADType<T, Nvar, Order, Var>& x )
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2008-02-14
 
   Copyright (C) 2008 Université Joseph Fourier (Grenoble I)
@@ -184,7 +184,7 @@ cos ( const ADType<T, Nvar, Order, Var>& x )
 */
 /**
    \file adfunctions.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2008-02-14
  */
 template <class Expr> class ADFuncSin
@@ -292,7 +292,7 @@ sin ( const ADType<T, Nvar, Order, Var>& x )
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2008-02-14
 
   Copyright (C) 2008 Université Joseph Fourier (Grenoble I)
@@ -313,7 +313,7 @@ sin ( const ADType<T, Nvar, Order, Var>& x )
 */
 /**
    \file adfunctions.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2008-02-14
  */
 template <class Expr> class ADFuncTan
@@ -421,7 +421,7 @@ tan ( const ADType<T, Nvar, Order, Var>& x )
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2008-02-14
 
   Copyright (C) 2008 Université Joseph Fourier (Grenoble I)
@@ -442,7 +442,7 @@ tan ( const ADType<T, Nvar, Order, Var>& x )
 */
 /**
    \file adfunctions.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2008-02-14
  */
 template <class Expr> class ADFuncSqrt
@@ -550,7 +550,7 @@ sqrt ( const ADType<T, Nvar, Order, Var>& x )
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2008-02-14
 
   Copyright (C) 2008 Université Joseph Fourier (Grenoble I)
@@ -571,7 +571,7 @@ sqrt ( const ADType<T, Nvar, Order, Var>& x )
 */
 /**
    \file adfunctions.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2008-02-14
  */
 template <class Expr> class AdFuncExp
@@ -679,7 +679,7 @@ exp ( const ADType<T, Nvar, Order, Var>& x )
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2008-02-14
 
   Copyright (C) 2008 Université Joseph Fourier (Grenoble I)
@@ -700,7 +700,7 @@ exp ( const ADType<T, Nvar, Order, Var>& x )
 */
 /**
    \file adfunctions.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2008-02-14
  */
 template <class Expr> class AdFuncLog
@@ -808,7 +808,7 @@ log ( const ADType<T, Nvar, Order, Var>& x )
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2008-02-14
 
   Copyright (C) 2008 Université Joseph Fourier (Grenoble I)
@@ -829,7 +829,7 @@ log ( const ADType<T, Nvar, Order, Var>& x )
 */
 /**
    \file adfunctions.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2008-02-14
  */
 template <class Expr> class AdFuncLog10
@@ -937,7 +937,7 @@ log10 ( const ADType<T, Nvar, Order, Var>& x )
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2008-02-14
 
   Copyright (C) 2008 Université Joseph Fourier (Grenoble I)
@@ -958,7 +958,7 @@ log10 ( const ADType<T, Nvar, Order, Var>& x )
 */
 /**
    \file adfunctions.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2008-02-14
  */
 template <class Expr> class AdFuncAbs

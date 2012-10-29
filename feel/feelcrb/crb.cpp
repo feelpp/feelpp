@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2009-11-24
 
   Copyright (C) 2009 Université Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file opuscrb.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2009-11-24
  */
 #include <feel/feelcore/feel.hpp>
@@ -62,10 +62,15 @@ crbOptions( std::string const& prefix )
     ( "crb.print-error-during-rb-construction" , Feel::po::value<bool>()->default_value( 0 ), " print the max error (absolute) obtained during the offline step" )
     ( "crb.compute-variance" , Feel::po::value<bool>()->default_value( 0 ), " if true the output is the variance and not l(v)" )
     ( "crb.check.residual-transient-problems" , Feel::po::value<bool>()->default_value( 0 ), "check residuals for transient problems" )
+    ( "crb.save-information-for-variance",Feel::po::value<bool>()->default_value( 0 ), "if true will build variance matrix but it takes some times" )
+
     ( "crb.max-fixedpoint-iterations",Feel::po::value<int>()->default_value( 10 ), "nb iteration max for the fixed point (online part)" )
     ( "crb.solution-fixedpoint-tol",Feel::po::value<double>()->default_value( 1e-10 ), "tolerance on solution for fixed point (online part)" )
-    ( "crb.cvg-study",Feel::po::value<bool>()->default_value( false ), "convergence study if true")
+    ( "crb.output-fixedpoint-tol",Feel::po::value<double>()->default_value( 1e-10 ), "tolerance on output for fixed point (online part)" )
+    ( "crb.fixedpoint-verbose",Feel::po::value<bool>()->default_value( false ), "fixed point verbose if true" )
+    ( "crb.fixedpoint-critical-value",Feel::po::value<double>()->default_value(1000 ), "will crash if increment error at the end of fixed point is greater than this critical value" )
 
+    ( "crb.cvg-study",Feel::po::value<bool>()->default_value( false ), "convergence study if true")
     ;
 
 

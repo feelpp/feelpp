@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2009-01-04
 
   Copyright (C) 2009 Christophe Prud'homme
@@ -24,7 +24,7 @@
 */
 /**
    \file laplacian.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2009-01-04
  */
 #if !defined( __FEELPP_BENCH_LAPLACIAN_HPP)
@@ -208,14 +208,14 @@ Laplacian<Dim, BasisU, Entity>::run()
     auto u = Xh->element();
     auto v = Xh->element();
 
-    Log() << "Data Summary:\n";
-    Log() << "   hsize = " << meshSize() << "\n";
-    Log() << "  export = " << this->vm().count( "export" ) << "\n";
-    Log() << "      mu = " << mu << "\n";
-    Log() << " bccoeff = " << penalbc << "\n";
-    Log() << "[mesh]   number of elements: " << Xh->mesh()->numElements() << "\n";
-    Log() << "[dof]         number of dof: " << Xh->nDof() << "\n";
-    Log() << "[dof]    number of dof/proc: " << Xh->nLocalDof() << "\n";
+    LOG(INFO) << "Data Summary:\n";
+    LOG(INFO) << "   hsize = " << meshSize() << "\n";
+    LOG(INFO) << "  export = " << this->vm().count( "export" ) << "\n";
+    LOG(INFO) << "      mu = " << mu << "\n";
+    LOG(INFO) << " bccoeff = " << penalbc << "\n";
+    LOG(INFO) << "[mesh]   number of elements: " << Xh->mesh()->numElements() << "\n";
+    LOG(INFO) << "[dof]         number of dof: " << Xh->nDof() << "\n";
+    LOG(INFO) << "[dof]    number of dof/proc: " << Xh->nLocalDof() << "\n";
 
     size_type gnelts=0;
     mpi::all_reduce( this->comm(), Xh->mesh()->numElements() , gnelts, [] ( size_type x, size_type y ) {return x + y;} );
@@ -225,7 +225,7 @@ Laplacian<Dim, BasisU, Entity>::run()
     M_stats.put( "n.space.ndof",Xh->nDof() );
     M_stats.put( "n.space.nlocaldof",Xh->nLocalDof() );
     M_stats.put( "t.init.space",t.elapsed() );
-    Log() << "  -- time space and functions construction "<<t.elapsed()<<" seconds \n";
+    LOG(INFO) << "  -- time space and functions construction "<<t.elapsed()<<" seconds \n";
     t.restart() ;
 
     double penalbc = this->vm()["bccoeff"].template as<value_type>();
@@ -241,7 +241,7 @@ Laplacian<Dim, BasisU, Entity>::run()
     auto F = M_backend->newVector( Xh );
     form1( Xh, F, _init=true );
     M_stats.put( "t.init.vector",t.elapsed() );
-    Log() << "  -- time for vector init done in "<<t.elapsed()<<" seconds \n";
+    LOG(INFO) << "  -- time for vector init done in "<<t.elapsed()<<" seconds \n";
     t.restart() ;
     form1( Xh, F ) = integrate( elements( mesh ), trans( f )*id( v ) );
     M_stats.put( "t.assembly.vector.source",subt.elapsed() );
@@ -255,12 +255,12 @@ Laplacian<Dim, BasisU, Entity>::run()
         form1( Xh, F ) += integrate( _range=boundaryfaces( mesh ), _expr=penalbc*inner( u_exact,id( v ) )/hFace() );
         //form1( Xh, F ) += integrate( _range=boundaryfaces(mesh), _expr=penalbc*max(betacoeff,mu/hFace())*(trans(id(v))*N())*N());
         M_stats.put( "t.assembly.vector.dirichlet2",subt.elapsed() );
-        Log() << "   o time for rhs weak dirichlet terms: " << subt.elapsed() << "\n";
+        LOG(INFO) << "   o time for rhs weak dirichlet terms: " << subt.elapsed() << "\n";
         subt.restart();
     }
 
     M_stats.put( "t.assembly.vector.total",t.elapsed() );
-    Log() << "  -- time vector global assembly done in "<<t.elapsed()<<" seconds \n";
+    LOG(INFO) << "  -- time vector global assembly done in "<<t.elapsed()<<" seconds \n";
     t.restart() ;
 
     /*
@@ -292,7 +292,7 @@ Laplacian<Dim, BasisU, Entity>::run()
     auto D = M_backend->newMatrix( Xh, Xh );
     form2( Xh, Xh, D, _init=true );
     M_stats.put( "t.init.matrix",t.elapsed() );
-    Log() << "  -- time for matrix init done in "<<t.elapsed()<<" seconds \n";
+    LOG(INFO) << "  -- time for matrix init done in "<<t.elapsed()<<" seconds \n";
     t.restart() ;
 
     subt.restart();
@@ -300,7 +300,7 @@ Laplacian<Dim, BasisU, Entity>::run()
 
     form2( Xh, Xh, D, _pattern=patternsym ) =integrate( _range=elements( mesh ),_expr=mu*( inner( gradt( u ),grad( v ) ) ) );
     M_stats.put( "t.assembly.matrix.diffusion",subt.elapsed() );
-    Log() << "   o time for diffusion terms: " << subt.elapsed() << "\n";
+    LOG(INFO) << "   o time for diffusion terms: " << subt.elapsed() << "\n";
     subt.restart();
 
     if ( this->vm()[ "bctype" ].template as<int>() == 1  )
@@ -311,7 +311,7 @@ Laplacian<Dim, BasisU, Entity>::run()
         form2( Xh, Xh, D, _pattern=patternsym )+=integrate( _range=boundaryfaces( mesh ),_expr=+penalbc*inner( idt( u ),id( v ) )/hFace() );
         M_stats.put( "t.assembly.matrix.dirichlet2",subt.elapsed() );
         subt.restart();
-        Log() << "   o time for weak dirichlet terms: " << subt.elapsed() << "\n";
+        LOG(INFO) << "   o time for weak dirichlet terms: " << subt.elapsed() << "\n";
         subt.restart();
     }
 
@@ -323,12 +323,12 @@ Laplacian<Dim, BasisU, Entity>::run()
     {
         form2( Xh, Xh, D ) += on( _range=boundaryfaces( mesh ), _element=u, _rhs=F, _expr=u_exact );
         M_stats.put( "t.assembly.matrix.dirichlet",subt.elapsed() );
-        Log() << "   o time for strong dirichlet terms: " << subt.elapsed() << "\n";
+        LOG(INFO) << "   o time for strong dirichlet terms: " << subt.elapsed() << "\n";
         subt.restart();
     }
 
     M_stats.put( "t.assembly.matrix.total",t.elapsed() );
-    Log() << " -- time matrix global assembly done in "<<t.elapsed()<<" seconds \n";
+    LOG(INFO) << " -- time matrix global assembly done in "<<t.elapsed()<<" seconds \n";
     t.restart() ;
 
 
@@ -344,22 +344,22 @@ Laplacian<Dim, BasisU, Entity>::run()
     }
 
     M_stats.put( "t.solver.total",t.elapsed() );
-    Log() << " -- time for solver : "<<t.elapsed()<<" seconds \n";
+    LOG(INFO) << " -- time for solver : "<<t.elapsed()<<" seconds \n";
     t.restart();
 
 
     double meas = integrate( _range=elements( mesh ), _expr=constant( 1.0 ) ).evaluate()( 0, 0 );
-    Log() << "[laplacian] measure(Omega)=" << meas << " (should be equal to 4)\n";
+    LOG(INFO) << "[laplacian] measure(Omega)=" << meas << " (should be equal to 4)\n";
     std::cout << "[laplacian] measure(Omega)=" << meas << " (should be equal to 4)\n";
 
     double mean_u = integrate( elements( mesh ), idv( u ) ).evaluate()( 0, 0 )/meas;
-    Log() << "[laplacian] mean(u)=" << mean_u << "\n";
+    LOG(INFO) << "[laplacian] mean(u)=" << mean_u << "\n";
     std::cout << "[laplacian] mean(u)=" << mean_u << "\n";
 
     // get the zero mean pressure
     u.add( - mean_u );
     mean_u = integrate( elements( mesh ), idv( u ) ).evaluate()( 0, 0 )/meas;
-    Log() << "[laplacian] mean(u-mean(u))=" << mean_u << "\n";
+    LOG(INFO) << "[laplacian] mean(u-mean(u))=" << mean_u << "\n";
     std::cout << "[laplacian] mean(u-mean(u))=" << mean_u << "\n";
     double mean_uexact = integrate( elements( mesh ), u_exact ).evaluate()( 0, 0 )/meas;
     std::cout << "[laplacian] mean(uexact)=" << mean_uexact << "\n";
@@ -373,7 +373,7 @@ Laplacian<Dim, BasisU, Entity>::run()
 
     size_type gnnz=0;
     mpi::all_reduce( this->comm(), nnz, gnnz, [] ( size_type x, size_type y ) {return x + y;} );
-    Log() << "[laplacian] matrix NNZ local:"<< nnz << " global: "  << gnnz << "\n";
+    LOG(INFO) << "[laplacian] matrix NNZ local:"<< nnz << " global: "  << gnnz << "\n";
     M_stats.put( "n.matrix.nnz",gnnz );
     M_stats.put( "n.matrix.nlocalnz",nnz );
 
@@ -383,7 +383,7 @@ Laplacian<Dim, BasisU, Entity>::run()
     M_stats.put( "t.integrate.l2norm",t.elapsed() );
     t.restart();
     std::cout << "||u_error||_2 = " << math::sqrt( u_errorL2/u_exactL2 ) << "\n";;
-    Log() << "||u_error||_2 = " << math::sqrt( u_errorL2/u_exactL2 ) << "\n";;
+    LOG(INFO) << "||u_error||_2 = " << math::sqrt( u_errorL2/u_exactL2 ) << "\n";;
     M_stats.put( "e.l2.u",math::sqrt( u_errorL2/u_exactL2 ) );
 
     double u_errorsemiH1 = integrate( _range=elements( mesh ),

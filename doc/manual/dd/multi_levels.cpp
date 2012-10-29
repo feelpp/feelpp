@@ -30,23 +30,6 @@ makeOptions()
     return gridoptions.add( Feel::feel_options() );
 }
 
-inline
-AboutData
-makeAbout()
-{
-    AboutData about( "grid" ,
-                     "grid" ,
-                     "0.2",
-                     "nD(n=1,2,3) Grid on simplices or simplex products",
-                     Feel::AboutData::License_GPL,
-                     "Copyright (c) 2008-2009 Universite Joseph Fourier" );
-
-    about.addAuthor( "Abdoulaye Samake", "developer", "Abdoulaye.Samake@imag.fr", "" );
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
-    return about;
-
-}
-
 template<int Dim>
 class Grid
     :
@@ -72,9 +55,9 @@ public:
     /**
      * Constructor
      */
-    Grid( po::variables_map const& vm, AboutData const& about )
+    Grid()
         :
-        super( vm, about ),
+        super(),
         M_backend( backend_type::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( this->vm()["shape"].template as<std::string>() ),
@@ -83,9 +66,6 @@ public:
     }
 
     void run();
-
-    void run( const double* X, unsigned long P, double* Y, unsigned long N );
-
 private:
 
     backend_ptrtype M_backend;
@@ -103,33 +83,12 @@ Grid<Dim>::run()
 {
     std::cout << "------------------------------------------------------------\n";
     std::cout << "Execute Grid<" << Dim << ">\n";
-    std::vector<double> X( 2 );
-    X[0] = meshSize;
-
-    if ( shape == "hypercube" )
-        X[1] = 1;
-
-    else // default is simplex
-        X[1] = 0;
-
-    std::vector<double> Y( 3 );
-    run( X.data(), X.size(), Y.data(), Y.size() );
-}
-template<int Dim>
-void
-Grid<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
-{
-    if ( X[1] == 0 ) shape = "simplex";
-
-    if ( X[1] == 1 ) shape = "hypercube";
-
-    if ( !this->vm().count( "nochdir" ) )
-        Environment::changeRepository( boost::format( "doc/manual/%1%/%2%-%3%/P%4%/h_%5%/" )
-                                       % this->about().appName()
-                                       % shape
-                                       % Dim
-                                       % Order
-                                       % meshSize );
+    Environment::changeRepository( boost::format( "doc/manual/%1%/%2%-%3%/P%4%/h_%5%/" )
+                                   % this->about().appName()
+                                   % shape
+                                   % Dim
+                                   % Order
+                                   % meshSize );
 
 #if 0
     GeoTool::Node x1( 0,0 );
@@ -147,7 +106,7 @@ Grid<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
                                         _usenames=false,
                                         _shape=shape,
                                         _dim=Dim,
-                                        _h=X[0],
+                                        _h=meshSize,
                                         _xmin=0.,
                                         _xmax=1.,
                                         _ymin=0.,
@@ -182,14 +141,12 @@ Grid<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
     value_type kappa = this->vm()["kappa"].template as<double>();
     value_type nu = this->vm()["nu"].template as<double>();
 
-    using namespace Feel::vf;
-
     auto A = M_backend->newMatrix( Xh, Xh ) ;
-    form2( _test=Xh, _trial=Xh, _matrix=A, _init=true ) =
+    form2( _test=Xh, _trial=Xh, _matrix=A ) =
         integrate( elements( mesh ), kappa*gradt( u )*trans( grad( v ) ) + nu*idt( u )*id( v ) );
 
     auto B = M_backend->newMatrix( Xh, Xh ) ;
-    form2( _test=Xh, _trial=Xh, _matrix=B, _init=true );
+    form2( _test=Xh, _trial=Xh, _matrix=B );
     BOOST_FOREACH( int marker, flags )
     {
         form2( Xh, Xh, B ) +=
@@ -223,7 +180,7 @@ Grid<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
 
     if ( !modes.empty() )
     {
-        Log() << "eigenvalue " << 0 << " = (" << modes.begin()->second.get<0>() << "," <<  modes.begin()->second.get<1>() << ")\n";
+        LOG(INFO) << "eigenvalue " << 0 << " = (" << modes.begin()->second.get<0>() << "," <<  modes.begin()->second.get<1>() << ")\n";
 
         int i = 0;
         BOOST_FOREACH( auto mode, modes )
@@ -241,7 +198,7 @@ Grid<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
 
     if ( exporter->doExport() )
     {
-        Log() << "exportResults starts\n";
+        LOG(INFO) << "exportResults starts\n";
 
         exporter->step( 0 )->setMesh( mesh );
 
@@ -252,24 +209,24 @@ Grid<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
         }
 
         exporter->save();
-        Log() << "exportResults done\n";
+        LOG(INFO) << "exportResults done\n";
     }
 }
 
 int
 main( int argc, char** argv )
 {
-    Environment env( argc, argv );
+    using namespace Feel;
 
-    Application app( argc, argv, makeAbout(), makeOptions() );
+    Environment env( _argc=argc, _argv=argv,
+                     _desc=makeOptions(),
+                     _about=about(_name="mortar",
+                                  _author="Abdoulaye Samake",
+                                  _email="samakeablo@gmail.com") );
 
-    if ( app.vm().count( "help" ) )
-    {
-        std::cout << app.optionsDescription() << "\n";
-        return 0;
-    }
+    Application app;
 
-    app.add( new Grid<2>( app.vm(), app.about() ) );
+    app.add( new Grid<2>() );
     app.run();
 }
 

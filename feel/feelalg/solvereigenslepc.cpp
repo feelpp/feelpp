@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2007-07-04
 
   Copyright (C) 2007, 2009 Université Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file solvereigenslepc.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2007-07-04
  */
 #include <feel/feelcore/feel.hpp>
@@ -508,7 +508,7 @@ void SolverEigenSlepc<T>::setSlepcSolverType()
     const EPSType etype;
     ierr = EPSGetType( M_eps,&etype );
     CHKERRABORT( PETSC_COMM_WORLD,ierr );
-    Debug() << "solution method:  " << etype << "\n";
+    VLOG(1) << "solution method:  " << etype << "\n";
     //ierr = PetscPrintf(PETSC_COMM_WORLD," Solution method: %s\n\n",etype);
     CHKERRABORT( PETSC_COMM_WORLD,ierr );
     return;
@@ -560,7 +560,7 @@ SolverEigenSlepc<T>::setSlepcProblemType()
     }
 
 #endif
-    Debug() << "Problem  type:  " <<  this->M_eigen_problem_type  << "\n";
+    VLOG(1) << "Problem  type:  " <<  this->M_eigen_problem_type  << "\n";
     return;
 }
 

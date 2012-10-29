@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2010-06-14
 
   Copyright (C) 2010 Université Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file bench1_run1d.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2010-06-14
  */
 #include <bench1_impl.hpp>
@@ -49,13 +49,13 @@ Bench1::run1d()
                             _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES );
 
 
-    Log() << "run2d starts" << "\n";
+    LOG(INFO) << "run2d starts" << "\n";
     bench1<mesh_type, 1>( aMesh );
     bench1<mesh_type, 2>( aMesh );
     bench1<mesh_type, 4>( aMesh );
     bench1<mesh_type, 6>( aMesh );
     bench1<mesh_type, 8>( aMesh );
     bench1<mesh_type,10>( aMesh );
-    Log() << "run2d ends" << "\n";
+    LOG(INFO) << "run2d ends" << "\n";
 }
 }

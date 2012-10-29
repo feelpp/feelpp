@@ -2,7 +2,7 @@
 
    This file is part of the Feel library
 
-   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    Date: 2007-05-30
 
    Copyright (C) 2007, 2009 Universit� Joseph Fourier (Grenoble I)

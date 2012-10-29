@@ -66,7 +66,7 @@ makeAbout()
                      Feel::AboutData::License_GPL,
                      "Copyright (c) 2008-2009 Universite Joseph Fourier" );
 
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     return about;
 
 }
@@ -254,12 +254,12 @@ Test<Dim,Order>::run( const double* X, unsigned long P, double* Y, unsigned long
 
     if ( trace_exporter->doExport() )
     {
-        Log() << "trace export starts\n";
+        LOG(INFO) << "trace export starts\n";
 
         trace_exporter->step( 0 )->setMesh( trace_mesh );
         trace_exporter->step( 0 )->add( "trace_g", t );
         trace_exporter->save();
-        Log() << "trace export done\n";
+        LOG(INFO) << "trace export done\n";
     }
 
 } // Test::run

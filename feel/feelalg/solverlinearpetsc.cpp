@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2005-11-27
 
   Copyright (C) 2005,2006 EPFL
@@ -24,7 +24,7 @@
 */
 /**
    \file solverlinearpetsc.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-11-27
  */
 // $Id: petsc_linear_solver.C,v 1.5 2005/05/11 23:12:00 benkirk Exp $
@@ -53,6 +53,7 @@
 #include <feel/feelalg/solverlinearpetsc.hpp>
 #include <feel/feelalg/functionspetsc.hpp>
 #include <feel/feelalg/preconditionerpetsc.hpp>
+
 
 namespace Feel
 {
@@ -476,13 +477,13 @@ SolverLinearPetsc<T>::solve ( MatrixSparse<T> const&  matrix_in,
 
     if ( reason==KSP_DIVERGED_INDEFINITE_PC )
     {
-        Log() << "[solverlinearpetsc] Divergence because of indefinite preconditioner;\n";
-        Log() << "[solverlinearpetsc] Run the executable again but with '-pc_factor_shift_type POSITIVE_DEFINITE' option.\n";
+        LOG(INFO) << "[solverlinearpetsc] Divergence because of indefinite preconditioner;\n";
+        LOG(INFO) << "[solverlinearpetsc] Run the executable again but with '-pc_factor_shift_type POSITIVE_DEFINITE' option.\n";
     }
 
     else if ( reason<0 )
     {
-        Log() <<"[solverlinearpetsc] Other kind of divergence: this should not happen.\n";
+        LOG(INFO) <<"[solverlinearpetsc] Other kind of divergence: this should not happen.\n";
     }
 
     bool hasConverged;
@@ -510,7 +511,17 @@ SolverLinearPetsc<T>::solve ( MatrixSparse<T> const&  matrix_in,
 
 }
 
+template <typename T>
+boost::tuple<bool,unsigned int, typename SolverLinearPetsc<T>::real_type>
+SolverLinearPetsc<T>::solve ( MatrixShell<T>  const &mat,
+                              Vector<T> & x,
+                              Vector<T> const& b,
+                              const double tolerance,
+                              const unsigned int maxit,
+                              bool transpose )
+{
 
+}
 
 template <typename T>
 void

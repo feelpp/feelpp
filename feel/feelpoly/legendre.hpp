@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2006-02-20
 
   Copyright (C) 2006 EPFL
@@ -24,7 +24,7 @@
 */
 /**
    \file legendre.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2006-02-20
  */
 #ifndef __Legendre_H
@@ -427,7 +427,7 @@ private:
     derivate( ublas::matrix_expression<AE> const& __pts, mpl::int_<1> )
     {
         FEELPP_ASSERT( __pts().size1() == 1 )( __pts().size1() )( __pts().size2() ).error( "invalid points" );
-        // Debug() << "Expansion::derivate<1>] number of points " << __pts().size2() << "\n";
+        // VLOG(1) << "Expansion::derivate<1>] number of points " << __pts().size2() << "\n";
 
         vector_matrix_type D( 1 );
         D[0].resize( nOrder+1, __pts().size2() );

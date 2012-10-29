@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2006-01-14
 
   Copyright (C) 2011 Université de Grenoble 1 (Joseph Fourier)
@@ -23,7 +23,7 @@
 */
 /**
    \file nedelec.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2011-11-25
  */
 #ifndef __Nedelec_H
@@ -119,17 +119,17 @@ template<uint16_type N,
          template<uint16_type, uint16_type, uint16_type> class Convex = Simplex>
 class NedelecPolynomialSet
     :
-public detail::OrthonormalPolynomialSet<N, O+1, N, Vectorial, T, Convex>
+    public Feel::detail::OrthonormalPolynomialSet<N, O+1, N, Vectorial, T, Convex>
 {
-    typedef detail::OrthonormalPolynomialSet<N, O+1, N, Vectorial, T, Convex> super;
+    typedef Feel::detail::OrthonormalPolynomialSet<N, O+1, N, Vectorial, T, Convex> super;
 
 public:
     static const uint16_type Om1 = (O==0)?0:O-1;
-    typedef detail::OrthonormalPolynomialSet<N, O, N, Vectorial, T, Convex> Pk_v_type;
-    typedef detail::OrthonormalPolynomialSet<N, O+1, N, Vectorial, T, Convex> Pkp1_v_type;
-    typedef detail::OrthonormalPolynomialSet<N, Om1, N, Vectorial, T, Convex> Pkm1_v_type;
-    typedef detail::OrthonormalPolynomialSet<N, O, N, Scalar, T, Convex> Pk_s_type;
-    typedef detail::OrthonormalPolynomialSet<N, O+1, N, Scalar, T, Convex> Pkp1_s_type;
+    typedef Feel::detail::OrthonormalPolynomialSet<N, O, N, Vectorial, T, Convex> Pk_v_type;
+    typedef Feel::detail::OrthonormalPolynomialSet<N, O+1, N, Vectorial, T, Convex> Pkp1_v_type;
+    typedef Feel::detail::OrthonormalPolynomialSet<N, Om1, N, Vectorial, T, Convex> Pkm1_v_type;
+    typedef Feel::detail::OrthonormalPolynomialSet<N, O, N, Scalar, T, Convex> Pk_s_type;
+    typedef Feel::detail::OrthonormalPolynomialSet<N, O+1, N, Scalar, T, Convex> Pkp1_s_type;
 
     typedef PolynomialSet<typename super::basis_type,Vectorial> vectorial_polynomialset_type;
     typedef typename vectorial_polynomialset_type::polynomial_type vectorial_polynomial_type;
@@ -185,7 +185,7 @@ public:
         {
             for ( int j = 0; j < convex_type::nDim; ++j )
             {
-                detail::times_rotx<scalar_polynomial_type> xp( Pk.polynomial( l ), j );
+                Feel::detail::times_rotx<scalar_polynomial_type> xp( Pk.polynomial( l ), j );
                 ublas::row( xPkc,i*nComponents+j )=
                     ublas::row( Feel::project( Pkp1,
                                                xp,
@@ -293,8 +293,8 @@ public:
 
             if ( Gt.size2() )
             {
-                //Debug() << "Gt = " << Gt << "\n";
-                //Debug() << "p = " << p << "\n";
+                //VLOG(1) << "Gt = " << Gt << "\n";
+                //VLOG(1) << "p = " << p << "\n";
                 ublas::subrange( _M_pts, 0, nDim, p, p+Gt.size2() ) = Gt;
                 //for ( size_type j = 0; j < Gt.size2(); ++j )
                 //_M_eid[d].push_back( p+j );
@@ -438,12 +438,12 @@ template<uint16_type N,
 class Nedelec
     :
 public FiniteElement<NedelecPolynomialSet<N, O, T, Convex>,
-    detail::NedelecDual,
+    fem::detail::NedelecDual,
     PointSetEquiSpaced >,
 public boost::enable_shared_from_this<Nedelec<N,O,T,Convex> >
 {
     typedef FiniteElement<NedelecPolynomialSet<N, O, T, Convex>,
-            detail::NedelecDual,
+            fem::detail::NedelecDual,
             PointSetEquiSpaced > super;
 public:
 
@@ -586,7 +586,7 @@ public:
     {
         using namespace Feel::vf;
         typedef boost::shared_ptr<ContextType> gmc_ptrtype;
-        typedef fusion::map<fusion::pair<detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
+        typedef fusion::map<fusion::pair<Feel::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
 
         std::vector<value_type> v( nLocalDof );
 
@@ -596,7 +596,7 @@ public:
             // update the geomap at dof on face
             ctx->update( _face=face, _element=ctx->id() );
 
-            map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( ctx ) );
+            map_gmc_type mapgmc( fusion::make_pair<Feel::detail::gmc<0> >( ctx ) );
             expr.update( mapgmc, face );
 
             for ( int q = 0; q < nDofPerFace; ++q )

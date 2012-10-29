@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2008-04-14
 
   Copyright (C) 2008 Université Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file bratu.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2008-04-14
  */
 #include <feel/options.hpp>
@@ -80,7 +80,7 @@ makeAbout()
                            Feel::AboutData::License_GPL,
                            "Copyright (c) 2008 Université Joseph Fourier" );
 
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     return about;
 
 }
@@ -275,7 +275,7 @@ void
 Bratu<Dim, Order, Cont, Entity, FType>::updateResidual( const vector_ptrtype& X, vector_ptrtype& R )
 {
     boost::timer ti;
-    Debug() << "[updateResidual] start\n";
+    VLOG(1) << "[updateResidual] start\n";
     value_type penalisation_bc = this->vm()["penalbc"].template as<value_type>();
     mesh_ptrtype mesh = M_Xh->mesh();
     element_type u( M_Xh, "u" );
@@ -296,14 +296,14 @@ Bratu<Dim, Order, Cont, Entity, FType>::updateResidual( const vector_ptrtype& X,
 
     M_residual->close();
     *R = M_residual->container();
-    Debug() << "[updateResidual] done in " << ti.elapsed() << "s\n";
+    VLOG(1) << "[updateResidual] done in " << ti.elapsed() << "s\n";
 }
 template<int Dim, int Order, typename Cont, template<uint16_type,uint16_type,uint16_type> class Entity, template<uint16_type> class FType>
 void
 Bratu<Dim, Order, Cont, Entity, FType>::updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J )
 {
     boost::timer ti;
-    Debug() << "[updateJacobian] start\n";
+    VLOG(1) << "[updateJacobian] start\n";
     static bool is_init = false;
     value_type penalisation_bc = this->vm()["penalbc"].template as<value_type>();
     mesh_ptrtype mesh = M_Xh->mesh();
@@ -327,7 +327,7 @@ Bratu<Dim, Order, Cont, Entity, FType>::updateJacobian( const vector_ptrtype& X,
     M_jac->close();
     M_jac->matPtr()->addMatrix( 1.0, M_oplin->mat() );
     J = M_jac->matPtr();
-    Debug() << "[updateJacobian] done in " << ti.elapsed() << "s\n";
+    VLOG(1) << "[updateJacobian] done in " << ti.elapsed() << "s\n";
 }
 template<int Dim, int Order, typename Cont, template<uint16_type,uint16_type,uint16_type> class Entity, template<uint16_type> class FType>
 void
@@ -413,7 +413,7 @@ Bratu<Dim, Order, Cont, Entity,FType>::exportResults( double time,
         f3_type& E )
 {
 
-    Log() << "exportResults starts\n";
+    LOG(INFO) << "exportResults starts\n";
 
     exporter->step( time )->setMesh( U.functionSpace()->mesh() );
 

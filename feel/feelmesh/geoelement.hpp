@@ -277,6 +277,158 @@ private:
     element_connectivity_type M_element1;
 
 };
+#if 0
+template<typename ElementType>
+class SubFaceOfMany
+{
+public:
+    static const uint16_type nDim = ElementType::nDim;
+    static const uint16_type nRealDim = ElementType::nRealDim;
+    template<typename ET>
+    struct Element
+    {
+        typedef ElementType type;
+    };
+    typedef ElementType entity_type;
+    typedef boost::tuple<ElementType const*, size_type, uint16_type, size_type> element_connectivity_type;
+
+    SubFaceOfMany()
+        :
+        M_elements()
+        {}
+
+    SubFaceOfMany( SubFaceOfMany const& sf )
+        :
+        M_elements( sf.M_elements )
+        {
+        }
+    SubFaceOfMany( SubFaceOfNone const& /*sf*/ )
+        :
+        M_elements()
+        {
+        }
+    virtual ~SubFaceOfMany() {}
+
+    SubFaceOfMany& operator=( SubFaceOfMany const& sf )
+        {
+            if ( this != &sf )
+            {
+                M_elements = sf.M_elements;
+            }
+
+            return *this;
+        }
+    SubFaceOfMany& operator=( SubFaceOfNone const& /*sf*/ )
+    {
+        return *this;
+    }
+
+    entity_type const& element0() const
+    {
+        return *boost::get<0>( *M_elements.begin() );
+    }
+    entity_type const& element1() const
+    {
+        return *boost::get<0>( *boost::next(M_elements.begin()) );
+    }
+
+    void setConnection( element_connectivity_type const& connect )
+    {
+        this->insert( connect );
+    }
+
+    size_type ad_first() const
+    {
+        return boost::get<1>( *M_elements.begin() );
+    }
+    uint16_type pos_first() const
+    {
+        return boost::get<2>( *M_elements.begin() );
+    }
+    size_type proc_first() const
+    {
+        return boost::get<3>( *M_elements.begin() );
+    }
+
+    size_type ad_second() const
+    {
+        return boost::get<1>( *boost::next(M_elements.begin()) );
+    }
+    uint16_type pos_second() const
+    {
+        return boost::get<2>( *boost::next(M_elements.begin()) );
+    }
+    size_type proc_second() const
+    {
+        return boost::get<3>( *boost::next(M_elements.begin()) );
+    }
+
+
+    void setConnection0( element_connectivity_type const& connect )
+    {
+        M_elements.insert( connect );
+    }
+    void setConnection1( element_connectivity_type const& connect )
+    {
+        M_elements.insert( connect );
+    }
+
+    element_connectivity_type const& connection0() const
+    {
+        return *M_elements.begin();
+    }
+    element_connectivity_type const& connection1() const
+    {
+        return *boost::next(M_elements.begin());
+    }
+
+    bool isConnectedTo0() const
+    {
+        return ( boost::get<1>( *M_elements.begin() ) != invalid_size_type_value &&
+                 boost::get<2>( *M_elements.begin() ) != invalid_uint16_type_value &&
+                 boost::get<3>( *M_elements.begin() ) != invalid_size_type_value );
+    }
+    bool isConnectedTo1() const
+    {
+        return ( boost::get<1>( *boost::next(M_elements.begin()) ) != invalid_size_type_value &&
+                 boost::get<2>( *boost::next(M_elements.begin()) ) != invalid_uint16_type_value &&
+                 boost::get<3>( *boost::next(M_elements.begin()) ) != invalid_size_type_value );
+    }
+    bool
+    isInterProcessDomain( size_type p ) const
+    {
+        return false;
+    }
+    bool
+    isIntraProcessDomain( size_type p ) const
+    {
+        return true;
+    }
+
+    entity_type const& element( uint16_type e ) const
+    {
+        return *boost::get<0>( *M_elements.begin() );
+    }
+    void disconnect()
+    {
+        M_elements.clear();
+    }
+
+private:
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize( Archive & ar, const unsigned int version )
+        {
+        }
+private:
+
+    std::set<element_connectivity_type> M_elements;
+};
+#else
+//template<typename ElementType> class SubFaceOfMany: public SubFaceOf<ElementType> {};
+#define SubFaceOfMany SubFaceOf
+
+#endif
 
 //     *********** Geometrical Elements *****************
 //! \defgroup GeoEle Geometry Element classes
@@ -472,6 +624,8 @@ public:
         return super::marker3();
     }
 
+//private:
+    geo0d_type M_facept;
 
 private:
 
@@ -484,8 +638,6 @@ private:
         }
 
 
-private:
-    geo0d_type M_facept;
 };
 
 
@@ -527,9 +679,9 @@ public:
     typedef GeoElement1D<Dim, GEOSHAPE, SubFace, T > self_type;
     //typedef typename SubFace::template Element<self_type>::type element_type;
     typedef self_type element_type;
-    typedef typename mpl::if_<mpl::equal_to<mpl::int_<nDim>,mpl::int_<1> >,
-            mpl::identity<GeoElement0D<Dim, SubFaceOf<self_type>, T> >,
-            mpl::identity<GeoElement0D<Dim, SubFaceOfNone, T> > >::type::type point_type;
+    typedef typename mpl::if_<mpl::equal_to<mpl::int_<nRealDim>,mpl::int_<1> >,
+                              mpl::identity<GeoElement0D<Dim, SubFaceOf<self_type>, T> >,
+                              mpl::identity<GeoElement0D<Dim, SubFaceOfMany<self_type>, T> > >::type::type point_type;
     typedef point_type GeoBElement;
 
     static const uint16_type numLocalVertices = super::numLocalVertices;
@@ -748,6 +900,12 @@ template<uint16_type Dim,
          typename T>
 const uint16_type GeoElement1D<Dim,GEOSHAPE,SubFace,T>::numLocalVertices;
 
+template<uint16_type Dim,
+         typename GEOSHAPE,
+         typename SubFace,
+         typename T>
+const uint16_type GeoElement1D<Dim,GEOSHAPE,SubFace,T>::nDim;
+
 /**
  * \class GeoElement2D
  * \brief  Class for 2D elements.
@@ -786,7 +944,10 @@ public:
     typedef GeoElement2D<Dim, GEOSHAPE,SubFace, T> self_type;
     //typedef typename SubFace::template Element<self_type>::type element_type;
     typedef self_type element_type;
-    typedef GeoElement1D<Dim, entity_face_type, SubFaceOf<self_type>, T > edge_type;
+    typedef typename mpl::if_<mpl::equal_to<mpl::int_<nRealDim>,mpl::int_<2> >,
+                              mpl::identity<GeoElement1D<Dim, entity_face_type, SubFaceOf<self_type>, T> >,
+                              mpl::identity<GeoElement1D<Dim, entity_face_type, SubFaceOfMany<self_type>, T> > >::type::type edge_type;
+    //typedef GeoElement1D<Dim, entity_face_type, SubFaceOf<self_type>, T > edge_type;
     typedef GeoElement0D<Dim, SubFaceOfNone, T> point_type;
 #if 0
     BOOST_MPL_ASSERT_MSG( ( boost::is_same<point_type,typename edge_type::point_type>::value ),
@@ -927,6 +1088,23 @@ public:
     }
 
     /**
+     * \sa face()
+     */
+    edge_type& edge( uint16_type i )
+    {
+        FEELPP_ASSERT( i < numLocalEdges )( i )( numLocalEdges ).error( "invalid local edge index" );
+        FEELPP_ASSERT( M_edges[i] )( i ).error( "invalid edge (null pointer)" );
+        return boost::ref( *M_edges[i] );
+    }
+
+    edge_type & face( uint16_type i )
+    {
+        FEELPP_ASSERT( i < numLocalEdges )( i )( numLocalEdges ).error( "invalid local edge index" );
+        FEELPP_ASSERT( M_edges[i] )( i ).error( "invalid edge (null pointer)" );
+        return boost::ref( *M_edges[i] );
+    }
+
+    /**
      * \sa edge()
      */
     edge_type const& face( uint16_type i ) const
@@ -1040,6 +1218,8 @@ private:
   --------------------------------------------------------------------------*/
 template <uint16_type Dim, typename GEOSHAPE, typename SFO, typename T>
 const uint16_type GeoElement2D<Dim, GEOSHAPE, SFO, T>::numLocalEdges;
+template <uint16_type Dim, typename GEOSHAPE, typename SFO, typename T>
+const uint16_type GeoElement2D<Dim, GEOSHAPE, SFO, T>::nDim;
 
 
 /**
@@ -1069,7 +1249,7 @@ public:
     typedef GeoElement3D<Dim, GEOSHAPE,T> self_type;
     typedef self_type element_type;
     typedef GeoElement2D<Dim, entity_face_type, SubFaceOf<self_type>, T > face_type;
-    typedef GeoElement1D<Dim, typename entity_face_type::topological_face_type, SubFaceOfNone, T> edge_type;
+    typedef GeoElement1D<Dim, typename entity_face_type::topological_face_type, SubFaceOfMany<face_type>, T> edge_type;
     typedef GeoElement0D<Dim, SubFaceOfNone, T> point_type;
 
     typedef typename super::node_type node_type;
@@ -1102,6 +1282,9 @@ public:
         M_edge_permutation( numLocalEdges ),
         M_face_permutation( numLocalFaces )
     {
+        std::fill( M_edges.begin(), M_edges.end(), ( edge_type* )0 );
+        std::fill( M_faces.begin(), M_faces.end(), ( face_type* )0 );
+
         std::fill( M_edge_permutation.begin(), M_edge_permutation.end(), edge_permutation_type( edge_permutation_type::IDENTITY ) );
         std::fill( M_face_permutation.begin(), M_face_permutation.end(), face_permutation_type( face_permutation_type::IDENTITY ) );
     }
@@ -1228,6 +1411,13 @@ public:
         return *M_edges[i];
     }
 
+    edge_type& edge( uint16_type i )
+    {
+        FEELPP_ASSERT( i < numLocalEdges )( i ).error( "invalid local edge index" );
+        FEELPP_ASSERT( M_edges[i] )( i ).error( "invalid edge (null pointer)" );
+        return *M_edges[i];
+    }
+
     edge_type const* edgePtr( uint16_type i ) const
     {
         FEELPP_ASSERT( i < numLocalEdges )( i ).error( "invalid local edge index" );
@@ -1262,6 +1452,13 @@ public:
     }
 
     face_type const& face( uint16_type i ) const
+    {
+        FEELPP_ASSERT( i < numLocalFaces )( this->id() )( i ).error( "invalid local edge index" );
+        FEELPP_ASSERT( M_faces[i] )( this->id() )( i ).error( "invalid edge (null pointer)" );
+        return *M_faces[i];
+    }
+
+    face_type& face( uint16_type i )
     {
         FEELPP_ASSERT( i < numLocalFaces )( this->id() )( i ).error( "invalid local edge index" );
         FEELPP_ASSERT( M_faces[i] )( this->id() )( i ).error( "invalid edge (null pointer)" );
@@ -1357,4 +1554,3 @@ const uint16_type GeoElement3D<Dim, GEOSHAPE, T>::numLocalEdges;
 
 } // Feel
 #endif
-

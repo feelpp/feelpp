@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2005-10-18
 
   Copyright (C) 2005,2006,2009 EPFL
@@ -24,7 +24,7 @@
 */
 /**
    \file application.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-10-18
  */
 #include <feel/feelcore/feel.hpp>
@@ -111,7 +111,7 @@ Application::Application( int argc,
     if ( _S_process_id != 0 )
     {
         setenv( "DEBUG", env_str.c_str(), 1 );
-        //Debug() << "DEBUG is set to " << env_str << "\n";
+        //VLOG(1) << "DEBUG is set to " << env_str << "\n";
         //std::cout << "DEBUG is set to " << env_str << "\n";
     }
 
@@ -186,7 +186,7 @@ Application::Application( int argc,
     if ( _S_process_id != 0 )
     {
         setenv( "DEBUG", env_str.c_str(), 1 );
-        //Debug() << "DEBUG is set to " << env_str << "\n";
+        //VLOG(1) << "DEBUG is set to " << env_str << "\n";
         //std::cout << "DEBUG is set to " << env_str << "\n";
     }
 

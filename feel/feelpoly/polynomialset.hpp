@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
              Gilles Steiner <gilles.steiner@epfl.ch>
        Date: 2005-10-11
 
@@ -25,7 +25,7 @@
 */
 /**
    \file polynomialset.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-10-11
  */
 #ifndef __PolynomialSet_H
