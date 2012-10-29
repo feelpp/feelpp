@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2008-03-20
 
   Copyright (C) 2008, 2009 Universite Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file vector.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2008-03-20
  */
 #include <feel/feelalg/matrixshell.hpp>
@@ -315,7 +315,10 @@ void Vector<T>::print( std::ostream& os ) const
     for ( size_type i=this->firstLocalIndex(); i<this->lastLocalIndex(); i++ )
         os << i << "\t" << ( *this )( i ) << std::endl;
 }
-
+template <typename T>
+void Vector<T>::localize( Vector<T> const& v )
+{
+}
 
 template class Vector<double>;
 //template class Vector<long double>;

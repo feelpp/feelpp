@@ -97,10 +97,9 @@ public:
 
     //-----------------------------------------------------------------------------------//
 
-    Test_AOI( int argc, char** argv, AboutData const& ad,
-              po::options_description const& od )
+    Test_AOI()
         :
-        super( argc, argv, ad, od ),
+        super(),
         meshSize( this->vm()["hsize"].as<double>() ) { }
 
     void run();
@@ -236,15 +235,15 @@ Test_AOI::run()
 
 
 BOOST_AUTO_TEST_SUITE( auto_order_integration_testsuite )
-Feel::Environment env( boost::unit_test::framework::master_test_suite().argc,
-                       boost::unit_test::framework::master_test_suite().argv );
 BOOST_AUTO_TEST_CASE( auto_order_integration )
 {
+    using namespace Feel;
+    Feel::Environment env( _argc=boost::unit_test::framework::master_test_suite().argc,
+                           _argv=boost::unit_test::framework::master_test_suite().argv,
+                           _desc=makeOptions(), _about=makeAbout() );
 
-    Test_AOI leTest( boost::unit_test::framework::master_test_suite().argc,
-                     boost::unit_test::framework::master_test_suite().argv,
-                     makeAbout(), makeOptions() );
+    Test_AOI theTest;
 
-    leTest.run();
+    theTest.run();
 }
 BOOST_AUTO_TEST_SUITE_END()

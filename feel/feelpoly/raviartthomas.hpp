@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2006-01-14
 
   Copyright (C) 2006 EPFL
@@ -24,7 +24,7 @@
 */
 /**
    \file raviartthomas.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2006-01-14
  */
 #ifndef __RaviartThomas_H
@@ -119,9 +119,10 @@ public detail::OrthonormalPolynomialSet<N, N, O+1, Vectorial, T, Convex>
     typedef detail::OrthonormalPolynomialSet<N, N, O+1, Vectorial, T, Convex> super;
 
 public:
+    static const uint16_type Om1 = (O==0)?0:O-1;
     typedef detail::OrthonormalPolynomialSet<N, N, O, Vectorial, T, Convex> Pk_v_type;
     typedef detail::OrthonormalPolynomialSet<N, N, O+1, Vectorial, T, Convex> Pkp1_v_type;
-    typedef detail::OrthonormalPolynomialSet<N, N, O-1, Vectorial, T, Convex> Pkm1_v_type;
+    typedef detail::OrthonormalPolynomialSet<N, N, Om1, Vectorial, T, Convex> Pkm1_v_type;
     typedef detail::OrthonormalPolynomialSet<N, N, O, Scalar, T, Convex> Pk_s_type;
     typedef detail::OrthonormalPolynomialSet<N, N, O+1, Scalar, T, Convex> Pkp1_s_type;
 
@@ -285,8 +286,8 @@ public:
 
             if ( Gt.size2() )
             {
-                //Debug() << "Gt = " << Gt << "\n";
-                //Debug() << "p = " << p << "\n";
+                //VLOG(1) << "Gt = " << Gt << "\n";
+                //VLOG(1) << "p = " << p << "\n";
                 ublas::subrange( _M_pts, 0, nDim, p, p+Gt.size2() ) = Gt;
                 //for ( size_type j = 0; j < Gt.size2(); ++j )
                 //_M_eid[d].push_back( p+j );

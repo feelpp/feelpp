@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2012-03-20
 
   Copyright (C) 2012 Université Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file beamaxi2D.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2012-03-20
  */
 #include <feel/options.hpp>
@@ -60,7 +60,7 @@ makeAbout()
                            Feel::AboutData::License_GPL,
                            "Copyright (c) 2012 University Joseph Fourier Grenoble 1" );
 
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     return about;
 
 }
@@ -108,9 +108,9 @@ public:
         bcCoeff( this->vm()["bccoeff"].template as<double>() ),
         exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) )
     {
-        Log() << "[LinElAxi] hsize = " << meshSize << "\n";
-        Log() << "[LinElAxi] bccoeff = " << bcCoeff << "\n";
-        Log() << "[LinElAxi] export = " << this->vm().count( "export" ) << "\n";
+        LOG(INFO) << "[LinElAxi] hsize = " << meshSize << "\n";
+        LOG(INFO) << "[LinElAxi] bccoeff = " << bcCoeff << "\n";
+        LOG(INFO) << "[LinElAxi] export = " << this->vm().count( "export" ) << "\n";
 
     }
 
@@ -150,7 +150,7 @@ LinElAxi<Order>::run()
         return;
     }
 
-    this->changeRepository( boost::format( "%1%/%2%/P%3%/h_%4%/" )
+    this->changeRepository( boost::format( "examples/solid/%1%/%2%/P%3%/h_%4%/" )
                             % this->about().appName()
                             % entity_type::name()
                             % Order
@@ -201,7 +201,7 @@ LinElAxi<Order>::run()
     const double density = 50;
     //    const double gravity = -density*9.81;
     const double gravity = -1.0;
-    Log() << "lambda = " << lambda << "\n"
+    LOG(INFO) << "lambda = " << lambda << "\n"
           << "mu     = " << mu << "\n"
           << "gravity= " << gravity << "\n";
     std::cout << "lambda = " << lambda << "\n"
@@ -271,7 +271,7 @@ LinElAxi<Order>::exportResults( double time, element_type& U )
     exporter->step( time )->add( "displacement", disp );
 
     exporter->save();
-    Log() << "[timer] exportResults(): " << toc( false ) << "\n";
+    LOG(INFO) << "[timer] exportResults(): " << toc( false ) << "\n";
 } // LinElAxi::export
 
 
@@ -284,7 +284,7 @@ int
 main( int argc, char** argv )
 {
     using namespace Feel;
-
+    Environment env( argc, argv );
     tic();
 
     typedef Feel::LinElAxi<2> linelaxi_type;

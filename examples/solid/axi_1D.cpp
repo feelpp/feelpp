@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2008-01-04
 
   Copyright (C) 2008 Christophe Prud'homme
@@ -24,7 +24,7 @@
 */
 /**
    \file elaxi.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2008-01-04
  */
 #include <feel/options.hpp>
@@ -65,7 +65,7 @@ makeAbout()
                            Feel::AboutData::License_GPL,
                            "Copyright (c) 2007 University Joseph Fourier Grenoble 1" );
 
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     about.addAuthor( "Vuk Milisic", "developer", "vuk.milisic@imag.fr", "" );
     return about;
 
@@ -139,9 +139,9 @@ public:
         timers(),
         stats()
     {
-        Log() << "[Elaxi] hsize = " << meshSize << "\n";
-        Log() << "[Elaxi] bccoeff = " << bcCoeff << "\n";
-        Log() << "[Elaxi] export = " << this->vm().count( "export" ) << "\n";
+        LOG(INFO) << "[Elaxi] hsize = " << meshSize << "\n";
+        LOG(INFO) << "[Elaxi] bccoeff = " << bcCoeff << "\n";
+        LOG(INFO) << "[Elaxi] export = " << this->vm().count( "export" ) << "\n";
 
     }
 
@@ -255,7 +255,7 @@ Elaxi<Order, Entity>::run()
     const double density = 50;
     //    const double gravity = -density*9.81;
     const double gravity = -1.0;
-    Log() << "lambda = " << lambda << "\n"
+    LOG(INFO) << "lambda = " << lambda << "\n"
           << "mu     = " << mu << "\n"
           << "gravity= " << gravity << "\n";
     std::cout << "lambda = " << lambda << "\n"
@@ -278,13 +278,13 @@ Elaxi<Order, Entity>::run()
     stats["ndof"] = Xh->nDof();
 
 
-    Log() << "Data Summary:\n";
+    LOG(INFO) << "Data Summary:\n";
     size_type pattern = Pattern::COUPLED;
 
     timers["assembly"].first.restart();
     auto D = M_backend->newMatrix( Xh, Xh );
     std::cout << "====================Newton========================\n---->Start\n";
-    Log() << "====================Newton========================\n---->Start\n";
+    LOG(INFO) << "====================Newton========================\n---->Start\n";
 
     while ( ( error>tol ) && ( counter_it_newt <max_it_newt ) )
     {
@@ -293,9 +293,9 @@ Elaxi<Order, Entity>::run()
         std::cout << "error=     " << error << "\n";
         std::cout << "==================================================\n\n";
 
-        Log()<<  "iteration #" << counter_it_newt << "\n";
-        Log()<<  "error=     " << error << "\n";
-        Log()<<  "==================================================\n\n";
+        LOG(INFO)<<  "iteration #" << counter_it_newt << "\n";
+        LOG(INFO)<<  "error=     " << error << "\n";
+        LOG(INFO)<<  "==================================================\n\n";
 
 
 
@@ -313,9 +313,9 @@ Elaxi<Order, Entity>::run()
                        ) );
 
 
-        Log() << "[elaxi] matrix local assembly done\n";
+        LOG(INFO) << "[elaxi] matrix local assembly done\n";
         D->close();
-        Log() << "[elaxi] vector/matrix global assembly done\n";
+        LOG(INFO) << "[elaxi] vector/matrix global assembly done\n";
 
 
         /*
@@ -356,13 +356,13 @@ Elaxi<Order, Entity>::run()
         error=rhs->l2Norm();
 
 
-        Log() << "[elaxi] starting solve for D\n";
+        LOG(INFO) << "[elaxi] starting solve for D\n";
         M_backend->solve( _matrix=D, _solution=U, _rhs=rhs );
         std::cout << "rhs->l2Norm= " << rhs->l2Norm() << "\n";
 
         u1.zero();
 
-        Log() << "[elaxi] solve for D done\n";
+        LOG(INFO) << "[elaxi] solve for D done\n";
 
 
         error=rhs->l2Norm();
@@ -397,7 +397,7 @@ Elaxi<Order, Entity>::exportResults( double time, element_type& U )
     exporter->save();
 
     timers["export"].second = timers["export"].first.elapsed();
-    Log() << "[timer] exportResults(): " << timers["export"].second << "\n";
+    LOG(INFO) << "[timer] exportResults(): " << timers["export"].second << "\n";
 } // Elaxi::export
 
 
@@ -410,7 +410,7 @@ int
 main( int argc, char** argv )
 {
     using namespace Feel;
-
+    Environment env( argc, argv );
     /* change parameters below */
     const int nOrder = 2;
 

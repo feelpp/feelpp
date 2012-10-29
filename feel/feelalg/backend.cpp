@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2007-12-23
 
   Copyright (C) 2007-2012 Université Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file backend.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2007-12-23
  */
 #include <feel/feelalg/backend.hpp>
@@ -63,7 +63,7 @@ Backend<T>::Backend( WorldComm const& worldComm )
     M_showKSPConvergedReason( false ), M_showSNESConvergedReason( false )
 {
     if ( M_worldComm.globalSize() > 1 )
-        M_pc = "block_jacobi";
+        M_pc = "gasm";
 }
 
 template <typename T>
@@ -177,7 +177,7 @@ template <typename T>
 typename Backend<T>::backend_ptrtype
 Backend<T>::build( po::variables_map const& vm, std::string const& prefix, WorldComm const& worldComm )
 {
-    Log() << "[Backend] backend " << vm["backend"].template as<std::string>() << "\n";
+    LOG(INFO) << "[Backend] backend " << vm["backend"].template as<std::string>() << "\n";
     BackendType bt;
 
     if ( vm["backend"].template as<std::string>() == "eigen" )
@@ -194,10 +194,10 @@ Backend<T>::build( po::variables_map const& vm, std::string const& prefix, World
 
 #if defined( FEELPP_HAS_PETSC_H )
 
-        Log() << "[Backend] use fallback backend petsc\n";
+        LOG(INFO) << "[Backend] use fallback backend petsc\n";
         bt = BACKEND_PETSC;
 #else
-        Log() << "[Backend] backend " << vm["backend"].template as<std::string>() << " not available\n";
+        LOG(INFO) << "[Backend] backend " << vm["backend"].template as<std::string>() << " not available\n";
 #endif
     }
 
@@ -206,7 +206,7 @@ Backend<T>::build( po::variables_map const& vm, std::string const& prefix, World
     {
     case BACKEND_EIGEN:
     {
-        Log() << "[Backend] Instantiate a Eigen backend\n";
+        LOG(INFO) << "[Backend] Instantiate a Eigen backend\n";
         return backend_ptrtype( new BackendEigen<value_type>( vm, prefix, worldComm ) );
     }
     break;
@@ -216,7 +216,7 @@ Backend<T>::build( po::variables_map const& vm, std::string const& prefix, World
     default:
     case BACKEND_PETSC:
     {
-        Log() << "[Backend] Instantiate a Petsc backend\n";
+        LOG(INFO) << "[Backend] Instantiate a Petsc backend\n";
         return backend_ptrtype( new BackendPetsc<value_type>( vm, prefix, worldComm ) );
     }
     break;
@@ -286,7 +286,7 @@ Backend<T>::solve( sparse_matrix_ptrtype const& A,
         this->setPrecMatrixStructure( matStructInitial );//DIFFERENT_NONZERO_PATTERN,SAME_NONZERO_PATTERN
         if (this->comm().globalRank() == this->comm().masterRank() )
             std::cout << "Backend "  << M_prefix << " reuse failed, rebuilding preconditioner...\n";
-        Log() << "Backend "  << M_prefix << " reuse failed, rebuilding preconditioner...\n";
+        LOG(INFO) << "Backend "  << M_prefix << " reuse failed, rebuilding preconditioner...\n";
         boost::tie( M_converged, M_iteration, M_residual ) = this->solve( A, P, x, b );
 
         //if ( !M_converged ) throw std::logic_error( "solver failed to converge" );
@@ -358,7 +358,7 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
     {
         if (this->comm().globalRank() == this->comm().masterRank() )
             std::cout << "Backend "  << M_prefix << " reuse failed, rebuilding preconditioner...\n";
-        Log() << "Backend "  << M_prefix << " reuse failed, rebuilding preconditioner...\n";
+        LOG(INFO) << "Backend "  << M_prefix << " reuse failed, rebuilding preconditioner...\n";
 
         // reset to initial solution
         x_save->close();
@@ -375,7 +375,7 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
 
         if ( ret2.first < 0 )
         {
-            Feel::Log() << "\n[backend] non-linear solver fail";
+            LOG(INFO) << "\n[backend] non-linear solver fail";
             //exit( 0 );
             std::cerr<< "Backend " << M_prefix << " : non-linear solver failed to converge" << std::endl;
         }
@@ -411,9 +411,8 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
 
     if ( ret.first < 0 )
     {
-        Feel::Log() << "\n[backend] non-linear solver fail";
-        std::cerr<< "Backend " << M_prefix << " : non-linear solver failed to converge" << std::endl;
-        //exit(0);
+        LOG(ERROR) << "\n[backend] non-linear solver fail";
+        LOG(ERROR) << "Backend " << M_prefix << " : non-linear solver failed to converge" << std::endl;
     }
 
     return boost::make_tuple( true, its, tol );

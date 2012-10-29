@@ -119,7 +119,7 @@ makeAbout()
                            Feel::AboutData::License_LGPL,
                            "Copyright (c) 2005,2006 EPFL" );
 
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     return about;
 
 }
@@ -595,7 +595,7 @@ int main( int argc,  char** argv )
     Poisson<20> app20( argc, argv, makeAbout(), test );
     Poisson<25> app25( argc, argv, makeAbout(), test );
 
-    Debug() << "N process: " << Application::nProcess() << "\n"
+    VLOG(1) << "N process: " << Application::nProcess() << "\n"
             << "Id : " << Application::processId() << "\n";
 
     if ( app5.vm()["N"].as<int>()  == 5 )

@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2012-04-27
 
   Copyright (C) 2012 Université Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file test_backend.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2012-04-27
  */
 #define USE_BOOST_TEST 1
@@ -45,8 +45,8 @@ using boost::unit_test::test_suite;
 #include <feel/options.hpp>
 #include <feel/feelalg/backend.hpp>
 
-#define FEELAPP( argc, argv, about, options )                           \
-    Feel::Application app( argc, argv, about, options );                \
+#define FEELAPP()                                                       \
+    Feel::Application app;                                            \
     if ( app.vm().count( "help" ) )                                     \
     {                                                                   \
         std::cout << app.optionsDescription() << "\n";                  \
@@ -79,7 +79,7 @@ makeAbout()
                      Feel::AboutData::License_GPL,
                      "Copyright (c) 2010 Université Joseph Fourier" );
 
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     return about;
 
 }
@@ -90,9 +90,9 @@ makeAbout()
 class sim : public Simget
 {
 public:
-    sim( po::variables_map const& vm, AboutData const& about )
+    sim( )
         :
-        Simget( vm, about ),
+        Simget(),
         meshSize( this->vm()["hsize"].as<double>() )
         {
         }
@@ -100,8 +100,12 @@ public:
 
         {
             BOOST_CHECK( mpi::environment::initialized() );
+            BOOST_TEST_MESSAGE( "mpi ok" );
             BOOST_CHECK_EQUAL( detail::BackendManager::instance().size(), 0 );
+            BOOST_TEST_MESSAGE( "backend manager empty" );
             auto b = backend(_name="test1");
+#if 0
+            BOOST_TEST_MESSAGE( "creating backend" );
             BOOST_CHECK_EQUAL( detail::BackendManager::instance().size(), 1 );
             BOOST_CHECK_EQUAL( detail::BackendManager::instance().begin()->first.first, BACKEND_PETSC );
             BOOST_CHECK_EQUAL( detail::BackendManager::instance().begin()->first.second, "test1" );
@@ -110,8 +114,8 @@ public:
                 BOOST_TEST_MESSAGE( "[test_backend] backend name =" << b.first.second << " kind =" << b.first.first );;
             }
             auto v = b->newVector( 10, 10 );
+#endif
         }
-    void run( const double*, long unsigned int, double*, long unsigned int ) {}
 private:
     double meshSize;
 };
@@ -122,22 +126,26 @@ using namespace Feel;
 //BOOST_GLOBAL_FIXTURE( Environment )
 
 BOOST_AUTO_TEST_SUITE( backendsuite )
-
 BOOST_AUTO_TEST_CASE( test_backend1 )
 {
-    Environment env;
+    char** av = new char*[1];
+    av[0]=new char[13];
+    strcpy( av[0], "test_backend" );
+
+    using namespace Feel;
+    Feel::Environment env( _argc=1,//boost::unit_test::framework::master_test_suite().argc,
+                           _argv=av,//boost::unit_test::framework::master_test_suite().argv,
+                           _desc=makeOptions(), _about=makeAbout() );
 
     BOOST_TEST_MESSAGE( "test_backend1" );
     BOOST_CHECK( Environment::initialized() );
     //BOOST_CHECK( mpi::environment::initialized() );
     BOOST_TEST_MESSAGE( "initializing the Application" );
 
-    FEELAPP( 0,//boost::unit_test::framework::master_test_suite().argc,
-             boost::unit_test::framework::master_test_suite().argv,
-             makeAbout(), makeOptions() );
+    FEELAPP();
     BOOST_CHECK( mpi::environment::initialized() );
     BOOST_TEST_MESSAGE( "adding simget" );
-    app.add( new sim( app.vm(), app.about() ) );
+    app.add( new sim );
     BOOST_TEST_MESSAGE( "run simget" );
     app.run();
 

@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2008-05-25
 
   Copyright (C) 2008 Université Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file stvenant_kirchhoff_base.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2008-05-25
  */
 #include <stdexcept>
@@ -43,7 +43,7 @@ namespace Feel
 StructureBase::structure_ptrtype
 StructureBase::New( Feel::po::variables_map const& vm )
 {
-    Log() << "Creating new structure model and solver\n";
+    LOG(INFO) << "Creating new structure model and solver\n";
     using namespace Feel;
 
     if ( vm["d"].as<int>() == 2 )
@@ -98,7 +98,7 @@ StructureBase::makeAbout()
                            Feel::AboutData::License_GPL,
                            "Copyright (c) 2008 Université Joseph Fourier" );
 
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     return about;
 
 }
@@ -170,14 +170,14 @@ StructureBase::~StructureBase()
 void
 StructureBase::print() const
 {
-    Feel::Log() << "dt = " << this->dt() << "\n";
-    Feel::Log() << " T = " << this->T() << "\n";
-    Feel::Log() << "T0 = " << this->T0() << "\n";
+    LOG(INFO) << "dt = " << this->dt() << "\n";
+    LOG(INFO) << " T = " << this->T() << "\n";
+    LOG(INFO) << "T0 = " << this->T0() << "\n";
 
-    Feel::Log() << "order in space = " << this->spaceOrder() << "\n";
-    Feel::Log() << "order in time = " << this->timeOrder() << "\n";
+    LOG(INFO) << "order in space = " << this->spaceOrder() << "\n";
+    LOG(INFO) << "order in time = " << this->timeOrder() << "\n";
 
-    Feel::Log() << "gammabc = " << this->gammaBc() << "\n";
+    LOG(INFO) << "gammabc = " << this->gammaBc() << "\n";
 
 
 

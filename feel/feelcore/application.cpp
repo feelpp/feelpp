@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
   Date: 2005-03-17
 
   Copyright (C) 2007-2012 Universite de Grenoble 1
@@ -25,7 +25,7 @@
 */
 /**
    \file application.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-03-17
  */
 #include <cstdlib>
@@ -73,6 +73,13 @@
 
 #include <feel/feelcore/mpicompat.hpp>
 
+namespace google
+{
+namespace glog_internal_namespace_
+{
+bool IsGoogleLoggingInitialized();
+}
+}
 
 namespace Feel
 {
@@ -173,6 +180,14 @@ Application::initMPI( int argc, char** argv, MPI_Comm comm )
 
 }
 
+Application::Application()
+    :
+    _M_about( Environment::about() ),
+    _M_desc( Environment::optionsDescription() ),
+    _M_vm( Environment::vm() )
+{
+
+}
 #if defined( FEELPP_HAS_MPI_H )
 MPI_Comm Application::COMM_WORLD = MPI_COMM_WORLD;
 
@@ -187,8 +202,8 @@ Application::Application( int argc,
 #endif // FEELPP_HAS_MPI_H
     :
     _M_about( ad ),
-    _M_desc( "Allowed options" ),
-    _M_vm(),
+    _M_desc( Environment::optionsDescription() ),
+    _M_vm( Environment::vm() ),
     _M_to_pass_further()
 #if defined( FEELPP_HAS_MPI_H )
     ,
@@ -196,6 +211,12 @@ Application::Application( int argc,
 #endif
 {
     //_M_desc.add( Feel::feel_options() );
+    if ( !google::glog_internal_namespace_::IsGoogleLoggingInitialized() )
+    {
+        // Initialize Google's logging library.
+        google::InitGoogleLogging(_M_about.appName().c_str());
+    }
+
     initMPI( argc, argv, comm );
 
     doOptions( argc, argv );
@@ -212,7 +233,7 @@ Application::Application( int argc,
     if ( processId() != 0 )
     {
         setenv( "DEBUG", env_str.c_str(), 1 );
-        //Debug() << "DEBUG is set to " << env_str << "\n";
+        //VLOG(1) << "DEBUG is set to " << env_str << "\n";
         //std::cout << "DEBUG is set to " << env_str << "\n";
     }
 
@@ -242,8 +263,8 @@ Application::Application( int argc,
 #endif // FEELPP_HAS_MPI_H
     :
     _M_about( ad ),
-    _M_desc( "Allowed options" ),
-    _M_vm(),
+    _M_desc( Environment::optionsDescription() ),
+    _M_vm( Environment::vm() ),
     _M_to_pass_further()
 #if defined( FEELPP_HAS_MPI_H )
     ,
@@ -251,13 +272,19 @@ Application::Application( int argc,
 #endif
 
 {
+    if ( !google::glog_internal_namespace_::IsGoogleLoggingInitialized() )
+    {
+        // Initialize Google's logging library.
+        google::InitGoogleLogging(_M_about.appName().c_str());
+    }
+
     //_M_desc.add( Feel::feel_options() ).add( od );
     _M_desc.add( od );
 
 
     initMPI( argc, argv, comm );
 
-    doOptions( argc, argv );
+    //doOptions( argc, argv );
 
 #if defined( FEELPP_HAS_MPI_H )
     char * __env = getenv( "DEBUG" );
@@ -271,7 +298,7 @@ Application::Application( int argc,
     if ( processId() != 0 )
     {
         setenv( "DEBUG", env_str.c_str(), 1 );
-        //Debug() << "DEBUG is set to " << env_str << "\n";
+        //VLOG(1) << "DEBUG is set to " << env_str << "\n";
         //std::cout << "DEBUG is set to " << env_str << "\n";
     }
 
@@ -301,8 +328,8 @@ Application::Application( AboutData const& ad,
 #endif // FEELPP_HAS_MPI_H
     :
     _M_about( ad ),
-    _M_desc( "Allowed options" ),
-    _M_vm(),
+    _M_desc( Environment::optionsDescription() ),
+    _M_vm( Environment::vm() ),
     _M_to_pass_further()
 #if defined( FEELPP_HAS_MPI_H )
     ,
@@ -310,6 +337,12 @@ Application::Application( AboutData const& ad,
 #endif
 
 {
+    if ( !google::glog_internal_namespace_::IsGoogleLoggingInitialized() )
+    {
+        // Initialize Google's logging library.
+        google::InitGoogleLogging(_M_about.appName().c_str());
+    }
+
     //_M_desc.add( Feel::feel_options() ).add( od );
     _M_desc.add( od );
 
@@ -330,7 +363,7 @@ Application::Application( AboutData const& ad,
 
     initMPI( argc, argv, comm );
 
-    doOptions( argc, argv );
+    //doOptions( argc, argv );
 
 #if defined( FEELPP_HAS_MPI_H )
     char * __env = getenv( "DEBUG" );
@@ -344,7 +377,7 @@ Application::Application( AboutData const& ad,
     if ( processId() != 0 )
     {
         setenv( "DEBUG", env_str.c_str(), 1 );
-        //Debug() << "DEBUG is set to " << env_str << "\n";
+        //VLOG(1) << "DEBUG is set to " << env_str << "\n";
         //std::cout << "DEBUG is set to " << env_str << "\n";
     }
 
@@ -373,8 +406,8 @@ Application::Application( AboutData const& ad )
 #endif // FEELPP_HAS_MPI_H
     :
     _M_about( ad ),
-    _M_desc( "Allowed options" ),
-    _M_vm(),
+    _M_desc( Environment::optionsDescription() ),
+    _M_vm( Environment::vm() ),
     _M_to_pass_further()
 #if defined( FEELPP_HAS_MPI_H )
     ,
@@ -382,6 +415,11 @@ Application::Application( AboutData const& ad )
 #endif
 
 {
+    if ( !google::glog_internal_namespace_::IsGoogleLoggingInitialized() )
+    {
+        // Initialize Google's logging library.
+        google::InitGoogleLogging(_M_about.appName().c_str());
+    }
 #if 1
 
     //
@@ -414,7 +452,7 @@ Application::Application( AboutData const& ad )
     if ( processId() != 0 )
     {
         setenv( "DEBUG", env_str.c_str(), 1 );
-        //Debug() << "DEBUG is set to " << env_str << "\n";
+        //VLOG(1) << "DEBUG is set to " << env_str << "\n";
         //std::cout << "DEBUG is set to " << env_str << "\n";
     }
 
@@ -492,7 +530,6 @@ Application::doOptions( int argc, char** argv )
         ( "license", "prints the license text" )
         ( "version,v", "prints the version" )
         ( "feelinfo", "prints feel libraries information" )
-        ( "verbose,V", "verbose mode" )
         ( "nochdir", "Don't change repository directory even though it is called" )
         ( "config-file", po::value<std::string>(), "specify .cfg file" )
         ( "result-file", po::value<std::string>()->default_value(this->about().appName()), "specify .res file" )
@@ -706,8 +743,7 @@ Application::processGenericOptions()
                       << std::setw( 15 ) << std::right << "Feel Prefix : " << Info::prefix() << "\n"
                       << std::setw( 15 ) << std::right << "Feel DataDir : " << Info::datadir() << "\n";
 
-        if ( _M_vm.count( "verbose" ) ||
-             _M_vm.count( "help" ) ||
+        if ( _M_vm.count( "help" ) ||
              _M_vm.count( "version" ) ||
              _M_vm.count( "copyright" ) ||
              _M_vm.count( "license" ) ||
@@ -763,8 +799,7 @@ Application::processGenericOptions()
 
 
     }
-    if ( _M_vm.count( "verbose" ) ||
-         _M_vm.count( "help" ) ||
+    if ( _M_vm.count( "help" ) ||
          _M_vm.count( "version" ) ||
          _M_vm.count( "copyright" ) ||
          _M_vm.count( "license" ) ||

@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2008-05-27
 
   Copyright (C) 2008 Université Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file stvenant_kirchhoff_impl.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2008-05-27
  */
 #ifndef __STVENANT_KICHHOFF_IMPL_H
@@ -77,7 +77,7 @@ StVenantKirchhoff<Dim,Order>::StVenantKirchhoff( po::variables_map const& vm )
     // Operator Lag P1
     M_displacement_oplagp1 = displacement_oplagp1_ptrtype( new displacement_oplagp1_type( M_Dh, M_backend ) );
 
-    Log() << "[Turek::initLinearOperators] done\n";
+    LOG(INFO) << "[Turek::initLinearOperators] done\n";
 
 }
 
@@ -100,7 +100,7 @@ void
 StVenantKirchhoff<Dim, Order>::updateResidual( const vector_ptrtype& X, vector_ptrtype& R )
 {
     boost::timer ti;
-    Log() << "[updateResidual] start\n";
+    LOG(INFO) << "[updateResidual] start\n";
 
     mesh_ptrtype mesh = M_Xh->mesh();
 
@@ -156,14 +156,14 @@ StVenantKirchhoff<Dim, Order>::updateResidual( const vector_ptrtype& X, vector_p
     M_residual->add( flin );
     M_residual->close();
     *R = M_residual->container();
-    Log() << "[updateResidual] done in " << ti.elapsed() << "s\n";
+    LOG(INFO) << "[updateResidual] done in " << ti.elapsed() << "s\n";
 }
 template<int Dim, int Order>
 void
 StVenantKirchhoff<Dim, Order>::updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J )
 {
     boost::timer ti;
-    Log() << "[updateJacobian] start\n";
+    LOG(INFO) << "[updateJacobian] start\n";
     static bool is_init = false;
     mesh_ptrtype mesh = M_Xh->mesh();
 
@@ -204,7 +204,7 @@ StVenantKirchhoff<Dim, Order>::updateJacobian( const vector_ptrtype& X, sparse_m
     M_jac->close();
     M_jac->matPtr()->addMatrix( 1.0, M_oplin->mat() );
     J = M_jac->matPtr();
-    Log() << "[updateJacobian] done in " << ti.elapsed() << "s\n";
+    LOG(INFO) << "[updateJacobian] done in " << ti.elapsed() << "s\n";
 }
 template<int Dim, int Order>
 void
@@ -236,7 +236,7 @@ StVenantKirchhoff<Dim, Order>::initElastoStaticProblem()
 
     BOOST_FOREACH( std::string marker, this->dirichletMarkers() )
     {
-        Log() << "[LinearElasticty::Dirichlet] weakbc boundary " << marker << " id : " << mesh->markerName( marker ) << "\n";
+        LOG(INFO) << "[LinearElasticty::Dirichlet] weakbc boundary " << marker << " id : " << mesh->markerName( marker ) << "\n";
         *M_opelas +=
             integrate( markedfaces( mesh,mesh->markerName( marker ) ), im,
                        - trans( ( 2*mu*deft+lambda*trace( deft )*Id )*N() )*id( v )
@@ -282,7 +282,7 @@ StVenantKirchhoff<Dim, Order>::initLinearPart()
 
     BOOST_FOREACH( std::string marker, this->dirichletMarkers() )
     {
-        Log() << "[LinearPart::Dirichlet] weakbc boundary " << marker << " id : " << mesh->markerName( marker ) << "\n";
+        LOG(INFO) << "[LinearPart::Dirichlet] weakbc boundary " << marker << " id : " << mesh->markerName( marker ) << "\n";
         *M_oplin +=
             integrate( markedfaces( mesh,mesh->markerName( marker ) ), im,
                        - trans( ( 2*mu*deft+lambda*trace( deft )*Id )*N() )*id( v )
@@ -357,8 +357,8 @@ StVenantKirchhoff<Dim, Order>::run()
         //while ( error1 >= 1e-6 && iterations <= 2 )
     {
         boost::timer ti;
-        Log() << "============================================================\n";
-        Log() << "time: " << time << "s, iteration: " << iterations << "\n";
+        LOG(INFO) << "============================================================\n";
+        LOG(INFO) << "time: " << time << "s, iteration: " << iterations << "\n";
 
         *Un = U;
         this->updateResidual( Un, R );
@@ -380,22 +380,22 @@ StVenantKirchhoff<Dim, Order>::run()
                                         trans( idv( M_bdf->unknown( 0 ).template element<0>() )-idv( M_bdf->unknown( 1 ).template element<0>() ) )*
                                         ( idv( M_bdf->unknown( 0 ).template element<0>() )-idv( M_bdf->unknown( 1 ).template element<0>() ) ) ).evaluate()( 0, 0 ) )/d_norm2;
 
-        Log() << "                      ||d||_0 = " << d_norm2 << "\n";
-        Log() << "                   ||d(t)||_0 = " << math::sqrt( integrate( elements( mesh ), im, trans( idv( un->template element<0>() ) )*idv( un->template element<0>() ) ).evaluate()( 0, 0 ) ) << "\n";
-        Log() << "||dh(t+1) - dh(t)||_0/||d||_0 = " << error1 << "\n";
-        Log() << "     ||dh(t) - dh||_0/||d||_0 = " << error2 << "\n";
-        Log() << "||dh(t+1) - dh(t)||_0/||d||_0 = (bdf) " << error3 << "\n";
+        LOG(INFO) << "                      ||d||_0 = " << d_norm2 << "\n";
+        LOG(INFO) << "                   ||d(t)||_0 = " << math::sqrt( integrate( elements( mesh ), im, trans( idv( un->template element<0>() ) )*idv( un->template element<0>() ) ).evaluate()( 0, 0 ) ) << "\n";
+        LOG(INFO) << "||dh(t+1) - dh(t)||_0/||d||_0 = " << error1 << "\n";
+        LOG(INFO) << "     ||dh(t) - dh||_0/||d||_0 = " << error2 << "\n";
+        LOG(INFO) << "||dh(t+1) - dh(t)||_0/||d||_0 = (bdf) " << error3 << "\n";
 
         exportResults( time, U, d );
 
-        Log() << "time spent in iteration :  " << ti.elapsed() << "s\n";
+        LOG(INFO) << "time spent in iteration :  " << ti.elapsed() << "s\n";
 
         if ( error1  <= 1e-8 && iterations > 2 )
             break;
     }
 
-    Log() << "total time spent :  " << ttotal.elapsed() << "s\n";
-    Log() << "total number of iterations :  " << iterations << "\n";
+    LOG(INFO) << "total time spent :  " << ttotal.elapsed() << "s\n";
+    LOG(INFO) << "total number of iterations :  " << iterations << "\n";
 
 
 } // StVenantKirchhoff::run
@@ -434,7 +434,7 @@ void
 StVenantKirchhoff<Dim, Order>::exportResults( double time, element_type& U, displacement_element_type& d )
 {
 
-    Log() << "exportResults starts\n";
+    LOG(INFO) << "exportResults starts\n";
 
     element_type S( M_Xh, "S" );
     S = U;
@@ -463,9 +463,9 @@ StVenantKirchhoff<Dim, Order>::exportResults( double time, element_type& U, disp
         double avg_displ = integrate( markedfaces( mesh,mesh->markerName( "right" ) ), im, sqrt( trans( idv( U.template element<0>() ) )*idv( U.template element<0>() ) ) ).evaluate()( 0, 0 )/length;
         double avg_displ_static = integrate( markedfaces( mesh,mesh->markerName( "right" ) ), im, sqrt( trans( idv( d ) )*idv( d ) ) ).evaluate()( 0, 0 )/length;
 
-        Log() << "[postProcess]                  length = " << length << "\n";
-        Log() << "[postProcess]        avg_displacement = " << avg_displ << "\n";
-        Log() << "[postProcess] avg_displacement_static = " << avg_displ_static << "\n";
+        LOG(INFO) << "[postProcess]                  length = " << length << "\n";
+        LOG(INFO) << "[postProcess]        avg_displacement = " << avg_displ << "\n";
+        LOG(INFO) << "[postProcess] avg_displacement_static = " << avg_displ_static << "\n";
         timeStep->addScalar( "avg_displ", avg_displ );
         timeStep->addScalar( "avg_displ_static", avg_displ_static );
 

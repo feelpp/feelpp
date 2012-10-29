@@ -2,7 +2,7 @@
 
    This file is part of the Feel library
 
-   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    Date: 2011-07-09
 
    Copyright (C) 2011 Universite Joseph Fourier (Grenoble I)
@@ -45,8 +45,6 @@ using namespace Feel::vf;
 #if USE_BOOST_TEST
 
 BOOST_AUTO_TEST_SUITE( integration_opt )
-Feel::Environment env( boost::unit_test::framework::master_test_suite().argc,
-                       boost::unit_test::framework::master_test_suite().argv );
 
 typedef boost::mpl::list<boost::mpl::pair<mpl::int_<2>,mpl::int_<2> >,
         boost::mpl::pair<mpl::int_<2>,mpl::int_<3> >,
@@ -70,11 +68,9 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( integration_opt, T, dim_types )
     ( "straight", po::value<int>( &straighten )->default_value( 1 ), "straighten" )
     ;
 
-    po::variables_map vm;
-    po::store( po::parse_command_line( boost::unit_test::framework::master_test_suite().argc,
-                                       boost::unit_test::framework::master_test_suite().argv,
-                                       desc ), vm );
-    po::notify( vm );
+    Feel::Environment env( boost::unit_test::framework::master_test_suite().argc,
+                           boost::unit_test::framework::master_test_suite().argv,
+                           _desc=desc );
 
     using namespace Feel;
     using namespace Feel::vf;
@@ -131,11 +127,10 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_pie, T, order_types )
     ( "shape", po::value<std::string>()->default_value( "pie" ), "pie,circle" )
     ;
 
-    po::variables_map vm;
-    po::store( po::parse_command_line( boost::unit_test::framework::master_test_suite().argc,
-                                       boost::unit_test::framework::master_test_suite().argv,
-                                       desc ), vm );
-    po::notify( vm );
+    Feel::Environment env( boost::unit_test::framework::master_test_suite().argc,
+                           boost::unit_test::framework::master_test_suite().argv,
+                           _desc=desc );
+    po::variables_map vm = Environment::vm();
 
     using namespace Feel;
     using namespace Feel::vf;

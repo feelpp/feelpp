@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2008-02-07
 
   Copyright (C) 2008-2009 Université Joseph Fourier (Grenoble I)
@@ -22,22 +22,14 @@
 */
 /**
    \file myintegrals.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2008-02-07
  */
-#include <feel/options.hpp>
-#include <feel/feelcore/feel.hpp>
-#include <feel/feelpoly/im.hpp>
-
-#include <feel/feelfilters/gmsh.hpp>
-#include <feel/feelfilters/gmshhypercubedomain.hpp>
-#include <feel/feelpoly/polynomialset.hpp>
-
-
-#include <feel/feelvf/vf.hpp>
+#include <feel/feel.hpp>
 
 
 using namespace Feel;
+
 //# marker8 #
 inline
 po::options_description
@@ -51,24 +43,6 @@ makeOptions()
     return myintegralsoptions.add( Feel::feel_options() );
 }
 //# endmarker8 #
-
-//# marker9 #
-inline
-AboutData
-makeAbout()
-{
-    AboutData about( "myintegrals" ,
-                     "myintegrals" ,
-                     "0.3",
-                     "nD(n=1,2,3) MyIntegrals on simplices or simplex products",
-                     Feel::AboutData::License_GPL,
-                     "Copyright (c) 2008-2010 Universite Joseph Fourier" );
-
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
-    return about;
-}
-//# endmarker9 #
-
 
 /**
  * MyIntegrals: compute integrals over a domain
@@ -85,21 +59,19 @@ public:
     typedef double value_type;
 
     /*mesh*/
-    typedef Simplex<2> convex_type;
+    typedef Simplex<Dim> convex_type;
     typedef Mesh<convex_type> mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
-    MyIntegrals( po::variables_map const& vm, AboutData const& about )
+    MyIntegrals()
         :
-        super( vm, about ),
+        super(),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( this->vm()["shape"].template as<std::string>()  )
     {}
 
     //# marker10 #
     void run();
-
-    void run( const double* X, unsigned long P, double* Y, unsigned long N );
     //# endmarker10 #
 
 private:
@@ -113,40 +85,15 @@ template<int Dim>
 void
 MyIntegrals<Dim>::run()
 {
-    std::cout << "------------------------------------------------------------\n";
-    std::cout << "Execute MyIntegrals<" << Dim << ">\n";
-    std::vector<double> X( 2 );
-    X[0] = meshSize;
+    LOG(INFO) << "------------------------------------------------------------\n";
+    LOG(INFO) << "Execute MyIntegrals<" << Dim << ">\n";
 
-    if ( shape == "ellipsoid" )
-        X[1] = 2;
+    Environment::changeRepository( boost::format( "doc/manual/tutorial/%1%/%2%-%3%/h_%4%" )
+                                   % this->about().appName()
+                                   % shape
+                                   % Dim
+                                   % meshSize );
 
-    else if ( shape == "hypercube" )
-        X[1] = 1;
-
-    else // default is simplex
-        X[1] = 0;
-
-    std::vector<double> Y( 3 );
-    run( X.data(), X.size(), Y.data(), Y.size() );
-}
-template<int Dim>
-void
-MyIntegrals<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
-{
-    using namespace Feel::vf;
-
-    if ( X[1] == 0 ) shape = "simplex";
-
-    if ( X[1] == 1 ) shape = "hypercube";
-
-    if ( X[1] == 2 ) shape = "ellipsoid";
-
-    if ( !this->vm().count( "nochdir" ) )
-        Environment::changeRepository( boost::format( "doc/tutorial/%1%/%2%/h_%3%/" )
-                                       % this->about().appName()
-                                       % shape
-                                       % meshSize );
 
     /*
      * First we create the mesh
@@ -158,16 +105,13 @@ MyIntegrals<Dim>::run( const double* X, unsigned long P, double* Y, unsigned lon
     {
         //# marker11 #
         mesh = createGMSHMesh( _mesh=new mesh_type,
-                               _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES,
-                               _desc=domain( _name= ( boost::format( "%1%-%2%" ) % shape % Dim ).str() ,
-                                             _shape=shape,
-                                             _order=1,
-                                             _dim=Dim,
-                                             _h=X[0] ),
-                               _partitions=this->comm().size() );
+                                    _desc=domain( _name=shape,
+                                                  _shape=shape,
+                                                  _order=1,
+                                                  _dim=Dim,
+                                                  _h=meshSize ) );
         mesh->save( _name="mymesh",_path=".",_type="text" );
     }
-
     //# endmarker11 #
 
     /*
@@ -183,13 +127,13 @@ MyIntegrals<Dim>::run( const double* X, unsigned long P, double* Y, unsigned lon
                                           _expr=constant( 1.0 ) ).evaluate()( 0,0 );
     //# endmarker2 #
     //# marker3 #
-    Log() << "int_Omega 1 = " << global_domain_area
+    LOG(INFO) << "int_Omega 1 = " << global_domain_area
           << "[ " << local_domain_area << " ]\n";
 
     //# endmarker3 #
     if ( Dim > 1 )
     {
-        Log() << "nb faces on boundary " << nelements( boundaryfaces(mesh) ) << "\n";
+        LOG(INFO) << "nb faces on boundary " << nelements( boundaryfaces(mesh) ) << "\n";
         /*
          * Compute domain perimeter
          */
@@ -198,7 +142,7 @@ MyIntegrals<Dim>::run( const double* X, unsigned long P, double* Y, unsigned lon
                                         constant( 1.0 ) ).evaluate( false )( 0,0 );
         double global_boundary_length = integrate( boundaryfaces( mesh ),
                                         constant( 1.0 ) ).evaluate()( 0,0 );
-        Log() << "int_BoundaryOmega (1)= " << global_boundary_length
+        LOG(INFO) << "int_BoundaryOmega (1)= " << global_boundary_length
               << "[ " << local_boundary_length << " ]\n";
         //# endmarker4 #
     }
@@ -216,7 +160,7 @@ MyIntegrals<Dim>::run( const double* X, unsigned long P, double* Y, unsigned lon
                                     Px()*Px() + Py()*Py() + Pz()*Pz() // trans(P())*P()
                                   ).evaluate()( 0,0 );
     //# endmarker5 #
-    Log() << "int_Omega (x^2+y^2+z^2) = " << global_intf
+    LOG(INFO) << "int_Omega (x^2+y^2+z^2) = " << global_intf
           << "[ " << local_intf << " ]\n";
 
     //# marker6 #
@@ -226,8 +170,8 @@ MyIntegrals<Dim>::run( const double* X, unsigned long P, double* Y, unsigned lon
     double local_intsin = integrate( elements( mesh ),
                                      sin( Px()*Px() + Py()*Py() + Pz()*Pz() ) ).evaluate( false )( 0,0 );
     //# endmarker6 #
-    Log() << "int_Omega (sin(x^2+y^2+z^2)) [with order 4 max exact integration]= " << global_intsin << "\n";
-    Log() << "int_Omega[" << this->comm().rank() << "] (sin(x^2+y^2+z^2)) [with order 4 max exact integration]= " << local_intsin << "\n";
+    LOG(INFO) << "int_Omega (sin(x^2+y^2+z^2)) [with order 4 max exact integration]= " << global_intsin << "\n";
+    LOG(INFO) << "int_Omega[" << this->comm().rank() << "] (sin(x^2+y^2+z^2)) [with order 4 max exact integration]= " << local_intsin << "\n";
 
 
     //# marker7 #
@@ -239,7 +183,7 @@ MyIntegrals<Dim>::run( const double* X, unsigned long P, double* Y, unsigned lon
                                        _expr=sin( Px()*Px() + Py()*Py() + Pz()*Pz() ),
                                        _quad=_Q<2>() ).evaluate()( 0,0 );
     //# endmarker7 #
-    Log() << "int_Omega (sin(x^2+y^2+z^2)) [with order 2 max exact integration] = " << global_intsin2
+    LOG(INFO) << "int_Omega (sin(x^2+y^2+z^2)) [with order 2 max exact integration] = " << global_intsin2
           << "[ " << local_intsin2 << " ]\n";
 
 
@@ -248,19 +192,22 @@ MyIntegrals<Dim>::run( const double* X, unsigned long P, double* Y, unsigned lon
 int
 main( int argc, char** argv )
 {
-    Feel::Environment env( argc, argv );
+    /**
+     * Initialize Feel++ Environment
+     */
+    Environment env( _argc=argc, _argv=argv,
+                     _desc=makeOptions(),
+                     _about=about(_name="myintegrals",
+                                  _author="Christophe Prud'homme",
+                                  _email="christophe.prudhomme@feelpp.org") );
 
-    Application app( argc, argv, makeAbout(), makeOptions() );
+    Application app;
 
-    if ( app.vm().count( "help" ) )
-    {
-        std::cout << app.optionsDescription() << "\n";
-        return 0;
-    }
 
-    //app.add( new MyIntegrals<1>( app.vm(), app.about() ) );
-    app.add( new MyIntegrals<2>( app.vm(), app.about() ) );
-    //app.add( new MyIntegrals<3>( app.vm(), app.about() ) );
+    if ( Environment::numberOfProcessors() == 1 )
+        app.add( new MyIntegrals<1>() );
+    app.add( new MyIntegrals<2>() );
+    app.add( new MyIntegrals<3>() );
 
     app.run();
 }

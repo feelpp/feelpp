@@ -107,9 +107,9 @@ public:
     /**
      * Constructor
      */
-    TestElementSerialize( po::variables_map const& vm, AboutData const& about , bool rebuild_database )
+    TestElementSerialize( bool rebuild_database )
         :
-        super( vm, about ),
+        super(),
         M_meshSize( this->vm()["hsize"].template as<double>() ),
         M_shape( this->vm()["shape"].template as<std::string>() ),
         M_nb_element( this->vm()["nb_element"].template as<int>() ),
@@ -376,30 +376,29 @@ TestElementSerialize<Dim>::setRebuildDatabase( bool b )
 
 
 BOOST_AUTO_TEST_SUITE( element_serialize )
-Environment env( boost::unit_test::framework::master_test_suite().argc,
-                 boost::unit_test::framework::master_test_suite().argv );
+
 BOOST_AUTO_TEST_CASE( MyElementSerializeCase )
 {
 
     Feel::Environment env( boost::unit_test::framework::master_test_suite().argc,
-                           boost::unit_test::framework::master_test_suite().argv );
+                           boost::unit_test::framework::master_test_suite().argv,
+                           makeOptions(), makeAbout() );
 
-    Application app( boost::unit_test::framework::master_test_suite().argc,
-                     boost::unit_test::framework::master_test_suite().argv, makeAbout(), makeOptions() );
+    Application app;
 
     if ( app.vm().count( "help" ) )
         std::cout << app.optionsDescription() << "\n";
 
     //the first one :  create database ( if doesn't exist )
-    app.add( new TestElementSerialize<1>( app.vm(), app.about() , true ) );
+    app.add( new TestElementSerialize<1>( true ) );
     //the second one : load database
-    app.add( new TestElementSerialize<1>( app.vm(), app.about() , false ) );
+    app.add( new TestElementSerialize<1>(false ) );
 
-    app.add( new TestElementSerialize<2>( app.vm(), app.about() , true ) );
-    app.add( new TestElementSerialize<2>( app.vm(), app.about() , false ) );
+    app.add( new TestElementSerialize<2>(true ) );
+    app.add( new TestElementSerialize<2>(false ) );
 
-    app.add( new TestElementSerialize<3>( app.vm(), app.about() , true ) );
-    app.add( new TestElementSerialize<3>( app.vm(), app.about() , false ) );
+    app.add( new TestElementSerialize<3>(true ) );
+    app.add( new TestElementSerialize<3>(false ) );
 
     app.run();
 

@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2012-01-16
 
   Copyright (C) 2012 Université Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file preconditionerpetsc.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2012-01-16
  */
 #include <feel/feelalg/preconditionerpetsc.hpp>
@@ -167,7 +167,7 @@ void PreconditionerPetsc<T>::setPetscPreconditionerType ( const PreconditionerTy
         else
         {
             // But PETSc has no truly parallel LU, instead you have to set
-            // an actual parallel preconditioner (e.g. block Jacobi) and then
+            // an actual parallel preconditioner (e.g. gasm) and then
             // assign LU sub-preconditioners.
 #if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,2,0 )
             ierr = PCSetType ( pc, ( char* ) PCGASM );
@@ -314,7 +314,7 @@ void PreconditionerPetsc<T>::setPetscSubpreconditionerType( PCType type, PC& pc 
     // This is not used, so we just pass PETSC_NULL instead.
     // int first_local;
     // Fill array of local KSP contexts
-
+    LOG(INFO) << "[setPetscSubpreconditionerType] preconditioner type: " << thepctype << "\n";
     if ( std::string( thepctype ) == "block_jacobi" )
         ierr = PCBJacobiGetSubKSP( pc, &n_local, PETSC_NULL, &subksps );
     else if ( std::string( thepctype ) == "asm" )
@@ -343,7 +343,7 @@ void PreconditionerPetsc<T>::setPetscSubpreconditionerType( PCType type, PC& pc 
         {
 #if defined(FEELPP_HAS_MUMPS)
 #if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,2,0 )
-#warning we use mumps
+            LOG(INFO) << "[setPetscSubpreconditionerType] mumps used as sub_pc\n";
             PetscPCFactorSetMatSolverPackage( subpc, MATSOLVER_MUMPS );
 #endif
 #endif

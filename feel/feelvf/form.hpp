@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2007-05-30
 
   Copyright (C) 2007 Universite Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file form.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2007-05-30
  */
 #ifndef __Form_H
@@ -152,7 +152,7 @@ BOOST_PARAMETER_FUNCTION(
     tag,                                        // 3. namespace of tag types
     ( required                                  // 4. one required parameter, and
       ( test,             *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
-      ( in_out( vector ),   *( detail::is_vector_ptr<mpl::_> ) ) ) // required
+      ( in_out( vector ),   *(detail::is_vector_ptr<mpl::_> ) ) ) // required
     ( optional                                  //    four optional parameters, with defaults
       ( init,             *( boost::is_integral<mpl::_> ), false )
       ( do_threshold,     *( boost::is_integral<mpl::_> ), bool( false ) )
@@ -198,7 +198,7 @@ BOOST_PARAMETER_FUNCTION(
     ( required                                  // 4. one required parameter, and
       ( test,             *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
       ( trial,            *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
-      ( in_out( matrix ),   *( detail::is_matrix_ptr<mpl::_> ) ) ) // required
+      ( in_out( matrix ),   *(detail::is_matrix_ptr<mpl::_> ) ) ) // required
     ( optional                                  //    four optional parameters, with defaults
       ( init,             *( boost::is_integral<mpl::_> ), false )
       ( do_threshold,     *( boost::is_integral<mpl::_> ), bool( false ) )
@@ -251,7 +251,7 @@ BOOST_PARAMETER_FUNCTION(
     ( required                                  // 4. one required parameter, and
       ( test,             *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
       ( trial,            *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
-      ( in_out( matrix ),   *( detail::is_matrix_ptr<mpl::_> ) ) ) // required
+      ( in_out( matrix ),   *(detail::is_matrix_ptr<mpl::_> ) ) ) // required
     ( optional                                  //    four optional parameters, with defaults
       ( init,             *( boost::is_integral<mpl::_> ), false )
       ( do_threshold,     *( boost::is_integral<mpl::_> ), bool( false ) )

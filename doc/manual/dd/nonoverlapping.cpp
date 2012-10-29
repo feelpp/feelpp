@@ -78,6 +78,7 @@ makeAbout()
                      "Copyright (c) 2011 Universite Joseph Fourier" );
 
     about.addAuthor( "Abdoulaye Samake", "developer", "Abdoulaye.Samake@imag.fr", "" );
+    about.addAuthor( "Christophe Prud'homme", "patcher", "christophe.prudhomme@feelpp.org", "" );
     return about;
 
 }
@@ -110,9 +111,9 @@ public:
     /**
      * Constructor
      */
-    ddmethod( po::variables_map const& vm, AboutData const& about )
+    ddmethod()
         :
-        super( vm, about ),
+        super(),
         M_backend( backend_type::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( this->vm()["shape"].template as<std::string>() ),
@@ -226,10 +227,10 @@ ddmethod<Dim>::localProblem( element_type& u,
 
     timers["solver"].second = timers["solver"].first.elapsed();
 
-    Log() << "[timer] run():  assembly: " << timers["assembly"].second << "\n";
-    Log() << "[timer] run():    o D : " << timers["assembly_D"].second << "\n";
-    Log() << "[timer] run():    o F : " << timers["assembly_F"].second << "\n";
-    Log() << "[timer] run():  solver: " << timers["solver"].second << "\n";
+    LOG(INFO) << "[timer] run():  assembly: " << timers["assembly"].second << "\n";
+    LOG(INFO) << "[timer] run():    o D : " << timers["assembly_D"].second << "\n";
+    LOG(INFO) << "[timer] run():    o F : " << timers["assembly_F"].second << "\n";
+    LOG(INFO) << "[timer] run():  solver: " << timers["solver"].second << "\n";
 }
 
 template<int Dim>
@@ -258,7 +259,7 @@ ddmethod<Dim>::exportResults( element_type& u, element_type& v, double time )
     proj1 = vf::project( Xh1, elements( createMesh( u ) ), g );
     proj2 = vf::project( Xh2, elements( createMesh( v ) ), g );
 
-    Log() << "exportResults starts\n";
+    LOG(INFO) << "exportResults starts\n";
     timers["export"].first.restart();
 
     M_firstExporter->step( time )->setMesh( createMesh( u ) );
@@ -290,7 +291,7 @@ ddmethod<Dim>::exportResults( element_type& u, element_type& v, double time )
         }
     }
 
-    Log() << "exportResults done\n";
+    LOG(INFO) << "exportResults done\n";
     timers["export"].second = timers["export"].first.elapsed();
     std::cout << "[timer] exportResults(): " << timers["export"].second << "\n";
 } // ddmethod::export
@@ -490,18 +491,16 @@ int
 main( int argc, char** argv )
 {
     using namespace Feel;
+    /**
+     * Initialize Feel++ Environment
+     */
+    Environment env( _argc=argc, _argv=argv,
+                     _desc=makeOptions(),
+                     _about=makeAbout() );
 
-    Environment env( argc, argv );
-    Application app( argc, argv, makeAbout(), makeOptions() );
-
-    if ( app.vm().count( "help" ) )
-    {
-        std::cout << app.optionsDescription() << "\n";
-        return 0;
-    }
+    Application app;
 
     ddmethod<2>  Relax( app.vm(), app.about() );
-
     Relax.run();
 }
 

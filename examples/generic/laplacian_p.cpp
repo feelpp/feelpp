@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2006-11-23
 
   Copyright (C) 2006,2007 Universit� Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file laplacian.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2006-11-23
  */
 #include <feel/options.hpp>
@@ -77,7 +77,7 @@ makeAbout()
                            Feel::AboutData::License_GPL,
                            "Copyright (c) 2006, 2007 Universit� Joseph Fourier" );
 
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     return about;
 
 }
@@ -259,14 +259,14 @@ Laplacian<Order>::Laplacian( int argc, char** argv, AboutData const& ad, po::opt
                               );
     }
 
-    Log() << "[Laplacian] hsize = " << meshSize << "\n";
-    Log() << "[Laplacian] export = " << this->vm().count( "export" ) << "\n";
+    LOG(INFO) << "[Laplacian] hsize = " << meshSize << "\n";
+    LOG(INFO) << "[Laplacian] export = " << this->vm().count( "export" ) << "\n";
 
     mesh = createMesh( meshSize );
     Xh = space_type::New( mesh );
-    Log() << "Xh information\n";
+    LOG(INFO) << "Xh information\n";
     Xh->printInfo();
-    Log() << "Xch information\n";
+    LOG(INFO) << "Xch information\n";
     Xch = type_cont::New( mesh );
     Xch->printInfo();
 
@@ -304,8 +304,8 @@ Laplacian<Order>::createMesh( double meshSize )
     _mesh->accept( import );
 
     timers["mesh"].second = timers["mesh"].first.elapsed();
-    Log() << "[timer] createMesh(): " << timers["mesh"].second << "\n";
-    Log() << "[Laplacian] meshtype = " << anisomesh << "\n";
+    LOG(INFO) << "[timer] createMesh(): " << timers["mesh"].second << "\n";
+    LOG(INFO) << "[Laplacian] meshtype = " << anisomesh << "\n";
     return _mesh;
 } // Laplacian::createMesh
 
@@ -462,7 +462,7 @@ Laplacian<Order>::run()
 
         for ( ; it!=en; ++it )
         {
-            Log() << "Dealing with element " << it->id() << "\n";
+            LOG(INFO) << "Dealing with element " << it->id() << "\n";
 
             for ( uint16_type f = 0; f < mesh_type::element_type::numFaces; ++f )
             {
@@ -475,7 +475,7 @@ Laplacian<Order>::run()
                     std::vector<size_type> lelt;
                     localelts.clear();
 
-                    Log() << "\t Dealing with face " << face_id << " is on boundary? " << it->face( f ).isOnBoundary() << "\n";
+                    LOG(INFO) << "\t Dealing with face " << face_id << " is on boundary? " << it->face( f ).isOnBoundary() << "\n";
                     // create submesh : the two elements
                     // associated to the face
                     localelts.push_back( it->face( f ).element0() );
@@ -492,25 +492,25 @@ Laplacian<Order>::run()
                     // be careful do not renumber the mesh we want to keep the correspondance between the local and global
                     // mesh below
                     if ( it->face( f ).isOnBoundary() )
-                        Log() << "\t\t creating submesh from elements (" << localelts[0].id()  << ")\n";
+                        LOG(INFO) << "\t\t creating submesh from elements (" << localelts[0].id()  << ")\n";
 
                     else
-                        Log() << "\t\t creating submesh from elements (" << localelts[0].id() << "," << localelts[1].id() << ")\n";
+                        LOG(INFO) << "\t\t creating submesh from elements (" << localelts[0].id() << "," << localelts[1].id() << ")\n";
 
                     mesh->createSubmesh( *localmesh, localelts.begin(), localelts.end() );
-                    Log() << "\t\t creating submesh done. Num elements: " << localmesh->numElements() << "\n";
+                    LOG(INFO) << "\t\t creating submesh done. Num elements: " << localmesh->numElements() << "\n";
 
 
                     vectorial_space_ptrtype Wvh = vectorial_space_type::New( localmesh );
                     space_ptrtype Wsh = space_type::New( localmesh );
 
-                    Log() << " local elt 1: " << localmesh->element( 0 ).G() << "\n";
-                    Log() << "global elt 1: " << it->face( f ).element0().G() << "\n";
+                    LOG(INFO) << " local elt 1: " << localmesh->element( 0 ).G() << "\n";
+                    LOG(INFO) << "global elt 1: " << it->face( f ).element0().G() << "\n";
 
                     if ( !it->face( f ).isOnBoundary() )
                     {
-                        Log() << " local elt 2: " << localmesh->element( 1 ).G() << "\n";
-                        Log() << "global elt 2: " << it->face( f ).element1().G() << "\n";
+                        LOG(INFO) << " local elt 2: " << localmesh->element( 1 ).G() << "\n";
+                        LOG(INFO) << "global elt 2: " << it->face( f ).element1().G() << "\n";
                     }
 
                     std::map<size_type,std::vector<vectorial_element_ptrtype> > wlocal;
@@ -553,33 +553,33 @@ Laplacian<Order>::run()
                             wglobal[lelt[n]][i] = vectorial_element_ptrtype( new vectorial_element_type( Wh, "wglobal" ) );
                             w.zero();
                             w( k ) = 1;
-                            Log() << "element " << itl->id() << " w_" << i << " dof " << k << " norm= " << w.l2Norm() << "\n";
+                            LOG(INFO) << "element " << itl->id() << " w_" << i << " dof " << k << " norm= " << w.l2Norm() << "\n";
 
                             if ( it->face( f ).isOnBoundary() )
                             {
-                                Log() << "boundary face : " << itl->face( lface[n] ).id()
+                                LOG(INFO) << "boundary face : " << itl->face( lface[n] ).id()
                                       << " bdy ? " << itl->face( lface[n] ).isOnBoundary() << "\n";
-                                Log() << "bdy face (mesh) : " << localmesh->face( itl->face( lface[n] ).id() ).id() << "\n";
-                                Log() << "bdy face (mesh) : " << localmesh->face( itl->face( lface[n] ).id() ).isOnBoundary() << "\n";
-                                Log() << "bdy face (mesh) : " << localmesh->face( itl->face( lface[n] ).id() ).G() << "\n";
-                                Log() << "  global face (mesh) : " << it->face( f ).G() << "\n";
+                                LOG(INFO) << "bdy face (mesh) : " << localmesh->face( itl->face( lface[n] ).id() ).id() << "\n";
+                                LOG(INFO) << "bdy face (mesh) : " << localmesh->face( itl->face( lface[n] ).id() ).isOnBoundary() << "\n";
+                                LOG(INFO) << "bdy face (mesh) : " << localmesh->face( itl->face( lface[n] ).id() ).G() << "\n";
+                                LOG(INFO) << "  global face (mesh) : " << it->face( f ).G() << "\n";
                                 form1( Wvh, Floc, _init=true ) = integrate( _range=idedfaces( localmesh, itl->face( lface[n] ).id() ),
                                                                  _expr=trans( idv( w )*N() )*id( vv ), _quad=im );
                             }
 
                             else
                             {
-                                Log() << "internal face : " << itl->face( lface[n] ).id() << "\n";
-                                Log() << "internal face (mesh) : " << localmesh->face( itl->face( lface[n] ).id() ).id() << "\n";
-                                Log() << "internal face (mesh) : " << localmesh->face( itl->face( lface[n] ).id() ).isOnBoundary() << "\n";
-                                Log() << "internal face (mesh) : " << localmesh->face( itl->face( lface[n] ).id() ).G() << "\n";
-                                Log() << "  global face (mesh) : " << it->face( f ).G() << "\n";
+                                LOG(INFO) << "internal face : " << itl->face( lface[n] ).id() << "\n";
+                                LOG(INFO) << "internal face (mesh) : " << localmesh->face( itl->face( lface[n] ).id() ).id() << "\n";
+                                LOG(INFO) << "internal face (mesh) : " << localmesh->face( itl->face( lface[n] ).id() ).isOnBoundary() << "\n";
+                                LOG(INFO) << "internal face (mesh) : " << localmesh->face( itl->face( lface[n] ).id() ).G() << "\n";
+                                LOG(INFO) << "  global face (mesh) : " << it->face( f ).G() << "\n";
                                 form1( Wvh, Floc, _init=true ) = integrate( _range=idedfaces( localmesh, itl->face( lface[n] ).id() ),
                                                                  _expr=trans( jumpv( idv( w ) ) )*average( id( vv ) ), _quad=im );
                             }
 
                             Floc->close();
-                            Log() << "Floc element " << lelt[n] << " w_" << i << " flocnorm= " << Floc->l2Norm() << "\n";
+                            LOG(INFO) << "Floc element " << lelt[n] << " w_" << i << " flocnorm= " << Floc->l2Norm() << "\n";
 
                             if ( this->vm().count( "export-matlab" ) )
                             {
@@ -591,7 +591,7 @@ Laplacian<Order>::run()
                             // construct the L2 projection, we should use a direct solver here and actually
                             // construct the LU factorisation prior to the solve
                             solve( Mloc, *wlocal[lelt[n]][i], Floc );
-                            Log() << "element " << lelt[n] << " basis_" << i << " norm= " << wlocal[lelt[n]][i]->l2Norm() << "\n";
+                            LOG(INFO) << "element " << lelt[n] << " basis_" << i << " norm= " << wlocal[lelt[n]][i]->l2Norm() << "\n";
 
                             if ( this->vm().count( "export-matlab" ) )
                             {
@@ -614,7 +614,7 @@ Laplacian<Order>::run()
                                     }
                                 }
 
-                            Log() << "element " << lelt[n] << " global basis_" << i << " norm= " << wglobal[lelt[n]][i]->l2Norm() << "\n";
+                            LOG(INFO) << "element " << lelt[n] << " global basis_" << i << " norm= " << wglobal[lelt[n]][i]->l2Norm() << "\n";
                         }
                     }
 
@@ -627,7 +627,7 @@ Laplacian<Order>::run()
                                                               _expr=delta*trans( basist( wglobal ) )*basis( wglobal ), _quad=im );
 
                     face_done[ face_id ] = true;
-                    Log() << "\t Done with face " << face_id << "\n";
+                    LOG(INFO) << "\t Done with face " << face_id << "\n";
                 }
             }
         }
@@ -664,8 +664,8 @@ Laplacian<Order>::run()
     form1( Xch, L ) = integrate( _range=elements( mesh ), _expr=trans( g )*id( uEx ), _quad=im_norm );
     this->solve( M, uEx, L );
 
-    //    Log() << "||error||_0 = " << math::sqrt(integrate( elements(mesh), im, val( trans(idv(u)-g)*(idv(u)-g) ) ).evaluate()(0,0)) << "\n";
-    //    Log() << "||error||_0 = " << math::sqrt(integrate( elements(mesh), im, trans(idv(u)-idv(uEx))*(idv(u)-idv(uEx)) ).evaluate()(0,0)) << "\n";
+    //    LOG(INFO) << "||error||_0 = " << math::sqrt(integrate( elements(mesh), im, val( trans(idv(u)-g)*(idv(u)-g) ) ).evaluate()(0,0)) << "\n";
+    //    LOG(INFO) << "||error||_0 = " << math::sqrt(integrate( elements(mesh), im, trans(idv(u)-idv(uEx))*(idv(u)-idv(uEx)) ).evaluate()(0,0)) << "\n";
 
     // Norm computations
     value_type n1 = integrate( _range=elements( mesh ), _expr=val( ( gradv( u )-trans( grad_g ) )*( trans( gradv( u ) )-grad_g ) ), _quad=im_norm ).evaluate()( 0,0 );
@@ -690,12 +690,12 @@ Laplacian<Order>::run()
     // 	n3 = gamma*/hsize*integrate( internalfaces(mesh), im, (trans(jumpv(idv(u)))*jumpv(idv(u))) ).evaluate()(0,0);
     // 	n4 = gamma*Order/hsize*integrate( boundaryfaces(mesh), im, (trans(idv(u))*idv(u)) ).evaluate()(0,0);
 
-    //	Log() << "||dg-error||_dg = " << math::sqrt(n1+n2+n3+n4) << "\n";
-    Log() << "||dg-error||_dg = " << math::sqrt( n1+n3+n4 ) << "\n";
-    Log() << "||u-error||_0 = " << math::sqrt( n5 ) << "\n";
-    Log() << "||u-error||_1 = " << math::sqrt( n1 ) << "\n";
-    Log() << "||L-error||_0 = " << math::sqrt( n2 ) << "\n";
-    Log() << "||jump-error||_0 = " << math::sqrt( n3+n4 ) << "\n";
+    //	LOG(INFO) << "||dg-error||_dg = " << math::sqrt(n1+n2+n3+n4) << "\n";
+    LOG(INFO) << "||dg-error||_dg = " << math::sqrt( n1+n3+n4 ) << "\n";
+    LOG(INFO) << "||u-error||_0 = " << math::sqrt( n5 ) << "\n";
+    LOG(INFO) << "||u-error||_1 = " << math::sqrt( n1 ) << "\n";
+    LOG(INFO) << "||L-error||_0 = " << math::sqrt( n2 ) << "\n";
+    LOG(INFO) << "||jump-error||_0 = " << math::sqrt( n3+n4 ) << "\n";
 
     //this->writeResults(math::sqrt(n1+n2+n3+n4), math::sqrt(n5), math::sqrt(n1), -1, math::sqrt(n3+n4), theta, delta, gamma );
     this->writeResults( math::sqrt( n1+n2+n3+n4 ), math::sqrt( n5 ), math::sqrt( n1 ), ( n2>0 )?math::sqrt( n2 ):-1, math::sqrt( n3+n4 ), theta, delta, gamma, anisomesh );
@@ -706,24 +706,24 @@ Laplacian<Order>::run()
 
     this->exportResults( u, uc, uEx );
 
-    Log() << "        run():numElements: " << mesh->numElements() << "\n";
+    LOG(INFO) << "        run():numElements: " << mesh->numElements() << "\n";
 
-    Log() << "[im]    run():  nPoints: " << im.nPoints() << "\n";
-    Log() << "[im]    run():    Order: " << im.nOrder << "\n";
-    Log() << "[im_norm]run(): nPoints: " << im_norm.nPoints() << "\n";
-    Log() << "[im_norm]run():   Order: " << im_norm.nOrder << "\n";
-    Log() << "[timer] run():     init: " << timers["init"].second << "\n";
-    Log() << "[timer] run(): assembly: " << timers["assembly"].second << "\n";
-    Log() << "[timer] run():     o D elements : " << timers["assembly_D_elements"].second << "\n";
-    Log() << "[timer] run():     o D internalfaces : " << timers["assembly_D_internalfaces"].second << "\n";
-    Log() << "[timer] run():     o D boundaryfaces : " << timers["assembly_D_boundaryfaces"].second << "\n";
-    Log() << "[timer] run():     o D close : " << timers["assembly_D_close"].second << "\n";
-    //Log() << "[timer] run():     o F : " << timers["assembly_F"].second << "\n";
-    //Log() << "[timer] run():     o M : " << timers["assembly_M"].second << "\n";
-    //Log() << "[timer] run():     o L : " << timers["assembly_L"].second << "\n";
-    //Log() << "[timer] run():     o i : " << timers["assembly_evaluate"].second << "\n";
-    Log() << "[timer] run():   solver: " << timers["solver"].second << "\n";
-    Log() << "[timer] run():   solver: " << timers["export"].second << "\n";
+    LOG(INFO) << "[im]    run():  nPoints: " << im.nPoints() << "\n";
+    LOG(INFO) << "[im]    run():    Order: " << im.nOrder << "\n";
+    LOG(INFO) << "[im_norm]run(): nPoints: " << im_norm.nPoints() << "\n";
+    LOG(INFO) << "[im_norm]run():   Order: " << im_norm.nOrder << "\n";
+    LOG(INFO) << "[timer] run():     init: " << timers["init"].second << "\n";
+    LOG(INFO) << "[timer] run(): assembly: " << timers["assembly"].second << "\n";
+    LOG(INFO) << "[timer] run():     o D elements : " << timers["assembly_D_elements"].second << "\n";
+    LOG(INFO) << "[timer] run():     o D internalfaces : " << timers["assembly_D_internalfaces"].second << "\n";
+    LOG(INFO) << "[timer] run():     o D boundaryfaces : " << timers["assembly_D_boundaryfaces"].second << "\n";
+    LOG(INFO) << "[timer] run():     o D close : " << timers["assembly_D_close"].second << "\n";
+    //LOG(INFO) << "[timer] run():     o F : " << timers["assembly_F"].second << "\n";
+    //LOG(INFO) << "[timer] run():     o M : " << timers["assembly_M"].second << "\n";
+    //LOG(INFO) << "[timer] run():     o L : " << timers["assembly_L"].second << "\n";
+    //LOG(INFO) << "[timer] run():     o i : " << timers["assembly_evaluate"].second << "\n";
+    LOG(INFO) << "[timer] run():   solver: " << timers["solver"].second << "\n";
+    LOG(INFO) << "[timer] run():   solver: " << timers["export"].second << "\n";
 
 } // Laplacian::run
 
@@ -737,17 +737,17 @@ Laplacian<Order>::solve( sparse_matrix_ptrtype const& D, elem_type& u, vector_pt
 
     backend_ptrtype b( backend_type::build( this->vm() ) );
     vector_ptrtype U( b->newVector( u.functionSpace() ) );
-    Log() << "[solve] D sizes: " << D->size1() << ", " << D->size2() << "\n";
-    Log() << "[solve] u  size: " << u.size() << "\n";
-    Log() << "[solve] U  size: " << U->size() << "\n";
-    Log() << "[solve] F  size: " << F->size() << "\n";
+    LOG(INFO) << "[solve] D sizes: " << D->size1() << ", " << D->size2() << "\n";
+    LOG(INFO) << "[solve] u  size: " << u.size() << "\n";
+    LOG(INFO) << "[solve] U  size: " << U->size() << "\n";
+    LOG(INFO) << "[solve] F  size: " << F->size() << "\n";
 
 
     b->solve( D, D, U, F );
     u = *U;
 
     timers["solver"].second = timers["solver"].first.elapsed();
-    Log() << "[timer] solve: " << timers["solver"].second << "\n";
+    LOG(INFO) << "[timer] solve: " << timers["solver"].second << "\n";
 } // Laplacian::solve
 
 
@@ -766,7 +766,7 @@ Laplacian<Order>::exportResults( element_type& U, element_type_cont& V, element_
 
 
     timers["export"].second = timers["export"].first.elapsed();
-    Log() << "[timer] exportResults(): " << timers["export"].second << "\n";
+    LOG(INFO) << "[timer] exportResults(): " << timers["export"].second << "\n";
 } // Laplacian::export
 
 template<int Order>
@@ -824,7 +824,7 @@ Laplacian<Order>::writeResults( value_type e1,
     ofs.close();
 
     timers["write"].second = timers["write"].first.elapsed();
-    Log() << "[timer] writeResults(): " << timers["write"].second << "\n";
+    LOG(INFO) << "[timer] writeResults(): " << timers["write"].second << "\n";
 } // Laplacian::writeResults
 
 } // Feel

@@ -157,7 +157,7 @@ main( int argc, char** argv )
 
     case RECEPTOR:
     {
-        Log() << "solving case RECEPTOR\n";
+        LOG(INFO) << "solving case RECEPTOR\n";
         outputs.reserve( receptors.size() );
 
         for ( std::vector<std::string>::const_iterator it = receptors.begin(); it != receptors.end(); ++it )
@@ -170,11 +170,11 @@ main( int argc, char** argv )
 
     case LIGAND:
     {
-        Log() << "solving case LIGAND\n";
+        LOG(INFO) << "solving case LIGAND\n";
 
         if ( receptors.size() > 1 )
         {
-            Log() << "warning: case LIGAND: using only first receptor \n";
+            LOG(INFO) << "warning: case LIGAND: using only first receptor \n";
         }
 
         pbeq.setReceptor( pbeq.vm()["receptor"].as<std::string>() );
@@ -192,18 +192,18 @@ main( int argc, char** argv )
 
     case DOCK:
     {
-        Log() << "solving case DOCK\n";
+        LOG(INFO) << "solving case DOCK\n";
         std::vector<std::string> ligands = parseList( pbeq.vm()["ligand"].as<std::string>() );
 
         if ( ligands.size() > 1 )
         {
-            Log() << "warning: case DOCK: using only first ligand \n";
+            LOG(INFO) << "warning: case DOCK: using only first ligand \n";
         }
 
         pbeq.setReceptor( pbeq.vm()["receptor"].as<std::string>() );
         pbeq.setLigand  ( *ligands.begin() );
 
-        Log() << "Solution with ligand in default position: "
+        LOG(INFO) << "Solution with ligand in default position: "
               << pbeq.solveLigand( ) << "\n";
 
         ret = pbeq.setReclusterFile( pbeq.vm()["dock"].as<std::string>() );

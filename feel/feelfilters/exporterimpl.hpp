@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2010-04-21
 
   Copyright (C) 2010 Université Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file exporterimpl.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2010-04-21
  */
 #include <boost/tokenizer.hpp>
@@ -74,7 +74,7 @@ Exporter<MeshType, N>::Exporter( po::variables_map const& vm, std::string const&
     M_ft( ASCII ),
     M_path( "." )
 {
-    Debug() << "[exporter::exporter] do export = " << doExport() << "\n";
+    VLOG(1) << "[exporter::exporter] do export = " << doExport() << "\n";
 }
 
 template<typename MeshType, int N>
@@ -156,10 +156,10 @@ Exporter<MeshType, N>::setOptions( po::variables_map const& vm, std::string cons
     M_freq = vm[_prefix+"exporter.freq"].template as<int>();
     M_ft = file_type( vm[_prefix+"exporter.file-type"].template as<int>() );
 
-    Debug() << "[Exporter] type:  " << M_type << "\n";
-    Debug() << "[Exporter] prefix:  " << M_prefix << "\n";
-    Debug() << "[Exporter] freq:  " << M_freq << "\n";
-    Debug() << "[Exporter] ft:  " << M_ft << "\n";
+    VLOG(1) << "[Exporter] type:  " << M_type << "\n";
+    VLOG(1) << "[Exporter] prefix:  " << M_prefix << "\n";
+    VLOG(1) << "[Exporter] freq:  " << M_freq << "\n";
+    VLOG(1) << "[Exporter] ft:  " << M_ft << "\n";
     return this;
 }
 
