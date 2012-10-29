@@ -106,31 +106,33 @@ public:
         super( argc, argv, ad, opusapp_heatns_options( ad.appName() ).add( od ).add( crbOptions() ).add( feel_options() ) ),
         M_mode( mode )
     {
-        this->init();        
+        this->init();
     }
-    
+
     void init()
     {
-        
+
         try
         {
             M_current_path = fs::current_path();
 
             std::srand( static_cast<unsigned>( std::time( 0 ) ) );
+
             VLOG(1) << "[OpusApp_heatns] constructor " << this->about().appName()  << "\n";
             this->changeRepository( boost::format( "%1%/h_%2%/" )
                                     % this->about().appName()
                                     % this->vm()["hsize"].template as<double>()
                                   );
             VLOG(1) << "[OpusApp_heatns] ch repo" << "\n";
+
             this->setLogs();
             VLOG(1) << "[OpusApp_heatns] set Logs" << "\n";
             VLOG(1) << "[OpusApp_heatns] mode:" << ( int )M_mode << "\n";
-            
-            
+
+
             model = crbmodel_ptrtype( new crbmodel_type( this->vm(),M_mode ) );
             VLOG(1) << "[OpusApp_heatns] get model done" << "\n";
-            
+
             crb = crb_ptrtype( new crb_type( this->about().appName(),
                                              this->vm() ,
                                              model ) );
@@ -144,11 +146,11 @@ public:
             std::cout << "[OpusApp_heatns] a bad any cast occured, probably a nonexistant or invalid  command line/ config options\n";
             std::cout << "[OpusApp_heatns] exception reason: " << e.what() << "\n";
         }
-        
+
     }
 
     void setMode( std::string const& mode )
-    {        
+    {
         if ( mode == "pfem" ) M_mode = CRBModelMode_heatns::PFEM;
 
         if ( mode == "crb" ) M_mode = CRBModelMode_heatns::CRB;
@@ -160,7 +162,7 @@ public:
         if ( mode == "crb_online" ) M_mode = CRBModelMode_heatns::CRB_ONLINE;
     }
     void setMode( CRBModelMode_heatns mode )
-    {        
+    {
         M_mode = mode;
     }
 
@@ -209,9 +211,9 @@ public:
     FEELPP_DONT_INLINE
     void run()
     {
-        
+
         std::cout << "\n-------->OpusApp_heatns::run(). \n \n";
-        
+
         if ( this->vm().count( "help" ) )
         {
             std::cout << this->optionsDescription() << "\n";
@@ -224,13 +226,13 @@ public:
         int output_index = this->vm()["crb.output-index"].template as<int>();
         //int output_index = this->vm()[_o(this->about().appName(),"output.index")].template as<int>();
 
-        
+
         run_sampling_size = 1;
         std::cout << "-------->run_sampling_size = " << run_sampling_size << std::endl;
         std::cout << "-------->output_index = " << output_index << std::endl;
 
-        
-        
+
+
         typename crb_type::sampling_ptrtype Sampling( new typename crb_type::sampling_type( model->parameterSpace() ) );
 
         switch ( run_sampling_type )
@@ -260,22 +262,22 @@ public:
         hdrs[CRBModelMode_heatns::CRB_ONLINE] = crbonlinehdrs;
         hdrs[CRBModelMode_heatns::SCM_ONLINE] = scmonlinehdrs;
         std::ostringstream ostr;
-        
+
         if( crb->printErrorDuringOfflineStep() )
             crb->printErrorsDuringRbConstruction();
         if ( crb->showMuSelection() )
             crb->printMuSelection();
-        
+
         printParameterHdr( ostr, model->parameterSpace()->dimension(), hdrs[M_mode] );
         BOOST_FOREACH( auto mu, *Sampling )
         {
             int size = mu.size();
             std::cout << "mu = [ ";
-            
+
             for ( int i=0; i<size-1; i++ ) std::cout<< mu[i] <<" , ";
-            
+
             std::cout<< mu[size-1]<<" ] \n";
-            
+
             switch ( M_mode )
             {
             case  CRBModelMode_heatns::PFEM:
@@ -294,7 +296,7 @@ public:
             {
                 std::cout << "-------->CRBModelMode_heatns::CRB\n";
                 boost::timer ti;
-                
+
                 //model->solve( mu );
                 std::vector<double> ofem = boost::assign::list_of( model->output( output_index,mu ) )( ti.elapsed() );
                 ti.restart();
@@ -303,7 +305,7 @@ public:
                 double relative_error = std::abs( ofem[0]-o.template get<0>() ) /ofem[0];
                 double relative_estimated_error = o.template get<1>() / ofem[0];
                 double condition_number = o.template get<3>();
-                
+
                 if ( crb->errorType()==2 )
                 {
 
@@ -380,7 +382,7 @@ public:
     {
 
         std::cout << "\n-------->OpusApp_heatns::run( const double * X, unsigned long N, double * Y, unsigned long P ). \n \n";
-        
+
         switch ( M_mode )
         {
         case  CRBModelMode_heatns::PFEM:

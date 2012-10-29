@@ -57,6 +57,28 @@ MatrixPetsc<T>::MatrixPetsc( DataMap const& dmRow, DataMap const& dmCol, WorldCo
 
 template <typename T>
 inline
+MatrixPetsc<T>::MatrixPetsc( MatrixSparse<value_type> const& M, IS& isrow, IS& iscol )
+    :
+    super(),
+    _M_destroy_mat_on_exit( true )
+{
+    MatrixPetsc<T> const* A = dynamic_cast<MatrixPetsc<T> const*> ( &M );
+    PetscInt nrow;
+    PetscInt ncol;
+    ISGetSize(isrow,&nrow);
+    ISGetSize(iscol,&ncol);
+    DataMap dmrow(nrow, nrow);
+    DataMap dmcol(ncol, ncol);
+    this->setMapRow(dmrow);
+    this->setMapCol(dmcol);
+    MatGetSubMatrix(A->mat(), isrow, iscol, MAT_INITIAL_MATRIX, &this->_M_mat);
+    this->setInitialized( true );
+    this->close();
+}
+
+
+template <typename T>
+inline
 MatrixPetsc<T>::MatrixPetsc( Mat m )
     :
     _M_destroy_mat_on_exit( false )
