@@ -154,9 +154,9 @@ public:
     /**
      * Constructor
      */
-    ThreeFields( po::variables_map const& vm, AboutData const& about )
+    ThreeFields()
         :
-        super( vm, about ),
+        super(),
         M_backend( backend_type::build( this->vm() ) ),
         split( this->vm()["split"].template as<double>() ),
         mesh1Size( this->vm()["hsize1"].template as<double>() ),
@@ -816,17 +816,11 @@ ThreeFields<Dim, Order1, Order2, Order3>::run( const double* X, unsigned long P,
 int
 main( int argc, char** argv )
 {
-    Environment env( argc, argv );
-
-    Application app( argc, argv, makeAbout(), makeOptions() );
-
-    if ( app.vm().count( "help" ) )
-    {
-        std::cout << app.optionsDescription() << "\n";
-        return 0;
-    }
-
-    app.add( new ThreeFields<2,2,2,3>( app.vm(), app.about() ) );
+    using namespace Feel;
+    Environment env( _argc=argc, _argv=argv,
+                     _desc=makeOptions(),
+                     _about=makeAbout() );
+    app.add( new ThreeFields<2,2,2,3>() );
 
     app.run();
 }
