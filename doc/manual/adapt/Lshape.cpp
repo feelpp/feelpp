@@ -323,7 +323,7 @@ LShape<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
     double criterion_U; // Relative error
     bool criterion = true;
 
-    MeshAdapt mesh_adaptation( M_backend );
+    MeshAdapt mesh_adaptation;
     do{
         space_ptrtype Xh = space_type::New( mesh );
         u = Xh->element();

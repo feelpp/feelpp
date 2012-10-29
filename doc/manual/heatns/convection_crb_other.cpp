@@ -137,6 +137,16 @@ Convection_crb::exportResults( element_type& U )
 }
 
 // <int Order_s, int Order_p, int Order_t>
+void Convection_crb ::exportResults( element_ptrtype& U, int i )
+{
+    exporter->step( i )->setMesh( U->functionSpace()->mesh() );
+    exporter->step( i )->add( "u", U-> element<0>() );
+    exporter->step( i )->add( "p", U-> element<1>() );
+    exporter->step( i )->add( "T", U-> element<2>() );
+    exporter->save();
+}
+
+// <int Order_s, int Order_p, int Order_t>
 void Convection_crb ::exportResults( element_type& U, double t )
 {
     exporter->step( t )->setMesh( U.functionSpace()->mesh() );
@@ -170,9 +180,10 @@ Convection_crb::solve( parameter_type const& mu, element_ptrtype& T )
 {
     using namespace vf;
     Feel::ParameterSpace<2>::Element M_current_mu( mu );
-
-    M_backend->nlSolver()->jacobian = boost::bind( &self_type::updateJacobian, boost::ref( *this ), _1, _2 );
     
+    M_backend->nlSolver()->jacobian = boost::bind( &self_type::updateJacobian, boost::ref( *this ), _1, _2 );
+    M_backend->nlSolver()->residual = boost::bind( &self_type::updateResidual, boost::ref( *this ), _1, _2);
+
     vector_ptrtype R( M_backend->newVector( Xh ) );
     sparse_matrix_ptrtype J( M_backend->newMatrix( Xh,Xh ) );
     
@@ -192,16 +203,19 @@ Convection_crb::solve( parameter_type const& mu, element_ptrtype& T )
         std::cout<< " and Prandtl = " << M_current_Prandtl << "\n"<<std::endl;
         
         M_current_mu << M_current_Grashofs, M_current_Prandtl;
-        M_backend->nlSolver()->residual = boost::bind( &self_type::updateResidual, boost::ref( *this ), _1, _2, M_current_mu );
+//        M_backend->nlSolver()->residual = boost::bind( &self_type::updateResidual, boost::ref( *this ), _1, _2, M_current_mu );
         
         this->computeThetaq( M_current_mu );
         this->update( M_current_mu );
         
-        M_backend->nlSolve(_jacobian=J , _solution=T);
-            
+//        T->print(std::cout);
+        
+        M_backend->nlSolve(_jacobian=J , _solution=T , _residual=R);
+                    
         if ( exporter->doExport() )
         {
-            this->exportResults( *T, i );
+//            T->print(std::cout);
+            this->exportResults( T, i );
         }
     }
 }

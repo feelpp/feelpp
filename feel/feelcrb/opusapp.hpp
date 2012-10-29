@@ -270,6 +270,7 @@ public:
                 break;
             }
 
+
             std::map<CRBModelMode,std::vector<std::string> > hdrs;
             using namespace boost::assign;
             std::vector<std::string> pfemhdrs = boost::assign::list_of( "FEM Output" )( "FEM Time" );
@@ -347,6 +348,9 @@ public:
                     google::FlushLogFiles(google::GLOG_INFO);
                     boost::mpi::timer ti;
 
+                    //in the case we don't do the offline step, we need the affine decomposition
+                    model->computeAffineDecomposition();
+
                     //auto u_fem = model->solveRB( mu );
                     //auto u_fem = model->solveFemUsingOfflineEim( mu );
                     auto u_fem = model->solveFemUsingOnlineEimPicard( mu );
@@ -415,37 +419,6 @@ public:
 
                         }
 
-                        if (this->vm()["crb.cvg-study"].template as<bool>())
-                            {
-                                LOG(INFO) << "start convergence study...\n";
-                                std::map<int, boost::tuple<double,double,double> > conver;
-                                for( int N = 1; N < crb->dimension(); N++ )
-                                    {
-                                        LOG(INFO) << "N=" << N << "...\n";
-                                        auto o = crb->run( mu,  this->vm()["crb.online-tolerance"].template as<double>() , N);
-                                        auto u_crb = crb->expansion( mu , N );
-                                        auto u_error = model->functionSpace()->element();
-                                        u_error = u_fem - u_crb;
-                                        double rel_err = std::abs( ofem[0]-o.template get<0>() ) /ofem[0];
-                                        double l2_error = l2Norm( u_error )/l2Norm( u_fem );
-                                        double h1_error = h1Norm( u_error )/h1Norm( u_fem );
-                                        conver[N]=boost::make_tuple( rel_err, l2_error, h1_error );
-                                        LOG(INFO) << "N=" << N << " " << rel_err << " " << l2_error << " " << h1_error << "\n";
-                                        if ( proc_number == 0 )
-                                            std::cout << "N=" << N << " " << rel_err << " " << l2_error << " " << h1_error << "\n";
-                                        LOG(INFO) << "N=" << N << " done.\n";
-                                    }
-                                if( proc_number == 0 )
-                                    {
-                                        LOG(INFO) << "save in logfile\n";
-                                        std::ofstream conv( "convergence.dat" );
-                                        BOOST_FOREACH( auto en, conver )
-                                            {
-                                                conv << en.first << " " << en.second.get<0>()  << " " << en.second.get<1>() << " " << en.second.get<2>() << "\n";
-                                            }
-                                    }
-                            }
-
                     }
 
                     else
@@ -461,6 +434,37 @@ public:
 
                             std::ofstream res(this->vm()["result-file"].template as<std::string>() );
                             res << "output="<< o.template get<0>() << "\n";
+                        }
+                    }
+
+                    if (this->vm()["crb.cvg-study"].template as<bool>())
+                    {
+                        LOG(INFO) << "start convergence study...\n";
+                        std::map<int, boost::tuple<double,double,double> > conver;
+                        for( int N = 1; N < crb->dimension(); N++ )
+                        {
+                            LOG(INFO) << "N=" << N << "...\n";
+                            auto o = crb->run( mu,  this->vm()["crb.online-tolerance"].template as<double>() , N);
+                            auto u_crb = crb->expansion( mu , N );
+                            auto u_error = model->functionSpace()->element();
+                            u_error = u_fem - u_crb;
+                            double rel_err = std::abs( ofem[0]-o.template get<0>() ) /ofem[0];
+                            double l2_error = l2Norm( u_error )/l2Norm( u_fem );
+                            double h1_error = h1Norm( u_error )/h1Norm( u_fem );
+                            conver[N]=boost::make_tuple( rel_err, l2_error, h1_error );
+                            LOG(INFO) << "N=" << N << " " << rel_err << " " << l2_error << " " << h1_error << "\n";
+                            if ( proc_number == 0 )
+                                std::cout << "N=" << N << " " << rel_err << " " << l2_error << " " << h1_error << "\n";
+                            LOG(INFO) << "N=" << N << " done.\n";
+                        }
+                        if( proc_number == 0 )
+                        {
+                            LOG(INFO) << "save in logfile\n";
+                            std::ofstream conv( "convergence.dat" );
+                            BOOST_FOREACH( auto en, conver )
+                            {
+                                conv << en.first << " " << en.second.get<0>()  << " " << en.second.get<1>() << " " << en.second.get<2>() << "\n";
+                            }
                         }
                     }
 
@@ -616,7 +620,6 @@ private:
         double semih12 = integrate( elements(mesh), (vf::gradv(u_femT))*trans(vf::gradv(u_femT))).evaluate()(0,0);
         return math::sqrt( l22+semih12 );
     }
-
 
 private:
     CRBModelMode M_mode;

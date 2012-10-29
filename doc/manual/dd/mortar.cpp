@@ -535,9 +535,7 @@ main( int argc, char** argv )
 
     Environment env( _argc=argc, _argv=argv,
                      _desc=makeOptions(),
-                     _about=about(_name="mortar",
-                                  _author="Abdoulaye Samake",
-                                  _email="samakeablo@gmail.com") );
+                     _about=makeAbout() );
 
     Application app;
 

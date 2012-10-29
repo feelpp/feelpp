@@ -544,17 +544,17 @@ makeAbout()
 
 #if defined(USE_BOOST_TEST)
 BOOST_AUTO_TEST_SUITE( integration )
+
 Feel::Environment env( boost::unit_test::framework::master_test_suite().argc,
-                       boost::unit_test::framework::master_test_suite().argv );
+                       boost::unit_test::framework::master_test_suite().argv,
+                       makeOptions(), makeAbout() );
 
 typedef boost::mpl::list<boost::mpl::int_<1>,boost::mpl::int_<2>,boost::mpl::int_<3>,boost::mpl::int_<4>,boost::mpl::int_<5>  > order_types;
 
 BOOST_AUTO_TEST_CASE_TEMPLATE( test_integration_ho, T, order_types )
 {
     std::cout << "============================================================\n";
-    Feel::Application mpi( boost::unit_test::framework::master_test_suite().argc,
-                           boost::unit_test::framework::master_test_suite().argv,
-                           makeAbout(), makeOptions() );
+    Feel::Application mpi;
     Feel::Assert::setLog( "test_integration_ho.assert" );
     std::cout << "Order=" << T::value << "/5,"
               << " hsize=" << mpi.vm()["hsize"].as<double>() << ","
