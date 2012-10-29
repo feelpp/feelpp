@@ -43,3 +43,11 @@
 #include <feel/feelfilters/geotool.hpp>
 
 #include <feel/feelvf/vf.hpp>
+
+#include <ginac/ginac.h>
+namespace Feel
+{
+using GiNaC::symbol;
+using GiNaC::ex;
+}
+
