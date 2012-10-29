@@ -39,23 +39,27 @@ message(STATUS "Glog first pass: ${GLOG_INCLUDE_DIR}")
 
 
 if (NOT GLOG_INCLUDE_DIR )
-  message(STATUS "Building glog in ${CMAKE_BINARY_DIR}/contrib/glog-compile...")
-  execute_process(COMMAND mkdir -p ${CMAKE_BINARY_DIR}/contrib/glog-compile)
-  execute_process(
-    COMMAND ${FEELPP_HOME_DIR}/contrib/glog/configure --prefix=${CMAKE_BINARY_DIR}/contrib/glog --with-gflags=${GFLAGS_DIR}
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/glog-compile
-    OUTPUT_QUIET
-    OUTPUT_FILE "titi"
-    )
-  set(GLOG_INCLUDE_DIR ${CMAKE_BINARY_DIR}/contrib/glog/include)
+  if(${CMAKE_SOURCE_DIR}/contrib/glog/configure.ac IS_NEWER_THAN ${CMAKE_BINARY_DIR}/contrib/glog-compile/configure)
+    message(STATUS "Building glog in ${CMAKE_BINARY_DIR}/contrib/glog-compile...")
+    execute_process(COMMAND mkdir -p ${CMAKE_BINARY_DIR}/contrib/glog-compile)
+    execute_process(
+      COMMAND ${FEELPP_HOME_DIR}/contrib/glog/configure --prefix=${CMAKE_BINARY_DIR}/contrib/glog --with-gflags=${GFLAGS_DIR}
+      WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/glog-compile
+#      OUTPUT_QUIET
+      OUTPUT_FILE "glog-configure"
+      )
+    set(GLOG_INCLUDE_DIR ${CMAKE_BINARY_DIR}/contrib/glog/include)
+  endif()
 endif()
 
-message(STATUS "Installing glog in ${CMAKE_BINARY_DIR}/contrib/glog...")
-execute_process(
-  COMMAND make install
-  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/glog-compile
-  OUTPUT_QUIET
-  )
+if(${CMAKE_BINARY_DIR}/contrib/glog-compile/src/glog/logging.h IS_NEWER_THAN ${CMAKE_BINARY_DIR}/contrib/glog/include/glog/logging.h)
+  message(STATUS "Installing glog in ${CMAKE_BINARY_DIR}/contrib/glog...")
+  execute_process(
+    COMMAND make install
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/glog-compile
+    OUTPUT_QUIET
+    )
+endif()
 
 FIND_LIBRARY(GLOG_LIBRARY
   NAMES glog
