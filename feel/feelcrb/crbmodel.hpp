@@ -139,17 +139,15 @@ public:
                                   > affine_decomposition_type;
 
 
-<<<<<<< HEAD
     typedef typename boost::tuple< beta_vector_type,
                                    beta_vector_type,
                                    std::vector<beta_vector_type>,
                                    beta_vector_type
                                    > betaqm_type;
-=======
+
     //! time discretization
     typedef Bdf<space_type>  bdf_type;
     typedef boost::shared_ptr<bdf_type> bdf_ptrtype;
->>>>>>> master
 
     static const int nb_spaces = functionspace_type::nSpaces;
     typedef typename mpl::if_< boost::is_same< mpl::int_<nb_spaces> , mpl::int_<2> > , fusion::vector< mpl::int_<0>, mpl::int_<1> >  ,
@@ -158,10 +156,6 @@ public:
                                                      fusion::vector< mpl::int_<0>, mpl::int_<1>, mpl::int_<2>, mpl::int_<3>, mpl::int_<4> >
                                                      >::type >::type >::type index_vector_type;
 
-
-    //! time discretization
-    typedef Bdf<space_type>  bdf_type;
-    typedef boost::shared_ptr<bdf_type> bdf_ptrtype;
 
     //@}
 
@@ -572,15 +566,6 @@ public:
         return compute_normL2_in_composite_case.norm();
     }
 
-    element_type solveFemUsingOnlineEimPicard( parameter_type const& mu );
-    element_type solveFemUsingOfflineEim( parameter_type const& mu );
-
-    double computeNormL2( element_type u1 , element_type u2 )
-    {
-        using namespace Feel::vf;
-        auto mesh = u2.mesh();
-        return math::sqrt( integrate( elements(mesh),  (idv(u1)-idv(u2)) * (idv(u1)-idv(u2))  ).evaluate()(0,0) );
-    }
 
 
     /**
@@ -1694,140 +1679,6 @@ CRBModel<TruthModelType>::run( const double * X, unsigned long N, double * Y, un
     M_model->run( X, N, Y, P );
 }
 
-
-template<typename TruthModelType>
-typename CRBModel<TruthModelType>::element_type
-CRBModel<TruthModelType>::solveFemUsingOfflineEim( parameter_type const& mu )
-{
-    auto Xh= this->functionSpace();
-
-    bdf_ptrtype mybdf;
-    mybdf = bdf( _space=Xh, _vm=this->vm() , _name="mybdf" );
-    sparse_matrix_ptrtype A;
-    sparse_matrix_ptrtype M;
-    std::vector<vector_ptrtype> F;
-    element_ptrtype InitialGuess = Xh->elementPtr();
-    vector_ptrtype Rhs( M_backend->newVector( Xh ) );
-    auto u = Xh->element();
-
-    double time_initial;
-    double time_step;
-    double time_final;
-
-    if ( this->isSteady() )
-    {
-        time_initial=0;
-        time_step = 1e30;
-        time_final = 1e30;
-    }
-    else
-    {
-        time_initial=this->timeInitial();
-        time_step=this->timeStep();
-        time_final=this->timeFinal();
-        this->initializationField( InitialGuess, mu );
-    }
-
-    mybdf->setTimeInitial( time_initial );
-    mybdf->setTimeStep( time_step );
-    mybdf->setTimeFinal( time_final );
-
-    double bdf_coeff ;
-    auto vec_bdf_poly = M_backend->newVector( Xh );
-
-    for( mybdf->start(*InitialGuess); !mybdf->isFinished(); mybdf->next() )
-    {
-        bdf_coeff = mybdf->polyDerivCoefficient( 0 );
-        auto bdf_poly = mybdf->polyDeriv();
-        *vec_bdf_poly = bdf_poly;
-        boost::tie(M, A, F) = this->update( mu , mybdf->time() );
-        *Rhs = *F[0];
-        if( !isSteady() )
-        {
-            A->addMatrix( bdf_coeff, M );
-            Rhs->addVector( *vec_bdf_poly, *M );
-        }
-        M_backend->solve( _matrix=A , _solution=u, _rhs=Rhs );
-        mybdf->shiftRight(u);
-    }
-
-    return u;
-}
-
-template<typename TruthModelType>
-typename CRBModel<TruthModelType>::element_type
-CRBModel<TruthModelType>::solveFemUsingOnlineEimPicard( parameter_type const& mu )
-{
-    auto Xh= this->functionSpace();
-
-    bdf_ptrtype mybdf;
-    mybdf = bdf( _space=Xh, _vm=this->vm() , _name="mybdf" );
-    sparse_matrix_ptrtype A;
-    sparse_matrix_ptrtype M;
-    std::vector<vector_ptrtype> F;
-    element_ptrtype InitialGuess = Xh->elementPtr();
-
-    auto u = Xh->element();
-    auto uold = Xh->element();
-    vector_ptrtype Rhs( M_backend->newVector( Xh ) );
-
-    double time_initial;
-    double time_step;
-    double time_final;
-
-    if ( this->isSteady() )
-    {
-        time_initial=0;
-        time_step = 1e30;
-        time_final = 1e30;
-        u.zero();
-        InitialGuess->setZero();
-    }
-    else
-    {
-        time_initial=this->timeInitial();
-        time_step=this->timeStep();
-        time_final=this->timeFinal();
-        this->initializationField( InitialGuess, mu );
-    }
-
-    mybdf->setTimeInitial( time_initial );
-    mybdf->setTimeStep( time_step );
-    mybdf->setTimeFinal( time_final );
-
-    u=*InitialGuess;
-    double norm=0;
-    int iter=0;
-
-    double bdf_coeff ;
-    auto vec_bdf_poly = M_backend->newVector( Xh );
-
-    int max_fixedpoint_iterations  = this->vm()["crb.max-fixedpoint-iterations"].template as<int>();
-    double solution_fixedpoint_tol  = this->vm()["crb.solution-fixedpoint-tol"].template as<double>();
-    for( mybdf->start(*InitialGuess); !mybdf->isFinished(); mybdf->next() )
-    {
-        iter=0;
-        bdf_coeff = mybdf->polyDerivCoefficient( 0 );
-        auto bdf_poly = mybdf->polyDeriv();
-        *vec_bdf_poly = bdf_poly;
-        do {
-            boost::tie(M, A, F) = this->update( mu, mybdf->time() );
-            *Rhs = *F[0];
-            if( !isSteady() )
-            {
-                A->addMatrix( bdf_coeff, M );
-                Rhs->addVector( *vec_bdf_poly, *M );
-            }
-            uold = u;
-            M_backend->solve( _matrix=A , _solution=u, _rhs=Rhs );
-            norm = this->computeNormL2( uold , u );
-            iter++;
-
-        } while( norm > solution_fixedpoint_tol && iter<max_fixedpoint_iterations );
-        mybdf->shiftRight(u);
-    }
-    return u;
-}
 
 
 }
