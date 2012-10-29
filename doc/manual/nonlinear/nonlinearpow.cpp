@@ -136,7 +136,7 @@ public:
     /**
      * Constructor
      */
-    NonLinearPow( int argc, char** argv, AboutData const& ad, po::options_description const& od );
+    NonLinearPow();
 
     /**
      * create the mesh using mesh size \c meshSize
@@ -178,9 +178,9 @@ private:
 }; // NonLinearPow
 
 template<int Dim, int Order, template<uint16_type,uint16_type,uint16_type> class Entity>
-NonLinearPow<Dim,Order,Entity>::NonLinearPow( int argc, char** argv, AboutData const& ad, po::options_description const& od )
+NonLinearPow<Dim,Order,Entity>::NonLinearPow()
     :
-    super( argc, argv, ad, od ),
+    super(),
     M_backend( backend_type::build( this->vm() ) ),
     meshSize( this->vm()["hsize"].template as<double>() ),
     M_lambda( this->vm()["lambda"].template as<int>() ),
@@ -315,13 +315,17 @@ main( int argc, char** argv )
 {
     using namespace Feel;
 
+    Environment env( _argc=argc, _argv=argv,
+                     _desc=makeOptions(),
+                     _about=makeAbout() );
+
     /* change parameters below */
     const int nDim = 2;
     const int nOrder = 2;
     typedef Feel::NonLinearPow<nDim, nOrder> nonlinearpow_app_type;
 
     /* instantiate application */
-    nonlinearpow_app_type nonlinearpow( argc, argv, makeAbout(), makeOptions() );
+    nonlinearpow_app_type nonlinearpow;
 
     /* run application */
     nonlinearpow.run();

@@ -105,7 +105,7 @@ class Penalisation : public Application
     typedef boost::shared_ptr<export_type> export_ptrtype;
 
 public :
-    Penalisation( int argc, char** argv, AboutData const&, po::options_description const& );
+    Penalisation();
     void run();
 
 private :
