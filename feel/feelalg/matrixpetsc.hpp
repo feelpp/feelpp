@@ -380,6 +380,13 @@ public:
     void addMatrix ( const T a, MatrixSparse<T> &X );
 
     /**
+     * Multiply this by a Sparse matrix \p In,
+     * stores the result in \p Res:
+     * \f$ Res = \texttt{this}*In \f$.
+     */
+    void matMatMult ( MatrixSparse<T> const& In, MatrixSparse<T> &Res );
+
+    /**
      * scale the matrix by the factor \p a
      * \param a scaling factor
      */
