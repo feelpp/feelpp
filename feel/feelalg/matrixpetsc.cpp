@@ -819,6 +819,24 @@ MatrixPetsc<T>::addMatrix ( int* rows, int nrows,
     CHKERRABORT( this->comm(),ierr );
 }
 
+template <typename T>
+void
+MatrixPetsc<T>::matMatMult ( MatrixSparse<T> const& In, MatrixSparse<T> &Res )
+{
+    FEELPP_ASSERT ( this->isInitialized() ).error( "petsc matrix not initialized" );
+
+    FEELPP_ASSERT( this->size2() == In.size1() )( this->size2() )( In.size1() ).error( "incompatible dimension" );
+
+    MatrixPetsc<T> const* X = dynamic_cast<MatrixPetsc<T> const*> ( &In );
+    MatrixPetsc<T>* Y = dynamic_cast<MatrixPetsc<T>*> ( &Res );
+
+    FEELPP_ASSERT ( X != 0 ).error( "invalid petsc matrix" );
+    int ierr=0;
+
+    ierr = MatMatMult(this->_M_mat, X->mat(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &Y->mat());
+    CHKERRABORT( this->comm(),ierr );
+
+}
 
 #if 0
 template <typename T>
