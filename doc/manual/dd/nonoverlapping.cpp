@@ -46,8 +46,8 @@
 
 namespace Feel
 {
-gmsh_ptrtype nonOverlapGeometryLeft( double hsize );
-gmsh_ptrtype nonOverlapGeometryRight( double hsize );
+    gmsh_ptrtype nonOverlapGeometryLeft( int Dim, double hsize );
+    gmsh_ptrtype nonOverlapGeometryRight( int Dim, double hsize );
 
 using namespace Feel::vf;
 
@@ -144,8 +144,6 @@ public:
     mesh_ptrtype createMesh(  element_type& u );
 
     void run();
-
-    void run( const double* X, unsigned long P, double* Y, unsigned long N );
 
 private:
 
@@ -296,62 +294,29 @@ ddmethod<Dim>::exportResults( element_type& u, element_type& v, double time )
     std::cout << "[timer] exportResults(): " << timers["export"].second << "\n";
 } // ddmethod::export
 
+
 template<int Dim>
 void
 ddmethod<Dim>::run()
 {
-    std::cout << "------------------------------------------------------------\n";
-    std::cout << "Execute ddmethod<" << Dim << ">\n";
-    std::vector<double> X( 2 );
-    X[0] = meshSize;
-
-    if ( shape == "hypercube" )
-        X[1] = 1;
-
-    else // default is simplex
-        X[1] = 0;
-
-    std::vector<double> Y( 3 );
-    run( X.data(), X.size(), Y.data(), Y.size() );
-}
-
-template<int Dim>
-void
-ddmethod<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
-{
-    if ( X[1] == 0 ) shape = "simplex";
-
-    if ( X[1] == 1 ) shape = "hypercube";
 
     value_type tol = this->vm()["tol"].template as<double>();
     value_type imax = this->vm()["imax"].template as<double>();
 
     Environment::changeRepository( boost::format( "doc/manual/dd/%1%/%2%-%3%/P%4%/h_%5%/" )
                                    % this->about().appName()
-                                   %this->shape
+                                   % this->shape
                                    % Dim
                                    % Order
                                    %this->meshSize );
 
-    if ( Dim == 2 )
-    {
-        mesh1 = createGMSHMesh( _mesh=new mesh_type,
-                                _desc = nonOverlapGeometryLeft( this->meshSize ) );
 
-        mesh2 = createGMSHMesh( _mesh=new mesh_type,
-                                _desc = nonOverlapGeometryRight( this->meshSize ) );
-    }
+    mesh1 = createGMSHMesh( _mesh=new mesh_type,
+                            _desc = nonOverlapGeometryLeft( Dim, this->meshSize ) );
 
-    else if ( Dim == 3 )
-    {
-        mesh1 = createGMSHMesh( _mesh=new mesh_type,
-                                _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
-                                _desc=geo( _filename="Parallelepiped.geo",_h=this->meshSize ) );
+    mesh2 = createGMSHMesh( _mesh=new mesh_type,
+                            _desc = nonOverlapGeometryRight( Dim, this->meshSize ) );
 
-        mesh2 = createGMSHMesh( _mesh=new mesh_type,
-                                _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
-                                _desc=geo( _filename="Cylinder.geo",_h=this->meshSize ) );
-    }
 
 
     if ( Dim == 2 )
@@ -512,9 +477,8 @@ main( int argc, char** argv )
 
     Application app;
 
-    ddmethod<3>  Relax;
-
-    Relax.run();
+    app.add( new ddmethod<2> );
+    app.run();
 }
 
 
