@@ -23,7 +23,7 @@
 #
 cmake_minimum_required (VERSION 2.6)
 
-# 
+#
 # Bug in cmake that delete destroy library path if LIBRARY_PATH is not empty
 # Ugly hack that disable the environement variable
 # Waiting for cmake to fix it
@@ -74,6 +74,11 @@ IF(FEELPP_ENABLE_SVN AND ( Subversion_FOUND AND EXISTS ${PROJECT_SOURCE_DIR}/.sv
 ELSE()
   FIND_PACKAGE(Git)
   if(FEELPP_ENABLE_SVN AND GIT_FOUND AND  EXISTS ${PROJECT_SOURCE_DIR}/.git )
+
+    if ( NOT EXISTS ${PROJECT_SOURCE_DIR}/contrib/ginac/ginac )
+      execute_process(COMMAND git submodule init)
+      execute_process(COMMAND git submodule update)
+    endif()
 
     execute_process(
       COMMAND git rev-parse --verify -q --short git-svn
