@@ -174,7 +174,7 @@ Laplacian<Dim>::run()
     symbol x("x"),y("y"),z("z");
     ex gg = sin(pi*x)*cos(pi*y)*cos(pi*z);
     ex ff=-nu*laplacian(gg,{x,y,z});
-    std::cout << "laplacian(g)="<< ff << "\n";
+    LOG(INFO) << "laplacian(g)="<< ff << "\n";
     auto g = expr(gg,{x,y,z});
     auto f = expr(ff,{x,y,z});
     auto gradg = expr<1,Dim,2>(grad(gg,{x,y,z}), {x,y,z} );
