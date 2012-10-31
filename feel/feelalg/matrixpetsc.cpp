@@ -63,6 +63,7 @@ MatrixPetsc<T>::MatrixPetsc( MatrixSparse<value_type> const& M, IS& isrow, IS& i
     _M_destroy_mat_on_exit( true )
 {
     MatrixPetsc<T> const* A = dynamic_cast<MatrixPetsc<T> const*> ( &M );
+    int ierr=0;
     PetscInt nrow;
     PetscInt ncol;
     ISGetSize(isrow,&nrow);
@@ -71,7 +72,47 @@ MatrixPetsc<T>::MatrixPetsc( MatrixSparse<value_type> const& M, IS& isrow, IS& i
     DataMap dmcol(ncol, ncol);
     this->setMapRow(dmrow);
     this->setMapCol(dmcol);
-    MatGetSubMatrix(A->mat(), isrow, iscol, MAT_INITIAL_MATRIX, &this->_M_mat);
+    ierr = MatGetSubMatrix(A->mat(), isrow, iscol, MAT_INITIAL_MATRIX, &this->_M_mat);
+    CHKERRABORT( this->comm(),ierr );
+    this->setInitialized( true );
+    this->close();
+}
+
+template <typename T>
+inline
+MatrixPetsc<T>::MatrixPetsc( MatrixSparse<value_type> const& M, std::vector<int> const& rowIndex, std::vector<int> const& colIndex )
+    :
+    super(),
+    _M_destroy_mat_on_exit( true )
+{
+    MatrixPetsc<T> const* A = dynamic_cast<MatrixPetsc<T> const*> ( &M );
+    int ierr=0;
+    IS isrow;
+    IS iscol;
+    PetscInt *rowMap;
+    PetscInt *colMap;
+    int nrow = rowIndex.size();
+    int ncol = colIndex.size();
+
+    PetscMalloc(nrow*sizeof(PetscInt),&rowMap);
+    PetscMalloc(ncol*sizeof(PetscInt),&colMap);
+
+    for (int i=0; i<nrow; i++) rowMap[i] = rowIndex[i];
+    for (int i=0; i<ncol; i++) colMap[i] = colIndex[i];
+
+    ierr = ISCreateGeneral(Environment::worldComm(),nrow,rowMap,PETSC_COPY_VALUES,&isrow);
+    CHKERRABORT( this->comm(),ierr );
+    ierr = ISCreateGeneral(Environment::worldComm(),ncol,colMap,PETSC_COPY_VALUES,&iscol);
+    CHKERRABORT( this->comm(),ierr );
+    PetscFree(rowMap);
+    PetscFree(colMap);
+
+    DataMap dmrow(nrow, nrow);
+    DataMap dmcol(ncol, ncol);
+    this->setMapRow(dmrow);
+    this->setMapCol(dmcol);
+    ierr = MatGetSubMatrix(A->mat(), isrow, iscol, MAT_INITIAL_MATRIX, &this->_M_mat);
+    CHKERRABORT( this->comm(),ierr );
     this->setInitialized( true );
     this->close();
 }
@@ -778,6 +819,24 @@ MatrixPetsc<T>::addMatrix ( int* rows, int nrows,
     CHKERRABORT( this->comm(),ierr );
 }
 
+template <typename T>
+void
+MatrixPetsc<T>::matMatMult ( MatrixSparse<T> const& In, MatrixSparse<T> &Res )
+{
+    FEELPP_ASSERT ( this->isInitialized() ).error( "petsc matrix not initialized" );
+
+    FEELPP_ASSERT( this->size2() == In.size1() )( this->size2() )( In.size1() ).error( "incompatible dimension" );
+
+    MatrixPetsc<T> const* X = dynamic_cast<MatrixPetsc<T> const*> ( &In );
+    MatrixPetsc<T>* Y = dynamic_cast<MatrixPetsc<T>*> ( &Res );
+
+    FEELPP_ASSERT ( X != 0 ).error( "invalid petsc matrix" );
+    int ierr=0;
+
+    ierr = MatMatMult(this->_M_mat, X->mat(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &Y->mat());
+    CHKERRABORT( this->comm(),ierr );
+
+}
 
 #if 0
 template <typename T>
