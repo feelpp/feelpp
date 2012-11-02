@@ -126,9 +126,8 @@ INCLUDE_DIRECTORIES(BEFORE contrib/)
 #  SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} GINAC" )
 #ENDIF()
 
-
 add_definitions(-DIN_GINAC -DHAVE_LIBDL)
-include_directories(${FEELPP_SOURCE_DIR}/contrib/ginac/ ${FEELPP_BUILD_DIR}/contrib/ginac/ ${FEELPP_SOURCE_DIR}/contrib/ginac/ginac ${FEELPP_BUILD_DIR}/contrib/ginac/ginac )
+include_directories(${FEELPP_BUILD_DIR}/contrib/cln/include ${FEELPP_SOURCE_DIR}/contrib/ginac/ ${FEELPP_BUILD_DIR}/contrib/ginac/ ${FEELPP_SOURCE_DIR}/contrib/ginac/ginac ${FEELPP_BUILD_DIR}/contrib/ginac/ginac )
 SET(FEELPP_LIBRARIES ginac ${CLN_LIBRARIES} ${FEELPP_LIBRARIES} ${CMAKE_DL_LIBS} )
 set(DL_LIBS ${CMAKE_DL_LIBS})
 add_subdirectory(contrib/ginac)
