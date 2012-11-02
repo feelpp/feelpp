@@ -555,6 +555,14 @@ public:
         return M_maxit;
     }
 
+    /**
+     * \return the maximum number of SNES iterations
+     */
+    size_type maxIterationsSNES() const
+    {
+        return M_maxitSNES;
+    }
+
     bool converged() const
     {
         return M_converged;
@@ -583,7 +591,8 @@ public:
     bool showKSPConvergedReason() const { return M_showKSPConvergedReason; }
     bool showSNESConvergedReason() const { return M_showSNESConvergedReason; }
 
-
+    bool reusePrecRebuildAtFirstNewtonStep() const { return M_reusePrecRebuildAtFirstNewtonStep; }
+    bool reuseJacRebuildAtFirstNewtonStep() const { return M_reuseJacRebuildAtFirstNewtonStep; }
     //@}
 
     /** @name  Mutators
@@ -658,6 +667,10 @@ public:
     void setShowSNESMonitor( bool b ) { M_showSNESMonitor=b; }
     void setShowKSPConvergedReason( bool b ) { M_showKSPConvergedReason=b; }
     void setShowSNESConvergedReason( bool b ) { M_showSNESConvergedReason=b; }
+
+    void setReusePrecRebuildAtFirstNewtonStep(bool b) { M_reusePrecRebuildAtFirstNewtonStep=b; }
+    void setReuseJacRebuildAtFirstNewtonStep(bool b) { M_reuseJacRebuildAtFirstNewtonStep=b; }
+
 
     //@}
 
@@ -957,7 +970,7 @@ private:
     bool   M_reuseFailed;
     boost::timer M_timer;
     bool   M_transpose;
-    size_type    M_maxit;
+    size_type    M_maxit, M_maxitSNES;
     size_type    M_iteration;
     std::string M_export;
     std::string M_ksp;
