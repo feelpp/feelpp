@@ -39,16 +39,57 @@
 #include <boost/test/unit_test_suite.hpp>
 #include <boost/test/framework.hpp>
 #include <boost/test/floating_point_comparison.hpp>
-namespace Feel
-{
-namespace ut = boost::unit_test;
-static ut::test_suite* testsuite_master = BOOST_TEST_SUITE( "Feel Master Test Suite" );
-static ut::test_suite* testsuite_core = BOOST_TEST_SUITE( "Feel Core Test Suite" );
-static ut::test_suite* testsuite_poly = BOOST_TEST_SUITE( "Feel Polynomials Test Suite" );
-static ut::test_suite* testsuite_mesh = BOOST_TEST_SUITE( "Feel Mesh Test Suite" );
-static ut::test_suite* testsuite_fem = BOOST_TEST_SUITE( "Feel FEM Test Suite" );
+#include <feel/feelcore/environment.hpp>
 
-}
+
+#define FEELPP_ENVIRONMENT_NO_OPTIONS                                   \
+struct Feelpp {                                                         \
+    Feelpp()                                                            \
+        :env( boost::unit_test::framework::master_test_suite().argc,    \
+              boost::unit_test::framework::master_test_suite().argv)    \
+        {                                                               \
+            BOOST_TEST_MESSAGE( "setup Feel++" );                       \
+                                                                        \
+        }                                                               \
+    ~Feelpp()                                                           \
+        {                                                               \
+            BOOST_TEST_MESSAGE( "teardown Feel++" );                    \
+        }                                                               \
+    Feel::Environment env;                                              \
+};                                                                      \
+BOOST_GLOBAL_FIXTURE( Feelpp );
+
+
+#define FEELPP_ENVIRONMENT_WITH_OPTIONS( myabout, myopts)               \
+struct Feelpp {                                                         \
+    Feelpp()                                                            \
+        :env( Feel::_argc=boost::unit_test::framework::master_test_suite().argc, \
+              Feel::_argv=boost::unit_test::framework::master_test_suite().argv, \
+              Feel::_about=myabout, Feel::_desc=myopts )                \
+        {                                                               \
+            BOOST_TEST_MESSAGE( "setup Feel++" );                       \
+                                                                        \
+        }                                                               \
+    ~Feelpp()                                                           \
+        {                                                               \
+            BOOST_TEST_MESSAGE( "teardown Feel++" );                    \
+        }                                                               \
+    Feel::Environment env;                                              \
+};                                                                      \
+BOOST_GLOBAL_FIXTURE( Feelpp );
+
+
+
+
+#if 0
+    namespace ut = boost::unit_test;
+    static ut::test_suite* testsuite_master = BOOST_TEST_SUITE( "Feel Master Test Suite" );
+    static ut::test_suite* testsuite_core = BOOST_TEST_SUITE( "Feel Core Test Suite" );
+    static ut::test_suite* testsuite_poly = BOOST_TEST_SUITE( "Feel Polynomials Test Suite" );
+    static ut::test_suite* testsuite_mesh = BOOST_TEST_SUITE( "Feel Mesh Test Suite" );
+    static ut::test_suite* testsuite_fem = BOOST_TEST_SUITE( "Feel FEM Test Suite" );
+#endif
+
 #endif
 
 #endif //__TESTSUITE_HPP__

@@ -31,10 +31,7 @@
 // give a name to the testsuite
 #define BOOST_TEST_MODULE form_interpolation testsuite
 
-#if defined(USE_BOOST_TEST)
-#include <boost/test/unit_test.hpp>
-using boost::unit_test::test_suite;
-#endif
+#include <testsuite/testsuite.hpp>
 
 #include <feel/options.hpp>
 
@@ -274,14 +271,13 @@ void run( Application_ptrtype & theApp )
 
 #if USE_BOOST_TEST
 
+FEELPP_ENVIRONMENT_WITH_OPTIONS( test_form_interpolation::makeAbout(),
+                                 test_form_interpolation::makeOptions() );
+
 BOOST_AUTO_TEST_SUITE( form_interpolation )
 
 BOOST_AUTO_TEST_CASE( form_interpolation )
 {
-    Feel::Environment env( boost::unit_test::framework::master_test_suite().argc,
-                           boost::unit_test::framework::master_test_suite().argv,
-                           test_form_interpolation::makeOptions(),
-                           test_form_interpolation::makeAbout());
 
     auto theApp = Application_ptrtype( new Application_type );
 
