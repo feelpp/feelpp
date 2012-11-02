@@ -39,27 +39,41 @@ FIND_PATH(MATHEVAL_INCLUDE_DIR matheval.h
 message(STATUS "Libmatheval first pass: ${MATHEVAL_INCLUDE_DIR}")
 
 if (NOT MATHEVAL_INCLUDE_DIR )
-  message(STATUS "Building libmatheval in ${CMAKE_BINARY_DIR}/contrib/libmatheval-compile...")
   execute_process(COMMAND mkdir -p ${CMAKE_BINARY_DIR}/contrib/libmatheval-compile)
-  execute_process(
-    COMMAND ${FEELPP_HOME_DIR}/contrib/libmatheval/configure --prefix=${CMAKE_BINARY_DIR}/contrib/libmatheval --enable-tests=no
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/libmatheval-compile
-    OUTPUT_QUIET
-    OUTPUT_FILE "libmatheval.log"
-    )
-  message(STATUS "Installing libmatheval in ${CMAKE_BINARY_DIR}/contrib/libmatheval...")
-  execute_process(
-    COMMAND make install
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/libmatheval-compile
-    OUTPUT_QUIET
-    )
+  if(${CMAKE_SOURCE_DIR}/contrib/libmatheval/configure IS_NEWER_THAN ${CMAKE_BINARY_DIR}/contrib/libmatheval-compile/Makefile)
+    message(STATUS "Building libmatheval in ${CMAKE_BINARY_DIR}/contrib/libmatheval-compile...")
+    if ( APPLE )
+      execute_process(
+        COMMAND ${FEELPP_HOME_DIR}/contrib/libmatheval/configure --prefix=${CMAKE_BINARY_DIR}/contrib/libmatheval --enable-tests=no LDFLAGS=-L/opt/local/lib
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/libmatheval-compile
+        OUTPUT_QUIET
+        OUTPUT_FILE "libmatheval-configure.log"
+        )
+    else()
+      execute_process(
+        COMMAND ${FEELPP_HOME_DIR}/contrib/libmatheval/configure --prefix=${CMAKE_BINARY_DIR}/contrib/libmatheval --enable-tests=no
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/libmatheval-compile
+        OUTPUT_QUIET
+        OUTPUT_FILE "libmatheval-configure.log"
+        )
+    endif()
+  endif()
+  if(${CMAKE_SOURCE_DIR}/contrib/libmatheval/lib/matheval.h IS_NEWER_THAN ${CMAKE_BINARY_DIR}/contrib/libmatheval/include/matheval.h)
+    message(STATUS "Installing libmatheval in ${CMAKE_BINARY_DIR}/contrib/libmatheval (this may take a while)...")
+    execute_process(
+      COMMAND make -j${NProcs2} install
+      WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/libmatheval-compile
+      OUTPUT_QUIET
+      OUTPUT_FILE "libmatheval-make.log"
+      )
+  endif()
   set(MATHEVAL_INCLUDE_DIR ${CMAKE_BINARY_DIR}/contrib/libmatheval/include)
 
 endif ()
 
 
-FIND_LIBRARY( MATHEVAL_LIB matheval 
-  PATHS 
+FIND_LIBRARY( MATHEVAL_LIB matheval
+  PATHS
   ${CMAKE_BINARY_DIR}/contrib/libmatheval/lib/
   /usr/lib /opt/local/lib  $ENV{MATHEVAL_DIR}/lib)
 SET(MATHEVAL_LIBRARIES ${MATHEVAL_LIB} )

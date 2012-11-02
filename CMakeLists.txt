@@ -21,7 +21,7 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-cmake_minimum_required (VERSION 2.6)
+cmake_minimum_required (VERSION 2.8)
 
 #
 # Bug in cmake that delete destroy library path if LIBRARY_PATH is not empty
@@ -63,62 +63,50 @@ endmacro(set_config_option)
 OPTION(FEELPP_ENABLE_VERBOSE_CMAKE "enable Feel++ verbose cmake" OFF)
 
 OPTION(FEELPP_ENABLE_SVN "enable Feel++ looking up for svn information" OFF)
-SET(FEELPP_SCM "svn")
-FIND_PACKAGE(Subversion)
-IF(FEELPP_ENABLE_SVN AND ( Subversion_FOUND AND EXISTS ${PROJECT_SOURCE_DIR}/.svn ) )
-#IF ( Subversion_FOUND AND EXISTS ${PROJECT_SOURCE_DIR}/.svn )
-  Subversion_WC_INFO(${PROJECT_SOURCE_DIR} Project)
-  MESSAGE("Current revision is ${Project_WC_REVISION}")
-  Subversion_WC_LOG(${PROJECT_SOURCE_DIR} Project)
-  MESSAGE("Last changed log is ${Project_LAST_CHANGED_LOG}")
-ELSE()
-  FIND_PACKAGE(Git)
-  if(FEELPP_ENABLE_SVN AND GIT_FOUND AND  EXISTS ${PROJECT_SOURCE_DIR}/.git )
-
-    if ( NOT EXISTS ${PROJECT_SOURCE_DIR}/contrib/ginac/ginac )
-      execute_process(COMMAND git submodule init)
-      execute_process(COMMAND git submodule update)
-    endif()
-
-    execute_process(
-      COMMAND git rev-parse --verify -q --short git-svn
-      WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-      OUTPUT_VARIABLE GIT_COMMIT
-      ERROR_VARIABLE GIT_COMMIT_error
-      RESULT_VARIABLE GIT_COMMIT_result)
-    if ( NOT ${GIT_COMMIT_result} EQUAL 0 )
-      MESSAGE(SEND_ERROR "Command \"git rev-parse --verify -q --short git-svn\" failed with output:\n${GIT_COMMIT_error}")
-    else()
-      STRING(STRIP "${GIT_COMMIT}" GIT_COMMIT )
-      MESSAGE(STATUS "Git commit: ${GIT_COMMIT}")
-    endif()
-    execute_process(
-      COMMAND git show --raw ${GIT_COMMIT}
-#      COMMAND "grep git-svn-id"
-#      COMMAND sed -re "s/^\\s*git-svn-id: .*@([0-9]+).*$/\\1/"
-      WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-      OUTPUT_VARIABLE SVN_COMMIT
-      ERROR_VARIABLE Project_WC_REVISION_error
-      RESULT_VARIABLE Project_WC_REVISION_result)
-    if ( NOT ${Project_WC_REVISION_result} EQUAL 0 )
-      MESSAGE(SEND_ERROR "Command \"git show --raw ${GIT_COMMIT}\" failed with output:\n${Project_WC_REVISION_error}")
-    endif()
-    string(REGEX REPLACE ".*git-svn-id: .*trunk@([0-9]+) .*" "\\1"Project_WC_REVISION ${SVN_COMMIT})
-    MESSAGE(STATUS "Current SVN(git) revision is ${Project_WC_REVISION}")
+SET(FEELPP_SCM "git")
+# IF(FEELPP_ENABLE_SVN AND ( Subversion_FOUND AND EXISTS ${PROJECT_SOURCE_DIR}/.svn ) )
+# #IF ( Subversion_FOUND AND EXISTS ${PROJECT_SOURCE_DIR}/.svn )
+#   Subversion_WC_INFO(${PROJECT_SOURCE_DIR} Project)
+#   MESSAGE("Current revision is ${Project_WC_REVISION}")
+#   Subversion_WC_LOG(${PROJECT_SOURCE_DIR} Project)
+#   MESSAGE("Last changed log is ${Project_LAST_CHANGED_LOG}")
+# ELSE()
+FIND_PACKAGE(Git)
+#  if(GIT_FOUND AND  EXISTS ${PROJECT_SOURCE_DIR}/.git )
+if(GIT_FOUND)
+  message(STATUS "Git found" )
+  if ( NOT EXISTS ${PROJECT_SOURCE_DIR}/contrib/ginac/ginac )
+    message(STATUS "initializing submodules...")
+    execute_process(COMMAND git submodule init WORKING_DIRECTORY ${PROJECT_SOURCE_DIR} )
+    message(STATUS "updating submodules...")
+    execute_process(COMMAND git submodule update WORKING_DIRECTORY ${PROJECT_SOURCE_DIR} )
   endif()
-ENDIF()
+
+  execute_process(
+    COMMAND git rev-parse --verify -q --short HEAD
+    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+    OUTPUT_VARIABLE Project_WC_REVISION
+    ERROR_VARIABLE GIT_COMMIT_error
+    RESULT_VARIABLE GIT_COMMIT_result)
+  if ( NOT ${GIT_COMMIT_result} EQUAL 0 )
+    MESSAGE(SEND_ERROR "Command \"git rev-parse --verify -q --short git-svn\" failed with output:\n${GIT_COMMIT_error}")
+  else()
+    STRING(STRIP "${Project_WC_REVISION}" Project_WC_REVISION )
+    MESSAGE(STATUS "Git commit: ${Project_WC_REVISION}")
+  endif()
+endif()
+#ENDIF()
 
 set(FEELPP_VERSION_MAJOR "0")
 set(FEELPP_VERSION_MINOR "92")
 set(FEELPP_VERSION_MICRO "0")
 set(FEELPP_REVISION "0" )
 set(FEELPP_BUILDID "0" )
-if ((FEELPP_ENABLE_SVN AND Subversion_FOUND AND EXISTS ${PROJECT_SOURCE_DIR}/.svn) OR
-    (FEELPP_ENABLE_SVN AND GIT_FOUND AND  EXISTS ${PROJECT_SOURCE_DIR}/.git ))
+if (GIT_FOUND AND  EXISTS ${PROJECT_SOURCE_DIR}/.git )
   set(FEELPP_VERSION_EXTRA "~${FEELPP_SCM}${Project_WC_REVISION}")
   set(FEELPP_REVISION "${Project_WC_REVISION}")
   set(FEELPP_BUILDID "${Project_WC_REVISION}")
-  file(WRITE "${CMAKE_SOURCE_DIR}/SVNREVISION" "${Project_WC_REVISION}")
+  file(WRITE "${CMAKE_SOURCE_DIR}/GITREVISION" "${Project_WC_REVISION}")
 else()
   set(FEELPP_VERSION_EXTRA "")
   if ( EXISTS "${CMAKE_SOURCE_DIR}/SVNREVISION" )
@@ -180,10 +168,11 @@ ENDIF()
 
 
 
-#include(ProcessorCount)
-#ProcessorCount(N)
+include(ProcessorCount)
+ProcessorCount(NProcs)
 ##if(N GREATER 1)
-#  math (EXPR N2 '${N}/2')
+math (EXPR NProcs2 '${NProcs}/2')
+message(STATUS "using ${NProcs2} cores" )
 #  set(CTEST_BUILD_FLAGS -j${N2})
 #  set(ctest_test_args ${ctest_test_args} PARALLEL_LEVEL ${N2})
  OPTION(FEELPP_ENABLE_MPI_MODE "Instantiation mode" ON )

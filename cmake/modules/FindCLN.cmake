@@ -5,6 +5,46 @@
 # CLN_INCLUDE_DIR       the include directories
 # CLN_LIBRARIES         CLN library and its dependencies (if any)
 
+execute_process(COMMAND mkdir -p ${CMAKE_BINARY_DIR}/contrib/cln-compile)
+if ( NOT EXISTS ${CMAKE_SOURCE_DIR}/contrib/cln/configure )
+  message(STATUS "Autoreconf cln in ${CMAKE_SOURCE_DIR}/contrib/cln...")
+  execute_process( COMMAND autoreconf -i
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/contrib/cln
+    OUTPUT_FILE "cln-autoreconf")
+endif()
+
+if(${CMAKE_SOURCE_DIR}/contrib/cln/configure IS_NEWER_THAN ${CMAKE_BINARY_DIR}/contrib/cln-compile/Makefile)
+  message(STATUS "Building cln in ${CMAKE_BINARY_DIR}/contrib/cln-compile...")
+  execute_process(
+    COMMAND ${FEELPP_HOME_DIR}/contrib/cln/configure --prefix=${CMAKE_BINARY_DIR}/contrib/cln
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/cln-compile
+    #      OUTPUT_QUIET
+    OUTPUT_FILE "cln-configure"
+    )
+  set(CLN_INCLUDE_DIR ${CMAKE_BINARY_DIR}/contrib/cln/include)
+endif()
+
+if(${CMAKE_SOURCE_DIR}/contrib/cln/include/cln/cln.h IS_NEWER_THAN ${CMAKE_BINARY_DIR}/contrib/cln/include/cln/cln.h)
+  message(STATUS "Installing cln in ${CMAKE_BINARY_DIR}/contrib/cln (this may take a while)...")
+  execute_process(
+    COMMAND make -j${NProcs2} install
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/cln-compile
+    #  OUTPUT_QUIET
+    OUTPUT_FILE "cln-install"
+    )
+endif()
+string(REPLACE "include/cln" "" CLN_DIR ${CLN_INCLUDE_DIR} )
+FIND_LIBRARY(CLN_LIBRARY
+  NAMES cln
+  PATHS
+  ${CMAKE_BINARY_DIR}/contrib/cln/lib/
+  NO_DEFAULT_PATH
+#  /opt/local/lib
+#  /usr/local/lib
+#  /usr/lib
+  )
+set(CLN_LIBRARIES ${CLN_LIBRARY})
+
 if (CLN_INCLUDE_DIR AND CLN_LIBRARIES)
 	set(CLN_FIND_QUIETLY TRUE)
 endif()
@@ -45,12 +85,17 @@ if (PKG_CONFIG_FOUND)
 endif()
 
 find_path(CLN_INCLUDE_DIR NAMES cln/cln.h
-			  HINTS ${_cln_INCLUDE_DIRS}
-				$ENV{CLN_DIR}/include)
+			  HINTS
+              ${CMAKE_BINARY_DIR}/contrib/cln/include
+              ${_cln_INCLUDE_DIRS}
+			  $ENV{CLN_DIR}/include)
 find_library(CLN_LIBRARIES NAMES libcln cln
-			   HINTS ${_cln_LIBRARY_DIR}
-			         ${_cln_LIBRARY_DIRS}
-				 $ENV{CLN_DIR}/lib)
+			   HINTS
+               ${CMAKE_BINARY_DIR}/contrib/cln/lib
+               ${_cln_LIBRARY_DIR}
+			   ${_cln_LIBRARY_DIRS}
+			   $ENV{CLN_DIR}/lib)
+message(STATUS "Cln includes: ${CLN_INCLUDE_DIR} Libraries: ${CLN_LIBRARIES}" )
 
 if (CLN_INCLUDE_DIR)
 	_cl_get_version(CLN_VERSION_MAJOR
