@@ -59,12 +59,12 @@ public:
      * It permits Feel to check if a more recent version of itself exist.
      * Format: year/month/day hour:minutes:seconds
      */
-    static unsigned long long buildId();
+    static char const* buildId();
 
     /**
      * Revision number (Subversion revision).
      */
-    static unsigned long long revision();
+    static char const*  revision();
 
     /**
      * Returns the encoded number of FEEL's version, see the FEELPP_VERSION macro.
