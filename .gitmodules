@@ -1,6 +1,0 @@
-[submodule "contrib/cln"]
-	path = contrib/cln
-	url = https://code.google.com/p/feelpp.cln/
-[submodule "contrib/ginac"]
-	path = contrib/ginac
-	url = https://code.google.com/p/feelpp.ginac/
