@@ -1,0 +1,169 @@
+\documentclass{article}
+
+\begin{document}
+
+\section{Power Laws}
+
+\subsection{Definitions}
+
+Definitions for power and log:
+\begin{equation}\label{powerdef}
+x^a \equiv e^{a \ln x}
+\end{equation}
+\begin{equation}
+\ln x \equiv \ln |x| + i \arg(x) \mbox{ where } -\pi < \arg(x) \le \pi
+\end{equation}
+
+\subsection{General rules}
+
+\begin{equation}
+e^x e^y = e^{x+y}
+\end{equation}
+for arbitrary complex \(x\) and \(y\) (with~(\ref{powerdef}) we obtain
+the rule \(x^ax^b=x^{a+b}\) since \(x^ax^b\equiv e^{a\ln x}e^{b\ln x} = 
+e^{(a+b)\ln x}\equiv x^{a+b}\) for arbitrary complex \(a,b,x\))
+
+\begin{equation}
+x^{-a} = \frac{1}{x^a}
+\end{equation}
+for arbitrary complex \(x\) and \(a\)
+
+\subsection{\((ax)^b=a^b x^b\)}
+
+\subsubsection{\(b\) integer, \(x\) and \(a\) arbitrary complex}
+
+assume \(b>0\)
+
+\begin{eqnarray}
+(ax)^b & = & \underbrace{(ax) \cdots (ax)}_{b \times}
+\nonumber\\
+& = & \underbrace{a \cdots a}_{b \times}
+      \underbrace{x \cdots x}_{b \times}
+\nonumber\\
+& = & a^b x^b \mbox{ q.e.d.}
+\end{eqnarray}
+
+if \(b<0\) (so \(b=-|b|\))
+\begin{eqnarray}
+(ax)^b & = & \frac{1}{(ax)^{|b|}}
+\nonumber\\
+& = & \frac{1}{a^{|b|} x^{|b|}}
+\nonumber\\
+& = & a^{-|b|} x^{-|b|}
+\nonumber\\
+& = & a^b x^b
+\end{eqnarray}
+
+\subsubsection{\(a>0\), \(x\) and \(b\) arbitrary complex}
+
+\begin{eqnarray}
+(ax)^b & = & e^{b \ln(ax)}
+\nonumber\\
+& = & e^{b (\ln |ax| + i \arg(ax))}
+\end{eqnarray}
+
+if \(a\) is real and positive:
+\begin{equation}
+\ln |ax| = \ln |a| + \ln |x| = \ln a + \ln |x|
+\end{equation}
+and 
+\begin{equation}
+\arg(ax) = \arg(x)
+\end{equation}
+
+So
+\begin{eqnarray}
+e^{b (\ln |ax| + i \arg(ax))} & = &
+e^{b (\ln a + \ln |x| + i \arg(x))}
+\nonumber\\
+& = & e^{b (\ln a + \ln x)}
+\nonumber\\
+& = & e^{b \ln a} e^{b \ln x}
+\nonumber\\
+& = & a^b x^b \mbox{ q.e.d.}
+\end{eqnarray}
+
+\subsection{\((x^a)^b = x^{ab}\)}
+
+\subsubsection{\(b\) integer, \(x\) and \(a\) arbitrary complex}
+
+assume \(b>0\)
+
+\begin{eqnarray}
+(x^a)^b & = & \underbrace{(x^a) \cdots (x^a)}_{b \times}
+\nonumber\\
+& = & \underbrace{e^{a \ln x} \cdots e^{a \ln x}}_{b \times}
+\nonumber\\
+& = & e^{\underbrace{\scriptstyle a \ln x + \dots + a \ln x}_{b \times}}
+\nonumber\\
+& = & e^{a b \ln x}
+\nonumber\\
+& = & x^{ab} \mbox{ q.e.d.}
+\end{eqnarray}
+
+if \(b<0\) (so \(b=-|b|\))
+\begin{eqnarray}
+(x^a)^b & = & \frac{1}{(x^a)^{|b|}}
+\nonumber\\
+& = & \frac{1}{x^{a|b|}}
+\nonumber\\
+& = & x^{-a|b|}
+\nonumber\\
+& = & x^{ab}
+\end{eqnarray}
+
+\subsubsection{\(-1 < a \le 1\), \(x\) and \(b\) arbitrary complex}
+
+We have
+\begin{equation}
+x^a=e^{a \ln|x| + ia\arg(x)}
+\end{equation}
+if \(a\) is real
+\begin{equation}
+|x^a|=e^{a\ln|x|}
+\end{equation}
+and
+\begin{equation}
+\arg(x^a)-a\arg(x)=2k\pi
+\end{equation}
+now if \(-1 < a \le 1\), then \(-\pi < a\arg(x) \le \pi\),
+and so \(k=0\), i.e.
+\begin{equation}
+\arg(x^a)=a\arg(x)
+\end{equation}
+(Note that for \(a=-1\) this may not be true, as \(-1 \arg(x)\) may be equal to \(-\pi\).)
+So
+\begin{eqnarray}
+\ln(x^a) & = & \ln|x^a| + i\arg(x^a)
+\nonumber\\
+& = & \ln (e^{a\ln|x|})+ia\arg(x)
+\nonumber\\
+& = & a \ln |x| + ia\arg(x) \mbox{ (because \(a\ln|x|\) is real)}
+\nonumber\\
+& = & a\ln x
+\end{eqnarray}
+Hence
+\begin{eqnarray}
+(x^a)^b & = & e^{b\ln x^a}
+\nonumber\\
+& = & e^{ba\ln x}
+\nonumber\\
+& = & x^{ab} \mbox{ q.e.d.}
+\end{eqnarray}
+
+Proof contributed by Adam Strzebonski ({\tt adams@wolfram.com}) from
+Wolfram Research in newsgroup {\tt sci.math.symbolic}.
+
+\subsubsection{$x$ positive, $a$ real and $b$ arbitrary complex}
+We have
+\begin{equation}
+(x^a)^b = e^{b\log e^{a\log x}}.
+\end{equation}
+Because $a$ is real and $x$ is positive, $a\log x$ is real. From this
+it follows that $\log e^{a\log x} = a\log x$. I.e, we see that
+\begin{equation}
+(x^a)^b = e^{ba\log x} = x^{ab}.
+\end{equation}
+Qed.
+
+\end{document}

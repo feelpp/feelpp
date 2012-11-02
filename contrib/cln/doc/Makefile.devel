@@ -1,0 +1,45 @@
+# This is the developer's makefile, not the user's makefile.
+# Don't use it unless you know exactly what you do!
+
+
+PACKAGE = cln
+
+
+# Some important programs:
+SHELL = /bin/sh
+MAKE = make
+
+TEXI2DVI = texi2dvi
+DVIPS = dvips -D600
+MAKEINFO = LANGUAGE= makeinfo
+TEXI2HTML = texi2html
+EMACS = emacs
+
+
+all : documentation
+
+documentation : $(PACKAGE).dvi $(PACKAGE).ps $(PACKAGE).info $(PACKAGE).html $(PACKAGE)_toc.html
+
+$(PACKAGE).dvi : $(PACKAGE).texi
+	$(TEXI2DVI) $(PACKAGE).texi
+	rm -f *.aux *.toc *.cp *.fn *.ky *.pg *.tp *.vr *.my *.log
+
+$(PACKAGE).ps : $(PACKAGE).dvi
+	$(DVIPS) -o $(PACKAGE).ps $(PACKAGE).dvi
+
+$(PACKAGE).info : $(PACKAGE).texi
+	$(MAKEINFO) --no-split $(PACKAGE).texi
+
+$(PACKAGE).html : $(PACKAGE).texi
+	$(TEXI2HTML) -expandinfo -number -monolithic $(PACKAGE).texi
+
+$(PACKAGE)_toc.html : $(PACKAGE).texi
+	$(TEXI2HTML) -expandinfo -number -split_chapter $(PACKAGE).texi
+
+$(PACKAGE).texi : $(PACKAGE).tex
+	rm -f $(PACKAGE).texi
+	cp $(PACKAGE).tex $(PACKAGE).texi
+	$(EMACS) -batch $(PACKAGE).texi -load addnodes.el -f save-buffer
+	mv $(PACKAGE).texi $(PACKAGE).texi~
+	sed -e 's,@detailmenu,,g' -e 's,@end detailmenu,,g' < $(PACKAGE).texi~ > $(PACKAGE).texi
+	rm -f *~

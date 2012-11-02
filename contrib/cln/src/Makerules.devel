@@ -1,0 +1,10 @@
+# Common rules for the developer's makefiles.
+
+
+# Some important programs:
+SHELL = /bin/sh
+MAKE = make
+
+# Other programs:
+DIGIT_HEADER = $(SRCDIR)/base/digitseq/digit_header
+

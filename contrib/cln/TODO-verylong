@@ -1,0 +1,4 @@
+Optimizations for very long numbers:
+- gcd: recursive Euklid-Lehmer or Binary-Weber algorithms,
+- Gamma function for rational x.
+
