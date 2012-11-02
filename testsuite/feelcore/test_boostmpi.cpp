@@ -5,9 +5,29 @@
 #include <boost/serialization/string.hpp> // Needed to send/receive strings!
 namespace mpi = boost::mpi;
 
-int main( int argc, char* argv[] )
+#define BOOST_TEST_MODULE example
+#include <boost/test/included/unit_test.hpp>
+
+struct Feelpp {
+    Feelpp()
+        {
+            BOOST_TEST_MESSAGE( "setup Feel++" );
+            Feel::Environment env( boost::unit_test::framework::master_test_suite().argc,
+                                   boost::unit_test::framework::master_test_suite().argv);
+        }
+    ~Feelpp()
+        {
+            BOOST_TEST_MESSAGE( "teardown Feel++" );
+        }
+
+};
+
+//____________________________________________________________________________//
+
+BOOST_FIXTURE_TEST_SUITE( s, Feelpp )
+
+BOOST_AUTO_TEST_CASE( test_case1 )
 {
-    mpi::environment env( argc, argv );
     mpi::communicator world;
 
     if ( world.rank() == 0 )
@@ -57,5 +77,10 @@ int main( int argc, char* argv[] )
 
     std::cout << "Process #" << world.rank() << " shows " << res << std::endl;
 
-    return 0;
 }
+
+
+//____________________________________________________________________________//
+
+
+BOOST_AUTO_TEST_SUITE_END()
