@@ -1,0 +1,5 @@
+This directory contains some notes about the method used to compute various
+orthogonal polynomials, in particular how to retrieve a recurrence relation
+or closed formula for the coefficients directly from the definition of the
+polynomials.
+

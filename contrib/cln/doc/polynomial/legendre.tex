@@ -1,0 +1,224 @@
+%% This LaTeX-file was created by <bruno> Sun Feb 16 14:24:52 1997
+%% LyX 0.10 (C) 1995 1996 by Matthias Ettrich and the LyX Team
+
+%% Don't edit this file unless you are sure what you are doing.
+\documentclass[12pt,a4paper,oneside,onecolumn]{article}
+\usepackage[]{fontenc}
+\usepackage[latin1]{inputenc}
+\usepackage[dvips]{epsfig}
+
+%%
+%% BEGIN The lyx specific LaTeX commands.
+%%
+
+\makeatletter
+\def\LyX{L\kern-.1667em\lower.25em\hbox{Y}\kern-.125emX\spacefactor1000}%
+\newcommand{\lyxtitle}[1] {\thispagestyle{empty}
+\global\@topnum\z@
+\section*{\LARGE \centering \sffamily \bfseries \protect#1 }
+}
+\newcommand{\lyxline}[1]{
+{#1 \vspace{1ex} \hrule width \columnwidth \vspace{1ex}}
+}
+\newenvironment{lyxsectionbibliography}
+{
+\section*{\refname}
+\@mkboth{\uppercase{\refname}}{\uppercase{\refname}}
+\begin{list}{}{
+\itemindent-\leftmargin
+\labelsep 0pt
+\renewcommand{\makelabel}{}
+}
+}
+{\end{list}}
+\newenvironment{lyxchapterbibliography}
+{
+\chapter*{\bibname}
+\@mkboth{\uppercase{\bibname}}{\uppercase{\bibname}}
+\begin{list}{}{
+\itemindent-\leftmargin
+\labelsep 0pt
+\renewcommand{\makelabel}{}
+}
+}
+{\end{list}}
+\def\lxq{"}
+\newenvironment{lyxcode}
+{\list{}{
+\rightmargin\leftmargin
+\raggedright
+\itemsep 0pt
+\parsep 0pt
+\ttfamily
+}%
+\item[]
+}
+{\endlist}
+\newcommand{\lyxlabel}[1]{#1 \hfill}
+\newenvironment{lyxlist}[1]
+{\begin{list}{}
+{\settowidth{\labelwidth}{#1}
+\setlength{\leftmargin}{\labelwidth}
+\addtolength{\leftmargin}{\labelsep}
+\renewcommand{\makelabel}{\lyxlabel}}}
+{\end{list}}
+\newcommand{\lyxletterstyle}{
+\setlength\parskip{0.7em}
+\setlength\parindent{0pt}
+}
+\newcommand{\lyxaddress}[1]{
+\par {\raggedright #1 
+\vspace{1.4em}
+\noindent\par}
+}
+\newcommand{\lyxrightaddress}[1]{
+\par {\raggedleft \begin{tabular}{l}\ignorespaces
+#1
+\end{tabular}
+\vspace{1.4em}
+\par}
+}
+\newcommand{\lyxformula}[1]{
+\begin{eqnarray*}
+#1
+\end{eqnarray*}
+}
+\newcommand{\lyxnumberedformula}[1]{
+\begin{eqnarray}
+#1
+\end{eqnarray}
+}
+\makeatother
+
+%%
+%% END The lyx specific LaTeX commands.
+%%
+
+\pagestyle{plain}
+\setcounter{secnumdepth}{3}
+\setcounter{tocdepth}{3}
+
+%% Begin LyX user specified preamble:
+\catcode`@=11 % @ ist ab jetzt ein gewoehnlicher Buchstabe
+\def\mod#1{\allowbreak \mkern8mu \mathop{\operator@font mod}\,\,{#1}}
+\def\pmod#1{\allowbreak \mkern8mu \left({\mathop{\operator@font mod}\,\,{#1}}\right)}
+\catcode`@=12 % @ ist ab jetzt wieder ein Sonderzeichen
+
+
+%% End LyX user specified preamble.
+\begin{document}
+
+The Legendre polynomials  \( P_{n}(x) \) are defined through 
+\[
+P_{n}(x)=\frac{1}{2^{n}n!}\cdot \left( \frac{d}{dx}\right) ^{n}(x^{2}-1)^{n}\]
+(For a motivation
+of the  \( 2^{n} \) in the denominator, look at  \( P_{n}(x) \) modulo an odd prime  \( p \), and
+observe that  \( P_{n}(x)\equiv P_{p-1-n}(x)\mod p \) for  \( 0\leq n\leq p-1 \). This wouldn't hold if the  \( 2^{n} \) factor in the denominator
+weren't present.)
+
+\begin{description}
+
+\item [Theorem:]~
+
+\end{description}
+
+ \( P_{n}(x) \) satisfies the recurrence relation
+
+
+\[
+P_{0}(x)=1\]
+
+
+
+\[
+(n+1)\cdot P_{n+1}(x)=(2n+1)x\cdot P_{n}(x)-n\cdot P_{n-1}(x)\]
+for  \( n\geq 0 \) and the differential equation  \( (1-x^{2})\cdot P_{n}^{''}(x)-2x\cdot P_{n}^{'}(x)+(n^{2}+n)\cdot P_{n}(x)=0 \) for all  \( n\geq 0 \).
+
+\begin{description}
+
+\item [Proof:]~
+
+\end{description}
+
+Let  \( F:=\sum ^{\infty }_{n=0}P_{n}(x)\cdot z^{n} \) be the generating function of the sequence of polynomials. It
+is the diagonal series of the power series
+\[
+G:=\sum _{m,n=0}^{\infty }\frac{1}{2^{n}m!}\cdot \left( \frac{d}{dx}\right) ^{m}(x^{2}-1)^{n}\cdot y^{m}\cdot z^{n}\]
+Because the Taylor series
+development theorem holds in formal power series rings (see [1], section
+2.16), we can simplify
+\begin{eqnarray*}
+G & = & \sum _{n=0}^{\infty }\frac{1}{2^{n}}\cdot \left( \sum _{m=0}^{\infty }\frac{1}{m!}\cdot \left( \frac{d}{dx}\right) ^{m}(x^{2}-1)^{n}\cdot y^{m}\right) \cdot z^{n}\\
+ & = & \sum _{n=0}^{\infty }\frac{1}{2^{n}}\cdot \left( (x+y)^{2}-1\right) ^{n}\cdot z^{n}\\
+ & = & \frac{1}{1-\frac{1}{2}\left( (x+y)^{2}-1\right) z}
+\end{eqnarray*}
+We take over the terminology from the ``diag\_rational''
+paper; here  \( R=Q[x] \) and  \( M=Q[[x]] \) (or, if you like it better,  \( M=H(C) \), the algebra of
+functions holomorphic in the entire complex plane).  \( G\in M[[y,z]] \) is rational;
+hence  \( F \) is algebraic over  \( R[z] \). Let's proceed exactly as in the ``diag\_series''
+paper.  \( F(z^{2}) \) is the coefficient of  \( t^{0} \) in
+\[
+G(zt,\frac{z}{t})=\frac{2t}{2t-\left( (x+zt)^{2}-1\right) z}=\frac{2t}{-z^{3}\cdot t^{2}+2(1-xz^{2})\cdot t+(z-x^{2}z)}\]
+The splitting field of the denominator
+is  \( L=Q(x)(z)(\alpha ) \) where 
+\[
+\alpha _{1/2}=\frac{1-xz^{2}\pm \sqrt{1-2xz^{2}+z^{4}}}{z^{3}}\]
+
+\[
+\alpha =\alpha _{1}=\frac{2}{z^{3}}-\frac{2x}{z}+\frac{1-x^{2}}{2}z+\cdots \in Q(x)[[z]][\frac{1}{z}]\]
+
+\[
+\alpha _{2}=\frac{x^{2}-1}{2}z+\cdots \in Q(x)[[z]][\frac{1}{z}]\]
+The partial fraction decomposition of  \( G(zt,\frac{z}{t}) \) reads
+\[
+G(zt,\frac{z}{t})=-\frac{2}{z^{3}}\cdot \frac{1}{\alpha _{1}-\alpha _{2}}\cdot \left( \frac{\alpha _{1}}{t-\alpha _{1}}-\frac{\alpha _{2}}{t-\alpha _{2}}\right) \]
+It follows
+that
+\[
+F(z^{2})=-\frac{2}{z^{3}}\cdot \frac{1}{\alpha _{1}-\alpha _{2}}\cdot \left( \frac{\alpha _{1}}{0-\alpha _{1}}-0\right) =\frac{1}{\sqrt{1-2xz^{2}+z^{4}}}\]
+hence
+\[
+F(z)=\frac{1}{\sqrt{1-2xz+z^{2}}}\]
+
+
+It follows that  \( (1-2xz+z^{2})\cdot \frac{d}{dz}F+(z-x)\cdot F=0 \). This is equivalent to the claimed recurrence.
+
+Starting from the closed form for  \( F \), we compute a linear relation
+for the partial derivatives of  \( F \). Write  \( \partial _{x}=\frac{d}{dx} \) and  \( \Delta _{z}=z\frac{d}{dz} \). One computes
+\[
+F=1\cdot F\]
+
+\[
+\left( 1-2xz+z^{2}\right) \cdot \partial _{x}F=z\cdot F\]
+
+\[
+\left( 1-2xz+z^{2}\right) ^{2}\cdot \partial _{x}^{2}F=3z^{2}\cdot F\]
+
+\[
+\left( 1-2xz+z^{2}\right) \cdot \Delta _{z}F=(xz-z^{2})\cdot F\]
+
+\[
+\left( 1-2xz+z^{2}\right) ^{2}\cdot \partial _{x}\Delta _{z}F=(z+xz^{2}-2z^{3})\cdot F\]
+
+\[
+\left( 1-2xz+z^{2}\right) ^{2}\cdot \Delta _{z}^{2}F=\left( xz+(x^{2}-2)z^{2}-xz^{3}+z^{4}\right) \cdot F\]
+Solve
+a homogeneous  \( 5\times 6 \) system of linear equations over  \( Q(x) \) to get 
+\[
+\left( 1-2xz+z^{2}\right) ^{2}\cdot \left( (-2x)\cdot \partial _{x}F+(1-x^{2})\cdot \partial _{x}^{2}F+\Delta _{z}F+\Delta _{z}^{2}F\right) =0\]
+Divide by
+the first factor to get
+\[
+(-2x)\cdot \partial _{x}F+(1-x^{2})\cdot \partial _{x}^{2}F+\Delta _{z}F+\Delta _{z}^{2}F=0\]
+This is equivalent to the claimed equation
+ \( (1-x^{2})\cdot P_{n}^{''}(x)-2x\cdot P_{n}^{'}(x)+(n^{2}+n)\cdot P_{n}(x)=0 \).
+
+\begin{lyxsectionbibliography}
+
+\item [1] Bruno Haible: D-finite power series in several variables. \em Diploma
+thesis, University of Karlsruhe, June 1989\em . Sections 2.14, 2.15
+and 2.22.
+
+\end{lyxsectionbibliography}
+
+\end{document}
