@@ -1,0 +1,1130 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%
+%%% Version 12, 1999-09-07, Bruno
+%%% -----------------------------
+%%%
+%%% * Habe neue Referenzen zu den Karatsuba-Arbeiten hinzugefügt, entnommen
+%%%   dem großartigen Paper CECM-98-118 (98_118-Borwein-Bradley-Crandall.dvi).
+%%% * Habe in acm.bst, Funktion format.title, das change.case rausgenommen,
+%%%   das die Namen von Euler, Riemann u.a. in Kleinbuchstaben konvertiert
+%%%   hatte.
+%%%
+%%% Version 11, 1998-12-20, Bruno
+%%% -----------------------------
+%%%
+%%% * Habe Referenzen zu den Karatsuba-Arbeiten hinzugefügt.
+%%%
+%%% Version 10, 1998-03-10, Thomas & Bruno
+%%% --------------------------------------
+%%%
+%%% * Korrigiere die Formel für a(n) bei zeta(3).
+%%% * Schönheitsfehler im Literaturverzeichnis.
+%%%
+%%% Version 9, 1998-03-06, Thomas & Bruno
+%%% -------------------------------------
+%%%
+%%% * Schreibe \frac{1}{|x|} statt \frac{1}{x}.
+%%%
+%%% Version 8, 1998-01-16b, Thomas
+%%% ------------------------------
+%%%
+%%% * Drei Literaturverweise für LiDIA statt nur einem.
+%%%
+%%% Version 7, 1998-01-16a, Bruno
+%%% -----------------------------
+%%%
+%%% * Adresse: Praefix F fuer Frankreich
+%%% * Abstract: Erwaehne zeta(3)
+%%% * Kleinere Korrekturen der O()-Abschaetzungen
+%%%
+%%% Version 6, 1998-01-14, Thomas
+%%% -----------------------------
+%%%
+%%% * habe meine Adresse ge"andert.
+%%%
+%%% * habe Resultat f"ur die Euler Konstante + Kettenbruch eingef"uhrt
+%%%
+%%% Version 5, 1997-12-11, Thomas
+%%% -----------------------------
+%%%
+%%% * Habe die Anzahl der Scritte bei der Euler Konstante von
+%%%   x = ceiling(N log(2)/4)^2 auf x = ceiling((N+2) log(2)/4)^2
+%%%   hochgesetzt (Mail von Sofroniou) 
+%%%
+%%% * Habe Kommentar eingef"ugt bzgl Checkpointing bei der Euler
+%%%   Konstante und Gamma(x) (Mail von Sofroniou)
+%%%
+%%% * Habe Section zu Geschwindigkeit von Maple gegen"uber Pari
+%%%   verbessert (mail von Laurent Bernardi).
+%%%
+%%% Version 4, 1997-01-09, Thomas
+%%% -----------------------------
+%%%
+%%% * Habe die Komplexitätsaussage für sinh, cosh ergänzt.
+%%% * Habe die Versionen der getesteten CAS ergänzt.
+%%%
+%%% Version 3, 1997-01-07, Bruno
+%%% ----------------------------
+%%%
+%%% * Meine Firma schreibt sich mit vier Grossbuchstaben.
+%%% * Apery schreibt sich m.W. mit einem Akzent.
+%%% * Die Fehlermeldung meldet n2-n1>0, nicht n1-n2>0.
+%%% * N -> \(N\) (zweimal)
+%%% * Leerzeile entfernt nach Display-Formeln, bei denen der Absatz
+%%%   weitergeht. Hat den Effekt eines \noindent.
+%%% * Im Abschnitt: arctan(x) for rational x: "another way" -> "the fastest way"
+%%% * "[87]" -> "\cite{87}"
+%%% * Das Cohen-Villegas-Zagier brauchen wir nun doch nicht zu zitieren.
+%%% * Die "Note:" am Ende von Abschnitt ueber die Gamma-Funktion optisch
+%%%   verkleinert.
+%%% * Die Formel fuer die hypergeometrische Funktionen optisch verschoenert.
+%%%   Andere Formeln ebenso.
+%%% * Figure 2, erste Spalte rechtsbuendig.
+%%% * "out performs" -> "outperforms"
+%%% * "the streng" -> "the strength"
+%%% * Hinweis auf die Parallelisierbarkeit im Abstract.
+%%% * Bibtex-Style gehackt, damit nicht jeder zweite Autor auf seine
+%%%   Anfangsbuchstaben verkuerzt und alleinstehende Autoren ihres
+%%%   Vornamens beraubt werden.
+%%%
+%%% Version 2, 1997-01-06, Thomas
+%%% -----------------------------
+%%%
+%%% * geänderte Abschnitte sind auskommentiert mit %%%. Alle
+%%%   Änderungen sind als Vorschlag zu verstehen. Der Grund
+%%%   wird im folgenden angegeben. Falls Du mit einer Änderung
+%%%   einverstanden bist, kannst Du alle %%%-Zeilen löschen.
+%%%   
+%%% * Lyx defines wurden entfernt. Grund: das ISSAC-acmconf.sty
+%%%   erlaubt keine fremde macros. Übersetzung mit LaTeX geht.
+%%% * habe Keyboardumlaute (ä,ü,ö,ß) in LaTeX umgeschrieben.
+%%%   Grund: damit die Submission in einem file geht.
+%%% * Habe fontenc und psfig usepackage Befehle entfernt. 
+%%%   Grund: fonts bestimmt acmconf.sty und keine Bilder vorhanden.
+%%% * Habe bibliography mit BibTeX (binsplit.bib) und acm.bst
+%%%   erstellt. Grund: wird von ISSAC '97 verlangt.
+%%% * Habe langen Formeln in einer eqnarray Umgebung gesteckt.
+%%%   Grund: acmconf.sty läuft im twocolumn-Modus. Lange Formeln
+%%%   haben die Ausgabe durcheinander gebracht.
+%%% * Habe Reihenfolge bei der Beschreibung der elementare
+%%%   Funktionen geändert, sodaß zuerst die rationale und dann
+%%%   die reelle version beschrieben wird. Grund: Einheitlichkeit.
+%%% * Habe sinh mit binary-splitting gegen sinh mit exp-Berechnung
+%%%   getestet. Sie sind ungefähr gleich gut auf meinen Pentium,
+%%%   mir machen "Wackler" beim cosh. cosh ist ab und zu, sowohl
+%%%   bei kleiner als auch bei große Präzision langsamer. Habe
+%%%   dies und dem Abschnitt sinh, cosh ausgefüllt. Grund: es hat
+%%%   gefehlt.
+%%% * Habe artanh Abschnitt entfernt. Grund: ich habe in der
+%%%   Einleitung der elementaren Funktionen darauf verwiesen, daß
+%%%   man die Berechnung anderer Funktionen (wie artanh) auf die
+%%%   hier erwähnte zurückführen oder auf analoger Weise
+%%%   implementieren kann. Ich denke man braucht nicht alles explizit 
+%%%   anzugeben.
+%%% 
+%%% * Habe Dein Dankeschön an mich entfernt.
+%%% * Habe Abschnitt über Konvergenzbeschleunigung entfernt.
+%%%   Grund: das geht in Dein MathComp paper.
+%%% 
+%%% * Habe neue Formel für pi eingefügt. Grund: einfacher,
+%%%   effizienter und stimmt mit der angegebenen Referenz
+%%%   überein.
+%%% * Habe die Berechnung der Apery Konstante angepasst.
+%%%   Grund: die hier angegebenen Formel wurde mit einer
+%%%   umgeformten Reihe berechnet. Wenn man dieses nicht
+%%%   kennt, wirkt es verwirrend. Keine Effizienz-steigerung.
+%%% * Habe die Beschreibung für die erste version der Euler
+%%%   Konstante entfernt. Grund: wird von der zweiten version
+%%%   in jeder Hinsicht (Beweis, Effizienz) gedeckt. 
+%%% * Habe Abschnitte über Checkpointing und Parallelisierung
+%%%   eingefügt. Ein Beispiel über die Wirksamkeit habe ich
+%%%   bei der Apery Konstante angegeben. Grund: damit können wir
+%%%   das Paper auch bei PASCO '97 einreichen. 
+%%%   
+%%% * Habe Beispiel-C++-Implementierung für abpq Reihen eingefügt.
+%%%   Grund: zeigen wie einfach es ist wenn man die Formeln hat ;-)
+%%% * Habe Beispiel-Implementierung für abpqcd Reihen eingefügt.
+%%%   Grund: dito
+%%% * Habe Computational results und Conclusions Abschnitt eingefügt.
+%%% * Habe die Namen der Konstanten (C, G, ...) and die entsprechenden
+%%%   Abschnitten eingefügt. Grund: diese Namen werden bei den
+%%%   Tabellen im Abschnitt Computational results benutzt.
+%%% * Habe Verweis an LiDIA eingefügt. Grund: wird bei Computational
+%%%   results erw\"ahnt.
+%%%
+%%% Version 1, 1996-11-30, Bruno
+%%% 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Bruno Haible, Thomas Papanikolaou.                                     %%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\documentstyle{acmconf}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Plain TeX macros
+%\catcode`@=11 % @ ist ab jetzt ein gewoehnlicher Buchstabe
+%\def\@Re{\qopname@{Re}}      \def\re#1{{\@Re #1}}
+%\def\@Im{\qopname@{Im}}      \def\im#1{{\@Im #1}}
+%\catcode`@=12 % @ ist ab jetzt wieder ein Sonderzeichen
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% LaTeX2e macros
+\catcode`@=11 % @ ist ab jetzt ein gewoehnlicher Buchstabe
+\def\re{\mathop{\operator@font Re}\nolimits}
+\def\im{\mathop{\operator@font Im}\nolimits}
+\def\artanh{\mathop{\operator@font artanh}\nolimits}
+\catcode`@=12 % @ ist ab jetzt wieder ein Sonderzeichen
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{document}
+
+\title{Fast multiprecision evaluation of series of rational numbers}
+
+\author{
+\begin{tabular}{ccc}
+{Bruno Haible} & \hspace*{2cm} & {Thomas Papanikolaou}\\
+{\normalsize ILOG} && {\normalsize Laboratoire A2X}\\
+{\normalsize 9, rue de Verdun} && {\normalsize 351, cours de la Lib\'eration}\\
+{\normalsize F -- 94253 Gentilly Cedex} && {\normalsize F -- 33405 Talence Cedex}\\
+{\normalsize {\tt haible@ilog.fr}} && {\normalsize {\tt papanik@math.u-bordeaux.fr}}\\
+\end{tabular}
+}
+
+\maketitle
+
+\begin{abstract}
+
+We describe two techniques for fast multiple-precision evaluation of linearly
+convergent series, including power series and Ramanujan series. The computation
+time for \(N\) bits is  \( O((\log N)^{2}M(N)) \), where \( M(N) \) is the time
+needed to multiply two \(N\)-bit numbers. Applications include fast algorithms
+for elementary functions,  \(\pi\), hypergeometric functions at rational points,
+$\zeta(3)$, Euler's, Catalan's and Ap{\'e}ry's constant. The algorithms are
+suitable for parallel computation.
+
+\end{abstract}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Introduction}
+
+Multiple-precision evaluation of real numbers has become efficiently possible
+since Sch\"onhage and Strassen \cite{71} have showed that the bit complexity of
+the multiplication of two \(N\)-bit numbers is
+\( M(N)=O(N\:\log N\:\log\log N) \).
+This is not only a theoretical result; a C++ implementation \cite{96a} can
+exploit this already for  \( N=40000 \) bits. Algorithms for computing
+elementary functions (exp, log, sin, cos, tan, asin, acos, atan, sinh, cosh,
+tanh, arsinh, arcosh, artanh) have appeared in \cite{76b}, and a remarkable
+algorithm for \( \pi \) was found by Brent and Salamin \cite{76c}.
+
+However, all these algorithms suffer from the fact that calculated results
+are not reusable, since the computation is done using real arithmetic (using
+exact rational arithmetic would be extremely inefficient). Therefore functions
+or constants have to be recomputed from the scratch every time higher precision
+is required.
+
+In this note, we present algorithms for fast computation of sums of the form
+
+\[S=\sum _{n=0}^{\infty }R(n)F(0)\cdots F(n)\]
+where \( R(n) \) and \( F(n) \) are rational functions in \( n \) with rational
+coefficients, provided that this sum is linearly convergent, i.e. that the
+\( n \)-th term is \( O(c^{-n}) \) with  \( c>1 \). Examples include elementary
+and hypergeometric functions at rational points in the {\em interior} of the
+circle of convergence, as well as \( \pi  \) and Euler's, Catalan's and
+Ap{\'e}ry's constants.
+
+The presented algorithms are {\em easy to implement} and {\em extremely
+efficient}, since they take advantage of pure integer arithmetic. The
+calculated results are {\em exact}, making {\em checkpointing} and
+{\em reuse} of computations possible. Finally,
+the computation of our algorithms {\em can be easily parallelised}.
+
+After publishing the present paper, we were informed that the results of
+section 2 were already published by E.~Karatsuba in \cite{91,91b,93,95c}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Evaluation of linearly convergent series}
+
+The technique presented here applies to all linearly convergent sums of the
+form
+
+\[ S=\sum ^{\infty }_{n=0}
+\frac{a(n)}{b(n)}\frac{p(0)\cdots p(n)}{q(0)\cdots q(n)}\]
+where  \( a(n) \),  \( b(n) \),  \( p(n) \),  \( q(n) \) are integers with
+\( O(\log n) \) bits. The most often used case is that  \( a(n) \), \( b(n) \),
+\( p(n) \),  \( q(n) \) are polynomials in  \( n \) with integer coefficients.
+
+\begin{description}
+\item [Algorithm:]~
+\end{description}
+
+Given two index bounds  \( n_{1} \) and  \( n_{2} \), consider the partial sum 
+
+\[
+S=\sum _{n_{1}\leq n<n_{2}}
+\frac{a(n)}{b(n)}\frac{p(n_{1})\cdots p(n)}{q(n_{1})\cdots q(n)}\]
+
+It is not computed directly. Instead, we compute the integers
+\( P={p(n_{1})}\cdots {p(n_{2}-1)} \),  \( Q={q(n_{1})}\cdots {q(n_{2}-1)} \),
+\( B={b(n_{1})}\cdots {b(n_{2}-1)} \) and  \( T=BQS \). If  \( n_{2}-n_{1}<5 \),
+these are computed directly.  If  \( n_{2}-n_{1}\geq 5 \), they are computed
+using {\em binary splitting}: Choose an index  \( n_{m} \) in the middle of
+\( n_{1} \) and \( n_{2} \), compute the components \( P_{l} \), \( Q_{l} \),
+\( B_{l} \), \( T_{l} \) belonging to the interval \( n_{1}\leq n<n_{m} \),
+compute the components  \( P_{r} \),  \( Q_{r} \),  \( B_{r} \),  \( T_{r} \)
+belonging to the interval  \( n_{m}\leq n<n_{2} \), and set 
+\( P=P_{l}P_{r} \),  \( Q=Q_{l}Q_{r} \),  \( B=B_{l}B_{r} \) and
+\( T=B_{r}Q_{r}T_{l}+B_{l}P_{l}T_{r} \).
+
+Finally, this algorithm is applied to  \( n_{1}=0 \) and
+\( n_{2}=n_{\max }=O(N) \), and a final floating-point division
+\( S=\frac{T}{BQ} \) is performed.
+
+\begin{description}
+\item [Complexity:]~
+\end{description}
+
+The bit complexity of computing  \( S \) with  \( N \) bits of precision is 
+\( O((\log N)^{2}M(N)) \).
+
+\begin{description}
+\item [Proof:]~
+\end{description}
+
+Since we have assumed the series to be linearly convergent, the  \( n \)-th
+term is  \( O(c^{-n}) \) with  \( c>1 \). Hence choosing
+\( n_{\max }=N\frac{\log 2}{\log c}+O(1) \) will ensure that the round-off
+error is  \( <2^{-N} \). By our assumption that  \( a(n) \),  \( b(n) \),
+\( p(n) \),  \( q(n) \) are integers with  \( O(\log n) \) bits, the integers
+\( P \),  \( Q \),  \( B \),  \( T \) belonging to the interval
+\( n_{1}\leq n<n_{2} \) all have \( O((n_{2}-n_{1})\log n_{2}) \) bits.
+
+The algorithm's recursion depth is  \( d=\frac{\log n_{\max }}{\log 2}+O(1) \).
+At recursion depth  \( k \) (\( 1\leq k\leq d \)), integers having each
+\( O(\frac{n_{\max }}{2^{k}}\log n_{\max }) \) bits are multiplied. Thus,
+the entire computation time \( t \) is
+\begin{eqnarray*}
+t &=& \sum ^{d}_{k=1}
+2^{k-1}O\left( M\left( \frac{n_{\max }}{2^{k}}\log n_{\max }\right)\right)\\
+&=& \sum ^{d}_{k=1} O\left( M\left( n_{\max }\log n_{\max }\right) \right)\\
+&=& O(\log n_{\max }M(n_{\max }\log n_{\max }))
+\end{eqnarray*}
+Because of  \( n_{\max }=O( \frac{N}{\log c}) \) and
+\begin{eqnarray*}
+M\left(\frac{N}{\log c} \log \frac{N}{\log c}\right)
+&=& O\left(\frac{1}{\log c} N\, (\log N)^{2}\, \log \log N\right)\\
+&=& O\left(\frac{1}{\log c} \log N\, M(N)\right)
+\end{eqnarray*}
+we have
+\[ t = O\left(\frac{1}{\log c} (\log N)^{2}M(N)\right) \]
+Considering \(c\) as constant, this is the desired result.
+
+\begin{description}
+\item [Checkpointing/Parallelising:]~
+\end{description}
+
+A checkpoint can be easily done by storing the (integer) values of
+\( n_1 \),  \( n_2 \), \( P \),  \( Q \),  \( B \) and \( T \).
+Similarly, if \( m \) processors are available, then the interval 
+\( [0,n_{max}] \) can be divided into \( m \) pieces of length 
+\( l = \lfloor n_{max}/m \rfloor \). After each processor \( i \) has
+computed the sum of its interval \( [il,(i+1)l] \), the partial sums are
+combined to the final result using the rules described above.
+
+\begin{description}
+\item [Note:]~
+\end{description}
+
+For the special case  \( a(n)=b(n)=1 \), the binary splitting algorithm has
+already been documented in \cite{76a}, section 6, and \cite{87}, section 10.2.3.
+
+Explicit computation of  \( P \),  \( Q \),  \( B \),  \( T \) is only required
+as a recursion base, for  \( n_{2}-n_{1}<2 \), but avoiding recursions for
+\( n_{2}-n_{1}<5 \) gains some percent of execution speed.
+
+The binary splitting algorithm is asymptotically faster than step-by-step
+evaluation of the sum -- which has binary complexity  \( O(N^{2}) \) -- because
+it pushes as much multiplication work as possible to the region where
+multiplication becomes efficient. If the multiplication were implemented
+as an  \( M(N)=O(N^{2}) \) algorithm, the binary splitting algorithm would
+provide no speedup over step-by-step evaluation.
+
+\begin{description}
+\item [Implementation:]~
+\end{description}
+
+In the following we present a simplified C++ implementation of
+the above algorithm\footnote{A complete implementation can be found in 
+CLN \cite{96a}. The implementation of the binary-splitting method will
+be also available in {\sf LiDIA-1.4}}. The initialisation is done by a
+structure {\tt abpq\_series} containing arrays {\tt a}, {\tt b}, {\tt p}
+and {\tt q} of multiprecision integers ({\tt bigint}s). The values of
+the arrays at the index \( n \) correspond to the values of the functions
+\( a \), \( b \), \( p \) and \( q \) at the integer point \( n \).
+The (partial) results of the algorithm are stored in the
+{\tt abpq\_series\_result} structure.
+
+\begin{verbatim}
+// abpq_series is initialised by user
+struct { bigint *a, *b, *p, *q; 
+       } abpq_series;
+
+// abpq_series_result holds the partial results
+struct { bigint P, Q, B, T; 
+       } abpq_series_result;
+
+// binary splitting summation for abpq_series
+void sum_abpq(abpq_series_result & r, 
+              int n1, int n2, 
+              const abpq_series & arg)
+{
+  // check the length of the summation interval
+  switch (n2 - n1)
+  {
+    case 0:
+      error_handler("summation device", 
+               "sum_abpq:: n2-n1 should be > 0.");
+      break;
+
+    case 1: // the result at the point n1
+      r.P = arg.p[n1];
+      r.Q = arg.q[n1];
+      r.B = arg.b[n1];
+      r.T = arg.a[n1] * arg.p[n1];
+      break;
+
+    // cases 2, 3, 4 left out for simplicity
+
+    default: // the general case
+
+      // the left and the right partial sum
+      abpq_series_result L, R;
+
+      // find the middle of the interval
+      int nm = (n1 + n2) / 2;
+
+      // sum left side
+      sum_abpq(L, n1, nm, arg);
+
+      // sum right side
+      sum_abpq(R, nm, n2, arg);
+
+      // put together
+      r.P = L.P * R.P;
+      r.Q = L.Q * R.Q;
+      r.B = L.B * R.B;
+      r.T = R.B * R.Q * L.T + L.B * L.P * R.T;
+      break;
+  }
+}
+\end{verbatim}
+
+Note that the multiprecision integers could be replaced here by integer
+polynomials, or by any other ring providing the operators \( = \) (assignment),
+\( + \) (addition) and \( * \) (multiplication). For example, one could regard
+a bivariate polynomial over the integers as a series over the second variable,
+with polynomials over the first variable as its coefficients. This would result
+an accelerated algorithm for summing bivariate (and thus multivariate)
+polynomials.
+
+\subsection{Example: The factorial}
+
+This is the most classical example of the binary splitting algorithm and was
+probably known long before \cite{87}.
+
+Computation of the factorial is best done using the binary splitting algorithm,
+combined with a reduction of the even factors into odd factors and
+multiplication with a power of 2, according to the formula
+
+\[
+n!=2^{n-\sigma _{2}(n)}\cdot \prod _{k\geq 1}
+\left( \prod _{\frac{n}{2^{k}}<2m+1\leq \frac{n}{2^{k-1}}}(2m+1)\right) ^{k}\]
+and where the products 
+\[
+P(n_{1},n_{2})=\prod _{n_{1}<m\leq n_{2}}(2m+1)\]
+are evaluated according to the binary splitting algorithm:
+\( P(n_{1},n_{2})=P(n_{1},n_{m})P(n_{m},n_{2}) \) with  
+\( n_{m}=\left\lfloor \frac{n_{1}+n_{2}}{2}\right\rfloor  \) 
+if  \( n_{2}-n_{1}\geq 5 \).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Example: Elementary functions at rational points}
+
+The binary splitting algorithm can be applied to the fast computation of the
+elementary functions at rational points  \( x=\frac{u}{v} \), simply 
+by using the power series. We present how this can be done for
+\( \exp (x) \), \( \ln (x) \), \( \sin (x) \), \( \cos (x) \),
+\( \arctan (x) \), \( \sinh (x) \) and \( \cosh (x) \). The calculation
+of other elementary functions is similar (or it can be reduced to the
+calculation of these functions).
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{\( \exp (x) \) for rational \( x \)}
+
+This is a direct application of the above algorithm with  \( a(n)=1 \),
+\( b(n)=1 \), \( p(0)=q(0)=1 \), and \( p(n)=u \), \( q(n)=nv \) for \( n>0 \).
+Because the series is not only linearly convergent -- \( \exp (x) \) is an
+entire function --,  \( n_{\max }=O(\frac{N}{\log N + \log \frac{1}{|x|}}) \),
+hence the bit complexity is
+\[ O\left(\frac{(\log N)^2}{\log N + \log \frac{1}{|x|}} M(N)\right) \]
+Considering \(x\) as constant, this is  \( O(\log N\: M(N)) \).
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{\( \exp (x) \) for real \( x \)}
+
+This can be computed using the addition theorem for exp, by a trick due to
+Brent \cite{76a} (see also \cite{87}, section 10.2, exercise 8). Write
+
+\[
+x=x_{0}+\sum _{k=0}^{\infty }\frac{u_{k}}{v_{k}}\]
+with  \( x_{0} \) integer,  \( v_{k}=2^{2^{k}} \) and 
+\( |u_{k}|<2^{2^{k-1}} \), and compute 
+\[
+\exp (x)=
+\exp (x_{0})\cdot \prod _{k\geq 0}\exp \left( \frac{u_{k}}{v_{k}}\right) \]
+
+This algorithm has bit complexity
+\[ O\left(\sum\limits_{k=0}^{O(\log N)} \frac{(\log N)^2}{\log N + 2^k} M(N)\right)
+  = O((\log N)^{2}M(N)) \]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{ \( \ln (x) \) for rational  \( x \)}
+
+For rational  \( |x-1|<1 \), the binary splitting algorithm can also be applied
+directly to the power series for  \( \ln (x) \). Write  \( x-1=\frac{u}{v} \)
+and compute the series with  \( a(n)=1 \),  \( b(n)=n+1 \),  \( q(n)=v \),
+\( p(0)=u \), and  \( p(n)=-u \) for  \( n>0 \).
+
+This algorithm has bit complexity  \( O((\log N)^{2}M(N)) \).
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{\( \ln (x) \) for real \( x \)}
+
+This can be computed using the ``inverse'' Brent trick:
+
+Start with  \( y:=0 \).
+
+As long as  \( x\neq 1 \) within the actual precision, choose  \( k \)
+maximal with  \( |x-1|<2^{-k} \). Put \( z=2^{-2k}\left[ 2^{2k}(x-1)\right]  \),
+i.e. let  \( z \) contain the first  \( k \) significant bits of  \( x-1 \).
+\( z \) is a good approximation for  \( \ln (x) \). Set  \( y:=y+z \) and
+\( x:=x\cdot \exp (-z) \).
+
+Since  \( x\cdot \exp (y) \) is an invariant of the algorithm, the final
+\( y \) is the desired value  \( \ln (x) \).
+
+This algorithm has bit complexity
+\[ O\left(\sum\limits_{k=0}^{O(\log N)} \frac{(\log N)^2}{\log N + 2^k} M(N)\right)
+  = O((\log N)^{2}M(N)) \]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{ \( \sin (x) \),  \( \cos (x) \) for rational  \( x \)}
+
+These are direct applications of the binary splitting algorithm: For
+\( \sin (x) \), put  \( a(n)=1 \),  \( b(n)=1 \),  \( p(0)=u \), 
+\( q(0)=v \), and  \( p(n)=-u^{2} \),  \( q(n)=(2n)(2n+1)v^{2} \) for
+\( n>0 \). For  \( \cos (x) \), put  \( a(n)=1 \),  \( b(n)=1 \),  
+\( p(0)=1 \),  \( q(0)=1 \), and  \( p(n)=-u^{2} \),  \( q(n)=(2n-1)(2n)v^{2} \)
+for  \( n>0 \). Of course, when both  \( \sin (x) \) and  \( \cos (x) \) are 
+needed, one should only compute
+ \( \sin (x) \) this way, and then set  
+\( \cos (x)=\pm \sqrt{1-\sin (x)^{2}} \). This is a 20\% speedup at least.
+
+The bit complexity of these algorithms is  \( O(\log N\: M(N)) \).
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{ \( \sin (x) \),  \( \cos (x) \) for real  \( x \)}
+
+To compute  \( \cos (x)+i\sin (x)=\exp (ix) \) for real  \( x \), again the 
+addition theorems and Brent's trick
+can be used. The resulting algorithm has bit complexity  
+\( O((\log N)^{2}M(N)) \).
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{ \( \arctan (x) \) for rational  \( x \)}
+
+For rational  \( |x|<1 \), the fastest way to compute  \( \arctan (x) \) with 
+bit complexity  \( O((\log N)^{2}M(N)) \) is
+to apply the binary splitting algorithm directly to the power series
+for  \( \arctan (x) \). Put  \( a(n)=1 \),  \( b(n)=2n+1 \),  \( q(n)=1 \),  
+\( p(0)=x \) and  \( p(n)=-x^{2} \) for  \( n>0 \).
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{ \( \arctan (x) \) for real  \( x \)}
+
+This again can be computed using the ``inverse'' Brent trick:
+
+Start out with  \( z:=\frac{1}{\sqrt{1+x^{2}}}+i\frac{x}{\sqrt{1+x^{2}}} \) 
+and  \( \varphi :=0 \). During the algorithm  \( z \) will be a complex number
+with  \( |z|=1 \) and  \( \re (z)>0 \).
+
+As long as  \( \im (z)\neq 0 \) within the actual precision, choose  \( k \) 
+maximal with  \( |\im (z)|<2^{-k} \).
+Put  \( \alpha =2^{-2k}\left[ 2^{2k}\im (z)\right]  \), i.e. let  \( \alpha  \) 
+contain the first  \( k \) significant bits of  \( \im (z) \).  \( \alpha  \) 
+is a good approximation for  \( \arcsin (\im (z)) \). Set  
+\( \varphi :=\varphi +\alpha  \) and  \( z:=z\cdot \exp (-i\alpha ) \).
+
+Since  \( z\cdot \exp (i\varphi ) \) is an invariant of the algorithm, the 
+final  \( \varphi  \) is the desired
+value  \( \arcsin \frac{x}{\sqrt{1+x^{2}}} \).
+
+This algorithm has bit complexity
+\[ O\left(\sum\limits_{k=0}^{O(\log N)} \frac{(\log N)^2}{\log N + 2^k} M(N)\right)
+  = O((\log N)^{2}M(N)) \]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{\( \sinh (x) \), \( \cosh (x) \) for rational and real \( x \)}
+
+These can be computed by similar algorithms as  \( \sin (x) \) and  
+\( \cos (x) \) above, with the same asymptotic bit complexity. The
+standard computation, using \( \exp (x) \) and its reciprocal (calculated
+by the Newton method) results also to the same complexity and works equally
+well in practice.
+
+The bit complexity of these algorithms is  \( O(\log N\: M(N)) \) for rational
+\( x \) and \( O((\log N)^{2}M(N)) \) for real \( x \).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Example: Hypergeometric functions at rational points}
+
+The binary splitting algorithm is well suited for the evaluation of a
+hypergeometric series 
+
+\[
+F\left( \begin{array}{ccc}
+a_{1}, & \ldots , & a_{r}\\
+b_{1}, & \ldots , & b_{s}
+\end{array}
+\big| x\right) =\sum ^{\infty }_{n=0}
+\frac{a_{1}^{\overline{n}}\cdots 
+a_{r}^{\overline{n}}}{b_{1}^{\overline{n}}\cdots b_{s}^{\overline{n}}}x^{n}\]
+with rational coefficients  \( a_{1} \), ...,  \( a_{r} \),  \( b_{1} \),
+...,  \( b_{s} \) at a rational point  \( x \) in the interior of the circle of
+convergence. Just put  \( a(n)=1 \),  \( b(n)=1 \),  \( p(0)=q(0)=1 \), and
+\( \frac{p(n)}{q(n)}=\frac{(a_{1}+n-1)\cdots 
+(a_{r}+n-1)x}{(b_{1}+n-1)\cdots (b_{s}+n-1)} \) for  \( n>0 \). The evaluation 
+can thus be done with
+bit complexity  \( O((\log N)^{2}M(N)) \) for  
+\( r=s \) and  \( O(\log N\: M(N)) \) for  \( r<s \).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Example:  \( \pi  \)}
+
+The Ramanujan series for  \( \pi  \) 
+\[
+\frac{1}{\pi }=\frac{12}{C^{3/2}}\sum^{\infty }_{n=0}
+\frac{(-1)^n(6n)!(A+nB)}{(3n)!n!^{3}C^{3n}}\]
+with  \( A=13591409 \),  \( B=545140134 \), \( C=640320 \) found by the
+Chudnovsky's \footnote{A special case of \cite{87}, formula (5.5.18),
+with N=163.} and which is used by the {\sf LiDIA} \cite{95,97,97b} and the Pari
+\cite{95b} system to compute \( \pi \), is usually written as an algorithm
+of bit complexity  \( O(N^{2}) \). It is, however, possible to apply
+binary splitting to the sum. Put \( a(n)=A+nB \),  \( b(n)=1 \),
+\( p(0)=1 \),  \( q(0)=1 \), and \( p(n)=-(6n-5)(2n-1)(6n-1) \),
+\( q(n)=n^{3}C^3/24 \) for  \( n>0 \).  This reduces the complexity to 
+\( O((\log N)^{2}M(N)) \). Although this is theoretically slower than
+Brent-Salamin's quadratically convergent iteration, which has a bit
+complexity of  \( O(\log N\: M(N)) \), in practice the binary splitted
+Ramanujan sum is three times faster than Brent-Salamin, at least in the
+range from  \( N=1000 \) bits to \( N=1000000 \) bits.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% \subsection{Example: Catalan's constant}
+
+\subsection{Example: Catalan's constant \( G \)}
+
+A linearly convergent sum for Catalan's constant 
+\[
+G:=\sum ^{\infty }_{n=0}\frac{(-1)^{n}}{(2n+1)^{2}}\]
+is given in \cite{87}, p. 386:
+\[
+G = \frac{3}{8}\sum ^{\infty }_{n=0}\frac{1}{{2n \choose n} (2n+1)^{2}}
+    +\frac{\pi }{8}\log (2+\sqrt{3})
+\]
+
+The series is summed using binary splitting, putting \( a(n)=1 \),  
+\( b(n)=2n+1 \),  \( p(0)=1 \),  \( q(0)=1 \), and
+\( p(n)=n \),  \( q(n)=2(2n+1) \) for  \( n>0 \). Thus  
+\( G \) can be computed with bit complexity  \( O((\log N)^{2}M(N)) \).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Example: The Gamma function at rational points}
+
+For evaluating  \( \Gamma (s) \) for rational  \( s \), we first reduce \( s \)
+to the range \( 1\leq s\leq 2 \) by the formula \( \Gamma (s+1)=s\Gamma (s) \).
+To compute  \( \Gamma (s) \) with a precision of  \( N \) bits, choose a
+positive integer  \( x \) with  \( xe^{-x}<2^{-N} \). Partial integration lets
+us write 
+
+\begin{eqnarray*}
+\Gamma (s)&=& \int ^{\infty }_{0}e^{-t}t^{s-1}dt\\
+          &=& x^{s}e^{-x}\:\sum ^{\infty }_{n=0}
+             \frac{x^{n}}{s(s+1)\cdots (s+n)}
+             +\int^{\infty }_{x}e^{-t}t^{s-1}dt\\
+\end{eqnarray*}
+The last integral is  \( <xe^{-x}<2^{-N} \). The series is evaluated as a
+hypergeometric function (see above); the number of terms to be summed up is
+\( O(N) \), since \( x=O(N) \). Thus the entire computation can be done with
+bit complexity  \( O((\log N)^{2}M(N)) \).
+
+\begin{description}
+\item [Note:]~
+\end{description}
+
+This result is already mentioned in \cite{76b}.
+
+E.~Karatsuba \cite{91} extends this result to \( \Gamma (s) \) for algebraic
+\( s \).
+
+For \( \Gamma (s) \) there is no checkpointing possible because of the
+dependency on \( x \) in the binary splitting.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Example: The Riemann Zeta value \( \zeta (3) \) \label{zeta}}
+
+Recently, Doron Zeilberger's method of ``creative telescoping'' has been
+applied to Riemann's zeta function at  \( s=3 \) (see \cite{96c}), which is
+also known as {\em Ap{\'e}ry's constant}: 
+\[
+\zeta (3)=
+\frac{1}{2}\sum ^{\infty }_{n=1}
+               \frac{(-1)^{n-1}(205n^{2}-160n+32)}{n^{5}{2n \choose n}^{5}}
+\]
+
+This sum consists of three hypergeometric series. Binary splitting can also be
+applied directly, by putting  \( a(n)=205n^{2}+250n+77 \), \( b(n)=1 \),
+\( p(0)=1 \), \( p(n)=-n^{5} \) for  \( n>0 \), and \( q(n)=32(2n+1)^{5} \).
+Thus the bit complexity of computing \( \zeta (3) \) is
+\( O((\log N)^{2}M(N)) \).
+
+\begin{description}
+\item [Note:]~
+\end{description}
+
+Using this the authors were able to establish a new record in the
+calculation of \( \zeta (3) \) by computing 1,000,000 decimals \cite{96d}.
+The computation took 8 hours on a Hewlett Packard 9000/712 machine. After
+distributing on a cluster of 4 HP 9000/712 machines the same computation
+required only 2.5 hours. The half hour was necessary for reading the partial
+results from disk and for recombining them. Again, we have used binary-splitting
+for recombining: the 4 partial result produced 2 results which were combined
+to the final 1,000,000 decimals value of \( \zeta (3) \).
+
+This example shows the importance of checkpointing. Even if a machine crashes
+through the calculation, the results of the other machines are still usable.
+Additionally, being able to parallelise the computation reduced the computing
+time dramatically.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Evaluation of linearly convergent series of sums}
+
+The technique presented in the previous section also applies to all linearly
+convergent sums of the form
+
+\[
+U=\sum ^{\infty }_{n=0}\frac{a(n)}{b(n)}\left( \frac{c(0)}{d(0)}+\cdots 
++\frac{c(n)}{d(n)}\right) \frac{p(0)\cdots p(n)}{q(0)\cdots q(n)}\]
+ where  \( a(n) \),  \( b(n) \),  \( c(n) \),  \( d(n) \),  \( p(n) \),  
+\( q(n) \) are integers with  \( O(\log n) \) bits. The most often
+used case is again that  \( a(n) \),  \( b(n) \),  \( c(n) \),  \( d(n) \),  
+\( p(n) \),  \( q(n) \) are polynomials in  \( n \) with
+integer coefficients.
+
+\begin{description}
+\item [Algorithm:]~
+\end{description}
+
+Given two index bounds  \( n_{1} \)and  \( n_{2} \), consider the partial sums 
+\[
+S=\sum _{n_{1}\leq n<n_{2}}\frac{a(n)}{b(n)}
+\frac{p(n_{1})\cdots p(n)}{q(n_{1})\cdots q(n)}\]
+and 
+\[
+U=\sum _{n_{1}\leq n<n_{2}}\frac{a(n)}{b(n)}
+\left( \frac{c(n_{1})}{d(n_{1})}+\cdots +\frac{c(n)}{d(n)}\right) 
+\frac{p(n_{1})\cdots p(n)}{q(n_{1})\cdots q(n)}\]
+
+
+As above, we compute the integers  \( P={p(n_{1})}\cdots {p(n_{2}-1)} \),  
+\( Q={q(n_{1})}\cdots {q(n_{2}-1)} \),  \( B={b(n_{1})}\cdots {b(n_{2}-1)} \),  
+\( T=BQS \),  \( D={d(n_{1})}\cdots {d(n_{2}-1)} \),  
+\( C=D\left( \frac{c(n_{1})}{d(n_{1})}+\cdots +
+\frac{c(n_{2}-1)}{d(n_{2}-1)}\right)  \) and  \( V=DBQU \). 
+If  \( n_{2}-n_{1}<4 \), these
+are computed directly. If  \( n_{2}-n_{1}\geq 4 \), they are computed using 
+{\em binary splitting}: Choose an index  \( n_{m} \) in the middle of
+\( n_{1} \)and  \( n_{2} \), compute the components \( P_{l} \),  \( Q_{l} \),
+\( B_{l} \),  \( T_{l} \),  \( D_{l} \),  \( C_{l} \),  \( V_{l} \) belonging
+to the interval  \( n_{1}\leq n<n_{m} \), compute the components \( P_{r} \),
+\( Q_{r} \),  \( B_{r} \),  \( T_{r} \),  \( D_{r} \),  \( C_{r} \),  
+\( V_{r} \) belonging to the interval  \( n_{m}\leq n<n_{2} \), and set  
+\( P=P_{l}P_{r} \),  \( Q=Q_{l}Q_{r} \),  \( B=B_{l}B_{r} \), 
+\( T=B_{r}Q_{r}T_{l}+B_{l}P_{l}T_{r} \),  \( D=D_{l}D_{r} \),  
+\( C=C_{l}D_{r}+C_{r}D_{l} \) and  
+\( V=D_{r}B_{r}Q_{r}V_{l}+D_{r}C_{l}B_{l}P_{l}T_{r}+D_{l}B_{l}P_{l}V_{r} \).
+
+Finally, this algorithm is applied to \( n_{1}=0 \) and 
+\( n_{2}=n_{\max}=O(N) \), and final floating-point divisions 
+\( S=\frac{T}{BQ} \) and  \( U=\frac{V}{DBQ} \) are performed.
+
+\begin{description}
+\item [Complexity:]~
+\end{description}
+
+The bit complexity of computing  \( S \) and  \( U \) with  \( N \) bits of
+precision is \( O((\log N)^{2}M(N)) \).
+
+\begin{description}
+\item [Proof:]~
+\end{description}
+
+By our assumption that  \( a(n) \),  \( b(n) \),  \( c(n) \),  \( d(n) \),  
+\( p(n) \),  \( q(n) \) are integers with  \( O(\log n) \) bits,
+the integers  \( P \),  \( Q \),  \( B \),  \( T \),  \( D \),  \( C \),  
+\( V \) belonging to the interval  \( n_{1}\leq n<n_{2} \) all have
+ \( O((n_{2}-n_{1})\log n_{2}) \) bits. The rest of the proof is as in the 
+previous section.
+
+\begin{description}
+\item [Checkpointing/Parallelising:]~
+\end{description}
+
+A checkpoint can be easily done by storing the (integer) values of
+\( n_1 \),  \( n_2 \), \( P \),  \( Q \),  \( B \), \( T \) and additionally
+\( D \),  \( C \),  \( V \). Similarly, if \( m \) processors are available,
+then the interval \( [0,n_{max}] \) can be divided into \( m \) pieces of
+length \( l = \lfloor n_{max}/m \rfloor \). After each processor \( i \) has
+computed the sum of its interval \( [il,(i+1)l] \), the partial sums are
+combined to the final result using the rules described above.
+
+\begin{description}
+\item [Implementation:]~
+\end{description}
+
+The C++ implementation of the above algorithm is very similar
+to the previous one. The initialisation is done now by a structure 
+{\tt abpqcd\_series} containing arrays {\tt a}, {\tt b}, {\tt p},
+{\tt q}, {\tt c} and {\tt d} of multiprecision integers. The values of
+the arrays at the index \( n \) correspond to the values of the functions
+\( a \), \( b \), \( p \), \( q \), \( c \) and \( d \) at the integer point
+\( n \). The (partial) results of the algorithm are stored in the
+{\tt abpqcd\_series\_result} structure, which now contains 3 new elements
+({\tt C}, {\tt D} and {\tt V}).
+
+\begin{verbatim}
+// abpqcd_series is initialised by user
+struct { bigint *a, *b, *p, *q, *c, *d; 
+       } abpqcd_series;
+
+// abpqcd_series_result holds the partial results
+struct { bigint P, Q, B, T, C, D, V; 
+       } abpqcd_series_result;
+
+void sum_abpqcd(abpqcd_series_result & r, 
+                int n1, int n2, 
+                const abpqcd_series & arg)
+{
+  switch (n2 - n1)
+  {
+    case 0:
+      error_handler("summation device", 
+            "sum_abpqcd:: n2-n1 should be > 0.");
+      break;
+
+    case 1: // the result at the point n1
+      r.P = arg.p[n1];
+      r.Q = arg.q[n1];
+      r.B = arg.b[n1];
+      r.T = arg.a[n1] * arg.p[n1];
+      r.D = arg.d[n1];
+      r.C = arg.c[n1];
+      r.V = arg.a[n1] * arg.c[n1] * arg.p[n1];
+      break;
+
+    // cases 2, 3, 4 left out for simplicity
+
+    default: // general case
+     
+      // the left and the right partial sum
+      abpqcd_series_result L, R;
+
+      // find the middle of the interval
+      int nm = (n1 + n2) / 2;
+ 
+      // sum left side
+      sum_abpqcd(L, n1, nm, arg);
+
+      // sum right side
+      sum_abpqcd(R, nm, n2, arg);
+
+      // put together
+      r.P = L.P * R.P;
+      r.Q = R.Q * L.Q;
+      r.B = L.B * R.B;
+      bigint tmp = L.B * L.P * R.T;
+      r.T = R.B * R.Q * L.T + tmp;
+      r.D = L.D * R.D;
+      r.C = L.C * R.D + R.C * L.D;
+      r.V = R.D * (R.B * R.Q * L.V + L.C * tmp) 
+            + L.D * L.B * L.P * R.V;
+      break;
+  }
+}
+\end{verbatim}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Example: Euler's constant \( C \) \label{eulergamma}}
+
+\begin{description}
+\item [Theorem:]~
+\end{description}
+
+Let  \( f(x)=\sum ^{\infty }_{n=0}\frac{x^{n}}{n!^{2}} \) and  
+\( g(x)=\sum ^{\infty }_{n=0}H_{n}\frac{x^{n}}{n!^{2}} \). Then for  
+\( x\rightarrow \infty  \),  
+\( \frac{g(x)}{f(x)}=\frac{1}{2}\log x+C+O\left( e^{-4\sqrt{x}}\right)  \).
+
+\begin{description}
+\item [Proof:]~
+\end{description}
+
+The Laplace method for asymptotic evaluation of exponentially growing
+sums and integrals yields 
+\[
+f(x)=
+e^{2\sqrt{x}}x^{-\frac{1}{4}}\frac{1}{2\sqrt{\pi }}(1+O(x^{-\frac{1}{4}}))\]
+ and 
+\[
+g(x)=e^{2\sqrt{x}}x^{-\frac{1}{4}}\frac{1}{2\sqrt{\pi }}
+\left(\frac{1}{2}\log x+C+O(\log x\cdot x^{-\frac{1}{4}})\right)\]
+On the other hand,  \( h(x):=\frac{g(x)}{f(x)} \) satisfies the
+differential equation 
+\[
+xf(x)\cdot h''(x)+(2xf'(x)+f(x))\cdot h'(x)=f'(x)\]
+hence 
+\[
+h(x)=\frac{1}{2}\log x+C+c_{2}
+\int ^{\infty }_{x}\frac{1}{tf(t)^{2}}dt=\frac{1}{2}\log x+C+O(e^{-4\sqrt{x}})\]
+
+
+\begin{description}
+\item [Algorithm:]~
+\end{description}
+
+To compute  \( C \) with a precision of  \( N \) bits, set  
+\[ x=\left\lceil (N+2)\: \frac{\log 2}{4}\right\rceil ^{2} \]
+and evaluate the series for  \( g(x) \) and  \( f(x) \) simultaneously,
+using the binary-splitting algorithm,
+with  \( a(n)=1 \),  \( b(n)=1 \),  \( c(n)=1 \),  \( d(n)=n+1 \),  
+\( p(n)=x \),  \( q(n)=(n+1)^{2} \). Let  \( \alpha =3.591121477\ldots  \) 
+be the solution of the equation  \( -\alpha \log \alpha +\alpha +1=0 \). Then
+ \( \alpha \sqrt{x}-\frac{1}{4\log \alpha }\log \sqrt{x}+O(1) \) 
+terms of the series suffice for the relative error to be bounded
+by  \( 2^{-N} \).
+
+\begin{description}
+\item [Complexity:]~
+\end{description}
+
+The bit complexity of this algorithm is  \( O((\log N)^{2}M(N)) \).
+
+\begin{description}
+\item [Note:]~
+\end{description}
+
+This algorithm was first mentioned in \cite{80}. It is by far
+the fastest known algorithm for computing Euler's constant. 
+
+For Euler's constant there is no checkpointing possible because 
+of the dependency on \( x \) in the binary splitting.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Computational results}
+
+In this section we present some computational results of our CLN and
+{\sf LiDIA} implementation of the algorithms presented in this note. We use
+the official version (1.3) and an experimental version (1.4a) of {\sf LiDIA}.
+We have taken advantage of {\sf LiDIA}'s ability to replace its kernel
+(multiprecision arithmetic and memory management) \cite{95,97,97b}, so we were
+able to use in both cases CLN's fast integer arithmetic routines.
+
+\subsection{Timings}
+
+The table in Figure \ref{Fig1} shows the running times for the calculation of
+\( \exp(1) \), \( \log(2) \), \( \pi \), \( C \), \( G \) and \( \zeta(3) \)
+to precision 100, 1000, 10000 and 100000 decimal digits. The timings are given
+in seconds and they denote the {\em real} time needed, i.e. system and user
+time. The computation was done on an Intel Pentium with 133Hz and 32MB of RAM.
+
+\begin{figure}[htb]
+\begin{center}
+\begin{tabular}{|l|l|l|l|l|l|l|}
+\hline
+D      &\( \exp(1) \)&\( \log(2) \)&\( \pi \)&\( C \)  &\( G \)&\( \zeta(3) \)\\
+\hline
+\hline
+\( 10^2 \) &0.0005   & 0.0020      &0.0014   & 0.0309  &0.0179 & 0.0027 \\
+\hline
+\( 10^3 \) &0.0069   & 0.0474      &0.0141   & 0.8110  &0.3580 & 0.0696 \\
+\hline
+\( 10^4 \) &0.2566   & 1.9100      &0.6750   & 33.190  &13.370 & 2.5600 \\
+\hline
+\( 10^5 \) &5.5549   & 45.640      &17.430   & 784.93  &340.33 & 72.970 \\
+\hline
+\end{tabular}
+\caption{{\sf LiDIA-1.4a} timings of computation of constants using
+binary-splitting}\label{Fig1}
+\end{center}
+\end{figure}
+
+The second table (Figure \ref{Fig2}) summarizes the performance of
+\( exp(x) \) in various Computer Algebra systems\footnote{We do not list
+the timings of {\sf LiDIA-1.4a} since these are comparable to those of CLN.}.
+For a fair comparison of the algorithms, both argument and precision are
+chosen in such a way, that system--specific optimizations (BCD arithmetic
+in Maple, FFT multiplication in CLN, special exact argument handling in 
+{\sf LiDIA}) do not work. We use \( x = -\sqrt{2} \) and precision 
+\( 10^{(i/3)} \), with \( i \) running from \( 4 \) to \( 15 \).
+
+\begin{figure}[htb]
+\begin{center}
+\begin{tabular}{|r|l|l|l|l|}
+\hline
+D           &  Maple & Pari & {\sf LiDIA-1.3} & CLN \\
+\hline
+\hline
+21          & 0.00090   & 0.00047 & 0.00191           & 0.00075 \\
+\hline
+46          & 0.00250   & 0.00065 & 0.00239           & 0.00109 \\
+\hline
+100         & 0.01000   & 0.00160 & 0.00389           & 0.00239 \\
+\hline
+215         & 0.03100   & 0.00530 & 0.00750           & 0.00690 \\
+\hline
+464         & 0.11000   & 0.02500 & 0.02050           & 0.02991 \\
+\hline
+1000        & 0.4000    & 0.2940  & 0.0704            & 0.0861 \\
+\hline
+2154        & 1.7190    & 0.8980  & 0.2990            & 0.2527 \\
+\hline
+4641        & 8.121     & 5.941   & 1.510             & 0.906 \\
+\hline
+10000       & 39.340    & 39.776  & 7.360             & 4.059 \\
+\hline
+21544       & 172.499   & 280.207 & 39.900            & 15.010 \\
+\hline
+46415       & 868.841   & 1972.184& 129.000           & 39.848 \\
+\hline
+100000      & 4873.829  & 21369.197& 437.000           & 106.990 \\
+\hline
+\end{tabular}
+\caption{Timings of computation of \( \exp(-\sqrt{2}) \)}\label{Fig2}
+\end{center}
+\end{figure}
+
+MapleV R3 is the slowest system in this comparison. This is probably due to
+the BCD arithmetic it uses. However, Maple seems to have an asymptotically
+better algorithm for \( exp (x) \) for numbers having more than 10000 decimals.
+In this range it outperforms Pari-1.39.03, which is the fastest system in the
+0--200 decimals range.
+
+The comparison indicating the strength of binary-splitting is between
+{\sf LiDIA-1.3} and CLN itself. Having the same kernel, the only
+difference is here that {\sf LiDIA-1.3} uses Brent's \( O(\sqrt{n}M(n)) \)
+for \( \exp(x) \), whereas CLN changes from Brent's method to a
+binary-splitting version for large numbers.
+
+As expected in the range of 1000--100000 decimals CLN outperforms
+{\sf LiDIA-1.3} by far. The fact that {\sf LiDIA-1.2.1} is faster
+in the range of 200--1000 decimals (also in some trig. functions)
+is probably due to a better optimized \( O(\sqrt{n}M(n)) \) method
+for \( \exp(x) \).
+
+\subsection {Distributed computing of \( \zeta (3) \)}
+
+Using the method described in \ref{zeta} the authors were the first to 
+compute 1,000,000 decimals of \( \zeta (3) \) \cite{96d}.
+The computation took 8 hours on a Hewlett Packard 9000/712 machine. After
+distributing on a cluster of 4 HP 9000/712 machines the same computation
+required only 2.5 hours. The half hour was necessary for reading the partial
+results from disk and for recombining them. Again, we have used binary-splitting
+for recombining: the 4 partial result produced 2 results which were combined
+to the final 1,000,000 decimals value of \( \zeta (3) \).
+
+This example shows the importance of checkpointing. Even if a machine crashes
+through the calculation, the results of the other machines are still usable.
+Additionally, being able to parallelise the computation reduced the computing
+time dramatically.
+
+\subsection{Euler's constant \( C \)}
+
+We have implemented a version of Brent's and McMillan's algorithm \cite{80} and
+a version accelerated by binary-splitting as shown in \ref{eulergamma}.
+
+The computation of \( C \) was done twice on a SPARC-Ultra machine
+with 167 MHz and 256 MB of RAM. The first computation using the non-acellerated
+version required 160 hours. The result of this computation was then verified
+by the binary splitting version in (only) 14 hours.
+
+The first 475006 partial quotients of the continued fraction of \( C \)
+were computed on an Intel Pentium with 133 MHz and 32 MB of RAM in 3 hours
+using a programm by H. te Riele based on \cite{96e}, which was translated to
+{\sf LiDIA} for efficiency reasons. Computing the 475006th
+convergent produced the following improved theorem:
+
+\medskip
+
+\centerline{If \( C \) is a rational number, \(C=p/q\), then \( |q| > 10^{244663} \)}
+
+\medskip
+
+Details of this computation (including statistics on the partial 
+quotients) can be found in \cite{98}.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Conclusions}
+
+Although powerful, the binary splitting method has not been widely used.
+Especially, no information existed on the applicability of this method.
+
+In this note we presented a generic binary-splitting summation device for
+evaluating two types of linearly convergent series. From this we derived simple
+and computationally efficient algorithms for the evaluation of elementary
+functions and constants. These algorithms work with {\em exact}
+objects, making them suitable for use within Computer Algebra systems.
+
+We have shown that the practical performance of our algorithms is
+superior to current system implementations. In addition to existing methods,
+our algorithms provide the possibility of checkpointing and parallelising.
+These features can be useful for huge calculations, such as those done in
+analytic number theory research.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Thanks}
+
+The authors would like to thank J\"org Arndt, for pointing us to
+chapter 10 in \cite{87}. We would also like to thank Richard P. Brent for 
+his comments and Hermann te Riele for providing us his program for the
+continued fraction computation of Euler's constant.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\bibliography{binsplit}
+\bibliographystyle{acm}
+
+\end{document}

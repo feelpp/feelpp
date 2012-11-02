@@ -1,0 +1,62 @@
+# This is the developer's makefile, not the user's makefile.
+# Don't use it unless you know exactly what you do!
+
+
+# Some important programs:
+SHELL = /bin/sh
+MAKE = make
+
+
+# GNU tar together with GNU bzip2. Slow, but excellent compresion rates.
+PACK = tar
+PACKOPT = cvfhj
+PACKEXT = .tar.bz2
+
+EXCLUDE=--exclude CVS\* --exclude \*.o --exclude *.lo --exclude .cvsignore \
+        --exclude \*~ --exclude .\#\* --exclude .libs                      \
+        --exclude autogen.sh                                               \
+        --exclude ${AUTOCONF_CACHE}
+
+all: build-prerequisites documentation
+
+
+build-prerequisites: configures
+
+CONFIGURES = configure
+CONFIGURES_IN = configure.ac
+
+AUTOCONF_FILES = autoconf/aclocal.m4
+AUTOCONF_MACROS = ${wildcard m4/*.m4} # originally borrowed from GNU clisp
+AUTOCONF = autoconf
+AUTOCONF_CACHE = autom4te.cache
+
+configures: ${CONFIGURES}
+
+configure: configure.ac ${AUTOCONF_FILES} ${AUTOCONF_MACROS}
+	${AUTOCONF} --include=autoconf -I m4
+
+# Release:
+SRC_DIST=/tmp/cln-${VER}${PACKEXT}
+VER=${shell echo `grep "CL_VERSION " include/cln/version.h |sed 's/^.*CL_VERSION \(.*\)$$/\1/'`}
+
+src-distrib: include/cln/version.h force
+	${MAKE} -f Makefile.devel src--distrib TOPDIR=cln-${VER}
+
+src--distrib: clean
+	ln -s . ${TOPDIR}
+	${PACK} ${PACKOPT} ${SRC_DIST} ${EXCLUDE} --exclude ${TOPDIR}/${TOPDIR} ${TOPDIR}
+	rm -f ${TOPDIR}
+
+clean: force
+	test -f Makefile && ${MAKE} distclean
+
+# Syntaxcheck:
+check-configures: ${CONFIGURES}
+	set -e; for f in ${CONFIGURES}; do bash -x -n $$f; done
+
+
+documentation: force
+	cd doc && ${MAKE} -f Makefile.devel documentation
+
+force:
+

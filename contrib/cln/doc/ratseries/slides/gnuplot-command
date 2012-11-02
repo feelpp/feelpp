@@ -1,0 +1,7 @@
+set term postscript eps
+set size 0.85,1
+set logscale x 10
+set logscale y 10
+set ytics (0.001,0.01,0.1,1,10,100,1000,10000)
+set xlabel "N"
+plot [10:300000] [0.0001:10000000] 'fig2.maple' title 'Maple' with linespoints, 'fig2.pari' title 'Pari' with linespoints, 'fig2.lidia' title 'LiDIA' with linespoints, 'fig2.cln' title 'CLN' with linespoints

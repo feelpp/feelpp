@@ -1,0 +1,222 @@
+- operator<< should respect and reset the istream flags
+- operator>> should respect and reset the ostream flags
+  See ANSI/ISO C++ section 22.2.2.2 num_put
+  see egcs-1.1b/libio/iostream.cc : write_int,
+  uses stream.flags(), stream.width(0), stream.fill()
+
+; (format-float-for-f w d k overflowchar padchar plus-sign-flag arg stream)
+; gibt die Floating-Point-Zahl arg in Festkommadarstellung auf stream aus.
+(defun format-float-for-f (w d k overflowchar padchar plus-sign-flag arg stream)
+  (let ((width (if w (if (or plus-sign-flag (minusp arg)) (1- w) w) nil)))
+    ; width = zur Verfügung stehende Zeichen ohne Vorzeichen
+    (multiple-value-bind (digits digitslength leadingpoint trailingpoint)
+        (format-float-to-string arg width d k nil)
+      (when (eql d 0) (setq trailingpoint nil)) ; d=0 -> keine Zusatz-Null hinten
+      (when w
+        (setq width (- width digitslength))
+        (when leadingpoint ; evtl. Zusatz-Null vorne einplanen
+          (if (> width 0) (setq width (1- width)) (setq leadingpoint nil))
+        )
+        (when trailingpoint ; evtl. Zusatz-Null hinten einplanen
+          (if (> width 0) (setq width (1- width)) (setq trailingpoint nil))
+        )
+      )
+      ; Es bleiben noch width Zeichen übrig.
+      (if (and overflowchar w (minusp width))
+        (format-padding w overflowchar stream) ; Zu wenig Platz -> overflow
+        (progn
+          (when (and w (> width 0)) (format-padding width padchar stream))
+          (if (minusp arg)
+            (write-char #\- stream)
+            (if plus-sign-flag (write-char #\+ stream))
+          )
+          (when leadingpoint (write-char #\0 stream))
+          (write-string digits stream)
+          (when trailingpoint (write-char #\0 stream))
+      ) )
+) ) )
+
+; (format-float-for-e w d e k overflowchar padchar exponentchar plus-sign-flag
+;                     arg stream)
+; gibt die Floating-point-Zahl arg in Exponentialdarstellung auf den stream aus.
+; (vgl. CLTL S.392-394)
+; Aufteilung der Mantisse:
+;   Falls k<=0, erst 1 Null (falls von der Breite her passend), dann der Punkt,
+;               dann |k| Nullen, dann d-|k| signifikante Stellen;
+;               zusammen also d Nachkommastellen.
+;   Falls k>0,  erst k signifikante Stellen, dann der Punkt,
+;               dann weitere d-k+1 signifikante Stellen;
+;               zusammen also d+1 signifikante Stellen. Keine Nullen vorne.
+;   (Der Defaultwert in FORMAT-EXPONENTIAL-FLOAT ist k=1.)
+; Vor der Mantisse das Vorzeichen (ein + nur falls arg>=0 und plus-sign-flag).
+; Dann der Exponent, eingeleitet durch exponentchar, dann Vorzeichen des
+; Exponenten (stets + oder -), dann e Stellen für den Exponenten.
+; Dann wird das Ganze mit padchars auf w Zeichen Breite aufgefüllt.
+; Sollte das (auch nach evtl. Unterdrückung einer führenden Null) mehr als
+; w Zeichen ergeben, so werden statt dessen w overflowchars ausgegeben, oder
+; (falls overflowchar = nil) die Zahl mit so vielen Stellen wie nötig
+; ausgegeben.
+(defun format-float-for-e (w d e k
+       overflowchar padchar exponentchar plus-sign-flag arg stream)
+  (multiple-value-bind (mantissa oldexponent) (format-scale-exponent (abs arg))
+    (let* ((exponent (if (zerop arg) 0 (- oldexponent k))) ; auszugebender Exponent
+           (expdigits (write-to-string (abs exponent) :base 10. :radix nil :readably nil))
+           (expdigitsneed (if e (max (length expdigits) e) (length expdigits)))
+           ; expdigitsneed = Anzahl der Stellen, die für die Ziffern des
+           ; Exponenten nötig sind.
+           (mantd (if d (if (> k 0) (1+ (- d k)) d) nil))
+           ; mantd = Anzahl der Mantissenstellen hinter dem Punkt
+           (dmin (if (minusp k) (- 1 k) nil)) ; nachher: fordere, daß
+           ; nicht in die ersten (+ 1 (abs k)) Stellen hineingerundet wird.
+           (mantwidth (if w (- w 2 expdigitsneed) nil))
+           ; mantwidth = Anzahl der für die Mantisse (inkl. Vorzeichen, Punkt)
+           ; zur Verfügung stehenden Zeichen (oder nil)
+          )
+      (declare (simple-string expdigits) (fixnum exponent expdigitsneed))
+      (if (and overflowchar w e (> expdigitsneed e))
+        ; Falls Overflowchar und w und e angegeben, Exponent mehr braucht:
+        (format-padding w overflowchar stream)
+        (progn
+          (if w
+            (if (or plus-sign-flag (minusp arg)) (setq mantwidth (1- mantwidth)))
+          )
+          ; mantwidth = Anzahl der für die Mantisse (ohne Vorzeichen,
+          ; inklusive Punkt) zur Verfügung stehenden Zeichen (oder nil)
+          (multiple-value-bind (mantdigits mantdigitslength
+                                leadingpoint trailingpoint)
+              (format-float-to-string mantissa mantwidth mantd k dmin)
+            (when w
+              (setq mantwidth (- mantwidth mantdigitslength))
+              (if trailingpoint
+                (if (or (null mantd) (> mantd 0))
+                  (setq mantwidth (- mantwidth 1))
+                  (setq trailingpoint nil)
+              ) )
+              (if leadingpoint
+                (if (> mantwidth 0)
+                  (setq mantwidth (- mantwidth 1))
+                  (setq leadingpoint nil)
+              ) )
+            )
+            ; Es bleiben noch mantwidth Zeichen übrig.
+            (if (and overflowchar w (minusp mantwidth))
+              (format-padding w overflowchar stream) ; Zu wenig Platz -> overflow
+              (progn
+                (when (and w (> mantwidth 0))
+                  (format-padding mantwidth padchar stream)
+                )
+                (if (minusp arg)
+                  (write-char #\- stream)
+                  (if plus-sign-flag (write-char #\+ stream))
+                )
+                (if leadingpoint (write-char #\0 stream))
+                (write-string mantdigits stream)
+                (if trailingpoint (write-char #\0 stream))
+                (write-char
+                  (cond (exponentchar)
+                        ((and (not *PRINT-READABLY*)
+                              (typep arg *READ-DEFAULT-FLOAT-FORMAT*)
+                         )
+                         #\E
+                        )
+                        ((short-float-p arg) #\s)
+                        ((single-float-p arg) #\f)
+                        ((double-float-p arg) #\d)
+                        ((long-float-p arg) #\L)
+                  )
+                  stream
+                )
+                (write-char (if (minusp exponent) #\- #\+) stream)
+                (when (and e (> e (length expdigits)))
+                  (format-padding (- e (length expdigits)) #\0 stream)
+                )
+                (write-string expdigits stream)
+          ) ) )
+    ) ) )
+) )
+
+; ~F, CLTL S.390-392, CLtL2 S. 588-590
+(defformat-simple format-fixed-float (stream colon-modifier atsign-modifier
+                  (w nil) (d nil) (k 0) (overflowchar nil) (padchar #\Space))
+                  (arg)
+  (declare (ignore colon-modifier))
+  (when (rationalp arg) (setq arg (float arg)))
+  (if (floatp arg)
+    (format-float-for-f w d k overflowchar padchar atsign-modifier arg stream)
+    (print_rational arg stream 10)
+) )
+
+; ~E, CLTL S.392-395, CLtL2 S. 590-593
+(defformat-simple format-exponential-float (stream colon-modifier atsign-modifier
+                  (w nil) (d nil) (e nil) (k 1)
+                  (overflowchar nil) (padchar #\Space) (exponentchar nil))
+                  (arg)
+  (declare (ignore colon-modifier))
+  (when (rationalp arg) (setq arg (float arg)))
+  (if (floatp arg)
+    (format-float-for-e w d e k overflowchar padchar exponentchar
+                        atsign-modifier arg stream
+    )
+    (print_rational arg stream 10)
+) )
+
+; ~G, CLTL S.395-396, CLtL2 S. 594-595
+(defformat-simple format-general-float (stream colon-modifier atsign-modifier
+                  (w nil) (d nil) (e nil) (k 1)
+                  (overflowchar nil) (padchar #\Space) (exponentchar nil))
+                  (arg)
+  (declare (ignore colon-modifier))
+  (if (rationalp arg) (setq arg (float arg)))
+  (if (floatp arg)
+    (multiple-value-bind (mantissa n) (format-scale-exponent (abs arg))
+      (declare (ignore mantissa))
+      (if (null d)
+        (setq d
+          (multiple-value-bind (digits digitslength)
+            (format-float-to-string (abs arg) nil nil nil nil)
+            (declare (ignore digits))
+            (max (max (1- digitslength) 1) (min n 7))
+      ) ) )
+      (let* ((ee (if e (+ 2 e) 4))
+             (dd (- d n)))
+        (if (<= 0 dd d)
+          (progn
+            (format-float-for-f
+              (if w (- w ee) nil)
+              dd 0
+              overflowchar padchar atsign-modifier arg stream
+            )
+            (format-padding ee #\Space stream)
+          )
+          (format-float-for-e w d e k overflowchar padchar exponentchar
+                              atsign-modifier arg stream
+    ) ) ) )
+    (print_rational arg stream 10)
+) )
+
+; ~$, CLTL S.396-397, CLtL2 S. 595-596
+(defformat-simple format-dollars-float (stream colon-modifier atsign-modifier
+                  (d 2) (n 1) (w 0) (padchar #\Space))
+                  (arg)
+  (when (rationalp arg) (setq arg (float arg)))
+  (if (floatp arg)
+    (multiple-value-bind (digits digitslength
+                          leadingpoint trailingpoint leadings)
+      (format-float-to-string arg nil d 0 nil)
+      (declare (ignore digitslength leadingpoint trailingpoint))
+      (let* ((lefts (max leadings n))
+             (totalwidth (+ (if (or atsign-modifier (minusp arg)) 1 0)
+                            lefts 1 d
+             )           )
+             (padcount (max (- w totalwidth) 0)))
+        (if (not colon-modifier) (format-padding padcount padchar stream))
+        (if (minusp arg)
+          (write-char #\- stream)
+          (if atsign-modifier (write-char #\+ stream))
+        )
+        (if colon-modifier (format-padding padcount padchar stream))
+        (format-padding (- lefts leadings) #\0 stream)
+        (write-string digits stream)
+    ) )
+    (print_rational arg stream 10)
+) )

@@ -1,0 +1,52 @@
+TEX = tex
+DVIPS = dvips -D600
+GNUPLOT = gnuplot
+
+
+all : slide0.ps slide1.ps slide2.ps slide3.ps slide4.ps slide5.ps slide6.ps
+
+slide0.dvi : slide0.tex
+	$(TEX) slide0.tex
+
+slide1.dvi : slide1.tex
+	$(TEX) slide1.tex
+
+slide2.dvi : slide2.tex
+	$(TEX) slide2.tex
+
+slide3.dvi : slide3.tex
+	$(TEX) slide3.tex
+
+slide4.dvi : slide4.tex
+	$(TEX) slide4.tex
+
+slide5.dvi : slide5.tex
+	$(TEX) slide5.tex
+
+slide6.dvi : slide6.tex fig2.eps
+	$(TEX) slide6.tex
+
+fig2.eps : fig2.maple fig2.pari fig2.lidia fig2.cln gnuplot-command
+	$(GNUPLOT) < gnuplot-command > fig2.eps
+
+slide0.ps : slide0.dvi
+	$(DVIPS) -o $@ slide0.dvi
+
+slide1.ps : slide1.dvi
+	$(DVIPS) -o $@ slide1.dvi
+
+slide2.ps : slide2.dvi
+	$(DVIPS) -o $@ slide2.dvi
+
+slide3.ps : slide3.dvi
+	$(DVIPS) -o $@ slide3.dvi
+
+slide4.ps : slide4.dvi
+	$(DVIPS) -o $@ slide4.dvi
+
+slide5.ps : slide5.dvi
+	$(DVIPS) -o $@ slide5.dvi
+
+slide6.ps : slide6.dvi
+	$(DVIPS) -o $@ slide6.dvi
+

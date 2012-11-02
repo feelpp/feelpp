@@ -1,0 +1,67 @@
+\input texinfo  @c -*-texinfo-*-
+@c %**start of header
+@setfilename ginac-examples.info
+@settitle GiNaC Examples
+@afourpaper
+@c For `info' only.
+@paragraphindent 0
+@c For TeX only.
+@iftex
+@c I hate putting "@noindent" in front of every paragraph.
+@parindent=0pt
+@end iftex
+@c %**end of header
+@ifnottex
+@node Top
+@end ifnottex
+
+@dircategory Mathematics
+@direntry
+* ginac-examples: (ginac-examples).                   C++ library for symbolic computation.
+@end direntry
+
+@finalout
+@c finalout prevents ugly black rectangles on overfull hbox lines
+
+@majorheading GiNaC Examples
+
+This is a collection of code examples using GiNaC.
+
+@contents
+
+@chapter Input / Output
+
+@section Archiving expressions @uref{archive1.cpp, (source)}
+
+Two expression are stored in an archive on the disk and are restored again.
+
+@section Input and output of expressions
+
+@subsection Expression input @uref{derivative.cpp, (source)}
+
+Interactively input expression and compute its derivative with respect
+to the ``x'' variable.
+
+@chapter Monte Carlo Integration
+
+@section Example showing compile_ex @uref{compile1.cpp, (source)}
+
+Simple example showing compile_ex with one free variable. Timing between CLN and C double numerics is done.
+
+@section Using VEGAS from CUBA @uref{compile2.cpp, (source)}
+
+An expression in two variables is integrated by using VEGAS from the
+@uref{http://www.feynarts.de/cuba/, CUBA library}.
+
+@section Example showing link_ex @uref{compile3.cpp, (source)}
+
+Demonstrates the use of link_ex. Program has to be called more than once to see the effect.
+
+@chapter Lanczos Approximation
+
+The program lanczos.cpp calculates coefficients for use in the Lanczos
+approximation of the gamma function. The Lanczos approximation is used by
+the function inside GiNaC that approximates the gamma function numerically.
+See the comments in the source file for more information.
+
+@bye

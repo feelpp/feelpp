@@ -1,0 +1,316 @@
+#This file was created by <bruno> Sun Feb 16 14:05:04 1997
+#LyX 0.10 (C) 1995 1996 Matthias Ettrich and the LyX Team
+\lyxformat 2.10
+\textclass article
+\begin_preamble
+\catcode`@=11 % @ ist ab jetzt ein gewoehnlicher Buchstabe
+\def\ll{\langle\!\langle}
+\def\gg{\rangle\!\rangle}
+\catcode`@=12 % @ ist ab jetzt wieder ein Sonderzeichen
+
+\end_preamble
+\language default
+\inputencoding latin1
+\fontscheme default
+\epsfig dvips
+\papersize a4paper 
+\paperfontsize 12 
+\baselinestretch 1.00 
+\secnumdepth 3 
+\tocdepth 3 
+\paragraph_separation indent 
+\quotes_language english 
+\quotes_times 2 
+\paperorientation portrait 
+\papercolumns 0 
+\papersides 1 
+\paperpagestyle plain 
+
+\layout Standard
+
+The Laguerre polynomials 
+\begin_inset Formula  \( L_{n}(x) \)
+\end_inset 
+
+ are defined through 
+\begin_inset Formula 
+\[
+L_{n}(x)=e^{x}\cdot \left( \frac{d}{dx}\right) ^{n}(x^{n}e^{-x})\]
+
+\end_inset 
+
+
+\layout Description
+
+Theorem:
+\layout Standard
+
+
+\begin_inset Formula  \( L_{n}(x) \)
+\end_inset 
+
+ satisfies the recurrence relation
+\layout Standard
+
+
+\begin_inset Formula 
+\[
+L_{0}(x)=1\]
+
+\end_inset 
+
+
+\layout Standard
+
+
+\begin_inset Formula 
+\[
+L_{n+1}(x)=(2n+1-x)\cdot L_{n}(x)-n^{2}\cdot L_{n-1}(x)\]
+
+\end_inset 
+
+for 
+\begin_inset Formula  \( n\geq 0 \)
+\end_inset 
+
+ and the differential equation 
+\begin_inset Formula  \( x\cdot L_{n}^{''}(x)+(1-x)\cdot L_{n}^{'}(x)+n\cdot L_{n}(x)=0 \)
+\end_inset 
+
+ for all 
+\begin_inset Formula  \( n\geq 0 \)
+\end_inset 
+
+.
+
+\layout Description
+
+Proof:
+\layout Standard
+
+Let 
+\begin_inset Formula  \( F:=\sum ^{\infty }_{n=0}\frac{L_{n}(x)}{n!}\cdot z^{n} \)
+\end_inset 
+
+ be the exponential generating function of the sequence of polynomials.
+ It is the diagonal series of the power series
+\begin_inset Formula 
+\[
+G:=\sum _{m,n=0}^{\infty }\frac{1}{m!}\cdot e^{x}\cdot \left( \frac{d}{dx}\right) ^{m}(x^{n}e^{-x})\cdot y^{m}\cdot z^{n}\]
+
+\end_inset 
+
+Because the Taylor series development theorem holds in formal power series
+ rings (see [1], section 2.
+16), we can simplify
+\begin_inset Formula 
+\begin{eqnarray*}
+G & = & e^{x}\cdot \sum _{n=0}^{\infty }\left( \sum _{m=0}^{\infty }\frac{1}{m!}\cdot \left( \frac{d}{dx}\right) ^{m}(x^{n}e^{-x})\cdot y^{m}\right) \cdot z^{n}\\
+ & = & e^{x}\cdot \sum _{n=0}^{\infty }(x+y)^{n}e^{-(x+y)}\cdot z^{n}\\
+ & = & \frac{e^{-y}}{1-(x+y)z}
+\end{eqnarray*}
+
+\end_inset 
+
+We take over the terminology from the 
+\begin_inset Quotes eld
+\end_inset 
+
+diag_rational
+\begin_inset Quotes erd
+\end_inset 
+
+ paper; here 
+\begin_inset Formula  \( R=Q[x] \)
+\end_inset 
+
+ and 
+\begin_inset Formula  \( M=Q[[x]] \)
+\end_inset 
+
+ (or, if you like it better, 
+\begin_inset Formula  \( M=H(C) \)
+\end_inset 
+
+, the algebra of functions holomorphic in the entire complex plane).
+ 
+\begin_inset Formula  \( G\in M[[y,z]] \)
+\end_inset 
+
+ is not rational; nevertheless we can proceed similarly to the 
+\begin_inset Quotes eld
+\end_inset 
+
+diag_series
+\begin_inset Quotes erd
+\end_inset 
+
+ paper.
+ 
+\begin_inset Formula  \( F(z^{2}) \)
+\end_inset 
+
+ is the coefficient of 
+\begin_inset Formula  \( t^{0} \)
+\end_inset 
+
+ in
+\begin_inset Formula 
+\[
+G(zt,\frac{z}{t})=\frac{e^{-zt}}{1-z^{2}-\frac{xz}{t}}\in M[[zt,\frac{z}{t},z]]=M\ll z,t\gg \]
+
+\end_inset 
+
+The denominator's only zero is 
+\begin_inset Formula  \( t=\frac{xz}{1-z^{2}} \)
+\end_inset 
+
+.
+ We can write
+\begin_inset Formula 
+\[
+e^{-zt}=e^{-\frac{xz^{2}}{1-z^{2}}}+\left( zt-\frac{xz^{2}}{1-z^{2}}\right) \cdot P(z,t)\]
+
+\end_inset 
+
+with 
+\begin_inset Formula  \( P(z,t)\in Q[[zt,\frac{xz^{2}}{1-z^{2}}]]\subset Q[[zt,x,z]]=M[[zt,z]]\subset M\ll z,t\gg  \)
+\end_inset 
+
+.
+ This yields -- all computations being done in 
+\begin_inset Formula  \( M\ll z,t\gg  \)
+\end_inset 
+
+ --
+\begin_inset Formula 
+\begin{eqnarray*}
+G(zt,\frac{z}{t}) & = & \frac{e^{-\frac{xz^{2}}{1-z^{2}}}}{1-z^{2}-\frac{xz}{t}}+\frac{zt}{1-z^{2}}\cdot P(z,t)\\
+ & = & \frac{1}{1-z^{2}}\cdot e^{-\frac{xz^{2}}{1-z^{2}}}\cdot \sum _{j=0}^{\infty }\left( \frac{x}{1-z^{2}}\frac{z}{t}\right) ^{j}+\frac{zt}{1-z^{2}}\cdot P(z,t)
+\end{eqnarray*}
+
+\end_inset 
+
+Here, the coefficient of 
+\begin_inset Formula  \( t^{0} \)
+\end_inset 
+
+ is
+\begin_inset Formula 
+\[
+F(z^{2})=\frac{1}{1-z^{2}}\cdot e^{-\frac{xz^{2}}{1-z^{2}}}\]
+
+\end_inset 
+
+hence
+\begin_inset Formula 
+\[
+F(z)=\frac{1}{1-z}\cdot e^{-\frac{xz}{1-z}}\]
+
+\end_inset 
+
+
+\layout Standard
+
+It follows that 
+\begin_inset Formula  \( (1-z)^{2}\cdot \frac{d}{dz}F-(1-x-z)\cdot F=0 \)
+\end_inset 
+
+.
+ This is equivalent to the claimed recurrence.
+
+\layout Standard
+
+Starting from the closed form for 
+\begin_inset Formula  \( F \)
+\end_inset 
+
+, we compute a linear relation for the partial derivatives of 
+\begin_inset Formula  \( F \)
+\end_inset 
+
+.
+ Write 
+\begin_inset Formula  \( \partial _{x}=\frac{d}{dx} \)
+\end_inset 
+
+ and 
+\begin_inset Formula  \( \Delta _{z}=z\frac{d}{dz} \)
+\end_inset 
+
+.
+ One computes
+\begin_inset Formula 
+\[
+F=1\cdot F\]
+
+\end_inset 
+
+
+\begin_inset Formula 
+\[
+\left( 1-z\right) \cdot \partial _{x}F=-z\cdot F\]
+
+\end_inset 
+
+
+\begin_inset Formula 
+\[
+\left( 1-z\right) ^{2}\cdot \partial _{x}^{2}F=z^{2}\cdot F\]
+
+\end_inset 
+
+
+\begin_inset Formula 
+\[
+\left( 1-z\right) ^{2}\cdot \Delta _{z}F=((1-x)z-z^{2})\cdot F\]
+
+\end_inset 
+
+
+\begin_inset Formula 
+\[
+\left( 1-z\right) ^{3}\cdot \partial _{x}\Delta _{z}F=(-z+xz^{2}+z^{3})\cdot F\]
+
+\end_inset 
+
+Solve a homogeneous 
+\begin_inset Formula  \( 4\times 5 \)
+\end_inset 
+
+ system of linear equations over 
+\begin_inset Formula  \( Q(x) \)
+\end_inset 
+
+ to get 
+\begin_inset Formula 
+\[
+\left( 1-z\right) ^{3}\cdot \left( (1-x)\cdot \partial _{x}F+x\cdot \partial _{x}^{2}F+\Delta _{z}F\right) =0\]
+
+\end_inset 
+
+Divide by the first factor to get
+\begin_inset Formula 
+\[
+(1-x)\cdot \partial _{x}F+x\cdot \partial _{x}^{2}F+\Delta _{z}F=0\]
+
+\end_inset 
+
+This is equivalent to the claimed equation 
+\begin_inset Formula  \( x\cdot L_{n}^{''}(x)+(1-x)\cdot L_{n}^{'}(x)+n\cdot L_{n}(x)=0 \)
+\end_inset 
+
+.
+
+\layout Bibliography
+\cursor 123 
+[1] Bruno Haible: D-finite power series in several variables.
+ 
+\shape italic 
+Diploma thesis, University of Karlsruhe, June 1989
+\shape default 
+.
+ Sections 2.
+15 and 2.
+22.
+

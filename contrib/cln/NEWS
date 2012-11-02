@@ -1,0 +1,806 @@
+2011-05-08, version 1.3.2
+=========================
+
+Implementation changes
+----------------------
+
+* Fixed a bug in scale_float(cl_LF, cl_I) when the scale factor exceeded 2^31
+  on x86.
+
+Other changes
+-------------
+
+* Improved portability to some non-GCC compilers.
+
+
+2009-09-24, version 1.3.1
+=========================
+
+Implementation changes
+----------------------
+
+* Fixed a crash in double_approx(cl_RA) on 64-bit platforms.
+
+* Add basic support for Renesas SH (sh4).
+
+
+2009-06-30, version 1.3.0
+=========================
+
+Other changes
+-------------
+
+* Use the GNU autotools as build system.
+
+* Implemented a more portable module dependency mechanism.
+
+
+2008-04-05, version 1.2.2
+=========================
+
+Implementation changes
+----------------------
+
+* Re-establish CLN-1.2.0 ABI and fix ARM build, both inadvertently broken in
+  the previous release.
+
+
+2008-03-24, version 1.2.1
+=========================
+
+Implementation changes
+----------------------
+
+* Fixed some bugs in the output of numbers larger than 2^32 decimal digits.
+
+Other changes
+-------------
+
+* Modifying C/C++ operators like +=, ++, etc. are now enabled by default.
+
+
+2008-01-19, version 1.2.0
+=========================
+
+Algorithmic changes
+-------------------
+
+* Save big amounts of memory in computation of some functions and constants by:
+    - Avoiding pre-computation of series terms and instead computing them in a
+      streamed way.
+    - Avoiding computation with excess precision in binary splitting algorithm
+      by coercion of intermediate integer values to floating-point as early as
+      possible.
+
+Implementation changes
+----------------------
+
+* Added support for huge numbers:
+    - intC used for all counter loops.
+    - intE is now a 64-bit type on all 64-bit platforms and even on selected
+      32-bit platforms.
+
+* CLN now uses C++ exceptions for error handling. The cl_abort() hook is not
+  supported any more. Please refer to the documentation to learn about existing
+  exception types.
+
+* Fixed a bug on i386 where comparing Z/2Z ring zeros returnd random results.
+
+* Removed cl_boolean. Use built-in C++ bool instead.
+
+Other changes
+-------------
+
+* Dropped the cln-config script. Please use pkg-config instead.
+
+* Updated infrastructure to that of libtool-1.5.24.
+
+* Changed encoding of all files to UTF-8.
+
+* Fix compilation issues with GCC-4.3.
+
+* Fix linking issues on platforms that don't feature weak symbols (like win32).
+
+
+2006-08-08, version 1.1.13
+==========================
+
+* Compilation fixes for 64-bit brokenness introduced in last release.
+
+
+2006-08-06, version 1.1.12
+==========================
+
+Implementation changes
+----------------------
+
+* Fix rare assertion when printing quite large floats.
+
+Other changes
+-------------
+
+* Compilation fixes for several platforms: *BSD, Intel Mac, and MinGW.
+
+
+2005-11-23, version 1.1.11
+==========================
+
+Algorithmic changes
+-------------------
+
+* Considerably improved performance of number input.
+
+
+2005-10-22, version 1.1.10
+==========================
+
+Implementation changes
+----------------------
+
+* Removed the vptr of modular integer and univariate polynomial
+  classes in order to fix some crashes in that sector of CLN.  Code
+  using this needs to be recompiled.
+
+* Many more operator signatures make the integration of CLN types with
+  float/double easier.
+
+Other changes
+-------------
+
+* Several compilation fixes.
+
+* Made it possible to cross-compile CLN.
+
+
+2004-11-03, version 1.1.9
+=========================
+
+Algorithmic changes
+-------------------
+
+* Input of numbers in bases 2, 4, 8, 16 and 32 is now done in linear bit
+  complexity as opposed to O(N^2). Useful for all kinds of persistency.
+
+Implementation changes
+----------------------
+
+* Fixed several bugs in the integer input and output routines that could be
+  blamed for random crashes in the following cases: output in base 32 for
+  quite large numbers, input in base 2 for fixnums and input in base 3 for
+  fixnums on a 64 bit target.
+
+* Fixed crash when radix specifiers were used in input streams.
+
+* Speed up on x86_64 and ia64 by adding some inline assembly.
+
+Other changes
+-------------
+
+* Fixes for compilation on MacOS X and little endian Mips.
+
+
+2004-07-01, version 1.1.8
+=========================
+
+Implementation changes
+----------------------
+
+* Fix bug in log(a,b) when b is 1/n.
+
+* Fix crash in shared library on AMD64.
+
+Other changes
+-------------
+
+* Fixes for some language conformance issues.
+
+
+2004-05-02, version 1.1.7
+=========================
+
+Implementation changes
+----------------------
+
+* Fixed two corner case bugs in cl_LF multiplication and sqrt.
+
+* Workaround GCC 3.[123] compiler bug.
+
+* Parallel build should work reliably now.
+
+
+2004-01-01, version 1.1.6
+=========================
+
+Functional changes
+------------------
+
+* New function
+  `sintL ldegree(const cl_UP& x)'.
+  (Suggested by Munagala Ramanath.)
+
+Implementation changes
+----------------------
+
+* Fixed a bug in polynomial subtraction.
+  (Reported by Munagala Ramanath.)
+
+Other changes
+-------------
+
+* Provide a package control file cln.pc.
+
+* Updated infrastructure to autoconf-2.57.
+
+* Fixed compilation issues with GCC-3.4 prereleases and on Mac OSX.
+
+
+2002-05-28, version 1.1.5
+=========================
+
+Other changes
+-------------
+
+* Fix compilation issues with GCC-3.1.
+
+
+2002-01-04, version 1.1.4
+=========================
+
+Other changes
+-------------
+
+* Fix compilation issues with GMP-4.0 and on IBM s390.
+
+* Updated infrastructure to autoconf-2.52.
+
+
+2001-11-05, version 1.1.3
+=========================
+
+Implementation changes
+----------------------
+
+* Fix a computation error of sin and sinh for small arguments.
+  (Reported by Christopher Kennedy.)
+
+* Module ordering works with gcc-3.0 -fuse-cxa-atexit now.
+
+* -DNO_ASM works properly on Sparc.
+
+
+2001-07-25, version 1.1.2
+
+Implementation changes
+----------------------
+
+* Minor cleanups and portability issues.
+  (No need to upgrade if you have been happy so far.)
+
+
+2001-05-31, version 1.1.1
+=========================
+
+Implementation changes
+----------------------
+
+* Minor cleanups for GCC 3.0 and libstdc++-v3.
+
+* Fixes several little bugs and portability issues.
+
+
+2000-12-14, version 1.1.0
+=========================
+
+Functional changes
+------------------
+
+* ISO/IEC 14882 fashion adjustments:
+  Put everything into namespace cln.  All fundamental data types still
+  carry their old names.  Other non-macro identifiers are now written as 
+  cln::foo instead of cl_foo, except where the cl_ comes from a data type
+  (as in cl_I_to_int()).  Headers are installed into a separate
+  directory, #include <cln/foo.h> instead of <cl_foo.h>.  Applications
+  must be manually ported to the new style.  We apologize for the
+  inconvenience.
+
+Implementation changes
+----------------------
+
+* Removed internal copy of mpn subdirectory tree from libgmp-2.0.2.
+  Configuring with --with-gmp now relies on an installed libgmp library
+  version 3 or above.  We recommend libgmp-3.1 or newer.
+
+* Adjusted several break-even points to make better use of a faster libgmp and
+  better match present-day CPUs.
+
+* Fix several errors for architectures with 64-bit wide words.
+  (Others than Alpha, which worked already.)
+
+* Fix compilation errors with current GCC-3.0 snapshots.
+
+Other changes
+-------------
+
+* Added package tools: script cln-config and autoconf macro AC_PATH_CLN
+  (in file cln.m4).
+
+
+2000-01-13, version 1.0.3
+=========================
+
+Functional changes
+------------------
+
+* New function
+  `cl_I doublefactorial (uintL n)'.
+
+Implementation changes
+----------------------
+
+* Fix several little configuration errors.
+
+* Fix some compilation errors with gcc-2.96 prereleases.
+
+
+1999-09-07, version 1.0.2
+=========================
+
+Functional changes
+------------------
+
+* New functions
+  `cl_I numerator (const cl_RA&)'
+  `cl_I denominator (const cl_RA&)'.
+  Suggested by Richard Kreckel and Sylvain Pion.
+
+* New function `cl_equal_hashcode' for the classes cl_N, cl_R, cl_RA, cl_I,
+  cl_F, cl_SF, cl_FF, cl_DF, cl_LF.
+  Suggested by Richard Kreckel.
+
+Implementation changes
+----------------------
+
+* Fix an endless loop when either of the functions
+  `cl_boolean rootp (const cl_RA&, uintL, cl_RA*)',
+  `cl_boolean rootp (const cl_RA&, const cl_I&, cl_RA*)'
+  was called with an integer argument. Thanks to Richard Kreckel.
+
+* Fix a bug in the addition and subtraction of rational numbers which could
+  cause unnormalized rational numbers like 3/1 to be created.
+
+
+1999-06-09, version 1.0.1
+=========================
+
+Algorithmic changes
+-------------------
+
+* Speed up the functions `logand', `lognand', `logandc2'.
+
+Implementation changes
+----------------------
+
+* Fix compilation errors with gcc-2.7.2, egcs-1.1.2 and gcc-2.95.
+
+* Fix compilation errors on HPPA, MIPS, some versions of DEC Alpha, OpenBSD,
+  and SPARC with LiDIA.
+
+* Fix compilation errors on Win32. Thanks to Mumit Khan.
+
+
+1999-01-12, version 1.0
+=======================
+
+Functional changes
+------------------
+
+* New include files, containing I/O functions:
+    <cl_integer_io.h>
+    <cl_rational_io.h>
+    <cl_float_io.h>
+    <cl_sfloat_io.h> <cl_ffloat_io.h> <cl_dfloat_io.h> <cl_lfloat_io.h>
+    <cl_real_io.h>
+    <cl_complex_io.h>
+  The file <cl_io.h> now contains only I/O functions for characters and
+  C integers.
+
+* To access the base ring of a univariate polynomial ring, now use
+  `R->basering()' instead of `R->basering'.
+
+* Implement `plusp', `max', `min' for the classes cl_F, cl_SF, cl_FF, cl_DF,
+  cl_LF, cl_RA, cl_I.
+
+* Implement `abs' for the class cl_RA.
+
+* Replaced `read_number' with specialized functions `read_complex',
+  `read_real', `read_float', `read_rational', `read_integer'.
+
+* Replaced the functions
+  `void fprint (cl_ostream stream, int x)'
+  `void fprint (cl_ostream stream, unsigned int x)'
+  `void fprint (cl_ostream stream, long x)'
+  `void fprint (cl_ostream stream, unsigned long x)'
+  with
+  `void fprintdecimal (cl_ostream stream, int x)'
+  `void fprintdecimal (cl_ostream stream, unsigned int x)'
+  `void fprintdecimal (cl_ostream stream, long x)'
+  `void fprintdecimal (cl_ostream stream, unsigned long x)'
+
+Algorithmic changes
+-------------------
+
+* The function `cl_I xgcd (const cl_I& a, const cl_I& b, cl_I* u, cl_I* v)'
+  now normalizes the resulting u and v to be of minimum absolute value.
+  (Suggested by the LiDIA group.)
+
+* The conversion from string to cl_F, cl_R, cl_N now chooses the format of
+  the resulting float depending on the number of significant digits present
+  in the input string.
+
+* Speed up the functions
+  `cl_R operator* (const cl_RA&, const cl_LF&)'
+  `cl_R operator* (const cl_LF&, const cl_RA&)'
+  `cl_R operator/ (const cl_RA&, const cl_LF&)'
+  `cl_LF operator/ (const cl_LF&, const cl_RA&)'
+
+Implementation changes
+----------------------
+
+* Fix for `cl_I ash (const cl_I& x, const cl_I& n)' when |n| is between
+  2^29 and 2^37.
+  (Reported by Thomas Papanikolaou.)
+
+* Fixed a memory leak in the long-float truncate function.
+  (Reported by Keith Briggs.)
+
+* Fixed a memory leak in the modular integer exponentiation.
+
+* Reduced the stack space consumption. The default stack size (typically
+  8 MB on Unix) should now be sufficient in order to run all CLN programs.
+
+* Portability fixes for m68k platforms.
+  (Reported and fixed by Roman Hodek.)
+
+Other changes
+-------------
+
+* Restructured the sources. The subpackages
+    - base
+    - base + integer
+    - base + integer + rational
+    - base + integer + rational + float
+    - base + integer + rational + float + real
+    - base + integer + rational + float + real + complex
+    - base + integer + modinteger
+  are now self-contained.
+
+* The configuration script can be called with option `--enable-shared',
+  to build CLN as a shared library.
+
+* Updated the LiDIA interface.
+
+
+1998-05-07, version 0.98
+========================
+
+Implementation changes
+----------------------
+
+* Portability fixes for 64-bit platforms like DEC Alpha.
+  (Reported by John Cremona and Thomas Papanikolaou.)
+
+
+1998-02-27
+==========
+
+Other changes
+-------------
+
+* Portability fixes for new ISO/ANSI C++ compilers.
+
+* Updated the LiDIA interface for LiDIA version 1.3 and fixed a couple of
+  bugs.
+
+
+1997-09-06
+==========
+
+Implementation changes
+----------------------
+
+* Portability fix for i686 platforms.
+  (Reported by Michael Pfeifer.)
+
+
+1997-09-01
+==========
+
+Functional changes
+------------------
+
+* New include files:
+  <cl_ring.h>, declaring general rings,
+  <cl_GV.h>, <cl_SV.h>, defining vectors,
+  <cl_univpoly.h>, defining univariate polynomial rings.
+
+Algorithmic changes
+-------------------
+
+* Speed up the internal computation of ln(2) and ln(10) by about 20%.
+
+* Speed up the computation of exp (for 1000 digits or more) by about 10%.
+
+Implementation changes
+----------------------
+
+* Portability fix for 64-bit platforms like DEC Alpha:
+  Fixed a bug: endless loop in `sqrt' for large precision.
+  (Reported by Blake Jones.)
+
+* Portability fix for RS/6000 platforms.
+
+
+1997-02-21
+==========
+
+Algorithmic changes
+-------------------
+
+* Speed up the computation of the elementary transcendental functions:
+  exp, sinh, cosh, asinh, atanh (for 100 digits) by about 30%,
+  log (for 100 digits) by about 25%,
+  sin, cos (for 1000 or 10000 digits) by about 20%,
+  asin, acos, atan (for 1000 digits) by about 25%.
+
+Implementation changes
+----------------------
+
+* Portability fix for SunOS 4 and other BSD platforms.
+
+
+1997-01-31
+==========
+
+Algorithmic changes
+-------------------
+
+* Fixed a bug: endless recursion in `cl_boolean sqrtp (const cl_RA&, cl_RA*)'.
+
+* Fixed a bug: Only the first 85% of the digits returned by `cl_eulerconst'
+  for moderate precision (< 11370 digits) were correct.
+  (Reported by Thomas Papanikolaou.)
+
+Implementation changes
+----------------------
+
+* Fix static initialization order bug. Requires g++ 2.7.0 or newer
+  (g++ 2.8.0 or newer on HPPA).
+
+* New method `debug_print()', for pretty printing of CLN objects, intended
+  to be called from the debugger.
+
+
+1997-01-07
+==========
+
+Functional changes
+------------------
+
+* New functions `float cl_float_approx (const cl_R&)',
+                `double cl_double_approx (const cl_R&)'
+  for converting a real number to a C `float' or `double'.
+
+Algorithmic changes
+-------------------
+
+* Speed up `cl_zeta' using Cohen-Villegas-Zagier convergence acceleration.
+
+Implementation changes
+----------------------
+
+* New function `cl_print', for pretty printing of CLN objects, intended to be
+  called from the debugger.
+
+* Portability fixes for 64-bit platforms like DEC Alpha.
+
+
+1996-11-29
+==========
+
+Functional changes
+------------------
+
+* New include files:
+  <cl_string.h>, defining strings,
+  <cl_symbol.h>, defining symbols,
+  <cl_proplist.h>, defining property lists,
+  <cl_condition.h>, defining conditions/exceptions.
+
+* New functions `cl_F cl_catalanconst ()',
+                `cl_F cl_catalanconst (const cl_F&)',
+                `cl_F cl_catalanconst (cl_float_format_t)'
+  which return Catalan's constant.
+  (Suggested by Thomas Papanikolaou.)
+
+* New functions `cl_F cl_zeta (int s)',
+                `cl_F cl_zeta (int s, const cl_F&)',
+                `cl_F cl_zeta (int s, cl_float_format_t)'
+  which return the Riemann zeta function at an integral point s>1.
+
+* New functions `cl_F cl_exp1 ()',
+                `cl_F cl_exp1 (const cl_F&)',
+                `cl_F cl_exp1 (cl_float_format_t)'
+  which return e = exp(1).
+
+* New function `cl_I binomial (uintL n, uintL k)' which returns the
+  binomial coefficient (n choose k).
+
+* New functions `int cl_I_to_int (const cl_I&)',
+       `unsigned int cl_I_to_uint (const cl_I&)',
+                `long cl_I_to_long (const cl_I&)',
+       `unsigned long cl_I_to_ulong (const cl_I&)'
+  for converting an integer to a C `int' or `long'.
+
+* New functions `float cl_float_approx (const cl_I&)',
+                `float cl_float_approx (const cl_RA&)',
+                `double cl_double_approx (const cl_I&)',
+                `double cl_double_approx (const cl_RA&)'
+  for converting a rational number to a C `float' or `double'.
+
+Implementation changes
+----------------------
+
+* Moved the sources to subdirectories.
+  (Suggested by Jörg Arndt.)
+
+Other changes
+-------------
+
+* New benchmark for better comparing LiDIA, Pari and CLN.
+
+* Added an interface to LiDIA, allows using CLN as a replacement of libI.
+  (Suggested by Thomas Papanikolaou.)
+
+* Added an ILOG Talk interface, for interactive use of the library.
+
+
+1996-10-13
+==========
+
+Functional changes
+------------------
+
+* New include file <cl_modinteger.h>, defining modular integer rings.
+
+* New functions `cl_F cl_eulerconst ()', `cl_F cl_eulerconst (const cl_F&)',
+  `cl_F cl_eulerconst (cl_float_format_t)' which return Euler's constant.
+
+Algorithmic changes
+-------------------
+
+* Speed up square root of large numbers by use of Newton's algorithm.
+
+* Speed up multiplication and division of large long-floats by small integers.
+
+* Speed up the computation of pi, e, exp, log, sin, cos, tan, sinh, cosh, tanh,
+  asin, acos, atan, asinh, acosh, atanh.
+  All of them are now computed with asymptotically fast algorithms, of
+  bit complexity O(log(N)^2*M(N)) = O(N^(1+epsilon)) for N digits.
+
+* Fixed several bugs in the transcendental functions routines. In particular,
+  the `log' function went into an endless loop.
+
+* Fixed a bug: The cl_I -> cl_DF and cl_I -> cl_LF conversions didn't work
+  correctly for negative integers.
+
+
+1996-09-08
+==========
+
+Functional changes
+------------------
+
+* New include file <cl_numtheory.h>, containing number theoretic functions,
+  for now only the Jacobi symbol.
+
+Algorithmic changes
+-------------------
+
+* Speed up squaring of large numbers by 30%.
+
+* Speed up division of large numbers by use of Newton's algorithm. The
+  improvement is noticeable for numbers with at least about 1000 words =
+  32000 bits = 10000 decimal digits.
+
+* Speed up the binary-to-decimal conversion of large numbers by use of
+  a divide-and-conquer method. The improvement is noticeable for numbers
+  of at least 1250 words = 40000 bits = 12000 decimal digits.
+
+* Fixed a bug: The functions `cl_boolean minusp (const type&)' and
+  `cl_boolean zerop (const type&)' were missing for type=cl_I and type=cl_RA.
+
+* Fixed a bug: The function `cl_boolean logtest (const cl_I&, const cl_I&)'
+  didn't work correctly if both arguments were bignums.
+
+* Fixed a bug: The function `cl_I mod (const cl_I&, const cl_I&)', when called
+  as `mod(-n*m,m)' (n>0), returned m instead of 0.
+
+* Fixed a bug: The function `uintL power2p (const cl_I&)' returned wrong
+  values for arguments x = 2^n, n >= 29.
+
+Implementation changes
+----------------------
+
+* Speed up CLN by using the low-level addition/subtraction, shift and
+  multiplication loops from GNU gmp-2.0.2.
+
+* Fixed a severe reference counting bug in the constructors
+  `type::type (const long)' and `type::type (const unsigned long)'
+  for type=cl_number, type=cl_N, type=cl_RA, type=cl_I that most often
+  caused a core dump.
+
+* CLN's word sequences can be chosen to be stored big-endian in memory
+  (like it was up to now) or little-endian (needed for interfacing to GMP).
+
+
+1996-05-20
+==========
+
+Functional changes
+------------------
+
+* New include file <cl_timing.h>, contains timing facilities.
+
+Algorithmic changes
+-------------------
+
+* Speed up the multiplication of large numbers by use of an FFT based
+  algorithm (Schönhage-Strassen). The improvement is noticeable when both
+  factors have at least 1250 words = 40000 bits = 12000 decimal digits.
+
+* Speed up the functions `cl_I gcd (const cl_I&, const cl_I&)' and
+  `cl_I xgcd (const cl_I&, const cl_I&, cl_I*, cl_I*)' by a factor
+  of 1.5. Simple trick.
+
+* Speed up the function `cl_boolean sqrtp (const cl_I&, cl_I*)' using a
+  trick from Henri Cohen.
+
+* Fixed an endless loop in the function `uint32 gcd (uint32, uint32)'
+  which occurred when one of the arguments is zero.
+
+* Fixed an endless loop in the function `cl_I factorial (uintL)'.
+
+Implementation changes
+----------------------
+
+* <cl_io.h> now uses iostreams by default instead of stdio FILE pointers.
+  (Reported by Tito Flagella.)
+
+* Fixed linking error when compiling without -O.
+  (Reported by Tito Flagella.)
+
+* Fixed syntax error in <cl_input.h>.
+  (Reported by Tito Flagella.)
+
+* Fixed syntax errors in src/cl_DS.h and src/cl_FF_plus.h.
+  (Reported by Marcus Daniels.)
+
+* More portability fixes.
+
+* Configuration now supports the --srcdir option.
+  (Reported by Marcus Daniels.)
+
+
+1996-01-03
+==========
+
+* Compiles well on Sparc, using gcc.
+
+* Mail to beta testers.
+
+
+1995-12-06
+==========
+
+* Compiles well on Linux, using gcc.
+

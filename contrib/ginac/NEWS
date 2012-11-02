@@ -1,0 +1,786 @@
+This file records noteworthy changes.
+
+1.6.2 (6 November 2011)
+* Fixed the parser to read GiNaC::lst again.
+* Fixed a compile warning (relevant to openSUSE build).
+* Fixed a bug concerning the subsitutions in indexed expressions
+  (subs_options::no_index_renaming was ignored).
+
+1.6.1 (18 July 2011)
+* Fixed several internal assertions for the debug version of GiNaC.
+* More verbose report of (auto-)configuration problems.
+* Fixed a compile problem with ginsh using gcc 4.6.
+
+1.6.0 (22 May 2011)
+* Fixed compilation issues with clang.
+* Fixed compilation issues with VC++.
+* Fixed a segfault in fsolve() and improved its numerical algorithm.
+* Fixed several memory leaks in power::eval().
+* Fixed the substitution algorithm that led to wrong results (exp(log(x))->x).
+* Fixed a bug in add:eval() (real_part() had returned wrong results).
+* Fixed infinite loop bug when unarchiving realsymbol and possymbol.
+* Fixed bugs in the GCD code.
+* Fixed empty string bug in symbol::get_name().
+* Fixed bugs concerning STL vector sizes that can potentially cause segfaults.
+* Fixed a bug in is_polynomial().
+* Removed autogen dependencies.
+* Improved simplify_indexed() algorithm.
+* Changed the connection between library version and package version.
+* power::series() can handle now more expressions with singularities in the exponent.
+* Added conjugate() methods to functions cosh, sinh, tanh.
+
+1.5.8 (06 July 2010)
+* Changed default behaviour of conjugate() for user-defined functions to avoid
+  wrong evaluations. A user-defined conjugate_func must now be explicitly
+  registered.
+* Fixed: Parser now handles abbreviations as advertized in the manual.
+* Fixed two bugs in the GCD code (one infinite loop, one miscalculation).
+* Fixed dangerous iterator use.
+* Fixed a memory leak in excompiler.
+* Fixed several syntax issues wrt to gcc 4.5 and wrt to compile option -std=cxx0x.
+* Fixed a wrong URL and a texinfo problem in the manual.
+* Added degree_vector() utility function.
+
+1.5.7 (29 March 2010)
+* Fixed a bug in the GCD code (infinite loop in pgcd()).
+* Fixed a bug in atan2() (division by zero error for atan2(x,0) if x is a
+  negative and composite term).
+* Products now correctly set info_flags::negative and info_flags::negint.
+
+1.5.6 (28 January 2010)
+* Fixed compile problem with gcc 3.4.
+* Improved excompiler: The ginac-excompiler script will only be installed if
+  excompiler is supported and enabled.
+
+1.5.5 (04 November 2009)
+* Correct libtool versioning.
+
+1.5.4 (02 November 2009)
+* Default parser now can again read in user defined classes.
+* Add mul::info() and add::info() support for numeric info_flags (GiNaC now can
+  detect that the sum or product of a number of positive expressions is again a
+  positive expression).
+* Fixed cast that caused compile error on 64bit machines.
+* Fixed incorrect uses of STL iterators.
+* Removed subdirectory debian.
+* Output LaTeX-symbols using \mathrm, instead of \mbox.
+
+1.5.3 (30 July 2009)
+* The parser now understands user-defined functions by default. The identifier
+  names can now contain underscores.
+
+1.5.2 (10 July 2009)
+* Fixed documentation of return_type_info()
+* Fixed cstdio include issue.
+* GiNaC now requires at least version 1.2.2 of cln.
+
+1.5.1 (25 February 2009)
+* Fixed compiling problems with GNU g++ 3.4.
+* Work around weird C++ RTTI behaviour on woe32 so GiNaC works on MinGW again.
+
+1.5.0 (17 February 2009)
+* Added polynomial factorization.
+* New, faster (recursive descent) expression parser.
+* Faster GCD computation.
+* gcd() now allows the user to override (some of the) heuristics.
+* Writing extensions classes is simpler now:
+  - Replaced custom RTTI by standard C++ RTTI.
+  - Definition of archiving methods now optional when declaring a new GiNaC class.
+* Fixed recursion in polynomial divide that caused a significant slowdown in
+  sqrfree().
+* Improved lsolve() of systems containing non-numeric coefficients.
+* Removed implicit conversions from cl_N to numeric.
+* Improved configuration and compatibility.
+
+1.4.4 (7 Nov 2008)
+* Fixed a bug in the multiple polylogarithms Li/G that caused imaginary parts
+  of the arguments to be ignored. 
+* Fixed archiving of complex numbers.
+* Made the behaviour of class function more consistent with respect to
+  ncmul::eval().
+* Fixed bug in power::is_polynomial.
+* Improved heur_gcd() so it can handle rational polynomials.
+* Improved build scripts.
+
+1.4.3 (04 April 2008)
+* Fixed bug in numerical evaluation of multiple polylogarithms and
+  alternating multiple zeta values introduced in version 1.4.2.
+* Nielsen polylog now invalidates its lookup tables in case the precision
+  (Digits) has been changed.
+* Added new checks for recent bugs in the numerical evaluation of Li and zeta.
+
+1.4.2 (03 April 2008)
+* Fixed VPATH building of documentation.
+* Fixed bug in numerical evaluation of multiple polylogarithms for arguments
+  equal to certain roots of unity (thanks to Jianqiang Zhao).
+* Fixed check for memory leakage in parser.
+* Made internal function coerce() standard compliant.
+* Improved lsolve() of systems containing non-numeric coefficients.
+* Improved automatic test programs. Now they work on MinGW and Cygwin as well.
+
+1.4.1 (21 November 2007)
+* Fixed memory leak in ginac_yylex().
+* Fixed memory leaks in mul::eval() and power::eval().
+* Fixed macro checking for version of libreadline (Mac OS X).
+* Fixed broken preprocessor instruction in excompiler.cpp.
+* Fixed broken module loading in excompiler.cpp.
+* info(info_flags::has_indices) now works for sums and products.
+* Improved mul::expand().
+* Improved CLN output.
+
+1.4.0 (31 August 2007)
+* New tinfo mechanism.
+* Removed rtt from class symbol.
+* Faster archiving by adding a map from strings to indices in the atoms vector.
+* Improved unarchiving: algorithms order N instead of order N^2.
+* Added compile function, excompiler class.
+* Added exset type.
+* Added step function to GiNaCs built-in functions.
+* Added is_polynomial() method.
+* Added real_part() and imag_part() methods.
+* Added matrix::is_zero_matrix() method.
+* Added evalm() method to pseries class.
+* Improved dummy index renaming.
+* Many improvements for class clifford.
+* New flag for positive symbols/numbers, added possymbol class.
+* Added programming examples in doc/examples
+
+1.3.8 (28 August 2007)
+* Drop support of ginac-config and ginac.m4. Please use pkg-config instead.
+* atan2(y,x) branch cut correction.
+* Fixed bug in series expansion.
+* Additional transformations for mul and power.
+* Clifford units now honor representation labels.
+* Correct csrc output for idx and fderivative.
+* Improved handling of convergence transformationis for Li/G.
+* Fix compilation issues with prereleases of GCC 4.3.
+* info_flags::expanded added.
+* input_parser also accepts pow().
+* texinfo.tex removed from package.
+
+1.3.7 (05 February 2007)
+* Fixed bug in expansion of power.
+* Fixed bugs in functions S() (infinite loop), H() and zeta() (wrong results).
+* Rebuilt bison related files with bison version 2.3 (fixes parse error bugs).
+* Improved power::eval().
+* Improved libreadline detection.
+
+1.3.6 (13 December 2006)
+* Better worst case behavior in heuristic gcd.
+* Improved collecting for sparse multivariate polynomials.
+* Improved collect_common_factors.
+* Fixed bug in numerical evaluation of multiple polylogs.
+* Fixed numerical integration of complex functions.
+* Fixed bug in tensor::replace_contr_index().
+
+1.3.5 (17 August 2006)
+* Re-built bison related files that caused bugs with gcc 4.
+* Fixed bugs in fderivative::match_same_type(), expairseq::match(),
+  expand_dummy_sum(), and expairseq::map().
+* Fixed template specialization for class container to be gcc 4.2 compliant.
+* Output in csrc mode is now -x instead of -1.0*x.
+* Fixed tutorial and reference generation in html/pdf/ps format.
+* Modified autotool configuration to allow for compilation on MinGW.
+* Debian packaging files updated.
+
+1.3.4 (12 April 2006)
+* More general index dimensions are now possible.
+* Improved algebraic substitutions.
+* Fixed wrong matching in .has(). 
+* Fixed bug in differentiation of a power.
+* collect_common_factors also works with negative powers of common factors now.
+* Code clean-up and preparations for upcoming cln 1.2.
+
+1.3.3 (24 October 2005)
+* Fixed bug occuring in algebraic substitutions with expressions involving
+  indices.
+* Fixed bug that selected the wrong algorithm for determinants of purely
+  numeric matrices with at least one floating point element.
+* Fixed bug in function H that caused an infinite recursion for arguments
+  around +-I.
+* Fixed const-correctness in printing handler for GCC 4.0.2.
+* Made lookup in adaptivesimpson precision-aware.
+* Added series expansion for functions (classical) Li and S around x==0.
+* Added fsolve() numerical univariate real-valued function solver.
+* Added functions sub_matrix() and reduced_matrix().
+* Small cleanups. Less warnings with latest GCC.
+
+1.3.2 (10 July 2005)
+* GCD avoids to produce expanded expressions.
+* Fixed bug in expanding expressions containing dummy indices.
+* Fixed static initialization order bug.
+* collect_common_factors now works with powers.
+* Modernized configuration scripts.
+
+1.3.1 (04 May 2005)
+* integral() and eval_integ() can be used from ginsh.
+* Integrals can be series-expanded.
+* Fixed a library initialization problem.
+* GiNaC compiles from tarball even if lex/flex is missing.
+* Fixed bugs in canonicalize_clifford(), clifford_prime() and clifford_to_lst().
+* clifford_moebius_map(), remove_dirac_ONE() and LaTeX output of Clifford
+  objects now care about representation labels.
+* Fixed bug in gcd.
+* Better output for slashed expressions
+
+1.3.0 (19 October 2004)
+* The Clifford classes have been generalized to allow working with Clifford
+  algebras generated by arbitrary symmetric tensors or matrices. Also, a lot
+  of new functions for Clifford algebras have been added, including
+  automorphisms and Moebius transformations. [V. Kisil]
+* Added some basic symbolic and numeric integration facilities. [C. Dams]
+* The multiple polylogarithm Li() now evaluates numerically for arbitrary
+  arguments.
+* New functions G(a,y) and G(a,s,y) added (another notation for multiple
+  polylogarithms).
+
+1.2.4 (12 October 2004)
+* Added ex::unitcontprim() to compute the unit, content, and primitive parts
+  of a polynomial in one go.
+* binomial(n, k) evaluates for non-integer arguments n.
+* Li(2,x) now evaluates for +-I.
+* Optimized Li(2,x).
+* Fixed bug in Li(n,x) (if Li(2,x) was calculated with high precision the
+  enlargement of the look-up table caused a segmentation fault).
+* Fixed another bug in the series expansion of powers, and a bug in
+  power::info().
+
+1.2.3 (13 August 2004)
+* Added variants of dirac_trace() and color_trace() that take the trace over
+  more than one representation label by specifying a set or list of labels.
+* diracgamma::contract_with() uses Chisholm identities in 4 dimensions to
+  produce more compact results.
+* Fixed a bug in the series expansion of powers.
+* The --enable-html-doc and --enable-ps-doc configure options are gone.
+  Documentation in HTML, DVI, PostScript, and PDF formats is now built with
+  "make html", "make dvi", "make ps", and "make pdf", respectively. The only
+  documentation that gets built by default are the tutorial in .info format
+  and the manpages.
+
+1.2.2 (3 August 2004)
+* Added const_preorder_iterator and const_postorder_iterator classes (and
+  associated methods ex::pre/postorder_begin/end()) providing tree traversal
+  with iterators.
+* Fixed the LaTeX output of the varidx class.
+* Fixed bugs in series expansion and complex conjugation.
+* (p.i*p.i).get_free_indices() returns the correct result () instead of (.i).
+* Symbolic functions without any eval(), evalf() etc. functions now work
+  properly.
+* integer_content(), content(), and primpart() now also work for polynomials
+  with rational coefficients (calculating the LCM of coefficients'
+  denominators).
+* Added method matrix::rank().
+* Added function resultant().
+* Added integer_content() function to ginsh.
+
+1.2.1 (23 April 2004)
+* Fixed infinite recursion in atan2_evalf() and improved atan2_eval().
+* Added automatic evaluations for trigonometric functions with negative
+  arguments (e.g. sin(-2) -> -sin(2)).
+* Fixed a static initialization order goof-up.
+* Fixed various bugs in series expansion.
+
+1.2.0 (19 March 2004)
+* Added a structure<T> template class for the easy creation of user-defined
+  algebraic classes.
+* Added support for (acyclic) visitors, to allow cleaner implementations of
+  algebraic algorithms.
+* Added a const_iterator class that can be used instead of op()/nops().
+* Completely revamped the implementation of expression output. It is now
+  possible to add new output formats, to change the behavior of predefined
+  formats at run-time, and to have different output styles for algebraic
+  functions.
+* Symbols can be made non-commutative.
+* Added a method ex::conjugate() and a function conjugate() for complex
+  conjugation. Symbols can be declared as real or complex-valued.
+* Improved the speed of subs(), normal(), to_rational() and to_polynomial()
+  by the use of maps instead of lists. The old forms
+    subs(const lst & ls, const lst & lr, unsigned options)
+    to_rational/to_polynomial(lst & repl)
+  are still available for compatibility, but using the new forms
+    subs(const exmap & m, unsigned options)
+    to_rational/to_polynomial(exmap & repl)
+  is more efficient, especially when the number of replacements is large.
+* quo(), rem(), prem(), sprem(), decomp_rational(), unit(), content(),
+  primpart() and matrix::charpoly() now take a "const ex &" instead of a
+  "const symbol &".
+* Redundant expressions (two ex pointing to different objects are found to be
+  equal in compare()) are now actively deleted/fused to conserve memory and
+  speed up subsequent comparisons. This behavior can be suppressed on a
+  per-object level with status_flags::not_shareable. Lists and matrices are
+  not shareable by default.
+* Lots of internal streamlining and optimizations.
+* Caveats for class implementors:
+   - basic::copy() and basic::destroy() are gone; classes derived from
+     basic can use the defaults for the assignment operator and copy
+     constructor.
+   - basic::subs(), basic::normal(), basic::to_rational() and
+     basic::to_polynomial() take 'exmap' objects instead of lists.
+   - basic::subs() now descends into subexpressions (if accessible via
+     nops()/op()/let_op()). If you have a custom implementation of subs()
+     that calls basic::subs() after substituting subexpressions, this needs
+     to be changed to a call to subs_one_level().
+   - lst::thislst() and exprseq::thisexprseq() renamed to thiscontainer().
+   - thiscontainer() and associated constructors now take a std::auto_ptr.
+   - Overloading basic::print() is now deprecated. You should use
+     print_func<>() class options instead.
+
+1.1.7 (11 March 2004)
+* Fixed a bug in canonicalize_clifford().
+* Series expansion now works predictably. All terms with the exponent of the
+  expansion variable smaller than the given order are calculated exactly. If
+  the series is not terminating, the Order function is (at least) of the given
+  order.
+
+1.1.6 (22 January 2004)
+* Added a function option "dummy()" which means "no options". This simplifies
+  the implementation of symbolic functions which are not to be further
+  evaluated.
+* Removed a bug in the numerical evaluation of Li() that caused the system
+  to hang for certain parameter combinations.
+* Fixed a bug in the calculation of hash values for indices that could lead
+  to wrong results or bogus error messages from simplify_indexed().
+* Fixed a bug in the evaluation of harmonic polylogarithms for complex
+  arguments with positive imaginary part.
+
+1.1.5 (5 November 2003)
+* Harmonic polylogarithms now numerically evaluate for arbitrary arguments
+  (parameter must still be positive integers).
+* The zeta function now can also be given a lst as a parameter in which case
+  it becomes a multiple zeta value. The use of mZeta is deprecated.
+* The order of parameters for the multiple polylogarithm has been corrected.
+* Documentation for the nested sums functions zeta, harmonic polylog, multiple
+  polylog, etc. has been added.
+
+1.1.4 (17 October 2003)
+* Lists and matrices can now be initialized from comma-separated lists of
+  expressions, like this:
+
+    lst l;
+    l = x, 2, y, x+y;
+
+    matrix M(3, 3);
+    M = x, y, 0,
+       -y, x, 0,
+        0, 0, 1;
+
+  This is both faster and produces much smaller code than the old constructors
+  lst(ex, ex, ...) and matrix(unsigned, unsigned, lst), especially in the case
+  of matrices, and is now the recommended way to create these objects.
+* The function mZeta now evaluates much faster for arbitrary parameters. The
+  harmonic and multiple polylogarithms evaluate considerably faster and check
+  for convergence. The order of parameters for the harmonic polylogarithm
+  has been corrected.
+
+1.1.3 (22 August 2003)
+* Added new symbolic functions for better integration with nestedsums:
+  (multiple) polylogarithm Li(), Nielsen's generalized polylogarithm S(),
+  harmonic polylogarithm H(), and multiple zeta value mZeta().
+* New exhashmap<T> template intended as a drop-in replacement for
+  std::map<ex, T, ex_is_less> using GiNaC's hashing algorithms.
+
+1.1.2 (11 August 2003)
+* Fixed a bug in the unarchiving of sums and products: terms were not
+  reordered in a canonical way.
+* Fixed a bug in normal()/numer_denom(): denominator was not made unit
+  normal if it was a simple number.
+* Improved the speed of subs() in some cases.
+
+1.1.1 (18 June 2003)
+* lst (and exprseq) provide iterators for read-only element access. For
+  sequential access this is one order faster than using op().
+* Implemented relational::subs() (this was done in 1.0.9 but inadvertently
+  omitted from the 1.1 branch).
+* pole_error and do_taylor are available to library users.
+* Added on-line help and Tab-completion for print(), iprint(), print_latex()
+  and print_csrc() in ginsh.
+
+1.1.0 (3 April 2003)
+* Removed deprecated macros is_ex_a, is_ex_exactly_a and friends for good.
+* The scalar_products mechanism allows the specification of an index dimension.
+* Removed dirac_gamma6/7().
+* Added ex::to_polynomial().
+* subs() accepts an optional "options" argument. The option
+  subs_option::subs_algebraic enables "smart" substitutions in products and
+  powers.
+* Added stream manipulators "dflt", "latex", "python", "python_repr", "tree",
+  "csrc", "csrc_float", "csrc_double", "csrc_cl_N", "index_dimensions" and
+  "no_index_dimensions" to control the output format. Calling basic::print()
+  directly is now deprecated.
+* Made the hashing more simple and efficient.
+* Caveats for class implementors:
+   - basic::subs(): third argument changed from "bool" to "unsigned"
+   - unarchiving constructor and basic::unarchive(): "const" removed from
+     second argument
+   - basic::let_op() should only be implemented if write access to
+     subexpressions is desired
+   - simplify_ncmul() renamed to eval_ncmul()
+   - simplified_ncmul() renamed to hold_ncmul()
+   - nonsimplified_ncmul() renamed to reeval_ncmul()
+
+1.0.14 (1 March 2003)
+* Improved the C-source output: complex numbers are printed correctly (using
+  the STL complex<> template or cln::complex()), rational numbers use cl_RA()
+  in the CLN output, and small integers are printed in a more compact format
+  (e.g. "2.0" instead of "2.0000000e+00").
+* function_options::set_return_type() and function_options::do_not_evalf_params()
+  now actually work.
+
+1.0.13 (27 January 2003)
+* Contracting epsilon tensors with Euclidean indices now works.
+* Improved dummy index symmetrization in sums.
+* Added dirac_gammaL/R(), which can be used instead of dirac_gamma6/7()
+  but are single objects, to allow for a more compact notation of Dirac
+  strings.
+* Powers with negative numeric exponents are printed as fractions in the
+  LaTeX output.
+* Added symbolic_matrix() for the convenient creation of matrices filled
+  with symbols.
+* Added collect_common_factors() which collects common factors from the
+  terms of sums.
+* simplify_indexed() converts "gamma~mu*p.mu" to "p\".
+
+1.0.12 (30 October 2002)
+* Fixed a bug in power::expand() that could produce invalid expressions.
+* The input parser no longer ignores extra data following accepted input.
+* Improved the CLN C-source output (integers are printed as integers, and
+  floating point numbers include the precision).
+* Fixed a problem in the LaTeX-output of negative fractions.
+* Added print_latex() and print_csrc() to ginsh.
+* The sprem() function is now public.
+
+1.0.11 (18 September 2002)
+* Fixed a possible memory corruption in contractions of indexed objects with
+  delta or metric tensors.
+* Computing the derivative of a power series object with respect to a symbol
+  that is not the expansion variable now works correctly.
+* Several bugfixes in code generation.
+
+1.0.10 (24 July 2002)
+* Powers of indexed objects are now parenthesized correctly in LaTeX output.
+* Input parser handles indices (they have to be specified in the same list
+  as the symbols).
+* Added some limited support for subspaces in the idx and tensor classes.
+* Fixed a bug in canonicalize() (antisymmetric canonicalization of an already
+  sorted list containing two or more equal objects failed to return 0).
+
+1.0.9 (11 June 2002)
+* simplify_indexed() now raises/lowers dummy indices to canonicalize the index
+  variance. This allows some simplifications that weren't possible before,
+  like eps~a.b~c~d*X.a*X~b -> 0 and X.a~a-X~a.a -> 0.
+* Implemented relational::subs().
+* Fixed bug in simplify_ncmul() for clifford objects.
+
+1.0.8 (31 March 2002)
+* Improvements in memory usage of the expand() methods.
+
+1.0.7 (18 March 2002)
+* Fixed LaTeX output of indexed and matrix objects.
+* Fixed matrix::pow(n) for n==0 and added helper functions to create unit
+  matrices "ex unit_matrix(unsigned, unsigned)".
+
+1.0.6 (4 March 2002)
+* "(x+1).subs(x==x-1)" now returns the correct result "x" instead of "x-1".
+
+1.0.5 (27 January 2002)
+* (l)degree(s), coeff(s, n) and collect(s) were extended to accept expressions
+  of any class (except add/mul/ncmul/numeric) for "s". They should even work
+  if "s" is a "power" object, as long as the exponent is non-integer, but with
+  some limitations. For example, you can "collect(a*2^x+b*2^x, 2^x)" to get
+  "(a+b)*2^x", but "degree(2^(3*x), 2^x)" yields 0 instead of 3).
+* Fixed a small output bug.
+
+1.0.4 (24 January 2002)
+* Speedup in expand().
+* Faster Bernoulli numbers (Markus Nullmeier).
+* Some minor bugfixes and documentation updates.
+
+1.0.3 (21 December 2001)
+* Fixed a bug where quo() would call vector::reserve() with a negative
+  argument.
+* Fix several bugs in code generation.
+
+1.0.2 (19 December 2001)
+* Input parser recognizes "sqrt()", which is also used in the output.
+* divide(a,b,q) only modifies q if the division succeeds; also, divide(a,b,a)
+  works now.
+* Fixed small bug in dummy index renaming which could cause it to not
+  recognize renamable indices in some cases.
+* power::degree() and power::ldegree() throw an exception when encountering
+  a non-integer exponent.
+* Add output-support for Python bindings.
+
+1.0.1 (22 November 2001)
+* Function sqrfree() handles a few more cases now.
+* Class relational has real canonical ordering now.
+* Handle obscene libreadline version numbers when building ginsh.
+
+1.0.0 (6 November 2001)
+* Some internal reorganization resulting in a general speed-up.
+* The last 3 evaluated expressions in ginsh are now referred to with the
+  tokens '%', '%%' and '%%%'. The old '"', '""' and '"""' remain for
+  compatibility but may be removed in a future version of GiNaC.
+
+0.9.4 (20 September 2001)
+* Functions have better support for external scripting languages.
+* Interface cleanups and bugfixes.
+* Fix silly bug in evalf() that prevented things like 2^Pi being computed.
+
+0.9.3 (16 August 2001)
+* series expansion now much more consistent for small order expansion.
+* lsolve() accepts algorithmic hint as parameter.
+
+0.9.2 (31 July 2001)
+* Epsilon tensor is more functional.
+* simplify_indexed() is better at detecting expressions that vanish for
+  symmetry reasons.
+* Several little bugfixes and consistency enhancements.
+
+0.9.1 (27 June 2001)
+* Ctors of class numeric are not explicit any more.  All built-in callers for
+  pseudofunctions are now templated and default to ex arguments which relaxes
+  the need for explicit ctors.
+* New functions/methods:
+   - find()
+   - remove_first(), remove_last(), sort() and unique() for lists
+   - symmetrize_cyclic()
+   - decomp_rational()
+* Instead of just totally symmetric or antisymmetric, complex symmetries
+  can now be defined for indexed objects. Symmetries are described by a
+  tree of "symmetry" objects that is constructed with the sy_none(),
+  sy_symm(), sy_anti() and sy_cycl() functions. The symmetry of a function
+  with respect to its arguments can also be defined (this is currently
+  only used for the Beta function).
+* Generalized map() to take a function object instead of a function pointer.
+  This allows passing an arbitrary number of additional state to the
+  function being called.
+* color_trace(), dirac_trace(), diff(), expand(), evalf() and normal() work
+  better with container classes, e.g. using color_trace() on a relation will
+  take the trace on both sides, using diff() on a matrix differentiates every
+  element etc.
+* diff() works properly with non-commutative products and indexed objects.
+* New option flag "expand_function_args" for expand().
+* Supplement some (now deprecated) macros by inlined template functions:
+  - is_of_type(foo, type) -> is_a<type>(foo)
+  - is_ex_of_type(foo, type) -> is_a<type>(foo)
+  - is_exactly_of_type(foo, type) -> is_exactly_a<type>(foo)
+  - is_ex_exactly_of_type(foo, type) -> is_exactly_a<type>(foo)
+  - ex_to_foobar(baz)  ->  ex_to<foobar>(baz)
+* rem(c, p[x], x) (c: numeric, p[x]: polynomial) erroneously returned p[x]
+  instead of c.
+* Small bugfixes in pattern matching.
+* Updated libtool to version 1.4.
+
+0.9.0 (7 June 2001)
+* In the output and in ginsh, lists are now delimited by { } braces, and
+  matrices are delimited by single [ ] brackets.
+* simplify_indexed() renames dummy indices so, e.g., "a.i*a.i+a.j*a.j" gets
+  simplified to "2*a.i*a.i" (or "2*a.j*a.j").
+* New functions/methods:
+   - canonicalize_clifford() (helpful when comparing expressions containing
+     Dirac matrices)
+   - symmetrize() and antisymmetrize()
+   - numer_denom() (return numerator and denominator in one call)
+   - map() (apply function to subexpressions)
+   - evalm() (evaluate sums, products and integer powers of matrices)
+* Added a new function match() for performing pattern matching. subs() and
+  has() also accept patterns as arguments. A pattern can be any expression,
+  optionally containing wildcard objects. These are constructed with the
+  call "wild(<unsigned>)" and are denoted as "$0", "$1" etc. in the output
+  and in ginsh.
+* Positive integer powers of non-commutative expressions (except matrices)
+  are automatically expanded.
+* Removed cint subdirectory, ginaccint is a separate package now due to 
+  packaging considerations.
+* Several little bugfixes.
+
+0.8.3 (11 May 2001)
+* color and clifford classes are functional and documented.
+* New "spinidx" class for dotted/undotted indices.
+* Predefined spinor metric tensor (created by spinor_metric()).
+* Symbols can have a LaTeX name, e.g. symbol s("s", "\\sigma");
+* LaTeX output of indexed objects is much nicer.
+* Fixed some build problems (with recent libreadline).
+* Semantics of arithmetic operators now follows the C++ rules more strictly.
+
+0.8.2 (24 April 2001)
+* degree(), ldegree(), coeff(), lcoeff(), tcoeff() and collect() work with
+  non-symbols as the second argument in ginsh.
+* the argument to collect() can be a list of objects in which case the
+  result is either a recursively collected polynomial, or a polynomial in
+  a distributed form with terms like coeff*x1^e1*...*xn^en, as specified by
+  the second argument to collect().
+* Several bugfixes (including a nasty memory leak in .normal()).
+* class matrix: solve() doesn't call algorithms redundantly any more and
+  inverse() falls back to solve() which works in more general cases.
+
+0.8.1 (16 April 2001)
+* degree(), ldegree(), coeff(), lcoeff(), tcoeff() and collect() can now
+  be used with constants, functions and indexed expressions as well, so you
+  can use it to collect by powers of Pi or sin(x), or to find the coefficient
+  of gamma~0.
+  Limitations:
+   - it only works with symbols, constants, functions and indexed expressions,
+     trying to find the coefficient of, e.g., "x^2" or "x+y" won't work;
+   - it does not know about dummy index summations; the coefficient of
+     gamma~0 in p.mu*gamma~mu should be p.0 but is returned as 0;
+   - using coeff(), tcoeff(), lcoeff() or collect() on elements of
+     noncommutative products might return wrong or surprising results.
+* subs() no longer only substitutes symbols and indices but performs a more
+  general "syntactic substitution", i.e. it substitutes whole objects in sub-
+  expressions. You can subs((a+b)^2,a+b==3) and get 9, but subs(a+b+c,a+b==3)
+  doesn't do anything.
+  Limitations:
+   - substituting numerics (subs(expr, 2==4)) will not replace then in all
+     occurences; in general, you shouldn't substitute numerics, though.
+* Added preliminary (re)implementations of color and clifford classes.
+* simplify_indexed(): contraction of symmetric and antisymmetric tensors
+  is zero.
+* Replaced the various print*() member functions by a single print() that
+  takes a print_context object that determines the output formatting. This
+  should make it easier to add more output types, such as LaTeX output,
+  which is based on work by Stefan Weinzierl.
+* Added functions to retrieve the properties stored in archive objects
+  outside of unarchive() (for printing or debugging purposes).
+* Some bugfixes (indexed objects, archive writing).
+* .collect() on non-polynomials is now algebraically correct.
+
+0.8.0 (24 March 2001)
+* Complete revamp of indexed objects. Instead of multiple classes for
+  indexed things and their indices there is now only one "indexed" class
+  and two types of indices: "idx" for simple indices and "varidx" for
+  indices with variance. There are predefined delta, epsilon and metric
+  tensors, and a function simplify_indexed() that performs canonicalization
+  and dummy index summations. Matrix objects can be indexed for doing simple
+  linear algebra.
+* Added an option "expand_indexed" to expand() to perform expansion of
+  indexed objects like (a+b).i -> a.i + b.i
+* Renamed get_indices() to get_free_indices(), which no longer returns
+  dummy indices and checks the consistency of indices in sums.
+* sqrfree() factorization fixed and improved syntactically.
+* subs() works on matrices.
+* Matrices can be constructed from flat list of elements; diagonal matrices
+  can be constructed from list of diagonal elements with diag_matrix().
+* Fixed memory leak in expand().
+* Operator% for objects of class ncmul has gone.  Use operator* now for that
+  case too, which is much more natural.
+
+0.7.3 (28 February 2001)
+* Several bugfixes and minor performance tunings.
+* Added a section to the tutorial about adding new algebraic classes to GiNaC.
+* Closed many in-source documentation gaps.
+
+0.7.2 (17 February 2001)
+* Several bugfixes in power series expansion, one of them critical.
+
+0.7.1 (7 February 2001)
+* Fix problems with Cint that were caused by CLN's overloaded operator new.
+* Fix compilation errors with GCC3.
+* normal() handles large sums of fractions better and normalizes the exponent
+  of power expressions.
+* expand() always expands the exponent and transforms x^(a+b) -> x^a*x^b.
+* Some bugfixes of series expansion around branch cuts of special functions.
+
+0.7.0 (15 December 2000)
+* Requires CLN 1.1 now.  Class numeric doesn't use an indirect pointer to the
+  actual representation any more.  This is a speedup.
+* mul::expand() was reengineered to not allocate excess temporary memory.
+* Non-integer powers of a symbol are treated as constants by (l)degree() and
+  coeff().  Using these functions on an expression containing such powers used
+  to fail with an internal error message.  The side-effect is that collect()
+  can be used on expressions which are not polynomials.
+* Added a man page for the ginac-config script.
+* Ctor of numeric from char* honors Digits.
+
+0.6.4 (10 August 2000)
+* Complete revamp of methods in class matrix.  Some redundant (and poor)
+  implementations of elimination schemes were thrown out.  The code is now
+  highly orthogonal, more flexible and much more efficient.
+* Some long standing and quite nasty bugs were discovered and fixed in the
+  following functions: add::normal(), heur_gcd(), sr_gcd() and Order_eval().
+
+0.6.3 (25 July 2000)
+* Derivatives are now assembled in a slightly different manner (i.e. they
+  might 'look' different on first sight).  Under certain circumstances this
+  can result in a dramatic speedup because it gives hashing a better chance,
+  especially when computing higher derivatives.
+* Some series expansions of built-in functions have been reengineered.
+* The algorithm for computing determinants can be chosen by the user.  See
+  ginac/flags.h and ginac/matrix.h.
+* The Dilogarithm (Li2) now has floating point evaluation, derivative and a
+  proper series expansion.
+* Namespace 'std' cleanly disentangled, as demanded by ISO/EIC 14882-1998(E).
+* Some minor bugfixes, one major lsolve()-bugfix and documentation updates.
+
+0.6.2 (21 June 2000)
+* ginaccint.bin is now launched by a binary program instead of by a scripts.
+  This allows us to write #!-scripts.  A small test suite for GiNaC-cint was
+  added.
+* Several minor bugfixes.
+
+0.6.1 (18 May 2000)
+* Cleanup in the interface to Cint.  The required version is now Cint 5.14.38.
+* Several bugfixes in target install.
+
+0.6.0 (11 May 2000)
+* IMPORTANT: Several interface changes make programs written with GiNaC 
+  much clearer but break compatibility with older versions:
+  - f(x).series(x,p[,o]) -> f(x).series(x==p,o)
+  - series(f(x),x,p[,o]) -> series(f(x),x==p,o)
+  - gamma() -> tgamma()  (The true Gamma function, there is now also
+    log(tgamma()), called lgamma(), in accord with ISO/IEC 9899:1999.)
+  - EulerGamma -> Euler
+* #include'ing ginac.h defines the preprocessor symbols GINACLIB_MAJOR_VERSION,
+  GINACLIB_MINOR_VERSION, and GINACLIB_MICRO_VERSION with the respective GiNaC
+  library version numbers.
+* Expressions can be constructed from strings like this:
+    ex e("2*x+y", lst(x, y));
+* ex::to_rational() provides a way to extend the domain of functions like
+  gcd() and divide() that only work on polynomials or rational functions (the
+  good old ex::subs() method reverses this process)
+* Calling diff() on a function that has no derivative defined returns the
+  inert derivative function "Derivative".
+* Several new timings in the check target.  Some of them may be rather rude 
+  at your machine, feel free to interrupt them.
+
+0.5.4 (15 March 2000)
+* Some algorithms in class matrix (notably determinant) were replaced by
+  less brain-dead ones and should now have much better performance.
+* Checks were completely reorganized and split up into three parts:
+  a) exams (small regression tests with predefined input)
+  b) checks (lenghty coherence checks with random input)
+  c) timings (for coherence and crude benchmarking)
+* Behaviour of .evalf() was changed: it doesn't .evalf() any exponents.
+* Expanded expressions now remember they are expanded to prevent
+  superfluous expansions.
+* Small bugfixes and improvements in the series expansion.
+
+0.5.3 (23 February 2000)
+* A more flexible scheme for registering functions was implemented,
+  allowing for remembering, too.
+* Some Bugfixes.
+
+0.5.2 (16 February 2000)
+* Mainly fixes a bug in the packaging of release 0.5.1.
+
+0.5.1 (14 February 2000)
+* Fixes a small number of bugs.
+
+0.5.0 (7 February 2000)
+* Expressions can be written ("archived") to files and read therefrom.
+* Addition of GiNaC-cint, which lets you write complete programs in
+  an interactive shell-like manner in your favoured programming
+  language (i.e. C++).
+
+0.4.1 (13 December 1999)
+* Series Expansion of Gamma function and some other trigonometric
+  functions at their poles works now.
+* Many more evaluations of special functions at points where
+  exact results exist.
+* info_flags::rational doesn't return true for complex extensions
+  any more---use info_flags::crational for the old behaviour.
+  info_flags::integer and -::cinteger work similarly, the same
+  holds for types like info_flags::rational_polynomial.
+
+0.4.0 (26 November 1999)
+* First public release.

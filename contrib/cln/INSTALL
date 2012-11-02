@@ -1,0 +1,118 @@
+Prerequisites.
+=============
+
+ANSI-compliant C++ compiler. GNU C++ compiler (version >= 3.4) is recommend.
+Non-GNU compilers might not work at the moment.
+
+GNU multiprecision library (http://gmplib.org), version > 4.0 (older 3.x
+versions might work too).
+
+[Optional] To build CLN documentation texinfo and TeX are necessary.
+
+If you install CLN from git, you also need 
+
+git itself (http://git.or.cz), version >= 1.5.0
+GNU autoconf (http://www.gnu.org/software/autoconf), version >= 2.59
+GNU libtool  (http://www.gnu.org/software/libtool), version >= 1.5
+GNU automake (http://www.gnu.org/software/automake), version >= 1.8
+
+Installation from a source .tar.bz2 distribution.
+================================================
+
+$ ./configure
+$ make
+$ make check
+[ become root if necessary ]
+# make install
+
+To build the manual in PDF, HTML, or PostScript formats, use one of
+
+$ make pdf
+$ make html
+$ make ps
+
+To compile and run CLN's test suite and check whether the library was
+compiled correctly you can use
+
+$ make check
+
+The "configure" script can be given a number of options to enable and
+disable various features. Most useful ones are:
+
+--prefix=DIR
+
+Install CLN into the directory DIR (default: /usr/local).
+
+--with-gmp
+
+Use GNU multiprecision library (default: yes, if available)
+
+--disable-static
+
+Don't build static version of CLN library. This option is useful if
+want to reduce the build time (and you don't need the static library).
+
+For a complete list, run:
+
+$ ./configure --help
+
+
+Installation from git.
+=====================
+
+1. Download the code.
+
+Initial download:
+
+$ git clone git://www.ginac.de/cln.git
+
+Later on you can update your copy with
+
+$ git pull
+
+2. Make sure all required software is installed. This is *really*
+important step. If some package is missing, the `configure' script might
+be misgenerated,
+
+3. Run
+
+$ autoreconf -iv
+
+to generate the `configure' script, and proceed in a standard way, i.e.
+
+$ ./configure
+$ make
+[become root if necessary]
+# make install
+
+CLN is known to work with:
+=========================
+
+  - Linux/x86, gcc-3.x, gcc-4.[0-5].x
+  - Linux/x86_64, gcc-3.[3-4], gcc-4.[0-6].x, clang-2.8
+  - Linux/ia64, gcc-3.[2-4], gcc-4.[0-4].x
+  - Linux/arm, gcc-3.[0-3] (*), gcc-4.[0-4].x (*)
+  - Linux/mips, gcc-3.3, gcc-4.[0-4].x
+  - Linux/sparc, gcc-3.[1-3], gcc-4.[0-2].x
+  - Linux/alpha, gcc-3.[0-3], gcc-4.[0-2].x
+  - Linux/powerpc, gcc-3.[0-3], gcc-4.[0-4].x
+  - Linux/hppa, gcc-4.2.x (*)
+  - Solaris 2.4 (sparc), gcc-3.[1-3], gcc-4.[0-2].x (*)
+  - OSF/1 V4.0 (alpha), gcc-3.1
+  - Irix 6.5, gcc-3.0
+  - OS X Leopard (x86), gcc 4.0.1
+  - Windows/32-bit, MSVC 16.00.30319.01
+
+(*) On these platforms, problems with the assembler routines have been
+reported. It may be best to add "-DNO_ASM" to CPPFLAGS before
+configuring.
+
+Using gcc-4.2, the "make" step takes about 15 minutes, on an x86_64 / 2 GHz.
+
+If you use g++ from gcc-3.0.4 or older on Sparc, add either "-O", "-O1" or
+"-O2 -fno-schedule-insns" to the CXXFLAGS. With full "-O2", g++ miscompiles
+the division routines. Do not use gcc-3.0 on Sparc for compiling CLN, it
+won't work at all.
+
+More detailed installation instructions can be found in the documentation,
+in the doc/ directory.
