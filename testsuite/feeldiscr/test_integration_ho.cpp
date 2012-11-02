@@ -29,13 +29,17 @@
  */
 
 #define USE_BOOST_TEST 1
-
-// Boost.Test
 #define BOOST_TEST_MAIN
+#if 0
+// Boost.Test
+
 #if defined(USE_BOOST_TEST)
 #include <boost/test/unit_test.hpp>
 using boost::unit_test::test_suite;
 #include <boost/test/floating_point_comparison.hpp>
+#endif
+#else
+#include <testsuite/testsuite.hpp>
 #endif
 
 #include <boost/preprocessor/comparison/greater_equal.hpp>
@@ -543,9 +547,11 @@ makeAbout()
 }
 
 #if defined(USE_BOOST_TEST)
+FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
 BOOST_AUTO_TEST_SUITE( integration )
 
 typedef boost::mpl::list<boost::mpl::int_<1>,boost::mpl::int_<2>,boost::mpl::int_<3>,boost::mpl::int_<4>,boost::mpl::int_<5>  > order_types;
+//typedef boost::mpl::list<boost::mpl::int_<1>  > order_types;
 
 BOOST_AUTO_TEST_CASE_TEMPLATE( test_integration_ho, T, order_types )
 {

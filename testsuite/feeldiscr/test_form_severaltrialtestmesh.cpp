@@ -409,6 +409,10 @@ void run( Application_ptrtype & theApp )
  *_________________________________________________*/
 
 #if USE_BOOST_TEST
+
+FEELPP_ENVIRONMENT_WITH_OPTIONS( test_form_severaltrialtestmesh::makeAbout(),
+                                 test_form_severaltrialtestmesh::makeOptions() );
+
 BOOST_AUTO_TEST_SUITE( form_severaltrialtestmesh )
 
 typedef Feel::Application Application_type;
@@ -417,11 +421,6 @@ typedef boost::shared_ptr<Application_type> Application_ptrtype;
 
 BOOST_AUTO_TEST_CASE( form_severaltrialtestmesh1 )
 {
-    Feel::Environment env( boost::unit_test::framework::master_test_suite().argc,
-                           boost::unit_test::framework::master_test_suite().argv,
-                           test_form_severaltrialtestmesh::makeAbout(),
-                           test_form_severaltrialtestmesh::makeOptions() );
-
     auto theApp = Application_ptrtype( new Application_type );
 
     if ( theApp->vm().count( "help" ) )

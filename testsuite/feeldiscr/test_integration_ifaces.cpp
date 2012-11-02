@@ -317,6 +317,7 @@ makeAbout()
 
 }
 
+FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
 
 BOOST_AUTO_TEST_SUITE( integration )
 
@@ -327,10 +328,6 @@ typedef boost::mpl::list<boost::mpl::int_<1>,boost::mpl::int_<2> > dim_types;
 #if 1
 BOOST_AUTO_TEST_CASE_TEMPLATE( test_integration_ifaces_v, T, dim_types )
 {
-    Feel::Environment env( boost::unit_test::framework::master_test_suite().argc,
-                           boost::unit_test::framework::master_test_suite().argv,
-                           makeAbout(), makeOptions() );
-
     BOOST_TEST_MESSAGE( "Test integration on internal faces v (" << T::value << "D)" );
     Feel::test_integration_internal_faces_v<double,T::value> t( boost::unit_test::framework::master_test_suite().argc,
             boost::unit_test::framework::master_test_suite().argv,

@@ -37,11 +37,7 @@
 // disable the main function creation, use our own
 //#define BOOST_TEST_NO_MAIN
 
-#if defined(USE_BOOST_TEST)
-#include <boost/test/unit_test.hpp>
-using boost::unit_test::test_suite;
-#include <boost/test/floating_point_comparison.hpp>
-#endif
+#include <testsuite/testsuite.hpp>
 
 #include <feel/options.hpp>
 #include <feel/feelcore/environment.hpp>
@@ -180,12 +176,12 @@ struct test_integration_circle: public Application
     typedef FunctionSpace<mesh_type, bases<Lagrange<4, Scalar> >, double> space_type;
     typedef boost::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
-    typedef fusion::vector<Lagrange<4, Vectorial> > vector_basis_type;
+    typedef bases<Lagrange<4, Vectorial> > vector_basis_type;
     typedef FunctionSpace<mesh_type, vector_basis_type, value_type> vector_space_type;
 
-    test_integration_circle( int argc, char** argv, AboutData const& ad, po::options_description const& od )
+    test_integration_circle()
         :
-        Application( argc, argv, ad, od ),
+        Application(),
         backend( Backend<double>::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( "ellipsoid" ),
@@ -314,12 +310,12 @@ struct test_integration_simplex: public Application
     typedef FunctionSpace<mesh_type, bases<Lagrange<2, Scalar> >, double> space_type;
     typedef boost::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
-    typedef fusion::vector<Lagrange<2, Vectorial> > vector_basis_type;
+    typedef bases<Lagrange<2, Vectorial> > vector_basis_type;
     typedef FunctionSpace<mesh_type, vector_basis_type, value_type> vector_space_type;
 
-    test_integration_simplex( int argc, char** argv, AboutData const& ad, po::options_description const& od )
+    test_integration_simplex()
         :
-        Application( argc, argv, ad, od ),
+        Application(),
         backend( Backend<double>::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( "simplex" ),
@@ -346,7 +342,7 @@ struct test_integration_simplex: public Application
         //typename imesh<value_type,2,1>::ptrtype mesh( createSimplex<value_type,1>( meshSize ) );
         //typedef typename imesh<value_type,2>::type mesh_type;
 
-        typedef fusion::vector<Lagrange<3, Scalar> > basis_type;
+        typedef bases<Lagrange<3, Scalar> > basis_type;
         typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
         boost::shared_ptr<space_type> Xh( new space_type( mesh ) );
         typename space_type::element_type u( Xh );
@@ -417,7 +413,7 @@ struct test_integration_simplex: public Application
         BOOST_CHECK_CLOSE( hessu( 1,1 ), 2*meas, eps );
 
 
-        typedef fusion::vector<Lagrange<3, Vectorial> > v_basis_type;
+        typedef bases<Lagrange<3, Vectorial> > v_basis_type;
         typedef FunctionSpace<mesh_type, v_basis_type, value_type> v_space_type;
         boost::shared_ptr<v_space_type> Yh( new v_space_type( mesh ) );
         typename v_space_type::element_type v( Yh );
@@ -442,12 +438,12 @@ struct test_integration_domain: public Application
     typedef FunctionSpace<mesh_type, bases<Lagrange<2, Scalar> >, double> space_type;
     typedef boost::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
-    typedef fusion::vector<Lagrange<2, Vectorial> > vector_basis_type;
+    typedef bases<Lagrange<2, Vectorial> > vector_basis_type;
     typedef FunctionSpace<mesh_type, vector_basis_type, value_type> vector_space_type;
 
-    test_integration_domain( int argc, char** argv, AboutData const& ad, po::options_description const& od )
+    test_integration_domain()
         :
-        Application( argc, argv, ad, od ),
+        Application(),
         backend( Backend<double>::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( "hypercube" ),
@@ -517,7 +513,7 @@ struct test_integration_domain: public Application
         value_type vsin = integrate( elements( mesh ), sin( Px() ), _Q<5>() ).evaluate()( 0, 0 );
         value_type vsin1 = integrate( elements( mesh ), idf( f_sinPx() ), _Q<5>() ).evaluate()( 0, 0 );
         std::cout << vsin << " " << vsin1 << " [f_sinPx()] " << std::flush;
-
+#if 0
         value_type vmatheval = integrate( elements( mesh ), idf( f_matheval() ), _Q<5>() ).evaluate()( 0, 0 );
         std::cout << vmatheval << " [matheval]\n";
 #if defined(USE_BOOST_TEST)
@@ -531,7 +527,7 @@ struct test_integration_domain: public Application
         ( vsin1 )
         ( math::abs( vsin1-2.0*( -math::cos( 1.0 )+math::cos( -1.0 ) ) ) )( eps ).warn ( "vsin1 != 2*(cos(1)-cos(-1))" );
 #endif /* USE_BOOST_TEST */
-
+#endif
         // int ([-1,1],[-1,1]) abs(x) dx
         value_type vabs = integrate( elements( mesh ), abs( Px() )+abs( Py() ), _Q<5>() ).evaluate()( 0, 0 );
 #if defined(USE_BOOST_TEST)
@@ -566,12 +562,12 @@ struct test_integration_boundary: public Application
     typedef FunctionSpace<mesh_type, bases<Lagrange<2, Scalar> >, double> space_type;
     typedef boost::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
-    typedef fusion::vector<Lagrange<2, Vectorial> > vector_basis_type;
+    typedef bases<Lagrange<2, Vectorial> > vector_basis_type;
     typedef FunctionSpace<mesh_type, vector_basis_type, value_type> vector_space_type;
 
-    test_integration_boundary( int argc, char** argv, AboutData const& ad, po::options_description const& od )
+    test_integration_boundary()
         :
-        Application( argc, argv, ad, od ),
+        Application(),
         backend( Backend<double>::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( "hypercube" ),
@@ -654,12 +650,12 @@ struct test_integration_functions: public Application
     typedef FunctionSpace<mesh_type, bases<Lagrange<Order, Scalar> >, double> space_type;
     typedef boost::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
-    typedef fusion::vector<Lagrange<Order, Vectorial> > vector_basis_type;
+    typedef bases<Lagrange<Order, Vectorial> > vector_basis_type;
     typedef FunctionSpace<mesh_type, vector_basis_type, value_type> vector_space_type;
 
-    test_integration_functions( int argc, char** argv, AboutData const& ad, po::options_description const& od )
+    test_integration_functions()
         :
-        Application( argc, argv, ad, od ),
+        Application(),
         backend( Backend<double>::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( "hypercube" ),
@@ -811,9 +807,9 @@ struct test_integration_vectorial_functions: public Application
     typedef boost::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
 
-    test_integration_vectorial_functions( int argc, char** argv, AboutData const& ad, po::options_description const& od )
+    test_integration_vectorial_functions()
         :
-        Application( argc, argv, ad, od ),
+        Application(),
         backend( Backend<double>::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( "hypercube" ),
@@ -913,9 +909,9 @@ struct test_integration_matricial_functions: public Application
     typedef typename imesh<value_type,2>::type mesh_type;
     typedef typename imesh<value_type,2>::ptrtype mesh_ptrtype;
 
-    test_integration_matricial_functions( int argc, char** argv, AboutData const& ad, po::options_description const& od )
+    test_integration_matricial_functions()
         :
-        Application( argc, argv, ad, od ),
+        Application(),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( "hypercube" ),
         mesh()
@@ -978,12 +974,12 @@ struct test_integration_composite_functions: public Application
     typedef typename imesh<value_type,2>::convex_type convex_type;
     typedef typename imesh<value_type,2>::type mesh_type;
     typedef typename imesh<value_type,2>::ptrtype mesh_ptrtype;
-    typedef fusion::vector<Lagrange<Order, Vectorial>,Lagrange<Order-1, Scalar> > basis_type;
+    typedef bases<Lagrange<Order, Vectorial>,Lagrange<Order-1, Scalar> > basis_type;
     typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
     typedef typename space_type::element_type element_type;
-    test_integration_composite_functions( int argc, char** argv, AboutData const& ad, po::options_description const& od )
+    test_integration_composite_functions()
         :
-        Application( argc, argv, ad, od ),
+        Application(),
         backend( Backend<double>::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( "hypercube" ),
@@ -1003,17 +999,14 @@ struct test_integration_composite_functions: public Application
     void operator()()
     {
         using namespace Feel;
-        using namespace Feel::vf;
-
-
 
         const value_type eps = 1000*Feel::type_traits<value_type>::epsilon();
 
         boost::shared_ptr<space_type> Xh( new space_type( mesh ) );
         element_type u( Xh );
 
-        u.template element<0>() = vf::project( Xh->template functionSpace<0>(), elements( mesh ), P() );
-        u.template element<1>() = vf::project( Xh->template functionSpace<1>(), elements( mesh ), constant( 1 ) );
+        u.template element<0>() = project( _space=Xh->template functionSpace<0>(), _range=elements( mesh ), _expr=P() );
+        u.template element<1>() = project( _space=Xh->template functionSpace<1>(), _range=elements( mesh ), _expr=constant( 1. ) );
         BOOST_TEST_MESSAGE( "int(proj P() = " << integrate( elements( mesh ), idv( u.template element<0>() ) ).evaluate() << "\n" );
         BOOST_TEST_MESSAGE( "int(1 = " << integrate( elements( mesh ), idv( u.template element<1>() ) ).evaluate() << "\n" );
 
@@ -1152,16 +1145,15 @@ makeAbout()
 }
 
 #if defined(USE_BOOST_TEST)
+
+FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
+
 BOOST_AUTO_TEST_SUITE( integration )
-Feel::Environment env( boost::unit_test::framework::master_test_suite().argc,
-                       boost::unit_test::framework::master_test_suite().argv );
 
 BOOST_AUTO_TEST_CASE( test_integration_1 )
 {
     BOOST_TEST_MESSAGE( "Test integration Circle" );
-    Feel::test_integration_circle<double> t( boost::unit_test::framework::master_test_suite().argc,
-            boost::unit_test::framework::master_test_suite().argv,
-            makeAbout(), makeOptions() );
+    Feel::test_integration_circle<double> t;
 #if defined( FEELPP_HAS_TBB )
     //int n = tbb::task_scheduler_init::default_num_threads();
     int n = 1 ;
@@ -1189,51 +1181,44 @@ BOOST_AUTO_TEST_CASE( test_integration_1 )
 
 BOOST_AUTO_TEST_CASE( test_integration_2 )
 {
-    Feel::test_integration_domain<double> t( boost::unit_test::framework::master_test_suite().argc,
-            boost::unit_test::framework::master_test_suite().argv,
-            makeAbout(), makeOptions() );
+    BOOST_TEST_MESSAGE( "test_integration_2" );
+    Feel::test_integration_domain<double> t;
     t();
 }
 BOOST_AUTO_TEST_CASE( test_integration_3 )
 {
-    Feel::test_integration_boundary<double> t( boost::unit_test::framework::master_test_suite().argc,
-            boost::unit_test::framework::master_test_suite().argv,
-            makeAbout(), makeOptions() );
+    BOOST_TEST_MESSAGE( "test_integration_3" );
+    Feel::test_integration_boundary<double> t;
     t();
 }
 BOOST_AUTO_TEST_CASE( test_integration_4 )
 {
-    Feel::test_integration_functions<2,double> t( boost::unit_test::framework::master_test_suite().argc,
-            boost::unit_test::framework::master_test_suite().argv,
-            makeAbout(), makeOptions() );
+    BOOST_TEST_MESSAGE( "test_integration_4" );
+    Feel::test_integration_functions<2,double> t;
     t();
 }
 BOOST_AUTO_TEST_CASE( test_integration_5 )
 {
-    Feel::test_integration_vectorial_functions<2,double> t( boost::unit_test::framework::master_test_suite().argc,
-            boost::unit_test::framework::master_test_suite().argv,
-            makeAbout(), makeOptions() );
+    BOOST_TEST_MESSAGE( "test_integration_5" );
+    Feel::test_integration_vectorial_functions<2,double> t;
     t();
 }
 BOOST_AUTO_TEST_CASE( test_integration_6 )
 {
-    Feel::test_integration_composite_functions<2,double> t( boost::unit_test::framework::master_test_suite().argc,
-            boost::unit_test::framework::master_test_suite().argv,
-            makeAbout(), makeOptions() );
+    BOOST_TEST_MESSAGE( "test_integration_6" );
+    Feel::test_integration_composite_functions<2,double> t;
     t();
 }
 BOOST_AUTO_TEST_CASE( test_integration_7 )
 {
-    Feel::test_integration_simplex<double> t( boost::unit_test::framework::master_test_suite().argc,
-            boost::unit_test::framework::master_test_suite().argv,
-            makeAbout(), makeOptions() );
+    BOOST_TEST_MESSAGE( "test_integration_7" );
+    Feel::test_integration_simplex<double> t;
     t();
 }
 BOOST_AUTO_TEST_CASE( test_integration_8 )
 {
-    Feel::test_integration_matricial_functions<2,double> t( boost::unit_test::framework::master_test_suite().argc,
-            boost::unit_test::framework::master_test_suite().argv,
-            makeAbout(), makeOptions() );
+    BOOST_TEST_MESSAGE( "test_integration_8" );
+    Feel::test_integration_matricial_functions<2,double> t;
     t();
 
 }

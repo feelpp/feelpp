@@ -24,10 +24,7 @@
 
 #define BOOST_TEST_MODULE integration_opt testsuite
 
-#if defined(USE_BOOST_TEST)
-#include <boost/test/unit_test.hpp>
-using boost::unit_test::test_suite;
-#endif
+#include <testsuite/testsuite.hpp>
 
 #include <feel/options.hpp>
 
@@ -42,7 +39,44 @@ using boost::unit_test::test_suite;
 using namespace Feel;
 using namespace Feel::vf;
 
+double hsize = 2;
+int straighten = 1;
+int nlevels = 3;
+
+inline
+Feel::AboutData
+makeAbout()
+{
+    Feel::AboutData about( "test_integration_opt" ,
+                           "test_integration_opt" ,
+                           "0.1",
+                           "integration tests",
+                           Feel::AboutData::License_GPL,
+                           "Copyright (C) 2006-2010 Universite Joseph Fourier (Grenoble I)" );
+
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
+    return about;
+
+}
+
+po::options_description
+makeOptions()
+{
+    // Declare the supported options.
+    namespace po = boost::program_options;
+    po::options_description desc( "Allowed options" );
+    desc.add_options()
+    ( "help", "produce help message" )
+    ( "hsize", po::value<double>( &hsize )->default_value( 2 ), "h size" )
+    ( "straight", po::value<int>( &straighten )->default_value( 1 ), "straighten" )
+    ( "nlevels", po::value<int>( &nlevels )->default_value( 3 ), "number of refinement levels" )
+    ( "shape", po::value<std::string>()->default_value( "pie" ), "pie,circle" )
+    ;
+    return desc;
+}
 #if USE_BOOST_TEST
+
+FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
 
 BOOST_AUTO_TEST_SUITE( integration_opt )
 
@@ -56,21 +90,6 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( integration_opt, T, dim_types )
 {
     BOOST_TEST_MESSAGE( "============================================================\n"
                         << "Dim: " << T::first::value << "  Order: " << T::second::value << "\n" );
-
-    double hsize = 2;
-    int straighten = 1;
-    // Declare the supported options.
-    namespace po = boost::program_options;
-    po::options_description desc( "Allowed options" );
-    desc.add_options()
-    ( "help", "produce help message" )
-    ( "hsize", po::value<double>( &hsize )->default_value( 2 ), "h size" )
-    ( "straight", po::value<int>( &straighten )->default_value( 1 ), "straighten" )
-    ;
-
-    Feel::Environment env( boost::unit_test::framework::master_test_suite().argc,
-                           boost::unit_test::framework::master_test_suite().argv,
-                           _desc=desc );
 
     using namespace Feel;
     using namespace Feel::vf;
@@ -113,23 +132,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_pie, T, order_types )
     BOOST_TEST_MESSAGE( "============================================================\n"
                         << "Order: " << T::value << "\n" );
 
-    int nlevels = 3;
-    double hsize = 2;
-    int straighten = 1;
-    // Declare the supported options.
-    namespace po = boost::program_options;
-    po::options_description desc( "Allowed options" );
-    desc.add_options()
-    ( "help", "produce help message" )
-    ( "nlevels", po::value<int>( &nlevels )->default_value( 3 ), "number of refinement levels" )
-    ( "hsize", po::value<double>( &hsize )->default_value( 2 ), "h size" )
-    ( "straight", po::value<int>( &straighten )->default_value( 1 ), "straighten" )
-    ( "shape", po::value<std::string>()->default_value( "pie" ), "pie,circle" )
-    ;
 
-    Feel::Environment env( boost::unit_test::framework::master_test_suite().argc,
-                           boost::unit_test::framework::master_test_suite().argv,
-                           _desc=desc );
     po::variables_map vm = Environment::vm();
 
     using namespace Feel;
