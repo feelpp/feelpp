@@ -57,9 +57,9 @@ class MyApp: public Application
 {
     typedef Application super;
 public:
-    MyApp( int argc, char** argv, Feel::AboutData const& about, po::options_description const& od )
+    MyApp()
         :
-        super( argc, argv, about, od ),
+        super(),
         bdf( this->vm(), "bdf","test_bdf", Environment::worldComm() )
     {}
     void run()
@@ -78,8 +78,8 @@ private:
 };
 int main( int argc, char** argv )
 {
-    Feel::Environment env( argc,argv );
-    MyApp myapp( argc, argv, makeAbout(), makeOptions() );
+    Feel::Environment env( _argc=argc,_argv=argv,_desc=makeOptions(),_about=makeAbout() );
+    MyApp myapp;
     myapp.run();
 
 
