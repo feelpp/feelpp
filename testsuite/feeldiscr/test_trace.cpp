@@ -112,9 +112,9 @@ public:
     /**
      * Constructor
      */
-    Test( po::variables_map const& vm, AboutData const& about )
+    Test()
         :
-        super( vm, about ),
+        super(),
         M_backend( backend_type::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( this->vm()["shape"].template as<std::string>() )
@@ -267,27 +267,18 @@ Test<Dim,Order>::run( const double* X, unsigned long P, double* Y, unsigned long
 int
 main( int argc, char** argv )
 {
-    Environment env( argc, argv );
+    Environment env( _argc=argc,
+                     _argv=argv,
+                     _desc=makeOptions(), _about=makeAbout() );
+    Application app;
 
-    Application app( argc, argv, makeAbout(), makeOptions() );
-
-    if ( app.vm().count( "help" ) )
-    {
-        std::cout << app.optionsDescription() << "\n";
-        return 0;
-    }
 
     // app.add( new Test<1>( app.vm(), app.about() ) );
     //app.add( new Test<2,1>( app.vm(), app.about() ) );
     //app.add( new Test<2,2>( app.vm(), app.about() ) );
-    app.add( new Test<2,3>( app.vm(), app.about() ) );
+    app.add( new Test<2,3>() );
     // app.add( new Test<3>( app.vm(), app.about() ) );
 
     app.run();
 
 }
-
-
-
-
-

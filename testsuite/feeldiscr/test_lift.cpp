@@ -104,9 +104,9 @@ public:
     /**
      * Constructor
      */
-    TestLift( po::variables_map const& vm, AboutData const& about )
+    TestLift()
         :
-        super( vm, about ),
+        super(),
         M_backend( backend_type::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( this->vm()["shape"].template as<std::string>() )
@@ -276,20 +276,15 @@ TestLift<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
  * main code
  */
 BOOST_AUTO_TEST_SUITE( lift )
-Environment env( boost::unit_test::framework::master_test_suite().argc,
-                 boost::unit_test::framework::master_test_suite().argv );
 BOOST_AUTO_TEST_CASE( MyLiftCase )
 {
+    Environment env( _argc=boost::unit_test::framework::master_test_suite().argc,
+                     _argv=boost::unit_test::framework::master_test_suite().argv,
+                     _desc=makeOptions(), _about=makeAbout() );
+    Application app;
 
-    Application app( boost::unit_test::framework::master_test_suite().argc,
-                     boost::unit_test::framework::master_test_suite().argv, makeAbout(), makeOptions() );
-
-    if ( app.vm().count( "help" ) )
-        {
-            std::cout << app.optionsDescription() << "\n";
-        }
     //app.add( new TestLift<1>( app.vm(), app.about() ) );
-    app.add( new TestLift<2>( app.vm(), app.about() ) );
+    app.add( new TestLift<2>() );
     //app.add( new TestLift<3>( app.vm(), app.about() ) );
     app.run();
 }
