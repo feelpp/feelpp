@@ -32,14 +32,8 @@
 //#define BOOST_TEST_MAIN
 // give a name to the testsuite
 #define BOOST_TEST_MODULE function space testsuite
-// disable the main function creation, use our own
-//#define BOOST_TEST_NO_MAIN
+#include <testsuite/testsuite.hpp>
 
-//#if defined(USE_BOOST_TEST)
-#include <boost/test/unit_test.hpp>
-//#endif
-using boost::unit_test::test_suite;
-#include <boost/test/floating_point_comparison.hpp>
 
 
 #include <feel/options.hpp>
@@ -377,16 +371,15 @@ TestMixed<Dim,Order>::run()
 } // TestMixed::run
 }
 #if USE_BOOST_TEST
+
+FEELPP_ENVIRONMENT_NO_OPTIONS
+
 BOOST_AUTO_TEST_SUITE( mixed )
-Feel::Environment env( boost::unit_test::framework::master_test_suite().argc,
-                       boost::unit_test::framework::master_test_suite().argv );
 
 BOOST_AUTO_TEST_CASE( test_mixed1_21 )
 {
     BOOST_TEST_MESSAGE( "test_mixed1 (2D,Order 1,)" );
-    Feel::TestMixed<2,2> t( boost::unit_test::framework::master_test_suite().argc,
-                            boost::unit_test::framework::master_test_suite().argv,
-                            Feel::makeAbout(), Feel::makeOptions() );
+    Feel::TestMixed<2,2> t;
     t.run();
     BOOST_TEST_MESSAGE( "test_mixed1 (2D,Order 1,) done" );
 }
@@ -394,9 +387,7 @@ BOOST_AUTO_TEST_CASE( test_mixed1_21 )
 BOOST_AUTO_TEST_CASE( test_mixed1_23 )
 {
     BOOST_TEST_MESSAGE( "test_mixed1 (2D,Order 3,)" );
-    Feel::TestMixed<2,3> t( boost::unit_test::framework::master_test_suite().argc,
-                            boost::unit_test::framework::master_test_suite().argv,
-                            Feel::makeAbout(), Feel::makeOptions() );
+    Feel::TestMixed<2,3> t;
     t.run();
     BOOST_TEST_MESSAGE( "test_mixed1 (2D,Order 3,) done" );
 }
@@ -404,9 +395,7 @@ BOOST_AUTO_TEST_CASE( test_mixed1_23 )
 BOOST_AUTO_TEST_CASE( test_mixed2_31 )
 {
     BOOST_TEST_MESSAGE( "test_mixed2 (3D,Order 1,)" );
-    Feel::TestMixed<3,1> t( boost::unit_test::framework::master_test_suite().argc,
-                            boost::unit_test::framework::master_test_suite().argv,
-                            Feel::makeAbout(), Feel::makeOptions() );
+    Feel::TestMixed<3,1> t;
     t.run();
     BOOST_TEST_MESSAGE( "test_mixed2 (3D,Order 1,) done" );
 }
@@ -414,9 +403,7 @@ BOOST_AUTO_TEST_CASE( test_mixed2_31 )
 BOOST_AUTO_TEST_CASE( test_mixed2_33 )
 {
     BOOST_TEST_MESSAGE( "test_mixed2 (3D,Order 3,)" );
-    Feel::TestMixed<3,3> t( boost::unit_test::framework::master_test_suite().argc,
-                            boost::unit_test::framework::master_test_suite().argv,
-                            Feel::makeAbout(), Feel::makeOptions() );
+    Feel::TestMixed<3,3> t;
     t.run();
     BOOST_TEST_MESSAGE( "test_mixed2 (3D,Order 3,) done" );
 }

@@ -38,11 +38,7 @@
 // disable the main function creation, use our own
 //#define BOOST_TEST_NO_MAIN
 
-#if defined(USE_BOOST_TEST)
-#include <boost/test/unit_test.hpp>
-using boost::unit_test::test_suite;
-#include <boost/test/floating_point_comparison.hpp>
-#endif
+#include <testsuite/testsuite.hpp>
 
 #include <feel/feelcore/application.hpp>
 
@@ -670,10 +666,9 @@ TestHCurl::shape_functions( gmsh_ptrtype ( *one_element_mesh_desc_fun )( double 
 }
 #if USE_BOOST_TEST
 
+FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
+
 BOOST_AUTO_TEST_SUITE( space )
-Feel::Environment env( boost::unit_test::framework::master_test_suite().argc,
-                       boost::unit_test::framework::master_test_suite().argv,
-                       Feel::makeOptions(), Feel::makeAbout() );
 
 BOOST_AUTO_TEST_CASE( test_hcurl_N0_ref )
 {

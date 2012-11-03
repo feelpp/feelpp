@@ -374,20 +374,13 @@ TestElementSerialize<Dim>::setRebuildDatabase( bool b )
  * main code
  */
 
+FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
 
 BOOST_AUTO_TEST_SUITE( element_serialize )
 
 BOOST_AUTO_TEST_CASE( MyElementSerializeCase )
 {
-
-    Feel::Environment env( boost::unit_test::framework::master_test_suite().argc,
-                           boost::unit_test::framework::master_test_suite().argv,
-                           makeOptions(), makeAbout() );
-
     Application app;
-
-    if ( app.vm().count( "help" ) )
-        std::cout << app.optionsDescription() << "\n";
 
     //the first one :  create database ( if doesn't exist )
     app.add( new TestElementSerialize<1>( true ) );

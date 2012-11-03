@@ -140,7 +140,7 @@ public:
         M_previousParameter( tc.M_previousParameter ),
         M_maxParameter( tc.M_maxParameter ),
         M_minParameter( tc.M_minParameter ),
-        M_previousResidual( tc.previousResidual ),
+        M_previousResidual( tc.M_previousResidual ),
         M_previousElement( tc.M_previousElement ),
         M_currentResidual( tc.M_currentResidual ),
         M_currentElement( tc.M_currentElement ),

@@ -2,11 +2,9 @@
 
 #define USE_BOOST_TEST 1
 
-#if USE_BOOST_TEST
+
 #define BOOST_TEST_MODULE test_form_severaltrialtestmesh
-#include <boost/test/unit_test.hpp>
-using boost::unit_test::test_suite;
-#endif
+#include <testsuite/testsuite.hpp>
 
 #include <feel/options.hpp>
 

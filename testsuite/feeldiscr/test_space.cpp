@@ -36,11 +36,7 @@
 // disable the main function creation, use our own
 //#define BOOST_TEST_NO_MAIN
 
-#if defined(USE_BOOST_TEST)
-#include <boost/test/unit_test.hpp>
-using boost::unit_test::test_suite;
-#include <boost/test/floating_point_comparison.hpp>
-#endif
+#include <testsuite/testsuite.hpp>
 
 #include <boost/timer.hpp>
 
@@ -450,9 +446,9 @@ public:
 
 #if USE_BOOST_TEST
 
+FEELPP_ENVIRONMENT_NO_OPTIONS
+
 BOOST_AUTO_TEST_SUITE( space )
-Feel::Environment env( boost::unit_test::framework::master_test_suite().argc,
-                       boost::unit_test::framework::master_test_suite().argv );
 
 BOOST_AUTO_TEST_CASE( test_space1_11 )
 {

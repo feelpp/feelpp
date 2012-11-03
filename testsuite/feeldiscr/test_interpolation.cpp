@@ -35,11 +35,7 @@
 // disable the main function creation, use our own
 //#define BOOST_TEST_NO_MAIN
 
-#if defined(USE_BOOST_TEST)
-#include <boost/test/unit_test.hpp>
-using boost::unit_test::test_suite;
-#include <boost/test/floating_point_comparison.hpp>
-#endif
+#include <testsuite/testsuite.hpp>
 
 #include <feel/options.hpp>
 #include <feel/feelcore/environment.hpp>
@@ -477,9 +473,9 @@ init_unit_test_suite( int argc, char** argv )
     return test;
 }
 #else
+FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
+
 BOOST_AUTO_TEST_SUITE( interpolation )
-Feel::Environment env( boost::unit_test::framework::master_test_suite().argc,
-                       boost::unit_test::framework::master_test_suite().argv );
 
 BOOST_AUTO_TEST_CASE( test_interpolation12 )
 {

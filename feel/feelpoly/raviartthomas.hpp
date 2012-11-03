@@ -114,17 +114,17 @@ template<uint16_type N,
          template<uint16_type, uint16_type, uint16_type> class Convex = Simplex>
 class RaviartThomasPolynomialSet
     :
-public detail::OrthonormalPolynomialSet<N, N, O+1, Vectorial, T, Convex>
+    public Feel::detail::OrthonormalPolynomialSet<N, N, O+1, Vectorial, T, Convex>
 {
-    typedef detail::OrthonormalPolynomialSet<N, N, O+1, Vectorial, T, Convex> super;
+    typedef Feel::detail::OrthonormalPolynomialSet<N, N, O+1, Vectorial, T, Convex> super;
 
 public:
     static const uint16_type Om1 = (O==0)?0:O-1;
-    typedef detail::OrthonormalPolynomialSet<N, N, O, Vectorial, T, Convex> Pk_v_type;
-    typedef detail::OrthonormalPolynomialSet<N, N, O+1, Vectorial, T, Convex> Pkp1_v_type;
-    typedef detail::OrthonormalPolynomialSet<N, N, Om1, Vectorial, T, Convex> Pkm1_v_type;
-    typedef detail::OrthonormalPolynomialSet<N, N, O, Scalar, T, Convex> Pk_s_type;
-    typedef detail::OrthonormalPolynomialSet<N, N, O+1, Scalar, T, Convex> Pkp1_s_type;
+    typedef Feel::detail::OrthonormalPolynomialSet<N, N, O, Vectorial, T, Convex> Pk_v_type;
+    typedef Feel::detail::OrthonormalPolynomialSet<N, N, O+1, Vectorial, T, Convex> Pkp1_v_type;
+    typedef Feel::detail::OrthonormalPolynomialSet<N, N, Om1, Vectorial, T, Convex> Pkm1_v_type;
+    typedef Feel::detail::OrthonormalPolynomialSet<N, N, O, Scalar, T, Convex> Pk_s_type;
+    typedef Feel::detail::OrthonormalPolynomialSet<N, N, O+1, Scalar, T, Convex> Pkp1_s_type;
 
     typedef PolynomialSet<typename super::basis_type,Vectorial> vectorial_polynomialset_type;
     typedef typename vectorial_polynomialset_type::polynomial_type vectorial_polynomial_type;
@@ -178,7 +178,7 @@ public:
         {
             for ( int j = 0; j < convex_type::nDim; ++j )
             {
-                detail::times_x<scalar_polynomial_type> xp( Pk.polynomial( l ), j );
+                Feel::detail::times_x<scalar_polynomial_type> xp( Pk.polynomial( l ), j );
                 ublas::row( xPkc,i*nComponents+j )=
                     ublas::row( Feel::project( Pkp1,
                                                xp,
@@ -428,12 +428,12 @@ template<uint16_type N,
 class RaviartThomas
     :
 public FiniteElement<RaviartThomasPolynomialSet<N, O, T, Convex>,
-    detail::RaviartThomasDual,
+    fem::detail::RaviartThomasDual,
     PointSetEquiSpaced >,
 public boost::enable_shared_from_this<RaviartThomas<N,O,T,Convex> >
 {
     typedef FiniteElement<RaviartThomasPolynomialSet<N, O, T, Convex>,
-            detail::RaviartThomasDual,
+            fem::detail::RaviartThomasDual,
             PointSetEquiSpaced > super;
 public:
 
@@ -576,7 +576,7 @@ public:
     {
         using namespace Feel::vf;
         typedef boost::shared_ptr<ContextType> gmc_ptrtype;
-        typedef fusion::map<fusion::pair<detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
+        typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
 
         std::vector<value_type> v( nLocalDof );
 
@@ -586,7 +586,7 @@ public:
             // update the geomap at dof on face
             ctx->update( _face=face, _element=ctx->id() );
 
-            map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( ctx ) );
+            map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( ctx ) );
             expr.update( mapgmc, face );
 
             for ( int q = 0; q < nDofPerFace; ++q )

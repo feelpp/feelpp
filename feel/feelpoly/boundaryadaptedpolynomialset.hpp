@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2009-04-30
 
-  Copyright (C) 2009 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2009 Universite Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -271,8 +271,9 @@ public:
     struct apply
     {
         typedef typename mpl::if_<mpl::bool_<Convex::is_simplex>,
-                mpl::identity<detail::BoundaryAdaptedPolynomialSet<N,Order,PolySetType,T,Simplex> >,
-                mpl::identity<detail::BoundaryAdaptedPolynomialSet<N,Order,PolySetType,T,Hypercube> > >::type::type result_type;
+                mpl::identity<Feel::detail::BoundaryAdaptedPolynomialSet<N,Order,PolySetType,T,Simplex> >,
+                mpl::identity<Feel::detail::
+BoundaryAdaptedPolynomialSet<N,Order,PolySetType,T,Hypercube> > >::type::type result_type;
         typedef result_type type;
     };
 

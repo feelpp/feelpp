@@ -37,10 +37,7 @@
 // disable the main function creation, use our own
 //#define BOOST_TEST_NO_MAIN
 
-
-#include <boost/test/unit_test.hpp>
-using boost::unit_test::test_suite;
-#include <boost/test/floating_point_comparison.hpp>
+#include <testsuite/testsuite.hpp>
 
 #include <feel/feelalg/backend.hpp>
 
@@ -329,24 +326,17 @@ typedef boost::mpl::list<boost::mpl::int_<1>,boost::mpl::int_<2> > dim_types;
 BOOST_AUTO_TEST_CASE_TEMPLATE( test_integration_ifaces_v, T, dim_types )
 {
     BOOST_TEST_MESSAGE( "Test integration on internal faces v (" << T::value << "D)" );
-    Feel::test_integration_internal_faces_v<double,T::value> t( boost::unit_test::framework::master_test_suite().argc,
-            boost::unit_test::framework::master_test_suite().argv,
-            makeAbout(), makeOptions() );
+    Feel::test_integration_internal_faces_v<double,T::value> t;
     t();
     BOOST_TEST_MESSAGE( "Test integration on internal faces v (" << T::value << "D) done." );
 }
 #endif // 0
 BOOST_AUTO_TEST_CASE_TEMPLATE( test_integration_ifaces_lf, T, dim_types )
 {
-    Feel::Environment env( boost::unit_test::framework::master_test_suite().argc,
-                           boost::unit_test::framework::master_test_suite().argv,
-                           makeAbout(), makeOptions() );
 
 
     BOOST_TEST_MESSAGE( "Test integration on internal faces in linear forms (" << T::value << "D)" );
-    Feel::test_integration_internal_faces_lf<double,T::value> t( boost::unit_test::framework::master_test_suite().argc,
-            boost::unit_test::framework::master_test_suite().argv,
-            makeAbout(), makeOptions() );
+    Feel::test_integration_internal_faces_lf<double,T::value> t;
     t();
     BOOST_TEST_MESSAGE( "Test integration on internal faces in linear forms (" << T::value << "D) done" );
 }
