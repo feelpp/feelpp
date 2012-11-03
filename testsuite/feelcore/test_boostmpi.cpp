@@ -10,7 +10,7 @@
 
 //____________________________________________________________________________//
 
-FEELPP_ENVIRONMENT_NO_OPTIONS;
+FEELPP_ENVIRONMENT_NO_OPTIONS
 
 BOOST_AUTO_TEST_SUITE( boostmpi )
 

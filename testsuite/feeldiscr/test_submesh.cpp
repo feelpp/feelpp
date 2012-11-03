@@ -74,9 +74,9 @@ struct test_submesh: public Application
     typedef typename mesh_type::location_element_const_iterator location_element_const_iterator;
     typedef Backend<value_type> backend_type;
 
-    test_submesh( int argc, char** argv, AboutData const& ad, po::options_description const& od )
+    test_submesh()
         :
-        Application( argc, argv, ad, od ),
+        Application(),
         backend( Backend<double>::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( this->vm()["shape"].template as<std::string>() ),
@@ -200,23 +200,22 @@ makeAbout()
 
 }
 
-FEELPP_ENVIRONMENT_NO_OPTIONS
+FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
+
 BOOST_AUTO_TEST_SUITE( submesh )
 
-//typedef boost::mpl::list<boost::mpl::int_<1>,boost::mpl::int_<2>,boost::mpl::int_<3> > dim_types;
+typedef boost::mpl::list<boost::mpl::int_<1>,boost::mpl::int_<2>,boost::mpl::int_<3> > dim_types;
 //typedef boost::mpl::list<boost::mpl::int_<2>,boost::mpl::int_<3> > dim_types;
 //typedef boost::mpl::list<boost::mpl::int_<1>,boost::mpl::int_<2> > dim_types;
 //typedef boost::mpl::list<boost::mpl::int_<1> > dim_types;
-typedef boost::mpl::list<boost::mpl::int_<2> > dim_types;
+//typedef boost::mpl::list<boost::mpl::int_<2> > dim_types;
 //typedef boost::mpl::list<boost::mpl::int_<3> > dim_types;
 //typedef boost::mpl::list<boost::mpl::int_<2>,boost::mpl::int_<3>,boost::mpl::int_<1> > dim_types;
 
 BOOST_AUTO_TEST_CASE_TEMPLATE( test_submesh, T, dim_types )
 {
     BOOST_TEST_MESSAGE( "Test submesh (" << T::value << "D)" );
-    Feel::test_submesh<double,T::value> t( boost::unit_test::framework::master_test_suite().argc,
-                                           boost::unit_test::framework::master_test_suite().argv,
-                                           makeAbout(), makeOptions() );
+    Feel::test_submesh<double,T::value> t;
     t();
     BOOST_TEST_MESSAGE( "Test submesh (" << T::value << "D) done." );
 }
