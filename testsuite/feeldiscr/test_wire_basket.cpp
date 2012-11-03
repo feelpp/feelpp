@@ -213,7 +213,7 @@ void run( Application_ptrtype & theApp )
  * Main
  *_________________________________________________*/
 
-FEELPP_ENVIRONMENT_NO_OPTIONS
+FEELPP_ENVIRONMENT_WITH_OPTIONS( test_wire_basket::makeAbout(), test_wire_basket::makeOptions() )
 
 BOOST_AUTO_TEST_SUITE( wire_basket )
 
