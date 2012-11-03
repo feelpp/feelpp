@@ -133,9 +133,9 @@ public:
 
 #if defined( FEELPP_USE_LM )
     typedef Lagrange<0, Scalar> basis_l_type; // multipliers for pressure space
-    typedef fusion::vector< basis_u_type , basis_p_type , basis_t_type,basis_l_type> basis_type;
+    typedef bases< basis_u_type , basis_p_type , basis_t_type,basis_l_type> basis_type;
 #else
-    typedef fusion::vector< basis_u_type , basis_p_type , basis_t_type> basis_type;
+    typedef bases< basis_u_type , basis_p_type , basis_t_type> basis_type;
 #endif
 
     //! numerical type is double
