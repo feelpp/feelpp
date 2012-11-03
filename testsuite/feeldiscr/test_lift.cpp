@@ -27,9 +27,7 @@
 */
 
 #define BOOST_TEST_MODULE test_lift
-//#define USE_LIFT
-#include <boost/test/unit_test.hpp>
-using boost::unit_test::test_suite;
+#include <testsuite/testsuite.hpp>
 
 #include <feel/options.hpp>
 #include <feel/feelalg/backend.hpp>
@@ -275,12 +273,10 @@ TestLift<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
 /**
  * main code
  */
+FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
 BOOST_AUTO_TEST_SUITE( lift )
 BOOST_AUTO_TEST_CASE( MyLiftCase )
 {
-    Environment env( _argc=boost::unit_test::framework::master_test_suite().argc,
-                     _argv=boost::unit_test::framework::master_test_suite().argv,
-                     _desc=makeOptions(), _about=makeAbout() );
     Application app;
 
     //app.add( new TestLift<1>( app.vm(), app.about() ) );

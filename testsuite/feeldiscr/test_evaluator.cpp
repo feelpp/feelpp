@@ -27,22 +27,12 @@
    \date 2012-05-28
  */
 #include <sstream>
-
 #include <boost/timer.hpp>
-// Boost.Test
-// make sure that the init_unit_test function is defined by UTF
-//#define BOOST_TEST_MAIN
-// give a name to the testsuite
+
 #define BOOST_TEST_MODULE evaluate testsuite
-// disable the main function creation, use our own
-//#define BOOST_TEST_NO_MAIN
 #include <testsuite/testsuite.hpp>
 
 #include <boost/mpl/list.hpp>
-
-
-
-
 
 #include <feel/feeldiscr/mesh.hpp>
 #include <feel/feelfilters/gmsh.hpp>
@@ -51,7 +41,7 @@
 
 using namespace Feel;
 
-FEELPP_ENVIRONMENT_NO_OPTIONS();
+FEELPP_ENVIRONMENT_NO_OPTIONS
 
 BOOST_AUTO_TEST_SUITE( evaluatesuite )
 //typedef boost::mpl::list<boost::mpl::int_<1>,boost::mpl::int_<2>,boost::mpl::int_<3> > dim_types;

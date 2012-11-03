@@ -1,9 +1,7 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*-*/
 
 #define BOOST_TEST_MODULE test_wire_basket
-#include <boost/test/unit_test.hpp>
-using boost::unit_test::test_suite;
-
+#include <testsuite/testsuite.hpp>
 
 #include <feel/options.hpp>
 #include <feel/feelalg/backend.hpp>
@@ -215,27 +213,18 @@ void run( Application_ptrtype & theApp )
  * Main
  *_________________________________________________*/
 
+FEELPP_ENVIRONMENT_NO_OPTIONS
+
 BOOST_AUTO_TEST_SUITE( wire_basket )
 
 typedef Feel::Application Application_type;
 typedef boost::shared_ptr<Application_type> Application_ptrtype;
 
-Feel::Environment env( boost::unit_test::framework::master_test_suite().argc,
-                       boost::unit_test::framework::master_test_suite().argv );
+
 
 BOOST_AUTO_TEST_CASE( wire_basket1 )
 {
-    auto theApp = Application_ptrtype( new Application_type( boost::unit_test::framework::master_test_suite().argc,
-                                                             boost::unit_test::framework::master_test_suite().argv,
-                                                             test_wire_basket::makeAbout(),
-                                                             test_wire_basket::makeOptions()
-                                                             ) );
-
-    if ( theApp->vm().count( "help" ) )
-        {
-            std::cout << theApp->optionsDescription() << "\n";
-            exit( 0 );
-        }
+    auto theApp = Application_ptrtype( new Application_type );
 
     test_wire_basket::run<2>( theApp );
 

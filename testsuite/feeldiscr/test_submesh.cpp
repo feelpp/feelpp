@@ -33,13 +33,7 @@
 //#define BOOST_TEST_MAIN
 // give a name to the testsuite
 #define BOOST_TEST_MODULE submesh testsuite
-// disable the main function creation, use our own
-//#define BOOST_TEST_NO_MAIN
-
-
-#include <boost/test/unit_test.hpp>
-using boost::unit_test::test_suite;
-#include <boost/test/floating_point_comparison.hpp>
+#include <testsuite/testsuite.hpp>
 
 #include <feel/feelalg/backend.hpp>
 
@@ -206,10 +200,9 @@ makeAbout()
 
 }
 
-
+FEELPP_ENVIRONMENT_NO_OPTIONS
 BOOST_AUTO_TEST_SUITE( submesh )
-Feel::Environment env( boost::unit_test::framework::master_test_suite().argc,
-                       boost::unit_test::framework::master_test_suite().argv );
+
 //typedef boost::mpl::list<boost::mpl::int_<1>,boost::mpl::int_<2>,boost::mpl::int_<3> > dim_types;
 //typedef boost::mpl::list<boost::mpl::int_<2>,boost::mpl::int_<3> > dim_types;
 //typedef boost::mpl::list<boost::mpl::int_<1>,boost::mpl::int_<2> > dim_types;

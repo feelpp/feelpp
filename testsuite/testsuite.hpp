@@ -29,6 +29,8 @@
 #if !defined (__TESTSUITE_HPP__)
 #define __TESTSUITE_HPP__ 1
 
+#define USE_BOOST_TEST 1
+
 #if defined( USE_BOOST_TEST )
 // Boost.Test
 //#define BOOST_TEST_MAIN
@@ -57,7 +59,7 @@ struct Feelpp {                                                         \
         }                                                               \
     Feel::Environment env;                                              \
 };                                                                      \
-BOOST_GLOBAL_FIXTURE( Feelpp );
+BOOST_GLOBAL_FIXTURE( Feelpp )
 
 
 #define FEELPP_ENVIRONMENT_WITH_OPTIONS( myabout, myopts)               \
@@ -76,7 +78,7 @@ struct Feelpp {                                                         \
         }                                                               \
     Feel::Environment env;                                              \
 };                                                                      \
-BOOST_GLOBAL_FIXTURE( Feelpp );
+BOOST_GLOBAL_FIXTURE( Feelpp )
 
 
 
