@@ -27,8 +27,7 @@
 */
 
 #define BOOST_TEST_MODULE test_element_serialize
-#include <boost/test/unit_test.hpp>
-using boost::unit_test::test_suite;
+#include <testsuite/testsuite.hpp>
 
 #include <fstream>
 

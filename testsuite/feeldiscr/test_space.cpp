@@ -71,11 +71,11 @@ public:
         typedef Mesh<Simplex<Dim, 1> > mesh_type;
         typedef Simplex<Dim, 1> convex_type;
 
-        typedef FunctionSpace<mesh_type, fusion::vector<Lagrange<N, Scalar> >, T> scalar_space_type;
+        typedef FunctionSpace<mesh_type, bases<Lagrange<N, Scalar> >, T> scalar_space_type;
         BOOST_STATIC_ASSERT( scalar_space_type::nDim == Dim );
         BOOST_STATIC_ASSERT( scalar_space_type::N_COMPONENTS == 1 );
 
-        typedef FunctionSpace<mesh_type, fusion::vector<Lagrange<N, Vectorial> >, T> vectorial_space_type;
+        typedef FunctionSpace<mesh_type, bases<Lagrange<N, Vectorial> >, T> vectorial_space_type;
         BOOST_STATIC_ASSERT( vectorial_space_type::nDim == Dim );
         BOOST_STATIC_ASSERT( vectorial_space_type::N_COMPONENTS == Dim );
 
@@ -119,7 +119,7 @@ class TestSpace2
 {
 public:
     typedef Mesh<Simplex<Dim, 1> > mesh_type;
-    typedef fusion::vector<Lagrange<2, Vectorial>,
+    typedef bases<Lagrange<2, Vectorial>,
             Lagrange<1, Scalar>,
             Lagrange<1, Scalar> > basis_type;
     typedef FunctionSpace<mesh_type, basis_type, T> space_type;
@@ -295,12 +295,12 @@ public:
         typedef Mesh<Simplex<Dim, 1> > mesh_type;
         typedef Simplex<Dim, 1> convex_type;
 
-        typedef FunctionSpace<mesh_type, fusion::vector<BoundaryAdaptedPolynomialSet<N, Scalar> >, T> scalar_space_type;
+        typedef FunctionSpace<mesh_type, bases<BoundaryAdaptedPolynomialSet<N, Scalar> >, T> scalar_space_type;
         BOOST_STATIC_ASSERT( scalar_space_type::nDim == Dim );
         BOOST_STATIC_ASSERT( scalar_space_type::N_COMPONENTS == 1 );
 
         //std::cout << "antes vectorial\n";
-        //        typedef FunctionSpace<mesh_type, fusion::vector<detail::BoundaryAdaptedPolynomialSet<Dim, N, Vectorial, T> >, T> vectorial_space_type;
+        //        typedef FunctionSpace<mesh_type, bases<detail::BoundaryAdaptedPolynomialSet<Dim, N, Vectorial, T> >, T> vectorial_space_type;
         //	BOOST_STATIC_ASSERT( vectorial_space_type::nDim == Dim );
         //        BOOST_STATIC_ASSERT( vectorial_space_type::N_COMPONENTS == Dim );
 

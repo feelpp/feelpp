@@ -114,9 +114,9 @@ public:
     /**
      * Constructor
      */
-    TestStencil( int argc, char** argv, AboutData const& ad, po::options_description const& od )
+    TestStencil()
         :
-        super( argc, argv, ad, od ),
+        super(),
         M_backend( backend_type::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].as<double>() )
     {
@@ -172,7 +172,8 @@ private:
 
 }
 #if USE_BOOST_TEST
-FEELPP_ENVIRONMENT_NO_OPTIONS
+FEELPP_ENVIRONMENT_WITH_OPTIONS( Feel::makeAbout(), Feel::makeOptions() )
+
 BOOST_AUTO_TEST_SUITE( space )
 BOOST_AUTO_TEST_CASE( test_stencil )
 {

@@ -666,7 +666,7 @@ TestHCurl::shape_functions( gmsh_ptrtype ( *one_element_mesh_desc_fun )( double 
 }
 #if USE_BOOST_TEST
 
-FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
+FEELPP_ENVIRONMENT_WITH_OPTIONS( Feel::makeAbout(), Feel::makeOptions() )
 
 BOOST_AUTO_TEST_SUITE( space )
 
