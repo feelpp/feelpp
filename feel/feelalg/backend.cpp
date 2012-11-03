@@ -53,6 +53,7 @@ Backend<T>::Backend( WorldComm const& worldComm )
     M_reuseJacRebuildAtFirstNewtonStep(true),
     M_transpose( false ),
     M_maxit( 1000 ),
+    M_maxitSNES( 50 ),
     M_export( "" ),
     M_ksp( "gmres" ),
     M_pc( "lu" ),
@@ -85,6 +86,7 @@ Backend<T>::Backend( Backend const& backend )
     M_reuseJacRebuildAtFirstNewtonStep( backend.M_reuseJacRebuildAtFirstNewtonStep ),
     M_transpose( backend.M_transpose ),
     M_maxit( backend.M_maxit ),
+    M_maxitSNES( backend.M_maxitSNES ),
     M_export( backend.M_export ),
     M_ksp( backend.M_ksp ),
     M_pc( backend.M_pc ),
@@ -116,6 +118,7 @@ Backend<T>::Backend( po::variables_map const& vm, std::string const& prefix, Wor
     M_reuseJacRebuildAtFirstNewtonStep( vm[prefixvm( prefix,"reuse-jac.rebuild-at-first-newton-step" )].template as<bool>() ),
     M_transpose( false ),
     M_maxit( vm[prefixvm( prefix,"ksp-maxit" )].template as<size_type>() ),
+    M_maxitSNES( vm[prefixvm( prefix,"snes-maxit" )].template as<size_type>() ),
     M_export( vm[prefixvm( prefix,"export-matlab" )].template as<std::string>() ),
     M_ksp( vm[prefixvm( prefix,"ksp-type" )].template as<std::string>() ),
     M_pc( vm[prefixvm( prefix,"pc-type" )].template as<std::string>() ),
@@ -318,6 +321,7 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
     M_nlsolver->setShowKSPMonitor( this->showKSPMonitor() );
     M_nlsolver->setShowKSPConvergedReason( this->showKSPConvergedReason() );
     M_nlsolver->setShowSNESConvergedReason( this->showSNESConvergedReason() );
+    M_nlsolver->setNbItMax( this->maxIterationsSNES() );
 
     //vector_ptrtype x_save = x->clone();
     vector_ptrtype x_save;
@@ -406,6 +410,7 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
     M_nlsolver->setShowKSPMonitor( this->showKSPMonitor() );
     M_nlsolver->setShowKSPConvergedReason( this->showKSPConvergedReason() );
     M_nlsolver->setShowSNESConvergedReason( this->showSNESConvergedReason() );
+    M_nlsolver->setNbItMax( this->maxIterationsSNES() );
 
     auto ret = M_nlsolver->solve( A, x, b, tol, its );
 
