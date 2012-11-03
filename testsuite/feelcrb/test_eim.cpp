@@ -29,11 +29,7 @@
 #define USE_BOOST_TEST 1
 #define BOOST_TEST_MODULE eim testsuite
 
-#if defined(USE_BOOST_TEST)
-#include <boost/test/unit_test.hpp>
-using boost::unit_test::test_suite;
-#include <boost/test/floating_point_comparison.hpp>
-#endif
+#include <testsuite/testsuite.hpp>
 
 #include <boost/timer.hpp>
 #include <boost/smart_ptr/enable_shared_from_this.hpp>
@@ -114,9 +110,9 @@ public:
     typedef boost::shared_ptr<fun_type> fun_ptrtype;
     typedef std::vector<fun_ptrtype> funs_type;
 
-    model( po::variables_map const& vm, AboutData const& about )
+    model()
         :
-        Simget( vm, about ),
+        Simget(),
         meshSize( vm["hsize"].as<double>() )
         {
 
@@ -295,9 +291,9 @@ public:
     typedef boost::shared_ptr<fun_type> fun_ptrtype;
     typedef std::vector<fun_ptrtype> funs_type;
 
-    model_circle( po::variables_map const& vm, AboutData const& about )
+    model_circle()
         :
-        Simget( vm, about ),
+        Simget(),
         meshSize( vm["hsize"].as<double>() )
         {
 
@@ -402,20 +398,17 @@ private:
 
 using namespace Feel;
 
+FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
+
 BOOST_AUTO_TEST_SUITE( eimsuite )
 
 BOOST_AUTO_TEST_CASE( test_eim1 )
 {
-    Environment env;
-
-
-    FEELAPP( 0,//boost::unit_test::framework::master_test_suite().argc,
-             boost::unit_test::framework::master_test_suite().argv,
-             makeAbout(), makeOptions() );
     BOOST_CHECK( mpi::environment::initialized() );
+    Application app;
     BOOST_TEST_MESSAGE( "adding simget" );
-    app.add( new model( app.vm(), app.about() ) );
-    app.add( new model_circle( app.vm(), app.about() ) );
+    app.add( new model );
+    app.add( new model_circle );
     app.run();
 
     BOOST_TEST_MESSAGE( "test_eim1 done" );

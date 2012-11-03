@@ -152,19 +152,10 @@ typedef boost::shared_ptr<Application_type> Application_ptrtype;
 //BOOST_AUTO_TEST_CASE( wire_basket1 )
 int main(int argc, char** argv )
 {
-    Feel::Environment env( argc, argv );
+    using namespace Feel;
+    Environment env( _argc=argc, _argv=argv, _desc=makeOptions(), _about=makeAbout() );
 
-    auto theApp = Application_ptrtype( new Application_type( argc, argv,
-                                                             test_wirebasket::makeAbout(),
-                                                             test_wirebasket::makeOptions()
-                                                             ) );
-
-    if ( theApp->vm().count( "help" ) )
-        {
-            std::cout << theApp->optionsDescription() << "\n";
-            exit( 0 );
-        }
-
+    auto theApp = Application_ptrtype( new Application_type );
     test_wirebasket::run<2>( theApp );
 
 }

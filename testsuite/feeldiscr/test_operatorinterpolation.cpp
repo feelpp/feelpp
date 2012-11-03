@@ -414,7 +414,8 @@ test2dOpLagrangeP1Composite( Application_ptrtype test_app )
 /**
  * main code
  */
-FEELPP_ENVIRONMENT_NO_OPTIONS
+FEELPP_ENVIRONMENT_WITH_OPTIONS( test_operatorinterpolation::makeAbout(), 
+                                 test_operatorinterpolation::makeOptions() )
 
 BOOST_AUTO_TEST_SUITE( interp_operatorinterpolation )
 

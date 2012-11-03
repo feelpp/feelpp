@@ -103,15 +103,15 @@ runtest( Application_ptrtype test_app )
     auto u = Xh->element();
 
     BOOST_MESSAGE( "testing Gauss formula on ( 1, 1, 1 )\n" );
-    u = vf::project( Xh,elements( mesh ),vf::vec( cst( 1.0 ),cst( 1.0 ),cst( 1.0 ) ) );
+    u = project( Xh,elements( mesh ),vec( cst( 1.0 ),cst( 1.0 ),cst( 1.0 ) ) );
     auto value1 = integrate( _range=elements( mesh ),_expr=divv( u ), _quad=_Q<15>(),_geomap=geomap ).evaluate()( 0,0 );
     auto value2 = integrate( _range=boundaryfaces( mesh ),_expr=trans( idv( u ) )*N(),_quad=_Q<15>(),_geomap=geomap ).evaluate()( 0,0 );
     BOOST_MESSAGE( "\n value (div) =" << value1 << "\n value (n) =" << value2 <<"\n" );
     BOOST_CHECK_SMALL( value1, 1e-12 );
     BOOST_CHECK_SMALL( value2, 1e-12 );
 
-    BOOST_MESSAGE( "testing Gauss formula on ( vf::cos(M_PI*Px()/5.),vf::cos(M_PI*Py()/5.),vf::cos(M_PI*Py()/5.))\n" );
-    u = vf::project( Xh,elements( mesh ),vf::vec( vf::cos( M_PI*Px()/5. ),vf::cos( M_PI*Py()/5. ),vf::cos( M_PI*Py()/5. ) ) );
+    BOOST_MESSAGE( "testing Gauss formula on ( cos(M_PI*Px()/5.),cos(M_PI*Py()/5.),cos(M_PI*Py()/5.))\n" );
+    u = project( Xh,elements( mesh ),vec( cos( M_PI*Px()/5. ),cos( M_PI*Py()/5. ),cos( M_PI*Py()/5. ) ) );
     value1 = integrate( _range=elements( mesh ),_expr=divv( u ), _quad=_Q<15>(),_geomap=geomap ).evaluate()( 0,0 );
     value2 = integrate( _range=boundaryfaces( mesh ),_expr=trans( idv( u ) )*N(),_quad=_Q<15>(),_geomap=geomap ).evaluate()( 0,0 );
     BOOST_MESSAGE( "\n value (div) =" << value1 << "\n value (n) =" << value2 <<"\n" );
@@ -122,7 +122,7 @@ runtest( Application_ptrtype test_app )
     if ( exportResults )
     {
         auto nnn = Xh->element();
-        nnn = vf::project( Xh,markedfaces( mesh,"Wall" ),N() );
+        nnn = project( Xh,markedfaces( mesh,"Wall" ),N() );
         auto UNexporter = Exporter<mesh_type>::New( "gmsh"/*test_app->vm()*/, "ExportOOOO"+__ostrData.str() );
         UNexporter->step( 0 )->setMesh( mesh );
         UNexporter->step( 0 )->add( "u", u );
@@ -133,7 +133,7 @@ runtest( Application_ptrtype test_app )
 
 }
 
-FEELPP_ENVIRONMENT_NO_OPTIONS
+FEELPP_ENVIRONMENT_WITH_OPTIONS( test_normal3d::makeAbout(), test_normal3d::makeOptions() )
 
 BOOST_AUTO_TEST_SUITE( normal3d )
 
