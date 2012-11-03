@@ -599,10 +599,7 @@ Laplacian<Dim, Order, Cont, Entity,FType>::exportResults( double time,
     //exporter->step(time)->setMesh( this->createMesh( meshSize, 0, 1 ) );
     if ( !this->vm().count( "export-mesh-only" ) )
     {
-        exporter->step( time )->add( "pid",
-                                     regionProcess( boost::shared_ptr<p0_space_type>( new p0_space_type( U.functionSpace()->mesh() ) ) ) );
-
-
+        exporter->step( time )->addRegions();
         exporter->step( time )->add( "u", U );
         exporter->step( time )->add( "v", V );
         exporter->step( time )->add( "e", E );

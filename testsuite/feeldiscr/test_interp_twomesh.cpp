@@ -498,7 +498,7 @@ run_test_export( Application_ptrtype & test_app )
  *_________________________________________________*/
 
 
-FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
+FEELPP_ENVIRONMENT_WITH_OPTIONS( test_interp_twomesh::makeAbout(), test_interp_twomesh::makeOptions() )
 
 BOOST_AUTO_TEST_SUITE( interp_twomesh_testsuite )
 
