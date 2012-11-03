@@ -34,14 +34,11 @@
 //#define BOOST_TEST_MAIN
 // give a name to the testsuite
 #define BOOST_TEST_MODULE project discr testsuite
-// disable the main function creation, use our own
-//#define BOOST_TEST_NO_MAIN
-#include <boost/test/unit_test.hpp>
-#include <boost/test/test_case_template.hpp>
+#include <testsuite/testsuite.hpp>
+
 #include <boost/mpl/list.hpp>
 
 
-using boost::unit_test::test_suite;
 
 
 #include <feel/feeldiscr/mesh.hpp>
@@ -51,9 +48,9 @@ using boost::unit_test::test_suite;
 
 using namespace Feel;
 
+FEELPP_ENVIRONMENT_NO_OPTIONS
+
 BOOST_AUTO_TEST_SUITE( projectsuite )
-Feel::Environment env( boost::unit_test::framework::master_test_suite().argc,
-                       boost::unit_test::framework::master_test_suite().argv );
 
 typedef boost::mpl::list<boost::mpl::int_<1>,boost::mpl::int_<2>,boost::mpl::int_<3> > dim_types;
 //typedef boost::mpl::list<boost::mpl::int_<2>,boost::mpl::int_<3>,boost::mpl::int_<1> > dim_types;

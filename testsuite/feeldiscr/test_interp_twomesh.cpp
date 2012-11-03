@@ -1,6 +1,5 @@
 #define BOOST_TEST_MODULE interp_twomesh tests
-#include <boost/test/unit_test.hpp>
-using boost::unit_test::test_suite;
+#include <testsuite/testsuite.hpp>
 
 #include <feel/options.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
@@ -499,20 +498,16 @@ run_test_export( Application_ptrtype & test_app )
  *_________________________________________________*/
 
 
+FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
 
 BOOST_AUTO_TEST_SUITE( interp_twomesh_testsuite )
-Feel::Environment env( boost::unit_test::framework::master_test_suite().argc,
-                       boost::unit_test::framework::master_test_suite().argv );
+
 BOOST_AUTO_TEST_CASE( interp_twomesh_geomap )
 {
 
     using namespace test_interp_twomesh;
 
-    test_app = Application_ptrtype( new Application_type( boost::unit_test::framework::master_test_suite().argc,
-                                    boost::unit_test::framework::master_test_suite().argv,
-                                    makeAbout(),
-                                    makeOptions()
-                                                        ) );
+    test_app = Application_ptrtype( new Application_type );
 
     test_app->changeRepository( boost::format( "/testsuite/feeldiscr/geomap/%1%/" )
                                 % test_app->about().appName()
