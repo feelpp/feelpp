@@ -182,7 +182,7 @@ struct test_integration_circle: public Application
     test_integration_circle()
         :
         Application(),
-        backend( Backend<double>::build( this->vm() ) ),
+        M_backend( Backend<double>::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( "ellipsoid" ),
         mesh()
@@ -252,7 +252,7 @@ struct test_integration_circle: public Application
         boost::shared_ptr<space_type> Xh( new space_type( mesh ) );
         auto u = Xh->element();
 
-        u = vf::project( Xh, elements( mesh ), constant( 1.0 ) );
+        u = project( Xh, elements( mesh ), constant( 1.0 ) );
         v0 = integrate( elements( mesh ), idv( u ) ).evaluate()( 0, 0 );
 #if defined(USE_BOOST_TEST)
         BOOST_TEST_MESSAGE( "[circle] v0(~pi)=" << v0 << " pi=" << pi << " should be equal \n" );
@@ -261,7 +261,7 @@ struct test_integration_circle: public Application
         FEELPP_ASSERT( math::abs( v0-pi ) < math::pow( meshSize, 2*Order ) )( v0 )( math::abs( v0-pi ) )( math::pow( meshSize, 2*Order ) ).warn ( "v0 != pi" );
 #endif /* USE_BOOST_TEST */
 
-        u = vf::project( Xh, elements( mesh ), Px()*Px()+Py()*Py() );
+        u = project( Xh, elements( mesh ), Px()*Px()+Py()*Py() );
         v0 = integrate( elements( mesh ), idv( u ), _Q<2>() ).evaluate()( 0, 0 );
 #if defined(USE_BOOST_TEST)
         BOOST_TEST_MESSAGE( "[circle] v0(~pi/2)=" << v0 << " pi/2=" << pi/2 << " should be equal \n" );
@@ -272,7 +272,7 @@ struct test_integration_circle: public Application
         boost::shared_ptr<vector_space_type> Xvh( new vector_space_type( mesh ) );
         auto U = Xvh->element();
 
-        U = vf::project( Xvh, elements( mesh ), vec( constant( 1.0 ),constant( 1.0 ) ) );
+        U = project( Xvh, elements( mesh ), vec( constant( 1.0 ),constant( 1.0 ) ) );
         v0 = integrate( boundaryfaces( mesh ), trans( idv( U ) )*N() ).evaluate()( 0, 0 );
         v00 = integrate( elements( mesh ), divv( U ) ).evaluate()( 0, 0 );
 
@@ -284,7 +284,7 @@ struct test_integration_circle: public Application
         FEELPP_ASSERT( math::abs( v0-v00 ) < eps )( v0 )( v00 )( math::abs( v0-v00 ) ).warn ( "int 1.N() != int div 1" );
 #endif /* USE_BOOST_TEST */
 
-        U = vf::project( Xvh, elements( mesh ), vec( Px(),Py() ) );
+        U = project( Xvh, elements( mesh ), vec( Px(),Py() ) );
         v0 = integrate( boundaryfaces( mesh ), trans( idv( U ) )*N() ).evaluate()( 0, 0 );
         v00 = integrate( elements( mesh ), divv( U ) ).evaluate()( 0, 0 );
 
@@ -296,7 +296,7 @@ struct test_integration_circle: public Application
 #endif /* USE_BOOST_TEST */
 
     }
-    boost::shared_ptr<Feel::Backend<double> > backend;
+    boost::shared_ptr<Feel::Backend<double> > M_backend;
     double meshSize;
     std::string shape;
     mesh_ptrtype mesh;
@@ -316,7 +316,7 @@ struct test_integration_simplex: public Application
     test_integration_simplex()
         :
         Application(),
-        backend( Backend<double>::build( this->vm() ) ),
+        M_backend( Backend<double>::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( "simplex" ),
         mesh()
@@ -375,11 +375,11 @@ struct test_integration_simplex: public Application
         BOOST_TEST_MESSAGE( "[simplex] v0 4 (==v0 3) = " <<  in4 << "\n" );
 
         // int ([-1,1],[-1,x]) 1 dx
-        u = vf::project( Xh, elements( mesh ), Px()+Py() );
+        u = project( Xh, elements( mesh ), Px()+Py() );
         double v1 = integrate( elements( mesh ), gradv( u )*trans( gradv( u ) ) ).evaluate()( 0,0 ) ;
         BOOST_CHECK_CLOSE( v1, 2*meas, eps );
 
-        u = vf::project( Xh, elements( mesh ), Px()*Px() );
+        u = project( Xh, elements( mesh ), Px()*Px() );
         double lapu = integrate( elements( mesh ),  trace( hessv( u ) ) ).evaluate()( 0, 0 );
         BOOST_CHECK_CLOSE( lapu, 2*meas, eps );
         double lapu1 = integrate( elements( mesh ),  trace( hessv( u )*trans( hessv( u ) ) ) ).evaluate()( 0, 0 );
@@ -390,7 +390,7 @@ struct test_integration_simplex: public Application
         BOOST_CHECK_SMALL( hessu( 0,1 ), eps );
         BOOST_CHECK_SMALL( hessu( 1,1 ), eps );
 
-        u = vf::project( Xh, elements( mesh ), Px()*Px()+Py()*Py() );
+        u = project( Xh, elements( mesh ), Px()*Px()+Py()*Py() );
         lapu = integrate( elements( mesh ),  trace( hessv( u ) ) ).evaluate()( 0, 0 );
         BOOST_CHECK_CLOSE( lapu, 4*meas, eps );
         lapu1 = integrate( elements( mesh ),  trace( hessv( u )*trans( hessv( u ) ) ) ).evaluate()( 0, 0 );
@@ -401,7 +401,7 @@ struct test_integration_simplex: public Application
         BOOST_CHECK_SMALL( hessu( 0,1 ), eps );
         BOOST_CHECK_CLOSE( hessu( 1,1 ), 2*meas, eps );
 
-        u = vf::project( Xh, elements( mesh ), Px()*Px()+Py()*Py()+3*Px()*Py() );
+        u = project( Xh, elements( mesh ), Px()*Px()+Py()*Py()+3*Px()*Py() );
         lapu = integrate( elements( mesh ),  trace( hessv( u ) ) ).evaluate()( 0, 0 );
         BOOST_CHECK_CLOSE( lapu, 4*meas, eps );
         lapu1 = integrate( elements( mesh ),  trace( hessv( u )*trans( hessv( u ) ) ) ).evaluate()( 0, 0 );
@@ -419,12 +419,12 @@ struct test_integration_simplex: public Application
         typename v_space_type::element_type v( Yh );
 
         auto p2 = Px()*Px()*Py()+Py()*Py()+cos( Px() );
-        v = vf::project( Yh, elements( mesh ), vec( p2,p2 ) );
+        v = project( Yh, elements( mesh ), vec( p2,p2 ) );
         double divp2 = integrate( elements( mesh ), divv( v ), _Q<2>() ).evaluate()( 0, 0 );
         double unp2 = integrate( boundaryfaces( mesh ), trans( idv( v ) )*N(), _Q<2>() ).evaluate()( 0, 0 );
         BOOST_CHECK_CLOSE( divp2, unp2, eps );
     }
-    boost::shared_ptr<Feel::Backend<double> > backend;
+    boost::shared_ptr<Feel::Backend<double> > M_backend;
     double meshSize;
     std::string shape;
     mesh_ptrtype mesh;
@@ -444,7 +444,7 @@ struct test_integration_domain: public Application
     test_integration_domain()
         :
         Application(),
-        backend( Backend<double>::build( this->vm() ) ),
+        M_backend( Backend<double>::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( "hypercube" ),
         mesh()
@@ -547,7 +547,7 @@ struct test_integration_domain: public Application
 #endif /* USE_BOOST_TEST */
 
     }
-    boost::shared_ptr<Feel::Backend<double> > backend;
+    boost::shared_ptr<Feel::Backend<double> > M_backend;
     double meshSize;
     std::string shape;
     mesh_ptrtype mesh;
@@ -568,7 +568,7 @@ struct test_integration_boundary: public Application
     test_integration_boundary()
         :
         Application(),
-        backend( Backend<double>::build( this->vm() ) ),
+        M_backend( Backend<double>::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( "hypercube" ),
         mesh()
@@ -635,7 +635,7 @@ struct test_integration_boundary: public Application
 
 
     }
-    boost::shared_ptr<Feel::Backend<double> > backend;
+    boost::shared_ptr<Feel::Backend<double> > M_backend;
     double meshSize;
     std::string shape;
     mesh_ptrtype mesh;
@@ -656,7 +656,7 @@ struct test_integration_functions: public Application
     test_integration_functions()
         :
         Application(),
-        backend( Backend<double>::build( this->vm() ) ),
+        M_backend( Backend<double>::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( "hypercube" ),
         mesh()
@@ -682,7 +682,7 @@ struct test_integration_functions: public Application
         typename space_type::element_type u( Xh );
 
         // int ([-1,1],[-1,x]) 1 dx
-        u = vf::project( Xh, elements( mesh ), constant( 1.0 ) );
+        u = project( Xh, elements( mesh ), constant( 1.0 ) );
         value_type v0 = integrate( elements( mesh ), idv( u ) ).evaluate()( 0, 0 );
 #if defined(USE_BOOST_TEST)
         BOOST_CHECK_CLOSE( v0, 4.0, eps );
@@ -691,7 +691,7 @@ struct test_integration_functions: public Application
 #endif /* USE_BOOST_TEST */
 
         //
-        u = vf::project( Xh, elements( mesh ), Px() );
+        u = project( Xh, elements( mesh ), Px() );
         value_type v1 = integrate( elements( mesh ), idv( u ) ).evaluate()( 0, 0 );
 #if defined(USE_BOOST_TEST)
         BOOST_CHECK_SMALL( v1- 0.0, eps );
@@ -712,7 +712,7 @@ struct test_integration_functions: public Application
         FEELPP_ASSERT( math::abs( v3-0.0 ) < eps )( v3 )( math::abs( v3-0.0 ) )( eps ).warn ( "v3 != 0" );
 #endif /* USE_BOOST_TEST */
 
-        u = vf::project( Xh, elements( mesh ), exp( Px() )*exp( Py() ) );
+        u = project( Xh, elements( mesh ), exp( Px() )*exp( Py() ) );
         value_type v4 = integrate( elements( mesh ), idv( u ), _Q<2>() ).evaluate()( 0, 0 );
         value_type v4_ex = ( math::exp( 1.0 )-math::exp( -1.0 ) )*( math::exp( 1.0 )-math::exp( -1.0 ) );
 #if defined(USE_BOOST_TEST)
@@ -756,7 +756,7 @@ struct test_integration_functions: public Application
 
 #if 1
         double meas = integrate( elements( mesh ), cst( 1. ) ).evaluate()( 0, 0 );
-        u = vf::project( Xh, elements( mesh ), Px()*Px() + Py()*Py() +Px()*Py()  );
+        u = project( Xh, elements( mesh ), Px()*Px() + Py()*Py() +Px()*Py()  );
         auto hess6 = integrate( elements( mesh ), hessv( u ) ).evaluate();
 #if defined(USE_BOOST_TEST)
         BOOST_TEST_MESSAGE( "hess6 =" << hess6 << "\n" );
@@ -791,7 +791,7 @@ struct test_integration_functions: public Application
 #endif /* USE_BOOST_TEST */
 #endif
     }
-    boost::shared_ptr<Feel::Backend<double> > backend;
+    boost::shared_ptr<Feel::Backend<double> > M_backend;
     double meshSize;
     std::string shape;
     mesh_ptrtype mesh;
@@ -810,7 +810,7 @@ struct test_integration_vectorial_functions: public Application
     test_integration_vectorial_functions()
         :
         Application(),
-        backend( Backend<double>::build( this->vm() ) ),
+        M_backend( Backend<double>::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( "hypercube" ),
         mesh()
@@ -835,12 +835,12 @@ struct test_integration_vectorial_functions: public Application
         boost::shared_ptr<space_type> Xh( new space_type( mesh ) );
         typename space_type::element_type u( Xh );
 
-        u = vf::project( Xh, elements( mesh ), P() );
+        u = project( Xh, elements( mesh ), P() );
         BOOST_TEST_MESSAGE( "int(proj P() = " << integrate( elements( mesh ), idv( u ) ).evaluate() << "\n" );
-        u = vf::project( Xh, elements( mesh ), one() );
+        u = project( Xh, elements( mesh ), one() );
         BOOST_TEST_MESSAGE( "int(proj one() = " << integrate( elements( mesh ), idv( u ) ).evaluate() << "\n" );
 
-        u = vf::project( Xh, elements( mesh ), P() );
+        u = project( Xh, elements( mesh ), P() );
         auto m=  integrate( elements( mesh ), gradv( u ) ).evaluate();
 #if defined(USE_BOOST_TEST)
         BOOST_CHECK_CLOSE( m( 0,0 ), 4, std::pow( 10.0,-2.0*Order ) );
@@ -860,13 +860,13 @@ struct test_integration_vectorial_functions: public Application
         BOOST_CHECK_CLOSE( my( 1,0 ), 4, std::pow( 10.0,-2.0*Order ) );
 #endif
 
-        u = vf::project( Xh, elements( mesh ), Py()*oneX() + Px()*oneY() );
+        u = project( Xh, elements( mesh ), Py()*oneX() + Px()*oneY() );
         auto int_divu = integrate( elements( mesh ), divv( u ) ).evaluate();
 #if defined(USE_BOOST_TEST)
         value_type norm_int_divu = int_divu.norm();
         BOOST_CHECK_SMALL( norm_int_divu, eps );
 #endif
-        u = vf::project( Xh, elements( mesh ), P() );
+        u = project( Xh, elements( mesh ), P() );
         int_divu = integrate( elements( mesh ), divv( u ) ).evaluate();
 #if defined(USE_BOOST_TEST)
         norm_int_divu = int_divu.norm();
@@ -874,7 +874,7 @@ struct test_integration_vectorial_functions: public Application
 #endif
 
         // check the divergence theorem
-        u = vf::project( Xh, elements( mesh ), P() );
+        u = project( Xh, elements( mesh ), P() );
         int_divu = integrate( elements( mesh ), divv( u ) ).evaluate();
         BOOST_TEST_MESSAGE( "int_divu = " << int_divu << "\n" );
         auto int_un = integrate( boundaryfaces( mesh ), trans( idv( u ) )*N() ).evaluate();
@@ -896,7 +896,7 @@ struct test_integration_vectorial_functions: public Application
         BOOST_CHECK_SMALL( int_ut, eps );
 #endif
     }
-    boost::shared_ptr<Feel::Backend<double> > backend;
+    boost::shared_ptr<Feel::Backend<double> > M_backend;
     double meshSize;
     std::string shape;
     mesh_ptrtype mesh;
@@ -980,7 +980,7 @@ struct test_integration_composite_functions: public Application
     test_integration_composite_functions()
         :
         Application(),
-        backend( Backend<double>::build( this->vm() ) ),
+        M_backend( Backend<double>::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( "hypercube" ),
         mesh()
@@ -1044,8 +1044,8 @@ struct test_integration_composite_functions: public Application
 
 #endif
 
-        u.template element<0>() = vf::project( Xh->template functionSpace<0>(), elements( mesh ), u_exact );
-        u.template element<1>() = vf::project( Xh->template functionSpace<1>(), elements( mesh ), Px()+Py() );
+        u.template element<0>() = project( Xh->template functionSpace<0>(), elements( mesh ), u_exact );
+        u.template element<1>() = project( Xh->template functionSpace<1>(), elements( mesh ), Px()+Py() );
         BOOST_TEST_MESSAGE( "int(u) = " << integrate( elements( mesh ), idv( u.template element<0>() ) ).evaluate() << "\n" );
         BOOST_TEST_MESSAGE( "int(u - u_exact) = " << integrate( elements( mesh ),
                             trans( idv( u.template element<0>() )-u_exact )*( idv( u.template element<0>() )-u_exact ) ).evaluate() << "\n" );
@@ -1092,12 +1092,16 @@ struct test_integration_composite_functions: public Application
                           ).evaluate();
         BOOST_TEST_MESSAGE( "|grad(u)-grad_exact|_0^2 = " << m5 << "\n" );
 
-        auto F = backend->newVector( Xh );
-        form1( _test=Xh, _vector=F ) = integrate( elements( *mesh ),
+        auto F = M_backend->newVector( Xh );
+        BOOST_TEST_MESSAGE( "[6] F built" );
+        form1( _test=Xh, _vector=F ) = integrate( elements( mesh ),
                                                   ( trans( vec( constant( 1.0 ), constant( 1.0 ) ) ) * id( u.template element<0>() )+
                                                     id( u.template element<1>() ) ) );
+        BOOST_TEST_MESSAGE( "[6] integration done" );
         F->printMatlab( "composite_F.m" );
+        BOOST_TEST_MESSAGE( "[6] vector saved" );
         F->close();
+        BOOST_TEST_MESSAGE( "[6] start tests" );
         value_type vf = inner_product( *F, u );
         value_type vv1 = integrate( elements( mesh ), idv( u.template element<0>() ) ).evaluate()( 0, 0 );
         value_type vv2 = integrate( elements( mesh ), idv( u.template element<0>() ) ).evaluate()( 1, 0 );
@@ -1108,7 +1112,7 @@ struct test_integration_composite_functions: public Application
         BOOST_CHECK_CLOSE( vf,vv1+vv2+vv3, eps );
 #endif
     }
-    boost::shared_ptr<Feel::Backend<double> > backend;
+    boost::shared_ptr<Feel::Backend<double> > M_backend;
     double meshSize;
     std::string shape;
     mesh_ptrtype mesh;
@@ -1146,7 +1150,7 @@ makeAbout()
 
 #if defined(USE_BOOST_TEST)
 
-FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
+FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
 
 BOOST_AUTO_TEST_SUITE( integration )
 
@@ -1203,12 +1207,14 @@ BOOST_AUTO_TEST_CASE( test_integration_5 )
     Feel::test_integration_vectorial_functions<2,double> t;
     t();
 }
+
 BOOST_AUTO_TEST_CASE( test_integration_6 )
 {
     BOOST_TEST_MESSAGE( "test_integration_6" );
     Feel::test_integration_composite_functions<2,double> t;
     t();
 }
+
 BOOST_AUTO_TEST_CASE( test_integration_7 )
 {
     BOOST_TEST_MESSAGE( "test_integration_7" );

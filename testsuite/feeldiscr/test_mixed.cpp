@@ -55,7 +55,6 @@
 
 namespace Feel
 {
-using namespace Feel::vf;
 /**
  * This routine returns the list of options using the
  * boost::program_options library. The data returned is typically used
@@ -165,9 +164,9 @@ public:
     /**
      * Constructor
      */
-    TestMixed( int argc, char** argv, AboutData const& ad, po::options_description const& od )
+    TestMixed()
         :
-        super( argc, argv, ad, od ),
+        super(),
         M_backend( backend_type::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( this->vm()["shape"].template as<std::string>() )
@@ -372,7 +371,7 @@ TestMixed<Dim,Order>::run()
 }
 #if USE_BOOST_TEST
 
-FEELPP_ENVIRONMENT_NO_OPTIONS
+FEELPP_ENVIRONMENT_WITH_OPTIONS( Feel::makeAbout(), Feel::makeOptions() );
 
 BOOST_AUTO_TEST_SUITE( mixed )
 
