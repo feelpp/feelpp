@@ -1,8 +1,7 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*-*/
 
 #define BOOST_TEST_MODULE test_graphcsr
-#include <boost/test/unit_test.hpp>
-using boost::unit_test::test_suite;
+#include <testsuite/testsuite.hpp>
 
 
 #include <feel/options.hpp>
@@ -23,7 +22,6 @@ namespace test_graphcsr
 {
 
 using namespace Feel;
-using namespace Feel::vf;
 
 typedef Application Application_type;
 typedef boost::shared_ptr<Application_type> Application_ptrtype;
@@ -161,6 +159,8 @@ void run( Application_ptrtype & theApp )
  *_________________________________________________*/
 
 #if 1
+FEELPP_ENVIRONMENT_WITH_OPTIONS( test_graphcsr::makeAbout(), test_graphcsr::makeOptions() )
+
 BOOST_AUTO_TEST_SUITE( graphcsr )
 
 typedef Feel::Application Application_type;
@@ -169,9 +169,6 @@ typedef boost::shared_ptr<Application_type> Application_ptrtype;
 BOOST_AUTO_TEST_CASE( graphcsr_case1 )
 {
     using namespace Feel;
-    Feel::Environment env( _argc=boost::unit_test::framework::master_test_suite().argc,
-                           _argv=boost::unit_test::framework::master_test_suite().argv,
-                           _desc=test_graphcsr::makeOptions(),_about=test_graphcsr::makeAbout());
 
     auto theApp = Application_ptrtype( new Application_type );
 
