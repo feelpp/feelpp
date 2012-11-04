@@ -30,8 +30,7 @@
 #define DO_TEST 1
 // Boost.Test
 #define BOOST_TEST_MAIN
-#include <boost/test/unit_test.hpp>
-using boost::unit_test::test_suite;
+#include <testsuite/testsuite.hpp>
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelmesh/simplex.hpp>
@@ -39,6 +38,7 @@ using boost::unit_test::test_suite;
 #include <feel/feelmesh/refentity.hpp>
 #include <feel/feelmesh/geoelement.hpp>
 
+FEELPP_ENVIRONMENT_NO_OPTIONS
 
 BOOST_AUTO_TEST_CASE( test_connectivity1 )
 {

@@ -29,11 +29,7 @@
 #define USE_BOOST_TEST 1
 #define BOOST_TEST_MODULE backend testsuite
 
-#if defined(USE_BOOST_TEST)
-#include <boost/test/unit_test.hpp>
-using boost::unit_test::test_suite;
-#include <boost/test/floating_point_comparison.hpp>
-#endif
+#include <testsuite/testsuite.hpp>
 
 #include <boost/timer.hpp>
 
@@ -123,7 +119,7 @@ private:
 
 using namespace Feel;
 
-//BOOST_GLOBAL_FIXTURE( Environment )
+FEELPP_ENVIRONMENT_WITH_OPTIONS( Feel::makeAbout(), Feel::makeOptions() )
 
 BOOST_AUTO_TEST_SUITE( backendsuite )
 BOOST_AUTO_TEST_CASE( test_backend1 )
@@ -133,9 +129,6 @@ BOOST_AUTO_TEST_CASE( test_backend1 )
     strcpy( av[0], "test_backend" );
 
     using namespace Feel;
-    Feel::Environment env( _argc=1,//boost::unit_test::framework::master_test_suite().argc,
-                           _argv=av,//boost::unit_test::framework::master_test_suite().argv,
-                           _desc=makeOptions(), _about=makeAbout() );
 
     BOOST_TEST_MESSAGE( "test_backend1" );
     BOOST_CHECK( Environment::initialized() );

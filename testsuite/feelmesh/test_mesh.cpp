@@ -36,10 +36,7 @@
 // disable the main function creation, use our own
 //#define BOOST_TEST_NO_MAIN
 
-#include <boost/test/unit_test.hpp>
-#include <boost/test/parameterized_test.hpp>
-
-using boost::unit_test::test_suite;
+#include <testsuite/testsuite.hpp>
 
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelmesh/geoentity.hpp>
@@ -201,10 +198,11 @@ struct test_mesh_filters
     double meshSize;
     Feel::detail::mesh_ptrtype mesh;
 };
+
+FEELPP_ENVIRONMENT_NO_OPTIONS
+
 BOOST_AUTO_TEST_SUITE( mesh )
 
-Feel::Environment env( boost::unit_test::framework::master_test_suite().argc,
-                       boost::unit_test::framework::master_test_suite().argv );
 
 BOOST_AUTO_TEST_CASE( test_mesh_filters_ )
 {
