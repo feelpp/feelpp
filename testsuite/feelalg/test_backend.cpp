@@ -31,11 +31,6 @@
 
 #include <testsuite/testsuite.hpp>
 
-#include <boost/timer.hpp>
-
-#include <boost/archive/binary_iarchive.hpp>
-#include <boost/archive/binary_oarchive.hpp>
-
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelcore/application.hpp>
 #include <feel/options.hpp>
@@ -56,7 +51,7 @@ inline
 po::options_description
 makeOptions()
 {
-    po::options_description simgetoptions( "test_simget options" );
+    po::options_description simgetoptions( "test_backend options" );
     simgetoptions.add_options()
     ( "hsize", po::value<double>()->default_value( 0.5 ), "mesh size" )
     ;
@@ -68,12 +63,12 @@ inline
 AboutData
 makeAbout()
 {
-    AboutData about( "test_simget" ,
-                     "test_simget" ,
+    AboutData about( "test_backend" ,
+                     "test_backend" ,
                      "0.1",
-                     "SimGet tests",
+                     "Backend tests",
                      Feel::AboutData::License_GPL,
-                     "Copyright (c) 2010 Université Joseph Fourier" );
+                     "Copyright (c) 2012 Feel++ Consortium" );
 
     about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     return about;
@@ -124,11 +119,6 @@ FEELPP_ENVIRONMENT_WITH_OPTIONS( Feel::makeAbout(), Feel::makeOptions() )
 BOOST_AUTO_TEST_SUITE( backendsuite )
 BOOST_AUTO_TEST_CASE( test_backend1 )
 {
-    char** av = new char*[1];
-    av[0]=new char[13];
-    strcpy( av[0], "test_backend" );
-
-    using namespace Feel;
 
     BOOST_TEST_MESSAGE( "test_backend1" );
     BOOST_CHECK( Environment::initialized() );
