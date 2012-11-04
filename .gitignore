@@ -1,4 +1,9 @@
 
+*.aux
+*.cppbck
+*.hppbck
+*.log
+*.orig
 /#CTestConfig.cmake#
 /#ctest.make#
 /.DS_Store
@@ -11,6 +16,7 @@
 /CPackSourceConfig.cmake
 /CTestTestfile.cmake
 /Debug
+/GITREVISION
 /Makefile
 /Makefile.headers
 /Makefile.in
@@ -18,6 +24,7 @@
 /NEWS.pdf
 /NEWS.tex
 /NEWS.txt
+/README.org~
 /SVNREVISION
 /TAGS
 /Testing
@@ -40,8 +47,3 @@
 /subdirs
 /tools
 /usb_modeswitch.conf
-*.orig
-*.hppbck
-*.cppbck
-*.aux
-*.log
