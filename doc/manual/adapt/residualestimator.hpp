@@ -28,32 +28,7 @@
    \author Stéphane Veys <stephane.veys@gmail.com>
    \date 2010-08-05
  */
-/** include predefined feel command line options */
-#include <feel/options.hpp>
-
-/** include linear algebra backend */
-#include <feel/feelalg/backend.hpp>
-
-/** include function space class */
-#include <feel/feeldiscr/functionspace.hpp>
-
-/** include helper function to define \f$P_0\f$ functions associated with regions  */
-#include <feel/feeldiscr/region.hpp>
-
-/** include integration methods */
-#include <feel/feelpoly/im.hpp>
-
-/** include gmsh mesh importer */
-#include <feel/feelfilters/gmsh.hpp>
-
-/** include exporter factory class */
-#include <feel/feelfilters/exporter.hpp>
-
-/** include  polynomialset header */
-#include <feel/feelpoly/polynomialset.hpp>
-
-/** include  the header for the variational formulation language (vf) aka FEEL++ */
-#include <feel/feelvf/vf.hpp>
+#include <feel/feel.hpp>
 
 #if defined (FEELPP_HAS_MADLIB_H)
 #include <MAdLib.h>
@@ -63,7 +38,6 @@
 
 /** use Feel namespace */
 using namespace Feel;
-using namespace Feel::vf;
 using namespace boost::numeric::ublas;
 
 /**
