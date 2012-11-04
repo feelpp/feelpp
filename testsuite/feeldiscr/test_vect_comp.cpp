@@ -55,7 +55,7 @@ makeAbout()
 
 }
 
-FEELPP_ENVIRONMENT_WITH_OPTIONS( Feel::makeAbout(), Feel::makeOptions() )
+FEELPP_ENVIRONMENT_WITH_OPTIONS( test_vect_comp::makeAbout(), test_vect_comp::makeOptions() )
 
 BOOST_AUTO_TEST_SUITE( interp_vect_comp )
 
@@ -64,13 +64,8 @@ BOOST_AUTO_TEST_CASE( interp_vect_comp )
 
     using namespace test_vect_comp;
 
-    using namespace Feel::vf;
 
-    auto test_app = Application_ptrtype( new Application_type( boost::unit_test::framework::master_test_suite().argc,
-                                         boost::unit_test::framework::master_test_suite().argv,
-                                         makeAbout(),
-                                         makeOptions()
-                                                             ) );
+    auto test_app = Application_ptrtype( new Application_type );
 
     test_app->changeRepository( boost::format( "/testsuite/feeldiscr/%1%/" )
                                 % test_app->about().appName()
