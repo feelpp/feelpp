@@ -130,7 +130,7 @@ public:
     typedef Mesh<line_entity_type> line_mesh_type;
     typedef boost::shared_ptr<line_mesh_type> line_mesh_ptrtype;
 
-    typedef DiscontinuousInterfaces<fusion::vector<mpl::vector<mpl::int_<4>, mpl::int_<6>, mpl::int_<7> > > > discontinuity_type;
+    typedef DiscontinuousInterfaces<bases<mpl::vector<mpl::int_<4>, mpl::int_<6>, mpl::int_<7> > > > discontinuity_type;
     typedef bases<Lagrange<Order, Scalar, discontinuity_type> > basis_type;
     typedef bases<Lagrange<Order-1, Vectorial> > vectorial_basis_type;
 

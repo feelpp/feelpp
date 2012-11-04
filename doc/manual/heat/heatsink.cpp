@@ -148,11 +148,11 @@ public:
     typedef Mesh<entity_type> mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
-    typedef FunctionSpace<mesh_type, fusion::vector<Lagrange<0, Scalar> >, Discontinuous > p0_space_type;
+    typedef FunctionSpace<mesh_type, bases<Lagrange<0, Scalar> >, Discontinuous > p0_space_type;
     typedef typename p0_space_type::element_type p0_element_type;
 
     /*basis*/
-    typedef fusion::vector<Lagrange<Order, Scalar> > basis_type;
+    typedef bases<Lagrange<Order, Scalar> > basis_type;
 
     /*space*/
     typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
@@ -378,7 +378,7 @@ HeatSink<Dim, Order>::run()
             integrate( _range=markedelements( mesh, "spreader_mesh" ), _expr=rho_s*c_s*idv( bdf_poly )*id( v ) ) +
             integrate( _range=markedelements( mesh, "fin_mesh" ), _expr=rho_f*c_f*idv( bdf_poly )*id( v ) );
         form1( _test=Xh, _vector=Ft ) +=
-            integrate( _range= markedfaces( mesh,"gamma4" ), _expr= heat_flux*( 1-exp( -M_bdf->time() ) )*id( v ) );
+            integrate( _range= markedfaces( mesh,"gamma4" ), _expr= heat_flux*( 1-math::exp( -M_bdf->time() ) )*id( v ) );
 
         // add contrib from time independent terms
         Ft->add( 1., F );

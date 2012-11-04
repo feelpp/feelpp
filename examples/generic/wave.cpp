@@ -145,15 +145,15 @@ public:
     typedef Mesh<entity_type> mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
-    typedef FunctionSpace<mesh_type, fusion::vector<Lagrange<0, Scalar> >,Discontinuous> p0_space_type;
+    typedef FunctionSpace<mesh_type, bases<Lagrange<0, Scalar> >,Discontinuous> p0_space_type;
     typedef typename p0_space_type::element_type p0_element_type;
 
     template<typename Conti = Cont>
     struct space
     {
         /*basis*/
-        typedef fusion::vector<Lagrange<Order, FType> > basis_type;
-        typedef fusion::vector<Lagrange<Order-1, Vectorial> > grad_basis_type;
+        typedef bases<Lagrange<Order, FType> > basis_type;
+        typedef bases<Lagrange<Order-1, Vectorial> > grad_basis_type;
 
         /*space*/
         typedef FunctionSpace<mesh_type, basis_type, Conti> type;
@@ -181,9 +181,9 @@ public:
     typedef Exporter<mesh_type> export_type;
     typedef boost::shared_ptr<export_type> export_ptrtype;
 
-    Wave( int argc, char** argv, AboutData const& ad, po::options_description const& od )
+    Wave()
         :
-        super( argc, argv, ad, od ),
+        super(),
         M_backend( backend_type::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) ),
@@ -415,10 +415,7 @@ Wave<Dim, Order, Cont, Entity,FType>::exportResults( double time,
     //exporter->step(time)->setMesh( this->createMesh( meshSize, 0, 1 ) );
     if ( !this->vm().count( "export-mesh-only" ) )
     {
-        exporter->step( time )->add( "pid",
-                                     regionProcess( boost::shared_ptr<p0_space_type>( new p0_space_type( U.functionSpace()->mesh() ) ) ) );
-
-
+        exporter->step( time )->addRegions();
         exporter->step( time )->add( "u", U );
         exporter->step( time )->add( "v", V );
         exporter->step( time )->add( "e", E );
@@ -517,7 +514,8 @@ int
 main( int argc, char** argv )
 {
     using namespace Feel;
-    Environment env( argc, argv );
+    Environment env( _argc=argc, _argv=argv,_desc=makeOptions(),_about=makeAbout() );
+
     /* change parameters below */
     const int nDim = 1;
     const int nOrder = 2;
@@ -528,7 +526,7 @@ main( int argc, char** argv )
     typedef Feel::Wave<nDim, nOrder, MyContinuity, Simplex, Scalar> wave_type;
 
     /* define and run application */
-    wave_type wave( argc, argv, makeAbout(), makeOptions() );
+    wave_type wave;
 
     wave.run();
 }
