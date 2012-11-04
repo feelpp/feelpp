@@ -1,6 +1,6 @@
 # laplacian_p laplacian_p2
 set( EXAMPLES pmesh laplacian advection dar  wave
-    laplacian_lagrange_multiplier stokes)
+    laplacian_lagrange_multiplier )
 
 foreach( EXAMPLE ${EXAMPLES} )
   if ( EXISTS ${EXAMPLE}.cfg )
