@@ -190,6 +190,34 @@ void run( Application_ptrtype & theApp )
     auto trace_trace_exporter = trace_trace_export_type::New( theApp->vm(), "Trace_Trace_Export" );
 
 
+    //-------------------------------------------------------------------------------------------------------
+    auto mesh3D = createGMSHMesh( _mesh=new mesh_type,
+                                  _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
+                                  _desc=domain( _name=(boost::format( "Hypercube-%1%" ) % nDim).str() ,
+                                                _addmidpoint=false,
+                                                _usenames=true, _shape="hypercube", _dim=nDim, _h=meshSize,
+                                                _xmin=0., _xmax=1., _ymin=0., _ymax=1., _zmin=0., _zmax=1.,
+                                                _substructuring=true
+                                                ) );
+
+    auto wirebasket = createSubmesh( mesh3D, markededges(mesh3D,"WireBasket") );
+    FEELPP_ASSERT( wirebasket->numElements() != 0 )( wirebasket->numElements() ).error( "invalid wirebasket mesh" );
+    auto Wh = trace_trace_space_type::New( _mesh=wirebasket );
+    auto w = Wh->element();
+    auto z = Wh->element();
+
+    auto M = backend->newMatrix( _test=Wh, _trial=Wh );
+    form2( _trial=Wh, _test=Wh, _matrix=M ) = integrate( _range=elements(wirebasket), _expr=idt(w)*id(z) );
+    w.setOnes();
+    z.setOnes();
+    //std::cout << "measure from mass = " << M->energy( w, w ) << "\n";
+    BOOST_CHECK_CLOSE( M->energy( w, w ), 12., 1e-13 );
+
+
+
+    //-------------------------------------------------------------------------------------------------------
+
+
     exporter->step( 0 )->setMesh( mesh );
     exporter->step( 0 )->add( "g", projection_g );
     exporter->step( 0 )->add( "glift", glift );
