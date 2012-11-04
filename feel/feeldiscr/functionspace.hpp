@@ -1446,7 +1446,7 @@ public:
                               mpl::identity<typename mpl::transform<meshes_list, ChangeToMeshPtr<mpl::_1>, mpl::back_inserter<meshes<> > >::type  > >::type::type mesh_ptrtype;
     typedef typename mpl::if_<boost::is_base_of<MeshBase, meshes_list >,
             mpl::identity<typename mesh_type::element_type>,
-            mpl::identity<mpl::void_> >::type::type convex_type;
+            mpl::identity<typename mesh_0_type::element_type> >::type::type convex_type;
 
     template<typename BasisType>
     struct GetNComponents
