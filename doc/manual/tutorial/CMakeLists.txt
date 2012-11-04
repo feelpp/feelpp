@@ -41,6 +41,11 @@ if( NOT FEELPP_MINIMAL_CONFIGURATION )
   feelpp_add_application( doc_laplacian_periodic SRCS periodic.cpp LABEL doc  )
   feelpp_add_application( doc_stokes_periodic SRCS stokes_periodic.cpp LABEL doc  )
 
+  feelpp_add_application( doc_laplacian_full SRCS laplacian_full.cpp LABEL doc)
+  feelpp_add_application( doc_laplacian_lagrange_multiplier SRCS laplacian_lagrange_multiplier.cpp LABEL doc)
+  feelpp_add_application( doc_sound SRCS sound.cpp room.cpp LABEL doc )
+  feelpp_add_application( doc_wave SRCS wave.cpp room.cpp LABEL doc )
+  feelpp_add_application( doc_advection SRCS advection.cpp CFG advection.cfg LABEL doc )
 
   feelpp_add_application( doc_stokes SRCS stokes.cpp LABEL doc )
   feelpp_add_application( doc_stokes_lm SRCS stokes.cpp LABEL doc DEFS FEELPP_USE_LM )
