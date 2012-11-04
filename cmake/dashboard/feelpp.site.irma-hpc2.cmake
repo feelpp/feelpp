@@ -23,7 +23,7 @@
 #
 set(OS_VERSION debian-sid)
 set(ARCH x86_64)
-set(WORK_DIR /home/prudhomm/sources/)
+set(WORK_DIR /home/u2/prudhomm/sources/)
 set(MAKE_ARGS "-j10")
 set(PARALLEL "10")
 set(FEELPP_WORK_DIR ${WORK_DIR})
