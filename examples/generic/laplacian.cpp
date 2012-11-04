@@ -144,20 +144,20 @@ public:
     typedef Mesh<entity_type> mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
-    typedef FunctionSpace<mesh_type, fusion::vector<Lagrange<0, Scalar> >, Discontinuous> p0_space_type;
+    typedef FunctionSpace<mesh_type, bases<Lagrange<0, Scalar> >, Discontinuous> p0_space_type;
     typedef typename p0_space_type::element_type p0_element_type;
 
     template<typename Conti = Cont>
     struct space
     {
         /*basis*/
-        typedef fusion::vector<Lagrange<Order, FType> > basis_type;
+        typedef bases<Lagrange<Order, FType> > basis_type;
 
 
 #if 0
         typedef typename mpl::if_<mpl::bool_<Conti::is_continuous>,
-                mpl::identity<fusion::vector<Lagrange<Order, FType> > >,
-                mpl::identity<fusion::vector<OrthonormalPolynomialSet<Order, FType> > > >::type::type basis_type;
+                mpl::identity<bases<Lagrange<Order, FType> > >,
+                mpl::identity<bases<OrthonormalPolynomialSet<Order, FType> > > >::type::type basis_type;
 #endif
         /*space*/
         typedef FunctionSpace<mesh_type, basis_type, Conti, value_type> type;

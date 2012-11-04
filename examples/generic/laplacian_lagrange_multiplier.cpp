@@ -116,7 +116,7 @@ public:
     typedef Mesh<entity_type> mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
-    typedef fusion::vector<Lagrange<Order, Scalar>,
+    typedef bases<Lagrange<Order, Scalar>,
             Lagrange<0, Scalar> > basis_type;
 
     /*space*/

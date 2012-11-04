@@ -123,8 +123,8 @@ public:
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
     /*discontinuous basis*/
-    typedef fusion::vector<Lagrange<Order, Scalar, Discontinuous, PointSetGaussLobatto> > basis_type;
-    //    typedef fusion::vector<fem::Dubiner<Dim, Order, Scalar, Discontinuous, value_type, Hypercube>,
+    typedef bases<Lagrange<Order, Scalar, Discontinuous, PointSetGaussLobatto> > basis_type;
+    //    typedef bases<fem::Dubiner<Dim, Order, Scalar, Discontinuous, value_type, Hypercube>,
     //						   fem::Dubiner<Dim, Order, Vectorial, Discontinuous, value_type, Hypercube>
     //						   > basis_type;
     /*discontinuous space*/
@@ -133,7 +133,7 @@ public:
     typedef typename space_type::element_type element_type;
     typedef boost::shared_ptr<element_type> element_ptrtype;
 
-    typedef fusion::vector<Lagrange<Order, Vectorial, Discontinuous, PointSetGaussLobatto> > vectorial_basis_type;
+    typedef bases<Lagrange<Order, Vectorial, Discontinuous, PointSetGaussLobatto> > vectorial_basis_type;
     typedef FunctionSpace<mesh_type, vectorial_basis_type> vectorial_space_type;
     typedef boost::shared_ptr<vectorial_space_type> vectorial_space_ptrtype;
     typedef typename vectorial_space_type::element_type vectorial_element_type;
@@ -143,11 +143,11 @@ public:
 
 #if 0
     typedef typename mpl::if_<mpl::bool_<Conti::is_continuous>,
-            mpl::identity<fusion::vector<Lagrange<Order, FType> > >,
-            mpl::identity<fusion::vector<OrthonormalPolynomialSet<Order, FType> > > >::type::type basis_type;
+            mpl::identity<bases<Lagrange<Order, FType> > >,
+            mpl::identity<bases<OrthonormalPolynomialSet<Order, FType> > > >::type::type basis_type;
 #endif
     /*continuous basis*/
-    typedef fusion::vector<Lagrange<Order, Scalar> > basis_type_cont;
+    typedef bases<Lagrange<Order, Scalar> > basis_type_cont;
 
     /*continuous space*/
     typedef FunctionSpace<mesh_type, basis_type_cont, value_type> type_cont;

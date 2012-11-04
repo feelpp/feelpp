@@ -298,11 +298,12 @@ int
 main( int argc, char** argv )
 {
     using namespace Feel;
-    Environment env( argc, argv );
+    Environment env( _argc=argc, _argv=argv,_desc=makeOptions(),_about=makeAbout() );
+
     /* assertions handling */
     Feel::Assert::setLog( "sound.assert" );
 
-    Application sound( argc, argv, makeAbout(), makeOptions() );
+    Application sound;
 
     sound.setStats( boost::assign::list_of( "n.space" )( "t.init" )( "t.assembly.vector" )( "t.assembly.matrix" )( "t.solver" )( "t.eigensolver" ) );
     sound.add( new Sound<2, 1>( "2D-P1" ) );

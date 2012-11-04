@@ -21,9 +21,10 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-
-feel_add_example(beam beam.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES})
-feel_add_example(stvenant_kirchhoff stvenant_kirchhoff.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES})
-feel_add_example(axi_1D axi_1D.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES})
-feel_add_example(linelaxi linelaxi.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES})
+feel_add_example( thermalfin thermalfin.cpp fin.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES})
+feel_add_example( resistance resistance.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES})
+feel_add_example( heatsink heatsink.cpp fin_sink.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG heatsink.cfg)
+#feel_add_example( Cabine_heat Cabine_heat.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES})
+#feel_add_example( ground ground.cpp  LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG ground.cfg ground-realistic.cfg ) #ground1.cfg ground2.cfg ground3.cfg )
+#feel_geo(${CMAKE_CURRENT_SOURCE_DIR}/ground.geo)
 

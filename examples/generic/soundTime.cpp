@@ -384,12 +384,13 @@ Sound<Dim, Order>::run()
 int
 main( int argc, char** argv )
 {
-    using namespace Feel;
-    Environment env( argc, argv );
+    using namespace Feel;    
+    Environment env( _argc=argc, _argv=argv,_desc=makeOptions(),_about=makeAbout() );
+
     /* assertions handling */
     Feel::Assert::setLog( "sound.assert" );
 
-    Application sound( argc, argv, makeAbout(), makeOptions() );
+    Application sound;
 
     // Selon la dimension passee en parametre, on resout lequation donde correspondant a cette dimension.
     // Cela permet de faire un maillage adequat selon la dimension
