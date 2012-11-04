@@ -126,7 +126,7 @@ public:
     struct space
     {
         /*basis*/
-        typedef fusion::vector<Lagrange<Order, Scalar> > basis_type;
+        typedef bases<Lagrange<Order, Scalar> > basis_type;
         /*space*/
         typedef FunctionSpace<mesh_type, basis_type, Conti, value_type> type;
         typedef boost::shared_ptr<type> ptrtype;

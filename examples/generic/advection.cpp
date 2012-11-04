@@ -405,7 +405,7 @@ int
 main( int argc, char** argv )
 {
     using namespace Feel;
-    Environment env( argc, argv );
+    Environment env( _argc=argc, _argv=argv,_desc=makeOptions(),_about=makeAbout() );
 
     /* change parameters below */
     const int nDim = 2;
@@ -415,7 +415,7 @@ main( int argc, char** argv )
     typedef Feel::Advection<nDim, nOrder, MyContinuity, Simplex> advection_type;
 
     /* define and run application */
-    advection_type advection( argc, argv, makeAbout(), makeOptions() );
+    advection_type advection;
     advection.run();
 }
 

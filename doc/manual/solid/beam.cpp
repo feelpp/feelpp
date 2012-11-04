@@ -73,7 +73,7 @@ public:
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
     /*basis*/
-    typedef fusion::vector<Lagrange<feOrder, Vectorial> > basis_type;
+    typedef bases<Lagrange<feOrder, Vectorial> > basis_type;
 
     /*space*/
     typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;

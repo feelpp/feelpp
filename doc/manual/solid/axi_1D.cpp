@@ -116,7 +116,7 @@ public:
     /*basis*/
     //typedef mytag<fem::Lagrange<Dim, Order, Vectorial, Continuous, double, Entity>,0> basis_u_type;
     typedef Lagrange<Order, Scalar> basis_scalar_type;
-    typedef fusion::vector<basis_scalar_type,basis_scalar_type> basis_type;
+    typedef bases<basis_scalar_type,basis_scalar_type> basis_type;
     /*space*/
     typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
     typedef boost::shared_ptr<space_type> space_ptrtype;
@@ -129,9 +129,9 @@ public:
     typedef Exporter<mesh_type> export_type;
 
 
-    Elaxi( int argc, char** argv, AboutData const& ad, po::options_description const& od )
+    Elaxi()
         :
-        super( argc, argv, ad, od ),
+        super(),
         M_backend( backend_type::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         bcCoeff( this->vm()["bccoeff"].template as<double>() ),
@@ -410,7 +410,10 @@ int
 main( int argc, char** argv )
 {
     using namespace Feel;
-    Environment env( argc, argv );
+    Environment env( _argc=argc, _argv=argv,
+                     _desc=makeOptions(),
+                     _about=makeAbout() );
+
     /* change parameters below */
     const int nOrder = 2;
 
@@ -420,7 +423,7 @@ main( int argc, char** argv )
     Feel::Assert::setLog( "elaxi.assert" );
 
     /* define and run application */
-    elaxi_type elaxi( argc, argv, makeAbout(), makeOptions() );
+    elaxi_type elaxi;
     elaxi.run();
 }
 

@@ -47,6 +47,6 @@ macro(feel_add_example)
   endif()
 endmacro(feel_add_example)
 
-foreach( DIR generic heat solid snippets )
+foreach( DIR generic snippets )
   add_subdirectory( ${DIR} )
 endforeach()

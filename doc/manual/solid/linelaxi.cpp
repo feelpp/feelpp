@@ -26,14 +26,7 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2012-03-20
  */
-#include <feel/options.hpp>
-#include <feel/feelcore/application.hpp>
-#include <feel/feeltiming/tic.hpp>
-#include <feel/feeldiscr/functionspace.hpp>
-#include <feel/feelalg/backend.hpp>
-#include <feel/feelfilters/gmsh.hpp>
-#include <feel/feelfilters/exporter.hpp>
-#include <feel/feelvf/vf.hpp>
+#include <feel/feel.hpp>
 
 inline
 Feel::po::options_description
@@ -100,9 +93,9 @@ public:
     typedef Exporter<mesh_type> export_type;
 
 
-    LinElAxi( int argc, char** argv, AboutData const& ad, po::options_description const& od )
+    LinElAxi()
         :
-        super( argc, argv, ad, od ),
+        super(),
         M_backend( backend_type::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         bcCoeff( this->vm()["bccoeff"].template as<double>() ),
@@ -167,8 +160,7 @@ LinElAxi<Order>::run()
                                                 _xmin=0, _xmax=1,
                                                 _ymin=0, _ymax=10,
                                                 _h=meshSize ),
-                                        _update=MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK,
-                                        _partitions=this->comm().size()  );
+                                        _update=MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
     toc();
 
 
@@ -284,7 +276,9 @@ int
 main( int argc, char** argv )
 {
     using namespace Feel;
-    Environment env( argc, argv );
+    Environment env( _argc=argc, _argv=argv,
+                     _desc=makeOptions(),
+                     _about=makeAbout() );
     tic();
 
     typedef Feel::LinElAxi<2> linelaxi_type;
@@ -293,7 +287,7 @@ main( int argc, char** argv )
     Feel::Assert::setLog( "linelaxi.assert" );
 
     /* define and run application */
-    linelaxi_type linelaxi( argc, argv, makeAbout(), makeOptions() );
+    linelaxi_type linelaxi;
     linelaxi.run();
     toc();
 }

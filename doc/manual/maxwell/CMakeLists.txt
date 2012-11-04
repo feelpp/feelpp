@@ -21,4 +21,4 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-feelpp_add_application(diode SRCS diode.cpp diodegeo.cpp CFG diode.cfg)
+feelpp_add_application(diode SRCS diode.cpp diodegeo.cpp CFG diode.cfg LABEL doc)
