@@ -177,7 +177,7 @@ add_subdirectory(tutorial)
 
 if (NOT FEELPP_MINIMAL_CONFIGURATION)
   add_subdirectory(dd)
-  #add_subdirectory(heat)
+  add_subdirectory(heat)
   add_subdirectory(heatns)
   add_subdirectory(nonlinear)
   add_subdirectory(adapt)
