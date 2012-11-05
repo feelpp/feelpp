@@ -57,11 +57,11 @@ makeOptions()
 {
     po::options_description relaxationoptions( "relaxation options" );
     relaxationoptions.add_options()
-        ( "hsize", po::value<double>()->default_value( 0.04 ), "mesh size" )
+        ( "hsize", po::value<double>()->default_value( 0.08 ), "mesh size" )
         ( "shape", Feel::po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (either simplex or hypercube)" )
         ( "nu", po::value<double>()->default_value( 1 ), "grad.grad coefficient" )
-        ( "tol", Feel::po::value<double>()->default_value( 1e-06 ),  " tolerance " )
-        ( "imax", Feel::po::value<double>()->default_value( 50 ), " maximum number of iteration" )
+        ( "tol", Feel::po::value<double>()->default_value( 1e-08 ),  " tolerance " )
+        ( "imax", Feel::po::value<double>()->default_value( 20 ), " maximum number of iteration" )
         ;
     return relaxationoptions.add( Feel::feel_options() );
 }
@@ -106,7 +106,6 @@ public:
     typedef typename space_type::element_type element_type;
     typedef Exporter<mesh_type> export_type;
     typedef boost::shared_ptr<export_type> export_ptrtype;
-    //typedef  boost::numeric::ublas::vector<element_type> Vector_type ;
 
     /**
      * Constructor
@@ -182,9 +181,7 @@ ddmethod<Dim>::init( element_type& u, RhsExpr f, sparse_matrix_ptrtype& A, vecto
     auto mesh = Xh->mesh();
     auto v = Xh->element();
 
-    //F = M_backend->newVector( Xh );
     timers["assembly"].first.restart();
-
     form1( _test=Xh,_vector=F ) =
         integrate( elements( mesh ), f*id( v ) );
 
@@ -193,16 +190,17 @@ ddmethod<Dim>::init( element_type& u, RhsExpr f, sparse_matrix_ptrtype& A, vecto
     timers["assembly"].second = timers["assembly"].first.elapsed();
     timers["assembly_F"].second = timers["assembly"].first.elapsed();
 
-    //A = M_backend->newMatrix( Xh, Xh );
-    timers["assembly"].first.restart();
 
+    timers["assembly"].first.restart();
     form2( _test=Xh, _trial=Xh, _matrix=A ) =
         integrate( elements( mesh ), gradt( u )*trans( grad( v ) ) );
 
     timers["assembly"].second += timers["assembly"].first.elapsed();
     timers["assembly_A"].second = timers["assembly"].first.elapsed();
-
     A->close();
+
+    std::cout << "[timer] assembly_F: " << timers["assembly_F"].second << "\n";
+    std::cout << "[timer] assembly_A: " << timers["assembly_A"].second << "\n";
 }
 
 template<int Dim>
@@ -220,11 +218,9 @@ ddmethod<Dim>::localProblem( element_type& u,
     auto mesh = Xh->mesh();
     auto v = Xh->element();
 
+    timers["update"].first.restart();
     auto Ffull = M_backend->newVector( Xh );
     Ffull->add(1.,*F);
-
-    auto Afull = M_backend->newMatrix( Xh, Xh );
-    Afull->addMatrix(1.,*A);
 
     BOOST_FOREACH( int marker, interfaceFlags )
     {
@@ -233,16 +229,31 @@ ddmethod<Dim>::localProblem( element_type& u,
     }
     Ffull->close();
 
+    timers["update"].second = timers["update"].first.elapsed();
+    timers["update_F"].second = timers["update"].first.elapsed();
+
+
+    timers["update"].first.restart();
+    auto Afull = M_backend->newMatrix( Xh, Xh );
+    Afull->addMatrix(1.,*A);
+
     BOOST_FOREACH( int marker, dirichletFlags )
     {
         form2( Xh, Xh, Afull ) +=
             on( markedfaces( mesh, marker ) ,	u, Ffull, gD );
     }
 
+    timers["update"].second = timers["update"].first.elapsed();
+    timers["update_A"].second = timers["update"].first.elapsed();
+
+
     timers["solver"].first.restart();
-    backend_type::build()->solve( _matrix=Afull, _solution=u, _rhs=Ffull );//, _reuse_prec=true );
+    backend_type::build()->solve( _matrix=Afull, _solution=u, _rhs=Ffull, _reuse_prec=true );
     timers["solver"].second = timers["solver"].first.elapsed();
 
+    std::cout << "[timer] update_F: " << timers["update_F"].second << "\n";
+    std::cout << "[timer] update_A: " << timers["update_A"].second << "\n";
+    std::cout << "[timer] solver: " << timers["solver"].second << "\n";
 }
 
 template<int Dim>
@@ -345,8 +356,10 @@ ddmethod<Dim>::run()
 
     auto Xh1 = space_type::New( mesh1 );
     auto Xh2 = space_type::New( mesh2 );
-    element_type u1( Xh1, "u1" );
-    element_type u2( Xh2, "u2" );
+
+    auto u1 = Xh1->element();
+    auto u2 = Xh2->element();
+
     auto uu = Xh1->element();
     auto uv = Xh2->element();
 
@@ -463,16 +476,13 @@ ddmethod<Dim>::run()
 
     }; // iteration loop
 
+    this->exportResults( u1,u2, 0 );
+
     std::cout << "-------------------------end iteration---------------\n";
-
     std::cout << "number of iteration  : " << cptExport << "\n";
-
     std::cout << "L2erroru1  : " << L2erroru1  << "\n";
-
     std::cout << "L2erroru2  : " << L2erroru2  << "\n";
-
     std::cout << "H1erroru1  : " << H1erroru1  << "\n";
-
     std::cout << "H1erroru2  : " << H1erroru2  << "\n";
 
 } // nonoverlap::run
