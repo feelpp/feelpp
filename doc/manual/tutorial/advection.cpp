@@ -21,15 +21,7 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
-#include <feel/options.hpp>
-#include <feel/feelcore/application.hpp>
-
-#include <feel/feelalg/backend.hpp>
-#include <feel/feeldiscr/functionspace.hpp>
-#include <feel/feeldiscr/projector.hpp>
-#include <feel/feelfilters/gmsh.hpp>
-#include <feel/feelfilters/exporter.hpp>
-#include <feel/feelvf/vf.hpp>
+#include <feel/feel.hpp>
 
 
 /**
@@ -187,9 +179,9 @@ public:
     /* export */
     typedef Exporter<mesh_type,Order> export_type;
 
-    Advection( int argc, char** argv, AboutData const& ad, po::options_description const& od )
+    Advection()
         :
-        super( argc, argv, ad, od ),
+        super(),
         backend( backend_type::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         bcCoeff( this->vm()["bccoeff"].template as<double>() ),
