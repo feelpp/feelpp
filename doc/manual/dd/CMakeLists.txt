@@ -34,14 +34,6 @@ feelpp_add_application( doc_multi_levels SRCS multi_levels.cpp LABEL doc  )
 
 # Non-conforming domain decomposition methods
 feelpp_add_application( doc_mortar SRCS mortar.cpp LABEL doc  )
-feelpp_add_application( doc_threefields SRCS threefields.cpp NO_TEST LABEL doc )
+feelpp_add_application( doc_threefields SRCS threefields.cpp TEST -pc_type ilu -ksp_monitor  LABEL doc )
 
-add_test( threefields-1 feelpp_doc_threefields -pc_type ilu -ksp_monitor )
-set_property(TEST threefields-1 PROPERTY LABEL doc)
 
-add_dependencies( doc
-  feelpp_doc_overlapping
-  feelpp_doc_nonoverlapping
-  feelpp_doc_multi_levels
-  feelpp_doc_mortar
-  feelpp_doc_threefields )
