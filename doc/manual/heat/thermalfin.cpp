@@ -26,19 +26,7 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2007-06-11
  */
-#include <feel/options.hpp>
-#include <feel/feelcore/application.hpp>
-
-#include <feel/feelalg/backend.hpp>
-
-#include <feel/feeldiscr/functionspace.hpp>
-#include <feel/feeldiscr/region.hpp>
-
-#include <feel/feelfilters/gmsh.hpp>
-#include <feel/feelfilters/exporter.hpp>
-
-#include <feel/feelvf/vf.hpp>
-
+#include <feel/feel.hpp>
 
 
 Feel::gmsh_ptrtype makefin( double hsize );
@@ -137,9 +125,9 @@ public:
     typedef Exporter<mesh_type> export_type;
 
 
-    ThermalFin( int argc, char** argv, AboutData const& ad, po::options_description const& od )
+    ThermalFin()
         :
-        super( argc, argv, ad, od ),
+        super(),
         M_backend( backend_type::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].as<double>() ),
         exporter( export_type::New( this->vm(), this->about().appName() ) )
@@ -326,9 +314,12 @@ int
 main( int argc, char** argv )
 {
     using namespace Feel;
-    Environment env( argc, argv );
+    Environment env( _argc=argc, _argv=argv,
+                     _desc=makeOptions(),
+                     _about=makeAbout() );
+
     /* define and run application */
-    ThermalFin thermalfin( argc, argv, makeAbout(), makeOptions() );
+    ThermalFin thermalfin;
 
     thermalfin.run();
 }
