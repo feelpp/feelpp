@@ -39,6 +39,7 @@
 
 #include <feel/feeldiscr/operatorlinear.hpp>
 #include <feel/feeldiscr/bdf2.hpp>
+#include <feel/feeldiscr/projector.hpp>
 
 #include <feel/feelfilters/geotool.hpp>
 
