@@ -26,26 +26,7 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2008-06-04
  */
-#include <feel/options.hpp>
-#include <feel/feelcore/application.hpp>
-
-#include <feel/feelalg/backend.hpp>
-
-#include <feel/feeldiscr/functionspace.hpp>
-#include <feel/feeldiscr/region.hpp>
-#include <feel/feeldiscr/operatorlinear.hpp>
-#include <feel/feelpoly/im.hpp>
-
-#include <feel/feelfilters/gmsh.hpp>
-#include <feel/feelfilters/exporter.hpp>
-#include <feel/feelfilters/gmshhypercubedomain.hpp>
-#include <feel/feelpoly/polynomialset.hpp>
-
-
-#include <feel/feelvf/vf.hpp>
-
-
-
+#include <feel/feel.hpp>
 
 inline
 Feel::po::options_description
@@ -135,7 +116,7 @@ public:
     typedef boost::shared_ptr<export_type> export_ptrtype;
 
     /** constructor */
-    LaplacianLM( int argc, char** argv, AboutData const& ad, po::options_description const& od );
+    LaplacianLM();
 
     /** mesh generation */
     mesh_ptrtype createMesh();
@@ -170,9 +151,9 @@ private:
 }; // LaplacianLM
 
 template<int Dim, int Order>
-LaplacianLM<Dim,Order>::LaplacianLM( int argc, char** argv, AboutData const& ad, po::options_description const& od )
+LaplacianLM<Dim,Order>::LaplacianLM()
     :
-    super( argc, argv, ad, od ),
+    super(),
     M_backend( backend_type::build( this->vm() ) ),
 
     // Data
@@ -317,7 +298,9 @@ main( int argc, char** argv )
 {
     using namespace Feel;
 
-    Environment env( argc, argv );
+    Environment env( _argc=argc, _argv=argv,
+                     _desc=makeOptions(),
+                     _about=makeAbout() );
 
     /* change parameters below */
     const int nDim = 2;
@@ -326,7 +309,7 @@ main( int argc, char** argv )
     typedef Feel::LaplacianLM<nDim, nOrder> laplacian_ml_type;
 
     /* define and run application */
-    laplacian_ml_type laplacian_ml( argc, argv, makeAbout(), makeOptions() );
+    laplacian_ml_type laplacian_ml;
 
     laplacian_ml.run();
 }

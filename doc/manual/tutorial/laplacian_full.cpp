@@ -26,25 +26,7 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2006-11-23
  */
-#include <feel/options.hpp>
-#include <feel/feelcore/application.hpp>
-
-#include <feel/feelalg/backend.hpp>
-
-#include <feel/feeldiscr/functionspace.hpp>
-#include <feel/feeldiscr/region.hpp>
-#include <feel/feelpoly/im.hpp>
-
-#include <feel/feelfilters/gmsh.hpp>
-#include <feel/feelfilters/exporter.hpp>
-#include <feel/feelfilters/gmshhypercubedomain.hpp>
-#include <feel/feelpoly/polynomialset.hpp>
-
-
-#include <feel/feelvf/vf.hpp>
-
-
-
+#include <feel/feel.hpp>
 
 inline
 Feel::po::options_description
@@ -171,9 +153,9 @@ public:
     typedef Exporter<mesh_type> export_type;
     typedef boost::shared_ptr<export_type> export_ptrtype;
 
-    Laplacian( int argc, char** argv, AboutData const& ad, po::options_description const& od )
+    Laplacian()
         :
-        super( argc, argv, ad, od ),
+        super(),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( this->vm()["shape"].template as<std::string>() ),
         b( backend_type::build( this->vm() ) ),
@@ -673,7 +655,9 @@ main( int argc, char** argv )
 {
     using namespace Feel;
 
-    Environment env( argc, argv );
+    Environment env( _argc=argc, _argv=argv,
+                     _desc=makeOptions(),
+                     _about=makeAbout() );
 
     /* change parameters below */
     const int nDim = 2;
@@ -685,7 +669,7 @@ main( int argc, char** argv )
     //typedef Feel::Laplacian<nDim, nOrder, MyContinuity, Simplex, Scalar> laplacian_type;
 
     /* define and run application */
-    laplacian_type laplacian( argc, argv, makeAbout(), makeOptions() );
+    laplacian_type laplacian;
 
     laplacian.run();
 }
