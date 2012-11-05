@@ -26,26 +26,7 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2009-01-22
  */
-#include <fstream>
-
-#include <feel/options.hpp>
-#include <feel/feelcore/application.hpp>
-
-#include <feel/feelalg/backend.hpp>
-
-#include <feel/feelpoly/expansiontypes.hpp>
-#include <feel/feeldiscr/functionspace.hpp>
-#include <feel/feeldiscr/region.hpp>
-#include <feel/feeldiscr/operatorlinear.hpp>
-#include <feel/feelpoly/im.hpp>
-
-#include <feel/feelfilters/gmsh.hpp>
-#include <feel/feelfilters/exporter.hpp>
-#include <feel/feelfilters/gmshhypercubedomain.hpp>
-#include <feel/feelpoly/polynomialset.hpp>
-
-
-#include <feel/feelvf/vf.hpp>
+#include <feel/feel.hpp>
 
 
 
@@ -130,7 +111,7 @@ public:
     typedef Mesh<line_entity_type> line_mesh_type;
     typedef boost::shared_ptr<line_mesh_type> line_mesh_ptrtype;
 
-    typedef DiscontinuousInterfaces<bases<mpl::vector<mpl::int_<4>, mpl::int_<6>, mpl::int_<7> > > > discontinuity_type;
+    typedef DiscontinuousInterfaces<fusion::vector<mpl::vector<mpl::int_<4>, mpl::int_<6>, mpl::int_<7> > > > discontinuity_type;
     typedef bases<Lagrange<Order, Scalar, discontinuity_type> > basis_type;
     typedef bases<Lagrange<Order-1, Vectorial> > vectorial_basis_type;
 
@@ -151,7 +132,7 @@ public:
     typedef boost::shared_ptr<export_type> export_ptrtype;
 
     /** constructor */
-    ResistanceLaplacian( int argc, char** argv, AboutData const& ad, po::options_description const& od );
+    ResistanceLaplacian();
 
     /** mesh generation */
     mesh_ptrtype createMesh();
@@ -198,9 +179,9 @@ private:
 }; // Resistance
 
 template<int Dim, int Order>
-ResistanceLaplacian<Dim,Order>::ResistanceLaplacian( int argc, char** argv, AboutData const& ad, po::options_description const& od )
+ResistanceLaplacian<Dim,Order>::ResistanceLaplacian()
     :
-    super( argc, argv, ad, od ),
+    super(),
     M_backend( backend_type::build( this->vm() ) ),
 
     // Data
@@ -483,7 +464,9 @@ int
 main( int argc, char** argv )
 {
     using namespace Feel;
-    Environment env( argc, argv );
+    Environment env( _argc=argc, _argv=argv,
+                     _desc=makeOptions(),
+                     _about=makeAbout() );
     /* change parameters below */
     const int nDim = 2;
     const int nOrder = 1;
@@ -491,7 +474,7 @@ main( int argc, char** argv )
     typedef Feel::ResistanceLaplacian<nDim, nOrder> laplacian_resistance_type;
 
     /* define and run application */
-    laplacian_resistance_type laplacian_resistance( argc, argv, makeAbout(), makeOptions() );
+    laplacian_resistance_type laplacian_resistance;
 
     laplacian_resistance.run();
 }

@@ -26,21 +26,7 @@
    \author Baptiste Morin <baptistemorin@gmail.com>
    \date 2011-06-28
  */
-#include <feel/options.hpp>
-#include <feel/feelcore/application.hpp>
-
-#include <feel/feelalg/backend.hpp>
-
-#include <feel/feeldiscr/functionspace.hpp>
-#include <feel/feeldiscr/region.hpp>
-
-#include <feel/feelfilters/gmsh.hpp>
-#include <feel/feelfilters/exporter.hpp>
-#include <feel/feelfilters/gmshhypercubedomain.hpp>
-
-#include <feel/feelmesh/filters.hpp>
-#include <feel/feelvf/vf.hpp>
-#include <feel/feeldiscr/bdf2.hpp>
+#include <feel/feel.hpp>
 
 Feel::gmsh_ptrtype makefin( double hsize, double width, double deep , double L );
 
@@ -167,7 +153,7 @@ public:
     typedef Exporter<mesh_type> export_type;
 
     /* constructor */
-    HeatSink( int argc, char** argv, AboutData const& ad, po::options_description const& od );
+    HeatSink();
 
     /* run the simulation */
     void run();
@@ -231,9 +217,9 @@ private:
 
 /* Constructor */
 template<int Dim, int Order>
-HeatSink<Dim,Order>::HeatSink( int argc, char** argv, AboutData const& ad, po::options_description const& od )
+HeatSink<Dim,Order>::HeatSink()
     :
-    super( argc, argv, ad, od ),
+    super(),
     M_backend( backend_type::build( this->vm() ) ),
     meshSize( this->vm()["hsize"].template as<double>() ),
     depth( this->vm()["deep"].template as<double>() ),
@@ -418,7 +404,10 @@ int
 main( int argc, char** argv )
 {
     using namespace Feel;
-    Environment env( argc, argv );
+    Environment env( _argc=argc, _argv=argv,
+                     _desc=makeOptions(),
+                     _about=makeAbout() );
+
     /* Parameters to be changed */
     const int nDim = 2;
     const int nOrder = 2;
@@ -427,7 +416,7 @@ main( int argc, char** argv )
     typedef Feel::HeatSink<nDim, nOrder> heat_sink_type;
 
     /* instanciate */
-    heat_sink_type heatsink( argc, argv, makeAbout(), makeOptions() );
+    heat_sink_type heatsink;
 
     /* run */
     heatsink.run();
