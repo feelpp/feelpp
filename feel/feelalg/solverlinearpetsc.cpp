@@ -72,7 +72,7 @@ extern "C"
         Preconditioner<double> * preconditioner = static_cast<Preconditioner<double>*>( ctx );
         preconditioner->init();
 
-        std::cout << "init prec\n";
+        LOG(INFO) << "init prec\n";
 
         return 0;
     }
@@ -84,7 +84,7 @@ extern "C"
 
         VectorPetsc<double> x_vec( x );
         VectorPetsc<double> y_vec( y );
-        std::cout << "apply prec\n";
+        LOG(INFO) << "apply prec\n";
         preconditioner->apply( x_vec,y_vec );
 
         return 0;
@@ -97,7 +97,7 @@ extern "C"
         CHKERRQ( ierr );
         Preconditioner<double> * preconditioner = static_cast<Preconditioner<double>*>( ctx );
         preconditioner->init();
-        std::cout << "init prec\n";
+        LOG(INFO) << "init prec\n";
         return 0;
     }
 
@@ -107,7 +107,7 @@ extern "C"
         PetscErrorCode ierr = PCShellGetContext( pc,&ctx );
         CHKERRQ( ierr );
         Preconditioner<double> * preconditioner = static_cast<Preconditioner<double>*>( ctx );
-        std::cout << "apply prec\n";
+        LOG(INFO) << "apply prec\n";
         VectorPetsc<double> x_vec( x );
         VectorPetsc<double> y_vec( y );
 
@@ -266,8 +266,11 @@ void SolverLinearPetsc<T>::init ()
         CHKERRABORT( this->worldComm().globalComm(),ierr );
 
         //If there is a preconditioner object we need to set the internal setup and apply routines
+        //LOG(INFO) << "preconditioner: "  << this->M_preconditioner << "\n";
         if ( this->M_preconditioner )
         {
+            PCSetType(_M_pc, PCSHELL);
+
             PCShellSetContext( _M_pc,( void* )this->M_preconditioner.get() );
             PCShellSetSetUp( _M_pc,__feel_petsc_preconditioner_setup );
             PCShellSetApply( _M_pc,__feel_petsc_preconditioner_apply );

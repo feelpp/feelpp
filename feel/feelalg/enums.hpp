@@ -31,6 +31,7 @@
 #define __FeelAlgEnums_H 1
 
 #include <feel/feelcore/feel.hpp>
+#include <feel/feelcore/feelpetsc.hpp>
 
 
 namespace Feel
@@ -278,6 +279,11 @@ enum MatSolverPackageType
     MATSOLVER_PLAPACK,
     MATSOLVER_BAS
 };
+#if defined(FEELPP_HAS_MUMPS) && PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,2,0 )
+const auto MATSOLVER_DEFAULT = MATSOLVER_MUMPS;
+#else
+const auto MATSOLVER_DEFAULT = MATSOLVER_PETSC;
+#endif
 
 } // Feel
 #endif /* __FeelAlgEnums_H */
