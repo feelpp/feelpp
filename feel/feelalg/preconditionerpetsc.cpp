@@ -142,7 +142,7 @@ void PreconditionerPetsc<T>::setPetscPreconditionerType ( const PreconditionerTy
             // But PETSc has no truly parallel ILU, instead you have to set
             // an actual parallel preconditioner (e.g. block Jacobi) and then
             // assign ILU sub-preconditioners.
-            ierr = PCSetType ( pc, ( char* ) PCBJACOBI );
+            ierr = PCSetType ( pc, ( char* ) PCGASM );
             CHKERRABORT( worldComm.globalComm(),ierr );
 
             // Set ILU as the sub preconditioner type
@@ -203,7 +203,7 @@ void PreconditionerPetsc<T>::setPetscPreconditionerType ( const PreconditionerTy
         CHKERRABORT( worldComm.globalComm(),ierr );
 
         // Set LU as the sub preconditioner type
-        setPetscSubpreconditionerType( PCLU, pc, worldComm );
+        //setPetscSubpreconditionerType( PCLU, pc, worldComm );
         break;
     }
 #endif
