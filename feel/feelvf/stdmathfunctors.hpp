@@ -314,7 +314,22 @@ class VF_FUNC_NAME( O ) : public UnaryFunctor<typename ExprT1::value_type>      
         typedef VF_FUNC_NAME(O)<t1> expr_t;                             \
         return Expr< expr_t >(  expr_t( t1( __e1 ) ) );                 \
     }                                                                   \
+    /**/                                                                \
+    template<typename ExprT1>                                           \
+    inline                                                              \
+    Expr< VF_FUNC_NAME( O )<typename mpl::if_<boost::is_arithmetic<ExprT1>, \
+                                              mpl::identity<Cst<ExprT1> >, \
+                                              mpl::identity<Expr<ExprT1> > >::type::type > > \
+    VF_FUNC_SYMBOL( O )( ExprT1 const& __e1 )                           \
+    {                                                                   \
+        typedef typename mpl::if_<boost::is_arithmetic<ExprT1>,         \
+            mpl::identity<Cst<ExprT1> >,                                \
+            mpl::identity<Expr<ExprT1> > >::type::type t1;               \
+        typedef VF_FUNC_NAME(O)<t1> expr_t;                             \
+        return Expr< expr_t >(  expr_t( t1( __e1 ) ) );                 \
+    }                                                                   \
     /**/
+
 #
 
 namespace Feel
