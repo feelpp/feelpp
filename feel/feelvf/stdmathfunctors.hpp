@@ -43,6 +43,8 @@
 # include <boost/preprocessor/punctuation/comma.hpp>
 # include <boost/preprocessor/facilities/identity.hpp>
 
+#include <boost/utility/enable_if.hpp>
+
 /// \cond detail
 #include <feel/feelcore/traits.hpp>
 #include <feel/feelvf/unaryfunctor.hpp>
@@ -314,22 +316,16 @@ class VF_FUNC_NAME( O ) : public UnaryFunctor<typename ExprT1::value_type>      
         typedef VF_FUNC_NAME(O)<t1> expr_t;                             \
         return Expr< expr_t >(  expr_t( t1( __e1 ) ) );                 \
     }                                                                   \
-    /**/                                                                \
     template<typename ExprT1>                                           \
     inline                                                              \
-    Expr< VF_FUNC_NAME( O )<typename mpl::if_<boost::is_arithmetic<ExprT1>, \
-                                              mpl::identity<Cst<ExprT1> >, \
-                                              mpl::identity<Expr<ExprT1> > >::type::type > > \
-    VF_FUNC_SYMBOL( O )( ExprT1 const& __e1 )                           \
+    Expr< VF_FUNC_NAME( O )<Cst<ExprT1> > >                             \
+    VF_FUNC_SYMBOL( O )( ExprT1 const& __e1, typename boost::enable_if<boost::is_arithmetic<ExprT1> >::type* dummy = 0 ) \
     {                                                                   \
-        typedef typename mpl::if_<boost::is_arithmetic<ExprT1>,         \
-            mpl::identity<Cst<ExprT1> >,                                \
-            mpl::identity<Expr<ExprT1> > >::type::type t1;               \
+        typedef Cst<ExprT1> t1;                                         \
         typedef VF_FUNC_NAME(O)<t1> expr_t;                             \
         return Expr< expr_t >(  expr_t( t1( __e1 ) ) );                 \
     }                                                                   \
     /**/
-
 #
 
 namespace Feel
