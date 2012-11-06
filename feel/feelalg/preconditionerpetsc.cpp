@@ -47,6 +47,21 @@ void PreconditionerPetsc<T>::apply( const Vector<T> & x, Vector<T> & y )
 }
 
 
+/*----------------------- inline functions ----------------------------------*/
+template <typename T>
+PreconditionerPetsc<T>::PreconditionerPetsc ( WorldComm const& worldComm )
+    :
+    Preconditioner<T>( worldComm )
+{
+}
+
+
+
+template <typename T>
+PreconditionerPetsc<T>::~PreconditionerPetsc ()
+{
+    this->clear ();
+}
 
 
 template <typename T>
@@ -81,6 +96,8 @@ void PreconditionerPetsc<T>::init ()
     // the operators have been set.
     // 2.) It should be safe to call set_petsc_preconditioner_type()
     // multiple times.
+    //LOG(INFO) << "prec : "  << this->M_preconditioner_type << "\n";
+    //LOG(INFO) << "mat solver package : "  << this->M_matSolverPackage_type << "\n";
     setPetscPreconditionerType( this->M_preconditioner_type,this->M_matSolverPackage_type,M_pc,this->worldComm() );
 
     this->M_is_initialized = true;

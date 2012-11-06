@@ -186,23 +186,6 @@ private:
 
 
 
-/*----------------------- inline functions ----------------------------------*/
-template <typename T>
-FEELPP_STRONG_INLINE
-PreconditionerPetsc<T>::PreconditionerPetsc ( WorldComm const& worldComm )
-    :
-    Preconditioner<T>( worldComm )
-{
-}
-
-
-
-template <typename T>
-FEELPP_STRONG_INLINE
-PreconditionerPetsc<T>::~PreconditionerPetsc ()
-{
-    this->clear ();
-}
 
 } // Feel
 #endif /* __PreconditionerPetsc_H */
