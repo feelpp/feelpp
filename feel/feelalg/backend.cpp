@@ -656,9 +656,15 @@ po::options_description backend_options( std::string const& prefix )
     // preconditioner options
     ( prefixvm( prefix,"pc-type" ).c_str(), Feel::po::value<std::string>()->default_value( "lu" ), "type of preconditioners (lu, ilut, ilutp, diag, id,...)" )
     ( prefixvm( prefix,"constant-null-space" ).c_str(), Feel::po::value<bool>()->default_value( "lu" ), "set the null space to be the constant values" )
-    ( prefixvm( prefix,"pc-factor-mat-solver-package-type" ).c_str(), Feel::po::value<std::string>()->default_value( "petsc" ),
-      "sets the software that is used to perform the factorization (petsc,umfpack, spooles, petsc, superlu, superlu_dist, mump,...)" )
 
+#if defined(FEELPP_HAS_MUMPS) && PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,2,0 )
+        ( prefixvm( prefix,"pc-factor-mat-solver-package-type" ).c_str(), Feel::po::value<std::string>()->default_value( "mumps" ),
+          "sets the software that is used to perform the factorization (petsc,umfpack, spooles, petsc, superlu, superlu_dist, mump,...)" )
+#else
+        ( prefixvm( prefix,"pc-factor-mat-solver-package-type" ).c_str(), Feel::po::value<std::string>()->default_value( "petsc" ),
+          "sets the software that is used to perform the factorization (petsc,umfpack, spooles, petsc, superlu, superlu_dist, mump,...)" )
+#endif
+        
     ( prefixvm( prefix,"ilu-threshold" ).c_str(), Feel::po::value<double>()->default_value( 1e-3 ), "threshold value for preconditioners" )
     ( prefixvm( prefix,"ilu-fillin" ).c_str(), Feel::po::value<int>()->default_value( 2 ), "fill-in level value for preconditioners" )
     ( prefixvm( prefix,"pc-factor-levels" ).c_str(), Feel::po::value<int>()->default_value( 3 ), "Sets the number of levels of fill to use for ilu" )
