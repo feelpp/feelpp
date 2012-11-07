@@ -297,8 +297,10 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( boost::shared_ptr<Preconditioner<double> > ),
     p->setMatSolverPackageType( pcfactormatsolverpackage );
 
     if ( matrix )
-        p->setMatrix( matrix );
-    p->init();
+        {
+            p->setMatrix( matrix );
+            p->init();
+        }
     return p;
 }
 
