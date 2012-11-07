@@ -47,6 +47,15 @@ using  GiNaC::matrix;
 using  GiNaC::symbol;
 using  GiNaC::lst;
 using  GiNaC::ex;
+using  GiNaC::parser;
+
+template<int Dim> inline std::initializer_list<symbol> symbols() { symbol x("x"); return {x}; }
+template<> inline std::initializer_list<symbol> symbols<1>() { symbol x("x"); return {x}; }
+template<> inline std::initializer_list<symbol> symbols<2>() { symbol x("x"),y("y"); return {x,y}; }
+template<> inline std::initializer_list<symbol> symbols<3>() { symbol x("x"),y("y"),z("z"); return {x,y,z}; }
+
+ex parse( std::string const& str, std::initializer_list<symbol> syms );
+
 namespace vf
 {
 
@@ -153,6 +162,8 @@ public:
         return M_cfun;
     }
 
+    std::list<GiNaC::symbol> const& syms() const { return M_syms; }
+
     //@}
 
 
@@ -186,7 +197,8 @@ public:
             :
             M_fun( expr.fun() ),
             M_gmc( fusion::at_key<key_type>( geom ).get() ),
-            M_y( M_gmc->nPoints() )
+            M_y( M_gmc->nPoints() ),
+            M_nsyms( expr.syms().size() )
         {}
 
         tensor( this_type const& expr,
@@ -194,14 +206,16 @@ public:
             :
             M_fun( expr.fun() ),
             M_gmc( fusion::at_key<key_type>( geom ).get() ),
-            M_y( M_gmc->nPoints() )
+            M_y( M_gmc->nPoints() ),
+            M_nsyms( expr.syms().size() )
         {}
 
         tensor( this_type const& expr, Geo_t const& geom )
             :
             M_fun( expr.fun() ),
             M_gmc( fusion::at_key<key_type>( geom ).get() ),
-            M_y( M_gmc->nPoints() )
+            M_y( M_gmc->nPoints() ),
+            M_nsyms( expr.syms().size() )
         {
         }
 
@@ -223,13 +237,15 @@ public:
             M_gmc =  fusion::at_key<key_type>( geom ).get();
 
             int no = 1;
-            int ni = gmc_type::nDim;
-            double xi[gmc_type::nDim];
+            int ni = M_nsyms;///gmc_type::nDim;
+            Eigen::VectorXd xi( M_nsyms );
             for(int q = 0; q < M_gmc->nPoints();++q )
             {
                 for(int k = 0;k < gmc_type::nDim;++k )
                     xi[k]=M_gmc->xReal( q )[k];
-                M_fun(&ni,xi,&no,&M_y[q]);
+                for( int k = gmc_type::nDim; k < xi.size(); ++k )
+                    xi[k] = 0;
+                M_fun(&ni,xi.data(),&no,&M_y[q]);
             }
 
         }
@@ -239,14 +255,15 @@ public:
             M_gmc =  fusion::at_key<key_type>( geom ).get();
 
             int no = 1;
-            int ni = gmc_type::nDim;
-            double xi[3];
+            int ni = M_nsyms;//gmc_type::nDim;
+            Eigen::VectorXd xi( M_nsyms );
             for(int q = 0; q < M_gmc->nPoints();++q )
             {
                 for(int k = 0;k < gmc_type::nDim;++k )
                     xi[k]=M_gmc->xReal( q )[k];
-
-                M_fun(&ni,xi,&no,&M_y[q]);
+                for( int k = gmc_type::nDim; k < xi.size(); ++k )
+                    xi[k] = 0;
+                M_fun(&ni,xi.data(),&no,&M_y[q]);
             }
         }
 
@@ -283,6 +300,7 @@ public:
 
 
         vec_type M_y;
+        int M_nsyms;
     };
 
 private:
@@ -420,6 +438,7 @@ public:
         return M_cfun;
     }
 
+    std::list<GiNaC::symbol> const& syms() const { return M_syms; }
     //@}
 
 
@@ -449,7 +468,8 @@ public:
             :
             M_fun( expr.fun() ),
             M_gmc( fusion::at_key<key_type>( geom ).get() ),
-            M_y( M_gmc->nPoints() )
+            M_y( M_gmc->nPoints() ),
+            M_nsyms( expr.syms().size() )
         {}
 
         tensor( this_type const& expr,
@@ -457,14 +477,16 @@ public:
             :
             M_fun( expr.fun() ),
             M_gmc( fusion::at_key<key_type>( geom ).get() ),
-            M_y( M_gmc->nPoints() )
+            M_y( M_gmc->nPoints() ),
+            M_nsyms( expr.syms().size() )
         {}
 
         tensor( this_type const& expr, Geo_t const& geom )
             :
             M_fun( expr.fun() ),
             M_gmc( fusion::at_key<key_type>( geom ).get() ),
-            M_y( M_gmc->nPoints() )
+            M_y( M_gmc->nPoints() ),
+            M_nsyms( expr.syms().size() )
         {
         }
 
@@ -486,13 +508,15 @@ public:
             M_gmc =  fusion::at_key<key_type>( geom ).get();
 
             int no = M*N;
-            int ni = gmc_type::nDim;
-            double xi[gmc_type::nDim];
+            int ni = M_nsyms;//gmc_type::nDim;
+            Eigen::VectorXd xi( M_nsyms );
             for(int q = 0; q < M_gmc->nPoints();++q )
             {
                 for(int k = 0;k < gmc_type::nDim;++k )
                     xi[k]=M_gmc->xReal( q )[k];
-                M_fun(&ni,xi,&no,M_y[q].data());
+                for( int k = gmc_type::nDim; k < xi.size(); ++k )
+                    xi[k] = 0;
+                M_fun(&ni,xi.data(),&no,M_y[q].data());
             }
 
         }
@@ -502,13 +526,15 @@ public:
             M_gmc =  fusion::at_key<key_type>( geom ).get();
 
             int no = M*N;
-            int ni = gmc_type::nDim;
-            double xi[gmc_type::nDim];
+            int ni = M_nsyms;//gmc_type::nDim;
+            Eigen::VectorXd xi( M_nsyms );
             for(int q = 0; q < M_gmc->nPoints();++q )
             {
                 for(int k = 0;k < gmc_type::nDim;++k )
                     xi[k]=M_gmc->xReal( q )[k];
-                M_fun(&ni,xi,&no,M_y[q].data());
+                for( int k = gmc_type::nDim; k < xi.size(); ++k )
+                    xi[k] = 0;
+                M_fun(&ni,xi.data(),&no,M_y[q].data());
             }
         }
 
@@ -541,6 +567,7 @@ public:
         GiNaC::FUNCP_CUBA M_fun;
         gmc_ptrtype M_gmc;
         loc_type M_y;
+        int M_nsyms;
     };
 
 private:

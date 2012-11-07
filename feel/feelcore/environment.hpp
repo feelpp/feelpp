@@ -286,7 +286,12 @@ public:
         {
             S_deleteObservers.connect( obs );
         }
-
+    template<typename Observer>
+    static void
+    addDeleteObserver( boost::shared_ptr<Observer> const& obs )
+        {
+            S_deleteObservers.connect(boost::bind(&Observer::operator(), obs));
+        }
     //@}
 
 
