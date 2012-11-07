@@ -40,6 +40,8 @@
 #include <feel/feeldiscr/operatorlinear.hpp>
 #include <feel/feeldiscr/bdf2.hpp>
 #include <feel/feeldiscr/projector.hpp>
+#include <feel/feeldiscr/operatorinterpolation.hpp>
+#include <feel/feeldiscr/operatorlagrangep1.hpp>
 
 #include <feel/feelfilters/geotool.hpp>
 
