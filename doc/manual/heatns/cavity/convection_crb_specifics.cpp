@@ -213,7 +213,7 @@ boost::tuple<theta_vector_type, std::vector<theta_vector_type> >
 Convection_crb::computeThetaq( parameter_type const& mu, double )
 {    
     M_thetaAq.resize( Qa() );
-    M_thetaAq( 0 ) = - 1/math::sqrt( mu( 0 ) ); // k_1
+    M_thetaAq( 0 ) = 1/math::sqrt( mu( 0 ) ); // k_1
     M_thetaAq( 1 ) = 1/( mu( 1 )*math::sqrt( mu ( 0 ) ) ); // k_2
     M_thetaAq( 2 ) = 1;
     M_thetaAq( 3 ) = 1;
@@ -232,9 +232,9 @@ Convection_crb::computeThetaq( parameter_type const& mu, double )
 void
 Convection_crb::update( parameter_type const& mu )
 {    
-    *D = *M_Aq[0];
+    D->zero();
     
-    for ( size_type q = 1; q < M_Aq.size(); ++q )
+    for ( size_type q = 0; q < (M_thetaAq.size()-1); ++q )
     {
         //std::cout << "[affine decomp] scale q=" << q << " with " << M_thetaAq[q] << "\n";
         D->addMatrix( M_thetaAq[q], M_Aq[q] );
@@ -289,8 +289,9 @@ void Convection_crb ::updateJacobian( const vector_ptrtype& X, sparse_matrix_ptr
     // Fluid-NS
     // fluid convection derivatives: attention 2 terms
     
-    form2( _test=Xh,_trial=Xh, _matrix=M_Aq[3] )  += integrate ( _range=elements( mesh ), _expr=cst( 1. )*trans( id( v ) )*( gradv( u ) )*idt( u ) );
-    form2( _test=Xh,_trial=Xh, _matrix=M_Aq[3] )  += integrate ( _range=elements( mesh ), _expr=cst( 1. )*trans( id( v ) )*( gradt( u ) )*idv( u ) );
+    form2( _test=Xh,_trial=Xh, _matrix=M_Aq[3] )  += integrate ( _range=elements( mesh ), _expr=cst( 1.)*trans( id( v ) )*( gradv( u ) )*idt( u ) );
+
+    form2( _test=Xh,_trial=Xh, _matrix=M_Aq[3] )  += integrate ( _range=elements( mesh ), _expr=cst( 1.)*trans( id( v ) )*( gradt( u ) )*idv( u ) );
 
         
     //    // temperature derivatives
@@ -303,15 +304,15 @@ void Convection_crb ::updateJacobian( const vector_ptrtype& X, sparse_matrix_ptr
     form2( _test=Xh, _trial=Xh, _matrix=M_Aq[3] ) +=
     integrate ( elements( mesh ),
                pC*grad( s )*( idt( t )*idv( u ) ) );
-    
+           
     form2( _test=Xh, _trial=Xh, _matrix=M_Aq[3] ) +=
     integrate ( boundaryfaces( mesh ),
                pC*( trans( idv( u ) )*N() )*id( s )*idt( t ) );
-    
+               
     form2( _test=Xh, _trial=Xh, _matrix=M_Aq[3] ) +=
     integrate ( boundaryfaces( mesh ),
                pC*( trans( idt( u ) )*N() )*id( s )*idv( t ) );
-    
+
     if ( weakdir == 0 )
     {
         //vitesse

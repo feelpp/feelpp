@@ -182,7 +182,7 @@ Convection_crb::solve( parameter_type const& mu, element_ptrtype& T )
     Feel::ParameterSpace<2>::Element M_current_mu( mu );
     
     M_backend->nlSolver()->jacobian = boost::bind( &self_type::updateJacobian, boost::ref( *this ), _1, _2 );
-    M_backend->nlSolver()->residual = boost::bind( &self_type::updateResidual, boost::ref( *this ), _1, _2);
+    M_backend->nlSolver()->residual = boost::bind( &self_type::updateResidual, boost::ref( *this ), _1, _2 );
 
     vector_ptrtype R( M_backend->newVector( Xh ) );
     sparse_matrix_ptrtype J( M_backend->newMatrix( Xh,Xh ) );
@@ -197,26 +197,28 @@ Convection_crb::solve( parameter_type const& mu, element_ptrtype& T )
         int denom = ( N==1 )?1:N-1;
         M_current_Grashofs = math::exp( math::log( 1. )+i*( math::log( gr )-math::log( 1. ) )/denom );
         M_current_Prandtl = math::exp( math::log( 1.e-2 )+i*( math::log( pr )-math::log( 1.e-2 ) )/denom );
-
-        std::cout << "i/N = " << i << "/" << N <<std::endl;
+        
+        std::cout << "i/N = " << i+1 << "/" << N <<std::endl;
         std::cout << " intermediary Grashof = " << M_current_Grashofs<<std::endl;
         std::cout<< " and Prandtl = " << M_current_Prandtl << "\n"<<std::endl;
         
         M_current_mu << M_current_Grashofs, M_current_Prandtl;
-//        M_backend->nlSolver()->residual = boost::bind( &self_type::updateResidual, boost::ref( *this ), _1, _2, M_current_mu );
         
         this->computeThetaq( M_current_mu );
         this->update( M_current_mu );
-        
-//        T->print(std::cout);
+                
+//        T->print(std::cout);        
         
         M_backend->nlSolve(_jacobian=J , _solution=T , _residual=R);
                     
         if ( exporter->doExport() )
         {
 //            T->print(std::cout);
+            Log() << "exportResults starts\n";
             this->exportResults( T, i );
-        }
+            Log() << "exportResults done\n";
+
+        }        
     }
 }
 
@@ -240,9 +242,6 @@ Convection_crb::scalarProduct( vector_type const& x, vector_type const& y )
 void
 Convection_crb::run( const double * X, unsigned long N, double * Y, unsigned long P )
 {
-    
-    std::cout << "\nConvection_crb::run( const double * X, unsigned long N, double * Y, unsigned long P )\n\n";
-    
     
 /*    using namespace vf;
     Feel::ParameterSpace<2>::Element mu( M_Dmu );
@@ -275,8 +274,36 @@ Convection_crb::output( int output_index, parameter_type const& mu )
     auto U = Xh->element( "u" );
     U = *pT;
 
+    element_0_type u = U. element<0>(); // fonction vitesse
+    element_1_type p = U. element<1>(); // fonction pression
     element_2_type t = U. element<2>(); // fonction temperature
+#if defined( FEELPP_USE_LM )
+    element_3_type xi = U. element<3>(); // fonction multipliers
+#endif
+
+    // value mean-pressure
+    double meas = integrate( elements( mesh ),constant( 1.0 )  ).evaluate()( 0, 0 );
+    std::cout << "measure(Omega)=" << meas << " (should be equal to 1)\n";
+    std::cout << "mean pressure = "
+    << integrate( elements( mesh ) ,idv( p ) ).evaluate()( 0,0 )/meas << "\n";
     
+#if defined( FEELPP_USE_LM )
+    Log() << "value of the Lagrange multiplier xi= " << xi( 0 ) << "\n";
+    std::cout << "value of the Lagrange multiplier xi= " << xi( 0 ) << "\n";
+#endif
+    
+    double mean_div_u = integrate( elements( mesh ),
+                                  divv( u ) ).evaluate()( 0, 0 );
+    std::cout << "mean_div(u)=" << mean_div_u << "\n";
+    
+    double div_u_error_L2 = integrate( elements( mesh ),
+                                      divv( u )*divv( u ) ).evaluate()( 0, 0 );
+    std::cout << "||div(u)||_2=" << math::sqrt( div_u_error_L2 ) << "\n";
+    
+    double AverageTdomain = integrate( elements( mesh ) , idv( t ) ).evaluate()( 0,0 ) ;
+    std::cout << "AverageTdomain = " << AverageTdomain << std::endl;
+    
+
     double output = 0.0;
     
     // right hand side (compliant)
@@ -289,11 +316,13 @@ Convection_crb::output( int output_index, parameter_type const& mu )
     // output
     if ( output_index == 1 )
     {
-        output = integrate( markedfaces( mesh, "Tflux" ) , idv( t ) ).evaluate()( 0,0 ) ;
+        // calcul le nombre de Nusselt
+        double AverageT = integrate( markedfaces( mesh,"Tflux" ) ,
+                                    idv( t ) ).evaluate()( 0,0 ) ;
+        std::cout << "AverageT = " << AverageT << std::endl;
 
-        double AverageTdomain = integrate( elements( mesh ) , idv( t ) ).evaluate()( 0,0 ) ;
-        std::cout << "AverageTdomain = " << AverageTdomain << std::endl;
-
+        output = AverageT;
+        
     }
     
     return output;

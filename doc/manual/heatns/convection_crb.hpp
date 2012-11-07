@@ -346,12 +346,10 @@ public:
 
     
     void updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J );
-//    void updateResidual( const vector_ptrtype& X, vector_ptrtype& R, parameter_type const& mu );
     void updateResidual( const vector_ptrtype& X, vector_ptrtype& R );
 
 private:
 
-    
     po::options_description _M_desc;
 
     po::variables_map M_vm;
@@ -367,9 +365,6 @@ private:
     vector_ptrtype F;
 
     sparse_matrix_ptrtype D,M;
-
-    //pas de temps
-    //value_type dt;
 
     // Exporters
     boost::shared_ptr<export_type> exporter;
