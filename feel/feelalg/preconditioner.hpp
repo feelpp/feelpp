@@ -118,6 +118,11 @@ public:
 
         return *this;
     }
+
+    void operator()()
+    {
+        this->clear();
+    }
     //@}
 
     /** @name Accessors
@@ -299,6 +304,8 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( boost::shared_ptr<Preconditioner<double> > ),
     if ( matrix )
         p->setMatrix( matrix );
     p->init();
+    Environment::addDeleteObserver( p );
+
     return p;
 }
 

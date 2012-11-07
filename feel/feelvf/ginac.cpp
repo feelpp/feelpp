@@ -26,6 +26,8 @@
    \author Christophe Prud'homme <prudhomme@unistra.fr>
    \date 2012-10-24
  */
+#include <feel/feelcore/environment.hpp>
+
 #include <ginac/ginac.h>
 
 namespace GiNaC
@@ -104,3 +106,27 @@ laplacian( matrix const& f, std::vector<symbol> const& l )
 
 } // GiNaC
 
+namespace Feel
+{
+using  GiNaC::ex;
+using  GiNaC::symbol;
+ex parse( std::string const& str, std::initializer_list<symbol>  _syms )
+{
+    LOG(INFO) << "parsing " << str << "\n";
+    std::vector<symbol> syms(_syms);
+    for(int i =0; i < syms.size();++i)
+        LOG(INFO) <<"sym: "  << syms[i].get_name() << "\n";
+    LOG(INFO) <<"done with symbols\n";
+    using GiNaC::symtab;
+    using GiNaC::parser;
+    symtab table;
+    LOG(INFO) <<"insert symbols in symbol table\n";
+    std::for_each( syms.begin(), syms.end(), [&table]( symbol const& s ) { std::cerr << "adding symbol: " << s.get_name() << std::endl; table[s.get_name()] = s; } );
+    LOG(INFO) <<"define parser\n";
+    parser reader(table);
+    LOG(INFO) <<"parse expression\n";
+    //return reader(str);
+    return cos(0);
+}
+
+}
