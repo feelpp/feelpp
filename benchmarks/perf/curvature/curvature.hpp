@@ -32,23 +32,7 @@
 #include <boost/any.hpp>
 #include <boost/utility.hpp>
 
-#include <feel/options.hpp>
-#include <feel/feelcore/simget.hpp>
-
-#include <feel/feelalg/backend.hpp>
-
-#include <feel/feeldiscr/functionspace.hpp>
-#include <feel/feeldiscr/projector.hpp>
-#include <feel/feeldiscr/operatorlagrangep1.hpp>
-
-#include <feel/feelfilters/gmsh.hpp>
-#include <feel/feelfilters/exporter.hpp>
-#include <feel/feelpoly/lagrange.hpp>
-//#include <feel/feelpoly/crouzeixraviart.hpp>
-
-#include <feel/feelmesh/elements.hpp>
-
-#include <feel/feelvf/vf.hpp>
+#include <feel/feel.hpp>
 
 #define PROJ_INT_BY_PART 1
 
@@ -130,10 +114,9 @@ public:
     /* export */
     typedef Exporter<mesh_type> export_type;
 
-    Curvature( std::string const& basis_name,
-               po::variables_map const& vm, AboutData const& ad )
+    Curvature( std::string const& basis_name )
         :
-        super( vm, ad ),
+        super(),
         M_backend(),
         M_basis_name( basis_name ),
         exporter()
