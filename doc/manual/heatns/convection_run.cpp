@@ -214,25 +214,28 @@ Convection::run()
         int denom = ( N==1 )?1:N-1;
         M_current_Grashofs = math::exp( math::log( 1. )+i*( math::log( gr )-math::log( 1. ) )/denom );
         M_current_Prandtl = math::exp( math::log( 1e-2 )+i*( math::log( pr )-math::log( 1e-2 ) )/denom );
+
         std::cout << "i/N = " << i << "/" << N <<std::endl;
         std::cout << " intermediary Grashof = " << M_current_Grashofs<<std::endl;
         std::cout<< " and Prandtl = " << M_current_Prandtl << "\n"<<std::endl;
+        
         M_backend->nlSolve( _solution = U );
-
+        
+        std::ofstream file_solution;
+        std::string mu_str;
+        mu_str = ( boost::format( "_%1%" ) % i ).str() ;
+        std::string name = "FEMsolution" + mu_str;
+        file_solution.open( name,std::ios::out );        
+        for ( int j=0; j < U.size(); j++ )
+            file_solution << U.operator()( j )<<"\n";
+        file_solution.close();
+        
         if ( exporter->doExport() )
         {
             Log() << "exportResults starts\n";
-
-            exporter->step( i )->setMesh( mesh );
-
-            exporter->step( i )->add( "u", u );
-            exporter->step( i )->add( "t", t );
-            exporter->step( i )->add( "p", p );
-
-            exporter->save();
+            this->exportResults(U,i);
             Log() << "exportResults done\n";
         }
-
     }
 
     // value mean-pressure
@@ -253,6 +256,9 @@ Convection::run()
     double div_u_error_L2 = integrate( elements( mesh ),
                                        divv( u )*divv( u ) ).evaluate()( 0, 0 );
     std::cout << "||div(u)||_2=" << math::sqrt( div_u_error_L2 ) << "\n";
+
+    double AverageTdomain = integrate( elements( mesh ) , idv( t ) ).evaluate()( 0,0 ) ;
+    std::cout << "AverageTdomain = " << AverageTdomain << std::endl;
 
     // calcul le nombre de Nusselt
     double AverageT = integrate( markedfaces( mesh,"Tflux" ) ,
