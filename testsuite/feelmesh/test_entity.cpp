@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2005-08-10
 
   Copyright (C) 2005,2006 EPFL
@@ -24,14 +24,13 @@
 */
 /**
    \file test_entity.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-08-10
  */
 #define DO_TEST 1
 // Boost.Test
 #define BOOST_TEST_MAIN
-#include <boost/test/unit_test.hpp>
-using boost::unit_test::test_suite;
+#include <testsuite/testsuite.hpp>
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelmesh/simplex.hpp>
@@ -39,6 +38,7 @@ using boost::unit_test::test_suite;
 #include <feel/feelmesh/refentity.hpp>
 #include <feel/feelmesh/geoelement.hpp>
 
+FEELPP_ENVIRONMENT_NO_OPTIONS
 
 BOOST_AUTO_TEST_CASE( test_connectivity1 )
 {

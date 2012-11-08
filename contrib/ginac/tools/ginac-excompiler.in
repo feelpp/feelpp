@@ -1,0 +1,2 @@
+#!/bin/sh
+@CMAKE_C_COMPILER@ -x c -fPIC -shared -o $1.so $1

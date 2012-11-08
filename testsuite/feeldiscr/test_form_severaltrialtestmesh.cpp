@@ -2,11 +2,9 @@
 
 #define USE_BOOST_TEST 1
 
-#if USE_BOOST_TEST
+
 #define BOOST_TEST_MODULE test_form_severaltrialtestmesh
-#include <boost/test/unit_test.hpp>
-using boost::unit_test::test_suite;
-#endif
+#include <testsuite/testsuite.hpp>
 
 #include <feel/options.hpp>
 
@@ -409,21 +407,19 @@ void run( Application_ptrtype & theApp )
  *_________________________________________________*/
 
 #if USE_BOOST_TEST
+
+FEELPP_ENVIRONMENT_WITH_OPTIONS( test_form_severaltrialtestmesh::makeAbout(),
+                                 test_form_severaltrialtestmesh::makeOptions() );
+
 BOOST_AUTO_TEST_SUITE( form_severaltrialtestmesh )
 
 typedef Feel::Application Application_type;
 typedef boost::shared_ptr<Application_type> Application_ptrtype;
 
-Feel::Environment env( boost::unit_test::framework::master_test_suite().argc,
-                       boost::unit_test::framework::master_test_suite().argv );
 
 BOOST_AUTO_TEST_CASE( form_severaltrialtestmesh1 )
 {
-    auto theApp = Application_ptrtype( new Application_type( boost::unit_test::framework::master_test_suite().argc,
-                                       boost::unit_test::framework::master_test_suite().argv,
-                                       test_form_severaltrialtestmesh::makeAbout(),
-                                       test_form_severaltrialtestmesh::makeOptions()
-                                                           ) );
+    auto theApp = Application_ptrtype( new Application_type );
 
     if ( theApp->vm().count( "help" ) )
     {
@@ -443,10 +439,11 @@ main( int argc, char** argv )
 {
     typedef Feel::Application Application_type;
     typedef boost::shared_ptr<Application_type> Application_ptrtype;
-    Feel::Environment env( argc,argv );
-    auto theApp = Application_ptrtype( new Application_type( argc,argv,
-                                       test_form_severaltrialtestmesh::makeAbout(),
-                                       test_form_severaltrialtestmesh::makeOptions() ) );
+    Feel::Environment env( argc,argv,
+                           test_form_severaltrialtestmesh::makeAbout(),
+                           test_form_severaltrialtestmesh::makeOptions() );
+    auto theApp = Application_ptrtype( new Application_type );
+
 
 
     if ( theApp->vm().count( "help" ) )

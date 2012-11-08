@@ -2,7 +2,7 @@
 
    This file is part of the Feel library
 
-   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    Date: 2006-12-30
 
    Copyright (C) 2006 Universit� Joseph Fourier (Grenoble)
@@ -23,7 +23,7 @@
 */
 /**
    \file bdf.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2006-12-30
 */
 #ifndef _BDF_H
@@ -298,7 +298,7 @@ template <typename SpaceType>
 typename Bdf<SpaceType>::element_type&
 Bdf<SpaceType>::unknown( int i )
 {
-    //Debug() << "[Bdf::unknown] id: " << i << " l2norm = " << _M_unknowns[i]->l2Norm() << "\n";
+    //VLOG(1) << "[Bdf::unknown] id: " << i << " l2norm = " << _M_unknowns[i]->l2Norm() << "\n";
     return *_M_unknowns[i];
 }
 
@@ -348,7 +348,7 @@ Bdf<SpaceType>::shiftRight( typename space_type::template Element<value_type, co
     /*    int i = 0;
     BOOST_FOREACH( boost::shared_ptr<element_type>& t, _M_unknowns  )
         {
-            //Debug() << "[Bdf::shiftright] id: " << i << " l2norm = " << t->l2Norm() << "\n";
+            //VLOG(1) << "[Bdf::shiftright] id: " << i << " l2norm = " << t->l2Norm() << "\n";
             ++i;
         }
     */

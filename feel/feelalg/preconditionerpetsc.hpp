@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2012-01-16
 
   Copyright (C) 2012 Université Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file preconditionerpetsc.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2012-01-16
  */
 #ifndef __PreconditionerPetsc_H
@@ -186,23 +186,6 @@ private:
 
 
 
-/*----------------------- inline functions ----------------------------------*/
-template <typename T>
-FEELPP_STRONG_INLINE
-PreconditionerPetsc<T>::PreconditionerPetsc ( WorldComm const& worldComm )
-    :
-    Preconditioner<T>( worldComm )
-{
-}
-
-
-
-template <typename T>
-FEELPP_STRONG_INLINE
-PreconditionerPetsc<T>::~PreconditionerPetsc ()
-{
-    this->clear ();
-}
 
 } // Feel
 #endif /* __PreconditionerPetsc_H */

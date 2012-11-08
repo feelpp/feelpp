@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2012-04-11
 
   Copyright (C) 2012 Université Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file test_stencil.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2012-04-11
  */
 #define USE_BOOST_TEST 1
@@ -32,14 +32,7 @@
 //#define BOOST_TEST_MAIN
 // give a name to the testsuite
 #define BOOST_TEST_MODULE stencil
-// disable the main function creation, use our own
-//#define BOOST_TEST_NO_MAIN
-
-#if defined(USE_BOOST_TEST)
-#include <boost/test/unit_test.hpp>
-using boost::unit_test::test_suite;
-#include <boost/test/floating_point_comparison.hpp>
-#endif
+#include <testsuite/testsuite.hpp>
 
 #include <feel/feelcore/application.hpp>
 #include <feel/options.hpp>
@@ -83,7 +76,7 @@ makeAbout()
                      "Test for stencil manager",
                      AboutData::License_GPL,
                      "Copyright (c) 2012 Universite Joseph Fourier" );
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     return about;
 
 }
@@ -121,9 +114,9 @@ public:
     /**
      * Constructor
      */
-    TestStencil( int argc, char** argv, AboutData const& ad, po::options_description const& od )
+    TestStencil()
         :
-        super( argc, argv, ad, od ),
+        super(),
         M_backend( backend_type::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].as<double>() )
     {
@@ -179,16 +172,13 @@ private:
 
 }
 #if USE_BOOST_TEST
+FEELPP_ENVIRONMENT_WITH_OPTIONS( Feel::makeAbout(), Feel::makeOptions() )
 
 BOOST_AUTO_TEST_SUITE( space )
-Feel::Environment env( boost::unit_test::framework::master_test_suite().argc,
-                       boost::unit_test::framework::master_test_suite().argv );
 BOOST_AUTO_TEST_CASE( test_stencil )
 {
     BOOST_TEST_MESSAGE( "test_stencil" );
-    Feel::TestStencil t( boost::unit_test::framework::master_test_suite().argc,
-                       boost::unit_test::framework::master_test_suite().argv,
-                       Feel::makeAbout(), Feel::makeOptions() );
+    Feel::TestStencil t;
 
     t();
 

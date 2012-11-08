@@ -1,6 +1,5 @@
 #define BOOST_TEST_MODULE test_vect_comp
-#include <boost/test/unit_test.hpp>
-using boost::unit_test::test_suite;
+#include <testsuite/testsuite.hpp>
 
 #include <feel/options.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
@@ -12,9 +11,6 @@ using boost::unit_test::test_suite;
 #include <iostream>
 
 using namespace Feel;
-using namespace Feel::vf;
-
-
 
 namespace test_vect_comp
 {
@@ -59,22 +55,17 @@ makeAbout()
 
 }
 
+FEELPP_ENVIRONMENT_WITH_OPTIONS( test_vect_comp::makeAbout(), test_vect_comp::makeOptions() )
+
 BOOST_AUTO_TEST_SUITE( interp_vect_comp )
-Feel::Environment env( boost::unit_test::framework::master_test_suite().argc,
-                       boost::unit_test::framework::master_test_suite().argv );
 
 BOOST_AUTO_TEST_CASE( interp_vect_comp )
 {
 
     using namespace test_vect_comp;
 
-    using namespace Feel::vf;
 
-    auto test_app = Application_ptrtype( new Application_type( boost::unit_test::framework::master_test_suite().argc,
-                                         boost::unit_test::framework::master_test_suite().argv,
-                                         makeAbout(),
-                                         makeOptions()
-                                                             ) );
+    auto test_app = Application_ptrtype( new Application_type );
 
     test_app->changeRepository( boost::format( "/testsuite/feeldiscr/%1%/" )
                                 % test_app->about().appName()

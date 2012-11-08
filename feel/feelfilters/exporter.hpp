@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2004-11-09
 
   Copyright (C) 2004 EPFL
@@ -24,7 +24,7 @@
 */
 /**
    \file Exporter.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2004-11-09
  */
 #ifndef __Exporter_H
@@ -356,7 +356,11 @@ public:
      */
     void saveTimeSet() const
     {
-        if ( this->worldComm().rank() != this->worldComm().masterRank() ) return;
+        if ( this->worldComm().rank() != this->worldComm().masterRank() )
+            {
+                ++M_cptOfSave;
+                return;
+            }
 
         auto __ts_it = this->beginTimeSet();
         auto __ts_en = this->endTimeSet();

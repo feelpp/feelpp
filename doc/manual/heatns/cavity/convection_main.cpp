@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2009-03-04
 
   Copyright (C) 2009-2012 Universite Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file convection_main.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2009-03-04
  */
 
@@ -106,7 +106,7 @@ makeAbout()
 
     // Informations sur l'auteur
     about.addAuthor( "Quinodoz Samuel","Student","samuel.quinodoz@epfl.ch" ,"main developer" );
-    about.addAuthor( "Christophe Prud'homme","Maintainer","christophe.prudhomme@ujf-grenoble.fr" ,"" );
+    about.addAuthor( "Christophe Prud'homme","Maintainer","christophe.prudhomme@feelpp.org" ,"" );
 
     // Retourne les infos
     return about;
@@ -127,7 +127,7 @@ about()
     
     // Informations sur l'auteur
     about.addAuthor( "Quinodoz Samuel","Student","samuel.quinodoz@epfl.ch" ,"main developer" );
-    about.addAuthor( "Christophe Prud'homme","Maintainer","christophe.prudhomme@ujf-grenoble.fr" ,"" );
+    about.addAuthor( "Christophe Prud'homme","Maintainer","christophe.prudhomme@feelpp.org" ,"" );
     
     // Retourne les infos
     return about;

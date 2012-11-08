@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2009-03-04
 
   Copyright (C) 2009 Universite Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file convection_jacobian.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2009-03-04
  */
 #include <convection.hpp>
@@ -33,7 +33,7 @@ void Convection ::updateJacobian( const vector_ptrtype& X,
         sparse_matrix_ptrtype& J )
 {
     boost::timer ti;
-    Log() << "[updateJacobian] start\n";
+    LOG(INFO) << "[updateJacobian] start\n";
 
     if ( !J )
     {
@@ -80,8 +80,7 @@ void Convection ::updateJacobian( const vector_ptrtype& X,
         else
             form2( Xh, Xh, M_D )  += on ( markedfaces( mesh, "Tfixed" ),t,Rtemp,cst( T0 ) );
     }
-
-    Log() << "[updateJacobian] done in " << ti.elapsed() << "s\n";
+    LOG(INFO) << "[updateJacobian] done in " << ti.elapsed() << "s\n";
 
     J->addMatrix( 1.0, M_L);
     J->addMatrix( 1.0, M_D);

@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2008-06-12
 
   Copyright (C) 2008 Universite Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file test_bdf.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2008-06-12
  */
 #include <feel/feelcore/feel.hpp>
@@ -41,7 +41,7 @@ makeAbout()
                            Feel::AboutData::License_LGPL,
                            "Copyright (c) 2008 Universite Joseph Fourier" );
 
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     return about;
 
 }
@@ -57,9 +57,9 @@ class MyApp: public Application
 {
     typedef Application super;
 public:
-    MyApp( int argc, char** argv, Feel::AboutData const& about, po::options_description const& od )
+    MyApp()
         :
-        super( argc, argv, about, od ),
+        super(),
         bdf( this->vm(), "bdf","test_bdf", Environment::worldComm() )
     {}
     void run()
@@ -78,8 +78,8 @@ private:
 };
 int main( int argc, char** argv )
 {
-    Feel::Environment env( argc,argv );
-    MyApp myapp( argc, argv, makeAbout(), makeOptions() );
+    Feel::Environment env( _argc=argc,_argv=argv,_desc=makeOptions(),_about=makeAbout() );
+    MyApp myapp;
     myapp.run();
 
 

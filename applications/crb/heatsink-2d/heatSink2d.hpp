@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2009-11-13
 
   Copyright (C) 2009 Université Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file heatSink.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2009-11-13
  */
 #ifndef __HeatSink2D_H
@@ -96,7 +96,7 @@ makeHeatSink2DAbout( std::string const& str = "heatSink" )
                            Feel::AboutData::License_GPL,
                            "Copyright (c) 2010,2011 Université de Grenoble 1 (Joseph Fourier)" );
 
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     about.addAuthor( "Stephane Veys", "developer", "stephane.veys@imag.fr", "" );
     return about;
 }
@@ -698,7 +698,7 @@ void HeatSink2D::init()
     //mu_max <<  /* Bi */ 0.1 , /*L*/2, /*k*/1;
     M_Dmu->setMax( mu_max );
 
-    Log() << "Number of dof " << Xh->nLocalDof() << "\n";
+    LOG(INFO) << "Number of dof " << Xh->nLocalDof() << "\n";
 
     assemble();
 
@@ -793,7 +793,7 @@ void HeatSink2D::solve( sparse_matrix_ptrtype& D,
 void HeatSink2D::exportResults( double time, element_type& T, parameter_type const& mu )
 {
     std::cout<<"STRT"<<std::endl;
-    Log() << "exportResults starts\n";
+    LOG(INFO) << "exportResults starts\n";
     std::string exp_name = "Model_T" + ( boost::format( "_%1%" ) %time ).str();
     //export_ptrtype exp = export_ptrtype( Exporter<mesh_type>::New( exp_name ) );
     export_ptrtype exporter;

@@ -93,9 +93,9 @@ public:
     /**
      * Constructor
      */
-    NIRBTEST( po::variables_map const& vm, AboutData const& about )
+    NIRBTEST()
         :
-        super( vm, about ),
+        super(),
         M_backend( backend_type::build( this->vm() ) ),
         CoarseMeshSize( this->vm()["hcoarsesize"].template as<double>() ),
         FineMeshSize( this->vm()["hfinsize"].template as<double>() ),
@@ -447,7 +447,7 @@ void NIRBTEST<PolynomialOrder>::run( const double* X, unsigned long P, double* Y
         std::cout << "Computation of Coarse snapshot " <<std::endl;
         boost::timer ti;
         ComputeSnapshot( XhCoarse,"_Coarse_" );
-        
+
         double Time_snapshot_Coarse = ti.elapsed();
         std::cout << "Computation of the " << NbSnapshot << " snapshots : done  -- ";
         std::cout << "Time per snapshot: " << Time_snapshot_Coarse/NbSnapshot << " sec " <<std::endl;
@@ -476,7 +476,7 @@ void NIRBTEST<PolynomialOrder>::run( const double* X, unsigned long P, double* Y
         std::cout << "Construction of uNirbFine - Fine/Fine Grid  (saved in nirb1Grid): done "<<std::endl;
         std::cout << "Time to build  " << TimeFine << " sec" <<std::endl;
 
- 
+
 
         mesh_ptrtype meshRef;
 
@@ -529,7 +529,7 @@ void NIRBTEST<PolynomialOrder>::run( const double* X, unsigned long P, double* Y
 
         //std::cout << "L2NormURef = " << L2NormUref <<  " -- H1NormUref = " << H1NormUref <<std::endl;
         //std::cout <<std::endl;
- 
+
 
 
         // //Computation of relative error measured in  H1 norm
@@ -723,8 +723,8 @@ void NIRBTEST<PolynomialOrder>::ComputeSnapshot( space_ptrtype Xh,std::string fi
             exit(0);
         }
         std::string path = "./Sol" + filename + ( boost::format( "%1%" ) %i ).str() ;
-        ui.save( _path=path ); 
-        //boost::filesystem::path full_path_Sol( boost::filesystem::current_path() ); 
+        ui.save( _path=path );
+        //boost::filesystem::path full_path_Sol( boost::filesystem::current_path() );
         //cout << "Path where the sol are save " << full_path_Sol << endl;
 
     }
@@ -737,7 +737,7 @@ template< int PolynomialOrder>
 Eigen::MatrixXd NIRBTEST<PolynomialOrder> :: ConstructStiffMatrixSnapshot( space_ptrtype Xh,sparse_matrix_ptrtype const & StiffMatrix )
 {
 
-     
+
     auto ui = Xh->element();
     auto uj = Xh->element();
     /*
@@ -745,18 +745,18 @@ Eigen::MatrixXd NIRBTEST<PolynomialOrder> :: ConstructStiffMatrixSnapshot( space
      form2( _test=Xh, _trial=Xh, _matrix=D ) =
      integrate( _range=elements(Xh->mesh()), _expr=gradt(ui)*trans(grad(uj)));
     */
-    Eigen::MatrixXd S ( NbSnapshot,NbSnapshot ); //Dense RB stiffness matrix S 
+    Eigen::MatrixXd S ( NbSnapshot,NbSnapshot ); //Dense RB stiffness matrix S
     cout << " Dans ConstructStiffMatrixSnapshot " << endl;
-    //boost::filesystem::path full_path_Sol( boost::filesystem::current_path() ); 
+    //boost::filesystem::path full_path_Sol( boost::filesystem::current_path() );
     //cout << "Path where the sol are load " << full_path_Sol << endl;
-    
+
     for ( int i = 0; i< NbSnapshot; i++ )
     {
         ui.zero();
         std::string path = ( boost::format( "./Sol_%1%" ) %i ).str() ;
         //std::string suffixe = "-";
         //ui.load( _path=path,_suffix=suffixe );
-         
+
         ui.load( _path=path);
 
         if ( ui.l2Norm()==0. )
@@ -1364,7 +1364,7 @@ Eigen::MatrixXd NIRBTEST<PolynomialOrder> :: BuildBetaH( space_ptrtype XhFine,
         std::cerr << "ERROR : Problem in opening 'IndBR'" << sizeRB << " file " <<std::endl;
         exit( 0 );
 
-        
+
     }
 
     for ( int i =0 ; i < sizeRB; i++ )
@@ -1391,7 +1391,7 @@ Eigen::MatrixXd NIRBTEST<PolynomialOrder> :: BuildBetaH( space_ptrtype XhFine,
             std::cerr <<"Coarse sampling has to be done " << std::endl;
             ComputeSnapshot( XhCoarse,"_Coarse_" );
             i--;
-             
+
         }
 
         //opI->apply(uCoarse,uCoarseInterpolation);

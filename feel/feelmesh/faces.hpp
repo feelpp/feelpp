@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2005-09-03
 
   Copyright (C) 2005,2006 EPFL
@@ -24,7 +24,7 @@
 */
 /**
    \file faces.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-09-03
  */
 #ifndef __faces_H
@@ -49,7 +49,7 @@ namespace multi_index = boost::multi_index;
  * \class Faces
  * \brief Faces container class
  *
- * @author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+ * @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
  * @see Elements, Edges, Points
  */
 template<typename EntityType, typename ElementType>
@@ -61,13 +61,19 @@ public:
     /** @name Typedefs
      */
     //@{
-    typedef typename mpl::if_<mpl::equal_to<mpl::int_<EntityType::nDim>, mpl::int_<0> >,
-            mpl::identity<GeoElement0D<EntityType::nRealDim, SubFaceOf<ElementType> > >,
-            typename mpl::if_<mpl::equal_to<mpl::int_<EntityType::nDim>, mpl::int_<1> >,
-            mpl::identity<GeoElement1D<EntityType::nRealDim, EntityType,  SubFaceOf<ElementType> > >,
-            mpl::identity<GeoElement2D<EntityType::nRealDim, EntityType,  SubFaceOf<ElementType> > >
-            >::type
-            >::type::type face_type;
+    typedef typename mpl::if_<mpl::equal_to<mpl::int_<EntityType::nDim>, mpl::int_<EntityType::nRealDim-1> >,
+                              mpl::identity<typename mpl::if_<mpl::equal_to<mpl::int_<EntityType::nDim>, mpl::int_<0> >,
+                                                              mpl::identity<GeoElement0D<EntityType::nRealDim, SubFaceOf<ElementType> > >,
+                                                              typename mpl::if_<mpl::equal_to<mpl::int_<EntityType::nDim>, mpl::int_<1> >,
+                                                                                mpl::identity<GeoElement1D<EntityType::nRealDim, EntityType,  SubFaceOf<ElementType> > >,
+                                                                                mpl::identity<GeoElement2D<EntityType::nRealDim, EntityType,  SubFaceOf<ElementType> > >
+                                                                                >::type>::type>,
+                              mpl::identity<typename mpl::if_<mpl::equal_to<mpl::int_<EntityType::nDim>, mpl::int_<0> >,
+                                                              mpl::identity<GeoElement0D<EntityType::nRealDim, SubFaceOfMany<ElementType> > >,
+                                                              typename mpl::if_<mpl::equal_to<mpl::int_<EntityType::nDim>, mpl::int_<1> >,
+                                                                                mpl::identity<GeoElement1D<EntityType::nRealDim, EntityType,  SubFaceOfMany<ElementType> > >,
+                                                                                mpl::identity<GeoElement2D<EntityType::nRealDim, EntityType,  SubFaceOfMany<ElementType> > >
+                                                                                >::type>::type> >::type::type::type face_type;
 
     typedef multi_index::multi_index_container<
     face_type,
@@ -202,9 +208,9 @@ public:
          */
         void operator()( face_type& e )
         {
-            //Debug() << "FaceUpdatePoint] update point index " << _M_index << " with "<< _M_pt.id() << "\n";
+            //VLOG(1) << "FaceUpdatePoint] update point index " << _M_index << " with "<< _M_pt.id() << "\n";
             e.setPoint( _M_index, _M_pt );
-            //Debug() << "FaceUpdatePoint] update point "<< e.point(_M_index).id() << "\n";
+            //VLOG(1) << "FaceUpdatePoint] update point "<< e.point(_M_index).id() << "\n";
         }
     private:
         uint16_type _M_index;
@@ -300,12 +306,12 @@ public:
     face_type const& face( size_type i ) const
     {
         return *_M_faces.find( face_type( i ) );
-    };
+    }
 
     face_iterator faceIterator( size_type i ) const
     {
         return  _M_faces.find( face_type( i ) );
-    };
+    }
 
     face_iterator beginFace()
     {

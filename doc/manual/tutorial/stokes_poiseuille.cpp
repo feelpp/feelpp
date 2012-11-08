@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2009-01-04
 
   Copyright (C) 2009 Christophe Prud'homme
@@ -24,7 +24,7 @@
 */
 /**
    \file stokes_poiseuille.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2009-01-04
  */
 #include <feel/options.hpp>
@@ -91,7 +91,7 @@ makeAbout()
                            Feel::AboutData::License_GPL,
                            "Copyright (c) 2009-2012 Université de Grenoble 1 (Joseph Fourier)" );
 
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     return about;
 
 }
@@ -264,11 +264,11 @@ Stokes_Poiseuille::run()
 #endif
     //# endmarker4 #
 
-    Log() << "Data Summary:\n";
-    Log() << "   hsize = " << meshSize << "\n";
-    Log() << "  export = " << this->vm().count( "export" ) << "\n";
-    Log() << "      mu = " << mu << "\n";
-    Log() << " bccoeff = " << penalbc << "\n";
+    LOG(INFO) << "Data Summary:\n";
+    LOG(INFO) << "   hsize = " << meshSize << "\n";
+    LOG(INFO) << "  export = " << this->vm().count( "export" ) << "\n";
+    LOG(INFO) << "      mu = " << mu << "\n";
+    LOG(INFO) << " bccoeff = " << penalbc << "\n";
 
 
 
@@ -291,6 +291,7 @@ Stokes_Poiseuille::run()
 
     auto p_exact=(-2*Px()+1);
 
+
     auto f=vec(cst(0.) , cst(0.) );
     //*************************************************************************************
 
@@ -300,7 +301,7 @@ Stokes_Poiseuille::run()
     stokes_rhs += integrate( markedfaces( mesh,"Inlet" ), inner( u_exact,-SigmaN+penalbc*id( v )/hFace() ) );
     stokes_rhs += integrate( markedfaces( mesh,"Outlet" ), inner( u_exact,-SigmaN+penalbc*id( v )/hFace() ) );
 
-    Log() << "[stokes] vector local assembly done\n";
+    LOG(INFO) << "[stokes] vector local assembly done\n";
 
     /*
      * Construction of the left hand side
@@ -342,14 +343,14 @@ Stokes_Poiseuille::run()
 #endif
     this->exportResults( u_exact, p_exact, U, V );
 
-   
 
-    Log() << "[dof]         number of dof: " << Xh->nDof() << "\n";
-    Log() << "[dof]    number of dof/proc: " << Xh->nLocalDof() << "\n";
-    Log() << "[dof]      number of dof(U): " << Xh->functionSpace<0>()->nDof()  << "\n";
-    Log() << "[dof] number of dof/proc(U): " << Xh->functionSpace<0>()->nLocalDof()  << "\n";
-    Log() << "[dof]      number of dof(P): " << Xh->functionSpace<1>()->nDof()  << "\n";
-    Log() << "[dof] number of dof/proc(P): " << Xh->functionSpace<1>()->nLocalDof()  << "\n";
+
+    LOG(INFO) << "[dof]         number of dof: " << Xh->nDof() << "\n";
+    LOG(INFO) << "[dof]    number of dof/proc: " << Xh->nLocalDof() << "\n";
+    LOG(INFO) << "[dof]      number of dof(U): " << Xh->functionSpace<0>()->nDof()  << "\n";
+    LOG(INFO) << "[dof] number of dof/proc(U): " << Xh->functionSpace<0>()->nLocalDof()  << "\n";
+    LOG(INFO) << "[dof]      number of dof(P): " << Xh->functionSpace<1>()->nDof()  << "\n";
+    LOG(INFO) << "[dof] number of dof/proc(P): " << Xh->functionSpace<1>()->nLocalDof()  << "\n";
 } // Stokes::run
 
 
@@ -367,7 +368,7 @@ Stokes_Poiseuille::exportResults( ExprUExact u_exact, ExprPExact p_exact,
 #if defined( FEELPP_USE_LM )
     auto lambda = U.element<2>();
     auto nu = V.element<2>();
-    Log() << "value of the Lagrange multiplier lambda= " << lambda( 0 ) << "\n";
+    LOG(INFO) << "value of the Lagrange multiplier lambda= " << lambda( 0 ) << "\n";
     std::cout << "value of the Lagrange multiplier lambda= " << lambda( 0 ) << "\n";
 
 #endif
@@ -378,11 +379,11 @@ Stokes_Poiseuille::exportResults( ExprUExact u_exact, ExprPExact p_exact,
     std::cout << "||u_error||_2 = " << math::sqrt( u_errorL2 ) << "\n";;
 
     double meas = integrate( elements( u.mesh() ), cst( 1.0 ) ).evaluate()( 0, 0 );
-    Log() << "[stokes] measure(Omega)=" << meas << " (should be equal to 1)\n";
+    LOG(INFO) << "[stokes] measure(Omega)=" << meas << " (should be equal to 1)\n";
     std::cout << "[stokes] measure(Omega)=" << meas << " (should be equal to 1)\n";
 
     double mean_p = integrate( elements( u.mesh() ), idv( p ) ).evaluate()( 0, 0 )/meas;
-    Log() << "[stokes] mean(p)=" << mean_p << "\n";
+    LOG(INFO) << "[stokes] mean(p)=" << mean_p << "\n";
     std::cout << "[stokes] mean(p)=" << mean_p << "\n";
 
     ////////////////////////////////////////////////////////////////////////////////////////
@@ -394,7 +395,7 @@ Stokes_Poiseuille::exportResults( ExprUExact u_exact, ExprPExact p_exact,
     double p_errorL2 = integrate( elements( u.mesh() ), ( idv( p )-mean_p - p_exact )*( idv( p )-mean_p-p_exact ) ).evaluate()( 0, 0 );
     std::cout << "||p_error||_2 = " << math::sqrt( p_errorL2 ) << "\n";;
 
-    Log() << "[stokes] solve for D done\n";
+    LOG(INFO) << "[stokes] solve for D done\n";
 
 
     double u_errorH1 = integrate( elements( u.mesh() ),  trans( idv( u )-u_exact )*( idv( u )-u_exact )).evaluate()( 0, 0 ) +  integrate( elements( u.mesh() ),  trans( gradv( u ) -  gradv ( u_exact_proj ) )*( gradv( u ) -  gradv ( u_exact_proj )) ).evaluate()( 0, 0 );
@@ -403,11 +404,11 @@ Stokes_Poiseuille::exportResults( ExprUExact u_exact, ExprPExact p_exact,
 
 
     double mean_div_u = integrate( elements( u.mesh() ), divv( u ) ).evaluate()( 0, 0 );
-    Log() << "[stokes] mean_div(u)=" << mean_div_u << "\n";
+    LOG(INFO) << "[stokes] mean_div(u)=" << mean_div_u << "\n";
     std::cout << "[stokes] mean_div(u)=" << mean_div_u << "\n";
 
     double div_u_error_L2 = integrate( elements( u.mesh() ), divv( u )*divv( u ) ).evaluate()( 0, 0 );
-    Log() << "[stokes] ||div(u)||_2=" << math::sqrt( div_u_error_L2 ) << "\n";
+    LOG(INFO) << "[stokes] ||div(u)||_2=" << math::sqrt( div_u_error_L2 ) << "\n";
     std::cout << "[stokes] ||div(u)||=" << math::sqrt( div_u_error_L2 ) << "\n";
 
     v = vf::project( u.functionSpace(), elements( u.mesh() ), u_exact );

@@ -1,7 +1,6 @@
 
 #define BOOST_TEST_MODULE test_operatorinterpolation
-#include <boost/test/unit_test.hpp>
-using boost::unit_test::test_suite;
+#include <testsuite/testsuite.hpp>
 
 #include <feel/options.hpp>
 #include <feel/feelalg/backend.hpp>
@@ -16,7 +15,6 @@ using boost::unit_test::test_suite;
 
 
 using namespace Feel;
-using namespace Feel::vf;
 
 namespace test_operatorinterpolation
 {
@@ -416,9 +414,10 @@ test2dOpLagrangeP1Composite( Application_ptrtype test_app )
 /**
  * main code
  */
+FEELPP_ENVIRONMENT_WITH_OPTIONS( test_operatorinterpolation::makeAbout(), 
+                                 test_operatorinterpolation::makeOptions() )
+
 BOOST_AUTO_TEST_SUITE( interp_operatorinterpolation )
-Environment env( boost::unit_test::framework::master_test_suite().argc,
-                 boost::unit_test::framework::master_test_suite().argv );
 
 BOOST_AUTO_TEST_CASE( interp_operatorinterpolation )
 {

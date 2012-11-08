@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2007-07-20
 
   Copyright (C) 2007 Universite Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file matvec.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2007-07-20
  */
 #ifndef __VFVec_H
@@ -735,30 +735,30 @@ public:
         template<typename IM>
         void init( IM const& im )
         {
-            fusion::for_each( M_expr, detail::init_expression<IM>( im ) );
+            fusion::for_each( M_expr,vf::detail::init_expression<IM>( im ) );
         }
         void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
         {
-            fusion::for_each( M_expr, detail::update_expression_gij<Geo_t, Basis_i_t, Basis_j_t>( geom, fev, feu ) );
+            fusion::for_each( M_expr,vf::detail::update_expression_gij<Geo_t, Basis_i_t, Basis_j_t>( geom, fev, feu ) );
 
         }
         void update( Geo_t const& geom, Basis_i_t const& fev )
         {
-            fusion::for_each( M_expr, detail::update_expression_gi<Geo_t, Basis_i_t>( geom, fev ) );
+            fusion::for_each( M_expr,vf::detail::update_expression_gi<Geo_t, Basis_i_t>( geom, fev ) );
         }
         void update( Geo_t const& geom )
         {
-            fusion::for_each( M_expr, detail::update_expression_g<Geo_t>( geom ) );
+            fusion::for_each( M_expr,vf::detail::update_expression_g<Geo_t>( geom ) );
         }
         void update( Geo_t const& geom, uint16_type face )
         {
-            fusion::for_each( M_expr, detail::update_expression_face_g<Geo_t>( geom, face ) );
+            fusion::for_each( M_expr,vf::detail::update_expression_face_g<Geo_t>( geom, face ) );
         }
 
         value_type
         evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type /*c2*/, uint16_type q ) const
         {
-            return fusion::accumulate( M_expr, value_type( 0 ), detail::evaluate_expression_gij<value_type>( i, j, c1, q  ) );
+            return fusion::accumulate( M_expr, value_type( 0 ),vf::detail::evaluate_expression_gij<value_type>( i, j, c1, q  ) );
         }
         template<int PatternContext>
         value_type
@@ -766,19 +766,19 @@ public:
                  mpl::int_<PatternContext> ) const
         {
             return fusion::accumulate( M_expr, value_type( 0 ),
-                                       detail::evaluate_expression_gij<value_type>( i, j, c1, q  ) );
+                                      vf::detail::evaluate_expression_gij<value_type>( i, j, c1, q  ) );
 
         }
 
         value_type
         evaliq( uint16_type i, uint16_type c1, uint16_type /*c2*/, uint16_type q ) const
         {
-            return fusion::accumulate( M_expr, value_type( 0 ), detail::evaluate_expression_gi<value_type>( i, c1, q ) );
+            return fusion::accumulate( M_expr, value_type( 0 ),vf::detail::evaluate_expression_gi<value_type>( i, c1, q ) );
         }
         value_type
         evalq( uint16_type c1, uint16_type /*c2*/, uint16_type q ) const
         {
-            return fusion::accumulate( M_expr, value_type( 0 ), detail::evaluate_expression_g<value_type>( c1, q ) );
+            return fusion::accumulate( M_expr, value_type( 0 ),vf::detail::evaluate_expression_g<value_type>( c1, q ) );
         }
         tensor_vector_type M_expr;
     };
@@ -800,10 +800,10 @@ private:
  */
 template<typename Expr1>
 inline
-Expr< detail::Vec<fusion::vector<Expr1> > >
+Expr<vf::detail::Vec<fusion::vector<Expr1> > >
 vec( Expr1  expr1 )
 {
-    typedef detail::Vec<fusion::vector<Expr1> > expr_t;
+    typedef vf::detail::Vec<fusion::vector<Expr1> > expr_t;
     return Expr<expr_t>( expr_t( fusion::vector<Expr1>( expr1 ) ) );
 }
 /**
@@ -811,10 +811,10 @@ vec( Expr1  expr1 )
  */
 template<typename Expr1, typename Expr2>
 inline
-Expr< detail::Vec<fusion::vector<Expr1, Expr2> > >
+Expr<vf::detail::Vec<fusion::vector<Expr1, Expr2> > >
 vec( Expr1  expr1, Expr2  expr2 )
 {
-    typedef detail::Vec<fusion::vector<Expr1, Expr2> > expr_t;
+    typedef vf::detail::Vec<fusion::vector<Expr1, Expr2> > expr_t;
     return Expr<expr_t>( expr_t( fusion::vector<Expr1, Expr2>( expr1, expr2 ) ) );
 }
 /**
@@ -822,10 +822,10 @@ vec( Expr1  expr1, Expr2  expr2 )
  */
 template<typename Expr1, typename Expr2, typename Expr3>
 inline
-Expr< detail::Vec<fusion::vector<Expr1, Expr2, Expr3> > >
+Expr<vf::detail::Vec<fusion::vector<Expr1, Expr2, Expr3> > >
 vec( Expr1  expr1, Expr2  expr2, Expr3  expr3 )
 {
-    typedef detail::Vec<fusion::vector<Expr1, Expr2, Expr3> > expr_t;
+    typedef vf::detail::Vec<fusion::vector<Expr1, Expr2, Expr3> > expr_t;
     return Expr<expr_t>( expr_t( fusion::vector<Expr1, Expr2, Expr3>( expr1, expr2, expr3 ) ) );
 }
 
@@ -1000,31 +1000,31 @@ public:
         template<typename IM>
         void init( IM const& im )
         {
-            fusion::for_each( M_expr, detail::init_expression<IM>( im ) );
+            fusion::for_each( M_expr,vf::detail::init_expression<IM>( im ) );
         }
         void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
         {
-            fusion::for_each( M_expr, detail::update_expression_gij<Geo_t, Basis_i_t, Basis_j_t>( geom, fev, feu ) );
+            fusion::for_each( M_expr,vf::detail::update_expression_gij<Geo_t, Basis_i_t, Basis_j_t>( geom, fev, feu ) );
 
         }
         void update( Geo_t const& geom, Basis_i_t const& fev )
         {
-            fusion::for_each( M_expr, detail::update_expression_gi<Geo_t, Basis_i_t>( geom, fev ) );
+            fusion::for_each( M_expr,vf::detail::update_expression_gi<Geo_t, Basis_i_t>( geom, fev ) );
         }
         void update( Geo_t const& geom )
         {
-            fusion::for_each( M_expr, detail::update_expression_g<Geo_t>( geom ) );
+            fusion::for_each( M_expr,vf::detail::update_expression_g<Geo_t>( geom ) );
         }
         void update( Geo_t const& geom, uint16_type face )
         {
-            fusion::for_each( M_expr, detail::update_expression_face_g<Geo_t>( geom, face ) );
+            fusion::for_each( M_expr,vf::detail::update_expression_face_g<Geo_t>( geom, face ) );
         }
 
         value_type
         evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
             return fusion::accumulate( M_expr, value_type( 0 ),
-                                       detail::evaluate_expression_gij<value_type>( expression_type::matrix_size2,
+                                      vf::detail::evaluate_expression_gij<value_type>( expression_type::matrix_size2,
                                                i, j, c1, c2, q ) );
         }
         template<int PatternContext>
@@ -1033,7 +1033,7 @@ public:
                  mpl::int_<PatternContext> ) const
         {
             return fusion::accumulate( M_expr, value_type( 0 ),
-                                       detail::evaluate_expression_gij<value_type>( expression_type::matrix_size2,
+                                      vf::detail::evaluate_expression_gij<value_type>( expression_type::matrix_size2,
                                                i, j, c1, c2, q ) );
         }
 
@@ -1041,13 +1041,13 @@ public:
         evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
             return fusion::accumulate( M_expr, value_type( 0 ),
-                                       detail::evaluate_expression_gi<value_type>( expression_type::matrix_size2, i, c1, c2, q ) );
+                                      vf::detail::evaluate_expression_gi<value_type>( expression_type::matrix_size2, i, c1, c2, q ) );
 
         }
         value_type
         evalq( uint16_type c1, uint16_type c2, uint16_type q ) const
         {
-            return fusion::accumulate( M_expr, value_type( 0 ), detail::evaluate_expression_g<value_type>( expression_type::matrix_size2,
+            return fusion::accumulate( M_expr, value_type( 0 ),vf::detail::evaluate_expression_g<value_type>( expression_type::matrix_size2,
                                        c1, c2, q ) );
         }
         tensor_matrix_type M_expr;
@@ -1070,11 +1070,11 @@ private:
  */
 template<int M, int N, typename Expr1>
 inline
-Expr< detail::Mat<M, N, fusion::vector<Expr1> > >
+Expr<vf::detail::Mat<M, N, fusion::vector<Expr1> > >
 mat( Expr1  expr1 )
 {
     BOOST_MPL_ASSERT_MSG( ( M == 1 && N == 1 ),  INVALID_MATRIX_SIZE_SHOULD_BE_1_1, ( mpl::int_<M>, mpl::int_<N> ) );
-    typedef detail::Mat<M, N, fusion::vector<Expr1> > expr_t;
+    typedef vf::detail::Mat<M, N, fusion::vector<Expr1> > expr_t;
     return Expr<expr_t>( expr_t( fusion::vector<Expr1>( expr1 ) ) );
 }
 
@@ -1083,11 +1083,11 @@ mat( Expr1  expr1 )
  */
 template<int M, int N, typename Expr1, typename Expr2>
 inline
-Expr< detail::Mat<M, N, fusion::vector<Expr1, Expr2> > >
+Expr<vf::detail::Mat<M, N, fusion::vector<Expr1, Expr2> > >
 mat( Expr1  expr1, Expr2  expr2 )
 {
     BOOST_MPL_ASSERT_MSG( ( M == 2 && N == 1 || M == 1 && N == 2 ), INVALID_MATRIX_SIZE, ( mpl::int_<M>, mpl::int_<N> ) );
-    typedef detail::Mat<M,N,fusion::vector<Expr1, Expr2> > expr_t;
+    typedef vf::detail::Mat<M,N,fusion::vector<Expr1, Expr2> > expr_t;
     return Expr<expr_t>( expr_t( fusion::vector<Expr1, Expr2>( expr1, expr2 ) ) );
 }
 
@@ -1096,7 +1096,7 @@ mat( Expr1  expr1, Expr2  expr2 )
  */
 template<int M, int N, typename Expr1, typename Expr2, typename Expr3>
 inline
-Expr< detail::Mat<M, N, fusion::vector<Expr1, Expr2, Expr3> > >
+Expr<vf::detail::Mat<M, N, fusion::vector<Expr1, Expr2, Expr3> > >
 mat( Expr1  expr1, Expr2  expr2, Expr3  expr3 )
 {
 #if 0
@@ -1105,7 +1105,7 @@ mat( Expr1  expr1, Expr2  expr2, Expr3  expr3 )
                           ( INVALID_MATRIX_SIZE ),
                           ( mpl::int_<M>, mpl::int_<N> ) );
 #endif
-    typedef detail::Mat<M, N, fusion::vector<Expr1, Expr2, Expr3> > expr_t;
+    typedef vf::detail::Mat<M, N, fusion::vector<Expr1, Expr2, Expr3> > expr_t;
     return Expr<expr_t>( expr_t( fusion::vector<Expr1, Expr2, Expr3>( expr1, expr2, expr3 ) ) );
 }
 
@@ -1114,7 +1114,7 @@ mat( Expr1  expr1, Expr2  expr2, Expr3  expr3 )
  */
 template<int M, int N, typename Expr1, typename Expr2, typename Expr3, typename Expr4>
 inline
-Expr< detail::Mat<M, N, fusion::vector<Expr1, Expr2, Expr3, Expr4> > >
+Expr<vf::detail::Mat<M, N, fusion::vector<Expr1, Expr2, Expr3, Expr4> > >
 mat( Expr1  expr1, Expr2  expr2, Expr3  expr3, Expr4 expr4 )
 {
 #if 0
@@ -1124,7 +1124,7 @@ mat( Expr1  expr1, Expr2  expr2, Expr3  expr3, Expr4 expr4 )
                           ( INVALID_MATRIX_SIZE ),
                           ( mpl::int_<M>, mpl::int_<N> ) );
 #endif
-    typedef detail::Mat<M, N, fusion::vector<Expr1, Expr2, Expr3, Expr4> > expr_t;
+    typedef vf::detail::Mat<M, N, fusion::vector<Expr1, Expr2, Expr3, Expr4> > expr_t;
     return Expr<expr_t>( expr_t( fusion::vector<Expr1, Expr2, Expr3, Expr4>( expr1, expr2, expr3, expr4 ) ) );
 }
 
@@ -1136,7 +1136,7 @@ template<int M, int N,
          typename Expr5, typename Expr6, typename Expr7, typename Expr8,
          typename Expr9>
 inline
-Expr< detail::Mat<M, N, fusion::vector<Expr1, Expr2, Expr3, Expr4, Expr5, Expr6, Expr7, Expr8, Expr9 > > >
+Expr<vf::detail::Mat<M, N, fusion::vector<Expr1, Expr2, Expr3, Expr4, Expr5, Expr6, Expr7, Expr8, Expr9 > > >
 mat( Expr1  expr1, Expr2  expr2, Expr3  expr3, Expr4 expr4,
      Expr5  expr5, Expr6  expr6, Expr7  expr7, Expr8 expr8, Expr9 expr9 )
 {
@@ -1147,7 +1147,7 @@ mat( Expr1  expr1, Expr2  expr2, Expr3  expr3, Expr4 expr4,
                           ( INVALID_MATRIX_SIZE ),
                           ( mpl::int_<M>, mpl::int_<N> ) );
 #endif
-    typedef detail::Mat<M, N, fusion::vector<Expr1, Expr2, Expr3, Expr4,Expr5, Expr6, Expr7, Expr8, Expr9> > expr_t;
+    typedef vf::detail::Mat<M, N, fusion::vector<Expr1, Expr2, Expr3, Expr4,Expr5, Expr6, Expr7, Expr8, Expr9> > expr_t;
     return Expr<expr_t>( expr_t( fusion::vector<Expr1, Expr2, Expr3, Expr4, Expr5, Expr6, Expr7, Expr8, Expr9>( expr1, expr2, expr3, expr4, expr5, expr6, expr7, expr8, expr9 ) ) );
 }
 

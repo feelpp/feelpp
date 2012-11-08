@@ -1,0 +1,333 @@
+#This file was created by <bruno> Sun Feb 16 00:32:21 1997
+#LyX 0.10 (C) 1995 1996 Matthias Ettrich and the LyX Team
+\lyxformat 2.10
+\textclass article
+\language default
+\inputencoding latin1
+\fontscheme default
+\epsfig dvips
+\papersize a4paper 
+\paperfontsize 12 
+\baselinestretch 1.00 
+\secnumdepth 3 
+\tocdepth 3 
+\paragraph_separation indent 
+\quotes_language english 
+\quotes_times 2 
+\paperorientation portrait 
+\papercolumns 1 
+\papersides 1 
+\paperpagestyle plain 
+
+\layout Standard
+
+The Tschebychev polynomials (of the 1st kind) 
+\begin_inset Formula  \( T_{n}(x) \)
+\end_inset 
+
+ are defined through the recurrence relation
+\layout Standard
+
+
+\begin_inset Formula 
+\[
+T_{0}(x)=1\]
+
+\end_inset 
+
+
+\layout Standard
+
+
+\begin_inset Formula 
+\[
+T_{1}(x)=x\]
+
+\end_inset 
+
+
+\layout Standard
+
+
+\begin_inset Formula 
+\[
+T_{n+2}(x)=2x\cdot T_{n+1}(x)-T_{n}(x)\]
+
+\end_inset 
+
+ for 
+\begin_inset Formula  \( n\geq 0 \)
+\end_inset 
+
+.
+
+\layout Description
+
+Theorem:
+\layout Standard
+
+
+\begin_inset Formula  \( T_{n}(x) \)
+\end_inset 
+
+ satisfies the differential equation 
+\begin_inset Formula  \( (x^{2}-1)\cdot T_{n}^{''}(x)+x\cdot T_{n}^{'}(x)-n^{2}\cdot T_{n}(x)=0 \)
+\end_inset 
+
+ for all 
+\begin_inset Formula  \( n\geq 0 \)
+\end_inset 
+
+.
+
+\layout Description
+
+Proof:
+\layout Standard
+
+Let 
+\begin_inset Formula  \( F:=\sum ^{\infty }_{n=0}T_{n}(x)z^{n} \)
+\end_inset 
+
+ be the generating function of the sequence of polynomials.
+ The recurrence is equivalent to the equation 
+\begin_inset Formula 
+\[
+(1-2x\cdot z+z^{2})\cdot F=1-x\cdot z\]
+
+\end_inset 
+
+
+\layout Description
+
+Proof
+\protected_separator 
+1:
+\layout Standard
+
+
+\begin_inset Formula  \( F \)
+\end_inset 
+
+ is a rational function in 
+\begin_inset Formula  \( z \)
+\end_inset 
+
+, 
+\begin_inset Formula  \( F=\frac{1-xz}{1-2xz+z^{2}} \)
+\end_inset 
+
+.
+ From the theory of recursions with constant coefficients, we know that
+ we have to perform a partial fraction decomposition.
+ So let 
+\begin_inset Formula  \( p(z)=z^{2}-2x\cdot z+1 \)
+\end_inset 
+
+ be the denominator and 
+\begin_inset Formula  \( \alpha =x+\sqrt{x^{2}-1} \)
+\end_inset 
+
+ and 
+\begin_inset Formula  \( \alpha ^{-1} \)
+\end_inset 
+
+ its zeroes.
+ The partial fraction decomposition reads 
+\begin_inset Formula 
+\[
+F=\frac{1-xz}{1-2xz+z^{2}}=\frac{1}{2}\left( \frac{1}{1-\alpha z}+\frac{1}{1-\alpha ^{-1}z}\right) \]
+
+\end_inset 
+
+ hence 
+\begin_inset Formula  \( T_{n}(x)=\frac{1}{2}(\alpha ^{n}+\alpha ^{-n}) \)
+\end_inset 
+
+.
+ Note that the field 
+\begin_inset Formula  \( Q(x)(\alpha ) \)
+\end_inset 
+
+, being a finite dimensional extension field of 
+\begin_inset Formula  \( Q(x) \)
+\end_inset 
+
+ in characteristic 0, has a unique derivation extending 
+\begin_inset Formula  \( \frac{d}{dx} \)
+\end_inset 
+
+ on 
+\begin_inset Formula  \( Q(x) \)
+\end_inset 
+
+.
+ We can therefore try to construct an annihilating differential operator
+ for 
+\begin_inset Formula  \( T_{n}(x) \)
+\end_inset 
+
+ by combination of annihilating differential operators for 
+\begin_inset Formula  \( \alpha ^{n} \)
+\end_inset 
+
+ and 
+\begin_inset Formula  \( \alpha ^{-n} \)
+\end_inset 
+
+.
+ In fact, 
+\begin_inset Formula  \( L_{1}:=(\alpha -x)\frac{d}{dx}-n \)
+\end_inset 
+
+ satisfies 
+\begin_inset Formula  \( L_{1}[\alpha ^{n}]=0 \)
+\end_inset 
+
+, and 
+\begin_inset Formula  \( L_{2}:=(\alpha -x)\frac{d}{dx}+n \)
+\end_inset 
+
+ satisfies 
+\begin_inset Formula  \( L_{2}[\alpha ^{-n}]=0 \)
+\end_inset 
+
+.
+ A common multiple of 
+\begin_inset Formula  \( L_{1} \)
+\end_inset 
+
+ and 
+\begin_inset Formula  \( L_{2} \)
+\end_inset 
+
+ is easily found by solving an appropriate system of linear equations:
+\layout Standard
+
+
+\begin_inset Formula  \( L=(x^{2}-1)\left( \frac{d}{dx}\right) ^{2}+x\frac{d}{dx}-n^{2}=\left( (\alpha -x)\frac{d}{dx}+n\right) \cdot L_{1}=\left( (\alpha -x)\frac{d}{dx}-n\right) \cdot L_{2} \)
+\end_inset 
+
+
+\layout Standard
+
+It follows that both 
+\begin_inset Formula  \( L[\alpha ^{n}]=0 \)
+\end_inset 
+
+ and 
+\begin_inset Formula  \( L[\alpha ^{-n}]=0 \)
+\end_inset 
+
+, hence 
+\begin_inset Formula  \( L[T_{n}(x)]=0 \)
+\end_inset 
+
+.
+
+\layout Description
+
+Proof
+\protected_separator 
+2:
+\layout Standard
+
+Starting from the above equation, we compute a linear relation for the partial
+ derivatives of 
+\begin_inset Formula  \( F \)
+\end_inset 
+
+.
+ Write 
+\begin_inset Formula  \( \partial _{x}=\frac{d}{dx} \)
+\end_inset 
+
+ and 
+\begin_inset Formula  \( \Delta _{z}=z\frac{d}{dz} \)
+\end_inset 
+
+.
+ One computes
+\layout Standard
+
+
+\begin_inset Formula 
+\[
+\left( 1-2xz+z^{2}\right) \cdot F=1-xz\]
+
+\end_inset 
+
+
+\begin_inset Formula 
+\[
+\left( 1-2xz+z^{2}\right) ^{2}\cdot \partial _{x}F=z-z^{3}\]
+
+\end_inset 
+
+
+\begin_inset Formula 
+\[
+\left( 1-2xz+z^{2}\right) ^{3}\cdot \partial _{x}^{2}F=4z^{2}-4z^{4}\]
+
+\end_inset 
+
+
+\begin_inset Formula 
+\[
+\left( 1-2xz+z^{2}\right) ^{2}\cdot \Delta _{z}F=xz-2z^{2}+xz^{3}\]
+
+\end_inset 
+
+
+\begin_inset Formula 
+\[
+\left( 1-2xz+z^{2}\right) ^{3}\cdot \partial _{x}\Delta _{z}F=z+2xz^{2}-6z^{3}+2xz^{4}+z^{5}\]
+
+\end_inset 
+
+
+\begin_inset Formula 
+\[
+\left( 1-2xz+z^{2}\right) ^{3}\cdot \Delta _{z}^{2}F=xz+(2x^{2}-4)z^{2}-(2x^{2}-4)z^{4}-xz^{5}\]
+
+\end_inset 
+
+
+\layout Standard
+
+Solve a 
+\begin_inset Formula  \( 6\times 6 \)
+\end_inset 
+
+ system of linear equations over 
+\begin_inset Formula  \( Q(x) \)
+\end_inset 
+
+ to get 
+\begin_inset Formula 
+\[
+x\cdot \partial _{x}F+(x^{2}-1)\cdot \partial _{x}^{2}F-\Delta _{z}^{2}F=0\]
+
+\end_inset 
+
+
+\layout Standard
+
+This is equivalent to the claimed equation 
+\begin_inset Formula  \( (x^{2}-1)\cdot T_{n}^{''}(x)+x\cdot T_{n}^{'}(x)-n^{2}\cdot T_{n}(x)=0 \)
+\end_inset 
+
+.
+
+\layout Bibliography
+\cursor 137 
+[1] Bruno Haible: D-finite power series in several variables.
+ 
+\shape italic 
+Diploma thesis, University of Karlsruhe, June 1989.
+
+\shape default 
+ Sections 2.
+12 and 2.
+15.
+

@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2012-01-16
 
   Copyright (C) 2012 Université Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file preconditioner.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2012-01-16
  */
 #ifndef __Preconditioner_H
@@ -287,7 +287,7 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( boost::shared_ptr<Preconditioner<double> > ),
                                  ( optional
                                    ( matrix,( d_sparse_matrix_ptrtype ),d_sparse_matrix_ptrtype() )
                                    ( backend,( BackendType ), BACKEND_PETSC )
-                                   ( pcfactormatsolverpackage,( MatSolverPackageType ), MATSOLVER_PETSC )
+                                   ( pcfactormatsolverpackage,( MatSolverPackageType ), MATSOLVER_DEFAULT )
                                    ( worldcomm,      *, Environment::worldComm() )
                                    )
                                  )
@@ -297,8 +297,10 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( boost::shared_ptr<Preconditioner<double> > ),
     p->setMatSolverPackageType( pcfactormatsolverpackage );
 
     if ( matrix )
-        p->setMatrix( matrix );
-
+        {
+            p->setMatrix( matrix );
+            p->init();
+        }
     return p;
 }
 

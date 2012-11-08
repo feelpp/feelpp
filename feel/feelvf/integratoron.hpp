@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2005-03-15
 
   Copyright (C) 2005,2006 EPFL
@@ -24,7 +24,7 @@
 */
 /**
    \file integratoron.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-03-15
  */
 #ifndef __INTEGRATORON_HPP
@@ -306,7 +306,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
     typedef boost::shared_ptr<gm_type> gm_ptrtype;
     typedef typename gm_type::template Context<context, geoelement_type> gmc_type;
     typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
-    typedef fusion::map<fusion::pair<detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
 
 
     // dof
@@ -316,7 +316,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
     typedef typename element_type::functionspace_type::fe_type fe_type;
     typedef typename fe_type::template Context< context, fe_type, gm_type, geoelement_type> fecontext_type;
     typedef boost::shared_ptr<fecontext_type> fecontext_ptrtype;
-    //typedef fusion::map<fusion::pair<detail::gmc<0>, fecontext_ptrtype> > map_gmc_type;
+    //typedef fusion::map<fusion::pair<vf::detail::gmc<0>, fecontext_ptrtype> > map_gmc_type;
 
     // expression
     //typedef typename expression_type::template tensor<map_gmc_type,fecontext_type> t_expr_type;
@@ -368,7 +368,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
     uint16_type __face_id = __face_it->pos_first();
     gmc_ptrtype __c( new gmc_type( __gm, __face_it->element( 0 ), __geopc, __face_id ) );
 
-    map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c ) );
+    map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
     //t_expr_type expr( _M_expr, mapgmc );
 
 
@@ -413,7 +413,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
         Debug( 5066 ) << "FACE_ID = " << __face_it->id() << "  ref pts=" << __c->xRefs() << "\n";
         Debug( 5066 ) << "FACE_ID = " << __face_it->id() << " real pts=" << __c->xReal() << "\n";
 
-        map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c ) );
+        map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
 
         t_expr_type expr( _M_expr, mapgmc );
         expr.update( mapgmc );
@@ -516,7 +516,7 @@ struct integratoron_type
  * \arg sum sum the multiple nodal  contributions  if applicable (false by default)
  */
 BOOST_PARAMETER_FUNCTION(
-    ( typename detail::integratoron_type<Args>::expr_type ), // return type
+    ( typename vf::detail::integratoron_type<Args>::expr_type ), // return type
     on,    // 2. function name
 
     tag,           // 3. namespace of tag types
@@ -534,8 +534,8 @@ BOOST_PARAMETER_FUNCTION(
     )
 )
 {
-    typename detail::integratoron_type<Args>::type ion( range, element, rhs, expr, type );
-    return typename detail::integratoron_type<Args>::expr_type( ion );
+    typename vf::detail::integratoron_type<Args>::type ion( range, element, rhs, expr, type );
+    return typename vf::detail::integratoron_type<Args>::expr_type( ion );
 }
 
 #else
@@ -604,7 +604,7 @@ Expr<IntegratorOnExpr<ElementRange, Elem,
          OnExpr const& __e,
          size_type __on = ON_ELIMINATION|ON_ELIMINATION_KEEP_DIAGONAL )
 {
-    return detail::on( __r, __u, __rhs, __e, __on,  mpl::or_<is_shared_ptr<RhsElem>, boost::is_pointer<RhsElem> >() );
+    returnvf::detail::on( __r, __u, __rhs, __e, __on,  mpl::or_<is_shared_ptr<RhsElem>, boost::is_pointer<RhsElem> >() );
 
 }
 
@@ -622,7 +622,7 @@ Expr<IntegratorOnExpr<ElementRange, Elem,
          OnExpr const& __e,
          size_type __on = ON_ELIMINATION|ON_ELIMINATION_KEEP_DIAGONAL )
 {
-    return detail::on( __r, __u, __rhs, __e, __on,  mpl::or_<is_shared_ptr<RhsElem>, boost::is_pointer<RhsElem> >() );
+    returnvf::detail::on( __r, __u, __rhs, __e, __on,  mpl::or_<is_shared_ptr<RhsElem>, boost::is_pointer<RhsElem> >() );
 
 }
 #endif // 0

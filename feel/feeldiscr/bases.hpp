@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2009-01-21
 
   Copyright (C) 2009-2011 Universite Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file bases.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2009-01-21
  */
 #ifndef __Bases_H
@@ -112,16 +112,23 @@ struct meshes
 };
 
 template<typename... Args>
-struct periodic
+struct Periodicity
     :
     public detail::periodic_base,
+    public detail::periodicity_base,
     public boost::fusion::vector<Args...>
 {
     typedef boost::fusion::vector<Args...> super;
-    typedef periodic<Args...> this_type;
+    typedef Periodicity<Args...> this_type;
 	static const int s = sizeof...(Args);
-    periodic( super const& m) : super( m ) {}
+    Periodicity() : super() {}
+    Periodicity( super const& m) : super( m ) {}
+    Periodicity( Args... args ) : super( fusion::make_vector(args...) ) {}
 };
+
+template<typename... Args>
+Periodicity<Args...> periodicity( Args... args )
+{ return Periodicity<Args...>( args... ); }
 
 #else
 
@@ -194,6 +201,51 @@ struct meshes
     typedef meshes<A0,A1,A2,A3,A4> this_type;
     meshes( super const& m ) : super( m ) {}
 };
+
+template <class A0=mpl::void_, class A1=mpl::void_, class A2=mpl::void_, class A3=mpl::void_, class A4=mpl::void_>
+struct Periodicity
+        :
+    public detail::periodic_base,
+    public detail::periodicity_base,
+    public mpl::if_<boost::is_same<A0,mpl::void_>,
+                    boost::fusion::vector<>,
+                    typename mpl::if_<boost::is_same<A1,mpl::void_>,
+                                      boost::fusion::vector<A0>,
+                                      typename mpl::if_<boost::is_same<A2,mpl::void_>,
+                                                        boost::fusion::vector<A0,A1>,
+                                                        typename mpl::if_<boost::is_same<A3,mpl::void_>,
+                                                                          boost::fusion::vector<A0,A1,A2>,
+                                                                          typename mpl::if_<boost::is_same<A4,mpl::void_>,
+                                                                                            boost::fusion::vector<A0,A1,A2,A3>,
+                                                                                            boost::fusion::vector<A0,A1,A2,A3,A4> >::type>::type>::type>::type>::type
+
+{
+    typedef typename mpl::if_<boost::is_same<A0,mpl::void_>,
+                              boost::fusion::vector<>,
+                              typename mpl::if_<boost::is_same<A1,mpl::void_>,
+                                                boost::fusion::vector<A0>,
+                                                typename mpl::if_<boost::is_same<A2,mpl::void_>,
+                                                                  boost::fusion::vector<A0,A1>,
+                                                                  typename mpl::if_<boost::is_same<A3,mpl::void_>,
+                                                                                    boost::fusion::vector<A0,A1,A2>,
+                                                                                    typename mpl::if_<boost::is_same<A4,mpl::void_>,
+                                                                                                      boost::fusion::vector<A0,A1,A2,A3>,
+                                                                                                      boost::fusion::vector<A0,A1,A2,A3,A4> >::type>::type>::type>::type>::type super;
+
+    typedef Periodicity<A0,A1,A2,A3,A4> this_type;
+    Periodicity() : super() {}
+    Periodicity( super const& m ) : super( m ) {}
+    Periodicity( A0 a0 ) : super( fusion::make_vector(a0) ) {}
+    Periodicity( A0 a0, A1 a1 ) : super( fusion::make_vector(a0,a1) ) {}
+    Periodicity( A0 a0, A1 a1, A2 a2 ) : super( fusion::make_vector(a0,a1,a2) ) {}
+    Periodicity( A0 a0, A1 a1, A2 a2, A3 a3 ) : super( fusion::make_vector(a0,a1,a2,a3) ) {}
+
+};
+
+template<typename A0> Periodicity<A0> periodicity( A0 const& a0 ) { return Periodicity<A0>( a0 ); }
+template<typename A0,typename A1> Periodicity<A0,A1> periodicity( A0 const& a0, A1 const& a1 ) { return Periodicity<A0,A1>( a0,a1 ); }
+template<typename A0,typename A1,typename A2> Periodicity<A0,A1,A2> periodicity( A0 const& a0, A1 const& a1, A2 const& a2 ) { return Periodicity<A0,A1,A2>( a0,a1,a2 ); }
+
 #endif
 
 }// Feel

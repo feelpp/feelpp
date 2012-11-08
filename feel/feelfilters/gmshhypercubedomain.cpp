@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2006-12-29
 
   Copyright (C) 2006-2010 Université Joseph Fourier (Grenoble)
@@ -23,7 +23,7 @@
 */
 /**
    \file gmshhypercubedomain.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2006-12-29
  */
 #ifndef __GMSHTENSORIZEDDOMAIN_HPP
@@ -237,14 +237,16 @@ GmshHypercubeDomain::getDescription3D() const
     if ( M_use_hypercube )
         ostr << "  Recombine;\n";
 
-    ostr << "};\n"
-         << "Physical Line(1) = {1};\n"
-         << "Physical Line(2) = {2};\n"
-         << "Physical Line(3) = {3};\n"
-         << "Physical Line(4) = {4};\n";
+    ostr << "};\n";
 
-    if ( this->usePhysicalNames() == false )
+
+    if ( this->usePhysicalNames() == false && this->subStructuring() == false )
     {
+        ostr << "Physical Line(1) = {1};\n"
+             << "Physical Line(2) = {2};\n"
+             << "Physical Line(3) = {3};\n"
+             << "Physical Line(4) = {4};\n";
+
         ostr << "Physical Surface(6) = {6};\n"
              << "Physical Surface(15) = {15};\n"
              << "Physical Surface(19) = {19};\n"
@@ -253,7 +255,18 @@ GmshHypercubeDomain::getDescription3D() const
              << "Physical Surface(28) = {28};\n"
              << "Physical Volume(30) = {1};\n";
     }
-
+    else if ( this->subStructuring() == true )
+    {
+        ostr << "Physical Point(\"CrossPoints\") = {1,2,3,4,5,6,10,14};\n";
+        ostr << "Physical Line(\"WireBasket\") = {1,2,3,4,8,9,10,11,13,14,18,22};\n";
+        ostr << "Physical Surface(\"TOP\") = {6};\n"
+             << "Physical Surface(\"NORTH\") = {15};\n"
+             << "Physical Surface(\"WEST\") = {19};\n"
+             << "Physical Surface(\"SOUTH\") = {23};\n"
+             << "Physical Surface(\"EAST\") = {27};\n"
+             << "Physical Surface(\"BOTTOM\") = {28};\n"
+             << "Physical Volume(30) = {1};\n";
+    }
     else
     {
         ostr << "Physical Surface(\"Neumann\") = {6,19,27,28};\n"

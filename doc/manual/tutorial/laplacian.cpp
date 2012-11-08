@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2008-02-07
 
   Copyright (C) 2008-2012 Universite Joseph Fourier (Grenoble I)
@@ -22,30 +22,15 @@
 */
 /**
    \file laplacian.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2010-07-15
  */
-/** include predefined feel command line options */
-#include <feel/options.hpp>
 
-/** include linear algebra backend */
-#include <feel/feelalg/backend.hpp>
+#include <feel/feel.hpp>
 
-/** include function space class */
-#include <feel/feeldiscr/functionspace.hpp>
-
-/** include gmsh mesh importer */
-#include <feel/feelfilters/gmsh.hpp>
-
-/** include exporter factory class */
-#include <feel/feelfilters/exporter.hpp>
-
-/** include  the header for the variational formulation language (vf) aka FEEL++ */
-#include <feel/feelvf/vf.hpp>
 
 /** use Feel namespace */
 using namespace Feel;
-using namespace Feel::vf;
 
 /**
  * This routine returns the list of options using the
@@ -68,29 +53,6 @@ makeOptions()
       "penalisation parameter for the weak boundary Dirichlet formulation" )
     ;
     return laplacianoptions.add( Feel::feel_options() );
-}
-
-/**
- * This routine defines some information about the application like
- * authors, version, or name of the application. The data returned is
- * typically used as an argument of a Feel::Application subclass.
- *
- * \return some data about the application.
- */
-inline
-AboutData
-makeAbout()
-{
-    AboutData about( "laplacian" ,
-                     "laplacian" ,
-                     "0.2",
-                     "nD(n=1,2,3) Laplacian on simplices or simplex products",
-                     Feel::AboutData::License_GPL,
-                     "Copyright (c) 2008-2009 Universite Joseph Fourier" );
-
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
-    return about;
-
 }
 
 
@@ -140,17 +102,15 @@ public:
     /**
      * Constructor
      */
-    Laplacian( po::variables_map const& vm, AboutData const& about )
+    Laplacian()
         :
-        super( vm, about ),
+        super(),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( this->vm()["shape"].template as<std::string>() )
     {
     }
 
     void run();
-
-    void run( const double* X, unsigned long P, double* Y, unsigned long N );
 
 private:
 
@@ -167,47 +127,23 @@ template<int Dim>
 void
 Laplacian<Dim>::run()
 {
-    if ( this->comm().rank() == 0 )
-    {
-        std::cout << "------------------------------------------------------------\n";
-        std::cout << "Execute Laplacian<" << Dim << ">\n";
-    }
-    std::vector<double> X( 2 );
-    X[0] = meshSize;
+    LOG(INFO) << "------------------------------------------------------------\n";
+    LOG(INFO) << "Execute Laplacian<" << Dim << ">\n";
 
-    if ( shape == "hypercube" )
-        X[1] = 1;
-
-    else // default is simplex
-        X[1] = 0;
-
-    std::vector<double> Y( 3 );
-    run( X.data(), X.size(), Y.data(), Y.size() );
-}
-template<int Dim>
-void
-Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
-{
-    if ( X[1] == 0 ) shape = "simplex";
-
-    if ( X[1] == 1 ) shape = "hypercube";
-
-    if ( !this->vm().count( "nochdir" ) )
-        Environment::changeRepository( boost::format( "doc/tutorial/%1%/%2%-%3%/P%4%/h_%5%/" )
-                                       % this->about().appName()
-                                       % shape
-                                       % Dim
-                                       % Order
-                                       % meshSize );
+    Environment::changeRepository( boost::format( "doc/manual/tutorial/%1%/%2%-%3%/P%4%/h_%5%/" )
+                                   % this->about().appName()
+                                   % shape
+                                   % Dim
+                                   % Order
+                                   % meshSize );
 
     mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
                                         _desc=domain( _name=( boost::format( "%1%-%2%" ) % shape % Dim ).str() ,
-                                                _usenames=true,
-                                                _shape=shape,
-                                                _h=X[0],
-                                                _xmin=-1,
-                                                _ymin=-1 ),
-                                        _update=MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
+                                                      _usenames=true,
+                                                      _shape=shape,
+                                                      _h=meshSize,
+                                                      _xmin=-1,
+                                                      _ymin=-1 ) );
 
 
     /**
@@ -215,8 +151,10 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
      */
     /** \code */
     space_ptrtype Xh = space_type::New( mesh );
+
     // print some information (number of local/global dof in logfile)
     Xh->printInfo();
+
     element_type u( Xh, "u" );
     element_type v( Xh, "v" );
     element_type gproj( Xh, "v" );
@@ -229,20 +167,26 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
     /** \code */
     //# marker1 #
     value_type pi = 2*M_PI;
-    //! deduce from expression the type of g (thanks to keyword 'auto')
-    auto g = sin( pi*Px() )*cos( pi*Py() )*cos( pi*Pz() );
-    gproj = vf::project( Xh, elements( mesh ), g );
-
-    //! deduce from expression the type of f (thanks to keyword 'auto')
-    auto f = pi*pi*Dim*g;
-    //# endmarker1 #
-    /** \endcode */
-
     bool weak_dirichlet = this->vm()["weakdir"].template as<int>();
     value_type penaldir = this->vm()["penaldir"].template as<double>();
     value_type nu = this->vm()["nu"].template as<double>();
 
-    using namespace Feel::vf;
+    symbol x("x"),y("y"),z("z");
+    ex gg = sin(pi*x)*cos(pi*y)*cos(pi*z);
+    ex ff=-nu*laplacian(gg,{x,y,z});
+    LOG(INFO) << "laplacian(g)="<< ff << "\n";
+    auto g = expr(gg,{x,y,z});
+    auto f = expr(ff,{x,y,z});
+    auto gradg = expr<1,Dim,2>(grad(gg,{x,y,z}), {x,y,z} );
+
+    // build Xh-interpolant of g
+    gproj = vf::project( Xh, elements( mesh ), g );
+
+
+    //# endmarker1 #
+    /** \endcode */
+
+
 
     /**
      * Construction of the right hand side. F is the vector that holds
@@ -251,22 +195,21 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
      */
     /** \code */
     //# marker2 #
-    auto F = backend( _vm=this->vm() )->newVector( Xh );
-    auto rhs = form1( _test=Xh, _vector=F, _init=true );
+    auto F = backend()->newVector( Xh );
+    auto rhs = form1( _test=Xh, _vector=F );
     rhs = integrate( _range=elements( mesh ), _expr=f*id( v ) )+
         integrate( _range=markedfaces( mesh, "Neumann" ),
-                   _expr=nu*gradv( gproj )*vf::N()*id( v ) );
+                   _expr=nu*gradg*vf::N()*id( v )
+            );
 
     //# endmarker2 #
     if ( weak_dirichlet )
     {
         //# marker41 #
         rhs += integrate( _range=markedfaces( mesh,"Dirichlet" ),
-                             _expr=g*( -grad( v )*vf::N()+penaldir*id( v )/hFace() ) );
+                          _expr=nu*g*( -grad( v )*vf::N()+penaldir*id( v )/hFace() ) );
         //# endmarker41 #
     }
-
-    F->close();
 
     /** \endcode */
 
@@ -296,9 +239,9 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
         /** \code */
         //# marker10 #
         a += integrate( _range=markedfaces( mesh,"Dirichlet" ),
-                        _expr= ( -( gradt( u )*vf::N() )*id( v )
-                                 -( grad( v )*vf::N() )*idt( u )
-                                 +penaldir*id( v )*idt( u )/hFace() ) );
+                        _expr= nu * ( -( gradt( u )*vf::N() )*id( v )
+                                      -( grad( v )*vf::N() )*idt( u )
+                                      +penaldir*id( v )*idt( u )/hFace() ) );
         //# endmarker10 #
         /** \endcode */
     }
@@ -323,22 +266,16 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
     //! solve the system
     /** \code */
     //# marker6 #
-    backend( _rebuild=true,_vm=this->vm() )->solve( _matrix=D, _solution=u, _rhs=F );
+    backend( _rebuild=true  )->solve( _matrix=D, _solution=u, _rhs=F );
     //# endmarker6 #
     /** \endcode */
 
     //! compute the \f$L_2$ norm of the error
     /** \code */
     //# marker7 #
-    double L2error2 =integrate( _range=elements( mesh ),
-                                _expr=( idv( u )-g )*( idv( u )-g ) ).evaluate()( 0,0 );
-    double L2error =   math::sqrt( L2error2 );
+    double L2error =normL2( _range=elements( mesh ),_expr=( idv( u )-g ) );
 
-
-    Log() << "||error||_L2=" << L2error << "\n";
-
-    std::ofstream res(this->vm()["result-file"].template as<std::string>() );
-    res << "L2="<< L2error << "\n";
+    LOG(INFO) << "||error||_L2=" << L2error << "\n";
 
     //# endmarker7 #
     /** \endcode */
@@ -350,19 +287,21 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
     e = vf::project( Xh, elements( mesh ), g );
 
     export_ptrtype exporter( export_type::New( this->vm(),
-                             ( boost::format( "%1%-%2%-%3%" )
-                               % this->about().appName()
-                               % shape
-                               % Dim ).str() ) );
+                                               ( boost::format( "%1%-%2%-%3%" )
+                                                 % this->about().appName()
+                                                 % shape
+                                                 % Dim ).str() ) );
 
     if ( exporter->doExport() )
     {
-        Log() << "exportResults starts\n";
+        LOG(INFO) << "exportResults starts\n";
 
         exporter->step( 0 )->setMesh( mesh );
+        exporter->step( 0 )->add( "solution", u );
+        exporter->step( 0 )->add( "exact", e );
 
         exporter->save();
-        Log() << "exportResults done\n";
+        LOG(INFO) << "exportResults done\n";
     }
 
     /** \endcode */
@@ -374,33 +313,24 @@ Laplacian<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long 
 int
 main( int argc, char** argv )
 {
-    Environment env( argc, argv );
     /**
-     * create an application
+     * Initialize Feel++ Environment
      */
-    /** \code */
-    Application app( argc, argv, makeAbout(), makeOptions() );
+    Environment env( _argc=argc, _argv=argv,
+                     _desc=makeOptions(),
+                     _about=about(_name="laplacian",
+                                  _author="Christophe Prud'homme",
+                                  _email="christophe.prudhomme@feelpp.org") );
+
+    Application app;
 
 
-    /** \endcode */
+    if ( app.nProcess() == 1 )
+        app.add( new Laplacian<1>() );
+    app.add( new Laplacian<2>() );
+    app.add( new Laplacian<3>() );
 
-    /**
-     * register the simgets
-     */
-    /** \code */
-    //if ( app.nProcess() == 1 )
-    //app.add( new Laplacian<1>( app.vm(), app.about() ) );
-
-    app.add( new Laplacian<2>( app.vm(), app.about() ) );
-    //app.add( new Laplacian<3>( app.vm(), app.about() ) );
-    /** \endcode */
-
-    /**
-     * run the application
-     */
-    /** \code */
     app.run();
-    /** \endcode */
 
 }
 

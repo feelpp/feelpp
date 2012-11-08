@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2007-07-04
 
   Copyright (C) 2007-2011 Universite Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file solvereigen.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2007-07-04
  */
 #include <boost/algorithm/string.hpp>
@@ -159,8 +159,8 @@ SolverEigen<T>::build( po::variables_map const& vm, std::string const& prefix )
 
     else
     {
-        Log() << "[SolverNonLinear] solver " << vm["backend"].template as<std::string>() << " not available\n";
-        Log() << "[Backend] use fallback  gmm\n";
+        LOG(INFO) << "[SolverNonLinear] solver " << vm["backend"].template as<std::string>() << " not available\n";
+        LOG(INFO) << "[Backend] use fallback  gmm\n";
 #if defined( FEELPP_HAS_PETSC )
         solver_package = SOLVERS_PETSC;
 #endif
