@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2008-01-09
 
   Copyright (C) 2008-2009 Université Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file bratu.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2008-04-14
  */
 #include <feel/options.hpp>
@@ -67,7 +67,7 @@ makeAbout()
                            Feel::AboutData::License_GPL,
                            "Copyright (c) 2008-2009 Université Joseph Fourier" );
 
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     return about;
 
 }
@@ -132,7 +132,7 @@ public:
     /**
      * Constructor
      */
-    Bratu( int argc, char** argv, AboutData const& ad, po::options_description const& od );
+    Bratu();
 
     /**
      * run the convergence test
@@ -164,9 +164,9 @@ private:
 }; // Bratu
 
 template<int Dim, int Order, template<uint16_type,uint16_type,uint16_type> class Entity>
-Bratu<Dim,Order,Entity>::Bratu( int argc, char** argv, AboutData const& ad, po::options_description const& od )
+Bratu<Dim,Order,Entity>::Bratu()
     :
-    super( argc, argv, ad, od ),
+    super(),
     M_backend( backend_type::build( this->vm() ) ),
     meshSize( this->vm()["hsize"].template as<double>() ),
     M_lambda( this->vm()["lambda"].template as<double>() ),
@@ -209,7 +209,7 @@ void
 Bratu<Dim, Order, Entity>::updateResidual( const vector_ptrtype& X, vector_ptrtype& R )
 {
     boost::timer ti;
-    Log() << "[updateResidual] start\n";
+    LOG(INFO) << "[updateResidual] start\n";
     value_type penalisation_bc = this->vm()["penalbc"].template as<value_type>();
     mesh_ptrtype mesh = M_Xh->mesh();
     element_type u( M_Xh, "u" );
@@ -226,14 +226,14 @@ Bratu<Dim, Order, Entity>::updateResidual( const vector_ptrtype& X, vector_ptrty
                                          + penalisation_bc*trans( idv( u ) )*id( v )/hFace() )-
                                        g*( - grad( v )*N() + penalisation_bc*id( v )/hFace() ) );
     R->close();
-    Log() << "[updateResidual] done in " << ti.elapsed() << "s\n";
+    LOG(INFO) << "[updateResidual] done in " << ti.elapsed() << "s\n";
 }
 template<int Dim, int Order, template<uint16_type,uint16_type,uint16_type> class Entity>
 void
 Bratu<Dim, Order, Entity>::updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J )
 {
     boost::timer ti;
-    Log() << "[updateJacobian] start\n";
+    LOG(INFO) << "[updateJacobian] start\n";
     mesh_ptrtype mesh = M_Xh->mesh();
     element_type u( M_Xh, "u" );
     element_type v( M_Xh, "v" );
@@ -243,7 +243,7 @@ Bratu<Dim, Order, Entity>::updateJacobian( const vector_ptrtype& X, sparse_matri
 
     form2( _test=M_Xh, _trial=M_Xh, _matrix=J ) = integrate( elements( mesh ), M_lambda*( exp( idv( u ) ) )*idt( u )*id( v ) );
     J->addMatrix( 1.0, M_oplin->mat() );
-    Log() << "[updateJacobian] done in " << ti.elapsed() << "s\n";
+    LOG(INFO) << "[updateJacobian] done in " << ti.elapsed() << "s\n";
 }
 
 template<int Dim, int Order, template<uint16_type,uint16_type,uint16_type> class Entity>
@@ -285,7 +285,7 @@ Bratu<Dim, Order, Entity>::exportResults( element_type& U )
 {
     if ( exporter->doExport() )
     {
-        Log() << "exportResults starts\n";
+        LOG(INFO) << "exportResults starts\n";
         exporter->step( 0 )->setMesh( U.functionSpace()->mesh() );
         exporter->step( 0 )->addRegions();
         exporter->step( 0 )->add( "u", U );
@@ -302,13 +302,18 @@ main( int argc, char** argv )
 {
     using namespace Feel;
 
+    Environment env( _argc=argc, _argv=argv,
+                     _desc=makeOptions(),
+                     _about=makeAbout() );
+
+
     /* change parameters below */
     const int nDim = 2;
     const int nOrder = 2;
     typedef Feel::Bratu<nDim, nOrder> bratu_app_type;
 
     /* instantiate application */
-    bratu_app_type bratu( argc, argv, makeAbout(), makeOptions() );
+    bratu_app_type bratu;
 
     /* run application */
     bratu.run();

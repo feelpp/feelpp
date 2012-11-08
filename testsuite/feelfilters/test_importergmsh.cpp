@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2007-06-16
 
   Copyright (C) 2007-2010 Université Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file test_importergmsh.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2007-06-16
  */
 #include <sstream>
@@ -34,10 +34,7 @@
 //#define BOOST_TEST_MAIN
 // give a name to the testsuite
 #define BOOST_TEST_MODULE mesh filter testsuite
-// disable the main function creation, use our own
-//#define BOOST_TEST_NO_MAIN
-#include <boost/test/unit_test.hpp>
-#include <boost/test/test_case_template.hpp>
+#include <testsuite/testsuite.hpp>
 #include <boost/mpl/list.hpp>
 
 #include <feel/feelcore/feel.hpp>
@@ -80,9 +77,11 @@ checkCreateGmshMesh( std::string const& shape, std::string const& convex = "Simp
                        std::distance( mesh->beginFaceOnBoundary(), mesh->endFaceOnBoundary() ) );
 
 }
+
+FEELPP_ENVIRONMENT_NO_OPTIONS
+
 BOOST_AUTO_TEST_SUITE( gmshsuite )
-Feel::Environment env( boost::unit_test::framework::master_test_suite().argc,
-                       boost::unit_test::framework::master_test_suite().argv );
+
 
 typedef boost::mpl::list<boost::mpl::int_<1>,boost::mpl::int_<2>,boost::mpl::int_<3> > dim_types;
 

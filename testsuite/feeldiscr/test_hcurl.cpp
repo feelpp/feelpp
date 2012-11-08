@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
   Author(s): Cecile Daversin  <cecile.daversin@lncmi.cnrs.fr>
        Date: 2011-12-07
 
@@ -25,7 +25,7 @@
 */
 /**
    \file test_hcurl.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \author Cecile Daversin <cecile.daversin@lncmi.cnrs.fr>
    \date 2011-12-07
  */
@@ -38,11 +38,7 @@
 // disable the main function creation, use our own
 //#define BOOST_TEST_NO_MAIN
 
-#if defined(USE_BOOST_TEST)
-#include <boost/test/unit_test.hpp>
-using boost::unit_test::test_suite;
-#include <boost/test/floating_point_comparison.hpp>
-#endif
+#include <testsuite/testsuite.hpp>
 
 #include <feel/feelcore/application.hpp>
 
@@ -315,7 +311,7 @@ makeAbout()
                      AboutData::License_GPL,
                      "Copyright (c) 2009 Universite Joseph Fourier" );
     about.addAuthor( "Cecile Daversin", "developer", "cecile.daversin@lncmi.cnrs.fr", "" );
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     return about;
 
 }
@@ -365,9 +361,9 @@ public:
     /**
      * Constructor
      */
-    TestHCurl( int argc, char** argv, AboutData const& ad, po::options_description const& od )
+    TestHCurl()
         :
-        super( argc, argv, ad, od ),
+        super(),
         M_backend( backend_type::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].as<double>() ),
         exporter( Exporter<mesh_type>::New( this->vm() ) )
@@ -670,23 +666,22 @@ TestHCurl::shape_functions( gmsh_ptrtype ( *one_element_mesh_desc_fun )( double 
 }
 #if USE_BOOST_TEST
 
+FEELPP_ENVIRONMENT_WITH_OPTIONS( Feel::makeAbout(), Feel::makeOptions() )
+
 BOOST_AUTO_TEST_SUITE( space )
 
 BOOST_AUTO_TEST_CASE( test_hcurl_N0_ref )
 {
     BOOST_TEST_MESSAGE( "test_hcurl_N0 on reference element" );
-    Feel::TestHCurl t( boost::unit_test::framework::master_test_suite().argc,
-                       boost::unit_test::framework::master_test_suite().argv,
-                       Feel::makeAbout(), Feel::makeOptions() );
+    Feel::TestHCurl t;
+
     t.shape_functions( &Feel::oneelement_geometry_ref );
     BOOST_TEST_MESSAGE( "test_hcurl_N0 on reference element done" );
 }
 BOOST_AUTO_TEST_CASE( test_hcurl_N0_real )
 {
     BOOST_TEST_MESSAGE( "test_hcurl_N0 on one real element" );
-    Feel::TestHCurl t( boost::unit_test::framework::master_test_suite().argc,
-                       boost::unit_test::framework::master_test_suite().argv,
-                       Feel::makeAbout(), Feel::makeOptions() );
+    Feel::TestHCurl t;
     t.shape_functions( &Feel::oneelement_geometry_real_1 );
     BOOST_TEST_MESSAGE( "test_hcurl_N0 on one real element done" );
 }
@@ -694,9 +689,7 @@ BOOST_AUTO_TEST_CASE( test_hcurl_N0_real )
 BOOST_AUTO_TEST_CASE( test_hcurl_N0_real_2 )
 {
     BOOST_TEST_MESSAGE( "test_hcurl_N0 on one real element" );
-    Feel::TestHCurl t( boost::unit_test::framework::master_test_suite().argc,
-                       boost::unit_test::framework::master_test_suite().argv,
-                       Feel::makeAbout(), Feel::makeOptions() );
+    Feel::TestHCurl t;
     t.shape_functions( &Feel::oneelement_geometry_real_2 );
     BOOST_TEST_MESSAGE( "test_hcurl_N0 on one real element done" );
 }
@@ -704,9 +697,7 @@ BOOST_AUTO_TEST_CASE( test_hcurl_N0_real_2 )
 BOOST_AUTO_TEST_CASE( test_hcurl_projection )
 {
     BOOST_TEST_MESSAGE( "test_hcurl_N0 on one real element" );
-    Feel::TestHCurl t( boost::unit_test::framework::master_test_suite().argc,
-                       boost::unit_test::framework::master_test_suite().argv,
-                       Feel::makeAbout(), Feel::makeOptions() );
+    Feel::TestHCurl t;
     t.testProjector();
     BOOST_TEST_MESSAGE( "test_hcurl_N0 on one real element done" );
 }
@@ -714,9 +705,7 @@ BOOST_AUTO_TEST_CASE( test_hcurl_projection )
 BOOST_AUTO_TEST_CASE( test_hcurl_example_1 )
 {
     BOOST_TEST_MESSAGE( "test_hcurl on example 1" );
-    Feel::TestHCurl t( boost::unit_test::framework::master_test_suite().argc,
-                       boost::unit_test::framework::master_test_suite().argv,
-                       Feel::makeAbout(), Feel::makeOptions() );
+    Feel::TestHCurl t;
     t.exampleProblem1();
     BOOST_TEST_MESSAGE( "test_hcurl_N0 on example 1 done" );
 }
@@ -727,8 +716,10 @@ BOOST_AUTO_TEST_SUITE_END()
 int
 main( int argc, char* argv[] )
 {
+    Feel::Environment env( argc,argv,
+                           makeAbout(), makeOptions() );
 
-    Feel::TestHCurl app_hcurl( argc, argv, Feel::makeAbout(), Feel::makeOptions() );
+    Feel::TestHCurl app_hcurl;
 
     // app_hcurl.tangent_operators();
     app_hcurl.shape_functions();

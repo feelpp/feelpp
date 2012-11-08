@@ -1,7 +1,6 @@
 
 #define BOOST_TEST_MODULE test_meshmarker
-#include <boost/test/unit_test.hpp>
-using boost::unit_test::test_suite;
+#include <testsuite/testsuite.hpp>
 
 #include <feel/options.hpp>
 #include <feel/feelalg/backend.hpp>
@@ -98,9 +97,9 @@ test_meshmarker( Application_ptrtype test_app )
 /**
  * main code
  */
+FEELPP_ENVIRONMENT_WITH_OPTIONS( test_meshmarker::makeAbout(), test_meshmarker::makeOptions() )
+
 BOOST_AUTO_TEST_SUITE( test_meshmarker )
-Environment env( boost::unit_test::framework::master_test_suite().argc,
-                 boost::unit_test::framework::master_test_suite().argv );
 
 BOOST_AUTO_TEST_CASE( test_meshmarker1 )
 {

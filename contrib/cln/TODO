@@ -1,0 +1,35 @@
+Algorithms:
+
+Niels Moeller's subquadratic GCD
+
+- polynomial division and gcd
+- polynomial documentation
+7. add combinatorial, linear algebra, factorization, polynomial functions
+   as in SAC-2.
+7. finite fields, e.g.
+   - gf256_log_2, gf256_antilog_2, gf256_power_of_2, gf256_add, gf256_minus,
+     gf256_subtract, gf256_mul, gf256_inv, gf256_div, gf256_product, gf256_exp,
+     gf256_term, gfmul, gfadd, gfinv, gfexp.
+   more polynomial operations:
+     x(), power, >>, <<, division, scalmult, content, primitivepart,
+     gcd, xgcd, no_of_real_roots, factorization.
+   modular polynomials: powmod etc.
+7. chinese remainder algorithm, maybe Hensel-lifting as in Magnum.
+8. factor and primality testing for small integers
+8. primality test in Z:
+   + polynomials cl_MUP_MI, cl_MUP_I
+     use integer FFT for multiplication in cl_UP_MI and cl_MUP_MI
+   + - Pollard rho
+   + - complex values of j()
+     - Hilbert polynomial for j() 7.6.1
+   + roots of polynomials mod N 1.6.1
+   + - elliptic curves, Jacobi representation
+     - m.P on elliptic curve
+   + Atkin's algorithm
+10. factoring in Z:
+   - small prime table,
+   - Pollard rho,
+   - multiple polynomial quadratic sieve
+
+Document the timing class
+

@@ -28,37 +28,43 @@ add_custom_target(
                                    ${FEELPP_BUILD_DIR}/doc/manual/
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 )
-add_docex(myapp)
-add_docex(mymesh)
-add_docex(loadmesh)
-add_docex(myintegrals)
-add_docex(geotool)
-add_docex(myfunctionspace)
+
+foreach(app myapp mymesh myintegrals myfunctionspace geotool loadmesh )
+  feelpp_add_application( doc_${app} SRCS ${app}.cpp LABEL doc)
+endforeach()
+
 
 if( NOT FEELPP_MINIMAL_CONFIGURATION )
-  add_docex(laplacian)
-  add_docex(dar)
-  #add_docex(stokes)
-  feelpp_add_application( doc_stokes SRCS stokes.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} )
-  feelpp_add_application( doc_stokes_lm SRCS stokes.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} DEFS FEELPP_USE_LM )
 
-  feelpp_add_application( doc_stokes_Dirichlet_Dirichlet SRCS stokes_Dirichlet_Dirichlet.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} )
-  feelpp_add_application( doc_stokes_Dirichlet_Dirichlet_lm SRCS stokes_Dirichlet_Dirichlet.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} DEFS FEELPP_USE_LM )
-  feelpp_add_application( doc_stokes_Dirichlet_Dirichlet_cylinder SRCS stokes_Dirichlet_Dirichlet.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} DEFS STOKESPRESSMESHTYPE=2)
-  feelpp_add_application( doc_stokes_Dirichlet_Dirichlet_hypercube SRCS stokes_Dirichlet_Dirichlet.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} DEFS STOKESPRESSMESHTYPE=1)
+  feelpp_add_application( doc_laplacian SRCS laplacian.cpp LABEL doc CFG laplacian.cfg SCRIPTS laplacian.py ADD_OT )
 
-  feelpp_add_application( doc_stokes_Dirichlet_Neumann SRCS stokes_Dirichlet_Neumann.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} )
-  feelpp_add_application( doc_stokes_Dirichlet_Neumann_lm SRCS stokes_Dirichlet_Neumann.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} DEFS FEELPP_USE_LM )
-  feelpp_add_application( doc_stokes_Dirichlet_Neumann_cylinder SRCS stokes_Dirichlet_Neumann.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} DEFS STOKESPRESSMESHTYPE=2)
-  feelpp_add_application( doc_stokes_Dirichlet_Neumann_hypercube SRCS stokes_Dirichlet_Neumann.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} DEFS STOKESPRESSMESHTYPE=1)
+  feelpp_add_application( doc_laplacian_periodic SRCS periodic.cpp LABEL doc  )
+  feelpp_add_application( doc_stokes_periodic SRCS stokes_periodic.cpp LABEL doc  )
 
-  feelpp_add_application( doc_stokes_Neumann_Neumann SRCS stokes_Neumann_Neumann.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} )
-  feelpp_add_application( doc_stokes_Neumann_Neumann_aorta SRCS stokes_Neumann_Neumann.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} DEFS STOKESPRESSMESHTYPE=3)
-  feelpp_add_application( doc_stokes_Neumann_Neumann_cylinder SRCS stokes_Neumann_Neumann.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} DEFS STOKESPRESSMESHTYPE=2)
-  feelpp_add_application( doc_stokes_Neumann_Neumann_hypercube SRCS stokes_Neumann_Neumann.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} DEFS STOKESPRESSMESHTYPE=1)
+  feelpp_add_application( doc_laplacian_full SRCS laplacian_full.cpp LABEL doc)
+  feelpp_add_application( doc_laplacian_lagrange_multiplier SRCS laplacian_lagrange_multiplier.cpp LABEL doc)
+  feelpp_add_application( doc_sound SRCS sound.cpp room.cpp LABEL doc )
+  feelpp_add_application( doc_wave SRCS wave.cpp room.cpp LABEL doc )
+  feelpp_add_application( doc_advection SRCS advection.cpp CFG advection.cfg LABEL doc )
 
-  feelpp_add_application( doc_stokes_laplacian_inlet SRCS stokes_laplacian_inlet.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES})
+  feelpp_add_application( doc_stokes SRCS stokes.cpp LABEL doc )
+  feelpp_add_application( doc_stokes_lm SRCS stokes.cpp LABEL doc DEFS FEELPP_USE_LM )
+
+  feelpp_add_application( doc_stokes_Dirichlet_Dirichlet SRCS stokes_Dirichlet_Dirichlet.cpp LABEL doc )
+  feelpp_add_application( doc_stokes_Dirichlet_Dirichlet_lm SRCS stokes_Dirichlet_Dirichlet.cpp LABEL doc DEFS FEELPP_USE_LM )
+  feelpp_add_application( doc_stokes_Dirichlet_Dirichlet_cylinder SRCS stokes_Dirichlet_Dirichlet.cpp LABEL doc DEFS STOKESPRESSMESHTYPE=2)
+  feelpp_add_application( doc_stokes_Dirichlet_Dirichlet_hypercube SRCS stokes_Dirichlet_Dirichlet.cpp LABEL doc DEFS STOKESPRESSMESHTYPE=1)
+
+  feelpp_add_application( doc_stokes_Dirichlet_Neumann SRCS stokes_Dirichlet_Neumann.cpp LABEL doc )
+  feelpp_add_application( doc_stokes_Dirichlet_Neumann_lm SRCS stokes_Dirichlet_Neumann.cpp LABEL doc DEFS FEELPP_USE_LM )
+  feelpp_add_application( doc_stokes_Dirichlet_Neumann_cylinder SRCS stokes_Dirichlet_Neumann.cpp LABEL doc DEFS STOKESPRESSMESHTYPE=2)
+  feelpp_add_application( doc_stokes_Dirichlet_Neumann_hypercube SRCS stokes_Dirichlet_Neumann.cpp LABEL doc DEFS STOKESPRESSMESHTYPE=1)
+
+  feelpp_add_application( doc_stokes_Neumann_Neumann SRCS stokes_Neumann_Neumann.cpp LABEL doc )
+  feelpp_add_application( doc_stokes_Neumann_Neumann_aorta SRCS stokes_Neumann_Neumann.cpp LABEL doc DEFS STOKESPRESSMESHTYPE=3)
+  feelpp_add_application( doc_stokes_Neumann_Neumann_cylinder SRCS stokes_Neumann_Neumann.cpp LABEL doc DEFS STOKESPRESSMESHTYPE=2)
+  feelpp_add_application( doc_stokes_Neumann_Neumann_hypercube SRCS stokes_Neumann_Neumann.cpp LABEL doc DEFS STOKESPRESSMESHTYPE=1)
+
+  feelpp_add_application( doc_stokes_laplacian_inlet SRCS stokes_laplacian_inlet.cpp LABEL doc)
 endif()
 
-# stokes_good stokes_locking stokes_spurious
-# bratu nonlinearpow mortar multi_levels threefields nirb)

@@ -4,11 +4,10 @@
 #include "penalisation.hpp"
 
 using namespace Feel;
-using namespace Feel::vf;
 
 template <int Dim>
-Penalisation<Dim>::Penalisation( int argc, char** argv, AboutData const& ad , po::options_description const& od ):
-    Application( argc,argv,ad,od ),
+Penalisation<Dim>::Penalisation():
+    Application(),
     H1( 2. ),
     H2( 2. ),
     L1( 4. ),

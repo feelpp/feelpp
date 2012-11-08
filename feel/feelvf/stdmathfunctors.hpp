@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2005-06-07
 
   Copyright (C) 2005,2006 EPFL
@@ -24,7 +24,7 @@
 */
 /**
    \file functions.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-06-07
  */
 #if !defined( STD_MATH_UNARY_FUNCTORS_HPP )
@@ -42,6 +42,8 @@
 # include <boost/preprocessor/facilities/empty.hpp>
 # include <boost/preprocessor/punctuation/comma.hpp>
 # include <boost/preprocessor/facilities/identity.hpp>
+
+#include <boost/utility/enable_if.hpp>
 
 /// \cond detail
 #include <feel/feelcore/traits.hpp>
@@ -218,8 +220,8 @@ class VF_FUNC_NAME( O ) : public UnaryFunctor<typename ExprT1::value_type>      
             typedef this_type expression_type;                          \
             typedef typename expression_1_type::template tensor<Geo_t, Basis_i_t,Basis_j_t> tensor2_expr_type; \
             typedef typename tensor2_expr_type::value_type value_type;  \
-            typedef typename detail::ExtractGm<Geo_t>::gmc_ptrtype gmc_ptrtype; \
-            typedef typename detail::ExtractGm<Geo_t>::gmc_type gmc_type; \
+            typedef typename vf::detail::ExtractGm<Geo_t>::gmc_ptrtype gmc_ptrtype; \
+            typedef typename vf::detail::ExtractGm<Geo_t>::gmc_type gmc_type; \
             typedef typename tensor2_expr_type::shape shape;            \
                                                                         \
             struct is_zero { static const bool value = tensor2_expr_type::is_zero::value; }; \
@@ -227,21 +229,21 @@ class VF_FUNC_NAME( O ) : public UnaryFunctor<typename ExprT1::value_type>      
             tensor( this_type const& expr, Geo_t const& geom, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ ) \
                 :                                                       \
                 _M_expr( expr.expression(), geom ),                     \
-                _M_gmc( detail::ExtractGm<Geo_t>::get( geom ) )         \
+                _M_gmc(vf::detail::ExtractGm<Geo_t>::get( geom ) )         \
                     {                                                   \
                         update( geom );                                 \
                     }                                                   \
             tensor( this_type const& expr,Geo_t const& geom, Basis_i_t const& /*fev*/ ) \
                 :                                                       \
                 _M_expr( expr.expression(), geom ),                     \
-                _M_gmc( detail::ExtractGm<Geo_t>::get( geom ) )         \
+                _M_gmc(vf::detail::ExtractGm<Geo_t>::get( geom ) )         \
                     {                                                   \
                         update( geom );                                 \
                     }                                                   \
             tensor( this_type const& expr, Geo_t const& geom )             \
                 :                                                       \
                 _M_expr( expr.expression(), geom ),                     \
-                _M_gmc( detail::ExtractGm<Geo_t>::get( geom ) )         \
+                _M_gmc(vf::detail::ExtractGm<Geo_t>::get( geom ) )         \
                     {                                                   \
                         update( geom );                                 \
                     }                                                   \
@@ -305,12 +307,21 @@ class VF_FUNC_NAME( O ) : public UnaryFunctor<typename ExprT1::value_type>      
     inline                                                              \
     Expr< VF_FUNC_NAME( O )<typename mpl::if_<boost::is_arithmetic<ExprT1>, \
                                               mpl::identity<Cst<ExprT1> >, \
-                                              mpl::identity<ExprT1> >::type::type > > \
-    VF_FUNC_SYMBOL( O )( ExprT1 const& __e1 )                           \
+                                              mpl::identity<Expr<ExprT1> > >::type::type > > \
+    VF_FUNC_SYMBOL( O )( Expr<ExprT1> const& __e1 )                     \
     {                                                                   \
         typedef typename mpl::if_<boost::is_arithmetic<ExprT1>,         \
             mpl::identity<Cst<ExprT1> >,                                \
-            mpl::identity<ExprT1> >::type::type t1;                     \
+            mpl::identity<Expr<ExprT1> > >::type::type t1;               \
+        typedef VF_FUNC_NAME(O)<t1> expr_t;                             \
+        return Expr< expr_t >(  expr_t( t1( __e1 ) ) );                 \
+    }                                                                   \
+    template<typename ExprT1>                                           \
+    inline                                                              \
+    Expr< VF_FUNC_NAME( O )<Cst<ExprT1> > >                             \
+    VF_FUNC_SYMBOL( O )( ExprT1 const& __e1, typename boost::enable_if<boost::is_arithmetic<ExprT1> >::type* dummy = 0 ) \
+    {                                                                   \
+        typedef Cst<ExprT1> t1;                                         \
         typedef VF_FUNC_NAME(O)<t1> expr_t;                             \
         return Expr< expr_t >(  expr_t( t1( __e1 ) ) );                 \
     }                                                                   \

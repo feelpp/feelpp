@@ -1,0 +1,154 @@
+# Checking the constants.                    -*- Autotest -*-
+
+# Copyright (C) 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2011 Free
+# Software Foundation, Inc.
+#
+# This file is part of GNU libmatheval
+#
+# GNU libmatheval is free software: you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# GNU libmatheval is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with GNU libmatheval.  If not, see
+# <http://www.gnu.org/licenses/>.
+
+AT_BANNER([[Checking evaluating constants.]])
+
+AT_SETUP([Check constants.])
+
+AT_DATA([constant.scm],
+[[
+(define f (evaluator-create "e"))
+(display (evaluator-evaluate-x f 0))
+]])
+
+AT_CHECK([matheval.sh constant.scm], [ignore], [2.71828182845905], [ignore])
+
+AT_DATA([constant.scm],
+[[
+(define f (evaluator-create "log2e"))
+(display (evaluator-evaluate-x f 0))
+]])
+
+AT_CHECK([matheval.sh constant.scm], [ignore], [1.44269504088896], [ignore])
+
+AT_DATA([constant.scm],
+[[
+(define f (evaluator-create "log10e"))
+(display (evaluator-evaluate-x f 0))
+]])
+
+AT_CHECK([matheval.sh constant.scm], [ignore], [0.434294481903252], [ignore])
+
+AT_DATA([constant.scm],
+[[
+(define f (evaluator-create "ln2"))
+(display (evaluator-evaluate-x f 0))
+]])
+
+AT_CHECK([matheval.sh constant.scm], [ignore], [0.693147180559945], [ignore])
+
+AT_DATA([constant.scm],
+[[
+(define f (evaluator-create "ln10"))
+(display (evaluator-evaluate-x f 0))
+]])
+
+AT_CHECK([matheval.sh constant.scm], [ignore], [2.30258509299405], [ignore])
+
+AT_DATA([constant.scm],
+[[
+(define f (evaluator-create "pi"))
+(display (evaluator-evaluate-x f 0))
+]])
+
+AT_CHECK([matheval.sh constant.scm], [ignore], [3.14159265358979], [ignore])
+
+AT_DATA([constant.scm],
+[[
+(define f (evaluator-create "pi_2"))
+(display (evaluator-evaluate-x f 0))
+]])
+
+AT_CHECK([matheval.sh constant.scm], [ignore], [1.5707963267949], [ignore])
+
+AT_DATA([constant.scm],
+[[
+(define f (evaluator-create "pi_4"))
+(display (evaluator-evaluate-x f 0))
+]])
+
+AT_CHECK([matheval.sh constant.scm], [ignore], [0.785398163397448], [ignore])
+
+AT_DATA([constant.scm],
+[[
+(define f (evaluator-create "1_pi"))
+(display (evaluator-evaluate-x f 0))
+]])
+
+AT_CHECK([matheval.sh constant.scm], [ignore], [0.318309886183791], [ignore])
+
+AT_DATA([constant.scm],
+[[
+(define f (evaluator-create "2_pi"))
+(display (evaluator-evaluate-x f 0))
+]])
+
+AT_CHECK([matheval.sh constant.scm], [ignore], [0.636619772367581], [ignore])
+
+AT_DATA([constant.scm],
+[[
+(define f (evaluator-create "2_sqrtpi"))
+(display (evaluator-evaluate-x f 0))
+]])
+
+AT_CHECK([matheval.sh constant.scm], [ignore], [1.12837916709551], [ignore])
+
+AT_DATA([constant.scm],
+[[
+(define f (evaluator-create "sqrt2"))
+(display (evaluator-evaluate-x f 0))
+]])
+
+AT_CHECK([matheval.sh constant.scm], [ignore], [1.4142135623731], [ignore])
+
+AT_DATA([constant.scm],
+[[
+(define f (evaluator-create "sqrt1_2"))
+(display (evaluator-evaluate-x f 0))
+]])
+
+AT_CHECK([matheval.sh constant.scm], [ignore], [0.707106781186548], [ignore])
+
+AT_DATA([constant.scm],
+[[
+(define f (evaluator-create "e^ln10"))
+(display (evaluator-evaluate-x f 0))
+]])
+
+AT_CHECK([matheval.sh constant.scm], [ignore], [10.0], [ignore])
+
+AT_DATA([constant.scm],
+[[
+(define f (evaluator-create "pi*1_pi"))
+(display (evaluator-evaluate-x f 0))
+]])
+
+AT_CHECK([matheval.sh constant.scm], [ignore], [1.0], [ignore])
+
+AT_DATA([constant.scm],
+[[
+(define f (evaluator-create "sqrt2/sqrt1_2"))
+(display (evaluator-evaluate-x f 0))
+]])
+
+AT_CHECK([matheval.sh constant.scm], [ignore], [2.0], [ignore])
+
+AT_CLEANUP

@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2005-11-27
 
   Copyright (C) 2005,2006 EPFL
@@ -41,7 +41,7 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 /**
    \file solverlinearpetsc.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-11-27
  */
 
@@ -54,6 +54,7 @@
 #include <feel/feelcore/feelpetsc.hpp>
 #include <feel/feelalg/solverlinear.hpp>
 
+#include <feel/feelalg/matrixshell.hpp>
 #include <feel/feelalg/matrixpetsc.hpp>
 #include <feel/feelalg/vectorpetsc.hpp>
 
@@ -189,6 +190,14 @@ public:
     {
         return this->solve( mat, mat, x, b, tolerance, maxit, transpose );
     }
+
+    boost::tuple<bool,unsigned int, real_type>
+    solve ( MatrixShell<T>  const &mat,
+            Vector<T> & x,
+            Vector<T> const& b,
+            const double tolerance,
+            const unsigned int maxit,
+            bool transpose );
 
     /**
      * This method allows you to call a linear solver while specifying

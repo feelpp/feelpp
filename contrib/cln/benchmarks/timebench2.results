@@ -1,0 +1,183 @@
+A.
+
+Timings on Linux i486 33 MHz
+
+N=100
+
+Function            LiDIA/libI  LiDIA/cln     Pari       CLN-1996-11-17
+ multiplication       0.00046     0.00042     0.001      0.00042
+ division             0.00041     0.00034     0.001      0.00033
+ isqrt                0.026       0.00013     0.002      0.00013
+ gcd                  0.00595     0.00170     0.009      0.00169
+
+N=1000
+
+Function            LiDIA/libI  LiDIA/cln     Pari       CLN-1996-11-17
+ multiplication       0.022       0.019       0.2        0.019
+ division             0.021       0.019       0.15       0.019
+ isqrt                6.49        0.002       0.1        0.002
+ gcd                  0.166       0.070       0.5        0.071
+
+N=10000
+
+Function            LiDIA/libI  LiDIA/cln     Pari       CLN-1996-11-17
+ multiplication       2.22        0.72        7          0.72
+ division             1.98        1.39        3.8        1.38
+ isqrt             5509           0.17       12.1        0.17
+ gcd                 38.9         5.4         ---        5.4
+
+N=100000
+
+Function            LiDIA/libI  LiDIA/cln     Pari       CLN-1996-11-17
+ multiplication                                          6.9
+ division                                               20.4
+ isqrt                                                  10.2
+ gcd                                                   428
+
+Timings on Darwin PowerPC G4 1066 MHz
+
+N = 100
+
+Function            CLN-1.1.8   CLN-1.1.8
+                     no gmp     gmp-4.1.2
+ multiplication     0.0000069   0.0000066
+ division           0.0000047   0.0000047
+ isqrt              0.0000024   0.0000024
+ gcd                0.0000163   0.0000163
+
+N = 1000
+
+Function            CLN-1.1.8   CLN-1.1.8
+                     no gmp     gmp-4.1.2
+ multiplication     0.000197    0.000192
+ division           0.000179    0.000179
+ isqrt              0.000021    0.000021
+ gcd                0.000603    0.000600
+
+N = 10000
+
+Function            CLN-1.1.8   CLN-1.1.8
+                     no gmp     gmp-4.1.2
+ multiplication     0.0082      0.0081
+ division           0.0156      0.0155
+ isqrt              0.0009      0.0010
+ gcd                0.0449      0.0445
+
+N = 100000
+
+Function            CLN-1.1.8   CLN-1.1.8
+                     no gmp     gmp-4.1.2
+ multiplication     0.087       0.087
+ division           0.27        0.27
+ isqrt              0.132       0.133
+ gcd                3.28        3.26
+
+
+A'.
+
+Timings on Linux i486 33 MHz
+
+                    LiDIA/libI  LiDIA/cln     Pari       CLN-1996-11-17
+N=100                                         0.2        0.07
+N=200                                         1.4        0.70
+N=1000                                      525        271
+
+Timings on Darwin PowerPC G4 1066 MHz
+
+Function            CLN-1.1.8   CLN-1.1.8
+                     no gmp     gmp-4.1.2
+N=1000              2.72        2.74
+
+B.
+
+Timings on Linux i486 33 MHz
+
+N=100
+
+Function            LiDIA/libI  LiDIA/cln     Pari       CLN-1997-02-08
+ multiplication       0.00054     0.00058     0.000      0.00026
+ sqrt                 0.0033      0.0040      0.002      0.00028
+ pi                   0.01        0.02        0.005      0
+ eulerconst           0.27        0.40        0.12       0.17
+ e                    0.02        0.01        0.011      0
+ exp                  0.021       0.025       0.012      0.014
+ log                  0.041       0.051       0.021      0.014
+ sin                  0.021       0.028       0.014      0.013
+ cos                  0.021       0.027       0.012      0.012
+ asin                 0.072       0.081       0.047      0.015
+ acos                 0.073       0.081       0.048      0.016
+ atan                 0.067       0.076       0.039      0.014
+ sinh                 0.022       0.025       0.012      0.014
+ cosh                 0.022       0.025       0.012      0.014
+ asinh                0.045       0.056       0.026      0.013
+ acosh                0.048       0.060       0.029      0.015
+ atanh                0.049       0.061       0.028      0.015
+
+N=1000
+
+Function            LiDIA/libI  LiDIA/cln     Pari       CLN-1997-02-08
+ multiplication       0.013       0.010       0.018      0.010
+ sqrt                 0.048       0.042       0.049      0.011
+ pi                   0.28        0.25        0.174      0.12
+ eulerconst          10.0         9.4         7.6        4.6
+ e                    0.12        0.09        1.19       0.06
+ exp                  1.11        0.73        1.33       0.70
+ log                  1.48        1.28        1.81       0.65
+ sin                  0.76        0.66        1.56       0.51
+ cos                  0.75        0.65        1.62       0.49
+ asin                 3.03        2.52        4.10       0.84
+ acos                 3.03        2.52        4.10       0.84
+ atan                 2.93        2.44        3.96       0.79
+ sinh                 1.11        0.73        1.31       0.71
+ cosh                 1.11        0.73        1.31       0.71
+ asinh                1.60        1.40        1.89       0.65
+ acosh                1.65        1.44        1.98       0.73
+ atanh                1.60        1.40        1.88       0.69
+
+N=10000
+
+Function            LiDIA/libI  LiDIA/cln     Pari       CLN-1997-02-08
+ multiplication       0.51        0.36        1.75       0.37
+ sqrt                 4.58        3.36        5.6        0.95
+ pi                  23.8        17.8        16.7        6.0
+ eulerconst        1045         817        1128        327
+ e                    5.5         3.30      360          2.39
+ exp                130          75.1       373         40.2
+ log                301         224         562         32.3
+ sin                 83.6        61.9       475         53.4
+ cos                 83.5        61.7       474         52.1
+ asin               866         567        1281         72.4
+ acos               865         567        1282         72.4
+ atan               860         561        1274         69.9
+ sinh               130          75.1       378         41.5
+ cosh               129          75.1       377         41.4
+ asinh              313         232         578         31.1
+ acosh              311         231         583         36.9
+ atanh              314         233         573         36.6
+
+N=100000
+
+Function            LiDIA/libI  LiDIA/cln     Pari       CLN-1996-11-17
+ multiplication      19.3         4.63                   4.58
+ sqrt               298          55.8                   19.5
+ pi                             199                    122
+ eulerconst                                           6952
+ e                                                      42
+ exp                                                   860
+ log                                                   735
+ sin                                                  1483
+ cos                                                  1571
+ asin                                                 1440
+ acos                                                 1441
+ atan                                                 1407
+ sinh                                                  877
+ cosh                                                  877
+ asinh                                                 758
+ acosh                                                 813
+ atanh                                                 813
+
+Versions:
+  LiDIA 1.2.1 with libI
+  LiDIA 1.2.1 with cln-1996-11-17 (based on gmp 2.0.2)
+  Pari 1.39
+  cln-1997-02-08 and cln-1996-11-17 (both based on gmp 2.0.2)

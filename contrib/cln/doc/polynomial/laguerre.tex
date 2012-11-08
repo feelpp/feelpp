@@ -1,0 +1,214 @@
+%% This LaTeX-file was created by <bruno> Sun Feb 16 14:06:08 1997
+%% LyX 0.10 (C) 1995 1996 by Matthias Ettrich and the LyX Team
+
+%% Don't edit this file unless you are sure what you are doing.
+\documentclass[12pt,a4paper,oneside,onecolumn]{article}
+\usepackage[]{fontenc}
+\usepackage[latin1]{inputenc}
+\usepackage[dvips]{epsfig}
+
+%%
+%% BEGIN The lyx specific LaTeX commands.
+%%
+
+\makeatletter
+\def\LyX{L\kern-.1667em\lower.25em\hbox{Y}\kern-.125emX\spacefactor1000}%
+\newcommand{\lyxtitle}[1] {\thispagestyle{empty}
+\global\@topnum\z@
+\section*{\LARGE \centering \sffamily \bfseries \protect#1 }
+}
+\newcommand{\lyxline}[1]{
+{#1 \vspace{1ex} \hrule width \columnwidth \vspace{1ex}}
+}
+\newenvironment{lyxsectionbibliography}
+{
+\section*{\refname}
+\@mkboth{\uppercase{\refname}}{\uppercase{\refname}}
+\begin{list}{}{
+\itemindent-\leftmargin
+\labelsep 0pt
+\renewcommand{\makelabel}{}
+}
+}
+{\end{list}}
+\newenvironment{lyxchapterbibliography}
+{
+\chapter*{\bibname}
+\@mkboth{\uppercase{\bibname}}{\uppercase{\bibname}}
+\begin{list}{}{
+\itemindent-\leftmargin
+\labelsep 0pt
+\renewcommand{\makelabel}{}
+}
+}
+{\end{list}}
+\def\lxq{"}
+\newenvironment{lyxcode}
+{\list{}{
+\rightmargin\leftmargin
+\raggedright
+\itemsep 0pt
+\parsep 0pt
+\ttfamily
+}%
+\item[]
+}
+{\endlist}
+\newcommand{\lyxlabel}[1]{#1 \hfill}
+\newenvironment{lyxlist}[1]
+{\begin{list}{}
+{\settowidth{\labelwidth}{#1}
+\setlength{\leftmargin}{\labelwidth}
+\addtolength{\leftmargin}{\labelsep}
+\renewcommand{\makelabel}{\lyxlabel}}}
+{\end{list}}
+\newcommand{\lyxletterstyle}{
+\setlength\parskip{0.7em}
+\setlength\parindent{0pt}
+}
+\newcommand{\lyxaddress}[1]{
+\par {\raggedright #1 
+\vspace{1.4em}
+\noindent\par}
+}
+\newcommand{\lyxrightaddress}[1]{
+\par {\raggedleft \begin{tabular}{l}\ignorespaces
+#1
+\end{tabular}
+\vspace{1.4em}
+\par}
+}
+\newcommand{\lyxformula}[1]{
+\begin{eqnarray*}
+#1
+\end{eqnarray*}
+}
+\newcommand{\lyxnumberedformula}[1]{
+\begin{eqnarray}
+#1
+\end{eqnarray}
+}
+\makeatother
+
+%%
+%% END The lyx specific LaTeX commands.
+%%
+
+\pagestyle{plain}
+\setcounter{secnumdepth}{3}
+\setcounter{tocdepth}{3}
+
+%% Begin LyX user specified preamble:
+\catcode`@=11 % @ ist ab jetzt ein gewoehnlicher Buchstabe
+\def\ll{\langle\!\langle}
+\def\gg{\rangle\!\rangle}
+\catcode`@=12 % @ ist ab jetzt wieder ein Sonderzeichen
+
+
+%% End LyX user specified preamble.
+\begin{document}
+
+The Laguerre polynomials  \( L_{n}(x) \) are defined through 
+\[
+L_{n}(x)=e^{x}\cdot \left( \frac{d}{dx}\right) ^{n}(x^{n}e^{-x})\]
+
+
+\begin{description}
+
+\item [Theorem:]~
+
+\end{description}
+
+ \( L_{n}(x) \) satisfies the recurrence relation
+
+
+\[
+L_{0}(x)=1\]
+
+
+
+\[
+L_{n+1}(x)=(2n+1-x)\cdot L_{n}(x)-n^{2}\cdot L_{n-1}(x)\]
+for  \( n\geq 0 \) and the differential equation  \( x\cdot L_{n}^{''}(x)+(1-x)\cdot L_{n}^{'}(x)+n\cdot L_{n}(x)=0 \) for all  \( n\geq 0 \).
+
+\begin{description}
+
+\item [Proof:]~
+
+\end{description}
+
+Let  \( F:=\sum ^{\infty }_{n=0}\frac{L_{n}(x)}{n!}\cdot z^{n} \) be the exponential generating function of the sequence of polynomials.
+It is the diagonal series of the power series
+\[
+G:=\sum _{m,n=0}^{\infty }\frac{1}{m!}\cdot e^{x}\cdot \left( \frac{d}{dx}\right) ^{m}(x^{n}e^{-x})\cdot y^{m}\cdot z^{n}\]
+Because the Taylor series
+development theorem holds in formal power series rings (see [1], section
+2.16), we can simplify
+\begin{eqnarray*}
+G & = & e^{x}\cdot \sum _{n=0}^{\infty }\left( \sum _{m=0}^{\infty }\frac{1}{m!}\cdot \left( \frac{d}{dx}\right) ^{m}(x^{n}e^{-x})\cdot y^{m}\right) \cdot z^{n}\\
+ & = & e^{x}\cdot \sum _{n=0}^{\infty }(x+y)^{n}e^{-(x+y)}\cdot z^{n}\\
+ & = & \frac{e^{-y}}{1-(x+y)z}
+\end{eqnarray*}
+We take over the terminology from the ``diag\_rational''
+paper; here  \( R=Q[x] \) and  \( M=Q[[x]] \) (or, if you like it better,  \( M=H(C) \), the algebra of
+functions holomorphic in the entire complex plane).  \( G\in M[[y,z]] \) is not rational;
+nevertheless we can proceed similarly to the ``diag\_series'' paper.
+ \( F(z^{2}) \) is the coefficient of  \( t^{0} \) in
+\[
+G(zt,\frac{z}{t})=\frac{e^{-zt}}{1-z^{2}-\frac{xz}{t}}\in M[[zt,\frac{z}{t},z]]=M\ll z,t\gg \]
+The denominator's only zero is  \( t=\frac{xz}{1-z^{2}} \). We
+can write
+\[
+e^{-zt}=e^{-\frac{xz^{2}}{1-z^{2}}}+\left( zt-\frac{xz^{2}}{1-z^{2}}\right) \cdot P(z,t)\]
+with  \( P(z,t)\in Q[[zt,\frac{xz^{2}}{1-z^{2}}]]\subset Q[[zt,x,z]]=M[[zt,z]]\subset M\ll z,t\gg  \). This yields -- all computations being done in  \( M\ll z,t\gg  \)
+--
+\begin{eqnarray*}
+G(zt,\frac{z}{t}) & = & \frac{e^{-\frac{xz^{2}}{1-z^{2}}}}{1-z^{2}-\frac{xz}{t}}+\frac{zt}{1-z^{2}}\cdot P(z,t)\\
+ & = & \frac{1}{1-z^{2}}\cdot e^{-\frac{xz^{2}}{1-z^{2}}}\cdot \sum _{j=0}^{\infty }\left( \frac{x}{1-z^{2}}\frac{z}{t}\right) ^{j}+\frac{zt}{1-z^{2}}\cdot P(z,t)
+\end{eqnarray*}
+Here, the coefficient of  \( t^{0} \) is
+\[
+F(z^{2})=\frac{1}{1-z^{2}}\cdot e^{-\frac{xz^{2}}{1-z^{2}}}\]
+hence
+\[
+F(z)=\frac{1}{1-z}\cdot e^{-\frac{xz}{1-z}}\]
+
+
+It follows that  \( (1-z)^{2}\cdot \frac{d}{dz}F-(1-x-z)\cdot F=0 \). This is equivalent to the claimed recurrence.
+
+Starting from the closed form for  \( F \), we compute a linear relation
+for the partial derivatives of  \( F \). Write  \( \partial _{x}=\frac{d}{dx} \) and  \( \Delta _{z}=z\frac{d}{dz} \). One computes
+\[
+F=1\cdot F\]
+
+\[
+\left( 1-z\right) \cdot \partial _{x}F=-z\cdot F\]
+
+\[
+\left( 1-z\right) ^{2}\cdot \partial _{x}^{2}F=z^{2}\cdot F\]
+
+\[
+\left( 1-z\right) ^{2}\cdot \Delta _{z}F=((1-x)z-z^{2})\cdot F\]
+
+\[
+\left( 1-z\right) ^{3}\cdot \partial _{x}\Delta _{z}F=(-z+xz^{2}+z^{3})\cdot F\]
+Solve
+a homogeneous  \( 4\times 5 \) system of linear equations over  \( Q(x) \) to get 
+\[
+\left( 1-z\right) ^{3}\cdot \left( (1-x)\cdot \partial _{x}F+x\cdot \partial _{x}^{2}F+\Delta _{z}F\right) =0\]
+Divide by
+the first factor to get
+\[
+(1-x)\cdot \partial _{x}F+x\cdot \partial _{x}^{2}F+\Delta _{z}F=0\]
+This is equivalent to the claimed equation
+ \( x\cdot L_{n}^{''}(x)+(1-x)\cdot L_{n}^{'}(x)+n\cdot L_{n}(x)=0 \).
+
+\begin{lyxsectionbibliography}
+
+\item [1] Bruno Haible: D-finite power series in several variables. \em Diploma
+thesis, University of Karlsruhe, June 1989\em . Sections 2.15 and
+2.22.
+
+\end{lyxsectionbibliography}
+
+\end{document}

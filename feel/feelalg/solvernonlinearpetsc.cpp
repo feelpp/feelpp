@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2007-07-02
 
   Copyright (C) 2007-2011 Université Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file solvernonlinearpetsc.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2007-07-02
  */
 #include <feel/feelcore/feel.hpp>
@@ -74,7 +74,7 @@ extern "C"
         ostr << "[SolverNonLinearPetsc] NL step " << its
              << std::scientific
              << ", |residual|_2 = " << fnorm;
-        //Feel::Log() << ostr.str() << "\n";
+        //LOG(INFO) << ostr.str() << "\n";
         //std::cout << ostr.str() << "\n";
 #if 1
         KSP            ksp;         /* linear solver context */
@@ -87,7 +87,7 @@ extern "C"
         // Get the norm of the final residual to return to the user.
         ierr = KSPGetResidualNorm ( ksp, &final_resid );
         CHKERRABORT( PETSC_COMM_WORLD,ierr );
-        ///Feel::Log() << "[SolverNonLinearPetsc] KSP num of it = " << lits << " residual = " << final_resid << "\n";
+        ///LOG(INFO) << "[SolverNonLinearPetsc] KSP num of it = " << lits << " residual = " << final_resid << "\n";
         //std::cout << "[SolverNonLinearPetsc] KSP num of it = " << lits << " residual = " << final_resid << "\n";
 #endif
         KSPConvergedReason reason;
@@ -251,13 +251,13 @@ extern "C"
         boost::numeric::ublas::vector<double> xx( size );
         std::copy( xa, xa+size, xx.begin() );
 
-        //Feel::Log() << "dense_residual before xx= " << xx << "\n";
+        //LOG(INFO) << "dense_residual before xx= " << xx << "\n";
 
         boost::numeric::ublas::vector<double> rr( size );
 
         if ( solver->dense_residual != NULL ) solver->dense_residual ( xx, rr );
 
-        //Feel::Log() << "dense_residual after update rr= " << rr << "\n";
+        //LOG(INFO) << "dense_residual after update rr= " << rr << "\n";
 
         for ( int i=0; i<size; i++ )
         {
@@ -265,7 +265,7 @@ extern "C"
         }
 
         VecRestoreArray( x, &xa );
-        //Feel::Log() << "dense_residual rr= " << rr << "\n";
+        //LOG(INFO) << "dense_residual rr= " << rr << "\n";
 
         return ierr;
     }
@@ -290,7 +290,7 @@ extern "C"
         boost::numeric::ublas::vector<double> xx( size );
         std::copy( xa, xa+size, xx.begin() );
 
-        ///Feel::Log() << "dense_jacobian xx= " << xx << "\n";
+        ///LOG(INFO) << "dense_jacobian xx= " << xx << "\n";
 
         int size1;
         int size2;
@@ -299,7 +299,7 @@ extern "C"
 
         if ( solver->dense_jacobian != NULL ) solver->dense_jacobian ( xx, jj );
 
-        //Feel::Log() << "dense_jacobian jj = " << jj << "\n";
+        //LOG(INFO) << "dense_jacobian jj = " << jj << "\n";
 
         for ( int i = 0; i < size1; ++i )
             for ( int j = 0; j < size2; ++j )
@@ -620,20 +620,21 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
 
     ierr = SNESGetIterationNumber( M_snes,&n_iterations );
     CHKERRABORT( this->worldComm().globalComm(),ierr );
-    Log() << "[SolverNonLinearPetsc] number of nonlinear iterations = " << n_iterations << "\n";
+    LOG(INFO) << "[SolverNonLinearPetsc] number of nonlinear iterations = " << n_iterations << "\n";
 
     for ( int i=0; i<n_iterations+1; i++ )
     {
-        Log() << "iteration " << i << ": Linear iterations : " << hist_its[i] << " Function norm = " << history[i] << "\n";
+        LOG(INFO) << "iteration " << i << ": Linear iterations : " << hist_its[i] << " Function norm = " << history[i] << "\n";
     }
 
     SNESConvergedReason reason;
     SNESGetConvergedReason( M_snes,&reason );
-    Log() << "[solvernonlinearpetsc] convergence reason : " << reason << "\n";
+    LOG(INFO) << "[solvernonlinearpetsc] convergence reason : " << reason << "\n";
 
     if ( reason<0 )
     {
-        Log() << "[solvernonlinearpetsc] not converged: " << reason << "\n";
+        LOG(ERROR) << "Nonlinear solve did not converge due to " << PetscConvertSNESReasonToString(reason)
+                   << " iterations " << n_iterations << std::endl;
         if (this->showSNESConvergedReason() && this->worldComm().globalRank() == this->worldComm().masterRank() )
             std::cout << "Nonlinear solve did not converge due to " << PetscConvertSNESReasonToString(reason)
                       << " iterations " << n_iterations << std::endl;
@@ -759,7 +760,7 @@ SolverNonLinearPetsc<T>::solve ( dense_matrix_type&  jac_in,  // System Jacobian
     SNESConvergedReason reason;
     SNESGetConvergedReason( M_snes,&reason );
 
-    //Log() << "[solvernonlinearpetsc] convergence reason : " << reason << "\n";
+    //LOG(INFO) << "[solvernonlinearpetsc] convergence reason : " << reason << "\n";
     if ( reason<0 )
     {
         Debug( 7020 )  << "[solvernonlinearpetsc] not converged (see petscsnes.h for an explanation): " << reason << "\n";

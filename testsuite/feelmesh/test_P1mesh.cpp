@@ -1,7 +1,6 @@
 
 #define BOOST_TEST_MODULE test_P1mesh
-#include <boost/test/unit_test.hpp>
-using boost::unit_test::test_suite;
+#include <testsuite/testsuite.hpp>
 
 #include <feel/options.hpp>
 #include <feel/feelalg/backend.hpp>
@@ -238,12 +237,11 @@ test2dP1meshComposite( Application_ptrtype test_app )
 
 } // namespace test_P1mesh
 
+FEELPP_ENVIRONMENT_WITH_OPTIONS( test_P1mesh::makeAbout(), test_P1mesh::makeOptions() )
 /**
  * main code
  */
 BOOST_AUTO_TEST_SUITE( interp_P1mesh )
-Environment env( boost::unit_test::framework::master_test_suite().argc,
-                 boost::unit_test::framework::master_test_suite().argv );
 
 BOOST_AUTO_TEST_CASE( interp_P1mesh )
 {

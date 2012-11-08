@@ -3,7 +3,7 @@
    This file is part of the Feel library
 
    Author(s):
-   Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    Klaus Sapelza <klaus.sapelza@epfl.ch>
    Date: 2006-09-14
 
@@ -26,7 +26,7 @@
 */
 /**
    \file vectorepetra.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \author Klaus.Sapelza <klaus.sapelza@epfl.ch>
    \date 2006-09-14
 */

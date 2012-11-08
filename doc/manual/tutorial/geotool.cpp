@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2011-04-04
 
   Copyright (C) 2011 Université Joseph Fourier (Grenoble I)
@@ -23,23 +23,16 @@
 */
 /**
    \file geotool.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2011-04-04
  */
-#include <boost/preprocessor/cat.hpp>
-#include <boost/preprocessor/stringize.hpp>
 
-#include <feel/options.hpp>
-#include <feel/feelfilters/gmsh.hpp>
-#include <feel/feelfilters/exporter.hpp>
-#include <feel/feelvf/vf.hpp>
-#include <feel/feelfilters/geotool.hpp>
+#include <feel/feel.hpp>
 
 template<typename MeshType>
 void myexport( std::string const& name, boost::shared_ptr<MeshType> mesh )
 {
     using namespace Feel;
-    using namespace Feel::vf;
 
     typedef Mesh<Simplex<2> > mesh_type;
     typedef Exporter<mesh_type> exporter_type;
@@ -50,9 +43,13 @@ void myexport( std::string const& name, boost::shared_ptr<MeshType> mesh )
 
 int main( int argc, char**argv )
 {
-    Feel::Environment env( argc, argv );
     using namespace Feel;
-    using namespace Feel::vf;
+
+    Environment env( _argc=argc, _argv=argv,
+                     _about=about(_name="geotool",
+                                  _author="Christophe Prud'homme",
+                                  _email="christophe.prudhomme@feelpp.org") );
+
 
     typedef Mesh<Simplex<2> > mesh_type;
     typedef Exporter<mesh_type> exporter_type;

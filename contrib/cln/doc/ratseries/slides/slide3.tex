@@ -1,0 +1,38 @@
+\magnification=\magstep3
+\hsize=19truecm
+\vsize=19truecm
+\nopagenumbers
+\parindent=0mm
+\font\eins=cmb10 scaled \magstep 3
+\font\zwei=cmr12
+\font\mini=cmr7
+\def\frac#1#2{{{#1} \over {#2}}}
+\hbox{}
+\vfill
+
+\centerline{\eins Binary Splitting}
+\bigskip\bigskip
+Recursive algorithm:
+\medskip
+\centerline{$\displaystyle S_{[n_1,n_2)} = {\sum\limits_{n=n_1}^{n_2-1} \frac{a(n)}{b(n)} \, \frac{p(n_1) \cdots p(n)}{q(n_1) \cdots q(n)}}$}
+\medskip
+Compute $P = {p(n_1) \cdots p(n_2-1)}$, $Q = {q(n_1) \cdots q(n_2-1)}$,
+\vskip 0cm
+$B = {b(n_1) \cdots b(n_2-1)}$ and $T$ with
+\medskip
+\centerline{$\displaystyle S_{[n_1,n_2)} = \frac{T}{B \cdot Q}$}
+\bigskip
+\quad $n_2 - n_1 < 4$ \quad $\rightarrow$ directly
+\medskip
+\quad $n_2 - n_1 \geq 4$ \quad $\rightarrow$ split
+\medskip
+\centerline{$P = P_L \cdot P_R$}
+\centerline{$Q = Q_L \cdot Q_R$}
+\centerline{$B = B_L \cdot B_R$}
+\centerline{$T = B_R \cdot Q_R \cdot T_L + B_L \cdot P_L \cdot T_R$}
+
+\vfill
+\hbox{}
+\eject
+
+\end

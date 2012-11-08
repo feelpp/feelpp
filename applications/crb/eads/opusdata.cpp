@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2008-11-15
 
   Copyright (C) 2008 Université Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file opusdata.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2008-11-15
  */
 #include <stdexcept>
@@ -241,33 +241,33 @@ void
 OpusData::print() const
 {
 
-    Feel::Log() << "Simulation parameters\n";
-    Feel::Log() << "=====================\n";
-    Feel::Log() << "h = " << this->h() << "\n";
+    LOG(INFO) << "Simulation parameters\n";
+    LOG(INFO) << "=====================\n";
+    LOG(INFO) << "h = " << this->h() << "\n";
 
-    Feel::Log() << "Stabilisation/Penalisation parameters\n";
-    Feel::Log() << "=====================================\n";
-    Feel::Log() << "gamma-bc     = " << this->gammaBc() << "\n";
-    Feel::Log() << "gamma-u      = " << this->gammaU() << "\n";
-    Feel::Log() << "gamma-t      = " << this->gammaTemp() << "\n";
-    Feel::Log() << "gamma-p      = " << this->gammaP() << "\n";
-    Feel::Log() << "gamma-divdiv = " << this->gammaDivDiv() << "\n";
-    Feel::Log() << "delta-divdiv = " << this->deltaDivDiv() << "\n";
+    LOG(INFO) << "Stabilisation/Penalisation parameters\n";
+    LOG(INFO) << "=====================================\n";
+    LOG(INFO) << "gamma-bc     = " << this->gammaBc() << "\n";
+    LOG(INFO) << "gamma-u      = " << this->gammaU() << "\n";
+    LOG(INFO) << "gamma-t      = " << this->gammaTemp() << "\n";
+    LOG(INFO) << "gamma-p      = " << this->gammaP() << "\n";
+    LOG(INFO) << "gamma-divdiv = " << this->gammaDivDiv() << "\n";
+    LOG(INFO) << "delta-divdiv = " << this->deltaDivDiv() << "\n";
 
-    Feel::Log() << "eps-peusdo-compress = " << this->epsPseudoCompressibility() << "\n";
+    LOG(INFO) << "eps-peusdo-compress = " << this->epsPseudoCompressibility() << "\n";
 
-    Feel::Log() << "linalg-same-prec = " << this->useSamePreconditioner() << "\n";
+    LOG(INFO) << "linalg-same-prec = " << this->useSamePreconditioner() << "\n";
 
-    Feel::Log() << "init = " << this->init() << "\n";
+    LOG(INFO) << "init = " << this->init() << "\n";
 
-    Feel::Log() << "export = " << this->doExport() << "\n";
+    LOG(INFO) << "export = " << this->doExport() << "\n";
 
     std::ostringstream ostr;
     ostr << this->component( "PCB" ) << "\n"
          << this->component( "IC1" ) << "\n"
          << this->component( "IC2" ) << "\n"
          << this->component( "AIR" ) << "\n";
-    Feel::Log() << ostr.str();
+    LOG(INFO) << ostr.str();
 }
 
 void

@@ -1,0 +1,28 @@
+\magnification=\magstep3
+\hsize=19truecm
+\vsize=19truecm
+\nopagenumbers
+\parindent=0mm
+\font\eins=cmb10 scaled \magstep 3
+\font\zwei=cmr12
+\font\mini=cmr7
+\def\frac#1#2{{{#1} \over {#2}}}
+\hbox{}
+\vfill
+
+\centerline{\eins Application to Euler's Constant}
+\bigskip\bigskip
+Put
+\quad\quad{$\displaystyle f(x) := {\sum\limits_{n=0}^{\infty} \frac{x^n}{{n!}^2}}$}\hfill\break
+\hphantom{Put}\quad\quad{$\displaystyle g(x) := {\sum\limits_{n=0}^{\infty} \left( \frac{1}{1} + \cdots + \frac{1}{n} \right) \frac{x^n}{{n!}^2}}$}\hfill\break
+\bigskip\bigskip
+Then
+\hfill{$\displaystyle \frac{g(x)}{f(x)} = \frac{1}{2} \log x + \gamma + O \left( e^{-4 \sqrt{x}} \right) $.}\hfill\break
+\bigskip\bigskip
+Choose $\displaystyle {x = {\left\lceil \frac{N \log 2}{4} \right\rceil}^2}$.
+
+\vfill
+\hbox{}
+\eject
+
+\end

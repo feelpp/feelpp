@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2005-06-01
 
   Copyright (C) 2005,2006 EPFL
@@ -24,7 +24,7 @@
 */
 /**
    \file ppoperators.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-06-01
  */
 #if !defined( PP_OPERATORS_HPP )
@@ -652,8 +652,8 @@
             protected:                                                  \
             VF_OP_NAME( O )() {}                                        \
                                                                         \
-        L_type VF_TYPE_CV(L) _M_left;                                   \
-        R_type VF_TYPE_CV(R) _M_right;                                  \
+        L_type _M_left;                                                  \
+        R_type _M_right;                                                \
     };                                                                  \
     template <BOOST_PP_IF( VF_TYPE_IS_EXPR( L ),                        \
                            BOOST_PP_IDENTITY(class VF_TYPE_NAME(L)),    \

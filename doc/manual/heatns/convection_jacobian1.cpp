@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2009-03-05
 
   Copyright (C) 2009 Universite Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file convection_jacobian1.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2009-03-05
  */
 #include "convection.hpp"
@@ -52,12 +52,12 @@ void Convection ::updateJacobian1( const vector_ptrtype& X,
     auto eta = V. element<3>(); // fonction test multipliers
 #endif
 
-    Log() << "[updateJacobian1] ||U|| = " << U.l2Norm() << "\n";
-    Log() << "[updateJacobian1] ||u|| = " << u.l2Norm() << "\n";
-    Log() << "[updateJacobian1] ||p|| = " << p.l2Norm() << "\n";
-    Log() << "[updateJacobian1] ||t|| = " << t.l2Norm() << "\n";
+    LOG(INFO) << "[updateJacobian1] ||U|| = " << U.l2Norm() << "\n";
+    LOG(INFO) << "[updateJacobian1] ||u|| = " << u.l2Norm() << "\n";
+    LOG(INFO) << "[updateJacobian1] ||p|| = " << p.l2Norm() << "\n";
+    LOG(INFO) << "[updateJacobian1] ||t|| = " << t.l2Norm() << "\n";
 #if defined( FEELPP_USE_LM )
-    Log() << "[updateJacobian1] ||xi|| = " << xi.l2Norm() << "\n";
+    LOG(INFO) << "[updateJacobian1] ||xi|| = " << xi.l2Norm() << "\n";
 #endif
 
     double gr= M_current_Grashofs;
@@ -98,7 +98,7 @@ void Convection ::updateJacobian1( const vector_ptrtype& X,
     form2( _test=Xh,_trial=Xh, _matrix=D )  += integrate ( _range=elements( mesh ),_expr=cst( a )*trans( id( v ) )*( gradv( u ) )*idt( u ) );
     form2( _test=Xh,_trial=Xh, _matrix=D )  +=integrate ( _range=elements( mesh ), _expr=cst( a )*trans( id( v ) )*( gradt( u )*idv( u ) ) );
 
-    Log() << "[updateJacobian1] Convection terms done\n";
+    LOG(INFO) << "[updateJacobian1] Convection terms done\n";
 
 
 }

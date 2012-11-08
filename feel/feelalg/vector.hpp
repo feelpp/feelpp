@@ -445,6 +445,9 @@ public:
                              const std::vector<size_type>& dof_indices ) = 0;
 #endif
 
+    virtual value_type dot( Vector<T> const& v ) = 0;
+    virtual value_type dot( boost::shared_ptr<Vector<T> > const& v ) { return dot( *v ); }
+
     /**
      * \f$ U=v \f$ where v is a DenseVector<T>
      * and you want to specify WHERE to insert it
@@ -571,6 +574,7 @@ inner_product( Vector<T> const& v1, Vector<T> const& v2 )
     typedef typename type_traits<T>::real_type real_type;
 
     size_type s = v1.localSize();
+    //size_type s = v1.map().nLocalDofWithoutGhost();
     real_type res = 0;
     size_type start = v1.firstLocalIndex();
     real_type global_res = 0;

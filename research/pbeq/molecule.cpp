@@ -73,7 +73,7 @@ int Molecule::readPQRfile( std::string const filename )
 
     if ( pqrfile.fail() )
     {
-        Log() << "readPQRfile::failed to open *" << filename << "*"
+        LOG(INFO) << "readPQRfile::failed to open *" << filename << "*"
               << "\n";
         return 1;
     }
@@ -89,7 +89,7 @@ int Molecule::readPQRfile( std::string const filename )
 
         else
         {
-            Log() << "readPQRfile::problem reading atom " << "\n";
+            LOG(INFO) << "readPQRfile::problem reading atom " << "\n";
             return 1;
         }
     }
@@ -131,14 +131,14 @@ int Molecule::readCRDfile( std::string const filename )
 
     if ( chafile.fail() || chafile.eof() )
     {
-        Log() << "readCRDfile::failed to open *" << filename_cha_crd.str() << "*"
+        LOG(INFO) << "readCRDfile::failed to open *" << filename_cha_crd.str() << "*"
               << "\n";
         return 1;
     }
 
     if ( radfile.fail() || radfile.eof() )
     {
-        Log() << "readCRDfile::failed to open *" << filename_rad_crd.str() << "*"
+        LOG(INFO) << "readCRDfile::failed to open *" << filename_rad_crd.str() << "*"
               << "\n";
         return 1;
     }
@@ -160,7 +160,7 @@ int Molecule::readCRDfile( std::string const filename )
 
         if ( ret == -1 )
         {
-            Log() << "readCRDfile::problem reading atom " << "\n";
+            LOG(INFO) << "readCRDfile::problem reading atom " << "\n";
             return 1;
         }
     }
@@ -209,7 +209,7 @@ int Molecule::readDock4file(   std::ifstream& dock4file )
 
         if ( ret == -1 )
         {
-            Log() << "readDock4file:: problem reading atom " << "\n";
+            LOG(INFO) << "readDock4file:: problem reading atom " << "\n";
             std::cerr << "readDock4file:: problem reading atom " << "\n";
             showMe();
             return -1;
@@ -227,7 +227,7 @@ int Molecule::readDock4file(   std::ifstream& dock4file )
 
     if ( --it == M_atoms.begin() ) return 1;
 
-    Log() << "readDock4file:: problem reading molecule " << "\n";
+    LOG(INFO) << "readDock4file:: problem reading molecule " << "\n";
     std::cerr << "readDock4file:: problem reading molecule " << "\n";
 
     showMe();
@@ -259,7 +259,7 @@ std::string Molecule::clearRemarks( std::string const remStr,
 void Molecule::showMe() const
 {
     int nA( M_atoms.size() );
-    Log() << "REMARK Molecule with  " << nA << " atoms" << "\n";
+    LOG(INFO) << "REMARK Molecule with  " << nA << " atoms" << "\n";
 
     std::list<atom_type>::const_iterator it;
 

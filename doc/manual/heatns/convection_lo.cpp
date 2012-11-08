@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2009-03-12
 
   Copyright (C) 2009 Universite Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file convection_lo.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2009-03-12
  */
 #include "convection.hpp"
@@ -35,7 +35,7 @@
 void Convection ::initLinearOperator( sparse_matrix_ptrtype& L )
 {
     boost::timer ti;
-    Log() << "[initLinearOperator] start\n";
+    LOG(INFO) << "[initLinearOperator] start\n";
 
     mesh_ptrtype mesh = Xh->mesh();
     element_type U( Xh, "u" );
@@ -93,7 +93,7 @@ void Convection ::initLinearOperator( sparse_matrix_ptrtype& L )
     auto bf = form2( _test=Xh, _trial=Xh, _matrix=L );
     bf =integrate( _range=elements( mesh ),
                    _expr=cst( b )*trace( gradt( u )*trans( grad( v ) ) )  );
-    Log() << "[initLinearOperator] Fluid Diffusion terms done\n";
+    LOG(INFO) << "[initLinearOperator] Fluid Diffusion terms done\n";
 
     // pressure-velocity terms
     bf += integrate ( _range=elements( mesh ), _expr=- idt( p ) * div( v ) );
@@ -109,16 +109,16 @@ void Convection ::initLinearOperator( sparse_matrix_ptrtype& L )
         bf  += integrate ( marked2faces( mesh, "F.wall" ), +gamma*trans( idt( u ) )*id( v )/hFace() );
     }
 
-    Log() << "[initLinearOperator] Fluid Pressure-Velocity terms done\n";
+    LOG(INFO) << "[initLinearOperator] Fluid Pressure-Velocity terms done\n";
 
 #if defined( FEELPP_USE_LM )
     // multipliers for zero-mean pressure
     bf+= integrate ( _range=elements( mesh ), _expr=id( q )*idt( xi ) );
     bf+= integrate ( _range=elements( mesh ), _expr=idt( p )*id( eta ) );
-    Log() << "[initLinearOperator] Fluid Pressure-Multipliers terms done\n";
+    LOG(INFO) << "[initLinearOperator] Fluid Pressure-Multipliers terms done\n";
 #endif
 
-    Log() << "[initLinearOperator] done in " << ti.elapsed() << "s\n";
+    LOG(INFO) << "[initLinearOperator] done in " << ti.elapsed() << "s\n";
 
 
 }

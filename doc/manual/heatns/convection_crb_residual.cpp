@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2009-03-04
 
   Copyright (C) 2009 Universite Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file convection_crb_residual.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2009-03-04
  */
 #include "convection_crb.hpp"
@@ -37,8 +37,7 @@
 void
 Convection_crb::updateResidual( const vector_ptrtype& X, vector_ptrtype& R )
 {
-
-    Log() << "[updateResidual] start\n";
+    LOG(INFO) << "[updateResidual] start\n";
 
     mesh_ptrtype mesh = Xh->mesh();
 
@@ -60,10 +59,15 @@ Convection_crb::updateResidual( const vector_ptrtype& X, vector_ptrtype& R )
     element_3_type eta = V. element<3>(); // fonction test multipliers
 #endif
 
-    
+
     double gr( M_current_Grashofs );
     double pr = M_current_Prandtl;
+<<<<<<< HEAD
     
+=======
+    double sqgrpr( 1/( pr*math::sqrt( gr ) ) );
+
+>>>>>>> 3bd57b367fafcb4978de81fc027f501f7acc25f4
     double gamma( this->vm()["penalbc"]. as<double>() );
     double k=this->vm()["k"]. as<double>();
     double nu=this->vm()["nu"]. as<double>();
@@ -80,7 +84,7 @@ Convection_crb::updateResidual( const vector_ptrtype& X, vector_ptrtype& R )
 
     //choix de la valeur des paramètres dimensionnés ou adimensionnés
     double a=0.0,b=0.0,c=0.0;
-    
+
     a=1;
     b=1/math::sqrt( gr );
     c=1/( pr*math::sqrt( gr ) );
@@ -168,7 +172,7 @@ Convection_crb::updateResidual( const vector_ptrtype& X, vector_ptrtype& R )
                         // weak dirichlet condition T=T_0 | left side
                         -gradv( t )*N()*id( s )*cst_ref( c )
                         -grad( s )*N()*idv( t )*cst_ref( c ) );
-        
+
         form1( Xh,R ) 	+=
             integrate ( markedfaces( mesh,mesh->markerName( "Tfixed" ) ),
                         cst_ref( gamma )*idv( t )*id( s )/hFace() );
@@ -188,7 +192,7 @@ Convection_crb::updateResidual( const vector_ptrtype& X, vector_ptrtype& R )
         }
     }
     modifVec( boundaryfaces( mesh ),u,R,one()*0 );
-    
+
 //    R->print(std::cout);
         
 }

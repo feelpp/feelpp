@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2008-02-07
 
   Copyright (C) 2008-2010 Université Joseph Fourier (Grenoble I)
@@ -22,10 +22,13 @@
 */
 /**
    \file residualestimator.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2010-07-15
  */
 #include <residualestimator.hpp>
+
+#include <feel/feel.hpp>
+using namespace Feel;
 
 /**
  * This routine returns the list of options using the
@@ -68,36 +71,19 @@ makeOptions()
 int
 main( int argc, char** argv )
 {
-    /**
-     * create an application
-     */
-    /** \code */
-    Application app( argc, argv, makeAbout(), makeOptions() );
+    using namespace Feel;
+    Environment env( _argc=argc, _argv=argv,
+                     _desc=makeOptions(),
+                     _about=makeAbout() );
+ 
+    Application app;
 
-    if ( app.vm().count( "help" ) )
-    {
-        std::cout << app.optionsDescription() << "\n";
-        return 0;
-    }
 
-    /** \endcode */
+    //app.add( new ResidualEstimator<1,1>() );
+    app.add( new ResidualEstimator<2,1>() );
+    //app.add( new ResidualEstimator<3,1>() );
 
-    /**
-     * register the simgets
-     */
-    /** \code */
-    //app.add( new ResidualEstimator<1,1>( app.vm(), app.about() ) );
-    app.add( new ResidualEstimator<2,1>( app.vm(), app.about() ) );
-    //app.add( new ResidualEstimator<3,1>( app.vm(), app.about() ) );
-
-    /** \endcode */
-
-    /**
-     * run the application
-     */
-    /** \code */
     app.run();
-    /** \endcode */
 }
 
 

@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2012-05-02
 
   Copyright (C) 2012 Université Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file eim.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2012-05-02
  */
 #ifndef _FEELPP_EIM_HPP
@@ -42,259 +42,16 @@
 #include <boost/serialization/export.hpp>
 #include <boost/serialization/base_object.hpp>
 
+#include <feel/feelcrb/crbdb.hpp>
+#include <feel/feelcrb/parameterspace.hpp>
+
+#include <feel/feelvf/vf.hpp>
+
 #include <Eigen/Core>
 
 namespace Feel
 {
-template<typename T>
-class EIMBase
-{
-public:
-
-    /** @name Typedefs
-     */
-    //@{
-
-    typedef T value_type;
-
-    typedef Eigen::Matrix<double, Dynamic, Dynamic> matrix_type;
-    typedef Eigen::Matrix<double, Dynamic, 1> vector_type;
-
-    //@}
-
-    EIMBase()
-        :
-        _M_is_read( false ),
-        _M_is_written( false ),
-        _M_name( "default" ),
-        _M_M( 1 ),
-        _M_M_max( 1 ),
-        _M_offline_done( false ),
-        _M_tol( 1e-8 ),
-        _M_q(),
-        _M_B(),
-        _M_t(),
-        _M_index_max()
-        {
-        }
-    EIMBase( std::string const& __name, double __tol = 1e-8 )
-        :
-        _M_is_read( false ),
-        _M_is_written( false ),
-        _M_name( __name ),
-        _M_M( 1 ),
-        _M_M_max( 1 ),
-        _M_offline_done( false ),
-        _M_tol( __tol ),
-        _M_q(),
-        _M_B(),
-        _M_t(),
-        _M_index_max()
-        {
-        }
-    EIMBase( EIMBase const& __bbf )
-        :
-        _M_is_read( __bbf._M_is_read ),
-        _M_is_written( __bbf._M_is_written ),
-        _M_name( __bbf._M_name ),
-        _M_M( __bbf._M_M ),
-        _M_M_max (__bbf._M_M_max ),
-        _M_offline_done( __bbf._M_offline_done ),
-        _M_tol( __bbf._M_tol ),
-        _M_q( __bbf._M_q ),
-        _M_B( __bbf._M_B ),
-        _M_t( __bbf._M_t ),
-        _M_index_max( __bbf._M_index_max )
-        {}
-    virtual ~EIMBase() {}
-
-    /** @name Accessors
-     */
-    //@{
-
-    /**
-       \return the number of DOF in space discretization
-    */
-    size_t nbDOF() const {  return _M_q.rows(); }
-
-    matrix_type const& q() const {  return _M_q; }
-
-    Eigen::ColXpr qm( size_t __m ) const
-        {
-            FEEL_ASSERT( __m >= 0 && __m < _M_M )( __m )( _M_M ).error( "out of bounds access" );
-
-            return _M_q.col( __m );
-        }
-    value_type qxm( size_t __i, size_t __m ) const
-        {
-            FEEL_ASSERT( __m >= 0 && __m < _M_M )( __m )( _M_M ).error( "out of bounds access" );
-            FEEL_ASSERT( __i >= 0 && __i < _M_q.rows() )( __i )( _M_q.rows() ).error( "out of bounds access" );
-
-            return _M_q( __i, __m );
-        }
-
-
-    size_t Mmax() const { return _M_M_max; }
-
-
-    //@}
-
-    /** @name  Methods
-     */
-    //@{
-
-    /**
-       orthonormalize
-    */
-    void orthonormalize( matrix_type& );
-
-    friend class boost::serialization::access;
-    template<class Archive>
-    void serialize(Archive & __ar, const unsigned int __version )
-        {
-            Debug( 7450 ) << "serializing...\n";
-
-            __ar & BOOST_SERIALIZATION_NVP( _M_name );
-
-            Debug( 7450 ) << "name saved/loaded...\n";
-
-            __ar & BOOST_SERIALIZATION_NVP( _M_offline_done );
-            Debug( 7450 ) << "offline status...\n";
-
-            __ar & BOOST_SERIALIZATION_NVP( _M_M_max );
-            Debug( 7450 ) << "M saved/loaded\n";
-            _M_M = _M_M_max;
-
-            // save index
-            __ar & BOOST_SERIALIZATION_NVP( _M_index_max );
-            Debug( 7450 ) << "index saved/loaded\n";
-
-            // save t
-            __ar & BOOST_SERIALIZATION_NVP( _M_t );
-            Debug( 7450 ) << "t saved/loaded\n";
-
-            // save q
-            __ar & BOOST_SERIALIZATION_NVP( _M_q );
-            Debug( 7450 ) << "q saved/loaded\n";
-
-            // save B
-            __ar & BOOST_SERIALIZATION_NVP( _M_B );
-            Debug( 7450 ) << "B saved/loaded\n";
-
-        }
-
-    /**
-       offline stage
-    */
-    virtual void offline(  )
-        {}
-
-    /**
-       Check whether the offline stage has been executed and the database created.
-       \return \c true if the offline has been executed and the DB saved, \c false otherwise
-    */
-    bool isOfflineDone() const
-        {
-            return _M_offline_done;
-        }
-
-    /**
-       \brief Online stage of the coefficient-function interpolation.
-
-       Our coefficient function approximation is the interpolant of
-       \f$g\f$ over \f$T_M\f$ :
-       \f$g_M (x ;
-       \mu) = \sum^M_{m = 1} \beta_m
-       (\mu) \: q_m (x)\f$, where
-       \f$\sum^M_{j = 1} \: B^M_{i \: j} \: \beta_j (\mu) = g (t_i ; \mu)\f$, \f$
-       1 \leq i \leq M\f$.
-       We define \f$\varepsilon_M (\mu) \equiv \| g (\: \cdot \: ; \mu) - g_M
-       (\: \cdot \: ; \mu)\|_{L^{\infty} (\Omega)}\f$.
-
-       Note that \f$ \Omega \f$ is given and $D^\mu$ is handled by the \c parameterset_type
-       data structure.
-    */
-    virtual void beta( vector_type& __beta, size_t M  ) const
-        {}
-
-    virtual void beta( vector_type& __beta, value_type& __err, size_t M ) const
-        {}
-
-    /**
-       Given the \f$\mu\f$ in parameter space,
-       compute \f$ q_m( x ) \forall x \in \Omega\f$
-    */
-    void blackbox_q( vector_type& __g, int __m )
-        {
-            FEEL_ASSERT( _M_t.size() ).error( "t size is 0" );
-            FEEL_ASSERT( _M_q.rows() && _M_q.cols() ).error( "q size is 0" );
-            FEEL_ASSERT( _M_B.rows() && _M_B.cols() ).error( "B size is 0" );
-            if ( __g.size() != _M_q.rows() )
-                __g.resize( _M_q.rows() );
-            __g = qm( __m );
-        }
-
-    /**
-       Given the \f$\mu\f$ in parameter space,
-       compute \f$ g_M( x, \mu ) \forall x \in \Omega\f$
-    */
-    void blackbox( vector_type& __g )
-        {
-            FEEL_ASSERT( _M_t.size() ).error( "t size is 0" );
-            FEEL_ASSERT( _M_q.rows() && _M_q.cols() ).error( "q size is 0" );
-            FEEL_ASSERT( _M_B.rows() && _M_B.cols() ).error( "B size is 0" );
-
-            vector_type __b;
-            beta( __b, _M_M_max );
-
-            __g.conservativeResize( _M_q.rows() );
-
-            __g = _M_q.block(0,0,_M_q.rows(),_M_M_max)*__b;
-        }
-    //@}
-
-protected:
-
-    mutable bool _M_is_read;
-    mutable bool _M_is_written;
-
-    std::string _M_name;
-
-    size_t _M_M;
-    size_t _M_M_max;
-
-    mutable bool _M_offline_done;
-
-    double _M_tol;
-
-
-    matrix_type _M_q;
-
-    matrix_type _M_B;
-
-    std::vector<coord_type> _M_t;
-
-    std::vector<size_t> _M_index_max;
-
-};
-
-template<typename T>
-void
-EIMBase<T>::orthonormalize( matrix_type& __Z )
-{
-    FEEL_ASSERT( __Z.rows() > 0 && __Z.cols() > 0 )( __Z.rows() )( __Z.cols() ).error( "invalid number of rows or columns" );
-    // here we use the norm2 but it might be a good one
-    size_t __M = __Z.cols();
-    for ( size_t __i = 0;__i < __M-1; ++__i )
-    {
-        value_type __s = __Z.col(i)*__Z.col(__M-1);
-        __Z.col(__M-1) -= s*__Z*col(__i);
-    }
-    value_type __normZ = __Z.col(__M-1).norm();;
-    __Z.col(__M-1).normalize();
-}
-
-/*!
+/**
   \class EIM
   \brief Empirical interpolation of a function to obtain an affine decomposition
 
@@ -350,34 +107,43 @@ EIMBase<T>::orthonormalize( matrix_type& __Z )
   (\: \cdot \: ; \mu)\|_{L^{\infty} (\Omega)}\f$.
 
   \todo make it truly mesh independent.
-  \todo find a generic solution for coordinates type \c coord_type
+  \todo find a generic solution for coordinates type \c node_type
 
-  @author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
   @see
 */
-template<typename T,
-         typename Dmu,
-         template<typename> class F>
-class EIM
-    :
-    public EIMBase<T>
+template<typename ModelType>
+class EIM : public CRBDB
 {
+    typedef  CRBDB super;
+
 public:
 
-
+    static const uint16_type nDim = ModelType::nDim;
     /** @name Typedefs
      */
     //@{
-    typedef EIMBase<T> super;
+    typedef ModelType model_type;
+    typedef typename ModelType::value_type value_type;
 
-    typedef typename super::value_type value_type;
-    typedef typename super::coord_type coord_type;
+    typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> matrix_type;
+    typedef typename matrix_type::ColXpr column_type;
+    typedef Eigen::Matrix<double, Eigen::Dynamic, 1> vector_type;
+    typedef typename ModelType::node_type node_type;
 
-    typedef typename Dmu::singleton_type pset_type;
-    typedef typename pset_type::parameter_set_type parameter_set_type;
-    typedef typename super::matrix_type matrix_type;
+    typedef typename ModelType::functionspace_type functionspace_type;
+    typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
+    typedef typename functionspace_type::element_type element_type;
+    typedef typename functionspace_type::element_ptrtype element_ptrtype;
 
-    typedef F<value_type> f_type;
+    typedef typename ModelType::solution_type solution_type;
+
+    typedef typename ModelType::parameterspace_type parameterspace_type;
+    typedef typename ModelType::parameter_type parameter_type;
+    typedef typename parameterspace_type::sampling_ptrtype sampling_ptrtype;
+
+    typedef boost::tuple<double,Eigen::Matrix<double,nDim,1> > space_residual_type;
+    typedef boost::tuple<double,parameter_type> parameter_residual_type;
 
     //@}
 
@@ -385,23 +151,69 @@ public:
      */
     //@{
 
-    EIM( space_type const& Xh, double __tol = 1e-8 )
+    EIM()
         :
-        super( f_type().name(), __tol ),
-        M_Xh( Xh )
+        super(),
+        M_vm(),
+        M_is_read( false ),
+        M_is_written( false ),
+        M_name( "default" ),
+        M_M( 1 ),
+        M_M_max( 1 ),
+        M_offline_done( false ),
+        M_tol( 1e-8 ),
+        M_q(),
+        M_B(),
+        M_t(),
+        M_index_max(),
+        M_model( 0 )
+        {}
+    EIM( po::variables_map const& vm, model_type* model, sampling_ptrtype sampling, double __tol = 1e-8 )
+        :
+        super(model->modelName(), model->name(), model->name(), vm ),
+        M_vm( vm ),
+        M_is_read( false ),
+        M_is_written( false ),
+        M_name( model->name() ),
+        M_trainset( sampling ),
+        M_M( 1 ),
+        M_M_max( 1 ),
+        M_offline_done( false ),
+        M_tol( __tol ),
+        M_q(),
+        M_B(),
+        M_t(),
+        M_index_max(),
+        M_model( model )
         {
+            if ( !loadDB() || M_vm["eim.rebuild-database"].template as<bool>() )
+            {
+                LOG(INFO) << "construct EIM approximation...\n";
+                M_offline_done = false;
+            }
+
             if (  !this->isOfflineDone() )
-                offline( M_Xh );
+                offline();
         }
 
     EIM( EIM const & __bbf )
         :
-        super( __bbf )
+    super(__bbf),
+        M_is_read( __bbf.M_is_read ),
+        M_is_written( __bbf.M_is_written ),
+        M_name( __bbf.M_name ),
+        M_M( __bbf.M_M ),
+        M_M_max (__bbf.M_M_max ),
+        M_offline_done( __bbf.M_offline_done ),
+        M_tol( __bbf.M_tol ),
+        M_q( __bbf.M_q ),
+        M_B( __bbf.M_B ),
+        M_t( __bbf.M_t ),
+        M_index_max( __bbf.M_index_max ),
+        M_model( __bbf.M_model )
         {}
     ~EIM()
         {}
-
-    static EIMBase<T>* create() { return new EIM<T, Dmu, F>; }
 
     //@}
 
@@ -412,17 +224,110 @@ public:
 
     //@}
 
+    /** @name Accessors
+     */
+    //@{
+
+    /**
+       \return the number of DOF in space discretization
+    */
+    size_type nDOF() const {  FEELPP_ASSERT( M_model != 0 ).error( "Invalid EIM model" ); return M_model->functionSpace()->nLocalDof(); }
+
+    /**
+     * return the set of reduced basis functions associated with the eim
+     */
+    std::vector<element_type> const& q() const {  return M_q; }
+
+    /**
+     * return the m-th reduced basis function associated with the eim
+     */
+    element_type const&
+    q( size_type __m ) const
+        {
+            FEELPP_ASSERT( __m >= 0 && __m < M_M )( __m )( M_M ).error( "out of bounds access" );
+
+            return M_q[ __m ];
+        }
+
+    size_type mMax() const { return M_M_max; }
+
+
+    /**
+       Check whether the offline stage has been executed and the database created.
+       \return \c true if the offline has been executed and the DB saved, \c false otherwise
+    */
+    bool isOfflineDone() const
+        {
+            return M_offline_done;
+        }
+
+    //@}
+
+
 
 
     /** @name  Mutators
      */
     //@{
 
+    void setTrainSet( sampling_ptrtype pset ) { M_trainset = pset; }
+
     //@}
 
     /** @name  Methods
      */
     //@{
+
+    /**
+     * save the CRB database
+     */
+    void saveDB()
+        {
+            fs::ofstream ofs( this->dbLocalPath() / this->dbFilename() );
+
+            if ( ofs )
+            {
+                boost::archive::text_oarchive oa( ofs );
+                // write class instance to archive
+                oa << *this;
+                // archive and stream closed when destructors are called
+            }
+        }
+
+    /**
+     * load the CRB database
+     */
+    bool loadDB()
+        {
+            //if ( this->rebuildDB() )
+            //return false;
+
+            fs::path db = this->lookForDB();
+
+            if ( db.empty() )
+                return false;
+
+            if ( !fs::exists( db ) )
+                return false;
+
+            //std::cout << "Loading " << db << "...\n";
+            fs::ifstream ifs( db );
+
+            if ( ifs )
+            {
+                boost::archive::text_iarchive ia( ifs );
+                // write class instance to archive
+                ia >> *this;
+                //std::cout << "Loading " << db << " done...\n";
+                this->setIsLoaded( true );
+                // archive and stream closed when destructors are called
+                return true;
+            }
+
+            return false;
+        }
+
+
 
     /**
        \brief Online stage of the coefficient-function interpolation.
@@ -440,19 +345,100 @@ public:
        Note that \f$ \Omega \f$ is given and $D^\mu$ is handled by the \c parameterset_type
        data structure.
     */
-    void beta( vector_type& __beta, size_t M  ) const;
+    vector_type beta( parameter_type const& mu  ) const { return beta( mu, this->mMax() ); }
+    vector_type beta( parameter_type const& mu, solution_type const& T  ) const { return beta( mu, T, this->mMax() ); }
+    vector_type beta( parameter_type const& mu, size_type M  ) const;
+    vector_type beta( parameter_type const& mu, solution_type const& T, size_type M  ) const;
 
-    void beta( vector_type& __beta, value_type& __err, size_t M ) const;
+    element_type residual ( size_type M ) const;
 
+    parameter_residual_type computeBestFit( sampling_ptrtype trainset, int __M );
+
+    element_type operator()( parameter_type const& mu ) const { return expansion( M_q, beta( mu ) ); }
+    element_type operator()( parameter_type const& mu, solution_type const& T ) const { return expansion( M_q, beta( mu, T ) ); }
+    /**
+       orthonormalize
+    */
+    void orthonormalize( std::vector<element_type>& );
+
+    friend class boost::serialization::access;
     template<class Archive>
-    void
-    serialize( Archive& __ar, const unsigned int __version )
+    void serialize(Archive & __ar, const unsigned int __version )
         {
-            __ar & BOOST_SERIALIZATION_NVP( boost::serialization::base_object<super>(*this) );
+            LOG(INFO) << "serializing...\n";
+
+            __ar & BOOST_SERIALIZATION_NVP( M_name );
+
+            LOG(INFO) << "name saved/loaded...\n";
+
+            __ar & BOOST_SERIALIZATION_NVP( M_offline_done );
+            LOG(INFO) << "offline status...\n";
+
+            __ar & BOOST_SERIALIZATION_NVP( M_M_max );
+            LOG(INFO) << "M saved/loaded\n";
+            M_M = M_M_max;
+
+            // save index
+            __ar & BOOST_SERIALIZATION_NVP( M_index_max );
+            LOG(INFO) << "index saved/loaded\n";
+
+            // save t
+            __ar & BOOST_SERIALIZATION_NVP( M_t );
+            LOG(INFO) << "t saved/loaded\n";
+
+
+            if ( Archive::is_loading::value )
+            {
+                for( int i = 0; i < M_M_max; ++ i )
+                {
+                    M_q.push_back( M_model->functionSpace()->element() );
+                }
+                for( int i = 0; i < M_M_max; ++ i )
+                    __ar & BOOST_SERIALIZATION_NVP( M_q[i] );
+                // save q
+                LOG(INFO) << "q saved/loaded\n";
+            }
+            else
+            {
+                for( int i = 0; i < M_M_max; ++ i )
+                    __ar & BOOST_SERIALIZATION_NVP( M_q[i] );
+            }
+
+
+            // save B
+            __ar & BOOST_SERIALIZATION_NVP( M_B );
+            LOG(INFO) << "B saved/loaded\n";
+
         }
     //@}
 
 
+protected:
+
+    po::variables_map M_vm;
+    mutable bool M_is_read;
+    mutable bool M_is_written;
+
+    std::string M_name;
+    sampling_ptrtype M_trainset;
+    size_type M_M;
+    size_type M_M_max;
+
+    mutable bool M_offline_done;
+
+    double M_tol;
+
+    std::vector<element_type> M_g;
+
+    std::vector<element_type> M_q;
+
+    matrix_type M_B;
+
+    std::vector<node_type> M_t;
+
+    std::vector<size_type> M_index_max;
+
+    model_type* M_model;
 protected:
 
 private:
@@ -494,256 +480,538 @@ private:
        \f$B^M_{i \: j} = q_j (t_i)\f$,
        \f$1 \leq i,j \leq M\f$.
     */
-    void offline( ::getfem::mesh_fem const& __m );
-
-
-private:
-
-    mutable f_type _M_f;
-
-};
-
-template<typename T,
-         typename Dmu,
-         template<typename> class F
-         >
-void
-EIM<T, Dmu, F>::beta( vector_type& __beta, size_t __M ) const
-{
-    if ( __M <= 0 )
-        __M = 1;
-    if ( __M >= this->Mmax() )
-        __M = this->Mmax();
-    // beta=B_M\g(Od(indx),mut(i))'
-    __beta.resize( __M );
-    for ( size_t __m = 0;__m < __M;++__m )
-    {
-        __beta[__m] = _M_f( this->_M_t[__m], Dmu::instance().current() );
-    }
-
-
-    this->_M_B.block(0,0,__M,__M).triangularView<Eigen::UnitLower>().solveInPlace(__beta);
-}
-template<typename T,
-         typename Dmu,
-         template<typename> class F
-         >
-void
-EIM<T, Dmu, F>::beta( vector_type& __beta, value_type& __err, size_t __M ) const
-{
-    if ( __M <= 0 )
-        __M = 1;
-    if ( __M >= this->Mmax() )
-        __M = this->Mmax()-1;
-    if (  this->Mmax() == 1 )// affine case
-    {
-        beta( __beta, __M );
-        __err = 0;
-        return;
-    }
-
-    beta( __beta, __M );
-    value_type gmu = _M_f( this->_M_t[__M], Dmu::instance().current() ); // g(t_{M+1})
-    value_type gMmu = 0; // gM(t_{M+1})
-    for ( size_t __m = 0; __m < __M;++__m )
-        gMmu += __beta[ __m ] * qxm( this->_M_index_max[__M], __m );
-    __err = std::abs( gmu - gMmu );
-}
-
-template<typename T,
-         typename Dmu,
-         template<typename> class F
-         >
-void
-EIM<T, Dmu, F>::offline(  )
-{
-    if ( this->isOfflineDone() )
-        return;
-
-
-    matrix_type __Z( M_Xh->nLocalDof(), this->_M_M );
-
-    __Z.col( this->_M_M-1 ) = expr
-    __f.assign_special( gmm::mat_col( __Z, this->_M_M-1 ) );
-
-    orthonormalize( __Z );
-
-    //std::cout << "Z(" << this->_M_M-1 << ") = " << __Z.col( this->_M_M-1 ) << "\n";
-    //std::cout << "\n";
-
-    /**
-       \par build \f$W^g_M\f$
-
-
-    */
-    double err = 1;
-
-    while (  err >= this->_M_tol )
-    {
-        /**
-           build the \f$ M\times M\f$ matrix \f$ A_z = Z^T * Z\f$
-        */
-        matrix_type __A_z(this->_M_M, this->_M_M);
-        __A_z = __Z.transpose()*__Z;
-        //std::cout << "Az = " << __A_z << "\n";
-
-        /**
-           linear program to find the \f$ sup_\mu h(\mu) \f$ where \f$ h(mu) = inf_z ||f-z||_\infty\f$
-        */
-        Dmu::instance().setRandom();
-
-#if 0
-        boost::tie( mu, err )  = lp( _data = data );
-
-        // push mu into parameter set
-#endif
-
-        if ( this->_M_M == 1 && err < 1e-12 )
-            break;
-
-        /** we have a new \f$\mu^g_M\f$, insert it in \f$S^g_M\f$ and the corresponding \f$z \in W^g_M\f$
-         */
-        ++this->_M_M;
-
-        std::cout << "S(" << this->_M_M-1 << ") = " << __S << "\n";
-
-        // update Z(:,M-1)
-        __Z.col(_M_M-1) = ;
-
-        orthonormalize( __Z );
-
-        //std::cout << "Z(" << this->_M_M-1 << ") = " << gmm::mat_col( __Z, this->_M_M-1 ) << "\n";
-        //std::cout << "\n";
-
-        if ( this->_M_M > 20 )
-            break;
-    }
-
-
-    // Build T^M
-    this->_M_t.conservativeResize( this->_M_M );
-
-    auto __z_col = __Z.col(0);
-    int index_max;
-    value_type __z_max = __z_col.maxCoeff(&index_max);
-
-    this->_M_index_max.push_back( index_max);
-    std::cout << "index = [ ";
-    std::copy( this->_M_index_max.begin(), this->_M_index_max.end(), std::ostream_iterator<size_t>( std::cout, " " ) );
-    std::cout << " ]\n";
-
-    // store t_0
-    this->_M_t[0] = M_Xh->dofPoint( this->_M_index_max[0] ).template get<0>();
-
-    this->_M_q.resize( M_Xh->nLocalDof(), this->_M_M );
-    // copy Z(:,1) in q(:,1)
-    this->_M_q.col(0) = __z_col;
-    // divide by max(Z(:,1))
-    this->_M_q.col(0)/=__z_max;
-
-    // residual : res(:,1)=Z(:,1)
-    matrix_type __res( M_Xh->nLocalDof(), this->_M_M );
-    __res.col(0) = __z_col;
-
-    this->_M_B.resize( 1, 1 );
-    this->_M_B( 0, 0 ) = 1;
-
-    for ( size_t __i = 1;__i < this->_M_M;++__i )
-    {
-        this->_M_B.conservativeResize( __i, __i );
-        matrix_type __b( __i, 1 );
-
-        this->_M_B = this->_M_q.block( this->_M_index_max, 0, 1, __i );
-        __b = __Z.block( this->_M_index_max, __i, 1, 1 );
-        //std::cout << "M_B " << __i-1 << " = " << this->_M_B[__i-1] <<"\n";
-
-        vector_type __sigma( __i );
-        __sigma = __b.col(0);
-
-
-        this->_M_B.triangularView<Eigen::UnitLower>().solveInPlace(__sigma);
-
-        // res(:,i)=Z(:,i)-q(:,0:i)*sigma
-        __res.col(__i) = __Z.col(__i) -__sigma*this->_M_q.block( 0, 0, this->_M_q.rows(), __i );
-
-        auto __res_col = __res.col(__i);
-        int index_max;
-        auto __res_max = __res_col.maxCoeff(&index_max);
-        this->_M_index_max.push_back( index_max );
-
-        std::cout << "index = [ ";
-        std::copy( this->_M_index_max.begin(), this->_M_index_max.end(), std::ostream_iterator<size_t>( std::cout, " " ) );
-        std::cout << " ]\n";
-
-        // store t_i: TODO
-        //this->_M_t[__i] = __mesh.point_of_dof( this->_M_index_max[__i] );
-
-
-        _M_q.col(__i) = __res.col(__i)/boost::get<0>( __res_max );
-    }
-    if (  this->_M_M > 1 )
-    {
-        this->_M_B.conservativeResize( this->_M_M, this->_M_M );
-        this->_M_B = _M_q.block(this->_M_index_max,0,1,this->_M_M);
-    }
-    std::cout << "M_B = " << this->_M_B <<"\n";
-    //std::cout << "q(" << this->_M_M-1 << ") = " << gmm::mat_col( _M_q, this->_M_M-1 ) << "\n";
-    //std::cout << "\n";
-
-    this->_M_M_max = this->_M_M;
-
-    this->_M_offline_done = true;
-}
-
-template<typename SpaceType, typename ParameterSpaceType>
-class EIMFunctionBase
-{
+    void offline();
 public:
-    typedef SpaceType space_type;
-    typedef typename space_type::element_type element_type;
-    typedef ParameterSpaceType parameterspace_type;
-    typedef typename parameterspace_type::element_type parameter_type;
-
-    virtual element_type operator()( parameter_type const& ) = 0;
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
+
+template<typename ModelType>
+typename EIM<ModelType>::vector_type
+EIM<ModelType>::beta( parameter_type const& mu, size_type __M ) const
+{
+    // beta=B_M\g(Od(indx),mut(i))'
+    vector_type __beta( __M );
+    for ( size_type __m = 0;__m < __M;++__m )
+    {
+        __beta[__m] = M_model->operator()( this->M_t[__m], mu );
+    }
+    this->M_B.block(0,0,__M,__M).template triangularView<Eigen::UnitLower>().solveInPlace(__beta);
+    return __beta;
+}
+template<typename ModelType>
+typename EIM<ModelType>::vector_type
+EIM<ModelType>::beta( parameter_type const& mu, solution_type const& T, size_type __M ) const
+{
+    // beta=B_M\g(Od(indx),mut(i))'
+    vector_type __beta( __M );
+    for ( size_type __m = 0;__m < __M;++__m )
+    {
+        __beta[__m] = M_model->operator()( T, this->M_t[__m], mu );
+    }
+    this->M_B.block(0,0,__M,__M).template triangularView<Eigen::UnitLower>().solveInPlace(__beta);
+    return __beta;
+}
+
+template<typename ModelType>
+typename EIM<ModelType>::element_type
+EIM<ModelType>::residual( size_type __M ) const
+{
+    LOG(INFO) << "compute residual for m=" << __M << "...\n";
+    vector_type rhs( __M );
+
+    //LOG(INFO) << "g[" << __M << "]=" << M_g[__M] << "\n";
+    for ( size_type __m = 0;__m < __M;++__m )
+    {
+        LOG(INFO) << "t[" << __m << "]=" << M_t[__m] << "\n";
+        rhs[__m]= M_g[__M]( M_t[__m] )(0,0,0);
+    }
+    this->M_B.block(0,0,__M,__M).template triangularView<Eigen::UnitLower>().solveInPlace(rhs);
+    LOG(INFO) << "solve B sol = rhs with rhs = " << rhs <<"\n";
+
+    // res(:,i)=M_g(:,i)-q(:,0:i)*sigma
+    LOG(INFO) << "compute residual..." <<"\n";
+    using namespace vf;
+    auto z = expansion( M_q, rhs, __M );
+    LOG(INFO) << "return residual..." <<"\n";
+    return vf::project( _space=M_model->functionSpace(),
+                        _expr=idv(M_g[__M])-idv( z ) );
+}
+
+template<typename ModelType>
+void
+EIM<ModelType>::orthonormalize( std::vector<element_type> & __Z )
+{
+    size_type __M = __Z.size();
+    for ( size_type __i = 0;__i < __M-1; ++__i )
+    {
+        value_type __s = inner_product(__Z[__i],__Z[__M-1]);
+        __Z[__M-1].add(- __s,__Z[__i]);
+    }
+    __Z[__M-1].scale(inner_product(__Z[__M-1],__Z[__M-1]));
+}
 
 
 template<typename ModelType>
-class EIMFunction
-    : public EIMFunctionBase<typename ModelType::functionspace_type, typename ModelType::parameterspace_type>
+typename EIM<ModelType>::parameter_residual_type
+EIM<ModelType>::computeBestFit( sampling_ptrtype trainset, int __M )
 {
-    typedef EIMFunctionBase<typename ModelType::functionspace_type, typename ModelType::parameterspace_type> super;
-public:
-    typedef ModelType model_type;
-    typedef boost::shared_ptr<ModelType> model_ptrtype;
-    typedef typename ModelType::functionspace_type space_type;
-    typedef typename ModelType::functionspace_ptrtype space_ptrtype;
+    LOG(INFO) << "compute best fit  for m=" << __M
+              << " and trainset of size " << trainset->size() << "...\n";
+    using namespace vf;
+    parameter_type mu = M_model->parameterSpace()->element();
 
+    vector_type maxerr( trainset->size() );
+    maxerr.setZero();
+    int index = 0;
+    LOG(INFO) << "Compute best fit M=" << __M << "\n";
+    BOOST_FOREACH( mu, *trainset )
+    {
+        LOG(INFO) << "compute best fit check mu...\n";
+        mu.check();
+        LOG_EVERY_N(INFO, 1 ) << " (every 10 mu) compute fit at mu="<< mu <<"\n" ;
+        // evaluate model at mu
+        auto Z = M_model->operator()( mu );
 
-    typedef typename space_type::element_type element_type;
-    typedef ParameterSpaceType parameterspace_type;
-    typedef typename parameterspace_type::element_type parameter_type;
-
-    EIMFunction( model_ptrtype model, element_ptrtype u, expr_ptrtype expr )
-        :
-        super( model->functionSpace(), model->parameterSpace() ),
-        M_model( model ),
-        M_u( u ),
-        M_expr( expr )
-        {}
-    element_type operator()( parameter_type const&  mu )
+        vector_type rhs( __M );
+        for ( size_type __m = 0;__m < __M;++__m )
         {
-            *M_u = M_model->solve( mu );
-            return vf::project( _space=M_model->functionSpace(), _expr=*M_expr );
+            rhs[__m]= Z( M_t[__m] )(0,0,0);
         }
-private:
-    model_ptrtype M_model;
-    expr_ptrtype M_expr;
-    element_ptrtype M_u;
+        this->M_B.block(0,0,__M,__M).template triangularView<Eigen::UnitLower>().solveInPlace(rhs);
+        auto res = vf::project( _space=M_model->functionSpace(),
+                                _expr=idv(Z)-idv( expansion( M_q, rhs, __M ) ) );
+        auto resmax = normLinf( _range=elements(M_model->mesh()), _pset=_Q<5>(), _expr=idv(res) );
+        LOG_ASSERT( index < trainset->size() ) << "Invalid index " << index << " should be less than trainset size = " << trainset->size() << "\n";
+        maxerr( index++ ) = resmax.template get<0>();
+        int index2;
+        auto err = maxerr.array().abs().maxCoeff( &index2 );
+        LOG_EVERY_N(INFO, 1 ) << " (every 10 mu) maxerr=" <<  err << " at index = " << index2 << " at mu = " << trainset->at(index2) << "\n";
+    }
+    LOG_ASSERT( index == trainset->size() ) << "Invalid index " << index << " should be equal to trainset size = " << trainset->size() << "\n";
+    auto err = maxerr.array().abs().maxCoeff( &index );
+    LOG(INFO)<< "err=" << err << " reached at index " << index << " and mu=" << trainset->at(index) << "\n";
+    return boost::make_tuple( err, trainset->at(index) );
+}
+template<typename ModelType>
+void
+EIM<ModelType>::offline(  )
+{
+    using namespace vf;
+
+    if ( this->isOfflineDone() )
+        return;
+    LOG(INFO) << "[offline] starting offline stage ...\n";
+    M_M = 1;
+    LOG(INFO) << "[offline] create mu_1...\n";
+    // min element in Dmu to start with (in // each proc have the same element)
+    auto mu = M_model->parameterSpace()->min();
+
+    if ( !M_trainset )
+        M_trainset = M_model->parameterSpace()->sampling();
+    if ( M_trainset->empty() )
+    {
+        int sampling_size = M_vm["eim.sampling-size"].template as<int>();
+        std::string file_name = ( boost::format("eim_trainset_%1%") % sampling_size ).str();
+        std::ifstream file ( file_name );
+        if( ! file )
+        {
+            M_trainset->randomize( sampling_size  );
+            M_trainset->writeOnFile(file_name);
+        }
+        else
+        {
+            M_trainset->clear();
+            M_trainset->readFromFile(file_name);
+        }
+    }
+
+    // store residual
+    auto res = M_model->functionSpace()->element();
+
+    LOG(INFO) << "compute finite element solution at mu_1...\n";
+    M_g.push_back( M_model->operator()( mu ) );
+
+    LOG(INFO) << "compute T^" << 0 << "...\n";
+    // Build T^0
+    auto zmax = normLinf( _range=elements(M_model->mesh()), _pset=_Q<5>(), _expr=idv(M_g[0]) );
+    // store space coordinate where max absolute value occurs
+    M_t.push_back( zmax.template get<1>() );
+    LOG(INFO) << "norm Linf = " << zmax.template get<0>() << " at " << zmax.template get<1>() << "\n";
+    //LOG(INFO) << "g = " << M_g[0] << "\n";
+
+    LOG(INFO) << "compute and insert q_0...\n";
+    // insert first element
+    auto q = M_g[0];
+    //q.scale( 1./zmax.template get<0>() );
+    q.scale( 1./ M_g[0]( M_t[0] )( 0, 0, 0 ) );
+    M_q.push_back( q );
+
+    LOG(INFO) << "compute entry (0,0) of interpolation matrix...\n";
+    this->M_B.resize( 1, 1 );
+    this->M_B( 0, 0 ) = 1;
+    CHECK( math::abs( M_q[0]( M_t[0] )( 0, 0, 0 ) - 1 ) < 1e-10 )
+        << "q[0](t[0] != 1 " << "q[0] = " << M_q[0]( M_t[0] )( 0, 0, 0 )
+        << "  t[0] = "<< M_t[0] << "\n";
+
+    ++M_M;
+    /**
+       \par build \f$W^g_M\f$
+    */
+    double err = 1;
+
+    LOG(INFO) << "start greedy algorithm...\n";
+    for(  ; M_M < M_vm["eim.dimension-max"].template as<int>(); ++M_M ) //err >= this->M_tol )
+    {
+        LOG(INFO) << "M=" << M_M << "...\n";
+
+        LOG(INFO) << "compute best fit error...\n";
+        // compute mu = arg max inf ||G(.;mu)-z||_infty
+        auto bestfit = computeBestFit( M_trainset, this->M_M-1 );
+
+        auto g_bestfit = M_model->operator()( bestfit.template get<1>() );
+        auto gmax = normLinf( _range=elements(M_model->mesh()), _pset=_Q<5>(), _expr=idv(g_bestfit) );
+
+        LOG(INFO) << "best fit max error = " << bestfit.template get<0>() << " relative error = " << bestfit.template get<0>()/gmax.template get<0>() << " at mu = "
+                  << bestfit.template get<1>() << "  tolerance=" << M_vm["eim.error-max"].template as<double>() << "\n";
+
+        if ( (bestfit.template get<0>()/gmax.template get<0>()) < M_vm["eim.error-max"].template as<double>() )
+            break;
+
+        /**
+         * we have a new \f$\mu^g_M\f$, insert it in \f$S^g_M\f$ and the
+         * corresponding \f$z \in W^g_M\f$
+         */
+        LOG(INFO) << "[offline] S(" << this->M_M-1 << ") = " << bestfit.template get<1>() << "\n";
+
+        // update M_g(:,M-1)
+        M_g.push_back( g_bestfit );
+
+        //orthonormalize( M_g );
+
+        // build T^m such that T^m-1 \subset T^m
+        LOG(INFO) << "[offline] compute residual M="<< M_M << "..." <<"\n";
+        res = this->residual(M_M-1);
+        //LOG(INFO) << "residual = " << res << "\n";
+        LOG(INFO) << "[offline] compute arg sup |residual|..." <<"\n";
+        auto resmax = normLinf( _range=elements(M_model->mesh()), _pset=_Q<5>(), _expr=idv(res) );
+        LOG(INFO) << "[offline] store coordinates where max absolute value is attained " << resmax.template get<1>() << "..." <<"\n";
+        // store space coordinate where max absolute value occurs
+        M_t.push_back( resmax.template get<1>() );
+
+        LOG(INFO) << "[offline] scale new basis function by " << 1./resmax.template get<0>() << "..." <<"\n";
+        res.scale( 1./res(resmax.template get<1>())(0,0,0) );
+        LOG(INFO) << "store new basis function..." <<"\n";
+        M_q.push_back( res );
+
+        std::for_each( M_t.begin(), M_t.end(), []( node_type const& t ) { LOG(INFO) << "t=" << t << "\n"; } );
+        // update interpolation matrix
+        M_B.conservativeResize( M_M, M_M );
+        for( int __i = 0; __i < M_M; ++__i )
+        {
+            for( int __j = 0; __j < M_M; ++__j )
+            {
+                this->M_B( __i, __j ) = M_q[__j]( M_t[__i] )(0,0,0);
+
+            }
+        }
+        LOG(INFO) << "[offline] Interpolation matrix: M_B = " << this->M_B <<"\n";
+#if 0
+        for( int __i = 0; __i < M_M; ++__i )
+        {
+            for( int __j = __i+1; __j < M_M; ++__j )
+            {
+                LOG_ASSERT( math::abs( M_q[__j]( M_t[__i] )(0,0,0)) < 1e-10 )
+                    << "q[j](t_i) when j > i should be 0, = "
+                    << math::abs( M_q[__j]( M_t[__i] )(0,0,0)) << "\n";
+            }
+            //this->M_B(__i,__i)=1;
+            //this->M_B(__i,__i)=;
+            LOG_ASSERT( math::abs( M_q[__i]( M_t[__i] )( 0, 0, 0 ) - 1 ) < 1e-10 )
+                << "q[ " << __i << "](t[" << __i << "] != 1 "
+                << "t[" << __i << "] = "<< M_t[__i] << "\n";
+        }
+#endif
+
+
+        LOG(INFO) << "================================================================================\n";
+        if ( resmax.template get<0>() < M_vm["eim.error-max"].template as<double>() )
+        {
+            ++M_M;
+            break;
+        }
+    }
+
+    LOG(INFO) << "[offline] M_max = " << M_M-1 << "...\n";
+    this->M_M_max = this->M_M-1;
+
+    this->M_offline_done = true;
+    LOG(INFO) << "[offline] saving DB...\n";
+    saveDB();
+    LOG(INFO) << "[offline] done with offline stage ...\n";
+}
+
+template<typename SpaceType, typename ModelSpaceType, typename ParameterSpaceType>
+class EIMFunctionBase
+{
+public:
+
+    typedef SpaceType functionspace_type;
+    typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
+    typedef typename functionspace_type::element_type element_type;
+    typedef typename functionspace_type::element_ptrtype element_ptrtype;
+    typedef typename functionspace_type::mesh_type mesh_type;
+    typedef typename functionspace_type::mesh_ptrtype mesh_ptrtype;
+    typedef typename functionspace_type::value_type value_type;
+
+    typedef ModelSpaceType model_functionspace_type;
+    typedef typename model_functionspace_type::element_type solution_type;
+
+    static const uint16_type nDim = mesh_type::nDim;
+
+    typedef ParameterSpaceType parameterspace_type;
+    typedef boost::shared_ptr<parameterspace_type> parameterspace_ptrtype;
+    typedef typename parameterspace_type::element_type parameter_type;
+    typedef typename parameterspace_type::sampling_ptrtype sampling_ptrtype;
+    typedef Eigen::Matrix<double, nDim, 1> node_type;
+
+    typedef EIM<EIMFunctionBase<SpaceType,model_functionspace_type, ParameterSpaceType> > eim_type;
+    typedef typename eim_type::vector_type vector_type;
+
+    typedef boost::shared_ptr<eim_type> eim_ptrtype;
+    //typedef typename eim_type::betam_type betam_type;
+    //typedef typename eim_type::qm_type qm_type;
+
+
+    EIMFunctionBase( po::variables_map const& vm,
+                     functionspace_ptrtype fspace,
+                     parameterspace_ptrtype pspace,
+                     sampling_ptrtype sampling,
+                     std::string const& modelname,
+                     std::string const& name )
+        :
+        M_vm( vm ),
+        M_fspace( fspace ),
+        M_pspace( pspace ),
+        M_trainset( sampling ),
+        M_modelname( modelname ),
+        M_name( name )
+        {
+            LOG(INFO)<< "EimFunctionBase constructor\n";
+        }
+    virtual ~EIMFunctionBase()
+        {}
+    std::string const& name() const { return M_name; }
+    void setName( std::string const& name ) { M_name = name; }
+    std::string modelName() const { return M_modelname; }
+    void setModelName( std::string const& name ) { M_modelname = name; }
+
+    functionspace_ptrtype functionSpace() const { return M_fspace; }
+    functionspace_ptrtype functionSpace()  { return M_fspace; }
+    parameterspace_ptrtype parameterSpace() const { return M_pspace; }
+    parameterspace_ptrtype parameterSpace()  { return M_pspace; }
+    sampling_ptrtype trainSet() { return M_trainset; }
+    sampling_ptrtype trainSet() const { return M_trainset; }
+    virtual void setTrainSet( sampling_ptrtype tset ) { M_trainset = tset; }
+
+    mesh_ptrtype mesh() const { return M_fspace->mesh(); }
+    mesh_ptrtype mesh()  { return M_fspace->mesh(); }
+
+    virtual element_type operator()( parameter_type const& ) = 0;
+    virtual element_type operator()( solution_type const& T, parameter_type const& ) = 0;
+    virtual element_type interpolant( parameter_type const& ) = 0;
+    value_type operator()( node_type const& x, parameter_type const& mu )
+        {
+            LOG(INFO) << "calling EIMFunctionBase::operator()( x=" << x << ", mu=" << mu << ")\n";
+            element_type v = this->operator()( mu );
+            value_type res = v(x)(0,0,0);
+            LOG(INFO) << "EIMFunctionBase::operator() v(x)=" << res << "\n";
+            return res;
+        }
+
+    // evaluate eim expansion at interpolation points in space and mu in parameter where T provides the coefficient
+    //value_type operator()( vector_type const& T, parameter_type const& mu ) = 0;
+
+    value_type operator()( solution_type const& T, node_type const& x, parameter_type const& mu )
+        {
+            LOG(INFO) << "calling EIMFunctionBase::operator()( x=" << x << ", mu=" << mu << ")\n";
+            element_type v = this->operator()( T, mu );
+            value_type res = v(x)(0,0,0);
+            LOG(INFO) << "EIMFunctionBase::operator() v(x)=" << res << "\n";
+            return res;
+        }
+
+    virtual element_type const& q( int m )  const = 0;
+    virtual vector_type  beta( parameter_type const& mu ) const = 0;
+    virtual vector_type  beta( parameter_type const& mu, solution_type const& T ) const = 0;
+    virtual size_type  mMax() const = 0;
+
+    po::variables_map M_vm;
+    functionspace_ptrtype M_fspace;
+    parameterspace_ptrtype M_pspace;
+    sampling_ptrtype M_trainset;
+    std::string M_modelname;
+    std::string M_name;
 };
 
 
 
+template<typename ModelType, typename SpaceType, typename ExprType>
+class EIMFunction
+    : public EIMFunctionBase<SpaceType, typename ModelType::functionspace_type, typename ModelType::parameterspace_type>
+{
+    typedef EIMFunctionBase<SpaceType, typename ModelType::functionspace_type, typename ModelType::parameterspace_type> super;
+public:
+    typedef ModelType model_type;
+    typedef ModelType* model_ptrtype;
+
+    typedef SpaceType functionspace_type;
+    typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
+    typedef typename super::element_type element_type;
+    typedef typename super::element_ptrtype element_ptrtype;
+
+    typedef typename ModelType::element_type solution_type;
+
+    typedef typename super::parameterspace_type parameterspace_type;
+    typedef typename super::parameter_type parameter_type;
+    typedef typename super::sampling_ptrtype sampling_ptrtype;
+
+    typedef ExprType expr_type;
+    typedef boost::shared_ptr<expr_type> expr_ptrtype;
+
+    typedef typename super::eim_type eim_type;
+    typedef typename super::eim_ptrtype eim_ptrtype;
+
+    typedef typename super::vector_type vector_type;
+
+    EIMFunction( po::variables_map const& vm,
+                 model_ptrtype model,
+                 functionspace_ptrtype space,
+                 solution_type& u,
+                 parameter_type& mu,
+                 expr_type& expr,
+                 sampling_ptrtype sampling,
+                 std::string const& name )
+        :
+        super( vm, space, model->parameterSpace(), sampling, model->modelName(), name ),
+        M_model( model ),
+        M_expr( expr ),
+        M_u( u ),
+        M_mu( mu ),
+        M_eim( new eim_type( vm, this, sampling ) )
+        {
+        }
+    element_type operator()( parameter_type const&  mu )
+        {
+            M_mu = mu;
+            M_mu.check();
+            M_u = M_model->solve( mu );
+            //LOG(INFO) << "operator() mu=" << mu << "\n" << "sol=" << M_u << "\n";
+            return vf::project( _space=this->functionSpace(), _expr=M_expr );
+        }
+    element_type operator()( solution_type const& T, parameter_type const&  mu )
+        {
+            M_mu = mu;
+            M_mu.check();
+            // no need to solve we have already an approximation (typically from
+            // an nonlinear iteration procedure)
+            M_u = T;
+            return vf::project( _space=this->functionSpace(), _expr=M_expr );
+        }
+
+    void setTrainSet( sampling_ptrtype tset ) { M_eim->setTrainSet( tset ); }
+    element_type interpolant( parameter_type const& mu ) { return M_eim->operator()( mu ); }
+
+    element_type const& q( int m ) const { return M_eim->q( m ); }
+
+    vector_type  beta( parameter_type const& mu ) const { return M_eim->beta( mu ); }
+    vector_type  beta( parameter_type const& mu, solution_type const& T ) const { return M_eim->beta( mu, T ); }
+
+    size_type mMax() const { return M_eim->mMax(); }
+
+private:
+    model_ptrtype M_model;
+    expr_type M_expr;
+    solution_type& M_u;
+    parameter_type& M_mu;
+    eim_ptrtype M_eim;
+};
+
+namespace detail
+{
+
+template<typename Args>
+struct compute_eim_return
+{
+    typedef typename boost::remove_reference<typename boost::remove_pointer<typename parameter::binding<Args, tag::model>::type>::type>::type model1_type;
+    typedef typename boost::remove_const<typename boost::remove_pointer<model1_type>::type>::type model_type;
+    typedef typename boost::remove_reference<typename parameter::binding<Args, tag::expr>::type>::type expr_type;
+    typedef typename boost::remove_reference<typename parameter::binding<Args, tag::space>::type>::type::element_type space_type;
+    typedef EIMFunction<model_type, space_type, expr_type> type;
+    typedef boost::shared_ptr<EIMFunction<model_type, space_type, expr_type> > ptrtype;
+};
+}
+
+BOOST_PARAMETER_FUNCTION(
+    ( typename Feel::detail::compute_eim_return<Args>::ptrtype ), // 1. return type
+    eim,                        // 2. name of the function template
+    tag,                                        // 3. namespace of tag types
+    ( required
+      ( in_out(model),          * )
+      ( in_out(element),        * )
+      ( in_out(parameter),        * )
+      ( in_out(expr),          * )
+      ( name, * )
+      ( space, *)
+      ( options, *)
+        ) // required
+    ( optional
+      //( space, *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ), model->functionSpace() )
+      //( space, *, model->functionSpace() )
+      ( sampling, *, model->parameterSpace()->sampling() )
+      ( verbose, (int), 0 )
+        ) // optionnal
+)
+{
+    Feel::detail::ignore_unused_variable_warning( args );
+    typedef typename Feel::detail::compute_eim_return<Args>::type eim_type;
+    typedef typename Feel::detail::compute_eim_return<Args>::ptrtype eim_ptrtype;
+    return  eim_ptrtype(new eim_type( options, model, space, element, parameter, expr, sampling, name ) );
+} // eim
+
+template<typename ModelType>
+struct EimFunctionNoSolve
+{
+    typedef typename ModelType::functionspace_type functionspace_type;
+    typedef typename ModelType::functionspace_ptrtype functionspace_ptrtype;
+    typedef typename functionspace_type::element_type element_type;
+    typedef typename ModelType::parameterspace_type parameterspace_type;
+    typedef typename ModelType::parameterspace_ptrtype parameterspace_ptrtype;
+    typedef typename parameterspace_type::element_type parameter_type;
+    typedef typename parameterspace_type::sampling_type sampling_type;
+    typedef typename parameterspace_type::sampling_ptrtype sampling_ptrtype;
+
+    EimFunctionNoSolve( ModelType* model ): M_model( model ) {}
+
+    element_type solve( parameter_type const& mu )
+        {
+            LOG(INFO) << "no solve required\n";
+            return M_model->functionSpace()->element();
+        }
+    std::string modelName() const { return M_model->modelName(); }
+    functionspace_ptrtype functionSpace() { return M_model->functionSpace(); }
+    parameterspace_ptrtype parameterSpace() { return M_model->parameterSpace(); }
+    ModelType* M_model;
+};
+
+template<typename ModelType>
+EimFunctionNoSolve<ModelType>*
+eim_no_solve( ModelType* model )
+{
+    return new EimFunctionNoSolve<ModelType>( model );
+}
+
+
+po::options_description eimOptions( std::string const& prefix ="");
 }
 #endif /* _FEELPP_EIM_HPP */
 

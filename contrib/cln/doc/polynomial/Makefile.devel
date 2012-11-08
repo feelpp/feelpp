@@ -1,0 +1,25 @@
+# This is the developer's makefile, not the user's makefile.
+# Don't use it unless you know exactly what you do!
+
+
+# Some important programs:
+SHELL = /bin/sh
+MAKE = make
+RM = rm -f
+
+LATEX = latex
+DVIPS = dvips -D600
+
+
+all : diag_rational.ps tchebychev.ps hermite.ps legendre.ps laguerre.ps
+
+# %.tex : %.lyx
+
+%.dvi : %.tex
+	$(LATEX) $<
+	$(RM) $(patsubst %.tex,%.aux,$<)
+	$(RM) $(patsubst %.tex,%.log,$<)
+
+%.ps : %.dvi
+	$(DVIPS) -o $@ $<
+

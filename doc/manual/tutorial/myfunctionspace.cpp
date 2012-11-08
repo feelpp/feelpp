@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2010-07-15
 
   Copyright (C) 2010 Université Joseph Fourier (Grenoble I)
@@ -22,22 +22,10 @@
 */
 /**
    \file myfunctionspace.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2010-07-15
  */
-#include <feel/options.hpp>
-#include <feel/feelcore/feel.hpp>
-#include <feel/feelpoly/im.hpp>
-
-#include <feel/feelpoly/polynomialset.hpp>
-#include <feel/feeldiscr/functionspace.hpp>
-#include <feel/feeldiscr/region.hpp>
-#include <feel/feelfilters/exporter.hpp>
-#include <feel/feelfilters/gmsh.hpp>
-
-
-#include <feel/feelvf/vf.hpp>
-
+#include <feel/feel.hpp>
 
 using namespace Feel;
 
@@ -55,22 +43,6 @@ makeOptions()
     ;
     return myintegralsoptions.add( Feel::feel_options() );
 }
-inline
-AboutData
-makeAbout()
-{
-    AboutData about( "myfunctionspace" ,
-                     "myfunctionspace" ,
-                     "0.3",
-                     "nD(n=1,2,3) MyFunctionSpace on simplices or simplex products",
-                     Feel::AboutData::License_GPL,
-                     "Copyright (c) 2008-2010 Universite Joseph Fourier" );
-
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
-    return about;
-
-}
-
 
 /**
  * MyFunctionSpace: compute integrals over a domain
@@ -116,9 +88,9 @@ public:
     typedef Exporter<mesh_type,1> export_type;
     typedef boost::shared_ptr<export_type> export_ptrtype;
 
-    MyFunctionSpace( po::variables_map const& vm, AboutData const& about )
+    MyFunctionSpace()
         :
-        super( vm, about ),
+        super(),
         dim( this->vm()["dim"].template as<int>() ),
         order( this->vm()["order"].template as<int>() ),
         meshSize( this->vm()["hsize"].template as<double>() ),
@@ -127,9 +99,7 @@ public:
     {
     }
 
-    FEELPP_DONT_INLINE void run();
-
-    FEELPP_DONT_INLINE void run( const double* X, unsigned long P, double* Y, unsigned long N );
+    void run();
 
 private:
 
@@ -145,56 +115,20 @@ template<int Dim, int Order>
 void
 MyFunctionSpace<Dim,Order>::run()
 {
-    if ( dim && dim != Dim ) return;
-
-    if ( order && order != Order ) return;
-
-    std::cout << "------------------------------------------------------------\n";
-    std::cout << "Execute MyFunctionSpace<" << Dim << ">\n";
-    std::vector<double> X( 2 );
-    X[0] = meshSize;
-
-    if ( shape == "hypercube" )
-        X[1] = 1;
-
-    else if ( shape == "ellipsoid" )
-        X[1] = 2;
-
-    else // default is simplex
-        X[1] = 0;
-
-    std::vector<double> Y( 3 );
-    run( X.data(), X.size(), Y.data(), Y.size() );
-}
-template<int Dim, int Order>
-void
-MyFunctionSpace<Dim, Order>::run( const double* X, unsigned long P, double* Y, unsigned long N )
-{
-    using namespace Feel::vf;
-
-    if ( X[1] == 0 ) shape = "simplex";
-
-    if ( X[1] == 1 ) shape = "hypercube";
-
-    if ( X[1] == 2 ) shape = "ellipsoid";
-
-    Environment::changeRepository( boost::format( "doc/tutorial/%1%/%2%/h_%3%/" )
+    Environment::changeRepository( boost::format( "doc/manual/tutorial/%1%/%2%/h_%3%/" )
                                    % this->about().appName()
                                    % shape
                                    % meshSize );
-    Environment::setLogs( this->about().appName() );
 
     //# marker31 #
     //! create the mesh
     mesh_ptrtype mesh =
         createGMSHMesh( _mesh=new mesh_type,
-                        //_update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
-                        _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES,
                         _desc=domain( _name= ( boost::format( "%1%-%2%-%3%" ) % shape % Dim % Order ).str() ,
                                       _shape=shape,
                                       _dim=Dim,
                                       _order=Order,
-                                      _h=X[0] ) );
+                                      _h=meshSize ) );
 
     //# endmarker31 #
     /**
@@ -230,78 +164,47 @@ MyFunctionSpace<Dim, Order>::run( const double* X, unsigned long P, double* Y, u
     //# endmarker5 #
 
     //# marker6 #
-    double L2g2 = integrate( elements( mesh ), g*g ).evaluate()( 0,0 );
-    double L2uerror2 = integrate( elements( mesh ), ( idv( u )-g )*( idv( u )-g ) ).evaluate()( 0,0 );
-    Log() << "||u-g||_0=" << math::sqrt( L2uerror2/L2g2 ) << "\n";
-    double L2f2 = integrate( elements( mesh ), f*f ).evaluate()( 0,0 );
-    double L2verror2 = integrate( elements( mesh ), ( idv( v )-f )*( idv( v )-f ) ).evaluate()( 0,0 );
-    Log() << "||v-f||_0=" << math::sqrt( L2verror2/L2f2 ) << "\n";
+    double L2g = normL2( elements( mesh ), g );
+    double L2uerror = normL2( elements( mesh ), ( idv( u )-g ) );
+    LOG(INFO) << "||u-g||_0=" << L2uerror/L2g << "\n";
+    double L2f = normL2( elements( mesh ), f );
+    double L2verror = normL2( elements( mesh ), ( idv( v )-f ) );
+    LOG(INFO) << "||v-f||_0=" << L2verror/L2f  << "\n";
     //# endmarker6 #
 
     //# marker7 #
     // exporting to paraview or gmsh
-    std::cout << "exporting\n" << std::endl;
+    LOG(INFO) << "exporting\n" << std::endl;
     exporter = export_ptrtype( export_type::New( this->vm(), ( boost::format( "%1%-%2%-%3%-%4%" ) % this->about().appName() % shape % Dim % Order ).str() ) );
-    std::cout << "exporting mesh \n" << std::endl;
+    LOG(INFO) << "exporting mesh \n" << std::endl;
     exporter->step( 0 )->setMesh( mesh );
     auto P0h = p0_space_type::New( mesh );
-    std::cout << "saving pid\n" << std::endl;
+    LOG(INFO) << "saving pid\n" << std::endl;
     exporter->step( 0 )->add( "pid", regionProcess( P0h ) );
-#if 1
+
     exporter->step( 0 )->add( "g", u );
     exporter->step( 0 )->add( "u-g", w );
     exporter->step( 0 )->add( "f", v );
-#endif
+
     exporter->save();
     //# endmarker7 #
-
-    // saving and loading function
-    u.save( _path="." );
-    std::cout << "after saving ||u||^2_2=" << integrate( _range=elements( mesh ), _expr=idv( u )*idv( u ) ).evaluate() << "\n";
-    u.zero();
-    std::cout << "after zeroing out ||u||^2_2=" << integrate( _range=elements( mesh ), _expr=idv( u )*idv( u ) ).evaluate() << "\n";
-    u.load( _path="." );
-    std::cout << "after loading ||u||^2_2=" << integrate( _range=elements( mesh ), _expr=idv( u )*idv( u ) ).evaluate() << "\n";
 } // MyFunctionSpace::run
 
 int
 main( int argc, char** argv )
 {
-    Feel::Environment env( argc, argv );
+    /**
+     * Initialize Feel++ Environment
+     */
+    Environment env( _argc=argc, _argv=argv,
+                     _desc=makeOptions(),
+                     _about=about(_name="myfunctionspace",
+                                  _author="Christophe Prud'homme",
+                                  _email="christophe.prudhomme@feelpp.org") );
 
-    Feel::Assert::setLog( "myfunctionspace.assert" );
-    Application app( argc, argv, makeAbout(), makeOptions() );
+    Application app;
 
-    if ( app.vm().count( "help" ) )
-    {
-        std::cout << app.optionsDescription() << "\n";
-        return 0;
-    }
-
-#if 0
-    app.add( new MyFunctionSpace<1,1>( app.vm(), app.about() ) );
-    app.add( new MyFunctionSpace<1,2>( app.vm(), app.about() ) );
-    app.add( new MyFunctionSpace<1,3>( app.vm(), app.about() ) );
-    //app.add( new MyFunctionSpace<1,4>( app.vm(), app.about() ) );
-    //app.add( new MyFunctionSpace<1,5>( app.vm(), app.about() ) );
-
-
-    app.add( new MyFunctionSpace<2,1>( app.vm(), app.about() ) );
-    app.add( new MyFunctionSpace<2,2>( app.vm(), app.about() ) );
-    app.add( new MyFunctionSpace<2,3>( app.vm(), app.about() ) );
-    //app.add( new MyFunctionSpace<2,4>( app.vm(), app.about() ) );
-    //app.add( new MyFunctionSpace<2,5>( app.vm(), app.about() ) );
-
-#else
-    app.add( new MyFunctionSpace<2,3>( app.vm(), app.about() ) );
-    //app.add( new MyFunctionSpace<3,3>( app.vm(), app.about() ) );
-    // need to be debugged
-#if 0
-
-    app.add( new MyFunctionSpace<3,2>( app.vm(), app.about() ) );
-    app.add( new MyFunctionSpace<3,3>( app.vm(), app.about() ) );
-    app.add( new MyFunctionSpace<3,4>( app.vm(), app.about() ) );
-#endif
-#endif
+    app.add( new MyFunctionSpace<2,3>() );
+    app.add( new MyFunctionSpace<3,3>() );
     app.run();
 }

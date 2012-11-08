@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2005-02-07
 
   Copyright (C) 2005,2006 EPFL
@@ -24,7 +24,7 @@
 */
 /**
    \file test_geomap.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-02-07
  */
 #include <feel/feelcore/feel.hpp>
@@ -72,7 +72,7 @@ public:
     void test( double hsize, std::string version  = FEELPP_GMSH_FORMAT_VERSION )
     {
         M_mesh = mesh_ptr_type( new mesh_type );
-        Debug() << "testing Interp with file format version " << version << "\n";
+        VLOG(1) << "testing Interp with file format version " << version << "\n";
         std::string fname;
         //GmshHypercubeDomain<entity_type::nDim,entity_type::nOrder,Entity> td;
         GmshSimplexDomain td( entity_type::nDim,entity_type::nOrder );
@@ -132,7 +132,7 @@ public:
             ( el_it->id() ).error( "invalid geometric transformation inversion" );
         }
 
-        Debug() << "testing Interp with file format version " << version << " done\n";
+        VLOG(1) << "testing Interp with file format version " << version << " done\n";
     }
 private:
     mesh_ptr_type M_mesh;
@@ -140,7 +140,9 @@ private:
 int
 main( int argc, char** argv )
 {
-    Feel::Environment env( argc,argv );
+    Feel::Environment env( argc,argv);
+
+
     Feel::Assert::setLog( "assertions.log" );
     //boost::mpi::environment env( argc, argv );
     TestInterp<2,Simplex> test_interp;

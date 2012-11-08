@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2009-11-13
 
   Copyright (C) 2009 Université Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file heat1d.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2009-11-13
  */
 #ifndef __Heat1D_H
@@ -78,7 +78,7 @@ makeHeat1DAbout( std::string const& str = "heat1d" )
                            Feel::AboutData::License_GPL,
                            "Copyright (c) 2010-2012 Universite de Grenoble 1 (Joseph Fourier)" );
 
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     return about;
 }
 
@@ -187,10 +187,16 @@ public:
     typedef parameterspace_type::sampling_type sampling_type;
     typedef parameterspace_type::sampling_ptrtype sampling_ptrtype;
 
-    typedef Eigen::VectorXd theta_vector_type;
+    //typedef Eigen::VectorXd theta_vector_type;
+    typedef std::vector< std::vector< double > > beta_vector_type;
 
 
-    typedef boost::tuple<std::vector<sparse_matrix_ptrtype>, std::vector<std::vector<vector_ptrtype>  > > affine_decomposition_type;
+    typedef boost::tuple<
+        std::vector< std::vector<sparse_matrix_ptrtype> >,
+        std::vector< std::vector<sparse_matrix_ptrtype> >,
+        std::vector< std::vector<std::vector<vector_ptrtype> > > ,
+        std::vector< std::vector< vector_ptrtype > >
+        > affine_decomposition_type;
     //@}
 
     /** @name Constructors, destructor
@@ -252,6 +258,32 @@ public:
         return 1;
     }
 
+    int Qmf( ) const
+    {
+        return 0;
+    }
+    int Qm( ) const
+    {
+        return 0;
+    }
+
+    int mMaxA( int q )
+    {
+        return 1;
+    }
+    int mMaxM( int q )
+    {
+        return 0;
+    }
+    int mMaxMF( int q )
+    {
+        return 0;
+    }
+    int mMaxF(int output_index, int q )
+    {
+        return 1;
+    }
+
     /**
      * \brief Returns the function space
      */
@@ -270,56 +302,75 @@ public:
      * \brief compute the theta coefficient for both bilinear and linear form
      * \param mu parameter to evaluate the coefficients
      */
-    boost::tuple<theta_vector_type, std::vector<theta_vector_type> >
-    computeThetaq( parameter_type const& mu, double time=0 )
+    boost::tuple<beta_vector_type, beta_vector_type, std::vector<beta_vector_type>, beta_vector_type >
+    computeBetaQm( parameter_type const& mu, double time=0 )
     {
-        M_thetaAq.resize( Qa() );
-        M_thetaAq( 0 ) = 1;
-        M_thetaAq( 1 ) = mu( 0 ); // k_1
-        M_thetaAq( 2 ) = mu( 1 ); // k_2
+        M_betaAqm.resize( Qa() );
+        M_betaAqm[0].resize( 1 );
+        M_betaAqm[1].resize( 1 );
+        M_betaAqm[2].resize( 1 );
+        M_betaAqm[0][0]= 1;
+        M_betaAqm[1][0] = mu( 0 ); // k_1
+        M_betaAqm[2][0] = mu( 1 ); // k_2
 
-        M_thetaFq.resize( Nl() );
-        M_thetaFq[0].resize( Ql( 0 ) );
-        M_thetaFq[0]( 0 ) = mu( 2 ); // delta
-        M_thetaFq[0]( 1 ) = mu( 3 ); // phi
+        M_betaFqm.resize( Nl() );
+        M_betaFqm[0].resize( Ql(0) );
+        M_betaFqm[1].resize( Ql(1) );
+        M_betaFqm[0][0].resize( 1 );
+        M_betaFqm[0][1].resize( 1 );
+        M_betaFqm[1][0].resize( 1 );
+        M_betaFqm[0][0][0] = mu( 2 ); // delta
+        M_betaFqm[0][1][0] = mu( 3 ); // phi
+        M_betaFqm[1][0][0] = 1;
 
-        M_thetaFq[1].resize( Ql( 1 ) );
-        M_thetaFq[1]( 0 ) = 1;
-
-        return boost::make_tuple( M_thetaAq, M_thetaFq );
+        return boost::make_tuple( M_betaMqm, M_betaAqm, M_betaFqm, M_betaMFqm );
     }
 
     /**
      * \brief return the coefficient vector
      */
-    theta_vector_type const& thetaAq() const
+    beta_vector_type const& betaAqm() const
     {
-        return M_thetaAq;
+        return M_betaAqm;
+    }
+
+    beta_vector_type const& betaMqm() const
+    {
+        return M_betaMqm;
+    }
+
+    value_type betaMFqm( int q , int m )
+    {
+        return M_betaMFqm[q][m];
     }
 
     /**
      * \brief return the coefficient vector
      */
-    std::vector<theta_vector_type> const& thetaFq() const
+    std::vector<beta_vector_type> const& betaFqm() const
     {
-        return M_thetaFq;
+        return M_betaFqm;
     }
 
     /**
      * \brief return the coefficient vector \p q component
      *
      */
-    value_type thetaAq( int q ) const
+    value_type betaAqm( int q , int m ) const
     {
-        return M_thetaAq( q );
+        return M_betaAqm[q][m];
+    }
+    value_type betaMqm( int q , int m ) const
+    {
+        return M_betaMqm[q][m];
     }
 
     /**
      * \return the \p q -th term of the \p l -th output
      */
-    value_type thetaL( int l, int q ) const
+    value_type betaL( int l, int q, int m ) const
     {
-        return M_thetaFq[l]( q );
+        return M_betaFqm[l][q][m];
     }
 
     //@}
@@ -354,6 +405,13 @@ public:
     sparse_matrix_ptrtype newMatrix() const;
 
     /**
+     * create a new vector
+     * \return the newly created vector
+     */
+     vector_ptrtype newVector() const;
+
+
+    /**
      * \brief Returns the affine decomposition
      */
     affine_decomposition_type computeAffineDecomposition();
@@ -363,23 +421,31 @@ public:
      * \param mu the model parameter
      * \param T the temperature field
      */
-    void solve( parameter_type const& mu, element_ptrtype& T );
+     void solve( parameter_type const& mu, element_ptrtype& T );
 
     /**
      * solve for a given parameter \p mu
      */
-    void solve( parameter_type const& mu );
+    element_type solve( parameter_type const& mu );
 
     /**
      * solve \f$ M u = f \f$
      */
     void l2solve( vector_ptrtype& u, vector_ptrtype const& f );
 
+    /**
+     * H1 scalar product
+     */
+    sparse_matrix_ptrtype innerProduct ( void )
+    {
+        return M;
+    }
+
 
     /**
      * update the PDE system with respect to \param mu
      */
-    void update( parameter_type const& mu );
+    void update( parameter_type const& mu , int output_index=0);
     //@}
 
     /**
@@ -436,12 +502,17 @@ private:
     vector_ptrtype F;
     element_ptrtype pT;
 
-    std::vector<sparse_matrix_ptrtype> M_Aq;
-    std::vector<std::vector<vector_ptrtype> > M_Fq;
+    std::vector < std::vector<sparse_matrix_ptrtype> > M_Aqm;
+    std::vector < std::vector<sparse_matrix_ptrtype> > M_Mqm;
+    std::vector < std::vector<vector_ptrtype> > M_MFqm;
+    std::vector < std::vector<std::vector<vector_ptrtype> > > M_Fqm;
+
+    beta_vector_type M_betaAqm;
+    beta_vector_type M_betaMqm;
+    beta_vector_type M_betaMFqm;
+    std::vector<beta_vector_type> M_betaFqm;
 
     parameterspace_ptrtype M_Dmu;
-    theta_vector_type M_thetaAq;
-    std::vector<theta_vector_type> M_thetaFq;
 };
 
 Heat1D::Heat1D()
@@ -484,19 +555,24 @@ Heat1D::init()
     pT = element_ptrtype( new element_type( Xh ) );
 
     //  initialisation de A1 et A2
-    M_Aq.resize( 3 );
-    M_Aq[0] = backend->newMatrix( Xh, Xh );
-    M_Aq[1] = backend->newMatrix( Xh, Xh );
-    M_Aq[2] = backend->newMatrix( Xh, Xh );
 
+    M_Aqm.resize( this->Qa() );
+    for(int q=0; q<Qa(); q++)
+    {
+        M_Aqm[q].resize( 1 );
+        M_Aqm[q][0] = backend->newMatrix( Xh, Xh );
+    }
 
-    M_Fq.resize( 2 );
-    M_Fq[0].resize( 2 );
-    M_Fq[0][0] = backend->newVector( Xh );
-    M_Fq[0][1] = backend->newVector( Xh );
-
-    M_Fq[1].resize( 1 );
-    M_Fq[1][0] = backend->newVector( Xh );
+    M_Fqm.resize( this->Nl() );
+    for(int l=0; l<Nl(); l++)
+    {
+        M_Fqm[l].resize( Ql(l) );
+        for(int q=0; q<Ql(l) ; q++)
+        {
+            M_Fqm[l][q].resize(1);
+            M_Fqm[l][q][0] = backend->newVector( Xh );
+        }
+    }
 
     D = backend->newMatrix( Xh, Xh );
     F = backend->newVector( Xh );
@@ -510,47 +586,39 @@ Heat1D::init()
     mu_max << 50, 50, 5, 5;
     M_Dmu->setMax( mu_max );
 
-
-    /*Feel::ParameterSpace<4>::Element mu_min( M_Dmu );
-    mu_min << 50, 50, 5, 5;
-    M_Dmu->setMin( mu_min );
-    Feel::ParameterSpace<4>::Element mu_max( M_Dmu );
-    mu_max << 50, 50, 5, 5;
-    M_Dmu->setMax( mu_max );
-    */
-
     element_type u( Xh, "u" );
     element_type v( Xh, "v" );
 
-    Log() << "Number of dof " << Xh->nLocalDof() << "\n";
+    LOG(INFO) << "Number of dof " << Xh->nLocalDof() << "\n";
 
     // right hand side
-    form1( Xh, M_Fq[0][0], _init=true ) = integrate( markedfaces( mesh,mesh->markerName( "left" ) ), id( v ) );
-    form1( _test=Xh, _vector=M_Fq[0][1], _init=true ) = integrate( elements( mesh ), id( v ) );
-    M_Fq[0][0]->close();
-    M_Fq[0][1]->close();
+    form1( Xh, M_Fqm[0][0][0], _init=true ) = integrate( markedfaces( mesh,mesh->markerName( "left" ) ), id( v ) );
+    form1( _test=Xh, _vector=M_Fqm[0][1][0], _init=true ) = integrate( elements( mesh ), id( v ) );
+    M_Fqm[0][0][0]->close();
+    M_Fqm[0][1][0]->close();
 
     // output
-    form1( Xh, M_Fq[1][0], _init=true ) = integrate( markedelements( mesh,"k1_2" ), id( v )/0.2 );
-    form1( Xh, M_Fq[1][0] ) += integrate( markedelements( mesh,"k2_1" ), id( v )/0.2 );
-    M_Fq[1][0]->close();
+    form1( Xh, M_Fqm[1][0][0], _init=true ) = integrate( markedelements( mesh,"k1_2" ), id( v )/0.2 );
+    form1( Xh, M_Fqm[1][0][0] ) += integrate( markedelements( mesh,"k2_1" ), id( v )/0.2 );
+    M_Fqm[1][0][0]->close();
 
-    form2( Xh, Xh, M_Aq[0], _init=true ) = integrate( elements( mesh ), 0.1*( gradt( u )*trans( grad( v ) ) ) );
-    form2( Xh, Xh, M_Aq[0] ) += integrate( markedfaces( mesh,mesh->markerName( "right" ) ), id( u )*idt( v ) );
-    M_Aq[0]->close();
+    form2( Xh, Xh, M_Aqm[0][0], _init=true ) = integrate( elements( mesh ), 0.1*( gradt( u )*trans( grad( v ) ) ) );
+    form2( Xh, Xh, M_Aqm[0][0] ) += integrate( markedfaces( mesh,mesh->markerName( "right" ) ), id( u )*idt( v ) );
+    M_Aqm[0][0]->close();
 
-    form2( Xh, Xh, M_Aq[1], _init=true ) = integrate( markedelements( mesh,mesh->markerName( "k1_1" ) ), ( gradt( u )*trans( grad( v ) ) ) );
-    form2( Xh, Xh, M_Aq[1] ) += integrate( markedelements( mesh,mesh->markerName( "k1_2" ) ), ( gradt( u )*trans( grad( v ) ) ) );
-    M_Aq[1]->close();
+    form2( Xh, Xh, M_Aqm[1][0], _init=true ) = integrate( markedelements( mesh, "k1_1"  ), ( gradt( u )*trans( grad( v ) ) ) );
+    form2( Xh, Xh, M_Aqm[1][0] ) += integrate( markedelements( mesh,"k1_2"  ), ( gradt( u )*trans( grad( v ) ) ) );
+    M_Aqm[1][0]->close();
 
-    form2( Xh, Xh, M_Aq[2], _init=true ) = integrate( markedelements( mesh,mesh->markerName( "k2_1" ) ), ( gradt( u )*trans( grad( v ) ) ) );
-    form2( Xh, Xh, M_Aq[2] ) += integrate( markedelements( mesh,mesh->markerName( "k2_2" ) ), ( gradt( u )*trans( grad( v ) ) ) );
-    M_Aq[2]->close();
+    form2( Xh, Xh, M_Aqm[2][0], _init=true ) = integrate( markedelements( mesh, "k2_1"  ), ( gradt( u )*trans( grad( v ) ) ) );
+    form2( Xh, Xh, M_Aqm[2][0] ) += integrate( markedelements( mesh, "k2_2"  ), ( gradt( u )*trans( grad( v ) ) ) );
+    M_Aqm[2][0]->close();
     M = backend->newMatrix( Xh, Xh );
 
     form2( Xh, Xh, M, _init=true ) =
         integrate( elements( mesh ), id( u )*idt( v ) + grad( u )*trans( gradt( u ) ) );
     M->close();
+
 
 } // Heat1d::run
 
@@ -560,10 +628,16 @@ Heat1D::newMatrix() const
     return backend->newMatrix( Xh, Xh );
 }
 
+Heat1D::vector_ptrtype
+Heat1D::newVector() const
+{
+    return backend->newVector( Xh );
+}
+
 Heat1D::affine_decomposition_type
 Heat1D::computeAffineDecomposition()
 {
-    return boost::make_tuple( M_Aq, M_Fq );
+    return boost::make_tuple( M_Mqm, M_Aqm, M_Fqm, M_MFqm );
 }
 
 
@@ -584,7 +658,7 @@ Heat1D::exportResults( element_type& U )
 {
     if ( M_do_export )
     {
-        Log() << "exportResults starts\n";
+        LOG(INFO) << "exportResults starts\n";
 
         exporter->step( 0 )->setMesh( U.functionSpace()->mesh() );
 
@@ -595,32 +669,41 @@ Heat1D::exportResults( element_type& U )
 } // Heat1d::export
 
 void
-Heat1D::update( parameter_type const& mu )
+Heat1D::update( parameter_type const& mu, int output_index )
 {
-    *D = *M_Aq[0];
+    //*D = *M_Aqm[0];
+    D->close();
+    D->zero();
 
-    for ( size_type q = 1; q < M_Aq.size(); ++q )
+    for ( size_type q = 0; q < Qa(); ++q )
     {
-        //std::cout << "[affine decomp] scale q=" << q << " with " << M_thetaAq[q] << "\n";
-        D->addMatrix( M_thetaAq[q], M_Aq[q] );
+        for ( size_type m = 0; m < mMaxA(q); ++m )
+        {
+            D->addMatrix( M_betaAqm[q][m], M_Aqm[q][m] );
+        }
     }
 
     F->close();
     F->zero();
 
-    for ( size_type q = 0; q < M_Fq[0].size(); ++q )
+    for ( size_type q = 0; q < Ql(output_index); ++q )
     {
-        //std::cout << "[affine decomp] scale q=" << q << " with " << M_thetaFq[0][q] << "\n";
-        F->add( M_thetaFq[0][q], M_Fq[0][q] );
+        for ( size_type m = 0; m < mMaxF(output_index,q); ++m )
+        {
+            F->add( M_betaFqm[0][q][m], M_Fqm[0][q][m] );
+        }
     }
 }
-void
+
+
+typename Heat1D::element_type
 Heat1D::solve( parameter_type const& mu )
 {
     //std::cout << "solve(mu) for parameter " << mu << "\n";
 
     element_ptrtype T( new element_type( Xh ) );
     this->solve( mu, T );
+    return *T;
     //this->exportResults( *T );
 
 }
@@ -629,7 +712,7 @@ void
 Heat1D::solve( parameter_type const& mu, element_ptrtype& T )
 {
 
-    this->computeThetaq( mu );
+    this->computeBetaQm( mu );
     this->update( mu );
     backend->solve( _matrix=D,  _solution=T, _rhs=F );
 }
@@ -690,7 +773,7 @@ Heat1D::output( int output_index, parameter_type const& mu )
     // right hand side (compliant)
     if ( output_index == 0 )
     {
-        output = M_thetaFq[0]( 0 )*dot( M_Fq[0][0], U )+M_thetaFq[0]( 1 )*dot( M_Fq[0][1], U );
+        output = M_betaFqm[0][0][0]*dot( M_Fqm[0][0][0], U ) + M_betaFqm[0][1][0]*dot( M_Fqm[0][1][0], U );
         //std::cout << "output0 c1 = " << s1 <<"\n";
         //double s2 = ( M_thetaFq[0](0)*integrate( markedfaces(mesh,mesh->markerName( "left" )), idv(*pT) ).evaluate()(0,0) +
         //M_thetaFq[0](1)*integrate( elements(mesh), idv(*pT) ).evaluate()(0,0) );

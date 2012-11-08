@@ -1,0 +1,16 @@
+// Defines configuration dependent macros
+
+#ifndef _CL_GMPCONFIG_H
+#define _CL_GMPCONFIG_H
+
+/* These definitions are adjusted by `configure' automatically. */
+
+
+/* interfacing to GNU gmp */
+
+/* Define if you wish to use the fast GNU gmp low-level functions. */
+#undef CL_USE_GMP
+
+
+#endif /* _CL_GMPCONFIG_H */
+

@@ -24,5 +24,5 @@
 
 include_directories(./)
 
-feelpp_add_application(penalisation2 EXCLUDE_FROM_ALL SRCS penalisation2.cpp GEO mesh_2d.geo CFG penalisation2.cfg LINK_LIBRARIES ${FEELPP_LIBRARIES} )
-feelpp_add_application(penalisation3 EXCLUDE_FROM_ALL SRCS penalisation3.cpp GEO mesh_3d.geo CFG penalisation3.cfg LINK_LIBRARIES ${FEELPP_LIBRARIES} )
+feelpp_add_application(penalisation2 EXCLUDE_FROM_ALL SRCS penalisation2.cpp GEO mesh_2d.geo CFG penalisation2.cfg LABEL doc )
+feelpp_add_application(penalisation3 EXCLUDE_FROM_ALL SRCS penalisation3.cpp GEO mesh_3d.geo CFG penalisation3.cfg LABEL doc )

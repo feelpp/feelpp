@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2007-05-25
 
   Copyright (C) 2007-2011 Université Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file backendpetsc.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2007-05-25
  */
 
@@ -374,7 +374,8 @@ BackendPetsc<T>::solve( sparse_matrix_ptrtype const& A,
     Debug( 7005 ) << "[BackendPetsc::solve] number of iterations : " << res.template get<1>() << "\n";
     Debug( 7005 ) << "[BackendPetsc::solve]             residual : " << res.template get<2>() << "\n";
 
-    if ( !res.template get<0>() ) std::cerr<< "Backend " << this->prefix() << " : linear solver failed to converge" << std::endl;
+    if ( !res.template get<0>() )
+        LOG(ERROR) << "Backend " << this->prefix() << " : linear solver failed to converge" << std::endl;
 
     return res;
 } // BackendPetsc::solve
@@ -405,7 +406,8 @@ BackendPetsc<T>::solve( sparse_matrix_type const& A,
     Debug( 7005 ) << "[BackendPetsc::solve] number of iterations : " << res.template get<1>() << "\n";
     Debug( 7005 ) << "[BackendPetsc::solve]             residual : " << res.template get<2>() << "\n";
 
-    if ( !res.template get<0>() ) std::cerr<< "Backend " << this->prefix() << " : linear solver failed to converge" << std::endl;
+    if ( !res.template get<0>() )
+        LOG(ERROR) << "Backend " << this->prefix() << " : linear solver failed to converge" << std::endl;
 
     return res;
 } // BackendPetsc::solve

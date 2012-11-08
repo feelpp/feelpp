@@ -2,10 +2,12 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2005-01-12
 
-  Copyright (C) 2005,2006 EPFL, INRIA, Politecnico di Milano
+  Copyright (C) 2005,2006 EPFL
+  Copyright (C) 2006-2012 Universite Joseph Fourier
+
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -23,7 +25,7 @@
 */
 /**
    \file timeSet.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-01-12
  */
 
@@ -131,7 +133,7 @@ public:
         /**
          */
         //@{
-
+        typedef Step step_type;
         typedef MeshType mesh_type;
         typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
@@ -456,10 +458,10 @@ public:
         void
         addRegions()
         {
-            Debug() << "[timeset] Adding regions...\n";
+            VLOG(1) << "[timeset] Adding regions...\n";
             if ( !M_ts->_M_scalar_p0 )
             {
-                Debug() << "[timeset] creating space...\n";
+                VLOG(1) << "[timeset] creating space...\n";
                 if ( Environment::worldComm().numberOfSubWorlds() > 1 )
                 {
                     auto wc = std::vector<WorldComm>( 1, Environment::worldComm().subWorld(Environment::worldComm().numberOfSubWorlds()) );
@@ -472,14 +474,68 @@ public:
                 }
                 _M_scalar_p0 = M_ts->_M_scalar_p0;
             }
-            Debug() << "[timeset] adding pid...\n";
+            VLOG(1) << "[timeset] adding pid...\n";
             add( "pid", regionProcess( _M_scalar_p0 ) );
             //add( "marker", regionMarker( _M_scalar_p0 ) );
             //add( "marker2", regionMarker2( _M_scalar_p0 ) );
             //add( "marker3", regionMarker3( _M_scalar_p0 ) );
         }
         template<typename FunctionType>
+        void add( std::initializer_list<std::string>  __n, FunctionType const& func )
+        {
+            std::vector<std::string> str( __n );
+            add_( str, func, mpl::bool_<(FunctionType::functionspace_type::nSpaces>1)>() );
+        }
+        template<typename FunctionType>
+        void add( std::vector<std::string> const& __n, FunctionType const& func )
+        {
+            add_( __n, func, mpl::bool_<(FunctionType::functionspace_type::nSpaces>1)>() );
+        }
+        template<typename FunctionType>
         void add( std::string const& __n, FunctionType const& func )
+        {
+            add_( __n, func, mpl::bool_<(FunctionType::functionspace_type::nSpaces>1)>() );
+        }
+
+        template<typename TSet>
+        struct AddFunctionProduct
+        {
+            AddFunctionProduct( TSet& tset ) : M_tset( tset ) {}
+            TSet& M_tset;
+
+            template<typename T>
+            void
+            operator()( T const& fun ) const
+                {
+                    LOG(INFO) << "export "  << fun.name() << " ...\n";
+                    M_tset.add_( fun.name(), fun, mpl::bool_<false>() );
+                }
+        };
+        template<typename FunctionType>
+        void add_( std::vector<std::string> const& __n, FunctionType const& func, mpl::bool_<true> )
+        {
+            std::vector<std::string> s = __n;
+            FEELPP_ASSERT( s.size() == FunctionType::functionspace_type::nSpaces );
+            // implement elements() which returns a fusion vector of the components
+            fusion::for_each( subelements(func,s), AddFunctionProduct<step_type>( *this ) );
+        }
+        template<typename FunctionType>
+        void add_( std::string const& __n, FunctionType const& func, mpl::bool_<true> )
+        {
+            std::vector<std::string> s;
+            // s.push_back(__n);
+            for(int i=0; i<FunctionType::functionspace_type::nSpaces; i++)
+                {
+                    std::ostringstream i_str;
+                    i_str << "_" << i;
+                    s.push_back(__n + i_str.str());
+                }
+            FEELPP_ASSERT( s.size() == FunctionType::functionspace_type::nSpaces );
+            // implement elements() which returns a fusion vector of the components
+            fusion::for_each( subelements(func,s), AddFunctionProduct<step_type>( *this ) );
+        }
+        template<typename FunctionType>
+        void add_( std::string const& __n, FunctionType const& func, mpl::bool_<false> )
         {
             typedef typename mpl::or_<is_shared_ptr<FunctionType>, boost::is_pointer<FunctionType> >::type is_ptr_or_shared_ptr;
             add( __n,func,is_ptr_or_shared_ptr() );

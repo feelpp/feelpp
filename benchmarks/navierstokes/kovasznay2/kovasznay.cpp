@@ -54,9 +54,9 @@ Kovasznay::Kovasznay( int argc, char** argv, AboutData const& ad )
     M_pErrorL2( -1.0 ),
     M_divError( -1.0 )
 {
-    Debug() << "[Kovasznay] hsize       = " << M_meshSize << "\n";
-    Debug() << "[Kovasznay] nu          = " << M_nu << "\n";
-    Debug() << "[Kovasznay] export      = "
+    VLOG(1) << "[Kovasznay] hsize       = " << M_meshSize << "\n";
+    VLOG(1) << "[Kovasznay] nu          = " << M_nu << "\n";
+    VLOG(1) << "[Kovasznay] export      = "
             << this->vm()["doexport"].as<int>() << "\n";
 
 }
@@ -77,9 +77,9 @@ Kovasznay::Kovasznay( int argc,
     M_pErrorL2( -1.0 ),
     M_divError( -1.0 )
 {
-    Debug() << "[Kovasznay] hsize   = " << M_meshSize << "\n";
-    Debug() << "[Kovasznay] nu      = " << M_nu << "\n";
-    Debug() << "[Kovasznay] export  = "
+    VLOG(1) << "[Kovasznay] hsize   = " << M_meshSize << "\n";
+    VLOG(1) << "[Kovasznay] nu      = " << M_nu << "\n";
+    VLOG(1) << "[Kovasznay] export  = "
             << this->vm()["doexport"].as<int>() << "\n";
 
 }
@@ -97,9 +97,9 @@ Kovasznay::Kovasznay( Kovasznay const& tc )
     M_pErrorL2( -1.0 ),
     M_divError( -1.0 )
 {
-    Debug() << "[Kovasznay] hsize   = " << M_meshSize << "\n";
-    Debug() << "[Kovasznay] nu      = " << M_nu << "\n";
-    Debug() << "[Kovasznay] export  = "
+    VLOG(1) << "[Kovasznay] hsize   = " << M_meshSize << "\n";
+    VLOG(1) << "[Kovasznay] nu      = " << M_nu << "\n";
+    VLOG(1) << "[Kovasznay] export  = "
             << this->vm()["doexport"].as<int>() << "\n";
 
 }
@@ -130,7 +130,7 @@ Kovasznay::createMesh( double meshSize )
 
 #endif
     M_timers["mesh"].second = M_timers["mesh"].first.elapsed();
-    Debug() << "[timer] createMesh(): " << M_timers["mesh"].second << "\n";
+    VLOG(1) << "[timer] createMesh(): " << M_timers["mesh"].second << "\n";
     return mesh;
 } // Kovasznay::createMesh
 
@@ -172,11 +172,11 @@ Kovasznay::run()
     //space_u->dof()->showMe();
     psLogger.log( "t=0, spaces" );
 
-    Debug() << "[Kovasznay] velocity dofs total         "
+    VLOG(1) << "[Kovasznay] velocity dofs total         "
             << space_U->nDof() << "\n";
-    Debug() << "[Kovasznay] pressure dofs               "
+    VLOG(1) << "[Kovasznay] pressure dofs               "
             << space_p->nDof() << "\n";
-    Debug() << "[Kovasznay] total    dofs               "
+    VLOG(1) << "[Kovasznay] total    dofs               "
             << space_U->nDof() + space_p->nDof() << "\n";
 #if 0
     element_u_type ux   ( space_u, "ux" );
@@ -270,7 +270,7 @@ Kovasznay::run()
     oseenUpdateInit( oseen, U );
 
     M_timers["updateNS"].second += M_timers["updateNS"].first.elapsed();
-    Debug() << "[Kovasznay] NS assembly time: "
+    VLOG(1) << "[Kovasznay] NS assembly time: "
             << M_timers["updateNS"].first.elapsed() << "\n";
     msg.str( "" );
     msg << "subiter " << subiter << " oseen update";
@@ -282,24 +282,24 @@ Kovasznay::run()
               << "\n" << std::flush;
 
     if ( !backendNS->reusePC() )
-        Debug() << "[Kovasznay] NS solving: rebuild pc\n";
+        VLOG(1) << "[Kovasznay] NS solving: rebuild pc\n";
 
     M_timers["solverNS"].first.restart();
     oseen.solve();
     M_timers["solverNS"].second += M_timers["solverNS"].first.elapsed();
-    Debug() << "[Kovasznay] NS solving  time: "
+    VLOG(1) << "[Kovasznay] NS solving  time: "
             << M_timers["solverNS"].first.elapsed() << "\n";
-    Debug() << "[Kovasznay] NS solving  iterations: "
+    VLOG(1) << "[Kovasznay] NS solving  iterations: "
             << backendNS->get_iteration() <<"\n";
 
     if ( backendNS->reuseFailed() )
     {
-        Debug() << "[Kovasznay] NS solving: pc reuse failed\n";
+        VLOG(1) << "[Kovasznay] NS solving: pc reuse failed\n";
         std::cout << "[Kovasznay]    pc reuse failed\n";
     }
 
     if ( !backendNS->converged() )
-        Debug() << "[Kovasznay] NS solving: didn't converge\n";
+        VLOG(1) << "[Kovasznay] NS solving: didn't converge\n";
 
     msg.str( "" );
     msg << "subiter " << subiter << " oseen solve";
@@ -354,10 +354,10 @@ Kovasznay::run()
                                      fixpointIncP*fixpointIncP /
                                      std::pow( M_meshSize, 2*( 1+pOrder ) ) );
 
-    Debug() << "[Kovasznay] fixpoint iteration   " << subiter << "\n";
-    Debug() << "[Kovasznay] fixpoint increm. u = " << fixpointIncU << "\n";
-    Debug() << "[Kovasznay] fixpoint increm. p = " << fixpointIncP << "\n";
-    Debug() << "[Kovasznay] fixpoint error     = " << fixpointErr  << "\n";
+    VLOG(1) << "[Kovasznay] fixpoint iteration   " << subiter << "\n";
+    VLOG(1) << "[Kovasznay] fixpoint increm. u = " << fixpointIncU << "\n";
+    VLOG(1) << "[Kovasznay] fixpoint increm. p = " << fixpointIncP << "\n";
+    VLOG(1) << "[Kovasznay] fixpoint error     = " << fixpointErr  << "\n";
 
     this->exportResults( subiter, U, p );
     psLogger.log( "doexport" );
@@ -378,7 +378,7 @@ Kovasznay::run()
         oseenUpdateIter( oseen, U, !backendNS->reusePC() );
 
         M_timers["updateNS"].second += M_timers["updateNS"].first.elapsed();
-        Debug() << "[Kovasznay] NS assembly time: "
+        VLOG(1) << "[Kovasznay] NS assembly time: "
                 << M_timers["updateNS"].first.elapsed() << "\n";
         msg.str( "" );
         msg << "subiter " << subiter << " oseen update";
@@ -390,24 +390,24 @@ Kovasznay::run()
                   << "\n" << std::flush;
 
         if ( !backendNS->reusePC() )
-            Debug() << "[Kovasznay] NS solving: rebuild pc\n";
+            VLOG(1) << "[Kovasznay] NS solving: rebuild pc\n";
 
         M_timers["solverNS"].first.restart();
         oseen.solve();
         M_timers["solverNS"].second += M_timers["solverNS"].first.elapsed();
-        Debug() << "[Kovasznay] NS solving  time: "
+        VLOG(1) << "[Kovasznay] NS solving  time: "
                 << M_timers["solverNS"].first.elapsed() << "\n";
-        Debug() << "[Kovasznay] NS solving  iterations: "
+        VLOG(1) << "[Kovasznay] NS solving  iterations: "
                 << backendNS->get_iteration() <<"\n";
 
         if ( backendNS->reuseFailed() )
         {
-            Debug() << "[Kovasznay] NS solving: pc reuse failed\n";
+            VLOG(1) << "[Kovasznay] NS solving: pc reuse failed\n";
             std::cout << "[Kovasznay]    pc reuse failed\n";
         }
 
         if ( !backendNS->converged() )
-            Debug() << "[Kovasznay] NS solving: didn't converge\n";
+            VLOG(1) << "[Kovasznay] NS solving: didn't converge\n";
 
         msg.str( "" );
         msg << "subiter " << subiter << " oseen solve";
@@ -439,7 +439,7 @@ Kovasznay::run()
         if ( denom == 0.0 )
         {
             omega = omegaLow;
-            Debug() << "[Kovasznay] omega = Inf -> " << omegaLow << "\n";
+            VLOG(1) << "[Kovasznay] omega = Inf -> " << omegaLow << "\n";
         }
 
         else
@@ -449,21 +449,21 @@ Kovasznay::run()
 
             if ( omega < omegaMin )
             {
-                Debug() << "[Kovasznay] omega = " << omega << " -> "
+                VLOG(1) << "[Kovasznay] omega = " << omega << " -> "
                         << omegaLow << "\n";
                 omega = omegaLow;
             }
 
             else if ( omega > omegaMax )
             {
-                Debug() << "[Kovasznay] omega = " << omega << " -> "
+                VLOG(1) << "[Kovasznay] omega = " << omega << " -> "
                         << omegaHigh << "\n";
                 omega = omegaHigh;
             }
 
             else
             {
-                Debug() << "[Kovasznay] omega = " << omega << "\n";
+                VLOG(1) << "[Kovasznay] omega = " << omega << "\n";
             }
         }
 
@@ -491,10 +491,10 @@ Kovasznay::run()
                                   fixpointIncP*fixpointIncP /
                                   std::pow( M_meshSize, 2*( 1+pOrder ) ) );
 
-        Debug() << "[Kovasznay] fixpoint iteration   " << subiter << "\n";
-        Debug() << "[Kovasznay] fixpoint increm. u = " << fixpointIncU << "\n";
-        Debug() << "[Kovasznay] fixpoint increm. p = " << fixpointIncP << "\n";
-        Debug() << "[Kovasznay] fixpoint error     = " << fixpointErr  << "\n";
+        VLOG(1) << "[Kovasznay] fixpoint iteration   " << subiter << "\n";
+        VLOG(1) << "[Kovasznay] fixpoint increm. u = " << fixpointIncU << "\n";
+        VLOG(1) << "[Kovasznay] fixpoint increm. p = " << fixpointIncP << "\n";
+        VLOG(1) << "[Kovasznay] fixpoint error     = " << fixpointErr  << "\n";
 
         p = oseen.pressure();
         this->exportResults( subiter, U, p );
@@ -503,14 +503,14 @@ Kovasznay::run()
     } // nonlinear/subiteration loop
 
     // --- post processing
-    Debug() << "[Kovasznay] #subiter = " << subiter << "\n";
+    VLOG(1) << "[Kovasznay] #subiter = " << subiter << "\n";
 #endif
-    Debug() << "[Kovasznay] total timings:\n";
+    VLOG(1) << "[Kovasznay] total timings:\n";
     std::map<std::string,std::pair<boost::timer,double> >::iterator it;
 
     for ( it=M_timers.begin(); it!=M_timers.end(); ++it )
     {
-        Debug() << "[Kovasznay]   " << it->first << ": "
+        VLOG(1) << "[Kovasznay]   " << it->first << ": "
                 << it->second.second << "\n";
     }
 
@@ -567,18 +567,18 @@ Kovasznay::exportResults( int iter,
     if ( M_divError < 0.0 )
         M_divError = divError;
 
-    Debug() << "[Kovasznay] ||u-u_ex||_L2 = " << uErrorL2 << "\n";
-    Debug() << "[Kovasznay] ||u-u_ex||_H1 = " << uErrorH1 << "\n";
-    Debug() << "[Kovasznay] ||p-p_ex||_L2 = " << pErrorL2 << "\n";
-    Debug() << "[Kovasznay] ||div u ||_L2 = " << divError << "\n";
+    VLOG(1) << "[Kovasznay] ||u-u_ex||_L2 = " << uErrorL2 << "\n";
+    VLOG(1) << "[Kovasznay] ||u-u_ex||_H1 = " << uErrorH1 << "\n";
+    VLOG(1) << "[Kovasznay] ||p-p_ex||_L2 = " << pErrorL2 << "\n";
+    VLOG(1) << "[Kovasznay] ||div u ||_L2 = " << divError << "\n";
 
-    Debug() << "[Kovasznay] ||u-u_ex||_L2 / ||u_0-u_ex||_L2 = "
+    VLOG(1) << "[Kovasznay] ||u-u_ex||_L2 / ||u_0-u_ex||_L2 = "
             << uErrorL2/M_uErrorL2 << "\n";
-    Debug() << "[Kovasznay] ||u-u_ex||_H1 / ||u_0-u_ex||_H1 = "
+    VLOG(1) << "[Kovasznay] ||u-u_ex||_H1 / ||u_0-u_ex||_H1 = "
             << uErrorH1/M_uErrorH1 << "\n";
-    Debug() << "[Kovasznay] ||p-p_ex||_L2 / ||p_0-p_ex||_L2 = "
+    VLOG(1) << "[Kovasznay] ||p-p_ex||_L2 / ||p_0-p_ex||_L2 = "
             << pErrorL2/M_pErrorL2 << "\n";
-    Debug() << "[Kovasznay] ||div u ||_L2 / ||div u_0 ||_L2 = "
+    VLOG(1) << "[Kovasznay] ||div u ||_L2 / ||div u_0 ||_L2 = "
             << divError/M_divError << "\n";
 
     M_timers["doexport"].first.restart();
@@ -602,7 +602,7 @@ Kovasznay::exportResults( int iter,
     } // export
 
     M_timers["doexport"].second += M_timers["doexport"].first.elapsed();
-    Debug() << "[Kovasznay] exporting time: "
+    VLOG(1) << "[Kovasznay] exporting time: "
             << M_timers["doexport"].first.elapsed()
             << "\n";
 } // Kovasznay::exportResults

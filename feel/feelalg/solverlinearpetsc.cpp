@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2005-11-27
 
   Copyright (C) 2005,2006 EPFL
@@ -24,7 +24,7 @@
 */
 /**
    \file solverlinearpetsc.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-11-27
  */
 // $Id: petsc_linear_solver.C,v 1.5 2005/05/11 23:12:00 benkirk Exp $
@@ -54,6 +54,7 @@
 #include <feel/feelalg/functionspetsc.hpp>
 #include <feel/feelalg/preconditionerpetsc.hpp>
 
+
 namespace Feel
 {
 
@@ -71,7 +72,7 @@ extern "C"
         Preconditioner<double> * preconditioner = static_cast<Preconditioner<double>*>( ctx );
         preconditioner->init();
 
-        std::cout << "init prec\n";
+        LOG(INFO) << "init prec\n";
 
         return 0;
     }
@@ -83,7 +84,7 @@ extern "C"
 
         VectorPetsc<double> x_vec( x );
         VectorPetsc<double> y_vec( y );
-        std::cout << "apply prec\n";
+        LOG(INFO) << "apply prec\n";
         preconditioner->apply( x_vec,y_vec );
 
         return 0;
@@ -96,7 +97,7 @@ extern "C"
         CHKERRQ( ierr );
         Preconditioner<double> * preconditioner = static_cast<Preconditioner<double>*>( ctx );
         preconditioner->init();
-        std::cout << "init prec\n";
+        LOG(INFO) << "init prec\n";
         return 0;
     }
 
@@ -106,7 +107,7 @@ extern "C"
         PetscErrorCode ierr = PCShellGetContext( pc,&ctx );
         CHKERRQ( ierr );
         Preconditioner<double> * preconditioner = static_cast<Preconditioner<double>*>( ctx );
-        std::cout << "apply prec\n";
+        LOG(INFO) << "apply prec\n";
         VectorPetsc<double> x_vec( x );
         VectorPetsc<double> y_vec( y );
 
@@ -265,8 +266,11 @@ void SolverLinearPetsc<T>::init ()
         CHKERRABORT( this->worldComm().globalComm(),ierr );
 
         //If there is a preconditioner object we need to set the internal setup and apply routines
+        //LOG(INFO) << "preconditioner: "  << this->M_preconditioner << "\n";
         if ( this->M_preconditioner )
         {
+            PCSetType(_M_pc, PCSHELL);
+
             PCShellSetContext( _M_pc,( void* )this->M_preconditioner.get() );
             PCShellSetSetUp( _M_pc,__feel_petsc_preconditioner_setup );
             PCShellSetApply( _M_pc,__feel_petsc_preconditioner_apply );
@@ -476,13 +480,13 @@ SolverLinearPetsc<T>::solve ( MatrixSparse<T> const&  matrix_in,
 
     if ( reason==KSP_DIVERGED_INDEFINITE_PC )
     {
-        Log() << "[solverlinearpetsc] Divergence because of indefinite preconditioner;\n";
-        Log() << "[solverlinearpetsc] Run the executable again but with '-pc_factor_shift_type POSITIVE_DEFINITE' option.\n";
+        LOG(INFO) << "[solverlinearpetsc] Divergence because of indefinite preconditioner;\n";
+        LOG(INFO) << "[solverlinearpetsc] Run the executable again but with '-pc_factor_shift_type POSITIVE_DEFINITE' option.\n";
     }
 
     else if ( reason<0 )
     {
-        Log() <<"[solverlinearpetsc] Other kind of divergence: this should not happen.\n";
+        LOG(INFO) <<"[solverlinearpetsc] Other kind of divergence: this should not happen.\n";
     }
 
     bool hasConverged;
@@ -510,7 +514,17 @@ SolverLinearPetsc<T>::solve ( MatrixSparse<T> const&  matrix_in,
 
 }
 
+template <typename T>
+boost::tuple<bool,unsigned int, typename SolverLinearPetsc<T>::real_type>
+SolverLinearPetsc<T>::solve ( MatrixShell<T>  const &mat,
+                              Vector<T> & x,
+                              Vector<T> const& b,
+                              const double tolerance,
+                              const unsigned int maxit,
+                              bool transpose )
+{
 
+}
 
 template <typename T>
 void

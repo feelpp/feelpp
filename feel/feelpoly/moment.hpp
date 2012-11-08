@@ -3,7 +3,7 @@
   This file is part of the Feel library
 
   Author(s): Gilles Steiner <gilles.steiner@epfl.ch>
-             Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+             Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2005-12-05
 
   Copyright (C) 2005,2006 EPFL

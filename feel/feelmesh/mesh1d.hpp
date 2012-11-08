@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2005-11-09
 
   Copyright (C) 2005,2006 EPFL
@@ -24,7 +24,7 @@
 */
 /**
    \file mesh1d.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-11-09
  */
 #ifndef __Mesh1D_H
@@ -120,6 +120,10 @@ public:
     typedef typename super_faces::faces_type faces_type;
     typedef typename super_faces::face_type face_type;
     typedef face_type edge_type;
+
+    typedef super_faces super_edges;
+    typedef typename super_edges::marker_face_iterator marker_edge_iterator;
+    typedef typename super_edges::marker_face_const_iterator marker_edge_const_iterator;
 
     typedef Mesh1D<Shape> self_type;
     typedef boost::shared_ptr<self_type> self_ptrtype;

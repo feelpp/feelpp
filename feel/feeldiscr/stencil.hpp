@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2011-12-23
 
   Copyright (C) 2011 Université Joseph Fourier (Grenoble I)
@@ -872,7 +872,7 @@ Stencil<X1,X2>::computeGraph( size_type hints, mpl::bool_<true> )
                         for ( size_type j=0; j<n2_dof_on_element; j++ )
                         {
                             const size_type jg = element_dof2[j];
-                            //Debug() << "computeGraph : ig:" << ig1 << ", lig: " << ig1-first1_dof_on_proc  << ", jg = " << jg << "\n";
+                            //VLOG(1) << "computeGraph : ig:" << ig1 << ", lig: " << ig1-first1_dof_on_proc  << ", jg = " << jg << "\n";
 #if 0
                             // See if jg is in the sorted range
                             std::pair<std::vector<size_type>::iterator,
@@ -928,7 +928,7 @@ Stencil<X1,X2>::computeGraph( size_type hints, mpl::bool_<true> )
                         {
 
 #if 0
-                            Debug() << "element id " << elem.id()
+                            VLOG(1) << "element id " << elem.id()
                                     << ", element neighbor id " << neighbor_id
                                     << " in proc " << neighbor_process_id << "\n";
 #endif
@@ -936,7 +936,7 @@ Stencil<X1,X2>::computeGraph( size_type hints, mpl::bool_<true> )
                                                          neighbor_process_id ) );
 
 #if 0
-                            Debug() << "found neighbor of element id " << elem.id()
+                            VLOG(1) << "found neighbor of element id " << elem.id()
                                     << ", element neighbor id " << neighbor->id()
                                     << " in proc " << neighbor->processId() << "\n";
 #endif
@@ -969,7 +969,7 @@ Stencil<X1,X2>::computeGraph( size_type hints, mpl::bool_<true> )
                                         graph.test ( Pattern::EXTENDED ) )
 
                                 {
-                                    //Debug() << "found element in proc " << neighbor_process_id << " that shares dof\n";
+                                    //VLOG(1) << "found element in proc " << neighbor_process_id << " that shares dof\n";
                                     for ( size_type j=0; j<n_dof_on_neighbor; j++ )
                                     {
                                         const size_type jg = neighbor_dof[j];
@@ -1002,7 +1002,7 @@ Stencil<X1,X2>::computeGraph( size_type hints, mpl::bool_<true> )
 #if 0
 
                     for ( int k = 0; k < row.get<2>().size(); ++k )
-                        Debug() << "row[ " << ig1 - first1_dof_on_proc << ","<< k << " ]=" << row.get<2>()[k] << "\n";
+                        VLOG(1) << "row[ " << ig1 - first1_dof_on_proc << ","<< k << " ]=" << row.get<2>()[k] << "\n";
 
 #endif
                 } // only dof on proc

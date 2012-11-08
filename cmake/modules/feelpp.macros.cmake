@@ -5,7 +5,7 @@ INCLUDE(ParseArguments)
 macro(feelpp_add_application)
 
   PARSE_ARGUMENTS(FEELPP_APP
-    "SRCS;LINK_LIBRARIES;CFG;GEO;MESH;LABEL;DEFS;DEPS;SCRIPTS"
+    "SRCS;LINK_LIBRARIES;CFG;GEO;MESH;LABEL;DEFS;DEPS;SCRIPTS;TEST"
     "NO_TEST;EXCLUDE_FROM_ALL;ADD_OT"
     ${ARGN}
     )
@@ -40,12 +40,19 @@ macro(feelpp_add_application)
   endif()
   target_link_libraries( ${execname} ${FEELPP_APP_LINK_LIBRARIES} ${FEELPP_LIBRARIES})
   INSTALL(PROGRAMS "${CMAKE_CURRENT_BINARY_DIR}/${execname}"  DESTINATION bin COMPONENT Bin)
-  add_test(${execname} ${CMAKE_CURRENT_BINARY_DIR}/${execname})
+  if ( NOT FEELPP_APP_NO_TEST )
+    add_test(NAME ${execname} COMMAND ${CMAKE_CURRENT_BINARY_DIR}/${execname} ${FEELPP_APP_TEST})
+  endif()
   #add_dependencies(crb ${execname})
   # Add label if provided
   if ( FEELPP_APP_LABEL )
     set_property(TARGET ${execname} PROPERTY LABELS ${FEELPP_APP_LABEL})
-    set_property(TEST ${execname} PROPERTY LABELS ${FEELPP_APP_LABEL})
+    if ( NOT FEELPP_APP_NO_TEST )
+      set_property(TEST ${execname} PROPERTY LABELS ${FEELPP_APP_LABEL})
+    endif()
+    if ( TARGET ${FEELPP_APP_LABEL} )
+      add_dependencies( ${FEELPP_APP_LABEL} ${execname} )
+    endif()
   endif()
 
 
@@ -134,7 +141,9 @@ macro(feelpp_add_test)
     add_executable(${targetname} ${filename})
     target_link_libraries(${targetname} ${FEELPP_LIBRARIES} ${FEELPP_TEST_LINK_LIBRARIES} ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY} )
     set_property(TARGET ${targetname} PROPERTY LABELS testsuite)
-    add_dependencies(testsuite ${targetname})
+    if ( TARGET testsuite )
+      add_dependencies(testsuite ${targetname})
+    endif()
 
     add_test(
       NAME test_${FEELPP_TEST_NAME}

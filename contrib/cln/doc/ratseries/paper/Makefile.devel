@@ -1,0 +1,38 @@
+# How to use the Makefile
+#
+# LATEX, BIBTEX, DVIPS, RM, GZIP and UUENCODE are configuration
+# variables which you can change to point to the appropriate
+# location on your system. You do not need to change anything else.
+#
+LATEX=latex
+BIBTEX=bibtex
+DVIPS=dvips -D600
+RM=rm -f
+GZIP=gzip
+UUENCODE=uuencode
+
+# `make' creates binsplit.dvi and binsplit.ps
+#
+all:	binsplit.dvi binsplit.ps
+
+# `make binsplit.dvi' creates binsplit.dvi
+#
+binsplit.dvi:	binsplit.tex binsplit.bib
+	$(LATEX) binsplit.tex
+	$(BIBTEX) binsplit
+	$(LATEX) binsplit.tex
+	$(LATEX) binsplit.tex
+
+# `make binsplit.ps' creates binsplit.ps
+#
+binsplit.ps:	binsplit.dvi
+	$(DVIPS) -o binsplit.ps binsplit.dvi
+
+# `make clean' removes all redundant files produced by LaTeX and BibTeX 
+#
+clean:
+	-$(RM) *.aux *.log *.toc *.idx *.lof *.lot *.bbl *.blg
+
+# Do not type the quotes!
+#
+# End of Help
