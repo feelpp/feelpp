@@ -62,12 +62,6 @@ Convection_crb::updateResidual( const vector_ptrtype& X, vector_ptrtype& R )
 
     double gr( M_current_Grashofs );
     double pr = M_current_Prandtl;
-<<<<<<< HEAD
-    
-=======
-    double sqgrpr( 1/( pr*math::sqrt( gr ) ) );
-
->>>>>>> 3bd57b367fafcb4978de81fc027f501f7acc25f4
     double gamma( this->vm()["penalbc"]. as<double>() );
     double k=this->vm()["k"]. as<double>();
     double nu=this->vm()["nu"]. as<double>();
