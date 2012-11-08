@@ -284,7 +284,7 @@ Convection_crb::update( parameter_type const& mu )
 {    
     D->zero();
     
-    for ( size_type q = 0; q < (M_thetaAq.size()-1); ++q )
+    for ( size_type q = 0; q < (M_betaAq.size()-1); ++q )
     {
         for ( size_type m = 0; m < mMaxA(q); ++m )
         {
