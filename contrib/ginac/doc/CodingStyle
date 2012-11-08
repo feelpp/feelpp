@@ -1,0 +1,384 @@
+GiNaC Coding Style
+==================
+
+This document attempts to describe the preferred coding style for GiNaC.
+
+
+0. Preface
+----------
+
+Different people have different ideas of how source code should be formatted
+to be most beautiful and/or useful to work with. GiNaC itself was developed
+by a group of people whose ideas on these matters differed in some details.
+It also evolved over the course of the years, and received contributions
+from outside. As a result, the GiNaC source is not in all places 100%
+consistent with the rules laid out in this document. Old code will
+eventually be converted, however. New code should always be in this style.
+
+Sometimes it's also not possible (or desirable) to give precise rules for
+every single occasion. Should you write "2*x+y", "2*x + y" or "2 * x + y"?
+We don't know. We also don't care (much). Use your own discretion.
+
+This document does not intend to codify the "perfect" programming style, but
+please try to follow these rules. It will make our (and your) lives easier. :-)
+
+
+1. General Conventions
+----------------------
+
+Any code in GiNaC should comply to the C++ standard, as defined by ISO/IEC
+14882:1998(E). Don't use compiler-specific language extensions unless they
+are surrounded by appropriate "#ifdef"s, and you also provide a compliant
+version of the code in question for other compilers.
+
+Source code formatting assumes a fixed-width font. You do not need to restrict
+yourself to 80 columns, except in comment blocks, but try to avoid overlong
+lines.
+
+
+2. Indentation and Alignment
+----------------------------
+
+Short version: Indentation and alignment should be tab-size independent. Use
+one Tab for each indentation level. Use spaces for aligning portions of code.
+
+Explanation: "Indentation" and "alignment" are two related, but different
+things. To indent means to set a section of code in from the left margin,
+to facilitate distinguishing "contained" sections (such as a sequence of lines
+inside an "if" statement) from their "containers" (in this case, the "if"
+statement itself). For nested constructs, indentation is carried out in
+several levels:
+
+No indentation
+Begin 1
+	One level of indentation
+	Begin 2
+		Two levels of indentation
+		etc.
+	End 2
+End 1
+
+To align, on the other hand, means to make parts of the text start on the
+same column on the screen, to make it look more tidy and clear.
+
+Here is an example that features both indentation and alignment:
+
+class person {
+	string name;  // person's full name
+	int age;      // age in years
+};
+
+The inner part of the class definition (the part between the braces) is
+_indented_ by one level. The comments at the end of these two lines are
+_aligned_ to put them directly below each other on the screen.
+
+Now why are we making such a fuss about the difference between these two?
+This is where the "tab-size independent" part comes in.
+
+Both indentation and alignment are often done with Tab characters ('\t' or
+ASCII 0x09). And in theory, that would be the best and logical choice.
+Unfortunately, there is no general agreement about the placement of the
+tabulator stops in effect.
+
+Traditionally, tab stops are every 8 characters. Many programmers indent with
+Tabs because it's only one keypress, but they feel that a tab-size of 8
+pushes the code too far to the right, so they change it to 4 characters (or
+some other value) in their editors. When alignment is also performed with
+tabs this results in misaligned code unless the tab-size is set to the
+exact same value the author of the code used.
+
+Take the "person" class definition from above as an example (here and in
+the following, ':' represents a Tab, while '.' represents a Space). Assume
+that we had done both indentation and alignment with Tabs, with a tab-size
+of 8:
+
+|-------|-------|-------|-------|-------|-------|------- <- tab stops
+class person {
+::::::::string name;::::// person's full name
+::::::::int age;::::::::// age in years
+};
+
+Now somebody who prefers a tab-size of 4 looks at the code:
+
+|---|---|---|---|---|---|---|---|---|---|---|---|---|--- <- tab stops
+class person {
+::::string name;::::// person's full name
+::::int age;::::// age in years
+};
+
+The indentation is still correct, but the two comments are now misaligned.
+
+The default indentation mode of the Emacs editor is even worse: it mixes
+Tabs (which it assumes to be of size 4) and spaces for both indentation and
+alignment, with an effective amount of 2 character widths per indentation
+level. The resulting code usually looks like a complete mess for any tab-size
+setting other than 4.
+
+So, how do you make it tab-size independent? One solution would be to not
+use any Tab characters at all. This, however, would hard-code the amount
+of space used for indentation, something which so many people disagree
+about.
+
+Instead, we adopted a different approach in GiNaC: Tabs are used exclusively
+for indentation (one Tab per level); spaces are used for alignment. This
+gets you the best of both worlds: It allows every programmer to change the
+tab-size (and thus, the visual amount of indentation) to his/her own desire,
+but the code still looks OK at any setting.
+
+This is how our class definition should be entered using this scheme
+(remember, ':' are Tabs, '.' are Spaces):
+
+|-------|-------|-------|-------|-------|-------|------- <- tab stops
+class person {
+::::::::string name;..// person's full name
+::::::::int age;......// age in years
+};
+
+8 characters indentation are too much for you? No problem. Just change the
+tab-size, and it still looks good:
+
+|---|---|---|---|---|---|---|---|---|---|---|---|---|--- <- tab stops
+class person {
+::::string name;..// person's full name
+::::int age;......// age in years
+};
+
+Some more examples (shown with a tab-size of 4):
+
+// here, we have aligned the parameter declarations
+int foo(int i1, int i2, int i3,
+........string s1, string s2,
+........vector<int> &result)
+{
+::::// inside the function, one level of indentation
+::::if (i1 == i2) {
+::::::::// inside the "if", two levels of indentation
+::::::::return 0;
+::::}
+::::// outside the "if", one level again
+
+::::// indentation is also used here:
+::::static int fibonacci[] = {
+::::::::1, 2, 3, 5, 8, 13,
+::::::::21, 34, 55, 89, 144
+::::};
+
+::::// and here:
+::::int x = bar(
+::::::::i1 - i2,
+::::::::i2 - i3,
+::::::::i3 - i1
+::::);
+
+::::// continuation lines, however, are aligned, not indented:
+::::cout << "i1 = " << i1 << ", i2 = " << i2 << ", i3 = " << i3
+::::.....<< ", string1 = " << s1
+::::.....<< ", string2 = " << s2 << endl;
+
+::::if (s1 == s2)
+::::::::return i1;.......// these two comments
+::::else
+::::::::return i2 + i3;..// are also aligned
+}
+
+
+3. Whitespace
+-------------
+
+A ',' is always followed by one space:
+
+	int a[] = {1, 2, 3};
+
+There is no space between a function name and the following opening
+parenthesis. There are no spaces after the opening and before the closing
+parentheses, either:
+
+	x = foo(i1, i2, i3);
+
+There is, however, one space after "if", "for", "while", "switch", and
+"catch" (these are not functions, after all):
+
+	if (i1 == i2)
+
+You should place one space before and behind any binary operator (except
+'::', '[]', '.', '.*', '->' and '->*'; for ',' see above). There is no space
+after (or before, in the case of postfix '++' and '--') unary operators:
+
+	a = b[i] + *p++;
+	x = -(y + z) / 2;
+
+There are no spaces around the '<' and '>' used to designate template
+parameters. Unfortunately, a design flaw in C++ requires putting a space
+between two consecutive closing '>'s. We suggest that in this case you also
+put a space after the opening '<':
+
+	vector<int> vi;
+	vector< list<int> > vli;
+
+'*' and '&' in the declaration of pointer-to and reference-to variables
+have a space before, but not after them:
+
+	int *p;
+	int &r;
+
+There is still an ongoing debate amongst GiNaC developers whether reference
+parameters should be written as "foo(string &s)" or "foo(string & s)". :-)
+
+The following section has additional examples for the proper use of
+whitespace.
+
+
+4. Braces
+---------
+
+One word: K&R, also known as "One True Brace Style", suitably extended for
+C++. The opening brace goes at the end of the line, except for function
+bodies. Really short functions can be written in one single line.
+
+	if (a == b) {
+		// do something
+	} else if (a > b) {
+		// do something else
+	} else {
+		// must be a < b
+	}
+
+	for (int i = 0; i < 5; ++i) {
+		// "++i" is preferred over "i++" because, in the case of
+		// overloaded operators, the prefix "++" is the simpler one
+		// (the postfix "++" usually has to use a temporary variable
+		// to save the previous state of the object for returning
+		// it to the caller)
+	}
+
+	while (a < b) {
+		// loop body
+	}
+
+	do {
+		// loop body
+	} while (a < b);
+
+	switch (x) {
+	case 0:
+		// first case
+		break;
+	case 1:
+		// second case
+		break;
+	default:
+		// default case
+		break;
+	}
+
+	try {
+		// do something dangerous
+	} catch (std::exception &e) {
+		// we're caught
+	} catch (...) {
+		// catchall
+	}
+
+	class foo {
+	public:
+		foo(int i) : x(i)
+		{
+			// under construction
+		}
+
+		int get_x() const { return x; }
+
+	protected:
+		void schwupp(char c);
+
+	private:
+		int x;
+	};
+
+	namespace bar {
+		// a foo by any other name...
+	}
+
+	void foo::schwupp(char c)
+	{
+		// diwupp
+	}
+
+Also take note of the use of whitespace in the above examples.
+
+
+5. Naming
+---------
+
+C++ identifiers (names of classes, types, functions, variables, etc.) should
+not contain any uppercase characters. Preprocessor macros (anything that is
+"#define"d), on the other hand, should not contain any lowercase characters.
+There are some exceptions however, like "Li()" and "is_ex_the_function()"
+(a macro). Not to mention the "GiNaC" namespace...
+
+Names that consist of multiple words should use underscores to separate the
+words (for example, "construct_from_int").
+
+Don't use naming conventions such as "Hungarian notation" where the type,
+scope, or context of an identifier is encoded in its name as a prefix,
+like "T" or "C" for classes ("TList"), "f" or "m" for member variables, etc.
+Try to follow the existing naming conventions in GiNaC.
+
+Names of C++ source files end in ".cpp" (not ".C", ".cc", or ".cxx").
+Names of header files end in ".h" (not ".hpp", ".H", ".hh", or ".hxx").
+
+
+6. Namespaces
+-------------
+
+Don't place "using namespace std;", "using std::vector;" or anything like this
+into public library header files. Doing so would force the import of all or
+parts of the "std" namespace upon all users of the library, even if they don't
+want it. Always fully qualify identifiers in the headers.
+
+Definitions that are only used internally within the library but have to be
+placed in a public header file for one reason or another should be put into
+a namespace called "internal" inside the "GiNaC" namespace.
+
+
+7. Miscellaneous Conventions
+----------------------------
+
+Don't put the expression after a "return" statement in parentheses. It's
+"return x;", not "return (x);" or "return(x);".
+
+Don't put an empty "return;" statement at the end of a function that doesn't
+return a value.
+
+Try to put declarations of local variables close to the point where they are
+used for the first time. C++ is not like C, where all declarations have to
+be at the beginning of a block.
+
+It's "const string &s", not "string const &s".
+
+"goto" labels (if you have to use them) always start at column 1.
+
+Don't deliberately modify code to dodge compiler warnings, unless it
+clarifies the code in question to a human reader. This includes the use
+of "UNUSED()" macros and similar contraptions.
+
+Don't use more than two consecutive empty lines. Use single empty lines to
+separate logical blocks of code (preferably, each of these blocks also has an
+explanatory comment in front). Use two lines when you feel that one line is
+not enough (to separate two functions, for example). But not more.
+
+
+8. Documentation
+----------------
+
+Every class, class member, and function definition should have a comment
+in doxygen format (Javadoc style) in front of it, explaining the object's
+purpose.
+
+Comments inside functions should give the reader a general idea of the
+algorithms used in the function, and describe the pragmatics behind the
+code. To quote Linus Torvalds: "You want your comments to tell WHAT your
+code does, not HOW.".
+
+If your algorithms are covered in detail in some paper or thesis, it's a
+good idea to put in a short bibliographical note.

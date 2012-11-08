@@ -1,0 +1,361 @@
+#This file was created by <bruno> Sun Feb 16 14:24:48 1997
+#LyX 0.10 (C) 1995 1996 Matthias Ettrich and the LyX Team
+\lyxformat 2.10
+\textclass article
+\begin_preamble
+\catcode`@=11 % @ ist ab jetzt ein gewoehnlicher Buchstabe
+\def\mod#1{\allowbreak \mkern8mu \mathop{\operator@font mod}\,\,{#1}}
+\def\pmod#1{\allowbreak \mkern8mu \left({\mathop{\operator@font mod}\,\,{#1}}\right)}
+\catcode`@=12 % @ ist ab jetzt wieder ein Sonderzeichen
+
+\end_preamble
+\language default
+\inputencoding latin1
+\fontscheme default
+\epsfig dvips
+\papersize a4paper 
+\paperfontsize 12 
+\baselinestretch 1.00 
+\secnumdepth 3 
+\tocdepth 3 
+\paragraph_separation indent 
+\quotes_language english 
+\quotes_times 2 
+\paperorientation portrait 
+\papercolumns 0 
+\papersides 1 
+\paperpagestyle plain 
+
+\layout Standard
+\cursor 47 
+The Legendre polynomials 
+\begin_inset Formula  \( P_{n}(x) \)
+\end_inset 
+
+ are defined through 
+\begin_inset Formula 
+\[
+P_{n}(x)=\frac{1}{2^{n}n!}\cdot \left( \frac{d}{dx}\right) ^{n}(x^{2}-1)^{n}\]
+
+\end_inset 
+
+(For a motivation of the 
+\begin_inset Formula  \( 2^{n} \)
+\end_inset 
+
+ in the denominator, look at 
+\begin_inset Formula  \( P_{n}(x) \)
+\end_inset 
+
+ modulo an odd prime 
+\begin_inset Formula  \( p \)
+\end_inset 
+
+, and observe that 
+\begin_inset Formula  \( P_{n}(x)\equiv P_{p-1-n}(x)\mod p \)
+\end_inset 
+
+ for 
+\begin_inset Formula  \( 0\leq n\leq p-1 \)
+\end_inset 
+
+.
+ This wouldn't hold if the 
+\begin_inset Formula  \( 2^{n} \)
+\end_inset 
+
+ factor in the denominator weren't present.
+)
+\layout Description
+
+Theorem:
+\layout Standard
+
+
+\begin_inset Formula  \( P_{n}(x) \)
+\end_inset 
+
+ satisfies the recurrence relation
+\layout Standard
+
+
+\begin_inset Formula 
+\[
+P_{0}(x)=1\]
+
+\end_inset 
+
+
+\layout Standard
+
+
+\begin_inset Formula 
+\[
+(n+1)\cdot P_{n+1}(x)=(2n+1)x\cdot P_{n}(x)-n\cdot P_{n-1}(x)\]
+
+\end_inset 
+
+for 
+\begin_inset Formula  \( n\geq 0 \)
+\end_inset 
+
+ and the differential equation 
+\begin_inset Formula  \( (1-x^{2})\cdot P_{n}^{''}(x)-2x\cdot P_{n}^{'}(x)+(n^{2}+n)\cdot P_{n}(x)=0 \)
+\end_inset 
+
+ for all 
+\begin_inset Formula  \( n\geq 0 \)
+\end_inset 
+
+.
+
+\layout Description
+
+Proof:
+\layout Standard
+
+Let 
+\begin_inset Formula  \( F:=\sum ^{\infty }_{n=0}P_{n}(x)\cdot z^{n} \)
+\end_inset 
+
+ be the generating function of the sequence of polynomials.
+ It is the diagonal series of the power series
+\begin_inset Formula 
+\[
+G:=\sum _{m,n=0}^{\infty }\frac{1}{2^{n}m!}\cdot \left( \frac{d}{dx}\right) ^{m}(x^{2}-1)^{n}\cdot y^{m}\cdot z^{n}\]
+
+\end_inset 
+
+Because the Taylor series development theorem holds in formal power series
+ rings (see [1], section 2.
+16), we can simplify
+\begin_inset Formula 
+\begin{eqnarray*}
+G & = & \sum _{n=0}^{\infty }\frac{1}{2^{n}}\cdot \left( \sum _{m=0}^{\infty }\frac{1}{m!}\cdot \left( \frac{d}{dx}\right) ^{m}(x^{2}-1)^{n}\cdot y^{m}\right) \cdot z^{n}\\
+ & = & \sum _{n=0}^{\infty }\frac{1}{2^{n}}\cdot \left( (x+y)^{2}-1\right) ^{n}\cdot z^{n}\\
+ & = & \frac{1}{1-\frac{1}{2}\left( (x+y)^{2}-1\right) z}
+\end{eqnarray*}
+
+\end_inset 
+
+We take over the terminology from the 
+\begin_inset Quotes eld
+\end_inset 
+
+diag_rational
+\begin_inset Quotes erd
+\end_inset 
+
+ paper; here 
+\begin_inset Formula  \( R=Q[x] \)
+\end_inset 
+
+ and 
+\begin_inset Formula  \( M=Q[[x]] \)
+\end_inset 
+
+ (or, if you like it better, 
+\begin_inset Formula  \( M=H(C) \)
+\end_inset 
+
+, the algebra of functions holomorphic in the entire complex plane).
+ 
+\begin_inset Formula  \( G\in M[[y,z]] \)
+\end_inset 
+
+ is rational; hence 
+\begin_inset Formula  \( F \)
+\end_inset 
+
+ is algebraic over 
+\begin_inset Formula  \( R[z] \)
+\end_inset 
+
+.
+ Let's proceed exactly as in the 
+\begin_inset Quotes eld
+\end_inset 
+
+diag_series
+\begin_inset Quotes erd
+\end_inset 
+
+ paper.
+ 
+\begin_inset Formula  \( F(z^{2}) \)
+\end_inset 
+
+ is the coefficient of 
+\begin_inset Formula  \( t^{0} \)
+\end_inset 
+
+ in
+\begin_inset Formula 
+\[
+G(zt,\frac{z}{t})=\frac{2t}{2t-\left( (x+zt)^{2}-1\right) z}=\frac{2t}{-z^{3}\cdot t^{2}+2(1-xz^{2})\cdot t+(z-x^{2}z)}\]
+
+\end_inset 
+
+The splitting field of the denominator is 
+\begin_inset Formula  \( L=Q(x)(z)(\alpha ) \)
+\end_inset 
+
+ where 
+\begin_inset Formula 
+\[
+\alpha _{1/2}=\frac{1-xz^{2}\pm \sqrt{1-2xz^{2}+z^{4}}}{z^{3}}\]
+
+\end_inset 
+
+
+\begin_inset Formula 
+\[
+\alpha =\alpha _{1}=\frac{2}{z^{3}}-\frac{2x}{z}+\frac{1-x^{2}}{2}z+\cdots \in Q(x)[[z]][\frac{1}{z}]\]
+
+\end_inset 
+
+
+\begin_inset Formula 
+\[
+\alpha _{2}=\frac{x^{2}-1}{2}z+\cdots \in Q(x)[[z]][\frac{1}{z}]\]
+
+\end_inset 
+
+The partial fraction decomposition of 
+\begin_inset Formula  \( G(zt,\frac{z}{t}) \)
+\end_inset 
+
+ reads
+\begin_inset Formula 
+\[
+G(zt,\frac{z}{t})=-\frac{2}{z^{3}}\cdot \frac{1}{\alpha _{1}-\alpha _{2}}\cdot \left( \frac{\alpha _{1}}{t-\alpha _{1}}-\frac{\alpha _{2}}{t-\alpha _{2}}\right) \]
+
+\end_inset 
+
+It follows that
+\begin_inset Formula 
+\[
+F(z^{2})=-\frac{2}{z^{3}}\cdot \frac{1}{\alpha _{1}-\alpha _{2}}\cdot \left( \frac{\alpha _{1}}{0-\alpha _{1}}-0\right) =\frac{1}{\sqrt{1-2xz^{2}+z^{4}}}\]
+
+\end_inset 
+
+hence
+\begin_inset Formula 
+\[
+F(z)=\frac{1}{\sqrt{1-2xz+z^{2}}}\]
+
+\end_inset 
+
+
+\layout Standard
+
+It follows that 
+\begin_inset Formula  \( (1-2xz+z^{2})\cdot \frac{d}{dz}F+(z-x)\cdot F=0 \)
+\end_inset 
+
+.
+ This is equivalent to the claimed recurrence.
+
+\layout Standard
+
+Starting from the closed form for 
+\begin_inset Formula  \( F \)
+\end_inset 
+
+, we compute a linear relation for the partial derivatives of 
+\begin_inset Formula  \( F \)
+\end_inset 
+
+.
+ Write 
+\begin_inset Formula  \( \partial _{x}=\frac{d}{dx} \)
+\end_inset 
+
+ and 
+\begin_inset Formula  \( \Delta _{z}=z\frac{d}{dz} \)
+\end_inset 
+
+.
+ One computes
+\begin_inset Formula 
+\[
+F=1\cdot F\]
+
+\end_inset 
+
+
+\begin_inset Formula 
+\[
+\left( 1-2xz+z^{2}\right) \cdot \partial _{x}F=z\cdot F\]
+
+\end_inset 
+
+
+\begin_inset Formula 
+\[
+\left( 1-2xz+z^{2}\right) ^{2}\cdot \partial _{x}^{2}F=3z^{2}\cdot F\]
+
+\end_inset 
+
+
+\begin_inset Formula 
+\[
+\left( 1-2xz+z^{2}\right) \cdot \Delta _{z}F=(xz-z^{2})\cdot F\]
+
+\end_inset 
+
+
+\begin_inset Formula 
+\[
+\left( 1-2xz+z^{2}\right) ^{2}\cdot \partial _{x}\Delta _{z}F=(z+xz^{2}-2z^{3})\cdot F\]
+
+\end_inset 
+
+
+\begin_inset Formula 
+\[
+\left( 1-2xz+z^{2}\right) ^{2}\cdot \Delta _{z}^{2}F=\left( xz+(x^{2}-2)z^{2}-xz^{3}+z^{4}\right) \cdot F\]
+
+\end_inset 
+
+Solve a homogeneous 
+\begin_inset Formula  \( 5\times 6 \)
+\end_inset 
+
+ system of linear equations over 
+\begin_inset Formula  \( Q(x) \)
+\end_inset 
+
+ to get 
+\begin_inset Formula 
+\[
+\left( 1-2xz+z^{2}\right) ^{2}\cdot \left( (-2x)\cdot \partial _{x}F+(1-x^{2})\cdot \partial _{x}^{2}F+\Delta _{z}F+\Delta _{z}^{2}F\right) =0\]
+
+\end_inset 
+
+Divide by the first factor to get
+\begin_inset Formula 
+\[
+(-2x)\cdot \partial _{x}F+(1-x^{2})\cdot \partial _{x}^{2}F+\Delta _{z}F+\Delta _{z}^{2}F=0\]
+
+\end_inset 
+
+This is equivalent to the claimed equation 
+\begin_inset Formula  \( (1-x^{2})\cdot P_{n}^{''}(x)-2x\cdot P_{n}^{'}(x)+(n^{2}+n)\cdot P_{n}(x)=0 \)
+\end_inset 
+
+.
+
+\layout Bibliography
+
+[1] Bruno Haible: D-finite power series in several variables.
+ 
+\shape italic 
+Diploma thesis, University of Karlsruhe, June 1989
+\shape default 
+.
+ Sections 2.
+14, 2.
+15 and 2.
+22.
+

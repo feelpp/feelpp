@@ -1,6 +1,5 @@
 #define BOOST_TEST_MODULE test_geotool
-#include <boost/test/unit_test.hpp>
-using boost::unit_test::test_suite;
+#include <testsuite/testsuite.hpp>
 
 #include <feel/options.hpp>
 #include <feel/feelfilters/geotool.hpp>
@@ -353,9 +352,9 @@ void runSphereHollow( Application_ptrtype testApp )
 
 } // namespace test_geotool
 
+FEELPP_ENVIRONMENT_WITH_OPTIONS( test_geotool::makeAbout(), test_geotool::makeOptions() )
+
 BOOST_AUTO_TEST_SUITE( interp_geotool )
-Feel::Environment env( boost::unit_test::framework::master_test_suite().argc,
-                       boost::unit_test::framework::master_test_suite().argv );
 
 BOOST_AUTO_TEST_CASE( interp_geotool )
 {

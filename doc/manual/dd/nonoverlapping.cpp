@@ -46,8 +46,8 @@
 
 namespace Feel
 {
-gmsh_ptrtype nonOverlapGeometryLeft( double hsize );
-gmsh_ptrtype nonOverlapGeometryRight( double hsize );
+    gmsh_ptrtype nonOverlapGeometryLeft( int Dim, double hsize );
+    gmsh_ptrtype nonOverlapGeometryRight( int Dim, double hsize );
 
 using namespace Feel::vf;
 
@@ -57,12 +57,12 @@ makeOptions()
 {
     po::options_description relaxationoptions( "relaxation options" );
     relaxationoptions.add_options()
-    ( "hsize", po::value<double>()->default_value( 0.04 ), "mesh size" )
-    ( "shape", Feel::po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (either simplex or hypercube)" )
-    ( "nu", po::value<double>()->default_value( 1 ), "grad.grad coefficient" )
-    ( "tol", Feel::po::value<double>()->default_value( 1e-06 ),  " tolerance " )
-    ( "imax", Feel::po::value<double>()->default_value( 50 ), " maximum number of iteration" )
-    ;
+        ( "hsize", po::value<double>()->default_value( 0.08 ), "mesh size" )
+        ( "shape", Feel::po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (either simplex or hypercube)" )
+        ( "nu", po::value<double>()->default_value( 1 ), "grad.grad coefficient" )
+        ( "tol", Feel::po::value<double>()->default_value( 1e-08 ),  " tolerance " )
+        ( "imax", Feel::po::value<double>()->default_value( 20 ), " maximum number of iteration" )
+        ;
     return relaxationoptions.add( Feel::feel_options() );
 }
 
@@ -78,6 +78,7 @@ makeAbout()
                      "Copyright (c) 2011 Universite Joseph Fourier" );
 
     about.addAuthor( "Abdoulaye Samake", "developer", "Abdoulaye.Samake@imag.fr", "" );
+    about.addAuthor( "Christophe Prud'homme", "patcher", "christophe.prudhomme@feelpp.org", "" );
     return about;
 
 }
@@ -94,8 +95,8 @@ public:
     typedef double value_type;
     typedef Backend<value_type> backend_type;
     typedef boost::shared_ptr<backend_type> backend_ptrtype;
-    typedef typename backend_type::sparse_matrix_type sparse_matrix_type;
-    typedef typename backend_type::vector_type vector_type;
+    typedef typename backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
+    typedef typename backend_type::vector_ptrtype vector_ptrtype;
     typedef Simplex<Dim> convex_type;
     typedef Mesh<convex_type> mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
@@ -105,14 +106,13 @@ public:
     typedef typename space_type::element_type element_type;
     typedef Exporter<mesh_type> export_type;
     typedef boost::shared_ptr<export_type> export_ptrtype;
-    typedef  boost::numeric::ublas::vector<element_type> Vector_type ;
 
     /**
      * Constructor
      */
-    ddmethod( po::variables_map const& vm, AboutData const& about )
+    ddmethod()
         :
-        super( vm, about ),
+        super(),
         M_backend( backend_type::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( this->vm()["shape"].template as<std::string>() ),
@@ -130,21 +130,19 @@ public:
 
     {}
 
+    template<typename RhsExpr>
+    void init(element_type& u, RhsExpr f, sparse_matrix_ptrtype& A, vector_ptrtype& F);
+
     template<typename DirichletExpr,
-             typename RhsExpr,
              typename InterfaceExpr>
     void localProblem( element_type& u,
                        std::vector<int> const& dirichletFlags, DirichletExpr gD,
-                       RhsExpr f,
-                       std::vector<int> const& interfaceFlags, InterfaceExpr w );
+                       std::vector<int> const& interfaceFlags, InterfaceExpr w,
+                       sparse_matrix_ptrtype const& A,
+                       vector_ptrtype const& F );
 
     void exportResults( element_type& u,element_type& v,double time );
-
-    mesh_ptrtype createMesh(  element_type& u );
-
     void run();
-
-    void run( const double* X, unsigned long P, double* Y, unsigned long N );
 
 private:
 
@@ -165,108 +163,125 @@ private:
     std::vector<int> interfaceFlags1;
     std::vector<int> interfaceFlags2;
 
+    sparse_matrix_ptrtype A1, A2;
+    vector_ptrtype F1, F2;
+
 }; // nonoverlap
 
 template<int Dim> const uint16_type ddmethod<Dim>::Order;
 
+
 template<int Dim>
-template<typename DirichletExpr,
-         typename RhsExpr,
-         typename InterfaceExpr>
+template<typename RhsExpr>
 void
-ddmethod<Dim>::localProblem( element_type& u,
-                             std::vector<int> const& dirichletFlags, DirichletExpr gD,
-                             RhsExpr f,
-                             std::vector<int> const& interfaceFlags, InterfaceExpr w )
+ddmethod<Dim>::init( element_type& u, RhsExpr f, sparse_matrix_ptrtype& A, vector_ptrtype& F )
 {
 
-    auto Xh=u.functionSpace();
-    auto mesh=Xh->mesh();
-    element_type v( Xh,"v" );
-
-    auto B = M_backend->newVector( Xh );
+    auto Xh = u.functionSpace();
+    auto mesh = Xh->mesh();
+    auto v = Xh->element();
 
     timers["assembly"].first.restart();
-
-    form1( _test=Xh,_vector=B, _init=true ) =
+    form1( _test=Xh,_vector=F ) =
         integrate( elements( mesh ), f*id( v ) );
 
-    BOOST_FOREACH( int marker, interfaceFlags )
-    {
-        form1( _test=Xh,_vector=B ) +=
-            integrate( markedfaces( mesh, marker ), w*id( v ) );
-    }
-
-    B->close();
+    F->close();
 
     timers["assembly"].second = timers["assembly"].first.elapsed();
     timers["assembly_F"].second = timers["assembly"].first.elapsed();
 
-    auto A = M_backend->newMatrix( Xh, Xh );
 
     timers["assembly"].first.restart();
-
-    form2( _test=Xh, _trial=Xh, _matrix=A, _init=true ) =
+    form2( _test=Xh, _trial=Xh, _matrix=A ) =
         integrate( elements( mesh ), gradt( u )*trans( grad( v ) ) );
 
+    timers["assembly"].second += timers["assembly"].first.elapsed();
+    timers["assembly_A"].second = timers["assembly"].first.elapsed();
     A->close();
 
-    BOOST_FOREACH( int marker, dirichletFlags )
-    {
-        form2( Xh, Xh, A ) +=
-            on( markedfaces( mesh, marker ) ,	u, B, gD );
-    }
-
-    timers["assembly"].second += timers["assembly"].first.elapsed();
-    timers["assembly_D"].second = timers["assembly"].first.elapsed();
-
-    timers["solver"].first.restart();
-
-    backend_type::build()->solve( _matrix=A, _solution=u, _rhs=B );//, _reuse_prec=true );
-
-    timers["solver"].second = timers["solver"].first.elapsed();
-
-    Log() << "[timer] run():  assembly: " << timers["assembly"].second << "\n";
-    Log() << "[timer] run():    o D : " << timers["assembly_D"].second << "\n";
-    Log() << "[timer] run():    o F : " << timers["assembly_F"].second << "\n";
-    Log() << "[timer] run():  solver: " << timers["solver"].second << "\n";
+    std::cout << "[timer] assembly_F: " << timers["assembly_F"].second << "\n";
+    std::cout << "[timer] assembly_A: " << timers["assembly_A"].second << "\n";
 }
 
 template<int Dim>
-typename ddmethod<Dim>::mesh_ptrtype
-ddmethod<Dim>::createMesh(  element_type& u )
+template<typename DirichletExpr,
+         typename InterfaceExpr>
+void
+ddmethod<Dim>::localProblem( element_type& u,
+                             std::vector<int> const& dirichletFlags, DirichletExpr gD,
+                             std::vector<int> const& interfaceFlags, InterfaceExpr w,
+                             sparse_matrix_ptrtype const& A,
+                             vector_ptrtype const& F )
 {
-    auto Xh=u.functionSpace();
-    mesh_ptrtype mesh =Xh->mesh();
-    return mesh;
+
+    auto Xh = u.functionSpace();
+    auto mesh = Xh->mesh();
+    auto v = Xh->element();
+
+    timers["update"].first.restart();
+    auto Ffull = M_backend->newVector( Xh );
+    Ffull->add(1.,*F);
+
+    BOOST_FOREACH( int marker, interfaceFlags )
+    {
+        form1( _test=Xh,_vector=Ffull ) +=
+            integrate( markedfaces( mesh, marker ), w*id( v ) );
+    }
+    Ffull->close();
+
+    timers["update"].second = timers["update"].first.elapsed();
+    timers["update_F"].second = timers["update"].first.elapsed();
+
+
+    timers["update"].first.restart();
+    auto Afull = M_backend->newMatrix( Xh, Xh );
+    Afull->addMatrix(1.,*A);
+
+    BOOST_FOREACH( int marker, dirichletFlags )
+    {
+        form2( Xh, Xh, Afull ) +=
+            on( markedfaces( mesh, marker ) ,	u, Ffull, gD );
+    }
+
+    timers["update"].second = timers["update"].first.elapsed();
+    timers["update_A"].second = timers["update"].first.elapsed();
+
+
+    timers["solver"].first.restart();
+    backend_type::build()->solve( _matrix=Afull, _solution=u, _rhs=Ffull, _reuse_prec=true );
+    timers["solver"].second = timers["solver"].first.elapsed();
+
+    std::cout << "[timer] update_F: " << timers["update_F"].second << "\n";
+    std::cout << "[timer] update_A: " << timers["update_A"].second << "\n";
+    std::cout << "[timer] solver: " << timers["solver"].second << "\n";
 }
 
 template<int Dim>
 void
 ddmethod<Dim>::exportResults( element_type& u, element_type& v, double time )
 {
-    auto Xh1=u.functionSpace();
-    auto Xh2=v.functionSpace();
+    auto Xh1 = u.functionSpace();
+    auto mesh1 = Xh1->mesh();
+    auto Xh2 = v.functionSpace();
+    auto mesh2 = Xh2->mesh();
 
     double pi = M_PI;
     using namespace vf;
     auto g = sin( pi*Px() )*cos( pi*Py() );
 
-    auto proj1 = Xh1->element();
-    auto proj2 = Xh2->element();
+    auto proj1 = vf::project( Xh1, elements(mesh1), g );
+    auto proj2 = vf::project( Xh2, elements(mesh2), g );
 
-    proj1 = vf::project( Xh1, elements( createMesh( u ) ), g );
-    proj2 = vf::project( Xh2, elements( createMesh( v ) ), g );
 
-    Log() << "exportResults starts\n";
+    LOG(INFO) << "exportResults starts\n";
     timers["export"].first.restart();
 
-    M_firstExporter->step( time )->setMesh( createMesh( u ) );
+    M_firstExporter->step( time )->setMesh(mesh1);
     M_firstExporter->step( time )->add( "solution", ( boost::format( "solution-%1%" ) % int( 1 ) ).str(), u );
     M_firstExporter->step( time )->add( "exact", ( boost::format( "exact-%1%" ) % int( 1 ) ).str(), proj1 );
     M_firstExporter->save();
 
-    M_secondExporter->step( time )->setMesh( createMesh( v ) );
+    M_secondExporter->step( time )->setMesh(mesh2);
     M_secondExporter->step( time )->add( "solution",( boost::format( "solution-%1%" ) % int( 2 ) ).str(), v );
     M_secondExporter->step( time )->add( "exact",( boost::format( "exact-%1%" ) % int( 2 ) ).str(), proj2 );
     M_secondExporter->save();
@@ -290,67 +305,34 @@ ddmethod<Dim>::exportResults( element_type& u, element_type& v, double time )
         }
     }
 
-    Log() << "exportResults done\n";
+    LOG(INFO) << "exportResults done\n";
     timers["export"].second = timers["export"].first.elapsed();
     std::cout << "[timer] exportResults(): " << timers["export"].second << "\n";
 } // ddmethod::export
+
 
 template<int Dim>
 void
 ddmethod<Dim>::run()
 {
-    std::cout << "------------------------------------------------------------\n";
-    std::cout << "Execute ddmethod<" << Dim << ">\n";
-    std::vector<double> X( 2 );
-    X[0] = meshSize;
-
-    if ( shape == "hypercube" )
-        X[1] = 1;
-
-    else // default is simplex
-        X[1] = 0;
-
-    std::vector<double> Y( 3 );
-    run( X.data(), X.size(), Y.data(), Y.size() );
-}
-
-template<int Dim>
-void
-ddmethod<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
-{
-    if ( X[1] == 0 ) shape = "simplex";
-
-    if ( X[1] == 1 ) shape = "hypercube";
 
     value_type tol = this->vm()["tol"].template as<double>();
     value_type imax = this->vm()["imax"].template as<double>();
 
     Environment::changeRepository( boost::format( "doc/manual/dd/%1%/%2%-%3%/P%4%/h_%5%/" )
                                    % this->about().appName()
-                                   %this->shape
+                                   % this->shape
                                    % Dim
                                    % Order
-                                   %this->meshSize );
+                                   % this->meshSize );
 
-    if ( Dim == 2 )
-    {
-        mesh1 = createGMSHMesh( _mesh=new mesh_type,
-                                _desc = nonOverlapGeometryLeft( this->meshSize ) );
 
-        mesh2 = createGMSHMesh( _mesh=new mesh_type,
-                                _desc = nonOverlapGeometryRight( this->meshSize ) );
-    }
+    mesh1 = createGMSHMesh( _mesh=new mesh_type,
+                            _desc = nonOverlapGeometryLeft( Dim, this->meshSize ) );
 
-    else if ( Dim == 3 )
-    {
-        mesh1 = createGMSHMesh( _mesh=new mesh_type,
-                                _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
-                                _desc=geo( _filename="Parallelepiped.geo",_h=this->meshSize ) );
+    mesh2 = createGMSHMesh( _mesh=new mesh_type,
+                            _desc = nonOverlapGeometryRight( Dim, this->meshSize ) );
 
-        mesh2 = createGMSHMesh( _mesh=new mesh_type,
-                                _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
-                                _desc=geo( _filename="Cylinder.geo",_h=this->meshSize ) );
-    }
 
 
     if ( Dim == 2 )
@@ -374,10 +356,18 @@ ddmethod<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
 
     auto Xh1 = space_type::New( mesh1 );
     auto Xh2 = space_type::New( mesh2 );
-    element_type u1( Xh1, "u1" );
-    element_type u2( Xh2, "u2" );
+
+    auto u1 = Xh1->element();
+    auto u2 = Xh2->element();
+
     auto uu = Xh1->element();
     auto uv = Xh2->element();
+
+    F1 = M_backend->newVector( Xh1 );
+    F2 = M_backend->newVector( Xh2 );
+
+    A1 = M_backend->newMatrix( Xh1, Xh1 );
+    A2 = M_backend->newMatrix( Xh2, Xh2 );
 
     auto lambda = Xh1->element();
     auto lambdaold = Xh1->element();
@@ -407,6 +397,9 @@ ddmethod<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
     std::ofstream history1( fname1.c_str() );
     std::ofstream history2( fname2.c_str(),std::ios::app );
 
+    this->init(u1, f, A1, F1);
+    this->init(u2, f, A2, F2);
+
     while ( ( ( L2erroru1 +L2erroru2 ) > tol ) && ( cptExport < imax ) )
     {
         ++cptExport;
@@ -419,16 +412,16 @@ ddmethod<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
         std::cout << "H1erroru2  : " << H1erroru2  << "\n";
 
         localProblem( u1,
-                      dirichletFlags1, /*dirichlet*/g,
-                      /*rhs*/f,
-                      interfaceFlags1,idv( lambda ) );
+                      dirichletFlags1, g,
+                      interfaceFlags1, idv( lambda ),
+                      A1, F1 );
 
         Ih12->apply( lambda, uv );
 
         localProblem( u2,
                       dirichletFlags2, g,
-                      f,
-                      interfaceFlags2,-idv( uv ) );
+                      interfaceFlags2,-idv( uv ),
+                      A2, F2 );
 
         Ih21->apply( u2, uu );
 
@@ -479,20 +472,17 @@ ddmethod<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
             std::cerr << " convergence history filename " << fname2 << " could not be opened " << "\n";
         }
 
-        this->exportResults( u1,u2, cptExport );
+        //this->exportResults( u1,u2, cptExport );
 
     }; // iteration loop
 
+    this->exportResults( u1,u2, 0 );
+
     std::cout << "-------------------------end iteration---------------\n";
-
     std::cout << "number of iteration  : " << cptExport << "\n";
-
     std::cout << "L2erroru1  : " << L2erroru1  << "\n";
-
     std::cout << "L2erroru2  : " << L2erroru2  << "\n";
-
     std::cout << "H1erroru1  : " << H1erroru1  << "\n";
-
     std::cout << "H1erroru2  : " << H1erroru2  << "\n";
 
 } // nonoverlap::run
@@ -502,19 +492,17 @@ int
 main( int argc, char** argv )
 {
     using namespace Feel;
+    /**
+     * Initialize Feel++ Environment
+     */
+    Environment env( _argc=argc, _argv=argv,
+                     _desc=makeOptions(),
+                     _about=makeAbout() );
 
-    Environment env( argc, argv );
-    Application app( argc, argv, makeAbout(), makeOptions() );
+    Application app;
 
-    if ( app.vm().count( "help" ) )
-    {
-        std::cout << app.optionsDescription() << "\n";
-        return 0;
-    }
-
-    ddmethod<3>  Relax( app.vm(), app.about() );
-
-    Relax.run();
+    app.add( new ddmethod<2> );
+    app.run();
 }
 
 

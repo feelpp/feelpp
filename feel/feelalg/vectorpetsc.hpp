@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2005-10-18
 
   Copyright (C) 2005,2006 EPFL
@@ -24,7 +24,7 @@
 */
 /**
    \file vectorpetsc.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-10-18
  */
 #ifndef __VectorPetsc_H
@@ -69,6 +69,7 @@ class VectorPetsc : public Vector<T>
 
 public:
 
+    friend class boost::serialization::access;
 
     /** @name Typedefs
      */
@@ -152,6 +153,59 @@ public:
     {
         this->_M_vec = v;
         this->M_is_initialized = true;
+    }
+
+    /**
+     * Constructor,  extracts a subvector from 'v' using mapping 'is'
+     * without copy.
+     */
+    VectorPetsc( VectorPetsc<value_type> &v, IS &is )
+        :
+        super(),
+        _M_destroy_vec_on_exit( false )
+    {
+#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
+        /* map */
+        PetscInt n;
+        ISGetSize(is,&n);
+        DataMap dm(n, n, v.comm());
+        this->setMap(dm);
+        /* init */
+        VecGetSubVector(v.vec(), is, &this->_M_vec);
+        this->M_is_initialized = true;
+        /* close */
+        this->close(); /* no // assembly required */
+#endif
+    }
+
+    VectorPetsc( Vector<value_type> const& v, std::vector<int> const& index )
+        :
+        super(),
+        //super(v,index),
+        _M_destroy_vec_on_exit( false )
+    {
+#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
+
+        VectorPetsc<T> const* V = dynamic_cast<VectorPetsc<T> const*> ( &v );
+        int ierr=0;
+        IS is;
+        PetscInt *map;
+        int n = index.size();
+        PetscMalloc(n*sizeof(PetscInt),&map);
+        for (int i=0; i<n; i++) map[i] = index[i];
+        ierr = ISCreateGeneral(Environment::worldComm(),n,map,PETSC_COPY_VALUES,&is);
+        CHKERRABORT( this->comm(),ierr );
+        PetscFree(map);
+
+        DataMap dm(n, n, V->comm());
+        this->setMap(dm);
+        /* init */
+        ierr = VecGetSubVector(V->vec(), is, &this->_M_vec);
+        CHKERRABORT( this->comm(),ierr );
+        this->M_is_initialized = true;
+        /* close */
+        this->close(); /* no // assembly required */
+#endif
     }
 
     /**
@@ -605,6 +659,26 @@ public:
      */
     void printMatlab( const std::string name="NULL" ) const;
 
+    value_type dot( Vector<T> const& __v );
+
+    /**
+     * Serialization for PETSc VECSEQ
+     */
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version) const
+    {
+        value_type *array = *((value_type**)this->vec()->data);
+        int n             = this->vec()->map->n;
+        int N             = this->vec()->map->N;
+
+        int rank;
+        MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+        FEELPP_ASSERT( n==N ).error( "wrong vector type for serialization (!=VECSEQ)" );
+
+        for (int i=0; i<n; i++)
+            ar & array[i];
+    }
     //@}
 
 
@@ -790,6 +864,7 @@ public:
 
     void duplicateFromOtherPartition( Vector<T> const& vecInput );
 
+    value_type dot( Vector<T> const& __v );
 private :
 
     void duplicateFromOtherPartition_run( Vector<T> const& vecInput );

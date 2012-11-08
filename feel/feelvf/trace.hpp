@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2007-02-10
 
   Copyright (C) 2007 Universite Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file trace.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2007-02-10
  */
 #ifndef __Trace_H
@@ -125,7 +125,7 @@ public:
 
     //@}
 
-    //template<typename Geo_t, typename Basis_i_t = fusion::map<fusion::pair<detail::gmc<0>,boost::shared_ptr<detail::gmc<0> > > >, typename Basis_j_t = Basis_i_t>
+    //template<typename Geo_t, typename Basis_i_t = fusion::map<fusion::pair<vf::detail::gmc<0>,boost::shared_ptrvf::detail::gmc<0> > > >, typename Basis_j_t = Basis_i_t>
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t>
     struct tensor
     {

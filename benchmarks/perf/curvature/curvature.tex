@@ -19,6 +19,7 @@ after row=\midrule,
 },
 every last row/.style={
 after row=\bottomrule},}
+
 \pgfqkeys{/pgfplots}{
 %  cycle list name = black white,
   legend style = { at={(0.95,0.3)} },
@@ -46,6 +47,7 @@ columns/e.nod.k.roc/.style={fixed,precision=2,column name=$k^{n}/k^{n-1}$}
             legend pos = south east
           }
         ]
+
         \addplot table[x=h,y=e.nod.k] {2D-P4-Simplex-1-errors.dat};
         \addplot [white,forget plot] table[x=h,y={create col/linear        regression={y=e.nod.k}}]{2D-P4-Simplex-1-errors.dat};
         \pgfmathsetmacro{\slopea}{\pgfplotstableregressiona} ;
@@ -53,6 +55,7 @@ columns/e.nod.k.roc/.style={fixed,precision=2,column name=$k^{n}/k^{n-1}$}
         \addplot [white,forget plot] table[x=h,y={create col/linear regression={y=e.nod.k}}]{2D-P5-Simplex-1-errors.dat};
         \pgfmathsetmacro{\slopeb}{\pgfplotstableregressiona} ;
         \legend{$P^4$(\pgfmathprintnumber{\slopea}), $P^5$(\pgfmathprintnumber{\slopeb})}
+
       \end{loglogaxis}
     \end{tikzpicture}
     }

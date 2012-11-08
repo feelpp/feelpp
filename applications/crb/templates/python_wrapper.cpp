@@ -25,7 +25,7 @@
 #include <signal.h>
 
 #include <feel/feelcrb/crbwrapper.hpp>
-#include <@CRB_MODEL_SHORT_NAME@.hpp>
+#include <@CRB_MODEL_HDRS@>
 #include <feel/feelcrb/opusapp.hpp>
 
 #include <WrapperCommon.h>
@@ -93,6 +93,7 @@
 #define WRAPPERNAME @CRB_MODEL_WRAPPER_NAME@
 
 
+typedef Feel::OpusApp<Feel::@CRB_MODEL_CLASS@> TheModelType;
 
 #ifdef __cplusplus
 extern "C" {
@@ -140,10 +141,13 @@ extern "C" {
         CHECK_WRAPPER_IN(   WRAPPER_ARGUMENTS  );
         CHECK_WRAPPER_OUT(  WRAPPER_ARGUMENTS  );
 
-        auto app = new Feel::OpusApp<Feel::@CRB_MODEL_LONG_NAME@>( Feel::make@CRB_MODEL_LONG_NAME@About( "@CRB_MODEL_SHORT_NAME@" ),
-        Feel::make@CRB_MODEL_LONG_NAME@Options() );
-        app->setMode( @CRB_MODEL_WRAPPER_TYPE@ );
-        *p_p_state = app;
+        {
+            Feel::Environment env();
+            auto app = new TheModelType( Feel::make@CRB_MODEL_LONG_NAME@About( "@CRB_MODEL_SHORT_NAME@" ),
+                                                                   Feel::make@CRB_MODEL_LONG_NAME@Options() );
+            app->setMode( @CRB_MODEL_WRAPPER_TYPE@ );
+            *p_p_state = app;
+        }
 
 
     } )
@@ -151,7 +155,7 @@ extern "C" {
     /* The deleteState function is optional */
     FUNC_DELETESTATE( WRAPPERNAME ,
     {
-        delete CAST( Feel::OpusApp<Feel::@CRB_MODEL_LONG_NAME@>*,p_state );
+        delete CAST( TheModelType*,p_state );
     } )
 
     /* Any function declared into the wrapper may declare three actual function prefixed with
@@ -196,7 +200,7 @@ extern "C" {
      */
     FUNC_EXEC( WRAPPERNAME,
     {
-        CRB_FUNC_EXEC_BODY_IN_TEMPDIR( Feel::OpusApp<Feel::@CRB_MODEL_LONG_NAME@>, WRAPPERNAME )
+        CRB_FUNC_EXEC_BODY_IN_TEMPDIR( TheModelType, WRAPPERNAME )
     } )
 
     // do not use multithreading it breaks the wrapper

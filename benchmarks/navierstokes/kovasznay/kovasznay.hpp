@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2009-01-04
 
   Copyright (C) 2009-2011 Christophe Prud'homme
@@ -24,7 +24,7 @@
 */
 /**
    \file stokes.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2009-01-04
  */
 #include <feel/options.hpp>
@@ -271,7 +271,7 @@ Kovasznay<_OrderU, _OrderP, Entity>::Kovasznay( int argc, char** argv, AboutData
      * First we create the mesh : a square [0,1]x[0,1] with characteristic
      * length = meshSize
      */
-    Log() << "creating mesh with hsize=" << meshSize << "\n";
+    LOG(INFO) << "creating mesh with hsize=" << meshSize << "\n";
     mesh = createGMSHMesh( _mesh=new mesh_type,
                            _desc=domain( _name="square",
                                          _shape="hypercube",
@@ -282,7 +282,7 @@ Kovasznay<_OrderU, _OrderP, Entity>::Kovasznay( int argc, char** argv, AboutData
                                          _xmin=-0.5,_xmax=1.,
                                          _ymin=-0.5,_ymax=1.5 ) );
 
-    Log() << "mesh created in " << t.elapsed() << "s\n";
+    LOG(INFO) << "mesh created in " << t.elapsed() << "s\n";
     t.restart();
 
     /*
@@ -305,23 +305,23 @@ Kovasznay<_OrderU, _OrderP, Entity>::Kovasznay( int argc, char** argv, AboutData
     v = vf::project( Xh->template functionSpace<0>(), elements( Xh->mesh() ), u_exact );
     q = vf::project( Xh->template functionSpace<1>(), elements( Xh->mesh() ), p_exact );
 
-    Log() << "Data Summary:\n";
-    Log() << "   hsize = " << meshSize << "\n";
-    Log() << "  export = " << this->vm().count( "export" ) << "\n";
-    Log() << "      mu = " << mu << "\n";
-    Log() << " bccoeff = " << penalbc << "\n";
-    Log() << "Xh and elements created in " << t.elapsed() << "s\n";
+    LOG(INFO) << "Data Summary:\n";
+    LOG(INFO) << "   hsize = " << meshSize << "\n";
+    LOG(INFO) << "  export = " << this->vm().count( "export" ) << "\n";
+    LOG(INFO) << "      mu = " << mu << "\n";
+    LOG(INFO) << " bccoeff = " << penalbc << "\n";
+    LOG(INFO) << "Xh and elements created in " << t.elapsed() << "s\n";
     t.restart();
-    Log() << "[dof]         number of dof: " << Xh->nDof() << "\n";
-    Log() << "[dof]    number of dof/proc: " << Xh->nLocalDof() << "\n";
-    Log() << "[dof]      number of dof(U): " << Xh->template functionSpace<0>()->nDof()  << "\n";
-    Log() << "[dof] number of dof/proc(U): " << Xh->template functionSpace<0>()->nLocalDof()  << "\n";
-    Log() << "[dof]      number of dof(P): " << Xh->template functionSpace<1>()->nDof()  << "\n";
-    Log() << "[dof] number of dof/proc(P): " << Xh->template functionSpace<1>()->nLocalDof()  << "\n";
+    LOG(INFO) << "[dof]         number of dof: " << Xh->nDof() << "\n";
+    LOG(INFO) << "[dof]    number of dof/proc: " << Xh->nLocalDof() << "\n";
+    LOG(INFO) << "[dof]      number of dof(U): " << Xh->template functionSpace<0>()->nDof()  << "\n";
+    LOG(INFO) << "[dof] number of dof/proc(U): " << Xh->template functionSpace<0>()->nLocalDof()  << "\n";
+    LOG(INFO) << "[dof]      number of dof(P): " << Xh->template functionSpace<1>()->nDof()  << "\n";
+    LOG(INFO) << "[dof] number of dof/proc(P): " << Xh->template functionSpace<1>()->nLocalDof()  << "\n";
 
     F = vector_ptrtype( M_backend->newVector( Xh ) );
     D = sparse_matrix_ptrtype(  M_backend->newMatrix( Xh, Xh ) );
-    Log() << "D and F allocated in " << t.elapsed() << "s\n";
+    LOG(INFO) << "D and F allocated in " << t.elapsed() << "s\n";
     t.restart();
 }
 
@@ -337,14 +337,14 @@ Kovasznay<_OrderU, _OrderP, Entity>::addPressureStabilisation( element_1_type& p
     if ( is_equal_order && this->vm()["stab-p"].template as<bool>() )
     {
         boost::timer t;
-        Log() << "[assembly] add stabilisation terms for equal order approximation ( orderU="
+        LOG(INFO) << "[assembly] add stabilisation terms for equal order approximation ( orderU="
               << OrderU << ", orderP=" << OrderP << " )\n";
         size_type pattern = Pattern::COUPLED|Pattern::EXTENDED;
         form2( Xh, Xh, D, _pattern=pattern )  +=
             integrate( internalfaces( mesh ),
                        ( p_stabexpr )*( trans( jumpt( gradt( p ) ) )*jump( grad( q ) ) ),
                        _Q<2*OrderP+2>() );
-        Log() << "[assembly] form2 D equal order stabilisation terms in " << t.elapsed() << "s\n";
+        LOG(INFO) << "[assembly] form2 D equal order stabilisation terms in " << t.elapsed() << "s\n";
         t.restart();
     }
 
@@ -362,13 +362,13 @@ Kovasznay<_OrderU, _OrderP, Entity>::addDivergenceStabilisation( element_0_type&
     if ( this->vm()["stab-div"].template as<bool>() )
     {
         boost::timer t;
-        Log() << "[assembly] add stabilisation terms for divergence ( orderU="
+        LOG(INFO) << "[assembly] add stabilisation terms for divergence ( orderU="
               << OrderU << ", orderP=" << OrderP << " )\n";
         size_type pattern = Pattern::COUPLED|Pattern::EXTENDED;
         form2( Xh, Xh, D, _pattern=pattern )  +=
             integrate( internalfaces( mesh ),
                        ( d_stabexpr )*( trans( jumpt( divt( u ) ) )*jump( div( v ) ) ) );
-        Log() << "[assembly] form2 D divergence stabilisation terms in " << t.elapsed() << "s\n";
+        LOG(INFO) << "[assembly] form2 D divergence stabilisation terms in " << t.elapsed() << "s\n";
         t.restart();
     }
 
@@ -440,8 +440,8 @@ Kovasznay<_OrderU, _OrderP, Entity>::buildRhs()
         //max(sqrt(trans(beta)*beta),mu/hFace()) ) );
     }
 
-    Log() << "[stokes] vector local assembly done\n";
-    Log() << "form1 F created in " << t.elapsed() << "s\n";
+    LOG(INFO) << "[stokes] vector local assembly done\n";
+    LOG(INFO) << "form1 F created in " << t.elapsed() << "s\n";
     t.restart();
 
 }
@@ -498,36 +498,36 @@ Kovasznay<_OrderU, _OrderP, Entity>::buildLhs()
         pattern |= Pattern::EXTENDED;
 
     Feel::Context graph( pattern );
-    Log() << "[stokes] test : " << ( graph.test ( Pattern::DEFAULT ) || graph.test ( Pattern::EXTENDED ) ) << "\n";
-    Log() << "[stokes]  : graph.test ( Pattern::DEFAULT )=" <<  graph.test ( Pattern::DEFAULT ) << "\n";
-    Log() << "[stokes]  : graph.test ( Pattern::COUPLED )=" <<  graph.test ( Pattern::COUPLED ) << "\n";
-    Log() << "[stokes]  : graph.test ( Pattern::EXTENDED)=" <<  graph.test ( Pattern::EXTENDED ) << "\n";
-    Log() << "[assembly] add diffusion terms\n";
+    LOG(INFO) << "[stokes] test : " << ( graph.test ( Pattern::DEFAULT ) || graph.test ( Pattern::EXTENDED ) ) << "\n";
+    LOG(INFO) << "[stokes]  : graph.test ( Pattern::DEFAULT )=" <<  graph.test ( Pattern::DEFAULT ) << "\n";
+    LOG(INFO) << "[stokes]  : graph.test ( Pattern::COUPLED )=" <<  graph.test ( Pattern::COUPLED ) << "\n";
+    LOG(INFO) << "[stokes]  : graph.test ( Pattern::EXTENDED)=" <<  graph.test ( Pattern::EXTENDED ) << "\n";
+    LOG(INFO) << "[assembly] add diffusion terms\n";
     form2( Xh, Xh, D, _init=true, _pattern=pattern );
-    Log() << "[assembly] form2 D init in " << t.elapsed() << "s\n";
+    LOG(INFO) << "[assembly] form2 D init in " << t.elapsed() << "s\n";
     t.restart();
     form2( Xh, Xh, D )+= integrate( elements( mesh ), 2*mu*trace( deft*trans( def ) ) + trans( gradt( u )*beta )*id( v ) );
-    Log() << "[assembly] form2 D convection and viscous terms in " << t.elapsed() << "s\n";
+    LOG(INFO) << "[assembly] form2 D convection and viscous terms in " << t.elapsed() << "s\n";
     t.restart();
-    Log() << "[assembly] add velocity/pressure terms\n";
+    LOG(INFO) << "[assembly] add velocity/pressure terms\n";
     form2( Xh, Xh, D )+=integrate( elements( mesh ),- div( v )*idt( p ) + divt( u )*id( q ) );
-    Log() << "[assembly] form2 D velocity/pressure terms in " << t.elapsed() << "s\n";
+    LOG(INFO) << "[assembly] form2 D velocity/pressure terms in " << t.elapsed() << "s\n";
     t.restart();
-    Log() << "[assembly] add lagrange multipliers terms for zero mean pressure\n";
+    LOG(INFO) << "[assembly] add lagrange multipliers terms for zero mean pressure\n";
 #if defined(WITH_LAGRANGE_MULTIPLIERS)
     form2( Xh, Xh, D )+=integrate( elements( mesh ), id( q )*idt( lambda ) + idt( p )*id( nu ) );
-    Log() << "[assembly] form2 D pressure/multipliers terms in " << t.elapsed() << "s\n";
+    LOG(INFO) << "[assembly] form2 D pressure/multipliers terms in " << t.elapsed() << "s\n";
     t.restart();
 #endif
 
     if ( M_weak_dirichlet )
     {
-        Log() << "[assembly] add terms for weak Dirichlet condition handling\n";
+        LOG(INFO) << "[assembly] add terms for weak Dirichlet condition handling\n";
         form2( Xh, Xh, D )+=integrate( boundaryfaces( mesh ), -trans( SigmaNt )*id( v ) );
         form2( Xh, Xh, D )+=integrate( boundaryfaces( mesh ), -trans( SigmaN )*idt( u ) );
         form2( Xh, Xh, D )+=integrate( boundaryfaces( mesh ), +penalbc*trans( idt( u ) )*id( v )/hFace() );
         form2( Xh, Xh, D )+=integrate( boundaryfaces( mesh ), +penalbc*( trans( idt( u ) )*N() )*( trans( id( v ) )*N() )*max( M_beta,mu/hFace() ) );
-        Log() << "[assembly] form2 D boundary terms in " << t.elapsed() << "s\n";
+        LOG(INFO) << "[assembly] form2 D boundary terms in " << t.elapsed() << "s\n";
         t.restart();
     }
 
@@ -548,7 +548,7 @@ Kovasznay<_OrderU, _OrderP, Entity>::buildLhs()
     //auto d_stabexpr = M_stabD*hFace()*hFace()/math::pow(double(OrderU), 7./2.);
     //this->addDivergenceStabilisation( u, v, d_stabexpr  );
 
-    Log() << "[stokes] matrix local assembly done\n";
+    LOG(INFO) << "[stokes] matrix local assembly done\n";
 
     D->close();
     F->close();
@@ -558,8 +558,8 @@ Kovasznay<_OrderU, _OrderP, Entity>::buildLhs()
         form2( Xh, Xh, D ) += on( boundaryfaces( mesh ), u, F, u_exact );
     }
 
-    Log() << "[stokes] vector/matrix global assembly done\n";
-    Log() << "form2 D created in " << t.elapsed() << "s\n";
+    LOG(INFO) << "[stokes] vector/matrix global assembly done\n";
+    LOG(INFO) << "form2 D created in " << t.elapsed() << "s\n";
     t.restart();
 
 }
@@ -579,18 +579,18 @@ Kovasznay<_OrderU, _OrderP, Entity>::run()
         boost::timer t;
         D->printMatlab( "D.m" );
         F->printMatlab( "F.m" );
-        Log() << "system saved in " << t.elapsed() << "s\n";
+        LOG(INFO) << "system saved in " << t.elapsed() << "s\n";
         t.restart();
     }
 
     boost::timer t;
     M_backend->solve( _matrix=D, _solution=U, _rhs=F, _rtolerance=1e-14 );
 
-    Log() << "system solved in " << t.elapsed() << "s\n";
+    LOG(INFO) << "system solved in " << t.elapsed() << "s\n";
     t.restart();
 
     this->exportResults( U, V );
-    Log() << "postprocessing done in " << t.elapsed() << "s\n";
+    LOG(INFO) << "postprocessing done in " << t.elapsed() << "s\n";
     t.restart();
 
     this->postProcessing();
@@ -635,13 +635,13 @@ Kovasznay<_OrderU, _OrderP, Entity>::exportResults( element_type& U, element_typ
 
     double mean_p = integrate( elements( mesh ), idv( p ) ).evaluate()( 0, 0 )/mesh->measure();
     double mean_pexact = integrate( elements( mesh ), p_exact ).evaluate()( 0, 0 )/mesh->measure();
-    Log() << "[stokes] mean(p)=" << mean_p << "\n";
-    Log() << "[stokes] mean(p_exact)=" << mean_pexact << "\n";
+    LOG(INFO) << "[stokes] mean(p)=" << mean_p << "\n";
+    LOG(INFO) << "[stokes] mean(p_exact)=" << mean_pexact << "\n";
     std::cout << "[stokes] mean(p)=" << mean_p << "\n";
     std::cout << "[stokes] mean(p_exact)=" << mean_pexact << "\n";
 
 
-    Log() << "[stokes] measure(Omega)=" << mesh->measure() << " (should be equal to 3)\n";
+    LOG(INFO) << "[stokes] measure(Omega)=" << mesh->measure() << " (should be equal to 3)\n";
     std::cout << "[stokes] measure(Omega)=" << mesh->measure() << " (should be equal to 3)\n";
 
     double p_errorL2_2 = integrate( elements( mesh ),
@@ -650,12 +650,12 @@ Kovasznay<_OrderU, _OrderP, Entity>::exportResults( element_type& U, element_typ
     double p_errorL2 = math::sqrt( p_errorL2_2/pex_L2 );
     std::cout << "||p_error||_0/||pex||_0 = " <<  p_errorL2 << "\n";;
 
-    Log() << "[stokes] solve for D done\n";
+    LOG(INFO) << "[stokes] solve for D done\n";
 
 
 
     double mean_div_u = integrate( elements( mesh ), divv( u ) ).evaluate()( 0, 0 );
-    Log() << "[stokes] mean_div(u)=" << mean_div_u << "\n";
+    LOG(INFO) << "[stokes] mean_div(u)=" << mean_div_u << "\n";
     std::cout << "[stokes] mean_div(u)=" << mean_div_u << "\n";
 
     double div_u_errorL2_2 = integrate( elements( mesh ), divv( u )*divv( u ) ).evaluate()( 0, 0 );
@@ -664,7 +664,7 @@ Kovasznay<_OrderU, _OrderP, Entity>::exportResults( element_type& U, element_typ
     std::cout << "[stokes] ||div(uexact)||=" << uex_div_L2 << "\n";
     std::cout << "[stokes] ||uexact,n||=" << uex_n_L2 << "\n";
     double div_u_errorL2 = math::sqrt( div_u_errorL2_2 );
-    Log() << "[stokes] ||div(u)||_2=" << div_u_errorL2 << "\n";
+    LOG(INFO) << "[stokes] ||div(u)||_2=" << div_u_errorL2 << "\n";
     std::cout << "[stokes] ||div(u)||=" << div_u_errorL2 << "\n";
 
     this->addOutputValue( u_errorL2 )

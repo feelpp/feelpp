@@ -4,8 +4,9 @@
 PortSystem      1.0
 
 name            boost
-version         1.49.0
-license         Boost-1.0
+version         1.51.0
+revision        1
+license         Boost-1
 categories      devel
 platforms       darwin
 maintainers     adfernandes
@@ -22,9 +23,9 @@ set distver     [join [split ${version} .] _]
 distname        ${name}_${distver}
 use_bzip2       yes
 
-checksums           md5     0d202cb811f934282dea64856a175698 \
-                    sha1    26a52840e9d12f829e3008589abf0a925ce88524 \
-                    rmd160  3504c6f27c63ab52182c822d45d020fa30179abc
+checksums           md5     4b6bd483b692fd138aef84ed2c8eb679 \
+                    sha1    52ef06895b97cc9981b8abf1997c375ca79f30c5 \
+                    rmd160  e92733c82785a38049f2d6a8126eadd3f8ac0c40
 
 depends_lib     port:zlib \
                 port:expat \
@@ -34,14 +35,17 @@ depends_lib     port:zlib \
 
 patchfiles      patch-tools_build_v2_engine_src_build.sh.diff \
                 patch-tools_build_v2_engine_src_build.jam.diff \
-                patch-thread_visibility.diff \
                 patch-bootstrap.sh.diff
-
 
 post-patch {
     reinplace "s|%%CONFIGURE.CC%%|${configure.cc}|g" ${worksrcpath}/tools/build/v2/engine/build.sh
     reinplace "s|%%CONFIGURE.CC%%|${configure.cc}|g" ${worksrcpath}/tools/build/v2/engine/build.jam
-    reinplace "s|-no-cpp-precomp||g" ${worksrcpath}/tools/build/v2/tools/darwin.jam
+    # When building i386 code with apple-gcc-4.2, boost-1.50.0 adds a '-march=i386' compiler flag
+    # which breaks the atomic intrinsics. The earliest 32-bit intel processors that Apple made
+    # were the Core Solo and Core Duo, so we use the "prescott" architecture for them as per
+    # (http://en.gentoo-wiki.com/wiki/Safe_Cflags/Intel#Intel_Core_Solo.2FDuo.2C_Pentium_Dual-Core_T20xx.2FT21xx)
+    # to fix broken 32-bit builds as per (https://trac.macports.org/ticket/35172).
+    reinplace "s|-march=i386|-march=prescott|g" ${worksrcpath}/tools/build/v2/tools/gcc.jam
 }
 
 proc write_jam s {
@@ -52,11 +56,19 @@ proc write_jam s {
 }
 
 # clang++ produces broken boost libraries (https://trac.macports.org/ticket/31525)
-#if {${configure.compiler} == "clang"} {
-#    configure.compiler macports-gcc-4.6
-#}
+compiler.blacklist macports-clang-2.9 macports-clang-3.0
+if {[vercmp $xcodeversion 4.4] < 0} {
+    compiler.blacklist-append clang
+}
+
+# It turns out that ccache and distcc can produce boost libraries that, although they
+# compile without warning, have all sorts of runtime errors especially with pointer corruption.
+# Since most people will now use MacPorts' pre-compiled boost, this should not be a problem.
+configure.ccache    no
+configure.distcc    no
 
 configure.cmd       ./bootstrap.sh
+#configure.compiler  macports-gcc-4.6
 configure.args      --without-libraries=python \
                     --without-libraries=mpi \
                     --with-icu=${prefix}
@@ -68,20 +80,7 @@ post-configure {
     reinplace -E "s|-install_name \"|&${prefix}/lib/|" \
         ${worksrcpath}/tools/build/v2/tools/darwin.jam
 
-    # Modified from 'portconfigure.tcl':
-    # set pre-compiler filter to use (ccache/distcc), if any.
-    if {[tbool configure.ccache] && [tbool configure.distcc]} {
-        set filter "ccache "
-        ui_msg "Warning: boost does not support distcc with ccache"
-    } elseif {[tbool configure.ccache]} {
-        set filter "ccache "
-    } elseif {[tbool configure.distcc]} {
-        set filter "distcc "
-    } else {
-        set filter ""
-    }
-    # should support different SDKs (https://trac.macports.org/ticket/33085)
-    write_jam "using darwin : : ${filter}${configure.cxx} ;"
+    write_jam "using darwin : : ${configure.cxx} ;"
 
 }
 
@@ -92,6 +91,8 @@ use_parallel_build  no
 
 build.cmd       ${worksrcpath}/b2
 build.target
+#build.args-append   pch=off
+#build.args-delete   architecture=x86
 build.args      -d2 \
                 --layout=tagged \
                 --debug-configuration \
@@ -133,7 +134,7 @@ post-destroot {
     }
 }
 
-set pythons_suffixes {25 26 27 31 32}
+set pythons_suffixes {25 26 27 31 32 33}
 
 set pythons_ports {}
 foreach s ${pythons_suffixes} {
@@ -156,8 +157,10 @@ foreach s ${pythons_suffixes} {
     set v [string index ${s} 0].[string index ${s} 1]
     set i [lsearch -exact ${pythons_ports} ${p}]
     set c [lreplace ${pythons_ports} ${i} ${i}]
+    # python 3k conflicts with openmpi (https://svn.boost.org/trac/boost/ticket/4657)
+    if { ${s} > 30 } { set o "openmpi" } else { set o "" }
     eval [subst {
-        variant ${p} description "Build Boost.Python for Python ${v}" conflicts ${c} debug {
+        variant ${p} description "Build Boost.Python for Python ${v}" conflicts ${c} ${o} debug {
 
             # There is a conflict with python and debug support, so we should really change the 'variant' line above
             # to end with "conflicts ${c} debug" above. However, we leave it enabled for those who want to try it.
@@ -179,6 +182,8 @@ foreach s ${pythons_suffixes} {
     }]
 }
 
+default_variants +no_single +no_static +openmpi
+
 variant debug description {Builds debug versions of the libraries as well} {
     build.args-delete   variant=release
     build.args-append   variant=debug,release
@@ -192,18 +197,6 @@ variant no_static description {Disable building static libraries} {
 variant no_single description {Disable building single-threaded libraries} {
     build.args-delete   threading=single,multi
     build.args-append   threading=multi
-}
-
-variant gcc46 description {Build with gcc46} {
-
-    depends_lib-append      port:gcc46
-    build.args-append   pch=off
-    build.args-delete   architecture=x86
-    configure.compiler macports-gcc-4.6
-#    configure.compiler /opt/local/bin/g++-mp-4.6
-    post-configure {
-        #write_jam "using darwin : : /opt/local/bin/g++-mp-4.5 ;"
-    }
 }
 
 variant openmpi conflicts debug description {Build Boost.MPI} {
@@ -265,7 +258,9 @@ if {![variant_isset universal]} {
         if {[lsearch ${build_arch} *86*] != -1} {
             build.args-append   architecture=x86
         } else {
-            error "Current value of 'build_arch' is not supported."
+            pre-fetch {
+                error "Current value of 'build_arch' is not supported."
+            }
         }
     }
     if {[lsearch ${build_arch} *64] != -1} {
@@ -295,6 +290,11 @@ variant universal {
     if {[lsearch ${universal_archs} *64] != -1} {
         if {[lsearch ${universal_archs} i386] != -1 || [lsearch ${universal_archs} ppc] != -1} {
             build.args-append   address-model=32_64
+            if {[lsearch ${universal_archs} ppc64] == -1} {
+                post-patch {
+                    reinplace "/local support-ppc64 =/s/= 1/= /" ${worksrcpath}/tools/build/v2/tools/darwin.jam
+                }
+            }
         } else {
             build.args-append   address-model=64
         }
@@ -302,9 +302,6 @@ variant universal {
         build.args-append   address-model=32
     }
 }
-
-
-default_variants +openmpi
 
 platform powerpc {
     build.args-append   --disable-long-double

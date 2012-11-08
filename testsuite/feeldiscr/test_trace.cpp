@@ -66,7 +66,7 @@ makeAbout()
                      Feel::AboutData::License_GPL,
                      "Copyright (c) 2008-2009 Universite Joseph Fourier" );
 
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     return about;
 
 }
@@ -112,9 +112,9 @@ public:
     /**
      * Constructor
      */
-    Test( po::variables_map const& vm, AboutData const& about )
+    Test()
         :
-        super( vm, about ),
+        super(),
         M_backend( backend_type::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( this->vm()["shape"].template as<std::string>() )
@@ -254,12 +254,12 @@ Test<Dim,Order>::run( const double* X, unsigned long P, double* Y, unsigned long
 
     if ( trace_exporter->doExport() )
     {
-        Log() << "trace export starts\n";
+        LOG(INFO) << "trace export starts\n";
 
         trace_exporter->step( 0 )->setMesh( trace_mesh );
         trace_exporter->step( 0 )->add( "trace_g", t );
         trace_exporter->save();
-        Log() << "trace export done\n";
+        LOG(INFO) << "trace export done\n";
     }
 
 } // Test::run
@@ -267,27 +267,18 @@ Test<Dim,Order>::run( const double* X, unsigned long P, double* Y, unsigned long
 int
 main( int argc, char** argv )
 {
-    Environment env( argc, argv );
+    Environment env( _argc=argc,
+                     _argv=argv,
+                     _desc=makeOptions(), _about=makeAbout() );
+    Application app;
 
-    Application app( argc, argv, makeAbout(), makeOptions() );
-
-    if ( app.vm().count( "help" ) )
-    {
-        std::cout << app.optionsDescription() << "\n";
-        return 0;
-    }
 
     // app.add( new Test<1>( app.vm(), app.about() ) );
     //app.add( new Test<2,1>( app.vm(), app.about() ) );
     //app.add( new Test<2,2>( app.vm(), app.about() ) );
-    app.add( new Test<2,3>( app.vm(), app.about() ) );
+    app.add( new Test<2,3>() );
     // app.add( new Test<3>( app.vm(), app.about() ) );
 
     app.run();
 
 }
-
-
-
-
-

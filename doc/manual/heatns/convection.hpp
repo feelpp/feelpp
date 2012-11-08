@@ -3,7 +3,7 @@
   This file is part of the Feel library
 
   Author(s): Samuel Quinodoz
-             Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+             Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2009-02-25
 
   Copyright (C) 2007 Samuel Quinodoz
@@ -28,7 +28,7 @@
 
 /**
    \file convection.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \author Samuel Quinodoz
    \date 2009-02-25
  */
@@ -111,9 +111,9 @@ public:
 
 #if defined( FEELPP_USE_LM )
     typedef Lagrange<0, Scalar> basis_l_type; // multipliers for pressure space
-    typedef fusion::vector< basis_u_type , basis_p_type , basis_t_type,basis_l_type> basis_type;
+    typedef bases< basis_u_type , basis_p_type , basis_t_type,basis_l_type> basis_type;
 #else
-    typedef fusion::vector< basis_u_type , basis_p_type , basis_t_type> basis_type;
+    typedef bases< basis_u_type , basis_p_type , basis_t_type> basis_type;
 #endif
 
     //! numerical type is double
