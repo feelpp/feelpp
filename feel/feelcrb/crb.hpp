@@ -515,7 +515,7 @@ public:
             auto e1 = M_composite_e1.template element< T::value >();
             auto e2 = M_composite_e2.template element< T::value >();
             mesh_ptrtype mesh = e1.functionSpace()->mesh();
-            double integral = integrate( _range=elements(mesh) , _expr=vf::idv( e1 ) * vf::idv( e2 ) ).evaluate()(0,0);
+            double integral = integrate( _range=elements(mesh) , _expr=trans( vf::idv( e1 ) ) * vf::idv( e2 ) ).evaluate()(0,0);
 
             M_vect.push_back( integral );
         }
@@ -556,7 +556,7 @@ public:
             auto Xh = M_composite_e1.functionSpace();
             mesh_ptrtype mesh = Xh->mesh();
             double integral = integrate( _range=elements(mesh) ,
-                                         _expr=( vf::idv( e1 ) - vf::idv( e2 ) )
+                                         _expr=trans( vf::idv( e1 ) - vf::idv( e2 ) )
                                          *     ( vf::idv( e1 ) - vf::idv( e2 ) )
                                          ).evaluate()(0,0);
             M_error(i) = math::sqrt( integral ) ;
@@ -2181,6 +2181,7 @@ CRB<TruthModelType>::offline()
 
         M_compute_variance = this->vm()["crb.compute-variance"].template as<bool>();
         if ( M_database_contains_variance_info )
+            //throw std::logic_error( "[CRB::offline] ERROR : build variance is not actived" );
             buildVarianceMatrixPhi( M_N );
 
         if ( M_error_type==CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM )

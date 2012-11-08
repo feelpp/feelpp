@@ -66,7 +66,7 @@ extern "C"
 #endif
 
 
-#if PETSC_VERSION_LESS_THAN(3,0,1) && PETSC_VERSION_RELEASE
+#if PETSC_VERSION_LESS_THAN(3,0,1) 
     PetscErrorCode __feel_petsc_preconditioner_setup ( void * ctx )
     {
         Preconditioner<double> * preconditioner = static_cast<Preconditioner<double>*>( ctx );
@@ -228,8 +228,8 @@ void SolverLinearPetsc<T>::init ()
         //  These options will override those specified above as long as
         //  KSPSetFromOptions() is called _after_ any other customization
         //  routines.
-        ierr = PCSetFromOptions ( _M_pc );
-        CHKERRABORT( this->worldComm().globalComm(),ierr );
+        //ierr = PCSetFromOptions ( _M_pc );
+        //CHKERRABORT( this->worldComm().globalComm(),ierr );
         ierr = KSPSetFromOptions ( _M_ksp );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
 
@@ -266,14 +266,20 @@ void SolverLinearPetsc<T>::init ()
         CHKERRABORT( this->worldComm().globalComm(),ierr );
 
         //If there is a preconditioner object we need to set the internal setup and apply routines
-        //LOG(INFO) << "preconditioner: "  << this->M_preconditioner << "\n";
         if ( this->M_preconditioner )
         {
+            LOG(INFO) << "preconditioner: "  << this->M_preconditioner << "\n";
+
             PCSetType(_M_pc, PCSHELL);
 
             PCShellSetContext( _M_pc,( void* )this->M_preconditioner.get() );
             PCShellSetSetUp( _M_pc,__feel_petsc_preconditioner_setup );
             PCShellSetApply( _M_pc,__feel_petsc_preconditioner_apply );
+            const PCType pc_type;
+            ierr = PCGetType ( _M_pc, &pc_type );
+            CHKERRABORT( this->worldComm().globalComm(),ierr );
+            
+            LOG(INFO) << "preconditioner set as "  << pc_type << "\n";
         }
 
         if ( this->showKSPMonitor() )
@@ -447,7 +453,7 @@ SolverLinearPetsc<T>::solve ( MatrixSparse<T> const&  matrix_in,
                               this->maxIterations() );
     CHKERRABORT( this->worldComm().globalComm(),ierr );
 
-    PreconditionerPetsc<T>::setPetscPreconditionerType( this->preconditionerType(),this->matSolverPackageType(),_M_pc, this->worldComm() );
+    //PreconditionerPetsc<T>::setPetscPreconditionerType( this->preconditionerType(),this->matSolverPackageType(),_M_pc, this->worldComm() );
 
 
     // makes the default convergence test use || B*(b - A*(initial guess))||
