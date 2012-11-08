@@ -31,7 +31,8 @@
     #include "convection.hpp"
 #else
     #include "convection_crb.hpp"
-    #include <feel/feelcrb/opusapp_heatns.hpp>
+    #include <feel/feelcrb/opusapp.hpp>
+//#include <feel/feelcrb/opusapp_heatns.hpp>
 #endif
 
 typedef Eigen::VectorXd theta_vector_type;
@@ -151,7 +152,8 @@ main( int argc, char** argv )
         myconvection.run();
 #else        
         std::cout << "CRB_SOLVER = " << CRB_SOLVER << std::endl;
-        Feel::OpusApp_heatns<Convection_crb> myconvectioncrb( argc, argv, makeAbout(), makeOptions()  );
+        //Feel::OpusApp_heatns<Convection_crb> myconvectioncrb( argc, argv, makeAbout(), makeOptions()  );
+        Feel::OpusApp<Convection_crb> myconvectioncrb( argc, argv, makeAbout(), makeOptions()  );
         myconvectioncrb.run();
 #endif
     

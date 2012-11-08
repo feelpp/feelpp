@@ -31,7 +31,7 @@
 
 #include "convection_crb.hpp"
 
-typedef Eigen::VectorXd theta_vector_type;
+typedef std::vector< std::vector< double > > beta_vector_type;
 
 void Convection_crb::init()
 {
@@ -72,28 +72,30 @@ void Convection_crb::init()
     double Prmax( this->vm()["Prmax"]. as<double>() );
     mu_max << Grmax, Prmax;
     M_Dmu->setMax( mu_max );
-    
-    
+
+
     //  initialisation de A0, A1, A2
-    M_Aq.resize( Qa() );
+    M_Aqm.resize( Qa() );
     for (int ii=0; ii<Qa(); ii++)
     {
-        M_Aq[ii] = M_backend->newMatrix( Xh, Xh );
+        M_Aqm[ii].resize(1);
+        M_Aqm[ii][0] = M_backend->newMatrix( Xh, Xh );
     }
-        
-    M_Fq.resize( Nl() );
+
+    M_Fqm.resize( Nl() );
     for (int ii=0; ii<Nl(); ii++)
     {
-        M_Fq[ii].resize( Ql(ii) );
+        M_Fqm[ii].resize( Ql(ii) );
         for (int jj=0; jj<Ql(ii); jj++)
         {
-            M_Fq[ii][jj] = M_backend->newVector( Xh );
-        }        
+            M_Fqm[ii][jj].resize(1);
+            M_Fqm[ii][jj][0] = M_backend->newVector( Xh );
+        }
     }
-        
+
     D = M_backend->newMatrix( Xh, Xh );
     F = M_backend->newVector( Xh );
-    
+
     double gamma( this->vm()["penalbc"]. as<double>() );
     double k=this->vm()["k"]. as<double>();
     double nu=this->vm()["nu"]. as<double>();
@@ -105,75 +107,82 @@ void Convection_crb::init()
     // Fluid
     // diffusion
     
-    // M_Aq[0] = C = grad(u)*grav(v)
-    form2( _test=Xh, _trial=Xh, _matrix=M_Aq[0], _init=true ) = integrate( _range=elements( mesh ),
+    // M_Aqm[0] = C = grad(u)*grav(v)
+    form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[0][0], _init=true ) = integrate( _range=elements( mesh ),
                                                                           _expr=trace( gradt( u )*trans( grad( v ) ) )  );
     
-    // heat diffusion: M_Aq[1] = G = grad(t)*grad(s)
-    form2( _test=Xh, _trial=Xh, _matrix=M_Aq[1], _init=true ) = integrate( _range=elements( mesh ),
+    // heat diffusion: M_Aqm[1] = G = grad(t)*grad(s)
+    form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[1][0], _init=true ) = integrate( _range=elements( mesh ),
                                                                           _expr=gradt( t )*trans( grad( s ) ) );
 
     // pressure-velocity terms
-    // M_Aq[2] = -B = -p*div(v)
-    form2( _test=Xh, _trial=Xh, _matrix=M_Aq[2], _init=true ) = integrate ( _range=elements( mesh ), _expr=- idt( p ) * div( v ) );
-    
-    // M_Aq[2] += B^t = q*div(u)
-    form2( _test=Xh, _trial=Xh, _matrix=M_Aq[2] ) += integrate ( _range=elements( mesh ), _expr=divt( u ) * id( q ) );
-    
+    // M_Aqm[2] = -B = -p*div(v)
+    form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[2][0], _init=true ) = integrate ( _range=elements( mesh ), _expr=- idt( p ) * div( v ) );
+
+    // M_Aqm[2] += B^t = q*div(u)
+    form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[2][0] ) += integrate ( _range=elements( mesh ), _expr=divt( u ) * id( q ) );
+
     if ( weakdir == 1 )
     {
         // weak Dirichlet condition at the walls (u=0)
-        form2( _test=Xh, _trial=Xh, _matrix=M_Aq[0] ) += integrate ( marked2faces( mesh, "F.wall" ), -trans( gradt( u )*N() )*id( v ) );
-        form2( _test=Xh, _trial=Xh, _matrix=M_Aq[2] ) += integrate ( marked2faces( mesh, "F.wall" ), -trans( -idt( p )*N() )*id( v ) );
-        form2( _test=Xh, _trial=Xh, _matrix=M_Aq[0] )  += integrate ( marked2faces( mesh, "F.wall" ), -trans( grad( v )*N() )*idt( u ) );
-        form2( _test=Xh, _trial=Xh, _matrix=M_Aq[2] )  += integrate ( marked2faces( mesh, "F.wall" ), -trans( -id( q )*N() )*idt( u ) );
-        form2( _test=Xh, _trial=Xh, _matrix=M_Aq[2] )  += integrate ( marked2faces( mesh, "F.wall" ), +gamma*trans( idt( u ) )*id( v )/hFace() );
+        form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[0][0] ) += integrate ( marked2faces( mesh, "F.wall" ), -trans( gradt( u )*N() )*id( v ) );
+        form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[2][0] ) += integrate ( marked2faces( mesh, "F.wall" ), -trans( -idt( p )*N() )*id( v ) );
+        form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[0][0] )  += integrate ( marked2faces( mesh, "F.wall" ), -trans( grad( v )*N() )*idt( u ) );
+        form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[2][0] )  += integrate ( marked2faces( mesh, "F.wall" ), -trans( -id( q )*N() )*idt( u ) );
+        form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[2][0] )  += integrate ( marked2faces( mesh, "F.wall" ), +gamma*trans( idt( u ) )*id( v )/hFace() );
     }
-    
+
 #if defined( FEELPP_USE_LM )
     // multipliers for zero-mean pressure
-    form2( _test=Xh, _trial=Xh, _matrix=M_Aq[2] ) += integrate ( _range=elements( mesh ), _expr=id( q )*idt( xi ) );
-    form2( _test=Xh, _trial=Xh, _matrix=M_Aq[2] ) += integrate ( _range=elements( mesh ), _expr=idt( p )*id( eta ) );
+    form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[2][0] ) += integrate ( _range=elements( mesh ), _expr=id( q )*idt( xi ) );
+    form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[2][0] ) += integrate ( _range=elements( mesh ), _expr=idt( p )*id( eta ) );
 #endif
-    
-    
+
+
     double expansion = 1;
-    
+
     if ( adim == 0 ) expansion=3.7e-3;
-    
+
     // Temperature
-    
+
 #if CONVECTION_DIM==2
     // buyoancy forces c(theta,v)
-    form2( _test=Xh, _trial=Xh, _matrix=M_Aq[2] ) +=integrate( _range=elements( mesh ),
+    form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[2][0] ) +=integrate( _range=elements( mesh ),
                                                               _expr=-expansion*idt( t )*( trans( vec( constant( 0. ),constant( 1.0 ) ) )*id( v ) ) );
 #else
-    form2( _test=Xh, _trial=Xh, _matrix=M_Aq[2] ) +=integrate( _range=elements( mesh ),
+    form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[2][0] ) +=integrate( _range=elements( mesh ),
                                                               _expr=-expansion*idt( t )*( trans( vec( cst(0.), constant( 0. ),constant( 1.0 ) ) )*id( v ) ) );
 #endif
-    
-    
+
+
     if ( weakdir == 1 )
     {
         // weak Dirichlet on temperature (T=0|left wall)
-        form2( _test=Xh, _trial=Xh, _matrix=M_Aq[1] ) += integrate ( markedfaces( mesh,mesh->markerName( "Tfixed" ) ),
+        form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[1][0] ) += integrate ( markedfaces( mesh,mesh->markerName( "Tfixed" ) ),
                                                                     - gradt( t )*N()*id( s ) );
-        form2( _test=Xh, _trial=Xh, _matrix=M_Aq[1] ) += integrate ( markedfaces( mesh,mesh->markerName( "Tfixed" ) ),
+        form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[1][0] ) += integrate ( markedfaces( mesh,mesh->markerName( "Tfixed" ) ),
                                                                     - grad( s )*N()*idt( t ) );
-        form2( _test=Xh, _trial=Xh, _matrix=M_Aq[2] ) += integrate ( markedfaces( mesh,mesh->markerName( "Tfixed" ) ),
+        form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[2][0] ) += integrate ( markedfaces( mesh,mesh->markerName( "Tfixed" ) ),
                                                                     gamma*idt( t )*id( s )/hFace() );
     }
-        
+
     M = M_backend->newMatrix( Xh, Xh );
-    
+
     form2( Xh, Xh, M, _init=true ) = integrate( elements( mesh ), trans( id( v ) )*idt( u ) + trace( grad( v )*trans( gradt( u ) ) ) );
-    
+
     form2( Xh, Xh, M ) += integrate( _range=elements( mesh ), _expr=id( q )*idt( p ) + grad( q )*trans( gradt( p ) ) );
-    
+
     form2( Xh, Xh, M ) += integrate( _range=elements( mesh ), _expr=id( s )*idt( t ) + grad( s )*trans( gradt( t ) ) );
-    
+
     M->close();
-        
+
+    auto ini_cond = Xh->elementPtr();
+    ini_cond->setZero();
+    M_InitialGuessQm.resize( 1 );
+    M_InitialGuessQm[0].resize( 1 );
+    M_InitialGuessQm[0][0] = ini_cond;
+
+
 }
 
 // \return the number of terms in affine decomposition of left hand
@@ -181,6 +190,14 @@ void Convection_crb::init()
 int Convection_crb::Qa() const
 {
     return 4;
+}
+
+int Convection_crb::mMaxA( int q )
+{
+    if ( q < 4 )
+        return 1;
+    else
+        throw std::logic_error( "[Model] ERROR : try to acces to mMaxA(q) with a bad value of q");
 }
 
 /**
@@ -194,6 +211,20 @@ int Convection_crb::Nl() const
     return 2;
 }
 
+int Convection_crb::mMaxF( int output_index, int q)
+{
+    if ( q < 1 )
+        return 1;
+    else
+        throw std::logic_error( "[Model] ERROR : try to acces to mMaxF(output_index,q) with a bad value of q");
+}
+
+int Convection_crb::mMaxInitialGuess( int q )
+{
+    return 1;
+}
+
+
 /**
  * \param l the index of output
  * \return number of terms  in affine decomposition of the \p q th output term
@@ -201,32 +232,51 @@ int Convection_crb::Nl() const
 int Convection_crb::Ql( int l ) const
 {
 //    if ( l == 0 ) return 2;
-    
+
     return 1;
 }
 
+
+int Convection_crb::QInitialGuess() const
+{
+    return 1;
+}
+
+
+
 /**
- * \brief compute the theta coefficient for both bilinear and linear form
+ * \brief compute the beta coefficient for both bilinear and linear form
  * \param mu parameter to evaluate the coefficients
  */
-boost::tuple<theta_vector_type, std::vector<theta_vector_type> >
-Convection_crb::computeThetaq( parameter_type const& mu, double )
-{    
-    M_thetaAq.resize( Qa() );
-    M_thetaAq( 0 ) = 1/math::sqrt( mu( 0 ) ); // k_1
-    M_thetaAq( 1 ) = 1/( mu( 1 )*math::sqrt( mu ( 0 ) ) ); // k_2
-    M_thetaAq( 2 ) = 1;
-    M_thetaAq( 3 ) = 1;
-    
-    M_thetaFq.resize( Nl() );        
-    M_thetaFq[0].resize( Ql( 0 ) );
-    M_thetaFq[0]( 0 ) = 1. ; //mu( 2 ); // delta
-    //    M_thetaFq[0]( 1 ) = mu( 3 ); // phi
-    
-    M_thetaFq[1].resize( Ql( 1 ) );
-    M_thetaFq[1]( 0 ) = 1;
 
-    return boost::make_tuple( M_thetaAq, M_thetaFq );
+boost::tuple<beta_vector_type, std::vector<beta_vector_type>, beta_vector_type>
+Convection_crb::computeBetaQm( parameter_type const& mu, double )
+{
+    M_betaAqm.resize( Qa() );
+    M_betaAqm[0].resize(1);
+    M_betaAqm[1].resize(1);
+    M_betaAqm[2].resize(1);
+    M_betaAqm[3].resize(1);
+    M_betaAqm[0][0] = 1/math::sqrt( mu( 0 ) ); // k_1
+    M_betaAqm[1][0] = 1/( mu( 1 )*math::sqrt( mu ( 0 ) ) ); // k_2
+    M_betaAqm[2][0] = 1;
+    M_betaAqm[3][0] = 1;
+
+    M_betaFqm.resize( Nl() );
+    M_betaFqm[0].resize( Ql( 0 ) );
+    M_betaFqm[0][0].resize(1);
+    M_betaFqm[0][0][0] = 1. ; //mu( 2 ); // delta
+    //    M_betaFqm[0]( 1 ) = mu( 3 ); // phi
+
+    M_betaFqm[1].resize( Ql( 1 ) );
+    M_betaFqm[1][0].resize(1);
+    M_betaFqm[1][0][0] = 1;
+
+    M_betaInitialGuessQm.resize( QInitialGuess() );
+    M_betaInitialGuessQm[0].resize( 1 );
+    M_betaInitialGuessQm[0][0] = 0;
+
+    return boost::make_tuple( M_betaAqm, M_betaFqm , M_betaInitialGuessQm );
 }
 
 void
@@ -236,20 +286,27 @@ Convection_crb::update( parameter_type const& mu )
     
     for ( size_type q = 0; q < (M_thetaAq.size()-1); ++q )
     {
-        //std::cout << "[affine decomp] scale q=" << q << " with " << M_thetaAq[q] << "\n";
-        D->addMatrix( M_thetaAq[q], M_Aq[q] );
+        for ( size_type m = 0; m < mMaxA(q); ++m )
+        {
+            D->addMatrix( M_betaAqm[q][m] , M_Aqm[q][m] );
+        }
+        //D->addMatrix( M_betaAqm[q], M_Aqm[q] );
     }
-    
+
     D->close();
     F->zero();
-    
-    for ( size_type q = 0; q < M_Fq[0].size(); ++q )
+
+    for ( size_type q = 0; q < M_Fqm[0].size(); ++q )
     {
-        //std::cout << "[affine decomp] scale q=" << q << " with " << M_thetaFq[0][q] << "\n";
-        F->add( M_thetaFq[0][q], M_Fq[0][q] );
+        for ( size_type m = 0; m < mMaxF(0,q); ++m )
+        {
+            F->add( M_betaFqm[0][q][m], M_Fqm[0][q][m] );
+        }
+        //std::cout << "[affine decomp] scale q=" << q << " with " << M_betaFqm[0][q] << "\n";
+        //F->add( M_betaFqm[0][q], M_Fqm[0][q] );
     }
     F->close();
-    
+
 }
 
 void Convection_crb ::updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J)
@@ -284,53 +341,52 @@ void Convection_crb ::updateJacobian( const vector_ptrtype& X, sparse_matrix_ptr
     double T0 = this->vm()["T0"]. as<double>();
         
     double pC = 1.0;
-    M_Aq[3]->zero();
+    M_Aqm[3][0]->zero();
 
     // Fluid-NS
     // fluid convection derivatives: attention 2 terms
     
-    form2( _test=Xh,_trial=Xh, _matrix=M_Aq[3] )  += integrate ( _range=elements( mesh ), _expr=cst( 1.)*trans( id( v ) )*( gradv( u ) )*idt( u ) );
-
-    form2( _test=Xh,_trial=Xh, _matrix=M_Aq[3] )  += integrate ( _range=elements( mesh ), _expr=cst( 1.)*trans( id( v ) )*( gradt( u ) )*idv( u ) );
+    form2( _test=Xh,_trial=Xh, _matrix=M_Aqm[3][0] )  += integrate ( _range=elements( mesh ), _expr=cst( 1. )*trans( id( v ) )*( gradv( u ) )*idt( u ) );
+    form2( _test=Xh,_trial=Xh, _matrix=M_Aqm[3][0] )  += integrate ( _range=elements( mesh ), _expr=cst( 1. )*trans( id( v ) )*( gradt( u ) )*idv( u ) );
 
         
     //    // temperature derivatives
     //
     // heat convection by the fluid: attention 2 terms
-    form2( _test=Xh, _trial=Xh, _matrix=M_Aq[3] ) +=
+    form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[3][0] ) +=
     integrate ( elements( mesh ),
                pC*grad( s )*( idv( t )*idt( u ) ) );
     
-    form2( _test=Xh, _trial=Xh, _matrix=M_Aq[3] ) +=
+    form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[3][0] ) +=
     integrate ( elements( mesh ),
                pC*grad( s )*( idt( t )*idv( u ) ) );
-           
-    form2( _test=Xh, _trial=Xh, _matrix=M_Aq[3] ) +=
+    
+    form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[3][0] ) +=
     integrate ( boundaryfaces( mesh ),
                pC*( trans( idv( u ) )*N() )*id( s )*idt( t ) );
-               
-    form2( _test=Xh, _trial=Xh, _matrix=M_Aq[3] ) +=
+    
+    form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[3][0] ) +=
     integrate ( boundaryfaces( mesh ),
                pC*( trans( idt( u ) )*N() )*id( s )*idv( t ) );
 
     if ( weakdir == 0 )
     {
         //vitesse
-        form2( Xh, Xh, M_Aq[3] )  += on( boundaryfaces( mesh ),u, Rtemp,one()*0. );
+        form2( Xh, Xh, M_Aqm[3][0] )  += on( boundaryfaces( mesh ),u, Rtemp,one()*0. );
         
         if ( adim==1 )
             //temperature
-            form2( Xh, Xh, M_Aq[3] )  += on ( markedfaces( mesh, "Tfixed" ),t,Rtemp,cst( 0.0 ) );
+            form2( Xh, Xh, M_Aqm[3][0] )  += on ( markedfaces( mesh, "Tfixed" ),t,Rtemp,cst( 0.0 ) );
         
         else
-            form2( Xh, Xh, M_Aq[3] )  += on ( markedfaces( mesh, "Tfixed" ),t,Rtemp,cst( T0 ) );
+            form2( Xh, Xh, M_Aqm[3][0] )  += on ( markedfaces( mesh, "Tfixed" ),t,Rtemp,cst( T0 ) );
     }
 
-    M_Aq[3]->close();
+    M_Aqm[3][0]->close();
 
     J->zero();
     J->addMatrix(1.,D);
-    J->addMatrix(1.,M_Aq[3]);
+    J->addMatrix(1.,M_Aqm[3][0]);
     
 }
 

@@ -45,13 +45,19 @@ makeOptions()
 {
     po::options_description laplacianoptions( "Laplacian options" );
     laplacianoptions.add_options()
-    ( "hsize", po::value<double>()->default_value( 0.5 ), "mesh size" )
-    ( "shape", Feel::po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (either simplex or hypercube)" )
-    ( "nu", po::value<double>()->default_value( 1 ), "grad.grad coefficient" )
-    ( "weakdir", po::value<int>()->default_value( 1 ), "use weak Dirichlet condition" )
-    ( "penaldir", Feel::po::value<double>()->default_value( 10 ),
-      "penalisation parameter for the weak boundary Dirichlet formulation" )
-    ;
+        ( "hsize", po::value<double>()->default_value( 0.5 ), "mesh size" )
+        ( "shape", Feel::po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (either simplex or hypercube)" )
+        ( "nu", po::value<double>()->default_value( 1 ), "grad.grad coefficient" )
+        ( "weakdir", po::value<int>()->default_value( 1 ), "use weak Dirichlet condition" )
+        ( "penaldir", Feel::po::value<double>()->default_value( 10 ),
+          "penalisation parameter for the weak boundary Dirichlet formulation" )
+        ( "exact1D", po::value<std::string>()->default_value( "sin(2*Pi*x)" ), "exact 1D solution" )
+        ( "exact2D", po::value<std::string>()->default_value( "sin(2*Pi*x)*cos(2*Pi*y)" ), "exact 2D solution" )
+        ( "exact3D", po::value<std::string>()->default_value( "sin(2*Pi*x)*cos(2*Pi*y)*cos(2*Pi*z)" ), "exact 3D solution" )
+        ( "rhs1D", po::value<std::string>()->default_value( "" ), "right hand side 1D" )
+        ( "rhs2D", po::value<std::string>()->default_value( "" ), "right hand side 2D" )
+        ( "rhs3D", po::value<std::string>()->default_value( "" ), "right hand side 3D" )
+        ;
     return laplacianoptions.add( Feel::feel_options() );
 }
 
@@ -170,14 +176,22 @@ Laplacian<Dim>::run()
     bool weak_dirichlet = this->vm()["weakdir"].template as<int>();
     value_type penaldir = this->vm()["penaldir"].template as<double>();
     value_type nu = this->vm()["nu"].template as<double>();
-
-    symbol x("x"),y("y"),z("z");
-    ex gg = sin(pi*x)*cos(pi*y)*cos(pi*z);
-    ex ff=-nu*laplacian(gg,{x,y,z});
-    LOG(INFO) << "laplacian(g)="<< ff << "\n";
-    auto g = expr(gg,{x,y,z});
-    auto f = expr(ff,{x,y,z});
-    auto gradg = expr<1,Dim,2>(grad(gg,{x,y,z}), {x,y,z} );
+    std::string exact  = this->vm()[(boost::format("exact%1%D")%Dim).str()].template as<std::string>();
+    std::string rhs  = this->vm()[(boost::format("rhs%1%D")%Dim).str()].template as<std::string>();
+    LOG(INFO) << "exact = "  << exact << "\n";
+    auto vars=symbols<Dim>();
+    ex gg = parse(exact,vars);
+    LOG(INFO) << "="<< gg << "\n";
+    ex ff;
+    if ( rhs.empty() )
+        ff=-nu*laplacian(gg,vars);
+    else
+        ff = parse(rhs,vars);
+    LOG(INFO) << "rhs="<< ff << "\n";
+    LOG(INFO) << "grad(g)="<< grad(gg,vars) << "\n";
+    auto g = expr(gg,vars);
+    auto f = expr(ff,vars);
+    auto gradg = expr<1,Dim,2>(grad(gg,vars), vars );
 
     // build Xh-interpolant of g
     gproj = vf::project( Xh, elements( mesh ), g );
@@ -196,8 +210,8 @@ Laplacian<Dim>::run()
     /** \code */
     //# marker2 #
     auto F = backend()->newVector( Xh );
-    auto rhs = form1( _test=Xh, _vector=F );
-    rhs = integrate( _range=elements( mesh ), _expr=f*id( v ) )+
+    auto l = form1( _test=Xh, _vector=F );
+    l = integrate( _range=elements( mesh ), _expr=f*id( v ) )+
         integrate( _range=markedfaces( mesh, "Neumann" ),
                    _expr=nu*gradg*vf::N()*id( v )
             );
@@ -206,7 +220,7 @@ Laplacian<Dim>::run()
     if ( weak_dirichlet )
     {
         //# marker41 #
-        rhs += integrate( _range=markedfaces( mesh,"Dirichlet" ),
+        l += integrate( _range=markedfaces( mesh,"Dirichlet" ),
                           _expr=nu*g*( -grad( v )*vf::N()+penaldir*id( v )/hFace() ) );
         //# endmarker41 #
     }
@@ -325,10 +339,10 @@ main( int argc, char** argv )
     Application app;
 
 
-    if ( app.nProcess() == 1 )
-        app.add( new Laplacian<1>() );
+    //if ( app.nProcess() == 1 )
+    //app.add( new Laplacian<1>() );
     app.add( new Laplacian<2>() );
-    app.add( new Laplacian<3>() );
+    //app.add( new Laplacian<3>() );
 
     app.run();
 

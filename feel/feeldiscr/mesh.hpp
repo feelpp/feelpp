@@ -1163,6 +1163,8 @@ public:
         meshChanged.connect( obs );
     }
 
+    void removeFacesFromBoundary( std::initializer_list<uint16_type> markers );
+
     //@}
 
 protected:
@@ -1183,6 +1185,7 @@ protected:
      */
     void check() const;
 
+
 private:
 
     /**
@@ -1198,6 +1201,8 @@ private:
     void updateOnBoundary( mpl::int_<1> );
     void updateOnBoundary( mpl::int_<2> );
     void updateOnBoundary( mpl::int_<3> );
+
+
 private:
 
     //! communicator

@@ -54,6 +54,12 @@ PreconditionerPetsc<T>::PreconditionerPetsc ( WorldComm const& worldComm )
     Preconditioner<T>( worldComm )
 {
 }
+template <typename T>
+PreconditionerPetsc<T>::PreconditionerPetsc ( PreconditionerPetsc const& p )
+    :
+    Preconditioner<T>( p )
+{
+}
 
 
 
@@ -79,6 +85,8 @@ void PreconditionerPetsc<T>::init ()
     {
         // Create the preconditioning object
         int ierr = PCCreate( this->worldComm().globalComm(),&M_pc );
+        CHKERRABORT( this->worldComm().globalComm(),ierr );
+        ierr = PCSetFromOptions ( M_pc );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
 
         MatrixPetsc<T> * pmatrix = dynamic_cast<MatrixPetsc<T>*>( this->M_matrix.get() );
@@ -107,10 +115,15 @@ void PreconditionerPetsc<T>::init ()
 template <typename T>
 void PreconditionerPetsc<T>::clear ()
 {
+    LOG(INFO)<<"clear()\n";
     if ( this-> M_is_initialized )
     {
+        LOG(INFO) << "precond destroyed\n" ;
         this->M_is_initialized = false;
-        PETSc::PCDestroy( M_pc );
+        PetscTruth is_petsc_initialized;
+        PetscInitialized( &is_petsc_initialized );
+        if ( is_petsc_initialized )
+            PETSc::PCDestroy( M_pc );
     }
 }
 
