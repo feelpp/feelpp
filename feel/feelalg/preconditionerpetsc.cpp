@@ -120,7 +120,10 @@ void PreconditionerPetsc<T>::clear ()
     {
         LOG(INFO) << "precond destroyed\n" ;
         this->M_is_initialized = false;
-        PETSc::PCDestroy( M_pc );
+        PetscTruth is_petsc_initialized;
+        PetscInitialized( &is_petsc_initialized );
+        if ( is_petsc_initialized )
+            PETSc::PCDestroy( M_pc );
     }
 }
 
