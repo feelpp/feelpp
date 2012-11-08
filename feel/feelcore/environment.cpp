@@ -463,6 +463,27 @@ Environment::Environment( int& argc, char**& argv )
     :
     M_env( argc, argv, false )
 {
+    // if scratsch dir not defined, define it
+    const char* env;
+    env = getenv("FEELPP_SCRATCHDIR");
+    if (env != NULL && env[0] != '\0')
+    {
+        env = getenv("SCRATCHDIR");
+        if (env != NULL && env[0] != '\0')
+        {
+            std::string value = (boost::format("%1%/feelpp/") % env).str();
+            ::setenv("FEELPP_SCRATCHDIR",value.c_str(), 0 );
+        }
+        else
+        {
+            std::string value = (boost::format("/tmp/feelpp/") % env).str();
+            ::setenv("FEELPP_SCRATCHDIR",value.c_str(), 0 );
+        }
+    }
+    env = getenv("FEELPP_SCRATCHDIR");
+    S_scratchdir = fs::path( env );
+
+
     google::AllowCommandLineReparsing();
     google::ParseCommandLineFlags(&argc, &argv, false);
 
@@ -825,6 +846,9 @@ std::vector<std::string> Environment::S_to_pass_further;
 boost::signals2::signal<void ()> Environment::S_deleteObservers;
 
 boost::shared_ptr<WorldComm> Environment::S_worldcomm;
+
+fs::path Environment::S_scratchdir;
+
 } // detail
 
 }

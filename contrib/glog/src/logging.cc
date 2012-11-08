@@ -138,6 +138,15 @@ GLOG_DEFINE_string(logmailer, "/bin/mail",
 // Compute the default value for --log_dir
 static const char* DefaultLogDir() {
   const char* env;
+  env = getenv("FEELPP_SCRATCHDIR");
+  if (env != NULL && env[0] != '\0') {
+      return env;
+  }
+  env = getenv("SCRATCHDIR");
+  if (env != NULL && env[0] != '\0') {
+      return env;
+  }
+
   env = getenv("GOOGLE_LOG_DIR");
   if (env != NULL && env[0] != '\0') {
     return env;
