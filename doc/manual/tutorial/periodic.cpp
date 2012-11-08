@@ -192,17 +192,17 @@ PeriodicLaplacian<Dim,Order>::PeriodicLaplacian()
                                          _h=h,
                                          _xmin=-1.5, _ymin=-1.5, _xmax=1.5, _ymax=1.5 ) );
 
-
+    LOG(INFO) << "nfaces: " << nelements( markedfaces(mesh,{2,4}) ) << " boundary face: "  << nelements( boundaryfaces(mesh) )<< "\n";
     LOG(INFO) << "create space\n";
     node_type trans( 2 );
     trans[0]=0;
     trans[1]=3;
     Xh = functionspace_type::New( _mesh=mesh, _periodicity=periodicity(Periodic<>( 2, 4, trans )) );
-
+    LOG(INFO) << "nfaces after: " << nelements( markedfaces(mesh,{2,4}) ) << " boundary face: "  << nelements( boundaryfaces(mesh) )<< "\n";
     Xh_vec = functionspace_vec_type::New( _mesh=mesh, _periodicity=periodicity(Periodic<>( 2, 4, trans ) ));
-
+    LOG(INFO) << "nfaces after: " << nelements( markedfaces(mesh,{2,4}) ) << " boundary face: "  << nelements( boundaryfaces(mesh) )<< "\n";
     Xhc = functionspace_composite_type::New( _mesh=mesh, _periodicity=periodicity( Periodic<>(2, 4, trans), NoPeriodicity() ) );
-
+    LOG(INFO) << "nfaces after: " << nelements( markedfaces(mesh,{2,4}) ) << " boundary face: "  << nelements( boundaryfaces(mesh) )<< "\n";
     LOG(INFO) << "Xh print space info\n";
     Xh->printInfo();
     LOG(INFO) << "Xh_vec print space info\n";
