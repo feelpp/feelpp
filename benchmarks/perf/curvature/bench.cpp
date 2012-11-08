@@ -27,8 +27,6 @@
    \date 2011-10-31
  */
 #include <boost/assign/list_of.hpp>
-#include <feel/feelcore/application.hpp>
-
 #include <curvature.hpp>
 
 /**
@@ -117,8 +115,8 @@ int main( int argc, char** argv )
 {
 
     using namespace Feel;
-    Environment env(argc,argv);
-    Application benchmark( argc, argv, makeAbout(), makeOptions() );
+    Environment env(_argc=argc,_argv=argv,_desc=makeOptions(),_about=makeAbout());
+    Application benchmark;
 
     if ( benchmark.vm().count( "help" ) )
     {
@@ -126,16 +124,16 @@ int main( int argc, char** argv )
         return 0;
     }
 #if 1
-    benchmark.add( new Curvature<2, Lagrange<1, Scalar>, Lagrange<1, Vectorial>, Simplex>( "2D-P1-Simplex", benchmark.vm(), benchmark.about() ) );
-    benchmark.add( new Curvature<2, Lagrange<2, Scalar>, Lagrange<2, Vectorial>, Simplex>( "2D-P2-Simplex", benchmark.vm(), benchmark.about() ) );
-    benchmark.add( new Curvature<2, Lagrange<3, Scalar>, Lagrange<3, Vectorial>, Simplex>( "2D-P3-Simplex", benchmark.vm(), benchmark.about() ) );
+    benchmark.add( new Curvature<2, Lagrange<1, Scalar>, Lagrange<1, Vectorial>, Simplex>( "2D-P1-Simplex") );
+    benchmark.add( new Curvature<2, Lagrange<2, Scalar>, Lagrange<2, Vectorial>, Simplex>( "2D-P2-Simplex") );
+    benchmark.add( new Curvature<2, Lagrange<3, Scalar>, Lagrange<3, Vectorial>, Simplex>( "2D-P3-Simplex") );
 #endif
 
 #if 1
-    benchmark.add( new Curvature<2, Lagrange<4, Scalar>, Lagrange<4, Vectorial,Discontinuous>, Simplex>( "2D-P4-Simplex", benchmark.vm(), benchmark.about() ) );
-    benchmark.add( new Curvature<2, Lagrange<5, Scalar>, Lagrange<5, Vectorial,Discontinuous>, Simplex>( "2D-P5-Simplex", benchmark.vm(), benchmark.about() ) );
+    benchmark.add( new Curvature<2, Lagrange<4, Scalar>, Lagrange<4, Vectorial,Discontinuous>, Simplex>( "2D-P4-Simplex" ) );
+    benchmark.add( new Curvature<2, Lagrange<5, Scalar>, Lagrange<5, Vectorial,Discontinuous>, Simplex>( "2D-P5-Simplex" ) ) ;
 #endif
-    //    benchmark.add( new Curvature<3, Lagrange<2, Scalar>, Lagrange<2, Vectorial>, Simplex>( "2D-P3-Simplex", benchmark.vm(), benchmark.about() ) );
+    //    benchmark.add( new Curvature<3, Lagrange<2, Scalar>, Lagrange<2, Vectorial>, Simplex>( "2D-P3-Simplex" ) );
 
     benchmark.setStats( boost::assign::list_of( "e.nod" )( "e.l2" )( "e.sm" )( "e.hs" )("n.space")("n.spacev") );
 

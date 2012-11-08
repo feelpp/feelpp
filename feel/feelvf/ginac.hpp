@@ -47,6 +47,15 @@ using  GiNaC::matrix;
 using  GiNaC::symbol;
 using  GiNaC::lst;
 using  GiNaC::ex;
+using  GiNaC::parser;
+
+template<int Dim> inline std::vector<symbol> symbols() { return {symbol("x")}; }
+template<> inline std::vector<symbol> symbols<1>() { return {symbol("x")}; }
+template<> inline std::vector<symbol> symbols<2>() { return {symbol("x"),symbol("y") };}
+template<> inline std::vector<symbol> symbols<3>() { return {symbol("x"),symbol("y"),symbol("z") };}
+
+ex parse( std::string const& str, std::vector<symbol> const& syms );
+
 namespace vf
 {
 
@@ -94,7 +103,7 @@ public:
      */
     //@{
 
-    explicit GinacEx( expression_type const & fun, std::list<GiNaC::symbol> const& syms )
+    explicit GinacEx( expression_type const & fun, std::vector<GiNaC::symbol> const& syms )
     :
     M_fun( fun ),
     M_syms( syms),
@@ -153,6 +162,8 @@ public:
         return M_cfun;
     }
 
+    std::vector<GiNaC::symbol> const& syms() const { return M_syms; }
+
     //@}
 
 
@@ -186,7 +197,8 @@ public:
             :
             M_fun( expr.fun() ),
             M_gmc( fusion::at_key<key_type>( geom ).get() ),
-            M_y( M_gmc->nPoints() )
+            M_y( M_gmc->nPoints() ),
+            M_nsyms( expr.syms().size() )
         {}
 
         tensor( this_type const& expr,
@@ -194,14 +206,16 @@ public:
             :
             M_fun( expr.fun() ),
             M_gmc( fusion::at_key<key_type>( geom ).get() ),
-            M_y( M_gmc->nPoints() )
+            M_y( M_gmc->nPoints() ),
+            M_nsyms( expr.syms().size() )
         {}
 
         tensor( this_type const& expr, Geo_t const& geom )
             :
             M_fun( expr.fun() ),
             M_gmc( fusion::at_key<key_type>( geom ).get() ),
-            M_y( M_gmc->nPoints() )
+            M_y( M_gmc->nPoints() ),
+            M_nsyms( expr.syms().size() )
         {
         }
 
@@ -223,13 +237,15 @@ public:
             M_gmc =  fusion::at_key<key_type>( geom ).get();
 
             int no = 1;
-            int ni = gmc_type::nDim;
-            double xi[gmc_type::nDim];
+            int ni = M_nsyms;///gmc_type::nDim;
+            Eigen::VectorXd xi( M_nsyms );
             for(int q = 0; q < M_gmc->nPoints();++q )
             {
                 for(int k = 0;k < gmc_type::nDim;++k )
                     xi[k]=M_gmc->xReal( q )[k];
-                M_fun(&ni,xi,&no,&M_y[q]);
+                for( int k = gmc_type::nDim; k < xi.size(); ++k )
+                    xi[k] = 0;
+                M_fun(&ni,xi.data(),&no,&M_y[q]);
             }
 
         }
@@ -239,14 +255,15 @@ public:
             M_gmc =  fusion::at_key<key_type>( geom ).get();
 
             int no = 1;
-            int ni = gmc_type::nDim;
-            double xi[3];
+            int ni = M_nsyms;//gmc_type::nDim;
+            Eigen::VectorXd xi( M_nsyms );
             for(int q = 0; q < M_gmc->nPoints();++q )
             {
                 for(int k = 0;k < gmc_type::nDim;++k )
                     xi[k]=M_gmc->xReal( q )[k];
-
-                M_fun(&ni,xi,&no,&M_y[q]);
+                for( int k = gmc_type::nDim; k < xi.size(); ++k )
+                    xi[k] = 0;
+                M_fun(&ni,xi.data(),&no,&M_y[q]);
             }
         }
 
@@ -283,17 +300,18 @@ public:
 
 
         vec_type M_y;
+        int M_nsyms;
     };
 
 private:
     mutable expression_type  M_fun;
-    std::list<GiNaC::symbol> M_syms;
+    std::vector<GiNaC::symbol> M_syms;
     GiNaC::FUNCP_CUBA M_cfun;
 };
 
 inline
 Expr< GinacEx<2> >
-expr( GiNaC::ex const& f, std::list<GiNaC::symbol> const& lsym )
+expr( GiNaC::ex const& f, std::vector<GiNaC::symbol> const& lsym )
 {
     return Expr< GinacEx<2> >(  GinacEx<2>( f, lsym ) );
 }
@@ -305,7 +323,7 @@ expr( GiNaC::ex const& f, std::list<GiNaC::symbol> const& lsym )
 template<int Order>
 inline
 Expr< GinacEx<Order> >
-expr( GiNaC::ex const& f, std::list<GiNaC::symbol> const& lsym )
+expr( GiNaC::ex const& f, std::vector<GiNaC::symbol> const& lsym )
 {
     return Expr< GinacEx<Order> >(  GinacEx<Order>( f, lsym ) );
 }
@@ -346,7 +364,7 @@ public:
      */
     //@{
 
-    explicit GinacMatrix( GiNaC::matrix const & fun, std::list<GiNaC::symbol> const& syms )
+    explicit GinacMatrix( GiNaC::matrix const & fun, std::vector<GiNaC::symbol> const& syms )
     :
         M_fun( fun.evalm() ),
         M_syms( syms),
@@ -359,7 +377,7 @@ public:
             std::for_each( M_syms.begin(),M_syms.end(), [&]( GiNaC::symbol const& s ) { syml.append(s); } );
             GiNaC::compile_ex(exprs, syml, M_cfun);
         }
-    explicit GinacMatrix( GiNaC::ex const & fun, std::list<GiNaC::symbol> const& syms )
+    explicit GinacMatrix( GiNaC::ex const & fun, std::vector<GiNaC::symbol> const& syms )
         :
         M_fun(fun.evalm()),
         M_syms( syms),
@@ -420,6 +438,7 @@ public:
         return M_cfun;
     }
 
+    std::vector<GiNaC::symbol> const& syms() const { return M_syms; }
     //@}
 
 
@@ -449,7 +468,8 @@ public:
             :
             M_fun( expr.fun() ),
             M_gmc( fusion::at_key<key_type>( geom ).get() ),
-            M_y( M_gmc->nPoints() )
+            M_y( M_gmc->nPoints() ),
+            M_nsyms( expr.syms().size() )
         {}
 
         tensor( this_type const& expr,
@@ -457,14 +477,16 @@ public:
             :
             M_fun( expr.fun() ),
             M_gmc( fusion::at_key<key_type>( geom ).get() ),
-            M_y( M_gmc->nPoints() )
+            M_y( M_gmc->nPoints() ),
+            M_nsyms( expr.syms().size() )
         {}
 
         tensor( this_type const& expr, Geo_t const& geom )
             :
             M_fun( expr.fun() ),
             M_gmc( fusion::at_key<key_type>( geom ).get() ),
-            M_y( M_gmc->nPoints() )
+            M_y( M_gmc->nPoints() ),
+            M_nsyms( expr.syms().size() )
         {
         }
 
@@ -486,13 +508,15 @@ public:
             M_gmc =  fusion::at_key<key_type>( geom ).get();
 
             int no = M*N;
-            int ni = gmc_type::nDim;
-            double xi[gmc_type::nDim];
+            int ni = M_nsyms;//gmc_type::nDim;
+            Eigen::VectorXd xi( M_nsyms );
             for(int q = 0; q < M_gmc->nPoints();++q )
             {
                 for(int k = 0;k < gmc_type::nDim;++k )
                     xi[k]=M_gmc->xReal( q )[k];
-                M_fun(&ni,xi,&no,M_y[q].data());
+                for( int k = gmc_type::nDim; k < xi.size(); ++k )
+                    xi[k] = 0;
+                M_fun(&ni,xi.data(),&no,M_y[q].data());
             }
 
         }
@@ -502,13 +526,15 @@ public:
             M_gmc =  fusion::at_key<key_type>( geom ).get();
 
             int no = M*N;
-            int ni = gmc_type::nDim;
-            double xi[gmc_type::nDim];
+            int ni = M_nsyms;//gmc_type::nDim;
+            Eigen::VectorXd xi( M_nsyms );
             for(int q = 0; q < M_gmc->nPoints();++q )
             {
                 for(int k = 0;k < gmc_type::nDim;++k )
                     xi[k]=M_gmc->xReal( q )[k];
-                M_fun(&ni,xi,&no,M_y[q].data());
+                for( int k = gmc_type::nDim; k < xi.size(); ++k )
+                    xi[k] = 0;
+                M_fun(&ni,xi.data(),&no,M_y[q].data());
             }
         }
 
@@ -541,18 +567,19 @@ public:
         GiNaC::FUNCP_CUBA M_fun;
         gmc_ptrtype M_gmc;
         loc_type M_y;
+        int M_nsyms;
     };
 
 private:
     mutable expression_type  M_fun;
-    std::list<GiNaC::symbol> M_syms;
+    std::vector<GiNaC::symbol> M_syms;
     GiNaC::FUNCP_CUBA M_cfun;
 }; // GinacMatrix
 /// \endcond
 
 inline
 Expr< GinacMatrix<1,1,2> >
-expr( GiNaC::matrix const& f, std::list<GiNaC::symbol> const& lsym )
+expr( GiNaC::matrix const& f, std::vector<GiNaC::symbol> const& lsym )
 {
     return Expr< GinacMatrix<1,1,2> >(  GinacMatrix<1,1,2>( f, lsym ) );
 }
@@ -564,7 +591,7 @@ expr( GiNaC::matrix const& f, std::list<GiNaC::symbol> const& lsym )
 template<int M, int N, int Order>
 inline
 Expr< GinacMatrix<M,N,Order> >
-expr( GiNaC::matrix const& f, std::list<GiNaC::symbol> const& lsym )
+expr( GiNaC::matrix const& f, std::vector<GiNaC::symbol> const& lsym )
 {
     return Expr< GinacMatrix<M,N,Order> >(  GinacMatrix<M,N,Order>( f, lsym ) );
 }
@@ -572,7 +599,7 @@ expr( GiNaC::matrix const& f, std::list<GiNaC::symbol> const& lsym )
 template<int M, int N, int Order>
 inline
 Expr< GinacMatrix<M,N,Order> >
-expr( GiNaC::ex const& f, std::list<GiNaC::symbol> const& lsym )
+expr( GiNaC::ex const& f, std::vector<GiNaC::symbol> const& lsym )
 {
     return Expr< GinacMatrix<M,N,Order> >(  GinacMatrix<M,N,Order>( f, lsym ) );
 }
