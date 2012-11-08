@@ -27,6 +27,7 @@
    \date 2012-03-20
  */
 #include <feel/feel.hpp>
+#include <feel/feeltiming/tic.hpp>
 
 inline
 Feel::po::options_description
