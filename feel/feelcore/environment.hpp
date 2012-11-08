@@ -292,6 +292,12 @@ public:
         {
             S_deleteObservers.connect(boost::bind(&Observer::operator(), obs));
         }
+
+    /**
+     * \return the scratch directory
+     */
+    static const fs::path& scratchDirectory() { return S_scratchdir; }
+
     //@}
 
 
@@ -309,6 +315,8 @@ private:
     /// Whether this environment object called MPI_Init
     bool i_initialized;
     mpi::environment M_env;
+
+    static  fs::path S_scratchdir;
 
     static AboutData S_about;
     static po::variables_map S_vm;
