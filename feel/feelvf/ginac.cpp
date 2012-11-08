@@ -110,10 +110,12 @@ namespace Feel
 {
 using  GiNaC::ex;
 using  GiNaC::symbol;
-ex parse( std::string const& str, std::initializer_list<symbol>  _syms )
+ex parse( std::string const& str, std::vector<symbol>  const& syms )
 {
     LOG(INFO) << "parsing " << str << "\n";
-    std::vector<symbol> syms(_syms);
+
+    LOG(INFO) << "syms " << syms.size() << "\n";
+
     for(int i =0; i < syms.size();++i)
         LOG(INFO) <<"sym: "  << syms[i].get_name() << "\n";
     LOG(INFO) <<"done with symbols\n";
@@ -121,12 +123,16 @@ ex parse( std::string const& str, std::initializer_list<symbol>  _syms )
     using GiNaC::parser;
     symtab table;
     LOG(INFO) <<"insert symbols in symbol table\n";
-    std::for_each( syms.begin(), syms.end(), [&table]( symbol const& s ) { std::cerr << "adding symbol: " << s.get_name() << std::endl; table[s.get_name()] = s; } );
+    table["x"]=syms[0];
+    table["y"]=syms[1];
+    //std::for_each( syms.begin(), syms.end(), [&table]( symbol const& s ) { std::cerr << "adding symbol: " << s.get_name() << std::endl; table[s.get_name()] = s; } );
     LOG(INFO) <<"define parser\n";
     parser reader(table);
+
     LOG(INFO) <<"parse expression\n";
-    //return reader(str);
-    return cos(0);
+    ex e= reader(str);
+    LOG(INFO) << "e=" << e << "\n";
+    return e;
 }
 
 }

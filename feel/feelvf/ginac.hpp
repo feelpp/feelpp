@@ -49,12 +49,12 @@ using  GiNaC::lst;
 using  GiNaC::ex;
 using  GiNaC::parser;
 
-template<int Dim> inline std::initializer_list<symbol> symbols() { symbol x("x"); return {x}; }
-template<> inline std::initializer_list<symbol> symbols<1>() { symbol x("x"); return {x}; }
-template<> inline std::initializer_list<symbol> symbols<2>() { symbol x("x"),y("y"); return {x,y}; }
-template<> inline std::initializer_list<symbol> symbols<3>() { symbol x("x"),y("y"),z("z"); return {x,y,z}; }
+template<int Dim> inline std::vector<symbol> symbols() { return {symbol("x")}; }
+template<> inline std::vector<symbol> symbols<1>() { return {symbol("x")}; }
+template<> inline std::vector<symbol> symbols<2>() { return {symbol("x"),symbol("y") };}
+template<> inline std::vector<symbol> symbols<3>() { return {symbol("x"),symbol("y"),symbol("z") };}
 
-ex parse( std::string const& str, std::initializer_list<symbol> syms );
+ex parse( std::string const& str, std::vector<symbol> const& syms );
 
 namespace vf
 {
@@ -103,7 +103,7 @@ public:
      */
     //@{
 
-    explicit GinacEx( expression_type const & fun, std::list<GiNaC::symbol> const& syms )
+    explicit GinacEx( expression_type const & fun, std::vector<GiNaC::symbol> const& syms )
     :
     M_fun( fun ),
     M_syms( syms),
@@ -162,7 +162,7 @@ public:
         return M_cfun;
     }
 
-    std::list<GiNaC::symbol> const& syms() const { return M_syms; }
+    std::vector<GiNaC::symbol> const& syms() const { return M_syms; }
 
     //@}
 
@@ -305,13 +305,13 @@ public:
 
 private:
     mutable expression_type  M_fun;
-    std::list<GiNaC::symbol> M_syms;
+    std::vector<GiNaC::symbol> M_syms;
     GiNaC::FUNCP_CUBA M_cfun;
 };
 
 inline
 Expr< GinacEx<2> >
-expr( GiNaC::ex const& f, std::list<GiNaC::symbol> const& lsym )
+expr( GiNaC::ex const& f, std::vector<GiNaC::symbol> const& lsym )
 {
     return Expr< GinacEx<2> >(  GinacEx<2>( f, lsym ) );
 }
@@ -323,7 +323,7 @@ expr( GiNaC::ex const& f, std::list<GiNaC::symbol> const& lsym )
 template<int Order>
 inline
 Expr< GinacEx<Order> >
-expr( GiNaC::ex const& f, std::list<GiNaC::symbol> const& lsym )
+expr( GiNaC::ex const& f, std::vector<GiNaC::symbol> const& lsym )
 {
     return Expr< GinacEx<Order> >(  GinacEx<Order>( f, lsym ) );
 }
@@ -364,7 +364,7 @@ public:
      */
     //@{
 
-    explicit GinacMatrix( GiNaC::matrix const & fun, std::list<GiNaC::symbol> const& syms )
+    explicit GinacMatrix( GiNaC::matrix const & fun, std::vector<GiNaC::symbol> const& syms )
     :
         M_fun( fun.evalm() ),
         M_syms( syms),
@@ -377,7 +377,7 @@ public:
             std::for_each( M_syms.begin(),M_syms.end(), [&]( GiNaC::symbol const& s ) { syml.append(s); } );
             GiNaC::compile_ex(exprs, syml, M_cfun);
         }
-    explicit GinacMatrix( GiNaC::ex const & fun, std::list<GiNaC::symbol> const& syms )
+    explicit GinacMatrix( GiNaC::ex const & fun, std::vector<GiNaC::symbol> const& syms )
         :
         M_fun(fun.evalm()),
         M_syms( syms),
@@ -438,7 +438,7 @@ public:
         return M_cfun;
     }
 
-    std::list<GiNaC::symbol> const& syms() const { return M_syms; }
+    std::vector<GiNaC::symbol> const& syms() const { return M_syms; }
     //@}
 
 
@@ -572,14 +572,14 @@ public:
 
 private:
     mutable expression_type  M_fun;
-    std::list<GiNaC::symbol> M_syms;
+    std::vector<GiNaC::symbol> M_syms;
     GiNaC::FUNCP_CUBA M_cfun;
 }; // GinacMatrix
 /// \endcond
 
 inline
 Expr< GinacMatrix<1,1,2> >
-expr( GiNaC::matrix const& f, std::list<GiNaC::symbol> const& lsym )
+expr( GiNaC::matrix const& f, std::vector<GiNaC::symbol> const& lsym )
 {
     return Expr< GinacMatrix<1,1,2> >(  GinacMatrix<1,1,2>( f, lsym ) );
 }
@@ -591,7 +591,7 @@ expr( GiNaC::matrix const& f, std::list<GiNaC::symbol> const& lsym )
 template<int M, int N, int Order>
 inline
 Expr< GinacMatrix<M,N,Order> >
-expr( GiNaC::matrix const& f, std::list<GiNaC::symbol> const& lsym )
+expr( GiNaC::matrix const& f, std::vector<GiNaC::symbol> const& lsym )
 {
     return Expr< GinacMatrix<M,N,Order> >(  GinacMatrix<M,N,Order>( f, lsym ) );
 }
@@ -599,7 +599,7 @@ expr( GiNaC::matrix const& f, std::list<GiNaC::symbol> const& lsym )
 template<int M, int N, int Order>
 inline
 Expr< GinacMatrix<M,N,Order> >
-expr( GiNaC::ex const& f, std::list<GiNaC::symbol> const& lsym )
+expr( GiNaC::ex const& f, std::vector<GiNaC::symbol> const& lsym )
 {
     return Expr< GinacMatrix<M,N,Order> >(  GinacMatrix<M,N,Order>( f, lsym ) );
 }
