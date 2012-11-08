@@ -1063,6 +1063,27 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
 
 template<typename Shape, typename T, int Tag>
 void
+Mesh<Shape, T, Tag>::updateOnBoundary( mpl::int_<1> )
+{
+    element_iterator iv,en;
+    boost::tie( iv, en ) = this->elementsRange();
+    for ( ; iv != en; ++iv )
+    {
+        bool isOnBoundary = false;
+
+        for ( size_type j = 0; j < this->numLocalFaces(); j++ )
+        {
+            isOnBoundary |= iv->face( j ).isOnBoundary();
+        }
+
+        // an element on the boundary means that is shares a face
+        // with the boundary
+        this->elements().modify( iv, detail::OnBoundary( isOnBoundary ) );
+    }
+}
+
+template<typename Shape, typename T, int Tag>
+void
 Mesh<Shape, T, Tag>::updateOnBoundary( mpl::int_<2> )
 {
     element_iterator iv,en;
