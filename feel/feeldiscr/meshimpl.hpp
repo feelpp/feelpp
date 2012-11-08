@@ -78,6 +78,10 @@ Mesh<Shape, T, Tag>::markerId ( boost::any const& __marker )
     {
         theflag = boost::any_cast<size_type>( __marker);
     }
+    else if ( boost::any_cast<uint16_type>( &__marker ) )
+    {
+        theflag = boost::any_cast<uint16_type>( __marker);
+    }
     else if ( boost::any_cast<std::string>( &__marker ) )
     {
         theflag = this->markerName( boost::any_cast<std::string>( __marker) );
@@ -1056,26 +1060,6 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
     Debug( 4015 ) << "[Mesh::updateFaces] element/face connectivity : " << ti.elapsed() << "\n";
     ti.restart();
 }
-template<typename Shape, typename T, int Tag>
-void
-Mesh<Shape, T, Tag>::updateOnBoundary( mpl::int_<1> )
-{
-    element_iterator iv,en;
-    boost::tie( iv, en ) = this->elementsRange();
-    for ( ; iv != en; ++iv )
-    {
-        bool isOnBoundary = false;
-
-        for ( size_type j = 0; j < this->numLocalFaces(); j++ )
-        {
-            isOnBoundary |= iv->face( j ).isOnBoundary();
-        }
-
-        // an element on the boundary means that is shares a face
-        // with the boundary
-        this->elements().modify( iv, detail::OnBoundary( isOnBoundary ) );
-    }
-}
 
 template<typename Shape, typename T, int Tag>
 void
@@ -1096,6 +1080,35 @@ Mesh<Shape, T, Tag>::updateOnBoundary( mpl::int_<2> )
         // with the boundary
         this->elements().modify( iv, detail::OnBoundary( isOnBoundary ) );
     }
+}
+template<typename Shape, typename T, int Tag>
+void
+Mesh<Shape, T, Tag>::removeFacesFromBoundary( std::initializer_list<uint16_type> markers )
+{
+    std::for_each( markers.begin(), markers.end(),
+                   [=]( uint16_type marker )
+                   {
+                       auto range=markedfaces( this, marker );
+                       LOG(INFO) << "removing " << nelements(range) << " faces marked "  << marker << " from boundary faces\n";
+
+                       for( auto it = range.template get<1>(), en = range.template get<2>(); it != en; ++it )
+                       {
+                           if ( it->isOnBoundary() )
+                           {
+                               LOG(INFO) << "removing face "  << it->id() << "\n";
+                               auto it2 = this->faces().project<0>( it );
+                               this->faces().modify( it2, []( face_type & f ) { f.setOnBoundary( false ); } );
+
+
+                               //face_type f = *it2;
+                               //f.setOnBoundary( false );
+                               //this->faces().replace( it2, f );
+                               CHECK( it2->isOnBoundary() ==false ) << " face should not be on the boundary anymore\n";
+                               CHECK( it->isOnBoundary() ==false ) << " face should not be on the boundary anymore\n";
+                           }
+
+                       }
+                   } );
 }
 
 template<typename Shape, typename T, int Tag>

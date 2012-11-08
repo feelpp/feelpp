@@ -124,6 +124,9 @@ struct Periodicity
     Periodicity() : super() {}
     Periodicity( super const& m) : super( m ) {}
     Periodicity( Args... args ) : super( fusion::make_vector(args...) ) {}
+
+    uint16_type tag1() const { return fusion::at_c<0>(*this).tag1(); }
+    uint16_type tag2() const { return fusion::at_c<0>(*this).tag2(); }
 };
 
 template<typename... Args>
@@ -240,6 +243,8 @@ struct Periodicity
     Periodicity( A0 a0, A1 a1, A2 a2 ) : super( fusion::make_vector(a0,a1,a2) ) {}
     Periodicity( A0 a0, A1 a1, A2 a2, A3 a3 ) : super( fusion::make_vector(a0,a1,a2,a3) ) {}
 
+    uint16_type tag1() const { return fusion::at_c<0>(*this).tag1(); }
+    uint16_type tag2() const { return fusion::at_c<0>(*this).tag2(); }
 };
 
 template<typename A0> Periodicity<A0> periodicity( A0 const& a0 ) { return Periodicity<A0>( a0 ); }
