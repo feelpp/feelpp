@@ -295,6 +295,7 @@ GeoGMSHTool::opFusion( const GeoGMSHTool & m,int __typeOp )
 void//std::string
 GeoGMSHTool::init( int orderGeo, std::string gmshFormatVersion,
                    double hmin,double hmax,int refine,
+                   bool optimize3dNetgen,
                    GMSH_PARTITIONER partitioner, int partitions, bool partition_file )
 {
     //fait dans gmsh.cpp
@@ -309,9 +310,14 @@ GeoGMSHTool::init( int orderGeo, std::string gmshFormatVersion,
 #else
     *_M_ostr << "Mesh.Algorithm3D = 4;\n";
 #endif
-    *_M_ostr << "Mesh.RecombinationAlgorithm=0;\n" // Mesh recombination algorithm (0=standard, 1=blossom)
-             << "Mesh.OptimizeNetgen=1;\n"
-             << "Mesh.CharacteristicLengthMin=" << hmin << ";\n"
+    *_M_ostr << "Mesh.RecombinationAlgorithm=0;\n"; // Mesh recombination algorithm (0=standard, 1=blossom)
+
+    if (optimize3dNetgen)
+        *_M_ostr << "Mesh.OptimizeNetgen=1;\n";
+    else
+        *_M_ostr << "Mesh.OptimizeNetgen=0;\n";
+
+    *_M_ostr << "Mesh.CharacteristicLengthMin=" << hmin << ";\n"
              << "Mesh.CharacteristicLengthMax=" << hmax << ";\n"
              << "// refine level " << refine << "\n" // just to rewrite file if refine change
              << "// partitioning data\n"
@@ -496,6 +502,9 @@ GeoGMSHTool::geoStr()
     for ( ; itSurf != itSurf_end; ++itSurf )
     {
         surface_type_const_iterator_type itSurf2 = itSurf->begin();
+
+        if (itSurf2->get<2>().second==0) continue; // surface useless
+
 
         // utile pour les physical marker
         //if ((__dataSurfacePostCpt[boost::get<0>(*itSurf2)][boost::get<1>(*itSurf2)]).empty())
