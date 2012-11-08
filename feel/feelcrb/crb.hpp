@@ -2181,8 +2181,8 @@ CRB<TruthModelType>::offline()
 
         M_compute_variance = this->vm()["crb.compute-variance"].template as<bool>();
         if ( M_database_contains_variance_info )
-            //throw std::logic_error( "[CRB::offline] ERROR : build variance is not actived" );
-            buildVarianceMatrixPhi( M_N );
+            throw std::logic_error( "[CRB::offline] ERROR : build variance is not actived" );
+        //buildVarianceMatrixPhi( M_N );
 
         if ( M_error_type==CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM )
         {
