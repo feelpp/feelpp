@@ -54,6 +54,9 @@ makeOptions()
         ( "exact1D", po::value<std::string>()->default_value( "sin(2*Pi*x)" ), "exact 1D solution" )
         ( "exact2D", po::value<std::string>()->default_value( "sin(2*Pi*x)*cos(2*Pi*y)" ), "exact 2D solution" )
         ( "exact3D", po::value<std::string>()->default_value( "sin(2*Pi*x)*cos(2*Pi*y)*cos(2*Pi*z)" ), "exact 3D solution" )
+        ( "rhs1D", po::value<std::string>()->default_value( "" ), "right hand side 1D" )
+        ( "rhs2D", po::value<std::string>()->default_value( "" ), "right hand side 2D" )
+        ( "rhs3D", po::value<std::string>()->default_value( "" ), "right hand side 3D" )
         ;
     return laplacianoptions.add( Feel::feel_options() );
 }
@@ -174,12 +177,17 @@ Laplacian<Dim>::run()
     value_type penaldir = this->vm()["penaldir"].template as<double>();
     value_type nu = this->vm()["nu"].template as<double>();
     std::string exact  = this->vm()[(boost::format("exact%1%D")%Dim).str()].template as<std::string>();
+    std::string rhs  = this->vm()[(boost::format("rhs%1%D")%Dim).str()].template as<std::string>();
     LOG(INFO) << "exact = "  << exact << "\n";
     auto vars=symbols<Dim>();
     ex gg = parse(exact,vars);
     LOG(INFO) << "="<< gg << "\n";
-    ex ff=-nu*laplacian(gg,vars);
-    LOG(INFO) << "laplacian(g)="<< ff << "\n";
+    ex ff;
+    if ( rhs.empty() )
+        ff=-nu*laplacian(gg,vars);
+    else
+        ff = parse(rhs,vars);
+    LOG(INFO) << "rhs="<< ff << "\n";
     LOG(INFO) << "grad(g)="<< grad(gg,vars) << "\n";
     auto g = expr(gg,vars);
     auto f = expr(ff,vars);
@@ -202,8 +210,8 @@ Laplacian<Dim>::run()
     /** \code */
     //# marker2 #
     auto F = backend()->newVector( Xh );
-    auto rhs = form1( _test=Xh, _vector=F );
-    rhs = integrate( _range=elements( mesh ), _expr=f*id( v ) )+
+    auto l = form1( _test=Xh, _vector=F );
+    l = integrate( _range=elements( mesh ), _expr=f*id( v ) )+
         integrate( _range=markedfaces( mesh, "Neumann" ),
                    _expr=nu*gradg*vf::N()*id( v )
             );
@@ -212,7 +220,7 @@ Laplacian<Dim>::run()
     if ( weak_dirichlet )
     {
         //# marker41 #
-        rhs += integrate( _range=markedfaces( mesh,"Dirichlet" ),
+        l += integrate( _range=markedfaces( mesh,"Dirichlet" ),
                           _expr=nu*g*( -grad( v )*vf::N()+penaldir*id( v )/hFace() ) );
         //# endmarker41 #
     }
