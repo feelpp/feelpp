@@ -1096,7 +1096,7 @@ Mesh<Shape, T, Tag>::removeFacesFromBoundary( std::initializer_list<uint16_type>
                            if ( it->isOnBoundary() )
                            {
                                LOG(INFO) << "removing face "  << it->id() << "\n";
-                               auto it2 = this->faces().project<0>( it );
+                               auto it2 = this->faces().template project<0>( it );
                                this->faces().modify( it2, []( face_type & f ) { f.setOnBoundary( false ); } );
 
 
