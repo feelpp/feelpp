@@ -129,7 +129,7 @@ public:
     typedef parameterspace_type::element_ptrtype parameter_ptrtype;
     typedef parameterspace_type::sampling_type sampling_type;
     typedef parameterspace_type::sampling_ptrtype sampling_ptrtype;
-    typedef Eigen::VectorXd theta_vector_type;
+    typedef std::vector< std::vector< double > > beta_vector_type;
 
 #if defined( FEELPP_USE_LM )
     typedef Lagrange<0, Scalar> basis_l_type; // multipliers for pressure space
@@ -165,7 +165,10 @@ public:
     // Definition pour les exportations
     typedef Exporter<mesh_type> export_type;
 
-    typedef boost::tuple<std::vector<sparse_matrix_ptrtype>, std::vector<std::vector<vector_ptrtype>>> affine_decomposition_type;
+    typedef boost::tuple<
+        std::vector< std::vector<sparse_matrix_ptrtype> >,
+        std::vector< std::vector<std::vector<vector_ptrtype> > > ,
+        std::vector< std::vector< element_ptrtype > > > affine_decomposition_type;
     
     // Constructeur
     Convection_crb( );
@@ -186,7 +189,7 @@ public:
 
     affine_decomposition_type computeAffineDecomposition()
     {
-        return boost::make_tuple( M_Aq, M_Fq );
+        return boost::make_tuple( M_Aqm, M_Fqm, M_InitialGuessQm );
     }
 
     
@@ -208,45 +211,62 @@ public:
      */
     int Ql( int l ) const;
 
+    int mMaxA( int q );
+    int mMaxF( int output_index, int q );
+    int mMaxInitialGuess( int q );
+
+    int QInitialGuess() const ;
+
     /**
-     * \brief compute the theta coefficient for both bilinear and linear form
+     * \brief compute the beta coefficient for both bilinear and linear form
      * \param mu parameter to evaluate the coefficients
      */
-    boost::tuple<theta_vector_type, std::vector<theta_vector_type> >
-    computeThetaq( parameter_type const& mu, double time=0  ) ;
+    boost::tuple<beta_vector_type, std::vector<beta_vector_type>, beta_vector_type>
+    computeBetaQm( parameter_type const& mu, double time=0  ) ;
+
+    boost::tuple<beta_vector_type, std::vector<beta_vector_type>, beta_vector_type>
+    computeBetaQm(element_type const& T,  parameter_type const& mu, double time=0  )
+    {
+        return computeBetaQm( mu , time );
+    }
     
     /**
      * \brief return the coefficient vector
      */
-    theta_vector_type const& thetaAq() const
+    beta_vector_type const& betaAqm() const
     {
-        return M_thetaAq;
+        return M_betaAqm;
     };
     
     /**
      * \brief return the coefficient vector
      */
-    std::vector<theta_vector_type> const& thetaFq() const
+    std::vector<beta_vector_type> const& betaFqm() const
     {
-        return M_thetaFq;
+        return M_betaFqm;
     };
     
     /**
      * \brief return the coefficient vector \p q component
      *
      */
-    value_type thetaAq( int q ) const
+    value_type betaAqm( int q , int m) const
     {
-        return M_thetaAq( q );
+        return M_betaAqm[q][m];
     };
     
     /**
      * \return the \p q -th term of the \p l -th output
      */
-    value_type thetaL( int l, int q ) const
+    value_type betaL( int l, int q, int m ) const
     {
-        return M_thetaFq[l]( q );
+        return M_betaFqm[l][q][l];
     };
+
+    value_type betaInitialGuessQm( int q, int m ) const
+    {
+        return M_betaInitialGuessQm[q][m];
+    }
 
     void update( parameter_type const& mu );
     
@@ -264,7 +284,7 @@ public:
     /**
      * solve for a given parameter \p mu
      */
-    void solve( parameter_type const& mu );
+    element_type solve( parameter_type const& mu );
     
     /**
      * solve \f$ M u = f \f$
@@ -309,6 +329,12 @@ public:
     {
         return M_backend->newMatrix( Xh, Xh );
     };
+
+    vector_ptrtype newVector() const
+    {
+        return M_backend->newVector( Xh );
+    }
+
     
     space_ptrtype functionSpace()
     {
@@ -387,12 +413,16 @@ private:
     
     element_ptrtype pT;
 
-    std::vector<sparse_matrix_ptrtype> M_Aq;
-    std::vector<std::vector<vector_ptrtype> > M_Fq;
+    std::vector< std::vector<sparse_matrix_ptrtype> > M_Aqm;
+    std::vector< std::vector<sparse_matrix_ptrtype> > M_Mqm;
+    std::vector< std::vector<std::vector<vector_ptrtype> > > M_Fqm;
+    std::vector< std::vector< element_ptrtype> > M_InitialGuessQm;
+
     
     parameterspace_ptrtype M_Dmu;
-    theta_vector_type M_thetaAq;
-    std::vector<theta_vector_type> M_thetaFq;
+    beta_vector_type M_betaAqm;
+    beta_vector_type M_betaInitialGuessQm;
+    std::vector<beta_vector_type> M_betaFqm;
     
     
 

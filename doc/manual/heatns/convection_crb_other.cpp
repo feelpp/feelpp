@@ -167,12 +167,12 @@ Convection_crb::solve( sparse_matrix_ptrtype& D,
     u = *U;
 }
 
-void
+typename Convection_crb::element_type
 Convection_crb::solve( parameter_type const& mu )
 {
     element_ptrtype T( new element_type( Xh ) );
     this->solve( mu, T );
-    
+    return *T;
 }
 
 void
@@ -205,7 +205,7 @@ Convection_crb::solve( parameter_type const& mu, element_ptrtype& T )
         M_current_mu << M_current_Grashofs, M_current_Prandtl;
 //        M_backend->nlSolver()->residual = boost::bind( &self_type::updateResidual, boost::ref( *this ), _1, _2, M_current_mu );
         
-        this->computeThetaq( M_current_mu );
+        this->computeBetaQm( M_current_mu );
         this->update( M_current_mu );
         
 //        T->print(std::cout);
