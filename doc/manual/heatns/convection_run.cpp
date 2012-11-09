@@ -86,7 +86,7 @@ Convection::run()
     // Espace des fonctions et elements
     Xh = space_type::New( mesh );
 
-    element_type U( Xh, "u" );
+    element_type U( Xh, "U" );
     element_type Un( Xh, "un" );
     element_type V( Xh, "v" );
     element_type W( Xh, "v" );
@@ -221,13 +221,14 @@ Convection::run()
 
         M_backend->nlSolve( _solution = U );
 
-        std::ofstream file_solution;
-        std::string mu_str;
-        mu_str = ( boost::format( "_%1%" ) % i ).str() ;
-        std::string name = "FEMsolution" + mu_str;
 
        if( Environment::worldComm().globalSize() == 1 )
         {
+            std::ofstream file_solution;
+            std::string mu_str;
+            mu_str = ( boost::format( "_%1%" ) % i ).str() ;
+            std::string name = "FEMsolution" + mu_str;
+
             //work only in sequential else problem with VectorUblas<>::operator()()
             file_solution.open( name,std::ios::out );
             for ( int j=0; j < U.size(); j++ )
@@ -241,6 +242,8 @@ Convection::run()
             this->exportResults(U,i);
         }
     }
+
+    U.save(_path=".");
 
     // value mean-pressure
     double meas = integrate( elements( mesh ),constant( 1.0 )  ).evaluate()( 0, 0 );
