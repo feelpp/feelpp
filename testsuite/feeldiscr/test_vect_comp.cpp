@@ -87,7 +87,7 @@ BOOST_AUTO_TEST_CASE( interp_vect_comp )
     GeoTool::Node x2( 4,1 );
     GeoTool::Rectangle R( meshSize,"OMEGA",x1,x2 );
 
-    auto mesh = R.createMesh<mesh_type>( "domain" );
+    auto mesh = R.createMesh(_mesh=new mesh_type,_name= "domain" );
 
 
     space_ptrtype Xh = space_type::New( mesh );

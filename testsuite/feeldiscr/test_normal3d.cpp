@@ -91,7 +91,7 @@ runtest( Application_ptrtype test_app )
     std::ostringstream __ostrData;
     __ostrData<<convex_type::name()<<"h"<<meshSize;
 
-    auto mesh_ = C.createMesh<mesh_type>( "domain"+__ostrData.str(), 0 );
+    auto mesh_ = C.createMesh(_mesh=new mesh_type,_name= "domain"+__ostrData.str(), _straighten=false );
     auto mesh=mesh_;
 
     if ( straighten )
