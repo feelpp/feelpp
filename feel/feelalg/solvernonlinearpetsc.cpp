@@ -485,7 +485,7 @@ void SolverNonLinearPetsc<T>::init ()
     PetscPCFactorSetMatSolverPackage( M_pc,this->matSolverPackageType() );
 
 
-    if ( this->M_preconditioner )
+    if ( this->M_preconditioner && this->preconditionerType()==PreconditionerType::SHELL_PRECOND )
     {
         //PCSetType( M_pc, PCSHELL );
         PCShellSetContext( M_pc,( void* )this->M_preconditioner.get() );

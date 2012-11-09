@@ -266,7 +266,7 @@ void SolverLinearPetsc<T>::init ()
         CHKERRABORT( this->worldComm().globalComm(),ierr );
 
         //If there is a preconditioner object we need to set the internal setup and apply routines
-        if ( this->M_preconditioner )
+        if ( this->M_preconditioner && this->preconditionerType()==PreconditionerType::SHELL_PRECOND )
         {
             LOG(INFO) << "preconditioner: "  << this->M_preconditioner << "\n";
 
