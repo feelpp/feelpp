@@ -218,18 +218,23 @@ Convection::run()
         std::cout << "i/N = " << i << "/" << N <<std::endl;
         std::cout << " intermediary Grashof = " << M_current_Grashofs<<std::endl;
         std::cout<< " and Prandtl = " << M_current_Prandtl << "\n"<<std::endl;
-        
+
         M_backend->nlSolve( _solution = U );
-        
+
         std::ofstream file_solution;
         std::string mu_str;
         mu_str = ( boost::format( "_%1%" ) % i ).str() ;
         std::string name = "FEMsolution" + mu_str;
-        file_solution.open( name,std::ios::out );        
-        for ( int j=0; j < U.size(); j++ )
-            file_solution << U.operator()( j )<<"\n";
-        file_solution.close();
-        
+
+       if( Environment::worldComm().globalSize() == 1 )
+        {
+            //work only in sequential else problem with VectorUblas<>::operator()()
+            file_solution.open( name,std::ios::out );
+            for ( int j=0; j < U.size(); j++ )
+                file_solution << U.operator()( j )<<"\n";
+            file_solution.close();
+        }
+
         if ( exporter->doExport() )
         {
             LOG(INFO) << "exportResults done\n";
