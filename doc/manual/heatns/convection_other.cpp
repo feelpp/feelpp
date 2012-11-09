@@ -59,11 +59,14 @@ Convection::Convection( int argc,
     int state = this->vm()["steady"]. as<int>() ;
     int weakdir( this->vm()["weakdir"]. as<int>() );
 
-    std::string repository = this->vm()["output_dir"]. as<std::string>() + "/%1%/meshsize=%2%/procs_%3%/" ;
+    double gr( this->vm()["gr"]. as<double>() );
+    double pr = this->vm()["pr"]. as<double>();
+    std::string repository = this->vm()["output_dir"]. as<std::string>() + "/%1%/meshsize=%2%/(gr_%3%,pr_%4%)" ;
     this->changeRepository( boost::format( repository )
                             % this->about().appName()
                             % meshSize
-                            % Environment::numberOfProcessors() );
+                            % gr
+                            % pr);
 
 }
 // <int Order_s, int Order_p, int Order_t>
