@@ -56,7 +56,7 @@ M_backend( backend_type::build( vm ) ),
 exporter( Exporter<mesh_type>::New( vm, "convection" ) ),
 M_Dmu( new parameterspace_type )
 {
-//    this->init();
+    this->init();
 }
 
 // <int Order_s, int Order_p, int Order_t>
@@ -208,9 +208,10 @@ Convection_crb::solve( parameter_type const& mu, element_ptrtype& T )
         this->update( M_current_mu );
                 
 //        T->print(std::cout);        
+
         
         M_backend->nlSolve(_jacobian=J , _solution=T , _residual=R);
-                    
+
         if ( exporter->doExport() )
         {
 //            T->print(std::cout);
