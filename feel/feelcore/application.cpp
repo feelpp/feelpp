@@ -478,7 +478,7 @@ Application::Application( Application const& __app )
 }
 Application::~Application()
 {
-#if 1
+#if 0
 #if defined ( FEELPP_HAS_PETSC_H )
     PetscTruth is_petsc_initialized;
     PetscInitialized( &is_petsc_initialized );
