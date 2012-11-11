@@ -362,7 +362,7 @@ FIND_LIBRARY(GFORTRAN_LIBRARY
     "/opt/local/lib"
     "/usr/lib/gcc/x86_64-linux-gnu/"
     PATH_SUFFIXES
-    gcc46 gcc45 gcc44 4.6 4.5 4.4
+    gcc47 gcc46 gcc45 gcc44 4.7 4.6 4.5 4.4
 )
 if ( GFORTRAN_LIBRARY )
   set( FEELPP_LIBRARIES ${GFORTRAN_LIBRARY} ${FEELPP_LIBRARIES})
