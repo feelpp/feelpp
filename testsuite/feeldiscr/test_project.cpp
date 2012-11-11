@@ -67,7 +67,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( project1, T, dim_types )
                                                 _addmidpoint=false,
                                                 _shape="simplex",
                                                 _h=2. ),
-                                        _update=MESH_CHECK|MESH_UPDATE_EDGES|MESH_UPDATE_FACES );
+                                        _update=MESH_CHECK|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_ADD_ELEMENTS_INFO);
 
     typedef FunctionSpace<mesh_type,bases<Lagrange<1, Scalar> > > space_type;
     typedef boost::shared_ptr<space_type> space_ptrtype;
@@ -97,7 +97,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( project2, T, dim_types )
                                                 _shape="simplex",
                                                 _dim=T::value,
                                                 _h=( T::value==1 )?0.49:0.5 ),
-                                        _update=MESH_CHECK|MESH_UPDATE_EDGES|MESH_UPDATE_FACES );
+                                        _update=MESH_CHECK|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_ADD_ELEMENTS_INFO );
 
     typedef FunctionSpace<mesh_type,bases<Lagrange<1, Scalar> > > space_type;
     typedef boost::shared_ptr<space_type> space_ptrtype;
