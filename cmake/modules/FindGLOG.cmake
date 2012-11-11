@@ -53,7 +53,7 @@ if (NOT GLOG_INCLUDE_DIR )
 endif()
 
 if ( (${CMAKE_BINARY_DIR}/contrib/glog-compile/src/glog/logging.h IS_NEWER_THAN ${CMAKE_BINARY_DIR}/contrib/glog/include/glog/logging.h) OR
-    ( ${CMAKE_SOURCE_DIR}/contrib/glog/src/logginc.cc IS_NEWER_THAN ${CMAKE_BINARY_DIR}/contrib/glog/include/glog/logging.h ) )
+    ( ${CMAKE_SOURCE_DIR}/contrib/glog/src/logging.cc IS_NEWER_THAN ${CMAKE_BINARY_DIR}/contrib/glog/include/glog/logging.h ) )
   message(STATUS "Installing glog in ${CMAKE_BINARY_DIR}/contrib/glog...")
   execute_process(
     COMMAND make install
