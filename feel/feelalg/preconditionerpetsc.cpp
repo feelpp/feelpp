@@ -106,7 +106,7 @@ void PreconditionerPetsc<T>::init ()
     // 2.) It should be safe to call set_petsc_preconditioner_type()
     // multiple times.
     VLOG(2) << "prec : "  << this->M_preconditioner_type << "\n";
-    setPetscPreconditionerType( this->M_preconditioner_type,this->M_matSolverPackage_type,M_pc,this->worldComm() );
+    setPetscPreconditionerType( this->M_preconditioner_type,this->M_matSolverPackage_type,M_pc,this->worldComm(),this->name() );
     VLOG(2) << "mat solver package : "  << this->M_matSolverPackage_type << "("  << Environment::vm()["pc-factor-mat-solver-package-type"].template as<std::string>() << ")\n";
     std::string type =  Environment::vm()["pc-factor-mat-solver-package-type"].template as<std::string>();
     this->setMatSolverPackageType( matSolverPackageEnumType( type ) );
@@ -362,7 +362,7 @@ void PreconditionerPetsc<T>::setPetscPreconditionerType ( const PreconditionerTy
     if ( preconditioner_type == ASM_PRECOND ||
          preconditioner_type == GASM_PRECOND ||
          preconditioner_type == BLOCK_JACOBI_PRECOND )
-        setPetscSubpreconditionerType( pc, worldComm );
+        setPetscSubpreconditionerType( pc, worldComm, name );
 }
 
 
