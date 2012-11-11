@@ -1930,15 +1930,17 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
                                                                                   this->im().points() ) );
 
             //std::cout << "2" << std::endl;
-            it = this->beginElement();
+            //it = this->beginElement();
 
             // wait for all the guys
 #ifdef FEELPP_HAS_MPI
             auto const& worldComm = const_cast<MeshBase*>( it->mesh() )->worldComm();
+#if 0
             if ( worldComm.localSize() > 1 )
             {
                 worldComm.localComm().barrier();
             }
+#endif
 #endif
 
             // possibly high order
@@ -2330,11 +2332,13 @@ Integrator<Elements, Im, Expr, Im2>::broken( boost::shared_ptr<P0hType>& P0h, mp
         // wait for all the guys
 #ifdef FEELPP_HAS_MPI
         auto const& worldComm = const_cast<MeshBase*>( it->mesh() )->worldComm();
+
+#if 0
         if ( worldComm.size() > 1 )
         {
             worldComm.barrier();
         }
-
+#endif
 #endif
 
 
