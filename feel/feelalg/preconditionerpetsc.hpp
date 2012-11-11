@@ -67,7 +67,7 @@ public:
     //@{
 
     //! default constructor
-    PreconditionerPetsc( WorldComm const& worldComm=Environment::worldComm() );
+    PreconditionerPetsc( std::string const& name, WorldComm const& worldComm=Environment::worldComm() );
     //! copy constructor
     PreconditionerPetsc( PreconditionerPetsc const & );
     //! destructor
@@ -129,7 +129,8 @@ public:
     static void setPetscPreconditionerType ( const PreconditionerType & preconditioner_type,
                                              const MatSolverPackageType & matSolverPackage_type,
                                              PC & pc,
-                                             WorldComm const& worldComm=Environment::worldComm() );
+                                             WorldComm const& worldComm=Environment::worldComm(),
+                                             std::string const& prefix="");
 
 
     //@}
@@ -158,7 +159,7 @@ public:
      */
     Mat M_mat;
 
-    static void setPetscSubpreconditionerType( const PCType type, PC& pc, WorldComm const& worldComm=Environment::worldComm() );
+    static void setPetscSubpreconditionerType( PC& pc, WorldComm const& worldComm=Environment::worldComm(), std::string const& prefix="" );
 
     static void setPetscFieldSplitPreconditionerType( const PCCompositeType type,
                                                       const KSPType * subksptypes,

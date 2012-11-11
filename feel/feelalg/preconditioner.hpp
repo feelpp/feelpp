@@ -76,22 +76,23 @@ public:
     //@{
 
     //! default constructor
-    Preconditioner( WorldComm const& worldComm=Environment::worldComm() );
+    Preconditioner( std::string const& name = "", WorldComm const& worldComm=Environment::worldComm() );
 
     //! copy constructor
     Preconditioner( Preconditioner const & o )
-        :
-        M_worldComm( o.M_worldComm ),
-        M_matrix( o.M_matrix ),
-        M_preconditioner_type( o.M_preconditioner_type ),
-        M_matSolverPackage_type( o.M_matSolverPackage_type ),
-        M_is_initialized( o.M_is_initialized )
-    {}
+    :
+    M_name(),
+    M_worldComm( o.M_worldComm ),
+    M_matrix( o.M_matrix ),
+    M_preconditioner_type( o.M_preconditioner_type ),
+    M_matSolverPackage_type( o.M_matSolverPackage_type ),
+    M_is_initialized( o.M_is_initialized )
+        {}
 
     //! destructor
     ~Preconditioner();
 
-    static preconditioner_ptrtype build( BackendType = BACKEND_PETSC, WorldComm const& worldComm=Environment::worldComm() );
+    static preconditioner_ptrtype build( std::string const& name = "", BackendType = BACKEND_PETSC, WorldComm const& worldComm=Environment::worldComm() );
 
     /**
      * Initialize data structures if not done so already.
@@ -106,23 +107,24 @@ public:
 
     //! copy operator
     Preconditioner& operator=( Preconditioner const & o )
-    {
-        if ( this != &o )
         {
-            M_worldComm = o.M_worldComm;
-            M_matrix = o.M_matrix;
-            M_is_initialized = o.M_is_initialized;
-            M_matSolverPackage_type = o.M_matSolverPackage_type;
-            M_preconditioner_type = o.M_preconditioner_type;
+            if ( this != &o )
+            {
+                M_name = o.M_name;
+                M_worldComm = o.M_worldComm;
+                M_matrix = o.M_matrix;
+                M_is_initialized = o.M_is_initialized;
+                M_matSolverPackage_type = o.M_matSolverPackage_type;
+                M_preconditioner_type = o.M_preconditioner_type;
+            }
+
+            return *this;
         }
 
-        return *this;
-    }
-
     void operator()()
-    {
-        this->clear();
-    }
+        {
+            this->clear();
+        }
     //@}
 
     /** @name Accessors
@@ -134,9 +136,9 @@ public:
      * initialized, false otherwise.
      */
     bool initialized () const
-    {
-        return M_is_initialized;
-    }
+        {
+            return M_is_initialized;
+        }
 
     WorldComm const& worldComm() const { return M_worldComm; }
 
@@ -151,9 +153,9 @@ public:
      * Usually by solving Py=x to get the action of P^-1 x.
      */
     void apply( vector_ptrtype const& x, vector_ptrtype& y )
-    {
-        this->apply( *x, *y );
-    }
+        {
+            this->apply( *x, *y );
+        }
 
     /**
      * Release all memory and clear data structures.
@@ -166,11 +168,11 @@ public:
      * Returns the type of preconditioner to use.
      */
     PreconditionerType type () const
-    {
-        return M_preconditioner_type;
-    }
+        {
+            return M_preconditioner_type;
+        }
 
-
+    virtual std::string name() const { return M_name; }
 
 
     //@}
@@ -178,6 +180,8 @@ public:
     /** @name  Mutators
      */
     //@{
+
+    virtual void setName( std::string const& n ) { M_name = n; }
 
     /**
      * Sets the matrix P to be preconditioned.
@@ -205,6 +209,11 @@ public:
 
 
 protected:
+
+    /**
+     * name of the preconditioner
+     */
+    std::string M_name;
 
     /**
      * Communicator
@@ -240,13 +249,14 @@ typedef boost::shared_ptr<Preconditioner<double> > preconditioner_ptrtype;
 
 template <typename T>
 FEELPP_STRONG_INLINE
-Preconditioner<T>::Preconditioner ( WorldComm const& worldComm )
-    :
-    M_worldComm(worldComm),
-    M_matrix(),
-    M_preconditioner_type   ( ILU_PRECOND ),
-    M_matSolverPackage_type ( MATSOLVER_PETSC ),
-    M_is_initialized        ( false )
+Preconditioner<T>::Preconditioner ( std::string const& name, WorldComm const& worldComm )
+:
+M_name(name),
+M_worldComm(worldComm),
+M_matrix(),
+M_preconditioner_type   ( ILU_PRECOND ),
+M_matSolverPackage_type ( MATSOLVER_PETSC ),
+M_is_initialized        ( false )
 {
 }
 
@@ -290,21 +300,21 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( boost::shared_ptr<Preconditioner<double> > ),
                                  ( required
                                    ( pc,( PreconditionerType ) ) )
                                  ( optional
+                                   ( prefix, *( boost::is_convertible<mpl::_,std::string> ), "" )
                                    ( matrix,( d_sparse_matrix_ptrtype ),d_sparse_matrix_ptrtype() )
                                    ( backend,( BackendType ), BACKEND_PETSC )
                                    ( pcfactormatsolverpackage,( MatSolverPackageType ), MATSOLVER_DEFAULT )
                                    ( worldcomm,      *, Environment::worldComm() )
-                                   )
-                                 )
+                                     )
+    )
 {
-    boost::shared_ptr<Preconditioner<double> > p = Preconditioner<double>::build( backend, worldcomm );
+    boost::shared_ptr<Preconditioner<double> > p = Preconditioner<double>::build( prefix, backend, worldcomm );
     p->setType( pc );
     p->setMatSolverPackageType( pcfactormatsolverpackage );
 
     if ( matrix )
     {
         p->setMatrix( matrix );
-        p->init();
     }
     Environment::addDeleteObserver( p );
     return p;

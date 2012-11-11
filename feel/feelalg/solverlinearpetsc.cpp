@@ -66,13 +66,13 @@ extern "C"
 #endif
 
 
-#if PETSC_VERSION_LESS_THAN(3,0,1) 
+#if PETSC_VERSION_LESS_THAN(3,0,1)
     PetscErrorCode __feel_petsc_preconditioner_setup ( void * ctx )
     {
         Preconditioner<double> * preconditioner = static_cast<Preconditioner<double>*>( ctx );
         preconditioner->init();
 
-        LOG(INFO) << "init prec\n";
+        LOG(INFO) << "__feel_petsc_preconditioner_setup:: init prec\n";
 
         return 0;
     }
@@ -84,7 +84,7 @@ extern "C"
 
         VectorPetsc<double> x_vec( x );
         VectorPetsc<double> y_vec( y );
-        LOG(INFO) << "apply prec\n";
+
         preconditioner->apply( x_vec,y_vec );
 
         return 0;
@@ -268,18 +268,18 @@ void SolverLinearPetsc<T>::init ()
         //If there is a preconditioner object we need to set the internal setup and apply routines
         if ( this->M_preconditioner )
         {
-            LOG(INFO) << "preconditioner: "  << this->M_preconditioner << "\n";
+            VLOG(2) << "preconditioner: "  << this->M_preconditioner << "\n";
 
             PCSetType(_M_pc, PCSHELL);
-
+            PCShellSetName( _M_pc, this->M_preconditioner->name().c_str() );
             PCShellSetContext( _M_pc,( void* )this->M_preconditioner.get() );
             PCShellSetSetUp( _M_pc,__feel_petsc_preconditioner_setup );
             PCShellSetApply( _M_pc,__feel_petsc_preconditioner_apply );
             const PCType pc_type;
             ierr = PCGetType ( _M_pc, &pc_type );
             CHKERRABORT( this->worldComm().globalComm(),ierr );
-            
-            LOG(INFO) << "preconditioner set as "  << pc_type << "\n";
+
+            VLOG(2) << "preconditioner set as "  << pc_type << "\n";
         }
 
         if ( this->showKSPMonitor() )

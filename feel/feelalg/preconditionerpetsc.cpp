@@ -49,9 +49,9 @@ void PreconditionerPetsc<T>::apply( const Vector<T> & x, Vector<T> & y )
 
 /*----------------------- inline functions ----------------------------------*/
 template <typename T>
-PreconditionerPetsc<T>::PreconditionerPetsc ( WorldComm const& worldComm )
+PreconditionerPetsc<T>::PreconditionerPetsc ( std::string const& name, WorldComm const& worldComm )
     :
-    Preconditioner<T>( worldComm )
+    Preconditioner<T>( name, worldComm )
 {
 }
 template <typename T>
@@ -73,11 +73,7 @@ PreconditionerPetsc<T>::~PreconditionerPetsc ()
 template <typename T>
 void PreconditionerPetsc<T>::init ()
 {
-    if ( !this->M_matrix )
-    {
-        std::cerr << "ERROR: No matrix set for PreconditionerPetsc, but init() called" << std::endl;
-    }
-
+    CHECK( this->M_matrix ) << "ERROR: No matrix set for PreconditionerPetsc, but init() called" << "\n";
     this->M_matrix->close();
 
     // Clear the preconditioner in case it has been created in the past
@@ -85,16 +81,22 @@ void PreconditionerPetsc<T>::init ()
     {
         // Create the preconditioning object
         int ierr = PCCreate( this->worldComm().globalComm(),&M_pc );
+
         CHKERRABORT( this->worldComm().globalComm(),ierr );
         ierr = PCSetFromOptions ( M_pc );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
+        const PCType pc_type;
+        ierr = PCGetType ( M_pc, &pc_type );
+        CHKERRABORT( this->worldComm().globalComm(),ierr );
 
+        LOG(INFO) << "preconditionerpetsc set as "  << pc_type << "\n";
         MatrixPetsc<T> * pmatrix = dynamic_cast<MatrixPetsc<T>*>( this->M_matrix.get() );
 
         M_mat = pmatrix->mat();
     }
 
-    int ierr = PCSetOperators( M_pc,M_mat,M_mat,( MatStructure )SAME_NONZERO_PATTERN );
+    int ierr;
+    ierr = PCSetOperators( M_pc,M_mat,M_mat,( MatStructure )SAME_NONZERO_PATTERN );
     CHKERRABORT( this->worldComm().globalComm(),ierr );
 
     // Set the PCType.  Note: this used to be done *before* the call to
@@ -104,10 +106,20 @@ void PreconditionerPetsc<T>::init ()
     // the operators have been set.
     // 2.) It should be safe to call set_petsc_preconditioner_type()
     // multiple times.
-    //LOG(INFO) << "prec : "  << this->M_preconditioner_type << "\n";
-    //LOG(INFO) << "mat solver package : "  << this->M_matSolverPackage_type << "\n";
+    VLOG(2) << "prec : "  << this->M_preconditioner_type << "\n";
     setPetscPreconditionerType( this->M_preconditioner_type,this->M_matSolverPackage_type,M_pc,this->worldComm() );
+    VLOG(2) << "mat solver package : "  << this->M_matSolverPackage_type << "("  << Environment::vm()["pc-factor-mat-solver-package-type"].template as<std::string>() << ")\n";
+    std::string type =  Environment::vm()["pc-factor-mat-solver-package-type"].template as<std::string>();
+    this->setMatSolverPackageType( matSolverPackageEnumType( type ) );
 
+
+
+
+
+
+
+    if ( Environment::vm().count( "pc-view" ) )
+        PCView( M_pc, PETSC_VIEWER_STDOUT_SELF );
     this->M_is_initialized = true;
 }
 
@@ -115,26 +127,82 @@ void PreconditionerPetsc<T>::init ()
 template <typename T>
 void PreconditionerPetsc<T>::clear ()
 {
-    LOG(INFO)<<"clear()\n";
     if ( this-> M_is_initialized )
     {
-        LOG(INFO) << "precond destroyed\n" ;
         this->M_is_initialized = false;
+
         PetscTruth is_petsc_initialized;
         PetscInitialized( &is_petsc_initialized );
         if ( is_petsc_initialized )
             PETSc::PCDestroy( M_pc );
     }
+
 }
 
 
+void
+configurePC( PC& pc, WorldComm const& worldComm, std::string sub = "", std::string prefix = "" )
+{
+    LOG(INFO) << "configuring PC...\n";
+    google::FlushLogFiles(google::INFO);
+    const char* pctype;
+    int ierr = PCGetType ( pc, &pctype );
+    CHKERRABORT( worldComm.globalComm(),ierr );
+    LOG(INFO) << "configuring PC " << pctype << "\n";
+    google::FlushLogFiles(google::INFO);
+    if ( std::string(pctype) == "gasm" )
+    {
+        std::string t = Environment::vm(_name="pc-gasm-type",_prefix=prefix,_sub=sub,_worldcomm=worldComm).as<std::string>();
+        if ( t == "restrict" ) PCGASMSetType( pc, PC_GASM_RESTRICT );
+        if ( t == "basic" ) PCGASMSetType( pc, PC_GASM_BASIC );
+        if ( t == "interpolate" ) PCGASMSetType( pc, PC_GASM_INTERPOLATE );
+        if ( t == "none" ) PCGASMSetType( pc, PC_GASM_NONE );
 
+        int levels = Environment::vm(_name="pc-gasm-overlap",_prefix=prefix,_sub=sub,_worldcomm=worldComm).as<int>();
+        PCGASMSetOverlap( pc, levels );
+
+    }
+    if ( std::string(pctype) == "asm" )
+    {
+        std::string t = Environment::vm(_name="pc-asm-type",_prefix=prefix,_sub=sub,_worldcomm=worldComm).as<std::string>();
+        if ( t == "restrict" ) PCASMSetType( pc, PC_ASM_RESTRICT );
+        if ( t == "basic" ) PCASMSetType( pc, PC_ASM_BASIC );
+        if ( t == "interpolate" ) PCASMSetType( pc, PC_ASM_INTERPOLATE );
+        if ( t == "none" ) PCASMSetType( pc, PC_ASM_NONE );
+
+        int levels = Environment::vm(_name="pc-asm-overlap",_prefix=prefix,_sub=sub,_worldcomm=worldComm).as<int>();
+        PCASMSetOverlap( pc, levels );
+
+    }
+    if ( std::string(pctype) == "lu" )
+    {
+        std::string t = Environment::vm(_name="pc-factor-mat-solver-package-type",_prefix=prefix,_sub=sub,_worldcomm=worldComm).as<std::string>();
+        LOG(INFO) << "mat solver package: " << t << "\n";
+        google::FlushLogFiles(google::INFO);
+        // set factor package
+        PCFactorSetMatSolverPackage( pc, t.c_str() );
+
+    }
+    if ( std::string(pctype) == "ilu" )
+    {
+        // do we need to set the mat solver package for ilu ?
+        //PetscPCFactorSetMatSolverPackage( pc, "petsc" );
+        ierr = PCFactorSetLevels( pc, Environment::vm(_name="pc-factor-levels",_prefix=prefix,_sub=sub,_worldcomm=worldComm).as<int>() );
+        CHKERRABORT( worldComm.globalComm(),ierr );
+        ierr = PCFactorSetFill( pc, Environment::vm(_name="pc-factor-fill",_prefix=prefix,_sub=sub,_worldcomm=worldComm).as<double>() );
+        CHKERRABORT( worldComm.globalComm(),ierr );
+    }
+    LOG(INFO) << "configuring PC " << pctype << " done\n";
+    google::FlushLogFiles(google::INFO);
+}
 
 template <typename T>
 void PreconditionerPetsc<T>::setPetscPreconditionerType ( const PreconditionerType & preconditioner_type,
                                                           const MatSolverPackageType & matSolverPackage_type,
                                                           PC & pc,
-                                                          WorldComm const& worldComm )
+                                                          WorldComm const& worldComm,
+                                                          std::string const& name )
+
 {
     //mpi::communicator world;
     int ierr = 0;
@@ -175,8 +243,6 @@ void PreconditionerPetsc<T>::setPetscPreconditionerType ( const PreconditionerTy
             ierr = PCSetType ( pc, ( char* ) PCGASM );
             CHKERRABORT( worldComm.globalComm(),ierr );
 
-            // Set ILU as the sub preconditioner type
-            setPetscSubpreconditionerType( PCILU, pc, worldComm );
         }
 
         break;
@@ -192,6 +258,7 @@ void PreconditionerPetsc<T>::setPetscPreconditionerType ( const PreconditionerTy
         {
             ierr = PCSetType ( pc, ( char* ) PCLU );
             CHKERRABORT( worldComm.globalComm(),ierr );
+
         }
 
         else
@@ -206,8 +273,7 @@ void PreconditionerPetsc<T>::setPetscPreconditionerType ( const PreconditionerTy
 #endif
             CHKERRABORT( worldComm.globalComm(),ierr );
 
-            // Set ILU as the sub preconditioner type
-            setPetscSubpreconditionerType( PCLU, pc, worldComm );
+
         }
 
         break;
@@ -215,15 +281,8 @@ void PreconditionerPetsc<T>::setPetscPreconditionerType ( const PreconditionerTy
 
     case ASM_PRECOND:
     {
-        // In parallel, I think ASM uses ILU by default as the sub-preconditioner...
-        // I tried setting a different sub-preconditioner here, but apparently the matrix
-        // is not in the correct state (at this point) to call PCSetUp().
         ierr = PCSetType ( pc, ( char* ) PCASM );
         CHKERRABORT( worldComm.globalComm(),ierr );
-
-        // Set LU as the sub preconditioner type
-        setPetscSubpreconditionerType( PCLU, pc, worldComm );
-
         break;
     }
 #if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,2,0 )
@@ -231,9 +290,6 @@ void PreconditionerPetsc<T>::setPetscPreconditionerType ( const PreconditionerTy
     {
         ierr = PCSetType ( pc, ( char* ) PCGASM );
         CHKERRABORT( worldComm.globalComm(),ierr );
-
-        // Set LU as the sub preconditioner type
-        //setPetscSubpreconditionerType( PCLU, pc, worldComm );
         break;
     }
 #endif
@@ -302,21 +358,21 @@ void PreconditionerPetsc<T>::setPetscPreconditionerType ( const PreconditionerTy
 
 #endif
 
-    // Let the commandline override stuff
-    if ( preconditioner_type != AMG_PRECOND )
-    {
-        ierr = PCSetFromOptions( pc );
-        CHKERRABORT( worldComm.globalComm(),ierr );
-    }
+    configurePC( pc, worldComm, "", name );
+
+    if ( preconditioner_type == ASM_PRECOND ||
+         preconditioner_type == GASM_PRECOND ||
+         preconditioner_type == BLOCK_JACOBI_PRECOND )
+        setPetscSubpreconditionerType( pc, worldComm );
 }
 
 
 
 template <typename T>
 #if PETSC_VERSION_LESS_THAN(3,0,0)
-void PreconditionerPetsc<T>::setPetscSubpreconditionerType( PCType type, PC& pc )
+void PreconditionerPetsc<T>::setPetscSubpreconditionerType( PC& pc, std::string const& prefix  )
 #else
-    void PreconditionerPetsc<T>::setPetscSubpreconditionerType( const PCType type, PC& pc, WorldComm const& worldComm )
+    void PreconditionerPetsc<T>::setPetscSubpreconditionerType( PC& pc, WorldComm const& worldComm, std::string const& prefix )
 #endif
 {
     // For catching PETSc error return codes
@@ -345,6 +401,7 @@ void PreconditionerPetsc<T>::setPetscSubpreconditionerType( PCType type, PC& pc 
     // int first_local;
     // Fill array of local KSP contexts
     LOG(INFO) << "[setPetscSubpreconditionerType] preconditioner type: " << thepctype << "\n";
+    google::FlushLogFiles(google::INFO);
     if ( std::string( thepctype ) == "block_jacobi" )
         ierr = PCBJacobiGetSubKSP( pc, &n_local, PETSC_NULL, &subksps );
     else if ( std::string( thepctype ) == "asm" )
@@ -355,7 +412,9 @@ void PreconditionerPetsc<T>::setPetscSubpreconditionerType( PCType type, PC& pc 
 #endif
 
     CHKERRABORT( worldComm.globalComm(),ierr );
-
+    std::string subpctype =  Environment::vm(_name="pc-type",_sub="sub",_prefix=prefix).template as<std::string>();
+    LOG(INFO) << "subpctype: " << subpctype << "\n";
+    google::FlushLogFiles(google::INFO);
     // Loop over sub-ksp objects, set ILU preconditioner
     for ( int i=0; i<n_local; ++i )
     {
@@ -366,19 +425,11 @@ void PreconditionerPetsc<T>::setPetscSubpreconditionerType( PCType type, PC& pc 
         CHKERRABORT( worldComm.globalComm(),ierr );
 
         // Set requested type on the sub PC
-        ierr = PCSetType( subpc, type );
+        ierr = PCSetType( subpc, subpctype.c_str() );
         CHKERRABORT( worldComm.globalComm(),ierr );
-
-        if ( std::string(type) == "lu" )
-        {
-#if defined(FEELPP_HAS_MUMPS)
-#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,2,0 )
-            LOG(INFO) << "[setPetscSubpreconditionerType] mumps used as sub_pc\n";
-            PetscPCFactorSetMatSolverPackage( subpc, MATSOLVER_MUMPS );
-#endif
-#endif
-        }
-
+        LOG(INFO) << "pc " << i << "\n";
+        google::FlushLogFiles(google::INFO);
+        configurePC( subpc, worldComm, "sub", prefix );
     }
 
 }
