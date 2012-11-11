@@ -37,7 +37,6 @@
 void
 Convection_crb::updateResidual( const vector_ptrtype& X, vector_ptrtype& R )
 {
-
     LOG(INFO) << "[updateResidual] start\n";
 
     mesh_ptrtype mesh = Xh->mesh();
@@ -62,10 +61,7 @@ Convection_crb::updateResidual( const vector_ptrtype& X, vector_ptrtype& R )
 
 
     double gr( M_current_Grashofs );
-    double sqgr( 1/math::sqrt( gr ) );
     double pr = M_current_Prandtl;
-    double sqgrpr( 1/( pr*math::sqrt( gr ) ) );
-
     double gamma( this->vm()["penalbc"]. as<double>() );
     double k=this->vm()["k"]. as<double>();
     double nu=this->vm()["nu"]. as<double>();
@@ -84,9 +80,7 @@ Convection_crb::updateResidual( const vector_ptrtype& X, vector_ptrtype& R )
     double a=0.0,b=0.0,c=0.0;
 
     a=1;
-//    b=1/math::sqrt( mu( 0 ) );
     b=1/math::sqrt( gr );
-//    c=1/( mu( 1 )*math::sqrt( mu ( 0 ) ) );
     c=1/( pr*math::sqrt( gr ) );
     double expansion = 1;
 
@@ -194,7 +188,7 @@ Convection_crb::updateResidual( const vector_ptrtype& X, vector_ptrtype& R )
     modifVec( boundaryfaces( mesh ),u,R,one()*0 );
 
 //    R->print(std::cout);
-
+        
 }
 
 

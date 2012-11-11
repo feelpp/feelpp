@@ -59,11 +59,14 @@ Convection::Convection( int argc,
     int state = this->vm()["steady"]. as<int>() ;
     int weakdir( this->vm()["weakdir"]. as<int>() );
 
-    std::string repository = this->vm()["output_dir"]. as<std::string>() + "/%1%/meshsize=%2%/procs_%3%/" ;
+    double gr( this->vm()["gr"]. as<double>() );
+    double pr = this->vm()["pr"]. as<double>();
+    std::string repository = this->vm()["output_dir"]. as<std::string>() + "/%1%/meshsize=%2%/(gr_%3%,pr_%4%)" ;
     this->changeRepository( boost::format( repository )
                             % this->about().appName()
                             % meshSize
-                            % Environment::numberOfProcessors() );
+                            % gr
+                            % pr);
 
 }
 // <int Order_s, int Order_p, int Order_t>
@@ -137,7 +140,7 @@ void Convection ::solve( sparse_matrix_ptrtype & J ,
         vector_ptrtype& F )
 {
     M_backend->nlSolve( _solution= u );
-};
+}
 
 // <int Order_s, int Order_p, int Order_t>
 void Convection ::exportResults( boost::format fmt, element_type& U, double t )
@@ -148,7 +151,16 @@ void Convection ::exportResults( boost::format fmt, element_type& U, double t )
     exporter->step( t )->add( "p", U. element<1>() );
     exporter->step( t )->add( "T", U. element<2>() );
     exporter->save();
-};
+}
 
+// <int Order_s, int Order_p, int Order_t>
+void Convection ::exportResults( element_type& U, int i )
+{
+    exporter->step( i )->setMesh( U.functionSpace()->mesh() );
+    exporter->step( i )->add( "u", U. element<0>() );
+    exporter->step( i )->add( "p", U. element<1>() );
+    exporter->step( i )->add( "T", U. element<2>() );
+    exporter->save();
+}
 // instantiation
 // class Convection<2,1,2>;

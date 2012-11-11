@@ -31,7 +31,8 @@
     #include "convection.hpp"
 #else
     #include "convection_crb.hpp"
-    #include <feel/feelcrb/opusapp_heatns.hpp>
+    #include <feel/feelcrb/opusapp.hpp>
+//#include <feel/feelcrb/opusapp_heatns.hpp>
 #endif
 
 typedef Eigen::VectorXd theta_vector_type;
@@ -124,11 +125,11 @@ about()
                     "Natural convection simulation",// Short comment
                     AboutData::License_GPL ,	// Licence
                     "Copyright (c) SQ 2008\nCopyright (c) 2009-2012 Christophe Prud'homme" );// Copyright
-    
+
     // Informations sur l'auteur
     about.addAuthor( "Quinodoz Samuel","Student","samuel.quinodoz@epfl.ch" ,"main developer" );
     about.addAuthor( "Christophe Prud'homme","Maintainer","christophe.prudhomme@feelpp.org" ,"" );
-    
+
     // Retourne les infos
     return about;
 }
@@ -136,25 +137,44 @@ about()
 int
 main( int argc, char** argv )
 {
+
     using namespace Feel;
-    Feel::Environment env( argc, argv );
-    if ( Environment::worldComm().rank() == 0 )
-        std::cout << " number of processors : "  << Environment::numberOfProcessors() << "\n";
 
     /* assertions handling */
     Feel::Assert::setLog( "convection.assert" );
-    
+
     /* define and run application */
 #if CRB_SOLVER == 0
+    //Feel::Environment env( argc, argv );
+    Feel::Environment env( _argc=argc, _argv=argv,
+                           _desc=makeOptions(),
+                           _about=makeAbout() );
+
+    if ( Environment::worldComm().rank() == 0 )
+        std::cout << " number of processors : "  << Environment::numberOfProcessors() << "\n";
+
         std::cout << "CRB_SOLVER = " << CRB_SOLVER << std::endl;
         Convection myconvection( argc, argv, makeAbout(), makeOptions() );
         myconvection.run();
-#else        
+#else
         std::cout << "CRB_SOLVER = " << CRB_SOLVER << std::endl;
-        Feel::OpusApp_heatns<Convection_crb> myconvectioncrb( argc, argv, makeAbout(), makeOptions()  );
+        //Feel::OpusApp_heatns<Convection_crb> myconvectioncrb( argc, argv, makeAbout(), makeOptions()  );
+        //Feel::OpusApp<Convection_crb> myconvectioncrb( argc, argv, makeAbout(), makeOptions()  );
+
+        Feel::Environment env( _argc=argc, _argv=argv,
+                               _desc=opusapp_options("Convection")
+                               .add(makeOptions())
+                               .add(crbOptions())
+                               .add(eimOptions()),
+                               _about=makeAbout() );
+
+    if ( Environment::worldComm().rank() == 0 )
+        std::cout << " number of processors : "  << Environment::numberOfProcessors() << "\n";
+
+        Feel::OpusApp<Convection_crb> myconvectioncrb ;
         myconvectioncrb.run();
 #endif
-    
+
 }
 
 //./feel_heatns_natural_convection_cavity_2d --config-file=convection.cfg -snes_max_it 100 -ksp_converged_reason -pc_factor_mat_solver_package umfpack -snes_monitor

@@ -105,7 +105,8 @@ run_test_geomap( Application_ptrtype & test_app )
 
     //Mesh
     //mesh_ptrtype mesh = createMesh<Dim,OrderGeo>( "mesh_geomap_" + mesh_type::shape_type::name(), (R1-C).geoStr() );
-    mesh_ptrtype mesh = ( R1-C ).createMesh<mesh_type>( "mesh_geomap_" + mesh_type::shape_type::name() );
+    mesh_ptrtype mesh = ( R1-C ).createMesh(_mesh=new mesh_type,
+                                            _name= "mesh_geomap_" + mesh_type::shape_type::name() );
 
     //-----------------------------------------------------------------------------------//
 
@@ -388,10 +389,14 @@ run_test_interp( Application_ptrtype & test_app )
     //-----------------------------------------------------------------------------------//
 
     //Mesh
-    mesh_ptrtype mesh1 = R1.createMesh<mesh_type>( "mesh1_interp" + mesh_type::shape_type::name() );
-    mesh_ptrtype mesh2 = R2.createMesh<mesh_type>( "mesh2_interp" + mesh_type::shape_type::name() );
-    mesh_ptrtype mesh3 = ( R-C ).createMesh<mesh_type>( "mesh3_interp" + mesh_type::shape_type::name() );
-    mesh_ptrtype mesh4 = C2.createMesh<mesh_type>( "mesh4_interp" + mesh_type::shape_type::name() );
+    mesh_ptrtype mesh1 = R1.createMesh(_mesh=new mesh_type,
+                                       _name= "mesh1_interp" + mesh_type::shape_type::name() );
+    mesh_ptrtype mesh2 = R2.createMesh(_mesh=new mesh_type,
+                                       _name="mesh2_interp" + mesh_type::shape_type::name() );
+    mesh_ptrtype mesh3 = ( R-C ).createMesh(_mesh=new mesh_type,
+                                            _name="mesh3_interp" + mesh_type::shape_type::name() );
+    mesh_ptrtype mesh4 = C2.createMesh(_mesh=new mesh_type,
+                                       _name="mesh4_interp" + mesh_type::shape_type::name() );
 
     std::list<boost::tuple<mesh_ptrtype,mesh_ptrtype> > __listMesh;
     __listMesh.push_back( boost::make_tuple( mesh1,mesh2 ) );
@@ -456,7 +461,8 @@ run_test_export( Application_ptrtype & test_app )
     //-----------------------------------------------------------------------------------//
 
     //Mesh
-    mesh_ptrtype mesh = ( R-C ).createMesh<mesh_type>( "mesh_test_export" );
+    mesh_ptrtype mesh = ( R-C ).createMesh(_mesh=new mesh_type,
+                                           _name="mesh_test_export" );
 
     space_ptrtype Xh = space_type::New( mesh );
 

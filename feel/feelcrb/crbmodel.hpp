@@ -1167,7 +1167,7 @@ struct AssembleMassMatrixInCompositeCase
         mesh_ptrtype mesh = Xh->mesh();
 
         form2( _test=Xh, _trial=Xh, _matrix=M_crb_model.Mqm(0,0) ) +=
-               integrate( _range=elements( mesh ), _expr=idt( u )*id( v ) );
+            integrate( _range=elements( mesh ), _expr=trans( idt( u ) )*id( v ) );
 
     }
 
@@ -1225,7 +1225,7 @@ struct AssembleMFInCompositeCase
                 auto vectFM = M_crb_model.MFqm(q,m);
                 auto ini = M_composite_initial_guess[q][m]->template element< T::value >();
                 form1( _test=Xh, _vector=vectFM ) +=
-                    integrate ( _range=elements( mesh ), _expr=Feel::vf::idv( ini )*Feel::vf::id( v ) );
+                    integrate ( _range=elements( mesh ), _expr=trans( Feel::vf::idv( ini ) )*Feel::vf::id( v ) );
             }
         }
     }

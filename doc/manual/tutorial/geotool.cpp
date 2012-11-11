@@ -58,10 +58,10 @@ int main( int argc, char**argv )
 
     GeoTool::Circle C1( 0.1,"C1",GeoTool::Node( 0.5,0.5 ),GeoTool::Node( 0.75,0.75 ) );
 
-    auto R1mesh = R1.createMesh<mesh_type>( "R1" );
-    auto C1mesh = C1.createMesh<mesh_type>( "C1" );
-    auto R1mC1mesh = ( R1-C1 ).createMesh<mesh_type>( "R1-C1" );
-    auto R1pC1mesh = ( R1+C1 ).createMesh<mesh_type>( "R1+C1" );
+    auto R1mesh = R1.createMesh(_mesh=new mesh_type,_name="R1" );
+    auto C1mesh = C1.createMesh(_mesh=new mesh_type,_name="C1" );
+    auto R1mC1mesh = ( R1-C1 ).createMesh(_mesh=new mesh_type,_name="R1-C1" );
+    auto R1pC1mesh = ( R1+C1 ).createMesh(_mesh=new mesh_type,_name="R1+C1" );
 
 
     myexport<mesh_type>( "R1",R1mesh );

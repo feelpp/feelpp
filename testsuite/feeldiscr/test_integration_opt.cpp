@@ -76,7 +76,7 @@ makeOptions()
 }
 #if USE_BOOST_TEST
 
-FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
+FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
 
 BOOST_AUTO_TEST_SUITE( integration_opt )
 
@@ -157,7 +157,8 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_pie, T, order_types )
             GeoTool::Node B( std::sqrt( 2. )/2,std::sqrt( 2. )/2 ); // 45D
 
             GeoTool::Pie Pie( meshSize,"pie", C, A, B );
-            mesh = Pie.createMesh<mesh_type>( ( boost::format( "pie-%1%-%2%" ) % T::value % l ).str() );
+            mesh = Pie.createMesh(_mesh=new mesh_type,
+                                  _name=( boost::format( "pie-%1%-%2%" ) % T::value % l ).str() );
         }
 
         if ( shape == "circle" )
@@ -166,7 +167,8 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_pie, T, order_types )
             GeoTool::Node C( 0,0 );
             GeoTool::Node A( 1,0. );
             GeoTool::Circle Circle( meshSize,"circle", C, A );
-            mesh = Circle.createMesh<mesh_type>( ( boost::format( "circle-%1%-%2%" ) % T::value % l ).str() );
+            mesh = Circle.createMesh(_mesh=new mesh_type,
+                                     _name=( boost::format( "circle-%1%-%2%" ) % T::value % l ).str() );
         }
 
 

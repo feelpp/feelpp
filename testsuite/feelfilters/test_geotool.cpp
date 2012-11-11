@@ -318,7 +318,9 @@ void runCubeWithConformalInternalShape( Application_ptrtype testApp )
     C2.setMarker(_type="volume",_name="Omega",_markerAll=true);
 
     auto mesh = ((C-C2)+C2).createMesh(_mesh=new mesh_type,
-                                  _name="domainCubeWithConformalInternalShape" );
+                                       _name="domainCubeWithConformalInternalShape",
+                                       _optimize3d_netgen=false // else bug with last gmsh-devel(svn.rev:13736)
+                                       );
 
     auto area = integrate( _range=elements( mesh ),
                            _expr=cst(1.) ).evaluate()( 0,0 );
