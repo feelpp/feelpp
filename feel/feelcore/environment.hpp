@@ -271,7 +271,7 @@ public:
         {
             std::ostringstream os;
             if ( !prefix.empty() )
-                os << prefix << "-";
+                os << prefix << ".";
             if ( !sub.empty() )
                 os << sub << "-";
             os << name;
