@@ -661,9 +661,9 @@ po::options_description backend_options( std::string const& prefix )
     ( prefixvm( prefix,"constant-null-space" ).c_str(), Feel::po::value<bool>()->default_value( "0" ), "set the null space to be the constant values" )
 
     ( prefixvm( prefix,"pc-gasm-type" ).c_str(), Feel::po::value<std::string>()->default_value( "restrict" ), "type of gasm (basic, restrict, interpolate, none)" )
-    ( prefixvm( prefix,"pc-gasm-overlap" ).c_str(), Feel::po::value<int>()->default_value( 1 ), "number of overlap levels" )
+    ( prefixvm( prefix,"pc-gasm-overlap" ).c_str(), Feel::po::value<int>()->default_value( 2 ), "number of overlap levels" )
     ( prefixvm( prefix,"pc-asm-type" ).c_str(), Feel::po::value<std::string>()->default_value( "restrict" ), "type of asm (basic, restrict, interpolate, none)" )
-    ( prefixvm( prefix,"pc-asm-overlap" ).c_str(), Feel::po::value<int>()->default_value( 1 ), "number of overlap levels" )
+    ( prefixvm( prefix,"pc-asm-overlap" ).c_str(), Feel::po::value<int>()->default_value( 2 ), "number of overlap levels" )
 #if defined(FEELPP_HAS_MUMPS) && PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,2,0 )
     ( prefixvm( prefix,"pc-factor-mat-solver-package-type" ).c_str(), Feel::po::value<std::string>()->default_value( "mumps" ),
       "sets the software that is used to perform the factorization (petsc,umfpack, spooles, petsc, superlu, superlu_dist, mumps,...)" )
