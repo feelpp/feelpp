@@ -97,7 +97,7 @@ extern "C"
         CHKERRQ( ierr );
         Preconditioner<double> * preconditioner = static_cast<Preconditioner<double>*>( ctx );
         preconditioner->init();
-        LOG(INFO) << "init prec\n";
+        LOG(INFO) << "__feel_petsc_preconditioner_setup: init prec\n";
         return 0;
     }
 
@@ -107,7 +107,6 @@ extern "C"
         PetscErrorCode ierr = PCShellGetContext( pc,&ctx );
         CHKERRQ( ierr );
         Preconditioner<double> * preconditioner = static_cast<Preconditioner<double>*>( ctx );
-        LOG(INFO) << "apply prec\n";
         VectorPetsc<double> x_vec( x );
         VectorPetsc<double> y_vec( y );
 
