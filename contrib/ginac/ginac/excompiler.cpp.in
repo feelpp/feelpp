@@ -110,6 +110,8 @@ public:
 	 */
 	void create_src_file(std::string& filename, std::ofstream& ofs)
 	{
+        boost::mpi::communicator world;
+        std::string pid = boost::lexical_cast<std::string>(world.rank());
 		if (filename.empty()) {
 			// fill filename with unique random word
 			const char* filename_pattern = "./GiNaCXXXXXX";
@@ -119,10 +121,13 @@ public:
 				delete[] new_filename;
 				throw std::runtime_error("mktemp failed");
 			}
-			filename = std::string(new_filename);
-			ofs.open(new_filename, std::ios::out);
+
+
+			filename = std::string(new_filename)+pid;
+			ofs.open(filename.c_str(), std::ios::out);
 			delete[] new_filename;
 		} else {
+            filename = filename + pid;
 			// use parameter as filename
 			ofs.open(filename.c_str(), std::ios::out);
 		}
@@ -134,6 +139,9 @@ public:
 		ofs << "#include <stddef.h> " << std::endl;
 		ofs << "#include <stdlib.h> " << std::endl;
 		ofs << "#include <math.h> " << std::endl;
+        ofs << "#define Pi M_PI" << std::endl;
+        ofs << "#define pi M_PI" << std::endl;
+		//ofs << "#include <ginac/constant.h> " << std::endl;
 		ofs << std::endl;
 	}
 	/**
@@ -254,7 +262,6 @@ void compile_ex(const ex& expr, const symbol& sym1, const symbol& sym2, FUNCP_2P
 
 void compile_ex(const lst& exprs, const lst& syms, FUNCP_CUBA& fp, const std::string filename)
 {
-	boost::mpi::communicator world;
 	lst replacements;
 	for (std::size_t count=0; count<syms.nops(); ++count) {
 		std::ostringstream s;
@@ -268,7 +275,7 @@ void compile_ex(const lst& exprs, const lst& syms, FUNCP_CUBA& fp, const std::st
 	}
 
 	std::ofstream ofs;
-	std::string unique_filename = filename+boost::lexical_cast<std::string>(world.rank());
+	std::string unique_filename = filename;
 	global_excompiler.create_src_file(unique_filename, ofs);
 
 	ofs << "void compiled_ex(const int* an, const double a[], const int* fn, double f[])" << std::endl;
