@@ -70,6 +70,9 @@ Penalisation<Dim>::Penalisation():
     t=0;
     iter=0;
     Tfinal=this->vm()["Tfinal"].template as<double>();
+    // if we are in test mode then do only one time step
+    if ( Environment::vm( _name="test" ).template as<double>() )
+        Tfinal = dt;
     xp=this->vm()["x0"].template as<double>();
     yp=this->vm()["y0"].template as<double>();
     zp=this->vm()["z0"].template as<double>();
@@ -266,8 +269,10 @@ void Penalisation<Dim>::updateChi()
     std::cout << "updateChi: p0.size=  " << p0.size() << "\n";
     std::cout << "updateChi: carac.size=  " << carac.size() << "\n";
     std::cout << "updateChi: mesh.size=  " << mesh->numElements() << "\n";
+#if 0
     p0.printMatlab( "p0" );
     carac.printMatlab( "ca" );
+#endif
 }//updateChi
 
 

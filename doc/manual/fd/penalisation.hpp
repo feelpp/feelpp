@@ -41,7 +41,8 @@ inline po::options_description makeOptions()
     ( "epsilon", po::value<double>()->default_value( 0.8 ), "penalisation term for particle" )
     ( "Tfinal", po::value<double>()->default_value( 3 ), "Final time" )
     ( "Ylimit", po::value<double>()->default_value( 0 ), "Stop the simulation if y reaches Ylimit (never stop if 0)" )
-    ( "DT", po::value<double>()->default_value( 0.01 ), "time step" );
+    ( "DT", po::value<double>()->default_value( 0.01 ), "time step" )
+    ( "test", "test application" );
     return mesOptions
            .add( Feel::feel_options() )
            .add( backend_options( "stokes_backend" ) )
@@ -158,4 +159,4 @@ private :
 
 }//namespace Feel
 
-#endif PENALISATION_HPP
+#endif //PENALISATION_HPP
