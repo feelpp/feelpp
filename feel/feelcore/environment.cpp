@@ -513,7 +513,7 @@ Environment::Environment( int& argc, char**& argv )
     :
     M_env( argc, argv, false )
 {
-    S_scratchdir = scratchdir()/argv[0];
+    S_scratchdir = scratchdir()/fs::path(argv[0]).filename();
     if ( !fs::exists( S_scratchdir ) )
         fs::create_directories( S_scratchdir );
     FLAGS_log_dir=S_scratchdir.string();
@@ -575,7 +575,7 @@ Environment::Environment( int& argc, char**& argv )
 void
 Environment::init( int argc, char** argv, po::options_description const& desc, AboutData const& about )
 {
-    S_scratchdir = scratchdir()/argv[0];
+    S_scratchdir = scratchdir()/fs::path(argv[0]).filename();
     if ( !fs::exists( S_scratchdir ) )
         fs::create_directories( S_scratchdir );
     FLAGS_log_dir=S_scratchdir.string();
@@ -714,21 +714,27 @@ Environment::finalized()
 std::string
 Environment::rootRepository()
 {
-    std::string env;
-
-    if ( ::getenv( "FEELPP_REPOSITORY" ) )
+    char * senv = ::getenv( "FEELPP_REPOSITORY" );
+    if ( senv != NULL && senv[0] != '\0' )
     {
-        env = ::getenv( "FEELPP_REPOSITORY" );
+        return std::string(senv);
     }
-
-    else
+    senv = ::getenv( "FEELPP_WORKDIR" );
+    if ( senv != NULL && senv[0] != '\0' )
     {
-        // by default create $HOME/feel
-        env = ::getenv( "HOME" );
-        env += "/feel";
+        return std::string( senv );
     }
-
-    return env;
+    senv = ::getenv( "WORKDIR" );
+    if ( senv != NULL && senv[0] != '\0' )
+    {
+        return std::string( senv )+"/feel";
+    }
+    senv = ::getenv( "HOME" );
+    if ( senv != NULL && senv[0] != '\0' )
+    {
+        return std::string( senv ) + "/feel";
+    }
+    return std::string();
 }
 std::string
 Environment::localGeoRepository()
