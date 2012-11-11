@@ -51,6 +51,7 @@ BOOST_PARAMETER_NAME( vm )  // Note: no semicolon
 BOOST_PARAMETER_NAME( options )
     BOOST_PARAMETER_NAME( about )
     BOOST_PARAMETER_NAME( prefix )
+    BOOST_PARAMETER_NAME( sub )
     BOOST_PARAMETER_NAME( path )
     BOOST_PARAMETER_NAME( suffix )
     BOOST_PARAMETER_NAME( filename )

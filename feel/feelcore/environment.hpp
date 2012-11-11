@@ -260,6 +260,27 @@ public:
     static boost::tuple<std::string,bool> systemConfigRepository();
 
     BOOST_PARAMETER_MEMBER_FUNCTION(
+        (po::variable_value), static vm, tag,
+        (required
+         (name,(std::string)))
+        (optional
+         (worldcomm, ( WorldComm ), Environment::worldComm() )
+         (sub,( std::string ),"")
+         (prefix,( std::string ),"")
+            ))
+        {
+            std::ostringstream os;
+            if ( !prefix.empty() )
+                os << prefix << "-";
+            if ( !sub.empty() )
+                os << sub << "-";
+            os << name;
+            auto it = Environment::vm().find(os.str());
+            CHECK( it != Environment::vm().end() ) << "Invalid option " << os.str() << "\n";
+            return it->second;
+        }
+
+    BOOST_PARAMETER_MEMBER_FUNCTION(
         (void), static changeRepository, tag,
         (required
          (directory,(boost::format)))
@@ -323,7 +344,7 @@ private:
     static boost::shared_ptr<po::options_description> S_desc;
     static std::vector<std::string> S_to_pass_further;
 
-    static boost::signals2::signal<void ()> S_deleteObservers;
+    static boost::signals2::signal<void()> S_deleteObservers;
 
     static boost::shared_ptr<WorldComm> S_worldcomm;
 };
