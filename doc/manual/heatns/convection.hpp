@@ -156,6 +156,7 @@ public:
 
     // Definition de la procedure pour exporter les solutions
     void exportResults( boost::format, element_type& U, double t );
+    void exportResults( element_type& U, int i );
     
 private:
     void initLinearOperator( sparse_matrix_ptrtype& L );
@@ -163,7 +164,7 @@ private:
     void updateJacobian1( const vector_ptrtype& X, sparse_matrix_ptrtype& J );
     void updateJacobian2( const vector_ptrtype& X, sparse_matrix_ptrtype& J );
 private:
-
+    
     backend_ptrtype M_backend;
 
     space_ptrtype Xh;

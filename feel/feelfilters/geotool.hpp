@@ -985,6 +985,7 @@ public:
                std::string gmshFormatVersion,
                double hmin=0,double hmax=1e22,
                int refine=0,
+               bool optimize3dNetgen=true,
                GMSH_PARTITIONER partitioner=GMSH_PARTITIONER_CHACO,
                int partitions=1,
                bool partition_file=false );
@@ -1129,6 +1130,7 @@ public:
           ( worldcomm,      *, Environment::worldComm() )
           ( hmin,     ( double ), 0 )
           ( hmax,     ( double ), 1e22 )
+          ( optimize3d_netgen, *( boost::is_integral<mpl::_> ), true )
         ) //optional
     )
     {
@@ -1151,6 +1153,7 @@ public:
             gmsh.setMshFileByPartition( partition_file );
             this->init( _mesh_type::nOrder,gmsh.version(),
                         hmin,hmax,refine,
+                        optimize3d_netgen,
                         partitioner,partitions,partition_file );
 
             std::string geostring;
@@ -1185,7 +1188,7 @@ public:
     }
 
 
-
+#if 0 // old function
     template<typename mesh_type>
     boost::shared_ptr<mesh_type>
     createMesh( std::string name, int straighten = 1, WorldComm const& worldcomm=Environment::worldComm() )
@@ -1231,7 +1234,7 @@ public:
 
         return mesh;
     }
-
+#endif
     /*_________________________________________________*
      *_________________________________________________*
      * Accessor                                        *

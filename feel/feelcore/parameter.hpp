@@ -128,6 +128,7 @@ BOOST_PARAMETER_NAME( options )
     BOOST_PARAMETER_NAME( recombine )
     BOOST_PARAMETER_NAME( files_path )
     BOOST_PARAMETER_NAME( depends )
+    BOOST_PARAMETER_NAME( optimize3d_netgen )
 // parameter for adapt
     BOOST_PARAMETER_NAME( model )
     BOOST_PARAMETER_NAME( geotracking )
