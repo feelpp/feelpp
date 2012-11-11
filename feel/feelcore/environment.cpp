@@ -26,6 +26,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2010-04-14
  */
+#include <cstdlib>
+#include <pwd.h>
 
 #include <boost/program_options.hpp>
 #include <boost/preprocessor/stringize.hpp>
@@ -47,7 +49,26 @@
 #include <feel/feelcore/feelpetsc.hpp>
 #include <feel/options.hpp>
 
+namespace detail
+{
+class Env{
+public:
+    static std::string getUserName()
+        {
+            register struct passwd *pw;
+            register uid_t uid;
+            int c;
 
+            uid = geteuid ();
+            pw = getpwuid (uid);
+            if (pw)
+            {
+                return std::string(pw->pw_name);
+            }
+            return std::string("");
+        }
+};
+}
 namespace google
 {
 namespace glog_internal_namespace_
@@ -458,31 +479,44 @@ Environment::Environment()
     FEELPP_ASSERT( S_worldcomm ).error( "creating worldcomm failed" );
 }
 
-
-Environment::Environment( int& argc, char**& argv )
-    :
-    M_env( argc, argv, false )
+fs::path scratchdir()
 {
-    // if scratsch dir not defined, define it
     const char* env;
+    // if scratsch dir not defined, define it
     env = getenv("FEELPP_SCRATCHDIR");
     if (env != NULL && env[0] != '\0')
     {
         env = getenv("SCRATCHDIR");
         if (env != NULL && env[0] != '\0')
         {
-            std::string value = (boost::format("%1%/feelpp/") % env).str();
-            ::setenv("FEELPP_SCRATCHDIR",value.c_str(), 0 );
+            std::string value = (boost::format("%1%/%2%/feelpp/") % env % ::detail::Env::getUserName()).str();
+            std::cerr << "value=" << value << "\n";
+            setenv("FEELPP_SCRATCHDIR", (boost::format("%1%/%2%/feelpp/") % env % ::detail::Env::getUserName() ).str().c_str(),0);
         }
         else
         {
-            std::string value = (boost::format("/tmp/feelpp/") % env).str();
-            ::setenv("FEELPP_SCRATCHDIR",value.c_str(), 0 );
-        }
+            std::string value = (boost::format("/tmp/%1%/feelpp/") % ::detail::Env::getUserName()).str();
+            setenv("FEELPP_SCRATCHDIR", value.c_str(),0);
+         }
     }
     env = getenv("FEELPP_SCRATCHDIR");
-    S_scratchdir = fs::path( env );
+    if (env != NULL && env[0] != '\0')
+    {
+        std::cerr << "env=" << env << "\n";
+        return fs::path( env );
+    }
+    std::string value = (boost::format("/tmp/%1%/feelpp/") % ::detail::Env::getUserName()).str();
+    return fs::path( value );
+}
 
+Environment::Environment( int& argc, char**& argv )
+    :
+    M_env( argc, argv, false )
+{
+    S_scratchdir = scratchdir()/argv[0];
+    if ( !fs::exists( S_scratchdir ) )
+        fs::create_directories( S_scratchdir );
+    FLAGS_log_dir=S_scratchdir.string();
 
     google::AllowCommandLineReparsing();
     google::ParseCommandLineFlags(&argc, &argv, false);
@@ -541,6 +575,11 @@ Environment::Environment( int& argc, char**& argv )
 void
 Environment::init( int argc, char** argv, po::options_description const& desc, AboutData const& about )
 {
+    S_scratchdir = scratchdir()/argv[0];
+    if ( !fs::exists( S_scratchdir ) )
+        fs::create_directories( S_scratchdir );
+    FLAGS_log_dir=S_scratchdir.string();
+
     // duplicate argv before passing to gflags because gflags is going to
     // rearrange them and it screws badly the flags for PETSc/SLEPc
     char** envargv = dupargv( argv );
@@ -613,15 +652,16 @@ Environment::init( int argc, char** argv, po::options_description const& desc, A
 }
 Environment::~Environment()
 {
-    Debug(900) << "[~Environment] sending delete to all deleters" << "\n";
+    LOG(INFO) << "[~Environment] sending delete to all deleters" << "\n";
 
     // send signal to all deleters
     S_deleteObservers();
-    Debug(900) << "[~Environment] delete signal sent" << "\n";
+    google::FlushLogFiles(google::GLOG_INFO);
+    LOG(INFO) << "[~Environment] delete signal sent" << "\n";
 
     if ( i_initialized )
     {
-        Debug(900) << "[~Environment] finalizing slepc,petsc and mpi\n";
+        LOG(INFO) << "[~Environment] finalizing slepc,petsc and mpi\n";
 #if defined ( FEELPP_HAS_PETSC_H )
         PetscTruth is_petsc_initialized;
         PetscInitialized( &is_petsc_initialized );
@@ -843,7 +883,7 @@ po::variables_map Environment::S_vm;
 boost::shared_ptr<po::options_description> Environment::S_desc;
 std::vector<std::string> Environment::S_to_pass_further;
 
-boost::signals2::signal<void ()> Environment::S_deleteObservers;
+boost::signals2::signal<void()> Environment::S_deleteObservers;
 
 boost::shared_ptr<WorldComm> Environment::S_worldcomm;
 
