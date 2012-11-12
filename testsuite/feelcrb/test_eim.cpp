@@ -106,14 +106,14 @@ public:
     typedef parameterspace_type::sampling_type sampling_type;
     typedef parameterspace_type::sampling_ptrtype sampling_ptrtype;
 
-    typedef EIMFunctionBase<space_type, parameterspace_type> fun_type;
+    typedef EIMFunctionBase<space_type, space_type, parameterspace_type> fun_type;
     typedef boost::shared_ptr<fun_type> fun_ptrtype;
     typedef std::vector<fun_ptrtype> funs_type;
 
     model()
         :
         Simget(),
-        meshSize( vm["hsize"].as<double>() )
+        meshSize( this->vm()["hsize"].as<double>() )
         {
 
             mesh = createGMSHMesh( _mesh=new mesh_type,
@@ -138,6 +138,9 @@ public:
             mu = Dmu->element();
             BOOST_CHECK_EQUAL( mu.parameterSpace(), Dmu );
 
+            auto Pset = Dmu->sampling();
+            int sampling_size = this->vm()["eim.sampling-size"].as<int>();
+            Pset->randomize( sampling_size );
 
             BOOST_TEST_MESSAGE( "Allocation done" );
             BOOST_TEST_MESSAGE( "pushing function to be empirically interpolated" );
@@ -154,6 +157,7 @@ public:
                           _space=this->functionSpace(),
                           _parameter=mu,
                           _expr=sin(cst_ref(mu(0))*idv(u)*idv(u)),
+                          _sampling=Pset,
                           _name="q1" );
             BOOST_TEST_MESSAGE( "create e done" );
             BOOST_CHECK( e );
@@ -166,6 +170,7 @@ public:
                            _space=this->functionSpace(),
                            _parameter=mu,
                            _expr=cst_ref(mu(0)),
+                           _sampling=Pset,
                            _name="mu0" );
             BOOST_TEST_MESSAGE( "create e1 done" );
             M_funs.push_back( e1 );
@@ -178,6 +183,7 @@ public:
                            _space=this->functionSpace(),
                            _parameter=mu,
                            _expr=cst_ref(mu(0))*Px(),
+                           _sampling=Pset,
                            _name="mu0x" );
             BOOST_TEST_MESSAGE( "create e2 done" );
             M_funs.push_back( e2 );
@@ -188,6 +194,7 @@ public:
                            _space=this->functionSpace(),
                            _parameter=mu,
                            _expr=sin(2*constants::pi<double>()*cst_ref(mu(0))*Px()),
+                           _sampling=Pset,
                            _name="sin2pimu0x" );
             BOOST_TEST_MESSAGE( "create e3 done" );
             M_funs.push_back( e3 );
@@ -198,6 +205,7 @@ public:
                            _space=this->functionSpace(),
                            _parameter=mu,
                            _expr=exp(-((Px()-0.5)*(Px()-0.5)+(Py()-0.5)*(Py()-0.5))/(2*cst_ref(mu(0))*cst_ref(mu(0)))),
+                           _sampling=Pset,
                            _name="q2" );
             BOOST_TEST_MESSAGE( "create e5 done" );
             M_funs.push_back( e5 );
@@ -287,14 +295,14 @@ public:
     typedef parameterspace_type::sampling_type sampling_type;
     typedef parameterspace_type::sampling_ptrtype sampling_ptrtype;
 
-    typedef EIMFunctionBase<space_type, parameterspace_type> fun_type;
+    typedef EIMFunctionBase<space_type, space_type, parameterspace_type> fun_type;
     typedef boost::shared_ptr<fun_type> fun_ptrtype;
     typedef std::vector<fun_ptrtype> funs_type;
 
     model_circle()
         :
         Simget(),
-        meshSize( vm["hsize"].as<double>() )
+        meshSize( this->vm()["hsize"].as<double>() )
         {
 
             mesh = createGMSHMesh( _mesh=new mesh_type,
@@ -322,6 +330,10 @@ public:
             mu = Dmu->element();
             BOOST_CHECK_EQUAL( mu.parameterSpace(), Dmu );
 
+            auto Pset = Dmu->sampling();
+            int sampling_size = this->vm()["eim.sampling-size"].as<int>();
+            Pset->randomize( sampling_size );
+
             BOOST_TEST_MESSAGE( "Allocation done" );
             BOOST_TEST_MESSAGE( "pushing function to be empirically interpolated" );
 
@@ -336,6 +348,7 @@ public:
                           _space=this->functionSpace(),
                           _parameter=mu,
                           _expr= cst_ref(mu(0)) *( Px() - cst_ref(mu(2)) )*( Px() - cst_ref(mu(2)) )+cst_ref(mu(1)) *( Py() - cst_ref(mu(3)) )*( Py() - cst_ref(mu(3)) ),
+                          _sampling=Pset,
                           _name="q_1");
             BOOST_TEST_MESSAGE( "create eim" );
             BOOST_CHECK( e );
