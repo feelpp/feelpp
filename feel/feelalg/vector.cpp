@@ -117,8 +117,7 @@ Vector<T> & Vector<T>::operator= ( const Vector<T>& v )
 {
     if ( this != &v )
     {
-        if ( M_map.nProcessors() == 1 )
-            M_map = v.map();
+        M_map = v.map();
 
         for ( size_type i = 0; i < M_map.nLocalDofWithGhost(); ++i )
         {
