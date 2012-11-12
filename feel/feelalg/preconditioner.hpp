@@ -174,6 +174,7 @@ public:
 
     virtual std::string name() const { return M_name; }
 
+    sparse_matrix_ptrtype const& matrix() const { return M_matrix; }
 
     //@}
 
