@@ -847,7 +847,8 @@ public:
                                        ( jacobian,( sparse_matrix_ptrtype ), sparse_matrix_ptrtype() )
                                        ( residual,( vector_ptrtype ), vector_ptrtype() )
                                        //(prec,(sparse_matrix_ptrtype), jacobian )
-                                       ( prec,( preconditioner_ptrtype ), preconditioner( _pc=this->pcEnumType()/*LU_PRECOND*/,_backend=BACKEND_PETSC ) )
+                                       ( prec,( preconditioner_ptrtype ), preconditioner( _prefix=this->prefix(),_pc=this->pcEnumType()/*LU_PRECOND*/,_backend=BACKEND_PETSC,
+                                                                                          _pcfactormatsolverpackage=this->matSolverPackageEnumType() ) )
                                        ( maxit,( size_type ), M_maxit/*1000*/ )
                                        ( rtolerance,( double ), M_rtolerance/*1e-13*/ )
                                        ( atolerance,( double ), M_atolerance/*1e-50*/ )

@@ -401,110 +401,108 @@ void SolverNonLinearPetsc<T>::init ()
         ierr = SNESSetFromOptions( M_snes );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
 
-    }
-
-
-    int ierr=0;
-
-    // if the non linear solver type is define by the user in the code
-    switch ( this->getType() )
-    {
-    case LINE_SEARCH :
-    {
-        ierr = SNESSetType( M_snes, SNESLS );
-        CHKERRABORT( this->worldComm().globalComm(),ierr );
-    }
-    break;
-
-    case TRUST_REGION :
-    {
-        ierr = SNESSetType( M_snes, SNESTR );
-        CHKERRABORT( this->worldComm().globalComm(),ierr );
-    }
-    break;
-
-    case SELECT_IN_ARGLIST:
-        // no-op
+        //int ierr=0;
+        // if the non linear solver type is define by the user in the code
+        switch ( this->getType() )
+        {
+        case LINE_SEARCH :
+        {
+            ierr = SNESSetType( M_snes, SNESLS );
+            CHKERRABORT( this->worldComm().globalComm(),ierr );
+        }
         break;
-    }
+
+        case TRUST_REGION :
+        {
+            ierr = SNESSetType( M_snes, SNESTR );
+            CHKERRABORT( this->worldComm().globalComm(),ierr );
+        }
+        break;
+
+        case SELECT_IN_ARGLIST:
+            // no-op
+            break;
+        }
 
 
-    double __relResTol,__absResTol,__absSolTol;
-    int __nbItMax, __nbEvalFuncMax;
+        double __relResTol,__absResTol,__absSolTol;
+        int __nbItMax, __nbEvalFuncMax;
 
-    if ( this->getAbsoluteResidualTol()==0 )
-    {
-        ierr = SNESGetTolerances( M_snes, &__absResTol, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL );
+        if ( this->getAbsoluteResidualTol()==0 )
+        {
+            ierr = SNESGetTolerances( M_snes, &__absResTol, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL );
+            CHKERRABORT( this->worldComm().globalComm(),ierr );
+        }
+
+        else __absResTol = this->getAbsoluteResidualTol();
+
+        if ( this->getRelativeResidualTol()==0 )
+        {
+            ierr = SNESGetTolerances( M_snes, PETSC_NULL, &__relResTol, PETSC_NULL, PETSC_NULL, PETSC_NULL );
+            CHKERRABORT( this->worldComm().globalComm(),ierr );
+        }
+
+        else __relResTol = this->getRelativeResidualTol();
+
+        if ( this->getAbsoluteSolutionTol()==0 )
+        {
+            ierr = SNESGetTolerances( M_snes, PETSC_NULL, PETSC_NULL, &__absSolTol, PETSC_NULL, PETSC_NULL );
+            CHKERRABORT( this->worldComm().globalComm(),ierr );
+        }
+
+        else __absSolTol = this->getAbsoluteSolutionTol();
+
+        if ( this->getNbItMax()==0 )
+        {
+            ierr = SNESGetTolerances( M_snes, PETSC_NULL, PETSC_NULL, PETSC_NULL, &__nbItMax, PETSC_NULL );
+            CHKERRABORT( this->worldComm().globalComm(),ierr );
+        }
+
+        else __nbItMax = this->getNbItMax();
+
+        ierr = SNESGetTolerances( M_snes, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL, &__nbEvalFuncMax );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
-    }
 
-    else __absResTol = this->getAbsoluteResidualTol();
-
-    if ( this->getRelativeResidualTol()==0 )
-    {
-        ierr = SNESGetTolerances( M_snes, PETSC_NULL, &__relResTol, PETSC_NULL, PETSC_NULL, PETSC_NULL );
+        ierr = SNESSetTolerances( M_snes,__absResTol,__relResTol,__absSolTol,__nbItMax,__nbEvalFuncMax );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
-    }
 
-    else __relResTol = this->getRelativeResidualTol();
-
-    if ( this->getAbsoluteSolutionTol()==0 )
-    {
-        ierr = SNESGetTolerances( M_snes, PETSC_NULL, PETSC_NULL, &__absSolTol, PETSC_NULL, PETSC_NULL );
+        //KSP ksp;
+        ierr = SNESGetKSP ( M_snes, &M_ksp );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
-    }
-
-    else __absSolTol = this->getAbsoluteSolutionTol();
-
-    if ( this->getNbItMax()==0 )
-    {
-        ierr = SNESGetTolerances( M_snes, PETSC_NULL, PETSC_NULL, PETSC_NULL, &__nbItMax, PETSC_NULL );
+        //PC pc;
+        ierr = KSPGetPC( M_ksp,&M_pc );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
-    }
 
-    else __nbItMax = this->getNbItMax();
-
-    ierr = SNESGetTolerances( M_snes, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL, &__nbEvalFuncMax );
-    CHKERRABORT( this->worldComm().globalComm(),ierr );
-
-    ierr = SNESSetTolerances( M_snes,__absResTol,__relResTol,__absSolTol,__nbItMax,__nbEvalFuncMax );
-    CHKERRABORT( this->worldComm().globalComm(),ierr );
-
-    //KSP ksp;
-    ierr = SNESGetKSP ( M_snes, &M_ksp );
-    CHKERRABORT( this->worldComm().globalComm(),ierr );
-    //PC pc;
-    ierr = KSPGetPC( M_ksp,&M_pc );
-    CHKERRABORT( this->worldComm().globalComm(),ierr );
-
-    // Set user-specified  solver and preconditioner types
-    this->setPetscKspSolverType();
-    this->setPetscPreconditionerType();
-    //this->setPetscConstantNullSpace();
-    // sets the software that is used to perform the factorization
-    PetscPCFactorSetMatSolverPackage( M_pc,this->matSolverPackageType() );
+        // Set user-specified  solver and preconditioner types
+        this->setPetscKspSolverType();
+        this->setPetscPreconditionerType();
+        //this->setPetscConstantNullSpace();
+        // sets the software that is used to perform the factorization
+        PetscPCFactorSetMatSolverPackage( M_pc,this->matSolverPackageType() );
 
 
-    if ( this->M_preconditioner && this->preconditionerType()==PreconditionerType::SHELL_PRECOND )
-    {
-        //PCSetType( M_pc, PCSHELL );
-        PCShellSetContext( M_pc,( void* )this->M_preconditioner.get() );
+        if ( this->M_preconditioner /*&& this->preconditionerType()==PreconditionerType::SHELL_PRECOND*/ )
+        {
+            PCSetType( M_pc, PCSHELL );
+            PCShellSetContext( M_pc,( void* )this->M_preconditioner.get() );
+            PCShellSetName( M_pc, this->M_preconditioner->name().c_str() );
+            //Re-Use the shell functions from petsc_linear_solver
+            PCShellSetSetUp( M_pc,__feel_petsc_preconditioner_setup );
+            PCShellSetApply( M_pc,__feel_petsc_preconditioner_apply );
+        }
 
-        //Re-Use the shell functions from petsc_linear_solver
-        PCShellSetSetUp( M_pc,__feel_petsc_preconditioner_setup );
-        PCShellSetApply( M_pc,__feel_petsc_preconditioner_apply );
-    }
+        if ( this->showSNESMonitor() )
+        {
+            ierr = SNESMonitorSet( M_snes,SNESMonitorDefault,PETSC_NULL,PETSC_NULL );
+            CHKERRABORT( this->worldComm().globalComm(),ierr );
+        }
 
-    if ( this->showSNESMonitor() )
-    {
-        ierr = SNESMonitorSet( M_snes,SNESMonitorDefault,PETSC_NULL,PETSC_NULL );
-        CHKERRABORT( this->worldComm().globalComm(),ierr );
-    }
+        if ( this->showKSPMonitor() )
+        {
+            ierr = KSPMonitorSet( M_ksp,KSPMonitorDefault,PETSC_NULL,PETSC_NULL );
+            CHKERRABORT( this->worldComm().globalComm(),ierr );
+        }
 
-    if ( this->showKSPMonitor() )
-    {
-        ierr = KSPMonitorSet( M_ksp,KSPMonitorDefault,PETSC_NULL,PETSC_NULL );
-        CHKERRABORT( this->worldComm().globalComm(),ierr );
     }
 
 
@@ -520,6 +518,10 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
                                  const double,              // Stopping tolerance
                                  const unsigned int )
 {
+    //Set the preconditioning matrix if not given
+    if ( this->M_preconditioner && !this->M_preconditioner->matrix() )
+        this->M_preconditioner->setMatrix( jac_in );
+
     this->init ();
 
     int ierr=0;
@@ -583,8 +585,8 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
     CHKERRABORT( this->worldComm().globalComm(),ierr );
 
     //Set the preconditioning matrix
-    if ( this->M_preconditioner )
-        this->M_preconditioner->setMatrix( jac_in );
+    //if ( this->M_preconditioner )
+    //this->M_preconditioner->setMatrix( jac_in );
 
 
     /*
