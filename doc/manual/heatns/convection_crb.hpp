@@ -53,6 +53,9 @@
 
 #include <feel/feelcrb/parameterspace.hpp>
 
+#include <Eigen/Core>
+#include <Eigen/LU>
+#include <Eigen/Dense>
 
 // use the Feel namespace
 using namespace Feel;
@@ -170,6 +173,8 @@ public:
         std::vector< std::vector<std::vector<vector_ptrtype> > > ,
         std::vector< std::vector< element_ptrtype > > > affine_decomposition_type;
     
+    typedef Eigen::MatrixXd matrixN_type;
+
     // Constructeur
     Convection_crb( );
     Convection_crb( po::variables_map const& vm );
@@ -196,6 +201,7 @@ public:
     // \return the number of terms in affine decomposition of left hand
     // side bilinear form
     int Qa() const;
+    int Qa_tril() const;
     
     /**
      * there is at least one output which is the right hand side of the
@@ -373,6 +379,7 @@ public:
     
     void updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J );
     void updateResidual( const vector_ptrtype& X, vector_ptrtype& R );
+    matrixN_type compute_trilinear_form( const element_ptrtype& X ){ matrixN_type A_tril; return A_tril;};
 
 private:
 
