@@ -64,6 +64,7 @@ makeOptions()
 {
     po::options_description lShapeoptions( "LShape options" );
     lShapeoptions.add_options()
+        ( "nDim", po::value<int>()->default_value( 2 ), "dimension" )
         ( "hsize", po::value<double>()->default_value( 0.1 ), "mesh size" )
         ( "Lx", po::value<double>()->default_value( 2.0 ), "length (x) of Lshape" )
         ( "Ly", po::value<double>()->default_value( 2.0 ), "length (y) of Lshape" )
@@ -466,7 +467,20 @@ main( int argc, char** argv )
     /**
      * register the simgets
      */
-    app.add( new LShape<2>() );
+    switch (app.vm()["nDim"].as<int>()) {
+    case(2) : {
+        app.add( new LShape<2>() );
+        break;
+    }
+    case(3) : {
+        app.add( new LShape<3>() );
+        break;
+    }
+    default: {
+        std::cerr << "wrong pb dimension - should be either 2 or 3\n";
+        return 1;
+    }
+    }
     //app.add( new LShape<3>() );
 
     /**
