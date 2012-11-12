@@ -190,13 +190,11 @@ public:
     //typedef Eigen::VectorXd theta_vector_type;
     typedef std::vector< std::vector< double > > beta_vector_type;
 
-
     typedef boost::tuple<
         std::vector< std::vector<sparse_matrix_ptrtype> >,
-        std::vector< std::vector<sparse_matrix_ptrtype> >,
         std::vector< std::vector<std::vector<vector_ptrtype> > > ,
-        std::vector< std::vector< vector_ptrtype > >
-        > affine_decomposition_type;
+        std::vector< std::vector< element_ptrtype > > > affine_decomposition_type;
+
     //@}
 
     /** @name Constructors, destructor
@@ -271,18 +269,21 @@ public:
     {
         return 1;
     }
-    int mMaxM( int q )
-    {
-        return 0;
-    }
-    int mMaxMF( int q )
-    {
-        return 0;
-    }
     int mMaxF(int output_index, int q )
     {
         return 1;
     }
+
+    int QInitialGuess() const
+    {
+        return 1;
+    }
+
+    int mMaxInitialGuess( int q )
+    {
+        return 1;
+    }
+
 
     /**
      * \brief Returns the function space
@@ -302,7 +303,13 @@ public:
      * \brief compute the theta coefficient for both bilinear and linear form
      * \param mu parameter to evaluate the coefficients
      */
-    boost::tuple<beta_vector_type, beta_vector_type, std::vector<beta_vector_type>, beta_vector_type >
+    boost::tuple<beta_vector_type, std::vector<beta_vector_type>, beta_vector_type>
+    computeBetaQm( element_type const& T,parameter_type const& mu , double time=1e30 )
+    {
+        return computeBetaQm( mu , time );
+    }
+
+    boost::tuple<beta_vector_type, std::vector<beta_vector_type>, beta_vector_type >
     computeBetaQm( parameter_type const& mu, double time=0 )
     {
         M_betaAqm.resize( Qa() );
@@ -323,7 +330,11 @@ public:
         M_betaFqm[0][1][0] = mu( 3 ); // phi
         M_betaFqm[1][0][0] = 1;
 
-        return boost::make_tuple( M_betaMqm, M_betaAqm, M_betaFqm, M_betaMFqm );
+        M_betaInitialGuessQm.resize( QInitialGuess() );
+        M_betaInitialGuessQm[0].resize( 1 );
+        M_betaInitialGuessQm[0][0] = 0;
+
+        return boost::make_tuple( M_betaAqm, M_betaFqm, M_betaInitialGuessQm);
     }
 
     /**
@@ -332,16 +343,6 @@ public:
     beta_vector_type const& betaAqm() const
     {
         return M_betaAqm;
-    }
-
-    beta_vector_type const& betaMqm() const
-    {
-        return M_betaMqm;
-    }
-
-    value_type betaMFqm( int q , int m )
-    {
-        return M_betaMFqm[q][m];
     }
 
     /**
@@ -360,9 +361,10 @@ public:
     {
         return M_betaAqm[q][m];
     }
-    value_type betaMqm( int q , int m ) const
+
+    value_type betaInitialGuessQm( int q, int m ) const
     {
-        return M_betaMqm[q][m];
+        return M_betaInitialGuessQm[q][m];
     }
 
     /**
@@ -504,12 +506,11 @@ private:
 
     std::vector < std::vector<sparse_matrix_ptrtype> > M_Aqm;
     std::vector < std::vector<sparse_matrix_ptrtype> > M_Mqm;
-    std::vector < std::vector<vector_ptrtype> > M_MFqm;
     std::vector < std::vector<std::vector<vector_ptrtype> > > M_Fqm;
+    std::vector< std::vector< element_ptrtype> > M_InitialGuessQm;
 
     beta_vector_type M_betaAqm;
-    beta_vector_type M_betaMqm;
-    beta_vector_type M_betaMFqm;
+    beta_vector_type M_betaInitialGuessQm;
     std::vector<beta_vector_type> M_betaFqm;
 
     parameterspace_ptrtype M_Dmu;
@@ -574,6 +575,12 @@ Heat1D::init()
         }
     }
 
+    auto ini_cond = Xh->elementPtr();
+    ini_cond->setZero();
+    M_InitialGuessQm.resize( 1 );
+    M_InitialGuessQm[0].resize( 1 );
+    M_InitialGuessQm[0][0] = ini_cond;
+
     D = backend->newMatrix( Xh, Xh );
     F = backend->newVector( Xh );
 
@@ -637,7 +644,7 @@ Heat1D::newVector() const
 Heat1D::affine_decomposition_type
 Heat1D::computeAffineDecomposition()
 {
-    return boost::make_tuple( M_Mqm, M_Aqm, M_Fqm, M_MFqm );
+    return boost::make_tuple( M_Aqm, M_Fqm, M_InitialGuessQm );
 }
 
 

@@ -474,7 +474,6 @@ public:
      * solve for a given parameter \p mu
      */
     element_type solve( parameter_type const& mu );
-    element_type solveRB( parameter_type const& mu );
 
     /**
      * solve \f$ M u = f \f$
@@ -906,11 +905,6 @@ void HeatShield::update( parameter_type const& mu,double bdf_coeff, element_type
 }
 
 
-typename HeatShield::element_type
-HeatShield::solveRB( parameter_type const& mu )
-{
-    return solve( mu );
-}
 
 
 typename HeatShield::element_type
