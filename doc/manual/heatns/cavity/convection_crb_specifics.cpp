@@ -31,11 +31,18 @@
 
 #include "convection_crb.hpp"
 
+/*
+#include <Eigen/Core>
+#include <Eigen/LU>
+#include <Eigen/Dense>
+
+typedef Eigen::MatrixXd matrixN_type;
+*/
+
 typedef std::vector< std::vector< double > > beta_vector_type;
 
 void Convection_crb::init()
 {
-    
     mesh_ptrtype mesh;
     mesh = createGMSHMesh( _mesh=new mesh_type,
                           _desc=createMesh(),
@@ -190,6 +197,10 @@ void Convection_crb::init()
 int Convection_crb::Qa() const
 {
     return 4;
+}
+int Convection_crb::Qa_tril() const
+{
+    return 1;
 }
 
 int Convection_crb::mMaxA( int q )
@@ -390,6 +401,71 @@ void Convection_crb ::updateJacobian( const vector_ptrtype& X, sparse_matrix_ptr
     
 }
 
-
+/*
+matrixN_type Convection_crb::compute_trilinear_form( const element_ptrtype& X )
+{
+    auto mesh = Xh->mesh();
+    auto U = Xh->element( "u" );
+    U = *X;
+    auto V = Xh->element( "v" );
+    auto W = Xh->element( "v" );
+    auto u = U. element<0>(); // fonction vitesse
+    auto v = V. element<0>(); // fonction test vitesse
+    auto p = U. element<1>(); // fonction pression
+    auto q = V. element<1>(); // fonction test pression
+    auto t = U. element<2>(); // fonction temperature
+    auto s = V. element<2>(); // fonction test temperature
+#if defined( FEELPP_USE_LM )
+    auto xi = U. element<3>(); // fonction multipliers
+    auto eta = V. element<3>(); // fonction test multipliers
+#endif
+ 
+    matrixN_type A_tril;
+       
+    double gamma( this->vm()["penalbc"]. as<double>() );
+    
+    int adim=this->vm()["adim"]. as<int>();
+    
+    //conditions fortes de dir
+    auto Rtemp =  M_backend->newVector( Xh );
+    int weakdir( this->vm()["weakdir"]. as<int>() );
+    double T0 = this->vm()["T0"]. as<double>();
+    
+    
+    // Fluid-NS
+    // fluid convection derivatives: attention 2 terms
+    
+    form2( _test=Xh,_trial=Xh, _matrix=A_tril , _init=true ) = integrate ( _range=elements( mesh ), _expr=trans( id( v ) )*( gradv( v ) )*idt( u ) );
+    form2( _test=Xh,_trial=Xh, _matrix=A_tril )  += integrate ( _range=elements( mesh ), _expr=trans( id( v ) )*( gradt( u ) )*idv( v ) );
+    
+    
+    //    // temperature derivatives
+    //
+    // heat convection by the fluid: attention 2 terms
+    form2( _test=Xh, _trial=Xh, _matrix=A_tril ) += integrate ( elements( mesh ), grad( s )*( idv( s )*idt( u ) ) );
+    
+    form2( _test=Xh, _trial=Xh, _matrix=A_tril ) += integrate ( elements( mesh ), grad( s )*( idt( t )*idv( v ) ) );
+    
+    form2( _test=Xh, _trial=Xh, _matrix=A_tril ) += integrate ( boundaryfaces( mesh ), trans( idv( v )*N() )*id( s )*idt( t ) );
+    
+    form2( _test=Xh, _trial=Xh, _matrix=A_tril ) += integrate ( boundaryfaces( mesh ), trans( idt( u )*N() )*id( s )*idv( s ) );
+    
+    if ( weakdir == 0 )
+    {
+        //vitesse
+        form2( Xh, Xh, A_tril )  += on( boundaryfaces( mesh ),u, Rtemp,one()*0. );
+        
+        if ( adim==1 )
+            //temperature
+            form2( Xh, Xh, A_tril )  += on ( markedfaces( mesh, "Tfixed" ),t,Rtemp,cst( 0.0 ) );
+        
+        else
+            form2( Xh, Xh, A_tril )  += on ( markedfaces( mesh, "Tfixed" ),t,Rtemp,cst( T0 ) );
+    }
+    
+    return A_tril;
+    
+}
+*/
 // instantiation
 // class Convection_crb<2,1,2>;
