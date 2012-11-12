@@ -175,6 +175,15 @@ VectorPetsc<T>::add ( const value_type& a_in, const Vector<value_type>& v_in )
     int ierr = 0;
     PetscScalar a = static_cast<PetscScalar>( a_in );
 
+    if ( this->comm().size()>1 )
+    {
+        const_cast<VectorPetscMPI<T>*>( dynamic_cast<const VectorPetscMPI<T>*>( &v_in ) )->close();
+    }
+    else
+    {
+        const_cast<VectorPetsc<T>*>( dynamic_cast<const VectorPetsc<T>*>( &v_in ) )->close();
+    }
+
     const VectorPetsc<T>* v = dynamic_cast<const VectorPetsc<T>*>( &v_in );
 
     assert ( v != NULL );
