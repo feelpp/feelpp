@@ -176,7 +176,7 @@ void Penalisation<Dim>::stokes()
 
     addCL();
 
-    backend->solve( _matrix=D,_solution=U,_rhs=F );
+    Feel::backend(_rebuild=true)->solve( _matrix=D,_solution=U,_rhs=F );
 
     LOG(INFO)<<"fin resolution : "<<local_chrono.elapsed()<<" s"<<"\n";
 
