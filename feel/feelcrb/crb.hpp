@@ -5240,10 +5240,16 @@ CRB<TruthModelType>::run( parameter_type const& mu, double eps , int N)
 
     int Nwn;
     if( N > 0 )
+    {
+        //in this case we want to fix Nwn
         Nwn = N;
+    }
     else
-        Nwn = Nwn_max;
-
+    {
+        //Nwn = Nwn_max;
+        //M_N may be different of dimension-max
+        Nwn = M_N;
+    }
     auto o = lb( Nwn, mu, uN, uNdu , uNold, uNduold );
     double output = o.template get<0>();
 
