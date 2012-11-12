@@ -111,14 +111,6 @@ void PreconditionerPetsc<T>::init ()
     std::string type =  Environment::vm()["pc-factor-mat-solver-package-type"].template as<std::string>();
     this->setMatSolverPackageType( matSolverPackageEnumType( type ) );
 
-
-
-
-
-
-
-    if ( Environment::vm().count( "pc-view" ) )
-        PCView( M_pc, PETSC_VIEWER_STDOUT_SELF );
     this->M_is_initialized = true;
 }
 
@@ -133,7 +125,9 @@ void PreconditionerPetsc<T>::clear ()
         PetscTruth is_petsc_initialized;
         PetscInitialized( &is_petsc_initialized );
         if ( is_petsc_initialized )
+        {
             PETSc::PCDestroy( M_pc );
+        }
     }
 
 }
@@ -191,6 +185,10 @@ configurePC( PC& pc, WorldComm const& worldComm, std::string sub = "", std::stri
         ierr = PCFactorSetFill( pc, Environment::vm(_name="pc-factor-fill",_prefix=prefix,_sub=sub,_worldcomm=worldComm).as<double>() );
         CHKERRABORT( worldComm.globalComm(),ierr );
     }
+
+    if ( Environment::vm(_name="pc-view",_sub=sub,_prefix=prefix).as<bool>() )
+        PCView( pc, PETSC_VIEWER_STDOUT_SELF );
+
     LOG(INFO) << "configuring PC " << pctype << " done\n";
     google::FlushLogFiles(google::INFO);
 }
