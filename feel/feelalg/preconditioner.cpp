@@ -54,7 +54,8 @@ Preconditioner<T>::setMatrix( sparse_matrix_ptrtype mat )
 {
     if (M_is_initialized)
     {
-        this->clear();
+        M_mat_has_changed = true;
+        //this->clear();
     }
 
     //M_is_initialized = false;
@@ -85,6 +86,13 @@ Preconditioner<T>::setMatSolverPackageType ( const MatSolverPackageType mspt )
 
     M_matSolverPackage_type  = mspt;
     //M_is_initialized = false;
+}
+
+template <typename T>
+void
+Preconditioner<T>::setPrecMatrixStructure( MatrixStructure mstruct  )
+{
+    M_prec_matrix_structure = mstruct;
 }
 
 
