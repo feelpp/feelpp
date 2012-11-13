@@ -270,30 +270,6 @@ Preconditioner<T>::~Preconditioner ()
     this->clear ();
 }
 
-template <typename T>
-FEELPP_STRONG_INLINE
-void
-Preconditioner<T>::setMatrix( sparse_matrix_ptrtype mat )
-{
-    M_is_initialized = false;
-    M_matrix = mat;
-}
-
-template <typename T>
-void
-Preconditioner<T>::setType ( const PreconditionerType pct )
-{
-    M_is_initialized = false;
-    M_preconditioner_type = pct;
-}
-
-template <typename T>
-void
-Preconditioner<T>::setMatSolverPackageType ( const MatSolverPackageType mspt )
-{
-    M_is_initialized = false;
-    M_matSolverPackage_type  = mspt;
-}
 
 BOOST_PARAMETER_MEMBER_FUNCTION( ( boost::shared_ptr<Preconditioner<double> > ),
                                  preconditioner,
