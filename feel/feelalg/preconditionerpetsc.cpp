@@ -97,8 +97,15 @@ void PreconditionerPetsc<T>::init ()
 
         M_mat = pmatrix->mat();
     }
+    else if (this->M_mat_has_changed)
+    {
+        MatrixPetsc<T> * pmatrix = dynamic_cast<MatrixPetsc<T>*>( this->M_matrix.get() );
+        M_mat = pmatrix->mat();
+    }
 
-    int ierr = PCSetOperators( M_pc,M_mat,M_mat, PetscGetMatStructureEnum(MatrixStructure::SAME_NONZERO_PATTERN) );
+    //int ierr = PCSetOperators( M_pc,M_mat,M_mat, PetscGetMatStructureEnum(MatrixStructure::SAME_NONZERO_PATTERN) );
+    //int ierr = PCSetOperators( M_pc,M_mat,M_mat, PetscGetMatStructureEnum(MatrixStructure::DIFFERENT_NONZERO_PATTERN) );
+    int ierr = PCSetOperators( M_pc,M_mat,M_mat, PetscGetMatStructureEnum(this->M_prec_matrix_structure) );
     CHKERRABORT( this->worldComm().globalComm(),ierr );
 
     // Set the PCType.  Note: this used to be done *before* the call to
