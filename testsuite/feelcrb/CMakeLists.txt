@@ -23,4 +23,5 @@
 #
 
 feelpp_add_test( eim )
+feelpp_add_test( nlsolve_eigen )
 
