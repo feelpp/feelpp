@@ -101,6 +101,7 @@ void PreconditionerPetsc<T>::init ()
     {
         MatrixPetsc<T> * pmatrix = dynamic_cast<MatrixPetsc<T>*>( this->M_matrix.get() );
         M_mat = pmatrix->mat();
+        this->M_mat_has_changed = false;
     }
 
     //int ierr = PCSetOperators( M_pc,M_mat,M_mat, PetscGetMatStructureEnum(MatrixStructure::SAME_NONZERO_PATTERN) );
