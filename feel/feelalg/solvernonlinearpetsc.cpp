@@ -880,7 +880,7 @@ SolverNonLinearPetsc<T>::solve ( map_dense_matrix_type&  jac_in,  // System Jaco
     Vec petsc_x;
     Vec petsc_r;
 
-#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,2,0 )
+#if PETSC_VERSION_LESS_THAN( 3,3,0 )
     VecCreateSeqWithArray( PETSC_COMM_SELF, x_in.size(), x_in.data(), &petsc_x );
     VecCreateSeqWithArray( PETSC_COMM_SELF, r_in.size(), r_in.data(), &petsc_r );
 #else
