@@ -86,7 +86,9 @@ public:
     M_matrix( o.M_matrix ),
     M_preconditioner_type( o.M_preconditioner_type ),
     M_matSolverPackage_type( o.M_matSolverPackage_type ),
-    M_is_initialized( o.M_is_initialized )
+    M_prec_matrix_structure ( o.M_prec_matrix_structure ),
+    M_is_initialized( o.M_is_initialized ),
+    M_mat_has_changed( o.M_mat_has_changed )
         {}
 
     //! destructor
@@ -115,7 +117,9 @@ public:
                 M_matrix = o.M_matrix;
                 M_is_initialized = o.M_is_initialized;
                 M_matSolverPackage_type = o.M_matSolverPackage_type;
+                M_prec_matrix_structure = o.M_prec_matrix_structure;
                 M_preconditioner_type = o.M_preconditioner_type;
+                M_mat_has_changed = o.M_mat_has_changed;
             }
 
             return *this;
@@ -199,6 +203,12 @@ public:
      */
     void setMatSolverPackageType( const MatSolverPackageType mspt );
 
+    /**
+     * information about the preconditioner matrix structure during successive linear solves
+     */
+    void setPrecMatrixStructure( MatrixStructure mstruct  );
+
+
     //@}
 
     /** @name  Methods
@@ -238,9 +248,14 @@ protected:
     MatSolverPackageType M_matSolverPackage_type;
 
     /**
+     * Enum that indicating information about the preconditioner matrix structure during successive linear solves
+     */
+    MatrixStructure M_prec_matrix_structure;
+
+    /**
      * Flag indicating if the data structures have been initialized.
      */
-    bool M_is_initialized;
+    bool M_is_initialized, M_mat_has_changed;
 
 };
 
@@ -257,7 +272,9 @@ M_worldComm(worldComm),
 M_matrix(),
 M_preconditioner_type   ( ILU_PRECOND ),
 M_matSolverPackage_type ( MATSOLVER_PETSC ),
-M_is_initialized        ( false )
+M_prec_matrix_structure ( MatrixStructure::SAME_NONZERO_PATTERN ),
+M_is_initialized        ( false ),
+M_mat_has_changed       ( false )
 {
 }
 
@@ -270,30 +287,6 @@ Preconditioner<T>::~Preconditioner ()
     this->clear ();
 }
 
-template <typename T>
-FEELPP_STRONG_INLINE
-void
-Preconditioner<T>::setMatrix( sparse_matrix_ptrtype mat )
-{
-    M_is_initialized = false;
-    M_matrix = mat;
-}
-
-template <typename T>
-void
-Preconditioner<T>::setType ( const PreconditionerType pct )
-{
-    M_is_initialized = false;
-    M_preconditioner_type = pct;
-}
-
-template <typename T>
-void
-Preconditioner<T>::setMatSolverPackageType ( const MatSolverPackageType mspt )
-{
-    M_is_initialized = false;
-    M_matSolverPackage_type  = mspt;
-}
 
 BOOST_PARAMETER_MEMBER_FUNCTION( ( boost::shared_ptr<Preconditioner<double> > ),
                                  preconditioner,
