@@ -321,6 +321,97 @@ extern "C"
         return ierr;
     }
 
+
+    // ------ Using EIGEN
+    PetscErrorCode
+    __feel_petsc_snes_dense_residual_eigen ( SNES snes, Vec x, Vec r, void *ctx )
+    {
+        int ierr=0;
+
+        CHECK ( x   != NULL )<<" invalid iterate \n";
+        CHECK ( r   != NULL )<<" invalid residual\n ";
+        CHECK ( ctx != NULL )<<" invalid context \n";
+
+        Feel::SolverNonLinearPetsc<double>* solver =
+            static_cast<Feel::SolverNonLinearPetsc<double>*> ( ctx );
+
+        int size;
+        VecGetSize( x,&size );
+
+        double *xa;
+        VecGetArray( x, &xa );
+
+        double *ra;
+        VecGetArray( r, &ra );
+
+        Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic , 1> > map_x ( xa,size );
+
+        Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic , 1> > map_r ( ra,size );
+
+        //LOG(INFO) << "dense_residual before xmap_x = \n" << map_x << "\n";
+
+        if ( solver->map_dense_residual != NULL ) solver->map_dense_residual ( map_x, map_r );
+
+        //LOG(INFO) << "dense_residual after update map_r = \n" << map_r << "\n";
+
+        VecRestoreArray( x, &xa );
+        VecRestoreArray( r, &ra );
+
+        return ierr;
+    }
+
+    PetscErrorCode
+    __feel_petsc_snes_dense_jacobian_eigen ( SNES snes, Vec x, Mat *jac, Mat *pc, MatStructure *msflag, void *ctx )
+    {
+        int ierr=0;
+
+        assert ( ctx != NULL );
+
+        Feel::SolverNonLinearPetsc<double>* solver =
+            static_cast<Feel::SolverNonLinearPetsc<double>*> ( ctx );
+
+        int size;
+        VecGetSize( x,&size );
+        double *xa;
+        VecGetArray( x, &xa );
+
+        Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic, 1> > map_x ( xa,size );
+
+
+        int size1;
+        int size2;
+        MatGetSize( *jac, &size1, &size2 );
+
+        PetscScalar *ja;
+        MatGetArray( *jac, &ja );
+
+        int jac_size = size1*size2;
+        //Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> > map_jac ( ja, size1, size2 );
+        Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> > map_jac ( ja, size1, size2 );
+
+        //LOG(INFO) << "dense_jacobian map_x= \n" << map_x << "\n";
+
+        if ( solver->map_dense_jacobian != NULL ) solver->map_dense_jacobian ( map_x, map_jac );
+
+        //LOG(INFO) << "dense_jacobian map_jac = \n" << map_jac << "\n";
+
+
+        VecRestoreArray( x, &xa );
+        MatRestoreArray(*jac, &ja);
+
+        /*
+          Assemble matrix
+        */
+        MatAssemblyBegin( *jac,MAT_FINAL_ASSEMBLY );
+        MatAssemblyEnd( *jac,MAT_FINAL_ASSEMBLY );
+
+
+        *msflag = MatStructure::SAME_NONZERO_PATTERN;
+
+
+        return ierr;
+    }
+
 } // end extern "C"
 //---------------------------------------------------------------------
 
@@ -754,6 +845,114 @@ SolverNonLinearPetsc<T>::solve ( dense_matrix_type&  jac_in,  // System Jacobian
         x_in[i] = a[i];
 
     VecRestoreArray( petsc_x , &a );
+
+    PETSc::VecDestroy( petsc_x );
+    PETSc::VecDestroy( petsc_r );
+    PETSc::MatDestroy( petsc_j );
+
+    SNESConvergedReason reason;
+    SNESGetConvergedReason( M_snes,&reason );
+
+    //LOG(INFO) << "[solvernonlinearpetsc] convergence reason : " << reason << "\n";
+    if ( reason<0 )
+    {
+        Debug( 7020 )  << "[solvernonlinearpetsc] not converged (see petscsnes.h for an explanation): " << reason << "\n";
+    }
+
+    this->clear();
+
+    // return the # of its. and the final residual norm.  Note that
+    // n_iterations may be zero for PETSc versions 2.2.x and greater.
+    return std::make_pair( reason, 0. );
+}
+
+template <typename T>
+std::pair<unsigned int, typename SolverNonLinearPetsc<T>::real_type>
+SolverNonLinearPetsc<T>::solve ( map_dense_matrix_type&  jac_in,  // System Jacobian Matrix
+                                 map_dense_vector_type& x_in,    // Solution vector
+                                 map_dense_vector_type& r_in,    // Residual vector
+                                 const double,              // Stopping tolerance
+                                 const unsigned int )
+{
+    this->init ();
+
+    int ierr=0;
+    Vec petsc_x;
+    Vec petsc_r;
+
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,2,0 )
+    VecCreateSeqWithArray( PETSC_COMM_SELF, x_in.size(), x_in.data(), &petsc_x );
+    VecCreateSeqWithArray( PETSC_COMM_SELF, r_in.size(), r_in.data(), &petsc_r );
+#else
+    PetscInt bs = 1;
+    VecCreateSeqWithArray( PETSC_COMM_SELF, bs, x_in.size(), x_in.data(), &petsc_x );
+    VecCreateSeqWithArray( PETSC_COMM_SELF, bs, r_in.size(), r_in.data(), &petsc_r );
+#endif
+
+    ierr = SNESSetFunction ( M_snes, petsc_r, __feel_petsc_snes_dense_residual_eigen, this );
+    CHKERRABORT( this->worldComm().globalComm(),ierr );
+
+    Mat petsc_j;
+    //MatCreateSeqDense( this->worldComm().globalComm(), jac_in.size1(), jac_in.size2(), 0, &petsc_j );
+
+    MatCreateSeqDense(PETSC_COMM_SELF , jac_in.rows(), jac_in.cols() , jac_in.data() , &petsc_j) ;
+
+    /*
+      Assemble matrix
+    */
+    MatAssemblyBegin( petsc_j,MAT_FINAL_ASSEMBLY );
+    MatAssemblyEnd( petsc_j,MAT_FINAL_ASSEMBLY );
+
+
+    ierr = SNESSetJacobian ( M_snes, petsc_j, petsc_j, __feel_petsc_snes_dense_jacobian_eigen, this );
+    CHKERRABORT( this->worldComm().globalComm(),ierr );
+
+
+    /*
+       Set linear solver defaults for this problem. By extracting the
+       KSP, KSP, and PC contexts from the SNES context, we can then
+       directly call any KSP, KSP, and PC routines to set various options.
+    */
+    //KSP            ksp;         /* linear solver context */
+    //PC             pc;           /* preconditioner context */
+    //SNESGetKSP( M_snes,&ksp );
+    //KSPGetPC( ksp,&pc );
+    //PCSetType(pc,PCNONE);
+    PCSetType( M_pc,PCLU );
+    KSPSetTolerances( M_ksp,1e-16,PETSC_DEFAULT,PETSC_DEFAULT,20 );
+
+    // Older versions (at least up to 2.1.5) of SNESSolve took 3 arguments,
+    // the last one being a pointer to an int to hold the number of iterations required.
+
+# if (PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR <= 1)
+    int n_iterations =0;
+
+    ierr = SNESSolve ( M_snes, petsc_x, &n_iterations );
+    CHKERRABORT( this->worldComm().globalComm(),ierr );
+
+    // 2.2.x style
+#elif (PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR <= 2)
+
+    ierr = SNESSolve ( M_snes, petsc_x );
+    CHKERRABORT( this->worldComm().globalComm(),ierr );
+
+    // 2.3.x & newer style
+#else
+
+    ierr = SNESSolve ( M_snes, PETSC_NULL, petsc_x );
+    CHKERRABORT( this->worldComm().globalComm(),ierr );
+
+#endif
+
+#if 0
+    double* a;
+    VecGetArray( petsc_x , &a );
+
+    for ( int i = 0; i < ( int )x_in.size(); ++i )
+        x_in[i] = a[i];
+
+    VecRestoreArray( petsc_x , &a );
+#endif
 
     PETSc::VecDestroy( petsc_x );
     PETSc::VecDestroy( petsc_r );
