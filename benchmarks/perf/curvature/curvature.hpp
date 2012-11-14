@@ -261,10 +261,10 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
 
     // projectors
 
-    double diffnum = std::pow(meshSizeInit(), std::max(1,BasisU::nOrder-1)) * 0.001 ;
+    double diffnum = std::pow(meshSizeInit(), std::max(1,BasisU::nOrder-1)) ;
 
-    auto l2p = projector(Xh , Xh, backend_l2, L2);
-    auto l2pVec = projector(Xh_Vec, Xh_Vec, backend_l2Vec, L2);
+    auto l2p = opProjection(Xh , Xh, _type=L2);
+    auto l2pVec = opProjection(Xh_Vec, Xh_Vec, _type=L2);
     auto smooth = projector(Xh , Xh, backend_l2Smooth, DIFF, diffnum, 20);
     auto smoothVec = projector(Xh_Vec, Xh_Vec, backend_l2SmoothVec, DIFF, diffnum, 20);
 
@@ -344,7 +344,7 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
     auto phi_nod = init_shape;
 
 
-    double max_modgradphi=0.01;
+    double max_modgradphi=0.9;
 
     /* ------------------ L2 projection ---------------- */
     auto n_l2 = l2pVec->project( gradv(init_shape) /
@@ -355,38 +355,6 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
     auto kk_l2 = l2p->project( divv(nk_l2) );
 
     auto phi_l2 = l2p->project( shape_expr );
-
-
-    /* L2 without using projector directly */
-    auto backend_int = backend_type::build( this->vm() );
-    auto n_l2_bis = Xh_Vec->element();
-
-    auto D = backend_int->newMatrix(Xh_Vec, Xh_Vec);
-    auto F = backend_int->newVector(Xh_Vec);
-
-    form2(Xh_Vec, Xh_Vec, D) = integrate(elements(mesh), trans(idt(n_l2_bis)) * id(n_l2_bis) );
-
-    form1(Xh_Vec, F) = integrate(elements(mesh), gradv(init_shape) * trans(grad(init_shape))
-                                 / vf::max(sqrt( gradv(init_shape) * trans(gradv(init_shape))), max_modgradphi)  );
-
-    D->close();
-    F->close();
-
-    backend_int->solve(D, n_l2_bis, F);
-
-    backend_int = backend_type::build( this->vm() );
-    auto k_l2_bis = Xh->element();
-
-    D = backend_int->newMatrix(Xh, Xh);
-    F = backend_int->newVector(Xh);
-
-    form2(Xh, Xh, D) = integrate(elements(mesh), idt(k_l2_bis) * id(k_l2_bis) );
-    form1(Xh, F) = integrate(elements(mesh), divv(n_l2_bis) * id(k_l2_bis) );
-
-    D->close();
-    F->close();
-
-    backend_int->solve(D, k_l2_bis, F);
 
 
     /* ------------------ smooth projection ---------------- */
@@ -409,39 +377,45 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
     /* instead of solving : int_omega k * v = int_omega div( grad(phi) / |grad phi|)
        solve : int k * v = - int_omega grad(phi) / |grad phi| . grad(v) + int_Gamma grad(phi) / |grad phi| . N * v
     */
-    backend_int = backend_type::build( this->vm() );
-    auto k_int = Xh->element();
-    auto kk_int = Xh->element();
+    // backend_int = backend_type::build( this->vm() );
+    // auto k_int = Xh->element();
+    // auto kk_int = Xh->element();
 
-    D = backend_int->newMatrix(Xh, Xh);
-    F = backend_int->newVector(Xh);
+    // D = backend_int->newMatrix(Xh, Xh);
+    // F = backend_int->newVector(Xh);
 
-    form2(Xh, Xh, D) = integrate(elements(mesh), idt(k_int) * id(k_int) * vf::max(sqrt( gradv(init_shape) * trans(gradv(init_shape))), max_modgradphi) );
-    form1(Xh, F) = integrate(elements(mesh),
-                               - gradv(init_shape) * trans(grad(init_shape)) );
+    // form2(Xh, Xh, D) = integrate(elements(mesh), idt(k_int) * id(k_int) * vf::max(sqrt( gradv(init_shape) * trans(gradv(init_shape))), max_modgradphi) );
+    // form1(Xh, F) = integrate(elements(mesh),
+    //                            - gradv(init_shape) * trans(grad(init_shape)) );
 
-    form1(Xh, F) += integrate(boundaryfaces(mesh),
-                                 gradv(init_shape) * N() * id(init_shape) );
+    // form1(Xh, F) += integrate(boundaryfaces(mesh),
+    //                              gradv(init_shape) * N() * id(init_shape) );
 
-    D->close();
-    F->close();
+    // D->close();
+    // F->close();
 
-    backend_int->solve(D, k_int, F);
+    // backend_int->solve(D, k_int, F);
 
-    form2(Xh, Xh, D) = integrate(elements(mesh), idt(kk_int) * id(kk_int) * vf::max(sqrt( gradv(k_int) * trans(gradv(k_int))), max_modgradphi) );
-    form1(Xh, F) = integrate(elements(mesh),
-                               - gradv(k_int) * trans(grad(k_int)) );
+    // form2(Xh, Xh, D) = integrate(elements(mesh), idt(kk_int) * id(kk_int) * vf::max(sqrt( gradv(k_int) * trans(gradv(k_int))), max_modgradphi) );
+    // form1(Xh, F) = integrate(elements(mesh),
+    //                            - gradv(k_int) * trans(grad(k_int)) );
 
-    form1(Xh, F) += integrate(boundaryfaces(mesh),
-                                 gradv(k_int) * N() * id(k_int) );
+    // form1(Xh, F) += integrate(boundaryfaces(mesh),
+    //                              gradv(k_int) * N() * id(k_int) );
 
-    D->close();
-    F->close();
+    // D->close();
+    // F->close();
 
-    backend_int->solve(D, kk_int, F);
+    // backend_int->solve(D, kk_int, F);
 
+    auto n_int = l2pVec->derivate( idv(init_shape) ); // /modgradphi
+    auto k_int = l2p->derivate( trans(idv(n_int)) );
+    auto nn_int = l2pVec->derivate( idv(k_int) );
+    auto kk_int = l2p->derivate( trans(idv((nn_int))) );
 
     #endif
+
+    auto Radius_expr = sqrt( Px() * Px() + Py() * Py() );
 
     // +++++++++++++++++++ error computation ++++++++++++++++++++++
     double perimeter = integrate( _range=marked2elements(mesh, 1.), _expr=Delta ).evaluate()(0,0);
@@ -462,13 +436,13 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
 
     /*  nodal  */
     double error_nod = integrate(marked2elements(mesh, 1.),
-                               (idv(k_nod) -  1 / Radius) * (idv(k_nod) -  1 / Radius) * Delta ).evaluate()(0,0) / perimeter ;
+                               (idv(k_nod) -  1 / Radius_expr) * (idv(k_nod) -  1 / Radius_expr) * Delta ).evaluate()(0,0) / perimeter ;
     error_nod = std::sqrt(error_nod);
     M_stats.put( "e.nod.k", error_nod);
     LOG(INFO) << "e.nod.k = " << error_nod << "\n";
 
     double error_nod_kk = integrate(marked2elements(mesh, 1.),
-                               (idv(kk_nod) -  1 / Radius) * (idv(kk_nod) -  1 / Radius) * Delta ).evaluate()(0,0) / perimeter ;
+                               (idv(kk_nod) -  1 / Radius_expr) * (idv(kk_nod) -  1 / Radius_expr) * Delta ).evaluate()(0,0) / perimeter ;
     error_nod_kk = std::sqrt(error_nod_kk);
     M_stats.put( "e.nod.kk", error_nod_kk);
     LOG(INFO) << "e.nod.kk = " << error_nod_kk << "\n";
@@ -481,21 +455,16 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
 
     /* l2 */
     double error_l2 = integrate(marked2elements(mesh, 1.),
-                                (idv(k_l2) -  1 / Radius) * (idv(k_l2) -  1 / Radius) * Delta).evaluate()(0,0) / perimeter ;
+                                (idv(k_l2) -  1 / Radius_expr) * (idv(k_l2) -  1 / Radius_expr) * Delta).evaluate()(0,0) / perimeter ;
     error_l2 = std::sqrt(error_l2);
     M_stats.put( "e.l2.k", error_l2);
     LOG(INFO) << "e.l2.k = " << error_l2 << "\n";
 
     double error_l2_kk = integrate(marked2elements(mesh, 1.),
-                                (idv(kk_l2) -  1 / Radius) * (idv(kk_l2) -  1 / Radius) * Delta).evaluate()(0,0) / perimeter ;
+                                (idv(kk_l2) -  1 / Radius_expr) * (idv(kk_l2) -  1 / Radius_expr) * Delta).evaluate()(0,0) / perimeter ;
     error_l2_kk = std::sqrt(error_l2_kk);
     M_stats.put( "e.l2.kk", error_l2_kk);
     LOG(INFO) << "e.l2.kk = " << error_l2_kk << "\n";
-
-    double error_l2_bis = integrate(marked2elements(mesh, 1.),
-                                (idv(k_l2_bis) -  1 / Radius) * (idv(k_l2_bis) -  1 / Radius) * Delta ).evaluate()(0,0) / perimeter ;
-    error_l2_bis = std::sqrt(error_l2_bis);
-    M_stats.put( "e.l2.k_bis", error_l2_bis);
 
     double error_l2_phi = integrate(marked2elements(mesh, 1.),
                                      (idv(phi_l2) - shape_expr)*(idv(phi_l2) - shape_expr) ).evaluate()(0,0);
@@ -505,12 +474,12 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
 
     #if PROJ_INT_BY_PART
     double error_l2_int = integrate(marked2elements(mesh, 1.),
-                                    (idv(k_int) -  1 / Radius) * (idv(k_int) -  1 / Radius) * Delta ).evaluate()(0,0) / perimeter ;
+                                    (idv(k_int) -  1 / Radius_expr) * (idv(k_int) -  1 / Radius_expr) * Delta ).evaluate()(0,0) / perimeter ;
     error_l2_int = std::sqrt( error_l2_int );
     M_stats.put( "e.l2.kk_int", error_l2_int);
 
     double error_l2_int_kk = integrate(marked2elements(mesh, 1.),
-                                    (idv(kk_int) -  1 / Radius) * (idv(kk_int) -  1 / Radius) * Delta ).evaluate()(0,0) / perimeter ;
+                                    (idv(kk_int) -  1 / Radius_expr) * (idv(kk_int) -  1 / Radius_expr) * Delta ).evaluate()(0,0) / perimeter ;
     error_l2_int_kk = std::sqrt( error_l2_int_kk );
     M_stats.put( "e.l2.kk_int", error_l2_int_kk);
 
@@ -518,13 +487,13 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
 
     /* smooth */
     double error_smooth = integrate(marked2elements(mesh, 1.),
-                                    (idv(k_smooth) - 1 / Radius) * (idv(k_smooth) - 1 / Radius) * Delta ).evaluate()(0,0) / perimeter ;
+                                    (idv(k_smooth) - 1 / Radius_expr) * (idv(k_smooth) - 1 / Radius_expr) * Delta ).evaluate()(0,0) / perimeter ;
     error_smooth = std::sqrt(error_smooth);
     M_stats.put( "e.sm.k", error_smooth);
     LOG(INFO) << "e.sm.k = " << error_smooth << "\n";
 
     double error_smooth_kk = integrate(marked2elements(mesh, 1.),
-                                    (idv(kk_smooth) - 1 / Radius) * (idv(kk_smooth) - 1 / Radius) * Delta ).evaluate()(0,0) / perimeter ;
+                                    (idv(kk_smooth) - 1 / Radius_expr) * (idv(kk_smooth) - 1 / Radius_expr) * Delta ).evaluate()(0,0) / perimeter ;
     error_smooth_kk = std::sqrt(error_smooth_kk);
     M_stats.put( "e.sm.kk", error_smooth_kk);
     LOG(INFO) << "e.sm.kk = " << error_smooth_kk << "\n";
@@ -537,20 +506,20 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
 
     /* hess */
     double error_hess = integrate(marked2elements(mesh, 1.),
-                             (idv(k_hess) - 1 / Radius) * (idv(k_hess) - 1 / Radius) * Delta ).evaluate()(0,0) / perimeter ;
+                             (idv(k_hess) - 1 / Radius_expr) * (idv(k_hess) - 1 / Radius_expr) * Delta ).evaluate()(0,0) / perimeter ;
     error_hess = std::sqrt(error_hess);
     M_stats.put( "e.hs.kproj", error_hess);
     LOG(INFO) << "e.hs.kproj = " << error_hess << "\n";
 
     double error_hess_kk = integrate(marked2elements(mesh, 1.),
-                             (idv(kk_hess) - 1 / Radius) * (idv(kk_hess) - 1 / Radius) * Delta ).evaluate()(0,0) / perimeter ;
+                             (idv(kk_hess) - 1 / Radius_expr) * (idv(kk_hess) - 1 / Radius_expr) * Delta ).evaluate()(0,0) / perimeter ;
     error_hess_kk = std::sqrt(error_hess_kk);
     M_stats.put( "e.hs.kkproj", error_hess_kk);
     LOG(INFO) << "e.hs.kkproj = " << error_hess_kk << "\n";
 
     auto k_hess_proj = trace( hessv(init_shape) );
     double error_hessp = integrate(marked2elements(mesh, 1.),
-                                   (k_hess_proj - 1 / Radius) * (k_hess_proj - 1 / Radius) * Delta ).evaluate()(0,0) / perimeter ;
+                                   (k_hess_proj - 1 / Radius_expr) * (k_hess_proj - 1 / Radius_expr) * Delta ).evaluate()(0,0) / perimeter ;
     error_hessp = std::sqrt(error_hessp);
     M_stats.put( "e.hs.k", error_hessp);
     LOG(INFO) << "e.hs.k = " << error_hessp << "\n";
