@@ -47,6 +47,55 @@ Preconditioner<T>::build( std::string const& name,
     }
 }
 
+template <typename T>
+FEELPP_STRONG_INLINE
+void
+Preconditioner<T>::setMatrix( sparse_matrix_ptrtype mat )
+{
+    if (M_is_initialized)
+    {
+        M_mat_has_changed = true;
+        //this->clear();
+    }
+
+    //M_is_initialized = false;
+    M_matrix = mat;
+}
+
+template <typename T>
+void
+Preconditioner<T>::setType ( const PreconditionerType pct )
+{
+    if (M_is_initialized && M_preconditioner_type!=pct)
+    {
+        this->clear();
+    }
+
+    M_preconditioner_type = pct;
+
+}
+
+template <typename T>
+void
+Preconditioner<T>::setMatSolverPackageType ( const MatSolverPackageType mspt )
+{
+    if (M_is_initialized && M_matSolverPackage_type!=mspt )
+    {
+        this->clear();
+    }
+
+    M_matSolverPackage_type  = mspt;
+    //M_is_initialized = false;
+}
+
+template <typename T>
+void
+Preconditioner<T>::setPrecMatrixStructure( MatrixStructure mstruct  )
+{
+    M_prec_matrix_structure = mstruct;
+}
+
+
 
 template class Preconditioner<double>;
 
