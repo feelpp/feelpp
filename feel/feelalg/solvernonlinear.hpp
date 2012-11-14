@@ -240,6 +240,10 @@ public:
      */
     virtual void setPrecMatrixStructure( MatrixStructure mstruct  )
     {
+        // warning : in boths cases!
+        if ( M_preconditioner )
+            M_preconditioner->setPrecMatrixStructure(mstruct);
+
         M_prec_matrix_structure = mstruct;
     }
 
