@@ -92,6 +92,10 @@ public:
     typedef typename super::dense_matrix_type dense_matrix_type;
     typedef typename super::dense_vector_type dense_vector_type;
 
+    //eigen
+    typedef typename super::map_dense_matrix_type map_dense_matrix_type;
+    typedef typename super::map_dense_vector_type map_dense_vector_type;
+
     //@}
 
     /** @name Constructors, destructor
@@ -157,6 +161,13 @@ public:
     virtual std::pair<unsigned int, real_type> solve ( dense_matrix_type&,    // System Jacobian Matrix
             dense_vector_type&,          // Solution vector
             dense_vector_type&,          // Residual vector
+            const double,        // Stopping tolerance
+            const unsigned int ); // N. Iterations
+
+    //use eigen
+    virtual std::pair<unsigned int, real_type> solve ( map_dense_matrix_type&,    // System Jacobian Matrix
+            map_dense_vector_type&,          // Solution vector
+            map_dense_vector_type&,          // Residual vector
             const double,        // Stopping tolerance
             const unsigned int ); // N. Iterations
 

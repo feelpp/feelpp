@@ -32,6 +32,9 @@
 #include <boost/function.hpp>
 #include <boost/bind.hpp>
 
+#include <Eigen/Core>
+#include <Eigen/LU>
+#include <Eigen/Dense>
 
 #include <feel/feelalg/enums.hpp>
 #include <feel/feelalg/glas.hpp>
@@ -81,6 +84,9 @@ public:
     typedef ublas::matrix<value_type> dense_matrix_type;
     typedef ublas::vector<value_type> dense_vector_type;
 
+    typedef Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> > map_dense_matrix_type;
+    typedef Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic, 1> > map_dense_vector_type;
+
     typedef boost::function<void ( const vector_ptrtype& X,
                                    vector_ptrtype& R )> residual_function_type;
     typedef boost::function<void ( const vector_ptrtype& X,
@@ -96,6 +102,15 @@ public:
     typedef boost::function<void ( dense_vector_type const& X,
                                    dense_vector_type& R,
                                    dense_matrix_type& J )> dense_matvec_function_type;
+
+    //eigen
+    typedef boost::function<void ( map_dense_vector_type const& X,
+                                   map_dense_vector_type & R )> map_dense_residual_function_type;
+    typedef boost::function<void ( map_dense_vector_type const& X,
+                                   map_dense_matrix_type& J )> map_dense_jacobian_function_type;
+    typedef boost::function<void ( map_dense_vector_type const& X,
+                                   map_dense_vector_type& R,
+                                   map_dense_matrix_type& J )> map_dense_matvec_function_type;
 
 
     //@}
@@ -394,11 +409,20 @@ public:
             const unsigned int ) = 0; // N. Iterations
 
     /**
-     * Solves a sparse nonlinear system.
+     * Solves a dense nonlinear system.
      */
     virtual std::pair<unsigned int, real_type> solve ( dense_matrix_type&,  // System Jacobian Matrix
             dense_vector_type&, // Solution vector
             dense_vector_type&, // Residual vector
+            const double,      // Stopping tolerance
+            const unsigned int ) = 0; // N. Iterations
+
+    /**
+     * Solves a dense nonlinear system ( using eigen).
+     */
+    virtual std::pair<unsigned int, real_type> solve ( map_dense_matrix_type&,  // System Jacobian Matrix
+            map_dense_vector_type&, // Solution vector
+            map_dense_vector_type&, // Residual vector
             const double,      // Stopping tolerance
             const unsigned int ) = 0; // N. Iterations
 
@@ -429,10 +453,22 @@ public:
     dense_residual_function_type dense_residual;
 
     /**
+     * Function that computes the residual \p R(X) of the nonlinear system
+     * at the input iterate \p X using eigen.
+     */
+    map_dense_residual_function_type map_dense_residual;
+
+    /**
      * Function that computes the Jacobian \p J(X) of the nonlinear system
      * at the input iterate \p X.
      */
     dense_jacobian_function_type dense_jacobian;
+
+    /**
+     * Function that computes the Jacobian \p J(X) of the nonlinear system
+     * at the input iterate \p X using eigen.
+     */
+    map_dense_jacobian_function_type map_dense_jacobian;
 
     /**
      * Function that computes either the residual \f$ R(X) \f$ or the
@@ -441,6 +477,14 @@ public:
      * \p XSNULL.
      */
     dense_matvec_function_type dense_matvec;
+
+    /**
+     * Function that computes either the residual \f$ R(X) \f$ or the
+     * Jacobian \f$ J(X) \f$ of the nonlinear system at the input
+     * iterate \f$ X \f$.  Note that either \p R or \p J could be
+     * \p XSNULL.
+     */
+    map_dense_matvec_function_type map_dense_matvec;
 
     //@}
 
