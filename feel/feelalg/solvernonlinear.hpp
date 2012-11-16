@@ -228,11 +228,22 @@ public:
         return M_reuse_prec;
     }
 
+    /**
+     * \return the prefix
+     */
+    std::string const& prefix() const{ return M_prefix; }
+
+
     //@}
 
     /** @name  Mutators
      */
     //@{
+
+    /**
+     * set the prefix of the solver (typically for command line options)
+     */
+    void setPrefix( std::string const& p ) { M_prefix = p; }
 
     /**
      * \return the preconditioner matrix structure
@@ -504,6 +515,8 @@ protected:
     bool M_is_initialized;
 
     MatrixStructure M_prec_matrix_structure;
+
+    std::string M_prefix;
 
     /**
      * Define the type of non linear solver
