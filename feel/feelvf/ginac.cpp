@@ -123,8 +123,17 @@ ex parse( std::string const& str, std::vector<symbol>  const& syms )
     using GiNaC::parser;
     symtab table;
     LOG(INFO) <<"insert symbols in symbol table\n";
+
     table["x"]=syms[0];
-    table["y"]=syms[1];
+    if ( syms.size() == 2 )
+    {
+        table["y"]=syms[1];
+    }
+    if ( syms.size() == 3 )
+    {
+        table["y"]=syms[1];
+        table["z"]=syms[2];
+    }
     //std::for_each( syms.begin(), syms.end(), [&table]( symbol const& s ) { std::cerr << "adding symbol: " << s.get_name() << std::endl; table[s.get_name()] = s; } );
     LOG(INFO) <<"define parser\n";
     parser reader(table);
