@@ -32,6 +32,7 @@
 #include <boost/timer.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/fusion/include/fold.hpp>
+#include <boost/smart_ptr/enable_shared_from_this.hpp>
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/environment.hpp>
@@ -124,7 +125,8 @@ template<int NR, typename T> class VectorBlock;
  * @see
  */
 template<typename T>
-class Backend
+class Backend:
+    public boost::enable_shared_from_this<Backend<T> >
 {
 public:
 
@@ -593,6 +595,9 @@ public:
 
     bool reusePrecRebuildAtFirstNewtonStep() const { return M_reusePrecRebuildAtFirstNewtonStep; }
     bool reuseJacRebuildAtFirstNewtonStep() const { return M_reuseJacRebuildAtFirstNewtonStep; }
+
+    BackendType type() const { return M_backend; }
+
     //@}
 
     /** @name  Mutators
@@ -736,8 +741,8 @@ public:
                                        ( rhs,( vector_ptrtype ) ) )
                                      ( optional
                                        //(prec,(sparse_matrix_ptrtype), matrix )
-                                       ( prec,( preconditioner_ptrtype ), preconditioner( _prefix=this->prefix(),_matrix=matrix,_pc=this->pcEnumType()/*LU_PRECOND*/,_backend=BACKEND_PETSC,
-                                                                                          _pcfactormatsolverpackage=this->matSolverPackageEnumType() ) )
+                                       ( prec,( preconditioner_ptrtype ), preconditioner( _prefix=this->prefix(),_matrix=matrix,_pc=this->pcEnumType()/*LU_PRECOND*/,
+                                                                                          _pcfactormatsolverpackage=this->matSolverPackageEnumType(), _backend=this->shared_from_this() ) )
                                        ( maxit,( size_type ), M_maxit/*1000*/ )
                                        ( rtolerance,( double ), M_rtolerance/*1e-13*/ )
                                        ( atolerance,( double ), M_atolerance/*1e-50*/ )
@@ -881,6 +886,7 @@ public:
             //this->nlSolver()->residual( _sol, residual );
         }
 
+        this->nlSolver()->setPrefix( this->prefix() );
         if ( !jacobian )
             this->nlSolver()->jacobian( _sol, jacobian );
 

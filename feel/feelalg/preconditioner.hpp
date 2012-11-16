@@ -39,6 +39,10 @@
 
 namespace Feel
 {
+template<typename T> class Backend;
+typedef Backend<double> backend_type;
+typedef boost::shared_ptr<Backend<double> > backend_ptrtype;
+
 /**
  * \class Preconditioner
  * \brief base class for preconditioner
@@ -294,12 +298,12 @@ typedef boost::shared_ptr<preconditioner_type> preconditioner_ptrtype;
 namespace detail
 {
 class PreconditionerManagerImpl:
-    public std::map<std::string, preconditioner_ptrtype >,
-    public boost::noncopyable
+        public std::map<std::pair<backend_ptrtype,std::string>, preconditioner_ptrtype >,
+        public boost::noncopyable
 {
 public:
     typedef preconditioner_ptrtype value_type;
-    typedef std::string key_type;
+    typedef std::pair<backend_ptrtype,std::string> key_type;
     typedef std::map<key_type, value_type> preconditioner_manager_type;
 
 };
@@ -322,11 +326,12 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( boost::shared_ptr<Preconditioner<double> > ),
                                  preconditioner,
                                  tag,
                                  ( required
-                                   ( pc,( PreconditionerType ) ) )
+                                   ( pc,( PreconditionerType ) )
+                                   ( backend, (backend_ptrtype) ) )
                                  ( optional
                                    ( prefix, *( boost::is_convertible<mpl::_,std::string> ), "" )
                                    ( matrix,( d_sparse_matrix_ptrtype ),d_sparse_matrix_ptrtype() )
-                                   ( backend,( BackendType ), BACKEND_PETSC )
+
                                    ( pcfactormatsolverpackage,( MatSolverPackageType ), MATSOLVER_DEFAULT )
                                    ( worldcomm,      *, Environment::worldComm() )
                                    ( rebuild,      (bool), false )
@@ -345,7 +350,7 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( boost::shared_ptr<Preconditioner<double> > ),
 
     Feel::detail::ignore_unused_variable_warning( args );
 
-    auto git = detail::PreconditionerManager::instance().find( prefix );
+    auto git = detail::PreconditionerManager::instance().find( std::make_pair( backend, prefix ) );
 
     if (  git != detail::PreconditionerManager::instance().end() && ( rebuild == false ) )
     {
@@ -356,7 +361,7 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( boost::shared_ptr<Preconditioner<double> > ),
     else
     {
 
-        preconditioner_ptrtype p = Preconditioner<double>::build( prefix, backend, worldcomm );
+        preconditioner_ptrtype p = Preconditioner<double>::build( prefix, backend->type(), worldcomm );
         p->setType( pc );
         p->setMatSolverPackageType( pcfactormatsolverpackage );
 
@@ -365,7 +370,7 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( boost::shared_ptr<Preconditioner<double> > ),
             p->setMatrix( matrix );
         }
         VLOG(2) << "storing preconditionerin singleton" << "\n";
-        detail::PreconditionerManager::instance().operator[]( prefix ) = p;
+        detail::PreconditionerManager::instance().operator[]( std::make_pair( backend, prefix ) ) = p;
         return p;
     }
 }

@@ -645,11 +645,11 @@ po::options_description backend_options( std::string const& prefix )
     ( prefixvm( prefix,"export-matlab" ).c_str(), Feel::po::value<std::string>()->default_value( "" ), "export matrix/vector to matlab, default empty string means no export, other string is used as prefix" )
 
     ( prefixvm( prefix,"ksp-type" ).c_str(), Feel::po::value<std::string>()->default_value( "gmres" ), "cg, bicgstab, gmres" )
-    ( prefixvm( prefix,"ksp-monitor" ).c_str() , "monitor ksp" )
+    ( prefixvm( prefix,"ksp-monitor" ).c_str(), Feel::po::value<bool>()->default_value( false ) , "monitor ksp" )
     ( prefixvm( prefix,"ksp-converged-reason" ).c_str() , "converged reason ksp" )
 
     ( prefixvm( prefix,"snes-maxit" ).c_str(), Feel::po::value<size_type>()->default_value( 50 ), "maximum number of iterations" )
-    ( prefixvm( prefix,"snes-monitor" ).c_str() , "monitor snes" )
+        ( prefixvm( prefix,"snes-monitor" ).c_str(), Feel::po::value<bool>()->default_value( false ) , "monitor snes" )
     ( prefixvm( prefix,"snes-converged-reason" ).c_str() , "converged reason snes" )
 
 

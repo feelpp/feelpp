@@ -582,13 +582,13 @@ void SolverNonLinearPetsc<T>::init ()
             PCShellSetApply( M_pc,__feel_petsc_preconditioner_apply );
         }
 
-        if ( this->showSNESMonitor() )
+        if ( Environment::vm(_name="snes-monitor",_prefix=this->prefix()).template as<bool>() )
         {
             ierr = SNESMonitorSet( M_snes,SNESMonitorDefault,PETSC_NULL,PETSC_NULL );
             CHKERRABORT( this->worldComm().globalComm(),ierr );
         }
 
-        if ( this->showKSPMonitor() )
+        if ( Environment::vm(_name="ksp-monitor",_prefix=this->prefix()).template as<bool>() )
         {
             ierr = KSPMonitorSet( M_ksp,KSPMonitorDefault,PETSC_NULL,PETSC_NULL );
             CHKERRABORT( this->worldComm().globalComm(),ierr );
