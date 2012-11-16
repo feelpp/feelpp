@@ -379,7 +379,7 @@ public:
     
     void updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J );
     void updateResidual( const vector_ptrtype& X, vector_ptrtype& R );
-    matrixN_type compute_trilinear_form( const element_ptrtype& X ){ matrixN_type A_tril; return A_tril;};
+    sparse_matrix_ptrtype computeTrilinearForm( const element_ptrtype& X );
 
 private:
 
