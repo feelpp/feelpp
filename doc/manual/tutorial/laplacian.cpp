@@ -339,10 +339,10 @@ main( int argc, char** argv )
     Application app;
 
 
-    //if ( app.nProcess() == 1 )
-    //app.add( new Laplacian<1>() );
+    if ( app.nProcess() == 1 )
+        app.add( new Laplacian<1>() );
     app.add( new Laplacian<2>() );
-    //app.add( new Laplacian<3>() );
+    app.add( new Laplacian<3>() );
 
     app.run();
 
