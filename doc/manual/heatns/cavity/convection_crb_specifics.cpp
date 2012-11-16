@@ -401,8 +401,8 @@ void Convection_crb ::updateJacobian( const vector_ptrtype& X, sparse_matrix_ptr
     
 }
 
-/*
-matrixN_type Convection_crb::compute_trilinear_form( const element_ptrtype& X )
+typename Convection_crb ::sparse_matrix_ptrtype
+Convection_crb::computeTrilinearForm( const element_ptrtype& X )
 {
     auto mesh = Xh->mesh();
     auto U = Xh->element( "u" );
@@ -420,7 +420,7 @@ matrixN_type Convection_crb::compute_trilinear_form( const element_ptrtype& X )
     auto eta = V. element<3>(); // fonction test multipliers
 #endif
  
-    matrixN_type A_tril;
+    sparse_matrix_ptrtype A_tril;
        
     double gamma( this->vm()["penalbc"]. as<double>() );
     
@@ -446,9 +446,9 @@ matrixN_type Convection_crb::compute_trilinear_form( const element_ptrtype& X )
     
     form2( _test=Xh, _trial=Xh, _matrix=A_tril ) += integrate ( elements( mesh ), grad( s )*( idt( t )*idv( v ) ) );
     
-    form2( _test=Xh, _trial=Xh, _matrix=A_tril ) += integrate ( boundaryfaces( mesh ), trans( idv( v )*N() )*id( s )*idt( t ) );
+    form2( _test=Xh, _trial=Xh, _matrix=A_tril ) += integrate ( boundaryfaces( mesh ), trans( idv( v ) )*N() *id( s )*idt( t ) );
     
-    form2( _test=Xh, _trial=Xh, _matrix=A_tril ) += integrate ( boundaryfaces( mesh ), trans( idt( u )*N() )*id( s )*idv( s ) );
+    form2( _test=Xh, _trial=Xh, _matrix=A_tril ) += integrate ( boundaryfaces( mesh ), trans( idt( u ) )*N() *id( s )*idv( s ) );
     
     if ( weakdir == 0 )
     {
@@ -466,6 +466,6 @@ matrixN_type Convection_crb::compute_trilinear_form( const element_ptrtype& X )
     return A_tril;
     
 }
-*/
+
 // instantiation
 // class Convection_crb<2,1,2>;
