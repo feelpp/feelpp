@@ -148,6 +148,16 @@ public:
     }
 
     /**
+     * \return the prefix
+     */
+    std::string const& prefix() const{ return M_prefix; }
+
+    /**
+     * set the prefix of the solver (typically for command line options)
+     */
+    void setPrefix( std::string const& p ) { M_prefix = p; }
+
+    /**
      * set tolerances: relative tolerance \p rtol, divergence tolerance \p dtol
      * and absolute tolerance \p atol
      */
@@ -344,6 +354,8 @@ protected:
 
     ///
     po::variables_map M_vm;
+
+    std::string M_prefix;
 
     /// relative tolerance
     double M_rtolerance;

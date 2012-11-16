@@ -355,6 +355,7 @@ BackendPetsc<T>::solve( sparse_matrix_ptrtype const& A,
                         vector_ptrtype& x,
                         vector_ptrtype const& b )
 {
+    M_solver_petsc.setPrefix( this->prefix() );
     M_solver_petsc.setPreconditionerType( this->pcEnumType() );
     M_solver_petsc.setSolverType( this->kspEnumType() );
     if (!M_solver_petsc.initialized())
@@ -387,6 +388,7 @@ BackendPetsc<T>::solve( sparse_matrix_type const& A,
                         vector_type& x,
                         vector_type const& b )
 {
+    M_solver_petsc.setPrefix( this->prefix() );
     M_solver_petsc.setPreconditionerType( this->pcEnumType() );
     M_solver_petsc.setSolverType( this->kspEnumType() );
     if (!M_solver_petsc.initialized())

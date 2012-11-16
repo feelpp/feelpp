@@ -281,7 +281,7 @@ void SolverLinearPetsc<T>::init ()
             VLOG(2) << "preconditioner set as "  << pc_type << "\n";
         }
 
-        if ( this->showKSPMonitor() )
+        if ( Environment::vm(_name="ksp-monitor",_prefix=this->prefix()).template as<bool>() )
         {
             KSPMonitorSet( _M_ksp,KSPMonitorDefault,PETSC_NULL,PETSC_NULL );
         }
