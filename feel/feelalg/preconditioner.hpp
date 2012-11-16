@@ -30,6 +30,7 @@
 #define __Preconditioner_H 1
 
 #include <boost/parameter.hpp>
+#include <feel/feelcore/singleton.hpp>
 #include <feel/feelcore/parameter.hpp>
 #include <feel/feelalg/matrixsparse.hpp>
 #include <feel/feelalg/vector.hpp>
@@ -287,6 +288,35 @@ Preconditioner<T>::~Preconditioner ()
     this->clear ();
 }
 
+typedef Preconditioner<double> preconditioner_type;
+typedef boost::shared_ptr<preconditioner_type> preconditioner_ptrtype;
+
+namespace detail
+{
+class PreconditionerManagerImpl:
+    public std::map<std::string, preconditioner_ptrtype >,
+    public boost::noncopyable
+{
+public:
+    typedef preconditioner_ptrtype value_type;
+    typedef std::string key_type;
+    typedef std::map<key_type, value_type> preconditioner_manager_type;
+
+};
+typedef Feel::Singleton<PreconditionerManagerImpl> PreconditionerManager;
+
+struct PreconditionerManagerDeleterImpl
+{
+    void operator()() const
+        {
+            VLOG(2) << "[PreconditionerManagerDeleter] clear PreconditionerManager Singleton: " << detail::PreconditionerManager::instance().size() << "\n";
+            detail::PreconditionerManager::instance().clear();
+            VLOG(2) << "[PreconditionerManagerDeleter] clear PreconditionerManager done\n";
+        }
+};
+typedef Feel::Singleton<PreconditionerManagerDeleterImpl> PreconditionerManagerDeleter;
+} // detail
+
 
 BOOST_PARAMETER_MEMBER_FUNCTION( ( boost::shared_ptr<Preconditioner<double> > ),
                                  preconditioner,
@@ -299,20 +329,47 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( boost::shared_ptr<Preconditioner<double> > ),
                                    ( backend,( BackendType ), BACKEND_PETSC )
                                    ( pcfactormatsolverpackage,( MatSolverPackageType ), MATSOLVER_DEFAULT )
                                    ( worldcomm,      *, Environment::worldComm() )
+                                   ( rebuild,      (bool), false )
                                      )
     )
 {
-    boost::shared_ptr<Preconditioner<double> > p = Preconditioner<double>::build( prefix, backend, worldcomm );
-    p->setType( pc );
-    p->setMatSolverPackageType( pcfactormatsolverpackage );
-
-    if ( matrix )
+    // register the PreconditionerManager into Feel::Environment so that it gets the
+    // PreconditionerManager is cleared up when the Environment is deleted
+    static bool observed=false;
+    if ( !observed )
     {
-        p->setMatrix( matrix );
+        Environment::addDeleteObserver( detail::PreconditionerManagerDeleter::instance() );
+        observed = true;
     }
-    Environment::addDeleteObserver( p );
-    return p;
+
+
+    Feel::detail::ignore_unused_variable_warning( args );
+
+    auto git = detail::PreconditionerManager::instance().find( prefix );
+
+    if (  git != detail::PreconditionerManager::instance().end() && ( rebuild == false ) )
+    {
+        VLOG(2) << "[preconditioner] found preconditioner name=" << prefix << " rebuild=" << rebuild << "\n";
+        return git->second;
+    }
+
+    else
+    {
+
+        preconditioner_ptrtype p = Preconditioner<double>::build( prefix, backend, worldcomm );
+        p->setType( pc );
+        p->setMatSolverPackageType( pcfactormatsolverpackage );
+
+        if ( matrix )
+        {
+            p->setMatrix( matrix );
+        }
+        VLOG(2) << "storing preconditionerin singleton" << "\n";
+        detail::PreconditionerManager::instance().operator[]( prefix ) = p;
+        return p;
+    }
 }
+
 
 } // Feel
 #endif /* __Preconditioner_H */
