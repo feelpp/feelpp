@@ -201,7 +201,7 @@ public:
     // \return the number of terms in affine decomposition of left hand
     // side bilinear form
     int Qa() const;
-    int Qa_tril() const;
+    int QaTri() const;
     
     /**
      * there is at least one output which is the right hand side of the
@@ -379,7 +379,7 @@ public:
     
     void updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J );
     void updateResidual( const vector_ptrtype& X, vector_ptrtype& R );
-    sparse_matrix_ptrtype computeTrilinearForm( const element_ptrtype& X );
+    sparse_matrix_ptrtype computeTrilinearForm( const element_type& X );
 
 private:
 

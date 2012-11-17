@@ -32,6 +32,10 @@
 #else
     #include "convection_crb.hpp"
     #include <feel/feelcrb/opusapp.hpp>
+    #include <feel/feelcrb/crb.hpp>
+    #include <feel/feelcrb/crbmodel.hpp>
+    #include <feel/feelcrb/crb_trilinear.hpp>
+    #include <feel/feelcrb/crbmodeltrilinear.hpp>
 //#include <feel/feelcrb/opusapp_heatns.hpp>
 #endif
 
@@ -171,7 +175,8 @@ main( int argc, char** argv )
     if ( Environment::worldComm().rank() == 0 )
         std::cout << " number of processors : "  << Environment::numberOfProcessors() << "\n";
 
-        Feel::OpusApp<Convection_crb> myconvectioncrb ;
+    //Feel::OpusApp<Convection_crb , CRB , CRBModel > myconvectioncrb ;
+    Feel::OpusApp<Convection_crb , CRBTrilinear , CRBModelTrilinear > myconvectioncrb ;
         myconvectioncrb.run();
 #endif
 
