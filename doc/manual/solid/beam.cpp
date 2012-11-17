@@ -34,15 +34,14 @@ makeOptions()
 {
     Feel::po::options_description beamoptions( "Beam options" );
     beamoptions.add_options()
-    ( "hsize", Feel::po::value<double>()->default_value( 0.01 ), "first h value to start convergence" )
-    ( "beta", Feel::po::value<double>()->default_value( 1.0 ), "beta value in -Delta u + beta u = f" )
-    ( "bccoeff", Feel::po::value<double>()->default_value( 100.0 ), "coeff for weak Dirichlet conditions" )
-    ( "bctype", Feel::po::value<int>()->default_value( 1 ), "Dirichlet condition type(0=elimination,1=penalisation, 2=weak" )
-    ( "scale", Feel::po::value<double>()->default_value( 10 ), "scale factor for mesh mover" )
-    ( "export", "export results(ensight, data file(1D)" )
-    ( "export-matlab", "export matrix and vectors in matlab" )
-
-    ;
+        ( "E", Feel::po::value<double>()->default_value( 1.4e6 ), "Young modulus" )
+        ( "nu", Feel::po::value<double>()->default_value( 0.4 ), "Poisson coefficient" )
+        ( "hsize", Feel::po::value<double>()->default_value( 0.01 ), "first h value to start convergence" )
+        ( "beta", Feel::po::value<double>()->default_value( 1.0 ), "beta value in -Delta u + beta u = f" )
+        ( "bccoeff", Feel::po::value<double>()->default_value( 100.0 ), "coeff for weak Dirichlet conditions" )
+        ( "bctype", Feel::po::value<int>()->default_value( 1 ), "Dirichlet condition type(0=elimination,1=weak" )
+        ( "scale", Feel::po::value<double>()->default_value( 10 ), "scale factor for mesh mover" )
+        ;
     return beamoptions.add( Feel::feel_options() );
 }
 
@@ -59,13 +58,8 @@ public:
 
     // -- TYPEDEFS --
     static const uint16_type Dim = nDim;
-    static const uint16_type feOrder = nOrder;
-    static const uint16_type imOrder = nOrder;
 
     typedef double value_type;
-
-    typedef Backend<double> backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
 
     /*mesh*/
     typedef Simplex<Dim> entity_type;
@@ -73,7 +67,7 @@ public:
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
     /*basis*/
-    typedef bases<Lagrange<feOrder, Vectorial> > basis_type;
+    typedef bases<Lagrange<nOrder, Vectorial> > basis_type;
 
     /*space*/
     typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
@@ -86,7 +80,6 @@ public:
     Beam()
         :
         super(),
-        M_backend( backend_type::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         beta( this->vm()["beta"].template as<double>() ),
         bcCoeff( this->vm()["bccoeff"].template as<double>() ),
@@ -98,14 +91,13 @@ public:
         LOG(INFO) << "[Beam] beta = " << beta << "\n";
         LOG(INFO) << "[Beam] bccoeff = " << bcCoeff << "\n";
         LOG(INFO) << "[Beam] bctype = " <<  M_bctype << "\n";
-        LOG(INFO) << "[Beam] export = " << this->vm().count( "export" ) << "\n";
 
     }
 
     ~Beam()
     {
-        std::map<std::string,std::pair<boost::timer,double> >::iterator it = timers.begin();
-        std::map<std::string,std::pair<boost::timer,double> >::iterator en = timers.end();
+        std::map<std::string,std::pair<mpi::timer,double> >::iterator it = timers.begin();
+        std::map<std::string,std::pair<mpi::timer,double> >::iterator en = timers.end();
 
         for ( ; it != en; ++it )
         {
@@ -127,8 +119,6 @@ private:
 
 private:
 
-    backend_ptrtype M_backend;
-
     double meshSize;
     double beta;
     double bcCoeff;
@@ -136,7 +126,7 @@ private:
 
     boost::shared_ptr<export_type> exporter;
 
-    std::map<std::string,std::pair<boost::timer,double> > timers;
+    std::map<std::string,std::pair<mpi::timer,double> > timers;
 }; // Beam
 
 template<int nDim, int nOrder>
@@ -144,7 +134,7 @@ void
 Beam<nDim,nOrder>::run()
 {
 
-    this->changeRepository( boost::format( "examples/solid/%1%/%2%/P%3%/h_%4%/" )
+    this->changeRepository( boost::format( "doc/manual/solid/%1%/%2%/P%3%/h_%4%/" )
                             % this->about().appName()
                             % entity_type::name()
                             % nOrder
@@ -161,7 +151,9 @@ Beam<nDim,nOrder>::run()
                                                       _ymin=0., _ymax=0.02,
                                                       _zmin=0., _zmax=0.02,
                                                       _h=meshSize ) );
-
+    // add marker clamped to the mesh
+    mesh->addMarkerName( "clamped",( nDim==2 )?1:19, (nDim==2)?1:2);
+    mesh->addMarkerName( "tip",( nDim==2)?3:27, (nDim==2)?1:2);
     /*
      * The function space and some associate elements are then defined
      */
@@ -176,15 +168,11 @@ Beam<nDim,nOrder>::run()
     /*
      * Data associated with the simulation
      */
-#if 0
-    const double E = 21*1e5;
-    const double sigma = 0.28;
-#else
-    const double E = 1.4e6;
-    const double sigma = 0.4;
-#endif
-    const double mu = E/( 2*( 1+sigma ) );
-    const double lambda = E*sigma/( ( 1+sigma )*( 1-2*sigma ) );
+    const double E = Environment::vm(_name="E").template as<double>();
+    const double nu = Environment::vm(_name="nu").template as<double>();
+
+    const double mu = E/( 2*( 1+nu ) );
+    const double lambda = E*nu/( ( 1+nu )*( 1-2*nu ) );
     const double density = 1e3;
     const double gravity = -2;//-density*0.05;
     LOG(INFO) << "lambda = " << lambda << "\n"
@@ -197,30 +185,24 @@ Beam<nDim,nOrder>::run()
      * \f$ f = \int_\Omega g * v \f$ where \f$ g \f$ is a vector
      * directed in the \f$ y \f$ direction.
      */
-    auto F = M_backend->newVector( Xh );
+    auto F = backend()->newVector( Xh );
     F->zero();
     timers["assembly"].first.restart();
-
-    if ( this->vm().count( "export-matlab" ) )
-        F->printMatlab( "F0.m" );
 
     if ( Dim == 3 )
         form1( _test=Xh, _vector=F ) = integrate( elements( mesh ), trans( gravity*oneZ() )*id( v ) );
     else
         form1( _test=Xh, _vector=F ) = integrate( elements( mesh ), trans( gravity*oneY() )*id( v ) );
 
-    if ( this->vm().count( "export-matlab" ) )
-        F->printMatlab( "F1.m" );
-
     timers["assembly"].second = timers["assembly"].first.elapsed();
 
     /*
      * Construction of the left hand side
      */
-    auto D = M_backend->newMatrix( Xh, Xh );
+    auto D = backend()->newMatrix( Xh, Xh );
     timers["assembly"].first.restart();
-    auto deft = 0.5*( gradt( u )+trans( gradt( u ) ) );
-    auto def = 0.5*( grad( v )+trans( grad( v ) ) );
+    auto deft = sym(gradt(u));
+    auto def = sym(grad(u));
     auto a = form2( _test=Xh, _trial=Xh, _matrix=D );
     a = integrate( elements( mesh ),
                    lambda*divt( u )*div( v )  +
@@ -228,31 +210,25 @@ Beam<nDim,nOrder>::run()
 
     if ( M_bctype == 1 ) // weak Dirichlet bc
     {
-        auto Id = ( mat<nDim,nDim>( cst( 1 ), cst( 0 ), cst( 0 ), cst( 1. ) ) );
-        a += integrate( markedfaces( mesh,1 ),
+        auto Id = eye<nDim>();
+        a += integrate( markedfaces( mesh, "clamped" ),
                         - trans( ( 2*mu*deft+lambda*trace( deft )*Id )*N() )*id( v )
                         - trans( ( 2*mu*def+lambda*trace( def )*Id )*N() )*idt( u )
                         + bcCoeff*trans( idt( u ) )*id( v )/hFace() );
     }
 
     if ( M_bctype == 0 )
-        a += on( markedfaces( mesh,( nDim==2 )?1:23 ), u, F, constant( 0 )*one() );
-
-    if ( this->vm().count( "export-matlab" ) )
-    {
-        F->printMatlab( "F2.m" );
-        D->printMatlab( "elas.m" );
-    }
+        a += on( markedfaces( mesh, "clamped" ), u, F, zero<nDim,1>() );
 
     timers["assembly"].second += timers["assembly"].first.elapsed();
 
-    M_backend->solve( _matrix=D, _solution=u, _rhs=F );
+    backend(_rebuild=true)->solve( _matrix=D, _solution=u, _rhs=F );
 
     v = vf::project( Xh, elements( Xh->mesh() ), P() );
     this->exportResults( 0, u, v );
 
-    auto i1 = integrate( markedfaces( mesh,3 ), idv( u ) ).evaluate();
-    LOG(INFO) << "deflection: " << i1/0.02 << "\n";
+    auto i1 = mean( _range=markedfaces( mesh, "tip"  ), _expr=idv( u ) );
+    LOG(INFO) << "deflection: " << i1 << "\n";
 
 
 
