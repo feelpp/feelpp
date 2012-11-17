@@ -46,9 +46,6 @@ makeOptions()
     ( "penalbc", Feel::po::value<double>()->default_value( 10 ), "penalisation parameter for the weak boundary conditions" )
     ( "hsize", Feel::po::value<double>()->default_value( 0.5 ), "first h value to start convergence" )
     ( "bctype", Feel::po::value<int>()->default_value( 1 ), "0 = strong Dirichlet, 1 = weak Dirichlet" )
-    ( "export", "export results(ensight, data file(1D)" )
-    ( "export-mesh-only", "export mesh only in ensight format" )
-    ( "export-matlab", "export matrix and vectors in matlab" )
     ;
     return stvenant_kirchhoffoptions.add( Feel::feel_options() );
 }
@@ -94,7 +91,7 @@ public:
 
     typedef Lagrange<Order, Vectorial> basis_u_type;
     typedef Lagrange<Order, Vectorial> basis_v_type;
-    typedef mpl::vector<basis_u_type> basis_type;
+    typedef bases<basis_u_type> basis_type;
 
 
     typedef FunctionSpace<mesh_type, basis_type, value_type> functionspace_type;
@@ -127,7 +124,7 @@ public:
         ft( this->vm()["ft"].template as<double>() ),
         omega( this->vm()["omega"].template as<double>() )
         {
-            this->changeRepository( boost::format( "examples/solid/%1%/%2%/P%3%/h_%4%/" )
+            this->changeRepository( boost::format( "doc/manual/solid/%1%/%2%/P%3%/h_%4%/" )
                                     % this->about().appName()
                                     % entity_type::name()
                                     % Order
@@ -229,7 +226,7 @@ StVenantKirchhoff<Dim, Order>::updateResidual( const vector_ptrtype& X, vector_p
     auto g = constant( 0.0 );
     auto defv = sym( gradv( u ) );
     auto def=  sym( grad( u ) );
-    auto Id = ( mat<Dim,Dim>( cst( 1 ), cst( 0 ), cst( 0 ), cst( 1. ) ) );
+    auto Id = eye<Dim>();
     //std::cout << "u = " << u << "\n";
 
     auto eta = 0.1*Px()*( Px() -5 )*( Px()-2.5 )*sin( omega*M_PI*cst_ref( time )  );
@@ -310,7 +307,7 @@ StVenantKirchhoff<Dim, Order>::run()
     M_oplin = opLinear( _domainSpace=M_Xh, _imageSpace=M_Xh, _backend=M_backend );
     auto deft = sym( gradt( u ) );
     auto def = sym( grad( v ) );
-    auto Id = ( mat<Dim,Dim>( cst( 1 ), cst( 0 ), cst( 0 ), cst( 1. ) ) );
+    auto Id = eye<Dim>();
     *M_oplin =
         integrate( elements( mesh ),
                    //density*trans(idt(uu))*id(v)*M_bdf->derivateCoefficient( M_time_order, dt ) +

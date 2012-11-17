@@ -184,7 +184,7 @@ Elaxi<Order, Entity>::run()
     //    int maxIter = 10.0/meshSize;
     using namespace Feel::vf;
 
-    this->changeRepository( boost::format( "%1%/%2%/P%3%/h_%4%/" )
+    this->changeRepository( boost::format( "doc/manual/solid/%1%/%2%/P%3%/h_%4%/" )
                             % this->about().appName()
                             % entity_type::name()
                             % Order
