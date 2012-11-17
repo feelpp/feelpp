@@ -198,11 +198,10 @@ int Convection_crb::Qa() const
 {
     return 4;
 }
-int Convection_crb::Qa_tril() const
+int Convection_crb::QaTri() const
 {
     return 1;
 }
-
 int Convection_crb::mMaxA( int q )
 {
     if ( q < 4 )
@@ -260,7 +259,7 @@ int Convection_crb::QInitialGuess() const
  * \param mu parameter to evaluate the coefficients
  */
 
-boost::tuple<beta_vector_type, std::vector<beta_vector_type>, beta_vector_type>
+boost::tuple<beta_vector_type, std::vector<beta_vector_type> , beta_vector_type >
 Convection_crb::computeBetaQm( parameter_type const& mu, double )
 {
     M_betaAqm.resize( Qa() );
@@ -402,13 +401,13 @@ void Convection_crb ::updateJacobian( const vector_ptrtype& X, sparse_matrix_ptr
 }
 
 typename Convection_crb ::sparse_matrix_ptrtype
-Convection_crb::computeTrilinearForm( const element_ptrtype& X )
+Convection_crb::computeTrilinearForm( const element_type& X )
 {
     auto mesh = Xh->mesh();
-    auto U = Xh->element( "u" );
-    U = *X;
+    auto U = Xh->element( "U" );
+    U = X;
     auto V = Xh->element( "v" );
-    auto W = Xh->element( "v" );
+    auto W = Xh->element( "w" );
     auto u = U. element<0>(); // fonction vitesse
     auto v = V. element<0>(); // fonction test vitesse
     auto p = U. element<1>(); // fonction pression
@@ -421,6 +420,7 @@ Convection_crb::computeTrilinearForm( const element_ptrtype& X )
 #endif
  
     sparse_matrix_ptrtype A_tril;
+    A_tril = M_backend->newMatrix( _test=Xh, _trial=Xh );
        
     double gamma( this->vm()["penalbc"]. as<double>() );
     
@@ -431,13 +431,10 @@ Convection_crb::computeTrilinearForm( const element_ptrtype& X )
     int weakdir( this->vm()["weakdir"]. as<int>() );
     double T0 = this->vm()["T0"]. as<double>();
     
-    
     // Fluid-NS
     // fluid convection derivatives: attention 2 terms
-    
     form2( _test=Xh,_trial=Xh, _matrix=A_tril , _init=true ) = integrate ( _range=elements( mesh ), _expr=trans( id( v ) )*( gradv( v ) )*idt( u ) );
     form2( _test=Xh,_trial=Xh, _matrix=A_tril )  += integrate ( _range=elements( mesh ), _expr=trans( id( v ) )*( gradt( u ) )*idv( v ) );
-    
     
     //    // temperature derivatives
     //
@@ -462,7 +459,6 @@ Convection_crb::computeTrilinearForm( const element_ptrtype& X )
         else
             form2( Xh, Xh, A_tril )  += on ( markedfaces( mesh, "Tfixed" ),t,Rtemp,cst( T0 ) );
     }
-    
     return A_tril;
     
 }
