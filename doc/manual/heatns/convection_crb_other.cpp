@@ -211,7 +211,7 @@ Convection_crb::solve( parameter_type const& mu, element_ptrtype& T )
 
         
         M_backend->nlSolve(_jacobian=J , _solution=T , _residual=R);
-
+#if 0
         if ( exporter->doExport() )
         {
 //            T->print(std::cout);
@@ -220,7 +220,9 @@ Convection_crb::solve( parameter_type const& mu, element_ptrtype& T )
             Log() << "exportResults done\n";
 
         }        
+#endif
     }
+
 }
 
 void
