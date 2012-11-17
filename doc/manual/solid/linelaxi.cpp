@@ -35,12 +35,14 @@ makeOptions()
 {
     Feel::po::options_description linelaxioptions( "LinElAxi options" );
     linelaxioptions.add_options()
-    ( "hsize", Feel::po::value<double>()->default_value( 0.1 ), "first h value to start convergence" )
-    ( "bctype", Feel::po::value<int>()->default_value( 1 ), "0 = strong Dirichlet, 1 = weak Dirichlet" )
-    ( "bccoeff", Feel::po::value<double>()->default_value( 1.0e+5 ), "coeff for weak Dirichlet conditions" )
-    ( "gr", Feel::po::value<double>()->default_value( 1.0 ), "component in r of the surfacic force" )
-    ( "gz", Feel::po::value<double>()->default_value( 1.0 ), "component in z of the surfacic force" )
-    ;
+        ( "E", Feel::po::value<double>()->default_value( 21e5 ), "Young modulus" )
+        ( "nu", Feel::po::value<double>()->default_value( 0.28 ), "Poisson coefficient" )
+        ( "hsize", Feel::po::value<double>()->default_value( 0.1 ), "first h value to start convergence" )
+        ( "bctype", Feel::po::value<int>()->default_value( 1 ), "0 = strong Dirichlet, 1 = weak Dirichlet" )
+        ( "bccoeff", Feel::po::value<double>()->default_value( 1.0e+5 ), "coeff for weak Dirichlet conditions" )
+        ( "gr", Feel::po::value<double>()->default_value( 1.0 ), "component in r of the surfacic force" )
+        ( "gz", Feel::po::value<double>()->default_value( 1.0 ), "component in z of the surfacic force" )
+        ;
     return linelaxioptions.add( Feel::feel_options() ) ;
 }
 inline
@@ -144,7 +146,7 @@ LinElAxi<Order>::run()
         return;
     }
 
-    this->changeRepository( boost::format( "examples/solid/%1%/%2%/P%3%/h_%4%/" )
+    this->changeRepository( boost::format( "doc/manual/solid/%1%/%2%/P%3%/h_%4%/" )
                             % this->about().appName()
                             % entity_type::name()
                             % Order
@@ -187,19 +189,17 @@ LinElAxi<Order>::run()
      * Data associated with the simulation
      */
     const double tol = 1e-5;
-    const double E = 21*1e5;
-    const double sigma = 0.28;
-    const double mu = E/( 2*( 1+sigma ) );
-    const double lambda = E*sigma/( ( 1+sigma )*( 1-2*sigma ) );
+    const double E = Environment::vm(_name="E").template as<double>();
+    const double nu = Environment::vm(_name="nu").template as<double>();
+    const double mu = E/( 2*( 1+nu ) );
+    const double lambda = E*nu/( ( 1+nu )*( 1-2*nu ) );
     const double density = 50;
     //    const double gravity = -density*9.81;
     const double gravity = -1.0;
     LOG(INFO) << "lambda = " << lambda << "\n"
           << "mu     = " << mu << "\n"
           << "gravity= " << gravity << "\n";
-    std::cout << "lambda = " << lambda << "\n"
-              << "mu     = " << mu << "\n"
-              << "gravity= " << gravity << "\n";
+
     auto gr = this->vm()["gr"].template as<double>();
     auto gz = this->vm()["gz"].template as<double>();
     /*
@@ -264,7 +264,7 @@ LinElAxi<Order>::exportResults( double time, element_type& U )
     exporter->step( time )->add( "displacement", disp );
 
     exporter->save();
-    LOG(INFO) << "[timer] exportResults(): " << toc( false ) << "\n";
+    LOG(INFO) << "[timer] exportResults(): " << toc( "export results", false ) << "\n";
 } // LinElAxi::export
 
 

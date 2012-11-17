@@ -214,7 +214,7 @@ Beam<nDim,nOrder>::run()
         a += integrate( markedfaces( mesh, "clamped" ),
                         - trans( ( 2*mu*deft+lambda*trace( deft )*Id )*N() )*id( v )
                         - trans( ( 2*mu*def+lambda*trace( def )*Id )*N() )*idt( u )
-                        + bcCoeff*trans( idt( u ) )*id( v )/hFace() );
+                        + bcCoeff*std::max(2*mu,lambda)*trans( idt( u ) )*id( v )/hFace() );
     }
 
     if ( M_bctype == 0 )
