@@ -3990,10 +3990,6 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
 {
     Debug( 5010 ) << "calling init(<composite>) begin\n";
     _M_mesh = __m;
-    if ( is_periodic )
-    {
-        _M_mesh->removeFacesFromBoundary( { periodicity.tag1(), periodicity.tag2() } );
-    }
 
     // todo : check worldsComm size and _M_functionspaces are the same!
     fusion::for_each( _M_functionspaces, detail::InitializeSpace<mesh_ptrtype,periodicity_type>( __m, periodicity,
