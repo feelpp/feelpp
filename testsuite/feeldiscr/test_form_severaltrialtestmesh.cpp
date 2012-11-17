@@ -265,7 +265,7 @@ void runGen( Application_ptrtype & theApp,const Expr1 & expr_f, const Expr2 & ex
     std::cout << "\n solve system start "<< std::endl;mytimer.restart();
     auto myprec = preconditioner( _matrix=AbB,
                                   _pc=PreconditionerType::LU_PRECOND,
-                                  _backend=BackendType::BACKEND_PETSC,
+                                  _backend=backend,
                                   _pcfactormatsolverpackage=MatSolverPackageType::MATSOLVER_UMFPACK );
 
     backend->solve( _matrix=AbB,
