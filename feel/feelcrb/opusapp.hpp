@@ -70,7 +70,9 @@ enum class SamplingMode
  *
  * @author Christophe Prud'homme
  */
-template<typename ModelType>
+    template<typename ModelType,
+             template < typename ReducedMethod > class RM=CRB,
+             template < typename ModelInterface > class Model=CRBModel>
 class OpusApp   : public Application
 {
     typedef Application super;
@@ -88,11 +90,20 @@ public:
 
     typedef typename model_type::element_type element_type;
 
-
+#if 0
+    //old
     typedef CRBModel<ModelType> crbmodel_type;
     typedef boost::shared_ptr<crbmodel_type> crbmodel_ptrtype;
     typedef CRB<crbmodel_type> crb_type;
     typedef boost::shared_ptr<crb_type> crb_ptrtype;
+#endif
+
+    typedef Model<ModelType> crbmodel_type;
+    typedef boost::shared_ptr<crbmodel_type> crbmodel_ptrtype;
+    typedef RM<crbmodel_type> crb_type;
+    typedef boost::shared_ptr<crb_type> crb_ptrtype;
+
+    typedef CRBModel<ModelType> crbmodelbilinear_type;
 
     OpusApp()
         :
@@ -167,6 +178,8 @@ public:
                 crb = crb_ptrtype( new crb_type( this->about().appName(),
                                                  this->vm() ,
                                                  model ) );
+
+                LOG(INFO) << "[OpusApp] get crb done" << "\n";
 
                 //VLOG(1) << "[OpusApp] get crb done" << "\n";
                 //crb->setTruthModel( model );
@@ -285,10 +298,13 @@ public:
             hdrs[CRBModelMode::SCM_ONLINE] = scmonlinehdrs;
             std::ostringstream ostr;
 
-            if( crb->printErrorDuringOfflineStep() )
-                crb->printErrorsDuringRbConstruction();
-            if ( crb->showMuSelection() )
-                crb->printMuSelection();
+            if( boost::is_same<  crbmodel_type , crbmodelbilinear_type >::value )
+            {
+                if( crb->printErrorDuringOfflineStep() )
+                    crb->printErrorsDuringRbConstruction();
+                if ( crb->showMuSelection() )
+                    crb->printMuSelection();
+            }
 
             auto exporter = Exporter<typename crbmodel_type::mesh_type>::New( "ensight" );
             exporter->step( 0 )->setMesh( model->functionSpace()->mesh() );
@@ -353,7 +369,11 @@ public:
 
                     //auto u_fem = model->solveRB( mu );
                     //auto u_fem = model->solveFemUsingOfflineEim( mu );
-                    auto u_fem = model->solveFemUsingOnlineEimPicard( mu );
+                    element_type u_fem;
+                    if( boost::is_same<  crbmodel_type , crbmodelbilinear_type >::value )
+                        u_fem = model->solveFemUsingOnlineEimPicard( mu );
+                    else
+                        u_fem = model->solve( mu );
 
                     std::ostringstream u_fem_str;
                     u_fem_str << "u_fem(" << mu_str.str() << ")";
@@ -423,6 +443,9 @@ public:
 
                     else
                     {
+                        if( ! boost::is_same<  crbmodel_type , crbmodelbilinear_type >::value )
+                            throw std::logic_error( "ERROR TYPE must be 2 when using CRBTrilinear (no error estimation)" );
+
                         std::vector<double> v = boost::assign::list_of( ofem[0] )( ofem[1] )( o.template get<0>() )( relative_estimated_error )( ti.elapsed() ) ( relative_error )( condition_number )( l2_error )( h1_error ) ;
                         if( proc_number == 0 )
                         {
