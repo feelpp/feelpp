@@ -323,6 +323,11 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
     typedef typename expression_type::template tensor<map_gmc_type> t_expr_type;
     typedef typename t_expr_type::shape shape;
 
+    // make sure that the form is close, ie the associated matrix is assembled
+    __form.matrix().close();
+    // make sure that the right hand side is closed, ie the associated vector is assembled
+    _M_rhs->close();
+
     //
     // start
     //
