@@ -932,6 +932,33 @@ public:
         M_preconditioner = preconditioner;
     }
 
+    /**
+     * register a backend observer for the delete signal of backend
+     */
+    template<typename Observer>
+    void
+    addDeleteObserver( Observer const& obs )
+        {
+            M_deleteObservers.connect( obs );
+        }
+    /**
+     * register a backend observer for the delete signal of backend that is a
+     * shared_ptr<>
+     */
+    template<typename Observer>
+    void
+    addDeleteObserver( boost::shared_ptr<Observer> const& obs )
+        {
+            M_deleteObservers.connect(boost::bind(&Observer::operator(), obs));
+        }
+    /**
+     * send the delete signal to all observers
+     */
+    void
+    sendDeleteSignal()
+        {
+            M_deleteObservers();
+        }
     //@}
 
 
@@ -990,7 +1017,10 @@ private:
     bool M_showKSPConvergedReason, M_showSNESConvergedReason;
     //std::map<std::string,boost::tuple<std::string,std::string> > M_sub;
 
+    boost::signals2::signal<void()> M_deleteObservers;
 };
+
+
 typedef Backend<double> backend_type;
 typedef boost::shared_ptr<backend_type> backend_ptrtype;
 
@@ -1060,6 +1090,9 @@ BOOST_PARAMETER_FUNCTION(
 
     else
     {
+        if (  git != detail::BackendManager::instance().end() && ( rebuild == true ) )
+            git->second->sendDeleteSignal();
+
         VLOG(2) << "[backend] building backend name=" << name << " kind=" << kind << " rebuild=" << rebuild << "\n";
 
         backend_ptrtype b;
