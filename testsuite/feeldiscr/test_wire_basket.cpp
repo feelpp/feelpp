@@ -211,7 +211,7 @@ void run( Application_ptrtype & theApp )
     w.setOnes();
     z.setOnes();
     //std::cout << "measure from mass = " << M->energy( w, w ) << "\n";
-    BOOST_CHECK_CLOSE( M->energy( w, w ), 12., 1e-13 );
+    BOOST_CHECK_CLOSE( M->energy( w, w ), 12., 1e-12 );
 
 
 
