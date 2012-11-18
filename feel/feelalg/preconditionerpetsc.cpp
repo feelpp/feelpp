@@ -139,6 +139,7 @@ void PreconditionerPetsc<T>::clear ()
         PetscInitialized( &is_petsc_initialized );
         if ( is_petsc_initialized )
         {
+            LOG(INFO) << "calling PCDestroy\n";
             PETSc::PCDestroy( M_pc );
         }
     }
