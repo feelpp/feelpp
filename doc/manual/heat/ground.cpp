@@ -200,18 +200,18 @@ Ground<Dim,Order>::Ground()
     using namespace Feel::vf;
 
 
-    Log() << "meshSize = " << meshSize << "\n"
-          << "D = "<<D<<"\n"
-          << "W = " << W << "\n"
-          << "TR = " << TR << "\n"
-          << "TA = " << TA << "\n"
-          << "rho0 = " << rho0 << "\n"
-          << "k0 = " << k0 << "\n"
-          << "c0 = " << c0 << "\n"
-          << "rho1 = " << rho1 << "\n"
-          << "k1 = " << k1 << "\n"
-          << "c1 = " << c1 << "\n"
-          << "frequency = " << frequency << "\n";
+    LOG(INFO) << "meshSize = " << meshSize << "\n"
+              << "D = "<<D<<"\n"
+              << "W = " << W << "\n"
+              << "TR = " << TR << "\n"
+              << "TA = " << TA << "\n"
+              << "rho0 = " << rho0 << "\n"
+              << "k0 = " << k0 << "\n"
+              << "c0 = " << c0 << "\n"
+              << "rho1 = " << rho1 << "\n"
+              << "k1 = " << k1 << "\n"
+              << "c1 = " << c1 << "\n"
+              << "frequency = " << frequency << "\n";
 
     /*
      * First we create the mesh
