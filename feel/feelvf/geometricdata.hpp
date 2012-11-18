@@ -71,13 +71,14 @@ const size_type jkp = vm::KB|vm::JACOBIAN|vm::POINT;
 #if 1
 # define VF_GD                                                          \
    BOOST_PP_TUPLE_TO_LIST(                                              \
-      20,                                                               \
+       21,                                                              \
       (                                                                 \
        ( N       , GDN       , 0, jkbn, Vectorial, _M_gmc->unitNormal( q )[ c1 ] , 0), \
        ( Nx      , GDNx      , 0, jkbn, Scalar   , _M_gmc->unitNormal( q )[ 0 ]  , 0), \
        ( Ny      , GDNy      , 1, jkbn, Scalar   , _M_gmc->unitNormal( q )[ 1 ]  , 0), \
        ( Nz      , GDNz      , 2, jkbn, Scalar   , _M_gmc->unitNormal( q )[ 2 ]  , 0), \
        ( Nref    , GDNref    , 0, 0, Vectorial, _M_gmc->refNormal( q )[ c1 ] , 0), \
+       ( normalNorm, GDnormalNorm, 0, 0, Scalar, _M_gmc->normalNorm( q ) , 0), \
        ( T       , GDT       , 0, jt, Vectorial, _M_gmc->tangent( q )[ c1 ], 0), \
        ( Tx      , GDTx      , 0, jt, Scalar   , _M_gmc->tangent( q )[ 0 ] , 0), \
        ( Ty      , GDTy      , 1, jt, Scalar   , _M_gmc->tangent( q )[ 1 ] , 0), \
