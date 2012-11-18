@@ -585,10 +585,10 @@ TestHCurl::shape_functions( gmsh_ptrtype ( *one_element_mesh_desc_fun )( double 
             auto int_u_t = integrate( markedfaces( oneelement_mesh, edge ), trans( T() )*( JinvT() )*idv( u_vec[i] ) ).evaluate()( 0,0 );
 
             if ( edgeid == i )
-                BOOST_CHECK_CLOSE( int_u_t, 1, 1e-14 );
+                BOOST_CHECK_CLOSE( int_u_t, 1, 1e-13 );
 
             else
-                BOOST_CHECK_SMALL( int_u_t, 1e-14 );
+                BOOST_CHECK_SMALL( int_u_t, 1e-13 );
 
             checkidv[3*i+edgeid] = int_u_t;
 
@@ -598,10 +598,10 @@ TestHCurl::shape_functions( gmsh_ptrtype ( *one_element_mesh_desc_fun )( double 
             auto form_v_t = inner_product( u_vec[i], *F );
 
             if ( edgeid == i )
-                BOOST_CHECK_CLOSE( form_v_t, 1, 1e-14 );
+                BOOST_CHECK_CLOSE( form_v_t, 1, 1e-13 );
 
             else
-                BOOST_CHECK_SMALL( form_v_t, 1e-14 );
+                BOOST_CHECK_SMALL( form_v_t, 1e-13 );
 
             checkform1[3*i+edgeid] = form_v_t;
 
@@ -610,8 +610,16 @@ TestHCurl::shape_functions( gmsh_ptrtype ( *one_element_mesh_desc_fun )( double 
         }
         BOOST_TEST_MESSAGE( "check integral evaluation on element using Stokes theorem\n" );
         // check the curl (should be either 1 or 0)
+        auto int_1_v = integrate( elements( oneelement_mesh ), cst(1.0) ).evaluate()( 0,0 );
+        auto int_detJ_v = integrate( elements( oneelement_mesh ), detJ() ).evaluate()( 0,0 );
+        auto int_invdetJ_v = integrate( elements( oneelement_mesh ), 1./detJ() ).evaluate()( 0,0 );
+
+        BOOST_TEST_MESSAGE( "int_1_v = " << int_1_v << "\n" );
+        BOOST_TEST_MESSAGE( "int_detJ_v = " << int_detJ_v << "\n" );
+        BOOST_TEST_MESSAGE( "int_invdetJ_v = " << int_invdetJ_v << "\n" );
+
         auto int_curlx_v = integrate( elements( oneelement_mesh ), curlxv( u_vec[i] )/detJ() ).evaluate()( 0,0 );
-        auto int_v_t = integrate( boundaryfaces( oneelement_mesh ), trans( T() )*( JinvT() )*idv( u_vec[i] ) ).evaluate()( 0,0 );
+        auto int_v_t = integrate( boundaryfaces( oneelement_mesh ), trans( T() )*idv( u_vec[i] )/(normalNorm()*detJ()) ).evaluate()( 0,0 );
         BOOST_CHECK_CLOSE( int_v_t, 1, 1e-13 );
         BOOST_CHECK_CLOSE( int_curlx_v, int_v_t, 1e-13 );
 
@@ -685,7 +693,7 @@ BOOST_AUTO_TEST_CASE( test_hcurl_N0_real )
     t.shape_functions( &Feel::oneelement_geometry_real_1 );
     BOOST_TEST_MESSAGE( "test_hcurl_N0 on one real element done" );
 }
-
+#if 1
 BOOST_AUTO_TEST_CASE( test_hcurl_N0_real_2 )
 {
     BOOST_TEST_MESSAGE( "test_hcurl_N0 on one real element" );
@@ -709,7 +717,7 @@ BOOST_AUTO_TEST_CASE( test_hcurl_example_1 )
     t.exampleProblem1();
     BOOST_TEST_MESSAGE( "test_hcurl_N0 on example 1 done" );
 }
-
+#endif
 BOOST_AUTO_TEST_SUITE_END()
 #else
 
