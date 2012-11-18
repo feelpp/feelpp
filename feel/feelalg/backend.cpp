@@ -134,6 +134,8 @@ Backend<T>::Backend( po::variables_map const& vm, std::string const& prefix, Wor
 template <typename T>
 Backend<T>::~Backend()
 {
+    LOG(INFO) << "Sending delete signal to all observers...\n";
+    this->sendDeleteSignal();
     //this->clear ();
 }
 template <typename T>
