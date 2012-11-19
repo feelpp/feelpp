@@ -166,6 +166,7 @@ public:
     CRBTrilinear()
         :
         super(),
+        M_nlsolver( SolverNonLinear<double>::build( SOLVERS_PETSC, Environment::worldComm() ) ),
         M_model(),
         M_output_index( 0 ),
         M_tolerance( 1e-2 ),
@@ -188,6 +189,7 @@ public:
                name,
                ( boost::format( "%1%-%2%-%3%" ) % name % vm["crb.output-index"].template as<int>() % vm["crb.error-type"].template as<int>() ).str(),
                vm ),
+        M_nlsolver( SolverNonLinear<double>::build( SOLVERS_PETSC, Environment::worldComm() ) ),
         M_model(),
         M_backend( backend_type::build( vm ) ),
         M_output_index( vm["crb.output-index"].template as<int>() ),
@@ -211,6 +213,7 @@ public:
                name,
                ( boost::format( "%1%-%2%-%3%" ) % name % vm["crb.output-index"].template as<int>() % vm["crb.error-type"].template as<int>() ).str(),
                vm ),
+        M_nlsolver( SolverNonLinear<double>::build( SOLVERS_PETSC, Environment::worldComm() ) ),
         M_model(),
         M_backend( backend_type::build( vm ) ),
         M_output_index( vm["crb.output-index"].template as<int>() ),
@@ -404,7 +407,7 @@ private:
     std::vector < std::vector < matrixN_type> >  M_Aqm_tril_pr;
     mutable matrixN_type M_bilinear_terms;
     mutable vectorN_type M_linear_terms;
-
+    boost::shared_ptr<SolverNonLinear<double> > M_nlsolver;
 
 
     // ------ from crb
@@ -422,10 +425,12 @@ private:
     // sampling of parameter space to build WN
     sampling_ptrtype M_WNmu;
     sampling_ptrtype M_WNmu_complement;
+
+    scm_ptrtype M_scm;
+
     //export
     export_ptrtype exporter;
 
-    scm_ptrtype M_scm;
 
     friend class boost::serialization::access;
     // When the class Archive corresponds to an output archive, the
@@ -560,6 +565,11 @@ CRBTrilinear<TruthModelType>::offline()
         {
             M_Fqm_pr[q].resize( 1 );
         }
+
+        M_Lqm_pr.resize( M_model->Ql( M_output_index ) );
+        for(int q=0; q<M_model->Ql( M_output_index ); q++)
+            M_Lqm_pr[q].resize( 1 );
+
     }//end of if( rebuild_database )
 #if 1
     else
@@ -663,7 +673,7 @@ CRBTrilinear<TruthModelType>::offline()
         }//loop over q
 
 
-        LOG(INFO) << "[CRBTrilinear::offline] compute Fq_pr, Fq_du" << "\n";
+        LOG(INFO) << "[CRBTrilinear::offline] compute Fq_pr" << "\n";
 
         for ( size_type q = 0; q < M_model->Ql( 0 ); ++q )
         {
@@ -673,6 +683,19 @@ CRBTrilinear<TruthModelType>::offline()
             {
                 int index = M_N-l;
                 M_Fqm_pr[q][0]( index ) = M_model->Fqm( 0, q, 0, M_WN[index] );
+            }
+        }//loop over q
+
+        LOG(INFO) << "[CRB::offline] compute Lq_pr" << "\n";
+
+        for ( size_type q = 0; q < M_model->Ql( M_output_index ); ++q )
+        {
+            M_Lqm_pr[q][0].conservativeResize( M_N );
+
+            for ( size_type l = 1; l <= number_of_added_elements; ++l )
+            {
+                int index = M_N-l;
+                M_Lqm_pr[q][0]( index ) = M_model->Fqm( M_output_index, q, 0, M_WN[index] );
             }
         }//loop over q
 
@@ -791,6 +814,7 @@ CRBTrilinear<TruthModelType>::lb( size_type N, parameter_type const& mu, vectorN
 
     vectorN_type R( (int) N );
     matrixN_type J( (int) N , (int) N );
+    uN.setZero( (int) N );
 
     double *r_data = R.data();
     double *j_data = J.data();
@@ -820,13 +844,13 @@ CRBTrilinear<TruthModelType>::lb( size_type N, parameter_type const& mu, vectorN
         M_model->computeBetaQm( current_mu );
         this->updateLinearTerms( current_mu );
 
-        backend_primal_problem->nlSolver()->map_dense_jacobian = boost::bind( &self_type::updateJacobian, boost::ref( *this ), _1, _2  , current_mu );
-        backend_primal_problem->nlSolver()->map_dense_residual = boost::bind( &self_type::updateResidual, boost::ref( *this ), _1, _2  , current_mu );
+        M_nlsolver->map_dense_jacobian = boost::bind( &self_type::updateJacobian, boost::ref( *this ), _1, _2  , current_mu );
+        M_nlsolver->map_dense_residual = boost::bind( &self_type::updateResidual, boost::ref( *this ), _1, _2  , current_mu );
 
         updateResidual( map_uN, map_R , current_mu );
         updateJacobian( map_uN, map_J , current_mu );
 
-        backend_primal_problem->nlSolver()->solve( map_J , map_uN , map_R, 1e-10, 100);
+        M_nlsolver->solve( map_J , map_uN , map_R, 1e-10, 100);
     }
 
 
@@ -839,9 +863,7 @@ CRBTrilinear<TruthModelType>::lb( size_type N, parameter_type const& mu, vectorN
     {
         L += betaFqm[M_output_index][q][0]*M_Lqm_pr[q][0].head( N );
     }
-
     output = L.dot( uN );
-
     LOG(INFO) << "[CRBTrilinear::lb] computation of the output done";
 
     google::FlushLogFiles(google::GLOG_INFO);
@@ -922,7 +944,6 @@ CRBTrilinear<TruthModelType>::updateResidual( const map_dense_vector_type& map_X
         }
     }
     map_R += temp * map_X ;
-
 }
 
 
