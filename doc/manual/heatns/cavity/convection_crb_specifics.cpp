@@ -190,6 +190,31 @@ void Convection_crb::init()
     M_InitialGuessQm[0][0] = ini_cond;
 
 
+    // right hand side
+#if CONVECTION_DIM == 2
+    form1( Xh, _vector=M_Fqm[0][0][0] ) =
+        integrate ( elements( mesh ),
+                    // buyoancy force
+                    -expansion*trans( vec( constant( 0. ),idv( t ) ) )*id( v ) );
+#else
+    // right hand side
+    form1( Xh, _vector=M_Fqm[0][0][0] ) =
+        integrate ( elements( mesh ),
+                    // buyoancy force
+                    -expansion*trans( vec( cst(0.), constant( 0. ),idv( t ) ) )*id( v ) );
+#endif
+    M_Fqm[0][0][0]->close();
+
+    form1( Xh, _vector=M_Fqm[0][1][0] ) =
+        integrate ( markedfaces( mesh, "Tflux"),
+                    // heat flux on the right side
+                    - id( s )  );
+    M_Fqm[0][1][0]->close();
+
+    //output : \int_{\Omega} T
+    form1( _test=Xh, _vector=M_Fqm[1][0][0] ) = integrate( _range=markedfaces( mesh,"Tflux" ), _expr= id(s) );//*(1.0/area) ) ;
+    M_Fqm[1][0][0]->close();
+
 }
 
 // \return the number of terms in affine decomposition of left hand
@@ -223,7 +248,7 @@ int Convection_crb::Nl() const
 
 int Convection_crb::mMaxF( int output_index, int q)
 {
-    if ( q < 1 )
+    if ( q < Ql(output_index) )
         return 1;
     else
         throw std::logic_error( "[Model] ERROR : try to acces to mMaxF(output_index,q) with a bad value of q");
@@ -241,8 +266,7 @@ int Convection_crb::mMaxInitialGuess( int q )
  */
 int Convection_crb::Ql( int l ) const
 {
-//    if ( l == 0 ) return 2;
-
+    if ( l == 0 ) return 2;
     return 1;
 }
 
@@ -267,16 +291,17 @@ Convection_crb::computeBetaQm( parameter_type const& mu, double )
     M_betaAqm[1].resize(1);
     M_betaAqm[2].resize(1);
     M_betaAqm[3].resize(1);
-    M_betaAqm[0][0] = 1/math::sqrt( mu( 0 ) ); // k_1
-    M_betaAqm[1][0] = 1/( mu( 1 )*math::sqrt( mu ( 0 ) ) ); // k_2
+    M_betaAqm[0][0] = 1/math::sqrt( mu( 0 ) );
+    M_betaAqm[1][0] = 1/( mu( 1 )*math::sqrt( mu ( 0 ) ) );
     M_betaAqm[2][0] = 1;
     M_betaAqm[3][0] = 1;
 
     M_betaFqm.resize( Nl() );
     M_betaFqm[0].resize( Ql( 0 ) );
     M_betaFqm[0][0].resize(1);
-    M_betaFqm[0][0][0] = 1. ; //mu( 2 ); // delta
-    //    M_betaFqm[0]( 1 ) = mu( 3 ); // phi
+    M_betaFqm[0][1].resize(1);
+    M_betaFqm[0][0][0] = 1. ;
+    M_betaFqm[0][1][0] = 1/( mu( 1 )*math::sqrt( mu ( 0 ) ) );
 
     M_betaFqm[1].resize( Ql( 1 ) );
     M_betaFqm[1][0].resize(1);
