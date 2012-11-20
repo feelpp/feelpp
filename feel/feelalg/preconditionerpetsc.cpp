@@ -380,14 +380,16 @@ void PreconditionerPetsc<T>::setPetscPreconditionerType ( const PreconditionerTy
 
 #endif
 
+    // before configurePC else pc-view doesn't work really
+    if ( preconditioner_type == FIELDSPLIT_PRECOND )
+        setPetscFieldSplitPreconditionerType( pc, worldComm, name );
+
     configurePC( pc, worldComm, "", name );
 
     if ( preconditioner_type == ASM_PRECOND ||
          preconditioner_type == GASM_PRECOND ||
          preconditioner_type == BLOCK_JACOBI_PRECOND )
         setPetscSubpreconditionerType( pc, worldComm, name );
-    else if ( preconditioner_type == FIELDSPLIT_PRECOND )
-        setPetscFieldSplitPreconditionerType( pc, worldComm, name );
 }
 
 
@@ -479,6 +481,20 @@ PreconditionerPetsc<T>::setPetscFieldSplitPreconditionerType( PC& pc,
     ierr = PCFieldSplitSetType( pc, theFieldSplitType );
     CHKERRABORT( worldComm.globalComm(),ierr );
 
+    if ( t == "schur" )
+    {
+        PCFieldSplitSchurFactType theSchurFactType = PC_FIELDSPLIT_SCHUR_FACT_FULL;
+        std::string t2 = Environment::vm(_name="fieldsplit-schur-fact-type",_prefix=prefix,_worldcomm=worldComm).template as<std::string>();
+        if (t2 == "diag")  theSchurFactType = PC_FIELDSPLIT_SCHUR_FACT_DIAG;
+        if (t2 == "lower")  theSchurFactType = PC_FIELDSPLIT_SCHUR_FACT_LOWER;
+        if (t2 == "upper")  theSchurFactType = PC_FIELDSPLIT_SCHUR_FACT_UPPER;
+        if (t2 == "full")  theSchurFactType = PC_FIELDSPLIT_SCHUR_FACT_FULL;
+
+        ierr = PCFieldSplitSetSchurFactType( pc,theSchurFactType );
+        CHKERRABORT( worldComm.globalComm(),ierr );
+    }
+
+
     // call necessary before PCFieldSplitGetSubKSP
     ierr = PCSetUp( pc );
     CHKERRABORT( worldComm.globalComm(),ierr );
@@ -496,7 +512,7 @@ PreconditionerPetsc<T>::setPetscFieldSplitPreconditionerType( PC& pc,
         std::string prefixSplit = prefixvm(prefix , (boost::format( "fieldsplit-%1%" )  %i ).str() );
 
         std::string subksptype =  Environment::vm(_name="ksp-type",_prefix=prefixSplit).template as<std::string>();
-        std::cout<< " subksptype " << subksptype << std::endl;
+        //std::cout<< " subksptype " << subksptype << std::endl;
         ierr = KSPSetType ( subksps[i], subksptype.c_str() );
         CHKERRABORT( worldComm.globalComm(),ierr );
 
