@@ -665,7 +665,7 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
     KSPSetOperators( M_ksp, jac->mat(), jac->mat(),
                      PetscGetMatStructureEnum(this->precMatrixStructure()) );
 
-    if ( this->preconditionerType() == FIELDSPLIT_PRECOND )
+    if ( !this->M_preconditioner && this->preconditionerType() == FIELDSPLIT_PRECOND )
         {
             jac->updatePCFieldSplit( M_pc );
         }
