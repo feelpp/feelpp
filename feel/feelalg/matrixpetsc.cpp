@@ -446,7 +446,7 @@ void MatrixPetsc<T>::setIndexSplit( std::vector< std::vector<int> > const &index
         CHKERRABORT( this->comm(),ierr );
 
 #if 0
-        ISView( _M_petscIS[i],PETSC_VIEWER_STDOUT_SELF );
+        ISView( _M_petscIS[i],PETSC_VIEWER_STDOUT_WORLD ); // PETSC_VIEWER_STDOUT_SELF
 
         PetscInt n;
         /*

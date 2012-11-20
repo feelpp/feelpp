@@ -334,7 +334,7 @@ SolverLinearPetsc<T>::solve ( MatrixSparse<T> const&  matrix_in,
     rhs->close ();
 
 
-    if ( this->preconditionerType() == FIELDSPLIT_PRECOND )
+    if ( !this->M_preconditioner && this->preconditionerType() == FIELDSPLIT_PRECOND )
         matrix->updatePCFieldSplit( _M_pc );
 
     //   // If matrix != precond, then this means we have specified a

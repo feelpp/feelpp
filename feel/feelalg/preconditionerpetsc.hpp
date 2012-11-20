@@ -161,11 +161,9 @@ public:
 
     static void setPetscSubpreconditionerType( PC& pc, WorldComm const& worldComm=Environment::worldComm(), std::string const& prefix="" );
 
-    static void setPetscFieldSplitPreconditionerType( const PCCompositeType type,
-                                                      const KSPType * subksptypes,
-                                                      const PCType * subpctypes,
-                                                      PC& pc,
-                                                      WorldComm const& worldComm=Environment::worldComm() );
+    static void setPetscFieldSplitPreconditionerType( PC& pc,
+                                                      WorldComm const& worldComm=Environment::worldComm(),
+                                                      std::string const& prefix="" );
 
 private:
     /**
