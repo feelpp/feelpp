@@ -694,9 +694,38 @@ po::options_description backend_options( std::string const& prefix )
 
     for ( uint16_type i=0; i<5; ++i )
     {
+        std::string prefixfieldsplit = ( boost::format( "%1%fieldsplit-%2%" ) %prefixvm( prefix,"" ) %i ).str();
+
         _options.add_options()
-        ( ( boost::format( "%1%fieldsplit-%2%-pc-type" ) %prefixvm( prefix,"" ) %i ).str().c_str(), Feel::po::value<std::string>()->default_value( "lu" ), "type of fieldsplit preconditioners" )
-        ( ( boost::format( "%1%fieldsplit-%2%-ksp-type" ) %prefixvm( prefix,"" ) %i ).str().c_str(), Feel::po::value<std::string>()->default_value( "gmres" ), "type of fieldsplit solver" )
+       ( prefixvm( prefixfieldsplit,"pc-type" ).c_str(), Feel::po::value<std::string>()->default_value( (i==0)?"lu":"none" ), "type of fieldsplit preconditioners" )
+       ( prefixvm( prefixfieldsplit,"sub-pc-type" ).c_str(), Feel::po::value<std::string>()->default_value( "lu" ), "type of fieldsplit preconditioners" )
+            ( prefixvm( prefixfieldsplit,"ksp-type").c_str(), Feel::po::value<std::string>()->default_value( /*"gmres"*/"preonly" ), "type of fieldsplit solver" )
+#if defined(FEELPP_HAS_MUMPS) && PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,2,0 )
+       (  prefixvm( prefixfieldsplit,"pc-factor-mat-solver-package-type").c_str(), Feel::po::value<std::string>()->default_value( "mumps" ),
+          "sets the software that is used to perform the factorization (petsc,umfpack, spooles, petsc, superlu, superlu_dist, mumps,...)" )
+       (  prefixvm( prefixfieldsplit,"sub-pc-factor-mat-solver-package-type").c_str(), Feel::po::value<std::string>()->default_value( "mumps" ),
+          "sets the software that is used to perform the factorization (petsc,umfpack, spooles, petsc, superlu, superlu_dist, mumps,...)" )
+#else
+       ( prefixvm( prefixfieldsplit,"pc-factor-mat-solver-package-type").c_str(), Feel::po::value<std::string>()->default_value( "petsc" ),
+              "sets the software that is used to perform the factorization (petsc,umfpack, spooles, petsc, superlu, superlu_dist, mumps,...)" )
+       ( prefixvm( prefixfieldsplit,"sub-pc-factor-mat-solver-package-type").c_str(), Feel::po::value<std::string>()->default_value( "petsc" ),
+              "sets the software that is used to perform the factorization (petsc,umfpack, spooles, petsc, superlu, superlu_dist, mumps,...)" )
+#endif
+
+       ( prefixvm( prefixfieldsplit,"pc-gasm-type" ).c_str(), Feel::po::value<std::string>()->default_value( "restrict" ), "type of gasm (basic, restrict, interpolate, none)" )
+       ( prefixvm( prefixfieldsplit,"pc-gasm-overlap" ).c_str(), Feel::po::value<int>()->default_value( 2 ), "number of overlap levels" )
+       ( prefixvm( prefixfieldsplit,"pc-asm-type" ).c_str(), Feel::po::value<std::string>()->default_value( "restrict" ), "type of asm (basic, restrict, interpolate, none)" )
+       ( prefixvm( prefixfieldsplit,"pc-asm-overlap" ).c_str(), Feel::po::value<int>()->default_value( 2 ), "number of overlap levels" )
+
+       ( prefixvm( prefixfieldsplit,"pc-factor-levels" ).c_str(), Feel::po::value<int>()->default_value( 3 ), "Sets the number of levels of fill to use for ilu as a sub-preconditioner" )
+       ( prefixvm( prefixfieldsplit,"sub-pc-factor-levels" ).c_str(), Feel::po::value<int>()->default_value( 3 ), "Sets the number of levels of fill to use for ilu as a sub-preconditioner" )
+       ( prefixvm( prefixfieldsplit,"pc-factor-fill" ).c_str(), Feel::po::value<double>()->default_value( 6 ),
+         "Indicate the amount of fill you expect in the factored matrix, fill = number nonzeros in factor/number nonzeros in original matrix." )
+       ( prefixvm( prefixfieldsplit,"sub-pc-factor-fill" ).c_str(), Feel::po::value<double>()->default_value( 6 ),
+         "Indicate the amount of fill you expect in the factored matrix, fill = number nonzeros in factor/number nonzeros in original matrix." )
+
+       ( prefixvm( prefixfieldsplit,"pc-view" ).c_str(), Feel::po::value<bool>()->default_value( false ), "display sub-preconditioner information" )
+       ( prefixvm( prefixfieldsplit,"sub-pc-view" ).c_str(), Feel::po::value<bool>()->default_value( false ), "display sub-preconditioner information" )
         ;
 
     }
