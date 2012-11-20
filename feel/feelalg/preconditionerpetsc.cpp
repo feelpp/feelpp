@@ -483,6 +483,7 @@ PreconditionerPetsc<T>::setPetscFieldSplitPreconditionerType( PC& pc,
 
     if ( t == "schur" )
     {
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,3,0 )
         PCFieldSplitSchurFactType theSchurFactType = PC_FIELDSPLIT_SCHUR_FACT_FULL;
         std::string t2 = Environment::vm(_name="fieldsplit-schur-fact-type",_prefix=prefix,_worldcomm=worldComm).template as<std::string>();
         if (t2 == "diag")  theSchurFactType = PC_FIELDSPLIT_SCHUR_FACT_DIAG;
@@ -492,6 +493,7 @@ PreconditionerPetsc<T>::setPetscFieldSplitPreconditionerType( PC& pc,
 
         ierr = PCFieldSplitSetSchurFactType( pc,theSchurFactType );
         CHKERRABORT( worldComm.globalComm(),ierr );
+#endif
     }
 
 
