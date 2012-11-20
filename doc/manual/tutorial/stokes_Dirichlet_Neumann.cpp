@@ -323,18 +323,11 @@ Stokes_Dirichlet_Neumann::run()
     auto q = V.element<1>( "p" );
     //# endmarker4 #
 
-    Log() << "Data Summary:\n";
-    Log() << "   hsize = " << meshSize << "\n";
-    Log() << "  export = " << this->vm().count( "export" ) << "\n";
-    Log() << "      mu = " << mu << "\n";
-    Log() << " bccoeff = " << penalbc << "\n";
-
-    std::cout << "Data Summary:\n";
-    std::cout << "   hsize = " << meshSize << "\n";
-    std::cout << "  export = " << this->vm().count( "export" ) << "\n";
-    std::cout << "      mu = " << mu << "\n";
-    std::cout << " bccoeff = " << penalbc << "\n";
-
+    LOG(INFO) << "Data Summary:\n";
+    LOG(INFO) << "   hsize = " << meshSize << "\n";
+    LOG(INFO) << "  export = " << this->vm().count( "export" ) << "\n";
+    LOG(INFO) << "      mu = " << mu << "\n";
+    LOG(INFO) << " bccoeff = " << penalbc << "\n";
 
 
     //# marker5 #
@@ -367,7 +360,7 @@ Stokes_Dirichlet_Neumann::run()
     // right hand side
     auto stokes_rhs = form1( _test=Xh, _vector=F );
     stokes_rhs += integrate( elements( mesh ),inner( f,id( v ) ) );
-    Log() << "[stokes] vector local assembly done\n";
+    LOG(INFO) << "[stokes] vector local assembly done\n";
     stokes_rhs += integrate( markedfaces( mesh,"inlet" ), inner( u_exact,-SigmaN+penalbc*id( v )/hFace() ) );
 
 
@@ -425,7 +418,7 @@ Stokes_Dirichlet_Neumann::run()
     std::cout<<"start solving"<<"\n";
     M_backend->solve( _matrix=D, _solution=U, _rhs=F );
     std::cout<<"end solving"<<"\n";
-    std::cout<<"Solution"<<U<<"\n";
+    //std::cout<<"Solution"<<U<<"\n";
 #if 0
     U.save( _path="." );
     u.save( _path="." );
@@ -440,12 +433,12 @@ Stokes_Dirichlet_Neumann::run()
 
 
 
-    Log() << "[dof]         number of dof: " << Xh->nDof() << "\n";
-    Log() << "[dof]    number of dof/proc: " << Xh->nLocalDof() << "\n";
-    Log() << "[dof]      number of dof(U): " << Xh->functionSpace<0>()->nDof()  << "\n";
-    Log() << "[dof] number of dof/proc(U): " << Xh->functionSpace<0>()->nLocalDof()  << "\n";
-    Log() << "[dof]      number of dof(P): " << Xh->functionSpace<1>()->nDof()  << "\n";
-    Log() << "[dof] number of dof/proc(P): " << Xh->functionSpace<1>()->nLocalDof()  << "\n";
+    LOG(INFO) << "[dof]         number of dof: " << Xh->nDof() << "\n";
+    LOG(INFO) << "[dof]    number of dof/proc: " << Xh->nLocalDof() << "\n";
+    LOG(INFO) << "[dof]      number of dof(U): " << Xh->functionSpace<0>()->nDof()  << "\n";
+    LOG(INFO) << "[dof] number of dof/proc(U): " << Xh->functionSpace<0>()->nLocalDof()  << "\n";
+    LOG(INFO) << "[dof]      number of dof(P): " << Xh->functionSpace<1>()->nDof()  << "\n";
+    LOG(INFO) << "[dof] number of dof/proc(P): " << Xh->functionSpace<1>()->nLocalDof()  << "\n";
 } // Stokes::run
 
 
@@ -462,7 +455,7 @@ Stokes_Dirichlet_Neumann::exportResults( ExprUExact u_exact, ExprPExact p_exact,
 #if defined( FEELPP_USE_LM )
     auto lambda = U.element<2>();
     auto nu = V.element<2>();
-    Log() << "value of the Lagrange multiplier lambda= " << lambda( 0 ) << "\n";
+    LOG(INFO) << "value of the Lagrange multiplier lambda= " << lambda( 0 ) << "\n";
     std::cout << "value of the Lagrange multiplier lambda= " << lambda( 0 ) << "\n";
 #endif
 
@@ -476,11 +469,11 @@ Stokes_Dirichlet_Neumann::exportResults( ExprUExact u_exact, ExprPExact p_exact,
     std::cout << "||u_error||_2 = " << math::sqrt( u_errorL2 ) << "\n";;
 
     double meas = integrate( elements( u.mesh() ), cst( 1.0 ) ).evaluate()( 0, 0 );
-    Log() << "[stokes] measure(Omega)=" << meas << " (should be equal to 1)\n";
+    LOG(INFO) << "[stokes] measure(Omega)=" << meas << " (should be equal to 1)\n";
     std::cout << "[stokes] measure(Omega)=" << meas << " (should be equal to 1)\n";
 
     double mean_p = integrate( elements( u.mesh() ), idv( p ) ).evaluate()( 0, 0 )/meas;
-    Log() << "[stokes] mean(p)=" << mean_p << "\n";
+    LOG(INFO) << "[stokes] mean(p)=" << mean_p << "\n";
     std::cout << "[stokes] mean(p)=" << mean_p << "\n";
 
     ////////////////////////////////////////////////////////////////////////////////////////
@@ -492,7 +485,7 @@ Stokes_Dirichlet_Neumann::exportResults( ExprUExact u_exact, ExprPExact p_exact,
     double p_errorL2 = integrate( elements( u.mesh() ), ( idv( p ) - p_exact )*( idv( p )-p_exact ) ).evaluate()( 0, 0 );
     std::cout << "||p_error||_2 = " << math::sqrt( p_errorL2 ) << "\n";;
 
-    Log() << "[stokes] solve for D done\n";
+    LOG(INFO) << "[stokes] solve for D done\n";
 
 
     double u_errorH1 = integrate( elements( u.mesh() ),  trans( idv( u )-u_exact )*( idv( u )-u_exact )).evaluate()( 0, 0 ) +  integrate( elements( u.mesh() ),  trans( gradv( u ) -  gradv ( u_exact_proj ) )*( gradv( u ) -  gradv ( u_exact_proj )) ).evaluate()( 0, 0 );
@@ -501,11 +494,11 @@ Stokes_Dirichlet_Neumann::exportResults( ExprUExact u_exact, ExprPExact p_exact,
 
 
     double mean_div_u = integrate( elements( u.mesh() ), divv( u ) ).evaluate()( 0, 0 );
-    Log() << "[stokes] mean_div(u)=" << mean_div_u << "\n";
+    LOG(INFO) << "[stokes] mean_div(u)=" << mean_div_u << "\n";
     std::cout << "[stokes] mean_div(u)=" << mean_div_u << "\n";
 
     double div_u_error_L2 = integrate( elements( u.mesh() ), divv( u )*divv( u ) ).evaluate()( 0, 0 );
-    Log() << "[stokes] ||div(u)||_2=" << math::sqrt( div_u_error_L2 ) << "\n";
+    LOG(INFO) << "[stokes] ||div(u)||_2=" << math::sqrt( div_u_error_L2 ) << "\n";
     std::cout << "[stokes] ||div(u)||=" << math::sqrt( div_u_error_L2 ) << "\n";
 
     v = vf::project( u.functionSpace(), elements( u.mesh() ), u_exact );
@@ -536,7 +529,8 @@ main( int argc, char** argv )
 
     using namespace Feel;
 
-    Environment env( argc, argv );
+    Environment env( _argc=argc, _argv=argv,
+                     _desc=makeOptions() );
 
     /* assertions handling */
     Feel::Assert::setLog( "stokes.assert" );
