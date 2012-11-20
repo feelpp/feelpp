@@ -1135,28 +1135,63 @@ struct searchIndicesBySpace
     }
 };
 
+// get start for each proc ->( proc0 : 0 ), (proc1 : sumdofproc0 ), (proc2 : sumdofproc0+sumdofproc1 ) ....
+struct computeStartOfFieldSplit
+{
+    typedef boost::tuple< uint , size_type > result_type;
+
+    template<typename T>
+    result_type operator()( result_type const &  previousRes, T const& t )
+    {
+        auto cptSpaces = previousRes.get<0>();
+        auto start = previousRes.get<1>();
+
+        for (int proc=0;proc<t->dof()->worldComm().globalSize();++proc)
+            {
+                if (proc < t->dof()->worldComm().globalRank())
+                    start+=t->dof()->nLocalDofWithoutGhost(proc);
+            }
+        return boost::make_tuple( ++cptSpaces, start );
+    }
+
+};
+
+// compute split
 struct computeNDofForEachSpace
 {
+
+    computeNDofForEachSpace(size_type startSplit)
+    :
+        M_startSplit(startSplit)
+    {}
+
     typedef boost::tuple< uint, uint, std::vector<std::vector<int> > > result_type;
 
     template<typename T>
     result_type operator()( result_type const & previousRes, T const& t )
     {
-        auto nDof = t->nDof();
-
+        auto const nDofWithoutGhost = t->nLocalDofWithoutGhost();
+        auto const nDofWithGhost = t->nLocalDofWithGhost();
+        auto const firstDof = t->dof()->firstDofGlobalCluster();
         auto cptSpaces = previousRes.get<0>();
         auto start = previousRes.get<1>();
         auto is = previousRes.get<2>();
+        //std::cout << "compo " << cptSpaces << " start " << start <<" split nDofWithout " << nDof << " with ghost "<< nDofWithGhost<< " M_startSplit " << M_startSplit <<std::endl;
 
-        is.push_back( std::vector<int>( nDof ) );
+        is.push_back( std::vector<int>( nDofWithoutGhost ) );
 
-        for ( uint i=0; i<nDof; ++i )
+        for ( uint i=0; i<nDofWithGhost; ++i )
         {
-            is[cptSpaces][i] = start+i;
+            if (t->dof()->dofGlobalProcessIsGhost(i)) continue;
+            auto const globalDof = t->dof()->mapGlobalProcessToGlobalCluster(i);
+            is[cptSpaces][globalDof - firstDof ] = M_startSplit + start + globalDof - firstDof;
         }
 
-        return boost::make_tuple( ++cptSpaces, ( start+nDof ), is );
+        return boost::make_tuple( ++cptSpaces, ( start+nDofWithoutGhost ), is );
     }
+
+
+    size_type M_startSplit;
 };
 
 struct rebuildDofPointsTool
@@ -3603,24 +3638,36 @@ public:
             std::vector<std::vector<int> > is;
             auto initial = boost::make_tuple( cptSpaces,start,is );
 
-            auto result = boost::fusion::fold( functionSpaces(), initial,  detail::computeNDofForEachSpace() );
+            // get start for each proc ->( proc0 : 0 ), (proc1 : sumdofproc0 ), (proc2 : sumdofproc0+sumdofproc1 ) ....
+            auto startSplit = boost::fusion::fold( functionSpaces(), boost::make_tuple(0,0), detail::computeStartOfFieldSplit() ).get<1>();
+            // compute split
+            auto result = boost::fusion::fold( functionSpaces(), initial,  detail::computeNDofForEachSpace(startSplit) );
             is = result.template get<2>();
 #if 0
-            std::cout << "split size=" << result.template get<2>().size() << " nspace=" << nSpaces << "\n";
-            std::cout << "split:\n";
-
-            std::cout << "\n\n";
-
-            for ( int s= 0; s < nSpaces; ++s )
+            for ( int proc = 0; proc<this->worldComm().globalSize(); ++proc )
             {
-                std::cout << "space: " << is[s].size() << "\n";
-
-                for ( int i = 0; i < is[s].size(); ++i )
+                this->worldComm().globalComm().barrier();
+                if ( proc==this->worldComm().globalRank() )
                 {
-                    std::cout << is[s][i] << " ";
-                }
+                    std::cout << "proc " << proc << "\n";
+                    std::cout << "split size=" << result.template get<2>().size() << " nspace=" << nSpaces << "\n";
+                    std::cout << "split:\n";
 
-                std::cout << "\n\n";
+                    //std::cout << "\n\n";
+
+
+                    for ( int s= 0; s < nSpaces; ++s )
+                    {
+                        std::cout << "space: " << is[s].size() << "\n";
+
+                        for ( int i = 0; i < is[s].size(); ++i )
+                        {
+                            std::cout << is[s][i] << " ";
+                        }
+
+                        std::cout << "\n\n";
+                    }
+                }
             }
 
 #endif
