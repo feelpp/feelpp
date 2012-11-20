@@ -3639,7 +3639,7 @@ public:
             auto initial = boost::make_tuple( cptSpaces,start,is );
 
             // get start for each proc ->( proc0 : 0 ), (proc1 : sumdofproc0 ), (proc2 : sumdofproc0+sumdofproc1 ) ....
-            auto startSplit = boost::fusion::fold( functionSpaces(), boost::make_tuple(0,0), detail::computeStartOfFieldSplit() ).get<1>();
+            auto startSplit = boost::fusion::fold( functionSpaces(), boost::make_tuple(0,0), detail::computeStartOfFieldSplit() ).template get<1>();
             // compute split
             auto result = boost::fusion::fold( functionSpaces(), initial,  detail::computeNDofForEachSpace(startSplit) );
             is = result.template get<2>();
