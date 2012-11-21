@@ -277,19 +277,23 @@ public:
      */
     convergence_type offline();
 
-    void updateLinearTerms( parameter_type const& mu ) const;
+    /**
+     * \param mu : parameters
+     * \param N : dimension of the reduced basis used
+     */
+    void updateLinearTerms( parameter_type const& mu , int N ) const;
 
     /**
      * Update the Jacobian Matrix for Newton Solver
      *
      */
-    void updateJacobian( const map_dense_vector_type& X, map_dense_matrix_type& J , parameter_type const& mu ) const;
+    void updateJacobian( const map_dense_vector_type& X, map_dense_matrix_type& J , parameter_type const& mu , int N ) const;
 
     /**
      * Update the Residual of the Newton Solver
      *
      */
-    void updateResidual( const map_dense_vector_type& X, map_dense_vector_type& R , parameter_type const& mu ) const;
+    void updateResidual( const map_dense_vector_type& X, map_dense_vector_type& R , parameter_type const& mu , int N ) const;
 
 
 
@@ -842,13 +846,13 @@ CRBTrilinear<TruthModelType>::lb( size_type N, parameter_type const& mu, vectorN
         current_mu << current_Grashofs, current_Prandtl;
 
         M_model->computeBetaQm( current_mu );
-        this->updateLinearTerms( current_mu );
+        this->updateLinearTerms( current_mu , N );
 
-        M_nlsolver->map_dense_jacobian = boost::bind( &self_type::updateJacobian, boost::ref( *this ), _1, _2  , current_mu );
-        M_nlsolver->map_dense_residual = boost::bind( &self_type::updateResidual, boost::ref( *this ), _1, _2  , current_mu );
+        M_nlsolver->map_dense_jacobian = boost::bind( &self_type::updateJacobian, boost::ref( *this ), _1, _2  , current_mu , N );
+        M_nlsolver->map_dense_residual = boost::bind( &self_type::updateResidual, boost::ref( *this ), _1, _2  , current_mu , N );
 
-        updateResidual( map_uN, map_R , current_mu );
-        updateJacobian( map_uN, map_J , current_mu );
+        updateResidual( map_uN, map_R , current_mu , N );
+        updateJacobian( map_uN, map_J , current_mu , N );
 
         M_nlsolver->solve( map_J , map_uN , map_R, 1e-10, 100);
     }
@@ -873,7 +877,7 @@ CRBTrilinear<TruthModelType>::lb( size_type N, parameter_type const& mu, vectorN
 }
 template<typename TruthModelType>
 void
-CRBTrilinear<TruthModelType>::updateLinearTerms( parameter_type const& mu ) const
+CRBTrilinear<TruthModelType>::updateLinearTerms( parameter_type const& mu , int N ) const
 {
 
     LOG(INFO) << "update linear terms \n";
@@ -885,36 +889,36 @@ CRBTrilinear<TruthModelType>::updateLinearTerms( parameter_type const& mu ) cons
 
     google::FlushLogFiles(google::GLOG_INFO);
 
-    M_bilinear_terms.setZero( M_N , M_N );
+    M_bilinear_terms.setZero( N , N );
 
     for ( size_type q = 0; q < M_model->Qa(); ++q )
     {
-        M_bilinear_terms += betaAqm[q][0]*M_Aqm_pr[q][0].block( 0, 0, M_N, M_N );
+        M_bilinear_terms += betaAqm[q][0]*M_Aqm_pr[q][0].block( 0, 0, N, N );
     }
 
-    M_linear_terms.setZero( M_N );
+    M_linear_terms.setZero( N );
 
     for ( size_type q = 0; q < M_model->Ql( 0 ); ++q )
     {
-        M_linear_terms += betaFqm[0][q][0]*M_Fqm_pr[q][0].head( M_N );
+        M_linear_terms += betaFqm[0][q][0]*M_Fqm_pr[q][0].head( N );
     }
 
 }
 template<typename TruthModelType>
 void
-CRBTrilinear<TruthModelType>::updateJacobian( const map_dense_vector_type& map_X, map_dense_matrix_type& map_J , const parameter_type & mu ) const
+CRBTrilinear<TruthModelType>::updateJacobian( const map_dense_vector_type& map_X, map_dense_matrix_type& map_J , const parameter_type & mu , int N) const
 {
     LOG(INFO) << "updateJacobian \n";
     map_J = M_bilinear_terms;
 
     for ( size_type q = 0; q < M_model->QaTri(); ++q )
     {
-        for (int k = 0 ; k < M_N; ++k)
+        for (int k = 0 ; k < N; ++k)
         {
-            for ( int i = 0; i < M_N; ++i )
+            for ( int i = 0; i < N; ++i )
             {
-                map_J( k, i ) += ( M_Aqm_tril_pr[q][k].row(i) ).dot(map_X);
-                map_J( k, i ) += ( (M_Aqm_tril_pr[q][k].col(i)).transpose() ).dot(map_X);
+                map_J( k, i ) += ( M_Aqm_tril_pr[q][k].row( i ).head( N ) ).dot(map_X);
+                map_J( k, i ) += ( (M_Aqm_tril_pr[q][k].col( i ).head( N ) ).transpose() ).dot(map_X);
             }
         }
     }
@@ -923,23 +927,23 @@ CRBTrilinear<TruthModelType>::updateJacobian( const map_dense_vector_type& map_X
 
 template<typename TruthModelType>
 void
-CRBTrilinear<TruthModelType>::updateResidual( const map_dense_vector_type& map_X, map_dense_vector_type& map_R , const parameter_type & mu) const
+CRBTrilinear<TruthModelType>::updateResidual( const map_dense_vector_type& map_X, map_dense_vector_type& map_R , const parameter_type & mu, int N ) const
 {
     LOG(INFO) << " updateResidual \n";
 
-    matrixN_type temp ( M_N , M_N );
-    temp.setZero( M_N , M_N );
+    matrixN_type temp ( N , N );
+    temp.setZero( N , N );
 
     map_R = M_linear_terms;
     map_R += M_bilinear_terms * map_X ;
 
     for ( size_type q = 0; q < M_model->QaTri(); ++q )
     {
-        for (int k = 0 ; k < M_N; ++k)
+        for (int k = 0 ; k < N; ++k)
         {
-            for ( int i = 0; i < M_N; ++i )
+            for ( int i = 0; i < N; ++i )
             {
-                temp( k, i ) += map_X.dot( M_Aqm_tril_pr[0][k].row(i) ) ;
+                temp( k, i ) += map_X.dot( M_Aqm_tril_pr[0][k].row( i ).head( N ) ) ;
             }
         }
     }
