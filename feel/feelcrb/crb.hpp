@@ -811,6 +811,11 @@ public:
         return *M_Xi;
     }
 
+    sampling_ptrtype wnmu ( ) const
+    {
+        return M_WNmu;
+    }
+
     /**
      * save the CRB database
      */
@@ -828,6 +833,13 @@ public:
      *  \param name_of_space : primal or dual
      */
     void projectionOnPodSpace( const element_ptrtype & u , element_ptrtype& projection ,const std::string& name_of_space="primal" );
+
+
+    bool useWNmu()
+    {
+        bool use = this->vm()["crb.run-on-WNmu"].template as<bool>();
+        return use;
+    }
 
 
     /**

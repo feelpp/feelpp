@@ -294,7 +294,7 @@ public:
             std::map<CRBModelMode,std::vector<std::string> > hdrs;
             using namespace boost::assign;
             std::vector<std::string> pfemhdrs = boost::assign::list_of( "FEM Output" )( "FEM Time" );
-            std::vector<std::string> crbhdrs = boost::assign::list_of( "FEM Output" )( "FEM Time" )( "RB Output" )( "Error Bounds" )( "CRB Time" )( "Relative error PFEM/CRB" )( "Conditionning" )( "l2_error" )( "h1_error" );
+            std::vector<std::string> crbhdrs = boost::assign::list_of( "FEM Output" )( "FEM Time" )( "RB Output" )( "Error Bounds" )( "CRB Time" )( "Rel. error" )( "Conditionning" )( "l2_error" )( "h1_error" );
             std::vector<std::string> scmhdrs = boost::assign::list_of( "Lb" )( "Lb Time" )( "Ub" )( "Ub Time" )( "FEM" )( "FEM Time" )( "Rel.(FEM-Lb)" );
             std::vector<std::string> crbonlinehdrs = boost::assign::list_of( "RB Output" )( "Error Bounds" )( "CRB Time" );
             std::vector<std::string> scmonlinehdrs = boost::assign::list_of( "Lb" )( "Lb Time" )( "Ub" )( "Ub Time" )( "Rel.(FEM-Lb)" );
@@ -305,7 +305,7 @@ public:
             hdrs[CRBModelMode::SCM_ONLINE] = scmonlinehdrs;
             std::ostringstream ostr;
 
-            if( boost::is_same<  crbmodel_type , crbmodelbilinear_type >::value )
+            //if( boost::is_same<  crbmodel_type , crbmodelbilinear_type >::value )
             {
                 if( crb->printErrorDuringOfflineStep() )
                     crb->printErrorsDuringRbConstruction();
@@ -331,6 +331,8 @@ public:
                 relative_estimated_error_vector.resize( run_sampling_size );
 
             int curpar = 0;
+            if( crb->useWNmu() )
+                Sampling = crb->wnmu();
             BOOST_FOREACH( auto mu, *Sampling )
             {
 
@@ -468,8 +470,8 @@ public:
 
                     else
                     {
-                        if( ! boost::is_same<  crbmodel_type , crbmodelbilinear_type >::value )
-                            throw std::logic_error( "ERROR TYPE must be 2 when using CRBTrilinear (no error estimation)" );
+                        //if( ! boost::is_same<  crbmodel_type , crbmodelbilinear_type >::value )
+                        //    throw std::logic_error( "ERROR TYPE must be 2 when using CRBTrilinear (no error estimation)" );
 
                         std::vector<double> v = boost::assign::list_of( ofem[0] )( ofem[1] )( o.template get<0>() )( relative_estimated_error )( ti.elapsed() ) ( relative_error )( condition_number )( l2_error )( h1_error ) ;
                         if( proc_number == Environment::worldComm().masterRank() )
@@ -639,7 +641,6 @@ public:
                 file_summary_of_simulations <<"min of time CRB : "<<min_time_crb<<" at the "<<index_min_time_crb+1<<"^th simulation\n";
                 file_summary_of_simulations <<"mean of time CRB : "<<mean_time_crb<<"\n\n";
             }
-
         }
     void run( const double * X, unsigned long N,
               double * Y, unsigned long P )
