@@ -37,6 +37,11 @@
 #include <feel/feelcrb/crbmodel.hpp>
 #include <boost/serialization/version.hpp>
 
+#include <Eigen/Core>
+#include <Eigen/LU>
+#include <Eigen/Dense>
+
+
 namespace Feel
 {
 po::options_description opusapp_options( std::string const& prefix );
@@ -89,6 +94,8 @@ public:
     typedef typename model_type::functionspace_ptrtype functionspace_ptrtype;
 
     typedef typename model_type::element_type element_type;
+
+    typedef Eigen::VectorXd vectorN_type;
 
 #if 0
     //old
@@ -311,11 +318,24 @@ public:
 
             printParameterHdr( ostr, model->parameterSpace()->dimension(), hdrs[M_mode] );
 
+            //Statistics
+            vectorN_type l2_error_vector( run_sampling_size );
+            vectorN_type h1_error_vector( run_sampling_size );
+            vectorN_type relative_error_vector( run_sampling_size );
+            vectorN_type time_fem_vector ( run_sampling_size );
+            vectorN_type time_crb_vector ( run_sampling_size );
+            vectorN_type relative_estimated_error_vector;
+            std::ofstream file_summary_of_simulations( ( boost::format( "summary_of_simulations_%d" ) %crb->dimension() ).str().c_str() ,std::ios::out | std::ios::app );
+
+            if( crb->errorType()!=2 )
+                relative_estimated_error_vector.resize( run_sampling_size );
+
             int curpar = 0;
             BOOST_FOREACH( auto mu, *Sampling )
             {
+
                 int size = mu.size();
-                if( proc_number == 0 )
+                if( proc_number == Environment::worldComm().masterRank() )
                 {
                     std::cout << "(" << curpar++ << "/" << Sampling->size() << ") mu = [ ";
                     for ( int i=0; i<size-1; i++ ) std::cout<< mu[i] <<" , ";
@@ -325,6 +345,7 @@ public:
                 std::ostringstream mu_str;
                 for ( int i=0; i<size-1; i++ ) mu_str << std::scientific << std::setprecision( 5 ) << mu[i] <<",";
                 mu_str << std::scientific << std::setprecision( 5 ) << mu[size-1];
+
 
                 LOG(INFO) << "mu=" << mu << "\n";
                 mu.check();
@@ -349,7 +370,7 @@ public:
                     exporter->step(0)->add( u_fem.name(), u_fem );
                     //model->solve( mu );
                     std::vector<double> o = boost::assign::list_of( model->output( output_index,mu ) )( ti.elapsed() );
-                    if(proc_number == 0 ) std::cout << "output=" << o[0] << "\n";
+                    if(proc_number == Environment::worldComm().masterRank() ) std::cout << "output=" << o[0] << "\n";
                     printEntry( ostr, mu, o );
 
                 }
@@ -394,16 +415,14 @@ public:
                     int N =  this->vm()["crb.dimension"].template as<int>();
 
                     auto o = crb->run( mu,  this->vm()["crb.online-tolerance"].template as<double>() , N);
+                    double time_crb = ti.elapsed();
 
-                    //if( this->vm()["crb.rebuild-database"].template as<bool>() )
-                    //{
-                            auto u_crb = crb->expansion( mu , N );
-                            std::ostringstream u_crb_str;
-                            u_crb_str << "u_crb(" << mu_str.str() << ")";
-                            u_crb.setName( u_crb_str.str()  );
-                            LOG(INFO) << "export u_crb \n";
-                            exporter->step(0)->add( u_crb.name(), u_crb );
-                    //}
+                    auto u_crb = crb->expansion( mu , N );
+                    std::ostringstream u_crb_str;
+                    u_crb_str << "u_crb(" << mu_str.str() << ")";
+                    u_crb.setName( u_crb_str.str()  );
+                    LOG(INFO) << "export u_crb \n";
+                    exporter->step(0)->add( u_crb.name(), u_crb );
 
                     double relative_error = std::abs( ofem[0]-o.template get<0>() ) /ofem[0];
                     double relative_estimated_error = o.template get<1>() / ofem[0];
@@ -425,14 +444,20 @@ public:
 
                     if ( crb->errorType()==2 )
                     {
-                        std::vector<double> v = boost::assign::list_of( ofem[0] )( ofem[1] )( o.template get<0>() )( relative_estimated_error )( ti.elapsed() )( relative_error )( condition_number )( l2_error )( h1_error );
-                        if( proc_number == 0 )
+                        std::vector<double> v = boost::assign::list_of( ofem[0] )( ofem[1] )( o.template get<0>() )( relative_estimated_error )( time_crb )( relative_error )( condition_number )( l2_error )( h1_error );
+                        if( proc_number == Environment::worldComm().masterRank() )
                         {
                             std::cout << "output=" << o.template get<0>() << " with " << o.template get<2>() << " basis functions\n";
-                            std::ofstream file_summary_of_simulations( ( boost::format( "summary_of_simulations_%d" ) % o.template get<2>() ).str().c_str() ,std::ios::out | std::ios::app );
                             printEntry( file_summary_of_simulations, mu, v );
                             printEntry( ostr, mu, v );
-                            file_summary_of_simulations.close();
+                            //file_summary_of_simulations.close();
+
+                            //stat
+                            relative_error_vector[curpar-1] = relative_error;
+                            l2_error_vector[curpar-1] = l2_error;
+                            h1_error_vector[curpar-1] = h1_error;
+                            time_fem_vector[curpar-1] = ofem[1];
+                            time_crb_vector[curpar-1] = time_crb;
 
                             std::ofstream res(this->vm()["result-file"].template as<std::string>() );
                             res << "output="<< o.template get<0>() << "\n";
@@ -447,13 +472,20 @@ public:
                             throw std::logic_error( "ERROR TYPE must be 2 when using CRBTrilinear (no error estimation)" );
 
                         std::vector<double> v = boost::assign::list_of( ofem[0] )( ofem[1] )( o.template get<0>() )( relative_estimated_error )( ti.elapsed() ) ( relative_error )( condition_number )( l2_error )( h1_error ) ;
-                        if( proc_number == 0 )
+                        if( proc_number == Environment::worldComm().masterRank() )
                         {
                             std::cout << "output=" << o.template get<0>() << " with " << o.template get<2>() << " basis functions  (relative error estimation on this output : " << relative_estimated_error<<") \n";
-                            std::ofstream file_summary_of_simulations( ( boost::format( "summary_of_simulations_%d" ) % o.template get<2>() ).str().c_str() ,std::ios::out | std::ios::app );
+                            //std::ofstream file_summary_of_simulations( ( boost::format( "summary_of_simulations_%d" ) % o.template get<2>() ).str().c_str() ,std::ios::out | std::ios::app );
                             printEntry( file_summary_of_simulations, mu, v );
                             printEntry( ostr, mu, v );
                             file_summary_of_simulations.close();
+
+                            relative_error_vector[curpar-1] = relative_error;
+                            l2_error_vector[curpar-1] = l2_error;
+                            h1_error_vector[curpar-1] = h1_error;
+                            time_fem_vector[curpar-1] = ofem[1];
+                            time_crb_vector[curpar-1] = time_crb;
+                            relative_estimated_error_vector[curpar-1] = relative_estimated_error;
 
                             std::ofstream res(this->vm()["result-file"].template as<std::string>() );
                             res << "output="<< o.template get<0>() << "\n";
@@ -476,14 +508,19 @@ public:
                             double h1_error = h1Norm( u_error )/h1Norm( u_fem );
                             conver[N]=boost::make_tuple( rel_err, l2_error, h1_error );
                             LOG(INFO) << "N=" << N << " " << rel_err << " " << l2_error << " " << h1_error << "\n";
-                            if ( proc_number == 0 )
+                            if ( proc_number == Environment::worldComm().masterRank() )
                                 std::cout << "N=" << N << " " << rel_err << " " << l2_error << " " << h1_error << "\n";
                             LOG(INFO) << "N=" << N << " done.\n";
                         }
-                        if( proc_number == 0 )
+                        if( proc_number == Environment::worldComm().masterRank() )
                         {
                             LOG(INFO) << "save in logfile\n";
-                            std::ofstream conv( "convergence.dat" );
+
+                            std::string mu_str;
+                            for ( int i=0; i<mu.size(); i++ )
+                                mu_str= mu_str + ( boost::format( "_%1%" ) %mu[i] ).str() ;
+                            std::string file_name = "convergence"+mu_str+".dat";
+                            std::ofstream conv( file_name );
                             BOOST_FOREACH( auto en, conver )
                             {
                                 conv << en.first << " " << en.second.get<0>()  << " " << en.second.get<1>() << " " << en.second.get<2>() << "\n";
@@ -539,7 +576,69 @@ public:
                 std::cout << "------------------------------------------------------------\n";
             }
             exporter->save();
-            if( proc_number == 0 ) std::cout << ostr.str() << "\n";
+            if( proc_number == Environment::worldComm().masterRank() ) std::cout << ostr.str() << "\n";
+
+            LOG( INFO ) << "compute statistics \n";
+            Eigen::MatrixXf::Index index_max_l2;
+            Eigen::MatrixXf::Index index_min_l2;
+            Eigen::MatrixXf::Index index_max_h1;
+            Eigen::MatrixXf::Index index_min_h1;
+            Eigen::MatrixXf::Index index_max_time_fem;
+            Eigen::MatrixXf::Index index_min_time_fem;
+            Eigen::MatrixXf::Index index_max_time_crb;
+            Eigen::MatrixXf::Index index_min_time_crb;
+            Eigen::MatrixXf::Index index_max_estimated_error;
+            Eigen::MatrixXf::Index index_min_estimated_error;
+            Eigen::MatrixXf::Index index_max_output_error;
+            Eigen::MatrixXf::Index index_min_output_error;
+
+            double max_l2 = l2_error_vector.maxCoeff(&index_max_l2);
+            double min_l2 = l2_error_vector.minCoeff(&index_min_l2);
+            double mean_l2 = l2_error_vector.mean();
+            double max_h1 = h1_error_vector.maxCoeff(&index_max_h1);
+            double min_h1 = h1_error_vector.minCoeff(&index_min_h1);
+            double mean_h1 = h1_error_vector.mean();
+            double max_time_fem = time_fem_vector.maxCoeff(&index_max_time_fem);
+            double min_time_fem = time_fem_vector.minCoeff(&index_min_time_fem);
+            double mean_time_fem = time_fem_vector.mean();
+            double max_time_crb = time_crb_vector.maxCoeff(&index_max_time_crb);
+            double min_time_crb = time_crb_vector.minCoeff(&index_min_time_crb);
+            double mean_time_crb = time_crb_vector.mean();
+            double max_output_error = relative_error_vector.maxCoeff(&index_max_output_error);
+            double min_output_error = relative_error_vector.minCoeff(&index_min_output_error);
+            double mean_output_error = relative_error_vector.mean();
+            double max_estimated_error = 0;
+            double min_estimated_error = 0;
+            double mean_estimated_error = 0;
+
+            if( crb->errorType()!=2 )
+            {
+                max_estimated_error = relative_estimated_error_vector.maxCoeff(&index_max_estimated_error);
+                min_estimated_error = relative_estimated_error_vector.minCoeff(&index_min_estimated_error);
+                mean_estimated_error = relative_estimated_error_vector.mean();
+            }
+            if( proc_number == Environment::worldComm().masterRank() )
+            {
+                file_summary_of_simulations <<"\n\nStatistics\n";
+                file_summary_of_simulations <<"max of output error : "<<max_output_error<<" at the "<<index_max_output_error+1<<"^th simulation\n";
+                file_summary_of_simulations <<"min of output error : "<<min_output_error<<" at the "<<index_min_output_error+1<<"^th simulation\n";
+                file_summary_of_simulations <<"mean of output error : "<<mean_output_error<<"\n\n";
+                file_summary_of_simulations <<"max of estimated output error : "<<max_estimated_error<<" at the "<<index_max_estimated_error+1<<"^th simulation\n";
+                file_summary_of_simulations <<"min of estimated output error : "<<min_estimated_error<<" at the "<<index_min_estimated_error+1<<"^th simulation\n";
+                file_summary_of_simulations <<"mean of estimated output error : "<<mean_estimated_error<<"\n\n";
+                file_summary_of_simulations <<"max of L2 error : "<<max_l2<<" at the "<<index_max_l2+1<<"^th simulation\n";
+                file_summary_of_simulations <<"min of L2 error : "<<min_l2<<" at the "<<index_min_l2+1<<"^th simulation\n";
+                file_summary_of_simulations <<"mean of L2 error : "<<mean_l2<<"\n\n";
+                file_summary_of_simulations <<"max of H1 error : "<<max_h1<<" at the "<<index_max_h1+1<<"^th simulation\n";
+                file_summary_of_simulations <<"min of H1 error : "<<min_h1<<" at the "<<index_min_h1+1<<"^th simulation\n";
+                file_summary_of_simulations <<"mean of H1 error : "<<mean_h1<<"\n\n";
+                file_summary_of_simulations <<"max of time FEM : "<<max_time_fem<<" at the "<<index_max_time_fem+1<<"^th simulation\n";
+                file_summary_of_simulations <<"min of time FEM : "<<min_time_fem<<" at the "<<index_min_time_fem+1<<"^th simulation\n";
+                file_summary_of_simulations <<"mean of time FEM : "<<mean_time_fem<<"\n\n";
+                file_summary_of_simulations <<"max of time CRB : "<<max_time_crb<<" at the "<<index_max_time_crb+1<<"^th simulation\n";
+                file_summary_of_simulations <<"min of time CRB : "<<min_time_crb<<" at the "<<index_min_time_crb+1<<"^th simulation\n";
+                file_summary_of_simulations <<"mean of time CRB : "<<mean_time_crb<<"\n\n";
+            }
 
         }
     void run( const double * X, unsigned long N,
