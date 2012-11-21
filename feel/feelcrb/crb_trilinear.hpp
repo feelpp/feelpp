@@ -321,6 +321,18 @@ public:
         return M_scm;
     }
 
+    sampling_ptrtype wnmu ( ) const
+    {
+        return M_WNmu;
+    }
+
+    bool useWNmu()
+    {
+        bool use = this->vm()["crb.run-on-WNmu"].template as<bool>();
+        return use;
+    }
+
+
 
     /**
      * print max errors (total error and also primal and dual contributions)
@@ -374,7 +386,11 @@ public:
     /**
      * if true, show the mu selected during the offline stage
      */
-    bool showMuSelection() ;
+    bool showMuSelection()
+    {
+        bool show = this->vm()["crb.show-mu-selection"].template as<bool>();
+        return show;
+    }
 
     /**
      * print parameters set mu selected during the offline stage
@@ -1050,20 +1066,30 @@ template<typename TruthModelType>
 void
 CRBTrilinear<TruthModelType>::printMuSelection( void )
 {
+
     LOG(INFO)<<" List of parameter selectionned during the offline algorithm \n";
     for(int k=0;k<M_WNmu->size();k++)
     {
-        std::cout<<" mu "<<k<<" = [ ";
         LOG(INFO)<<" mu "<<k<<" = [ ";
         parameter_type const& _mu = M_WNmu->at( k );
         for( int i=0; i<_mu.size()-1; i++ )
-        {
             LOG(INFO)<<_mu(i)<<" , ";
-            std::cout<<_mu(i)<<" , ";
-        }
         LOG(INFO)<<_mu( _mu.size()-1 )<<" ] \n";
-        std::cout<<_mu( _mu.size()-1 )<<" ] "<<std::endl;
     }
+
+    if( this->worldComm().globalRank() == this->worldComm().masterRank() )
+    {
+        std::cout<<" List of parameter selectionned during the offline algorithm"<<std::endl;
+        for(int k=0;k<M_WNmu->size();k++)
+        {
+            std::cout<<" mu "<<k<<" = [ ";
+            parameter_type const& _mu = M_WNmu->at( k );
+            for( int i=0; i<_mu.size()-1; i++ )
+                std::cout<<_mu(i)<<" , ";
+            std::cout<<_mu( _mu.size()-1 )<<" ] "<<std::endl;
+        }
+    }
+
 }
 
 template<typename TruthModelType>
