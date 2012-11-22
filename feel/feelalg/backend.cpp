@@ -561,6 +561,8 @@ Backend<T>::pcEnumType() const
 
     else if ( this->pcType()=="block_jacobi" ) return BLOCK_JACOBI_PRECOND;
 
+    else if ( this->pcType()=="bjacobi" )      return BLOCK_JACOBI_PRECOND;
+
     else if ( this->pcType()=="sor" )          return SOR_PRECOND;
 
     else if ( this->pcType()=="eisenstat" )    return EISENSTAT_PRECOND;
@@ -568,6 +570,8 @@ Backend<T>::pcEnumType() const
     else if ( this->pcType()=="shell" )        return SHELL_PRECOND;
 
     else if ( this->pcType()=="fieldsplit" )   return FIELDSPLIT_PRECOND;
+
+    else if ( this->pcType()=="ml" )   return ML_PRECOND;
 
     else return LU_PRECOND;
 
