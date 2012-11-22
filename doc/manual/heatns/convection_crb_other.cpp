@@ -170,9 +170,8 @@ Convection_crb::solve( sparse_matrix_ptrtype& D,
 typename Convection_crb::element_type
 Convection_crb::solve( parameter_type const& mu )
 {
-    element_ptrtype T( new element_type( Xh ) );
-    this->solve( mu, T );
-    return *T;
+    this->solve( mu, pT );
+    return *pT;
 }
 
 void
@@ -189,7 +188,7 @@ Convection_crb::solve( parameter_type const& mu, element_ptrtype& T )
     
     double gr = mu( 0 );
     double pr = mu( 1 );
-    
+    T->zero();
     int N=std::max( 1.0,std::max( std::ceil( std::log( gr ) ),std::ceil( std::log( pr )-std::log( 1.e-2 ) ) ) );
     
     for ( int i = 0; i < N; ++i )
@@ -209,7 +208,6 @@ Convection_crb::solve( parameter_type const& mu, element_ptrtype& T )
                 
 //        T->print(std::cout);        
 
-        
         M_backend->nlSolve(_jacobian=J , _solution=T , _residual=R);
 #if 0
         if ( exporter->doExport() )
@@ -271,7 +269,7 @@ double
 Convection_crb::output( int output_index, parameter_type const& mu )
 {
     using namespace vf;
-    this->solve( mu, pT );
+    //this->solve( mu, pT );
     
     auto mesh = Xh->mesh();
     auto U = Xh->element( "u" );
