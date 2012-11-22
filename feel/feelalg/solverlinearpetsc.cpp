@@ -829,6 +829,11 @@ SolverLinearPetsc<T>::setPetscPreconditionerType()
         CHKERRABORT( this->worldComm().globalComm(),ierr );
         return;
 
+    case ML_PRECOND:
+        ierr = PCSetType( _M_pc,( char* ) PCML );
+        CHKERRABORT( this->worldComm().globalComm(),ierr );
+        return;
+
     default:
         std::cerr << "ERROR:  Unsupported PETSC Preconditioner: "
                   << this->preconditionerType()       << std::endl
