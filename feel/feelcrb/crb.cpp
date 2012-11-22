@@ -71,6 +71,7 @@ crbOptions( std::string const& prefix )
     ( "crb.fixedpoint-critical-value",Feel::po::value<double>()->default_value(1000 ), "will crash if increment error at the end of fixed point is greater than this critical value" )
 
     ( "crb.cvg-study",Feel::po::value<bool>()->default_value( false ), "convergence study if true")
+    ( "crb.run-on-WNmu",Feel::po::value<bool>()->default_value( false ), "use mu taken for build the reduced basis, so for steady problems we are very accurate")
     ;
 
 
