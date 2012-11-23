@@ -497,7 +497,7 @@ public:
                     if (this->vm()["crb.cvg-study"].template as<bool>())
                     {
                         LOG(INFO) << "start convergence study...\n";
-                        std::map<int, boost::tuple<double,double,double> > conver;
+                        std::map<int, boost::tuple<double,double,double,double> > conver;
                         for( int N = 1; N < crb->dimension(); N++ )
                         {
                             LOG(INFO) << "N=" << N << "...\n";
@@ -508,10 +508,11 @@ public:
                             double rel_err = std::abs( ofem[0]-o.template get<0>() ) /ofem[0];
                             double l2_error = l2Norm( u_error )/l2Norm( u_fem );
                             double h1_error = h1Norm( u_error )/h1Norm( u_fem );
-                            conver[N]=boost::make_tuple( rel_err, l2_error, h1_error );
-                            LOG(INFO) << "N=" << N << " " << rel_err << " " << l2_error << " " << h1_error << "\n";
+                            double condition_number = o.template get<3>();
+                            conver[N]=boost::make_tuple( rel_err, l2_error, h1_error , condition_number );
+                            LOG(INFO) << "N=" << N << " " << rel_err << " " << l2_error << " " << h1_error << " " <<condition_number<<"\n";
                             if ( proc_number == Environment::worldComm().masterRank() )
-                                std::cout << "N=" << N << " " << rel_err << " " << l2_error << " " << h1_error << "\n";
+                                std::cout << "N=" << N << " " << rel_err << " " << l2_error << " " << h1_error << " " <<condition_number<<std::endl;
                             LOG(INFO) << "N=" << N << " done.\n";
                         }
                         if( proc_number == Environment::worldComm().masterRank() )
@@ -525,7 +526,7 @@ public:
                             std::ofstream conv( file_name );
                             BOOST_FOREACH( auto en, conver )
                             {
-                                conv << en.first << " " << en.second.get<0>()  << " " << en.second.get<1>() << " " << en.second.get<2>() << "\n";
+                                conv << en.first << "\t" << en.second.get<0>()  << "\t" << en.second.get<1>() << "\t" << en.second.get<2>() << "\t"<< en.second.get<3>() << "\n";
                             }
                         }
                     }
