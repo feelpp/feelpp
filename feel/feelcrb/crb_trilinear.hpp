@@ -300,6 +300,7 @@ public:
     // -------- from crb
 
     void orthonormalize( size_type N, wn_type& wn, int Nm = 1 );
+    void checkOrthonormality( int N, const wn_type& wn ) const;
 
     /**
      * if true, print the max error (absolute) during the offline stage
@@ -873,9 +874,31 @@ CRBTrilinear<TruthModelType>::lb( size_type N, parameter_type const& mu, vectorN
         M_nlsolver->solve( map_J , map_uN , map_R, 1e-10, 100);
     }
 
-
     LOG(INFO) << "[CRBTrilinear::lb] solve with Newton done";
 
+    //compute conditioning of matrix J
+    Eigen::SelfAdjointEigenSolver< matrixN_type > eigen_solver;
+    eigen_solver.compute( map_J );
+    int number_of_eigenvalues =  eigen_solver.eigenvalues().size();
+    //we copy eigenvalues in a std::vector beacause it's easier to manipulate it
+    std::vector<double> eigen_values( number_of_eigenvalues );
+    for ( int i=0; i<number_of_eigenvalues; i++ )
+    {
+        if ( imag( eigen_solver.eigenvalues()[i] )>1e-12 )
+        {
+            throw std::logic_error( "[CRBTrilinear::lb] ERROR : complex eigenvalues were found" );
+        }
+
+        eigen_values[i]=real( eigen_solver.eigenvalues()[i] );
+    }
+    int position_of_largest_eigenvalue=number_of_eigenvalues-1;
+    int position_of_smallest_eigenvalue=0;
+    double eig_max = eigen_values[position_of_largest_eigenvalue];
+    double eig_min = eigen_values[position_of_smallest_eigenvalue];
+    double condition_number = eig_max / eig_min;
+    //end of computation of conditionning
+
+    LOG( INFO ) <<"[CRBTrilinear::lb] compute condition number of jacobian done\n";
     vectorN_type L ( ( int )N );
     L.setZero( N );
 
@@ -888,7 +911,7 @@ CRBTrilinear<TruthModelType>::lb( size_type N, parameter_type const& mu, vectorN
 
     google::FlushLogFiles(google::GLOG_INFO);
 
-    return boost::make_tuple( output, 0 );
+    return boost::make_tuple( output, condition_number );
 
 }
 template<typename TruthModelType>
@@ -1003,8 +1026,46 @@ CRBTrilinear<TruthModelType>::orthonormalize( size_type N, wn_type& wn, int Nm )
     Debug ( 12000 ) << "[CRB::orthonormalize] finished ...\n";
     Debug ( 12000 ) << "[CRB::orthonormalize] copying back results in basis\n";
 
+    if ( this->vm()["crb.check.gs"].template as<int>() )
+        checkOrthonormality( N , wn );
+
 }
 
+template <typename TruthModelType>
+void
+CRBTrilinear<TruthModelType>::checkOrthonormality ( int N, const wn_type& wn ) const
+{
+
+    if ( wn.size()==0 )
+    {
+        throw std::logic_error( "[CRB::checkOrthonormality] ERROR : size of wn is zero" );
+    }
+
+    if ( orthonormalize_primal*orthonormalize_dual==0 && this->worldComm().globalRank() == this->worldComm().masterRank() )
+    {
+        std::cout<<"Warning : calling checkOrthonormality is called but ";
+        std::cout<<" orthonormalize_dual = "<<orthonormalize_dual;
+        std::cout<<" and orthonormalize_primal = "<<orthonormalize_primal<<std::endl;
+    }
+
+    matrixN_type A, I;
+    A.setZero( N, N );
+    I.setIdentity( N, N );
+
+    for ( int i = 0; i < N; ++i )
+    {
+        for ( int j = 0; j < N; ++j )
+        {
+            A( i, j ) = M_model->scalarProduct(  wn[i], wn[j] );
+        }
+    }
+
+    A -= I;
+    Debug( 12000 ) << "orthonormalization: " << A.norm() << "\n";
+    if( this->worldComm().globalRank() == this->worldComm().masterRank() )
+        std::cout << "    o check : " << A.norm() << " (should be 0)\n";
+    //FEELPP_ASSERT( A.norm() < 1e-14 )( A.norm() ).error( "orthonormalization failed.");
+}
 
 template <typename TruthModelType>
 void
@@ -1118,7 +1179,7 @@ CRBTrilinear<TruthModelType>::run( parameter_type const& mu, double eps , int N)
     double output = o.template get<0>();
 
     double e = 0;
-    double condition_number = 0;
+    double condition_number = o.template get<1>();
 
     return boost::make_tuple( output , e, Nwn , condition_number );
 }
