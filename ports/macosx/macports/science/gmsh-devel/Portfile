@@ -8,7 +8,7 @@ fetch.type          svn
 fetch.user          gmsh
 fetch.password      gmsh
 svn.url             https://geuz.org/svn/gmsh/trunk
-svn.revision        13703
+svn.revision        13935
 svn.method          export
 svn.post_args       --username ${fetch.user} --password ${fetch.password}
 
@@ -35,6 +35,8 @@ if {${configure.compiler} == "clang"} {
 }
 
 configure.args-append \
+    -DENABLE_BUILD_LIB=ON\
+    -DENABLE_BUILD_SHARED=ON\
     -DENABLE_NATIVE_FILE_CHOOSER:BOOL=OFF\
     -DENABLE_OCC:BOOL=OFF \
     -DENABLE_FLTK:BOOL=ON\
