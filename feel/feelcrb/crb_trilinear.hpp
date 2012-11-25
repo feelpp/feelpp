@@ -277,25 +277,30 @@ public:
      */
     convergence_type offline();
 
-    void updateLinearTerms( parameter_type const& mu ) const;
+    /**
+     * \param mu : parameters
+     * \param N : dimension of the reduced basis used
+     */
+    void updateLinearTerms( parameter_type const& mu , int N ) const;
 
     /**
      * Update the Jacobian Matrix for Newton Solver
      *
      */
-    void updateJacobian( const map_dense_vector_type& X, map_dense_matrix_type& J , parameter_type const& mu ) const;
+    void updateJacobian( const map_dense_vector_type& X, map_dense_matrix_type& J , parameter_type const& mu , int N ) const;
 
     /**
      * Update the Residual of the Newton Solver
      *
      */
-    void updateResidual( const map_dense_vector_type& X, map_dense_vector_type& R , parameter_type const& mu ) const;
+    void updateResidual( const map_dense_vector_type& X, map_dense_vector_type& R , parameter_type const& mu , int N ) const;
 
 
 
     // -------- from crb
 
     void orthonormalize( size_type N, wn_type& wn, int Nm = 1 );
+    void checkOrthonormality( int N, const wn_type& wn ) const;
 
     /**
      * if true, print the max error (absolute) during the offline stage
@@ -316,6 +321,18 @@ public:
     {
         return M_scm;
     }
+
+    sampling_ptrtype wnmu ( ) const
+    {
+        return M_WNmu;
+    }
+
+    bool useWNmu()
+    {
+        bool use = this->vm()["crb.run-on-WNmu"].template as<bool>();
+        return use;
+    }
+
 
 
     /**
@@ -370,7 +387,11 @@ public:
     /**
      * if true, show the mu selected during the offline stage
      */
-    bool showMuSelection() ;
+    bool showMuSelection()
+    {
+        bool show = this->vm()["crb.show-mu-selection"].template as<bool>();
+        return show;
+    }
 
     /**
      * print parameters set mu selected during the offline stage
@@ -842,20 +863,42 @@ CRBTrilinear<TruthModelType>::lb( size_type N, parameter_type const& mu, vectorN
         current_mu << current_Grashofs, current_Prandtl;
 
         M_model->computeBetaQm( current_mu );
-        this->updateLinearTerms( current_mu );
+        this->updateLinearTerms( current_mu , N );
 
-        M_nlsolver->map_dense_jacobian = boost::bind( &self_type::updateJacobian, boost::ref( *this ), _1, _2  , current_mu );
-        M_nlsolver->map_dense_residual = boost::bind( &self_type::updateResidual, boost::ref( *this ), _1, _2  , current_mu );
+        M_nlsolver->map_dense_jacobian = boost::bind( &self_type::updateJacobian, boost::ref( *this ), _1, _2  , current_mu , N );
+        M_nlsolver->map_dense_residual = boost::bind( &self_type::updateResidual, boost::ref( *this ), _1, _2  , current_mu , N );
 
-        updateResidual( map_uN, map_R , current_mu );
-        updateJacobian( map_uN, map_J , current_mu );
+        updateResidual( map_uN, map_R , current_mu , N );
+        updateJacobian( map_uN, map_J , current_mu , N );
 
         M_nlsolver->solve( map_J , map_uN , map_R, 1e-10, 100);
     }
 
-
     LOG(INFO) << "[CRBTrilinear::lb] solve with Newton done";
 
+    //compute conditioning of matrix J
+    Eigen::SelfAdjointEigenSolver< matrixN_type > eigen_solver;
+    eigen_solver.compute( map_J );
+    int number_of_eigenvalues =  eigen_solver.eigenvalues().size();
+    //we copy eigenvalues in a std::vector beacause it's easier to manipulate it
+    std::vector<double> eigen_values( number_of_eigenvalues );
+    for ( int i=0; i<number_of_eigenvalues; i++ )
+    {
+        if ( imag( eigen_solver.eigenvalues()[i] )>1e-12 )
+        {
+            throw std::logic_error( "[CRBTrilinear::lb] ERROR : complex eigenvalues were found" );
+        }
+
+        eigen_values[i]=real( eigen_solver.eigenvalues()[i] );
+    }
+    int position_of_largest_eigenvalue=number_of_eigenvalues-1;
+    int position_of_smallest_eigenvalue=0;
+    double eig_max = eigen_values[position_of_largest_eigenvalue];
+    double eig_min = eigen_values[position_of_smallest_eigenvalue];
+    double condition_number = eig_max / eig_min;
+    //end of computation of conditionning
+
+    LOG( INFO ) <<"[CRBTrilinear::lb] compute condition number of jacobian done\n";
     vectorN_type L ( ( int )N );
     L.setZero( N );
 
@@ -868,12 +911,12 @@ CRBTrilinear<TruthModelType>::lb( size_type N, parameter_type const& mu, vectorN
 
     google::FlushLogFiles(google::GLOG_INFO);
 
-    return boost::make_tuple( output, 0 );
+    return boost::make_tuple( output, condition_number );
 
 }
 template<typename TruthModelType>
 void
-CRBTrilinear<TruthModelType>::updateLinearTerms( parameter_type const& mu ) const
+CRBTrilinear<TruthModelType>::updateLinearTerms( parameter_type const& mu , int N ) const
 {
 
     LOG(INFO) << "update linear terms \n";
@@ -885,36 +928,36 @@ CRBTrilinear<TruthModelType>::updateLinearTerms( parameter_type const& mu ) cons
 
     google::FlushLogFiles(google::GLOG_INFO);
 
-    M_bilinear_terms.setZero( M_N , M_N );
+    M_bilinear_terms.setZero( N , N );
 
     for ( size_type q = 0; q < M_model->Qa(); ++q )
     {
-        M_bilinear_terms += betaAqm[q][0]*M_Aqm_pr[q][0].block( 0, 0, M_N, M_N );
+        M_bilinear_terms += betaAqm[q][0]*M_Aqm_pr[q][0].block( 0, 0, N, N );
     }
 
-    M_linear_terms.setZero( M_N );
+    M_linear_terms.setZero( N );
 
     for ( size_type q = 0; q < M_model->Ql( 0 ); ++q )
     {
-        M_linear_terms += betaFqm[0][q][0]*M_Fqm_pr[q][0].head( M_N );
+        M_linear_terms += betaFqm[0][q][0]*M_Fqm_pr[q][0].head( N );
     }
 
 }
 template<typename TruthModelType>
 void
-CRBTrilinear<TruthModelType>::updateJacobian( const map_dense_vector_type& map_X, map_dense_matrix_type& map_J , const parameter_type & mu ) const
+CRBTrilinear<TruthModelType>::updateJacobian( const map_dense_vector_type& map_X, map_dense_matrix_type& map_J , const parameter_type & mu , int N) const
 {
     LOG(INFO) << "updateJacobian \n";
     map_J = M_bilinear_terms;
 
     for ( size_type q = 0; q < M_model->QaTri(); ++q )
     {
-        for (int k = 0 ; k < M_N; ++k)
+        for (int k = 0 ; k < N; ++k)
         {
-            for ( int i = 0; i < M_N; ++i )
+            for ( int i = 0; i < N; ++i )
             {
-                map_J( k, i ) += ( M_Aqm_tril_pr[q][k].row(i) ).dot(map_X);
-                map_J( k, i ) += ( (M_Aqm_tril_pr[q][k].col(i)).transpose() ).dot(map_X);
+                map_J( k, i ) += ( M_Aqm_tril_pr[q][k].row( i ).head( N ) ).dot(map_X);
+                map_J( k, i ) += ( (M_Aqm_tril_pr[q][k].col( i ).head( N ) ).transpose() ).dot(map_X);
             }
         }
     }
@@ -923,23 +966,23 @@ CRBTrilinear<TruthModelType>::updateJacobian( const map_dense_vector_type& map_X
 
 template<typename TruthModelType>
 void
-CRBTrilinear<TruthModelType>::updateResidual( const map_dense_vector_type& map_X, map_dense_vector_type& map_R , const parameter_type & mu) const
+CRBTrilinear<TruthModelType>::updateResidual( const map_dense_vector_type& map_X, map_dense_vector_type& map_R , const parameter_type & mu, int N ) const
 {
     LOG(INFO) << " updateResidual \n";
 
-    matrixN_type temp ( M_N , M_N );
-    temp.setZero( M_N , M_N );
+    matrixN_type temp ( N , N );
+    temp.setZero( N , N );
 
     map_R = M_linear_terms;
     map_R += M_bilinear_terms * map_X ;
 
     for ( size_type q = 0; q < M_model->QaTri(); ++q )
     {
-        for (int k = 0 ; k < M_N; ++k)
+        for (int k = 0 ; k < N; ++k)
         {
-            for ( int i = 0; i < M_N; ++i )
+            for ( int i = 0; i < N; ++i )
             {
-                temp( k, i ) += map_X.dot( M_Aqm_tril_pr[0][k].row(i) ) ;
+                temp( k, i ) += map_X.dot( M_Aqm_tril_pr[0][k].row( i ).head( N ) ) ;
             }
         }
     }
@@ -983,8 +1026,46 @@ CRBTrilinear<TruthModelType>::orthonormalize( size_type N, wn_type& wn, int Nm )
     Debug ( 12000 ) << "[CRB::orthonormalize] finished ...\n";
     Debug ( 12000 ) << "[CRB::orthonormalize] copying back results in basis\n";
 
+    if ( this->vm()["crb.check.gs"].template as<int>() )
+        checkOrthonormality( N , wn );
+
 }
 
+template <typename TruthModelType>
+void
+CRBTrilinear<TruthModelType>::checkOrthonormality ( int N, const wn_type& wn ) const
+{
+
+    if ( wn.size()==0 )
+    {
+        throw std::logic_error( "[CRB::checkOrthonormality] ERROR : size of wn is zero" );
+    }
+
+    if ( orthonormalize_primal*orthonormalize_dual==0 && this->worldComm().globalRank() == this->worldComm().masterRank() )
+    {
+        std::cout<<"Warning : calling checkOrthonormality is called but ";
+        std::cout<<" orthonormalize_dual = "<<orthonormalize_dual;
+        std::cout<<" and orthonormalize_primal = "<<orthonormalize_primal<<std::endl;
+    }
+
+    matrixN_type A, I;
+    A.setZero( N, N );
+    I.setIdentity( N, N );
+
+    for ( int i = 0; i < N; ++i )
+    {
+        for ( int j = 0; j < N; ++j )
+        {
+            A( i, j ) = M_model->scalarProduct(  wn[i], wn[j] );
+        }
+    }
+
+    A -= I;
+    Debug( 12000 ) << "orthonormalization: " << A.norm() << "\n";
+    if( this->worldComm().globalRank() == this->worldComm().masterRank() )
+        std::cout << "    o check : " << A.norm() << " (should be 0)\n";
+    //FEELPP_ASSERT( A.norm() < 1e-14 )( A.norm() ).error( "orthonormalization failed.");
+}
 
 template <typename TruthModelType>
 void
@@ -1046,20 +1127,30 @@ template<typename TruthModelType>
 void
 CRBTrilinear<TruthModelType>::printMuSelection( void )
 {
+
     LOG(INFO)<<" List of parameter selectionned during the offline algorithm \n";
     for(int k=0;k<M_WNmu->size();k++)
     {
-        std::cout<<" mu "<<k<<" = [ ";
         LOG(INFO)<<" mu "<<k<<" = [ ";
         parameter_type const& _mu = M_WNmu->at( k );
         for( int i=0; i<_mu.size()-1; i++ )
-        {
             LOG(INFO)<<_mu(i)<<" , ";
-            std::cout<<_mu(i)<<" , ";
-        }
         LOG(INFO)<<_mu( _mu.size()-1 )<<" ] \n";
-        std::cout<<_mu( _mu.size()-1 )<<" ] "<<std::endl;
     }
+
+    if( this->worldComm().globalRank() == this->worldComm().masterRank() )
+    {
+        std::cout<<" List of parameter selectionned during the offline algorithm"<<std::endl;
+        for(int k=0;k<M_WNmu->size();k++)
+        {
+            std::cout<<" mu "<<k<<" = [ ";
+            parameter_type const& _mu = M_WNmu->at( k );
+            for( int i=0; i<_mu.size()-1; i++ )
+                std::cout<<_mu(i)<<" , ";
+            std::cout<<_mu( _mu.size()-1 )<<" ] "<<std::endl;
+        }
+    }
+
 }
 
 template<typename TruthModelType>
@@ -1088,7 +1179,7 @@ CRBTrilinear<TruthModelType>::run( parameter_type const& mu, double eps , int N)
     double output = o.template get<0>();
 
     double e = 0;
-    double condition_number = 0;
+    double condition_number = o.template get<1>();
 
     return boost::make_tuple( output , e, Nwn , condition_number );
 }
