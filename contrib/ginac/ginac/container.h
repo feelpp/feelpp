@@ -34,6 +34,7 @@
 #include <memory>
 #include <stdexcept>
 #include <vector>
+#include <boost/shared_ptr.hpp>
 
 namespace GiNaC {
 
@@ -152,7 +153,7 @@ public:
 			this->seq = s;
 	}
 
-	explicit container(std::shared_ptr<STLT> vp)
+	explicit container(boost::shared_ptr<STLT> vp)
 	{
 		setflag(get_default_flags());
 		this->seq.swap(*vp);
@@ -364,7 +365,7 @@ public:
 	ex eval(int level = 0) const;
 	ex subs(const exmap & m, unsigned options = 0) const;
 
-	void read_archive(const archive_node &n, lst &sym_lst) 
+	void read_archive(const archive_node &n, lst &sym_lst)
 	{
 		inherited::read_archive(n, sym_lst);
 		setflag(get_default_flags());
@@ -451,7 +452,7 @@ protected:
 
 	/** Similar to duplicate(), but with a preset sequence (which gets
 	 *  deleted). Must be overridden by derived classes. */
-	virtual ex thiscontainer(std::shared_ptr<STLT> vp) const { return container(vp); }
+	virtual ex thiscontainer(boost::shared_ptr<STLT> vp) const { return container(vp); }
 
 	virtual void printseq(const print_context & c, char openbracket, char delim,
 	                      char closebracket, unsigned this_precedence,
@@ -495,7 +496,7 @@ protected:
 	void do_print_python(const print_python & c, unsigned level) const;
 	void do_print_python_repr(const print_python_repr & c, unsigned level) const;
 	STLT evalchildren(int level) const;
-	std::shared_ptr<STLT> subschildren(const exmap & m, unsigned options = 0) const;
+	boost::shared_ptr<STLT> subschildren(const exmap & m, unsigned options = 0) const;
 };
 
 /** Default constructor */
@@ -582,7 +583,7 @@ ex container<C>::subs(const exmap & m, unsigned options) const
 	// f(x).subs(x==f^-1(x))
 	//   -> f(f^-1(x))  [subschildren]
 	//   -> x           [eval]   /* must not subs(x==f^-1(x))! */
-	std::shared_ptr<STLT> vp = subschildren(m, options);
+	boost::shared_ptr<STLT> vp = subschildren(m, options);
 	if (vp.get()) {
 		ex result(thiscontainer(vp));
 		if (is_a<container<C> >(result))
@@ -751,7 +752,7 @@ typename container<C>::STLT container<C>::evalchildren(int level) const
 }
 
 template <template <class T, class = std::allocator<T> > class C>
-std::shared_ptr<typename container<C>::STLT> container<C>::subschildren(const exmap & m, unsigned options) const
+boost::shared_ptr<typename container<C>::STLT> container<C>::subschildren(const exmap & m, unsigned options) const
 {
 	// returns a NULL pointer if nothing had to be substituted
 	// returns a pointer to a newly created STLT otherwise
@@ -763,7 +764,7 @@ std::shared_ptr<typename container<C>::STLT> container<C>::subschildren(const ex
 		if (!are_ex_trivially_equal(*cit, subsed_ex)) {
 
 			// copy first part of seq which hasn't changed
-			std::shared_ptr<STLT> s(new STLT(this->seq.begin(), cit));
+			boost::shared_ptr<STLT> s(new STLT(this->seq.begin(), cit));
 			this->reserve(*s, this->seq.size());
 
 			// insert changed element
@@ -781,8 +782,8 @@ std::shared_ptr<typename container<C>::STLT> container<C>::subschildren(const ex
 
 		++cit;
 	}
-	
-	return std::shared_ptr<STLT>(0); // nothing has changed
+
+	return boost::shared_ptr<STLT>() ; // nothing has changed
 }
 
 } // namespace GiNaC

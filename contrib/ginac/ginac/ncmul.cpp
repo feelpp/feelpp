@@ -84,7 +84,7 @@ ncmul::ncmul(const exvector & v, bool discardable) : inherited(v,discardable)
 {
 }
 
-ncmul::ncmul(std::shared_ptr<exvector> vp) : inherited(vp)
+ncmul::ncmul(boost::shared_ptr<exvector> vp) : inherited(vp)
 {
 }
 
@@ -120,9 +120,9 @@ typedef std::vector<std::size_t> uintvector;
 ex ncmul::expand(unsigned options) const
 {
 	// First, expand the children
-	std::shared_ptr<exvector> vp = expandchildren(options);
+	boost::shared_ptr<exvector> vp = expandchildren(options);
 	const exvector &expanded_seq = vp.get() ? *vp : this->seq;
-	
+
 	// Now, look for all the factors that are sums and remember their
 	// position and number of terms.
 	uintvector positions_of_adds(expanded_seq.size());
@@ -245,7 +245,7 @@ ex ncmul::coeff(const ex & s, int n) const
 		}
 		return (new ncmul(coeffseq,1))->setflag(status_flags::dynallocated);
 	}
-		 
+
 	exvector::const_iterator i = seq.begin(), end = seq.end();
 	bool coeff_found = false;
 	while (i != end) {
@@ -260,7 +260,7 @@ ex ncmul::coeff(const ex & s, int n) const
 	}
 
 	if (coeff_found) return (new ncmul(coeffseq,1))->setflag(status_flags::dynallocated);
-	
+
 	return _ex0;
 }
 
@@ -271,19 +271,19 @@ size_t ncmul::count_factors(const ex & e) const
 		size_t factors=0;
 		for (size_t i=0; i<e.nops(); i++)
 			factors += count_factors(e.op(i));
-		
+
 		return factors;
 	}
 	return 1;
 }
-		
+
 void ncmul::append_factors(exvector & v, const ex & e) const
 {
 	if ((is_exactly_a<mul>(e)&&(e.return_type()!=return_types::commutative))||
 		(is_exactly_a<ncmul>(e))) {
 		for (size_t i=0; i<e.nops(); i++)
 			append_factors(v, e.op(i));
-	} else 
+	} else
 		v.push_back(e);
 }
 
@@ -322,7 +322,7 @@ ex ncmul::eval(int level) const
 	exvector::const_iterator cit = evaledseq.begin(), citend = evaledseq.end();
 	while (cit != citend)
 		factors += count_factors(*cit++);
-	
+
 	exvector assocseq;
 	assocseq.reserve(factors);
 	cit = evaledseq.begin();
@@ -331,10 +331,10 @@ ex ncmul::eval(int level) const
 	{	ex factor = mf.handle_factor(*(cit++), 1);
 		append_factors(assocseq, factor);
 	}
-	
+
 	// ncmul(x) -> x
 	if (assocseq.size()==1) return *(seq.begin());
- 
+
 	// ncmul() -> 1
 	if (assocseq.empty()) return _ex1;
 
@@ -381,7 +381,7 @@ ex ncmul::eval(int level) const
 		commutativeseq.push_back((new ncmul(noncommutativeseq,1))->setflag(status_flags::dynallocated));
 		return (new mul(commutativeseq))->setflag(status_flags::dynallocated);
 	}
-		
+
 	// ncmul(x1,y1,x2,y2) -> *(ncmul(x1,x2),ncmul(y1,y2))
 	//     (collect elements of same type)
 
@@ -426,20 +426,20 @@ ex ncmul::eval(int level) const
 			s += evv[i].size();
 		GINAC_ASSERT(s == assoc_num);
 #endif // def DO_GINAC_ASSERT
-		
+
 		// if all elements are of same type, simplify the string
 		if (evv_num == 1) {
 			return evv[0][0].eval_ncmul(evv[0]);
 		}
-		
+
 		exvector splitseq;
 		splitseq.reserve(evv_num);
 		for (i=0; i<evv_num; ++i)
 			splitseq.push_back((new ncmul(evv[i]))->setflag(status_flags::dynallocated));
-		
+
 		return (new mul(splitseq))->setflag(status_flags::dynallocated);
 	}
-	
+
 	return (new ncmul(assocseq))->setflag(status_flags::dynallocated |
 										  status_flags::evaluated);
 }
@@ -447,7 +447,7 @@ ex ncmul::eval(int level) const
 ex ncmul::evalm() const
 {
 	// Evaluate children first
-	std::shared_ptr<exvector> s(new exvector);
+	boost::shared_ptr<exvector> s(new exvector);
 	s->reserve(seq.size());
 	exvector::const_iterator it = seq.begin(), itend = seq.end();
 	while (it != itend) {
@@ -478,7 +478,7 @@ ex ncmul::thiscontainer(const exvector & v) const
 	return (new ncmul(v))->setflag(status_flags::dynallocated);
 }
 
-ex ncmul::thiscontainer(std::shared_ptr<exvector> vp) const
+ex ncmul::thiscontainer(boost::shared_ptr<exvector> vp) const
 {
 	return (new ncmul(vp))->setflag(status_flags::dynallocated);
 }
@@ -522,7 +522,7 @@ ex ncmul::derivative(const symbol & s) const
 	size_t num = seq.size();
 	exvector addseq;
 	addseq.reserve(num);
-	
+
 	// D(a*b*c) = D(a)*b*c + a*D(b)*c + a*b*D(c)
 	exvector ncmulseq = seq;
 	for (size_t i=0; i<num; ++i) {
@@ -568,7 +568,7 @@ unsigned ncmul::return_type() const
 	GINAC_ASSERT(!all_commutative); // not all factors should commutate, because this is a ncmul();
 	return all_commutative ? return_types::commutative : return_types::noncommutative;
 }
-   
+
 return_type_t ncmul::return_type_tinfo() const
 {
 	if (seq.empty())
@@ -596,7 +596,7 @@ return_type_t ncmul::return_type_tinfo() const
 // non-virtual functions in this class
 //////////
 
-std::shared_ptr<exvector> ncmul::expandchildren(unsigned options) const
+boost::shared_ptr<exvector> ncmul::expandchildren(unsigned options) const
 {
 	const_iterator cit = this->seq.begin(), end = this->seq.end();
 	while (cit != end) {
@@ -604,7 +604,7 @@ std::shared_ptr<exvector> ncmul::expandchildren(unsigned options) const
 		if (!are_ex_trivially_equal(*cit, expanded_ex)) {
 
 			// copy first part of seq which hasn't changed
-			std::shared_ptr<exvector> s(new exvector(this->seq.begin(), cit));
+			boost::shared_ptr<exvector> s(new exvector(this->seq.begin(), cit));
 			reserve(*s, this->seq.size());
 
 			// insert changed element
@@ -623,7 +623,7 @@ std::shared_ptr<exvector> ncmul::expandchildren(unsigned options) const
 		++cit;
 	}
 
-	return std::shared_ptr<exvector>(0); // nothing has changed
+	return boost::shared_ptr<exvector>(); // nothing has changed
 }
 
 const exvector & ncmul::get_factors() const

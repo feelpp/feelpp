@@ -27,6 +27,7 @@
 
 #include <iosfwd>
 #include <memory>
+#include <boost/shared_ptr.hpp>
 #include <string>
 
 namespace GiNaC {
@@ -240,7 +241,7 @@ class print_functor {
 public:
 	print_functor() : impl() {}
 	print_functor(const print_functor & other) : impl(other.impl.get() ? other.impl->duplicate() : 0) {}
-	print_functor(std::shared_ptr<print_functor_impl> impl_) : impl(impl_) {}
+	print_functor(boost::shared_ptr<print_functor_impl> impl_) : impl(impl_) {}
 
 	template <class T, class C>
 	print_functor(void f(const T &, const C &, unsigned)) : impl(new print_ptrfun_handler<T, C>(f)) {}
@@ -265,7 +266,7 @@ public:
 	bool is_valid() const { return impl.get(); }
 
 private:
-	std::shared_ptr<print_functor_impl> impl;
+	boost::shared_ptr<print_functor_impl> impl;
 };
 
 

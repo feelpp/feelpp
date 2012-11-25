@@ -31,6 +31,7 @@
 #include <list>
 #include <memory>
 #include <vector>
+#include <boost/shared_ptr.hpp>
 
 namespace GiNaC {
 
@@ -72,8 +73,8 @@ public:
 	expairseq(const ex & lh, const ex & rh);
 	expairseq(const exvector & v);
 	expairseq(const epvector & v, const ex & oc, bool do_index_renaming = false);
-	expairseq(std::shared_ptr<epvector>, const ex & oc, bool do_index_renaming = false);
-	
+	expairseq(boost::shared_ptr<epvector>, const ex & oc, bool do_index_renaming = false);
+
 	// functions overriding virtual functions from base classes
 public:
 	unsigned precedence() const {return 10;}
@@ -95,11 +96,11 @@ protected:
 	unsigned return_type() const;
 	unsigned calchash() const;
 	ex expand(unsigned options=0) const;
-	
+
 	// new virtual functions which can be overridden by derived classes
 protected:
 	virtual ex thisexpairseq(const epvector & v, const ex & oc, bool do_index_renaming = false) const;
-	virtual ex thisexpairseq(std::shared_ptr<epvector> vp, const ex & oc, bool do_index_renaming = false) const;
+	virtual ex thisexpairseq(boost::shared_ptr<epvector> vp, const ex & oc, bool do_index_renaming = false) const;
 	virtual void printseq(const print_context & c, char delim,
 	                      unsigned this_precedence,
 	                      unsigned upper_precedence) const;
@@ -116,7 +117,7 @@ protected:
 	virtual void combine_overall_coeff(const ex & c);
 	virtual void combine_overall_coeff(const ex & c1, const ex & c2);
 	virtual bool can_make_flat(const expair & p) const;
-	
+
 	// non-virtual functions in this class
 protected:
 	void do_print(const print_context & c, unsigned level) const;
@@ -155,12 +156,12 @@ protected:
 	                             epvector::const_iterator last_non_zero);
 #endif // EXPAIRSEQ_USE_HASHTAB
 	bool is_canonical() const;
-	std::shared_ptr<epvector> expandchildren(unsigned options) const;
-	std::shared_ptr<epvector> evalchildren(int level) const;
-	std::shared_ptr<epvector> subschildren(const exmap & m, unsigned options = 0) const;
-	
+	boost::shared_ptr<epvector> expandchildren(unsigned options) const;
+	boost::shared_ptr<epvector> evalchildren(int level) const;
+	boost::shared_ptr<epvector> subschildren(const exmap & m, unsigned options = 0) const;
+
 // member variables
-	
+
 protected:
 	epvector seq;
 	ex overall_coeff;
