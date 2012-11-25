@@ -48,7 +48,7 @@ void Convection_crb::init()
                           _desc=createMesh(),
                           _update=MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
     Xh = space_type::New( mesh );
-
+    LOG(INFO)<<"number of dofs : "<<Xh->nLocalDof()<<"\n";
     pT = element_ptrtype( new element_type( Xh ) );
 
     element_type U( Xh, "u" );
