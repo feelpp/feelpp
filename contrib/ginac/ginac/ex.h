@@ -33,7 +33,7 @@
 
 namespace GiNaC {
 #ifdef _MSC_VER
-  // MSVC produces a different symbol for _ex0 when it is declared inside   
+  // MSVC produces a different symbol for _ex0 when it is declared inside
   // ex::is_zero() than when it is declared at top level as follows
   extern const ex _ex0;
 #endif
@@ -74,7 +74,7 @@ class ex {
 	template<class T> friend inline const T &ex_to(const ex &);
 	template<class T> friend inline bool is_a(const ex &);
 	template<class T> friend inline bool is_exactly_a(const ex &);
-	
+
 	// default constructor, copy constructor and assignment operator
 public:
 	ex() throw();
@@ -93,7 +93,7 @@ public:
 	 *  in the expression must be specified in a lst in the second argument.
 	 *  Undefined symbols and other parser errors will throw an exception. */
 	ex(const std::string &s, const ex &l);
-	
+
 public:
 	// non-virtual functions in this class
 public:
@@ -209,14 +209,14 @@ public:
 	// comparison
 	int compare(const ex & other) const;
 	bool is_equal(const ex & other) const;
-	bool is_zero() const { 
+	bool is_zero() const {
 #ifndef _MSC_VER
 	  extern const ex _ex0;
 #endif
-	  return is_equal(_ex0); 
+	  return is_equal(_ex0);
 	}
 	bool is_zero_matrix() const;
-	
+
 	// symmetry
 	ex symmetrize() const;
 	ex symmetrize(const lst & l) const;
@@ -373,9 +373,9 @@ public:
 
 	// This should return an ex*, but that would be a pointer to a
 	// temporary value
-	std::shared_ptr<ex> operator->() const
+	boost::shared_ptr<ex> operator->() const
 	{
-		return std::shared_ptr<ex>(new ex(operator*()));
+		return boost::shared_ptr<ex>(new ex(operator*()));
 	}
 
 	ex operator[](difference_type n) const

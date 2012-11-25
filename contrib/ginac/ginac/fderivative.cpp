@@ -55,7 +55,7 @@ fderivative::fderivative(unsigned ser, const paramset & params, const exvector &
 {
 }
 
-fderivative::fderivative(unsigned ser, const paramset & params, std::shared_ptr<exvector> vp) : function(ser, vp), parameter_set(params)
+fderivative::fderivative(unsigned ser, const paramset & params, boost::shared_ptr<exvector> vp) : function(ser, vp), parameter_set(params)
 {
 }
 
@@ -176,7 +176,7 @@ ex fderivative::thiscontainer(const exvector & v) const
 	return fderivative(serial, parameter_set, v);
 }
 
-ex fderivative::thiscontainer(std::shared_ptr<exvector> vp) const
+ex fderivative::thiscontainer(boost::shared_ptr<exvector> vp) const
 {
 	return fderivative(serial, parameter_set, vp);
 }

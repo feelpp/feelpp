@@ -31,18 +31,18 @@ namespace GiNaC {
 class add : public expairseq
 {
 	GINAC_DECLARE_REGISTERED_CLASS(add, expairseq)
-	
+
 	friend class mul;
 	friend class power;
-	
+
 	// other constructors
 public:
 	add(const ex & lh, const ex & rh);
 	add(const exvector & v);
 	add(const epvector & v);
 	add(const epvector & v, const ex & oc);
-	add(std::shared_ptr<epvector> vp, const ex & oc);
-	
+	add(boost::shared_ptr<epvector> vp, const ex & oc);
+
 	// functions overriding virtual functions from base classes
 public:
 	unsigned precedence() const {return 40;}
@@ -68,7 +68,7 @@ protected:
 	unsigned return_type() const;
 	return_type_t return_type_tinfo() const;
 	ex thisexpairseq(const epvector & v, const ex & oc, bool do_index_renaming = false) const;
-	ex thisexpairseq(std::shared_ptr<epvector> vp, const ex & oc, bool do_index_renaming = false) const;
+	ex thisexpairseq(boost::shared_ptr<epvector> vp, const ex & oc, bool do_index_renaming = false) const;
 	expair split_ex_to_pair(const ex & e) const;
 	expair combine_ex_with_coeff_to_pair(const ex & e,
 	                                     const ex & c) const;

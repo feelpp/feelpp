@@ -109,7 +109,7 @@ clifford::clifford(unsigned char rl, const ex & metr, int comm_sign, const exvec
 {
 }
 
-clifford::clifford(unsigned char rl, const ex & metr, int comm_sign, std::shared_ptr<exvector> vp) : inherited(not_symmetric(), vp), representation_label(rl), metric(metr), commutator_sign(comm_sign)
+clifford::clifford(unsigned char rl, const ex & metr, int comm_sign, boost::shared_ptr<exvector> vp) : inherited(not_symmetric(), vp), representation_label(rl), metric(metr), commutator_sign(comm_sign)
 {
 }
 
@@ -175,16 +175,16 @@ ex clifford::get_metric(const ex & i, const ex & j, bool symmetrised) const
 bool clifford::same_metric(const ex & other) const
 {
 	ex metr;
-	if (is_a<clifford>(other)) 
+	if (is_a<clifford>(other))
 		metr = ex_to<clifford>(other).get_metric();
-	else 
+	else
 		metr = other;
 
 	if (is_a<indexed>(metr))
 		return metr.op(0).is_equal(get_metric().op(0));
 	else {
 		exvector indices = metr.get_free_indices();
-		return  (indices.size() == 2) 
+		return  (indices.size() == 2)
 			&& simplify_indexed(get_metric(indices[0], indices[1])-metr).is_zero();
 	}
 }
@@ -198,7 +198,7 @@ ex clifford::op(size_t i) const
 	GINAC_ASSERT(i<nops());
 	if (nops()-i == 1)
 		return representation_label;
-	else 
+	else
 		return inherited::op(i);
 }
 
@@ -210,7 +210,7 @@ ex & clifford::let_op(size_t i)
         ensure_if_modifiable();
 	if (nops()-i == 1)
 		return rl;
-	else 
+	else
 		return inherited::let_op(i);
 }
 
@@ -266,7 +266,7 @@ void clifford::do_print_dflt(const print_dflt & c, unsigned level) const
 	} else { // We do not print representation label if it is 0
 		if (representation_label == 0) {
 			this->print_dispatch<inherited>(c, level);
-		} else { // otherwise we put it before indices in square brackets; the code is borrowed from indexed.cpp 
+		} else { // otherwise we put it before indices in square brackets; the code is borrowed from indexed.cpp
 			if (precedence() <= level) {
 				c.s << '(';
 			}
@@ -457,7 +457,7 @@ bool cliffordunit::contract_with(exvector::iterator self, exvector::iterator oth
 	if (is_a<clifford>(*other)) {
 		// Contraction only makes sense if the represenation labels are equal
 		// and the metrics are the same
-		if ((ex_to<clifford>(*other).get_representation_label() != rl) 
+		if ((ex_to<clifford>(*other).get_representation_label() != rl)
 		    && unit.same_metric(*other))
 			return false;
 
@@ -493,7 +493,7 @@ bool cliffordunit::contract_with(exvector::iterator self, exvector::iterator oth
 			if (std::find_if(self + 1, other, is_not_a_clifford()) != other) {
 				return false;
 			}
-			
+
 			ex S = ncmul(exvector(self + 1, before_other), true);
 
 			if (is_a<clifford>(*before_other) && ex_to<clifford>(*before_other).get_representation_label() == rl) {
@@ -502,7 +502,7 @@ bool cliffordunit::contract_with(exvector::iterator self, exvector::iterator oth
 				// simply commutes
 				*self = (*self) * S * (*other) * (*before_other);
 			}
-				
+
 			std::fill(self + 1, other + 1, _ex1);
 			return true;
 		}
@@ -617,8 +617,8 @@ ex clifford::eval_ncmul(const exvector & v) const
 
 			if (a_is_cliffordunit && b_is_cliffordunit && ex_to<clifford>(a).same_metric(b)
 				&& (ex_to<clifford>(a).get_commutator_sign() == -1)) {
-				// This is done only for Clifford algebras 
-				
+				// This is done only for Clifford algebras
+
 				const ex & ia = a.op(1);
 				const ex & ib = b.op(1);
 				if (ia.is_equal(ib)) { // gamma~alpha gamma~alpha -> g~alpha~alpha
@@ -663,7 +663,7 @@ ex clifford::eval_ncmul(const exvector & v) const
 
 				// a\ a\ -> a^2
 				varidx ix((new symbol)->setflag(status_flags::dynallocated), ex_to<idx>(a.op(1)).minimal_dim(ex_to<idx>(b.op(1))));
-				
+
 				a = indexed(ag, ix) * indexed(ag, ix.toggle_variance());
 				b = dirac_ONE(representation_label);
 				something_changed = true;
@@ -684,13 +684,13 @@ ex clifford::thiscontainer(const exvector & v) const
 	return clifford(representation_label, metric, commutator_sign, v);
 }
 
-ex clifford::thiscontainer(std::shared_ptr<exvector> vp) const
+ex clifford::thiscontainer(boost::shared_ptr<exvector> vp) const
 {
 	return clifford(representation_label, metric, commutator_sign, vp);
 }
 
 ex diracgamma5::conjugate() const
-{	
+{
 	return _ex_1 * (*this);
 }
 
@@ -764,7 +764,7 @@ ex clifford_unit(const ex & mu, const ex & metr, unsigned char rl)
 		varidx xi((new symbol)->setflag(status_flags::dynallocated), ex_to<idx>(mu).get_dim()),
 			chi((new symbol)->setflag(status_flags::dynallocated), ex_to<idx>(mu).get_dim());
 		return clifford(unit, mu, indexed(metr, xi, chi), rl);
-	}  else 
+	}  else
 		throw(std::invalid_argument("clifford_unit(): metric for Clifford unit must be of type tensor, matrix or an expression with two free indices"));
 }
 
@@ -1101,13 +1101,13 @@ ex remove_dirac_ONE(const ex & e, unsigned char rl, unsigned options)
 			e1 = expand_dummy_sum(e, true);
 		e1 = canonicalize_clifford(e1);
 	}
-	
+
 	if (is_a<clifford>(e1) && ex_to<clifford>(e1).get_representation_label() >= rl) {
 		if (is_a<diracone>(e1.op(0)))
 			return 1;
-		else 
+		else
 			throw(std::invalid_argument("remove_dirac_ONE(): expression is a non-scalar Clifford number!"));
-	} else if (is_a<add>(e1) || is_a<ncmul>(e1) || is_a<mul>(e1)  
+	} else if (is_a<add>(e1) || is_a<ncmul>(e1) || is_a<mul>(e1)
 			   || is_a<matrix>(e1) || e1.info(info_flags::list)) {
 		if (options & 3) // is a child or was already expanded
 			return e1.map(fcn);
@@ -1126,7 +1126,7 @@ ex remove_dirac_ONE(const ex & e, unsigned char rl, unsigned options)
 			} catch (std::exception &p) {
 				need_reevaluation = true;
 			}
-	} 
+	}
 	if (need_reevaluation)
 		return remove_dirac_ONE(e, rl, options | 2);
 	return e1;
@@ -1141,7 +1141,7 @@ int clifford_max_label(const ex & e, bool ignore_ONE)
 			return ex_to<clifford>(e).get_representation_label();
 	else {
 		int rl = -1;
-		for (size_t i=0; i < e.nops(); i++) 
+		for (size_t i=0; i < e.nops(); i++)
 			rl = (rl > clifford_max_label(e.op(i), ignore_ONE)) ? rl : clifford_max_label(e.op(i), ignore_ONE);
 		return rl;
 	}
@@ -1151,13 +1151,13 @@ ex clifford_norm(const ex & e)
 {
 	return sqrt(remove_dirac_ONE(e * clifford_bar(e)));
 }
-	
+
 ex clifford_inverse(const ex & e)
 {
 	ex norm = clifford_norm(e);
 	if (!norm.is_zero())
 		return clifford_bar(e) / pow(norm, 2);
-	else 
+	else
 		throw(std::invalid_argument("clifford_inverse(): cannot find inverse of Clifford number with zero norm!"));
 }
 
@@ -1192,7 +1192,7 @@ ex lst_to_clifford(const ex & v, const ex & e) {
 				else if (max - dim == 1) {
 					if (ex_to<matrix>(v).cols() > ex_to<matrix>(v).rows())
 						return v.op(0) * dirac_ONE(ex_to<clifford>(e).get_representation_label()) + indexed(sub_matrix(ex_to<matrix>(v), 0, 1, 1, dim), mu_toggle) * e;
-					else 
+					else
 						return v.op(0) * dirac_ONE(ex_to<clifford>(e).get_representation_label()) + indexed(sub_matrix(ex_to<matrix>(v), 1, dim, 0, 1), mu_toggle) * e;
  				} else
 					throw(std::invalid_argument("lst_to_clifford(): dimensions of vector and clifford unit mismatch"));
@@ -1210,16 +1210,16 @@ ex lst_to_clifford(const ex & v, const ex & e) {
 	} else
 		throw(std::invalid_argument("lst_to_clifford(): the second argument should be a Clifford unit"));
 }
- 
+
 /** Auxiliary structure to define a function for striping one Clifford unit
  * from vectors. Used in  clifford_to_lst(). */
-static ex get_clifford_comp(const ex & e, const ex & c) 
+static ex get_clifford_comp(const ex & e, const ex & c)
 {
 	pointer_to_map_function_1arg<const ex &> fcn(get_clifford_comp, c);
 	int ival = ex_to<numeric>(ex_to<idx>(c.op(1)).get_value()).to_int();
-		
+
 	if (is_a<add>(e) || e.info(info_flags::list) // || is_a<pseries>(e) || is_a<integral>(e)
-		|| is_a<matrix>(e)) 
+		|| is_a<matrix>(e))
 		return e.map(fcn);
 	else if (is_a<ncmul>(e) || is_a<mul>(e)) {
 		// find a Clifford unit with the same metric, delete it and substitute its index
@@ -1248,7 +1248,7 @@ static ex get_clifford_comp(const ex & e, const ex & c)
 						exvector ind_vec;
 						if (is_a<indexed>(e.op(j)))
 							ind_vec = ex_to<indexed>(e.op(j)).get_dummy_indices(ex_to<indexed>(e.op(ind)));
-						
+
 						if (ind_vec.size() > 0) {
 							found_dummy = true;
 							exvector::const_iterator it = ind_vec.begin(), itend = ind_vec.end();
@@ -1269,13 +1269,13 @@ static ex get_clifford_comp(const ex & e, const ex & c)
 			return (found_dummy ? S : 0);
 		} else
 			throw(std::invalid_argument("get_clifford_comp(): expression is not a Clifford vector to the given units"));
-	} else if (e.is_zero()) 
+	} else if (e.is_zero())
 		return e;
 	else if (is_a<clifford>(e) && ex_to<clifford>(e).same_metric(c))
 		if ( ex_to<idx>(e.op(1)).is_numeric() &&
 			 (ival != ex_to<numeric>(ex_to<idx>(e.op(1)).get_value()).to_int()) )
 			return 0;
-		else 
+		else
 			return 1;
 	else
 		throw(std::invalid_argument("get_clifford_comp(): expression is not usable as a Clifford vector"));
@@ -1291,23 +1291,23 @@ lst clifford_to_lst(const ex & e, const ex & c, bool algebraic)
 	unsigned int D = ex_to<numeric>(ex_to<idx>(mu).get_dim()).to_int();
 
 	if (algebraic) // check if algebraic method is applicable
-		for (unsigned int i = 0; i < D; i++) 
-			if (pow(c.subs(mu == i, subs_options::no_pattern), 2).is_zero() 
+		for (unsigned int i = 0; i < D; i++)
+			if (pow(c.subs(mu == i, subs_options::no_pattern), 2).is_zero()
 				|| (! is_a<numeric>(pow(c.subs(mu == i, subs_options::no_pattern), 2))))
 				algebraic = false;
-	lst V; 
+	lst V;
 	ex v0 = remove_dirac_ONE(canonicalize_clifford(e+clifford_prime(e)).normal())/2;
 	if (! v0.is_zero())
 		V.append(v0);
-	ex e1 = canonicalize_clifford(e - v0 * dirac_ONE(ex_to<clifford>(c).get_representation_label())); 
+	ex e1 = canonicalize_clifford(e - v0 * dirac_ONE(ex_to<clifford>(c).get_representation_label()));
 	if (algebraic) {
-		for (unsigned int i = 0; i < D; i++) 
+		for (unsigned int i = 0; i < D; i++)
 			V.append(remove_dirac_ONE(
 						simplify_indexed(canonicalize_clifford(e1 * c.subs(mu == i, subs_options::no_pattern) +  c.subs(mu == i, subs_options::no_pattern) * e1))
 						/ (2*pow(c.subs(mu == i, subs_options::no_pattern), 2))));
 	} else {
 		try {
-			for (unsigned int i = 0; i < D; i++) 
+			for (unsigned int i = 0; i < D; i++)
 				V.append(get_clifford_comp(e1, c.subs(c.op(1) == i, subs_options::no_pattern)));
 		} catch  (std::exception &p) {
 			/* Try to expand dummy summations to simplify the expression*/
@@ -1316,9 +1316,9 @@ lst clifford_to_lst(const ex & e, const ex & c, bool algebraic)
 			v0 = remove_dirac_ONE(canonicalize_clifford(e1+clifford_prime(e1)).normal())/2;
 			if (! v0.is_zero()) {
 				V.append(v0);
-				e1 = canonicalize_clifford(e1 - v0 * dirac_ONE(ex_to<clifford>(c).get_representation_label())); 
+				e1 = canonicalize_clifford(e1 - v0 * dirac_ONE(ex_to<clifford>(c).get_representation_label()));
 			}
-			for (unsigned int i = 0; i < D; i++) 
+			for (unsigned int i = 0; i < D; i++)
 				V.append(get_clifford_comp(e1, c.subs(c.op(1) == i, subs_options::no_pattern)));
 		}
 	}
@@ -1329,10 +1329,10 @@ lst clifford_to_lst(const ex & e, const ex & c, bool algebraic)
 ex clifford_moebius_map(const ex & a, const ex & b, const ex & c, const ex & d, const ex & v, const ex & G, unsigned char rl)
 {
 	ex x, D, cu;
-	
+
 	if (! is_a<matrix>(v) && ! v.info(info_flags::list))
 		throw(std::invalid_argument("clifford_moebius_map(): parameter v should be either vector or list"));
-	
+
 	if (is_a<clifford>(G)) {
 		cu = G;
 	} else {
@@ -1341,21 +1341,21 @@ ex clifford_moebius_map(const ex & a, const ex & b, const ex & c, const ex & d, 
 			varidx mu((new symbol)->setflag(status_flags::dynallocated), D);
 			cu = clifford_unit(mu, G, rl);
 		} else if (is_a<matrix>(G)) {
-			D = ex_to<matrix>(G).rows(); 
+			D = ex_to<matrix>(G).rows();
 			idx mu((new symbol)->setflag(status_flags::dynallocated), D);
 			cu = clifford_unit(mu, G, rl);
 		} else throw(std::invalid_argument("clifford_moebius_map(): metric should be an indexed object, matrix, or a Clifford unit"));
-		
+
 	}
-	
-	x = lst_to_clifford(v, cu); 
+
+	x = lst_to_clifford(v, cu);
 	ex e = clifford_to_lst(simplify_indexed(canonicalize_clifford((a * x + b) * clifford_inverse(c * x + d))), cu, false);
 	return (is_a<matrix>(v) ? matrix(ex_to<matrix>(v).rows(), ex_to<matrix>(v).cols(), ex_to<lst>(e)) : e);
 }
 
 ex clifford_moebius_map(const ex & M, const ex & v, const ex & G, unsigned char rl)
 {
-	if (is_a<matrix>(M) && (ex_to<matrix>(M).rows() == 2) && (ex_to<matrix>(M).cols() == 2)) 
+	if (is_a<matrix>(M) && (ex_to<matrix>(M).rows() == 2) && (ex_to<matrix>(M).cols() == 2))
 		return clifford_moebius_map(M.op(0), M.op(1), M.op(2), M.op(3), v, G, rl);
 	else
 		throw(std::invalid_argument("clifford_moebius_map(): parameter M should be a 2x2 matrix"));

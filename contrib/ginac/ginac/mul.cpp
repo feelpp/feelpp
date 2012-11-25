@@ -89,7 +89,7 @@ mul::mul(const epvector & v, const ex & oc, bool do_index_renaming)
 	GINAC_ASSERT(is_canonical());
 }
 
-mul::mul(std::shared_ptr<epvector> vp, const ex & oc, bool do_index_renaming)
+mul::mul(boost::shared_ptr<epvector> vp, const ex & oc, bool do_index_renaming)
 {
 	GINAC_ASSERT(vp.get()!=0);
 	overall_coeff = oc;
@@ -396,7 +396,7 @@ ex mul::coeff(const ex & s, int n) const
 {
 	exvector coeffseq;
 	coeffseq.reserve(seq.size()+1);
-	
+
 	if (n==0) {
 		// product of individual coeffs
 		// if a non-zero power of s is found, the resulting product will be 0
@@ -408,7 +408,7 @@ ex mul::coeff(const ex & s, int n) const
 		coeffseq.push_back(overall_coeff);
 		return (new mul(coeffseq))->setflag(status_flags::dynallocated);
 	}
-	
+
 	epvector::const_iterator i = seq.begin(), end = seq.end();
 	bool coeff_found = false;
 	while (i != end) {
@@ -426,7 +426,7 @@ ex mul::coeff(const ex & s, int n) const
 		coeffseq.push_back(overall_coeff);
 		return (new mul(coeffseq))->setflag(status_flags::dynallocated);
 	}
-	
+
 	return _ex0;
 }
 
@@ -441,19 +441,19 @@ ex mul::coeff(const ex & s, int n) const
  *  @param level cut-off in recursive evaluation */
 ex mul::eval(int level) const
 {
-	std::shared_ptr<epvector> evaled_seqp = evalchildren(level);
+	boost::shared_ptr<epvector> evaled_seqp = evalchildren(level);
 	if (evaled_seqp.get()) {
 		// do more evaluation later
 		return (new mul(evaled_seqp, overall_coeff))->
 		           setflag(status_flags::dynallocated);
 	}
-	
+
 	if (flags & status_flags::evaluated) {
 		GINAC_ASSERT(seq.size()>0);
 		GINAC_ASSERT(seq.size()>1 || !overall_coeff.is_equal(_ex1));
 		return *this;
 	}
-	
+
 	size_t seq_size = seq.size();
 	if (overall_coeff.is_zero()) {
 		// *(...,x;0) -> 0
@@ -469,7 +469,7 @@ ex mul::eval(int level) const
 	           ex_to<numeric>((*seq.begin()).coeff).is_equal(*_num1_p)) {
 		// *(+(x,y,...);c) -> +(*(x,c),*(y,c),...) (c numeric(), no powers of +())
 		const add & addref = ex_to<add>((*seq.begin()).rest);
-		std::shared_ptr<epvector> distrseq(new epvector);
+		boost::shared_ptr<epvector> distrseq(new epvector);
 		distrseq->reserve(addref.seq.size());
 		epvector::const_iterator i = addref.seq.begin(), end = addref.seq.end();
 		while (i != end) {
@@ -487,7 +487,7 @@ ex mul::eval(int level) const
 		epvector::const_iterator last = seq.end();
 		epvector::const_iterator i = seq.begin();
 		epvector::const_iterator j = seq.begin();
-		std::shared_ptr<epvector> s(new epvector);
+		boost::shared_ptr<epvector> s(new epvector);
 		numeric oc = *_num1_p;
 		bool something_changed = false;
 		while (i!=last) {
@@ -497,13 +497,13 @@ ex mul::eval(int level) const
 				continue;
 			}
 
-			// XXX: What is the best way to check if the polynomial is a primitive? 
+			// XXX: What is the best way to check if the polynomial is a primitive?
 			numeric c = i->rest.integer_content();
 			const numeric lead_coeff =
 				ex_to<numeric>(ex_to<add>(i->rest).seq.begin()->coeff).div(c);
 			const bool canonicalizable = lead_coeff.is_integer();
 
-			// XXX: The main variable is chosen in a random way, so this code 
+			// XXX: The main variable is chosen in a random way, so this code
 			// does NOT transform the term into the canonical form (thus, in some
 			// very unlucky event it can even loop forever). Hopefully the main
 			// variable will be the same for all terms in *this
@@ -536,7 +536,7 @@ ex mul::eval(int level) const
 			primitive->overall_coeff = ex_to<numeric>(primitive->overall_coeff).div_dyn(c);
 			for (epvector::iterator ai = primitive->seq.begin(); ai != primitive->seq.end(); ++ai)
 				ai->coeff = ex_to<numeric>(ai->coeff).div_dyn(c);
-			
+
 			s->push_back(expair(*primitive, _ex1));
 
 			++i;
@@ -559,11 +559,11 @@ ex mul::evalf(int level) const
 {
 	if (level==1)
 		return mul(seq,overall_coeff);
-	
+
 	if (level==-max_recursion_level)
 		throw(std::runtime_error("max recursion level reached"));
-	
-	std::shared_ptr<epvector> s(new epvector);
+
+	boost::shared_ptr<epvector> s(new epvector);
 	s->reserve(seq.size());
 
 	--level;
@@ -621,7 +621,7 @@ ex mul::evalm() const
 	// Evaluate children first, look whether there are any matrices at all
 	// (there can be either no matrices or one matrix; if there were more
 	// than one matrix, it would be a non-commutative product)
-	std::shared_ptr<epvector> s(new epvector);
+	boost::shared_ptr<epvector> s(new epvector);
 	s->reserve(seq.size());
 
 	bool have_matrix = false;
@@ -667,7 +667,7 @@ ex mul::eval_ncmul(const exvector & v) const
 }
 
 bool tryfactsubs(const ex & origfactor, const ex & patternfactor, int & nummatches, exmap& repls)
-{	
+{
 	ex origbase;
 	int origexponent;
 	int origexpsign;
@@ -765,7 +765,7 @@ bool mul::has(const ex & pattern, unsigned options) const
 }
 
 ex mul::algebraic_subs_mul(const exmap & m, unsigned options) const
-{	
+{
 	std::vector<bool> subsed(nops(), false);
 	ex divide_by = 1;
 	ex multiply_by = 1;
@@ -777,7 +777,7 @@ retry1:
 			int nummatches = std::numeric_limits<int>::max();
 			std::vector<bool> currsubsed(nops(), false);
 			exmap repls;
-			
+
 			if(!algebraic_match_mul_with_mul(*this, it->first, repls, 0, nummatches, subsed, currsubsed))
 				continue;
 
@@ -864,7 +864,7 @@ ex mul::derivative(const symbol & s) const
 	size_t num = seq.size();
 	exvector addseq;
 	addseq.reserve(num);
-	
+
 	// D(a*b*c) = D(a)*b*c + a*D(b)*c + a*b*D(c)
 	epvector mulseq = seq;
 	epvector::const_iterator i = seq.begin(), end = seq.end();
@@ -891,10 +891,10 @@ unsigned mul::return_type() const
 		// mul without factors: should not happen, but commutates
 		return return_types::commutative;
 	}
-	
+
 	bool all_commutative = true;
 	epvector::const_iterator noncommutative_element; // point to first found nc element
-	
+
 	epvector::const_iterator i = seq.begin(), end = seq.end();
 	while (i != end) {
 		unsigned rt = i->rest.return_type();
@@ -922,7 +922,7 @@ return_type_t mul::return_type_tinfo() const
 {
 	if (seq.empty())
 		return make_return_type_t<mul>(); // mul without factors: should not happen
-	
+
 	// return type_info of first noncommutative element
 	epvector::const_iterator i = seq.begin(), end = seq.end();
 	while (i != end) {
@@ -939,7 +939,7 @@ ex mul::thisexpairseq(const epvector & v, const ex & oc, bool do_index_renaming)
 	return (new mul(v, oc, do_index_renaming))->setflag(status_flags::dynallocated);
 }
 
-ex mul::thisexpairseq(std::shared_ptr<epvector> vp, const ex & oc, bool do_index_renaming) const
+ex mul::thisexpairseq(boost::shared_ptr<epvector> vp, const ex & oc, bool do_index_renaming) const
 {
 	return (new mul(vp, oc, do_index_renaming))->setflag(status_flags::dynallocated);
 }
@@ -982,7 +982,7 @@ expair mul::combine_pair_with_coeff_to_pair(const expair & p,
 
 ex mul::recombine_pair_to_ex(const expair & p) const
 {
-	if (ex_to<numeric>(p.coeff).is_equal(*_num1_p)) 
+	if (ex_to<numeric>(p.coeff).is_equal(*_num1_p))
 		return p.rest;
 	else
 		return (new power(p.rest,p.coeff))->setflag(status_flags::dynallocated);
@@ -1009,7 +1009,7 @@ bool mul::expair_needs_further_processing(epp it)
 		}
 	}
 	return false;
-}       
+}
 
 ex mul::default_overall_coeff() const
 {
@@ -1068,14 +1068,14 @@ ex mul::expand(unsigned options) const
 	}
 
 	// do not rename indices if the object has no indices at all
-	if ((!(options & expand_options::expand_rename_idx)) && 
+	if ((!(options & expand_options::expand_rename_idx)) &&
 			this->info(info_flags::has_indices))
 		options |= expand_options::expand_rename_idx;
 
 	const bool skip_idx_rename = !(options & expand_options::expand_rename_idx);
 
 	// First, expand the children
-	std::shared_ptr<epvector> expanded_seqp = expandchildren(options);
+	boost::shared_ptr<epvector> expanded_seqp = expandchildren(options);
 	const epvector & expanded_seq = (expanded_seqp.get() ? *expanded_seqp : seq);
 
 	// Now, look for all the factors that are sums and multiply each one out
@@ -1155,7 +1155,7 @@ ex mul::expand(unsigned options) const
 					distrseq2.reserve(add1.seq.size());
 					const ex i2_new = (skip_idx_rename || (dummy_subs.op(0).nops() == 0) ?
 							i2->rest :
-							i2->rest.subs(ex_to<lst>(dummy_subs.op(0)), 
+							i2->rest.subs(ex_to<lst>(dummy_subs.op(0)),
 								ex_to<lst>(dummy_subs.op(1)), subs_options::no_pattern));
 					for (epvector::const_iterator i1=add1begin; i1!=add1end; ++i1) {
 						// Don't push_back expairs which might have a rest that evaluates to a numeric,
@@ -1168,7 +1168,7 @@ ex mul::expand(unsigned options) const
 						}
 					}
 					tmp_accu += (new add(distrseq2, oc))->setflag(status_flags::dynallocated);
-				} 
+				}
 				last_expanded = tmp_accu;
 			} else {
 				if (!last_expanded.is_equal(_ex1))
@@ -1224,7 +1224,7 @@ ex mul::expand(unsigned options) const
 	}
 }
 
-  
+
 //////////
 // new virtual functions which can be overridden by derived classes
 //////////
@@ -1243,7 +1243,7 @@ ex mul::expand(unsigned options) const
  *  @see mul::expand()
  *  @return pointer to epvector containing expanded representation or zero
  *  pointer, if sequence is unchanged. */
-std::shared_ptr<epvector> mul::expandchildren(unsigned options) const
+boost::shared_ptr<epvector> mul::expandchildren(unsigned options) const
 {
 	const epvector::const_iterator last = seq.end();
 	epvector::const_iterator cit = seq.begin();
@@ -1251,11 +1251,11 @@ std::shared_ptr<epvector> mul::expandchildren(unsigned options) const
 		const ex & factor = recombine_pair_to_ex(*cit);
 		const ex & expanded_factor = factor.expand(options);
 		if (!are_ex_trivially_equal(factor,expanded_factor)) {
-			
+
 			// something changed, copy seq, eval and return it
-			std::shared_ptr<epvector> s(new epvector);
+			boost::shared_ptr<epvector> s(new epvector);
 			s->reserve(seq.size());
-			
+
 			// copy parts of seq which are known not to have changed
 			epvector::const_iterator cit2 = seq.begin();
 			while (cit2!=cit) {
@@ -1276,8 +1276,8 @@ std::shared_ptr<epvector> mul::expandchildren(unsigned options) const
 		}
 		++cit;
 	}
-	
-	return std::shared_ptr<epvector>(0); // nothing has changed
+
+	return boost::shared_ptr<epvector>(); // nothing has changed
 }
 
 GINAC_BIND_UNARCHIVER(mul);

@@ -86,7 +86,7 @@ add::add(const epvector & v, const ex & oc)
 	GINAC_ASSERT(is_canonical());
 }
 
-add::add(std::shared_ptr<epvector> vp, const ex & oc)
+add::add(boost::shared_ptr<epvector> vp, const ex & oc)
 {
 	GINAC_ASSERT(vp.get()!=0);
 	overall_coeff = oc;
@@ -167,14 +167,14 @@ void add::do_print_csrc(const print_csrc & c, unsigned level) const
 {
 	if (precedence() <= level)
 		c.s << "(";
-	
+
 	// Print arguments, separated by "+" or "-"
 	epvector::const_iterator it = seq.begin(), itend = seq.end();
 	char separator = ' ';
 	while (it != itend) {
-		
+
 		// If the coefficient is negative, separator is "-"
-		if (it->coeff.is_equal(_ex_1) || 
+		if (it->coeff.is_equal(_ex_1) ||
 			ex_to<numeric>(it->coeff).numer().is_equal(*_num_1_p))
 			separator = '-';
 		c.s << separator;
@@ -191,18 +191,18 @@ void add::do_print_csrc(const print_csrc & c, unsigned level) const
 			c.s << '*';
 			it->rest.print(c, precedence());
 		}
-		
+
 		++it;
 		separator = '+';
 	}
-	
+
 	if (!overall_coeff.is_zero()) {
 		if (overall_coeff.info(info_flags::positive)
 		 || is_a<print_csrc_cl_N>(c) || !overall_coeff.info(info_flags::real))  // sign inside ctor argument
 			c.s << '+';
 		overall_coeff.print(c, precedence());
 	}
-		
+
 	if (precedence() <= level)
 		c.s << ")";
 }
@@ -275,7 +275,7 @@ int add::degree(const ex & s) const
 	int deg = std::numeric_limits<int>::min();
 	if (!overall_coeff.is_zero())
 		deg = 0;
-	
+
 	// Find maximum of degrees of individual terms
 	epvector::const_iterator i = seq.begin(), end = seq.end();
 	while (i != end) {
@@ -292,7 +292,7 @@ int add::ldegree(const ex & s) const
 	int deg = std::numeric_limits<int>::max();
 	if (!overall_coeff.is_zero())
 		deg = 0;
-	
+
 	// Find minimum of degrees of individual terms
 	epvector::const_iterator i = seq.begin(), end = seq.end();
 	while (i != end) {
@@ -306,8 +306,8 @@ int add::ldegree(const ex & s) const
 
 ex add::coeff(const ex & s, int n) const
 {
-	std::shared_ptr<epvector> coeffseq(new epvector);
-	std::shared_ptr<epvector> coeffseq_cliff(new epvector);
+	boost::shared_ptr<epvector> coeffseq(new epvector);
+	boost::shared_ptr<epvector> coeffseq_cliff(new epvector);
 	int rl = clifford_max_label(s);
 	bool do_clifford = (rl != -1);
 	bool nonscalar = false;
@@ -343,13 +343,13 @@ ex add::coeff(const ex & s, int n) const
  *  @param level cut-off in recursive evaluation */
 ex add::eval(int level) const
 {
-	std::shared_ptr<epvector> evaled_seqp = evalchildren(level);
+	boost::shared_ptr<epvector> evaled_seqp = evalchildren(level);
 	if (evaled_seqp.get()) {
 		// do more evaluation later
 		return (new add(evaled_seqp, overall_coeff))->
 		       setflag(status_flags::dynallocated);
 	}
-	
+
 #ifdef DO_GINAC_ASSERT
 	epvector::const_iterator i = seq.begin(), end = seq.end();
 	while (i != end) {
@@ -357,13 +357,13 @@ ex add::eval(int level) const
 		++i;
 	}
 #endif // def DO_GINAC_ASSERT
-	
+
 	if (flags & status_flags::evaluated) {
 		GINAC_ASSERT(seq.size()>0);
 		GINAC_ASSERT(seq.size()>1 || !overall_coeff.is_zero());
 		return *this;
 	}
-	
+
 	int seq_size = seq.size();
 	if (seq_size == 0) {
 		// +(;c) -> c
@@ -374,7 +374,7 @@ ex add::eval(int level) const
 	} else if (!overall_coeff.is_zero() && seq[0].rest.return_type() != return_types::commutative) {
 		throw (std::logic_error("add::eval(): sum of non-commutative objects has non-zero numeric term"));
 	}
-	
+
 	// if any terms in the sum still are purely numeric, then they are more
 	// appropriately collected into the overall coefficient
 	epvector::const_iterator last = seq.end();
@@ -386,7 +386,7 @@ ex add::eval(int level) const
 		++j;
 	}
 	if (terms_to_collect) {
-		std::shared_ptr<epvector> s(new epvector);
+		boost::shared_ptr<epvector> s(new epvector);
 		s->reserve(seq_size - terms_to_collect);
 		numeric oc = *_num1_p;
 		j = seq.begin();
@@ -400,7 +400,7 @@ ex add::eval(int level) const
 		return (new add(s, ex_to<numeric>(overall_coeff).add_dyn(oc)))
 		        ->setflag(status_flags::dynallocated);
 	}
-	
+
 	return this->hold();
 }
 
@@ -408,7 +408,7 @@ ex add::evalm() const
 {
 	// Evaluate children first and add up all matrices. Stop if there's one
 	// term that is not a matrix.
-	std::shared_ptr<epvector> s(new epvector);
+	boost::shared_ptr<epvector> s(new epvector);
 	s->reserve(seq.size());
 
 	bool all_matrices = true;
@@ -504,7 +504,7 @@ ex add::eval_ncmul(const exvector & v) const
 		return inherited::eval_ncmul(v);
 	else
 		return seq.begin()->rest.eval_ncmul(v);
-}    
+}
 
 // protected
 
@@ -512,9 +512,9 @@ ex add::eval_ncmul(const exvector & v) const
  *  @see ex::diff */
 ex add::derivative(const symbol & y) const
 {
-	std::shared_ptr<epvector> s(new epvector);
+	boost::shared_ptr<epvector> s(new epvector);
 	s->reserve(seq.size());
-	
+
 	// Only differentiate the "rest" parts of the expairs. This is faster
 	// than the default implementation in basic::derivative() although
 	// if performs the same function (differentiate each term).
@@ -554,7 +554,7 @@ ex add::thisexpairseq(const epvector & v, const ex & oc, bool do_index_renaming)
 }
 
 // Note: do_index_renaming is ignored because it makes no sense for an add.
-ex add::thisexpairseq(std::shared_ptr<epvector> vp, const ex & oc, bool do_index_renaming) const
+ex add::thisexpairseq(boost::shared_ptr<epvector> vp, const ex & oc, bool do_index_renaming) const
 {
 	return (new add(vp,oc))->setflag(status_flags::dynallocated);
 }
@@ -624,7 +624,7 @@ ex add::recombine_pair_to_ex(const expair & p) const
 
 ex add::expand(unsigned options) const
 {
-	std::shared_ptr<epvector> vp = expandchildren(options);
+	boost::shared_ptr<epvector> vp = expandchildren(options);
 	if (vp.get() == 0) {
 		// the terms have not changed, so it is safe to declare this expanded
 		return (options == 0) ? setflag(status_flags::expanded) : *this;

@@ -139,7 +139,7 @@ public:
 	// internal constructors
 	indexed(const symmetry & symm, const exprseq & es);
 	indexed(const symmetry & symm, const exvector & v, bool discardable = false);
-	indexed(const symmetry & symm, std::shared_ptr<exvector> vp);
+	indexed(const symmetry & symm, boost::shared_ptr<exvector> vp);
 
 	// functions overriding virtual functions from base classes
 public:
@@ -157,14 +157,14 @@ public:
 protected:
 	ex derivative(const symbol & s) const;
 	ex thiscontainer(const exvector & v) const;
-	ex thiscontainer(std::shared_ptr<exvector> vp) const;
+	ex thiscontainer(boost::shared_ptr<exvector> vp) const;
 	unsigned return_type() const;
 	return_type_t return_type_tinfo() const { return op(0).return_type_tinfo(); }
 	ex expand(unsigned options = 0) const;
 
 	// new virtual functions which can be overridden by derived classes
 	// none
-	
+
 	// non-virtual functions in this class
 public:
 	/** Check whether all index values have a certain property.
@@ -258,7 +258,7 @@ exvector get_all_dummy_indices(const ex & e);
   * expanded epxression. */
 exvector get_all_dummy_indices_safely(const ex & e);
 
-/** Returns b with all dummy indices, which are listed in va, renamed 
+/** Returns b with all dummy indices, which are listed in va, renamed
  *  if modify_va is set to TRUE all dummy indices of b will be appended to va */
 ex rename_dummy_indices_uniquely(exvector & va, const ex & b, bool modify_va = false);
 
@@ -268,14 +268,14 @@ ex rename_dummy_indices_uniquely(const ex & a, const ex & b);
 /** Same as above, where va and vb contain the indices of a and b and are sorted */
 ex rename_dummy_indices_uniquely(const exvector & va, const exvector & vb, const ex & b);
 
-/** Similar to above, where va and vb are the same and the return value is a list of two lists 
+/** Similar to above, where va and vb are the same and the return value is a list of two lists
  *  for substitution in b */
 lst rename_dummy_indices_uniquely(const exvector & va, const exvector & vb);
 
 /** This function returns the given expression with expanded sums
- *  for all dummy index summations, where the dimensionality of 
+ *  for all dummy index summations, where the dimensionality of
  *  the dummy index is a nonnegative integer.
- *  Optionally all indices with a variance will be substituted by 
+ *  Optionally all indices with a variance will be substituted by
  *  indices with the corresponding numeric values without variance.
  *
  *  @param e the given expression

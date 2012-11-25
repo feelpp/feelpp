@@ -208,8 +208,8 @@ public:
 	// end of generated lines
 	function(unsigned ser, const exprseq & es);
 	function(unsigned ser, const exvector & v, bool discardable = false);
-	function(unsigned ser, std::shared_ptr<exvector> vp);
-	
+	function(unsigned ser, boost::shared_ptr<exvector> vp);
+
 	// functions overriding virtual functions from base classes
 public:
 	void print(const print_context & c, unsigned level = 0) const;
@@ -221,7 +221,7 @@ public:
 	unsigned calchash() const;
 	ex series(const relational & r, int order, unsigned options = 0) const;
 	ex thiscontainer(const exvector & v) const;
-	ex thiscontainer(std::shared_ptr<exvector> vp) const;
+	ex thiscontainer(boost::shared_ptr<exvector> vp) const;
 	ex conjugate() const;
 	ex real_part() const;
 	ex imag_part() const;
@@ -233,10 +233,10 @@ protected:
 	bool match_same_type(const basic & other) const;
 	unsigned return_type() const;
 	return_type_t return_type_tinfo() const;
-	
+
 	// new virtual functions which can be overridden by derived classes
 	// none
-	
+
 	// non-virtual functions in this class
 protected:
 	ex pderivative(unsigned diff_param) const; // partial differentiation

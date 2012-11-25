@@ -21,8 +21,8 @@ if(${CMAKE_SOURCE_DIR}/contrib/cln/configure IS_NEWER_THAN ${CMAKE_BINARY_DIR}/c
     #      OUTPUT_QUIET
     OUTPUT_FILE "cln-configure"
     )
-  set(CLN_INCLUDE_DIR ${CMAKE_BINARY_DIR}/contrib/cln/include)
 endif()
+set(CLN_INCLUDE_DIR ${CMAKE_BINARY_DIR}/contrib/cln/include)
 
 if(${CMAKE_SOURCE_DIR}/contrib/cln/include/cln/cln.h IS_NEWER_THAN ${CMAKE_BINARY_DIR}/contrib/cln/include/cln/cln.h)
   message(STATUS "Installing cln in ${CMAKE_BINARY_DIR}/contrib/cln (this may take a while)...")
