@@ -115,7 +115,7 @@ function_options & function_options::latex_name(std::string const & tn)
 
 // the following lines have been generated for max. @maxargs@ parameters
 +++ for method, N in [ (f, N) for f in methods[0:-1] for N in range(1, maxargs + 1)]:
-function_options & function_options::@method@_func(@method@_funcp_@N@ e) 
+function_options & function_options::@method@_func(@method@_funcp_@N@ e)
 {
 	test_and_set_nparams(@N@);
 	@method@_f = @method@_funcp(e);
@@ -174,7 +174,7 @@ function_options & function_options::set_symmetry(const symmetry & s)
 	symtree = s;
 	return *this;
 }
-	
+
 void function_options::test_and_set_nparams(unsigned n)
 {
 	if (nparams==0) {
@@ -184,7 +184,7 @@ void function_options::test_and_set_nparams(unsigned n)
 		// usually executed before main(), so the exception could not
 		// be caught anyhow
 		std::cerr << "WARNING: " << name << "(): number of parameters ("
-		          << n << ") differs from number set before (" 
+		          << n << ") differs from number set before ("
 		          << nparams << ")" << std::endl;
 	}
 }
@@ -238,12 +238,12 @@ function::function(unsigned ser, const exprseq & es) : exprseq(es), serial(ser)
 	clearflag(status_flags::evaluated);
 }
 
-function::function(unsigned ser, const exvector & v, bool discardable) 
+function::function(unsigned ser, const exvector & v, bool discardable)
   : exprseq(v,discardable), serial(ser)
 {
 }
 
-function::function(unsigned ser, std::shared_ptr<exvector> vp) 
+function::function(unsigned ser, boost::shared_ptr<exvector> vp)
   : exprseq(vp), serial(ser)
 {
 }
@@ -490,7 +490,7 @@ ex function::thiscontainer(const exvector & v) const
 	return function(serial, v);
 }
 
-ex function::thiscontainer(std::shared_ptr<exvector> vp) const
+ex function::thiscontainer(boost::shared_ptr<exvector> vp) const
 {
 	return function(serial, vp);
 }
@@ -714,7 +714,7 @@ ex function::pderivative(unsigned diff_param) const // partial differentiation
 {
 	GINAC_ASSERT(serial<registered_functions().size());
 	const function_options &opt = registered_functions()[serial];
-	
+
 	// No derivative defined? Then return abstract derivative object
 	if (opt.derivative_f == NULL)
 		return fderivative(serial, diff_param, seq);
@@ -737,7 +737,7 @@ ex function::power(const ex & power_param) const // power of function
 {
 	GINAC_ASSERT(serial<registered_functions().size());
 	const function_options &opt = registered_functions()[serial];
-	
+
 	if (opt.power_f == NULL)
 		return (new GiNaC::power(*this, power_param))->setflag(status_flags::dynallocated |
 		                                                       status_flags::evaluated);

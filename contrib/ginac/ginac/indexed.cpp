@@ -121,7 +121,7 @@ indexed::indexed(const symmetry & symm, const exvector & v, bool discardable) : 
 {
 }
 
-indexed::indexed(const symmetry & symm, std::shared_ptr<exvector> vp) : inherited(vp), symtree(symm)
+indexed::indexed(const symmetry & symm, boost::shared_ptr<exvector> vp) : inherited(vp), symtree(symm)
 {
 }
 
@@ -324,7 +324,7 @@ ex indexed::thiscontainer(const exvector & v) const
 	return indexed(ex_to<symmetry>(symtree), v);
 }
 
-ex indexed::thiscontainer(std::shared_ptr<exvector> vp) const
+ex indexed::thiscontainer(boost::shared_ptr<exvector> vp) const
 {
 	return indexed(ex_to<symmetry>(symtree), vp);
 }
@@ -735,7 +735,7 @@ struct ex_base_is_less : public std::binary_function<ex, ex, bool> {
 	}
 };
 
-/* An auxiliary function used by simplify_indexed() and expand_dummy_sum() 
+/* An auxiliary function used by simplify_indexed() and expand_dummy_sum()
  * It returns an exvector of factors from the supplied product */
 static void product_to_exvector(const ex & e, exvector & v, bool & non_commutative)
 {
@@ -1031,7 +1031,7 @@ public:
 };
 
 bool hasindex(const ex &x, const ex &sym)
-{	
+{
 	if(is_a<idx>(x) && x.op(0)==sym)
 		return true;
 	else
@@ -1400,7 +1400,7 @@ exvector get_all_dummy_indices_safely(const ex & e)
 		return ex_to<indexed>(e).get_dummy_indices();
 	else if (is_a<power>(e) && e.op(1)==2) {
 		return e.op(0).get_free_indices();
-	}	
+	}
 	else if (is_a<mul>(e) || is_a<ncmul>(e)) {
 		exvector dummies;
 		exvector free_indices;

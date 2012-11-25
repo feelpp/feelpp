@@ -31,20 +31,20 @@ namespace GiNaC {
 class mul : public expairseq
 {
 	GINAC_DECLARE_REGISTERED_CLASS(mul, expairseq)
-	
+
 	friend class add;
 	friend class ncmul;
 	friend class power;
-	
+
 	// other constructors
 public:
 	mul(const ex & lh, const ex & rh);
 	mul(const exvector & v);
 	mul(const epvector & v);
 	mul(const epvector & v, const ex & oc, bool do_index_renaming = false);
-	mul(std::shared_ptr<epvector> vp, const ex & oc, bool do_index_renaming = false);
+	mul(boost::shared_ptr<epvector> vp, const ex & oc, bool do_index_renaming = false);
 	mul(const ex & lh, const ex & mh, const ex & rh);
-	
+
 	// functions overriding virtual functions from base classes
 public:
 	unsigned precedence() const {return 50;}
@@ -72,7 +72,7 @@ protected:
 	unsigned return_type() const;
 	return_type_t return_type_tinfo() const;
 	ex thisexpairseq(const epvector & v, const ex & oc, bool do_index_renaming = false) const;
-	ex thisexpairseq(std::shared_ptr<epvector> vp, const ex & oc, bool do_index_renaming = false) const;
+	ex thisexpairseq(boost::shared_ptr<epvector> vp, const ex & oc, bool do_index_renaming = false) const;
 	expair split_ex_to_pair(const ex & e) const;
 	expair combine_ex_with_coeff_to_pair(const ex & e, const ex & c) const;
 	expair combine_pair_with_coeff_to_pair(const expair & p, const ex & c) const;
@@ -84,10 +84,10 @@ protected:
 	bool can_make_flat(const expair & p) const;
 	ex expand(unsigned options=0) const;
 	void find_real_imag(ex&, ex&) const;
-	
+
 	// new virtual functions which can be overridden by derived classes
 	// none
-	
+
 	// non-virtual functions in this class
 public:
 	ex algebraic_subs_mul(const exmap & m, unsigned options) const;
@@ -98,7 +98,7 @@ protected:
 	void do_print_csrc(const print_csrc & c, unsigned level) const;
 	void do_print_python_repr(const print_python_repr & c, unsigned level) const;
 	static bool can_be_further_expanded(const ex & e);
-	std::shared_ptr<epvector> expandchildren(unsigned options) const;
+	boost::shared_ptr<epvector> expandchildren(unsigned options) const;
 };
 GINAC_DECLARE_UNARCHIVER(mul);
 

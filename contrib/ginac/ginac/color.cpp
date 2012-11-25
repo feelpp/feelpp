@@ -90,7 +90,7 @@ color::color(unsigned char rl, const exvector & v, bool discardable) : inherited
 {
 }
 
-color::color(unsigned char rl, std::shared_ptr<exvector> vp) : inherited(not_symmetric(), vp), representation_label(rl)
+color::color(unsigned char rl, boost::shared_ptr<exvector> vp) : inherited(not_symmetric(), vp), representation_label(rl)
 {
 }
 
@@ -184,7 +184,7 @@ ex color::thiscontainer(const exvector & v) const
 	return color(representation_label, v);
 }
 
-ex color::thiscontainer(std::shared_ptr<exvector> vp) const
+ex color::thiscontainer(boost::shared_ptr<exvector> vp) const
 {
 	return color(representation_label, vp);
 }
@@ -209,7 +209,7 @@ static ex permute_free_index_to_front(const exvector & iv3, const exvector & iv2
 		sig = P; \
 		return iv3[A]; \
 	}
-	
+
 	TEST_PERMUTATION(0,1,2,  1);
 	TEST_PERMUTATION(0,2,1, -1);
 	TEST_PERMUTATION(1,0,2, -1);
