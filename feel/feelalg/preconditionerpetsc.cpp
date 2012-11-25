@@ -169,7 +169,7 @@ configurePC( PC& pc, WorldComm const& worldComm, std::string sub = "", std::stri
     const char* pctype;
     int ierr = PCGetType ( pc, &pctype );
     CHKERRABORT( worldComm.globalComm(),ierr );
-    LOG(INFO) << "configuring PC " << pctype << "\n";
+    LOG(INFO) << "configuring PC (" << prefix << "." << sub << ")" << pctype <<  "\n";
     google::FlushLogFiles(google::INFO);
     if ( std::string(pctype) == "gasm" )
     {
@@ -357,10 +357,16 @@ void PreconditionerPetsc<T>::setPetscPreconditionerType ( const PreconditionerTy
         CHKERRABORT( worldComm.globalComm(),ierr );
         break;
 
-    case FIELDSPLIT_PRECOND: {
+    case FIELDSPLIT_PRECOND:
         ierr = PCSetType( pc,( char* ) PCFIELDSPLIT );
         CHKERRABORT( worldComm.globalComm(),ierr );
-        break; }
+        break;
+
+    case ML_PRECOND:
+        ierr = PCSetType( pc,( char* ) PCML );
+        CHKERRABORT( worldComm.globalComm(),ierr );
+        break;
+
 
     default:
         std::cerr << "ERROR:  Unsupported PETSC Preconditioner: "
@@ -379,7 +385,6 @@ void PreconditionerPetsc<T>::setPetscPreconditionerType ( const PreconditionerTy
     }
 
 #endif
-
     // before configurePC else pc-view doesn't work really
     if ( preconditioner_type == FIELDSPLIT_PRECOND )
         setPetscFieldSplitPreconditionerType( pc, worldComm, name );
@@ -428,7 +433,7 @@ void PreconditionerPetsc<T>::setPetscSubpreconditionerType( PC& pc, std::string 
     // Fill array of local KSP contexts
     LOG(INFO) << "[setPetscSubpreconditionerType] preconditioner type: " << thepctype << "\n";
     google::FlushLogFiles(google::INFO);
-    if ( std::string( thepctype ) == "block_jacobi" )
+    if ( std::string( thepctype ) == "block_jacobi" || std::string( thepctype ) == "bjacobi" )
         ierr = PCBJacobiGetSubKSP( pc, &n_local, PETSC_NULL, &subksps );
     else if ( std::string( thepctype ) == "asm" )
         ierr = PCASMGetSubKSP( pc, &n_local, PETSC_NULL, &subksps );
@@ -517,6 +522,15 @@ PreconditionerPetsc<T>::setPetscFieldSplitPreconditionerType( PC& pc,
         //std::cout<< " subksptype " << subksptype << std::endl;
         ierr = KSPSetType ( subksps[i], subksptype.c_str() );
         CHKERRABORT( worldComm.globalComm(),ierr );
+#if 0
+        Mat A00;Mat A01;Mat A10; Mat A11;
+        ierr = PCFieldSplitGetSchurBlocks(pc,&A00,&A01,&A10, &A11);
+        CHKERRABORT( worldComm.globalComm(),ierr );
+        if (i==0) {
+        ierr = KSPSetOperators( subksps[i], A00, A00,
+                                PetscGetMatStructureEnum(MatrixStructure::SAME_PRECONDITIONER));
+        CHKERRABORT( worldComm.globalComm(),ierr ); }
+#endif
 
         LOG(INFO) << "configure split " << i << "\n";
         google::FlushLogFiles(google::INFO);
@@ -525,18 +539,23 @@ PreconditionerPetsc<T>::setPetscFieldSplitPreconditionerType( PC& pc,
         PC subpc;
         ierr = KSPGetPC( subksps[i], &subpc );
         CHKERRABORT( worldComm.globalComm(),ierr );
+
         // Set requested type on the sub PC
         std::string subpctype =  Environment::vm(_name="pc-type",_prefix=prefixSplit).template as<std::string>();
         ierr = PCSetType( subpc, subpctype.c_str() );
         CHKERRABORT( worldComm.globalComm(),ierr );
+
+        //LOG(INFO) << "configure split " << i << " (" << prefixSplit << ")" << subpctype <<  "\n";
+        //google::FlushLogFiles(google::INFO);
+
         // configure sub PC
         configurePC( subpc, worldComm, "", prefixSplit );
 
         // configure maybe sub sub PC
-        const PCType thesubpctype;
+        const char* thesubpctype;
         ierr = PCGetType( subpc, &thesubpctype );
         CHKERRABORT( worldComm.globalComm(),ierr );
-        if ( std::string( thesubpctype ) == "block_jacobi" ||
+        if ( std::string( thesubpctype ) == "block_jacobi" || std::string( thesubpctype ) == "bjacobi" ||
              std::string( thesubpctype ) == "asm" ||
              std::string( thesubpctype ) == "gasm" )
         setPetscSubpreconditionerType( subpc, worldComm, prefixSplit );
