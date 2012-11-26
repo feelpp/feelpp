@@ -2,7 +2,7 @@
 # $Id$
 
 PortSystem          1.0
-PortGroup           cmake 1.0
+#PortGroup           cmake 1.0
 
 fetch.type          svn
 fetch.user          gmsh
@@ -13,7 +13,7 @@ svn.method          export
 svn.post_args       --username ${fetch.user} --password ${fetch.password}
 
 name                gmsh-devel
-version             2.6.1-svn-${svn.revision}
+version             2.6.2-svn-${svn.revision}
 categories          science
 platforms           darwin
 maintainers         ujf-grenoble.fr:Christophe.Prudhomme
@@ -33,9 +33,23 @@ conflicts           gmsh
 if {${configure.compiler} == "clang"} {
     configure.compiler llvm-gcc-4.2
 }
+configure.compiler macports-gcc-4.6
 
+worksrcdir	build
+configure	{ system "mkdir -p ${worksrcpath}/ && cd ${worksrcpath}/ && cmake ${configure.args} ../trunk" }
+
+#configure.pre_args  
 configure.args-append \
-    -DENABLE_BUILD_LIB=ON\
+    -DCMAKE_C_COMPILER=/opt/local/bin/gcc-mp-4.6\
+    -DCMAKE_CXX_COMPILER=/opt/local/bin/g++-mp-4.6\
+    -DCMAKE_INSTALL_PREFIX=${prefix}\
+    -DCMAKE_VERBOSE_MAKEFILE=ON \
+    -DCMAKE_COLOR_MAKEFILE=ON \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON \
+    -DCMAKE_INSTALL_NAME_DIR=${prefix}/lib \
+    -DCMAKE_SYSTEM_PREFIX_PATH=\"${prefix}\;/usr\" \
+    -DENABLE_BUILD_LIB=OFF\
     -DENABLE_BUILD_SHARED=ON\
     -DENABLE_NATIVE_FILE_CHOOSER:BOOL=OFF\
     -DENABLE_OCC:BOOL=OFF \
@@ -45,10 +59,11 @@ configure.args-append \
     -DENABLE_METIS=OFF \
     -DENABLE_TAUCS=OFF
 
-build.target all lib shared
+build.target all shared
 
 depends_lib  \
     port:mesa \
+    port:cmake \
     port:libpng \
     port:python27 \
     port:petsc \
