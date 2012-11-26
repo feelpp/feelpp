@@ -58,7 +58,7 @@ add_custom_command(
 
 set(ginsh_extra_libs)
 if (READLINE_FOUND)
-	set(ginsh_extra_libs ${READLINE_LIBRARIES})
+	set(ginsh_extra_libs ${READLINE_LIBRARY})
 endif()
 
 add_executable(ginsh ${ginsh_SOURCES} ${ginsh_HEADERS})
