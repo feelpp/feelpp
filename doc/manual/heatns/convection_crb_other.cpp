@@ -189,17 +189,31 @@ Convection_crb::solve( parameter_type const& mu, element_ptrtype& T )
     double gr = mu( 0 );
     double pr = mu( 1 );
     T->zero();
-    int N=std::max( 1.0,std::max( std::ceil( std::log( gr ) ),std::ceil( std::log( pr )-std::log( 1.e-2 ) ) ) );
+    bool use_continuity = this->vm()["use_continuity"].template as<bool>();
+    int N=1;
+
+    if( use_continuity )
+        N=std::max( 1.0,std::max( std::ceil( std::log( gr ) ),std::ceil( std::log( pr )-std::log( 1.e-2 ) ) ) );
     
     for ( int i = 0; i < N; ++i )
     {
-        int denom = ( N==1 )?1:N-1;
-        M_current_Grashofs = math::exp( math::log( 1. )+i*( math::log( gr )-math::log( 1. ) )/denom );
-        M_current_Prandtl = math::exp( math::log( 1.e-2 )+i*( math::log( pr )-math::log( 1.e-2 ) )/denom );
+
+        if( use_continuity )
+        {
+            int denom = ( N==1 )?1:N-1;
+            M_current_Grashofs = math::exp( math::log( 1. )+i*( math::log( gr )-math::log( 1. ) )/denom );
+            M_current_Prandtl = math::exp( math::log( 1.e-2 )+i*( math::log( pr )-math::log( 1.e-2 ) )/denom );
+        }
+        else
+        {
+            M_current_Grashofs = gr;
+            M_current_Prandtl = pr;
+        }
+
         
-        std::cout << "i/N = " << i+1 << "/" << N <<std::endl;
-        std::cout << " intermediary Grashof = " << M_current_Grashofs<<std::endl;
-        std::cout<< " and Prandtl = " << M_current_Prandtl << "\n"<<std::endl;
+        //std::cout << "i/N = " << i+1 << "/" << N <<std::endl;
+        //std::cout << " intermediary Grashof = " << M_current_Grashofs<<std::endl;
+        //std::cout<< " and Prandtl = " << M_current_Prandtl << "\n"<<std::endl;
         
         M_current_mu << M_current_Grashofs, M_current_Prandtl;
         
@@ -208,7 +222,7 @@ Convection_crb::solve( parameter_type const& mu, element_ptrtype& T )
                 
 //        T->print(std::cout);        
 
-        M_backend->nlSolve(_jacobian=J , _solution=T , _residual=R);
+        M_backend->nlSolve(_jacobian=J , _solution=T , _residual=R );
 #if 0
         if ( exporter->doExport() )
         {
@@ -284,25 +298,25 @@ Convection_crb::output( int output_index, parameter_type const& mu )
 
     // value mean-pressure
     double meas = integrate( elements( mesh ),constant( 1.0 )  ).evaluate()( 0, 0 );
-    std::cout << "measure(Omega)=" << meas << " (should be equal to 1)\n";
-    std::cout << "mean pressure = "
-    << integrate( elements( mesh ) ,idv( p ) ).evaluate()( 0,0 )/meas << "\n";
+    //std::cout << "measure(Omega)=" << meas << " (should be equal to 1)\n";
+    //std::cout << "mean pressure = "
+    //<< integrate( elements( mesh ) ,idv( p ) ).evaluate()( 0,0 )/meas << "\n";
     
 #if defined( FEELPP_USE_LM )
     Log() << "value of the Lagrange multiplier xi= " << xi( 0 ) << "\n";
-    std::cout << "value of the Lagrange multiplier xi= " << xi( 0 ) << "\n";
+    // std::cout << "value of the Lagrange multiplier xi= " << xi( 0 ) << "\n";
 #endif
     
     double mean_div_u = integrate( elements( mesh ),
                                   divv( u ) ).evaluate()( 0, 0 );
-    std::cout << "mean_div(u)=" << mean_div_u << "\n";
+    //std::cout << "mean_div(u)=" << mean_div_u << "\n";
     
     double div_u_error_L2 = integrate( elements( mesh ),
                                       divv( u )*divv( u ) ).evaluate()( 0, 0 );
-    std::cout << "||div(u)||_2=" << math::sqrt( div_u_error_L2 ) << "\n";
+    //std::cout << "||div(u)||_2=" << math::sqrt( div_u_error_L2 ) << "\n";
     
     double AverageTdomain = integrate( elements( mesh ) , idv( t ) ).evaluate()( 0,0 ) ;
-    std::cout << "AverageTdomain = " << AverageTdomain << std::endl;
+    //std::cout << "AverageTdomain = " << AverageTdomain << std::endl;
     
 
     double output = 0.0;
@@ -320,7 +334,7 @@ Convection_crb::output( int output_index, parameter_type const& mu )
         // calcul le nombre de Nusselt
         double AverageT = integrate( markedfaces( mesh,"Tflux" ) ,
                                     idv( t ) ).evaluate()( 0,0 ) ;
-        std::cout << "AverageT = " << AverageT << std::endl;
+        //std::cout << "AverageT = " << AverageT << std::endl;
 
         output = AverageT;
         
