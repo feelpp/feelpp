@@ -44,9 +44,23 @@ typedef std::vector< std::vector< double > > beta_vector_type;
 void Convection_crb::init()
 {
     mesh_ptrtype mesh;
-    mesh = createGMSHMesh( _mesh=new mesh_type,
-                          _desc=createMesh(),
-                          _update=MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
+
+    if (this->vm()["readMesh"]. as<int>()){
+        std::string repository = this->vm()["input_dir"]. as<std::string>() ;
+        std::string file_mesh = this->vm()["mesh_name"]. as<std::string>() ;;
+        std::string complete_name = repository + file_mesh;
+        std::cout << "Meshes read in file : " << complete_name <<std::endl;
+
+        mesh  =  loadGMSHMesh( _mesh=new mesh_type,
+                              _filename=complete_name,
+                              _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER );
+    }
+    else{
+        mesh = createGMSHMesh( _mesh=new mesh_type,
+                               _desc=createMesh(),
+                               _update=MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
+    }
+
     Xh = space_type::New( mesh );
     LOG(INFO)<<"number of dofs : "<<Xh->nLocalDof()<<"\n";
     pT = element_ptrtype( new element_type( Xh ) );

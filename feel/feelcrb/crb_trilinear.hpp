@@ -811,7 +811,6 @@ CRBTrilinear<TruthModelType>::lb( size_type N, parameter_type const& mu, vectorN
     google::FlushLogFiles(google::GLOG_INFO);
 
     if ( N > M_N ) N = M_N;
-
     beta_vector_type betaAqm;
     std::vector<beta_vector_type> betaFqm, betaLqm;
 
@@ -848,17 +847,31 @@ CRBTrilinear<TruthModelType>::lb( size_type N, parameter_type const& mu, vectorN
     double gr = mu( 0 );
     double pr = mu( 1 );
 
-    int Nmax=std::max( 1.0,std::max( std::ceil( std::log( gr ) ),std::ceil( std::log( pr )-std::log( 1.e-2 ) ) ) );
+    bool use_continuity = this->vm()["crb.use-continuity"].template as<bool>();
+    int Nmax=1;
+
+    if( use_continuity )
+        Nmax=std::max( 1.0,std::max( std::ceil( std::log( gr ) ),std::ceil( std::log( pr )-std::log( 1.e-2 ) ) ) );
 
     for ( int i = 0; i < Nmax; ++i )
     {
-        int denom = ( Nmax==1 )?1:Nmax-1;
-        double current_Grashofs = math::exp( math::log( 1. )+i*( math::log( gr )-math::log( 1. ) )/denom );
-        double current_Prandtl = math::exp( math::log( 1.e-2 )+i*( math::log( pr )-math::log( 1.e-2 ) )/denom );
 
-        std::cout << "[CRBTrilinear::lb] i/N = " << i+1 << "/" << Nmax <<std::endl;
-        std::cout << "[CRBTrilinear::lb] intermediary Grashof = " << current_Grashofs<<std::endl;
-        std::cout << "[CRBTrilinear::lb] and Prandtl = " << current_Prandtl <<" \n" <<std::endl;
+        double current_Grashofs;
+        double current_Prandtl;
+        if( use_continuity )
+        {
+            int denom = ( Nmax==1 )?1:Nmax-1;
+            current_Grashofs = math::exp( math::log( 1. )+i*( math::log( gr )-math::log( 1. ) )/denom );
+            current_Prandtl = math::exp( math::log( 1.e-2 )+i*( math::log( pr )-math::log( 1.e-2 ) )/denom );
+        }
+        else
+        {
+            current_Grashofs = gr;
+            current_Prandtl = pr;
+        }
+        //std::cout << "[CRBTrilinear::lb] i/N = " << i+1 << "/" << Nmax <<std::endl;
+        //std::cout << "[CRBTrilinear::lb] intermediary Grashof = " << current_Grashofs<<std::endl;
+        //std::cout << "[CRBTrilinear::lb] and Prandtl = " << current_Prandtl <<" \n" <<std::endl;
 
         current_mu << current_Grashofs, current_Prandtl;
 
@@ -871,7 +884,7 @@ CRBTrilinear<TruthModelType>::lb( size_type N, parameter_type const& mu, vectorN
         updateResidual( map_uN, map_R , current_mu , N );
         updateJacobian( map_uN, map_J , current_mu , N );
 
-        M_nlsolver->solve( map_J , map_uN , map_R, 1e-10, 100);
+        M_nlsolver->solve( map_J , map_uN , map_R, 1e-12, 100);
     }
 
     LOG(INFO) << "[CRBTrilinear::lb] solve with Newton done";
