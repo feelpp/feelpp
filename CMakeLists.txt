@@ -313,6 +313,11 @@ IF(NOT APPLE)
 ADD_SUBDIRECTORY ( data )
 ENDIF(NOT APPLE)
 
+if (APPLE)
+  list(REMOVE_ITEM FEELPP_LIBRARIES /usr/lib/libstdc++.dylib)
+endif()
+
+
 #
 # Feel
 #
