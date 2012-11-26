@@ -151,8 +151,8 @@ public:
 	 */
 	void compile_src_file(const std::string filename, bool clean_up)
 	{
-		std::string strcompile = "ginac-excompiler " + filename;
-		if (system(strcompile.c_str()))
+		std::string strcompile = "ginac-excompiler " + filename + " > /dev/null 2>&1";
+		if (system(strcompile.c_str()) )
 		{
 			// try the compiler in Feel++ source
 			strcompile = "@FEELPP_BUILD_DIR@/contrib/ginac/tools/ginac-excompiler " + filename;
