@@ -408,6 +408,7 @@ foreach(OPT ${CONFIG_OPTIONS})
   set(FEELPP_CONFIG_OPTIONS "${FEELPP_CONFIG_OPTIONS} ${OPT}")
 endforeach(OPT)
 
+
 set(INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
 set(FEELPP_PREFIX ${CMAKE_INSTALL_PREFIX})
 set(FEELPP_DATADIR ${CMAKE_INSTALL_PREFIX}/share/feel )
@@ -427,6 +428,25 @@ foreach(includedir feelcore feelalg feelmesh feelpoly feelfilters feeldiscr feel
 endforeach()
 FILE(GLOB files "feel/*.hpp")
 INSTALL(FILES ${files} DESTINATION include/feel COMPONENT Devel)
+
+# install cln headers
+FILE(GLOB files "${CMAKE_CURRENT_BINARY_DIR}/contrib/cln/include/cln/*.h")
+INSTALL(FILES ${files} DESTINATION include/feel/cln COMPONENT Devel)
+FILE(GLOB files "${CMAKE_CURRENT_BINARY_DIR}/contrib/cln/lib/lib*")
+INSTALL(FILES ${files} DESTINATION lib/ COMPONENT Devel)
+
+# install gflags headers
+FILE(GLOB files "${CMAKE_CURRENT_BINARY_DIR}/contrib/gflags/include/gflags/*.h")
+INSTALL(FILES ${files} DESTINATION include/feel/gflags COMPONENT Devel)
+FILE(GLOB files "${CMAKE_CURRENT_BINARY_DIR}/contrib/gflags/lib/lib*")
+INSTALL(FILES ${files} DESTINATION lib/ COMPONENT Devel)
+
+# install glog headers
+FILE(GLOB files "${CMAKE_CURRENT_BINARY_DIR}/contrib/glog/include/glog/*.h")
+INSTALL(FILES ${files} DESTINATION include/feel/glog COMPONENT Devel)
+FILE(GLOB files "${CMAKE_CURRENT_BINARY_DIR}/contrib/glog/lib/lib*")
+INSTALL(FILES ${files} DESTINATION lib/ COMPONENT Devel)
+
 # gmm
 IF ( NOT GMM_FOUND )
   FILE(GLOB files "contrib/gmm/include/*.h")
