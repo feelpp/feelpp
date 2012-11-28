@@ -2183,6 +2183,8 @@ runCylindre( data_geo_ptrtype dg )
 
     writePlaneSurface( 1, dg, 1 );
     writePlaneSurface( 2, dg, 2 );
+    writePtInSurface(dg,1,1 );
+    writePtInSurface(dg,6,2 );
 
     writeRuledSurface( 3, dg, 13 );
     writeRuledSurface( 4, dg, 15 );
@@ -2504,7 +2506,86 @@ runTube( data_geo_ptrtype dg )
 #endif
 
 
-}
+} // runTube
+
+
+void
+runSpecial3D_1( data_geo_ptrtype dg )
+{
+    double lgstruct=0.35101;
+    double xL = 0.6-lgstruct;
+    double yMin = -0.12,yMax=0.12;
+    writePoint(1,dg,  xL, yMin, 0.19 );
+    writePoint(2,dg, 0.6, yMin, 0.19 );
+    writePoint(3,dg, 0.6, yMin, 0.21 );
+    writePoint(4,dg,  xL, yMin, 0.21 );
+    writePoint(5,dg,  xL, yMax, 0.19 );
+    writePoint(6,dg, 0.6, yMax, 0.19 );
+    writePoint(7,dg, 0.6, yMax, 0.21 );
+    writePoint(8,dg,  xL, yMax, 0.21 );
+    // point sup
+    writePoint(9,dg,  0.2     , yMin, 0.2 );// center
+    writePoint(10,dg, 0.2-0.05, yMin, 0.2 ); // on circle
+    writePoint(11,dg, 0.2     , yMax, 0.2 );// center
+    writePoint(12,dg, 0.2-0.05, yMax, 0.2); // on circle
+
+    writeLine(1,dg, 1,2);
+    writeLine(2,dg, 2,3);
+    writeLine(3,dg, 3,4);
+    writeLine(4,dg, 4,1);
+    writeLine(5,dg, 5,6);
+    writeLine(6,dg, 6,7);
+    writeLine(7,dg, 7,8);
+    writeLine(8,dg, 8,5);
+    writeLine(9,dg, 1,5);
+    writeLine(10,dg,2,6);
+    writeLine(11,dg,3,7);
+    writeLine(12,dg,4,8);
+    // line sup
+    writeCircle(13,dg, 1,9,10 );
+    writeCircle(14,dg, 10,9,4 );
+    writeCircle(15,dg, 5,11,12 );
+    writeCircle(16,dg, 12,11,8 );
+    // line on cylinder
+    writeLine(17,dg, 12, 10);
+
+
+    writeLineLoop(1,dg, Loop()>>1>>2>>3>>4);
+    writeLineLoop(2,dg, Loop()>>5>>6>>7>>8);
+    writeLineLoop(3,dg, Loop()>>1>>10>>-5>>-9);
+    writeLineLoop(4,dg, Loop()>>10>>6>>-11>>-2);
+    writeLineLoop(5,dg, Loop()>>11>>7>>-12>>-3);
+    //writeLineLoop(6,dg, Loop()>>9>>-8>>-12>>4);
+    writePlaneSurface(1,dg,1);
+    writePlaneSurface(2,dg,2);
+    writePlaneSurface(3,dg,3);
+    writePlaneSurface(4,dg,4);
+    writePlaneSurface(5,dg,5);
+    //writePlaneSurface(6,dg,6);
+
+
+    writeLineLoop(6,dg,  Loop()>>16>>-12>>-14>>-17);
+    writeLineLoop(7,dg,  Loop()>>17>>-13>>9>>15);
+    writeLineLoop(8,dg,  Loop()>>14>>4>>13);
+    writeLineLoop(9,dg, Loop()>>15>>16>>8);
+    writeRuledSurface(6,dg,6);
+    writeRuledSurface(7,dg,7);
+    writePlaneSurface(8,dg,8);
+    writePlaneSurface(9,dg,9);
+    writePtInSurface(dg,9,8 );
+    writePtInSurface(dg,11,9 );
+
+#if 0
+    writeSurfaceLoop( 1, dg, Loop()>>7>>10>>8>>9>>6 );
+    writeVolume( 1,dg,1 );
+    writeSurfaceLoop( 2, dg, Loop()>>5>>4>>3>>1>>2>>6 );
+    writeVolume( 2,dg,2 );
+#else
+    writeSurfaceLoop( 1, dg, Loop()>>6>>9>>7>>8>>5>>4>>3>>1>>2 );
+    writeVolume( 1,dg,1 );
+#endif
+
+} // runSpecial3D_1
 
 
 } //namespace GeoTool
