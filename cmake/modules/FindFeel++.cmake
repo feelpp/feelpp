@@ -203,7 +203,11 @@ if ( GLPK_FOUND )
 endif()
 
 # google perf tools
-option(FEELPP_ENABLE_GOOGLEPERFTOOLS "Enable Google Perf Tools (tcmalloc, stracktrace and profiler)" ON)
+if (APPLE)
+  option(FEELPP_ENABLE_GOOGLEPERFTOOLS "Enable Google Perf Tools (tcmalloc, stracktrace and profiler)" OFF)
+else()
+  option(FEELPP_ENABLE_GOOGLEPERFTOOLS "Enable Google Perf Tools (tcmalloc, stracktrace and profiler)" ON)
+endif()
 if ( FEELPP_ENABLE_GOOGLEPERFTOOLS )
   find_package(GooglePerfTools)
   if ( GOOGLE_PERFTOOLS_FOUND )
