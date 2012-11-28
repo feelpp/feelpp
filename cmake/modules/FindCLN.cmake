@@ -121,7 +121,7 @@ if (CLN_INCLUDE_DIR)
 endif()
 
 # Check if the version embedded into the library is the same as the one in the headers.
-if (CLN_INCLUDE_DIR AND CLN_LIBRARIES AND NOT CMAKE_CROSSCOMPILING)
+if (0) #CLN_INCLUDE_DIR AND CLN_LIBRARIES AND NOT CMAKE_CROSSCOMPILING)
 	include(CheckCXXSourceRuns)
 	set(_save_required_includes ${CMAKE_REQUIRED_INCLUDES})
 	set(_save_required_libraries ${CMAKE_REQUIRED_LIBRARIES})
