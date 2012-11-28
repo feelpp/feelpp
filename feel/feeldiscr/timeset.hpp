@@ -503,7 +503,7 @@ public:
         struct AddFunctionProduct
         {
             AddFunctionProduct( TSet& tset ) : M_tset( tset ) {}
-            mutable TSet& M_tset;
+            TSet& M_tset;
 
             template<typename T>
             void
