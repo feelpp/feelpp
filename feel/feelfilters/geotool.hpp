@@ -51,7 +51,7 @@
 /*_________________________________________________*/
 
 # define GEOTOOL_SHAPE                                                  \
-    ( 17, ( ( Line          , 1, 0, 0, "line"         , 2, LINE       ), \
+    ( 18, ( ( Line          , 1, 0, 0, "line"         , 2, LINE       ), \
             ( Triangle      , 2, 1, 0, "triangle"     , 3, TRIANGLE   ), \
             ( Rectangle     , 2, 1, 0, "rectangle"    , 2, RECTANGLE  ), \
             ( Quadrangle    , 2, 1, 0, "quadrangle"   , 4, QUADRANGLE ), \
@@ -67,7 +67,8 @@
             ( Cube          , 3, 6, 1, "cube"         , 2, CUBE       ), \
             ( Cylindre      , 3, 6, 1, "cylindre"     , 4, CYLINDRE   ), \
             ( Sphere        , 3, 8, 1, "sphere"       , 2, SPHERE     ), \
-            ( Tube          , 3,20, 4, "tube"         , 5, TUBE       ) \
+            ( Tube          , 3,20, 4, "tube"         , 5, TUBE       ), \
+            ( Special3D_1   , 3, 9, 1, "special3D_1"  , 1, SPECIAL3D_1 ) \
             )                                                           \
       )                                                                 \
     /**/
@@ -467,9 +468,29 @@
       )                                         \
     /**/
 
+/*_________________________________________________*/
+//special3D_1
+
+# define GEOTOOL_MARKER_POINT_SPECIAL3D_1                 \
+    ( 1, ( ( 1, 12, ( 1,2,3,4,5,6,7,8,9,10,11,12 ) ) ) )  \
+    /**/
+# define GEOTOOL_MARKER_LINE_SPECIAL3D_1                                \
+    ( 1, ( ( 1, 17, ( 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17 ) ) ) ) \
+    /**/
+# define GEOTOOL_MARKER_SURFACE_SPECIAL3D_1        \
+    ( 2, ( ( 1, 5, ( 1,2,3,4,5 ) ),                \
+           ( 3, 4, ( 6,7,8,9 ) )                   \
+           )                                       \
+      )                                            \
+    /**/
+# define GEOTOOL_MARKER_VOLUME_SPECIAL3D_1         \
+    ( 1, ( ( 1, 1, ( 1 ) ) )                       \
+      )                                            \
+    /**/
+
+
 
 /*_________________________________________________*/
-
 
 #if 0
 # define GEOTOOL_MARKER_SURFACE_DEFAULT         \
@@ -1769,7 +1790,7 @@ computeBasisOrthogonal( node_type dir,node_type centre );
 /*                                                 */
 /**/
 #define GEOTOOL_SHAPE_FOR_PARAM_SIGNATURE(r, state)                     \
-        Node BOOST_PP_CAT( __param, BOOST_PP_TUPLE_ELEM(2,0,state) ) BOOST_PP_COMMA() \
+    Node BOOST_PP_CAT( __param, BOOST_PP_TUPLE_ELEM(2,0,state) ) = Node(0,0,0) BOOST_PP_COMMA() \
         /**/
 /*_________________________________________________*/
 /*                                                 */
