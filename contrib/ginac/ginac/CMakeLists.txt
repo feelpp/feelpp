@@ -147,21 +147,21 @@ set(ginaclib_private_headers
     polynomial/debug.h
 )
 
-add_library(ginac ${ginaclib_sources})
-set_target_properties(ginac PROPERTIES
+add_library(feelpp_ginac ${ginaclib_sources})
+set_target_properties(feelpp_ginac PROPERTIES
 	SOVERSION ${ginaclib_soversion}
 	VERSION ${ginaclib_version})
-target_link_libraries(ginac ${CLN_LIBRARIES} ${CMAKE_DL_LIBS} ${Boost_MPI_LIBRARY} ${MPI_LIBRARIES})
+target_link_libraries(feelpp_ginac ${CLN_LIBRARIES} ${CMAKE_DL_LIBS} ${Boost_MPI_LIBRARY} ${MPI_LIBRARIES})
 include_directories(${CMAKE_SOURCE_DIR}/contrib/ginac/ginac)
 
 if (NOT BUILD_SHARED_LIBS)
-	set_target_properties(ginac PROPERTIES OUTPUT_NAME "ginac")
+	set_target_properties(feelpp_ginac PROPERTIES OUTPUT_NAME "ginac")
 	# Avoid the static library vs import library conflict (necessary for
 	# m$ toolchain).
-	set_target_properties(ginac PROPERTIES PREFIX "lib")
+	set_target_properties(feelpp_ginac PROPERTIES PREFIX "lib")
 endif()
 
-install(TARGETS ginac LIBRARY DESTINATION "${LIB_INSTALL_DIR}"
+install(TARGETS feelpp_ginac LIBRARY DESTINATION "${LIB_INSTALL_DIR}"
 		      RUNTIME DESTINATION "${BIN_INSTALL_DIR}"
 		      ARCHIVE DESTINATION "${LIB_INSTALL_DIR}")
 install(FILES ${ginaclib_public_headers} DESTINATION "${INCLUDE_INSTALL_DIR}/ginac")
