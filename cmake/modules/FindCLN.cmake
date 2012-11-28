@@ -24,7 +24,8 @@ if(${CMAKE_SOURCE_DIR}/contrib/cln/configure IS_NEWER_THAN ${CMAKE_BINARY_DIR}/c
 endif()
 set(CLN_INCLUDE_DIR ${CMAKE_BINARY_DIR}/contrib/cln/include)
 
-if(${CMAKE_SOURCE_DIR}/contrib/cln/include/cln/cln.h IS_NEWER_THAN ${CMAKE_BINARY_DIR}/contrib/cln/include/cln/cln.h)
+if( (${CMAKE_SOURCE_DIR}/contrib/cln/include/cln/cln.h IS_NEWER_THAN ${CMAKE_BINARY_DIR}/contrib/cln/include/cln/cln.h) OR
+    (${CMAKE_SOURCE_DIR}/contrib/cln/src/Makefile.am IS_NEWER_THAN ${CMAKE_BINARY_DIR}/contrib/cln-compile/src/Makefile) )
   message(STATUS "Installing cln in ${CMAKE_BINARY_DIR}/contrib/cln (this may take a while)...")
   execute_process(
     COMMAND make -j${NProcs2} install
@@ -35,7 +36,7 @@ if(${CMAKE_SOURCE_DIR}/contrib/cln/include/cln/cln.h IS_NEWER_THAN ${CMAKE_BINAR
 endif()
 string(REPLACE "include/cln" "" CLN_DIR ${CLN_INCLUDE_DIR} )
 FIND_LIBRARY(CLN_LIBRARY
-  NAMES cln
+  NAMES feelpp_cln
   PATHS
   ${CMAKE_BINARY_DIR}/contrib/cln/lib/
   NO_DEFAULT_PATH
@@ -43,6 +44,7 @@ FIND_LIBRARY(CLN_LIBRARY
 #  /usr/local/lib
 #  /usr/lib
   )
+message(STATUS "cln libs: ${CLN_LIBRARY}" )
 set(CLN_LIBRARIES ${CLN_LIBRARY})
 
 if (CLN_INCLUDE_DIR AND CLN_LIBRARIES)
@@ -84,17 +86,17 @@ if (PKG_CONFIG_FOUND)
 	pkg_check_modules(_cln cln)
 endif()
 
-find_path(CLN_INCLUDE_DIR NAMES cln/cln.h
-			  HINTS
-              ${CMAKE_BINARY_DIR}/contrib/cln/include
-              ${_cln_INCLUDE_DIRS}
-			  $ENV{CLN_DIR}/include)
-find_library(CLN_LIBRARIES NAMES libcln cln
-			   HINTS
-               ${CMAKE_BINARY_DIR}/contrib/cln/lib
-               ${_cln_LIBRARY_DIR}
-			   ${_cln_LIBRARY_DIRS}
-			   $ENV{CLN_DIR}/lib)
+find_path(CLN_INCLUDE_DIR NAMES feel/cln/cln.h cln/cln.h
+  HINTS
+  ${CMAKE_BINARY_DIR}/contrib/cln/include
+  ${_cln_INCLUDE_DIRS}
+  $ENV{CLN_DIR}/include)
+find_library(CLN_LIBRARIES NAMES feelpp_cln libcln cln
+  HINTS
+  ${CMAKE_BINARY_DIR}/contrib/cln/lib
+  ${_cln_LIBRARY_DIR}
+  ${_cln_LIBRARY_DIRS}
+  $ENV{CLN_DIR}/lib)
 message(STATUS "Cln includes: ${CLN_INCLUDE_DIR} Libraries: ${CLN_LIBRARIES}" )
 
 if (CLN_INCLUDE_DIR)
@@ -121,7 +123,7 @@ if (CLN_INCLUDE_DIR)
 endif()
 
 # Check if the version embedded into the library is the same as the one in the headers.
-if (0) #CLN_INCLUDE_DIR AND CLN_LIBRARIES AND NOT CMAKE_CROSSCOMPILING)
+if (CLN_INCLUDE_DIR AND CLN_LIBRARIES AND NOT CMAKE_CROSSCOMPILING)
 	include(CheckCXXSourceRuns)
 	set(_save_required_includes ${CMAKE_REQUIRED_INCLUDES})
 	set(_save_required_libraries ${CMAKE_REQUIRED_LIBRARIES})
