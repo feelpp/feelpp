@@ -480,12 +480,14 @@ public:
             //add( "marker2", regionMarker2( _M_scalar_p0 ) );
             //add( "marker3", regionMarker3( _M_scalar_p0 ) );
         }
+
         template<typename FunctionType>
-        void add( std::initializer_list<std::string>  __n, FunctionType const& func )
+        void add( std::initializer_list<std::string>&  __n, FunctionType const& func )
         {
             std::vector<std::string> str( __n );
             add_( str, func, mpl::bool_<(FunctionType::functionspace_type::nSpaces>1)>() );
         }
+
         template<typename FunctionType>
         void add( std::vector<std::string> const& __n, FunctionType const& func )
         {
@@ -501,7 +503,7 @@ public:
         struct AddFunctionProduct
         {
             AddFunctionProduct( TSet& tset ) : M_tset( tset ) {}
-            TSet& M_tset;
+            mutable TSet& M_tset;
 
             template<typename T>
             void
