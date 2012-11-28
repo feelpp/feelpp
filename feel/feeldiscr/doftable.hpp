@@ -970,7 +970,15 @@ public:
      */
     void buildGhostInterProcessDofMap( mesh_type& mesh,
                                        std::map<size_type,boost::tuple<size_type,size_type> > & mapInterProcessDof );
-    void buildDofNotPresent( mesh_type& mesh,
+    void buildGhostInterProcessDofMapInit( mesh_type& mesh,
+                                           std::vector< std::map<size_type,std::set<boost::tuple<size_type,uint16_type> > > > & listToSend );
+
+    boost::tuple<bool, std::vector< std::map<size_type,std::set<boost::tuple<size_type,uint16_type> > > > >
+    buildGhostInterProcessDofMapRecursive( mesh_type& mesh,
+                                           std::vector< std::map<size_type,std::set<boost::tuple<size_type,uint16_type> > > > const& listToSend,
+                                           std::map<size_type,boost::tuple<size_type,size_type> > & mapInterProcessDof,
+                                           std::vector< std::set<size_type > > & memoryFace );
+    void buildDofNotPresent( std::map<size_type,boost::tuple<size_type,size_type> > const & mapInterProcessDof,
                              std::set<int> & setInterProcessDofNotPresent );
 
     void buildGlobalProcessToGlobalClusterDofMap( mesh_type& mesh,
