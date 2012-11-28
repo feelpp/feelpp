@@ -161,7 +161,7 @@ Convection_crb::solve( sparse_matrix_ptrtype& D,
               element_type& u,
               vector_ptrtype& F )
 {
-    
+
     vector_ptrtype U( M_backend->newVector( u.functionSpace() ) );
     M_backend->solve( D, D, U, F );
     u = *U;
@@ -179,22 +179,22 @@ Convection_crb::solve( parameter_type const& mu, element_ptrtype& T )
 {
     using namespace vf;
     Feel::ParameterSpace<2>::Element M_current_mu( mu );
-    
+
     M_backend->nlSolver()->jacobian = boost::bind( &self_type::updateJacobian, boost::ref( *this ), _1, _2 );
     M_backend->nlSolver()->residual = boost::bind( &self_type::updateResidual, boost::ref( *this ), _1, _2 );
 
     vector_ptrtype R( M_backend->newVector( Xh ) );
     sparse_matrix_ptrtype J( M_backend->newMatrix( Xh,Xh ) );
-    
+
     double gr = mu( 0 );
     double pr = mu( 1 );
     T->zero();
-    bool use_continuity = this->vm()["use_continuity"].template as<bool>();
+    bool use_continuity = this->vm()["use_continuity"].as<bool>();
     int N=1;
 
     if( use_continuity )
         N=std::max( 1.0,std::max( std::ceil( std::log( gr ) ),std::ceil( std::log( pr )-std::log( 1.e-2 ) ) ) );
-    
+
     for ( int i = 0; i < N; ++i )
     {
 
@@ -210,17 +210,17 @@ Convection_crb::solve( parameter_type const& mu, element_ptrtype& T )
             M_current_Prandtl = pr;
         }
 
-        
+
         //std::cout << "i/N = " << i+1 << "/" << N <<std::endl;
         //std::cout << " intermediary Grashof = " << M_current_Grashofs<<std::endl;
         //std::cout<< " and Prandtl = " << M_current_Prandtl << "\n"<<std::endl;
-        
+
         M_current_mu << M_current_Grashofs, M_current_Prandtl;
-        
+
         this->computeBetaQm( M_current_mu );
         this->update( M_current_mu );
-                
-//        T->print(std::cout);        
+
+//        T->print(std::cout);
 
         M_backend->nlSolve(_jacobian=J , _solution=T , _residual=R );
 #if 0
@@ -231,7 +231,7 @@ Convection_crb::solve( parameter_type const& mu, element_ptrtype& T )
             this->exportResults( T, i );
             Log() << "exportResults done\n";
 
-        }        
+        }
 #endif
     }
 
@@ -257,21 +257,21 @@ Convection_crb::scalarProduct( vector_type const& x, vector_type const& y )
 void
 Convection_crb::run( const double * X, unsigned long N, double * Y, unsigned long P )
 {
-    
+
 /*    using namespace vf;
     Feel::ParameterSpace<2>::Element mu( M_Dmu );
     mu << X[0], X[1];
     static int do_init = true;
-    
+
     if ( do_init )
     {
 //        double meshSize = X[2];
         this->init();
         do_init = false;
     }
-    
+
     this->solve( mu, pT );
- */   
+ */
 //    double mean = integrate( elements( mesh ), chi( ( Px() >= -0.1 ) && ( Px() <= 0.1 ) )*idv( *pT ) ).evaluate()( 0,0 )/0.2;
 //    Y[0]=mean;
 
@@ -284,7 +284,7 @@ Convection_crb::output( int output_index, parameter_type const& mu )
 {
     using namespace vf;
     //this->solve( mu, pT );
-    
+
     auto mesh = Xh->mesh();
     auto U = Xh->element( "u" );
     U = *pT;
@@ -301,33 +301,33 @@ Convection_crb::output( int output_index, parameter_type const& mu )
     //std::cout << "measure(Omega)=" << meas << " (should be equal to 1)\n";
     //std::cout << "mean pressure = "
     //<< integrate( elements( mesh ) ,idv( p ) ).evaluate()( 0,0 )/meas << "\n";
-    
+
 #if defined( FEELPP_USE_LM )
     Log() << "value of the Lagrange multiplier xi= " << xi( 0 ) << "\n";
     // std::cout << "value of the Lagrange multiplier xi= " << xi( 0 ) << "\n";
 #endif
-    
+
     double mean_div_u = integrate( elements( mesh ),
                                   divv( u ) ).evaluate()( 0, 0 );
     //std::cout << "mean_div(u)=" << mean_div_u << "\n";
-    
+
     double div_u_error_L2 = integrate( elements( mesh ),
                                       divv( u )*divv( u ) ).evaluate()( 0, 0 );
     //std::cout << "||div(u)||_2=" << math::sqrt( div_u_error_L2 ) << "\n";
-    
+
     double AverageTdomain = integrate( elements( mesh ) , idv( t ) ).evaluate()( 0,0 ) ;
     //std::cout << "AverageTdomain = " << AverageTdomain << std::endl;
-    
+
 
     double output = 0.0;
-    
+
     // right hand side (compliant)
     if ( output_index == 0 )
     {
         output = 0.0 ;
 
     }
-    
+
     // output
     if ( output_index == 1 )
     {
@@ -337,11 +337,11 @@ Convection_crb::output( int output_index, parameter_type const& mu )
         //std::cout << "AverageT = " << AverageT << std::endl;
 
         output = AverageT;
-        
+
     }
-    
+
     return output;
-    
+
 }
 
 // instantiation
