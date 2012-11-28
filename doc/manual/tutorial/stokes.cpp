@@ -353,8 +353,8 @@ Stokes::exportResults( ExprUExact u_exact, ExprPExact p_exact,
         exporter->step( 0 )->add( {"u","p","l"}, U );
         exporter->step( 0 )->add( {"u_exact","p_exact","l_exact"}, V );
 #else
-        exporter->step( 0 )->add( {"u","p"}, U );
-        exporter->step( 0 )->add( {"u_exact","p_exact"}, V );
+        exporter->step( 0 )->add( std::vector<std::string>({"u","p"}), U );
+        exporter->step( 0 )->add( std::vector<std::string>({"u_exact","p_exact"}), V );
 #endif
 
         exporter->save();
