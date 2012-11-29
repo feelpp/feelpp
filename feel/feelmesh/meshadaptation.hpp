@@ -155,6 +155,18 @@ namespace Feel
             defaultMetric.push_back(initPairMetric);
         }
 
+        //! Set of measures on a dof
+        std::vector<vectorN_type> const measures()
+        {
+            return measures_;
+        }
+
+        //! Set of directions on a dof
+        std::vector<matrixN_type> const directions()
+        {
+            return directions_;
+        }
+
         //! Interface
         mesh_ptrtype adaptMeshImpl( const mesh_ptrtype& initMesh, std::string geofile, std::string adaptType,
                                          std::list< std::pair<element_type, std::string> > var,
@@ -173,7 +185,7 @@ namespace Feel
 
         //! Compute the metric for mesh adaptation using hessian matrix
         void computeMetric(const double tol, const double h_min, const double h_max, const matrixN_type & hessian_matrix,
-                           matrixN_type & M, double & max_eigenvalue);
+                           matrixN_type & M, double & max_eigenvalue, int dofId);
 
         //! Mesh adaptation from Hessian matrix
         //1 : proj u Pk -> P1 and Hessian P1
@@ -222,6 +234,9 @@ namespace Feel
     private :
         std::list< std::pair<element_type, std::string> > defaultVar;
         std::list< std::pair<std::vector<p1_element_type>, std::string> > defaultMetric;
+
+        std::vector<vectorN_type> measures_;
+        std::vector<matrixN_type> directions_;
 
     };
 
@@ -774,7 +789,7 @@ namespace Feel
     MeshAdaptation<Dim,
                    Order,
                    OrderGeo>::computeMetric(const double tol, const double hMin, const double hMax,
-                                            const matrixN_type & hessianMatrix, matrixN_type & metric, double & maxEigenvalue)
+                                            const matrixN_type & hessianMatrix, matrixN_type & metric, double & maxEigenvalue, int dofId)
     {
         using namespace Feel::vf;
 
@@ -805,8 +820,11 @@ namespace Feel
             for (int i=0; i<Dim; i++)
                 R(i,j)=real((eigenSolver.eigenvectors())(i,j)); // because eigenvectors are complex
 
-        metric = (R * S) * R.transpose(); // to be checked
+        metric = (R * S) * R.transpose();
         maxEigenvalue = eigenvalues.maxCoeff();
+
+        measures_[dofId] = eigenvalues;
+        directions_[dofId] = R;
     }
 
     template<int Dim,
@@ -822,6 +840,10 @@ namespace Feel
 
         p0_space_ptrtype P0h = p0_space_type::New( mesh ); //P0 space
         p1_space_ptrtype P1h = p1_space_type::New( mesh ); //P1 space
+
+        // Initialize measures_ and directions_ size
+        measures_.resize(P1h->nLocalDof());
+        directions_.resize(P1h->nLocalDof());
 
         // Store measure on each point
         int bbItemSize;
@@ -894,7 +916,7 @@ namespace Feel
 
                 double maxEigenvalue;
                 matrixN_type metrics;
-                computeMetric(tol, hMin, hMax, hessianMatrix, metrics, maxEigenvalue);
+                computeMetric(tol, hMin, hMax, hessianMatrix, metrics, maxEigenvalue, dofptIdP1);
 
                 if (aniso)
                     {
@@ -962,7 +984,12 @@ namespace Feel
         using namespace Feel::vf;
 
         p1_space_ptrtype P1h = p1_space_type::New( mesh ); //P1 space
-        p1vec_space_ptrtype P1hvec = p1vec_space_type::New( mesh ); //P1 space
+        p1vec_space_ptrtype P1hvec = p1vec_space_type::New( mesh ); //P1 (vectorial) space
+
+        // Initialize measures_ and directions_ size
+        measures_.resize(P1h->nLocalDof());
+        directions_.resize(P1h->nLocalDof());
+
 
         // Define P(k-2) space from Order parameter
         typedef bases<Lagrange<Order-2,Scalar, Discontinuous> > p_km2_basis_type;
@@ -1043,7 +1070,7 @@ namespace Feel
 
                 double maxEigenvalue;
                 matrixN_type metrics;
-                computeMetric(tol, hMin, hMax, hessianMatrix, metrics, maxEigenvalue);
+                computeMetric(tol, hMin, hMax, hessianMatrix, metrics, maxEigenvalue, dofptIdP1);
 
                 if (aniso)
                     {
