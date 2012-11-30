@@ -472,19 +472,19 @@ Convection_crb::computeTrilinearForm( const element_type& X )
 
     // Fluid-NS
     // fluid convection derivatives: attention 2 terms
-    form2( _test=Xh,_trial=Xh, _matrix=A_tril , _init=true ) = integrate ( _range=elements( mesh ), _expr=trans( id( v ) )*( gradv( v ) )*idt( u ) );
-    form2( _test=Xh,_trial=Xh, _matrix=A_tril )  += integrate ( _range=elements( mesh ), _expr=trans( id( v ) )*( gradt( u ) )*idv( v ) );
+    form2( _test=Xh,_trial=Xh, _matrix=A_tril , _init=true ) = integrate ( _range=elements( mesh ), _expr=trans( id( v ) )*( gradv( u ) )*idt( u ) );
+    form2( _test=Xh,_trial=Xh, _matrix=A_tril )  += integrate ( _range=elements( mesh ), _expr=trans( id( v ) )*( gradt( u ) )*idv( u ) );
 
     //    // temperature derivatives
     //
     // heat convection by the fluid: attention 2 terms
-    form2( _test=Xh, _trial=Xh, _matrix=A_tril ) += integrate ( elements( mesh ), grad( s )*( idv( s )*idt( u ) ) );
+    form2( _test=Xh, _trial=Xh, _matrix=A_tril ) += integrate ( elements( mesh ), grad( s )*( idv( t )*idt( u ) ) );
 
-    form2( _test=Xh, _trial=Xh, _matrix=A_tril ) += integrate ( elements( mesh ), grad( s )*( idt( t )*idv( v ) ) );
+    form2( _test=Xh, _trial=Xh, _matrix=A_tril ) += integrate ( elements( mesh ), grad( s )*( idt( t )*idv( u ) ) );
 
-    form2( _test=Xh, _trial=Xh, _matrix=A_tril ) += integrate ( boundaryfaces( mesh ), trans( idv( v ) )*N() *id( s )*idt( t ) );
+    form2( _test=Xh, _trial=Xh, _matrix=A_tril ) += integrate ( boundaryfaces( mesh ), trans( idv( u ) )*N() *id( s )*idt( t ) );
 
-    form2( _test=Xh, _trial=Xh, _matrix=A_tril ) += integrate ( boundaryfaces( mesh ), trans( idt( u ) )*N() *id( s )*idv( s ) );
+    form2( _test=Xh, _trial=Xh, _matrix=A_tril ) += integrate ( boundaryfaces( mesh ), trans( idt( u ) )*N() *id( s )*idv( t ) );
 
     if ( weakdir == 0 )
     {
