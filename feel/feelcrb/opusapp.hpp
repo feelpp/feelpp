@@ -455,12 +455,14 @@ public:
                             printEntry( ostr, mu, v );
                             //file_summary_of_simulations.close();
 
-                            //stat
-                            relative_error_vector[curpar-1] = relative_error;
-                            l2_error_vector[curpar-1] = l2_error;
-                            h1_error_vector[curpar-1] = h1_error;
-                            time_fem_vector[curpar-1] = ofem[1];
-                            time_crb_vector[curpar-1] = time_crb;
+                            if ( this->vm()["crb.compute-stat"].template as<bool>() )
+                            {
+                                relative_error_vector[curpar-1] = relative_error;
+                                l2_error_vector[curpar-1] = l2_error;
+                                h1_error_vector[curpar-1] = h1_error;
+                                time_fem_vector[curpar-1] = ofem[1];
+                                time_crb_vector[curpar-1] = time_crb;
+                            }
 
                             std::ofstream res(this->vm()["result-file"].template as<std::string>() );
                             res << "output="<< o.template get<0>() << "\n";
@@ -481,15 +483,17 @@ public:
                             //std::ofstream file_summary_of_simulations( ( boost::format( "summary_of_simulations_%d" ) % o.template get<2>() ).str().c_str() ,std::ios::out | std::ios::app );
                             printEntry( file_summary_of_simulations, mu, v );
                             printEntry( ostr, mu, v );
-                            file_summary_of_simulations.close();
+                            //file_summary_of_simulations.close();
 
-                            relative_error_vector[curpar-1] = relative_error;
-                            l2_error_vector[curpar-1] = l2_error;
-                            h1_error_vector[curpar-1] = h1_error;
-                            time_fem_vector[curpar-1] = ofem[1];
-                            time_crb_vector[curpar-1] = time_crb;
-                            relative_estimated_error_vector[curpar-1] = relative_estimated_error;
-
+                            if ( this->vm()["crb.compute-stat"].template as<bool>() )
+                            {
+                                relative_error_vector[curpar-1] = relative_error;
+                                l2_error_vector[curpar-1] = l2_error;
+                                h1_error_vector[curpar-1] = h1_error;
+                                time_fem_vector[curpar-1] = ofem[1];
+                                time_crb_vector[curpar-1] = time_crb;
+                                relative_estimated_error_vector[curpar-1] = relative_estimated_error;
+                            }
                             std::ofstream res(this->vm()["result-file"].template as<std::string>() );
                             res << "output="<< o.template get<0>() << "\n";
                         }
@@ -582,67 +586,71 @@ public:
             exporter->save();
             if( proc_number == Environment::worldComm().masterRank() ) std::cout << ostr.str() << "\n";
 
-            LOG( INFO ) << "compute statistics \n";
-            Eigen::MatrixXf::Index index_max_l2;
-            Eigen::MatrixXf::Index index_min_l2;
-            Eigen::MatrixXf::Index index_max_h1;
-            Eigen::MatrixXf::Index index_min_h1;
-            Eigen::MatrixXf::Index index_max_time_fem;
-            Eigen::MatrixXf::Index index_min_time_fem;
-            Eigen::MatrixXf::Index index_max_time_crb;
-            Eigen::MatrixXf::Index index_min_time_crb;
-            Eigen::MatrixXf::Index index_max_estimated_error;
-            Eigen::MatrixXf::Index index_min_estimated_error;
-            Eigen::MatrixXf::Index index_max_output_error;
-            Eigen::MatrixXf::Index index_min_output_error;
-
-            double max_l2 = l2_error_vector.maxCoeff(&index_max_l2);
-            double min_l2 = l2_error_vector.minCoeff(&index_min_l2);
-            double mean_l2 = l2_error_vector.mean();
-            double max_h1 = h1_error_vector.maxCoeff(&index_max_h1);
-            double min_h1 = h1_error_vector.minCoeff(&index_min_h1);
-            double mean_h1 = h1_error_vector.mean();
-            double max_time_fem = time_fem_vector.maxCoeff(&index_max_time_fem);
-            double min_time_fem = time_fem_vector.minCoeff(&index_min_time_fem);
-            double mean_time_fem = time_fem_vector.mean();
-            double max_time_crb = time_crb_vector.maxCoeff(&index_max_time_crb);
-            double min_time_crb = time_crb_vector.minCoeff(&index_min_time_crb);
-            double mean_time_crb = time_crb_vector.mean();
-            double max_output_error = relative_error_vector.maxCoeff(&index_max_output_error);
-            double min_output_error = relative_error_vector.minCoeff(&index_min_output_error);
-            double mean_output_error = relative_error_vector.mean();
-            double max_estimated_error = 0;
-            double min_estimated_error = 0;
-            double mean_estimated_error = 0;
-
-            if( crb->errorType()!=2 )
+            if ( this->vm()["crb.compute-stat"].template as<bool>() )
             {
-                max_estimated_error = relative_estimated_error_vector.maxCoeff(&index_max_estimated_error);
-                min_estimated_error = relative_estimated_error_vector.minCoeff(&index_min_estimated_error);
-                mean_estimated_error = relative_estimated_error_vector.mean();
-            }
-            if( proc_number == Environment::worldComm().masterRank() )
-            {
-                file_summary_of_simulations <<"\n\nStatistics\n";
-                file_summary_of_simulations <<"max of output error : "<<max_output_error<<" at the "<<index_max_output_error+1<<"^th simulation\n";
-                file_summary_of_simulations <<"min of output error : "<<min_output_error<<" at the "<<index_min_output_error+1<<"^th simulation\n";
-                file_summary_of_simulations <<"mean of output error : "<<mean_output_error<<"\n\n";
-                file_summary_of_simulations <<"max of estimated output error : "<<max_estimated_error<<" at the "<<index_max_estimated_error+1<<"^th simulation\n";
-                file_summary_of_simulations <<"min of estimated output error : "<<min_estimated_error<<" at the "<<index_min_estimated_error+1<<"^th simulation\n";
-                file_summary_of_simulations <<"mean of estimated output error : "<<mean_estimated_error<<"\n\n";
-                file_summary_of_simulations <<"max of L2 error : "<<max_l2<<" at the "<<index_max_l2+1<<"^th simulation\n";
-                file_summary_of_simulations <<"min of L2 error : "<<min_l2<<" at the "<<index_min_l2+1<<"^th simulation\n";
-                file_summary_of_simulations <<"mean of L2 error : "<<mean_l2<<"\n\n";
-                file_summary_of_simulations <<"max of H1 error : "<<max_h1<<" at the "<<index_max_h1+1<<"^th simulation\n";
-                file_summary_of_simulations <<"min of H1 error : "<<min_h1<<" at the "<<index_min_h1+1<<"^th simulation\n";
-                file_summary_of_simulations <<"mean of H1 error : "<<mean_h1<<"\n\n";
-                file_summary_of_simulations <<"max of time FEM : "<<max_time_fem<<" at the "<<index_max_time_fem+1<<"^th simulation\n";
-                file_summary_of_simulations <<"min of time FEM : "<<min_time_fem<<" at the "<<index_min_time_fem+1<<"^th simulation\n";
-                file_summary_of_simulations <<"mean of time FEM : "<<mean_time_fem<<"\n\n";
-                file_summary_of_simulations <<"max of time CRB : "<<max_time_crb<<" at the "<<index_max_time_crb+1<<"^th simulation\n";
-                file_summary_of_simulations <<"min of time CRB : "<<min_time_crb<<" at the "<<index_min_time_crb+1<<"^th simulation\n";
-                file_summary_of_simulations <<"mean of time CRB : "<<mean_time_crb<<"\n\n";
-            }
+
+                LOG( INFO ) << "compute statistics \n";
+                Eigen::MatrixXf::Index index_max_l2;
+                Eigen::MatrixXf::Index index_min_l2;
+                Eigen::MatrixXf::Index index_max_h1;
+                Eigen::MatrixXf::Index index_min_h1;
+                Eigen::MatrixXf::Index index_max_time_fem;
+                Eigen::MatrixXf::Index index_min_time_fem;
+                Eigen::MatrixXf::Index index_max_time_crb;
+                Eigen::MatrixXf::Index index_min_time_crb;
+                Eigen::MatrixXf::Index index_max_estimated_error;
+                Eigen::MatrixXf::Index index_min_estimated_error;
+                Eigen::MatrixXf::Index index_max_output_error;
+                Eigen::MatrixXf::Index index_min_output_error;
+
+                double max_l2 = l2_error_vector.maxCoeff(&index_max_l2);
+                double min_l2 = l2_error_vector.minCoeff(&index_min_l2);
+                double mean_l2 = l2_error_vector.mean();
+                double max_h1 = h1_error_vector.maxCoeff(&index_max_h1);
+                double min_h1 = h1_error_vector.minCoeff(&index_min_h1);
+                double mean_h1 = h1_error_vector.mean();
+                double max_time_fem = time_fem_vector.maxCoeff(&index_max_time_fem);
+                double min_time_fem = time_fem_vector.minCoeff(&index_min_time_fem);
+                double mean_time_fem = time_fem_vector.mean();
+                double max_time_crb = time_crb_vector.maxCoeff(&index_max_time_crb);
+                double min_time_crb = time_crb_vector.minCoeff(&index_min_time_crb);
+                double mean_time_crb = time_crb_vector.mean();
+                double max_output_error = relative_error_vector.maxCoeff(&index_max_output_error);
+                double min_output_error = relative_error_vector.minCoeff(&index_min_output_error);
+                double mean_output_error = relative_error_vector.mean();
+                double max_estimated_error = 0;
+                double min_estimated_error = 0;
+                double mean_estimated_error = 0;
+
+                if( crb->errorType()!=2 )
+                {
+                    max_estimated_error = relative_estimated_error_vector.maxCoeff(&index_max_estimated_error);
+                    min_estimated_error = relative_estimated_error_vector.minCoeff(&index_min_estimated_error);
+                    mean_estimated_error = relative_estimated_error_vector.mean();
+                }
+                if( proc_number == Environment::worldComm().masterRank() )
+                {
+                    file_summary_of_simulations <<"\n\nStatistics\n";
+                    file_summary_of_simulations <<"max of output error : "<<max_output_error<<" at the "<<index_max_output_error+1<<"^th simulation\n";
+                    file_summary_of_simulations <<"min of output error : "<<min_output_error<<" at the "<<index_min_output_error+1<<"^th simulation\n";
+                    file_summary_of_simulations <<"mean of output error : "<<mean_output_error<<"\n\n";
+                    file_summary_of_simulations <<"max of estimated output error : "<<max_estimated_error<<" at the "<<index_max_estimated_error+1<<"^th simulation\n";
+                    file_summary_of_simulations <<"min of estimated output error : "<<min_estimated_error<<" at the "<<index_min_estimated_error+1<<"^th simulation\n";
+                    file_summary_of_simulations <<"mean of estimated output error : "<<mean_estimated_error<<"\n\n";
+                    file_summary_of_simulations <<"max of L2 error : "<<max_l2<<" at the "<<index_max_l2+1<<"^th simulation\n";
+                    file_summary_of_simulations <<"min of L2 error : "<<min_l2<<" at the "<<index_min_l2+1<<"^th simulation\n";
+                    file_summary_of_simulations <<"mean of L2 error : "<<mean_l2<<"\n\n";
+                    file_summary_of_simulations <<"max of H1 error : "<<max_h1<<" at the "<<index_max_h1+1<<"^th simulation\n";
+                    file_summary_of_simulations <<"min of H1 error : "<<min_h1<<" at the "<<index_min_h1+1<<"^th simulation\n";
+                    file_summary_of_simulations <<"mean of H1 error : "<<mean_h1<<"\n\n";
+                    file_summary_of_simulations <<"max of time FEM : "<<max_time_fem<<" at the "<<index_max_time_fem+1<<"^th simulation\n";
+                    file_summary_of_simulations <<"min of time FEM : "<<min_time_fem<<" at the "<<index_min_time_fem+1<<"^th simulation\n";
+                    file_summary_of_simulations <<"mean of time FEM : "<<mean_time_fem<<"\n\n";
+                    file_summary_of_simulations <<"max of time CRB : "<<max_time_crb<<" at the "<<index_max_time_crb+1<<"^th simulation\n";
+                    file_summary_of_simulations <<"min of time CRB : "<<min_time_crb<<" at the "<<index_min_time_crb+1<<"^th simulation\n";
+                    file_summary_of_simulations <<"mean of time CRB : "<<mean_time_crb<<"\n\n";
+                }
+            }//end of compute-stat
         }
     void run( const double * X, unsigned long N,
               double * Y, unsigned long P )
