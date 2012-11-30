@@ -318,21 +318,22 @@ public:
 
             printParameterHdr( ostr, model->parameterSpace()->dimension(), hdrs[M_mode] );
 
-            //Statistics
-            vectorN_type l2_error_vector( run_sampling_size );
-            vectorN_type h1_error_vector( run_sampling_size );
-            vectorN_type relative_error_vector( run_sampling_size );
-            vectorN_type time_fem_vector ( run_sampling_size );
-            vectorN_type time_crb_vector ( run_sampling_size );
-            vectorN_type relative_estimated_error_vector;
             std::ofstream file_summary_of_simulations( ( boost::format( "summary_of_simulations_%d" ) %crb->dimension() ).str().c_str() ,std::ios::out | std::ios::app );
-
-            if( crb->errorType()!=2 )
-                relative_estimated_error_vector.resize( run_sampling_size );
 
             int curpar = 0;
             if( crb->useWNmu() )
                 Sampling = crb->wnmu();
+
+            //Statistics
+            vectorN_type l2_error_vector( Sampling->size() );
+            vectorN_type h1_error_vector( Sampling->size() );
+            vectorN_type relative_error_vector( Sampling->size() );
+            vectorN_type time_fem_vector ( Sampling->size() );
+            vectorN_type time_crb_vector ( Sampling->size() );
+            vectorN_type relative_estimated_error_vector;
+            if( crb->errorType()!=2 )
+                relative_estimated_error_vector.resize( Sampling->size() );
+
             BOOST_FOREACH( auto mu, *Sampling )
             {
 
