@@ -823,7 +823,9 @@ namespace Feel
         metric = (R * S) * R.transpose();
         maxEigenvalue = eigenvalues.maxCoeff();
 
-        measures_[dofId] = eigenvalues;
+        for(int i=0; i<Dim; i++)
+            measures_[dofId](i) = 1.0/math::sqrt(eigenvalues(i));
+
         directions_[dofId] = R;
     }
 
