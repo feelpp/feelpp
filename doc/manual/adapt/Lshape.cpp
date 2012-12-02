@@ -271,13 +271,12 @@ LShape<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
     if ( X[1] == 0 ) shape = "simplex";
     if ( X[1] == 1 ) shape = "hypercube";
 
-    if ( !this->vm().count( "nochdir" ) )
-        Environment::changeRepository( boost::format( "doc/tutorial/%1%/%2%-%3%/P%4%/h_%5%/" )
-                                       % this->about().appName()
-                                       % shape
-                                       % Dim
-                                       % Order
-                                       % meshSize );
+    Environment::changeRepository( boost::format( "doc/manual/adapt/%1%/%2%-%3%/P%4%/h_%5%/" )
+                                   % this->about().appName()
+                                   % shape
+                                   % Dim
+                                   % Order
+                                   % meshSize );
 
     //! Set dimensions of Lshape geometry
     double Lx = this->vm()["Lx"].template as<double>();
