@@ -98,7 +98,7 @@ macro(feelpp_add_application)
     endforeach()
   endif(FEELPP_APP_SCRIPTS)
 
-  if ( FEELPP_APP_ADD_OT )
+  if ( FEELPP_APP_ADD_OT AND OPENTURNS_FOUND )
     set(pycpp "${execname}_pywrapper.cpp")
     set(xml "${execname}_ot.xml")
     set(FEELPP_APP_OT_WRAPPER_NAME "${execname}_ot")
@@ -113,7 +113,7 @@ macro(feelpp_add_application)
     feelpp_ot_add_python_module(${FEELPP_APP_OT_WRAPPER_NAME} ${pycpp}
       LINK_LIBRARIES ${OpenTURNS_LIBRARIES}
       CFG ${FEELPP_APP_CFG} XML ${xml} TEST)
-  endif( FEELPP_APP_ADD_OT )
+  endif()
 endmacro(feelpp_add_application)
 
 
