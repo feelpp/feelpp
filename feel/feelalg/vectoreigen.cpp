@@ -101,7 +101,9 @@ VectorEigen<T>::~VectorEigen()
 template <typename T>
 typename VectorEigen<T>::clone_ptrtype
 VectorEigen<T>::clone () const
-{}
+{
+    return clone_ptrtype( new VectorEigen<T>( *this ) );
+}
 
 template <typename T>
 void
