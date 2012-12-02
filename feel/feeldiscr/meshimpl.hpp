@@ -1503,7 +1503,7 @@ Mesh<Shape, T, Tag>::checkLocalPermutation( mpl::bool_<true> ) const
                        list_of_bad_elts.end(),
                        []( const element_type& e )
                        {
-                           LOG_FIRST_N(WARN,10) << "element is not anticlockwise oriented(wrong local numbering): " << e << "\n";
+                           LOG_FIRST_N(WARNING,10) << "element is not anticlockwise oriented(wrong local numbering): " << e << "\n";
                        });
 
 
