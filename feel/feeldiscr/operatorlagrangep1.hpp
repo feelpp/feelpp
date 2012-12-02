@@ -317,9 +317,9 @@ OperatorLagrangeP1<space_type>::OperatorLagrangeP1( domain_space_ptrtype const& 
 
     for ( size_type elid = 0, pt_image_id = 0; it != en; ++it )
     {
-        VLOG(2) << "=========================================\n";
-        VLOG(2) << "global element " << it->id() << " oriented ok ? : " << it->isAnticlockwiseOriented() << "\n";
-        VLOG(2) << "global element G=" << it->G() << "\n";
+        DVLOG(2) << "=========================================\n";
+        DVLOG(2) << "global element " << it->id() << " oriented ok ? : " << it->isAnticlockwiseOriented() << "\n";
+        DVLOG(2) << "global element G=" << it->G() << "\n";
 
         gmc->update( *it );
 
@@ -328,10 +328,10 @@ OperatorLagrangeP1<space_type>::OperatorLagrangeP1( domain_space_ptrtype const& 
         auto enl = _M_p2m.mesh()->endElement();
         for ( ; itl != enl; ++itl, ++elid )
         {
-            VLOG(2) << "************************************\n";
-            VLOG(2) << "local elt = " << elid << "\n";
-            VLOG(2) << "local element " << itl->id() << " oriented ok ? : " << itl->isAnticlockwiseOriented() << "\n";
-            VLOG(2) << "local element G=" << itl->G() << "\n";
+            DVLOG(2) << "************************************\n";
+            DVLOG(2) << "local elt = " << elid << "\n";
+            DVLOG(2) << "local element " << itl->id() << " oriented ok ? : " << itl->isAnticlockwiseOriented() << "\n";
+            DVLOG(2) << "local element G=" << itl->G() << "\n";
 
             element_type elt;
             elt.setId( elid );
@@ -345,7 +345,7 @@ OperatorLagrangeP1<space_type>::OperatorLagrangeP1( domain_space_ptrtype const& 
             // accumulate the points
             for ( int p = 0; p < image_mesh_type::element_type::numVertices; ++p )
             {
-                VLOG(2) << "local In original element, vertex number " << itl->point( p ).id() << "\n";
+                DVLOG(2) << "local In original element, vertex number " << itl->point( p ).id() << "\n";
                 uint16_type localptid = itl->point( p ).id();;//p;//it->point( p ).id(); //itl->point( p ).id();
                 uint16_type localptid_dof = localDof( it, localptid );
                 size_type ptid = boost::get<0>( this->domainSpace()->dof()->localToGlobal( it->id(),
@@ -368,16 +368,16 @@ OperatorLagrangeP1<space_type>::OperatorLagrangeP1( domain_space_ptrtype const& 
 
                         point_type __pt( n_new_nodes, boost::get<0>( this->domainSpace()->dof()->dofPoint( ptid ) )  );
 
-                        VLOG(2) << "[OperatorLagrangeP1] element id "
+                        DVLOG(2) << "[OperatorLagrangeP1] element id "
                                       << elid << "\n";
-                        VLOG(2) << "[OperatorLagrangeP1] local point id "
+                        DVLOG(2) << "[OperatorLagrangeP1] local point id "
                                       << localptid << " coord " << itl->point( p ).node() << "\n";
-                        VLOG(2) << "[OperatorLagrangeP1] point local id "
+                        DVLOG(2) << "[OperatorLagrangeP1] point local id "
                                       << localptid << " global id " << ptid << "\n"
                                       << " localptid_dof = " << localptid_dof << "\n";
-                        VLOG(2) << "[OperatorLagrangeP1] adding point "
+                        DVLOG(2) << "[OperatorLagrangeP1] adding point "
                                       << __pt.id() << " : " << __pt.node() << "\n";
-                        VLOG(2) << "[OperatorLagrangeP1] domain point gid "
+                        DVLOG(2) << "[OperatorLagrangeP1] domain point gid "
                                       << boost::get<1>( this->domainSpace()->dof()->dofPoint( ptid ) )
                                       << " coords: " << boost::get<0>( this->domainSpace()->dof()->dofPoint( ptid ) ) << "\n";
 
@@ -450,7 +450,7 @@ OperatorLagrangeP1<space_type>::OperatorLagrangeP1( domain_space_ptrtype const& 
         }
     }
 
-    VLOG(2) << "[P1 Lagrange] Number of points in mesh: " << _M_mesh->numPoints() << "\n";
+    DVLOG(2) << "[P1 Lagrange] Number of points in mesh: " << _M_mesh->numPoints() << "\n";
 
     _M_mesh->setNumVertices( _M_mesh->numPoints() );
     _M_mesh->components().reset();
